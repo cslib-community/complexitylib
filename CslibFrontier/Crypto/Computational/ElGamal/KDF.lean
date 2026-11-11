@@ -178,20 +178,25 @@ noncomputable def seededSetup (setup : ℕ → PMF F.Desc) (seedLen : ℕ → F.
 a fresh uniform seed `s ← Cslib.BitString.sampleList (seedLen n d)` and passing
 `((d, s), u, v, w)` to `distinguisher`. -/
 noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
-    (distinguisher : ℕ → F.withSeed.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
-    (n : ℕ) (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let s ← Cslib.BitString.sampleList (seedLen n input.1)
-  distinguisher n ((input.1, s), input.2)
+    (distinguisher : ℕ → DDHChallenge (Desc := F.withSeed.Desc) → ProbComp Bool)
+    (n : ℕ) (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
+  let s ← Cslib.BitString.sampleList (seedLen n input.description)
+  distinguisher n
+    { description := (input.description, s)
+      leftPublic := input.leftPublic
+      rightPublic := input.rightPublic
+      candidateShared := input.candidateShared }
 
 /-- In `ddhRealGame`, `seededDDHDistinguisher` simulates `F.withSeed.ddhRealGame` under
 `seededSetup`. -/
 @[simp] theorem ddhRealGame_seededDDHDistinguisher (setup : ℕ → PMF F.Desc)
     (seedLen : ℕ → F.Desc → ℕ)
-    (distinguisher : ℕ → F.withSeed.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (distinguisher : ℕ → DDHChallenge (Desc := F.withSeed.Desc) → ProbComp Bool)
     (n : ℕ) :
     F.ddhRealGame setup (F.seededDDHDistinguisher seedLen distinguisher) n =
       F.withSeed.ddhRealGame (F.seededSetup setup seedLen) distinguisher n := by
-  simp only [pmf_norm, ddhRealGame, seededDDHDistinguisher, seededSetup, withSeed,
+  simp only [pmf_norm, ddhRealGame, eval_ddhRealExperiment, seededDDHDistinguisher, seededSetup,
+    withSeed,
     Cslib.BitString.eval_sampleList]
   pmf_swap
 
@@ -199,11 +204,12 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
 `seededSetup`. -/
 @[simp] theorem ddhIdealGame_seededDDHDistinguisher (setup : ℕ → PMF F.Desc)
     (seedLen : ℕ → F.Desc → ℕ)
-    (distinguisher : ℕ → F.withSeed.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (distinguisher : ℕ → DDHChallenge (Desc := F.withSeed.Desc) → ProbComp Bool)
     (n : ℕ) :
     F.ddhIdealGame setup (F.seededDDHDistinguisher seedLen distinguisher) n =
       F.withSeed.ddhIdealGame (F.seededSetup setup seedLen) distinguisher n := by
-  simp only [pmf_norm, ddhIdealGame, seededDDHDistinguisher, seededSetup, withSeed,
+  simp only [pmf_norm, ddhIdealGame, eval_ddhIdealExperiment, seededDDHDistinguisher,
+    seededSetup, withSeed,
     Cslib.BitString.eval_sampleList]
   pmf_swap
 
@@ -212,39 +218,32 @@ in unary and `distinguisher` is uniform strict PPT. -/
 theorem isPPTOn_seededDDHDistinguisher {seedLen : ℕ → F.Desc → ℕ}
     (hseed : ComputableInPolyTime (fun p : ℕ × F.Desc => seedLen p.1 p.2)
       (encPair encUnary F.encDesc) encUnary)
-    {distinguisher : ℕ → F.withSeed.Desc × List Bool × List Bool × List Bool → ProbComp Bool}
+    {distinguisher : ℕ → DDHChallenge (Desc := F.withSeed.Desc) → ProbComp Bool}
     (hD : IsPPTOn
       F.withSeed.encDDHInput
       encBool (fun input => distinguisher input.1 input.2)) :
     IsPPTOn F.encDDHInput
       encBool (fun input => F.seededDDHDistinguisher seedLen distinguisher input.1 input.2) := by
-  let EIn := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
-  have hprep : ComputableInPolyTime
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool => (input.1, input.2.1))
-      EIn (encPair encUnary F.encDesc) := by fun_prop
   have hlen : ComputableInPolyTime
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool => seedLen input.1 input.2.1)
-      EIn encUnary := hseed.comp hprep
-  have hsample : IsPPTOn EIn encBits
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-        Cslib.BitString.sampleList (seedLen input.1 input.2.1)) :=
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+        seedLen input.1 input.2.description) F.encDDHInput encUnary :=
+    hseed.comp (show ComputableInPolyTime
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) => (input.1, input.2.description))
+      F.encDDHInput (encPair encUnary F.encDesc) from by fun_prop)
+  have hsample : IsPPTOn F.encDDHInput encBits
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+        Cslib.BitString.sampleList (seedLen input.1 input.2.description)) :=
     ComputableInPolyTime.sampleList hlen
   unfold seededDDHDistinguisher
   refine hsample.bind_with ?_
-  change IsPPTOn (encPair EIn encBits) encBool
-    (fun p : (ℕ × F.Desc × List Bool × List Bool × List Bool) × List Bool =>
-      distinguisher p.1.1 ((p.1.2.1, p.2), p.1.2.2))
-  refine hD.preprocess
-    (prepare := fun p : (ℕ × F.Desc × List Bool × List Bool × List Bool) × List Bool =>
-      (p.1.1, ((p.1.2.1, p.2), p.1.2.2))) ?_
-  change ComputableInPolyTime
-    (fun p : (ℕ × F.Desc × List Bool × List Bool × List Bool) × List Bool =>
-      (p.1.1, ((p.1.2.1, p.2), p.1.2.2)))
-    (encPair EIn encBits)
-    (encPair encUnary
-      (encPair (encPair F.encDesc encBits)
-        (encPair encBits (encPair encBits encBits))))
-  fun_prop
+  exact hD.preprocess
+    (prepare := fun p : (ℕ × DDHChallenge (Desc := F.Desc)) × List Bool =>
+      (p.1.1, { description := (p.1.2.description, p.2)
+                leftPublic := p.1.2.leftPublic
+                rightPublic := p.1.2.rightPublic
+                candidateShared := p.1.2.candidateShared }))
+    (show ComputableInPolyTime _ (encPair F.encDDHInput encBits) F.withSeed.encDDHInput from by
+      fun_prop)
 
 /-- **Preservation of `DDH` under public-seed augmentation**: if `F.DDH setup` holds and
 `seedLen` is polynomial-time computable in unary, then `F.withSeed.DDH (F.seededSetup setup
@@ -357,7 +356,7 @@ advantage between `kdfRealGame` and `kdfIdealGame` under `F.seededSetup` and `F.
 most `NNReal.sqrt ((2 : ℝ≥0) ^ (msgLen n) / (qMin : ℝ≥0)) / 2`. -/
 theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
     (keyLen bound : F.Desc → ℕ) (msgLen : ℕ → ℕ)
-    (distinguisher : ℕ → F.withSeed.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (distinguisher : ℕ → DDHChallenge (Desc := F.withSeed.Desc) → ProbComp Bool)
     (n qMin : ℕ) (hq0 : 0 < qMin)
     (hkey : ∀ d ∈ (setup n).support, keyLen d = msgLen n)
     (hbound : ∀ d ∈ (setup n).support, ∀ x : F.Carrier d, (F.encode d x).length ≤ bound d)
@@ -376,15 +375,15 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
           (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
             ProbComp.eval (distinguisher n
-              ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-                F.linearHashKDF keyLen bound ((d, a), F.encode d (γ • F.generator d)))))
+              ⟨(d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+                F.linearHashKDF keyLen bound ((d, a), F.encode d (γ • F.generator d))⟩))
     ((Cslib.BitString.uniformList (F.linearHashSeedLen msgLen bound n d)).bind fun a =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
           (Cslib.BitString.uniformList (msgLen n)).bind fun pad =>
             ProbComp.eval (distinguisher n
-              ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-                pad))) ≤ _
+              ⟨(d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+                pad⟩)) ≤ _
   rw [Game.advantage_bind_comm]
   refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α => ?_
   rw [Game.advantage_bind_comm]
@@ -395,14 +394,14 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
     (PMF.uniformOfFintype (ZMod (F.order d))).map (F.paddedGeneratorMultiple bound d)
   let test : BitString (m * W) × BitString m → Game := fun pair =>
     ProbComp.eval (distinguisher n
-      ((d, List.ofFn pair.1), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-        List.ofFn pair.2))
+      ⟨(d, List.ofFn pair.1), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+        List.ofFn pair.2⟩)
   have hreal :
       (Cslib.BitString.uniformList (F.linearHashSeedLen msgLen bound n d)).bind (fun s =>
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
           ProbComp.eval (distinguisher n
-            ((d, s), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-              F.linearHashKDF keyLen bound ((d, s), F.encode d (γ • F.generator d))))) =
+            ⟨(d, s), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
+              F.linearHashKDF keyLen bound ((d, s), F.encode d (γ • F.generator d))⟩)) =
       (seededHash (PMF.uniformOfFintype (BitString (m * W))) source
         (fun seed =>
           Cslib.BitString.LinearHash.hash
@@ -426,7 +425,7 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
       (Cslib.BitString.uniformList (F.linearHashSeedLen msgLen bound n d)).bind (fun s =>
         (Cslib.BitString.uniformList m).bind fun pad =>
           ProbComp.eval (distinguisher n
-            ((d, s), F.encode d (α • F.generator d), F.encode d (β • F.generator d), pad))) =
+            ⟨(d, s), F.encode d (α • F.generator d), F.encode d (β • F.generator d), pad⟩)) =
       ((PMF.uniformOfFintype (BitString (m * W))).bind fun seed =>
         (PMF.uniformOfFintype (BitString m)).map (seed, ·)).bind test := by
     simp only [pmf_norm, linearHashSeedLen, Cslib.BitString.uniformList, test]

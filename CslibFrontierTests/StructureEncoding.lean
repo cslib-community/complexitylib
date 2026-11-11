@@ -59,6 +59,62 @@ example {α : Type} {enc : α ↪ List Bool} {f : α → Point}
     ComputableInPolyTime (fun a => Point.mk (f a).x (f a).y (f a).z) enc ePoint := by
   fun_prop
 
+/-- A record with an implicit description type, as used by encoded security challenges. -/
+structure DescribedPair {Desc : Type} where
+  /-- The arbitrary description. -/
+  description : Desc
+  /-- The first word. -/
+  left : List Bool
+  /-- The second word. -/
+  right : List Bool
+
+/-- Explicit command parameters determine the record type and its field encodings. -/
+enc_structure eDescribedPair (Desc : Type) (encDesc : Desc ↪ List Bool) :
+    DescribedPair (Desc := Desc) where
+  description : encDesc, left : encBits, right : encBits
+
+example (Desc : Type) (encDesc : Desc ↪ List Bool) (d : Desc) (u v : List Bool) :
+    eDescribedPair Desc encDesc ⟨d, u, v⟩ = encPair encDesc (encPair encBits encBits) (d, u, v) :=
+  rfl
+
+-- Swapping the two words exercises both generated field projections and the constructor rule.
+example (Desc : Type) (encDesc : Desc ↪ List Bool) :
+    ComputableInPolyTime
+      (fun p : DescribedPair (Desc := Desc) =>
+        { description := p.description, left := p.right, right := p.left })
+      (eDescribedPair Desc encDesc) (eDescribedPair Desc encDesc) := by
+  fun_prop
+
+example (Desc : Type) (encDesc : Desc ↪ List Bool) {α : Type} {enc : α ↪ List Bool}
+    {S : α → ℕ} {f : α → DescribedPair (Desc := Desc)}
+    (hf : ComputableInSpace f enc (eDescribedPair Desc encDesc) S) :
+    ComputableInSpace (fun a => (f a).description) enc encDesc S :=
+  eDescribedPair_description_budget Desc encDesc hf
+
+/-- User parameters may share names with the command's generated proof variables. -/
+enc_structure eDescribedPairCollision (γ : Type) (encIn : γ ↪ List Bool) :
+    DescribedPair (Desc := γ) where
+  description : encIn, left : encBits, right : encBits
+
+example (γ : Type) (encIn : γ ↪ List Bool) :
+    ComputableInPolyTime
+      (fun p : DescribedPair (Desc := γ) =>
+        { description := p.description, left := p.right, right := p.left })
+      (eDescribedPairCollision γ encIn) (eDescribedPairCollision γ encIn) := by
+  fun_prop
+
+-- The constructor must retain the chosen description encoding when the caller has a different
+-- input type and encoding. A same-domain identity test would not detect parameter capture.
+example (γ : Type) (encIn : γ ↪ List Bool) {α : Type} {enc : α ↪ List Bool}
+    {description : α → γ} {left right : α → List Bool}
+    (hd : ComputableInPolyTime description enc encIn)
+    (hl : ComputableInPolyTime left enc encBits)
+    (hr : ComputableInPolyTime right enc encBits) :
+    ComputableInPolyTime
+      (fun a => { description := description a, left := left a, right := right a })
+      enc (eDescribedPairCollision γ encIn) :=
+  eDescribedPairCollision_mk_polyTime γ encIn hd hl hr
+
 /-- A single-field structure, where `eSFields` is the field encoding itself rather than a pair. -/
 structure Single where
   /-- Binary payload list. -/

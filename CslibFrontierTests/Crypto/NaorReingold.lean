@@ -149,10 +149,7 @@ theorem isQueryBounded_singleQueryDistinguisher (n : ℕ) (aux : List Bool) :
 /-- Uniform strict-PPT certificate for the lazy-sampling DDH distinguisher built from
 `singleQueryDistinguisher` on `schnorrGroups`. -/
 example :
-    IsPPTOn
-      (encPair encUnary
-        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool
+    IsPPTOn schnorrGroups.encDDHInput encBool
       (fun input =>
         schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher
           input.1 input.2) :=

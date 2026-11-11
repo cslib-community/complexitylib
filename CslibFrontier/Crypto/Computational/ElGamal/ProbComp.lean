@@ -201,49 +201,50 @@ theorem hashedElGamalDecaps_hashedElGamalEncapsProb (H : F.Desc × List Bool →
 `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`. -/
 def kemToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (distinguisher : Distinguisher) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
   distinguisher n
     (encPair encBits (encPair encBits encBits)
-      (pk, (H (input.1, F.ddhShared input), F.ddhEph input)))
+      (pk, (H (input.description, input.candidateShared), input.rightPublic)))
 
 /-- KDF distinguisher constructed from a `KEMAdversary` (`Distinguisher`) for
 `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`. -/
 def kemToKDFDistinguisher (distinguisher : Distinguisher) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
   distinguisher n
-    (encPair encBits (encPair encBits encBits) (pk, (F.ddhShared input, F.ddhEph input)))
+    (encPair encBits (encPair encBits encBits) (pk, (input.candidateShared, input.rightPublic)))
 
 /-- `ddhIdealGame` for `kemToDDHDistinguisher` is identical to `kdfRealGame` for
 `kemToKDFDistinguisher`. -/
 theorem ddhIdealGame_kemToDDHDistinguisher_eq_kdfRealGame (setup : ℕ → PMF F.Desc)
     (H : F.Desc × List Bool → List Bool) (distinguisher : Distinguisher) (n : ℕ) :
     F.ddhIdealGame setup (F.kemToDDHDistinguisher H distinguisher) n =
-      F.kdfRealGame setup H (F.kemToKDFDistinguisher distinguisher) n :=
-  rfl
+      F.kdfRealGame setup H (F.kemToKDFDistinguisher distinguisher) n := by
+  simp only [ddhIdealGame, eval_ddhIdealExperiment, kdfRealGame,
+    kemToDDHDistinguisher, kemToKDFDistinguisher]
 
 /-- `kemToDDHDistinguisher` is uniform strict PPT whenever `H` is polynomial time and
 `distinguisher` is uniform strict PPT. -/
 theorem isPPTOn_kemToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     {distinguisher : Distinguisher} (hD : IsPPT encBool distinguisher) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.kemToDDHDistinguisher H distinguisher input.1 input.2) := by
-  let E1 := encPair F.encDesc (encPair encBits (encPair encBits encBits))
-  let h1 := ComputableInPolyTime.snd encUnary E1
-  let h2 := h1.snd'
-  let h3 := h2.snd'
-  have hprep := (ComputableInPolyTime.fst encUnary E1).prod
-    (((h1.fst'.prod h2.fst').encoding_comp.prod
-      ((hH.comp' (h1.fst'.prod h3.snd')).prod h3.fst')).encoding_comp)
+  let hchallenge := ComputableInPolyTime.snd encUnary F.encDDHChallenge
+  let hd := F.encDDHChallenge_description_polyTime hchallenge
+  let hu := F.encDDHChallenge_leftPublic_polyTime hchallenge
+  let hv := F.encDDHChallenge_rightPublic_polyTime hchallenge
+  let hw := F.encDDHChallenge_candidateShared_polyTime hchallenge
+  have hprep := (ComputableInPolyTime.fst encUnary F.encDDHChallenge).prod
+    (((hd.prod hu).encoding_comp.prod ((hH.comp' (hd.prod hw)).prod hv)).encoding_comp)
   exact hD.on.preprocess hprep
 
 /-- `kemToKDFDistinguisher` is uniform strict PPT whenever `distinguisher` is: it is
 `kemToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/
 theorem isPPTOn_kemToKDFDistinguisher {distinguisher : Distinguisher}
     (hD : IsPPT encBool distinguisher) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.kemToKDFDistinguisher distinguisher input.1 input.2) :=
   F.isPPTOn_kemToDDHDistinguisher (H := fun p => p.2) (ComputableInPolyTime.snd F.encDesc encBits)
     hD
@@ -277,7 +278,8 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
       F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n =
       (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
-    simp only [ddhRealGame, kemToDDHDistinguisher, PMF.monad_bind_eq_bind, PMF.pure_bind, k]
+    simp only [ddhRealGame, eval_ddhRealExperiment, kemToDDHDistinguisher,
+      PMF.monad_bind_eq_bind, PMF.pure_bind, k]
   rw [hreal, hddh]
   exact F.advantage_bind_sampleExp_pair_le n (d n) k
 

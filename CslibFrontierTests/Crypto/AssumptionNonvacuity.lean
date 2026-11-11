@@ -80,8 +80,9 @@ theorem not_cdh_const : ¬ F.CDH fun _ => PMF.pure d :=
 
 /-- Accept when the first and third elements are both the identity of the fixed group `d`. -/
 noncomputable def identityTest :
-    ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool :=
-  fun _ input => pure (decide (input.2.1 = F.encode d 0 ∧ input.2.2.2 = F.encode d 0))
+    ℕ → DDHChallenge (Desc := F.Desc) → ProbComp Bool :=
+  fun _ input =>
+    pure (decide (input.leftPublic = F.encode d 0 ∧ input.candidateShared = F.encode d 0))
 
 theorem identityTest_isPPT :
     IsPPTOn F.encDDHInput encBool (fun input => identityTest F d input.1 input.2) := by
@@ -99,7 +100,8 @@ theorem succProbability_ddhRealGame_identityTest (n : ℕ) :
     Game.succProbability (F.ddhRealGame (fun _ => PMF.pure d) (identityTest F d) n) =
       (F.order d : ℝ≥0)⁻¹ := by
   have h := uniform_eq_apply F d 0
-  simp only [ddhRealGame, identityTest, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
+  simp only [ddhRealGame, eval_ddhRealExperiment, identityTest, ProbComp.eval_pure,
+    PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.pure_bind, encode_smul_eq_zero_iff, mul_eq_zero] at h ⊢
   simp only [and_or_left, and_self, or_iff_left_of_imp And.left, PMF.bind_const,
     eq_comm (a := (0 : ZMod _))] at h ⊢
@@ -109,13 +111,28 @@ theorem succProbability_ddhRealGame_identityTest (n : ℕ) :
 theorem succProbability_ddhIdealGame_identityTest (n : ℕ) :
     Game.succProbability (F.ddhIdealGame (fun _ => PMF.pure d) (identityTest F d) n) =
       (F.order d : ℝ≥0)⁻¹ ^ 2 := by
-  simp only [ddhIdealGame, identityTest, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
+  simp only [ddhIdealGame, eval_ddhIdealExperiment, identityTest, ProbComp.eval_pure,
+    PMF.monad_bind_eq_bind,
     PMF.pure_bind, encode_smul_eq_zero_iff, PMF.bind_const]
   rw [Game.succProbability, ← ENNReal.toNNReal_natCast, ← ENNReal.toNNReal_inv,
     ← ENNReal.toNNReal_pow]
   congr 1
   simp [PMF.bind_apply, tsum_fintype, PMF.uniformOfFintype_apply, PMF.pure_apply, ite_and,
     Finset.sum_ite_eq', sq]
+
+/-- Evaluating the syntax-facing experiments preserves the distinct real and ideal probabilities
+on a fixed group, with a uniform strict-PPT distinguisher. -/
+example (n : ℕ) :
+    Game.succProbability (ProbComp.eval (F.ddhRealExperiment (identityTest F d) n d)) =
+      (F.order d : ℝ≥0)⁻¹ := by
+  simpa only [ddhRealGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
+    succProbability_ddhRealGame_identityTest F d n
+
+example (n : ℕ) :
+    Game.succProbability (ProbComp.eval (F.ddhIdealExperiment (identityTest F d) n d)) =
+      (F.order d : ℝ≥0)⁻¹ ^ 2 := by
+  simpa only [ddhIdealGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
+    succProbability_ddhIdealGame_identityTest F d n
 
 /-- **DDH fails for a fixed group.** -/
 theorem not_ddh_const : ¬ F.DDH fun _ => PMF.pure d := by

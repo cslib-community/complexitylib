@@ -32,6 +32,34 @@ open scoped NNReal
 def d23 : schnorrGroups.Desc :=
   ⟨(23, 11, 2), ⟨by norm_num, by norm_num, by norm_num, by norm_num, by norm_num⟩⟩
 
+/-- Named challenges retain the original byte order and unary security parameter, even for
+arbitrary words that do not encode group elements. -/
+example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) (u v : List Bool) :
+    F.encCDHInput (n, { description := d, leftPublic := u, rightPublic := v }) =
+      encPair encUnary (encPair F.encDesc (encPair encBits encBits)) (n, d, u, v) := rfl
+
+example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) (u v w : List Bool) :
+    F.encDDHInput
+        (n, { description := d, leftPublic := u, rightPublic := v, candidateShared := w }) =
+      encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
+        (n, d, u, v, w) := rfl
+
+/-- The elementary CDH-to-DDH reduction tests the named candidate shared word. On `d23`, the
+public elements `8 = 2^3` and `9 = 2^5` share `16 = 2^(3*5)`. -/
+example :
+    schnorrGroups.cdhToDDHDistinguisher (fun _ _ => pure (Nat.bits 16)) 7
+      { description := d23
+        leftPublic := Nat.bits 8
+        rightPublic := Nat.bits 9
+        candidateShared := Nat.bits 16 } = pure true := rfl
+
+example :
+    schnorrGroups.cdhToDDHDistinguisher (fun _ _ => pure (Nat.bits 16)) 7
+      { description := d23
+        leftPublic := Nat.bits 8
+        rightPublic := Nat.bits 9
+        candidateShared := Nat.bits 7 } = pure false := rfl
+
 /-- `false` encodes as the identity residue `1` in `(ZMod 23)ˣ`, and `true` as the generator `2`. -/
 example : schnorrGroups.encodeBit d23 false = Nat.bits 1 := by decide
 example : schnorrGroups.encodeBit d23 true = Nat.bits 2 := by decide
@@ -217,7 +245,7 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (hDDH : schnorrGroups.DDH setup
 `d23` at `n = 4` with non-zero exponents `(α, β) = (3, 5)` and `(α', β', γ') = (3, 5, 7)` in
 `ZMod 11` (`3 * 5 = 4 ≠ 7`). -/
 example
-    (distinguisher : ℕ → schnorrGroups.Desc × List Bool × List Bool × List Bool → ProbComp Bool) :
+    (distinguisher : ℕ → DDHChallenge (Desc := schnorrGroups.Desc) → ProbComp Bool) :
     Game.advantage (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23) distinguisher 4)
       (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23) distinguisher 4) ≤
       Game.advantage
@@ -301,14 +329,13 @@ example : schnorrGroups.ddhIdealRefTuple d23 = (Nat.bits 1, Nat.bits 1, Nat.bits
 DDH games and therefore advantage `0`, so it cannot satisfy `1 / invEps n ≤ advantage` for any
 positive `invEps n`. -/
 noncomputable def constFalseDDHDistinguisher (_ : ℕ)
-    (_ : schnorrGroups.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
+    (_ : DDHChallenge (Desc := schnorrGroups.Desc)) : ProbComp Bool :=
   pure false
 
 /-- `constFalseDDHDistinguisher` is uniform strict PPT. -/
 theorem isPPTOn_constFalseDDHDistinguisher :
     IsPPTOn
-      (encPair encUnary
-        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
+      schnorrGroups.encDDHInput
       encBool (fun input => constFalseDDHDistinguisher input.1 input.2) :=
   (ComputableInPolyTime.const false).isPPTOn
 
@@ -317,17 +344,18 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (n : ℕ) :
     Game.advantage (schnorrGroups.ddhRealGame setup constFalseDDHDistinguisher n)
       (schnorrGroups.ddhIdealGame setup constFalseDDHDistinguisher n) = 0 := by
   have hreal : schnorrGroups.ddhRealGame setup constFalseDDHDistinguisher n = PMF.pure false := by
-    simp [PrimeOrderGroupFamily.ddhRealGame, constFalseDDHDistinguisher]
+    simp [PrimeOrderGroupFamily.ddhRealGame, PrimeOrderGroupFamily.eval_ddhRealExperiment,
+      constFalseDDHDistinguisher]
   have hideal : schnorrGroups.ddhIdealGame setup constFalseDDHDistinguisher n = PMF.pure false := by
-    simp [PrimeOrderGroupFamily.ddhIdealGame, constFalseDDHDistinguisher]
+    simp [PrimeOrderGroupFamily.ddhIdealGame, PrimeOrderGroupFamily.eval_ddhIdealExperiment,
+      constFalseDDHDistinguisher]
   simp [hreal, hideal]
 
 /-- Concrete instantiation of `isPPTOn_ddhAmplifiedDecider` on `schnorrGroups` with inverse
 advantage bound `fun n => n + 1`. -/
 example :
     IsPPTOn
-      (encPair encUnary
-        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
+      schnorrGroups.encDDHInput
       encBool
       (fun input =>
         schnorrGroups.ddhAmplifiedDecider constFalseDDHDistinguisher (fun n => n + 1)
@@ -375,7 +403,7 @@ theorem discreteLogGame_exactDLAdversary (d : schnorrGroups.Desc) (n : ℕ) :
 /-- Idealized DDH distinguisher obtained from `exactDLAdversary` via `dlToCDHAdversary` and
 `cdhToDDHDistinguisher`. -/
 noncomputable abbrev exactDDHDistinguisher :
-    ℕ → schnorrGroups.Desc × List Bool × List Bool × List Bool → ProbComp Bool :=
+    ℕ → DDHChallenge (Desc := schnorrGroups.Desc) → ProbComp Bool :=
   schnorrGroups.cdhToDDHDistinguisher (schnorrGroups.dlToCDHAdversary exactDLAdversary)
 
 /-- On `d23` (order `11`), `exactDDHDistinguisher` achieves average-case DDH advantage at least
@@ -410,12 +438,12 @@ real DH triple `(3 • g, 5 • g, 4 • g)` (`4 = 3 * 5` in `ZMod 11`) over `d2
 example :
     1 - (1 / 2 : ℝ) ^ 7 ≤
       (ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) 7
-        (d23, schnorrGroups.encode d23 ((3 : ZMod (schnorrGroups.order d23)) •
+        ⟨d23, schnorrGroups.encode d23 ((3 : ZMod (schnorrGroups.order d23)) •
             schnorrGroups.generator d23),
           schnorrGroups.encode d23 ((5 : ZMod (schnorrGroups.order d23)) •
             schnorrGroups.generator d23),
           schnorrGroups.encode d23 ((4 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23))) true).toReal := by
+            schnorrGroups.generator d23)⟩) true).toReal := by
   have h := schnorrGroups.ddhAmplifiedDecider_correct_ge_one_sub_pow exactDDHDistinguisher
     (fun _ => 2) 7 d23 3 5 4 (by decide)
     (one_half_le_advantage_exactDDHDistinguisher 7) (by norm_num)
@@ -429,12 +457,12 @@ non-DH triple `(3 • g, 5 • g, 7 • g)` (`7 ≠ 3 * 5` in `ZMod 11`) over `d
 example :
     1 - (1 / 2 : ℝ) ^ 7 ≤
       (ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) 7
-        (d23, schnorrGroups.encode d23 ((3 : ZMod (schnorrGroups.order d23)) •
+        ⟨d23, schnorrGroups.encode d23 ((3 : ZMod (schnorrGroups.order d23)) •
             schnorrGroups.generator d23),
           schnorrGroups.encode d23 ((5 : ZMod (schnorrGroups.order d23)) •
             schnorrGroups.generator d23),
           schnorrGroups.encode d23 ((7 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23))) false).toReal := by
+            schnorrGroups.generator d23)⟩) false).toReal := by
   have h := schnorrGroups.ddhAmplifiedDecider_correct_ge_one_sub_pow exactDDHDistinguisher
     (fun _ => 2) 7 d23 3 5 7 (by decide)
     (one_half_le_advantage_exactDDHDistinguisher 7) (by norm_num)
@@ -447,9 +475,9 @@ for any worst-case sequence of exponent triples `(α n, β n, γ n)`. -/
 example (α β γ : ℕ → ZMod (schnorrGroups.order d23)) :
     Negligible fun n =>
       ((ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) n
-        (d23, schnorrGroups.encode d23 (α n • schnorrGroups.generator d23),
+        ⟨d23, schnorrGroups.encode d23 (α n • schnorrGroups.generator d23),
           schnorrGroups.encode d23 (β n • schnorrGroups.generator d23),
-          schnorrGroups.encode d23 (γ n • schnorrGroups.generator d23)))).toOuterMeasure
+          schnorrGroups.encode d23 (γ n • schnorrGroups.generator d23)⟩)).toOuterMeasure
         {b | b ≠ decide (γ n = α n * β n)}).toNNReal :=
   schnorrGroups.negligible_ddhAmplifiedDecider_error
     (ComputableInPolyTime.const 2)
@@ -478,7 +506,7 @@ theorem schnorrGroups_encode_d23_length_le (x : schnorrGroups.Carrier d23) :
 /-- Unconditional concrete finite quantitative bound on `d23` (`order d23 = 11`, `B = 6`, `k = 4`):
 for any KDF distinguisher, the advantage of distinguishing `linearHashKDF (fun _ => 4) (fun _ => 6)`
 from a truly uniform 4-bit key on `d23` is bounded by `NNReal.sqrt (2 ^ 4 / 11) / 2`. -/
-example (distinguisher : ℕ → schnorrGroups.withSeed.Desc × List Bool × List Bool × List Bool →
+example (distinguisher : ℕ → DDHChallenge (Desc := schnorrGroups.withSeed.Desc) →
       ProbComp Bool) (n : ℕ) :
     Game.advantage
       (schnorrGroups.withSeed.kdfRealGame
@@ -526,23 +554,21 @@ def constZeroKDF : schnorrGroups.Desc × List Bool → List Bool :=
   fun _ => [false]
 
 /-- A uniform strict-PPT KDF distinguisher that inspects the first bit of the candidate key
-`input.2.2.2`. -/
+`input.candidateShared`. -/
 noncomputable def firstBitKDFDistinguisher (_ : ℕ)
-    (input : schnorrGroups.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  pure (input.2.2.2.headD false)
+    (input : DDHChallenge (Desc := schnorrGroups.Desc)) : ProbComp Bool :=
+  pure (input.candidateShared.headD false)
 
 /-- `firstBitKDFDistinguisher` is uniform strict PPT. -/
 theorem isPPTOn_firstBitKDFDistinguisher :
     IsPPTOn
-      (encPair encUnary
-        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
+      schnorrGroups.encDDHInput
       encBool (fun input => firstBitKDFDistinguisher input.1 input.2) := by
   have hhead : ComputableInPolyTime (fun s : List Bool => s.headD false) encBits encBool := by
     fun_prop
   have hproj : ComputableInPolyTime
-      (fun input : ℕ × schnorrGroups.Desc × List Bool × List Bool × List Bool => input.2.2.2.2)
-      (encPair encUnary
-        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
+      (fun input : ℕ × DDHChallenge (Desc := schnorrGroups.Desc) => input.2.candidateShared)
+      schnorrGroups.encDDHInput
       encBits := by fun_prop
   exact (hhead.comp hproj).isPPTOn
 

@@ -253,29 +253,6 @@ abbrev decEph (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
 abbrev decBody (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
   (F.decCt input).2
 
-/-- Group-element payload `(u, v, w)` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhPayload (input : F.Desc × List Bool × List Bool × List Bool) :
-    List Bool × List Bool × List Bool :=
-  input.2
-
-/-- Public-key component `u` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhPk (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (F.ddhPayload input).1
-
-/-- Challenge pair `(v, w)` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhChallenge (input : F.Desc × List Bool × List Bool × List Bool) :
-    List Bool × List Bool :=
-  (F.ddhPayload input).2
-
-/-- Ephemeral component `v` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhEph (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (F.ddhChallenge input).1
-
-/-- Challenge shared component `w` (or `pad`/`k`) of a 4-tuple DDH/KDF distinguisher input
-`(d, u, v, w)`. -/
-abbrev ddhShared (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (F.ddhChallenge input).2
-
 /-- Word-level ElGamal encryption: given `(d, encode u, encode m, b)`, compute
 `(encode (b • g), encode (b • u + m))`. -/
 def encodeElGamalEncrypt (input : F.Desc × List Bool × List Bool × ℕ) : List Bool × List Bool :=
@@ -391,13 +368,14 @@ using `F.add` and return the adversary's guess, and otherwise return `false`. -/
 def elGamalMsgToDDHDistinguisher {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encodeMsg : F.Desc → Msg → List Bool)
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
   let choice ← adversary.choose n pk
   if valid n pk (Encryption.ChoiceOut.msg₀ choice) (Encryption.ChoiceOut.msg₁ choice) then
     let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
     let ct := encPair encBits encBits
-      (F.ddhEph input, F.add (input.1, F.ddhShared input, encodeMsg input.1 m))
+      (input.rightPublic,
+        F.add (input.description, input.candidateShared, encodeMsg input.description m))
     adversary.guess n choice.2 ct
   else
     return false
@@ -409,8 +387,8 @@ theorem ddhRealGame_elGamalMsgToDDHDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.ddhRealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit) n =
       F.elGamalMsgCPAGameOn valid encodeMsg setup adversary bit n := by
-  simp only [ddhRealGame, elGamalMsgToDDHDistinguisher, elGamalMsgCPAGameOn,
-    ddhPk, ProbComp.eval_bind,
+  simp only [ddhRealGame, eval_ddhRealExperiment, elGamalMsgToDDHDistinguisher, elGamalMsgCPAGameOn,
+    ProbComp.eval_bind,
     PMF.monad_bind_eq_bind, apply_ite ProbComp.eval, ProbComp.eval_pure, PMF.monad_pure_eq_pure]
   pmf_swap with d α choice
   split_ifs <;> first | rfl | exact PMF.bind_const _ _
@@ -433,8 +411,8 @@ theorem ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
     (hsound : F.AdmitsGroupElements encodeMsg valid) :
     F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n =
       F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n := by
-  simp only [ddhIdealGame, elGamalMsgToDDHDistinguisher,
-    ddhPk, ddhEph, ddhShared, Encryption.ChoiceOut.msg₀,
+  simp only [ddhIdealGame, eval_ddhIdealExperiment, elGamalMsgToDDHDistinguisher,
+    Encryption.ChoiceOut.msg₀,
     Encryption.ChoiceOut.msg₁, Encryption.ChoiceOut.msgs,
     ProbComp.eval_bind,
     PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte, apply_ite ProbComp.eval,
@@ -496,29 +474,28 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
       encBool
       (fun input => F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit input.1
         input.2) := by
-  let encTuple := encPair encBits (encPair encBits encBits)
-  let EIn := encPair encUnary (encPair F.encDesc encTuple)
+  let EIn := F.encDDHInput
   let EChoice := encPair (encPair encMsg encMsg) encBits
   let E2 := encPair EIn EChoice
-  have hin2 := ComputableInPolyTime.snd encUnary (encPair F.encDesc encTuple)
-  have hd_in := (ComputableInPolyTime.fst F.encDesc encTuple).comp hin2
-  have htuple_in := (ComputableInPolyTime.snd F.encDesc encTuple).comp hin2
-  have hu_in := (ComputableInPolyTime.fst encBits (encPair encBits encBits)).comp htuple_in
-  have hvw_in := (ComputableInPolyTime.snd encBits (encPair encBits encBits)).comp htuple_in
+  have hin2 := ComputableInPolyTime.snd encUnary F.encDDHChallenge
+  have hd_in := F.encDDHChallenge_description_polyTime hin2
+  have hu_in := F.encDDHChallenge_leftPublic_polyTime hin2
+  have hv_in := F.encDDHChallenge_rightPublic_polyTime hin2
+  have hw_in := F.encDDHChallenge_candidateShared_polyTime hin2
   have hpk_in := (hd_in.prod hu_in).encoding_comp
   have hp1 := ComputableInPolyTime.fst EIn EChoice
   have hp2 := ComputableInPolyTime.snd EIn EChoice
-  have hn := (ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).comp hp1
+  have hn := (ComputableInPolyTime.fst encUnary F.encDDHChallenge).comp hp1
   have hd := hd_in.comp hp1
-  have hv := ((ComputableInPolyTime.fst encBits encBits).comp hvw_in).comp hp1
-  have hw := ((ComputableInPolyTime.snd encBits encBits).comp hvw_in).comp hp1
+  have hv := hv_in.comp hp1
+  have hw := hw_in.comp hp1
   have hmsgs := (ComputableInPolyTime.fst (encPair encMsg encMsg) encBits).comp hp2
   have hst := (ComputableInPolyTime.snd (encPair encMsg encMsg) encBits).comp hp2
   have hm0 := (ComputableInPolyTime.fst encMsg encMsg).comp hmsgs
   have hm1 := (ComputableInPolyTime.snd encMsg encMsg).comp hmsgs
   have hm : ComputableInPolyTime
       (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
+          (ℕ × DDHChallenge (Desc := F.Desc)) ×
             (Msg × Msg) × List Bool =>
         if bit then p.2.1.2 else p.2.1.1)
       E2 encMsg := by
@@ -529,18 +506,19 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
   have hvalidStep := (hvalid.comp (hn.prod ((hpk_in.comp hp1).prod (hm0.prod hm1)))).tidy
   have hguessStep := hA.guess.preprocess
     (prepare := fun p :
-        (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
+        (ℕ × DDHChallenge (Desc := F.Desc)) ×
           (Msg × Msg) × List Bool =>
       (p.1.1, p.2.2, encPair encBits encBits
-        (p.1.2.2.2.1,
-          F.add (p.1.2.1, p.1.2.2.2.2, encodeMsg p.1.2.1 (if bit then p.2.1.2 else p.2.1.1)))))
+        (p.1.2.rightPublic,
+          F.add (p.1.2.description, p.1.2.candidateShared,
+            encodeMsg p.1.2.description (if bit then p.2.1.2 else p.2.1.1)))))
     (hn.prod (hst.prod
       (hv.prod (F.computableInPolyTime_add.comp (hd.prod (hw.prod hencM)))).encoding_comp))
   unfold elGamalMsgToDDHDistinguisher
   refine (hA.choose.on.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, encPair F.encDesc encBits (input.2.1, input.2.2.1)))
-    ((ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).prod hpk_in)).bind_with ?_
+    (prepare := fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+      (input.1, encPair F.encDesc encBits (input.2.description, input.2.leftPublic)))
+    ((ComputableInPolyTime.fst encUnary F.encDDHChallenge).prod hpk_in)).bind_with ?_
   exact IsPPTOn.cond hvalidStep hguessStep (ComputableTidilyInPolyTime.const false).isPPTOn
 
 /-- **Typed-message ElGamal encryption is IND-CPA secure under the DDH assumption**
@@ -647,7 +625,7 @@ def elGamalINDCPA (setup : ℕ → PMF F.Desc) : Prop :=
 Exercise 11.5(a), p. 459): given `(d, u, v, w)`, pass `(d, u)` as the public key, encrypt the
 selected challenge bit by masking with `w`, and return the adversary's guess. -/
 abbrev elGamalToDDHDistinguisher (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
   F.elGamalMsgToDDHDistinguisher (fun _ _ _ _ => true) F.encodeBit adversary bit n input
 
 /-- In the real DDH game, `elGamalToDDHDistinguisher` simulates `elGamalCPAGame` exactly. -/
@@ -716,7 +694,7 @@ noncomputable abbrev elGamalGroupCPAGameOn (valid : ℕ → List Bool → List B
 identity message encoding. -/
 abbrev elGamalGroupToDDHDistinguisher (valid : ℕ → List Bool → List Bool → List Bool → Bool)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
   F.elGamalMsgToDDHDistinguisher valid (fun _ m => m) adversary bit n input
 
 /-- **Quantitative reduction of group-element ElGamal IND-CPA to DDH** ([BonehShoup2023],
@@ -938,15 +916,17 @@ noncomputable def hashedElGamalUniformPadGame (setup : ℕ → PMF F.Desc)
 Experiment `0`, p. 448): draw `d ← setup n` and independent uniform `α, β, γ : ZMod (F.order d)`,
 and give the distinguisher `(d, encode (α • g), encode (β • g), H (d, encode (γ • g)))`. -/
 noncomputable def kdfRealGame (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
-    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (distinguisher : ℕ → DDHChallenge (Desc := F.Desc) → ProbComp Bool)
     (n : ℕ) : Game := do
   let d ← setup n
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let γ ← PMF.uniformOfFintype (ZMod (F.order d))
   ProbComp.eval (distinguisher n
-    (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-      H (d, F.encode d (γ • F.generator d))))
+    { description := d
+      leftPublic := F.encode d (α • F.generator d)
+      rightPublic := F.encode d (β • F.generator d)
+      candidateShared := H (d, F.encode d (γ • F.generator d)) })
 
 /-- The ideal key-derivation security experiment ([BonehShoup2023], Section 11.5.2,
 Attack Game 11.3, Experiment `1`, p. 448): draw `d ← setup n`, independent uniform
@@ -954,14 +934,17 @@ Attack Game 11.3, Experiment `1`, p. 448): draw `d ← setup n`, independent uni
 `pad ← Cslib.BitString.uniformList (msgLen n)`, and give the distinguisher
 `(d, encode (α • g), encode (β • g), pad)`. -/
 noncomputable def kdfIdealGame (setup : ℕ → PMF F.Desc) (msgLen : ℕ → ℕ)
-    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
+    (distinguisher : ℕ → DDHChallenge (Desc := F.Desc) → ProbComp Bool)
     (n : ℕ) : Game := do
   let d ← setup n
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let pad ← Cslib.BitString.uniformList (msgLen n)
   ProbComp.eval (distinguisher n
-    (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d), pad))
+    { description := d
+      leftPublic := F.encode d (α • F.generator d)
+      rightPublic := F.encode d (β • F.generator d)
+      candidateShared := pad })
 
 /-- Secure key derivation for `H` over `F` ([BonehShoup2023], Section 11.5.2, Attack Game 11.3,
 p. 448, and Definition 11.5, p. 449): every uniform strict PPT distinguisher has negligible
@@ -979,13 +962,13 @@ public key, mask the selected message word with `pad = H (d, w)` via
 `Cslib.BitString.listXor pad.length [pad, m]`, and return the adversary's guess. -/
 def hashedElGamalToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
   let choice ← adversary.choose n pk
   let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let pad := H (input.1, F.ddhShared input)
+  let pad := H (input.description, input.candidateShared)
   let ct := encPair encBits encBits
-    (F.ddhEph input, Cslib.BitString.listXor pad.length [pad, m])
+    (input.rightPublic, Cslib.BitString.listXor pad.length [pad, m])
   adversary.guess n choice.2 ct
 
 /-- In the real DDH game, `hashedElGamalToDDHDistinguisher` simulates `hashedElGamalCPAGame`
@@ -995,7 +978,8 @@ exactly. -/
     (n : ℕ) :
     F.ddhRealGame setup (F.hashedElGamalToDDHDistinguisher H adversary bit) n =
       F.hashedElGamalCPAGame setup H adversary bit n := by
-  simp only [ddhRealGame, hashedElGamalToDDHDistinguisher, hashedElGamalCPAGame, ProbComp.eval_bind,
+  simp only [ddhRealGame, eval_ddhRealExperiment, hashedElGamalToDDHDistinguisher,
+    hashedElGamalCPAGame, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
   pmf_swap
 
@@ -1006,8 +990,9 @@ exactly. -/
     (n : ℕ) :
     F.ddhIdealGame setup (F.hashedElGamalToDDHDistinguisher H adversary bit) n =
       F.hashedElGamalIdealDDHGame setup H adversary bit n := by
-  simp only [ddhIdealGame, hashedElGamalToDDHDistinguisher, hashedElGamalIdealDDHGame,
-    ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
+  simp only [ddhIdealGame, eval_ddhIdealExperiment, hashedElGamalToDDHDistinguisher,
+    hashedElGamalIdealDDHGame,
+    ProbComp.eval_bind, PMF.monad_bind_eq_bind]
   pmf_swap
 
 /-- `hashedElGamalToDDHDistinguisher` is uniform strict PPT whenever `H` is polynomial time and
@@ -1017,25 +1002,24 @@ theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → Lis
     {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) (bit : Bool) :
     IsPPTOn F.encDDHInput
       encBool (fun input => F.hashedElGamalToDDHDistinguisher H adversary bit input.1 input.2) := by
-  let encTuple := encPair encBits (encPair encBits encBits)
-  let EIn := encPair encUnary (encPair F.encDesc encTuple)
+  let EIn := F.encDDHInput
   let EChoice := encPair (encPair encBits encBits) encBits
   let E := encPair EIn EChoice
-  have hin2 := ComputableInPolyTime.snd encUnary (encPair F.encDesc encTuple)
-  have hd_in := (ComputableInPolyTime.fst F.encDesc encTuple).comp hin2
-  have htuple_in := (ComputableInPolyTime.snd F.encDesc encTuple).comp hin2
-  have hu_in := (ComputableInPolyTime.fst encBits (encPair encBits encBits)).comp htuple_in
-  have hvw_in := (ComputableInPolyTime.snd encBits (encPair encBits encBits)).comp htuple_in
+  have hin2 := ComputableInPolyTime.snd encUnary F.encDDHChallenge
+  have hd_in := F.encDDHChallenge_description_polyTime hin2
+  have hu_in := F.encDDHChallenge_leftPublic_polyTime hin2
+  have hv_in := F.encDDHChallenge_rightPublic_polyTime hin2
+  have hw_in := F.encDDHChallenge_candidateShared_polyTime hin2
   have hp1 := ComputableInPolyTime.fst EIn EChoice
   have hp2 := ComputableInPolyTime.snd EIn EChoice
-  have hn := (ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).comp hp1
-  have hv := ((ComputableInPolyTime.fst encBits encBits).comp hvw_in).comp hp1
-  have hw := ((ComputableInPolyTime.snd encBits encBits).comp hvw_in).comp hp1
+  have hn := (ComputableInPolyTime.fst encUnary F.encDDHChallenge).comp hp1
+  have hv := hv_in.comp hp1
+  have hw := hw_in.comp hp1
   have hmsgs := (ComputableInPolyTime.fst (encPair encBits encBits) encBits).comp hp2
   have hst := (ComputableInPolyTime.snd (encPair encBits encBits) encBits).comp hp2
   have hm : ComputableInPolyTime
       (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
+          (ℕ × DDHChallenge (Desc := F.Desc)) ×
             (List Bool × List Bool) × List Bool =>
         if bit then p.2.1.2 else p.2.1.1) E encBits := by
     cases bit
@@ -1044,17 +1028,17 @@ theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → Lis
   have hpad := hH.comp ((hd_in.comp hp1).prod hw)
   unfold hashedElGamalToDDHDistinguisher
   refine (hA.choose.on.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, encPair F.encDesc encBits (input.2.1, input.2.2.1)))
-    ((ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).prod
+    (prepare := fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+      (input.1, encPair F.encDesc encBits (input.2.description, input.2.leftPublic)))
+    ((ComputableInPolyTime.fst encUnary F.encDDHChallenge).prod
       (hd_in.prod hu_in).encoding_comp)).bind_with ?_
   exact hA.guess.preprocess
     (prepare := fun p :
-        (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
+        (ℕ × DDHChallenge (Desc := F.Desc)) ×
           (List Bool × List Bool) × List Bool =>
-      let pad := H (p.1.2.1, p.1.2.2.2.2)
+      let pad := H (p.1.2.description, p.1.2.candidateShared)
       (p.1.1, p.2.2, encPair encBits encBits
-        (p.1.2.2.2.1,
+        (p.1.2.rightPublic,
           Cslib.BitString.listXor pad.length [pad, if bit then p.2.1.2 else p.2.1.1])))
     (hn.prod (hst.prod (hv.prod (computableInPolyTime_listXor_pair hpad hm)).encoding_comp))
 
@@ -1063,13 +1047,13 @@ Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, pad)`, p
 public key, mask the selected message word with `pad` via
 `Cslib.BitString.listXor pad.length [pad, m]`, and return the adversary's guess. -/
 def hashedElGamalToKDFDistinguisher (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
   let choice ← adversary.choose n pk
   let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let pad := F.ddhShared input
+  let pad := input.candidateShared
   let ct := encPair encBits encBits
-    (F.ddhEph input, Cslib.BitString.listXor pad.length [pad, m])
+    (input.rightPublic, Cslib.BitString.listXor pad.length [pad, m])
   adversary.guess n choice.2 ct
 
 /-- In the real KDF game, `hashedElGamalToKDFDistinguisher` simulates `hashedElGamalIdealDDHGame`
@@ -1078,8 +1062,10 @@ exactly: unfolded, this is the ideal DDH game for `hashedElGamalToDDHDistinguish
     (H : F.Desc × List Bool → List Bool) (adversary : Encryption.WordAdversary) (bit : Bool)
     (n : ℕ) :
     F.kdfRealGame setup H (F.hashedElGamalToKDFDistinguisher adversary bit) n =
-      F.hashedElGamalIdealDDHGame setup H adversary bit n :=
-  F.ddhIdealGame_hashedElGamalToDDHDistinguisher setup H adversary bit n
+      F.hashedElGamalIdealDDHGame setup H adversary bit n := by
+  simpa only [ddhIdealGame, eval_ddhIdealExperiment, kdfRealGame,
+    hashedElGamalToDDHDistinguisher, hashedElGamalToKDFDistinguisher] using
+    F.ddhIdealGame_hashedElGamalToDDHDistinguisher setup H adversary bit n
 
 /-- In the ideal KDF game, `hashedElGamalToKDFDistinguisher` simulates
 `hashedElGamalUniformPadGame` exactly. -/
@@ -1088,7 +1074,7 @@ exactly: unfolded, this is the ideal DDH game for `hashedElGamalToDDHDistinguish
     F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary bit) n =
       F.hashedElGamalUniformPadGame setup msgLen adversary bit n := by
   simp only [kdfIdealGame, hashedElGamalToKDFDistinguisher, hashedElGamalUniformPadGame,
-    ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
+    ProbComp.eval_bind, PMF.monad_bind_eq_bind]
   pmf_swap
 
 /-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is: it is

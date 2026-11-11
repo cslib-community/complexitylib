@@ -409,8 +409,10 @@ private theorem advantage_eval_cramerShoupMsgToDDHDistinguisher_le
     Game.advantage
       (ProbComp.eval
         (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit n
-          (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-            F.encode d (γ • F.generator d))))
+          { description := d
+            leftPublic := F.encode d (α • F.generator d)
+            rightPublic := F.encode d (β • F.generator d)
+            candidateShared := F.encode d (γ • F.generator d) }))
       (F.cramerShoupChallengeGame hasAD encodeMsg encodeAD H isElem adversary bit n d α β γ) ≤
       6 / 2 ^ n := by
   unfold cramerShoupChallengeGame cramerShoupMsgToDDHDistinguisher
@@ -452,12 +454,12 @@ theorem advantage_cramerShoupGame1_game2_le
       12 / 2 ^ n := by
   refine advantage_four_le _ _ _ _ ?_ ?_
   · unfold ddhRealGame cramerShoupGame1
-    simp only [PMF.monad_bind_eq_bind]
+    simp only [eval_ddhRealExperiment, PMF.monad_bind_eq_bind]
     peel_binds d α β
     exact F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
       hmem adversary bit n d α β (α * β)
   · unfold ddhIdealGame cramerShoupGame2
-    simp only [PMF.monad_bind_eq_bind]
+    simp only [eval_ddhIdealExperiment, PMF.monad_bind_eq_bind]
     peel_binds d α β γ
     exact F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
       hmem adversary bit n d α β γ

@@ -43,31 +43,34 @@ open scoped ENNReal NNReal Cslib.Probability.PMF
 
 /-- Test whether the third challenge element equals the encoded identity `0 • g` (original). -/
 private def ddhZeroDistinguisher (F : PrimeOrderGroupFamily) (_n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  pure (decide (input.2.2.2 = F.smul (input.1, 0, F.encode input.1 (F.generator input.1))))
+    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+  pure (decide (input.candidateShared =
+    F.smul (input.description, 0, F.encode input.description (F.generator input.description))))
 
 private theorem isPPTOn_ddhZeroDistinguisher (F : PrimeOrderGroupFamily) :
     IsPPTOn F.encDDHInput encBool (fun input => ddhZeroDistinguisher F input.1 input.2) := by
-  let EIn := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
+  let EIn := F.encDDHInput
   have hd : ComputableInPolyTime
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool => input.2.1) EIn F.encDesc := by
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) => input.2.description) EIn F.encDesc := by
     fun_prop
   have hw : ComputableInPolyTime
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool => input.2.2.2.2)
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) => input.2.candidateShared)
       EIn encBits := by
     fun_prop
   have hgen : ComputableInPolyTime
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-        F.encode input.2.1 (F.generator input.2.1)) EIn encBits :=
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+        F.encode input.2.description (F.generator input.2.description)) EIn encBits :=
     F.computableInPolyTime_generator.comp hd
   have hzero : ComputableInPolyTime
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-        F.smul (input.2.1, 0, F.encode input.2.1 (F.generator input.2.1))) EIn encBits :=
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+        F.smul (input.2.description, 0,
+          F.encode input.2.description (F.generator input.2.description))) EIn encBits :=
     F.computableInPolyTime_smul.comp (hd.prod ((ComputableInPolyTime.const 0).prod hgen))
   have hdec : ComputableInPolyTime
-      (fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-        decide (input.2.2.2.2 =
-          F.smul (input.2.1, 0, F.encode input.2.1 (F.generator input.2.1)))) EIn encBool := by
+      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+        decide (input.2.candidateShared =
+          F.smul (input.2.description, 0,
+            F.encode input.2.description (F.generator input.2.description)))) EIn encBool := by
     have hw_t := hw.tidy
     have hzero_t := hzero.tidy
     exact .of_tidy (by fun_prop)
@@ -135,8 +138,8 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
         (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹) +
         (∑' d, setup n d *
           (((F.order d - 1 : ℕ) : ℝ≥0∞) * ((F.order d : ℝ≥0∞)⁻¹ * (F.order d : ℝ≥0∞)⁻¹))) := by
-    dsimp only [ddhRealGame, ddhZeroDistinguisher]
-    simp only [ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.bind_apply]
+    simp only [ddhRealGame, eval_ddhRealExperiment, ddhZeroDistinguisher,
+      ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.bind_apply]
     rw [← tsum_add]
     refine tsum_congr fun d => ?_
     have hstep :
@@ -152,8 +155,8 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
   have hideal :
       (F.ddhIdealGame setup (ddhZeroDistinguisher F) n) true =
         ∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹ := by
-    dsimp only [ddhIdealGame, ddhZeroDistinguisher]
-    simp only [ProbComp.eval_pure, PMF.monad_bind_eq_bind]
+    simp only [ddhIdealGame, eval_ddhIdealExperiment, ddhZeroDistinguisher,
+      ProbComp.eval_pure, PMF.monad_bind_eq_bind]
     rw [PMF.bind_apply]
     refine tsum_congr fun d => congrArg (setup n d * ·) ?_
     simp only [decide_encode_smul_eq_zero_iff F d, PMF.bind_const]

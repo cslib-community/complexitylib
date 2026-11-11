@@ -329,28 +329,6 @@ abbrev csExpB (abc : ℕ × ℕ × ℕ) : ℕ :=
 abbrev csExpC (abc : ℕ × ℕ × ℕ) : ℕ :=
   (csExpBC abc).2
 
-/-- Group-element word triple `(u, v, w)` of a 4-tuple DDH input `(d, u, v, w)`. -/
-abbrev csDdhTuple {Desc : Type} (input : Desc × List Bool × List Bool × List Bool) :
-    List Bool × List Bool × List Bool :=
-  input.2
-
-/-- Challenge word pair `(v, w)` of a 4-tuple DDH input `(d, u, v, w)`. -/
-abbrev csDdhChallenge {Desc : Type} (input : Desc × List Bool × List Bool × List Bool) :
-    List Bool × List Bool :=
-  (csDdhTuple input).2
-
-/-- Public-key word `u` of a 4-tuple DDH input `(d, u, v, w)`. -/
-abbrev csDdhU {Desc : Type} (input : Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (csDdhTuple input).1
-
-/-- First challenge word `v` of a 4-tuple DDH input `(d, u, v, w)`. -/
-abbrev csDdhV {Desc : Type} (input : Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (csDdhChallenge input).1
-
-/-- Second challenge word `w` of a 4-tuple DDH input `(d, u, v, w)`. -/
-abbrev csDdhW {Desc : Type} (input : Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (csDdhChallenge input).2
-
 /-- Per-stage decryption-query bound `(Q₁ n, Q₂ n)` for an `ADCCA2AdversaryOf Msg AD`. -/
 def ADCCA2AdversaryOf.IsQueryBounded {Msg AD : Type} (adversary : ADCCA2AdversaryOf Msg AD)
     (Q₁ Q₂ : ℕ → ℕ) : Prop :=

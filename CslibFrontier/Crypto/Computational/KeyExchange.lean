@@ -227,8 +227,8 @@ noncomputable def dhIdealKey (_n : ℕ) (transcript : F.Desc × List Bool × Lis
 tuple `(d, u, v, w)` is passed on as the transcript `(d, u, v)` with key `w`. -/
 @[expose]
 def dhEavToDDH (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool)
-    (n : ℕ) (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  let (d, u, v, w) := input
+    (n : ℕ) (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+  let ⟨d, u, v, w⟩ := input
   adversary n ((d, u, v), w)
 
 /-- The real eavesdropping experiment on Diffie–Hellman is the real DDH experiment. -/
@@ -236,7 +236,7 @@ theorem realGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool) (n : ℕ) :
     (F.dhKeyExchange setup).realGame adversary n =
       F.ddhRealGame setup (F.dhEavToDDH adversary) n := by
-  simp only [KeyExchange.realGame, dhKeyExchange, ddhRealGame, dhEavToDDH,
+  simp only [KeyExchange.realGame, dhKeyExchange, ddhRealGame, eval_ddhRealExperiment, dhEavToDDH,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
     smul_val_encode, smul_smul]
 
@@ -246,7 +246,8 @@ theorem idealGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool) (n : ℕ) :
     (F.dhKeyExchange setup).idealGame F.dhIdealKey adversary n =
       F.ddhIdealGame setup (F.dhEavToDDH adversary) n := by
-  simp only [KeyExchange.idealGame, dhKeyExchange, dhIdealKey, ddhIdealGame, dhEavToDDH,
+  simp only [KeyExchange.idealGame, dhKeyExchange, dhIdealKey, ddhIdealGame,
+    eval_ddhIdealExperiment, dhEavToDDH,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
 
 /-- The re-association `dhEavToDDH` is uniform strict PPT when the eavesdropper is. -/
@@ -255,19 +256,11 @@ theorem isPPTOn_dhEavToDDH
     (hA : IsPPTOn (KeyExchange.encEavInput F.encDHTranscript encBits) encBool
       (fun input => adversary input.1 input.2)) :
     IsPPTOn F.encDDHInput encBool (fun input => F.dhEavToDDH adversary input.1 input.2) := by
-  have h2 := ComputableInPolyTime.snd encUnary
-    (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
-  have h3 :=
-    (ComputableInPolyTime.snd F.encDesc (encPair encBits (encPair encBits encBits))).comp h2
-  have h4 := (ComputableInPolyTime.snd encBits (encPair encBits encBits)).comp h3
+  unfold dhEavToDDH
   exact hA.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, ((input.2.1, input.2.2.1, input.2.2.2.1), input.2.2.2.2)))
-    ((ComputableInPolyTime.fst _ _).prod
-      ((((ComputableInPolyTime.fst _ _).comp h2).prod
-        (((ComputableInPolyTime.fst _ _).comp h3).prod
-          ((ComputableInPolyTime.fst _ _).comp h4))).prod
-        ((ComputableInPolyTime.snd _ _).comp h4)))
+    (prepare := fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+      (input.1, ((input.2.description, input.2.leftPublic, input.2.rightPublic),
+        input.2.candidateShared))) (by fun_prop)
 
 /-- **Diffie–Hellman key exchange is secure against eavesdroppers under DDH**
 ([KatzLindell2020], Theorem 11.3, p. 394): if the Decisional Diffie–Hellman assumption holds for

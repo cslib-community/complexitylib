@@ -31,6 +31,37 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean), [CslibFrontier/Crypto/Computational/RSAAttacks.lean](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, `INDCPA` / `INDCPAOn` under `QuadraticResiduosityHard` and explicit prime growth, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
 | LWE, SIS, and module lattices | [CslibFrontier/Crypto/Computational/LWE/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/LWE/Basic.lean), [CslibFrontier/Crypto/Computational/LWE/Decoding.lean](../../CslibFrontier/Crypto/Computational/LWE/Decoding.lean), [CslibFrontier/Crypto/Computational/LWE/KeyGen.lean](../../CslibFrontier/Crypto/Computational/LWE/KeyGen.lean), [CslibFrontier/Crypto/Computational/SIS/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/SIS/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Module.lean](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), [CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean), [CslibFrontier/Crypto/Computational/LWE/Regev.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev.lean), [CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean) | Explicit dimensions, modulus and noise/norm parameters (`2^w` binary matrix words and shared LWE decoding/key-generation helpers in `LWE/Basic.lean`, `LWE/Decoding.lean`, and `LWE/KeyGen.lean`, arbitrary `[NeZero (q security)]` moduli, Ajtai collision extraction, negacyclic `R_q = ℤ_q[X]/(X^n+1)` block-anticirculant expansion `expandModuleMatrix`, `ModuleSIS`, `RingSIS`, and `DecisionModuleLWE` in `SIS/Module.lean`, Module-LWE public-key encryption in `SIS/ModuleEncryption.lean`, and plain-LWE Regev and GPV dual-Regev bit encryption and IND-CPA security at modulus `2^w` in `LWE/Regev*` and `LWE/DualRegev*`); classical uniform-PPT hardness hypotheses |
 
+For Diffie–Hellman games, import
+[`DiffieHellman.lean`](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean) and open
+`Cslib.Crypto.PrimeOrderGroupFamily`. `F.cdhExperiment adversary n d`,
+`F.ddhRealExperiment distinguisher n d`, and `F.ddhIdealExperiment distinguisher n d`
+are sequential `ProbComp` programs for a fixed description `d`. They draw exact uniform
+exponents from `ZMod (F.order d)`: the real DDH candidate is `(a * b) • g`, while the ideal
+candidate uses an independent exponent `c`. Here `a • g` is additive notation for the
+textbook `g^a`. Each outer game draws `d` from `setup n : PMF F.Desc` and evaluates the
+whole conditional program once. Setup remains an arbitrary PMF; neither setup nor these
+exact finite draws acquire a strict-PPT certificate from this syntax. Executable reductions
+use `F.sampleExp n d` when they need approximate modular sampling, with its explicit
+`1 / 2 ^ n` statistical error and separate PPT theorem.
+
+A CDH adversary receives `CDHChallenge (Desc := F.Desc)` with fields `description`,
+`leftPublic`, and `rightPublic`; a DDH distinguisher receives `DDHChallenge` with the
+additional `candidateShared`. The public-element and candidate fields are arbitrary words,
+so reductions remain total on malformed group encodings. `F.encCDHInput` and `F.encDDHInput` encode the unary security
+parameter followed by the challenge, preserving the former tuple byte order and framing.
+The `enc_structure` declarations supply field and constructor certificates for native
+runtime proofs. `dlToCDHAdversary` and `cdhToDDHDistinguisher` show the elementary reductions
+using these names. The [DH client](../../CslibFrontierTests/Crypto/DiffieHellman.lean)
+checks the exact encodings and accepts/rejects concrete candidate shared words; the
+[nonvacuity client](../../CslibFrontierTests/Crypto/AssumptionNonvacuity.lean) evaluates the
+fixed-description real and ideal programs to probabilities `1 / q` and `1 / q²` for the
+same efficient identity test. A constant group therefore still fails the hardness
+assumptions. From the repository root, check both clients with:
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibFrontierTests.Crypto.AssumptionNonvacuity
+```
+
 For a one-bit expanding PRG, [Stretch/Prefix.lean](../../CslibFrontier/Crypto/Computational/Stretch/Prefix.lean)
 proves that `(forwardIterate g ℓ seed).take ℓ` has length `ℓ` and agrees with the first `ℓ`
 emitted bits of every longer run. The premise is global: `length (g seed) = length seed + 1`
