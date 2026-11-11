@@ -50,11 +50,14 @@ the theorems that a change adds or modifies, private ones included, and groups e
 theorems of the library, and the public theorems of its dependencies (Lean core, Batteries,
 Mathlib, cslib and the others it imports), that have the same statement up to binder names and
 kinds, universe levels, the order of hypotheses and of instance arguments, the notations `≥`, `>`
-and `≠`, the order of the sides of `=` and `↔`, and default arguments. `scripts/ParallelDefs.lean`
-defines this statement key exactly. It is equality, not unification: a local lemma that only
-specializes a more general one is not found. The tool reports the groups that span two modules of
-the library or contain a dependency's theorem (`--same-module` adds the others); `--no-external`
-skips the dependencies. With `--all` it examines the whole library, as an audit (under a minute).
+and `≠`, the order of the sides of `=` and `↔`, and default arguments. Built-in list lookups
+`xs[i]` for `i : Fin xs.length` and `xs[i.1]` share a key, ignoring only their bounds proofs;
+the list, index and value expressions remain distinct. Custom indexing instances are not unfolded.
+`scripts/ParallelDefs.lean` defines this statement key exactly. It is equality, not unification:
+a local lemma that only specializes a more general one is not found. The tool reports the groups
+that span two modules of the library or contain a dependency's theorem (`--same-module` adds the
+others); `--no-external` skips the dependencies. With `--all` it examines the whole library, as an
+audit (under a minute).
 
 A group is a candidate too. If its theorems state the same fact, keep one copy in the most general
 home (the dependency, then `Foundations`, then the topic module), use it in the clients and delete
