@@ -1155,8 +1155,35 @@ register_result "trakhtenbrot-sentence" where
     Theorem 9.2 and Corollary 9.3 state the binary case; higher arities pad binary atoms by \
     repeating the second argument). Sentences are coded by primcodableRaw, a scoped \
     instance, independent of the symbol encoding up to primitive recursive equivalence. \
-    FinSat and FinValid quantify over finite nonempty structures. Function symbols, infinite \
-    vocabularies and the decidable monadic converse (arities at most one) are not covered."
+    FinSat and FinValid quantify over finite nonempty structures. Function symbols and \
+    infinite vocabularies are not covered; the decidable monadic converse and dichotomy are \
+    in trakhtenbrot-dichotomy."
+
+register_result "trakhtenbrot-dichotomy" where
+  title := "Trakhtenbrot–Löwenheim: the decidability dichotomy for finite satisfiability"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Lowenheim1915, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.computablePred_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_not_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finSat_of_monadic,
+    FirstOrder.Language.Sentence.computablePred_finValid_of_monadic
+  ]
+  scope := "Mathlib L.Sentence over a relational language with finitely many relation \
+    symbols, coded by primcodableRaw. Finite satisfiability and finite validity (over \
+    finite nonempty structures) are decidable—and finite validity and finite \
+    unsatisfiability are r.e.—if and only if every relation symbol has arity at most one \
+    (allowing both unary and nullary symbols). On the monadic side, finite satisfiability \
+    and finite validity are primitive recursive by checking RawFormula.SatOnFin below the \
+    explicit bound max q 1 * 2 ^ k proved in monadic-small-model (Löwenheim is cited for \
+    decidability of the monadic class only). Function symbols and infinite vocabularies \
+    are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
@@ -1437,7 +1464,8 @@ register_result "monadic-small-model" where
     with a nonempty model has one on Fin (n + 1) with n + 1 ≤ max q 1 * 2 ^ k for k unary \
     symbols, through a substructure of the given model. The explicit bound and its proof by \
     Ehrenfeucht–Fraïssé games are proved here; Löwenheim is cited for the small model \
-    property only. The decision procedure for finite satisfiability is not yet formalized."
+    property only. The resulting decision procedure and dichotomy for finite satisfiability \
+    are in trakhtenbrot-dichotomy."
 
 register_result "connectivity-not-fo" where
   title := "Connectivity is not first-order definable"
