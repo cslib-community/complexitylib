@@ -5467,6 +5467,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Composition
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.DomainInterpretation
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Encoding
+public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Horn
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.TransitiveClosure
@@ -5739,6 +5740,7 @@ public import CslibFrontier.Logics.SecondOrder.Encoding
 public import CslibFrontier.Logics.SecondOrder.Existential
 public import CslibFrontier.Logics.SecondOrder.Grounding
 public import CslibFrontier.Logics.SecondOrder.Horn
+public import CslibFrontier.Logics.SecondOrder.Horn.GuardElimination
 public import CslibFrontier.Logics.SecondOrder.Horn.LeastFixedPoint
 public import CslibFrontier.Logics.SecondOrder.Horn.Ordered
 public import CslibFrontier.Logics.SecondOrder.IndependentSet
