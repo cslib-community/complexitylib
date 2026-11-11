@@ -111,7 +111,6 @@ or more edges. -/
 @[expose] def Reach : Query Language.graph :=
   {M | Relation.ReflTransGen (graphAdj M) 0 M.maxElem}
 
-@[simp]
 theorem mem_Reach {M : Structure Language.graph} :
     M ∈ Reach ↔ Relation.ReflTransGen (graphAdj M) 0 M.maxElem :=
   Iff.rfl
@@ -518,7 +517,6 @@ instance : stGraphLanguage.IsRelational := fun _ => inferInstance
     Relation.ReflTransGen
       (fun x y : M => Language.Structure.RelMap (L := stGraphLanguage) (.inl .adj) ![x, y]) s t}
 
-@[simp]
 theorem mem_STReach {M : Structure stGraphLanguage} :
     M ∈ STReach ↔ ∃ s t : M,
       Language.Structure.RelMap (L := stGraphLanguage) (.inr .source) ![s] ∧
