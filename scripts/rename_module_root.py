@@ -35,8 +35,8 @@ Apply mode (the default) transforms the checkout in the current directory in pla
    when the module does not exist (test fixtures), so they are rewritten too. Comment lines that
    the longer names push past 100 columns are re-wrapped, and `FIXUPS` makes the few edits that
    no rule can.
-   `manual/development-history/` and `manual/data/` describe and analyse the pinned historical
-   snapshot, so only their URLs change.
+   `manual/history/` (formerly `manual/development-history/`) and `manual/data/` describe and
+   analyse the pinned historical snapshot, so only their URLs change.
 3. The aggregators are regenerated: with `lake exe mk_all` unless `--no-mk-all`, otherwise by the
    same rule in Python (`regenerate_aggregates`).
 
@@ -135,7 +135,7 @@ EXCLUDED = frozenset({
     "scripts/cache/setup-gcs.sh",
 })
 # Historical analyses of the pinned snapshot: only URLs change.
-URL_ONLY = ("manual/development-history/", "manual/data/")
+URL_ONLY = ("manual/history/", "manual/development-history/", "manual/data/")
 # Tooling sources: their dotted root tokens are module names even for nonexistent (fixture) modules.
 TOOLING_SUFFIXES = (".py", ".sh", ".cjs", ".js", ".yml", ".yaml")
 PRAGMA = "rename-module-root: keep"

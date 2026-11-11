@@ -202,7 +202,9 @@ def solveTagged (name : Name) : TacticM Unit := do
         (rule_sets := [LogSpace]))
   else
     `(tactic| solve |
-      aesop (config := { terminal := true, assumptionTransparency := .reducible })
+      aesop
+        (config :=
+          { terminal := true, enableSimp := false, assumptionTransparency := .reducible })
         (rule_sets := [PolyTime]))
   let remaining ← evalTacticAt tactic goal
   unless remaining.isEmpty do throwError "proof search did not discharge `{name}`"

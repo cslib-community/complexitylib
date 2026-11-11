@@ -308,27 +308,27 @@ tensorization and comparison inequalities ([Tsybakov, Section 2.4](../sources.md
 
 - **Bhattacharyya coefficient and Hellinger distance.** Import
   [Hellinger.lean](../../CslibFrontier/Probability/Hellinger.lean). The definitions
-  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L133)
+  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L134)
   (`∑' a, √((p a).toReal * (q a).toReal) ∈ [0, 1]`),
-  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L137) (`1 - bhattacharyya p q`),
-  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L141)
+  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L138) (`1 - bhattacharyya p q`),
+  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L142)
   (`√(hellingerSq p q) ∈ [0, 1]`)—along with their symmetry, `[0, 1]` bounds, and definiteness
   (`= 0 ↔ p = q`)—apply to any `PMF α`, while the theorem API below assumes finite types
   `[Finite α]` / `[Fintype α]`. No competing `MetricSpace (PMF α)` instance is registered because
   `Cslib.Probability.PMF` already uses that slot for half-`L¹` `dist`;
-  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L304) supplies the
+  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L305) supplies the
   metric triangle inequality directly.
 - **Total-variation comparison and `n`-fold i.i.d. tensorization (finite types).**
-  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L345) and
-  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L398) give
+  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L346) and
+  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L399) give
   `h²(p, q) ≤ dist p q ≤ √2 * h(p, q)` (with `tvDist` corollaries on `toMeasure`).
-  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L426) and
-  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L444) prove multiplicative
+  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L427) and
+  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L445) prove multiplicative
   tensorization, yielding the sample-complexity acceptance bound
-  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L497):
+  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L498):
   `dist (iid p n) (iid q n) ≤ √(2 * n) * hellingerDist p q`. Markov kernel and map data
-  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L576) and
-  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L595).
+  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L577) and
+  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L596).
 - **Pearson `χ²` divergence and Ingster / Le Cam mixture bounds (finite types).** Import
   [ChiSquare.lean](../../CslibFrontier/Probability/ChiSquare.lean).
   [`echiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L142) (`ℝ≥0∞`-valued
@@ -359,6 +359,68 @@ cover disjoint point masses (`echiSquare = ⊤`), rational Bernoulli pairs, the 
 `pi`/`iid` tensorization, close Pythagorean-triple coins at `n = 10`, `map`/`bind` data
 processing, `2 h² ≤ KL ≤ log (1 + χ²) ≤ χ²`, and an Ingster/Le Cam two-point mixture bound. Run
 `scripts/build.sh CslibFrontierTests.HellingerChiSquare`.
+
+## Select a hypothesis from a finite family
+
+Import [Likelihood.lean](../../CslibFrontier/Probability/HypothesisSelection/Likelihood.lean),
+[LeCamBirge.lean](../../CslibFrontier/Probability/HypothesisSelection/LeCamBirge.lean), and
+[Tournament.lean](../../CslibFrontier/Probability/HypothesisSelection/Tournament.lean) to test pairs
+of discrete distributions and localize an unknown distribution `p : PMF α` from i.i.d. samples
+`iid p n` over a finite alphabet `α`.
+
+- **Likelihood-ratio Chernoff and realizable MLE.**
+  [Likelihood.lean](../../CslibFrontier/Probability/HypothesisSelection/Likelihood.lean) proves the
+  weighted likelihood-ratio bound `Cslib.Probability.PMF.toOuterMeasure_mul_le_bhattacharyya_div_sqrt`,
+  single-sample `toOuterMeasure_le_bhattacharyya`, and `n`-fold i.i.d. Chernoff bound
+  `toOuterMeasure_iid_le_bhattacharyya_pow` (`≤ Real.exp (-n * hellingerDist p q ^ 2)` via
+  `toOuterMeasure_iid_le_exp_hellingerDist`). Over any nonempty finite family `models` (`s : Finset ι`
+  with `mle`, or `Fin M` with `mleFin`), `mle_hellingerDist_gt_le` and `mleFin_hellingerDist_gt_le`
+  show that when `models i₀` generates the samples, maximum likelihood selects a model within
+  Hellinger radius `r ≥ 0` except with probability at most `(M - 1) * Real.exp (-n * r ^ 2)`,
+  giving sample complexity `Real.log (M / δ) / r ^ 2` (`mleFin_hellingerDist_ge_le_of_log`,
+  [Canonne](../sources.md#canonne22), [Tsybakov](../sources.md#tsybakov09)). Bare MLE is not robust
+  under misspecification: assigning zero probability to a single observed atom rejects a near-optimal
+  model immediately.
+- **Robust Le Cam–Birgé and Scheffé pairwise tests.**
+  [LeCamBirge.lean](../../CslibFrontier/Probability/HypothesisSelection/LeCamBirge.lean) defines the
+  clipped midpoint likelihood-ratio square root `birgeWeight q₀ q₁ a` (`√((q₀(a) + 2 q₁(a)) /
+  (2 q₀(a) + q₁(a)))`, `1` where both vanish, always in `[1 / √2, √2]`) and `leCamBirgeTest`
+  (comparing `∏ i, birgeWeight q₀ q₁ (x i) < 1`). Under any `p` with
+  `10 * hellingerDist p q₀ ≤ hellingerDist q₀ q₁`, `leCamBirgeTest_false_le` bounds false
+  rejection by `Real.exp (-n * hellingerSq q₀ q₁ / 25)` (`leCamBirgeTest_false_le_of_radius` gives
+  `Real.exp (-4 * n * r ^ 2)` when `h(p, q₀) ≤ r` and `10 * r ≤ h(q₀, q₁)`, and `leCamBirgeTest_true_le`
+  / `leCamBirgeTest_true_le_of_radius` are symmetric). For total variation, `scheffeTest` compares
+  `empiricalMass (scheffeSet q₀ q₁) x` against `(q₀(A) + q₁(A)) / 2` and achieves error at most
+  `Real.exp (-2 * n * γ ^ 2)` whenever `dist p q₀ + γ ≤ dist q₀ q₁ / 2` (`scheffeTest_false_le`,
+  `scheffeTest_true_le`).
+- **Parameter-free tournaments and finite covers.**
+  [Tournament.lean](../../CslibFrontier/Probability/HypothesisSelection/Tournament.lean) defines two
+  agnostic tournament selectors needing no prior bound on the approximation radius. `scheffeSelect`
+  (`scheffeSelectFin`) minimizes `scheffeScore` (worst empirical discrepancy over challengers'
+  Scheffé sets), achieving `dist p q_hat ≤ 3 * dist p q₀ + 2 * γ` simultaneously for all `q₀ ∈ s`
+  except with probability at most `2 * M * (M - 1) * Real.exp (-2 * n * γ ^ 2)`
+  (`scheffeSelect_prob_gt_le`, `scheffeSelectFin_ge_le_of_log`, `scheffeSelect_of_cover`).
+  `birgeTournamentSelect` (`birgeTournamentSelectFin`) minimizes `maxDefeatRadius` across pairwise
+  `leCamBirgeTest` matches: whenever some candidate satisfies `hellingerDist p (models i₀) ≤ r`, the
+  output satisfies `hellingerDist p (models i_hat) ≤ 11 * r` except with probability at most
+  `2 * (M - 1) * Real.exp (-4 * n * r ^ 2)` (`birgeTournamentSelect_prob_gt_le`,
+  `birgeTournamentSelectFin_ge_le_of_log`), giving agnostic `11 * r` selection over any finite
+  `r`-Hellinger cover (`birgeTournamentSelect_of_cover`). The `1/3`–`2/3` `birgeWeight` constants,
+  one-sided `scheffeScore`, and tournament proofs are this library's formulation ([Le Cam 1973](../sources.md#lecam73),
+  [Birgé 1983](../sources.md#birge83), and [Devroye–Lugosi 2001](../sources.md#devroyelugosi01) were
+  not inspected beyond bibliographic metadata).
+
+Model boundaries: all results are non-asymptotic bounds for discrete i.i.d. `PMF` tuples
+`Fin n → α` on finite alphabets `α` and finite candidate families (`hs : s.Nonempty` or `NeZero M`),
+assuming exact evaluation of `PMF` masses rather than continuous densities, unbounded alphabets, or
+streaming space/time bounds. The checked clients in
+[HypothesisSelection.lean](../../CslibFrontierTests/HypothesisSelection.lean) verify `bhattacharyya`
+and `n = 20` Chernoff decay for `coin (1 / 5)` vs. `coin (4 / 5)`, `n = 64` sample complexity for
+`mleFin` on three coins, a concrete zero-likelihood counterexample (`twoCoinsDetHalf` on nine `true`
+and one `false` samples) where `mleFin` picks the wrong model while both `scheffeSelectFin` and
+`birgeTournamentSelectFin` recover the near-optimal model, and probabilistic `scheffeSelectFin`,
+`birgeTournamentSelectFin`, and finite-cover bounds under `coin (201 / 1000)` misspecification. Run
+`scripts/build.sh CslibFrontierTests.HypothesisSelection`.
 
 ## Bound the mixing time of a finite Markov chain
 

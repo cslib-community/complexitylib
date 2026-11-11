@@ -12,6 +12,7 @@ public import CslibFrontier.Foundations.Data.BitString.Parity
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import CslibFrontier.Probability.SmallBias
 import CslibFrontier.Foundations.Data.BitString.Discriminator
+import CslibFrontier.Foundations.Data.BitString.Sign.BigOperators
 import CslibFrontier.Foundations.Data.Finset.Markov
 import CslibFrontier.Probability.SmallBias.Correlation
 import CslibFrontier.Probability.SmallBias.Powering
@@ -286,16 +287,6 @@ section Core
 
 variable {n k ℓ : ℕ}
 
-/-- Twice the agreement of two Boolean functions is `|Z|` plus their sign correlation. -/
-private theorem two_mul_card_eq_add_sum_signVal {Z : Type*} [Fintype Z] (f g : Z → Bool) :
-    2 * (#{z | f z = g z} : ℝ) = Fintype.card Z + ∑ z, signVal (f z) * signVal (g z) := by
-  classical
-  have h (z : Z) : signVal (f z) * signVal (g z) = 2 * (if f z = g z then 1 else 0) - 1 := by
-    rw [signVal_mul_signVal]; split_ifs <;> norm_num
-  rw [sum_congr rfl fun z _ => h z, sum_sub_distrib, ← mul_sum, sum_boole, sum_const, card_univ,
-    nsmul_eq_mul, mul_one]
-  ring
-
 /-- Translating the first argument of a sign correlation translates the second. -/
 private theorem sum_signVal_add_eq (h F : BitString k → Bool) (c : BitString k) :
     ∑ u, signVal (h (u + c)) * signVal (F u) = ∑ u, signVal (h u) * signVal (F (u + c)) := by
@@ -409,7 +400,7 @@ private theorem two_mul_card_agree_eq {r : BitString k → BitString n} (σ : Fi
       2 ^ k + ∑ u, signVal (h (u + kaneWilliamsResidualParities n k ℓ σ w)) *
         signVal (r u ⬝ᵥ kaneWilliamsMessage n k ℓ w) := by
   simp_rw [kaneWilliamsB_embedUpdate]
-  rw [two_mul_card_eq_add_sum_signVal, sum_signVal_add_eq]
+  rw [sum_signVal_add_eq, sum_signVal_mul_signVal_eq_two_mul_card_sub]
   simp
 
 /-- Markov's inequality for the survivor counts: if `U` has mean at most `B` over all block
