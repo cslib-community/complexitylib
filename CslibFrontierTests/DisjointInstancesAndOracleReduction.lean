@@ -473,17 +473,21 @@ lemma countdownStackSpec_stateBound (a i : ℕ) (hi : i ≤ countdownStackSpec.r
   have H_mul2 : (a + 1) * (2 * (a + 1) + 1) = 2 * (a + 1)^2 + (a + 1) := by ring
   rw [H_mul2] at hlen_stack
   simp only [encStackSearchState_apply, length_encPair]
-  have hctx : ((encFinEnum Unit) ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).ctx).length ≤ 10 := by
-    have h := length_encFinEnum_lt ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).ctx
+  have hctx : ((encFinEnum Unit) ((countdownStackSpec.step (fun _ => 1))^[i]
+    (countdownStackSpec.initState a)).ctx).length ≤ 10 := by
+    have h := length_encFinEnum_lt ((countdownStackSpec.step (fun _ => 1))^[i]
+      (countdownStackSpec.initState a)).ctx
     have hc : Nat.card Unit ≤ 10 := by simp
     omega
   have H_sq : a + 1 ≤ (a + 1)^2 := by
-    have h1 : (a + 1) * 1 ≤ (a + 1) * (a + 1) := Nat.mul_le_mul_left (a + 1) (Nat.le_add_left 1 a)
+    have h1 : (a + 1) * 1 ≤ (a + 1) * (a + 1) :=
+      Nat.mul_le_mul_left (a + 1) (Nat.le_add_left 1 a)
     have h2 : (a + 1) * 1 = a + 1 := by ring
     have h3 : (a + 1) * (a + 1) = (a + 1)^2 := by ring
     omega
   have H_sq2 : 1 ≤ (a + 1)^2 := by
-    have h1 : 1 * 1 ≤ (a + 1) * (a + 1) := Nat.mul_le_mul (Nat.le_add_left 1 a) (Nat.le_add_left 1 a)
+    have h1 : 1 * 1 ≤ (a + 1) * (a + 1) :=
+      Nat.mul_le_mul (Nat.le_add_left 1 a) (Nat.le_add_left 1 a)
     have h2 : (a + 1) * (a + 1) = (a + 1)^2 := by ring
     omega
   omega
@@ -501,7 +505,8 @@ example : ∃ c e : ℕ, ∃ Space : ℕ → ℕ,
     (PolyBounded.self)
     (stateBound := fun a => 1000 * (a + 1) ^ 2) (ansBound := fun _ => (encNat 1).length)
     (leafMax := fun _ => (encNat 1).length)
-    (PolyBounded.of_forall_le 1000 2 (fun a => by simp only [encUnary_apply, List.length_replicate]; exact le_rfl))
+    (PolyBounded.of_forall_le 1000 2 (fun a => by
+      simp only [encUnary_apply, List.length_replicate]; exact le_rfl))
     (PolyBounded.const (encNat 1).length)
     countdownStackSpec_stateBound
     (by
