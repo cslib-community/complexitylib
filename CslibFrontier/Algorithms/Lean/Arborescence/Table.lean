@@ -274,7 +274,8 @@ private theorem ret_hasCycleFromM (x : Fin n) (f : ParentTable n) :
       (List.range m).foldl
         (fun (st : CycleSearchState n) _ =>
           let cur := st.current; let hit := st.hit
-          { current := f[cur.1], hit := hit || (f[cur.1] == x) : CycleSearchState n }) ({ current := x, hit := false } : CycleSearchState n) =
+          { current := f[cur.1], hit := hit || (f[cur.1] == x) : CycleSearchState n })
+            ({ current := x, hit := false } : CycleSearchState n) =
       { current := ((fun i : Fin n => f[i.1])^[m] x),
         hit := (List.range m).any fun k => (fun i : Fin n => f[i.1])^[k + 1] x == x } := by
     intro m
@@ -732,85 +733,6 @@ variable {β : Type*} [LinearOrder β] [AddCommMonoid β]
 
 section Transfer
 
-private theorem argmin_map_equiv {α γ : Type*} {δ : Type*} [LinearOrder δ]
-    (e : α → γ) (l : List α) (f : γ → δ) :
-    (l.argmin (f ∘ e)).map e = (l.map e).argmin f := by
-  unfold List.argmin
-  rw [List.foldl_map]
-  have hgen : ∀ (acc : Option α),
-      (l.foldl (fun a b => List.argAux (fun x y => (f ∘ e) x < (f ∘ e) y) a b) acc).map e =
-        l.foldl (fun a b => List.argAux (fun x y => f x < f y) a (e b)) (acc.map e) := by
-    intro acc
-    induction l generalizing acc with
-    | nil => rfl
-    | cons x l ih =>
-      simp only [List.foldl_cons]
-      have harg : (List.argAux (fun x y => (f ∘ e) x < (f ∘ e) y) acc x).map e =
-          List.argAux (fun x y => f x < f y) (acc.map e) (e x) := by
-        cases acc with
-        | none => rfl
-        | some c =>
-          unfold List.argAux
-          simp only [Option.map_some, Function.comp_apply]
-          split_ifs <;> rfl
-      rw [← harg]
-      exact ih _
-  simpa using hgen none
-
-private theorem argmin_congr_mem {α δ : Type*} [LinearOrder δ] (all l : List α) {f g : α → δ}
-    (hl : ∀ x ∈ l, x ∈ all) (hfg : ∀ x ∈ all, f x = g x) :
-    l.argmin f = l.argmin g := by
-  have hinv : ∀ (m : List α) (acc : Option α),
-      (∀ z, acc = some z → z ∈ all) →
-      (∀ x ∈ m, x ∈ all) →
-      m.foldl (List.argAux fun a b => f a < f b) acc =
-        m.foldl (List.argAux fun a b => g a < g b) acc := by
-    intro m
-    induction m with
-    | nil => intro acc _ _; rfl
-    | cons x m ih =>
-      intro acc hacc hm
-      have hx : x ∈ all := hm x List.mem_cons_self
-      have hm' : ∀ y ∈ m, y ∈ all := fun y hy => hm y (List.mem_cons_of_mem _ hy)
-      have hstep :
-          List.argAux (fun a b => f a < f b) acc x =
-            List.argAux (fun a b => g a < g b) acc x := by
-        cases acc with
-        | none => rfl
-        | some z => simp only [List.argAux, hfg x hx, hfg z (hacc z rfl)]
-      simp only [List.foldl_cons, hstep]
-      refine ih _ (fun z hz => ?_) hm'
-      cases acc with
-      | none =>
-        have : x = z := by simpa [List.argAux] using hz
-        exact this ▸ hx
-      | some y =>
-        dsimp only [List.argAux] at hz
-        split_ifs at hz <;> simp only [Option.some.injEq] at hz
-        · exact hz ▸ hx
-        · exact hz ▸ hacc y rfl
-  exact hinv l none (fun _ h => by simp at h) hl
-
-theorem isSome_argmin_filter {α δ : Type*} [LinearOrder δ] (l : List α) (p : α → Bool)
-    (f : α → δ) : ((l.filter p).argmin f).isSome = l.any p := by
-  by_cases h : ∃ x ∈ l, p x = true
-  · obtain ⟨x, hx1, hx2⟩ := h
-    have hne : l.filter p ≠ [] := List.ne_nil_of_mem (List.mem_filter.mpr ⟨hx1, hx2⟩)
-    obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := f) hne
-    rw [hm, Option.isSome_some]
-    symm
-    exact List.any_eq_true.mpr ⟨x, hx1, hx2⟩
-  · have hnil : l.filter p = [] := by
-      rw [List.filter_eq_nil_iff]
-      intro x hx hpx
-      exact h ⟨x, hx, by simpa using hpx⟩
-    rw [hnil, List.argmin_nil, Option.isSome_none]
-    symm
-    rw [Bool.eq_false_iff]
-    intro hbad
-    exact h (List.any_eq_true.mp hbad)
-
-omit [AddCommMonoid β] in
 private theorem selectParentsM_spec {V : Type*} [FinEnum V]
     (a : AdjTable (FinEnum.card V)) (c : CostTable β (FinEnum.card V))
     (aV : V → V → Bool) (cV : V → V → β) (rV : V)
@@ -852,7 +774,7 @@ private theorem selectParentsM_spec {V : Type*} [FinEnum V]
       simp [hv, r, e]
     · have hvV : e.symm v ≠ rV := fun h => hv (hvr.mpr h)
       simp only [hv, ↓reduceIte, hvV]
-      rw [← hcand v, ← argmin_map_equiv e.symm _ (cV (e.symm v))]
+      rw [← hcand v, ← List.argmin_map_equiv e.symm _ (cV (e.symm v))]
       congr 1
       refine congrArg (List.argmin · _) ?_
       funext w
@@ -1005,7 +927,7 @@ private theorem bestEntryTableM_spec {V : Type*} [FinEnum V]
   rw [ret_bestEntryTableM]
   unfold bestEntry FinEnum.toList
   have hcost : (fun y : Fin n => c[u.1][y.1]) = cV (e.symm u) ∘ e.symm := funext fun y => hc u y
-  rw [hcost, argmin_map_equiv e.symm]
+  rw [hcost, List.argmin_map_equiv e.symm]
   have hfil : ((List.finRange n).filter fun y => inCycle[y.1] && a[u.1][y.1]).map e.symm =
       ((List.finRange n).map e.symm).filter fun y => decide (y ∈ C) && aV (e.symm u) y := by
     rw [List.filter_map]
@@ -1038,14 +960,14 @@ private theorem bestExitTableM_spec {V : Type*} [FinEnum V]
   set l := (List.finRange n).filter fun x => inCycle[x.1] && a[x.1][w.1]
   have hcomp : l.argmin (fun x => c[x.1][w.1] + other[x.1]) =
       l.argmin ((fun x => exitCost cV fV C x (e.symm w)) ∘ e.symm) := by
-    refine argmin_congr_mem l l (fun _ hx => hx) fun x hx => ?_
+    refine List.argmin_congr_mem l l (fun _ hx => hx) fun x hx => ?_
     have hxin : inCycle[x.1] = true :=
       (Bool.and_eq_true _ _ |>.mp (List.mem_filter.mp hx).2).1
     dsimp only [Function.comp_def, e]
     rw [hc x w, hother hxin, exitCost]
   rw [hcomp]
   dsimp only [e]
-  rw [argmin_map_equiv (@FinEnum.equiv V _).symm l
+  rw [List.argmin_map_equiv (@FinEnum.equiv V _).symm l
     (fun x => exitCost cV fV C x ((@FinEnum.equiv V _).symm w)), List.filter_map]
   refine congrArg (List.argmin _) (congrArg (List.map (@FinEnum.equiv V _).symm)
     (List.filter_congr fun x _ => ?_))
@@ -1290,11 +1212,11 @@ theorem edmondsTableAuxM_ret_eq_edmondsAux {V : Type*} [FinEnum V] :
         have hbEntry_isSome (u : Fin (FinEnum.card V)) : bEntry[u.1].isSome =
             (List.finRange (FinEnum.card V)).any fun y => inCycle[y.1] && a[u.1][y.1] := by
           dsimp only [bEntry]
-          rw [ret_bestEntryTableM, isSome_argmin_filter]
+          rw [ret_bestEntryTableM, List.isSome_argmin_filter]
         have hbExit_isSome (w : Fin (FinEnum.card V)) : bExit[w.1].isSome =
             (List.finRange (FinEnum.card V)).any fun x => inCycle[x.1] && a[x.1][w.1] := by
           dsimp only [bExit]
-          rw [ret_bestExitTableM, isSome_argmin_filter]
+          rw [ret_bestExitTableM, List.isSome_argmin_filter]
         have hbExit_mem (w xs : Fin (FinEnum.card V)) (hbx : bExit[w.1] = some xs) :
             inCycle[xs.1] = true := by
           dsimp only [bExit] at hbx
@@ -1360,13 +1282,15 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
         have ht : (edmondsTableAuxM r (fuel + 1) a c).time =
             (selectParentsM a c r).time + (findCycleM r sel.parents).time := by
           simp [edmondsTableAuxM, sel, hfeas, hcyc]
-        have hstep : (selectParentsM a c r).time + (findCycleM r sel.parents).time ≤ 13 * n ^ 2 := by
+        have hstep : (selectParentsM a c r).time + (findCycleM r sel.parents).time
+            ≤ 13 * n ^ 2 := by
           omega
         calc (edmondsTableAuxM r (fuel + 1) a c).time ≤ 13 * n ^ 2 := ht ▸ hstep
           _ ≤ (_ + 1) * (13 * n ^ 2) := Nat.le_mul_of_pos_left _ (Nat.succ_pos _)
       | some x0 =>
         have hx0_find : (List.finRange n).find? (fun x =>
-            x != r && (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =
+            x != r x != r && (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =x != r && (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =
+            (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =
             some x0 := by
           simpa [ret_findCycleM] using hcyc
         have hx0_mem := List.find?_some hx0_find
@@ -1384,7 +1308,8 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
         have hx0C : x0 ∈ C := iterate_mem_cycleOf hm hm0 hmc 0
         have hfC : ∀ y ∈ C, fV y ∈ C := fun y hy => map_mem_cycleOf hm hm0 hmc hy
         have hfr : fV r = r := by
-          have hs := congrArg (fun (p : SelectParentsResult n) => p.parents[r.1]) (ret_selectParentsM a c r)
+          have hs := congrArg (fun (p : SelectParentsResult n) => p.parents[r.1])
+            (ret_selectParentsM a c r)
           simpa [sel, fV] using hs
         have hrC : r ∉ C := root_notMem_cycleOf r hfr hx0r hm hm0 hmc
         have hCr : ∀ y ∈ C, y ≠ r := fun y hy h => hrC (h ▸ hy)
@@ -1435,7 +1360,7 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
           have hex : bExit[w.1].isSome =
               (FinEnum.toList (Fin n)).any (fun x => decide (x ∈ C) && aV x w) := by
             dsimp only [bExit]
-            rw [ret_bestExitTableM, isSome_argmin_filter, ← hany_congr]
+            rw [ret_bestExitTableM, List.isSome_argmin_filter, ← hany_congr]
             refine congrArg (List.any (List.finRange n)) (funext fun x => ?_)
             have hxbool : inCycle[x.1] = decide (x ∈ C) :=
               Bool.eq_iff_iff.mpr (by simpa using hmask x)
@@ -1443,7 +1368,7 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
           have hen : bEntry[u.1].isSome =
               (FinEnum.toList (Fin n)).any (fun y => decide (y ∈ C) && aV u y) := by
             dsimp only [bEntry]
-            rw [ret_bestEntryTableM, isSome_argmin_filter, ← hany_congr]
+            rw [ret_bestEntryTableM, List.isSome_argmin_filter, ← hany_congr]
             refine congrArg (List.any (List.finRange n)) (funext fun y => ?_)
             have hybool : inCycle[y.1] = decide (y ∈ C) :=
               Bool.eq_iff_iff.mpr (by simpa using hmask y)
