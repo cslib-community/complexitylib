@@ -648,9 +648,9 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 
 ### Structural graph algorithms
 
-- **Dynamic programming over tree decompositions** ([#2927](https://github.com/cslib-community/cslib-frontier/issues/2927)): a reusable evaluator over a supplied rooted decomposition with state-space, transition, join and runtime bounds, and an executable FPT `TimeM` independent-set program charging its operations on materialized tables ([#3295](https://github.com/cslib-community/cslib-frontier/issues/3295)).
-  Clients: coloring and SAT/CSP decision and counting, each naming the graph whose width is measured; runtimes are stated in the number of vertices.
-- **Treewidth structure** ([#2927](https://github.com/cslib-community/cslib-frontier/issues/2927)): an encoded treewidth parameter connected to `FPT`, nice decompositions, treewidth under minors, and the grid and separator characterizations of treewidth.
+- **Dynamic programming over tree decompositions** ([#2927](https://github.com/cslib-community/cslib-frontier/issues/2927)): a reusable evaluator over a supplied rooted decomposition with state-space, transition, join and runtime bounds, an executable FPT `TimeM` independent-set program charging its operations on materialized tables ([#3295](https://github.com/cslib-community/cslib-frontier/issues/3295)), and pruned nice-tree dynamic programs for finite-domain SAT/CSP counting and decision over primal and active primal graphs in `|V|` (`#3672` M12).
+  Remaining clients and upgrades: graph coloring, migrating `mwisFPT` from decomposition node count to `|V|`, and decomposition-finding algorithms.
+- **Treewidth structure** ([#2927](https://github.com/cslib-community/cslib-frontier/issues/2927)): an encoded treewidth parameter connected to `FPT`, treewidth under minors, and the grid and separator characterizations of treewidth (nice decompositions `NiceTreeDecomposition` and linear-size `toNiceTreePruned` normalization are already landed).
 - **Algorithmic metatheorems:** MSO-to-automata/evaluator compilation and a Courcelle-style theorem with computable parameter dependence on width and formula size.
   Keep the supplied decomposition and its encoding explicit; certify decomposition finding separately.
   Connect the evaluator to descriptive complexity, parameterized reductions and constraint networks.

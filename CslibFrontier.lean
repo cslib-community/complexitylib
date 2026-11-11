@@ -211,7 +211,9 @@ public import CslibFrontier.Algorithms.Lean.TSP.PerfectMatching
 public import CslibFrontier.Algorithms.Lean.TSP.Shortcut
 public import CslibFrontier.Algorithms.Lean.TSP.Walk
 public import CslibFrontier.Algorithms.Lean.TimeM.Loops
+public import CslibFrontier.Algorithms.Lean.TreeDecomposition.BagAssignment
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.BagMask
+public import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
 public import CslibFrontier.Algorithms.Lean.VertexCover.Matching
@@ -2140,6 +2142,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.BinaryWeightedC
 public import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
 public import CslibFrontier.Computability.Complexity.FineGrained.CircuitCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.CircuitLowerBoundBudget
+public import CslibFrontier.Computability.Complexity.FineGrained.CliqueGrouping
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionCircuitCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionMatching
@@ -4954,6 +4957,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.StrongProduct
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SymmDiff
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Basic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Bounds
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Nice
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Rooted
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Subtree
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TutteBerge
@@ -5894,6 +5898,7 @@ public import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
 public import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree
 public import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 public import CslibFrontier.Logics.Propositional.CSP.Planar.RelationMinor
+public import CslibFrontier.Logics.Propositional.CSP.PrimalGraph
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
