@@ -2124,6 +2124,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrence
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WordRAM
 public import CslibFrontier.Computability.Complexity.Gradel
+public import CslibFrontier.Computability.Complexity.Gradel.Tableau
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.PolyTime
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.Program
 public import CslibFrontier.Computability.Complexity.ImmermanVardi

@@ -52,6 +52,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
@@ -1028,6 +1029,27 @@ register_result "immerman-vardi" where
     input tables. A query is defined by one checked FO(LFP) sentence iff its language is in \
     native P under encStructure (unary cardinality, then framed truth tables); malformed \
     table shapes and universes below two are rejected."
+
+register_result "gradel-so-horn-captures-p" where
+  title := "Grädel: SO∃-Horn captures polynomial time on ordered structures with successor"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Gradel2007, theorem := "Theorems 3.2.17–3.2.18 and Exercise 3.2.20",
+      locator := "Section 3.2.3, pp. 147–148" },
+    { paper := Gradel1992, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.hornDefinable_iff_encodedLanguage_mem_P,
+    Cslib.Logic.FO.Ordered.HornDefinable.encodedLanguage_mem_P,
+    Cslib.Logic.FO.Ordered.HornDefinable.of_encodedLanguage_mem_P
+  ]
+  scope := "Queries over a finite relational vocabulary on canonically ordered structures Fin n \
+    with n ≥ 2. HornDefinable asks for one SO∃-Horn sentence with quantifier-free guards over \
+    language (succLanguage L), supplying primitive non-wrapping successor alongside the \
+    canonical numeric symbols (order, BIT, 0, 1 and max); hornDefinable_iff_exists_sentence \
+    identifies this fragment with arbitrary first-order guards over language L. A query is \
+    HornDefinable iff its language is in native P under encStructure; malformed table shapes \
+    and universes below two are rejected."
 
 register_result "fo-tc-nl" where
   title := "FO(TC) is contained in NL on ordered structures"
