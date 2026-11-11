@@ -24,7 +24,7 @@ example : MaxCut ∈ NP encMaxCut ∧
     PolyTimeReducible (encList encNat) encMaxCut Partition MaxCut :=
   ⟨MaxCut_npComplete.1, polyTimeReducible_Partition_MaxCut⟩
 
-example : PolyTimeReducible (encPair (encList encNat) encNat) encMaxCut SubsetSum MaxCut :=
+example : PolyTimeReducible encSubsetSum encMaxCut SubsetSum MaxCut :=
   polyTimeReducible_SubsetSum_Partition.trans polyTimeReducible_Partition_MaxCut
 
 /-! ### Cut weights -/

@@ -214,8 +214,9 @@ private theorem exists_certifies {G : Graph} {k : ℕ} (h : (G, k) ∈ FeedbackV
 
 /-- `FeedbackVertexSet` belongs to `NP`, with a listed numbering as the witness. -/
 theorem mem_NP : FeedbackVertexSet ∈ NP (encPair encGraph encNat) := by
-  refine mem_NP_of_colorOf computableInPolyTime_check
-    (fun G k ρ h => mem_of_certifies ((check_iff ((G, k), ρ)).1 h)) fun G k h => ?_
+  refine mem_NP_of_colorOf Prod.fst computableInPolyTime_check
+    (fun ⟨G, k⟩ => G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k)))
+    (fun ⟨G, k⟩ ρ h => mem_of_certifies ((check_iff ((G, k), ρ)).1 h)) fun ⟨G, k⟩ h => ?_
   obtain ⟨g, hgle, hg⟩ := exists_certifies h
   exact ⟨g, fun v hv => (hgle v hv).trans G.1.toFinset_card_le, (check_iff ((G, k), _)).2 hg⟩
 
