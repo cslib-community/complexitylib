@@ -955,8 +955,8 @@ when its numerical statement is already proved. The full objective in
 | Unrestricted Theorem 5 source coverage, PDF pp. 4–6, 11–12 | Native epoch/whole-policy representation and the preceding controller APIs | Partial: unrestricted source query/cutoff and external-machine realization, broader unbounded-horizon/divergent-path real-cost packaging and general measurable interfaces remain. Domination needed for measurable/unbounded progress is blocked on #4336; the other representation obligations are not blocked on that issue. |
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
-| Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `incidence`, `region`, `weight_cast`, `dual_cast`; `NativeResidualSelector.computable_request`, `controller_law` | Partial: original-label binary construction and incidence/weight/price correspondence, runtime component/residual planner and one same-code native program with runtime role count are present. A complete three-block native source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. The general X3C-family residual-history/certification specialization remains unproved. |
-| Theorem 6 universal native optimum and optimal uniform selectors, PDF p. 13 | `ResidualCover.native_one_turn_lower` is only the older clocked one-turn bridge | Missing: unrestricted native one/two-turn competitor transfer, native optimum specialization and a quantified optimal-output guarantee for the new selector. These are paper-local obligations, not blocked on #4335 or #4336. |
+| Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. General raw-history decoding, canonical-role correspondence and the controller’s optimal output for arbitrary X3C families remain unproved. |
+| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `ResidualCover.native_one_turn_lower` is only the older clocked one-turn bridge | Missing: unrestricted native one/two-turn competitor transfer, exact expected query-token minima and a quantified cost-optimal output guarantee for the selector. These are paper-local obligations, not blocked on #4335 or #4336. |
 
 Not everything outside #4335/#4336 is present. In particular, the native
 Theorem 6 obligations and the separate Theorem 5 representation obligations in
@@ -1042,6 +1042,21 @@ enumerations. The hidden exact-cover witnesses are not serialized. `incidence`,
 derives component recovery for this source construction, using its whole-block
 fallback sets rather than a supplied recovery certificate.
 
+`source_valid` now derives every rational WSC promise from those X3C inputs;
+clients do not supply a native validity or dual certificate. `nativeInstance`
+is the actual decoded native WSC interpretation. `covered_label`, `cost_label`
+and `certified_label` preserve the source semantics of arbitrary original
+families, including overlapping unused triples. `native_near_residual` gives the
+actual missing block, and `native_responses_certified` derives both chronological
+local tests at $\rho=1$. `native_primal_optimum` constructs an original-label
+native cover of weight one and bounds **every** native integral cover below by
+one, including families with out-of-range labels. `native_dual_optimum` bounds
+every nonnegative feasible dual above by one. Thus $L=\mathrm{OPT}=1$ is now
+proved for the decoded native **WSC instance**; this does not yet establish the
+optimal query-token cost over native policies. The larger client derives these
+claims on five six-point blocks with overlapping unused triples, checks the
+thirty-element native ground and all five six-element missing-block residuals.
+
 `NativeResidualSelector.Query` pairs the original rational WSC input with original
 point labels of the requested subuniverse. `Query.candidates` restricts to candidates
 contained in that universe while retaining their global labels. `representatives`
@@ -1081,7 +1096,7 @@ actual query bytes against its own original labeled subinstance. This is a
 nontrivial integrated client, not a universal native optimum theorem.
 
 The general source-family specialization still needs proofs that arbitrary encoded
-near/specialist responses induce the required runtime histories, certificates,
+near/specialist raw responses induce the proved interpreted families and tests,
 canonical role correspondence and optimal output in this controller. Universal
 native one/two-turn optimum transfer and selection of the cheaper attained strategy
 remain open. Natural invoices in the concrete source protocol do not assert an

@@ -467,4 +467,53 @@ example (e f : ResidualCover.Point StochasticOracleResidualCover.blocks) :
       (Fintype.equivFin _).symm (Fintype.equivFin _).symm
       (Fintype.equivFin _ f) (Fintype.equivFin _ e)
 
+-- The larger overlapping X3C input acquires its validity from the source
+-- construction, rather than an independently supplied rational certificate.
+example : SourceEncoding.Valid largerSource :=
+  NativeResidualEncoding.source_valid StochasticOracleResidualCover.blocks
+    (Fintype.equivFin _).symm (Fintype.equivFin _).symm (by norm_num)
+
+private def largerNative : PartialCover.Instance ℕ ℕ :=
+  NativeResidualEncoding.nativeInstance StochasticOracleResidualCover.blocks
+    (Fintype.equivFin _).symm (Fintype.equivFin _).symm (by norm_num)
+
+private def largerFamily : Finset ℕ :=
+  (ResidualCover.payload StochasticOracleResidualCover.blocks Finset.univ).map
+    (NativeResidualEncoding.candidateLabel StochasticOracleResidualCover.blocks
+      (Fintype.equivFin _).symm)
+
+-- The actual decoded native WSC has a thirty-element ground, a weight-one
+-- integral cover, and a lower bound against every native candidate family,
+-- including arbitrary out-of-range labels. No optimum is an input.
+example : largerNative.ground.card = 30 ∧
+    largerNative.covered largerFamily = largerNative.ground ∧
+    largerNative.cost largerFamily = 1 ∧
+    ∀ F, largerNative.covered F = largerNative.ground → 1 ≤ largerNative.cost F := by
+  have hg : largerNative.ground.card = 30 := by
+    rw [largerNative, NativeResidualEncoding.ground_label, Finset.card_map,
+      Finset.card_univ, ResidualCover.universe_card]
+    norm_num [StochasticOracleResidualCover.blocks, StochasticOracleResidualCover.block]
+  exact ⟨hg, NativeResidualEncoding.native_primal_optimum
+    StochasticOracleResidualCover.blocks (Fintype.equivFin _).symm
+      (Fintype.equivFin _).symm (by norm_num)⟩
+
+-- All five hidden missing blocks give their own nonempty residual and both
+-- source responses pass the interpreted native local test at rho=1.
+example (j : Fin 5) :
+    let label := NativeResidualEncoding.candidateLabel StochasticOracleResidualCover.blocks
+      (Fintype.equivFin _).symm
+    let near := (ResidualCover.payload StochasticOracleResidualCover.blocks
+      (Finset.univ.erase j)).map label
+    let specialist := (ResidualCover.specialist StochasticOracleResidualCover.blocks j).map label
+    largerNative.Certified 1 ∅ near ∧ largerNative.Certified 1 near specialist ∧
+      (largerNative.ground \ largerNative.covered near).card = 6 := by
+  dsimp only
+  have hc := NativeResidualEncoding.native_responses_certified
+    StochasticOracleResidualCover.blocks (Fintype.equivFin _).symm
+      (Fintype.equivFin _).symm (by norm_num) j
+  refine ⟨hc.1, hc.2, ?_⟩
+  rw [largerNative, NativeResidualEncoding.native_near_residual, Finset.card_map]
+  simp [ResidualCover.groundBlock, StochasticOracleResidualCover.blocks,
+    StochasticOracleResidualCover.block]
+
 end CslibFrontierTests.StochasticOracleNativeResidualSelector

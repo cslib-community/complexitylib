@@ -582,8 +582,8 @@ example :
           simpa only [Nat.cast_one] using hb).trans hc
     exact ⟨final, he, hb', hd, ht⟩
 
--- Endpoint source probabilities exercise q=0 and q=1 on the same nonempty
--- compiled one-call controller, rather than only the scalar polynomial formula.
+-- A certain source envelope is tested on the same nonempty compiled one-call
+-- controller, rather than only the scalar polynomial formula.
 set_option backward.isDefEq.respectTransparency false in
 private theorem one_probability (p : ℝ) (hp : 0 ≤ p) (hpone : p ≤ 1) :
     p ≤ (((terminalLaw one one_limits one_sample ()).map
@@ -612,11 +612,6 @@ private theorem one_probability (p : ℝ) (hp : 0 ≤ p) (hpone : p ≤ 1) :
 example : (((terminalLaw one one_limits one_sample ()).map
     (NativeExecution.certified one valid 1)) true).toReal ≥ 1 :=
   one_probability 1 (by norm_num) (by norm_num)
-
--- q=1: the zero envelope remains valid for the same nonempty run and invoice.
-example : (((terminalLaw one one_limits one_sample ()).map
-    (NativeExecution.certified one valid 1)) true).toReal ≥ 0 :=
-  one_probability 0 (by norm_num) (by norm_num)
 
 -- Any original, possibly query-dependent joint oracle receives exactly the
 -- selected original address and opaque payload from the compiled one-call mode.
