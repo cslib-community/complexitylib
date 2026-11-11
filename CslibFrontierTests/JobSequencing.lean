@@ -100,4 +100,19 @@ example : ComputableInPolyTime
 example : ComputableInPolyTime (fun x : List ℕ × ℕ => SubsetSum.toJobSequencing (x.1, x.2 + 1))
     (encPair (encList encNat) encNat) encJobSequencing := by fun_prop
 
+example : ComputableInPolyTime
+    (fun x : JobSequencingInstance =>
+      (⟨x.jobs.map fun j => ⟨j.deadline, j.time, j.penalty⟩, x.bound⟩ : JobSequencingInstance))
+    encJobSequencing encJobSequencing := by fun_prop
+
 end CslibFrontierTests.JobSequencing
+
+-- Global `fun_prop` availability without opening `Cslib.Complexity` or
+-- `Cslib.Complexity.JobSequencing`.
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun x : Cslib.Complexity.JobSequencingInstance =>
+      Cslib.Complexity.JobSequencingInstance.mk
+        (x.jobs.map fun j => Cslib.Complexity.JobSequencing.Job.mk j.time j.deadline j.penalty)
+        x.bound)
+    Cslib.Complexity.encJobSequencing Cslib.Complexity.encJobSequencing := by
+  fun_prop
