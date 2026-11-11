@@ -59,9 +59,9 @@ is exhausted.
 Completeness needs injective tables: a constant table loses the information that propagation
 relies on, and `solve` may then miss a satisfying labelling (a counterexample is in the tests).
 The cost of the algorithm is analysed in
-`CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime`. This file does not show
-that `GapUniqueGames (Fin L) 1 s` is in `PromiseP` under the encoding of
-`Cslib.Complexity.UniqueGamesConjecture`; that wiring is not done.
+`CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime`, and `PromiseP`
+membership under the encoding of `Cslib.Complexity.UniqueGamesConjecture` is proved in
+`CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity`.
 
 ## References
 
@@ -673,7 +673,7 @@ private theorem scan_cons (labels : List α) (g : Graph (α → α)) {S : State 
   unfold scan; rw [h]
 
 /-- Scanning keeps the number of slots. -/
-private theorem length_scan (labels : List α) (g : Graph (α → α)) (S : State α) :
+theorem length_scan (labels : List α) (g : Graph (α → α)) (S : State α) :
     (scan labels g S).table.length = S.table.length := by
   unfold scan
   split
@@ -688,7 +688,7 @@ private theorem get_scan (labels : List α) (g : Graph (α → α)) {S : State �
   · exact foldl_visit_get labels _ hv
 
 /-- Repeated scanning keeps the number of slots. -/
-private theorem length_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) (S : State α) :
+theorem length_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) (S : State α) :
     ((scan labels g)^[k] S).table.length = S.table.length := by
   induction k with
   | zero => rfl
@@ -948,7 +948,7 @@ private theorem settle_get [Inhabited α] (labels : List α) (S : State α) (v :
 
 omit [DecidableEq α] in
 /-- Settling keeps the number of slots. -/
-private theorem settle_length [Inhabited α] (labels : List α) (S : State α) :
+theorem settle_length [Inhabited α] (labels : List α) (S : State α) :
     (settle labels S).table.length = S.table.length :=
   foldl_freeze_length _ _ _
 
@@ -1079,7 +1079,7 @@ private theorem step_src [Inhabited α] (labels : List α) (g : Graph (α → α
     rw [settle_isSome, get_iterate_scan labels g _ h1]; rfl
 
 /-- A step of the outer loop keeps the number of slots. -/
-private theorem length_step [Inhabited α] (labels : List α) (g : Graph (α → α)) (S : State α)
+theorem length_step [Inhabited α] (labels : List α) (g : Graph (α → α)) (S : State α)
     (e : Edge (α → α)) : (step labels g S e).table.length = S.table.length := by
   unfold step
   split
