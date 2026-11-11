@@ -5474,6 +5474,7 @@ public import CslibFrontier.Foundations.Probability.Multilinear.Invariance
 public import CslibFrontier.Foundations.Probability.ProductDensity
 public import CslibFrontier.Foundations.Probability.SecondMoment
 public import CslibFrontier.Foundations.Probability.SpectralPayment
+public import CslibFrontier.Foundations.Probability.TwoStage
 public import CslibFrontier.Foundations.Quantum.Bell
 public import CslibFrontier.Foundations.Quantum.Bipartite
 public import CslibFrontier.Foundations.Quantum.DensityMatrix

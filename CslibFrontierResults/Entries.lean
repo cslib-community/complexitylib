@@ -2708,7 +2708,7 @@ register_result "cikk-amp-reconstruction" where
     distribution with error 1/2 - gamma and success probability p, then the black-box reduction \
     that answers each of its queries with k queries to f, decodes its hypothesis with \
     Goldreich-Levin and then with the direct-product decoder learns C with error eps and \
-    success probability p delta0^2/8, where delta0 = gamma/2^(K+3), when 0 < K, \
+    success probability p delta0^2/8, where delta0 = gamma/2^(K+3), when \
     k <= 2 (gamma/2)^2 (2^K - 1), 2s <= k, s >= (64/eps) log(512/(eps delta0^2)) and \
     m >= (16/delta0) log(8/eps). Claim 4.4, the Goldreich-Levin step, is \
     dens_filter_glAmpCandidate_agree in HardnessAmplification/GLAmpDecode.lean, used in the \
@@ -2719,8 +2719,8 @@ register_result "cikk-amp-reconstruction" where
     constants are ours, and p delta0^2/8 >= p gamma^6/(10368 k^2) for the least admissible K; \
     (d) the four parameter conditions are hypotheses, where the source fixes \
     k = ceil(3c (1/eps) ln(1/gamma)) + 1. The size s of the direct-product set is an explicit \
-    argument, and the seed distribution needs k > 0. The hypotheses are not shown to be small \
-    circuits, and the running time of the learner is not certified."
+    argument, and the seed distribution needs k > 0 and s <= k. The circuit size of the \
+    hypotheses is not bounded here, and the running time of the learner is not certified."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
