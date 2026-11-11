@@ -394,8 +394,10 @@ lemma countdownStackSpec_foldl_acc (a : ℕ) (L' : List (List Bool)) :
       (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
       (countdownStackSpec.initAcc a)).total ≤ 2 ^ a := by
   have H : ∀ l acc, acc.total ≤ acc.cap →
-      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩) acc l).cap = acc.cap ∧
-      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩) acc l).total ≤ acc.cap := by
+      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
+        acc l).cap = acc.cap ∧
+      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
+        acc l).total ≤ acc.cap := by
     intro l
     induction l with
     | nil =>
@@ -450,9 +452,12 @@ lemma countdownStackSpec_stateBound (a i : ℕ) (hi : i ≤ countdownStackSpec.r
   have hcap := countdownStackSpec_foldl_acc a L'
   rw [← hacc] at hcap
   obtain ⟨hcap1, hcap2⟩ := hcap
-  have hlen_cap := CappedNatAcc.length_encCappedNatAcc_le_of_le_two_pow (by rw [hcap1]; exact hcap2) (by rw [hcap1])
-  have hlen_stack : (encList encNat ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).stack).length ≤ (a + 1) * (2 * (a + 1) + 1) + 1 := by
-    have h_enc_list := length_encList_le encNat ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).stack (b := a + 1) (by
+  have hlen_cap := CappedNatAcc.length_encCappedNatAcc_le_of_le_two_pow
+    (by rw [hcap1]; exact hcap2) (by rw [hcap1])
+  have hlen_stack : (encList encNat ((countdownStackSpec.step (fun _ => 1))^[i]
+    (countdownStackSpec.initState a)).stack).length ≤ (a + 1) * (2 * (a + 1) + 1) + 1 := by
+    have h_enc_list := length_encList_le encNat ((countdownStackSpec.step (fun _ => 1))^[i]
+      (countdownStackSpec.initState a)).stack (b := a + 1) (by
       intro x hx
       obtain ⟨w, hw1, hw2, hw3⟩ := helem x hx
       have hwalk : ∀ (s : ℕ) (w : List Bool), countdownBranching.walk s w ≤ s := by
