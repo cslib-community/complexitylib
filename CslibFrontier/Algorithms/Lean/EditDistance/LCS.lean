@@ -411,4 +411,54 @@ theorem isLeast_editDist_indel (x y : List α) :
   · rintro c ⟨s, -, rfl, rfl, rfl⟩
     exact editDist_le_cost Costs.indel s
 
+variable {α : Type*} [DecidableEq α]
+
+theorem lcsLength_le_length_left (x y : List α) : lcsLength x y ≤ x.length := by
+  obtain ⟨hx, -, h⟩ := lcs_spec x y
+  exact h ▸ hx.length_le
+
+theorem lcsLength_le_length_right' (x y : List α) : lcsLength x y ≤ y.length := by
+  obtain ⟨-, hy, h⟩ := lcs_spec x y
+  exact h ▸ hy.length_le
+
+theorem lcsLength_mono {x x' y y' : List α} (hx : x <+ x') (hy : y <+ y') :
+    lcsLength x y ≤ lcsLength x' y' := by
+  obtain ⟨h₁, h₂, h⟩ := lcs_spec x y
+  exact h ▸ length_le_lcsLength (h₁.trans hx) (h₂.trans hy)
+
+/-- Splitting the first argument splits the second: an optimal common subsequence of `x₁ ++ x₂`
+and `y` splits into common subsequences of `x₁, y₁` and `x₂, y₂` for some `y = y₁ ++ y₂`. -/
+theorem exists_lcsLength_append_le (x₁ x₂ y : List α) :
+    ∃ y₁ y₂, y = y₁ ++ y₂ ∧ lcsLength (x₁ ++ x₂) y ≤ lcsLength x₁ y₁ + lcsLength x₂ y₂ := by
+  obtain ⟨hx, hy, h⟩ := lcs_spec (x₁ ++ x₂) y
+  obtain ⟨z₁, z₂, hz, hz₁, hz₂⟩ := List.sublist_append_iff.mp hx
+  rw [hz] at hy
+  obtain ⟨y₁, y₂, rfl, hy₁, hy₂⟩ := List.append_sublist_iff.mp hy
+  refine ⟨y₁, y₂, rfl, ?_⟩
+  rw [← h, hz, List.length_append]
+  exact Nat.add_le_add (length_le_lcsLength hz₁ hy₁) (length_le_lcsLength hz₂ hy₂)
+
+theorem lcsLength_add_le_lcsLength_append (x₁ x₂ y₁ y₂ : List α) :
+    lcsLength x₁ y₁ + lcsLength x₂ y₂ ≤ lcsLength (x₁ ++ x₂) (y₁ ++ y₂) := by
+  obtain ⟨h₁, h₁', e₁⟩ := lcs_spec x₁ y₁
+  obtain ⟨h₂, h₂', e₂⟩ := lcs_spec x₂ y₂
+  rw [← e₁, ← e₂, ← List.length_append]
+  exact length_le_lcsLength (h₁.append h₂) (h₁'.append h₂')
+
+/-- Symbols that `x` lacks can be deleted from `y`. -/
+theorem lcsLength_filter_right (p : α → Bool) {x : List α} (hx : ∀ c ∈ x, p c) (y : List α) :
+    lcsLength x (y.filter p) = lcsLength x y := by
+  refine Nat.le_antisymm (lcsLength_mono (List.Sublist.refl x) List.filter_sublist) ?_
+  obtain ⟨h₁, h₂, h⟩ := lcs_spec x y
+  have : (lcs x y).filter p = lcs x y := List.filter_eq_self.mpr fun c hc => hx c (h₁.subset hc)
+  rw [← h]
+  exact length_le_lcsLength h₁ (this ▸ h₂.filter p)
+
+theorem lcsLength_replicate_left_le (n : ℕ) (c : α) (y : List α) :
+    lcsLength (List.replicate n c) y ≤ y.count c := by
+  obtain ⟨h₁, h₂, h⟩ := lcs_spec (List.replicate n c) y
+  obtain ⟨k, -, hk⟩ := List.sublist_replicate_iff.mp h₁
+  rw [← h, hk, List.length_replicate]
+  exact List.replicate_sublist_iff.mp (hk ▸ h₂)
+
 end Cslib.Algorithms.Lean.EditDistance

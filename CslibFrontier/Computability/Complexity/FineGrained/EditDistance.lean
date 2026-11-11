@@ -21,15 +21,15 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Fun
 # Orthogonal vectors hardness of edit distance
 
 This module formalizes the reduction from the orthogonal vectors problem to the edit distance
-problem by Backurs and Indyk [BackursIndyk2015], derived cleanly via the LCS reduction by Abboud,
-Backurs, and Vassilevska Williams [AbboudBackursVassilevskaWilliams2015].
+problem by Backurs and Indyk \[BackursIndyk2015\], derived cleanly via the LCS reduction by Abboud,
+Backurs, and Vassilevska Williams \[AbboudBackursVassilevskaWilliams2015\].
 
 ## Main definitions
 * `Cslib.Complexity.OV.toEditDistance`: the reduction to edit distance.
 
 ## References
 * [A. Backurs, P. Indyk, *Edit Distance Cannot Be Computed in Strongly Subquadratic
-  Time*][BackursIndyk2015]
+  Time*]\[BackursIndyk2015\]
 -/
 
 public section
@@ -55,10 +55,10 @@ theorem exists_computableInO_toEditDistance :
 
 -- We need the true mathematical gap theorem using editDist_indel_add_two_mul
 theorem Edit.editDist_P1_P2 (d : Nat) (A B : List (List Bool)) :
-    editDist Costs.indel (LCS.P1 d A) (LCS.P2 d A B) =
-      (LCS.P1 d A).length + (LCS.P2 d A B).length -
-        2 * lcsLength (LCS.P1 d A) (LCS.P2 d A B) := by
-  have hlen := editDist_indel_add_two_mul (LCS.P1 d A) (LCS.P2 d A B)
+    editDist Costs.indel (LCS.P1 d A) (LCS.P2 d B) =
+      (LCS.P1 d A).length + (LCS.P2 d B).length -
+        2 * lcsLength (LCS.P1 d A) (LCS.P2 d B) := by
+  have hlen := editDist_indel_add_two_mul (LCS.P1 d A) (LCS.P2 d B)
   omega
 
 theorem not_decidableInTimeO_editDist_of_OVH (hOVH : OVH) {ε : ℝ} (hε : 0 < ε)

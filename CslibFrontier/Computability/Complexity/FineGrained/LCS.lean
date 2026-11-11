@@ -11,7 +11,8 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 public import CslibFrontier.Algorithms.Lean.EditDistance.LCS
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import CslibFrontier.Computability.Complexity.FineGrained.Diameter
+public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 
 /-!
@@ -19,7 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Fun
 
 This module reduces the orthogonal vectors problem to the longest common subsequence problem,
 following the gadget approach of Abboud, Backurs and Vassilevska Williams
-[AbboudBackursVassilevskaWilliams2015]. Each vector becomes a block whose `s0` and `s2` runs of
+\[AbboudBackursVassilevskaWilliams2015\]. Each vector becomes a block whose `s0` and `s2` runs of
 length `LCS.M d = 10 d + 10` prevent profitable matches across blocks. The second string pads
 the vector blocks of `B` with `B.length` dummy blocks on each side, separated by `s3` runs.
 
@@ -41,16 +42,18 @@ The upper bound charges each symbol of a common subsequence either to a block of
 
 ## References
 * [A. Abboud, A. Backurs, V. Vassilevska Williams, *Tight Hardness Results for LCS and Other
-  Sequence Similarity Measures*][AbboudBackursVassilevskaWilliams2015]
+  Sequence Similarity Measures*]\[AbboudBackursVassilevskaWilliams2015\]
 -/
 public section
 
 open scoped List
 
 namespace Cslib.Complexity.OV
+open Diameter
 
 open Cslib.Algorithms.Lean.EditDistance
 open Cslib.Complexity
+open Diameter
 open Turing.MultiTapeTM
 
 /-- The seven-letter alphabet of the reduction: `s0`, `s2` bound blocks, `s1` pads the vector
@@ -1218,107 +1221,6 @@ theorem LCS.lcsLength_P1_P2 (d N : Nat) (A B : List (List Bool))
 @[expose] def toLCS (p : List (List Bool) × List (List Bool)) : List LCSSymbol × List LCSSymbol :=
   (LCS.P1 (OV.dim p) p.1, LCS.P2 (OV.dim p) p.2)
 
-/-- The first list of an instance, with the second replaced by `[]`. -/
-/-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
--/
-
-module
--- upstream: candidate
-
-public import CslibFrontier.Init
-public import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
-public import CslibFrontier.Algorithms.Lean.EditDistance.LCS
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
-public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
-
-
-/-!
-# Orthogonal vectors hardness of longest common subsequence
-
-This module formalizes the reduction from the orthogonal vectors problem to the longest common
-subsequence problem by Abboud, Backurs, and Vassilevska Williams
-[AbboudBackursVassilevskaWilliams2015].
-
-## Main definitions
-* `Cslib.Complexity.OV.toLCS`: the reduction to LCS.
-
-## Main results
-* `Cslib.Complexity.OV.lcsLength_toLCS`: the gap characterization.
-
-## References
-* [A. Abboud, A. Backurs, V. Vassilevska Williams, *Tight Hardness Results for LCS
-  and Other Sequence Similarity Measures*][AbboudBackursVassilevskaWilliams2015]
--/
-
-public section
-
-namespace Cslib.Complexity.OV
-
-open Cslib.Algorithms.Lean.EditDistance
-open Cslib.Complexity
-open Diameter
-open Turing.MultiTapeTM
-
-inductive LCSSymbol | s0 | s1 | s2 | s3 | s4 | s5 | s6
-  deriving DecidableEq, Repr, Inhabited
-
-open LCSSymbol
-
-@[expose] def encLCSSymbol : LCSSymbol ↪ List Bool :=
-  ⟨fun
-    | s0 => [false, false, false]
-    | s1 => [false, false, true]
-    | s2 => [false, true, false]
-    | s3 => [false, true, true]
-    | s4 => [true, false, false]
-    | s5 => [true, false, true]
-    | s6 => [true, true, false],
-   by intro x y h; revert h; cases x <;> cases y <;> decide⟩
-
-@[expose] def LCS.CG1 (u : Bool) : List LCSSymbol := if u then [s5, s4, s5] else [s5, s4, s6, s5]
-@[expose] def LCS.CG2 (v : Bool) : List LCSSymbol := if v then [s5, s6, s5] else [s5, s6, s4, s5]
-
-@[expose] def LCS.R1 (a : List Bool) : List LCSSymbol := (a.map CG1).flatten
-@[expose] def LCS.R2 (b : List Bool) : List LCSSymbol := (b.map CG2).flatten
-
-@[expose] def LCS.W (d : Nat) : Nat := 3 * d - 1
-
-@[expose] def LCS.VG1 (d : Nat) (a : List Bool) : List LCSSymbol := List.replicate (W d) s1 ++ R1 a
-@[expose] def LCS.VG2 (d : Nat) (b : List Bool) : List LCSSymbol := R2 b ++ List.replicate (W d) s1
-
-@[expose] def LCS.VG1' (d : Nat) (a : List Bool) : List LCSSymbol := [s0] ++ VG1 d a ++ [s2]
-@[expose] def LCS.VG2' (d : Nat) (b : List Bool) : List LCSSymbol := [s0] ++ VG2 d b ++ [s2, s3]
-
-@[expose] def LCS.f (d : Nat) : List Bool := List.replicate d true
-
-@[expose] def LCS.P1 (d : Nat) (A : List (List Bool)) : List LCSSymbol :=
-  let L := 3 * A.length
-  List.replicate L s3 ++ (A.map (VG1' d)).flatten ++ List.replicate L s3
-
-@[expose] def LCS.P2 (d : Nat) (A B : List (List Bool)) : List LCSSymbol :=
-  let dummy := (List.replicate A.length (f d)).map (VG2' d)
-  [s3] ++ dummy.flatten ++ (B.map (VG2' d)).flatten ++ dummy.flatten
-
-theorem lcsLength_CG1_CG2_true_true : lcsLength (LCS.CG1 true) (LCS.CG2 true) = 2 := by decide
-theorem lcsLength_CG1_CG2_true_false : lcsLength (LCS.CG1 true) (LCS.CG2 false) = 3 := by decide
-theorem lcsLength_CG1_CG2_false_true : lcsLength (LCS.CG1 false) (LCS.CG2 true) = 3 := by decide
-theorem lcsLength_CG1_CG2_false_false : lcsLength (LCS.CG1 false) (LCS.CG2 false) = 3 := by decide
-
-theorem lcsLength_CG1_CG2 (u v : Bool) :
-    lcsLength (LCS.CG1 u) (LCS.CG2 v) = if u ∧ v then 2 else 3 := by
-  cases u <;> cases v <;> decide
-
-
-@[expose] def toLCS (p : List (List Bool) × List (List Bool)) : List LCSSymbol × List LCSSymbol :=
-  (LCS.P1 (dim p) p.1, LCS.P2 (dim p) p.1 p.2)
-
-
-
 /-- it reads the marker of a bit of the outer frame of `A` (or the first bit of `encOV`),
 whether the bit it reads is a frame marker, the coordinate of the current bit, and the number
 of the current vector. -/
@@ -1328,25 +1230,42 @@ abbrev LCSParseState : Type := (((Bool × Bool) × Bool) × ℕ) × ℕ
 abbrev encLCSParseState : LCSParseState ↪ List Bool :=
   encPair (encPair (encPair (encPair encBool encBool) encBool) encNat) encNat
 
+namespace LIn
+
+abbrev s1 (p : LCSParseState × Bool) := p.1.1.1.1.1
+abbrev s2 (p : LCSParseState × Bool) := p.1.1.1.1.2
+abbrev marker (p : LCSParseState × Bool) := p.1.1.1.2
+abbrev coord (p : LCSParseState × Bool) := p.1.1.2
+abbrev vec (p : LCSParseState × Bool) := p.1.2
+abbrev bit (p : LCSParseState × Bool) := p.2
+
+end LIn
+
 /-- A round of the parser, reading one bit. In the first list each bit `c` of the inner frames
 comes as `[true, c]` in the outer frame, and the first unmarked bit ends the first list. In the
 inner frames, a marker `true` announces a bit of the vector and `false` ends the vector. -/
 def lcsParseStep (p : LCSParseState × Bool) : LCSParseState :=
-  if !p.1.1.1.1.1 && !p.1.1.1.1.2 then
-    if p.2 then ((((false, true), p.1.1.1.2), p.1.1.2), p.1.2)
-    else ((((true, false), false), p.1.1.2), p.1.2)
-  else if p.1.1.1.2 then ((((p.1.1.1.1.1, false), false), p.1.1.2 + 1), p.1.2)
-  else if p.2 then ((((p.1.1.1.1.1, false), true), p.1.1.2), p.1.2)
-  else ((((p.1.1.1.1.1, false), false), 0), p.1.2 + 1)
+  if !LIn.s1 p && !LIn.s2 p then
+    if LIn.bit p then
+      ((((false, true), LIn.marker p), LIn.coord p), LIn.vec p)
+    else
+      ((((true, false), false), LIn.coord p), LIn.vec p)
+  else if LIn.marker p then
+    ((((LIn.s1 p, false), false), LIn.coord p + 1), LIn.vec p)
+  else if LIn.bit p then
+    ((((LIn.s1 p, false), true), LIn.coord p), LIn.vec p)
+  else
+    ((((LIn.s1 p, false), false), 0), LIn.vec p + 1)
 
 /-- The output of a round of the parser: `f k i b` for the bit `b` of coordinate `i` of the vector
 numbered `k`, and `g s k` at the end of the vector numbered `k` of the list `s`. -/
 def lcsParseEmit {β : Type} (f : ℕ → ℕ → Bool → List β) (g : Bool → ℕ → List β)
     (p : LCSParseState × Bool) : List β :=
-  if !p.1.1.1.1.1 && !p.1.1.1.1.2 then []
-  else if p.1.1.1.2 then f p.1.2 p.1.1.2 p.2
-  else if p.2 then []
-  else g p.1.1.1.1.1 p.1.2
+  if !LIn.s1 p && !LIn.s2 p then []
+  else if LIn.marker p then
+    f (LIn.vec p) (LIn.coord p) (LIn.bit p)
+  else if LIn.bit p then []
+  else g (LIn.s1 p) (LIn.vec p)
 
 /-- **One pass of the parser** over a list of bits, from a state. -/
 def lcsParseRun {β : Type} (f : ℕ → ℕ → Bool → List β) (g : Bool → ℕ → List β) :
@@ -1437,7 +1356,7 @@ end Stream
 /-- A round increases the coordinate plus the vector number by at most one. -/
 private theorem lcsParseStep_le (s : LCSParseState) (b : Bool) :
     (lcsParseStep (s, b)).1.2 + (lcsParseStep (s, b)).2 ≤ s.1.2 + s.2 + 1 := by
-  unfold lcsParseStep
+  unfold lcsParseStep LIn.s1 LIn.s2 LIn.marker LIn.coord LIn.vec LIn.bit
   split_ifs <;> simp only <;> omega
 
 /-- The coordinate plus the vector number grow by at most the number of rounds. -/
@@ -1626,31 +1545,4 @@ theorem computableInPolyTime_toLCS :
     ComputableInPolyTime toLCS encOV (encPair (encList encLCSSymbol) (encList encLCSSymbol)) := by
   sorry
 
-def extractA (p : List (List Bool) × List (List Bool)) : List (List Bool) × List (List Bool) :=
-  (p.1, [])
-/-- The second list of an instance, with the first replaced by `[]`. -/
-def extractB (p : List (List Bool) × List (List Bool)) : List (List Bool) × List (List Bool) :=
-  ([], p.2)
-
-theorem comp_extractA : ComputableInO extractA encOV encOV
-  (fun p => (encOV p).length + 1) (fun p => (encOV p).length + 1) := by
-  have id : ComputableInO (fun p : _ × _ => p) encOV encOV _ _ :=
-    ComputableInO.of_linear (.of_eq fun _ => rfl)
-  have fst : ComputableInO (fun p : _ × _ => p.1) encOV (encList encBits) _ _ :=
-    ComputableInO.fst' (enc₁ := encList encBits) (enc₂ := encList encBits) id
-  have nil : ComputableInO (fun p : _ × _ => ([] : List (List Bool))) encOV (encList encBits) _ _ :=
-    ComputableInO.const []
-  have pair := ComputableInO.prod fst nil
-  exact pair.mono 2 (fun p => by omega) (fun p => by omega)
-
-theorem comp_extractB : ComputableInO extractB encOV encOV
-  (fun p => (encOV p).length + 1) (fun p => (encOV p).length + 1) := by
-  have id : ComputableInO (fun p : _ × _ => p) encOV encOV _ _ :=
-    ComputableInO.of_linear (.of_eq fun _ => rfl)
-  have snd : ComputableInO (fun p : _ × _ => p.2) encOV (encList encBits) _ _ :=
-    ComputableInO.snd' (enc₁ := encList encBits) (enc₂ := encList encBits) id
-  have nil : ComputableInO (fun p : _ × _ => ([] : List (List Bool))) encOV (encList encBits) _ _ :=
-    ComputableInO.const []
-  have pair := ComputableInO.prod nil snd
-  exact pair.mono 2 (fun p => by omega) (fun p => by omega)
 end Cslib.Complexity.OV
