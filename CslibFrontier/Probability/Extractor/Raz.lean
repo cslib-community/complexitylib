@@ -55,7 +55,6 @@ def razExtractor (M : Y → Matrix ι ι (ZMod 2)) (x : (ι → ZMod 2) × (ι �
 
 /-- The statement that Raz's extractor is a two-source extractor.
 Defined as a `Prop` to avoid `sorry` before the proof is complete. -/
-
 theorem dist_bind_map_eq_abs_bias (p : PMF ((ι → ZMod 2) × (ι → ZMod 2))) (q : PMF Y)
     (M : Y → Matrix ι ι (ZMod 2)) :
     dist (p.bind (fun x => q.map (fun y => decide (razExtractor M x y = 1))))
@@ -63,7 +62,8 @@ theorem dist_bind_map_eq_abs_bias (p : PMF ((ι → ZMod 2) × (ι → ZMod 2)))
     |∑ x, (p x).toReal * ∑ y, (q y).toReal * (-1 : ℝ) ^ (razExtractor M x y).val| / 2 := by
   rw [dist_uniformOfFintype_bool]
   have h1 : (p.bind (fun x => q.map (fun y => decide (razExtractor M x y = 1))) true).toReal =
-      ∑ x, (p x).toReal * ∑ y, if decide (razExtractor M x y = 1) = true then (q y).toReal else 0 := by
+      ∑ x, (p x).toReal * ∑ y, if decide (razExtractor M x y = 1) = true
+          then (q y).toReal else 0 := by
     rw [PMF.bind_apply_toReal]
     refine sum_congr rfl fun x _ => ?_
     rw [PMF.map_apply_toReal]
@@ -74,7 +74,8 @@ theorem dist_bind_map_eq_abs_bias (p : PMF ((ι → ZMod 2) × (ι → ZMod 2)))
         then (q y).toReal else 0 := by
     calc ∑ x, (p x).toReal * ∑ y, (q y).toReal * (-1 : ℝ) ^ (razExtractor M x y).val
       _ = ∑ x, (p x).toReal * ∑ y,
-          ((q y).toReal - 2 * (if decide (razExtractor M x y = 1) = true then (q y).toReal else 0)) := by
+          ((q y).toReal - 2 *
+            (if decide (razExtractor M x y = 1) = true then (q y).toReal else 0)) := by
         refine sum_congr rfl fun x _ => ?_
         congr 1
         refine sum_congr rfl fun y _ => ?_
