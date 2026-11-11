@@ -38,15 +38,16 @@ per layer, at most `j + 1` oracle gates on any path, and fan-in at most the head
 `max (2 ^ (n - j k)) (2 ^ k · W)`.
 
 The McKay–Murray–Williams parameters (`Cslib.MCSP.MergeTree.mmwCircuit`) take `k = ⌊log₂ s⌋`
-and as many levels as leave every leaf at least `s ³ / 8` points. For `2 ≤ s` and `n ≤ s` the
-circuit has, with `N = 2 ^ n`, `O(N / s)` oracle gates and gates, fan-in `O(s ⁴)` and adaptivity
-`O(n / log s)`: it is an `[O(N / s), O(s ⁴), O(n / log s)]–Circuit[O(N / s)]` circuit for
-`MCSP[s]`. The \[MMW19\] bullet of
-[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Proposition 63] asks for
+and as many levels as leave every leaf at least `2 ^ (3 k) > s ³ / 8` points (when `3 k ≤ n`;
+otherwise the circuit is a single leaf). For `2 ≤ s` and `n ≤ s`, with `N = 2 ^ n`, the circuit
+has at most `1 + 128 N / s` oracle gates, at most `3 + 129 N / s` gates, fan-in at most `12 s ⁴`
+and adaptivity at most `n / ⌊log₂ s⌋ + 1`. The gate counts are `O(N / s)` once `s ≤ N`, which
+holds in the bullet's regime `s ≤ N / poly(n)`. So it is an
+`[O(N / s), O(s ⁴), O(n / log s)]–Circuit[O(N / s)]` circuit for `MCSP[s]`. The \[MMW19\] bullet
+of [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Proposition 63] asks for
 `[O(N / poly(s)), poly(s), O(n / log s)]–Circuit[N / poly(s)]`; this is `poly(s) = s` in the
-counts and `s ⁴` in the fan-in. The gate bound carries an additive `O(s n)` for the constant
-gates, which is `O(N / s)` in the bullet's regime `s ≤ N / poly(n)`. The oracle is the derived
-merge-tree oracle; as Definition 62 allows, no bound on its complexity is claimed.
+counts and `s ⁴` in the fan-in. The oracle is the derived merge-tree oracle; as Definition 62
+allows, no bound on its complexity is claimed.
 
 ## Main definitions
 
@@ -314,8 +315,9 @@ theorem fanInAtMost_circuit {n s k j : ℕ} (hjk : j * k ≤ n) :
 /-! ### The McKay–Murray–Williams parameters -/
 
 /-- The number of merge levels of the McKay–Murray–Williams tree for `MCSP[s]`: with
-`k = ⌊log₂ s⌋` bits per level, the largest `m` with `m k ≤ n - 3 k`, so that each leaf reads
-`2 ^ (n - m k) ≥ s ^ 3 / 8` table bits. It is `0` when `s ≤ 1`. -/
+`k = ⌊log₂ s⌋` bits per level, the largest `m` with `m k ≤ n - 3 k`. When `3 k ≤ n`, each leaf
+then reads `2 ^ (n - m k) ≥ 2 ^ (3 k) > s ^ 3 / 8` table bits; otherwise `m = 0` and the single
+leaf reads all `2 ^ n`. It is `0` when `s ≤ 1`. -/
 def mmwLevels (n s : ℕ) : ℕ := (n - 3 * Nat.log 2 s) / Nat.log 2 s
 
 /-- **The McKay–Murray–Williams circuit for `MCSP[s]`**: `mmwLevels n s` merge levels of
@@ -389,23 +391,40 @@ theorem mul_cost_program_mmwCircuit_le {n s : ℕ} (hns : n ≤ s) :
     _ = 128 * (2 ^ (m * k) * 2 ^ (3 * k)) := by ring
     _ ≤ 128 * 2 ^ n := Nat.mul_le_mul_left _ hpow
 
-/-- **Gates of the McKay–Murray–Williams circuit**: `s · size ≤ 128 · 2 ^ n + s (2 n + 3)` when
-`n ≤ s`. The second term counts the two constant gates per layer; it is `O(2 ^ n)` in the regime
-`s ≤ 2 ^ n / n` of [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Proposition 63]. -/
+/-- The constant gates of the McKay–Murray–Williams circuit beyond the root are few:
+`2 s m ≤ 2 ^ n` for `m = mmwLevels n s`, since `s < 2 ^ (k + 1)`, `m < 2 ^ (m k)` and
+`m k + k + 2 ≤ n` when `m ≥ 1`. -/
+private theorem two_mul_mul_mmwLevels_le (n s : ℕ) : 2 * (s * mmwLevels n s) ≤ 2 ^ n := by
+  rcases Nat.eq_zero_or_pos (mmwLevels n s) with hm | hm
+  · simp [hm]
+  have hk : 0 < Nat.log 2 s := Nat.pos_of_ne_zero fun hk => by
+    simp [mmwLevels_eq_zero_of_log_eq_zero hk] at hm
+  have hspec := (mmwLevels_spec n s).1
+  have hsk : s ≤ 2 ^ (Nat.log 2 s + 1) := (Nat.lt_pow_succ_log_self (by norm_num) s).le
+  generalize Nat.log 2 s = k at *
+  generalize mmwLevels n s = m at *
+  have hmk : k ≤ m * k := Nat.le_mul_of_pos_left _ hm
+  have hm2 : m ≤ 2 ^ (m * k) :=
+    Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_right (by norm_num) (Nat.le_mul_of_pos_right _ hk))
+  calc 2 * (s * m) ≤ 2 * (2 ^ (k + 1) * 2 ^ (m * k)) :=
+        Nat.mul_le_mul_left _ (Nat.mul_le_mul hsk hm2)
+    _ = 2 ^ (m * k + k + 2) := by ring
+    _ ≤ 2 ^ n := Nat.pow_le_pow_right (by norm_num) (by omega)
+
+/-- **Gates of the McKay–Murray–Williams circuit**: `O(N / s)`, namely
+`s · size ≤ 129 · 2 ^ n + 3 s`, when `n ≤ s`: the oracle gates, and two constant gates per layer.
+-/
 theorem mul_size_mmwCircuit_le {n s : ℕ} (hns : n ≤ s) :
-    s * (mmwCircuit n s).size ≤ 128 * 2 ^ n + s * (2 * n + 3) := by
+    s * (mmwCircuit n s).size ≤ 129 * 2 ^ n + 3 * s := by
   have hc := mul_cost_program_mmwCircuit_le hns
-  have hm : mmwLevels n s ≤ n := by
-    rcases Nat.eq_zero_or_pos (Nat.log 2 s) with hk | hk
-    · simp [mmwLevels_eq_zero_of_log_eq_zero hk]
-    · exact (Nat.le_mul_of_pos_right _ hk).trans (mmwLevels_mul_le n s)
+  have hm := two_mul_mul_mmwLevels_le n s
   have hsize : (mmwCircuit n s).size =
       (mmwCircuit n s).program.cost OracleOp.queryWeight + 2 * (mmwLevels n s + 1) := by
     rw [mmwCircuit, cost_program_circuit, size_circuit]
-  rw [hsize, Nat.mul_add]
+  rw [hsize]
   generalize (mmwCircuit n s).program.cost OracleOp.queryWeight = q at *
-  have h2 : s * (2 * (mmwLevels n s + 1)) ≤ s * (2 * n + 2) := Nat.mul_le_mul_left _ (by omega)
-  have h3 : s * (2 * n + 3) = s * (2 * n + 2) + s := by ring
+  have h2 : s * (q + 2 * (mmwLevels n s + 1)) = s * q + 2 * (s * mmwLevels n s) + 2 * s := by
+    ring
   omega
 
 /-- **Adaptivity of the McKay–Murray–Williams circuit**: at most `n / ⌊log₂ s⌋ + 1` oracle gates
