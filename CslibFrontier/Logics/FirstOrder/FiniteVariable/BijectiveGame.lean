@@ -50,7 +50,8 @@ structures, is in `CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintik
 ## Main results
 
 * `Cslib.Logic.FO.BijPebbleWins.mono`, `Cslib.Logic.FO.BijPebbleWins.of_subset`,
-  `Cslib.Logic.FO.bijPebbleWins_congr`: monotonicity and independence of unplaced pebbles.
+  `Cslib.Logic.FO.bijPebbleWins_congr`, `Cslib.Logic.FO.bijPebbleWins_comp_equiv_iff`: monotonicity,
+  independence of unplaced pebbles, and pebble reindexing.
 * `Cslib.Logic.FO.BijPebbleWins.refl`, `Cslib.Logic.FO.BijPebbleWins.symm`,
   `Cslib.Logic.FO.BijPebbleWins.trans`, `FirstOrder.Language.Equiv.bijPebbleWins`: the
   equivalence-relation laws and invariance under isomorphism.
@@ -153,6 +154,33 @@ theorem bijPebbleWins_congr :
   | _ + 1, _, _, _, _, _, ha, hb, h => bijPebbleWins_succ.2 ⟨h.partialIsoOn.congr ha hb,
       fun i => (h.move i).imp fun f hf c =>
         bijPebbleWins_congr (ha.update_insert i c) (hb.update_insert i (f c)) (hf c)⟩
+
+private theorem preimage_insert_equiv {k' : ℕ} (σ : Fin k' ≃ Fin k) (i : Fin k')
+    (S : Set (Fin k)) : insert i (σ ⁻¹' S) = σ ⁻¹' insert (σ i) S := by
+  ext j
+  simp only [Set.mem_insert_iff, Set.mem_preimage, σ.injective.eq_iff]
+
+private theorem update_comp_equiv {α : Type*} {k' : ℕ} (σ : Fin k' ≃ Fin k) (a : Fin k → α)
+    (i : Fin k') (c : α) : Function.update (a ∘ σ) i c = Function.update a (σ i) c ∘ σ := by
+  ext j
+  by_cases h : j = i
+  · subst h
+    simp only [Function.update_self, Function.comp_apply]
+  · simp only [Function.update_of_ne h, Function.comp_apply,
+      Function.update_of_ne (σ.injective.ne h)]
+
+/-- Reindexing pebble names along a bijection preserves winning positions of the bijective game. -/
+theorem bijPebbleWins_comp_equiv_iff {k' : ℕ} (σ : Fin k' ≃ Fin k) :
+    ∀ {n : ℕ} {S : Set (Fin k)} {a : Fin k → M} {b : Fin k → N},
+      BijPebbleWins L n (σ ⁻¹' S) (a ∘ σ) (b ∘ σ) ↔ BijPebbleWins L n S a b
+  | 0, _, _, _ => by
+    rw [bijPebbleWins_zero, bijPebbleWins_zero, partialIsoOn_comp_equiv_iff]
+  | _ + 1, _, _, _ => by
+    rw [bijPebbleWins_succ, bijPebbleWins_succ, partialIsoOn_comp_equiv_iff]
+    refine and_congr Iff.rfl (σ.forall_congr fun i => exists_congr fun f =>
+      forall_congr' fun c => ?_)
+    rw [preimage_insert_equiv, update_comp_equiv, update_comp_equiv,
+      bijPebbleWins_comp_equiv_iff σ]
 
 theorem BijPebbleWins.refl : ∀ (n : ℕ) (S : Set (Fin k)) (a : Fin k → M), BijPebbleWins L n S a a
   | 0, S, a => bijPebbleWins_zero.2 (PartialIsoOn.refl S a)
