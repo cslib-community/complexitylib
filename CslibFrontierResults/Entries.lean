@@ -2118,7 +2118,7 @@ register_result "nw-reconstruction-learner" where
     nw-reconstruction-best-of."
 
 register_result "nw-reconstruction-best-of" where
-  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning from a dense test that avoids the \
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning from a distinguisher for the \
     Nisan–Wigderson generator"
   topic := "meta-complexity"
   sources := [
@@ -2126,18 +2126,22 @@ register_result "nw-reconstruction-best-of" where
       locator := "p. 10:9" }
   ]
   theorems := [
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns,
     Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns_of_dens,
     Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_queriesAtMost,
     Cslib.MachineLearning.UniformLearning.complexity_eval_bestOf_nwLearner_le
   ]
   scope := "Theorem 2.11 in a library form. For an (l, n, a)-design with m > 0 blocks and a \
-    deterministic test accepting at least a delta > 0 fraction of m-bit strings but no output \
-    of the generator of any f in the class, best-of-k selection on t uniform sample points over \
-    the reconstruction learner built from the negated test learns the class under the uniform \
-    distribution with membership queries, error 1/2 - delta/(4m) and confidence 1 - eta, when \
-    log(2/eta) <= (delta/(2m)) k and 8 log(4k/eta) <= t (delta/(2m))^2. Any delta replaces the \
-    source's advantage above 1/5, error 1/2 - delta/(4m) replaces 1/2 - 1/L (the source's L is \
-    the output length m), and explicit k and t replace poly(L). It makes at most k m 2^a + t \
+    deterministic test that accepts outputs of the generator of each f in the class with \
+    probability at least eps > 0 more than uniform m-bit strings, best-of-k selection on t \
+    uniform sample points over the reconstruction learner built from the test learns the class \
+    under the uniform distribution with membership queries, error 1/2 - eps/(4m) and confidence \
+    1 - eta, when eps/(2m) <= 1, log(2/eta) <= (eps/(2m)) k and 8 log(4k/eta) <= t (eps/(2m))^2. \
+    Any advantage eps > 0 replaces the source's advantage above 1/5, error 1/2 - eps/(4m) \
+    replaces 1/2 - 1/L (the source's L is the output length m), and explicit k and t replace \
+    poly(L). bestOf_nwLearner_learns_of_dens is the natural-property special case: a test \
+    accepting at least a delta > 0 fraction of m-bit strings but no generator output, used \
+    through its negation, which has advantage at least delta. It makes at most k m 2^a + t \
     queries, and every hypothesis has the De Morgan circuit bound of one run. The running time \
     of the learner is not certified."
 
