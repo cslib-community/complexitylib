@@ -80,7 +80,6 @@ theorem lsbIndex_cons (d x : ℕ) (xs : List ℕ) :
     lsbIndex d (x :: xs) = x + d * lsbIndex d xs := rfl
 
 /-- Evaluating `lsbIndex` on an all-zero coordinate tuple yields `0`. -/
-@[simp]
 theorem lsbIndex_map_zero {V : Type*} (d : ℕ) : ∀ xs : List V,
     lsbIndex d (xs.map fun _ => 0) = 0
   | [] => rfl
