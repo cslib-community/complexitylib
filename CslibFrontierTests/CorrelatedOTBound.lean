@@ -506,7 +506,7 @@ private theorem beaver_priv0 :
           let out : (i : Fin 2) → beaverOut i :=
             Fin.cases s (fun _ j => (c j, otSelect (s j) (c j)))
           (v0, out) := by
-    dsimp only [idealCorrelatedJoint, idealROT, beaverSim]
+    dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, idealROT, beaverSim]
     simp only [Finset.mem_singleton, one_ne_zero, ↓reduceDIte,
       ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
       PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def, Finset.restrict, Fin.cases_zero]
@@ -712,7 +712,7 @@ private theorem beaver_priv1 :
           let out : (i : Fin 2) → beaverOut i :=
             Fin.cases s (fun _ j => (c j, otSelect (s j) (c j)))
           (v1, out) := by
-    dsimp only [idealCorrelatedJoint, idealROT, beaverSim,
+    dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, idealROT, beaverSim,
       Finset.restrict]
     simp only [Finset.mem_singleton, zero_ne_one, ↓reduceDIte,
       ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
@@ -796,7 +796,7 @@ theorem beaverOTProtocol_private :
     PerfectSemiHonestPrivateProperOverSource beaverOTProtocol deal211 (idealROT 1) beaverSim := by
   have hOutEq : (realCorrelated beaverOTProtocol deal211).map Prod.snd = idealROT 1 := by
     have h := congrArg (PMF.map Prod.snd) beaver_priv0
-    dsimp only [idealCorrelatedJoint, realCorrelatedJoint] at h
+    dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, realCorrelatedJoint] at h
     rw [PMF.map_bind, PMF.map_comp] at h
     have hconst : ∀ {α β : Type} (p : PMF α) (b : β),
         PMF.map (fun _ => b) p = PMF.pure b := fun p b => PMF.map_const p b
@@ -807,7 +807,7 @@ theorem beaverOTProtocol_private :
     revert I hI
     decide
   rcases hI_cases with rfl | rfl | rfl
-  · dsimp only [idealCorrelatedJoint, realCorrelatedJoint, beaverSim]
+  · dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, realCorrelatedJoint, beaverSim]
     rw [← hOutEq, PMF.bind_map]
     simp only [Finset.notMem_empty, ↓reduceDIte, ProbComp.eval_pure,
       PMF.pure_map, Function.comp_def]

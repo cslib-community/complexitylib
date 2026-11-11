@@ -42,7 +42,7 @@ Rudolf Ahlswede and Imre Csiszár. "Common Randomness in Information Theory and 
 <a id="ahlswedecsiszar07"></a>
 ## ahlswedecsiszar07
 
-Rudolf Ahlswede and Imre Csiszár. "On Oblivious Transfer Capacity." ISIT 2007, Nice, France, pp. 2061--2064, https://doi.org/10.1109/ISIT.2007.4557524. Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8). Used for the asymptotic single-choice-bit string-OT bound (which the Lean formalization adapts to finite exact batch-bit OT with independent choices).
+Rudolf Ahlswede and Imre Csiszár. "On Oblivious Transfer Capacity." ISIT 2007, Nice, France, pp. 2061–2064, https://doi.org/10.1109/ISIT.2007.4557524, https://www.math.uni-bielefeld.de/ahlswede/homepage/public/242.pdf. Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8). Used for the asymptotic single-choice-bit string-OT bound (which the Lean formalization adapts to finite exact batch-bit OT with independent choices).
 
 <a id="aik11"></a>
 ## aik11

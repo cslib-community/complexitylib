@@ -812,7 +812,8 @@ theorem rot_le_mutualInfo
     have hmem : (({0} : Finset (Fin 2)).restrict views, out) ∈
         (realCorrelatedJoint proto source {0}).support :=
       (PMF.mem_support_map_iff _ _ _).mpr ⟨(views, out), hω, rfl⟩
-    rw [← hPriv0, idealCorrelatedJoint, PMF.mem_support_bind_iff] at hmem
+    rw [← hPriv0, idealCorrelatedJoint, semanticIdealCorrelatedJoint,
+        PMF.mem_support_bind_iff] at hmem
     obtain ⟨y, hy, hres⟩ := hmem
     rw [PMF.mem_support_map_iff] at hres
     obtain ⟨_, _, hy_eq⟩ := hres
@@ -842,7 +843,8 @@ theorem rot_le_mutualInfo
             (PMF.uniformOfFintype (Fin k → Bool)).map fun ch =>
               (v0, Fin.cases (motive := fun _ => Fin k → Bool × Bool) sb
                 (fun _ j => (ch j, otSelect (sb j) (ch j)))) := by
-      rw [idealCorrelatedJoint, idealROT, ← uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind]
+      rw [idealCorrelatedJoint, semanticIdealCorrelatedJoint,
+        idealROT, ← uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind]
       congr 1 with sb : 1
       rw [PMF.bind_map]
       dsimp only [Function.comp_def]
@@ -948,7 +950,8 @@ theorem rot_le_mutualInfo
               (v1, Fin.cases (motive := fun _ => Fin k → Bool × Bool)
                 (fun j => if (rb j).1 then (ub j, (rb j).2) else ((rb j).2, ub j))
                 (fun _ => rb)) := by
-      rw [idealCorrelatedJoint, hIdealRotRe, ← uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind]
+      rw [idealCorrelatedJoint, semanticIdealCorrelatedJoint,
+        hIdealRotRe, ← uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind]
       congr 1 with rb : 1
       rw [PMF.bind_map]
       dsimp only [Function.comp_def]
@@ -1233,7 +1236,8 @@ theorem chosenOT_le_mutualInfo
     have hmem : (({0} : Finset (Fin 2)).restrict views, out) ∈
         (realCorrelatedJointWithInput proto source {0} (pairVec (eQ0 x0) (eQ1 x1))).support :=
       (PMF.mem_support_map_iff _ _ _).mpr ⟨(views, out), hω, rfl⟩
-    rw [← hPriv0, idealCorrelatedJointWithInput, PMF.mem_support_bind_iff] at hmem
+    rw [← hPriv0, idealCorrelatedJointWithInput, semanticIdealCorrelatedJointWithInput,
+        PMF.mem_support_bind_iff] at hmem
     obtain ⟨y, hy, hres⟩ := hmem
     rw [PMF.mem_support_map_iff] at hres
     obtain ⟨_, _, hy_eq⟩ := hres
@@ -1273,7 +1277,8 @@ theorem chosenOT_le_mutualInfo
         · dsimp only [Function.comp_def, Prod.map_apply, id_eq, rotChoices, ROut]
           rw [hin1]
           exact funext (heQ1 x1)
-      rw [hLHS, ← hPriv0, idealCorrelatedJointWithInput, semanticIdealCorrelatedJointWithInput, batchOTFunctionality,
+      rw [hLHS, ← hPriv0, idealCorrelatedJointWithInput,
+        semanticIdealCorrelatedJointWithInput, batchOTFunctionality,
         Functionality.ofDeterministic]
       simp only [ProbComp.eval_pure, PMF.pure_bind, PMF.map_comp, Function.comp_def]
       have hrest : ({0} : Finset (Fin 2)).restrict
@@ -1294,7 +1299,8 @@ theorem chosenOT_le_mutualInfo
           (v0, batchOTAnswer (pairVec (F := (batchOTSpec k Bool).Query ()) (eQ0 x0) (eQ1 x1))) ∈
             (realCorrelatedJointWithInput proto source {0}
               (pairVec (eQ0 x0) (eQ1 x1))).support := by
-        rw [← hPriv0, idealCorrelatedJointWithInput, batchOTFunctionality,
+        rw [← hPriv0, idealCorrelatedJointWithInput, semanticIdealCorrelatedJointWithInput,
+        batchOTFunctionality,
           Functionality.ofDeterministic]
         simp only [ProbComp.eval_pure, PMF.pure_bind, PMF.mem_support_map_iff]
         rw [hrest, hresty]
@@ -1372,7 +1378,8 @@ theorem chosenOT_le_mutualInfo
             rfl
           · simp only [hx, Bool.not_true, otSelect_false, x0, otPairEquiv, Equiv.coe_fn_mk]
             rfl
-      rw [hLHS, ← hPriv1, idealCorrelatedJointWithInput, semanticIdealCorrelatedJointWithInput, batchOTFunctionality,
+      rw [hLHS, ← hPriv1, idealCorrelatedJointWithInput,
+        semanticIdealCorrelatedJointWithInput, batchOTFunctionality,
         Functionality.ofDeterministic]
       simp only [ProbComp.eval_pure, PMF.pure_bind, PMF.map_comp, Function.comp_def]
       have hrest : ({1} : Finset (Fin 2)).restrict
