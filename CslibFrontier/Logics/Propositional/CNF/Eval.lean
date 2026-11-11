@@ -41,4 +41,16 @@ theorem Clause.eval_congr {V : Type*} {σ τ : V → Bool} {c : Clause V}
   rw [Bool.eq_iff_iff, Clause.eval_eq_true_iff, Clause.eval_eq_true_iff]
   exact exists_congr fun l => and_congr_right fun hl => by rw [h l hl]
 
+
+/-- The number of satisfied clauses in a CNF depends only on the values of its variables. -/
+theorem CNF.countP_eval_congr {V : Type*} {σ τ : V → Bool} {φ : CNF V}
+    (h : ∀ v ∈ φ.vars, σ v = τ v) :
+    φ.countP (Clause.eval σ) = φ.countP (Clause.eval τ) := by
+  refine List.countP_congr fun c hc => ?_
+  have hc' : CNF.eval σ [c] = CNF.eval τ [c] := CNF.eval_congr fun v hv => by
+    obtain ⟨d, hd, b, hb⟩ := CNF.mem_vars.1 hv
+    rw [List.mem_singleton.1 hd] at hb
+    exact h v (CNF.mem_vars.2 ⟨c, hc, b, hb⟩)
+  simp only [CNF.eval_cons, CNF.eval_nil, Bool.and_true] at hc'
+  rw [hc']
 end Cslib.Logic.PL

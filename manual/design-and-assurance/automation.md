@@ -302,19 +302,30 @@ truncated subtraction, and rejection when fit or exact-operation evidence is mis
 Automatic staging computes the whole encoded argument when any coordinate needs computation;
 an explicit `pure` stage remains useful to share a computed value between several calls.
 
-Ordinary `if` guards accept natural-word `=`, `≠`, `<`, `≤`, `>` and `≥`, and negations of
-these comparisons. Write `if a ≤ b then ... else ...` directly: the tactic reverses a strict
-test and swaps alternatives, charging the existing branch without computing `b + 1`. An
-operand actually written as `b + 1` still needs its usual fit proof. The complete
+Ordinary `if` guards accept natural-word `=`, `≠`, `<`, `≤`, `>` and `≥`, combined using
+`¬`, `∧` and `∨`. A depth limit bounds logical traversal and unfolding of named predicates.
+The heap's `IndexedMinPQ.RawPrioLT` can stay in the source program. The
+[compound-guard clients](../../CslibFrontierTests/WordRAMRealizeCompound.lean) check that priority
+predicate, aliases, tie-breaking and arbitrary decidability instances. Conjunctions and
+disjunctions retain left-to-right short-circuiting: the arithmetic and fit obligations of a
+later test arise only on paths that reach it. Complete encoded operands retain their live-word
+treatment, including operands containing an opaque host predicate.
+
+Write `if a ≤ b then ... else ...` directly: the tactic reverses a strict test and swaps
+alternatives, charging the existing branch without computing `b + 1`. An operand actually
+written as `b + 1` still needs its usual fit proof. The complete
 [guard clients](../../CslibFrontierTests/WordRAMRealizeGuards.lean) check equal and maximal
 fitting words, selected-path safety and native execution of the migrated QuotientFilter query
 scan step with a maximal cutoff. From the repository root, run:
 
 ```bash
-scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGuards
+scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGuards \
+  CslibFrontierTests.WordRAMRealizeCompound
 ```
 
-Use nested branches for compound tests. Loop guards keep their existing grammar: `=`, `<`,
+An unsupported predicate is reported at its guard. Expose its supported comparisons, or use a
+separately certified memory method to compute a word and compare that word. Loop guards keep
+their existing grammar: `=`, `<`,
 `>` and `≠ 0`; this branch support does not extend the loop guard rules.
 
 Returned choices can also stay inside `pure`, including tuple and option components:

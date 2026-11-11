@@ -145,7 +145,7 @@ private theorem realizes_linkBody : Realizes .exact linkBody (.refl _)
   conv =>
     arg 2
     ext d
-    simp only [linkBody, priority_if]
+    simp only [linkBody]
   realize
   all_goals first
     | exact h.1.1.of_le (by have := h.1.2.1; have := h.1.2.2.1; omega)

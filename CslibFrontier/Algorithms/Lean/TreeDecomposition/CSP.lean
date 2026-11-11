@@ -739,22 +739,12 @@ private theorem dpSpec_congr {β : Type} (A : DPAlg β) (q : ℕ) (hq : 0 < q)
         decide (v ∈ c.2)) || c.eval sem α₁) =
       (F.all fun c => !(decide (c.2.toFinset ⊆ insert v child.bag) &&
         decide (v ∈ c.2)) || c.eval sem α₂) := by
-      rw [Bool.eq_iff_iff, List.all_eq_true, List.all_eq_true]
-      constructor <;> intro hall c hcF
-      · by_cases hc : c.2.toFinset ⊆ insert v child.bag ∧ v ∈ c.2
-        · have hev : c.eval sem α₁ = c.eval sem α₂ :=
-            Constraint.eval_congr fun u hu => h u (hc.1 (List.mem_toFinset.2 hu))
-          simpa [hc.1, hc.2, hev] using hall c hcF
-        · simp only [Bool.or_eq_true, Bool.not_eq_true', Bool.and_eq_false_eq_eq_false_or_eq_false,
-            decide_eq_false_iff_not]
-          exact Or.inl (not_and_or.1 hc)
-      · by_cases hc : c.2.toFinset ⊆ insert v child.bag ∧ v ∈ c.2
-        · have hev : c.eval sem α₁ = c.eval sem α₂ :=
-            Constraint.eval_congr fun u hu => h u (hc.1 (List.mem_toFinset.2 hu))
-          simpa [hc.1, hc.2, hev] using hall c hcF
-        · simp only [Bool.or_eq_true, Bool.not_eq_true', Bool.and_eq_false_eq_eq_false_or_eq_false,
-            decide_eq_false_iff_not]
-          exact Or.inl (not_and_or.1 hc)
+      refine List.all_congr rfl fun c => ?_
+      by_cases hc : c.2.toFinset ⊆ insert v child.bag
+      · have hev : c.eval sem α₁ = c.eval sem α₂ :=
+          Constraint.eval_congr fun u hu => h u (hc (List.mem_toFinset.2 hu))
+        rw [hev]
+      · simp [hc]
     rw [hAll, dpSpec_congr A q hq sem F U hval.2 hbag]
   | .forget v child, hval, α₁, α₂, h => by
     simp only [dpSpec]

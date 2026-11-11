@@ -300,6 +300,15 @@ noncomputable def indCcaRomAdvantage (S : Scheme PK SK M R CT K)
     (ProbComp.eval (S.roIndCcaGame A false))
     (ProbComp.eval (S.roIndCcaGame A true))
 
+/-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
+decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
+noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
+    (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) : PMF (ROResp R K q) :=
+  match q with
+  | .G m => PMF.pure (G m)
+  | .H x => PMF.pure (H x)
+  | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNotBot G H dk c))
+
 /-- The eager random-oracle IND-CCA game for `FO-notbot` (standard KEM IND-CCA experiment, not
 separately located in the source map above), defined directly from `S.keyGenNotBot`,
 `S.encapsNotBot`, and `S.decapsNotBot` over eagerly sampled random functions `G : M → R` and
@@ -313,11 +322,7 @@ noncomputable def eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   let kStar := if b then kRand else kReal
-  OracleComp.interpret (fun (q : ROQuery M CT) => match q with
-    | .G m => PMF.pure (G m)
-    | .H x => PMF.pure (H x)
-    | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNotBot G H dk c)))
-    (A (pk, cStar, kStar))
+  OracleComp.interpret (S.eagerHandler G H dk cStar) (A (pk, cStar, kStar))
 
 /-- Simulated `H` oracle of `simHandler`: on key-derivation queries `(false, m, c)`, checks whether
 `S.pke.encDet pk m (G(m)) = c` and if so returns `H_q(c)`. This is designed so that decapsulation
@@ -434,7 +439,7 @@ noncomputable def roAnswerHandler (S : Scheme PK SK M R CT K)
 
 /-- Evaluating `(do let k ← roHashH sampleKey x; return some k) st` and mapping `ROCache` via
 `RandomOracle.ofList`. -/
-theorem eval_roHashH_some_map_ofList (sampleKey : ProbComp K) (x : Bool × M × CT)
+private theorem eval_roHashH_some_map_ofList (sampleKey : ProbComp K) (x : Bool × M × CT)
     (st : ROCache M R CT K) :
     (ProbComp.eval ((do let k ← roHashH sampleKey x; return some k) st)).map
       (fun (res, st') =>
@@ -648,15 +653,6 @@ theorem eval_roIndCcaGame_eq_h1 [Fintype M] [Finite R]
       (RandomOracle.ofList [((false, mStar, cStar), kReal)])).map Prod.fst)]
   congr 1 with rStar : 1
   pmf_swap
-
-/-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
-decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
-noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
-    (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) : PMF (ROResp R K q) :=
-  match q with
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (H x)
-  | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNotBot G H dk c))
 
 /-- Single-step simulation from `S.h1Handler` to `S.eagerHandler` via
 `RandomOracle.answer_complete`. -/

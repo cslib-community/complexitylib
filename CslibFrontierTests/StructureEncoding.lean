@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 import CslibFrontier.Tactic.PolyTime
 
@@ -74,6 +75,42 @@ example {α : Type} {enc : α ↪ List Bool} {xs : α → List ℕ}
     (hxs : ComputableInPolyTime xs enc (encList encNat)) :
     ComputableInPolyTime (fun a => Single.mk (xs a)) enc eSingle := by
   fun_prop
+
+/-- A fixed-size family with a tag whose type does not mention the size parameter. -/
+structure TaggedTable (n : ℕ) where
+  /-- A flag outside the table. -/
+  tag : Bool
+  /-- Binary values indexed by the fixed table size. -/
+  entries : Fin n → ℕ
+
+noncomputable section
+
+variable {n : ℕ}
+
+/-- The framed tag followed by the existing finite-table encoding. -/
+enc_structure eTaggedTable : TaggedTable n where
+  tag : encBool, entries : (encPi (Index := Fin n) encNat)
+
+example (t : TaggedTable n) :
+    eTaggedTable t = encPair encBool (encPi encNat) (t.tag, t.entries) := rfl
+
+-- A parameter-independent field still fixes the encoded input type, including at size zero.
+example : ComputableInDegree (TaggedTable.tag (n := 0)) eTaggedTable encBool 1 1 := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → TaggedTable n}
+    (hf : ComputableInSpace f enc eTaggedTable S) :
+    ComputableInSpace (fun a => (f a).entries) enc (encPi encNat) S := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
+    {tag : α → Bool} {entries : α → Fin n → ℕ}
+    (ht : ComputableInSpace tag enc encBool S)
+    (he : ComputableInSpace entries enc (encPi encNat) S) :
+    ComputableInSpace (fun a => TaggedTable.mk (tag a) (entries a)) enc eTaggedTable S := by
+  fun_prop
+
+end
 
 /-- A multi-field problem instance encoded with `enc_structure` for `polytime` clients. -/
 structure HittingSetInstance where

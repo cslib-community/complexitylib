@@ -374,17 +374,9 @@ theorem CyclicExchangeObstruction.cap {n : ℕ} {P : Set (Fin (n + 4) → Bool)}
       ⟨_, h.feasible, rfl, rfl⟩
   · intro j hj hd hp
     obtain ⟨s, hs, h12, hsd⟩ := (mem_cyclicDifferenceRelation_capRelation P _).mp hp
-    have hk : 3 ≤ (capDifferencePort j).val := by
-      have hjv : j.val ≠ 0 := fun he => hj (Fin.ext he)
-      simp only [capDifferencePort, hjv, ite_false]
-      change 3 ≤ j.val + 2
-      omega
+    have hk := three_le_val_capDifferencePort hj
     rcases eq_pair_or_quartet_of_cap j hj s h12 hsd with he | he
-    · have hk0 : capDifferencePort j ≠ 0 := by
-        intro he
-        have hv := congrArg Fin.val he
-        change (capDifferencePort j).val = 0 at hv
-        omega
+    · have hk0 := (capDifferencePort_eq_zero_iff j).not.mpr hj
       exact h.forbidden _ hk0 rfl (he ▸ hs)
     · exact hq _ hk (he ▸ hs)
 
