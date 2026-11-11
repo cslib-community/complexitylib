@@ -3778,8 +3778,11 @@ public import CslibFrontier.Cryptanalysis.AddXNORGroupedQuarter
 public import CslibFrontier.Cryptanalysis.AddXNORGuard
 public import CslibFrontier.Cryptanalysis.AddXNORGuardedChain
 public import CslibFrontier.Cryptanalysis.AddXNORIdealChain
+public import CslibFrontier.Cryptanalysis.AddXNORIdealCollisions
 public import CslibFrontier.Cryptanalysis.AddXNORIdealCoupling
 public import CslibFrontier.Cryptanalysis.AddXNORIdealCut
+public import CslibFrontier.Cryptanalysis.AddXNORIdealForest
+public import CslibFrontier.Cryptanalysis.AddXNORIdealLedger
 public import CslibFrontier.Cryptanalysis.AddXNORJoinedDissection
 public import CslibFrontier.Cryptanalysis.AddXNORJoinedProbe
 public import CslibFrontier.Cryptanalysis.AddXNORMatcherResources

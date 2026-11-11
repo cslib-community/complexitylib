@@ -66,7 +66,7 @@ variable {Index Word : Type} [Fintype Index] [DecidableEq Index]
     PMF (Index → Equiv.Perm Word) := PMF.pi fun i => RandomPermutation.complete (tables i)
 
 /-- The invariant required for every coordinate's exact completion law. -/
-def Valid (tables : Tables Index Word) : Prop :=
+@[expose] def Valid (tables : Tables Index Word) : Prop :=
   ∀ i, IsPartialBijection (tables i)
 
 omit [Fintype Index] [DecidableEq Index] [Fintype Word] [DecidableEq Word]

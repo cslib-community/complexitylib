@@ -18,7 +18,8 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 - **Remaining Add/XNOR source clauses** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
   Repaired ideal-chain planted search and decision security bounds: the actual indexed
   permutation experiments, exact lazy laws and hidden-cut visible stopped coupling are installed;
-  collision/covering estimates and the final numerical inequalities remain.
+  relate its cut-hit event to the fresh-ledger collision/two-sided covering event and derive
+  the final numerical security inequalities, including independent-search verification.
   Preserve typed inputs, explicit bit resources and the width condition on uniform class means.
 
 ## Programs

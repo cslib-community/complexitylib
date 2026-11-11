@@ -374,9 +374,15 @@ by a reversible single-cut image swap, with no collision-free or simulation prem
 instantiates `identicalUntilBad` on concrete visible readers and identifies both source
 worlds. `decision_advantage_le_visibleBad` and `search_comparison` charge their actual
 visible stopping event; `verifiedAdversary_queryBound` counts only $T+q$ calls for search
-and verification. The next obligation is numerical collision/forest-covering analysis of
-that event and independent verification, not another sampler or coupling contract.
-No numerical source constant or alternative asymptotic bound is yet proved.
+and verification. `AddXNORIdealLedger` now derives actual fresh ledgers from the indexed
+sampler, with exact cache/output laws and at most one new entry per external call.
+`AddXNORIdealCollisions.source_collision_le_eight` charges up to $T+q$ visible draws and
+proves collision probability at most $8T^2/2^m$ under the source budget assumptions.
+`source_forest_bound` derives $3T/2^h+8T^2/2^m$ for its explicitly defined
+collision-or-covered analysis event after a $T$-query program. This is not a bound on
+`visibleBadGame`: prove the cut-hit-to-analysis-event bridge and independent verification
+before claiming either security inequality. In particular, do not silently add another
+$q$ auxiliary calls to the existing $T+q$ search verifier and retain the same constants.
 The Operator's Manual's STOC733 source inventory lists the missing Theorem 8/Corollary 4 security clauses and the
 retained width/MSB qualifications. ALL-main acceptance is not yet warranted.
 Do not promote an older pair/batch bound, unnormalized machine profile, native

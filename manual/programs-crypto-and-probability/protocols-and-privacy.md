@@ -1563,11 +1563,38 @@ search law and an independent-target verification game. The
 already-occupied target, its repaired preimage, a genuine endpoint change, no-query
 public-input equality, and an exact private-coin stopping probability of $1/2$.
 
-These are proved coupling/experiment bounds, **not** numerical collision or covering
-estimates. The remaining obligation is to bound the actual cut-hit/stopping game on
-visible transcripts (and independent verification for the search comparison) using the
-no-collision forest and hidden-word counting argument. No source constant, improved
-constant, or asymptotic ideal-chain lower bound is concluded by this milestone.
+The [fresh-ledger instrument](../../CslibFrontier/Cryptanalysis/AddXNORIdealLedger.lean)
+now records only actual cache misses of that sampler. `Ledger.project_run` preserves
+its complete caches and `Ledger.uniform_output` identifies its eager uniform output law;
+`Ledger.run_length` derives at most one fresh entry per external call. Hits, including
+inverse cache hits, do not become fresh-collision events. The
+[forest proof](../../CslibFrontier/Cryptanalysis/AddXNORIdealForest.lean) constructs one
+exact rooted label witness per reachable word. This yields at most $L$ covered nonempty
+hidden words for $L$ fresh entries; reversing all entries gives the backward bound from
+the same ledger. Initially protected roots may coincide. No collision-free nonempty
+queried path can return to any protected root.
+
+[AddXNORIdealCollisions.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealCollisions.lean)
+bounds each fresh-hit probability using the actual available-answer set. Summing these
+conditional bounds gives $2(2Q+\binom{Q}{2})/(2^m-Q)$ for a $Q$-query run
+with $Q<2^m$.
+`source_collision_le_eight` proves the simpler $8T^2/2^m$ bound when $Q=T+q$,
+$q\le T$, $T\ge4$ and $T\le2^{m-3}$. `collisionOrCovered` runs the actual
+adaptive/private-coin program, then samples independent hidden prefix/suffix words.
+`source_forest_bound` bounds this analysis event after $T$ calls by
+$3T/2^h+8T^2/2^m$, for positive side lengths $h,d$ with $h=d$ or $h=d+1$.
+The coefficient $8$ is an honest collision bound, not a claimed improvement to the
+source's security theorem. The
+[numerical clients](../../CslibFrontierTests/AddXNORIdealNumerics.lean) check forks,
+inverse fresh answers and cache hits, coincident roots, and a private-coin observer with
+$q=9$, $h=5$, $T=9$, $m=14$; its analysis-event bound is $1809/2048<1$.
+
+The remaining security bridge is substantive: prove that every actual hidden-cut hit
+is covered by this fresh-ledger event when the hidden path is revealed, while preserving
+the visible-call budget and full joint law of the permutation family. Search additionally
+needs the independent-target verification estimate; adding a hidden-path reveal to the
+already $T+q$ verifier must be charged explicitly. Thus these numerical analysis-event
+bounds do not yet bound `visibleBadGame` or prove either security inequality.
 
 The repaired *claim to be proved* is precisely Section 6, Theorem 8 (PDF p. 25):
 $q\ge3$, $h=\lceil q/2\rceil$ and $\max(q,4)\le T\le2^{m-3}$ imply success at most
@@ -1579,8 +1606,7 @@ this is not an unconditional arithmetic-instance or worst-case existence lower b
 The further simulator repair required by the checked trace above must replace the
 literal Lemma 10 law, not assume it. The exact experiments avoid its invalid-table
 behavior. The stopped coupling above compares the actual planted and independent games;
-numerical collision/forest-covering estimates and the final search-success analysis remain
-open. Here the repair concerns the qualified oracle claim and a valid simulation law,
+the cut-hit-to-analysis-event bridge and the final search-success analysis remain open. Here the repair concerns the qualified oracle claim and a valid simulation law,
 not a new arithmetic hardness theorem.
 
 ### STOC733 main-result coverage inventory
@@ -1614,8 +1640,8 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.plantedSearch`, `IdealChain.search_comparison`, `IdealChain.verifiedAdversary_queryBound` | Partial: actual stopped search comparison; numerical security inequality missing |
-| Corollary 4, p. 28 | `IdealChain.coupledDecision_planted`, `IdealChain.decision_advantage_le_visibleBad` | Partial: actual coupling and visible-event advantage bound; numerical bound missing |
+| Theorem 8, pp. 25–28 | `IdealChain.plantedSearch`, `IdealChain.search_comparison`, `IdealChain.verifiedAdversary_queryBound`, `IdealChain.Collisions.source_forest_bound` | Partial: stopped search comparison and numerical fresh-ledger bounds; security bridge missing |
+| Corollary 4, p. 28 | `IdealChain.coupledDecision_planted`, `IdealChain.decision_advantage_le_visibleBad`, `IdealChain.Collisions.source_forest_bound` | Partial: actual coupling and numerical collision/covering analysis; cut-hit probability bridge missing |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
 balanced yes-instance cannot satisfy width $0$ when $v=0$.

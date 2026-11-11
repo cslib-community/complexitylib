@@ -120,6 +120,10 @@ inductive PermQuery (α : Type) where
   | inverse (y : α)
   deriving DecidableEq
 
+/-- The word supplied in a forward or inverse request, before the oracle answers it. -/
+def PermQuery.argument {α : Type} : PermQuery α → α
+  | .forward x | .inverse x => x
+
 /-- The oracle specification of a bidirectional permutation on `α`. -/
 abbrev PermOracleSpec (α : Type) : OracleSpec (PermQuery α) :=
   fun _ => α
@@ -371,11 +375,11 @@ theorem AgreesWith.pairwise_snd_of_pairwise_fst {cache : Cache α} {π : Equiv.P
 
 /-! Most arguments below treat forward and inverse queries alike: a query either hits `cache`,
 or misses it and records the cache entry `PermQuery.toCacheEntry ⟨q, a⟩` for its answer `a`. The
-private `cachedAnswer` and the facts about it below put both directions in this form. -/
+`cachedAnswer` and the facts about it below put both directions in this form. -/
 
 /-- The recorded answer to `q` in `cache`: its image for a forward query, its preimage for an
 inverse query. -/
-private def cachedAnswer (cache : Cache α) : PermQuery α → Option α
+def cachedAnswer (cache : Cache α) : PermQuery α → Option α
   | .forward x => cache.lookup x
   | .inverse y => invLookup cache y
 
@@ -840,9 +844,29 @@ private theorem card_extPerms_cons_eq_of_unusedDomain {cache : Cache α} (y : α
 
 /-- The answers still available to a query that misses `cache`: `unusedRange cache` for a forward
 query and `unusedDomain cache` for an inverse query. -/
-private def freshAnswers (cache : Cache α) : PermQuery α → Finset α
+def freshAnswers (cache : Cache α) : PermQuery α → Finset α
   | .forward _ => unusedRange cache
   | .inverse _ => unusedDomain cache
+
+/-- At most one answer is excluded per stored cache entry, in either query direction. -/
+theorem card_not_freshAnswers_le (cache : Cache α) (q : PermQuery α) :
+    (Finset.univ.filter fun a : α => a ∉ freshAnswers cache q).card ≤ cache.length := by
+  cases q with
+  | forward x =>
+    simpa [freshAnswers, invLookup, Option.ne_none_iff_isSome] using
+      RandomOracle.card_filter_lookup_isSome_le (cache.map Prod.swap)
+  | inverse y =>
+    simpa [freshAnswers, Option.ne_none_iff_isSome] using
+      RandomOracle.card_filter_lookup_isSome_le cache
+
+/-- The available-answer set loses at most the number of recorded entries. -/
+theorem card_freshAnswers_lower (cache : Cache α) (q : PermQuery α) :
+    Fintype.card α - cache.length ≤ (freshAnswers cache q).card := by
+  have hcomp : Fintype.card α - (freshAnswers cache q).card ≤ cache.length := by
+    simpa only [← Finset.sdiff_eq_filter,
+      Finset.card_sdiff, Finset.inter_univ, Finset.card_univ] using
+      card_not_freshAnswers_le cache q
+  omega
 
 private theorem AgreesWith.evalPerm_mem_freshAnswers {cache : Cache α} {π : Equiv.Perm α}
     (hπ : AgreesWith cache π) {q : PermQuery α} (hq : cachedAnswer cache q = none) :
@@ -851,7 +875,8 @@ private theorem AgreesWith.evalPerm_mem_freshAnswers {cache : Cache α} {π : Eq
   | forward x => exact mem_unusedRange_iff.mpr (hπ.invLookup_apply_eq_none hq)
   | inverse y => exact mem_unusedDomain_iff.mpr (hπ.lookup_symm_apply_eq_none hq)
 
-private theorem IsPartialBijection.freshAnswers_nonempty {cache : Cache α}
+/-- A cache miss in a valid partial bijection has an available fresh answer. -/
+theorem IsPartialBijection.freshAnswers_nonempty {cache : Cache α}
     (h : IsPartialBijection cache) {q : PermQuery α} (hq : cachedAnswer cache q = none) :
     (freshAnswers cache q).Nonempty :=
   let ⟨_, hπ⟩ := h
@@ -950,11 +975,13 @@ omit [Nonempty α] in
   ext π
   simp [complete, PMF.uniformOfFinset_apply, PMF.uniformOfFintype_apply]
 
-private theorem answer_of_cachedAnswer_eq_some {q : PermQuery α} {cache : Cache α} {a : α}
+/-- A bidirectional cache hit returns its recorded answer without changing the table. -/
+theorem answer_of_cachedAnswer_eq_some {q : PermQuery α} {cache : Cache α} {a : α}
     (h : cachedAnswer cache q = some a) : answer q cache = PMF.pure (a, cache) := by
   cases q <;> simp_all [answer, cachedAnswer]
 
-private theorem answer_of_cachedAnswer_eq_none {q : PermQuery α} {cache : Cache α}
+/-- A bidirectional cache miss samples uniformly from the available answers and records it. -/
+theorem answer_of_cachedAnswer_eq_none {q : PermQuery α} {cache : Cache α}
     (h : cachedAnswer cache q = none) (hne : (freshAnswers cache q).Nonempty) :
     answer q cache = (PMF.uniformOfFinset _ hne).map fun a =>
       (a, PermQuery.toCacheEntry ⟨q, a⟩ :: cache) := by
@@ -1370,14 +1397,7 @@ private theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
           {x : α × (Cache α × Bool) | x.2.2 = true} = {a : α | a ∉ freshAnswers c q} := by
         ext a
         simp
-      have hcard : (Finset.univ.filter fun a : α => a ∉ freshAnswers c q).card ≤ c.length := by
-        cases q with
-        | forward x =>
-          simpa [freshAnswers, invLookup, Option.ne_none_iff_isSome] using
-            RandomOracle.card_filter_lookup_isSome_le (c.map Prod.swap)
-        | inverse y =>
-          simpa [freshAnswers, Option.ne_none_iff_isSome] using
-            RandomOracle.card_filter_lookup_isSome_le c
+      have hcard := card_not_freshAnswers_le c q
       simp only [forgetfulWithBad, hq]
       rw [PMF.toOuterMeasure_map_apply, hpre, PMF.toOuterMeasure_uniformOfFintype]
       gcongr
