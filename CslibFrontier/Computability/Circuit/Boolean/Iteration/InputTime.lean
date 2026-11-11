@@ -134,9 +134,9 @@ theorem synthesis_batched_binary_powering (f : BitString n → BitString n) (C :
     have hout (member : Fin r) : wires (fun x => f^[2 ^ j] (state j x member)) ⊆ src' := by
       rintro _ ⟨bit, rfl⟩
       refine Or.inr ⟨finProdFinEquiv (member, bit), funext fun x => ?_⟩
-      have hd : directProductInput (packed x) member = state j x member := by
+      have hd : BitString.block (packed x) member = state j x member := by
         funext i
-        simp only [directProductInput, packed, Equiv.symm_apply_apply]
+        simp only [BitString.block, packed, Equiv.symm_apply_apply]
       change pow.eval interpretation (packed x) _ = _
       rw [hp (packed x), blockMap_apply, hd]
     have hmux := Synthesis.iUnion (I := interpretation) (s := src')

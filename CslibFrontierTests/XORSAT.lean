@@ -68,15 +68,38 @@ example : XORSAT.solve
     [([0, 1], true), ([1, 2], true), ([0, 2], true)] = false := by decide
 
 -- Compression compares binary labels and allocates two columns, regardless of their values.
-example : (XORSAT.compile [([1048576, 17, 1048576], true)]).1 = 2 := by decide
+example : (XORSAT.compile [([1048576, 17, 1048576], true)]).width = 2 := by decide
 example : XORSAT.solve
     [([1048576, 17, 1048576], true), ([17], false)] = false := by decide
 example : XORSAT.solve
     [([1048576, 17, 1048576], true), ([17], true)] = true := by decide
 
 -- A zero leading column is skipped; malformed dense widths are rejected.
-example : XORSAT.Dense.decide (2, [([false, true], true)]) = true := by decide
-example : XORSAT.Dense.decide (2, [([true], true)]) = false := by decide
+example : XORSAT.Dense.decide ⟨2, [⟨[false, true], true⟩]⟩ = true := by decide
+example : XORSAT.Dense.decide ⟨2, [⟨[true], true⟩]⟩ = false := by decide
+
+-- `encRow` and `encInput` satisfy extensionality and expose `fun_prop` rules.
+example (r₁ r₂ : XORSAT.Dense.Row) (hc : r₁.coeffs = r₂.coeffs) (hr : r₁.rhs = r₂.rhs) :
+    r₁ = r₂ :=
+  XORSAT.Dense.Row.ext hc hr
+
+example (q₁ q₂ : XORSAT.Dense.Input) (hw : q₁.width = q₂.width) (hr : q₁.rows = q₂.rows) :
+    q₁ = q₂ :=
+  XORSAT.Dense.Input.ext hw hr
+
+section DenseTests
+
+open Turing.MultiTapeTM Cslib.Complexity.XORSAT.Dense
+
+example : ComputableInPolyTime
+    (fun q : Input => q.rows) encInput encSystem := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun r : Row => Row.mk r.coeffs (!r.rhs)) encRow encRow := by
+  fun_prop
+
+end DenseTests
 
 -- The semantic endpoint produces actual models of ordinary sparse systems.
 example : ∃ a : ℕ → Bool,

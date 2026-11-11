@@ -93,6 +93,7 @@ import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
+import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -2969,6 +2970,51 @@ register_result "goemans-williamson-maxdicut" where
     Real.goemansWilliamsonDicutConstant (0.79607 < β < 0.79608), plus the balanced-digraph \
     reduction recovering α > 0.87856 on p. 1138. No SDP solver, finite-precision sampler, or \
     derandomization is formalized."
+
+register_result "quantum-value-adversary" where
+  title := "Ambainis: relational quantum adversary bound for non-Boolean input alphabets"
+  topic := "quantum complexity"
+  sources := [
+    { paper := Ambainis2002, theorem := "Theorem 6",
+      locator := "Section 6.1 (arXiv:quant-ph/0002066v1)" }
+  ]
+  theorems := [
+    Cslib.Quantum.norm_inner_valueOracle_valueOracle_ge,
+    Cslib.Quantum.one_sub_mul_sum_le_of_sq_le_value,
+    Cslib.Quantum.one_sub_mul_sqrt_le_two_mul_mul_sqrt_value,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_le_two_mul_mul_sqrt_value,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_le_two_mul_mul_sqrt_value_measureOut
+  ]
+  scope := "T-query quantum value-query algorithms over an arbitrary finite index type ι, \
+    arbitrary input alphabet α, finite value register V, finite workspace W, and arbitrary \
+    unitary oracle family step : α → (ℂ^V ≃ₗᵢ[ℂ] ℂ^V), with multi-outcome classical readout \
+    out : ι × V × W → β (both measureProb and PMF measureOut forms). Proves exact factor 2 \
+    without two-value diagonalization overhead: (1 - δ) √(m m') <= 2T √L and \
+    (1 - 2√(ε(1-ε))) √(m m') <= 2T √L."
+
+register_result "quantum-permutation-inversion" where
+  title := "Ambainis: Ω(√N) quantum query lower bound for inverting a permutation"
+  topic := "quantum complexity"
+  sources := [
+    { paper := Ambainis2002, theorem := "Theorem 7",
+      locator := "Section 6.2 (arXiv:quant-ph/0002066v1)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_sqrt_min_le_of_permInversion_partition,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_div_two_le_of_permInversion,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_div_two_le_of_permInversion_measureOut,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_sub_one_le_of_permInversion,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_card_le_of_permInversion,
+    Cslib.Quantum.permInversion_div_two_lower_bound,
+    Cslib.Quantum.permInversion_lower_bound,
+    Cslib.Quantum.permInversion_measureOut_lower_bound
+  ]
+  scope := "T-query quantum value-query algorithms over a finite index type ι, finite value \
+    register V, finite workspace W, and arbitrary unitary oracle family step : ι → (ℂ^V ≃ₗᵢ[ℂ] \
+    ℂ^V), outputting π.symm target via a classical readout out with failure probability at most \
+    ε <= 1/2 on every permutation π : Equiv.Perm ι. Proves (1 - 2√(ε(1-ε))) √⌊|ι|/2⌋ <= 2T, \
+    (1 - 2√(ε(1-ε))) √(|ι| - 1) <= 2√2 T, and (for 2 <= |ι|) (1 - 2√(ε(1-ε))) √|ι| <= 2√3 T, \
+    giving |ι| / 2 <= 1296 T² and |ι| <= 3888 T² at ε = 1/3."
 
 register_result "nayak-wu-counting" where
   title := "Nayak–Wu: quantum query lower bound for approximate counting"
