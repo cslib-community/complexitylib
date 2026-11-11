@@ -26,9 +26,10 @@ gate computes `T` restricted to `A_i`. Covering the inputs with `c` of the sets,
 This file builds such a family in the constant-free De Morgan basis, as one program `template A T`
 on `p` inputs, and proves the facts the reduction uses about it. The source writes each window as a
 canonical DNF [pp. 22:19–22:20]; here all windows share the `p` negations, a constant-zero gate and
-the `p · 2^p` gates of prefix conjunctions, and window `i` is an OR chain over the inputs `0, …, y`
-in the order of `BitString.equivFin`. This is a construction choice internal to the proof: like the
-source's, its gates depend on `T` only through the entries inside the window they belong to.
+the `p · 2^p` gates of prefix conjunctions, and window `i` is an OR chain: its gate `window i y` is
+the OR of the accepted inputs of `A i` up to `y`, in the order of `BitString.equivFin`. This is a
+construction choice internal to the proof: like the source's, its gates depend on `T` only through
+the entries inside the window they belong to.
 
 * **Layout** (`Gate`, `gateCount`, `Gate.set`, `Gate.op`): the gates, their number and their
   operations depend only on `p` and the number `t` of sets.
@@ -487,7 +488,8 @@ variable {σ : Signature.{v}} {I : Interpretation σ Bool} [Boolean.DeMorganBasi
 
 /-- **Exact cost of the template.** For `p ≥ 1`, over any De Morgan basis, computing all gate
 functions of a window template costs exactly the number of distinct ones that are not input
-projections [IlangoLoffOliveira2020, Proposition 14, pp. 22:21–22:22]. -/
+projections. This is the analogue for this template of [IlangoLoffOliveira2020, Proposition 14,
+pp. 22:21–22:22]. -/
 theorem ecomplexity_template [NeZero p] (A : Fin t → Finset (Fin (2 ^ p)))
     (T : Fin (2 ^ p) → Bool) :
     ecomplexity I (template A T) = #(nonInputComponents (template A T)) := by
@@ -527,8 +529,9 @@ private theorem synthesis_or {n : ℕ} {C : Finset (Fin n)} (hC : C.Nonempty) :
     omega
 
 /-- **The table given the template.** If the windows `C` cover every input, then `T` costs at
-most `#C - 1` gates given the template: it is the OR of the last gates of those windows
-[IlangoLoffOliveira2020, Lemma 15, p. 22:22]. -/
+most `#C - 1` gates given the template: it is the OR of the last gates of those windows. This is
+the analogue for this template of [IlangoLoffOliveira2020, Lemma 15, p. 22:22], with the sharper
+bound `#C - 1`. -/
 theorem ecomplexityGiven_tableFun_le (A : Fin t → Finset (Fin (2 ^ p))) (T : Fin (2 ^ p) → Bool)
     (C : Finset (Fin t)) (hC : ∀ y, ∃ i ∈ C, y ∈ A i) :
     ecomplexityGiven I (single (tableFun T)) (template A T) ≤ ((#C - 1 : ℕ) : ℕ∞) := by
@@ -555,8 +558,8 @@ theorem ecomplexityGiven_tableFun_le (A : Fin t → Finset (Fin (2 ^ p))) (T : F
     exact_mod_cast hsize.trans (by rw [Finset.card_image_of_injective _ hinj])
 
 /-- **Completeness.** For `p ≥ 1`, if the windows `C` cover every input, the template followed by
-`T` costs at most the number of distinct non-input gate functions plus `#C - 1`
-[IlangoLoffOliveira2020, Lemma 15, p. 22:22]. -/
+`T` costs at most the number of distinct non-input gate functions plus `#C - 1`. This is the
+analogue for this template of [IlangoLoffOliveira2020, Lemma 15, p. 22:22]. -/
 theorem ecomplexity_append_le [NeZero p] (A : Fin t → Finset (Fin (2 ^ p)))
     (T : Fin (2 ^ p) → Bool) (C : Finset (Fin t)) (hC : ∀ y, ∃ i ∈ C, y ∈ A i) :
     ecomplexity I (fun x => Fin.append (template A T x) (single (tableFun T) x)) ≤
