@@ -840,7 +840,7 @@ private theorem card_extPerms_cons_eq_of_unusedDomain {cache : Cache α} (y : α
 
 /-- The answers still available to a query that misses `cache`: `unusedRange cache` for a forward
 query and `unusedDomain cache` for an inverse query. -/
-private def freshAnswers (cache : Cache α) : PermQuery α → Finset α
+def freshAnswers (cache : Cache α) : PermQuery α → Finset α
   | .forward _ => unusedRange cache
   | .inverse _ => unusedDomain cache
 
@@ -1200,7 +1200,7 @@ theorem run_interpret_forgetfulAnswer_liftForward {β : Type}
 /-- Forgetful lazy handler instrumented with a `bad` flag that records whether a fresh draw fell
 outside `freshAnswers`: a forward draw collided with `ran(cache)` or an inverse draw collided with
 `dom(cache)`. -/
-private noncomputable def forgetfulWithBad (q : PermQuery α) :
+noncomputable def forgetfulWithBad (q : PermQuery α) :
     StateT (Cache α × Bool) PMF α := fun (cache, bad) =>
   match cachedAnswer cache q with
   | some a => PMF.pure (a, (cache, bad))
@@ -1211,7 +1211,7 @@ private noncomputable def forgetfulWithBad (q : PermQuery α) :
 /-- Coupled exact lazy handler with a `bad` flag: draw a candidate uniformly from `α`; if it lies in
 `freshAnswers` (`unusedRange` for a forward query, `unusedDomain` for an inverse one), use it
 directly, and otherwise set `bad := true` and resample with `answer`. -/
-private noncomputable def exactWithBad (q : PermQuery α) :
+noncomputable def exactWithBad (q : PermQuery α) :
     StateT (Cache α × Bool) PMF α := fun (cache, bad) =>
   match cachedAnswer cache q with
   | some a => PMF.pure (a, (cache, bad))
@@ -1222,7 +1222,7 @@ private noncomputable def exactWithBad (q : PermQuery α) :
     else
       (answer q cache).map fun (a, cache') => (a, (cache', true))
 
-private theorem forgetfulWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool) :
+theorem forgetfulWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool) :
     (forgetfulWithBad q st).map (fun (a, st') => (a, st'.1)) = forgetfulAnswer q st.1 := by
   rcases st with ⟨cache, bad⟩
   cases h : cachedAnswer cache q with
@@ -1239,7 +1239,7 @@ private theorem run_interpret_forgetfulWithBad_map_fst {β : Type}
   OracleComp.run_interpret_map_state forgetfulWithBad forgetfulAnswer Prod.fst
     forgetfulWithBad_map_fst program (cache, bad)
 
-private theorem exactWithBad_preserve_isPartialBijection (q : PermQuery α) (st : Cache α × Bool)
+theorem exactWithBad_preserve_isPartialBijection (q : PermQuery α) (st : Cache α × Bool)
     (hst : IsPartialBijection st.1) (a : α) (st' : Cache α × Bool)
     (hmem : (a, st') ∈ (exactWithBad q st).support) :
     IsPartialBijection st'.1 := by
@@ -1261,7 +1261,7 @@ private theorem exactWithBad_preserve_isPartialBijection (q : PermQuery α) (st 
       obtain ⟨_, rfl⟩ := Prod.mk.inj heq
       exact answer_preserve_isPartialBijection q cache hst b cache' hmem'
 
-private theorem exactWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool)
+theorem exactWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool)
     (hst : IsPartialBijection st.1) :
     (exactWithBad q st).map (fun (a, st') => (a, st'.1)) = answer q st.1 := by
   rcases st with ⟨cache, bad⟩
@@ -1291,7 +1291,7 @@ private theorem run_interpret_exactWithBad_map_fst {β : Type}
     exactWithBad_map_fst program (cache, bad) hcache
 
 /-- `exactWithBad` and `forgetfulWithBad` are identical until `bad = true`. -/
-private theorem identicalUntilBad_exactWithBad_forgetfulWithBad :
+theorem identicalUntilBad_exactWithBad_forgetfulWithBad :
     IdenticalUntilBad (spec := PermOracleSpec α) exactWithBad forgetfulWithBad
       (fun st : Cache α × Bool => st.2 = true) where
   agree q st hst a st' hst' := by
@@ -1350,7 +1350,7 @@ private theorem identicalUntilBad_exactWithBad_forgetfulWithBad :
 
 /-- Over an `n`-query-bounded program starting from `(cache, false)`, `forgetfulWithBad` reaches
 `bad = true` with probability at most `(n * cache.length + n.choose 2) * |α|⁻¹`. -/
-private theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
+theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     {program : OracleComp (PermOracleSpec α) β} {n : ℕ}
     (hn : IsQueryBounded program n) (cache : Cache α) :
     ((OracleComp.interpret forgetfulWithBad program).run (cache, false)).toOuterMeasure
@@ -1436,7 +1436,7 @@ theorem forgetfulAnswer_bind_apply_le_uniformPerm {β γ : Type}
   have hbad := toOuterMeasure_bad_forgetfulWithBad_le hQ []
   simpa only [List.length_nil, mul_zero, zero_add] using hbad
 
-private theorem forgetfulWithBad_step_good (q : PermQuery α) (c c' : Cache α) (a : α)
+theorem forgetfulWithBad_step_good (q : PermQuery α) (c c' : Cache α) (a : α)
     (hmem : (a, (c', false)) ∈ (forgetfulWithBad q (c, false)).support)
     (hp1 : c.Pairwise (fun x y => x.1 ≠ y.1)) (hp2 : c.Pairwise (fun x y => x.2 ≠ y.2)) :
     c'.Pairwise (fun x y => x.1 ≠ y.1) ∧ c'.Pairwise (fun x y => x.2 ≠ y.2) ∧
@@ -1458,7 +1458,7 @@ private theorem forgetfulWithBad_step_good (q : PermQuery α) (c c' : Cache α) 
       List.pairwise_cons.mpr ⟨fun e he => (invLookup_eq_none_iff.mp h2 e he).symm, hp2⟩,
       le_rfl⟩
 
-private theorem forgetfulWithBad_pairwise_and_length_le {β : Type}
+theorem forgetfulWithBad_pairwise_and_length_le {β : Type}
     {program : OracleComp (PermOracleSpec α) β} {n : ℕ}
     (hn : IsQueryBounded program n) {c c' : Cache α} {a : β}
     (hp1 : c.Pairwise (fun x y => x.1 ≠ y.1)) (hp2 : c.Pairwise (fun x y => x.2 ≠ y.2))
