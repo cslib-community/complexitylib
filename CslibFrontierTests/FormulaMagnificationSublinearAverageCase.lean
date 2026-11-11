@@ -23,6 +23,25 @@ open Cslib Cslib.Circuits Cslib.Circuits.Boolean Filter Asymptotics
 example : MCSP.sqrtThreshold 16 = 16 :=
   MCSP.sqrtThreshold_sq 4
 
+-- Away from perfect squares the floor matters: `⌊2 ^ √3⌋₊ = 3`, as `3 ^ 5 ≤ 2 ^ 8 ≤ 2 ^ (5 √3)`
+-- and `√3 < 2`.
+example : MCSP.sqrtThreshold 3 = 3 := by
+  have hpos : (0 : ℝ) < 2 ^ Real.sqrt 3 := by positivity
+  rw [MCSP.sqrtThreshold, Nat.cast_ofNat, Nat.floor_eq_iff hpos.le]
+  constructor
+  · have h8 : (8 : ℝ) ≤ Real.sqrt 3 * 5 := by
+      have : (8 / 5 : ℝ) ≤ Real.sqrt 3 := Real.le_sqrt' (by norm_num) |>.mpr (by norm_num)
+      linarith
+    have h5 : (3 : ℝ) ^ 5 ≤ (2 ^ Real.sqrt 3) ^ 5 := by
+      rw [← Real.rpow_natCast (2 ^ Real.sqrt 3) 5, ← Real.rpow_mul (by norm_num)]
+      calc (3 : ℝ) ^ 5 ≤ 2 ^ (8 : ℝ) := by norm_num
+        _ ≤ 2 ^ (Real.sqrt 3 * ((5 : ℕ) : ℝ)) :=
+          Real.rpow_le_rpow_of_exponent_le (by norm_num) (by push_cast; linarith)
+    exact_mod_cast (pow_le_pow_iff_left₀ (by norm_num) hpos.le (by norm_num)).mp h5
+  · have h2 : Real.sqrt 3 < 2 := (Real.sqrt_lt' (by norm_num)).mpr (by norm_num)
+    calc (2 : ℝ) ^ Real.sqrt 3 < 2 ^ (2 : ℝ) := Real.rpow_lt_rpow_of_exponent_lt (by norm_num) h2
+      _ = (3 : ℕ) + 1 := by norm_num
+
 -- The threshold lies between `2 ^ ⌊√n⌋` and `2 ^ (⌊√n⌋ + 1)`.
 example (n : ℕ) : 2 ^ Nat.sqrt n ≤ MCSP.sqrtThreshold n ∧
     MCSP.sqrtThreshold n ≤ 2 ^ (Nat.sqrt n + 1) :=

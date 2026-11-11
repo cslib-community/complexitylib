@@ -172,7 +172,7 @@ def leafSize (D : ZeroErrorFormula N) : ℕ :=
       D.unknown.eval interpretation T = false ∧ D.answer.eval interpretation T = b := by
   cases h : D.unknown.eval interpretation T <;> simp [eval, h]
 
-theorem leafSize_eq (D : ZeroErrorFormula N) :
+theorem leafSize_def (D : ZeroErrorFormula N) :
     D.leafSize = D.unknown.leafSize + D.answer.leafSize := by
   simp only [leafSize]
 
@@ -189,7 +189,7 @@ def ofMask (F : Formula signature N) : ZeroErrorFormula N :=
   simp only [ofMask]
 
 @[simp] theorem leafSize_ofMask (F : Formula signature N) : (ofMask F).leafSize = F.leafSize := by
-  simp [leafSize_eq]
+  simp [leafSize_def]
 
 end ZeroErrorFormula
 
@@ -268,7 +268,7 @@ private theorem isLittleO_two_pow_of_eventually_le_two_pow_half {f : ℕ → ℕ
 /-- Hardness magnification from sublinear zero-error average-case formulas, for any
 subexponential threshold `s` and unknown fraction `1 / k n` with `k n ≤ 2 ^ n`: if no family of
 ternary De Morgan formula devices of size `o(2 ^ n)` solves `MCSP[s]` on average with zero error,
-then some binary NP language has no polynomial-size formulas. This is the general form of
+then some binary NP language has no polynomial-size formulas. This is a library generalization of
 [OliveiraSanthanam2018, Section 1.2, Theorem 5, p. 8], proved as in
 [OliveiraSanthanam2018, Section 3.3, Theorem 27, p. 21]. -/
 theorem exists_NP_not_mem_FormulaPoly_of_zero_error_average_case_sublinear_hard {s k : ℕ → ℕ}
