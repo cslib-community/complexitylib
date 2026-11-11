@@ -50,9 +50,11 @@ indexing and `O(1)` arithmetic/comparison in `β`:
 * `expandParentTableM`: `n` ticks.
 
 The non-recursive work at any contraction level is at most `7 * n ^ 2 + 6 * n ≤ 13 * n ^ 2` ticks
-(and at most `5 * n ^ 2` at the terminal non-contracting level), yielding at most `13 * n ^ 3`
-(`O(n³)`) ticks in total, including table initialization. Sparse `O(n m)` and `O(m log n)` /
-`O(m + n log n)` implementations remain tracked separately in #3526.
+(and at most `5 * n ^ 2` at the terminal non-contracting level), so `edmondsTableAuxM` runs in at
+most `13 * n ^ 3` ticks; including `2 * n ^ 2` table initialization, `edmondsTableM` and
+`edmondsOutTableM` run in at most `13 * n ^ 3 + 2 * n ^ 2 ≤ 15 * n ^ 3` (`O(n³)`) ticks in
+total. Sparse `O(n m)` and `O(m log n)` / `O(m + n log n)` implementations remain tracked
+separately in #3526.
 
 ## Main definitions
 
@@ -73,10 +75,10 @@ The non-recursive work at any contraction level is at most `7 * n ^ 2 + 6 * n �
   `Cslib.Algorithms.Lean.Arborescence.edmondsTable_optimal`,
   `Cslib.Algorithms.Lean.Arborescence.edmondsOutTable_spec`: transferred correctness and
   optimality.
-* `Cslib.Algorithms.Lean.Arborescence.time_edmondsTableAuxM_le`,
+* `Cslib.Algorithms.Lean.Arborescence.time_edmondsTableAuxM_le` (`≤ 13 * n ^ 3`),
   `Cslib.Algorithms.Lean.Arborescence.time_edmondsTableM_le`,
-  `Cslib.Algorithms.Lean.Arborescence.time_edmondsOutTableM_le`: explicit `≤ 13 * n ^ 3`
-  (`O(n³)`) charged step bounds.
+  `Cslib.Algorithms.Lean.Arborescence.time_edmondsOutTableM_le` (`≤ 15 * n ^ 3`): explicit
+  `O(n³)` charged step bounds.
 
 ## References
 
@@ -1547,6 +1549,19 @@ theorem edmondsTableM_ret_eq_edmonds {V : Type*} [FinEnum V] (G : Digraph V) [De
     (fun u w => decide (G.Adj u w)) c r
     (fun u w => ret_initAdjTableM _ _ u w) (fun u w => ret_initCostTableM _ _ u w)
 
+private theorem time_edmondsInitAndAux_le (n : ℕ) (r : Fin n)
+    (aFn : Fin n → Fin n → Bool) (cFn : Fin n → Fin n → β) :
+    (initAdjTableM n aFn).time + (initCostTableM n cFn).time +
+        (edmondsTableAuxM r n (initAdjTableM n aFn).ret (initCostTableM n cFn).ret).time ≤
+      15 * n ^ 3 := by
+  have ha := time_initAdjTableM n aFn
+  have hc := time_initCostTableM n cFn
+  have haux :=
+    time_edmondsTableAuxM_le r (initAdjTableM n aFn).ret (initCostTableM n cFn).ret
+  have hn : 0 < n := Nat.lt_of_le_of_lt (Nat.zero_le _) r.isLt
+  have hn2 : n ^ 2 ≤ n ^ 3 := Nat.pow_le_pow_right hn (by decide)
+  omega
+
 /-- **`O(n³)` charged step bound for `edmondsTableM`**: initializing the `n × n` tables and
 running the contraction solver takes at most `13 * n ^ 3 + 2 * n ^ 2 ≤ 15 * n ^ 3` ticks on `n`
 vertices. -/
@@ -1554,21 +1569,8 @@ theorem time_edmondsTableM_le {V : Type*} [FinEnum V] (G : Digraph V) [Decidable
     (c : V → V → β) (r : V) :
     (edmondsTableM G c r).time ≤ 15 * (FinEnum.card V) ^ 3 := by
   let e : V ≃ Fin (FinEnum.card V) := @FinEnum.equiv V _
-  let n := FinEnum.card V
-  let aFn : Fin n → Fin n → Bool := fun u w => decide (G.Adj (e.symm u) (e.symm w))
-  let cFn : Fin n → Fin n → β := fun u w => c (e.symm u) (e.symm w)
-  have ha := time_initAdjTableM n aFn
-  have hc := time_initCostTableM n cFn
-  have haux :
-      (edmondsTableAuxM (e r) n (initAdjTableM n aFn).ret (initCostTableM n cFn).ret).time ≤
-        13 * n ^ 3 :=
-    time_edmondsTableAuxM_le (e r) (initAdjTableM n aFn).ret (initCostTableM n cFn).ret
-  have hn : 0 < n := Nat.lt_of_le_of_lt (Nat.zero_le _) (e r).isLt
-  have hn2 : n ^ 2 ≤ n ^ 3 := Nat.pow_le_pow_right hn (by decide)
-  change (initAdjTableM n aFn).time + (initCostTableM n cFn).time +
-      (edmondsTableAuxM (e r) n (initAdjTableM n aFn).ret (initCostTableM n cFn).ret).time ≤
-    15 * n ^ 3
-  omega
+  exact time_edmondsInitAndAux_le (FinEnum.card V) (e r)
+    (fun u w => decide (G.Adj (e.symm u) (e.symm w))) (fun u w => c (e.symm u) (e.symm w))
 
 /-- Materialized-table correctness for spanning in-arborescences, transferred from
 `edmonds_spec`. -/
@@ -1610,26 +1612,15 @@ theorem edmondsOutTableM_ret_eq_edmondsOut {V : Type*} [FinEnum V] (G : Digraph 
     (fun u w => decide (G.Adj w u)) (fun u w => c w u) r
     (fun u w => ret_initAdjTableM _ _ u w) (fun u w => ret_initCostTableM _ _ u w)
 
-/-- **`O(n³)` charged step bound for `edmondsOutTableM`**. -/
+/-- **`O(n³)` charged step bound for `edmondsOutTableM`**: initializing the reversed `n × n`
+tables and running the contraction solver takes at most `13 * n ^ 3 + 2 * n ^ 2 ≤ 15 * n ^ 3`
+ticks on `n` vertices. -/
 theorem time_edmondsOutTableM_le {V : Type*} [FinEnum V] (G : Digraph V) [DecidableRel G.Adj]
     (c : V → V → β) (r : V) :
     (edmondsOutTableM G c r).time ≤ 15 * (FinEnum.card V) ^ 3 := by
   let e : V ≃ Fin (FinEnum.card V) := @FinEnum.equiv V _
-  let n := FinEnum.card V
-  let aFn : Fin n → Fin n → Bool := fun u w => decide (G.Adj (e.symm w) (e.symm u))
-  let cFn : Fin n → Fin n → β := fun u w => c (e.symm w) (e.symm u)
-  have ha := time_initAdjTableM n aFn
-  have hc := time_initCostTableM n cFn
-  have haux :
-      (edmondsTableAuxM (e r) n (initAdjTableM n aFn).ret (initCostTableM n cFn).ret).time ≤
-        13 * n ^ 3 :=
-    time_edmondsTableAuxM_le (e r) (initAdjTableM n aFn).ret (initCostTableM n cFn).ret
-  have hn : 0 < n := Nat.lt_of_le_of_lt (Nat.zero_le _) (e r).isLt
-  have hn2 : n ^ 2 ≤ n ^ 3 := Nat.pow_le_pow_right hn (by decide)
-  change (initAdjTableM n aFn).time + (initCostTableM n cFn).time +
-      (edmondsTableAuxM (e r) n (initAdjTableM n aFn).ret (initCostTableM n cFn).ret).time ≤
-    15 * n ^ 3
-  omega
+  exact time_edmondsInitAndAux_le (FinEnum.card V) (e r)
+    (fun u w => decide (G.Adj (e.symm w) (e.symm u))) (fun u w => c (e.symm w) (e.symm u))
 
 /-- Materialized-table correctness for out-arborescences, transferred from `edmondsOut_spec`. -/
 theorem edmondsOutTable_spec [IsOrderedAddMonoid β] {V : Type*} [FinEnum V]

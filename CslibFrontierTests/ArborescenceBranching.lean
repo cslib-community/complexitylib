@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: local-only (test driver)
+
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import Mathlib.Data.Fin.VecNotation
 
@@ -23,6 +26,8 @@ Exercises the full `#3526` arborescence and branching stack:
   `optimumBranchingList`), positive/negative/out-of-bounds threshold deciders, and `P` membership
   (`minArborescenceDec_mem_P`, `minOutArborescenceDec_mem_P`, `maxBranchingDec_mem_P`).
 -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.ArborescenceBranching
 

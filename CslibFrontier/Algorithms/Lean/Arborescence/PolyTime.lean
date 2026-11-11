@@ -1728,6 +1728,25 @@ theorem computableInPolyTime_edmondsOutList :
   unfold edmondsOutList
   exact ite computableInPolyTime_rootInBounds hrun (const none)
 
+private theorem computableInPolyTime_nonRootFilter
+    (hcr : ComputableInPolyTime (fun d : ArborescenceDecInstance => clampedRoot d.inst)
+      encArborescenceDecInstance encUnary) :
+    ComputableInPolyTime
+      (fun q : ArborescenceDecInstance × List ℕ =>
+        (List.range q.1.inst.adj.length).filter fun v => v != clampedRoot q.1.inst)
+      (encPair encArborescenceDecInstance (encList encUnary)) (encList encUnary) := by
+  refine filterWithInput (range.comp (by fun_prop)) ?_
+  have hcr' : ComputableInPolyTime
+      (fun r : (ArborescenceDecInstance × List ℕ) × ℕ => clampedRoot r.1.1.inst)
+      (encPair (encPair encArborescenceDecInstance (encList encUnary)) encUnary)
+      encUnary :=
+    hcr.comp ((fst _ _).comp (fst _ _))
+  have hv : ComputableInPolyTime
+      (fun r : (ArborescenceDecInstance × List ℕ) × ℕ => r.2)
+      (encPair (encPair encArborescenceDecInstance (encList encUnary)) encUnary)
+      encUnary := by fun_prop
+  exact bool_not.comp (unary_beq' hv hcr')
+
 theorem computableInPolyTime_minArborescenceDecide :
     ComputableInPolyTime minArborescenceDecide encArborescenceDecInstance encBool := by
   have hed : ComputableInPolyTime (fun d : ArborescenceDecInstance => edmondsList d.inst)
@@ -1742,25 +1761,9 @@ theorem computableInPolyTime_minArborescenceDecide :
       (fun q : ArborescenceDecInstance × List ℕ =>
         (((List.range q.1.inst.adj.length).filter fun v => v != clampedRoot q.1.inst).map fun v =>
           costAt q.1.inst.cost v (q.2.getD v 0)).sum)
-      (encPair encArborescenceDecInstance (encList encUnary)) encIntBin := by
-    refine intBin_sum.comp ?_
-    refine mapWithInput (filterWithInput (range.comp (by fun_prop)) ?_) ?_
-    · have hne : ComputableInPolyTime
-          (fun r : (ArborescenceDecInstance × List ℕ) × ℕ =>
-            r.2 != clampedRoot r.1.1.inst)
-          (encPair (encPair encArborescenceDecInstance (encList encUnary)) encUnary) encBool := by
-        have hcr' : ComputableInPolyTime
-            (fun r : (ArborescenceDecInstance × List ℕ) × ℕ => clampedRoot r.1.1.inst)
-            (encPair (encPair encArborescenceDecInstance (encList encUnary)) encUnary)
-            encUnary :=
-          hcr.comp ((fst _ _).comp (fst _ _))
-        have hv : ComputableInPolyTime
-            (fun r : (ArborescenceDecInstance × List ℕ) × ℕ => r.2)
-            (encPair (encPair encArborescenceDecInstance (encList encUnary)) encUnary)
-            encUnary := by fun_prop
-        exact bool_not.comp (unary_beq' hv hcr')
-      exact hne
-    · exact computableInPolyTime_costAt' (by fun_prop) (by fun_prop) (by fun_prop)
+      (encPair encArborescenceDecInstance (encList encUnary)) encIntBin :=
+    intBin_sum.comp (mapWithInput (computableInPolyTime_nonRootFilter hcr)
+      (computableInPolyTime_costAt' (by fun_prop) (by fun_prop) (by fun_prop)))
   exact intBin_le' htotal (by fun_prop)
 
 theorem computableInPolyTime_minOutArborescenceDecide :
@@ -1777,20 +1780,9 @@ theorem computableInPolyTime_minOutArborescenceDecide :
       (fun q : ArborescenceDecInstance × List ℕ =>
         (((List.range q.1.inst.adj.length).filter fun v => v != clampedRoot q.1.inst).map fun v =>
           costAt q.1.inst.cost (q.2.getD v 0) v).sum)
-      (encPair encArborescenceDecInstance (encList encUnary)) encIntBin := by
-    refine intBin_sum.comp ?_
-    refine mapWithInput (filterWithInput (range.comp (by fun_prop)) ?_) ?_
-    · have hcr' : ComputableInPolyTime
-          (fun r : (ArborescenceDecInstance × List ℕ) × ℕ => clampedRoot r.1.1.inst)
-          (encPair (encPair encArborescenceDecInstance (encList encUnary)) encUnary)
-          encUnary :=
-        hcr.comp ((fst _ _).comp (fst _ _))
-      have hv : ComputableInPolyTime
-          (fun r : (ArborescenceDecInstance × List ℕ) × ℕ => r.2)
-          (encPair (encPair encArborescenceDecInstance (encList encUnary)) encUnary)
-          encUnary := by fun_prop
-      exact bool_not.comp (unary_beq' hv hcr')
-    · exact computableInPolyTime_costAt' (by fun_prop) (by fun_prop) (by fun_prop)
+      (encPair encArborescenceDecInstance (encList encUnary)) encIntBin :=
+    intBin_sum.comp (mapWithInput (computableInPolyTime_nonRootFilter hcr)
+      (computableInPolyTime_costAt' (by fun_prop) (by fun_prop) (by fun_prop)))
   exact intBin_le' htotal (by fun_prop)
 
 private theorem computableInPolyTime_superRootAdjList :
@@ -2034,7 +2026,7 @@ private theorem argMinRange_fin {n : ℕ} (pred : Fin n → Bool) (key : Fin n �
   simpa [List.argmin, argMinRange, map_val_finRange] using h
 
 /-- Boolean adjacency relation on `Fin n × Fin n` read from row-major table `a`. -/
-@[expose] def tableAdj (n : ℕ) (a : List (List Bool)) (u w : Fin n) : Bool :=
+private def tableAdj (n : ℕ) (a : List (List Bool)) (u w : Fin n) : Bool :=
   adjAt a u.1 w.1
 
 private theorem decide_congr_inst {p : Prop} (d₁ d₂ : Decidable p) :
@@ -2647,18 +2639,6 @@ private theorem arcCost_parentDigraph_eq_sum_range {n : ℕ} (c : List (List ℤ
   dsimp only [Function.comp_apply, tableCost]
   rw [hp v]
 
-private theorem arcCost_congr_inst {V β : Type*} (f₁ f₂ : Fintype V) [AddCommMonoid β]
-    {T : Digraph V} (d₁ d₂ : DecidableRel T.Adj) (c : V → V → β) :
-    @arcCost V β f₁ _ T d₁ c = @arcCost V β f₂ _ T d₂ c := by
-  cases Subsingleton.elim f₁ f₂
-  cases Subsingleton.elim d₁ d₂
-  rfl
-
-private theorem arcCost_congr_dec {V β : Type*} [Fintype V] [AddCommMonoid β]
-    {T : Digraph V} (d₁ d₂ : DecidableRel T.Adj) (c : V → V → β) :
-    @arcCost V β _ _ T d₁ c = @arcCost V β _ _ T d₂ c :=
-  arcCost_congr_inst _ _ d₁ d₂ c
-
 theorem minArborescenceDecide_eq_true_iff (d : ArborescenceDecInstance) :
     minArborescenceDecide d = true ↔ d ∈ minArborescenceDec := by
   unfold minArborescenceDecide minArborescenceDec
@@ -2691,15 +2671,15 @@ theorem minArborescenceDecide_eq_true_iff (d : ArborescenceDecInstance) :
         constructor
         · intro hle
           refine ⟨hr, Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV, hT, hTG, ?_⟩
-          rw [← arcCost_congr_dec (Classical.decRel _) _ (tableCost d.inst.cost)] at hle
+          rw [← arcCost_congr _ _ (Classical.decRel _) _ rfl (tableCost d.inst.cost)] at hle
           exact hle
         · rintro ⟨_, T₁, hT₁, hT₁G, hle₁⟩
           let _ := Classical.decRel T₁.Adj
           have hc := hopt T₁ hT₁ hT₁G
-          rw [arcCost_congr_inst (T := T₁) _ (Fin.fintype _) _ (Classical.decRel T₁.Adj)
+          rw [arcCost_congr (T₁ := T₁) _ (Fin.fintype _) _ (Classical.decRel T₁.Adj) rfl
               (tableCost d.inst.cost),
-            arcCost_congr_inst (T := Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV) _
-              (Fin.fintype _) _ inferInstance (tableCost d.inst.cost)] at hc
+            arcCost_congr (T₁ := Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV) _
+              (Fin.fintype _) _ inferInstance rfl (tableCost d.inst.cost)] at hc
           dsimp only at hle₁
           exact hc.trans hle₁
   · have hcond : decide ((d.inst.root : ℤ) < (d.inst.adj.length : ℤ)) = false :=
@@ -2805,7 +2785,7 @@ theorem minOutArborescenceDecide_eq_true_iff (d : ArborescenceDecInstance) :
               (Classical.decRel _) (tableCost d.inst.cost) := by
           have har := arcCost_reverse (Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV)
             (fun u w => tableCost d.inst.cost w u)
-          rw [arcCost_congr_dec _ (Classical.decRel _) (tableCost d.inst.cost)] at har
+          rw [arcCost_congr _ _ _ (Classical.decRel _) rfl (tableCost d.inst.cost)] at har
           rw [har]
           have hct := arcCost_parentDigraph_eq_sum_range (transposeIntTable n d.inst.cost)
             ⟨d.inst.root, hr⟩ pV pL hp_eq
@@ -2836,8 +2816,7 @@ theorem minOutArborescenceDecide_eq_true_iff (d : ArborescenceDecInstance) :
         · intro hle
           refine ⟨hr, (Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV).reverse, hT_arb, hT_le, ?_⟩
           dsimp only
-          rw [arcCost_congr_inst (f₁ := _) (f₂ := Fin.fintype n) (d₁ := _)
-            (d₂ := Classical.decRel _) (tableCost d.inst.cost)]
+          rw [arcCost_congr _ (Fin.fintype n) _ (Classical.decRel _) rfl (tableCost d.inst.cost)]
           exact hle
         · rintro ⟨hr', T₁, hT₁, hT₁G, hle₁⟩
           obtain ⟨t, ht_root, ht_eq⟩ :=
@@ -2849,10 +2828,11 @@ theorem minOutArborescenceDecide_eq_true_iff (d : ArborescenceDecInstance) :
               ⟨d.inst.root, hr⟩ pV (fun u w => tableCost d.inst.cost w u),
             ← @arcCost_parentDigraph (Fin n) ℤ FinEnum.instFintype FinEnum.decEq _
               ⟨d.inst.root, hr'⟩ t (fun u w => tableCost d.inst.cost w u)] at hc
-          rw [arcCost_congr_inst (T := Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV) _
-              (Fin.fintype n) _ (Classical.decRel _) (fun u w => tableCost d.inst.cost w u),
-            arcCost_congr_inst (T := Digraph.parentDigraph ⟨d.inst.root, hr'⟩ t) _
-              (Fin.fintype n) _ (Classical.decRel _) (fun u w => tableCost d.inst.cost w u)] at hc
+          rw [arcCost_congr (T₁ := Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV) _
+              (Fin.fintype n) _ (Classical.decRel _) rfl (fun u w => tableCost d.inst.cost w u),
+            arcCost_congr (T₁ := Digraph.parentDigraph ⟨d.inst.root, hr'⟩ t) _
+              (Fin.fintype n) _ (Classical.decRel _) rfl
+              (fun u w => tableCost d.inst.cost w u)] at hc
           rw [← @arcCost_reverse (Fin n) ℤ (Fin.fintype n) _
               (Digraph.parentDigraph ⟨d.inst.root, hr⟩ pV) (Classical.decRel _)
               (Classical.decRel _) (fun u w => tableCost d.inst.cost w u),
@@ -3245,7 +3225,7 @@ theorem maxBranchingDecide_eq_true_iff (d : BranchingDecInstance) :
         _ = -@arcCost (Fin n) ℤ (Fin.fintype n) Int.instAddCommMonoid Bstar (Classical.decRel _)
               (tableCost d.inst.weight) := by
             rw [arcCost_superRootExtend Bstar (tableCost d.inst.weight),
-              arcCost_congr_inst _ (Fin.fintype n) _ (Classical.decRel _)
+              arcCost_congr _ (Fin.fintype n) _ (Classical.decRel _) rfl
                 (tableCost d.inst.weight)]
     have hrhs : @arcCost (Fin (n + 1)) ℤ FinEnum.instFintype Int.instAddCommMonoid
           T₁ (Classical.decRel _) (tableCost wt') =
@@ -3263,16 +3243,16 @@ theorem maxBranchingDecide_eq_true_iff (d : BranchingDecInstance) :
                 (e (e.symm u)) (e (e.symm w))) = superRootCost (tableCost d.inst.weight) := by
               funext u w; simp only [Equiv.apply_symm_apply]
             dsimp only [T₁]
-            rw [arcCost_congr_dec _ _ _, h, hc]
+            rw [arcCost_congr _ _ _ _ rfl _, h, hc]
         _ = -@arcCost (Fin n) ℤ (Fin.fintype n) Int.instAddCommMonoid B₁ (Classical.decRel _)
               (tableCost d.inst.weight) := by
             rw [arcCost_superRootExtend B₁ (tableCost d.inst.weight),
-              arcCost_congr_inst _ (Fin.fintype n) _ (Classical.decRel _)
+              arcCost_congr _ (Fin.fintype n) _ (Classical.decRel _) rfl
                 (tableCost d.inst.weight)]
-    rw [arcCost_congr_inst (T := Digraph.parentDigraph r pV) _ FinEnum.instFintype _
-        (Classical.decRel _) (tableCost wt'),
-      arcCost_congr_inst (T := T₁) _ FinEnum.instFintype _
-        (Classical.decRel _) (tableCost wt')] at hcmp
+    rw [arcCost_congr (T₁ := Digraph.parentDigraph r pV) _ FinEnum.instFintype _
+        (Classical.decRel _) rfl (tableCost wt'),
+      arcCost_congr (T₁ := T₁) _ FinEnum.instFintype _
+        (Classical.decRel _) rfl (tableCost wt')] at hcmp
     rw [hlhs, hrhs] at hcmp
     exact neg_le_neg_iff.mp hcmp
   unfold maxBranchingDecide maxBranchingDec
@@ -3284,13 +3264,13 @@ theorem maxBranchingDecide_eq_true_iff (d : BranchingDecInstance) :
   constructor
   · intro hth
     refine ⟨Bstar, hB_branch, hBstar_le, ?_⟩
-    rw [arcCost_congr_inst (f₁ := _) (f₂ := Fin.fintype n) (d₁ := _) (d₂ := Classical.decRel _)
+    rw [arcCost_congr _ (Fin.fintype n) _ (Classical.decRel _) rfl
       (tableCost d.inst.weight)]
     exact hth
   · rintro ⟨B₁, hB₁, hB₁G, hle₁⟩
     classical
     have hc := hBstar_opt B₁ hB₁ hB₁G
-    rw [arcCost_congr_inst (T := B₁) _ (Fin.fintype n) _ (Classical.decRel _)
+    rw [arcCost_congr (T₁ := B₁) _ (Fin.fintype n) _ (Classical.decRel _) rfl
         (tableCost d.inst.weight)] at hle₁
     exact hle₁.trans hc
 
