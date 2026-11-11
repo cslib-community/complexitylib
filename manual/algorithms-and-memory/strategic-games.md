@@ -446,14 +446,15 @@ parity argument:
 - [Bimatrix/RationalVertex.lean](../../CslibFrontier/GameTheory/Bimatrix/RationalVertex.lean)
   perturbs positive integer payoff matrices with `K = 2 ^ bitBound m n H` (`intMatP`, `intMatQ`,
   `pertRhsPInt`, `pertRhsQInt`), establishes nondegeneracy over every ordered field, and recovers
-  unperturbed exact rational Nash equilibria via signed Cramer determinants (`extractNumP`,
-  `extractNumQ`, `isNash_extractNum`) with polynomial numerator bounds `m! * H^m` and `n! * H^n`.
-- [Bimatrix/PPAD.lean](../../CslibFrontier/GameTheory/Bimatrix/PPAD.lean) defines `BimatrixCode`
-  under `encBimatrix`, the rational Nash search problem `BimatrixNash` (accepting `[]` on
-  malformed codes), polynomial-time bit-encoded graph maps `pred` and `succ` on `2 * (m + n)`
-  bits, and `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`,
-  `BimatrixNash_mem_PPAD`, `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and
-  `BimatrixNash_searchReducible_EndOfLine`.
+  unperturbed exact rational Nash equilibria via signed Cramer determinants (`cramerVec`,
+  `basisSignNum`, `IsFeasibleBasis`, `isNash_extractNum`) with polynomial numerator bounds
+  `m! * H^m` and `n! * H^n`.
+- [Bimatrix/PPAD.lean](../../CslibFrontier/GameTheory/Bimatrix/PPAD.lean) defines the
+  structure `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix`),
+  the rational Nash search problem `BimatrixNash` (accepting `[]` on malformed codes),
+  polynomial-time bit-encoded graph maps `pred` and `succ` on `2 * (m + n)` bits, and
+  `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`, `BimatrixNash_mem_PPAD`,
+  `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`.
 
 Executing the Lemke–Howson path as a standalone solver, extending the undirected parity theorem
 directly to degenerate bimatrix games, and proving the Savani–von Stengel exponential lower

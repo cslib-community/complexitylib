@@ -36,25 +36,25 @@ open Cslib Cslib.Complexity Cslib.GameTheory Cslib.GameTheory.BimatrixCode Turin
 /-! ### Concrete games and malformed inputs -/
 
 /-- `2 × 2` coordination game. -/
-def coordCode : BimatrixCode := ([[1, 0], [0, 1]], [[1, 0], [0, 1]])
+def coordCode : BimatrixCode := ⟨[[1, 0], [0, 1]], [[1, 0], [0, 1]]⟩
 
 /-- `2 × 2` matching pennies (unique mixed equilibrium `(1/2, 1/2)`). -/
-def penniesCode : BimatrixCode := ([[1, -1], [-1, 1]], [[-1, 1], [1, -1]])
+def penniesCode : BimatrixCode := ⟨[[1, -1], [-1, 1]], [[-1, 1], [1, -1]]⟩
 
 /-- `3 × 2` game (3.3) of [vonStengel2007] with equilibrium `((4/5, 1/5, 0), (2/3, 1/3))`. -/
-def stengelCode : BimatrixCode := ([[3, 3], [2, 5], [0, 6]], [[3, 2], [2, 6], [3, 1]])
+def stengelCode : BimatrixCode := ⟨[[3, 3], [2, 5], [0, 6]], [[3, 2], [2, 6], [3, 1]]⟩
 
 /-- Degenerate `2 × 2` zero game where every pair of mixed strategies is a Nash equilibrium. -/
-def zeroCode : BimatrixCode := ([[0, 0], [0, 0]], [[0, 0], [0, 0]])
+def zeroCode : BimatrixCode := ⟨[[0, 0], [0, 0]], [[0, 0], [0, 0]]⟩
 
 /-- Empty `0 × 0` code (malformed). -/
-def emptyCode : BimatrixCode := ([], [])
+def emptyCode : BimatrixCode := ⟨[], []⟩
 
 /-- Non-rectangular code (malformed). -/
-def nonRectCode : BimatrixCode := ([[1, 0], [0]], [[1, 0], [0, 1]])
+def nonRectCode : BimatrixCode := ⟨[[1, 0], [0]], [[1, 0], [0, 1]]⟩
 
 /-- Mismatched row-count code (malformed). -/
-def mismatchCode : BimatrixCode := ([[1, 0]], [[1, 0], [0, 1]])
+def mismatchCode : BimatrixCode := ⟨[[1, 0]], [[1, 0], [0, 1]]⟩
 
 example : coordCode.WellFormed ∧ coordCode.wellFormedB = true ∧ coordCode.vertexLen = 8 :=
   ⟨(wellFormed_iff_wellFormedB coordCode).2 (by decide), by decide, by decide⟩
@@ -131,8 +131,7 @@ private lemma witness_len_le_of_entry_le {c : BimatrixCode} {x y : List ℚ} {K 
   have hym : (encList encRat y).length ≤ 3 * (2 * K + 1) :=
     hy'.trans (Nat.mul_le_mul_right _ hy_len)
   have hL : 1 ≤ (encBimatrix c).length := by
-    change 1 ≤ (encPair (encList (encList encRat)) (encList (encList encRat)) c).length
-    rw [length_encPair]
+    rw [encBimatrix_apply, length_encPair]
     omega
   change (encPair (encList encRat) (encList encRat) (x, y)).length ≤ _
   rw [length_encPair]

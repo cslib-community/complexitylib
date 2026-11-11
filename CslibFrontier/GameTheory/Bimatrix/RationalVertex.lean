@@ -38,12 +38,10 @@ the scaled best-response polytopes `P_ε = {x ≥ 0 | Bᵀ x ≤ K^n + K^(n-1-j)
 * `Cslib.GameTheory.BimatrixGame.intMatP`, `Cslib.GameTheory.BimatrixGame.intMatQ`,
   `Cslib.GameTheory.BimatrixGame.pertRhsPInt`, `Cslib.GameTheory.BimatrixGame.pertRhsQInt`:
   integral constraint matrices and perturbed right-hand sides.
-* `Cslib.GameTheory.BimatrixGame.IsFeasibleBasisP`,
-  `Cslib.GameTheory.BimatrixGame.IsFeasibleBasisQ`: pure integer Cramer feasibility predicates for
-  `m`-element and `n`-element tight bases.
-* `Cslib.GameTheory.BimatrixGame.extractNumP`, `Cslib.GameTheory.BimatrixGame.extractNumQ`:
-  exact integer numerators for the unperturbed rational Nash equilibrium of a completely labelled
-  basis pair.
+* `Cslib.GameTheory.BimatrixGame.IsFeasibleBasis`: pure integer Cramer feasibility predicate for
+  `k`-element tight bases.
+* `Cslib.GameTheory.BimatrixGame.cramerVec`, `Cslib.GameTheory.BimatrixGame.basisSignNum`:
+  signed Cramer numerator vector for an integer basis system.
 
 ## Main results
 
@@ -51,8 +49,9 @@ the scaled best-response polytopes `P_ε = {x ≥ 0 | Bᵀ x ≤ K^n + K^(n-1-j)
 * `Cslib.GameTheory.BimatrixGame.isNondegenerateSystem_pertP`,
   `Cslib.GameTheory.BimatrixGame.isNondegenerateSystem_pertQ`: nondegeneracy of `(P_ε, Q_ε)` over
   every ordered field (`ℚ`, `ℝ`) whenever `kernelVecBound` is below `K`.
-* `Cslib.GameTheory.BimatrixGame.isFeasibleBasisP_iff_exists_isVertex`,
-  `Cslib.GameTheory.BimatrixGame.isFeasibleBasisQ_iff_exists_isVertex`: bijection between integer
+* `Cslib.GameTheory.BimatrixGame.isFeasibleBasis_iff_ratBasisSol_le`,
+  `Cslib.GameTheory.BimatrixGame.isVertex_ratBasisSol_of_isFeasibleBasis`,
+  `Cslib.GameTheory.BimatrixGame.exists_isFeasibleBasis_of_isVertex`: equivalence between integer
   feasible bases and vertices of `(P_ε, Q_ε)`.
 * `Cslib.GameTheory.BimatrixGame.isNash_extractNum`: any nonzero completely labelled basis pair of
   `(P_ε, Q_ε)` extracts an exact rational Nash equilibrium of `⟨A, B⟩`.
@@ -237,29 +236,29 @@ end BitBound
 
 section Polytopes
 
-/-- Integer constraint matrix `[-I_m ; Bᵀ]` for best-response polytope `P`. -/
+/-- Integer constraint matrix `[-I_m; Bᵀ]` for best-response polytope `P`. -/
 @[expose] def intMatP {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℤ) :
     Matrix (Fin m ⊕ Fin n) (Fin m) ℤ :=
   Matrix.fromRows (-1) Bᵀ
 
-/-- Integer constraint matrix `[A ; -I_n]` for best-response polytope `Q`. -/
+/-- Integer constraint matrix `[A; -I_n]` for best-response polytope `Q`. -/
 @[expose] def intMatQ {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℤ) :
     Matrix (Fin m ⊕ Fin n) (Fin n) ℤ :=
   Matrix.fromRows A (-1)
 
-/-- Unperturbed integer right-hand side `[0 ; 1]` for `P`. -/
+/-- Unperturbed integer right-hand side `[0; 1]` for `P`. -/
 @[expose] def intRhsP (m n : ℕ) : Fin m ⊕ Fin n → ℤ :=
   Sum.elim 0 1
 
-/-- Unperturbed integer right-hand side `[1 ; 0]` for `Q`. -/
+/-- Unperturbed integer right-hand side `[1; 0]` for `Q`. -/
 @[expose] def intRhsQ (m n : ℕ) : Fin m ⊕ Fin n → ℤ :=
   Sum.elim 1 0
 
-/-- Perturbed integer right-hand side `[0 ; K^n + K^(n-1-j)]` for `P_ε`. -/
+/-- Perturbed integer right-hand side `[0; K^n + K^(n-1-j)]` for `P_ε`. -/
 @[expose] def pertRhsPInt (m n : ℕ) (K : ℤ) : Fin m ⊕ Fin n → ℤ :=
   Sum.elim 0 (fun j => K ^ n + K ^ (n - 1 - j.1))
 
-/-- Perturbed integer right-hand side `[K^m + K^(m-1-i) ; 0]` for `Q_ε`. -/
+/-- Perturbed integer right-hand side `[K^m + K^(m-1-i); 0]` for `Q_ε`. -/
 @[expose] def pertRhsQInt (m n : ℕ) (K : ℤ) : Fin m ⊕ Fin n → ℤ :=
   Sum.elim (fun i => K ^ m + K ^ (m - 1 - i.1)) 0
 
