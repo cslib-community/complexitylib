@@ -17,7 +17,7 @@ public import Mathlib.Data.Finset.Sort
 
 A *nice tree decomposition* (`SimpleGraph.NiceTreeDecomposition G`) is a rooted binary tree
 decomposition whose root and leaves have empty bags and whose every internal node is of three types
-[CyganEtAl2015, Section 7.2.2]:
+([CyganEtAl2015]):
 
 * **Leaf**: no children, empty bag `∅`.
 * **Introduce `v`**: one child `child` with `v` outside `child.subtreeVerts` and
@@ -61,7 +61,7 @@ leaves at most `card V + 1` nodes without increasing width, and `RootedTreeDecom
 
 ## References
 
-* [M. Cygan et al., *Parameterized Algorithms*, Section 7.2.2][CyganEtAl2015]
+* [M. Cygan et al., *Parameterized Algorithms*][CyganEtAl2015]
 -/
 
 public section
@@ -545,6 +545,14 @@ private theorem unaryRootedData_succ_bag (rootBag : Finset V) (child : NiceTree 
   rw [h]
 
 omit [DecidableEq V] in
+private theorem unaryRootedData_succ_bag_of_ne_zero (rootBag : Finset V) (child : NiceTree V)
+    (dChild : Fin (child.sizePred + 1) → Fin (child.sizePred + 1) × Finset V)
+    {i : Fin (child.sizePred + 1 + 1)} (hi0 : i.val ≠ 0) :
+    (unaryRootedData rootBag child dChild i).2 =
+      (dChild ⟨i.val - 1, by have := i.isLt; omega⟩).2 := by
+  simp only [unaryRootedData, hi0, ↓reduceDIte]
+
+omit [DecidableEq V] in
 private theorem unaryRootedData_succ_parent_one (rootBag : Finset V) (child : NiceTree V)
     (dChild : Fin (child.sizePred + 1) → Fin (child.sizePred + 1) × Finset V) :
     (unaryRootedData rootBag child dChild ⟨1, by omega⟩).1 = 0 := by
@@ -655,31 +663,23 @@ private theorem mem_subtreeVerts_of_rootedData :
   | .leaf, i, v, hv => by simp [rootedData] at hv
   | .introduce w child, i, v, hv => by
     by_cases hi0 : i.val = 0
-    · have hi' : i = 0 := Fin.ext hi0
-      rw [hi', rootedData_bag_zero] at hv
+    · rw [(Fin.ext hi0 : i = 0), rootedData_bag_zero] at hv
       exact Finset.insert_subset_insert w child.bag_subset_subtreeVerts hv
-    · have his : i.val < child.sizePred + 1 + 1 := by
-        have := i.isLt; simp only [sizePred] at this; exact this
-      let k : Fin (child.sizePred + 1) := ⟨i.val - 1, by omega⟩
-      have hik : (⟨1 + k.val, by have := k.isLt; omega⟩ : Fin (child.sizePred + 1 + 1)) = i :=
-        Fin.ext (by dsimp [k]; omega)
-      have hv' : v ∈ (rootedData child k).2 := by
-        rw [← unaryRootedData_succ_bag (insert w child.bag) child (rootedData child) k]
-        exact hik ▸ hv
+    · have hv' : v ∈ (rootedData child
+          ⟨i.val - 1, by have := i.isLt; simp only [sizePred] at this; omega⟩).2 := by
+        rw [← unaryRootedData_succ_bag_of_ne_zero (insert w child.bag) child (rootedData child)
+          hi0]
+        exact hv
       exact Finset.mem_insert_of_mem (mem_subtreeVerts_of_rootedData (T := child) hv')
   | .forget w child, i, v, hv => by
     by_cases hi0 : i.val = 0
-    · have hi' : i = 0 := Fin.ext hi0
-      rw [hi', rootedData_bag_zero] at hv
+    · rw [(Fin.ext hi0 : i = 0), rootedData_bag_zero] at hv
       exact ((Finset.erase_subset w _).trans child.bag_subset_subtreeVerts) hv
-    · have his : i.val < child.sizePred + 1 + 1 := by
-        have := i.isLt; simp only [sizePred] at this; exact this
-      let k : Fin (child.sizePred + 1) := ⟨i.val - 1, by omega⟩
-      have hik : (⟨1 + k.val, by have := k.isLt; omega⟩ : Fin (child.sizePred + 1 + 1)) = i :=
-        Fin.ext (by dsimp [k]; omega)
-      have hv' : v ∈ (rootedData child k).2 := by
-        rw [← unaryRootedData_succ_bag (child.bag.erase w) child (rootedData child) k]
-        exact hik ▸ hv
+    · have hv' : v ∈ (rootedData child
+          ⟨i.val - 1, by have := i.isLt; simp only [sizePred] at this; omega⟩).2 := by
+        rw [← unaryRootedData_succ_bag_of_ne_zero (child.bag.erase w) child (rootedData child)
+          hi0]
+        exact hv
       exact mem_subtreeVerts_of_rootedData (T := child) hv'
   | .join left right, i, v, hv => by
     dsimp only [rootedData] at hv
@@ -791,34 +791,22 @@ private theorem rootedData_card_le_maxBagCard (T : NiceTree V) (i : Fin (T.sizeP
   | leaf => simp [rootedData, maxBagCard]
   | introduce w child ih =>
     by_cases hi0 : i.val = 0
-    · have hi' : i = 0 := Fin.ext hi0
-      rw [hi', rootedData_bag_zero, bag]
+    · rw [(Fin.ext hi0 : i = 0), rootedData_bag_zero, bag]
       exact le_max_left _ _
     · have his : i.val < child.sizePred + 1 + 1 := by
         have := i.isLt; simp only [sizePred] at this; exact this
-      let k : Fin (child.sizePred + 1) := ⟨i.val - 1, by omega⟩
-      have hik : (⟨1 + k.val, by have := k.isLt; omega⟩ : Fin (child.sizePred + 1 + 1)) = i :=
-        Fin.ext (by dsimp [k]; omega)
-      have hbag : (rootedData (.introduce w child) i).2 = (rootedData child k).2 := by
-        rw [← hik]
-        exact unaryRootedData_succ_bag _ _ _ k
-      rw [hbag]
-      exact (ih k).trans (le_max_right _ _)
+      change (unaryRootedData (insert w child.bag) child (rootedData child) i).2.card ≤ _
+      rw [unaryRootedData_succ_bag_of_ne_zero _ child (rootedData child) hi0]
+      exact (ih ⟨i.val - 1, by omega⟩).trans (le_max_right _ _)
   | forget w child ih =>
     by_cases hi0 : i.val = 0
-    · have hi' : i = 0 := Fin.ext hi0
-      rw [hi', rootedData_bag_zero, bag]
+    · rw [(Fin.ext hi0 : i = 0), rootedData_bag_zero, bag]
       exact le_max_left _ _
     · have his : i.val < child.sizePred + 1 + 1 := by
         have := i.isLt; simp only [sizePred] at this; exact this
-      let k : Fin (child.sizePred + 1) := ⟨i.val - 1, by omega⟩
-      have hik : (⟨1 + k.val, by have := k.isLt; omega⟩ : Fin (child.sizePred + 1 + 1)) = i :=
-        Fin.ext (by dsimp [k]; omega)
-      have hbag : (rootedData (.forget w child) i).2 = (rootedData child k).2 := by
-        rw [← hik]
-        exact unaryRootedData_succ_bag _ _ _ k
-      rw [hbag]
-      exact (ih k).trans (le_max_right _ _)
+      change (unaryRootedData (child.bag.erase w) child (rootedData child) i).2.card ≤ _
+      rw [unaryRootedData_succ_bag_of_ne_zero _ child (rootedData child) hi0]
+      exact (ih ⟨i.val - 1, by omega⟩).trans (le_max_right _ _)
   | join left right ihL ihR =>
     by_cases hi0 : i.val = 0
     · have hi' : i = 0 := Fin.ext hi0
@@ -1339,108 +1327,62 @@ namespace RootedTreeDecomposition
 
 variable {V : Type uV} {G : SimpleGraph V} [DecidableEq V]
 
-private def keepIdx {n : ℕ} (c : Fin (n + 2)) (j : Fin (n + 1)) : Fin (n + 2) :=
-  if _ : j.val < c.val then ⟨j.val, by have := j.isLt; omega⟩
-  else ⟨j.val + 1, by have := j.isLt; omega⟩
-
-private def dropIdx {n : ℕ} (c : Fin (n + 2)) (i : Fin (n + 2)) : Fin (n + 1) :=
-  if _ : i.val < c.val then ⟨i.val, by have := c.isLt; omega⟩
-  else ⟨i.val - 1, by have := i.isLt; omega⟩
-
-private theorem keepIdx_ne {n : ℕ} (c : Fin (n + 2)) (j : Fin (n + 1)) : keepIdx c j ≠ c := by
-  intro h
-  have := congrArg Fin.val h
-  dsimp [keepIdx] at this
-  split_ifs at this <;> dsimp at this <;> omega
-
-private theorem keepIdx_zero {n : ℕ} {c : Fin (n + 2)} (hc : c ≠ 0) : keepIdx c 0 = 0 := by
-  have h0 : (0 : ℕ) < c.val := Nat.pos_of_ne_zero fun h => hc (Fin.ext h)
-  exact Fin.ext (by simp [keepIdx, h0])
-
-private theorem dropIdx_keepIdx {n : ℕ} (c : Fin (n + 2)) (j : Fin (n + 1)) :
-    dropIdx c (keepIdx c j) = j := by
-  apply Fin.ext
-  have hj : j.val < n + 1 := j.isLt
-  have hc : c.val < n + 2 := c.isLt
-  by_cases hjc : j.val < c.val
-  · simp only [keepIdx, dropIdx, hjc, ↓reduceDIte, Fin.val_mk]
-  · have hn : ¬j.val + 1 < c.val := by omega
-    simp only [keepIdx, dropIdx, hjc, hn, ↓reduceDIte, Fin.val_mk, Nat.add_sub_cancel]
-
-private theorem keepIdx_dropIdx {n : ℕ} {c x : Fin (n + 2)} (hx : x ≠ c) :
-    keepIdx c (dropIdx c x) = x := by
-  have hx' : x.val ≠ c.val := fun h => hx (Fin.ext h)
-  have hxlt : x.val < n + 2 := x.isLt
-  have hclt : c.val < n + 2 := c.isLt
-  apply Fin.ext
-  dsimp [keepIdx, dropIdx]
-  split_ifs <;> dsimp at * <;> omega
-
-private theorem dropIdx_lt_dropIdx {n : ℕ} (c : Fin (n + 2)) {x y : Fin (n + 2)} (hxy : x < y)
-    (hx : x ≠ c) (hy : y ≠ c) : dropIdx c x < dropIdx c y := by
-  have hx' : x.val ≠ c.val := fun h => hx (Fin.ext h)
-  have hy' : y.val ≠ c.val := fun h => hy (Fin.ext h)
-  have hxy' : x.val < y.val := Fin.lt_def.1 hxy
-  have hxlt : x.val < n + 2 := x.isLt
-  have hylt : y.val < n + 2 := y.isLt
-  have hclt : c.val < n + 2 := c.isLt
-  rw [Fin.lt_def]
-  dsimp [dropIdx]
-  split_ifs <;> dsimp at * <;> omega
+private theorem succAbove_predAbove_of_ne {n : ℕ} {c x : Fin (n + 2)}
+    (hc0 : c ≠ 0) (hx : x ≠ c) :
+    c.succAbove ((c.pred hc0).predAbove x) = x := by
+  have h1 := Fin.succ_succAbove_predAbove (p := c.pred hc0) (Fin.succ_pred c hc0 ▸ hx)
+  rwa [Fin.succ_pred] at h1
 
 /-- Contract a nonroot node `c` whose bag is a subset of its parent's bag, reducing the node
 count by one without increasing the width. -/
 def contractStep {n : ℕ} (R : G.RootedTreeDecomposition (n + 1)) (c : Fin (n + 2)) (hc0 : c ≠ 0)
     (hsub : R.bag c ⊆ R.bag (R.parent c)) : G.RootedTreeDecomposition n :=
+  let drop : Fin (n + 2) → Fin (n + 1) := (c.pred hc0).predAbove
   let parent' : Fin (n + 1) → Fin (n + 1) := fun j =>
-    let p := R.parent (keepIdx c j)
-    if p = c then dropIdx c (R.parent c) else dropIdx c p
+    let p := R.parent (c.succAbove j)
+    drop (if p = c then R.parent c else p)
+  have hzero : c.succAbove 0 = 0 := (Fin.succAbove_eq_zero_iff hc0).mpr rfl
   have hp0 : parent' 0 = 0 := by
-    have h0 : R.parent (keepIdx c 0) = 0 := by rw [keepIdx_zero hc0, R.parent_zero]
-    dsimp [parent']
+    have h0 : R.parent (c.succAbove 0) = 0 := by rw [hzero, R.parent_zero]
+    dsimp [parent', drop]
     rw [h0, ite_eq_right (fun h => absurd h hc0.symm)]
-    exact Fin.ext (by simp [dropIdx])
+    exact Fin.succAbove_right_injective (p := c)
+      (by rw [succAbove_predAbove_of_ne hc0 hc0.symm, hzero])
   have hplt : ∀ j : Fin (n + 1), j ≠ 0 → parent' j < j := by
     intro j hj0
-    have h0lt : (0 : Fin (n + 2)) < keepIdx c j := by
-      have : (0 : ℕ) < c.val := Nat.pos_of_ne_zero fun h => hc0 (Fin.ext h)
-      have hjv : 0 < j.val := Nat.pos_of_ne_zero fun h => hj0 (Fin.ext h)
-      have hjl : j.val < n + 1 := j.isLt
-      rw [Fin.lt_def]
-      dsimp [keepIdx]
-      split_ifs <;> dsimp <;> omega
-    have hkne : keepIdx c j ≠ 0 := ne_of_gt h0lt
-    have hpk := R.parent_lt (keepIdx c j) hkne
-    dsimp [parent']
+    have hkne : c.succAbove j ≠ 0 := (Fin.succAbove_eq_zero_iff hc0).not.mpr hj0
+    have hpk := R.parent_lt (c.succAbove j) hkne
+    dsimp [parent', drop]
+    rw [← Fin.succAbove_lt_succAbove_iff (p := c)]
     split_ifs with hpc
     · have hpc_lt := R.parent_lt c hc0
-      have hpc_ne : R.parent c ≠ c := ne_of_lt hpc_lt
-      have hlt' : R.parent c < keepIdx c j := by
-        calc
-          R.parent c < c := hpc_lt
-          _ = R.parent (keepIdx c j) := hpc.symm
-          _ < keepIdx c j := hpk
-      simpa only [dropIdx_keepIdx] using dropIdx_lt_dropIdx c hlt' hpc_ne (keepIdx_ne c j)
-    · simpa only [dropIdx_keepIdx] using dropIdx_lt_dropIdx c hpk hpc (keepIdx_ne c j)
+      rw [succAbove_predAbove_of_ne hc0 (ne_of_lt hpc_lt)]
+      calc
+        R.parent c < c := hpc_lt
+        _ = R.parent (c.succAbove j) := hpc.symm
+        _ < c.succAbove j := hpk
+    · rwa [succAbove_predAbove_of_ne hc0 hpc]
   { parent := parent'
     parent_zero := hp0
     parent_lt := hplt
-    bag := fun j => R.bag (keepIdx c j)
+    bag := fun j => R.bag (c.succAbove j)
     exists_mem_bag := fun v => by
       obtain ⟨i, hi⟩ := R.exists_mem_bag v
       by_cases hic : i = c
       · have hpc : R.parent c ≠ c := ne_of_lt (R.parent_lt c hc0)
-        exact ⟨dropIdx c (R.parent c), by
-          rw [keepIdx_dropIdx hpc]; exact hsub (hic ▸ hi)⟩
-      · exact ⟨dropIdx c i, by rwa [keepIdx_dropIdx hic]⟩
+        exact ⟨drop (R.parent c), by
+          rw [succAbove_predAbove_of_ne hc0 hpc]; exact hsub (hic ▸ hi)⟩
+      · exact ⟨drop i, by rwa [succAbove_predAbove_of_ne hc0 hic]⟩
     exists_adj_mem_bag := fun u v huv => by
       obtain ⟨i, hu, hv⟩ := R.exists_adj_mem_bag huv
       by_cases hic : i = c
       · have hpc : R.parent c ≠ c := ne_of_lt (R.parent_lt c hc0)
-        exact ⟨dropIdx c (R.parent c), by rw [keepIdx_dropIdx hpc]; exact hsub (hic ▸ hu),
-          by rw [keepIdx_dropIdx hpc]; exact hsub (hic ▸ hv)⟩
-      · exact ⟨dropIdx c i, by rw [keepIdx_dropIdx hic]; exact hu,
-          by rw [keepIdx_dropIdx hic]; exact hv⟩
+        exact ⟨drop (R.parent c),
+          by rw [succAbove_predAbove_of_ne hc0 hpc]; exact hsub (hic ▸ hu),
+          by rw [succAbove_predAbove_of_ne hc0 hpc]; exact hsub (hic ▸ hv)⟩
+      · exact ⟨drop i,
+          by rw [succAbove_predAbove_of_ne hc0 hic]; exact hu,
+          by rw [succAbove_predAbove_of_ne hc0 hic]; exact hv⟩
     top_unique := fun v _ _ hi hit hj hjt => by
       have htop_ne : R.top v ≠ c := by
         intro htc
@@ -1449,63 +1391,57 @@ def contractStep {n : ℕ} (R : G.RootedTreeDecomposition (n + 1)) (c : Fin (n +
         rcases htop.2 with h0 | hnot
         · exact hc0 h0
         · exact hnot (hsub htop.1)
-      let t' := dropIdx c (R.top v)
-      have ht' : v ∈ R.bag (keepIdx c t') := by
-        dsimp [t']
-        rw [keepIdx_dropIdx htop_ne]
+      let t' := drop (R.top v)
+      have ht' : v ∈ R.bag (c.succAbove t') := by
+        dsimp [t', drop]
+        rw [succAbove_predAbove_of_ne hc0 htop_ne]
         exact R.mem_bag_top v
-      have hreach : ∀ k : Fin (n + 2), ∀ j : Fin (n + 1), keepIdx c j = k →
-          ∀ hj : v ∈ R.bag (keepIdx c j),
-            ((parentTree parent').induce {m | v ∈ R.bag (keepIdx c m)}).Reachable
+      have hreach : ∀ k : Fin (n + 2), ∀ j : Fin (n + 1), c.succAbove j = k →
+          ∀ hj : v ∈ R.bag (c.succAbove j),
+            ((parentTree parent').induce {m | v ∈ R.bag (c.succAbove m)}).Reachable
               ⟨j, hj⟩ ⟨t', ht'⟩ := by
         intro k
         induction k using WellFoundedLT.induction with
         | ind k ih =>
           intro j hjk hj
           subst hjk
-          by_cases htopj : keepIdx c j = R.top v
-          · have hjeq : j = t' := by rw [← dropIdx_keepIdx c j, htopj]
+          by_cases htopj : c.succAbove j = R.top v
+          · have hjeq : j = t' := Fin.succAbove_right_injective (p := c)
+              (by dsimp [t', drop]; rw [htopj, succAbove_predAbove_of_ne hc0 htop_ne])
             subst hjeq
             rfl
-          · have hnot_top : ¬R.IsTop v (keepIdx c j) := fun h => htopj (R.isTop_iff.1 h)
-            have hj0 : keepIdx c j ≠ 0 := by
+          · have hnot_top : ¬R.IsTop v (c.succAbove j) := fun h => htopj (R.isTop_iff.1 h)
+            have hj0 : c.succAbove j ≠ 0 := by
               intro h0
               exact hnot_top (R.isTop_iff_mem.2 ⟨hj, Or.inl h0⟩)
-            have hmem_p : v ∈ R.bag (R.parent (keepIdx c j)) := by
+            have hmem_p : v ∈ R.bag (R.parent (c.succAbove j)) := by
               by_contra hnot
               exact hnot_top (R.isTop_iff_mem.2 ⟨hj, Or.inr hnot⟩)
-            have hpk : R.parent (keepIdx c j) < keepIdx c j := R.parent_lt _ hj0
-            by_cases hpc : R.parent (keepIdx c j) = c
+            have hpk : R.parent (c.succAbove j) < c.succAbove j := R.parent_lt _ hj0
+            have hstep : ∀ (x : Fin (n + 2)) (hx_ne : x ≠ c) (hx_lt : x < c.succAbove j)
+                (hx_mem : v ∈ R.bag x) (hpar : parent' j = drop x),
+                ((parentTree parent').induce {m | v ∈ R.bag (c.succAbove m)}).Reachable
+                  ⟨j, hj⟩ ⟨t', ht'⟩ := by
+              intro x hx_ne hx_lt hx_mem hpar
+              have hx'k : c.succAbove (drop x) = x := succAbove_predAbove_of_ne hc0 hx_ne
+              have hx' : v ∈ R.bag (c.succAbove (drop x)) := by rwa [hx'k]
+              have hadj : ((parentTree parent').induce {m | v ∈ R.bag (c.succAbove m)}).Adj
+                  ⟨j, hj⟩ ⟨drop x, hx'⟩ := by
+                change (parentTree parent').Adj j (drop x)
+                rw [parentTree_adj hplt]
+                left
+                exact ⟨fun h0 => hj0 (by rw [h0, hzero]), hpar⟩
+              exact hadj.reachable.trans (ih x hx_lt (drop x) hx'k hx')
+            by_cases hpc : R.parent (c.succAbove j) = c
             · have hpc_lt : R.parent c < c := R.parent_lt c hc0
-              have hpc_ne : R.parent c ≠ c := ne_of_lt hpc_lt
-              have hmem_pc : v ∈ R.bag (R.parent c) := hsub (hpc ▸ hmem_p)
-              have hlt_pc : R.parent c < keepIdx c j := by
+              have hpc_lt_j : R.parent c < c.succAbove j := by
                 calc
                   R.parent c < c := hpc_lt
-                  _ = R.parent (keepIdx c j) := hpc.symm
-                  _ < keepIdx c j := hpk
-              let j' := dropIdx c (R.parent c)
-              have hj'k : keepIdx c j' = R.parent c := keepIdx_dropIdx hpc_ne
-              have hj' : v ∈ R.bag (keepIdx c j') := by rwa [hj'k]
-              have hpar_eq : parent' j = j' := by simp [parent', hpc, j']
-              have hadj : ((parentTree parent').induce {m | v ∈ R.bag (keepIdx c m)}).Adj
-                  ⟨j, hj⟩ ⟨j', hj'⟩ := by
-                change (parentTree parent').Adj j j'
-                rw [parentTree_adj hplt]
-                left
-                refine ⟨fun h0 => hj0 (by rw [h0, keepIdx_zero hc0]), hpar_eq⟩
-              exact hadj.reachable.trans (ih (R.parent c) hlt_pc j' hj'k hj')
-            · let j' := dropIdx c (R.parent (keepIdx c j))
-              have hj'k : keepIdx c j' = R.parent (keepIdx c j) := keepIdx_dropIdx hpc
-              have hj' : v ∈ R.bag (keepIdx c j') := by rwa [hj'k]
-              have hpar_eq : parent' j = j' := by simp [parent', hpc, j']
-              have hadj : ((parentTree parent').induce {m | v ∈ R.bag (keepIdx c m)}).Adj
-                  ⟨j, hj⟩ ⟨j', hj'⟩ := by
-                change (parentTree parent').Adj j j'
-                rw [parentTree_adj hplt]
-                left
-                refine ⟨fun h0 => hj0 (by rw [h0, keepIdx_zero hc0]), hpar_eq⟩
-              exact hadj.reachable.trans (ih (R.parent (keepIdx c j)) hpk j' hj'k hj')
+                  _ = R.parent (c.succAbove j) := hpc.symm
+                  _ < c.succAbove j := hpk
+              exact hstep (R.parent c) (ne_of_lt hpc_lt) hpc_lt_j
+                (hsub (hpc ▸ hmem_p)) (by simp [parent', hpc])
+            · exact hstep _ hpc hpk hmem_p (by simp [parent', hpc])
       exact eq_of_preconnected_parentTree hp0 hplt
         (fun ⟨a, ha⟩ ⟨b, hb⟩ => (hreach _ a rfl ha).trans (hreach _ b rfl hb).symm)
         hi hit hj hjt }
@@ -1514,7 +1450,7 @@ theorem contractStep_width_le {n : ℕ} (R : G.RootedTreeDecomposition (n + 1)) 
     (hc0 : c ≠ 0) (hsub : R.bag c ⊆ R.bag (R.parent c)) :
     (R.contractStep c hc0 hsub).width ≤ R.width :=
   (width_le_iff _).2 fun j => by
-    change (R.bag (keepIdx c j)).card ≤ R.width + 1
+    change (R.bag (c.succAbove j)).card ≤ R.width + 1
     exact R.card_bag_le _
 
 /-- Iteratively contract all nonroot nodes whose bag is contained in their parent's bag. -/
@@ -1589,12 +1525,7 @@ theorem prune_nodes_le [Fintype V] {n : ℕ} (R : G.RootedTreeDecomposition n) :
     exact congrArg R'.top hab
   have hcard := Fintype.card_le_of_injective f hinj
   have hsub : Fintype.card {c : Fin (m + 1) // c ≠ 0} = m := by
-    have heq : {c : Fin (m + 1) // c ≠ 0} ≃ Fin m :=
-      { toFun := fun c => c.1.pred c.2
-        invFun := fun i => ⟨i.succ, Fin.succ_ne_zero i⟩
-        left_inv := fun c => Subtype.ext (Fin.succ_pred c.1 c.2)
-        right_inv := fun i => Fin.pred_succ _ }
-    rw [Fintype.card_congr heq, Fintype.card_fin]
+    simp [Fintype.card_subtype_compl]
   omega
 
 end RootedTreeDecomposition

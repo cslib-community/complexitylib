@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 import CslibFrontier.Foundations.Data.List.Counting
+import CslibFrontier.Logics.Propositional.CNF.Eval
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 
 /-!
@@ -176,18 +177,6 @@ private lemma mem_of_mem_block {φ : CNF ℕ} {r i : ℕ} {c : Clause ℕ}
     (hc : c ∈ GroupClique.block φ r i) : c ∈ φ :=
   List.mem_of_mem_drop (List.mem_of_mem_take hc)
 
-private lemma length_vars_le_three_mul {ψ : CNF ℕ} (h3 : ∀ c ∈ ψ, c.length ≤ 3) :
-    (CNF.vars ψ).length ≤ 3 * ψ.length := by
-  induction ψ with
-  | nil => simp [CNF.vars]
-  | cons c ψ ih =>
-    have hc : c.length ≤ 3 := h3 c List.mem_cons_self
-    have hψ : (CNF.vars ψ).length ≤ 3 * ψ.length :=
-      ih fun c' hc' => h3 c' (List.mem_cons_of_mem c hc')
-    simp only [CNF.vars, List.flatten_cons, List.map_append, List.length_append, List.length_map,
-      List.length_cons] at hψ ⊢
-    omega
-
 private lemma length_distinctVars_block_le {φ : CNF ℕ} {r i : ℕ}
     (h3 : ∀ c ∈ φ, c.length ≤ 3) :
     (GroupClique.block φ r i).distinctVars.length ≤ 3 * GroupClique.blockSize φ r := by
@@ -195,7 +184,7 @@ private lemma length_distinctVars_block_le {φ : CNF ℕ} {r i : ℕ}
   have h2 := (GroupClique.block φ r i).numVars_le_length_vars
   have h3b : ∀ c ∈ GroupClique.block φ r i, c.length ≤ 3 :=
     fun c hc => h3 c (mem_of_mem_block hc)
-  have h4 := length_vars_le_three_mul h3b
+  have h4 := CNF.length_vars_le_mul_length h3b
   have h5 : (GroupClique.block φ r i).length ≤ GroupClique.blockSize φ r := by
     dsimp only [GroupClique.block]
     exact List.length_take_le _ _
@@ -290,26 +279,6 @@ private lemma mem_edgesOfBound_iff {r : ℕ} {φ : CNF ℕ} {bound : ℕ} {e : �
     simp only [hbeq, Bool.false_eq_true, ↓reduceIte, List.mem_map, List.mem_filter,
       List.mem_range, Bool.and_eq_true]
     exact ⟨b, ⟨hb, he₂, hcomp⟩, rfl⟩
-
-private lemma bitsAssignment_natOfBits {vs : List ℕ} (τ : ℕ → Bool)
-    {x : ℕ} (hx : x ∈ vs) :
-    bitsAssignment vs (Nat.ofBits fun k : Fin vs.length => τ vs[k.1]) x = τ x := by
-  have hlt : vs.idxOf x < vs.length := List.idxOf_lt_length_of_mem hx
-  rw [bitsAssignment, Nat.testBit_ofBits_lt _ _ hlt]
-  simp [List.getElem_idxOf]
-
-private lemma mem_vars_of_mem_clause {ψ : CNF ℕ} {c : Clause ℕ} {x : ℕ} {pol : Bool}
-    (hc : c ∈ ψ) (hl : (x, pol) ∈ c) : x ∈ ψ.vars := by
-  simp only [CNF.vars, List.mem_map, List.mem_flatten]
-  exact ⟨(x, pol), ⟨c, hc, hl⟩, rfl⟩
-
-private lemma clause_eval_congr {c : Clause ℕ} {τ₁ τ₂ : ℕ → Bool}
-    (h : ∀ lit ∈ c, τ₁ lit.1 = τ₂ lit.1) :
-    Clause.eval τ₁ c = Clause.eval τ₂ c := by
-  apply Bool.eq_iff_iff.mpr
-  simp only [Clause.eval, List.any_eq_true]
-  exact exists_congr fun lit => and_congr_right fun hlit => by
-    simp only [Literal.eval, h lit hlit]
 
 /-! ### Correctness and vertex-count bounds -/
 
@@ -431,9 +400,9 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
         (CNF.eval_eq_true_iff _ _).mp ha'_eval c hcb
       have hcongr : Clause.eval τ c =
           Clause.eval (bitsAssignment (GroupClique.block φ r i).distinctVars a') c := by
-        refine clause_eval_congr fun ⟨x, pol⟩ hlit => ?_
+        refine Clause.eval_congr fun ⟨x, pol⟩ hlit => ?_
         have hx_vars : x ∈ (GroupClique.block φ r i).vars :=
-          mem_vars_of_mem_clause hcb hlit
+          CNF.mem_vars.2 ⟨c, hcb, pol, hlit⟩
         have hx_dvars : x ∈ (GroupClique.block φ r i).distinctVars :=
           CNF.mem_distinctVars.mpr hx_vars
         have hex : ∃ k < r, x ∈ (GroupClique.block φ r k).distinctVars := ⟨i, hi, hx_dvars⟩
@@ -486,11 +455,13 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
           exact (hcomp x hxj).resolve_left (by simp [hx_dvars])
       rw [hcongr, hclause_eval]
     · rintro ⟨_, τ, hτ⟩
-      let code : ℕ → ℕ := fun i =>
-        Nat.ofBits fun k : Fin (GroupClique.block φ r i).distinctVars.length =>
-          τ (GroupClique.block φ r i).distinctVars[k.1]
+      have hcode_exists : ∀ i, ∃ ci < 2 ^ (GroupClique.block φ r i).distinctVars.length,
+          ∀ v ∈ (GroupClique.block φ r i).distinctVars,
+            bitsAssignment (GroupClique.block φ r i).distinctVars ci v = τ v := fun i =>
+        exists_lt_two_pow_bitsAssignment_eq τ
+      let code : ℕ → ℕ := fun i => (hcode_exists i).choose
       have hcode_lt : ∀ i, code i < bound := fun i =>
-        lt_of_lt_of_le (Nat.ofBits_lt_two_pow _)
+        lt_of_lt_of_le (hcode_exists i).choose_spec.1
           (Nat.pow_le_pow_right (by omega) (length_distinctVars_block_le h3))
       have hcode_eval : ∀ i,
           (GroupClique.block φ r i).eval
@@ -503,9 +474,9 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
         have hcongr :
             Clause.eval (bitsAssignment (GroupClique.block φ r i).distinctVars (code i)) c =
               Clause.eval τ c := by
-          refine clause_eval_congr fun ⟨x, pol⟩ hlit => ?_
-          exact bitsAssignment_natOfBits τ
-            (CNF.mem_distinctVars.mpr (mem_vars_of_mem_clause hc hlit))
+          refine Clause.eval_congr fun ⟨x, pol⟩ hlit => ?_
+          exact (hcode_exists i).choose_spec.2 x
+            (CNF.mem_distinctVars.mpr (CNF.mem_vars.2 ⟨c, hc, pol, hlit⟩))
         rw [hcongr, hτc]
       let f : ℕ → ℕ := fun i => GroupClique.vertex bound i (code i)
       have hf_inj : Set.InjOn f (Finset.range r) := by
@@ -532,7 +503,7 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
           intro x hx₁
           by_cases hx₂ : x ∈ (GroupClique.block φ r j).distinctVars
           · refine Or.inr ?_
-            rw [bitsAssignment_natOfBits τ hx₁, bitsAssignment_natOfBits τ hx₂]
+            rw [(hcode_exists i).choose_spec.2 x hx₁, (hcode_exists j).choose_spec.2 x hx₂]
           · exact Or.inl (by simp [hx₂])
         · rw [Finset.card_image_of_injOn hf_inj, Finset.card_range]
   · have hnot3 : ¬∀ c ∈ φ, c.length ≤ 3 := by
@@ -565,33 +536,20 @@ private theorem computableInPolyTime_takeClause {γ : Type} {encIn : γ ↪ List
     (hxs : ComputableInPolyTime xs encIn encCNF)
     (hn : ComputableInPolyTime n encIn encUnary) :
     ComputableInPolyTime (fun g => (xs g).take (n g)) encIn encCNF := by
-  have hxs' :
-      ComputableInPolyTime xs encIn (encList (encList (encPair encNat encBool))) :=
-    ComputableInPolyTime.of_enc_eq hxs fun _ => rfl
-  have htake :
-      ComputableInPolyTime (fun g => (xs g).take (n g)) encIn
-        (encList (encList (encPair encNat encBool))) :=
-    (ComputableInPolyTime.of_tidy
-      (ComputableTidilyInPolyTime.takeUnary (encList (encPair encNat encBool)))).comp
-      (ComputableInPolyTime.prod hxs' hn)
-  exact ComputableInPolyTime.of_enc_eq htake fun _ => rfl
+  have hxs' : ComputableTidilyInPolyTime xs encIn (encList (encList (encPair encNat encBool))) :=
+    (ComputableInPolyTime.of_enc_eq hxs fun _ => rfl).tidy
+  exact ComputableInPolyTime.of_enc_eq
+    (ComputableInPolyTime.of_tidy (hxs'.listTakeWithInput hn.tidy)) fun _ => rfl
 
 private theorem computableInPolyTime_dropClause {γ : Type} {encIn : γ ↪ List Bool}
     {xs : γ → CNF ℕ} {n : γ → ℕ}
     (hxs : ComputableInPolyTime xs encIn encCNF)
     (hn : ComputableInPolyTime n encIn encUnary) :
     ComputableInPolyTime (fun g => (xs g).drop (n g)) encIn encCNF := by
-  have hxs' :
-      ComputableInPolyTime xs encIn (encList (encList (encPair encNat encBool))) :=
-    ComputableInPolyTime.of_enc_eq hxs fun _ => rfl
-  have hdrop :
-      ComputableInPolyTime (fun g => (xs g).drop (n g)) encIn
-        (encList (encList (encPair encNat encBool))) :=
-    (@ComputableInPolyTime.dropUnary (List (ℕ × Bool))
-      (encList (encPair encNat encBool))
-      (encList (encList (encPair encNat encBool))) _ _).comp
-      (ComputableInPolyTime.prod hxs' hn)
-  exact ComputableInPolyTime.of_enc_eq hdrop fun _ => rfl
+  have hxs' : ComputableTidilyInPolyTime xs encIn (encList (encList (encPair encNat encBool))) :=
+    (ComputableInPolyTime.of_enc_eq hxs fun _ => rfl).tidy
+  exact ComputableInPolyTime.of_enc_eq
+    (ComputableInPolyTime.of_tidy (hxs'.listDropWithInput hn.tidy)) fun _ => rfl
 
 private theorem computableInPolyTime_blockSize {γ : Type} {encIn : γ ↪ List Bool}
     {φ : γ → CNF ℕ} {r : γ → ℕ}
@@ -902,28 +860,6 @@ theorem exists_computableInO_groupClique :
 
 /-! ### ETH transfers and Clique lower bounds -/
 
-private lemma polyBounded_le_const_mul_pow {α : Type} {size u : α → ℕ}
-    (hu : PolyBounded size u) :
-    ∃ C d : ℕ, ∀ a, u a ≤ C * (size a + 1) ^ d + C := by
-  rcases hu with ⟨bound, ⟨d, hd⟩, hub⟩
-  dsimp only [Filter.EventuallyLE] at hd
-  rw [Filter.eventually_atTop] at hd
-  rcases hd with ⟨N, hN⟩
-  refine ⟨max ((Finset.range N).sup bound) 1, d, fun a => ?_⟩
-  have ha := hub a
-  by_cases hlt : size a < N
-  · have hsup : bound (size a) ≤ (Finset.range N).sup bound :=
-      Finset.le_sup (Finset.mem_range.mpr hlt)
-    have hmax : (Finset.range N).sup bound ≤ max ((Finset.range N).sup bound) 1 := le_max_left _ _
-    omega
-  · have hge : N ≤ size a := Nat.not_lt.mp hlt
-    have hpow : bound (size a) ≤ (size a) ^ d := hN (size a) hge
-    have hpow1 : (size a) ^ d ≤ (size a + 1) ^ d := Nat.pow_le_pow_left (Nat.le_succ _) d
-    have h1 : 1 ≤ max ((Finset.range N).sup bound) 1 := le_max_right _ _
-    have hmul : (size a + 1) ^ d ≤ max ((Finset.range N).sup bound) 1 * (size a + 1) ^ d :=
-      Nat.le_mul_of_pos_left _ h1
-    omega
-
 private lemma blockSize_real_le {m r : ℕ} (hr : 1 ≤ r) :
     (((m + r - 1) / r : ℕ) : ℝ) ≤ (m : ℝ) / (r : ℝ) + 1 := by
   have hr_pos : (0 : ℝ) < (r : ℝ) := by exact_mod_cast hr
@@ -1075,7 +1011,7 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
   have hprep_poly : ComputableInPolyTime prep encCNF (encPair encUnary encCNF) :=
     ComputableInPolyTime.prod (ComputableInPolyTime.const r) ComputableInPolyTime.id'
   rcases hprep_poly.exists_computableInO with ⟨T₀, S₀, hT₀, hS₀, hprepO⟩
-  rcases polyBounded_le_const_mul_pow hT₀ with ⟨C₀', d₀, hT₀_le⟩
+  rcases hT₀.exists_le with ⟨C₀', d₀, hT₀_le⟩
   have hcomp₁ := hred.comp hprepO
   have hcomp₂ := hdec.comp hcomp₁
   let tTot : CNF ℕ → ℕ := fun φ =>
@@ -1099,10 +1035,10 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
     exact one_le_mul_of_one_le_of_one_le hexp hpoly
   have hstep1 : ∀ φ : CNF ℕ,
       (T₀ φ : ℝ) ≤
-        ((C₀' : ℝ) + (C₀' : ℝ)) *
+        (C₀' : ℝ) *
           ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) := by
     intro φ
-    have h1 : (T₀ φ : ℝ) ≤ (C₀' : ℝ) * (((encCNF φ).length : ℝ) + 1) ^ d₀ + (C₀' : ℝ) := by
+    have h1 : (T₀ φ : ℝ) ≤ (C₀' : ℝ) * (((encCNF φ).length : ℝ) + 1) ^ d₀ := by
       exact_mod_cast hT₀_le φ
     have hpow : (((encCNF φ).length : ℝ) + 1) ^ d₀ ≤ (((encCNF φ).length : ℝ) + 1) ^ E :=
       pow_le_pow_right₀ (by linarith [Nat.cast_nonneg (α := ℝ) (encCNF φ).length])
@@ -1112,16 +1048,7 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
     have hterm : (((encCNF φ).length : ℝ) + 1) ^ d₀ ≤
         (2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E :=
       le_trans hpow (le_mul_of_one_le_left (pow_nonneg (by positivity) _) hexp)
-    calc
-      (T₀ φ : ℝ) ≤ (C₀' : ℝ) * (((encCNF φ).length : ℝ) + 1) ^ d₀ + (C₀' : ℝ) := h1
-      _ ≤ (C₀' : ℝ) *
-            ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) +
-          (C₀' : ℝ) *
-            ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) := by
-        gcongr
-        exact le_mul_of_one_le_right (Nat.cast_nonneg _) (hbase_ge φ)
-      _ = ((C₀' : ℝ) + (C₀' : ℝ)) *
-            ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) := by ring
+    exact h1.trans (mul_le_mul_of_nonneg_left hterm (Nat.cast_nonneg _))
   have hstep2 : ∀ φ : CNF ℕ,
       ((C₀ * 2 ^ (D * (3 * GroupClique.blockSize φ r)) *
           ((encPair encUnary encCNF (r, φ)).length + 1) ^ D : ℕ) : ℝ) ≤
@@ -1187,24 +1114,24 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
       _ = A * ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) + c₂ := by
         ring
   let K : ℕ :=
-    Nat.ceil ((C₀' : ℝ) + (C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) + c₂
+    Nat.ceil ((C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) + c₂
   have hK : ∀ φ : CNF ℕ,
       (tTot φ : ℝ) ≤
         (K : ℝ) * ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) +
           (K : ℝ) := by
     intro φ
     have hceil :
-        (C₀' : ℝ) + (C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A ≤ (K : ℝ) := by
+        (C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A ≤ (K : ℝ) := by
       have h1 := Nat.le_ceil
-        ((C₀' : ℝ) + (C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A)
+        ((C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A)
       have h2 : (Nat.ceil
-          ((C₀' : ℝ) + (C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) : ℝ) ≤
+          ((C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) : ℝ) ≤
           (K : ℝ) := Nat.cast_le.mpr (Nat.le_add_right _ c₂)
       exact le_trans h1 h2
     have hc₂ : (c₂ : ℝ) ≤ (K : ℝ) := Nat.cast_le.mpr (Nat.le_add_left c₂ _)
     have hsum :
         (tTot φ : ℝ) ≤
-          ((C₀' : ℝ) + (C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) *
+          ((C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) *
             ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) +
           c₂ := by
       have hT : (tTot φ : ℝ) = (T₀ φ : ℝ) +
@@ -1221,7 +1148,7 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
       le_trans zero_le_one (hbase_ge φ)
     calc
       (tTot φ : ℝ)
-          ≤ ((C₀' : ℝ) + (C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) *
+          ≤ ((C₀' : ℝ) + (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + A) *
               ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) + c₂ :=
         hsum
       _ ≤ (K : ℝ) * ((2 : ℝ) ^ (δ * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ E) +

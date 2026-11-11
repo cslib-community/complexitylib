@@ -193,39 +193,32 @@ def pairFullNice : activePairCSP.primalGraph.NiceTreeDecomposition where
       | (simp only [pairFullNiceTree, NiceTree.CoversFinset.eq_1, NiceTree.CoversFinset.eq_2,
           NiceTree.CoversFinset.eq_3, NiceTree.bag]; decide)
 
-/-- Explicit bijection `Bool ≃ Fin 2`. -/
-@[expose] def boolEquivFin2 : Bool ≃ Fin 2 where
-  toFun b := if b then 1 else 0
-  invFun x := decide (x = 1)
-  left_inv b := by cases b <;> decide
-  right_inv x := by fin_cases x <;> decide
-
 private lemma pos2 : 0 < 2 := by decide
 
 /-- `ret_cspCountNiceM_equiv` and `ret_cspDecideNiceM_equiv` recover `Bool` CSP model count `2`
 and satisfiability directly from kernel evaluation on `pairFullNice` (ignoring isolated `2`). -/
 example : CSP.modelCount boolXorSem activePairCSP = 2 := by
-  rw [← ret_cspCountNiceM_equiv boolXorSem pairFullNice boolEquivFin2]
+  rw [← ret_cspCountNiceM_equiv boolXorSem pairFullNice finTwoEquiv.symm]
   decide
 
 example : CSP.Satisfiable boolXorSem activePairCSP :=
-  (ret_cspDecideNiceM_equiv boolXorSem pairFullNice boolEquivFin2).mp (by decide)
+  (ret_cspDecideNiceM_equiv boolXorSem pairFullNice finTwoEquiv.symm).mp (by decide)
 
 /-- Counting and decision on `activePairCSP.activePrimalGraph` match `CSP.modelCount` (`2`) and
 `CSP.Satisfiable` (`true`). -/
 example :
-    (cspCountActiveRootedM 2 pos2 (semFin boolXorSem boolEquivFin2)
+    (cspCountActiveRootedM 2 pos2 (semFin boolXorSem finTwoEquiv.symm)
         activePairCSP activePairRooted).ret = 2 ∧
-      (cspDecideActiveRootedM 2 pos2 (semFin boolXorSem boolEquivFin2)
+      (cspDecideActiveRootedM 2 pos2 (semFin boolXorSem finTwoEquiv.symm)
         activePairCSP activePairRooted).ret = true := by
   have hc : CSP.modelCount boolXorSem activePairCSP = 2 := by
-    rw [← ret_cspCountNiceM_equiv boolXorSem pairFullNice boolEquivFin2]
+    rw [← ret_cspCountNiceM_equiv boolXorSem pairFullNice finTwoEquiv.symm]
     decide
   have hs : CSP.Satisfiable boolXorSem activePairCSP :=
-    (ret_cspDecideNiceM_equiv boolXorSem pairFullNice boolEquivFin2).mp (by decide)
+    (ret_cspDecideNiceM_equiv boolXorSem pairFullNice finTwoEquiv.symm).mp (by decide)
   refine ⟨?_, ?_⟩
-  · rw [ret_cspCountActiveRootedM, modelCount_semFin pos2 boolXorSem boolEquivFin2, hc]
-  · rw [ret_cspDecideActiveRootedM, satisfiable_semFin_iff boolXorSem boolEquivFin2]
+  · rw [ret_cspCountActiveRootedM, modelCount_semFin pos2 boolXorSem finTwoEquiv.symm, hc]
+  · rw [ret_cspDecideActiveRootedM, satisfiable_semFin_iff boolXorSem finTwoEquiv.symm]
     exact hs
 
 end Cslib.Tests.TreeDecompositionCSP
