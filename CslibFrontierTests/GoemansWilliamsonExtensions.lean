@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliamsonDicut
+import CslibFrontierTests.GoemansWilliamsonMaxCut
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -260,98 +261,51 @@ example :
 
 /-! ### Balanced (Eulerian) 3-cycle MAX-DICUT (`α > 0.87856`) -/
 
-private def cycle3Ends : Fin 3 → Fin 3 × Fin 3 := ![(0, 1), (1, 2), (2, 0)]
+section BalancedTriangle
 
-private noncomputable def tri3 : Fin 3 → Vec2 :=
-  ![!₂[1, 0], !₂[-1 / 2, √3 / 2], !₂[-1 / 2, -(√3 / 2)]]
-
-private theorem norm_tri3 (i : Fin 3) : ‖tri3 i‖ = 1 := by
-  have h3 : (√3 : ℝ) ^ 2 = 3 := Real.sq_sqrt (by norm_num)
-  rw [norm_eq_sqrt_real_inner, PiLp.inner_apply, Real.sqrt_eq_one, Fin.sum_univ_two]
-  fin_cases i
-  · change (1 : ℝ) * 1 + 0 * 0 = 1
-    norm_num
-  · change (-1 / 2 : ℝ) * (-1 / 2) + (√3 / 2) * (√3 / 2) = 1
-    linear_combination (1 / 4) * h3
-  · change (-1 / 2 : ℝ) * (-1 / 2) + (-(√3 / 2)) * (-(√3 / 2)) = 1
-    linear_combination (1 / 4) * h3
-
-private theorem inner_tri3 {i j : Fin 3} (hij : i ≠ j) : ⟪tri3 i, tri3 j⟫ = -1 / 2 := by
-  have h3 : (√3 : ℝ) ^ 2 = 3 := Real.sq_sqrt (by norm_num)
-  fin_cases i <;> fin_cases j <;>
-    first
-    | exact absurd rfl hij
-    | (rw [PiLp.inner_apply, Fin.sum_univ_two]
-       first
-       | (change (1 : ℝ) * (-1 / 2) + 0 * (√3 / 2) = -1 / 2; norm_num)
-       | (change (1 : ℝ) * (-1 / 2) + 0 * (-(√3 / 2)) = -1 / 2; norm_num)
-       | (change (-1 / 2 : ℝ) * 1 + (√3 / 2) * 0 = -1 / 2; norm_num)
-       | (change (-1 / 2 : ℝ) * 1 + (-(√3 / 2)) * 0 = -1 / 2; norm_num)
-       | (change (-1 / 2 : ℝ) * (-1 / 2) + (-(√3 / 2)) * (√3 / 2) = -1 / 2
-          linear_combination -(1 / 4) * h3)
-       | (change (-1 / 2 : ℝ) * (-1 / 2) + (√3 / 2) * (-(√3 / 2)) = -1 / 2
-          linear_combination -(1 / 4) * h3))
+open GoemansWilliamsonMaxCut (tri triEnds triW norm_tri isMaxOn_tri)
 
 private noncomputable def cycle3OptVec : Option (Fin 3) → Vec2
   | none => e0
-  | some i => tri3 i
+  | some i => tri i
 
 private theorem norm_cycle3OptVec (o : Option (Fin 3)) : ‖cycle3OptVec o‖ = 1 := by
   rcases o with _ | i
   · exact norm_e0
-  · exact norm_tri3 i
+  · exact norm_tri i
 
-private theorem isBalancedDigraph_cycle3 :
-    IsBalancedDigraph cycle3Ends (fun _ => (1 : ℝ)) := by
+private theorem isBalancedDigraph_cycle3 : IsBalancedDigraph triEnds triW := by
   refine isBalancedDigraph_of_outdeg_eq_indeg fun x => ?_
-  fin_cases x <;> simp [cycle3Ends, Fin.sum_univ_three]
+  fin_cases x <;> simp [triEnds, triW, Fin.sum_univ_three]
 
 private theorem isMaxOn_cycle3OptVec :
-    IsMaxOn (dicutSdpValue cycle3Ends (fun _ => 1)) {v' | ∀ o, ‖v' o‖ = 1} cycle3OptVec := by
+    IsMaxOn (dicutSdpValue triEnds triW) {v' | ∀ o, ‖v' o‖ = 1} cycle3OptVec := by
   rw [isMaxOn_iff]
   intro v' hv'
-  have h1 : 2 * dicutSdpValue cycle3Ends (fun _ => 1) v' =
-      sdpValue cycle3Ends (fun _ => 1) (fun x => v' (some x)) :=
+  have h1 : 2 * dicutSdpValue triEnds triW v' = sdpValue triEnds triW (fun x => v' (some x)) :=
     two_mul_dicutSdpValue_eq_sdpValue_of_isBalancedDigraph isBalancedDigraph_cycle3 v'
-  have h2 : 2 * dicutSdpValue cycle3Ends (fun _ => 1) cycle3OptVec =
-      sdpValue cycle3Ends (fun _ => 1) (fun x => cycle3OptVec (some x)) :=
+  have h2 : 2 * dicutSdpValue triEnds triW cycle3OptVec = sdpValue triEnds triW tri :=
     two_mul_dicutSdpValue_eq_sdpValue_of_isBalancedDigraph isBalancedDigraph_cycle3 cycle3OptVec
-  have hnorm_sum : 0 ≤ ‖v' (some 0) + v' (some 1) + v' (some 2)‖ ^ 2 := sq_nonneg _
-  have hsdp_le : sdpValue cycle3Ends (fun _ => 1) (fun x => v' (some x)) ≤ 9 / 4 := by
-    rw [← real_inner_self_eq_norm_sq] at hnorm_sum
-    simp only [inner_add_left, inner_add_right, real_inner_self_eq_norm_sq, hv' _, one_pow]
-      at hnorm_sum
-    have c01 : ⟪v' (some 1), v' (some 0)⟫ = ⟪v' (some 0), v' (some 1)⟫ := real_inner_comm _ _
-    have c12 : ⟪v' (some 2), v' (some 1)⟫ = ⟪v' (some 1), v' (some 2)⟫ := real_inner_comm _ _
-    have c02 : ⟪v' (some 0), v' (some 2)⟫ = ⟪v' (some 2), v' (some 0)⟫ := real_inner_comm _ _
-    rw [c01, c12, c02] at hnorm_sum
-    unfold sdpValue cycle3Ends
-    simp only [Fin.sum_univ_three, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val,
-      one_mul]
-    linarith
-  have hsdp_opt : sdpValue cycle3Ends (fun _ => 1) (fun x => cycle3OptVec (some x)) = 9 / 4 := by
-    unfold sdpValue cycle3Ends cycle3OptVec
-    simp only [Fin.sum_univ_three, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val,
-      one_mul, inner_tri3 (by decide : (0 : Fin 3) ≠ 1),
-      inner_tri3 (by decide : (1 : Fin 3) ≠ 2), inner_tri3 (by decide : (2 : Fin 3) ≠ 0)]
-    norm_num
+  have hmax : sdpValue triEnds triW (fun x => v' (some x)) ≤ sdpValue triEnds triW tri :=
+    isMaxOn_iff.1 isMaxOn_tri (fun x => v' (some x)) fun x => hv' (some x)
   linarith
 
 example :
     (0.87856 : ℝ) <
-      ∫ r : Vec2, dicutValue cycle3Ends (fun _ => 1) (dicutHyperplaneSet cycle3OptVec r)
-        ∂stdGaussian Vec2 ∧
+      ∫ r : Vec2, dicutValue triEnds triW (dicutHyperplaneSet cycle3OptVec r) ∂stdGaussian Vec2 ∧
     goemansWilliamsonDicutConstant < 0.79608 := by
-  have hint := goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph cycle3Ends
-    (fun _ => zero_le_one) isBalancedDigraph_cycle3 norm_cycle3OptVec (ε := 0)
+  have hint := goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph triEnds
+    (fun _ => zero_le_one) (w := triW) isBalancedDigraph_cycle3 norm_cycle3OptVec (ε := 0)
     (fun v' hv' => by simpa only [add_zero] using isMaxOn_iff.1 isMaxOn_cycle3OptVec v' hv')
     (fun x => x == 0)
-  have hval : dicutValue cycle3Ends (fun _ => 1) (fun x : Fin 3 => x == 0) = 1 := by
-    unfold dicutValue cycle3Ends
+  have hval : dicutValue triEnds triW (fun x : Fin 3 => x == 0) = 1 := by
+    unfold dicutValue triEnds triW
     rw [Fin.sum_univ_three]
     norm_num
   rw [hval, sub_zero, mul_one] at hint
   exact ⟨lt_goemansWilliamsonConstant.trans_le hint, goemansWilliamsonDicutConstant_lt⟩
+
+end BalancedTriangle
 
 /-! ### `(Q'')`/`(P'')` triple rounding instantiation -/
 
