@@ -50,6 +50,7 @@ import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Converse
+import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
@@ -103,6 +104,10 @@ import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.CNF
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.Coloring
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.IndependentSetReduction
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.SizedGraph
 import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Reduction
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
@@ -1199,6 +1204,125 @@ register_result "ordered-projection-reducibility" where
     QFNumeric.onFullTuple); projection-completeness endpoints are not yet formalized here, and \
     the logspace encoding lift at encStructure is proved separately in \
     Classes.LogSpace.FirstOrder.Ordered.Projection."
+
+register_result "ordered-sized-graph-qfp" where
+  title := "Ordered IndependentSet, Clique, and VertexCover are pairwise QF-projection equivalent"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Karp1972, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.independentSet_qfProjectionReduces_Clique,
+    Cslib.Logic.FO.Ordered.clique_qfProjectionReduces_IndependentSet,
+    Cslib.Logic.FO.Ordered.independentSet_qfProjectionReduces_VertexCover,
+    Cslib.Logic.FO.Ordered.vertexCover_qfProjectionReduces_IndependentSet,
+    Cslib.Logic.FO.Ordered.clique_qfProjectionReduces_VertexCover,
+    Cslib.Logic.FO.Ordered.vertexCover_qfProjectionReduces_Clique
+  ]
+  scope := "Queries on canonically ordered FO.sizedGraph structures on Fin n (2 ≤ n), where \
+    target set cardinality is the cardinality of the unary relation size. Dimension-1 BIT-free \
+    quantifier-free projections complement off-diagonal edges (guarding the diagonal by numeric \
+    equality x = y) and complement the unary size relation; transitivity yields all six \
+    pairwise QFProjectionReduces reductions."
+
+register_result "ordered-sat-to-threesat-qfp" where
+  title := "Ordered SAT reduces to ThreeSAT via a BIT-free quantifier-free projection"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_ThreeSAT,
+    Cslib.Logic.FO.Ordered.isQFProjection_satToThreeSATInterpretation,
+    Cslib.Logic.FO.Ordered.mem_ThreeSAT_satToThreeSATInterpretation
+  ]
+  scope := "Queries on canonically ordered FO.cnf structures on Fin n (2 ≤ n), where ThreeSAT \
+    requires at most three literals per clause. A dimension-5 BIT-free quantifier-free \
+    projection over order, non-wrapping successor, 0 and max chains positive and negative \
+    literal scans with relay variables and pads unused clause tuples with two-literal \
+    tautologies; each output bit reads at most one input literal. NP-hardness of Ordered.SAT \
+    itself is not yet formalized."
+
+register_result "ordered-sat-to-independent-set-qfp" where
+  title := "Ordered SAT reduces to IndependentSet, Clique, and VertexCover via QF projections"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Karp1972, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_IndependentSet,
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_Clique,
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_VertexCover,
+    Cslib.Logic.FO.Ordered.isQFProjection_satToIndependentSetInterpretation,
+    Cslib.Logic.FO.Ordered.mem_IndependentSet_satToIndependentSetInterpretation
+  ]
+  scope := "A dimension-4 BIT-free quantifier-free projection maps any canonically ordered \
+    FO.cnf structure on Fin n (2 ≤ n) to an FO.sizedGraph structure partitioned into n clause \
+    cliques plus one top clique with a distinguished anchor vertex and target size n + 1; \
+    anchor-to-clause edges test single negated input literals and inter-clause edges enforce \
+    variable consistency. Composing with the dimension-1 sizedGraph projections yields \
+    QFProjectionReduces to Clique and VertexCover. NP-hardness of Ordered.SAT is not yet \
+    formalized."
+
+register_result "ordered-sat-to-three-coloring-qfp" where
+  title := "Ordered SAT reduces to simple and general 3-colorability via a QF projection"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := GareyJohnson1979, theorem := unverified, locator := unverified },
+    { paper := Sipser2013, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_SimpleThreeColorable,
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_ThreeColorable,
+    Cslib.Logic.FO.Ordered.isQFProjection_satToColoringInterpretation,
+    Cslib.Logic.FO.Ordered.simpleGraph_satToColoring,
+    Cslib.Logic.FO.Ordered.mem_SimpleThreeColorable_satToColoringInterpretation,
+    Cslib.Logic.FO.Ordered.mem_ThreeColorable_satToColoringInterpretation
+  ]
+  scope := "A dimension-6 BIT-free quantifier-free projection over order, non-wrapping \
+    successor, 0 and max maps any canonically ordered FO.cnf structure on Fin n (2 ≤ n) to a \
+    simple loopless undirected Language.graph structure (modeling Theory.simpleGraph on all \
+    inputs) using a palette triangle, literal switches, single-literal activation edges, and \
+    successor-linked 3-vertex OR-gate chains. Simultaneously reduces Ordered.SAT to \
+    Ordered.SimpleThreeColorable and Ordered.ThreeColorable. NP-hardness of Ordered.SAT is not \
+    yet formalized."
+
+register_result "ordered-np-queries-fagin-and-logspace" where
+  title := "Ordered NP benchmark queries lie in ESO and native NP with logspace gadget reductions"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Fagin1974, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.ESODefinable.of_definable,
+    Cslib.Logic.FO.Ordered.sat_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.threeSAT_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.threeColorable_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.simpleThreeColorable_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.independentSet_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.clique_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.vertexCover_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_ThreeSAT,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_SimpleThreeColorable,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_ThreeColorable,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_IndependentSet,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_Clique,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_VertexCover
+  ]
+  scope := "Pushing unordered existential second-order sentences forward along LHom.sumInl \
+    places Ordered.SAT, Ordered.ThreeSAT, Ordered.ThreeColorable, Ordered.SimpleThreeColorable, \
+    Ordered.IndependentSet, Ordered.Clique, and Ordered.VertexCover in Ordered.ESODefinable and \
+    in native NP under encStructure via the ordered Fagin verifier; lifting their BIT-free \
+    quantifier-free projections yields deterministic LogSpaceReducible reductions at \
+    encStructure. NP-completeness awaits the ordered Fagin converse / SAT hardness endpoint."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"

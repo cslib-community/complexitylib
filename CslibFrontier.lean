@@ -2070,6 +2070,7 @@ public import CslibFrontier.Computability.Complexity.ExplicitRamsey.FranklWilson
 public import CslibFrontier.Computability.Complexity.Fagin.Converse
 public import CslibFrontier.Computability.Complexity.Fagin.Layout
 public import CslibFrontier.Computability.Complexity.Fagin.Ordered
+public import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
 public import CslibFrontier.Computability.Complexity.Fagin.Ordered.Verifier
 public import CslibFrontier.Computability.Complexity.Fagin.Power
 public import CslibFrontier.Computability.Complexity.Fagin.SAT
@@ -5587,10 +5588,15 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Blocks
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Bounds
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Columns
 public import CslibFrontier.Logics.FirstOrder.Ordered.Packing
+public import CslibFrontier.Logics.FirstOrder.Ordered.Problems.CNF
+public import CslibFrontier.Logics.FirstOrder.Ordered.Problems.Coloring
+public import CslibFrontier.Logics.FirstOrder.Ordered.Problems.IndependentSetReduction
 public import CslibFrontier.Logics.FirstOrder.Ordered.Problems.Reachability
+public import CslibFrontier.Logics.FirstOrder.Ordered.Problems.SizedGraph
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Composition
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Reduction
+public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Tagged
 public import CslibFrontier.Logics.FirstOrder.Ordered.QFNumeric
 public import CslibFrontier.Logics.FirstOrder.Ordered.QFNumeric.Tuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.Query
