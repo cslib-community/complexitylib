@@ -49,7 +49,7 @@ def require_clean_revision(expected=None):
         raise ValueError("Refusing to stage outputs from modified or untracked sources")
     ignored = subprocess.check_output([
         "git", "ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--",
-        "Complexity", "ComplexityTests",
+        "CslibFrontier", "CslibFrontierTests",
     ], cwd=ROOT)
     if any(ignored.split(b"\0")):
         raise ValueError("Refusing to stage outputs with ignored entries in compiled source trees")
@@ -65,7 +65,7 @@ def stage(destination):
     with tempfile.TemporaryDirectory(prefix=".stage-", dir=destination.resolve()) as temporary:
         work = Path(temporary)
         mapping = work / "mapping.jsonl"
-        run(["lake", "build", "Complexity", "ComplexityTests", "-o", str(mapping)])
+        run(["lake", "build", "CslibFrontier", "CslibFrontierTests", "-o", str(mapping)])
         run(["lake", "cache", "stage", str(mapping), str(work / "archives")])
         artifacts = destination / "a0" / SCOPE
         artifacts.mkdir(parents=True)

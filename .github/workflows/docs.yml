@@ -1,6 +1,6 @@
 name: API documentation
 
-# Builds of `main` deploy to https://www.cslib.io/complexitylib/, with the guide under guide/ and
+# Builds of `main` deploy to https://www.cslib.io/cslib-frontier/, with the guide under guide/ and
 # formal abstract PDFs under abstracts/. A manual run on another branch does not deploy; it uploads
 # an `api-docs` artifact. Pull requests never run this; the Guide workflow builds pull requests
 # that change the guide.
@@ -50,7 +50,7 @@ jobs:
         timeout-minutes: 10
         run: scripts/cache/get-missing.sh
       - name: Generate API documentation
-        run: DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs
+        run: DISABLE_EQUATIONS=1 lake -d docbuild build CslibFrontier:docs
       # Also catches library changes that break one of the guide's examples.
       - name: Build the guide
         run: scripts/guide.sh
@@ -61,11 +61,15 @@ jobs:
         run: |
           python3 -B scripts/check_abstract_ci.py --wait-seconds 1200 \
             --download-dir docbuild/.lake/build/doc/abstracts
-          echo "[Latest catalogue PDF](https://www.cslib.io/complexitylib/abstracts/catalogue.pdf)" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Latest catalogue PDF](https://www.cslib.io/cslib-frontier/abstracts/catalogue.pdf)" >> "$GITHUB_STEP_SUMMARY"
       - name: Check generated documentation and the guide's links into it
         run: python3 scripts/check_docs.py --trim --guide
       - name: Add the guide to the site
         run: cp -R guide/.lake/build/site/html-multi docbuild/.lake/build/doc/guide
+      # GitHub Pages serves 404.html for missing paths. It sends API pages that the
+      # module-root rename moved to their new addresses.
+      - name: Add the not-found page
+        run: cp docbuild/404.html docbuild/.lake/build/doc/404.html
       - if: github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:

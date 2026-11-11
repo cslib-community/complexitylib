@@ -20,7 +20,7 @@ class UpstreamSyncTests(unittest.TestCase):
         temp = tempfile.TemporaryDirectory(prefix="test-upstream-sync-")
         self.addCleanup(temp.cleanup)
         self.repo = Path(temp.name)
-        (self.repo / "Complexity").mkdir()
+        (self.repo / "CslibFrontier").mkdir()
         root = patch.object(upstream_sync, "ROOT", self.repo)
         root.start()
         self.addCleanup(root.stop)
@@ -35,7 +35,7 @@ class UpstreamSyncTests(unittest.TestCase):
         return out.getvalue()
 
     def test_only_actual_line_comments_are_markers(self) -> None:
-        path = Path("Complexity/Markers.lean")
+        path = Path("CslibFrontier/Markers.lean")
         (self.repo / path).write_text(
             "module\n/- Example with /- nesting -/:\n-- upstream: submitted #1\n-/\n"
             'def exampleText := r#"\n-- upstream: submitted #2\n"#\n'
@@ -56,7 +56,7 @@ class UpstreamSyncTests(unittest.TestCase):
         self.assertIn("cslib pin bbbbbbbb, upstream main bbbbbbbb: CURRENT", report)
 
     def test_offline_classifies_the_status_not_its_explanation(self) -> None:
-        (self.repo / "Complexity/Markers.lean").write_text(
+        (self.repo / "CslibFrontier/Markers.lean").write_text(
             "module\n-- upstream: candidate (not submitted #1)\n"
             "-- upstream: candidate (related to vendored owner:feature/branch)\n"
             "-- upstream: submitted #3 @abcdef0\n"

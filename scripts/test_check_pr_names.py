@@ -19,7 +19,7 @@ LIBRARY = """\
 module
 -- upstream: candidate
 
-public import Complexity.Init
+public import CslibFrontier.Init
 
 /-! # Demo
 
@@ -77,7 +77,7 @@ class CheckPrNamesTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = pathlib.Path(self.tmp.name)
-        self.write("Complexity/Demo/Basic.lean", LIBRARY)
+        self.write("CslibFrontier/Demo/Basic.lean", LIBRARY)
 
     def write(self, rel: str, content: str) -> None:
         path = self.root / rel
@@ -96,7 +96,7 @@ class CheckPrNamesTests(unittest.TestCase):
         self.assertEqual(cpn.extract_tokens(text), ["foo", "bar `x` baz", "qux"])
 
     def test_candidates_skip_non_names(self) -> None:
-        skipped = ["h k m + padFn 𝒩", "Complexity/Demo/Basic.lean", "CarterWegman.lean",
+        skipped = ["h k m + padFn 𝒩", "CslibFrontier/Demo/Basic.lean", "CarterWegman.lean",
                    "0", "c69067ba", "simp", "ε", "trace", "hx", "_leaf_le", "pull_request",
                    "GITHUB_EVENT_PATH",
                    "PRF", "lake build", "mk_all --check", "lint-style", "native_decide", "theorem",
@@ -127,7 +127,7 @@ class CheckPrNamesTests(unittest.TestCase):
         self.assertEqual(self.check(" ".join(f"`{n}`" for n in names)), {})
 
     def test_to_additive_translation_and_modules_resolve(self) -> None:
-        names = ["Finset.sum_swap_demo", "Complexity.Demo.Basic", "Demo.Basic"]
+        names = ["Finset.sum_swap_demo", "CslibFrontier.Demo.Basic", "Demo.Basic"]
         self.assertEqual(self.check(" ".join(f"`{n}`" for n in names)), {})
 
     def test_missing_names_are_reported_with_context(self) -> None:
@@ -147,8 +147,8 @@ class CheckPrNamesTests(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.root = pathlib.Path(tmp.name)
-        self.write("Complexity/Parent.lean", "class Base (α : Type) where\n  base : α\n")
-        self.write("Complexity/Child.lean",
+        self.write("CslibFrontier/Parent.lean", "class Base (α : Type) where\n  base : α\n")
+        self.write("CslibFrontier/Child.lean",
                    "structure Pair (α : Type) extends Base α where\n  first : α\n")
         self.assertEqual(self.check("`Pair.toBase`"), {})
         self.assertEqual(list(self.check("`Pair.toNotAThing`")), ["Pair.toNotAThing"])
@@ -176,7 +176,7 @@ class CheckPrNamesTests(unittest.TestCase):
         self.assertEqual(list(self.check(text)), ["nonceSignOracle"])
 
     def test_comments_are_not_declarations(self) -> None:
-        self.write("Complexity/Demo/Commented.lean",
+        self.write("CslibFrontier/Demo/Commented.lean",
                    "/- theorem inBlock : True := trivial -/\n-- theorem inLine : True := trivial\n"
                    "/-- doc\ntheorem inDoc : True := trivial -/\n"
                    "theorem real_decl : True := trivial\n")
@@ -214,12 +214,12 @@ class CheckPrNamesTests(unittest.TestCase):
         self.git("init", "-q")
         self.git("config", "color.ui", "always")
         self.commit("--allow-empty", "-m", "root")
-        self.write("Complexity/Demo/Old.lean",
+        self.write("CslibFrontier/Demo/Old.lean",
                    "namespace Cslib.Old\ntheorem old_lemma : True := trivial\nend Cslib.Old\n")
         self.git("add", ".")
         self.commit("-m", "base")
         base = self.git("rev-parse", "HEAD")
-        (self.root / "Complexity/Demo/Old.lean").unlink()
+        (self.root / "CslibFrontier/Demo/Old.lean").unlink()
         found = self.check("Removes `Cslib.Old.old_lemma`; adds `brandNew`.", base=base)
         self.assertTrue(found["Cslib.Old.old_lemma"].removed)
         self.assertFalse(found["brandNew"].removed)

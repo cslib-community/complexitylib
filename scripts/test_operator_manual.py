@@ -27,13 +27,13 @@ class ManualChecks(unittest.TestCase):
         self.repo = Path(self.temp.name)
         self.manual = self.repo / "manual"
         (self.manual / "workflows/data").mkdir(parents=True)
-        (self.repo / "ComplexityTests").mkdir()
-        self.client = self.repo / "ComplexityTests/Client.lean"
+        (self.repo / "CslibFrontierTests").mkdir()
+        self.client = self.repo / "CslibFrontierTests/Client.lean"
         self.fragment = "example : True := by\n  trivial"
         self.client.write_text("import Lean\n\n" + self.fragment + "\n")
         self.doc = self.manual / "workflows/first.md"
         self.doc.write_text(
-            "# First client\n\n[Complete client](../../ComplexityTests/Client.lean)\n\n"
+            "# First client\n\n[Complete client](../../CslibFrontierTests/Client.lean)\n\n"
             "<!-- excerpt: first -->\n```lean\n" + self.fragment + "\n```\n")
         (self.manual / "README.md").write_text(
             "# Manual\n\n[First client](workflows/first.md#first-client)\n"
@@ -42,7 +42,7 @@ class ManualChecks(unittest.TestCase):
         self.manifest = self.manual / "workflows/data/test-excerpts.json"
         self.manifest.write_text(json.dumps([{
             "id": "first", "document": "workflows/first.md",
-            "source_path": "ComplexityTests/Client.lean"}]))
+            "source_path": "CslibFrontierTests/Client.lean"}]))
 
     def errors(self):
         return check(self.repo)["errors"]
@@ -86,7 +86,7 @@ class ManualChecks(unittest.TestCase):
 
     def test_context_requires_link_to_complete_client(self):
         self.doc.write_text(self.doc.read_text().replace(
-            "[Complete client](../../ComplexityTests/Client.lean)", "Complete client omitted"))
+            "[Complete client](../../CslibFrontierTests/Client.lean)", "Complete client omitted"))
         self.assertTrue(any("link the complete source client" in e for e in self.errors()))
 
     def test_generated_documents_are_not_inputs(self):
@@ -316,12 +316,12 @@ class PortableLinks(unittest.TestCase):
         self.repo = Path(self.temp.name)
         self.root = self.repo / 'manual'
         self.root.mkdir()
-        (self.repo / 'ComplexityTests').mkdir()
+        (self.repo / 'CslibFrontierTests').mkdir()
         self.revision = 'a' * 40
         for name, value in {
             'ROOT': self.root, 'FILES': ['README.md', 'workflows/first.md'],
             'SOURCE_REVISION': self.revision,
-            'SOURCE_PATHS': {'ComplexityTests', 'ComplexityTests/A client.lean',
+            'SOURCE_PATHS': {'CslibFrontierTests', 'CslibFrontierTests/A client.lean',
                              'manual/AGENT_OPERATORS.md'},
             'CHANGED_PATHS': set(),
         }.items():
@@ -337,12 +337,12 @@ class PortableLinks(unittest.TestCase):
         return self.link(href, path)['c'][2][0]
 
     def test_source_links_are_pinned_encoded_and_keep_query_and_fragment(self):
-        self.assertEqual(self.target('../ComplexityTests/A%20client.lean?plain=1#L12'),
-                         f'https://github.com/cslib-community/complexitylib/blob/{self.revision}'
-                         '/ComplexityTests/A%20client.lean?plain=1#L12')
-        self.assertEqual(self.target('../ComplexityTests'),
-                         f'https://github.com/cslib-community/complexitylib/tree/{self.revision}'
-                         '/ComplexityTests')
+        self.assertEqual(self.target('../CslibFrontierTests/A%20client.lean?plain=1#L12'),
+                         f'https://github.com/cslib-community/cslib-frontier/blob/{self.revision}'
+                         '/CslibFrontierTests/A%20client.lean?plain=1#L12')
+        self.assertEqual(self.target('../CslibFrontierTests'),
+                         f'https://github.com/cslib-community/cslib-frontier/tree/{self.revision}'
+                         '/CslibFrontierTests')
 
     def test_internal_anchors_and_citations_stay_in_the_book(self):
         self.assertEqual(self.target('workflows/first.md#example'),
@@ -353,7 +353,7 @@ class PortableLinks(unittest.TestCase):
 
     def test_other_manual_is_a_repository_link(self):
         self.assertEqual(self.target('AGENT_OPERATORS.md#review'),
-                         f'https://github.com/cslib-community/complexitylib/blob/{self.revision}'
+                         f'https://github.com/cslib-community/cslib-frontier/blob/{self.revision}'
                          '/manual/AGENT_OPERATORS.md#review')
 
     def test_external_links_are_unchanged(self):
@@ -363,9 +363,9 @@ class PortableLinks(unittest.TestCase):
 
     def test_unpublished_or_changed_targets_fail_instead_of_linking_wrong_content(self):
         with self.assertRaisesRegex(ValueError, 'absent from the rendered revision'):
-            self.target('../ComplexityTests/New.lean')
-        with mock.patch.object(book.base, 'CHANGED_PATHS', {'ComplexityTests/A client.lean'}):
-            for href in ('../ComplexityTests/A%20client.lean', '../ComplexityTests'):
+            self.target('../CslibFrontierTests/New.lean')
+        with mock.patch.object(book.base, 'CHANGED_PATHS', {'CslibFrontierTests/A client.lean'}):
+            for href in ('../CslibFrontierTests/A%20client.lean', '../CslibFrontierTests'):
                 with self.subTest(href=href), self.assertRaisesRegex(ValueError, 'uncommitted changes'):
                     self.target(href)
 

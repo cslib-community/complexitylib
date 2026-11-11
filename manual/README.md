@@ -33,9 +33,9 @@ The [reference index](index.md) covers models, major theorems, design choices an
 credit. The [model map](model-map.md) provides 265 model and interface entries from the
 initial survey. Update the affected descriptions and routes when an interface, theorem
 contract or operating procedure changes; the index is not a claim that every mathematical
-declaration has been classified. The [existing guide](../guide/ComplexityGuide.lean) remains
-the home of its checked narrative examples, and [library source](../Complexity/) and
-[tests](../ComplexityTests/) remain the authority for definitions and example bodies.
+declaration has been classified. The [existing guide](../guide/CslibFrontierGuide.lean) remains
+the home of its checked narrative examples, and [library source](../CslibFrontier/) and
+[tests](../CslibFrontierTests/) remain the authority for definitions and example bodies.
 
 ## Maintain both manuals with the code
 

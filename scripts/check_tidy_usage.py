@@ -8,7 +8,7 @@ measurement parameters, not approved exemptions.
 
 Usage: python3 scripts/check_tidy_usage.py --json /tmp/tidy-usage.json
 To reproduce the issue's older broad Machines measurement boundary, pass
---internal-prefix Complexity/Computability/Machines/ (this grants no exemption).
+--internal-prefix CslibFrontier/Computability/Machines/ (this grants no exemption).
 Use TIDY_USAGE_NATIVE=1 python3 -B -m unittest discover -s scripts -p test_tidy_usage.py
 to check both classic and split Lean metadata readers as well as the lexical regressions.
 """
@@ -35,8 +35,8 @@ from proof_lengths import masks  # noqa: E402
 # Report-only S4 measurement. These prefixes describe the proposed target, not an exemption
 # from S3 or an assertion that the boundary migration has already happened.
 TIDY_INTERNAL_PREFIXES = (
-    "Complexity/Computability/Machines/Turing/MultiTape/Internal/",
-    "ComplexityTests/Machines/Turing/MultiTape/Internal/",
+    "CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/",
+    "CslibFrontierTests/Machines/Turing/MultiTape/Internal/",
 )
 BRIDGE_TOKEN = re.compile(r"\.(?:tidy|of_tidy)(?![\w'!?])")
 LOCAL_FUN_PROP = re.compile(r"(?:^|,)\s*local\s+fun_prop\s*(?:,|$)")
@@ -120,7 +120,7 @@ def tidy_usage_report(lib: Library, prefixes: tuple[str, ...] = TIDY_INTERNAL_PR
     unknown statement counts, since the root build does not elaborate the separate guide.
     """
     modules = sorted(m for m in lib.ileans if m.startswith(
-        ("Complexity.", "ComplexityTests.", "ComplexityAbstracts.")))
+        ("CslibFrontier.", "CslibFrontierTests.", "CslibFrontierAbstracts.")))
     extra = [m for m in modules if m not in lib.modules]
     constants = dict(lib.constants)
     if extra:
@@ -154,7 +154,7 @@ def tidy_usage_report(lib: Library, prefixes: tuple[str, ...] = TIDY_INTERNAL_PR
                                       known_suffixes)
         private = private_by_module[module] if metadata else None
         counts = {"public_tidy_statements": public_by_module[module]
-                  if module.startswith("Complexity.") else None,
+                  if module.startswith("CslibFrontier.") else None,
                   "private_tidy_declarations": len(private) if metadata else None,
                   "local_tidy_fun_prop": len(signals["local_tidy_fun_prop"]),
                   "bridge_occurrences": len(signals["bridges"])}
@@ -175,8 +175,8 @@ def tidy_usage_report(lib: Library, prefixes: tuple[str, ...] = TIDY_INTERNAL_PR
                   "dirty": bool(run(["git", "status", "--porcelain"],
                                     capture_output=True).stdout.strip()),
                   "source_dirty": bool(run(["git", "status", "--porcelain", "--",
-                      "Complexity", "ComplexityTests", "abstracts", "guide",
-                      "Complexity.lean"],
+                      "CslibFrontier", "CslibFrontierTests", "abstracts", "guide",
+                      "CslibFrontier.lean"],
                       capture_output=True).stdout.strip()),
                   "scanned_source_sha256": source_hash.hexdigest(),
                   "scanned_files": len(sources), "build_dir": str(lib.build_dir)}

@@ -35,7 +35,7 @@ whose types are alpha-equivalent (`k = "thm"`), or whose types and exposed bodie
 
 open Lean
 
-namespace ComplexityScripts.LeanOutputs
+namespace CslibFrontierScripts.LeanOutputs
 
 def kindOf : ConstantInfo → String
   | .defnInfo _ => "def"
@@ -189,10 +189,10 @@ unsafe def run (libDir : System.FilePath) : IO Unit := do
   -- Keep the regions reachable until every expression has been used.
   if regions.isEmpty then stdout.flush
 
-end ComplexityScripts.LeanOutputs
+end CslibFrontierScripts.LeanOutputs
 
 unsafe def main (args : List String) : IO Unit :=
   match args with
-  | [] => ComplexityScripts.LeanOutputs.run ".lake/build/lib/lean"
-  | [libDir] => ComplexityScripts.LeanOutputs.run libDir
+  | [] => CslibFrontierScripts.LeanOutputs.run ".lake/build/lib/lean"
+  | [libDir] => CslibFrontierScripts.LeanOutputs.run libDir
   | _ => throw <| IO.userError "usage: LeanOutputs [<lib-dir>] < modules.txt"

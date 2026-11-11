@@ -63,7 +63,7 @@
     const node = document.createElement(valid ? "a" : "span");
     node.className = "commit";
     node.textContent = valid ? revision.slice(0, 8) : "Unavailable";
-    if (valid) { node.href = "https://github.com/cslib-community/complexitylib/commit/" + revision; node.title = revision; }
+    if (valid) { node.href = "https://github.com/cslib-community/cslib-frontier/commit/" + revision; node.title = revision; }
     return node;
   }
   function svgNode(tag, attributes = {}, content) {
@@ -273,7 +273,7 @@
     byId("latest-commit").hidden = !latest || !/^[0-9a-f]{40}$/.test(latest.revision);
     if (latest) {
       const link = byId("latest-commit");
-      if (/^[0-9a-f]{40}$/.test(latest.revision)) { link.textContent = latest.revision.slice(0, 8); link.href = "https://github.com/cslib-community/complexitylib/commit/" + latest.revision; }
+      if (/^[0-9a-f]{40}$/.test(latest.revision)) { link.textContent = latest.revision.slice(0, 8); link.href = "https://github.com/cslib-community/cslib-frontier/commit/" + latest.revision; }
       text("latest-age", age(latest.published_at));
       text("latest-detail", leanVersion(latest.toolchain) + " · " + count(latest.module_count) + " modules");
     } else { text("latest-age", "No publication yet"); text("latest-detail", "The first published build will appear here."); }

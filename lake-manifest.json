@@ -101,6 +101,6 @@
    "inputRev": "v4.36.0-rc2",
    "inherited": true,
    "configFile": "lakefile.toml"}],
- "name": "complexitylib",
+ "name": "«cslib-frontier»",
  "lakeDir": ".lake",
  "fixedToolchain": false}

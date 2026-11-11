@@ -22,15 +22,15 @@ import check_hygiene
 import lean_outputs
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = "https://github.com/cslib-community/complexitylib/blob/main/"
-API = "https://www.cslib.io/complexitylib/"
+REPOSITORY = "https://github.com/cslib-community/cslib-frontier/blob/main/"
+API = "https://www.cslib.io/cslib-frontier/"
 
 
 def module_path(module: str, root: Path) -> Path:
-    if not re.fullmatch(r"(?:Complexity|ComplexityAbstracts)(?:\.[A-Za-z_][A-Za-z0-9_]*)+", module):
+    if not re.fullmatch(r"(?:CslibFrontier|CslibFrontierAbstracts)(?:\.[A-Za-z_][A-Za-z0-9_]*)+", module):
         raise ValueError(f"Unsupported module: {module}")
     relative = Path(module.replace(".", "/") + ".lean")
-    return root / (Path("abstracts") / relative if module.startswith("ComplexityAbstracts.")
+    return root / (Path("abstracts") / relative if module.startswith("CslibFrontierAbstracts.")
                    else relative)
 
 
@@ -46,7 +46,7 @@ def load_lean_registry(root: Path = ROOT) -> dict:
     Checked declarations do not establish paper correspondence: recorded citations still
     require source review, independently of successful elaboration and export.
     """
-    subprocess.run(["lake", "build", "--no-build", "ComplexityResults"], cwd=root,
+    subprocess.run(["lake", "build", "--no-build", "CslibFrontierResults"], cwd=root,
                    text=True, check=True, capture_output=True)
     exported = subprocess.run(["lake", "env", "lean", "--run", "scripts/ExportResults.lean"],
                               cwd=root, text=True, check=True, capture_output=True)
@@ -166,7 +166,7 @@ def markdown(entries: list[dict], root: Path = ROOT, papers: bool = False) -> st
         for entry in results:
             lines.extend([f"### {entry['title']}", "", entry["scope"], ""])
             for name in entry["theorems"]:
-                if entry["module"].startswith("ComplexityAbstracts."):
+                if entry["module"].startswith("CslibFrontierAbstracts."):
                     source = module_path(entry["module"], root)
                     line = build_abstracts.declaration_line(source.read_text(), name)
                     target = REPOSITORY + source.relative_to(root).as_posix() + f"#L{line}"
@@ -207,7 +207,7 @@ def main() -> int:
             print(f"{len(entries)} result groups; {sum(len(e['theorems']) for e in entries)} "
                   f"theorems; {len(keys)} bibliography keys. Coverage/source review remain incomplete.")
     except subprocess.CalledProcessError as error:
-        parser.exit(1, "Registry export/metadata check failed; build ComplexityResults and the registered modules first.\n" +
+        parser.exit(1, "Registry export/metadata check failed; build CslibFrontierResults and the registered modules first.\n" +
                     (error.stderr or str(error)))
     except (ValueError, OSError, KeyError, TypeError) as error:
         parser.exit(1, f"Registry error: {error}\n")

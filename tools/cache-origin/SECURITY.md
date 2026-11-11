@@ -113,6 +113,6 @@ This PR is a bounded milestone: HTTP origin source, operator configuration examp
 publication, bounded ordered restoration, retention and recovery. The MIT host was installed
 and commissioned manually; the repository does not yet reproduce that installation or perform
 automated upgrades. Repository-managed, repeatable provisioning and upgrade/rollback validation
-remain open under [#2503](https://github.com/cslib-community/complexitylib/issues/2503). Neither
+remain open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503). Neither
 source approval nor the host checks close that broader issue. Reader activation, a real-build
 cold restore, a recovery exercise and exact-head human maintainer approval remain separate gates.
