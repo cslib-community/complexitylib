@@ -186,11 +186,6 @@ theorem measureOrCollisionProb_eq (seed : Measure ι) [IsProbabilityMeasure seed
     Finset.prod_const, Finset.card_univ, Fintype.card_fin, ENNReal.toReal_pow, ← measureReal_def,
     probReal_compl_eq_one_sub hmeas, measureCollisionProb]
 
-/-- `p ↦ 1 - (1 - p) ^ L` is monotone on `[0, 1]`. -/
-private theorem one_sub_pow_mono {p q : ℝ} (hpq : p ≤ q) (hq : q ≤ 1) (L : ℕ) :
-    1 - (1 - p) ^ L ≤ 1 - (1 - q) ^ L :=
-  sub_le_sub_left (pow_le_pow_left₀ (by linarith) (by linarith) L) 1
-
 /-- The OR construction under `Measure.pi` turns a `(p₁, p₂)`-sensitive family into a
 `(1 - (1 - p₁) ^ L, 1 - (1 - p₂) ^ L)`-sensitive one. -/
 theorem IsLocalitySensitive.measureOr {seed : Measure ι} [IsProbabilityMeasure seed]
@@ -201,10 +196,11 @@ theorem IsLocalitySensitive.measureOr {seed : Measure ι} [IsProbabilityMeasure 
       (1 - (1 - p₂) ^ L) where
   le_of_near x x' hx := by
     rw [measureOrCollisionProb_eq _ _ _ (hmeas x x')]
-    exact one_sub_pow_mono (h.le_of_near x x' hx) (measureCollisionProb_le_one _ _ _ _) L
+    exact one_sub_one_sub_pow_le_one_sub_one_sub_pow
+      (h.le_of_near x x' hx) (measureCollisionProb_le_one _ _ _ _) L
   le_of_far x x' hx := by
     rw [measureOrCollisionProb_eq _ _ _ (hmeas x x')]
-    exact one_sub_pow_mono (h.le_of_far x x' hx) hp₂ L
+    exact one_sub_one_sub_pow_le_one_sub_one_sub_pow (h.le_of_far x x' hx) hp₂ L
 
 /-- `L` bands of `k` independent draws from a probability measure collide in some band with
 probability `sCurve k L (measureCollisionProb seed hash x x')`. -/

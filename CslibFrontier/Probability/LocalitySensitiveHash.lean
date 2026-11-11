@@ -225,7 +225,7 @@ theorem orCollisionProb_eq (seed : PMF ι) (hash : ι → X → Y) (L : ℕ) (x 
   · exact ENNReal.one_ne_top
 
 /-- `p ↦ 1 - (1 - p) ^ L` is monotone on probabilities. -/
-private theorem one_sub_one_sub_pow_le_one_sub_one_sub_pow {p q : ℝ} (hpq : p ≤ q) (hq : q ≤ 1)
+theorem one_sub_one_sub_pow_le_one_sub_one_sub_pow {p q : ℝ} (hpq : p ≤ q) (hq : q ≤ 1)
     (L : ℕ) : 1 - (1 - p) ^ L ≤ 1 - (1 - q) ^ L :=
   sub_le_sub_left (pow_le_pow_left₀ (by linarith) (by linarith) L) 1
 

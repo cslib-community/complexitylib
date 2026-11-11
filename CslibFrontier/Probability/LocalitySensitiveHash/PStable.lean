@@ -556,12 +556,10 @@ theorem p2StableProb_strictAnti {r c₁ c₂ : ℝ} (hr : 0 < r) (hc₁ : 0 ≤ 
   exact stableCollisionProb_withDensity_strictAnti (by unfold gaussianPDFReal; fun_prop)
     (fun z => gaussianPDFReal_pos 0 1 z one_ne_zero) (integrable_gaussianPDFReal 0 1) hr hc₁ hlt
 
-/-- **Exact integral representation for `p = 2`** ([DatarImmorlicaIndykMirrokni2004]): for `r > 0`
-and `c > 0`, `p2StableProb r c = ∫ t in 0..r, (2 / c) * gaussianPDFReal 0 1 (t / c) * (1 - t / r)`.
--/
-theorem p2StableProb_eq_integral {r c : ℝ} (hr : 0 < r) (hc : 0 < c) :
+/-- Shared reduction of `p2StableProb r c` to twice the half-line integral on `0..(r / c)`. -/
+private theorem p2StableProb_eq_two_mul {r c : ℝ} (hr : 0 < r) (hc : 0 < c) :
     p2StableProb r c =
-      ∫ t in (0 : ℝ)..r, (2 / c) * gaussianPDFReal 0 1 (t / c) * (1 - t / r) := by
+      2 * ∫ z in (0 : ℝ)..(r / c), (1 - c * z / r) * gaussianPDFReal 0 1 z := by
   have heven : ∀ z, gaussianPDFReal 0 1 (-z) = gaussianPDFReal 0 1 z := fun z => by
     simp [gaussianPDFReal_def]
   have h2 := stableCollisionProb_withDensity_eq_two_mul (by unfold gaussianPDFReal; fun_prop)
@@ -570,7 +568,15 @@ theorem p2StableProb_eq_integral {r c : ℝ} (hr : 0 < r) (hc : 0 < c) :
   rw [p2StableProb, gaussianReal_of_var_ne_zero 0 one_ne_zero]
   change stableCollisionProb
     (volume.withDensity fun z => ENNReal.ofReal (gaussianPDFReal 0 1 z)) r c = _
-  rw [h2]
+  exact h2
+
+/-- **Exact integral representation for `p = 2`** ([DatarImmorlicaIndykMirrokni2004]): for `r > 0`
+and `c > 0`, `p2StableProb r c = ∫ t in 0..r, (2 / c) * gaussianPDFReal 0 1 (t / c) * (1 - t / r)`.
+-/
+theorem p2StableProb_eq_integral {r c : ℝ} (hr : 0 < r) (hc : 0 < c) :
+    p2StableProb r c =
+      ∫ t in (0 : ℝ)..r, (2 / c) * gaussianPDFReal 0 1 (t / c) * (1 - t / r) := by
+  rw [p2StableProb_eq_two_mul hr hc]
   have hcomp := intervalIntegral.integral_comp_mul_left
     (fun t : ℝ => (2 / c) * gaussianPDFReal 0 1 (t / c) * (1 - t / r)) (a := 0) (b := r / c) hc.ne'
   simp only [mul_zero, smul_eq_mul] at hcomp
@@ -596,15 +602,7 @@ theorem p2StableProb_eq_sub {r c : ℝ} (hr : 0 < r) (hc : 0 < c) :
     p2StableProb r c =
       (gaussianReal 0 1).real (Set.Icc (-r / c) (r / c)) -
         √(2 / π) * (c / r) * (1 - Real.exp (-((r / c) ^ 2) / 2)) := by
-  have heven : ∀ z, gaussianPDFReal 0 1 (-z) = gaussianPDFReal 0 1 z := fun z => by
-    simp [gaussianPDFReal_def]
-  have h2 := stableCollisionProb_withDensity_eq_two_mul (by unfold gaussianPDFReal; fun_prop)
-    (fun z => (gaussianPDFReal_pos 0 1 z one_ne_zero).le) (integrable_gaussianPDFReal 0 1)
-    heven hr hc
-  rw [p2StableProb, gaussianReal_of_var_ne_zero 0 one_ne_zero]
-  change stableCollisionProb
-    (volume.withDensity fun z => ENNReal.ofReal (gaussianPDFReal 0 1 z)) r c = _
-  rw [h2]
+  rw [p2StableProb_eq_two_mul hr hc]
   have hi1 : IntervalIntegrable (gaussianPDFReal 0 1) volume 0 (r / c) :=
     (integrable_gaussianPDFReal 0 1).intervalIntegrable
   have hi2 : IntervalIntegrable (fun z : ℝ => (c * z / r) * gaussianPDFReal 0 1 z) volume 0
@@ -616,6 +614,8 @@ theorem p2StableProb_eq_sub {r c : ℝ} (hr : 0 < r) (hc : 0 < c) :
   rw [hsplit, intervalIntegral.integral_sub hi1 hi2, mul_sub]
   have hnorm : 2 * ∫ z in (0 : ℝ)..(r / c), gaussianPDFReal 0 1 z =
       (gaussianReal 0 1).real (Set.Icc (-r / c) (r / c)) := by
+    have heven : ∀ z, gaussianPDFReal 0 1 (-z) = gaussianPDFReal 0 1 z := fun z => by
+      simp only [gaussianPDFReal_def, neg_sq]
     have hcomp := intervalIntegral.integral_comp_neg (gaussianPDFReal 0 1) (a := -(r / c)) (b := 0)
     simp only [neg_zero, neg_neg, heven] at hcomp
     have hrc : 0 < r / c := div_pos hr hc
