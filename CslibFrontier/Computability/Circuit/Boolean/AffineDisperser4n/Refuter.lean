@@ -65,7 +65,8 @@ def childrenEq {n} (S : State n) (x : ℕ) (c : ℕ ⊕ ℕ) : Bool :=
 
 def findD4 {n} (S : State n) : Option (ℕ × ℕ) :=
   (S.unpaired.sort (· ≤ ·)).findSome? fun x =>
-    (S.eqns.sort (· ≤ ·)).findSome? fun e =>
+    if decide (isNode x S.out.arg) then none
+    else (S.eqns.sort (· ≤ ·)).findSome? fun e =>
       if childrenEq S x (.inr e) then some (x, e) else none
 
 def findMovable {n} (S : State n) : Option ℕ :=
@@ -104,16 +105,37 @@ def findPartnersShareChild {n} (S : State n) : Option (ℕ × (ℕ ⊕ ℕ)) :=
     else none
   else none
 
-def isConstantGate {n} (S : State n) (J : ℕ) : Bool :=
-  match (S.gate J).left, (S.gate J).right with
-  | .const _b1, .const _b2 => true
-  | .const b1, _ => decide ((S.gate J).op b1 false = (S.gate J).op b1 true)
-  | _, .const b2 => decide ((S.gate J).op false b2 = (S.gate J).op true b2)
-  | .node u, .node v => decide (u = v)
+def degenerateLit {n} (S : State n) (J : ℕ) : Option Lit :=
+  let g := S.gate J
+  let op := g.op
+  let eval (L R : Bool) : Bool :=
+    let bL := match g.left with | .const b => b | .node _ => L
+    let bR := match g.right with | .const b => b | .node _ => R
+    op bL bR
+  let oFF := eval false false
+  let oFT := eval false true
+  let oTF := eval true false
+  let oTT := eval true true
+  if oFF == oFT && oTF == oTT then
+    if oFF == oTF then some (Lit.const oFF)
+    else match g.left with
+         | .node u => some (Lit.node u oFF)
+         | .const _ => none
+  else if oFF == oTF && oFT == oTT then
+    if oFF == oFT then some (Lit.const oFF)
+    else match g.right with
+         | .node v => some (Lit.node v oFF)
+         | .const _ => none
+  else if let (.node u, .node v) := (g.left, g.right) then
+    if u == v then
+      if oFF == oTT then some (Lit.const oFF)
+      else some (Lit.node u oFF)
+    else none
+  else none
 
 def findD1 {n} (S : State n) : Option ℕ :=
   (S.gates.sort (· ≤ ·)).find? fun J =>
-    decide (isConstantGate S J)
+    decide ((degenerateLit S J).isSome)
 
 def findPairInSystem {n} (S : State n) : Option ℕ :=
   (S.eqns.sort (· ≤ ·)).findSome? fun e =>
@@ -134,20 +156,25 @@ def findAndOnPair {n} (S : State n) : Option (ℕ × ℕ) :=
     else none
 
 def chooseStep? {n} (S : State n) : Option StepChoice :=
-  if let some J := findD1 S then some (.deleteConstantGate J)
-  else if let some J := findD2 S then some (.deleteDeadGate J)
-  else if let some e := findD3 S then some (.deleteShortEqn e)
-  else if let some (x, e) := findD4 S then some (.deleteUnitParam x e)
-  else if let some J := findMovable S then some (.moveAffine J)
-  else if let some p := findDegeneratePair S then some (.degeneratePair p)
-  else if let some (pr_fst, _H) := findPartnersShareChild S then some (.partnersShareChild pr_fst)
-  else if let some p := findPairInSystem S then some (.pairInSystem p)
-  else if let some (G, p) := findAndOnPair S then some (.andOnPair G p)
-  else if hne : S.gates.Nonempty then
-    let G := S.gates.min' hne
-    if 0 < S.auxIn G then some (.swapAuxIn G)
-    else some (.pairCreation G)
-  else none
+  match S.out.arg with
+  | .const _ => none
+  | .node u =>
+    if decide (u ∈ S.params) then none
+    else if let some J := findD1 S then some (.deleteConstantGate J)
+    else if let some J := findD2 S then some (.deleteDeadGate J)
+    else if let some e := findD3 S then some (.deleteShortEqn e)
+    else if let some (x, e) := findD4 S then some (.deleteUnitParam x e)
+    else if let some J := findMovable S then some (.moveAffine J)
+    else if let some p := findDegeneratePair S then some (.degeneratePair p)
+    else if let some (pr_fst, _H) := findPartnersShareChild S then some (.partnersShareChild pr_fst)
+    else if let some p := findPairInSystem S then some (.pairInSystem p)
+    else if let some (G, p) := findAndOnPair S then some (.andOnPair G p)
+    else if hne : S.gates.Nonempty then
+      let G := S.gates.min' hne
+      if 0 < S.auxIn G then some (.swapAuxIn G)
+      else if decide (u = G) then none
+      else some (.pairCreation G)
+    else none
 
 def toDenseRow (m : ℕ) (terms : Finset ℕ) (c : Bool) : Row :=
   ⟨(List.range m).map (fun i => decide (i ∈ terms)), c⟩
@@ -184,8 +211,8 @@ def findPair {n} (S : State n) (p : ℕ) : Option ZeroPair :=
 def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
   match choice with
   | .deleteConstantGate J =>
-    let g := S.gate J
-    State.deleteGate S J (Lit.const (g.op false false))
+    let l := (degenerateLit S J).getD (Lit.const false)
+    State.deleteGate S J l
   | .deleteDeadGate J =>
     State.deleteGate S J (Lit.const false)
   | .deleteShortEqn e =>
@@ -271,7 +298,7 @@ def isFstOfAnyPair {n} (S : State n) (x : ℕ) : Bool :=
 
 def terminalVal {n} (S : State n) (d_params : List ℕ) (A : List Bool) (x : ℕ) : Bool :=
   match findPair S x with
-  | some pr => if pr.fst = x then !pr.fstBias else
+  | some pr => if pr.fst = x then pr.fstBias else
       match d_params.findIdx? (· = x) with
       | some i => A.getD i false
       | none => false
@@ -288,13 +315,17 @@ def allAssignments : ℕ → List (List Bool)
   | 0 => [[]]
   | m + 1 => let r := allAssignments m; r.map (false :: ·) ++ r.map (true :: ·)
 
-def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool) (d : ℕ) (S : State n) : Option (BitString n) :=
+def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool) (d : ℕ)
+    (S : State n) : Option (BitString n) :=
   let d_params := getDParams S d
   (allAssignments d).findSome? fun A =>
     let val_param := terminalVal S d_params A
-    let val_all := fun y => if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
+    let val_all := fun y =>
+      if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
     let x_vec : BitString n := S.phi val_all
-    if C.eval fullInterpretation x_vec 0 != f x_vec then some x_vec else none
+    if C.eval fullInterpretation x_vec 0 != f x_vec then
+      some x_vec
+    else none
 
 def refuterLoop {n} (S : State n) (fuel : ℕ) : State n :=
   match fuel with
@@ -304,9 +335,11 @@ def refuterLoop {n} (S : State n) (fuel : ℕ) : State n :=
     | some choice => refuterLoop (applyStep S choice) fuel'
     | none => S
 
-def refute {n d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool) : BitString n :=
+def refute {n d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
+    (f : BitString n → Bool) : BitString n :=
   let S_init := initialState C
-  let S_final := refuterLoop S_init (S_init.m + S_init.s)
+  let S_final := refuterLoop S_init
+    (4 * (S_init.m + S_init.s) + 3 * S_init.gates.card + S_init.aux.card)
   match findCounterexample C f d S_final with
   | some x => x
   | none => fun _ => false
