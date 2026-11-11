@@ -6050,8 +6050,10 @@ public import CslibFrontier.MachineLearning.PACLearning.VCDimension
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import CslibFrontier.MachineLearning.Rademacher.Basic
 public import CslibFrontier.MachineLearning.Rademacher.Classification
+public import CslibFrontier.MachineLearning.Rademacher.Contraction
 public import CslibFrontier.MachineLearning.Rademacher.Generalization
 public import CslibFrontier.MachineLearning.Rademacher.GrowthFunction
+public import CslibFrontier.MachineLearning.Rademacher.Margin
 public import CslibFrontier.MachineLearning.Replicable.Amplification
 public import CslibFrontier.MachineLearning.Replicable.Basic
 public import CslibFrontier.MachineLearning.Replicable.BiasEstimation

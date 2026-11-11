@@ -1012,6 +1012,11 @@ Lean development team. *Validating a Lean Proof*, The Lean Language Reference, a
 
 Lucien Le Cam. "Convergence of Estimates Under Dimensionality Restrictions." *The Annals of Statistics* 1(1), 38–53, 1973. https://doi.org/10.1214/aos/1193342380 . Bibliographic metadata checked via search summaries on 2026-11-11; the article text was not inspected, and no theorem number is claimed. Cited as background origin for bounded pairwise Hellinger tests and tournament localization (`leCamBirgeTest`, `birgeTournamentSelect`).
 
+<a id="ledouxtalagrand91"></a>
+## ledouxtalagrand91
+
+Michel Ledoux and Michel Talagrand. *Probability in Banach Spaces: Isoperimetry and Processes*. Ergebnisse der Mathematik und ihrer Grenzgebiete (3), vol. 23, Springer-Verlag, Berlin, 1991. ISBN 978-3-540-52013-9. Bibliographic metadata and the locator Theorem 4.12 (pp. 112–114, Rademacher contraction principle for convex nondecreasing functions and centered contractions `φ_i(0) = 0`) were checked against secondary search summaries on 2026-11-11 UTC; the book text was not directly inspected. [Rademacher/Contraction](../CslibFrontier/MachineLearning/Rademacher/Contraction.lean) follows the uncentered expected-supremum proof of [mohrirostamizadehtalwalkar18](#mohrirostamizadehtalwalkar18), Section 5.4, Lemma 5.7.
+
 <a id="lemkehowson64"></a>
 ## lemkehowson64
 
@@ -1166,6 +1171,11 @@ Jayadev Misra, David Gries. “Finding Repeated Elements.” *Science of Compute
 ## mitzenmacherupfal17
 
 Michael Mitzenmacher and Eli Upfal. *Probability and Computing: Randomization and Probabilistic Techniques in Algorithms and Data Analysis*, 2nd edition. Cambridge University Press, 2017. The locator Section 1.3, Theorem 1.4 (an incorrect product survives a uniform `0`/`1` vector with probability at most `1/2`) was checked against secondary descriptions on 2026-11-07; the full text was not inspected in this pass.
+
+<a id="mohrirostamizadehtalwalkar18"></a>
+## mohrirostamizadehtalwalkar18
+
+Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
 
 <a id="monderershapley96"></a>
 ## monderershapley96
