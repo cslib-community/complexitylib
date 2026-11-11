@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.LearningParams
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.AmpGeneratorCircuit
+import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 
 /-!
 # Learning AC⁰[2] with the rank property
@@ -20,7 +21,8 @@ is useful [Carmosino et al., Theorem 5.1, p. 10:19]
 quasi-polynomial time with membership queries under the uniform distribution
 [Carmosino et al., Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016]. This file
 proves the `p = 2` case for a fixed depth `d` and size `s`, with the GF(2) rank property as the
-test, counting queries: neither the running time nor the hypotheses' circuit size is certified.
+test. It certifies the number of queries and the De Morgan circuit size of the hypotheses, not the
+running time.
 
 The CIKK learner (`Cslib.MachineLearning.UniformLearning.learns_cikkLearner`) needs a test that is
 dense and rejects every output `g_z` of the black-box generator on the amplified target. Take the
@@ -38,15 +40,26 @@ The learner then makes at most `(h + 1) 2 ^ (12 g + 6 e + 59)` queries, and
 number of queries is `2 ^ O((e + log (n s)) ^ (2 d + 14))` times `h + 1`: quasi-polynomial in `n`,
 `s` and the inverse error `2 ^ e`.
 
+The rank test is decided from the truth table by a De Morgan circuit with at most `173 · 8 ^ ℓ`
+gates (`Cslib.Circuits.Boolean.Razborov.complexity_truthTableTest_rankTest_le`). Composed with the
+bound of the learner's hypotheses, affine in the test's circuit size
+(`Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_le_two_pow`), and with
+`ℓ + 2 ≤ g`, every hypothesis has a De Morgan circuit with at most `2 ^ (17 g + 9 e + 76)` gates,
+again quasi-polynomial for fixed `d`. Since the test is itself a small circuit, this bounds the
+circuit complexity of the hypotheses themselves, not the size of an oracle circuit.
+
 Labels:
 * **Rank property.** The test is this library's variant of the rank property (one square matrix,
   threshold `C(n, a) / 2`, level `sliceLevel`; see
   `Cslib.Circuits.Boolean.Razborov.RankProperty`), with density `1 / 2` where Theorem 5.1 assumes
-  largeness `1 / 5`. Its constructivity is not used: it only bounds the hypotheses' circuit size,
-  which is not part of this file.
+  largeness `1 / 5`. Its constructivity enters only through the size of its truth-table circuit,
+  which bounds the hypotheses' size; the source's constructivity is NC² rather than size.
 * **`p = 2` only.** Corollary 5.4 states every prime.
 * **Queries, not time.** Corollary 5.4 bounds the running time; this file certifies the number of
-  queries. Neither the learner's running time nor the circuit size of its hypotheses is certified.
+  queries. The learner's running time is not certified.
+* **Hypothesis size.** The hypotheses' bound is De Morgan circuit size with this library's
+  constants; their depth is not certified, so they are not shown to lie in AC⁰[2]. Corollary 5.4's
+  hypotheses are general circuits as well, so the learner is not proper in either.
 * **Nonuniform target class.** The class is fixed by `d` and `s`, with the input length `n`. The
   parameters `g` and `ℓ` are explicit closed forms rather than the source's choice of `L` with
   `log L > u⁻¹(poly)` [Carmosino et al., proof of Theorem 5.1, p. 10:19]
@@ -65,6 +78,10 @@ over.
   `(h + 1) 2 ^ (12 g + 6 e + 59)` queries.
 * `Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest_le`: the same bound in
   closed form in `d`, `e`, `h`, `n` and `s`.
+* `Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le_two_pow`: every
+  hypothesis has a De Morgan circuit with at most `2 ^ (17 g + 9 e + 76)` gates.
+* `Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le`: the same bound in
+  closed form in `d`, `e`, `n` and `s`.
 
 ## References
 
@@ -147,5 +164,61 @@ theorem queriesAtMost_cikkLearner_rankTest_le (d e h n s : ℕ) :
   have hg := cikkAC0Gap_le d e n s
   exact fun ω => (queriesAtMost_cikkLearner_rankTest d e h n s ω).trans
     (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) (by omega)))
+
+/-- The hypothesis bound at any input length `ℓ` and advantage exponent `g` with `ℓ + 2 ≤ g`: the
+test has at most `173 · 8 ^ ℓ < 2 ^ (3 ℓ + 8)` gates. -/
+private theorem complexity_eval_cikkLearner_rankTest_le_of_add_two_le {n ℓ g : ℕ} (e h : ℕ)
+    (hfix : ℓ + 2 ≤ g) (f : BooleanFunction n) (ω) :
+    complexity interpretation (single
+        ((cikkLearner n ℓ e g h (truthTableTest (rankProperty sliceLevel ℓ)) ω).eval f)) ≤
+      2 ^ (17 * g + 9 * e + 76) := by
+  have htest : complexity interpretation (single (truthTableTest (rankProperty sliceLevel ℓ))) + 1 ≤
+      2 ^ (3 * ℓ + 8) := by
+    rw [rankProperty_apply]
+    have h8 : (8 : ℕ) ^ ℓ = 2 ^ (3 * ℓ) := by rw [pow_mul]; norm_num
+    have := complexity_truthTableTest_rankTest_le ℓ (sliceLevel ℓ)
+    rw [pow_add, ← h8]
+    have : 1 ≤ 8 ^ ℓ := Nat.one_le_pow _ _ (by norm_num)
+    omega
+  calc _ ≤ 2 ^ (11 * g + 9 * e + 3 * ℓ + 80) *
+          (complexity interpretation (single (truthTableTest (rankProperty sliceLevel ℓ))) + 1) :=
+        complexity_eval_cikkLearner_le_two_pow n ℓ e g h _ f ω
+    _ ≤ 2 ^ (11 * g + 9 * e + 3 * ℓ + 80) * 2 ^ (3 * ℓ + 8) := Nat.mul_le_mul_left _ htest
+    _ = 2 ^ (11 * g + 9 * e + 6 * ℓ + 88) := by rw [← pow_add]; ring_nf
+    _ ≤ 2 ^ (17 * g + 9 * e + 76) := Nat.pow_le_pow_right (by norm_num) (by omega)
+
+/-- **Size of the AC⁰[2] learner's hypotheses** [Carmosino et al., Theorem 5.1, p. 10:19, and
+Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016], for `p = 2`: with
+`g = cikkAC0Gap d e n s`, on every target `f` and seed, the hypothesis of the learner of
+`learns_cikkLearner_rankTest` has a De Morgan circuit with at most `2 ^ (17 g + 9 e + 76)` gates.
+This bounds size only, with this library's constants: depth is not certified, so the hypotheses are
+not shown to lie in AC⁰[2]. -/
+theorem complexity_eval_cikkLearner_rankTest_le_two_pow (d e h n s : ℕ) (f : BooleanFunction n)
+    (ω) :
+    complexity interpretation (single
+        ((cikkLearner n (cikkAC0Len d e n s (cikkAC0Gap d e n s)) e (cikkAC0Gap d e n s) h
+          (truthTableTest (rankProperty sliceLevel
+            (cikkAC0Len d e n s (cikkAC0Gap d e n s)))) ω).eval f)) ≤
+      2 ^ (17 * cikkAC0Gap d e n s + 9 * e + 76) :=
+  complexity_eval_cikkLearner_rankTest_le_of_add_two_le e h
+    (cikkAC0Len_add_two_le_cikkAC0Gap d e n s) f ω
+
+/-- **Quasi-polynomial hypothesis size** [Carmosino et al., Corollary 5.4, p. 10:20]
+[CarmosinoImpagliazzoKabanetsKolokolova2016], for `p = 2`: with `D = d + 7`,
+`M = 2^{e+10} (3e + 42)` and `B = ⌊log₂ (M² (s + 6 (n + 1)² + 3))⌋ + 1`, the hypothesis of the
+learner of `learns_cikkLearner_rankTest` has a De Morgan circuit with at most
+`2 ^ (17 · 2^{2D(5D+25)} B^{2D} + 9 e + 76)` gates. For fixed `d`, `B = O(e + log (n s))`, so this
+is quasi-polynomial in `n`, `s` and `2 ^ e`. Depth is not certified. -/
+theorem complexity_eval_cikkLearner_rankTest_le (d e h n s : ℕ) (f : BooleanFunction n) (ω) :
+    complexity interpretation (single
+        ((cikkLearner n (cikkAC0Len d e n s (cikkAC0Gap d e n s)) e (cikkAC0Gap d e n s) h
+          (truthTableTest (rankProperty sliceLevel
+            (cikkAC0Len d e n s (cikkAC0Gap d e n s)))) ω).eval f)) ≤
+      2 ^ (17 * (2 ^ (2 * (d + 7) * (5 * (d + 7) + 25)) *
+        (Nat.log 2 ((2 ^ (e + 10) * (3 * e + 42)) ^ 2 * (s + 6 * (n + 1) ^ 2 + 3)) + 1) ^
+          (2 * (d + 7))) + 9 * e + 76) := by
+  have hg := cikkAC0Gap_le d e n s
+  exact (complexity_eval_cikkLearner_rankTest_le_two_pow d e h n s f ω).trans
+    (Nat.pow_le_pow_right (by norm_num) (by omega))
 
 end Cslib.MachineLearning.UniformLearning

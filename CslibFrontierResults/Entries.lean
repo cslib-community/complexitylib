@@ -2799,9 +2799,12 @@ register_result "cikk-learning-ac0-2" where
   theorems := [
     Cslib.MachineLearning.UniformLearning.learns_cikkLearner_rankTest,
     Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest,
-    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest_le
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest_le,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le_two_pow,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le
   ]
-  scope := "Corollary 5.4 for p = 2 with queries counted, for a fixed depth d and size s. With \
+  scope := "Corollary 5.4 for p = 2 with queries and hypothesis size counted, for a fixed depth d \
+    and size s. With \
     g = cikkAC0Gap d e n s and l = cikkAC0Len d e n s g, the CIKK learner \
     (cikk-learning-from-dense-test) whose test accepts the truth tables of the rank property \
     (rank-property-natural-ac0-2) at input length l learns every function on n bits computed \
@@ -2810,11 +2813,16 @@ register_result "cikk-learning-ac0-2" where
     confidence 1 - 2^-h. It makes at most (h+1) 2^(12g + 6e + 59) queries, and \
     g <= 2^(2D(5D+25)) B^(2D) with D = d + 7 and B = floor(log2(M^2 (s + 6(n+1)^2 + 3))) + 1, \
     M = 2^(e+10)(3e+42), so for fixed d the number of queries is quasi-polynomial in n, s and \
-    2^e. Labels: (1) the rank property is this library's variant (one square matrix, threshold \
-    C(n, a)/2, level sliceLevel) with density 1/2 where Theorem 5.1 assumes largeness 1/5, and \
-    its constructivity is not used; (2) p = 2 only, where Corollary 5.4 states every prime; \
-    (3) queries are certified, but the source's running-time bound is not, nor is the \
-    hypotheses' circuit size; (4) the target class is nonuniform, fixed by d and s; (5) g and \
+    2^e. On every target and seed the hypothesis has a De Morgan circuit with at most \
+    2^(17g + 9e + 76) gates, also quasi-polynomial for fixed d: the rank test's truth-table \
+    circuit (173 * 8^l gates) fed into cikk-learner-hypothesis-size, with l + 2 <= g. Labels: \
+    (1) the rank property is this library's variant (one square matrix, threshold C(n, a)/2, \
+    level sliceLevel) with density 1/2 where Theorem 5.1 assumes largeness 1/5, and its \
+    constructivity is used only as truth-table circuit size, not the source's NC^2; (2) p = 2 \
+    only, where Corollary 5.4 states every prime; (3) queries and De Morgan hypothesis size are \
+    certified, but the source's running-time bound is not; hypothesis depth is not certified, \
+    so the hypotheses are not shown to lie in AC^0[2] (Corollary 5.4's hypotheses are general \
+    circuits too); (4) the target class is nonuniform, fixed by d and s; (5) g and \
     l are explicit closed forms from the fixed point l + 2 <= g, replacing the source's choice \
     of L with log L > u^-1(poly); the generator circuits add depth 7, and all constants are \
     this library's; (6) the deviations of cikk-learning-from-dense-test carry over. The \
