@@ -499,7 +499,6 @@ theorem binomialRandom_real_forall_not_isIsolated_and_not_connected_le [Fintype 
     intro G ⟨hni, hnc⟩
     obtain ⟨S, hS2, hShalf, hSconn, hScut⟩ :=
       exists_connected_induce_forall_not_adj_of_not_connected hnc hni
-    let _ : Nonempty (S : Set V) := ⟨⟨hSconn.nonempty.some.1, hSconn.nonempty.some.2⟩⟩
     obtain ⟨tS, htScard, htSedge⟩ := exists_card_sub_one_subset_edgeSet_of_connected hSconn
     let f : Sym2 (S : Set V) → Sym2 V := Sym2.map Subtype.val
     have hfinj : Function.Injective f := fun a b h => by

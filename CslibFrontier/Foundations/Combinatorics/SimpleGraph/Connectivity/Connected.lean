@@ -111,9 +111,9 @@ theorem exists_connected_induce_forall_not_adj_of_not_connected {V : Type*} [Fin
   refine ⟨K u₀, hcard_ge_two, hle_half, hind_conn, fun x hx y hy hadj => ?_⟩
   exact hy ((hK_mem u₀ y).mpr (((hK_mem u₀ x).mp hx).trans hadj.reachable))
 
-/-- Every connected finite nonempty graph contains a spanning tree edge subset of cardinality
+/-- Every connected finite graph contains a spanning tree edge subset of cardinality
 `|V| - 1`. All elements of this subset are non-diagonal edges of `G`. -/
-theorem exists_card_sub_one_subset_edgeSet_of_connected {V : Type*} [Fintype V] [Nonempty V]
+theorem exists_card_sub_one_subset_edgeSet_of_connected {V : Type*} [Fintype V]
     {G : SimpleGraph V} (hc : G.Connected) :
     ∃ t : Finset (Sym2 V), #t = Fintype.card V - 1 ∧ ∀ e ∈ t, e ∈ G.edgeSet ∧ ¬e.IsDiag := by
   classical
