@@ -247,10 +247,14 @@ circuit class with, at input length `m` and `n = Nat.log 2 m`,
 - at most `610 s₂(n) ^ 4 + 1` oracle gates on any path (adaptivity),
 - at most `5000 m s₂(n) ^ 5 + 1` gates.
 
-The oracle is `antiCheckerOracle` at every length. The `+ 1` in the size bound covers input
-length `0`, which has no instances but needs a gate for the output; at the truth-table lengths
-`m = 2 ^ n`, including `n = 0`, the circuits of `exists_oracleCircuit_gapMCSP` meet the bound
-without it. -/
+The oracle is `antiCheckerOracle` at every length. Each truth-table length `m = 2 ^ n` is
+covered by `exists_oracleCircuit_gapMCSP` at that `n`, under the parameter bound
+`n s₁(n) + 2 + 2 n (n + 2) ≤ s₂(n)` at that `n`. This includes `n = 0` (`m = 1`): every function
+of no variables is constant, so there are no no-instances, and that theorem uses one constant gate.
+The other lengths carry no instances, so any circuit within the bounds will do
+(`LocalCircuitClass.of_two_pow`). For `m ≥ 2` it is a circuit with no gates that outputs an input.
+At `m = 0` there is no input wire, so the output needs one constant gate. The `+ 1` in the size
+bound pays for it and is needed only there: without it the bound at `m = 0` would be `0`. -/
 theorem localCircuitClass_gapMCSP {s₁ s₂ : ℕ → ℕ}
     (hgap : ∀ n, n * s₁ n + 2 + 2 * n * (n + 2) ≤ s₂ n) :
     LocalCircuitClass (fun m => m * (610 * s₂ (Nat.log 2 m) ^ 4) + 1)
