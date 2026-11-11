@@ -304,6 +304,11 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 
 Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased but Representative Sample*. Foundations and Trends in Communications and Information Theory 19(6), 1032–1198, 2022. https://doi.org/10.1561/0100000114 . Checked on 2026-11-10 against the author-hosted draft dated March 10, 2024 at https://ccanonne.github.io/files/misc/main-survey-fnt.pdf (journal pagination not inspected; locators follow that March 10, 2024 draft): Appendix B (pp. 149–152: Definition B.1, `(B.1)`–`(B.3)`, `(B.5)`–`(B.6)`, Lemmas B.1, B.2, and B.5) for Hellinger/`χ²`/KL definitions, tensorization, and comparison inequalities, and Section 3.1 (pp. 99–103: `(3.3)`, Lemma 3.1, and `(3.10)`) for the `√(2n)` Hellinger i.i.d. bound and Ingster's mixture second-moment identity (`CslibFrontier/Probability/{Hellinger,ChiSquare}.lean`).
 
+<a id="carmosinoimpagliazzokabanetskolokolova2016"></a>
+## carmosinoimpagliazzokabanetskolokolova2016
+
+Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run.
+
 <a id="ccpv11"></a>
 ## ccpv11
 
@@ -825,7 +830,7 @@ Rahul Ilango. *Constant Depth Formula and Partial Function Versions of MCSP are 
 <a id="ilo2020"></a>
 ## ilo2020
 
-Rahul Ilango, Bruno Loff and Igor C. Oliveira. *NP-Hardness of Circuit Minimization for Multi-Output Functions*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 22:1–22:36. https://doi.org/10.4230/LIPIcs.CCC.2020.22 . Inspected the LIPIcs PDF directly: the canonical DNF (pp. 22:19–22:20), Section 4.2 (pp. 22:20–22:21), Proposition 14 and the consequence `∆ = CC(T • g) − CC(g)` (pp. 22:21–22:22), Lemma 15 (p. 22:22) and Lemma 16 (pp. 22:22–22:23).
+Rahul Ilango, Bruno Loff and Igor C. Oliveira. *NP-Hardness of Circuit Minimization for Multi-Output Functions*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 22:1–22:36. https://doi.org/10.4230/LIPIcs.CCC.2020.22 . Inspected the LIPIcs PDF directly: Theorem 4 (p. 22:5), the canonical DNF (pp. 22:19–22:20), Section 4.2 (pp. 22:20–22:21), Proposition 14 and the consequence `∆ = CC(T • g) − CC(g)` (pp. 22:21–22:22), Lemma 15 (p. 22:22) and Lemma 16 (pp. 22:22–22:23).
 
 <a id="ilps22"></a>
 ## ilps22
@@ -1305,7 +1310,7 @@ Dijen K. Ray-Chaudhuri and Richard M. Wilson. “On `t`-Designs.” *Osaka Journ
 <a id="razborovrudich1997"></a>
 ## razborovrudich1997
 
-Alexander A. Razborov and Steven Rudich. *Natural Proofs*. Journal of Computer and System Sciences 55(1), 24–35, 1997. https://doi.org/10.1006/jcss.1997.1494 . Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean modules cite its Section 4 for the pseudorandom-generator form of the barrier.
+Alexander A. Razborov and Steven Rudich. *Natural Proofs*. Journal of Computer and System Sciences 55(1), 24–35, 1997. https://doi.org/10.1006/jcss.1997.1494 . Bibliographic data comes from the repository bibliography. The Lean modules cite its Section 4 for the pseudorandom-generator form of the barrier. Section 3.2 (p. 27), which states Razborov's GF(2) rank property against AC⁰[2] abstractly and leaves its largeness as an exercise, was inspected for [#4451](https://github.com/cslib-community/cslib-frontier/issues/4451); the rest of the paper was not inspected for this chapter.
 
 <a id="reedsmithvetta2004"></a>
 ## reedsmithvetta2004
@@ -1546,10 +1551,20 @@ Bernhard von Stengel. "Equilibrium Computation for Two-Player Games in Strategic
 
 Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07. The authors' journal manuscript https://people.csail.mit.edu/virgi/tria-mmult-jv.pdf was consulted on 2026-11-08 for the negative triangle problem over a structure (Section 2), Theorem 4.1, Theorem 4.2, Lemma 4.1 and Lemma 4.2 (and its proof with parts of size `n^{1−a}`). Theorem and lemma numbers follow that manuscript.
 
+<a id="vzg13"></a>
+## vzg13
+
+Joachim von zur Gathen and Jürgen Gerhard. *Modern Computer Algebra*, 3rd edition, Cambridge University Press, 2013. https://doi.org/10.1017/CBO9781139856065 . Bibliographic metadata checked from the publisher record and Chapter 5 section listing (§5.7 "Rational function reconstruction", p. 115; §5.8 "Cauchy interpolation", p. 118; and §5.10 "Rational number reconstruction"); the full book text was not inspected, and no theorem or algorithm numbers are claimed.
+
 <a id="wagnerfischer74"></a>
 ## wagnerfischer74
 
 Robert A. Wagner and Michael J. Fischer. "The String-to-String Correction Problem." *Journal of the ACM* 21(1), 168–173, 1974. https://doi.org/10.1145/321796.321811 . The bibliographic data come from search summaries of the publisher record (2026-11-08). The full text is paywalled and was not inspected, so the paper's internal theorem and algorithm numbering is unverified and is not cited. The manual credits it with the edit-distance dynamic program under general letter costs, with traces (alignments) as the objects of minimum cost and with the `O(|x| |y|)` table, as these are standardly described.
+
+<a id="wang81"></a>
+## wang81
+
+Paul S. Wang. "A p-adic Algorithm for Univariate Partial Fractions." *Proceedings of the 1981 ACM Symposium on Symbolic and Algebraic Computation (SYMSAC '81)*, 212–217, ACM, 1981. https://doi.org/10.1145/800206.806398 . Bibliographic metadata checked from the ACM Digital Library record; the article text was not inspected, and no theorem or algorithm numbers are claimed.
 
 <a id="wattenhofer16"></a>
 ## wattenhofer16
