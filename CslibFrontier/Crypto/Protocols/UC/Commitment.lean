@@ -12,13 +12,30 @@ import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Probability.PMF
 
 /-!
-# Ideal UC Bit Commitment and the Canetti–Fischlin Plain-Model Impossibility Theorem
+# Ideal UC Bit Commitment and a Canetti–Fischlin Plain-Model Impossibility Theorem
 
 This module defines the two-party ideal bit-commitment functionality `fcom` in the Universally
 Composable (UC) framework with static corruptions
 (`CslibFrontier/Crypto/Protocols/UC/Execution.lean`)
-and proves the Canetti–Fischlin impossibility theorem ([CanettiFischlin2001], Theorem 6): no
-plain-model two-party commitment protocol with nontrivial completeness can UC-realize `fcom`.
+and proves an adaptation, and special case, of the Canetti–Fischlin impossibility theorem
+([CanettiFischlin2001], Theorem 6): no plain-model two-party commitment scheme with one commitment
+message and one opening message, and with nontrivial completeness, UC-realizes `fcom`.
+
+Scope relative to the source. Theorem 6 covers every bilateral, terminating protocol with
+non-negligible termination, even against simulators that may depend on the environment. The
+result here is narrower:
+- `PlainCommitmentScheme` sends exactly one commitment message and one opening message;
+- the asymptotic statement `not_realizes_fcom` assumes that the honest acceptance probabilities on
+  `false` and `true` eventually sum to at least `1 + c` for a constant `c > 0`;
+- `Realizes` supplies one simulator before the environment is chosen (the concrete trade-off
+  `acceptProb_add_le_one_add_advantage` does allow independent simulators for `C = {0}` and
+  `C = {1}`);
+- `PolyBounded` counts oracle calls and allows arbitrary pure computation between them, so the
+  budgets of `corruptReceiverEnv_polyBounded` and `corruptCommitterEnv_polyBounded` are call
+  counts, not efficient machine realizations.
+Impossibility for this statistical, call-bounded notion does not by itself give impossibility of
+computational UC commitment; general bilateral protocols and the computational setting remain
+open here.
 
 In `fcom` ([CanettiFischlin2001], Figure 2), committer `0 : Fin 2` submits `.commit b` and later
 `.openCom` and receives no party-port output (`none`), while receiver `1 : Fin 2` polls `.query`
@@ -75,7 +92,7 @@ gets an output, and the receiver gets `some .receipt` and then `some (.opened b)
 adversary delivers the messages (`deliverCommit` and `deliverOpen` on the network in the real world,
 on the backdoor of `fcom` in the ideal world). In particular, an environment that commits and then
 queries receiver `1` sees `none` in both worlds. The test file has an explicit `C = ∅` simulator for
-a one-time-pad scheme with zero advantage against every predicate of the full honest view.
+a one-time-pad scheme under which two fixed honest schedules are perfectly simulated.
 
 ## Main definitions
 
@@ -1052,12 +1069,12 @@ deliver `c` to honest receiver `1` and return `some (st₁, recDel₁)`. -/
       ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
       (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg))
       (Option ((S₁ κ {1}).State × Bool)) := do
-  let x ← ProbOracleComp.sample (simCommit S₁ κ)
-  match x.1.1 with
+  let ((r₁, st₁), recDel₁) ← ProbOracleComp.sample (simCommit S₁ κ)
+  match r₁ with
   | .inr (.commitMsg (some c)) =>
     let _ ← ProbOracleComp.query
       (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inr (.inr (.deliverCommit c)))
-    return some (x.1.2, x.2)
+    return some (st₁, recDel₁)
   | _ => return none
 
 /-- Second phase of the Canetti–Fischlin corrupted-committer environment (`C = {0}`) for target bit
@@ -1173,10 +1190,10 @@ execution (`exec scheme.toProtocol (dummyAdversary 2 _ _) {0} (corruptCommitterE
 @[expose] def simulatedTranscriptGame (scheme : PlainCommitmentScheme CommitMsg OpenMsg)
     (S₁ : PlainCommitmentSim CommitMsg OpenMsg)
     (b : Bool) (κ : ℕ) : ProbComp Bool := do
-  let x ← simCommit S₁ κ
-  match x.1.1 with
+  let ((r₁, st₁), recDel₁) ← simCommit S₁ κ
+  match r₁ with
   | .inr (.commitMsg (some c)) =>
-    let r₂ ← simOpen S₁ b κ x.1.2 x.2
+    let r₂ ← simOpen S₁ b κ st₁ recDel₁
     match r₂ with
     | .inr (.openMsg (some o)) =>
       let res ← scheme.verify κ c o
@@ -1609,7 +1626,7 @@ theorem acceptProb_le_ideal_add_advantage [DecidableEq CommitMsg] [DecidableEq O
      Game.succProbability (exec fcom.toProtocol S₀ {0} (corruptCommitterEnv S₁ b) κ z₀).eval)
   linarith
 
-/-- **Canetti–Fischlin Quantitative Trade-Off ([CanettiFischlin2001], Theorem 6):**
+/-- **Canetti–Fischlin Quantitative Trade-Off (adapted from [CanettiFischlin2001], Theorem 6):**
 for every plain-model commitment scheme `scheme`, every corrupted-receiver simulator `S₁`
 (`C = {1}`), and every corrupted-committer simulator `S₀` (`C = {0}`), the sum of the honest
 acceptance probabilities on `false` and `true` is bounded by `1` plus the four dummy-adversary
@@ -1711,10 +1728,13 @@ theorem not_realizesWithin_fcom [DecidableEq CommitMsg] [DecidableEq OpenMsg]
   obtain ⟨pD, hg, hdummy⟩ := hreal.emulatesDummyWithin
   exact not_emulatesDummyWithin_fcom hV pD (ε 1) κ (hgap pD hg) hdummy
 
-/-- **Canetti–Fischlin Impossibility Theorem ([CanettiFischlin2001], Theorem 6):** no plain-model
-two-party commitment scheme whose verification is polynomial-call bounded and whose honest
-acceptance probabilities on `false` and `true` eventually sum to at least `1 + c` (for some `c > 0`)
-can UC-realize `fcom`. -/
+/-- **Canetti–Fischlin Impossibility, Special Case** (adapted from [CanettiFischlin2001],
+Theorem 6): no plain-model two-party commitment scheme with one commitment message and one
+opening message, whose verification is polynomial-call bounded and whose honest acceptance
+probabilities on
+`false` and `true` eventually sum to at least `1 + c` (for some constant `c > 0`), UC-realizes
+`fcom` in the statistical, call-bounded sense of `Realizes`. See the module docstring for the
+scope relative to the source theorem. -/
 theorem not_realizes_fcom [DecidableEq CommitMsg] [DecidableEq OpenMsg]
     {scheme : PlainCommitmentScheme CommitMsg OpenMsg}
     {pV : Polynomial ℕ} (hV : ∀ κ c o, (scheme.verify κ c o).IsQueryBounded (pV.eval κ))

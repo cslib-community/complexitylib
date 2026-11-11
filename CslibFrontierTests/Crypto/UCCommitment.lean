@@ -19,13 +19,14 @@ We verify non-vacuity and concrete behavior of `fcom` and `PlainCommitmentScheme
 2. `oneTimePadScheme` masks the committed bit with a uniform Boolean pad `r` in the commit phase
    (`c = b ^^ r`, `o = r`) and unmasks `c ^^ o` on opening: its commit message alone is
    information-theoretically hiding, it is polynomial-call bounded (`IsPolyBounded 1 0`) and
-   perfectly complete (`oneTimePadScheme_perfectlyComplete`), and in the uncorrupted case (`C = ∅`)
-   the explicit simulator `oneTimePadEmptySim` achieves zero distinguishing advantage on both
-   `honestCommitEnv` (`advantage_oneTimePadEmptySim_honestCommitEnv`) and any predicate of the full
-   8-step honest execution view including committer replies, pre/post-delivery receiver replies,
-   and the `(c, o)` transcript (`advantage_oneTimePadEmptySim_honestViewEnv`). Nevertheless, by
-   Canetti–Fischlin it still cannot UC-realize `fcom` against static corruptions
-   (`not_realizes_oneTimePadScheme`).
+   perfectly complete (`oneTimePadScheme_perfectlyComplete`). In the uncorrupted case (`C = ∅`)
+   the explicit simulator `oneTimePadEmptySim` perfectly simulates two fixed honest schedules:
+   `honestCommitEnv` (`advantage_oneTimePadEmptySim_honestCommitEnv`) and every predicate of the
+   eight fields of `HonestView` recorded by the ten-query schedule `honestViewEnv` (committer
+   replies, receiver replies before and after each delivery, and the `(c, o)` transcript;
+   `advantage_oneTimePadEmptySim_honestViewEnv`). This is not a simulation of every `C = ∅`
+   environment. Nevertheless, by the Canetti–Fischlin argument it cannot UC-realize `fcom` against
+   static corruptions (`not_realizes_oneTimePadScheme`).
 -/
 
 namespace CslibFrontierTests.Crypto.UCCommitment
@@ -137,7 +138,12 @@ abbrev fcomIdealNet :=
 is recorded in `fcom`, `.readCommit` samples and caches a uniform commit bit `c`; `.deliverCommit`
 gates receipt delivery in `fcom` via `.deliverCommit`; once `fcom` reveals `some (.opened b)` on
 `.query`, `.readOpen` computes `o := c ^^ b`; and `.deliverOpen` gates opening delivery in
-`fcom` via `.deliverOpen`. -/
+`fcom` via `.deliverOpen`.
+
+It forwards `.deliverCommit _` and `.deliverOpen _` without checking the delivered message, so it is
+not a general `C = ∅` simulator: an environment that delivers `!c` instead of `c` and then polls the
+receiver sees `none` in the real world but the receipt here. It is only used for the honest
+schedules `honestCommitEnv` and `honestViewEnv`. -/
 def oneTimePadEmptySim : PlainCommitmentSim Bool Bool := fun _ _ =>
   { State := Option Bool
     init := pure none
@@ -291,8 +297,8 @@ theorem eval_exec_fcom_oneTimePadEmptySim_honestCommitEnv (b : Bool) (κ : ℕ) 
   rw [exec_fcom_oneTimePadEmptySim_honestCommitEnv]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_const]
 
-/-- `oneTimePadEmptySim` achieves zero distinguishing advantage on `honestCommitEnv b`
-at `C = ∅`. -/
+/-- `oneTimePadEmptySim` perfectly simulates the honest schedule `honestCommitEnv b` at `C = ∅`:
+the distinguishing advantage on this environment is zero. -/
 theorem advantage_oneTimePadEmptySim_honestCommitEnv (b : Bool) (κ : ℕ) (z : List Bool) :
     advantage oneTimePadScheme.toProtocol fcom.toProtocol (dummyAdversary 2 _ _)
       oneTimePadEmptySim ∅ (honestCommitEnv b) κ z = 0 := by
@@ -307,17 +313,26 @@ theorem advantage_oneTimePadEmptySim_honestCommitEnv (b : Bool) (κ : ℕ) (z : 
   rw [advantage, hreal, eval_exec_fcom_oneTimePadEmptySim_honestCommitEnv]
   simp
 
-/-- Full honest-execution view tuple recording all party-port and network-port replies across the
-commit and open phases, including pre-delivery receiver queries and committer outputs. -/
-abbrev HonestView :=
-  Option CommitmentOutput ×
-  Option CommitmentOutput ×
-  Bool ×
-  Option CommitmentOutput ×
-  Option CommitmentOutput ×
-  Option CommitmentOutput ×
-  Bool ×
-  Option CommitmentOutput
+/-- The view recorded by `honestViewEnv`: the committer's replies, the receiver's replies before and
+after each delivery, and the network transcript `(c, o)`. -/
+structure HonestView where
+  /-- Committer `0`'s reply to `.commit b`. -/
+  commitReply : Option CommitmentOutput
+  /-- Receiver `1`'s reply to `.query` before the commit message is delivered. -/
+  receiverBeforeDelivery : Option CommitmentOutput
+  /-- The commit message `c` read from the network. -/
+  commitMessage : Bool
+  /-- Receiver `1`'s reply to `.query` after the commit message is delivered. -/
+  receiverAfterCommitDelivery : Option CommitmentOutput
+  /-- Committer `0`'s reply to `.openCom`. -/
+  openReply : Option CommitmentOutput
+  /-- Receiver `1`'s reply to `.query` after the opening but before the opening message is
+  delivered. -/
+  receiverBeforeOpenDelivery : Option CommitmentOutput
+  /-- The opening message `o` read from the network. -/
+  openMessage : Bool
+  /-- Receiver `1`'s reply to `.query` after the opening message is delivered. -/
+  receiverFinal : Option CommitmentOutput
 
 /-- Environment that exercises the full honest commit-and-open schedule at `C = ∅` while recording
 the committer's outputs on `.commit b` and `.openCom`, the receiver's outputs before and after
@@ -351,7 +366,11 @@ def honestViewEnv (b : Bool) (P : HonestView → Bool) :
         (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inr (.inr (.deliverOpen o)))
       let outRecFinal ← ProbOracleComp.query
         (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inl (1, .query))
-      return P (outCom₀, outRecPre, c, outRecMid, outOpen₀, outRecPreOpen, o, outRecFinal)
+      return P
+        { commitReply := outCom₀, receiverBeforeDelivery := outRecPre,
+          commitMessage := c, receiverAfterCommitDelivery := outRecMid, openReply := outOpen₀,
+          receiverBeforeOpenDelivery := outRecPreOpen, openMessage := o,
+          receiverFinal := outRecFinal }
     | _ => return false
   | _ => return false
 
@@ -421,9 +440,12 @@ private theorem exec_real_honestViewEnv (b : Bool) (P : HonestView → Bool)
     (κ : ℕ) (z : List Bool) :
     exec oneTimePadScheme.toProtocol (dummyAdversary 2 _ _) ∅ (honestViewEnv b P) κ z =
       (fun r : Fin 2 =>
-        P (none, none, b ^^ decide (r.val = 1), some .receipt, none, some .receipt,
-          decide (r.val = 1),
-          some (.opened ((b ^^ decide (r.val = 1)) ^^ decide (r.val = 1))))) <$>
+        P
+          { commitReply := none, receiverBeforeDelivery := none,
+            commitMessage := b ^^ decide (r.val = 1), receiverAfterCommitDelivery := some .receipt,
+            openReply := none, receiverBeforeOpenDelivery := some .receipt,
+            openMessage := decide (r.val = 1),
+            receiverFinal := some (.opened ((b ^^ decide (r.val = 1)) ^^ decide (r.val = 1))) }) <$>
         ProbComp.unifFin 1 := by
   rw [exec_dummyAdversary, map_eq_bind_pure_comp]
   simp only [Machine.run, Machine.link, honestViewEnv, init_otpReal,
@@ -459,8 +481,11 @@ private theorem exec_fcom_oneTimePadEmptySim_honestViewEnv (b : Bool) (P : Hones
     (κ : ℕ) (z : List Bool) :
     exec fcom.toProtocol oneTimePadEmptySim ∅ (honestViewEnv b P) κ z =
       (fun r : Fin 2 =>
-        P (none, none, decide (r.val = 1), some .receipt, none, some .receipt,
-          decide (r.val = 1) ^^ b, some (.opened b))) <$>
+        P
+          { commitReply := none, receiverBeforeDelivery := none,
+            commitMessage := decide (r.val = 1), receiverAfterCommitDelivery := some .receipt,
+            openReply := none, receiverBeforeOpenDelivery := some .receipt,
+            openMessage := decide (r.val = 1) ^^ b, receiverFinal := some (.opened b) }) <$>
         ProbComp.unifFin 1 := by
   rw [map_eq_bind_pure_comp]
   simp only [exec, Machine.run, Machine.link, honestViewEnv, init_otpIdeal,
@@ -517,8 +542,8 @@ theorem eval_exec_oneTimePadEmptySim_honestViewEnv (b : Bool) (P : HonestView �
           ext r
           fin_cases r <;> rfl
 
-/-- `oneTimePadEmptySim` has zero distinguishing advantage against `honestViewEnv b P` for every
-committed bit `b` and every distinguisher predicate `P : HonestView → Bool`. -/
+/-- `oneTimePadEmptySim` perfectly simulates the honest schedule `honestViewEnv b P`: the
+advantage is zero for every committed bit `b` and every predicate `P : HonestView → Bool`. -/
 theorem advantage_oneTimePadEmptySim_honestViewEnv (b : Bool) (P : HonestView → Bool)
     (κ : ℕ) (z : List Bool) :
     advantage oneTimePadScheme.toProtocol fcom.toProtocol (dummyAdversary 2 _ _)
@@ -526,9 +551,9 @@ theorem advantage_oneTimePadEmptySim_honestViewEnv (b : Bool) (P : HonestView �
   rw [advantage, eval_exec_oneTimePadEmptySim_honestViewEnv]
   simp
 
-/-- Even though `oneTimePadScheme`'s commit message `b ^^ mask` hides `b` perfectly and is
-perfectly simulatable when `C = ∅`, it still cannot UC-realize `fcom` in the plain model against
-static corruptions. -/
+/-- Even though `oneTimePadScheme`'s commit message `b ^^ mask` hides `b` perfectly and the honest
+schedules `honestCommitEnv` and `honestViewEnv` are perfectly simulated when `C = ∅`, it still
+cannot UC-realize `fcom` in the plain model against static corruptions. -/
 theorem not_realizes_oneTimePadScheme : ¬ Realizes oneTimePadScheme.toProtocol fcom :=
   not_realizes_fcom_of_perfectlyComplete oneTimePadScheme_isPolyBounded.2
     oneTimePadScheme_perfectlyComplete
