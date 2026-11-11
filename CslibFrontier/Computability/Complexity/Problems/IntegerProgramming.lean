@@ -141,17 +141,19 @@ end ZeroOneIP
 namespace SubsetSum
 
 /-- A subset sum instance as a single equation. -/
-@[expose] def toZeroOneIP (x : List ℕ × ℕ) : List ZeroOneIP.Equation := [⟨x.1, x.2⟩]
+@[expose] def toZeroOneIP (x : SubsetSumInstance) : List ZeroOneIP.Equation :=
+  [⟨x.numbers, x.target⟩]
 
 /-- **Correctness of the reduction to `ZeroOneIP`.** -/
-theorem toZeroOneIP_mem_iff (x : List ℕ × ℕ) : toZeroOneIP x ∈ ZeroOneIP ↔ x ∈ SubsetSum := by
+theorem toZeroOneIP_mem_iff (x : SubsetSumInstance) :
+    toZeroOneIP x ∈ ZeroOneIP ↔ x ∈ SubsetSum := by
   simp only [ZeroOneIP, toZeroOneIP, Set.mem_ofPred_eq, List.mem_singleton, forall_eq,
     mem_SubsetSum]
-  rw [exists_le_iff_exists_maskSelect le_rfl (fun s => s.sum = x.2)]
+  rw [exists_le_iff_exists_maskSelect le_rfl (fun s => s.sum = x.target)]
   simp only [Multiset.sum_coe, sum_maskSelect]
   constructor
   · rintro ⟨y, hy⟩
-    refine ⟨(List.range x.1.length).map y, by simp, ?_⟩
+    refine ⟨(List.range x.numbers.length).map y, by simp, ?_⟩
     rw [← hy]
     exact sum_congr rfl fun j hj => by simp [List.getD_eq_getElem?_getD, mem_range.1 hj]
   · rintro ⟨w, -, hw⟩
