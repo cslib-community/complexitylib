@@ -5909,6 +5909,9 @@ public import CslibFrontier.Probability.HashFamily.Polynomial
 public import CslibFrontier.Probability.HashFamily.Uniform
 public import CslibFrontier.Probability.HashIsolation
 public import CslibFrontier.Probability.Hellinger
+public import CslibFrontier.Probability.HypothesisSelection.LeCamBirge
+public import CslibFrontier.Probability.HypothesisSelection.Likelihood
+public import CslibFrontier.Probability.HypothesisSelection.Tournament
 public import CslibFrontier.Probability.IID
 public import CslibFrontier.Probability.IID.CollisionCount
 public import CslibFrontier.Probability.IID.CrossCollisionCount
