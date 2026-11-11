@@ -12,8 +12,8 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Order.Filter.AtTopBot.Basic
 public import Mathlib.Topology.Order.Basic
 import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
+import CslibFrontier.Foundations.Analysis.SpecificLimits.PolyLtPow
 import Mathlib.Algebra.Order.Floor.Semifield
-import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
 # Gap-MCSP magnification near linear size
@@ -101,27 +101,6 @@ theorem exists_gapMCSP_separator_of_NP_subset_PPoly (hNP : NP encBits ⊆ PPolyO
   exact ⟨c, hc, fun s₁ s₂ n hs => ⟨_, hub s₂ n, slice_yesSet_separates hs⟩⟩
 
 /-! ### Arithmetic -/
-
-/-- A fixed multiple of `(n + 1) ^ k` is eventually below `r ^ n` for `r > 1`. -/
-private theorem eventually_mul_add_one_pow_lt_pow (K : ℝ) (k : ℕ) {r : ℝ} (hr : 1 < r) :
-    ∀ᶠ n : ℕ in atTop, K * ((n : ℝ) + 1) ^ k < r ^ n := by
-  have hr0 : 0 < r := by linarith
-  have hK : 0 < |K| + 1 := by positivity
-  have hδ : 0 < (r * (|K| + 1))⁻¹ := inv_pos.2 (mul_pos hr0 hK)
-  have hlim := (tendsto_pow_const_div_const_pow_of_one_lt k hr).comp (tendsto_add_atTop_nat 1)
-  filter_upwards [hlim.eventually (gt_mem_nhds hδ)] with n hn
-  simp only [Function.comp_apply, Nat.cast_add, Nat.cast_one] at hn
-  have hrn : 0 < r ^ (n + 1) := pow_pos hr0 _
-  rw [div_lt_iff₀ hrn, pow_succ] at hn
-  have hpow : 0 ≤ ((n : ℝ) + 1) ^ k := by positivity
-  have hrn' : 0 < r ^ n := pow_pos hr0 _
-  have h1 : K * ((n : ℝ) + 1) ^ k ≤ (|K| + 1) * ((n : ℝ) + 1) ^ k :=
-    mul_le_mul_of_nonneg_right (by linarith [le_abs_self K]) hpow
-  have h2 : (|K| + 1) * ((n : ℝ) + 1) ^ k < (|K| + 1) * ((r * (|K| + 1))⁻¹ * (r ^ n * r)) :=
-    mul_lt_mul_of_pos_left hn hK
-  have h3 : (|K| + 1) * ((r * (|K| + 1))⁻¹ * (r ^ n * r)) = r ^ n := by
-    field_simp
-  linarith
 
 /-- For `0 < β` and `c β < ε`, the McKay–Murray–Williams size `2^n·c·(n + ⌊2^{βn}⌋₊ + 1)^c` is
 eventually below `N^{1+ε}`, where `N = 2^n`. -/

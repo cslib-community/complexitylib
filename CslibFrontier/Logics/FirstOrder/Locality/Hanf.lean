@@ -31,10 +31,12 @@ radius-`(3 ^ (n + 1) - 1) / 2` neighborhoods satisfy the same formulas of quanti
 The proof follows [Libkin, §4.2–4.3][Libkin2004]. The key step `hanfEquiv_of_nbhdIso` is
 [Libkin, Lemma 4.9][Libkin2004]: if `M ⇆_d N` and `a`, `b` have isomorphic radius-`(3d + 1)`
 neighborhoods, then `(M, a) ⇆_d (N, b)`. The required bijection agrees with the neighborhood
-isomorphism on the radius-`(2d + 1)` ball and matches the remaining points by neighborhood type,
-which is possible because both bijections preserve the number of points of each type. Corollary
-4.10 (`HanfEquiv.exists_equiv`) and an induction on the number of rounds finish the proof, with the
-radius recursion `hanf_radius_succ`.
+isomorphism on the radius-`(2d + 1)` ball and matches the remaining points by neighborhood type
+(`exists_compl_equiv_nbhdIso`), which is possible because both bijections preserve the number of
+points of each type. Corollary 4.10 (`HanfEquiv.exists_equiv`) and an induction on the number of
+rounds finish the proof, with the radius recursion `hanf_radius_succ`. The exact Hanf and Gaifman
+locality ranks `2 ^ (n - 1) - 1` and `2 ^ n - 1` ([Libkin, Exercises 4.10 and 4.11][Libkin2004])
+are proved in `CslibFrontier.Logics.FirstOrder.Locality.Sharp`.
 
 **Hypotheses.** Both structures are finite (the bijection forces `N` finite when `M` is). The
 theorem for Hanf-equivalence also assumes `M` nonempty: two empty structures that disagree on a
@@ -49,6 +51,8 @@ function symbols.
 
 ## Main results
 
+* `Cslib.Logic.FO.Locality.exists_compl_equiv_nbhdIso`: complement matching by singleton
+  neighborhood type.
 * `Cslib.Logic.FO.Locality.hanfEquiv_of_nbhdIso`: [Libkin, Lemma 4.9][Libkin2004].
 * `Cslib.Logic.FO.Locality.HanfEquiv.duplicatorWins`,
   `Cslib.Logic.FO.Locality.HanfEquiv.realize_iff`,
@@ -154,6 +158,10 @@ theorem hanfEquiv_iff {k d : ℕ} {a : Fin k → M} {b : Fin k → N} :
 theorem HanfEquiv.refl (d : ℕ) {k : ℕ} (a : Fin k → M) : HanfEquiv L d a a :=
   ⟨Equiv.refl M, fun _ => NbhdIso.refl _ _⟩
 
+theorem HanfEquiv.mono {k d r : ℕ} {a : Fin k → M} {b : Fin k → N} (H : HanfEquiv L r a b)
+    (hdr : d ≤ r) : HanfEquiv L d a b :=
+  let ⟨f, hf⟩ := H; ⟨f, fun c => (hf c).mono hdr⟩
+
 /-- For structures (with no tuple), Hanf-equivalence is Libkin's `M ⇆_d N`: a bijection matching
 points with isomorphic radius-`d` neighborhoods. -/
 theorem hanfEquiv_zero_iff {d : ℕ} {a : Fin 0 → M} {b : Fin 0 → N} :
@@ -185,6 +193,26 @@ private def ptSetoid [Nonempty M] (d : ℕ) : Setoid M where
   r x y := NbhdIso L d (fun _ : Fin 1 => x) (fun _ : Fin 1 => y)
   iseqv := ⟨fun _ => NbhdIso.refl _ _, fun h => h.symm, fun h h' => h.trans h'⟩
 
+/-- If `e : M ≃ N` and a bijection `h` between `s : Set M` and `t : Set N` both match points with
+isomorphic radius-`d` neighborhoods, then so does some bijection between the complements `sᶜ` and
+`tᶜ`. -/
+theorem exists_compl_equiv_nbhdIso [Finite M] {d : ℕ} (e : M ≃ N)
+    (he : ∀ c, NbhdIso L d (fun _ : Fin 1 => c) (fun _ : Fin 1 => e c))
+    {s : Set M} {t : Set N} {h : M → N} (hh : Set.BijOn h s t)
+    (hs : ∀ x ∈ s, NbhdIso L d (fun _ : Fin 1 => x) (fun _ : Fin 1 => h x)) :
+    ∃ g : (sᶜ : Set M) ≃ (tᶜ : Set N),
+      ∀ x : (sᶜ : Set M), NbhdIso L d (fun _ : Fin 1 => (x : M)) (fun _ : Fin 1 => (g x : N)) := by
+  rcases isEmpty_or_nonempty M with hM | hM
+  · have : IsEmpty N := e.symm.isEmpty
+    exact ⟨Equiv.equivOfIsEmpty _ _, fun x => isEmptyElim (x : M)⟩
+  · let κa : M → Quotient (ptSetoid (L := L) (M := M) d) := Quotient.mk _
+    let κb : N → Quotient (ptSetoid (L := L) (M := M) d) := fun y => Quotient.mk _ (e.symm y)
+    have hbe : ∀ x, κb (e x) = κa x := fun x => by simp [κa, κb]
+    have hκ : ∀ x ∈ s, κb (h x) = κa x := fun x hx =>
+      Quotient.sound ((he (e.symm (h x))).trans (by simpa using (hs x hx).symm))
+    obtain ⟨g, hg⟩ := exists_equiv_compl e hbe hh hκ
+    exact ⟨g, fun x => (Quotient.exact (hg x)).symm.trans (by simpa using he (e.symm (g x)))⟩
+
 /-- [Libkin, Lemma 4.9][Libkin2004]: if a bijection `e : M ≃ N` matches points with isomorphic
 radius-`d` neighborhoods (`M ⇆_d N`) and `a`, `b` have isomorphic radius-`(3d + 1)`
 neighborhoods, then `(M, a) ⇆_d (N, b)`. -/
@@ -194,17 +222,10 @@ theorem hanfEquiv_of_nbhdIso [Finite M] {k d : ℕ} {a : Fin k → M} {b : Fin k
   obtain ⟨h, Hh⟩ := nbhdIso_iff.1 hab
   set S := ball L a (2 * d + 1)
   have HS : IsNbhdIso L (2 * d + 1) a b h := Hh.mono (by omega)
-  rcases isEmpty_or_nonempty M with hM | hM
-  · exact ⟨e, fun c => isEmptyElim c⟩
-  let κa : M → Quotient (ptSetoid (L := L) (M := M) d) := Quotient.mk _
-  let κb : N → Quotient (ptSetoid (L := L) (M := M) d) := fun y => Quotient.mk _ (e.symm y)
-  have hbe : ∀ x, κb (e x) = κa x := fun x => by simp [κa, κb]
   -- a point near `a` and its image under `h` have isomorphic radius-`d` neighborhoods
   have hpt : ∀ x ∈ S, NbhdIso L d (fun _ : Fin 1 => x) (fun _ : Fin 1 => h x) := fun x hx =>
     (Hh.restrict (x := fun _ : Fin 1 => x) (l := 2 * d + 1) (fun _ => hx) (by omega)).nbhdIso
-  have hκ : ∀ x ∈ S, κb (h x) = κa x := fun x hx =>
-    Quotient.sound ((he (e.symm (h x))).trans (by simpa using (hpt x hx).symm))
-  obtain ⟨g, hg⟩ := exists_equiv_compl e hbe HS.bijOn hκ
+  obtain ⟨g, hg⟩ := exists_compl_equiv_nbhdIso e he HS.bijOn hpt
   classical
   let F : M ≃ N :=
     ((Equiv.Set.sumCompl S).symm.trans (Equiv.sumCongr (HS.bijOn.equiv h) g)).trans
@@ -223,9 +244,7 @@ theorem hanfEquiv_of_nbhdIso [Finite M] {k d : ℕ} {a : Fin k → M} {b : Fin k
     exact this.nbhdIso
   · -- far from `a`, combine the neighborhood of `a` with that of `c`
     rw [hFS' c hc]
-    have hcc : NbhdIso L d (fun _ : Fin 1 => c) (fun _ : Fin 1 => (g ⟨c, hc⟩ : N)) :=
-      (Quotient.exact (hg ⟨c, hc⟩)).symm.trans (by simpa using he (e.symm (g ⟨c, hc⟩)))
-    obtain ⟨h₂, H₂⟩ := nbhdIso_iff.1 hcc
+    obtain ⟨h₂, H₂⟩ := nbhdIso_iff.1 (hg ⟨c, hc⟩)
     refine (Hh.mono (by omega)).snoc H₂ (fun i => ?_) (fun i => ?_)
     · exact lt_of_not_ge fun h' => hc (mem_ball.2 ⟨i, h'⟩)
     · exact lt_of_not_ge fun h' => (g ⟨c, hc⟩).2 (mem_ball.2 ⟨i, h'⟩)

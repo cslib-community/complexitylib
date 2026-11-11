@@ -260,13 +260,14 @@ namespace SubsetSum
 /-- **Karp's reduction from `SubsetSum` to `JobSequencing`** [Karp1972]: each number `a` becomes a
 job of time and penalty `a` with the target `t` as deadline, and the penalty bound is
 `a.sum - t`. A target above the total is mapped to a single job that is always late. -/
-@[expose] def toJobSequencing (x : List ℕ × ℕ) : JobSequencingInstance :=
-  if x.2 ≤ x.1.sum then ⟨x.1.map fun a => ⟨a, x.2, a⟩, x.1.sum - x.2⟩
+@[expose] def toJobSequencing (x : SubsetSumInstance) : JobSequencingInstance :=
+  if x.target ≤ x.numbers.sum then
+    ⟨x.numbers.map fun a => ⟨a, x.target, a⟩, x.numbers.sum - x.target⟩
   else ⟨[⟨1, 0, 1⟩], 0⟩
 
 open JobSequencing in
 /-- **Correctness of the reduction to `JobSequencing`.** -/
-theorem toJobSequencing_mem_iff (x : List ℕ × ℕ) :
+theorem toJobSequencing_mem_iff (x : SubsetSumInstance) :
     toJobSequencing x ∈ JobSequencing ↔ x ∈ SubsetSum := by
   obtain ⟨l, t⟩ := x
   rw [mem_SubsetSum_iff_sublist]
