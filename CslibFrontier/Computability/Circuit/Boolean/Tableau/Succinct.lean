@@ -741,11 +741,6 @@ theorem Ref.label_lt {n T t c : ℕ} (hn : n < 2 * T) (ht : t ≤ T) {r : Ref k 
     · simp only [Ref.label, hg, Bool.false_eq_true, ↓reduceIte]
       exact constLabel_lt hT _
 
-omit [DecidableEq State] in
-private theorem mem_tseitinClause {op : Op} {w a b v : ℕ} {s : Bool} {j : Fin 3}
-    (h : (v, s) ∈ tseitinClause op w a b j) : v = w ∨ v = a ∨ v = b := by
-  fin_cases j <;> cases op <;> simp [tseitinClause] at h <;> omega
-
 /-- **Every variable of the formula is below `2 ^ labelBits k State T`**, for `n < 2 T`: labels
 have `labelBits k State T` bits. -/
 theorem lt_two_pow_labelBits_of_mem_vars {n T : ℕ} (hn : n < 2 * T) {x : List Bool}

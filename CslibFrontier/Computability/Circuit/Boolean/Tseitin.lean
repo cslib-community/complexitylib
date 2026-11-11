@@ -97,6 +97,12 @@ def tseitinClause (op : Op) (w a b : V) (j : Fin 3) : Clause V :=
   | .or, 1 => [(w, true), (b, false), (b, false)]
   | .or, _ => [(w, false), (a, true), (b, true)]
 
+/-- Every variable occurring in `tseitinClause op w a b j` is `w`, `a`, or `b`. -/
+theorem mem_tseitinClause {op : Op} {w a b v : V} {s : Bool} {j : Fin 3}
+    (h : (v, s) ∈ tseitinClause op w a b j) : v = w ∨ v = a ∨ v = b := by
+  fin_cases j <;> cases op <;> simp only [tseitinClause, List.mem_cons, List.not_mem_nil,
+    or_false, Prod.mk.injEq] at h <;> tauto
+
 /-- Every clause of a gate has three literals. -/
 @[simp] theorem length_tseitinClause (op : Op) (w a b : V) (j : Fin 3) :
     (tseitinClause op w a b j).length = 3 := by

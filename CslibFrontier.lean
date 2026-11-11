@@ -2092,6 +2092,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.ContractionCoun
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionMatching
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionPartitionFunction
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingCSP
+public import CslibFrontier.Computability.Complexity.FineGrained.CountingEncodings
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingEndpoint
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingFiniteCSP
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
@@ -2210,6 +2211,7 @@ public import CslibFrontier.Computability.Complexity.Problems.FeedbackArcSet
 public import CslibFrontier.Computability.Complexity.Problems.FeedbackVertexSet
 public import CslibFrontier.Computability.Complexity.Problems.GeneralizedGeography
 public import CslibFrontier.Computability.Complexity.Problems.Graph
+public import CslibFrontier.Computability.Complexity.Problems.Graph.CountingCNF
 public import CslibFrontier.Computability.Complexity.Problems.Graph.DartConnectivity
 public import CslibFrontier.Computability.Complexity.Problems.Graph.DirectedCycle
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing
@@ -2330,11 +2332,13 @@ public import CslibFrontier.Computability.Complexity.Problems.STCON.Completeness
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Search
 public import CslibFrontier.Computability.Complexity.Problems.SetCover
+public import CslibFrontier.Computability.Complexity.Problems.SetSplitting
 public import CslibFrontier.Computability.Complexity.Problems.SharpDNF
 public import CslibFrontier.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras
 public import CslibFrontier.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.SharpSAT
 public import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
+public import CslibFrontier.Computability.Complexity.Problems.SharpTwoSAT
 public import CslibFrontier.Computability.Complexity.Problems.StatisticalDifference
 public import CslibFrontier.Computability.Complexity.Problems.StatisticalDifference.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
@@ -2367,6 +2371,7 @@ public import CslibFrontier.Computability.Complexity.Problems.XORSAT.Dense
 public import CslibFrontier.Computability.Complexity.ProofSystem
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Reduction.Autoreducibility
+public import CslibFrontier.Computability.Complexity.Reduction.CountingTuring
 public import CslibFrontier.Computability.Complexity.Reduction.Equiv
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism.Conjecture
@@ -5191,6 +5196,7 @@ public import CslibFrontier.Foundations.Data.Polynomial.CoeffList
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffNorm1
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffProd
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffSumBounds
+public import CslibFrontier.Foundations.Data.Polynomial.FiniteDifference
 public import CslibFrontier.Foundations.Data.Polynomial.HermiteInterpolation
 public import CslibFrontier.Foundations.Data.Polynomial.ModulusAmplifier
 public import CslibFrontier.Foundations.Data.Polynomial.ParityAmplifier
@@ -5706,6 +5712,7 @@ public import CslibFrontier.Logics.Propositional.CNF.ExactDistinct
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.BlockBounds
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Blocks
+public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Circuit
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Compile
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.FromSAT
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Gadgets
@@ -5718,6 +5725,7 @@ public import CslibFrontier.Logics.Propositional.CNF.ExactThree
 public import CslibFrontier.Logics.Propositional.CNF.ExactThree.ThreeOccurrence
 public import CslibFrontier.Logics.Propositional.CNF.ExactlyOne
 public import CslibFrontier.Logics.Propositional.CNF.Gadgets
+public import CslibFrontier.Logics.Propositional.CNF.GraphCountingEncodings
 public import CslibFrontier.Logics.Propositional.CNF.Horn
 public import CslibFrontier.Logics.Propositional.CNF.Horn.Relabel
 public import CslibFrontier.Logics.Propositional.CNF.ImplicationChain
@@ -5802,6 +5810,7 @@ public import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 public import CslibFrontier.Logics.Propositional.CSP.ToBoolean
 public import CslibFrontier.Logics.Propositional.CSP.ToCNF
 public import CslibFrontier.Logics.Propositional.CSP.ToCNF.Count
+public import CslibFrontier.Logics.Propositional.CSP.ToOneHotCNF
 public import CslibFrontier.Logics.Propositional.CSP.Vars
 public import CslibFrontier.Logics.Propositional.ClauseSet.Basic
 public import CslibFrontier.Logics.Propositional.ClauseSet.Satisfiable

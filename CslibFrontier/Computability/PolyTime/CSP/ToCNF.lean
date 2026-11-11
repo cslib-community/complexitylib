@@ -59,7 +59,9 @@ variable {Rel V : Type}
 open Cslib.Logic.PL.CSP ComputableInPolyTime
 
 
-private theorem computableInPolyTime_mapFilterConst {α ι γ : Type} {encIn : α ↪ List Bool}
+/-- Filtering and mapping a fixed list `items` by input-dependent polynomial-time operations is
+computable in polynomial time. -/
+theorem computableInPolyTime_mapFilterConst {α ι γ : Type} {encIn : α ↪ List Bool}
     {encC : γ ↪ List Bool} (items : List ι) {test : α → ι → Bool} {f : α → ι → γ}
     (htest : ∀ i ∈ items, ComputableInPolyTime (fun a => test a i) encIn encBool)
     (hf : ∀ i ∈ items, ComputableInPolyTime (fun a => f a i) encIn encC) :

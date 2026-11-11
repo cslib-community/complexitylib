@@ -60,6 +60,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.Complexity.Problems.SharpTwoSAT
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
 import CslibFrontier.Computability.Kolmogorov.MKtP
@@ -2634,3 +2635,21 @@ register_result "unique-games-perfect-completeness" where
     empty so every unique game vacuously has unsatVal = 0 and GapUniqueGames (Fin 0) 1 s \
     has no no-instances, while no graph is satisfiable. This fixes L rather than taking it \
     as part of the input."
+
+register_result "sharp-2sat-completeness" where
+  title := "Valiant: #2-SAT is #P-complete under polynomial-time counting Turing reductions"
+  topic := "counting complexity"
+  sources := [
+    { paper := Valiant1979Enumeration, theorem := unverified, locator := unverified },
+    { paper := Valiant1979, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.SharpTwoSAT_countingTuringComplete,
+    Cslib.Complexity.countingTuringReducible_SharpSAT_SharpTwoSAT,
+    Cslib.Complexity.SharpTwoSAT_polyTime_implies_P_eq_NP
+  ]
+  scope := "SharpTwoSAT counts satisfying assignments on occurring variables of CNFs of clause \
+    width at most 2 (and returns 0 otherwise) under encCNF. Completeness is under native \
+    polynomial-time counting Turing reductions (PolyTimeOracleProgram against \
+    AnswersBits), proved via clause-weight 2-CNF gadgets and division-free finite-difference \
+    polynomial interpolation at 0."
