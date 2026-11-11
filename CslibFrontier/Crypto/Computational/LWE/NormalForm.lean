@@ -117,18 +117,22 @@ theorem decisionNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
     {noise : PMF (ZMod q)}
     (adversary : List Bool → ProbComp Bool) :
     Game.advantage
-      (distinguishingGame (realEnsemble (fun _ => n) (fun _ => n + m) (fun _ => q) (fun _ => noise) 0) adversary)
+      (distinguishingGame (realEnsemble (fun _ => n) (fun _ => n + m) (fun _ => q) (fun _ => noise) 0)
+        adversary)
       (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => n + m) (fun _ => q) 0) adversary)
     ≤ Game.advantage
-      (distinguishingGame (realEnsembleErrorSecret (fun _ => n) (fun _ => m) (fun _ => q) (fun _ => noise) 0) (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary))
-      (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => m) (fun _ => q) 0) (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary)) + 1 :=
+      (distinguishingGame (realEnsembleErrorSecret (fun _ => n) (fun _ => m) (fun _ => q) (fun _ => noise) 0)
+        (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary))
+      (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => m) (fun _ => q) 0)
+        (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary)) + 1 :=
   le_trans (Game.advantage_le_one _ _) (le_add_self)
 
 theorem searchNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
     {noise : PMF (ZMod q)}
     (adversary : List Bool → ProbComp (List Bool)) :
     Game.succProbability (searchGame n (n + m) q noise adversary)
-    ≤ Game.succProbability (searchGameErrorSecret n m q noise (reduceNormalSearch (n:=n) (m:=m) (q:=q) adversary)) + 1 :=
+    ≤ Game.succProbability (searchGameErrorSecret n m q noise
+        (reduceNormalSearch (n:=n) (m:=m) (q:=q) adversary)) + 1 :=
   le_trans (Game.succProbability_le_one _) (le_add_self)
 
 end Cslib.Crypto.PrimeLWE
