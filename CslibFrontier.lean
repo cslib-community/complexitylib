@@ -948,6 +948,7 @@ public import CslibFrontier.Computability.CellProbe.Chronogram
 public import CslibFrontier.Computability.CellProbe.DecisionTree
 public import CslibFrontier.Computability.CellProbe.Defs
 public import CslibFrontier.Computability.CellProbe.Randomized
+public import CslibFrontier.Computability.Circuit.Accumulate
 public import CslibFrontier.Computability.Circuit.Approximation
 public import CslibFrontier.Computability.Circuit.Approximation.Hamming
 public import CslibFrontier.Computability.Circuit.Arithmetic
@@ -1203,6 +1204,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.OpValue
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle.LocalCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle.LocalClass
+public import CslibFrontier.Computability.Circuit.Boolean.Oracle.Selection
 public import CslibFrontier.Computability.Circuit.Boolean.OracleFormula
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Circuit.Boolean.PPolyHard
