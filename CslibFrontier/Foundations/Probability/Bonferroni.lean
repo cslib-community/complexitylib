@@ -29,7 +29,7 @@ binomial (factorial) moment of the count `X ω = Nat.card {i : ι // ω ∈ A i}
 * `ProbabilityTheory.measureReal_natCard_eq_le_bonferroni` and
   `ProbabilityTheory.bonferroni_le_measureReal_natCard_eq`: the truncated inclusion-exclusion
   (**Bonferroni**) upper and lower bounds for `μ.real {ω | Nat.card {i // ω ∈ A i} = k}` at any
-  odd (`2 * m + 1`) or even (`2 * m`) truncation depth.
+  odd (`2 * m + 1`) or even (`2 * m`) truncation depth (see [Frieze and Karoński, Lemma 33.10](https://www.math.cmu.edu/~af1p/BOOK.pdf) pp. 696–697, noting their normalization sums the factorial moment directly rather than our alternating sum).
 * `ProbabilityTheory.measureReal_forall_notMem_le_bonferroni` and
   `ProbabilityTheory.bonferroni_le_measureReal_forall_notMem`: the `k = 0` specialization for
   `μ.real {ω | ∀ i, ω ∉ A i}`.
@@ -37,7 +37,7 @@ binomial (factorial) moment of the count `X ω = Nat.card {i : ι // ω ∈ A i}
   (Poisson convergence from factorial moments): if for every fixed `r : ℕ` the `r`-th binomial
   moment converges to `lam ^ r / r!`, then
   `(μ n).real {ω | Nat.card {i // ω ∈ A n i} = k} → exp (-lam) * (lam ^ k / k!)` for every
-  `k : ℕ`.
+  `k : ℕ` (see [Frieze and Karoński, Theorem 33.11](https://www.math.cmu.edu/~af1p/BOOK.pdf) pp. 697–698).
 
 ## Main results
 
