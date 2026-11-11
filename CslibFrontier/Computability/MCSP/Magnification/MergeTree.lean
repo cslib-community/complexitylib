@@ -44,8 +44,9 @@ the payload (`Cslib.MCSP.MergeTree.length_encQuery_ofNode`).
 its uniform complexity ("for our discussion, this is not going to be relevant"); neither does this
 module. The oracle is derived from `CircuitMinMergeLanguage`, the binary `Circuit-Min-Merge`
 language of `Cslib.MCSP.circuitMinMergeLanguage_mem_PPolyOn`: `k` levels of its merge step, plus
-leaf queries on `2 ^ k` table bits. Querying `CircuitMinMergeLanguage` itself, one binary merge per
-oracle gate, gives only the binary-tree parameters: `N · poly(n, s)` gates, `N` oracle gates and
+leaf queries on `2 ^ k` table bits. Querying `CircuitMinMergeLanguage` itself gives only the
+binary-tree parameters: each oracle gate answers one bit, so each of the `N - 1` binary merges takes
+`stateWidth n s` oracle gates, for `≈ N · poly(n, s)` oracle gates of fan-in `poly(n, s)` and
 adaptivity `n`.
 
 ## Main definitions
@@ -66,9 +67,8 @@ adaptivity `n`.
 * `Cslib.MCSP.MergeTree.encQuery_ofNode_mem_oracle_iff_merge`,
   `Cslib.MCSP.MergeTree.encQuery_ofNode_mem_oracle_iff_leaf`: inner and leaf node queries answer a
   bit of the state of their subcube.
-* `Cslib.MCSP.MergeTree.encQuery_ofNode_nil_mem_oracle_iff_merge`,
-  `Cslib.MCSP.MergeTree.encQuery_ofNode_nil_mem_oracle_iff_leaf`: bit `0` at the root answers
-  `MCSP[s]`.
+* `Cslib.MCSP.MergeTree.encQuery_ofNode_nil_mem_oracle_iff_leaf`: a single root leaf query
+  answers `MCSP[s]`.
 * `Cslib.MCSP.MergeTree.length_encQuery`, `Cslib.MCSP.MergeTree.encQuery_ofNode`,
   `Cslib.MCSP.MergeTree.length_encQuery_ofNode`: a node query is a fixed header followed by its
   payload.
@@ -93,10 +93,11 @@ open Circuits Circuits.Boolean Turing.MultiTapeTM
 def mergeLanguage : Language Bool :=
   {w | ∃ a ∈ CircuitMinMergeLanguage, encMerge a = w}
 
-/-- `mergeLanguage` encodes `CircuitMinMergeLanguage`, as `mergeVec_eq_subcubeState` requires. -/
-theorem mem_mergeLanguage_iff (a : MergeInput) :
-    a ∈ CircuitMinMergeLanguage ↔ encMerge a ∈ mergeLanguage :=
-  ⟨fun ha => ⟨a, ha, rfl⟩, fun ⟨_, ha', h⟩ => encMerge.injective h ▸ ha'⟩
+/-- `mergeLanguage` encodes `CircuitMinMergeLanguage`; `mergeVec_eq_subcubeState` takes the
+reverse direction. -/
+theorem encMerge_mem_mergeLanguage_iff (a : MergeInput) :
+    encMerge a ∈ mergeLanguage ↔ a ∈ CircuitMinMergeLanguage :=
+  ⟨fun ⟨_, ha', h⟩ => encMerge.injective h ▸ ha', fun ha => ⟨a, ha, rfl⟩⟩
 
 /-- `k` levels of the merge step `mergeVec L`: merges the `2 ^ k` states `y e` of the subcubes
 `p ++ e`, `e ∈ {0, 1} ^ k`, into one state, splitting on the first bit of `e`. -/
@@ -143,8 +144,8 @@ namespace MergeTree
 
 /-! ### Queries and the oracle -/
 
-/-- A query to the merge-tree oracle: bit `j` of the `depth`-fold merge
-(`Cslib.MCSP.iterMergeVec`) of the `2 ^ depth` children of the subcube `subcube`, for arity `arity`
+/-- A query to the merge-tree oracle: bit `j` of the `levels`-fold merge
+(`Cslib.MCSP.iterMergeVec`) of the `2 ^ levels` children of the subcube `subcube`, for arity `arity`
 and size bound `size`. -/
 structure Query where
   /-- The arity `n` of the truth table. -/
@@ -154,7 +155,7 @@ structure Query where
   /-- The prefix `p` of the node's subcube. -/
   subcube : List Bool
   /-- The number `k` of merge levels; the node has `2 ^ k` children. -/
-  depth : ℕ
+  levels : ℕ
   /-- Whether the children are points read from table bits (`true`) or subcubes whose states the
   payload holds (`false`). -/
   leaf : Bool
@@ -165,17 +166,17 @@ structure Query where
   payload : List Bool
 
 /-- **Unary parameters, raw prefix, leaf flag, raw bit field, then the payload**: `arity`, `size`
-and `depth` in unary, `subcube`, `bitField` and `payload` as raw bits, and every field but the
+and `levels` in unary, `subcube`, `bitField` and `payload` as raw bits, and every field but the
 payload framed. -/
 enc_structure encQuery : Query where
-  arity : encUnary, size : encUnary, subcube : encBits, depth : encUnary, leaf : encBool,
+  arity : encUnary, size : encUnary, subcube : encBits, levels : encUnary, leaf : encBool,
   bitField : encBits, payload : encBits
 
-/-- **The length of a query**: twice its unary parameters, prefix and bit field, plus eight bits of
-framing, plus the payload. -/
+/-- **The length of a query**: twice its unary parameters, prefix and bit field, plus `8` for
+the six frame terminators and the framed leaf flag, plus the payload. -/
 theorem length_encQuery (q : Query) :
     (encQuery q).length =
-      2 * (q.arity + q.size + q.subcube.length + q.depth + q.bitField.length) + 8 +
+      2 * (q.arity + q.size + q.subcube.length + q.levels + q.bitField.length) + 8 +
         q.payload.length := by
   simp only [encQuery_apply, encQueryFields, length_encPair, encUnary_apply,
     List.length_replicate, encBits_apply, encBool_apply, List.length_singleton]
@@ -209,13 +210,13 @@ noncomputable def childState (n s : ℕ) (p : List Bool) (k : ℕ) (leaf : Bool)
   if leaf then pointState n s (p ++ List.ofFn e) (v.getD (BitString.equivFin k e) false)
   else fun i => v.getD (BitString.equivFin k e * stateWidth n s + i) false
 
-/-- The answer to a query: bit `j` of the `depth`-fold merge of its children under
+/-- The answer to a query: bit `j` of the `levels`-fold merge of its children under
 `mergeLanguage`, where `j` is the number of `true` bits of the bit field, or `false` when
 `j ≥ stateWidth arity size`. -/
 noncomputable def Query.answer (q : Query) : Bool :=
   if hj : q.bitField.count true < stateWidth q.arity q.size then
-    iterMergeVec mergeLanguage q.arity q.size q.subcube q.depth
-      (childState q.arity q.size q.subcube q.depth q.leaf q.payload) ⟨_, hj⟩
+    iterMergeVec mergeLanguage q.arity q.size q.subcube q.levels
+      (childState q.arity q.size q.subcube q.levels q.leaf q.payload) ⟨_, hj⟩
   else false
 
 /-- **The merge-tree oracle**: the encodings of the queries whose answer is `true`. It is one
@@ -226,7 +227,12 @@ It is derived from `CircuitMinMergeLanguage`: a query asks for a bit of `k` leve
 step (`Cslib.MCSP.iterMergeVec` of `Cslib.MCSP.mergeVec` under `Cslib.MCSP.mergeLanguage`), on
 `2 ^ k` child states, or, at a leaf, on the point states of `2 ^ k` table bits. Querying
 `CircuitMinMergeLanguage` itself, one binary merge per oracle gate, gives only the binary-tree
-parameters. No bound on the complexity of this language is claimed. -/
+parameters. No bound on the complexity of this language is claimed.
+
+A single root leaf query with `k = n` already decides `MCSP[s]`
+(`Cslib.MCSP.MergeTree.encQuery_ofNode_nil_mem_oracle_iff_leaf`), so the content of the
+\[MMW19\] bullet lies in the oracle-gate, fan-in and adaptivity bounds of the circuit built from
+these queries, not in the oracle. -/
 def oracle : Language Bool :=
   {w | ∃ q : Query, q.answer = true ∧ encQuery q = w}
 
@@ -259,7 +265,8 @@ theorem encQuery_ofNode_mem_oracle_iff_merge {n s : ℕ} (f : BooleanFunction n)
         subcubeState n s f (p ++ List.ofFn e) i) :
     encQuery (Query.ofNode n s p k false j v) ∈ oracle ↔ subcubeState n s f p j = true := by
   rw [encQuery_mem_oracle_iff, answer_ofNode,
-    iterMergeVec_eq_subcubeState mem_mergeLanguage_iff f hpk fun e => ?_]
+    iterMergeVec_eq_subcubeState (fun a => (encMerge_mem_mergeLanguage_iff a).symm) f
+      hpk fun e => ?_]
   funext i
   simp only [childState, Bool.false_eq_true, ↓reduceIte]
   exact hv e i
@@ -273,24 +280,10 @@ theorem encQuery_ofNode_mem_oracle_iff_leaf {n s : ℕ} (f : BooleanFunction n) 
       v.getD (BitString.equivFin k e) false = f (BitString.ofList n (p ++ List.ofFn e))) :
     encQuery (Query.ofNode n s p k true j v) ∈ oracle ↔ subcubeState n s f p j = true := by
   rw [encQuery_mem_oracle_iff, answer_ofNode,
-    iterMergeVec_eq_subcubeState mem_mergeLanguage_iff f hpk.le fun e => ?_]
+    iterMergeVec_eq_subcubeState (fun a => (encMerge_mem_mergeLanguage_iff a).symm) f
+      hpk.le fun e => ?_]
   simp only [childState, ↓reduceIte]
   rw [hv, subcubeState_eq_pointState f (by simp only [List.length_append, List.length_ofFn]; omega)]
-
-/-- **The root, as an inner node, answers `MCSP[s]`.** If block `equivFin k e` of the payload `v`
-holds the state of the subcube `e` of the function with truth table `T`, for every
-`e ∈ {0, 1} ^ k` with `k ≤ n`, then bit `0` of the root query is the answer of `MCSP[s]`
-(`GapMCSP.yesSet s`) on `T`. -/
-theorem encQuery_ofNode_nil_mem_oracle_iff_merge (s : ℕ → ℕ) {n k : ℕ} (hk : k ≤ n)
-    (T : BitString (2 ^ n)) {v : List Bool}
-    (hv : ∀ (e : BitString k) (i : Fin (stateWidth n (s n))),
-      v.getD (BitString.equivFin k e * stateWidth n (s n) + i) false =
-        subcubeState n (s n) ((truthTable n).symm T) (List.ofFn e) i) :
-    encQuery (Query.ofNode n (s n) [] k false 0 v) ∈ oracle ↔
-      (GapMCSP.yesSet s).slice (2 ^ n) T = true := by
-  rw [← subcubeState_nil_zero_eq_slice_yesSet]
-  exact encQuery_ofNode_mem_oracle_iff_merge ((truthTable n).symm T) (p := []) (by simpa using hk)
-    ⟨0, Nat.succ_pos _⟩ hv
 
 /-- **The root, as a leaf, answers `MCSP[s]`.** If bit `equivFin n e` of the payload `v` is bit
 `equivFin n e` of the truth table `T`, then bit `0` of the root leaf query with `n` levels is the

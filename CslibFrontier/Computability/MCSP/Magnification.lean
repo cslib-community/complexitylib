@@ -9,13 +9,13 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.Encoding.Certificate
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly
-public import CslibFrontier.Computability.Circuit.Boolean.Substitution
 public import CslibFrontier.Computability.Complexity.Classes.PH.KarpLipton
 public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.MCSP.NP
 public import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Computability.Circuit.Boolean.EvaluationTime
 import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
+import CslibFrontier.Computability.Circuit.Boolean.Substitution
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -656,7 +656,7 @@ private theorem mergeCert₁_append_subcubeState (n s : ℕ) (f : BooleanFunctio
 slices of a language `L` for each output bit `j : Fin (stateWidth n s)`. When `L` encodes
 `CircuitMinMergeLanguage`, it maps the states of the half-subcubes `p ++ [false]` and
 `p ++ [true]` to the state of `p` (`Cslib.MCSP.mergeVec_eq_subcubeState`). -/
-noncomputable def mergeVec (L : Language Bool) (n s : ℕ) (p : List Bool)
+@[no_expose] noncomputable def mergeVec (L : Language Bool) (n s : ℕ) (p : List Bool)
     (y : BitString (stateWidth n s + stateWidth n s)) : BitString (stateWidth n s) :=
   fun j =>
     let f := frame (encHeader ((n, s), (p, (j : ℕ))))

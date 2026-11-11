@@ -43,6 +43,6 @@ example {n s : ℕ} (f : BooleanFunction n) {p : List Bool} (hp : p.length < n) 
     mergeVec mergeLanguage n s p
         (Fin.append (subcubeState n s f (p ++ [false])) (subcubeState n s f (p ++ [true]))) =
       subcubeState n s f p :=
-  mergeVec_eq_subcubeState mem_mergeLanguage_iff f hp
+  mergeVec_eq_subcubeState (fun a => (encMerge_mem_mergeLanguage_iff a).symm) f hp
 
 end CslibFrontierTests.MagnificationMergeTree
