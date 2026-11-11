@@ -58,6 +58,8 @@ import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
+import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
@@ -943,6 +945,44 @@ register_result "nash-existence-bimatrix" where
   ]
   scope := "Real payoff matrices over finite nonempty strategy sets, with no nondegeneracy \
     assumption; derived from the n-player theorem. Nonconstructive."
+
+register_result "facility-location-random-dictatorship" where
+  title := "Random dictatorship is strategyproof and (2 - 2 / n)-approximate for social cost"
+  topic := "game theory"
+  sources := [
+    { paper := AlonFeldmanProcacciaTennenholtz2010, theorem := "Theorem 3.1",
+      locator := "Section 3.2 and first remark, arXiv:0907.2049v1 pp. 6–7" }
+  ]
+  theorems := [
+    Cslib.GameTheory.FacilityLocation.randomDictatorship_isStrategyProof,
+    Cslib.GameTheory.FacilityLocation.randomDictatorship_hasApproxRatio,
+    Cslib.GameTheory.FacilityLocation.randomDictatorship_hasApproxRatio_two
+  ]
+  scope := "Any nonempty finite agent index set ι and Borel-measurable pseudometric space G \
+    ([PseudoMetricSpace G] [OpensMeasurableSpace G]); slightly generalizes AFPT Theorem 3.1 \
+    and its first remark from graph/metric spaces to pseudometrics. Weak group strategyproofness \
+    fails on a 3-leaf star metric (Star4 in CslibFrontierTests.FacilityLocation, per §3.2 third \
+    remark), and strong group strategyproofness fails on ℝ for n = 3."
+
+register_result "facility-location-median" where
+  title := "Fixed order-statistic and median mechanisms on ℝ are group strategyproof and optimal"
+  topic := "game theory"
+  sources := [
+    { paper := ProcacciaTennenholtz2013, theorem := unverified,
+      locator := "Section 3.1, pp. 18:7–18:8 (unnumbered prose)" },
+    { paper := Moulin1980, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.FacilityLocation.orderStatisticMechanism_isGroupStrategyProof,
+    Cslib.GameTheory.FacilityLocation.medianMechanism_isGroupStrategyProof,
+    Cslib.GameTheory.FacilityLocation.lowerMedian_isOptimal,
+    Cslib.GameTheory.FacilityLocation.medianMechanism_hasApproxRatio_one
+  ]
+  scope := "Any nonempty finite agent set ι locating a single facility on ℝ with sum-of-distances \
+    social cost; orderStatisticMechanism k clamps k at |ι| - 1 when k ≥ |ι|. PT §3.1 states \
+    weak group strategyproofness (attributed to Moulin 1980, uninspected here) and optimality \
+    for the lower median x_((n-1)/2); the library proves the stronger IsGroupStrategyProof \
+    property."
 
 /-!
 ## Descriptive complexity and finite model theory
