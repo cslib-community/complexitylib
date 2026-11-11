@@ -6039,6 +6039,7 @@ public import CslibFrontier.MachineLearning.UniformLearning.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.BestOf
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
+public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Parameters
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
