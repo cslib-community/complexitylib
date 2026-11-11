@@ -354,6 +354,12 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         status = run_check(root, ["lake", "build", "--wfail", "--iofail", *batch], "affected modules and clients")
         if status:
             return status
+    if plan.targets:
+        # Restored outputs carry no warnings for `--wfail` to see (#4523).
+        status = run_check(root, [sys.executable, "-B", "scripts/check_cache_restores.py", "--base", plan.base],
+                           "changed files restored from the artifact cache")
+        if status:
+            return status
     status = run_lint(root, plan)
     if status:
         return status

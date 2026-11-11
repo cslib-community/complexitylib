@@ -60,27 +60,27 @@ where
 /-- Packing retains each record after its computed key. -/
 theorem eval_keyedSortCircuit_pack (key : Circuit signature r k) (depth : ℕ)
     (x : BitString (BitonicSort.arity depth * r)) (j : Fin (BitonicSort.arity depth)) :
-    directProductInput ((keyedSortCircuit.pack key depth).eval interpretation x) j =
-      Fin.append (key.eval interpretation (directProductInput x j)) (directProductInput x j) := by
+    BitString.block ((keyedSortCircuit.pack key depth).eval interpretation x) j =
+      Fin.append (key.eval interpretation (BitString.block x j)) (BitString.block x j) := by
   funext b
-  simp [keyedSortCircuit.pack, directProductInput, Circuit.eval_replicate_apply]
+  simp [keyedSortCircuit.pack, BitString.block, Circuit.eval_replicate_apply]
 
 /-- Each output record is the body of the corresponding sorted enriched record. -/
 theorem eval_keyedSortCircuit (key : Circuit signature r k) (depth : ℕ) (ascending : Bool)
     (x : BitString (BitonicSort.arity depth * r)) (j : Fin (BitonicSort.arity depth)) :
-    directProductInput ((keyedSortCircuit key depth ascending).eval interpretation x) j =
-      directProductInput ((bitonicSortCircuit (Fin.castAdd r) depth ascending).eval interpretation
+    BitString.block ((keyedSortCircuit key depth ascending).eval interpretation x) j =
+      BitString.block ((bitonicSortCircuit (Fin.castAdd r) depth ascending).eval interpretation
         ((keyedSortCircuit.pack key depth).eval interpretation x)) j ∘ Fin.natAdd k := by
   funext b
   simp only [keyedSortCircuit, Circuit.eval_comp, Circuit.eval_wiring,
-    directProductInput, Function.comp_apply, Equiv.symm_apply_apply]
+    BitString.block, Function.comp_apply, Equiv.symm_apply_apply]
 
 /-- Sorting by computed keys preserves the multiset of complete records. -/
 theorem keyedSortCircuit_perm (key : Circuit signature r k) (depth : ℕ) (ascending : Bool)
     (x : BitString (BitonicSort.arity depth * r)) :
-    (List.ofFn (directProductInput
+    (List.ofFn (BitString.block
       ((keyedSortCircuit key depth ascending).eval interpretation x))).Perm
-        (List.ofFn (directProductInput x)) := by
+        (List.ofFn (BitString.block x)) := by
   have h := (bitonicSortCircuit_perm (Fin.castAdd r) depth ascending
     ((keyedSortCircuit.pack key depth).eval interpretation x)).map
       (fun record : BitString (k + r) => record ∘ Fin.natAdd k)
@@ -90,23 +90,23 @@ theorem keyedSortCircuit_perm (key : Circuit signature r k) (depth : ℕ) (ascen
 
 private theorem output_key (key : Circuit signature r k) (depth : ℕ) (ascending : Bool)
     (x : BitString (BitonicSort.arity depth * r)) (j : Fin (BitonicSort.arity depth)) :
-    directProductInput ((bitonicSortCircuit (Fin.castAdd r) depth ascending).eval interpretation
+    BitString.block ((bitonicSortCircuit (Fin.castAdd r) depth ascending).eval interpretation
       ((keyedSortCircuit.pack key depth).eval interpretation x)) j ∘ Fin.castAdd r =
         key.eval interpretation
-          (directProductInput
+          (BitString.block
             ((keyedSortCircuit key depth ascending).eval interpretation x) j) := by
   rw [eval_keyedSortCircuit]
   have h := bitonicSortCircuit_perm (Fin.castAdd r) depth ascending
     ((keyedSortCircuit.pack key depth).eval interpretation x)
   obtain ⟨i, hi⟩ := List.mem_ofFn.mp (h.mem_iff.mp (List.mem_ofFn.mpr ⟨j, rfl⟩))
   rw [← hi, eval_keyedSortCircuit_pack]
-  simp [Function.comp_def, -Fin.natAdd_eq_addNat]
+  simp only [Function.comp_def, Fin.append_left, Fin.append_right]
 
 /-- Recomputing the keys of ascending output records gives a nondecreasing sequence. -/
 theorem monotone_keyedSortCircuit (key : Circuit signature r k) (depth : ℕ)
     (x : BitString (BitonicSort.arity depth * r)) :
     Monotone (fun j => toLex (key.eval interpretation
-      (directProductInput ((keyedSortCircuit key depth true).eval interpretation x) j))) := by
+      (BitString.block ((keyedSortCircuit key depth true).eval interpretation x) j))) := by
   simpa only [output_key] using monotone_bitonicSortCircuit (Fin.castAdd r) depth
     ((keyedSortCircuit.pack key depth).eval interpretation x)
 
@@ -114,7 +114,7 @@ theorem monotone_keyedSortCircuit (key : Circuit signature r k) (depth : ℕ)
 theorem antitone_keyedSortCircuit (key : Circuit signature r k) (depth : ℕ)
     (x : BitString (BitonicSort.arity depth * r)) :
     Antitone (fun j => toLex (key.eval interpretation
-      (directProductInput ((keyedSortCircuit key depth false).eval interpretation x) j))) := by
+      (BitString.block ((keyedSortCircuit key depth false).eval interpretation x) j))) := by
   simpa only [output_key] using antitone_bitonicSortCircuit (Fin.castAdd r) depth
     ((keyedSortCircuit.pack key depth).eval interpretation x)
 

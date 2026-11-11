@@ -82,7 +82,7 @@ example (table : BitString 0 → BitString 0) : (batchLookupCircuit table 0).siz
   let c := materialize (routeValuesCircuit (Fin.castSucc : Fin 1 → Fin 2) (Fin.last 1) 2 1)
   (List.finRange 4096).all fun raw =>
     let x := (BitString.equivFin 12).symm raw
-    let rows : Fin 4 → BitString 3 := directProductInput x
+    let rows : Fin 4 → BitString 3 := BitString.block x
     let out := (c.evalVector interpretation x).get
     (List.finRange 4).all fun j =>
       !rows j 1 || (out j == (List.finRange 4).any fun i =>

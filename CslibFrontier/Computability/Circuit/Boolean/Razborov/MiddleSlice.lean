@@ -8,19 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.RankProperty
-public import CslibFrontier.Computability.Complexity.Classes.P.Slices
 public import Mathlib.Data.Nat.Sqrt
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Sqrt
-import CslibFrontier.Foundations.Data.BitString.List
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!
-# A middle slice in P but not in AC⁰[2]
+# A middle slice not in AC⁰[2]
 
 The **middle slice** (`middleSlice`) accepts the `n`-bit strings with exactly `a(n)` zeros, where
 `a(n) = ⌈n / 2⌉ - ⌊√(n + 1)⌋ / 10` (`sliceLevel`). It passes Razborov's rank test at level `a(n)`
@@ -28,13 +20,16 @@ The **middle slice** (`middleSlice`) accepts the `n`-bit strings with exactly `a
 (`two_mul_two_pow_le_size_of_mem_rankTest`) bounds every constant-depth circuit for it with `MOD_2`
 gates from below by `2 ^ Ω(n ^ (1 / (2 d)))`. Hence the middle slice is not in AC⁰[2]
 (`middleSlice_notMem_AC0Mod_two`) [Razborov1987]. It is in `P`, by counting the true bits and
-comparing with `a(n)` computed in unary from the length (`middleSlice_mem_P`), which separates
-`P` from AC⁰[2] (`exists_mem_P_notMem_AC0Mod_two`).
+comparing with `a(n)` computed in unary from the length, which separates `P` from AC⁰[2]
+(`Cslib.Circuits.Boolean.Razborov.middleSlice_mem_P` and
+`Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two`). Those are in
+`CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P`, kept apart so that this lower
+bound does not import the polynomial-time Turing machine library.
 
-For odd primes, parity separates `P` from AC⁰[p]; this module covers `p = 2`, where parity is a
-single gate. `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` combines the two for every prime,
-and `Cslib.Circuits.Boolean.Smolensky.majority_notMem_AC0Mod` uses the middle slice to show that
-majority is not in AC⁰[2].
+For odd primes, parity separates `P` from AC⁰[p]; the middle slice covers `p = 2`, where parity
+is a single gate. `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` combines the two for every
+prime, and `Cslib.Circuits.Boolean.Smolensky.majority_notMem_AC0Mod` uses the middle slice to show
+that majority is not in AC⁰[2].
 
 The lower bound follows the rank argument as recorded by
 [Razborov and Rudich, §3.2][RazborovRudich1997] and sketched for `p = 2` by
@@ -56,8 +51,6 @@ its choice of hard function.
 * `Cslib.Circuits.Boolean.Razborov.two_mul_two_pow_le_size_of_mem_rankTest_sliceLevel`: the
   size–depth tradeoff for any function passing the rank test at level `sliceLevel m`.
 * `Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two`: the slice is not in AC⁰[2].
-* `Cslib.Circuits.Boolean.Razborov.middleSlice_mem_P`: the slice is in `P`.
-* `Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two`: `P ⊄ AC⁰[2]`.
 
 ## References
 
@@ -72,7 +65,7 @@ public section
 
 namespace Cslib.Circuits.Boolean.Razborov
 
-open BitString Cslib.Complexity Turing.MultiTapeTM
+open BitString
 
 /-- The gap of the middle slice below the middle, `⌊√(n + 1)⌋ / 10`. -/
 def sliceGap (n : ℕ) : ℕ := Nat.sqrt (n + 1) / 10
@@ -144,44 +137,5 @@ theorem middleSlice_notMem_AC0Mod_two : Language.ofSlices middleSlice ∉ AC0Mod
   have hsz : 5 * (n + 1) * C.size ≤ 5 * (n + 1) * size n := Nat.mul_le_mul_left _ hCs
   have hlt' : 5 * (n + 1) * size n < 2 ^ ℓ := hlt
   omega
-
-/-- The list evaluator of the middle slice: count the true bits and compare with
-`n - sliceLevel n`, where `n` is the length. -/
-private theorem middleSlice_ofList (x : List Bool) :
-    middleSlice x.length (ofList x.length x) =
-      decide (x.count true = x.length - ((x.length + 1) / 2 - Nat.sqrt (x.length + 1) / 10)) := by
-  rw [Bool.eq_iff_iff, decide_eq_true_iff, middleSlice_eq_true_iff, ← count_true_ofFn,
-    ofFn_ofList rfl, sliceLevel_eq]
-
-/-- **The middle slice is in `P`**: count the true bits in unary and compare with
-`n - sliceLevel n`, computed in unary from the length `n` (the square root in binary). -/
-theorem middleSlice_mem_P : (Language.ofSlices middleSlice : Set (List Bool)) ∈ P encBits := by
-  refine ofSlices_mem_P ?_
-  simp only [middleSlice_ofList]
-  have hlen : ComputableInPolyTime (fun x : List Bool => x.length) encBits encUnary :=
-    ComputableInPolyTime.length_bits
-  have hsucc : ComputableInPolyTime (fun x : List Bool => x.length + 1) encBits encUnary :=
-    ComputableInPolyTime.unary_add' hlen (.const 1)
-  have hsqrt : ComputableInPolyTime (fun x : List Bool => Nat.sqrt (x.length + 1)) encBits
-      encUnary :=
-    ComputableInPolyTime.binary_to_unary_bounded
-      (ComputableInPolyTime.binary_sqrt' (ComputableInPolyTime.unary_to_binary.comp hsucc)) hsucc
-      fun x => Nat.sqrt_le_self _
-  have hgap : ComputableInPolyTime (fun x : List Bool => Nat.sqrt (x.length + 1) / 10) encBits
-      encUnary :=
-    ComputableInPolyTime.unary_div' hsqrt (.const 10)
-  have hlevel : ComputableInPolyTime
-      (fun x : List Bool => (x.length + 1) / 2 - Nat.sqrt (x.length + 1) / 10) encBits encUnary :=
-    ComputableInPolyTime.unary_sub' (ComputableInPolyTime.unary_div' hsucc (.const 2)) hgap
-  have hcount : ComputableInPolyTime (fun x : List Bool => x.count true) encBits encUnary :=
-    ComputableInPolyTime.bitsCountWithInput ComputableInPolyTime.id' (.const true)
-  exact ComputableInPolyTime.unary_eq' hcount (ComputableInPolyTime.unary_sub' hlen hlevel)
-
-/-- **Unconditional separation `P ⊄ AC⁰[2]`**: the middle slice is in `P` and not in AC⁰[2]
-[Razborov1987]. `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` combines it with parity for odd
-primes, giving `P ⊄ AC⁰[p]` for every prime `p`. -/
-theorem exists_mem_P_notMem_AC0Mod_two :
-    ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧ L ∉ AC0Mod 2 :=
-  ⟨_, middleSlice_mem_P, middleSlice_notMem_AC0Mod_two⟩
 
 end Cslib.Circuits.Boolean.Razborov
