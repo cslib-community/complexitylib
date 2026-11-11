@@ -186,21 +186,6 @@ private lemma candBound_spec (L : ℕ) (c : Fin L → Bool) :
   simp only [Fintype.card_fin, encUGCand] at hpi ⊢
   omega
 
-private lemma length_encList_set_le {α : Type} (enc : α ↪ List Bool) (l : List α)
-    (i : ℕ) (x : α) :
-    (encList enc (l.set i x)).length ≤ (encList enc l).length + 2 * (enc x).length + 1 := by
-  induction l generalizing i with
-  | nil => simp
-  | cons a l ih =>
-    cases i with
-    | zero =>
-      simp only [List.set_cons_zero, encList_cons, List.length_append, length_frame]
-      omega
-    | succ i =>
-      have := ih i
-      simp only [List.set_cons_succ, encList_cons, List.length_append] at this ⊢
-      omega
-
 private lemma length_encList_replicate_none {α : Type} (n : ℕ) (enc : α ↪ List Bool) :
     (encList (encOption enc) (List.replicate n none)).length = n := by
   induction n with
