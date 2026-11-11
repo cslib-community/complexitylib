@@ -68,6 +68,7 @@ import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
 import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
+import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
@@ -701,6 +702,27 @@ register_result "magnification" where
     some 2^n-bit slice of MCSP[n^k] needs more than 2^n·c·(n + 1)^c gates, then NP ⊄ P/poly \
     and P ≠ NP. Size-only lower-bound hypothesis."
 
+register_result "gap-mcsp-magnification" where
+  title := "Oliveira–Pich–Santhanam: N^(1+ε) lower bounds for Gap-MCSP imply NP ⊄ P/poly"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraPichSanthanam2019, theorem := "Theorem 1.4 (ECCC TR18-158 Theorem 4)",
+      locator := unverified }
+  ]
+  theorems := [
+    Cslib.MCSP.not_NP_subset_PPoly_of_gapMCSP_hard,
+    Cslib.MCSP.P_ne_NP_of_gapMCSP_hard,
+    Cslib.MCSP.exists_gapMCSP_separator_of_NP_subset_PPoly
+  ]
+  scope := "If for some ε > 0 and every small enough β > 0 (eventually as β → 0⁺), for \
+    infinitely many n no Boolean function on 2^n-bit truth tables that accepts every \
+    yes-instance and rejects every no-instance of Gap-MCSP[⌊2^(βn)/(10n)⌋₊, ⌊2^(βn)⌋₊] has \
+    De Morgan complexity at most N^(1+ε) (N = 2^n, all operation gates counted), then \
+    NP ⊄ P/poly and P ≠ NP. The source's constant c = 10. Proof route: the \
+    McKay–Murray–Williams circuits for MCSP[s] under NP ⊆ P/poly separate Gap-MCSP[s₁, s₂] \
+    whenever s₁ ≤ s₂; OPS's own proof through the efficient anti-checker (Lemma 4.1) is not \
+    formalized."
+
 register_result "matrix-multiplication" where
   title := "Matrix multiplication: the exponent is at most 9/4"
   topic := "algebraic complexity"
@@ -1123,7 +1145,7 @@ register_result "immerman-l-capture" where
     universes below two are rejected."
 
 register_result "ordered-projection-reducibility" where
-  title := "Immerman–Landau: ordered first-order projections compose and refine FO reductions"
+  title := "Immerman–Landau: ordered FO and QF projections compose and refine FO reductions"
   topic := "descriptive complexity"
   sources := [
     { paper := ImmermanLandau1995, theorem := "Proposition 3.7", locator := "Section 3" },
@@ -1134,6 +1156,7 @@ register_result "ordered-projection-reducibility" where
     Cslib.Logic.FO.Ordered.ProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.ProjectionReduces.reduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.projectionReduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.reduces
   ]
@@ -1142,9 +1165,11 @@ register_result "ordered-projection-reducibility" where
     trees of numeric guards with constants or single signed input literals at the leaves; \
     first-order projections allow guards over order, BIT, 0, 1 and max, while quantifier-free \
     projections require quantifier-free guards over order, non-wrapping successor, 0 and max \
-    without BIT. Transitivity of quantifier-free projections and projection-completeness \
-    endpoints are not yet formalized here; the logspace encoding lift at encStructure is proved \
-    separately in Classes.LogSpace.FirstOrder.Ordered.Projection."
+    without BIT. Both IsProjectionMap and IsQFProjectionMap contain the identity and are \
+    closed under composition (with BIT-free quantifier-free guard pullback via \
+    QFNumeric.onFullTuple); projection-completeness endpoints are not yet formalized here, and \
+    the logspace encoding lift at encStructure is proved separately in \
+    Classes.LogSpace.FirstOrder.Ordered.Projection."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
