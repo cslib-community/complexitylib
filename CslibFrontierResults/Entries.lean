@@ -2746,9 +2746,9 @@ register_result "cikk-learning-from-dense-test" where
     queries, error 2^-e and confidence 1 - 2^-h, with at most \
     (h+1) 2^(2l + 10g + 6e + 59) queries. Labelled deviations: (1) a single outer best-of \
     selection replaces the source's per-stage confidence boosts (proof of Theorem 3.2), with \
-    the same result up to constants; (2) any density 2^(l+1-g) replaces largeness 1/5, and \
-    the Nisan-Wigderson advantage is delta/(2L) instead of 1/L; (3) error, confidence and k \
-    are powers of two with this library's constants, where the source has \
+    the same result up to constants; (2) any density at least 2^(l+1-g) replaces largeness \
+    1/5, and the Nisan-Wigderson advantage is delta/(2L) instead of 1/L; (3) error, \
+    confidence and k are powers of two with this library's constants, where the source has \
     k = ceil(3c (1/eps) ln(1/gamma)) + 1, and the deviations of cikk-amp-reconstruction carry \
     over; (4) the number of queries is certified, the hypothesis size is not part of this \
     entry, and the running time is not certified; (5) p = 2 only; (6) the test is an \
