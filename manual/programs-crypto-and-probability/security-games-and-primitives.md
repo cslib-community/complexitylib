@@ -682,6 +682,20 @@ nonconstant counter schedule, are in
 and direct checks of the sampling lemmas are in
 [`CslibFrontierTests/BitStringCollision.lean`](../../CslibFrontierTests/BitStringCollision.lean).
 
+For the chosen-plaintext security of random-IV counter (CTR) mode, import
+[`Encryption/CTRMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CTRMode.lean)
+(Katz–Lindell 3rd ed., §3.6.3, Figure 3.9, Definition 3.22, Theorem 3.33 [katzlindell20][katzlindell20];
+Boneh–Shoup Chapter 4 [bs23][bs23]). It formalizes the adaptive left-or-right multiple-encryption
+experiment (`ctrCpaGame`, `ctrIdealGame`, `CTRAdversary`) for any counter schedule `counter :
+BitString n → ℕ → BitString n` satisfying within-query offset distinctness and per-offset IV
+injectivity, proves exact real-PRF correspondence for `ctrReduction` (`ctrCpaGame_eq_realGame`,
+`isQueryBounded_ctrReduction`), bounds the idealization collision error by `K ^ 2 / 2 ^ n` for `K`
+total queried blocks (`advantage_idealGame_ctrReduction_le`), and specializes to the modular-addition
+counter `ctrModCounter` whenever per-query length `ℓ ≤ 2 ^ n` (`ctrModCounter_injOn`,
+`ctrModCounter_injective_left`, `advantage_ctrCpaGame_ctrModCounter_randomFunction_le`,
+`advantage_ctrCpaGame_ctrModCounter_le`). Concrete `BitString 8` evaluations and non-vacuous bounds
+are in [`CslibFrontierTests/Crypto/CTRMode.lean`](../../CslibFrontierTests/Crypto/CTRMode.lean).
+
 For the chosen-plaintext security of random-IV OFB mode, import
 [`Encryption/OFBMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/OFBMode.lean)
 (Katz–Lindell 3rd ed., §3.6.3, Figure 3.8, Definition 3.22, following the proof of Theorem 3.33
@@ -741,6 +755,23 @@ so `encryptThenMAC E M.redundantTag hctLen` satisfies `INDCPA` and `EncForge` ye
 `PseudorandomFunction.prfEncryptThenMACRedundantTag_counterexample`, Exercise 5.4). Concrete
 evaluations and composed `IsPPT` / `IsOraclePPT` checks on `echoFamily` are in
 [`CslibFrontierTests/Crypto/CompositionCounterexamples.lean`](../../CslibFrontierTests/Crypto/CompositionCounterexamples.lean).
+
+For generic MAC-then-Encrypt composition and its chosen-ciphertext counterexample over
+`SymmetricCipher` and `MACScheme`, import
+[`Encryption/MACThenEncrypt.lean`](../../CslibFrontier/Crypto/Computational/Encryption/MACThenEncrypt.lean)
+(Katz–Lindell 3rd ed., §5.2 [katzlindell20][katzlindell20]; Boneh–Shoup §9.4.1 [bs23][bs23]).
+Given a decryption-completeness hypothesis `h_dec` on framed `(msg, tag)` encodings and `M.msgLen n
+= n`, `macThenEncrypt E M hmsgLen h_dec` signs `msg` and encrypts `encPair encBits encBits (msg,
+tag)` under `E`, verifying length, framing round-trip, and `M.verify` on decryption. The malleable
+wrapper `SymmetricCipher.extendCipher` appends `false` to every ciphertext and ignores the last bit
+in decryption, preserving `h_dec` (`h_dec_extendCipher`), `INDCPA` (`SymmetricCipher.INDCPA.extendCipher`),
+and `OneTimeINDCPA` (`SymmetricCipher.OneTimeINDCPA.extendCipher`) via `extendCPAAdversary` and
+`extendOneTimeCPAAdversary`. Meanwhile, flipping that trailing bit (`macThenEncryptExtendCIAdversary`,
+`macThenEncryptExtendCCAAdversary`) achieves advantage `1` for every `n ≥ 1` against
+`macThenEncrypt E.extendCipher M`, refuting `OneTimeCiphertextIntegrity`, `CiphertextIntegrity`,
+`OneTimeINDCCA` (`not_oneTimeINDCCA_macThenEncrypt_extendCipher`), and `INDCCA`
+(`not_indcca_macThenEncrypt_extendCipher`). Concrete checks on `echoCipher` and `echoMAC` are in
+[`CslibFrontierTests/Crypto/MACThenEncrypt.lean`](../../CslibFrontierTests/Crypto/MACThenEncrypt.lean).
 
 ## Authentication, signatures, and state
 
