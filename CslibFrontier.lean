@@ -5956,6 +5956,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash
 public import CslibFrontier.Probability.PairwiseIndependentHash.Affine
 public import CslibFrontier.Probability.PairwiseIndependentHash.ComponentGap
 public import CslibFrontier.Probability.PairwiseIndependentHash.ConditionalAveraging
+public import CslibFrontier.Probability.PairwiseIndependentHash.Covering
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameChannel
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameSubstitution
 public import CslibFrontier.Probability.PairwiseIndependentHash.Mixing
