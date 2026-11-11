@@ -1380,7 +1380,7 @@ Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinato
 <a id="schrijver86"></a>
 ## schrijver86
 
-Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. Bibliographic metadata from `references.bib`; cited at book level for polynomial-time exact rational Gaussian elimination and fraction-free subdeterminant size bounds (`rationalElim_computableInPolyTime`, `ratSolve_computableInPolyTime`). No primary copy was inspected in this pass, so no chapter or theorem number is claimed.
+Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. Bibliographic metadata from `references.bib`; cited at book level for polynomial-time exact rational Gaussian elimination and fraction-free subdeterminant size bounds (`rationalElim_computableInPolyTime`, `ratSolve_computableInPolyTime`). The primary book was not inspected, so no chapter or theorem number is claimed.
 
 <a id="schummervohra07"></a>
 ## schummervohra07

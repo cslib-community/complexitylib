@@ -41,7 +41,7 @@ elimination and reduced row echelon form over fields and the integers:
 
 ## References
 
-* A. Schrijver, *Theory of Linear and Integer Programming* [Schrijver1986], Section 3.3.
+* A. Schrijver, *Theory of Linear and Integer Programming* [Schrijver1986].
 -/
 
 public section
@@ -329,52 +329,17 @@ theorem bareissMatrix_nonPivot_col {R : Type*} [CommRing R] (A : Matrix (Fin m) 
   exact det_zero_of_column_eq b.castSucc_ne_last fun t => by
     simp only [submatrix_apply, Fin.snoc_castSucc, Fin.snoc_last]
 
-/-- Canonical equivalence between `Fin k ⊕ Unit` and `Fin (k + 1)`. -/
-private def sumUnitEquiv (k : ℕ) : Fin k ⊕ Unit ≃ Fin (k + 1) where
-  toFun
-    | Sum.inl a => a.castSucc
-    | Sum.inr () => Fin.last k
-  invFun i := if h : i.val < k then Sum.inl ⟨i.val, h⟩ else Sum.inr ()
-  left_inv x := by
-    rcases x with ⟨a, ha⟩ | ⟨⟩
-    · simp only [Fin.val_castSucc, ha, ↓reduceDIte]
-    · simp only [Fin.val_last, lt_self_iff_false, ↓reduceDIte]
-  right_inv i := by
-    by_cases h : i.val < k
-    · simp only [h, ↓reduceDIte, Fin.castSucc_mk]
-    · have hi : i = Fin.last k := Fin.ext (by have := i.isLt; rw [Fin.val_last]; omega)
-      subst hi
-      simp only [Fin.val_last, lt_self_iff_false, ↓reduceDIte]
+private def sumUnitEquiv (k : ℕ) : Fin k ⊕ Unit ≃ Fin (k + 1) :=
+  (Equiv.sumCongr (Equiv.refl (Fin k)) (Equiv.ofUnique Unit (Fin 1))).trans finSumFinEquiv
 
-/-- Canonical equivalence between `Fin k ⊕ Fin 2` and `Fin (k + 2)`. -/
-private def sumFinTwoEquiv (k : ℕ) : Fin k ⊕ Fin 2 ≃ Fin (k + 2) where
-  toFun
-    | Sum.inl a => a.castSucc.castSucc
-    | Sum.inr 0 => (Fin.last k).castSucc
-    | Sum.inr 1 => Fin.last (k + 1)
-  invFun i :=
-    if h : i.val < k then Sum.inl ⟨i.val, h⟩
-    else if h' : i.val = k then Sum.inr 0 else Sum.inr 1
-  left_inv x := by
-    rcases x with ⟨a, ha⟩ | j
-    · simp only [Fin.val_castSucc, ha, ↓reduceDIte]
-    · fin_cases j
-      · simp only [Fin.isValue, Fin.val_castSucc, Fin.val_last, lt_self_iff_false, ↓reduceDIte]
-        rfl
-      · simp only [Fin.isValue, Fin.val_last, show ¬(k + 1 < k) by omega, ↓reduceDIte,
-          show k + 1 ≠ k by omega]
-        rfl
-  right_inv i := by
-    by_cases h : i.val < k
-    · simp only [h, ↓reduceDIte, Fin.castSucc_mk]
-    · by_cases h' : i.val = k
-      · have hi : i = (Fin.last k).castSucc :=
-          Fin.ext (by simp only [Fin.val_castSucc, Fin.val_last, h'])
-        subst hi
-        simp only [Fin.val_castSucc, Fin.val_last, lt_self_iff_false, ↓reduceDIte]
-      · have hi : i = Fin.last (k + 1) := Fin.ext (by have := i.isLt; rw [Fin.val_last]; omega)
-        subst hi
-        simp only [Fin.val_last, show ¬(k + 1 < k) by omega, show k + 1 ≠ k by omega, ↓reduceDIte]
+private theorem sumUnitEquiv_inl (k : ℕ) (a : Fin k) : sumUnitEquiv k (Sum.inl a) = a.castSucc :=
+  rfl
+
+private theorem sumUnitEquiv_inr (k : ℕ) (u : Unit) : sumUnitEquiv k (Sum.inr u) = Fin.last k := by
+  cases u
+  simp only [sumUnitEquiv, Equiv.trans_apply, Equiv.sumCongr_apply, Sum.map_inr,
+    finSumFinEquiv_apply_right]
+  rfl
 
 private theorem det_snoc_eq_det_border {R : Type*} [CommRing R] (A : Matrix (Fin m) (Fin n) R)
     (S : Fin k → Fin m) (C : Fin k → Fin n) (p : Fin m) (q : Fin n) :
@@ -384,14 +349,13 @@ private theorem det_snoc_eq_det_border {R : Type*} [CommRing R] (A : Matrix (Fin
       (A.submatrix (Fin.snoc S p) (Fin.snoc C q)).submatrix (sumUnitEquiv k) (sumUnitEquiv k) := by
     ext i j
     rcases i with i | ⟨⟩ <;> rcases j with j | ⟨⟩
-    · simp only [border, fromBlocks_apply₁₁, submatrix_apply, sumUnitEquiv, Equiv.coe_fn_mk,
-        Fin.snoc_castSucc]
-    · simp only [border, fromBlocks_apply₁₂, of_apply, submatrix_apply, sumUnitEquiv,
-        Equiv.coe_fn_mk, Fin.snoc_castSucc, Fin.snoc_last]
-    · simp only [border, fromBlocks_apply₂₁, of_apply, submatrix_apply, sumUnitEquiv,
-        Equiv.coe_fn_mk, Fin.snoc_castSucc, Fin.snoc_last]
-    · simp only [border, fromBlocks_apply₂₂, of_apply, submatrix_apply, sumUnitEquiv,
-        Equiv.coe_fn_mk, Fin.snoc_last]
+    · simp only [border, fromBlocks_apply₁₁, submatrix_apply, sumUnitEquiv_inl, Fin.snoc_castSucc]
+    · simp only [border, fromBlocks_apply₁₂, of_apply, submatrix_apply, sumUnitEquiv_inl,
+        sumUnitEquiv_inr, Fin.snoc_castSucc, Fin.snoc_last]
+    · simp only [border, fromBlocks_apply₂₁, of_apply, submatrix_apply, sumUnitEquiv_inl,
+        sumUnitEquiv_inr, Fin.snoc_castSucc, Fin.snoc_last]
+    · simp only [border, fromBlocks_apply₂₂, of_apply, submatrix_apply, sumUnitEquiv_inr,
+        Fin.snoc_last]
   rw [heq, det_submatrix_equiv_self]
 
 /-- **Main Bareiss–Jordan identity over any field `K`:** appending a pivot `(p, q)` with
@@ -458,25 +422,24 @@ theorem pivotDet_mul_bareissMatrix_snoc {K : Type*} [Field K] (A : Matrix (Fin m
         rcases u with u | ⟨⟩ <;> rcases v with v | ⟨⟩
         · by_cases hv : v = a
           · subst hv
-            simp only [border, updateCol_apply, sumUnitEquiv, Equiv.coe_fn_mk,
-              ↓reduceIte, Sum.elim_inl, submatrix_apply, Fin.snoc_castSucc, Function.update_self]
+            simp only [border, updateCol_apply, sumUnitEquiv_inl, ↓reduceIte, Sum.elim_inl,
+              submatrix_apply, Fin.snoc_castSucc, Function.update_self]
           · have hne' : v.castSucc ≠ a.castSucc := fun h => hv (Fin.castSucc_inj.1 h)
-            simp only [border, updateCol_apply, sumUnitEquiv, Equiv.coe_fn_mk, Sum.inl.injEq,
-              hv, ↓reduceIte, fromBlocks_apply₁₁, submatrix_apply, Fin.snoc_castSucc,
-              Function.update_of_ne hne']
-        · simp only [border, updateCol_apply, sumUnitEquiv, Equiv.coe_fn_mk, reduceCtorEq,
+            simp only [border, updateCol_apply, sumUnitEquiv_inl, Sum.inl.injEq, hv, ↓reduceIte,
+              fromBlocks_apply₁₁, submatrix_apply, Fin.snoc_castSucc, Function.update_of_ne hne']
+        · simp only [border, updateCol_apply, sumUnitEquiv_inl, sumUnitEquiv_inr, reduceCtorEq,
             ↓reduceIte, fromBlocks_apply₁₂, of_apply, submatrix_apply, Fin.snoc_castSucc,
             Function.update_of_ne (a.castSucc_ne_last).symm, Fin.snoc_last]
         · by_cases hv : v = a
           · subst hv
-            simp only [border, updateCol_apply, sumUnitEquiv, Equiv.coe_fn_mk,
-              ↓reduceIte, Sum.elim_inr, submatrix_apply, Fin.snoc_last, Function.update_self]
+            simp only [border, updateCol_apply, sumUnitEquiv_inl, sumUnitEquiv_inr, ↓reduceIte,
+              Sum.elim_inr, submatrix_apply, Fin.snoc_last, Function.update_self]
           · have hne' : v.castSucc ≠ a.castSucc := fun h => hv (Fin.castSucc_inj.1 h)
-            simp only [border, updateCol_apply, sumUnitEquiv, Equiv.coe_fn_mk, Sum.inl.injEq,
+            simp only [border, updateCol_apply, sumUnitEquiv_inl, sumUnitEquiv_inr, Sum.inl.injEq,
               hv, ↓reduceIte, fromBlocks_apply₂₁, of_apply, submatrix_apply, Fin.snoc_last,
               Fin.snoc_castSucc, Function.update_of_ne hne']
-        · simp only [border, updateCol_apply, sumUnitEquiv, Equiv.coe_fn_mk, reduceCtorEq,
-            ↓reduceIte, fromBlocks_apply₂₂, of_apply, submatrix_apply, Fin.snoc_last,
+        · simp only [border, updateCol_apply, sumUnitEquiv_inr, reduceCtorEq, ↓reduceIte,
+            fromBlocks_apply₂₂, of_apply, submatrix_apply, Fin.snoc_last,
             Function.update_of_ne (a.castSucc_ne_last).symm]
       have hleft := congrArg Matrix.det hupd
       rw [det_submatrix_equiv_self] at hleft
@@ -516,20 +479,31 @@ theorem pivotDet_mul_bareissMatrix_snoc {K : Type*} [Field K] (A : Matrix (Fin m
             (of fun (u : Fin 2) v => if u = 0 then A p (C v) else A i (C v))
             ![![A p q, A p j], ![A i q, A i j]] =
           (A.submatrix (Fin.snoc (Fin.snoc S p) i) (Fin.snoc (Fin.snoc C q) j)).submatrix
-            (sumFinTwoEquiv k) (sumFinTwoEquiv k) := by
+            (finSumFinEquiv (m := k) (n := 2)) (finSumFinEquiv (m := k) (n := 2)) := by
+        have hleft_eq : ∀ t : Fin k, finSumFinEquiv (m := k) (n := 2) (Sum.inl t) =
+            t.castSucc.castSucc := fun _ => rfl
+        have h0_eq : ∀ h : 0 < 2,
+            finSumFinEquiv (m := k) (n := 2) (Sum.inr ⟨0, h⟩) = (Fin.last k).castSucc :=
+          fun _ => rfl
+        have h1_eq : ∀ h : 1 < 2,
+            finSumFinEquiv (m := k) (n := 2) (Sum.inr ⟨1, h⟩) = Fin.last (k + 1) :=
+          fun _ => rfl
         ext u v
+        simp only [submatrix_apply]
         rcases u with u | u <;> rcases v with v | v
-        · simp only [submatrix_apply, sumFinTwoEquiv, Equiv.coe_fn_mk, Fin.snoc_castSucc]
+        · simp only [hleft_eq, Fin.snoc_castSucc]
           rfl
-        · fin_cases v <;>
-            simp only [submatrix_apply, sumFinTwoEquiv, Equiv.coe_fn_mk, Fin.snoc_castSucc,
-              Fin.snoc_last] <;> rfl
-        · fin_cases u <;>
-            simp only [submatrix_apply, sumFinTwoEquiv, Equiv.coe_fn_mk, Fin.snoc_castSucc,
-              Fin.snoc_last] <;> rfl
-        · fin_cases u <;> fin_cases v <;>
-            simp only [submatrix_apply, sumFinTwoEquiv, Equiv.coe_fn_mk, Fin.snoc_castSucc,
-              Fin.snoc_last] <;> rfl
+        · fin_cases v
+          · dsimp only; rw [hleft_eq, h0_eq]; simp only [Fin.snoc_castSucc, Fin.snoc_last]; rfl
+          · dsimp only; rw [hleft_eq, h1_eq]; simp only [Fin.snoc_castSucc, Fin.snoc_last]; rfl
+        · fin_cases u
+          · dsimp only; rw [hleft_eq, h0_eq]; simp only [Fin.snoc_castSucc, Fin.snoc_last]; rfl
+          · dsimp only; rw [hleft_eq, h1_eq]; simp only [Fin.snoc_castSucc, Fin.snoc_last]; rfl
+        · fin_cases u <;> fin_cases v
+          · dsimp only; rw [h0_eq]; simp only [Fin.snoc_castSucc, Fin.snoc_last]; rfl
+          · dsimp only; rw [h0_eq, h1_eq]; simp only [Fin.snoc_castSucc, Fin.snoc_last]; rfl
+          · dsimp only; rw [h1_eq, h0_eq]; simp only [Fin.snoc_castSucc, Fin.snoc_last]; rfl
+          · dsimp only; rw [h1_eq]; simp only [Fin.snoc_last]; rfl
       have hdet := congrArg Matrix.det hblk
       rw [det_submatrix_equiv_self] at hdet
       rw [pivotDet, ← hdet, det_mul_det_fromBlocks_fin2 hΔ (fun t => A (S t) q)

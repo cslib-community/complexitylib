@@ -5,13 +5,17 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Fraction-free Bareiss-Jordan rational elimination and bit-length bounds)
+-- upstream: candidate
 
+public import CslibFrontier.Init
+public import CslibFrontier.Computability.PolyTime.Int.Table
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Bareiss
 public import CslibFrontier.Foundations.Data.Nat.BinarySize
 public import CslibFrontier.Foundations.Data.Rat.Basic
+import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.List.GetD
+import Mathlib.Data.List.NodupEquivFin
 import Mathlib.LinearAlgebra.Matrix.Diagonal
 
 /-!
@@ -129,7 +133,7 @@ deriving instance DecidableEq for IntTable, RatTable, BareissState, RationalElim
 
 /-- Entry `(i, j)` of an `IntTable`, defaulting to `0` out of bounds. -/
 @[expose] def IntTable.entry (T : IntTable) (i j : ℕ) : ℤ :=
-  (T.rows.getD i []).getD j 0
+  Cslib.rowEntry T.rows i j
 
 /-- Entry `(i, j)` of a `RatTable`, defaulting to `0` out of bounds. -/
 @[expose] def RatTable.entry (M : RatTable) (i j : ℕ) : ℚ :=
@@ -137,7 +141,7 @@ deriving instance DecidableEq for IntTable, RatTable, BareissState, RationalElim
 
 /-- Rectangular shape invariant for `IntTable`. -/
 @[expose] def IntTable.WellFormed (T : IntTable) : Prop :=
-  T.rows.length = T.numRows ∧ ∀ r ∈ T.rows, r.length = T.numCols
+  Cslib.IsTableShape T.numRows T.numCols T.rows
 
 /-- Rectangular shape invariant for `RatTable`. -/
 @[expose] def RatTable.WellFormed (M : RatTable) : Prop :=
@@ -158,18 +162,6 @@ theorem IntTable.toMatrix_apply (T : IntTable) (i : Fin T.numRows) (j : Fin T.nu
 @[simp]
 theorem RatTable.toMatrix_apply (M : RatTable) (i : Fin M.numRows) (j : Fin M.numCols) :
     M.toMatrix i j = M.entry i.val j.val := rfl
-
-private theorem getD_map_range {α : Type*} (d : α) (n : ℕ) (f : ℕ → α) {k : ℕ} (hk : k < n) :
-    ((List.range n).map f).getD k d = f k := by
-  rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range hk]
-  rfl
-
-private theorem IntTable.entry_of_tabulate (m n : ℕ) (f : ℕ → ℕ → ℤ)
-    {i j : ℕ} (hi : i < m) (hj : j < n) :
-    IntTable.entry ⟨m, n, (List.range m).map fun r => (List.range n).map fun c => f r c⟩ i j =
-      f i j := by
-  simp only [IntTable.entry]
-  rw [getD_map_range [] m _ hi, getD_map_range 0 n _ hj]
 
 /-! ### Row denominator clearing -/
 
@@ -256,8 +248,9 @@ theorem rowMultiplier_pos (M : RatTable) (i : Fin M.numRows) : 0 < rowMultiplier
 private theorem clearDenoms_entry_eq (M : RatTable) (i : Fin M.numRows) (j : Fin M.numCols) :
     (clearDenoms M).toMatrix i j =
       (M.toMatrix i j).num * Int.ofNat (rowMultiplier M i / (M.toMatrix i j).den) := by
-  simp only [IntTable.toMatrix_apply, RatTable.toMatrix_apply, IntTable.entry, clearDenoms]
-  rw [getD_map_range [] M.numRows _ i.isLt]
+  simp only [IntTable.toMatrix_apply, RatTable.toMatrix_apply, IntTable.entry, Cslib.rowEntry,
+    clearDenoms]
+  rw [List.getD_map_range _ [] i.isLt]
   simp only [clearRow, List.getD_eq_getElem?_getD, List.getElem?_map, normalizedRatRow,
     List.getElem?_range j.isLt]
   rfl
@@ -332,10 +325,10 @@ theorem clearDenoms_abs_le (M : RatTable) {b : ℕ}
     let m := st.table.numRows
     let n := st.table.numCols
     let nextRows : List (List ℤ) :=
-      (List.range m).map fun i =>
-        (List.range n).map fun j =>
-          if i = p then st.table.entry p j
-          else (pivVal * st.table.entry i j - st.table.entry i c * st.table.entry p j) / prevDet
+      Cslib.tabulateTable m n fun i j =>
+        if i = p then st.table.entry p j
+        else
+          (pivVal * st.table.entry i j - st.table.entry i c * st.table.entry p j) / prevDet
     { table := ⟨m, n, nextRows⟩
       pivotDet := pivVal
       pivotRows := st.pivotRows ++ [p]
@@ -353,67 +346,36 @@ theorem clearDenoms_abs_le (M : RatTable) {b : ℕ}
 @[expose] def bareissElim (T : IntTable) : BareissState :=
   bareissElimCols T T.numCols
 
-/-- Map a bounded list of row indices to `Fin k → Fin m`. -/
-def rowSel {m k : ℕ} (rows : List ℕ) (hk : k = rows.length) (hrows : ∀ r ∈ rows, r < m) :
+/-- Map a bounded list of row or column indices to `Fin k → Fin m`. -/
+def finSel {m k : ℕ} (idxs : List ℕ) (hk : k = idxs.length) (hidxs : ∀ i ∈ idxs, i < m) :
     Fin k → Fin m :=
-  fun a => ⟨rows[a.val]'(hk ▸ a.isLt), hrows _ (List.getElem_mem _)⟩
+  fun a => ⟨idxs[a.val]'(hk ▸ a.isLt), hidxs _ (List.getElem_mem _)⟩
 
-/-- Map a bounded list of column indices to `Fin k → Fin n`. -/
-def colSel {n k : ℕ} (cols : List ℕ) (hk : k = cols.length) (hcols : ∀ c ∈ cols, c < n) :
-    Fin k → Fin n :=
-  fun a => ⟨cols[a.val]'(hk ▸ a.isLt), hcols _ (List.getElem_mem _)⟩
-
-private theorem rowSel_snoc {m : ℕ} (rows : List ℕ) (p : ℕ)
-    (hp : p < m) (hrows : ∀ r ∈ rows, r < m) (hp' : ∀ r ∈ rows ++ [p], r < m) :
-    rowSel (rows ++ [p]) (by simp) hp' = Fin.snoc (rowSel rows rfl hrows) (⟨p, hp⟩ : Fin m) := by
-  ext a
-  by_cases ha : a.val < rows.length
-  · have ha' : a = Fin.castSucc ⟨a.val, ha⟩ := rfl
-    rw [ha', Fin.snoc_castSucc]
-    exact List.getElem_append_left ha
-  · have ha' : a = Fin.last rows.length :=
-      Fin.ext (by have := a.isLt; rw [Fin.val_last]; omega)
-    rw [ha', Fin.snoc_last]
-    have hlen : rows.length ≤ (Fin.last rows.length : Fin (rows.length + 1)).val := by
-      rw [Fin.val_last]
-    dsimp only [rowSel]
-    rw [List.getElem_append_right hlen]
-    simp only [Fin.val_last, Nat.sub_self, List.getElem_singleton]
-
-private theorem colSel_snoc {n k : ℕ} (cols : List ℕ) (hk : k = cols.length) (c : ℕ)
-    (hc : c < n) (hcols : ∀ x ∈ cols, x < n) (hc' : ∀ x ∈ cols ++ [c], x < n) :
-    colSel (cols ++ [c]) (by simp [hk]) hc' =
-      Fin.snoc (colSel cols hk hcols) (⟨c, hc⟩ : Fin n) := by
+private theorem finSel_snoc {m k : ℕ} (idxs : List ℕ) (hk : k = idxs.length) (x : ℕ)
+    (hx : x < m) (hidxs : ∀ i ∈ idxs, i < m) (hx' : ∀ i ∈ idxs ++ [x], i < m)
+    {hk' : k + 1 = (idxs ++ [x]).length} :
+    finSel (idxs ++ [x]) hk' hx' = Fin.snoc (finSel idxs hk hidxs) (⟨x, hx⟩ : Fin m) := by
   subst hk
   ext a
-  by_cases ha : a.val < cols.length
+  by_cases ha : a.val < idxs.length
   · have ha' : a = Fin.castSucc ⟨a.val, ha⟩ := rfl
     rw [ha', Fin.snoc_castSucc]
     exact List.getElem_append_left ha
-  · have ha' : a = Fin.last cols.length :=
+  · have ha' : a = Fin.last idxs.length :=
       Fin.ext (by have := a.isLt; rw [Fin.val_last]; omega)
     rw [ha', Fin.snoc_last]
-    have hlen : cols.length ≤ (Fin.last cols.length : Fin (cols.length + 1)).val := by
+    have hlen : idxs.length ≤ (Fin.last idxs.length : Fin (idxs.length + 1)).val := by
       rw [Fin.val_last]
-    dsimp only [colSel]
+    dsimp only [finSel]
     rw [List.getElem_append_right hlen]
     simp only [Fin.val_last, Nat.sub_self, List.getElem_singleton]
 
 private theorem pairwise_lt_strictMono {n k : ℕ} {cols : List ℕ} (hk : k = cols.length)
     (hpw : cols.Pairwise (· < ·)) (hcols : ∀ c ∈ cols, c < n) :
-    StrictMono (colSel cols hk hcols) := by
+    StrictMono (finSel cols hk hcols) := by
   intro a b hab
   change cols[a.val] < cols[b.val]
   exact (List.pairwise_iff_getElem.mp hpw) a.val b.val (hk ▸ a.isLt) (hk ▸ b.isLt) hab
-
-private theorem pairwise_lt_append {xs : List ℕ} (hpw : xs.Pairwise (· < ·)) {y : ℕ}
-    (hy : ∀ x ∈ xs, x < y) : (xs ++ [y]).Pairwise (· < ·) := by
-  rw [List.pairwise_append]
-  refine ⟨hpw, List.pairwise_singleton _ _, ?_⟩
-  intro x hx z hz
-  rw [List.mem_singleton] at hz
-  subst hz
-  exact hy x hx
 
 /-- Loop invariant linking `BareissState` to `Matrix.bareissMatrix`. -/
 structure BareissInv (T : IntTable) (stepCols : ℕ) (st : BareissState) : Prop where
@@ -428,23 +390,23 @@ structure BareissInv (T : IntTable) (stepCols : ℕ) (st : BareissState) : Prop 
   pivotDet_ne_zero : st.pivotDet ≠ 0
   pivotDet_eq :
     st.pivotDet = Matrix.pivotDet T.toMatrix
-      (rowSel st.pivotRows rfl row_lt) (colSel st.pivotCols len_eq col_dim)
+      (finSel st.pivotRows rfl row_lt) (finSel st.pivotCols len_eq col_dim)
   table_eq :
     ∀ (i : Fin T.numRows) (j : Fin T.numCols),
       st.table.entry i.val j.val =
         Matrix.bareissMatrix T.toMatrix
-          (rowSel st.pivotRows rfl row_lt) (colSel st.pivotCols len_eq col_dim) i j
+          (finSel st.pivotRows rfl row_lt) (finSel st.pivotCols len_eq col_dim) i j
   term_cols :
-    ∀ (i : Fin T.numRows), (∀ a, rowSel st.pivotRows rfl row_lt a ≠ i) →
+    ∀ (i : Fin T.numRows), (∀ a, finSel st.pivotRows rfl row_lt a ≠ i) →
       ∀ (j : Fin T.numCols), j.val < stepCols →
         Matrix.bareissMatrix T.toMatrix
-          (rowSel st.pivotRows rfl row_lt) (colSel st.pivotCols len_eq col_dim) i j = 0
+          (finSel st.pivotRows rfl row_lt) (finSel st.pivotCols len_eq col_dim) i j = 0
   echelon_zero :
     ∀ (a : Fin st.pivotRows.length) (j : Fin T.numCols),
       j.val < st.pivotCols[a.val]'(len_eq ▸ a.isLt) →
         Matrix.bareissMatrix T.toMatrix
-          (rowSel st.pivotRows rfl row_lt) (colSel st.pivotCols len_eq col_dim)
-          (rowSel st.pivotRows rfl row_lt a) j = 0
+          (finSel st.pivotRows rfl row_lt) (finSel st.pivotCols len_eq col_dim)
+          (finSel st.pivotRows rfl row_lt a) j = 0
 
 private theorem findPivotRow_none {st : BareissState} {c : ℕ}
     (hnone : findPivotRow st c = none) :
@@ -485,7 +447,7 @@ theorem bareissInv_init {T : IntTable} (hT : T.WellFormed) :
       term_cols := fun _ _ _ hj => absurd hj (Nat.not_lt_zero _)
       echelon_zero := fun a _ _ => a.elim0 }
   change T.entry i.val j.val = Matrix.bareissMatrix T.toMatrix
-    (rowSel ([] : List ℕ) rfl _) (colSel ([] : List ℕ) rfl _) i j
+    (finSel ([] : List ℕ) rfl _) (finSel ([] : List ℕ) rfl _) i j
   rw [Matrix.bareissMatrix_zero]
   rfl
 
@@ -541,7 +503,7 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
   · obtain ⟨p, hpfind⟩ := Option.ne_none_iff_exists'.mp hfind
     have ⟨hp_lt, hp_notMem, hp_nz⟩ := findPivotRow_some hpfind
     have hp_m : p < T.numRows := hinv.dims.1 ▸ hp_lt
-    have hp_fin : ∀ a, rowSel st.pivotRows rfl hinv.row_lt a ≠ ⟨p, hp_m⟩ := by
+    have hp_fin : ∀ a, finSel st.pivotRows rfl hinv.row_lt a ≠ ⟨p, hp_m⟩ := by
       intro a ha
       apply hp_notMem
       have hp_eq : st.pivotRows[a.val] = p := congrArg Fin.val ha
@@ -549,11 +511,10 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
       exact List.getElem_mem _
     have hstep : bareissStep st c =
         { table := ⟨st.table.numRows, st.table.numCols,
-            (List.range st.table.numRows).map fun i =>
-              (List.range st.table.numCols).map fun j =>
-                if i = p then st.table.entry p j
-                else (st.table.entry p c * st.table.entry i j -
-                  st.table.entry i c * st.table.entry p j) / st.pivotDet⟩
+            Cslib.tabulateTable st.table.numRows st.table.numCols fun i j =>
+              if i = p then st.table.entry p j
+              else (st.table.entry p c * st.table.entry i j -
+                st.table.entry i c * st.table.entry p j) / st.pivotDet⟩
           pivotDet := st.table.entry p c
           pivotRows := st.pivotRows ++ [p]
           pivotCols := st.pivotCols ++ [c] } := by
@@ -576,18 +537,20 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
       · rw [List.mem_singleton.mp h2]; exact hc
     have hlen' : (st.pivotRows ++ [p]).length = (st.pivotCols ++ [c]).length := by
       simp only [List.length_append, List.length_singleton, hinv.len_eq]
-    let S := rowSel st.pivotRows rfl hinv.row_lt
-    let C := colSel st.pivotCols hinv.len_eq hinv.col_dim
-    let S' := rowSel (st.pivotRows ++ [p]) rfl hrow_lt'
-    let C' := colSel (st.pivotCols ++ [c]) hlen' hcol_dim'
+    let S := finSel st.pivotRows rfl hinv.row_lt
+    let C := finSel st.pivotCols hinv.len_eq hinv.col_dim
+    let S' := finSel (st.pivotRows ++ [p]) rfl hrow_lt'
+    let C' := finSel (st.pivotCols ++ [c]) hlen' hcol_dim'
     have hk_eq : st.pivotRows.length + 1 = (st.pivotRows ++ [p]).length := by
       rw [List.length_append, List.length_singleton]
     have hS'_eq : S' ∘ finCongr hk_eq = Fin.snoc S ⟨p, hp_m⟩ := by
-      rw [← rowSel_snoc st.pivotRows p hp_m hinv.row_lt hrow_lt']
-      rfl
+      rw [← finSel_snoc st.pivotRows rfl p hp_m hinv.row_lt hrow_lt']
+      · rfl
+      · simp only [List.length_append, List.length_singleton]
     have hC'_eq : C' ∘ finCongr hk_eq = Fin.snoc C ⟨c, hc⟩ := by
-      rw [← colSel_snoc st.pivotCols hinv.len_eq c hc hinv.col_dim hcol_dim']
-      rfl
+      rw [← finSel_snoc st.pivotCols hinv.len_eq c hc hinv.col_dim hcol_dim']
+      · rfl
+      · simp only [List.length_append, List.length_singleton, hinv.len_eq]
     have hΔ : Matrix.pivotDet T.toMatrix S C ≠ 0 := by
       rw [← hinv.pivotDet_eq]
       exact hinv.pivotDet_ne_zero
@@ -596,26 +559,22 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
       exact hp_nz
     have hwf' : IntTable.WellFormed
         { numRows := st.table.numRows, numCols := st.table.numCols,
-          rows := (List.range st.table.numRows).map fun i =>
-            (List.range st.table.numCols).map fun j =>
-              if i = p then st.table.entry p j
-              else (st.table.entry p c * st.table.entry i j -
-                st.table.entry i c * st.table.entry p j) / st.pivotDet } := by
-      refine ⟨by simp only [List.length_map, List.length_range], fun r hr => ?_⟩
-      simp only [List.mem_map, List.mem_range] at hr
-      obtain ⟨_, _, rfl⟩ := hr
-      simp only [List.length_map, List.length_range]
+          rows := Cslib.tabulateTable st.table.numRows st.table.numCols fun i j =>
+            if i = p then st.table.entry p j
+            else (st.table.entry p c * st.table.entry i j -
+              st.table.entry i c * st.table.entry p j) / st.pivotDet } :=
+      Cslib.isTableShape_tabulateTable _ _ _
     have htable' : ∀ (i : Fin T.numRows) (j : Fin T.numCols),
         IntTable.entry
           { numRows := st.table.numRows, numCols := st.table.numCols,
-            rows := (List.range st.table.numRows).map fun r =>
-              (List.range st.table.numCols).map fun col =>
-                if r = p then st.table.entry p col
-                else (st.table.entry p c * st.table.entry r col -
-                  st.table.entry r c * st.table.entry p col) / st.pivotDet }
+            rows := Cslib.tabulateTable st.table.numRows st.table.numCols fun r col =>
+              if r = p then st.table.entry p col
+              else (st.table.entry p c * st.table.entry r col -
+                st.table.entry r c * st.table.entry p col) / st.pivotDet }
           i.val j.val = Matrix.bareissMatrix T.toMatrix S' C' i j := by
       intro i j
-      rw [IntTable.entry_of_tabulate _ _ _ (hinv.dims.1.symm ▸ i.isLt) (hinv.dims.2.symm ▸ j.isLt)]
+      rw [IntTable.entry, Cslib.rowEntry_tabulateTable_of_lt _ (hinv.dims.1.symm ▸ i.isLt)
+        (hinv.dims.2.symm ▸ j.isLt)]
       rw [← bareissMatrix_snoc_congr T.toMatrix (Fin.snoc S ⟨p, hp_m⟩) (Fin.snoc C ⟨c, hc⟩)
         S' C' hk_eq hS'_eq hC'_eq i j]
       by_cases hip : i.val = p
@@ -641,7 +600,8 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
             rw [List.mem_singleton.mp hz]
             rintro rfl
             exact hp_notMem hx⟩
-        col_strict := pairwise_lt_append hinv.col_strict hinv.col_lt
+        col_strict := List.pairwise_append.2 ⟨hinv.col_strict, List.pairwise_singleton _ _,
+          fun x hx z hz => by rw [List.mem_singleton.mp hz]; exact hinv.col_lt x hx⟩
         pivotDet_ne_zero := hp_nz
         pivotDet_eq := ?_
         table_eq := htable'
@@ -1120,12 +1080,12 @@ theorem rationalElim_spec (M : RatTable) :
           (⟨j.val, j.isLt⟩ : Fin M.numCols) := rfl
     rw [hrow, clearDenoms_toMatrix_apply M ⟨i.val, i.isLt⟩ ⟨j.val, j.isLt⟩]
     rfl
-  let S : Fin st.pivotRows.length → Fin M.numRows := rowSel st.pivotRows rfl hinv.row_lt
-  let C : Fin st.pivotRows.length → Fin M.numCols := colSel st.pivotCols hinv.len_eq hinv.col_dim
+  let S : Fin st.pivotRows.length → Fin M.numRows := finSel st.pivotRows rfl hinv.row_lt
+  let C : Fin st.pivotRows.length → Fin M.numCols := finSel st.pivotCols hinv.len_eq hinv.col_dim
   let S₀ : Fin st.pivotRows.length → Fin (clearDenoms M).numRows :=
-    rowSel st.pivotRows rfl hinv.row_lt
+    finSel st.pivotRows rfl hinv.row_lt
   let C₀ : Fin st.pivotRows.length → Fin (clearDenoms M).numCols :=
-    colSel st.pivotCols hinv.len_eq hinv.col_dim
+    finSel st.pivotCols hinv.len_eq hinv.col_dim
   have hΔ : Matrix.pivotDet M' S C ≠ 0 := by
     rw [map_pivotDet_dim (clearDenoms M).toMatrix M' S₀ C₀ S C rfl rfl hM'_apply
       (fun _ => rfl) (fun _ => rfl), ← hinv.pivotDet_eq]
@@ -1171,7 +1131,7 @@ theorem rationalElim_spec (M : RatTable) :
       have hpiv_row : res.rref.entry i.val j.val =
           Rat.divInt (st.table.entry (st.pivotRows[i.val]) j.val) st.pivotDet := by
         rw [RatTable.entry, hrow_i]
-        exact getD_map_range 0 st.table.numCols _ (by rw [hinv.dims.2]; exact j.isLt)
+        exact List.getD_map_range _ 0 (by rw [hinv.dims.2]; exact j.isLt)
       rw [hpiv_row, Rat.divInt_eq_div]
       have hsi : S ⟨i.val, hi⟩ = σ i := (hσ ⟨i.val, hi⟩).symm
       rw [← hsi]
@@ -1274,33 +1234,17 @@ theorem rationalElim_spec (M : RatTable) :
     rfl
   have hker_len : res.kernelBasis.length = M.numCols - res.rank := by
     simpa only [res, rationalElim, List.length_map] using hnonPiv_len
+  have hker_len_np : res.kernelBasis.length = res.nonPivotCols.length := by
+    simp only [res, rationalElim, List.length_map]
   let kerEquiv : Fin res.kernelBasis.length ≃ { j : Fin M.numCols // ∀ a, C a ≠ j } :=
-    { toFun := fun idx =>
-        have hmem : res.nonPivotCols[idx.val]'(by simpa [res, rationalElim] using idx.isLt) ∈
-            res.nonPivotCols := List.getElem_mem _
-        ⟨⟨res.nonPivotCols[idx.val]'(by simpa [res, rationalElim] using idx.isLt),
-            ((hnonPiv_iff _).mp hmem).1⟩,
-          fun a ha => ((hnonPiv_iff _).mp hmem).2 a (congrArg Fin.val ha)⟩
-      invFun := fun j =>
-        have hjmem : j.1.val ∈ res.nonPivotCols :=
-          (hnonPiv_iff j.1.val).mpr ⟨j.1.isLt, fun a ha => j.2 a (Fin.ext ha)⟩
-        ⟨res.nonPivotCols.idxOf j.1.val, by
-          simpa only [res, rationalElim, List.length_map] using List.idxOf_lt_length_of_mem hjmem⟩
-      left_inv := fun idx => by
-        apply Fin.ext
-        have hidx_len : idx.val < res.nonPivotCols.length := by
-          simpa only [res, rationalElim, List.length_map] using idx.isLt
-        have hmem : res.nonPivotCols[idx.val]'hidx_len ∈ res.nonPivotCols := List.getElem_mem _
-        have hlt := List.idxOf_lt_length_of_mem hmem
-        have hget := List.getElem_idxOf hlt
-        have hinj := List.nodup_iff_injective_getElem.mp hnonPiv_nodup
-        exact congrArg (Fin.val : Fin res.nonPivotCols.length → ℕ)
-          (@hinj ⟨res.nonPivotCols.idxOf _, hlt⟩ ⟨idx.val, hidx_len⟩ hget)
-      right_inv := fun j => by
-        apply Subtype.ext; apply Fin.ext
-        have hjmem : j.1.val ∈ res.nonPivotCols :=
-          (hnonPiv_iff j.1.val).mpr ⟨j.1.isLt, fun a ha => j.2 a (Fin.ext ha)⟩
-        exact List.getElem_idxOf (List.idxOf_lt_length_of_mem hjmem) }
+    ((finCongr hker_len_np).trans (List.Nodup.getEquiv res.nonPivotCols hnonPiv_nodup)).trans
+      { toFun := fun ⟨c, hc⟩ =>
+          ⟨⟨c, ((hnonPiv_iff c).mp hc).1⟩,
+            fun a ha => ((hnonPiv_iff c).mp hc).2 a (congrArg Fin.val ha)⟩
+        invFun := fun j =>
+          ⟨j.1.val, (hnonPiv_iff j.1.val).mpr ⟨j.1.isLt, fun a ha => j.2 a (Fin.ext ha)⟩⟩
+        left_inv := fun _ => rfl
+        right_inv := fun ⟨⟨_, _⟩, _⟩ => rfl }
   have hker_vec : ∀ idx : Fin res.kernelBasis.length,
       (fun j : Fin M.numCols => res.kernelBasis[idx.val].getD j.val 0) =
         Matrix.kernelBasisVec M' S C (kerEquiv idx).1 := by
@@ -1315,7 +1259,7 @@ theorem rationalElim_spec (M : RatTable) :
       rw [List.getElem_map]
     rw [hk_eq]
     simp only [buildKernelVec]
-    rw [getD_map_range 0 st.table.numCols _ (by rw [hinv.dims.2]; exact c.isLt)]
+    rw [List.getD_map_range _ 0 (by rw [hinv.dims.2]; exact c.isLt)]
     by_cases hc : ∃ a, C a = c
     · obtain ⟨a, rfl⟩ := hc
       have hca : st.pivotCols[a.val]'(hinv.len_eq ▸ a.isLt) = (C a).val := rfl
@@ -1336,7 +1280,7 @@ theorem rationalElim_spec (M : RatTable) :
         (S a) (kerEquiv idx).1 rfl rfl hM'_apply
         (fun _ => rfl) (fun _ => rfl) rfl rfl]
       dsimp only [S₀, C₀]
-      rw [← hinv.table_eq (rowSel st.pivotRows rfl hinv.row_lt a)
+      rw [← hinv.table_eq (finSel st.pivotRows rfl hinv.row_lt a)
           ⟨(kerEquiv idx).1.val, (kerEquiv idx).1.isLt⟩,
         hp_S, hΔ_rat, div_eq_mul_inv, mul_comm]
       rfl
@@ -1345,7 +1289,9 @@ theorem rationalElim_spec (M : RatTable) :
         refine (find?_zip_none_iff hinv.len_eq).mpr fun a ha => ?_
         exact hnc ⟨a.val, hinv.len_eq.symm ▸ a.isLt⟩ (Fin.ext ha)
       rw [hnone, Matrix.kernelBasisVec_nonPivot S C _ c hnc]
-      simp only [Fin.ext_iff, kerEquiv, Equiv.coe_fn_mk]
+      have hker_val : (kerEquiv idx).1.val = res.nonPivotCols[idx.val]'hidx_len :=
+        List.get_eq_getElem
+      simp only [Fin.ext_iff, hker_val]
   have hker_li : LinearIndependent ℚ (fun idx : Fin res.kernelBasis.length =>
       (fun j : Fin M.numCols => res.kernelBasis[idx.val].getD j.val 0)) := by
     have hli := (Matrix.linearIndependent_kernelBasisVec M' S C).comp kerEquiv kerEquiv.injective
@@ -1381,14 +1327,14 @@ theorem ratRref_isReducedRowEchelon (M : RatTable) :
 theorem ratRank_eq (M : RatTable) : ratRank M = M.toMatrix.rank :=
   (rationalElim_spec M).2.2.2.2.1
 
-private theorem augmentRatTable_toMatrix_apply (A : RatTable) (b : List ℚ)
+theorem augmentRatTable_toMatrix_apply (A : RatTable) (b : List ℚ)
     (i : Fin (augmentRatTable A b).numRows) (j : Fin (augmentRatTable A b).numCols) :
     (augmentRatTable A b).toMatrix i j =
       if hj : j.val < A.numCols then A.toMatrix ⟨i.val, i.isLt⟩ ⟨j.val, hj⟩
       else b.getD i.val 0 := by
   rw [RatTable.toMatrix_apply, RatTable.entry]
   dsimp only [augmentRatTable]
-  rw [getD_map_range [] A.numRows _ i.isLt]
+  rw [List.getD_map_range (n := A.numRows) _ [] i.isLt]
   have hnorm_len : (normalizedRatRow A i.val).length = A.numCols := by
     simp only [normalizedRatRow, List.length_map, List.length_range]
   by_cases hj : j.val < A.numCols
@@ -1468,16 +1414,16 @@ theorem ratSolve_spec (sys : LinearSystemInput) :
         omega
       simp only [hj, ↓reduceDIte]
       rw [hjeq, Fin.snoc_last]
-  let S : Fin st.pivotRows.length → Fin A.numRows := rowSel st.pivotRows rfl hinv.row_lt
+  let S : Fin st.pivotRows.length → Fin A.numRows := finSel st.pivotRows rfl hinv.row_lt
   let Caug : Fin st.pivotRows.length → Fin (A.numCols + 1) :=
-    colSel st.pivotCols hinv.len_eq hinv.col_dim
+    finSel st.pivotCols hinv.len_eq hinv.col_dim
   have hC_A_lt : ∀ c ∈ st.pivotCols, c < A.numCols := hinv.col_lt
   let C_A : Fin st.pivotRows.length → Fin A.numCols :=
-    colSel st.pivotCols hinv.len_eq hC_A_lt
+    finSel st.pivotCols hinv.len_eq hC_A_lt
   let S₀ : Fin st.pivotRows.length → Fin (clearDenoms augRat).numRows :=
-    rowSel st.pivotRows rfl hinv.row_lt
+    finSel st.pivotRows rfl hinv.row_lt
   let Caug₀ : Fin st.pivotRows.length → Fin (clearDenoms augRat).numCols :=
-    colSel st.pivotCols hinv.len_eq hinv.col_dim
+    finSel st.pivotCols hinv.len_eq hinv.col_dim
   have hCaug_eq : Caug = Fin.castSucc ∘ C_A := by
     ext a
     rfl
@@ -1624,7 +1570,7 @@ theorem ratSolve_spec (sys : LinearSystemInput) :
           | some (p, _) => Rat.divInt (st.table.entry p A.numCols) st.pivotDet
           | none => 0).getD j.val 0) = Matrix.solveVec A' S C_A b' := by
       ext c
-      rw [getD_map_range 0 A.numCols _ c.isLt]
+      rw [List.getD_map_range _ 0 c.isLt]
       exact congrFun hsol_vec c
     rw [hvec, ← hsolve_iff]
     exact haug_res.2.mpr (hcons_iff.mp hcons)
@@ -1703,7 +1649,7 @@ theorem bareissInv_entry_bound {T : IntTable} {c : ℕ} {st : BareissState}
       |st.pivotDet| ≤ (stageEntryBound T.numRows T.numCols B : ℤ) := by
   have hk_le : st.pivotRows.length ≤ min T.numRows T.numCols :=
     bareissInv_pivotRows_length_le hinv
-  have hS_inj : Function.Injective (rowSel st.pivotRows rfl hinv.row_lt) := by
+  have hS_inj : Function.Injective (finSel st.pivotRows rfl hinv.row_lt) := by
     intro a₁ a₂ ha
     have hinj := List.nodup_iff_injective_getElem.mp hinv.row_nodup
     exact hinj (congrArg Fin.val ha)
@@ -1715,11 +1661,11 @@ theorem bareissInv_entry_bound {T : IntTable} {c : ℕ} {st : BareissState}
   · intro i j
     rw [hinv.table_eq i j]
     have hle := Matrix.abs_bareissMatrix_le T.toMatrix hB hS_inj
-      (colSel st.pivotCols hinv.len_eq hinv.col_dim) i j
+      (finSel st.pivotCols hinv.len_eq hinv.col_dim) i j
     exact hle.trans (Int.ofNat_le.mpr hmono_k)
   · rw [hinv.pivotDet_eq]
-    have hle := Matrix.abs_pivotDet_le T.toMatrix hB (rowSel st.pivotRows rfl hinv.row_lt)
-      (colSel st.pivotCols hinv.len_eq hinv.col_dim)
+    have hle := Matrix.abs_pivotDet_le T.toMatrix hB (finSel st.pivotRows rfl hinv.row_lt)
+      (finSel st.pivotCols hinv.len_eq hinv.col_dim)
     have hmono : st.pivotRows.length.factorial * B ^ st.pivotRows.length ≤
         stageEntryBound T.numRows T.numCols B := by
       refine Nat.mul_le_mul (Nat.factorial_le (Nat.le_trans hk_le (Nat.le_succ _))) ?_

@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
@@ -24,6 +25,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Computability.PolyTime.Int.ExactDiv
+import CslibFrontier.Computability.PolyTime.Int.Table
 import Mathlib.Data.List.GetD
 
 /-!
@@ -258,7 +260,8 @@ private theorem length_encBareissState_le_of_inv {T : IntTable} {c : ℕ} {st : 
     obtain ⟨ci, hci, rfl⟩ := List.getElem_of_mem hz
     have hci' : ci < T.numCols := hrow_l ▸ hci
     have hent : st.table.entry ri ci = st.table.rows[ri][ci] := by
-      simp only [IntTable.entry, List.getD_eq_getElem _ _ hri, List.getD_eq_getElem _ _ hci]
+      simp only [IntTable.entry, Cslib.rowEntry, List.getD_eq_getElem _ _ hri,
+        List.getD_eq_getElem _ _ hci]
     exact (length_encIntBin_of_natAbs_le (hent ▸ hbd.1 ⟨ri, hri'⟩ ⟨ci, hci'⟩)).trans
       (Nat.add_le_add_right hS_size 1)
   have hrows_enc : (encList (encList encIntBin) st.table.rows).length ≤
@@ -301,41 +304,6 @@ attribute [local irreducible] encRat encIntBin encNat IntTable.enc RatTable.enc
   BareissState.enc RationalElimResult.enc LinearSystemInput.enc LinearSolveResult.enc
 
 @[local fun_prop]
-private theorem optionSome_poly {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {f : γ → α} (hf : ComputableInPolyTime f encIn encA) :
-    ComputableInPolyTime (fun x => some (f x)) encIn (encOption encA) :=
-  .of_tidy ((ComputableTidilyInPolyTime.optionSome encA).comp hf.tidy)
-
-private theorem optionElim_poly {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    {encC : γ ↪ List Bool} {value : α → Option β} {fallback : α → γ} {body : α → β → γ}
-    (hvalue : ComputableInPolyTime value encA (encOption encB))
-    (hfallback : ComputableInPolyTime fallback encA encC)
-    (hbody : ComputableInPolyTime (fun p : α × β => body p.1 p.2) (encPair encA encB) encC) :
-    ComputableInPolyTime (fun a => (value a).elim (fallback a) (body a)) encA encC :=
-  .of_tidy (ComputableTidilyInPolyTime.optionElimWithInput hvalue.tidy hfallback.tidy hbody.tidy)
-
-@[local fun_prop]
-private theorem contains_unary_poly {α : Type} {encIn : α ↪ List Bool}
-    {xs : α → List ℕ} {x : α → ℕ}
-    (hxs : ComputableInPolyTime xs encIn (encList encUnary))
-    (hx : ComputableInPolyTime x encIn encUnary) :
-    ComputableInPolyTime (fun a => (xs a).contains (x a)) encIn encBool := by
-  have hbase : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.contains p.2)
-      (encPair (encList encUnary) encUnary) encBool := by
-    have heq : (fun p : List ℕ × ℕ => p.1.contains p.2) =
-        (fun p : List ℕ × ℕ => p.1.any fun y => y == p.2) := by
-      funext p
-      rw [Bool.eq_iff_iff]
-      simp only [List.contains_eq_mem, List.any_eq_true, beq_iff_eq, decide_eq_true_eq]
-      exact ⟨fun h => ⟨p.2, h, rfl⟩, fun ⟨_, hy, he⟩ => he ▸ hy⟩
-    rw [heq]
-    exact anyWithInput (fst _ _) (.of_tidy (ComputableTidilyInPolyTime.beq
-      (ComputableTidilyInPolyTime.snd _ _)
-      ((ComputableTidilyInPolyTime.snd (encList encUnary) encUnary).comp
-        (ComputableTidilyInPolyTime.fst _ _))))
-  exact hbase.comp (hxs.prod hx)
-
-@[local fun_prop]
 private theorem ratTable_entry_poly {α : Type} {encIn : α ↪ List Bool}
     {M : α → RatTable} {i j : α → ℕ}
     (hM : ComputableInPolyTime M encIn RatTable.enc)
@@ -347,19 +315,6 @@ private theorem ratTable_entry_poly {α : Type} {encIn : α ↪ List Bool}
     unfold RatTable.entry
     fun_prop
   exact hbase.comp ((hM.prod hi).prod hj)
-
-@[local fun_prop]
-private theorem intTable_entry_poly {α : Type} {encIn : α ↪ List Bool}
-    {T : α → IntTable} {i j : α → ℕ}
-    (hT : ComputableInPolyTime T encIn IntTable.enc)
-    (hi : ComputableInPolyTime i encIn encUnary)
-    (hj : ComputableInPolyTime j encIn encUnary) :
-    ComputableInPolyTime (fun a => (T a).entry (i a) (j a)) encIn encIntBin := by
-  have hbase : ComputableInPolyTime (fun p : (IntTable × ℕ) × ℕ => p.1.1.entry p.1.2 p.2)
-      (encPair (encPair IntTable.enc encUnary) encUnary) encIntBin := by
-    unfold IntTable.entry
-    fun_prop
-  exact hbase.comp ((hT.prod hi).prod hj)
 
 @[local fun_prop]
 private theorem normalizedRatRow_poly {α : Type} {encIn : α ↪ List Bool}
@@ -452,13 +407,14 @@ private theorem clearDenoms_poly {α : Type} {encIn : α ↪ List Bool} {M : α 
 private theorem findPivotRow_base :
     ComputableInPolyTime (fun p : BareissState × ℕ => findPivotRow p.1 p.2)
       (encPair BareissState.enc encUnary) (encOption encUnary) := by
-  unfold findPivotRow
+  unfold findPivotRow IntTable.entry
   have hr : ComputableInPolyTime (fun p : BareissState × ℕ => List.range p.1.table.numRows)
       (encPair BareissState.enc encUnary) (encList encUnary) :=
     unary_range' (by fun_prop)
   have ht : ComputableInPolyTime
       (fun p : (BareissState × ℕ) × ℕ =>
-        !p.1.1.pivotRows.contains p.2 && decide (p.1.1.table.entry p.2 p.1.2 ≠ 0))
+        !p.1.1.pivotRows.contains p.2 &&
+          decide (Cslib.rowEntry p.1.1.table.rows p.2 p.1.2 ≠ 0))
       (encPair (encPair BareissState.enc encUnary) encUnary) encBool := by
     fun_prop
   exact .of_tidy (ComputableTidilyInPolyTime.findWithInput hr.tidy ht.tidy)
@@ -476,64 +432,24 @@ private theorem findPivotRow_poly {α : Type} {encIn : α ↪ List Bool}
 private theorem bareissStep_base :
     ComputableInPolyTime (fun p : BareissState × ℕ => bareissStep p.1 p.2)
       (encPair BareissState.enc encUnary) BareissState.enc := by
-  let rowsOf : (BareissState × ℕ) × ℕ → List (List ℤ) := fun q =>
-    (List.range q.1.1.table.numRows).map fun i =>
-      (List.range q.1.1.table.numCols).map fun j =>
-        if i = q.2 then q.1.1.table.entry q.2 j
-        else (q.1.1.table.entry q.2 q.1.2 * q.1.1.table.entry i j -
-          q.1.1.table.entry i q.1.2 * q.1.1.table.entry q.2 j) / q.1.1.pivotDet
   have heq : (fun p : BareissState × ℕ => bareissStep p.1 p.2) = fun p =>
       (findPivotRow p.1 p.2).elim p.1 fun r =>
-        BareissState.mk (IntTable.mk p.1.table.numRows p.1.table.numCols (rowsOf (p, r)))
-          (p.1.table.entry r p.2) (p.1.pivotRows ++ [r]) (p.1.pivotCols ++ [p.2]) := by
+        BareissState.mk
+          (IntTable.mk p.1.table.numRows p.1.table.numCols
+            (Cslib.tabulateTable p.1.table.numRows p.1.table.numCols fun i j =>
+              if i = r then Cslib.rowEntry p.1.table.rows r j
+              else
+                (Cslib.rowEntry p.1.table.rows r p.2 * Cslib.rowEntry p.1.table.rows i j -
+                  Cslib.rowEntry p.1.table.rows i p.2 * Cslib.rowEntry p.1.table.rows r j) /
+                    p.1.pivotDet))
+          (Cslib.rowEntry p.1.table.rows r p.2) (p.1.pivotRows ++ [r])
+          (p.1.pivotCols ++ [p.2]) := by
     funext p
-    unfold bareissStep
+    unfold bareissStep IntTable.entry
     cases findPivotRow p.1 p.2 <;> rfl
   rw [heq]
-  have hrows : ComputableInPolyTime rowsOf
-      (encPair (encPair BareissState.enc encUnary) encUnary)
-      (encList (encList encIntBin)) := by
-    have hinner : ComputableInPolyTime
-        (fun p : ((BareissState × ℕ) × ℕ) × ℕ =>
-          (List.range p.1.1.1.table.numCols).map fun j =>
-            if p.2 = p.1.2 then p.1.1.1.table.entry p.1.2 j
-            else (p.1.1.1.table.entry p.1.2 p.1.1.2 * p.1.1.1.table.entry p.2 j -
-              p.1.1.1.table.entry p.2 p.1.1.2 * p.1.1.1.table.entry p.1.2 j) /
-                p.1.1.1.pivotDet)
-        (encPair (encPair (encPair BareissState.enc encUnary) encUnary) encUnary)
-        (encList encIntBin) := by
-      have hcol : ComputableInPolyTime
-          (fun p : ((BareissState × ℕ) × ℕ) × ℕ => List.range p.1.1.1.table.numCols)
-          (encPair (encPair (encPair BareissState.enc encUnary) encUnary) encUnary)
-          (encList encUnary) := unary_range' (by fun_prop)
-      have hcell : ComputableInPolyTime
-          (fun q : (((BareissState × ℕ) × ℕ) × ℕ) × ℕ =>
-            if q.1.2 = q.1.1.2 then q.1.1.1.1.table.entry q.1.1.2 q.2
-            else (q.1.1.1.1.table.entry q.1.1.2 q.1.1.1.2 *
-                q.1.1.1.1.table.entry q.1.2 q.2 -
-              q.1.1.1.1.table.entry q.1.2 q.1.1.1.2 *
-                q.1.1.1.1.table.entry q.1.1.2 q.2) /
-                q.1.1.1.1.pivotDet)
-          (encPair (encPair (encPair (encPair BareissState.enc encUnary) encUnary) encUnary)
-            encUnary) encIntBin := by fun_prop
-      exact .of_tidy (ComputableTidilyInPolyTime.mapWithInput hcol.tidy hcell.tidy)
-    have hrowRange : ComputableInPolyTime
-        (fun q : (BareissState × ℕ) × ℕ => List.range q.1.1.table.numRows)
-        (encPair (encPair BareissState.enc encUnary) encUnary) (encList encUnary) :=
-      unary_range' (by fun_prop)
-    exact .of_tidy (ComputableTidilyInPolyTime.mapWithInput hrowRange.tidy hinner.tidy)
-  have hf : ComputableInPolyTime (fun p : BareissState × ℕ => findPivotRow p.1 p.2)
-      (encPair BareissState.enc encUnary) (encOption encUnary) :=
-    findPivotRow_base
-  have hbody : ComputableInPolyTime
-      (fun q : (BareissState × ℕ) × ℕ =>
-        BareissState.mk
-          (IntTable.mk q.1.1.table.numRows q.1.1.table.numCols (rowsOf q))
-          (q.1.1.table.entry q.2 q.1.2) (q.1.1.pivotRows ++ [q.2])
-          (q.1.1.pivotCols ++ [q.1.2]))
-      (encPair (encPair BareissState.enc encUnary) encUnary) BareissState.enc := by fun_prop
-  exact .of_tidy (ComputableTidilyInPolyTime.optionElimWithInput hf.tidy
-    (fst BareissState.enc encUnary).tidy hbody.tidy)
+  exact ComputableInPolyTime.optionElimWithInput findPivotRow_base
+    (fst BareissState.enc encUnary) (by fun_prop)
 
 private theorem bareissStep_poly {α : Type} {encIn : α ↪ List Bool}
     {st : α → BareissState} {c : α → ℕ}
@@ -710,27 +626,10 @@ private theorem bareissElimCols_aug_poly :
     hrows hcols hsizeB fun sys i j => ?_
   refine clearDenoms_abs_le (augmentRatTable sys.matrix sys.rhs) (fun i' j' => ?_) i j
   have hb := linearSystemInput_encoding_bounds sys
-  have hrow_i : (augmentRatTable sys.matrix sys.rhs).rows.getD i'.val [] =
-      normalizedRatRow sys.matrix i'.val ++ [sys.rhs.getD i'.val 0] := by
-    have hi_lt : i'.val < sys.matrix.numRows := i'.isLt
-    simp only [augmentRatTable, List.getD_eq_getElem?_getD, List.getElem?_map,
-      List.getElem?_range hi_lt, Option.map_some, Option.getD_some]
-  have hnorm_len : (normalizedRatRow sys.matrix i'.val).length = sys.matrix.numCols := by
-    simp only [normalizedRatRow, List.length_map, List.length_range]
-  simp only [RatTable.toMatrix_apply, RatTable.entry]
-  rw [hrow_i]
-  by_cases hj : j'.val < sys.matrix.numCols
-  · have hlt : j'.val < (normalizedRatRow sys.matrix i'.val).length := hnorm_len.symm ▸ hj
-    rw [List.getD_eq_getElem?_getD, List.getElem?_append_left hlt]
-    simp only [normalizedRatRow, List.getElem?_map, List.getElem?_range hj,
-      Option.map_some, Option.getD_some]
-    exact hb.2.2.1 ⟨i'.val, i'.isLt⟩ ⟨j'.val, hj⟩
-  · have hjlt : j'.val < sys.matrix.numCols + 1 := j'.isLt
-    have hle : (normalizedRatRow sys.matrix i'.val).length ≤ j'.val := by omega
-    rw [List.getD_eq_getElem?_getD, List.getElem?_append_right hle]
-    have hsub : j'.val - (normalizedRatRow sys.matrix i'.val).length = 0 := by omega
-    simp only [hsub, List.getElem?_cons_zero, Option.getD_some]
-    exact hb.2.2.2 ⟨i'.val, i'.isLt⟩
+  rw [augmentRatTable_toMatrix_apply]
+  split_ifs with hj
+  · exact hb.2.2.1 ⟨i'.val, i'.isLt⟩ ⟨j'.val, hj⟩
+  · exact hb.2.2.2 ⟨i'.val, i'.isLt⟩
 
 @[local fun_prop]
 private theorem scaledIntRow_poly {α : Type} {encIn : α ↪ List Bool}
@@ -741,7 +640,7 @@ private theorem scaledIntRow_poly {α : Type} {encIn : α ↪ List Bool}
     ComputableInPolyTime (fun a => scaledIntRow (T a) (Δ a) (r a)) encIn (encList encRat) := by
   have hbase : ComputableInPolyTime (fun p : (IntTable × ℤ) × ℕ => scaledIntRow p.1.1 p.1.2 p.2)
       (encPair (encPair IntTable.enc encIntBin) encUnary) (encList encRat) := by
-    unfold scaledIntRow
+    unfold scaledIntRow IntTable.entry
     exact mapWithInput (unary_range' (by fun_prop)) (by fun_prop)
   exact hbase.comp ((hT.prod hΔ).prod hr)
 
@@ -783,16 +682,17 @@ private theorem buildKernelVec_poly {α : Type} {encIn : α ↪ List Bool}
         (List.range p.1.table.numCols).map fun c =>
           ((p.1.pivotRows.zip p.1.pivotCols).find? fun pc => pc.2 == c).elim
             (if c = p.2 then 1 else 0)
-            (fun pc => Rat.divInt (-p.1.table.entry pc.1 p.2) p.1.pivotDet) := by
+            (fun pc => Rat.divInt (-Cslib.rowEntry p.1.table.rows pc.1 p.2) p.1.pivotDet) := by
       funext p
-      unfold buildKernelVec
+      unfold buildKernelVec IntTable.entry
       dsimp only
       refine congrArg (fun f => List.map f (List.range p.1.table.numCols)) ?_
       funext c
       cases (p.1.pivotRows.zip p.1.pivotCols).find? fun pc => pc.2 == c <;> rfl
     rw [heq]
     refine mapWithInput (unary_range' (by fun_prop)) ?_
-    exact optionElim_poly (findWithInput (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop)
+    exact ComputableInPolyTime.optionElimWithInput
+      (findWithInput (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop)
   exact hbase.comp (hst.prod hj)
 
 /-- `rationalElim` is computable in polynomial time on multi-tape Turing machines. -/
@@ -857,24 +757,24 @@ theorem ratSolve_computableInPolyTime :
     bareissElimCols (clearDenoms (augmentRatTable sys.matrix sys.rhs)) sys.matrix.numCols
   let consOf : LinearSystemInput → Bool := fun sys =>
     (List.range sys.matrix.numRows).all fun r =>
-      (stOf sys).pivotRows.contains r || decide ((stOf sys).table.entry r sys.matrix.numCols = 0)
+      (stOf sys).pivotRows.contains r ||
+        decide (Cslib.rowEntry (stOf sys).table.rows r sys.matrix.numCols = 0)
   let solOf : LinearSystemInput → List ℚ := fun sys =>
     (List.range sys.matrix.numCols).map fun c =>
       (((stOf sys).pivotRows.zip (stOf sys).pivotCols).find? fun pc => pc.2 == c).elim 0
-        fun pc => Rat.divInt ((stOf sys).table.entry pc.1 sys.matrix.numCols) (stOf sys).pivotDet
+        fun pc =>
+          Rat.divInt (Cslib.rowEntry (stOf sys).table.rows pc.1 sys.matrix.numCols)
+            (stOf sys).pivotDet
   have heq : ratSolve = fun sys =>
       if consOf sys = true then
         LinearSolveResult.mk (some (solOf sys)) (stOf sys).pivotRows (stOf sys).pivotCols
       else
         LinearSolveResult.mk none (stOf sys).pivotRows (stOf sys).pivotCols := by
     funext sys
-    unfold ratSolve
+    unfold ratSolve IntTable.entry
     by_cases hcons : consOf sys = true
-    · have hc : ((List.range sys.matrix.numRows).all fun r =>
-          (bareissElimCols (clearDenoms (augmentRatTable sys.matrix sys.rhs))
-            sys.matrix.numCols).pivotRows.contains r ||
-            decide ((bareissElimCols (clearDenoms (augmentRatTable sys.matrix sys.rhs))
-              sys.matrix.numCols).table.entry r sys.matrix.numCols = 0)) = true := hcons
+    · have hc := hcons
+      dsimp only [consOf, stOf] at hc
       simp only [hcons, hc, ↓reduceIte]
       dsimp only [solOf, stOf]
       refine congrArg (fun s => LinearSolveResult.mk (some s) _ _) ?_
@@ -885,12 +785,8 @@ theorem ratSolve_computableInPolyTime :
           (bareissElimCols (clearDenoms (augmentRatTable sys.matrix sys.rhs))
             sys.matrix.numCols).pivotCols).find?
           (fun pc => pc.2 == c) <;> rfl
-    · have hc : ((List.range sys.matrix.numRows).all fun r =>
-          (bareissElimCols (clearDenoms (augmentRatTable sys.matrix sys.rhs))
-            sys.matrix.numCols).pivotRows.contains r ||
-            decide ((bareissElimCols (clearDenoms (augmentRatTable sys.matrix sys.rhs))
-              sys.matrix.numCols).table.entry r sys.matrix.numCols = 0)) = false :=
-        Bool.eq_false_iff.mpr hcons
+    · have hc := Bool.eq_false_iff.mpr hcons
+      dsimp only [consOf, stOf] at hc
       simp only [hcons, hc, Bool.false_eq_true, ↓reduceIte]
       rfl
   rw [heq]
@@ -900,7 +796,8 @@ theorem ratSolve_computableInPolyTime :
     allWithInput (unary_range' (by fun_prop)) (by fun_prop)
   have hsol : ComputableInPolyTime solOf LinearSystemInput.enc (encList encRat) :=
     mapWithInput (unary_range' (by fun_prop))
-      (optionElim_poly (findWithInput (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop))
+      (ComputableInPolyTime.optionElimWithInput
+        (findWithInput (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop))
   have hyes : ComputableInPolyTime
       (fun sys => LinearSolveResult.mk (some (solOf sys))
         (stOf sys).pivotRows (stOf sys).pivotCols)
