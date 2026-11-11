@@ -87,60 +87,41 @@ noncomputable def idealGame : PMF Bool := do
     (Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w)))
   guess choice.2 (decomposeMatrix w U)
 
-private noncomputable def maskedMatrices (n m w : ℕ) :
-    PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) ×
-      Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w))) := do
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)))
-  let R ← PMF.uniformOfFintype (Matrix (Fin (n + 1) × Fin w) (Fin m) Bool)
-  return (A, bitMatrix (ZMod (2 ^ w)) R * A)
-
-private noncomputable def independentMatrices (n m w : ℕ) :
-    PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) ×
-      Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w))) := do
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)))
-  let U ← PMF.uniformOfFintype
-    (Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w)))
-  return (A, U)
-
-private theorem dist_maskedMatrices_le (n m w : ℕ) :
-    dist (maskedMatrices n m w) (independentMatrices n m w) ≤
-      ((n + 1) * w : ℕ) * Real.sqrt ((2 : ℝ) ^ (w * (n + 1)) / (2 : ℝ) ^ m) / 2 := by
-  simpa [maskedMatrices, independentMatrices, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.map, bitMatrix, pow_mul, Function.comp_def] using
-    BitString.SubsetSum.dist_mul_le (q := 2 ^ w) (m := m) (d := n + 1)
-      (Rows := Fin (n + 1) × Fin w)
-
 private noncomputable def shiftedGuess (bit : Bool)
-    (pair : Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) ×
-      Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w))) : PMF Bool := do
-  let choice ← choose pair.1
+    (A : Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)))
+    (M : Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w))) : PMF Bool := do
+  let choice ← choose A
   let μ := if bit then choice.1.2 else choice.1.1
-  guess choice.2 (decomposeMatrix w ((μ.toNat : ZMod (2 ^ w)) • gadgetMatrix n w + pair.2))
-
-private theorem maskedMatrices_bind_shiftedGuess (bit : Bool) :
-    (maskedMatrices n m w).bind (shiftedGuess choose guess bit) =
-      uniformPublicGame choose guess bit := by
-  simp only [pmf_norm, maskedMatrices, shiftedGuess, uniformPublicGame,
-    encryptWithCoins_eq_decomposeMatrix]
-  pmf_swap
-
-private theorem independentMatrices_bind_shiftedGuess (bit : Bool) :
-    (independentMatrices n m w).bind (shiftedGuess choose guess bit) = idealGame choose guess := by
-  simp only [pmf_norm, independentMatrices, shiftedGuess, idealGame]
-  pmf_swap with A choice
-  have h := congrArg (fun law => law.bind (guess choice.2))
-    (uniform_decomposeMatrix_add
-      (((if bit then choice.1.2 else choice.1.1).toNat : ZMod (2 ^ w)) • gadgetMatrix n w))
-  simpa only [PMF.bind_map, Function.comp_def] using h
+  guess choice.2 (decomposeMatrix w ((μ.toNat : ZMod (2 ^ w)) • gadgetMatrix n w + M))
 
 /-- The entire adaptive experiment is close to one common ideal game. No efficiency or finite
 state assumption is imposed on either adversarial stage. -/
 theorem dist_uniformPublicGame_ideal_le (bit : Bool) :
     dist (uniformPublicGame choose guess bit) (idealGame choose guess) ≤
       ((n + 1) * w : ℕ) * Real.sqrt ((2 : ℝ) ^ (w * (n + 1)) / (2 : ℝ) ^ m) / 2 := by
-  rw [← maskedMatrices_bind_shiftedGuess choose guess bit,
-    ← independentMatrices_bind_shiftedGuess choose guess bit]
-  exact (dist_bind_le _ _ _).trans (dist_maskedMatrices_le n m w)
+  have hreal : uniformPublicGame choose guess bit =
+      (PMF.uniformOfFintype (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)))).bind fun A =>
+        (PMF.uniformOfFintype (Matrix (Fin (n + 1) × Fin w) (Fin m) Bool)).bind fun R =>
+          shiftedGuess choose guess bit A
+            (R.map (fun bit => (bit.toNat : ZMod (2 ^ w))) * A) := by
+    simp only [pmf_norm, uniformPublicGame, shiftedGuess, encryptWithCoins_eq_decomposeMatrix]
+    pmf_swap
+  have hideal : idealGame choose guess =
+      (PMF.uniformOfFintype (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)))).bind fun A =>
+        (PMF.uniformOfFintype (Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w)))).bind
+          fun U => shiftedGuess choose guess bit A U := by
+    simp only [pmf_norm, idealGame, shiftedGuess]
+    congr 1 with A : 1
+    conv_rhs => rw [PMF.bind_comm]
+    congr 1 with choice : 1
+    have h := congrArg (fun law => law.bind (guess choice.2))
+      (uniform_decomposeMatrix_add
+        (((if bit then choice.1.2 else choice.1.1).toNat : ZMod (2 ^ w)) • gadgetMatrix n w))
+    simpa only [PMF.bind_map, Function.comp_def] using h.symm
+  rw [hreal, hideal]
+  simpa only [Fintype.card_prod, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, pow_mul] using
+    BitString.SubsetSum.dist_bind_mul_le (q := 2 ^ w) (m := m) (d := n + 1)
+      (Rows := Fin (n + 1) × Fin w) (shiftedGuess choose guess bit)
 
 /-- Under a uniform public matrix, arbitrary adaptive message selection and saved state give
 acceptance probabilities differing by at most `N * sqrt(2^(w * (n + 1)) / 2^m)`.
