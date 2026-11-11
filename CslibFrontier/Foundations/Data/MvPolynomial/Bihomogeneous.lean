@@ -11,7 +11,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.MixedOperator
 public import Mathlib.Algebra.Order.Antidiag.FinsuppEquiv
 public import Mathlib.RingTheory.MvPolynomial.EulerIdentity
 public import Mathlib.LinearAlgebra.Dimension.Constructions
-import Mathlib.RingTheory.MvPolynomial.Basic
+public import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
 # Bihomogeneous polynomials
@@ -59,29 +59,13 @@ section Slice
 
 variable {M : Type*} [AddCommMonoid M] (w : σ → M) (m : M)
 
-/-- A weighted homogeneous slice is spanned by the monomials of that weight. -/
-theorem weightedHomogeneousSubmodule_eq_span :
-    weightedHomogeneousSubmodule R w m =
-      Submodule.span R (Set.range fun d : {d : σ →₀ ℕ // weight w d = m} => monomial d.1 1) := by
-  refine le_antisymm (fun p hp => ?_) (Submodule.span_le.2 ?_)
-  · rw [p.as_sum]
-    refine Submodule.sum_mem _ fun d hd => ?_
-    rw [← mul_one (p.coeff d), ← smul_eq_mul, ← smul_monomial]
-    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨⟨d, hp (mem_support_iff.1 hd)⟩, rfl⟩)
-  · rintro _ ⟨d, rfl⟩
-    exact isWeightedHomogeneous_monomial w d.1 1 d.2
-
-/-- A weighted homogeneous slice has as many dimensions as there are monomials of that weight. -/
-theorem finrank_weightedHomogeneousSubmodule [StrongRankCondition R]
-    [Finite {d : σ →₀ ℕ // weight w d = m}] :
+/-- A weighted homogeneous slice has as many dimensions as there are monomials of that weight:
+it is the span of these monomials, with Mathlib's basis `basisRestrictSupport`. -/
+theorem finrank_weightedHomogeneousSubmodule [StrongRankCondition R] :
     Module.finrank R (weightedHomogeneousSubmodule R w m) =
       Nat.card {d : σ →₀ ℕ // weight w d = m} := by
-  have : Fintype {d : σ →₀ ℕ // weight w d = m} := Fintype.ofFinite _
-  rw [weightedHomogeneousSubmodule_eq_span, Nat.card_eq_fintype_card]
-  refine finrank_span_eq_card ?_
-  have h := (basisMonomials σ R).linearIndependent.comp _
-    (Subtype.val_injective (p := fun d : σ →₀ ℕ => weight w d = m))
-  rwa [coe_basisMonomials] at h
+  rw [weightedHomogeneousSubmodule_eq_finsupp_supported]
+  exact Module.finrank_eq_nat_card_basis (basisRestrictSupport R {d | weight w d = m})
 
 end Slice
 
@@ -183,8 +167,12 @@ theorem finrank_bihomogeneous [StrongRankCondition R] [Fintype σ] (a b : ℕ) :
 /-- In finitely many variables the slice of bidegree `(a, b)` is finite-dimensional. -/
 instance finite_bihomogeneous [Finite σ] (a b : ℕ) :
     Module.Finite R (weightedHomogeneousSubmodule R (bidegWeight s) (a, b)) := by
-  rw [weightedHomogeneousSubmodule_eq_span]
-  exact Module.Finite.span_of_finite R (Set.finite_range _)
+  classical
+  have := Fintype.ofFinite σ
+  have : Finite {d : σ →₀ ℕ // weight (bidegWeight s) d = (a, b)} :=
+    Finite.of_equiv _ (bidegreeEquiv s a b).symm
+  rw [weightedHomogeneousSubmodule_eq_finsupp_supported]
+  exact Module.Finite.of_basis (basisRestrictSupport R {d | weight (bidegWeight s) d = (a, b)})
 
 variable {s}
 

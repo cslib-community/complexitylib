@@ -148,12 +148,16 @@ private theorem weight_of_not_isV (hp : p.Good) (W : Quad p.n) {s : Fin p.n} (hs
   have hb : (0 : ℝ) < p.b := by exact_mod_cast hp.b_pos
   have hu : (0 : ℝ) < p.u := by exact_mod_cast hp.u_pos
   by_cases hpq : W.1.1.edge s = W.1.2.edge s
-  · simp [Quad.weight, Quad.type, Quad.mate, Quad.shift, hs, hpq, Params.β]
+  · simp only [hs, Bool.false_eq_true, ↓reduceIte, Nat.cast_one, Quad.shift, hpq, iff_false,
+      not_true_eq_false, Quad.mate, Quad.weight, Quad.type, ne_eq, decide_false, Params.β, mul_ite,
+      mul_one, mul_zero]
     split_ifs
     · field_simp
       ring
     · ring
-  · simp [Quad.weight, Quad.type, Quad.mate, Quad.shift, hs, hpq, Params.β]
+  · simp only [hs, Bool.false_eq_true, ↓reduceIte, Nat.cast_one, Quad.shift, hpq,
+      CharP.cast_eq_zero, add_zero, Quad.mate, Quad.weight, Quad.type, ne_eq, not_false_eq_true,
+      decide_true, Params.β]
     field_simp
     ring
 

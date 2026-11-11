@@ -73,8 +73,12 @@ theorem rank_sliceMatrix [Fintype {d : σ →₀ ℕ // weight w d = m}]
     by_cases hd : weight w d = m'
     · exact congrFun (congrArg Subtype.val h) ⟨d, hd⟩
     · exact (hT p hp).coeff_eq_zero d hd
-  rw [Matrix.rank_eq_finrank_span_cols, hcols, ← Submodule.map_span,
-    ← weightedHomogeneousSubmodule_eq_span, Submodule.map_comp]
+  have hspan : weightedHomogeneousSubmodule K w m = Submodule.span K
+      (Set.range fun D : {d : σ →₀ ℕ // weight w d = m} => monomial D.1 (1 : K)) := by
+    rw [weightedHomogeneousSubmodule_eq_finsupp_supported]
+    exact (restrictSupport_eq_span K _).trans (by rw [Set.image_eq_range]; rfl)
+  rw [Matrix.rank_eq_finrank_span_cols, hcols, ← Submodule.map_span, ← hspan,
+    Submodule.map_comp]
   exact (LinearEquiv.ofBijective _ ⟨hinj, LinearMap.submoduleMap_surjective _ _⟩).finrank_eq.symm
 
 variable (s : σ → Prop) [DecidablePred s]
