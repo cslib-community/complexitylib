@@ -199,6 +199,11 @@ theorem entry_eq_some_of_forall_termParity {f : VarFunctions I lam}
         termParity f x t = true := fun h => by simpa [hb t₀ ht₀] using h t₀ ht₀
     rw [ite_eq_right hnot, ite_eq_left hb]
 
+/-- The weight `I.weights.getD v 0` that `varLength` reads is, for a variable `v < n`, one of the
+weights of `I`. -/
+theorem getD_weights_mem {v : ℕ} (hv : v < I.weights.length) : I.weights.getD v 0 ∈ I.weights := by
+  simp [List.getD_eq_getElem?_getD, hv]
+
 /-- `ℓ v` is at most the seed width for a variable `v < n`. -/
 theorem varLength_le_seedWidth {v : ℕ} (hv : v < I.weights.length) :
     varLength I lam v ≤ seedWidth I lam :=

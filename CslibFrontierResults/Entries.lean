@@ -82,6 +82,7 @@ import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
@@ -94,6 +95,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.CFI
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
@@ -1621,8 +1623,38 @@ register_result "weisfeiler-leman-counting" where
     quantifier rank at most n in the first k variables, and across all ranks iff they agree in \
     round |V|^k + |W|^k. For nonempty graphs, C^(k+1) sentence equivalence equals k-WL histogram \
     equality in all rounds and in round |V|^k + |W|^k, with a +k quantifier-rank shift for \
-    individual rounds. Colored graphs and Cai–Fürer–Immerman lower-bound graphs are not \
-    formalized."
+    individual rounds. The Cai–Fürer–Immerman lower-bound graphs separating C^(k+1) and k-WL \
+    from isomorphism are in cai-furer-immerman-graphs; colored graphs are not formalized."
+
+register_result "cai-furer-immerman-graphs" where
+  title := "Cai–Fürer–Immerman lower-bound graphs separating C^(k+1) and k-WL from graph \
+    isomorphism"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := unverified, locator := "Section 6" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWinsForever_cfiEven_cfiOdd,
+    Cslib.Logic.FO.bijPebbleWins_cfiEven_cfiOdd,
+    Cslib.Logic.FO.pebbleWinsForever_cfiEven_cfiOdd,
+    Cslib.Logic.FO.realize_countingFormula_cfiEven_iff_cfiOdd,
+    Cslib.Logic.FO.realize_formula_cfiEven_iff_cfiOdd,
+    Cslib.Logic.FO.wlHistogram_cfiGraph_eq,
+    Cslib.Logic.FO.wlHistogram_cfiEven_eq_cfiOdd_of_le,
+    Cslib.Logic.FO.wlHistogram_cfiEven_eq_cfiOdd,
+    Cslib.Logic.FO.colorHistogram_cfiEven_eq_cfiOdd,
+    Cslib.Logic.FO.bijPebbleWinsForever_cfiGraph_empty,
+    Cslib.Logic.FO.realize_countingFormula_cfiGraph_iff,
+    Cslib.Logic.FO.exists_nonisomorphic_wlHistogram_eq
+  ]
+  scope := "Uncolored finite simple graphs over FirstOrder.Language.graph. For every k : ℕ, \
+    cfiEven k and cfiOdd k are built over the complete base graph K_(2k+4) with parity gadgets \
+    over ZMod 2 and triangle-apex uncoloring on each edge pair; their isomorphism \
+    classification and non-isomorphism are in cai-furer-immerman-isomorphism. Duplicator wins \
+    the infinite (k + 1)-pebble bijective game on cfiEven k and cfiOdd k, so they agree on all \
+    C^(k+1) and FO^(k+1) sentences and have identical d-WL histograms in every round for all \
+    d ≤ k. Using K_(2k+4) avoids degree-3 expanders at the cost of graphs of size exponential \
+    in k rather than O(k); the linear-size expander lower bound is not formalized."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"
@@ -1825,8 +1857,31 @@ register_result "weisfeiler-leman" where
     Fin.snoc u v paired with the k single-coordinate replacement colors. The partition \
     stabilizes from round |V|^k - k₀ on, is isomorphism-invariant, and two-graph tuple or \
     histogram agreement in all rounds reduces to round |V|^k + |W|^k. The logical correspondence \
-    with C^(k+1) is in weisfeiler-leman-counting; initial tuple colorings and certified \
-    complexity bounds are not formalized."
+    with C^(k+1) is in weisfeiler-leman-counting, and the Cai–Fürer–Immerman lower-bound graphs \
+    are in cai-furer-immerman-graphs and cai-furer-immerman-isomorphism; initial tuple \
+    colorings and certified complexity bounds are not formalized."
+
+register_result "cai-furer-immerman-isomorphism" where
+  title := "Cai–Fürer–Immerman graphs over K_m: twist-parity isomorphism classification"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := unverified, locator := "Section 6" }
+  ]
+  theorems := [
+    SimpleGraph.isEmpty_iso_cfiGraph_of_sum_ne,
+    SimpleGraph.not_nonempty_iso_cfiGraph_of_sum_ne,
+    SimpleGraph.nonempty_iso_cfiGraph_iff_sum_eq,
+    SimpleGraph.isEmpty_iso_cfiEven_cfiOdd,
+    SimpleGraph.not_nonempty_iso_cfiEven_cfiOdd
+  ]
+  scope := "Uncolored finite simple Cai–Fürer–Immerman graphs cfiGraph m f over the complete \
+    base graph K_m with twist f : Fin m → ZMod 2. Each edge pair is joined to an apex vertex so \
+    that triangle membership separates edge and apex vertices from parity-gadget vertices \
+    without vertex colors. Twisting f along an edge of K_m yields an isomorphic graph, and for \
+    3 ≤ m two graphs cfiGraph m f and cfiGraph m g are isomorphic iff ∑ v, f v = ∑ v, g v; in \
+    particular cfiEven k and cfiOdd k over K_(2k+4) are non-isomorphic. Indistinguishability \
+    in C^(k+1) and k-WL is in cai-furer-immerman-graphs; expander base graphs of size O(k) are \
+    not formalized."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"

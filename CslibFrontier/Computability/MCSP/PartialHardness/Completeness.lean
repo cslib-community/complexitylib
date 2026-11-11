@@ -180,9 +180,7 @@ private theorem sum_two_pow_varLength_le {S : Finset ℕ} (hS : S ⊆ Finset.ran
   calc ∑ v ∈ S, 2 ^ varLength I lam v ≤ ∑ v ∈ S, 2 * (I.weights.getD v 0 * lam) := by
         refine sum_le_sum fun v hv => Nat.pow_clog_le_mul Nat.one_lt_two ?_
         have hvn := Finset.mem_range.1 (hS hv)
-        have hpos := hwf.weight_pos _ (List.getElem_mem hvn)
-        have : I.weights.getD v 0 = I.weights[v] := by simp [List.getD_eq_getElem?_getD, hvn]
-        rw [this]
+        have hpos := hwf.weight_pos _ (getD_weights_mem hvn)
         positivity
     _ = 2 * I.weight S * lam := by
         rw [← Finset.mul_sum, ← Finset.sum_mul, CMMSAInstance.weight, mul_assoc]
