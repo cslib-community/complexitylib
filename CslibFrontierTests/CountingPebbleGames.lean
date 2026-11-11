@@ -28,8 +28,8 @@ import CslibFrontier.Foundations.Data.Fintype.FiberEquiv
   adjacency to `x` correspond to equality with and adjacency to `y`, since both graphs are
   `2`-regular on six vertices. So the two graphs satisfy the same two-variable counting sentences,
   a positive instance of the bijective game that is not an isomorphism. By the Immerman–Lander
-  theorem, still to be formalized, this matches the failure of color refinement to separate
-  them. -/
+  theorem (`CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement`), this matches the
+  failure of color refinement to separate them. -/
 
 @[expose] public section
 
