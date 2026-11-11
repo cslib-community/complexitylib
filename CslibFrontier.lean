@@ -2477,6 +2477,7 @@ public import CslibFrontier.Computability.Kolmogorov.Incompleteness
 public import CslibFrontier.Computability.Kolmogorov.Incompressibility
 public import CslibFrontier.Computability.Kolmogorov.Invariance
 public import CslibFrontier.Computability.Kolmogorov.MINKT
+public import CslibFrontier.Computability.Kolmogorov.MINKTStar
 public import CslibFrontier.Computability.Kolmogorov.MINcKT
 public import CslibFrontier.Computability.Kolmogorov.MKtP
 public import CslibFrontier.Computability.Kolmogorov.MultiTape
@@ -2652,6 +2653,7 @@ public import CslibFrontier.Computability.MCSP.HardnessConsequences
 public import CslibFrontier.Computability.MCSP.Magnification
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree
+public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Circuit
 public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.Multi.NP
 public import CslibFrontier.Computability.MCSP.MultiNPHard.Reduction
@@ -4168,6 +4170,7 @@ public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Derandomization
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Design
+public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Queries
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Reconstruction
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Sampling
 public import CslibFrontier.Crypto.Protocols.BCS.Basic
@@ -4825,6 +4828,7 @@ public import CslibFrontier.Foundations.Combinatorics.ShiftColoring
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Acyclic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.BallPath
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Berge
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
@@ -5516,6 +5520,7 @@ public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.BijectiveGame
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CFI
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
@@ -5909,6 +5914,7 @@ public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses
 public import CslibFrontier.MachineLearning.UniformLearning.MembershipQuery
+public import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 public import CslibFrontier.Privacy.DifferentialPrivacy.AboveThreshold
 public import CslibFrontier.Privacy.DifferentialPrivacy.AdvancedComposition
 public import CslibFrontier.Privacy.DifferentialPrivacy.Basic

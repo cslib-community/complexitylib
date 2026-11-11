@@ -294,6 +294,11 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 
 Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased but Representative Sample*. Foundations and Trends in Communications and Information Theory 19(6), 1032–1198, 2022. https://doi.org/10.1561/0100000114 . Checked on 2026-11-10 against the author-hosted draft dated March 10, 2024 at https://ccanonne.github.io/files/misc/main-survey-fnt.pdf (journal pagination not inspected; locators follow that March 10, 2024 draft): Appendix B (pp. 149–152: Definition B.1, `(B.1)`–`(B.3)`, `(B.5)`–`(B.6)`, Lemmas B.1, B.2, and B.5) for Hellinger/`χ²`/KL definitions, tensorization, and comparison inequalities, and Section 3.1 (pp. 99–103: `(3.3)`, Lemma 3.1, and `(3.10)`) for the `√(2n)` Hellinger i.i.d. bound and Ingster's mixture second-moment identity (`CslibFrontier/Probability/{Hellinger,ChiSquare}.lean`).
 
+<a id="carmosinoimpagliazzokabanetskolokolova2016"></a>
+## carmosinoimpagliazzokabanetskolokolova2016
+
+Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run.
+
 <a id="ccpv11"></a>
 ## ccpv11
 
@@ -752,6 +757,11 @@ Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudora
 
 Shuichi Hirahara. *Non-Black-Box Worst-Case to Average-Case Reductions within NP*. FOCS 2018, 247–258. https://doi.org/10.1109/FOCS.2018.00032 . Full version ECCC TR18-138. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation follows its Definition 9 (`MINKT`) and Definition 11 (`GapMINKT`) with ECCC numbering.
 
+<a id="hirahara2022"></a>
+## hirahara2022
+
+Shuichi Hirahara. *NP-Hardness of Learning Programs and Partial MCSP*. FOCS 2022, 968–979. https://doi.org/10.1109/FOCS54457.2022.00095 . Full version ECCC TR22-119. Checked against the FOCS proceedings text on 2026-11-11: the partial-string problems `MKTP*` and `MINKT*` (Section I, p. 971), consistency with a partial string (footnote 5, p. 971), the KT-style time measure of Theorem I.2 (footnote 6, p. 971), Theorem I.2 (p. 971), and the account of Ko's `MINKT` and relativization barrier (abstract, p. 968; Section I, p. 970). The ECCC numbering was not checked.
+
 <a id="hk21"></a>
 ## hk21
 
@@ -1016,6 +1026,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## liupass2021crypto
 
 Yanyi Liu and Rafael Pass. *On the Possibility of Basing Cryptography on EXP ≠ BPP*. CRYPTO 2021, LNCS 12825, 11–40. https://doi.org/10.1007/978-3-030-84242-0_2 . Full version ECCC TR21-056. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation cites its Section 2.2 for `MKtP` and Fact 3.1 with ECCC numbering.
+
+<a id="liupass2022ccc"></a>
+## liupass2022ccc
+
+Yanyi Liu and Rafael Pass. *On One-Way Functions from NP-Complete Problems*. CCC 2022, LIPIcs 234, 36:1–36:24. https://doi.org/10.4230/LIPIcs.CCC.2022.36 . Full version ECCC TR21-059. Checked against the LIPIcs text on 2026-11-11: Theorem 1.2 (p. 36:5), the NP-completeness of the conditional problem `McK^tP[ζ]` under randomized polynomial-time reductions, where a program is a RAM machine with random access to the condition (p. 36:4); footnote 4 (p. 36:4) notes that the problem had not been considered for RAM programs before, as opposed to Turing machines.
 
 <a id="lizhong2024"></a>
 ## lizhong2024
