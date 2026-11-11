@@ -115,8 +115,8 @@ For exact `k`-CNF satisfiability with improved constants,
 `CNF.IsExactDistinct k` formulas with the deterministic rule `Moser.firstViolatedRule`. Under
 standard share degree `Moser.degree φ i ≤ d` and `Real.exp 1 * (d + 1) ≤ 2 ^ k`, it supplies
 `Moser.lintegral_resamplings_le_of_exp_mul_le`, `Moser.lintegral_sum_resamplings_le_of_exp_mul_le`,
-`Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le` and
-`CNF.IsExactDistinct.satisfiable_of_exp_mul_le_moserTardos`. Using `Moser.Conflicts` and
+and `Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le` (yielding a constructive proof of
+`CNF.IsExactDistinct.satisfiable_of_exp_mul_le` above). Using `Moser.Conflicts` and
 `Moser.conflictDegree`, `Moser.not_lopsidependent_of_not_conflicts` weakens the neighborhood to
 clauses sharing a variable with opposite polarity, yielding
 `Moser.lintegral_resamplings_le_of_conflict_exp_mul_le`,

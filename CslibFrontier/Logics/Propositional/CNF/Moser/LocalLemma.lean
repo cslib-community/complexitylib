@@ -21,8 +21,8 @@ for exact `k`-CNF formulas (`CNF.IsExactDistinct`), using independent fair coin 
 
 * Under the symmetric local lemma bound `e (d + 1) ≤ 2 ^ k` (using `Moser.degree`), any valid
   clause-resampling rule resamples each clause at most `1 / d` times in expectation (`1 ≤ d`) and
-  at most `φ.length / d` times in total, terminates almost surely (for all `d : ℕ`, including
-  for the deterministic `firstViolatedRule`), and yields `φ.Satisfiable`. Compare with
+  at most `φ.length / d` times in total, and stops almost surely (for all `d : ℕ`, including for
+  `firstViolatedRule`, matching `CNF.IsExactDistinct.satisfiable_of_exp_mul_le`). Compare with
   `Cslib.Logic.PL.Moser.lintegral_resamplings_le` under the entropy-compression condition
   `r < 2 ^ (k - 3)`.
 * Using **lopsided Moser–Tardos** (`MoserTardos.Lopsided`, [MoserTardos2010, Section 6]), we show
@@ -390,15 +390,6 @@ theorem ae_exists_eval_run_firstViolated_of_conflict_exp_mul_le {k d' : ℕ} {φ
 end ConflictLopsided
 
 end Moser
-
-/-- **Constructive `k`-SAT local lemma** [MoserTardos2010]: if every clause of an exact `k`-CNF
-shares variables with at most `d` other clauses and `e (d + 1) ≤ 2 ^ k`, then `φ` is satisfiable
-(proved constructively via `Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le`). -/
-theorem CNF.IsExactDistinct.satisfiable_of_exp_mul_le_moserTardos {n k d : ℕ} {φ : CNF (Fin n)}
-    (hφ : φ.IsExactDistinct k) (hdeg : ∀ i : Fin φ.length, Moser.degree φ i ≤ d)
-    (hlll : Real.exp 1 * (d + 1) ≤ 2 ^ k) : φ.Satisfiable := by
-  obtain ⟨T, N, hN⟩ := (Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le hφ hdeg hlll).exists
-  exact ⟨_, hN⟩
 
 /-- **Constructive lopsided `k`-SAT local lemma** [MoserTardos2010, Section 6]: if every clause of
 an exact `k`-CNF conflicts with at most `d'` other clauses and `e (d' + 1) ≤ 2 ^ k`, then `φ` is

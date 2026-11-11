@@ -185,7 +185,7 @@ theorem lintegral_resamplings_le_symmetric (A : ι → Set (∀ v, α v))
     (lintegral_iSup_count_le_symmetric_of_pos μ vbl A hAm hA hdpos hd hq hlll i) hsel
 
 /-- Symmetric Moser–Tardos expected resampling count when `d = 0` (`e * q ≤ 1`): at most
-`q / (1 - q)` (which is less than `1 / (e - 1)`). -/
+`q / (1 - q)` (which is at most `1 / (e - 1)`). -/
 theorem lintegral_resamplings_le_symmetric_zero (A : ι → Set (∀ v, α v))
     (hAm : ∀ i, MeasurableSet (A i)) (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V))
     (hd : ∀ i, #{j : ι | j ≠ i ∧ ¬Disjoint (vbl i) (vbl j)} ≤ 0)

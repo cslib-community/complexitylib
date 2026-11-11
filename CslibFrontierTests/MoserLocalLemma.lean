@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Logics.Propositional.CNF.LocalLemma
 import CslibFrontier.Logics.Propositional.CNF.Moser.LocalLemma
 
 /-! Tests for constructive `k`-SAT Moser–Tardos and Section 6 conflict-graph lopsided LLL. -/
@@ -73,7 +74,7 @@ example :
     linarith
   exact ⟨ae_exists_eval_run_firstViolated_of_exp_mul_le star4_exact
       (fun j => (star4_degree j).le) hlll,
-    star4_exact.satisfiable_of_exp_mul_le_moserTardos (fun j => (star4_degree j).le) hlll⟩
+    star4_exact.satisfiable_of_exp_mul_le (fun j => (star4_degree j).le) hlll⟩
 
 /-! ### Deterministic `firstViolatedRule` execution and `d = 0` isolated exact `3`-CNF -/
 
@@ -106,7 +107,7 @@ example :
     norm_num
     linarith
   exact ⟨ae_exists_eval_run_firstViolated_of_exp_mul_le hex hdeg hlll,
-    hex.satisfiable_of_exp_mul_le_moserTardos hdeg hlll⟩
+    hex.satisfiable_of_exp_mul_le hdeg hlll⟩
 
 /-! ### Conflict-graph lopsided `k`-SAT (`d' = 0` and `d' = 1`, `degree = 3` fails) -/
 
