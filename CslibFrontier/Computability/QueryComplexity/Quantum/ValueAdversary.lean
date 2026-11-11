@@ -304,18 +304,8 @@ theorem one_sub_mul_sum_le_of_sq_le_value [DecidableEq α]
         linarith
       refine h1.trans (sum_le_sum fun i hi => ?_)
       have hi' := (mem_filter.1 hi).2
-      have hw : γ p ≤ √(a p i) * √(b p i) :=
-        (Real.le_sqrt_of_sq_le (hγsq p hp i hi')).trans_eq (Real.sqrt_mul (ha p hp i hi') (b p i))
-      set u := ‖querySlice i (runValue step U ψ₀ p.1 t)‖
-      set v := ‖querySlice i (runValue step U ψ₀ p.2 t)‖
-      have huv : 0 ≤ u * v :=
-        mul_nonneg (norm_nonneg (querySlice i (runValue step U ψ₀ p.1 t)))
-          (norm_nonneg (querySlice i (runValue step U ψ₀ p.2 t)))
-      calc
-        2 * γ p * (u * v) ≤ 2 * (√(a p i) * u) * (√(b p i) * v) := by nlinarith
-        _ ≤ (√(a p i) * u) ^ 2 + (√(b p i) * v) ^ 2 := two_mul_le_add_sq _ _
-        _ = a p i * u ^ 2 + b p i * v ^ 2 := by
-          simp [mul_pow, Real.sq_sqrt (ha p hp i hi'), Real.sq_sqrt (hb p hp i hi')]
+      exact two_mul_mul_le_of_sq_le_mul (norm_nonneg _) (norm_nonneg _)
+        (ha p hp i hi') (hb p hp i hi') (hγsq p hp i hi')
     have hX := sum_endpoint_querySlice_sq_le step U hψ₀ R Prod.fst a α_b hα t
     have hY := sum_endpoint_querySlice_sq_le step U hψ₀ R Prod.snd b β_b hβ t
     linarith

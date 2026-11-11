@@ -366,9 +366,8 @@ theorem one_sub_two_mul_sqrt_mul_sqrt_min_le_of_permInversion_partition {ι V W 
       (h₁ p.2 (mem_filter.2 ⟨mem_univ _, hp₁⟩)) hε
 
 /-- **Permutation inversion overlap bound** ([Ambainis2002], Theorem 7, overlap form): if on every
-pair of permutations `π, σ : Equiv.Perm ι` differing by a single transposition involving `target`
-(`π.symm target ≠ σ.symm target`), a `T`-query value-query algorithm ends with state overlap at
-most `δ`, then `(1 - δ) √⌊|ι| / 2⌋ ≤ 2 T`. -/
+pair of permutations `π, σ : Equiv.Perm ι` with `π.symm target ≠ σ.symm target`, a `T`-query
+value-query algorithm ends with state overlap at most `δ`, then `(1 - δ) √⌊|ι| / 2⌋ ≤ 2 T`. -/
 theorem one_sub_mul_sqrt_div_two_le_of_permInversion {ι V W : Type*}
     [Fintype ι] [Fintype V] [Fintype W]
     (step : ι → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
