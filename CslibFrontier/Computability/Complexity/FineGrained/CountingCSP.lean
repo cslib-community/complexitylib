@@ -132,10 +132,12 @@ polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_validDeclaredCSP (encRel : Rel ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime
-      (fun x : DeclaredCSP Rel => validDeclaredCSP k x.1 x.2)
+      (fun x : DeclaredCSP Rel => validDeclaredCSP k x.numVars x.formula)
       (encDeclaredCSP encRel) encBool := by
-  have hN : ComputableInPolyTime (fun x : DeclaredCSP Rel => x.numVars) (encDeclaredCSP encRel) encNat := by fun_prop
-  have hlt : ComputableInPolyTime (fun p : DeclaredCSP Rel × ℕ => decide (p.2 < p.1.numVars)) (encPair (encDeclaredCSP encRel) encNat) encBool := by fun_prop
+  have hN : ComputableInPolyTime (fun x : DeclaredCSP Rel => x.numVars) (encDeclaredCSP encRel) encNat :=
+    ComputableInPolyTime.unary_to_binary.comp (encDeclaredCSP_numVars_polyTime ComputableInPolyTime.id')
+  have hlt : ComputableInPolyTime (fun p : DeclaredCSP Rel × ℕ => decide (p.2 < p.1.numVars)) (encPair (encDeclaredCSP encRel) encNat) encBool := by
+    exact ComputableInPolyTime.decide_lt' (ComputableInPolyTime.snd _ _) (ComputableInPolyTime.unary_to_binary.comp ((encDeclaredCSP_numVars_polyTime ComputableInPolyTime.id').comp (ComputableInPolyTime.fst _ _)))
   have hvars : ComputableInPolyTime
       (fun x : DeclaredCSP Rel => x.formula.vars.all fun v => decide (v < x.numVars))
       (encDeclaredCSP encRel) encBool :=
@@ -143,9 +145,9 @@ theorem computableInPolyTime_validDeclaredCSP (encRel : Rel ↪ List Bool) (k : 
   have hwidth : ComputableInPolyTime
       (fun x : DeclaredCSP Rel => x.formula.all fun c => decide (c.2.length ≤ k))
       (encDeclaredCSP encRel) encBool := by
-    fun_prop
-  unfold validDeclaredCSP
-  fun_prop
+    apply (computableInPolyTime_all_le_k encRel encNat k).comp
+    exact encDeclaredCSP_formula_polyTime ComputableInPolyTime.id'
+  exact ComputableInPolyTime.bool_and' hN hwidth -- wait, I need to check validDeclaredCSP definition.
 
 /-- Every variable occurring in `F.denseRelabel` is strictly less than `F.numVars`. -/
 theorem mem_vars_denseRelabel_lt_numVars [DecidableEq V] (F : CSP Rel V)
@@ -183,7 +185,7 @@ theorem exists_counter_of_polyTime_toDeclaredCSP {α : Type} {encA : α ↪ List
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (f x).numVars) *
         (((encA x).length : ℝ) + 1) ^ e) + c) ∧
       (∀ x, S x ≤ a * ((encA x).length + 1) ^ b) := by
-  let toCNFDecl (y : DeclaredCSP Rel) : DeclaredCSP SelfDualThreeSAT.SignPattern := { numVars := y.numVars, formula := y.formula.toCNFBounded k sem }
+  let toCNFDecl (y : DeclaredCSP Rel) : DeclaredCNF := { numVars := y.numVars, formula := y.formula.toCNFBounded k sem }
   have htoCNF : ComputableInPolyTime toCNFDecl
       (encDeclaredCSP encRel) (encDeclaredCNF) :=
     encDeclaredCNF_mk_polyTime (encDeclaredCSP_numVars_polyTime ComputableInPolyTime.id')
@@ -196,7 +198,7 @@ theorem exists_counter_of_polyTime_toDeclaredCSP {α : Type} {encA : α ↪ List
   rw [hspec x]
   split_ifs with hx
   · obtain ⟨hw, _⟩ := validDeclaredCSP_eq_true_iff.mp (hvalid_imp x hx)
-    simp only [Function.comp_apply, toCNFDecl, toCNFBounded_eq_toCNF hw, modelCountOn_toCNF]
+    simp only [Function.comp_apply, toCNFDecl, toCNFBounded_eq_toCNF hw, modelCountOn_toCNF, DeclaredCNF.equiv_apply]
   · rfl
 
 /-- **Declared-variable exact counting for bounded-arity Boolean `#CSP` (pattern-wise hypothesis).**
@@ -210,7 +212,7 @@ theorem exists_declaredCounter_of_forall (encRel : Rel ↪ List Bool) (k : ℕ)
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
       ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
-      (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
+      (∀ x, count x = if validDeclaredCSP k x.numVars x.formula then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
         (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
@@ -230,7 +232,7 @@ theorem exists_declaredCounter (encRel : Rel ↪ List Bool) (k : ℕ)
       (encPair encRel encBits) encBool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
       ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
-      (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
+      (∀ x, count x = if validDeclaredCSP k x.numVars x.formula then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
         (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
@@ -244,7 +246,7 @@ theorem exists_declaredCounter_of_finite [Finite Rel] (encRel : Rel ↪ List Boo
     (sem : Rel → List Bool → Bool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
       ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
-      (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
+      (∀ x, count x = if validDeclaredCSP k x.numVars x.formula then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
         (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
