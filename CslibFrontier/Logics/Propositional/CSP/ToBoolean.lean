@@ -13,6 +13,7 @@ public import CslibFrontier.Foundations.Data.BitString.Counter
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Logics.Propositional.CSP
 import CslibFrontier.Foundations.Data.List.Counting
+import CslibFrontier.Foundations.Data.Nat.Div
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Log
 
@@ -244,10 +245,6 @@ private def decodeAssign (q N : ℕ) (hq : 0 < q) (σ : Finset.range (N * CSP.bi
     if h : v * b + j < N * b then σ ⟨v * b + j, Finset.mem_range.mpr h⟩ else false
   CSP.toFin q hq (lsbValue bits)
 
-private theorem div_mul_add (v b j : ℕ) (hj : j < b) : (v * b + j) / b = v := by
-  have hb : 0 < b := by omega
-  rw [Nat.add_comm, Nat.add_mul_div_right _ _ hb, Nat.div_eq_of_lt hj, Nat.zero_add]
-
 /-- Reading the bits of block `v` through the zero-extension of `σ` gives the bit list that
 `decodeAssign` decodes. -/
 private theorem map_extend_bitScope {N b : ℕ} (σ : Finset.range (N * b) → Bool) (v : ℕ) :
@@ -271,7 +268,7 @@ private theorem encodeAssign_block (q N : ℕ) (τ : Finset.range N → Fin q) {
     rw [List.length_map, List.length_range] at hj1
     simp only [List.getElem_map, List.getElem_range, mul_add_lt_mul hv hj1, dite_true]
     dsimp only [encodeAssign]
-    have hdiv : (v * b + j) / b = v := div_mul_add v b j hj1
+    have hdiv : (v * b + j) / b = v := Nat.mul_add_div_of_lt v hj1
     have hmod : (v * b + j) % b = j := Nat.mul_add_mod_of_lt hj1
     have hsub : (⟨(v * b + j) / b, Finset.mem_range.mpr (by rw [hdiv]; exact hv)⟩ :
         Finset.range N) = ⟨v, Finset.mem_range.mpr hv⟩ := Subtype.ext hdiv

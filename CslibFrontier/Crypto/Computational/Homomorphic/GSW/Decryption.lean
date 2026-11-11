@@ -56,9 +56,9 @@ def decryptionPhase {n w : ℕ} (t : Fin n → ZMod (2 ^ w)) (C : Ciphertext n w
 theorem decryptionPhase_eq_mulVec {n w : ℕ} (t : Fin n → ZMod (2 ^ w))
     (C : Ciphertext n w) (row : Fin (n + 1) × Fin w) :
     decryptionPhase t C row =
-      (bitMatrix (ZMod (2 ^ w)) C *ᵥ powersOfTwo w (secretVector t)) row := by
+      (bitMatrix (ZMod (2 ^ w)) C *ᵥ powersOfTwo w (LWE.secretVector t)) row := by
   rw [← recomposeMatrix_mulVec]
-  simp [decryptionPhase, Matrix.mulVec, dotProduct, secretVector, Fin.sum_univ_succ,
+  simp [decryptionPhase, Matrix.mulVec, dotProduct, LWE.secretVector, Fin.sum_univ_succ,
     sub_eq_add_neg]
 
 /-- The total width-zero decryption routine returns `false`. -/
@@ -69,14 +69,14 @@ theorem decryptionPhase_eq_mulVec {n w : ℕ} (t : Fin n → ZMod (2 ^ w))
 /-- At positive width, decryption reads the highest digit of the leading coordinate. -/
 theorem decrypt_eq_decode_decryptionPhase {n w : ℕ} (hw : 0 < w)
     (t : Fin n → ZMod (2 ^ w)) (C : Ciphertext n w) :
-    decrypt t C = decode w (decryptionPhase t C (0, ⟨w - 1, by omega⟩)) := by
+    decrypt t C = LWE.decode w (decryptionPhase t C (0, ⟨w - 1, by omega⟩)) := by
   rw [decryptionPhase_eq_mulVec]
   simp [decrypt, hw]
 
 /-- At width one, decryption is the sole bit of the selected row's phase. -/
 theorem decrypt_one {n : ℕ} (t : Fin n → ZMod (2 ^ 1)) (C : Ciphertext n 1) :
     decrypt t C = (decryptionPhase t C (0, 0)).val.testBit 0 := by
-  rw [decrypt_eq_decode_decryptionPhase (by decide), decode_one]
+  rw [decrypt_eq_decode_decryptionPhase (by decide), LWE.decode_one]
   rfl
 
 /-- At width at least two, all raw ciphertexts decrypt by exclusive-or of two phase bits. -/
@@ -85,6 +85,6 @@ theorem decrypt_eq_xor_highBits {n w : ℕ} (hw : 2 ≤ w)
     decrypt t C =
       ((decryptionPhase t C (0, ⟨w - 1, by omega⟩)).val.testBit (w - 1) ^^
         (decryptionPhase t C (0, ⟨w - 1, by omega⟩)).val.testBit (w - 2)) := by
-  rw [decrypt_eq_decode_decryptionPhase (by omega), decode_eq_xor_highBits hw]
+  rw [decrypt_eq_decode_decryptionPhase (by omega), LWE.decode_eq_xor_highBits hw]
 
 end Cslib.Crypto.Homomorphic.GSW

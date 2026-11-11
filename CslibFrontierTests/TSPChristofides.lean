@@ -105,7 +105,7 @@ example : [[0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3]].map (tourLength star) = [11
 
 /-- The guarantee applied to the tour `[0, 1, 2, 3]` of length `11`. -/
 example : 2 * tourLength star (christofidesTour star) ≤ 3 * 11 :=
-  two_mul_tourLength_christofidesTour_le_three_mul_of_mem star_isMetric
+  two_mul_tourLength_christofidesTour_le_three_mul_of_mem (x := ⟨star, 11⟩) star_isMetric
     ⟨[0, 1, 2, 3], by decide +kernel, by decide +kernel⟩
 
 /-! ### 2. Nonvacuity of the bound for any tree and matching -/
