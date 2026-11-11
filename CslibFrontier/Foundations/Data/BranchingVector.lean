@@ -358,7 +358,7 @@ theorem nodeCount_of_not_isLeaf {s : σ} (h : T.isLeaf s = false) :
     T.nodeCount s = 1 + ((T.children s).map T.nodeCount).sum := by
   conv_lhs => rw [nodeCount]
   rw [dite_eq_right (by simp only [h, Bool.false_eq_true, not_false_eq_true]),
-    attach_map_val (T.children s) T.nodeCount]
+    List.attach_map_val]
 
 /-- Total work summed over all nodes of the search tree rooted at `s` for per-node cost
 `nodeWork`. -/
@@ -381,7 +381,7 @@ theorem workCost_of_not_isLeaf (nodeWork : σ → ℕ) {s : σ} (h : T.isLeaf s 
     T.workCost nodeWork s = nodeWork s + ((T.children s).map (T.workCost nodeWork)).sum := by
   conv_lhs => rw [workCost]
   rw [dite_eq_right (by simp only [h, Bool.false_eq_true, not_false_eq_true]),
-    attach_map_val (T.children s) (T.workCost nodeWork)]
+    List.attach_map_val]
 
 /-- Reachability of subtree states from `s` in `T`. -/
 inductive Reachable (s : σ) : σ → Prop

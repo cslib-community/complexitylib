@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.ClearWork
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Bind
@@ -775,13 +776,15 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
   have hmidSpacePoly : PolyBounded (fun a => (input a).length) midSpace :=
     (PolyBounded.const ((kB + 1 + 2) + kp + 2)).mul
       (((PolyBounded.const 2).mul
-        ((hprepSpacePoly.max hloopSpacePoly).max (hboundPoly.add (.const 2)))).add (.const 1))
+        (PolyBounded.max (PolyBounded.max hprepSpacePoly hloopSpacePoly)
+          (hboundPoly.add (.const 2)))).add (.const 1))
   have hextSpacePoly : PolyBounded (fun a => (input a).length) extSpace :=
     (PolyBounded.const ke).mul (((PolyBounded.const 2).mul htePoly).add (.const 1))
   have hfullSpacePoly : PolyBounded (fun a => (input a).length) fullSpace :=
     (PolyBounded.const (ke + kMid + 2)).mul
       (((PolyBounded.const 2).mul
-        ((hmidSpacePoly.max hextSpacePoly).max (hboundPoly.add (.const 2)))).add (.const 1))
+        (PolyBounded.max (PolyBounded.max hmidSpacePoly hextSpacePoly)
+          (hboundPoly.add (.const 2)))).add (.const 1))
   let polyFactor (a : α) : ℕ :=
     4 * tp a + 4 * (roundTime a + 10 * bound a + 23) + 16 * bound a + te a + 46
   have hpolyFactor : PolyBounded (fun a => (input a).length) polyFactor :=
@@ -803,6 +806,7 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
       dsimp only [μLoop]
       rw [PMF.bind_map]
       congr 1 with final : 1
+      dsimp only [Function.comp_def]
       rw [hdecodeOut])
 
 /-- **Captured-input binary-counter iteration in polynomial workspace.** The loop step may capture
@@ -935,7 +939,8 @@ theorem IsPPTOn.exists_multiTapePTM_iterateWith_binary {initial : α → σ} {co
   have hfullSpacePoly : PolyBounded (fun a => (input a).length) fullSpace :=
     (PolyBounded.const (ke + kM + 2)).mul
       (((PolyBounded.const 2).mul
-        ((hmidSpacePoly.max hextSpacePoly).max (houtPoly.add (.const 2)))).add (.const 1))
+        (PolyBounded.max (PolyBounded.max hmidSpacePoly hextSpacePoly)
+          (houtPoly.add (.const 2)))).add (.const 1))
   let polyFactor (a : α) : ℕ := 2 * midSpace a + te a + 4
   have hpolyFactor : PolyBounded (fun a => (input a).length) polyFactor :=
     (((PolyBounded.const 2).mul hmidSpacePoly).add htePoly).add (.const 4)
@@ -953,6 +958,7 @@ theorem IsPPTOn.exists_multiTapePTM_iterateWith_binary {initial : α → σ} {co
       dsimp only [μMid]
       rw [PMF.bind_map]
       congr 1 with final : 1
+      dsimp only [Function.comp_def]
       rw [hdecodePacked])
 
 end BinaryIterate
