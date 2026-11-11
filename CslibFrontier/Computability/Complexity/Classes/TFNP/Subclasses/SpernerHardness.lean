@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Fin
+import CslibFrontier.Foundations.Data.BitString.List.LowBits
 import Mathlib.Data.FinEnum
 import Mathlib.Tactic.FinCases
 
@@ -1050,11 +1051,6 @@ private theorem lowBits_evalNat (n : ℕ) (c : CircuitCode) (u : ℕ) :
 private theorem lowBits_zero_eq (n : ℕ) : lowBits n 0 = zeroVertex n := by
   simpa [zeroVertex] using lowBits_lsbValue (List.replicate n false)
 
-private theorem lowBits_inj_of_lt {n a b : ℕ} (ha : a < 2 ^ n) (hb : b < 2 ^ n)
-    (h : lowBits n a = lowBits n b) : a = b := by
-  have hval := congrArg lsbValue h
-  simpa only [lsbValue_lowBits ha, lsbValue_lowBits hb] using hval
-
 private theorem activeNbr_eq_hasNbr (n : ℕ) (fCode gCode : CircuitCode) {X : ℕ}
     (hX : X < 2 ^ n) (isOut : Bool) :
     let F := evalNat n fCode
@@ -1075,18 +1071,18 @@ private theorem activeNbr_eq_hasNbr (n : ℕ) (fCode gCode : CircuitCode) {X : �
       rw [← lowBits_evalNat n gCode (evalNat n fCode X), heq]
     · intro heq
       rw [← lowBits_evalNat n gCode (evalNat n fCode X)] at heq
-      exact lowBits_inj_of_lt (evalNat_lt _ _ _) hX heq
+      exact lowBits_injective_of_lt (evalNat_lt _ _ _) hX heq
   have h2 : F X ≠ X ↔ cf (lowBits n X) ≠ lowBits n X := by
     simp only [F, cf, ← lowBits_evalNat n fCode X]
-    exact ⟨fun hne heq => hne (lowBits_inj_of_lt hFlt hX heq),
+    exact ⟨fun hne heq => hne (lowBits_injective_of_lt hFlt hX heq),
       fun hne heq => hne (congrArg (lowBits n) heq)⟩
   have h3 : (if isOut then F X ≠ 0 else X ≠ 0) ↔
       (if isOut then cf (lowBits n X) ≠ zeroVertex n else lowBits n X ≠ zeroVertex n) := by
     cases isOut <;>
       simp only [← lowBits_zero_eq n, F, cf, ← lowBits_evalNat n fCode X]
-    · exact ⟨fun hne heq => hne (lowBits_inj_of_lt hX h0lt heq),
+    · exact ⟨fun hne heq => hne (lowBits_injective_of_lt hX h0lt heq),
         fun hne heq => hne (congrArg (lowBits n) heq)⟩
-    · exact ⟨fun hne heq => hne (lowBits_inj_of_lt hFlt h0lt heq),
+    · exact ⟨fun hne heq => hne (lowBits_injective_of_lt hFlt h0lt heq),
         fun hne heq => hne (congrArg (lowBits n) heq)⟩
   exact ⟨fun h => ⟨h1.mp h.2.2.2, h2.mp h.2.1, h3.mp h.2.2.1⟩,
     fun h => ⟨hFlt, h2.mpr h.2.1, h3.mpr h.2.2, h1.mpr h.1⟩⟩
@@ -1571,12 +1567,7 @@ theorem EndOfLine_searchReducible_Sperner2D :
       have hulen : (lowBits n X).length = n := length_lowBits n X
       have hune : lowBits n X ≠ zeroVertex n := by
         rw [← lowBits_zero_eq n]
-        intro heq
-        apply hXne
-        have h := congrArg lsbValue heq
-        dsimp only [X] at h
-        rw [lsbValue_lowBits hXlt, lsbValue_lowBits (Nat.two_pow_pos n)] at h
-        exact h
+        exact fun heq => hXne (lowBits_injective_of_lt hXlt (Nat.two_pow_pos n) heq)
       dsimp only [EndOfLine, endOfLineRel]
       have hin := (activeIn_eq_hasIn (n, pCode, sCode) hXlt).symm
       have hout := (activeOut_eq_hasOut (n, pCode, sCode) hXlt).symm
