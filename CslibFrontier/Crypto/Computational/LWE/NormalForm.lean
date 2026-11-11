@@ -222,7 +222,8 @@ private theorem transformAugmented_publicMatrix (A : Matrix (Fin (n + m)) (Fin n
     rw [Matrix.mulVec_add, Matrix.mulVec_mulVec, Matrix.neg_mul, Matrix.mul_assoc,
       Matrix.nonsing_inv_mul _ hu, Matrix.mul_one, Matrix.neg_mulVec]
     abel
-  simp only [transformAugmented, transform, publicMatrix_tail, publicMatrix_head, (gaussInv?_eq_some_inv _).mp h]
+  simp only [transformAugmented, transform, publicMatrix_tail, publicMatrix_head,
+    (gaussInv?_eq_some_inv _).mp h]
   funext i
   simp only [publicMatrix]
   rw [key]
@@ -254,8 +255,8 @@ private theorem eval_reduceNormalSearch_publicMatrix
           (topBlock A *ᵥ s + topVec e - decodeZModVec n q g))) := by
   unfold reduceNormalSearch
   rw [decodeMatrix_encMatrix]
-  simp only [publicMatrix_tail, publicMatrix_head, gaussInv?_eq, h, ↓reduceIte, transformAugmented_publicMatrix A s e h,
-    pmf_norm]
+  simp only [publicMatrix_tail, publicMatrix_head, gaussInv?_eq, h, ↓reduceIte,
+    transformAugmented_publicMatrix A s e h, pmf_norm]
   rfl
 
 /-- Stack a top block on a bottom block. -/
