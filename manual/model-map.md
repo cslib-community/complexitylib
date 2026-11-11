@@ -267,7 +267,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `crypto-mpc` | [Synchronous typed oracle-aided MPC](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
 | `crypto-uc` | [Call-bounded UC execution and emulation](programs-crypto-and-probability/protocols-and-privacy.md) | protocols |
 | `crypto-perfect-secrecy` | [Perfect-secrecy encryption](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
-| `crypto-secret-sharing` | [Authorized-coalition secret sharing](programs-crypto-and-probability/protocols-and-privacy.md) | information-theoretic-crypto |
+| `crypto-secret-sharing` | [Authorized-coalition, access-structure, and distribution-design secret sharing](programs-crypto-and-probability/protocols-and-privacy.md#secret-sharing-for-general-access-structures-and-distribution-designs) | information-theoretic-crypto |
 | `privacy-differential` | [Differential privacy of output laws for an explicit adjacency relation](programs-crypto-and-probability/protocols-and-privacy.md) | privacy |
 | `average-exact-ppt` | [MildlyHardOnAverage](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
 | `average-symmetric-ppt` | [MildlyHardOnAverageToApprox](programs-crypto-and-probability/average-case-hardness.md) | average-case-hardness |
@@ -329,3 +329,4 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `mechanism-general-vcg` | [General-valuation mechanisms and VCG](algorithms-and-memory/mechanism-design.md) | mechanism-design |
 | `mechanism-bayes-nash` | [Bayes–Nash equilibrium, revenue equivalence and the first-price auction](algorithms-and-memory/mechanism-design.md) | mechanism-design |
 | `social-welfare-function` | [Social welfare functions on strict rankings and Arrow's theorem](algorithms-and-memory/mechanism-design.md) | social-choice |
+| `facility-location-mechanism` | [Randomized facility-location mechanisms, strategyproofness, and median optimality](algorithms-and-memory/mechanism-design.md) | facility-location |
