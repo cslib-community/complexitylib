@@ -172,4 +172,77 @@ def selectFirst {K w : ℕ} (dflt : Fin w → Fin K) :
       Circuit.size_wiring, Circuit.size_wiring, ih, size_muxCircuit]
     ring
 
+/-! ### One round -/
+
+/-- A wire source in a round: one of the `K` inputs, or a constant. -/
+abbrev Source (K : ℕ) := Fin K ⊕ Bool
+
+/-- The value of a source on the input `x`. -/
+def Source.val {K : ℕ} (x : BitString K) : Source K → Bool
+  | .inl i => x i
+  | .inr b => b
+
+/-- The wire carrying a source after the constant layer. -/
+def Source.idx {K : ℕ} : Source K → Fin (K + 2)
+  | .inl i => Fin.castAdd 2 i
+  | .inr false => Fin.natAdd K (Fin.castAdd 1 (0 : Fin 1) : Fin (1 + 1))
+  | .inr true => Fin.natAdd K (Fin.natAdd 1 (0 : Fin 1) : Fin (1 + 1))
+
+/-- The inputs followed by the constants `false` and `true`. Two gates. -/
+def constLayer (K : ℕ) : Circuit oracleSignature K (K + 2) :=
+  (Circuit.id oracleSignature K).append
+    ((Circuit.oneGate (σ := oracleSignature) (OracleOp.base (.const false)) Fin.elim0).append
+      (Circuit.oneGate (σ := oracleSignature) (OracleOp.base (.const true)) Fin.elim0))
+
+theorem eval_constLayer_idx {K : ℕ} (O : Language Bool) (x : BitString K) (s : Source K) :
+    (constLayer K).eval (oracleInterpretation O) x s.idx = s.val x := by
+  rcases s with i | _ | _
+  · simp [constLayer, Source.idx, Source.val, Circuit.eval_append, Fin.append_left]
+  all_goals
+    simp only [constLayer, Source.idx, Source.val, Circuit.eval_append, Fin.append_right]
+    rfl
+
+@[simp] theorem size_constLayer (K : ℕ) : (constLayer K).size = 2 := rfl
+
+@[simp] theorem cost_constLayer (K : ℕ) :
+    (constLayer K).program.cost OracleOp.queryWeight = 0 := rfl
+
+theorem depthWith_constLayer (K : ℕ) : (constLayer K).depthWith OracleOp.queryWeight = 0 :=
+  Nat.eq_zero_of_le_zero <| (Circuit.depthWith_append_le _ _ _).trans <| max_le (by simp) <|
+    (Circuit.depthWith_append_le _ _ _).trans <| max_le (by simp) (by simp)
+
+theorem fanInAtMost_constLayer (K r : ℕ) : (constLayer K).FanInAtMost r :=
+  (Circuit.fanInAtMost_wiring _ _).append <|
+    ((Circuit.fanInAtMost_oneGate _ _ _).2 (Nat.zero_le _)).append
+      ((Circuit.fanInAtMost_oneGate _ _ _).2 (Nat.zero_le _))
+
+/-- `N` oracle gates side by side; gate `i` reads the `q` wires `src i` of the constant layer's
+output. -/
+def queryLayer {K N q : ℕ} (src : Fin N → Fin q → Source K) : Circuit oracleSignature (K + 2) N :=
+  Circuit.pi fun i => Circuit.oneGate (σ := oracleSignature) (OracleOp.query q)
+    fun a => (src i a).idx
+
+@[simp] theorem eval_queryLayer {K N q : ℕ} (src : Fin N → Fin q → Source K) (O : Language Bool)
+    (x : BitString K) (i : Fin N) :
+    (queryLayer src).eval (oracleInterpretation O) ((constLayer K).eval (oracleInterpretation O) x) i =
+      O.slice q fun a => (src i a).val x := by
+  simp [queryLayer, eval_constLayer_idx]
+
+@[simp] theorem size_queryLayer {K N q : ℕ} (src : Fin N → Fin q → Source K) :
+    (queryLayer src).size = N := by
+  simp [queryLayer]
+
+@[simp] theorem cost_queryLayer {K N q : ℕ} (src : Fin N → Fin q → Source K) :
+    (queryLayer src).program.cost OracleOp.queryWeight = N := by
+  simp only [queryLayer, Circuit.cost_pi, Circuit.cost_oneGate, OracleOp.queryWeight_query,
+    Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul, mul_one]
+
+theorem depthWith_queryLayer_le {K N q : ℕ} (src : Fin N → Fin q → Source K) :
+    (queryLayer src).depthWith OracleOp.queryWeight ≤ 1 :=
+  Circuit.depthWith_pi_le _ _ fun _ => by simp
+
+theorem fanInAtMost_queryLayer {K N q : ℕ} (src : Fin N → Fin q → Source K) :
+    (queryLayer src).FanInAtMost q :=
+  Circuit.fanInAtMost_pi fun _ => (Circuit.fanInAtMost_oneGate _ _ _).2 le_rfl
+
 end Cslib.Circuits.Boolean
