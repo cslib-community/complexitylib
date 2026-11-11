@@ -28,13 +28,14 @@ The library does not yet prove that Multi-MCSP is NP-hard. It does contain the w
 
 [TimeBounded.lean](../../CslibFrontier/Computability/Kolmogorov/TimeBounded.lean) defines `K^t` on the native multi-tape universal machine: `timeBoundedAt t x` is the shortest program producing `x` within `t` steps, `timeBounded t` uses the clock `t |x|`, and `timeBoundedNat` is the natural-valued wrapper. `levinKt` is Levin's `Kt`, minimizing program length plus the logarithm of running time. The [description-method chapter](../machines-and-classes/computability-and-description.md#clock-conventions) gives the clock conventions and the plain, conditional and Partrec-side models. [Counting.lean](../../CslibFrontier/Computability/Kolmogorov/TimeBounded/Counting.lean) counts objects of small `K^t` for every step budget: under an injective encoding into strings, fewer than `2 ^ (s + 1)` objects have `K^t` at most `s` (`encard_setOf_timeBoundedAt_le_lt`, and `card_filter_timeBoundedAt_le_lt` for finite types). `card_filter_timeBoundedAt_truthTable_le_lt` applies this to Boolean functions on `L` inputs, with truth tables in the order of `BitString.equivFin`. Since no time bound enters, counting arguments such as the no case of partial-`MINKT` hardness ([#4447](https://github.com/cslib-community/cslib-frontier/issues/4447)) can use it at any budget.
 
-Three decision problems use these measures, with membership only:
+Four decision problems use these measures, with membership only:
 
 - [MINKT.lean](../../CslibFrontier/Computability/Kolmogorov/MINKT.lean): `MINKT` takes a string with time and size thresholds in unary. `MINKT.mem_NP` and, for fixed thresholds computable in polynomial time, `MINKTAt.mem_NP` place it in NP (registry ID `minkt-np`). The problem follows Hirahara's Definition 9 (after Ko), and the fixed-threshold `MINKTAt` follows Liu and Pass, Section 2.2. [hirahara2018][hirahara2018] [ko1991][ko1991] [liupass20][liupass20]
 - [MINcKT.lean](../../CslibFrontier/Computability/Kolmogorov/MINcKT.lean): the conditional analogue, with `MINcKT.mem_NP`. No recorded source states this membership, so it has no registry entry.
+- [MINKTStar.lean](../../CslibFrontier/Computability/Kolmogorov/MINKTStar.lean): the partial-string variant `MINKTStar` (MINKT\*), whose pattern lists entries in `{0, 1, *}` (`Option Bool`). An instance is a yes-instance when some total string `Consistent` with the pattern has `K^t` at most the threshold. `MINKTStar.mem_NP` places it in NP, and `MINKTStar.polyTimeReducible_MINKT_MINKTStar` reduces `MINKT` to it. The problem follows Hirahara's FOCS 2022 introduction and footnote 5 [hirahara2022][hirahara2022]. The source does not state the membership, so it has no registry entry.
 - [MKtP.lean](../../CslibFrontier/Computability/Kolmogorov/MKtP.lean): `MKtP.mem_E` and `MKtP.mem_EXP` place the minimum-`Kt` problem in E and EXP when the threshold is unary; `MKtPAt.mem_EXP` covers fixed thresholds (registry ID `mktp-exp`). Liu and Pass write the threshold in binary, so the unary form is a different encoding. [liupass2021crypto][liupass2021crypto]
 
-`GapMINKT`, `GapMINcKT` and `GapMKtP` are the corresponding promise problems. NP-hardness of `MINKT` or `MINcKT` is not formalized.
+`GapMINKT`, `GapMINcKT` and `GapMKtP` are the corresponding promise problems. NP-hardness of `MINKTStar` under randomized reductions [hirahara2022][hirahara2022] is tracked in [#4447](https://github.com/cslib-community/cslib-frontier/issues/4447). NP-hardness of the total problems `MINKT` and `MINcKT` is open, so it is not planned. Ko introduced `MINKT` and showed that no relativizing proof gives NP-hardness of learning programs [ko1991][ko1991], as Hirahara recounts (abstract, p. 968; Section I, p. 970) [hirahara2022][hirahara2022]. Liu and Pass prove a conditional problem NP-complete under randomized reductions (Theorem 1.2, p. 36:5), but for RAM programs that query the condition, not for Turing machines (footnote 4, p. 36:4) [liupass2022ccc][liupass2022ccc].
 
 For plain complexity, Kolmogorov–Levin symmetry of information ([SymmetryOfInformation.lean](../../CslibFrontier/Computability/Kolmogorov/SymmetryOfInformation.lean), registry ID `symmetry-of-information`) is described under [abstract description methods](../machines-and-classes/computability-and-description.md#abstract-description-methods). Chaitin's incompleteness theorem ([Incompleteness.lean](../../CslibFrontier/Computability/Kolmogorov/Incompleteness.lean), registry ID `chaitin-incompleteness`) is described under [clock conventions](../machines-and-classes/computability-and-description.md#clock-conventions).
 
@@ -166,7 +167,7 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 
 - Liu–Pass Theorem 3.1 (c) in the near-linear range `t(n) ≥ (1 + ε) n`, which needs a rate-1 efficient conditional EP-PRG.
 - The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1). Existence, the greedy against a threshold oracle, its oracle circuit and, under `NP ⊆ P/poly`, `P/poly` circuits for the oracle on its queries are proved, but replacing the oracle gates by those circuits is not ([#4383](https://github.com/cslib-community/cslib-frontier/issues/4383)). Their Theorem 1.4 is proved by another route (see [Hardness magnification](#hardness-magnification)).
-- NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
+- Hirahara's NP-hardness of Partial MCSP and of `MINKTStar` (FOCS 2022; [#4362](https://github.com/cslib-community/cslib-frontier/issues/4362), [#4447](https://github.com/cslib-community/cslib-frontier/issues/4447)), and Hirahara–Watanabe on the limits of reductions to MCSP. NP-hardness of the total problems `MINKT` and `MINcKT` is an open problem.
 - NP-hardness of Multi-output MCSP under randomized reductions (Ilango, Loff and Oliveira, CCC 2020); the problem, its NP membership, the window gadget and the reduction's correctness from `GapSetCover 3` are formalized; the reduction's polynomial running time and the hardness theorem are not yet proved ([#4405](https://github.com/cslib-community/cslib-frontier/issues/4405)).
 - The minimum formula size problem (MFSP) as a separate problem, and the locality barrier (Theorem 59) of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam. Of their Proposition 63, the MCSP `[OS18]` bullet is formalized as class membership, and the `[MMW19]` bullet as an explicit oracle circuit with its counts, whose class-membership statement waits on the local circuit class ([#4430](https://github.com/cslib-community/cslib-frontier/issues/4430)); the other bullets are not formalized.
 - Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.
@@ -181,6 +182,7 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 [franklwilson1981]: ../sources.md#franklwilson1981
 [ggm86]: ../sources.md#ggm86
 [hirahara2018]: ../sources.md#hirahara2018
+[hirahara2022]: ../sources.md#hirahara2022
 [holenstein05]: ../sources.md#holenstein05
 [ilango2020focs]: ../sources.md#ilango2020focs
 [ilo2020]: ../sources.md#ilo2020
@@ -192,6 +194,7 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 [liptonyoung1994]: ../sources.md#liptonyoung1994
 [liupass20]: ../sources.md#liupass20
 [liupass2021crypto]: ../sources.md#liupass2021crypto
+[liupass2022ccc]: ../sources.md#liupass2022ccc
 [mckaymurraywilliams2019]: ../sources.md#mckaymurraywilliams2019
 [murraywilliams2017]: ../sources.md#murraywilliams2017
 [nagy1972]: ../sources.md#nagy1972
