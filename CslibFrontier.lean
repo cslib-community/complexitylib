@@ -1001,9 +1001,11 @@ public import CslibFrontier.Computability.Circuit.Balanced
 public import CslibFrontier.Computability.Circuit.Basic
 public import CslibFrontier.Computability.Circuit.BipartiteMatching
 public import CslibFrontier.Computability.Circuit.Bird
+public import CslibFrontier.Computability.Circuit.Blockwise
 public import CslibFrontier.Computability.Circuit.Boolean.AC0
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Basic
+public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Gadgets
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Simulation
 public import CslibFrontier.Computability.Circuit.Boolean.Advice
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser
@@ -1090,6 +1092,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.Hamming
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore.Set
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmp
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmpCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.Schedule
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.Stages
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.WorstCase
