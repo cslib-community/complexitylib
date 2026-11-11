@@ -1,6 +1,6 @@
 /-
-Copyright (c) 2026 Shriya Thakur, Hugo Akitaya, Freddy Stock, and Adriano Corbellino. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+Copyright (c) 2026 Shriya Thakur, Hugo Akitaya, Freddy Stock, and Adriano Corbellino.
+All rights reserved. Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Hugo Akitaya, Shriya Thakur, Freddy Stock, and Adriano Corbellino
 -/
 module
@@ -8,6 +8,7 @@ module
 
 -- Import vertex cover to prove that hitting set is NP hard
 public import CslibFrontier.Computability.Complexity.Problems.vertexCover
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -23,7 +24,7 @@ that it is NP-complete via a polynomial-time reduction from Vertex Cover.
 
 An instance consists of a finite universe U, a collection of subsets
 of U, and a target cardinality k. The problem asks whether there
-exists a subset of `U` of cardinality exactly k that intersects every
+exists a subset of U of cardinality exactly k that intersects every
 set in the collection.
 
 ## definitions
@@ -52,16 +53,25 @@ namespace Cslib.Complexity
 open Turing.MultiTapeTM ComputableInPolyTime
 /-- A Hitting Set instance consists of a universe (U), a collection of subsets (S),
 and a target cardinality (k) -/
-abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ
+structure HittingSetInstance where
+  finiteUniverse : List ℕ
+  subsets : List (List ℕ)
+  k : ℕ
 
-/-- Encode a hitting set instance as a binary string. -/
-def encHittingSet : HittingSetInstance ↪ List Bool :=
-  encPair (encPair (encList encNat) (encList (encList encNat))) encNat
+/-- Encode a hitting set instance as a bit string with a universe, collection of subsets,
+and cardinality in the given order -/
+enc_structure encHittingSet : HittingSetInstance where
+  finiteUniverse : (encList encNat), subsets : (encList (encList encNat)), k : encNat
+
 
 /-- Instances admitting a hitting set of exactly k elements from the universe. -/
-def HittingSet : Set HittingSetInstance := {x | ∃ H : Finset {u // u ∈ x.1.1},
+def HittingSet : Set HittingSetInstance := {x | ∃ H : Finset {u // u ∈ x.finiteUniverse},
   -- for all subsets of S atleast 1 element of H belongs to S
-  H.card = x.2 ∧ ∀ S ∈ x.1.2, ∃ u ∈ H, (u : ℕ) ∈ S}
+  H.card = x.k ∧ ∀ S ∈ x.subsets, ∃ u ∈ H, (u : ℕ) ∈ S}
+
+attribute [fun_prop] encHittingSet_finiteUniverse_polyTime
+  encHittingSet_subsets_polyTime encHittingSet_k_polyTime
+  encHittingSet_mk_polyTime
 
 -- sets = [[1, 2], [2, 3], [3, 4]]
 -- selected = [2, 3]
@@ -74,11 +84,11 @@ def isHittingSet (sets : List (List ℕ)) (selected : List ℕ) : Bool :=
 /-- Verify a Hitting Set certificate by selecting universe elements
 and checking its card and intersection with every subset. -/
 def HittingSet.verifier : HittingSetInstance × List Bool → Bool :=
-  subsetVerifier (fun x => x.1.1) fun y =>
-    decide (y.2.length = y.1.2) &&
-    isHittingSet y.1.1.2 y.2
+  subsetVerifier (fun x => x.finiteUniverse) fun y =>
+    decide (y.2.length = y.1.k) &&
+    isHittingSet y.1.subsets y.2
 
--- Proves that isHittingSet returns true exactly when the selected elements hit every subset
+/-- Proves that isHittingSet returns true exactly when the selected elements hit every subset -/
 theorem isHittingSet_eq_true_iff (sets : List (List ℕ)) (selected : List ℕ) :
 isHittingSet sets selected = true ↔
 ∀ S ∈ sets, ∃ u ∈ selected, u ∈ S := by
@@ -91,12 +101,13 @@ isHittingSet sets selected = true ↔
   simp only [List.contains_iff_mem]
   simp only [and_comm]
 
--- A hitting set can be represented as a finite set of elements from U or a finite set
+/-- A hitting set can be represented as a finite set of elements from U or a finite set
 -- of nats whose elements are all in the universe
 -- This lemma later helps us use Finset N witnesses instead of manipulating subtype elem
--- which helps make the verifier correctness proof and reduction rom vertex cover easier to express.
+-- which helps make the verifier correctness proof and
+reduction from vertex cover easier to express. -/
 theorem mem_HittingSet_iff (x : HittingSetInstance) : x ∈ HittingSet ↔ ∃ H : Finset ℕ,
-(∀ u ∈ H, u ∈ x.1.1) ∧ H.card = x.2 ∧ (∀ S ∈ x.1.2, ∃ u ∈ H, u ∈ S) := by
+(∀ u ∈ H, u ∈ x.finiteUniverse) ∧ H.card = x.k ∧ (∀ S ∈ x.subsets, ∃ u ∈ H, u ∈ S) := by
   unfold HittingSet
   simp only [Set.mem_ofPred_eq]
   -- convert a finite set of subtype elements into a finite set of nats
@@ -111,7 +122,7 @@ theorem mem_HittingSet_iff (x : HittingSetInstance) : x ∈ HittingSet ↔ ∃ H
       obtain ⟨v, hv, rfl⟩ := Finset.mem_map.mp hu
       exact v.property
     -- mapping through an embedding preserves cardinality
-    · change (H.map (Function.Embedding.subtype _)).card = x.2
+    · change (H.map (Function.Embedding.subtype _)).card = x.k
       rw [Finset.card_map]
       exact hcard
     -- every subset hit by H is also hit by H'
@@ -124,17 +135,17 @@ theorem mem_HittingSet_iff (x : HittingSetInstance) : x ∈ HittingSet ↔ ∃ H
   · intro h
     obtain ⟨ H, hmem, hcard, hhit⟩ := h
     -- Attach membership proofs to elements of H, then use hmem to construct elements of type U
-    let H' : Finset {u // u ∈ x.1.1} :=
+    let H' : Finset {u // u ∈ x.finiteUniverse} :=
     H.attach.map
       ⟨fun u => ⟨u.val, hmem u.val u.property⟩,
         by
           intro a b h
           apply Subtype.ext
           exact congrArg
-            (fun v : {u // u ∈ x.1.1} => v.val) h⟩
+            (fun v : {u // u ∈ x.finiteUniverse} => v.val) h⟩
     refine ⟨H', ?_, ?_⟩
     -- Attachig proofs and mapping through an embedding does not change the # of selected elem
-    · change (H.attach.map _).card = x.2
+    · change (H.attach.map _).card = x.k
       rw [Finset.card_map, Finset.card_attach]
       exact hcard
     -- every subset hit by H is also hit by H'
@@ -149,25 +160,31 @@ theorem mem_HittingSet_iff (x : HittingSetInstance) : x ∈ HittingSet ↔ ∃ H
       · apply Subtype.ext
         rfl
 
--- verifier correctle recognizes the YES instances using cert of length bounded by input size
+/-- verifier correctle recognizes the YES instances using cert of length bounded by input size -/
 theorem HittingSet.isVerifier : IsVerifier encHittingSet Polynomial.X
   HittingSet.verifier HittingSet := by
   -- Rewrite hitting set membership using Finset N instead of a finite set of subtype elem
   have hset : HittingSet = {x | ∃ H : Finset ℕ,
-    (∀ u ∈ H, u ∈ x.1.1) ∧ H.card = x.2 ∧ (∀ S ∈ x.1.2, ∃ u ∈ H, u ∈ S)} :=
+    (∀ u ∈ H, u ∈ x.finiteUniverse) ∧ H.card = x.k ∧ (∀ S ∈ x.subsets, ∃ u ∈ H, u ∈ S)} :=
   Set.ext fun x => by simpa only [Set.mem_ofPred_eq] using mem_HittingSet_iff x
   rw [hset]
   -- Use the general subset verifier theorem
-  --  We need to prove the cert length bound and verifier correctness
+  -- We need to prove the cert length bound and verifier correctness
   refine isVerifier_subsetVerifier
     -- The cert length is <= length of encoded input
     (fun x => by
-      have hlen := length_le_length_encList encNat x.1.1
+      have hlen := length_le_length_encList encNat x.finiteUniverse
       -- poly  x evals to input length
       simp only [Polynomial.eval_X]
-      unfold encHittingSet
+      rw [encHittingSet_apply]
+      -- definitional eq
+      change x.finiteUniverse.length ≤
+        ((encPair (encList encNat) (encPair (encList (encList encNat)) encNat))
+          (x.finiteUniverse, (x.subsets, x.k))).length
       rw [length_encPair, length_encPair]
-      -- finish length equality
+      -- simplify proj so omega can use the cert length bound
+      change x.finiteUniverse.length ≤  2 * ((encList encNat) x.finiteUniverse).length + 1 +
+        (2 * ((encList (encList encNat)) x.subsets).length + 1 + (encNat x.k).length)
       omega)
       -- show that bool verifier accepts only valid hitting sets
     (fun x l hl _ => by
@@ -180,9 +197,6 @@ theorem HittingSet.isVerifier : IsVerifier encHittingSet Polynomial.X
       -- Since the selected list has no duplicates its
       -- length = card of finset
       rw [List.toFinset_card_of_nodup hl])
-
-
--- #check Turing.MultiTapeTM.ComputableInPolyTime.contains
 
 /-- Checking whether a nat belongs to a list is poly time if we can compute
 both the list and the elemnt in poly time -/
@@ -197,8 +211,10 @@ theorem computableInPolyTime_containsNat : ComputableInPolyTime
 
 /-- Check whether the selected elements intersect a given subset -/
 def hitsSubset (selected : List ℕ) (S : List ℕ) : Bool := S.any (fun u => selected.contains u)
--- #eval hitsSubset [2, 3] [1, 2]  -- true
--- #eval hitsSubset [2, 3] [4, 5]  -- false
+
+example : hitsSubset [2, 3] [1, 2] = true := by decide
+
+example : hitsSubset [2, 3] [4, 5] = false := by decide
 
 /-- Checking whether selected elements hit one subset is polynomial-time. -/
 @[fun_prop]
