@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.Coloring
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
-import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -151,24 +150,13 @@ theorem mem_NP : ChromaticNumber ∈ NP encChromaticNumber := by
       split
       · exact hadj u hu v hv huv
       · exact fun heq => huv.ne ((List.idxOf_inj hu).1 heq)
-  have hset : ChromaticNumber = {x | ∃ cs : List ℕ, check (x, cs) = true} := by
-    ext ⟨G, k⟩
-    refine ⟨fun h => let ⟨g, _, hg⟩ := hcert G k h; ⟨G.1.map g, hg⟩, fun ⟨cs, hcs⟩ => ?_⟩
-    obtain ⟨hlt, hadj⟩ := (check_iff (⟨G, k⟩, cs)).1 hcs
-    exact mem_KColoring_iff.2 ⟨colorOf G cs, hlt, hadj⟩
-  rw [hset]
-  refine mem_NP_of_witness (p := 2 * Polynomial.X ^ 2 + Polynomial.X) (.list .nat)
-    computableInPolyTime_check (fun _ _ => Iff.rfl) ?_
-  rintro ⟨G, k⟩ cs hcs
-  obtain ⟨hlt, hadj⟩ := (check_iff (⟨G, k⟩, cs)).1 hcs
-  obtain ⟨g, hgle, hg⟩ := hcert G k (mem_KColoring_iff.2 ⟨colorOf G cs, hlt, hadj⟩)
-  have hN : G.1.length ≤ (encChromaticNumber ⟨G, k⟩).length := by
-    rw [encChromaticNumber_apply]
-    exact G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k))
-  refine ⟨G.1.map g, hg, ?_⟩
-  have h := Graph.length_encList_map_le hN fun v hv => (hgle v hv).trans hN
-  simpa only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X,
-    Polynomial.eval_ofNat] using h
+  refine mem_NP_of_colorOf ChromaticNumberInstance.graph computableInPolyTime_check
+    (fun ⟨G, k⟩ => by
+      rw [encChromaticNumber_apply]
+      exact G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k)))
+    (fun ⟨G, k⟩ cs h => ?_) (fun ⟨G, k⟩ h => hcert G k h)
+  obtain ⟨hlt, hadj⟩ := (check_iff (⟨G, k⟩, cs)).1 h
+  exact mem_KColoring_iff.2 ⟨colorOf G cs, hlt, hadj⟩
 
 end ChromaticNumber
 
