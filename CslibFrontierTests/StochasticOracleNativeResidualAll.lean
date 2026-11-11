@@ -85,14 +85,13 @@ example : ((NativeUnboundedExecution.terminal (NativeResidualRouting.controller 
   NativeResidualAll.native_certified blocks points candidates parameters invoice
     (by norm_num) 1 (by norm_num)
 
--- The all-specialist upper bound also applies to the original one-turn OPT.
+-- The actual all-specialist cost also equals the original one-turn native OPT.
 example : BatchOptimum.optimum (NativeResidualAll.config 1)
     (NativeResidualOracle.sample blocks points candidates parameters invoice)
-    (input blocks points candidates) () (valid blocks points candidates (by norm_num)) 1 ≤ 15 := by
-  have h := NativeResidualAll.native_upper blocks points candidates parameters invoice
-    (by norm_num) 1 (by norm_num) prices
-  norm_num [parameters, Fin.sum_univ_succ] at h ⊢
-  exact h
+    (input blocks points candidates) () (valid blocks points candidates (by norm_num)) 1 = 15 := by
+  rw [NativeResidualMinima.native_one_optimum blocks points candidates parameters invoice
+    (by norm_num) prices]
+  norm_num [parameters, Fin.sum_univ_succ]
 
 -- All calls are concurrent: the joint resource law has bill fifteen and duration one.
 example : (NativeUnboundedExecution.terminal (NativeResidualRouting.controller false).program
@@ -105,5 +104,38 @@ example : (NativeUnboundedExecution.terminal (NativeResidualRouting.controller f
   rw [NativeResidualAll.native_resources blocks points candidates parameters invoice
     (by norm_num) 2 (by norm_num)]
   norm_num [invoice_succ, Fin.sum_univ_succ]
+
+private def uniformInvoice (i : Fin 6) : ℕ := if i = 0 then 2 else 1
+private def uniformParameters : Parameters 5 where
+  missing := parameters.missing
+  full_support := parameters.full_support
+  nearCost := 2
+  near_pos := by norm_num
+  specialistCost _ := 1
+  specialist_pos _ := by norm_num
+
+private theorem uniformPrices (i : Fin 6) : (uniformInvoice i : ℝ) =
+    (finSuccEquiv 5 i).elim uniformParameters.nearCost uniformParameters.specialistCost := by
+  refine Fin.cases ?_ (fun j => ?_) i
+  · norm_num [uniformInvoice, uniformParameters]
+  · rw [finSuccEquiv_succ]
+    simp only [uniformInvoice, uniformParameters, Fin.succ_ne_zero, ite_false,
+      Option.elim_some, Nat.cast_one]
+
+-- A genuine adaptivity gap: five specialist tokens versus three adaptive tokens,
+-- for the native optima over all admitted competitors, not two handpicked scores.
+example :
+    (BatchOptimum.optimum (NativeResidualAll.config 1)
+      (NativeResidualOracle.sample blocks points candidates uniformParameters uniformInvoice)
+      (input blocks points candidates) () (valid blocks points candidates (by norm_num)) 1).toReal /
+    (BatchOptimum.optimum limits
+      (NativeResidualOracle.sample blocks points candidates uniformParameters uniformInvoice)
+      (input blocks points candidates) () (valid blocks points candidates (by norm_num)) 1).toReal =
+        5 / 3 := by
+  have h := NativeResidualMinima.native_linear_ratio blocks points candidates uniformParameters
+    uniformInvoice (by norm_num) uniformPrices 1 2 (by norm_num) (fun _ => rfl)
+      (by norm_num [uniformParameters]) (by norm_num)
+  norm_num at h ⊢
+  exact h
 
 end CslibFrontierTests.StochasticOracleNativeResidualAll

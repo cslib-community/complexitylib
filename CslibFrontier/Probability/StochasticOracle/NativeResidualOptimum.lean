@@ -21,15 +21,16 @@ acceptance with original-label weight-one optimality. Arbitrary finite-control
 native competitors use the same residual sampler and initial seed. Neither a
 behavioral representation nor a cost lower bound is an admission premise.
 
-This module proves the two-turn lower optimum, not native attainment or the
-one-turn/two-turn equality and ratio. The price convention here identifies the
+This module proves the one- and two-turn lower optima. Native attainment,
+equalities and the ratio are assembled downstream in `NativeResidualMinima`.
+The price convention here identifies the
 source prices with actual discrete per-opportunity invoices; arbitrary real
 invoice encodings remain outside this wire model.
 
 ## Main results
 
 * `accept_eq`: the actual native certificate test is source optimal-cover acceptance.
-* `two_lower`: the residual lower bound for the existing native token optimum.
+* `one_lower`, `two_lower`: residual lower bounds for the existing native token optima.
 -/
 
 public section
@@ -87,6 +88,23 @@ theorem accept_eq (hz : 0 < z) (hx : Valid data.startup.system)
       simpa only [ite_eq_left_iff, zero_ne_one, imp_false, not_not] using h
     exact ⟨by simpa only [hI] using hcover.mpr hh.1, hh.2.le⟩
 
+private theorem optimal_event {k : ℕ} {Control : Type} {input : List Bool}
+    (hz : 0 < z)
+    (result : Option (World k Control Unit (ServerState (z + 1) Unit) input)) :
+    Coverage.nativeSuccess (NativeResidualPolicies.optimalAccept T candidates hz) result =
+      decide (optimalOutput hz
+        (NativeResidualPolicies.terminalOutput T candidates result) = 1) := by
+  cases result with
+  | none => simp [Coverage.nativeSuccess, NativeResidualPolicies.terminalOutput,
+      optimalOutput, PartialCover.Instance.cost]
+  | some next =>
+    cases hc : NativeOpenSelection.result
+        (decodeFamily data.startup.system.rows.length) next with
+    | none => simp [Coverage.nativeSuccess, NativeResidualPolicies.terminalOutput, hc,
+        optimalOutput, PartialCover.Instance.cost]
+    | some C => simp [Coverage.nativeSuccess, NativeResidualPolicies.terminalOutput, hc,
+        NativeResidualPolicies.optimalAccept]
+
 /-- Theorem 6's two-turn token lower optimum, over every admitted finite-control
 selection-only native machine in the existing Theorem 5 common-oracle class.
 The source deadline and actual bill are those of the same sampler and input.
@@ -112,25 +130,43 @@ theorem two_lower (P : Parameters z) (limits : Limits (z + 1))
     (NativeUnboundedExecution.terminal machine
       (environment limits (NativeResidualOracle.sample T points candidates P invoice)) world))
   rw [he] at hs
-  have hevent (result : Option (World k Control Unit (ServerState (z + 1) Unit)
-      (GuardedStartup.encoding data))) :
-      Coverage.nativeSuccess (NativeResidualPolicies.optimalAccept T candidates hz) result =
-        decide (optimalOutput hz
-          (NativeResidualPolicies.terminalOutput T candidates result) = 1) := by
-    cases result with
-    | none => simp [Coverage.nativeSuccess, NativeResidualPolicies.terminalOutput,
-        optimalOutput, PartialCover.Instance.cost]
-    | some next =>
-      cases hc : NativeOpenSelection.result
-          (decodeFamily data.startup.system.rows.length) next with
-      | none => simp [Coverage.nativeSuccess, NativeResidualPolicies.terminalOutput, hc,
-          optimalOutput, PartialCover.Instance.cost]
-      | some C => simp [Coverage.nativeSuccess, NativeResidualPolicies.terminalOutput, hc,
-          NativeResidualPolicies.optimalAccept]
   rw [show Coverage.nativeSuccess (NativeResidualPolicies.optimalAccept T candidates hz) =
     (fun result => decide (optimalOutput hz
-      (NativeResidualPolicies.terminalOutput T candidates result) = 1)) from funext hevent] at hs
+      (NativeResidualPolicies.terminalOutput T candidates result) = 1)) from
+        funext (optimal_event T data candidates hz)] at hs
   exact NativeResidualPolicies.native_two_lower T points candidates P limits invoice machine
+    world (NativeBatch.initial_invariant limits ()) rfl ht hz hprice hadmit
+      (le_antisymm (PMF.coe_le_one _ _) hs)
+
+/-- Theorem 6's one-turn token lower optimum, over every admitted finite-control
+selection-only native machine in the existing Theorem 5 common-oracle class.
+The source deadline and actual bill are those of the same sampler and input.
+No expected-cost, integrability, representation or optimality conclusion is a premise. -/
+theorem one_lower (P : Parameters z) (limits : Limits (z + 1))
+    (invoice : Fin (z + 1) → ℕ) (hz : 0 < z) (hx : Valid data.startup.system)
+    (hdata : data.startup.system = SourceEncoding.toNative (source T points candidates))
+    (ht : limits.turns = 1)
+    (hprice : ∀ i, (invoice i : ℝ) =
+      (finSuccEquiv z i).elim P.nearCost P.specialistCost) :
+    ENNReal.ofReal (∑ j, P.specialistCost j) ≤
+      BatchOptimum.optimum limits (NativeResidualOracle.sample T points candidates P invoice)
+        data () hx 1 := by
+  apply le_sInf
+  intro v hv
+  obtain ⟨k, Control, hfinite, machine, hadmit, hsuccess, rfl⟩ := hv
+  let world : World k Control Unit (ServerState (z + 1) Unit) (GuardedStartup.encoding data) :=
+    ⟨machine.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial (), []⟩⟩
+  have he := accept_eq T points data candidates hz hx hdata
+  rw [he] at hadmit
+  have hs := hsuccess.trans (BatchOptimum.certified_le_accepted limits data.startup.system hx
+    (NativeUnboundedExecution.terminal machine
+      (environment limits (NativeResidualOracle.sample T points candidates P invoice)) world))
+  rw [he] at hs
+  rw [show Coverage.nativeSuccess (NativeResidualPolicies.optimalAccept T candidates hz) =
+    (fun result => decide (optimalOutput hz
+      (NativeResidualPolicies.terminalOutput T candidates result) = 1)) from
+        funext (optimal_event T data candidates hz)] at hs
+  exact NativeResidualPolicies.native_one_lower T points candidates P limits invoice machine
     world (NativeBatch.initial_invariant limits ()) rfl ht hz hprice hadmit
       (le_antisymm (PMF.coe_le_one _ _) hs)
 

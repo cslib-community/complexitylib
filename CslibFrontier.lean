@@ -6023,6 +6023,7 @@ public import CslibFrontier.Probability.FiniteSampleInformation.WideSimplexTheor
 public import CslibFrontier.Probability.FiniteSampleInformation.WideSquarePullback
 public import CslibFrontier.Probability.FiniteSampleInformation.WideTauHomConeContact
 public import CslibFrontier.Probability.FiniteTable
+public import CslibFrontier.Probability.FiniteTable.Expectation
 public import CslibFrontier.Probability.FiniteTableOfPMF
 public import CslibFrontier.Probability.Fooling
 public import CslibFrontier.Probability.Fooling.OneSided

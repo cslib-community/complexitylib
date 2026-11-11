@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualAll
 
 /-!
-# Attained two-turn native residual optimum
+# Attained one- and two-turn native residual optima
 
 [Wang2027], Theorem 6, PDF p. 13. Both alternatives in the source minimum
 are attained by fixed compiled controllers on the same original encoded input,
@@ -21,11 +21,11 @@ Discrete invoices are explicitly identified with the source prices.
 ## Main results
 
 * `native_cost_mem`: the source minimum is attained in the native competitor class.
-* `native_optimum`: the native two-turn optimum equals the source minimum.
+* `native_optimum`, `native_one_optimum`: native optima equal the source minima.
+* `native_ratio`, `native_linear_ratio`: the source adaptivity ratio for these native optima.
 
-The native one-turn lower bound and equality, ratio and uniform cost-aware choice
-are separate obligations; the one-turn all-specialist upper bound is already
-`NativeResidualAll.native_upper`.
+A uniform cost-aware choice compiled into a single program and arbitrary-real
+invoice representation remain separate obligations.
 -/
 
 public section
@@ -73,5 +73,66 @@ theorem native_optimum (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz : 
   dsimp only [c, input] at hlower
   rwa [NativeResidualOracle.sample_reindex T points candidates
     (rows_length T points candidates)] at hlower
+
+/-- Exact one-turn native optimum. The all-specialist controller attains the
+universal lower bound on the same original input, residual oracle and seed. -/
+theorem native_one_optimum (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz : 3 ≤ z)
+    (hprice : ∀ i, (invoice i : ℝ) =
+      (finSuccEquiv z i).elim P.nearCost P.specialistCost) :
+    BatchOptimum.optimum (NativeResidualAll.config 1)
+      (NativeResidualOracle.sample T points candidates P invoice)
+      (input T points candidates) () (valid T points candidates (by omega)) 1 =
+        ENNReal.ofReal (∑ j, P.specialistCost j) := by
+  apply le_antisymm (NativeResidualAll.native_upper T points candidates P invoice hz 1
+    (by omega) hprice)
+  let c := (finCongr (rows_length T points candidates)).trans candidates
+  have hdata : (input T points candidates).startup.system =
+      SourceEncoding.toNative (source T points c) := by
+    rw [source_reindex]
+    rfl
+  have hlower := NativeResidualOptimum.one_lower T points (input T points candidates) c
+    P (NativeResidualAll.config 1) invoice (by omega)
+    (valid T points candidates (by omega)) hdata rfl hprice
+  dsimp only [c, input] at hlower
+  rwa [NativeResidualOracle.sample_reindex T points candidates
+    (rows_length T points candidates)] at hlower
+
+/-- The source adaptivity ratio, now for the attained original native optima.
+Both real parts are justified by the finite exact native optimum equalities. -/
+theorem native_ratio (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz : 3 ≤ z)
+    (hprice : ∀ i, (invoice i : ℝ) =
+      (finSuccEquiv z i).elim P.nearCost P.specialistCost)
+    (c α : ℝ) (hc : 0 < c) (hs : ∀ j, P.specialistCost j = c)
+    (h0 : P.nearCost = α * c) :
+    (BatchOptimum.optimum (NativeResidualAll.config 1)
+      (NativeResidualOracle.sample T points candidates P invoice)
+      (input T points candidates) () (valid T points candidates (by omega)) 1).toReal /
+    (BatchOptimum.optimum limits (NativeResidualOracle.sample T points candidates P invoice)
+      (input T points candidates) () (valid T points candidates (by omega)) 1).toReal =
+        (z : ℝ) / min (z : ℝ) (α + 1) := by
+  have hsum : 0 ≤ ∑ j, P.specialistCost j :=
+    Finset.sum_nonneg (fun j _ => (P.specialist_pos j).le)
+  have hmean : 0 ≤ P.missing.mean P.specialistCost :=
+    Finset.sum_nonneg (fun j _ => mul_nonneg (P.missing.nonneg j) (P.specialist_pos j).le)
+  rw [native_one_optimum T points candidates P invoice hz hprice,
+    native_optimum T points candidates P invoice hz hprice,
+    ENNReal.toReal_ofReal hsum,
+    ENNReal.toReal_ofReal (le_min hsum (add_nonneg P.near_pos.le hmean))]
+  exact homogeneous_ratio P c α hc hs h0
+
+/-- The source's linear adaptivity-gap branch, with its threshold explicit. -/
+theorem native_linear_ratio (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz : 3 ≤ z)
+    (hprice : ∀ i, (invoice i : ℝ) =
+      (finSuccEquiv z i).elim P.nearCost P.specialistCost)
+    (c α : ℝ) (hc : 0 < c) (hs : ∀ j, P.specialistCost j = c)
+    (h0 : P.nearCost = α * c) (hgap : α + 1 < (z : ℝ)) :
+    (BatchOptimum.optimum (NativeResidualAll.config 1)
+      (NativeResidualOracle.sample T points candidates P invoice)
+      (input T points candidates) () (valid T points candidates (by omega)) 1).toReal /
+    (BatchOptimum.optimum limits (NativeResidualOracle.sample T points candidates P invoice)
+      (input T points candidates) () (valid T points candidates (by omega)) 1).toReal =
+        (z : ℝ) / (α + 1) := by
+  simpa only [min_eq_right hgap.le] using
+    native_ratio T points candidates P invoice hz hprice c α hc hs h0
 
 end Cslib.Probability.StochasticOracle.NativeResidualMinima
