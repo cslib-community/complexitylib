@@ -1366,8 +1366,10 @@ theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     | some a => simp [forgetfulWithBad, hq, PMF.toOuterMeasure_pure_apply]
     | none =>
       have hpre : (fun a : α => (a, (PermQuery.toCacheEntry ⟨q, a⟩ :: c,
-          false || decide (a ∉ freshAnswers c q)))) ⁻¹'
-          {x : α × (Cache α × Bool) | let (_, _, bad) := x; bad = true} = {a : α | a ∉ freshAnswers c q} := by
+          false || decide (a ∉ freshAnswers c q))))
+          ⁻¹'
+          {x : α × (Cache α × Bool) | let (_, _, bad) := x; bad = true} =
+          {a : α | a ∉ freshAnswers c q} := by
         ext a
         simp
       have hcard : (Finset.univ.filter fun a : α => a ∉ freshAnswers c q).card ≤ c.length := by
@@ -1436,7 +1438,7 @@ theorem forgetfulAnswer_bind_apply_le_uniformPerm {β γ : Type}
   have hbad := toOuterMeasure_bad_forgetfulWithBad_le hQ []
   simpa only [List.length_nil, mul_zero, zero_add] using hbad
 
-theorem forgetfulWithBad_step_good (q : PermQuery α) (c c' : Cache α) (a : α)
+private theorem forgetfulWithBad_step_good (q : PermQuery α) (c c' : Cache α) (a : α)
     (hmem : (a, (c', false)) ∈ (forgetfulWithBad q (c, false)).support)
     (hp1 : c.Pairwise (fun x y => x.1 ≠ y.1)) (hp2 : c.Pairwise (fun x y => x.2 ≠ y.2)) :
     c'.Pairwise (fun x y => x.1 ≠ y.1) ∧ c'.Pairwise (fun x y => x.2 ≠ y.2) ∧
@@ -1458,7 +1460,7 @@ theorem forgetfulWithBad_step_good (q : PermQuery α) (c c' : Cache α) (a : α)
       List.pairwise_cons.mpr ⟨fun e he => (invLookup_eq_none_iff.mp h2 e he).symm, hp2⟩,
       le_rfl⟩
 
-theorem forgetfulWithBad_pairwise_and_length_le {β : Type}
+private theorem forgetfulWithBad_pairwise_and_length_le {β : Type}
     {program : OracleComp (PermOracleSpec α) β} {n : ℕ}
     (hn : IsQueryBounded program n) {c c' : Cache α} {a : β}
     (hp1 : c.Pairwise (fun x y => x.1 ≠ y.1)) (hp2 : c.Pairwise (fun x y => x.2 ≠ y.2))
