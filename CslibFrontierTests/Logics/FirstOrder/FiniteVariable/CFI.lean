@@ -194,27 +194,9 @@ theorem not_isRegularOfDegree_cfiEven (k d : ℕ) : ¬ (cfiEven k).IsRegularOfDe
     · exact (cfiGraph_adj_gadget_edge _ _ _ _ _ _).2 ⟨⟨u1, h10⟩, rfl, rfl⟩
     · exact (cfiGraph_adj_gadget_edge _ _ _ _ _ _).2 ⟨⟨u2, h20⟩, rfl, rfl⟩
     · exact (cfiGraph_adj_gadget_edge _ _ _ _ _ _).2 ⟨⟨u3, h30⟩, rfl, rfl⟩
-  have hn12 : n₁ ≠ n₂ := by
-    intro h
-    have hs : (s(u0, u1) : Sym2 (Fin (2 * k + 4))) = s(u0, u2) := by injection h
-    rw [Sym2.eq_iff] at hs
-    rcases hs with ⟨-, heq⟩ | ⟨h02, -⟩
-    · exact h12 heq
-    · exact h20.symm h02
-  have hn13 : n₁ ≠ n₃ := by
-    intro h
-    have hs : (s(u0, u1) : Sym2 (Fin (2 * k + 4))) = s(u0, u3) := by injection h
-    rw [Sym2.eq_iff] at hs
-    rcases hs with ⟨-, heq⟩ | ⟨h03, -⟩
-    · exact h13 heq
-    · exact h30.symm h03
-  have hn23 : n₂ ≠ n₃ := by
-    intro h
-    have hs : (s(u0, u2) : Sym2 (Fin (2 * k + 4))) = s(u0, u3) := by injection h
-    rw [Sym2.eq_iff] at hs
-    rcases hs with ⟨-, heq⟩ | ⟨h03, -⟩
-    · exact h23 heq
-    · exact h30.symm h03
+  have hn12 : n₁ ≠ n₂ := fun h => h12 (Sym2.congr_right.1 (by injection h))
+  have hn13 : n₁ ≠ n₃ := fun h => h13 (Sym2.congr_right.1 (by injection h))
+  have hn23 : n₂ ≠ n₃ := fun h => h23 (Sym2.congr_right.1 (by injection h))
   have hcard3 : ({n₁, n₂, n₃} : Finset (CFIVertex (2 * k + 4) 0)).card = 3 := by
     rw [Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_singleton]
     · simp only [Finset.mem_singleton]

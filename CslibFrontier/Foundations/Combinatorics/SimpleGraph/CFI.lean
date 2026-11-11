@@ -259,24 +259,16 @@ def CFIVertex.support : CFIVertex m f → Finset (Fin m)
     (CFIVertex.apex e he : CFIVertex m f).support = e.toFinset := by
   rw [CFIVertex.support]
 
-private theorem card_toFinset_sym2_le_two (e : Sym2 (Fin m)) : e.toFinset.card ≤ 2 := by
-  induction e using Sym2.ind with
-  | _ v w =>
-    have hsub : s(v, w).toFinset ⊆ ({v, w} : Finset (Fin m)) := fun z hz => by
-      rw [Sym2.mem_toFinset, Sym2.mem_iff] at hz
-      simp only [Finset.mem_insert, Finset.mem_singleton, hz]
-    exact (Finset.card_le_card hsub).trans Finset.card_le_two
-
 /-- Every CFI vertex has base-vertex support of size at most `2`. -/
 theorem CFIVertex.card_support_le_two (x : CFIVertex m f) : x.support.card ≤ 2 := by
   cases x with
   | gadget v _ _ => simp only [support_gadget, Finset.card_singleton, Nat.one_le_ofNat]
-  | edge e he b =>
+  | edge e he _ =>
     rw [support_edge]
-    exact card_toFinset_sym2_le_two e
+    exact (Sym2.card_toFinset_of_not_isDiag e he).le
   | apex e he =>
     rw [support_apex]
-    exact card_toFinset_sym2_le_two e
+    exact (Sym2.card_toFinset_of_not_isDiag e he).le
 
 /-- If two distinct base vertices `u ≠ w` both lie in `x.support`, then no third vertex `w'`
 distinct from `u` and `w` lies in `x.support`. -/
@@ -332,14 +324,6 @@ section EdgeTwist
 open scoped CharTwo
 
 variable {m : ℕ}
-
-private theorem sym2_pair_eq_left_iff {v z₁ z₂ : Fin m} (hz₁ : z₁ ≠ v) :
-    s(v, z₁) = s(v, z₂) ↔ z₁ = z₂ := by
-  rw [Sym2.eq_iff]
-  refine ⟨fun h => ?_, fun h => Or.inl ⟨rfl, h⟩⟩
-  rcases h with ⟨-, rfl⟩ | ⟨-, hzv⟩
-  · rfl
-  · exact absurd hzv hz₁
 
 private theorem sum_add_single_one {v : Fin m} (α : {z : Fin m // z ≠ v} → ZMod 2)
     (w : {z : Fin m // z ≠ v}) :
@@ -406,7 +390,7 @@ private theorem cfiFlipMap_adj_gadget_edge {f g : Fin m → ZMod 2} {u w : Fin m
   by_cases hvu : v = u
   · have hwv : w ≠ v := hvu ▸ huw.symm
     have hedge : (s(v, z.val) = s(u, w)) ↔ z = ⟨w, hwv⟩ := by
-      rw [← hvu, sym2_pair_eq_left_iff z.property, Subtype.ext_iff]
+      rw [← hvu, Sym2.congr_right, Subtype.ext_iff]
     by_cases hz : z = ⟨w, hwv⟩
     · have heq : s(v, z.val) = s(u, w) := hedge.2 hz
       rw [cfiFlipMap, dite_eq_left hvu, cfiFlipMap, ite_eq_left heq, cfiGraph_adj_gadget_edge]
@@ -417,7 +401,7 @@ private theorem cfiFlipMap_adj_gadget_edge {f g : Fin m → ZMod 2} {u w : Fin m
   · by_cases hvw : v = w
     · have huv : u ≠ v := hvw ▸ huw
       have hedge : (s(v, z.val) = s(u, w)) ↔ z = ⟨u, huv⟩ := by
-        rw [Sym2.eq_swap (a := u), ← hvw, sym2_pair_eq_left_iff z.property, Subtype.ext_iff]
+        rw [Sym2.eq_swap (a := u), ← hvw, Sym2.congr_right, Subtype.ext_iff]
       by_cases hz : z = ⟨u, huv⟩
       · have heq : s(v, z.val) = s(u, w) := hedge.2 hz
         rw [cfiFlipMap, dite_eq_right hvu, dite_eq_left hvw, cfiFlipMap, ite_eq_left heq,
@@ -717,7 +701,7 @@ private theorem not_inTriangle_gadget {f : Fin m → ZMod 2} (v : Fin m)
       obtain ⟨w₁, rfl, rfl⟩ := hxy
       obtain ⟨w₂, rfl, rfl⟩ := hxz
       obtain ⟨heq, hne⟩ := hyz
-      have hw : w₁ = w₂ := Subtype.ext ((sym2_pair_eq_left_iff w₁.property).1 heq)
+      have hw : w₁ = w₂ := Subtype.ext (Sym2.congr_right.1 heq)
       exact hne (congrArg α hw)
 
 private theorem zmod_two_add_one_ne_self (b : ZMod 2) : b + 1 ≠ b := by
@@ -847,12 +831,8 @@ private def edgeBit {f : Fin m → ZMod 2} : CFIVertex m f → ZMod 2
   | _ => 0
 
 private theorem not_isDiag_map {π : Fin m ≃ Fin m} {e : Sym2 (Fin m)} (he : ¬ e.IsDiag) :
-    ¬ (e.map π).IsDiag := by
-  induction e using Sym2.ind with
-  | _ v w =>
-    change ¬ (s(π v, π w) : Sym2 (Fin m)).IsDiag
-    rw [Sym2.mk_isDiag_iff]
-    exact π.injective.ne (Sym2.mk_isDiag_iff.not.1 he)
+    ¬ (e.map π).IsDiag :=
+  mt (Sym2.isDiag_map π.injective).1 he
 
 private theorem exists_gadget_eq_of_not_inTriangle {f : Fin m → ZMod 2} {x : CFIVertex m f}
     (hx : ¬ InTriangle (cfiGraph m f) x) :
@@ -1055,7 +1035,7 @@ private theorem sum_eq_of_iso (hm : 3 ≤ m) {f g : Fin m → ZMod 2}
       obtain ⟨z, hez, hbz⟩ := hadj
       have hmap : (s(v, w.val) : Sym2 (Fin m)).map π = s(π v, π w.val) := rfl
       rw [hmap] at hez
-      have hz_eq : z = eDir w := Subtype.ext ((sym2_pair_eq_left_iff z.property).1 hez.symm)
+      have hz_eq : z = eDir w := Subtype.ext (Sym2.congr_right.1 hez.symm)
       rw [← hz_eq, ← hbz]
     have hsum_F : ∑ w : {w : Fin m // w ≠ v},
         σ ⟨s(v, w.val), Sym2.mk_isDiag_iff.not.2 w.property.symm⟩ = ∑ w : Fin m, F v w := by
