@@ -49,6 +49,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
@@ -656,6 +657,26 @@ register_result "magnification" where
     2^n·c·(n + s(n) + 1)^c, counting all operation gates. Hence if for some k and every c > 0 \
     some 2^n-bit slice of MCSP[n^k] needs more than 2^n·c·(n + 1)^c gates, then NP ⊄ P/poly \
     and P ≠ NP. Size-only lower-bound hypothesis."
+
+register_result "formula-magnification-ternary" where
+  title := "Oliveira–Santhanam: sublinear zero-error average-case formula lower bounds for \
+    MCSP[2^√n] imply NP ⊄ Formula[poly]"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 5",
+      locator := "ECCC TR18-139, Section 1.2, p. 8; Appendix A, Definition 43, p. 34" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_half_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_zero_error_average_case_sublinear_hard
+  ]
+  scope := "If no nonuniform family of ternary De Morgan formula devices (an unknown mask and an \
+    answer formula) with o(2^n) total leaves solves MCSP[⌊2^√n⌋] on 2^n-bit truth tables with \
+    zero error, answering ? on at most a 1/n fraction of truth tables for every large n \
+    (Definition 43), then some binary NP language has no polynomial-size De Morgan formulas; \
+    the general form takes any subexponential threshold. Circuit size counts every De Morgan \
+    gate. Conditional: no formula lower bound for MCSP is proved."
 
 register_result "matrix-multiplication" where
   title := "Matrix multiplication: the exponent is at most 9/4"

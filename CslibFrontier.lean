@@ -2585,6 +2585,7 @@ public import CslibFrontier.Computability.MCSP.FormulaMagnification
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
+public import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 public import CslibFrontier.Computability.MCSP.HardnessConsequences
 public import CslibFrontier.Computability.MCSP.Magnification
 public import CslibFrontier.Computability.MCSP.NP
@@ -2595,6 +2596,7 @@ public import CslibFrontier.Computability.MCSP.Shannon
 public import CslibFrontier.Computability.MCSP.Succinct
 public import CslibFrontier.Computability.MCSP.SuccinctNP
 public import CslibFrontier.Computability.MCSP.SuccinctNP.Words
+public import CslibFrontier.Computability.MCSP.ZeroErrorAverageCase
 public import CslibFrontier.Computability.Machines.ReadMachine.Basic
 public import CslibFrontier.Computability.Machines.ReadMachine.StepMachine
 public import CslibFrontier.Computability.Machines.ReadMachine.Tidy
