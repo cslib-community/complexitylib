@@ -111,4 +111,28 @@ theorem localFormulaClass_approxMCSP {s₁ s₂ k : ℕ → ℕ} (hk : ∀ n, 1 
     · exact absurd (by simpa using exists_length_eq_two_pow_of_mem_truthTableLanguage hx) hm
     · exact absurd (by simpa using exists_length_eq_two_pow_of_mem_truthTableLanguage hx) hm
 
+/-- An explicit polynomial bound on the fan-in of the oracle gates, `poly(s * k)`, when
+`n ≤ s`. -/
+theorem approxMCSPQueryEncLength_le {n s k : ℕ} (hn : n ≤ s) (hk : 1 ≤ k) :
+    approxMCSPQueryEncLength n s k ≤ 98 * (k * (s + 1)) ^ 3 := by
+  have hlog := computableFunctionsLogBound_le_poly n s
+  have hlog' : computableFunctionsLogBound n s + 2 ≤ 7 * (s + 1) ^ 2 := by nlinarith
+  have hk' : 1 ≤ k * (s + 1) := Nat.one_le_iff_ne_zero.mpr (by positivity)
+  unfold approxMCSPQueryEncLength SuccinctMCSP.ofFunctionEncLength
+  have h1 : k * (computableFunctionsLogBound n s + 2) ≤ 7 * k * (s + 1) ^ 2 := by nlinarith
+  have h2 : 8 * n + 10 ≤ 10 * (s + 1) := by omega
+  have h3 : k * (computableFunctionsLogBound n s + 2) * (8 * n + 10) ≤
+      70 * (k * (s + 1)) ^ 3 := by
+    calc k * (computableFunctionsLogBound n s + 2) * (8 * n + 10)
+        ≤ (7 * k * (s + 1) ^ 2) * (10 * (s + 1)) := Nat.mul_le_mul h1 h2
+      _ = 70 * k * (s + 1) ^ 3 := by ring
+      _ ≤ 70 * (k * (s + 1)) ^ 3 := by
+        rw [mul_pow, ← mul_assoc]
+        exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.le_self_pow (by decide) k))
+  have h4 : 4 * n + 3 + s ≤ 28 * (k * (s + 1)) ^ 3 := by
+    have : s + 1 ≤ k * (s + 1) := Nat.le_mul_of_pos_left _ hk
+    have : k * (s + 1) ≤ (k * (s + 1)) ^ 3 := Nat.le_self_pow (by decide) _
+    omega
+  omega
+
 end Cslib.Circuits.Boolean
