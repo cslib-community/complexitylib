@@ -94,8 +94,8 @@ def diamondGraph (φ : CNF ℕ) : Graph :=
 
 /-- The reduction from `SAT` to `DirHamPath` [Sipser, Theorem 7.46][Sipser2013]: the diamond
 graph of `φ`, from the top of the first diamond to the bottom of the last. -/
-def toDirHamPath (φ : CNF ℕ) : Graph × ℕ × ℕ :=
-  (diamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.vars.length)
+def toDirHamPath (φ : CNF ℕ) : PathInstance :=
+  ⟨diamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.vars.length⟩
 
 /-- The reduction from `SAT` to `DirHamCycle`: the diamond graph of `φ` with an arc from the
 bottom of the last diamond back to the top of the first. -/
@@ -104,8 +104,8 @@ def toDirHamCycle (φ : CNF ℕ) : Graph :=
 
 /-- The diamond graph of `φ` as a diamond graph with a slot for each clause in every row. -/
 theorem toDirHamPath_eq (φ : CNF ℕ) : toDirHamPath φ =
-    (Diamond.graph φ.vars.length (fun _ => φ.length) φ.length (diamondDetours φ),
-      Diamond.topNode 0, Diamond.topNode φ.vars.length) := rfl
+    ⟨Diamond.graph φ.vars.length (fun _ => φ.length) φ.length (diamondDetours φ),
+      Diamond.topNode 0, Diamond.topNode φ.vars.length⟩ := rfl
 
 /-! ### Correctness -/
 
