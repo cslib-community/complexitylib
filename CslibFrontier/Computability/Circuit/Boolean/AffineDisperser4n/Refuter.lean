@@ -179,14 +179,20 @@ def chooseStep? {n} (S : State n) : Option StepChoice :=
 def toDenseRow (m : ℕ) (terms : Finset ℕ) (c : Bool) : Row :=
   ⟨(List.range m).map (fun i => decide (i ∈ terms)), c⟩
 
+/-- A strict upper bound on the names of the parameters and auxiliary variables of `S`: the width
+of the dense `XORSAT` systems built by `evaluateAux`. -/
+def varBound {n} (S : State n) : ℕ :=
+  (S.params ∪ S.aux).sup id + 1
+
 def evaluateAux {n} (S : State n) (a : ℕ) (val : ℕ → Bool) : Bool :=
+  let N := varBound S
   let sys : System := (S.eqns.sort (· ≤ ·)).map fun e =>
-    toDenseRow S.m (S.eqn e).terms (S.eqn e).rhs
+    toDenseRow N (S.eqn e).terms (S.eqn e).rhs
   let paramSys : System := (S.params.sort (· ≤ ·)).map fun p =>
-    toDenseRow S.m {p} (val p)
-  let aSys : System := [toDenseRow S.m {a} false]
+    toDenseRow N {p} (val p)
+  let aSys : System := [toDenseRow N {a} false]
   let F : System := sys ++ paramSys ++ aSys
-  if Cslib.Complexity.XORSAT.Dense.decide ⟨S.m, F⟩ then false else true
+  if Cslib.Complexity.XORSAT.Dense.decide ⟨N, F⟩ then false else true
 
 def findAffineRep {n} (S : State n) (a : ℕ) : Bool × Finset ℕ :=
   let c := evaluateAux S a (fun _ => false)
