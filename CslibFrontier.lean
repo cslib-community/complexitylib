@@ -4115,6 +4115,9 @@ public import CslibFrontier.Crypto.Protocols.MPC.PolyTime
 public import CslibFrontier.Crypto.Protocols.MPC.SPDZ
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Crypto.Protocols.MPC.Yao
+public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.DealClient
+public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Information
+public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Protocol
 public import CslibFrontier.Crypto.Protocols.PIR.Basic
 public import CslibFrontier.Crypto.Protocols.PIR.CoveringCode
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
