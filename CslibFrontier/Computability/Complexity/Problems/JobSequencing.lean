@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
 public import CslibFrontier.Computability.Complexity.Classes.NP.Witness
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -20,15 +21,16 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 # Sequencing with deadlines and penalties
 
 `JobSequencing` is Karp's problem JOB SEQUENCING [Karp1972], the problem SEQUENCING TO MINIMIZE
-TARDY TASK WEIGHT of [Garey and Johnson, Problem SS3][GareyJohnson1979]: given jobs
-`(time, deadline, penalty)` and a bound `k`, some order of the jobs, run one after another from
-time `0` without idle time, has total penalty at most `k`, where a job pays its penalty when it
-completes after its deadline.
+TARDY TASK WEIGHT of [Garey and Johnson, Problem SS3][GareyJohnson1979]: given jobs with
+`(time, deadline, penalty)` (`Cslib.Complexity.JobSequencing.Job`) and a bound
+(`Cslib.Complexity.JobSequencingInstance`), some order of the jobs, run one after another from
+time `0` without idle time, has total penalty at most `bound`, where a job pays its penalty when
+it completes after its deadline.
 All numbers are natural numbers in binary (`encNat`); orders are permutations (`List.Perm`) of the
 list of jobs, so repeated jobs are scheduled with multiplicity.
 
-Karp's reduction from `SubsetSum` (his KNAPSACK) maps the numbers `a` and target `t` to the jobs
-`(a, t, a)`, of time and penalty `a` and common deadline `t`, with penalty bound `a.sum - t`
+Karp's reduction from `SubsetSum` (his KNAPSACK) maps the numbers `a` and target `t` to jobs of
+time and penalty `a` and common deadline `t`, with penalty bound `a.sum - t`
 (`SubsetSum.toJobSequencing`). The jobs completed on time in an order hold numbers of total at
 most `t`, and the others pay their whole time as penalty, so the bound is met exactly when the
 jobs on time sum to `t`. A target above `a.sum` is mapped to a fixed instance without a feasible
@@ -40,9 +42,12 @@ total penalty in closed form from prefix sums.
 
 ## Main definitions
 
+* `Cslib.Complexity.JobSequencing.Job`, `Cslib.Complexity.JobSequencing.encJob`:
+  jobs with processing time, deadline, and penalty, and their binary encoding.
 * `Cslib.Complexity.JobSequencing.penaltyFrom`, `Cslib.Complexity.JobSequencing.totalPenalty`:
   the total penalty of an order.
-* `Cslib.Complexity.JobSequencing`, `Cslib.Complexity.encJobSequencing`.
+* `Cslib.Complexity.JobSequencingInstance`, `Cslib.Complexity.JobSequencing`,
+  `Cslib.Complexity.encJobSequencing`.
 * `Cslib.Complexity.SubsetSum.toJobSequencing`: Karp's reduction.
 
 ## Main results
@@ -62,7 +67,7 @@ total penalty in closed form from prefix sums.
 * [R. M. Karp, *Reducibility among combinatorial problems*][Karp1972]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -71,52 +76,135 @@ open scoped List
 
 namespace JobSequencing
 
-/-- The total penalty of the jobs `(time, deadline, penalty)` run in the given order, one after
-another without idle time, from time `s`: a job pays its penalty when it completes after its
-deadline. -/
-def penaltyFrom : ℕ → List (ℕ × ℕ × ℕ) → ℕ
-  | _, [] => 0
-  | s, (time, deadline, penalty) :: σ =>
-    (if deadline < s + time then penalty else 0) + penaltyFrom (s + time) σ
+/-- A job in `JobSequencing`, with processing time, deadline, and tardiness penalty. -/
+@[ext]
+structure Job where
+  /-- The processing time required by the job. -/
+  time : ℕ
+  /-- The deadline by which the job must complete to avoid paying its penalty. -/
+  deadline : ℕ
+  /-- The penalty incurred if the job completes strictly after its deadline. -/
+  penalty : ℕ
+deriving DecidableEq, Repr
 
-/-- The total penalty of the jobs `(time, deadline, penalty)` run in the given order from
-time `0`. -/
-def totalPenalty (σ : List (ℕ × ℕ × ℕ)) : ℕ := penaltyFrom 0 σ
+/-- Binary encoding of a job as `(time, (deadline, penalty))`. -/
+enc_structure encJob : Job where time : encNat, deadline : encNat, penalty : encNat
+
+namespace Job
+
+/-- Projecting `Job.time` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_time {γ : Type} {encIn : γ ↪ List Bool} {g : γ → Job}
+    (h : ComputableInPolyTime g encIn encJob) :
+    ComputableInPolyTime (fun x => (g x).time) encIn encNat :=
+  ComputableInPolyTime.comp encJob_time_deg.computableInPolyTime h
+
+/-- Projecting `Job.deadline` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_deadline {γ : Type} {encIn : γ ↪ List Bool} {g : γ → Job}
+    (h : ComputableInPolyTime g encIn encJob) :
+    ComputableInPolyTime (fun x => (g x).deadline) encIn encNat :=
+  ComputableInPolyTime.comp encJob_deadline_deg.computableInPolyTime h
+
+/-- Projecting `Job.penalty` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_penalty {γ : Type} {encIn : γ ↪ List Bool} {g : γ → Job}
+    (h : ComputableInPolyTime g encIn encJob) :
+    ComputableInPolyTime (fun x => (g x).penalty) encIn encNat :=
+  ComputableInPolyTime.comp encJob_penalty_deg.computableInPolyTime h
+
+/-- Constructing a `Job` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_mk {γ : Type} {encIn : γ ↪ List Bool} {t d p : γ → ℕ}
+    (ht : ComputableInPolyTime t encIn encNat)
+    (hd : ComputableInPolyTime d encIn encNat)
+    (hp : ComputableInPolyTime p encIn encNat) :
+    ComputableInPolyTime (fun x => (⟨t x, d x, p x⟩ : Job)) encIn encJob :=
+  encJob_mk_deg.computableInPolyTime.comp (ht.prod (hd.prod hp))
+
+end Job
+
+/-- The total penalty of the jobs run in the given order, one after another without idle time,
+from time `s`: a job pays its penalty when it completes after its deadline. -/
+@[expose] def penaltyFrom : ℕ → List Job → ℕ
+  | _, [] => 0
+  | s, j :: σ =>
+    (if j.deadline < s + j.time then j.penalty else 0) + penaltyFrom (s + j.time) σ
+
+/-- The total penalty of the jobs run in the given order from time `0`. -/
+@[expose] def totalPenalty (σ : List Job) : ℕ := penaltyFrom 0 σ
 
 /-- The penalties of two consecutive runs add up; the second starts when the first ends. -/
-theorem penaltyFrom_append (s : ℕ) (σ τ : List (ℕ × ℕ × ℕ)) :
-    penaltyFrom s (σ ++ τ) = penaltyFrom s σ + penaltyFrom (s + (σ.map Prod.fst).sum) τ := by
+theorem penaltyFrom_append (s : ℕ) (σ τ : List Job) :
+    penaltyFrom s (σ ++ τ) = penaltyFrom s σ + penaltyFrom (s + (σ.map Job.time).sum) τ := by
   induction σ generalizing s with
   | nil => simp only [List.nil_append, penaltyFrom, List.map_nil, List.sum_nil, Nat.add_zero,
       Nat.zero_add]
-  | cons x σ ih =>
-    obtain ⟨time, deadline, penalty⟩ := x
+  | cons j σ ih =>
     simp only [List.cons_append, penaltyFrom, ih, List.map_cons, List.sum_cons, Nat.add_assoc]
 
 end JobSequencing
 
-/-- Instances of `JobSequencing` are encoded as a list of jobs `(time, deadline, penalty)` and a
-penalty bound, all in binary. -/
-abbrev encJobSequencing : List (ℕ × ℕ × ℕ) × ℕ ↪ List Bool :=
-  encPair (encList (encPair encNat (encPair encNat encNat))) encNat
+/-- An instance of `JobSequencing`: a list of jobs to schedule and a penalty bound. -/
+@[ext]
+structure JobSequencingInstance where
+  /-- The jobs to schedule consecutively without idle time starting at time `0`. -/
+  jobs : List JobSequencing.Job
+  /-- The maximum allowed total tardiness penalty. -/
+  bound : ℕ
+deriving DecidableEq, Repr
 
-/-- **Sequencing with deadlines and penalties** [Karp1972]: some order of the jobs
-`(time, deadline, penalty)` has total penalty at most the bound. -/
-def JobSequencing : Set (List (ℕ × ℕ × ℕ) × ℕ) :=
-  {x | ∃ σ, σ ~ x.1 ∧ JobSequencing.totalPenalty σ ≤ x.2}
+/-- Instances of `JobSequencing` are encoded as a list of jobs and a penalty bound, all in
+binary. -/
+enc_structure encJobSequencing : JobSequencingInstance where
+  jobs : (encList JobSequencing.encJob), bound : encNat
+
+namespace JobSequencingInstance
+
+/-- Projecting `JobSequencingInstance.jobs` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_jobs {γ : Type} {encIn : γ ↪ List Bool}
+    {g : γ → JobSequencingInstance}
+    (h : ComputableInPolyTime g encIn encJobSequencing) :
+    ComputableInPolyTime (fun x => (g x).jobs) encIn (encList JobSequencing.encJob) :=
+  ComputableInPolyTime.comp encJobSequencing_jobs_deg.computableInPolyTime h
+
+/-- Projecting `JobSequencingInstance.bound` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_bound {γ : Type} {encIn : γ ↪ List Bool}
+    {g : γ → JobSequencingInstance}
+    (h : ComputableInPolyTime g encIn encJobSequencing) :
+    ComputableInPolyTime (fun x => (g x).bound) encIn encNat :=
+  ComputableInPolyTime.comp encJobSequencing_bound_deg.computableInPolyTime h
+
+/-- Constructing a `JobSequencingInstance` is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_mk {γ : Type} {encIn : γ ↪ List Bool}
+    {jobs : γ → List JobSequencing.Job} {bound : γ → ℕ}
+    (hjobs : ComputableInPolyTime jobs encIn (encList JobSequencing.encJob))
+    (hbound : ComputableInPolyTime bound encIn encNat) :
+    ComputableInPolyTime (fun x => (⟨jobs x, bound x⟩ : JobSequencingInstance))
+      encIn encJobSequencing :=
+  encJobSequencing_mk_deg.computableInPolyTime.comp (hjobs.prod hbound)
+
+end JobSequencingInstance
+
+/-- **Sequencing with deadlines and penalties** [Karp1972]: some order of the jobs has total
+penalty at most the bound. -/
+@[expose] def JobSequencing : Set JobSequencingInstance :=
+  {x | ∃ σ, σ ~ x.jobs ∧ JobSequencing.totalPenalty σ ≤ x.bound}
 
 namespace JobSequencing
 
 /-- The total penalty in closed form: the `i`-th job completes at the sum of the times of the
 first `i + 1` jobs. -/
-private theorem penaltyFrom_eq (s : ℕ) (σ : List (ℕ × ℕ × ℕ)) :
+private theorem penaltyFrom_eq (s : ℕ) (σ : List Job) :
     penaltyFrom s σ = ((List.range σ.length).map fun i =>
-      if (σ.getD i (0, 0, 0)).2.1 < s + ((σ.take (i + 1)).map Prod.fst).sum then
-        (σ.getD i (0, 0, 0)).2.2 else 0).sum := by
+      if (σ.getD i ⟨0, 0, 0⟩).deadline < s + ((σ.take (i + 1)).map Job.time).sum then
+        (σ.getD i ⟨0, 0, 0⟩).penalty else 0).sum := by
   induction σ generalizing s with
   | nil => rfl
-  | cons x σ ih =>
-    obtain ⟨time, deadline, penalty⟩ := x
+  | cons j σ ih =>
     rw [penaltyFrom, ih, List.length_cons, List.range_succ_eq_map, List.map_cons,
       List.sum_cons, List.map_map]
     congr 2
@@ -127,11 +215,10 @@ private theorem penaltyFrom_eq (s : ℕ) (σ : List (ℕ × ℕ × ℕ)) :
 /-- The total penalty of an order is polynomial-time computable. -/
 @[fun_prop]
 theorem computableInPolyTime_totalPenalty :
-    ComputableInPolyTime totalPenalty (encList (encPair encNat (encPair encNat encNat)))
-      encNat := by
-  have h : totalPenalty = fun σ : List (ℕ × ℕ × ℕ) => ((List.range σ.length).map fun i =>
-      if (σ.getD i (0, 0, 0)).2.1 < ((σ.take (i + 1)).map Prod.fst).sum then
-        (σ.getD i (0, 0, 0)).2.2 else 0).sum := by
+    ComputableInPolyTime totalPenalty (encList encJob) encNat := by
+  have h : totalPenalty = fun σ : List Job => ((List.range σ.length).map fun i =>
+      if (σ.getD i ⟨0, 0, 0⟩).deadline < ((σ.take (i + 1)).map Job.time).sum then
+        (σ.getD i ⟨0, 0, 0⟩).penalty else 0).sum := by
     funext σ
     simpa only [totalPenalty, Nat.zero_add] using penaltyFrom_eq 0 σ
   rw [h]
@@ -139,46 +226,54 @@ theorem computableInPolyTime_totalPenalty :
 
 /-- The check of an order against an instance: it is a permutation of the jobs, by counting
 occurrences, and its total penalty is within the bound. -/
-private def check (y : (List (ℕ × ℕ × ℕ) × ℕ) × List (ℕ × ℕ × ℕ)) : Bool :=
-  ((y.2 ++ y.1.1).all fun j => decide (y.2.count j = y.1.1.count j)) &&
-    decide (totalPenalty y.2 ≤ y.1.2)
+private def check (y : JobSequencingInstance × List Job) : Bool :=
+  ((y.2 ++ y.1.jobs).all fun j => decide (y.2.count j = y.1.jobs.count j)) &&
+    decide (totalPenalty y.2 ≤ y.1.bound)
 
-private theorem check_iff (x : List (ℕ × ℕ × ℕ) × ℕ) (σ : List (ℕ × ℕ × ℕ)) :
-    check (x, σ) = true ↔ σ ~ x.1 ∧ totalPenalty σ ≤ x.2 := by
+private theorem check_iff (x : JobSequencingInstance) (σ : List Job) :
+    check (x, σ) = true ↔ σ ~ x.jobs ∧ totalPenalty σ ≤ x.bound := by
   simp only [check, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq, List.mem_append]
   refine and_congr_left fun _ => ⟨fun h => List.perm_iff_count.2 fun j => ?_,
     fun h j _ => List.perm_iff_count.1 h j⟩
-  by_cases hj : j ∈ σ ∨ j ∈ x.1
+  by_cases hj : j ∈ σ ∨ j ∈ x.jobs
   · exact h j hj
   · rw [not_or] at hj
     rw [List.count_eq_zero_of_not_mem hj.1, List.count_eq_zero_of_not_mem hj.2]
 
 private theorem computableInPolyTime_check :
-    ComputableInPolyTime check
-      (encPair encJobSequencing (encList (encPair encNat (encPair encNat encNat)))) encBool := by
+    ComputableInPolyTime check (encPair encJobSequencing (encList encJob)) encBool := by
   unfold check
   simp only [List.count_eq_countP]
   fun_prop
 
+/-- A total decoder for `Job` induced by `encJob`'s binary triple layout. -/
+private def decoderJob : Decoder encJob :=
+  (Decoder.pair .nat (.pair .nat .nat)).map
+    (fun t => ⟨t.1, t.2.1, t.2.2⟩)
+    (fun j => (j.time, j.deadline, j.penalty))
+    (fun _ => rfl)
+    (fun _ => rfl)
+
 /-- `JobSequencing` belongs to `NP`, with the order as the witness; a permutation of the jobs is
 encoded with the length of the encoded list of jobs. -/
 theorem mem_NP : JobSequencing ∈ NP encJobSequencing := by
-  have h := mem_NP_of_witness (p := Polynomial.X) (.list (.pair .nat (.pair .nat .nat)))
+  have h := mem_NP_of_witness (p := Polynomial.X) (Decoder.list decoderJob)
     computableInPolyTime_check check_iff fun x σ hσ => ⟨σ, hσ, ?_⟩
   · exact h
-  · rw [Polynomial.eval_X, length_encList, (hσ.1.map _).sum_eq, ← length_encList]
-    simp only [length_encPair]
+  · rw [Polynomial.eval_X, encJobSequencing_apply, length_encPair, length_encList,
+      (hσ.1.map _).sum_eq, ← length_encList]
+    dsimp only
     omega
 
 /-- A job of time and penalty `a` with deadline `t`. -/
-private abbrev job (t a : ℕ) : ℕ × ℕ × ℕ := (a, t, a)
+private def job (t a : ℕ) : Job := ⟨a, t, a⟩
 
 private theorem penaltyFrom_le (s t : ℕ) (l : List ℕ) :
     penaltyFrom s (l.map (job t)) ≤ l.sum := by
   induction l generalizing s with
   | nil => exact le_refl _
   | cons a l ih =>
-    simp only [List.map_cons, penaltyFrom, List.sum_cons]
+    simp only [List.map_cons, job, penaltyFrom, List.sum_cons]
     have := ih (s + a)
     split <;> omega
 
@@ -187,7 +282,7 @@ private theorem penaltyFrom_eq_zero (s t : ℕ) (l : List ℕ) (h : s + l.sum �
   induction l generalizing s with
   | nil => rfl
   | cons a l ih =>
-    simp only [List.map_cons, penaltyFrom, List.sum_cons] at h ⊢
+    simp only [List.map_cons, job, penaltyFrom, List.sum_cons] at h ⊢
     rw [ih (s + a) (by omega), ite_eq_right (by omega)]
 
 /-- In an order of the jobs `job t a` started at time `s`, the jobs completed on time hold a
@@ -198,7 +293,7 @@ private theorem exists_onTime (t : ℕ) (l : List ℕ) (s : ℕ) :
   induction l generalizing s with
   | nil => exact ⟨[], List.Sublist.slnil, rfl, Or.inr rfl⟩
   | cons a l ih =>
-    simp only [List.map_cons, penaltyFrom, List.sum_cons]
+    simp only [List.map_cons, job, penaltyFrom, List.sum_cons]
     obtain ⟨O, hO, hsum, hle⟩ := ih (s + a)
     by_cases ha : t < s + a
     · refine ⟨O, hO.cons a, ?_, ?_⟩
@@ -223,8 +318,9 @@ namespace SubsetSum
 /-- **Karp's reduction from `SubsetSum` to `JobSequencing`** [Karp1972]: each number `a` becomes a
 job of time and penalty `a` with the target `t` as deadline, and the penalty bound is
 `a.sum - t`. A target above the total is mapped to a single job that is always late. -/
-def toJobSequencing (x : List ℕ × ℕ) : List (ℕ × ℕ × ℕ) × ℕ :=
-  if x.2 ≤ x.1.sum then (x.1.map fun a => (a, x.2, a), x.1.sum - x.2) else ([(1, 0, 1)], 0)
+@[expose] def toJobSequencing (x : List ℕ × ℕ) : JobSequencingInstance :=
+  if x.2 ≤ x.1.sum then ⟨x.1.map fun a => ⟨a, x.2, a⟩, x.1.sum - x.2⟩
+  else ⟨[⟨1, 0, 1⟩], 0⟩
 
 open JobSequencing in
 /-- **Correctness of the reduction to `JobSequencing`.** -/
@@ -236,17 +332,18 @@ theorem toJobSequencing_mem_iff (x : List ℕ × ℕ) :
   split_ifs with ht
   · constructor
     · rintro ⟨σ, hσ, hpen⟩
-      have hσ' : σ = (σ.map Prod.fst).map (job t) := by
+      dsimp only at hσ hpen
+      have hσ' : σ = (σ.map Job.time).map (job t) := by
         conv_lhs => rw [← List.map_id σ]
         rw [List.map_map]
         refine List.map_congr_left fun j hj => ?_
         obtain ⟨a, -, rfl⟩ := List.mem_map.1 (hσ.subset hj)
         rfl
-      have hperm : σ.map Prod.fst ~ l := by
-        simpa only [List.map_map, Function.comp_def, List.map_id'] using hσ.map Prod.fst
-      obtain ⟨O, hO, hsum, hle⟩ := exists_onTime t (σ.map Prod.fst) 0
+      have hperm : σ.map Job.time ~ l := by
+        simpa only [List.map_map, Function.comp_def, List.map_id'] using hσ.map Job.time
+      obtain ⟨O, hO, hsum, hle⟩ := exists_onTime t (σ.map Job.time) 0
       rw [← hσ'] at hsum
-      have htot : (σ.map Prod.fst).sum = l.sum := hperm.sum_eq
+      have htot : (σ.map Job.time).sum = l.sum := hperm.sum_eq
       unfold totalPenalty at hpen
       have hOt : O.sum = t := by
         rcases hle with hle | rfl
@@ -258,11 +355,12 @@ theorem toJobSequencing_mem_iff (x : List ℕ × ℕ) :
     · rintro ⟨s, hs, hsum⟩
       obtain ⟨r, hr⟩ := hs.exists_perm_append
       refine ⟨(s ++ r).map (job t), (hr.map _).symm, ?_⟩
+      dsimp only
       have htot := hr.sum_eq
       rw [List.sum_append] at htot
       unfold totalPenalty
       rw [List.map_append, penaltyFrom_append, penaltyFrom_eq_zero 0 t s (by omega)]
-      have := penaltyFrom_le (0 + ((s.map (job t)).map Prod.fst).sum) t r
+      have := penaltyFrom_le (0 + ((s.map (job t)).map Job.time).sum) t r
       omega
   · constructor
     · rintro ⟨σ, hσ, hpen⟩

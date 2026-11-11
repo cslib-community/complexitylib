@@ -329,6 +329,11 @@ Moses Charikar, Kevin Chen, Martin Farach-Colton. “Finding Frequent Items in D
 
 Eshan Chattopadhyay and Jyun-Jie Liao. *Optimal Error Pseudodistributions for Read-Once Branching Programs*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 25:1–25:27, 2020. https://doi.org/10.4230/LIPIcs.CCC.2020.25 ; cited from arXiv:2002.07208v4. Appendix A.1 (Definition A.2, Lemmas A.3 and A.4) was checked against the arXiv v4 text on 2026-11-08. Hoza (2021) cites the CCC version's Lemma 43 for the same material.
 
+<a id="chenhiraharaoliveirapichrajgopalsanthanam2020"></a>
+## chenhiraharaoliveirapichrajgopalsanthanam2020
+
+Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` bullet of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
+
 <a id="christofides76"></a>
 ## christofides76
 
@@ -620,6 +625,11 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 ## gomoryhu61
 
 Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
+
+<a id="goosetal22"></a>
+## goosetal22
+
+Mika Göös, Alexandros Hollender, Siddhartha Jain, Gilbert Maystre, William Pires, Robert Robere and Ran Tao. "Further Collapses in TFNP." *37th Computational Complexity Conference (CCC 2022)*, LIPIcs 234, 33:1–33:15, 2022. https://doi.org/10.4230/LIPIcs.CCC.2022.33 . Checked on 2026-11-10 against the arXiv TeX source of `arXiv:2202.07761v2` (https://arxiv.org/abs/2202.07761 , dated 20 May 2022): Section 1, Theorem 1 (`EOPL = PLS ∩ PPAD`) and Theorem 2 (`SOPL = PLS ∩ PPADS`); Section 2, Lemma 1 (`inj-PHP` and `bij-PHP` as `PPADS`- and `PPAD`-complete formulations); Section 3, Lemma 2 (the path-pigeonhole reduction `inj-PHP ≤ Path-inj-PHP_f`); Section 4, Lemma 3 (`SoD ∧ inj-PHP ≤ SoPL`); and Section 5, Lemma 4 (`SoPL ∧ bij-PHP ≤ EoPL`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLineCollapse.lean` implements Lemma 4 directly from `SOPL` and `PPAD` (`SOPL_inter_PPAD_subset_EOPL`, `EOPL_eq_SOPL_inter_PPAD`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/SOPLCollapse.lean` implements Lemmas 1–3 directly on `PLS` and `PPADS` families over width `n₁(a) + 2(n₁(a) + n₂(a))` (`plsPpads_sink`, `mem_SOPL_of_localOpt_sinkOfLine`, `PLS_inter_PPADS_subset_SOPL`) and deduces Theorem 2 (`SOPL_eq_PLS_inter_PPADS`) and Theorem 1 (`EOPL_eq_PLS_inter_PPAD`). `UEOPL` and the query-model results of the paper are not formalized.
 
 <a id="grenet11"></a>
 ## grenet11

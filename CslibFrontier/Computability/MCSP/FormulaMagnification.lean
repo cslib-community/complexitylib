@@ -1030,6 +1030,72 @@ theorem card_le_two_mul_filter_notMem_succinctMCSP {n s k M : ℕ} (hk : 1 ≤ k
   change Fintype.card (Fin q → BitString n) ≤ 2 * Good.card
   omega
 
+open Classical in
+/-- **Seed selection for the Oliveira–Santhanam reduction**
+[OliveiraSanthanam2018, Section 3.1, proof of Lemma 16, p. 14]. If `1 ≤ k n`, `s₁ n ≤ s₂ n` and
+`(computableFunctions n (s₂ n)).card ≤ 2 ^ M`, there are `2 ^ n` tuples of `k n * (M + 2)` inputs
+such that the sampled `SuccinctMCSP` queries at threshold `s₂ n` all accept every truth table in
+`GapMCSP.yesSet s₁`, and some query rejects every truth table in `ApproxMCSP.noSet s₂ k`. For
+`1 ≤ n` a coordinate projection is not a no-instance, so the union bound runs over fewer than
+`2 ^ (2 ^ n)` no-instances and `2 ^ n` tuples suffice; for `n = 0` there is only one tuple. -/
+theorem exists_seeds_approxMCSP {s₁ s₂ k : ℕ → ℕ} {n M : ℕ} (hk : 1 ≤ k n)
+    (hs : s₁ n ≤ s₂ n) (hcard : (computableFunctions n (s₂ n)).card ≤ 2 ^ M) :
+    ∃ ωs : Fin (2 ^ n) → Fin (k n * (M + 2)) → BitString n,
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ → ∀ j,
+        SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T)
+          (Finset.univ.image (ωs j)) (s₂ n) ∈ SuccinctMCSP) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k → ∃ j,
+        SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T)
+          (Finset.univ.image (ωs j)) (s₂ n) ∉ SuccinctMCSP) := by
+  classical
+  set q := k n * (M + 2)
+  let good : BitString (2 ^ n) → Finset (Fin q → BitString n) := fun T =>
+    Finset.univ.filter fun ω => SuccinctMCSP.Instance.ofFunction
+      ((MCSP.truthTable n).symm T) (Finset.univ.image ω) (s₂ n) ∉ SuccinctMCSP
+  have hgood : ∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+      Fintype.card (Fin q → BitString n) ≤ 2 * (good T).card := fun T hT =>
+    card_le_two_mul_filter_notMem_succinctMCSP hk hcard (ApproxMCSP.ofFn_mem_noSet_iff.mp hT)
+  have hyes : ∀ (ωs : Fin (2 ^ n) → Fin q → BitString n) (T : BitString (2 ^ n)),
+      List.ofFn T ∈ GapMCSP.yesSet s₁ → ∀ j,
+        SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T)
+          (Finset.univ.image (ωs j)) (s₂ n) ∈ SuccinctMCSP := fun _ T hT _ =>
+    SuccinctMCSP.ofFunction_mem_of_complexity_le ((GapMCSP.ofFn_mem_yesSet_iff.mp hT).trans hs) _
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · -- There is only one tuple of inputs, and it is good for every no-instance.
+    let ω₀ : Fin q → BitString 0 := fun _ => Fin.elim0
+    refine ⟨fun _ => ω₀, hyes _, fun T hT => ⟨⟨0, Nat.one_pos⟩, ?_⟩⟩
+    obtain ⟨ω, hω⟩ : (good T).Nonempty := by
+      rw [← Finset.card_pos]
+      have h1 := hgood T hT
+      have h2 : 0 < Fintype.card (Fin q → BitString 0) := Fintype.card_pos
+      omega
+    rw [Subsingleton.elim ω₀ ω]
+    exact (Finset.mem_filter.mp hω).2
+  · -- A coordinate projection is not a no-instance, so there are fewer than `2 ^ (2 ^ n)`.
+    have hproj : List.ofFn (MCSP.truthTable n fun x : BitString n => x ⟨0, hn⟩) ∉
+        ApproxMCSP.noSet s₂ k := fun h => by
+      have h' := GapMCSP.ofFn_mem_noSet_iff.mp (ApproxMCSP.ofFn_mem_gapMCSP_noSet_of_mem_noSet hk h)
+      rw [Equiv.symm_apply_apply, complexity_single_proj] at h'
+      exact Nat.not_lt_zero _ h'
+    let noFinset : Finset (BitString (2 ^ n)) :=
+      Finset.univ.filter fun T => List.ofFn T ∈ ApproxMCSP.noSet s₂ k
+    have hno_card : Fintype.card noFinset < 2 ^ (2 ^ n) := by
+      rw [Fintype.card_coe]
+      calc noFinset.card < (Finset.univ : Finset (BitString (2 ^ n))).card :=
+            Finset.card_lt_card (Finset.filter_ssubset.mpr ⟨_, Finset.mem_univ _, hproj⟩)
+        _ = 2 ^ (2 ^ n) := by simp [BitString]
+    obtain ⟨ωs, hωs⟩ := exists_cover_of_scaled_card_lt (S := Fin q → BitString n) (W := noFinset)
+      (fun ω T => ω ∈ good T.1) 1 2 (2 ^ n)
+      (fun T => by
+        have h := hgood T.1 (Finset.mem_filter.mp T.2).2
+        have hle := Finset.card_le_univ (good T.1)
+        rw [Fintype.card_subtype_compl, Fintype.card_coe]
+        omega)
+      (by simpa only [one_pow, mul_one] using hno_card)
+    refine ⟨ωs, hyes ωs, fun T hT => ?_⟩
+    obtain ⟨j, hj⟩ := hωs ⟨T, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hT⟩⟩
+    exact ⟨j, (Finset.mem_filter.mp hj).2⟩
+
 /-- **End-to-end Oliveira–Santhanam formula construction for any language agreeing with
 `SuccinctMCSP` [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].**
 If `L : Language Bool` agrees with `SuccinctMCSP` along `SuccinctMCSP.enc` and every
@@ -1050,18 +1116,7 @@ theorem exists_formula_separating_approxMCSP_of_agrees
       (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
         F.eval interpretation T = false) := by
   classical
-  set q := k n * (M + 2)
-  let noFinset : Finset (BitString (2 ^ n)) :=
-    Finset.univ.filter fun T => List.ofFn T ∈ ApproxMCSP.noSet s₂ k
-  have hno_card : Fintype.card noFinset ≤ 2 ^ (2 ^ n) := by
-    rw [Fintype.card_coe]
-    exact (Finset.card_le_univ noFinset).trans (by simp [BitString])
-  obtain ⟨ωs, hωs⟩ := exists_forall_exists_apply_mem (Ω := Fin q → BitString n) hno_card
-    (fun T : noFinset => Finset.univ.filter fun ω : Fin q → BitString n =>
-      SuccinctMCSP.Instance.ofFunction
-        ((MCSP.truthTable n).symm T.1) (Finset.univ.image ω) (s₂ n) ∉ SuccinctMCSP)
-    (fun ⟨T, hT⟩ => card_le_two_mul_filter_notMem_succinctMCSP hk hcard
-      (ApproxMCSP.ofFn_mem_noSet_iff.mp (Finset.mem_filter.mp hT).2))
+  obtain ⟨ωs, hyes, hno⟩ := exists_seeds_approxMCSP (s₁ := s₁) hk hs hcard
   let qs : List (Finset (BitString n) × ℕ) :=
     List.ofFn fun j => (Finset.univ.image (ωs j), s₂ n)
   obtain ⟨F, hFeval, hFleaf⟩ := exists_formula_all_ofFunction_SuccinctMCSP_of_agrees hag n qs
@@ -1076,23 +1131,19 @@ theorem exists_formula_separating_approxMCSP_of_agrees
         obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hp
         refine hB (Finset.univ.image (ωs j)).card ?_
         calc (Finset.univ.image (ωs j)).card
-            ≤ (Finset.univ : Finset (Fin q)).card := Finset.card_image_le
-          _ = q := by simp)
-    simpa only [qs, List.length_map, List.length_ofFn, smul_eq_mul] using hmap
-  refine ⟨F, hFleaf.trans hsum, fun T hyes => ?_, fun T hnoT => ?_⟩
+            ≤ (Finset.univ : Finset (Fin (k n * (M + 2)))).card := Finset.card_image_le
+          _ = k n * (M + 2) := by simp)
+    refine hmap.trans ?_
+    simp only [qs, List.length_map, List.length_ofFn, smul_eq_mul]
+    exact Nat.mul_le_mul_right B (Nat.le_succ _)
+  refine ⟨F, hFleaf.trans hsum, fun T hT => ?_, fun T hT => ?_⟩
   · rw [hFeval T, decide_eq_true_eq]
     intro p hp
     obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hp
-    have hcomp : complexity interpretation (single ((MCSP.truthTable n).symm T)) ≤ s₂ n :=
-      (GapMCSP.ofFn_mem_yesSet_iff.mp hyes).trans hs
-    exact SuccinctMCSP.ofFunction_mem_of_complexity_le hcomp _
+    exact hyes T hT j
   · rw [hFeval T, decide_eq_false_iff_not, not_forall]
-    have hmem : T ∈ noFinset := Finset.mem_filter.mpr ⟨Finset.mem_univ T, hnoT⟩
-    obtain ⟨j, hj⟩ := hωs ⟨T, hmem⟩
-    have hj' : SuccinctMCSP.Instance.ofFunction
-        ((MCSP.truthTable n).symm T) (Finset.univ.image (ωs j)) (s₂ n) ∉ SuccinctMCSP :=
-      (Finset.mem_filter.mp hj).2
-    exact ⟨(Finset.univ.image (ωs j), s₂ n), fun h => hj' (h (List.mem_ofFn.mpr ⟨j, rfl⟩))⟩
+    obtain ⟨j, hj⟩ := hno T hT
+    exact ⟨_, fun h => hj (h (List.mem_ofFn.mpr ⟨j, rfl⟩))⟩
 
 /-- **End-to-end Oliveira–Santhanam formula construction for approximate `(1, 1 - 1 / k)-MCSP`
 [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].**
