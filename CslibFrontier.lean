@@ -1200,6 +1200,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.NonconstantCost
 public import CslibFrontier.Computability.Circuit.Boolean.Nondeterminism
 public import CslibFrontier.Computability.Circuit.Boolean.OpValue
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle
+public import CslibFrontier.Computability.Circuit.Boolean.OracleFormula
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Circuit.Boolean.PPolyHard
 public import CslibFrontier.Computability.Circuit.Boolean.Parity
@@ -2615,6 +2616,7 @@ public import CslibFrontier.Computability.MCSP.AntiChecker.Certificate
 public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.MCSP.FormulaMagnification
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
+public import CslibFrontier.Computability.MCSP.FormulaMagnification.Locality
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
@@ -5455,6 +5457,7 @@ public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.BijectiveGame
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka

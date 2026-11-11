@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Foundations.Data.Fintype.RestrictInjective
-import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
+import CslibFrontier.Foundations.ModelTheory.Graph
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
 import Mathlib.Tactic.FinCases
 
