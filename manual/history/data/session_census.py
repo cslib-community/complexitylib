@@ -8,7 +8,7 @@ is reported telemetry, not CPU time, human time, or time spent proving a theorem
 """
 import argparse, collections, datetime as dt, hashlib, json
 from pathlib import Path
-DEFAULT_OUTPUT=Path(__file__).resolve().parents[2]/'_generated/development-history/data'
+DEFAULT_OUTPUT=Path(__file__).resolve().parents[2]/'_generated/history/data'
 
 def open_zstd(p):
     try:

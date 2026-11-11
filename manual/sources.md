@@ -2,7 +2,7 @@
 
 Repository citations are pinned to the reviewed source or dependency revision. Direct declaration links in the chapter text identify the supporting statement. The [library bibliography](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/references.bib) is linked at the survey revision; inclusion there is not a claim that this review checked every cited paper. Mathematical attributions reported only from source annotations are identified as such in the chapters.
 
-The private-transcript sources are described in [the extraction methods](development-history/methods.md); selected excerpts are included in the manual, while their bulk exports remain untracked. Public GitHub issues, PRs and CI runs are linked from [development history](development-history/index.md). Refetching mutable records is not an archive of their historical contents. Inaccessible sources and unavailable archives are identified below or in the relevant chapter.
+The private-transcript sources are described in [the extraction methods](history/methods.md); selected excerpts are included in the manual, while their bulk exports remain untracked. Public GitHub issues, PRs and CI runs are linked from [development history](history/development.md). Refetching mutable records is not an archive of their historical contents. Inaccessible sources and unavailable archives are identified below or in the relevant chapter.
 
 <a id="aaronson20"></a>
 ## aaronson20
@@ -1046,6 +1046,11 @@ Thierry Mignon and Nicolas Ressayre. *A quadratic bound for the determinant and 
 ## mirsky1971
 
 L. Mirsky. "A Dual of Dilworth's Decomposition Theorem." *The American Mathematical Monthly* 78(8), 876–877, 1971. https://doi.org/10.1080/00029890.1971.11992886 . Bibliographic metadata from search summaries, checked on 2026-11-08; the paper is paywalled and was not inspected. The library attributes to it only the finite chain–antichain duality, whose formal statement and height-function proof follow [Schrijver's lecture notes](#schrijver17), Theorem 7.5.
+
+<a id="mishrasanthanam2027"></a>
+## mishrasanthanam2027
+
+Om Swostik Mishra and Rahul Santhanam. *An Explicit `4n - O(log n)` Size Lower Bound against General Boolean Circuits*. STOC 2027 submission 1241, 2027. https://stoc2027.sigact-ec.workers.dev/submissions/1241.pdf . The submission PDF was inaccessible in this pass (HTTP error 1042) and was not inspected directly; bibliographic details and cited labels (`Lemma 2.2`, `Theorem 4.1`, `Lemma 4.2`, `Remark 4.3`, and the `Theorem 1.1` target) come from repository issue `#4322` and remain unverified against the primary manuscript.
 
 <a id="misragries82"></a>
 ## misragries82
