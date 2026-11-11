@@ -31,11 +31,14 @@ for the first accepted trial, or a default.
 **Per-seed analysis.** `card_filter_dpDecode_err_le_ge` fixes `P` and `b₀` and shows that at
 least half of the trial vectors give a hypothesis with error at most `ε #U`. It assumes that the
 tuples consistent with the seed have density at least `δ / 2` and that at most an `ε / 64`
-fraction of them disagree with `f` in `ε k / 64` or more positions. These hypotheses are
-discharged for a `δ / 4` fraction of `(P, b₀)` in the companion density module (#4451, M6.3b1b).
-The analysis follows the shape of IJKW's Lemmas 3.8–3.12 (good, excellent and correct). Its
-constants (`ε / 64`, `(64 / ε) log (4 / δ)`, `(16 / δ) log (8 / ε)`) are ours, derived for the
-tuple formulation; they are not IJKW's.
+fraction of them disagree with `f` in `ε k / 64` or more positions. Discharging these hypotheses
+for many seeds is left to a later stacked change, `DirectProduct/Density.lean` (#4451 M6.3b1b).
+Until it lands, no decoding guarantee follows from this module alone, and the density headline
+and M6.3 remain open. The analysis follows the shape of IJKW's Lemmas 3.8–3.10. Its constants
+(`ε / 64`, `(64 / ε) log (4 / δ)`, `(16 / δ) log (8 / ε)`) are ours, derived for the tuple
+formulation; they are not IJKW's. The parameter roles are swapped relative to IJKW's Theorem 1.2:
+`ε` here is their output error `δ`, and `δ` here is their agreement `ε`. The tuple form also omits
+their Algorithm 1 lookup that answers `x = aᵢ` with the corresponding output.
 
 ## Main definitions
 
@@ -62,12 +65,12 @@ namespace Cslib.Circuits.Boolean.DirectProduct
 
 open Finset Cslib.Probability
 
-variable {U V : Type*} [Fintype U] [DecidableEq U] {k : ℕ}
+variable {U : Type*} [Fintype U] [DecidableEq U] {k : ℕ}
 
 /-- **Fibres of overwriting on `P`**: summing `H` over the tuples `r` overwritten by `b₀` on `P`
 counts each tuple that agrees with `b₀` on `P` once for each of the `#U ^ #P` values `r` had
 there. -/
-theorem sum_piecewise_eq_card_pow_mul_sum {M : Type*} [AddCommMonoid M] (P : Finset (Fin k))
+theorem sum_piecewise_eq_card_pow_nsmul_sum {M : Type*} [AddCommMonoid M] (P : Finset (Fin k))
     (b₀ : Fin k → U) (H : (Fin k → U) → M) :
     ∑ r : Fin k → U, H (P.piecewise b₀ r) =
       Fintype.card U ^ #P • ∑ y ∈ {y : Fin k → U | ∀ i ∈ P, y i = b₀ i}, H y := by
@@ -130,7 +133,7 @@ theorem card_filter_trialTuple (P : Finset (Fin k)) (b₀ : Fin k → U) (x : U)
     · subst hij
       simp [trialTuple]
     · by_cases hi : i ∈ P <;> simp [trialTuple, hij, hi]
-  have h := sum_piecewise_eq_card_pow_mul_sum (insert j P) (Function.update b₀ j x)
+  have h := sum_piecewise_eq_card_pow_nsmul_sum (insert j P) (Function.update b₀ j x)
     (fun y => if q j y then 1 else 0)
   simp only [hj, not_false_eq_true, true_and, hpw, h, card_insert_of_notMem hj, smul_eq_mul,
     sum_boole, Nat.cast_id]
@@ -271,14 +274,15 @@ theorem badPairs_eq_filter (C' : (Fin k → U) → Fin k → V) (f : U → V) (P
 theorem sum_card_acceptedPairs_nsmul {M : Type*} [AddCommMonoid M]
     (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k)) (b₀ : Fin k → U) (g : U → M) :
     ∑ x, #(acceptedPairs C' P b₀ x) • g x = ∑ y ∈ consistent C' P b₀, ∑ j ∈ Pᶜ, g (y j) := by
-  classical
-  have h : ∀ x, #(acceptedPairs C' P b₀ x) • g x =
-      ∑ p ∈ (Pᶜ ×ˢ consistent C' P b₀).filter (fun p => p.2 p.1 = x), g (p.2 p.1) := by
-    intro x
-    rw [acceptedPairs_eq_filter, ← sum_const]
-    exact sum_congr rfl fun p hp => by rw [(mem_filter.1 hp).2]
-  simp_rw [h]
-  rw [sum_fiberwise_of_maps_to (fun _ _ => mem_univ _), sum_product, sum_comm]
+  rw [sum_sum_comp_eq_sum_nsmul g (consistent C' P b₀) Pᶜ]
+  refine sum_congr rfl fun x _ => ?_
+  congr 1
+  rw [acceptedPairs_eq_filter]
+  refine card_nbij' Prod.swap Prod.swap ?_ ?_ (fun p _ => Prod.swap_swap p)
+    (fun p _ => Prod.swap_swap p) <;>
+  · intro p hp
+    simp only [coe_filter, mem_product, Set.mem_ofPred_eq, Prod.fst_swap, Prod.snd_swap] at hp ⊢
+    tauto
 
 /-- **Bad pairs by tuple**: the bad pairs, summed over inputs, are the free positions at which a
 consistent tuple disagrees with `f`. -/
@@ -318,7 +322,9 @@ theorem sub_mul_le_two_mul_sum_sum_compl [Nonempty U] (F : U → ℝ) (hF : ∀ 
 
 /-- **Few inputs are rarely accepted**: if the consistent tuples have density at least `μ` among
 the tuples agreeing with `b₀` on `P`, the inputs with fewer than `#S w / (4 #U)` accepted pairs,
-where `S` is the consistent set and `w = #Pᶜ`, number at most `8 #U log (2 / μ) / w`. -/
+where `S` is the consistent set and `w = #Pᶜ`, number at most `8 #U log (2 / μ) / w`. This is the
+tuple-formulation analogue of IJKW's Lemma 3.9, proved, as there, from the weight bound of their
+Lemma 2.13 (`Cslib.Probability.sub_mul_le_two_mul_sum_sum`). -/
 theorem card_filter_acceptedPairs_lt_mul_le (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k))
     (b₀ : Fin k → U) {μ : ℝ} (hμ0 : 0 < μ) (hμ1 : μ ≤ 1)
     (hS : μ * Fintype.card U ^ #Pᶜ ≤ #(consistent C' P b₀)) :
@@ -419,11 +425,10 @@ theorem card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f : U �
       exact_mod_cast hca
     have heq : (N : ℝ) - c * a = N * (1 - c * a / N) := by field_simp
     have hle : 1 - c * a / (N : ℝ) ≤ Real.exp (-(c * θ / N)) := by
-      have h1 := Real.add_one_le_exp (-(c * a / (N : ℝ)))
       have h2 : -(c * a / (N : ℝ)) ≤ -(c * θ / N) := by
         rw [neg_le_neg_iff]
         exact div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left ha hc0.le) hN0.le
-      linarith [Real.exp_le_exp.2 h2]
+      exact (Real.one_sub_le_exp_neg _).trans (Real.exp_le_exp.2 h2)
     rw [heq, mul_pow]
     refine mul_le_mul_of_nonneg_left ?_ (by positivity)
     calc (1 - c * a / (N : ℝ)) ^ m ≤ Real.exp (-(c * θ / N)) ^ m :=
@@ -450,7 +455,9 @@ omit [Fintype U] [DecidableEq U] in
 on the slice of `b₀` and at most an `ε / 64` fraction of them have `ε k / 64` or more
 disagreements. If `k ≤ 2 #Pᶜ`, `#Pᶜ ≥ (64 / ε) log (4 / δ)` and `m ≥ (16 / δ) log (8 / ε)`, then the
 errors of the decoder, summed over inputs and trial vectors, are at most `ε #U N ^ m / 2`.
-These constants are ours (derived for the tuple formulation), not IJKW's. -/
+These constants are ours (derived for the tuple formulation), not IJKW's. The two seed hypotheses
+are to be discharged for many seeds in a later stacked change, `DirectProduct/Density.lean`
+(#4451 M6.3b1b); until then the density headline and M6.3 remain open. -/
 theorem sum_card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f : U → V) (dflt : V)
     (P : Finset (Fin k)) (b₀ : Fin k → U) (m : ℕ) {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
     (hε1 : ε ≤ 1) (hδ1 : δ ≤ 1) (hk : k ≤ 2 * #Pᶜ) (hw : 64 / ε * Real.log (4 / δ) ≤ #Pᶜ)
@@ -582,7 +589,9 @@ theorem sum_card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f :
 
 /-- **A good seed decodes well for half of the trial vectors.** Under the hypotheses of
 `sum_card_filter_dpDecode_ne_le`, at least half of the trial vectors `v` give a hypothesis
-`dpDecode C' dflt P b₀ v` that differs from `f` on at most `ε #U` inputs. -/
+`dpDecode C' dflt P b₀ v` that differs from `f` on at most `ε #U` inputs. The two seed hypotheses
+are to be discharged for many seeds in a later stacked change, `DirectProduct/Density.lean`
+(#4451 M6.3b1b); until then the density headline and M6.3 remain open. -/
 theorem card_filter_dpDecode_err_le_ge (C' : (Fin k → U) → Fin k → V) (f : U → V) (dflt : V)
     (P : Finset (Fin k)) (b₀ : Fin k → U) (m : ℕ) {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
     (hε1 : ε ≤ 1) (hδ1 : δ ≤ 1) (hk : k ≤ 2 * #Pᶜ) (hw : 64 / ε * Real.log (4 / δ) ≤ #Pᶜ)
