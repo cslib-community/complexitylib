@@ -33,9 +33,8 @@ library's own; [Hirahara2022] fixes only the shape of the problems.
 * **Seed.** Variable `v` reads its table from the block `[v B, v B + 2 ^ ℓ v)` of the random string,
   where `B = 2 ^ W` for the seed width `W` (`seededFunctions`, a `BitString.decodeTables`). Bits
   outside the blocks are ignored. The string has length `(seedLen λ₀).eval |I|`, a polynomial.
-* **Pattern.** `seededPattern λ₀ Δ k I r` lists the entries of the CMMSA partial truth table
-  under the seeded functions, and is polynomial-time in `(I, r)`
-  (`computableInPolyTime_seededPattern`).
+* **Tables.** `seededTables λ₀ I r` reads the same tables from `r` as explicit lists, in polynomial
+  time in `(I, r)`; a reduction evaluates the CMMSA partial truth table on them.
 * **Randomized reduction.** `rpReducible_of_seeded` turns any map `out I f` of the instance and the
   functions into a randomized reduction from `X` to `Y`, given that `out I f` is polynomial-time
   under the seeded functions, lies in `Y.yes` for every `f` when `I ∈ X.yes`, and lies outside
@@ -54,16 +53,14 @@ library's own; [Hirahara2022] fixes only the shape of the problems.
 * `Cslib.PartialMCSP.FromCMMSA.seedLen`: the length of the random string.
 * `Cslib.PartialMCSP.FromCMMSA.seededFunctions`: the functions read from a random string.
 * `Cslib.PartialMCSP.FromCMMSA.seededTables`: their explicit tables, read from the string.
-* `Cslib.PartialMCSP.FromCMMSA.seededPattern`: the partial truth table under the seeded functions.
 
 ## Main results
 
 * `Cslib.PartialMCSP.FromCMMSA.mul_sq_le_lamOf`, `one_le_lamOf`: bounds on the scale.
-* `Cslib.PartialMCSP.FromCMMSA.computableInPolyTime_lamOf`, `computableInPolyTime_seededTables`,
-  `computableInPolyTime_seededPattern`: the scale, the tables and the pattern are polynomial-time.
+* `Cslib.PartialMCSP.FromCMMSA.computableInPolyTime_lamOf`, `computableInPolyTime_seededTables`:
+  the scale and the tables are polynomial-time.
 * `Cslib.PartialMCSP.FromCMMSA.isVarTable_seededTables`: the tables are those of the seeded
-  functions; `tableN_seededTables`: evaluating them gives the pattern, and `seededPattern_eq_ofFn`
-  lists its entries.
+  functions.
 * `Cslib.PartialMCSP.FromCMMSA.seedLen_eval`: the length of the random string.
 * `Cslib.PartialMCSP.FromCMMSA.two_pow_varLength_le_two_pow_seedWidth`,
   `length_weights_mul_le_seedLen`: every table fits in its block, and the blocks fit in the random
@@ -196,36 +193,6 @@ theorem computableInPolyTime_seededTables (lam₀ : ℕ) {I : α → CMMSAInstan
       (ComputableInPolyTime.bitsGetDWithInput ((hr.comp h₁).comp h₁₁)
         (ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul' (h₂.comp h₁₁) hB) hy)
         false))
-
-/-! ### The pattern -/
-
-/-- The partial truth table of the CMMSA construction under the seeded functions. -/
-def seededPattern (lam₀ Δ k : ℕ) (I : CMMSAInstance) (r : List Bool) : List (Option Bool) :=
-  List.ofFn fun i =>
-    entry (Δ := Δ) (k := k) (seededFunctions lam₀ I r) ((BitString.equivFin _).symm i)
-
-/-- The pattern lists the entries under the seeded functions. -/
-theorem seededPattern_eq_ofFn (lam₀ Δ k : ℕ) (I : CMMSAInstance) (r : List Bool) :
-    seededPattern lam₀ Δ k I r = List.ofFn fun i =>
-      entry (Δ := Δ) (k := k) (seededFunctions lam₀ I r) ((BitString.equivFin _).symm i) := by
-  rw [seededPattern]
-
-/-- The pattern is the explicit-table evaluation on the seeded tables. -/
-theorem tableN_seededTables (lam₀ Δ k : ℕ) (I : CMMSAInstance) (r : List Bool) :
-    tableN I Δ k (lamOf lam₀ I) (seededTables lam₀ I r) = seededPattern lam₀ Δ k I r :=
-  tableN_eq_ofFn (isVarTable_seededTables lam₀ I r) 0
-
-/-- **The pattern is polynomial-time** in the instance and the random string, for fixed `λ₀`, `Δ`
-and `k`. -/
-@[fun_prop]
-theorem computableInPolyTime_seededPattern (lam₀ Δ k : ℕ) {I : α → CMMSAInstance}
-    {r : α → List Bool} (hI : ComputableInPolyTime I input CMMSAInstance.encoding)
-    (hr : ComputableInPolyTime r input encBits) :
-    ComputableInPolyTime (fun a => seededPattern lam₀ Δ k (I a) (r a)) input
-      PartialMCSP.encTable := by
-  simp only [← tableN_seededTables]
-  exact computableInPolyTime_tableN Δ k hI (computableInPolyTime_lamOf lam₀ hI)
-    (computableInPolyTime_seededTables lam₀ hI hr)
 
 /-! ### The randomized reduction -/
 
