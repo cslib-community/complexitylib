@@ -1107,6 +1107,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Restriction
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Subbotovskaya
+public import CslibFrontier.Computability.Circuit.Boolean.GF2Rank
 public import CslibFrontier.Computability.Circuit.Boolean.GateElimination
 public import CslibFrontier.Computability.Circuit.Boolean.Gates
 public import CslibFrontier.Computability.Circuit.Boolean.Hamming
@@ -1248,6 +1249,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount.PolyTi
 public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount.ThresholdPolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Propagation
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
+public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.RankProperty
 public import CslibFrontier.Computability.Circuit.Boolean.ReadOnce
 public import CslibFrontier.Computability.Circuit.Boolean.Routing
@@ -2514,6 +2516,7 @@ public import CslibFrontier.Computability.Kolmogorov.MINKT
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar.Generator
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar.Generator.PolyTime
+public import CslibFrontier.Computability.Kolmogorov.MINKTStar.Hardness
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar.TruthTable
 public import CslibFrontier.Computability.Kolmogorov.MINcKT
 public import CslibFrontier.Computability.Kolmogorov.MKtP
@@ -2693,6 +2696,7 @@ public import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Circuit
+public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.Multi.NP
 public import CslibFrontier.Computability.MCSP.MultiNPHard
