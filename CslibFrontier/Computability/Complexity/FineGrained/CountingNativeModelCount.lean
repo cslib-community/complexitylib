@@ -107,7 +107,7 @@ public theorem exists_counter_of_polyTime_toDeclared {α : Type} {encA : α ↪ 
   · dsimp only
     split_ifs with hx
     · have hvalid' : CNF.validDeclaredInput k (g' x).1 (g' x).2 = true := hvalid_imp x hx
-      simp [hspec₀ (g' x), hvalid']
+      simp only [hspec₀ (g' x), hvalid']
       rfl
     · rfl
   · let Y : ℕ := (encA x).length + 1
