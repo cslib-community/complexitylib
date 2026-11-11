@@ -1143,8 +1143,7 @@ private theorem mem_of_mem_List.consecutivePairs {α : Type*} {l : List α} {x y
           simp only [consecutivePairs_cons_cons, List.mem_cons, Prod.mk.injEq,
             ] at h
           rcases h with ⟨rfl, rfl⟩ | h
-          · exact ⟨by simp only [List.mem_cons, true_or],
-              by simp only [List.mem_cons, true_or, or_true]⟩
+          · exact ⟨by simp, by simp⟩
           · obtain ⟨hx, hy⟩ := ih h
             exact ⟨List.mem_cons_of_mem a hx, List.mem_cons_of_mem a hy⟩
 
@@ -1254,8 +1253,8 @@ private theorem chain_one_zero_mem_backward {p : ℕ} (hp : 1 ≤ p) (b : Finset
       (List.cons_ne_nil _ _)]
     refine List.mem_append_right _ (List.mem_cons_of_mem _ ?_)
     simp only [consecutivePairs_cons_cons, consecutivePairs_singleton,
-      List.mem_cons, ℓ₀, Nat.mul_zero, zero_add,
-      true_or]
+      ℓ₀, Nat.mul_zero, zero_add]
+    simp
 
 /-- Every vertex subset `b : Finset (Fin p)` (`1 ≤ p`) determines a satisfying assignment of the
 correlation `3`-SAT formula and hence a directed Hamiltonian tour `τ` of `corrDigraphAdj p hp`
