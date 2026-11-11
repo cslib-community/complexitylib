@@ -65,8 +65,10 @@ Two interface choices are not in the source. `ampLearner A s m K` takes the size
 explicitly, since the seed type contains `P`. `ampSeed` needs `[NeZero k]`, since a trial picks a
 position in `Fin k` and the extra seed is empty when `k = 0`.
 
-The learning guarantee and the number of queries are certified; running time and the circuit size
-of the hypotheses are not.
+The learning guarantee and the number of queries are certified, and the circuit size of the
+hypotheses is bounded in `CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity`
+(`Cslib.MachineLearning.UniformLearning.complexity_eval_ampLearner_le`); running time is not
+certified.
 
 ## Main definitions
 

@@ -187,7 +187,7 @@ theorem sum_two_pow_varLength_le_two_mul_weight {S : Finset ℕ}
   calc ∑ v ∈ S, 2 ^ varLength I lam v ≤ ∑ v ∈ S, 2 * (I.weights.getD v 0 * lam) := by
         refine sum_le_sum fun v hv => Nat.pow_clog_le_mul Nat.one_lt_two ?_
         have hvn := Finset.mem_range.1 (hS hv)
-        have hpos := hwf.weight_pos _ (getD_weights_mem hvn)
+        have hpos := hwf.weight_pos _ (List.getD_mem 0 hvn)
         positivity
     _ = 2 * I.weight S * lam := by
         rw [← Finset.mul_sum, ← Finset.sum_mul, CMMSAInstance.weight, mul_assoc]
