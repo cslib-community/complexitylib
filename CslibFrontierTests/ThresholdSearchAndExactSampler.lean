@@ -192,9 +192,9 @@ theorem expRange_bisect_oracleQueries (A : Set (List Bool)) :
         ((bisectStep (fun m => decide (encNat m ∈ A)))^[(2 ^ n - 0).size] ⟨0, 2 ^ n⟩).lo)
       encUnary encNat := by
   open ComputableInPolyTime in
-  have hreq : ComputableInPolyTime (fun q : ThresholdQuery ℕ => encNat q.target)
-      (encThresholdQuery encUnary) encBits :=
-    (encThresholdQuery_target_polyTime id').encoding_comp
+  have hreq : ComputableInPolyTime (fun q : OracleThresholdQuery ℕ => encNat q.target)
+      (encOracleThresholdQuery encUnary) encBits :=
+    (encOracleThresholdQuery_target_polyTime id').encoding_comp
   refine computableInPolyTimeWithOracleQueries_bisect A (req := fun _ m => encNat m)
     hreq (const 0) binary_two_pow fun n => ?_
   simp only [Nat.sub_zero, encUnary_apply, List.length_replicate]
