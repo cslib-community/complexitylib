@@ -43,8 +43,9 @@ operation.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.BitSynthesis`: bit-synthesizable functions.
-* `Cslib.Circuits.Boolean.glPredictor`, `Cslib.Circuits.Boolean.glCost`: the Goldreich–Levin
-  decoder of the inner code and its gate budget.
+* `Cslib.Circuits.Boolean.glPredictor`: the Goldreich–Levin decoder of the inner code. Its gate
+  budget `Cslib.Circuits.Boolean.glCost` is defined in
+  `CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLSynthesis`.
 
 ## Main results
 
