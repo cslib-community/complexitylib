@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Probabilistic.Sampling
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -47,26 +47,17 @@ Adapted from Computability/Probabilistic/UniformNat.lean on the cslib `crypto` b
 
 public section
 
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
-/-- Compute the dyadic range in unary via capped binary decoding. Its exponential expression
-does not authorize exponential output: the proved linear cap supplies the implementation. -/
-@[local fun_prop]
-private theorem unary_dyadicSize : ComputableTidilyInPolyTime Cslib.Probability.dyadicSize
-    encUnary encUnary := by
-  change ComputableTidilyInPolyTime (fun n => Cslib.Probability.dyadicSize n) encUnary encUnary
-  simp only [Cslib.Probability.dyadicSize_eq_boundedBinaryValue]
-  fun_prop
-
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
-/-- Compute the linearly capped dyadic range from a unary bound in plain polynomial time. -/
+/-- Compute the linearly capped dyadic range from a unary bound in plain polynomial time.
+Its exponential expression does not authorize exponential output: the proved linear cap supplies
+the implementation. -/
 @[fun_prop]
 theorem Turing.MultiTapeTM.ComputableInPolyTime.unary_dyadicSize :
     Turing.MultiTapeTM.ComputableInPolyTime Cslib.Probability.dyadicSize
-      Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary :=
-  Turing.MultiTapeTM.ComputableInPolyTime.of_tidy
-    Turing.MultiTapeTM.ComputableTidilyInPolyTime.unary_dyadicSize
+      Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary := by
+  change Turing.MultiTapeTM.ComputableInPolyTime (fun n => Cslib.Probability.dyadicSize n)
+    Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary
+  simp only [Cslib.Probability.dyadicSize_eq_boundedBinaryValue]
+  fun_prop
 
 namespace Cslib.Probability
 
@@ -145,7 +136,6 @@ theorem isPPTOn_sampleModNat {α : Type} {input : α ↪ List Bool} {width modul
     IsPPTOn input encNat (fun a => sampleModNat (width a) (modulus a)) := by
   unfold sampleModNat
   exact (ComputableInPolyTime.sampleBinaryNat hwidth).map_with
-    (.of_tidy (ComputableTidilyInPolyTime.binary_mod' (by fun_prop)
-      (hmodulus.tidy.comp (by fun_prop))))
+    (ComputableInPolyTime.binary_mod' (by fun_prop) (by fun_prop))
 
 end Cslib.Probability
