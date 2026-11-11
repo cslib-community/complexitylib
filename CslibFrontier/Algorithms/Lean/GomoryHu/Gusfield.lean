@@ -45,6 +45,10 @@ processed, the parent graph is connected with `n - 1` edges, hence a tree, and b
 * `Cslib.Algorithms.Lean.GomoryHu.gusfieldStep`, `Cslib.Algorithms.Lean.GomoryHu.gusfieldLoop`,
   `Cslib.Algorithms.Lean.GomoryHu.gusfieldParent`: Gusfield's algorithm on parent functions, with
   a cut oracle `C : V → V → Finset V`.
+* `Cslib.Algorithms.Lean.GomoryHu.gusfieldStepWeight`,
+  `Cslib.Algorithms.Lean.GomoryHu.gusfieldWeightLoop`,
+  `Cslib.Algorithms.Lean.GomoryHu.gusfieldWithWeights`: the same algorithm tracking the cut value
+  `w u = f (S u)` alongside the parent function, given a value oracle `val : V → V → β`.
 
 The tree of the output is its parent graph `SimpleGraph.parentGraph`
 (`CslibFrontier.Foundations.Combinatorics.SimpleGraph.Acyclic`).
@@ -53,6 +57,12 @@ The tree of the output is its parent graph `SimpleGraph.parentGraph`
 
 * `Cslib.Algorithms.Lean.GomoryHu.isGomoryHuTree_gusfieldParent`: for a symmetric submodular `f`
   and an oracle returning minimum cuts, Gusfield's algorithm computes a Gomory–Hu tree of `f`.
+* `Cslib.Algorithms.Lean.GomoryHu.gusfieldWithWeights_spec`,
+  `Cslib.Algorithms.Lean.GomoryHu.isGomoryHuTree_gusfieldWithWeights`,
+  `Cslib.Algorithms.Lean.GomoryHu.gusfieldWithWeights_weight_eq`,
+  `Cslib.Algorithms.Lean.GomoryHu.isMinCutBetween_gusfieldWithWeights_edgeSide`:
+  `gusfieldWithWeights` computes the same Gomory–Hu tree together with
+  `w u = f (edgeSide (parentGraph p) u (p u))` for every non-root `u`.
 
 ## References
 
@@ -163,6 +173,50 @@ order `l`, starting from the star centred at `r`. -/
 @[expose] def gusfieldParent (C : V → V → Finset V) (r : V) (l : List V) : V → V :=
   gusfieldLoop C r l fun _ => r
 
+/-- One step of Gusfield's algorithm on the edge-weight function `w`, updating edge weights from the
+cut value `v` for `(s, p s)`. On a swap (`p (p s) ∈ X`), `s` inherits `w (p s)` and `p s` receives
+`v`; otherwise `s` receives `v`. -/
+@[expose] def gusfieldStepWeight (p : V → V) (w : V → β) (s : V) (X : Finset V) (v : β) :
+    V → β := fun z =>
+  if p (p s) ∈ X then
+    if z = s then w (p s) else if z = p s then v else w z
+  else
+    if z = s then v else w z
+
+/-- Gusfield's loop tracking both the parent function `p` and edge-weight function `w`, using cut
+oracle `C` and cut-value oracle `val`. -/
+@[expose] def gusfieldWeightLoop (C : V → V → Finset V) (val : V → V → β) (r : V) :
+    List V → (V → V) → (V → β) → (V → V) × (V → β)
+  | [], p, w => (p, w)
+  | s :: l, p, w =>
+    if s = r then gusfieldWeightLoop C val r l p w
+    else
+      let X := C s (p s)
+      gusfieldWeightLoop C val r l (gusfieldStep p s X)
+        (gusfieldStepWeight p w s X (val s (p s)))
+
+/-- The parent and weight functions computed by Gusfield's algorithm with cut oracle `C`, value
+oracle `val`, root `r`, initial weight `w₀`, and vertex order `l`. -/
+@[expose] def gusfieldWithWeights (C : V → V → Finset V) (val : V → V → β) (r : V) (w₀ : β)
+    (l : List V) : (V → V) × (V → β) :=
+  gusfieldWeightLoop C val r l (fun _ => r) (fun _ => w₀)
+
+/-- Ignoring edge weights, `gusfieldWeightLoop` computes the same parent function as
+`gusfieldLoop`. -/
+theorem fst_gusfieldWeightLoop (C : V → V → Finset V) (val : V → V → β) (r : V) :
+    ∀ (l : List V) (p : V → V) (w : V → β),
+      (gusfieldWeightLoop C val r l p w).1 = gusfieldLoop C r l p
+  | [], _, _ => rfl
+  | s :: l, p, w => by
+    by_cases hsr : s = r <;>
+      simp only [gusfieldWeightLoop, gusfieldLoop, hsr, ↓reduceIte, fst_gusfieldWeightLoop]
+
+/-- The first component of `gusfieldWithWeights` equals `gusfieldParent`. -/
+theorem fst_gusfieldWithWeights (C : V → V → Finset V) (val : V → V → β) (r : V) (w₀ : β)
+    (l : List V) :
+    (gusfieldWithWeights C val r w₀ l).1 = gusfieldParent C r l :=
+  fst_gusfieldWeightLoop C val r l (fun _ => r) (fun _ => w₀)
+
 end Algorithm
 
 /-! ### The invariant -/
@@ -190,25 +244,27 @@ private theorem mem_iff_of_reflTransGen_tAdj {p : V → V} {Y : Finset V} (hY : 
 variable [Fintype V] [DecidableEq V] [Preorder β]
 
 /-- Invariant of Gusfield's algorithm after processing the vertex set `P ∋ r`: every processed
-vertex `i ≠ r` has a parent `p i ∈ P` and a minimum `i`–`p i` cut `S i` that no other parent
-pointer crosses, and all vertices are joined to `r` by parent pointers. -/
-private structure GInv (f : Finset V → β) (r : V) (P : Finset V) (p : V → V) (S : V → Finset V) :
-    Prop where
+vertex `i ≠ r` has a parent `p i ∈ P`, a minimum `i`–`p i` cut `S i` that no other parent pointer
+crosses, recorded weight `w i = f (S i)`, and all vertices are joined to `r` by parent pointers. -/
+private structure GInv (f : Finset V → β) (r : V) (P : Finset V) (p : V → V) (S : V → Finset V)
+    (w : V → β) : Prop where
   root_mem : r ∈ P
   parent_root : p r = r
   parent_mem : ∀ z, p z ∈ P
   cut : ∀ i ∈ P, i ≠ r → IsMinCutBetween f i (p i) (S i)
   lam : ∀ i ∈ P, i ≠ r → ∀ z, z ≠ i → (z ∈ S i ↔ p z ∈ S i)
+  weight : ∀ i ∈ P, i ≠ r → w i = f (S i)
   conn : ∀ z, Relation.ReflTransGen (TAdj p) z r
 
 omit [Fintype V] [DecidableEq V] in
-private theorem gInv_init (f : Finset V → β) (r : V) (S : V → Finset V) :
-    GInv f r {r} (fun _ => r) S where
+private theorem gInv_init (f : Finset V → β) (r : V) (S : V → Finset V) (w : V → β) :
+    GInv f r {r} (fun _ => r) S w where
   root_mem := Finset.mem_singleton_self r
   parent_root := rfl
   parent_mem _ := Finset.mem_singleton_self r
   cut _ hi hir := absurd (Finset.mem_singleton.mp hi) hir
   lam _ hi hir := absurd (Finset.mem_singleton.mp hi) hir
+  weight _ hi hir := absurd (Finset.mem_singleton.mp hi) hir
   conn _ := Relation.ReflTransGen.single (Or.inl rfl)
 
 /-- Re-hanging a subtree: if `Si` is a minimum `i`–`t` cut missing `s` and `X` is a minimum
@@ -280,7 +336,7 @@ omit [Fintype V] in
 /-- The two kinds of tree edges at `t`: a child edge `(k, t)` with `t ∉ S k`, or the parent edge
 `(t, p t)` with `t ∈ S t`. -/
 private theorem GInv.edgesAt_cases {r : V} {P : Finset V} {p : V → V} {S : V → Finset V}
-    (I : GInv f r P p S) {t k : V} (hk : k ∈ edgesAt r P p t) :
+    {w : V → β} (I : GInv f r P p S w) {t k : V} (hk : k ∈ edgesAt r P p t) :
     (t ∉ S k ∧ p k = t) ∨ (t ∈ S k ∧ k = t) := by
   obtain ⟨hkP, hkr, hkt⟩ := mem_edgesAt.mp hk
   have hc := I.cut k hkP hkr
@@ -290,7 +346,8 @@ private theorem GInv.edgesAt_cases {r : V} {P : Finset V} {p : V → V} {S : V �
 
 /-- The far side of a tree edge at `t` is a minimum cut between its far endpoint and `t`. -/
 private theorem GInv.isMinCutBetween_farSide (hsym : ∀ X, f Xᶜ = f X) {r : V} {P : Finset V}
-    {p : V → V} {S : V → Finset V} (I : GInv f r P p S) {t k : V} (hk : k ∈ edgesAt r P p t) :
+    {p : V → V} {S : V → Finset V} {w : V → β} (I : GInv f r P p S w) {t k : V}
+    (hk : k ∈ edgesAt r P p t) :
     IsMinCutBetween f (farEnd p S t k) t (farSide S t k) := by
   obtain ⟨hkP, hkr, -⟩ := mem_edgesAt.mp hk
   have hc := I.cut k hkP hkr
@@ -304,7 +361,8 @@ private theorem GInv.isMinCutBetween_farSide (hsym : ∀ X, f Xᶜ = f X) {r : V
 
 /-- Far sides are closed under the parent pointers other than their own edge. -/
 private theorem GInv.mem_farSide_iff {r : V} {P : Finset V} {p : V → V} {S : V → Finset V}
-    (I : GInv f r P p S) {t k : V} (hk : k ∈ edgesAt r P p t) {z : V} (hzk : z ≠ k) :
+    {w : V → β} (I : GInv f r P p S w) {t k : V} (hk : k ∈ edgesAt r P p t) {z : V}
+    (hzk : z ≠ k) :
     z ∈ farSide S t k ↔ p z ∈ farSide S t k := by
   obtain ⟨hkP, hkr, -⟩ := mem_edgesAt.mp hk
   have hl := I.lam k hkP hkr z hzk
@@ -315,7 +373,7 @@ private theorem GInv.mem_farSide_iff {r : V} {P : Finset V} {p : V → V} {S : V
 
 /-- The child endpoint of a child edge `(k, t)` lies on its far side. -/
 private theorem GInv.self_mem_farSide {r : V} {P : Finset V} {p : V → V} {S : V → Finset V}
-    (I : GInv f r P p S) {t k : V} (hk : k ∈ edgesAt r P p t) (htk : t ∉ S k) :
+    {w : V → β} (I : GInv f r P p S w) {t k : V} (hk : k ∈ edgesAt r P p t) (htk : t ∉ S k) :
     k ∈ farSide S t k := by
   obtain ⟨hkP, hkr, -⟩ := mem_edgesAt.mp hk
   simp only [farSide, htk, ↓reduceIte]
@@ -323,7 +381,8 @@ private theorem GInv.self_mem_farSide {r : V} {P : Finset V} {p : V → V} {S : 
 
 /-- The parent of `t` lies on the far side of the parent edge `(t, p t)`. -/
 private theorem GInv.parent_mem_farSide {r : V} {P : Finset V} {p : V → V} {S : V → Finset V}
-    (I : GInv f r P p S) {t : V} (htP : t ∈ P) (htr : t ≠ r) : p t ∈ farSide S t t := by
+    {w : V → β} (I : GInv f r P p S w) {t : V} (htP : t ∈ P) (htr : t ≠ r) :
+    p t ∈ farSide S t t := by
   have hc := I.cut t htP htr
   simp only [farSide, hc.left_mem, ↓reduceIte, Finset.mem_compl]
   exact hc.right_notMem
@@ -331,8 +390,9 @@ private theorem GInv.parent_mem_farSide {r : V} {P : Finset V} {p : V → V} {S 
 /-- The far sides of distinct tree edges at `t` are disjoint: a vertex on both would be joined to
 `t` by parent pointers inside both, but `t` lies on neither. -/
 private theorem GInv.disjoint_farSide (hsym : ∀ X, f Xᶜ = f X) {r : V} {P : Finset V}
-    {p : V → V} {S : V → Finset V} (I : GInv f r P p S) {t k k' : V} (hk : k ∈ edgesAt r P p t)
-    (hk' : k' ∈ edgesAt r P p t) (hne : k ≠ k') : Disjoint (farSide S t k) (farSide S t k') := by
+    {p : V → V} {S : V → Finset V} {w : V → β} (I : GInv f r P p S w) {t k k' : V}
+    (hk : k ∈ edgesAt r P p t) (hk' : k' ∈ edgesAt r P p t) (hne : k ≠ k') :
+    Disjoint (farSide S t k) (farSide S t k') := by
   have htA : ∀ {j}, j ∈ edgesAt r P p t → t ∉ farSide S t j := fun hj =>
     (I.isMinCutBetween_farSide hsym hj).right_notMem
   -- The child endpoint of one edge is not on the far side of another.
@@ -365,7 +425,7 @@ private theorem GInv.disjoint_farSide (hsym : ∀ X, f Xᶜ = f X) {r : V} {P : 
 /-- **Coverage.** A vertex joined to `t` by parent pointers is `t`, an unprocessed child of `t`, or
 on the far side of some tree edge at `t`. -/
 private theorem GInv.cover {r : V} {P : Finset V} {p : V → V} {S : V → Finset V}
-    (I : GInv f r P p S) {t : V} (htP : t ∈ P) {w : V}
+    {w₀ : V → β} (I : GInv f r P p S w₀) {t : V} (htP : t ∈ P) {w : V}
     (hw : Relation.ReflTransGen (TAdj p) w t) :
     (∃ k ∈ edgesAt r P p t, w ∈ farSide S t k) ∨ w = t ∨ (w ∉ P ∧ p w = t) := by
   induction hw using Relation.ReflTransGen.head_induction_on with
@@ -422,8 +482,8 @@ with parent `t = p s` and a minimum `s`–`t` cut `X`, there is a minimum `s`–
 with `X` on the vertices whose parent is `t` and on the parent of `t`, and that no other parent
 pointer crosses. -/
 private theorem exists_uncrossed (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {r : V}
-    {P : Finset V} {p : V → V} {S : V → Finset V} (I : GInv f r P p S) {s t : V} (hsP : s ∉ P)
-    (ht : p s = t) {X : Finset V} (hX : IsMinCutBetween f s t X) :
+    {P : Finset V} {p : V → V} {S : V → Finset V} {w : V → β} (I : GInv f r P p S w) {s t : V}
+    (hsP : s ∉ P) (ht : p s = t) {X : Finset V} (hX : IsMinCutBetween f s t X) :
     ∃ U, IsMinCutBetween f s t U ∧ (∀ z, p z = t → (z ∈ U ↔ z ∈ X)) ∧
       (p t ∈ U ↔ p t ∈ X) ∧ (∀ z, z ≠ t → p z ≠ t → (z ∈ U ↔ p z ∈ U)) := by
   have htP : t ∈ P := ht ▸ I.parent_mem s
@@ -492,9 +552,10 @@ private theorem exists_uncrossed (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodul
 
 /-- **Gusfield's step preserves the invariant.** -/
 private theorem gInv_step (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {r : V} {P : Finset V}
-    {p : V → V} {S : V → Finset V} (I : GInv f r P p S) {s : V} (hsP : s ∉ P) {X : Finset V}
-    (hX : IsMinCutBetween f s (p s) X) :
-    ∃ S', GInv f r (insert s P) (gusfieldStep p s X) S' := by
+    {p : V → V} {S : V → Finset V} {w : V → β} (I : GInv f r P p S w) {s : V} (hsP : s ∉ P)
+    {X : Finset V} (hX : IsMinCutBetween f s (p s) X) {v : β} (hval : v = f X) :
+    ∃ S', GInv f r (insert s P) (gusfieldStep p s X) S' (gusfieldStepWeight p w s X v) ∧
+      gusfieldStepWeight p w s X v r = w r := by
   obtain ⟨t, ht⟩ : ∃ t, p s = t := ⟨_, rfl⟩
   rw [ht] at hX
   obtain ⟨U, U0, U1, U2, U3⟩ := exists_uncrossed hsym hsub I hsP ht hX
@@ -556,6 +617,8 @@ private theorem gInv_step (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
     · rw [h.1]
       exact (Relation.ReflTransGen.single (show TAdj q z s from Or.inl hqz)).tail hst'
     · exact Relation.ReflTransGen.single (Or.inl hqz)
+  have hfUX : f U = f X :=
+    le_antisymm (U0.le hX.left_mem hX.right_notMem) (hX.le U0.left_mem U0.right_notMem)
   by_cases hswap : p t ∈ X
   · -- `s` takes the place of `t`.
     have htr : t ≠ r := by
@@ -565,7 +628,8 @@ private theorem gInv_step (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
       exact hswap
     have qs' : q s = p t := by rw [qs, ite_eq_left hswap]
     have qt' : q t = s := by rw [qt, ite_eq_left hswap]
-    refine ⟨Function.update (Function.update S s (S t)) t Uᶜ, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨Function.update (Function.update S s (S t)) t Uᶜ,
+      ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
     · exact Finset.mem_insert_of_mem I.root_mem
     · rw [qz r (Ne.symm hsr) (Ne.symm htr), ite_eq_right (fun h => ?_)]
       · exact I.parent_root
@@ -615,6 +679,18 @@ private theorem gInv_step (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
       by_cases hzt : z = t
       · rw [hzt, qt', hsS i hiP hir]
       exact hgen (S i) (hsS i hiP hir) z hzs hzt (I.lam i hiP hir z hzi)
+    · intro i hi hir
+      by_cases his : i = s
+      · rw [his, Function.update_of_ne hst, Function.update_self, gusfieldStepWeight, ht,
+          ite_eq_left hswap, ite_eq_left rfl]
+        exact I.weight t htP htr
+      by_cases hit : i = t
+      · rw [hit, Function.update_self, gusfieldStepWeight, ht, ite_eq_left hswap,
+          ite_eq_right hst.symm, ite_eq_left rfl, hval, ← hfUX, hsym U]
+      have hiP : i ∈ P := (Finset.mem_insert.mp hi).resolve_left his
+      rw [Function.update_of_ne hit, Function.update_of_ne his, gusfieldStepWeight, ht,
+        ite_eq_left hswap, ite_eq_right his, ite_eq_right hit]
+      exact I.weight i hiP hir
     · refine reflTransGen_tAdj_of_step I.conn fun z => ?_
       by_cases hzs : z = s
       · rw [hzs, ht]
@@ -624,10 +700,12 @@ private theorem gInv_step (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
         exact (Relation.ReflTransGen.single (show TAdj q t s from Or.inl qt')).tail
           (show TAdj q s (p t) from Or.inl qs')
       exact hconn_other z hzs hzt (Or.inr qt')
+    · rw [gusfieldStepWeight, ht, ite_eq_left hswap, ite_eq_right (Ne.symm hsr),
+        ite_eq_right (Ne.symm htr)]
   · -- `s` is hung below `t`.
     have qs' : q s = t := by rw [qs, ite_eq_right hswap]
     have qt' : q t = p t := by rw [qt, ite_eq_right hswap]
-    refine ⟨Function.update S s U, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨Function.update S s U, ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩
     · exact Finset.mem_insert_of_mem I.root_mem
     · by_cases htr : r = t
       · rw [htr, qt', ← htr]
@@ -671,6 +749,13 @@ private theorem gInv_step (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
       · rw [hzt, qt']
         exact I.lam i hiP hir t (fun h => hzi (hzt.trans h))
       exact hgen (S i) (hsS i hiP hir) z hzs hzt (I.lam i hiP hir z hzi)
+    · intro i hi hir
+      by_cases his : i = s
+      · rw [his, Function.update_self, gusfieldStepWeight, ht, ite_eq_right hswap,
+          ite_eq_left rfl, hval, ← hfUX]
+      have hiP : i ∈ P := (Finset.mem_insert.mp hi).resolve_left his
+      rw [Function.update_of_ne his, gusfieldStepWeight, ht, ite_eq_right hswap, ite_eq_right his]
+      exact I.weight i hiP hir
     · refine reflTransGen_tAdj_of_step I.conn fun z => ?_
       by_cases hzs : z = s
       · rw [hzs, ht]
@@ -679,15 +764,21 @@ private theorem gInv_step (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
       · rw [hzt]
         exact Relation.ReflTransGen.single (Or.inl qt')
       exact hconn_other z hzs hzt (Or.inl qs')
+    · rw [gusfieldStepWeight, ht, ite_eq_right hswap, ite_eq_right (Ne.symm hsr)]
 
 /-- Gusfield's loop preserves the invariant. -/
-private theorem gInv_loop (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {C : V → V → Finset V}
-    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) {r : V} :
-    ∀ (l : List V) {P : Finset V} {p : V → V} {S : V → Finset V}, GInv f r P p S → l.Nodup →
-      (∀ x ∈ l, x ∉ P ∨ x = r) → ∃ S', GInv f r (P ∪ l.toFinset) (gusfieldLoop C r l p) S'
-  | [], P, p, S, I, _, _ =>
-    ⟨S, by rw [gusfieldLoop, List.toFinset_nil, Finset.union_empty]; exact I⟩
-  | s :: l, P, p, S, I, hnd, hl => by
+private theorem gInv_loop (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f)
+    {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) {r : V} :
+    ∀ (l : List V) {P : Finset V} {p : V → V} {S : V → Finset V} {w : V → β},
+      GInv f r P p S w → l.Nodup → (∀ x ∈ l, x ∉ P ∨ x = r) →
+      ∃ S', GInv f r (P ∪ l.toFinset) (gusfieldWeightLoop C val r l p w).1 S'
+        (gusfieldWeightLoop C val r l p w).2 ∧
+        (gusfieldWeightLoop C val r l p w).2 r = w r
+  | [], P, p, S, w, I, _, _ =>
+    ⟨S, by rw [gusfieldWeightLoop, List.toFinset_nil, Finset.union_empty]; exact I, rfl⟩
+  | s :: l, P, p, S, w, I, hnd, hl => by
     rw [List.nodup_cons] at hnd
     have hset : P ∪ (s :: l).toFinset = insert s P ∪ l.toFinset := by
       ext x
@@ -695,15 +786,17 @@ private theorem gInv_loop (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
       tauto
     by_cases hsr : s = r
     · have hl' : ∀ x ∈ l, x ∉ P ∨ x = r := fun x hx => hl x (List.mem_cons_of_mem s hx)
-      obtain ⟨S', I'⟩ := gInv_loop hsym hsub hC l I hnd.2 hl'
+      obtain ⟨S', I', hwr⟩ := gInv_loop hsym hsub hC hval l I hnd.2 hl'
       have hins : insert s P = P := Finset.insert_eq_of_mem (hsr ▸ I.root_mem)
-      refine ⟨S', ?_⟩
-      rw [hset, hins]
-      rw [gusfieldLoop, ite_eq_left hsr]
-      exact I'
+      refine ⟨S', ?_, ?_⟩
+      · rw [hset, hins, gusfieldWeightLoop, ite_eq_left hsr]
+        exact I'
+      · rw [gusfieldWeightLoop, ite_eq_left hsr]
+        exact hwr
     · have hsP : s ∉ P := (hl s (List.mem_cons_self)).resolve_right hsr
       have hsp : s ≠ p s := fun h => hsP (h ▸ I.parent_mem s)
-      obtain ⟨S₁, I₁⟩ := gInv_step hsym hsub I hsP (hC s (p s) hsp)
+      obtain ⟨S₁, I₁, hw1⟩ :=
+        gInv_step hsym hsub I hsP (hC s (p s) hsp) (hval s (p s) hsp)
       have hl' : ∀ x ∈ l, x ∉ insert s P ∨ x = r := by
         intro x hx
         rcases hl x (List.mem_cons_of_mem s hx) with h | h
@@ -711,11 +804,12 @@ private theorem gInv_loop (hsym : ∀ X, f Xᶜ = f X) (hsub : IsSubmodular f) {
           rw [Finset.mem_insert, not_or]
           exact ⟨fun hxs => hnd.1 (hxs ▸ hx), h⟩
         · exact Or.inr h
-      obtain ⟨S', I'⟩ := gInv_loop hsym hsub hC l I₁ hnd.2 hl'
-      refine ⟨S', ?_⟩
-      rw [hset]
-      rw [gusfieldLoop, ite_eq_right hsr]
-      exact I'
+      obtain ⟨S', I', hwr⟩ := gInv_loop hsym hsub hC hval l I₁ hnd.2 hl'
+      refine ⟨S', ?_, ?_⟩
+      · rw [hset, gusfieldWeightLoop, ite_eq_right hsr]
+        exact I'
+      · rw [gusfieldWeightLoop, ite_eq_right hsr]
+        exact hwr.trans hw1
 
 end Step
 
@@ -727,8 +821,8 @@ variable [Fintype V] [DecidableEq V] [Preorder β] {f : Finset V → β}
 
 omit [DecidableEq V] in
 /-- The side of a parent edge `(u, p u)` of the final tree is the label `S u`. -/
-private theorem gInv_edgeSide_eq {r : V} {p : V → V} {S : V → Finset V}
-    (I : GInv f r Finset.univ p S) (hT : (parentGraph p).IsTree) {u : V} (hur : u ≠ r)
+private theorem gInv_edgeSide_eq {r : V} {p : V → V} {S : V → Finset V} {w : V → β}
+    (I : GInv f r Finset.univ p S w) (hT : (parentGraph p).IsTree) {u : V} (hur : u ≠ r)
     (hadj : (parentGraph p).Adj u (p u)) : edgeSide (parentGraph p) u (p u) = S u := by
   have hc := I.cut u (Finset.mem_univ u) hur
   refine edgeSide_eq_of_forall_adj hT hadj hc.left_mem hc.right_notMem fun x y hxy hne => ?_
@@ -744,10 +838,13 @@ private theorem gInv_edgeSide_eq {r : V} {p : V → V} {S : V → Finset V}
     rw [← h]
     exact (I.lam u (Finset.mem_univ u) hur y hyu).symm
 
-/-- **The final invariant yields a Gomory–Hu tree.** Once every vertex is processed, the parent
-graph is a spanning tree whose parent edges carry the minimum cuts `S u`. -/
+/-- **The final invariant yields a Gomory–Hu tree** whose parent edges carry the cuts `S u` and
+weights `w u = f (edgeSide (parentGraph p) u (p u))`. -/
 private theorem gInv_isGomoryHuTree (hsym : ∀ X, f Xᶜ = f X) {r : V} {p : V → V} {S : V → Finset V}
-    (I : GInv f r Finset.univ p S) : IsGomoryHuTree f (parentGraph p) := by
+    {w : V → β} (I : GInv f r Finset.univ p S w) :
+    IsGomoryHuTree f (parentGraph p) ∧
+      (∀ u, u ≠ r → IsMinCutBetween f u (p u) (edgeSide (parentGraph p) u (p u)) ∧
+        w u = f (edgeSide (parentGraph p) u (p u))) := by
   classical
   have hne : ∀ x, x ≠ r → p x ≠ x := fun x hx h =>
     (I.cut x (Finset.mem_univ x) hx).ne h.symm
@@ -798,22 +895,49 @@ private theorem gInv_isGomoryHuTree (hsym : ∀ X, f Xᶜ = f X) {r : V} {p : V 
       Finset.card_univ, Nat.card_eq_fintype_card]
     have := Fintype.card_pos_iff.mpr ⟨r⟩
     omega
-  refine ⟨htree, fun u v huv => ?_⟩
-  rcases (parentGraph_adj.mp huv).2 with h | h
-  · have hur : u ≠ r := fun hur => (parentGraph_adj.mp huv).1 (by rw [← h, hur, I.parent_root])
-    rw [← h] at huv ⊢
-    rw [gInv_edgeSide_eq I htree hur huv]
-    exact I.cut u (Finset.mem_univ u) hur
-  · have hvr : v ≠ r := fun hvr => (parentGraph_adj.mp huv).1 (by rw [← h, hvr, I.parent_root])
-    have hvu : (parentGraph p).Adj v (p v) := h ▸ huv.symm
-    have hside := gInv_edgeSide_eq I htree hvr hvu
-    rw [h] at hside
-    rw [edgeSide_swap htree huv.symm, hside]
-    have hc := I.cut v (Finset.mem_univ v) hvr
-    rw [h] at hc
-    exact hc.compl hsym
+  refine ⟨⟨htree, fun u v huv => ?_⟩, fun u hur => ?_⟩
+  · rcases (parentGraph_adj.mp huv).2 with h | h
+    · have hur : u ≠ r := fun hur => (parentGraph_adj.mp huv).1 (by rw [← h, hur, I.parent_root])
+      rw [← h] at huv ⊢
+      rw [gInv_edgeSide_eq I htree hur huv]
+      exact I.cut u (Finset.mem_univ u) hur
+    · have hvr : v ≠ r := fun hvr => (parentGraph_adj.mp huv).1 (by rw [← h, hvr, I.parent_root])
+      have hvu : (parentGraph p).Adj v (p v) := h ▸ huv.symm
+      have hside := gInv_edgeSide_eq I htree hvr hvu
+      rw [h] at hside
+      rw [edgeSide_swap htree huv.symm, hside]
+      have hc := I.cut v (Finset.mem_univ v) hvr
+      rw [h] at hc
+      exact hc.compl hsym
+  · have hadj : (parentGraph p).Adj u (p u) := parentGraph_adj.mpr ⟨(hne u hur).symm, Or.inl rfl⟩
+    have hside := gInv_edgeSide_eq I htree hur hadj
+    rw [hside]
+    exact ⟨I.cut u (Finset.mem_univ u) hur, I.weight u (Finset.mem_univ u) hur⟩
 
 end Correct
+
+private theorem gInv_gusfieldWithWeights [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) :
+    let res := gusfieldWithWeights C val r w₀ l
+    ∃ S, GInv f r Finset.univ res.1 S res.2 ∧ res.2 r = w₀ := by
+  obtain ⟨S, I, hwr⟩ := gInv_loop hsym hsub hC hval l (gInv_init f r (fun _ => ∅) fun _ => w₀)
+    hnd fun x _ => by
+      by_cases hx : x = r
+      · exact Or.inr hx
+      · exact Or.inl (fun h => hx (Finset.mem_singleton.mp h))
+  have huniv : ({r} : Finset V) ∪ l.toFinset = Finset.univ := by
+    ext x
+    simp only [Finset.mem_union, Finset.mem_singleton, List.mem_toFinset, Finset.mem_univ,
+      iff_true]
+    by_cases hx : x = r
+    · exact Or.inl hx
+    · exact Or.inr (hl x hx)
+  rw [huniv] at I
+  exact ⟨S, I, hwr⟩
 
 /-- **Correctness of Gusfield's algorithm** ([Gusfield1990]). For a symmetric submodular `f`, a
 cut oracle `C` returning a minimum `s`–`t` cut for all `s ≠ t`, a root `r` and a duplicate-free
@@ -824,18 +948,98 @@ theorem isGomoryHuTree_gusfieldParent [Fintype V] [DecidableEq V] [AddCommMonoid
     (hsub : IsSubmodular f) {C : V → V → Finset V}
     (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) {l : List V} (hnd : l.Nodup)
     (hl : ∀ x, x ≠ r → x ∈ l) : IsGomoryHuTree f (parentGraph (gusfieldParent C r l)) := by
-  obtain ⟨S, I⟩ := gInv_loop hsym hsub hC l (gInv_init f r fun _ => ∅) hnd fun x _ => by
-    by_cases hx : x = r
-    · exact Or.inr hx
-    · exact Or.inl (fun h => hx (Finset.mem_singleton.mp h))
-  have huniv : ({r} : Finset V) ∪ l.toFinset = Finset.univ := by
-    ext x
-    simp only [Finset.mem_union, Finset.mem_singleton, List.mem_toFinset, Finset.mem_univ,
-      iff_true]
-    by_cases hx : x = r
-    · exact Or.inl hx
-    · exact Or.inr (hl x hx)
-  rw [huniv] at I
-  exact gInv_isGomoryHuTree hsym I
+  rw [← fst_gusfieldWithWeights C (fun s t => f (C s t)) r (f ∅) l]
+  obtain ⟨_, I, -⟩ :=
+    gInv_gusfieldWithWeights hsym hsub hC (fun _ _ _ => rfl) r (f ∅) hnd hl
+  exact (gInv_isGomoryHuTree hsym I).1
+
+/-- The root `r` remains its own parent in `gusfieldParent`. -/
+private theorem gusfieldParent_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) :
+    gusfieldParent C r l r = r := by
+  rw [← fst_gusfieldWithWeights C (fun s t => f (C s t)) r (f ∅) l]
+  obtain ⟨_, I, -⟩ :=
+    gInv_gusfieldWithWeights hsym hsub hC (fun _ _ _ => rfl) r (f ∅) hnd hl
+  exact I.parent_root
+
+/-- **Bundled correctness of Gusfield's algorithm with edge weights** ([Gusfield1990]): for a
+symmetric submodular `f`, cut oracle `C`, consistent value oracle `val s t = f (C s t)`, root `r`,
+initial weight `w₀` and duplicate-free list `l` covering `V \ {r}`, `gusfieldWithWeights` produces
+a Gomory–Hu parent graph with fixed root `r`, root weight `w₀`, and non-root weights equal to `f`
+on each tree-edge side. -/
+theorem gusfieldWithWeights_spec [Fintype V] [DecidableEq V] [AddCommMonoid β] [LinearOrder β]
+    [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) :
+    let res := gusfieldWithWeights C val r w₀ l
+    IsGomoryHuTree f (parentGraph res.1) ∧ res.1 r = r ∧ res.2 r = w₀ ∧
+      ∀ u, u ≠ r →
+        IsMinCutBetween f u (res.1 u) (edgeSide (parentGraph res.1) u (res.1 u)) ∧
+          res.2 u = f (edgeSide (parentGraph res.1) u (res.1 u)) := by
+  obtain ⟨S, I, hwr⟩ := gInv_gusfieldWithWeights hsym hsub hC hval r w₀ hnd hl
+  obtain ⟨htree, hside⟩ := gInv_isGomoryHuTree hsym I
+  exact ⟨htree, I.parent_root, hwr, fun u hur => hside u hur⟩
+
+/-- **Correctness of Gusfield's algorithm with edge weights** ([Gusfield1990]): for a symmetric
+submodular `f`, a cut oracle `C` returning minimum cuts, a root `r` and a duplicate-free list `l`
+covering `V \ {r}`, the parent component of `gusfieldWithWeights` is a Gomory–Hu tree of `f`. -/
+theorem isGomoryHuTree_gusfieldWithWeights [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) (w₀ : β) {l : List V}
+    (hnd : l.Nodup) (hl : ∀ x, x ≠ r → x ∈ l) :
+    IsGomoryHuTree f (parentGraph (gusfieldWithWeights C val r w₀ l).1) := by
+  rw [fst_gusfieldWithWeights]
+  exact isGomoryHuTree_gusfieldParent hsym hsub hC r hnd hl
+
+/-- For every non-root vertex `u`, the tree-edge side containing `u` in `gusfieldWithWeights` is a
+minimum `u`–`p u` cut of `f`. -/
+theorem isMinCutBetween_gusfieldWithWeights_edgeSide [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) {u : V} (hur : u ≠ r) :
+    let res := gusfieldWithWeights C val r w₀ l
+    IsMinCutBetween f u (res.1 u) (edgeSide (parentGraph res.1) u (res.1 u)) :=
+  ((gusfieldWithWeights_spec hsym hsub hC hval r w₀ hnd hl).2.2.2 u hur).1
+
+/-- **Edge-weight correctness of Gusfield's algorithm** ([Gusfield1990]): for every non-root vertex
+`u`, the weight recorded by `gusfieldWithWeights` equals `f` on the tree-edge side containing
+`u`. -/
+theorem gusfieldWithWeights_weight_eq [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) {u : V} (hur : u ≠ r) :
+    let res := gusfieldWithWeights C val r w₀ l
+    res.2 u = f (edgeSide (parentGraph res.1) u (res.1 u)) :=
+  ((gusfieldWithWeights_spec hsym hsub hC hval r w₀ hnd hl).2.2.2 u hur).2
+
+/-- The root `r` remains its own parent in `gusfieldWithWeights`. -/
+theorem gusfieldWithWeights_parent_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) (w₀ : β) {l : List V}
+    (hnd : l.Nodup) (hl : ∀ x, x ≠ r → x ∈ l) :
+    (gusfieldWithWeights C val r w₀ l).1 r = r := by
+  rw [fst_gusfieldWithWeights]
+  exact gusfieldParent_root hsym hsub hC r hnd hl
+
+/-- The weight recorded at the root `r` in `gusfieldWithWeights` equals the initial weight `w₀`. -/
+theorem gusfieldWithWeights_weight_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) :
+    (gusfieldWithWeights C val r w₀ l).2 r = w₀ :=
+  (gusfieldWithWeights_spec hsym hsub hC hval r w₀ hnd hl).2.2.1
 
 end Cslib.Algorithms.Lean.GomoryHu
