@@ -390,6 +390,36 @@ theorem numTables_lt (n : ℕ) {p₁ p₂ : ℝ} (hp₁ : 0 < p₁) :
     (numTables n p₁ p₂ : ℝ) < (n : ℝ) ^ rho p₁ p₂ / p₁ + 1 :=
   Nat.ceil_lt_add_one (div_nonneg (Real.rpow_nonneg (Nat.cast_nonneg n) _) hp₁.le)
 
+/-- For `(p₁, p₂)`-sensitive parameters `0 < p₂ < p₁ ≤ 1` and `n > 0`, the explicit choices
+`k = numHashes n p₂` and `L = numTables n p₁ p₂` satisfy `0 < L` and
+`(1 - p₁ ^ k) ^ L + L * n * p₂ ^ k / (3 * L) ≤ exp (-1) + 1 / 3`. -/
+theorem numTables_failure_bound_le {n : ℕ} (hn : 0 < n) {p₁ p₂ : ℝ} (hp₂ : 0 < p₂)
+    (hp₂₁ : p₂ < p₁) (hp₁ : p₁ ≤ 1) :
+    0 < numTables n p₁ p₂ ∧
+      (1 - p₁ ^ numHashes n p₂) ^ numTables n p₁ p₂ +
+        numTables n p₁ p₂ * n * p₂ ^ numHashes n p₂ / (3 * numTables n p₁ p₂) ≤
+          Real.exp (-1) + 1 / 3 := by
+  set k := numHashes n p₂
+  set L := numTables n p₁ p₂
+  have hp₁0 : 0 < p₁ := hp₂.trans hp₂₁
+  have hLp : 1 ≤ (L : ℝ) * p₁ ^ k := one_le_numTables_mul_pow hn hp₂ hp₂₁ hp₁
+  have hnp : (n : ℝ) * p₂ ^ k ≤ 1 := mul_pow_numHashes_le hn hp₂ (hp₂₁.trans_le hp₁)
+  have hpk0 : 0 ≤ p₁ ^ k := pow_nonneg hp₁0.le k
+  have hpk1 : p₁ ^ k ≤ 1 := pow_le_one₀ hp₁0.le hp₁
+  have hL : 0 < L := by
+    by_contra h0
+    rw [show L = 0 by omega, Nat.cast_zero, zero_mul] at hLp
+    linarith
+  refine ⟨hL, add_le_add ?_ ?_⟩
+  · calc (1 - p₁ ^ k) ^ L ≤ Real.exp (-p₁ ^ k) ^ L := by
+          refine pow_le_pow_left₀ (by linarith) ?_ L
+          linarith [Real.add_one_le_exp (-p₁ ^ k)]
+      _ = Real.exp (-(L * p₁ ^ k)) := by rw [← Real.exp_nat_mul]; ring_nf
+      _ ≤ Real.exp (-1) := Real.exp_le_exp.2 (by linarith)
+  · have hL' : (0 : ℝ) < L := by exact_mod_cast hL
+    rw [div_le_iff₀ (by positivity)]
+    nlinarith
+
 /-- **The `(c, r)`-near-neighbour guarantee with explicit parameters**, for the static structure
 ([HarPeledIndykMotwani2012], Theorem 3.4, which also covers updates). The scanning rule is that of
 [IndykMotwani1998]; see [AndoniIndyk2008], Section 2.4. Let `hash` be `(p₁, p₂)`-sensitive with
@@ -405,29 +435,10 @@ theorem toOuterMeasure_query_numTables_eq_none_le [DecidableEq Y] {near far : X 
         {s | query (andHash hash (numHashes P.length p₂)) far s (3 * numTables P.length p₁ p₂)
           P q = none}).toReal ≤ Real.exp (-1) + 1 / 3 := by
   have hn : 0 < P.length := List.length_pos_of_mem hx₀
-  set k := numHashes P.length p₂
-  set L := numTables P.length p₁ p₂
-  have hp₁0 : 0 < p₁ := hp₂.trans hp₂₁
-  have hLp : 1 ≤ (L : ℝ) * p₁ ^ k := one_le_numTables_mul_pow hn hp₂ hp₂₁ hp₁
-  have hnp : (P.length : ℝ) * p₂ ^ k ≤ 1 := mul_pow_numHashes_le hn hp₂ (hp₂₁.trans_le hp₁)
-  have hpk0 : 0 ≤ p₁ ^ k := pow_nonneg hp₁0.le k
-  have hpk1 : p₁ ^ k ≤ 1 := pow_le_one₀ hp₁0.le hp₁
-  have hL : 0 < L := by
-    by_contra h0
-    rw [show L = 0 by omega, Nat.cast_zero, zero_mul] at hLp
-    linarith
-  have hbound := toOuterMeasure_query_andHash_eq_none_le h hp₂.le hp₂₁ k L
-    (by omega : 0 < 3 * L) hx₀ hnear
-  refine hbound.trans (add_le_add ?_ ?_)
-  · calc (1 - p₁ ^ k) ^ L ≤ Real.exp (-p₁ ^ k) ^ L := by
-          refine pow_le_pow_left₀ (by linarith) ?_ L
-          linarith [Real.add_one_le_exp (-p₁ ^ k)]
-      _ = Real.exp (-(L * p₁ ^ k)) := by rw [← Real.exp_nat_mul]; ring_nf
-      _ ≤ Real.exp (-1) := Real.exp_le_exp.2 (by linarith)
-  · have hL' : (0 : ℝ) < L := by exact_mod_cast hL
-    rw [div_le_iff₀ (by push_cast; positivity)]
-    push_cast
-    nlinarith
+  obtain ⟨hL, hnum⟩ := numTables_failure_bound_le hn hp₂ hp₂₁ hp₁
+  have hbound := toOuterMeasure_query_andHash_eq_none_le h hp₂.le hp₂₁ (numHashes P.length p₂)
+    (numTables P.length p₁ p₂) (by omega : 0 < 3 * numTables P.length p₁ p₂) hx₀ hnear
+  exact hbound.trans (by simpa only [Nat.cast_mul, Nat.cast_ofNat] using hnum)
 
 /-! ### Repetition -/
 
