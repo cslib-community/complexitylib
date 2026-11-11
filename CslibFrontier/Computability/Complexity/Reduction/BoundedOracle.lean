@@ -1171,7 +1171,7 @@ noncomputable def refl (encA : α ↪ List Bool) (A : Set α) :
 
 /-- Complement the source language `Aᶜ` without changing the `OracleCallBound` profile. -/
 @[expose]
-def compl_left {A : Set α} {B : Set β} (R : BoundedOracleReduction encA encB A B) :
+def complLeft {A : Set α} {B : Set β} (R : BoundedOracleReduction encA encB A B) :
     BoundedOracleReduction encA encB Aᶜ B where
   program a := Bool.not <$> R.program a
   bound := R.bound
@@ -1190,9 +1190,9 @@ def compl_left {A : Set α} {B : Set β} (R : BoundedOracleReduction encA encB A
 /-- Every language's complement reduces to the language itself via `1` query (`Aᶜ ≤ B` for `B = A`).
 -/
 @[expose]
-noncomputable def compl_self (encA : α ↪ List Bool) (A : Set α) :
+noncomputable def complSelf (encA : α ↪ List Bool) (A : Set α) :
     BoundedOracleReduction encA encA Aᶜ A :=
-  (refl encA A).compl_left
+  (refl encA A).complLeft
 
 /-- Lift a typed `BoundedOracleReduction encB encC B C` to a word-level `BoundedOracleProgram`
 answering `encodedDecisionOracle encB B` via a total polynomial-time `D : Decoder encB`:
