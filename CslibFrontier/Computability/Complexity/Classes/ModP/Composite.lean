@@ -148,7 +148,8 @@ theorem ModP_eq_ModP_prod_primeFactors (hk : k ≠ 0) :
   rw [mem_ModP_iff_primeFactors hk]
   have h_coprime : (k.primeFactors : Set ℕ).Pairwise (fun i j => i.Coprime j) := by
     intro i hi j hj hneq
-    exact (Nat.coprime_primes (Nat.prime_of_mem_primeFactors hi) (Nat.prime_of_mem_primeFactors hj)).mpr hneq
+    exact (Nat.coprime_primes (Nat.prime_of_mem_primeFactors hi)
+      (Nat.prime_of_mem_primeFactors hj)).mpr hneq
   rw [mem_ModP_prod_iff k.primeFactors (fun p => p) h_coprime]
 
 theorem supClosed_ModP (k : ℕ) (hA : A ∈ ModP k enc) (hB : B ∈ ModP k enc) :
