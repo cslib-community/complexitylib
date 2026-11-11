@@ -598,10 +598,10 @@ theorem exactWalk_apply_some (R : SelfReducible enc W) {count : α → ℕ}
         · have hterm_false : ∀ r : Fin (W y).card,
               PMF.uniformOfFintype (Fin (W y).card) r *
                 (if (r : ℕ) < (W (R.child y true)).card then
-                  PMF.map (Option.map (true :: ·))
+                  PMF.map (Option.map (fun xs => true :: xs))
                     (R.exactWalk count unif k (R.child y true) (W (R.child y true)).card)
                 else
-                  PMF.map (Option.map (false :: ·))
+                  PMF.map (Option.map (fun xs => false :: xs))
                     (R.exactWalk count unif k (R.child y false)
                       ((W y).card - (W (R.child y true)).card)))
                   (some (false :: u)) =
@@ -794,12 +794,16 @@ theorem mem_exactSampleQueries_length_le (R : SelfReducible enc W) (count : α �
       have hy_pos : 0 < R.len y := by omega
       simp only [exactWalkQueries] at hu
       split_ifs at hu with hc hr
-      · rcases List.mem_cons.mp hu with rfl | htl
+      · rcases List.mem_cons.mp hu with rfl | htl_t
         · exact R.length_child_le y hy_pos true
-        · exact (ih _ _ _ (by have := R.len_child y hy_pos true; omega) u htl).trans (R.length_child_le _ _ _)
-      · rcases List.mem_cons.mp hu with rfl | htl
+        · exact (ih (R.child y true) (count (R.child y true)) ds.tail
+            (by have := R.len_child y hy_pos true; omega) u htl_t).trans
+            (R.length_child_le y hy_pos true)
+      · rcases List.mem_cons.mp hu with rfl | htl_f
         · exact R.length_child_le y hy_pos true
-        · exact (ih _ _ _ (by have := R.len_child y hy_pos false; omega) u htl).trans (R.length_child_le _ _ _)
+        · exact (ih (R.child y false) (c - count (R.child y true)) ds.tail
+            (by have := R.len_child y hy_pos false; omega) u htl_f).trans
+            (R.length_child_le y hy_pos false)
       · simp at hu
   simp only [exactSampleQueries] at hz
   split_ifs at hz
@@ -1564,7 +1568,7 @@ theorem isOraclePPTOn_boundedConditionalOracleSample (R : SelfReducible enc W)
         (encOption encNat)
       have hsnd1 := snd (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encNat
       have hadv := (R.computableInPolyTime_advanceConditionalState).comp
-        ((((hst.comp hp1).comp hp2).prod (hsnd1.comp hp2)).prod
+        ((((hst_o.comp hp1).comp hp2).prod (hsnd1.comp hp2)).prod
           (snd (encPair (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encNat)
             (encOption encNat)))
       exact (((hdraw_ppt.isOraclePPTOn (Operation := Unit)).map_with'
@@ -1578,7 +1582,7 @@ theorem isOraclePPTOn_boundedConditionalOracleSample (R : SelfReducible enc W)
           (sampleFinBounded pair.2.countVal (pair.1.2 + R.len pair.1.1))
         pure (R.advanceConditionalState pair.2 c₁ ro))
       hdraw_oracle
-    exact (IsOraclePPTOn.cond' hcond hyes hst.isOraclePPTOn).congr fun pair State oracle s => by
+    exact (IsOraclePPTOn.cond' hcond hyes hst_o.isOraclePPTOn).congr fun pair State oracle s => by
       unfold conditionalWalkOracleStep
       cases pair.2.active && decide (0 < pair.2.countVal) <;> rfl
   -- Run the `R.len x`-step loop given `(p, c)` where `c` is the root count
@@ -1609,7 +1613,7 @@ theorem isOraclePPTOn_boundedConditionalOracleSample (R : SelfReducible enc W)
           (encPair (encPair (encPair enc encUnary) encNat) (encConditionalWalkState enc))
           (encPair (encPair enc encUnary) (encConditionalWalkState enc)) :=
         (hp_fst.comp (fst _ _)).prod (snd _ _)
-      exact hstep.preprocess' hprep
+      exact hstep_oracle.preprocess' hprep
     have hx_cert : ComputableInPolyTime (fun pc : (α × ℕ) × ℕ => pc.1.1)
         (encPair (encPair enc encUnary) encNat) enc :=
       (fst enc encUnary).comp hp_fst
