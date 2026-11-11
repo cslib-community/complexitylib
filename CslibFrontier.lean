@@ -1664,6 +1664,7 @@ public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Advice
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Collapse
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games
+public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games.PolyRounds
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games.Repetition
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.PH
@@ -1775,6 +1776,8 @@ public import CslibFrontier.Computability.Complexity.Classes.IP.GameTree
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.Emulation
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.GoldwasserSipser
+public import CslibFrontier.Computability.Complexity.Classes.IP.Games.Oracle
+public import CslibFrontier.Computability.Complexity.Classes.IP.Games.PolyRounds
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.Repetition
 public import CslibFrontier.Computability.Complexity.Classes.IP.GraphNonIsomorphism
 public import CslibFrontier.Computability.Complexity.Classes.IP.Guessing
