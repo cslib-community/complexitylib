@@ -34,7 +34,9 @@ printed pp. 488–493, 501–502, 521–522][BonehShoup2023], over an arbitrary 
 `AD : Type`) over a `PrimeOrderGroupFamily`, proves its algebraic and word-level
 decryption correctness and polynomial-time computability certificates, and establishes the
 **adaptive Lemma 12.8 projective-hash rejection bound** and **Lemma 12.6 one-time group-mask
-challenge blindness** (Games 3 $\to$ 3.5 $\to$ 4 $\to$ 5 of Theorem 12.9, printed pp. 492–493)
+challenge blindness** (the hops `cramerShoupGame3` $\to$ `cramerShoupGame3Half` $\to$
+`cramerShoupGame4` $\to$ `cramerShoupGame5`, covering Games 4 $\to$ 5 $\to$ 6 in the proof of
+Theorem 12.9, printed pp. 492–493)
 against an adaptive `ADCCA2AdversaryOf Msg AD`. Groups are written additively as
 `ZMod (F.order d)`-modules (matching `DiscreteLog`, `DiffieHellman`, `ElGamal`, and
 `ProjectiveHash`).
@@ -356,7 +358,8 @@ def ADCCA2AdversaryOf.IsQueryBounded {Msg AD : Type} (adversary : ADCCA2Adversar
   (∀ n state ct, (adversary.guess n state ct).IsQueryBounded (Q₂ n))
 
 /-- Every strict oracle PPT `ADCCA2AdversaryOf Msg AD` has polynomial bounds on its Phase 1
-queries, Phase 2 queries, and saved-state length in terms of `(n, pk.length, ct.length)`. -/
+queries and saved-state length in terms of `(n, pk.length)`, and on its Phase 2 queries in terms
+of `(n, state.length, ct.length)` for every state word `state`. -/
 theorem ADCCA2AdversaryOf.IsPPT.query_bounds {Msg AD : Type} {encMsg : Msg ↪ List Bool}
     {encAD : AD ↪ List Bool} {adversary : ADCCA2AdversaryOf Msg AD}
     (hA : adversary.IsPPT encMsg encAD) :
@@ -1171,11 +1174,11 @@ noncomputable def cramerShoupGame3
 
 /-! ### Projective-hash rejection (Games 3.5, 4, and 5) and concrete 1CCA bound -/
 
-/-- Decryption helper for Game 4 ([BonehShoup2023], Section 12.5.3, printed p. 492): on the fiber
-`σ = δ - α * τ`, `σ₁ = δ₁ - α * τ₁`, `σ₂ = δ₂ - α * τ₂`, reject any ciphertext whose `(v', w')`
-pair does not satisfy `w' == F.smul (d, α.val, v')`, and otherwise decrypt using
-`(δ, 0, δ₁, 0, δ₂, 0)` (which agrees with `(σ, τ, σ₁, τ₁, σ₂, τ₂)` on all Diffie–Hellman queries
-by `projHash_fiber_eq` and `projHash2_fiber_dh`). -/
+/-- Decryption helper for `cramerShoupGame4` (Game 5 of [BonehShoup2023], Section 12.5.3, printed
+p. 492): on the fiber `σ = δ - α * τ`, `σ₁ = δ₁ - α * τ₁`, `σ₂ = δ₂ - α * τ₂`, reject any
+ciphertext whose `(v', w')` pair does not satisfy `w' == F.smul (d, α.val, v')`, and otherwise
+decrypt using `(δ, 0, δ₁, 0, δ₂, 0)` (which agrees with `(σ, τ, σ₁, τ₁, σ₂, τ₂)` on all
+Diffie–Hellman queries by `projHash_fiber_eq` and `projHash2_fiber_dh`). -/
 def decodeCramerShoupDH
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (d : F.Desc) (α δ δ₁ δ₂ : ZMod (F.order d)) (ct ad : List Bool) : Option (List Bool) :=
@@ -1203,10 +1206,10 @@ def cramerShoupDHPhase2Reply
   else
     encOption encBits (F.decodeCramerShoupDH H isElem d α δ δ₁ δ₂ q.1 q.2)
 
-/-- Bad-event predicate for Game 3 $\to$ Game 4 ([BonehShoup2023], Section 12.5.3, equations
-(12.26)–(12.27), printed pp. 492–493): `ct_q = encBits4 (v', w', e', z')` is a syntactically
-well-formed non-DH ciphertext (`w' != F.smul (d, α.val, v')`) whose tag `z'` matches
-`encodeProjHash2` on `(v', w', e', ad_q)`. -/
+/-- Bad-event predicate for `cramerShoupGame3` $\to$ `cramerShoupGame4` (Games 4 $\to$ 5 of
+[BonehShoup2023], Section 12.5.3, equations (12.26)–(12.27), printed pp. 492–493):
+`ct_q = encBits4 (v', w', e', z')` is a syntactically well-formed non-DH ciphertext
+(`w' != F.smul (d, α.val, v')`) whose tag `z'` matches `encodeProjHash2` on `(v', w', e', ad_q)`. -/
 def isCramerShoupBadDH
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (d : F.Desc) (α : ZMod (F.order d))
@@ -1563,10 +1566,11 @@ def HonestPhase2QueryBound (hasAD : Bool) {Msg AD : Type}
         F.encode d ((β * (δ₁ + ρ * δ₂) + (γ - α * β) * ξ) • F.generator d))
       (adversary.guess n (csChoiceState choiceOut.1) ct).IsQueryBounded Q₂
 
-/-- **Game 3.5** (intermediate hybrid between Game 3 and Game 4 of [BonehShoup2023],
-Section 12.5.3, printed pp. 491–492): under the fiber change of variables
-`σ = δ - α * τ`, `σ₁ = δ₁ - α * τ₁`, `σ₂ = δ₂ - α * τ₂`, replace Phase 1's decryption oracle
-`cramerShoupPhase1Reply` with `cramerShoupDHPhase1Reply` (rejecting non-DH queries in Phase 1). -/
+/-- **Game 3.5** (intermediate hybrid between `cramerShoupGame3` and `cramerShoupGame4`, which
+correspond to Games 4 and 5 of [BonehShoup2023], Section 12.5.3, printed pp. 491–492): under the
+fiber change of variables `σ = δ - α * τ`, `σ₁ = δ₁ - α * τ₁`, `σ₂ = δ₂ - α * τ₂`, replace
+Phase 1's decryption oracle `cramerShoupPhase1Reply` with `cramerShoupDHPhase1Reply` (rejecting
+non-DH queries in Phase 1). -/
 noncomputable def cramerShoupGame3Half
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
     (encodeAD : F.Desc × AD → List Bool)
@@ -1756,8 +1760,11 @@ theorem advantage_cramerShoupGame3Half_game4_le
       (F.div_order_le_div_of_le hm0 (hm d d_mem))
   · simp only [hvalid, Bool.false_eq_true, ↓reduceIte, PMF.bind_const, Game.advantage_self, zero_le]
 
-/-- **Game 3 $\to$ Game 4 bound** ([BonehShoup2023], Section 12.5.3, equations (12.26)–(12.27),
-printed pp. 492–493, using Lemma 12.8, printed p. 488): replacing both Phase 1 and Phase 2
+/-- **Game 3 $\to$ Game 4 bound** (Games 4 $\to$ 5 of [BonehShoup2023], Section 12.5.3,
+equations (12.26)–(12.27), printed pp. 492–493, using Lemma 12.8, printed p. 488): if `isElem`
+accepts exactly the encodings of group elements, every supported group has order at least `m > 0`,
+and Phase 1 and Phase 2 make at most `Q₁` and `Q₂` queries on honest inputs
+(`HonestPhase1QueryBound`, `HonestPhase2QueryBound`), then replacing both Phase 1 and Phase 2
 decryption oracles with their DH-restricted counterparts changes the game advantage by at most
 `(Q₁ + Q₂) / m`. -/
 theorem advantage_cramerShoupGame3_game4_le
@@ -1824,11 +1831,13 @@ theorem cramerShoupGame5_false_eq_true
       F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary true n :=
   rfl
 
-/-- **Game 4 $\to$ Game 5 bound** ([BonehShoup2023], Section 12.5.3, equations (12.23) and (12.28),
-printed pp. 492–493, using Lemma 12.6, printed p. 486):
-whenever `γ ≠ α * β`, `projHash F d (δ - α * τ) τ (β • g) (γ • g) + m` is uniformly distributed
-over `F.Carrier d` by `uniform_projHash_fiber_add` (Lemma 12.6), so `cramerShoupGame4` and
-`cramerShoupGame5` differ only on the event `γ = α * β` of probability `1 / F.order d ≤ 1 / m`. -/
+/-- **Game 4 $\to$ Game 5 bound** (Games 5 $\to$ 6 of [BonehShoup2023], Section 12.5.3, with the
+non-DH-triple step of its Game 3 folded in; equations (12.23) and (12.28), printed pp. 492–493,
+using Lemma 12.6, printed p. 486): suppose `isElem` accepts exactly the encodings of group elements
+and every supported group has order at least `m > 0`. Whenever `γ ≠ α * β`,
+`projHash F d (δ - α * τ) τ (β • g) (γ • g) + m` is uniformly distributed over `F.Carrier d` by
+`uniform_projHash_fiber_add` (Lemma 12.6), so `cramerShoupGame4` and `cramerShoupGame5` differ
+only on the event `γ = α * β` of probability `1 / F.order d ≤ 1 / m`. -/
 theorem advantage_cramerShoupGame4_game5_le
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
     (encodeAD : F.Desc × AD → List Bool)

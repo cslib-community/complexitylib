@@ -31,7 +31,7 @@ import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Finiteness
 import CslibFrontier.Crypto.Game.Order
 

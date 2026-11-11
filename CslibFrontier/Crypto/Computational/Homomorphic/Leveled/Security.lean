@@ -24,13 +24,16 @@ Two public-artifact hybrids replace secret encryptions by zero encryptions in th
 worlds, and `zeroLinkAdversary` simulates the intervening zero-link experiment. The unified
 two-stage reduction `leveledAdversary` combines all three hops into a single base IND-CPA
 adversary with concrete loss `4 * dyadicSize (2 * budget n) * dyadicSize (capacity n) ≤
-16 * (2 * budget n + 1) * (capacity n + 1)`, matching Gentry's Theorem 4 ([Gentry2009], Section 2,
-p. 171) up to a constant factor from power-of-two coin sampling and NAND-compiled depth `2 * d`,
-with asymptotic `IsPPT` rather than a multiplicative runtime bound relative to the adversary
-(see `CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecurity` for the exact
-`(2 * budget n) * capacity n` uniform-index loss, its strict-PPT `sampleModNat` counterpart with
-`O(1 / 2 ^ n)` statistical tail, and explicit polynomial public-key, saved-state, and coin-budget
-overhead bounds).
+16 * (2 * budget n + 1) * (capacity n + 1)` when every supported base secret key has the same
+length `width ≤ capacity n`, matching Gentry's Theorem 4 ([Gentry2009], Section 2, p. 171) up
+to a constant factor from power-of-two coin sampling and NAND-compiled depth `2 * d`, with
+asymptotic `IsPPT` rather than a multiplicative runtime bound relative to the adversary (see
+`CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecurity` for the exact
+`3 * (2 * budget n) * capacity n` uniform-index loss when also `0 < budget n` and
+`0 < capacity n`, its strict-PPT `sampleModNat` counterpart whose statistical tail with `2 * n`
+coins per sample is at most `2 / 2 ^ n` once `3 + 2 * budget n + capacity n ≤ 2 ^ n`, explicit
+polynomial public-key and saved-state length bounds, and polynomially bounded coin-count
+formulas).
 Correctness, evaluation efficiency, compactness, a concrete base cryptosystem and fixed-key
 unbounded-depth bootstrapping are separate results or obligations.
 
@@ -52,7 +55,7 @@ unbounded-depth bootstrapping are separate results or obligations.
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Section 11.2][BonehShoup2023]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Leveled
 
@@ -60,9 +63,10 @@ open Probability Turing.MultiTapeTM
 open scoped NNReal
 
 /-- Exact chosen-message advantage of the depth-budgeted scheme `scheme D budget` in terms of
-the unified two-stage base reduction `leveledAdversary` ([Gentry2009], Section 2, Theorem 4,
+the unified two-stage base reduction `leveledAdversary`, when every base secret key in the support
+of `E.keyGen n` has the same length `width ≤ capacity n` ([Gentry2009], Section 2, Theorem 4,
 p. 171, up to a constant factor in the loss; see `ExactSecurity.lean` for the exact
-`(2 * budget n) * capacity n` factor and explicit polynomial overhead bounds). -/
+`3 * (2 * budget n) * capacity n` factor and explicit polynomial overhead bounds). -/
 theorem advantage_scheme_eq_leveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -77,9 +81,10 @@ theorem advantage_scheme_eq_leveledAdversary {E : Scheme}
   advantage_game_eq_leveledAdversary E budget capacity adversary n width hwidth hcapacity
 
 /-- Polynomial concrete-security bound for the depth-budgeted scheme `scheme D budget` with
-explicit factor `16 * (2 * budget n + 1) * (capacity n + 1)` ([Gentry2009], Section 2,
+explicit factor `16 * (2 * budget n + 1) * (capacity n + 1)`, when every base secret key in the
+support of `E.keyGen n` has the same length `width ≤ capacity n` ([Gentry2009], Section 2,
 Theorem 4, p. 171, up to a constant factor in the loss; see `ExactSecurity.lean` for the exact
-`(2 * budget n) * capacity n` factor and explicit polynomial overhead bounds). -/
+`3 * (2 * budget n) * capacity n` factor and explicit polynomial overhead bounds). -/
 theorem advantage_scheme_le_mul_leveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)

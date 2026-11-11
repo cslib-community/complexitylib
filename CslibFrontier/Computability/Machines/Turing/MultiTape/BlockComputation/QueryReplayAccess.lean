@@ -151,26 +151,17 @@ theorem length_encRawResult_le (s : Config k Q)
     (hcodes : ∀ h n, n ∈ s.cells h → n ≤ 2) :
     (encRawResult (rawResult s)).length ≤ 128 * (k + 1) *
       (s.width + Nat.card (Option Q) + Nat.card OutputTrack + 1) := by
-  have hnat (n : ℕ) : (encNat n).length ≤ n := by
-    rw [encNat_apply, Nat.size_eq_bits_len, Nat.size_le]
-    exact Nat.lt_two_pow_self
   have hq := (length_encFinite_lt s.control).le
   have ht := (length_encFinite_lt s.track).le
   have hres (h : Option (Fin k)) : (encNat ((rawResult s).2.1 h)).length ≤ s.width := by
-    apply (hnat _).trans
+    apply (length_encNat_le_self _).trans
     cases h
     · exact inputResidue_le _ _
     · exact workResidue_le _ _
   have hh : (encPi encNat (rawResult s).2.1).length ≤ (k + 1) * (2 * s.width + 1) := by
     simpa only [Fintype.card_option, Fintype.card_fin] using
       length_encPi_le encNat (rawResult s).2.1 hres
-  have hw : (encPi (encList encNat) s.cells).length ≤ k * (30 * s.width + 1) := by
-    have hl (h : Fin k) : (encList encNat (s.cells h)).length ≤ 15 * s.width := by
-      have hl' := length_encList_le encNat (s.cells h)
-        (fun n hn => (hnat n).trans (hcodes h n hn))
-      nlinarith [hcells h]
-    simpa only [Fintype.card_fin, ← Nat.mul_assoc] using
-      length_encPi_le (encList encNat) s.cells hl
+  have hw := length_encCells_le s.cells hcells hcodes
   change (encPair (encFinite (Option Q)) (encPair (encPi encNat)
     (encPair (encFinite OutputTrack) (encPi (encList encNat)))) (rawResult s)).length ≤ _
   simp only [length_encPair, rawResult]

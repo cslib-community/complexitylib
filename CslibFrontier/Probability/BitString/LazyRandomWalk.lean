@@ -15,6 +15,7 @@ import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # The lazy random walk on the hypercube

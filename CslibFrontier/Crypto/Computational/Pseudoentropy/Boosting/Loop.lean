@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Boosting.Program
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Correctness of the clocked boosting loop
