@@ -662,7 +662,9 @@ keystream and ciphertext uniformity on fixed (non-adaptive) injective point sche
 counters), and `BitString.toOuterMeasure_addRight_mem_finset_eq` and
 `BitString.toOuterMeasure_addRight_mem_list_le` give the shifted-block collision probabilities
 `S.card / 2^n` and at most `ks.length / 2^n`. The modes module builds on them with
-`advantage_xorEvalPoints_eq_zero` and the chain collision bound `toOuterMeasure_badChain_le`
+`advantage_xorEvalPoints_eq_zero`, the uniform-block XOR and support-length helpers
+(`uniformBlocks_eq`, `length_snd_of_mem_support_uniformDraws`, `map_zipWith_uniformBlocks`,
+`map_iv_uniformBlocks_zipWith`), and the chain collision bound `toOuterMeasure_badChain_le`
 (`bs.length * (ks.length + bs.length) / 2^n`, over `uniformBlocks`, the `PMF.iid` uniform blocks read
 as a list) used when analyzing random-IV chaining. The indexed OFB and CTR masks decrypt the
 list-mode ciphertexts (`maskBlockDecrypt_ofbBlockMask_ofbEncryptBlocks`,
@@ -681,6 +683,14 @@ nonconstant counter schedule, are in
 [`CslibFrontierTests/Crypto/BlockCipherModes.lean`](../../CslibFrontierTests/Crypto/BlockCipherModes.lean),
 and direct checks of the sampling lemmas are in
 [`CslibFrontierTests/BitStringCollision.lean`](../../CslibFrontierTests/BitStringCollision.lean).
+
+For the shared lazy-versus-fresh random-function hybrid used by both CTR and OFB mode, import
+[`Encryption/RandomFunctionHybrid.lean`](../../CslibFrontier/Crypto/Computational/Encryption/RandomFunctionHybrid.lean):
+it packages `FlagState`, the caching/fresh step handlers `lazyStep` and `freshStep`, the game
+equivalence `idealGame_eq_runWith_lazyStep`, the bad-flag reduction bounds
+`advantage_lazy_fresh_le` and `advantage_idealGame_freshStep_le`, lifted-coin support helpers
+(`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`), and the two- and four-hop advantage
+triangle helpers `advantage_le_two` and `advantage_le_four`.
 
 For the chosen-plaintext security of random-IV counter (CTR) mode, import
 [`Encryption/CTRMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CTRMode.lean)

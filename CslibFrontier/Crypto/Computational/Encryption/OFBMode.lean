@@ -9,12 +9,10 @@ public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Crypto.Primitives.PRF.Finite
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.QueryCount
-import CslibFrontier.Crypto.Game.UntilBad
+import CslibFrontier.Crypto.Computational.Encryption.RandomFunctionHybrid
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
-import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
-import CslibFrontier.Probability.Product
 /-!
 # CPA Security of Output Feedback (OFB) Mode
 
@@ -198,10 +196,6 @@ theorem interpret_ofbChainQueries (f : BitString n → BitString n) (x : BitStri
     simp only [ofbChainQueries, ofbChain, OracleComp.interpret_bind,
       ProbOracleComp.interpret_query, ih, pure_bind, OracleComp.interpret_pure]
 
-private theorem interpret_unifFin_self {α : Type} (p : ProbComp α) :
-    OracleComp.interpret ProbComp.unifFin p = p :=
-  OracleComp.interpret_query_eq_self p
-
 /-- The OFB experiment for the keyed block function `F` is the real PRF experiment for `F` and
 the reduction `ofbReduction ℓ b adversary`. -/
 theorem ofbCpaGame_eq_realGame {Key : Type} [Fintype Key] [Nonempty Key]
@@ -215,10 +209,14 @@ theorem ofbCpaGame_eq_realGame {Key : Type} [Fintype Key] [Nonempty Key]
   funext q
   cases q with
   | inl i =>
-    simp only [ProbOracleComp.interpret_sample, interpret_unifFin_self]
+    simp only [ProbOracleComp.interpret_sample]
+    exact (OracleComp.interpret_query_eq_self _).symm
   | inr q =>
-    simp [ofbOracle, ofbQueryProgram, ofbEncryptBlocks, ProbOracleComp.interpret_sample,
-      interpret_unifFin_self, interpret_ofbChainQueries]
+    simp only [ofbOracle, ofbQueryProgram, ofbEncryptBlocks, ProbOracleComp.interpret_sample,
+      OracleComp.interpret_bind, OracleComp.interpret_pure, pure_bind, interpret_ofbChainQueries,
+      length_ofbSelect]
+    rw [show (ProbComp.unifFin : (k : ℕ) → ProbComp (Fin (k + 1))) = OracleComp.query from rfl,
+      OracleComp.interpret_query_eq_self, bind_pure_comp]
 
 /-- The keystream program makes exactly `k` oracle calls. -/
 theorem isQueryBounded_ofbChainQueries (x : BitString n) (k : ℕ) :
@@ -250,144 +248,7 @@ theorem isQueryBounded_ofbReduction (ℓ : ℕ) (b : Bool) {adversary : OFBAdver
         fun ks => OracleComp.IsCostBounded.pure (iv, List.zipWith (· + ·) ks (ofbSelect ℓ b q)) 0
     exact OracleComp.IsCostBounded.mono hq (by simp [ofbCost])
 
-/-! ### Section 3: Lazy Sampling with a Repetition Flag -/
-
-/-- A lazily sampled function table and a flag recording a repeated input. -/
-private abbrev FlagState (n : ℕ) : Type := List (BitString n × BitString n) × Bool
-
-/-- Lazy sampling of a uniform function: a cached input returns its cached value and raises the
-flag, and a new input draws a uniform value. -/
-private noncomputable def lazyStep (x : BitString n) : StateT (FlagState n) PMF (BitString n) :=
-  fun s => match s.1.lookup x with
-    | some y => PMF.pure (y, (s.1, true))
-    | none => (PMF.uniformOfFintype (BitString n)).map fun u => (u, ((x, u) :: s.1, s.2))
-
-/-- Fresh sampling: every input draws a new uniform value, and a repeated input raises the
-flag. -/
-private noncomputable def freshStep (x : BitString n) : StateT (FlagState n) PMF (BitString n) :=
-  fun s => (PMF.uniformOfFintype (BitString n)).map fun u =>
-    (u, ((x, u) :: s.1, s.2 || (s.1.lookup x).isSome))
-
-private theorem map_eq_bind_pure {α β : Type} (f : α → β) (p : PMF α) :
-    p.map f = p.bind fun a => PMF.pure (f a) := rfl
-
-private theorem snd_eq_of_mem_support_lift {α σ : Type} {p : PMF α} {s : σ} {z : α × σ}
-    (hz : z ∈ ((StateT.lift p : StateT σ PMF α) s).support) : z.2 = s := by
-  simp only [StateT.lift, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hz
-  obtain ⟨a, -, rfl⟩ := hz
-  rfl
-
-private theorem prop_of_mem_support_map {α β : Type} {p : PMF α} {f : α → β} {z : β}
-    (hz : z ∈ (p.map f).support) {P : β → Prop} (h : ∀ a, P (f a)) : P z := by
-  obtain ⟨a, -, rfl⟩ := (PMF.mem_support_map_iff f p z).1 hz
-  exact h a
-
-private theorem flag_of_mem_support_pure {y : BitString n}
-    {c : List (BitString n × BitString n)} {z : BitString n × FlagState n}
-    (hz : z ∈ (PMF.pure (y, (c, true))).support) : z.2.2 = true := by
-  rw [PMF.mem_support_pure_iff] at hz
-  subst hz
-  rfl
-
-private theorem toOuterMeasure_lift_eq_zero {α σ : Type} {bad : σ → Prop} (p : PMF α) (s : σ)
-    (hs : ¬bad s) : ((StateT.lift p : StateT σ PMF α) s).toOuterMeasure {x | bad x.2} = 0 := by
-  rw [PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-  intro x hx hbad
-  have h2 : x.2 = s := snd_eq_of_mem_support_lift hx
-  exact hs (h2 ▸ hbad)
-
-private theorem lazyStep_map_fst (x : BitString n) (s : FlagState n) :
-    (lazyStep x s).map (fun (a, s') => (a, s'.1)) =
-      memoize (fun _ => PMF.uniformOfFintype (BitString n)) x s.1 := by
-  unfold lazyStep
-  cases h : s.1.lookup x with
-  | some y =>
-    rw [memoize_of_some _ _ _ _ h]
-    simp only [PMF.pure_map, Probability.PMF.monad_pure_eq_pure]
-  | none =>
-    rw [memoize_of_none _ _ _ h]
-    simp only [map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind,
-      Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure]
-
-private theorem runWith_memoize_eq {α : Type}
-    (program : ProbOracleComp (fun _ : BitString n => BitString n) α) :
-    (ProbOracleComp.runWith (memoize fun _ => PMF.uniformOfFintype (BitString n)) program
-      []).map Prod.fst =
-      (ProbOracleComp.runWith lazyStep program ([], false)).map Prod.fst := by
-  rw [← ProbOracleComp.runWith_map_state lazyStep
-    (memoize fun _ => PMF.uniformOfFintype (BitString n)) Prod.fst lazyStep_map_fst program
-    ([], false), PMF.map_comp]
-  exact congrArg (fun f => PMF.map f _) (funext fun ⟨_, _⟩ => rfl)
-
-private theorem identicalUntilBad_lazyStep_freshStep :
-    OracleComp.IdenticalUntilBad
-      (sumHandler (fun i => StateT.lift (ProbComp.unifOracle i)) (lazyStep (n := n)))
-      (sumHandler (fun i => StateT.lift (ProbComp.unifOracle i)) (freshStep (n := n)))
-      (fun s : FlagState n => s.2 = true) where
-  agree q s _ a s' hs' := by
-    cases q with
-    | inl i => rfl
-    | inr x =>
-      change lazyStep x s (a, s') = freshStep x s (a, s')
-      simp only [lazyStep, freshStep]
-      cases h : s.1.lookup x with
-      | none => simp only [Option.isSome_none, Bool.or_false]
-      | some y =>
-        simp only [Option.isSome_some, Bool.or_true]
-        have h1 : (PMF.pure (y, (s.1, true)) : PMF (BitString n × FlagState n)) (a, s') = 0 :=
-          (PMF.apply_eq_zero_iff _ _).2 fun hz => hs' (flag_of_mem_support_pure hz)
-        have h2 : ((PMF.uniformOfFintype (BitString n)).map fun u =>
-            (u, ((x, u) :: s.1, true))) (a, s') = 0 :=
-          (PMF.apply_eq_zero_iff _ _).2 fun hz =>
-            hs' (prop_of_mem_support_map hz (P := fun z => z.2.2 = true) fun _ => rfl)
-        rw [h1, h2]
-  absorb_first q s hs x hx := by
-    have hs' : s.2 = true := hs
-    cases q with
-    | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
-      exact hs
-    | inr y =>
-      change x ∈ (lazyStep y s).support at hx
-      simp only [lazyStep] at hx
-      split at hx
-      · exact flag_of_mem_support_pure hx
-      · exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => hs'
-  absorb_second q s hs x hx := by
-    have hs' : s.2 = true := hs
-    cases q with
-    | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
-      exact hs
-    | inr y =>
-      change x ∈ (freshStep y s).support at hx
-      exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => by simp [hs']
-
-private theorem idealGame_ofbReduction_eq (ℓ : ℕ) (b : Bool) (adversary : OFBAdversary n) :
-    PRF.idealGame (ofbReduction ℓ b adversary) =
-      (ProbOracleComp.runWith lazyStep (ofbReduction ℓ b adversary) ([], false)).map
-        Prod.fst := by
-  rw [← runWith_memoize_eq]
-  have h := RandomOracle.interpret_prob_eq_memoize
-    (fun _ : BitString n => PMF.uniformOfFintype (BitString n)) (ofbReduction ℓ b adversary)
-  rw [← h]
-  simp only [PRF.idealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
-    Probability.PMF.monad_bind_eq_bind]
-
-private theorem advantage_lazy_fresh_le (program : PRF.Adversary (BitString n) (BitString n)) :
-    (Game.advantage ((ProbOracleComp.runWith lazyStep program ([], false)).map Prod.fst)
-        ((ProbOracleComp.runWith freshStep program ([], false)).map Prod.fst) : ℝ) ≤
-      ((ProbOracleComp.runWith freshStep program ([], false)).toOuterMeasure
-        {x | x.2.2 = true}).toReal := by
-  have h := identicalUntilBad_lazyStep_freshStep.advantage_le program ([], false)
-    fun x => PMF.pure x.1
-  rw [identicalUntilBad_lazyStep_freshStep.bad_eq] at h
-  exact h
-
-
-/-! ### Section 4: The Collision Bound for Fresh Sampling -/
+/-! ### Section 3: The Collision Bound for Fresh Sampling -/
 
 /-- The table after fresh sampling along a keystream from `x`: each draw is recorded under the
 input that produced it. -/
@@ -411,18 +272,6 @@ private theorem length_chainCache (c : List (BitString n × BitString n)) (x : B
     simp only [chainCache, ih, List.length_cons]
     omega
 
-private theorem isSome_lookup_iff (c : List (BitString n × BitString n)) (x : BitString n) :
-    (c.lookup x).isSome = true ↔ x ∈ c.map Prod.fst := by
-  induction c with
-  | nil => simp [List.lookup]
-  | cons p c ih =>
-    obtain ⟨k, v⟩ := p
-    by_cases h : x = k
-    · subst h
-      simp [List.lookup]
-    · have hb : (x == k) = false := by simpa using h
-      simp [List.lookup, hb, ih, h]
-
 private theorem not_goodChain_of_chainFlag (c : List (BitString n × BitString n))
     (x : BitString n) (us : List (BitString n)) (h : chainFlag c x us = true) :
     ¬goodChain (c.map Prod.fst) x (List.replicate us.length 0) us := by
@@ -433,24 +282,9 @@ private theorem not_goodChain_of_chainFlag (c : List (BitString n × BitString n
     intro hx
     simp only [chainFlag, Bool.or_eq_true] at h
     rcases h with h | h
-    · exact absurd ((isSome_lookup_iff c x).1 h) hx
+    · obtain ⟨p, hp, hxp⟩ := List.lookup_isSome_iff.1 h
+      exact absurd (List.mem_map.2 ⟨p, hp, (beq_iff_eq.1 hxp).symm⟩) hx
     · exact ih ((x, u) :: c) u h
-
-private theorem length_of_mem_support_uniformBlocks {k : ℕ} {us : List (BitString n)}
-    (h : us ∈ (uniformBlocks (n := n) k).support) : us.length = k := by
-  rw [uniformBlocks, PMF.support_map] at h
-  obtain ⟨f, -, rfl⟩ := h
-  simp
-
-private theorem length_of_mem_support_chainDraws {k : ℕ}
-    {p : BitString n × List (BitString n)}
-    (h : p ∈ ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
-      (uniformBlocks (n := n) k).map (iv, ·)).support) : p.2.length = k := by
-  rw [PMF.mem_support_bind_iff] at h
-  obtain ⟨iv, -, hp⟩ := h
-  rw [PMF.support_map] at hp
-  obtain ⟨us, hus, rfl⟩ := hp
-  exact length_of_mem_support_uniformBlocks hus
 
 /-- Fresh sampling along a keystream of length `k` draws `k` uniform blocks. -/
 private theorem runWith_freshStep_ofbChainQueries (x : BitString n) (k : ℕ) (s : FlagState n) :
@@ -461,8 +295,11 @@ private theorem runWith_freshStep_ofbChainQueries (x : BitString n) (k : ℕ) (s
   | zero => simp [ofbChainQueries, chainCache, chainFlag]
   | succ k ih =>
     simp only [ofbChainQueries, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-      ProbOracleComp.runWith_pure, ih, freshStep, uniformBlocks_succ, map_eq_bind_pure,
-      PMF.bind_bind, PMF.pure_bind, chainCache, chainFlag, Bool.or_assoc]
+      ProbOracleComp.runWith_pure, freshStep, uniformBlocks_succ]
+    rw [PMF.bind_map, PMF.map_bind]
+    refine congrArg _ (funext fun u => ?_)
+    simp only [Function.comp_def, ih, ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind,
+      chainCache, chainFlag, Bool.or_assoc]
 
 /-- One encryption under fresh sampling: a uniform initialization vector and uniform keystream
 blocks, added to the selected plaintext. -/
@@ -475,7 +312,7 @@ private theorem runWith_freshStep_ofbQueryProgram (ℓ : ℕ) (b : Bool) (q : OF
             (chainCache s.1 p.1 p.2, s.2 || chainFlag s.1 p.1 p.2)) := by
   simp only [ofbQueryProgram, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
     ProbComp.eval_uniform, runWith_freshStep_ofbChainQueries, ProbOracleComp.runWith_pure,
-    length_ofbSelect, map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
+    length_ofbSelect, PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind]
 
 private theorem length_of_mem_support_freshQuery (ℓ : ℕ) (b : Bool) (q : OFBQuery n)
     (s : FlagState n) {x : (BitString n × List (BitString n)) × FlagState n}
@@ -483,7 +320,7 @@ private theorem length_of_mem_support_freshQuery (ℓ : ℕ) (b : Bool) (q : OFB
     x.2.1.length = s.1.length + ofbBlocks ℓ q := by
   rw [runWith_freshStep_ofbQueryProgram, PMF.support_map] at hx
   obtain ⟨⟨iv, us⟩, hp, rfl⟩ := hx
-  have hlen : us.length = ofbBlocks ℓ q := length_of_mem_support_chainDraws hp
+  have hlen : us.length = ofbBlocks ℓ q := length_snd_of_mem_support_uniformDraws hp
   simp only [length_chainCache, hlen]
 
 /-- One encryption under fresh sampling raises the flag with probability at most
@@ -499,7 +336,7 @@ private theorem toOuterMeasure_bad_freshQuery_le (ℓ : ℕ) (b : Bool) (q : OFB
   simp only [List.length_replicate, List.length_map] at hbad
   refine le_trans (PMF.toOuterMeasure_mono _ ?_) hbad
   rintro ⟨iv, us⟩ ⟨hflag, hp⟩
-  have hlen : us.length = ofbBlocks ℓ q := length_of_mem_support_chainDraws hp
+  have hlen : us.length = ofbBlocks ℓ q := length_snd_of_mem_support_uniformDraws hp
   have hs' : s.2 = false := by simpa using hs
   have hflag' : chainFlag s.1 iv us = true := by simpa [hs'] using hflag
   have h := not_goodChain_of_chainFlag s.1 iv us hflag'
@@ -555,62 +392,14 @@ private theorem toOuterMeasure_bad_fresh_le (ℓ : ℕ) (b : Bool) {adversary : 
   · simp only [List.length_nil, Nat.cast_mul, Nat.cast_add, Nat.cast_zero]
     ring
 
-/-! ### Section 5: Fresh Sampling Gives the Ideal Experiment -/
-
-private theorem uniformBlocks_eq (k : ℕ) :
-    uniformBlocks (n := n) k = (PMF.uniformOfFintype (Fin k → BitString n)).map List.ofFn := by
-  rw [uniformBlocks, PMF.iid_uniformOfFintype]
-
-/-- Adding a fixed message to uniform blocks leaves them uniform. -/
-private theorem map_zipWith_uniformBlocks :
-    ∀ ms : List (BitString n),
-      (uniformBlocks ms.length).map (fun us => List.zipWith (· + ·) us ms) =
-        uniformBlocks ms.length
-  | [] => by simp
-  | m :: ms => by
-    have hshift : (PMF.uniformOfFintype (BitString n)).map (· + m) =
-        PMF.uniformOfFintype (BitString n) :=
-      PMF.uniformOfFintype_map_equiv (Equiv.addRight m)
-    calc (uniformBlocks (m :: ms).length).map (fun us => List.zipWith (· + ·) us (m :: ms))
-        = (PMF.uniformOfFintype (BitString n)).bind fun u =>
-            ((uniformBlocks ms.length).map fun us => List.zipWith (· + ·) us ms).map
-              ((u + m) :: ·) := by
-          rw [List.length_cons, uniformBlocks_succ]
-          simp only [map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind, List.zipWith_cons_cons]
-      _ = (PMF.uniformOfFintype (BitString n)).bind fun u =>
-            (uniformBlocks ms.length).map ((u + m) :: ·) := by
-          rw [map_zipWith_uniformBlocks ms]
-      _ = ((PMF.uniformOfFintype (BitString n)).map (· + m)).bind fun u =>
-            (uniformBlocks ms.length).map (u :: ·) :=
-          (PMF.bind_map (PMF.uniformOfFintype (BitString n)) (· + m) fun u =>
-            (uniformBlocks ms.length).map (u :: ·)).symm
-      _ = uniformBlocks (m :: ms).length := by
-          rw [hshift, List.length_cons, uniformBlocks_succ]
-
-/-- Adding a fixed message to the keystream draws leaves the draws uniform. -/
-private theorem map_chainDraws_zipWith (ms : List (BitString n)) :
-    ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
-        (uniformBlocks (n := n) ms.length).map (iv, ·)).map
-      (fun p => (p.1, List.zipWith (· + ·) p.2 ms)) =
-      (PMF.uniformOfFintype (BitString n)).bind fun iv =>
-        (uniformBlocks (n := n) ms.length).map (iv, ·) := by
-  calc ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
-          (uniformBlocks (n := n) ms.length).map (iv, ·)).map
-        (fun p => (p.1, List.zipWith (· + ·) p.2 ms))
-      = (PMF.uniformOfFintype (BitString n)).bind fun iv =>
-          ((uniformBlocks (n := n) ms.length).map fun us => List.zipWith (· + ·) us ms).map
-            (iv, ·) := by
-        simp only [map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
-    _ = (PMF.uniformOfFintype (BitString n)).bind fun iv =>
-          (uniformBlocks (n := n) ms.length).map (iv, ·) := by
-        rw [map_zipWith_uniformBlocks ms]
+/-! ### Section 4: Fresh Sampling Gives the Ideal Experiment -/
 
 private theorem eval_ofbIdealOracle (ℓ : ℕ) (q : OFBQuery n) :
     ProbComp.eval (ofbIdealOracle ℓ q) =
       (PMF.uniformOfFintype (BitString n)).bind fun iv =>
         (uniformBlocks (n := n) (ofbBlocks ℓ q)).map (iv, ·) := by
   simp only [ofbIdealOracle, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-    uniformBlocks_eq, map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
+    uniformBlocks_eq, PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind]
 
 /-- Forgetting the table, one encryption under fresh sampling is one call to the ideal
 oracle. -/
@@ -618,19 +407,11 @@ private theorem map_unit_runWith_freshStep_ofbQueryProgram (ℓ : ℕ) (b : Bool
     (s : FlagState n) :
     (ProbOracleComp.runWith freshStep (ofbQueryProgram ℓ b q) s).map (fun x => (x.1, ())) =
       (ProbComp.eval (ofbIdealOracle ℓ q)).map (·, ()) := by
-  have hpad := map_chainDraws_zipWith (ofbSelect ℓ b q)
+  have hpad := map_iv_uniformBlocks_zipWith (ofbSelect ℓ b q)
   rw [length_ofbSelect] at hpad
   rw [runWith_freshStep_ofbQueryProgram, eval_ofbIdealOracle]
   conv_rhs => rw [← hpad]
   exact (PMF.map_comp _ _ _).trans (Eq.symm (PMF.map_comp _ _ _))
-
-private theorem map_fst_map_unit {α σ : Type} (p : PMF (α × σ)) :
-    (p.map fun x => (x.1, ())).map Prod.fst = p.map Prod.fst :=
-  PMF.map_comp _ _ _
-
-private theorem map_fst_map_pair_unit {α : Type} (p : PMF α) :
-    (p.map fun a => (a, ())).map Prod.fst = p :=
-  (PMF.map_comp _ _ _).trans (PMF.map_id _)
 
 /-- Under fresh sampling, the reduction's output is distributed as in the ideal experiment. -/
 private theorem freshGame_eq_ofbIdealGame (ℓ : ℕ) (b : Bool) (adversary : OFBAdversary n) :
@@ -652,27 +433,22 @@ private theorem freshGame_eq_ofbIdealGame (ℓ : ℕ) (b : Bool) (adversary : OF
           (sumHandler ProbComp.unifOracle fun q => ProbComp.eval (ofbIdealOracle ℓ q))
           adversary).map (·, ()) :=
     ProbOracleComp.runWith_readOnly (fun q _ => ProbComp.eval (ofbIdealOracle ℓ q)) adversary ()
-  rw [ofbReduction, ProbOracleComp.runWith_interpret_sumHandler, ← map_fst_map_unit, hstate, hro,
-    map_fst_map_pair_unit, ofbIdealGame, ProbOracleComp.eval_interpret]
+  rw [ofbReduction, ProbOracleComp.runWith_interpret_sumHandler]
+  calc
+    (ProbOracleComp.runWith (fun q => ProbOracleComp.runWith freshStep (ofbQueryProgram ℓ b q))
+          adversary ([], false)).map Prod.fst
+        = ((ProbOracleComp.runWith
+              (fun q => ProbOracleComp.runWith freshStep (ofbQueryProgram ℓ b q))
+              adversary ([], false)).map fun x => (x.1, ())).map Prod.fst :=
+          (PMF.map_comp (fun x : Bool × FlagState n => (x.1, ())) _ Prod.fst).symm
+    _ = ((OracleComp.interpret
+            (sumHandler ProbComp.unifOracle fun q => ProbComp.eval (ofbIdealOracle ℓ q))
+            adversary).map (·, ())).map Prod.fst := by rw [hstate, hro]
+    _ = ofbIdealGame ℓ adversary := by
+          rw [(PMF.map_comp (·, ()) _ Prod.fst).trans (PMF.map_id _),
+            ofbIdealGame, ProbOracleComp.eval_interpret]
 
-/-! ### Section 6: Security of OFB Mode -/
-
-private theorem advantage_le_two (g₀ g₁ g₂ : Game) :
-    (Game.advantage g₀ g₂ : ℝ) ≤ Game.advantage g₀ g₁ + Game.advantage g₂ g₁ := by
-  rw [Game.advantage_comm g₂ g₁]
-  exact_mod_cast Game.advantage_triangle g₀ g₁ g₂
-
-private theorem advantage_le_four (g₀ g₁ g₂ g₃ g₄ : Game) :
-    (Game.advantage g₀ g₄ : ℝ) ≤
-      Game.advantage g₀ g₁ + Game.advantage g₁ g₂ + Game.advantage g₃ g₂ +
-        Game.advantage g₄ g₃ := by
-  have h₁ : (Game.advantage g₀ g₄ : ℝ) ≤ Game.advantage g₀ g₁ + Game.advantage g₁ g₄ := by
-    exact_mod_cast Game.advantage_triangle g₀ g₁ g₄
-  have h₂ : (Game.advantage g₁ g₄ : ℝ) ≤ Game.advantage g₁ g₂ + Game.advantage g₂ g₄ := by
-    exact_mod_cast Game.advantage_triangle g₁ g₂ g₄
-  have h₃ : (Game.advantage g₂ g₄ : ℝ) ≤ Game.advantage g₃ g₂ + Game.advantage g₄ g₃ :=
-    (advantage_le_two g₂ g₃ g₄).trans_eq (by rw [Game.advantage_comm g₂ g₃, add_comm])
-  linarith
+/-! ### Section 5: Security of OFB Mode -/
 
 /-- **The reduction against a uniform random function.** If the queries of `adversary` ask at
 most `K` blocks in total, then with a uniform random function the output of the reduction
@@ -682,8 +458,8 @@ theorem advantage_idealGame_ofbReduction_le (ℓ : ℕ) (b : Bool) {adversary : 
     {K : ℕ} (h : OracleComp.IsCostBounded (ofbCost ℓ) adversary K) :
     (Game.advantage (PRF.idealGame (ofbReduction ℓ b adversary)) (ofbIdealGame ℓ adversary) :
         ℝ) ≤ (K : ℝ) * (K + ℓ) / 2 ^ n := by
-  rw [idealGame_ofbReduction_eq, ← freshGame_eq_ofbIdealGame ℓ b adversary]
-  refine (advantage_lazy_fresh_le _).trans ?_
+  rw [← freshGame_eq_ofbIdealGame ℓ b adversary]
+  refine (advantage_idealGame_freshStep_le _).trans ?_
   have hne : ((K * (K + ℓ) : ℕ) : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ ≠ ⊤ :=
     ENNReal.mul_ne_top (ENNReal.natCast_ne_top _)
       (ENNReal.inv_ne_top.2 (pow_ne_zero _ two_ne_zero))

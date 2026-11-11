@@ -11,14 +11,12 @@ public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Crypto.Primitives.PRF.Finite
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.QueryCount
-import CslibFrontier.Crypto.Game.UntilBad
+import CslibFrontier.Crypto.Computational.Encryption.RandomFunctionHybrid
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
-import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
-import CslibFrontier.Probability.Product
 
 /-!
 # CPA Security of Counter (CTR) Mode
@@ -232,10 +230,6 @@ theorem interpret_ctrMaskQueriesFrom_zero (f : BitString n → BitString n)
   rw [interpret_ctrMaskQueriesFrom, ctrMaskBlocks, range'_map_eq]
   simp
 
-private theorem interpret_unifFin_self {α : Type} (p : ProbComp α) :
-    OracleComp.interpret ProbComp.unifFin p = p :=
-  OracleComp.interpret_query_eq_self p
-
 /-- The CTR experiment for keyed function `F` equals the real PRF experiment for `F` and
 `ctrReduction counter ℓ b adversary`. -/
 theorem ctrCpaGame_eq_realGame {Key : Type} (counter : BitString n → ℕ → BitString n)
@@ -251,10 +245,14 @@ theorem ctrCpaGame_eq_realGame {Key : Type} (counter : BitString n → ℕ → B
   funext q
   cases q with
   | inl i =>
-    simp only [ProbOracleComp.interpret_sample, interpret_unifFin_self]
+    simp only [ProbOracleComp.interpret_sample]
+    exact (OracleComp.interpret_query_eq_self _).symm
   | inr q =>
-    simp [ctrOracle, ctrQueryProgram, ctrEncryptBlocks, ProbOracleComp.interpret_sample,
-      interpret_unifFin_self, interpret_ctrMaskQueriesFrom_zero]
+    simp only [ctrOracle, ctrQueryProgram, ctrEncryptBlocks, ProbOracleComp.interpret_sample,
+      OracleComp.interpret_bind, OracleComp.interpret_pure, pure_bind,
+      interpret_ctrMaskQueriesFrom_zero, length_ctrSelect]
+    rw [show (ProbComp.unifFin : (k : ℕ) → ProbComp (Fin (k + 1))) = OracleComp.query from rfl,
+      OracleComp.interpret_query_eq_self, bind_pure_comp]
 
 /-- `ctrMaskQueriesFrom counter iv i k` makes at most `k` oracle queries. -/
 theorem isQueryBounded_ctrMaskQueriesFrom (counter : BitString n → ℕ → BitString n)
@@ -291,139 +289,7 @@ theorem isQueryBounded_ctrReduction (counter : BitString n → ℕ → BitString
           OracleComp.IsCostBounded.pure (iv, List.zipWith (· + ·) ks (ctrSelect ℓ b q)) 0
     exact OracleComp.IsCostBounded.mono hq (by simp [ctrCost])
 
-/-! ### Section 3: Lazy Sampling with a Repetition Flag -/
-
-private abbrev FlagState (n : ℕ) : Type := List (BitString n × BitString n) × Bool
-
-private noncomputable def lazyStep (x : BitString n) : StateT (FlagState n) PMF (BitString n) :=
-  fun s => match s.1.lookup x with
-    | some y => PMF.pure (y, (s.1, true))
-    | none => (PMF.uniformOfFintype (BitString n)).map fun u => (u, ((x, u) :: s.1, s.2))
-
-private noncomputable def freshStep (x : BitString n) : StateT (FlagState n) PMF (BitString n) :=
-  fun s => (PMF.uniformOfFintype (BitString n)).map fun u =>
-    (u, ((x, u) :: s.1, s.2 || (s.1.lookup x).isSome))
-
-private theorem map_eq_bind_pure {α β : Type} (f : α → β) (p : PMF α) :
-    p.map f = p.bind fun a => PMF.pure (f a) := rfl
-
-private theorem snd_eq_of_mem_support_lift {α σ : Type} {p : PMF α} {s : σ} {z : α × σ}
-    (hz : z ∈ ((StateT.lift p : StateT σ PMF α) s).support) : z.2 = s := by
-  simp only [StateT.lift, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hz
-  obtain ⟨a, -, rfl⟩ := hz
-  rfl
-
-private theorem prop_of_mem_support_map {α β : Type} {p : PMF α} {f : α → β} {z : β}
-    (hz : z ∈ (p.map f).support) {P : β → Prop} (h : ∀ a, P (f a)) : P z := by
-  obtain ⟨a, -, rfl⟩ := (PMF.mem_support_map_iff f p z).1 hz
-  exact h a
-
-private theorem flag_of_mem_support_pure {y : BitString n}
-    {c : List (BitString n × BitString n)} {z : BitString n × FlagState n}
-    (hz : z ∈ (PMF.pure (y, (c, true))).support) : z.2.2 = true := by
-  rw [PMF.mem_support_pure_iff] at hz
-  subst hz
-  rfl
-
-private theorem toOuterMeasure_lift_eq_zero {α σ : Type} {bad : σ → Prop} (p : PMF α) (s : σ)
-    (hs : ¬bad s) : ((StateT.lift p : StateT σ PMF α) s).toOuterMeasure {x | bad x.2} = 0 := by
-  rw [PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-  intro x hx hbad
-  exact hs ((snd_eq_of_mem_support_lift hx) ▸ hbad)
-
-private theorem lazyStep_map_fst (x : BitString n) (s : FlagState n) :
-    (lazyStep x s).map (fun (a, s') => (a, s'.1)) =
-      memoize (fun _ => PMF.uniformOfFintype (BitString n)) x s.1 := by
-  unfold lazyStep
-  cases h : s.1.lookup x with
-  | some y =>
-    rw [memoize_of_some _ _ _ _ h]
-    simp only [PMF.pure_map, Probability.PMF.monad_pure_eq_pure]
-  | none =>
-    rw [memoize_of_none _ _ _ h]
-    simp only [map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind,
-      Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure]
-
-private theorem runWith_memoize_eq {α : Type}
-    (program : ProbOracleComp (fun _ : BitString n => BitString n) α) :
-    (ProbOracleComp.runWith (memoize fun _ => PMF.uniformOfFintype (BitString n)) program
-      []).map Prod.fst =
-      (ProbOracleComp.runWith lazyStep program ([], false)).map Prod.fst := by
-  rw [← ProbOracleComp.runWith_map_state lazyStep
-    (memoize fun _ => PMF.uniformOfFintype (BitString n)) Prod.fst lazyStep_map_fst program
-    ([], false), PMF.map_comp]
-  exact congrArg (fun f => PMF.map f _) (funext fun ⟨_, _⟩ => rfl)
-
-private theorem identicalUntilBad_lazyStep_freshStep :
-    OracleComp.IdenticalUntilBad
-      (sumHandler (fun i => StateT.lift (ProbComp.unifOracle i)) (lazyStep (n := n)))
-      (sumHandler (fun i => StateT.lift (ProbComp.unifOracle i)) (freshStep (n := n)))
-      (fun s : FlagState n => s.2 = true) where
-  agree q s _ a s' hs' := by
-    cases q with
-    | inl i => rfl
-    | inr x =>
-      change lazyStep x s (a, s') = freshStep x s (a, s')
-      simp only [lazyStep, freshStep]
-      cases h : s.1.lookup x with
-      | none => simp only [Option.isSome_none, Bool.or_false]
-      | some y =>
-        simp only [Option.isSome_some, Bool.or_true]
-        have h1 : (PMF.pure (y, (s.1, true)) : PMF (BitString n × FlagState n)) (a, s') = 0 :=
-          (PMF.apply_eq_zero_iff _ _).2 fun hz => hs' (flag_of_mem_support_pure hz)
-        have h2 : ((PMF.uniformOfFintype (BitString n)).map fun u =>
-            (u, ((x, u) :: s.1, true))) (a, s') = 0 :=
-          (PMF.apply_eq_zero_iff _ _).2 fun hz =>
-            hs' (prop_of_mem_support_map hz (P := fun z => z.2.2 = true) fun _ => rfl)
-        rw [h1, h2]
-  absorb_first q s hs x hx := by
-    have hs' : s.2 = true := hs
-    cases q with
-    | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
-      exact hs
-    | inr y =>
-      change x ∈ (lazyStep y s).support at hx
-      simp only [lazyStep] at hx
-      split at hx
-      · exact flag_of_mem_support_pure hx
-      · exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => hs'
-  absorb_second q s hs x hx := by
-    have hs' : s.2 = true := hs
-    cases q with
-    | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
-      exact hs
-    | inr y =>
-      change x ∈ (freshStep y s).support at hx
-      exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => by simp [hs']
-
-private theorem idealGame_ctrReduction_eq (counter : BitString n → ℕ → BitString n) (ℓ : ℕ)
-    (b : Bool) (adversary : CTRAdversary n) :
-    PRF.idealGame (ctrReduction counter ℓ b adversary) =
-      (ProbOracleComp.runWith lazyStep (ctrReduction counter ℓ b adversary) ([], false)).map
-        Prod.fst := by
-  rw [← runWith_memoize_eq]
-  have h := RandomOracle.interpret_prob_eq_memoize
-    (fun _ : BitString n => PMF.uniformOfFintype (BitString n))
-    (ctrReduction counter ℓ b adversary)
-  rw [← h]
-  simp only [PRF.idealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
-    Probability.PMF.monad_bind_eq_bind]
-
-private theorem advantage_lazy_fresh_le (program : PRF.Adversary (BitString n) (BitString n)) :
-    (Game.advantage ((ProbOracleComp.runWith lazyStep program ([], false)).map Prod.fst)
-        ((ProbOracleComp.runWith freshStep program ([], false)).map Prod.fst) : ℝ) ≤
-      ((ProbOracleComp.runWith freshStep program ([], false)).toOuterMeasure
-        {x | x.2.2 = true}).toReal := by
-  have h := identicalUntilBad_lazyStep_freshStep.advantage_le program ([], false)
-    fun x => PMF.pure x.1
-  rw [identicalUntilBad_lazyStep_freshStep.bad_eq] at h
-  exact h
-
-/-! ### Section 4: Inter-Query Collision Bound for Fresh CTR Sampling -/
+/-! ### Section 3: Inter-Query Collision Bound for Fresh CTR Sampling -/
 
 private def ctrCache (c : List (BitString n × BitString n))
     (counter : BitString n → ℕ → BitString n) (iv : BitString n) :
@@ -445,18 +311,6 @@ private theorem length_ctrCache (c : List (BitString n × BitString n))
   | cons u us ih =>
     simp only [ctrCache, ih, List.length_cons]
     omega
-
-private theorem isSome_lookup_iff (c : List (BitString n × BitString n)) (x : BitString n) :
-    (c.lookup x).isSome = true ↔ x ∈ c.map Prod.fst := by
-  induction c with
-  | nil => simp [List.lookup]
-  | cons p c ih =>
-    obtain ⟨k, v⟩ := p
-    by_cases h : x = k
-    · subst h
-      simp [List.lookup]
-    · have hb : (x == k) = false := by simpa using h
-      simp [List.lookup, hb, ih, h]
 
 private theorem ctrAnyHit_cons_eq (c : List (BitString n × BitString n))
     (counter : BitString n → ℕ → BitString n) (iv : BitString n) (u : BitString n)
@@ -481,34 +335,21 @@ private theorem ctrAnyHit_eq_true_iff (c : List (BitString n × BitString n))
   induction k generalizing i with
   | zero => simp [ctrAnyHit]
   | succ k ih =>
-    simp only [ctrAnyHit, Bool.or_eq_true, isSome_lookup_iff, ih]
+    simp only [ctrAnyHit, Bool.or_eq_true, List.lookup_isSome_iff, ih]
     constructor
-    · rintro (h | ⟨j, hj, hmem⟩)
-      · exact ⟨0, Nat.zero_lt_succ k, by simpa using h⟩
+    · rintro (⟨p, hp, hpe⟩ | ⟨j, hj, hmem⟩)
+      · exact ⟨0, Nat.zero_lt_succ k,
+          by simpa using List.mem_map.2 ⟨p, hp, (beq_iff_eq.1 hpe).symm⟩⟩
       · exact ⟨j + 1, Nat.add_lt_add_right hj 1,
           by simpa [Nat.add_assoc, Nat.add_comm 1 j] using hmem⟩
     · rintro ⟨j, hj, hmem⟩
       cases j with
-      | zero => exact Or.inl (by simpa using hmem)
+      | zero =>
+        obtain ⟨v, hv⟩ : ∃ v, (counter iv i, v) ∈ c := by simpa using hmem
+        exact Or.inl ⟨(counter iv i, v), hv, beq_self_eq_true _⟩
       | succ j =>
         exact Or.inr ⟨j, Nat.lt_of_add_lt_add_right hj,
           by simpa [Nat.add_assoc, Nat.add_comm 1 j] using hmem⟩
-
-private theorem length_of_mem_support_uniformBlocks {k : ℕ} {us : List (BitString n)}
-    (h : us ∈ (uniformBlocks (n := n) k).support) : us.length = k := by
-  rw [uniformBlocks, PMF.support_map] at h
-  obtain ⟨f, -, rfl⟩ := h
-  simp
-
-private theorem length_of_mem_support_ctrDraws {k : ℕ}
-    {p : BitString n × List (BitString n)}
-    (h : p ∈ ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
-      (uniformBlocks (n := n) k).map (iv, ·)).support) : p.2.length = k := by
-  rw [PMF.mem_support_bind_iff] at h
-  obtain ⟨iv, -, hp⟩ := h
-  rw [PMF.support_map] at hp
-  obtain ⟨us, hus, rfl⟩ := hp
-  exact length_of_mem_support_uniformBlocks hus
 
 private theorem runWith_freshStep_ctrMaskQueriesFrom
     (counter : BitString n → ℕ → BitString n) (iv : BitString n) (i k : ℕ) (s : FlagState n)
@@ -530,7 +371,7 @@ private theorem runWith_freshStep_ctrMaskQueriesFrom
     change ((freshStep (counter iv i) s).bind fun p =>
       (ProbOracleComp.runWith freshStep (ctrMaskQueriesFrom counter iv (i + 1) k) p.2).map
         fun q => (p.1 :: q.1, q.2)) = _
-    simp only [freshStep, map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
+    simp only [freshStep, Function.comp_def, ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind]
     have hstep : ∀ u : BitString n,
         ProbOracleComp.runWith freshStep (ctrMaskQueriesFrom counter iv (i + 1) k)
           ((counter iv i, u) :: s.1, s.2 || (s.1.lookup (counter iv i)).isSome) =
@@ -540,8 +381,8 @@ private theorem runWith_freshStep_ctrMaskQueriesFrom
       fun u => by
         rw [ih (i + 1) _ hsub, ctrAnyHit_cons_eq s.1 counter iv u i (i + 1) k hdistinct]
         simp only [Bool.or_assoc]
-    simp only [hstep, uniformBlocks_succ, map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind,
-      ctrCache, ctrAnyHit]
+    simp only [hstep, uniformBlocks_succ, Function.comp_def, ← PMF.bind_pure_comp, PMF.bind_bind,
+      PMF.pure_bind, ctrCache, ctrAnyHit]
 
 private theorem runWith_freshStep_ctrQueryProgram
     (counter : BitString n → ℕ → BitString n) (ℓ : ℕ) (b : Bool) (q : CTRQuery n)
@@ -554,14 +395,16 @@ private theorem runWith_freshStep_ctrQueryProgram
             (ctrCache s.1 counter p.1 0 p.2,
               s.2 || ctrAnyHit s.1 counter p.1 0 (ctrBlocks ℓ q))) := by
   simp only [ctrQueryProgram, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
-    ProbComp.eval_uniform, length_ctrSelect, map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
+    ProbComp.eval_uniform, length_ctrSelect, Function.comp_def, ← PMF.bind_pure_comp,
+    PMF.bind_bind, PMF.pure_bind]
   refine PMF.bind_congr_on_support _ _ _ fun iv _ => ?_
   have hinj : ∀ a b', 0 ≤ a → a < 0 + ctrBlocks ℓ q → 0 ≤ b' → b' < 0 + ctrBlocks ℓ q → a ≠ b' →
       counter iv a ≠ counter iv b' := fun a b' _ ha _ hb hab =>
     hintra iv a b' (lt_of_lt_of_le (by omega) (ctrBlocks_le ℓ q))
       (lt_of_lt_of_le (by omega) (ctrBlocks_le ℓ q)) hab
   rw [runWith_freshStep_ctrMaskQueriesFrom counter iv 0 (ctrBlocks ℓ q) s hinj]
-  simp only [ProbOracleComp.runWith_pure, map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [ProbOracleComp.runWith_pure, Function.comp_def, ← PMF.bind_pure_comp, PMF.bind_bind,
+    PMF.pure_bind]
 
 private theorem length_of_mem_support_freshQuery
     (counter : BitString n → ℕ → BitString n) (ℓ : ℕ) (b : Bool) (q : CTRQuery n)
@@ -572,7 +415,7 @@ private theorem length_of_mem_support_freshQuery
     x.2.1.length = s.1.length + ctrBlocks ℓ q := by
   rw [runWith_freshStep_ctrQueryProgram counter ℓ b q s hintra, PMF.support_map] at hx
   obtain ⟨⟨iv, us⟩, hp, rfl⟩ := hx
-  have hlen : us.length = ctrBlocks ℓ q := length_of_mem_support_ctrDraws hp
+  have hlen : us.length = ctrBlocks ℓ q := length_snd_of_mem_support_uniformDraws hp
   simp only [length_ctrCache, hlen]
 
 private theorem toOuterMeasure_eq_val_of_inj {y : BitString n}
@@ -734,60 +577,14 @@ private theorem toOuterMeasure_bad_fresh_le
       mul_zero]
     ring
 
-/-! ### Section 5: Fresh Sampling Gives the Ideal Experiment -/
-
-private theorem uniformBlocks_eq (k : ℕ) :
-    uniformBlocks (n := n) k = (PMF.uniformOfFintype (Fin k → BitString n)).map List.ofFn := by
-  rw [uniformBlocks, PMF.iid_uniformOfFintype]
-
-private theorem map_zipWith_uniformBlocks :
-    ∀ ms : List (BitString n),
-      (uniformBlocks ms.length).map (fun us => List.zipWith (· + ·) us ms) =
-        uniformBlocks ms.length
-  | [] => by simp
-  | m :: ms => by
-    have hshift : (PMF.uniformOfFintype (BitString n)).map (· + m) =
-        PMF.uniformOfFintype (BitString n) :=
-      PMF.uniformOfFintype_map_equiv (Equiv.addRight m)
-    calc (uniformBlocks (m :: ms).length).map (fun us => List.zipWith (· + ·) us (m :: ms))
-        = (PMF.uniformOfFintype (BitString n)).bind fun u =>
-            ((uniformBlocks ms.length).map fun us => List.zipWith (· + ·) us ms).map
-              ((u + m) :: ·) := by
-          rw [List.length_cons, uniformBlocks_succ]
-          simp only [map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind, List.zipWith_cons_cons]
-      _ = (PMF.uniformOfFintype (BitString n)).bind fun u =>
-            (uniformBlocks ms.length).map ((u + m) :: ·) := by
-          rw [map_zipWith_uniformBlocks ms]
-      _ = ((PMF.uniformOfFintype (BitString n)).map (· + m)).bind fun u =>
-            (uniformBlocks ms.length).map (u :: ·) :=
-          (PMF.bind_map (PMF.uniformOfFintype (BitString n)) (· + m) fun u =>
-            (uniformBlocks ms.length).map (u :: ·)).symm
-      _ = uniformBlocks (m :: ms).length := by
-          rw [hshift, List.length_cons, uniformBlocks_succ]
-
-private theorem map_ctrDraws_zipWith (ms : List (BitString n)) :
-    ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
-        (uniformBlocks (n := n) ms.length).map (iv, ·)).map
-      (fun p => (p.1, List.zipWith (· + ·) p.2 ms)) =
-      (PMF.uniformOfFintype (BitString n)).bind fun iv =>
-        (uniformBlocks (n := n) ms.length).map (iv, ·) := by
-  calc ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
-          (uniformBlocks (n := n) ms.length).map (iv, ·)).map
-        (fun p => (p.1, List.zipWith (· + ·) p.2 ms))
-      = (PMF.uniformOfFintype (BitString n)).bind fun iv =>
-          ((uniformBlocks (n := n) ms.length).map fun us => List.zipWith (· + ·) us ms).map
-            (iv, ·) := by
-        simp only [map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
-    _ = (PMF.uniformOfFintype (BitString n)).bind fun iv =>
-          (uniformBlocks (n := n) ms.length).map (iv, ·) := by
-        rw [map_zipWith_uniformBlocks ms]
+/-! ### Section 4: Fresh Sampling Gives the Ideal Experiment -/
 
 private theorem eval_ctrIdealOracle (ℓ : ℕ) (q : CTRQuery n) :
     ProbComp.eval (ctrIdealOracle ℓ q) =
       (PMF.uniformOfFintype (BitString n)).bind fun iv =>
         (uniformBlocks (n := n) (ctrBlocks ℓ q)).map (iv, ·) := by
   simp only [ctrIdealOracle, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-    uniformBlocks_eq, map_eq_bind_pure, PMF.bind_bind, PMF.pure_bind]
+    uniformBlocks_eq, Function.comp_def, ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind]
 
 private theorem map_unit_runWith_freshStep_ctrQueryProgram
     (counter : BitString n → ℕ → BitString n) (ℓ : ℕ) (b : Bool) (q : CTRQuery n)
@@ -795,19 +592,11 @@ private theorem map_unit_runWith_freshStep_ctrQueryProgram
     (hintra : ∀ iv i j, i < ℓ → j < ℓ → i ≠ j → counter iv i ≠ counter iv j) :
     (ProbOracleComp.runWith freshStep (ctrQueryProgram counter ℓ b q) s).map (fun x => (x.1, ())) =
       (ProbComp.eval (ctrIdealOracle ℓ q)).map (·, ()) := by
-  have hpad := map_ctrDraws_zipWith (ctrSelect ℓ b q)
+  have hpad := map_iv_uniformBlocks_zipWith (ctrSelect ℓ b q)
   rw [length_ctrSelect] at hpad
   rw [runWith_freshStep_ctrQueryProgram counter ℓ b q s hintra, eval_ctrIdealOracle]
   conv_rhs => rw [← hpad]
   exact (PMF.map_comp _ _ _).trans (Eq.symm (PMF.map_comp _ _ _))
-
-private theorem map_fst_map_unit {α σ : Type} (p : PMF (α × σ)) :
-    (p.map fun x => (x.1, ())).map Prod.fst = p.map Prod.fst :=
-  PMF.map_comp _ _ _
-
-private theorem map_fst_map_pair_unit {α : Type} (p : PMF α) :
-    (p.map fun a => (a, ())).map Prod.fst = p :=
-  (PMF.map_comp _ _ _).trans (PMF.map_id _)
 
 private theorem freshGame_eq_ctrIdealGame
     (counter : BitString n → ℕ → BitString n) (ℓ : ℕ) (b : Bool) (adversary : CTRAdversary n)
@@ -833,27 +622,23 @@ private theorem freshGame_eq_ctrIdealGame
           (sumHandler ProbComp.unifOracle fun q => ProbComp.eval (ctrIdealOracle ℓ q))
           adversary).map (·, ()) :=
     ProbOracleComp.runWith_readOnly (fun q _ => ProbComp.eval (ctrIdealOracle ℓ q)) adversary ()
-  rw [ctrReduction, ProbOracleComp.runWith_interpret_sumHandler, ← map_fst_map_unit, hstate, hro,
-    map_fst_map_pair_unit, ctrIdealGame, ProbOracleComp.eval_interpret]
+  rw [ctrReduction, ProbOracleComp.runWith_interpret_sumHandler]
+  calc
+    (ProbOracleComp.runWith
+          (fun q => ProbOracleComp.runWith freshStep (ctrQueryProgram counter ℓ b q))
+          adversary ([], false)).map Prod.fst
+        = ((ProbOracleComp.runWith
+              (fun q => ProbOracleComp.runWith freshStep (ctrQueryProgram counter ℓ b q))
+              adversary ([], false)).map fun x => (x.1, ())).map Prod.fst :=
+          (PMF.map_comp (fun x : Bool × FlagState n => (x.1, ())) _ Prod.fst).symm
+    _ = ((OracleComp.interpret
+            (sumHandler ProbComp.unifOracle fun q => ProbComp.eval (ctrIdealOracle ℓ q))
+            adversary).map (·, ())).map Prod.fst := by rw [hstate, hro]
+    _ = ctrIdealGame ℓ adversary := by
+          rw [(PMF.map_comp (·, ()) _ Prod.fst).trans (PMF.map_id _),
+            ctrIdealGame, ProbOracleComp.eval_interpret]
 
-/-! ### Section 6: Security of CTR Mode and Modular Counter Instantiation -/
-
-private theorem advantage_le_two (g₀ g₁ g₂ : Game) :
-    (Game.advantage g₀ g₂ : ℝ) ≤ Game.advantage g₀ g₁ + Game.advantage g₂ g₁ := by
-  rw [Game.advantage_comm g₂ g₁]
-  exact_mod_cast Game.advantage_triangle g₀ g₁ g₂
-
-private theorem advantage_le_four (g₀ g₁ g₂ g₃ g₄ : Game) :
-    (Game.advantage g₀ g₄ : ℝ) ≤
-      Game.advantage g₀ g₁ + Game.advantage g₁ g₂ + Game.advantage g₃ g₂ +
-        Game.advantage g₄ g₃ := by
-  have h₁ : (Game.advantage g₀ g₄ : ℝ) ≤ Game.advantage g₀ g₁ + Game.advantage g₁ g₄ := by
-    exact_mod_cast Game.advantage_triangle g₀ g₁ g₄
-  have h₂ : (Game.advantage g₁ g₄ : ℝ) ≤ Game.advantage g₁ g₂ + Game.advantage g₂ g₄ := by
-    exact_mod_cast Game.advantage_triangle g₁ g₂ g₄
-  have h₃ : (Game.advantage g₂ g₄ : ℝ) ≤ Game.advantage g₃ g₂ + Game.advantage g₄ g₃ :=
-    (advantage_le_two g₂ g₃ g₄).trans_eq (by rw [Game.advantage_comm g₂ g₃, add_comm])
-  linarith
+/-! ### Section 5: Security of CTR Mode and Modular Counter Instantiation -/
 
 /-- **The CTR reduction against a uniform random function.** If the queries of `adversary` ask at
 most `K` blocks in total, and `counter` has no intra-query collisions below `ℓ` and is injective in
@@ -867,8 +652,8 @@ theorem advantage_idealGame_ctrReduction_le
     (Game.advantage (PRF.idealGame (ctrReduction counter ℓ b adversary))
         (ctrIdealGame ℓ adversary) : ℝ) ≤
       (K : ℝ) ^ 2 / 2 ^ n := by
-  rw [idealGame_ctrReduction_eq, ← freshGame_eq_ctrIdealGame counter ℓ b adversary hintra]
-  refine (advantage_lazy_fresh_le _).trans ?_
+  rw [← freshGame_eq_ctrIdealGame counter ℓ b adversary hintra]
+  refine (advantage_idealGame_freshStep_le _).trans ?_
   have hne : ((K * K : ℕ) : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ ≠ ⊤ :=
     ENNReal.mul_ne_top (ENNReal.natCast_ne_top _)
       (ENNReal.inv_ne_top.2 (pow_ne_zero _ two_ne_zero))
