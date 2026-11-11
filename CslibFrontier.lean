@@ -1481,6 +1481,7 @@ public import CslibFrontier.Computability.Circuit.Fusion.Simulation
 public import CslibFrontier.Computability.Circuit.Fusion.SimulationContext
 public import CslibFrontier.Computability.Circuit.HintDecoding
 public import CslibFrontier.Computability.Circuit.InnerSize
+public import CslibFrontier.Computability.Circuit.Inputization
 public import CslibFrontier.Computability.Circuit.Iteration
 public import CslibFrontier.Computability.Circuit.KernelVector
 public import CslibFrontier.Computability.Circuit.Linearize
