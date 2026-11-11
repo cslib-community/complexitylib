@@ -74,6 +74,17 @@ theorem atoms_mapVars (f : ℕ → ℕ) : ∀ φ : RawFormula, (mapVars f φ).at
   | imp φ ψ => by simp only [mapVars, atoms, atoms_mapVars f φ, atoms_mapVars f ψ]
   | all _ φ => by simp only [mapVars, atoms, atoms_mapVars f φ]
 
+@[simp]
+theorem quantifierDepth_mapVars (f : ℕ → ℕ) :
+    ∀ φ : RawFormula, (mapVars f φ).quantifierDepth = φ.quantifierDepth
+  | falsum => rfl
+  | equal _ _ => rfl
+  | rel _ _ => rfl
+  | imp φ ψ => by
+    simp only [mapVars, quantifierDepth_imp, quantifierDepth_mapVars f φ,
+      quantifierDepth_mapVars f ψ]
+  | all _ φ => by simp only [mapVars, quantifierDepth_all, quantifierDepth_mapVars f φ]
+
 /-- Renaming by an injective map: the renamed formula holds under `v` iff the formula holds under
 `v ∘ f`. -/
 theorem realize_mapVars {M : Type*} {I : ℕ → List M → Prop} {f : ℕ → ℕ}
@@ -314,6 +325,16 @@ theorem atoms_levels : ∀ φ : RawFormula, (levels φ).atoms = φ.atoms
   | rel _ _ => by simp [levels, atoms]
   | imp φ ψ => by simp only [levels, atoms, atoms_levels φ, atoms_levels ψ]
   | all _ φ => by simp only [levels, atoms, atoms_mapVars, atoms_levels φ]
+
+@[simp]
+theorem quantifierDepth_levels : ∀ φ : RawFormula, (levels φ).quantifierDepth = φ.quantifierDepth
+  | falsum => rfl
+  | equal _ _ => rfl
+  | rel _ _ => rfl
+  | imp φ ψ => by
+    simp only [levels, quantifierDepth_imp, quantifierDepth_levels φ, quantifierDepth_levels ψ]
+  | all _ φ => by
+    simp only [levels, quantifierDepth_all, quantifierDepth_mapVars, quantifierDepth_levels φ]
 
 /-- `levels φ` holds under `ρ` iff `φ` holds under `x ↦ ρ (2 * x + 1)`. -/
 theorem realize_levels {M : Type*} {I : ℕ → List M → Prop} :

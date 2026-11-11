@@ -128,11 +128,23 @@ In particular, the `4n - 10d` affine-disperser elimination module for general Bo
 
 [BipartitePerfectMatching.lean](../../CslibFrontier/Computability/Complexity/Problems/BipartitePerfectMatching.lean) reads a word of length `n * n` as the row-major adjacency matrix of a subgraph of `K_{n,n}`, with bit `v + n * u` the edge `(u, v)` as numbered by `finProdFinEquiv`. It rejects words of non-square length, and `slice_mul_self` identifies the slice at length `n * n` with `Circuits.bipartitePerfectMatching n`. [Membership.lean](../../CslibFrontier/Computability/Complexity/Problems/BipartitePerfectMatching/Membership.lean) proves `BipartitePerfectMatching.mem_P` with a list-based augmenting-path algorithm: at most `n` rounds, each adding one augmentation found by breadth-first alternating labels. Its maximality proof reuses the Hopcroft–Karp counting lemma `card_mul_le_of_noShortAug`, but the algorithm is not Hopcroft–Karp's `O(√n)`-phase schedule, and the unit-cost `TimeM` solvers in `Algorithms/Lean/MaxFlow` are not used. [Separation.lean](../../CslibFrontier/Computability/Circuit/Monotone/BipartiteMatching/Separation.lean) combines this with Razborov's bound: `two_pow_sq_lt_ecomplexity_slice` gives more than `2 ^ (⌊⌊log₂ n⌋ / 16⌋ ^ 2)` monotone gates at length `n * n` once `⌊log₂ n⌋ ≥ 320`, and `eventually_pow_lt_ecomplexity_slice` shows that this eventually exceeds `(n * n) ^ k` for every `k`. `exists_monotone_mem_P_superpolynomial_ecomplexity` packages the result as a language in `P encBits` with monotone slices and superpolynomial monotone circuit complexity along the lengths `n * n`. The language is also in `P/poly` (`mem_PPoly`). Monotone size counts constants and binary AND/OR gates. Checks are in [the tests](../../CslibFrontierTests/BipartitePerfectMatchingP.lean).
 
+## Affine dispersers and `B₂` gate lower bounds
+
+Two explicit polynomial-time affine dispersers supply unconditional `3.5 N - o(N)` gate lower bounds over `B₂` (`fullInterpretation (k := 2)`) via `seven_mul_le_two_mul_size_add`:
+
+- [AffineDisperser](../../CslibFrontier/Computability/Complexity/AffineDisperser.lean) proves `exists_mem_P_eventually_le_size` for `explicitDisperserLanguage` (`P encBits`), with threshold dimension `O(N / log N)` and `B₂` gate bound `3.5 N - 42 N / (⌊log₂ N⌋ + 1) - 7` ([bensassonkopparty12][bensassonkopparty12], [mishrasanthanam26][mishrasanthanam26]).
+- As Milestone 1 toward [#4323](https://github.com/cslib-community/cslib-frontier/issues/4323), [AffineDisperser/Li](../../CslibFrontier/Computability/Complexity/AffineDisperser/Li/PolyTime.lean) replaces multi-prime exhaustive polynomial search with Shoup's deterministic irreducible-polynomial construction (`shoupIrreducibleBits`, built over [Berlekamp.lean](../../CslibFrontier/Computability/Complexity/AffineDisperser/Li/Berlekamp.lean) and [ShoupIrreducible.lean](../../CslibFrontier/Computability/Complexity/AffineDisperser/Li/ShoupIrreducible.lean), certified in [ShoupPolyTime.lean](../../CslibFrontier/Computability/Complexity/AffineDisperser/Li/ShoupPolyTime.lean)) and pairs it with the combinatorial affine-source and somewhere-condenser infrastructure in [AffineSource.lean](../../CslibFrontier/Foundations/Combinatorics/AffineDisperser/Li/AffineSource.lean) and [SomewhereCondenser.lean](../../CslibFrontier/Foundations/Combinatorics/AffineDisperser/Li/SomewhereCondenser.lean) ([shoup1990][shoup1990], [li2023][li2023], [lizhong2024][lizhong2024]). This improves the unconditional threshold to `O(N ^ (4 / 5))` (`isAffineDisperser_primeDisperser`, `isBigO_primeThreshold`) and gives `exists_mem_P_eventually_le_size_primeDisperser` in `P encBits` with `B₂` bound `3.5 N - 15036 N ^ (4 / 5)`. The remaining composition to reach `O(log N)` dimension in [#4323](https://github.com/cslib-community/cslib-frontier/issues/4323) stays open. Checks live in [LiAffineDisperser.lean](../../CslibFrontierTests/LiAffineDisperser.lean).
+
 ## Known Limitations
 
 This survey follows the conventional semantic model and the named headline bridges, but it does not infer a native runtime from an abstract size proof. It does not equate formula leaf size with circuit gates, weighted depth with all-gate depth, or nonuniform existence with uniform generation. Those choices are central to using the library's results correctly.
 
+[bensassonkopparty12]: ../sources.md#bensassonkopparty12
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [fly22]: ../sources.md#fly22
+[li2023]: ../sources.md#li2023
+[lizhong2024]: ../sources.md#lizhong2024
 [mishrasanthanam2027]: ../sources.md#mishrasanthanam2027
+[mishrasanthanam26]: ../sources.md#mishrasanthanam26
+[shoup1990]: ../sources.md#shoup1990
