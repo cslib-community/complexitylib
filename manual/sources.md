@@ -1529,7 +1529,7 @@ Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Betwe
 <a id="vzg13"></a>
 ## vzg13
 
-Joachim von zur Gathen and Jürgen Gerhard. *Modern Computer Algebra*, 3rd edition, Cambridge University Press, 2013. https://doi.org/10.1017/CBO9781139856065 . Bibliographic metadata checked from the publisher record and Chapter 5 section listing (§5.8 "Cauchy interpolation" and §5.10 "Rational number reconstruction"); the full book text was not inspected, and no theorem or algorithm numbers are claimed.
+Joachim von zur Gathen and Jürgen Gerhard. *Modern Computer Algebra*, 3rd edition, Cambridge University Press, 2013. https://doi.org/10.1017/CBO9781139856065 . Bibliographic metadata checked from the publisher record and Chapter 5 section listing (§5.7 "Rational function reconstruction", p. 115; §5.8 "Cauchy interpolation", p. 118; and §5.10 "Rational number reconstruction"); the full book text was not inspected, and no theorem or algorithm numbers are claimed.
 
 <a id="wagnerfischer74"></a>
 ## wagnerfischer74

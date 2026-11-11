@@ -50,8 +50,8 @@ from evaluation points via `Lagrange.interpolate`.
 
 ## References
 
-* [J. von zur Gathen, J. Gerhard, *Modern Computer Algebra*][vonZurGathenGerhard2013], §5.8 (Cauchy
-  interpolation and rational function reconstruction).
+* [J. von zur Gathen, J. Gerhard, *Modern Computer Algebra*][vonZurGathenGerhard2013], §§5.7–5.8
+  (§5.7, p. 115 for rational function reconstruction; §5.8, p. 118 for Cauchy interpolation).
 -/
 
 public section
@@ -359,19 +359,7 @@ theorem reconstruct_eq_some {M u : F[X]} {N D : ℕ} {p : PolyRat F}
     have hmonic : (Polynomial.C st.t1.leadingCoeff⁻¹ * st.t1).Monic := by
       rw [Polynomial.Monic, Polynomial.leadingCoeff_C_mul_of_isUnit (Ne.isUnit hc_ne),
         inv_mul_cancel₀ (Polynomial.leadingCoeff_ne_zero.mpr hinv.t1_ne)]
-    have hcop_tM : IsCoprime st.t1 M := by
-      have hg := EuclideanDomain.gcd_eq_gcd_ab st.t1 M
-      rcases hgcd with ⟨u_g, hu_g⟩
-      refine ⟨EuclideanDomain.gcdA st.t1 M * (u_g⁻¹ : F[X]ˣ),
-        EuclideanDomain.gcdB st.t1 M * (u_g⁻¹ : F[X]ˣ), ?_⟩
-      calc
-        EuclideanDomain.gcdA st.t1 M * (u_g⁻¹ : F[X]ˣ) * st.t1 +
-            EuclideanDomain.gcdB st.t1 M * (u_g⁻¹ : F[X]ˣ) * M
-            = (st.t1 * EuclideanDomain.gcdA st.t1 M + M * EuclideanDomain.gcdB st.t1 M) *
-              (u_g⁻¹ : F[X]ˣ) := by ring
-        _ = EuclideanDomain.gcd st.t1 M * (u_g⁻¹ : F[X]ˣ) := by rw [← hg]
-        _ = (u_g : F[X]) * (u_g⁻¹ : F[X]ˣ) := by rw [hu_g]
-        _ = 1 := u_g.mul_inv
+    have hcop_tM : IsCoprime st.t1 M := EuclideanDomain.gcd_isUnit_iff.mp hgcd
     have hcop_rt : IsCoprime st.r1 st.t1 := by
       rcases hcop_tM with ⟨a, b, hab⟩
       rcases hinv.bezout with ⟨s, hs1, hs2⟩
@@ -577,12 +565,8 @@ theorem reconstruct_of_eq {M u : F[X]} {N D : ℕ} {p : PolyRat F}
   have htM_cop : IsCoprime st.t1 M := by
     rw [hb_eq] at hcM
     exact hcM.of_mul_left_right
-  have hgcd_unit : IsUnit (EuclideanDomain.gcd st.t1 M) := by
-    rcases htM_cop with ⟨a, b, hab⟩
-    exact isUnit_of_dvd_one <| by
-      rw [← hab]
-      exact dvd_add (dvd_mul_of_dvd_right (EuclideanDomain.gcd_dvd_left _ _) _)
-        (dvd_mul_of_dvd_right (EuclideanDomain.gcd_dvd_right _ _) _)
+  have hgcd_unit : IsUnit (EuclideanDomain.gcd st.t1 M) :=
+    EuclideanDomain.gcd_isUnit_iff.mpr htM_cop
   have hcond : st.t1.natDegree ≤ D ∧ IsUnit (EuclideanDomain.gcd st.t1 M) := ⟨ht1_deg, hgcd_unit⟩
   simp only [hcond, and_self, ↓reduceIte]
   congr 1
@@ -606,30 +590,15 @@ via `Lagrange.interpolate` and `PolyRat.reconstruct`. -/
 def cauchy (s : Finset F) (vals : F → F) (N D : ℕ) : Option (PolyRat F) :=
   reconstruct (∏ a ∈ s, (X - C a)) (Lagrange.interpolate s id vals) N D
 
+open scoped Function in
 open Classical in
 private theorem dvd_prod_X_sub_C_iff {s : Finset F} {f : F[X]} :
     (∏ a ∈ s, (X - C a)) ∣ f ↔ ∀ a ∈ s, f.eval a = 0 := by
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert a s ha ih =>
-    rw [Finset.prod_insert ha, Finset.forall_mem_insert]
-    constructor
-    · intro hdvd
-      have ha_dvd : (X - C a) ∣ f := dvd_trans (dvd_mul_right _ _) hdvd
-      have hs_dvd : (∏ b ∈ s, (X - C b)) ∣ f := dvd_trans (dvd_mul_left _ _) hdvd
-      exact ⟨Polynomial.dvd_iff_isRoot.mp ha_dvd, ih.mp hs_dvd⟩
-    · rintro ⟨ha0, hs0⟩
-      have ha_dvd : (X - C a) ∣ f := Polynomial.dvd_iff_isRoot.mpr ha0
-      have hs_dvd : (∏ b ∈ s, (X - C b)) ∣ f := ih.mpr hs0
-      have hrel : IsCoprime (X - C a) (∏ b ∈ s, (X - C b)) := by
-        refine IsCoprime.prod_right fun b hb => ?_
-        have hne : a - b ≠ 0 := sub_ne_zero.mpr (fun h => ha (h ▸ hb))
-        refine ⟨C (-(a - b)⁻¹), C (a - b)⁻¹, ?_⟩
-        calc
-          C (-(a - b)⁻¹) * (X - C a) + C (a - b)⁻¹ * (X - C b)
-              = C (a - b)⁻¹ * C (a - b) := by simp only [map_neg, map_sub]; ring
-          _ = 1 := by rw [← map_mul, inv_mul_cancel₀ hne, map_one]
-      exact hrel.mul_dvd ha_dvd hs_dvd
+  refine ⟨fun hdvd a ha => Polynomial.dvd_iff_isRoot.mp
+    (dvd_trans (Finset.dvd_prod_of_mem (fun x => X - C x) ha) hdvd), fun h => ?_⟩
+  exact Finset.prod_dvd_of_coprime
+    ((Polynomial.pairwise_coprime_X_sub_C Function.injective_id).set_pairwise _)
+    fun a ha => Polynomial.dvd_iff_isRoot.mpr (h a ha)
 
 open Classical in
 private theorem isCoprime_prod_X_sub_C_iff {s : Finset F} {b : F[X]} :

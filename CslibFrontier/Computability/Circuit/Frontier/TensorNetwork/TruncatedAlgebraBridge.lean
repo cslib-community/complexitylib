@@ -47,57 +47,27 @@ theorem truncHom_eq_mk (P ℓ : ℕ) (p : ℕ[X]) :
       Polynomial.Truncated.mk ℓ (p.map (Nat.castRingHom (ZMod (2 ^ P)))) := by
   rw [truncHom, RingHom.comp_apply, Polynomial.Truncated.mk_apply, Polynomial.coe_mapRingHom]
 
-private noncomputable def toTruncatedRingHom (P ℓ : ℕ) :
-    Polynomial.Truncated (ZMod (2 ^ P)) ℓ →+* Ring P (truncFl ℓ) :=
-  Ideal.Quotient.lift (Ideal.span {(X : (ZMod (2 ^ P))[X]) ^ ℓ}) (AdjoinRoot.mk _) fun p hp => by
-    rw [Ideal.mem_span_singleton] at hp
-    rcases hp with ⟨q, rfl⟩
-    rw [map_mul, ← map_monicOf_truncFl, AdjoinRoot.mk_self, zero_mul]
+private noncomputable def adjoinRootCongr {R : Type*} [CommRing R] {f g : R[X]} (h : f = g) :
+    AdjoinRoot f ≃+* AdjoinRoot g :=
+  h ▸ RingEquiv.refl (AdjoinRoot f)
+
+private theorem adjoinRootCongr_mk {R : Type*} [CommRing R] {f g : R[X]} (h : f = g) (p : R[X]) :
+    adjoinRootCongr h (AdjoinRoot.mk f p) = AdjoinRoot.mk g p := by
+  subst h
+  rfl
 
 /-- Ring isomorphism between `Polynomial.Truncated (ZMod (2 ^ P)) ℓ` and
 `GaloisRingArith.Ring P (truncFl ℓ) = B_{P,ℓ}`. -/
 def truncEquivTruncated (P ℓ : ℕ) :
     Polynomial.Truncated (ZMod (2 ^ P)) ℓ ≃+* Ring P (truncFl ℓ) :=
-  let invFun : Ring P (truncFl ℓ) →+* Polynomial.Truncated (ZMod (2 ^ P)) ℓ :=
-    AdjoinRoot.lift (algebraMap (ZMod (2 ^ P)) _) (Polynomial.Truncated.var (ZMod (2 ^ P)) ℓ)
-      (by simp [map_monicOf_truncFl, Polynomial.eval₂_X_pow])
-  { toFun := toTruncatedRingHom P ℓ
-    invFun := invFun
-    left_inv x := by
-      induction x using Polynomial.Truncated.induction_on with
-      | hp p =>
-        have hto : toTruncatedRingHom P ℓ (Polynomial.Truncated.mk ℓ p) = AdjoinRoot.mk _ p := by
-          rw [toTruncatedRingHom, Polynomial.Truncated.mk_apply, Ideal.Quotient.lift_mk]
-        change invFun (toTruncatedRingHom P ℓ (Polynomial.Truncated.mk ℓ p)) =
-          Polynomial.Truncated.mk ℓ p
-        rw [hto]
-        change AdjoinRoot.lift (algebraMap (ZMod (2 ^ P)) _)
-          (Polynomial.Truncated.var (ZMod (2 ^ P)) ℓ) _ (AdjoinRoot.mk _ p) =
-            Polynomial.Truncated.mk ℓ p
-        rw [AdjoinRoot.lift_mk, ← Polynomial.aeval_def, Polynomial.Truncated.var_eq_mk_X,
-          Polynomial.aeval_algHom_apply (Polynomial.Truncated.mk ℓ) X p, Polynomial.aeval_X_left]
-        rfl
-    right_inv y := by
-      induction y using AdjoinRoot.induction_on with
-      | ih p =>
-        have hinv : invFun (AdjoinRoot.mk _ p) = Polynomial.Truncated.mk ℓ p := by
-          change AdjoinRoot.lift (algebraMap (ZMod (2 ^ P)) _)
-            (Polynomial.Truncated.var (ZMod (2 ^ P)) ℓ) _ (AdjoinRoot.mk _ p) =
-              Polynomial.Truncated.mk ℓ p
-          rw [AdjoinRoot.lift_mk, ← Polynomial.aeval_def, Polynomial.Truncated.var_eq_mk_X,
-            Polynomial.aeval_algHom_apply (Polynomial.Truncated.mk ℓ) X p, Polynomial.aeval_X_left]
-          rfl
-        change toTruncatedRingHom P ℓ (invFun (AdjoinRoot.mk _ p)) = AdjoinRoot.mk _ p
-        rw [hinv, toTruncatedRingHom, Polynomial.Truncated.mk_apply, Ideal.Quotient.lift_mk]
-    map_mul' := (toTruncatedRingHom P ℓ).map_mul
-    map_add' := (toTruncatedRingHom P ℓ).map_add }
+  (Polynomial.Truncated.equivAdjoinRoot (ZMod (2 ^ P)) ℓ).toRingEquiv.trans
+    (adjoinRootCongr map_monicOf_truncFl.symm)
 
 @[simp]
 theorem truncEquivTruncated_mk_zmod (P ℓ : ℕ) (p : (ZMod (2 ^ P))[X]) :
     truncEquivTruncated P ℓ (Polynomial.Truncated.mk ℓ p) =
       AdjoinRoot.mk (Polynomial.map (Int.castRingHom (ZMod (2 ^ P))) (monicOf (truncFl ℓ))) p := by
-  change toTruncatedRingHom P ℓ (Polynomial.Truncated.mk ℓ p) = AdjoinRoot.mk _ p
-  rw [toTruncatedRingHom, Polynomial.Truncated.mk_apply, Ideal.Quotient.lift_mk]
+  simp [truncEquivTruncated, adjoinRootCongr_mk]
 
 @[simp]
 theorem truncEquivTruncated_symm_mk (P ℓ : ℕ) (p : (ZMod (2 ^ P))[X]) :
@@ -111,9 +81,7 @@ theorem truncEquivTruncated_mk (P ℓ : ℕ) (p : ℤ[X]) :
     truncEquivTruncated P ℓ
         (Polynomial.Truncated.mk ℓ (p.map (Int.castRingHom (ZMod (2 ^ P))))) =
       truncRingHom P ℓ p := by
-  change toTruncatedRingHom P ℓ (Polynomial.Truncated.mk ℓ _) = truncRingHom P ℓ p
-  rw [toTruncatedRingHom, Polynomial.Truncated.mk_apply, Ideal.Quotient.lift_mk, truncRingHom,
-    RingHom.comp_apply, Polynomial.coe_mapRingHom]
+  rw [truncEquivTruncated_mk_zmod, truncRingHom, RingHom.comp_apply, Polynomial.coe_mapRingHom]
 
 end
 

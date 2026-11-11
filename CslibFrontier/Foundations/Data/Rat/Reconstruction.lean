@@ -99,22 +99,10 @@ private theorem mul_eq_mul_of_divInt_eq {r t : ℤ} {q : ℚ} (ht : t ≠ 0)
 
 theorem height_inv {q : ℚ} (hq : q ≠ 0) : height q⁻¹ = height q := by
   have hnum_nz : q.num ≠ 0 := Rat.num_ne_zero.mpr hq
-  have hcop : q.den.Coprime q.num.natAbs := q.reduced.symm
   have hinv_num : (q⁻¹).num.natAbs = q.den := by
-    rw [Rat.inv_def, Rat.natAbs_num_divInt_of_ne_zero _ _ hnum_nz, Int.natAbs_natCast, hcop,
-      Nat.div_one]
-  have hinv_den : (q⁻¹).den = q.num.natAbs := by
-    have hmul_eq : (q⁻¹).num * q.num = (q.den : ℤ) * ((q⁻¹).den : ℤ) := by
-      have hdiv : ((q⁻¹).num : ℚ) / ((q⁻¹).den : ℚ) = (q.den : ℚ) / (q.num : ℚ) := by
-        rw [Rat.num_div_den]
-        conv_rhs => rw [← Int.cast_natCast q.den, ← Rat.divInt_eq_div, ← Rat.inv_def]
-      have hden1 : ((q⁻¹).den : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr (q⁻¹).den_nz
-      have hnumq : (q.num : ℚ) ≠ 0 := Int.cast_ne_zero.mpr hnum_nz
-      exact_mod_cast (div_eq_div_iff hden1 hnumq).mp hdiv
-    have hn := congrArg Int.natAbs hmul_eq
-    rw [Int.natAbs_mul, Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast, hinv_num] at hn
-    exact (Nat.mul_left_cancel q.den_pos hn).symm
-  rw [height, height, hinv_num, hinv_den, max_comm]
+    rw [Rat.num_inv, Int.natAbs_mul, Int.natAbs_sign_of_ne_zero hnum_nz, Int.natAbs_natCast,
+      one_mul]
+  rw [height, height, hinv_num, Rat.den_inv_of_ne_zero hq, max_comm]
 
 theorem height_divInt_le (a b : ℤ) (hb : b ≠ 0) :
     height (Rat.divInt a b) ≤ max a.natAbs b.natAbs :=

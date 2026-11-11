@@ -331,14 +331,8 @@ theorem sum_coeff_mul_var_pow (x : Truncated R r) :
   conv_rhs => rw [← mk_toPoly x, toPoly]
   rw [map_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
-  have hsmul (a : R) (y : Truncated R r) :
-      a • y = algebraMap R (Truncated R r) a * y := by
-    induction y using induction_on with
-    | hp p =>
-      rw [← map_smul, Polynomial.smul_eq_C_mul, map_mul, ← Polynomial.algebraMap_eq,
-        AlgHom.commutes]
-  rw [hsmul, map_mul, map_pow, var, ← AlgHom.commutes (mk r) (coeff i x),
-    Polynomial.algebraMap_eq]
+  rw [Algebra.smul_def (coeff i x) (var R r ^ i), map_mul, map_pow, var,
+    ← AlgHom.commutes (mk r) (coeff i x), Polynomial.algebraMap_eq]
 
 /-- Canonical length-`r` coefficient list of `x : Truncated R r`. -/
 @[expose] def coeffs (x : Truncated R r) : List R :=
@@ -416,14 +410,7 @@ theorem geomInv_def (y : Truncated R r) : geomInv y = ∑ k ∈ Finset.range r, 
 /-- `(1 - y) * geomInv y = 1` whenever `coeff 0 y = 0`. -/
 theorem one_sub_mul_geomInv {y : Truncated R r} (hy : coeff 0 y = 0) :
     (1 - y) * geomInv y = 1 := by
-  rw [geomInv, Finset.mul_sum]
-  calc
-    ∑ k ∈ Finset.range r, (1 - y) * y ^ k
-        = ∑ k ∈ Finset.range r, (y ^ k - y ^ (k + 1)) := by
-          refine Finset.sum_congr rfl fun k _ => ?_
-          rw [sub_mul, one_mul, pow_succ']
-    _ = y ^ 0 - y ^ r := Finset.sum_range_sub' (fun k => y ^ k) r
-    _ = 1 := by rw [pow_zero, pow_eq_zero_of_coeff_zero hy, sub_zero]
+  rw [geomInv, mul_neg_geom_sum, pow_eq_zero_of_coeff_zero hy, sub_zero]
 
 /-- `(1 + y) * geomInv (-y) = 1` whenever `coeff 0 y = 0`. -/
 theorem one_add_mul_geomInv_neg {y : Truncated R r} (hy : coeff 0 y = 0) :
@@ -589,16 +576,9 @@ theorem mk_comp_eq_subst (p q : R[X]) (hq : (mk r q) ^ r = 0) :
   exact (Polynomial.aeval_algHom_apply (mk r) q p).symm
 
 private theorem coeff_pow_eq_zero_of_constantCoeff_zero {g : R⟦X⟧}
-    (hg0 : PowerSeries.constantCoeff g = 0) : ∀ {d i : ℕ}, i < d → PowerSeries.coeff i (g ^ d) = 0
-  | 0, _, hi => absurd hi (Nat.not_lt_zero _)
-  | d + 1, i, hi => by
-    rw [pow_succ, PowerSeries.coeff_mul]
-    refine Finset.sum_eq_zero fun k hk => ?_
-    have hk_eq : k.1 + k.2 = i := Finset.mem_antidiagonal.mp hk
-    by_cases hk2 : k.2 = 0
-    · rw [hk2, PowerSeries.coeff_zero_eq_constantCoeff, hg0, mul_zero]
-    · have hk1 : k.1 < d := by omega
-      rw [coeff_pow_eq_zero_of_constantCoeff_zero hg0 hk1, zero_mul]
+    (hg0 : PowerSeries.constantCoeff g = 0) {d i : ℕ} (hi : i < d) :
+    PowerSeries.coeff i (g ^ d) = 0 :=
+  PowerSeries.X_pow_dvd_iff.mp (pow_dvd_pow_of_dvd (PowerSeries.X_dvd_iff.mpr hg0) d) i hi
 
 /-- Truncating `PowerSeries.subst g f` modulo `T ^ r` equals truncated substitution of the
 truncations in `Truncated R r`, when `PowerSeries.constantCoeff g = 0`. -/
