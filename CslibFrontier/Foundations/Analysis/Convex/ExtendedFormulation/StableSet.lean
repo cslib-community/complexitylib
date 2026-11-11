@@ -71,8 +71,11 @@ section Gadget
 
 /-- Ordered pairs `(fst, snd)` in `Fin n` with `fst < snd`. -/
 structure CorrPairIdx (n : ℕ) where
+  /-- Smaller vertex index in `Fin n`. -/
   fst : Fin n
+  /-- Larger vertex index in `Fin n`. -/
   snd : Fin n
+  /-- Ordering witness `fst < snd`. -/
   lt : fst < snd
   deriving DecidableEq
 
@@ -252,7 +255,7 @@ private def stabToCorrLinear (K : Type*) [Semiring K] (n : ℕ) :
     simp only [Pi.smul_apply, smul_eq_mul, RingHom.id_apply]
     split_ifs <;> rfl
 
-private theorem stabToCorrLinear_lift {K : Type*} [Semiring K] [PartialOrder K]
+private theorem stabToCorrLinear_lift {K : Type*} [Semiring K]
     {n : ℕ} (b : Finset (Fin n)) :
     stabToCorrLinear K n (stabVertex K (liftCorrIndep b)) = corrVertex K b := by
   ext ⟨i, j⟩
@@ -278,7 +281,7 @@ private theorem stabToCorrLinear_lift {K : Type*} [Semiring K] [PartialOrder K]
     · simp only [hlt, ↓reduceDIte, reduceCtorEq, exists_false, false_or,
         hiff j i ((lt_or_gt_of_ne hij).resolve_left hlt), and_comm]
 
-private theorem stabToCorrLinear_tight {K : Type*} [Semiring K] [PartialOrder K]
+private theorem stabToCorrLinear_tight {K : Type*} [Semiring K]
     {n : ℕ} {S : Finset (CorrGadgetV n)}
     (hS : (corrGadgetGraph n).IsIndepSet (S : Set (CorrGadgetV n)))
     (hcard : S.card = n + Fintype.card (CorrPairIdx n)) :
@@ -426,7 +429,7 @@ noncomputable def stabHardGraph (m : ℕ) : SimpleGraph (Fin m) :=
   else ⊥
 
 private theorem extensionComplexity_corrGadgetGraph_le_stabHardGraph
-    {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K] (m : ℕ) (hm : 2 ≤ m) :
+    {K : Type*} [Field K] [LinearOrder K] (m : ℕ) (hm : 2 ≤ m) :
     extensionComplexity (stabPolytope K (corrGadgetGraph (Nat.sqrt (m / 2)))) ≤
       extensionComplexity (stabPolytope K (stabHardGraph m)) := by
   classical

@@ -278,7 +278,7 @@ end Reduction
 
 section LowerBound
 
-private noncomputable def tspSplitEquiv (V : Type*) [Fintype V] [DecidableEq V]
+private noncomputable def tspSplitEquiv (V : Type*) [Fintype V]
     {n : ℕ} (hn : 69 ≤ n) (hcard : Fintype.card V = n) :
     let p := Nat.sqrt (n / 69)
     let hp : 1 ≤ p := Nat.sqrt_pos.2 (by omega)

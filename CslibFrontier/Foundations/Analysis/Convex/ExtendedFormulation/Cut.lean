@@ -86,7 +86,7 @@ private theorem corrToCutSym_symm {α : Type*} (y : (α × α) → K) (u v : Opt
   cases u <;> cases v <;> simp only [corrToCutSym]
   abel
 
-private def corrToCutLinear (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+private def corrToCutLinear (K : Type*) [Field K] [LinearOrder K]
     (α : Type*) : ((α × α) → K) →ₗ[K] (↥(⊤ : SimpleGraph (Option α)).edgeSet → K) where
   toFun y e := Sym2.lift ⟨corrToCutSym y, corrToCutSym_symm y⟩ e.1
   map_add' y₁ y₂ := by

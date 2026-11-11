@@ -184,12 +184,16 @@ four clauses enforcing `C_{ij} = C_{ii} ∧ C_{jj}`
   | 2 => true
   | 3 => false
 
+/-- Polarity of literal 2 (`C_{jj}`) in the four clauses enforcing `C_{ij} = C_{ii} ∧ C_{jj}`
+[FioriniMassarPokuttaTiwaryDeWolf2015, Step (i)]. -/
 @[expose] def clauseLit₂ : Fin 4 → Bool
   | 0 => false
   | 1 => true
   | 2 => false
   | 3 => true
 
+/-- Polarity of literal 3 (`C_{ij}`) in the four clauses enforcing `C_{ij} = C_{ii} ∧ C_{jj}`
+[FioriniMassarPokuttaTiwaryDeWolf2015, Step (i)]. -/
 @[expose] def clauseLit₃ : Fin 4 → Bool
   | 0 => true
   | 1 => false
@@ -538,7 +542,7 @@ private theorem cyclicPairs_mem_iff {α : Type*} (l : List α) [NeZero l.length]
         exact Nat.mod_eq_of_lt hj
       simp only [hi1]
 
-private noncomputable def varAt (p : ℕ) [NeZero p]
+private noncomputable def varAt (p : ℕ)
     (k : Fin (Fintype.card (CorrVar p))) : CorrVar p :=
   (Fintype.equivFin (CorrVar p)).symm k
 

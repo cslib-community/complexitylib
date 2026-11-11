@@ -85,7 +85,7 @@ def corrValidVec (a : Finset α) : (α × α) → K :=
 
 /-- Matrix of Kaibel–Weltge / FMPTW valid inequalities `⟨2 diag(a) - a aᵀ, x⟩ ≤ 1` indexed by
 `a : Finset α`. -/
-def corrValidMatrix (α : Type*) [Fintype α] [DecidableEq α] : Matrix (Finset α) (α × α) K :=
+def corrValidMatrix (α : Type*) [DecidableEq α] : Matrix (Finset α) (α × α) K :=
   Matrix.of (corrValidVec K)
 
 omit [LinearOrder K] [IsStrictOrderedRing K] [Fintype α] in
@@ -144,7 +144,7 @@ theorem corrValidVec_dotProduct_corrVertex (a b : Finset α) :
 omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- The slack of `corrValidVec K a` at vertex `corrVertex K b` is `(|a ∩ b| - 1) ^ 2`
 [FioriniMassarPokuttaTiwaryDeWolf2015, Lemma 6]; [KaibelWeltge2015, Lemma 1]. -/
-@[simp] theorem corrValidMatrix_slackMatrix_apply (a b : Finset α) :
+theorem corrValidMatrix_slackMatrix_apply (a b : Finset α) :
     (corrValidMatrix K α).slackMatrix (fun _ => 1) (corrVertex K) a b =
       (((a ∩ b).card : K) - 1) ^ 2 := by
   rw [Matrix.slackMatrix_apply]

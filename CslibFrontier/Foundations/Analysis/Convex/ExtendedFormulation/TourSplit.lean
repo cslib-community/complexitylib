@@ -36,7 +36,7 @@ directed Hamiltonian cycle lifts back to an undirected tour (`paddedSplitTour_of
 
 ## Main results
 
-* `IsTourEdgeSet.card_splitV`: `Fintype.card (SplitV W v₀ pad) = 3 * Fintype.card W + pad`.
+* `card_splitV`: `Fintype.card (SplitV W v₀ pad) = 3 * Fintype.card W + pad`.
 * `exists_dirTour_of_paddedSplitTour`: every undirected tour of `paddedSplitGraph` induces a
   directed tour of `adjD` with matching inter-gadget edges.
 * `paddedSplitTour_of_dirTour`: every directed tour of `adjD` lifts to an undirected tour of
