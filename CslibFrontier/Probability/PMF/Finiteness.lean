@@ -5,8 +5,9 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib for `ENNReal.Finiteness.sum_ne_top` and the `PMF.apply_ne_top`
--- tag; addition to `Cslib/Probability/PMF.lean` for the `toOuterMeasure_ne_top` tag)
+-- upstream: candidate (Mathlib for `ENNReal.Finiteness.sum_ne_top`, the `PMF.apply_ne_top` tag,
+-- and, as changes to `finiteness` itself, the `x < _` hypothesis rule and the `applyHyps` tag;
+-- addition to `Cslib/Probability/PMF.lean` for the `toOuterMeasure_ne_top` tag)
 
 public import CslibFrontier.Probability.PMF.Event
 public import Mathlib.Basic.ENNReal.BigOperators
@@ -20,8 +21,9 @@ sums, products, powers, quotients, inverses and casts. This module adds the rule
 discrete distributions need: the mass `p a` of an outcome and the probability
 `p.toOuterMeasure s` of an event are finite, and so is a finite sum of finite terms. With them
 the side conditions of `ENNReal.toReal_add`, `ENNReal.toReal_mono` and `ENNReal.toNNReal_mono`
-in probability bounds are `by finiteness`, whatever the shape of the bound. It also proves `x ≠ ∞`
-from a hypothesis `x < _`, and applies hypotheses such as `∀ i, f i ≠ ∞`.
+in probability bounds are `by finiteness`, whatever the shape of the bound. It also applies
+hypotheses such as `∀ i, f i ≠ ∞`, and keeps Mathlib's proof of `x ≠ ∞` from a hypothesis `x < _`
+working alongside the sum rule.
 
 ## Main results
 

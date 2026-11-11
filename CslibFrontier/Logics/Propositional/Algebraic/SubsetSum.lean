@@ -192,7 +192,7 @@ public theorem PC.not_refutableInDegree_subsetSumPoly [Nonempty ι] {c : ι → 
     have h0 : BitString.totalDegree (1 : (ι → Bool) → F) = 0 :=
       Nat.le_zero.1 (totalDegree_le_of_mem_lowDegree (one_mem_lowDegree 0))
     omega
-  · intro f hf
+  · intro f hf _
     rcases List.mem_append.1 hf with hf | hf
     · rw [List.mem_singleton] at hf
       subst hf

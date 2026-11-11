@@ -21,11 +21,13 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicT
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
@@ -56,6 +58,8 @@ import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
+import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
@@ -73,6 +77,7 @@ import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
+import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
@@ -182,6 +187,23 @@ register_result "savitch-general" where
     c₁·s(n) + c₂ along every computation prefix; the recognizer form permits nonterminating \
     branches. The deterministic machine halts on every input and reads its input in place; \
     arbitrary injective encodings."
+
+register_result "space-hierarchy" where
+  title := "Stearns–Hartmanis–Lewis: the deterministic space hierarchy"
+  topic := "space complexity"
+  sources := [
+    { paper := StearnsHartmanisLewis1965, theorem := unverified, locator := unverified },
+    { paper := Sipser2013, theorem := unverified, locator := unverified },
+    { paper := AroraBarak09, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.DSPACE_ssubset_DSPACE,
+    Cslib.Complexity.L_ssubset_DSPACE_log2_sq
+  ]
+  scope := "DSPACE f ⊂ DSPACE g on binary words for space-constructible g with ⌊log₂ n⌋ ≤ g n \
+    when every c·f(n)+c is eventually below g(n): the textbook gap and logarithmic threshold. \
+    DSPACE is total deterministic decision by one native multi-tape machine within \
+    O(s n) work cells. The nondeterministic space hierarchy is not part of this entry."
 
 register_result "alternation" where
   title := "Chandra–Kozen–Stockmeyer: AP equals PSPACE"
@@ -924,6 +946,44 @@ register_result "nash-existence-bimatrix" where
   scope := "Real payoff matrices over finite nonempty strategy sets, with no nondegeneracy \
     assumption; derived from the n-player theorem. Nonconstructive."
 
+register_result "facility-location-random-dictatorship" where
+  title := "Random dictatorship is strategyproof and (2 - 2 / n)-approximate for social cost"
+  topic := "game theory"
+  sources := [
+    { paper := AlonFeldmanProcacciaTennenholtz2010, theorem := "Theorem 3.1",
+      locator := "Section 3.2 and first remark, arXiv:0907.2049v1 pp. 6–7" }
+  ]
+  theorems := [
+    Cslib.GameTheory.FacilityLocation.randomDictatorship_isStrategyProof,
+    Cslib.GameTheory.FacilityLocation.randomDictatorship_hasApproxRatio,
+    Cslib.GameTheory.FacilityLocation.randomDictatorship_hasApproxRatio_two
+  ]
+  scope := "Any nonempty finite agent index set ι and Borel-measurable pseudometric space G \
+    ([PseudoMetricSpace G] [OpensMeasurableSpace G]); slightly generalizes AFPT Theorem 3.1 \
+    and its first remark from graph/metric spaces to pseudometrics. Weak group strategyproofness \
+    fails on a 3-leaf star metric (Star4 in CslibFrontierTests.FacilityLocation, per §3.2 third \
+    remark), and strong group strategyproofness fails on ℝ for n = 3."
+
+register_result "facility-location-median" where
+  title := "Fixed order-statistic and median mechanisms on ℝ are group strategyproof and optimal"
+  topic := "game theory"
+  sources := [
+    { paper := ProcacciaTennenholtz2013, theorem := unverified,
+      locator := "Section 3.1, pp. 18:7–18:8 (unnumbered prose)" },
+    { paper := Moulin1980, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.FacilityLocation.orderStatisticMechanism_isGroupStrategyProof,
+    Cslib.GameTheory.FacilityLocation.medianMechanism_isGroupStrategyProof,
+    Cslib.GameTheory.FacilityLocation.lowerMedian_isOptimal,
+    Cslib.GameTheory.FacilityLocation.medianMechanism_hasApproxRatio_one
+  ]
+  scope := "Any nonempty finite agent set ι locating a single facility on ℝ with sum-of-distances \
+    social cost; orderStatisticMechanism k clamps k at |ι| - 1 when k ≥ |ι|. PT §3.1 states \
+    weak group strategyproofness (attributed to Moulin 1980, uninspected here) and optimality \
+    for the lower median x_((n-1)/2); the library proves the stronger IsGroupStrategyProof \
+    property."
+
 /-!
 ## Descriptive complexity and finite model theory
 
@@ -985,6 +1045,21 @@ register_result "immerman-nl-capture" where
     (encStructure) is in native NL; positive closures suffice. Malformed table shapes and \
     universes below two are rejected."
 
+register_result "fo-dtc-l" where
+  title := "FO(DTC) is contained in L on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 4.2", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.DTCDefinable.encodedLanguage_mem_L
+  ]
+  scope := "A query defined by one FO(DTC) sentence over a finite relational vocabulary with the \
+    canonical numeric symbols, on Fin n with n ≥ 2, is in native L under encStructure; \
+    malformed tables and cardinalities below two are rejected. Deterministic closure is \
+    reflexive transitive closure of the deterministic reduct on tuples of fixed width, \
+    nested and at any polarity. The converse L ⊆ FO(DTC) is not formalized."
+
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
   topic := "descriptive complexity"
@@ -1004,8 +1079,10 @@ register_result "trakhtenbrot" where
     many symbols of arity at most three. FinSat asks for some, FinValid for every, finite \
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
-    Libkin's form for a fixed vocabulary with a binary relation symbol and the transfer to \
-    Mathlib sentences are separate entries."
+    Corollaries: every r.e. set of finitely valid formulas misses one, so no sound proof \
+    system with a decidable proof relation proves every finitely valid formula. Libkin's \
+    form for a fixed vocabulary with a binary relation symbol and the transfer to Mathlib \
+    sentences are separate entries."
 
 register_result "trakhtenbrot-binary" where
   title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
@@ -1021,9 +1098,10 @@ register_result "trakhtenbrot-binary" where
   ]
   scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
     symbol, no computable procedure is correct for finite satisfiability on the raw \
-    sentences over σ, and the finitely valid sentences over σ are not r.e. Raw \
-    library-local syntax with finite nonempty models; the form for Mathlib's L.Sentence is \
-    the entry trakhtenbrot-sentence."
+    sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
+    r.e. set of finitely valid sentences misses one over σ, and no sound proof system \
+    with a decidable proof relation proves them all. Raw library-local syntax with finite \
+    nonempty models; the form for Mathlib's L.Sentence is the entry trakhtenbrot-sentence."
 
 register_result "trakhtenbrot-sentence" where
   title := "Trakhtenbrot's theorem for Mathlib sentences"
@@ -1067,7 +1145,8 @@ register_result "zero-one-law-graphs" where
     random graph G(n, 1/2) on Fin n. The limit probability is 1 exactly for the \
     consequences of the theory of the random graph and 0 exactly when the negation is one. \
     Consequences: even vertex count and even edge count are not first-order definable. \
-    Other edge probabilities and unlabelled random graphs are not covered."
+    Constant edge probabilities 0 < p < 1 are covered by the entry zero-one-law-binomial; \
+    edge probabilities depending on n and unlabelled random graphs are not covered."
 
 register_result "zero-one-law-rado" where
   title := "The Rado graph and the almost-sure theory of G(n, 1/2)"
@@ -1088,6 +1167,30 @@ register_result "zero-one-law-rado" where
     in the Rado graph SimpleGraph.radoGraph on ℕ, and almost never otherwise. Structure \
     theory for countable simple graphs: uniqueness among graphs with every extension \
     property, universality for induced embeddings, and self-complementarity."
+
+register_result "zero-one-law-binomial" where
+  title := "The 0-1 law for G(n, p) with constant edge probability"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := AlonSpencer2016, theorem := unverified, locator := unverified },
+    { paper := Fagin1976, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.graph.binomialRandom_zero_one_law,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_one_iff,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_zero_iff,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_one_iff_radoGraph,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_zero_iff_radoGraph,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_one_iff_tendsto_randomGraphProb,
+    Cslib.Logic.FO.graph.not_exists_sentence_of_not_tendsto_binomialRandom
+  ]
+  scope := "First-order sentences of Mathlib's language of graphs under Mathlib's binomial \
+    random graph SimpleGraph.binomialRandom (Fin n) p, labelled, for a fixed real \
+    0 < p < 1. The limit probability is 1 exactly for the consequences of the theory of the \
+    random graph, equivalently for the sentences true in the Rado graph, so the almost-sure \
+    sentences are those of G(n, 1/2) for every such p. At p = 0 and p = 1 the graph is \
+    empty or complete and this characterization fails. Edge probabilities depending on n, \
+    other vocabularies and unlabelled random graphs are not covered."
 
 register_result "zero-one-law-relational" where
   title := "The 0-1 law for finite relational vocabularies"
@@ -1181,7 +1284,8 @@ register_result "mcnaughton-papert" where
   title := "McNaughton–Papert: first-order definable equals star-free on finite words"
   topic := "descriptive complexity"
   sources := [
-    { paper := Libkin2004, theorem := "Theorem 7.26", locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 7.26",
+      locator := "second half of the proof, pp. 128–129" },
     { paper := McNaughtonPapert1971, theorem := unverified, locator := unverified }
   ]
   theorems := [
@@ -1336,7 +1440,7 @@ register_result "hanf-gaifman-locality" where
   title := "Hanf and Gaifman locality of first-order logic"
   topic := "descriptive complexity"
   sources := [
-    { paper := Libkin2004, theorem := "Theorem 4.12 and Corollary 4.13",
+    { paper := Libkin2004, theorem := "Lemma 4.9, Theorem 4.12 and Corollary 4.13",
       locator := "Sections 4.2–4.3" }
   ]
   theorems := [
@@ -1433,22 +1537,28 @@ register_result "color-refinement" where
     classes. The partition is stable from round |V| - k₀ and is the coarsest equitable \
     partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
-    test is incomplete (equal-order d-regular graphs). No k-dimensional Weisfeiler–Leman, \
-    fractional isomorphism or certified algorithm."
+    test is incomplete (equal-order d-regular graphs). The correspondence with \
+    two-variable counting logic C² is not formalized. No k-dimensional \
+    Weisfeiler–Leman, fractional isomorphism or certified algorithm."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
   topic := "time complexity"
   sources := [
-    { paper := FortnowSanthanam2006, theorem := "Lemma 5", locator := "Section 3.3" }
+    { paper := FortnowSanthanam2006,
+      theorem := "Lemma 5 (the translation method only, not these statements)",
+      locator := "Section 3.3" }
   ]
   theorems := [
     Cslib.Complexity.DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow,
-    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_log_rpow
+    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_pow_mul_log_rpow_le,
+    Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_two_pow_add_log_div,
+    Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_of_two_pow_mul_rpow_le
   ]
   scope := "DTIME(n^a) is strictly inside DTIME(g) whenever g(n) >= n^a (ln n)^eps eventually, \
-    for every integer a >= 1 and real eps > 0, on bit strings with native multitape DTIME. \
+    for every integer a >= 1 and real eps > 0, and DTIME(2^n) is strictly inside DTIME(g) \
+    whenever g(n) >= 2^n n^eps eventually, on bit strings with native multitape DTIME. \
     Derived by translation (padding) from the library's polylogarithmic-gap diagonal theorem; \
-    the source lemma is the translation method, not this statement. Only the bounds n^a are \
-    covered, not arbitrary time-constructible t, and this is not W. J. Paul's fixed-tape \
-    hierarchy."
+    the source lemma is the translation method, not this statement. Only the bounds n^a and \
+    2^n are covered, not arbitrary time-constructible t, and this is not W. J. Paul's \
+    fixed-tape hierarchy."

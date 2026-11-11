@@ -25,6 +25,7 @@ import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.PolyTime.Init
 import Mathlib.FieldTheory.Finite.Basic
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # The Computational and Decisional Diffie–Hellman assumptions

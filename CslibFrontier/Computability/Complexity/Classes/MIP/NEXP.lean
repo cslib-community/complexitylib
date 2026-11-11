@@ -222,7 +222,7 @@ theorem computableInPolyTime_consistentHist :
     (size := fun p => 2 * (encPair encHistory encHistory p).length + 6)
     (PolyBounded.of_forall_le 8 1 fun p => by simp only [pow_one]; lia)
     (fun p _ s _ hs => by
-      have hlen := Interaction.length_encList_le_of_suffix (enc := encPair encBits encBits) hs
+      have hlen := length_encList_sublist (encPair encBits encBits) hs.sublist
       have hp := length_le_encPair_right encHistory encHistory p
       simp only [length_encPair, encBool_apply, List.length_singleton]
       lia)).1
