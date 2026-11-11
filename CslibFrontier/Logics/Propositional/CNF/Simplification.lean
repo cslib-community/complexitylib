@@ -127,31 +127,7 @@ namespace CNF.Sparsification
 open Finset
 variable [DecidableEq V]
 
-/-! ### Helper identities on single-clause normalization -/
-
-private theorem mem_dedup_iff {C : Clause V} {l : Literal V} : l ∈ dedup C ↔ l ∈ C := by
-  rw [← List.mem_toFinset, toFinset_dedup, List.mem_toFinset]
-
-private theorem normalize_singleton (C : Clause V) :
-    normalize [C] = [dedup C] := by
-  unfold normalize dedupClauses reduce
-  simp
-
-/-- Clause literal deduplication removes all duplicates. -/
-theorem nodup_dedup_clause (C : Clause V) : (dedup C).Nodup := by
-  have hnorm := normalized_normalize (k := C.length) (φ := [C]) fun D hD => by
-    rcases List.mem_singleton.mp hD
-    exact le_rfl
-  rw [normalize_singleton] at hnorm
-  exact hnorm.nodup (dedup C) List.mem_cons_self
-
-/-- Clause literal deduplication does not increase clause length. -/
-theorem length_dedup_clause_le (C : Clause V) : (dedup C).length ≤ C.length := by
-  have hnorm := normalized_normalize (k := C.length) (φ := [C]) fun D hD => by
-    rcases List.mem_singleton.mp hD
-    exact le_rfl
-  rw [normalize_singleton] at hnorm
-  exact hnorm.length_le (dedup C) List.mem_cons_self
+/-! ### Normalization duplicate-freedom -/
 
 /-- Every clause of `normalize φ` is duplicate-free. -/
 theorem nodup_of_mem_normalize {φ : CNF V} {C : Clause V} (hC : C ∈ normalize φ) :
@@ -159,7 +135,7 @@ theorem nodup_of_mem_normalize {φ : CNF V} {C : Clause V} (hC : C ∈ normalize
   have hsub : normalize φ <+ φ.map dedup :=
     (reduce_sublist _).trans (dedupClauses_sublist _)
   obtain ⟨D, _, rfl⟩ := List.mem_map.mp (hsub.subset hC)
-  exact nodup_dedup_clause D
+  exact nodup_dedup D
 
 /-- Every clause of `countingNormalize φ` is duplicate-free. -/
 theorem nodup_of_mem_countingNormalize {φ : CNF V} {C : Clause V}
@@ -172,7 +148,7 @@ theorem nodup_of_mem_countingNormalize {φ : CNF V} {C : Clause V}
 @[simp] theorem eval_dedup (C : Clause V) (σ : V → Bool) :
     Clause.eval σ (dedup C) = C.eval σ := by
   rw [Bool.eq_iff_iff, Clause.eval_eq_true_iff, Clause.eval_eq_true_iff]
-  simp only [mem_dedup_iff]
+  simp only [mem_dedup]
 
 /-- Literal deduplication across all clauses preserves formula evaluation. -/
 @[simp] theorem eval_map_dedup (φ : CNF V) (σ : V → Bool) :
@@ -257,9 +233,9 @@ private theorem vars_toFinset_sublist {ψ φ : CNF V} (hsub : ψ <+ φ) :
   simp only [List.mem_toFinset, CNF.mem_vars, List.mem_map]
   constructor
   · rintro ⟨_, ⟨c, hc, rfl⟩, b, hb⟩
-    exact ⟨c, hc, b, mem_dedup_iff.mp hb⟩
+    exact ⟨c, hc, b, mem_dedup.mp hb⟩
   · rintro ⟨c, hc, b, hb⟩
-    exact ⟨dedup c, ⟨c, hc, rfl⟩, b, mem_dedup_iff.mpr hb⟩
+    exact ⟨dedup c, ⟨c, hc, rfl⟩, b, mem_dedup.mpr hb⟩
 
 /-- Clause deduplication preserves the occurring variable set. -/
 @[simp] theorem vars_toFinset_dedupClauses (φ : CNF V) :
@@ -375,7 +351,7 @@ theorem vars_length_map_dedup_le (φ : CNF V) :
   | nil => exact le_rfl
   | cons c ψ ih =>
     simp only [List.map_cons, Function.comp_apply, List.sum_cons]
-    exact Nat.add_le_add (length_dedup_clause_le c) ih
+    exact Nat.add_le_add (length_dedup_le c) ih
 
 /-- Clause deduplication does not increase total literal occurrences. -/
 theorem vars_length_dedupClauses_le (φ : CNF V) :
@@ -419,7 +395,7 @@ theorem occurrences_sublist_le {ψ φ : CNF V} (hsub : ψ <+ φ) (v : V) :
   funext c
   dsimp only [Function.comp_apply]
   rw [decide_eq_decide]
-  simp only [mem_dedup_iff]
+  simp only [mem_dedup]
 
 /-- Tautology elimination never increases clause occurrences. -/
 theorem occurrences_removeTautologies_le (φ : CNF V) (v : V) :
