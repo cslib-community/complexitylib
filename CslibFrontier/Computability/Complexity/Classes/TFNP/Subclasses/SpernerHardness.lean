@@ -480,9 +480,10 @@ private theorem tilePorts_tileKind {N : ℕ} {P S : ℕ → ℕ} {X Y : ℕ}
               intro hpx
               have ⟨ho', hs'⟩ := activeOut_of_activeIn hX hi
               exact hboth ⟨hpx ▸ ho', hpx ▸ hs'⟩
-            have hnot : (activeOut N P S Y && decide (S Y = X)) = false := by
-              cases ho : activeOut N P S Y <;> by_cases hs : S Y = X <;> simp_all
-            rw [if_neg (by rw [hnot]; exact Bool.false_ne_true)]
+            have hnot' : ¬(activeOut N P S Y = true ∧ decide (S Y = X) = true) := by
+              simp only [decide_eq_true_eq]
+              exact hboth
+            simp only [hnot', ↓reduceIte]
             rcases Nat.lt_trichotomy (P X) Y with hlt | heq | hgt
             · simp [hlt, Nat.not_lt.mpr hlt.le]
             · exact absurd heq hne
@@ -499,16 +500,16 @@ private theorem tilePorts_tileKind {N : ℕ} {P S : ℕ → ℕ} {X Y : ℕ}
     cases activeOut N P S Y <;> cases activeIn N P S X
     · rfl
     · refine Prod.ext rfl (Prod.ext rfl (Prod.ext ?_ ?_)) <;>
-        simp only [Bool.true_eq_false, ↓reduceIte] <;> split_ifs <;>
+        simp only [↓reduceIte] <;> split_ifs <;>
         first | rfl | (simp only [Bool.and_eq_true, Bool.not_eq_true',
           decide_eq_true_eq, decide_eq_false_iff_not] at *; omega)
     · refine Prod.ext ?_ (Prod.ext ?_ (Prod.ext rfl rfl)) <;>
-        simp only [Bool.true_eq_false, ↓reduceIte] <;> split_ifs <;>
-        first | rfl | (simp only [Bool.and_eq_true, Bool.not_eq_true',
+        simp only [↓reduceIte] <;> split_ifs <;>
+        first | rfl | (simp only [Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true',
           decide_eq_true_eq, decide_eq_false_iff_not] at *; omega)
     · refine Prod.ext ?_ (Prod.ext ?_ (Prod.ext ?_ ?_)) <;>
-        simp only [Bool.true_eq_false, ↓reduceIte] <;> split_ifs <;>
-        first | rfl | (simp only [Bool.and_eq_true, Bool.not_eq_true',
+        simp only [↓reduceIte] <;> split_ifs <;>
+        first | rfl | (simp only [Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true',
           decide_eq_true_eq, decide_eq_false_iff_not] at *; omega)
 
 private theorem eastPort_eq_westPort (N : ℕ) (P S : ℕ → ℕ) (X Y : ℕ) :
@@ -1074,6 +1075,7 @@ private theorem activeOut_eq_hasOut (inst : ℕ × CircuitCode × CircuitCode) {
   rcases inst with ⟨n, pCode, sCode⟩
   have hSlt : evalNat n sCode X < 2 ^ n := evalNat_lt n sCode X
   have h0lt : 0 < 2 ^ n := Nat.two_pow_pos n
+  dsimp only
   unfold activeOut hasOut
   rw [decide_eq_decide]
   have h1 : evalNat n pCode (evalNat n sCode X) = X ↔
@@ -1117,6 +1119,7 @@ private theorem activeIn_eq_hasIn (inst : ℕ × CircuitCode × CircuitCode) {X 
   rcases inst with ⟨n, pCode, sCode⟩
   have hPlt : evalNat n pCode X < 2 ^ n := evalNat_lt n pCode X
   have h0lt : 0 < 2 ^ n := Nat.two_pow_pos n
+  dsimp only
   unfold activeIn hasIn
   rw [decide_eq_decide]
   have h1 : evalNat n sCode (evalNat n pCode X) = X ↔
@@ -1522,8 +1525,10 @@ private theorem computableInPolyTime_colorFun :
       lsbValue (uv.take (n + 5)) < 16 * (2 ^ n + 1) ∧
       16 ≤ lsbValue ((uv.drop (n + 5)).take (n + 5)) ∧
       lsbValue ((uv.drop (n + 5)).take (n + 5)) < 16 * (2 ^ n + 1)
-  · simp [colorFun, eolInstN, eolInstP, eolInstS, graphInteriorColor, hbox]
-  · simp [colorFun, eolInstN, eolInstP, eolInstS, graphInteriorColor, marginTailColor_eq, hbox]
+  · simp only [colorFun, eolInstN, eolInstP, eolInstS, graphInteriorColor, hbox,
+      and_self, decide_true, ↓reduceIte]
+  · simp only [colorFun, eolInstN, eolInstP, eolInstS, graphInteriorColor, marginTailColor_eq,
+      hbox, ↓reduceIte]
     rfl
 
 private def decodeSol (p : (ℕ × CircuitCode × CircuitCode) × List Bool) : List Bool :=
@@ -1590,9 +1595,7 @@ private theorem computableInPolyTime_decodeSol :
   simp only [decodeSol, eolInstN]
   by_cases h1 : lsbValue (w.tail.take (n + 5)) < 16
   · simp [h1]
-  · by_cases h2 : lsbValue (w.tail.drop (n + 5)) < 16
-    · simp [h1, h2]
-    · simp [h1, h2]
+  · simp [h1]
 
 /-- `EndOfLine` reduces in polynomial time to `Sperner2D`. -/
 theorem EndOfLine_searchReducible_Sperner2D :
@@ -1620,7 +1623,8 @@ theorem EndOfLine_searchReducible_Sperner2D :
     let M := 2 ^ (n + 5)
     obtain ⟨hwlen, htri⟩ := hw
     have hwlen' : w.length = 2 * (n + 5) + 1 := hwlen
-    have htIn : InGrid M M (decodeTriangle (n + 5) w) := inGrid_decodeTriangle hwlen'
+    have htIn : InGrid M M (Sperner2D.decodeTriangle (n + 5) w) :=
+      Sperner2D.inGrid_decodeTriangle hwlen'
     have hN : 1 ≤ N := Nat.one_le_two_pow
     have hM : 16 * (N + 1) ≤ M := by
       have hpow : M = 32 * N := by
@@ -1633,8 +1637,8 @@ theorem EndOfLine_searchReducible_Sperner2D :
       simp only [Sperner2D.color, graphColor]
       split_ifs with hbd
       · rfl
-      · have hxlt : cx < M := by omega
-        have hylt : cy < M := by omega
+      · have hxlt : cx < M := by dsimp only [M] at hx ⊢; omega
+        have hylt : cy < M := by dsimp only [M] at hy ⊢; omega
         let uv := lowBits (n + 5) cx ++ lowBits (n + 5) cy
         have huv : uv.length = 2 * ((n, pCode, sCode).1 + 5) := by
           simp only [uv, List.length_append, length_lowBits]
@@ -1645,40 +1649,48 @@ theorem EndOfLine_searchReducible_Sperner2D :
             List.take_of_length_le (length_lowBits (n + 5) cy).le]
         simp only [colorFun, uv, List.take_left' (length_lowBits (n + 5) cx), htake,
           lsbValue_lowBits hxlt, lsbValue_lowBits hylt, outputColor_colorToBits]
-    have htriGraph : Trichromatic (graphColor N P S M) (decodeTriangle (n + 5) w) := by
+        rfl
+    have htriGraph : Trichromatic (graphColor N P S M) (Sperner2D.decodeTriangle (n + 5) w) := by
       intro k₁ k₂ heq
       have hbd (k : Fin 3) :
-          ((decodeTriangle (n + 5) w).corner k).1 ≤ M ∧
-          ((decodeTriangle (n + 5) w).corner k).2 ≤ M := by
+          ((Sperner2D.decodeTriangle (n + 5) w).corner k).1 ≤ M ∧
+          ((Sperner2D.decodeTriangle (n + 5) w).corner k).2 ≤ M := by
         have htIn' := htIn
-        rcases hdt : decodeTriangle (n + 5) w with ⟨_ | _, x, y⟩
-        · rw [hdt] at htIn'
-          dsimp only at htIn'
-          fin_cases k <;> simp only [corner] <;> exact ⟨by omega, by omega⟩
-        · rw [hdt] at htIn'
-          dsimp only at htIn'
-          fin_cases k <;> simp only [corner] <;> exact ⟨by omega, by omega⟩
+        rcases hdt : Sperner2D.decodeTriangle (n + 5) w with ⟨_ | _, x, y⟩ <;>
+          (rw [hdt] at htIn'; dsimp only [InGrid] at htIn';
+            fin_cases k <;> simp only [corner] <;> exact ⟨by omega, by omega⟩)
       apply htri
+      dsimp only [Function.comp_apply] at heq ⊢
       rw [hcolor_eq (hbd k₁).1 (hbd k₁).2, hcolor_eq (hbd k₂).1 (hbd k₂).2]
       exact heq
+    have hdrop : w.tail.drop (n + 5) = w.drop (n + 5 + 1) := by
+      cases w with
+      | nil => rfl
+      | cons _ _ => rfl
     rcases trichromatic_graphColor_imp hN hM htIn htriGraph with
       ⟨_, hy16, ho0⟩ | ⟨hx16, _, _, hy16, _, _, hXlt, hXne, hneq⟩
-    · have hcond : (decodeTriangle (n + 5) w).x < 16 ∨
-          (decodeTriangle (n + 5) w).y < 16 := .inr hy16
+    · have hcond : (Sperner2D.decodeTriangle (n + 5) w).x < 16 ∨
+          (Sperner2D.decodeTriangle (n + 5) w).y < 16 := .inr hy16
+      simp only [Sperner2D.decodeTriangle] at hcond
+      rw [hdrop] at hcond
       have hdec : decodeSol ((n, pCode, sCode), w) = zeroVertex n := by
-        simp [decodeSol, decodeTriangle, hcond]
+        simp only [decodeSol, hdrop]
+        exact ite_eq_left_iff.mpr fun h => absurd hcond h
       rw [hdec]
       refine endOfLineRel_zeroVertex_of_hasOut_eq_false ?_
       have h0lt : 0 < N := Nat.two_pow_pos n
       rw [← lowBits_zero_eq n, ← activeOut_eq_hasOut (n, pCode, sCode) h0lt]
       exact ho0
-    · have hxge : ¬ ((decodeTriangle (n + 5) w).x < 16 ∨
-          (decodeTriangle (n + 5) w).y < 16) := by
-        simp only [decodeTriangle] at hx16 hy16 ⊢
+    · have hxge : ¬ ((Sperner2D.decodeTriangle (n + 5) w).x < 16 ∨
+          (Sperner2D.decodeTriangle (n + 5) w).y < 16) := by
         omega
-      let X := (decodeTriangle (n + 5) w).x / 16 - 1
+      let X := (Sperner2D.decodeTriangle (n + 5) w).x / 16 - 1
+      have hxge' := hxge
+      simp only [Sperner2D.decodeTriangle] at hxge'
+      rw [hdrop] at hxge'
       have hdec : decodeSol ((n, pCode, sCode), w) = lowBits n X := by
-        simp [decodeSol, decodeTriangle, X, hxge]
+        simp only [decodeSol, hdrop, X, Sperner2D.decodeTriangle]
+        exact ite_eq_right_iff.mpr fun h => absurd h hxge'
       rw [hdec]
       have hulen : (lowBits n X).length = n := length_lowBits n X
       have hune : lowBits n X ≠ zeroVertex n := by
@@ -1686,14 +1698,16 @@ theorem EndOfLine_searchReducible_Sperner2D :
         intro heq
         apply hXne
         have h := congrArg lsbValue heq
-        simpa only [lsbValue_lowBits hXlt, lsbValue_lowBits (Nat.two_pow_pos n)] using h
-      simp only [EndOfLine, P, S] at *
+        dsimp only [X] at h
+        rw [lsbValue_lowBits hXlt, lsbValue_lowBits (Nat.two_pow_pos n)] at h
+        exact h
+      dsimp only [EndOfLine, endOfLineRel]
       have hin := (activeIn_eq_hasIn (n, pCode, sCode) hXlt).symm
       have hout := (activeOut_eq_hasOut (n, pCode, sCode) hXlt).symm
-      simp only [endOfLineRel]
       refine ⟨hulen, ?_⟩
-      rw [hin, hout]
-      simp [hune, bne_iff_ne, hneq]
+      dsimp only [X] at hune ⊢
+      rw [hin, hout, beq_iff_eq, decide_eq_true hune, bne_iff_ne]
+      exact hneq
 
 /-- `Sperner2D` is `PPAD`-hard under polynomial-time search reductions. -/
 theorem Sperner2D_searchHard : SearchHard @PPAD encSperner2D Sperner2D :=
