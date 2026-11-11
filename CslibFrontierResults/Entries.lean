@@ -1662,10 +1662,11 @@ register_result "anti-checker" where
     Cslib.MCSP.exists_lt_complexityOn,
     Cslib.MCSP.exists_ofFunction_notMem
   ]
-  scope := "Unconditional, nonuniform existence. If no m members of a family of fewer than 2^b \
-    functions on at most 2^m inputs have f as strict majority, 16 b inputs refute every member. \
-    For circuits with n <= m: if f needs more than m s gates plus those of strict majority on \
-    m bits, f needs more than s gates on some 16 b inputs. Ordered tuples give the share 1/16 \
+  scope := "Unconditional, nonuniform existence. For m > 0, if no m members of a family of \
+    fewer than 2^b functions on at most 2^m inputs have f as strict majority, some set of at \
+    most 16 b inputs refutes every member. For circuits with n <= m: if f needs more than m s \
+    gates plus those of strict majority on m bits, f needs more than s gates on some set of at \
+    most 16 b inputs. Ordered tuples give the share 1/16 \
     where the source gets 1/(2m). The efficient anti-checker lemma under NP ⊆ P/poly \
     (Oliveira–Pich–Santhanam Lemma 4.1) is not formalized."
 
@@ -1683,8 +1684,9 @@ register_result "natural-proofs" where
   scope := "Conditional. If a family of length-doubling generators with polynomial circuit \
     complexity is subexponentially secure against circuits (for long seeds of length k, \
     tests with at most 2^m gates, m^d <= k, have advantage at most 2^-m), then no \
-    P/poly-natural property is useful against P/poly. Tests are nonuniform circuits reading \
-    the whole truth table; the generator family is a hypothesis, not a constructed object."
+    P/poly-natural property is useful against P/poly. The generator tests are nonuniform \
+    circuits reading the 2k-bit outputs; the barrier's derived tests read whole truth tables \
+    of the GGM keyed family. The generator family is a hypothesis, not a constructed object."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
@@ -1729,7 +1731,8 @@ register_result "minkt-np" where
   topic := "meta-complexity"
   sources := [
     { paper := Ko1991, theorem := unverified, locator := unverified },
-    { paper := Hirahara2018, theorem := unverified, locator := "Definition 9" }
+    { paper := Hirahara2018, theorem := unverified, locator := "Definition 9" },
+    { paper := LiuPass2020, theorem := unverified, locator := "Section 2.2" }
   ]
   theorems := [
     Cslib.Kolmogorov.MINKT.mem_NP,
@@ -1739,7 +1742,8 @@ register_result "minkt-np" where
   scope := "Instances are a string with time and size thresholds in unary, and K^t is measured \
     with the library's multi-tape universal machine and step clock. Fixed thresholds t and s \
     computable in polynomial time in unary give an NP bit-string language. Membership only; \
-    NP-hardness of MINKT is not formalized. Hirahara's Definition 9 defines the problem."
+    NP-hardness of MINKT is not formalized. Hirahara's Definition 9 (after Ko) defines the \
+    problem, and the fixed-threshold MINKTAt follows Liu and Pass, Section 2.2."
 
 register_result "mktp-exp" where
   title := "MKtP, the minimum Levin Kt complexity problem, is in E and EXP"

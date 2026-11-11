@@ -752,8 +752,8 @@ Falk Hüffner. "Algorithm Engineering for Optimal Graph Bipartization." *Journal
 
 Yuval Ishai, Joe Kilian, Kobbi Nissim and Erez Petrank. "Extending Oblivious Transfers Efficiently." *Advances in Cryptology – CRYPTO 2003*, Lecture Notes in Computer Science 2729, 145–161, Springer, 2003. https://doi.org/10.1007/978-3-540-45146-4_9 . Bibliographic data from the DOI record; the full text was not inspected in this pass. The manual cites Section 3 for the semi-honest protocol (Figure 1) and Definition 1 for correlation robustness, as reported by secondary descriptions; theorem and lemma numbers are not claimed.
 
-<a id="ilango2020"></a>
-## ilango2020
+<a id="ilango2020focs"></a>
+## ilango2020focs
 
 Rahul Ilango. *Constant Depth Formula and Partial Function Versions of MCSP are Hard*. FOCS 2020, 424–433. https://doi.org/10.1109/FOCS46700.2020.00047 . Full version ECCC TR20-183. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter.
 

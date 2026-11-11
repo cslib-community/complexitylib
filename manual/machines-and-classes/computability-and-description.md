@@ -111,9 +111,9 @@ Mathlib defines relative computability inductively: `Nat.RecursiveIn O f` is the
 
 The description models support concrete membership theorems with visible parameter encodings:
 
-- [MINKT.mem_NP](../../CslibFrontier/Computability/Kolmogorov/MINKT.lean#L251) verifies a short program producing a specified word by a supplied time. The instance uses unary size and time bounds; the verifier's polynomial cost is measured in that encoded input length.
-- [MINcKT.mem_NP](../../CslibFrontier/Computability/Kolmogorov/MINcKT.lean#L228) adds an auxiliary condition, with the same explicit time/size convention.
-- [MKtP.mem_E](../../CslibFrontier/Computability/Kolmogorov/MKtP.lean#L317) places the library's Levin-style threshold problem in single-exponential time when the threshold is unary. It does not prove that arbitrary binary-threshold input has the same resource bound.
+- [MINKT.mem_NP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Kolmogorov/MINKT.lean#L251) verifies a short program producing a specified word by a supplied time. The instance uses unary size and time bounds; the verifier's polynomial cost is measured in that encoded input length.
+- [MINcKT.mem_NP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Kolmogorov/MINcKT.lean#L231) adds an auxiliary condition, with the same explicit time/size convention.
+- [MKtP.mem_E](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Kolmogorov/MKtP.lean#L328) places the library's Levin-style threshold problem in single-exponential time when the threshold is unary. It does not prove that arbitrary binary-threshold input has the same resource bound.
 
 Fixed-bound and gap/promise variants expose these conventions rather than treating the numerical parameters as free. Incompressibility, chain-rule, conditional-copy and computational-depth results concern these selected methods. Their hardness/cryptography applications cross into the programs-and-cryptography chapter; this chapter makes no claim that generic average-case assumptions or conjectured separations have been proved.
 
