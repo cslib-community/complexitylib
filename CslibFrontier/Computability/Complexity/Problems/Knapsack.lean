@@ -116,10 +116,11 @@ namespace SubsetSum
 
 /-- The reduction from `SubsetSum` to `Knapsack`: each number becomes an item with equal weight
 and value, and the target becomes both the capacity and the goal. -/
-def toKnapsack (x : List ℕ × ℕ) : List (ℕ × ℕ) × ℕ × ℕ := (x.1.map fun a => (a, a), x.2, x.2)
+def toKnapsack (x : SubsetSumInstance) : List (ℕ × ℕ) × ℕ × ℕ :=
+  (x.numbers.map fun a => (a, a), x.target, x.target)
 
 /-- **Correctness of the reduction to `Knapsack`.** -/
-theorem toKnapsack_mem_iff (x : List ℕ × ℕ) : toKnapsack x ∈ Knapsack ↔ x ∈ SubsetSum := by
+theorem toKnapsack_mem_iff (x : SubsetSumInstance) : toKnapsack x ∈ Knapsack ↔ x ∈ SubsetSum := by
   obtain ⟨l, t⟩ := x
   simp only [Knapsack, toKnapsack, mem_SubsetSum, Set.mem_ofPred_eq, ← Multiset.map_coe]
   constructor
@@ -135,8 +136,9 @@ theorem toKnapsack_mem_iff (x : List ℕ × ℕ) : toKnapsack x ∈ Knapsack ↔
 /-- The reduction to `Knapsack` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toKnapsack :
-    ComputableInPolyTime toKnapsack encSubsetSum encKnapsack :=
-  ((map (id'.prod id')).comp (fst _ _)).prod ((snd _ _).prod (snd _ _))
+    ComputableInPolyTime toKnapsack encSubsetSum encKnapsack := by
+  unfold toKnapsack
+  fun_prop
 
 end SubsetSum
 

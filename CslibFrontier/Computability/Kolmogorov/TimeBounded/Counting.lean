@@ -33,8 +33,9 @@ of `MCSP.truthTable` and of the partial tables of `PartialMCSP`.
 
 ## References
 
-The truth-table count is the counting step of the no case of the NP-hardness of partial `MINKT`
-[Hirahara2022, Theorem I.2]. Issue #4447 tracks that development.
+The truth-table count is used in the no case of the library's proof of the `MINKT*` clause of
+[Hirahara2022, Theorem I.2], where a count of programs replaces the source's argument. Issue #4447
+tracks that development.
 -/
 
 public section

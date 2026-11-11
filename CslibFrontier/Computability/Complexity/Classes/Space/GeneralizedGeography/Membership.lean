@@ -385,27 +385,28 @@ theorem alternation_foldl_step (G : Graph) :
 with `B` arcs and `n` declared vertex entries, replay `n + 1` blocks of `2 * B` single-bit moves
 from the start vertex, the first player to move; the existential player wins when the first player
 does. -/
-def verifier (x : (Graph × ℕ) × List Bool) : Bool :=
-  ((blocks x.1.1.2.length (x.1.1.1.length + 1) x.2).foldl (step x.1.1 x.1.1.2.length)
-    (none, true, [x.1.2], x.1.2)).1.getD false
+def verifier (x : GeneralizedGeographyInstance × List Bool) : Bool :=
+  ((blocks x.1.graph.2.length (x.1.graph.1.length + 1) x.2).foldl
+    (step x.1.graph x.1.graph.2.length) (none, true, [x.1.start], x.1.start)).1.getD false
 
 /-- The arcs and the declared vertex entries of a graph are no more than the length of the encoded
 instance. -/
-private theorem length_le_length_encode (x : Graph × ℕ) :
-    x.1.2.length ≤ (encPair encGraph encNat x).length ∧
-      x.1.1.length ≤ (encPair encGraph encNat x).length := by
-  have h₁ := length_le_length_encList (encPair encNat encNat) x.1.2
-  have h₂ := length_le_length_encList encNat x.1.1
+private theorem length_le_length_encode (x : GeneralizedGeographyInstance) :
+    x.graph.2.length ≤ (encGeneralizedGeography x).length ∧
+      x.graph.1.length ≤ (encGeneralizedGeography x).length := by
+  have h₁ := length_le_length_encList (encPair encNat encNat) x.graph.2
+  have h₂ := length_le_length_encList encNat x.graph.1
+  rw [encGeneralizedGeography_apply]
   enc_len [encGraph]
 
 /-- **The replay is a game verifier of Generalized Geography**, with `2 * (n + 1) ^ 2` single-bit
 moves on instances of encoded length `n`. -/
 theorem isGameVerifier_verifier :
-    IsGameVerifier (encPair encGraph encNat) ((Polynomial.X + 1) ^ 2) verifier
+    IsGameVerifier encGeneralizedGeography ((Polynomial.X + 1) ^ 2) verifier
       GeneralizedGeography := by
   rintro ⟨G, s⟩
-  set n := (encPair encGraph encNat (G, s)).length
-  obtain ⟨hB, hV⟩ := length_le_length_encode (G, s)
+  set n := (encGeneralizedGeography ⟨G, s⟩).length
+  obtain ⟨hB, hV⟩ := length_le_length_encode ⟨G, s⟩
   dsimp only at hB hV
   have hle : 2 * G.2.length * (G.1.length + 1) ≤
       2 * ((Polynomial.X + 1) ^ 2 : Polynomial ℕ).eval n := by
@@ -519,80 +520,91 @@ theorem length_encPlay_step_le (G : Graph) (B : ℕ) (st : Play) (block : List B
     · enc_len
 
 /-- The inputs of the verifier: a graph with a start vertex, and the moves. -/
-private abbrev encInput : (Graph × ℕ) × List Bool ↪ List Bool :=
-  encPair (encPair encGraph encNat) encBits
+private abbrev encInput : GeneralizedGeographyInstance × List Bool ↪ List Bool :=
+  encPair encGeneralizedGeography encBits
 
 /-- The inputs of a block of the replay: the input of the verifier, a play and a block. -/
-private abbrev encStep : (((Graph × ℕ) × List Bool) × Play) × List Bool ↪ List Bool :=
+private abbrev encStep :
+    (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) ↪ List Bool :=
   encPair (encPair encInput encPlay) encBits
 
 /-- **The replay is polynomial-time**: a fold over the blocks whose state grows by at most one
 vertex per block. -/
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
-  have hG : ComputableInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1) encInput
-      encGraph := by fun_prop
-  have hB : ComputableInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1.2.length) encInput
+    ComputableInPolyTime verifier (encPair encGeneralizedGeography encBits) encBool := by
+  have hG : ComputableInPolyTime
+      (fun x : GeneralizedGeographyInstance × List Bool => x.1.graph) encInput encGraph := by
+    fun_prop
+  have hB : ComputableInPolyTime
+      (fun x : GeneralizedGeographyInstance × List Bool => x.1.graph.2.length) encInput
       encUnary := (length_list _).comp ((snd _ _).comp hG)
-  have hR : ComputableInPolyTime (fun x : (Graph × ℕ) × List Bool => x.1.1.1.length + 1)
+  have hR : ComputableInPolyTime
+      (fun x : GeneralizedGeographyInstance × List Bool => x.1.graph.1.length + 1)
       encInput encUnary :=
     unary_add.comp (((length_list _).comp ((fst _ _).comp hG)).prod (const 1))
   have hblocks : ComputableInPolyTime
-      (fun x : (Graph × ℕ) × List Bool => blocks x.1.1.2.length (x.1.1.1.length + 1) x.2) encInput
-      (encList encBits) := by
+      (fun x : GeneralizedGeographyInstance × List Bool =>
+        blocks x.1.graph.2.length (x.1.graph.1.length + 1) x.2)
+      encInput (encList encBits) := by
     have h2B : ComputableInPolyTime
-        (fun p : ((Graph × ℕ) × List Bool) × ℕ => 2 * p.1.1.1.2.length)
-        (encPair encInput encUnary) encUnary := unary_mul.comp ((const 2).prod (hB.comp (fst _ _)))
+        (fun p : (GeneralizedGeographyInstance × List Bool) × ℕ => 2 * p.1.1.graph.2.length)
+        (encPair encInput encUnary) encUnary :=
+      unary_mul.comp ((const 2).prod (hB.comp (fst _ _)))
     unfold blocks
     exact mapWithInput (range.comp hR) (bitsTakeWithInput (bitsDropWithInput
       ((snd _ _).comp (fst _ _)) (unary_mul.comp (h2B.prod (snd _ _)))) h2B)
   have hinit : ComputableInPolyTime
-      (fun x : (Graph × ℕ) × List Bool => ((none, true, [x.1.2], x.1.2) : Play)) encInput
-      encPlay := by
+      (fun x : GeneralizedGeographyInstance × List Bool =>
+        ((none, true, [x.1.start], x.1.start) : Play))
+      encInput encPlay := by
     fun_prop
   have hstep : ComputableInPolyTime
-      (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
-        step p.1.1.1.1 p.1.1.1.1.2.length p.1.2 p.2)
+      (fun p : (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) =>
+        step p.1.1.1.graph p.1.1.1.graph.2.length p.1.2 p.2)
       encStep encPlay := by
     have hst : ComputableInPolyTime
-        (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) => p.1.2)
+        (fun p : (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) => p.1.2)
         encStep encPlay := by fun_prop
     have hX : ComputableInPolyTime
-        (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) => p.1.1)
+        (fun p : (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) => p.1.1)
         encStep encInput := by fun_prop
     have hbits : ComputableInPolyTime
-        (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
-          moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2)
+        (fun p : (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) =>
+          moverBits p.1.1.1.graph.2.length p.1.2.2.1 p.2)
         encStep (encList encBool) :=
       computableInPolyTime_moverBits (hB.comp hX) (by fun_prop) (snd _ _)
     have hpair : ComputableInPolyTime
-        (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
-          ((p.1.1.1.1, p.1.2), moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2))
+        (fun p : (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) =>
+          ((p.1.1.1.graph, p.1.2), moverBits p.1.1.1.graph.2.length p.1.2.2.1 p.2))
         encStep
         (encPair (encPair encGraph encPlay) (encList encBool)) :=
       ((hG.comp hX).prod hst).prod hbits
     have hnext : ComputableInPolyTime
-        (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) =>
-          next p.1.1.1.1 p.1.2.2.1 p.1.2.2.2.1 p.1.2.2.2.2
-            (moverBits p.1.1.1.1.2.length p.1.2.2.1 p.2))
+        (fun p : (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) =>
+          next p.1.1.1.graph p.1.2.2.1 p.1.2.2.2.1 p.1.2.2.2.2
+            (moverBits p.1.1.1.graph.2.length p.1.2.2.1 p.2))
         encStep encPlay := by
       have h := computableInPolyTime_next.comp hpair
       simp only [Function.comp_def] at h
       exact h
     have hsome : ComputableInPolyTime
-        (fun p : ((((Graph × ℕ) × List Bool) × Play) × List Bool) => p.1.2.1.isSome)
+        (fun p : (((GeneralizedGeographyInstance × List Bool) × Play) × List Bool) =>
+          p.1.2.1.isSome)
         encStep encBool := optionIsSome ((fst _ _).comp hst)
     unfold step
     exact ite' hsome hst hnext
   have hfold := foldlWithInput_of_bounded_growth (encA := encBits) (encL := encList encBits)
-    (step := fun x : (Graph × ℕ) × List Bool => step x.1.1 x.1.1.2.length) hinit
-    ⟨hblocks, hstep, inferInstance, inferInstance⟩
+    (step := fun x : GeneralizedGeographyInstance × List Bool =>
+      step x.1.graph x.1.graph.2.length)
+    hinit ⟨hblocks, hstep, inferInstance, inferInstance⟩
     (growth := fun x => 5 * (encInput x).length + 4)
     ⟨((PolyBounded.const 5).mul .self).add (.const 4),
       fun x st b _ => (length_encPlay_step_le _ _ st b).trans (by
-        have := length_le_encPair_left (encPair encGraph encNat) encBits x
-        have : (encInput x).length = (encPair (encPair encGraph encNat) encBits x).length := rfl
-        have := length_le_encPair_left encGraph encNat x.1
+        have := length_le_encPair_left encGeneralizedGeography encBits x
+        have : (encInput x).length = (encPair encGeneralizedGeography encBits x).length := rfl
+        have := length_le_encPair_left encGraph encNat (x.1.graph, x.1.start)
+        rw [← encGeneralizedGeography_apply] at this
+        dsimp only at this
         omega)⟩
   unfold verifier
   exact optionGetDWithInput ((fst _ _).comp hfold) (const false)
@@ -605,7 +617,8 @@ open GeneralizedGeography Turing.MultiTapeTM
 
 /-- **Generalized Geography is in `PSPACE`** [Sipser, Theorem 8.14][Sipser2013]: it is a game of
 polynomially many moves whose winning condition is polynomial-time. -/
-theorem GeneralizedGeography_mem_PSPACE : GeneralizedGeography ∈ PSPACE (encPair encGraph encNat) :=
+theorem GeneralizedGeography_mem_PSPACE :
+    GeneralizedGeography ∈ PSPACE encGeneralizedGeography :=
   isGameVerifier_verifier.mem_PSPACE computableInPolyTime_verifier
 
 end Cslib.Complexity
