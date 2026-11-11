@@ -21,7 +21,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
-import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
+import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
@@ -44,6 +44,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Transi
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
+import CslibFrontier.Computability.Complexity.Classes.PH.Yap
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
@@ -93,6 +94,7 @@ import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
+import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -489,7 +491,7 @@ register_result "middle-slice-mod-two" where
       locator := "p. 10:20" }
   ]
   theorems := [
-    Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two,
+    Cslib.Circuits.Boolean.Razborov.middleSlice_mem_P,
     Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two
   ]
   scope := "The language of bit strings of length n with exactly ⌈n/2⌉ - ⌊√(n + 1)⌋/10 zeros is \
@@ -497,7 +499,8 @@ register_result "middle-slice-mod-two" where
     circuits of NOT, unbounded fan-in AND/OR and MOD_2 gates of constant depth and polynomial \
     size decides it (nonuniform). Proved through a variant of Razborov's GF(2) rank property \
     (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
-    sketch, and Razborov's original paper was not checked for its hard function."
+    sketch, and Razborov's original paper was not checked for its hard function. The lower bound \
+    itself is middleSlice_notMem_AC0Mod_two in the imported module Razborov.MiddleSlice."
 
 register_result "rank-property-natural-ac0-2" where
   title := "Razborov's rank property is a P/poly-natural property useful against AC⁰[2]"
@@ -2970,6 +2973,51 @@ register_result "goemans-williamson-maxdicut" where
     reduction recovering α > 0.87856 on p. 1138. No SDP solver, finite-precision sampler, or \
     derandomization is formalized."
 
+register_result "quantum-value-adversary" where
+  title := "Ambainis: relational quantum adversary bound for non-Boolean input alphabets"
+  topic := "quantum complexity"
+  sources := [
+    { paper := Ambainis2002, theorem := "Theorem 6",
+      locator := "Section 6.1 (arXiv:quant-ph/0002066v1)" }
+  ]
+  theorems := [
+    Cslib.Quantum.norm_inner_valueOracle_valueOracle_ge,
+    Cslib.Quantum.one_sub_mul_sum_le_of_sq_le_value,
+    Cslib.Quantum.one_sub_mul_sqrt_le_two_mul_mul_sqrt_value,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_le_two_mul_mul_sqrt_value,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_le_two_mul_mul_sqrt_value_measureOut
+  ]
+  scope := "T-query quantum value-query algorithms over an arbitrary finite index type ι, \
+    arbitrary input alphabet α, finite value register V, finite workspace W, and arbitrary \
+    unitary oracle family step : α → (ℂ^V ≃ₗᵢ[ℂ] ℂ^V), with multi-outcome classical readout \
+    out : ι × V × W → β (both measureProb and PMF measureOut forms). Proves exact factor 2 \
+    without two-value diagonalization overhead: (1 - δ) √(m m') <= 2T √L and \
+    (1 - 2√(ε(1-ε))) √(m m') <= 2T √L."
+
+register_result "quantum-permutation-inversion" where
+  title := "Ambainis: Ω(√N) quantum query lower bound for inverting a permutation"
+  topic := "quantum complexity"
+  sources := [
+    { paper := Ambainis2002, theorem := "Theorem 7",
+      locator := "Section 6.2 (arXiv:quant-ph/0002066v1)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_sqrt_min_le_of_permInversion_partition,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_div_two_le_of_permInversion,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_div_two_le_of_permInversion_measureOut,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_sub_one_le_of_permInversion,
+    Cslib.Quantum.one_sub_two_mul_sqrt_mul_sqrt_card_le_of_permInversion,
+    Cslib.Quantum.permInversion_div_two_lower_bound,
+    Cslib.Quantum.permInversion_lower_bound,
+    Cslib.Quantum.permInversion_measureOut_lower_bound
+  ]
+  scope := "T-query quantum value-query algorithms over a finite index type ι, finite value \
+    register V, finite workspace W, and arbitrary unitary oracle family step : ι → (ℂ^V ≃ₗᵢ[ℂ] \
+    ℂ^V), outputting π.symm target via a classical readout out with failure probability at most \
+    ε <= 1/2 on every permutation π : Equiv.Perm ι. Proves (1 - 2√(ε(1-ε))) √⌊|ι|/2⌋ <= 2T, \
+    (1 - 2√(ε(1-ε))) √(|ι| - 1) <= 2√2 T, and (for 2 <= |ι|) (1 - 2√(ε(1-ε))) √|ι| <= 2√3 T, \
+    giving |ι| / 2 <= 1296 T² and |ι| <= 3888 T² at ε = 1/3."
+
 register_result "nayak-wu-counting" where
   title := "Nayak–Wu: quantum query lower bound for approximate counting"
   topic := "quantum complexity"
@@ -3121,3 +3169,27 @@ register_result "sperner-2d-ppad-completeness" where
     Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
+
+register_result "yap-collapse" where
+  title := "Yap's theorem: coNP in NP/poly collapses the polynomial hierarchy to Σ₃"
+  topic := "structural complexity"
+  sources := [
+    { paper := Yap1983, theorem := unverified, locator := unverified },
+    { paper := BodlaenderJansenKratsch2014, theorem := "Theorem 2",
+      locator := "p. 6 (arXiv v1)" }
+  ]
+  theorems := [
+    Cslib.Complexity.SigmaP_two_subset_NPPoly_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PiP_three_eq_SigmaP_three_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_UNSAT_mem_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_coNP_encBits_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_inter_PiP_three_of_coNP_subset_NPPoly
+  ]
+  scope := "Conditional collapse for arbitrary injective instance encodings. NPPoly uses a \
+    polynomially bounded bit-string advice function of the encoded input length read by a \
+    native polynomial-time NP verifier; PH uses polynomial-time alternating verifiers with \
+    exact polynomial block lengths. Under coNP ⊆ NP/poly (equivalently NP ⊆ coNP/poly, \
+    coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
+    decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
+    from Σ_k ⊆ Π_k/poly are not part of this entry."
