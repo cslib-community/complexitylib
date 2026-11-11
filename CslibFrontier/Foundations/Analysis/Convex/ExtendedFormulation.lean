@@ -375,12 +375,12 @@ theorem isExtendedFormulation_of_mul_eq_slackMatrix [Fintype ρ] [DecidableEq ρ
     rw [hA, Set.mem_ofPred_eq, ← hxy]
     exact le_add_of_nonneg_right fun i => dotProduct_nonneg_of_nonneg (fun k => hT i k) hy
 
-/-- **Extended formulations give nonnegative factorizations**: an extended formulation of a
-nontrivial polytope `P = {x | A *ᵥ x ≤ b} = conv (range V)` with inequalities indexed by `σ` gives
-a nonnegative factorization of its slack matrix through `σ`
-[FioriniMassarPokuttaTiwaryDeWolf2015, proof of Theorem 3, (iii) ⇒ (i)]. -/
-theorem IsExtendedFormulation.hasNonnegFactorization_slackMatrix [Finite ν]
-    (hEF : IsExtendedFormulation P E F g E' F' g') (hA : P = {x | A *ᵥ x ≤ b})
+/-- **Extended formulations give nonnegative factorizations**, even when `(A, b)` is only a family
+of valid inequalities for `P` rather than a complete inequality description: an extended formulation
+of a nontrivial polytope `P = conv (range V)` with valid inequalities `A *ᵥ x ≤ b` on `P` gives a
+nonnegative factorization of `A.slackMatrix b V` through `σ`. -/
+theorem IsExtendedFormulation.hasNonnegFactorization_slackMatrix_of_forall_le [Finite ν]
+    (hEF : IsExtendedFormulation P E F g E' F' g') (hA : ∀ x ∈ P, A *ᵥ x ≤ b)
     (hV : P = convexHull K (Set.range V)) (hP : P.Nontrivial) :
     (A.slackMatrix b V).HasNonnegFactorization σ := by
   classical
@@ -402,12 +402,23 @@ theorem IsExtendedFormulation.hasNonnegFactorization_slackMatrix [Finite ν]
           (fun j => by rw [neg_dotProduct, neg_le_neg_iff]; exact hjm j (Finset.mem_univ j))
           (hV ▸ hx)
         rwa [neg_dotProduct, neg_le_neg_iff] at this)
-      (hVP j₁) (hVP j₂) hj (A i) (b i) fun x hx => by rw [hA] at hx; exact hx i
+      (hVP j₁) (hVP j₂) hj (A i) (b i) fun x hx => hA x hx i
   choose l hl hlrow using hrow
   refine ⟨of fun i k => l i k, of fun k j => (g - (E *ᵥ V j + F *ᵥ w j)) k,
     fun i k => hl i k, fun k j => sub_nonneg.2 (hw j).1 k, Matrix.ext fun i j => ?_⟩
   rw [mul_apply', slackMatrix_apply, ← hlrow i _ _ (hw j).2]
   rfl
+
+/-- **Extended formulations give nonnegative factorizations**: an extended formulation of a
+nontrivial polytope `P = {x | A *ᵥ x ≤ b} = conv (range V)` with inequalities indexed by `σ` gives
+a nonnegative factorization of its slack matrix through `σ`
+[FioriniMassarPokuttaTiwaryDeWolf2015, proof of Theorem 3, (iii) ⇒ (i)]. -/
+theorem IsExtendedFormulation.hasNonnegFactorization_slackMatrix [Finite ν]
+    (hEF : IsExtendedFormulation P E F g E' F' g') (hA : P = {x | A *ᵥ x ≤ b})
+    (hV : P = convexHull K (Set.range V)) (hP : P.Nontrivial) :
+    (A.slackMatrix b V).HasNonnegFactorization σ :=
+  hEF.hasNonnegFactorization_slackMatrix_of_forall_le
+    (fun _ hx => by rwa [hA] at hx) hV hP
 
 /-- **Extension complexity is at most the nonnegative rank of the slack matrix**, for any
 `P = {x | A *ᵥ x ≤ b} = conv (range V)`. -/
@@ -417,13 +428,21 @@ theorem extensionComplexity_le_nonnegRank_slackMatrix [Finite μ]
   le_nonnegRank_iff.2 fun r ⟨_, _, hT, hU, hTU⟩ => by
     simpa using (isExtendedFormulation_of_mul_eq_slackMatrix hA hV hT hU hTU).extensionComplexity_le
 
+/-- **The nonnegative rank of a slack matrix of valid inequalities is at most the extension
+complexity**, for any nontrivial polytope `P = conv (range V)` with `A *ᵥ x ≤ b` valid on `P`. -/
+theorem nonnegRank_slackMatrix_le_extensionComplexity_of_forall_le [Finite ν]
+    (hA : ∀ x ∈ P, A *ᵥ x ≤ b) (hV : P = convexHull K (Set.range V)) (hP : P.Nontrivial) :
+    (A.slackMatrix b V).nonnegRank ≤ extensionComplexity P :=
+  le_extensionComplexity_iff.2 fun _ ⟨_, _, _, _, _, _, _, _, hEF⟩ => by
+    simpa using (hEF.hasNonnegFactorization_slackMatrix_of_forall_le hA hV hP).nonnegRank_le
+
 /-- **The nonnegative rank of the slack matrix is at most the extension complexity**, for a
 nontrivial polytope `P = {x | A *ᵥ x ≤ b} = conv (range V)`. -/
 theorem nonnegRank_slackMatrix_le_extensionComplexity [Finite ν]
     (hA : P = {x | A *ᵥ x ≤ b}) (hV : P = convexHull K (Set.range V)) (hP : P.Nontrivial) :
     (A.slackMatrix b V).nonnegRank ≤ extensionComplexity P :=
-  le_extensionComplexity_iff.2 fun _ ⟨_, _, _, _, _, _, _, _, hEF⟩ => by
-    simpa using (hEF.hasNonnegFactorization_slackMatrix hA hV hP).nonnegRank_le
+  nonnegRank_slackMatrix_le_extensionComplexity_of_forall_le
+    (fun _ hx => by rwa [hA] at hx) hV hP
 
 /-- **Yannakakis's factorization theorem.** The extension complexity of a nontrivial polytope
 `P = {x | A *ᵥ x ≤ b} = conv (range V)`, with finitely many inequalities and points, is the
