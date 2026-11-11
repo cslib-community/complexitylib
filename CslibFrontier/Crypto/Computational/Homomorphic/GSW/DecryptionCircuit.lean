@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.Evaluation
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.InnerProduct
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.Subtract
+import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.Bits
 import Mathlib.Data.List.GetD
@@ -164,10 +165,6 @@ private theorem phase_cast (x : BitString (inputWidth n w)) (hw : 0 < w) :
     Nat.cast_sub (Nat.le_of_lt (BitString.equivFin w b).isLt), ZMod.natCast_self]
   simp only [ha, hb, decryptionPhase, sub_eq_add_neg, add_comm, zero_add]
 
-private theorem testBit_wordValue (x : BitString w) (i : Fin w) :
-    (BitString.equivFin w x : ℕ).testBit i.val = x i := by
-  simpa only [BitVec.getLsbD, toNat_word_eq_equivFin] using getLsbD_word x i
-
 /-- Implement the actual width-zero, width-one and top-two-bit decoder cases. -/
 private def decodeWord (w : ℕ) : Circuit signature w 1 :=
   if h₀ : w = 0 then Circuit.oneGate (.const false) Fin.elim0
@@ -188,13 +185,13 @@ private theorem eval_decodeWord (x : BitString w) :
     · subst w
       simp only [decodeWord, Nat.one_ne_zero, ↓reduceDIte, Circuit.eval_wiring,
         Function.comp_apply, LWE.decode_one, hv]
-      exact (testBit_wordValue x 0).symm
+      exact (BitString.testBit_equivFin x 0).symm
     · have hw : 2 ≤ w := by omega
       rw [LWE.decode_eq_xor_highBits hw, hv]
       simp only [decodeWord, h₀, h₁, ↓reduceDIte, Formula.eval_toCircuit,
         Formula.eval_xor, Formula.eval_input]
-      rw [testBit_wordValue x ⟨w - 1, by omega⟩,
-        testBit_wordValue x ⟨w - 2, by omega⟩]
+      rw [BitString.testBit_equivFin x ⟨w - 1, by omega⟩,
+        BitString.testBit_equivFin x ⟨w - 2, by omega⟩]
 
 private theorem depth_decodeWord_le (w : ℕ) : (decodeWord w).depth ≤ 3 := by
   unfold decodeWord

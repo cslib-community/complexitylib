@@ -457,28 +457,31 @@ private theorem exists_equiv_of_mem_support_relabelDist {n n' : ℕ} {A : Fin n 
 
 /-- The message of the protocol for the secret bit `b`: a random relabeling of the second graph
 when `b` is `true`, of the first otherwise. -/
-noncomputable def message (x : Graph × Graph) (b : Bool) : ProbComp (List Bool) :=
-  relabelMessage (if b then x.2 else x.1)
+noncomputable def message (x : GraphIsomorphismInstance) (b : Bool) : ProbComp (List Bool) :=
+  relabelMessage (if b then x.second else x.first)
 
 /-- One round of the private-coin protocol of Goldreich, Micali and Wigderson: the verifier picks
 one of the two graphs at random, sends a random relabeling of it, and accepts when the prover
 names the graph it picked. -/
-noncomputable def round (x : Graph × Graph) : WordOracleComp Unit Bool := guessingRound (message x)
+noncomputable def round (x : GraphIsomorphismInstance) : WordOracleComp Unit Bool :=
+  guessingRound (message x)
 
 /-- The verifier: two sequential rounds. -/
-noncomputable def verifier (x : Graph × Graph) : WordOracleComp Unit Bool :=
+noncomputable def verifier (x : GraphIsomorphismInstance) : WordOracleComp Unit Bool :=
   sequentialRepeat 2 (round x)
 
 /-- The honest prover: name the graph of which the message is a possible relabeling. -/
-noncomputable def prover (x : Graph × Graph) : Prover Unit := guessingProver (message x)
+noncomputable def prover (x : GraphIsomorphismInstance) : Prover Unit := guessingProver (message x)
 
-private theorem eval_message (x : Graph × Graph) (b : Bool) : ProbComp.eval (message x b) =
-    relabelDist (if b then x.2 else x.1).distinctVertices.length
-      (adjFin (if b then x.2 else x.1)) := eval_relabelMessage _
+private theorem eval_message (x : GraphIsomorphismInstance) (b : Bool) :
+    ProbComp.eval (message x b) =
+      relabelDist (if b then x.second else x.first).distinctVertices.length
+        (adjFin (if b then x.second else x.first)) := eval_relabelMessage _
 
 /-- **Soundness of one round.** On isomorphic graphs every prover names the picked graph with
 probability at most `17 / 32`: one half, plus half the key collision probability. -/
-theorem acceptProb_round_le {x : Graph × Graph} (hx : x ∈ GraphIsomorphism) (P : Prover Unit) :
+theorem acceptProb_round_le {x : GraphIsomorphismInstance} (hx : x ∈ GraphIsomorphism)
+    (P : Prover Unit) :
     acceptProb (round x) P ≤ 17 / 32 := by
   obtain ⟨σ, hσ⟩ := mem_GraphIsomorphism_iff.1 hx
   refine (acceptProb_guessingRound_le (δ := 1 / 16) (fun f hf => ?_) P).trans_eq ?_
@@ -493,7 +496,8 @@ theorem acceptProb_round_le {x : Graph × Graph} (hx : x ∈ GraphIsomorphism) (
 
 /-- **Completeness of one round.** On non-isomorphic graphs the honest prover always names the
 picked graph. -/
-private theorem acceptProb_round_prover {x : Graph × Graph} (hx : x ∈ GraphNonIsomorphism) :
+private theorem acceptProb_round_prover {x : GraphIsomorphismInstance}
+    (hx : x ∈ GraphNonIsomorphism) :
     acceptProb (round x) (prover x) = 1 := by
   refine acceptProb_guessingProver fun m hm hm' => hx ?_
   simp only [eval_message] at hm hm'
@@ -508,14 +512,15 @@ theorem isInteractiveProof_round :
   sound _ hx P := acceptProb_round_le (not_not.1 hx) P
 
 /-- **Completeness.** On non-isomorphic graphs the honest prover passes both rounds. -/
-theorem acceptProb_verifier_prover {x : Graph × Graph} (hx : x ∈ GraphNonIsomorphism) :
+theorem acceptProb_verifier_prover {x : GraphIsomorphismInstance} (hx : x ∈ GraphNonIsomorphism) :
     acceptProb (verifier x) (prover x) = 1 :=
   le_antisymm (PMF.coe_le_one _ _) (le_of_eq_of_le (one_pow 2).symm
     (le_acceptProb_sequentialRepeat (prover x) (fun _ => (acceptProb_round_prover hx).ge) 2))
 
 /-- **Soundness.** On isomorphic graphs every prover passes both rounds with probability at most
 `(17 / 32) ^ 2`. -/
-theorem acceptProb_verifier_le {x : Graph × Graph} (hx : x ∈ GraphIsomorphism) (P : Prover Unit) :
+theorem acceptProb_verifier_le {x : GraphIsomorphismInstance} (hx : x ∈ GraphIsomorphism)
+    (P : Prover Unit) :
     acceptProb (verifier x) P ≤ (17 / 32) ^ 2 :=
   acceptProb_sequentialRepeat_le (acceptProb_round_le hx) 2 P
 
@@ -554,15 +559,16 @@ private theorem isPPTOn_relabelMessage {γ : Type} {input : γ ↪ List Bool} {G
 
 /-- The verifier is strict oracle PPT. -/
 theorem isOraclePPTOn_verifier :
-    IsOraclePPTOn (encPair encGraph encGraph) encBool verifier := by
-  have hmessage : IsPPTOn (encPair (encPair encGraph encGraph) encBool) encBits
+    IsOraclePPTOn encGraphIsomorphism encBool verifier := by
+  have hmessage : IsPPTOn (encPair encGraphIsomorphism encBool) encBits
       (fun p => message p.1 p.2) :=
-    isPPTOn_relabelMessage (G := fun p : (Graph × Graph) × Bool => if p.2 then p.1.2 else p.1.1)
+    isPPTOn_relabelMessage (G := fun p : GraphIsomorphismInstance × Bool =>
+        if p.2 then p.1.second else p.1.first)
       (by fun_prop)
   exact isOraclePPTOn_sequentialRepeat (isOraclePPTOn_guessingRound hmessage) 2
 
 /-- **Graph non-isomorphism has an interactive proof**, with perfect completeness. -/
-theorem mem_IP : GraphNonIsomorphism ∈ IP (encPair encGraph encGraph) := by
+theorem mem_IP : GraphNonIsomorphism ∈ IP encGraphIsomorphism := by
   refine mem_IP_of isOraclePPTOn_verifier isInteractiveProof_verifier
     (ENNReal.div_le_of_le_mul (by norm_num)) ?_
   have h1 : ((17 : ENNReal) / 32) = ((17 / 32 : NNReal) : ENNReal) := by
