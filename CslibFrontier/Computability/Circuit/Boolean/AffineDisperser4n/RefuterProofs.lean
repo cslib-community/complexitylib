@@ -17,9 +17,22 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Refu
 import all CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Refuter
 
 /-!
-# Refuter correctness and time bound
+# Correctness of the `4n - 10d` refuter
 
-Proofs for the deterministic refuter algorithm.
+Every step chosen by `chooseStep?` is a step of gate elimination adding no gate, or a preparatory
+operation removing a gate or lowering the auxiliary inputs of the minimal gate (`RefuterStep`). In
+either case `refuterMeasure` decreases, so `refuterLoop` reaches a terminal state, preserving the
+potential invariant `ΔW ≤ 10 Δa`. With `C.size + 10 * d < 4 * n`, the terminal state still has
+`d < a`, and `findCounterexample` succeeds (`RefuterSearch.lean`).
+
+## Main results
+
+* `Cslib.Circuits.Boolean.AffineDisperser4n.applyStep_valid`: one refuter step.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.refuterLoop_valid`: the refuter loop.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.refute_correct`: `refute` finds a disagreeing input
+  for any circuit of size `< 4n - 10d` and any `d`-affine disperser.
+
+The `poly(n, 2^d)` running time of the refuter is not formalized.
 -/
 
 public section

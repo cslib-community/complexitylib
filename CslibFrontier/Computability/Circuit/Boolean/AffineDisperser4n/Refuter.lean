@@ -13,10 +13,29 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n
 public import CslibFrontier.Computability.Complexity.Problems.XORSAT.Dense
 
 /-!
-# Deterministic polynomial-time refuter for `4n - 10d` circuits
+# Deterministic refuter for `4n - 10d` circuits
 
-This module implements the deterministic `poly(n, 2^d)`-time algorithm finding a disagreeing input
-for any full-basis circuit of size `< 4n - 10d` against a `d`-affine disperser.
+The refuter `refute` takes a full-basis circuit `C` and a Boolean function `f` and returns an
+input. `RefuterProofs.lean` proves (`refute_correct`) that `C` and `f` disagree on that input
+whenever `C.size + 10 * d < 4 * n` and `f` is a `d`-affine disperser. The `poly(n, 2^d)` running
+time of the source is not formalized here.
+
+`refute` runs gate elimination from `initialState C`. At each state `chooseStep?` selects one of
+the cases of `State.Valid.exists_step`, and `applyStep` performs the concrete successor that the
+corresponding lemma proves to be a step (`State.deleteConstraint`, `State.partnersShareChildStep`,
+`State.andOnPairStep`, …). None of these needs the disperser property. Where the existence proof
+uses it, `chooseStep?` stops instead: when the output is a constant, a parameter, an auxiliary
+variable over no gates, or the minimal gate. `findCounterexample` then searches `2^d` inputs of an
+affine subspace of dimension `d` on which the output is constant (affine representations of
+auxiliary variables are computed by dense `XORSAT` elimination, `evaluateAux`).
+
+## Main definitions
+
+* `Cslib.Circuits.Boolean.AffineDisperser4n.chooseStep?`,
+  `Cslib.Circuits.Boolean.AffineDisperser4n.applyStep`: choosing and performing a step.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.refuterLoop`,
+  `Cslib.Circuits.Boolean.AffineDisperser4n.findCounterexample`,
+  `Cslib.Circuits.Boolean.AffineDisperser4n.refute`: the refuter.
 -/
 
 @[expose] public section
