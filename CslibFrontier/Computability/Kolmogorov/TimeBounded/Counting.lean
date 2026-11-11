@@ -48,14 +48,8 @@ open DescriptionMethod
 time-bounded complexity at most `s`, for every step budget `t`. -/
 theorem encard_setOf_timeBoundedAt_le_lt {α : Type*} {enc : α → List Bool}
     (henc : enc.Injective) (t s : ℕ) :
-    {a | timeBoundedAt t (enc a) ≤ s}.encard < 2 ^ (s + 1) := by
-  rw [← henc.encard_image]
-  refine (Set.encard_le_encard ?_).trans_lt
-    (universalTM.encard_setOf_etimeBoundedComplexity_lt t (s + 1))
-  rintro _ ⟨a, ha, rfl⟩
-  change universalTM.etimeBoundedComplexity t (enc a) < ((s + 1 : ℕ) : ℕ∞)
-  rw [Nat.cast_add, Nat.cast_one, ENat.lt_add_one_iff (ENat.natCast_ne_top s)]
-  exact ha
+    {a | timeBoundedAt t (enc a) ≤ s}.encard < 2 ^ (s + 1) :=
+  universalTM.encard_setOf_etimeBoundedComplexity_le_lt henc t s
 
 /-- Under an injective encoding of a finite type into strings, fewer than `2 ^ (s + 1)` elements
 have encodings of time-bounded complexity at most `s`, for every step budget `t`. -/
