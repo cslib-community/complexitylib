@@ -156,7 +156,8 @@ theorem decode_inSpace : ComputableInSpace decode encBits encData (fun w => w.le
     (budget_prod (budget_comp_linear hu hd)
       (budget_comp_linear hn (budget_comp_linear hd hd)))
 
-private theorem header_inSpace : ComputableInSpace (fun s : State => decode s.header.reverse)
+/-- Decoding the reversed retained header is linear in the encoded runtime state. -/
+theorem header_inSpace : ComputableInSpace (fun s : State => decode s.header.reverse)
     encState encData (fun s => (encState s).length) :=
   budget_comp_linear decode_inSpace (budget_comp_linear bitsReverse (fst _ _).fst')
 

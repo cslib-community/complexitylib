@@ -187,21 +187,14 @@ theorem length_resume_le (enc : σ ↪ List Bool) (p : Runtime.Input)
 
 /-- Decoding the retained header uses native space linear in the charged state. -/
 theorem data_inSpace (enc : σ ↪ List Bool) : ComputableInSpace data (encState enc) encData
-    (fun s => (encState enc s).length) := by
-  have hr : ComputableInSpace List.reverse encBits encBits (fun w => w.length) :=
-    of_inO ComputableInDegree.bitsReverse.inO_one
-  unfold data
-  exact budget_comp_linear Runtime.decode_inSpace
-    (budget_comp_linear hr (fst _ _).fst'.fst')
+    (fun s => (encState enc s).length) :=
+  budget_comp_linear (f := fun s : State σ => s.1) Runtime.header_inSpace (fst _ _)
 
 /-- The virtual width is computed without allocating the virtual input. -/
 theorem width_inSpace (enc : σ ↪ List Bool) :
     ComputableInSpace (fun s : State σ => Evaluator.width (data s)) (encState enc) encNat
-      (fun s => (encState enc s).length) := by
-  have hl : ComputableInSpace List.length encBits encNat (fun w => w.length) :=
-    (of_inO ComputableInO.lengthNat).weaken (.of_le_linear 1 1 fun _ => by omega)
-  exact budget_natAdd (data_inSpace enc).fst'
-    (budget_comp_linear hl (data_inSpace enc).snd'.fst')
+      (fun s => (encState enc s).length) :=
+  budget_comp_linear Evaluator.width_data_inSpace (data_inSpace enc)
 
 /-- The optional-read adapter has a native certificate from the outer query certificate alone. -/
 theorem symbol_inSpace (enc : σ ↪ List Bool)

@@ -9,11 +9,13 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.Ladner.PolyTime
 public import CslibFrontier.Computability.Complexity.Classes.P.Countable
+public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.PolyTime
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Clocked
-import CslibFrontier.Computability.Complexity.Classes.Immune
+import CslibFrontier.Computability.Complexity.Classes.NP.Closure
+import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Partrec
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -30,7 +32,11 @@ Schöning's uniform diagonalization theorem [Schöning][Schoening1982]
 of sets of bit words, both closed under finite variations, and let `A₁ ∉ C₁` and `A₂ ∉ C₂` be
 decidable. Then some `G ∈ P` makes the set `G.ite A₁ A₂`, which agrees with `A₁` on `G` and with
 `A₂` off `G`, belong to neither class. This set is decidable, reduces to the marked union of `A₁`
-and `A₂`, and reduces to `A₂` when `A₁ ∈ P` and `A₂` is neither empty nor everything.
+and `A₂`, and reduces to `A₂` when `A₁ ∈ P` and `A₂` is neither empty nor everything. The two
+predicates on classes live in
+`CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable`, and the recursive
+presentation of `P` lives in
+`CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.PolyTime`.
 
 The proof is delayed diagonalization. Stage `k` separates the mixed set from the member of index
 `k / 2` of the first family (even `k`) or the second family (odd `k`). The words of length `n` are
@@ -46,9 +52,6 @@ machines run within polynomial clocks (`Cslib.Complexity.recursivelyPresentable_
 
 ## Main definitions
 
-* `Cslib.Complexity.RecursivelyPresentable`: the class of the sets `{a | F (i, a) = true}` for a
-  computable `F`, with the index `i` in unary.
-* `Cslib.Complexity.ClosedUnderFiniteVariation`: closure under finite symmetric differences.
 * `Cslib.Complexity.markedUnion`: `false :: x` for `x ∈ A₁` and `true :: x` for `x ∈ A₂`.
 
 ## Main results
@@ -59,8 +62,11 @@ machines run within polynomial clocks (`Cslib.Complexity.recursivelyPresentable_
 * `Cslib.Complexity.isDecidable_ite`, `Cslib.Complexity.polyTimeReducible_ite_markedUnion`,
   `Cslib.Complexity.polyTimeReducible_ite_of_mem_P`: the mixed set is decidable and reduces to the
   marked union, and to `A₂` when `A₁ ∈ P`.
-* `Cslib.Complexity.recursivelyPresentable_P`, `Cslib.Complexity.closedUnderFiniteVariation_P`:
-  `P` meets the hypotheses.
+* `Cslib.Complexity.polyTimeReducible_left_markedUnion`,
+  `Cslib.Complexity.polyTimeReducible_right_markedUnion`,
+  `Cslib.Complexity.polyTimeReducible_markedUnion`,
+  `Cslib.Complexity.isDecidable_markedUnion`,
+  `Cslib.Complexity.markedUnion_mem_NP`: reduction and closure properties of `markedUnion`.
 * `Cslib.Complexity.exists_mem_P_ite_notMem_P`: the theorem with `C₁ = P`.
 
 ## Implementation notes
@@ -70,8 +76,10 @@ the source statement. Decidable sets and presentations are computed by total nat
 (`Turing.MultiTapeTM.IsComputable`). The reduction to `A₂` takes a member and a non-member of
 `A₂` in place of the hypothesis that `A₂` is neither empty nor everything.
 
-Ladner's density theorem, the application to the polynomial-time degree of a decidable set
-outside `P`, is not formalized here: it needs a recursive presentation of that degree.
+Ladner's density theorem, obtained by presenting polynomial-time degrees and cones, is proved in
+`CslibFrontier.Computability.Complexity.Classes.Ladner.Density`, and recursive presentations of
+`NP`, `PSPACE`, `PH`, and `EXP` are in
+`CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.Classes`.
 
 ## References
 
@@ -422,25 +430,6 @@ theorem exists_mem_P_forall_ite_ne {A₁ A₂ : Set (List Bool)} (hA₁ : IsDeci
   · rw [hD]
     exact D_ne hS hinf false i
 
-/-- A class of sets is **recursively presentable** when it is the class of the sets
-`{a | F (i, a) = true}`, `i : ℕ`, for a computable `F`. Such a class is nonempty, so the empty class
-is not recursively presentable. -/
-@[expose] def RecursivelyPresentable {α : Type} (enc : α ↪ List Bool) (C : Set (Set α)) : Prop :=
-  ∃ F : ℕ × α → Bool, IsComputable F (encPair encUnary enc) encBool ∧
-    C = Set.range fun i => {a | F (i, a) = true}
-
-/-- A class of sets is **closed under finite variations** when it contains every set finitely
-different from one of its members. -/
-@[expose] def ClosedUnderFiniteVariation {α : Type} (C : Set (Set α)) : Prop :=
-  ∀ ⦃L L' : Set α⦄, L ∈ C → (L ∆ L').Finite → L' ∈ C
-
-/-- A set outside a class closed under finite variations is infinitely different from each of its
-members. -/
-theorem ClosedUnderFiniteVariation.infinite_symmDiff {α : Type} {C : Set (Set α)}
-    (hC : ClosedUnderFiniteVariation C) {A L : Set α} (hA : A ∉ C) (hL : L ∈ C) :
-    (A ∆ L).Infinite :=
-  fun hfin => hA (hC hL (symmDiff_comm A L ▸ hfin))
-
 /-- **Schöning's uniform diagonalization theorem.** Let `C₁`, `C₂` be recursively presentable
 classes of sets of words, closed under finite variations, and `A₁ ∉ C₁`, `A₂ ∉ C₂` decidable. Some
 `G ∈ P` makes the set agreeing with `A₁` on `G` and with `A₂` off `G` belong to neither class. -/
@@ -456,7 +445,7 @@ theorem exists_mem_P_ite_notMem {C₁ C₂ : Set (Set (List Bool))}
     (fun i => hv₁.infinite_symmDiff h₁ ⟨i, rfl⟩) (fun i => hv₂.infinite_symmDiff h₂ ⟨i, rfl⟩)
   exact ⟨G, hG, fun ⟨i, hi⟩ => (hne i).1 hi.symm, fun ⟨i, hi⟩ => (hne i).2 hi.symm⟩
 
-/-! ### The mixed set -/
+/-! ### The mixed set and marked union -/
 
 /-- **The mixed set is decidable** when `G`, `A₁` and `A₂` are. -/
 theorem isDecidable_ite {α : Type} {enc : α ↪ List Bool} {G A₁ A₂ : Set α}
@@ -465,11 +454,7 @@ theorem isDecidable_ite {α : Type} {enc : α ↪ List Bool} {G A₁ A₂ : Set 
   obtain ⟨g, hg, hG'⟩ := isDecidable_iff.mp hG
   obtain ⟨f₁, hf₁, hA₁'⟩ := isDecidable_iff.mp hA₁
   obtain ⟨f₂, hf₂, hA₂'⟩ := isDecidable_iff.mp hA₂
-  have hsel := IsComputable.of_finite (encIn := encPair encBool (encPair encBool encBool))
-    (encMid := encBool) fun p : Bool × Bool × Bool => if p.1 then p.2.1 else p.2.2
-  refine isDecidable_iff.mpr ⟨fun a => if g a then f₁ a else f₂ a,
-    hsel.comp (hg.prod (enc := encPair encBool (encPair encBool encBool))
-      (hf₁.prod (enc := encPair encBool encBool) hf₂)), fun a => ?_⟩
+  refine isDecidable_iff.mpr ⟨fun a => if g a then f₁ a else f₂ a, hg.ite hf₁ hf₂, fun a => ?_⟩
   by_cases ha : a ∈ G
   · simp [Set.ite, ha, (hG' a).mp ha, hA₁']
   · simp [Set.ite, ha, (Bool.not_eq_true _).mp (mt (hG' a).mpr ha), hA₂']
@@ -479,9 +464,102 @@ theorem isDecidable_ite {α : Type} {enc : α ↪ List Bool} {G A₁ A₂ : Set 
 @[expose] def markedUnion (A₁ A₂ : Set (List Bool)) : Set (List Bool) :=
   {w | ∃ x, (w = false :: x ∧ x ∈ A₁) ∨ (w = true :: x ∧ x ∈ A₂)}
 
+/-- Membership of `b :: x` in `markedUnion A₁ A₂` selects `A₁` for `false` and `A₂` for `true`. -/
 theorem cons_mem_markedUnion {A₁ A₂ : Set (List Bool)} {b : Bool} {x : List Bool} :
     b :: x ∈ markedUnion A₁ A₂ ↔ x ∈ if b then A₂ else A₁ := by
   cases b <;> simp [markedUnion]
+
+/-- The left summand `A` reduces to `markedUnion A B` by prepending `false`. -/
+theorem polyTimeReducible_left_markedUnion (A B : Set (List Bool)) :
+    PolyTimeReducible encBits encBits A (markedUnion A B) :=
+  ⟨fun w => false :: w, by fun_prop, fun w => (cons_mem_markedUnion (b := false)).symm⟩
+
+/-- The right summand `B` reduces to `markedUnion A B` by prepending `true`. -/
+theorem polyTimeReducible_right_markedUnion (A B : Set (List Bool)) :
+    PolyTimeReducible encBits encBits B (markedUnion A B) :=
+  ⟨fun w => true :: w, by fun_prop, fun w => (cons_mem_markedUnion (b := true)).symm⟩
+
+/-- `markedUnion A B` reduces in polynomial time to any `C` with a non-member `c₀ ∉ C` whenever
+both `A` and `B` reduce to `C`. -/
+theorem polyTimeReducible_markedUnion {A B C : Set (List Bool)}
+    (hAC : PolyTimeReducible encBits encBits A C)
+    (hBC : PolyTimeReducible encBits encBits B C)
+    {c₀ : List Bool} (hc₀ : c₀ ∉ C) :
+    PolyTimeReducible encBits encBits (markedUnion A B) C := by
+  obtain ⟨fA, hfA, hA⟩ := hAC
+  obtain ⟨fB, hfB, hB⟩ := hBC
+  let step : List Bool → List Bool := fun w =>
+    if w.isEmpty then c₀ else if w.headD false then fB w.tail else fA w.tail
+  have hstep : ComputableInPolyTime step encBits encBits := by
+    unfold step
+    fun_prop
+  refine ⟨step, hstep, fun w => ?_⟩
+  cases w with
+  | nil =>
+    simp only [step, List.isEmpty_nil, ↓reduceIte, hc₀, iff_false]
+    rintro ⟨x, ⟨h, -⟩ | ⟨h, -⟩⟩ <;> cases h
+  | cons b u =>
+    rw [cons_mem_markedUnion]
+    cases b <;> simp [step, hA u, hB u]
+
+/-- The marked union of two decidable sets of words is decidable. -/
+theorem isDecidable_markedUnion {A B : Set (List Bool)}
+    (hA : IsDecidable A encBits) (hB : IsDecidable B encBits) :
+    IsDecidable (markedUnion A B) encBits := by
+  obtain ⟨fA, hfA, hA'⟩ := hA.exists_isComputable
+  obtain ⟨fB, hfB, hB'⟩ := hB.exists_isComputable
+  let dec : List Bool → Bool := fun w =>
+    if w.isEmpty then false else if w.headD false then fB w.tail else fA w.tail
+  have hempty : ComputableInPolyTime List.isEmpty encBits encBool := by fun_prop
+  have hhead : ComputableInPolyTime (fun w : List Bool => w.headD false) encBits encBool := by
+    fun_prop
+  have htail : ComputableInPolyTime (fun w : List Bool => w.tail) encBits encBits := by fun_prop
+  have hfalse : ComputableInPolyTime (fun _ : List Bool => false) encBits encBool := .const false
+  refine isDecidable_iff.mpr ⟨dec, hempty.isComputable.ite hfalse.isComputable
+    (hhead.isComputable.ite (hfB.comp htail.isComputable) (hfA.comp htail.isComputable)),
+    fun w => ?_⟩
+  cases w with
+  | nil =>
+    simp only [dec, List.isEmpty_nil, ↓reduceIte, Bool.false_eq_true, iff_false]
+    rintro ⟨x, ⟨h, -⟩ | ⟨h, -⟩⟩ <;> cases h
+  | cons b u =>
+    rw [cons_mem_markedUnion]
+    cases b <;> simp [dec, hA' u, hB' u]
+
+/-- The marked union of two problems in `NP` on bit words belongs to `NP`. -/
+theorem markedUnion_mem_NP {A B : Set (List Bool)}
+    (hA : A ∈ NP encBits) (hB : B ∈ NP encBits) :
+    markedUnion A B ∈ NP encBits := by
+  have hL :
+      {w : List Bool | (w.isEmpty = false ∧ w.headD false = false) ∧ w.tail ∈ A} ∈ NP encBits := by
+    have h₁ : {w : List Bool | w.isEmpty = false ∧ w.headD false = false} ∈ P encBits :=
+      ⟨fun w => !w.isEmpty && !w.headD false, by fun_prop, fun w => by
+        cases w with
+        | nil => simp
+        | cons b u => cases b <;> simp⟩
+    have h₂ : {w : List Bool | w.tail ∈ A} ∈ NP encBits :=
+      PolyTimeReducible.mem_NP ⟨List.tail, by fun_prop, fun _ => Iff.rfl⟩ hA
+    exact inter_mem_NP (P_subset_NP h₁) h₂
+  have hR :
+      {w : List Bool | (w.isEmpty = false ∧ w.headD false = true) ∧ w.tail ∈ B} ∈ NP encBits := by
+    have h₁ : {w : List Bool | w.isEmpty = false ∧ w.headD false = true} ∈ P encBits :=
+      ⟨fun w => !w.isEmpty && w.headD false, by fun_prop, fun w => by
+        cases w with
+        | nil => simp
+        | cons b u => cases b <;> simp⟩
+    have h₂ : {w : List Bool | w.tail ∈ B} ∈ NP encBits :=
+      PolyTimeReducible.mem_NP ⟨List.tail, by fun_prop, fun _ => Iff.rfl⟩ hB
+    exact inter_mem_NP (P_subset_NP h₁) h₂
+  convert union_mem_NP hL hR using 1
+  ext w
+  cases w with
+  | nil =>
+    simp only [Set.mem_union, Set.mem_ofPred_eq, List.isEmpty_nil, Bool.true_eq_false, false_and,
+      or_self, iff_false]
+    rintro ⟨x, ⟨h, -⟩ | ⟨h, -⟩⟩ <;> cases h
+  | cons b u =>
+    rw [cons_mem_markedUnion]
+    cases b <;> simp
 
 /-- **The mixed set reduces to the marked union** when `G ∈ P`. -/
 theorem polyTimeReducible_ite_markedUnion {G A₁ A₂ : Set (List Bool)} (hG : G ∈ P encBits) :
@@ -509,84 +587,6 @@ theorem polyTimeReducible_ite_of_mem_P {α : Type} {enc : α ↪ List Bool} {G A
       · simp [Set.ite, ha, ha₁, (hG' a).mp ha, (Bool.not_eq_true _).mp (mt (hA₁' a).mpr ha₁),
           hy₀]
     · simp [Set.ite, ha, (Bool.not_eq_true _).mp (mt (hG' a).mpr ha)]
-
-/-! ### `P` is recursively presentable -/
-
-/-- **`P` is closed under finite variations.** -/
-theorem closedUnderFiniteVariation_P {α : Type} (enc : α ↪ List Bool) :
-    ClosedUnderFiniteVariation (P enc) := fun L L' hL hfin =>
-  symmDiff_symmDiff_cancel_left L L' ▸ symmDiff_mem_P hL hfin.mem_P
-
-namespace UniformDiagonalization
-
-open Ladner (runIndexed clock exists_index_of_mem_P)
-
-/-- The presentation of `P`: whether the machine with index `i` accepts `w` within its clock. -/
-def pIndexed (p : ℕ × List Bool) : Bool :=
-  decide (runIndexed p.1 p.2 (clock p.1 p.2.length) = ([eBit true], true))
-
-theorem setOf_pIndexed_mem_P (i : ℕ) : {w | pIndexed (i, w) = true} ∈ P encBits := by
-  have hc : ComputableInPolyTime (fun w : List Bool => clock i w.length) encBits encUnary :=
-    (unary_pow i).comp (by fun_prop)
-  have hd : ComputableInPolyTime (fun w : List Bool =>
-      decide (runIndexed i w (clock i w.length) = ([eBit true], true))) encBits encBool := by
-    fun_prop
-  exact ⟨fun w => pIndexed (i, w), hd, fun _ => Iff.rfl⟩
-
-theorem exists_setOf_pIndexed_eq {A : Set (List Bool)} (h : A ∈ P encBits) (B : ℕ) :
-    ∃ i, B ≤ i ∧ {w | pIndexed (i, w) = true} = A := by
-  obtain ⟨f, hf, i, hi, hrun⟩ := exists_index_of_mem_P h B
-  refine ⟨i, hi, Set.ext fun w => ?_⟩
-  rw [Set.mem_ofPred_eq, pIndexed, hrun, hf]
-  cases f w <;> decide
-
-/-- The presentation of `P` with the clock capped at `c`. -/
-private def pIndexedCap (p : (ℕ × List Bool) × ℕ) : Bool :=
-  decide (runIndexed p.1.1 p.1.2 (Ladner.capPow (2 * p.1.2.length + 2) p.1.1 p.2) =
-    ([eBit true], true))
-
-private theorem computableInPolyTime_pIndexedCap :
-    ComputableInPolyTime pIndexedCap (encPair (encPair encUnary encBits) encUnary) encBool := by
-  unfold pIndexedCap
-  fun_prop
-
-theorem clock_le_two_pow (i l : ℕ) : clock i l ≤ 2 ^ ((l + 1) * i) := by
-  rw [clock, pow_mul]
-  refine Nat.pow_le_pow_left ?_ i
-  have h : l + 1 ≤ 2 ^ l := Nat.lt_two_pow_self
-  rw [pow_succ]
-  omega
-
-/-- **The presentation of `P` is computable**, by running each machine within its clock, written
-in unary with an exponential padding. -/
-theorem isComputable_pIndexed : IsComputable pIndexed (encPair encUnary encBits) encBool := by
-  have hL : ComputableInPolyTime (fun p : ℕ × List Bool => (p.2.length + 1) * p.1)
-      (encPair encUnary encBits) encUnary := by fun_prop
-  obtain ⟨C, c, hpad, -⟩ := hL.exists_computableInO_unary_two_pow
-  have hpair := (isComputable_id (encPair encUnary encBits)).prod
-    (enc := encPair (encPair encUnary encBits) encUnary) hpad.isComputable
-  have h := computableInPolyTime_pIndexedCap.isComputable.comp hpair
-  have heq : pIndexed = pIndexedCap ∘ fun a => (id a, 2 ^ ((a.2.length + 1) * a.1)) := by
-    funext p
-    have hc := clock_le_two_pow p.1 p.2.length
-    rw [clock] at hc
-    simp only [Function.comp_apply, id, pIndexedCap, pIndexed, Ladner.capPow, clock,
-      min_eq_left hc]
-    rfl
-  rw [heq]
-  exact h
-
-end UniformDiagonalization
-
-open UniformDiagonalization
-
-/-- **`P` is recursively presentable**, by the machines run within polynomial clocks. -/
-theorem recursivelyPresentable_P : RecursivelyPresentable encBits (P encBits) := by
-  refine ⟨pIndexed, isComputable_pIndexed, Set.ext fun A => ⟨fun h => ?_, ?_⟩⟩
-  · obtain ⟨i, -, hi⟩ := exists_setOf_pIndexed_eq h 0
-    exact ⟨i, hi⟩
-  · rintro ⟨i, rfl⟩
-    exact setOf_pIndexed_mem_P i
 
 /-- **Schöning's theorem for `P` against a second class.** -/
 theorem exists_mem_P_ite_notMem_P {C : Set (Set (List Bool))}

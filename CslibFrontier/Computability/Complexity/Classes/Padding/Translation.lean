@@ -23,7 +23,9 @@ with `n < G n` computable in polynomial time in binary. A word `x` of length `m`
 length exactly `G m` by prefixing `G m - m - 1` ones and a zero. The padded problem accepts `y`
 when, after removing the leading ones and one zero, the remainder `x` satisfies `G |x| ≤ |y|` and
 lies in the original problem. The guard costs `O(|y|)` and the writer `O(G m)`, so the transfer
-loses only constant factors.
+loses only constant factors. Since `G` runs in polynomial time on binary input, `G m` has
+polylogarithmically many bits, so `G m ≤ 2 ^ polylog m`: padding is at most quasi-polynomial.
+Exponential bounds are handled by taking `f₁`, `f₂` exponential and `G` slowly growing.
 
 This is the translation (padding) argument of [Fortnow and Santhanam, §3.3,
 Lemma 5][FortnowSanthanam2006] for a general padding function, with all native costs proved. The

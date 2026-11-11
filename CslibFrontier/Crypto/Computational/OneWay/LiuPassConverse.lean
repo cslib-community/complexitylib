@@ -19,7 +19,7 @@ import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.UniformNat
 

@@ -32,10 +32,10 @@ The [automation reference](../design-and-assurance/automation.md) explains regis
 
 For binary sign-magnitude integers, import
 `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary`.
-The plain `ComputableInPolyTime.intBin_natAbs`, `intBin_isNeg`, `intBin_signMagnitude`,
-`intBin_prod` and `intBin_pow` rules compose through `fun_prop`; `intBin_pow'` accepts computed
+The plain `ComputableInPolyTime.intBin_*` rules (sign and magnitude, ring operations,
+comparisons, list sums and products, unary powers) compose through `fun_prop`; `intBin_pow'` accepts computed
 base and unary exponent certificates. The complete
-[IntBinary client](../../CslibFrontierTests/RationalHitting/IntBinary.lean) checks composed products, powers,
+[IntBinary client](../../CslibFrontierTests/RationalHitting/IntBinary.lean) checks composed ring operations, products, powers,
 magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
 the unary exponent encoding merely to make a goal match.
 

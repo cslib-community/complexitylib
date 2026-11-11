@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.TreeEval.Reader.Encode
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Tactic.Space
 
 /-!
 # Offsets of nodes within linear work space
@@ -114,10 +115,10 @@ theorem tableLength_inSpace :
   have hid : ComputableInSpace (fun ℓ : ℕ => ℓ) encNat encNat fun ℓ => 1024 * (ℓ + 1) :=
     (of_inO (ComputableInO.of_eq (f := id) fun _ => rfl)).weaken hl
   have hstep : ComputableInSpace (fun x : ℕ => x * 4) encNat encNat
-      fun x => 64 * ((encNat x).length + 1) :=
-    (budget_comp_lin natMul (linear_mul _) (budget_prod
-      (of_inO (ComputableInO.of_eq (f := id) fun _ => rfl))
-      (budget_const (encB := encNat) 4 (.refl _)))).weaken (.of_le fun x => by omega)
+      fun x => 64 * ((encNat x).length + 1) := by
+    have : (fun x => (encNat x).length) ≼ fun x => 64 * ((encNat x).length + 1) :=
+      .of_le fun _ => by omega
+    space
   have h := iterate (n := fun ℓ : ℕ => ℓ) hid (budget_const (encB := encNat) 1 hl) hstep
     (Q := fun ℓ => 64 * (2 * ℓ + 2)) (B := fun ℓ => 2 * ℓ + 1)
     (fun ℓ k hk => by rw [iterate_mul_four]; have := length_encNat_pow_four k; omega)
@@ -164,11 +165,7 @@ private theorem bodyLength_inSpace :
       fun q => 64 * ((encPair encNat encNat q).length + 1) := by
     have hl₀ : (fun q => (encPair encNat encNat q).length) ≼
         fun q => 64 * ((encPair encNat encNat q).length + 1) := .of_le fun _ => by omega
-    have hG := (fst encNat encNat).weaken hl₀
-    have hb := (snd encNat encNat).weaken hl₀
-    have h2b := budget_comp_lin natAdd linear_succ (budget_prod hb hb)
-    have hsum := budget_comp_lin natAdd linear_succ (budget_prod hG h2b)
-    exact (budget_prod hG hsum).of_enc_eq fun q => by simp [bodyStep, two_mul]
+    space [bodyStep]
   have hG := budget_comp tableLength_inSpace ((fst encNat encNat).weaken hl)
     (.of_le_linear 1 0 fun q => by omega)
   have hinit := budget_prod hG ((fst encNat encNat).weaken hl)

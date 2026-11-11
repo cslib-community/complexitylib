@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Opening
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import CslibFrontier.Probability.StatisticalDistance.Coupling
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Tactic.PMFSwap
 
 /-!
@@ -195,7 +195,6 @@ theorem simulatedOpening_coupled {State Output : Type} (A : Sender State) (k : â
       Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
       senderRun_eq, PMF.bind_map]
     pmf_swap
-    rfl
   Â· simp only [joint, simulatedOpening, Probability.PMF.monad_bind_eq_bind,
       Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
     pmf_swap
