@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.FPAUS.ExactSampler
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.ThresholdSearch
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import CslibFrontier.Logics.Propositional.CNF.Eval
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -222,7 +223,7 @@ theorem maxClauseScore_unsatFour : MaxSAT.maxClauseScore unsatFour = 3 := by
           rw [hb0, hb1]; decide
         have hcongr : unsatFour.countP (Clause.eval σ) =
             unsatFour.countP (Clause.eval (fun v => if v = 0 then σ 0 else σ 1)) :=
-          MaxSAT.countP_eval_congr fun v hv => by
+          Cslib.Logic.PL.CNF.countP_eval_congr fun v hv => by
             have hv01 : v = 0 ∨ v = 1 := by
               revert v hv; decide
             rcases hv01 with rfl | rfl <;> simp

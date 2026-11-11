@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Oracle.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Option
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
+import CslibFrontier.Logics.Propositional.CNF.Eval
 import CslibFrontier.Computability.Complexity.Classes.NP.Closure
 import CslibFrontier.Computability.Complexity.Classes.NP.Image
 import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
@@ -953,17 +954,6 @@ theorem mem_MaxSATThreshold_iff {q : MaxSATQuery} :
 
 namespace MaxSAT
 
-/-- Assignments agreeing on `φ.vars` satisfy the same number of clauses of `φ`. -/
-theorem countP_eval_congr {σ τ : ℕ → Bool} {φ : CNF ℕ} (h : ∀ v ∈ φ.vars, σ v = τ v) :
-    φ.countP (Clause.eval σ) = φ.countP (Clause.eval τ) := by
-  refine List.countP_congr fun c hc => ?_
-  have hc' : CNF.eval σ [c] = CNF.eval τ [c] := CNF.eval_congr fun v hv => by
-    obtain ⟨d, hd, b, hb⟩ := CNF.mem_vars.1 hv
-    rw [List.mem_singleton.1 hd] at hb
-    exact h v (CNF.mem_vars.2 ⟨c, hc, b, hb⟩)
-  simp only [CNF.eval_cons, CNF.eval_nil, Bool.and_true] at hc'
-  rw [hc']
-
 /-- Polynomial-time NP verifier for `MaxSATThreshold`. -/
 def thresholdVerifier (p : MaxSATQuery × List Bool) : Bool :=
   decide (p.1.target ≤ p.1.formula.countP (Clause.eval (SAT.assignment p.1.formula p.2)))
@@ -980,7 +970,7 @@ theorem isVerifier_threshold :
       exact h1.trans (length_le_encPair_left encCNF encNat (q.formula, q.target))
     refine ⟨q.formula.vars.map σ, by simpa using hvars, fun k => ?_⟩
     simp only [thresholdVerifier, decide_eq_true_eq]
-    refine hσ.trans (countP_eval_congr fun v hv => ?_).le
+    refine hσ.trans (CNF.countP_eval_congr fun v hv => ?_).le
     have hlt : q.formula.vars.idxOf v < q.formula.vars.length := List.idxOf_lt_length_iff.2 hv
     have hlt' : q.formula.vars.idxOf v < (q.formula.vars.map σ).length := by simpa using hlt
     rw [SAT.assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt',
@@ -1179,7 +1169,7 @@ theorem mem_MaxSATThreshold_applyPartial_iff {answers : List (Literal ℕ)}
       simp only [σ, hu, ↓reduceIte, lookupVar_eq_of_mem hnodup hmem]
     have hcongr : (applyPartial answers φ).countP (Clause.eval σ) =
         (applyPartial answers φ).countP (Clause.eval τ) :=
-      countP_eval_congr fun u hu => by
+      CNF.countP_eval_congr fun u hu => by
         have hnot : u ∉ answers.map Prod.fst := fun hm => not_mem_vars_applyPartial hm hu
         exact ite_eq_right_iff.mpr fun hm => absurd hm hnot
     refine ⟨σ, hagree, ?_⟩
@@ -1386,7 +1376,7 @@ theorem target_le_countP_recoverBits {D : MaxSATQuery → Bool} {q : MaxSATQuery
     exact hnodup_dv
   have hcongr : q.formula.countP (Clause.eval (SAT.assignment q.formula (recoverBits D q))) =
       q.formula.countP (Clause.eval σ) := by
-    refine countP_eval_congr fun v hv => ?_
+    refine CNF.countP_eval_congr fun v hv => ?_
     have hlt : q.formula.vars.idxOf v < q.formula.vars.length := List.idxOf_lt_length_iff.2 hv
     have hbits : SAT.assignment q.formula (recoverBits D q) v = lookupVar ans v := by
       rw [SAT.assignment, List.getD_eq_getElem?_getD, recoverBits, List.getElem?_map,

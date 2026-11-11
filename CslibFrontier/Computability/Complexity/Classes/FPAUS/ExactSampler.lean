@@ -1273,27 +1273,42 @@ private theorem computableInPolyTime_finishConditionalWalk (R : SelfReducible en
     cases s.active && decide (0 < s.countVal) && decide ([] ∈ W s.node) <;> rfl
 
 open ComputableInPolyTime in
+private theorem boundedConditionalSample_polyTime_helpers (R : SelfReducible enc W) :
+    ComputableInPolyTime (fun p : α × ℕ => p.2 + R.len p.1) (encPair enc encUnary) encUnary ∧
+    ComputableInPolyTime (fun pair : (α × ℕ) × ConditionalWalkState α => 
+      pair.2.active && decide (0 < pair.2.countVal))
+      (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encBool ∧
+    ComputableInPolyTime (fun pair : (α × ℕ) × ConditionalWalkState α => R.child pair.2.node true)
+      (encPair (encPair enc encUnary) (encConditionalWalkState enc)) enc := by
+  have hfuel : ComputableInPolyTime (fun p : α × ℕ => p.2 + R.len p.1)
+      (encPair enc encUnary) encUnary :=
+    unary_add' (snd enc encUnary) (R.len_polytime.comp (fst enc encUnary))
+  have hst := snd (encPair enc encUnary) (encConditionalWalkState enc)
+  have hnd := encConditionalWalkState_node_polyTime hst
+  have hcv := encConditionalWalkState_countVal_polyTime hst
+  have hact := encConditionalWalkState_active_polyTime hst
+  have hcond : ComputableInPolyTime
+      (fun pair : (α × ℕ) × ConditionalWalkState α =>
+        pair.2.active && decide (0 < pair.2.countVal))
+      (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encBool :=
+    bool_and' hact (binary_lt' (const 0) hcv)
+  have hy1 := R.child_polytime.comp (hnd.prod (const true))
+  exact ⟨hfuel, hcond, hy1⟩
+
+open ComputableInPolyTime in
+open ComputableInPolyTime in
+open ComputableInPolyTime in
 /-- **Strict PPT certificate for `boundedConditionalSample`** when `count` is polynomial-time. -/
 theorem isPPTOn_boundedConditionalSample (R : SelfReducible enc W) {count : α → ℕ}
     (hcount : ComputableInPolyTime count enc encNat) :
     IsPPTOn (encPair enc encUnary) (encOption encBits)
       (Function.uncurry (R.boundedConditionalSample count)) := by
-  have hfuel : ComputableInPolyTime (fun p : α × ℕ => p.2 + R.len p.1)
-      (encPair enc encUnary) encUnary :=
-    unary_add' (snd enc encUnary) (R.len_polytime.comp (fst enc encUnary))
+  obtain ⟨hfuel, hcond, hy1⟩ := R.boundedConditionalSample_polyTime_helpers
   have hstep : IsPPTOn (encPair (encPair enc encUnary) (encConditionalWalkState enc))
       (encConditionalWalkState enc)
       (fun pair => R.conditionalWalkStep count (pair.1.2 + R.len pair.1.1) pair.2) := by
     have hst := snd (encPair enc encUnary) (encConditionalWalkState enc)
-    have hnd := encConditionalWalkState_node_polyTime hst
     have hcv := encConditionalWalkState_countVal_polyTime hst
-    have hact := encConditionalWalkState_active_polyTime hst
-    have hcond : ComputableInPolyTime
-        (fun pair : (α × ℕ) × ConditionalWalkState α =>
-          pair.2.active && decide (0 < pair.2.countVal))
-        (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encBool :=
-      bool_and' hact (binary_lt' (const 0) hcv)
-    have hy1 := R.child_polytime.comp (hnd.prod (const true))
     have hc1 := hcount.comp hy1
     have hdraw := isPPTOn_sampleFinBounded hcv
       (hfuel.comp (fst (encPair enc encUnary) (encConditionalWalkState enc)))
