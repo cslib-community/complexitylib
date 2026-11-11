@@ -5904,6 +5904,7 @@ public import CslibFrontier.MachineLearning.StatisticalQuery.Parity
 public import CslibFrontier.MachineLearning.StatisticalQuery.Simulation
 public import CslibFrontier.MachineLearning.UniformLearning.AC0
 public import CslibFrontier.MachineLearning.UniformLearning.Basic
+public import CslibFrontier.MachineLearning.UniformLearning.BestOf
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses
