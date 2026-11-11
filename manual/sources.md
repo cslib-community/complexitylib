@@ -1471,10 +1471,20 @@ Bernhard von Stengel. "Equilibrium Computation for Two-Player Games in Strategic
 
 Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07. The authors' journal manuscript https://people.csail.mit.edu/virgi/tria-mmult-jv.pdf was consulted on 2026-11-08 for the negative triangle problem over a structure (Section 2), Theorem 4.1, Theorem 4.2, Lemma 4.1 and Lemma 4.2 (and its proof with parts of size `n^{1−a}`). Theorem and lemma numbers follow that manuscript.
 
+<a id="vzg13"></a>
+## vzg13
+
+Joachim von zur Gathen and Jürgen Gerhard. *Modern Computer Algebra*, 3rd edition, Cambridge University Press, 2013. https://doi.org/10.1017/CBO9781139856065 . Bibliographic metadata checked from the publisher record and Chapter 5 section listing (§5.8 "Cauchy interpolation" and §5.10 "Rational number reconstruction"); the full book text was not inspected, and no theorem or algorithm numbers are claimed.
+
 <a id="wagnerfischer74"></a>
 ## wagnerfischer74
 
 Robert A. Wagner and Michael J. Fischer. "The String-to-String Correction Problem." *Journal of the ACM* 21(1), 168–173, 1974. https://doi.org/10.1145/321796.321811 . The bibliographic data come from search summaries of the publisher record (2026-11-08). The full text is paywalled and was not inspected, so the paper's internal theorem and algorithm numbering is unverified and is not cited. The manual credits it with the edit-distance dynamic program under general letter costs, with traces (alignments) as the objects of minimum cost and with the `O(|x| |y|)` table, as these are standardly described.
+
+<a id="wang81"></a>
+## wang81
+
+Paul S. Wang. "A p-adic Algorithm for Univariate Partial Fractions." *Proceedings of the 1981 ACM Symposium on Symbolic and Algebraic Computation (SYMSAC '81)*, 212–217, ACM, 1981. https://doi.org/10.1145/800206.806398 . Bibliographic metadata checked from the ACM Digital Library record; the article text was not inspected, and no theorem or algorithm numbers are claimed.
 
 <a id="wattenhofer16"></a>
 ## wattenhofer16
