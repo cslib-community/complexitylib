@@ -969,7 +969,9 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FirstMome
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FourPath
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ImmRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.MatrixProduct
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.OfFintype
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Path
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.PathCount
@@ -980,6 +982,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.RankMeasu
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Schedule
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.SecondMoment
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.SliceSum
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum.LayerWeight
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum.Runs
@@ -1234,6 +1237,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Modular.Subtract
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.Subtract.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Multiplicity
 public import CslibFrontier.Computability.Circuit.Boolean.NaturalProof
+public import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.ConstDepth
 public import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 public import CslibFrontier.Computability.Circuit.Boolean.Nechiporuk
 public import CslibFrontier.Computability.Circuit.Boolean.NegationNormalForm
@@ -1258,6 +1262,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Propagation
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.RankProperty
+public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 public import CslibFrontier.Computability.Circuit.Boolean.ReadOnce
 public import CslibFrontier.Computability.Circuit.Boolean.Routing
 public import CslibFrontier.Computability.Circuit.Boolean.RoutingValues
@@ -2154,6 +2159,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.LocalMapCountin
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Histogram
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.PolyTime
+public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Reduction
 public import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 public import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.AssignSL
 public import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.Basic
@@ -4230,6 +4236,7 @@ public import CslibFrontier.Crypto.Primitives.PRG.NextBit
 public import CslibFrontier.Crypto.Primitives.PRG.Nisan
 public import CslibFrontier.Crypto.Primitives.PRG.Nisan.Bits
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson
+public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.AmpGeneratorCircuit
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.BitPolynomial
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Derandomization
@@ -5136,6 +5143,7 @@ public import CslibFrontier.Foundations.Data.List.ListsUpTo
 public import CslibFrontier.Foundations.Data.List.Lookup
 public import CslibFrontier.Foundations.Data.List.OfFn
 public import CslibFrontier.Foundations.Data.List.OfFnGetD
+public import CslibFrontier.Foundations.Data.List.OfFnPad
 public import CslibFrontier.Foundations.Data.List.OrderStatistic
 public import CslibFrontier.Foundations.Data.List.Palindrome
 public import CslibFrontier.Foundations.Data.List.Perm
@@ -5853,6 +5861,8 @@ public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Visits
 public import CslibFrontier.Logics.Propositional.CSP.ExactlyOne
 public import CslibFrontier.Logics.Propositional.CSP.FactorTable
 public import CslibFrontier.Logics.Propositional.CSP.HardCore
+public import CslibFrontier.Logics.Propositional.CSP.MaxCSP
+public import CslibFrontier.Logics.Propositional.CSP.MaxCSPSampling
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Enumeration
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
