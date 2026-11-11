@@ -21,7 +21,7 @@ WORKFLOWS = ['README.md', 'workflows/index.md', 'workflows/getting-started.md',
              'workflows/probabilistic-workflows.md', 'workflows/finding-results.md',
              'workflows/troubleshooting.md', 'workflows/contributing.md', 'COMMANDS.md']
 REFERENCE = [f'{s}/{n}.md' for s, names in base.ORDER[:-1] for n in names]
-HISTORY = [f'development-history/{n}.md' for n in base.ORDER[-1][1]]
+HISTORY = [f'history/{n}.md' for n in base.ORDER[-1][1]]
 APPENDICES = ['model-map.md', 'MAINTAINING.md', 'BUILD.md', 'workflows/agent-operations.md', 'index.md']
 FILES = WORKFLOWS + REFERENCE + HISTORY + APPENDICES
 STEM = 'cslib-frontier-operators-manual'
@@ -30,7 +30,7 @@ AGENT_FILES = ['AGENT_OPERATORS.md']
 HISTORICAL_REVISION = '13e6a31951bf1c89a1a6258c44f9444aecbbefd8'
 EXCLUDED_DIRECTORIES = {'_build', '_generated', '__pycache__'}
 # Bibliography bodies are rendered separately; the old paper plan is archival editorial context.
-NON_CHAPTER_DOCUMENTS = {'sources.md', 'paper-plan.md', 'AGENT_OPERATORS.md'}
+NON_CHAPTER_DOCUMENTS = {'sources.md', 'history/paper-plan.md', 'AGENT_OPERATORS.md'}
 CONVERTER_INPUTS = ['data/build_manual.py', 'data/build_latex.py', 'data/visuals.py']
 
 
@@ -238,7 +238,7 @@ def main():
         elif relative == REFERENCE[0]:
             parts.append(r'\part{Models, theorems, and design reference}' + '\n')
         elif relative == HISTORY[0]:
-            parts.append(r'\part{Historical development record}' + '\n')
+            parts.append(r'\part{History}' + '\n')
         elif relative == APPENDICES[0]:
             parts.append(r'\appendix' + '\n')
         path = ROOT / relative
