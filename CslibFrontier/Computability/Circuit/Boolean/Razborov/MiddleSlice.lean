@@ -31,8 +31,10 @@ gates from below by `2 ^ Ω(n ^ (1 / (2 d)))`. Hence the middle slice is not in 
 comparing with `a(n)` computed in unary from the length (`middleSlice_mem_P`), which separates
 `P` from AC⁰[2] (`exists_mem_P_notMem_AC0Mod_two`).
 
-`Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` gives the separation for odd primes through
-parity; this module covers `p = 2`, where parity is a single gate.
+For odd primes, parity separates `P` from AC⁰[p]; this module covers `p = 2`, where parity is a
+single gate. `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` combines the two for every prime,
+and `Cslib.Circuits.Boolean.Smolensky.majority_notMem_AC0Mod` uses the middle slice to show that
+majority is not in AC⁰[2].
 
 The lower bound follows the rank argument as recorded by
 [Razborov and Rudich, §3.2][RazborovRudich1997] and sketched for `p = 2` by
@@ -51,6 +53,8 @@ its choice of hard function.
 ## Main results
 
 * `Cslib.Circuits.Boolean.Razborov.middleSlice_mem_rankTest`: the slice passes the rank test.
+* `Cslib.Circuits.Boolean.Razborov.two_mul_two_pow_le_size_of_mem_rankTest_sliceLevel`: the
+  size–depth tradeoff for any function passing the rank test at level `sliceLevel m`.
 * `Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two`: the slice is not in AC⁰[2].
 * `Cslib.Circuits.Boolean.Razborov.middleSlice_mem_P`: the slice is in `P`.
 * `Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two`: `P ⊄ AC⁰[2]`.
@@ -109,6 +113,19 @@ private theorem le_sliceGap {m n : ℕ} (hn : 100 * m ^ 2 ≤ n + 1) : m ≤ sli
 theorem middleSlice_mem_rankTest (n : ℕ) : middleSlice n ∈ rankTest n (sliceLevel n) :=
   exactWeight_mem_rankTest _
 
+/-- **Size–depth tradeoff at the slice level**: on `m` inputs, a circuit of depth at most `d` with
+`MOD_2` gates computing a function that passes the rank test at level `sliceLevel m` has at least
+`2 · 2 ^ ℓ / (5 (m + 1))` gates, whenever `ℓ ≥ 1` and `100 (ℓ ^ d + 1)² ≤ m + 1`. -/
+theorem two_mul_two_pow_le_size_of_mem_rankTest_sliceLevel {m d ℓ : ℕ} (hℓ : 1 ≤ ℓ)
+    (hm : 100 * (ℓ ^ d + 1) ^ 2 ≤ m + 1) {f : BooleanFunction m}
+    (hf : f ∈ rankTest m (sliceLevel m)) {C : Circuit Unbounded.extSignature m 1}
+    (hC : C.Computes (Unbounded.extInterpretation (modGate 2)) (single f)) (hCd : C.depth ≤ d) :
+    2 * 2 ^ ℓ ≤ 5 * (m + 1) * C.size := by
+  have hgap : ℓ ^ d + 1 ≤ sliceGap m := le_sliceGap hm
+  have hdepth : ℓ ^ C.depth ≤ ℓ ^ d := Nat.pow_le_pow_right hℓ hCd
+  exact two_mul_two_pow_le_size_of_mem_rankTest (by omega) (hundred_mul_sliceGap_sq_le m) hf hC hℓ
+    (by omega)
+
 /-- **The middle slice is not in AC⁰[2]** [Razborov1987]: constant-depth, polynomial-size circuits
 of negations, unbounded fan-in conjunctions and disjunctions, and `MOD_2` gates do not decide it. -/
 theorem middleSlice_notMem_AC0Mod_two : Language.ofSlices middleSlice ∉ AC0Mod 2 := by
@@ -122,10 +139,8 @@ theorem middleSlice_notMem_AC0Mod_two : Language.ofSlices middleSlice ∉ AC0Mod
   set n := 100 * (ℓ ^ d + 1) ^ 2 with hn
   obtain ⟨C, hCc, hCd, hCs⟩ := hC n
   rw [Language.slice_ofSlices] at hCc
-  have hgap : ℓ ^ d + 1 ≤ sliceGap n := le_sliceGap (by omega)
-  have hdepth : ℓ ^ C.depth ≤ ℓ ^ d := Nat.pow_le_pow_right hℓ hCd
-  have htrade := two_mul_two_pow_le_size_of_mem_rankTest (by omega) (hundred_mul_sliceGap_sq_le n)
-    (middleSlice_mem_rankTest n) hCc hℓ (by omega)
+  have htrade := two_mul_two_pow_le_size_of_mem_rankTest_sliceLevel hℓ (by omega)
+    (middleSlice_mem_rankTest n) hCc hCd
   have hsz : 5 * (n + 1) * C.size ≤ 5 * (n + 1) * size n := Nat.mul_le_mul_left _ hCs
   have hlt' : 5 * (n + 1) * size n < 2 ^ ℓ := hlt
   omega
@@ -163,8 +178,8 @@ theorem middleSlice_mem_P : (Language.ofSlices middleSlice : Set (List Bool)) �
   exact ComputableInPolyTime.unary_eq' hcount (ComputableInPolyTime.unary_sub' hlen hlevel)
 
 /-- **Unconditional separation `P ⊄ AC⁰[2]`**: the middle slice is in `P` and not in AC⁰[2]
-[Razborov1987]. Together with `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` for odd primes,
-`P ⊄ AC⁰[p]` holds for every prime `p`. -/
+[Razborov1987]. `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` combines it with parity for odd
+primes, giving `P ⊄ AC⁰[p]` for every prime `p`. -/
 theorem exists_mem_P_notMem_AC0Mod_two :
     ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧ L ∉ AC0Mod 2 :=
   ⟨_, middleSlice_mem_P, middleSlice_notMem_AC0Mod_two⟩
