@@ -53,7 +53,7 @@ instance encoding.
   classes*][KarpLipton1980]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 
