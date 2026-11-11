@@ -8,11 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.FunctionTime
-public import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
-public import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
+import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
+import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -51,18 +51,17 @@ exponent loss (`DecidableInExpTime.of_computableInExpTime_polyBounded`,
 `k`, `SharpETH ↔ 0 < sharpSatExponent 3`, `SharpSETH ↔ Tendsto sharpSatExponent atTop (𝓝 1)`, and
 clause-measured counting rates transfer to variable-measured counting rates through disjoint
 counting sparsification (`exists_computableInExpTime_SharpKSAT_numVars_of_length`,
-`SharpETH_iff_not_computableInSubexpTime_length`).
-
-Finally, `CountingNativeEndpoint.exists_modelCounter` supplies unconditional subexponential
-counting for every fixed width `k`, yielding `sharpSatExponent k = 0`, `¬SharpETH`, and
-`¬SharpSETH`. As with `ETH` and `SETH`, all positive algorithm-transfer and exponent-comparison
-theorems hold unconditionally without assuming the refuted hypotheses.
+`SharpETH_iff_not_computableInSubexpTime_length`). In addition, `SETH → ETH` (`SETH.eth`) follows
+unconditionally via `toThreeSAT` clause-splitting and `3`-SAT sparsification, and
+`unrestrictedSatExponent` separates unbounded-width `SAT` from fixed-width `SETH`.
 
 ## Main definitions
 
 * `Cslib.Complexity.ComputableInTimeO`, `Cslib.Complexity.ComputableInExpTime`,
   `Cslib.Complexity.ComputableInSubexpTime`: parameterized time bounds for functions.
-* `Cslib.Complexity.SharpKSAT`, `Cslib.Complexity.sharpSatExponent`: `#k-SAT` and its exponent.
+* `Cslib.Complexity.SharpKSAT`, `Cslib.Complexity.sharpSatExponent`,
+  `Cslib.Complexity.unrestrictedSatExponent`: `#k-SAT`, its exponent, and the unrestricted `SAT`
+  exponent.
 * `Cslib.Complexity.SharpETH`, `Cslib.Complexity.SharpSETH`: the counting exponential time
   hypotheses.
 
@@ -79,13 +78,14 @@ theorems hold unconditionally without assuming the refuted hypotheses.
 * `Cslib.Complexity.sharpSatExponent_nonneg`, `Cslib.Complexity.sharpSatExponent_le_one`,
   `Cslib.Complexity.sharpSatExponent_mono`, `Cslib.Complexity.satExponent_le_sharpSatExponent`:
   `0 ≤ s_k ≤ s^#_k ≤ 1` and monotonicity in `k`.
+* `Cslib.Complexity.satExponent_eq_sInf_pos`, `Cslib.Complexity.sharpSatExponent_eq_sInf_pos`,
+  `Cslib.Complexity.SETH_iff_iSup_ge_three_eq_one`,
+  `Cslib.Complexity.SharpSETH_iff_iSup_ge_three_eq_one`, `Cslib.Complexity.SETH.eth`: positive-`δ`
+  infima, finite-prefix suprema, and `SETH → ETH`.
 * `Cslib.Complexity.SharpETH_iff_sharpSatExponent_pos`,
   `Cslib.Complexity.SharpSETH_iff_tendsto`,
   `Cslib.Complexity.SharpETH_iff_not_computableInSubexpTime_length`: exponent and clause-rate
   characterizations.
-* `Cslib.Complexity.computableInSubexpTime_SharpKSAT`,
-  `Cslib.Complexity.sharpSatExponent_eq_zero`, `Cslib.Complexity.not_SharpETH`,
-  `Cslib.Complexity.not_SharpSETH`: unconditional consequences of the native model counter.
 
 ## References
 
@@ -94,7 +94,6 @@ theorems hold unconditionally without assuming the refuted hypotheses.
   complexity?*][ImpagliazzoPaturiZane2001]
 * [M. Cygan, F. V. Fomin, Ł. Kowalik, D. Lokshtanov, D. Marx, M. Pilipczuk, M. Pilipczuk,
   S. Saurabh, *Parameterized Algorithms*][CyganEtAl2015]
-* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH]
 -/
 
 public section
@@ -708,8 +707,11 @@ theorem SharpKSAT_computableInExpTime_one (k : ℕ) :
 theorem DecidableInExpTime.KSAT_of_SharpKSAT {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ) :
     DecidableInExpTime (KSAT k) encCNF CNF.numVars δ := by
+  have hpos : ComputableInPolyTime (fun n : ℕ => decide (0 < n)) encNat encBool :=
+    ComputableInPolyTime.binary_lt.comp
+      ((ComputableInPolyTime.const 0).prod ComputableInPolyTime.id')
   have hdec := DecidableInExpTime.of_computableInExpTime_polyBounded hδ h
-    (polyBounded_length_encNat_SharpKSAT k) computableInPolyTime_pos_nat
+    (polyBounded_length_encNat_SharpKSAT k) hpos
   have heq : {φ : CNF ℕ | decide (0 < SharpKSAT k φ) = true} = KSAT k := by
     ext φ
     simp only [Set.mem_ofPred_eq, decide_eq_true_eq, mem_KSAT_iff_pos_SharpKSAT]
@@ -883,6 +885,204 @@ theorem SETH.sharpSETH (h : SETH) : SharpSETH := by
   · obtain ⟨k, hk⟩ := h ε hε
     exact ⟨k, fun hcount => hk (DecidableInExpTime.KSAT_of_SharpKSAT (by linarith) hcount)⟩
 
+/-! ### Positive-rate infima, finite-prefix suprema, `SETH → ETH`, and unrestricted `SAT` -/
+
+/-- For any upward-closed predicate `P : ℝ → Prop` holding at `1`, the infimum over `δ ≥ 0` agrees
+with the infimum over strictly positive rates `δ > 0`. -/
+theorem csInf_nonneg_eq_csInf_pos {P : ℝ → Prop}
+    (hmono : ∀ ⦃δ δ' : ℝ⦄, δ ≤ δ' → P δ → P δ') (h1 : P 1) :
+    sInf {δ : ℝ | 0 ≤ δ ∧ P δ} = sInf {δ : ℝ | 0 < δ ∧ P δ} := by
+  have hne_pos : {δ : ℝ | 0 < δ ∧ P δ}.Nonempty := ⟨1, one_pos, h1⟩
+  have hne_nn : {δ : ℝ | 0 ≤ δ ∧ P δ}.Nonempty := ⟨1, zero_le_one, h1⟩
+  have hbdd_pos : BddBelow {δ : ℝ | 0 < δ ∧ P δ} := ⟨0, fun _ h => h.1.le⟩
+  have hbdd_nn : BddBelow {δ : ℝ | 0 ≤ δ ∧ P δ} := ⟨0, fun _ h => h.1⟩
+  refine le_antisymm
+    (csInf_le_csInf hbdd_nn hne_pos fun _ h => ⟨h.1.le, h.2⟩)
+    (le_csInf hne_nn fun δ ⟨hδ, hP⟩ => ?_)
+  by_contra hlt
+  rw [not_le] at hlt
+  set ε : ℝ := (sInf {r : ℝ | 0 < r ∧ P r} - δ) / 2
+  have hε : 0 < ε := by dsimp only [ε]; linarith
+  have hmem : δ + ε ∈ {r : ℝ | 0 < r ∧ P r} :=
+    ⟨by linarith, hmono (by linarith) hP⟩
+  have hle := csInf_le hbdd_pos hmem
+  dsimp only [ε] at hle
+  linarith
+
+/-- `satExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
+theorem satExponent_eq_sInf_pos (k : ℕ) :
+    satExponent k = sInf {δ : ℝ | 0 < δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ} :=
+  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle) (KSAT_decidableInExpTime_one k)
+
+/-- `sharpSatExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
+theorem sharpSatExponent_eq_sInf_pos (k : ℕ) :
+    sharpSatExponent k =
+      sInf {δ : ℝ | 0 < δ ∧ ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ} :=
+  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle) (SharpKSAT_computableInExpTime_one k)
+
+/-- Dropping any finite prefix `k < K` of a monotone bounded sequence `s : ℕ → ℝ` preserves its
+supremum. -/
+theorem iSup_ge_eq_iSup_of_monotone {s : ℕ → ℝ} (hmono : Monotone s) {B : ℝ}
+    (hbdd : ∀ k, s k ≤ B) (K : ℕ) :
+    (⨆ k : {k : ℕ // K ≤ k}, s k.val) = ⨆ k : ℕ, s k := by
+  have : Nonempty {k : ℕ // K ≤ k} := ⟨⟨K, le_rfl⟩⟩
+  have hBdd : BddAbove (Set.range s) := ⟨B, Set.forall_mem_range.mpr hbdd⟩
+  have hBddK : BddAbove (Set.range fun k : {k : ℕ // K ≤ k} => s k.val) :=
+    ⟨B, Set.forall_mem_range.mpr fun k => hbdd k.val⟩
+  refine le_antisymm
+    (ciSup_le fun k => le_ciSup hBdd k.val)
+    (ciSup_le fun k => (hmono (Nat.le_max_left k K)).trans
+      (le_ciSup hBddK ⟨max k K, Nat.le_max_right k K⟩))
+
+/-- A monotone sequence bounded above by `1` tends to `1` iff its supremum equals `1`. -/
+theorem tendsto_atTop_nhds_one_iff_iSup_eq_one {s : ℕ → ℝ} (hmono : Monotone s)
+    (hbdd : ∀ k, s k ≤ 1) :
+    Tendsto s atTop (𝓝 1) ↔ (⨆ k : ℕ, s k) = 1 := by
+  have hBdd : BddAbove (Set.range s) := ⟨1, Set.forall_mem_range.mpr hbdd⟩
+  constructor
+  · intro htend
+    refine le_antisymm (ciSup_le hbdd) ?_
+    by_contra hlt
+    rw [not_le] at hlt
+    set ε : ℝ := (1 - ⨆ k : ℕ, s k) / 2
+    have hε : 0 < ε := by dsimp only [ε]; linarith
+    obtain ⟨k, hk⟩ := (htend.eventually (lt_mem_nhds (by linarith : 1 - ε < 1))).exists
+    have hle : s k ≤ ⨆ m : ℕ, s m := le_ciSup hBdd k
+    dsimp only [ε] at hk
+    linarith
+  · intro hsup
+    rw [Metric.tendsto_atTop]
+    intro ε hε
+    have hex : ∃ K : ℕ, 1 - ε < s K := by
+      by_contra hall
+      simp only [not_exists, not_lt] at hall
+      have hle : (⨆ k : ℕ, s k) ≤ 1 - ε := ciSup_le hall
+      linarith
+    obtain ⟨K, hK⟩ := hex
+    refine ⟨K, fun k hk => ?_⟩
+    have h1 : 1 - ε < s k := hK.trans_le (hmono hk)
+    have h2 : s k ≤ 1 := hbdd k
+    rw [Real.dist_eq, abs_sub_lt_iff]
+    constructor <;> linarith
+
+/-- Dropping any finite prefix `k < K` leaves `⨆ k, satExponent k` unchanged. -/
+theorem iSup_ge_satExponent_eq_iSup (K : ℕ) :
+    (⨆ k : {k : ℕ // K ≤ k}, satExponent k.val) = ⨆ k : ℕ, satExponent k :=
+  iSup_ge_eq_iSup_of_monotone satExponent_mono satExponent_le_one K
+
+/-- `SETH` holds iff `⨆ k : ℕ, satExponent k = 1`. -/
+theorem SETH_iff_iSup_eq_one : SETH ↔ (⨆ k : ℕ, satExponent k) = 1 :=
+  SETH_iff_tendsto.trans
+    (tendsto_atTop_nhds_one_iff_iSup_eq_one satExponent_mono satExponent_le_one)
+
+/-- `SETH` holds iff `⨆ k ≥ 3, satExponent k = 1`. -/
+theorem SETH_iff_iSup_ge_three_eq_one :
+    SETH ↔ (⨆ k : {k : ℕ // 3 ≤ k}, satExponent k.val) = 1 := by
+  rw [iSup_ge_satExponent_eq_iSup 3, SETH_iff_iSup_eq_one]
+
+/-- Dropping any finite prefix `k < K` leaves `⨆ k, sharpSatExponent k` unchanged. -/
+theorem iSup_ge_sharpSatExponent_eq_iSup (K : ℕ) :
+    (⨆ k : {k : ℕ // K ≤ k}, sharpSatExponent k.val) = ⨆ k : ℕ, sharpSatExponent k :=
+  iSup_ge_eq_iSup_of_monotone sharpSatExponent_mono sharpSatExponent_le_one K
+
+/-- `SharpSETH` holds iff `⨆ k : ℕ, sharpSatExponent k = 1`. -/
+theorem SharpSETH_iff_iSup_eq_one : SharpSETH ↔ (⨆ k : ℕ, sharpSatExponent k) = 1 :=
+  SharpSETH_iff_tendsto.trans
+    (tendsto_atTop_nhds_one_iff_iSup_eq_one sharpSatExponent_mono sharpSatExponent_le_one)
+
+/-- `SharpSETH` holds iff `⨆ k ≥ 3, sharpSatExponent k = 1`. -/
+theorem SharpSETH_iff_iSup_ge_three_eq_one :
+    SharpSETH ↔ (⨆ k : {k : ℕ // 3 ≤ k}, sharpSatExponent k.val) = 1 := by
+  rw [iSup_ge_sharpSatExponent_eq_iSup 3, SharpSETH_iff_iSup_eq_one]
+
+/-- Clause-splitting reduction (`toThreeSAT`) transfers subexponential clause-count decidability of
+`ThreeSAT` to `KSAT k` for every fixed width `k` (each width-`≤ k` clause splits into at most
+`max 1 k` width-`≤ 3` clauses). -/
+theorem DecidableInSubexpTime.KSAT_length_of_ThreeSAT_length (k : ℕ)
+    (h3 : DecidableInSubexpTime ThreeSAT encCNF List.length) :
+    DecidableInSubexpTime (KSAT k) encCNF List.length := by
+  let reduceWidth (φ : CNF ℕ) : CNF ℕ :=
+    if φ.all (fun c => decide (c.length ≤ k)) then toThreeSAT φ else [[]]
+  have hr : ComputableInPolyTime reduceWidth encCNF encCNF :=
+    ComputableInPolyTime.ite' (computableInPolyTime_all_length_le k)
+      computableInPolyTime_toThreeSAT (ComputableInPolyTime.const [[]])
+  refine h3.of_reduction hr (fun φ => ?_) (c := max 1 k) fun φ => ?_
+  · dsimp only [reduceWidth]
+    by_cases hw : (φ.all fun c => decide (c.length ≤ k)) = true
+    · simp only [hw, ↓reduceIte, mem_ThreeSAT_toThreeSAT_iff]
+      have hw' : ∀ c ∈ φ, c.length ≤ k := fun c hc =>
+        decide_eq_true_eq.mp (List.all_eq_true.mp hw c hc)
+      exact ⟨fun h => h.2, fun h => ⟨hw', h⟩⟩
+    · simp only [hw, Bool.false_eq_true, ↓reduceIte]
+      have hnot_ksat : φ ∉ KSAT k := fun h =>
+        hw (List.all_eq_true.mpr fun c hc => decide_eq_true (h.1 c hc))
+      have hnot_3sat : ([[]] : CNF ℕ) ∉ ThreeSAT := by
+        rintro ⟨-, σ, hσ⟩
+        exact Bool.false_ne_true hσ
+      exact ⟨fun h => absurd h hnot_ksat, fun h => absurd h hnot_3sat⟩
+  · dsimp only [reduceWidth]
+    split_ifs with hw
+    · simp only [List.all_eq_true, decide_eq_true_eq] at hw
+      have hlen_eq : (toThreeSAT φ).length = (φ.map fun c => max 1 (c.length - 2)).sum := by
+        rw [toThreeSAT, CNF.relabel, List.length_map, CNF.length_to3CNF]
+      have hsum_le : (φ.map fun c => max 1 (c.length - 2)).sum ≤ φ.length * max 1 k := by
+        refine (List.sum_le_length_nsmul _ (max 1 k) fun n hn => ?_).trans (by simp)
+        obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hn
+        have hck := hw c hc
+        omega
+      rw [hlen_eq, Nat.mul_comm]
+      omega
+    · simp only [List.length_singleton]
+      omega
+
+/-- **Strong ETH implies ETH (`SETH → ETH`)** via clause-splitting (`toThreeSAT`) and IPZ
+sparsification (`DecidableInSubexpTime.numVars_of_length`), without invoking the native counting
+refutation: if `ThreeSAT` is decidable in subexponential time in variables, then it is decidable in
+subexponential time in clauses, hence every fixed-width `KSAT k` is decidable in subexponential
+time in clauses and (by sparsification) in variables, contradicting `SETH`. -/
+theorem SETH.eth (h : SETH) : ETH := by
+  by_contra hnot
+  have h3_len : DecidableInSubexpTime ThreeSAT encCNF List.length := by
+    by_contra hnot_len
+    exact hnot (ETH_iff_not_decidableInSubexpTime_length.mpr hnot_len)
+  obtain ⟨k, hk⟩ := h (1 / 2) (by norm_num)
+  have hk_vars : DecidableInSubexpTime (KSAT k) encCNF CNF.numVars :=
+    (DecidableInSubexpTime.KSAT_length_of_ThreeSAT_length k h3_len).numVars_of_length
+  have hhalf : (1 : ℝ) - 1 / 2 = 1 / 2 := by norm_num
+  rw [hhalf] at hk
+  exact hk (hk_vars (1 / 2) (by norm_num))
+
+/-- **Unrestricted `SAT` exponent**: infimum of `δ ≥ 0` such that `SAT` (with unbounded clause
+width) is decidable within time `2 ^ (δ * n) * poly(L)`. Unlike `SETH`, which takes `⨆ k, s_k` over
+fixed clause widths, `unrestrictedSatExponent` requires a single machine per `δ` handling arbitrary
+clause widths simultaneously. -/
+@[expose] noncomputable def unrestrictedSatExponent : ℝ :=
+  sInf {δ : ℝ | 0 ≤ δ ∧ DecidableInExpTime SAT encCNF CNF.numVars δ}
+
+theorem unrestrictedSatExponent_nonneg : 0 ≤ unrestrictedSatExponent :=
+  le_csInf ⟨1, zero_le_one, SAT_decidableInExpTime_one⟩ fun _ h => h.1
+
+theorem unrestrictedSatExponent_le_one : unrestrictedSatExponent ≤ 1 :=
+  csInf_le ⟨0, fun _ h => h.1⟩ ⟨zero_le_one, SAT_decidableInExpTime_one⟩
+
+/-- Every fixed-width exponent `satExponent k` is bounded above by `unrestrictedSatExponent`. -/
+theorem satExponent_le_unrestrictedSatExponent (k : ℕ) :
+    satExponent k ≤ unrestrictedSatExponent := by
+  refine le_csInf ⟨1, zero_le_one, SAT_decidableInExpTime_one⟩ fun δ ⟨hδ, h⟩ =>
+    satExponent_le hδ ?_
+  rw [KSAT_eq_inter k (KSAT_subset_SAT k) le_rfl]
+  exact h.inter (computableInPolyTime_all_length_le k) hδ
+
+/-- `⨆ k, satExponent k ≤ unrestrictedSatExponent`. -/
+theorem iSup_satExponent_le_unrestrictedSatExponent :
+    (⨆ k : ℕ, satExponent k) ≤ unrestrictedSatExponent :=
+  ciSup_le satExponent_le_unrestrictedSatExponent
+
+/-- Under `SETH`, `unrestrictedSatExponent = 1`. -/
+theorem SETH.unrestrictedSatExponent_eq_one (h : SETH) : unrestrictedSatExponent = 1 :=
+  le_antisymm unrestrictedSatExponent_le_one
+    ((SETH_iff_iSup_eq_one.mp h).symm.le.trans iSup_satExponent_le_unrestrictedSatExponent)
+
 /-! ### Clause-measured vs. variable-measured counting rates (counting sparsification) -/
 
 /-- **From variables to clauses for `#k-SAT`.** Because a width-`≤ k` formula with `m` clauses has
@@ -1011,58 +1211,5 @@ theorem SharpETH_iff_not_computableInSubexpTime_length :
   rw [SharpETH_iff_not_computableInSubexpTime, ← SharpKSAT_three]
   exact ⟨fun h hlen => h hlen.SharpKSAT_numVars_of_length,
     fun h hnum => h hnum.SharpKSAT_length_of_numVars⟩
-
-/-! ### Unconditional consequences of the native model counter -/
-
-/-- Every fixed-width `#k-SAT` problem is computable in subexponential time in `numVars`. -/
-theorem computableInSubexpTime_SharpKSAT (k : ℕ) :
-    ComputableInSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars := by
-  open SubexponentialSAT in
-  obtain ⟨count, A, e, _, hspec, hcountO⟩ := CountingNativeEndpoint.exists_modelCounter k
-  intro δ hδ
-  obtain ⟨K, _, hK⟩ := exists_two_pow_mul_interpolationScale_le A hδ
-  have hraw : ComputableInExpTime count encCNF encNat CNF.numVars δ := by
-    refine ComputableInExpTime.of_computableInO hcountO (⌈K⌉₊ + 1) e fun φ => ?_
-    set X : ℝ := (2 : ℝ) ^ ((A : ℝ) * interpolationScale φ.numVars)
-    have hceil : (⌈X⌉₊ : ℝ) ≤ X + 1 := (Nat.ceil_lt_add_one (by positivity)).le
-    have hXK : X ≤ ⌈K⌉₊ * (2 : ℝ) ^ (δ * φ.numVars) :=
-      (hK φ.numVars).trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))
-    have h1 : (1 : ℝ) ≤ (2 : ℝ) ^ (δ * φ.numVars) :=
-      Real.one_le_rpow (by norm_num) (by positivity)
-    have hsum : (⌈X⌉₊ : ℝ) ≤ (⌈K⌉₊ + 1 : ℕ) * (2 : ℝ) ^ (δ * φ.numVars) := by
-      push_cast
-      linarith
-    have hmul := mul_le_mul_of_nonneg_right hsum
-      (by positivity : (0 : ℝ) ≤ (((encCNF φ).length : ℝ) + 1) ^ e)
-    push_cast at hmul ⊢
-    rwa [mul_assoc] at hmul
-  have hguarded := hraw.ite_polyTime hδ.le (computableInPolyTime_all_length_le k)
-    (ComputableInPolyTime.const 0)
-  have heq : (fun φ : CNF ℕ => if φ.all (fun c => decide (c.length ≤ k)) then count φ else 0) =
-      SharpKSAT k := by
-    funext φ
-    unfold SharpKSAT SharpSAT
-    split_ifs with hw
-    · simp only [List.all_eq_true, decide_eq_true_eq] at hw
-      exact hspec φ hw
-    · rfl
-  rwa [heq] at hguarded
-
-/-- The `#k-SAT` exponent vanishes for every fixed clause width `k`. -/
-theorem sharpSatExponent_eq_zero (k : ℕ) : sharpSatExponent k = 0 :=
-  sharpSatExponent_eq_zero_iff_computableInSubexpTime.mpr (computableInSubexpTime_SharpKSAT k)
-
-/-- The native model counter refutes `#ETH`. -/
-theorem not_SharpETH : ¬SharpETH := by
-  rw [SharpETH_iff_sharpSatExponent_pos, sharpSatExponent_eq_zero 3]
-  exact lt_irrefl 0
-
-/-- The native model counter refutes `#SETH`. -/
-theorem not_SharpSETH : ¬SharpSETH := by
-  rintro h
-  obtain ⟨k, hk⟩ := h (1 / 2) (by norm_num)
-  have hhalf : (1 : ℝ) - 1 / 2 = 1 / 2 := by norm_num
-  rw [hhalf] at hk
-  exact hk (computableInSubexpTime_SharpKSAT k (1 / 2) (by norm_num))
 
 end Cslib.Complexity

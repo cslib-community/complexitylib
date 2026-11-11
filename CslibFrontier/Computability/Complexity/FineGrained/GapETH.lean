@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.Randomized
 public import CslibFrontier.Computability.Complexity.FineGrained.ExhaustiveSearch
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.PCP.Approximation.MaxThreeSAT
 import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
@@ -39,11 +40,10 @@ randomized **Gap Exponential Time Hypotheses** (`GapETH`, `rGapETH`) [Dinur2016]
    `P.completeness < 1` or the thresholds are irrational. Exhaustive search over `2 ^ n` numbered
    assignments decides `MaxKSATThreshold k` in time `2 ^ n * poly(L)`, giving `0 ≤ rGapSatExponent P
    ≤ gapSatExponent P ≤ 1` for every `P : GapKSATSpec`.
-3. **Hypothesis hierarchy and unconditional native consequences.** On perfect-completeness specs
-   `GapKSATSpec.perfect k s`, any exact `k`-SAT solver solves the gap problem, yielding the positive
-   implications `rGapETH → GapETH → ETH` and `rGapETH → rETH → ETH`, threshold invariance of
-   `rGapETH` across `(0, 1 / 2)`, and unconditional native refutations `not_GapETH : ¬GapETH` and
-   `not_rGapETH : ¬rGapETH` via `CountingNativeEndpoint.decidableInSubexpTime_KSAT`.
+3. **Hypothesis hierarchy.** On perfect-completeness specs `GapKSATSpec.perfect k s`, any exact
+   `k`-SAT solver solves the gap problem, yielding the positive implications
+   `rGapETH → GapETH → ETH` and `rGapETH → rETH → ETH`, together with threshold invariance of
+   `rGapETH` across `(0, 1 / 2)`.
 
 ## Main definitions
 
@@ -71,10 +71,6 @@ randomized **Gap Exponential Time Hypotheses** (`GapETH`, `rGapETH`) [Dinur2016]
 * `Cslib.Complexity.rGapETH.gapETH`, `Cslib.Complexity.rGapETH.rETH`,
   `Cslib.Complexity.GapETH.eth`: positive conditional implications `rGapETH → GapETH → ETH` and
   `rGapETH → rETH`.
-* `Cslib.Complexity.gapSatExponent_perfect_eq_zero`,
-  `Cslib.Complexity.rGapSatExponent_perfect_eq_zero`, `Cslib.Complexity.not_GapETH`,
-  `Cslib.Complexity.not_rGapETH`: unconditional consequences of the native subexponential `k`-SAT
-  solver.
 
 ## References
 
@@ -637,6 +633,19 @@ theorem gapSatExponent_le_one (P : GapKSATSpec) : gapSatExponent P ≤ 1 :=
 theorem rGapSatExponent_le_one (P : GapKSATSpec) : rGapSatExponent P ≤ 1 :=
   rGapSatExponent_le zero_le_one (GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded)
 
+/-- `gapSatExponent P` equals the infimum over strictly positive rates `δ > 0`. -/
+theorem gapSatExponent_eq_sInf_pos (P : GapKSATSpec) :
+    gapSatExponent P =
+      sInf {δ : ℝ | 0 < δ ∧ SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ} :=
+  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle) (GapKSAT_solvesPromiseInExpTime_one P)
+
+/-- `rGapSatExponent P` equals the infimum over strictly positive rates `δ > 0`. -/
+theorem rGapSatExponent_eq_sInf_pos (P : GapKSATSpec) :
+    rGapSatExponent P = sInf {δ : ℝ | 0 < δ ∧
+      SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ} :=
+  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle)
+    (GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded)
+
 theorem gapSatExponent_zero_eq_zero {P : GapKSATSpec} (h0 : P.width = 0) :
     gapSatExponent P = 0 :=
   le_antisymm
@@ -781,45 +790,5 @@ theorem GapETH.eth (h : GapETH) : ETH := by
   obtain ⟨s, hs0, hs1, hpos⟩ := GapETH_iff_exists_gapSatExponent_pos.mp h
   exact ETH_iff_satExponent_pos.mpr
     (hpos.trans_le (gapSatExponent_perfect_le_satExponent 3 hs0 hs1))
-
-/-! ### 6. Unconditional consequences from the native subexponential `k`-SAT solver -/
-
-/-- Every perfect-completeness `GapKSAT (GapKSATSpec.perfect k s hs0 hs1)` is solvable
-deterministically in subexponential time in `φ.numVars`. -/
-theorem solvesPromiseInSubexpTime_GapKSAT_perfect (k : ℕ) {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s < 1) :
-    SolvesPromiseInSubexpTime (GapKSAT (GapKSATSpec.perfect k s hs0 hs1)) encCNF CNF.numVars :=
-  fun δ hδ => .GapKSAT_perfect_of_KSAT hs0 hs1 hδ.le
-    (CountingNativeEndpoint.decidableInSubexpTime_KSAT k δ hδ)
-
-/-- Every perfect-completeness `GapKSAT (GapKSATSpec.perfect k s hs0 hs1)` is solvable in
-subexponential time under any error profile `E`. -/
-theorem solvesWithErrorInSubexpTime_GapKSAT_perfect (k : ℕ) {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s < 1)
-    (E : ErrorModel) :
-    SolvesWithErrorInSubexpTime (GapKSAT (GapKSATSpec.perfect k s hs0 hs1)) encCNF E
-      CNF.numVars :=
-  fun δ hδ =>
-    (solvesPromiseInSubexpTime_GapKSAT_perfect k hs0 hs1 δ hδ).solvesWithErrorInExpTime hδ.le E
-
-/-- Every perfect-completeness `GapKSAT` specification has `gapSatExponent = 0`. -/
-theorem gapSatExponent_perfect_eq_zero (k : ℕ) {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s < 1) :
-    gapSatExponent (GapKSATSpec.perfect k s hs0 hs1) = 0 :=
-  le_antisymm
-    ((gapSatExponent_perfect_le_satExponent k hs0 hs1).trans
-      (le_of_eq (CountingNativeEndpoint.satExponent_eq_zero k)))
-    (gapSatExponent_nonneg _)
-
-/-- Every perfect-completeness `GapKSAT` specification has `rGapSatExponent = 0`. -/
-theorem rGapSatExponent_perfect_eq_zero (k : ℕ) {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s < 1) :
-    rGapSatExponent (GapKSATSpec.perfect k s hs0 hs1) = 0 :=
-  le_antisymm
-    ((rGapSatExponent_le_gapSatExponent _).trans
-      (le_of_eq (gapSatExponent_perfect_eq_zero k hs0 hs1)))
-    (rGapSatExponent_nonneg _)
-
-/-- **`GapETH` is false** for native multi-tape Turing machines on `encCNF`. -/
-theorem not_GapETH : ¬GapETH := fun h => CountingNativeEndpoint.not_ETH h.eth
-
-/-- **`rGapETH` is false** for native multi-tape Turing machines on `encCNF`. -/
-theorem not_rGapETH : ¬rGapETH := fun h => not_GapETH h.gapETH
 
 end Cslib.Complexity

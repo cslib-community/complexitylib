@@ -2132,6 +2132,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.PPZ.LazyOrder
 public import CslibFrontier.Computability.Complexity.FineGrained.Padding
 public import CslibFrontier.Computability.Complexity.FineGrained.PermutationIndependentSet
 public import CslibFrontier.Computability.Complexity.FineGrained.Randomized
+public import CslibFrontier.Computability.Complexity.FineGrained.RatesNativeEndpoint
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementParams
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementScheduleDesign

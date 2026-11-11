@@ -15,7 +15,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Foundations.Data.Nat.Power
 import Mathlib.Analysis.Asymptotics.Lemmas
@@ -53,20 +52,19 @@ their exact relationship to the family notions:
   replacing `s` by its running maximum `(Finset.range (n + 1)).sup' _ s` preserves `s =o[atTop] id`
   while making `s` monotone, so single-machine subexponential time transfers unconditionally along
   linear-parameter polynomial-time and parsimonious reductions.
-* **Unconditional native single-machine algorithms**
-  (`computableInSingleSubexpTime_SharpDeclaredKSAT`, `computableInSingleSubexpTime_SharpKSAT`,
-  `decidableInSingleSubexpTime_KSAT`, `not_SingleETH`, `not_SingleSharpETH`): because
-  `CountingNativeEndpoint.exists_declaredCounter` adapts its branching divisor dynamically with the
-  declared variable count (`interpolationScale =o[atTop] id`), a *single* native multi-tape machine
-  solves `#k-SAT` and `k`-SAT in time `2 ^ o(n) · poly(L)` for each fixed `k`.
+* **Effective-uniformity converse** (`PrecisionInput`,
+  `DecidableInSingleSubexpTime.of_uniformFamily`, `ComputableInSingleSubexpTime.of_uniformFamily`):
+  an effectively uniform rate family solving `(m, a)` at rate `1 / (m + 1)` with polynomial overhead
+  in `m` yields a single machine running in time `2 ^ o(μ a) · poly(L)` by diagonally scheduling `m`
+  in polynomial time.
 
 ## Main definitions
 
 * `Cslib.Complexity.DecidableInSingleSubexpTime`,
   `Cslib.Complexity.ComputableInSingleSubexpTime`: single-machine `2 ^ o(μ) · poly(L)` time.
+* `Cslib.Complexity.PrecisionInput`, `Cslib.Complexity.PrecisionInput.encoding`: unary-precision
+  input pairs for uniform rate families.
 * `Cslib.Complexity.SingleETH`, `Cslib.Complexity.SingleSharpETH`: single-machine `ETH` and `#ETH`.
-* `Cslib.Complexity.DeclaredFormula`, `Cslib.Complexity.encDeclaredFormula`,
-  `Cslib.Complexity.SharpDeclaredKSAT`: structured declared-variable counting instances.
 
 ## Main results
 
@@ -76,22 +74,19 @@ their exact relationship to the family notions:
 * `Cslib.Complexity.decidableInSingleSubexpTime_iff_exists_machine`,
   `Cslib.Complexity.computableInSingleSubexpTime_iff_exists_machine`: equivalence with exchanging
   `∃ (M, e)` and `∀ δ > 0`.
+* `Cslib.Complexity.DecidableInSingleSubexpTime.of_uniformFamily`,
+  `Cslib.Complexity.ComputableInSingleSubexpTime.of_uniformFamily`: conversion from effectively
+  uniform rate families back to a single `2 ^ o(μ)` machine.
 * `Cslib.Complexity.DecidableInSingleSubexpTime.of_reduction`,
   `Cslib.Complexity.ComputableInSingleSubexpTime.of_reduction`,
   `Cslib.Complexity.DecidableInSingleSubexpTime.of_computableInSingleSubexpTime_polyBounded`:
   unconditional single-machine reduction and decision-from-counting transfers.
-* `Cslib.Complexity.computableInSingleSubexpTime_SharpDeclaredKSAT`,
-  `Cslib.Complexity.computableInSingleSubexpTime_SharpKSAT`,
-  `Cslib.Complexity.decidableInSingleSubexpTime_KSAT`,
-  `Cslib.Complexity.not_SingleETH`, `Cslib.Complexity.not_SingleSharpETH`: single-machine native
-  subexponential counting and decision for every fixed width `k`.
 
 ## References
 
 * [R. Impagliazzo, R. Paturi, *On the complexity of k-SAT*][ImpagliazzoPaturi2001]
 * [R. Impagliazzo, R. Paturi, F. Zane, *Which problems have strongly exponential
   complexity?*][ImpagliazzoPaturiZane2001]
-* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH]
 -/
 
 public section
@@ -630,7 +625,164 @@ theorem DecidableInSingleSubexpTime.of_reduction {A : Set α} {B : Set β}
 
 end SingleMachines
 
-/-! ### `SingleETH`, `SingleSharpETH`, and native single-machine algorithms -/
+/-- Problem instance `input` paired with a unary precision index `precision` (representing target
+rate `1 / (precision + 1)` in an effectively uniform algorithm family). -/
+structure PrecisionInput (α : Type) where
+  /-- Unary precision index `m`. -/
+  precision : ℕ
+  /-- Underlying problem instance. -/
+  input : α
+
+/-- Framed encoding of `PrecisionInput α` (`encUnary` precision and `enc` instance). -/
+@[expose] def PrecisionInput.encoding {α : Type} (enc : α ↪ List Bool) :
+    PrecisionInput α ↪ List Bool :=
+  Function.Embedding.trans
+    ⟨fun x => (x.precision, x.input), fun ⟨_, _⟩ ⟨_, _⟩ h => by cases h; rfl⟩
+    (encPair encUnary enc)
+
+section UniformFamily
+
+variable {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
+
+/-- **Converse from an effectively uniform rate family (`ComputableInSingleSubexpTime`).**
+While an arbitrary non-uniform `∀ δ > 0, ∃ M_δ` family need not collapse to one machine, a single
+uniform machine `evalAt : PrecisionInput α → β` running in time
+`≤ c * ((m + 1) ^ d * 2 ^ (μ a / (m + 1)) * (|enc a| + 1) ^ e) + c` together with a
+polynomial-time precision schedule `sched : α → ℕ` tending to `∞` with `μ a` yields a single
+`2 ^ o(μ a) · poly(L)` machine. -/
+theorem ComputableInSingleSubexpTime.of_uniformFamily {f : α → β} {μ : α → ℕ}
+    {evalAt : PrecisionInput α → β} {T S : PrecisionInput α → ℕ}
+    (heval : ComputableInO evalAt (PrecisionInput.encoding encIn) encOut T S)
+    (hcorrect : ∀ m a, evalAt { precision := m, input := a } = f a)
+    {c d e : ℕ}
+    (htime : ∀ m a,
+      (T { precision := m, input := a } : ℝ) ≤
+        c * ((m + 1 : ℝ) ^ d * (2 ^ ((μ a : ℝ) / (m + 1)) * ((encIn a).length + 1) ^ e)) + c)
+    {sched : α → ℕ} (hsched : ComputableInPolyTime sched encIn encUnary)
+    (htend : ∀ M : ℕ, ∃ N : ℕ, ∀ a, N ≤ μ a → M ≤ sched a) :
+    ComputableInSingleSubexpTime f encIn encOut μ := by
+  have hmk : ComputableInPolyTime (fun a : α => PrecisionInput.mk (sched a) a) encIn
+      (PrecisionInput.encoding encIn) :=
+    .of_enc_eq (hsched.prod .id') fun _ => rfl
+  obtain ⟨dp, _, hmk_deg⟩ := hmk.exists_degree
+  obtain ⟨cs, ds, hs_len⟩ := hsched.polyBounded_length.exists_le
+  have hcomp_eq : (evalAt ∘ fun a : α => PrecisionInput.mk (sched a) a) = f :=
+    funext fun a => hcorrect (sched a) a
+  have hfO : ComputableInO f encIn encOut
+      (fun a => ((encIn a).length + 1) ^ dp + T { precision := sched a, input := a })
+      (fun a => ((encIn a).length + 1) ^ dp + S { precision := sched a, input := a }) := by
+    rw [← hcomp_eq]
+    exact heval.comp hmk_deg.inO
+  have hforall : ∀ δ : ℝ, 0 < δ → ∃ C : ℕ, ∀ a : α,
+      ((((encIn a).length + 1) ^ dp + T { precision := sched a, input := a } : ℕ) : ℝ) ≤
+        C * (2 ^ (δ * μ a) * ((encIn a).length + 1) ^ (dp + ds * d + e)) + C := by
+    intro δ hδ
+    obtain ⟨M, hM⟩ := exists_nat_gt (1 / δ)
+    have hM_rate : 1 / ((M : ℝ) + 1) ≤ δ := by
+      have hpos : (0 : ℝ) < (M : ℝ) + 1 := by positivity
+      rw [div_le_iff₀ hpos]
+      have h1 := (div_lt_iff₀ hδ).mp hM
+      linarith
+    obtain ⟨N, hN⟩ := htend M
+    let C_sched : ℕ := (cs + 1) ^ d
+    let C_total : ℕ := 1 + c * C_sched * 2 ^ N + c
+    refine ⟨C_total, fun a => ?_⟩
+    set L1 : ℝ := ((encIn a).length : ℝ) + 1
+    have hL1 : 1 ≤ L1 := le_add_of_nonneg_left (Nat.cast_nonneg _)
+    have hsched_bound : ((sched a : ℝ) + 1) ^ d ≤ (C_sched : ℝ) * L1 ^ (ds * d) := by
+      have hsl := hs_len a
+      rw [encUnary_apply, List.length_replicate] at hsl
+      have hslR : (sched a : ℝ) + 1 ≤ (cs + 1 : ℝ) * L1 ^ ds := by
+        have hpow1 : (1 : ℝ) ≤ L1 ^ ds := one_le_pow₀ hL1
+        have hcast : (sched a : ℝ) ≤ cs * L1 ^ ds := by
+          dsimp only [L1]
+          exact_mod_cast hsl
+        linarith
+      calc ((sched a : ℝ) + 1) ^ d
+          ≤ ((cs + 1 : ℝ) * L1 ^ ds) ^ d := pow_le_pow_left₀ (by positivity) hslR d
+        _ = (C_sched : ℝ) * L1 ^ (ds * d) := by
+          dsimp only [C_sched]
+          rw [mul_pow, ← pow_mul]
+          push_cast
+          rfl
+    have hexp_bound : (2 : ℝ) ^ ((μ a : ℝ) / (sched a + 1)) ≤
+        (2 ^ N : ℝ) * 2 ^ (δ * μ a) := by
+      by_cases hμN : N ≤ μ a
+      · have hMs : M ≤ sched a := hN a hμN
+        have hdiv_le : (μ a : ℝ) / (sched a + 1) ≤ δ * μ a := by
+          have h1 : (μ a : ℝ) / (sched a + 1) ≤ (μ a : ℝ) / (M + 1) :=
+            div_le_div_of_nonneg_left (Nat.cast_nonneg _) (by positivity)
+              (by exact_mod_cast Nat.add_le_add_right hMs 1)
+          have h2 : (μ a : ℝ) / (M + 1) ≤ δ * μ a := by
+            rw [show (μ a : ℝ) / (M + 1) = (1 / ((M : ℝ) + 1)) * μ a by ring]
+            exact mul_le_mul_of_nonneg_right hM_rate (Nat.cast_nonneg _)
+          exact h1.trans h2
+        have hpow1 : (1 : ℝ) ≤ (2 : ℝ) ^ N := one_le_pow₀ (by norm_num)
+        exact (Real.rpow_le_rpow_of_exponent_le (by norm_num) hdiv_le).trans
+          (le_mul_of_one_le_left (by positivity) hpow1)
+      · simp only [not_le] at hμN
+        have hdiv_le : (μ a : ℝ) / (sched a + 1) ≤ N := by
+          have hden : (1 : ℝ) ≤ (sched a : ℝ) + 1 := le_add_of_nonneg_left (Nat.cast_nonneg _)
+          exact (div_le_self (Nat.cast_nonneg _) hden).trans (by exact_mod_cast hμN.le)
+        have h1 : (2 : ℝ) ^ ((μ a : ℝ) / (sched a + 1)) ≤ (2 : ℝ) ^ N := by
+          rw [← Real.rpow_natCast]
+          exact Real.rpow_le_rpow_of_exponent_le (by norm_num) hdiv_le
+        have hX1 : (1 : ℝ) ≤ 2 ^ (δ * μ a) := Real.one_le_rpow (by norm_num) (by positivity)
+        exact h1.trans (le_mul_of_one_le_right (by positivity) hX1)
+    have hT_le := htime (sched a) a
+    have hprod : ((sched a : ℝ) + 1) ^ d * (2 ^ ((μ a : ℝ) / (sched a + 1)) * L1 ^ e) ≤
+        (C_sched * 2 ^ N : ℝ) * (2 ^ (δ * μ a) * L1 ^ (dp + ds * d + e)) := by
+      have hL_grow : L1 ^ (ds * d) * L1 ^ e ≤ L1 ^ (dp + ds * d + e) := by
+        rw [← pow_add]
+        exact pow_le_pow_right₀ hL1 (by omega)
+      calc ((sched a : ℝ) + 1) ^ d * (2 ^ ((μ a : ℝ) / (sched a + 1)) * L1 ^ e)
+          ≤ ((C_sched : ℝ) * L1 ^ (ds * d)) * (((2 ^ N : ℝ) * 2 ^ (δ * μ a)) * L1 ^ e) :=
+            mul_le_mul hsched_bound
+              (mul_le_mul_of_nonneg_right hexp_bound (by positivity))
+              (by positivity) (by positivity)
+        _ = (C_sched * 2 ^ N : ℝ) * (2 ^ (δ * μ a) * (L1 ^ (ds * d) * L1 ^ e)) := by ring
+        _ ≤ (C_sched * 2 ^ N : ℝ) * (2 ^ (δ * μ a) * L1 ^ (dp + ds * d + e)) :=
+            mul_le_mul_of_nonneg_left
+              (mul_le_mul_of_nonneg_left hL_grow (by positivity)) (by positivity)
+    have hc_prod := mul_le_mul_of_nonneg_left hprod (Nat.cast_nonneg c : (0 : ℝ) ≤ c)
+    have hX1 : (1 : ℝ) ≤ 2 ^ (δ * μ a) := Real.one_le_rpow (by norm_num) (by positivity)
+    have hdp_le : L1 ^ dp ≤ 2 ^ (δ * μ a) * L1 ^ (dp + ds * d + e) :=
+      (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
+    have hc_one : (0 : ℝ) ≤ (c : ℝ) * (2 ^ (δ * μ a) * L1 ^ (dp + ds * d + e)) := by positivity
+    set X : ℝ := 2 ^ (δ * μ a) * L1 ^ (dp + ds * d + e)
+    have hring : (1 + (c : ℝ) * C_sched * 2 ^ N + c) * X =
+        X + (c : ℝ) * ((C_sched * 2 ^ N : ℝ) * X) + (c : ℝ) * X := by ring
+    have hnn_extra : (0 : ℝ) ≤ 1 + (c : ℝ) * C_sched * 2 ^ N := by positivity
+    dsimp only [C_total, L1, X] at hT_le hc_prod hdp_le hc_one hring hnn_extra ⊢
+    push_cast at hc_prod ⊢
+    linarith
+  obtain ⟨s, hnn, hs_o, hbound⟩ := exists_isLittleO_of_forall_exp_bound hforall
+  exact ⟨s, dp + ds * d + e, hnn, hs_o, ComputableInTimeO.of_computableInO hfO hbound⟩
+
+/-- **Converse from an effectively uniform rate family (`DecidableInSingleSubexpTime`).** -/
+theorem DecidableInSingleSubexpTime.of_uniformFamily {A : Set α} {μ : α → ℕ}
+    {decideAt : PrecisionInput α → Bool} {T S : PrecisionInput α → ℕ}
+    (hdec : ComputableInO decideAt (PrecisionInput.encoding encIn) encBool T S)
+    (hcorrect : ∀ m a, a ∈ A ↔ decideAt { precision := m, input := a } = true)
+    {c d e : ℕ}
+    (htime : ∀ m a,
+      (T { precision := m, input := a } : ℝ) ≤
+        c * ((m + 1 : ℝ) ^ d * (2 ^ ((μ a : ℝ) / (m + 1)) * ((encIn a).length + 1) ^ e)) + c)
+    {sched : α → ℕ} (hsched : ComputableInPolyTime sched encIn encUnary)
+    (htend : ∀ M : ℕ, ∃ N : ℕ, ∀ a, N ≤ μ a → M ≤ sched a) :
+    DecidableInSingleSubexpTime A encIn μ := by
+  let g (a : α) : Bool := decideAt { precision := 0, input := a }
+  have hg_single : ComputableInSingleSubexpTime g encIn encBool μ :=
+    .of_uniformFamily hdec
+      (fun m a => Bool.eq_iff_iff.mpr ((hcorrect m a).symm.trans (hcorrect 0 a)))
+      htime hsched htend
+  obtain ⟨s, e', hnn, hs_o, hg_time⟩ := hg_single
+  exact ⟨s, e', hnn, hs_o,
+    decidableInTimeO_iff_exists_computableInTimeO.mpr ⟨g, fun a => hcorrect 0 a, hg_time⟩⟩
+
+end UniformFamily
+
+/-! ### `SingleETH`, `SingleSharpETH`, and single-machine rate transfers -/
 
 /-- **Single-machine `ETH`:** `3`-SAT is not decidable by a single machine in time
 `2 ^ o(n) · poly(L)` (`n = φ.numVars`). -/
@@ -655,8 +807,11 @@ theorem SharpETH.singleSharpETH (h : SharpETH) : SingleSharpETH := fun hsingle =
 theorem DecidableInSingleSubexpTime.KSAT_of_SharpKSAT {k : ℕ}
     (h : ComputableInSingleSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars) :
     DecidableInSingleSubexpTime (KSAT k) encCNF CNF.numVars := by
+  have hpos : ComputableInPolyTime (fun n : ℕ => decide (0 < n)) encNat encBool :=
+    ComputableInPolyTime.binary_lt.comp
+      ((ComputableInPolyTime.const 0).prod ComputableInPolyTime.id')
   have hdec := DecidableInSingleSubexpTime.of_computableInSingleSubexpTime_polyBounded h
-    (polyBounded_length_encNat_SharpKSAT k) computableInPolyTime_pos_nat
+    (polyBounded_length_encNat_SharpKSAT k) hpos
   have heq : {φ : CNF ℕ | decide (0 < SharpKSAT k φ) = true} = KSAT k := by
     ext φ
     simp only [Set.mem_ofPred_eq, decide_eq_true_eq, mem_KSAT_iff_pos_SharpKSAT]
@@ -716,155 +871,5 @@ theorem ComputableInSingleSubexpTime.SharpKSAT_length_of_numVars {k : ℕ}
   · push_cast
     dsimp only [L] at *
     nlinarith
-
-/-- Input to declared-variable model counting: a unary declared variable bound `numDeclared` and a
-CNF formula `formula`. -/
-structure DeclaredFormula where
-  /-- Declared variable bound `N`, representing the domain `Finset.range N`. -/
-  numDeclared : ℕ
-  /-- Input CNF formula over natural variable indices. -/
-  formula : CNF ℕ
-  deriving Inhabited
-
-/-- Framed encoding of `DeclaredFormula` (`numDeclared` in unary, `formula` via `encCNF`). -/
-enc_structure encDeclaredFormula : DeclaredFormula where
-  numDeclared : encUnary, formula : encCNF
-
-/-- Guarded model count of `x.formula` on `Finset.range x.numDeclared` when `x.formula` has clause
-width `≤ k` and all variables `< x.numDeclared`, and `0` otherwise. -/
-@[expose] def SharpDeclaredKSAT (k : ℕ) (x : DeclaredFormula) : ℕ :=
-  if CNF.validDeclaredInput k x.numDeclared x.formula then
-    x.formula.modelCountOn (Finset.range x.numDeclared)
-  else 0
-
-/-- On valid declared inputs, `SharpDeclaredKSAT k x` scales `x.formula.modelCount` by the
-`2 ^ (x.numDeclared - x.formula.numVars)` assignments to unused declared variables. -/
-theorem SharpDeclaredKSAT_of_valid {k : ℕ} {x : DeclaredFormula}
-    (hw : ∀ c ∈ x.formula, c.length ≤ k) (hv : ∀ v ∈ x.formula.vars, v < x.numDeclared) :
-    SharpDeclaredKSAT k x = x.formula.modelCount * 2 ^ (x.numDeclared - x.formula.numVars) := by
-  have hsub : x.formula.vars.toFinset ⊆ Finset.range x.numDeclared := fun v hmem =>
-    Finset.mem_range.mpr (hv v (List.mem_toFinset.mp hmem))
-  have hval : CNF.validDeclaredInput k x.numDeclared x.formula = true :=
-    CNF.validDeclaredInput_eq_true_iff.mpr ⟨hw, hsub⟩
-  simp only [SharpDeclaredKSAT, hval, ↓reduceIte,
-    CNF.modelCountOn_eq_mul_modelCount x.formula _ hsub, Finset.card_range, Nat.mul_comm]
-
-/-- On invalid declared inputs (`CNF.validDeclaredInput = false`), `SharpDeclaredKSAT k x = 0`. -/
-theorem SharpDeclaredKSAT_of_not_valid {k : ℕ} {x : DeclaredFormula}
-    (h : CNF.validDeclaredInput k x.numDeclared x.formula = false) :
-    SharpDeclaredKSAT k x = 0 := by
-  simp only [SharpDeclaredKSAT, h, Bool.false_eq_true, ↓reduceIte]
-
-/-- **Unconditional single-machine declared model counting.** For each fixed width `k`, one native
-multi-tape machine computes `SharpDeclaredKSAT k` in time `2 ^ o(numDeclared) · poly(L)`. -/
-theorem computableInSingleSubexpTime_SharpDeclaredKSAT (k : ℕ) :
-    ComputableInSingleSubexpTime (SharpDeclaredKSAT k) encDeclaredFormula encNat
-      DeclaredFormula.numDeclared := by
-  open SubexponentialSAT in
-  obtain ⟨count, T, S, A, c, e, _, _, hcountO, hspec, hT, -⟩ :=
-    CountingNativeEndpoint.exists_declaredCounter k
-  have htoPair : ComputableInPolyTime (fun x : DeclaredFormula => (x.numDeclared, x.formula))
-      encDeclaredFormula (encPair encUnary encCNF) := by fun_prop
-  obtain ⟨dg, _, hdg⟩ := htoPair.exists_degree
-  obtain ⟨p, q, hp⟩ := htoPair.polyBounded_length.exists_le
-  have hcompO := (hcountO.comp hdg.inO).of_enc_eq (g := SharpDeclaredKSAT k) fun x =>
-    congrArg encNat (hspec (x.numDeclared, x.formula)).symm
-  let s (N : ℕ) : ℝ := (A : ℝ) * interpolationScale N
-  have hs_nn : ∀ N, 0 ≤ s N := fun N =>
-    mul_nonneg (Nat.cast_nonneg A) (interpolationScale_nonneg N)
-  have hs_o : s =o[atTop] fun N : ℕ => (N : ℝ) :=
-    isLittleO_interpolationScale.const_mul_left (A : ℝ)
-  refine ⟨s, dg + q * e, hs_nn, hs_o,
-    (ComputableInTimeO.of_computableInO hcompO fun _ => le_rfl).mono
-      (1 + c * (p + 1) ^ e + c) (fun x => ?_) fun _ => by positivity⟩
-  set L : ℕ := (encDeclaredFormula x).length
-  have hL1 : 1 ≤ L + 1 := Nat.le_add_left 1 L
-  have hLR1 : (1 : ℝ) ≤ (L : ℝ) + 1 := by exact_mod_cast hL1
-  have hX1 : (1 : ℝ) ≤ 2 ^ s x.numDeclared := Real.one_le_rpow (by norm_num) (hs_nn _)
-  have hpow : ((encPair encUnary encCNF (x.numDeclared, x.formula)).length + 1) ^ e ≤
-      (p + 1) ^ e * (L + 1) ^ (q * e) :=
-    Nat.add_one_pow_le_of_le_mul_pow hL1 (hp x) e
-  have hqe : ((L : ℝ) + 1) ^ (q * e) ≤ ((L : ℝ) + 1) ^ (dg + q * e) :=
-    pow_le_pow_right₀ hLR1 (Nat.le_add_left _ _)
-  have hdg_le : ((L : ℝ) + 1) ^ dg ≤ 2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e) :=
-    (pow_le_pow_right₀ hLR1 (Nat.le_add_right _ _)).trans
-      (le_mul_of_one_le_left (by positivity) hX1)
-  have hpowR : (((encPair encUnary encCNF (x.numDeclared, x.formula)).length : ℝ) + 1) ^ e ≤
-      ((p + 1) ^ e : ℕ) * ((L : ℝ) + 1) ^ (dg + q * e) := by
-    have h1 : (((encPair encUnary encCNF (x.numDeclared, x.formula)).length : ℝ) + 1) ^ e ≤
-        ((p + 1) ^ e : ℕ) * ((L : ℝ) + 1) ^ (q * e) := by exact_mod_cast hpow
-    exact h1.trans (mul_le_mul_of_nonneg_left hqe (Nat.cast_nonneg _))
-  have hTR : (T (x.numDeclared, x.formula) : ℝ) ≤
-      ((c * (p + 1) ^ e : ℕ) : ℝ) * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) + c := by
-    have h0 := hT (x.numDeclared, x.formula)
-    have hmul : (2 : ℝ) ^ s x.numDeclared *
-        (((encPair encUnary encCNF (x.numDeclared, x.formula)).length : ℝ) + 1) ^ e ≤
-        ((p + 1) ^ e : ℕ) * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) := by
-      have hm := mul_le_mul_of_nonneg_left hpowR (by positivity : (0 : ℝ) ≤ 2 ^ s x.numDeclared)
-      linarith [show (2 : ℝ) ^ s x.numDeclared * (((p + 1) ^ e : ℕ) * ((L : ℝ) + 1) ^ (dg + q * e))
-        = ((p + 1) ^ e : ℕ) * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) by ring]
-    have hmulc := mul_le_mul_of_nonneg_left hmul (Nat.cast_nonneg c)
-    push_cast at hmulc ⊢
-    dsimp only [s] at *
-    linarith
-  have hc1 : (c : ℝ) ≤ c * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) :=
-    le_mul_of_one_le_right (Nat.cast_nonneg c)
-      (one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hLR1))
-  have hconst_nn : (0 : ℝ) ≤ (1 + c * (p + 1) ^ e + c : ℕ) := Nat.cast_nonneg _
-  change ((((encDeclaredFormula x).length + 1) ^ dg +
-    T (x.numDeclared, x.formula) : ℕ) : ℝ) ≤ _
-  push_cast at hTR hconst_nn ⊢
-  dsimp only [L] at *
-  linarith
-
-/-- **Unconditional single-machine `#k-SAT` model counting.** For each fixed width `k`, a *single*
-native multi-tape machine computes `SharpKSAT k` in time `2 ^ o(n) · poly(L)` (`n = φ.numVars`). -/
-theorem computableInSingleSubexpTime_SharpKSAT (k : ℕ) :
-    ComputableInSingleSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars := by
-  open SubexponentialSAT in
-  obtain ⟨count, A, e, _, hspec, hcountO⟩ := CountingNativeEndpoint.exists_modelCounter k
-  let s (n : ℕ) : ℝ := (A : ℝ) * interpolationScale n
-  have hs_nn : ∀ n, 0 ≤ s n := fun n =>
-    mul_nonneg (Nat.cast_nonneg A) (interpolationScale_nonneg n)
-  have hs_o : s =o[atTop] fun n : ℕ => (n : ℝ) :=
-    isLittleO_interpolationScale.const_mul_left (A : ℝ)
-  have hraw : ComputableInSingleSubexpTime count encCNF encNat CNF.numVars := by
-    refine ⟨s, e, hs_nn, hs_o,
-      (ComputableInTimeO.of_computableInO hcountO fun _ => le_rfl).mono 2
-        (fun φ => ?_) fun _ => by positivity⟩
-    set X : ℝ := (2 : ℝ) ^ s φ.numVars
-    have hX1 : 1 ≤ X := Real.one_le_rpow (by norm_num) (hs_nn _)
-    have hceil : (⌈X⌉₊ : ℝ) ≤ 2 * X := by
-      have hlt := (Nat.ceil_lt_add_one (by positivity : 0 ≤ X)).le
-      linarith
-    have hmul := mul_le_mul_of_nonneg_right hceil
-      (by positivity : (0 : ℝ) ≤ (((encCNF φ).length : ℝ) + 1) ^ e)
-    push_cast
-    dsimp only [X, s] at hmul ⊢
-    linarith
-  have hguarded := hraw.ite_polyTime (computableInPolyTime_all_length_le k)
-    (ComputableInPolyTime.const 0)
-  have heq : (fun φ : CNF ℕ => if φ.all (fun c => decide (c.length ≤ k)) then count φ else 0) =
-      SharpKSAT k := by
-    funext φ
-    unfold SharpKSAT SharpSAT
-    split_ifs with hw
-    · simp only [List.all_eq_true, decide_eq_true_eq] at hw
-      exact hspec φ hw
-    · rfl
-  rwa [heq] at hguarded
-
-/-- **Unconditional single-machine `k`-SAT decision.** For each fixed width `k`, a *single* native
-multi-tape machine decides `KSAT k` in time `2 ^ o(n) · poly(L)` (`n = φ.numVars`). -/
-theorem decidableInSingleSubexpTime_KSAT (k : ℕ) :
-    DecidableInSingleSubexpTime (KSAT k) encCNF CNF.numVars :=
-  DecidableInSingleSubexpTime.KSAT_of_SharpKSAT (computableInSingleSubexpTime_SharpKSAT k)
-
-/-- The single-machine native `3`-SAT solver refutes `SingleETH`. -/
-theorem not_SingleETH : ¬SingleETH := fun h => h (decidableInSingleSubexpTime_KSAT 3)
-
-/-- The single-machine native `#3-SAT` counter refutes `SingleSharpETH`. -/
-theorem not_SingleSharpETH : ¬SingleSharpETH := fun h =>
-  h (computableInSingleSubexpTime_SharpKSAT 3)
 
 end Cslib.Complexity

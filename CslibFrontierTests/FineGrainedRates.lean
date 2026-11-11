@@ -11,6 +11,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.CountingExponents
 import CslibFrontier.Computability.Complexity.FineGrained.SingleSubexp
 import CslibFrontier.Computability.Complexity.FineGrained.Randomized
 import CslibFrontier.Computability.Complexity.FineGrained.GapETH
+import CslibFrontier.Computability.Complexity.FineGrained.RatesNativeEndpoint
 
 /-!
 # Fine-grained rates, exponents, and exponential-time hypotheses
@@ -221,15 +222,68 @@ example :
     (GapETH → ETH) ∧
     (rETH → ETH) ∧
     (rSETH → SETH) ∧
+    (SETH → ETH) ∧
     (ETH → SharpETH) ∧
     (SETH → SharpSETH) ∧
     (ETH → SingleETH) ∧
     (SharpETH → SingleSharpETH) ∧
     (SingleETH → SingleSharpETH) ∧
-    (rGapETH → SingleSharpETH) :=
-  ⟨rGapETH.gapETH, rGapETH.rETH, GapETH.eth, rETH.eth, rSETH.seth, ETH.sharpETH, SETH.sharpSETH,
-    ETH.singleETH, SharpETH.singleSharpETH, SingleETH.singleSharpETH,
-    fun h => h.gapETH.eth.singleETH.singleSharpETH⟩
+    (rGapETH → SingleSharpETH) ∧
+    (rSETH → SingleSharpETH) :=
+  ⟨rGapETH.gapETH, rGapETH.rETH, GapETH.eth, rETH.eth, rSETH.seth, SETH.eth, ETH.sharpETH,
+    SETH.sharpSETH, ETH.singleETH, SharpETH.singleSharpETH, SingleETH.singleSharpETH,
+    fun h => h.gapETH.eth.singleETH.singleSharpETH,
+    fun h => h.seth.eth.singleETH.singleSharpETH⟩
+
+-- Positive-`δ` infima, finite-prefix `iSup` characterizations, and unrestricted vs. fixed-width
+-- `SAT`.
+example (k : ℕ) (P : GapKSATSpec) :
+    satExponent k = sInf {δ | 0 < δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ} ∧
+    sharpSatExponent k =
+      sInf {δ | 0 < δ ∧ ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ} ∧
+    rSatExponent k = sInf {δ | 0 < δ ∧
+      SolvesWithErrorInExpTime (.ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ} ∧
+    gapSatExponent P =
+      sInf {δ | 0 < δ ∧ SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ} ∧
+    (SETH ↔ (⨆ m : {m : ℕ // 3 ≤ m}, satExponent m.val) = 1) ∧
+    (SharpSETH ↔ (⨆ m : {m : ℕ // 3 ≤ m}, sharpSatExponent m.val) = 1) ∧
+    (rSETH ↔ (⨆ m : {m : ℕ // 3 ≤ m}, rSatExponent m.val) = 1) ∧
+    (⨆ m : ℕ, satExponent m) ≤ unrestrictedSatExponent ∧
+    (SETH → unrestrictedSatExponent = 1) :=
+  ⟨satExponent_eq_sInf_pos k, sharpSatExponent_eq_sInf_pos k, rSatExponent_eq_sInf_pos k,
+    gapSatExponent_eq_sInf_pos P, SETH_iff_iSup_ge_three_eq_one,
+    SharpSETH_iff_iSup_ge_three_eq_one, rSETH_iff_iSup_ge_three_eq_one,
+    iSup_satExponent_le_unrestrictedSatExponent, SETH.unrestrictedSatExponent_eq_one⟩
+
+-- Effectively uniform rate-family converse (`DecidableInSingleSubexpTime.of_uniformFamily`):
+-- a uniform family deciding `Set.univ : Set ℕ` (unary input `n`, parameter `μ n = n`) converts to
+-- `DecidableInSingleSubexpTime` via the identity precision schedule `sched = id`.
+example : DecidableInSingleSubexpTime (Set.univ : Set ℕ) encUnary id := by
+  have hdec : ComputableInO (fun _ : PrecisionInput ℕ => true)
+      (PrecisionInput.encoding encUnary) encBool
+      (fun x => (PrecisionInput.encoding encUnary x).length)
+      (fun x => (PrecisionInput.encoding encUnary x).length) := .const true
+  refine DecidableInSingleSubexpTime.of_uniformFamily hdec (fun _ _ => by simp)
+    (c := 2) (d := 1) (e := 1) (fun m a => ?_) ComputableInPolyTime.id'
+    fun M => ⟨M, fun _ ha => ha⟩
+  have hlen : (PrecisionInput.encoding encUnary { precision := m, input := a }).length =
+      2 * m + a + 1 := by
+    change (encPair encUnary encUnary (m, a)).length = 2 * m + a + 1
+    simp only [length_encPair, encUnary_apply, List.length_replicate]
+    omega
+  have hL : (encUnary a).length = a := by simp
+  rw [hlen, hL]
+  dsimp only [id]
+  rw [pow_one, pow_one]
+  have hX1 : (1 : ℝ) ≤ 2 ^ ((a : ℝ) / (m + 1)) := Real.one_le_rpow (by norm_num) (by positivity)
+  have hprod : ((m : ℝ) + 1) * ((a : ℝ) + 1) ≤
+      ((m : ℝ) + 1) * (2 ^ ((a : ℝ) / (m + 1)) * ((a : ℝ) + 1)) :=
+    mul_le_mul_of_nonneg_left (le_mul_of_one_le_left (by positivity) hX1) (by positivity)
+  have hprod2 := mul_le_mul_of_nonneg_left hprod (by norm_num : (0 : ℝ) ≤ 2)
+  have hlin : ((2 * m + a + 1 : ℕ) : ℝ) ≤ 2 * (((m : ℝ) + 1) * ((a : ℝ) + 1)) + 2 := by
+    push_cast
+    nlinarith [(Nat.cast_nonneg m : (0 : ℝ) ≤ m), (Nat.cast_nonneg a : (0 : ℝ) ≤ a)]
+  linarith
 
 -- Clause-vs-variable counting sparsification equivalence for `SharpETH` and `SETH`-style limits.
 example :
