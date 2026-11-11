@@ -137,7 +137,7 @@ private theorem isAffine_getD_ofFn {d : ℕ} (i : ℕ) :
   simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn]
   by_cases hi : i < d
   · simp [hi]
-  · simp [hi]
+  · simp only [hi, ↓reduceDIte, Option.getD_none]
     rfl
 
 private theorem isAffine_terminalVal {d : ℕ} (S : State n) (L : List ℕ) (x : ℕ) :
