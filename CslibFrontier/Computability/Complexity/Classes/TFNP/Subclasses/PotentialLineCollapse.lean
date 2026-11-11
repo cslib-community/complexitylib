@@ -62,8 +62,9 @@ moves all sources to the first column, because the bridges are attached at every
   instance, to both a sink-of-potential-line family and an end-of-line family is in `EOPL`.
 * `Cslib.Complexity.SOPL_inter_PPAD_subset_EOPL`, `Cslib.Complexity.EOPL_eq_SOPL_inter_PPAD`.
 
-The collapse `EOPL = PLS ∩ PPAD` of [Göös et al., Theorem 1][GoosEtAl2022] also needs the inclusion
-`PLS ∩ PPADS ⊆ SOPL` of [Göös et al., Section 4][GoosEtAl2022], which is not formalized here.
+The collapses `SOPL = PLS ∩ PPADS` and `EOPL = PLS ∩ PPAD` of
+[Göös et al., Theorems 1–2][GoosEtAl2022] combine this reduction with `PLS ∩ PPADS ⊆ SOPL`; see
+`CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse`.
 
 ## References
 
