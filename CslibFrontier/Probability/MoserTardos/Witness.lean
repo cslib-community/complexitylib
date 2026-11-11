@@ -213,7 +213,7 @@ theorem witness_eq_witnessRel [DecidableEq V] [DecidableEq ι] (vbl : ι → Fin
     (w : List ι) : witness vbl i w = witnessRel (Adj vbl) i w := by
   rw [witness]
 
-theorem proper_iff_properRel [DecidableEq V] (vbl : ι → Finset V) (S : Finset (ι × ℕ)) :
+theorem proper_iff_properRel (vbl : ι → Finset V) (S : Finset (ι × ℕ)) :
     Proper vbl S ↔ ProperRel (Adj vbl) S := by
   rw [Proper]
 
