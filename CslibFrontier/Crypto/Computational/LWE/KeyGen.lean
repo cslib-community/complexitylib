@@ -276,7 +276,8 @@ def decodeKeyInputs (n m w : ℕ) (inputs : SerializedKeyInputs) : KeyInputs n m
   cases inputs
   simp only [decodeKeyInputs, serializeKeyInputs, List.getD_ofFn, ZMod.natCast_zmod_val]
 
-private theorem eval_sampleBinaryNat_eq_map_val (w : ℕ) :
+/-- Sampling an unsigned `w`-bit integer gives the canonical residue representative law. -/
+theorem eval_sampleBinaryNat_eq_map_val (w : ℕ) :
     ProbComp.eval (sampleBinaryNat w) =
       (ProbComp.eval (sampleResidue w)).map ZMod.val := by
   rw [sampleResidue, ProbComp.eval_map, PMF.map_comp]

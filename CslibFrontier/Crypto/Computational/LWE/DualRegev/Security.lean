@@ -183,21 +183,11 @@ private theorem publicKeySerialized_eq (n m w : ℕ) (inputs : SerializedKeyInpu
   · simp only [List.flatMap_def, List.map_range_eq_ofFn, lowBits_eq_ofFn, decodeKeyInputs,
       ZMod.val_natCast]
 
-private theorem eval_sampleBinaryNat_eq_map_val (w : ℕ) :
-    ProbComp.eval (sampleBinaryNat w) =
-      (ProbComp.eval (LWE.sampleResidue w)).map ZMod.val := by
-  rw [LWE.sampleResidue, ProbComp.eval_map, PMF.map_comp]
-  symm
-  refine (PMF.map_congr_on_support (ProbComp.eval (sampleBinaryNat w))
-    (ZMod.val ∘ Nat.cast) id (fun value hvalue =>
-      ZMod.val_natCast_of_lt ((mem_support_sampleBinaryNat_iff w value).mp hvalue))).trans
-    (PMF.map_id _)
-
 /-- The public-key marginal of serialized key generation matches typed `DualRegev.keyGen`. -/
 theorem eval_keyGenSerialized_fst (n m w : ℕ) :
     (ProbComp.eval (keyGenSerialized n m w)).map Prod.fst =
       (ProbComp.eval (keyGen n m w)).map (fun keys => serializePublicKey keys.1) := by
-  have hrow := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) n
+  have hrow := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val w) n
   have hmat := ProbComp.eval_replicateFin_map hrow m
   have hbits := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (ProbComp.uniform Bool))).symm m
@@ -318,7 +308,7 @@ theorem eval_encryptSerialized (n m w η : ℕ) (publicWord : List Bool) (messag
     ProbComp.eval (encryptSerialized n m w η publicWord message) =
       (ProbComp.eval (encrypt η (decodePublicKey n m w publicWord) message)).map
         serializeCiphertext := by
-  have hs := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) n
+  have hs := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val w) n
   have hx := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (sampleCenteredBinomial η))).symm m
   change _ = (ProbComp.eval (LWE.sampleVector n w)).map _ at hs
