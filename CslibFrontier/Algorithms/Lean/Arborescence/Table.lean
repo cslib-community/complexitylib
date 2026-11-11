@@ -733,6 +733,7 @@ variable {β : Type*} [LinearOrder β] [AddCommMonoid β]
 
 section Transfer
 
+set_option linter.unusedSectionVars false in
 private theorem selectParentsM_spec {V : Type*} [FinEnum V]
     (a : AdjTable (FinEnum.card V)) (c : CostTable β (FinEnum.card V))
     (aV : V → V → Bool) (cV : V → V → β) (rV : V)
@@ -909,7 +910,7 @@ private theorem otherCycleCostM_spec {V : Type*} [FinEnum V]
   · intro y _
     rw [hc y f[y.1], hf y]
 
-omit [AddCommMonoid β] in
+set_option linter.unusedSectionVars false in
 private theorem bestEntryTableM_spec {V : Type*} [FinEnum V]
     (a : AdjTable (FinEnum.card V)) (c : CostTable β (FinEnum.card V))
     (inCycle : Vector Bool (FinEnum.card V))
@@ -1289,8 +1290,8 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
           _ ≤ (_ + 1) * (13 * n ^ 2) := Nat.le_mul_of_pos_left _ (Nat.succ_pos _)
       | some x0 =>
         have hx0_find : (List.finRange n).find? (fun x =>
-            x != r x != r && (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =x != r && (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =
-            (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =
+            x != r && (List.range n).any fun k =>
+              (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =
             some x0 := by
           simpa [ret_findCycleM] using hcyc
         have hx0_mem := List.find?_some hx0_find
