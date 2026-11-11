@@ -371,7 +371,7 @@ used as the source-rate implementation. Public packet/source statements now use
 named program, width, clock and quarter accessors; callback contexts bind their
 components by name. The tuple layouts and resource conclusions are unchanged.
 Theorem 7's pipeline, the small-operand algorithm and the source-rate sparse
-reduction are assembled. The sharper ideal-model search constants remain open in #2527/ROADMAP.
+reduction are assembled. The sharp ideal-model search constants are proved below.
 `AddXNORIdealChain` now defines actual planted-search and both decision experiments,
 with private-coin bidirectional adversaries. Its exact lazy laws reuse independently
 indexed permutation tables and prove validity on supported prefixes, including collisions.
@@ -407,56 +407,33 @@ The checked client records both comparisons without permutation-space enumeratio
 `VerificationCovering` now derives the actual walk's level-specific birth counts. Each
 nonempty computed rooted witness ends at a forward birth carrying its last label. Native
 verification adds at most one relevant forward birth and no reverse-view forward births.
-The full-range bound becomes $R(2^m,T+2q)+(T+1)/2^h+T/2^{q-h}$, hence
-$(3T+1)/2^h+18T^2/2^m$. The coupling still charges all reveal calls.
+`Forest.selected_add_reverse_le` shows that forward births at the cut layer and reverse-view
+births at the next layer are disjoint parts of the adversary's ledger, so both covering
+counts share its single budget. The worst case puts that budget on the shorter backward side,
+and the full-range bound becomes $R(2^m,T+2q)+1/2^h+T/2^{q-h}$.
 
-`VerificationCovering.source_theorem_eight_even` proves the literal source inequality for
-**every even $q$**, with no additional source restriction. Equal side lengths provide the
-covering slack; nonvacuity gives $2^m\ge10T^2$, which bounds the actual collision rate
-by $10T^2/2^m$ for $T\ge12$. The remaining small even cases are proved directly.
-Do not promote this endpoint to all lengths: odd $q$ still has the extra new-prefix term.
-The source's false Lemma 10 is load-bearing only for its post-query verification terms:
-walk collisions, Lemma 13 and the stopped guessing event. The original-query stopped
-comparison is already supplied by the valid cut coupling. A tighter internal-vertex count
-or joint planted-verification/guessing argument remains to be derived for odd lengths.
-The Operator's Manual inventory retains “Partial” for that gap; Corollary 4 is covered.
-Coverage of all stated main results is not yet established. The guessed hidden-endpoint client
-continues to show why old collision/covering alone is insufficient without a charged reveal.
+`VerificationCovering.source_search_sharp` proves $3T/2^h+10T^2/2^m$ for **every** chain
+length under the exact source hypotheses, and `VerificationCovering.source_theorem_eight` adds
+the source's $2^{-q}$ to give literal Theorem 8. Nonvacuity forces $2^m\ge10T^2$. For
+$T\ge12$ the actual rate fits $10T^2/2^m$; for $9\le T\le11$ the covering slack
+$(T-1)/2^h\ge1/8$ absorbs the excess; smaller $T$ is vacuous. Neither the source's false
+Lemma 10 nor the guessing term is used. The coupling still charges all reveal calls.
+When a counting bound seems to need one more allowance, first check whether two counts
+share a budget before building a joint probability argument; that settled this case.
+The Operator's Manual inventory records Theorem 8 as covered.
+The guessed hidden-endpoint client continues to show why old collision/covering alone is
+insufficient without a charged reveal.
 
-The stopped guessing term is now isolated in `IdealChain.Guessing.stopped_guess_le`
-([AddXNORIdealGuessing.lean](../CslibFrontier/Cryptanalysis/AddXNORIdealGuessing.lean)). Good final-state equality in the actual cut
-coupling transfers candidate equality with the hidden word, and independence bounds its
-probability by $2^{-q}$. This stopped-guess bound alone supplies no collision budget
-for actual planted verification; the successful non-planted case still needs a derived
-quantitative collision charge. The sharp odd-length clause remains open.
+`IdealChain.Guessing.stopped_guess_le` and `PlantedUniqueness` keep the source-shaped audit
+decomposition: planted uniqueness on collision-free complete ledgers (`accepted_eq`), transport
+to the audit (`search_transport`), stopped guessing at most $2^{-q}$ (`audit_guess_bound`) and
+the full-ledger collision marginal $(Q^2+Q)/(N-Q)$ with $Q=T+2q$, at most $10T^2/2^m$ for
+$T\ge6$ and $q\le T$ (`audit_collision_le_ten`). Theorem 8 does not depend on them, and no
+joint stopping/collision bound for that audit is claimed; the former open `RemainingCharge`
+premise and its conditional assembly were removed.
 The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
-`coarse_source_search_bound`; the best unconditional all-length bounds remain in
-`VerificationCovering`. No deprecated aliases are retained.
-
-`PlantedUniqueness.accepted_eq` now proves actual planted verification uniqueness using the
-native planting/adversary/verification execution and computed forest witnesses. Its ledger
-includes planting's queries, so this is not the cheaper source collision event. The exact
-open `PlantedUniqueness.RemainingCharge` proposition now records only the phase-separated
-audit's joint stopping/collision charge. It is unproved and may be stronger than necessary
-because it counts planting collisions. Only the explicitly conditional composition assumes it.
-`PlantedUniqueness.search_transport` proves that
-success is at most the audit stopping/collision union plus the stopped guessing event. Audit erasure
-is proved from the valid cut law and native replay; no quantitative bound is a premise.
-`PlantedUniqueness.audit_guess_law` now proves that phase-transcript connection, and
-`audit_guess_bound` proves the actual audit guessing half with exponent $2^{-q}$.
-`RemainingCharge` therefore now names only the open joint stopping/collision inequality.
-`source_theorem_eight_of_remaining_charge` states the final all-length assembly explicitly
-as conditional on that open proposition. It is not an unconditional proof of Theorem 8.
-The existing coarse separate rates exceed the target collision allowance even at
-$q=T=13,m=40$, as a kernel-checked arithmetic client shows. The new single-seed collision
-law gives
-$(Q^2+Q)/(N-Q)$ for the actual full audit, with $Q=T+2q$ and $N=2^m$.
-`PlantedUniqueness.audit_collision_le_ten` derives the collision marginal bound
-$10T^2/2^m$ for $T\ge6$ and $q\le T$, including $q=T=9$. This resolves the
-small-case collision normalization, but not the joint charge: the existing stopping
-estimate also pays for collisions. A bound on stopping outside the full-ledger collision
-event, or a joint union estimate, is still needed; adding the separate rates pays twice.
-The sharp odd-length inequality and coverage of all stated main results remain open.
+`coarse_source_search_bound`; the best unconditional bounds are in `VerificationCovering`.
+No deprecated aliases are retained.
 
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.

@@ -17,8 +17,9 @@ import Mathlib.Tactic.Linarith
 # Hidden-word guessing in the valid stopped cut coupling
 
 Good final-state equality transfers the joint candidate/hidden-word guessing event, without
-using the source's false frontier-sampler law. This does not assert that every successful
-non-planted candidate forces a collision; that actual-world uniqueness argument remains open.
+using the source's false frontier-sampler law. This does not by itself assert that every
+successful non-planted candidate forces a collision; `PlantedUniqueness.accepted_eq` proves that
+on collision-free complete ledgers.
 
 ## Main results
 

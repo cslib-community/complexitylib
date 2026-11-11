@@ -20,28 +20,30 @@ The complete native experiment includes planting, adversary calls and verificati
 collision predicate therefore charges planting too; it is not the source's cheaper post-query
 collision event. No law for the frontier sampler is used.
 
+This module decomposes actual planted search into an audit of stopping, full-ledger
+collisions and stopped guessing, following the shape of the source's proof. Literal
+Theorem 8 itself is proved without this decomposition, as
+`VerificationCovering.source_theorem_eight`; no joint stopping/collision bound for the audit
+is claimed here.
+
 The names below are in `Cslib.Cryptanalysis.AddXNOR.IdealChain`.
 
 ## Main definitions
 
 * `PlantedUniqueness.experiment`: actual execution
   retaining an accepted candidate.
-* `PlantedUniqueness.RemainingCharge`: the exact
-  open joint-event budget for the concrete phase-separated audit.
+* `PlantedUniqueness.audit`: the phase-separated stopping/collision/guessing audit.
 
 ## Main results
 
-* `PlantedUniqueness.audit_collision_law`: exact full-ledger collision marginal.
-* `PlantedUniqueness.audit_collision_le_ten`: collision coefficient ten for `6 ≤ T` and `q ≤ T`.
-
-* `PlantedUniqueness.audit_guess_bound`: the actual
-  audit stopped guessing probability is at most `2^(-q)`.
-* `PlantedUniqueness.source_theorem_eight_of_remaining_charge`:
-  explicitly conditional final assembly; the joint charge remains an open premise.
-* `PlantedUniqueness.search_transport`: the actual
-  source success probability is bounded by the two audit events, without a charge premise.
 * `PlantedUniqueness.accepted_eq`: actual accepted
   candidates equal the planted word when the complete ledger is collision-free.
+* `PlantedUniqueness.search_transport`: the actual
+  source success probability is bounded by the two audit events, without a charge premise.
+* `PlantedUniqueness.audit_guess_bound`: the actual
+  audit stopped guessing probability is at most `2^(-q)`.
+* `PlantedUniqueness.audit_collision_law`: exact full-ledger collision marginal.
+* `PlantedUniqueness.audit_collision_le_ten`: collision coefficient ten for `6 ≤ T` and `q ≤ T`.
 -/
 
 public section
@@ -419,7 +421,7 @@ theorem audit_collision_bound {q : ℕ} (m T : ℕ) (k : Fin q)
 
 /-- The full audit collision marginal fits coefficient ten once `T≥6` and `q≤T`.
 The small-alphabet case is trivial; otherwise its size is at least `10*T^2`.
-This does not charge adversary-phase stopping, so is not the remaining joint inequality. -/
+This does not charge adversary-phase stopping, so it is not a joint audit inequality. -/
 theorem audit_collision_le_ten {q : ℕ} (m T : ℕ) (k : Fin q)
     (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
       ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
@@ -456,35 +458,5 @@ theorem audit_collision_le_ten {q : ℕ} (m T : ℕ) (k : Fin q)
     apply (div_le_div_iff₀ hd hnpos).mpr
     nlinarith [mul_le_mul_of_nonneg_right hnum hnpos.le, mul_nonneg htn hbase,
       mul_nonneg (sq_nonneg (T : ℝ)) (show 0 ≤ 3 * (T : ℝ) - (T + 2 * q : ℕ) by linarith)]
-
-/-- OPEN joint stopping/collision charge for the concrete audit. The guessing half has
-been proved as `audit_guess_bound`. This is not an axiom or an established source bound. -/
-@[expose] def RemainingCharge : Prop :=
-  ∀ (q m T : ℕ) (hq : 3 ≤ q) (_hodd : q % 2 = 1)
-    (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
-      ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q)),
-    (∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T) →
-    max q 4 ≤ T → T ≤ 2 ^ (m - 3) →
-    let observations := challenges.bind fun draw => audit draw (Security.middleIndex q hq) adversary
-    ((observations.map fun r => r.stopped || r.collided) true).toReal ≤
-      3 * T / 2 ^ ((q + 1) / 2) + 10 * (T : ℝ) ^ 2 / 2 ^ m
-
-/-- Conditional assembly only: a proof of the open joint charge would complete literal
-Theorem 8. This theorem explicitly exposes that remaining premise; it does not prove it. -/
-theorem source_theorem_eight_of_remaining_charge (hcharge : RemainingCharge)
-    {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
-    (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
-      ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
-    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T)
-    (hT : max q 4 ≤ T) (hlimit : T ≤ 2 ^ (m - 3)) :
-    ((plantedSearch adversary) true).toReal ≤
-      3 * T / 2 ^ ((q + 1) / 2) + 10 * (T : ℝ) ^ 2 / 2 ^ m + 1 / (2 : ℝ) ^ q := by
-  by_cases heven : q % 2 = 0
-  · exact VerificationCovering.source_theorem_eight_even hq heven m T adversary hbudget hT hlimit
-  · have hc := hcharge q m T hq (by omega) adversary hbudget hT hlimit
-    have hg := audit_guess_bound (Security.middleIndex q hq) adversary
-    have ht := search_transport (Security.middleIndex q hq) adversary
-    dsimp only at hc
-    linarith
 
 end Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness

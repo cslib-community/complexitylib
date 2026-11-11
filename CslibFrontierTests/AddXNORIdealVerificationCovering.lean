@@ -11,11 +11,11 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import Mathlib.Tactic.NormNum
 
 /-!
-# Actual verification birth counts and the sharp even-length endpoint
+# Actual verification birth counts and literal Theorem 8
 
 The finite native walk client derives counts from supported execution, including the reverse
-view. The numerical clients exercise the whole planted experiment and distinguish the remaining
-odd-length bound comparison from a counterexample to the security inequality.
+view. The numerical clients instantiate literal Theorem 8 at even and odd chain lengths,
+including the smallest odd case with a bound below one.
 -/
 
 public section
@@ -45,31 +45,41 @@ example : ∃ endpoint : Fin 7, ∃ records : List (Forest.Record (Label 5) (Fin
       simpa only [List.filter_nil, List.length_nil, zero_add] using hl)
   · simpa using hreverse
 
-/-- Literal Theorem 8 now holds even when the query budget equals the even chain length;
-no extra `T>2*q` or alphabet-separation restriction is imposed on the general even theorem. -/
+/-- Literal Theorem 8 at an even chain length, with the query budget equal to the length. -/
 example (adversary : Fin (2 ^ 40) → Fin (2 ^ 40) →
     ProbOracleComp (Spec 20 (Fin (2 ^ 40))) (Operators 20))
     (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) 20) :
     ((plantedSearch adversary) true).toReal ≤
-      3 * (20 : ℝ) / 2 ^ 10 + 10 * (20 : ℝ) ^ 2 / 2 ^ 40 + 1 / 2 ^ 20 := by
-  exact VerificationCovering.source_theorem_eight_even (by norm_num : 3 ≤ 20)
-    (by norm_num) 40 20 adversary hbudget (by norm_num) (by norm_num)
+      3 * (20 : ℝ) / 2 ^ 10 + 10 * (20 : ℝ) ^ 2 / 2 ^ 40 + 1 / 2 ^ 20 :=
+  VerificationCovering.source_theorem_eight (by norm_num : 3 ≤ 20) 40 20 adversary hbudget
+    (by norm_num) (by norm_num)
 
-/-- The new whole-game odd-length bound is substantially smaller than the preceding one. -/
+/-- Literal Theorem 8 at an odd chain length, where the backward side is one level shorter. -/
 example (adversary : Fin (2 ^ 40) → Fin (2 ^ 40) →
     ProbOracleComp (Spec 21 (Fin (2 ^ 40))) (Operators 21))
     (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) 100) :
-    ((plantedSearch adversary) true).toReal < 148 / 1000 := by
+    ((plantedSearch adversary) true).toReal ≤
+      3 * (100 : ℝ) / 2 ^ 11 + 10 * (100 : ℝ) ^ 2 / 2 ^ 40 + 1 / 2 ^ 21 :=
+  VerificationCovering.source_theorem_eight (by norm_num : 3 ≤ 21) 40 100 adversary hbudget
+    (by norm_num) (by norm_num)
+
+/-- The smallest odd case `q = T = 9` where the bound is below one, at the smallest such
+alphabet; below `T = 12` the factor-ten collision term alone does not absorb the rate. -/
+example (adversary : Fin (2 ^ 13) → Fin (2 ^ 13) →
+    ProbOracleComp (Spec 9 (Fin (2 ^ 13))) (Operators 9))
+    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) 9) :
+    ((plantedSearch adversary) true).toReal ≤
+      3 * (9 : ℝ) / 2 ^ 5 + 10 * (9 : ℝ) ^ 2 / 2 ^ 13 :=
+  VerificationCovering.source_search_sharp (by norm_num : 3 ≤ 9) 13 9 adversary hbudget
+    (by norm_num) (by norm_num)
+
+/-- The unrounded whole-game rate at the odd example is far below the literal bound. -/
+example (adversary : Fin (2 ^ 40) → Fin (2 ^ 40) →
+    ProbOracleComp (Spec 21 (Fin (2 ^ 40))) (Operators 21))
+    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) 100) :
+    ((plantedSearch adversary) true).toReal < 99 / 1000 := by
   have h := VerificationCovering.source_search_rate (by norm_num : 3 ≤ 21) 40 100
     adversary hbudget (by norm_num) (by norm_num)
   exact h.trans_lt (by norm_num [Collisions.rate])
-
-/-- The one-prefix term still prevents this upper bound from implying the literal source
-inequality at the same odd example. This makes no assertion about attainable success. -/
-example :
-    3 * (100 : ℝ) / 2 ^ 11 + 10 * (100 : ℝ) ^ 2 / 2 ^ 40 + 1 / 2 ^ 21 <
-      Collisions.rate (2 ^ 40) (100 + 21 + 21) +
-        (100 + 1 : ℕ) / (2 : ℝ) ^ 11 + (100 : ℝ) / 2 ^ 10 := by
-  norm_num [Collisions.rate]
 
 end IdealVerificationCoveringClient

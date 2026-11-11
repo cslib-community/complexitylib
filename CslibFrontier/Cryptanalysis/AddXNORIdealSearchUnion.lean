@@ -31,9 +31,11 @@ This removes the separate verification allowance, while retaining every auxiliar
   parameter range with honest constants `6,18`.
 
 [WangLvShenZhang2027], Theorem 8, PDF pp. 25–28, has sharper constants `3,10` and a
-separate guessing term. They do not follow from this bound throughout the range. The source
-uses a frontier sampler's exact-law claim (Lemma 10), which fails on collision traces; the
-valid cut coupling here does not silently inherit its success-without-bad or guessing laws.
+separate guessing term. They do not follow from this bound throughout the range;
+`VerificationCovering.source_theorem_eight` proves them by level-specific verifier counting.
+The source uses a frontier sampler's exact-law claim (Lemma 10), which fails on collision
+traces; the valid cut coupling here does not silently inherit its success-without-bad or
+guessing laws.
 -/
 
 public section

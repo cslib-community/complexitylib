@@ -13,13 +13,6 @@ Search Mathlib, CSLib and this library before starting, and check upstream work.
 The [pre-rewrite roadmap](https://github.com/cslib-community/cslib-frontier/blob/c89dd48c/ROADMAP.md) is the archive of past detail and design records, including the FHE industrial context, the first-order design decisions and the repository's history.
 The [version before the scope-only rewrite of 2026-11-08](https://github.com/cslib-community/cslib-frontier/blob/9886447e2/ROADMAP.md) holds the progress notes removed in that rewrite.
 
-## STOC submission 733
-
-- **Sharp ideal-chain planted-search constants** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
-  For odd chain lengths, recover Theorem 8's displayed
-  $3T/2^h+10T^2/2^m+2^{-q}$ bound from the actual planted experiment, without the false literal Lemma 10 simulation claim or free hidden-path
-  observations. Preserve typed inputs, explicit resources and the uniform-class width condition.
-
 ## Programs
 
 | Program | Issues |

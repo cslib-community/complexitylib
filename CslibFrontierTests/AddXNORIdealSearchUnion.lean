@@ -11,12 +11,12 @@ public import CslibFrontierTests.AddXNORIdealSecurity
 import Mathlib.Tactic.NormNum
 
 /-!
-# Shared-collision search bounds and the remaining sharp-constant gap
+# Shared-collision search bounds
 
 The source's displayed inequality follows from the old unrounded endpoint at the review's
-even-length example, and from the strengthened endpoint too. At the adjacent odd length,
-even the strengthened numerical upper bound is larger than the source expression. This is
-an obstruction to that comparison of bounds, not a counterexample to Theorem 8.
+even-length example, and from the strengthened endpoint too. At the adjacent odd length
+these coarse bounds are larger than the source expression; literal Theorem 8 is proved for
+every length by `VerificationCovering.source_theorem_eight` instead.
 -/
 
 public section

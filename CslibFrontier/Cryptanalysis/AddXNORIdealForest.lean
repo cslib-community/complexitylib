@@ -43,6 +43,8 @@ add a charged hidden-path reveal while retaining the old covering ledger.
   label string.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.covered_card_le_selected`: covering
   charged only to forward births in the final-label class.
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.selected_add_reverse_le`: forward and
+  reverse-view selected births share one ledger budget.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.covered_card_le`: the derived forest
   covering count.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.follows_of_suffix_of_seen`: collision-free
@@ -488,6 +490,21 @@ theorem paths_last_birth (seed : Word) (records : List (Forest.Record Index Word
 are excluded, since their answer is a predecessor rather than a newly reached endpoint. -/
 @[expose] def selected (P : Index → Bool) (r : Forest.Record Index Word) : Bool :=
   P r.label && match r.query with | .forward _ => true | .inverse _ => false
+
+omit [DecidableEq Word] in
+/-- A fresh entry is a forward birth or, in the reverse view, an inverse one, never both:
+the two selected counts together are at most the ledger size, for any label classes. -/
+theorem selected_add_reverse_le (P P' : Index → Bool) (records : List (Forest.Record Index Word)) :
+    (records.filter (selected P)).length +
+      ((records.map Forest.Record.reverse).filter (selected P')).length ≤ records.length := by
+  induction records with
+  | nil => simp
+  | cons r rest ih =>
+    rcases r with ⟨label, query, answer⟩
+    cases query <;> cases hp : P label <;> cases hp' : P' label <;>
+      simp only [List.filter_cons, List.map_cons, selected, Forest.Record.reverse, hp, hp',
+        Bool.and_true, Bool.and_false, Bool.false_eq_true, ↓reduceIte, List.length_cons] <;>
+      omega
 
 /-- Covered words inject into actual forward births of the appropriate last-label class. -/
 theorem covered_card_le_selected {Words : Type} [Fintype Words]

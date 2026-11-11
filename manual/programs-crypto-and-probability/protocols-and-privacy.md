@@ -1528,8 +1528,7 @@ proves that the same three answers are impossible in the true planted experiment
 The parameters satisfy Theorem 8's range. This trace already has a collision
 (`BAD`), so it does not challenge the collision-free coupling. It refutes exact
 simulation as written, **not** Theorem 8's inequality. A valid hidden-cut planting law
-is supplied below, together with the decision bound and a weaker-constant search bound.
-The displayed sharper search constants remain open.
+is supplied below, together with the decision bound and the literal search bound.
 
 The actual ideal experiment is now available in
 [AddXNORIdealChain.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealChain.lean).
@@ -1666,39 +1665,35 @@ constants for the repaired argument.
 now charges the actual verification walk at its relevant final layer. Nonempty computed
 rooted witnesses end at forward births bearing their last label; the forest covering
 injection is refined to count those entries only. The actual native walk has at most one
-query at each layer, and creates no reverse-view forward births. Consequently verification
-adds at most one level-$h$ prefix, and no backward covering allowance:
+query at each layer, and creates no reverse-view forward births. Moreover a fresh entry is
+either a forward birth or a reverse-view birth, never both
+(`Forest.selected_add_reverse_le`), so the forward count $F$ at the cut layer and the backward
+count $B$ at the next layer satisfy $F+B\le T+1$ and $B\le T$. Since the backward side is
+not longer than the forward one, the worst case puts the budget on the backward side:
 $$
 \Pr[\mathrm{search\ succeeds}]\le
- R(2^m,T+2q)+\frac{T+1}{2^h}+\frac{T}{2^{q-h}}.
+ R(2^m,T+2q)+\frac{1}{2^h}+\frac{T}{2^{q-h}}.
 $$
 `VerificationCovering.source_search_rate` proves this for all source parameters from the
-same valid cut coupling. `source_search_bound` gives
-$(3T+1)/2^h+18T^2/2^m$. The covering factor two is removed; the extra single prefix
-and the charged $T+2q$ collision horizon remain.
+same valid cut coupling.
 
-`VerificationCovering.source_theorem_eight_even` proves the **literal Theorem 8 inequality
-for every even $q$**, with all its other exact hypotheses and no further alphabet or
-budget restriction. Equal side lengths give covering allowance $(2T+1)/2^h\le3T/2^h$.
-Where the source right-hand side is below one it forces $2^m\ge10T^2$. For $T\ge12$,
-this implies the actual rate at horizon at most $3T$ is at most $10T^2/2^m$;
-the finitely many smaller even-length possibilities are handled directly. This does not
-assume a sharper simulator or silently drop verification calls.
-
-The remaining sharp gap is **odd $q$**. At $q=21,m=40,T=100$, the improved unrounded
-bound is below $0.148$, but still exceeds the source's displayed expression. This checked
-comparison is an obstruction to that bound comparison, not an attainable-success claim.
-A tighter rooted-tree count could account for internal prefix vertices, or a joint
-planted-success/guessing analysis could replace the new-prefix allowance by the source's
-$2^{-q}$ term. Neither replacement is assumed here.
+`VerificationCovering.source_search_sharp` normalizes it to
+$$
+\Pr[\mathrm{search\ succeeds}]\le \frac{3T}{2^h}+\frac{10T^2}{2^m}
+$$
+for **every** chain length, with all exact source hypotheses and no further alphabet or
+budget restriction, and `VerificationCovering.source_theorem_eight` states the literal
+Theorem 8 with the additional $2^{-q}$. The backward fraction is at most $2T/2^h$. Where the
+right-hand side is below one it forces $2^m\ge10T^2$; for $T\ge12$ the actual rate at horizon
+at most $3T$ is at most $10T^2/2^m$, for $9\le T\le11$ the covering slack $(T-1)/2^h\ge1/8$
+absorbs the excess, and every smaller $T$ makes the bound at least one. This does not assume
+a sharper simulator, silently drop verification calls, or use the guessing term.
 
 The gap in the source proof is confined to the post-query verification terms. Its p. 28
 conclusion uses the false exact Real/planted identity of Lemma 10 for the verification-walk
 collisions, Lemma 13's success assertion, and the stopped hidden-word guessing term.
 The valid cut coupling already supplies the needed stopped comparison during the original
-$T$ queries. It does not automatically supply that conditional post-query planted law.
-The new even-length endpoint bypasses it by the actual verifier's level-specific counting.
-The odd-length sharp statement remains open, not refuted; no counterexample is asserted.
+$T$ queries; the level-specific verifier count replaces the post-query terms.
 
 The [security client](../../CslibFrontierTests/AddXNORIdealSecurity.lean) checks the
 important guessed-endpoint case: a one-query visible cut hit with no old collision or
@@ -1707,48 +1702,26 @@ instantiates both whole-game bounds with input-dependent private-coin forward/in
 observers at $q=T=31$, $m=30$, obtaining decision advantage and search success below one
 percent without enumerating the permutation space.
 
-The stopped guessing term is now isolated in `IdealChain.Guessing.stopped_guess_le`
+The stopped guessing term is also isolated in `IdealChain.Guessing.stopped_guess_le`
 ([AddXNORIdealGuessing.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealGuessing.lean)). Good final-state equality in the actual cut
 coupling transfers candidate equality with the hidden word, and independence bounds its
-probability by $2^{-q}$. This stopped-guess bound alone supplies no collision budget
-for actual planted verification; the successful non-planted case still needs a derived
-quantitative collision charge. The sharp odd-length clause remains open.
+probability by $2^{-q}$. `PlantedUniqueness` keeps the source-shaped audit decomposition:
+`accepted_eq` proves actual planted verification uniqueness on collision-free complete
+ledgers (including planting's queries), `search_transport` bounds success by the audit
+stopping/collision union plus stopped guessing, `audit_guess_bound` bounds the latter by
+$2^{-q}$, and `audit_collision_le_ten` bounds the full-ledger collision marginal
+$(Q^2+Q)/(N-Q)$, $Q=T+2q$, by $10T^2/2^m$ for $T\ge6$ and $q\le T$. Theorem 8 above does not
+depend on this decomposition, and no joint stopping/collision bound for the audit is claimed.
 The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
-`coarse_source_search_bound`; the best unconditional all-length bounds remain in
-`VerificationCovering`. No deprecated aliases are retained.
-
-`PlantedUniqueness.accepted_eq` now proves actual planted verification uniqueness using the
-native planting/adversary/verification execution and computed forest witnesses. Its ledger
-includes planting's queries, so this is not the cheaper source collision event. The exact
-open `PlantedUniqueness.RemainingCharge` proposition now records only the phase-separated
-audit's joint stopping/collision charge. It is unproved and may be stronger than necessary
-because it counts planting collisions. Only the explicitly conditional composition assumes it.
-`PlantedUniqueness.search_transport` proves that
-success is at most the audit stopping/collision union plus the stopped guessing event. Audit erasure
-is proved from the valid cut law and native replay; no quantitative bound is a premise.
-`PlantedUniqueness.audit_guess_law` now proves that phase-transcript connection, and
-`audit_guess_bound` proves the actual audit guessing half with exponent $2^{-q}$.
-`RemainingCharge` therefore now names only the open joint stopping/collision inequality.
-`source_theorem_eight_of_remaining_charge` states the final all-length assembly explicitly
-as conditional on that open proposition. It is not an unconditional proof of Theorem 8.
-The existing coarse separate rates exceed the target collision allowance even at
-$q=T=13,m=40$, as a kernel-checked arithmetic client shows. The new single-seed collision
-law gives
-$(Q^2+Q)/(N-Q)$ for the actual full audit, with $Q=T+2q$ and $N=2^m$.
-`PlantedUniqueness.audit_collision_le_ten` derives the collision marginal bound
-$10T^2/2^m$ for $T\ge6$ and $q\le T$, including $q=T=9$. This resolves the
-small-case collision normalization, but not the joint charge: the existing stopping
-estimate also pays for collisions. A bound on stopping outside the full-ledger collision
-event, or a joint union estimate, is still needed; adding the separate rates pays twice.
-The sharp odd-length inequality and coverage of all stated main results remain open.
+`coarse_source_search_bound`; the best unconditional bounds are in `VerificationCovering`.
+No deprecated aliases are retained.
 
 ### STOC733 main-result coverage inventory
 
 Locators below refer to the pinned [WangLvShenZhang2027] manuscript's printed PDF pages.
 Names are in `Cslib.Cryptanalysis.AddXNOR` unless a narrower namespace is given.
 “Covered” records the implemented endpoint and the stated qualifications, not a new
-independent whole-paper acceptance verdict. The literal sharp search inequality remains
-incomplete; its weaker bound and the decision inequality are recorded separately.
+independent whole-paper acceptance verdict.
 The supporting lemmas cited here explain the main-result bridge; this is not a claim
 that every incidental proof assertion or experimental plot has a separate Lean theorem.
 
@@ -1774,7 +1747,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.PlantedUniqueness.search_transport`, `IdealChain.PlantedUniqueness.audit_guess_bound`, `IdealChain.PlantedUniqueness.RemainingCharge`, `IdealChain.PlantedUniqueness.source_theorem_eight_of_remaining_charge`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; transport and audit guessing proved; full-audit collision marginal at most $10T^2/2^m$ for $T\ge6$ and $q\le T$; joint `RemainingCharge` open; final assembly conditional |
+| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight`, `IdealChain.VerificationCovering.source_search_sharp`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Security.source_search_half_budget` | Covered for every chain length $q\ge3$ under the exact source hypotheses; the guessing term is not needed; the source's Lemma 10 is not used |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
@@ -1785,11 +1758,10 @@ as the counting/difference client checks. Theorem 7's uniform per-class mean for
 requires $p\le m$, but its deterministic source-machine endpoint covers $p>m$ too;
 no expectation-of-maximum, concentration or typical-space theorem is claimed.
 Section 7's finite CDCL observations are not formal asymptotic lower bounds.
-Accordingly the main-result inventory does **not** yet support acceptance of all stated main results.
+Every main-result row is now covered with the qualifications stated; whether that supports
+accepting all stated main results is for independent source-correspondence review.
 
-The full-paper objective remains open for the sharper displayed Theorem 8 search constants
-at odd chain lengths.
-Corollary 4 and the weaker-constant Theorem 8 query barrier are now proved. The source-rate
+Corollary 4 and Theorem 8 with its query barrier are proved. The source-rate
 sparse reduction above now charges family multiplicity and generation. The full source dissection pipeline, including
 the faster count prepass, is supplied by the later `DPDissection` route. The
 positional-cut result is not a universal
@@ -2848,7 +2820,7 @@ through actual computed capacity, amortized over labels.
 These are callback-phase bounds. The enclosing setup/loop and retained/ambient
 composition is supplied by the following resource endpoint. The later
 `DPDissection` route supplies the reachable-state-DP all-count/fast prepass;
-other paper objectives remain open.
+the coverage inventory records the other paper objectives.
 
 The binary layouts in these public APIs use documented reducible names: `encNatPairList`
 frames each binary pair (whose second coordinate is unframed), `encNatPairOption` uses
@@ -2906,8 +2878,8 @@ These are the whole solver's worst-case time/space bounds, not the complete
 source Theorem 7 by themselves: the faster DP prepass is absent from this older
 route. The complete `DPDissection` pipeline is proved below. The old
 association-list/cubic-filter interpreter is unchanged; the resource theorem
-uses the assembled sorted-list route. The repaired ideal-model paper objectives
-remain open. The source-rate sparse reduction is proved near the opening
+uses the assembled sorted-list route. The repaired ideal-model results are proved in
+the ideal-chain section. The source-rate sparse reduction is proved near the opening
 hardness section; the small-operand algorithm is supplied by the later `SmallDP` route.
 
 The reachable-state counter DP now has a concrete binary-addition stage in
@@ -3149,8 +3121,8 @@ population/wider-label client remains `CslibFrontierTests.AddXNORSourceDepth`.
 
 The earlier sorted-list solver and its certificate remain available. The source
 Theorem 7 pipeline, small-operand algorithm and source-rate sparse reduction are
-now assembled. The repaired ideal-model clauses remain open, so this does not complete the
-paper or the objective of covering every main result. Per-class expectations still do not bound the
+now assembled, and the repaired ideal-model clauses are proved in the ideal-chain section;
+see the coverage inventory there for the stated qualifications. Per-class expectations still do not bound the
 expected maximum balance or give a typical-space theorem. Build the integrated
 large-binary-counter, colliding/zero-count, empty/residual-quarter and complete
 witness/miss clients with
