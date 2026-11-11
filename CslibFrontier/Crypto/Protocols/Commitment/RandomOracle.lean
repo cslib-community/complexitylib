@@ -91,29 +91,6 @@ section Helpers
 
 variable {Query Value : Type} [BEq Query] [LawfulBEq Query]
 
-private theorem mem_cache_of_lookup_eq_some {cache : List (Query × Value)} {q : Query}
-    {v : Value} (h : cache.lookup q = some v) : (q, v) ∈ cache := by
-  induction cache with
-  | nil => simp at h
-  | cons hd tl ih =>
-    simp only [List.lookup] at h
-    cases hbeq : (q == hd.1) with
-    | true =>
-      rw [hbeq] at h
-      simp only [Option.some.injEq] at h
-      have hq : q = hd.1 := beq_iff_eq.mp hbeq
-      rw [hq, ← h]
-      exact List.mem_cons_self
-    | false =>
-      rw [hbeq] at h
-      exact List.mem_cons_of_mem hd (ih h)
-
-private theorem exists_mem_of_lookup_isSome {cache : List (Query × Value)} {q : Query}
-    (h : (cache.lookup q).isSome = true) : ∃ e ∈ cache, e.1 = q := by
-  cases hlook : cache.lookup q with
-  | none => simp [hlook] at h
-  | some v => exact ⟨(q, v), mem_cache_of_lookup_eq_some hlook, rfl⟩
-
 omit [LawfulBEq Query] in
 private theorem lookup_isSome_of_mem_support_memoize {dist : Query → PMF Value}
     {k : Query} {cache : List (Query × Value)} {v : Value} {cache' : List (Query × Value)}
@@ -395,9 +372,9 @@ private theorem uniformOfFintype_lookup_isSome_le
   have hsub : {r : R | (cache.lookup (m, r)).isSome = true} ⊆
       {r : R | ∃ e ∈ cache.map (fun entry => (entry.1.2, ())), e.1 = id r} := by
     intro r hr
-    obtain ⟨e, he, hm⟩ := exists_mem_of_lookup_isSome hr
+    obtain ⟨e, he, hm⟩ := List.lookup_isSome_iff.mp hr
     refine ⟨(e.1.2, ()), List.mem_map_of_mem he, ?_⟩
-    simp [hm]
+    simp [(beq_iff_eq.mp hm).symm]
   refine (MeasureTheory.measure_mono hsub).trans ?_
   have hle := RandomOracle.toOuterMeasure_exists_mem_fst_eq_le (f := id)
     (μ := PMF.uniformOfFintype R) (δ := (Fintype.card R : ℝ≥0∞)⁻¹)
@@ -893,7 +870,8 @@ private theorem mem_of_mem_support_verify {M R Digest : Type} [DecidableEq M] [D
     ⟨hsome, hc₁⟩ | ⟨-, -, hc₁⟩
   · dsimp only at hsome hc₁
     rw [hc₁]
-    exact mem_cache_of_lookup_eq_some hsome
+    obtain ⟨before, after, hlist, -⟩ := List.lookup_eq_some_iff.mp hsome
+    simp [hlist]
   · dsimp only at hc₁
     rw [hc₁]
     exact List.mem_cons_self

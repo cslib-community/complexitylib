@@ -519,21 +519,6 @@ section Simulation
 
 variable (F : PrimeOrderGroupFamily) {Party : Type} [Fintype Party] [DecidableEq Party]
 
-private theorem exists_superset_card_eq (I : Finset Party) {t : ℕ}
-    (hI : I.card ≤ t) (ht : t < Fintype.card Party) :
-    ∃ J : Finset Party, I ⊆ J ∧ J.card = t := by
-  have hrem : t - I.card ≤ (Finset.univ \ I).card := by
-    rw [Finset.card_sdiff_of_subset (Finset.subset_univ I), Finset.card_univ]
-    omega
-  obtain ⟨K, hKsub, hKcard⟩ := Finset.exists_subset_card_eq hrem
-  refine ⟨I ∪ K, Finset.subset_union_left, ?_⟩
-  have hdisj : Disjoint I K := by
-    rw [Finset.disjoint_left]
-    intro x hx hxK
-    exact (Finset.mem_sdiff.mp (hKsub hxK)).2 hx
-  rw [Finset.card_union_of_disjoint hdisj, hKcard]
-  omega
-
 /-- Interpolation nodes `none ↦ 0` and `some i ↦ params.point i.1` on `Option J`. -/
 @[expose] def simNodes {q : ℕ} (params : Shamir.Params (ZMod q) Party) (J : Finset Party)
     (k : Option J) : ZMod q :=
@@ -641,7 +626,7 @@ commitments in the exponent via `simCommitFromShares`. -/
 noncomputable def feldmanSim (d : F.Desc) (params : Shamir.Params (ZMod (F.order d)) Party)
     (I : Finset Party) (hI : I.card ≤ params.threshold) (h : F.Carrier d) :
     PMF ((Fin (params.threshold + 1) → F.Carrier d) × (I → ZMod (F.order d))) :=
-  let hJex := exists_superset_card_eq I hI params.threshold_lt_card
+  let hJex := Finset.exists_superset_card_eq hI params.threshold_lt_card.le
   let J := hJex.choose
   have hIJ : I ⊆ J := hJex.choose_spec.1
   (PMF.uniformOfFintype (J → ZMod (F.order d))).map fun σJ =>
@@ -653,7 +638,7 @@ theorem feldmanView_eq_feldmanSim (d : F.Desc) (params : Shamir.Params (ZMod (F.
     (I : Finset Party) (hI : I.card ≤ params.threshold) (secret : ZMod (F.order d)) :
     feldmanView F d params I secret =
       feldmanSim F d params I hI (secret • F.generator d) := by
-  let hJex := exists_superset_card_eq I hI params.threshold_lt_card
+  let hJex := Finset.exists_superset_card_eq hI params.threshold_lt_card.le
   let J := hJex.choose
   have hIJ : I ⊆ J := hJex.choose_spec.1
   have hJt : J.card = params.threshold := hJex.choose_spec.2
@@ -1159,16 +1144,16 @@ noncomputable def feldmanToDLAdversary {t : ℕ}
     (I : Finset Party) (hI : I.card ≤ t) (ht : t < Fintype.card Party)
     (adversary : ℕ → F.Desc × (Fin (t + 1) → List Bool) × (I → ℕ) → ProbComp (List Bool))
     (n : ℕ) (input : F.Desc × List Bool) : ProbComp (List Bool) :=
-  let J := (exists_superset_card_eq I hI ht).choose
+  let hJex := Finset.exists_superset_card_eq hI ht.le
+  let J := hJex.choose
   let eJ : Fin t ≃ J :=
     (Fintype.equivFinOfCardEq
-      (by simp only [Fintype.card_coe]; exact (exists_superset_card_eq I hI ht).choose_spec.2)).symm
+      (by simp only [Fintype.card_coe]; exact hJex.choose_spec.2)).symm
   do
     let σVec ← sampleExpVec F n input.1 t
     let C := feldmanSimCommitWords F t params J eJ input.1 input.2 σVec
     let σ : I → ℕ := fun i =>
-      σVec (eJ.symm ⟨i.1, (exists_superset_card_eq I hI ht).choose_spec.1 i.2⟩) %
-        F.order input.1
+      σVec (eJ.symm ⟨i.1, hJex.choose_spec.1 i.2⟩) % F.order input.1
     adversary n (input.1, C, σ)
 
 /-- **Strict-PPT preservation**: `feldmanToDLAdversary` is uniform strict PPT whenever
@@ -1182,7 +1167,7 @@ theorem isPPTOn_feldmanToDLAdversary {t : ℕ}
     (hadv : IsPPTOn (encFeldmanInput F t I) encBits (fun p => adversary p.1 p.2)) :
     IsPPTOn (encPair encUnary (encPair F.encDesc encBits)) encBits
       (fun p => feldmanToDLAdversary F params I hI ht adversary p.1 p.2) := by
-  let hJex := exists_superset_card_eq I hI ht
+  let hJex := Finset.exists_superset_card_eq hI ht.le
   let J := hJex.choose
   have hIJ : I ⊆ J := hJex.choose_spec.1
   have hJt : J.card = t := hJex.choose_spec.2
@@ -1240,22 +1225,24 @@ theorem succProbability_feldmanSecrecyGame_le_discreteLogGame
       Game.succProbability
         (F.discreteLogGame setup (feldmanToDLAdversary F params I hI ht adversary) n) +
         (t : ℝ≥0) / 2 ^ n := by
-  let hJex := exists_superset_card_eq I hI ht
+  let hJex := Finset.exists_superset_card_eq hI ht.le
   let J := hJex.choose
   have hIJ : I ⊆ J := hJex.choose_spec.1
   have hJt : J.card = t := hJex.choose_spec.2
   let eJ : Fin t ≃ J := (Fintype.equivFinOfCardEq (by simp [hJt])).symm
-  let idealDL : Game := do
-    let d ← setup n
-    let s ← PMF.uniformOfFintype (ZMod (F.order d))
-    let σVec ← PMF.uniformOfFintype (Fin t → ZMod (F.order d))
+  let idealStep (d : F.Desc) (s : ZMod (F.order d)) (σVec : Fin t → ZMod (F.order d)) : Game :=
     let σJ : J → ZMod (F.order d) := fun i => σVec (eJ.symm i)
     let C : Fin (t + 1) → List Bool := fun j =>
       F.encode d (simCommitFromShares F d (params d) J (s • F.generator d) σJ
         ⟨j.1, by rw [hthresh d]; exact j.2⟩)
     let σ : I → ℕ := fun i => (σJ ⟨i.1, hIJ i.2⟩).val
-    let guess ← ProbComp.eval (adversary n (d, C, σ))
-    return decide ((ofBits guess : ZMod (F.order d)) = s)
+    (ProbComp.eval (adversary n (d, C, σ))).bind fun guess =>
+      PMF.pure (decide ((ofBits guess : ZMod (F.order d)) = s))
+  let idealDL : Game := do
+    let d ← setup n
+    let s ← PMF.uniformOfFintype (ZMod (F.order d))
+    let σVec ← PMF.uniformOfFintype (Fin t → ZMod (F.order d))
+    idealStep d s σVec
   have hreal_eq : feldmanSecrecyGame F setup params hthresh I adversary n = idealDL := by
     unfold feldmanSecrecyGame idealDL
     refine bind_congr fun d => ?_
@@ -1347,19 +1334,11 @@ theorem succProbability_feldmanSecrecyGame_le_discreteLogGame
     unfold idealDL PrimeOrderGroupFamily.discreteLogGame
     refine CloseTo.bind_right _ fun d _ => ?_
     refine CloseTo.bind_right _ fun s _ => ?_
-    let cont : (Fin t → ZMod (F.order d)) → Game := fun σVec =>
-      let σJ : J → ZMod (F.order d) := fun i => σVec (eJ.symm i)
-      let C : Fin (t + 1) → List Bool := fun j =>
-        F.encode d (simCommitFromShares F d (params d) J (s • F.generator d) σJ
-          ⟨j.1, by rw [hthresh d]; exact j.2⟩)
-      let σ : I → ℕ := fun i => (σJ ⟨i.1, hIJ i.2⟩).val
-      (ProbComp.eval (adversary n (d, C, σ))).bind fun guess =>
-        PMF.pure (decide ((ofBits guess : ZMod (F.order d)) = s))
-    have hc := (closeTo_sampleExpVec F n d t).bind_left cont
+    have hc := (closeTo_sampleExpVec F n d t).bind_left (idealStep d s)
     rw [PMF.bind_map] at hc
     have hrhs :
         ((ProbComp.eval (sampleExpVec F n d t)).bind fun v =>
-          cont (fun j => (v j : ZMod (F.order d)))) =
+          idealStep d s (fun j => (v j : ZMod (F.order d)))) =
         ((ProbComp.eval (feldmanToDLAdversary F params I hI ht adversary n
           (d, F.encode d (s • F.generator d)))).bind fun guess =>
             PMF.pure (decide ((ofBits guess : ZMod (F.order d)) = s))) := by
@@ -1367,7 +1346,7 @@ theorem succProbability_feldmanSecrecyGame_le_discreteLogGame
       dsimp only
       simp only [ProbComp.eval_bind, PMF.bind_bind]
       congr 1 with v : 1
-      dsimp only [cont]
+      dsimp only [idealStep]
       congr 2
       congr 1
       refine Prod.ext rfl (Prod.ext (funext fun j => ?_) (funext fun i => ?_))
