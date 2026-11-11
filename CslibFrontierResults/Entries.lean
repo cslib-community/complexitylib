@@ -29,6 +29,7 @@ import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
@@ -1071,7 +1072,24 @@ register_result "fo-dtc-l" where
     canonical numeric symbols, on Fin n with n ≥ 2, is in native L under encStructure; \
     malformed tables and cardinalities below two are rejected. Deterministic closure is \
     reflexive transitive closure of the deterministic reduct on tuples of fixed width, \
-    nested and at any polarity. The converse L ⊆ FO(DTC) is not formalized."
+    nested and at any polarity. The converse, L ⊆ FO(DTC), is in the entry \
+    immerman-l-capture."
+
+register_result "immerman-l-capture" where
+  title := "Immerman: FO(DTC) captures L on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 4.2", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.dtcDefinable_iff_encodedLanguage_mem_L
+  ]
+  scope := "Canonically ordered finite structures over a finite relational vocabulary, with \
+    universes Fin n, n ≥ 2, and numeric symbols order, BIT, zero, one and maximum computed \
+    from the size. One FO(DTC) sentence defines the query iff its source-only encoded \
+    language (encStructure) is in native L. Deterministic closure is reflexive transitive \
+    closure of the deterministic reduct on tuples of fixed width. Malformed table shapes and \
+    universes below two are rejected."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"

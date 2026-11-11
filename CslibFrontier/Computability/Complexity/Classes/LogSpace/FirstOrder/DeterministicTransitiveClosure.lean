@@ -30,7 +30,9 @@ halts with every register at most `(N + 1) ^ (d + w)` for input length `N`, maxi
 Each closure is evaluated by following unique successors for at most `n ^ k` steps, where the
 successor is found by enumerating all candidate tuples and running the compiled body on each.
 Every compiled block exits on both truth values, so closures under negation need nothing more
-([Immerman1987], Theorem 4.2). The converse inclusion L ⊆ FO(DTC) remains open.
+([Immerman1987], Theorem 4.2). The converse inclusion L ⊆ FO(DTC) is
+`DTCDefinable.of_encodedLanguage_mem_L`, and the two together give
+`dtcDefinable_iff_encodedLanguage_mem_L`, both in `DeterministicTransitiveClosure/Converse`.
 
 ## Main results
 
