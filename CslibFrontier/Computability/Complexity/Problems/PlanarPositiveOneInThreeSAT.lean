@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.Drawi
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.DrawingFits
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.DrawingCosts
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.DrawingPolyTime
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Logics.Propositional.CNF.ExactOne.PolyTime
 import Mathlib.Tactic.Linarith
 
@@ -30,6 +31,8 @@ counted only on occurring variables, and every ordinary source model has a uniqu
 
 ## Main definitions
 
+* `DrawnPlanarPositiveOneInExactThreeSATThreeInstance`,
+  `encDrawnPlanarPositiveOneInExactThreeSATThree`: supplied-drawing instances and binary encoding.
 * `PlanarPositiveOneInExactThreeSATThree`: the existential orthogonal-drawing language.
 * `DrawnPlanarPositiveOneInExactThreeSATThree`: the supplied-drawing language.
 * `SharpPlanarPositiveOneInExactThreeSATThree`, `SharpDrawnPlanarPositiveOneInExactThreeSATThree`:
@@ -59,52 +62,67 @@ The local clause gadgets are from [HuntMaratheRadhakrishnanStearns1998, Theorem 
 The quantitative composition is original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM
 
+/-- An instance of `DrawnPlanarPositiveOneInExactThreeSATThree`: a positive CNF formula
+paired with a finite integer orthogonal drawing of its incidence graph. -/
+@[ext] structure DrawnPlanarPositiveOneInExactThreeSATThreeInstance where
+  /-- The CNF formula. -/
+  formula : CNF ℕ
+  /-- The supplied integer orthogonal incidence drawing. -/
+  drawing : Graph.OrthogonalDrawing
+  deriving DecidableEq, Repr
+
+/-- Binary encoding of a CNF formula and its supplied orthogonal incidence drawing. -/
+enc_structure encDrawnPlanarPositiveOneInExactThreeSATThree :
+    DrawnPlanarPositiveOneInExactThreeSATThreeInstance where
+  formula : encCNF, drawing : Graph.encOrthogonalDrawing
+
 /-- Positive exact-three, occurrence-three exact-one formulas with an integer orthogonal
 incidence drawing whose full real segments meet only at common incident endpoints. -/
-def PlanarPositiveOneInExactThreeSATThree : Set (CNF ℕ) :=
+@[expose] def PlanarPositiveOneInExactThreeSATThree : Set (CNF ℕ) :=
   {φ | φ ∈ PositiveOneInExactThreeSATThree ∧
     ∃ d, Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d}
 
 /-- The same language with its finite integer incidence drawing supplied as input. -/
-def DrawnPlanarPositiveOneInExactThreeSATThree : Set (CNF ℕ × Graph.OrthogonalDrawing) :=
-  {x | x.1 ∈ PositiveOneInExactThreeSATThree ∧
-    Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph x.1) x.2}
+@[expose] def DrawnPlanarPositiveOneInExactThreeSATThree :
+    Set DrawnPlanarPositiveOneInExactThreeSATThreeInstance :=
+  {x | x.formula ∈ PositiveOneInExactThreeSATThree ∧
+    Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph x.formula) x.drawing}
 
 /-- The width-at-most-three positive planar variant, without requiring ternary clauses. -/
-def PlanarPositiveOneInThreeSATThree : Set (CNF ℕ) :=
+@[expose] def PlanarPositiveOneInThreeSATThree : Set (CNF ℕ) :=
   {φ | φ ∈ PositiveOneInThreeSATThree ∧
     ∃ d, Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d}
 
 open Classical in
 /-- Count positive exact-three, occurrence-three exact-one models of formulas that have a planar
 orthogonal incidence drawing; return zero otherwise. -/
-noncomputable def SharpPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) : ℕ :=
+@[expose] noncomputable def SharpPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) : ℕ :=
   if ∃ d, Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d then
     SharpPositiveOneInExactThreeSATThree φ else 0
 
 open Classical in
 /-- Count positive exact-three, occurrence-three exact-one models when the supplied drawing is a
 planar orthogonal incidence drawing of the formula; return zero otherwise. -/
-noncomputable def SharpDrawnPlanarPositiveOneInExactThreeSATThree
-    (x : CNF ℕ × Graph.OrthogonalDrawing) : ℕ :=
-  if Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph x.1) x.2 then
-    SharpPositiveOneInExactThreeSATThree x.1 else 0
+@[expose] noncomputable def SharpDrawnPlanarPositiveOneInExactThreeSATThree
+    (x : DrawnPlanarPositiveOneInExactThreeSATThreeInstance) : ℕ :=
+  if Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph x.formula) x.drawing then
+    SharpPositiveOneInExactThreeSATThree x.formula else 0
 
 /-- Apply only the constant-factor positive compiler after the existing planarization. -/
-def toPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) : CNF ℕ :=
+@[expose] def toPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) : CNF ℕ :=
   CNF.PositiveExactOneCompile.formula (toPlanarThreeSAT φ)
 
 /-- Compute the actual positive incidence drawing by replacing each planar source clause box. -/
-def toDrawnPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) :
-    CNF ℕ × Graph.OrthogonalDrawing :=
-  (toPlanarPositiveOneInExactThreeSATThree φ,
-    SAT.ExactOne.positiveDrawing (toPlanarThreeSAT φ) (toDrawnPlanarThreeSAT φ).2)
+@[expose] def toDrawnPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) :
+    DrawnPlanarPositiveOneInExactThreeSATThreeInstance :=
+  ⟨toPlanarPositiveOneInExactThreeSATThree φ,
+    SAT.ExactOne.positiveDrawing (toPlanarThreeSAT φ) (toDrawnPlanarThreeSAT φ).drawing⟩
 
 /-- The positive formula is produced in native polynomial time. -/
 @[fun_prop]
@@ -162,7 +180,7 @@ theorem size_toPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) :
 theorem isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree (φ : CNF ℕ) :
     Graph.IsPlanarOrthogonalDrawing
       (SAT.incidenceGraph (toPlanarPositiveOneInExactThreeSATThree φ))
-      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).2 :=
+      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).drawing :=
   SAT.ExactOne.positiveDrawing_isPlanarOrthogonalDrawing
     (isPlanarOrthogonalDrawing_toDrawnPlanarThreeSAT φ)
 
@@ -184,7 +202,7 @@ theorem mem_DrawnPlanarPositiveOneInExactThreeSATThree_toDrawn_iff (φ : CNF ℕ
   change toPlanarPositiveOneInExactThreeSATThree φ ∈ PositiveOneInExactThreeSATThree ∧
     Graph.IsPlanarOrthogonalDrawing
       (SAT.incidenceGraph (toPlanarPositiveOneInExactThreeSATThree φ))
-      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).2 ↔ _
+      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).drawing ↔ _
   rw [and_iff_left
     (isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree φ)]
   exact mem_PositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree_iff φ
@@ -199,7 +217,7 @@ theorem mem_PlanarPositiveOneInExactThreeSATThree_toPlanar_iff (φ : CNF ℕ) :
       (mem_PositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree_iff φ).mp h.1
   · intro h
     refine ⟨?_,
-      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).2,
+      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).drawing,
       isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree φ⟩
     exact
       (mem_PositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree_iff φ).mpr h
@@ -222,7 +240,7 @@ theorem mem_PlanarPositiveOneInThreeSATThree_toPlanar_iff (φ : CNF ℕ) :
     refine ⟨⟨⟨?_, positive_toPlanarPositiveOneInExactThreeSATThree φ,
       (oneSatisfiable_toPlanarPositiveOneInExactThreeSATThree_iff φ).mpr h⟩,
       count_vars_toPlanarPositiveOneInExactThreeSATThree_le φ⟩,
-      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).2,
+      (toDrawnPlanarPositiveOneInExactThreeSATThree φ).drawing,
       isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree φ⟩
     exact fun c hc => (exactClauses_toPlanarPositiveOneInExactThreeSATThree φ c hc).1.le
 
@@ -275,7 +293,7 @@ theorem parsimoniousReducible_SharpThreeSAT_SharpPlanarPositiveOneInExactThreeSA
 /-- The full compiler retains linear grid sides relative to the original ordinary 3SAT input. -/
 theorem toDrawnPlanarPositiveOneInExactThreeSATThree_fits (φ : CNF ℕ) :
     let s := φ.length + φ.vars.length + 1
-    Graph.drawingFits (toDrawnPlanarPositiveOneInExactThreeSATThree φ).2
+    Graph.drawingFits (toDrawnPlanarPositiveOneInExactThreeSATThree φ).drawing
       (14516280000 * s) (14516280000 * s) := by
   apply Graph.drawingFits_mono
     (SAT.ExactOne.positiveDrawing_fits (toPlanarThreeSAT φ) (toDrawnPlanarThreeSAT_fits φ)) <;>
@@ -286,10 +304,10 @@ ordinary 3SAT input. Segment and wire costs refer to the emitted full routes. -/
 theorem toDrawnPlanarPositiveOneInExactThreeSATThree_costs (φ : CNF ℕ) :
     let out := toDrawnPlanarPositiveOneInExactThreeSATThree φ
     let s := φ.length + φ.vars.length + 1
-    out.1.length ≤ 41405000 * s ^ 2 ∧ out.1.vars.length ≤ 124215000 * s ^ 2 ∧
-      out.2.1.length ≤ 165620000 * s ^ 2 ∧ out.2.2.length ≤ 124215000 * s ^ 2 ∧
-        Graph.drawingSegmentCount out.2 ≤ 141463000 * s ^ 2 ∧
-          Graph.drawingWireLength out.2 ≤ 31029887000000 * s ^ 2 := by
+    out.formula.length ≤ 41405000 * s ^ 2 ∧ out.formula.vars.length ≤ 124215000 * s ^ 2 ∧
+      out.drawing.1.length ≤ 165620000 * s ^ 2 ∧ out.drawing.2.length ≤ 124215000 * s ^ 2 ∧
+        Graph.drawingSegmentCount out.drawing ≤ 141463000 * s ^ 2 ∧
+          Graph.drawingWireLength out.drawing ≤ 31029887000000 * s ^ 2 := by
   have hs := size_toPlanarPositiveOneInExactThreeSATThree φ
   have hp := toDrawnPlanarThreeSAT_costs φ
   have hc := SAT.ExactOne.positiveDrawing_costs
@@ -306,16 +324,16 @@ polynomial time under their ordinary binary encodings. -/
 @[fun_prop]
 theorem computableInPolyTime_toDrawnPlanarPositiveOneInExactThreeSATThree :
     ComputableInPolyTime toDrawnPlanarPositiveOneInExactThreeSATThree encCNF
-      (encPair encCNF Graph.encOrthogonalDrawing) := by
-  have hf := (CNF.PositiveExactOneCompile.computableInPolyTime_formula encNat).comp
-    (ComputableInPolyTime.fst encCNF Graph.encOrthogonalDrawing)
-  have h := (hf.prod SAT.ExactOne.DrawingNative.computableInPolyTime_positiveDrawing).comp
-    computableInPolyTime_toDrawnPlanarThreeSAT
-  exact h
+      encDrawnPlanarPositiveOneInExactThreeSATThree := by
+  have hd := SAT.ExactOne.DrawingNative.computableInPolyTime_positiveDrawing.comp
+    (computableInPolyTime_toPlanarThreeSAT.prod
+      (encDrawnPlanarThreeSATThree_drawing_polyTime computableInPolyTime_toDrawnPlanarThreeSAT))
+  exact encDrawnPlanarPositiveOneInExactThreeSATThree_mk_polyTime
+    computableInPolyTime_toPlanarPositiveOneInExactThreeSATThree hd
 
 /-- Ordinary 3SAT reduces natively to the positive target with its actual drawing supplied. -/
 theorem polyTimeReducible_ThreeSAT_DrawnPlanarPositiveOneInExactThreeSATThree :
-    PolyTimeReducible encCNF (encPair encCNF Graph.encOrthogonalDrawing)
+    PolyTimeReducible encCNF encDrawnPlanarPositiveOneInExactThreeSATThree
       ThreeSAT DrawnPlanarPositiveOneInExactThreeSATThree :=
   ⟨toDrawnPlanarPositiveOneInExactThreeSATThree,
     computableInPolyTime_toDrawnPlanarPositiveOneInExactThreeSATThree,
@@ -323,14 +341,15 @@ theorem polyTimeReducible_ThreeSAT_DrawnPlanarPositiveOneInExactThreeSATThree :
 
 /-- Supplied-drawing planar positive exact-three, occurrence-three exact-one SAT is NP-hard. -/
 theorem DrawnPlanarPositiveOneInExactThreeSATThree_npHard :
-    NPHard (encPair encCNF Graph.encOrthogonalDrawing) DrawnPlanarPositiveOneInExactThreeSATThree :=
+    NPHard encDrawnPlanarPositiveOneInExactThreeSATThree
+      DrawnPlanarPositiveOneInExactThreeSATThree :=
   ThreeSAT_npHard.trans polyTimeReducible_ThreeSAT_DrawnPlanarPositiveOneInExactThreeSATThree
 
 /-- Supplying the emitted drawing gives a native parsimonious reduction to the count guarded by the
 validity of the supplied drawing: the emitted drawing is always a planar orthogonal incidence
 drawing of the emitted formula. -/
 theorem parsimoniousReducible_SharpThreeSAT_SharpDrawnPlanarPositiveOneInExactThreeSATThree :
-    ParsimoniousReducible encCNF (encPair encCNF Graph.encOrthogonalDrawing) SharpThreeSAT
+    ParsimoniousReducible encCNF encDrawnPlanarPositiveOneInExactThreeSATThree SharpThreeSAT
       SharpDrawnPlanarPositiveOneInExactThreeSATThree :=
   ⟨toDrawnPlanarPositiveOneInExactThreeSATThree,
     computableInPolyTime_toDrawnPlanarPositiveOneInExactThreeSATThree, fun φ => by

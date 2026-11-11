@@ -94,6 +94,17 @@ and curry independent coins of different biases, and compute the probability tha
 show `true`. Run
 `scripts/build.sh CslibFrontierTests.PMFConditioning`.
 
+For real conditional expectations on a finite product distribution `PMF.pi p` (`∀ i : ι, α i`) given
+coordinate assignments on `fixed : Finset ι`, import
+[Product/ConditionalExpectation.lean](../../CslibFrontier/Probability/Product/ConditionalExpectation.lean).
+`PMF.condExpect p f fixed x` sums `f` against the product of `(p i)` over unfixed coordinates `i ∉ fixed`
+without requiring positive cylinder mass, so it extends smoothly outside `(PMF.pi p).support` while
+identifying `(PMF.pi p).filter …` with `fixedPi p fixed x` whenever fixed coordinates lie in
+`(p i).support` (`filter_pi_cylinder`). `condExpect_empty` recovers the full product expectation,
+`condExpect_univ` evaluates `f x`, `sum_mul_condExpect_insert` is the one-coordinate tower law, and
+`exists_condExpect_insert_le` / `exists_le_condExpect_insert` produce support-valued coordinate
+choices preserving the conditional expectation.
+
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
 upper bound, import [PMF/ToReal.lean](../../CslibFrontier/Probability/PMF/ToReal.lean) and use
 `PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
@@ -174,6 +185,28 @@ optimal cost is exactly `2`, no generating tree does better, and the entropy is 
 They also cover a non-halting tree that generates nothing and has infinite cost. Run
 `scripts/build.sh CslibFrontierTests.KnuthYao`. The model counts coin flips only; it does not certify
 that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
+When an exact sampler instead repeats a fixed-width `width`-bit decoder `attempt : List Bool → Option α`,
+import [DDGTree/Rejection.lean](../../CslibFrontier/Probability/DDGTree/Rejection.lean) for
+`BlockRejectionSpec`, [Languages/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Languages/Probabilistic/RejectionSampling.lean)
+for the `ProbComp` programs (`sampleBlockTrials`, `sampleSeededTrials`, `sampleBlockCapped`), and
+[Computability/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Computability/Probabilistic/RejectionSampling.lean)
+for strict `IsPPTOn` certificates (`isPPTOn_sampleSeededTrials`, `isPPTOn_sampleBlockTrials`,
+`isPPTOn_sampleBlockCapped`) when `trials` and `width` are computed in `encUnary`, the `attempt`
+decoder is polynomial-time on input-and-block pairs, and (`sampleBlockCapped`) the `fallback` map
+is polynomial-time. On the unbounded
+side, `spec.toDDGTree` satisfies `run_toDDGTree` (`n / width` trials after `n` fair bits), generates
+the target law when `0 < width` and `acceptProb ≠ 0` (`toDDGTree_generates`), and reads
+`width / acceptProb` fair bits in expectation (`expectedFlips_toDDGTree`, including `⊤` when
+`acceptProb = 0`). On the capped side, `runTrials_none` gives exact failure `rejectProb ^ t` and
+`dist_runCapped_le` bounds fallback statistical distance by `(rejectProb ^ t).toReal`.
+`uniformFinTree` and `uniformFinRejectionSpec` specialize this to `Fin n` (`≤ 2 * Nat.clog 2 n`
+expected flips, `k` flips at `2 ^ k`, and `≤ (1 / 2) ^ t` capped failure; `dyadicFinRejectionSpec`
+and `subsetDyadicSpec` cover `dyadicSize n` and finite subsets). The
+[checked clients](../../CslibFrontierTests/FairBitRejectionAndCondExp.lean) verify exact `8 / 3` and
+`24 / 5` flip counts on `Fin 3` and `Fin 5`, capped `Fin 3` bounds, the never-accepting `⊤`
+boundary, subset sampling on `Fin 6`, and `IsPPTOn`; run
+`scripts/build.sh CslibFrontierTests.FairBitRejectionAndCondExp`.
 
 ## Polarize statistical distance
 
@@ -2313,3 +2346,73 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 `scripts/build.sh CslibFrontierTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
+
+## Bound adapted Bernoulli counts and hitting times by stochastic domination
+
+Import [`CslibFrontier.Probability.StochasticDomination`](../../CslibFrontier/Probability/StochasticDomination.lean)
+(or its constituent submodules) and open `Cslib.Probability` when proving tail bounds or expected
+stopping-time bounds for sequences of adapted events whose step-wise conditional success
+probabilities satisfy lower or upper bounds.
+
+- **First-order stochastic order**:
+  [`StochasticDomination/Basic.lean`](../../CslibFrontier/Probability/StochasticDomination/Basic.lean)
+  defines `StochasticallyDominates μ ν` on `Measure α` (`ν U ≤ μ U` for measurable upper sets)
+  and `PMF.StochasticallyDominates p q` on `PMF α`. Equate them with measurable monotone
+  `ℝ≥0∞`-valued Lebesgue expectations on `SFinite` measures (`stochasticallyDominates_iff_lintegral`),
+  with measurable monotone Bochner expectations on probability measures (`IsProbabilityMeasure μ`,
+  `IsProbabilityMeasure ν`) for functions integrable under both `μ` and `ν`
+  (`stochasticallyDominates_iff_integral`, which fails for unequal-mass measures), with upper tails
+  on `ℕ` (`stochasticallyDominates_nat_iff_Ici`) and probability-measure lower tails /
+  `ProbabilityTheory.cdf` (`stochasticallyDominates_nat_iff_Iio`,
+  `stochasticallyDominates_real_iff_cdf`), `Bool` coin laws (`PMF.stochasticallyDominates_bool_iff`),
+  couplings (`StochasticallyDominates.of_coupling`), and closure under `map`, `bind` (on `SFinite`
+  measures), and `add_prod`.
+- **Poisson-binomial and binomial benchmarks**:
+  [`PoissonBinomial.lean`](../../CslibFrontier/Probability/PoissonBinomial.lean) defines
+  `PMF.poissonBinomial : List unitInterval → PMF ℕ` with convolution (`poissonBinomial_append`),
+  permutation invariance (`poissonBinomial_perm`), independent-coin product equivalence
+  (`poissonBinomial_eq_map_pi`), and `ProbabilityTheory.binomial` specialization
+  (`toMeasure_poissonBinomial_replicate`).
+  [`StochasticDomination/PoissonBinomial.lean`](../../CslibFrontier/Probability/StochasticDomination/PoissonBinomial.lean)
+  proves parameter monotonicity (`poissonBinomial_stochasticallyDominates_of_forall₂`,
+  `binomial_stochasticallyDominates_of_le`, `binomial_stochasticallyDominates_of_nat_le`) and, for
+  strictly positive success probability `0 < (p : ℝ)`, the exact negative-binomial waiting-time
+  series `tsum_binomial_real_Iio : ∑' t, (ProbabilityTheory.binomial t p).real (Set.Iio r) = r / p`.
+- **Finite-horizon adapted processes**:
+  [`StochasticDomination/Adapted.lean`](../../CslibFrontier/Probability/StochasticDomination/Adapted.lean)
+  defines `adaptedCount A n` on general `Filtration ℕ m` (under `IsProbabilityMeasure P` and
+  `MeasurableSet[ℱ (t + 1)] (A t)`) with both lower- and upper-envelope domination
+  (`adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_adaptedCount`), active-before-target binomial tails
+  requiring the lower bound `p` only while `adaptedCount A t < r`
+  (`adaptedCount_real_Iio_le_binomial`), specializations to Markov Ionescu–Tulcea trajectories
+  (`traj_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_traj_adaptedCount`,
+  `trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
+  sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
+  `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Infinite-horizon stopping-time means**:
+  [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
+  proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and
+  `integral_untopD_eq_tsum_real_lt` under `IsFiniteMeasure P`, measurable `τ`, and summability of
+  `fun n => P.real {n < τ}`, certifying `τ ≠ ⊤` a.e. and integrability of
+  `((τ ·).untopD 0 : ℝ)`). Under `IsProbabilityMeasure P` (or `IsMarkovKernel (κ n)` with an initial `[IsProbabilityMeasure μ₀]` for mixtures, or just `IsMarkovKernel (κ n)` for fixed prefixes), adapted events
+  `MeasurableSet[ℱ (t + 1)] (A t)`, and strictly positive success probability `0 < (p : ℝ)`,
+  `stoppingTime_mean_le_of_adaptedCount_le` assumes `P[A t | ℱ t] ≥ p` a.e. before `τ` (`{t < τ}`)
+  and `r ≤ adaptedCount A n ω → τ ω ≤ n` to deduce `τ ≠ ⊤` a.e., integrability of
+  `((τ ·).untopD 0 : ℝ)`, and `𝔼[(τ ·).untopD 0] ≤ r / p`; the hitting-time specializations
+  (`countHittingTime_mean_le`, `traj_countHittingTime_mean_le`,
+  `trajMeasure_countHittingTime_mean_le`) assume the conditional lower bound `p` while
+  `adaptedCount A t < r`.
+
+The checked [`StochasticDomination.lean` clients](../../CslibFrontierTests/StochasticDomination.lean)
+verify concrete `ℕ`/`ℝ`/`Bool` order inequalities (`lintegral_le`, `integral_le`, `bind`), exact
+heterogeneous `poissonBinomial` masses and means, `ProbabilityTheory.binomial` comparison, a
+state-dependent sequential `PMF` process, lower/upper `Kernel.trajMeasure` envelopes, a
+target-stopped `Kernel.trajMeasure` process whose success probability drops to `0` once `r = 2`
+successes are reached while satisfying `𝔼[τ_2] ≤ 4`, and a truncated stopping time strictly
+distinct from `countHittingTime`. Run `scripts/build.sh CslibFrontierTests.StochasticDomination` from
+the repository root to check them.
+Instantiating these theorems on oracle-program executions remains open until the stochastic-oracle
+semantics ([#2530](https://github.com/cslib-community/cslib-frontier/pull/2530)) lands on `main`.

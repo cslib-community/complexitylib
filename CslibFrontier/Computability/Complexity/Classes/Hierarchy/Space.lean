@@ -68,7 +68,9 @@ hierarchy theorem [Stearns, Hartmanis and Lewis][StearnsHartmanisLewis1965],
 * `DSPACE (n ^ k) ⊂ DSPACE (n ^ (k + 1))` (`Cslib.Complexity.DSPACE_pow_ssubset_DSPACE_pow_succ`);
 * `L ⊂ PSPACE` (`Cslib.Complexity.L_ssubset_PSPACE`).
 
-The gap `f = o(g)` and the lower bound `log n ≤ g n` are the textbook ones.
+The gap `f = o(g)` and the lower bound `log n ≤ g n` are the textbook ones. The nondeterministic
+space hierarchy, under the same hypotheses, is in
+`CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace`.
 
 ## Main definitions
 
@@ -88,6 +90,9 @@ The gap `f = o(g)` and the lower bound `log n ≤ g n` are the textbook ones.
   `Cslib.Complexity.DSPACE_log2_pow_ssubset_DSPACE_log2_pow_succ`,
   `Cslib.Complexity.DSPACE_pow_ssubset_DSPACE_pow_succ`, `Cslib.Complexity.L_ssubset_PSPACE`: its
   corollaries.
+* `Cslib.Complexity.eventually_mul_log2_pow_add_le`,
+  `Cslib.Complexity.eventually_mul_pow_add_le_succ_pow`: the gaps between consecutive powers of
+  `log₂ n` and of `n`, shared with the nondeterministic corollaries.
 
 ## References
 
@@ -392,7 +397,7 @@ theorem DSPACE_ssubset_DSPACE {f g : ℕ → ℕ} (hg : SpaceConstructible g)
   omega
 
 /-- `⌊log₂ n⌋ ^ (k + 1)` eventually dominates every `c * ⌊log₂ n⌋ ^ k + c`. -/
-private theorem eventually_mul_log2_pow_add_le (k c : ℕ) :
+theorem eventually_mul_log2_pow_add_le (k c : ℕ) :
     ∀ᶠ n in atTop, c * Nat.log2 n ^ k + c ≤ Nat.log2 n ^ (k + 1) := by
   filter_upwards [eventually_ge_atTop (2 ^ (2 * c + 1))] with n hn
   have hl : 2 * c + 1 ≤ Nat.log2 n :=
@@ -427,20 +432,24 @@ theorem L_ssubset_PSPACE : L encBits ⊂ PSPACE encBits :=
       Nat.pow_le_pow_left ((Nat.log2_le_self n).trans (Nat.le_succ n)) 2).trans
     (DSPACE_subset_PSPACE (by fun_prop))
 
-/-- **Polynomial space has a strict hierarchy**: `DSPACE (n ^ k) ⊂ DSPACE (n ^ (k + 1))`
-[Sipser, Corollary 9.5][Sipser2013]. The diagonal within space `4 * (n + 1) ^ (k + 1)` separates
-them. -/
-theorem DSPACE_pow_ssubset_DSPACE_pow_succ (k : ℕ) :
-    DSPACE encBits (· ^ k) ⊂ DSPACE encBits (· ^ (k + 1)) := by
-  refine (DSPACE_ssubset_DSPACE (g := fun n => (n + 1) ^ (k + 1))
-    (spaceConstructible_succ_pow (k + 1))
-    (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)))
-    fun c => ?_).trans_subset (DSPACE_subset_of_le_mul_add (2 ^ (k + 1)) 1
-      fun n => by simpa using Nat.mul_add_one_pow_le_two_pow 1 (k + 1) n)
+/-- `(n + 1) ^ (k + 1)` eventually dominates every `c * n ^ k + c`. -/
+theorem eventually_mul_pow_add_le_succ_pow (k c : ℕ) :
+    ∀ᶠ n in atTop, c * n ^ k + c ≤ (n + 1) ^ (k + 1) := by
   filter_upwards [eventually_ge_atTop (2 * c)] with n hc
   have h₁ : n ^ k ≤ (n + 1) ^ k := Nat.pow_le_pow_left (Nat.le_succ n) k
   have h₂ : 1 ≤ (n + 1) ^ k := Nat.one_le_pow _ _ (by omega)
   have e : (n + 1) ^ (k + 1) = (n + 1) ^ k * (n + 1) := pow_succ ..
   nlinarith
+
+/-- **Polynomial space has a strict hierarchy**: `DSPACE (n ^ k) ⊂ DSPACE (n ^ (k + 1))`
+[Sipser, Corollary 9.5][Sipser2013]. The diagonal within space `4 * (n + 1) ^ (k + 1)` separates
+them. -/
+theorem DSPACE_pow_ssubset_DSPACE_pow_succ (k : ℕ) :
+    DSPACE encBits (· ^ k) ⊂ DSPACE encBits (· ^ (k + 1)) :=
+  (DSPACE_ssubset_DSPACE (g := fun n => (n + 1) ^ (k + 1))
+    (spaceConstructible_succ_pow (k + 1))
+    (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)))
+    (eventually_mul_pow_add_le_succ_pow k)).trans_subset (DSPACE_subset_of_le_mul_add (2 ^ (k + 1))
+      1 fun n => by simpa using Nat.mul_add_one_pow_le_two_pow 1 (k + 1) n)
 
 end Cslib.Complexity
