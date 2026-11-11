@@ -70,9 +70,8 @@ theorem isPPTOn_lyubashevskySigningParams
       (fun input : ℕ × List (List ℤ) × List (List ℤ) × List Bool =>
         let (security, secret, matrix, msg) := input
         lyubashevskySignBoundedNative hash
-          ((lyubashevskySigningParams security, secret, matrix, msg), security + 1)) := by
+          (⟨lyubashevskySigningParams security, secret, matrix, msg⟩, security + 1)) := by
   apply (isPPTOn_lyubashevskySignBoundedNative hhash).preprocess
-  unfold encLyubashevskySignInput
   fun_prop
 
 /-- At the chosen radius every exact signing attempt fails with probability at most one half,

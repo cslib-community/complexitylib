@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Tactic.PolyTime
@@ -45,31 +46,61 @@ namespace Cslib.Crypto.Protocols.SigmaProtocol
 
 open Turing.MultiTapeTM
 
-/-- Dimensions followed by two challenge/optional-response pairs. -/
-abbrev LyubashevskyExtractInput :=
-  (ℕ × ℕ) × ((List Bool × Option (List ℤ)) × (List Bool × Option (List ℤ)))
+/-- Dimensions followed by two challenge/optional-response pairs for native special-soundness
+extraction. -/
+@[ext]
+structure LyubashevskyExtractInput where
+  /-- Response vector length `m`. -/
+  m : ℕ
+  /-- Challenge bit-vector length `k`. -/
+  k : ℕ
+  /-- First challenge bit list `c`. -/
+  challenge1 : List Bool
+  /-- First optional response vector `z`. -/
+  response1 : Option (List ℤ)
+  /-- Second challenge bit list `c'`. -/
+  challenge2 : List Bool
+  /-- Second optional response vector `z'`. -/
+  response2 : Option (List ℤ)
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Unary dimensions, raw challenges and framed optional lists of binary signed integers. -/
-def encLyubashevskyExtractInput : LyubashevskyExtractInput ↪ List Bool :=
-  encPair (encPair encUnary encUnary)
-    (encPair (encPair encBits (encOption (encList encIntBin)))
-      (encPair encBits (encOption (encList encIntBin))))
+enc_structure encLyubashevskyExtractInput : LyubashevskyExtractInput where
+  m : encUnary,
+  k : encUnary,
+  challenge1 : encBits,
+  response1 : (encOption (encList encIntBin)),
+  challenge2 : encBits,
+  response2 : (encOption (encList encIntBin))
+
+attribute [fun_prop]
+  encLyubashevskyExtractInput_m_polyTime encLyubashevskyExtractInput_k_polyTime
+  encLyubashevskyExtractInput_challenge1_polyTime encLyubashevskyExtractInput_response1_polyTime
+  encLyubashevskyExtractInput_challenge2_polyTime encLyubashevskyExtractInput_response2_polyTime
+  encLyubashevskyExtractInput_mk_polyTime
 
 /-- Parse every input word with the existing framing conventions; malformed fields have total
 zero/default interpretations. -/
 def decodeLyubashevskyExtractInput (word : List Bool) : LyubashevskyExtractInput :=
-  let dimensions := unframe word
-  let rows := dropFrame word
+  let rest1 := dropFrame word
+  let rest2 := dropFrame rest1
+  let rest3 := dropFrame rest2
+  let rest4 := dropFrame rest3
   let response (w : List Bool) : Option (List ℤ) :=
     if w.isEmpty then none else some ((frames w.tail).map decodeIntBin)
-  let row (w : List Bool) := (unframe w, response (dropFrame w))
-  (((unframe dimensions).length, (dropFrame dimensions).length),
-    (row (unframe rows), row (dropFrame rows)))
+  ⟨(unframe word).length, (unframe rest1).length, unframe rest2, response (unframe rest3),
+    unframe rest4, response (dropFrame rest4)⟩
 
 private theorem extractInput_decoder :
     ∃ D : Decoder encLyubashevskyExtractInput, D.decode = decodeLyubashevskyExtractInput := by
-  let row := Decoder.pair Decoder.bits (Decoder.option (Decoder.list Decoder.intBin))
-  let decoder := Decoder.pair (Decoder.pair Decoder.unary Decoder.unary) (Decoder.pair row row)
+  let resp := Decoder.option (Decoder.list Decoder.intBin)
+  let fields := Decoder.pair Decoder.unary (Decoder.pair Decoder.unary
+    (Decoder.pair Decoder.bits (Decoder.pair resp (Decoder.pair Decoder.bits resp))))
+  let decoder : Decoder encLyubashevskyExtractInput := fields.map
+    (fun p => ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2.1, p.2.2.2.2.2⟩)
+    (fun x : LyubashevskyExtractInput =>
+      (x.m, x.k, x.challenge1, x.response1, x.challenge2, x.response2))
+    (fun _ => rfl) (fun _ => rfl)
   exact ⟨decoder, rfl⟩
 
 /-- Parsing inverts the complete canonical input encoding. -/
@@ -90,16 +121,15 @@ theorem computableInPolyTime_decodeLyubashevskyExtractInput :
 /-- Compute `z-z′` first, then the SIGNED challenge difference `c′-c`. The unary dimensions
 control both output segments; optional responses default to zero coordinatewise. -/
 def lyubashevskyExtractList (input : LyubashevskyExtractInput) : List ℤ :=
-  ((List.range input.1.1).map fun i =>
-    (input.2.1.2.getD []).getD i 0 - (input.2.2.2.getD []).getD i 0) ++
-  ((List.range input.1.2).map fun i =>
-    (if input.2.2.1.getD i false then (1 : ℤ) else 0) -
-      (if input.2.1.1.getD i false then (1 : ℤ) else 0))
+  ((List.range input.m).map fun i =>
+    (input.response1.getD []).getD i 0 - (input.response2.getD []).getD i 0) ++
+  ((List.range input.k).map fun i =>
+    (if input.challenge2.getD i false then (1 : ℤ) else 0) -
+      (if input.challenge1.getD i false then (1 : ℤ) else 0))
 
 /-- Extraction always writes the two declared segments, even on malformed-length inputs. -/
-@[simp] theorem length_lyubashevskyExtractList (m k : ℕ)
-    (cz cz' : List Bool × Option (List ℤ)) :
-    (lyubashevskyExtractList ((m, k), cz, cz')).length = m + k := by
+@[simp] theorem length_lyubashevskyExtractList (input : LyubashevskyExtractInput) :
+    (lyubashevskyExtractList input).length = input.m + input.k := by
   simp [lyubashevskyExtractList]
 
 /-- One native extractor handles runtime dimensions and all binary integer magnitudes. -/
@@ -107,8 +137,7 @@ def lyubashevskyExtractList (input : LyubashevskyExtractInput) : List ℤ :=
 theorem computableInPolyTime_lyubashevskyExtractList :
     ComputableInPolyTime lyubashevskyExtractList encLyubashevskyExtractInput
       (encList encIntBin) := by
-  apply ComputableInPolyTime.of_tidy
-  unfold lyubashevskyExtractList encLyubashevskyExtractInput
+  unfold lyubashevskyExtractList
   fun_prop
 
 private theorem getD_optional_ofFn {m : ℕ} (z : Option (Fin m → ℤ)) (i : Fin m) :
@@ -125,13 +154,13 @@ private theorem map_range_eq_ofFn {α : Type} (n : ℕ) (f : ℕ → α) (g : Fi
 challenge difference. This formula is independent of statement matrices and the modulus. -/
 theorem lyubashevskyExtractList_ofFn {m k : ℕ} (c : Fin k → Bool) (z : Option (Fin m → ℤ))
     (c' : Fin k → Bool) (z' : Option (Fin m → ℤ)) :
-    lyubashevskyExtractList ((m, k),
-      ((List.ofFn c, z.map List.ofFn), (List.ofFn c', z'.map List.ofFn))) =
+    lyubashevskyExtractList
+      ⟨m, k, List.ofFn c, z.map List.ofFn, List.ofFn c', z'.map List.ofFn⟩ =
       List.ofFn (Fin.append (fun i => (z.getD 0) i - (z'.getD 0) i)
         (fun i => (if c' i then (1 : ℤ) else 0) - (if c i then (1 : ℤ) else 0))) := by
   rw [List.ofFn_fin_append]
   unfold lyubashevskyExtractList
-  dsimp only [Prod.fst, Prod.snd]
+  dsimp only
   congr 1
   · apply map_range_eq_ofFn
     intro i
@@ -158,7 +187,7 @@ theorem computableInPolyTime_lyubashevskyExtractWord :
 @[simp] theorem lyubashevskyExtractWord_enc (input : LyubashevskyExtractInput) :
     lyubashevskyExtractWord (encLyubashevskyExtractInput input) =
       encList encIntBin (lyubashevskyExtractList input) := by
-  simp [lyubashevskyExtractWord]
+  rw [lyubashevskyExtractWord, decodeLyubashevskyExtractInput_enc]
 
 /-- Canonical vectors realize the actual typed extractor for every statement and commitment.
 The ignored statement dimensions and modulus do not need to be supplied to the word program. -/
@@ -166,8 +195,8 @@ theorem lyubashevskyExtractList_eq_extract (n m k q : ℕ)
     (y : Matrix (Fin n) (Fin m) (ZMod q) × Matrix (Fin n) (Fin k) (ZMod q))
     (w : Fin n → ZMod q) (c : BitString k) (z : Option (Fin m → ℤ))
     (c' : BitString k) (z' : Option (Fin m → ℤ)) :
-    lyubashevskyExtractList ((m, k),
-      ((List.ofFn c, z.map List.ofFn), (List.ofFn c', z'.map List.ofFn))) =
+    lyubashevskyExtractList
+      ⟨m, k, List.ofFn c, z.map List.ofFn, List.ofFn c', z'.map List.ofFn⟩ =
       List.ofFn (fun i : Fin (m + k) =>
         lyubashevskyExtract n m k q y w c z c' z' (finSumFinEquiv.symm i)) := by
   rw [lyubashevskyExtractList_ofFn]
@@ -180,8 +209,8 @@ theorem lyubashevskyExtractWord_eq_extract (n m k q : ℕ)
     (y : Matrix (Fin n) (Fin m) (ZMod q) × Matrix (Fin n) (Fin k) (ZMod q))
     (w : Fin n → ZMod q) (c : BitString k) (z : Option (Fin m → ℤ))
     (c' : BitString k) (z' : Option (Fin m → ℤ)) :
-    lyubashevskyExtractWord (encLyubashevskyExtractInput ((m, k),
-      ((List.ofFn c, z.map List.ofFn), (List.ofFn c', z'.map List.ofFn)))) =
+    lyubashevskyExtractWord (encLyubashevskyExtractInput
+      ⟨m, k, List.ofFn c, z.map List.ofFn, List.ofFn c', z'.map List.ofFn⟩) =
       encList encIntBin (List.ofFn (fun i : Fin (m + k) =>
         lyubashevskyExtract n m k q y w c z c' z' (finSumFinEquiv.symm i))) := by
   rw [lyubashevskyExtractWord_enc, lyubashevskyExtractList_eq_extract n m k q y w]

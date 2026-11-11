@@ -22,7 +22,7 @@ open scoped ENNReal
 
 abbrev params : LyubashevskyParams :=
   { n := 1, m := 1, k := 1, width := 6, q := 7, γ := 2, β := 1 }
-abbrev input : LyubashevskySignInput := (params, [[1]], [[1]], [])
+abbrev input : LyubashevskySignInput := ⟨params, [[1]], [[1]], []⟩
 def hashTrue : List Bool × List Bool → List Bool := fun _ => [true]
 
 /-- Randomness zero yields commitment zero and response one. -/
@@ -42,7 +42,7 @@ example : lyubashevskyVerifySig 1 1 1 7 2 1
   decide
 
 /-- Missing secret/public rows and randomness coordinates use the documented zero defaults. -/
-example : lyubashevskySignPostprocess hashTrue ((params, [], [], []), []) =
+example : lyubashevskySignPostprocess hashTrue (⟨params, [], [], []⟩, []) =
     some (encList encIntBin [0], encList encIntBin [0]) := by decide
 
 /-- Only the configured challenge prefix is used. -/
@@ -75,5 +75,17 @@ example : CloseTo
   norm_num [params]
   rw [← mul_div_assoc]
   norm_num
+
+/-- Extensionality and compositional `fun_prop` work directly on `LyubashevskySignInput`. -/
+example (a b : LyubashevskySignInput) (hp : a.params = b.params) (hs : a.secret = b.secret)
+    (hm : a.matrix = b.matrix) (hmsg : a.message = b.message) : a = b := by
+  ext1 <;> assumption
+
+example :
+    ComputableInPolyTime
+      (fun x : LyubashevskySignInput =>
+        (⟨x.params, x.matrix, x.secret, x.message⟩ : LyubashevskySignInput))
+      encLyubashevskySignInput encLyubashevskySignInput := by
+  fun_prop
 
 end CslibFrontierTests.Crypto.LyubashevskySigning

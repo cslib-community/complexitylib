@@ -55,13 +55,29 @@ open Probability Probability.PMF Turing.MultiTapeTM Interactive
 open scoped ENNReal _root_.Matrix
 
 /-- Native signing input: parameters, secret integer rows, public matrix rows, message bits. -/
-abbrev LyubashevskySignInput :=
-  LyubashevskyParams × List (List ℤ) × List (List ℤ) × List Bool
+@[ext]
+structure LyubashevskySignInput where
+  /-- Protocol parameters `(n, m, k, width, q, γ, β)`. -/
+  params : LyubashevskyParams
+  /-- Secret integer rows of dimensions `m × k`. -/
+  secret : List (List ℤ)
+  /-- Public matrix rows of dimensions `n × m`. -/
+  matrix : List (List ℤ)
+  /-- Message bit string to be signed. -/
+  message : List Bool
+  deriving DecidableEq, Repr
 
 /-- Matrix entries are binary; dimensions and sampling width retain the parameter encoding. -/
-@[expose] def encLyubashevskySignInput : LyubashevskySignInput ↪ List Bool :=
-  encPair encLyubashevskyParams
-    (encPair (encList (encList encIntBin)) (encPair (encList (encList encIntBin)) encBits))
+enc_structure encLyubashevskySignInput : LyubashevskySignInput where
+  params : encLyubashevskyParams,
+  secret : (encList (encList encIntBin)),
+  matrix : (encList (encList encIntBin)),
+  message : encBits
+
+attribute [fun_prop]
+  encLyubashevskySignInput_params_polyTime encLyubashevskySignInput_secret_polyTime
+  encLyubashevskySignInput_matrix_polyTime encLyubashevskySignInput_message_polyTime
+  encLyubashevskySignInput_mk_polyTime
 
 /-- Input `(input, y)` of the native commitment, with the commitment randomness `y` in binary: the
 signing input encoded by `encLyubashevskySignInput`, then `y : List ℤ` as a list of binary
@@ -73,26 +89,26 @@ abbrev encLyubashevskySignWithRandomness : LyubashevskySignInput × List ℤ ↪
 /-- Native commitment from public matrix rows and commitment randomness. -/
 def lyubashevskySignCommitment
     (input : LyubashevskySignInput × List ℤ) : List Bool :=
-  let ((p, _, matrix, _), randomness) := input
-  encList encIntBin ((List.range p.n).map fun i =>
-    zmodReduce p.q (ListMatrix.dotProduct p.m (matrix.getD i []) randomness))
+  let (s, randomness) := input
+  encList encIntBin ((List.range s.params.n).map fun i =>
+    zmodReduce s.params.q (ListMatrix.dotProduct s.params.m (s.matrix.getD i []) randomness))
 
 /-- Native shifted response from secret rows, commitment randomness and raw challenge bits. -/
 def lyubashevskySignResponse
     (input : (LyubashevskySignInput × List ℤ) × List Bool) : List ℤ :=
-  let (((p, secret, _, _), randomness), challenge) := input
-  (List.range p.m).map fun i =>
+  let ((s, randomness), challenge) := input
+  (List.range s.params.m).map fun i =>
     randomness.getD i 0 +
-      ListMatrix.dotProduct p.k (secret.getD i []) (challengeIntList p.k challenge)
+      ListMatrix.dotProduct s.params.k (s.secret.getD i []) (challengeIntList s.params.k challenge)
 
 /-- Compute the commitment and shifted response, retaining exactly the inner-box responses.
 A short hash result is padded with false bits, and excess bits are ignored. -/
 def lyubashevskySignPostprocess (hash : List Bool × List Bool → List Bool)
     (input : LyubashevskySignInput × List ℤ) : Option (List Bool × List Bool) :=
-  let ((p, _, _, msg), _) := input
+  let (s, _) := input
   let commitment := lyubashevskySignCommitment input
-  let response := lyubashevskySignResponse (input, hash (msg, commitment))
-  if inBoxList p.m (p.γ - p.β) response then
+  let response := lyubashevskySignResponse (input, hash (s.message, commitment))
+  if inBoxList s.params.m (s.params.γ - s.params.β) response then
     some (commitment, encList encIntBin response)
   else none
 
@@ -101,7 +117,7 @@ def lyubashevskySignPostprocess (hash : List Bool × List Bool → List Bool)
 theorem computableInPolyTime_lyubashevskySignCommitment :
     ComputableInPolyTime lyubashevskySignCommitment
       encLyubashevskySignWithRandomness encBits := by
-  unfold lyubashevskySignCommitment encLyubashevskySignWithRandomness encLyubashevskySignInput
+  unfold lyubashevskySignCommitment encLyubashevskySignWithRandomness
   fun_prop
 
 /-- Polynomial-time computation of the native response. -/
@@ -110,7 +126,7 @@ theorem computableInPolyTime_lyubashevskySignResponse :
     ComputableInPolyTime lyubashevskySignResponse
       (encPair encLyubashevskySignWithRandomness encBits)
       (encList encIntBin) := by
-  unfold lyubashevskySignResponse encLyubashevskySignWithRandomness encLyubashevskySignInput
+  unfold lyubashevskySignResponse encLyubashevskySignWithRandomness
   fun_prop
 
 /-- The actual signing postprocessing is polynomial-time for a polynomial-time hash. -/
@@ -120,22 +136,22 @@ theorem computableInPolyTime_lyubashevskySignPostprocess
     (hhash : ComputableInPolyTime hash (encPair encBits encBits) encBits) :
     ComputableInPolyTime (lyubashevskySignPostprocess hash)
       encLyubashevskySignWithRandomness encCommitResponseOrAbort := by
-  let e := encPair encLyubashevskySignInput (encList encIntBin)
   have hw := computableInPolyTime_lyubashevskySignCommitment
-  have hmsg : ComputableInPolyTime (fun x : LyubashevskySignInput × List ℤ => x.1.2.2.2)
-      e encBits := by
-    unfold e encLyubashevskySignInput
+  have hmsg : ComputableInPolyTime (fun x : LyubashevskySignInput × List ℤ => x.1.message)
+      encLyubashevskySignWithRandomness encBits := by
+    unfold encLyubashevskySignWithRandomness
     fun_prop
   have hh := hhash.comp (hmsg.prod hw)
   have hz := computableInPolyTime_lyubashevskySignResponse.comp
     ((ComputableInPolyTime.id').prod hh)
-  have hm : ComputableInPolyTime (fun x : LyubashevskySignInput × List ℤ => x.1.1.m)
-      e encUnary := by
-    unfold e encLyubashevskySignInput
+  have hm : ComputableInPolyTime (fun x : LyubashevskySignInput × List ℤ => x.1.params.m)
+      encLyubashevskySignWithRandomness encUnary := by
+    unfold encLyubashevskySignWithRandomness
     fun_prop
   have hb : ComputableInPolyTime
-      (fun x : LyubashevskySignInput × List ℤ => x.1.1.γ - x.1.1.β) e encNat := by
-    unfold e encLyubashevskySignInput
+      (fun x : LyubashevskySignInput × List ℤ => x.1.params.γ - x.1.params.β)
+      encLyubashevskySignWithRandomness encNat := by
+    unfold encLyubashevskySignWithRandomness
     fun_prop
   have hc := computableInPolyTime_inBoxList.comp (hm.prod (hb.prod hz))
   exact hc.ite' ((ComputableInPolyTime.optionSome (encPair encBits encBits)).comp
@@ -145,29 +161,16 @@ theorem computableInPolyTime_lyubashevskySignPostprocess
 /-- One native signing attempt, with `m * width` independent fair bits. -/
 noncomputable def lyubashevskySignAttemptNative (hash : List Bool × List Bool → List Bool)
     (input : LyubashevskySignInput) : ProbComp (Option (List Bool × List Bool)) :=
-  let (p, _, _, _) := input
   (fun r => lyubashevskySignPostprocess hash (input, r)) <$>
-    sampleIntBoxList p.γ p.m p.width
+    sampleIntBoxList input.params.γ input.params.m input.params.width
 
 /-- Uniform strict-PPT efficiency of the signing attempt, including its failure result. -/
 theorem isPPTOn_lyubashevskySignAttemptNative
     {hash : List Bool × List Bool → List Bool}
     (hhash : ComputableInPolyTime hash (encPair encBits encBits) encBits) :
     IsPPTOn encLyubashevskySignInput encCommitResponseOrAbort
-      (lyubashevskySignAttemptNative hash) := by
-  have hγ : ComputableInPolyTime (fun x : LyubashevskySignInput => x.1.γ)
-      encLyubashevskySignInput encNat := by
-    unfold encLyubashevskySignInput
-    fun_prop
-  have hm : ComputableInPolyTime (fun x : LyubashevskySignInput => x.1.m)
-      encLyubashevskySignInput encUnary := by
-    unfold encLyubashevskySignInput
-    fun_prop
-  have hw : ComputableInPolyTime (fun x : LyubashevskySignInput => x.1.width)
-      encLyubashevskySignInput encUnary := by
-    unfold encLyubashevskySignInput
-    fun_prop
-  exact (isPPTOn_sampleIntBoxList hγ hm hw).map_with
+      (lyubashevskySignAttemptNative hash) :=
+  (isPPTOn_sampleIntBoxList (by fun_prop) (by fun_prop) (by fun_prop)).map_with
     (computableInPolyTime_lyubashevskySignPostprocess hhash)
 
 /-- Canonical native input for a typed secret and public matrix. The public `T = A S` matrix
@@ -176,8 +179,8 @@ def lyubashevskySignInput (p : LyubashevskyParams)
     (S : Matrix (Fin p.m) (Fin p.k) ℤ)
     (A : Matrix (Fin p.n) (Fin p.m) (ZMod p.q)) (msg : List Bool) :
     LyubashevskySignInput :=
-  (p, List.ofFn fun i => List.ofFn (S i),
-    List.ofFn fun i => List.ofFn fun j => ZMod.cast (A i j), msg)
+  ⟨p, List.ofFn fun i => List.ofFn (S i),
+    List.ofFn fun i => List.ofFn fun j => ZMod.cast (A i j), msg⟩
 
 /-- The typed challenge function actually implemented by the native hash call. -/
 def lyubashevskyNativeHash (hash : List Bool × List Bool → List Bool)
@@ -198,6 +201,7 @@ theorem lyubashevskySignCommitment_ofFn (p : LyubashevskyParams)
       encZModVec p.n p.q (A *ᵥ (Int.cast ∘ r)) := by
   change encList encIntBin _ = encList encIntBin _
   apply congrArg (encList encIntBin)
+  dsimp only [lyubashevskySignCommitment, lyubashevskySignInput]
   rw [← List.map_coe_finRange_eq_range, List.map_map]
   conv_rhs => rw [List.ofFn_eq_map]
   refine List.map_congr_left fun i _ => ?_

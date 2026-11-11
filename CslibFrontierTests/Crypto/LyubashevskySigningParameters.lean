@@ -28,15 +28,15 @@ example : lyubashevskySigningParams 1 =
 
 /-- A nonzero bounded secret and zero randomness yield a non-aborted response at λ=1. -/
 example : lyubashevskySignPostprocess (fun _ => [true, true])
-    ((lyubashevskySigningParams 1, [[1, 0], [0, -1]], [[1, 0], [0, 1]], []), [0, 0]) =
+    (⟨lyubashevskySigningParams 1, [[1, 0], [0, -1]], [[1, 0], [0, 1]], []⟩, [0, 0]) =
     some (encList encIntBin [0, 0], encList encIntBin [1, -1]) := by decide
 
 /-- With no sample bits at λ=0, secret `[-1]` and challenge one reject the only sampled vector. -/
 example : ProbComp.eval (lyubashevskySignBoundedNative (fun _ => [true])
-    ((lyubashevskySigningParams 0, [[-1]], [[1]], []), 1)) = PMF.pure none := by
+    (⟨lyubashevskySigningParams 0, [[-1]], [[1]], []⟩, 1)) = PMF.pure none := by
   have hp : lyubashevskySignPostprocess (fun _ => [true])
-      (({ n := 1, m := 1, k := 1, width := 0, q := 2, γ := 4, β := 1 },
-        [[-1]], [[1]], []), [-4]) = none := by decide
+      (⟨{ n := 1, m := 1, k := 1, width := 0, q := 2, γ := 4, β := 1 },
+        [[-1]], [[1]], []⟩, [-4]) = none := by decide
   simp [lyubashevskySignBoundedNative, lyubashevskySignAttemptNative,
     sampleIntBoxList, sampleIntBox, ProbComp.sampleModNat, OracleComp.replicate,
     lyubashevskySigningParams, boxShift, hp]
@@ -63,7 +63,7 @@ example : IsPPTOn
     (fun input : ℕ × List (List ℤ) × List (List ℤ) × List Bool =>
       let (security, secret, matrix, msg) := input
       lyubashevskySignBoundedNative (fun _ => [true])
-        ((lyubashevskySigningParams security, secret, matrix, msg), security + 1)) :=
+        (⟨lyubashevskySigningParams security, secret, matrix, msg⟩, security + 1)) :=
   isPPTOn_lyubashevskySigningParams (ComputableInPolyTime.const [true])
 
 /-- All-one secrets witness the bound's satisfiable hypothesis in every growing dimension. -/

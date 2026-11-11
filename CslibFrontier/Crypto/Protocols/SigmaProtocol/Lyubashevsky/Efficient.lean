@@ -724,9 +724,9 @@ def lyubashevskyExtractorAdapter
       List Bool × List Bool) : List Bool :=
   let (p, _, _, c, z, c', z') := inp
   lyubashevskyExtractWord
-    (encPair (encPair encUnary encUnary)
-      (encPair (encPair encBits encBits) (encPair encBits encBits))
-      ((p.m, p.k), ((c, z), (c', z'))))
+    (encPair encUnary (encPair encUnary
+      (encPair encBits (encPair encBits (encPair encBits encBits))))
+      (p.m, p.k, c, z, c', z'))
 
 /-- `lyubashevskyExtractorAdapter` is computable in polynomial time. -/
 @[fun_prop]
@@ -734,20 +734,20 @@ theorem computableInPolyTime_lyubashevskyExtractorAdapter :
     ComputableInPolyTime lyubashevskyExtractorAdapter
       (encPair encLyubashevskyParams (encPair encBits (encPair encBits
         (encPair encBits (encPair encBits (encPair encBits encBits)))))) encBits := by
-  let encPack := encPair (encPair encUnary encUnary)
-    (encPair (encPair encBits encBits) (encPair encBits encBits))
+  let encPack := encPair encUnary (encPair encUnary
+    (encPair encBits (encPair encBits (encPair encBits encBits))))
   have hpack : ComputableInPolyTime
       (fun inp : LyubashevskyParams × List Bool × List Bool × List Bool × List Bool ×
           List Bool × List Bool =>
         let (p, _, _, c, z, c', z') := inp
-        encPack ((p.m, p.k), ((c, z), (c', z'))))
+        encPack (p.m, p.k, c, z, c', z'))
       (encPair encLyubashevskyParams (encPair encBits (encPair encBits
         (encPair encBits (encPair encBits (encPair encBits encBits)))))) encBits :=
     (by fun_prop : ComputableInPolyTime
       (fun inp : LyubashevskyParams × List Bool × List Bool × List Bool × List Bool ×
           List Bool × List Bool =>
         let (p, _, _, c, z, c', z') := inp
-        ((p.m, p.k), ((c, z), (c', z'))))
+        (p.m, p.k, c, z, c', z'))
       (encPair encLyubashevskyParams (encPair encBits (encPair encBits
         (encPair encBits (encPair encBits (encPair encBits encBits))))))
       encPack).encoding_comp
@@ -761,13 +761,13 @@ theorem extractorRealizedBy_lyubashevskyExtractorAdapter :
       lyubashevskyExtractorAdapter := by
   intro p y t c z c' z'
   have hinput :
-      encPair (encPair encUnary encUnary)
-        (encPair (encPair encBits encBits) (encPair encBits encBits))
-        ((p.m, p.k),
-          ((lyubashevskyEncoding.challenge p c, lyubashevskyEncoding.response p z),
-            (lyubashevskyEncoding.challenge p c', lyubashevskyEncoding.response p z'))) =
-      encLyubashevskyExtractInput ((p.m, p.k),
-        ((List.ofFn c, z.map List.ofFn), (List.ofFn c', z'.map List.ofFn))) := rfl
+      encPair encUnary (encPair encUnary
+        (encPair encBits (encPair encBits (encPair encBits encBits))))
+        (p.m, p.k,
+          lyubashevskyEncoding.challenge p c, lyubashevskyEncoding.response p z,
+          lyubashevskyEncoding.challenge p c', lyubashevskyEncoding.response p z') =
+      encLyubashevskyExtractInput
+        ⟨p.m, p.k, List.ofFn c, z.map List.ofFn, List.ofFn c', z'.map List.ofFn⟩ := rfl
   dsimp only [lyubashevskyExtractorAdapter]
   rw [hinput, lyubashevskyExtractWord_eq_extract p.n p.m p.k p.q y t c z c' z']
   rfl
