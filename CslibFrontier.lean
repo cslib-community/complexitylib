@@ -214,6 +214,7 @@ public import CslibFrontier.Algorithms.Lean.VertexCover.Matching
 public import CslibFrontier.Algorithms.Lean.Yates
 public import CslibFrontier.Algorithms.Lean.ZFunction.Basic
 public import CslibFrontier.Algorithms.Lean.ZFunction.Search
+public import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 public import CslibFrontier.Algorithms.Matching.Edmonds
 public import CslibFrontier.Algorithms.Matching.MVV
 public import CslibFrontier.Algorithms.Matching.Tutte
@@ -3478,6 +3479,7 @@ public import CslibFrontier.Computability.PolyTime.JetArray
 public import CslibFrontier.Computability.PolyTime.LinearAlgebra.BooleanMeasurements
 public import CslibFrontier.Computability.PolyTime.LinearAlgebra.CopyPlacement
 public import CslibFrontier.Computability.PolyTime.LinearAlgebra.ExchangeReplacement
+public import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
 public import CslibFrontier.Computability.PolyTime.LinearAlgebra.ReplacementDesignBuilder
 public import CslibFrontier.Computability.PolyTime.PacketPacking
 public import CslibFrontier.Computability.PolyTime.ParityFactorEval
@@ -5300,6 +5302,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.FreeAlgebra
 public import CslibFrontier.Foundations.LinearAlgebra.ImageSparsification
 public import CslibFrontier.Foundations.LinearAlgebra.Interpolation
 public import CslibFrontier.Foundations.LinearAlgebra.KernelVector
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Bareiss
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BasicSolution
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BranchingProgramDeterminant
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CauchyBinet

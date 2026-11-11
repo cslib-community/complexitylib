@@ -9,6 +9,7 @@ import CslibFrontierResults.Registry
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
+import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -83,6 +84,7 @@ import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
+import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
@@ -2426,10 +2428,9 @@ register_result "formula-magnification-locality" where
   scope := "MCSP[(s, 0), (s, δ)] on N = 2^n-bit truth tables is computed by De Morgan formulas \
     with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
     N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
-    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: no bullet of Proposition 63 is proved \
-    for the [q, ℓ, a]-Circuit classes (LocalCircuitClass), and the other bullets and the \
-    locality barrier (Theorem 59) are not formalized here; the Gap-MCSP [OPS19] bullet is \
-    registered, with explicit counts, as gap-mcsp-oracle-circuits."
+    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: for the [q, ℓ, a]-Circuit classes \
+    (LocalCircuitClass) the Gap-MCSP [OPS19] bullet is registered as gap-mcsp-oracle-circuits; \
+    the other bullets of Proposition 63 and the locality barrier (Theorem 59) are not formalized."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
@@ -2504,14 +2505,17 @@ register_result "gap-mcsp-oracle-circuits" where
       locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
   ]
   theorems := [
-    Cslib.MCSP.exists_oracleCircuit_gapMCSP
+    Cslib.MCSP.exists_oracleCircuit_gapMCSP,
+    Cslib.MCSP.localCircuitClass_gapMCSP
   ]
   scope := "Unconditional. Whenever n·s₁ + 2 + 2n(n + 2) ≤ s₂ at length n, one oracle circuit on \
     N = 2^n inputs with the fixed oracle antiCheckerOracle accepts the yes-instances of \
     Gap-MCSP[s₁, s₂] and rejects its no-instances. It has at most 5000·N·s₂^5 gates, at most \
     610·N·s₂^4 + 1 oracle gates, fan-in at most 5000·s₂^5 and at most 610·s₂^4 + 1 oracle gates \
-    on any path. The [q, ℓ, a]-Circuit class is not defined, so the bounds are stated directly; \
-    the gap condition replaces the source's constructive s(n) ≤ 2^n/poly(n)."
+    on any path. localCircuitClass_gapMCSP states this in the class LocalCircuitClass \
+    (Definition 11) at input length m with n = log₂ m, the gap condition holding at every n; its \
+    size bound has a + 1 for input length 0, which has no instances. The gap condition replaces \
+    the source's constructive s(n) ≤ 2^n/poly(n)."
 
 register_result "natural-proofs" where
   title := "Razborov–Rudich: subexponentially secure generators rule out natural proofs \
@@ -2805,6 +2809,56 @@ register_result "unique-games-perfect-completeness" where
     empty so every unique game vacuously has unsatVal = 0 and GapUniqueGames (Fin 0) 1 s \
     has no no-instances, while no graph is satisfiable. This fixes L rather than taking it \
     as part of the input."
+
+register_result "bareiss-rational-elimination" where
+  title := "Exact rational Bareiss–Jordan Gaussian elimination and entry bounds"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.2; Theorem 3.3; Corollary 3.3a; Equations (28)–(30)",
+      locator := "Section 3.2, pp. 29–30; Section 3.3, pp. 32–35" }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_spec,
+    Cslib.LinearAlgebra.ratRref_isReducedRowEchelon,
+    Cslib.LinearAlgebra.ratRank_eq,
+    Cslib.LinearAlgebra.ratSolve_spec,
+    Cslib.LinearAlgebra.rationalElim_entry_bounds,
+    Cslib.LinearAlgebra.ratSolve_entry_bounds
+  ]
+  scope := "Executable row-denominator-cleared fraction-free Bareiss–Jordan elimination over ℚ \
+    built on Sylvester–Bareiss minor elimination over ℤ (RREF, exact rank, linearly independent \
+    spanning row and kernel bases, canonical linear system solving, and Hadamard/factorial entry \
+    and denominator bit-length bounds via stageEntryBound). Local adaptation: clears row \
+    denominators upfront and tracks fraction-free minor-scaled Jordan updates with a \
+    factorial/Hadamard bound rather than Schrijver's normalized rational elimination \
+    (Section 3.3, pp. 32–35). Bounded milestone of Issue #3672 (circulant spectra and fibre-sum \
+    bounds remain open there)."
+
+register_result "bareiss-rational-elimination-polytime" where
+  title := "Polynomial-time multi-tape Turing certificates for rational Gaussian elimination"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.3; Corollary 3.3a (ii), (iv), (v)",
+      locator := "Section 3.3, pp. 32–35" }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRref_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRank_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRowBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratKernelBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratSolve_computableInPolyTime
+  ]
+  scope := "Native Turing.MultiTapeTM.ComputableInPolyTime certificates for rationalElim, \
+    ratRref, ratRank, ratRowBasis, ratKernelBasis, and ratSolve. Local adaptations: uses \
+    row-denominator-cleared fraction-free Bareiss–Jordan integer updates and structured \
+    enc_structure codecs with explicit unary matrix dimensions and framed signed-binary/rational \
+    entries to certify native multi-tape time and workspace bounds unconditionally (including on \
+    ragged or oversized-header inputs), whereas Schrijver Section 3.3 analyzes normalized \
+    rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
+    (circulant spectra and fibre-sum bounds remain open there)."
 
 register_result "quantum-weighted-adversary" where
   title := "Weighted and strong-weighted quantum adversary lower bounds (Alb₃)"
