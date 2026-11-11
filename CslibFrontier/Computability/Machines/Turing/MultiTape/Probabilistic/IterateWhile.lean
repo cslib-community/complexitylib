@@ -142,7 +142,7 @@ theorem words_nil_next (v : List Bool) :
   Function.update_eq_self_iff.mpr (by simp [curTape_ne_nextTape.symm])
 
 /-- Without a current word, only the next tape is non-blank. -/
-theorem words_nil_cur (v : List Bool) :
+public theorem words_nil_cur (v : List Bool) :
     words (k := k) [] v = Function.update (fun _ => []) (nextTape k) v := by
   rw [words, Function.update_eq_self]
 
@@ -243,6 +243,7 @@ public noncomputable def iterateWhileRound (tm : MultiTapePTM k Bool State Opera
 /-- `tm`, applied repeatedly while its result is non-empty, using `mark` to flag the left end of
 words: load the input to the next tape, repeat rounds until the next tape is empty, then output
 the current word and clear its tape. -/
+@[expose]
 public noncomputable def iterateWhile (tm : MultiTapePTM k Bool State Operation) (mark : Bool) :
     MultiTapePTM (k + 1 + 2) Bool (MachineState State) Operation :=
   (ofDeterministic (loadWord Bool (nextTape k))).seq

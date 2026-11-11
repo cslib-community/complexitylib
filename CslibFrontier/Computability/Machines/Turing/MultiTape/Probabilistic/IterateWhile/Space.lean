@@ -75,10 +75,10 @@ public theorem RunsInSpace.iterateWhile {tm : MultiTapePTM k Bool State Empty} (
       mid (ProbOracleComp.mem_support_of_mem oracle hmid)
     exact ⟨rfl, hlength r le_rfl mid.2 hmidInv.1⟩
   have hbound := runsInSpace_toNTM_seq_repeatUntilBlank
-    (first := ofDeterministic (prepareRound (k := k) mark)) (body := tm.iterateWhileRound mark) (lastM := ofDeterministic (finish (k := k) mark))
-    (t₁ := 3 * 0 + 6 * L + 16) (t := t + 10 * L + 22) (t₂ := 5 * L + 11) (rounds := r) (s₀ := ([], w₀))
+    (first := ofDeterministic (loadWord Bool (nextTape k))) (body := tm.iterateWhileRound mark) (lastM := ofDeterministic (finish (k := k) mark))
+    (t₁ := 3 * L + 6) (t := t + 10 * L + 22) (t₂ := 5 * L + 11) (rounds := r) (s₀ := ([], w₀))
     (ws := fun q => words q.1 q.2)
-    (hfirst := (RunsWords.of_transformsTapes (Operation := Empty) (transformsTapes_prepareRound (k := k) mark [] w₀) (hP := rfl) (hQ := fun _ _ h => h) (ws' := words (k := k) w₀ []) (emitted := [])).mono (time' := 3 * 0 + 6 * L + 16)
+    (hfirst := (RunsWords.of_transformsTapes (Operation := Empty) (x := w₀) (out₀ := []) (ws₀ := fun _ => []) (transformsTapes_loadWord (nextTape k) w₀) ⟨rfl, rfl⟩ (ws' := words (k := k) [] w₀) (emitted := []) (fun _ _ h => ⟨h.1.trans (words_nil_cur w₀).symm, h.2⟩)).mono (time' := 3 * L + 6)
       (by have := hlength 0 (by omega) w₀ hbase; omega))
     (nextTape k)
     words_injective
@@ -116,7 +116,7 @@ public theorem RunsInSpace.iterateWhile {tm : MultiTapePTM k Bool State Empty} (
       exact (RunsWords.of_transformsTapes (Operation := Empty) (transformsTapes_finish (k := k) mark p.1)
         (hP := congrArg (words p.1) hnil) (hQ := fun _ _ h => h) (ws' := fun _ => []) (emitted := p.1)).mono (time' := 5 * L + 11) (by omega))
   exact hbound.mono (by
-    have : max (3 * 0 + 6 * L + 16) (max (t + 10 * L + 22) (5 * L + 11)) = t + 10 * L + 22 := by omega
-    omega)
+    have : max (3 * L + 6) (max (t + 10 * L + 22) (5 * L + 11)) = t + 10 * L + 22 := by omega
+    rw [this])
 
 end Turing.MultiTapePTM
