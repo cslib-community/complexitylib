@@ -65,6 +65,36 @@ The nondeterministic cover convention does not charge a final output announcemen
 
 ## Major communication bridges and bounds
 
+### Choosing an instance and steering a protocol
+
+Import [OneOut](../../CslibFrontier/Computability/Communication/OneOut.lean) for
+`Cslib.Communication.OneOut.Relation R`. Each input is an embedding `Fin k ↪ X` or
+`Fin k ↪ Y`, so each player supplies distinct entries. The output `OneOut.Answer k Z`
+contains an index and an answer for that instance. `atCoordinate p i` runs an existing
+protocol at a fixed index without adding communication; `ecomplexity_le` proves the
+upper bound for arbitrary search relations. An index `i : Fin k` excludes `k = 0`.
+
+Import [Forcing](../../CslibFrontier/Computability/Communication/Forcing.lean) to let
+players choose branches of an existing protocol tree. `Protocol.CanForce true goal p`
+means Alice can force an output satisfying `goal`, and `false` means Bob.
+`canForce_not_iff` gives determinacy. For input-dependent goals, `p.steer leftGoal rightGoal`
+is an actual protocol whose messages depend only on the sending player's input.
+`run_steer` proves both goals on inputs where each is forceable; `depth_steer` preserves
+the original depth. Local strategy selection is classical and noncomputable, as allowed
+by this deterministic communication model; only sent bits are charged.
+
+Goals are predicates on output labels. When two occurrences carry the same label but
+must be distinguished, first use `p.labelLeaves`. Its output is the existing rectangle
+API's `Fin p.leafCount`, and `leafOutput_run_labelLeaves` recovers the original answer.
+The [checked client](../../CslibFrontierTests/CommunicationOneOut.lean) steers a tree with
+constant original messages to output both input bits and checks incompatible goals,
+valid/invalid selected answers and the empty-index edge. From the repository root run
+`scripts/build.sh CslibFrontierTests.CommunicationOneOut` to check it.
+
+This is infrastructure and the upper-bound portion of submission 865. The large solvable
+rectangle bound, minimax/majority construction, headline lower bounds and later formula/core
+results remain open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
+
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).
 
 The communication development includes public-coin equality protocols and linear lower bounds for disjointness and inner product at bounded error, using corruption and discrepancy methods. Its Newman theorem replaces public randomness by a finite seed selection at an additive communication/error cost; the finite statement keeps the input-domain cardinalities and error increment visible. See [Newman.lean](../../CslibFrontier/Computability/Communication/Newman.lean), [Disjointness.lean](../../CslibFrontier/Computability/Communication/Disjointness.lean) and [Discrepancy.lean](../../CslibFrontier/Computability/Communication/Discrepancy.lean) for the precise finite statements and their hypotheses; the survey read the lower bounds through the since-retired [communication abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/CommunicationAbstract.lean).

@@ -1689,6 +1689,7 @@ public import CslibFrontier.Computability.Communication.Disjointness
 public import CslibFrontier.Computability.Communication.Distributional
 public import CslibFrontier.Computability.Communication.Equality
 public import CslibFrontier.Computability.Communication.FoolingSet
+public import CslibFrontier.Computability.Communication.Forcing
 public import CslibFrontier.Computability.Communication.Forster
 public import CslibFrontier.Computability.Communication.Functions
 public import CslibFrontier.Computability.Communication.Inclusion
@@ -1713,6 +1714,7 @@ public import CslibFrontier.Computability.Communication.Nondeterministic.Basic
 public import CslibFrontier.Computability.Communication.Nondeterministic.CoverNumber
 public import CslibFrontier.Computability.Communication.Nondeterministic.ExtensionComplexity
 public import CslibFrontier.Computability.Communication.Nondeterministic.Functions
+public import CslibFrontier.Computability.Communication.OneOut
 public import CslibFrontier.Computability.Communication.Operations
 public import CslibFrontier.Computability.Communication.PartitionJoin
 public import CslibFrontier.Computability.Communication.PaturiSimon
