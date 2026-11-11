@@ -14,6 +14,12 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Orthogonal vectors hardness of longest common subsequence
@@ -35,6 +41,12 @@ the vector blocks of `B` with `B.length` dummy blocks on each side, separated by
 * `Cslib.Complexity.OV.LCS.lcsLength_R1_R2_le_of_not_orthogonal` and
   `Cslib.Complexity.OV.LCS.three_mul_le_lcsLength_R1_R2`: the coordinate gadgets of two vectors
   of length `d` have a common subsequence of length `3 d` exactly when the vectors are orthogonal.
+* `Cslib.Complexity.OV.computableInPolyTime_toLCS`: the reduction is computable in polynomial
+  time.
+* `Cslib.Complexity.OV.exists_computableInO_toLCS`: the reduction runs within time
+  `L ((d + 1) (log L + 1)) ^ D` on instances of dimension `d` encoded in length `L`. It is
+  assembled from streaming passes over the encoded instance whose state holds the dimension in
+  unary; a first pass computes the dimension.
 
 The upper bound charges each symbol of a common subsequence either to a block of `P1` (at most
 `LCS.M d + LCS.W d` each) or to an `s0` symbol of `P2`. A counting lemma on `P2` bounds the
@@ -1257,85 +1269,85 @@ def lcsParseStep (p : LCSParseState × Bool) : LCSParseState :=
   else
     ((((LIn.s1 p, false), false), 0), LIn.vec p + 1)
 
-/-- The output of a round of the parser: `f k i b` for the bit `b` of coordinate `i` of the vector
-numbered `k`, and `g s k` at the end of the vector numbered `k` of the list `s`. -/
-def lcsParseEmit {β : Type} (f : ℕ → ℕ → Bool → List β) (g : Bool → ℕ → List β)
+section Passes
+
+variable {β : Type}
+
+/-- The output of a round of the parser: `f s k i b` for the bit `b` of coordinate `i` of the
+vector numbered `k` of the list `s` (`false` for the first list), and `g s k i` at the end of that
+vector, which has `i` bits. -/
+def lcsParseEmit (f : Bool → ℕ → ℕ → Bool → List β) (g : Bool → ℕ → ℕ → List β)
     (p : LCSParseState × Bool) : List β :=
   if !LIn.s1 p && !LIn.s2 p then []
   else if LIn.marker p then
-    f (LIn.vec p) (LIn.coord p) (LIn.bit p)
+    f (LIn.s1 p) (LIn.vec p) (LIn.coord p) (LIn.bit p)
   else if LIn.bit p then []
-  else g (LIn.s1 p) (LIn.vec p)
+  else g (LIn.s1 p) (LIn.vec p) (LIn.coord p)
 
 /-- **One pass of the parser** over a list of bits, from a state. -/
-def lcsParseRun {β : Type} (f : ℕ → ℕ → Bool → List β) (g : Bool → ℕ → List β) :
+def lcsParseRun (f : Bool → ℕ → ℕ → Bool → List β) (g : Bool → ℕ → ℕ → List β) :
     LCSParseState → List Bool → List β
   | _, [] => []
   | s, b :: l => lcsParseEmit f g (s, b) ++ lcsParseRun f g (lcsParseStep (s, b)) l
 
-section Stream
+/-- The concatenated outputs of the vectors of a list, numbered from `k`: for the vector `v`
+numbered `k`, the outputs `f k i b` of its bits followed by `g k v.length`. -/
+def lcsVecsOut (f : ℕ → ℕ → Bool → List β) (g : ℕ → ℕ → List β) :
+    ℕ → List (List Bool) → List β
+  | _, [] => []
+  | k, v :: vs => bitsOut (f k) 0 v ++ g k v.length ++ lcsVecsOut f g (k + 1) vs
 
-variable {β : Type} {f : ℕ → ℕ → Bool → List β} {g : Bool → ℕ → List β}
+section Frames
 
-/-- The streamed output of the parser rounds is the encoded output of the pass. -/
-theorem streamEmit_eq_lcsParseRun {enc : β ↪ List Bool} (s : LCSParseState) (l : List Bool) :
-    streamEmit lcsParseStep (fun p => encList enc (lcsParseEmit f g p)) s l =
-      encList enc (lcsParseRun f g s l) := by
-  induction l generalizing s with
-  | nil => rfl
-  | cons b l ih => rw [streamEmit, ih, lcsParseRun, encList_append]
+variable {f : Bool → ℕ → ℕ → Bool → List β} {g : Bool → ℕ → ℕ → List β}
 
-/-- In the second phase, a frame `[true, b₁, …, true, bₙ, false]` is one vector. -/
 theorem lcsParseRun_frame_snd (i k : ℕ) (v : List Bool) (rest : List Bool) :
     lcsParseRun f g ((((true, false), false), i), k) (frame v ++ rest) =
-      bitsOut (f k) i v ++ g true k ++
+      bitsOut (f true k) i v ++ g true k (i + v.length) ++
         lcsParseRun f g ((((true, false), false), 0), k + 1) rest := by
   induction v generalizing i with
   | nil => simp [frame_nil, lcsParseRun, lcsParseEmit, lcsParseStep, bitsOut]
   | cons b v ih =>
     simp only [frame_cons, List.cons_append, lcsParseRun, lcsParseEmit, lcsParseStep, bitsOut]
-    simp [ih, List.append_assoc]
+    simp [ih, List.append_assoc, Nat.add_assoc, Nat.add_comm 1 v.length]
 
-/-- In the second phase, the frames of a list of vectors. -/
 theorem lcsParseRun_frames_snd (k : ℕ) (vs : List (List Bool)) (rest : List Bool) :
     lcsParseRun f g ((((true, false), false), 0), k) (vs.flatMap frame ++ rest) =
-      vecsOut f (g true) k vs ++
+      lcsVecsOut (f true) (g true) k vs ++
         lcsParseRun f g ((((true, false), false), 0), k + vs.length) rest := by
   induction vs generalizing k with
-  | nil => simp [vecsOut]
+  | nil => simp [lcsVecsOut]
   | cons v vs ih =>
     rw [List.flatMap_cons, List.append_assoc, lcsParseRun_frame_snd, ih]
-    simp [vecsOut, List.append_assoc, Nat.add_assoc, Nat.add_comm 1 vs.length]
+    simp [lcsVecsOut, List.append_assoc, Nat.add_assoc, Nat.add_comm 1 vs.length]
 
-/-- In the first phase, the outer frame marks each bit `c` of the inner frames as `[true, c]`. -/
 theorem lcsParseRun_frame_fst (i k : ℕ) (v : List Bool) (rest : List Bool) :
     lcsParseRun f g ((((false, false), false), i), k)
         ((frame v).flatMap (fun b => [true, b]) ++ rest) =
-      bitsOut (f k) i v ++ g false k ++
+      bitsOut (f false k) i v ++ g false k (i + v.length) ++
         lcsParseRun f g ((((false, false), false), 0), k + 1) rest := by
   induction v generalizing i with
   | nil => simp [lcsParseRun, lcsParseEmit, lcsParseStep, bitsOut]
   | cons b v ih =>
     simp only [frame_cons, List.flatMap_cons, List.cons_append, List.nil_append]
-    cases b <;> simp [lcsParseRun, lcsParseEmit, lcsParseStep, bitsOut, ih, List.append_assoc]
+    cases b <;>
+      simp [lcsParseRun, lcsParseEmit, lcsParseStep, bitsOut, ih, List.append_assoc, Nat.add_assoc,
+        Nat.add_comm 1 v.length]
 
-/-- In the first phase, the outer frame of the inner frames of a list of vectors. -/
 theorem lcsParseRun_frames_fst (k : ℕ) (vs : List (List Bool)) (rest : List Bool) :
     lcsParseRun f g ((((false, false), false), 0), k)
         ((vs.flatMap frame).flatMap (fun b => [true, b]) ++ rest) =
-      vecsOut f (g false) k vs ++
+      lcsVecsOut (f false) (g false) k vs ++
         lcsParseRun f g ((((false, false), false), 0), k + vs.length) rest := by
   induction vs generalizing k with
-  | nil => simp [vecsOut]
+  | nil => simp [lcsVecsOut]
   | cons v vs ih =>
     rw [List.flatMap_cons, List.flatMap_append, List.append_assoc, lcsParseRun_frame_fst, ih]
-    simp [vecsOut, List.append_assoc, Nat.add_assoc, Nat.add_comm 1 vs.length]
+    simp [lcsVecsOut, List.append_assoc, Nat.add_assoc, Nat.add_comm 1 vs.length]
 
-/-- **The parser on an encoded instance**: it emits the outputs of the first list, then those of
-the second, numbering the vectors of both lists consecutively. -/
 theorem lcsParseRun_encOV (p : List (List Bool) × List (List Bool)) :
     lcsParseRun f g ((((false, false), false), 0), 0) (encOV p) =
-      vecsOut f (g false) 0 p.1 ++ vecsOut f (g true) p.1.length p.2 := by
+      lcsVecsOut (f false) (g false) 0 p.1 ++ lcsVecsOut (f true) (g true) p.1.length p.2 := by
   have hl (l : List (List Bool)) : encList encBits l = l.flatMap frame := rfl
   have e : encOV p = (p.1.flatMap frame).flatMap (fun b => [true, b]) ++
       (false :: p.2.flatMap frame ++ []) := by
@@ -1349,7 +1361,11 @@ theorem lcsParseRun_encOV (p : List (List Bool) × List (List Bool)) :
     lcsParseRun_frames_snd]
   simp [lcsParseRun]
 
-end Stream
+end Frames
+
+
+
+end Passes
 
 /-! ### The size of the parser state -/
 
@@ -1402,147 +1418,971 @@ theorem computableInPolyTime_lcsParseStep :
   unfold lcsParseStep
   fun_prop
 
-open ComputableInPolyTime in
-/-- The output of a round of the parser is computable in polynomial time when its outputs are. -/
-theorem computableInPolyTime_lcsParseEmit {β : Type} {enc : β ↪ List Bool}
-    {f : ℕ → ℕ → Bool → List β}
-    {g : Bool → ℕ → List β}
-    (hf : ComputableInPolyTime (fun p : LCSParseState × Bool => f p.1.2 p.1.1.2 p.2)
-      (encPair encLCSParseState encBool) (encList enc))
-    (hg : ComputableInPolyTime (fun p : LCSParseState × Bool => g p.1.1.1.1.1 p.1.2)
-      (encPair encLCSParseState encBool) (encList enc)) :
-    ComputableInPolyTime (lcsParseEmit f g) (encPair encLCSParseState encBool) (encList enc) := by
-  have hnil : ComputableInPolyTime (fun _ : LCSParseState × Bool => ([] : List β))
-      (encPair encLCSParseState encBool) (encList enc) := by fun_prop
-  have hc₁ : ComputableInPolyTime (fun p : LCSParseState × Bool => !p.1.1.1.1.1 && !p.1.1.1.1.2)
-      (encPair encLCSParseState encBool) encBool := by fun_prop
-  have hc₂ : ComputableInPolyTime (fun p : LCSParseState × Bool => p.1.1.1.2)
-      (encPair encLCSParseState encBool) encBool := by fun_prop
-  have hc₃ : ComputableInPolyTime (fun p : LCSParseState × Bool => p.2)
-      (encPair encLCSParseState encBool) encBool := by fun_prop
-  exact ite' hc₁ hnil (ite' hc₂ hf (ite' hc₃ hnil hg))
+section Passes
+
+variable {β : Type}
+
+/-! ### Outputs of the passes -/
+
+private theorem bitsOut_nil_fun (i : ℕ) (v : List Bool) :
+    bitsOut (fun _ _ => ([] : List β)) i v = [] := by
+  induction v generalizing i with
+  | nil => rfl
+  | cons b v ih => simp [bitsOut, ih]
+
+private theorem lcsVecsOut_const (c : List β) (k : ℕ) (vs : List (List Bool)) :
+    lcsVecsOut (fun _ _ _ => []) (fun _ _ => c) k vs = vs.flatMap (fun _ => c) := by
+  induction vs generalizing k with
+  | nil => rfl
+  | cons v vs ih => simp [lcsVecsOut, bitsOut_nil_fun, ih]
+
+private theorem bitsOut_gadget_pos (pre : List β) (CG : Bool → List β) (v : List Bool) (i : ℕ)
+    (hi : 0 < i) :
+    bitsOut (fun i b => (if i = 0 then pre else []) ++ CG b) i v = v.flatMap CG := by
+  induction v generalizing i with
+  | nil => rfl
+  | cons b v ih =>
+    simp [bitsOut, ih (i + 1) (by omega), Nat.pos_iff_ne_zero.mp hi]
+
+private theorem lcsVecsOut_gadget (pre suf : List β) (CG : Bool → List β) (k : ℕ)
+    (vs : List (List Bool)) :
+    lcsVecsOut (fun _ i b => (if i = 0 then pre else []) ++ CG b)
+      (fun _ i => (if i = 0 then pre else []) ++ suf) k vs =
+      vs.flatMap (fun v => pre ++ v.flatMap CG ++ suf) := by
+  induction vs generalizing k with
+  | nil => rfl
+  | cons v vs ih =>
+    simp only [lcsVecsOut, ih, List.flatMap_cons]
+    congr 1
+    rcases v with _ | ⟨b, v⟩
+    · simp [bitsOut]
+    · simp [bitsOut, bitsOut_gadget_pos pre CG v 1 one_pos, List.append_assoc]
+
+private theorem flatMap_const_replicate {α γ : Type*} (l : List α) (m : ℕ) (a : γ) :
+    l.flatMap (fun _ => List.replicate m a) = List.replicate (l.length * m) a := by
+  induction l with
+  | nil => simp
+  | cons x l ih =>
+    rw [List.flatMap_cons, ih, ← List.replicate_add, List.length_cons, Nat.succ_mul,
+      Nat.add_comm]
+
+/-! ### The dimension -/
+
+/-- The initial state of the parser. -/
+private abbrev LCS.parseStart : LCSParseState := ((((false, false), false), 0), 0)
+
+/-- A round of the dimension pass: the parser reads a bit, and the largest coordinate read so far
+is kept in binary. -/
+private def LCS.dimStep (q : (LCSParseState × ℕ) × Bool) : LCSParseState × ℕ :=
+  (lcsParseStep (q.1.1, q.2),
+    if (q.1.1.1.1.1.1 || q.1.1.1.1.1.2) && q.1.1.1.1.2 && decide (q.1.2 < q.1.1.1.2 + 1) then
+      q.1.1.1.2 + 1 else q.1.2)
+
+/-- The coordinates read by the dimension pass, as outputs of the parser. -/
+private def LCS.dimBits (_ : Bool) (_ i : ℕ) (_ : Bool) : List ℕ := [i + 1]
+/-- The dimension pass outputs nothing at the ends of the vectors. -/
+private def LCS.dimEnd (_ : Bool) (_ _ : ℕ) : List ℕ := []
+
+private theorem dimStep_eq (s : LCSParseState) (m : ℕ) (b : Bool) :
+    LCS.dimStep ((s, m), b) =
+      (lcsParseStep (s, b), (lcsParseEmit LCS.dimBits LCS.dimEnd (s, b)).foldl max m) := by
+  obtain ⟨⟨⟨⟨s1, s2⟩, mk⟩, c⟩, v⟩ := s
+  refine Prod.ext rfl ?_
+  cases s1 <;> cases s2 <;> cases mk <;> cases b <;>
+    simp only [LCS.dimStep, lcsParseEmit, LCS.dimBits, LCS.dimEnd, LIn.s1, LIn.s2, LIn.marker,
+      LIn.coord, LIn.bit,
+      ] <;> simp <;> split_ifs <;> omega
+
+private theorem foldl_dimStep (l : List Bool) (s : LCSParseState) (m : ℕ) :
+    l.foldl (fun q b => LCS.dimStep (q, b)) (s, m) =
+      (l.foldl (fun s b => lcsParseStep (s, b)) s,
+        (lcsParseRun LCS.dimBits LCS.dimEnd s l).foldl max m) := by
+  induction l generalizing s m with
+  | nil => rfl
+  | cons b l ih =>
+    rw [List.foldl_cons, dimStep_eq, ih, List.foldl_cons, lcsParseRun, List.foldl_append]
+
+/-- The largest coordinate read in a list of bits: the dimension of an encoded instance. -/
+private def LCS.dimOf (x : List Bool) : ℕ :=
+  (x.foldl (fun q b => LCS.dimStep (q, b)) (LCS.parseStart, 0)).2
+
+private theorem foldl_max_bitsOut (s : Bool) (k i m : ℕ) (v : List Bool) (h : i ≤ m) :
+    (bitsOut (LCS.dimBits s k) i v).foldl max m = max m (i + v.length) := by
+  induction v generalizing i m with
+  | nil => simp [bitsOut]; omega
+  | cons b v ih =>
+    simp only [bitsOut, LCS.dimBits, List.singleton_append, List.foldl_cons]
+    rw [ih (i + 1) (max m (i + 1)) (le_max_right _ _)]
+    simp only [List.length_cons]
+    omega
+
+private theorem listMax_cons {α : Type*} (f : α → ℕ) (a : α) (l : List α) :
+    listMax f (a :: l) = max (f a) (listMax f l) := rfl
+
+private theorem listMax_append {α : Type*} (f : α → ℕ) (l₁ l₂ : List α) :
+    listMax f (l₁ ++ l₂) = max (listMax f l₁) (listMax f l₂) := by
+  induction l₁ with
+  | nil => simp [listMax]
+  | cons a l ih => rw [List.cons_append, listMax_cons, listMax_cons, ih, Nat.max_assoc]
+
+private theorem foldl_max_lcsVecsOut (s : Bool) (k m : ℕ) (vs : List (List Bool)) :
+    (lcsVecsOut (LCS.dimBits s) (LCS.dimEnd s) k vs).foldl max m =
+      max m (listMax List.length vs) := by
+  induction vs generalizing k m with
+  | nil => simp [lcsVecsOut, listMax]
+  | cons v vs ih =>
+    rw [lcsVecsOut, List.foldl_append, List.foldl_append,
+      foldl_max_bitsOut s k 0 m v (Nat.zero_le _), LCS.dimEnd, List.foldl_nil, ih, listMax_cons]
+    omega
+
+private theorem dimOf_encOV (p : List (List Bool) × List (List Bool)) :
+    LCS.dimOf (encOV p) = OV.dim p := by
+  rw [LCS.dimOf, LCS.parseStart, foldl_dimStep]
+  dsimp only
+  rw [lcsParseRun_encOV, List.foldl_append, foldl_max_lcsVecsOut, foldl_max_lcsVecsOut, OV.dim,
+    listMax_append]
+  omega
+
+
+
+/-- A bound used for a round. -/
+private theorem pow_le_three_pow_mul {a l d K : ℕ} (ha : a + 1 ≤ 3 * (l + 1)) (hd : d ≤ K) :
+    (a + 1) ^ d ≤ 3 ^ K * (l + 1) ^ K :=
+  calc (a + 1) ^ d ≤ (3 * (l + 1)) ^ d := Nat.pow_le_pow_left ha _
+    _ ≤ (3 * (l + 1)) ^ K := Nat.pow_le_pow_right (by omega) hd
+    _ = 3 ^ K * (l + 1) ^ K := Nat.mul_pow _ _ _
 
 open ComputableInPolyTime in
-/-- **One pass of the parser** over an encoded instance runs within time `L (log L) ^ D` on inputs
-of length `L`, when its outputs are computable in polynomial time. -/
-theorem computableInO_lcsParseRun {β : Type} {enc : β ↪ List Bool} {f : ℕ → ℕ → Bool → List β}
-    {g : Bool → ℕ → List β} (fin : List β)
-    (hfg : ComputableInPolyTime (lcsParseEmit f g) (encPair encLCSParseState encBool)
-      (encList enc)) :
-    ∃ D, ComputableInO
-      (fun x : List Bool => lcsParseRun f g ((((false, false), false), 0), 0) x ++ fin)
-      encBits (encList enc) (fun x => (x.length + 1) * (Nat.size x.length + 1) ^ D)
-      fun x => (x.length + 1) * (Nat.size x.length + 1) ^ D := by
-  obtain ⟨dN, _, hN_deg⟩ := computableInPolyTime_lcsParseStep.exists_degree
+/-- **One pass over a bit string** with polynomial-time rounds: when the states stay within
+length `lMax x`, the pass costs its initialization, its finish and `(x.length + 1)` rounds of
+time polynomial in `lMax x`. -/
+private theorem bitStream {σ ω : Type} {encS : σ ↪ List Bool} {encOut : ω ↪ List Bool}
+    {init : List Bool → σ} {next : σ × Bool → σ} {emit : σ × Bool → List Bool}
+    {finish : σ → List Bool} {g : List Bool → ω} {tI sI : List Bool → ℕ} {tF sF : σ → ℕ}
+    (hinit : ComputableTidilyInTimeAndSpace init encBits encS tI sI)
+    (hnext : ComputableInPolyTime next (encPair encS encBool) encS)
+    (hemit : ComputableInPolyTime emit (encPair encS encBool) encBits)
+    (hfinish : ComputableTidilyInTimeAndSpace finish encS encBits tF sF)
+    (hg : ∀ x, encOut (g x) = streamEmit next emit (init x) x ++
+      finish (streamState (init x) next x x.length))
+    (lMax : List Bool → ℕ)
+    (hS : ∀ x, ∀ j ≤ x.length, (encS (streamState (init x) next x j)).length ≤ lMax x) :
+    ∃ c K, ComputableTidilyInTimeAndSpace g encBits encOut
+      (fun x => c * (tI x + tF (streamState (init x) next x x.length) +
+        (x.length + 1) * (lMax x + 1) ^ K))
+      (fun x => c * (sI x + sF (streamState (init x) next x x.length) + (lMax x + 1) ^ K)) := by
+  obtain ⟨dN, _, hN_deg⟩ := hnext.exists_degree
   obtain ⟨tN, sN, ⟨cN, htN⟩, ⟨cN', hsN⟩, hN⟩ := Internal.NormalForm.degree hN_deg
-  obtain ⟨dE, _, hE_deg⟩ := hfg.exists_degree
+  obtain ⟨dE, _, hE_deg⟩ := hemit.exists_degree
   obtain ⟨tE, sE, ⟨cE, htE⟩, ⟨cE', hsE⟩, hE⟩ := Internal.NormalForm.degree hE_deg
-  obtain ⟨cI, hI⟩ := computableInTimeAndSpace_of_const (α := List Bool)
-    (encIn := encBits)
-    (encOut := encLCSParseState) ((((false, false), false), 0), 0)
-  obtain ⟨cF, hF⟩ := computableInTimeAndSpace_of_const (α := LCSParseState)
-    (encIn := encLCSParseState)
-    (encOut := encList enc) fin
   let reader : InputReader Bool Unit := ⟨(), fun _ b => (none, some b)⟩
-  have hI' : ComputableTidilyInTimeAndSpace
-      (fun _ : List Bool => ((((false, false), false), 0), 0))
-      encBits encLCSParseState (fun _ => 2 * cI + 2) (fun _ => 0) :=
-    hI.computableTidilyInTimeAndSpace
-  have hF' : ComputableTidilyInTimeAndSpace (fun _ : LCSParseState => fin)
-      encLCSParseState (encList enc)
-      (fun _ => 2 * cF + 2) (fun _ => 0) := hF.computableTidilyInTimeAndSpace
-  -- the rounds take time polylogarithmic in the input length
-  have hpow (x : List Bool) (d : ℕ) (hd : d ≤ dN + dE + 1) :
-      (2 * (43 + 3 * Nat.size x.length) + 3) ^ d ≤
-        89 ^ d * (Nat.size x.length + 1) ^ (dN + dE + 1) :=
-    calc (2 * (43 + 3 * Nat.size x.length) + 3) ^ d ≤ (89 * (Nat.size x.length + 1)) ^ d :=
-          Nat.pow_le_pow_left (by omega) d
-      _ = 89 ^ d * (Nat.size x.length + 1) ^ d := Nat.mul_pow _ _ _
-      _ ≤ 89 ^ d * (Nat.size x.length + 1) ^ (dN + dE + 1) := by gcongr
   have hround (x : List Bool) (j : ℕ) (hj : j < x.length) (c₁ c₂ : ℕ)
-      (u₁ u₂ : LCSParseState × Bool → ℕ)
-      (h₁ : ∀ a, u₁ a ≤ c₁ * ((encPair encLCSParseState encBool a).length + 1) ^ dN)
-      (h₂ : ∀ a, u₂ a ≤ c₂ * ((encPair encLCSParseState encBool a).length + 1) ^ dE) :
-      u₁ (streamState ((((false, false), false), 0), 0) lcsParseStep x j, x[j]) +
-        u₂ (streamState ((((false, false), false), 0), 0) lcsParseStep x j, x[j]) ≤
-      c₁ * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
-        c₂ * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE := by
-    have hs : (encLCSParseState
-        (streamState ((((false, false), false), 0), 0) lcsParseStep x j, x[j]).1).length ≤
-        43 + 3 * Nat.size x.length := length_encLCSParseState_streamState_le x j
-    have e : (encPair encLCSParseState encBool
-        (streamState ((((false, false), false), 0), 0) lcsParseStep x j, x[j])).length + 1 ≤
-        2 * (43 + 3 * Nat.size x.length) + 3 := by
+      (u₁ u₂ : σ × Bool → ℕ)
+      (h₁ : ∀ a, u₁ a ≤ c₁ * ((encPair encS encBool a).length + 1) ^ dN)
+      (h₂ : ∀ a, u₂ a ≤ c₂ * ((encPair encS encBool a).length + 1) ^ dE) :
+      u₁ (streamState (init x) next x j, x[j]) + u₂ (streamState (init x) next x j, x[j]) ≤
+        (c₁ + c₂) * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) := by
+    have e : (encPair encS encBool (streamState (init x) next x j, x[j])).length + 1 ≤
+        3 * (lMax x + 1) := by
+      have := hS x j hj.le
       rw [length_encPair, encBool_apply, List.length_singleton]
+      dsimp only
       omega
-    exact Nat.add_le_add ((h₁ _).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left e _)))
-      ((h₂ _).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left e _)))
+    have p₁ := pow_le_three_pow_mul e (Nat.le_add_right dN dE)
+    have p₂ := pow_le_three_pow_mul e (Nat.le_add_left dE dN)
+    rw [Nat.add_mul]
+    exact Nat.add_le_add ((h₁ _).trans (Nat.mul_le_mul_left _ p₁))
+      ((h₂ _).trans (Nat.mul_le_mul_left _ p₂))
   obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.streamFold reader (fun b => [b])
     (fun _ => List.cons_ne_nil _ _) (fun a rest => by simp [reader, InputReader.read])
-    (encA := encBool) (fun x => x) (fun x => by simp) hI' hN hE hF'
-    (g := fun x : List Bool => lcsParseRun f g ((((false, false), false), 0), 0) x ++ fin)
-    (fun x => by rw [encList_append, streamEmit_eq_lcsParseRun])
-    (tMax := fun x => cN * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
-      cE * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE)
-    (sMax := fun x => cN' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
-      cE' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE)
-    (lMax := fun x => 43 + 3 * Nat.size x.length)
+    (encA := encBool) (encE := encBits) (encF := encBits) (fun x => x) (fun x => by simp)
+    hinit hN hE hfinish (g := g) (fun x => by simpa only [encBits_apply] using hg x)
+    (tMax := fun x => (cN + cE) * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)))
+    (sMax := fun x => (cN' + cE') * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)))
+    (lMax := fun x => lMax x + 1)
     (fun x j hj => hround x j hj cN cE tN tE htN htE)
     (fun x j hj => hround x j hj cN' cE' sN sE hsN hsE)
-    (fun x j _ => length_encLCSParseState_streamState_le x j)
+    (fun x j hj => (hS x j hj).trans (Nat.le_succ _))
     (fun x j hj => by rw [encBool_apply, List.length_singleton]; omega)
-  set M := cN * 89 ^ dN + cE * 89 ^ dE + cN' * 89 ^ dN + cE' * 89 ^ dE
-  have key (L Y t l a b : ℕ) (hY : 1 ≤ Y) (ht : t ≤ M * Y) (hl : l ≤ 43 * Y) :
-      a + b + L + L * (t + l + 1) + l + 1 ≤ (a + b + M + 100) * ((L + 1) * Y + 1) := by
-    nlinarith [Nat.mul_le_mul_left L ht, Nat.mul_le_mul_left L hl, Nat.mul_le_mul_left L hY]
-  have key2 (L Y s l a b : ℕ) (hY : 1 ≤ Y) (hs : s ≤ M * Y) (hl : l ≤ 43 * Y) :
-      0 + 0 + s + l + 1 ≤ (a + b + M + 100) * ((L + 1) * Y + 1) := by
-    have h1 : s + l + 1 ≤ (M + 43) * Y + 1 := by nlinarith
-    have h2 : (M + 43) * Y + 1 ≤ (a + b + M + 100) * Y := by nlinarith
-    have h3 : (a + b + M + 100) * Y ≤ (a + b + M + 100) * ((L + 1) * Y + 1) := by nlinarith
-    omega
-  have hY (x : List Bool) : 1 ≤ (Nat.size x.length + 1) ^ (dN + dE + 1) :=
-    Nat.one_le_pow _ _ (by omega)
-  have hl (x : List Bool) : 43 + 3 * Nat.size x.length ≤
-      43 * (Nat.size x.length + 1) ^ (dN + dE + 1) := by
-    have := Nat.le_self_pow (show dN + dE + 1 ≠ 0 by omega) (Nat.size x.length + 1)
-    omega
-  have ht (x : List Bool) : cN * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
-      cE * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE ≤
-      M * (Nat.size x.length + 1) ^ (dN + dE + 1) := by
-    have h₁ := Nat.mul_le_mul_left cN (hpow x dN (by omega))
-    have h₂ := Nat.mul_le_mul_left cE (hpow x dE (by omega))
-    simp only [M, Nat.add_mul, Nat.mul_assoc] at h₁ h₂ ⊢
-    omega
-  have hs (x : List Bool) : cN' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
-      cE' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE ≤
-      M * (Nat.size x.length + 1) ^ (dN + dE + 1) := by
-    have h₁ := Nat.mul_le_mul_left cN' (hpow x dN (by omega))
-    have h₂ := Nat.mul_le_mul_left cE' (hpow x dE (by omega))
-    simp only [M, Nat.add_mul, Nat.mul_assoc] at h₁ h₂ ⊢
-    omega
-  refine ⟨dN + dE + 1, ComputableInO.of_bounds h.computableInTimeAndSpace
-    (c * (2 * cI + 2 + (2 * cF + 2) + M + 100))
-    (fun x => by
-      rw [Nat.mul_assoc]
-      apply Nat.mul_le_mul_left
-      rw [encBits_apply]
-      exact key _ _ _ _ _ _ (hY x) (ht x) (hl x))
-    (fun x => by
-      rw [Nat.mul_assoc]
-      apply Nat.mul_le_mul_left
-      exact key2 x.length _ _ _ (2 * cI + 2) (2 * cF + 2) (hY x) (hs x) (hl x))
-    (fun x => by
-      apply (h.computableInTimeAndSpace.length_le x).trans
-      rw [Nat.mul_assoc]
-      apply Nat.mul_le_mul_left
-      rw [encBits_apply]
-      exact key _ _ _ _ _ _ (hY x) (ht x) (hl x))⟩
+  obtain ⟨C₀, hC₀⟩ : ∃ C₀, C₀ = (cN + cE + cN' + cE') * 3 ^ (dN + dE) := ⟨_, rfl⟩
+  have hA : (cN + cE) * 3 ^ (dN + dE) ≤ C₀ := hC₀ ▸ Nat.mul_le_mul_right _ (by omega)
+  have hB : (cN' + cE') * 3 ^ (dN + dE) ≤ C₀ := hC₀ ▸ Nat.mul_le_mul_right _ (by omega)
+  refine ⟨c * (C₀ + 4), dN + dE + 1, h.mono (fun x => ?_) (fun x => ?_)⟩
+  · simp only [encBits_apply]
+    generalize tI x = a, tF (streamState (init x) next x x.length) = b, x.length = L
+    have hY : (lMax x + 1) ^ (dN + dE) ≤ (lMax x + 1) ^ (dN + dE + 1) :=
+      Nat.pow_le_pow_right (by omega) (by omega)
+    have hl : lMax x + 1 ≤ (lMax x + 1) ^ (dN + dE + 1) :=
+      Nat.le_self_pow (by omega) _
+    have h3 : (cN + cE) * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) ≤
+        C₀ * (lMax x + 1) ^ (dN + dE + 1) := by
+      rw [← Nat.mul_assoc]; exact Nat.mul_le_mul hA hY
+    generalize (lMax x + 1) ^ (dN + dE + 1) = Z at hl h3
+    generalize (cN + cE) * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) = W at h3
+    rw [Nat.mul_assoc c]
+    apply Nat.mul_le_mul_left c
+    nlinarith
+  · generalize sI x = a, sF (streamState (init x) next x x.length) = b
+    have hY : (lMax x + 1) ^ (dN + dE) ≤ (lMax x + 1) ^ (dN + dE + 1) :=
+      Nat.pow_le_pow_right (by omega) (by omega)
+    have hl : lMax x + 1 ≤ (lMax x + 1) ^ (dN + dE + 1) :=
+      Nat.le_self_pow (by omega) _
+    have h3 : (cN' + cE') * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) ≤
+        C₀ * (lMax x + 1) ^ (dN + dE + 1) := by
+      rw [← Nat.mul_assoc]; exact Nat.mul_le_mul hB hY
+    generalize (lMax x + 1) ^ (dN + dE + 1) = Z at hl h3
+    generalize (cN' + cE') * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) = W at h3
+    rw [Nat.mul_assoc c]
+    apply Nat.mul_le_mul_left c
+    nlinarith
 
 
 
+/-! ### Computing the dimension in a pass -/
+
+/-- The state of a pass: the dimension, in unary, and the parser state. -/
+private abbrev LCSPassState : Type := ℕ × LCSParseState
+
+/-- The encoding of a pass state. -/
+private abbrev encLCSPassState : LCSPassState ↪ List Bool := encPair encUnary encLCSParseState
+
+/-- The initial state of a pass on an encoded instance. -/
+private def LCS.passInit (x : List Bool) : LCSPassState := (LCS.dimOf x, LCS.parseStart)
+
+/-- The output of the dimension pass. -/
+private def LCS.dimFinish (q : LCSParseState × ℕ) : List Bool :=
+  encLCSPassState (q.2, LCS.parseStart)
+
+private theorem dimStep_bound (s : LCSParseState) (m : ℕ) (b : Bool) :
+    max (LCS.dimStep ((s, m), b)).2
+      ((LCS.dimStep ((s, m), b)).1.1.2 + (LCS.dimStep ((s, m), b)).1.2) ≤
+      max m (s.1.2 + s.2) + 1 := by
+  have h := lcsParseStep_le s b
+  have h₁ : (LCS.dimStep ((s, m), b)).1 = lcsParseStep (s, b) := rfl
+  have h₂ : (LCS.dimStep ((s, m), b)).2 = m ∨ (LCS.dimStep ((s, m), b)).2 = s.1.2 + 1 := by
+    change (if _ then _ else _) = _ ∨ (if _ then _ else _) = _
+    split_ifs <;> simp
+  rw [h₁]
+  rcases h₂ with h₂ | h₂ <;> rw [h₂] <;> simp only [Nat.max_def] <;> split_ifs <;> omega
+
+private theorem foldl_dimStep_bound (l : List Bool) (s : LCSParseState) (m : ℕ) :
+    max (l.foldl (fun q b => LCS.dimStep (q, b)) (s, m)).2
+      ((l.foldl (fun q b => LCS.dimStep (q, b)) (s, m)).1.1.2 +
+        (l.foldl (fun q b => LCS.dimStep (q, b)) (s, m)).1.2) ≤ max m (s.1.2 + s.2) + l.length := by
+  induction l generalizing s m with
+  | nil => simp
+  | cons b l ih =>
+    rw [List.foldl_cons]
+    have h₁ := ih (LCS.dimStep ((s, m), b)).1 (LCS.dimStep ((s, m), b)).2
+    have h₂ := dimStep_bound s m b
+    simp only [Prod.mk.eta, List.length_cons] at h₁ ⊢
+    omega
+
+open ComputableInPolyTime in
+private theorem tA : ComputableInPolyTime (fun q : (LCSParseState × ℕ) × Bool => q.1.1.1.2 + 1)
+      (encPair (encPair encLCSParseState encNat) encBool) encNat := by
+  fun_prop
+
+open ComputableInPolyTime in
+private theorem tB : ComputableInPolyTime (fun q : (LCSParseState × ℕ) × Bool =>
+      (q.1.1.1.1.1.1 || q.1.1.1.1.1.2) && q.1.1.1.1.2)
+      (encPair (encPair encLCSParseState encNat) encBool) encBool := by
+  fun_prop
+
+open ComputableInPolyTime in
+private theorem tC : ComputableInPolyTime (fun q : (LCSParseState × ℕ) × Bool =>
+      decide (q.1.2 < q.1.1.1.2 + 1))
+      (encPair (encPair encLCSParseState encNat) encBool) encBool :=
+  binary_lt' (by fun_prop) tA
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_dimStep :
+    ComputableInPolyTime LCS.dimStep (encPair (encPair encLCSParseState encNat) encBool)
+      (encPair encLCSParseState encNat) := by
+  have hs : ComputableInPolyTime (fun q : (LCSParseState × ℕ) × Bool => (q.1.1, q.2))
+      (encPair (encPair encLCSParseState encNat) encBool) (encPair encLCSParseState encBool) := by
+    fun_prop
+  have hstep := ComputableInPolyTime.comp' (f := lcsParseStep)
+    (g := fun q : (LCSParseState × ℕ) × Bool => (q.1.1, q.2)) computableInPolyTime_lcsParseStep hs
+  have hc : ComputableInPolyTime (fun q : (LCSParseState × ℕ) × Bool =>
+      (q.1.1.1.1.1.1 || q.1.1.1.1.1.2) && q.1.1.1.1.2 && decide (q.1.2 < q.1.1.1.2 + 1))
+      (encPair (encPair encLCSParseState encNat) encBool) encBool :=
+    ComputableInPolyTime.bool_and' tB tC
+  have hm0 : ComputableInPolyTime (fun q : (LCSParseState × ℕ) × Bool => q.1.2)
+      (encPair (encPair encLCSParseState encNat) encBool) encNat := by
+    fun_prop
+  exact hstep.prod (ite' hc tA hm0)
+
+
+/-- A power of a quantity bounded by a multiple of `X ≥ 1`. -/
+private theorem pow_le_mul_pow {a X c n D : ℕ} (ha : a ≤ c * X) (hX : 1 ≤ X) (hn : n ≤ D) :
+    a ^ n ≤ c ^ n * X ^ D :=
+  calc a ^ n ≤ (c * X) ^ n := Nat.pow_le_pow_left ha n
+    _ = c ^ n * X ^ n := Nat.mul_pow _ _ _
+    _ ≤ c ^ n * X ^ D := Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hX hn)
+
+private theorem streamEmit_nil {σ α : Type*} (next : σ × α → σ) (s : σ) (l : List α) :
+    streamEmit next (fun _ => []) s l = [] := by
+  induction l generalizing s with
+  | nil => rfl
+  | cons a l ih => simp [streamEmit, ih]
+
+private theorem size_le_self (n : ℕ) : Nat.size n ≤ n :=
+  Nat.size_le.mpr Nat.lt_two_pow_self
+
+private theorem streamState_dimStep (x : List Bool) (j : ℕ) :
+    streamState (LCS.parseStart, 0) LCS.dimStep x j =
+      (streamState LCS.parseStart lcsParseStep x j,
+        (streamState (LCS.parseStart, 0) LCS.dimStep x j).2) := by
+  simp only [streamState]
+  rw [foldl_dimStep]
+
+private theorem snd_streamState_dimStep_le (x : List Bool) (j : ℕ) :
+    (streamState (LCS.parseStart, 0) LCS.dimStep x j).2 ≤ x.length := by
+  have := foldl_dimStep_bound (x.take j) LCS.parseStart 0
+  simp only [streamState, List.length_take] at this ⊢
+  omega
+
+private theorem dimOf_le (x : List Bool) : LCS.dimOf x ≤ x.length := by
+  have := snd_streamState_dimStep_le x x.length
+  simpa [streamState, LCS.dimOf] using this
+
+private theorem length_encDimState_le (x : List Bool) (j : ℕ) :
+    (encPair encLCSParseState encNat (streamState (LCS.parseStart, 0) LCS.dimStep x j)).length ≤
+      87 + 7 * Nat.size x.length := by
+  rw [streamState_dimStep, length_encPair]
+  dsimp only
+  have h₁ : (encLCSParseState (streamState LCS.parseStart lcsParseStep x j)).length ≤
+      43 + 3 * Nat.size x.length := length_encLCSParseState_streamState_le x j
+  have h₂ := Nat.size_le_size (snd_streamState_dimStep_le x j)
+  simp only [encNat_apply, Nat.size_eq_bits_len]
+  omega
+
+open ComputableInPolyTime in
+/-- **The dimension pass**: the initial state of a pass is computable within time
+`O(L (log L) ^ K)`. -/
+private theorem exists_tidy_initB : ∃ c K,
+    ComputableTidilyInTimeAndSpace LCS.passInit encBits encLCSPassState
+    (fun x => c * ((x.length + 1) * (Nat.size x.length + 1) ^ K))
+    (fun x => c * ((x.length + 1) * (Nat.size x.length + 1) ^ K)) := by
+  obtain ⟨cI, hI⟩ := computableInTimeAndSpace_of_const (α := List Bool) (encIn := encBits)
+    (encOut := encPair encLCSParseState encNat) (LCS.parseStart, 0)
+  have hI' := hI.computableTidilyInTimeAndSpace
+  have hemit : ComputableInPolyTime (fun _ : (LCSParseState × ℕ) × Bool => ([] : List Bool))
+      (encPair (encPair encLCSParseState encNat) encBool) encBits := ComputableInPolyTime.const _
+  have hfinO : ComputableInO LCS.dimFinish (encPair encLCSParseState encNat) encBits
+      (fun q => (encPair encLCSParseState encNat q).length + q.2 +
+        (encPair encLCSParseState encNat q).length)
+      (fun q => (encPair encLCSParseState encNat q).length + q.2 +
+        (encPair encLCSParseState encNat q).length) :=
+    ((ComputableInO.natToUnary.comp (ComputableInO.snd encLCSParseState encNat)).prod
+      (ComputableInO.const (encIn := encPair encLCSParseState encNat)
+        (encMid := encLCSParseState) LCS.parseStart)).of_enc_eq
+      (g := LCS.dimFinish) (encC := encBits) (fun q => by simp [LCS.dimFinish, encBits_apply])
+  obtain ⟨cF, hF, -⟩ := hfinO.tidy
+  obtain ⟨c, K, h⟩ := bitStream (init := fun _ => (LCS.parseStart, 0)) hI'
+    computableInPolyTime_dimStep hemit hF (g := LCS.passInit) (encOut := encLCSPassState)
+    (fun x => by
+      rw [streamEmit_nil, List.nil_append]
+      simp [LCS.passInit, LCS.dimFinish, LCS.dimOf, streamState])
+    (fun x => 87 + 7 * Nat.size x.length) (fun x j _ => length_encDimState_le x j)
+  refine ⟨c * (2 * cI + 2 + 200 * cF + 88 ^ K), K, h.mono (fun x => ?_) (fun x => ?_)⟩
+  all_goals
+    beta_reduce
+    have hl := length_encDimState_le x x.length
+    have hm := snd_streamState_dimStep_le x x.length
+    have hZ := size_le_self x.length
+    have hY : 1 ≤ (Nat.size x.length + 1) ^ K := Nat.one_le_pow _ _ (by omega)
+    have hp : (87 + 7 * Nat.size x.length + 1) ^ K ≤ 88 ^ K * (Nat.size x.length + 1) ^ K :=
+      pow_le_mul_pow (by omega) (by omega) le_rfl
+    generalize (encPair encLCSParseState encNat
+      (streamState (LCS.parseStart, 0) LCS.dimStep x x.length)).length = E at hl
+    generalize (streamState (LCS.parseStart, 0) LCS.dimStep x x.length).2 = m at hm
+    generalize (Nat.size x.length + 1) ^ K = Y at hY hp
+    generalize Nat.size x.length = Z at hl hZ hp
+    generalize x.length = L at hl hm hZ
+    simp only [Nat.mul_assoc c]
+    apply Nat.mul_le_mul_left c
+    have h1 : (2 * cI + 2) ≤ (2 * cI + 2) * ((L + 1) * Y) :=
+      Nat.le_mul_of_pos_right _ (Nat.mul_pos (by omega) hY)
+    have h2 : cF * (E + m + E + 1) ≤ 200 * cF * ((L + 1) * Y) := by
+      have : E + m + E + 1 ≤ 200 * ((L + 1) * Y) := by
+        have : L + 1 ≤ (L + 1) * Y := Nat.le_mul_of_pos_right _ hY
+        omega
+      calc cF * (E + m + E + 1) ≤ cF * (200 * ((L + 1) * Y)) := Nat.mul_le_mul_left _ this
+        _ = 200 * cF * ((L + 1) * Y) := by ring
+    have h3 : (L + 1) * (87 + 7 * Z + 1) ^ K ≤ 88 ^ K * ((L + 1) * Y) :=
+      calc (L + 1) * (87 + 7 * Z + 1) ^ K ≤ (L + 1) * (88 ^ K * Y) := Nat.mul_le_mul_left _ hp
+        _ = 88 ^ K * ((L + 1) * Y) := by ring
+    have h4 : (87 + 7 * Z + 1) ^ K ≤ 88 ^ K * ((L + 1) * Y) :=
+      hp.trans (Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega)))
+    nlinarith
+
+/-! ### The passes -/
+
+/-- A round of a pass: the dimension is kept and the parser reads a bit. -/
+private def LCS.passNext (q : LCSPassState × Bool) : LCSPassState :=
+  (q.1.1, lcsParseStep (q.1.2, q.2))
+
+private theorem streamState_lcsPassNext (d : ℕ) (s : LCSParseState) (l : List Bool) (j : ℕ) :
+    streamState (d, s) LCS.passNext l j = (d, streamState s lcsParseStep l j) := by
+  simp only [streamState]
+  generalize l.take j = l'
+  induction l' generalizing s with
+  | nil => rfl
+  | cons b l ih => exact ih _
+
+private theorem streamEmit_lcsPassNext {enc : β ↪ List Bool} (f : ℕ → Bool → ℕ → ℕ → Bool → List β)
+    (g : ℕ → Bool → ℕ → ℕ → List β) (d : ℕ) (s : LCSParseState) (l : List Bool) :
+    streamEmit LCS.passNext (fun q => encList enc (lcsParseEmit (f q.1.1) (g q.1.1) (q.1.2, q.2)))
+      (d, s) l = encList enc (lcsParseRun (f d) (g d) s l) := by
+  induction l generalizing s with
+  | nil => rfl
+  | cons b l ih =>
+    rw [streamEmit, lcsParseRun, encList_append]
+    exact congrArg _ (ih _)
+
+/-- The time bound of the passes: `L ((d + 1) (log L + 1)) ^ D` on `N` vectors of dimension `d`
+encoded in length `L`. -/
+private def LCS.passBound (D : ℕ) (p : List (List Bool) × List (List Bool)) : ℕ :=
+  ((encOV p).length + 1) * ((OV.dim p + 1) * (Nat.size (encOV p).length + 1)) ^ D
+
+private theorem passBound_mono {D D' : ℕ} (h : D ≤ D') (p : List (List Bool) × List (List Bool)) :
+    LCS.passBound D p ≤ LCS.passBound D' p :=
+  Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.mul_pos (by omega) (by omega)) h)
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_lcsPassNext :
+    ComputableInPolyTime LCS.passNext (encPair encLCSPassState encBool) encLCSPassState := by
+  have hs : ComputableInPolyTime (fun q : LCSPassState × Bool => (q.1.2, q.2))
+      (encPair encLCSPassState encBool) (encPair encLCSParseState encBool) := by fun_prop
+  have hd : ComputableInPolyTime (fun q : LCSPassState × Bool => q.1.1)
+      (encPair encLCSPassState encBool) encUnary := by fun_prop
+  exact hd.prod (ComputableInPolyTime.comp' (f := lcsParseStep)
+    (g := fun q : LCSPassState × Bool => (q.1.2, q.2)) computableInPolyTime_lcsParseStep hs)
+
+open ComputableInPolyTime in
+/-- **A pass over an encoded instance** with polynomial-time rounds and finish, whose state holds
+the dimension in unary, runs within the time `LCS.passBound D`. -/
+private theorem computableInO_pass {ω : Type} {encOut : ω ↪ List Bool}
+    {emit : LCSPassState × Bool → List Bool} {fin : LCSPassState → List Bool}
+    {g : List (List Bool) × List (List Bool) → ω}
+    (hemit : ComputableInPolyTime emit (encPair encLCSPassState encBool) encBits)
+    (hfin : ComputableInPolyTime fin encLCSPassState encBits)
+    (hg : ∀ p, encOut (g p) = streamEmit LCS.passNext emit (OV.dim p, LCS.parseStart) (encOV p) ++
+      fin (OV.dim p, streamState LCS.parseStart lcsParseStep (encOV p) (encOV p).length)) :
+    ∃ D, ComputableInO g encOV encOut (LCS.passBound D) (LCS.passBound D) := by
+  obtain ⟨cA, KA, hA⟩ := exists_tidy_initB
+  obtain ⟨dF, _, hF_deg⟩ := hfin.exists_degree
+  obtain ⟨tF, sF, ⟨cF, htF⟩, ⟨cF', hsF⟩, hF⟩ := Internal.NormalForm.degree hF_deg
+  have hS (x : List Bool) (j : ℕ) (_ : j ≤ x.length) :
+      (encLCSPassState (streamState (LCS.passInit x) LCS.passNext x j)).length ≤
+        2 * LCS.dimOf x + 44 + 3 * Nat.size x.length := by
+    rw [LCS.passInit, streamState_lcsPassNext, length_encPair]
+    dsimp only
+    have h₁ : (encLCSParseState (streamState LCS.parseStart lcsParseStep x j)).length ≤
+        43 + 3 * Nat.size x.length := length_encLCSParseState_streamState_le x j
+    rw [encUnary_apply, List.length_replicate]
+    omega
+  obtain ⟨c, K, h⟩ := bitStream hA computableInPolyTime_lcsPassNext hemit hF
+    (g := fun x => streamEmit LCS.passNext emit (LCS.passInit x) x ++
+      fin (streamState (LCS.passInit x) LCS.passNext x x.length))
+    (encOut := encBits) (fun x => by rw [encBits_apply]) _ hS
+  set D := KA + K + dF with hD
+  -- the bound in terms of the encoded instance
+  have key (x : List Bool) (cc : ℕ) (u : LCSPassState → ℕ)
+      (hu : ∀ a, u a ≤ cc * ((encLCSPassState a).length + 1) ^ dF) :
+      c * (cA * ((x.length + 1) * (Nat.size x.length + 1) ^ KA) +
+        u (streamState (LCS.passInit x) LCS.passNext x x.length) +
+        (x.length + 1) * (2 * LCS.dimOf x + 44 + 3 * Nat.size x.length + 1) ^ K) ≤
+      c * (cA + cc * 45 ^ dF + 45 ^ K) *
+        ((x.length + 1) * ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) ^ D) := by
+    have hX : 1 ≤ (LCS.dimOf x + 1) * (Nat.size x.length + 1) := Nat.mul_pos (by omega) (by omega)
+    have hZX : Nat.size x.length + 1 ≤ (LCS.dimOf x + 1) * (Nat.size x.length + 1) :=
+      Nat.le_mul_of_pos_left _ (by omega)
+    have hdX : LCS.dimOf x + 1 ≤ (LCS.dimOf x + 1) * (Nat.size x.length + 1) :=
+      Nat.le_mul_of_pos_right _ (by omega)
+    have hℓ : 2 * LCS.dimOf x + 44 + 3 * Nat.size x.length + 1 ≤
+        45 * ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) := by omega
+    have p1 : (Nat.size x.length + 1) ^ KA ≤
+        1 ^ KA * ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) ^ D :=
+      pow_le_mul_pow (by omega) hX (by omega)
+    have hu' := hu (streamState (LCS.passInit x) LCS.passNext x x.length)
+    have hl := hS x x.length le_rfl
+    have p2 :
+        ((encLCSPassState (streamState (LCS.passInit x) LCS.passNext x x.length)).length + 1) ^ dF ≤
+        45 ^ dF * ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) ^ D :=
+      pow_le_mul_pow (by omega) hX (by omega)
+    have p3 : (2 * LCS.dimOf x + 44 + 3 * Nat.size x.length + 1) ^ K ≤
+        45 ^ K * ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) ^ D :=
+      pow_le_mul_pow hℓ hX (by omega)
+    rw [one_pow, one_mul] at p1
+    generalize ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) ^ D = Y at p1 p2 p3
+    generalize u (streamState (LCS.passInit x) LCS.passNext x x.length) = U at hu'
+    generalize
+      ((encLCSPassState (streamState (LCS.passInit x) LCS.passNext x x.length)).length + 1) ^ dF
+      = P at hu' p2
+    generalize (2 * LCS.dimOf x + 44 + 3 * Nat.size x.length + 1) ^ K = Q at p3
+    generalize (Nat.size x.length + 1) ^ KA = R at p1
+    have hU : U ≤ cc * 45 ^ dF * Y := by
+      calc U ≤ cc * P := hu'
+        _ ≤ cc * (45 ^ dF * Y) := Nat.mul_le_mul_left _ p2
+        _ = cc * 45 ^ dF * Y := by ring
+    rw [Nat.mul_assoc c]
+    apply Nat.mul_le_mul_left c
+    have h1 : cA * ((x.length + 1) * R) ≤ cA * ((x.length + 1) * Y) :=
+      Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ p1)
+    have h2 : (x.length + 1) * Q ≤ 45 ^ K * ((x.length + 1) * Y) := by
+      calc (x.length + 1) * Q ≤ (x.length + 1) * (45 ^ K * Y) := Nat.mul_le_mul_left _ p3
+        _ = 45 ^ K * ((x.length + 1) * Y) := by ring
+    have h3 : cc * 45 ^ dF * Y ≤ cc * 45 ^ dF * ((x.length + 1) * Y) :=
+      Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega))
+    nlinarith
+  have h' : ComputableInO (fun x => streamEmit LCS.passNext emit (LCS.passInit x) x ++
+      fin (streamState (LCS.passInit x) LCS.passNext x x.length)) encBits encBits
+      (fun x => (x.length + 1) * ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) ^ D)
+      (fun x => (x.length + 1) * ((LCS.dimOf x + 1) * (Nat.size x.length + 1)) ^ D) := by
+    refine ComputableInO.of_bounds h.computableInTimeAndSpace
+      (c * (cA + cF * 45 ^ dF + 45 ^ K) + c * (cA + cF' * 45 ^ dF + 45 ^ K))
+      (fun x => ?_) (fun x => ?_) (fun x => ?_)
+    · exact (key x cF tF htF).trans (Nat.mul_le_mul (Nat.le_add_right _ _) (Nat.le_succ _))
+    · refine le_trans ?_ ((key x cF' sF hsF).trans
+        (Nat.mul_le_mul (Nat.le_add_left _ _) (Nat.le_succ _)))
+      exact Nat.mul_le_mul_left c (Nat.add_le_add_left (Nat.le_mul_of_pos_left _ (by omega)) _)
+    · exact ((h.computableInTimeAndSpace.length_le x).trans (key x cF tF htF)).trans
+        (Nat.mul_le_mul (Nat.le_add_right _ _) (Nat.le_succ _))
+  refine ⟨D, ((h'.of_encIn_eq (encD := encOV) (fun p => encOV p) (fun _ => rfl)).of_enc_eq
+    (g := g) (encC := encOut) (fun p => ?_)).mono_le (fun p => ?_) (fun p => ?_)⟩
+  · simp only [Function.comp_apply, encBits_apply, hg p, LCS.passInit, dimOf_encOV,
+      streamState_lcsPassNext]
+  · simp only [Function.comp_apply, dimOf_encOV, LCS.passBound, le_refl]
+  · simp only [Function.comp_apply, dimOf_encOV, LCS.passBound, le_refl]
+
+open ComputableInPolyTime in
+/-- The emission of a pass round is polynomial-time when the outputs of the bits and of the ends
+of the vectors are. -/
+private theorem computableInPolyTime_lcsPassEmit {enc : β ↪ List Bool}
+    {f : ℕ → Bool → ℕ → ℕ → Bool → List β} {g : ℕ → Bool → ℕ → ℕ → List β}
+    (hf : ComputableInPolyTime
+      (fun q : LCSPassState × Bool => f q.1.1 q.1.2.1.1.1.1 q.1.2.2 q.1.2.1.2 q.2)
+      (encPair encLCSPassState encBool) (encList enc))
+    (hg : ComputableInPolyTime
+      (fun q : LCSPassState × Bool => g q.1.1 q.1.2.1.1.1.1 q.1.2.2 q.1.2.1.2)
+      (encPair encLCSPassState encBool) (encList enc)) :
+    ComputableInPolyTime
+      (fun q : LCSPassState × Bool => encList enc (lcsParseEmit (f q.1.1) (g q.1.1) (q.1.2, q.2)))
+      (encPair encLCSPassState encBool) encBits := by
+  have hnil : ComputableInPolyTime (fun _ : LCSPassState × Bool => ([] : List β))
+      (encPair encLCSPassState encBool) (encList enc) := ComputableInPolyTime.const _
+  have hc₁ : ComputableInPolyTime (fun q : LCSPassState × Bool => !q.1.2.1.1.1.1 && !q.1.2.1.1.1.2)
+      (encPair encLCSPassState encBool) encBool := by fun_prop
+  have hc₂ : ComputableInPolyTime (fun q : LCSPassState × Bool => q.1.2.1.1.2)
+      (encPair encLCSPassState encBool) encBool := by fun_prop
+  have hc₃ : ComputableInPolyTime (fun q : LCSPassState × Bool => q.2)
+      (encPair encLCSPassState encBool) encBool := by fun_prop
+  exact encoding_comp (ite' hc₁ hnil (ite' hc₂ hf (ite' hc₃ hnil hg)))
+
+
+
+private theorem intercalate_eq_headD_append {α : Type*} (sep : List α) (L : List (List α)) :
+    sep.intercalate L = L.headD [] ++ L.tail.flatMap (fun l => sep ++ l) := by
+  rcases L with _ | ⟨l, rest⟩
+  · rfl
+  · induction rest generalizing l with
+    | nil => simp
+    | cons l' r ih =>
+      rw [List.intercalate_cons_cons, ih]
+      simp [List.append_assoc]
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_CG1 :
+    ComputableInPolyTime LCS.CG1 encBool (encList encLCSSymbol) := by
+  unfold LCS.CG1
+  fun_prop
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_CG2 :
+    ComputableInPolyTime LCS.CG2 encBool (encList encLCSSymbol) := by
+  unfold LCS.CG2
+  fun_prop
+
+private theorem bits_list :
+    ComputableInPolyTime (fun w : List Bool => w) encBits (encList encBool) :=
+  (bits_encList_polyTime encBool).1
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_R1 :
+    ComputableInPolyTime LCS.R1 encBits (encList encLCSSymbol) := by
+  have e : LCS.R1 = fun a => a.flatMap LCS.CG1 := funext fun a => by
+    simp [LCS.R1, List.flatMap]
+  rw [e]
+  exact flatMapWithInput (list := fun a => a) bits_list
+    (computableInPolyTime_CG1.comp (snd encBits encBool))
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_R2 :
+    ComputableInPolyTime LCS.R2 encBits (encList encLCSSymbol) := by
+  have e : LCS.R2 = fun a => a.flatMap LCS.CG2 := funext fun a => by
+    simp [LCS.R2, List.flatMap]
+  rw [e]
+  exact flatMapWithInput (list := fun a => a) bits_list
+    (computableInPolyTime_CG2.comp (snd encBits encBool))
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_VG1' :
+    ComputableInPolyTime (fun q : ℕ × List Bool => LCS.VG1' q.1 q.2)
+      (encPair encUnary encBits) (encList encLCSSymbol) := by
+  have := computableInPolyTime_R1
+  unfold LCS.VG1' LCS.M LCS.W
+  fun_prop
+
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_VG2' :
+    ComputableInPolyTime (fun q : ℕ × List Bool => LCS.VG2' q.1 q.2)
+      (encPair encUnary encBits) (encList encLCSSymbol) := by
+  have := computableInPolyTime_R2
+  unfold LCS.VG2' LCS.M LCS.W
+  fun_prop
+
+private theorem foldl_max_eq (l : List ℕ) (a : ℕ) : l.foldl max a = max a (l.foldr max 0) := by
+  induction l generalizing a with
+  | nil => simp
+  | cons x l ih => rw [List.foldl_cons, ih, List.foldr_cons, Nat.max_assoc]
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_P1 :
+    ComputableInPolyTime (fun q : ℕ × List (List Bool) => LCS.P1 q.1 q.2)
+      (encPair encUnary (encList encBits)) (encList encLCSSymbol) := by
+  have e : (fun q : ℕ × List (List Bool) => LCS.P1 q.1 q.2) = fun q =>
+      List.replicate (3 * q.2.length * (10 * q.1 + 10)) s3 ++
+        (q.2.flatMap (fun a => LCS.VG1' q.1 a) ++
+          List.replicate (3 * q.2.length * (10 * q.1 + 10)) s3) :=
+    funext fun q => by simp only [LCS.P1, LCS.sepLen, List.flatMap, List.append_assoc]
+  rw [e]
+  have hq : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
+      (encPair (encPair encUnary (encList encBits)) encBits) (encPair encUnary encBits) := by
+    fun_prop
+  have hV : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => LCS.VG1' p.1.1 p.2)
+      (encPair (encPair encUnary (encList encBits)) encBits) (encList encLCSSymbol) :=
+    ComputableInPolyTime.comp' (f := fun q : ℕ × List Bool => LCS.VG1' q.1 q.2)
+      (g := fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
+      computableInPolyTime_VG1' hq
+  have hR : ComputableInPolyTime
+      (fun q : ℕ × List (List Bool) => List.replicate (3 * q.2.length * (10 * q.1 + 10)) s3)
+      (encPair encUnary (encList encBits)) (encList encLCSSymbol) := by
+    fun_prop
+  exact listAppend' hR (listAppend' (flatMapWithInput
+    (f := fun (q : ℕ × List (List Bool)) (a : List Bool) => LCS.VG1' q.1 a)
+    (snd _ _) hV) hR)
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_P2 :
+    ComputableInPolyTime (fun q : ℕ × List (List Bool) => LCS.P2 q.1 q.2)
+      (encPair encUnary (encList encBits)) (encList encLCSSymbol) := by
+  have e : (fun q : ℕ × List (List Bool) => LCS.P2 q.1 q.2) = fun q =>
+      (LCS.P2Blocks q.1 q.2).headD [] ++ (LCS.P2Blocks q.1 q.2).tail.flatMap
+        (fun l => List.replicate (10 * q.1 + 10) s3 ++ l) :=
+    funext fun q => by
+      simp only [LCS.P2, LCS.sepLen]
+      exact intercalate_eq_headD_append _ _
+  rw [e]
+  have hD : ComputableInPolyTime (fun q : ℕ × List (List Bool) => LCS.DummyBlock q.1)
+      (encPair encUnary (encList encBits)) (encList encLCSSymbol) := by
+    unfold LCS.DummyBlock LCS.M LCS.W; fun_prop
+  have hq : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
+      (encPair (encPair encUnary (encList encBits)) encBits) (encPair encUnary encBits) := by
+    fun_prop
+  have hV : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => LCS.VG2' p.1.1 p.2)
+      (encPair (encPair encUnary (encList encBits)) encBits) (encList encLCSSymbol) :=
+    ComputableInPolyTime.comp' (f := fun q : ℕ × List Bool => LCS.VG2' q.1 q.2)
+      (g := fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
+      computableInPolyTime_VG2' hq
+  have hn : ComputableInPolyTime (fun q : ℕ × List (List Bool) => q.2.length)
+      (encPair encUnary (encList encBits)) encUnary := by fun_prop
+  have hB : ComputableInPolyTime (fun q : ℕ × List (List Bool) => LCS.P2Blocks q.1 q.2)
+      (encPair encUnary (encList encBits)) (encList (encList encLCSSymbol)) := by
+    unfold LCS.P2Blocks
+    exact listAppend' (listAppend' (replicate hn hD)
+      (mapWithInput
+        (f := fun (q : ℕ × List (List Bool)) (a : List Bool) => LCS.VG2' q.1 a) (snd _ _) hV))
+      (replicate hn hD)
+  have hS : ComputableInPolyTime
+      (fun p : (ℕ × List (List Bool)) × List LCSSymbol =>
+        List.replicate (10 * p.1.1 + 10) s3 ++ p.2)
+      (encPair (encPair encUnary (encList encBits)) (encList encLCSSymbol))
+      (encList encLCSSymbol) := by
+    fun_prop
+  exact listAppend' ((headD []).comp hB)
+    (flatMapWithInput (f := fun (q : ℕ × List (List Bool)) (l : List LCSSymbol) =>
+        List.replicate (10 * q.1 + 10) s3 ++ l)
+      ((tail (encA := encList encLCSSymbol)).comp hB) hS)
+
+open ComputableInPolyTime in
+private theorem computableInPolyTime_dim :
+    ComputableInPolyTime OV.dim encOV encUnary := by
+  have e : OV.dim = fun p => ((p.1 ++ p.2).map List.length).foldl max 0 := funext fun p => by
+    rw [OV.dim, listMax, foldl_max_eq, Nat.zero_max]
+  rw [e]
+  exact (unary_foldl_max 0).comp (by unfold encOV; fun_prop)
+
+
+/-! ### The passes of the reduction -/
+
+private theorem flatMap_const_eq {α γ : Type*} (l : List α) (c : List γ) :
+    l.flatMap (fun _ => c) = (List.replicate l.length c).flatten := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp [ih, List.replicate_succ]
+
+/-- Separated blocks without their first separator are the intercalated blocks. -/
+private theorem drop_flatMap_append {α : Type*} (sep : List α) (L : List (List α)) {n : ℕ}
+    (hn : sep.length = n) :
+    (L.flatMap (fun l => sep ++ l)).drop n = sep.intercalate L := by
+  subst hn
+  rcases L with _ | ⟨l, rest⟩
+  · simp
+  · rw [List.flatMap_cons, List.append_assoc, List.drop_left, intercalate_eq_headD_append]
+    rfl
+
+private theorem flatMap_eq_map_flatten {α γ : Type*} (l : List α) (f g : α → List γ)
+    (h : ∀ a, f a = g a) : l.flatMap f = (l.map g).flatten := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp [List.flatMap_cons, h, ih]
+
+/-- No output for the bits of the vectors. -/
+private def LCS.noBits (_ : ℕ) (_ : Bool) (_ _ : ℕ) (_ : Bool) : List LCSSymbol := []
+
+/-- The pass for the `s3` runs of `LCS.P1`: a run of length `3 (10 d + 10)` at the end of each
+vector of `A`. -/
+private def LCS.runEnd (d : ℕ) (side : Bool) (_ _ : ℕ) : List LCSSymbol :=
+  if side then [] else List.replicate (3 * LCS.sepLen d) s3
+
+/-- The pass for the blocks of `LCS.P1`: the bits of the vectors of `A`. -/
+private def LCS.blockBits (d : ℕ) (side : Bool) (_ i : ℕ) (b : Bool) : List LCSSymbol :=
+  if side then [] else
+    (if i = 0 then List.replicate (LCS.M d) s0 ++ List.replicate (LCS.W d) s1 else []) ++
+      LCS.CG1 b
+
+/-- The pass for the blocks of `LCS.P1`: the ends of the vectors of `A`. -/
+private def LCS.blockEnd (d : ℕ) (side : Bool) (_ i : ℕ) : List LCSSymbol :=
+  if side then [] else
+    (if i = 0 then List.replicate (LCS.M d) s0 ++ List.replicate (LCS.W d) s1 else []) ++
+      List.replicate (LCS.M d) s2
+
+/-- The pass for the dummy blocks of `LCS.P2`: a separator and a dummy block at the end of each
+vector of `B`. -/
+private def LCS.dummyEnd (d : ℕ) (side : Bool) (_ _ : ℕ) : List LCSSymbol :=
+  if side then List.replicate (LCS.sepLen d) s3 ++ LCS.DummyBlock d else []
+
+/-- The pass for the vector blocks of `LCS.P2`: the bits of the vectors of `B`. -/
+private def LCS.blockBits₂ (d : ℕ) (side : Bool) (_ i : ℕ) (b : Bool) : List LCSSymbol :=
+  if side then
+    (if i = 0 then List.replicate (LCS.sepLen d) s3 ++ List.replicate (LCS.M d) s0 else []) ++
+      LCS.CG2 b
+  else []
+
+/-- The pass for the vector blocks of `LCS.P2`: the ends of the vectors of `B`. -/
+private def LCS.blockEnd₂ (d : ℕ) (side : Bool) (_ i : ℕ) : List LCSSymbol :=
+  if side then
+    (if i = 0 then List.replicate (LCS.sepLen d) s3 ++ List.replicate (LCS.M d) s0 else []) ++
+      (List.replicate (LCS.W d) s1 ++ List.replicate (LCS.M d) s2)
+  else []
+
+private theorem lcsParseRun_runEnd (d : ℕ) (p : List (List Bool) × List (List Bool)) :
+    lcsParseRun (LCS.noBits d) (LCS.runEnd d) LCS.parseStart (encOV p) =
+      List.replicate (3 * p.1.length * LCS.sepLen d) s3 := by
+  rw [lcsParseRun_encOV]
+  have h₁ : lcsVecsOut (LCS.noBits d false) (LCS.runEnd d false) 0 p.1 =
+      p.1.flatMap (fun _ => List.replicate (3 * LCS.sepLen d) s3) :=
+    lcsVecsOut_const _ 0 p.1
+  have h₂ : lcsVecsOut (LCS.noBits d true) (LCS.runEnd d true) p.1.length p.2 = [] := by
+    rw [show LCS.runEnd d true = fun _ _ => [] from rfl,
+      show LCS.noBits d true = fun _ _ _ => [] from rfl,
+      lcsVecsOut_const]
+    simp
+  rw [h₁, h₂, List.append_nil, flatMap_const_replicate]
+  congr 1
+  ring
+
+private theorem lcsParseRun_block (d : ℕ) (p : List (List Bool) × List (List Bool)) :
+    lcsParseRun (LCS.blockBits d) (LCS.blockEnd d) LCS.parseStart (encOV p) =
+      (p.1.map (LCS.VG1' d)).flatten := by
+  rw [lcsParseRun_encOV]
+  have h₁ : lcsVecsOut (LCS.blockBits d false) (LCS.blockEnd d false) 0 p.1 =
+      p.1.flatMap (fun v => (List.replicate (LCS.M d) s0 ++ List.replicate (LCS.W d) s1) ++
+        v.flatMap LCS.CG1 ++ List.replicate (LCS.M d) s2) :=
+    lcsVecsOut_gadget _ _ _ 0 p.1
+  have h₂ : lcsVecsOut (LCS.blockBits d true) (LCS.blockEnd d true) p.1.length p.2 = [] := by
+    rw [show LCS.blockEnd d true = fun _ _ => [] from rfl,
+      show LCS.blockBits d true = fun _ _ _ => [] from rfl, lcsVecsOut_const]
+    simp
+  rw [h₁, h₂, List.append_nil]
+  exact flatMap_eq_map_flatten _ _ _ fun v => by
+    simp [LCS.VG1', LCS.R1, List.flatMap, List.append_assoc]
+
+private theorem lcsParseRun_dummy (d : ℕ) (p : List (List Bool) × List (List Bool)) :
+    lcsParseRun (LCS.noBits d) (LCS.dummyEnd d) LCS.parseStart (encOV p) =
+      p.2.flatMap (fun _ => List.replicate (LCS.sepLen d) s3 ++ LCS.DummyBlock d) := by
+  rw [lcsParseRun_encOV]
+  have h₁ : lcsVecsOut (LCS.noBits d false) (LCS.dummyEnd d false) 0 p.1 = [] := by
+    rw [show LCS.dummyEnd d false = fun _ _ => [] from rfl,
+      show LCS.noBits d false = fun _ _ _ => [] from rfl, lcsVecsOut_const]
+    simp
+  have h₂ : lcsVecsOut (LCS.noBits d true) (LCS.dummyEnd d true) p.1.length p.2 =
+      p.2.flatMap (fun _ => List.replicate (LCS.sepLen d) s3 ++ LCS.DummyBlock d) :=
+    lcsVecsOut_const _ _ p.2
+  rw [h₁, h₂, List.nil_append]
+
+private theorem lcsParseRun_block₂ (d : ℕ) (p : List (List Bool) × List (List Bool)) :
+    lcsParseRun (LCS.blockBits₂ d) (LCS.blockEnd₂ d) LCS.parseStart (encOV p) =
+      p.2.flatMap (fun v => List.replicate (LCS.sepLen d) s3 ++ LCS.VG2' d v) := by
+  rw [lcsParseRun_encOV]
+  have h₁ : lcsVecsOut (LCS.blockBits₂ d false) (LCS.blockEnd₂ d false) 0 p.1 = [] := by
+    rw [show LCS.blockEnd₂ d false = fun _ _ => [] from rfl,
+      show LCS.blockBits₂ d false = fun _ _ _ => [] from rfl, lcsVecsOut_const]
+    simp
+  have h₂ : lcsVecsOut (LCS.blockBits₂ d true) (LCS.blockEnd₂ d true) p.1.length p.2 =
+      p.2.flatMap (fun v => (List.replicate (LCS.sepLen d) s3 ++ List.replicate (LCS.M d) s0) ++
+        v.flatMap LCS.CG2 ++ (List.replicate (LCS.W d) s1 ++ List.replicate (LCS.M d) s2)) :=
+    lcsVecsOut_gadget _ _ _ _ p.2
+  rw [h₁, h₂, List.nil_append]
+  refine (flatMap_eq_map_flatten _ _ _ fun v => ?_).trans
+    (flatMap_eq_map_flatten _ _ _ fun _ => rfl).symm
+  simp [LCS.VG2', LCS.R2, List.flatMap, List.append_assoc]
+
+/-- `LCS.P1` from the passes. -/
+private theorem P1_eq_passes (d : ℕ) (p : List (List Bool) × List (List Bool)) :
+    LCS.P1 d p.1 = lcsParseRun (LCS.noBits d) (LCS.runEnd d) LCS.parseStart (encOV p) ++
+      (lcsParseRun (LCS.blockBits d) (LCS.blockEnd d) LCS.parseStart (encOV p) ++
+        lcsParseRun (LCS.noBits d) (LCS.runEnd d) LCS.parseStart (encOV p)) := by
+  rw [lcsParseRun_runEnd, lcsParseRun_block, LCS.P1]
+  simp only [List.append_assoc]
+
+/-- `LCS.P2` from the passes. -/
+private theorem P2_eq_passes (d : ℕ) (p : List (List Bool) × List (List Bool)) :
+    LCS.P2 d p.2 = (lcsParseRun (LCS.noBits d) (LCS.dummyEnd d) LCS.parseStart (encOV p) ++
+      (lcsParseRun (LCS.blockBits₂ d) (LCS.blockEnd₂ d) LCS.parseStart (encOV p) ++
+        lcsParseRun (LCS.noBits d) (LCS.dummyEnd d) LCS.parseStart (encOV p))).drop
+          (LCS.sepLen d) := by
+  rw [lcsParseRun_dummy, lcsParseRun_block₂, LCS.P2,
+    ← drop_flatMap_append (List.replicate (LCS.sepLen d) s3) _ (List.length_replicate ..)]
+  congr 1
+  simp only [LCS.P2Blocks, List.flatMap_append, List.flatMap_replicate, flatMap_const_eq,
+    List.flatMap_map, List.append_assoc]
+
+/-! ### Assembling the passes -/
+
+open ComputableInO in
+private theorem ComputableInO.append_of {γ α : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
+    {a b : γ → List α} {T : γ → ℕ}
+    (ha : ComputableInO a encIn (encList enc) T T) (hb : ComputableInO b encIn (encList enc) T T) :
+    ComputableInO (fun x => a x ++ b x) encIn (encList enc) T T := by
+  obtain ⟨c₁, h₁⟩ := ha.length_le
+  obtain ⟨c₂, h₂⟩ := hb.length_le
+  refine (ComputableInO.comp' (f := fun q : List α × List α => q.1 ++ q.2)
+    (append' (enc := enc)) (ha.prod hb)).mono (2 * c₁ + c₂ + 3) (fun x => ?_) (fun x => ?_) <;>
+  · have := h₁ x
+    have := h₂ x
+    simp only [length_encPair]
+    nlinarith
+
+open ComputableInO in
+private theorem ComputableInO.drop_of {γ α : Type} {encIn : γ ↪ List Bool} {enc : α ↪ List Bool}
+    {l : γ → List α} {n : γ → ℕ} {T : γ → ℕ}
+    (hl : ComputableInO l encIn (encList enc) T T) (hn : ComputableInO n encIn encUnary T T) :
+    ComputableInO (fun x => (l x).drop (n x)) encIn (encList enc) T T := by
+  obtain ⟨c₁, h₁⟩ := hl.length_le
+  obtain ⟨c₂, h₂⟩ := hn.length_le
+  refine (drop' hl hn).mono (2 * c₁ + c₂ + 3) (fun x => ?_) (fun x => ?_) <;>
+  · have := h₁ x
+    have := h₂ x
+    simp only [length_encPair]
+    nlinarith
+
+open ComputableInPolyTime in
+private theorem exists_computableInO_lcsRun {f : ℕ → Bool → ℕ → ℕ → Bool → List LCSSymbol}
+    {g : ℕ → Bool → ℕ → ℕ → List LCSSymbol}
+    (hf : ComputableInPolyTime
+      (fun q : LCSPassState × Bool => f q.1.1 q.1.2.1.1.1.1 q.1.2.2 q.1.2.1.2 q.2)
+      (encPair encLCSPassState encBool) (encList encLCSSymbol))
+    (hg : ComputableInPolyTime
+      (fun q : LCSPassState × Bool => g q.1.1 q.1.2.1.1.1.1 q.1.2.2 q.1.2.1.2)
+      (encPair encLCSPassState encBool) (encList encLCSSymbol)) :
+    ∃ D, ComputableInO (fun p => lcsParseRun (f (OV.dim p)) (g (OV.dim p)) LCS.parseStart (encOV p))
+      encOV (encList encLCSSymbol) (LCS.passBound D) (LCS.passBound D) :=
+  computableInO_pass (computableInPolyTime_lcsPassEmit hf hg) (ComputableInPolyTime.const [])
+    (fun p => by rw [streamEmit_lcsPassNext, List.append_nil])
+
+open ComputableInPolyTime in
+/-- **The reduction from orthogonal vectors to longest common subsequence runs in time
+`L ((d + 1) (log L + 1)) ^ D`** on `N` vectors of dimension `d` encoded in length `L`. -/
+private theorem exists_computableInO_toLCS' : ∃ D, ComputableInO toLCS encOV
+    (encPair (encList encLCSSymbol) (encList encLCSSymbol)) (LCS.passBound D)
+      (LCS.passBound D) := by
+  obtain ⟨D₁, hR⟩ := exists_computableInO_lcsRun (f := LCS.noBits) (g := LCS.runEnd)
+    (by unfold LCS.noBits; fun_prop) (by unfold LCS.runEnd LCS.sepLen; fun_prop)
+  obtain ⟨D₂, hM⟩ := exists_computableInO_lcsRun (f := LCS.blockBits) (g := LCS.blockEnd)
+    (by unfold LCS.blockBits LCS.M LCS.W LCS.CG1; fun_prop)
+    (by unfold LCS.blockEnd LCS.M LCS.W; fun_prop)
+  obtain ⟨D₃, hX⟩ := exists_computableInO_lcsRun (f := LCS.noBits) (g := LCS.dummyEnd)
+    (by unfold LCS.noBits; fun_prop)
+    (by unfold LCS.dummyEnd LCS.sepLen LCS.DummyBlock LCS.M LCS.W; fun_prop)
+  obtain ⟨D₄, hY⟩ := exists_computableInO_lcsRun (f := LCS.blockBits₂) (g := LCS.blockEnd₂)
+    (by unfold LCS.blockBits₂ LCS.sepLen LCS.M LCS.CG2; fun_prop)
+    (by unfold LCS.blockEnd₂ LCS.sepLen LCS.M LCS.W; fun_prop)
+  obtain ⟨D₅, hN⟩ := computableInO_pass (emit := fun _ => [])
+    (fin := fun q => encUnary (LCS.sepLen q.1))
+    (g := fun p => LCS.sepLen (OV.dim p)) (encOut := encUnary) (ComputableInPolyTime.const _)
+    (by unfold LCS.sepLen; fun_prop) (fun p => by rw [streamEmit_nil, List.nil_append])
+  set D := D₁ + D₂ + D₃ + D₄ + D₅
+  have w {γ : Type} {e : γ ↪ List Bool} {h : List (List Bool) × List (List Bool) → γ} {D' : ℕ}
+      (hD : D' ≤ D) (hh : ComputableInO h encOV e (LCS.passBound D') (LCS.passBound D')) :
+      ComputableInO h encOV e (LCS.passBound D) (LCS.passBound D) :=
+    hh.mono_le (passBound_mono hD) (passBound_mono hD)
+  have hR' := w (by omega) hR
+  have hM' := w (by omega) hM
+  have hX' := w (by omega) hX
+  have hY' := w (by omega) hY
+  have hN' := w (by omega) hN
+  have hP1 : ComputableInO (fun p => (toLCS p).1) encOV (encList encLCSSymbol)
+      (LCS.passBound D) (LCS.passBound D) :=
+    (ComputableInO.append_of hR' (ComputableInO.append_of hM' hR')).of_enc_eq
+      (fun p => by rw [toLCS, P1_eq_passes])
+  have hP2 : ComputableInO (fun p => (toLCS p).2) encOV (encList encLCSSymbol)
+      (LCS.passBound D) (LCS.passBound D) :=
+    (ComputableInO.drop_of (ComputableInO.append_of hX' (ComputableInO.append_of hY' hX'))
+      hN').of_enc_eq (fun p => by rw [toLCS, P2_eq_passes])
+  refine ⟨D, ((hP1.prod hP2).mono 2 (fun p => by omega) (fun p => by omega)).of_enc_eq
+    (fun p => rfl)⟩
+
+
+
+end Passes
+
+/-- **The reduction from orthogonal vectors to longest common subsequence is computable in
+polynomial time.** -/
 theorem computableInPolyTime_toLCS :
     ComputableInPolyTime toLCS encOV (encPair (encList encLCSSymbol) (encList encLCSSymbol)) := by
-  sorry
+  have hd := computableInPolyTime_dim
+  unfold toLCS
+  refine (computableInPolyTime_P1.comp (hd.prod ?_)).prod
+    (computableInPolyTime_P2.comp (hd.prod ?_))
+  · unfold encOV; exact ComputableInPolyTime.fst _ _
+  · unfold encOV; exact ComputableInPolyTime.snd _ _
+
+
+open ComputableInPolyTime in
+/-- **The reduction from orthogonal vectors to longest common subsequence runs in quasi-linear
+time times a polynomial in the dimension**: within time `L ((d + 1) (log L + 1)) ^ D` on instances
+of dimension `d` encoded in length `L`. The factor `d + 1` cannot be dropped: every block of
+`LCS.P1` has length at least `20 d`, also for the vectors shorter than the dimension, so instances
+with one long vector and many short ones have quadratic output. -/
+theorem exists_computableInO_toLCS : ∃ D, ComputableInO toLCS encOV
+    (encPair (encList encLCSSymbol) (encList encLCSSymbol))
+    (fun p => ((encOV p).length + 1) * ((OV.dim p + 1) * (Nat.size (encOV p).length + 1)) ^ D)
+    (fun p => ((encOV p).length + 1) * ((OV.dim p + 1) * (Nat.size (encOV p).length + 1)) ^ D) :=
+  exists_computableInO_toLCS'
 
 end Cslib.Complexity.OV
