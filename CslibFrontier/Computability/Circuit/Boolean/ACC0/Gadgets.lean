@@ -19,13 +19,14 @@ Building blocks for circuits over `Unbounded.extSignature` read with `MOD₂` ga
 
 * `Unbounded.parityOnCircuit s`: one `MOD₂` gate on the inputs in `s`, computing `parityOn s`.
 * `Unbounded.andCircuit i j`: one binary conjunction of two inputs.
-* `Unbounded.constsCircuit z`: the bits of a fixed string `z`, from one constant gate for each
-  value, so two gates whatever the length of `z`.
+* `Unbounded.constsCircuit φ z`: the bits of a fixed string `z`, from one constant gate
+  (`Unbounded.constCircuit`) for each value, so two gates whatever the length of `z`. It is built
+  over any basis containing the unbounded fan-in basis.
 * `Unbounded.innerProductCircuit k`: the inner product `b ⬝ᵥ r` over GF(2) of two strings of `k`
   bits, as `k` conjunctions under one `MOD₂` gate.
 
-The first three have depth one and the inner product depth two. Gates count towards the size;
-wires do not.
+The first three have depth at most one and the inner product depth at most two. Gates count
+towards the size; wires do not.
 
 ## Main definitions
 
@@ -45,7 +46,7 @@ wires do not.
   gates and depth at most two.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Unbounded
 
@@ -70,7 +71,7 @@ def parityOnCircuit (s : Finset (Fin n)) : Circuit extSignature n 1 :=
 
 /-- `parityOnCircuit s` is one gate. -/
 @[simp] theorem size_parityOnCircuit (s : Finset (Fin n)) : (parityOnCircuit s).size = 1 :=
-  rfl
+  Circuit.size_oneGate _ _
 
 /-- `parityOnCircuit s` has depth one. -/
 @[simp] theorem depth_parityOnCircuit (s : Finset (Fin n)) : (parityOnCircuit s).depth = 1 :=
@@ -80,53 +81,61 @@ def parityOnCircuit (s : Finset (Fin n)) : Circuit extSignature n 1 :=
 
 /-- One conjunction of the inputs `i` and `j`. -/
 def andCircuit (i j : Fin n) : Circuit extSignature n 1 :=
-  Circuit.oneGate (.ac (.and 2)) ![i, j]
+  binCircuit toExt (.and 2) rfl (Circuit.wiring _ fun _ => i) (Circuit.wiring _ fun _ => j)
 
 /-- `andCircuit i j` computes the conjunction of the inputs `i` and `j`, whatever the extra
 gates compute. -/
 @[simp] theorem eval_andCircuit (g : ∀ m, BooleanFunction m) (i j : Fin n) (x : BitString n)
     (o : Fin 1) : (andCircuit i j).eval (extInterpretation g) x o = (x i && x j) := by
-  rw [andCircuit, Circuit.eval_oneGate, extInterpretation_ac, interpretation_and]
-  simp [Fin.forall_fin_two]
-
-/-- `andCircuit i j` is one gate. -/
-@[simp] theorem size_andCircuit (i j : Fin n) : (andCircuit i j).size = 1 :=
+  rw [andCircuit, eval_binCircuit_and]
   rfl
 
-/-- `andCircuit i j` has depth one. -/
-@[simp] theorem depth_andCircuit (i j : Fin n) : (andCircuit i j).depth = 1 :=
-  Circuit.depth_oneGate _ _
+/-- `andCircuit i j` is one gate. -/
+@[simp] theorem size_andCircuit (i j : Fin n) : (andCircuit i j).size = 1 := by
+  simp [andCircuit]
+
+/-- `andCircuit i j` has depth at most one. -/
+theorem depth_andCircuit_le (i j : Fin n) : (andCircuit i j).depth ≤ 1 :=
+  (depth_binCircuit_le _ _ _ _).trans (by simp)
 
 /-! ### Fixed bits -/
 
-/-- The bits of `z`, each wired from one of two constant gates: the conjunction of nothing for
-`true` and the disjunction of nothing for `false`. -/
-def constsCircuit {m : ℕ} (z : BitString m) : Circuit extSignature n m :=
-  (Circuit.wiring extSignature fun i => if z i then Fin.castAdd 1 0 else Fin.natAdd 1 0).comp
-    ((Circuit.oneGate (σ := extSignature) (.ac (.and 0)) Fin.elim0).append
-      (Circuit.oneGate (σ := extSignature) (.ac (.or 0)) Fin.elim0))
+section Consts
 
-/-- `constsCircuit z` outputs `z` on every input, whatever the extra gates compute. -/
-@[simp] theorem eval_constsCircuit (g : ∀ m, BooleanFunction m) {m : ℕ} (z : BitString m)
-    (x : BitString n) : (constsCircuit z).eval (extInterpretation g) x = z := by
+variable {σ : Signature} (φ : signature.Hom σ)
+
+/-- The bits of `z`, each wired from one of two constant gates (`Unbounded.constCircuit`), over
+any basis containing the unbounded fan-in basis along `φ`. -/
+def constsCircuit {m : ℕ} (z : BitString m) : Circuit σ n m :=
+  (Circuit.wiring σ fun i => if z i then Fin.castAdd 1 0 else Fin.natAdd 1 0).comp
+    ((constCircuit φ true).append (constCircuit φ false))
+
+variable {φ}
+
+/-- `constsCircuit φ z` outputs `z` on every input. -/
+@[simp] theorem eval_constsCircuit {I : Interpretation σ Bool} [φ.Preserves interpretation I]
+    {m : ℕ} (z : BitString m) (x : BitString n) : (constsCircuit φ z).eval I x = z := by
   funext i
   rw [constsCircuit, Circuit.eval_comp, Circuit.eval_wiring, Function.comp_apply,
     Circuit.eval_append]
   cases z i
-  · exact (Fin.append_right _ _ (0 : Fin 1)).trans (decide_eq_false fun ⟨j, _⟩ => j.elim0)
-  · exact (Fin.append_left _ _ (0 : Fin 1)).trans (decide_eq_true fun j => j.elim0)
+  · exact (Fin.append_right _ _ (0 : Fin 1)).trans (eval_constCircuit _ _ _)
+  · exact (Fin.append_left _ _ (0 : Fin 1)).trans (eval_constCircuit _ _ _)
 
-/-- `constsCircuit z` has two gates. -/
+/-- `constsCircuit φ z` has two gates. -/
 @[simp] theorem size_constsCircuit {m : ℕ} (z : BitString m) :
-    (constsCircuit (n := n) z).size = 2 :=
-  rfl
+    (constsCircuit (n := n) φ z).size = 2 := by
+  simp [constsCircuit]
 
-/-- `constsCircuit z` has depth at most one. -/
+/-- `constsCircuit φ z` has depth at most one. -/
 theorem depth_constsCircuit_le {m : ℕ} (z : BitString m) :
-    (constsCircuit (n := n) z).depth ≤ 1 := by
+    (constsCircuit (n := n) φ z).depth ≤ 1 := by
   refine (Circuit.depth_comp_le _ _).trans ?_
   rw [Circuit.depth_wiring, zero_add]
-  exact (Circuit.depth_append_le _ _).trans (by simp)
+  exact (Circuit.depth_append_le _ _).trans
+    (max_le (depth_constCircuit_le _) (depth_constCircuit_le _))
+
+end Consts
 
 /-! ### Inner product over GF(2) -/
 
@@ -150,6 +159,6 @@ def innerProductCircuit (k : ℕ) : Circuit extSignature (k + k) 1 :=
 theorem depth_innerProductCircuit_le (k : ℕ) : (innerProductCircuit k).depth ≤ 2 := by
   refine (Circuit.depth_comp_le _ _).trans ?_
   rw [depth_parityOnCircuit]
-  exact Nat.add_le_add_left (Circuit.depth_pi_le _ fun i => (depth_andCircuit _ _).le) 1
+  exact Nat.add_le_add_left (Circuit.depth_pi_le _ fun i => depth_andCircuit_le _ _) 1
 
 end Cslib.Circuits.Boolean.Unbounded

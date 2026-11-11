@@ -1001,7 +1001,6 @@ public import CslibFrontier.Computability.Circuit.Balanced
 public import CslibFrontier.Computability.Circuit.Basic
 public import CslibFrontier.Computability.Circuit.BipartiteMatching
 public import CslibFrontier.Computability.Circuit.Bird
-public import CslibFrontier.Computability.Circuit.Blockwise
 public import CslibFrontier.Computability.Circuit.Boolean.AC0
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Basic
@@ -1592,6 +1591,7 @@ public import CslibFrontier.Computability.Circuit.Rational.SmallExpansion
 public import CslibFrontier.Computability.Circuit.Rational.Wronskian
 public import CslibFrontier.Computability.Circuit.ReedMullerDecoding
 public import CslibFrontier.Computability.Circuit.Replication
+public import CslibFrontier.Computability.Circuit.ReplicationDepth
 public import CslibFrontier.Computability.Circuit.SatCount
 public import CslibFrontier.Computability.Circuit.SignatureHom
 public import CslibFrontier.Computability.Circuit.Simulation
