@@ -14,8 +14,8 @@ public import Cslib.Crypto.Protocols.SecretSharing.Scheme
 /-!
 # Secret Sharing over General Monotone Access Structures and Source Classes
 
-This module generalizes `Cslib.Crypto.Protocols.SecretSharing.Scheme` in two orthogonal
-directions ([ACOR22]; [Aggarwal2026], Definition 2.1):
+This module generalizes `Cslib.Crypto.Protocols.SecretSharing.Scheme` beyond threshold,
+finite-key Definition 2.1 of [Aggarwal2026] in two orthogonal directions:
 
 1. **First-class monotone access structures (`AccessStructure`):** monotone upward-closed
    families of authorized coalitions `Finset Party`, supporting threshold structures
@@ -25,9 +25,11 @@ directions ([ACOR22]; [Aggarwal2026], Definition 2.1):
    (`AccessStructure.dual`), and minimal authorized sets (`AccessStructure.IsMinimalAuthorized`).
 2. **Source-class secret sharing (`SourceClass`, `AccessScheme`):** deterministic sharing and
    reconstruction maps paired with a class `SourceClass Key := Set (PMF Key)` of allowed key
-   distributions, allowing party-indexed share types `Share : Party → Type*`. A scheme is
-   perfectly correct for every key and perfectly private for every distribution in `sources`,
-   while marginal view distributions may vary across sources in the class.
+   distributions, generalizing [Aggarwal2026], Definition 2.1 (stated there for threshold
+   structures and finite key spaces) to general monotone access structures, arbitrary `Key` types,
+   and party-indexed share types `Share : Party → Type*`. A scheme is perfectly correct for every
+   key and perfectly private for every distribution in `sources`, while marginal view distributions
+   may vary across sources in the class.
 
 Bridges to and from upstream `Cslib.Crypto.Protocols.SecretSharing.Scheme` are provided via
 `AccessScheme.ofCslibScheme` and `AccessScheme.toCslibScheme`, along with key-source pullbacks
@@ -65,10 +67,12 @@ Bridges to and from upstream `Cslib.Crypto.Protocols.SecretSharing.Scheme` are p
 
 ## References
 
-* [D. Aggarwal, E. Chung, M. Obremski, J. Ribeiro, *On Secret Sharing, Randomness, and
-  Random-less Reductions for Secret Sharing*][ACOR22].
 * [D. Aggarwal, *Secret Sharing Despite Non-Extractable Randomness*][Aggarwal2026],
-  Definition 2.1.
+  Definition 2.1 (checked locator; generalized here from threshold finite-key schemes to arbitrary
+  `AccessStructure` and `Key`).
+* [D. Aggarwal, E. Chung, M. Obremski, J. Ribeiro, *On Secret Sharing, Randomness, and
+  Random-less Reductions for Secret Sharing*][ACOR22] (unverified directly; attributed via
+  [Aggarwal2026]).
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020].
 -/
 
@@ -245,7 +249,8 @@ abbrev singleton {Key : Type*} (P : PMF Key) : SourceClass Key := {P}
 end SourceClass
 
 /-- A secret-sharing scheme over a general monotone access structure `access`, relative to a class
-`sources` of allowed key distributions ([ACOR22]; [Aggarwal2026], Definition 2.1).
+`sources` of allowed key distributions (an original generalization of the threshold, finite-key
+Definition 2.1 in [Aggarwal2026] to general `AccessStructure Party` and arbitrary `Key`).
 
 Correctness is universal over keys `k : Key`: every authorized coalition deterministically
 reconstructs the secret. Privacy is relative to `sources`: for every source `P ∈ sources` and

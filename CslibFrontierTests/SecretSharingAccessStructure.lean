@@ -16,19 +16,20 @@ import Mathlib.Algebra.Field.ZMod
 # Tests for General Access-Structure Secret Sharing and Distribution Designs
 
 Concrete, non-vacuous checks exercising:
-1. Monotone access structures (`AccessStructure`), duals, minimal coalitions, and a non-monotone
-   counterexample.
+1. Monotone access structures (`AccessStructure`), duals, `IsNontrivial`, `inter`, `union`,
+   minimal coalitions, and a non-monotone counterexample.
 2. Shamir `(2, 3)` and `(3, 4)` instances over `ZMod 5` (`shamirUniformAccessScheme`,
-   `shamirAuxAccessScheme`), including concrete reconstruction, uniform unauthorized views,
-   vanishing mutual information, posterior privacy, zero conditional entropy on authorized sets,
-   and upstream `Cslib.Crypto.Protocols.SecretSharing.Scheme` bridges.
-3. ACOR22 distribution-design composition (`ThresholdDesign.toTwoTwo`, `shamirToTwoTwo`,
+   `shamirPaddedAccessScheme`), including concrete reconstruction, `PerfectlyCorrect`, `shareDist`,
+   `SourceClass.map`/`flat`, `restrictSecret`, `mapShare`, `relabelParty`, uniform unauthorized
+   views, vanishing mutual information, posterior privacy, zero conditional entropy on authorized
+   sets, and upstream `Cslib.Crypto.Protocols.SecretSharing.Scheme` bridges.
+3. Distribution-design composition (`ThresholdDesign.toTwoTwo`, `shamirToTwoTwo`,
    `DistributionDesign.comp`) from `(2, 3)` and `(3, 4)` Shamir schemes to `(2, 2)`, plus
-   non-existence of `(2, 3, 2, 2)`, `(3, 3, 2, 2)`, and `(3, 5, 2, 2)` designs.
-4. Additive `3`-out-of-`3` secret sharing over `ZMod 4`, a finite imperfect-source `2`-out-of-`2`
-   scheme over `ZMod 3` whose unauthorized marginal distributions genuinely vary with the source,
-   `δ`-statistical privacy under design composition, and a leaky counterexample with positive
-   mutual information.
+   non-existence of `(2, 3, 2, 2)`, `(3, 3, 2, 2)`, `(4, 4, 2, 2)`, and `(3, 5, 2, 2)` designs.
+4. Additive `3`-out-of-`3` secret sharing over `ZMod 4`, a finite `ZMod 3` `2`-out-of-`2`
+   source-dependent scheme (`taggedPadScheme`) whose unauthorized marginal views genuinely vary
+   with the chosen source `q`, `δ`-statistical privacy under design composition, and a leaky
+   counterexample with positive mutual information.
 -/
 
 namespace CslibFrontierTests.SecretSharingAccessStructure
@@ -84,6 +85,35 @@ example : ¬ Monotone (fun s : Finset (Fin 3) => s.card = 2) := by
   have h12 : ({0, 1} : Finset (Fin 3)) ⊆ {0, 1, 2} := by decide
   have h : ({0, 1, 2} : Finset (Fin 3)).card = 2 := hm h12 (by decide)
   revert h; decide
+
+example : graphAccess3.IsNontrivial := by
+  refine ⟨?_, ⟨{0, 1}, by simp, by decide⟩⟩
+  rintro ⟨b, (rfl | rfl), hsub⟩ <;> revert hsub <;> decide
+
+example :
+    ((AccessStructure.threshold (Fin 3) 2).inter (AccessStructure.ofSets {{0, 1}})).authorized
+      {0, 1, 2} :=
+  ⟨by decide, ⟨{0, 1}, by simp, by decide⟩⟩
+
+example :
+    ¬ ((AccessStructure.threshold (Fin 3) 2).inter (AccessStructure.ofSets {{0, 1}})).authorized
+      {0, 2} := by
+  rintro ⟨_, b, hb, hsub⟩
+  rw [Set.mem_singleton_iff.mp hb] at hsub
+  revert hsub; decide
+
+example :
+    ((AccessStructure.threshold (Fin 3) 2).union (AccessStructure.ofSets {{2}})).authorized
+      {2} :=
+  Or.inr ⟨{2}, by simp, Finset.Subset.rfl⟩
+
+example :
+    ¬ ((AccessStructure.threshold (Fin 3) 2).union (AccessStructure.ofSets {{2}})).authorized
+      {0} := by
+  rintro (h | ⟨b, hb, hsub⟩)
+  · revert h; decide
+  · rw [Set.mem_singleton_iff.mp hb] at hsub
+    revert hsub; decide
 
 /-! ### 2. Shamir instances, mutual information, and upstream bridges -/
 
@@ -164,32 +194,92 @@ example :
       (Set.mem_singleton _)).gen = uniformOfFintype (Randomness params3) :=
   rfl
 
-/-! ### 3. Shamir with imperfect auxiliary sources -/
+example :
+    PerfectlyCorrect (shamirUniformAccessScheme params3).access
+      (shamirUniformAccessScheme params3).share
+      (shamirUniformAccessScheme params3).reconstruct :=
+  (shamirUniformAccessScheme params3).perfectlyCorrect
 
-noncomputable def auxSourceFalse : PMF (Randomness params3 × Bool) :=
+example :
+    ((shamirUniformAccessScheme params3).shareDist
+      (uniformOfFintype (Randomness params3)) 3).map (fun v (i : ({0} : Finset (Fin 3))) =>
+        v i.1) = uniformOfFintype (({0} : Finset (Fin 3)) → ZMod 5) := by
+  rw [AccessScheme.shareDist, PMF.map_comp]
+  exact shamirUniform_viewDist_eq params3 (by
+    simp only [shamirUniformAccessScheme_access, shamirAccessStructure,
+      AccessStructure.threshold_authorized_iff]
+    decide) 3
+
+example :
+    uniformOfFintype (Randomness params3) ∈ SourceClass.flat (Randomness params3) :=
+  ⟨Finset.univ, Finset.univ_nonempty, by
+    ext x
+    simp [uniformOfFintype_apply, uniformOfFinset_apply]⟩
+
+noncomputable def shamirBoolScheme :=
+  (shamirUniformAccessScheme params3).restrictSecret
+    (fun b => if b then (1 : ZMod 5) else 0) (fun z => decide (z = 1))
+    (fun b => by cases b <;> decide)
+
+example :
+    shamirBoolScheme.reconstruct {0, 1} (shamirBoolScheme.view {0, 1} r3 true) = true :=
+  shamirBoolScheme.reconstruct_view_eq_secret r3 true (by
+    simp only [shamirBoolScheme, AccessScheme.restrictSecret, shamirUniformAccessScheme_access,
+      shamirAccessStructure, AccessStructure.threshold_authorized_iff]
+    decide)
+
+noncomputable def shamirShiftedShareScheme :=
+  (shamirUniformAccessScheme params3).mapShare (fun i => Equiv.addRight (i.val : ZMod 5))
+
+example :
+    shamirShiftedShareScheme.reconstruct {0, 1}
+      (shamirShiftedShareScheme.view {0, 1} r3 3) = (3 : ZMod 5) :=
+  shamirShiftedShareScheme.reconstruct_view_eq_secret r3 3 (by
+    simp only [shamirShiftedShareScheme, AccessScheme.mapShare, shamirUniformAccessScheme_access,
+      shamirAccessStructure, AccessStructure.threshold_authorized_iff]
+    decide)
+
+noncomputable def shamirSwappedPartyScheme :=
+  (shamirUniformAccessScheme params3).relabelParty (Equiv.swap (0 : Fin 3) 2)
+
+example :
+    shamirSwappedPartyScheme.access.authorized {0, 1} := by
+  simp only [shamirSwappedPartyScheme, AccessScheme.relabelParty, shamirUniformAccessScheme_access,
+    shamirAccessStructure, AccessStructure.threshold_authorized_iff, Finset.card_map]
+  decide
+
+/-! ### 3. Shamir with auxiliary-key padding (unused `Aux` component) -/
+
+noncomputable def paddedSourceFalse : PMF (Randomness params3 × Bool) :=
   (uniformOfFintype (Randomness params3)).map (·, false)
 
-noncomputable def auxSourceBiased : PMF (Randomness params3 × Bool) :=
+noncomputable def paddedSourceBiased : PMF (Randomness params3 × Bool) :=
   (uniformOfFintype (Randomness params3)).bind fun r =>
     (coin ⟨1 / 4, by norm_num⟩).map (r, ·)
 
-theorem auxSourceFalse_mem : auxSourceFalse ∈ shamirAuxSources params3 Bool := by
-  have hfst : auxSourceFalse.map Prod.fst = uniformOfFintype (Randomness params3) := by
-    simp only [auxSourceFalse, PMF.map_comp]
+theorem paddedSourceFalse_mem : paddedSourceFalse ∈ shamirPaddedSources params3 Bool := by
+  have hfst : paddedSourceFalse.map Prod.fst = uniformOfFintype (Randomness params3) := by
+    simp only [paddedSourceFalse, PMF.map_comp]
     exact PMF.map_id _
-  change auxSourceFalse.map Prod.fst ∈ shamirSources params3
+  change paddedSourceFalse.map Prod.fst ∈ shamirSources params3
   rw [hfst]
   exact uniformOfFintype_mem_shamirSources params3
 
-theorem auxSourceBiased_mem : auxSourceBiased ∈ shamirAuxSources params3 Bool :=
-  bind_mem_shamirAuxSources (uniformOfFintype_mem_shamirSources params3) _
+theorem paddedSourceBiased_mem : paddedSourceBiased ∈ shamirPaddedSources params3 Bool :=
+  bind_mem_shamirPaddedSources (uniformOfFintype_mem_shamirSources params3) _
 
-theorem auxSourceFalse_ne_auxSourceBiased : auxSourceFalse ≠ auxSourceBiased := by
+example :
+    uniformOfFintype (Randomness params3) ∈
+      SourceClass.map Prod.fst (shamirPaddedSources params3 Bool) :=
+  ⟨paddedSourceBiased, paddedSourceBiased_mem, by
+    simpa only [paddedSourceBiased] using map_fst_bind_pair _ _⟩
+
+theorem paddedSourceFalse_ne_paddedSourceBiased : paddedSourceFalse ≠ paddedSourceBiased := by
   intro h
-  have hnot : (r3, true) ∉ auxSourceFalse.support := by
-    simp [auxSourceFalse, PMF.support_map]
-  have hin : (r3, true) ∈ auxSourceBiased.support := by
-    simp only [auxSourceBiased, PMF.support_bind, Set.mem_iUnion, PMF.support_map,
+  have hnot : (r3, true) ∉ paddedSourceFalse.support := by
+    simp [paddedSourceFalse, PMF.support_map]
+  have hin : (r3, true) ∈ paddedSourceBiased.support := by
+    simp only [paddedSourceBiased, PMF.support_bind, Set.mem_iUnion, PMF.support_map,
       Set.mem_image, mem_support_uniformOfFintype]
     have hcoin : true ∈ (coin ⟨1 / 4, by norm_num⟩).support := by
       rw [PMF.mem_support_iff, coin_apply]
@@ -199,19 +289,19 @@ theorem auxSourceFalse_ne_auxSourceBiased : auxSourceFalse ≠ auxSourceBiased :
   exact hnot hin
 
 example :
-    (shamirAuxAccessScheme params3 Bool).reconstruct {0, 2}
-      ((shamirAuxAccessScheme params3 Bool).view {0, 2} (r3, true) 3) = (3 : ZMod 5) :=
-  (shamirAuxAccessScheme params3 Bool).reconstruct_view_eq_secret (r3, true) 3 (by
-    simp only [shamirAuxAccessScheme_access, shamirAccessStructure,
+    (shamirPaddedAccessScheme params3 Bool).reconstruct {0, 2}
+      ((shamirPaddedAccessScheme params3 Bool).view {0, 2} (r3, true) 3) = (3 : ZMod 5) :=
+  (shamirPaddedAccessScheme params3 Bool).reconstruct_view_eq_secret (r3, true) 3 (by
+    simp only [shamirPaddedAccessScheme_access, shamirAccessStructure,
       AccessStructure.threshold_authorized_iff]
     decide)
 
 example :
-    (shamirAuxAccessScheme params3 Bool).viewDist auxSourceBiased {2} 1 =
-      (shamirAuxAccessScheme params3 Bool).viewDist auxSourceBiased {2} 4 :=
-  (shamirAuxAccessScheme params3 Bool).viewDist_eq_of_not_authorized
-    auxSourceBiased_mem (by
-      simp only [shamirAuxAccessScheme_access, shamirAccessStructure,
+    (shamirPaddedAccessScheme params3 Bool).viewDist paddedSourceBiased {2} 1 =
+      (shamirPaddedAccessScheme params3 Bool).viewDist paddedSourceBiased {2} 4 :=
+  (shamirPaddedAccessScheme params3 Bool).viewDist_eq_of_not_authorized
+    paddedSourceBiased_mem (by
+      simp only [shamirPaddedAccessScheme_access, shamirAccessStructure,
         AccessStructure.threshold_authorized_iff]
       decide) 1 4
 
@@ -299,7 +389,7 @@ example :
       AccessStructure.threshold_authorized_iff]
     decide)
 
-/-- A concrete finite 2-out-of-2 imperfect-source scheme over `ZMod 3` where party `0`'s
+/-- A concrete finite 2-out-of-2 source-dependent scheme over `ZMod 3` where party `0`'s
 unauthorized view distribution genuinely depends on which source `P ∈ sources` is chosen, while
 remaining independent of the secret for every `P ∈ sources`. -/
 def taggedPadShare (k : Bool × ZMod 3) (m : ZMod 3) : Fin 2 → ZMod 3 ⊕ ZMod 3

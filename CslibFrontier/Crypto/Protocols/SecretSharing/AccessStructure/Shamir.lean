@@ -27,31 +27,36 @@ It provides:
 
 1. `shamirAccessStructure`: the `(params.threshold + 1)`-threshold access structure.
 2. `shamirSources`, `shamirAccessScheme`: Shamir sharing over the class of all
-   translation-invariant tail-coefficient distributions.
+   translation-invariant tail-coefficient distributions. Note that when `F` is finite,
+   `shamirSources` consists solely of the uniform distribution (`{uniformOfFintype}`), whereas
+   when `F` is infinite and `params.threshold ≥ 1`, no translation-invariant `PMF` on
+   `Fin params.threshold → F` exists (`shamirSources = ∅`), so `shamirAccessScheme` has vacuous
+   privacy over infinite fields (while universal correctness still holds for all keys).
 3. `shamirUniformAccessScheme`: canonical finite-field Shamir sharing over the uniform tail
    distribution, together with `shamirUniform_viewDist_eq` (marginal uniformity) and
    `shamirUniform_mutualInfo_eq_zero` (vanishing mutual information).
-4. `shamirAuxSources`, `shamirAuxAccessScheme`: finite/general imperfect-source Shamir instances
-   with auxiliary key material `(Randomness params × Aux)` whose first marginal is
-   translation-invariant while the auxiliary component may be biased, correlated, or deterministic.
+4. `shamirPaddedSources`, `shamirPaddedAccessScheme`: auxiliary-key padding of `shamirAccessScheme`
+   via `comapKey Prod.fst`, pairing `Randomness params` with an arbitrary ignored component
+   `Aux` (not an imperfect-randomness construction in [Aggarwal2026]'s sense).
 5. `shamirToTwoTwo`: `(2, 2)`-threshold sharing derived from Shamir (`1 ≤ params.threshold`) via
-   the ACOR22 distribution-design reduction (`ThresholdDesignOn.toTwoTwo`, [ACOR22]).
+   design composition (`ThresholdDesignOn.toTwoTwo`, [Aggarwal2026], Section 5; [ACOR22]
+   attribution unverified directly).
 
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.SecretSharing.shamirAccessStructure`: `(params.threshold + 1)`-threshold
   access structure for Shamir parameters.
 * `Cslib.Crypto.Protocols.SecretSharing.shamirSources`: class of translation-invariant tail
-  distributions.
+  distributions (`{uniform}` for finite `F`; `∅` for infinite `F` with `params.threshold ≥ 1`).
 * `Cslib.Crypto.Protocols.SecretSharing.shamirAccessSchemeOf`,
   `Cslib.Crypto.Protocols.SecretSharing.shamirAccessScheme`,
   `Cslib.Crypto.Protocols.SecretSharing.shamirUniformAccessScheme`: Shamir `AccessScheme`
   instances.
-* `Cslib.Crypto.Protocols.SecretSharing.shamirAuxSources`,
-  `Cslib.Crypto.Protocols.SecretSharing.shamirAuxAccessScheme`: auxiliary-key imperfect-source
-  Shamir instances.
-* `Cslib.Crypto.Protocols.SecretSharing.shamirToTwoTwo`: `(2, 2)` scheme via ACOR22 design
-  composition from Shamir (`1 ≤ params.threshold`).
+* `Cslib.Crypto.Protocols.SecretSharing.shamirPaddedSources`,
+  `Cslib.Crypto.Protocols.SecretSharing.shamirPaddedAccessScheme`: auxiliary-key padding of
+  Shamir sharing (ignores `Aux`).
+* `Cslib.Crypto.Protocols.SecretSharing.shamirToTwoTwo`: `(2, 2)` scheme via design composition
+  from Shamir (`1 ≤ params.threshold`).
 
 ## Main results
 
@@ -61,15 +66,18 @@ It provides:
   uniform view distributions under uniform Shamir randomness.
 * `Cslib.Crypto.Protocols.SecretSharing.shamirUniform_mutualInfo_eq_zero`: unauthorized coalitions
   have zero mutual information with the secret under uniform Shamir randomness.
-* `Cslib.Crypto.Protocols.SecretSharing.bind_mem_shamirAuxSources`: any correlated auxiliary
-  distribution paired with a translation-invariant Shamir tail lies in `shamirAuxSources`.
+* `Cslib.Crypto.Protocols.SecretSharing.bind_mem_shamirPaddedSources`: any correlated auxiliary
+  distribution paired with a translation-invariant Shamir tail lies in `shamirPaddedSources`.
 
 ## References
 
 * [A. Shamir, *How to Share a Secret*][Shamir1979].
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020].
+* [D. Aggarwal, *Secret Sharing Despite Non-Extractable Randomness*][Aggarwal2026],
+  Section 5 (checked locator for design reduction).
 * [D. Aggarwal, E. Chung, M. Obremski, J. Ribeiro, *On Secret Sharing, Randomness, and
-  Random-less Reductions for Secret Sharing*][ACOR22].
+  Random-less Reductions for Secret Sharing*][ACOR22] (unverified directly; attributed via
+  [Aggarwal2026], Section 5).
 -/
 
 public section
@@ -93,7 +101,9 @@ theorem shamirAccessStructure_authorized_iff (params : Shamir.Params F Party)
     (shamirAccessStructure params).authorized s ↔ Shamir.authorized params s :=
   Iff.rfl
 
-/-- The source class of translation-invariant distributions on Shamir tail coefficients. -/
+/-- The source class of translation-invariant distributions on Shamir tail coefficients. When `F`
+is finite, this is `{uniformOfFintype}`; when `F` is infinite and `params.threshold ≥ 1`, no
+translation-invariant `PMF` exists (`shamirSources = ∅`), so privacy over it is vacuous. -/
 @[expose] def shamirSources (params : Shamir.Params F Party) :
     SourceClass (Shamir.Randomness params) :=
   { P | ∀ δ : Shamir.Randomness params, P.map (· + δ) = P }
@@ -124,7 +134,9 @@ theorem shamirAccessSchemeOf_access (params : Shamir.Params F Party)
     (shamirAccessSchemeOf params sources hsources).access = shamirAccessStructure params :=
   rfl
 
-/-- Shamir secret sharing over the full class of translation-invariant tail distributions. -/
+/-- Shamir secret sharing over `shamirSources`. Note that for infinite fields `F` with
+`params.threshold ≥ 1`, `shamirSources params = ∅`, so privacy is vacuous and only universal
+correctness is nontrivial; use `shamirUniformAccessScheme` for finite fields. -/
 @[expose] noncomputable def shamirAccessScheme (params : Shamir.Params F Party) :
     AccessScheme F (Shamir.Randomness params) Party (fun _ => F) :=
   shamirAccessSchemeOf params (shamirSources params) Set.Subset.rfl
@@ -172,34 +184,36 @@ theorem shamirUniform_mutualInfo_eq_zero [Fintype F] [Nonempty F]
       (shamirUniformAccessScheme params).share s secretDist) = 0 :=
   (shamirUniformAccessScheme params).mutualInfo_view_eq_zero (Set.mem_singleton _) hs secretDist
 
-/-- Imperfect auxiliary-key sources for Shamir sharing: pairs `(r, aux)` whose tail-coefficient
-marginal `P.map Prod.fst` is translation-invariant while `aux` may be arbitrarily biased,
-deterministic, or correlated with `r`. -/
-@[expose] noncomputable def shamirAuxSources (params : Shamir.Params F Party) (Aux : Type*) :
+/-- Auxiliary-key-padded sources for Shamir sharing: pairs `(r, aux)` whose tail-coefficient
+marginal `P.map Prod.fst` is translation-invariant (uniform when `F` is finite), paired with
+unused auxiliary material `aux` that the scheme ignores. -/
+@[expose] noncomputable def shamirPaddedSources (params : Shamir.Params F Party) (Aux : Type*) :
     SourceClass (Shamir.Randomness params × Aux) :=
   { P | P.map Prod.fst ∈ shamirSources params }
 
 /-- Any correlated auxiliary distribution paired with a translation-invariant tail source lies in
-`shamirAuxSources`. -/
-theorem bind_mem_shamirAuxSources {params : Shamir.Params F Party} {Aux : Type*}
+`shamirPaddedSources`. -/
+theorem bind_mem_shamirPaddedSources {params : Shamir.Params F Party} {Aux : Type*}
     {P : PMF (Shamir.Randomness params)} (hP : P ∈ shamirSources params)
     (Q : Shamir.Randomness params → PMF Aux) :
-    (P.bind fun r => (Q r).map (r, ·)) ∈ shamirAuxSources params Aux := by
-  simpa only [shamirAuxSources, Set.mem_ofPred_eq, map_fst_bind_pair] using hP
+    (P.bind fun r => (Q r).map (r, ·)) ∈ shamirPaddedSources params Aux := by
+  simpa only [shamirPaddedSources, Set.mem_ofPred_eq, map_fst_bind_pair] using hP
 
-/-- Shamir secret sharing over auxiliary-extended imperfect key sources
-`Randomness params × Aux`. -/
-@[expose] noncomputable def shamirAuxAccessScheme (params : Shamir.Params F Party) (Aux : Type*) :
+/-- Auxiliary-key padding of `shamirAccessScheme` onto `Randomness params × Aux` via
+`comapKey Prod.fst` (ignoring the auxiliary component `Aux`; not an imperfect-randomness
+construction in [Aggarwal2026]'s sense). -/
+@[expose] noncomputable def shamirPaddedAccessScheme (params : Shamir.Params F Party)
+    (Aux : Type*) :
     AccessScheme F (Shamir.Randomness params × Aux) Party (fun _ => F) :=
-  (shamirAccessScheme params).comapKey Prod.fst (shamirAuxSources params Aux) (fun _ hP => hP)
+  (shamirAccessScheme params).comapKey Prod.fst (shamirPaddedSources params Aux) (fun _ hP => hP)
 
 @[simp]
-theorem shamirAuxAccessScheme_access (params : Shamir.Params F Party) (Aux : Type*) :
-    (shamirAuxAccessScheme params Aux).access = shamirAccessStructure params :=
+theorem shamirPaddedAccessScheme_access (params : Shamir.Params F Party) (Aux : Type*) :
+    (shamirPaddedAccessScheme params Aux).access = shamirAccessStructure params :=
   rfl
 
-/-- ACOR22 `(t', n') → (2, 2)` distribution-design reduction applied to Shamir secret sharing
-whenever `1 ≤ params.threshold` (i.e. threshold at least `2`). -/
+/-- `(t', n') → (2, 2)` distribution-design reduction applied to Shamir secret sharing whenever
+`1 ≤ params.threshold` ([Aggarwal2026], Section 5; [ACOR22] attribution unverified directly). -/
 @[expose] noncomputable def shamirToTwoTwo [DecidableEq Party]
     (params : Shamir.Params F Party) (ht : 1 ≤ params.threshold) :=
   (shamirAccessScheme params).toTwoTwo (rfl : (shamirAccessScheme params).access =

@@ -11,35 +11,43 @@ public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Basic
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Privacy
 import CslibFrontier.Probability.PMF.Map
+import Mathlib.Data.Fin.Embedding
 
 /-!
-# Distribution Designs and Random-less Composition (ACOR22)
+# Distribution Designs and Random-less Composition
 
-This module formalizes distribution designs and random-less composition of secret-sharing schemes
-from Aggarwal, Chung, Obremski, and Ribeiro ([ACOR22]; see also [Aggarwal2026], Section 5,
-"Relation to the reductions of ACOR22"):
+This module formalizes distribution designs and random-less composition of secret-sharing schemes.
+In the literature, threshold distribution designs and `(t', n') → (2, 2)` reductions are due to
+Aggarwal, Chung, Obremski, and Ribeiro ([ACOR22], unverified directly because the ePrint copy is
+gated behind an automated challenge) as presented in [Aggarwal2026], Section 5 ("Relation to the
+reductions of ACOR22"):
 
-1. **General distribution designs (`DistributionDesign`):** an assignment `assign : Party → Finset
-   Party'` handing each new party the shares of a set of old parties so that a coalition `s` is
-   authorized in `A` iff `s.biUnion assign` is authorized in `A'` (equivalently `A'.pullback
-   assign = A`).
+1. **General distribution designs (`DistributionDesign`):** an original generalization of the
+   threshold notion in [Aggarwal2026], Section 5 to general monotone access structures: an
+   assignment `assign : Party → Finset Party'` handing each new party the shares of a set of old
+   parties so that a coalition `s` is authorized in `A` iff `s.biUnion assign` is authorized in
+   `A'` (equivalently `A'.pullback assign = A`).
 2. **Random-less composition (`AccessScheme.composeDesign`,**
    **`StatisticallyPrivate.composeDesign`):** composing any scheme over `A'` with a
    `DistributionDesign A A'` yields a scheme over `A` with the *same* key type and source class
-   `sources`, preserving universal correctness, perfect privacy, and statistical `δ`-privacy.
+   `sources`, preserving universal correctness, perfect privacy, and statistical `δ`-privacy
+   ([Aggarwal2026], Section 5, threshold case generalized here to `AccessScheme`).
 3. **Threshold `(t, n, t', n')`-designs (`ThresholdDesignOn`, `ThresholdDesign`):**
-   - Exact-cardinality characterization (`ThresholdDesignOn.ofCardEq`).
-   - Explicit reduction from `(t', n')` to `(2, 2)` for `2 ≤ t' ≤ n'`
-     (`ThresholdDesign.toTwoTwo`, `ThresholdDesignOn.toTwoTwo`, `AccessScheme.toTwoTwo`).
-   - Non-existence of `(t, n, 2, 2)` designs for `2 ≤ t ≤ n` and `3 ≤ n`
-     (`no_thresholdDesign_two_two`), in particular ruling out `(2, 3, 2, 2)` designs
-     (`not_exists_design_2_3_2_2`) and `(r, r, 2, 2)` designs for `r ≥ 3`
-     (`not_exists_design_r_r_2_2`).
+   - Arbitrary-party `ThresholdDesignOn` (generalizing finite `Fin` index sets) and
+     exact-cardinality characterization (`ThresholdDesignOn.ofCardEq`).
+   - Explicit reduction from `(t', n')` to `(2, 2)` for `2 ≤ t' ≤ n'` via a single subset
+     constructor (`ThresholdDesignOn.ofSubset`, `ThresholdDesignOn.toTwoTwo`,
+     `ThresholdDesign.toTwoTwo`, `AccessScheme.toTwoTwo`; checked against [Aggarwal2026],
+     Section 5; [ACOR22] attribution unverified directly).
+   - Non-existence of `(t, n, 2, 2)` designs for all `2 ≤ t ≤ n` and `3 ≤ n`
+     (`no_thresholdDesign_two_two`), an original generalization of the two threshold cases stated
+     in [Aggarwal2026], Section 5: `(2, 3, 2, 2)` (`not_exists_design_2_3_2_2`) and `(r, r, 2, 2)`
+     for `r ≥ 3` (`not_exists_design_r_r_2_2`).
 
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.SecretSharing.DistributionDesign`: distribution design between general
-  monotone access structures.
+  monotone access structures (generalizing threshold designs in [Aggarwal2026], Section 5).
 * `Cslib.Crypto.Protocols.SecretSharing.DistributionDesign.id`,
   `Cslib.Crypto.Protocols.SecretSharing.DistributionDesign.comp`: identity and sequential
   composition of distribution designs.
@@ -47,29 +55,32 @@ from Aggarwal, Chung, Obremski, and Ribeiro ([ACOR22]; see also [Aggarwal2026], 
   composition along a distribution design.
 * `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesignOn`,
   `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesign`,
-  `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesignOn.ofCardEq`: threshold distribution
-  designs and exact-cardinality constructor matching the ACOR22 design conditions.
-* `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesign.toTwoTwo`,
-  `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesignOn.toTwoTwo`,
+  `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesignOn.ofCardEq`,
+  `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesignOn.ofSubset`: threshold distribution
+  designs, exact-cardinality constructor, and subset `(2, 2)` reduction.
+* `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesignOn.toTwoTwo`,
+  `Cslib.Crypto.Protocols.SecretSharing.ThresholdDesign.toTwoTwo`,
   `Cslib.Crypto.Protocols.SecretSharing.AccessScheme.toTwoTwo`: `(t', n') → (2, 2)` design
-  reduction for `2 ≤ t' ≤ n'`.
+  reduction for `2 ≤ t' ≤ n'` ([Aggarwal2026], Section 5).
 
 ## Main results
 
 * `Cslib.Crypto.Protocols.SecretSharing.StatisticallyPrivate.composeDesign`: statistical
   `δ`-privacy is preserved under distribution-design composition.
-* `Cslib.Crypto.Protocols.SecretSharing.no_thresholdDesign_two_two`: no `(t, n, 2, 2)`
-  distribution design exists when `2 ≤ t ≤ n` and `3 ≤ n`.
+* `Cslib.Crypto.Protocols.SecretSharing.no_thresholdDesign_two_two`: original generalization
+  ruling out `(t, n, 2, 2)` distribution designs for all `2 ≤ t ≤ n` and `3 ≤ n`.
 * `Cslib.Crypto.Protocols.SecretSharing.not_exists_design_2_3_2_2`,
   `Cslib.Crypto.Protocols.SecretSharing.not_exists_design_r_r_2_2`: non-existence of
-  `(2, 3, 2, 2)` designs and `(r, r, 2, 2)` designs for `r ≥ 3`.
+  `(2, 3, 2, 2)` designs and `(r, r, 2, 2)` designs for `r ≥ 3` ([Aggarwal2026], Section 5;
+  [ACOR22] attribution unverified directly).
 
 ## References
 
-* [D. Aggarwal, E. Chung, M. Obremski, J. Ribeiro, *On Secret Sharing, Randomness, and
-  Random-less Reductions for Secret Sharing*][ACOR22].
 * [D. Aggarwal, *Secret Sharing Despite Non-Extractable Randomness*][Aggarwal2026],
-  Section 5 ("Relation to the reductions of ACOR22").
+  Section 5 ("Relation to the reductions of ACOR22"; checked locator).
+* [D. Aggarwal, E. Chung, M. Obremski, J. Ribeiro, *On Secret Sharing, Randomness, and
+  Random-less Reductions for Secret Sharing*][ACOR22] (unverified directly; attributed via
+  [Aggarwal2026], Section 5).
 -/
 
 public section
@@ -83,7 +94,9 @@ section GeneralDesign
 
 /-- A distribution design from `A'` (over `Party'`) to `A` (over `Party`) assigns each party
 `i : Party` a finite subset `assign i` of `Party'` such that a coalition `s` is authorized in `A`
-iff the union `s.biUnion assign` is authorized in `A'` ([ACOR22]). -/
+iff the union `s.biUnion assign` is authorized in `A'` (an original generalization to general
+monotone access structures of the threshold design notion in [Aggarwal2026], Section 5; [ACOR22]
+attribution unverified directly). -/
 structure DistributionDesign {Party Party' : Type*}
     (A : AccessStructure Party) (A' : AccessStructure Party')
     [DecidableEq Party'] where
@@ -144,7 +157,8 @@ end DistributionDesign
 
 /-- Random-less composition of an `AccessScheme` along a `DistributionDesign`: each party `i`
 receives the tuple of shares of `d.assign i`, keeping the exact same `Key` type and `sources`
-class ([ACOR22]). -/
+class (checked for threshold designs in [Aggarwal2026], Section 5 and generalized here to arbitrary
+`AccessScheme`; [ACOR22] attribution unverified directly). -/
 @[expose] noncomputable def AccessScheme.composeDesign
     {Secret Key Party Party' : Type*} {Share' : Party' → Type*}
     (scheme' : AccessScheme Secret Key Party' Share')
@@ -225,27 +239,16 @@ end GeneralDesign
 section ThresholdDesign
 
 /-- A threshold distribution design converting a `t'`-threshold scheme over `Party'` to a
-`t`-threshold scheme over `Party`. -/
+`t`-threshold scheme over `Party` (generalizing finite-party threshold designs in [Aggarwal2026],
+Section 5). -/
 abbrev ThresholdDesignOn (Party Party' : Type*) [DecidableEq Party'] (t t' : ℕ) :=
   DistributionDesign (AccessStructure.threshold Party t)
     (AccessStructure.threshold Party' t')
 
-/-- A `(t, n, t', n')`-distribution design ([ACOR22]; [Aggarwal2026], Section 5). -/
+/-- A `(t, n, t', n')`-distribution design ([Aggarwal2026], Section 5; [ACOR22] attribution
+unverified directly). -/
 abbrev ThresholdDesign (t n t' n' : ℕ) :=
   ThresholdDesignOn (Fin n) (Fin n') t t'
-
-private theorem exists_superset_card_eq {α : Type*} [Fintype α]
-    {s : Finset α} {m : ℕ} (hs : s.card ≤ m) (hm : m ≤ Fintype.card α) :
-    ∃ t : Finset α, s ⊆ t ∧ t.card = m := by
-  classical
-  have hrem : m - s.card ≤ (Finset.univ \ s).card := by
-    rw [Finset.card_sdiff_of_subset (Finset.subset_univ s), Finset.card_univ]
-    omega
-  obtain ⟨u, hu_sub, hu_card⟩ := Finset.exists_subset_card_eq hrem
-  refine ⟨s ∪ u, Finset.subset_union_left, ?_⟩
-  rw [Finset.card_union_of_disjoint
-    (Finset.disjoint_of_subset_right hu_sub disjoint_sdiff_self_right), hu_card]
-  omega
 
 private theorem biUnion_fin_two {α : Type*} [DecidableEq α] (f : Fin 2 → Finset α) :
     (Finset.univ : Finset (Fin 2)).biUnion f = f 0 ∪ f 1 := by
@@ -257,20 +260,6 @@ private theorem biUnion_fin_two_ite {α : Type*} [DecidableEq α] (a b : Finset 
   have h0 : (if (0 : Fin 2) = 0 then a else b) = a := by simp
   have h1 : (if (1 : Fin 2) = 0 then a else b) = b := by simp
   rw [biUnion_fin_two, h0, h1]
-
-private theorem card_singleton_biUnion_ite_lt {α : Type*} [DecidableEq α] {a b : Finset α}
-    {t' : ℕ} (ha : a.card < t') (hb : b.card < t') {s : Finset (Fin 2)} (hs : s.card = 1) :
-    (s.biUnion (fun i => if i = 0 then a else b)).card < t' := by
-  obtain ⟨i, rfl⟩ := Finset.card_eq_one.mp hs
-  rw [Finset.singleton_biUnion]
-  split_ifs
-  · exact ha
-  · exact hb
-
-private theorem card_image_finCast (m n : ℕ) (hmn : m ≤ n) :
-    (Finset.univ.image (fun j : Fin m => (⟨j.val, by omega⟩ : Fin n))).card = m := by
-  rw [Finset.card_image_of_injective _ (fun a b h => by
-    cases a; cases b; simp only [Fin.mk.injEq] at h; simp [h]), Finset.card_univ, Fintype.card_fin]
 
 namespace ThresholdDesignOn
 
@@ -294,7 +283,7 @@ fewer than `t'` old parties (assuming `0 < t` and `t ≤ Fintype.card Party`). -
     · intro hbi
       by_contra hlt
       have hs_le : s.card ≤ t - 1 := by omega
-      obtain ⟨u, hs_sub, hcard⟩ := exists_superset_card_eq hs_le (by omega)
+      obtain ⟨u, hs_sub, hcard⟩ := Finset.exists_superset_card_eq hs_le (by omega)
       have hlt_bi : (u.biUnion assign).card < t' := hunauth u hcard
       have hsub_bi : s.biUnion assign ⊆ u.biUnion assign :=
         Finset.biUnion_subset_biUnion_of_subset_left assign hs_sub
@@ -315,18 +304,12 @@ theorem card_lt_of_card_eq_sub_one {Party Party' : Type*} [DecidableEq Party'] {
   simp only [AccessStructure.threshold_authorized_iff, not_le] at h
   exact h
 
-/-- Explicit `(2, 2, t', |Party'|)`-distribution design for any finite party type `Party'` with
-`2 ≤ t' ≤ |Party'|`: party `0` receives `t' - 1` old shares and party `1` receives `1` disjoint
-old share. -/
-noncomputable def toTwoTwo (Party' : Type*) [Fintype Party'] [DecidableEq Party']
-    {t' : ℕ} (ht' : 2 ≤ t') (htn' : t' ≤ Fintype.card Party') :
+/-- Explicit `(2, 2, t', |Party'|)`-distribution design built from any `t'`-element subset
+`U : Finset Party'` (`2 ≤ t'`) and a distinguished member `p₀ ∈ U`: party `0` receives `U.erase p₀`
+and party `1` receives `{p₀}` ([Aggarwal2026], Section 5). -/
+@[expose] def ofSubset {Party' : Type*} [DecidableEq Party'] {t' : ℕ}
+    (U : Finset Party') (p₀ : Party') (ht' : 2 ≤ t') (hU : U.card = t') (hp₀ : p₀ ∈ U) :
     ThresholdDesignOn (Fin 2) Party' 2 t' :=
-  have hcardU : t' ≤ (Finset.univ : Finset Party').card := by simpa using htn'
-  let U : Finset Party' := (Finset.exists_subset_card_eq hcardU).choose
-  have hU : U.card = t' := (Finset.exists_subset_card_eq hcardU).choose_spec.2
-  have hU_ne : U.Nonempty := Finset.card_pos.mp (by omega)
-  let p₀ : Party' := hU_ne.choose
-  have hp₀ : p₀ ∈ U := hU_ne.choose_spec
   ofCardEq (by decide) (by decide) (fun i => if i = 0 then U.erase p₀ else {p₀})
     (fun s hs => by
       have hs_univ : s = Finset.univ := Finset.eq_univ_of_card s (by simpa using hs)
@@ -343,54 +326,53 @@ noncomputable def toTwoTwo (Party' : Type*) [Fintype Party'] [DecidableEq Party'
           · exact Or.inr hxp
           · exact Or.inl ⟨hxp, hx⟩
       rw [hbi, hU])
-    (fun _ hs => card_singleton_biUnion_ite_lt
-      (by rw [Finset.card_erase_of_mem hp₀, hU]; omega)
-      (by rw [Finset.card_singleton]; omega) hs)
+    (fun s hs => by
+      obtain ⟨i, rfl⟩ := Finset.card_eq_one.mp hs
+      rw [Finset.singleton_biUnion]
+      split_ifs
+      · rw [Finset.card_erase_of_mem hp₀, hU]; omega
+      · rw [Finset.card_singleton]; omega)
+
+/-- Explicit `(2, 2, t', |Party'|)`-distribution design for any finite party type `Party'` with
+`2 ≤ t' ≤ |Party'|` ([Aggarwal2026], Section 5; [ACOR22] attribution unverified directly). -/
+noncomputable def toTwoTwo (Party' : Type*) [Fintype Party'] [DecidableEq Party']
+    {t' : ℕ} (ht' : 2 ≤ t') (htn' : t' ≤ Fintype.card Party') :
+    ThresholdDesignOn (Fin 2) Party' 2 t' :=
+  have hcardU : t' ≤ (Finset.univ : Finset Party').card := by simpa using htn'
+  let U : Finset Party' := (Finset.exists_subset_card_eq hcardU).choose
+  have hU : U.card = t' := (Finset.exists_subset_card_eq hcardU).choose_spec.2
+  have hU_ne : U.Nonempty := Finset.card_pos.mp (by omega)
+  ofSubset U hU_ne.choose ht' hU hU_ne.choose_spec
 
 end ThresholdDesignOn
 
 namespace ThresholdDesign
 
-/-- Explicit computable `(2, 2, t', n')`-distribution design for `2 ≤ t' ≤ n'` ([ACOR22];
-[Aggarwal2026], Section 5): party `0` receives old shares `{0, ..., t' - 2}` and party `1`
-receives `{t' - 1}`. -/
+/-- Explicit computable `(2, 2, t', n')`-distribution design for `2 ≤ t' ≤ n'` ([Aggarwal2026],
+Section 5; [ACOR22] attribution unverified directly): party `0` receives old shares `{0, ...,
+t' - 2}` and party `1` receives `{t' - 1}`. -/
 @[expose] def toTwoTwo {t' n' : ℕ} (ht' : 2 ≤ t') (htn' : t' ≤ n') :
     ThresholdDesign 2 2 t' n' :=
-  ThresholdDesignOn.ofCardEq (by decide) (by decide)
-    (fun i => if i = 0 then
-        Finset.univ.image (fun j : Fin (t' - 1) => (⟨j.val, by omega⟩ : Fin n'))
-      else {⟨t' - 1, by omega⟩})
-    (fun s hs => by
-      have hs_univ : s = Finset.univ := Finset.eq_univ_of_card s (by simpa using hs)
-      subst hs_univ
-      have hbi : (Finset.univ : Finset (Fin 2)).biUnion
-          (fun i => if i = 0 then
-              Finset.univ.image (fun j : Fin (t' - 1) => (⟨j.val, by omega⟩ : Fin n'))
-            else {⟨t' - 1, by omega⟩}) =
-          Finset.univ.image (fun j : Fin t' => (⟨j.val, by omega⟩ : Fin n')) := by
-        rw [biUnion_fin_two_ite]
-        ext k
-        simp only [Finset.mem_union, Finset.mem_image, Finset.mem_univ, true_and,
-          Finset.mem_singleton]
-        constructor
-        · rintro (⟨⟨j, hj⟩, rfl⟩ | h)
-          · exact ⟨⟨j, by omega⟩, rfl⟩
-          · exact ⟨⟨t' - 1, by omega⟩, h.symm⟩
-        · rintro ⟨⟨j, hj⟩, rfl⟩
-          by_cases hlt : j < t' - 1
-          · exact Or.inl ⟨⟨j, hlt⟩, rfl⟩
-          · exact Or.inr (Fin.ext (by dsimp; omega))
-      rw [hbi, card_image_finCast t' n' htn'])
-    (fun _ hs => by
-      exact card_singleton_biUnion_ite_lt
-        (by rw [card_image_finCast (t' - 1) n' (by omega)]; omega)
-        (by rw [Finset.card_singleton]; omega) hs)
+  ThresholdDesignOn.ofSubset
+    (Finset.univ.map (Fin.castLEEmb htn')) ⟨t' - 1, by omega⟩ ht'
+    (by rw [Finset.card_map, Finset.card_univ, Fintype.card_fin])
+    (Finset.mem_map.mpr ⟨⟨t' - 1, by omega⟩, Finset.mem_univ _, rfl⟩)
 
 @[simp]
 theorem toTwoTwo_assign_zero {t' n' : ℕ} (ht' : 2 ≤ t') (htn' : t' ≤ n') :
     (toTwoTwo ht' htn').assign 0 =
-      Finset.univ.image (fun j : Fin (t' - 1) => (⟨j.val, by omega⟩ : Fin n')) :=
-  rfl
+      Finset.univ.map (Fin.castLEEmb (by omega : t' - 1 ≤ n')) := by
+  ext ⟨k, hk⟩
+  simp only [toTwoTwo, ThresholdDesignOn.ofSubset, ThresholdDesignOn.ofCardEq, ↓reduceIte,
+    Finset.mem_erase, Finset.mem_map, Finset.mem_univ, Fin.castLEEmb_apply, true_and, ne_eq,
+    Fin.ext_iff, Fin.val_castLE]
+  constructor
+  · rintro ⟨hk_ne, ⟨⟨j, hj⟩, hjk⟩⟩
+    dsimp only at hjk
+    exact ⟨⟨j, by omega⟩, hjk⟩
+  · rintro ⟨⟨j, hj⟩, hjk⟩
+    dsimp only at hjk
+    exact ⟨by omega, ⟨⟨j, by omega⟩, hjk⟩⟩
 
 @[simp]
 theorem toTwoTwo_assign_one {t' n' : ℕ} (ht' : 2 ≤ t') (htn' : t' ≤ n') :
@@ -401,7 +383,7 @@ end ThresholdDesign
 
 /-- Convert any `t'`-threshold `AccessScheme` over a finite `Party'` (`2 ≤ t' ≤ |Party'|`) into
 a `(2, 2)`-threshold `AccessScheme` over `Fin 2` with the exact same `Key` type and `sources`
-class ([ACOR22]). -/
+class ([Aggarwal2026], Section 5; [ACOR22] attribution unverified directly). -/
 @[expose] noncomputable def AccessScheme.toTwoTwo
     {Secret Key Party' : Type*} {Share' : Party' → Type*}
     [Fintype Party'] [DecidableEq Party'] {t' : ℕ}
@@ -432,38 +414,9 @@ theorem AccessScheme.toTwoTwo_sources
     (scheme'.toTwoTwo haccess ht' htn').sources = scheme'.sources :=
   rfl
 
-/-- Convert any `(t', n')`-threshold `AccessScheme` (`2 ≤ t' ≤ n'`) into a `(2, 2)`-threshold
-`AccessScheme` over `Fin 2` via the explicit `ThresholdDesign.toTwoTwo` assignment, preserving
-`Key` and `sources` ([ACOR22]). -/
-@[expose] noncomputable def AccessScheme.toTwoTwoFin
-    {Secret Key : Type*} {t' n' : ℕ} {Share' : Fin n' → Type*}
-    (scheme' : AccessScheme Secret Key (Fin n') Share')
-    (haccess : scheme'.access = AccessStructure.threshold (Fin n') t')
-    (ht' : 2 ≤ t') (htn' : t' ≤ n') :=
-  let d : DistributionDesign (AccessStructure.threshold (Fin 2) 2) scheme'.access :=
-    haccess ▸ ThresholdDesign.toTwoTwo ht' htn'
-  scheme'.composeDesign d
-
-@[simp]
-theorem AccessScheme.toTwoTwoFin_access
-    {Secret Key : Type*} {t' n' : ℕ} {Share' : Fin n' → Type*}
-    (scheme' : AccessScheme Secret Key (Fin n') Share')
-    (haccess : scheme'.access = AccessStructure.threshold (Fin n') t')
-    (ht' : 2 ≤ t') (htn' : t' ≤ n') :
-    (scheme'.toTwoTwoFin haccess ht' htn').access = AccessStructure.threshold (Fin 2) 2 :=
-  rfl
-
-@[simp]
-theorem AccessScheme.toTwoTwoFin_sources
-    {Secret Key : Type*} {t' n' : ℕ} {Share' : Fin n' → Type*}
-    (scheme' : AccessScheme Secret Key (Fin n') Share')
-    (haccess : scheme'.access = AccessStructure.threshold (Fin n') t')
-    (ht' : 2 ≤ t') (htn' : t' ≤ n') :
-    (scheme'.toTwoTwoFin haccess ht' htn').sources = scheme'.sources :=
-  rfl
-
-/-- Non-existence of `(t, n, 2, 2)` distribution designs whenever `2 ≤ t ≤ n` and `3 ≤ n`
-([ACOR22]; [Aggarwal2026], Section 5). -/
+/-- Non-existence of `(t, n, 2, 2)` distribution designs whenever `2 ≤ t ≤ n` and `3 ≤ n`: an
+original generalization of the `(2, 3, 2, 2)` and `(r, r, 2, 2)` (`r ≥ 3`) non-existence results
+stated in [Aggarwal2026], Section 5 ([ACOR22] attribution unverified directly). -/
 theorem no_thresholdDesign_two_two {t n : ℕ} (ht : 2 ≤ t) (htn : t ≤ n) (hn : 3 ≤ n) :
     IsEmpty (ThresholdDesign t n 2 2) := by
   refine ⟨fun d => ?_⟩
@@ -509,7 +462,7 @@ theorem no_thresholdDesign_two_two {t n : ℕ} (ht : 2 ≤ t) (htn : t ≤ n) (h
         have h2 : ({i, j} : Finset (Fin n)).card ≤ 2 := Finset.card_le_two
         omega
       obtain ⟨u, hu_sup, hcard⟩ :=
-        exists_superset_card_eq hij_le (by rw [Fintype.card_fin]; omega)
+        Finset.exists_superset_card_eq hij_le (by rw [Fintype.card_fin]; omega)
       have hlt := d.card_lt_of_card_eq_sub_one (by omega) hcard
       have hsub : d.assign i ∪ d.assign j ⊆ u.biUnion d.assign := by
         intro x hx
@@ -555,12 +508,13 @@ theorem no_thresholdDesign_two_two {t n : ℕ} (ht : 2 ≤ t) (htn : t ≤ n) (h
       rw [huniv_empty, Finset.card_empty] at huniv
       omega
 
-/-- No `(2, 3, 2, 2)` distribution design exists ([ACOR22]; [Aggarwal2026], Section 5). -/
+/-- No `(2, 3, 2, 2)` distribution design exists ([Aggarwal2026], Section 5; [ACOR22] attribution
+unverified directly). -/
 theorem not_exists_design_2_3_2_2 : IsEmpty (ThresholdDesign 2 3 2 2) :=
   no_thresholdDesign_two_two (by decide) (by decide) (by decide)
 
-/-- No `(r, r, 2, 2)` distribution design exists for `r ≥ 3` ([ACOR22]; [Aggarwal2026],
-Section 5). -/
+/-- No `(r, r, 2, 2)` distribution design exists for `r ≥ 3` ([Aggarwal2026], Section 5; [ACOR22]
+attribution unverified directly). -/
 theorem not_exists_design_r_r_2_2 {r : ℕ} (hr : 3 ≤ r) : IsEmpty (ThresholdDesign r r 2 2) :=
   no_thresholdDesign_two_two (by omega) le_rfl hr
 

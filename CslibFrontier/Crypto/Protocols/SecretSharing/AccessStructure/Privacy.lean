@@ -57,9 +57,8 @@ source classes, statistical `δ`-privacy ([Aggarwal2026], Definition 2.1), poste
 ## References
 
 * [D. Aggarwal, *Secret Sharing Despite Non-Extractable Randomness*][Aggarwal2026],
-  Definition 2.1.
-* [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
-  Version 0.6][BonehShoup2023], Definition 3.5.
+  Definition 2.1 (threshold finite-key definition generalized here to arbitrary `AccessStructure`
+  and `Key`).
 * [T. M. Cover, J. A. Thomas, *Elements of Information Theory*][CoverThomas2006], Sections 2.4–2.5.
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020].
 -/
@@ -93,9 +92,10 @@ distributions. -/
       AccessStructure.viewDistOf P share s secret₀ =
         AccessStructure.viewDistOf P share s secret₁
 
-/-- Statistical `δ`-privacy relative to source class `sources` ([Aggarwal2026], Definition 2.1):
-under every source `P ∈ sources` and every unauthorized coalition `s`, the views of any two
-secrets have statistical distance at most `δ`. -/
+/-- Statistical `δ`-privacy relative to source class `sources` (generalizing [Aggarwal2026],
+Definition 2.1 from threshold structures and finite key spaces to general monotone access structures
+and arbitrary `Key`): under every source `P ∈ sources` and every unauthorized coalition `s`, the
+views of any two secrets have statistical distance at most `δ`. -/
 @[expose] def StatisticallyPrivate [DecidableEq Party] [∀ i, Fintype (Share i)]
     (access : AccessStructure Party) (sources : SourceClass Key)
     (share : Key → Secret → (i : Party) → Share i) (δ : ℝ≥0) : Prop :=
@@ -119,6 +119,11 @@ theorem StatisticallyPrivate.mono [DecidableEq Party] [∀ i, Fintype (Share i)]
     (hδ : δ ≤ δ') (h : StatisticallyPrivate access sources share δ) :
     StatisticallyPrivate access sources share δ' :=
   fun P hP s hs m₀ m₁ => StatisticallyClose.mono hδ (h P hP s hs m₀ m₁)
+
+/-- Every `AccessScheme` satisfies `PerfectlyCorrect`. -/
+theorem AccessScheme.perfectlyCorrect (scheme : AccessScheme Secret Key Party Share) :
+    PerfectlyCorrect scheme.access scheme.share scheme.reconstruct :=
+  scheme.correct
 
 /-- Every `AccessScheme` satisfies `ViewIndist`. -/
 theorem AccessScheme.viewIndist (scheme : AccessScheme Secret Key Party Share) :

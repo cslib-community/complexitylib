@@ -22,12 +22,12 @@ Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenst
 <a id="acor22"></a>
 ## acor22
 
-Divesh Aggarwal, Eldon Chung, Maciej Obremski, João Ribeiro. "On Secret Sharing, Randomness, and Random-less Reductions for Secret Sharing." *Theory of Cryptography (TCC 2022), Part I*, LNCS 13747, 327–354, Springer, 2022. https://doi.org/10.1007/978-3-031-22318-1_12 ; ePrint https://eprint.iacr.org/2021/802 . Bibliographic metadata taken from `references.bib`. The formalized definitions and theorems (distribution designs, random-less `(t', n') → (2, 2)` composition, and non-existence of `(2, 3, 2, 2)` and `(r, r, 2, 2)` designs for `r ≥ 3`) were checked against their exposition in Section 5 ("Relation to the reductions of ACOR22") of [aggarwal26](#aggarwal26); the direct ePrint copy was not inspected because it was gated behind an automated challenge.
+Divesh Aggarwal, Eldon Chung, Maciej Obremski, João Ribeiro. "On Secret Sharing, Randomness, and Random-less Reductions for Secret Sharing." *Theory of Cryptography (TCC 2022), Part I*, LNCS 13747, 327–354, Springer, 2022. https://doi.org/10.1007/978-3-031-22318-1_12 ; ePrint https://eprint.iacr.org/2021/802 . Bibliographic metadata taken from `references.bib`. The direct ePrint copy was not inspected (gated behind an automated challenge), so ACOR22 attributions are unverified directly; the formalized threshold design results (`ThresholdDesign`, `(t', n') → (2, 2)` composition, `(2, 3, 2, 2)` and `(r, r, 2, 2)` impossibility for `r ≥ 3`) were checked against [aggarwal26](#aggarwal26), Section 5.
 
 <a id="aggarwal26"></a>
 ## aggarwal26
 
-Divesh Aggarwal. *Secret Sharing Despite Non-Extractable Randomness*. arXiv:2610.20173v2, 2026. https://arxiv.org/abs/2610.20173v2 . LaTeX source (`secret_sharing.tex`, version v2) checked on 2026-11-10 UTC: Definition 2.1 (perfect correctness and `δ`-statistical privacy relative to a source class `sources`) and Section 5 ("Relation to the reductions of ACOR22", covering distribution designs, the `(t', n') → (2, 2)` composition, and the non-existence proofs for `(2, 3, 2, 2)` and `(r, r, 2, 2)` designs with `r ≥ 3`).
+Divesh Aggarwal. *Secret Sharing Despite Non-Extractable Randomness*. arXiv:2610.20173v2, 2026. https://arxiv.org/abs/2610.20173v2 . LaTeX source (`secret_sharing.tex`, version v2) checked on 2026-11-10 UTC: Definition 2.1 (threshold finite-key correctness and `δ`-statistical privacy relative to a source class `sources`; generalized in the library to general `AccessStructure` and arbitrary `Key`) and Section 5 ("Relation to the reductions of ACOR22", covering threshold distribution designs, the `(t', n') → (2, 2)` composition, and non-existence of `(2, 3, 2, 2)` and `(r, r, 2, 2)` designs with `r ≥ 3`, generalized in the library to `DistributionDesign`, `ThresholdDesignOn`, and `no_thresholdDesign_two_two` for `2 ≤ t ≤ n`, `3 ≤ n`).
 
 <a id="ahocorasick75"></a>
 ## ahocorasick75
