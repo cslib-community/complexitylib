@@ -20,6 +20,24 @@ import CslibFrontier.Probability.PMF.Uniform
 
 This module formalizes the Ideal Cipher Model, consisting of independent random
 permutations for each key, and defines its exact and forgetful lazy samplers.
+
+## Main definitions
+* `Query`: An ideal cipher query, combining a key and a permutation query.
+* `Spec`: The ideal cipher specification.
+* `lazyEvalPerm`, `answer`, `forgetfulAnswer`: Samplers for evaluating an ideal cipher.
+
+## Main results
+* `uniform_interpret_eq_lazy`: Eager random-permutation sampling matches lazy exact caching.
+* `identicalUntilBad_exactWithBad_forgetfulWithBad`: Identical-until-bad coupling between exact
+  and forgetful samplers.
+* `toOuterMeasure_bad_forgetfulWithBad_le`: Quadratic birthday bound on the forgetful bad event.
+* `abs_sub_uniformPerm_forgetful_le`: Ideal-cipher switching bound
+  `Q.choose 2 * (Fintype.card Block)⁻¹`.
+
+## References
+* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 7.3.1.
+* [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Version 0.6][BonehShoup2023],
+  Section 4.7.
 -/
 
 public section
@@ -31,21 +49,29 @@ open scoped ENNReal NNReal BigOperators
 
 variable {Key Block : Type}
 
+/-- A query to the ideal cipher, consisting of a key and a block query. -/
 abbrev Query (Key Block : Type) := Key × PermQuery Block
 
+/-- The oracle specification for an ideal cipher. -/
 abbrev Spec (Key Block : Type) : OracleSpec (Query Key Block) :=
   fun _ => Block
 
 section Finite
 variable [DecidableEq Key] [Fintype Key] [DecidableEq Block] [Fintype Block] [Nonempty Block]
 
+/-- Evaluate an ideal cipher directly with a full permutation state. -/
+@[expose]
 noncomputable def lazyEvalPerm (q : Query Key Block) : StateT (Key → Equiv.Perm Block) PMF Block :=
   fun P => (·, P) <$> PMF.pure (evalPerm (P q.1) q.2)
 
+/-- Evaluate an ideal cipher with a lazy cache. -/
+@[expose]
 noncomputable def answer (q : Query Key Block) :
     StateT (Key → Cache Block) PMF Block := fun st =>
   (RandomPermutation.answer q.2 (st q.1)).map fun (b, c) => (b, Function.update st q.1 c)
 
+/-- Evaluate an ideal cipher with a forgetful cache that doesn't check consistency. -/
+@[expose]
 noncomputable def forgetfulAnswer (q : Query Key Block) :
     StateT (Key → Cache Block) PMF Block := fun st =>
   (RandomPermutation.forgetfulAnswer q.2 (st q.1)).map fun (b, c) => (b, Function.update st q.1 c)
