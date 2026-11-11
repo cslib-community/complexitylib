@@ -64,18 +64,25 @@ example : (1 - 1 / 2 : ℝ) * (([(1, 6), (1, 6)] : List (ℕ × ℕ)).map Prod.s
 
 /-! ### 3. Knapsack with unary values -/
 
-example : Knapsack.unaryDecider ([(2, 3), (3, 4), (4, 5), (5, 6)], 5, 7) = true := by decide
+example : Knapsack.unaryDecider ⟨[⟨2, 3⟩, ⟨3, 4⟩, ⟨4, 5⟩, ⟨5, 6⟩], 5, 7⟩ = true := by decide
 
-example : Knapsack.unaryDecider ([(2, 3), (3, 4), (4, 5), (5, 6)], 5, 8) = false := by decide
+example : Knapsack.unaryDecider ⟨[⟨2, 3⟩, ⟨3, 4⟩, ⟨4, 5⟩, ⟨5, 6⟩], 5, 8⟩ = false := by decide
 
 /-- The decider certifies membership in `Knapsack`. -/
-example : ([(2, 3), (3, 4), (4, 5), (5, 6)], 5, 7) ∈ Knapsack :=
+example : (⟨[⟨2, 3⟩, ⟨3, 4⟩, ⟨4, 5⟩, ⟨5, 6⟩], 5, 7⟩ : KnapsackInstance) ∈ Knapsack :=
   (Knapsack.unaryDecider_eq_true_iff _).1 (by decide)
 
 /-- The decider certifies non-membership in `Knapsack`. -/
-example : ([(2, 3), (3, 4), (4, 5), (5, 6)], 5, 8) ∉ Knapsack := fun h => by
+example : (⟨[⟨2, 3⟩, ⟨3, 4⟩, ⟨4, 5⟩, ⟨5, 6⟩], 5, 8⟩ : KnapsackInstance) ∉ Knapsack := fun h => by
   have := (Knapsack.unaryDecider_eq_true_iff _).2 h
   revert this
   decide
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun x : KnapsackInstance =>
+      KnapsackInstance.mk (x.items.map fun i => Knapsack.Item.mk i.weight i.value)
+        x.capacity x.goal)
+    encKnapsackUnary encKnapsackUnary := by
+  fun_prop
 
 end CslibFrontierTests.KnapsackFPTAS

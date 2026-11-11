@@ -84,7 +84,8 @@ private theorem sample2CNF_le2 : ∀ c ∈ sample2CNF, c.length ≤ 2 := by
   simp only [sample2CNF, List.mem_cons, List.not_mem_nil, or_false] at hc
   rcases hc with rfl | rfl | rfl | rfl <;> decide
 
-private theorem sample2CNF_mem_maxTwoSAT : (sample2CNF, 3) ∈ Cslib.Complexity.MaxTwoSAT := by
+private theorem sample2CNF_mem_maxTwoSAT :
+    (⟨sample2CNF, 3⟩ : Cslib.Complexity.MaxTwoSATInstance) ∈ Cslib.Complexity.MaxTwoSAT := by
   refine Cslib.Complexity.mem_MaxTwoSAT_iff.2 ⟨sample2CNF_le2, fun n => n == 0, ?_⟩
   decide
 
@@ -96,7 +97,7 @@ private theorem sample2CNF_countP_le_three (σ : ℕ → Bool) :
     decide
   simpa [sample2CNF, Clause.eval, Literal.eval] using h01 (σ 0) (σ 1)
 
-example : (sample2CNF, 4) ∉ Cslib.Complexity.MaxTwoSAT := by
+example : (⟨sample2CNF, 4⟩ : Cslib.Complexity.MaxTwoSATInstance) ∉ Cslib.Complexity.MaxTwoSAT := by
   intro hmem
   obtain ⟨_, σ, h4⟩ := Cslib.Complexity.mem_MaxTwoSAT_iff.1 hmem
   have h3 := sample2CNF_countP_le_three σ
