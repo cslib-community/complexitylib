@@ -34,6 +34,16 @@ Divesh Aggarwal. *Secret Sharing Despite Non-Extractable Randomness*. arXiv:2610
 
 Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibliographic Search." *Communications of the ACM* 18(6), 333–340, 1975. https://doi.org/10.1145/360825.360855 . Scanned copy in D. J. Bernstein's bibliography archive, https://cr.yp.to/bib/1975/aho.pdf , checked 2026-11-08 for Algorithms 1 and 3, Lemmas 1–3, Theorems 1, 2 and 4, and Figures 1 and 2.
 
+<a id="ahlswedecsiszar93"></a>
+## ahlswedecsiszar93
+
+Rudolf Ahlswede and Imre Csiszár. "Common Randomness in Information Theory and Cryptography. Part I: Secret Sharing." *IEEE Transactions on Information Theory* 39(4), 1121–1132, 1993. https://doi.org/10.1109/18.243431 . Bibliographic metadata checked via secondary search summaries on 2026-11-11.
+
+<a id="ahlswedecsiszar07"></a>
+## ahlswedecsiszar07
+
+Rudolf Ahlswede and Imre Csiszár. "On Oblivious Transfer Capacity." ISIT 2007, Nice, France, pp. 2061–2064, https://doi.org/10.1109/ISIT.2007.4557524, https://www.math.uni-bielefeld.de/ahlswede/homepage/public/242.pdf. Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8). Used for the asymptotic single-choice-bit string-OT bound (which the Lean formalization adapts to finite exact batch-bit OT with independent choices).
+
 <a id="aik11"></a>
 ## aik11
 
@@ -1261,6 +1271,11 @@ Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungari
 ## naoryung89
 
 Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptographic Applications.” *Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing (STOC 1989)*, 33–43, 1989. https://doi.org/10.1145/73007.73011 . Authors' revised manuscript (March 13, 1995): https://www.wisdom.weizmann.ac.il/~naor/PAPERS/uowhf.ps (§2, §2.3, §3 and §4).
+
+<a id="nascimentowinter08"></a>
+## nascimentowinter08
+
+Anderson C. A. Nascimento and Andreas Winter. "On the Oblivious-Transfer Capacity of Noisy Resources." *IEEE Transactions on Information Theory* 54(6), 2572–2581, 2008. https://doi.org/10.1109/TIT.2008.921856 . Bibliographic metadata checked via secondary search summaries on 2026-11-11; the full paper was not audited, so no internal theorem numbers are claimed.
 
 <a id="nash51"></a>
 ## nash51
