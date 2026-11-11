@@ -14,6 +14,7 @@ public import CslibFrontier.Crypto.Game.CloseTo
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Auxiliary-input zero knowledge and product composition for interactive reductions

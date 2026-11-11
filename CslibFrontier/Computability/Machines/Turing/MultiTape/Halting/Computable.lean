@@ -48,8 +48,9 @@ models.
 
 * `Turing.MultiTapeTM.isComputable_iff`: computability is the existence of a machine computing the
   function without bounds.
-* `Turing.MultiTapeTM.IsComputable.comp`, `.prod`, `Turing.MultiTapeTM.isComputable_id`,
-  `Turing.MultiTapeTM.IsComputable.of_finite`: closure properties.
+* `Turing.MultiTapeTM.IsComputable.comp`, `.prod`, `.ite`,
+  `Turing.MultiTapeTM.isComputable_id`, `Turing.MultiTapeTM.IsComputable.of_finite`: closure
+  properties.
 * `Turing.MultiTapeTM.indicator_eq_true_iff`, `Turing.MultiTapeTM.indicator_eq_false_iff`: the
   indicator of a set.
 * `Turing.MultiTapeTM.isDecidable_iff`: decidability through any computable Boolean function.
@@ -122,6 +123,17 @@ theorem IsComputable.prod {α β₁ β₂ : Type u} {encIn : α ↪ List Bool} {
   let ⟨_, _, hg⟩ := hg.exists_computableTidilyInTimeAndSpace
   let ⟨_, h⟩ := PairEncoding.pair_mono hf.computableInTimeAndSpace hg.computableInTimeAndSpace
   h.isComputable
+
+/-- Conditional selection between computable Boolean functions is computable. The carrier lives in
+`Type`, as `Turing.MultiTapeTM.IsComputable.prod` pairs into `Bool × Bool`. -/
+theorem IsComputable.ite {α : Type} {encIn : α ↪ List Bool} {c t e : α → Bool}
+    (hc : IsComputable c encIn encBool) (ht : IsComputable t encIn encBool)
+    (he : IsComputable e encIn encBool) :
+    IsComputable (fun a => if c a then t a else e a) encIn encBool :=
+  let hte := ht.prod (enc := encPair encBool encBool) he
+  let hcte := hc.prod (enc := encPair encBool (encPair encBool encBool)) hte
+  (IsComputable.of_finite (encIn := encPair encBool (encPair encBool encBool))
+    (encMid := encBool) fun q : Bool × Bool × Bool => if q.1 then q.2.1 else q.2.2).comp hcte
 
 /-! ### Decidable sets -/
 
