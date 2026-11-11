@@ -52,14 +52,18 @@ def gaussLoop {q : ℕ} [Fact (Nat.Prime q)] (n : ℕ) : ℕ → List (List (ZMo
   | 0, rows => some rows
   | steps + 1, rows =>
     let c := n - (steps + 1)
-    match rows.partition (fun r => r.getD c 0 == 0) with
+    let top := rows.take c
+    let bottom := rows.drop c
+    match bottom.partition (fun r => r.getD c 0 == 0) with
     | (_, []) => none
     | (zeros, pivot :: rest) =>
       let normPivot := pivot.map (· * (pivot.getD c 0)⁻¹)
-      let nextRows := (zeros ++ rest).map (fun r =>
+      let elim := fun (r : List (ZMod q)) =>
         let factor := r.getD c 0
-        r.zipWith (fun x y => x - factor * y) normPivot)
-      gaussLoop n steps (nextRows ++ [normPivot])
+        r.zipWith (fun x y => x - factor * y) normPivot
+      let top' := top.map elim
+      let bottom' := (zeros ++ rest).map elim
+      gaussLoop n steps (top' ++ [normPivot] ++ bottom')
 
 def gaussInv? {n q : ℕ} [Fact (Nat.Prime q)] (A : Matrix (Fin n) (Fin n) (ZMod q)) : Option (Matrix (Fin n) (Fin n) (ZMod q)) :=
   let aug := List.ofFn (fun i : Fin n =>
@@ -93,7 +97,7 @@ def transform {m n q : ℕ} [Fact (Nat.Prime q)]
     Matrix (Fin m) (Fin n) (ZMod q) × (Fin m → ZMod q) :=
   let A1 := topBlock A
   let A2 := bottomBlock A
-  let b1 := topVec b
+      let b1 := topVec b
   let b2 := bottomVec b
   let A' := match gaussInv? A1 with
   | none => 0
@@ -117,12 +121,13 @@ def reduceNormalDecision {n m q : ℕ} [Fact (Nat.Prime q)]
   let Ab := decodeMatrix (n + m) (n + 1) q word
   let A := fun i j => Ab i (Fin.succ j)
   let A1 := topBlock A
-  if A1.det = 0 then
+  match gaussInv? A1 with
+  | none =>
     pure false
-  else
-    let Ab' := transformAugmented Ab
-    let word' := encMatrix m (n + 1) q Ab'
-    adversary word'
+  | some inv =>
+            let Ab' := transformAugmented Ab
+            let word' := encMatrix m (n + 1) q Ab'
+        adversary word'
 
 /-- The Normal Form reduction for Search LWE. -/
 def reduceNormalSearch {n m q : ℕ} [Fact (Nat.Prime q)]
@@ -132,38 +137,37 @@ def reduceNormalSearch {n m q : ℕ} [Fact (Nat.Prime q)]
   let A := fun i j => Ab i (Fin.succ j)
   let b := fun (i : Fin (n + m)) => Ab i (0 : Fin (n + 1))
   let A1 := topBlock A
-  if A1.det = 0 then
+  match gaussInv? A1 with
+  | none =>
     pure []
-  else
-    let Ab' := transformAugmented Ab
-    let word' := encMatrix m (n + 1) q Ab'
-    let guessWord ← adversary word'
-    let e1 := decodeZModVec n q guessWord
-    let b1 := topVec b
-    let s := match gaussInv? A1 with
-    | none => 0
-    | some inv => inv *ᵥ (b1 - e1)
-    pure (encZModVec n q s)
+  | some inv =>
+            let Ab' := transformAugmented Ab
+            let word' := encMatrix m (n + 1) q Ab'
+    let guessWord ←     adversary word'
+        let e1 := decodeZModVec n q guessWord
+        let b1 := topVec b
+        let s := inv *ᵥ (b1 - e1)
+        pure (encZModVec n q s)
 
 theorem decisionNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
     {noise : PMF (ZMod q)}
     (adversary : List Bool → ProbComp Bool) :
     Game.advantage
-      (distinguishingGame (realEnsemble (fun _ => n) (fun _ => n + m) (fun _ => q) (fun _ => noise) 0)
-        adversary)
-      (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => n + m) (fun _ => q) 0) adversary)
-    ≤ Game.advantage
       (distinguishingGame (realEnsembleErrorSecret (fun _ => n) (fun _ => m) (fun _ => q) (fun _ => noise) 0)
+        adversary)
+      (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => m) (fun _ => q) 0) adversary)
+    ≤ Game.advantage
+      (distinguishingGame (realEnsemble (fun _ => n) (fun _ => n + m) (fun _ => q) (fun _ => noise) 0)
         (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary))
-      (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => m) (fun _ => q) 0)
+      (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => n + m) (fun _ => q) 0)
         (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary)) + ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A | A.det = 0}).toReal :=
   le_trans (Game.advantage_le_one _ _) (le_add_self)
 
 theorem searchNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
     {noise : PMF (ZMod q)}
     (adversary : List Bool → ProbComp (List Bool)) :
-    Game.succProbability (searchGame n (n + m) q noise adversary)
-    ≤ Game.succProbability (searchGameErrorSecret n m q noise
+    Game.succProbability (searchGameErrorSecret n m q noise adversary)
+    ≤ Game.succProbability (searchGame n (n + m) q noise
         (reduceNormalSearch (n:=n) (m:=m) (q:=q) adversary)) + ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A | A.det = 0}).toReal :=
   le_trans (Game.succProbability_le_one _) (le_add_self)
 
