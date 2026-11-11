@@ -3076,13 +3076,13 @@ register_result "malicious-with-abort-mpc" where
   topic := "cryptography"
   sources := [
     { paper := Goldreich2004, theorem := unverified,
-      locator := "Theorem 7.3.3, pp. 637–638" }
+      locator := "Section 7.3.1 (concepts)" }
   ]
   theorems := [
     Cslib.Crypto.Protocols.MPC.adversaryAborts_characterization,
     Cslib.Crypto.Protocols.MPC.naive_without_abort_failure
   ]
-  scope := "Generalizes malicious execution with abort to general m-party functionalities, \
-    providing the `adversaryAborts_characterization` characterization theorem and the \
+  scope := "Formalizes malicious ideal wrappers with explicit abort for general m-party functionalities, \
+    providing the `adversaryAborts_characterization` equivalence theorem and the \
     `naive_without_abort_failure` counterexample demonstrating the necessity of the abort \
-    capability, formalizing Goldreich's Theorem 7.3.3."
+    capability (Cleve 1986)."

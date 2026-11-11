@@ -11,12 +11,12 @@ public import CslibFrontier.Crypto.Protocols.MPC.Composition
 import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
-# Malicious Execution and Composition with Abort
+# Malicious Ideal Wrappers
 
 This module formalizes the malicious ideal execution with abort for general $m$-party
 functionalities, generalizing the commitment-specific world from
 `CslibFrontier/Crypto/Protocols/MPC/OTCommitment/World.lean`.
-It proves the simple sequential composition with abort (adversary-aborts characterization)
+It proves the equivalence of explicit abort and wrapper-based abort for ideal functionalities
 and formalizes the classic counterexample showing that naive without-abort composition
 fails when the adversary can abort, as noted in #3673 M12 (Goldreich).
 
@@ -28,20 +28,20 @@ fails when the adversary can abort, as noted in #3673 M12 (Goldreich).
   the honest outputs.
 
 ## Main results
-* `Cslib.Crypto.Protocols.MPC.adversaryAborts_characterization`: The characterization of sequential
-  composition with abort.
+* `Cslib.Crypto.Protocols.MPC.adversaryAborts_characterization`:
+  The equivalence of malicious ideal execution with abort and the adversary-aborts wrapper.
 * `Cslib.Crypto.Protocols.MPC.naive_without_abort_failure`: Counterexample to naive without-abort
   composition.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.MPC
 
 open Probability Cslib.ProbComp
 
 /-- Malicious ideal execution without abort. -/
-def maliciousIdeal {m : ℕ} {In Out : Fin m → Type} {View : Type}
+@[expose] public def maliciousIdeal {m : ℕ} {In Out : Fin m → Type} {View : Type}
     (f : Functionality m In Out) (I : Finset (Fin m))
     (x : (i : Fin m) → In i)
     (S : ((i : I) → In i) → ProbComp (((i : I) → In i) × (((i : I) → Out i) → View))) :
@@ -55,7 +55,7 @@ def maliciousIdeal {m : ℕ} {In Out : Fin m → Type} {View : Type}
 /-- Malicious ideal execution with abort. The adversary `S` provides inputs for `I`,
 then given the outputs for `I`, decides whether to continue (`true`) or abort (`false`),
 and outputs a view. Honest parties receive `some y` if continue, or `none` if abort. -/
-def maliciousIdealWithAbort {m : ℕ} {In Out : Fin m → Type} {View : Type}
+@[expose] public def maliciousIdealWithAbort {m : ℕ} {In Out : Fin m → Type} {View : Type}
     (f : Functionality m In Out) (I : Finset (Fin m))
     (x : (i : Fin m) → In i)
     (S : ((i : I) → In i) → ProbComp (((i : I) → In i) × (((i : I) → Out i) → Bool × View))) :
@@ -69,7 +69,7 @@ def maliciousIdealWithAbort {m : ℕ} {In Out : Fin m → Type} {View : Type}
 
 /-- An adversary-aborts wrapper around a functionality, explicitly modeling the abort phase
 within a standard functionality, avoiding the need for a custom ideal execution definition. -/
-def adversaryAborts {m : ℕ} {In Out : Fin m → Type}
+@[expose] public def adversaryAborts {m : ℕ} {In Out : Fin m → Type}
     (f : Functionality m In Out) (I : Finset (Fin m)) :
     Functionality m (fun i => In i × (i ∈ I → ((j : I) → Out j) → Bool))
       (fun i => Option (Out i)) :=
@@ -78,31 +78,37 @@ def adversaryAborts {m : ℕ} {In Out : Fin m → Type}
     let cont := ∀ i : I, (x i.1).2 i.2 (fun j => y j.1)
     return fun i => if cont || (i ∈ I) then some (y i) else none
 
-@[simp] lemma fst_dite {α β} (c : Prop) [Decidable c] (t : c → α × β) (e : ¬c → α × β) :
+@[simp] private theorem fst_dite {α β} (c : Prop) [Decidable c] (t : c → α × β) (e : ¬c → α × β) :
   (if h : c then t h else e h).1 = if h : c then (t h).1 else (e h).1 := by
   split_ifs <;> rfl
 
-@[simp] lemma snd_dite {α β} (c : Prop) [Decidable c] (t : c → α × β) (e : ¬c → α × β) :
+@[simp] private theorem snd_dite {α β} (c : Prop) [Decidable c] (t : c → α × β) (e : ¬c → α × β) :
   (if h : c then t h else e h).2 = if h : c then (t h).2 else (e h).2 := by
   split_ifs <;> rfl
 
-lemma pmf_bind_congr {α β} {p q : PMF α} {f g : α → PMF β} (hpq : p = q) (hfg : ∀ x, f x = g x) :
+private theorem pmf_bind_congr {α β} {p q : PMF α} {f g : α → PMF β} (hpq : p = q)
+    (hfg : ∀ x, f x = g x) :
   p.bind f = q.bind g := by
   cases hpq
   congr 1
   funext x
   exact hfg x
 
+/--
+The equivalence of malicious ideal execution with abort and the adversary-aborts wrapper.
+## References
+* Goldreich 2004 (abort equivalence concept)
+-/
 theorem adversaryAborts_characterization {m : ℕ} {In Out : Fin m → Type} {View : Type}
     [Inhabited View]
     (f : Functionality m In Out) (I : Finset (Fin m)) (hI : I.Nonempty)
     (x : (i : Fin m) → In i)
     (S : ((i : I) → In i) → ProbComp (((i : I) → In i) × (((i : I) → Out i) → Bool × View))) :
-    ProbComp.eval (maliciousIdealWithAbort f I x S) = 
+    ProbComp.eval (maliciousIdealWithAbort f I x S) =
       ProbComp.eval (maliciousIdeal (adversaryAborts f I) I (fun i => (x i, fun _ _ => true))
         (fun x_I => do
           let (x_I_prime, S_out) ← S (fun i => (x_I i).1)
-          return (fun i => (x_I_prime i, fun _ y_I => (S_out y_I).1), fun y_I => 
+          return (fun i => (x_I_prime i, fun _ y_I => (S_out y_I).1), fun y_I =>
             if h : ∀ i, (y_I i).isSome then
               (S_out (fun i => Option.get _ (h i))).2
             else default))) := by
@@ -153,9 +159,9 @@ theorem adversaryAborts_characterization {m : ℕ} {In Out : Fin m → Type} {Vi
         simp
 
 /-- Naive without-abort composition failure:
-A randomized functionality without abort cannot be securely realized by an aborting protocol.
-We show there is a functionality (coin toss) such that ANY aborting simulator fails to match
-the ideal joint distribution without abort. -/
+A randomized functionality cannot be securely realized by an aborting protocol without bias.
+We show there is a functionality (coin toss) such that ANY non-aborting simulator fails to match
+the biased joint distribution of an aborting protocol (Cleve 1986). -/
 noncomputable def coinTossFunc : Functionality 2 (fun _ => Unit) (fun _ => Bool) :=
   fun _ => do
     let b ← uniform Bool
@@ -172,7 +178,7 @@ noncomputable def coinTossPrivateFunc : Functionality 2 (fun _ => Unit)
 /-- The set of corrupted parties containing only party 0. -/
 def I0 : Finset (Fin 2) := {0}
 
-/-- The biased coin toss distribution. -/
+/-- The biased coin toss distribution where party 1 aborts on false. -/
 noncomputable def coinTossBiasedDist :
   ProbComp (Unit × ((i : Fin 2) → Option (if i = 0 then Unit else Bool))) := do
   let b ← uniform Bool
@@ -180,42 +186,48 @@ noncomputable def coinTossBiasedDist :
     return ((), fun i => if h : i = 0 then cast (by simp [h]) (some ())
       else cast (by simp [h]) (some true))
   else
-    return ((), fun i => none)
+    return ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
 
-set_option linter.flexible false in
-set_option linter.unusedSimpArgs false in
 theorem naive_without_abort_failure :
-  ¬ (∃ S, ProbComp.eval (maliciousIdealWithAbort coinTossPrivateFunc I0 (fun _ => ()) S) = 
+  ¬ (∃ S, ProbComp.eval (do
+            let (v, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
+            return (v, fun i => some (y i))) = 
           ProbComp.eval coinTossBiasedDist) := by
   intro ⟨S, h⟩
-  have H := congr_arg (fun (p : PMF _) => p ((), fun _ => none)) h
-  have h_rhs : ProbComp.eval coinTossBiasedDist ((), fun _ => none) = 1/2 := by
+  have H := congr_arg (fun (p : PMF _)
+    => p ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)) h
+  have h_rhs : ProbComp.eval coinTossBiasedDist
+      ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = 1/2 := by
     dsimp [coinTossBiasedDist]
-    simp [eval_bind, eval_uniform, PMF.bind_apply, PMF.pure_apply,
-      PMF.uniformOfFintype_apply]; intro heq
-    have h2 := congr_fun heq 0
-    revert h2
-    simp
-  have h_lhs : ProbComp.eval (maliciousIdealWithAbort coinTossPrivateFunc I0 (fun _ => ()) S)
-    ((), fun _ => none) = 0 := by
-    dsimp [maliciousIdealWithAbort, coinTossPrivateFunc]
-    simp [eval_bind, eval_uniform, PMF.bind_apply, PMF.map_apply,
-      PMF.uniformOfFintype_apply]; intro a b
-    right
-    constructor
-    · intro heq
-      have h2 := congr_fun heq 0
-      have h0 : (0 : Fin 2) ∈ I0 := by decide
+    simp [eval_bind, eval_uniform, PMF.bind_apply, PMF.pure_apply, PMF.uniformOfFintype_apply]
+    have h_true : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) :
+        (i : Fin 2) → Option (if i = 0 then Unit else Bool)) ≠ 
+      (fun i => if h : i = 0 then cast (by simp [h]) (some ())
+        else cast (by simp [h]) (some true)) := by
+      intro heq
+      have h2 := congr_fun heq 1
+      have h1 : (1 : Fin 2) ≠ 0 := by decide
       revert h2
-      simp [h0]
-    · intro heq
-      have h2 := congr_fun heq 0
-      have h0 : (0 : Fin 2) ∈ I0 := by decide
+      simp [h1]
+    simp [h_true]
+  have h_lhs : ProbComp.eval (do
+            let (v, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
+            return (v, fun i => some (y i)))
+      ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = 0 := by
+    simp [PMF.map_apply]
+    intro a b heq
+    have h_false : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) :
+        (i : Fin 2) → Option (if i = 0 then Unit else Bool)) ≠ 
+      fun i => some (b i) := by
+      intro heq2
+      have h2 := congr_fun heq2 1
+      have h1 : (1 : Fin 2) ≠ 0 := by decide
       revert h2
-      simp [h0]
+      simp [h1]
+    contradiction
   rw [h_rhs, h_lhs] at H
-  have H_mul := congr_arg (fun x => x * 2) H
-  revert H_mul
-  simp
+  apply_fun ENNReal.toReal at H
+  revert H
+  norm_num
 
 end Cslib.Crypto.Protocols.MPC
