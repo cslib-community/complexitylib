@@ -2865,6 +2865,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Positions
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.DPi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families
@@ -4945,6 +4946,7 @@ public import CslibFrontier.Foundations.Data.List.Blocks
 public import CslibFrontier.Foundations.Data.List.Boole
 public import CslibFrontier.Foundations.Data.List.CommonPrefix
 public import CslibFrontier.Foundations.Data.List.Counting
+public import CslibFrontier.Foundations.Data.List.CourseOfValues
 public import CslibFrontier.Foundations.Data.List.DotProduct
 public import CslibFrontier.Foundations.Data.List.Equiv
 public import CslibFrontier.Foundations.Data.List.EraseDups
