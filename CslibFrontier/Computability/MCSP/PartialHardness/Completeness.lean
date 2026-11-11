@@ -55,6 +55,12 @@ input length whatever the constant is, since `m ≤ |I|` for the encoding of `I`
 
 * `Cslib.PartialMCSP.FromCMMSA.exists_toInstance_mem_PartialMCSP`: Yes instances map to Yes
   instances of partial MCSP for every `f`, once `λ ≥ λ₀ (m + 1) ²`.
+* `Cslib.PartialMCSP.FromCMMSA.exists_satTerm`: a satisfying assignment satisfies a term of every
+  formula.
+* `Cslib.PartialMCSP.FromCMMSA.sum_two_pow_varLength_le_two_mul_weight`: the blocks of an
+  assignment `S` have total size at most `2 w(S) λ`.
+
+The last two are also used by the `MINKT*` generator (`Cslib.Kolmogorov.MINKTStar.GenWitness`).
 
 ## References
 
@@ -147,7 +153,7 @@ private def combine (τ : ℕ → ℕ) :
 /-! ### Correctness -/
 
 /-- Every formula of a Yes instance has a term whose variables lie in the satisfying assignment. -/
-private theorem exists_satTerm {S : Finset ℕ}
+theorem exists_satTerm {S : Finset ℕ}
     (hmono : ∀ φ ∈ I.formulas, ∀ t ∈ φ, ∀ l ∈ t, l.2 = true)
     (hsat : ∀ φ ∈ I.formulas, φ.eval (fun i => decide (i ∈ S)) = true) :
     ∃ τ : ℕ → ℕ, ∀ j < I.formulas.length, τ j < (I.formulas.getD j []).length ∧
@@ -173,10 +179,10 @@ private theorem exists_satTerm {S : Finset ℕ}
   choose τ hτ using h
   exact ⟨τ, fun j hj => hτ j hj⟩
 
-/-- The blocks of the satisfying assignment fit in the table. -/
-private theorem sum_two_pow_varLength_le {S : Finset ℕ} (hS : S ⊆ Finset.range I.weights.length)
-    (hwf : I.WellFormed Δ) (hw : I.weight S ≤ I.threshold) (hlam : 1 ≤ lam) :
-    ∑ v ∈ S, 2 ^ varLength I lam v ≤ 2 ^ tableLength I lam := by
+/-- The blocks of the variables of an assignment `S` have total size at most `2 w(S) λ`. -/
+theorem sum_two_pow_varLength_le_two_mul_weight {S : Finset ℕ}
+    (hS : S ⊆ Finset.range I.weights.length) (hwf : I.WellFormed Δ) (hlam : 1 ≤ lam) :
+    ∑ v ∈ S, 2 ^ varLength I lam v ≤ 2 * I.weight S * lam := by
   calc ∑ v ∈ S, 2 ^ varLength I lam v ≤ ∑ v ∈ S, 2 * (I.weights.getD v 0 * lam) := by
         refine sum_le_sum fun v hv => Nat.pow_clog_le_mul Nat.one_lt_two ?_
         have hvn := Finset.mem_range.1 (hS hv)
@@ -184,6 +190,13 @@ private theorem sum_two_pow_varLength_le {S : Finset ℕ} (hS : S ⊆ Finset.ran
         positivity
     _ = 2 * I.weight S * lam := by
         rw [← Finset.mul_sum, ← Finset.sum_mul, CMMSAInstance.weight, mul_assoc]
+
+/-- The blocks of the satisfying assignment fit in the table. -/
+private theorem sum_two_pow_varLength_le {S : Finset ℕ} (hS : S ⊆ Finset.range I.weights.length)
+    (hwf : I.WellFormed Δ) (hw : I.weight S ≤ I.threshold) (hlam : 1 ≤ lam) :
+    ∑ v ∈ S, 2 ^ varLength I lam v ≤ 2 ^ tableLength I lam :=
+  calc ∑ v ∈ S, 2 ^ varLength I lam v ≤ 2 * I.weight S * lam :=
+        sum_two_pow_varLength_le_two_mul_weight hS hwf hlam
     _ ≤ 2 * I.threshold * lam := by gcongr
     _ ≤ 2 ^ tableLength I lam := Nat.le_pow_clog Nat.one_lt_two _
 
