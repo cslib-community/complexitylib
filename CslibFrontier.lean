@@ -1483,6 +1483,7 @@ public import CslibFrontier.Computability.Circuit.Fusion.Simulation
 public import CslibFrontier.Computability.Circuit.Fusion.SimulationContext
 public import CslibFrontier.Computability.Circuit.HintDecoding
 public import CslibFrontier.Computability.Circuit.InnerSize
+public import CslibFrontier.Computability.Circuit.Inputization
 public import CslibFrontier.Computability.Circuit.Iteration
 public import CslibFrontier.Computability.Circuit.KernelVector
 public import CslibFrontier.Computability.Circuit.Linearize
@@ -1515,6 +1516,7 @@ public import CslibFrontier.Computability.Circuit.Monotone.Formula
 public import CslibFrontier.Computability.Circuit.Monotone.KarchmerWigderson
 public import CslibFrontier.Computability.Circuit.Monotone.Set
 public import CslibFrontier.Computability.Circuit.Monotone.Synthesis
+public import CslibFrontier.Computability.Circuit.Normalization
 public import CslibFrontier.Computability.Circuit.OutputDistribution
 public import CslibFrontier.Computability.Circuit.Parallel
 public import CslibFrontier.Computability.Circuit.Pebbling
