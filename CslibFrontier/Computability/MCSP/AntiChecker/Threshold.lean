@@ -80,6 +80,8 @@ here.
 * `Cslib.MCSP.AntiChecker.four_mul_mul_add_one_mul_fifteen_pow_le_sixteen_pow`: the power
   `ℓ = L + 200` suffices.
 * `Cslib.MCSP.AntiChecker.isThresholdOracle_hashOracle`: hashing gives a threshold oracle.
+* `Cslib.MCSP.AntiChecker.isAntiChecker_greedy`: against any threshold oracle, the greedy is an
+  anti-checker for circuits.
 * `Cslib.MCSP.AntiChecker.isAntiChecker_hashAntiChecker`: the greedy anti-checker for circuits.
 
 ## References
@@ -416,16 +418,21 @@ def hashAntiChecker (n s : ℕ) (f : BooleanFunction n) : List (BitString n) :=
     (hashAntiChecker n s f).length = certLength n s * (certLength n s + 200) + 1 := by
   simp [hashAntiChecker]
 
-/-- **The greedy anti-checker for circuits.** If `f` needs more gates than `n` circuits with at
-most `s` gates and a circuit for their strict majority, then every circuit with at most `s` gates
-differs from `f` on an input of the greedy anti-checker. -/
-theorem isAntiChecker_hashAntiChecker {n s : ℕ} (hn : 0 < n) {f : BooleanFunction n}
+/-- **The greedy is an anti-checker for circuits against any threshold oracle.** If `f` needs more
+gates than `n` circuits with at most `s` gates and a circuit for their strict majority, then
+against any threshold oracle with power `L + 200` for the valid descriptions, where `L` is the
+certificate length, every circuit with at most `s` gates differs from `f` on an input chosen in
+the `L (L + 200) + 1` rounds of the greedy. -/
+theorem isAntiChecker_greedy {n s : ℕ} (hn : 0 < n) {f : BooleanFunction n}
     (hf : n * s + complexity interpretation (single (strictMajority n)) <
-      complexity interpretation (single f)) :
-    IsAntiChecker (computableFunctions n s) f {x | x ∈ hashAntiChecker n s f} := by
-  have hempty := consistent_greedy_eq_empty (f := f) (cands := BitString.enum n)
-    (isThresholdOracle_hashOracle (validCertificates n s) (certificateFunction n s)
-      (Nat.succ_pos _ : 0 < certLength n s + 200))
+      complexity interpretation (single f))
+    {O : List (BitString n × Bool) → ℕ → Bool}
+    (ho : IsThresholdOracle (validCertificates n s) (certificateFunction n s)
+      (certLength n s + 200) O) :
+    IsAntiChecker (computableFunctions n s) f
+      {x | x ∈ (greedy O f (BitString.enum n) (certLength n s * (certLength n s + 200) + 1)
+        []).map Prod.fst} := by
+  have hempty := consistent_greedy_eq_empty (f := f) (cands := BitString.enum n) ho
     (fun _ hG' hne => (exists_card_le_sixteen_mul_validCertificates hn le_rfl hf hne hG').imp
       fun x hx => ⟨BitString.mem_enum n x, hx⟩)
     (card_validCertificates_le n s) (four_mul_mul_add_one_mul_fifteen_pow_le_sixteen_pow _)
@@ -436,5 +443,15 @@ theorem isAntiChecker_hashAntiChecker {n s : ℕ} (hn : 0 < n) {f : BooleanFunct
   refine ⟨q.1, ?_, ?_⟩
   · exact List.mem_map.2 ⟨q, hq, rfl⟩
   · rwa [forall_mem_greedy_snd_eq _ f _ (P := []) (by simp) _ q hq] at hne
+
+/-- **The greedy anti-checker for circuits.** If `f` needs more gates than `n` circuits with at
+most `s` gates and a circuit for their strict majority, then every circuit with at most `s` gates
+differs from `f` on an input of the greedy anti-checker. -/
+theorem isAntiChecker_hashAntiChecker {n s : ℕ} (hn : 0 < n) {f : BooleanFunction n}
+    (hf : n * s + complexity interpretation (single (strictMajority n)) <
+      complexity interpretation (single f)) :
+    IsAntiChecker (computableFunctions n s) f {x | x ∈ hashAntiChecker n s f} :=
+  isAntiChecker_greedy hn hf (isThresholdOracle_hashOracle (validCertificates n s)
+    (certificateFunction n s) (Nat.succ_pos _))
 
 end Cslib.MCSP.AntiChecker

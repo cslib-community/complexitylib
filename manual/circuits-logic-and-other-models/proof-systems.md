@@ -89,15 +89,54 @@ that stops only when no event occurs almost surely reaches an assignment avoidin
 `proper_witness`, the coupling `check_witness`, `measure_check_eq_prod` and, combined,
 `table_witness_le`. Here `Proper` is the level independence proved inside Lemma 2.1(i), which
 implies the paper's properness. The paper's Galton–Watson counting is replaced by a depth
-induction, `sum_prod_shapes_le`. The model counts resamplings; it does not charge for sampling or
-for detecting occurring events. Theorems 1.3 (the parallel version) and 1.4 (the deterministic
-version) and the lopsided form are not formalized. The
+induction, `sum_prod_shapes_le`; relation-parameterized variants `witnessRel`, `ProperRel` and
+`sum_prod_shapesRel_le` support the lopsided extension.
+
+Symmetric weights `Real.exp 1 * q * (d + 1) ≤ 1` (`MoserTardos.exists_weights_of_symmetric`) and
+`PMF.pi` transport bridges live in `CslibFrontier.Probability.MoserTardos.Symmetric`. They give
+`lintegral_resamplings_le_symmetric` (`1 / d` for `1 ≤ d`), `lintegral_resamplings_le_symmetric_zero`
+(`q / (1 - q)` for `d = 0`), `lintegral_sum_resamplings_le_symmetric`,
+`ae_exists_forall_notMem_run_symmetric` and `exists_forall_notMem_symmetric`, together with
+`toReal_toOuterMeasure_pi_eq_measureReal`, `lintegral_resamplings_le_pmfPi`,
+`lintegral_resamplings_le_pmfPi_symmetric`, `ae_exists_forall_notMem_run_pmfPi` and
+`ae_exists_forall_notMem_run_pmfPi_symmetric` for events stated against `Cslib.Probability.PMF.pi`.
+
+The Section 6 lopsided extension is in `CslibFrontier.Probability.MoserTardos.Lopsided`
+[mosertardos10]. `Lopsidependent` and `lopsidedAdj` replace variable sharing by lopsidependency in
+the witness-tree relation `witnessRel (lopsidedAdj vbl A)`, using canonical depth-ordered log
+normalization for Lemma 6.2 (`Lopsided.table_isLog_eq_prod` and `Lopsided.table_witness_le`) and
+yielding Theorem 6.1 (`Lopsided.lintegral_resamplings_le`, `Lopsided.lintegral_sum_resamplings_le`,
+`Lopsided.ae_exists_run_eq_none`, `Lopsided.ae_exists_forall_notMem_run`,
+`Lopsided.exists_forall_notMem`, and symmetric `Lopsided.lintegral_resamplings_le_symmetric`,
+`Lopsided.ae_exists_forall_notMem_run_symmetric` and `Lopsided.exists_forall_notMem_symmetric`).
+
+For exact `k`-CNF satisfiability with improved constants,
+`CslibFrontier.Logics.Propositional.CNF.Moser.LocalLemma` instantiates these theorems on
+`CNF.IsExactDistinct k` formulas with the deterministic rule `Moser.firstViolatedRule`. Under
+standard share degree `Moser.degree φ i ≤ d` and `Real.exp 1 * (d + 1) ≤ 2 ^ k`, it supplies
+`Moser.lintegral_resamplings_le_of_exp_mul_le`, `Moser.lintegral_sum_resamplings_le_of_exp_mul_le`,
+and `Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le` (yielding a constructive proof of
+`CNF.IsExactDistinct.satisfiable_of_exp_mul_le` above). Using `Moser.Conflicts` and
+`Moser.conflictDegree`, `Moser.not_lopsidependent_of_not_conflicts` weakens the neighborhood to
+clauses sharing a variable with opposite polarity, yielding
+`Moser.lintegral_resamplings_le_of_conflict_exp_mul_le`,
+`Moser.lintegral_sum_resamplings_le_of_conflict_exp_mul_le`,
+`Moser.ae_exists_eval_run_firstViolated_of_conflict_exp_mul_le` and
+`CNF.IsExactDistinct.satisfiable_of_conflict_exp_mul_le` under `Real.exp 1 * (d' + 1) ≤ 2 ^ k`.
+
+The model counts resamplings; it does not charge for sampling or for detecting occurring events.
+Theorems 1.3 (the parallel version) and 1.4 (the deterministic version) are not formalized. The
 [checked examples](../../CslibFrontierTests/MoserTardos.lean) give one fair coin, where the bound is
 `x / (1 - x) = 1`, two dependent events on three coins that meet the hypothesis with equality, an
 impossible event with `x = 0`, two complementary events for which no `x` satisfies the
-hypothesis, and a concrete valid log on a fixed table whose witness tree is computed by `decide`
-and passes its check. Check them with
-`scripts/build.sh CslibFrontierTests.MoserTardos`.
+hypothesis, a concrete valid log on a fixed table whose witness tree is computed by `decide`
+and passes its check, symmetric (`d = 0` and `d = 1`) and `PMF.pi` bridges, and Section 6
+lopsided events sharing a variable where the standard bound fails; check them with
+`scripts/build.sh CslibFrontierTests.MoserTardos`. The
+[constructive `k`-SAT examples](../../CslibFrontierTests/MoserLocalLemma.lean) cover an exact
+`4`-CNF exceeding `degree < 2 ^ (k - 3)`, a `decide`-verified `firstViolatedRule` step, and
+exact `3`-CNFs where `conflictDegree` (`0` and `1`) succeeds while `degree = 3` fails the standard
+Local Lemma; check them with `scripts/build.sh CslibFrontierTests.MoserLocalLemma`.
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
