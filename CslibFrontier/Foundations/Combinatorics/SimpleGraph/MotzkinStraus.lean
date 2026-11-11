@@ -8,9 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
 public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 public import Mathlib.Combinatorics.SimpleGraph.AdjMatrix
 public import Mathlib.Combinatorics.SimpleGraph.Clique
+public import Mathlib.Geometry.Convex.ConvexSpace.Defs
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.Chebyshev
 import Mathlib.Tactic.FieldSimp
@@ -22,19 +24,21 @@ import Mathlib.Tactic.Ring
 
 For a finite simple graph `G` on a nonempty vertex type `V` with clique number `ω(G)`, the
 maximum of the quadratic form `x ⬝ᵥ G.adjMatrix K *ᵥ x` over the standard simplex
-`Δ = {x : V → K | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}` equals `1 - 1 / ω(G)`. This generalizes the
-real Motzkin–Straus theorem (attributed to [MotzkinStraus1965], cited from bibliographic metadata
-only without inspecting the published text) to any linearly ordered field `K` (including `ℚ` and
-`ℝ`); the `K`-generalization and the `SimpleGraph.copositiveCliqueMatrix` packaging below are
-original formulations of this library:
+`Convexity.StdSimplex K V` equals `1 - 1 / ω(G)` (note that [MotzkinStraus1965] sums over
+unordered edges `∑_{ij ∈ E} x_i x_j = (1 / 2) * (x ⬝ᵥ G.adjMatrix K *ᵥ x)`, differing by a factor
+of `2`). This generalizes the real Motzkin–Straus theorem (attributed to [MotzkinStraus1965], cited
+from bibliographic metadata only without inspecting the published text) to any linearly ordered
+field `K` (including `ℚ` and `ℝ`); the `K`-generalization and the
+`SimpleGraph.copositiveCliqueMatrix` packaging below are original formulations of this library:
 
-* **Upper bound** (`SimpleGraph.quadraticForm_adjMatrix_le_of_mem_simplex`): by strong induction on
-  the support size of `x ∈ Δ`. Whenever two distinct vertices `u, v` in the support of `x` are
-  nonadjacent, shifting weight along `e_u - e_v` changes `x ⬝ᵥ G.adjMatrix K *ᵥ x` linearly;
-  moving all weight of `v` onto `u` or vice versa strictly shrinks the support without decreasing
-  the quadratic form. Once the support is a clique `S`, Cauchy–Schwarz gives
+* **Upper bound** (`SimpleGraph.quadraticForm_adjMatrix_le_stdSimplex`): by strong induction on
+  the support size of `x : Convexity.StdSimplex K V`. Whenever two distinct vertices `u, v` in the
+  support of `x` are nonadjacent, shifting weight along `e_u - e_v` changes
+  `x ⬝ᵥ G.adjMatrix K *ᵥ x` linearly; moving all weight of `v` onto `u` or vice versa strictly
+  shrinks the support without decreasing the quadratic form. Once the support is a clique `S`,
+  Cauchy–Schwarz gives
   `x ⬝ᵥ G.adjMatrix K *ᵥ x = 1 - ∑ v ∈ S, x v ^ 2 ≤ 1 - 1 / #S ≤ 1 - 1 / ω(G)`.
-* **Attainment** (`SimpleGraph.exists_mem_simplex_quadraticForm_adjMatrix_eq_of_isNClique`): the
+* **Attainment** (`SimpleGraph.exists_stdSimplex_quadraticForm_adjMatrix_eq_of_isNClique`): the
   uniform distribution on a maximum clique achieves `1 - 1 / ω(G)`.
 
 We also record the integer matrix `SimpleGraph.copositiveCliqueMatrix G k` with entries `-1` on
@@ -48,10 +52,10 @@ nonempty finite graph.
 
 ## Main results
 
-* `SimpleGraph.quadraticForm_adjMatrix_le_of_mem_simplex`: Motzkin–Straus upper bound over any
+* `SimpleGraph.quadraticForm_adjMatrix_le_stdSimplex`: Motzkin–Straus upper bound over any
   linearly ordered field.
 * `SimpleGraph.isGreatest_quadraticForm_adjMatrix`: Motzkin–Straus identity
-  `max_{x ∈ Δ} xᵀ A_G x = 1 - 1 / ω(G)` over any linearly ordered field.
+  `max_{x : StdSimplex K V} xᵀ A_G x = 1 - 1 / ω(G)` over any linearly ordered field.
 * `SimpleGraph.sSup_quadraticForm_adjMatrix`: the real `sSup` form.
 * `SimpleGraph.exists_nonneg_dotProduct_copositiveCliqueMatrix_lt_zero_iff`: non-copositivity of
   `copositiveCliqueMatrix G k` characterizes `k ≤ G.cliqueNum` for `2 ≤ k`.
@@ -60,8 +64,7 @@ nonempty finite graph.
 
 * [T. S. Motzkin, E. G. Straus, *Maxima for graphs and a new proof of a theorem of Turán*,
   Canadian Journal of Mathematics 17 (1965), 533–540][MotzkinStraus1965] (bibliographic metadata
-  only; the published article text was not inspected in this pass, and no internal theorem numbers
-  are claimed).
+  only; the published article text is uninspected, and no internal theorem numbers are claimed).
 -/
 
 public section
@@ -133,38 +136,25 @@ private theorem dotProduct_adjMatrix_add_smul [Fintype V] [DecidableEq V] [CommR
       x ⬝ᵥ G.adjMatrix K *ᵥ x + 2 * t * ((G.adjMatrix K *ᵥ x) u - (G.adjMatrix K *ᵥ x) v) := by
   intro d
   set A := G.adjMatrix K
-  have hsymm : Aᵀ = A := G.transpose_adjMatrix
-  have hxAd : x ⬝ᵥ (A *ᵥ d) = d ⬝ᵥ (A *ᵥ x) := by
-    rw [← dotProduct_transpose_mulVec A d x, hsymm]
   have hdAx : d ⬝ᵥ (A *ᵥ x) = (A *ᵥ x) u - (A *ᵥ x) v := by
     simp only [d, Pi.sub_apply, dotProduct, Pi.single_apply, sub_mul, Finset.sum_sub_distrib,
       ite_mul, one_mul, zero_mul, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
   have hdAd : d ⬝ᵥ (A *ᵥ d) = 0 := by
-    have h1 : (A *ᵥ d) u = A u u - A u v := by
-      simp only [d, mulVec, dotProduct, Pi.sub_apply, Pi.single_apply, mul_sub,
-        Finset.sum_sub_distrib, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq',
-        Finset.mem_univ, ↓reduceIte]
-    have h2 : (A *ᵥ d) v = A v u - A v v := by
+    have hrow (w : V) : (A *ᵥ d) w = A w u - A w v := by
       simp only [d, mulVec, dotProduct, Pi.sub_apply, Pi.single_apply, mul_sub,
         Finset.sum_sub_distrib, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq',
         Finset.mem_univ, ↓reduceIte]
     have hAd : d ⬝ᵥ (A *ᵥ d) = (A *ᵥ d) u - (A *ᵥ d) v := by
       simp only [d, Pi.sub_apply, dotProduct, Pi.single_apply, sub_mul, Finset.sum_sub_distrib,
         ite_mul, one_mul, zero_mul, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
-    rw [hAd, h1, h2]
+    rw [hAd, hrow u, hrow v]
     have hadj' : ¬G.Adj v u := fun h => hadj h.symm
     have huu : ¬G.Adj u u := G.loopless.irrefl u
     have hvv : ¬G.Adj v v := G.loopless.irrefl v
     simp only [A, adjMatrix_apply, huu, hvv, hadj, hadj', ↓reduceIte, sub_self]
-  rw [add_dotProduct, mulVec_add, dotProduct_add, dotProduct_add, mulVec_smul, smul_dotProduct,
-    smul_dotProduct, dotProduct_smul, dotProduct_smul, hxAd, hdAx, hdAd, smul_zero]
-  simp only [smul_eq_mul]
-  ring
+  rw [Matrix.dotProduct_add_smul_symm G.transpose_adjMatrix x d t, hdAx, hdAd, mul_zero, add_zero]
 
-/-- **Motzkin–Straus upper bound**: on the standard simplex, `x ⬝ᵥ G.adjMatrix K *ᵥ x` is at
-most `1 - 1 / G.cliqueNum` (library generalization over arbitrary linearly ordered fields `K`;
-[MotzkinStraus1965] was not inspected directly). -/
-theorem quadraticForm_adjMatrix_le_of_mem_simplex [Fintype V]
+private theorem quadraticForm_adjMatrix_le_aux [Fintype V]
     [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     (G : SimpleGraph V) [DecidableRel G.Adj]
     {x : V → K} (hx0 : ∀ v, 0 ≤ x v) (hx1 : ∑ v, x v = 1) :
@@ -272,68 +262,95 @@ theorem quadraticForm_adjMatrix_le_of_mem_simplex [Fintype V]
         exact mul_nonneg (mul_nonneg (by norm_num) hxu_pos.le) (sub_nonneg.2 hle)
       linarith
 
-/-- The uniform weight vector on a `k`-clique (`1 ≤ k`) achieves `1 - 1 / k` on the simplex. -/
-theorem exists_mem_simplex_quadraticForm_adjMatrix_eq_of_isNClique [Fintype V]
+/-- **Motzkin–Straus upper bound**: on `Convexity.StdSimplex K V`, `x ⬝ᵥ G.adjMatrix K *ᵥ x`
+is at most `1 - 1 / G.cliqueNum` (library generalization over arbitrary linearly ordered fields `K`;
+[MotzkinStraus1965] was not inspected directly). -/
+theorem quadraticForm_adjMatrix_le_stdSimplex [Fintype V]
+    [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+    (G : SimpleGraph V) [DecidableRel G.Adj] (x : Convexity.StdSimplex K V) :
+    (x.weights : V → K) ⬝ᵥ G.adjMatrix K *ᵥ (x.weights : V → K) ≤ 1 - 1 / (G.cliqueNum : K) :=
+  quadraticForm_adjMatrix_le_aux G x.weights_nonneg x.total_of_fintype
+
+/-- The uniform weight vector on a `k`-clique (`1 ≤ k`) gives a point of
+`Convexity.StdSimplex K V` achieving `1 - 1 / k`. -/
+theorem exists_stdSimplex_quadraticForm_adjMatrix_eq_of_isNClique [Fintype V]
     [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     (G : SimpleGraph V) [DecidableRel G.Adj] {S : Finset V} {k : ℕ} (hk : 1 ≤ k)
     (hS : G.IsNClique k S) :
-    ∃ x : V → K, (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1 ∧
-      x ⬝ᵥ G.adjMatrix K *ᵥ x = 1 - 1 / (k : K) := by
+    ∃ x : Convexity.StdSimplex K V,
+      (x.weights : V → K) ⬝ᵥ G.adjMatrix K *ᵥ (x.weights : V → K) = 1 - 1 / (k : K) := by
   classical
-  let x : V → K := fun v => if v ∈ S then 1 / (k : K) else 0
+  let xVec : V → K := fun v => if v ∈ S then 1 / (k : K) else 0
   have hkpos : (0 : K) < k := by exact_mod_cast hk
   have hk_ne : (k : K) ≠ 0 := hkpos.ne'
-  refine ⟨x, fun v => by dsimp [x]; split_ifs <;> positivity, ?_, ?_⟩
-  · have hite : ∑ v : V, x v = ∑ v ∈ S, (1 / (k : K)) := by
-      dsimp [x]
+  have hx0 : ∀ v, 0 ≤ xVec v := fun v => by dsimp only [xVec]; split_ifs <;> positivity
+  have hx1 : ∑ v : V, xVec v = 1 := by
+    have hite : ∑ v : V, xVec v = ∑ _v ∈ S, (1 / (k : K)) := by
+      dsimp only [xVec]
       rw [Finset.sum_ite_mem, Finset.univ_inter]
     rw [hite, Finset.sum_const, hS.card_eq, nsmul_eq_mul, mul_one_div_cancel hk_ne]
-  · have hxout : ∀ v, v ∉ S → x v = 0 := fun v hv => by
-      dsimp only [x]
-      split_ifs
-      rfl
-    rw [dotProduct_adjMatrix_eq_of_isClique G hS.isClique hxout]
-    have hs1 : ∑ v ∈ S, x v = 1 := by
-      have heq : ∑ v ∈ S, x v = ∑ _v ∈ S, (1 / (k : K)) :=
-        Finset.sum_congr rfl fun v hv => by
-          dsimp only [x]
-          split_ifs
-          rfl
-      rw [heq, Finset.sum_const, hS.card_eq, nsmul_eq_mul, mul_one_div_cancel hk_ne]
-    have hs2 : ∑ v ∈ S, x v ^ 2 = 1 / (k : K) := by
-      have heq : ∑ v ∈ S, x v ^ 2 = ∑ _v ∈ S, (1 / (k : K)) ^ 2 :=
-        Finset.sum_congr rfl fun v hv => by
-          dsimp only [x]
-          split_ifs
-          rfl
-      rw [heq, Finset.sum_const, hS.card_eq, nsmul_eq_mul, sq, ← mul_assoc,
-        mul_one_div_cancel hk_ne, one_mul]
-    rw [hs1, hs2, one_pow]
+  let x : Convexity.StdSimplex K V :=
+    { weights := Finsupp.equivFunOnFinite.symm xVec
+      nonneg := fun v => by
+        simpa only [Finsupp.coe_zero, Pi.zero_apply, Finsupp.coe_equivFunOnFinite_symm] using hx0 v
+      total := by
+        rw [Finsupp.sum_fintype _ _ (fun _ => rfl)]
+        simpa only [Finsupp.coe_equivFunOnFinite_symm] using hx1 }
+  refine ⟨x, ?_⟩
+  rw [show (x.weights : V → K) = xVec from Finsupp.coe_equivFunOnFinite_symm xVec]
+  have hxout : ∀ v, v ∉ S → xVec v = 0 := fun v hv => by
+    dsimp only [xVec]
+    split_ifs
+    rfl
+  rw [dotProduct_adjMatrix_eq_of_isClique G hS.isClique hxout]
+  have hs1 : ∑ v ∈ S, xVec v = 1 := by
+    have heq : ∑ v ∈ S, xVec v = ∑ _v ∈ S, (1 / (k : K)) :=
+      Finset.sum_congr rfl fun v hv => by
+        dsimp only [xVec]
+        split_ifs
+        rfl
+    rw [heq, Finset.sum_const, hS.card_eq, nsmul_eq_mul, mul_one_div_cancel hk_ne]
+  have hs2 : ∑ v ∈ S, xVec v ^ 2 = 1 / (k : K) := by
+    have heq : ∑ v ∈ S, xVec v ^ 2 = ∑ _v ∈ S, (1 / (k : K)) ^ 2 :=
+      Finset.sum_congr rfl fun v hv => by
+        dsimp only [xVec]
+        split_ifs
+        rfl
+    rw [heq, Finset.sum_const, hS.card_eq, nsmul_eq_mul, sq, ← mul_assoc,
+      mul_one_div_cancel hk_ne, one_mul]
+  rw [hs1, hs2, one_pow]
 
 /-- **The Motzkin–Straus theorem** (library generalization to arbitrary linearly ordered fields `K`;
 [MotzkinStraus1965] is cited at paper level without inspecting the published text): on a nonempty
-finite graph, the maximum of `x ⬝ᵥ G.adjMatrix K *ᵥ x` over the standard simplex equals
-`1 - 1 / G.cliqueNum`. -/
+finite graph, the maximum of `x ⬝ᵥ G.adjMatrix K *ᵥ x` over `Convexity.StdSimplex K V` equals
+`1 - 1 / G.cliqueNum`. Note that [MotzkinStraus1965] maximizes
+`∑_{ij ∈ E} x_i x_j = (1 / 2) * (x ⬝ᵥ G.adjMatrix K *ᵥ x)`, giving `(1 / 2) * (1 - 1 / ω(G))`
+(differing by a factor of `2`). -/
 theorem isGreatest_quadraticForm_adjMatrix [Fintype V]
     [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     (G : SimpleGraph V) [Nonempty V] [DecidableRel G.Adj] :
-    IsGreatest ((fun x : V → K => x ⬝ᵥ G.adjMatrix K *ᵥ x) ''
-      {x : V → K | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}) (1 - 1 / (G.cliqueNum : K)) := by
+    IsGreatest
+      (Set.range fun x : Convexity.StdSimplex K V =>
+        (x.weights : V → K) ⬝ᵥ G.adjMatrix K *ᵥ (x.weights : V → K))
+      (1 - 1 / (G.cliqueNum : K)) := by
   refine ⟨?_, ?_⟩
   · obtain ⟨S, hS⟩ := G.exists_isNClique_cliqueNum
     have hpos : 1 ≤ G.cliqueNum := Nat.one_le_iff_ne_zero.2 G.cliqueNum_ne_zero_of_finite
-    obtain ⟨x, hx0, hx1, hxeq⟩ :=
-      exists_mem_simplex_quadraticForm_adjMatrix_eq_of_isNClique (K := K) G hpos hS
-    exact ⟨x, ⟨hx0, hx1⟩, hxeq⟩
-  · rintro _ ⟨x, ⟨hx0, hx1⟩, rfl⟩
-    exact quadraticForm_adjMatrix_le_of_mem_simplex G hx0 hx1
+    obtain ⟨x, hxeq⟩ :=
+      exists_stdSimplex_quadraticForm_adjMatrix_eq_of_isNClique (K := K) G hpos hS
+    exact ⟨x, hxeq⟩
+  · rintro _ ⟨x, rfl⟩
+    exact quadraticForm_adjMatrix_le_stdSimplex G x
 
 /-- **The Motzkin–Straus theorem** over `ℝ` in `sSup` form (attributed to [MotzkinStraus1965];
-the published text was not inspected in this pass). -/
+the published text is uninspected, and [MotzkinStraus1965] includes a factor of `1 / 2` from
+summing over unordered edges). -/
 theorem sSup_quadraticForm_adjMatrix [Fintype V]
     (G : SimpleGraph V) [Nonempty V] [DecidableRel G.Adj] :
-    sSup ((fun x : V → ℝ => x ⬝ᵥ G.adjMatrix ℝ *ᵥ x) ''
-      {x : V → ℝ | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}) = 1 - 1 / (G.cliqueNum : ℝ) :=
+    sSup
+        (Set.range fun x : Convexity.StdSimplex ℝ V =>
+          (x.weights : V → ℝ) ⬝ᵥ G.adjMatrix ℝ *ᵥ (x.weights : V → ℝ)) =
+      1 - 1 / (G.cliqueNum : ℝ) :=
   (isGreatest_quadraticForm_adjMatrix G).csSup_eq
 
 /-! ### Copositive matrix characterization of the clique number -/
@@ -387,35 +404,17 @@ theorem exists_nonneg_dotProduct_copositiveCliqueMatrix_lt_zero_iff [Fintype V]
         x ⬝ᵥ ((G.copositiveCliqueMatrix k).map (Int.cast : ℤ → K) *ᵥ x) < 0) ↔
       k ≤ G.cliqueNum := by
   constructor
-  · rintro ⟨x, hx0, hlt⟩
-    have hsne : ∑ v, x v ≠ 0 := by
-      intro hs
-      have hxzero : ∀ v, x v = 0 := fun v =>
-        le_antisymm (hs ▸ Finset.single_le_sum (fun w _ => hx0 w) (Finset.mem_univ v)) (hx0 v)
-      have hzero : x ⬝ᵥ ((G.copositiveCliqueMatrix k).map (Int.cast : ℤ → K) *ᵥ x) = 0 := by
-        simp only [dotProduct, hxzero, zero_mul, Finset.sum_const_zero]
-      linarith
-    have hspos : 0 < ∑ v, x v := lt_of_le_of_ne (Finset.sum_nonneg fun v _ => hx0 v) hsne.symm
-    let y : V → K := fun v => x v / ∑ w, x w
-    have hy0 : ∀ v, 0 ≤ y v := fun v => div_nonneg (hx0 v) hspos.le
-    have hy1 : ∑ v, y v = 1 := by
-      simp only [y, div_eq_mul_inv, ← Finset.sum_mul, mul_inv_cancel₀ hspos.ne']
-    have hyq : y ⬝ᵥ ((G.copositiveCliqueMatrix k).map (Int.cast : ℤ → K) *ᵥ y) =
-        (∑ v, x v)⁻¹ ^ 2 * (x ⬝ᵥ ((G.copositiveCliqueMatrix k).map (Int.cast : ℤ → K) *ᵥ x)) := by
-      simp only [dotProduct, mulVec, map_apply, y, Finset.mul_sum]
-      refine Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun v _ => ?_
-      ring
-    have hylt : y ⬝ᵥ ((G.copositiveCliqueMatrix k).map (Int.cast : ℤ → K) *ᵥ y) < 0 := by
-      rw [hyq]
-      exact mul_neg_of_pos_of_neg (sq_pos_of_pos (inv_pos.2 hspos)) hlt
-    rw [dotProduct_copositiveCliqueMatrix, hy1, one_pow, mul_one] at hylt
-    have hms := quadraticForm_adjMatrix_le_of_mem_simplex G hy0 hy1
+  · intro h
+    obtain ⟨y, hylt⟩ := (Matrix.exists_nonneg_dotProduct_lt_zero_iff_stdSimplex _).1 h
+    rw [dotProduct_copositiveCliqueMatrix, y.total_of_fintype, one_pow, mul_one] at hylt
+    have hms := quadraticForm_adjMatrix_le_stdSimplex G y
     have hk1 : (0 : K) < (k : K) - 1 := by
       have : (2 : K) ≤ k := by exact_mod_cast hk
       linarith
     have homega_pos : 0 < G.cliqueNum := Nat.pos_of_ne_zero G.cliqueNum_ne_zero_of_finite
     have homegaK : (0 : K) < G.cliqueNum := by exact_mod_cast homega_pos
-    have hstep : ((k : K) - 2) / ((k : K) - 1) < y ⬝ᵥ G.adjMatrix K *ᵥ y := by
+    have hstep : ((k : K) - 2) / ((k : K) - 1) <
+        (y.weights : V → K) ⬝ᵥ G.adjMatrix K *ᵥ (y.weights : V → K) := by
       rw [div_lt_iff₀ hk1]
       linarith
     have hcmp : ((k : K) - 2) / ((k : K) - 1) < 1 - 1 / (G.cliqueNum : K) := hstep.trans_le hms

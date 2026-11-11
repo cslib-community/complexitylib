@@ -5,31 +5,33 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/LinearAlgebra/Matrix/Copositive.lean`)
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 public import Mathlib.Data.Matrix.Basic
 public import Mathlib.Data.Nat.Factorial.Basic
+public import Mathlib.Geometry.Convex.ConvexSpace.Defs
 public import Mathlib.LinearAlgebra.Matrix.Symmetric
 import CslibFrontier.Foundations.LinearAlgebra.Matrix.BasicSolution
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.BigOperators.GroupWithZero.Finset
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Rat.BigOperators
+import Mathlib.Geometry.Convex.ConvexSpace.CompactSpaceStdSimplex
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 import Mathlib.Topology.Algebra.Ring.Real
-import Mathlib.Topology.Order.Compact
+import Mathlib.Topology.Instances.Matrix
 
 /-!
-# Polynomial-Size Nonnegative Integer Witnesses for Non-Copositivity
+# Copositive Matrices and Polynomial-Size Integer Witnesses
 
 A symmetric integer or rational matrix `M` is *copositive* if `x ⬝ᵥ M *ᵥ x ≥ 0` for all
 entrywise nonnegative vectors `x`. By minimizing the quadratic form `x ⬝ᵥ M *ᵥ x` over the
-compact standard simplex, KKT stationarity forces `M *ᵥ x*` to be constant and strictly negative
-on the support of any negative minimizer `x*`. Applying
+compact standard simplex (`Convexity.StdSimplex`), KKT stationarity forces `M *ᵥ x*` to be
+constant and strictly negative on the support of any negative minimizer `x*`. Applying
 `Matrix.exists_int_nonneg_mulVec_eq` to the principal submatrix on that support produces a
 nonnegative integer vector `p` with `p ⬝ᵥ M *ᵥ p < 0` whose entries are singly exponentially
 bounded in the dimension and entry bit-length, hence of polynomial bit-length.
@@ -46,6 +48,14 @@ are original to this library.
 
 ## Main results
 
+- `Matrix.dotProduct_add_smul_symm`: expansion of `x ⬝ᵥ M *ᵥ x` along `x + t • d` for
+  symmetric matrices.
+- `Matrix.dotProduct_submatrix_equiv`, `Matrix.IsCopositive.submatrix_equiv_iff`: quadratic
+  form and copositivity invariance under simultaneous row-and-column equivalence reindexing.
+- `Matrix.exists_nonneg_dotProduct_lt_zero_iff_stdSimplex`: non-copositivity is witnessed on
+  `Convexity.StdSimplex`.
+- `Matrix.dotProduct_scale_of_eq`, `Matrix.intCast_dotProduct_mulVec_nat`,
+  `Matrix.rat_clearDenom_entry`: quadratic form scaling and rational denominator clearing.
 - `Matrix.exists_nat_dotProduct_lt_zero_of_isSymm`: a non-copositive symmetric integer matrix has
   a bounded nonnegative integer certificate `p` with `p ⬝ᵥ M *ᵥ p < 0`.
 - `Matrix.isCopositive_int_real_iff_nat`: copositivity over `ℝ` and `ℕ` coincide for symmetric
@@ -60,8 +70,7 @@ are original to this library.
 
 - [MurtyKabadi1987] K. G. Murty and S. N. Kabadi, *Some NP-complete problems in quadratic and
   nonlinear programming*, Mathematical Programming 39(2), 1987, 117–129 (bibliographic metadata
-  only; the published article text was not inspected in this pass, and no internal theorem numbers
-  are claimed).
+  only; the published article text is uninspected, and no internal theorem numbers are claimed).
 -/
 
 public section
@@ -76,7 +85,8 @@ for every entrywise nonnegative vector `x`. -/
     (M : Matrix V V K) : Prop :=
   ∀ x : V → K, (∀ v, 0 ≤ x v) → 0 ≤ x ⬝ᵥ M *ᵥ x
 
-private theorem dotProduct_add_smul_symm {V K : Type*} [Fintype V] [CommRing K]
+/-- Expansion of the quadratic form of a symmetric matrix along `x + t • d`. -/
+theorem dotProduct_add_smul_symm {V K : Type*} [Fintype V] [CommRing K]
     {M : Matrix V V K} (hSymm : M.IsSymm) (x d : V → K) (t : K) :
     (x + t • d) ⬝ᵥ (M *ᵥ (x + t • d)) =
       x ⬝ᵥ (M *ᵥ x) + 2 * t * (d ⬝ᵥ (M *ᵥ x)) + t ^ 2 * (d ⬝ᵥ (M *ᵥ d)) := by
@@ -86,37 +96,97 @@ private theorem dotProduct_add_smul_symm {V K : Type*} [Fintype V] [CommRing K]
     dotProduct_smul, smul_dotProduct, dotProduct_smul, smul_dotProduct, hxMd]
   ring
 
-private theorem simplex_isCompact (n : ℕ) :
-    IsCompact {x : Fin n → ℝ | (∀ i, 0 ≤ x i) ∧ ∑ i, x i = 1} := by
-  let Δ : Set (Fin n → ℝ) := {x | (∀ i, 0 ≤ x i) ∧ ∑ i, x i = 1}
-  have hsub : Δ ⊆ Set.Icc (0 : Fin n → ℝ) 1 := by
-    intro x hx
-    refine ⟨hx.1, fun i => ?_⟩
-    have hle := Finset.single_le_sum (fun j _ => hx.1 j) (Finset.mem_univ i)
-    rw [Pi.one_apply]
-    linarith [hx.2]
-  have hclosed1 : IsClosed {x : Fin n → ℝ | ∀ i, 0 ≤ x i} := by
-    have : {x : Fin n → ℝ | ∀ i, 0 ≤ x i} =
-        ⋂ i : Fin n, (fun x : Fin n → ℝ => x i) ⁻¹' Set.Ici 0 := by
-      ext x
-      simp only [Set.mem_ofPred_eq, Set.mem_iInter, Set.mem_preimage, Set.mem_Ici]
-    rw [this]
-    exact isClosed_iInter fun i => isClosed_Ici.preimage (continuous_apply i)
-  have hclosed2 : IsClosed {x : Fin n → ℝ | ∑ i : Fin n, x i = 1} :=
-    isClosed_singleton.preimage
-      (continuous_finsetSum Finset.univ fun i _ => continuous_apply i)
-  exact isCompact_Icc.of_isClosed_subset (hclosed1.inter hclosed2) hsub
+/-- Reindexing the quadratic form of a matrix along an equivalence `e : W ≃ V`. -/
+theorem dotProduct_submatrix_equiv {V W K : Type*} [Fintype V] [Fintype W] [CommSemiring K]
+    (M : Matrix V V K) (e : W ≃ V) (x : W → K) :
+    x ⬝ᵥ (M.submatrix e e *ᵥ x) = (x ∘ e.symm) ⬝ᵥ (M *ᵥ (x ∘ e.symm)) := by
+  simp only [dotProduct, mulVec, submatrix_apply, Function.comp_apply]
+  refine Fintype.sum_equiv e _ _ fun i => ?_
+  simp only [Equiv.symm_apply_apply]
+  refine congrArg (x i * ·) ?_
+  exact Fintype.sum_equiv e _ _ fun _ => by simp only [Equiv.symm_apply_apply]
 
-private theorem dotProduct_mulVec_continuous {n : ℕ} (M : Matrix (Fin n) (Fin n) ℝ) :
-    Continuous fun x : Fin n → ℝ => x ⬝ᵥ M *ᵥ x := by
-  have heq : (fun x : Fin n → ℝ => x ⬝ᵥ M *ᵥ x) =
-      fun x => ∑ i : Fin n, x i * ∑ j : Fin n, M i j * x j := by
-    ext x
-    simp only [dotProduct, mulVec]
-  rw [heq]
-  refine continuous_finsetSum Finset.univ fun i _ => (continuous_apply i).mul ?_
-  exact continuous_finsetSum Finset.univ fun j _ =>
-    continuous_const.mul (continuous_apply j)
+/-- Copositivity is invariant under simultaneous row-and-column reindexing by an equivalence. -/
+theorem IsCopositive.submatrix_equiv_iff {V W K : Type*} [Fintype V] [Fintype W]
+    [CommSemiring K] [PartialOrder K] (M : Matrix V V K) (e : W ≃ V) :
+    (M.submatrix e e).IsCopositive ↔ M.IsCopositive := by
+  constructor
+  · intro hcop x hx
+    have h := hcop (x ∘ e) fun w => hx (e w)
+    rwa [dotProduct_submatrix_equiv M e (x ∘ e), Function.comp_assoc,
+      Equiv.self_comp_symm, Function.comp_id] at h
+  · intro hcop x hx
+    rw [dotProduct_submatrix_equiv M e x]
+    exact hcop (x ∘ e.symm) fun v => hx (e.symm v)
+
+/-- Non-copositivity over a linearly ordered field is witnessed on the standard simplex
+`Convexity.StdSimplex K V`. -/
+theorem exists_nonneg_dotProduct_lt_zero_iff_stdSimplex {V K : Type*} [Fintype V]
+    [Field K] [LinearOrder K] [IsStrictOrderedRing K] (M : Matrix V V K) :
+    (∃ x : V → K, (∀ v, 0 ≤ x v) ∧ x ⬝ᵥ (M *ᵥ x) < 0) ↔
+      ∃ x : Convexity.StdSimplex K V,
+        (x.weights : V → K) ⬝ᵥ (M *ᵥ (x.weights : V → K)) < 0 := by
+  constructor
+  · rintro ⟨x, hx0, hlt⟩
+    have hsum_ne : ∑ v, x v ≠ 0 := by
+      intro hsum0
+      have hxzero : ∀ v, x v = 0 := fun v =>
+        (Finset.sum_eq_zero_iff_of_nonneg fun w _ => hx0 w).1 hsum0 v (Finset.mem_univ v)
+      have hq0 : x ⬝ᵥ (M *ᵥ x) = 0 := by
+        simp only [dotProduct, hxzero, zero_mul, Finset.sum_const_zero]
+      linarith
+    have hsum_pos : 0 < ∑ v, x v :=
+      lt_of_le_of_ne (Finset.sum_nonneg fun v _ => hx0 v) hsum_ne.symm
+    let yVec : V → K := (∑ v, x v)⁻¹ • x
+    let y : Convexity.StdSimplex K V :=
+      { weights := Finsupp.equivFunOnFinite.symm yVec
+        nonneg := fun v => by
+          simpa only [Finsupp.coe_zero, Pi.zero_apply, Finsupp.coe_equivFunOnFinite_symm,
+            yVec, Pi.smul_apply, smul_eq_mul] using mul_nonneg (inv_nonneg.2 hsum_pos.le) (hx0 v)
+        total := by
+          rw [Finsupp.sum_fintype _ _ (fun _ => rfl)]
+          simp only [Finsupp.coe_equivFunOnFinite_symm, yVec, Pi.smul_apply, smul_eq_mul,
+            ← Finset.mul_sum]
+          exact inv_mul_cancel₀ hsum_pos.ne' }
+    refine ⟨y, ?_⟩
+    have hy_eq : (y.weights : V → K) = yVec := Finsupp.coe_equivFunOnFinite_symm yVec
+    rw [hy_eq, show yVec ⬝ᵥ (M *ᵥ yVec) = (∑ v, x v)⁻¹ ^ 2 * (x ⬝ᵥ (M *ᵥ x)) by
+      simp only [yVec, mulVec_smul, dotProduct_smul, smul_dotProduct, smul_eq_mul]
+      ring]
+    exact mul_neg_of_pos_of_neg (sq_pos_of_pos (inv_pos.2 hsum_pos)) hlt
+  · rintro ⟨x, hlt⟩
+    exact ⟨(x.weights : V → K), x.weights_nonneg, hlt⟩
+
+/-- Scaling a quadratic form when `c * M₁ i j = M₂ i j` entrywise. -/
+theorem dotProduct_scale_of_eq {V K : Type*} [Fintype V] [CommSemiring K]
+    {c : K} {M₁ M₂ : Matrix V V K} (hM : ∀ i j, c * M₁ i j = M₂ i j) (x : V → K) :
+    c * (x ⬝ᵥ (M₁ *ᵥ x)) = x ⬝ᵥ (M₂ *ᵥ x) := by
+  simp only [dotProduct, mulVec, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
+  calc
+    c * (x i * (M₁ i j * x j)) = x i * ((c * M₁ i j) * x j) := by ring
+    _ = x i * (M₂ i j * x j) := by rw [hM i j]
+
+/-- Casting an integer quadratic form evaluated on a `ℕ`-vector to any ring `K`. -/
+theorem intCast_dotProduct_mulVec_nat {V K : Type*} [Fintype V] [Ring K]
+    (M : Matrix V V ℤ) (p : V → ℕ) :
+    (((fun i => (p i : ℤ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℤ)) : ℤ) : K) =
+      (fun i => (p i : K)) ⬝ᵥ (M.map (Int.cast : ℤ → K) *ᵥ fun i => (p i : K)) := by
+  simp only [dotProduct, mulVec, map_apply, Int.cast_sum, Int.cast_mul, Int.cast_natCast]
+
+/-- Clearing a single rational denominator by multiplying with a multiple `d` of `q.den`. -/
+theorem rat_clearDenom_entry {q : ℚ} {d : ℕ} (hdvd : q.den ∣ d) :
+    (d : ℚ) * q = ((q.num * ((d / q.den : ℕ) : ℤ) : ℤ) : ℚ) := by
+  have hden_ne : (q.den : ℚ) ≠ 0 := Nat.cast_ne_zero.2 q.pos.ne'
+  have hden_mul : ((d / q.den : ℕ) : ℚ) * (q.den : ℚ) = (d : ℚ) := by
+    exact_mod_cast Nat.div_mul_cancel hdvd
+  calc
+    (d : ℚ) * q = ((d / q.den : ℕ) : ℚ) * (q.den : ℚ) * q := by rw [hden_mul]
+    _ = ((d / q.den : ℕ) : ℚ) * ((q.den : ℚ) * (q.num / (q.den : ℚ))) := by
+          rw [Rat.num_div_den]; ring
+    _ = ((d / q.den : ℕ) : ℚ) * (q.num : ℚ) := by rw [mul_div_cancel₀ _ hden_ne]
+    _ = ((q.num * ((d / q.den : ℕ) : ℤ) : ℤ) : ℚ) := by
+          simp only [Int.cast_mul, Int.cast_natCast]; ring
 
 private theorem kkt_stationarity_on_simplex {n : ℕ} {M : Matrix (Fin n) (Fin n) ℝ}
     (hSymm : M.IsSymm) {x : Fin n → ℝ} (hx0 : ∀ i, 0 ≤ x i) (hx1 : ∑ i, x i = 1)
@@ -188,46 +258,40 @@ private theorem exists_nat_dotProduct_lt_zero_of_isSymm_fin {n B : ℕ} {M : Mat
         (fun i => (p i : ℤ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℤ)) < 0 := by
   rw [IsCopositive] at hnc
   push Not at hnc
-  obtain ⟨x₀, hx₀_nonneg, hx₀_neg⟩ := hnc
-  have hx₀_sum_pos : 0 < ∑ i, x₀ i := by
-    by_contra hle
-    have hsum0 : ∑ i, x₀ i = 0 :=
-      le_antisymm (not_lt.1 hle) (Finset.sum_nonneg fun i _ => hx₀_nonneg i)
-    have hx₀_zero : ∀ i, x₀ i = 0 := fun i =>
-      (Finset.sum_eq_zero_iff_of_nonneg fun j _ => hx₀_nonneg j).1 hsum0 i (Finset.mem_univ i)
-    have hq0 : x₀ ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ x₀) = 0 := by
-      simp only [dotProduct, hx₀_zero, zero_mul, Finset.sum_const_zero]
-    linarith
-  let y₀ : Fin n → ℝ := (∑ i, x₀ i)⁻¹ • x₀
-  have hy₀_nonneg : ∀ i, 0 ≤ y₀ i := fun i => by
-    dsimp only [y₀, Pi.smul_apply, smul_eq_mul]
-    exact mul_nonneg (inv_nonneg.2 hx₀_sum_pos.le) (hx₀_nonneg i)
-  have hy₀_sum : ∑ i, y₀ i = 1 := by
-    simp only [y₀, Pi.smul_apply, smul_eq_mul, ← Finset.mul_sum]
-    exact inv_mul_cancel₀ hx₀_sum_pos.ne'
-  have hy₀_neg : y₀ ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ y₀) < 0 := by
-    rw [show y₀ ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ y₀) =
-        (∑ i, x₀ i)⁻¹ ^ 2 * (x₀ ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ x₀)) by
-      simp only [y₀, mulVec_smul, dotProduct_smul, smul_dotProduct, smul_eq_mul]
-      ring]
-    exact mul_neg_of_pos_of_neg (sq_pos_of_pos (inv_pos.2 hx₀_sum_pos)) hx₀_neg
-  let Δ : Set (Fin n → ℝ) := {x | (∀ i, 0 ≤ x i) ∧ ∑ i, x i = 1}
-  have hΔ_compact : IsCompact Δ := simplex_isCompact n
-  have hΔ_nonempty : Δ.Nonempty := ⟨y₀, hy₀_nonneg, hy₀_sum⟩
-  obtain ⟨x, hxΔ, hxmin⟩ := hΔ_compact.exists_isMinOn hΔ_nonempty
-    (dotProduct_mulVec_continuous (M.map Int.cast)).continuousOn
-  have hx0 : ∀ i, 0 ≤ x i := hxΔ.1
-  have hx1 : ∑ i, x i = 1 := hxΔ.2
-  have hxmin_all : ∀ y : Fin n → ℝ, (∀ i, 0 ≤ y i) → ∑ i, y i = 1 →
-      x ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ x) ≤ y ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ y) :=
-    fun y hy0 hy1 => hxmin ⟨hy0, hy1⟩
+  obtain ⟨y₀, hy₀_neg⟩ :=
+    (exists_nonneg_dotProduct_lt_zero_iff_stdSimplex (M.map (Int.cast : ℤ → ℝ))).1 hnc
   set MR : Matrix (Fin n) (Fin n) ℝ := M.map Int.cast
+  let f : Convexity.StdSimplex ℝ (Fin n) → ℝ := fun y =>
+    (y.weights : Fin n → ℝ) ⬝ᵥ (MR *ᵥ (y.weights : Fin n → ℝ))
+  have hweights : Continuous fun y : Convexity.StdSimplex ℝ (Fin n) => (y.weights : Fin n → ℝ) :=
+    continuous_pi fun i => Convexity.StdSimplex.continuous_weights_apply ℝ i
+  have hf : Continuous f := hweights.dotProduct (continuous_const.matrix_mulVec hweights)
+  obtain ⟨xStd, _, hxmin⟩ := isCompact_univ.exists_isMinOn ⟨y₀, Set.mem_univ _⟩ hf.continuousOn
+  let x : Fin n → ℝ := xStd.weights
+  have hx0 : ∀ i, 0 ≤ x i := xStd.weights_nonneg
+  have hx1 : ∑ i, x i = 1 := xStd.total_of_fintype
+  have hxmin_all : ∀ y : Fin n → ℝ, (∀ i, 0 ≤ y i) → ∑ i, y i = 1 →
+      x ⬝ᵥ (MR *ᵥ x) ≤ y ⬝ᵥ (MR *ᵥ y) := by
+    intro y hy0 hy1
+    let yStd : Convexity.StdSimplex ℝ (Fin n) :=
+      { weights := Finsupp.equivFunOnFinite.symm y
+        nonneg := fun i => by
+          simpa only [Finsupp.coe_zero, Pi.zero_apply, Finsupp.coe_equivFunOnFinite_symm] using
+            hy0 i
+        total := by
+          rw [Finsupp.sum_fintype _ _ (fun _ => rfl)]
+          simpa only [Finsupp.coe_equivFunOnFinite_symm] using hy1 }
+    have hy_eq : (yStd.weights : Fin n → ℝ) = y := Finsupp.coe_equivFunOnFinite_symm y
+    have hle : f xStd ≤ f yStd := hxmin (Set.mem_univ yStd)
+    dsimp only [f] at hle
+    rw [hy_eq] at hle
+    exact hle
   have hSymmR : MR.IsSymm := by
     ext i j
     simp only [MR, transpose_apply, map_apply]
     exact congrArg Int.cast (congrFun (congrFun hSymm i) j)
   set lam : ℝ := x ⬝ᵥ (MR *ᵥ x)
-  have hlam_neg : lam < 0 := lt_of_le_of_lt (hxmin_all y₀ hy₀_nonneg hy₀_sum) hy₀_neg
+  have hlam_neg : lam < 0 := lt_of_le_of_lt (hxmin (Set.mem_univ y₀)) hy₀_neg
   let S : Finset (Fin n) := Finset.univ.filter fun i => 0 < x i
   have hS_nonempty : S.Nonempty := by
     by_contra hemp
@@ -364,37 +428,21 @@ theorem exists_nat_dotProduct_lt_zero_of_isSymm {V : Type*} [Fintype V] {B : ℕ
   classical
   obtain ⟨e⟩ := Fintype.truncEquivFin V
   let M_fin : Matrix (Fin (Fintype.card V)) (Fin (Fintype.card V)) ℤ :=
-    Matrix.of fun i j => M (e.symm i) (e.symm j)
+    M.submatrix e.symm e.symm
   have hSymm_fin : M_fin.IsSymm := by
     ext i j
-    simp only [M_fin, transpose_apply, of_apply]
+    simp only [M_fin, transpose_apply, submatrix_apply]
     exact congrFun (congrFun hSymm (e.symm i)) (e.symm j)
   have hB_fin : ∀ i j, |M_fin i j| ≤ (B : ℤ) := fun i j => hB (e.symm i) (e.symm j)
   have hnc_fin : ¬ (M_fin.map (Int.cast : ℤ → ℝ)).IsCopositive := by
-    intro hcop
-    apply hnc
-    intro x hx
-    have hsub := hcop (x ∘ e.symm) fun i => hx (e.symm i)
-    have hdot :
-        (x ∘ e.symm) ⬝ᵥ (M_fin.map (Int.cast : ℤ → ℝ) *ᵥ (x ∘ e.symm)) =
-          x ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ x) := by
-      simp only [dotProduct, mulVec, Function.comp_apply, M_fin, map_apply, of_apply]
-      refine Fintype.sum_equiv e.symm _ _ fun i => ?_
-      refine congrArg (x (e.symm i) * ·) ?_
-      exact Fintype.sum_equiv e.symm _ _ fun _ => rfl
-    rwa [hdot] at hsub
+    have hmap : M_fin.map (Int.cast : ℤ → ℝ) = (M.map (Int.cast : ℤ → ℝ)).submatrix e.symm e.symm :=
+      rfl
+    rwa [hmap, IsCopositive.submatrix_equiv_iff]
   obtain ⟨p_fin, hp_le, hp_neg⟩ :=
     exists_nat_dotProduct_lt_zero_of_isSymm_fin hSymm_fin hB_fin hnc_fin
   refine ⟨fun v => p_fin (e v), fun v => hp_le (e v), ?_⟩
-  have hdotZ :
-      (fun v => (p_fin (e v) : ℤ)) ⬝ᵥ (M *ᵥ fun v => (p_fin (e v) : ℤ)) =
-        (fun i => (p_fin i : ℤ)) ⬝ᵥ (M_fin *ᵥ fun i => (p_fin i : ℤ)) := by
-    simp only [dotProduct, mulVec, M_fin, of_apply]
-    refine (Fintype.sum_equiv e.symm _ _ fun i => ?_).symm
-    simp only [Equiv.apply_symm_apply]
-    refine congrArg ((p_fin i : ℤ) * ·) ?_
-    exact Fintype.sum_equiv e.symm _ _ fun _ => by simp only [Equiv.apply_symm_apply]
-  rwa [hdotZ]
+  have hdotZ := dotProduct_submatrix_equiv M e.symm (fun i => (p_fin i : ℤ))
+  simpa only [Function.comp_def, Equiv.symm_symm] using hdotZ ▸ hp_neg
 
 /-- For a symmetric integer matrix, copositivity over `ℝ` coincides with nonnegativity on all
 nonnegative integer vectors. -/
@@ -405,14 +453,8 @@ theorem isCopositive_int_real_iff_nat {V : Type*} [Fintype V] {M : Matrix V V �
   constructor
   · intro hcop p
     have hreal := hcop (fun i => (p i : ℝ)) fun i => Nat.cast_nonneg (p i)
-    have hcast :
-        (Int.cast ((fun i => (p i : ℤ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℤ))) : ℝ) =
-          (fun i => (p i : ℝ)) ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ fun i => (p i : ℝ)) := by
-      simp only [dotProduct, mulVec, map_apply, Int.cast_sum, Int.cast_mul, Int.cast_natCast]
-    rw [← hcast] at hreal
-    exact not_lt.1 fun hn =>
-      not_le_of_gt (show (Int.cast ((fun i => (p i : ℤ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℤ))) : ℝ) < 0
-        from Int.cast_lt_zero.2 hn) hreal
+    rw [← intCast_dotProduct_mulVec_nat (K := ℝ) M p] at hreal
+    exact not_lt.1 fun hn => not_le_of_gt (Int.cast_lt_zero (R := ℝ).2 hn) hreal
   · intro hnat
     by_contra hnc
     let B : ℕ := Finset.univ.sup fun p : V × V => (M p.1 p.2).natAbs
@@ -443,23 +485,10 @@ private theorem exists_rat_clearDenom {V : Type*} [Finite V] (M : Matrix V V ℚ
   have hd : 0 < d := Finset.prod_pos fun p _ => (M p.1 p.2).pos
   let M_Z : Matrix V V ℤ := Matrix.of fun i j =>
     (M i j).num * ((d / (M i j).den : ℕ) : ℤ)
-  have hMZ : ∀ i j, (d : ℚ) * M i j = (M_Z i j : ℚ) := by
-    intro i j
-    have hdvd : (M i j).den ∣ d := Finset.dvd_prod_of_mem _ (Finset.mem_univ (i, j))
-    have hden_ne : ((M i j).den : ℚ) ≠ 0 := Nat.cast_ne_zero.2 (M i j).pos.ne'
-    have hden_mul : ((d / (M i j).den : ℕ) : ℚ) * ((M i j).den : ℚ) = (d : ℚ) := by
-      exact_mod_cast Nat.div_mul_cancel hdvd
-    calc
-      (d : ℚ) * M i j
-          = ((d / (M i j).den : ℕ) : ℚ) * ((M i j).den : ℚ) * M i j := by rw [hden_mul]
-      _ = ((d / (M i j).den : ℕ) : ℚ) *
-            (((M i j).den : ℚ) * ((M i j).num / ((M i j).den : ℚ))) := by
-        rw [Rat.num_div_den]; ring
-      _ = ((d / (M i j).den : ℕ) : ℚ) * ((M i j).num : ℚ) := by
-        rw [mul_div_cancel₀ _ hden_ne]
-      _ = (M_Z i j : ℚ) := by
-        simp only [M_Z, of_apply, Int.cast_mul, Int.cast_natCast]
-        ring
+  have hMZ : ∀ i j, (d : ℚ) * M i j = (M_Z i j : ℚ) := fun i j => by
+    have hdvd : (M i j).den ∣ d :=
+      Finset.dvd_prod_of_mem (fun p : V × V => (M p.1 p.2).den) (Finset.mem_univ (i, j))
+    simpa only [M_Z, of_apply] using rat_clearDenom_entry hdvd
   let B : ℕ := Finset.univ.sup fun p : V × V => (M_Z p.1 p.2).natAbs
   have hB : ∀ i j, |M_Z i j| ≤ (B : ℤ) := fun i j => by
     rw [← Int.natCast_natAbs (M_Z i j)]
@@ -475,7 +504,6 @@ private theorem exists_nat_dotProduct_lt_zero_of_rat_real {V : Type*} [Fintype V
       (∀ i, p i ≤
           Nat.factorial (Fintype.card V) * (Fintype.card V * (max B 1) ^ 2 + 1) ^ Fintype.card V) ∧
         (fun i => (p i : ℚ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℚ)) < 0 := by
-  have hd_ne : (d : ℚ) ≠ 0 := Nat.cast_ne_zero.2 hd.ne'
   have hSymmZ : M_Z.IsSymm := by
     ext i j
     apply Int.cast_injective (α := ℚ)
@@ -486,29 +514,20 @@ private theorem exists_nat_dotProduct_lt_zero_of_rat_real {V : Type*} [Fintype V
     apply hnc
     intro x hx
     have hrealZ := hcopZ x hx
-    have hscale : (d : ℝ) * (x ⬝ᵥ (M.map (Rat.cast : ℚ → ℝ) *ᵥ x)) =
-        x ⬝ᵥ (M_Z.map (Int.cast : ℤ → ℝ) *ᵥ x) := by
-      simp only [dotProduct, mulVec, map_apply, Finset.mul_sum]
-      refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
-      have hcast := congrArg (Rat.cast : ℚ → ℝ) (hMZ i j)
-      push_cast at hcast
-      calc
-        (d : ℝ) * (x i * ((M i j : ℝ) * x j)) = x i * (((d : ℝ) * (M i j : ℝ)) * x j) := by ring
-        _ = x i * ((M_Z i j : ℝ) * x j) := by rw [hcast]
+    have hscale := dotProduct_scale_of_eq (c := (d : ℝ))
+      (M₁ := M.map (Rat.cast : ℚ → ℝ)) (M₂ := M_Z.map (Int.cast : ℤ → ℝ))
+      (fun i j => by
+        have hcast := congrArg (Rat.cast : ℚ → ℝ) (hMZ i j)
+        simpa only [map_apply, Rat.cast_mul, Rat.cast_natCast, Rat.cast_intCast] using hcast) x
     rw [← hscale] at hrealZ
     exact (mul_nonneg_iff_of_pos_left (Nat.cast_pos.2 hd)).1 hrealZ
   obtain ⟨p, hp_le, hp_negZ⟩ := exists_nat_dotProduct_lt_zero_of_isSymm hSymmZ hB hncZ
   refine ⟨p, hp_le, ?_⟩
-  have hscaleQ : (d : ℚ) * ((fun i => (p i : ℚ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℚ))) =
-      (Int.cast ((fun i => (p i : ℤ)) ⬝ᵥ (M_Z *ᵥ fun i => (p i : ℤ))) : ℚ) := by
-    simp only [dotProduct, mulVec, Finset.mul_sum, Int.cast_sum, Int.cast_mul, Int.cast_natCast]
-    refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
-    have hij := hMZ i j
-    calc
-      (d : ℚ) * ((p i : ℚ) * (M i j * (p j : ℚ))) =
-          (p i : ℚ) * (((d : ℚ) * M i j) * (p j : ℚ)) := by ring
-      _ = (p i : ℚ) * ((M_Z i j : ℚ) * (p j : ℚ)) := by rw [hij]
-  have hnegQ : (Int.cast ((fun i => (p i : ℤ)) ⬝ᵥ (M_Z *ᵥ fun i => (p i : ℤ))) : ℚ) < 0 :=
+  have hscaleQ := dotProduct_scale_of_eq (c := (d : ℚ)) (M₁ := M)
+    (M₂ := M_Z.map (Int.cast : ℤ → ℚ))
+    (fun i j => by simpa only [map_apply] using hMZ i j) (fun i => (p i : ℚ))
+  rw [← intCast_dotProduct_mulVec_nat (K := ℚ) M_Z p] at hscaleQ
+  have hnegQ : (((fun i => (p i : ℤ)) ⬝ᵥ (M_Z *ᵥ fun i => (p i : ℤ)) : ℤ) : ℚ) < 0 :=
     Int.cast_lt_zero.2 hp_negZ
   rw [← hscaleQ] at hnegQ
   exact lt_of_not_ge fun h => not_lt_of_ge (mul_nonneg (Nat.cast_nonneg d) h) hnegQ

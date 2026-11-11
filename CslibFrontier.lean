@@ -2154,7 +2154,6 @@ public import CslibFrontier.Computability.Complexity.Problems.Clique.OfAdj
 public import CslibFrontier.Computability.Complexity.Problems.CliqueCover
 public import CslibFrontier.Computability.Complexity.Problems.Coloring
 public import CslibFrontier.Computability.Complexity.Problems.Copositivity
-public import CslibFrontier.Computability.Complexity.Problems.Copositivity.Witness
 public import CslibFrontier.Computability.Complexity.Problems.CountingSAT
 public import CslibFrontier.Computability.Complexity.Problems.DominatingSet
 public import CslibFrontier.Computability.Complexity.Problems.EUThreeSAT
@@ -5131,6 +5130,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BranchingProgramDet
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CauchyBinet
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.ClosedSubmatrix
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CoinStep
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CutRank
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Derivation
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.EndpointIncidence

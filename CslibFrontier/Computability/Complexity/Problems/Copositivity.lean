@@ -13,7 +13,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Encoding
 public import CslibFrontier.Computability.Complexity.Classes.NP
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.Clique
-public import CslibFrontier.Computability.Complexity.Problems.Copositivity.Witness
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
@@ -30,7 +30,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
-import CslibFrontier.Computability.PolyTime.Int.Compare
 import CslibFrontier.Computability.PolyTime.Int.DotProduct
 import CslibFrontier.Computability.PolyTime.Int.ExactDiv
 import CslibFrontier.Foundations.Data.List.DotProduct
@@ -45,11 +44,12 @@ import Mathlib.Tactic.Ring
 
 Testing whether an encoded symmetric rational matrix `M` is *copositive*—meaning `x ⬝ᵥ M *ᵥ x ≥ 0`
 for all entrywise nonnegative vectors `x`—is `coNP`-complete, and testing non-copositivity is
-`NP`-complete. These hardness/completeness results are attributed to [MurtyKabadi1987] at paper
-level from bibliographic metadata only without inspecting the published text; the row-list
-representation `SymRatMatrix`, binary encoding `encSymRatMatrix`, denominator-cleared verifier
-`NonCopositive.check`, bounded integer witness derivation, and `Clique` reduction are this
-library's formalization.
+`NP`-complete. The completeness statements are credited to [MurtyKabadi1987] (secondary search
+summaries indicate that [MurtyKabadi1987] proves hardness by reducing from subset sum rather than
+`Clique`; the published text was not inspected). This library's `Clique`/Motzkin–Straus
+reduction (`polyTimeReducible_Clique_NonCopositive`), the row-list representation `SymRatMatrix`,
+binary encoding `encSymRatMatrix`, denominator-cleared verifier `NonCopositive.check`, and the
+KKT/Cramer bounded integer witness derivation are original to this formalization.
 
 By `Matrix.exists_nat_dotProduct_lt_zero_of_rat`, a symmetric rational matrix fails to be
 copositive if and only if it admits a polynomially bit-bounded nonnegative integer vector `p` with
@@ -90,12 +90,10 @@ circuits over `encRat`.
 
 - [MotzkinStraus1965] T. S. Motzkin and E. G. Straus, *Maxima for graphs and a new proof of a
   theorem of Turán*, Canadian Journal of Mathematics 17, 1965, 533–540 (bibliographic metadata
-  only; the published text was not inspected in this pass, and no internal theorem numbers are
-  claimed).
+  only; the published text is uninspected, and no internal theorem numbers are claimed).
 - [MurtyKabadi1987] K. G. Murty and S. N. Kabadi, *Some NP-complete problems in quadratic and
   nonlinear programming*, Mathematical Programming 39(2), 1987, 117–129 (bibliographic metadata
-  only; the published text was not inspected in this pass, and no internal theorem numbers are
-  claimed).
+  only; the published text is uninspected, and no internal theorem numbers are claimed).
 -/
 
 public section
@@ -268,20 +266,8 @@ private theorem SymRatMatrix.intMatrix_eq (M : SymRatMatrix) (i j : Fin M.rows.l
 private theorem SymRatMatrix.intMatrix_mul_eq (M : SymRatMatrix)
     (i j : Fin M.rows.length) :
     (M.commonDenomNat : ℚ) * M.toMatrix i j = (M.intMatrix i j : ℚ) := by
-  set q := M.toMatrix i j
-  have hdvd : q.den ∣ M.commonDenomNat := M.den_dvd_commonDenomNat
-  have hden_ne : (q.den : ℚ) ≠ 0 := Nat.cast_ne_zero.2 q.pos.ne'
-  have hden_mul : ((M.commonDenomNat / q.den : ℕ) : ℚ) * (q.den : ℚ) = (M.commonDenomNat : ℚ) := by
-    exact_mod_cast Nat.div_mul_cancel hdvd
   rw [M.intMatrix_eq i j]
-  calc
-    (M.commonDenomNat : ℚ) * q
-        = ((M.commonDenomNat / q.den : ℕ) : ℚ) * (q.den : ℚ) * q := by rw [hden_mul]
-    _ = ((M.commonDenomNat / q.den : ℕ) : ℚ) * ((q.den : ℚ) * (q.num / (q.den : ℚ))) := by
-        rw [Rat.num_div_den]; ring
-    _ = ((M.commonDenomNat / q.den : ℕ) : ℚ) * (q.num : ℚ) := by rw [mul_div_cancel₀ _ hden_ne]
-    _ = ((q.num * ((M.commonDenomNat / q.den : ℕ) : ℤ) : ℤ) : ℚ) := by
-        simp only [Int.cast_mul, Int.cast_natCast]; ring
+  exact Matrix.rat_clearDenom_entry M.den_dvd_commonDenomNat
 
 private theorem SymRatMatrix.dotProduct_check_eq (M : SymRatMatrix) {p : List ℕ}
     (hlen : p.length = M.rows.length) :
@@ -335,14 +321,9 @@ private theorem SymRatMatrix.dotProduct_scale (M : SymRatMatrix) (pFin : Fin M.r
     (M.commonDenomNat : ℚ) *
         ((fun i => (pFin i : ℚ)) ⬝ᵥ (M.toMatrix *ᵥ fun i => (pFin i : ℚ))) =
       (((fun i => (pFin i : ℤ)) ⬝ᵥ (M.intMatrix *ᵥ fun i => (pFin i : ℤ)) : ℤ) : ℚ) := by
-  simp only [dotProduct, Matrix.mulVec, Finset.mul_sum, Int.cast_sum, Int.cast_mul,
-    Int.cast_natCast]
-  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => ?_
-  have hij := M.intMatrix_mul_eq i j
-  calc
-    (M.commonDenomNat : ℚ) * ((pFin i : ℚ) * (M.toMatrix i j * (pFin j : ℚ))) =
-        (pFin i : ℚ) * (((M.commonDenomNat : ℚ) * M.toMatrix i j) * (pFin j : ℚ)) := by ring
-    _ = (pFin i : ℚ) * ((M.intMatrix i j : ℚ) * (pFin j : ℚ)) := by rw [hij]
+  rw [Matrix.dotProduct_scale_of_eq (M₂ := M.intMatrix.map (Int.cast : ℤ → ℚ))
+    (fun i j => by simpa only [Matrix.map_apply] using M.intMatrix_mul_eq i j),
+    Matrix.intCast_dotProduct_mulVec_nat]
 
 private theorem NonCopositive.sound_of_check {M : SymRatMatrix} {p : List ℕ}
     (hc : NonCopositive.check M p = true) : M ∈ NonCopositive := by
@@ -984,38 +965,13 @@ theorem cliqueToSymRatMatrix_mem_iff (gk : Graph × ℕ) :
             cliqueToSymRatMatrix (G, k) ∈ NonCopositive ↔
               ∃ x : Fin G.distinctVertices.length → ℚ, (∀ v, 0 ≤ x v) ∧
                 x ⬝ᵥ ((H.copositiveCliqueMatrix k).map (Int.cast : ℤ → ℚ) *ᵥ x) < 0 := by
-          simp only [mem_NonCopositive_iff, Matrix.IsCopositive]
+          have hsub : (cliqueToSymRatMatrix (G, k)).toMatrix =
+              ((H.copositiveCliqueMatrix k).map (Int.cast : ℤ → ℚ)).submatrix eFin eFin :=
+            Matrix.ext fun i j => hmat_eq i j
+          rw [mem_NonCopositive_iff, hsub, Matrix.IsCopositive.submatrix_equiv_iff,
+            Matrix.IsCopositive]
           push Not
-          constructor
-          · rintro ⟨x, hx0, hxneg⟩
-            refine ⟨x ∘ eFin.symm, fun v => hx0 _, ?_⟩
-            have hdot :
-                (x ∘ eFin.symm) ⬝ᵥ ((H.copositiveCliqueMatrix k).map (Int.cast : ℤ → ℚ) *ᵥ
-                    (x ∘ eFin.symm)) =
-                  x ⬝ᵥ ((cliqueToSymRatMatrix (G, k)).toMatrix *ᵥ x) := by
-              simp only [dotProduct, Matrix.mulVec, Function.comp_apply]
-              rw [← Equiv.sum_comp eFin]
-              refine Finset.sum_congr rfl fun i _ => ?_
-              rw [← Equiv.sum_comp eFin]
-              simp only [Equiv.symm_apply_apply]
-              refine congrArg (x i * ·) (Finset.sum_congr rfl fun j _ => ?_)
-              rw [← hmat_eq i j]
-            rwa [hdot]
-          · rintro ⟨x, hx0, hxneg⟩
-            refine ⟨x ∘ eFin, fun v => hx0 _, ?_⟩
-            have hdot :
-                (x ∘ eFin) ⬝ᵥ ((cliqueToSymRatMatrix (G, k)).toMatrix *ᵥ (x ∘ eFin)) =
-                  x ⬝ᵥ ((H.copositiveCliqueMatrix k).map (Int.cast : ℤ → ℚ) *ᵥ x) := by
-              simp only [dotProduct, Matrix.mulVec, Function.comp_apply]
-              rw [← Equiv.sum_comp eFin.symm]
-              refine Finset.sum_congr rfl fun i _ => ?_
-              rw [← Equiv.sum_comp eFin.symm]
-              simp only [Equiv.apply_symm_apply]
-              refine congrArg (x i * ·) (Finset.sum_congr rfl fun j _ => ?_)
-              have hij := hmat_eq (eFin.symm i) (eFin.symm j)
-              simp only [Equiv.apply_symm_apply] at hij
-              rw [hij]
-            rwa [hdot]
+          rfl
         have hclique_iff : (G, k) ∈ Clique ↔ k ≤ H.cliqueNum := by
           rw [mem_Clique_iff]
           constructor
@@ -1188,17 +1144,24 @@ theorem polyTimeReducible_Clique_NonCopositive :
     PolyTimeReducible encClique encSymRatMatrix Clique NonCopositive :=
   ⟨cliqueToSymRatMatrix, computableInPolyTime_cliqueToSymRatMatrix, cliqueToSymRatMatrix_mem_iff⟩
 
+/-- `NonCopositive` is `NP`-hard (proved here via `Clique` and Motzkin–Straus; [MurtyKabadi1987]
+establishes completeness in the literature, reported via subset sum). -/
 theorem NonCopositive_npHard : NPHard encSymRatMatrix NonCopositive :=
   HardUnder.trans (fun _ _ h₁ h₂ => h₁.trans h₂) Clique_npHard
     polyTimeReducible_Clique_NonCopositive
 
+/-- `NonCopositive` is `NP`-complete (completeness statement credited to [MurtyKabadi1987];
+library proof combines bounded integer witness verification with `Clique`/Motzkin–Straus). -/
 theorem NonCopositive_npComplete : NPComplete encSymRatMatrix NonCopositive :=
   ⟨NonCopositive.mem_NP, NonCopositive_npHard⟩
 
+/-- `Copositive` is `coNP`-hard (proved here via `Clique` and Motzkin–Straus). -/
 theorem Copositive_coNPHard : coNPHard encSymRatMatrix Copositive := by
   rw [coNPHard, Copositive_eq_compl]
   exact HardUnder.compl (fun _ _ h => h.compl) (fun _ _ h => h) NonCopositive_npHard
 
+/-- `Copositive` is `coNP`-complete (completeness statement credited to [MurtyKabadi1987];
+library proof uses `NonCopositive` membership and the `Clique`/Motzkin–Straus reduction). -/
 theorem Copositive_coNPComplete : coNPComplete encSymRatMatrix Copositive :=
   ⟨Copositive.mem_coNP, Copositive_coNPHard⟩
 

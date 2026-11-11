@@ -9,8 +9,8 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Complexity.Problems.Copositivity
-public import CslibFrontier.Computability.Complexity.Problems.Copositivity.Witness
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.DotProduct
 import Mathlib.Combinatorics.SimpleGraph.Clique
@@ -66,10 +66,11 @@ theorem cliqueNum_top_fin3 : (⊤ : SimpleGraph (Fin 3)).cliqueNum = 3 := by
     simpa only [Finset.coe_univ, Finset.card_univ, Fintype.card_fin] using
       hclique.card_le_cliqueNum
 
--- On `K_3`, `sSup_{x ∈ Δ} xᵀ A_{K_3} x = 1 - 1 / 3 = 2 / 3`.
+-- On `K_3`, `sSup_{x : StdSimplex ℝ (Fin 3)} xᵀ A_{K_3} x = 1 - 1 / 3 = 2 / 3`.
 example :
-    sSup ((fun x : Fin 3 → ℝ => x ⬝ᵥ (⊤ : SimpleGraph (Fin 3)).adjMatrix ℝ *ᵥ x) ''
-      {x : Fin 3 → ℝ | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}) = 2 / 3 := by
+    sSup (Set.range fun x : Convexity.StdSimplex ℝ (Fin 3) =>
+      (x.weights : Fin 3 → ℝ) ⬝ᵥ (⊤ : SimpleGraph (Fin 3)).adjMatrix ℝ *ᵥ
+        (x.weights : Fin 3 → ℝ)) = 2 / 3 := by
   rw [SimpleGraph.sSup_quadraticForm_adjMatrix (⊤ : SimpleGraph (Fin 3)), cliqueNum_top_fin3]
   norm_num
 
@@ -148,10 +149,10 @@ private theorem cliqueNum_c4 : c4Graph.cliqueNum = 2 := by
     simpa only [Finset.card_pair (by decide : (0 : Fin 4) ≠ 1)] using
       hclique.card_le_cliqueNum
 
--- On `C_4`, `max_{x ∈ Δ} xᵀ A_{C_4} x = 1 - 1 / 2 = 1 / 2`.
+-- On `C_4`, `max_{x : StdSimplex ℚ (Fin 4)} xᵀ A_{C_4} x = 1 - 1 / 2 = 1 / 2`.
 example :
-    IsGreatest ((fun x : Fin 4 → ℚ => x ⬝ᵥ c4Graph.adjMatrix ℚ *ᵥ x) ''
-      {x : Fin 4 → ℚ | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}) (1 / 2) := by
+    IsGreatest (Set.range fun x : Convexity.StdSimplex ℚ (Fin 4) =>
+      (x.weights : Fin 4 → ℚ) ⬝ᵥ c4Graph.adjMatrix ℚ *ᵥ (x.weights : Fin 4 → ℚ)) (1 / 2) := by
   have h := SimpleGraph.isGreatest_quadraticForm_adjMatrix (K := ℚ) c4Graph
   rw [cliqueNum_c4] at h
   norm_num at h
@@ -169,10 +170,12 @@ theorem cliqueNum_bot_fin3 : (⊥ : SimpleGraph (Fin 3)).cliqueNum = 1 := by
       simp only [Finset.coe_singleton, SimpleGraph.isClique_singleton]
     simpa only [Finset.card_singleton] using hclique.card_le_cliqueNum
 
--- On the edgeless graph `⊥` on `Fin 3`, `sSup_{x ∈ Δ} xᵀ A_⊥ x = 1 - 1 / 1 = 0`.
+-- On the edgeless graph `⊥` on `Fin 3`,
+-- `sSup_{x : StdSimplex ℝ (Fin 3)} xᵀ A_⊥ x = 1 - 1 / 1 = 0`.
 example :
-    sSup ((fun x : Fin 3 → ℝ => x ⬝ᵥ (⊥ : SimpleGraph (Fin 3)).adjMatrix ℝ *ᵥ x) ''
-      {x : Fin 3 → ℝ | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}) = 0 := by
+    sSup (Set.range fun x : Convexity.StdSimplex ℝ (Fin 3) =>
+      (x.weights : Fin 3 → ℝ) ⬝ᵥ (⊥ : SimpleGraph (Fin 3)).adjMatrix ℝ *ᵥ
+        (x.weights : Fin 3 → ℝ)) = 0 := by
   rw [SimpleGraph.sSup_quadraticForm_adjMatrix (⊥ : SimpleGraph (Fin 3)), cliqueNum_bot_fin3]
   norm_num
 

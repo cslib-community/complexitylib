@@ -1020,7 +1020,7 @@ Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász
 <a id="motzkinstraus1965"></a>
 ## motzkinstraus1965
 
-T. S. Motzkin and E. G. Straus. "Maxima for Graphs and a New Proof of a Theorem of Turán." *Canadian Journal of Mathematics* 17, 533–540, 1965. https://doi.org/10.4153/CJM-1965-053-6 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text was not inspected in this pass. The manual attributes to this paper the characterization `max_{x ∈ Δ} xᵀ A_G x = 1 - 1 / ω(G)` over the standard simplex; no internal theorem or section numbers are cited.
+T. S. Motzkin and E. G. Straus. "Maxima for Graphs and a New Proof of a Theorem of Turán." *Canadian Journal of Mathematics* 17, 533–540, 1965. https://doi.org/10.4153/CJM-1965-053-6 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text is uninspected. The manual attributes to this paper the characterization `max_{x ∈ Δ} xᵀ A_G x = 1 - 1 / ω(G)` over the standard simplex (noting the factor-of-2 convention `∑_{ij ∈ E} x_i x_j = (1 / 2) xᵀ A_G x`); no internal theorem or section numbers are cited.
 
 <a id="mullersatterthwaite77"></a>
 ## mullersatterthwaite77
@@ -1030,7 +1030,7 @@ Eitan Muller and Mark A. Satterthwaite. "The Equivalence of Strong Positive Asso
 <a id="murtykabadi1987"></a>
 ## murtykabadi1987
 
-Katta G. Murty and Santosh N. Kabadi. "Some NP-Complete Problems in Quadratic and Nonlinear Programming." *Mathematical Programming* 39(2), 117–129, 1987. https://doi.org/10.1007/BF02592948 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text was not inspected in this pass. The manual cites it for the `coNP`-completeness of testing matrix copositivity (and `NP`-completeness of non-copositivity); no internal theorem or section numbers are cited.
+Katta G. Murty and Santosh N. Kabadi. "Some NP-Complete Problems in Quadratic and Nonlinear Programming." *Mathematical Programming* 39(2), 117–129, 1987. https://doi.org/10.1007/BF02592948 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text is uninspected. The manual cites it for the `coNP`-completeness of testing matrix copositivity (and `NP`-completeness of non-copositivity), noting that secondary summaries describe [Murty–Kabadi] as reducing from subset sum whereas this library proves completeness via `Clique` and Motzkin–Straus; no internal theorem or section numbers are cited.
 
 <a id="nagamochiibaraki92"></a>
 ## nagamochiibaraki92
