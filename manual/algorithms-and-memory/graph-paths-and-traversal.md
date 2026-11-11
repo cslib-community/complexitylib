@@ -197,7 +197,7 @@ The [branching and poly-time examples](../../CslibFrontierTests/ArborescenceBran
 
 Limitations:
 
-- The pure functional `edmonds` evaluates nested closures, while `edmondsTableM`, `edmondsOutTableM`, `optimumBranchingM`, and the `P` certificates use dense `O(n²)` tables per contraction round (`O(n³)` steps). Sparse `O(n m)` implementations, Tarjan's `O(m log n)` implementation, and the Gabow–Galil–Spencer–Tarjan `O(m + n log n)` implementation are not formalized.
+- The pure functional `edmonds` evaluates nested closures. The `TimeM` solvers `edmondsTableM`, `edmondsOutTableM`, and `optimumBranchingM` use dense `O(n²)` tables per contraction round to achieve their `O(n³)` tick bounds, while the `P` certificates operate on native lists to achieve polynomial-time limits without tight cubic step counts. Sparse `O(n m)` implementations, Tarjan's `O(m log n)` implementation, and the Gabow–Galil–Spencer–Tarjan `O(m + n log n)` implementation are not formalized.
 - Edmonds' Theorem 2 (the branching polytope in Section 5 of [Edmonds][edmonds67b]) is not formalized.
 
 [#3526](https://github.com/cslib-community/cslib-frontier/issues/3526) tracks the remaining work.

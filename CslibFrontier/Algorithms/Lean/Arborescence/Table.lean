@@ -692,7 +692,7 @@ variable {β : Type*} [LinearOrder β] [AddCommMonoid β]
     if sel.ret.1 then
       let cyc := findCycleM r sel.ret.2
       match cyc.ret with
-      | none => ⟨some sel.ret.2, sel.time + cyc.time⟩
+      | none => { ret := some sel.ret.2, time := sel.time + cyc.time }
       | some x0 =>
         let inCycle := cycleMaskM sel.ret.2 x0
         let other := otherCycleCostM c sel.ret.2 inCycle.ret
@@ -703,14 +703,15 @@ variable {β : Type*} [LinearOrder β] [AddCommMonoid β]
         let sub := edmondsTableAuxM r fuel a'.ret c'.ret
         match sub.ret with
         | none =>
-          ⟨none, sel.time + cyc.time + inCycle.time + other.time + bEntry.time + bExit.time +
-            a'.time + c'.time + sub.time⟩
+          { ret := none,
+            time := sel.time + cyc.time + inCycle.time + other.time + bEntry.time + bExit.time +
+              a'.time + c'.time + sub.time }
         | some q =>
           let exp := expandParentTableM sel.ret.2 inCycle.ret bEntry.ret bExit.ret x0 q
-          ⟨some exp.ret,
-            sel.time + cyc.time + inCycle.time + other.time + bEntry.time + bExit.time +
-              a'.time + c'.time + sub.time + exp.time⟩
-    else ⟨none, sel.time⟩
+          { ret := some exp.ret,
+            time := sel.time + cyc.time + inCycle.time + other.time + bEntry.time + bExit.time +
+              a'.time + c'.time + sub.time + exp.time }
+    else { ret := none, time := sel.time }
 
 /-! ### Equivalence with `edmondsAux` -/
 
@@ -775,7 +776,7 @@ private theorem argmin_congr_mem {α δ : Type*} [LinearOrder δ] (all l : List 
         · exact hz ▸ hacc y rfl
   exact hinv l none (fun _ h => by simp at h) hl
 
-private theorem isSome_argmin_filter {α δ : Type*} [LinearOrder δ] (l : List α) (p : α → Bool)
+theorem isSome_argmin_filter {α δ : Type*} [LinearOrder δ] (l : List α) (p : α → Bool)
     (f : α → δ) : ((l.filter p).argmin f).isSome = l.any p := by
   by_cases h : ∃ x ∈ l, p x = true
   · obtain ⟨x, hx1, hx2⟩ := h
@@ -1539,7 +1540,7 @@ rooted at `r`, transporting `G` and `c` onto flat `Fin (FinEnum.card V)` tables 
   let a := initAdjTableM (FinEnum.card V) fun u w => decide (G.Adj (e.symm u) (e.symm w))
   let ct := initCostTableM (FinEnum.card V) fun u w => c (e.symm u) (e.symm w)
   let res := edmondsTableAuxM (e r) (FinEnum.card V) a.ret ct.ret
-  ⟨res.ret.map fun p v => e.symm p[(e v).1], a.time + ct.time + res.time⟩
+  { ret := res.ret.map fun p v => e.symm p[(e v).1], time := a.time + ct.time + res.time }
 
 /-- **Equivalence with `ChuLiuEdmonds.edmonds`:** `edmondsTableM` returns the exact same parent
 map as `edmonds`. -/
@@ -1602,7 +1603,7 @@ directed away from `r`). -/
   let a := initAdjTableM (FinEnum.card V) fun u w => decide (G.Adj (e.symm w) (e.symm u))
   let ct := initCostTableM (FinEnum.card V) fun u w => c (e.symm w) (e.symm u)
   let res := edmondsTableAuxM (e r) (FinEnum.card V) a.ret ct.ret
-  ⟨res.ret.map fun p v => e.symm p[(e v).1], a.time + ct.time + res.time⟩
+  { ret := res.ret.map fun p v => e.symm p[(e v).1], time := a.time + ct.time + res.time }
 
 /-- `edmondsOutTableM` computes the exact same parent map as `edmondsOut`. -/
 theorem edmondsOutTableM_ret_eq_edmondsOut {V : Type*} [FinEnum V] (G : Digraph V)

@@ -2170,23 +2170,6 @@ private theorem findCycleList_eq {n : ℕ} [FinEnum (Fin n)]
   apply Bool.eq_iff_iff.mpr
   simp only [Bool.and_eq_true, bne_iff_ne, List.any_eq_true, List.mem_range, beq_iff_eq, hcard]
 
-private theorem isSome_argmin_filter_eq_any {α β : Type*} [LinearOrder β] (l : List α)
-    (p q : α → Bool) (hpq : ∀ x, p x = q x) (f : α → β) :
-    (List.argmin f (l.filter p)).isSome = l.any q := by
-  rw [List.filter_congr fun x _ => hpq x]
-  by_cases hex : ∃ x ∈ l, q x = true
-  · obtain ⟨x, hx, hqx⟩ := hex
-    obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := f)
-      (List.ne_nil_of_mem (List.mem_filter.mpr ⟨hx, hqx⟩))
-    rw [hm, Option.isSome_some]
-    symm
-    exact List.any_eq_true.mpr ⟨x, hx, hqx⟩
-  · have hnil : l.filter q = [] := List.filter_eq_nil_iff.mpr fun x hx hqx => hex ⟨x, hx, hqx⟩
-    rw [hnil, List.argmin_nil, Option.isSome_none]
-    symm
-    exact Bool.eq_false_iff.mpr fun ha => hex (List.any_eq_true.mp ha)
-
-private theorem list_getD_map_range {α : Type*} (f : ℕ → α) (n i : ℕ) (d : α) (hi : i < n) :
     ((List.range n).map f).getD i d = f i := by
   rw [List.getD_eq_getElem _ _ (by simp [hi]), List.getElem_map, List.getElem_range]
 
@@ -2330,8 +2313,10 @@ private theorem runListAux_eq_edmondsAux {n : ℕ} [FinEnum (Fin n)]
           rw [h]
           unfold bestEntry
           rw [htl]
-          exact isSome_argmin_filter_eq_any (List.finRange n) _ _
-            (fun y => congrArg (· && tableAdj n a u y) (decide_congr_inst _ _)) _
+          rw [isSome_argmin_filter]
+          apply congrArg
+          ext y
+          exact congrArg (· && tableAdj n a u y) (decide_congr_inst _ _)
         have hbx (w : Fin n) :
             bExit.getD w.1 none =
               ((bestExit (tableAdj n a) (tableCost c) fV C w)).map Fin.val := by
@@ -2369,8 +2354,10 @@ private theorem runListAux_eq_edmondsAux {n : ℕ} [FinEnum (Fin n)]
           rw [h]
           unfold bestExit
           rw [htl]
-          exact isSome_argmin_filter_eq_any (List.finRange n) _ _
-            (fun x => congrArg (· && tableAdj n a x w) (decide_congr_inst _ _)) _
+          rw [isSome_argmin_filter]
+          apply congrArg
+          ext x
+          exact congrArg (· && tableAdj n a x w) (decide_congr_inst _ _)
         have ha'_len : a'.length = n := by simp [a', contractAdjList]
         have ha'_eq : tableAdj n a' = contractAdj (tableAdj n a) C x0 r := by
           funext u w
