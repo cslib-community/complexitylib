@@ -83,6 +83,7 @@ import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
+import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
@@ -728,6 +729,29 @@ register_result "partial-mcsp" where
     N = 2^m, with explicit unary or binary size-threshold encodings and De Morgan all-gate or \
     binary-gate cost. Conditional: the library also refutes ETH (subexponential-sat), so the \
     premise is false; the implications remain valid."
+
+register_result "partial-mcsp-rp-hard" where
+  title := "Hirahara: Partial MCSP is NP-hard under randomized reductions"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Hirahara2022, theorem := "Theorem I.2",
+      locator := "p. 971, \"In particular\"" }
+  ]
+  theorems := [
+    Cslib.PartialMCSP.rpHard,
+    Cslib.PartialMCSP.rpHard_encBinary,
+    Cslib.PartialMCSP.rpReducible_GapCMMSA_PartialMCSP,
+    Cslib.PartialMCSP.NP_subset_BPP_of_mem_BPP,
+    Cslib.PartialMCSP.NP_subset_coRP_of_mem_coRP
+  ]
+  scope := "Every NP language reduces to PartialMCSP (the partial truth table, then the size \
+    threshold in unary, or in binary for rpHard_encBinary) by a polynomial-time randomized \
+    many-one reduction with one-sided error: yes maps to yes always, no to no with probability \
+    at least 2/3. Library route: from the library's GapCMMSA Δ g 1 (NP-hard via label cover) by \
+    the library's own seeded construction and analysis; the source fixes the statement, not the \
+    proof. The inapproximability and average-case forms of Theorem I.2 are not formalized. \
+    The BPP and coRP inclusions are conditional on PartialMCSP being in BPP or coRP; they follow \
+    from the reduction and are not stated separately in the source."
 
 register_result "multi-mcsp-np-hard" where
   title := "Ilango–Loff–Oliveira: Multi-output MCSP is NP-hard under randomized reductions"
