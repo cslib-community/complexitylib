@@ -12,6 +12,7 @@ import Cslib.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Computability.Circuit.Boolean.Lookup
 import CslibFrontier.Computability.Circuit.Boolean.MassProduction.ConstantCopies
 import CslibFrontier.Foundations.Data.BitString.Binary
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.Nat.AlignedPacking
 import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Tactic.GCongr
@@ -243,10 +244,8 @@ private theorem combine_append_eq {S : Finset ℕ} {f : VarFunctions I lam} {τ 
       0 = b := by
   have hj := formulaIndex_lt_of_entry_eq_some hx
   obtain ⟨htj, hvars⟩ := hτ _ hj
-  have hφΔ : (I.formulas.getD (formulaIndex x) []).length ≤ Δ := by
-    have hmem : I.formulas.getD (formulaIndex x) [] ∈ I.formulas := by
-      simp [List.getD_eq_getElem?_getD, hj, List.getElem_mem]
-    exact hΔ.length_le hmem
+  have hφΔ : (I.formulas.getD (formulaIndex x) []).length ≤ Δ :=
+    hΔ.length_le (List.getD_mem [] hj)
   have htΔ : τ (formulaIndex x) < Δ := lt_of_lt_of_le htj hφΔ
   rw [← termParity_eq_of_entry_eq_some hx ⟨_, htΔ⟩ htj]
   simp only [combine, combineCore, Fin.append_left, Fin.append_right, termParity, slotBit,
