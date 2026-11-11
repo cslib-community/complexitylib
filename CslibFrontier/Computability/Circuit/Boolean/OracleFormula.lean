@@ -65,29 +65,6 @@ namespace Cslib.Circuits.Boolean
 /-- Formulas over the De Morgan basis with oracle gates. -/
 abbrev OracleFormula (n : ℕ) : Type := Formula oracleSignature n
 
-/-- One for an oracle gate and zero for a De Morgan operation: the weight whose cost counts oracle
-gates and whose weighted depth counts oracle gates along a path. -/
-def OracleOp.queryWeight : OracleOp → ℕ
-  | .base _ => 0
-  | .query _ => 1
-
-/-- The fan-in of an oracle gate, and zero for a De Morgan operation. -/
-def OracleOp.queryArity : OracleOp → ℕ
-  | .base _ => 0
-  | .query q => q
-
-@[simp] theorem OracleOp.queryWeight_base (op : Op) : (OracleOp.base op).queryWeight = 0 := by
-  simp only [queryWeight]
-
-@[simp] theorem OracleOp.queryWeight_query (q : ℕ) : (OracleOp.query q).queryWeight = 1 := by
-  simp only [queryWeight]
-
-@[simp] theorem OracleOp.queryArity_base (op : Op) : (OracleOp.base op).queryArity = 0 := by
-  simp only [queryArity]
-
-@[simp] theorem OracleOp.queryArity_query (q : ℕ) : (OracleOp.query q).queryArity = q := by
-  simp only [queryArity]
-
 namespace OracleFormula
 
 variable {n : ℕ}
