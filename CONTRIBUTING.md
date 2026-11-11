@@ -354,9 +354,9 @@ should meet it, with checked Lean examples whose names link to the API documenta
 When a chapter needs proof plumbing or a missing lemma, improve the library rather than
 documenting around it.
 
-The [README](README.md#build-and-use) explains how to generate API documentation using
-[doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide with
-[Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
+The [build instructions](manual/BUILD.md#build-the-api-reference) explain how to generate API
+documentation using [doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide
+with [Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
 the library's toolchain and dependency checkouts, and `docbuild` its bibliography. After changing
 library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update cslib-frontier`
 and the same with `-d guide`. When changing the Lean toolchain, also update the doc-gen4 tag in

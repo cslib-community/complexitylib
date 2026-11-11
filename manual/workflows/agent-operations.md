@@ -5,7 +5,7 @@ human or agent. It covers task ownership, isolated work, validation evidence and
 The human directing agents should start with the separate
 [Agent Operator's Manual](../AGENT_OPERATORS.md) for assignment and intervention procedures.
 A short Lean proof can certify an unintended statement; a merged milestone can leave the
-original objective unresolved. The [development study](../development-history/index.md)
+original objective unresolved. The [development study](../history/development.md)
 supplies historical evidence separately. [cslib-frontier][complexitylib]
 
 ## Specify a bounded task and a visible endpoint
@@ -41,7 +41,7 @@ Inspect existing definitions before introducing abstractions. Require the exact 
 
 Assign review by the unanswered question. One non-authoring reviewer may cover correctness and API quality; add another for specific uncovered expertise. Give reviewers the revision, intended endpoint and validation evidence, and require inspection of definitions. Restating the author's summary is not independent source review.
 
-The [semantic-withdrawal cases](../development-history/case-studies.md) explain why hypotheses, adversary power and realizability need attention after successful Lean checking. They are historical diagnoses, not asserted defects in the reviewed snapshot. The circuit-synthesis case illustrates a concrete API review question: does simplifying construction preserve wire sharing and charge the actual gates?
+The [semantic-withdrawal cases](../history/case-studies.md) explain why hypotheses, adversary power and realizability need attention after successful Lean checking. They are historical diagnoses, not asserted defects in the reviewed snapshot. The circuit-synthesis case illustrates a concrete API review question: does simplifying construction preserve wire sharing and charge the actual gates?
 
 ## Queue approved work and keep its approval
 
@@ -64,9 +64,9 @@ The issue owns scope and remaining work; the PR owns the final change, validatio
 
 ## Interpret timing and transcript records
 
-Commit times, provider completion durations, conversation spans, CI runtime and PR elapsed time measure different things. Concurrent sessions overlap; summed duration is not elapsed wall-clock time or human effort. The [timing chapter](../development-history/timings.md) retains units and denominators. Its selected runs and cases do not estimate an automation success rate or causal speedup.
+Commit times, provider completion durations, conversation spans, CI runtime and PR elapsed time measure different things. Concurrent sessions overlap; summed duration is not elapsed wall-clock time or human effort. The [timing chapter](../history/timings.md) retains units and denominators. Its selected runs and cases do not estimate an automation success rate or causal speedup.
 
-For new records, retain the initial objective, task/session identities, parent-child links, source revisions, reviews, failed attempts and dispositions. Preserve emitted timestamps and define their event semantics before deriving durations. Retain appropriate excerpts and provenance. The [extraction methods](../development-history/methods.md) describe deduplication; [study design](../development-history/study-design.md) identifies evidence needed for comparisons. Desktop conversations remain absent, so this edition's historical corpus is explicitly incomplete.
+For new records, retain the initial objective, task/session identities, parent-child links, source revisions, reviews, failed attempts and dispositions. Preserve emitted timestamps and define their event semantics before deriving durations. Retain appropriate excerpts and provenance. The [extraction methods](../history/methods.md) describe deduplication; [study design](../history/study-design.md) identifies evidence needed for comparisons. Desktop conversations remain absent, so this edition's historical corpus is explicitly incomplete.
 
 [complexitylib]: ../sources.md#complexitylib
 
