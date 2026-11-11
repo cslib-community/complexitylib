@@ -2102,6 +2102,7 @@ register_result "tsp-polytope-extension-complexity" where
   ]
   theorems := [
     extensionComplexity_corrPolytope_le_tspPolytope_splitV,
+    extensionComplexity_corrPolytope_le_tspHardGraph_face,
     three_pow_le_two_pow_mul_extensionComplexity_tspPolytope,
     HasExtendedFormulation.three_div_two_pow_le_of_tspPolytope
   ]

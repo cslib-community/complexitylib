@@ -329,7 +329,22 @@ example : (3 : ℕ∞) ≤ extensionComplexity (tspPolytope ℚ (Fin 276)) := by
     decide
   simpa only [hc, Nat.cast_ofNat] using h
 
-example (u : Fin 69) : ¬ (tspHardGraph 69).Adj u u :=
-  (tspHardGraph 69).loopless.irrefl u
+example :
+    let _ : DecidableRel (tspHardGraph 276).Adj := Classical.decRel _
+    let c : ↥(⊤ : SimpleGraph (Fin 276)).edgeSet → ℚ :=
+      fun e => if e.1 ∈ (tspHardGraph 276).edgeSet then 0 else -1
+    (3 : ℕ∞) ≤ extensionComplexity (tspPolytope ℚ (Fin 276) ∩ {x | c ⬝ᵥ x = 0}) := by
+  classical
+  intro c
+  have : Nonempty (Fin (Nat.sqrt (276 / 69))) := ⟨⟨0, Nat.sqrt_pos.2 (by decide)⟩⟩
+  have h1 : (3 : ℕ∞) ≤ extensionComplexity (corrPolytope ℚ (Fin (Nat.sqrt (276 / 69)))) := by
+    have hc : (3 ^ Nat.sqrt (276 / 69) + 2 ^ Nat.sqrt (276 / 69) - 1) /
+        2 ^ Nat.sqrt (276 / 69) = 3 := by
+      rw [sqrt_eq_of_sq_le (n := 276 / 69) (s := 2) (by decide) (by decide)]
+      decide
+    simpa only [Fintype.card_fin, hc, Nat.cast_ofNat] using
+      ceil_three_div_two_pow_le_extensionComplexity_corrPolytope
+        (K := ℚ) (α := Fin (Nat.sqrt (276 / 69)))
+  exact h1.trans (extensionComplexity_corrPolytope_le_tspHardGraph_face (K := ℚ) 276 (by decide))
 
 end Cslib.Foundations.Analysis.Convex.ExtensionComplexityLowerBoundsTests

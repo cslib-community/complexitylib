@@ -5,13 +5,14 @@ Authors: Erik Demaine, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Analysis/Convex/ExtendedFormulation/Reduction.lean`)
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation
 public import Mathlib.Data.Matrix.Block
 public import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.Analysis.Convex.Combination
+import Mathlib.LinearAlgebra.Matrix.ToLin
 import Mathlib.Tactic.Abel
 import Mathlib.Tactic.Positivity
 
@@ -52,11 +53,6 @@ section Inter
 variable {K : Type*} [Semiring K] [PartialOrder K]
 variable {ι σ κ τ ρ : Type*} [Fintype ι] [Fintype κ] [Finite τ]
 
-private theorem sum_elim_eq_iff {α β γ : Type*} {a c : α → γ} {b d : β → γ} :
-    Sum.elim a b = Sum.elim c d ↔ a = c ∧ b = d :=
-  ⟨fun h => ⟨funext fun i => congrFun h (Sum.inl i), funext fun j => congrFun h (Sum.inr j)⟩,
-    fun ⟨h1, h2⟩ => h1 ▸ h2 ▸ rfl⟩
-
 omit [Finite τ] in
 /-- Intersecting a set `Q` with linear equations `C *ᵥ x = d` preserves the inequality index type
 `σ` of any extended formulation. -/
@@ -75,7 +71,7 @@ theorem IsExtendedFormulation.inter_mulVec_eq {Q : Set (ι → K)}
         Sum.elim (E' *ᵥ x + F' *ᵥ y) (C *ᵥ x) := by
       ext (i | j) <;> simp only [fromRows_mulVec, zero_mulVec, Pi.add_apply, Pi.zero_apply,
         add_zero, Sum.elim_inl, Sum.elim_inr]
-    rw [hsum, sum_elim_eq_iff]
+    rw [hsum, Sum.elim_eq_iff]
   simp_rw [heq]
   exact ⟨fun ⟨⟨y, hy, hy'⟩, hCx⟩ => ⟨y, hy, hy', hCx⟩,
     fun ⟨y, hy, hy', hCx⟩ => ⟨⟨y, hy, hy'⟩, hCx⟩⟩
@@ -134,14 +130,14 @@ theorem IsExtendedFormulation.affineImage [DecidableEq ι] {Q : Set (ν → K)}
     obtain ⟨y, hy, hy'⟩ := (hEF z).1 hz
     refine ⟨Sum.elim z y, ?_, ?_⟩
     · rwa [hblk]
-    · rw [heq_blk, hy', sum_elim_eq_iff]
+    · rw [heq_blk, hy', Sum.elim_eq_iff]
       refine ⟨?_, rfl⟩
       ext i
       simp only [Pi.add_apply, Pi.neg_apply]
       abel
   · rintro ⟨w, hw, hw'⟩
     rw [← Sum.elim_comp_inl_inr w, hblk] at hw
-    rw [← Sum.elim_comp_inl_inr w, heq_blk, sum_elim_eq_iff] at hw'
+    rw [← Sum.elim_comp_inl_inr w, heq_blk, Sum.elim_eq_iff] at hw'
     refine ⟨w ∘ Sum.inl, (hEF _).2 ⟨w ∘ Sum.inr, hw, hw'.2⟩, ?_⟩
     ext i
     have hi := congrFun hw'.1 i
@@ -171,30 +167,15 @@ section LinearMap
 variable {K : Type*} [CommRing K] [PartialOrder K]
 variable {ι ν : Type*} [Fintype ι] [Fintype ν]
 
-private def linearMapMatrix [DecidableEq ν] (f : (ν → K) →ₗ[K] (ι → K)) : Matrix ι ν K :=
-  Matrix.of fun i j => f (Pi.single j 1) i
-
-omit [Fintype ι] [PartialOrder K] in
-private theorem linearMapMatrix_mulVec [DecidableEq ν] (f : (ν → K) →ₗ[K] (ι → K)) (z : ν → K) :
-    linearMapMatrix f *ᵥ z = f z := by
-  ext i
-  have hdec : z = ∑ j : ν, z j • Pi.single j (1 : K) := by
-    ext k
-    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply, mul_ite, mul_one,
-      mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ↓reduceIte]
-  conv_rhs => rw [hdec, map_sum, Finset.sum_apply]
-  simp only [Matrix.mulVec, dotProduct, linearMapMatrix, Matrix.of_apply, map_smul, Pi.smul_apply,
-    smul_eq_mul, mul_comm]
-
 /-- A linear map image does not increase extension complexity
 [FioriniMassarPokuttaTiwaryDeWolf2015, Lemma 9 (i)]. -/
 theorem extensionComplexity_image_linearMap_le (Q : Set (ν → K)) (f : (ν → K) →ₗ[K] (ι → K)) :
     extensionComplexity (f '' Q) ≤ extensionComplexity Q := by
   classical
-  have him : f '' Q = (fun z => linearMapMatrix f *ᵥ z) '' Q :=
-    Set.image_congr fun z _ => (linearMapMatrix_mulVec f z).symm
+  have him : f '' Q = (fun z => LinearMap.toMatrix' f *ᵥ z) '' Q :=
+    Set.image_congr fun z _ => (LinearMap.toMatrix'_mulVec f z).symm
   rw [him]
-  exact extensionComplexity_image_mulVec_le Q (linearMapMatrix f)
+  exact extensionComplexity_image_mulVec_le Q (LinearMap.toMatrix' f)
 
 /-- If two sets are mutual linear images of each other, they have the same extension
 complexity. -/

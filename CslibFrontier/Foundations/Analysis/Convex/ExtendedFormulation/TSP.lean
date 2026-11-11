@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.CorrDigraph
+import Mathlib.Combinatorics.SimpleGraph.Maps
 import Mathlib.Data.Nat.Sqrt
 import Mathlib.Tactic.FinCases
 
@@ -37,6 +38,9 @@ every extended formulation of `tspPolytope K V` with `r` inequalities when `|V| 
 
 * `extensionComplexity_corrPolytope_le_tspPolytope_splitV`:
   `xc (corrPolytope K (Fin p)) ≤ xc (tspPolytope K (SplitV (CorrDigraphV p) v₀ pad))`.
+* `extensionComplexity_corrPolytope_le_tspHardGraph_face`:
+  `xc (corrPolytope K (Fin ⌊√(m / 69)⌋))` is bounded by the exposed `tspHardGraph m` tour face of
+  `tspPolytope K (Fin m)` for `69 ≤ m`.
 * `three_pow_le_two_pow_mul_extensionComplexity_tspPolytope`:
   for `69 ≤ |V|` and `p = Nat.sqrt (|V| / 69)`,
   `3 ^ p ≤ 2 ^ p * extensionComplexity (tspPolytope K V)`.
@@ -60,37 +64,15 @@ section Congruence
 
 variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
-private def tspEdgeEquiv {V W : Type*} (e : V ≃ W) :
-    ↥(⊤ : SimpleGraph V).edgeSet ≃ ↥(⊤ : SimpleGraph W).edgeSet where
-  toFun x := ⟨Sym2.map e x.1, by
-    obtain ⟨s, hs⟩ := x
-    induction s using Sym2.ind with
-    | _ u v =>
-        simpa only [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj, Sym2.map_mk, ne_eq,
-          EmbeddingLike.apply_eq_iff_eq] using hs⟩
-  invFun y := ⟨Sym2.map e.symm y.1, by
-    obtain ⟨s, hs⟩ := y
-    induction s using Sym2.ind with
-    | _ u v =>
-        simpa only [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj, Sym2.map_mk, ne_eq,
-          EmbeddingLike.apply_eq_iff_eq] using hs⟩
-  left_inv x := by
-    ext
-    obtain ⟨s, _⟩ := x
-    simp only [Sym2.map_map, Function.comp_def, Equiv.symm_apply_apply, Sym2.map_id', id_eq]
-  right_inv y := by
-    ext
-    obtain ⟨s, _⟩ := y
-    simp only [Sym2.map_map, Function.comp_def, Equiv.apply_symm_apply, Sym2.map_id', id_eq]
-
-private theorem tspEdgeEquiv_mem_tourEdgeSet {V₁ V₂ : Type*} [Fintype V₁] [Fintype V₂]
+private theorem mapEdgeSet_completeGraph_mem_tourEdgeSet {V₁ V₂ : Type*} [Fintype V₁] [Fintype V₂]
     [DecidableEq V₁] [DecidableEq V₂] (e : V₁ ≃ V₂)
     (σ₂ : Fin (Fintype.card V₂) ≃ V₂) (hV₂ : 3 ≤ Fintype.card V₂)
     (x : ↥(⊤ : SimpleGraph V₁).edgeSet) :
     let hcard : Fintype.card V₁ = Fintype.card V₂ := Fintype.card_congr e
     let hV₁ : 3 ≤ Fintype.card V₁ := hcard ▸ hV₂
     let σ₁ : Fin (Fintype.card V₁) ≃ V₁ := (finCongr hcard).trans (σ₂.trans e.symm)
-    tspEdgeEquiv e x ∈ tourEdgeSet σ₂ hV₂ ↔ x ∈ tourEdgeSet σ₁ hV₁ := by
+    (SimpleGraph.Iso.completeGraph e).mapEdgeSet x ∈ tourEdgeSet σ₂ hV₂ ↔
+      x ∈ tourEdgeSet σ₁ hV₁ := by
   intro hcard hV₁ σ₁
   have hcast_add : ∀ j : Fin (Fintype.card V₁),
       finCongr hcard (j + ⟨1, by omega⟩) = finCongr hcard j + ⟨1, by omega⟩ := fun j =>
@@ -101,8 +83,8 @@ private theorem tspEdgeEquiv_mem_tourEdgeSet {V₁ V₂ : Type*} [Fintype V₁] 
   obtain ⟨s, hs⟩ := x
   induction s using Sym2.ind with
   | _ u v =>
-      simp only [tourEdgeSet, Finset.mem_image, Finset.mem_univ, true_and, Subtype.ext_iff,
-        tspEdgeEquiv, Equiv.coe_fn_mk, Sym2.map_mk]
+      change ⟨s(e u, e v), _⟩ ∈ tourEdgeSet σ₂ hV₂ ↔ ⟨s(u, v), hs⟩ ∈ tourEdgeSet σ₁ hV₁
+      simp only [tourEdgeSet, Finset.mem_image, Finset.mem_univ, true_and, Subtype.ext_iff]
       constructor
       · rintro ⟨i, hi⟩
         refine ⟨(finCongr hcard).symm i, ?_⟩
@@ -123,7 +105,8 @@ private theorem tspEdgeEquiv_mem_tourEdgeSet {V₁ V₂ : Type*} [Fintype V₁] 
 omit [IsStrictOrderedRing K] in
 private theorem tspPolytope_funLeft_eq {V₁ V₂ : Type*} [Fintype V₁] [Fintype V₂]
     [DecidableEq V₁] [DecidableEq V₂] (e : V₁ ≃ V₂) :
-    LinearMap.funLeft K K ⇑(tspEdgeEquiv e) '' tspPolytope K V₂ = tspPolytope K V₁ := by
+    LinearMap.funLeft K K ⇑(SimpleGraph.Iso.completeGraph e).mapEdgeSet '' tspPolytope K V₂ =
+      tspPolytope K V₁ := by
   have hcard : Fintype.card V₁ = Fintype.card V₂ := Fintype.card_congr e
   rw [tspPolytope, image_linearMap_convexHull, tspPolytope]
   congr 1
@@ -135,20 +118,22 @@ private theorem tspPolytope_funLeft_eq {V₁ V₂ : Type*} [Fintype V₁] [Finty
     let σ₁ : Fin (Fintype.card V₁) ≃ V₁ := (finCongr hcard).trans (σ₂.trans e.symm)
     refine ⟨tourEdgeSet σ₁ hV₁, ⟨hV₁, σ₁, rfl⟩, ?_⟩
     ext x
-    simp only [tspVertex, LinearMap.funLeft_apply, tspEdgeEquiv_mem_tourEdgeSet e σ₂ hV₂ x, σ₁]
+    simp only [tspVertex, LinearMap.funLeft_apply,
+      mapEdgeSet_completeGraph_mem_tourEdgeSet e σ₂ hV₂ x, σ₁]
   · rintro ⟨F, ⟨hV₁, σ₁, rfl⟩, rfl⟩
     let hV₂ : 3 ≤ Fintype.card V₂ := hcard.symm ▸ hV₁
     let σ₂ : Fin (Fintype.card V₂) ≃ V₂ := (finCongr hcard.symm).trans (σ₁.trans e)
     refine ⟨tspVertex K (tourEdgeSet σ₂ hV₂), ⟨tourEdgeSet σ₂ hV₂, ⟨hV₂, σ₂, rfl⟩, rfl⟩, ?_⟩
     ext x
     simp only [LinearMap.funLeft_apply, tspVertex]
-    have heqv := tspEdgeEquiv_mem_tourEdgeSet e σ₂ hV₂ x
+    have heqv := mapEdgeSet_completeGraph_mem_tourEdgeSet e σ₂ hV₂ x
     have hσ : (finCongr hcard).trans (σ₂.trans e.symm) = σ₁ := by
       ext j
       simp only [σ₂, Equiv.trans_apply, Equiv.symm_apply_apply]
       change σ₁ ((finCongr hcard.symm) (finCongr hcard j)) = σ₁ j
       rw [show (finCongr hcard.symm) (finCongr hcard j) = j from Fin.ext rfl]
-    have heqv' : tspEdgeEquiv e x ∈ tourEdgeSet σ₂ hV₂ ↔ x ∈ tourEdgeSet σ₁ hV₁ := by
+    have heqv' : (SimpleGraph.Iso.completeGraph e).mapEdgeSet x ∈ tourEdgeSet σ₂ hV₂ ↔
+        x ∈ tourEdgeSet σ₁ hV₁ := by
       simpa only [hσ] using heqv
     simp only [heqv']
 
@@ -156,9 +141,80 @@ omit [IsStrictOrderedRing K] in
 private theorem extensionComplexity_tspPolytope_congr {V₁ V₂ : Type*} [Fintype V₁] [Fintype V₂]
     [DecidableEq V₁] [DecidableEq V₂] (e : V₁ ≃ V₂) :
     extensionComplexity (tspPolytope K V₁) = extensionComplexity (tspPolytope K V₂) :=
-  extensionComplexity_eq_of_linearMaps (LinearMap.funLeft K K ⇑(tspEdgeEquiv e))
-    (LinearMap.funLeft K K ⇑(tspEdgeEquiv e.symm)) (tspPolytope_funLeft_eq e)
-    (tspPolytope_funLeft_eq e.symm)
+  extensionComplexity_eq_of_linearMaps
+    (LinearMap.funLeft K K ⇑(SimpleGraph.Iso.completeGraph e).mapEdgeSet)
+    (LinearMap.funLeft K K ⇑(SimpleGraph.Iso.completeGraph e.symm).mapEdgeSet)
+    (tspPolytope_funLeft_eq e) (tspPolytope_funLeft_eq e.symm)
+
+omit [IsStrictOrderedRing K] in
+private theorem extensionComplexity_tspPolytope_inter_map_congr
+    {V₁ V₂ : Type*} [Fintype V₁] [Fintype V₂] [DecidableEq V₁] [DecidableEq V₂]
+    (e : V₁ ≃ V₂) (G : SimpleGraph V₁)
+    [DecidableRel G.Adj] [DecidableRel (G.map e.toEmbedding).Adj] :
+    let c₁ : ↥(⊤ : SimpleGraph V₁).edgeSet → K := fun a => if a.1 ∈ G.edgeSet then 0 else -1
+    let c₂ : ↥(⊤ : SimpleGraph V₂).edgeSet → K :=
+      fun b => if b.1 ∈ (G.map e.toEmbedding).edgeSet then 0 else -1
+    extensionComplexity (tspPolytope K V₁ ∩ {x | c₁ ⬝ᵥ x = 0}) =
+      extensionComplexity (tspPolytope K V₂ ∩ {x | c₂ ⬝ᵥ x = 0}) := by
+  intro c₁ c₂
+  let eEdge := (SimpleGraph.Iso.completeGraph e).mapEdgeSet
+  let f : (↥(⊤ : SimpleGraph V₁).edgeSet → K) →ₗ[K] (↥(⊤ : SimpleGraph V₂).edgeSet → K) :=
+    LinearMap.funLeft K K ⇑(SimpleGraph.Iso.completeGraph e.symm).mapEdgeSet
+  let g : (↥(⊤ : SimpleGraph V₂).edgeSet → K) →ₗ[K] (↥(⊤ : SimpleGraph V₁).edgeSet → K) :=
+    LinearMap.funLeft K K ⇑eEdge
+  have hc_eq : ∀ a : ↥(⊤ : SimpleGraph V₁).edgeSet, c₂ (eEdge a) = c₁ a := fun ⟨s, _⟩ => by
+    induction s using Sym2.ind with
+    | _ u v =>
+        change (if s(e u, e v) ∈ (G.map e.toEmbedding).edgeSet then (0 : K) else -1) =
+          if s(u, v) ∈ G.edgeSet then 0 else -1
+        have hmem : s(e u, e v) ∈ (G.map e.toEmbedding).edgeSet ↔ s(u, v) ∈ G.edgeSet := by
+          simp only [SimpleGraph.mem_edgeSet, SimpleGraph.map_adj]
+          refine ⟨fun ⟨a, b, hab, ha, hb⟩ => ?_, fun h => ⟨u, v, h, rfl, rfl⟩⟩
+          exact e.injective ha ▸ e.injective hb ▸ hab
+        exact if_congr hmem rfl rfl
+  have hgf_inv : ∀ x, g (f x) = x := fun x => by
+    ext ⟨s, _⟩
+    induction s using Sym2.ind with
+    | _ u v =>
+        change x ⟨s(e.symm (e u), e.symm (e v)), _⟩ = x ⟨s(u, v), _⟩
+        simp only [Equiv.symm_apply_apply]
+  have hfg_inv : ∀ y, f (g y) = y := fun y => by
+    ext ⟨s, _⟩
+    induction s using Sym2.ind with
+    | _ u v =>
+        change y ⟨s(e (e.symm u), e (e.symm v)), _⟩ = y ⟨s(u, v), _⟩
+        simp only [Equiv.apply_symm_apply]
+  have hfg_dot : ∀ x, c₂ ⬝ᵥ f x = c₁ ⬝ᵥ x := fun x => by
+    have hfun : (fun a => c₂ (eEdge a) * f x (eEdge a)) = fun a => c₁ a * x a := by
+      ext ⟨s, _⟩
+      induction s using Sym2.ind with
+      | _ u v =>
+          rw [hc_eq]
+          congr 1
+          change x ⟨s(e.symm (e u), e.symm (e v)), _⟩ = x ⟨s(u, v), _⟩
+          simp only [Equiv.symm_apply_apply]
+    rw [dotProduct, dotProduct, ← Equiv.sum_comp eEdge, hfun]
+  have himP₂ : f '' tspPolytope K V₁ = tspPolytope K V₂ := tspPolytope_funLeft_eq e.symm
+  have himP₁ : g '' tspPolytope K V₂ = tspPolytope K V₁ := tspPolytope_funLeft_eq e
+  refine extensionComplexity_eq_of_linearMaps (K := K) g f ?_ ?_
+  · ext x
+    simp only [Set.mem_image, Set.mem_inter_iff, Set.mem_ofPred_eq]
+    constructor
+    · rintro ⟨y, ⟨hyP, hy0⟩, rfl⟩
+      refine ⟨himP₁ ▸ ⟨y, hyP, rfl⟩, ?_⟩
+      rw [← hfg_dot (g y), hfg_inv y]
+      exact hy0
+    · rintro ⟨hxP, hx0⟩
+      refine ⟨f x, ⟨himP₂ ▸ ⟨x, hxP, rfl⟩, (hfg_dot x).trans hx0⟩, hgf_inv x⟩
+  · ext y
+    simp only [Set.mem_image, Set.mem_inter_iff, Set.mem_ofPred_eq]
+    constructor
+    · rintro ⟨x, ⟨hxP, hx0⟩, rfl⟩
+      exact ⟨himP₂ ▸ ⟨x, hxP, rfl⟩, (hfg_dot x).trans hx0⟩
+    · rintro ⟨hyP, hy0⟩
+      refine ⟨g y, ⟨himP₁ ▸ ⟨y, hyP, rfl⟩, ?_⟩, hfg_inv y⟩
+      rw [← hfg_dot (g y), hfg_inv y]
+      exact hy0
 
 end Congruence
 
@@ -224,20 +280,20 @@ private theorem corrPairEdge_mem_iff_tour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
         chain_fin_eq hv _ (by have := two_le_chainLen hp (.diag i); omega)]
       exact (hdiag i).trans ⟨fun h => ⟨h, h⟩, fun h => h.1⟩
 
-/-- `corrPolytope K (Fin p)` is a linear projection of a face of the symmetric TSP polytope on
-`SplitV (CorrDigraphV p) v₀ pad` vertices
-[FioriniMassarPokuttaTiwaryDeWolf2015, Section 3.4, Lemma 11]. -/
-theorem extensionComplexity_corrPolytope_le_tspPolytope_splitV
+private theorem extensionComplexity_corrPolytope_le_splitV_face
     {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
-    (p : ℕ) (hp : 1 ≤ p) (v₀ : CorrDigraphV p) (pad : ℕ) :
+    (p : ℕ) (hp : 1 ≤ p) (v₀ : CorrDigraphV p) (pad : ℕ)
+    [DecidableRel (paddedSplitGraph v₀ pad (corrDigraphAdj p hp)).Adj] :
+    let W := SplitV (CorrDigraphV p) v₀ pad
+    let c : ↥(⊤ : SimpleGraph W).edgeSet → K :=
+      fun e => if e.1 ∈ (paddedSplitGraph v₀ pad (corrDigraphAdj p hp)).edgeSet then 0 else -1
     extensionComplexity (corrPolytope K (Fin p)) ≤
-      extensionComplexity (tspPolytope K (SplitV (CorrDigraphV p) v₀ pad)) := by
+      extensionComplexity (tspPolytope K W ∩ {x | c ⬝ᵥ x = 0}) := by
   classical
+  intro W c
   have : Nonempty (CorrDigraphV p) := ⟨v₀⟩
   have : NeZero p := ⟨by omega⟩
-  let W := SplitV (CorrDigraphV p) v₀ pad
   let G : SimpleGraph W := paddedSplitGraph v₀ pad (corrDigraphAdj p hp)
-  let c : ↥(⊤ : SimpleGraph W).edgeSet → K := fun e => if ↑e ∈ G.edgeSet then 0 else -1
   let π : (↥(⊤ : SimpleGraph W).edgeSet → K) →ₗ[K] ((Fin p × Fin p) → K) :=
     { toFun := fun x q => x (corrPairEdge hp v₀ pad q.1 q.2)
       map_add' := fun _ _ => rfl
@@ -271,8 +327,18 @@ theorem extensionComplexity_corrPolytope_le_tspPolytope_splitV
       = extensionComplexity (π '' (tspPolytope K W ∩ {x | c ⬝ᵥ x = 0})) := by rw [hproj]
     _ ≤ extensionComplexity (tspPolytope K W ∩ {x | c ⬝ᵥ x = 0}) :=
       extensionComplexity_image_linearMap_le _ π
-    _ ≤ extensionComplexity (tspPolytope K W) :=
-      extensionComplexity_inter_dotProduct_eq_le (tspPolytope K W) c 0
+
+/-- `corrPolytope K (Fin p)` is a linear projection of a face of the symmetric TSP polytope on
+`SplitV (CorrDigraphV p) v₀ pad` vertices
+[FioriniMassarPokuttaTiwaryDeWolf2015, Section 3.4, Lemma 11]. -/
+theorem extensionComplexity_corrPolytope_le_tspPolytope_splitV
+    {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+    (p : ℕ) (hp : 1 ≤ p) (v₀ : CorrDigraphV p) (pad : ℕ) :
+    extensionComplexity (corrPolytope K (Fin p)) ≤
+      extensionComplexity (tspPolytope K (SplitV (CorrDigraphV p) v₀ pad)) := by
+  classical
+  exact (extensionComplexity_corrPolytope_le_splitV_face p hp v₀ pad).trans
+    (extensionComplexity_inter_dotProduct_eq_le _ _ 0)
 
 end Reduction
 
@@ -303,6 +369,36 @@ noncomputable def tspHardGraph (m : ℕ) : SimpleGraph (Fin m) :=
       tspSplitEquiv (Fin m) hm (Fintype.card_fin m)
     SimpleGraph.map e.toEmbedding (paddedSplitGraph v₀ pad (corrDigraphAdj p hp))
   else ⊥
+
+/-- For `m ≥ 69`, `corrPolytope K (Fin (Nat.sqrt (m / 69)))` has extension complexity at most
+that of the Hamiltonian-tour face of `tspPolytope K (Fin m)` supported on `tspHardGraph m`
+[FioriniMassarPokuttaTiwaryDeWolf2015, Section 3.4, Lemma 11]. -/
+theorem extensionComplexity_corrPolytope_le_tspHardGraph_face
+    {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+    (m : ℕ) (hm : 69 ≤ m) [DecidableRel (tspHardGraph m).Adj] :
+    let c : ↥(⊤ : SimpleGraph (Fin m)).edgeSet → K :=
+      fun e => if e.1 ∈ (tspHardGraph m).edgeSet then 0 else -1
+    extensionComplexity (corrPolytope K (Fin (Nat.sqrt (m / 69)))) ≤
+      extensionComplexity (tspPolytope K (Fin m) ∩ {x | c ⬝ᵥ x = 0}) := by
+  classical
+  intro c
+  let p := Nat.sqrt (m / 69)
+  have hp : 1 ≤ p := Nat.sqrt_pos.2 (by omega)
+  let v₀ : CorrDigraphV p := .gate (.diag ⟨0, hp⟩)
+  let pad := m - 3 * Fintype.card (CorrDigraphV p)
+  let e : SplitV (CorrDigraphV p) v₀ pad ≃ Fin m :=
+    tspSplitEquiv (Fin m) hm (Fintype.card_fin m)
+  let G : SimpleGraph (SplitV (CorrDigraphV p) v₀ pad) :=
+    paddedSplitGraph v₀ pad (corrDigraphAdj p hp)
+  have hmap : tspHardGraph m = G.map e.toEmbedding := by
+    simp only [tspHardGraph, hm, ↓reduceDIte]
+    rfl
+  have hc_eq : c = fun b => if b.1 ∈ (G.map e.toEmbedding).edgeSet then (0 : K) else -1 :=
+    funext fun b => by
+      dsimp only [c]
+      exact if_congr (by rw [hmap]) rfl rfl
+  rw [hc_eq, ← extensionComplexity_tspPolytope_inter_map_congr (K := K) e G]
+  exact extensionComplexity_corrPolytope_le_splitV_face p hp v₀ pad
 
 /-- Exponential `2^{Ω(√|V|)}` lower bound for the symmetric TSP polytope `tspPolytope K V` for any
 finite vertex type `V` with `|V| ≥ 69` (`p = ⌊√(|V| / 69)⌋`):
@@ -347,15 +443,21 @@ theorem HasExtendedFormulation.three_div_two_pow_le_of_tspPolytope
   hr.three_div_two_pow_le_of_mul_le (three_pow_le_two_pow_mul_extensionComplexity_tspPolytope V hV)
 
 /-- Specialization of `three_pow_le_two_pow_mul_extensionComplexity_tspPolytope` to `Fin m`
-(`m ≥ 69`). -/
+(`m ≥ 69`), routed through `tspHardGraph m`. -/
 theorem three_pow_le_two_pow_mul_extensionComplexity_tspPolytope_fin
     {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     (m : ℕ) (hm : 69 ≤ m) :
     ((3 ^ Nat.sqrt (m / 69) : ℕ) : ℕ∞) ≤
       (2 ^ Nat.sqrt (m / 69) : ℕ∞) * extensionComplexity (tspPolytope K (Fin m)) := by
-  simpa only [Fintype.card_fin] using
-    three_pow_le_two_pow_mul_extensionComplexity_tspPolytope (K := K) (Fin m)
-      (by simpa only [Fintype.card_fin] using hm)
+  classical
+  let p := Nat.sqrt (m / 69)
+  have hp : 1 ≤ p := Nat.sqrt_pos.2 (by omega)
+  have : Nonempty (Fin p) := ⟨⟨0, hp⟩⟩
+  have h1 := three_pow_le_two_pow_mul_extensionComplexity_corrPolytope (K := K) (α := Fin p)
+  rw [Fintype.card_fin] at h1
+  have h2 := (extensionComplexity_corrPolytope_le_tspHardGraph_face (K := K) m hm).trans
+    (extensionComplexity_inter_dotProduct_eq_le (tspPolytope K (Fin m)) _ 0)
+  exact h1.trans (mul_le_mul_right h2 _)
 
 /-- Field-valued `2^{Ω(√m)}` lower bound for `tspPolytope K (Fin m)` (`m ≥ 69`): any extended
 formulation with `r` inequalities satisfies `(3 / 2 : F) ^ Nat.sqrt (m / 69) ≤ r`. -/

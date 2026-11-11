@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
 public import Mathlib.Combinatorics.SimpleGraph.Basic
+import Mathlib.Combinatorics.SimpleGraph.Maps
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -235,38 +236,16 @@ theorem extensionComplexity_cutPolytope_option_eq (α : Type*) [Fintype α] [Dec
   · rw [corrPolytope, image_linearMap_convexHull, him₁, cutPolytope]
   · rw [cutPolytope, image_linearMap_convexHull, him₂, corrPolytope]
 
-private def cutEdgeEquiv {V W : Type*} (e : V ≃ W) :
-    ↥(⊤ : SimpleGraph V).edgeSet ≃ ↥(⊤ : SimpleGraph W).edgeSet where
-  toFun x := ⟨Sym2.map e x.1, by
-    obtain ⟨s, hs⟩ := x
-    induction s using Sym2.ind with
-    | _ u v =>
-        simpa only [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj, Sym2.map_mk, ne_eq,
-          EmbeddingLike.apply_eq_iff_eq] using hs⟩
-  invFun y := ⟨Sym2.map e.symm y.1, by
-    obtain ⟨s, hs⟩ := y
-    induction s using Sym2.ind with
-    | _ u v =>
-        simpa only [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj, Sym2.map_mk, ne_eq,
-          EmbeddingLike.apply_eq_iff_eq] using hs⟩
-  left_inv x := by
-    ext
-    obtain ⟨s, _⟩ := x
-    simp only [Sym2.map_map, Function.comp_def, Equiv.symm_apply_apply, Sym2.map_id', id_eq]
-  right_inv y := by
-    ext
-    obtain ⟨s, _⟩ := y
-    simp only [Sym2.map_map, Function.comp_def, Equiv.apply_symm_apply, Sym2.map_id', id_eq]
-
 omit [LinearOrder K] [IsStrictOrderedRing K] in
 private theorem cutVertex_funLeft {V₁ V₂ : Type*} [DecidableEq V₁] [DecidableEq V₂]
     (e : V₁ ≃ V₂) (Y : Finset V₂) :
-    LinearMap.funLeft K K (cutEdgeEquiv e) (cutVertex K Y) = cutVertex K (Y.image e.symm) := by
+    LinearMap.funLeft K K (SimpleGraph.Iso.completeGraph e).mapEdgeSet (cutVertex K Y) =
+      cutVertex K (Y.image e.symm) := by
   ext ⟨s, hs⟩
   induction s using Sym2.ind with
   | _ u v =>
-      simp only [LinearMap.funLeft_apply, cutEdgeEquiv, Equiv.coe_fn_mk,
-        Sym2.map_mk, cutVertex, Sym2.lift_mk, Finset.mem_image]
+      change cutVertex K Y ⟨s(e u, e v), _⟩ = cutVertex K (Y.image e.symm) ⟨s(u, v), hs⟩
+      simp only [cutVertex, Sym2.lift_mk, Finset.mem_image]
       have hiff : ∀ w : V₁, (∃ a ∈ Y, e.symm a = w) ↔ e w ∈ Y := fun w =>
         ⟨fun ⟨a, ha, haw⟩ => haw ▸ (e.apply_symm_apply a).symm ▸ ha,
           fun hw => ⟨e w, hw, e.symm_apply_apply w⟩⟩
@@ -277,9 +256,9 @@ private theorem extensionComplexity_cutPolytope_congr {V W : Type*} [Fintype V] 
     [DecidableEq V] [DecidableEq W] (e : V ≃ W) :
     extensionComplexity (cutPolytope K V) = extensionComplexity (cutPolytope K W) := by
   let f : (↥(⊤ : SimpleGraph V).edgeSet → K) →ₗ[K] (↥(⊤ : SimpleGraph W).edgeSet → K) :=
-    LinearMap.funLeft K K (cutEdgeEquiv e.symm)
+    LinearMap.funLeft K K (SimpleGraph.Iso.completeGraph e.symm).mapEdgeSet
   let g : (↥(⊤ : SimpleGraph W).edgeSet → K) →ₗ[K] (↥(⊤ : SimpleGraph V).edgeSet → K) :=
-    LinearMap.funLeft K K (cutEdgeEquiv e)
+    LinearMap.funLeft K K (SimpleGraph.Iso.completeGraph e).mapEdgeSet
   have hfg : ∀ X : Finset V, f (cutVertex K X) = cutVertex K (X.image e) := fun X => by
     simpa only [f, Equiv.symm_symm] using cutVertex_funLeft e.symm X
   have hgf : ∀ Y : Finset W, g (cutVertex K Y) = cutVertex K (Y.image e.symm) :=
