@@ -13,7 +13,52 @@ public import CslibFrontier.Computability.MCSP.FormulaMagnification
 /-!
 # Locality of the Oliveira–Santhanam formula construction
 
-Draft module docstring.
+Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam observe that the known hardness magnification
+reductions are *local*: they compute the hard problem with few oracle gates of small fan-in on
+cheap projections of the input [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Appendix A.2,
+Proposition 63, p. 52]. This file proves their [OS18] bullet for the library's
+Oliveira–Santhanam formula construction (`FormulaMagnification.lean`): the approximate MCSP
+promise problem is in `[N, poly(s / δ), 1]–Formula[N · poly(s / δ)]`.
+
+The oracle is `succinctMCSPOracle`, the encoded `SuccinctMCSP` yes-instances. It is one language
+for all input lengths, as Definition 11 requires. On `N = 2 ^ n` input bits the formula is a
+conjunction of `2 ^ n` oracle gates. Each gate reads a word of constants and single input
+leaves: the encoding of a `SuccinctMCSP` instance that samples the truth table at a fixed set of
+seed points (`exists_seeds_approxMCSP`). No oracle gate lies below another, so the adaptivity is
+one.
+
+The paper's bound on oracle gates is exactly `N`. The library's De Morgan form
+`exists_formula_separating_approxMCSP_of_agrees` still states `(2 ^ n + 1) * B`; both are derived
+from the same seed lemma, which supplies `2 ^ n` seeds.
+
+## Main definitions
+
+* `Cslib.Circuits.Boolean.succinctMCSPOracle`: the oracle language.
+* `Cslib.ApproxMCSP.noSetReal`: the no-instances of `MCSP[(s, 0), (s, δ)]` for a real error `δ`
+  [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.3, Definition 6, p. 12].
+
+## Main results
+
+* `Cslib.Circuits.Boolean.exists_oracleFormula_separating_approxMCSP`: at each input length
+  `2 ^ n`, at most `2 ^ n` oracle gates of fan-in at most `approxMCSPQueryEncLength n s k`,
+  adaptivity one, and leaf size at most `2 ^ n` times the fan-in.
+* `Cslib.Circuits.Boolean.localFormulaClass_approxMCSP`: the same as membership in
+  `LocalFormulaClass`.
+* `Cslib.Circuits.Boolean.approxMCSPQueryEncLength_le`: the fan-in is at most
+  `98 * (k * (s + 1)) ^ 3` when `n ≤ s`.
+* `Cslib.Circuits.Boolean.localFormulaClass_approxMCSP_real_poly`: Proposition 63's [OS18]
+  bullet with a real error `δ`, with explicit polynomials in `s` and `⌈1 / δ⌉₊`.
+
+The paper requires `n ≤ s(n) ≤ 2 ^ n / poly(n)`, `0 < δ(n) < 1 / 2` and a constructive `s`.
+Only `n ≤ s(n)` and `0 < δ(n)` are used here; constructivity plays no role in this nonuniform
+statement. As the paper remarks, the uniform complexity of the oracle gates is not considered.
+
+## References
+
+* [L. Chen, S. Hirahara, I. C. Oliveira, J. Pich, N. Rajgopal, R. Santhanam, *Beyond Natural
+  Proofs: Hardness Magnification and Locality*][ChenHiraharaOliveiraPichRajgopalSanthanam2020]
+* [I. C. Oliveira, R. Santhanam, *Hardness Magnification for Natural
+  Problems*][OliveiraSanthanam2018]
 -/
 
 public section
@@ -40,7 +85,12 @@ theorem eval_query_succinctWord_eq_true_iff (n : ℕ) (S : Finset (BitString n))
   exact SuccinctMCSP.enc.injective.mem_set_image
 
 open Classical in
-/-- Per-length local form of the Oliveira–Santhanam construction. -/
+/-- **The Oliveira–Santhanam construction is local, at one input length**
+[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Appendix A.2, Proposition 63, [OS18] bullet,
+p. 52]. If `1 ≤ k n` and `s₁ n ≤ s₂ n`, some oracle formula on `2 ^ n` inputs with at most
+`2 ^ n` oracle gates, each of fan-in at most `approxMCSPQueryEncLength n (s₂ n) (k n)`, at most
+one oracle gate on any path, and at most `2 ^ n` times that fan-in leaves, accepts
+`GapMCSP.yesSet s₁` and rejects `ApproxMCSP.noSet s₂ k` under `succinctMCSPOracle`. -/
 theorem exists_oracleFormula_separating_approxMCSP {s₁ s₂ k : ℕ → ℕ} {n : ℕ}
     (hk : 1 ≤ k n) (hs : s₁ n ≤ s₂ n) :
     ∃ E : OracleFormula (2 ^ n),
@@ -87,12 +137,16 @@ theorem exists_oracleFormula_separating_approxMCSP {s₁ s₂ k : ℕ → ℕ} {
     exact (eval_query_succinctWord_eq_true_iff _ _ _ T).mp (h (List.mem_ofFn.mpr ⟨j, rfl⟩))
 
 /-- A truth-table word has power-of-two length. -/
-theorem exists_length_eq_two_pow_of_mem_truthTableLanguage {C : ∀ n, Set (BooleanFunction n)}
+private theorem exists_length_eq_two_pow_of_mem_truthTableLanguage {C : ∀ n, Set (BooleanFunction n)}
     {w : List Bool} (hw : w ∈ truthTableLanguage C) : ∃ n, w.length = 2 ^ n := by
   obtain ⟨n, h, -⟩ := hw
   exact ⟨n, h⟩
 
-/-- Class form of the local Oliveira–Santhanam construction. -/
+/-- **The Oliveira–Santhanam construction in `LocalFormulaClass` form**
+[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Appendix A.2, Proposition 63, [OS18] bullet,
+p. 52]. With `n = Nat.log 2 m` at input length `m`, approximate MCSP is in
+`[m, ℓ, 1]–Formula[m · ℓ]` for the fan-in `ℓ = approxMCSPQueryEncLength n (s₂ n) (k n)`.
+Input lengths that are not powers of two have no yes- or no-instances. -/
 theorem localFormulaClass_approxMCSP {s₁ s₂ k : ℕ → ℕ} (hk : ∀ n, 1 ≤ k n)
     (hs : ∀ n, s₁ n ≤ s₂ n) :
     LocalFormulaClass (fun m => m)
@@ -182,7 +236,10 @@ end Cslib.ApproxMCSP
 
 namespace Cslib.Circuits.Boolean
 
-/-- Real-error class form of the local construction, with `k = ⌈1 / δ⌉₊`. -/
+/-- **Proposition 63, [OS18] bullet, with a real error**
+[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Appendix A.2, p. 52]: for `0 < δ n`,
+`MCSP[(s, 0), (s, δ)]` is in `[N, ℓ, 1]–Formula[N · ℓ]` with
+`ℓ = approxMCSPQueryEncLength n (s n) ⌈1 / δ n⌉₊`. -/
 theorem localFormulaClass_approxMCSP_real {s : ℕ → ℕ} {δ : ℕ → ℝ} (hδ : ∀ n, 0 < δ n) :
     LocalFormulaClass (fun m => m)
       (fun m => approxMCSPQueryEncLength (Nat.log 2 m) (s (Nat.log 2 m)) ⌈1 / δ (Nat.log 2 m)⌉₊)
@@ -194,7 +251,10 @@ theorem localFormulaClass_approxMCSP_real {s : ℕ → ℕ} {δ : ℕ → ℝ} (
     (fun n => Nat.ceil_pos.mpr (by have := hδ n; positivity)) fun _ => le_rfl).anti le_rfl
     (ApproxMCSP.noSetReal_le_noSet hδ)
 
-/-- Polynomial class form: `[N, poly(s / δ), 1]–Formula[N · poly(s / δ)]` when `n ≤ s n`. -/
+/-- **Proposition 63, [OS18] bullet, with explicit polynomials**
+[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Appendix A.2, p. 52]: if `0 < δ n` and
+`n ≤ s n`, then `MCSP[(s, 0), (s, δ)]` is in `[N, ℓ, 1]–Formula[N · ℓ]` with
+`ℓ = 98 * (⌈1 / δ n⌉₊ * (s n + 1)) ^ 3`, which is `poly(s / δ)`. -/
 theorem localFormulaClass_approxMCSP_real_poly {s : ℕ → ℕ} {δ : ℕ → ℝ} (hδ : ∀ n, 0 < δ n)
     (hs : ∀ n, n ≤ s n) :
     LocalFormulaClass (fun m => m)
