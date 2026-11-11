@@ -392,9 +392,9 @@ and `Reveal.source_independent_verification` bounds the original-input averaged 
 `Security.source_search_rate` composes the actual verifier and reveal at horizon $T+2q$.
 Its unrounded bound already implies the literal source inequality at $q=20,m=40,T=100$,
 although its $6,26$ normalization does not do so nontrivially.
-`SearchUnion.source_search_rate` now charges independent verification and cut detection
+`SearchUnion.coarse_source_search_rate` now charges independent verification and cut detection
 as a single union in the same executed ledger, removing the separate $8T^2/2^m$ allowance.
-`SearchUnion.source_search_bound` therefore gives $6T/2^{\lceil q/2\rceil}+18T^2/2^m$
+`SearchUnion.coarse_source_search_bound` therefore gives $6T/2^{\lceil q/2\rceil}+18T^2/2^m$
 under all source hypotheses. Covering still uses $T+q$ calls, and the reveal adds $q$ more.
 The strengthened unrounded bound still exceeds the source expression at $q=21,m=40,T=100$.
 The checked client records both comparisons without permutation-space enumeration.
@@ -417,6 +417,17 @@ or joint planted-verification/guessing argument remains to be derived for odd le
 The Operator's Manual inventory retains “Partial” for that gap; Corollary 4 is covered.
 Literal ALL-main acceptance is not yet warranted. The guessed hidden-endpoint client
 continues to show why old collision/covering alone is insufficient without a charged reveal.
+
+The stopped guessing term is now isolated in `IdealChain.Guessing.stopped_guess_le`
+([AddXNORIdealGuessing.lean](../CslibFrontier/Cryptanalysis/AddXNORIdealGuessing.lean)). Good final-state equality in the actual cut
+coupling transfers candidate equality with the hidden word, and independence bounds its
+probability by $2^{-q}$. This does not prove Lemma 13 in the actual planted world:
+non-planted successful verification still needs to be charged to a precisely defined
+collision event with a derived probability bound. The sharp odd-length clause remains open.
+The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
+`coarse_source_search_bound`; the best unconditional all-length bounds remain in
+`VerificationCovering`. No deprecated aliases are retained.
+
 
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.

@@ -25,9 +25,9 @@ This removes the separate verification allowance, while retaining every auxiliar
 
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Visible.accept_or_bad_eq`: the complete union law
   derived from agreement at good final states.
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.SearchUnion.source_search_rate`: actual search
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.SearchUnion.coarse_source_search_rate`: actual search
   probability with one shared rational collision rate.
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.SearchUnion.source_search_bound`: the full source
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.SearchUnion.coarse_source_search_bound`: the full source
   parameter range with honest constants `6,18`.
 
 [WangLvShenZhang2027], Theorem 8, PDF pp. 25–28, has sharper constants `3,10` and a
@@ -333,7 +333,7 @@ theorem source_search_rate_of_covering {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
 
 /-- The complete source search experiment with one shared verifier/reveal collision charge.
 The source hypotheses suffice; no probability estimate is a premise. -/
-theorem source_search_rate {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
+theorem coarse_source_search_rate {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
     (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
       ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
     (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T)
@@ -354,7 +354,7 @@ theorem source_search_rate {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
 
 /-- A uniformly stronger repaired search inequality than the earlier `6,26` bound.
 The collision rate is paid once, but the verifier and reveal still use up to `3*T` calls. -/
-theorem source_search_bound {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
+theorem coarse_source_search_bound {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
     (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
       ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
     (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T)
@@ -374,7 +374,7 @@ theorem source_search_bound {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
     exact_mod_cast (show 3 * (T + q) ≤ 6 * T by omega)
   have hf := div_le_div_of_nonneg_right hn
     (show (0 : ℝ) ≤ 2 ^ ((q + 1) / 2) by positivity)
-  have hp := source_search_rate hq m T adversary hbudget hT hlimit
+  have hp := coarse_source_search_rate hq m T adversary hbudget hT hlimit
   linarith
 
 end Cslib.Cryptanalysis.AddXNOR.IdealChain.SearchUnion

@@ -66,7 +66,7 @@ example (adversary : Fin (2 ^ 40) → Fin (2 ^ 40) →
     (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) 100) :
     ((plantedSearch adversary) true).toReal ≤
       3 * (100 : ℝ) / 2 ^ 10 + 10 * (100 : ℝ) ^ 2 / 2 ^ 40 + 1 / 2 ^ 20 := by
-  have h := SearchUnion.source_search_rate (by norm_num : 3 ≤ 20) 40 100 adversary hbudget
+  have h := SearchUnion.coarse_source_search_rate (by norm_num : 3 ≤ 20) 40 100 adversary hbudget
     (by norm_num) (by norm_num)
   exact h.trans (by norm_num [Collisions.rate])
 
@@ -75,7 +75,7 @@ example (adversary : Fin (2 ^ 40) → Fin (2 ^ 40) →
     ProbOracleComp (Spec 21 (Fin (2 ^ 40))) (Operators 21))
     (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) 100) :
     ((plantedSearch adversary) true).toReal < 1 / 5 := by
-  have h := SearchUnion.source_search_rate (by norm_num : 3 ≤ 21) 40 100 adversary hbudget
+  have h := SearchUnion.coarse_source_search_rate (by norm_num : 3 ≤ 21) 40 100 adversary hbudget
     (by norm_num) (by norm_num)
   exact h.trans_lt (by norm_num [Collisions.rate])
 

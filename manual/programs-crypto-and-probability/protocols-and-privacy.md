@@ -1643,12 +1643,12 @@ now removes the separately added verification-collision allowance. The complete 
 worlds have the same law for **acceptance or bad**, proved from their equality at good final
 states. Original-world acceptance implies a collision in the same verifier/reveal ledger
 that charges a visible cut hit. Their overlap is therefore charged once. The resulting
-`SearchUnion.source_search_rate` proves the stronger actual bound
+`SearchUnion.coarse_source_search_rate` proves the stronger actual bound
 $$
 \Pr[\mathrm{search\ succeeds}]\le
  R(2^m,T+2q)+\frac{T+q}{2^h}+\frac{T+q}{2^{q-h}},
 $$
-and `SearchUnion.source_search_bound` gives $6T/2^h+18T^2/2^m$ throughout the source
+and `SearchUnion.coarse_source_search_bound` gives $6T/2^h+18T^2/2^m$ throughout the source
 parameter range. The old $6,26$ theorem and its explicit half-chain/birthday budget
 alternatives remain available. This is a stronger proved bound, not a claim of optimal
 constants for the repaired argument.
@@ -1698,6 +1698,17 @@ instantiates both whole-game bounds with input-dependent private-coin forward/in
 observers at $q=T=31$, $m=30$, obtaining decision advantage and search success below one
 percent without enumerating the permutation space.
 
+The stopped guessing term is now isolated in `IdealChain.Guessing.stopped_guess_le`
+([AddXNORIdealGuessing.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealGuessing.lean)). Good final-state equality in the actual cut
+coupling transfers candidate equality with the hidden word, and independence bounds its
+probability by $2^{-q}$. This does not prove Lemma 13 in the actual planted world:
+non-planted successful verification still needs to be charged to a precisely defined
+collision event with a derived probability bound. The sharp odd-length clause remains open.
+The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
+`coarse_source_search_bound`; the best unconditional all-length bounds remain in
+`VerificationCovering`. No deprecated aliases are retained.
+
+
 ### STOC733 main-result coverage inventory
 
 Locators below refer to the pinned [WangLvShenZhang2027] manuscript's printed PDF pages.
@@ -1730,7 +1741,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; odd-length sharp inequality remains open |
+| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; odd-length uniqueness/sharp inequality remains open |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
