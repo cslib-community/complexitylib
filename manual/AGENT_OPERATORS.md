@@ -399,12 +399,23 @@ under all source hypotheses. Covering still uses $T+q$ calls, and the reveal add
 The strengthened unrounded bound still exceeds the source expression at $q=21,m=40,T=100$.
 The checked client records both comparisons without permutation-space enumeration.
 
-Do not claim Theorem 8's displayed $3T/2^h+10T^2/2^m+2^{-q}$ throughout the range.
-The source's p. 28 conclusion uses the false Lemma 10 exact Real/planted law to transfer
-its stopping and guessing events and apply its frontier success argument. The valid cut
-coupling does not supply that tighter planted-verification/guessing lemma. The Operator's
-Manual's inventory retains “Partial” for this exact gap; Corollary 4 is covered. ALL-main
-with literal source constants is not yet warranted. The guessed hidden-endpoint client
+`VerificationCovering` now derives the actual walk's level-specific birth counts. Each
+nonempty computed rooted witness ends at a forward birth carrying its last label. Native
+verification adds at most one relevant forward birth and no reverse-view forward births.
+The full-range bound becomes $R(2^m,T+2q)+(T+1)/2^h+T/2^{q-h}$, hence
+$(3T+1)/2^h+18T^2/2^m$. The coupling still charges all reveal calls.
+
+`VerificationCovering.source_theorem_eight_even` proves the literal source inequality for
+**every even $q$**, with no additional source restriction. Equal side lengths provide the
+covering slack; nonvacuity gives $2^m\ge10T^2$, which bounds the actual collision rate
+by $10T^2/2^m$ for $T\ge12$. The remaining small even cases are proved directly.
+Do not promote this endpoint to all lengths: odd $q$ still has the extra new-prefix term.
+The source's false Lemma 10 is load-bearing only for its post-query verification terms:
+walk collisions, Lemma 13 and the stopped guessing event. The original-query stopped
+comparison is already supplied by the valid cut coupling. A tighter internal-vertex count
+or joint planted-verification/guessing argument remains to be derived for odd lengths.
+The Operator's Manual inventory retains “Partial” for that gap; Corollary 4 is covered.
+Literal ALL-main acceptance is not yet warranted. The guessed hidden-endpoint client
 continues to show why old collision/covering alone is insufficient without a charged reveal.
 
 Do not promote an older pair/batch bound, unnormalized machine profile, native

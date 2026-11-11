@@ -1653,23 +1653,43 @@ parameter range. The old $6,26$ theorem and its explicit half-chain/birthday bud
 alternatives remain available. This is a stronger proved bound, not a claim of optimal
 constants for the repaired argument.
 
-The remaining losses are specific. Covering still counts the $T+q$ verifier, so replacing
-$T+q$ by $2T$ doubles its coefficient. Revealing another $q$ hidden edges yields a
-collision horizon $T+2q\le3T$, whose rate is bounded by $18T^2/2^m$.
-Even the strengthened unrounded right-hand side exceeds the source expression at
-$q=21,m=40,T=100$; it does not prove the sharp statement for all parameters.
-The source's Theorem 8 (PDF pp. 25–28), $3T/2^h+10T^2/2^m+2^{-q}$, is still **partial**.
+[AddXNORIdealVerificationCovering.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealVerificationCovering.lean)
+now charges the actual verification walk at its relevant final layer. Nonempty computed
+rooted witnesses end at forward births bearing their last label; the forest covering
+injection is refined to count those entries only. The actual native walk has at most one
+query at each layer, and creates no reverse-view forward births. Consequently verification
+adds at most one level-$h$ prefix, and no backward covering allowance:
+$$
+\Pr[\mathrm{search\ succeeds}]\le
+ R(2^m,T+2q)+\frac{T+1}{2^h}+\frac{T}{2^{q-h}}.
+$$
+`VerificationCovering.source_search_rate` proves this for all source parameters from the
+same valid cut coupling. `source_search_bound` gives
+$(3T+1)/2^h+18T^2/2^m$. The covering factor two is removed; the extra single prefix
+and the charged $T+2q$ collision horizon remain.
 
-The gap in the source proof is at a named law, not in the numerical union bound alone.
-Its conclusion on p. 28 transfers the $T$-query stopping event and the hidden-word guessing
-event using Lemmas 10–11, and applies Lemma 13 to the frontier sampler's verification.
-The exact Real/planted identity in Lemma 10 is false as written on the checked collision
-trace above. Thus those sampler-specific statements cannot by themselves imply the actual
-planted-search inequality. Repairing that identity by the valid cut law does not establish
-the source's success-without-bad assertion: adversary-chosen hidden-prefix inputs need a
-charged reveal, and off-planted-word verification must still be controlled. A tighter
-joint planted verification/guessing argument could recover the constants, but is not
-proved here or assumed as a premise. No counterexample to Theorem 8 is asserted.
+`VerificationCovering.source_theorem_eight_even` proves the **literal Theorem 8 inequality
+for every even $q$**, with all its other exact hypotheses and no further alphabet or
+budget restriction. Equal side lengths give covering allowance $(2T+1)/2^h\le3T/2^h$.
+Where the source right-hand side is below one it forces $2^m\ge10T^2$. For $T\ge12$,
+this implies the actual rate at horizon at most $3T$ is at most $10T^2/2^m$;
+the finitely many smaller even-length possibilities are handled directly. This does not
+assume a sharper simulator or silently drop verification calls.
+
+The remaining sharp gap is **odd $q$**. At $q=21,m=40,T=100$, the improved unrounded
+bound is below $0.148$, but still exceeds the source's displayed expression. This checked
+comparison is an obstruction to that bound comparison, not an attainable-success claim.
+A tighter rooted-tree count could account for internal prefix vertices, or a joint
+planted-success/guessing analysis could replace the new-prefix allowance by the source's
+$2^{-q}$ term. Neither replacement is assumed here.
+
+The gap in the source proof is confined to the post-query verification terms. Its p. 28
+conclusion uses the false exact Real/planted identity of Lemma 10 for the verification-walk
+collisions, Lemma 13's success assertion, and the stopped hidden-word guessing term.
+The valid cut coupling already supplies the needed stopped comparison during the original
+$T$ queries. It does not automatically supply that conditional post-query planted law.
+The new even-length endpoint bypasses it by the actual verifier's level-specific counting.
+The odd-length sharp statement remains open, not refuted; no counterexample is asserted.
 
 The [security client](../../CslibFrontierTests/AddXNORIdealSecurity.lean) checks the
 important guessed-endpoint case: a one-query visible cut hit with no old collision or
@@ -1710,7 +1730,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.SearchUnion.source_search_rate`, `IdealChain.SearchUnion.source_search_bound`, `IdealChain.Security.source_search_half_budget` | Partial: same source hypotheses and query barrier; stronger constants $6,18$; literal $3,10,2^{-q}$ inequality still unproved throughout the range |
+| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; odd-length sharp inequality remains open |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
@@ -1723,7 +1743,8 @@ no expectation-of-maximum, concentration or typical-space theorem is claimed.
 Section 7's finite CDCL observations are not formal asymptotic lower bounds.
 Accordingly the main-result inventory does **not** yet support ALL-main acceptance.
 
-The full-paper objective remains open for the sharper displayed Theorem 8 search constants.
+The full-paper objective remains open for the sharper displayed Theorem 8 search constants
+at odd chain lengths.
 Corollary 4 and the weaker-constant Theorem 8 query barrier are now proved. The source-rate
 sparse reduction above now charges family multiplicity and generation. The full source dissection pipeline, including
 the faster count prepass, is supplied by the later `DPDissection` route. The

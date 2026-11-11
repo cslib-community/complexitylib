@@ -3811,6 +3811,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORIdealReplay
 public import CslibFrontier.Cryptanalysis.AddXNORIdealReveal
 public import CslibFrontier.Cryptanalysis.AddXNORIdealSearchUnion
 public import CslibFrontier.Cryptanalysis.AddXNORIdealSecurity
+public import CslibFrontier.Cryptanalysis.AddXNORIdealVerificationCovering
 public import CslibFrontier.Cryptanalysis.AddXNORJoinedDissection
 public import CslibFrontier.Cryptanalysis.AddXNORJoinedProbe
 public import CslibFrontier.Cryptanalysis.AddXNORMatcherResources

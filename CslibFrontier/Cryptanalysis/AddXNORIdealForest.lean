@@ -41,6 +41,8 @@ add a charged hidden-path reveal while retaining the old covering ledger.
 
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.follows_witness`: paths get their exact
   label string.
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.covered_card_le_selected`: covering
+  charged only to forward births in the final-label class.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.covered_card_le`: the derived forest
   covering count.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.follows_of_suffix_of_seen`: collision-free
@@ -415,6 +417,31 @@ open scoped Classical in
     (labels : Words → List Index) : Finset Words :=
   Finset.univ.filter fun word => ∃ endpoint, Follows records seed (labels word) endpoint
 
+/-- Distinct queried label words inject into any finite set containing their endpoints.
+The required endpoint membership is normally discharged from the computed rooted witnesses. -/
+theorem covered_card_le_of_endpoint_mem {Words : Type} [Fintype Words]
+    (initial : Finset Word) (seed : Word) (hs : seed ∈ initial)
+    (records : List (Record Index Word)) (hc : NoCollision initial records)
+    (labels : Words → List Index) (hinj : Function.Injective labels) (keys : Finset Word)
+    (hkeys : ∀ word endpoint, Follows records seed (labels word) endpoint → endpoint ∈ keys) :
+    (covered records seed labels).card ≤ keys.card := by
+  classical
+  let ends (word : Words) : Word :=
+    if hw : word ∈ covered records seed labels then
+      Classical.choose (Finset.mem_filter.mp hw).2 else seed
+  have follows (word : Words) (hw : word ∈ covered records seed labels) :
+      Follows records seed (labels word) (ends word) := by
+    simpa only [ends, dite_eq_left hw] using Classical.choose_spec (Finset.mem_filter.mp hw).2
+  apply Finset.card_le_card_of_injOn ends
+  · intro word hw
+    exact hkeys word _ (follows word hw)
+  · intro left hl right hr heq
+    apply hinj
+    have hw₁ := follows_witness initial seed hs records hc (follows left hl)
+    have hw₂ := follows_witness initial seed hs records hc (follows right hr)
+    rw [heq] at hw₁
+    exact Option.some.inj (hw₁.symm.trans hw₂)
+
 /-- The covering count is derived from the fresh ledger and computed witnesses. Each nonempty
 queried label word injects into a key born at a forward fresh answer, of which there are at most
 as many as fresh entries. No forest-uniqueness or cardinality conclusion is a premise. -/
@@ -423,25 +450,63 @@ theorem covered_card_le {Words : Type} [Fintype Words]
     (records : List (Record Index Word)) (hc : NoCollision initial records)
     (labels : Words → List Index) (hinj : Function.Injective labels)
     (hne : ∀ word, labels word ≠ []) : (covered records seed labels).card ≤ records.length := by
+  have hb := covered_card_le_of_endpoint_mem initial seed hs records hc labels hinj
+    (born records) (fun word endpoint hf =>
+      (facts initial seed hs records hc).keys _ _
+        (follows_witness initial seed hs records hc hf) (hne word))
+  exact hb.trans (born_card_le records)
+
+/-- Every nonempty computed path ends at a forward fresh entry bearing its last label.
+This is a property of the actual computed witness, even before collision freedom is used. -/
+theorem paths_last_birth (seed : Word) (records : List (Forest.Record Index Word))
+    (endpoint : Word) (labels : List Index) (hne : labels ≠ [])
+    (hw : Forest.paths seed records endpoint = some labels) :
+    ∃ r ∈ records, (∃ input, r.query = .forward input) ∧ r.answer = endpoint ∧
+      ∃ stem, labels = stem ++ [r.label] := by
+  induction records with
+  | nil =>
+    simp only [Forest.paths] at hw
+    split at hw
+    · exact (hne (Option.some.inj hw).symm).elim
+    · contradiction
+  | cons r rest ih =>
+    cases hq : r.query with
+    | inverse point =>
+      obtain ⟨r', hr, hrest⟩ := ih (by simpa only [Forest.paths, hq] using hw)
+      exact ⟨r', List.mem_cons_of_mem _ hr, hrest⟩
+    | forward point =>
+      by_cases he : endpoint = r.answer
+      · subst endpoint
+        simp only [Forest.paths, hq, Function.update_self, Option.map_eq_some_iff] at hw
+        obtain ⟨stem, _, heq⟩ := hw
+        exact ⟨r, List.mem_cons_self, ⟨point, hq⟩, rfl, stem, heq.symm⟩
+      · obtain ⟨r', hr, hrest⟩ := ih
+          (by simpa only [Forest.paths, hq, Function.update_of_ne he] using hw)
+        exact ⟨r', List.mem_cons_of_mem _ hr, hrest⟩
+
+/-- Entries that can birth a rooted path ending in a selected label class. Inverse entries
+are excluded, since their answer is a predecessor rather than a newly reached endpoint. -/
+@[expose] def selected (P : Index → Bool) (r : Forest.Record Index Word) : Bool :=
+  P r.label && match r.query with | .forward _ => true | .inverse _ => false
+
+/-- Covered words inject into actual forward births of the appropriate last-label class. -/
+theorem covered_card_le_selected {Words : Type} [Fintype Words]
+    (initial : Finset Word) (seed : Word) (hs : seed ∈ initial)
+    (records : List (Forest.Record Index Word)) (hc : Forest.NoCollision initial records)
+    (labels : Words → List Index) (hinj : Function.Injective labels)
+    (hne : ∀ word, labels word ≠ []) (P : Index → Bool)
+    (hlast : ∀ word stem label, labels word = stem ++ [label] → P label = true) :
+    (Forest.covered records seed labels).card ≤ (records.filter (selected P)).length := by
   classical
-  let ends (word : Words) : Word :=
-    if hw : word ∈ covered records seed labels then
-      Classical.choose (Finset.mem_filter.mp hw).2 else seed
-  have follows (word : Words) (hw : word ∈ covered records seed labels) :
-      Follows records seed (labels word) (ends word) := by
-    simpa only [ends, dite_eq_left hw] using Classical.choose_spec (Finset.mem_filter.mp hw).2
-  have bound : (covered records seed labels).card ≤ (born records).card := by
-    apply Finset.card_le_card_of_injOn ends
-    · intro word hw
-      exact (facts initial seed hs records hc).keys _ _
-        (follows_witness initial seed hs records hc (follows word hw)) (hne word)
-    · intro left hl right hr heq
-      apply hinj
-      have hw₁ := follows_witness initial seed hs records hc (follows left hl)
-      have hw₂ := follows_witness initial seed hs records hc (follows right hr)
-      rw [heq] at hw₁
-      exact Option.some.inj (hw₁.symm.trans hw₂)
-  exact bound.trans (born_card_le records)
+  let keys := ((records.filter (selected P)).map Forest.Record.answer).toFinset
+  have hkeys := Forest.covered_card_le_of_endpoint_mem initial seed hs records hc labels hinj
+    keys (fun word endpoint hf => by
+      obtain ⟨r, hr, ⟨input, hq⟩, he, stem, hp⟩ := paths_last_birth seed records endpoint
+        (labels word) (hne word) (Forest.follows_witness initial seed hs records hc hf)
+      have hP := hlast word stem r.label hp
+      simp only [keys, List.mem_toFinset, List.mem_map, List.mem_filter]
+      exact ⟨r, ⟨hr, by simp [selected, hq, hP]⟩, he⟩)
+  exact hkeys.trans ((List.toFinset_card_le _).trans (by simp))
 
 /-- The layer-labelled representation of a binary operator prefix. The layer map may also
 list a reversed suffix for backward covering; injectivity of this encoding uses the bit field. -/

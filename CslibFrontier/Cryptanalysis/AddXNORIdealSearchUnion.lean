@@ -230,26 +230,34 @@ theorem changed_accept_le_rate (hq : 0 < q) (cut : Cut (Label q)) (seed target :
       Set.preimage, Set.mem_singleton_iff, decide_eq_true_eq] using hc
   linarith
 
-/-- The complete source search experiment with one shared verifier/reveal collision charge.
-The source hypotheses suffice; no probability estimate is a premise. -/
-theorem source_search_rate {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
+/-- Compose the actual search coupling with any proved source hidden-word covering estimate.
+This intermediate rule isolates covering; the source endpoints below discharge that estimate
+from execution, rather than treating it as a paper-theorem premise. -/
+theorem source_search_rate_of_covering {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
     (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
       ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
     (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T)
-    (hT : max q 4 ≤ T) (hlimit : T ≤ 2 ^ (m - 3)) :
+    (hT : max q 4 ≤ T) (hlimit : T ≤ 2 ^ (m - 3))
+    (forwardCount backwardCount : ℕ)
+    (hcover : ∀ seed target,
+      ((PMF.uniformOfFintype (Operators q)).bind fun bits =>
+        (ProbOracleComp.runWith Ledger.answer (verifiedAdversary adversary seed target) []).map
+          (fun (_, records) => CutBounds.coveredRecords
+            (sourceCut bits (Security.middleIndex q hq)) seed target records)) true ≤
+        (forwardCount : ℝ≥0∞) / 2 ^ ((q + 1) / 2) +
+          backwardCount / 2 ^ (q - (q + 1) / 2)) :
     ((plantedSearch adversary) true).toReal ≤
       Collisions.rate (2 ^ m) (T + q + q) +
-        (T + q : ℕ) / (2 : ℝ) ^ ((q + 1) / 2) +
-        (T + q : ℕ) / (2 : ℝ) ^ (q - (q + 1) / 2) := by
+        (forwardCount : ℕ) / (2 : ℝ) ^ ((q + 1) / 2) +
+        (backwardCount : ℕ) / (2 : ℝ) ^ (q - (q + 1) / 2) := by
   let k := Security.middleIndex q hq
   have hk : k.val + 1 = (q + 1) / 2 := by simp only [k, Security.middleIndex]; omega
-  have hd : 0 < q - (k.val + 1) := by rw [hk]; omega
   have hqT := (le_max_left q 4).trans hT
   have hw := Collisions.source_word_budget m T ((le_max_right q 4).trans hT) hlimit
   have hQ : T + q + q < 2 ^ m := by omega
   let bound : ℝ := Collisions.rate (2 ^ m) (T + q + q) +
-    (T + q : ℕ) / (2 : ℝ) ^ (k.val + 1) +
-    (T + q : ℕ) / (2 : ℝ) ^ (q - (k.val + 1))
+    (forwardCount : ℕ) / (2 : ℝ) ^ (k.val + 1) +
+    (backwardCount : ℕ) / (2 : ℝ) ^ (q - (k.val + 1))
   let B := fun seed target : Fin (2 ^ m) =>
     (PMF.uniformOfFintype (Operators q)).bind fun bits =>
       (PMF.uniformOfFintype (Label q → Equiv.Perm (Fin (2 ^ m)))).bind fun perms =>
@@ -282,12 +290,12 @@ theorem source_search_rate {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
       ⟨PMF.apply_ne_top _ _, ENNReal.ofReal_ne_top⟩) hlin'
     rw [ENNReal.toReal_add (PMF.apply_ne_top _ _) ENNReal.ofReal_ne_top,
       ENNReal.toReal_ofReal hnrate] at hlin
-    have hc := Covering.uniform_cut_covering_run k hd seed target
-      (verifiedAdversary adversary seed target) (T + q)
-      (verifiedAdversary_queryBound adversary T hbudget seed target)
-    have hn (n : ℕ) : ((T + q : ℕ) : ℝ≥0∞) / 2 ^ n ≠ ⊤ := by finiteness
-    have hr := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hn _, hn _⟩) hc
-    rw [ENNReal.toReal_add (hn _) (hn _)] at hr
+    have hc := hcover seed target
+    rw [← hk] at hc
+    have hnf : (forwardCount : ℝ≥0∞) / 2 ^ (k.val + 1) ≠ ⊤ := by finiteness
+    have hnb : (backwardCount : ℝ≥0∞) / 2 ^ (q - (k.val + 1)) ≠ ⊤ := by finiteness
+    have hr := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨hnf, hnb⟩) hc
+    rw [ENNReal.toReal_add hnf hnb] at hr
     simp only [ENNReal.toReal_div, ENNReal.toReal_natCast, ENNReal.toReal_pow,
       ENNReal.toReal_ofNat] at hr
     change ((B seed target) true).toReal ≤ _ at hlin
@@ -322,6 +330,27 @@ theorem source_search_rate {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
   have hr := ENNReal.toReal_mono ENNReal.ofReal_ne_top hp
   rw [ENNReal.toReal_ofReal hn] at hr
   simpa only [bound, hk] using hr
+
+/-- The complete source search experiment with one shared verifier/reveal collision charge.
+The source hypotheses suffice; no probability estimate is a premise. -/
+theorem source_search_rate {q : ℕ} (hq : 3 ≤ q) (m T : ℕ)
+    (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
+      ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
+    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T)
+    (hT : max q 4 ≤ T) (hlimit : T ≤ 2 ^ (m - 3)) :
+    ((plantedSearch adversary) true).toReal ≤
+      Collisions.rate (2 ^ m) (T + q + q) +
+        (T + q : ℕ) / (2 : ℝ) ^ ((q + 1) / 2) +
+        (T + q : ℕ) / (2 : ℝ) ^ (q - (q + 1) / 2) := by
+  apply source_search_rate_of_covering hq m T adversary hbudget hT hlimit (T + q) (T + q)
+  intro seed target
+  have hd : 0 < q - ((Security.middleIndex q hq).val + 1) := by
+    simp only [Security.middleIndex]
+    omega
+  simpa only [Security.middleIndex, Nat.sub_add_cancel (by omega : 1 ≤ (q + 1) / 2)] using
+    Covering.uniform_cut_covering_run (Security.middleIndex q hq) hd seed target
+      (verifiedAdversary adversary seed target) (T + q)
+      (verifiedAdversary_queryBound adversary T hbudget seed target)
 
 /-- A uniformly stronger repaired search inequality than the earlier `6,26` bound.
 The collision rate is paid once, but the verifier and reveal still use up to `3*T` calls. -/

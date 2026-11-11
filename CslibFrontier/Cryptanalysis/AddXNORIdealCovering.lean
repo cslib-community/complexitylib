@@ -12,7 +12,7 @@ import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
-import Mathlib.Data.Fin.Tuple.Take
+public import Mathlib.Data.Fin.Tuple.Take
 import Mathlib.Data.Fin.Rev
 import Mathlib.Logic.Equiv.Fin.Basic
 
@@ -41,7 +41,8 @@ namespace Cslib.Cryptanalysis.AddXNOR.IdealChain.Covering
 open Probability OracleComp RandomPermutation
 open scoped ENNReal
 
-private theorem uniform_take {q h : ℕ} (hle : h ≤ q) :
+/-- A prefix projection of the full uniform hidden word is uniform. -/
+theorem uniform_take {q h : ℕ} (hle : h ≤ q) :
     (PMF.uniformOfFintype (Operators q)).map (Fin.take h hle) =
       PMF.uniformOfFintype (Operators h) := by
   obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hle
@@ -53,7 +54,8 @@ private theorem uniform_take {q h : ℕ} (hle : h ≤ q) :
   simpa only [PMF.map_comp, Function.comp_def, Fin.appendEquiv_symm_apply,
     Probability.PMF.uniformOfFintype_prod_map_fst] using hp
 
-private theorem uniform_reverse (q : ℕ) :
+/-- Reversing the full uniform hidden word preserves its law. -/
+theorem uniform_reverse (q : ℕ) :
     (PMF.uniformOfFintype (Operators q)).map (fun bits i => bits i.rev) =
       PMF.uniformOfFintype (Operators q) := by
   have he := Probability.PMF.uniformOfFintype_map_equiv
@@ -77,7 +79,8 @@ private theorem reverse_ofFn {α : Type} {q : ℕ} (f : Fin q → α) :
     simp only [Fin.val_rev]
     omega
 
-private theorem source_front {q : ℕ} (bits : Operators q) (k : Fin q) :
+/-- The source cut's prefix is the layer-labelled prefix projection of the hidden word. -/
+theorem source_front {q : ℕ} (bits : Operators q) (k : Fin q) :
     (sourceCut bits k).left ++ [(sourceCut bits k).edge] =
       Forest.binaryLabels (fun i : Fin (k.val + 1) => i.castLE (by omega))
         (Fin.take (k.val + 1) (by omega) bits) := by
@@ -87,7 +90,8 @@ private theorem source_front {q : ℕ} (bits : Operators q) (k : Fin q) :
   rw [← Fin.ofFn_take_eq_take_ofFn (by omega)]
   rfl
 
-private theorem source_back {q : ℕ} (bits : Operators q) (k : Fin q) :
+/-- The reversed source suffix is a prefix projection of the reversed hidden word. -/
+theorem source_back {q : ℕ} (bits : Operators q) (k : Fin q) :
     (sourceCut bits k).right.reverse =
       Forest.binaryLabels
         (fun i : Fin (q - (k.val + 1)) => (i.castLE (by omega)).rev)
