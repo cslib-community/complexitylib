@@ -59,6 +59,8 @@ mixing lemma** (`abs_card_interedges_sub_le`, `abs_card_interedges_sub_le_mul_sq
 
 ## References
 
+* [S. Hoory, N. Linial, A. Wigderson, *Expander graphs and their applications*][HooryLinialWigderson2006], May 3, 2006 draft (`expanderbookr1.pdf`). Section 2.4 (Lemma 2.5) covers the singular-value adaptation, separate from the GV coding background in §12.3.1.
+
 * [S. Hoory, N. Linial, A. Wigderson, *Expander graphs and their applications*][HooryLinialWigderson2006], Bull. Amer. Math. Soc. 43(4):439–561 (2006). The mixing background relies on §2.4 (Lemma 2.5) and §12.3.1, while the formalized typed bipartite/multigraph and asymmetric generalizations explicitly adapt these arguments to multigraphs with parallel-edge multiplicities.
 * [M. Sipser, D. A. Spielman, *Expander codes*][SipserSpielman1996], IEEE Trans. Inf. Theory 42(6):1710–1722 (1996).
 -/
