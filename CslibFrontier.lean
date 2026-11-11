@@ -2124,6 +2124,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrence
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WordRAM
 public import CslibFrontier.Computability.Complexity.Gradel
+public import CslibFrontier.Computability.Complexity.Gradel.Tableau
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.PolyTime
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.Program
 public import CslibFrontier.Computability.Complexity.ImmermanVardi
@@ -4813,6 +4814,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposit
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Rooted
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TreeDecomposition.Subtree
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.TutteBerge
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 public import CslibFrontier.Foundations.Combinatorics.SmallSubsets
 public import CslibFrontier.Foundations.Combinatorics.Sperner
 public import CslibFrontier.Foundations.Combinatorics.Sperner.Kuhn
@@ -5465,6 +5467,7 @@ public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.PebbleGame
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.WeisfeilerLeman
 public import CslibFrontier.Logics.FirstOrder.Interpretation
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Constants
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Encoding

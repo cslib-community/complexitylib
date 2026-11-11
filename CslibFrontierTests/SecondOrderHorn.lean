@@ -8,12 +8,15 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Gradel
+public import CslibFrontier.Computability.Complexity.Gradel.Tableau
 public import CslibFrontier.Logics.SecondOrder.Horn.GuardElimination
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Horn
 public import Mathlib.ModelTheory.Graph
+import CslibFrontier.Computability.Complexity.Fagin.Verifier
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Tactic.FirstOrder
 
-/-! # SO∃-Horn definability, guard elimination, and full-tuple pullback
+/-! # SO∃-Horn definability, guard elimination, full-tuple pullback, and Grädel's theorem
 
 `evenLoops` is an SO∃-Horn sentence over directed graphs with successor. Its clauses walk the
 universe along successor and derive `R b x` when the number of self-loops at points up to `x` has
@@ -28,7 +31,9 @@ The second part tests `ESO.Horn.Sentence.elimGuards` and `hornDefinable_iff_exis
 sentence `sinkFreeHorn` whose guard contains nested `∀` and `∃` quantifiers (`¬ ∀ x, ∃ y, adj x y`),
 checking both positive and negative structures at `n = 2` and `n = 3`. The third part tests
 `FullTupleInterpretation.onHornSentence` at dimension `k = 2` on concrete positive and negative
-structures. -/
+structures. The fourth part tests `HornDefinable.of_encodedLanguage_mem_P` and
+`hornDefinable_iff_encodedLanguage_mem_P` end-to-end on native polynomial-time deciders, alongside
+positive and negative machine controls for `Gradel.Tableau.acceptanceHornSentence`. -/
 
 @[expose] public section
 
@@ -583,5 +588,277 @@ theorem not_realize_onHornSentence_unreachMax_completeGraph2 :
 example : HornDefinable ({M | (pairGraphInterp.onHornSentence unreachMax).Realize M} :
     Query Language.graph) :=
   HornDefinable.of_sentence (pairGraphInterp.onHornSentence unreachMax) fun _ => Iff.rfl
+
+/-! ### Grädel's theorem (`SO∃-Horn = P`) and Horn tableau controls -/
+
+section GradelCapture
+
+open Turing Turing.MultiTapeTM
+open Cslib.Complexity.Gradel.Tableau
+open Cslib.Complexity.ImmermanVardi.Tableau
+
+/-- Client-facing capture equivalence `hornDefinable_iff_encodedLanguage_mem_P` for any relational
+vocabulary. -/
+example {L : Language} [L.IsRelational] (v : Vocabulary L) (K : Query L) :
+    HornDefinable K ↔ K.encodedLanguage v ∈ P encStructure :=
+  hornDefinable_iff_encodedLanguage_mem_P v K
+
+/-- Round-trip of `evenLoopsQuery` through `hornDefinable_iff_encodedLanguage_mem_P`. -/
+example : HornDefinable evenLoopsQuery := by
+  have hP : evenLoopsQuery.encodedLanguage graphVocabulary ∈ P encStructure :=
+    (hornDefinable_iff_encodedLanguage_mem_P graphVocabulary evenLoopsQuery).mp
+      ⟨evenLoops, evenLoops_isQF, fun _ => Iff.rfl⟩
+  exact (hornDefinable_iff_encodedLanguage_mem_P graphVocabulary evenLoopsQuery).mpr hP
+
+/-- Empty query from a constant-`false` native decider: produces a quantifier-free Horn sentence
+rejecting every canonical ordered structure. -/
+example {L : Language} [L.IsRelational] (v : Vocabulary L) :
+    ∃ Φ : ESO.Horn.Sentence (language (succLanguage L)),
+      Φ.IsQF ∧ ∀ M : Ordered.Structure L, ¬ Φ.Realize M := by
+  have hP : (∅ : Query L).encodedLanguage v ∈ P encStructure := by
+    refine ⟨fun _ => false, ComputableInPolyTime.const false, fun a => ?_⟩
+    simp [Query.encodedLanguage]
+  obtain ⟨Φ, hqf, hΦ⟩ := HornDefinable.of_encodedLanguage_mem_P v hP
+  exact ⟨Φ, hqf, fun M h => (hΦ M).mpr h⟩
+
+/-- Non-trivial native polynomial-time query: directed graphs on `Fin 2`. Starting purely from a
+native `ComputableInPolyTime` decider, `HornDefinable.of_encodedLanguage_mem_P` synthesizes a
+quantifier-free `ESO.Horn.Sentence` over `G` that accepts `twoLoops2` (`size = 2`) and rejects
+`twoLoops` (`size = 3`). -/
+def sizeTwoGraphs : Query Language.graph := {M | M.size = 2}
+
+theorem sizeTwoGraphs_mem_P :
+    sizeTwoGraphs.encodedLanguage graphVocabulary ∈ P encStructure := by
+  refine ⟨fun a => graphVocabulary.checkShape a && decide (Prod.fst a = 2),
+    ComputableInPolyTime.bool_and' graphVocabulary.computableInPolyTime_checkShape
+      (ComputableInPolyTime.unary_eq' (ComputableInPolyTime.fst encUnary (encList encBits))
+        (ComputableInPolyTime.const 2)),
+    fun a => ?_⟩
+  rcases a with ⟨n, tables⟩
+  simp only [Query.encodedLanguage, sizeTwoGraphs, decoded, Set.mem_ofPred_eq, Bool.and_eq_true,
+    Vocabulary.checkShape_eq_true_iff, decide_eq_true_eq]
+  exact ⟨fun ⟨hw, ⟨_, heq⟩⟩ => ⟨hw, heq⟩, fun ⟨hw, heq⟩ => ⟨hw, ⟨by omega, heq⟩⟩⟩
+
+example :
+    ∃ Φ : ESO.Horn.Sentence G,
+      Φ.IsQF ∧ Φ.Realize twoLoops2 ∧ ¬ Φ.Realize twoLoops := by
+  obtain ⟨Φ, hqf, hΦ⟩ := HornDefinable.of_encodedLanguage_mem_P graphVocabulary sizeTwoGraphs_mem_P
+  refine ⟨Φ, hqf, (hΦ twoLoops2).mp rfl, fun h => ?_⟩
+  have hsz : twoLoops.size = 2 := (hΦ twoLoops).mpr h
+  exact absurd hsz (by decide)
+
+/-! #### Direct positive and negative controls for `acceptanceHornSentence` -/
+
+section TableauControls
+
+local instance {M : Type} : Language.empty.Structure M := Language.emptyStructure
+local instance : Fact (2 ≤ 4) := ⟨by decide⟩
+
+/-- Formula family interpreting the empty input `[]` over `Ordered.language Language.empty`. -/
+def nilInputFormula : Option Bool → (Ordered.language Language.empty).Formula (Fin 1)
+  | none => ⊤
+  | some _ => ⊥
+
+theorem realize_nilInputFormula {B : ℕ} [Fact (2 ≤ B)] (s : Option Bool) (a : Fin B) :
+    (nilInputFormula s).Realize ![a] ↔ inputAt ([] : List Bool) a.val = s := by
+  cases s <;> simp [nilInputFormula, inputAt]
+
+/-- Halts in one step outputting `[b]`. -/
+def haltWith (b : Bool) : MultiTapeTM 0 Bool Unit :=
+  ofTr () fun _ _ _ => ⟨0, Fin.elim0, some b, none⟩
+
+/-- Halts in one step with empty output `[]`. -/
+def haltEmpty : MultiTapeTM 0 Bool Unit :=
+  ofTr () fun _ _ _ => ⟨0, Fin.elim0, none, none⟩
+
+/-- Writes `true` on step 1, then loops forever in state `some true` without halting. -/
+def loopAfterTrue : MultiTapeTM 0 Bool Bool :=
+  ofTr false fun q _ _ =>
+    if q then ⟨0, Fin.elim0, none, some true⟩
+    else ⟨0, Fin.elim0, some true, some true⟩
+
+/-- Writes `true` on step 1, then writes `false` and halts on step 2 (`output = [true, false]`). -/
+def haltTrueFalse : MultiTapeTM 0 Bool Bool :=
+  ofTr false fun q _ _ =>
+    if q then ⟨0, Fin.elim0, some false, none⟩
+    else ⟨0, Fin.elim0, some true, some true⟩
+
+/-- Reads cell `1` of the input tape and outputs `true` iff that symbol is `some true`. -/
+def echoFirstBit : MultiTapeTM 0 Bool Unit :=
+  ofTr () fun _ inSym _ => ⟨0, Fin.elim0, some (inSym == some true), none⟩
+
+private theorem haltWith_run (b : Bool) :
+    ((haltWith b).runFrom ((haltWith b).initCfg []) 3).Halted ∧
+      ((haltWith b).runFrom ((haltWith b).initCfg []) 3).output = [b] := by
+  obtain ⟨hhalt, hout⟩ :
+      ((haltWith b).runFrom ((haltWith b).initCfg []) 1).Halted ∧
+        ((haltWith b).runFrom ((haltWith b).initCfg []) 1).output = [b] := by
+    rw [runFrom_one, step_of_state (q := ()) rfl]
+    simp [haltWith, tr_ofTr, Cfg.Halted, Action.apply_state, Action.apply_output]
+  rw [runFrom_eq_of_halt (haltWith b) ((haltWith b).initCfg []) (by decide : 1 ≤ 3) hhalt]
+  exact ⟨hhalt, hout⟩
+
+private theorem haltEmpty_run :
+    (haltEmpty.runFrom (haltEmpty.initCfg []) 3).Halted ∧
+      (haltEmpty.runFrom (haltEmpty.initCfg []) 3).output = [] := by
+  obtain ⟨hhalt, hout⟩ :
+      (haltEmpty.runFrom (haltEmpty.initCfg []) 1).Halted ∧
+        (haltEmpty.runFrom (haltEmpty.initCfg []) 1).output = [] := by
+    rw [runFrom_one, step_of_state (q := ()) rfl]
+    simp [haltEmpty, tr_ofTr, Cfg.Halted, Action.apply_state, Action.apply_output]
+  rw [runFrom_eq_of_halt haltEmpty (haltEmpty.initCfg []) (by decide : 1 ≤ 3) hhalt]
+  exact ⟨hhalt, hout⟩
+
+private theorem loopAfterTrue_run :
+    (loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 3).state = some true ∧
+      (loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 3).output = [true] := by
+  have h1 : (loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 1).state = some true ∧
+      (loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 1).output = [true] := by
+    rw [runFrom_one, step_of_state (q := false) rfl]
+    simp [loopAfterTrue, tr_ofTr, Action.apply_state, Action.apply_output]
+  obtain ⟨hs1, ho1⟩ := h1
+  have h2 : (loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 2).state = some true ∧
+      (loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 2).output = [true] := by
+    rw [show (2 : ℕ) = 1 + 1 from rfl, runFrom_succ, step_of_state (q := true) hs1]
+    simp only [Action.apply_state, Action.apply_output, ho1]
+    simp [loopAfterTrue, tr_ofTr]
+  obtain ⟨hs2, ho2⟩ := h2
+  rw [show (3 : ℕ) = 2 + 1 from rfl, runFrom_succ, step_of_state (q := true) hs2]
+  simp only [Action.apply_state, Action.apply_output, ho2]
+  simp [loopAfterTrue, tr_ofTr]
+
+private theorem haltTrueFalse_run :
+    (haltTrueFalse.runFrom (haltTrueFalse.initCfg []) 3).Halted ∧
+      (haltTrueFalse.runFrom (haltTrueFalse.initCfg []) 3).output = [true, false] := by
+  have h1 : (haltTrueFalse.runFrom (haltTrueFalse.initCfg []) 1).state = some true ∧
+      (haltTrueFalse.runFrom (haltTrueFalse.initCfg []) 1).output = [true] := by
+    rw [runFrom_one, step_of_state (q := false) rfl]
+    simp [haltTrueFalse, tr_ofTr, Action.apply_state, Action.apply_output]
+  obtain ⟨hs1, ho1⟩ := h1
+  obtain ⟨hhalt, hout⟩ :
+      (haltTrueFalse.runFrom (haltTrueFalse.initCfg []) 2).Halted ∧
+        (haltTrueFalse.runFrom (haltTrueFalse.initCfg []) 2).output = [true, false] := by
+    rw [show (2 : ℕ) = 1 + 1 from rfl, runFrom_succ, step_of_state (q := true) hs1]
+    simp only [Cfg.Halted, Action.apply_state, Action.apply_output, ho1]
+    simp [haltTrueFalse, tr_ofTr]
+  rw [runFrom_eq_of_halt haltTrueFalse (haltTrueFalse.initCfg []) (by decide : 2 ≤ 3) hhalt]
+  exact ⟨hhalt, hout⟩
+
+private theorem echoFirstBit_run (b₀ : Bool) :
+    ((echoFirstBit.runFrom (echoFirstBit.initCfg [b₀]) 3).Halted) ∧
+      ((echoFirstBit.runFrom (echoFirstBit.initCfg [b₀]) 3).output = [b₀]) := by
+  obtain ⟨hhalt, hout⟩ :
+      ((echoFirstBit.runFrom (echoFirstBit.initCfg [b₀]) 1).Halted) ∧
+        ((echoFirstBit.runFrom (echoFirstBit.initCfg [b₀]) 1).output = [b₀]) := by
+    rw [runFrom_one, step_of_state (q := ()) rfl]
+    simp [echoFirstBit, tr_ofTr, Cfg.Halted, Action.apply_state, Action.apply_output]
+  rw [runFrom_eq_of_halt echoFirstBit (echoFirstBit.initCfg [b₀]) (by decide : 1 ≤ 3) hhalt]
+  exact ⟨hhalt, hout⟩
+
+/-- **Positive control:** `haltWith true` halts with `[true]` by step `3`, so
+`acceptanceHornSentence` holds on `Fin 4`. -/
+example :
+    (acceptanceHornSentence Language.empty (haltWith true) nilInputFormula).Realize (Fin 4) := by
+  rw [realize_acceptanceHornSentence (haltWith true) nilInputFormula []
+    realize_nilInputFormula (by decide)]
+  exact haltWith_run true
+
+/-- **Negative control (output `[false]`):** `haltWith false` halts with `[false]`, rejected by the
+`OutView.one false` goal clause at `max`. -/
+example :
+    ¬ (acceptanceHornSentence Language.empty (haltWith false) nilInputFormula).Realize (Fin 4) := by
+  rw [realize_acceptanceHornSentence (haltWith false) nilInputFormula []
+    realize_nilInputFormula (by decide)]
+  obtain ⟨_, hout⟩ := haltWith_run false
+  rintro ⟨_, h⟩
+  rw [hout] at h
+  exact absurd h (by decide)
+
+/-- **Negative control (empty output `[]`):** `haltEmpty` halts with `[]`, rejected by the
+`OutView.empty` goal clause at `max`. -/
+example :
+    ¬ (acceptanceHornSentence Language.empty haltEmpty nilInputFormula).Realize (Fin 4) := by
+  rw [realize_acceptanceHornSentence haltEmpty nilInputFormula []
+    realize_nilInputFormula (by decide)]
+  obtain ⟨_, hout⟩ := haltEmpty_run
+  rintro ⟨_, h⟩
+  rw [hout] at h
+  exact absurd h (by decide)
+
+/-- **Negative control (non-halted at bound despite output `[true]`):** `loopAfterTrue` has already
+written `[true]` by step `3`, yet its state at `max = 3` is `some true`, so the halting goal clause
+rejects it. -/
+example :
+    ((loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 3).output = [true]) ∧
+      ¬ (acceptanceHornSentence Language.empty loopAfterTrue nilInputFormula).Realize (Fin 4) := by
+  obtain ⟨hstate, hout⟩ := loopAfterTrue_run
+  refine ⟨hout, ?_⟩
+  rw [realize_acceptanceHornSentence loopAfterTrue nilInputFormula []
+    realize_nilInputFormula (by decide)]
+  rintro ⟨hhalt, _⟩
+  change (loopAfterTrue.runFrom (loopAfterTrue.initCfg []) 3).state = none at hhalt
+  rw [hstate] at hhalt
+  exact absurd hhalt (by decide)
+
+/-- **Negative control (multi-bit output `[true, false]`):** `haltTrueFalse` halts at step `2` with
+output `[true, false]`, rejected by the `OutView.many` goal clause even though its first output bit
+is `true`. -/
+example :
+    ¬ (acceptanceHornSentence Language.empty haltTrueFalse nilInputFormula).Realize (Fin 4) := by
+  rw [realize_acceptanceHornSentence haltTrueFalse nilInputFormula []
+    realize_nilInputFormula (by decide)]
+  obtain ⟨_, hout⟩ := haltTrueFalse_run
+  rintro ⟨_, h⟩
+  rw [hout] at h
+  exact absurd h (by decide)
+
+/-- Formula family interpreting a 1-bit input `[b₀]` over `Ordered.language Language.empty`:
+position `1` carries `some b₀`, and all other positions carry `none`. -/
+def oneBitInputFormula (b₀ : Bool) :
+    Option Bool → (Ordered.language Language.empty).Formula (Fin 1)
+  | none => ∼(Term.equal (.var 0) (Ordered.one Language.empty))
+  | some b => if b = b₀ then Term.equal (.var 0) (Ordered.one Language.empty) else ⊥
+
+theorem realize_oneBitInputFormula {B : ℕ} [Fact (2 ≤ B)] (b₀ : Bool)
+    (s : Option Bool) (a : Fin B) :
+    (oneBitInputFormula b₀ s).Realize ![a] ↔ inputAt [b₀] a.val = s := by
+  have h1 : (Term.equal (.var 0) (Ordered.one Language.empty) :
+      (Ordered.language Language.empty).Formula (Fin 1)).Realize ![a] ↔ a.val = 1 := by
+    rw [Formula.realize_equal, Term.realize_var, Matrix.cons_val_zero, Fin.ext_iff,
+      Ordered.realize_one_val]
+  cases s with
+  | none =>
+    simp only [oneBitInputFormula, Formula.realize_not, h1]
+    rcases hv : a.val with _ | _ | k <;> simp [inputAt]
+  | some b =>
+    simp only [oneBitInputFormula]
+    split_ifs with hb
+    · subst hb
+      rw [h1]
+      rcases hv : a.val with _ | _ | k <;> simp [inputAt]
+    · rw [Formula.realize_bot]
+      rcases hv : a.val with _ | _ | k <;> simp [inputAt, Ne.symm hb]
+
+/-- **Input-dependent control:** `echoFirstBit` accepts `[true]` and rejects `[false]` on `Fin 4`
+(`[b₀].length + 1 = 2 < 4`). -/
+example :
+    (acceptanceHornSentence Language.empty echoFirstBit
+      (oneBitInputFormula true)).Realize (Fin 4) ∧
+    ¬ (acceptanceHornSentence Language.empty echoFirstBit
+      (oneBitInputFormula false)).Realize (Fin 4) := by
+  constructor
+  · rw [realize_acceptanceHornSentence echoFirstBit (oneBitInputFormula true) [true]
+      (realize_oneBitInputFormula true) (by decide)]
+    exact echoFirstBit_run true
+  · rw [realize_acceptanceHornSentence echoFirstBit (oneBitInputFormula false) [false]
+      (realize_oneBitInputFormula false) (by decide)]
+    obtain ⟨_, hout⟩ := echoFirstBit_run false
+    rintro ⟨_, h⟩
+    rw [hout] at h
+    exact absurd h (by decide)
+
+end TableauControls
+
+end GradelCapture
 
 end Cslib.Tests.SecondOrderHorn
