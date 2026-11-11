@@ -94,6 +94,17 @@ and curry independent coins of different biases, and compute the probability tha
 show `true`. Run
 `scripts/build.sh CslibFrontierTests.PMFConditioning`.
 
+For real conditional expectations on a finite product distribution `PMF.pi p` (`∀ i : ι, α i`) given
+coordinate assignments on `fixed : Finset ι`, import
+[Product/ConditionalExpectation.lean](../../CslibFrontier/Probability/Product/ConditionalExpectation.lean).
+`PMF.condExpect p f fixed x` sums `f` against the product of `(p i)` over unfixed coordinates `i ∉ fixed`
+without requiring positive cylinder mass, so it extends smoothly outside `(PMF.pi p).support` while
+identifying `(PMF.pi p).filter …` with `fixedPi p fixed x` whenever fixed coordinates lie in
+`(p i).support` (`filter_pi_cylinder`). `condExpect_empty` recovers the full product expectation,
+`condExpect_univ` evaluates `f x`, `sum_mul_condExpect_insert` is the one-coordinate tower law, and
+`exists_condExpect_insert_le` / `exists_le_condExpect_insert` produce support-valued coordinate
+choices preserving the conditional expectation.
+
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
 upper bound, import [PMF/ToReal.lean](../../CslibFrontier/Probability/PMF/ToReal.lean) and use
 `PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
@@ -174,6 +185,28 @@ optimal cost is exactly `2`, no generating tree does better, and the entropy is 
 They also cover a non-halting tree that generates nothing and has infinite cost. Run
 `scripts/build.sh CslibFrontierTests.KnuthYao`. The model counts coin flips only; it does not certify
 that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
+When an exact sampler instead repeats a fixed-width `width`-bit decoder `attempt : List Bool → Option α`,
+import [DDGTree/Rejection.lean](../../CslibFrontier/Probability/DDGTree/Rejection.lean) for
+`BlockRejectionSpec`, [Languages/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Languages/Probabilistic/RejectionSampling.lean)
+for the `ProbComp` programs (`sampleBlockTrials`, `sampleSeededTrials`, `sampleBlockCapped`), and
+[Computability/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Computability/Probabilistic/RejectionSampling.lean)
+for strict `IsPPTOn` certificates (`isPPTOn_sampleSeededTrials`, `isPPTOn_sampleBlockTrials`,
+`isPPTOn_sampleBlockCapped`) when `trials` and `width` are computed in `encUnary`, the `attempt`
+decoder is polynomial-time on input-and-block pairs, and (`sampleBlockCapped`) the `fallback` map
+is polynomial-time. On the unbounded
+side, `spec.toDDGTree` satisfies `run_toDDGTree` (`n / width` trials after `n` fair bits), generates
+the target law when `0 < width` and `acceptProb ≠ 0` (`toDDGTree_generates`), and reads
+`width / acceptProb` fair bits in expectation (`expectedFlips_toDDGTree`, including `⊤` when
+`acceptProb = 0`). On the capped side, `runTrials_none` gives exact failure `rejectProb ^ t` and
+`dist_runCapped_le` bounds fallback statistical distance by `(rejectProb ^ t).toReal`.
+`uniformFinTree` and `uniformFinRejectionSpec` specialize this to `Fin n` (`≤ 2 * Nat.clog 2 n`
+expected flips, `k` flips at `2 ^ k`, and `≤ (1 / 2) ^ t` capped failure; `dyadicFinRejectionSpec`
+and `subsetDyadicSpec` cover `dyadicSize n` and finite subsets). The
+[checked clients](../../CslibFrontierTests/FairBitRejectionAndCondExp.lean) verify exact `8 / 3` and
+`24 / 5` flip counts on `Fin 3` and `Fin 5`, capped `Fin 3` bounds, the never-accepting `⊤`
+boundary, subset sampling on `Fin 6`, and `IsPPTOn`; run
+`scripts/build.sh CslibFrontierTests.FairBitRejectionAndCondExp`.
 
 ## Polarize statistical distance
 

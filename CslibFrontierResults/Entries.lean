@@ -51,6 +51,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -68,6 +69,7 @@ import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
+import CslibFrontier.Computability.Kolmogorov.MINKTStar.Hardness
 import CslibFrontier.Computability.Kolmogorov.MKtP
 import CslibFrontier.Computability.Kolmogorov.SymmetryOfInformation
 import CslibFrontier.Computability.MCSP.AntiChecker
@@ -2703,6 +2705,31 @@ register_result "minkt-np" where
     NP-hardness of MINKT is not formalized. Hirahara's Definition 9 (after Ko) defines the \
     problem, and the fixed-threshold MINKTAt follows Liu and Pass, Section 2.2."
 
+register_result "minktstar-rp-hard" where
+  title := "Hirahara: MINKT* is NP-hard under randomized reductions"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Hirahara2022, theorem := "Theorem I.2",
+      locator := "p. 971, \"In particular\"" }
+  ]
+  theorems := [
+    Cslib.Kolmogorov.MINKTStar.rpHard,
+    Cslib.Kolmogorov.MINKTStar.rpReducible_GapCMMSA_MINKTStar,
+    Cslib.Kolmogorov.MINKTStar.NP_subset_BPP_of_mem_BPP,
+    Cslib.Kolmogorov.MINKTStar.NP_subset_coRP_of_mem_coRP
+  ]
+  scope := "Every NP language reduces to MINKT* (a partial string over {0, 1, *}, then the step \
+    budget and the size threshold in unary) by a polynomial-time randomized many-one reduction \
+    with one-sided error: yes maps to yes always, no to no with probability at least 2/3. K^t \
+    counts the steps of the described machine under the library's multi-tape universal machine, \
+    where the source's footnote 6 uses a KT-style measure. Library route: from the library's \
+    GapCMMSA Δ g 1 (NP-hard via label cover) by the seeded construction of the partial MCSP \
+    reduction, with a polynomial-time generator for the yes side and a count of truth tables of \
+    small time-bounded complexity for the no side; the source fixes the statement, not the \
+    proof. The (log N)^ε inapproximability and distributional forms of Theorem I.2 are not \
+    formalized. The BPP and coRP inclusions are conditional on MINKT* being in BPP or coRP; they \
+    follow from the reduction and are not stated separately in the source."
+
 register_result "mktp-exp" where
   title := "MKtP, the minimum Levin Kt complexity problem, is in E and EXP"
   topic := "meta-complexity"
@@ -2966,6 +2993,27 @@ register_result "bareiss-rational-elimination-polytime" where
     ragged or oversized-header inputs), whereas Schrijver Section 3.3 analyzes normalized \
     rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
     (circulant spectra and fibre-sum bounds remain open there)."
+
+register_result "sperner-2d-ppad-completeness" where
+  title := "PPAD-completeness of circuit two-dimensional Sperner (Sperner2D)"
+  topic := "structural complexity"
+  sources := [
+    { paper := ChenDeng2006, theorem := unverified,
+      locator := unverified },
+    { paper := ChenDengTeng2009, theorem := unverified,
+      locator := "Section 4.1, Definitions 4.2, 4.4 and 4.5 (with d = 2)" }
+  ]
+  theorems := [
+    Cslib.Complexity.EndOfLine_searchReducible_Sperner2D,
+    Cslib.Complexity.Sperner2D_searchHard,
+    Cslib.Complexity.Sperner2D_searchComplete
+  ]
+  scope := "Explicit polynomial-time search reduction EndOfLine ≤ Sperner2D compiling each \
+    n-bit EndOfLine instance uniformly into a circuit on a 2^(n + 5) × 2^(n + 5) grid of 16 × 16 \
+    routing, crossover and end-tile gadgets, combined with Sperner2D_mem_PPAD under encSperner2D. \
+    Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
+    as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
+    completeness and d-dimensional circuit Sperner are not formalized."
 
 section
 open Cslib.Communication
