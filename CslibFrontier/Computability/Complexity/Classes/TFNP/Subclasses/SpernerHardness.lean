@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Fin
+import Mathlib.Data.FinEnum
 import Mathlib.Tactic.FinCases
 
 /-!
@@ -91,23 +92,6 @@ private def TileKind.all : List TileKind :=
 private def TileKind.isCap : TileKind → Bool
   | .capS | .capN | .capE | .capW => true
   | _ => false
-
-private def TileKind.toFin : TileKind → Fin 19
-  | .empty => 0 | .lr => 1 | .rl => 2 | .bt => 3 | .tb => 4
-  | .wn => 5 | .nw => 6 | .es => 7 | .se => 8 | .sw => 9 | .ne => 10
-  | .crossLB => 11 | .crossRT => 12 | .crossLT => 13 | .crossRB => 14
-  | .capS => 15 | .capN => 16 | .capE => 17 | .capW => 18
-
-private theorem TileKind.all_getD_toFin (k : TileKind) :
-    TileKind.all.getD k.toFin.val .empty = k := by
-  cases k <;> rfl
-
-private theorem TileKind.toFin_injective : Function.Injective TileKind.toFin := by
-  intro a b h
-  rw [← TileKind.all_getD_toFin a, ← TileKind.all_getD_toFin b, h]
-
-private instance : Finite TileKind :=
-  Finite.of_injective TileKind.toFin TileKind.toFin_injective
 
 private def tilePorts : TileKind → Port × Port × Port × Port
   | .empty   => (.none, .none, .none, .none)
@@ -243,6 +227,9 @@ private theorem tileColor_no_spurious :
 
 private theorem mem_tileKind_all (k : TileKind) : k ∈ TileKind.all := by
   cases k <;> simp [TileKind.all]
+
+private instance : FinEnum TileKind :=
+  FinEnum.ofList TileKind.all mem_tileKind_all
 
 private theorem tileColor_west {k : TileKind} {i : ℕ} (hi : i < 16) :
     tileColor k 0 i = portColor (tilePorts k).1 i := by
@@ -1061,10 +1048,7 @@ private theorem lowBits_evalNat (n : ℕ) (c : CircuitCode) (u : ℕ) :
   rwa [length_evalCircuitCode] at h
 
 private theorem lowBits_zero_eq (n : ℕ) : lowBits n 0 = zeroVertex n := by
-  rw [zeroVertex, List.eq_replicate_iff]
-  exact ⟨length_lowBits n 0, fun b hb => by
-    obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
-    simp [lowBits, List.getElem_map]⟩
+  simpa [zeroVertex] using lowBits_lsbValue (List.replicate n false)
 
 private theorem lowBits_inj_of_lt {n a b : ℕ} (ha : a < 2 ^ n) (hb : b < 2 ^ n)
     (h : lowBits n a = lowBits n b) : a = b := by
@@ -1138,17 +1122,6 @@ private theorem outputColor_colorToBits (c : Fin 3) :
     Sperner2D.outputColor (colorToBits c) = c := by
   fin_cases c <;> decide
 
-private def encTileKind : TileKind ↪ List Bool where
-  toFun k := encUnary k.toFin.val
-  inj' a b h := by
-    apply TileKind.toFin_injective
-    apply Fin.ext
-    exact encUnary.injective h
-
-private def encFin16 : Fin 16 ↪ List Bool where
-  toFun i := encUnary i.val
-  inj' _ _ h := Fin.ext (encUnary.injective h)
-
 private theorem computableInPolyTime_evalNat {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {code : α → CircuitCode} {u : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
@@ -1187,7 +1160,7 @@ private theorem computableInPolyTime_div16Sub1 {α : Type} {enc : α ↪ List Bo
 private theorem computableInPolyTime_mod16 {α : Type} {enc : α ↪ List Bool} {f : α → ℕ}
     (hf : ComputableInPolyTime f enc encNat) :
     ComputableInPolyTime (fun a => (⟨f a % 16, Nat.mod_lt _ (by decide)⟩ : Fin 16))
-      enc encFin16 := by
+      enc (encFinEnum (Fin 16)) := by
   have hand : ComputableInPolyTime (fun a => f a &&& 15) enc encNat :=
     binary_and' hf (const 15)
   have hmod (x : ℕ) : x &&& 15 = x % 16 := by
@@ -1200,7 +1173,7 @@ private theorem computableInPolyTime_mod16 {α : Type} {enc : α ↪ List Bool} 
     omega
   have hunary : ComputableInPolyTime (fun a => f a % 16) enc encUnary := by
     simpa only [hmin_eq] using hmin
-  have hfin := (unary_finMod (by decide : 0 < 16) encFin16).comp hunary
+  have hfin := (unary_finMod (by decide : 0 < 16) (encFinEnum (Fin 16))).comp hunary
   refine hfin.of_enc_eq fun a => ?_
   have hlt : f a % 16 < 16 := Nat.mod_lt _ (by decide)
   simp [Nat.mod_eq_of_lt hlt]
@@ -1257,13 +1230,13 @@ private theorem computableInPolyTime_tileKindDiag {α : Type} {enc : α ↪ List
     (h3 : ComputableInPolyTime b3 enc encBool) (h4 : ComputableInPolyTime b4 enc encBool)
     (h5 : ComputableInPolyTime b5 enc encBool) (h6 : ComputableInPolyTime b6 enc encBool) :
     ComputableInPolyTime (fun a => tileKindDiag (b1 a) (b2 a) (b3 a) (b4 a) (b5 a) (b6 a))
-      enc encTileKind := by
+      enc (encFinEnum TileKind) := by
   let encB6 := encPair encBool (encPair encBool (encPair encBool
     (encPair encBool (encPair encBool encBool))))
   have hvec := h1.prod (h2.prod (h3.prod (h4.prod (h5.prod h6))))
   have htab : ComputableInPolyTime (fun p : Bool × Bool × Bool × Bool × Bool × Bool =>
       tileKindDiag p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2)
-      encB6 encTileKind := of_finite _
+      encB6 (encFinEnum TileKind) := of_finite _
   exact htab.comp hvec
 
 private theorem computableInPolyTime_tileKindOff {α : Type} {enc : α ↪ List Bool}
@@ -1274,7 +1247,7 @@ private theorem computableInPolyTime_tileKindOff {α : Type} {enc : α ↪ List 
     (h7 : ComputableInPolyTime b7 enc encBool) (h8 : ComputableInPolyTime b8 enc encBool) :
     ComputableInPolyTime
       (fun a => tileKindOff (b1 a) (b2 a) (b3 a) (b4 a) (b5 a) (b6 a) (b7 a) (b8 a))
-      enc encTileKind := by
+      enc (encFinEnum TileKind) := by
   let encB8 := encPair encBool (encPair encBool (encPair encBool (encPair encBool
     (encPair encBool (encPair encBool (encPair encBool encBool))))))
   have hvec := h1.prod (h2.prod (h3.prod (h4.prod (h5.prod (h6.prod (h7.prod h8))))))
@@ -1282,7 +1255,7 @@ private theorem computableInPolyTime_tileKindOff {α : Type} {enc : α ↪ List 
       Bool × Bool × Bool × Bool × Bool × Bool × Bool × Bool =>
       tileKindOff p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1 p.2.2.2.2.2.1
         p.2.2.2.2.2.2.1 p.2.2.2.2.2.2.2)
-      encB8 encTileKind := of_finite _
+      encB8 (encFinEnum TileKind) := of_finite _
   exact htab.comp hvec
 
 private def marginOutFun (b1 b2 b3 b4 b5 b6 b7 : Bool) : Fin 3 :=
@@ -1419,9 +1392,9 @@ private theorem computableInPolyTime_colorFun :
         (evalNat (eolInstN p) (eolInstS p))
         (lsbValue (p.2.take (eolInstN p + 5)) / 16 - 1)
         (lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) / 16 - 1))
-      encIn encTileKind := by
+      encIn (encFinEnum TileKind) := by
     have hif := (hX.decide_eq' hY).ite hkDiag hkOff
-    refine hif.of_enc_eq fun p => congrArg encTileKind ?_
+    refine hif.of_enc_eq fun p => congrArg (encFinEnum TileKind) ?_
     simp [tileKind]
   have hdx := computableInPolyTime_mod16 hx
   have hdy := computableInPolyTime_mod16 hy
@@ -1432,7 +1405,7 @@ private theorem computableInPolyTime_colorFun :
         (lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) / 16 - 1))
         (lsbValue (p.2.take (eolInstN p + 5)) % 16)
         (lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) % 16))) encIn encBits := by
-    let encT := encPair encTileKind (encPair encFin16 encFin16)
+    let encT := encPair (encFinEnum TileKind) (encPair (encFinEnum (Fin 16)) (encFinEnum (Fin 16)))
     have htab : ComputableInPolyTime (fun q : TileKind × Fin 16 × Fin 16 =>
         colorToBits (tileColor q.1 q.2.1.val q.2.2.val)) encT encBits := of_finite _
     exact htab.comp (hk.prod (hdx.prod hdy))
@@ -1469,12 +1442,8 @@ private theorem computableInPolyTime_decodeSol :
   have hm : ComputableInPolyTime (fun p : (ℕ × CircuitCode × CircuitCode) × List Bool =>
       eolInstN p + 5) encIn encUnary := unary_add' hn (const 5)
   have htail : ComputableInPolyTime (fun p : (ℕ × CircuitCode × CircuitCode) × List Bool =>
-      p.2.tail) encIn encBits := by
-    have hdrop1 : ComputableInPolyTime (fun p : (ℕ × CircuitCode × CircuitCode) × List Bool =>
-        p.2.drop 1) encIn encBits :=
-      .of_tidy (ComputableTidilyInPolyTime.bitsDropWithInput hw.tidy (const 1).tidy)
-    refine hdrop1.of_enc_eq fun p => congrArg encBits ?_
-    cases p.2 <;> simp
+      p.2.tail) encIn encBits :=
+    .of_tidy (ComputableTidilyInPolyTime.bitsTail.comp hw.tidy)
   have hxBits : ComputableInPolyTime (fun p => p.2.tail.take (eolInstN p + 5)) encIn encBits :=
     .of_tidy (ComputableTidilyInPolyTime.bitsTakeWithInput htail.tidy hm.tidy)
   have hyBits : ComputableInPolyTime (fun p => p.2.tail.drop (eolInstN p + 5)) encIn encBits :=
