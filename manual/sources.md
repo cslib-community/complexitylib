@@ -810,7 +810,7 @@ Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *
 <a id="impagliazzopudlaksgall99"></a>
 ## impagliazzopudlaksgall99
 
-Russell Impagliazzo, Pavel Pudlák and Jiří Sgall. “Lower Bounds for the Polynomial Calculus and the Gröbner Basis Algorithm.” *Computational Complexity* 8(2), 127–144, 1999. DOI: [10.1007/s000370050024](https://doi.org/10.1007/s000370050024). Bibliographic record from `references.bib` (`ImpagliazzoPudlakSgall1999`); the paper text was not inspected in this pass (the `algFPHP` axiom presentation follows [#3569](https://github.com/cslib-community/cslib-frontier/issues/3569)).
+Russell Impagliazzo, Pavel Pudlák and Jiří Sgall. “Lower Bounds for the Polynomial Calculus and the Gröbner Basis Algorithm.” *Computational Complexity* 8(2), 127–144, 1999. DOI: [10.1007/s000370050024](https://doi.org/10.1007/s000370050024). Bibliographic record from `references.bib` (`ImpagliazzoPudlakSgall1999`); the paper text was not inspected (the `algFPHP` axiom presentation follows [#3569](https://github.com/cslib-community/cslib-frontier/issues/3569)).
 
 <a id="impagliazzowigderson97"></a>
 ## impagliazzowigderson97

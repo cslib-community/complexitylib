@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Vincent Palma, Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Data.MvPolynomial.CoefficientDegree
 import CslibFrontier.Logics.Propositional.Algebraic.FunctionalPigeonhole
 import Mathlib.FieldTheory.Finite.Basic
 
@@ -41,11 +42,6 @@ example (x : Fin 1 × Fin 1 → Bool) (hx : IsBoolSolution (algFPHP 1 1 ℤ) x) 
   simp [pigeonIndicator, hf0]
 
 /-! ### `algFPHP(2, 1)`: unsatisfiable and refutable in degree `2` -/
-
-private theorem totalDegree_X_le' {σ R : Type*} [CommRing R] (v : σ) :
-    (X v : MvPolynomial σ R).totalDegree ≤ 1 := by
-  rw [X]
-  exact (totalDegree_monomial_le _ _).trans (by simp)
 
 private theorem algFPHPPigeonPoly_one_hole {m : ℕ} {R : Type*} [CommRing R] (i : Fin m) :
     (algFPHPPigeonPoly (n := 1) (R := R) i) = 1 - X (i, 0) := by
@@ -100,18 +96,20 @@ private theorem refutableInDegree_two_algFPHP21 (R : Type*) [CommRing R] :
     simpa [algFPHP21Proof, hq₂, hq₃, q₁, h₀₁, p₁, p₀] using proof₆
   refine ⟨algFPHP21Proof R, hproof, by simp [algFPHP21Proof], ?_⟩
   have hdeg_p₀ : p₀.totalDegree ≤ 2 :=
-    (totalDegree_sub _ _).trans (max_le (by simp) ((totalDegree_X_le' (0, 0)).trans (by decide)))
+    (totalDegree_sub _ _).trans
+      (max_le (by simp) ((totalDegree_X_le (0, 0)).trans (by decide)))
   have hdeg_p₁ : p₁.totalDegree ≤ 2 :=
-    (totalDegree_sub _ _).trans (max_le (by simp) ((totalDegree_X_le' (1, 0)).trans (by decide)))
+    (totalDegree_sub _ _).trans
+      (max_le (by simp) ((totalDegree_X_le (1, 0)).trans (by decide)))
   have hdeg_h₀₁ : h₀₁.totalDegree ≤ 2 :=
     (totalDegree_mul _ _).trans
-      (add_le_add (totalDegree_X_le' (0, 0)) (totalDegree_X_le' (1, 0)))
+      (add_le_add (totalDegree_X_le (0, 0)) (totalDegree_X_le (1, 0)))
   have hdeg_q₁ : q₁.totalDegree ≤ 2 :=
     (totalDegree_mul _ _).trans
-      (add_le_add (totalDegree_X_le' (0, 0))
-        ((totalDegree_sub _ _).trans (max_le (by simp) (totalDegree_X_le' (1, 0)))))
+      (add_le_add (totalDegree_X_le (0, 0))
+        ((totalDegree_sub _ _).trans (max_le (by simp) (totalDegree_X_le (1, 0)))))
   simp only [algFPHP21Proof, PC.degree_cons, PC.degree_nil, totalDegree_one]
-  exact max_le (by decide) (max_le ((totalDegree_X_le' (0, 0)).trans (by decide))
+  exact max_le (by decide) (max_le ((totalDegree_X_le (0, 0)).trans (by decide))
     (max_le hdeg_q₁ (max_le hdeg_h₀₁ (max_le hdeg_p₁ (max_le hdeg_p₀ (by decide))))))
 
 example :

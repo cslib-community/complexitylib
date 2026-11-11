@@ -9,12 +9,13 @@ module
 
 public import CslibFrontier.Logics.Propositional.Algebraic.Boolean
 
+import CslibFrontier.Foundations.Data.MvPolynomial.CoefficientDegree
+
 /-!
 # Algebraic functional pigeonhole principle (`algFPHP`)
 
 This module defines the algebraic functional pigeonhole principle `algFPHP m n R` for `m` pigeons
-and `n` holes over a commutative ring `R`, following Impagliazzo, Pudlák, and Sgall
-`ImpagliazzoPudlakSgall1999`.
+and `n` holes over a commutative ring `R`, following [ImpagliazzoPudlakSgall1999].
 
 The variables are indexed by `Fin m × Fin n`, where `x_{ij} = 1` indicates that pigeon `i`
 occupies hole `j`. The system consists of:
@@ -46,8 +47,8 @@ occupies hole `j`. The system consists of:
 
 ## References
 
-- R. Impagliazzo, P. Pudlák, and J. Sgall, *Lower Bounds for the Polynomial Calculus and the
-  Gröbner Basis Algorithm*, Computational Complexity 8(2):127–144 (1999).
+* [R. Impagliazzo, P. Pudlák, and J. Sgall, *Lower Bounds for the Polynomial Calculus and the
+  Gröbner Basis Algorithm*][ImpagliazzoPudlakSgall1999]
 -/
 
 public section
@@ -189,21 +190,17 @@ theorem mem_algFPHP {p : MvPolynomial (Fin m × Fin n) R} :
       p ∈ algFPHPConstraints m n R ∨ ∃ v : Fin m × Fin n, boolAxiom v = p := by
   simp only [algFPHP, List.mem_append, mem_boolAxioms]
 
-private theorem totalDegree_X_le {σ : Type*} (u : σ) :
-    (X u : MvPolynomial σ R).totalDegree ≤ 1 := by
-  rw [X]
-  exact (totalDegree_monomial_le _ _).trans (by simp)
-
 private theorem totalDegree_X_mul_X_le {σ : Type*} (u v : σ) :
     (X u * X v : MvPolynomial σ R).totalDegree ≤ 2 :=
-  (totalDegree_mul _ _).trans (add_le_add (totalDegree_X_le u) (totalDegree_X_le v))
+  (totalDegree_mul _ _).trans
+    (add_le_add (MvPolynomial.totalDegree_X_le u) (MvPolynomial.totalDegree_X_le v))
 
 /-- Every pigeon axiom has total degree at most `1`. -/
 theorem totalDegree_algFPHPPigeonPoly_le (i : Fin m) :
     (algFPHPPigeonPoly i : MvPolynomial (Fin m × Fin n) R).totalDegree ≤ 1 := by
   refine (totalDegree_sub _ _).trans (max_le ?_ (totalDegree_finsetSum_le fun j _ => ?_))
   · simp
-  · exact totalDegree_X_le (i, j)
+  · exact MvPolynomial.totalDegree_X_le (i, j)
 
 /-- Every constraint of `algFPHPConstraints m n R` has total degree at most `2`. -/
 theorem totalDegree_le_two_of_mem_algFPHPConstraints {p : MvPolynomial (Fin m × Fin n) R}
@@ -236,10 +233,6 @@ end Membership
 /-! ### Assignment semantics and common zeros -/
 
 section Semantics
-
-private theorem bitVal_eq_one_iff {R : Type*} [CommRing R] [Nontrivial R] {b : Bool} :
-    Cslib.BitString.bitVal R b = 1 ↔ b = true := by
-  cases b <;> simp
 
 private theorem bitPoint_pigeonIndicator {m n : ℕ} (R : Type*) [CommRing R]
     (f : Fin m → Fin n) (i : Fin m) (j : Fin n) :
@@ -331,7 +324,10 @@ private theorem pigeonIndicator_eq_of_bitPoint_eq {m n : ℕ} {R : Type*} [CommR
   have hfi := congrFun h (i, f i)
   simp only [Cslib.BitString.bitPoint, pigeonIndicator, decide_true, Cslib.BitString.bitVal_true]
     at hfi
-  exact of_decide_eq_true (bitVal_eq_one_iff.1 hfi.symm)
+  by_cases hfg : f i = g i
+  · exact hfg
+  · simp only [hfg, decide_false, Cslib.BitString.bitVal_false] at hfi
+    exact absurd hfi one_ne_zero
 
 private theorem pigeonIndicator_injective {m n : ℕ} :
     Function.Injective (pigeonIndicator : (Fin m → Fin n) → Fin m × Fin n → Bool) := by
