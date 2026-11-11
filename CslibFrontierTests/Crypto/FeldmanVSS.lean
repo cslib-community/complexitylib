@@ -72,14 +72,17 @@ example :
     schnorrGroups.encode d23 (sampleCommit 0) = Nat.bits 8 ∧
       schnorrGroups.encode d23 (sampleCommit 1) = Nat.bits 9 ∧
       schnorrGroups.encode d23 (sampleCommit 2) = Nat.bits 13 := by
-  have h0 := feldmanCommit_zero schnorrGroups d23 params23 3 sampleTail
-  have h1 := feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail ⟨0, by decide⟩
-  have h2 := feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail ⟨1, by decide⟩
-  change schnorrGroups.encode d23 (sampleCommit 0) = Nat.bits 8 ∧
-    schnorrGroups.encode d23 (sampleCommit (Fin.succ ⟨0, by decide⟩)) = Nat.bits 9 ∧
-    schnorrGroups.encode d23 (sampleCommit (Fin.succ ⟨1, by decide⟩)) = Nat.bits 13
+  have h0 : feldmanCommit schnorrGroups d23 params23 3 sampleTail 0 =
+      (3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 :=
+    feldmanCommit_zero schnorrGroups d23 params23 3 sampleTail
+  have h1 : feldmanCommit schnorrGroups d23 params23 3 sampleTail 1 =
+      (5 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 :=
+    (feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail ⟨0, by decide⟩).trans rfl
+  have h2 : feldmanCommit schnorrGroups d23 params23 3 sampleTail 2 =
+      (7 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 :=
+    (feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail ⟨1, by decide⟩).trans rfl
+  dsimp only [sampleCommit]
   rw [h0, h1, h2]
-  simp only [sampleTail, Matrix.cons_val_zero, Matrix.cons_val_one]
   decide
 
 example (i : Fin 4) :
@@ -133,10 +136,17 @@ private theorem malCommit_eval_eq (j : ZMod (schnorrGroups.order d23)) (i : Fin 
     (hi : params23.point i = j) :
     (3 + j + 2 * j ^ 2) • schnorrGroups.generator d23 =
       ∑ k : Fin (params23.threshold + 1), (params23.point i ^ (k : ℕ)) • malCommit k := by
+  have hm0 : malCommit (0 : Fin 3) =
+      (3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 := rfl
+  have hm1 : malCommit (1 : Fin 3) =
+      (1 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 := rfl
+  have hm2 : malCommit (2 : Fin 3) =
+      (2 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 := rfl
+  change (3 + j + 2 * j ^ 2) • schnorrGroups.generator d23 =
+    ∑ k : Fin 3, (params23.point i ^ (k : ℕ)) • malCommit k
   rw [Fin.sum_univ_three, hi]
-  simp only [malCommit, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-    Fin.val_zero, Fin.val_one, Fin.val_two]
-  simp only [pow_zero, one_smul, pow_one, smul_smul]
+  simp only [Fin.val_zero, Fin.val_one, Fin.val_two, pow_zero, one_smul, pow_one,
+    hm0, hm1, hm2, smul_smul]
   rw [← add_smul, ← add_smul]
   congr 1
   ring
@@ -164,14 +174,14 @@ private theorem hver₂ :
 example :
     Shamir.reconstruct params23 S₁ σ₁ = Shamir.reconstruct params23 S₂ σ₂ :=
   feldmanVerify_agree_on_authorized schnorrGroups d23 params23 malCommit
-    (by simp [Shamir.authorized]; decide)
-    (by simp [Shamir.authorized]; decide)
+    (by simp only [Shamir.authorized]; decide)
+    (by simp only [Shamir.authorized]; decide)
     hver₁ hver₂
 
 example :
     Shamir.reconstruct params23 S₁ σ₁ = 3 :=
   reconstruct_eq_of_feldmanVerify_commit_zero schnorrGroups d23 params23 malCommit
-    (by simp [malCommit]) S₁ (by simp [Shamir.authorized]; decide) σ₁ hver₁
+    rfl S₁ (by simp only [Shamir.authorized]; decide) σ₁ hver₁
 
 example (s₁ s₂ : ZMod (schnorrGroups.order d23))
     (h₁ : feldmanVerify schnorrGroups d23 params23 malCommit 0 s₁ = true)
