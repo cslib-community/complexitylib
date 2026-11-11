@@ -24,24 +24,29 @@ import CslibFrontier.Foundations.Data.Nat.Log
 /-!
 # Seeding the CMMSA construction with random tables
 
-The randomized reductions from `GapCMMSA` to partial MCSP [Hirahara2022, Theorem I.2] and to
-MINKT\* read the functions of the variables of a CMMSA instance `I` from a random string. This
-module provides the part they share.
+The library's randomized reductions from `GapCMMSA` to partial MCSP (issue #4362, route B) and to
+MINKT\* (issue #4447) read the functions of the variables of a CMMSA instance `I` from a random
+string. This module provides the part they share. The reductions and their analysis are the
+library's own; [Hirahara2022] fixes only the shape of the problems.
 
 * **Scale.** `lamOf λ₀ I = λ₀ (|I| + 1)²`, for the length `|I|` of the encoding of `I`.
 * **Seed.** Variable `v` reads its table from the block `[v B, v B + 2 ^ ℓ v)` of the random string,
   where `B = 2 ^ W` for the seed width `W` (`seededFunctions`, a `BitString.decodeTables`). Bits
-  outside the blocks are ignored. The string has length `seedLen λ₀ (|I|)`, a polynomial.
+  outside the blocks are ignored. The string has length `(seedLen λ₀).eval |I|`, a polynomial.
 * **Pattern.** `seededPattern λ₀ Δ k I r` lists the entries of the CMMSA partial truth table
-  under the seeded functions, and is polynomial-time in `(I, r)` (`computableInPolyTime_seeded`).
+  under the seeded functions, and is polynomial-time in `(I, r)`
+  (`computableInPolyTime_seededPattern`).
 * **Randomized reduction.** `rpReducible_of_seeded` turns any map `out I f` of the instance and the
   functions into a randomized reduction from `X` to `Y`, given that `out I f` is polynomial-time
   under the seeded functions, lies in `Y.yes` for every `f` when `I ∈ X.yes`, and lies outside
   `Y.no` for at most a third of the `f` when `I ∈ X.no`. Each seeded function is equally likely
   (`BitString.mul_card_filter_decodeTables_mem_le`), so the count of functions becomes a count of
   random strings.
-* **Parameters.** `exists_hard_params` fixes `Δ`, an odd `k`, `δ₀ = 1/4` and a gap `g` with the
+* **Parameters.** `exists_hard_params` gives `Δ`, an odd `k`, a bias `δ₀` and a gap `g` with the
   hypotheses of the soundness count for `P = 1`, and with `GapCMMSA Δ g 1` `NP`-hard.
+
+`rpReducible_of_seeded` and `exists_hard_params` are library results, with no counterpart in
+[Hirahara2022].
 
 ## Main definitions
 
@@ -55,12 +60,14 @@ module provides the part they share.
 
 * `Cslib.PartialMCSP.FromCMMSA.mul_sq_le_lamOf`, `one_le_lamOf`: bounds on the scale.
 * `Cslib.PartialMCSP.FromCMMSA.computableInPolyTime_lamOf`, `computableInPolyTime_seededTables`,
-  `computableInPolyTime_seeded`: the scale, the tables and the pattern are polynomial-time.
+  `computableInPolyTime_seededPattern`: the scale, the tables and the pattern are polynomial-time.
 * `Cslib.PartialMCSP.FromCMMSA.isVarTable_seededTables`: the tables are those of the seeded
   functions; `tableN_seededTables`: evaluating them gives the pattern, and `seededPattern_eq_ofFn`
   lists its entries.
-* `Cslib.PartialMCSP.FromCMMSA.two_pow_varLength_le_seedWidth`, `length_weights_mul_le_seedLen`:
-  every table fits in its block, and the blocks fit in the random string.
+* `Cslib.PartialMCSP.FromCMMSA.seedLen_eval`: the length of the random string.
+* `Cslib.PartialMCSP.FromCMMSA.two_pow_varLength_le_two_pow_seedWidth`,
+  `length_weights_mul_le_seedLen`: every table fits in its block, and the blocks fit in the random
+  string.
 * `Cslib.PartialMCSP.FromCMMSA.rpReducible_of_seeded`: the generic randomized reduction.
 * `Cslib.PartialMCSP.FromCMMSA.exists_hard_params`: the parameters.
 
@@ -95,6 +102,7 @@ theorem one_le_lamOf {lam₀ : ℕ} (h : 1 ≤ lam₀) (I : CMMSAInstance) : 1 �
 noncomputable def seedLen (lam₀ : ℕ) : Polynomial ℕ :=
   Polynomial.C (2 * (lam₀ + 1)) * (Polynomial.X + 1) ^ 4
 
+/-- The length of the random string for an encoding of length `N`. -/
 theorem seedLen_eval (lam₀ N : ℕ) : (seedLen lam₀).eval N = 2 * (lam₀ + 1) * (N + 1) ^ 4 := by
   simp [seedLen]
 
@@ -105,8 +113,8 @@ def seededFunctions (lam₀ : ℕ) (I : CMMSAInstance) (r : List Bool) :
   BitString.decodeTables (2 ^ seedWidth I (lamOf lam₀ I)) (fun v => varLength I (lamOf lam₀ I) v) r
 
 /-- Every block holds the table of its variable. -/
-theorem two_pow_varLength_le_seedWidth {I : CMMSAInstance} {lam : ℕ} (v : Fin I.weights.length) :
-    2 ^ varLength I lam v ≤ 2 ^ seedWidth I lam :=
+theorem two_pow_varLength_le_two_pow_seedWidth {I : CMMSAInstance} {lam : ℕ}
+    (v : Fin I.weights.length) : 2 ^ varLength I lam v ≤ 2 ^ seedWidth I lam :=
   Nat.pow_le_pow_right two_pos (varLength_le_seedWidth v.isLt)
 
 /-- The blocks fit in the random string. -/
@@ -154,6 +162,7 @@ theorem isVarTable_seededTables (lam₀ : ℕ) (I : CMMSAInstance) (r : List Boo
 variable {α : Type} {input : α ↪ List Bool}
 
 /-- The scale is polynomial-time, in unary. -/
+@[fun_prop]
 theorem computableInPolyTime_lamOf (lam₀ : ℕ) {I : α → CMMSAInstance}
     (hI : ComputableInPolyTime I input CMMSAInstance.encoding) :
     ComputableInPolyTime (fun a => lamOf lam₀ (I a)) input encUnary :=
@@ -162,6 +171,7 @@ theorem computableInPolyTime_lamOf (lam₀ : ℕ) {I : α → CMMSAInstance}
       ((ComputableInPolyTime.encoding_length _).comp hI) (ComputableInPolyTime.const 1)))
 
 /-- The explicit tables are polynomial-time in the instance and the random string. -/
+@[fun_prop]
 theorem computableInPolyTime_seededTables (lam₀ : ℕ) {I : α → CMMSAInstance}
     {r : α → List Bool} (hI : ComputableInPolyTime I input CMMSAInstance.encoding)
     (hr : ComputableInPolyTime r input encBits) :
@@ -207,7 +217,8 @@ theorem tableN_seededTables (lam₀ Δ k : ℕ) (I : CMMSAInstance) (r : List Bo
 
 /-- **The pattern is polynomial-time** in the instance and the random string, for fixed `λ₀`, `Δ`
 and `k`. -/
-theorem computableInPolyTime_seeded (lam₀ Δ k : ℕ) {I : α → CMMSAInstance}
+@[fun_prop]
+theorem computableInPolyTime_seededPattern (lam₀ Δ k : ℕ) {I : α → CMMSAInstance}
     {r : α → List Bool} (hI : ComputableInPolyTime I input CMMSAInstance.encoding)
     (hr : ComputableInPolyTime r input encBits) :
     ComputableInPolyTime (fun a => seededPattern lam₀ Δ k (I a) (r a)) input
@@ -223,7 +234,7 @@ open Classical in
 the functions of its variables at the scale `lamOf λ₀ I`. Suppose it is polynomial-time under the
 seeded functions, lies in `Y.yes` for every `f` when `I ∈ X.yes`, and lies outside `Y.no` for at
 most a third of the functions `f` when `I ∈ X.no`. Then `X` reduces to `Y` by a randomized
-reduction with one-sided error. -/
+reduction with one-sided error. This is a library result (issue #4362, route B). -/
 theorem rpReducible_of_seeded {β : Type} {encB : β ↪ List Bool}
     {X : PromiseProblem CMMSAInstance} {Y : PromiseProblem β} (lam₀ : ℕ)
     (out : (I : CMMSAInstance) → VarFunctions I (lamOf lam₀ I) → β)
@@ -240,7 +251,7 @@ theorem rpReducible_of_seeded {β : Type} {encB : β ↪ List Bool}
       2 ^ q := by
     have := BitString.mul_card_filter_decodeTables_mem_le
       (B := 2 ^ seedWidth I (lamOf lam₀ I)) (ℓ := fun v => varLength I (lamOf lam₀ I) v)
-      (p := q) (a := 3) (b := 1) two_pow_varLength_le_seedWidth
+      (p := q) (a := 3) (b := 1) two_pow_varLength_le_two_pow_seedWidth
       (length_weights_mul_le_seedLen lam₀ I) (S := {f | out I f ∉ Y.no}) (by simpa using hno I hI)
     rw [one_mul] at this
     convert this using 3
@@ -256,9 +267,10 @@ theorem rpReducible_of_seeded {β : Type} {encB : β ↪ List Bool}
 
 /-! ### The parameters -/
 
-/-- **Parameters for the reductions.** There are a bound `Δ`, an odd `k`, `δ₀ = 1/4` and a gap `g`
+/-- **Parameters for the reductions.** There are a bound `Δ`, an odd `k`, a bias `δ₀` and a gap `g`
 satisfying the hypotheses of the soundness count for `P = 1`, with room to spare
-(`24 log 2 < g (log 2 - H(δ₀))`), such that `GapCMMSA Δ g 1` is `NP`-hard. -/
+(`24 log 2 < g (log 2 - H(δ₀))`), such that `GapCMMSA Δ g 1` is `NP`-hard. Clients get only these
+facts (the proof takes `δ₀ = 1/4`). This is a library result (issue #4362, route B). -/
 theorem exists_hard_params : ∃ (Δ k : ℕ) (δ₀ g : ℝ), Odd k ∧ 0 ≤ δ₀ ∧ δ₀ ≤ 1 / 2 ∧
     (1 - 2 * δ₀) ^ k ≤ 1 / (2 * (Δ : ℝ) ^ 2) ∧
     24 * Real.log 2 < g * (Real.log 2 - Real.binEntropy δ₀) ∧
@@ -275,14 +287,8 @@ theorem exists_hard_params : ∃ (Δ k : ℕ) (δ₀ g : ℝ), Odd k ∧ 0 ≤ �
   refine ⟨Δ₀ + 1, 2 * (Δ₀ + 1) ^ 2 + 1, 1 / 4, 25 * Real.log 2 / γ, odd_two_mul_add_one _,
     by norm_num, by norm_num, ?_, ?_, hΔ₀.mono (GapCMMSA.yes_mono (Nat.le_succ Δ₀))
       (GapCMMSA.no_mono (Nat.le_succ Δ₀))⟩
-  · have hnat : 2 * (Δ₀ + 1) ^ 2 ≤ 2 ^ (2 * (Δ₀ + 1) ^ 2 + 1) := by
-      generalize hm : (Δ₀ + 1) ^ 2 = m
-      have := Nat.lt_two_pow_self (n := m)
-      rw [pow_succ, pow_mul]
-      have h4 : m ≤ 4 ^ m := this.le.trans (Nat.pow_le_pow_left (by norm_num) m)
-      have : (2 : ℕ) ^ 2 = 4 := by norm_num
-      rw [this]
-      omega
+  · have hnat : 2 * (Δ₀ + 1) ^ 2 ≤ 2 ^ (2 * (Δ₀ + 1) ^ 2 + 1) :=
+      Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_right two_pos (Nat.le_succ _))
     have hreal : (2 * ((Δ₀ + 1 : ℕ) : ℝ) ^ 2) ≤ (2 : ℝ) ^ (2 * (Δ₀ + 1) ^ 2 + 1) := by
       exact_mod_cast hnat
     rw [show (1 : ℝ) - 2 * (1 / 4) = 1 / 2 by norm_num, one_div_pow]

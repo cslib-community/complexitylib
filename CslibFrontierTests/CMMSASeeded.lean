@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 module
 
+public import CslibFrontier.Computability.MCSP.PartialHardness.EvaluatorPolyTime
 public import CslibFrontier.Computability.MCSP.PartialHardness.Seeded
 
 /-! Tests for the seeded step of the reductions from `GapCMMSA`. -/
@@ -21,8 +22,27 @@ shape of `rpReducible_of_seeded`. -/
 example (lam₀ Δ k : ℕ) :
     ComputableInPolyTime (fun p : CMMSAInstance × List Bool => seededPattern lam₀ Δ k p.1 p.2)
       (encPair CMMSAInstance.encoding encBits) PartialMCSP.encTable :=
-  computableInPolyTime_seeded lam₀ Δ k (ComputableInPolyTime.fst _ _)
+  computableInPolyTime_seededPattern lam₀ Δ k (ComputableInPolyTime.fst _ _)
     (ComputableInPolyTime.snd _ _)
+
+/-- The same by `fun_prop`, with the instance and the random string projected out of a larger
+context. -/
+example (lam₀ Δ k : ℕ) :
+    ComputableInPolyTime
+      (fun p : (CMMSAInstance × ℕ) × List Bool => seededPattern lam₀ Δ k p.1.1 p.2)
+      (encPair (encPair CMMSAInstance.encoding encUnary) encBits) PartialMCSP.encTable := by
+  fun_prop
+
+/-- The computability hypothesis of `rpReducible_of_seeded` for the partial MCSP map
+`out I f = toInstance I Δ k (lamOf λ₀ I) P f`, the client in `PartialHardness/Reduction.lean`. -/
+example (lam₀ Δ k P : ℕ) :
+    ComputableInPolyTime (fun p : CMMSAInstance × List Bool =>
+        toInstance p.1 Δ k (lamOf lam₀ p.1) P (seededFunctions lam₀ p.1 p.2))
+      (encPair CMMSAInstance.encoding encBits) PartialMCSP.enc := by
+  have hfst := ComputableInPolyTime.fst CMMSAInstance.encoding encBits
+  exact computableInPolyTime_toInstance Δ k P hfst (computableInPolyTime_lamOf _ hfst)
+    (computableInPolyTime_seededTables _ hfst (ComputableInPolyTime.snd _ _))
+    fun p => isVarTable_seededTables _ p.1 p.2
 
 /-- The pattern is a map `out I f` of the instance and the functions, so it meets the computability
 hypothesis of `rpReducible_of_seeded` as stated. Here every instance is a yes-instance of both
@@ -34,7 +54,7 @@ example (lam₀ Δ k : ℕ) :
     (fun I f => List.ofFn fun i => entry (Δ := Δ) (k := k) f ((BitString.equivFin _).symm i))
     (by
       simpa only [seededPattern_eq_ofFn] using
-        computableInPolyTime_seeded lam₀ Δ k (ComputableInPolyTime.fst _ _)
+        computableInPolyTime_seededPattern lam₀ Δ k (ComputableInPolyTime.fst _ _)
           (ComputableInPolyTime.snd _ _))
     (fun _ _ _ => trivial) (fun _ h => h.elim)
 
