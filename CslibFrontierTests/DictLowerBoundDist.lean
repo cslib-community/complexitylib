@@ -102,6 +102,34 @@ theorem marginal_uniform_at_all_boundaries (t : ℕ) (ht : t ≤ 2) :
   rw [map_extractKeySetVals_insertQueryDeleteDist (by omega) (by omega) ht,
     map_extractKeySetVals_insertDeleteDist (by omega) (by omega) ht]
 
+/-- Regression check for non-FIFO independent deletion order at `n = 2` (`U = 4, V = 1` and
+`V = 2`): the first deleted key equals the first initially inserted key with probability `1 / 2`
+(not `1`), and both FIFO (`Equiv.refl`) and LIFO (`Equiv.swap 0 1`) deletion sequences lie in the
+support of both distributions. -/
+theorem non_fifo_deletion_order_and_support :
+    ((insertQueryDeleteDist 4 1 2 (by omega) (by omega)).map
+      (fun ops => decide ((deletedKeys ops)[0]? = insertedKeyAt? ops 0))) true =
+      (1 : ℝ≥0∞) / 2 ∧
+    ((insertDeleteDist 4 1 2 (by omega) (by omega)).map
+      (fun ops => decide ((deletedKeys ops)[0]? = insertedKeyAt? ops 0))) true =
+      (1 : ℝ≥0∞) / 2 ∧
+    insertQueryDeleteSeq (n := 2) (Function.Embedding.refl (Fin 4)) (fun _ => (0 : Fin 2))
+      (Equiv.swap 0 1) ∈ (insertQueryDeleteDist 4 2 2 (by omega) (by omega)).support ∧
+    insertDeleteSeq (n := 2) (Function.Embedding.refl (Fin 4)) (fun _ => (0 : Fin 2))
+      (Equiv.swap 0 1) ∈ (insertDeleteDist 4 2 2 (by omega) (by omega)).support ∧
+    deletedKeys (insertQueryDeleteSeq (n := 2) (Function.Embedding.refl (Fin 4))
+      (fun _ => (0 : Fin 2)) (Equiv.swap 0 1)) = [1, 0] := by
+  have hhalf : ((2 : ℕ) : ℝ≥0∞)⁻¹ = (1 : ℝ≥0∞) / 2 := by
+    rw [one_div, Nat.cast_two]
+  refine ⟨(map_deletedKey_eq_insertedKey_insertQueryDeleteDist (U := 4) (V := 1) (n := 2)
+      (by omega) (by omega) 0 0).trans hhalf,
+    (map_deletedKey_eq_insertedKey_insertDeleteDist (U := 4) (V := 1) (n := 2)
+      (by omega) (by omega) 0 0).trans hhalf,
+    (mem_support_insertQueryDeleteDist_iff (by omega) (by omega)).mpr ⟨_, _, _, rfl⟩,
+    (mem_support_insertDeleteDist_iff (by omega) (by omega)).mpr ⟨_, _, _, rfl⟩, ?_⟩
+  rw [deletedKeys_insertQueryDeleteSeq]
+  decide
+
 /-! ### 2. Concrete direct-mapped `Scheme` for `Dynamic.spec 4 2 2` and `decodeDict` -/
 
 /-- Encode `Option ℕ` (for values `< 2`) into `Fin (2 ^ 2)`: `none ↦ 0`, `some v ↦ (v % 2) + 1`. -/
@@ -200,18 +228,19 @@ theorem directDictScheme_all_histories (M : ℕ) :
 theorem decodeDict_sequential_trace :
     let keys : Fin 4 ↪ Fin 4 := Function.Embedding.refl (Fin 4)
     let vals : Fin 4 → Fin 2 := ![1, 0, 1, 0]
-    let pref : List (Dynamic.Op 4) := (insertQueryDeleteSeq (n := 2) keys vals).take 5
+    let pref : List (Dynamic.Op 4) :=
+      (insertQueryDeleteSeq (n := 2) keys vals (Equiv.refl (Fin 2))).take 5
     decodeDict directDictScheme.toIndexed pref.length (directDictScheme.toIndexed.runSeq pref).2 =
       ((Dynamic.spec 4 2 2).run (Dictionary.empty 4) pref).1 ∧
     ((directDictScheme.toIndexed.step pref.length (.query 0)).run
       (directDictScheme.toIndexed.runSeq pref).2).1 = none := by
   intro keys vals pref
   have htake := validHistory_and_run_take_insertQueryDeleteSeq (n := 2) keys vals
-    (t := 1) (by omega)
+    (Equiv.refl (Fin 2)) (t := 1) (by omega)
   have hlen : pref.length ≤ 5 := List.length_take_le 5 _
   refine ⟨decodeDict_runSeq_eq (directDictScheme_all_histories 6) htake.1 hlen, ?_⟩
   refine step_query_eq_none_of_notMem_dom (directDictScheme_all_histories 6) htake.1 hlen ?_
-  rw [htake.2, windowDict_coe, dom_dictOfEmb]
+  rw [htake.2, activeWindowDict_refl, windowDict_coe, dom_dictOfEmb]
   simp only [Finset.mem_map, Finset.mem_univ, true_and, not_exists, windowEmb_apply]
   intro k hk
   have hk_val : 1 + k.1 = 0 := congrArg Fin.val hk
@@ -297,20 +326,21 @@ theorem yao_transfer_positive_lower_bound :
   let keysA : Fin 4 ↪ Fin 4 := Function.Embedding.refl (Fin 4)
   let keysB : Fin 4 ↪ Fin 4 := ⟨![2, 3, 0, 1], by decide⟩
   let valsZ : Fin 4 → Fin 2 := fun _ => 0
+  let idPerm : Equiv.Perm (Fin 2) := Equiv.refl (Fin 2)
   let distQ := insertQueryDeleteDist 4 2 2 (by omega) (by omega)
   let distU := insertDeleteDist 4 2 2 (by omega) (by omega)
-  let qA := insertQueryDeleteSeq (n := 2) keysA valsZ
-  let qB := insertQueryDeleteSeq (n := 2) keysB valsZ
-  let uA := insertDeleteSeq (n := 2) keysA valsZ
-  let uB := insertDeleteSeq (n := 2) keysB valsZ
+  let qA := insertQueryDeleteSeq (n := 2) keysA valsZ idPerm
+  let qB := insertQueryDeleteSeq (n := 2) keysB valsZ idPerm
+  let uA := insertDeleteSeq (n := 2) keysA valsZ idPerm
+  let uB := insertDeleteSeq (n := 2) keysB valsZ idPerm
   have hqA_mem : qA ∈ distQ.support :=
-    (mem_support_insertQueryDeleteDist_iff (by omega) (by omega)).mpr ⟨keysA, valsZ, rfl⟩
+    (mem_support_insertQueryDeleteDist_iff (by omega) (by omega)).mpr ⟨keysA, valsZ, idPerm, rfl⟩
   have hqB_mem : qB ∈ distQ.support :=
-    (mem_support_insertQueryDeleteDist_iff (by omega) (by omega)).mpr ⟨keysB, valsZ, rfl⟩
+    (mem_support_insertQueryDeleteDist_iff (by omega) (by omega)).mpr ⟨keysB, valsZ, idPerm, rfl⟩
   have huA_mem : uA ∈ distU.support :=
-    (mem_support_insertDeleteDist_iff (by omega) (by omega)).mpr ⟨keysA, valsZ, rfl⟩
+    (mem_support_insertDeleteDist_iff (by omega) (by omega)).mpr ⟨keysA, valsZ, idPerm, rfl⟩
   have huB_mem : uB ∈ distU.support :=
-    (mem_support_insertDeleteDist_iff (by omega) (by omega)).mpr ⟨keysB, valsZ, rfl⟩
+    (mem_support_insertDeleteDist_iff (by omega) (by omega)).mpr ⟨keysB, valsZ, idPerm, rfl⟩
   have hstateA_zero : (windowDict (n := 2) keysA valsZ 2 (by omega)).1 0 = none := by
     rw [windowDict_coe]
     refine dictOfEmb_apply_eq_none _ _ fun i => ?_
@@ -331,19 +361,21 @@ theorem yao_transfer_positive_lower_bound :
       (n := 2) (by omega) (by omega) directDictImpl.toRandomized fun D_det hcorr => ?_
     have hqA_run : ((Dynamic.spec 4 2 2).run (Dictionary.empty 4) qA).1 =
         (windowDict (n := 2) keysA valsZ 2 (by omega)).1 := by
-      have htake := (validHistory_and_run_take_insertQueryDeleteSeq (n := 2) keysA valsZ
+      have htake := (validHistory_and_run_take_insertQueryDeleteSeq (n := 2) keysA valsZ idPerm
         (t := 2) le_rfl).2
+      rw [activeWindowDict_refl] at htake
       rwa [List.take_of_length_le (by rw [length_insertQueryDeleteSeq])] at htake
     have hqB_run : ((Dynamic.spec 4 2 2).run (Dictionary.empty 4) qB).1 =
         (windowDict (n := 2) keysB valsZ 2 (by omega)).1 := by
-      have htake := (validHistory_and_run_take_insertQueryDeleteSeq (n := 2) keysB valsZ
+      have htake := (validHistory_and_run_take_insertQueryDeleteSeq (n := 2) keysB valsZ idPerm
         (t := 2) le_rfl).2
+      rw [activeWindowDict_refl] at htake
       rwa [List.take_of_length_le (by rw [length_insertQueryDeleteSeq])] at htake
     rcases one_le_seqProbes_of_two_postStates D_det hcorr
-        (length_insertQueryDeleteSeq (n := 2) keysA valsZ)
-        (length_insertQueryDeleteSeq (n := 2) keysB valsZ)
-        (validHistory_insertQueryDeleteSeq (U := 4) (V := 2) (n := 2) keysA valsZ)
-        (validHistory_insertQueryDeleteSeq (U := 4) (V := 2) (n := 2) keysB valsZ)
+        (length_insertQueryDeleteSeq (n := 2) keysA valsZ idPerm)
+        (length_insertQueryDeleteSeq (n := 2) keysB valsZ idPerm)
+        (validHistory_insertQueryDeleteSeq (U := 4) (V := 2) (n := 2) keysA valsZ idPerm)
+        (validHistory_insertQueryDeleteSeq (U := 4) (V := 2) (n := 2) keysB valsZ idPerm)
         (by rw [hqA_run, hqB_run, hstateA_zero, hstateB_zero]; decide) with h1 | h1
     · calc
         min (distQ qA) (distQ qB) ≤ distQ qA * 1 := by simp
@@ -361,19 +393,21 @@ theorem yao_transfer_positive_lower_bound :
       fun D_det hcorr => ?_
     have huA_run : ((Dynamic.spec 4 2 2).run (Dictionary.empty 4) uA).1 =
         (windowDict (n := 2) keysA valsZ 2 (by omega)).1 := by
-      have htake := (validHistory_and_run_take_insertDeleteSeq (n := 2) keysA valsZ
+      have htake := (validHistory_and_run_take_insertDeleteSeq (n := 2) keysA valsZ idPerm
         (t := 2) le_rfl).2
+      rw [activeWindowDict_refl] at htake
       rwa [List.take_of_length_le (by rw [length_insertDeleteSeq])] at htake
     have huB_run : ((Dynamic.spec 4 2 2).run (Dictionary.empty 4) uB).1 =
         (windowDict (n := 2) keysB valsZ 2 (by omega)).1 := by
-      have htake := (validHistory_and_run_take_insertDeleteSeq (n := 2) keysB valsZ
+      have htake := (validHistory_and_run_take_insertDeleteSeq (n := 2) keysB valsZ idPerm
         (t := 2) le_rfl).2
+      rw [activeWindowDict_refl] at htake
       rwa [List.take_of_length_le (by rw [length_insertDeleteSeq])] at htake
     rcases one_le_seqProbes_of_two_postStates D_det hcorr
-        (length_insertDeleteSeq (n := 2) keysA valsZ)
-        (length_insertDeleteSeq (n := 2) keysB valsZ)
-        (validHistory_insertDeleteSeq (U := 4) (V := 2) (n := 2) keysA valsZ)
-        (validHistory_insertDeleteSeq (U := 4) (V := 2) (n := 2) keysB valsZ)
+        (length_insertDeleteSeq (n := 2) keysA valsZ idPerm)
+        (length_insertDeleteSeq (n := 2) keysB valsZ idPerm)
+        (validHistory_insertDeleteSeq (U := 4) (V := 2) (n := 2) keysA valsZ idPerm)
+        (validHistory_insertDeleteSeq (U := 4) (V := 2) (n := 2) keysB valsZ idPerm)
         (by rw [huA_run, huB_run, hstateA_zero, hstateB_zero]; decide) with h1 | h1
     · calc
         min (distU uA) (distU uB) ≤ distU uA * 1 := by simp
@@ -581,26 +615,30 @@ theorem mixMem_replay_and_recovery_example :
 theorem cross_module_slicing_equiv_and_preMem_checks :
     let keys : Fin 4 ↪ Fin 4 := Function.Embedding.refl (Fin 4)
     let vals : Fin 4 → Fin 2 := fun _ => 0
-    (∀ {U V n : ℕ} (k : Fin (2 * n) ↪ Fin U) (v : Fin (2 * n) → Fin V) (j : Fin n),
-      elemSlice n 3 (insertQueryDeleteSeq k v) j.1 (j.1 + 1) = queryDeleteInsertMetaOp k v j ∧
-      elemSlice n 2 (insertDeleteSeq k v) j.1 (j.1 + 1) = deleteInsertMetaOp k v j) ∧
-    elemSlice 2 3 (insertQueryDeleteSeq (n := 2) keys vals) 1 2 =
-      [.query 1, .delete 1, .insert 3 0] ∧
-    elemSlice 2 2 (insertDeleteSeq (n := 2) keys vals) 1 2 =
-      [.delete 1, .insert 3 0] ∧
+    let lifo : Equiv.Perm (Fin 2) := Equiv.swap 0 1
+    (∀ {U V n : ℕ} (k : Fin (2 * n) ↪ Fin U) (v : Fin (2 * n) → Fin V)
+        (σ : Equiv.Perm (Fin n)) (j : Fin n),
+      elemSlice n 3 (insertQueryDeleteSeq k v σ) j.1 (j.1 + 1) =
+        queryDeleteInsertMetaOp k v σ j ∧
+      elemSlice n 2 (insertDeleteSeq k v σ) j.1 (j.1 + 1) =
+        deleteInsertMetaOp k v σ j) ∧
+    elemSlice 2 3 (insertQueryDeleteSeq (n := 2) keys vals lifo) 0 1 =
+      [.query 1, .delete 1, .insert 2 0] ∧
+    elemSlice 2 2 (insertDeleteSeq (n := 2) keys vals lifo) 0 1 =
+      [.delete 1, .insert 2 0] ∧
     ((sizedDictEquiv 4 2 2 (windowDict (n := 2) keys vals 0 (by omega))).1 : Finset (Fin 4)) =
       Dictionary.dom (windowDict (n := 2) keys vals 0 (by omega)).1 ∧
     (geomMetaTree 8 1).horizon = 8 ∧
     (iterLogMetaTree 8 2 1).horizon = 8 ∧
     ((1 ≤ (geomMetaTree 8 1).height) ↔ (geomMetaTree 8 1).blockSize 1 ≤ 4) ∧
     (0 : Fin 2) ∈ fourSegTree.badCells threeHitScheme 0 1 [(), (), (), ()] 0 0 := by
-  refine ⟨fun k v j => ⟨by simp [elemSlice], by simp [elemSlice]⟩,
+  refine ⟨fun k v σ j => ⟨by simp [elemSlice], by simp [elemSlice]⟩,
     by simpa [elemSlice, queryDeleteInsertMetaOp] using
       drop_take_insertQueryDeleteSeq (n := 2) (Function.Embedding.refl (Fin 4))
-        (fun _ => (0 : Fin 2)) ⟨1, by decide⟩,
+        (fun _ => (0 : Fin 2)) (Equiv.swap 0 1) ⟨0, by decide⟩,
     by simpa [elemSlice, deleteInsertMetaOp] using
       drop_take_insertDeleteSeq (n := 2) (Function.Embedding.refl (Fin 4))
-        (fun _ => (0 : Fin 2)) ⟨1, by decide⟩,
+        (fun _ => (0 : Fin 2)) (Equiv.swap 0 1) ⟨0, by decide⟩,
     by simp, by simp, by simp, le_height_geomMetaTree_iff (by omega) 1 1, ?_⟩
   let ops : List Unit := [(), (), (), ()]
   have hb0 : fourSegTree.blockSize 0 = 1 := fourSegTree.blockSize_zero

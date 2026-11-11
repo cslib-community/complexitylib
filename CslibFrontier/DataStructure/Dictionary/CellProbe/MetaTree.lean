@@ -21,16 +21,22 @@ accounting, bad-cell intersection inequality, and mixed-memory interval replay u
 succinct dictionary cell-probe lower bounds of Li, Liang, Yu, and Zhou ([LiLiangYuZhou2023];
 locators below follow `arXiv:2306.02253v3`, where printed page `p` is PDF page `p + 1`).
 
-1. **Divisibility-free bottom-up `MetaTree`:**
-   Rather than assuming `m_{ℓ-1} ∣ m_ℓ` and `m_ℓ ∣ n` "without loss of generality"
-   ([LiLiangYuZhou2023], Section 3, p. 11 / PDF p. 12 and Section 6, p. 25 / PDF p. 26,
-   Footnote 6), `MetaTree` specifies positive even fanouts `fanout ℓ` (`λ_ℓ`) from the leaves up,
-   setting `blockSize 0 = 1` and `blockSize (ℓ + 1) = blockSize ℓ * fanout (ℓ + 1)` (`m_ℓ`). Thus
-   `blockSize ℓ ∣ blockSize (ℓ + 1)` holds definitionally and `2 ∣ blockSize ℓ` holds for every
-   `ℓ ≥ 1`. At each level `ℓ`, `nodeCount ℓ := horizon / blockSize ℓ` disjoint full intervals
-   `[b * blockSize ℓ, (b + 1) * blockSize ℓ)` are packed into `[0, horizon)`, retaining at least
-   half of `[0, horizon)` (`horizon ≤ 2 * (nodeCount ℓ * blockSize ℓ)`) whenever
-   `blockSize ℓ ≤ horizon`.
+1. **Divisibility-free bottom-up `MetaTree` and forest-top height adaptation:**
+   In [LiLiangYuZhou2023], Section 3 (p. 11 / PDF p. 12), the authors assume `m_{ℓ-1} ∣ m_ℓ` for
+   simplicity and terminate at a single root with `m_h = n` covering all `n` meta-operations (and in
+   Section 6, p. 25 / PDF p. 26, Footnote 6, assume all parameters are integers for simplicity). Our
+   local formalization adaptation `MetaTree` specifies positive even integer fanouts `fanout ℓ`
+   (`λ_ℓ`) from the leaves up, setting `blockSize 0 = 1` and
+   `blockSize (ℓ + 1) = blockSize ℓ * fanout (ℓ + 1)` (`m_ℓ`), so `blockSize ℓ ∣ blockSize (ℓ + 1)`
+   holds definitionally and `2 ∣ blockSize ℓ` holds for every `ℓ ≥ 1`. Because exact bottom-up
+   products need not equal `horizon`, `MetaTree.ofFanout` chooses `height` as the largest level with
+   `blockSize height ≤ horizon / 2` (so there is no single root covering all `horizon`
+   meta-operations as in `m_h = n`, and each `blockSize ℓ` for `ℓ ≤ height` also fits Lemma 5.1's
+   `m < n / 2` regime up to equality). At each level `ℓ`, `nodeCount ℓ := horizon / blockSize ℓ`
+   disjoint full intervals `[b * blockSize ℓ, (b + 1) * blockSize ℓ)` are packed into
+   `[0, horizon)`, retaining at least half of `[0, horizon)` (`horizon ≤ 2 * (nodeCount ℓ *
+   blockSize ℓ)`) whenever `blockSize ℓ ≤ horizon` (any `< blockSize ℓ` trailing meta-operations
+   are simply omitted from that level's full-block sum).
 2. **Iterated-log and geometric schedules (`iterLogMetaTree` and `geomMetaTree`):**
    * `iterLogMetaTree n k c` ([LiLiangYuZhou2023], Section 3, p. 11 / PDF p. 12, for Theorems 1.1
      and 1.3(1)): uses `Nat.iterLog` with even `m_1` and
@@ -40,18 +46,19 @@ locators below follow `arXiv:2306.02253v3`, where printed page `p` is PDF page `
    * `geomMetaTree n m₁_half` ([LiLiangYuZhou2023], Section 6, pp. 25–26 / PDF pp. 26–27, for
      Theorems 1.2 and 1.3(2)): uses constant even fanout `λ = 2 ^ 64` above
      `m_1 = 2 * max 1 m₁_half` with `n < 4 * max 1 m₁_half * (2 ^ 64) ^ height`.
-3. **LCA probe accounting, Eq. (5) bad-cell bound, and post-memory qualification:**
+3. **LCA probe accounting, Eq. (5) bad-cell bound, and memory qualification:**
    Over any step-indexed `D_det : IndexedScheme Op Result cells w` where meta-operation `t` runs
    `stride` elementary steps starting at `initLen + stride * t`:
    * `nodeCost` (`cost_u`, [LiLiangYuZhou2023], Section 3, p. 11 / PDF p. 12) assigns `s - 1`
      units to internal node `(ℓ + 1, b)` for each cell probed in `s` distinct child segments,
      telescoping across all levels to `≤ D_det.seqProbes ops` (`sum_nodeCost_le_seqProbes`).
    * `badCells` (`S_bad`, [LiLiangYuZhou2023], Section 4.2, p. 14 / PDF p. 15) collects cells
-     probed in at least two distinct child segments, satisfying both Eq. (5)
+     probed in at least two distinct child segments, satisfying Eq. (5)
      ([LiLiangYuZhou2023], Section 4.3, Claim 4.1, p. 17 / PDF p. 18:
-     `∑ i, (segProbedCells ... i ∩ badCells ...).card ≤ 2 * nodeCost ...`) and post-memory
+     `∑ i, (segProbedCells ... i ∩ badCells ...).card ≤ 2 * nodeCost ...`), post-memory
      qualification soundness (`mem_badCells_of_seg_postMem_ne_node_postMem`, Section 4.2, pp. 14–15
-     / PDF pp. 15–16).
+     / PDF pp. 15–16 and Section 4.3, Claim 4.2, p. 17 / PDF p. 18), and its local symmetric
+     pre-memory counterpart (`mem_badCells_of_seg_preMem_ne_node_preMem`).
    * `mixMem` wraps `IndexedScheme.runInterval_eq_of_eq_on_probedCellsInterval` for mixed-state
      segment replay `C_mix` ([LiLiangYuZhou2023], Section 5.1, p. 22 / PDF p. 23 and Section 8,
      p. 29 / PDF p. 30).
@@ -310,7 +317,10 @@ private theorem lt_rawBlockSize_countLevels_succ {bound : ℕ} {fanout : ℕ →
 namespace MetaTree
 
 /-- Build a `MetaTree` over `horizon` meta-operations from any positive even `fanout`, choosing
-`height` as the largest level `h` with `blockSize h ≤ horizon / 2` (or `0` when `horizon < 2`). -/
+`height` as the largest level `h` with `blockSize h ≤ horizon / 2` (or `0` when `horizon < 2`).
+Unlike the paper's single-root convention `m_h = n`, stopping at `horizon / 2` avoids assuming that
+bottom-up integer products divide `horizon` while ensuring at least two full blocks at level
+`height` when `2 ≤ horizon`. -/
 def ofFanout (horizon : ℕ) (fanout : ℕ → ℕ)
     (hpos : ∀ ℓ, 1 ≤ ℓ → 0 < fanout ℓ)
     (heven : ∀ ℓ, 1 ≤ ℓ → 2 ∣ fanout ℓ) : MetaTree where
@@ -926,6 +936,25 @@ private theorem elemSlice_append {initLen stride : ℕ} (ops : List Op) {t₁ t�
     omega
   simp only [elemSlice, hlen, List.take_add, List.drop_drop, hbase]
 
+private theorem elemSlice_step_or_nil {initLen stride : ℕ} (ops : List Op) {t₁ t₂ : ℕ}
+    (h₁₂ : t₁ ≤ t₂) (t₃ : ℕ) :
+    initLen + stride * t₁ + (elemSlice initLen stride ops t₁ t₂).length = initLen + stride * t₂ ∨
+      elemSlice initLen stride ops t₂ t₃ = [] := by
+  by_cases hblen : initLen + stride * t₂ ≤ ops.length
+  · left
+    have hlen : (elemSlice initLen stride ops t₁ t₂).length = stride * (t₂ - t₁) := by
+      simp only [elemSlice, List.length_take, List.length_drop]
+      have hle1 : stride * t₁ ≤ stride * t₂ := Nat.mul_le_mul_left _ h₁₂
+      have hsub : stride * (t₂ - t₁) = (initLen + stride * t₂) - (initLen + stride * t₁) := by
+        rw [Nat.mul_sub_left_distrib]; omega
+      omega
+    rw [hlen, Nat.mul_sub_left_distrib]
+    have hle1 : stride * t₁ ≤ stride * t₂ := Nat.mul_le_mul_left _ h₁₂
+    omega
+  · right
+    push Not at hblen
+    simp [elemSlice, List.drop_of_length_le hblen.le]
+
 /-- Additivity of `rangeProbes` across contiguous meta-operation intervals `[t₁, t₂)` and
 `[t₂, t₃)`. -/
 theorem rangeProbes_append (D : IndexedScheme Op Result cells w) (initLen stride : ℕ)
@@ -936,22 +965,9 @@ theorem rangeProbes_append (D : IndexedScheme Op Result cells w) (initLen stride
   rw [elemSlice_append ops h₁₂ h₂₃, D.probesInterval_append,
     ← memAt_eq_runInterval_elemSlice D initLen stride ops h₁₂]
   congr 1
-  by_cases hblen : initLen + stride * t₂ ≤ ops.length
-  · have hlen : (elemSlice initLen stride ops t₁ t₂).length = stride * (t₂ - t₁) := by
-      simp only [elemSlice, List.length_take, List.length_drop]
-      have hle1 : stride * t₁ ≤ stride * t₂ := Nat.mul_le_mul_left _ h₁₂
-      have hsub : stride * (t₂ - t₁) = (initLen + stride * t₂) - (initLen + stride * t₁) := by
-        rw [Nat.mul_sub_left_distrib]; omega
-      omega
-    have hidx : initLen + stride * t₁ + (elemSlice initLen stride ops t₁ t₂).length =
-        initLen + stride * t₂ := by
-      rw [hlen, Nat.mul_sub_left_distrib]
-      have hle1 : stride * t₁ ≤ stride * t₂ := Nat.mul_le_mul_left _ h₁₂
-      omega
-    rw [hidx]
-  · push Not at hblen
-    have hdrop : ops.drop (initLen + stride * t₂) = [] := List.drop_of_length_le hblen.le
-    simp [elemSlice, hdrop]
+  rcases elemSlice_step_or_nil ops h₁₂ t₃ with hidx | hnil
+  · rw [hidx]
+  · simp [hnil]
 
 /-- Union law for `rangeProbedCells` across contiguous meta-operation intervals `[t₁, t₂)` and
 `[t₂, t₃)`. -/
@@ -964,22 +980,9 @@ theorem rangeProbedCells_append (D : IndexedScheme Op Result cells w) (initLen s
   rw [elemSlice_append ops h₁₂ h₂₃, D.probedCellsInterval_append,
     ← memAt_eq_runInterval_elemSlice D initLen stride ops h₁₂]
   congr 1
-  by_cases hblen : initLen + stride * t₂ ≤ ops.length
-  · have hlen : (elemSlice initLen stride ops t₁ t₂).length = stride * (t₂ - t₁) := by
-      simp only [elemSlice, List.length_take, List.length_drop]
-      have hle1 : stride * t₁ ≤ stride * t₂ := Nat.mul_le_mul_left _ h₁₂
-      have hsub : stride * (t₂ - t₁) = (initLen + stride * t₂) - (initLen + stride * t₁) := by
-        rw [Nat.mul_sub_left_distrib]; omega
-      omega
-    have hidx : initLen + stride * t₁ + (elemSlice initLen stride ops t₁ t₂).length =
-        initLen + stride * t₂ := by
-      rw [hlen, Nat.mul_sub_left_distrib]
-      have hle1 : stride * t₁ ≤ stride * t₂ := Nat.mul_le_mul_left _ h₁₂
-      omega
-    rw [hidx]
-  · push Not at hblen
-    have hdrop : ops.drop (initLen + stride * t₂) = [] := List.drop_of_length_le hblen.le
-    simp [elemSlice, hdrop]
+  rcases elemSlice_step_or_nil ops h₁₂ t₃ with hidx | hnil
+  · rw [hidx]
+  · simp [hnil]
 
 theorem rangeProbes_le_seqProbes (D : IndexedScheme Op Result cells w) (initLen stride : ℕ)
     (ops : List Op) (t₁ t₂ : ℕ) :
@@ -1183,6 +1186,26 @@ theorem card_badCells_le_nodeCost (T : MetaTree) (D : IndexedScheme Op Result ce
     _ ≤ ∑ j : Fin cells, (T.segHitCount D initLen stride ops ℓ b j - 1) :=
           Finset.sum_le_univ_sum_of_nonneg fun _ => Nat.zero_le _
 
+private theorem sum_card_segProbedCells_inter_eq_sum_segHitCount (T : MetaTree)
+    (D : IndexedScheme Op Result cells w) (initLen stride : ℕ) (ops : List Op) (ℓ b : ℕ)
+    (S : Finset (Fin cells)) :
+    ∑ i : Fin (T.fanout (ℓ + 1)),
+        (T.segProbedCells D initLen stride ops ℓ b i ∩ S).card =
+      ∑ j ∈ S, T.segHitCount D initLen stride ops ℓ b j := by
+  calc
+    ∑ i : Fin (T.fanout (ℓ + 1)),
+        (T.segProbedCells D initLen stride ops ℓ b i ∩ S).card
+      = ∑ i : Fin (T.fanout (ℓ + 1)), ∑ j ∈ S,
+          if j ∈ T.segProbedCells D initLen stride ops ℓ b i then 1 else 0 := by
+            refine Finset.sum_congr rfl fun i _ => ?_
+            rw [Finset.inter_comm, ← Finset.filter_mem_eq_inter, Finset.card_filter]
+    _ = ∑ j ∈ S, ∑ i : Fin (T.fanout (ℓ + 1)),
+          if j ∈ T.segProbedCells D initLen stride ops ℓ b i then 1 else 0 :=
+            Finset.sum_comm
+    _ = ∑ j ∈ S, T.segHitCount D initLen stride ops ℓ b j := by
+          refine Finset.sum_congr rfl fun j _ => ?_
+          simp only [segHitCount, Finset.card_filter]
+
 /-- **Bad-cell intersection bound** ([LiLiangYuZhou2023], Section 4.3, Claim 4.1, Eq. (5), p. 17 /
 PDF p. 18): across all `λ_{ℓ+1}` child segments of internal node `(ℓ + 1, b)`, the sum of
 `|S_A^{[i]} ∩ S_bad|` is at most `2 * nodeCost`, since every cell probed in `s ≥ 2` segments
@@ -1194,23 +1217,8 @@ theorem sum_card_segProbedCells_inter_badCells_le_two_mul_nodeCost (T : MetaTree
         T.badCells D initLen stride ops ℓ b).card ≤
       2 * T.nodeCost D initLen stride ops ℓ b := by
   set bad := T.badCells D initLen stride ops ℓ b
-  have hswap : ∑ i : Fin (T.fanout (ℓ + 1)),
-        (T.segProbedCells D initLen stride ops ℓ b i ∩ bad).card =
-      ∑ j ∈ bad, T.segHitCount D initLen stride ops ℓ b j := by
-    calc
-      ∑ i : Fin (T.fanout (ℓ + 1)),
-          (T.segProbedCells D initLen stride ops ℓ b i ∩ bad).card
-        = ∑ i : Fin (T.fanout (ℓ + 1)), ∑ j ∈ bad,
-            if j ∈ T.segProbedCells D initLen stride ops ℓ b i then 1 else 0 := by
-              refine Finset.sum_congr rfl fun i _ => ?_
-              rw [Finset.inter_comm, ← Finset.filter_mem_eq_inter, Finset.card_filter]
-      _ = ∑ j ∈ bad, ∑ i : Fin (T.fanout (ℓ + 1)),
-            if j ∈ T.segProbedCells D initLen stride ops ℓ b i then 1 else 0 :=
-              Finset.sum_comm
-      _ = ∑ j ∈ bad, T.segHitCount D initLen stride ops ℓ b j := by
-            refine Finset.sum_congr rfl fun j _ => ?_
-            simp only [segHitCount, Finset.card_filter]
-  rw [hswap, nodeCost, Finset.mul_sum]
+  rw [T.sum_card_segProbedCells_inter_eq_sum_segHitCount D initLen stride ops ℓ b bad,
+    nodeCost, Finset.mul_sum]
   calc
     ∑ j ∈ bad, T.segHitCount D initLen stride ops ℓ b j
       ≤ ∑ j ∈ bad, 2 * (T.segHitCount D initLen stride ops ℓ b j - 1) := by
@@ -1244,20 +1252,8 @@ theorem nodeCost_add_card_nodeProbedCells (T : MetaTree)
   have hsum_children : ∑ i : Fin (T.fanout (ℓ + 1)),
         (T.segProbedCells D initLen stride ops ℓ b i).card =
       ∑ j : Fin cells, T.segHitCount D initLen stride ops ℓ b j := by
-    calc
-      ∑ i : Fin (T.fanout (ℓ + 1)), (T.segProbedCells D initLen stride ops ℓ b i).card
-        = ∑ i : Fin (T.fanout (ℓ + 1)), ∑ j : Fin cells,
-            if j ∈ T.segProbedCells D initLen stride ops ℓ b i then 1 else 0 := by
-              refine Finset.sum_congr rfl fun i _ => ?_
-              conv_lhs =>
-                rw [← Finset.univ_inter (T.segProbedCells D initLen stride ops ℓ b i),
-                  ← Finset.filter_mem_eq_inter, Finset.card_filter]
-      _ = ∑ j : Fin cells, ∑ i : Fin (T.fanout (ℓ + 1)),
-            if j ∈ T.segProbedCells D initLen stride ops ℓ b i then 1 else 0 :=
-              Finset.sum_comm
-      _ = ∑ j : Fin cells, T.segHitCount D initLen stride ops ℓ b j := by
-            refine Finset.sum_congr rfl fun j _ => ?_
-            simp only [segHitCount, Finset.card_filter]
+    simpa only [Finset.inter_univ] using
+      T.sum_card_segProbedCells_inter_eq_sum_segHitCount D initLen stride ops ℓ b Finset.univ
   rw [nodeCost, hcard_parent, hsum_children, ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun j _ => ?_
   split_ifs with hpos <;> omega
@@ -1338,11 +1334,12 @@ theorem sum_nodeCost_le_seqProbes (T : MetaTree)
       T.nodeCost D initLen stride ops ℓ b ≤ D.seqProbes ops :=
   T.sum_nodeCost_le_seqProbes_of_height D initLen stride ops T.height
 
-/-- **Pre-memory qualification soundness** ([LiLiangYuZhou2023], Section 4.2, pp. 14–15 /
-PDF pp. 15–16 and Section 4.3, Claim 4.2, p. 17 / PDF p. 18): if cell `j` is probed during child
-segment `i` of internal node `(ℓ + 1, b)` and segment `i`'s pre-memory disagrees with the node's
-start-of-block memory at `j`, then `j` must also have been probed in an earlier child segment
-`i' < i`, so `j ∈ T.badCells D initLen stride ops ℓ b`. -/
+/-- **Pre-memory qualification soundness** (local symmetric counterpart to post-memory qualification
+in [LiLiangYuZhou2023], Section 4.2, pp. 14–15 / PDF pp. 15–16 and Section 4.3, Claim 4.2, p. 17 /
+PDF p. 18, which argues the post-memory direction): if cell `j` is probed during child segment `i`
+of internal node `(ℓ + 1, b)` and segment `i`'s pre-memory disagrees with the node's start-of-block
+memory at `j`, then `j` must also have been probed in an earlier child segment `i' < i`, so
+`j ∈ T.badCells D initLen stride ops ℓ b`. -/
 theorem mem_badCells_of_seg_preMem_ne_node_preMem (T : MetaTree)
     (D : IndexedScheme Op Result cells w) (initLen stride : ℕ) (ops : List Op)
     (ℓ b : ℕ) (i : Fin (T.fanout (ℓ + 1))) {j : Fin cells}
@@ -1378,9 +1375,9 @@ theorem mem_badCells_of_seg_preMem_ne_node_preMem (T : MetaTree)
     omega
   exact T.mem_badCells_of_mem_segProbedCells_ne D initLen stride ops ℓ b hne_idx hj_i' hj
 
-/-- Corollary of `mem_badCells_of_seg_preMem_ne_node_preMem`: on child segment `i`, the number of
-probed cells whose pre-segment value differs from the start-of-node memory is at most
-`|S_A^{[i]} ∩ S_bad|`. -/
+/-- Corollary of `mem_badCells_of_seg_preMem_ne_node_preMem` (local symmetric counterpart to
+post-memory qualification): on child segment `i`, the number of probed cells whose pre-segment
+value differs from the start-of-node memory is at most `|S_A^{[i]} ∩ S_bad|`. -/
 theorem card_filter_seg_preMem_ne_node_preMem_le (T : MetaTree)
     (D : IndexedScheme Op Result cells w) (initLen stride : ℕ) (ops : List Op)
     (ℓ b : ℕ) (i : Fin (T.fanout (ℓ + 1))) :
