@@ -128,7 +128,6 @@
  "CslibFrontier/Computability/Complexity/FineGrained/LocalMapCounting.lean": 5,
  "CslibFrontier/Computability/Complexity/FineGrained/PermutationIndependentSet.lean": 17,
  "CslibFrontier/Computability/Complexity/ImmermanVardi/Tableau/Step.lean": 2,
- "CslibFrontier/Computability/Complexity/Parameterized/ColorCoding.lean": 10,
  "CslibFrontier/Computability/Complexity/Parameterized/VertexCover.lean": 1,
  "CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean": 7,
  "CslibFrontier/Computability/Complexity/Problems/CSP/Incidence.lean": 1,
