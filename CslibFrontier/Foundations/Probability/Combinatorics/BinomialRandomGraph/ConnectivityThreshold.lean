@@ -394,15 +394,15 @@ end ThresholdAsymptotics
 
 section ComponentGap
 
-private noncomputable def insidePairs [Fintype V] [DecidableEq V] (S : Finset V) :
+private noncomputable def insidePairs [DecidableEq V] (S : Finset V) :
     Finset (Sym2 V) :=
   S.sym2.filter fun e => ¬e.IsDiag
 
-private theorem mem_insidePairs [Fintype V] [DecidableEq V] {S : Finset V} {e : Sym2 V} :
+private theorem mem_insidePairs [DecidableEq V] {S : Finset V} {e : Sym2 V} :
     e ∈ insidePairs S ↔ (∀ u ∈ e, u ∈ S) ∧ ¬e.IsDiag := by
   simp only [insidePairs, Finset.mem_filter, Finset.mem_sym2_iff]
 
-private theorem card_insidePairs [Fintype V] [DecidableEq V] (S : Finset V) :
+private theorem card_insidePairs [DecidableEq V] (S : Finset V) :
     #(insidePairs S) = (#S).choose 2 := by
   have heq : insidePairs S = S.sym2 \ S.image Sym2.diag := by
     ext e
