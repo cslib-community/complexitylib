@@ -1080,6 +1080,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Refu
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterAffineRep
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterProofs
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterSearch
+public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterTime
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.State
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Step
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Operations
