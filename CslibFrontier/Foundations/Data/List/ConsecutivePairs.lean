@@ -19,6 +19,8 @@ This module provides lemmas about `List.consecutivePairs` and its interaction wi
 
 public section
 
+namespace List
+
 @[simp] theorem consecutivePairs_nil {α : Type*} :
     List.consecutivePairs ([] : List α) = [] := rfl
 
@@ -28,7 +30,7 @@ public section
 @[simp] theorem consecutivePairs_singleton {α : Type*} (a : α) :
     List.consecutivePairs [a] = [] := rfl
 
-theorem List.consecutivePairs_append {α : Type*} {l₁ l₂ : List α}
+theorem consecutivePairs_append {α : Type*} {l₁ l₂ : List α}
     (h₁ : l₁ ≠ []) (h₂ : l₂ ≠ []) :
     List.consecutivePairs (l₁ ++ l₂) =
       List.consecutivePairs l₁ ++ (l₁.getLast h₁, l₂.head h₂) :: List.consecutivePairs l₂ := by
@@ -93,7 +95,7 @@ theorem getLast_flatMap {α β : Type*} {L : List β} (hL : L ≠ [])
           rw [h1, ih htail hft]
           exact hcongr _ _ (List.getLast_cons htail).symm
 
-theorem mem_List.consecutivePairs_flatMap {α β : Type*} {L : List β} (hL : L ≠ [])
+theorem mem_consecutivePairs_flatMap {α β : Type*} {L : List β} (hL : L ≠ [])
     {f : β → List α} (hf : ∀ b, f b ≠ []) {x y : α} :
     (x, y) ∈ List.consecutivePairs (L.flatMap f) ↔
       (∃ b ∈ L, (x, y) ∈ List.consecutivePairs (f b)) ∨
@@ -128,7 +130,7 @@ theorem mem_List.consecutivePairs_flatMap {α β : Type*} {L : List β} (hL : L 
               · cases hbb; exact Or.inr (Or.inl ⟨h1, h2⟩)
               · exact Or.inr (Or.inr (Or.inr ⟨(p₁, p₂), hp, h1, h2⟩))
 
-theorem getElem_mem_List.consecutivePairs {α : Type*} (l : List α) (i : ℕ)
+theorem getElem_mem_consecutivePairs {α : Type*} (l : List α) (i : ℕ)
     (hi : i + 1 < l.length) : (l[i], l[i + 1]) ∈ List.consecutivePairs l := by
   induction l generalizing i with
   | nil => simp only [List.length_nil] at hi; omega
@@ -146,7 +148,7 @@ theorem getElem_mem_List.consecutivePairs {α : Type*} (l : List α) (i : ℕ)
                                 List.getElem_cons_succ, List.mem_cons]
               exact Or.inr (ih j (by simp only [List.length_cons] at hi ⊢; omega))
 
-theorem mem_List.consecutivePairs_iff_exists_getElem {α : Type*} {l : List α} {x y : α} :
+theorem mem_consecutivePairs_iff_exists_getElem {α : Type*} {l : List α} {x y : α} :
     (x, y) ∈ List.consecutivePairs l ↔
       ∃ i, ∃ hi : i + 1 < l.length, l[i] = x ∧ l[i + 1] = y := by
   induction l with
@@ -192,7 +194,7 @@ theorem step_mem_cyclicPairs {α : Type*} (l : List α) [NeZero l.length] (hl : 
       rw [Fin.val_add, h1]
       exact Nat.mod_eq_of_lt hlt
     simp only [hi1]
-    exact List.mem_cons_of_mem _ (getElem_mem_List.consecutivePairs l i.1 hlt)
+    exact List.mem_cons_of_mem _ (getElem_mem_consecutivePairs l i.1 hlt)
 
 theorem cyclicPairs_mem_iff {α : Type*} (l : List α) [NeZero l.length] (hl : l ≠ [])
     (h2 : 2 ≤ l.length) {x y : α} :
@@ -202,7 +204,7 @@ theorem cyclicPairs_mem_iff {α : Type*} (l : List α) [NeZero l.length] (hl : l
   constructor
   · rintro ⟨i, rfl, rfl⟩
     exact step_mem_cyclicPairs l hl i h2
-  · rw [List.mem_cons, Prod.mk.injEq, mem_List.consecutivePairs_iff_exists_getElem]
+  · rw [List.mem_cons, Prod.mk.injEq, mem_consecutivePairs_iff_exists_getElem]
     rintro (⟨rfl, rfl⟩ | ⟨j, hj, rfl, rfl⟩)
     · refine ⟨⟨l.length - 1, by omega⟩, (List.getLast_eq_getElem hl).symm, ?_⟩
       have hi1 : (⟨l.length - 1, by omega⟩ + 1 : Fin l.length).1 = 0 := by
@@ -217,3 +219,4 @@ theorem cyclicPairs_mem_iff {α : Type*} (l : List α) [NeZero l.length] (hl : l
         exact Nat.mod_eq_of_lt hj
       simp only [hi1]
 
+end List
