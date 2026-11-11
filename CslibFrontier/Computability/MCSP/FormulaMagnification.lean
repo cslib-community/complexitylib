@@ -42,7 +42,9 @@ Santhanam [OliveiraSanthanam2018]:
 * **Lemma 26 and one-sided Theorem 27** ([OliveiraSanthanam2018, Section 3.3, Lemma 26 and
   Theorem 27, p. 21]; compare [OliveiraSanthanam2018, Section 1.2, Theorem 5, p. 8]): deterministic
   counting form of Lemma 26 and one-sided zero-error average-case De Morgan formula magnification
-  from `MCSP[s]` to `SuccinctMCSP` and `NP ⊄ FormulaPolyOn`.
+  from `MCSP[s]` to `SuccinctMCSP` and `NP ⊄ FormulaPolyOn`. Theorem 5 itself, with its threshold
+  and ternary devices, is stated in
+  `CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase`.
 
 ## Source Statements (ECCC TR18-139)
 
