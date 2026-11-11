@@ -21,7 +21,7 @@ example : realEncryptionView 1 2 32 (PMF.pure 0) ![true, false] =
 
 /-- A genuine small-secret law, with nonzero values in its support. -/
 private noncomputable def smallLaw : PMF (Fin 1 → Fin 2 → ZMod 32) :=
-  PMF.pi (fun _ => PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1)
+  PMF.pi (fun _ => PMF.pi fun _ => LWE.noiseLaw 5 1)
 
 example : (![![1, -1]] : Fin 1 → Fin 2 → ZMod 32) ∈ smallLaw.support := by
   rw [smallLaw, PMF.mem_support_pi_iff]
@@ -43,10 +43,10 @@ example {s : Fin 1 → Fin 2 → ZMod 32} (hs : s ∈ smallLaw.support) :
 example : (do
     let s ← smallLaw
     let view ← encryptionViewOfKeyLaw
-      (moduleLWEPublicKeyLaw 1 2 32 (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1) (PMF.pure s))
-      (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1) ![true, false] smallLaw
+      (moduleLWEPublicKeyLaw 1 2 32 (PMF.pi fun _ => LWE.noiseLaw 5 1) (PMF.pure s))
+      (PMF.pi fun _ => LWE.noiseLaw 5 1) ![true, false] smallLaw
     pure (s, view)).map Prod.snd =
-      realEncryptionView 1 2 32 (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1)
+      realEncryptionView 1 2 32 (PMF.pi fun _ => LWE.noiseLaw 5 1)
         ![true, false] smallLaw smallLaw :=
   realEncryptionView_retained_secret_marginal _ _ _ _
 
@@ -62,7 +62,7 @@ example : ProbComp.eval (OracleComp.replicate 2
 
 example {s : Fin 1 → Fin 1 → ZMod (2 ^ 0)}
     (hs : s ∈ (PMF.pi (fun _ : Fin 1 => PMF.pi
-      (fun _ : Fin 1 => Homomorphic.GSW.noiseLaw 0 0))).support) :
+      (fun _ : Fin 1 => LWE.noiseLaw 0 0))).support) :
     ModuleSIS.inInfNormBound 0 s :=
   moduleLWECenteredBinomial_inInfNormBound (by decide) hs
 
