@@ -178,44 +178,37 @@ noncomputable def coinTossBiasedDist :
       else cast (by simp [h]) (some true))
   else
     return ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
-
-
-
-
-
-
-@[expose]
-def extract_bool_from_malicious (y : (i : Fin 2) → if i = 0 then Unit else Bool) : Bool :=
+/-- Extracts the boolean from the ideal malicious output. -/
+def extractBoolFromMalicious (y : (i : Fin 2) → if i = 0 then Unit else Bool) : Bool :=
   if h : (1:Fin 2) = 0 then true else cast (by simp [h]) (y 1)
-
-@[expose]
-def extract_bool_from_biased (y : (i : Fin 2) → Option (if i = 0 then Unit else Bool)) : Bool :=
+/-- Extracts the boolean from the biased output distribution. -/
+def extractBoolFromBiased (y : (i : Fin 2) → Option (if i = 0 then Unit else Bool)) : Bool :=
   if h : (1:Fin 2) = 0 then true else
   match y 1 with
   | some v => cast (by simp [h]) v
   | none => true
 
-
-
-noncomputable instance (i : Fin 2) : Fintype (if i = 0 then Unit else Bool) := by
+noncomputable instance iteFintype (i : Fin 2) : Fintype (if i = 0 then Unit else Bool) := by
   split_ifs <;> infer_instance
 
-noncomputable instance (i : Fin 2) : DecidableEq (if i = 0 then Unit else Bool) := by
+noncomputable instance iteDecidableEq (i : Fin 2) : DecidableEq (if i = 0 then Unit else Bool) := by
   split_ifs <;> infer_instance
 
-lemma extract_bool_from_malicious_val (b : Bool) :
-  extract_bool_from_malicious (fun i => if h : i = 0 then cast (by simp [h]) ()
+private theorem extractBoolFromMalicious_val (b : Bool) :
+  extractBoolFromMalicious (fun i => if h : i = 0 then cast (by simp [h]) ()
     else cast (by simp [h]) b) = b := by
   cases b <;> rfl
 
-lemma extract_bool_from_biased_val1 :
-  extract_bool_from_biased (fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = true := rfl
+private theorem extractBoolFromBiased_val1 :
+  extractBoolFromBiased (fun i =>
+    if h : i = 0 then cast (by simp [h]) (some ()) else none) = true := rfl
 
-lemma extract_bool_from_biased_val2 :
-  extract_bool_from_biased (fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true)) = true := rfl
+private theorem extractBoolFromBiased_val2 :
+  extractBoolFromBiased (fun i =>
+    if h : i = 0 then cast (by simp [h]) (some ())
+    else cast (by simp [h]) (some true)) = true := rfl
 
-set_option linter.unusedFintypeInType false in
-lemma tsum_ite_eq_and_prop {α : Type} [Fintype α] [DecidableEq α] (A : α) (P : α → Prop)
+private theorem tsum_ite_eq_and_prop {α : Type} [Fintype α] [DecidableEq α] (A : α) (P : α → Prop)
     [DecidablePred P] (c : ENNReal) :
   (∑' x, if P x then if x = A then c else 0 else 0) = if P A then c else 0 := by
   rw [tsum_fintype]
@@ -232,69 +225,71 @@ lemma tsum_ite_eq_and_prop {α : Type} [Fintype α] [DecidableEq α] (A : α) (P
   have H2 : A ∈ Finset.univ := Finset.mem_univ A
   simp [H2]
 
-lemma ite_tsum_eq_ennreal {β : Type} (P : Prop) [Decidable P] (f : β → ENNReal) :
+private theorem ite_tsum_eq_ennreal {β : Type} (P : Prop) [Decidable P] (f : β → ENNReal) :
   (if P then ∑' x, f x else 0) = ∑' x, if P then f x else 0 := by
   split_ifs
   · rfl
   · exact tsum_zero.symm
 
-lemma ite_mul_eq_ennreal (P : Prop) [Decidable P] (c x : ENNReal) :
+private theorem ite_mul_eq_ennreal (P : Prop) [Decidable P] (c x : ENNReal) :
   (if P then c * x else 0) = c * (if P then x else 0) := by
   split_ifs
   · rfl
   · exact (mul_zero c).symm
 
-lemma sum_swap_3 {α β γ : Type} (f : α → β → γ → ENNReal) :
+private theorem sum_swap_3 {α β γ : Type} (f : α → β → γ → ENNReal) :
   (∑' (a:α), ∑' (b:β), ∑' (c:γ), f a b c) = ∑' (b:β), ∑' (a:α), ∑' (c:γ), f a b c := by
   rw [tsum_comm]
 
-lemma inner_sum_eval :
+private theorem inner_sum_eval :
   (∑' (b : Bool), if true = b then (↑(Fintype.card Bool) : ENNReal)⁻¹ else 0) = 1/2 := by
   rw [tsum_fintype, Fintype.sum_bool]
   have h1 : (Fintype.card Bool : ENNReal) = 2 := rfl
   rw [h1]
   simp [one_div]
 
+/-- Counterexample demonstrating the necessity of the abort capability. -/
 theorem naive_without_abort_failure :
   ¬ (∃ (S : ((i : I0) → Unit) → ProbComp (((i : I0) → Unit) × (((i : I0) →
       (if (↑i : Fin 2) = 0 then Unit else Bool)) → Unit))),
         ProbComp.eval (do
             let (_, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
-            return extract_bool_from_malicious y) = 
+            return extractBoolFromMalicious y) =
         ProbComp.eval (do
             let (_, y) ← coinTossBiasedDist
-            return extract_bool_from_biased y)) := by
+            return extractBoolFromBiased y)) := by
   intro ⟨S, h⟩
   have H := congr_arg (fun (p : PMF _) => p true) h
   have h_rhs : ProbComp.eval (do
             let (_, y) ← coinTossBiasedDist
-            return extract_bool_from_biased y) true = 1 := by
+            return extractBoolFromBiased y) true = 1 := by
     dsimp [coinTossBiasedDist]
     simp only [eval_bind, eval_uniform, PMF.bind_apply, PMF.uniformOfFintype_apply]
     simp only [apply_ite ProbComp.eval, eval_pure, tsum_fintype, Fintype.sum_bool, Fintype.card_bool, Nat.cast_ofNat]
     simp only [reduceCtorEq, ite_true, ite_false, PMF.pure_apply, mul_ite, mul_one, mul_zero]
     have h_split : ∀ a : Unit × ((i : Fin 2) → Option (if i = 0 then Unit else Bool)),
-      (if true = extract_bool_from_biased a.2 then (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true)) then (2⁻¹:ENNReal) else 0) + (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) then (2⁻¹:ENNReal) else 0) else 0) =
-      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true)) then if true = extract_bool_from_biased a.2 then (2⁻¹:ENNReal) else 0 else 0) +
-      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) then if true = extract_bool_from_biased a.2 then (2⁻¹:ENNReal) else 0 else 0) := by
+      (if true = extractBoolFromBiased a.2 then
+          (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true))
+            then (2⁻¹:ENNReal) else 0) +
+          (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
+            then (2⁻¹:ENNReal) else 0)
+        else 0) =
+      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true))
+        then if true = extractBoolFromBiased a.2 then (2⁻¹:ENNReal) else 0 else 0) +
+      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
+        then if true = extractBoolFromBiased a.2 then (2⁻¹:ENNReal) else 0 else 0) := by
       intro a
       split_ifs
       all_goals { first | rfl | exact Eq.symm (zero_add 0) }
 
     simp_rw [h_split, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
-    simp only [extract_bool_from_biased_val1, extract_bool_from_biased_val2, ite_true]
+    simp only [extractBoolFromBiased_val1, extractBoolFromBiased_val2, ite_true]
     rw [← one_div]
     exact ENNReal.add_halves 1
 
-
-
-
-
-
-
   have h_lhs : ProbComp.eval (do
             let (_, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
-            return extract_bool_from_malicious y) true = 1/2 := by
+            return extractBoolFromMalicious y) true = 1/2 := by
     dsimp [maliciousIdeal, coinTossPrivateFunc]
     simp only [eval_bind, PMF.bind_apply, eval_map, PMF.map_apply, bind_pure_comp]
     simp only [eval_uniform, PMF.uniformOfFintype_apply]
@@ -310,7 +305,7 @@ theorem naive_without_abort_failure :
         rw [sum_swap_3]
         simp only [tsum_comm (f := fun _ (x : Bool) => _)]
         simp only [tsum_ite_eq_and_prop]
-        simp only [extract_bool_from_malicious_val]
+        simp only [extractBoolFromMalicious_val]
         rw [inner_sum_eval]
     have h_mul : (∑' b, (ProbComp.eval (S (I0.restrict fun _ => ()))) b * (1/2 : ENNReal)) =
         (∑' b, (ProbComp.eval (S (I0.restrict fun _ => ()))) b) * (1/2 : ENNReal) := by
