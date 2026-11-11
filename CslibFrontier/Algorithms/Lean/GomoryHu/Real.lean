@@ -21,7 +21,8 @@ ordered field, proving cut-equivalence and flow-equivalence.
 * `Cslib.WeightedCut.isSubmodular_realCutWeight`: the cut function is submodular.
 * `Cslib.Algorithms.Lean.GomoryHu.exists_isGomoryHuTree_realCutWeight`: Gomory-Hu theorem for real.
 * `Cslib.Algorithms.Lean.GomoryHu.IsGomoryHuTree.isLeast_minRealCutBetween`: flow-equivalence.
-* `Cslib.Algorithms.Lean.GomoryHu.card_image_minRealCutBetween_le`: at most `|V| - 1` distinct values.
+* `Cslib.Algorithms.Lean.GomoryHu.card_image_minRealCutBetween_le`: at most
+  `|V| - 1` distinct values.
 -/
 
 public section
@@ -30,10 +31,12 @@ namespace Cslib.WeightedCut
 
 open Cslib.Algorithms.Lean.Submodular Cslib.Algorithms.Lean.GomoryHu
 
-variable {V : Type*} [Fintype V] [DecidableEq V] {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+variable {V : Type*} [Fintype V] [DecidableEq V] {K : Type*} [Field K]
+  [LinearOrder K] [IsStrictOrderedRing K]
 
 /-- The cut function of a weight matrix is submodular. -/
-theorem isSubmodular_realCutWeight (W : V → V → K) (hW : ∀ u v, 0 ≤ W u v) : IsSubmodular (realCutWeight W) :=
+theorem isSubmodular_realCutWeight (W : V → V → K) (hW : ∀ u v, 0 ≤ W u v) :
+    IsSubmodular (realCutWeight W) :=
   realCutWeight_union_add_realCutWeight_inter_le W hW
 
 /-- The minimum `s`–`t` cuts of the cut function are the sets containing `s` and missing `t`
@@ -64,13 +67,15 @@ namespace Cslib.Algorithms.Lean.GomoryHu
 open Cslib.WeightedCut
 open SimpleGraph (edgeSide mem_edgeSide_of_mem_darts)
 
-variable {V : Type*} [Fintype V] [DecidableEq V] {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+variable {V : Type*} [Fintype V] [DecidableEq V] {K : Type*} [Field K]
+  [LinearOrder K] [IsStrictOrderedRing K]
 
 /-- **Gomory–Hu theorem** ([GomoryHu1961]; [Schrijver2003], Section 15.4): every weighted
 multigraph `W` on a nonempty finite vertex set has a cut-equivalent tree, a spanning tree `T` on
 the vertices in which for every edge `uv`, the side of `T - uv` containing `u` is a minimum `u`–`v`
 cut of `W`. The edges of `T` need not be edges of `W`. -/
-theorem exists_isGomoryHuTree_realCutWeight [Nonempty V] {W : V → V → K} (hWs : ∀ u v, W u v = W v u)
+theorem exists_isGomoryHuTree_realCutWeight [Nonempty V] {W : V → V → K}
+    (hWs : ∀ u v, W u v = W v u)
     (hWn : ∀ u v, 0 ≤ W u v) :
     ∃ T : SimpleGraph V, IsGomoryHuTree (realCutWeight W) T :=
   exists_isGomoryHuTree (realCutWeight_compl' hWs) (isSubmodular_realCutWeight W hWn)
@@ -83,7 +88,8 @@ theorem IsGomoryHuTree.isLeast_minRealCutBetween {W : V → V → K} {T : Simple
     (hp : p.IsPath) :
     IsLeast ((fun d : T.Dart => minRealCutBetween W d.fst d.snd) '' {d | d ∈ p.darts})
       (minRealCutBetween W s t) := by
-  have hside : ∀ d : T.Dart, realCutWeight W (edgeSide T d.fst d.snd) = minRealCutBetween W d.fst d.snd :=
+  have hside : ∀ d : T.Dart, realCutWeight W (edgeSide T d.fst d.snd) =
+      minRealCutBetween W d.fst d.snd :=
     fun d => ((isMinCutBetween_realCutWeight_iff W).mp (hT.isMinCutBetween_edgeSide d.adj)).2.2
   constructor
   · obtain ⟨d, hd, hmin⟩ := hT.exists_isMinCutBetween_of_isPath hst hp
@@ -94,7 +100,8 @@ theorem IsGomoryHuTree.isLeast_minRealCutBetween {W : V → V → K} {T : Simple
 
 /-- An undirected weighted graph on `n` vertices has at most `n - 1` distinct minimum cut values
 `λ(s, t)` over pairs of distinct vertices ([GomoryHu1961]). -/
-theorem card_image_minRealCutBetween_le {W : V → V → K} (hWs : ∀ u v, W u v = W v u) (hWn : ∀ u v, 0 ≤ W u v) :
+theorem card_image_minRealCutBetween_le {W : V → V → K} (hWs : ∀ u v, W u v = W v u)
+    (hWn : ∀ u v, 0 ≤ W u v) :
     ((Finset.univ.offDiag : Finset (V × V)).image fun p => minRealCutBetween W p.1 p.2).card ≤
       Fintype.card V - 1 := by
   classical

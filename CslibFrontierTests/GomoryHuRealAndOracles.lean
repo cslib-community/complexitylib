@@ -8,6 +8,8 @@ module -- shake: keep-all
 -- upstream: local-only (test file)
 
 import CslibFrontier.Algorithms.Lean.GomoryHu.Real
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.Analysis.Real.Sqrt
 import CslibFrontier.Algorithms.Lean.GomoryHu.Oracles
 
 public section
@@ -37,5 +39,14 @@ example : (pushRelabelGomoryHu W5 0).weight.toList = [0, 8, 13, 10, 9] := by dec
 
 example : (dinitzGomoryHu W5 0).parent.toList = [0, 0, 0, 1, 3] := by decide
 example : (dinitzGomoryHu W5 0).weight.toList = [0, 8, 13, 10, 9] := by decide
+
+noncomputable def WReal : Fin 2 → Fin 2 → ℝ
+  | 0, 1 => Real.sqrt 2
+  | 1, 0 => Real.sqrt 2
+  | _, _ => 0
+
+theorem exists_real_tree : ∃ T, IsGomoryHuTree (Cslib.WeightedCut.realCutWeight WReal) T :=
+  exists_isGomoryHuTree_realCutWeight (by intro u v; fin_cases u <;> fin_cases v <;> rfl)
+    (by intro u v; fin_cases u <;> fin_cases v <;> simp [WReal] <;> try positivity)
 
 end CslibFrontierTests.GomoryHuRealAndOracles

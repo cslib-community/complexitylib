@@ -67,10 +67,13 @@ theorem dinitzValue_eq_cutWeight {W : Fin n → Fin n → ℕ} {s t : Fin n} (hs
   let res := gusfieldWithWeights (pushRelabelCut W) (pushRelabelValue W) r 0 (List.finRange n)
   { parent := Vector.ofFn res.1, weight := Vector.ofFn res.2 }
 
-theorem isGomoryHuTree_pushRelabelGomoryHu {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W) (r : Fin n) :
-    IsGomoryHuTree (cutWeight W) (SimpleGraph.parentGraph (vget (pushRelabelGomoryHu W r).parent)) := by
+theorem isGomoryHuTree_pushRelabelGomoryHu {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W)
+    (r : Fin n) :
+    IsGomoryHuTree (cutWeight W)
+      (SimpleGraph.parentGraph (vget (pushRelabelGomoryHu W r).parent)) := by
   unfold pushRelabelGomoryHu
-  have hp : vget (Vector.ofFn (gusfieldWithWeights (pushRelabelCut W) (pushRelabelValue W) r 0 (List.finRange n)).1) =
+  have hp : vget (Vector.ofFn (gusfieldWithWeights (pushRelabelCut W)
+    (pushRelabelValue W) r 0 (List.finRange n)).1) =
       (gusfieldWithWeights (pushRelabelCut W) (pushRelabelValue W) r 0 (List.finRange n)).1 := by
     funext v
     exact Vector.getElem_ofFn _
@@ -88,7 +91,8 @@ theorem isGomoryHuTree_pushRelabelGomoryHu {W : Fin n → Fin n → ℕ} (hW : I
 theorem isGomoryHuTree_dinitzGomoryHu {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W) (r : Fin n) :
     IsGomoryHuTree (cutWeight W) (SimpleGraph.parentGraph (vget (dinitzGomoryHu W r).parent)) := by
   unfold dinitzGomoryHu
-  have hp : vget (Vector.ofFn (gusfieldWithWeights (dinitzCut W) (dinitzValue W) r 0 (List.finRange n)).1) =
+  have hp : vget (Vector.ofFn (gusfieldWithWeights (dinitzCut W)
+    (dinitzValue W) r 0 (List.finRange n)).1) =
       (gusfieldWithWeights (dinitzCut W) (dinitzValue W) r 0 (List.finRange n)).1 := by
     funext v
     exact Vector.getElem_ofFn _

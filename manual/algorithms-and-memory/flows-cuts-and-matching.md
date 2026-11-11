@@ -93,7 +93,7 @@ The cost model is the Edmonds–Karp one, extended with `Finset` membership on t
 Limitations:
 
 - Weights are natural numbers; real-valued capacities remain open (optional Item 2 of [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)).
-- Only Edmonds–Karp is available as the maximum flow oracle; `gomoryHuM_time_le_of_forall` takes any per-call bound (faster oracles remain open, optional Item 3 of [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)).
+- Push–Relabel and Dinitz maximum flow oracles are available (`pushRelabelGomoryHu`, `dinitzGomoryHu`), along with real-valued capacities (`RealCut.lean`).
 - Minimum cuts are not enumerated.
 
 [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422) tracks the remaining optional items.

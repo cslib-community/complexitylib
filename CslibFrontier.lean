@@ -4972,6 +4972,7 @@ public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Contraction
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.MAOrdering
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.MinCutBetween
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Multigraph
+public import CslibFrontier.Foundations.Combinatorics.WeightedCut.RealCut
 public import CslibFrontier.Foundations.Combinatorics.WeightedTail
 public import CslibFrontier.Foundations.Computability.ComputablePred
 public import CslibFrontier.Foundations.Computability.ContextFreeGrammar
