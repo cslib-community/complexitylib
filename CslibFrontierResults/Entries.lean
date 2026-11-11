@@ -3065,7 +3065,11 @@ register_result "computational-sequential-composition-mpc" where
   theorems := [
     Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_compose_le
   ]
-  scope := "Formalizes the hybrid argument behind Goldreich's sequential composition theorem for     semi-honest privacy (Theorem 7.5.7). The `semiHonestAdvantage_compose_le` theorem bounds     the distinguishing advantage of a composed protocol against an induced outer distinguisher     by `ε_out + sc₁.length * ε_sub`. The outer distinguisher expands simulated inner views,     and `sc₁.length` gives a crude bound counting both message rounds and ideal oracle calls."
+  scope := "Formalizes the hybrid argument behind Goldreich's sequential composition theorem for \
+    semi-honest privacy (Theorem 7.5.7). The `semiHonestAdvantage_compose_le` theorem bounds \
+    the distinguishing advantage of a composed protocol against an induced outer distinguisher \
+    by `ε_out + sc₁.length * ε_sub`. The outer distinguisher expands simulated inner views, \
+    and `sc₁.length` gives a crude bound counting both message rounds and ideal oracle calls."
 
 register_result "malicious-with-abort-mpc" where
   title := "Malicious ideal/real execution with abort"
@@ -3078,4 +3082,7 @@ register_result "malicious-with-abort-mpc" where
     Cslib.Crypto.Protocols.MPC.adversaryAborts_characterization,
     Cslib.Crypto.Protocols.MPC.naive_without_abort_failure
   ]
-  scope := "Generalizes malicious execution with abort to general m-party functionalities, providing the     `adversaryAborts_characterization` characterization theorem and the     `naive_without_abort_failure` counterexample demonstrating the necessity of the abort     capability, formalizing Goldreich's Theorem 7.3.3."
+  scope := "Generalizes malicious execution with abort to general m-party functionalities, \
+    providing the `adversaryAborts_characterization` characterization theorem and the \
+    `naive_without_abort_failure` counterexample demonstrating the necessity of the abort \
+    capability, formalizing Goldreich's Theorem 7.3.3."
