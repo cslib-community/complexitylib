@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Kolmogorov.MINKTStar.TruthTable
 import CslibFrontier.Computability.MCSP.PartialHardness.Completeness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Foundations.Data.List.Blocks
+import CslibFrontier.Foundations.Data.List.GetD
 
 /-!
 # The `MINKT*` generator for the CMMSA table
@@ -130,11 +131,6 @@ private theorem getD_setTables {f : VarFunctions I lam} {S : Finset ℕ} {v : �
   · simp [setTables, List.getD_eq_getElem?_getD, hvn, hv]
   · simp [setTables, varTable, List.getD_eq_getElem?_getD, hvn]
 
-private theorem getD_formulas_mem {j : ℕ} (hj : j < I.formulas.length) :
-    I.formulas.getD j [] ∈ I.formulas := by
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj, Option.getD_some]
-  exact List.getElem_mem hj
-
 /-- **Consistency.** If `τ j` is a term of formula `j` whose variables lie in `S`, then the honest
 witness prints a table consistent with the CMMSA table. -/
 private theorem consistent_generate_ofSat (hwf : I.WellFormed Δ) {τ : ℕ → ℕ} {S : Finset ℕ}
@@ -149,7 +145,7 @@ private theorem consistent_generate_ofSat (hwf : I.WellFormed Δ) {τ : ℕ → 
   have hj : (x : ℕ) % 2 ^ indexWidth I < I.formulas.length := by
     simpa only [formulaIndex_equivFin_symm] using formulaIndex_lt_of_entry_eq_some hx
   obtain ⟨htj, hS⟩ := hτ _ hj
-  have hτΔ := htj.trans_le (hwf.length_le (getD_formulas_mem hj))
+  have hτΔ := htj.trans_le (hwf.length_le (List.getD_mem [] hj))
   have hpar := termParityN_eq (f := f) (T := setTables f S) x ⟨_, hτΔ⟩ fun q hq =>
     IsVarTable.of_getD_eq (getD_setTables (hS q hq))
   have hentry := termParity_eq_of_entry_eq_some hx ⟨_, hτΔ⟩
@@ -173,7 +169,7 @@ private theorem length_enc_ofSat_le (hwf : I.WellFormed Δ) (hlam : 1 ≤ lam) {
     refine (List.sum_le_length_nsmul _ (2 * Δ) fun a ha => ?_).trans (by simp)
     obtain ⟨j, hj, rfl⟩ := List.mem_map.1 ha
     have hj' := List.mem_range.1 hj
-    have := (hτ j hj').trans_le (hwf.length_le (getD_formulas_mem hj'))
+    have := (hτ j hj').trans_le (hwf.length_le (List.getD_mem [] hj'))
     simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
     omega
   -- the tables: `2 ∑_{v ∈ S} 2 ^ ℓ v + n ≤ 4 w(S) λ + n`

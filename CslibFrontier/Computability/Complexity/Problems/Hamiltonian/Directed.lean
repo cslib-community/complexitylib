@@ -84,7 +84,7 @@ namespace SAT
 clause `j` across slot `j` of the row of the first occurrence of its variable, left to right when
 `l` is positive. -/
 def diamondDetours (φ : CNF ℕ) : List Diamond.Detour :=
-  φ.zipIdx.flatMap fun c => c.1.map fun l => (c.2, φ.vars.idxOf l.1, c.2, l.2)
+  φ.zipIdx.flatMap fun c => c.1.map fun l => ⟨c.2, φ.vars.idxOf l.1, c.2, l.2⟩
 
 /-- The diamond graph of `φ` (`Cslib.Complexity.Diamond.graph`): a diamond for each variable
 occurrence, in order of occurrence, a slot for each clause in every row, and the detours of the
@@ -115,7 +115,7 @@ private theorem fst_mem_vars {φ : CNF ℕ} {j : ℕ} {l : Literal ℕ} (hj : j 
 
 private theorem mem_diamondDetours {φ : CNF ℕ} {d : Diamond.Detour} :
     d ∈ diamondDetours φ ↔ ∃ (j : ℕ) (hj : j < φ.length), ∃ l ∈ φ[j],
-      d = (j, φ.vars.idxOf l.1, j, l.2) := by
+      d = ⟨j, φ.vars.idxOf l.1, j, l.2⟩ := by
   simp only [diamondDetours, List.mem_flatMap, List.mem_map]
   constructor
   · rintro ⟨⟨c, j⟩, hc, l, hl, rfl⟩

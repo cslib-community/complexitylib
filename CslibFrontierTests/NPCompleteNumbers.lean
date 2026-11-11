@@ -33,9 +33,10 @@ theorem mem_Partition_iff_sublists {l : List ℕ} :
     l ∈ Partition ↔ ∃ s ∈ l.sublists, 2 * s.sum = l.sum := by
   simp only [mem_Partition_iff_sublist, List.mem_sublists]
 
-theorem mem_Knapsack_iff_sublists {x : List (ℕ × ℕ) × ℕ × ℕ} :
-    x ∈ Knapsack ↔ ∃ s ∈ x.1.sublists,
-      (s.map Prod.fst).sum ≤ x.2.1 ∧ x.2.2 ≤ (s.map Prod.snd).sum := by
+theorem mem_Knapsack_iff_sublists {x : KnapsackInstance} :
+    x ∈ Knapsack ↔ ∃ s ∈ x.items.sublists,
+      (s.map Knapsack.Item.weight).sum ≤ x.capacity ∧
+        x.goal ≤ (s.map Knapsack.Item.value).sum := by
   simp only [mem_Knapsack_iff_sublist, List.mem_sublists]
 
 /-! ### Headline results -/
@@ -168,24 +169,29 @@ example : SubsetSum.toPartition ⟨[], 0⟩ = [1, 1] := rfl
 
 /-! ### `Knapsack` -/
 
-example : Knapsack.verifier (([(2, 3), (3, 4), (4, 5)], 5, 7), [true, true, false]) = true := rfl
-example : ([(2, 3), (3, 4), (4, 5)], 5, 7) ∈ Knapsack := mem_Knapsack_iff_sublists.2 (by decide)
-example : ([(2, 3), (3, 4), (4, 5)], 5, 8) ∉ Knapsack :=
+example :
+    Knapsack.verifier (⟨[⟨2, 3⟩, ⟨3, 4⟩, ⟨4, 5⟩], 5, 7⟩, [true, true, false]) = true := rfl
+example : (⟨[⟨2, 3⟩, ⟨3, 4⟩, ⟨4, 5⟩], 5, 7⟩ : KnapsackInstance) ∈ Knapsack :=
+  mem_Knapsack_iff_sublists.2 (by decide)
+example : (⟨[⟨2, 3⟩, ⟨3, 4⟩, ⟨4, 5⟩], 5, 8⟩ : KnapsackInstance) ∉ Knapsack :=
   fun h => absurd (mem_Knapsack_iff_sublists.1 h) (by decide)
 
 -- Boundary cases: no items, goal zero, and repeated items.
-example : ([], 0, 0) ∈ Knapsack := mem_Knapsack_iff_sublists.2 (by decide)
-example : ([], 5, 1) ∉ Knapsack := fun h => absurd (mem_Knapsack_iff_sublists.1 h) (by decide)
-example : ([(1, 1), (1, 1)], 2, 2) ∈ Knapsack := mem_Knapsack_iff_sublists.2 (by decide)
-example : ([(1, 1)], 2, 2) ∉ Knapsack :=
+example : (⟨[], 0, 0⟩ : KnapsackInstance) ∈ Knapsack := mem_Knapsack_iff_sublists.2 (by decide)
+example : (⟨[], 5, 1⟩ : KnapsackInstance) ∉ Knapsack :=
+  fun h => absurd (mem_Knapsack_iff_sublists.1 h) (by decide)
+example : (⟨[⟨1, 1⟩, ⟨1, 1⟩], 2, 2⟩ : KnapsackInstance) ∈ Knapsack :=
+  mem_Knapsack_iff_sublists.2 (by decide)
+example : (⟨[⟨1, 1⟩], 2, 2⟩ : KnapsackInstance) ∉ Knapsack :=
   fun h => absurd (mem_Knapsack_iff_sublists.1 h) (by decide)
 
 -- Large weights and values are compared in binary.
-example : Knapsack.verifier (([(2 ^ 90, 2 ^ 95)], 2 ^ 90, 2 ^ 95), [true]) = true := by decide
-example : Knapsack.verifier (([(2 ^ 90 + 1, 2 ^ 95)], 2 ^ 90, 2 ^ 95), [true]) = false := by
-  decide
+example :
+    Knapsack.verifier (⟨[⟨2 ^ 90, 2 ^ 95⟩], 2 ^ 90, 2 ^ 95⟩, [true]) = true := by decide
+example :
+    Knapsack.verifier (⟨[⟨2 ^ 90 + 1, 2 ^ 95⟩], 2 ^ 90, 2 ^ 95⟩, [true]) = false := by decide
 
-example : SubsetSum.toKnapsack ⟨[3, 5], 5⟩ = ([(3, 3), (5, 5)], 5, 5) := rfl
+example : SubsetSum.toKnapsack ⟨[3, 5], 5⟩ = ⟨[⟨3, 3⟩, ⟨5, 5⟩], 5, 5⟩ := rfl
 
 -- The reduction carries the solvable instance `⟨[3, 5], 8⟩` to a solvable knapsack, and the
 -- unsolvable `⟨[3, 5], 4⟩` to an unsolvable one.
@@ -237,4 +243,12 @@ example : Turing.MultiTapeTM.ComputableInPolyTime
     (fun x : Cslib.Complexity.SubsetSumInstance =>
       Cslib.Complexity.SubsetSumInstance.mk x.numbers (x.target + 1))
     Cslib.Complexity.encSubsetSum Cslib.Complexity.encSubsetSum := by
+  fun_prop
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun x : Cslib.Complexity.KnapsackInstance =>
+      Cslib.Complexity.KnapsackInstance.mk
+        (x.items.map fun i => Cslib.Complexity.Knapsack.Item.mk i.weight (i.value + 1))
+        x.capacity x.goal)
+    Cslib.Complexity.encKnapsack Cslib.Complexity.encKnapsack := by
   fun_prop

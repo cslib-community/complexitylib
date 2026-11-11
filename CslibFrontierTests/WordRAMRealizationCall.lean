@@ -7,14 +7,14 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (realize certificate-call regression tests)
 
-public import CslibFrontier.Tactic.Realize
+public import CslibFrontier.Computability.WordRAM.Realization.BoundedTactic
 
 /-!
 # Calls to separately certified memory methods
 
 The methods are parameters, so their implementations cannot be unfolded. Calls select existing
-live words, may alias inputs, and carry their method domain to the reached memory. Argument
-computation requires an explicit, charged glue step.
+live words, may alias inputs, and carry their method domain to the reached memory. Computed
+arguments are automatically staged with charged glue in the callee's input encoding.
 -/
 
 public section
@@ -26,6 +26,11 @@ open Cslib.DataStructure
 private abbrev word : ℕ ↪ (Fin 1 → ℕ) := (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
 private abbrev pairWords : ℕ × ℕ ↪ (Fin 2 → ℕ) := appendWords word word
 private abbrev unitWords : Unit ↪ (Fin 0 → ℕ) := (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+
+-- This encoding has an unsupported glue coordinate, while its second word retains injectivity.
+private def squaredWords : ℕ ↪ (Fin 2 → ℕ) where
+  toFun n := ![n ^ 2, n]
+  inj' := fun _ _ h => congrFun h 1
 
 -- A separately certified method consumes a projection of a larger live environment.
 theorem projection_call (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memory.State → Prop)
@@ -125,13 +130,20 @@ example (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memory.State → Prop
   realize
   exact h
 
--- An arithmetic argument cannot be passed by free static rewiring.
+-- Automatic staging still requires the arithmetic result to fit; it is not free rewiring.
 example (m : ℕ → Memory.Prog ℕ)
     (_hm : Realizes .exact m word word (fun _ _ _ => True) (fun _ _ => 0)) : True := by
   fail_if_success
     have _ : Realizes .exact (fun d : ℕ => m (d + 1)) word word
         (fun _ _ _ => True) (fun _ _ => 0) := by realize
   trivial
+
+-- A computed scalar argument needs no handwritten `pure` stage.
+example (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memory.State → Prop)
+    (hm : Realizes .exact m word word P (fun _ _ => 0)) :
+    Realizes .exact (fun d : ℕ => m (d + 1)) word word
+      (fun w d s => Fits w (d + 1) ∧ P w (d + 1) s) (fun _ _ => 0) := by
+  realize <;> first | exact h.1 | exact h.2
 
 -- Its explicit pure step is certified glue; the fitting arithmetic result stays visible.
 example (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memory.State → Prop)
@@ -141,5 +153,81 @@ example (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memory.State → Prop
       m a) word word
       (fun w d s => Fits w (d + 1) ∧ P w (d + 1) s) (fun _ _ => 0) := by
   realize <;> first | exact h.1 | exact h.2
+
+-- Curried methods can combine computed coordinates, including repeated arguments.
+example (m : ℕ → ℕ → Memory.Prog ℕ) (P : ℕ → ℕ × ℕ → Memory.State → Prop)
+    (hm : Realizes .exact (fun d : ℕ × ℕ => m d.1 d.2) pairWords word P (fun _ _ => 0)) :
+    Realizes .exact (fun d : ℕ => m (d + 1) (d + 1)) word word
+      (fun w d s => Fits w (d + 1) ∧ P w (d + 1, d + 1) s) (fun _ _ => 0) := by
+  realize <;> first | exact h.1 | exact h.2
+
+-- The whole dependent argument uses its supplied encoding; no `WordEncoding` is inferred.
+example (m : {n : ℕ} → Fin n → ℕ → ℕ → Memory.Prog Unit)
+    (P : ℕ → IndexedArgument → Memory.State → Prop)
+    (hm : Realizes .exact (fun d : IndexedArgument => m d.1.1.2 d.1.2 d.2)
+      indexedInput unitWords P (fun _ _ => 0)) :
+    Realizes .exact (fun d : IndexedArgument => m d.1.1.2 (d.1.2 - 1) 1)
+      indexedInput unitWords
+      (fun w d s => 1 ≤ d.1.2 ∧ P w ((d.1.1, d.1.2 - 1), 1) s)
+      (fun _ _ => 0) := by
+  realize <;> first | exact h.1 | exact h.2 | exact (hwords 2).of_le h.1
+
+-- Staging preserves the callee's obligation at the memory reached after an earlier write.
+example (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memory.State → Prop)
+    (hm : Realizes .exact m word word P (fun _ _ => 0)) :
+    Realizes .exact (fun d : ℕ × ℕ => do
+      Memory.write d.1 d.2
+      m (d.2 + 1)) pairWords word
+      (fun w d s => Fits w (d.2 + 1) ∧
+        P w (d.2 + 1) ⟨Function.update s.mem d.1 d.2, s.frontier⟩)
+      (fun _ _ => 0) := by
+  realize <;> first | exact h.1 | exact h.2
+
+-- Standard-basis truncated subtraction has no exact-subtraction domain obligation.
+example (m : ℕ → Memory.Prog ℕ)
+    (hm : Realizes .standard m word word (fun _ _ _ => True) (fun _ _ => 0)) :
+    Realizes .standard (fun d : ℕ × ℕ => m (d.1 - d.2)) pairWords word
+      (fun _ _ _ => True) (fun _ _ => 0) := by
+  realize
+
+-- Exact subtraction still requires definedness, even when its truncated result fits.
+example (m : ℕ → Memory.Prog ℕ)
+    (_hm : Realizes .exact m word word (fun _ _ _ => True) (fun _ _ => 0)) : True := by
+  fail_if_success
+    have _ : Realizes .exact (fun d : ℕ × ℕ => m (d.1 - d.2)) pairWords word
+        (fun _ _ _ => True) (fun _ _ => 0) := by realize
+  trivial
+
+-- A fitting quotient does not grant exact division by zero.
+example (m : ℕ → Memory.Prog ℕ)
+    (_hm : Realizes .exact m word word (fun _ _ _ => True) (fun _ _ => 0)) : True := by
+  fail_if_success
+    have _ : Realizes .exact (fun d : ℕ × ℕ => m (d.1 / d.2)) pairWords word
+        (fun _ _ _ => True) (fun _ _ => 0) := by realize
+  trivial
+
+example (m : ℕ → Memory.Prog ℕ)
+    (hm : Realizes .exact m word word (fun _ _ _ => True) (fun _ _ => 0)) :
+    Realizes .exact (fun d : ℕ × ℕ => m (d.1 / d.2)) pairWords word
+      (fun _ d _ => d.2 ≠ 0) (fun _ _ => 0) := by
+  realize
+  exact h
+
+-- Frontier-bounded certificates use the same staging path and preserve their stronger contract.
+example (m : ℕ → Memory.Prog ℕ) (P : ℕ → ℕ → Memory.State → Prop)
+    (hm : RealizesBounded .exact m word word P (fun _ _ => 0)) :
+    RealizesBounded .exact (fun d : ℕ => m (d + 1)) word word
+      (fun w d s => Fits w (d + 1) ∧ P w (d + 1) s) (fun _ _ => 0) := by
+  realize <;> first | exact h.1 | exact h.2
+
+-- Failed staging of the first candidate's unsupported power must roll back its argument
+-- unification before trying a later certificate for the same method and basis.
+example (m : ℕ → Memory.Prog ℕ)
+    (_wrong : Realizes .exact m squaredWords word (fun _ _ _ => True) (fun _ _ => 0))
+    (hm : Realizes .exact m word word (fun _ _ _ => True) (fun _ _ => 0)) :
+    Realizes .exact (fun d : ℕ => m (d + 1)) word word
+      (fun w d _ => Fits w (d + 1)) (fun _ _ => 0) := by
+  realize
+  exact h
 
 end Cslib.WordRAM.Realization.Tests.Call

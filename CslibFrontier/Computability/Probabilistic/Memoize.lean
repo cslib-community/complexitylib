@@ -112,7 +112,7 @@ theorem memoize_cache_growth_le {Key Value : Type} [BEq Key]
   · simp only [hnext]
     lia
   · have := hvalues _ hvalue
-    enc_len [hnext, encMemoCache, encList_cons]
+    enc_len [hnext, encMemoCache]
 
 /-- A cached call preserves a reply-size invariant and adds at most one encoded entry. The bound
 charges the complete key and value, including both layers of framing. -/

@@ -568,10 +568,6 @@ theorem isOraclePPTOn_signAtO {γ : Type} {enc : γ ↪ List Bool} {path sk msg 
     (T.signBudget_polyTime.comp' (hsk.prod (hu.prod hmsg)))).map_with'
     (T.signWith_polyTime.comp' (((hsk.prod (hu.prod hmsg)).comp' (.fst _ _)).prod (.snd _ _)))
 
-/-- The encoding of a chain state. -/
-local notation "encCertState" =>
-  encPair encBits (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))
-
 /-- A chain state, written out so that the certificate automation sees the product. -/
 local notation "CertTriple" => (List Bool × (List Bool × List Bool) × List (List Bool × List Bool))
 

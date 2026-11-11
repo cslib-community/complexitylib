@@ -26,9 +26,8 @@ The size bound is this library's, not a source's. The circuits chain one Gauss�
 column; their depth is not certified here.
 
 This is the constructive and large half of a natural proof. Usefulness against `AC⁰[2]` along the
-middle level, from `Cslib.Circuits.Boolean.Razborov.two_mul_two_pow_le_size_of_mem_rankTest`, is
-not proved here; it is milestone M6.8 of
-[#4451](https://github.com/cslib-community/cslib-frontier/issues/4451).
+middle level is `Cslib.Circuits.Boolean.Razborov.isUseful_AC0Mod_two_rankProperty`, in
+`CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful`.
 
 ## Main definitions
 
@@ -169,8 +168,9 @@ theorem isLarge_rankProperty (a : ℕ → ℕ) : IsLarge (rankProperty a) := by
   exact (two_pow_two_pow_le_two_mul_ncard_rankTest n (a n)).trans (Nat.mul_le_mul_right _ h2)
 
 /-- **The rank property is `P/poly`-natural** along any level function: it is large, and its truth
-tables are decided by polynomial-size circuits. Usefulness against `AC⁰[2]` is not proved here
-(milestone M6.8 of [#4451](https://github.com/cslib-community/cslib-frontier/issues/4451)). -/
+tables are decided by polynomial-size circuits. Along the middle level it is also useful against
+`AC⁰[2]`
+(`Cslib.Circuits.Boolean.Razborov.isNatural_PPoly_and_isUseful_AC0Mod_two_rankProperty`). -/
 theorem isNatural_PPoly_rankProperty (a : ℕ → ℕ) : IsNatural PPoly (rankProperty a) :=
   ⟨rankProperty a, fun _ => le_rfl, isLarge_rankProperty a,
     truthTableLanguage_rankProperty_mem_PPoly a⟩
