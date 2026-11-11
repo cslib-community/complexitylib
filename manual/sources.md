@@ -1705,3 +1705,13 @@ Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-
 ## zre15
 
 Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.
+
+<a id="hopcroftullman1973"></a>
+## hopcroftullman1973
+
+John E. Hopcroft and Jeffrey D. Ullman. "Set Merging Algorithms." *SIAM Journal on Computing* 2(4), 294–303, 1973. https://doi.org/10.1137/0202024 . This paper introduces the iterated-logarithm amortized bound for disjoint-set union using path compression and union-by-rank.
+
+<a id="dpv2006"></a>
+## dpv2006
+
+Sanjoy Dasgupta, Christos H. Papadimitriou, and Umesh Vazirani. *Algorithms*. McGraw-Hill, 2006. ISBN 978-0073523408. Section 5.1.4 describes the Hopcroft-Ullman amortized bound using a potential function based on block towers.

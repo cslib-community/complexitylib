@@ -37,8 +37,10 @@ public section
 
 namespace Cslib.DataStructure.DisjointSet.UnionFind
 
+/-- The block of a node is the iterated logarithm of its rank. -/
 @[expose] def block (rank : ℕ) : ℕ := Nat.logStar rank
 
+/-- The credit assigned to a node for rank increases within its block. -/
 @[expose] def nodeCredit (uf : Batteries.UnionFind) (x : Fin uf.size) : ℕ :=
   if uf.parent x.1 = x.1 then 0 else
     let b := block (uf.rank (uf.parent x.1))
@@ -46,16 +48,20 @@ namespace Cslib.DataStructure.DisjointSet.UnionFind
       Nat.twoTower b + 1 - uf.rank (uf.parent x.1)
     else 0
 
+/-- The sum of credits across all nodes in the disjoint-set forest. -/
 @[expose] def nodeCreditSum (uf : Batteries.UnionFind) : ℕ :=
   ((List.finRange uf.size).map (fun x => nodeCredit uf x)).sum
 
+/-- The set of non-root nodes whose rank falls into block `b`. -/
 @[expose] def nonRootInBlock (uf : Batteries.UnionFind) (b : ℕ) : Finset (Fin uf.size) :=
   Finset.filter (fun x => uf.parent x.1 ≠ x.1 ∧ block (uf.rank x.1) = b) Finset.univ
 
+/-- The potential allocated to block `b`. -/
 @[expose] def blockBudget (uf : Batteries.UnionFind) : ℕ → ℕ
   | 0 => 2 * uf.size - 2 * (nonRootInBlock uf 0).card
   | b + 1 => 2 * uf.size - Nat.twoTower (b + 1) * (nonRootInBlock uf (b + 1)).card
 
+/-- The total Hopcroft-Ullman potential function of the disjoint-set forest. -/
 @[expose] def potential (uf : Batteries.UnionFind) : ℕ :=
   nodeCreditSum uf + ((List.range (Nat.logStar uf.size + 2)).map (fun b => blockBudget uf b)).sum
 
@@ -321,7 +327,7 @@ private theorem sum_map_le {α : Type*} {l : List α} (f g : α → ℕ)
     have ht := ih (fun x hx => hle x (List.mem_cons_of_mem a hx))
     omega
 
-private theorem sum_map_add_le_of_mem {α : Type*} [DecidableEq α] {l : List α} (hnodup : l.Nodup)
+private theorem sum_map_add_le_of_mem {α : Type*} {l : List α} (hnodup : l.Nodup)
     {k : α} (hk : k ∈ l) (f g : α → ℕ) (hle : ∀ x ∈ l, x ≠ k → f x ≤ g x) :
     (l.map f).sum + g k ≤ (l.map g).sum + f k := by
   induction l with

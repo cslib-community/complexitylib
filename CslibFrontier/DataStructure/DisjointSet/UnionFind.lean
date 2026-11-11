@@ -611,7 +611,7 @@ private theorem compressWithSteps_size (uf : Batteries.UnionFind) (x : Fin uf.si
 
 @[simp]
 theorem compressWithSteps_root (uf : Batteries.UnionFind) (x : Fin uf.size) :
-    ((compressWithSteps uf x).2.1 : ℕ) = uf.rootD x.1 := by
+    (Prod.fst (compressWithSteps uf x).snd : ℕ) = uf.rootD x.1 := by
   unfold compressWithSteps
   dsimp only
   rw [findGo_rankBound_fst, Batteries.UnionFind.findAux_root,
@@ -658,7 +658,8 @@ private theorem equiv_compressWithSteps (uf : Batteries.UnionFind) (x : Fin uf.s
 original forest. -/
 theorem compressWithSteps_root_beq_iff (uf : Batteries.UnionFind) (x : Fin uf.size)
     (y : Fin (compressWithSteps uf x).1.size) :
-    ((compressWithSteps uf x).2.1.1 == (compressWithSteps (compressWithSteps uf x).1 y).2.1.1) =
+    ((Prod.fst (compressWithSteps uf x).snd).val ==
+      (Prod.fst (compressWithSteps (compressWithSteps uf x).fst y).snd).val) =
       true ↔ uf.Equiv x.1 y.1 := by
   rw [beq_iff_eq, compressWithSteps_root, compressWithSteps_root, rootD_compressWithSteps]
   rfl
@@ -798,7 +799,8 @@ theorem compressWithSteps (uf : Batteries.UnionFind) (x : Fin uf.size) (h : Rank
   exact h.find x
 
 
-theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank uf) {x y : Fin uf.size}
+theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank uf)
+    {x y : Fin uf.size}
     (hx : uf.parent x.1 = x.1) (hy : uf.parent y.1 = y.1) :
     RankCount (uf.link x y hy) := by
   intro r a hr hp'
@@ -868,7 +870,8 @@ theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank 
       · rw [hxr] at hp heq_class ⊢
         rw [heq_class, ite_eq_left rfl]
         have h_filter_eq :
-            ((equivClass uf x.1 ∪ equivClass uf y.1).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
+            ((equivClass uf x.1 ∪ equivClass uf y.1).filter
+              (fun z => a ≤ (uf.link x y hy).rank z)) =
               ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z)) ∪
               ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) := by
           ext i
@@ -937,7 +940,8 @@ theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank 
         rw [heq_class, ite_eq_left rfl]
         have h_disj : Disjoint (equivClass uf x.1) (equivClass uf y.1) :=
           disjoint_equivClass_of_ne uf hxy
-        have h_rank_le_y : ∀ z ∈ equivClass uf x.1 ∪ equivClass uf y.1, uf.rank z ≤ uf.rank y.1 := by
+        have h_rank_le_y :
+            ∀ z ∈ equivClass uf x.1 ∪ equivClass uf y.1, uf.rank z ≤ uf.rank y.1 := by
           intro z hz
           have hle_root : uf.rank z ≤ uf.rank (uf.rootD z) := Batteries.UnionFind.le_rank_root
           rcases Finset.mem_union.mp hz with hzx | hzy
@@ -947,7 +951,8 @@ theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank 
             exact hle_root
         by_cases ha : a ≤ uf.rank y.1
         · have h_filter_eq :
-              ((equivClass uf x.1 ∪ equivClass uf y.1).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
+              ((equivClass uf x.1 ∪ equivClass uf y.1).filter
+                (fun z => a ≤ (uf.link x y hy).rank z)) =
                 ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z)) ∪
                 ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) := by
             ext i
@@ -1024,7 +1029,8 @@ theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank 
         rw [h_filter_eq]
         exact h hr hp
 
-theorem union {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank uf) (x y : Fin uf.size) :
+theorem union {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank uf)
+    (x y : Fin uf.size) :
     RankCount (uf.union x y) := by
   unfold Batteries.UnionFind.union
   dsimp only
@@ -1052,6 +1058,7 @@ theorem union {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank
 
 end RankCount
 
+/-- The representation invariant tying the UnionFind structure to the abstract partition. -/
 @[expose] def Rep {n : ℕ} (p : Partition n) (s : State n) : Prop :=
   ValidRank s.uf ∧ RankCount s.uf ∧
     (∀ x y : Fin n, p.rel x y = true ↔ s.uf.Equiv x.1 y.1) ∧
@@ -1094,10 +1101,11 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
     have hsz₁ : c₁.1.size = n := (compressWithSteps_size s.uf x').trans s.size_eq
     let y' : Fin c₁.1.size := ⟨y.1, hsz₁.symm ▸ y.2⟩
     let c₂ := compressWithSteps c₁.1 y'
-    have hans : (c₁.2.1.1 == c₂.2.1.1) = p.rel x y :=
+    have hans : (c₁.snd.fst.val == c₂.snd.fst.val) = p.rel x y :=
       Bool.eq_iff_iff.mpr ((compressWithSteps_root_beq_iff s.uf x' y').trans (hrel x y).symm)
     have hrank₂ : ValidRank c₂.1 := (hrank.compressWithSteps x').compressWithSteps y'
-    have hrankcount₂ : RankCount c₂.1 := RankCount.compressWithSteps c₁.1 y' (RankCount.compressWithSteps s.uf x' hrankcount)
+    have hrankcount₂ : RankCount c₂.1 :=
+      RankCount.compressWithSteps c₁.1 y' (RankCount.compressWithSteps s.uf x' hrankcount)
     have hequiv₂ : ∀ u v : Fin n, p.rel u v = true ↔ c₂.1.Equiv u.1 v.1 := fun u v =>
       (hrel u v).trans ((equiv_compressWithSteps c₁.1 y' u.1 v.1).trans
         (equiv_compressWithSteps s.uf x' u.1 v.1)).symm
@@ -1109,7 +1117,7 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
     have hsz₁ : c₁.1.size = n := (compressWithSteps_size s.uf x').trans s.size_eq
     let y' : Fin c₁.1.size := ⟨y.1, hsz₁.symm ▸ y.2⟩
     let c₂ := compressWithSteps c₁.1 y'
-    have hmerged : (c₁.2.1.1 != c₂.2.1.1) = !p.rel x y :=
+    have hmerged : (c₁.snd.fst.val != c₂.snd.fst.val) = !p.rel x y :=
       congrArg (!·) <| Bool.eq_iff_iff.mpr
         ((compressWithSteps_root_beq_iff s.uf x' y').trans (hrel x y).symm)
     have huf_eq : (step s (.union x y)).1.uf = s.uf.union x' y₀ := step_union_uf_eq s x y
@@ -1122,7 +1130,7 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
       rw [huf_eq, Batteries.UnionFind.equiv_union]
       change (p.merge x y).rel u v = true ↔ _
       rw [Partition.rel_merge_eq_true, hrel u v, hrel u x, hrel y v, hrel u y, hrel x v]
-    · change (if (c₁.2.1.1 != c₂.2.1.1) = true then s.numComp - 1 else s.numComp) =
+    · change (if (c₁.snd.fst.val != c₂.snd.fst.val) = true then s.numComp - 1 else s.numComp) =
         (p.merge x y).numComponents
       rw [hmerged, hcomp]
       cases hpxy : p.rel x y
