@@ -628,12 +628,13 @@ theorem dist_edgePoint_edgePoint_of_abs_sub_le_half [Finite V] (d : W.graph.Dart
   have h₂ := vertexDist_nonneg W.weight_nonneg (G := W.graph) d.snd d.fst
   have hs0 := s.2.1; have hs1 := s.2.2; have ht0 := t.2.1; have ht1 := t.2.2
   obtain ⟨hlo, hhi⟩ := abs_le.mp hst
-  have key : ∀ k : ℝ, |(s : ℝ) - t| ≤ k → 0 ≤ k → |(s : ℝ) - t| * W.weight d.edge ≤ k * W.weight d.edge :=
-    fun k hk _ => mul_le_mul_of_nonneg_right hk hw
-  have e₁ := key ((s : ℝ) + t) (abs_le.mpr ⟨by linarith, by linarith⟩) (by linarith)
-  have e₂ := key ((s : ℝ) + (1 - t)) (abs_le.mpr ⟨by linarith, by linarith⟩) (by linarith)
-  have e₃ := key ((1 - s : ℝ) + t) (abs_le.mpr ⟨by linarith, by linarith⟩) (by linarith)
-  have e₄ := key ((1 - s : ℝ) + (1 - t)) (abs_le.mpr ⟨by linarith, by linarith⟩) (by linarith)
+  have key : ∀ k : ℝ, |(s : ℝ) - t| ≤ k →
+      |(s : ℝ) - t| * W.weight d.edge ≤ k * W.weight d.edge :=
+    fun k hk => mul_le_mul_of_nonneg_right hk hw
+  have e₁ := key ((s : ℝ) + t) (abs_le.mpr ⟨by linarith, by linarith⟩)
+  have e₂ := key ((s : ℝ) + (1 - t)) (abs_le.mpr ⟨by linarith, by linarith⟩)
+  have e₃ := key ((1 - s : ℝ) + t) (abs_le.mpr ⟨by linarith, by linarith⟩)
+  have e₄ := key ((1 - s : ℝ) + (1 - t)) (abs_le.mpr ⟨by linarith, by linarith⟩)
   refine min_eq_left (le_min (le_min ?_ ?_) (le_min ?_ ?_)) <;> linarith
 
 /-- Points on two darts that leave a common vertex along distinct edges, each in the first half of
@@ -651,7 +652,8 @@ theorem dist_edgePoint_edgePoint_of_fst_eq [Finite V] {d₁ d₂ : W.graph.Dart}
   have h₃ := vertexDist_nonneg W.weight_nonneg (G := W.graph) d₁.snd d₂.snd
   have e₁ := mul_le_mul_of_nonneg_right (show (t₁ : ℝ) ≤ 1 - t₁ by linarith) hw₁
   have e₂ := mul_le_mul_of_nonneg_right (show (t₂ : ℝ) ≤ 1 - t₂ by linarith) hw₂
-  exact min_eq_left (le_min (le_min le_rfl (by linarith)) (le_min (by linarith) (by linarith)))
+  exact le_antisymm ((min_le_left _ _).trans (min_le_left _ _))
+    (le_min (le_min le_rfl (by linarith)) (le_min (by linarith) (by linarith)))
 
 theorem edgePoint_mem_interval_of_fst [Finite V] {x : MetricGraph W} {d : W.graph.Dart}
     {s t : unitInterval} (hst : (s : ℝ) ≤ t)
