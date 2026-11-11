@@ -78,7 +78,7 @@ structure RootInterval where
 
 /-- Closed-interval root isolation predicate: `I.lower ≤ I.upper` and `[I.lower, I.upper]`
 contains a unique real root of `p`. -/
-def RootInterval.IsIsolatingFor (I : RootInterval) (p : ℝ[X]) : Prop :=
+@[expose] def RootInterval.IsIsolatingFor (I : RootInterval) (p : ℝ[X]) : Prop :=
   I.lower ≤ I.upper ∧
     ∃! r : ℝ, (I.lower : ℝ) ≤ r ∧ r ≤ (I.upper : ℝ) ∧ p.IsRoot r
 
@@ -663,7 +663,9 @@ private theorem refineLeftRootM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Se
       rcases hloop with ⟨hiso, hlow, hup, hequiv⟩
       exact ⟨hiso, hlow.le, hup, fun _ => hlow, hequiv⟩
 
-private def IntervalGapOk (p : ℝ[X]) (I₁ I₂ : RootInterval) : Prop :=
+/-- Separation invariant between consecutive isolating intervals: either `I₁.upper < I₂.lower`, or
+`I₁.upper = I₂.lower` and that shared rational boundary point is not a root of `p`. -/
+@[expose] def IntervalGapOk (p : ℝ[X]) (I₁ I₂ : RootInterval) : Prop :=
   I₁.upper < I₂.lower ∨ (I₁.upper = I₂.lower ∧ p.eval (I₁.upper : ℝ) ≠ 0)
 
 private theorem intervalGapOk_of_mid {p : ℝ[X]} {m : ℚ} {I₁ I₂ : RootInterval}
@@ -815,7 +817,7 @@ private theorem isolateRoots_spec_aux {cs : List ℚ} (hsep : (ofCoeffList cs).S
     let b : ℚ := (cauchyBoundNat cs : ℚ)
     let seq := sturmSeqList cs
     let pR := (ofCoeffList cs).map (algebraMap ℚ ℝ)
-    (∀ I ∈ isolateRoots cs, I.IsIsolatingFor pR) ∧
+    (∀ I ∈ isolateRoots cs, I.IsIsolatingFor pR ∧ -b ≤ I.lower ∧ I.upper ≤ b) ∧
       (isolateRoots cs).Pairwise (IntervalGapOk pR) ∧
       (isolateRoots cs).length =
         sturmVariationsList seq (-b) - sturmVariationsList seq b ∧
@@ -841,13 +843,21 @@ private theorem isolateRoots_spec_aux {cs : List ℚ} (hsep : (ofCoeffList cs).S
       TimeM.ret_bind, sturmVariationsM_ret]
     rfl
   rw [heq]
-  exact ⟨fun I hI => (hspec.1 I hI).1, hspec.2.1, hspec.2.2.1, hspec.2.2.2.2⟩
+  exact ⟨fun I hI => ⟨(hspec.1 I hI).1, (hspec.1 I hI).2.1, (hspec.1 I hI).2.2.1⟩,
+    hspec.2.1, hspec.2.2.1, hspec.2.2.2.2⟩
 
 /-- Soundness: every rational interval returned by `isolateRoots cs` isolates a unique real root
 of `(ofCoeffList cs).map (algebraMap ℚ ℝ)`. -/
 theorem isolateRoots_isIsolatingFor {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
     ∀ I ∈ isolateRoots cs, I.IsIsolatingFor ((ofCoeffList cs).map (algebraMap ℚ ℝ)) :=
-  (isolateRoots_spec_aux hsep).1
+  fun I hI => ((isolateRoots_spec_aux hsep).1 I hI).1
+
+/-- Cauchy enclosure: every interval returned by `isolateRoots cs` lies within
+`[-cauchyBoundNat cs, cauchyBoundNat cs]`. -/
+theorem isolateRoots_mem_cauchy {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
+    ∀ I ∈ isolateRoots cs,
+      -(cauchyBoundNat cs : ℚ) ≤ I.lower ∧ I.upper ≤ (cauchyBoundNat cs : ℚ) :=
+  fun I hI => ((isolateRoots_spec_aux hsep).1 I hI).2
 
 /-- Ordering: consecutive intervals returned by `isolateRoots cs` satisfy `I₁.upper ≤ I₂.lower`. -/
 theorem isolateRoots_pairwise {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
@@ -857,7 +867,8 @@ theorem isolateRoots_pairwise {cs : List ℚ} (hsep : (ofCoeffList cs).Separable
   · exact hlt.le
   · exact heq_lu.le
 
-private theorem isolateRoots_intervalGapOk {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
+/-- Pairwise boundary-gap invariant `IntervalGapOk` across `isolateRoots cs`. -/
+theorem isolateRoots_intervalGapOk {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
     (isolateRoots cs).Pairwise (IntervalGapOk ((ofCoeffList cs).map (algebraMap ℚ ℝ))) :=
   (isolateRoots_spec_aux hsep).2.1
 
