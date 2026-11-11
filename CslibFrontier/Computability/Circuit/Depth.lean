@@ -323,4 +323,9 @@ theorem Circuit.depthWith_le_mul_depth {cost : σ.Op → ℕ} {b m : ℕ} (c : C
   (c.depthWith_le_iff cost).2 fun j => (c.program.wireDepthsWith_le_mul_wireDepths h _).trans
     (Nat.mul_le_mul_left b (c.outputDepths_le_depth j))
 
+/-- With zero costs, every circuit has depth zero. -/
+@[simp] theorem Circuit.depthWith_zero {m : ℕ} (c : Circuit σ n m) : c.depthWith 0 = 0 :=
+  Nat.eq_zero_of_le_zero <| (c.depthWith_le_mul_depth (b := 0) fun _ => le_rfl).trans_eq
+    (Nat.zero_mul _)
+
 end Cslib.Circuits
