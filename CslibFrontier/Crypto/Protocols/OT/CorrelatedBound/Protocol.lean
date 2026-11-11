@@ -1263,7 +1263,7 @@ theorem chosenOT_le_mutualInfo
         · dsimp only [Function.comp_def, Prod.map_apply, id_eq, rotChoices, ROut]
           rw [hin1]
           exact funext (heQ1 x1)
-      rw [hLHS, ← hPriv0, idealCorrelatedJointWithInput, batchOTFunctionality,
+      rw [hLHS, ← hPriv0, idealCorrelatedJointWithInput, semanticIdealCorrelatedJointWithInput, batchOTFunctionality,
         Functionality.ofDeterministic]
       simp only [ProbComp.eval_pure, PMF.pure_bind, PMF.map_comp, Function.comp_def]
       have hrest : ({0} : Finset (Fin 2)).restrict
@@ -1361,7 +1361,7 @@ theorem chosenOT_le_mutualInfo
             rfl
           · simp only [hx, Bool.not_true, otSelect_false, x0, otPairEquiv, Equiv.coe_fn_mk]
             rfl
-      rw [hLHS, ← hPriv1, idealCorrelatedJointWithInput, batchOTFunctionality,
+      rw [hLHS, ← hPriv1, idealCorrelatedJointWithInput, semanticIdealCorrelatedJointWithInput, batchOTFunctionality,
         Functionality.ofDeterministic]
       simp only [ProbComp.eval_pure, PMF.pure_bind, PMF.map_comp, Function.comp_def]
       have hrest : ({1} : Finset (Fin 2)).restrict
