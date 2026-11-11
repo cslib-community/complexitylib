@@ -1026,6 +1026,7 @@ public import CslibFrontier.Computability.Circuit.Bird
 public import CslibFrontier.Computability.Circuit.Boolean.AC0
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Basic
+public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Gadgets
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Simulation
 public import CslibFrontier.Computability.Circuit.Boolean.Advice
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser
@@ -1106,12 +1107,15 @@ public import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Restriction
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Subbotovskaya
+public import CslibFrontier.Computability.Circuit.Boolean.GF2Rank
 public import CslibFrontier.Computability.Circuit.Boolean.GateElimination
 public import CslibFrontier.Computability.Circuit.Boolean.Gates
 public import CslibFrontier.Computability.Circuit.Boolean.Hamming
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore.Set
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmp
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmpCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.Schedule
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.Stages
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.WorstCase
@@ -1613,6 +1617,7 @@ public import CslibFrontier.Computability.Circuit.Rational.SmallExpansion
 public import CslibFrontier.Computability.Circuit.Rational.Wronskian
 public import CslibFrontier.Computability.Circuit.ReedMullerDecoding
 public import CslibFrontier.Computability.Circuit.Replication
+public import CslibFrontier.Computability.Circuit.ReplicationDepth
 public import CslibFrontier.Computability.Circuit.SatCount
 public import CslibFrontier.Computability.Circuit.SignatureHom
 public import CslibFrontier.Computability.Circuit.Simulation
@@ -2041,6 +2046,7 @@ public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Com
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PPADS
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLine
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
+public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Principles
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Sperner
@@ -2688,6 +2694,7 @@ public import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Circuit
+public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.Multi.NP
 public import CslibFrontier.Computability.MCSP.MultiNPHard
@@ -2703,6 +2710,7 @@ public import CslibFrontier.Computability.MCSP.PartialHardness.Construction
 public import CslibFrontier.Computability.MCSP.PartialHardness.Evaluator
 public import CslibFrontier.Computability.MCSP.PartialHardness.EvaluatorPolyTime
 public import CslibFrontier.Computability.MCSP.PartialHardness.Knowledge
+public import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
 public import CslibFrontier.Computability.MCSP.PartialHardness.Seeded
 public import CslibFrontier.Computability.MCSP.PartialHardness.Soundness
 public import CslibFrontier.Computability.MCSP.PartialNP
@@ -4841,6 +4849,7 @@ public import CslibFrontier.Foundations.Combinatorics.GreedySchedules
 public import CslibFrontier.Foundations.Combinatorics.Hoeffding
 public import CslibFrontier.Foundations.Combinatorics.HybridPrediction
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric
+public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.Miss
 public import CslibFrontier.Foundations.Combinatorics.HypergraphCut
 public import CslibFrontier.Foundations.Combinatorics.InclusionMatrix
 public import CslibFrontier.Foundations.Combinatorics.Janson
@@ -5994,6 +6003,7 @@ public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses
 public import CslibFrontier.MachineLearning.UniformLearning.MembershipQuery
 public import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
+public import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 public import CslibFrontier.Privacy.DifferentialPrivacy.AboveThreshold
 public import CslibFrontier.Privacy.DifferentialPrivacy.AdvancedComposition
 public import CslibFrontier.Privacy.DifferentialPrivacy.Basic
@@ -6079,6 +6089,7 @@ public import CslibFrontier.Probability.IID
 public import CslibFrontier.Probability.IID.CollisionCount
 public import CslibFrontier.Probability.IID.CrossCollisionCount
 public import CslibFrontier.Probability.IID.Event
+public import CslibFrontier.Probability.IID.FirstAccepted
 public import CslibFrontier.Probability.IID.Occurrence
 public import CslibFrontier.Probability.Isolation
 public import CslibFrontier.Probability.JohnsonLindenstrauss
@@ -6205,6 +6216,7 @@ public import CslibFrontier.Probability.StatisticalDistance.Product
 public import CslibFrontier.Probability.StatisticalDistance.UniformMod
 public import CslibFrontier.Probability.StatisticalDistance.XOR
 public import CslibFrontier.Probability.StatisticalDistance.XORSampling
+public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
