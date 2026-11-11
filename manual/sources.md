@@ -614,7 +614,7 @@ Torbjörn Granlund, Peter L. Montgomery. "Division by Invariant Integers using M
 <a id="goemanswilliamson95"></a>
 ## goemanswilliamson95
 
-Michel X. Goemans and David P. Williamson. "Improved Approximation Algorithms for Maximum Cut and Satisfiability Problems Using Semidefinite Programming." *Journal of the ACM* 42(6), 1115–1145, 1995. https://doi.org/10.1145/227683.227684 . Section 2 (the relaxation (P) and random-hyperplane rounding) and Section 3 (Theorem 3.1, Lemma 3.2, Theorem 3.3, Lemma 3.4, and Lemma 3.5 with its tangent-line proof at `θ = 2.331122`) were checked against the author-hosted copy at https://math.mit.edu/~goemans/PAPERS/maxcut-jacm.pdf on 2026-11-08.
+Michel X. Goemans and David P. Williamson. "Improved Approximation Algorithms for Maximum Cut and Satisfiability Problems Using Semidefinite Programming." *Journal of the ACM* 42(6), 1115–1145, 1995. https://doi.org/10.1145/227683.227684 . Section 2 (the relaxation (P) and random-hyperplane rounding) and Section 3 (Theorem 3.1, Lemma 3.2, Theorem 3.3, Lemma 3.4, and Lemma 3.5 with its tangent-line proof at `θ = 2.331122`) were checked against the author-hosted copy at https://math.mit.edu/~goemans/PAPERS/maxcut-jacm.pdf on 2026-11-08. Section 7.2.1 (relaxations `(Q')`, `(P')`, and Theorem 7.2.1.1 for MAX 2-SAT) and Section 7.3 (relaxations `(Q'')`, `(P'')`, Lemmas 7.3.1–7.3.2, the `β > 0.79607` MAX DICUT bound, the balanced-digraph `α` bound on p. 1138, and the sign typo in display `(Q'')`) were checked against the same copy on 2026-11-11.
 
 <a id="goldbergtarjan88"></a>
 ## goldbergtarjan88
@@ -1130,7 +1130,7 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 <a id="mosertardos10"></a>
 ## mosertardos10
 
-Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
+Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08; Section 6 (lopsidependency, Lemma 6.2, Theorem 6.1, and the conflict-graph CNF application) was checked against the same arXiv v3 PDF on 2026-11-11. The JACM article numbering was not checked against the typeset journal version.
 
 <a id="motzkinstraus1965"></a>
 ## motzkinstraus1965
