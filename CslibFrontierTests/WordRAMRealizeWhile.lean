@@ -192,12 +192,12 @@ the body begins with
 example : Realizes .exact halve word word (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
-/-- A non-strict comparison is not a native test. -/
+/-- A general non-strict comparison is not a native test. -/
 def upTo (n : ℕ) : Memory.Prog ℕ :=
   boundedWhile (fun n i => i ≤ n) (fun (_, i) => do let _ ← Memory.read i; pure (i + 1)) n (n + 1) 0
 
 /--
-error: realize: a loop guard must be `a = b`, `a < b`, `a > b` or `a ≠ 0` on words, got
+error: realize: a loop guard must be `a = b`, `a < b`, `a > b`, `a ≠ 0` or `a + 1 ≤ b` on words, got
   a ≤ d
 -/
 #guard_msgs in
