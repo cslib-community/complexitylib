@@ -137,7 +137,7 @@ private theorem computableInPolyTime_arcOK :
       (encPair (encPair encFeedbackVertexSet (encList encNat)) (encPair encNat encNat))
       encBool := by
   unfold arcOK
-  fun_prop [Graph.computableInPolyTime_vertices]
+  fun_prop [encGraph_vertices_polyTime]
 
 private theorem computableInPolyTime_check :
     ComputableInPolyTime check (encPair encFeedbackVertexSet (encList encNat)) encBool := by
@@ -146,7 +146,7 @@ private theorem computableInPolyTime_check :
     unfold zeroCount
     exact countPWithInput (by fun_prop) (by fun_prop)
   exact bool_and.comp ((binary_le' (unary_to_binary.comp hz) (by fun_prop)).prod
-    (allWithInput (Graph.computableInPolyTime_edges (by fun_prop)) computableInPolyTime_arcOK))
+    (allWithInput (encGraph_edges_polyTime (by fun_prop)) computableInPolyTime_arcOK))
 
 /-- The distinct declared vertices numbered `0` are counted by `zeroCount`. -/
 private theorem zeroCount_eq (x : FeedbackVertexSetInstance × List ℕ) :

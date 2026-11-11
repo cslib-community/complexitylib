@@ -135,8 +135,8 @@ private theorem computableInPolyTime_backArcs :
     ComputableInPolyTime (fun x : FeedbackArcSetInstance × List ℕ => backArcs x.1.graph x.2)
       (encPair encFeedbackArcSet (encList encNat)) (encList (encPair encNat encNat)) := by
   unfold backArcs
-  exact filterWithInput (Graph.computableInPolyTime_edges (by fun_prop))
-    (by fun_prop [Graph.computableInPolyTime_vertices])
+  exact filterWithInput (encGraph_edges_polyTime (by fun_prop))
+    (by fun_prop [encGraph_vertices_polyTime])
 
 private theorem computableInPolyTime_check :
     ComputableInPolyTime check (encPair encFeedbackArcSet (encList encNat)) encBool := by
