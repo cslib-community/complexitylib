@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games.
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.GoldwasserSipser
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -31,7 +32,7 @@ whose move patterns, move lengths, and coin counts vary polynomially with the in
 `IPGameClass enc π` embeds into `IPPolyGameClass enc (fun _ => π)` and `IP[k]` embeds into
 `IPPolyRounds enc (fun _ => k)`.
 
-The main theorem is Goldwasser–Sipser for polynomially many rounds
+The main theorem is Goldwasser–Sipser [GoldwasserSipser1986, §3] for polynomially many rounds
 (`Cslib.Complexity.IPPolyRounds_subset_AMPolyRounds`): `IP[k(n)] ⊆ AM[k(n) + 2]`, without relying
 on round collapse (`AMk_eq_AM`, which is unavailable when `k(n)` grows with `n`):
 
@@ -153,14 +154,8 @@ private theorem computableInPolyTime_listReverseWithInput {α γ : Type}
 
 private theorem list_getLastD_eq_getD {α : Type} (l : List α) (d : α) :
     l.getLastD d = l.getD (l.length - 1) d := by
-  induction l generalizing d with
-  | nil => simp
-  | cons a l ih =>
-    cases l with
-    | nil => simp
-    | cons b l =>
-      rw [List.getLastD_cons, ih a]
-      simp
+  rw [List.getLastD_eq_getLast?, List.getLast?_eq_getElem?]
+  rfl
 
 namespace IPGame
 
@@ -364,19 +359,26 @@ theorem bestCount_append_verifier {ρ : ℕ} (msg : BitString ρ → ℕ → Lis
 
 /-! ### Dynamic polynomial-time `agrees`, `repeatMsg`, and `repeatDec` -/
 
-private abbrev AgreesState := ℕ × List Bool × List Bool × Bool
+structure AgreesState where
+  j : ℕ
+  p : List Bool
+  t : List Bool
+  ok : Bool
+  deriving Repr, DecidableEq
+
+enc_structure encAgreesState : AgreesState where j : encUnary, p : encBits, t : encBits, ok : encBool
 
 private def agreesStep (msg : α × List Bool × ℕ × List Bool → List Bool)
     (par : α × List Bool) (st : AgreesState) (x : IPMove × ℕ) : AgreesState :=
-  let (j, p, t, ok) := st
+  let {j, p, t, ok} := st
   let ok' := ok && match x.1 with
     | .verifier => decide (t.take x.2 = BitString.listRow x.2 0 (msg (par.1, par.2, j, p)))
     | .prover => true
-  (j + 1, p ++ t.take x.2, t.drop x.2, ok')
+  { j := j + 1, p := p ++ t.take x.2, t := t.drop x.2, ok := ok' }
 
 private theorem foldl_agreesStep (msg : α × List Bool × ℕ × List Bool → List Bool)
     (a : α) (c : List Bool) (g : List (IPMove × ℕ)) (j : ℕ) (p t : List Bool) (ok : Bool) :
-    (g.foldl (agreesStep msg (a, c)) (j, p, t, ok)).2.2.2 =
+    (g.foldl (agreesStep msg (a, c)) { j := j, p := p, t := t, ok := ok }).ok =
       (ok && agrees (fun j' p' => msg (a, c, j', p')) g j p t) := by
   induction g generalizing j p t ok with
   | nil => simp [agrees]
@@ -402,13 +404,13 @@ theorem computableInPolyTime_agrees_dyn {γ : Type} {enc : α ↪ List Bool} {en
       encIn encBool := by
   let encAg : (((α × List Bool) × AgreesState) × (IPMove × ℕ)) ↪ List Bool :=
     encFoldStep (encPair enc encBits)
-      (encPair encUnary (encPair encBits (encPair encBits encBool)))
+      encAgreesState
       (encPair encIPMove encUnary)
   have hstep : ComputableInPolyTime
       (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) =>
         agreesStep msg q.1.1 q.1.2 q.2)
       encAg
-      (encPair encUnary (encPair encBits (encPair encBits encBool))) := by
+      encAgreesState := by
     unfold agreesStep
     have ha' : ComputableInPolyTime
         (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.1.1) encAg enc := by
@@ -417,17 +419,17 @@ theorem computableInPolyTime_agrees_dyn {γ : Type} {enc : α ↪ List Bool} {en
         (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.1.2) encAg encBits := by
       fun_prop
     have hj' : ComputableInPolyTime
-        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.1) encAg encUnary := by
+        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.j) encAg encUnary := by
       fun_prop
     have hp' : ComputableInPolyTime
-        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.2.1) encAg encBits := by
+        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.p) encAg encBits := by
       fun_prop
     have ht' : ComputableInPolyTime
-        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.2.2.1)
+        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.t)
         encAg encBits := by
       fun_prop
     have hok' : ComputableInPolyTime
-        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.2.2.2)
+        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.ok)
         encAg encBool := by
       fun_prop
     have hm' : ComputableInPolyTime
@@ -438,30 +440,30 @@ theorem computableInPolyTime_agrees_dyn {γ : Type} {enc : α ↪ List Bool} {en
       fun_prop
     have hmsg' : ComputableInPolyTime
         (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) =>
-          msg (q.1.1.1, q.1.1.2, q.1.2.1, q.1.2.2.1)) encAg encBits :=
+          msg (q.1.1.1, q.1.1.2, q.1.2.j, q.1.2.p)) encAg encBits :=
       hmsg.comp (ha'.prod (hc'.prod (hj'.prod hp')))
     have htake : ComputableInPolyTime
-        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.2.2.1.take q.2.2)
+        (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) => q.1.2.t.take q.2.2)
         encAg encBits :=
       ComputableInPolyTime.bitsTakeWithInput ht' hn'
     have hrow : ComputableInPolyTime
         (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) =>
-          BitString.listRow q.2.2 0 (msg (q.1.1.1, q.1.1.2, q.1.2.1, q.1.2.2.1)))
+          BitString.listRow q.2.2 0 (msg (q.1.1.1, q.1.1.2, q.1.2.j, q.1.2.p)))
         encAg encBits :=
       ComputableInPolyTime.bitsRowWithInput hn' (ComputableInPolyTime.const 0) hmsg'
     have hcheck : ComputableInPolyTime
         (fun q : ((α × List Bool) × AgreesState) × (IPMove × ℕ) =>
           match q.2.1 with
           | .verifier =>
-            decide (q.1.2.2.2.1.take q.2.2 =
-              BitString.listRow q.2.2 0 (msg (q.1.1.1, q.1.1.2, q.1.2.1, q.1.2.2.1)))
+            decide (q.1.2.t.take q.2.2 =
+              BitString.listRow q.2.2 0 (msg (q.1.1.1, q.1.1.2, q.1.2.j, q.1.2.p)))
           | .prover => true)
         encAg encBool :=
       computableInPolyTime_ipMoveCases
         (f := fun q m => match m with
           | .verifier =>
-            decide (q.1.2.2.2.1.take q.2.2 =
-              BitString.listRow q.2.2 0 (msg (q.1.1.1, q.1.1.2, q.1.2.1, q.1.2.2.1)))
+            decide (q.1.2.t.take q.2.2 =
+              BitString.listRow q.2.2 0 (msg (q.1.1.1, q.1.1.2, q.1.2.j, q.1.2.p)))
           | .prover => true)
         hm' (ComputableInPolyTime.decide_eq' htake hrow) (ComputableInPolyTime.const true)
     have hokNext := ComputableInPolyTime.bool_and' hok' hcheck
@@ -478,10 +480,10 @@ theorem computableInPolyTime_agrees_dyn {γ : Type} {enc : α ↪ List Bool} {en
   set D := max (max d₁ d₂) (max d₃ d₄)
   have hspec := ComputableInPolyTime.foldlWith_spec
     (encP := encPair enc encBits)
-    (encB := encPair encUnary (encPair encBits (encPair encBits encBool)))
+    (encB := encAgreesState)
     (encA := encPair encIPMove encUnary) (encL := encIPShape)
     (par := fun x => (a x, c x)) (list := g)
-    (init := fun x => (j₀ x, p₀ x, t₀ x, true)) (step := agreesStep msg)
+    (init := fun x => { j := j₀ x, p := p₀ x, t := t₀ x, ok := true }) (step := agreesStep msg)
     (ha.prod hc) hg (hj₀.prod (hp₀.prod (ht₀.prod (ComputableInPolyTime.const true)))) hstep
     (fun x pre st => st.1 = j₀ x + pre.length ∧
       st.2.1.length + st.2.2.1.length ≤ (p₀ x).length + (t₀ x).length)
@@ -521,7 +523,7 @@ theorem computableInPolyTime_agrees_dyn {γ : Type} {enc : α ↪ List Bool} {en
         encBool_apply, List.length_singleton]
       nlinarith [hst.1, hst.2])
   have hout : ComputableInPolyTime
-      (fun x => ((g x).foldl (agreesStep msg (a x, c x)) (j₀ x, p₀ x, t₀ x, true)).2.2.2)
+      (fun x => ((g x).foldl (agreesStep msg (a x, c x)) { j := j₀ x, p := p₀ x, t := t₀ x, ok := true }).2.2.2)
       encIn encBool :=
     ((ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
       ((ComputableInPolyTime.snd _ _).comp hspec.1)))
@@ -687,10 +689,17 @@ theorem computableInPolyTime_shape_dyn {γ : Type} {encIn : γ ↪ List Bool}
   | cons y ys ih =>
     obtain ⟨_ | _, n⟩ := y <;> simp [shape, stepFn, ih]
 
-private abbrev CheckState := ℕ × List Bool × List Bool × Bool
+structure CheckState where
+  κ : ℕ
+  p : List Bool
+  w : List Bool
+  ok : Bool
+  deriving Repr, DecidableEq
+
+enc_structure encCheckState : CheckState where κ : encUnary, p : encBits, w : encBits, ok : encBool
 
 private def checkStep (B Z K : ℕ) (st : CheckState) (move : IPMove × ℕ) : CheckState :=
-  let (κ, p, w, ok) := st
+  let {κ, p, w, ok} := st
   match move with
   | (.verifier, n) =>
     let r := w.take (B * (n + Z) + B)
@@ -705,7 +714,7 @@ private def checkStep (B Z K : ℕ) (st : CheckState) (move : IPMove × ℕ) : C
 
 private theorem foldl_checkStep (B Z K : ℕ) (V : List Bool → Bool)
     (g : List (IPMove × ℕ)) (κ : ℕ) (p w : List Bool) (ok : Bool) :
-    (let st := g.foldl (checkStep B Z K) (κ, p, w, ok);
+    (let st := g.foldl (checkStep B Z K) { κ := κ, p := p, w := w, ok := ok };
       st.2.2.2 && decide (st.1 = 0) && V st.2.1) =
       (ok && check B Z K V g κ p w) := by
   induction g generalizing κ p w ok with
@@ -737,10 +746,10 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
       (fun x => check (B x) (Z x) (K x) (V x) (g x) (κ x) (p x) (w x)) encIn encBool := by
   let encCh : (((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ)) ↪ List Bool :=
     encFoldStep (encPair encUnary (encPair encUnary encUnary))
-      (encPair encUnary (encPair encBits (encPair encBits encBool)))
+      (encCheckState)
       (encPair encIPMove encUnary)
   let encSt : CheckState ↪ List Bool :=
-    encPair encUnary (encPair encBits (encPair encBits encBool))
+    encCheckState
   have hstep : ComputableInPolyTime
       (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) =>
         checkStep q.1.1.1 q.1.1.2.1 q.1.1.2.2 q.1.2 q.2)
@@ -755,16 +764,16 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
         (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.1.2.2) encCh encUnary := by
       fun_prop
     have hκq : ComputableInPolyTime
-        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.1) encCh encUnary := by
+        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.j) encCh encUnary := by
       fun_prop
     have hpq : ComputableInPolyTime
-        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.2.1) encCh encBits := by
+        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.p) encCh encBits := by
       fun_prop
     have hwq : ComputableInPolyTime
-        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.2.2.1) encCh encBits := by
+        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.w) encCh encBits := by
       fun_prop
     have hokq : ComputableInPolyTime
-        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.2.2.2) encCh encBool := by
+        (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.1.2.ok) encCh encBool := by
       fun_prop
     have hmq : ComputableInPolyTime
         (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) => q.2.1) encCh encIPMove := by
@@ -796,7 +805,8 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
       have hpNext := ComputableInPolyTime.bitsAppend hpq
         (ComputableInPolyTime.bitsTakeWithInput hx hnq)
       have hwNext := ComputableInPolyTime.bitsDropWithInput hyB hnZ
-      exact (hb.prod (hpNext.prod (hwNext.prod hokNext))).of_enc_eq fun q => rfl
+      exact (hb.prod (hpNext.prod (hwNext.prod hokNext))).of_enc_eq fun q => by
+      rcases q with ⟨⟨⟨B', Z', K'⟩, ⟨κ', p', w', ok'⟩⟩, ⟨_ | _, n'⟩⟩ <;> rfl
     have hpBranch : ComputableInPolyTime
         (fun q : ((ℕ × ℕ × ℕ) × CheckState) × (IPMove × ℕ) =>
           checkStep q.1.1.1 q.1.1.2.1 q.1.1.2.2 q.1.2 (.prover, q.2.2))
@@ -804,11 +814,11 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
       have hpNext := ComputableInPolyTime.bitsAppend hpq
         (ComputableInPolyTime.bitsTakeWithInput hwq hnq)
       have hwNext := ComputableInPolyTime.bitsDropWithInput hwq hnq
-      exact (hκq.prod (hpNext.prod (hwNext.prod hokq))).of_enc_eq fun q => rfl
-    exact (computableInPolyTime_ipMoveCases
-      (f := fun q m => checkStep q.1.1.1 q.1.1.2.1 q.1.1.2.2 q.1.2 (m, q.2.2))
-      hmq hvBranch hpBranch).of_enc_eq fun q => by
+      exact (hκq.prod (hpNext.prod (hwNext.prod hokq))).of_enc_eq fun q => by
       rcases q with ⟨⟨⟨B', Z', K'⟩, ⟨κ', p', w', ok'⟩⟩, ⟨_ | _, n'⟩⟩ <;> rfl
+    exact computableInPolyTime_ipMoveCases
+      (f := fun q m => checkStep q.1.1.1 q.1.1.2.1 q.1.1.2.2 q.1.2 (m, q.2.2))
+      hmq hvBranch hpBranch
   obtain ⟨c₁, d₁, hBlen⟩ := hB.polyBounded_length.exists_le
   obtain ⟨c₂, d₂, hκlen⟩ := hκ.polyBounded_length.exists_le
   obtain ⟨c₃, d₃, hplen⟩ := (show PolyBounded (fun x => (encIn x).length) (fun x => (p x).length)
@@ -819,14 +829,14 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
   set D := max (max (max d₁ d₂) (max d₃ d₄)) d₅
   have hspec := ComputableInPolyTime.foldlWith_spec
     (encP := encPair encUnary (encPair encUnary encUnary))
-    (encB := encSt) (encA := encPair encIPMove encUnary) (encL := encIPShape)
+    (encB := encCheckState) (encA := encPair encIPMove encUnary) (encL := encIPShape)
     (par := fun x => (B x, Z x, K x)) (list := g)
-    (init := fun x => (κ x, p x, w x, true))
+    (init := fun x => { κ := κ x, p := p x, w := w x, ok := true })
     (step := fun par => checkStep par.1 par.2.1 par.2.2)
     (hB.prod (hZ.prod hK)) hg
-    (hκ.prod (hp.prod (hw.prod (ComputableInPolyTime.const true)))) hstep
-    (fun x pre st => st.1 ≤ max (κ x) (B x) ∧
-      st.2.1.length ≤ (p x).length + transcriptLength pre ∧ st.2.2.1.length ≤ (w x).length)
+    (by fun_prop) hstep
+    (fun x pre st => st.κ ≤ max (κ x) (B x) ∧
+      st.p.length ≤ (p x).length + transcriptLength pre ∧ st.w.length ≤ (w x).length)
     (fun x => ⟨le_max_left _ _, by simp, le_rfl⟩)
     (fun x pre st val _ hst => by
       rcases st with ⟨κ', p', w', ok'⟩
@@ -882,26 +892,26 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
         (hwlen x).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (Nat.succ_pos _)
           (le_max_right _ _)))
       have hpow : 1 ≤ ((encIn x).length + 1) ^ D := Nat.one_le_pow _ _ (Nat.succ_pos _)
-      have hmax : st.1 ≤ (c₁ + c₂) * ((encIn x).length + 1) ^ D := by
+      have hmax : st.κ ≤ (c₁ + c₂) * ((encIn x).length + 1) ^ D := by
         have := hst.1
         rcases max_choice (κ x) (B x) with h | h <;> nlinarith
-      simp only [encSt, length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
+
+      simp only [encSt, encCheckState, length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
         encBool_apply, List.length_singleton]
-      nlinarith [hst.2.1, hst.2.2])
+      nlinarith [hst.1, hst.2.1, hst.2.2])
   have hst := hspec.1
   have hok : ComputableInPolyTime
-      (fun x => ((g x).foldl (checkStep (B x) (Z x) (K x)) (κ x, p x, w x, true)).2.2.2)
+      (fun x => ((g x).foldl (checkStep (B x) (Z x) (K x)) { κ := κ x, p := p x, w := w x, ok := true }).ok)
       encIn encBool :=
-    (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
-      ((ComputableInPolyTime.snd _ _).comp hst))
+    (by fun_prop : ComputableInPolyTime (fun st : CheckState => st.ok) encCheckState encBool).comp hst
   have hfinκ : ComputableInPolyTime
-      (fun x => ((g x).foldl (checkStep (B x) (Z x) (K x)) (κ x, p x, w x, true)).1)
+      (fun x => ((g x).foldl (checkStep (B x) (Z x) (K x)) { κ := κ x, p := p x, w := w x, ok := true }).κ)
       encIn encUnary :=
-    (ComputableInPolyTime.fst _ _).comp hst
+    (by fun_prop : ComputableInPolyTime (fun st : CheckState => st.κ) encCheckState encUnary).comp hst
   have hfinp : ComputableInPolyTime
-      (fun x => ((g x).foldl (checkStep (B x) (Z x) (K x)) (κ x, p x, w x, true)).2.1)
+      (fun x => ((g x).foldl (checkStep (B x) (Z x) (K x)) { κ := κ x, p := p x, w := w x, ok := true }).p)
       encIn encBits :=
-    (ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd _ _).comp hst)
+    (by fun_prop : ComputableInPolyTime (fun st : CheckState => st.p) encCheckState encBits).comp hst
   have hzero := ComputableInPolyTime.decide_eq' hfinκ (ComputableInPolyTime.const 0)
   have hv := hV hfinp
   exact (ComputableInPolyTime.bool_and' (ComputableInPolyTime.bool_and' hok hzero) hv).of_enc_eq
