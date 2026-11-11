@@ -253,6 +253,25 @@ def punctureLinear {κ ι R M : Type*} [Semiring R] [AddCommMonoid M] [Module R 
     (C : Submodule R (ι → M)) (emb : κ → ι) : Submodule R (κ → M) :=
   C.map (LinearMap.funLeft R M emb)
 
+/-- Membership in a punctured code `puncture C emb`. -/
+theorem mem_puncture {κ ι α : Type*} {C : Set (ι → α)} {emb : κ → ι} {y : κ → α} :
+    y ∈ puncture C emb ↔ ∃ x ∈ C, x ∘ emb = y :=
+  Iff.rfl
+
+/-- Membership in a punctured linear code `punctureLinear C emb`. -/
+theorem mem_punctureLinear {κ ι R M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
+    {C : Submodule R (ι → M)} {emb : κ → ι} {y : κ → M} :
+    y ∈ punctureLinear C emb ↔ ∃ x ∈ C, x ∘ emb = y :=
+  Iff.rfl
+
+/-- Coercion of `punctureLinear C emb` agrees with `puncture (C : Set _) emb`. -/
+@[simp]
+theorem coe_punctureLinear {κ ι R M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
+    (C : Submodule R (ι → M)) (emb : κ → ι) :
+    (punctureLinear C emb : Set (κ → M)) = puncture (C : Set (ι → M)) emb := by
+  ext y
+  exact Iff.rfl
+
 /-- Shortening a code `C` along an embedding `emb : κ ↪ ι`: words whose zero-extension lies in
 `C`. -/
 def shorten {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]

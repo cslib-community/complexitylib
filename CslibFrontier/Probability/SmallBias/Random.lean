@@ -249,6 +249,14 @@ def IsSmallBiasMultiset (r : ℕ) (ε : ℝ) (M : Multiset (Fin r → ZMod 2)) :
     ∀ a : Fin r → ZMod 2, a ≠ 0 →
       |(M.map fun x => (-1 : ℝ) ^ (a ⬝ᵥ x).val).sum / Multiset.card M| ≤ ε
 
+/-- Unfolding lemma for `IsSmallBiasMultiset`. -/
+theorem isSmallBiasMultiset_iff {r : ℕ} {ε : ℝ} {M : Multiset (Fin r → ZMod 2)} :
+    IsSmallBiasMultiset r ε M ↔
+      0 < Multiset.card M ∧
+        ∀ a : Fin r → ZMod 2, a ≠ 0 →
+          |(M.map fun x => (-1 : ℝ) ^ (a ⬝ᵥ x).val).sum / Multiset.card M| ≤ ε :=
+  Iff.rfl
+
 private theorem neg_one_pow_dotProduct_eq_chi {r : ℕ} (a x : Fin r → ZMod 2) :
     (-1 : ℝ) ^ (a ⬝ᵥ x).val =
       chi ℝ {i : Fin r | bitEquiv (a i) = true} (fun i => bitEquiv (x i)) := by

@@ -75,6 +75,11 @@ def parityCheckCode (H : Matrix κ ι R) : Submodule R (ι → R) :=
 def syndrome (H : Matrix κ ι R) (x : ι → R) : κ → R :=
   H *ᵥ x
 
+/-- The syndrome of `x` under `H` is `H *ᵥ x`. -/
+@[simp]
+theorem syndrome_eq (H : Matrix κ ι R) (x : ι → R) : syndrome H x = H *ᵥ x := by
+  rfl
+
 /-- A word lies in `parityCheckCode H` iff its syndrome vanishes. -/
 @[simp]
 theorem mem_parityCheckCode {H : Matrix κ ι R} {x : ι → R} :

@@ -43,6 +43,15 @@ example :
   ⟨exists_isSmallBiasMultiset_of_rat 2 (by norm_num),
    exists_isSmallBias_bitString_of_ceil 2 (ε := (1 / 2 : ℝ)) (by norm_num)⟩
 
+example :
+    ∃ M : Multiset (Fin 2 → ZMod 2),
+      0 < Multiset.card M ∧
+        ∀ a : Fin 2 → ZMod 2, a ≠ 0 →
+          |(M.map fun x => (-1 : ℝ) ^ (a ⬝ᵥ x).val).sum / Multiset.card M| ≤
+            ((1 / 2 : ℚ) : ℝ) := by
+  obtain ⟨M, _, hM⟩ := exists_isSmallBiasMultiset_of_rat 2 (ε := (1 / 2 : ℚ)) (by norm_num)
+  exact ⟨M, isSmallBiasMultiset_iff.1 hM⟩
+
 /-! ### 2. General linear and binary parity-check code API -/
 
 /-- Check matrix of the `[3, 2, 2]` binary single-parity-check code. -/
@@ -95,6 +104,21 @@ example :
   simpa only [Code.coe_shortenLinear] using
     hdist.trans
       (Code.le_minDist_shorten (Code.parityCheckCode spcMatrix : Set (Fin 3 → Bool)) emb2)
+
+example :
+    (fun _ : Fin 2 => true) ∈
+      Code.punctureLinear (Code.parityCheckCode spcMatrix) emb2 ∧
+    (Code.punctureLinear (Code.parityCheckCode spcMatrix) emb2 : Set (Fin 2 → Bool)) =
+      Code.puncture (Code.parityCheckCode spcMatrix : Set (Fin 3 → Bool)) emb2 ∧
+    Code.syndrome spcMatrix ![true, true, false] = 0 := by
+  refine ⟨?_, Code.coe_punctureLinear _ _, ?_⟩
+  · refine Code.mem_punctureLinear.2 ⟨![true, true, false], ?_, ?_⟩
+    · rw [Code.mem_parityCheckCode]
+      decide
+    · funext i
+      fin_cases i <;> rfl
+  · rw [Code.syndrome_eq]
+    decide
 
 /-! ### 3. General `BipartiteRotationMap` with parallel edges (`L ≠ R`) -/
 
