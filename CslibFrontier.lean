@@ -4402,6 +4402,7 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import CslibFrontier.DataStructure.BTree.Basic
 public import CslibFrontier.DataStructure.BTree.Comparisons.Insert
+public import CslibFrontier.DataStructure.BTree.Comparisons.LowerBound
 public import CslibFrontier.DataStructure.BTree.Comparisons.Query
 public import CslibFrontier.DataStructure.BTree.Comparisons.Range
 public import CslibFrontier.DataStructure.BTree.Cost.Erase
