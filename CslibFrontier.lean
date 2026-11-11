@@ -2067,10 +2067,12 @@ public import CslibFrontier.Computability.Complexity.FineGrained.CountingSparsif
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 public import CslibFrontier.Computability.Complexity.FineGrained.DensityBranchCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
+public import CslibFrontier.Computability.Complexity.FineGrained.EditDistance
 public import CslibFrontier.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.GraphProblems
+public import CslibFrontier.Computability.Complexity.FineGrained.LCS
 public import CslibFrontier.Computability.Complexity.FineGrained.LocalMapCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Histogram
