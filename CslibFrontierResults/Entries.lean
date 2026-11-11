@@ -138,6 +138,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
+import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -2584,8 +2585,36 @@ register_result "nw-reconstruction-learner" where
     replaces 1/L (the source's L is the output length m). It makes at most \
     m 2^a queries, and every hypothesis has De Morgan circuit size at most that of the test \
     plus m (2^a (2a + 3) + 1) + 1. The running time of the learner is not certified. Repeating \
-    poly(m) runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is not \
-    part of this entry."
+    runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is the entry \
+    nw-reconstruction-best-of."
+
+register_result "nw-reconstruction-best-of" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning from a distinguisher for the \
+    Nisan–Wigderson generator"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 2.11",
+      locator := "p. 10:9" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns,
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns_of_dens,
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_queriesAtMost,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_bestOf_nwLearner_le
+  ]
+  scope := "Theorem 2.11 in a library form. For an (l, n, a)-design with m > 0 blocks and a \
+    deterministic test that accepts outputs of the generator of each f in the class with \
+    probability at least eps > 0 more than uniform m-bit strings, best-of-k selection on t \
+    uniform sample points over the reconstruction learner built from the test learns the class \
+    under the uniform distribution with membership queries, error 1/2 - eps/(4m) and confidence \
+    1 - eta, when eps/(2m) <= 1, log(2/eta) <= (eps/(2m)) k and 8 log(4k/eta) <= t (eps/(2m))^2. \
+    Any advantage eps > 0 replaces the source's advantage above 1/5, error 1/2 - eps/(4m) \
+    replaces 1/2 - 1/L (the source's L is the output length m), and explicit k and t replace \
+    poly(L). bestOf_nwLearner_learns_of_dens is the natural-property special case: a test \
+    accepting at least a delta > 0 fraction of m-bit strings but no generator output, used \
+    through its negation, which has advantage at least delta. It makes at most k m 2^a + t \
+    queries, and every hypothesis has the De Morgan circuit bound of one run. The running time \
+    of the learner is not certified."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
