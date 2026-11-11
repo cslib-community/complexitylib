@@ -172,13 +172,13 @@ theorem eval_duplicateFlagsCircuit_iff {r k : ℕ} (key : Fin k → Fin r) (d : 
     intro j
     change (adjacentDuplicateCircuit _).eval interpretation (flatten sorted) j = true ↔ _
     rw [eval_adjacentDuplicateCircuit_iff]
-    · simp only [flatten, Function.comp_def, Equiv.symm_apply_apply]
+    · simp only [BitString.blocksEquiv_symm_apply, Function.comp_def, Equiv.symm_apply_apply]
       rw [duplicate_iff_not_unique]
       exact not_congr (List.Perm.existsUnique_ofFn_iff (BitonicSort.sort_perm order d true rows)
         (fun row => row ∘ key = sorted j ∘ key))
     · intro a b hab
-      simpa only [flatten, order, sorted, Function.comp_def, Equiv.symm_apply_apply,
-        le_iff_lt_or_eq] using
+      simpa only [BitString.blocksEquiv_symm_apply, order, sorted, Function.comp_def,
+        Equiv.symm_apply_apply, le_iff_lt_or_eq] using
         BitonicSort.monotone_sort order d rows hab
   rw [eval_duplicateFlagsCircuit, duplicate_iff_not_unique]
   exact BitonicSort.unrouteSort_rel_sort order d true rows answers R hr i

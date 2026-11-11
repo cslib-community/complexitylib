@@ -141,7 +141,7 @@ theorem eval_routeValuesCircuit_value_eq_true_iff {h k d width : ℕ}
     have he (i : Fin (BitonicSort.arity d)) :
         toLex (Fin.snoc (α := fun _ => Bool) (header y i ∘ key) (header y i tag)) =
           order (sorted i) := by
-      simp only [header, y, block_flatten, order, matchingSelector,
+      simp only [header, y, BitString.block_blocksEquiv_symm, order, matchingSelector,
         Fin.comp_snoc, Function.comp_assoc, Function.comp_apply]
     intro a b hab
     calc
@@ -151,13 +151,13 @@ theorem eval_routeValuesCircuit_value_eq_true_iff {h k d width : ℕ}
   have hr : ∀ i, R (sorted i) (answers i) := by
     intro i hi
     have ht : header y i tag = true := by
-      simpa only [header, y, block_flatten, Function.comp_apply] using hi
+      simpa only [header, y, BitString.block_blocksEquiv_symm, Function.comp_apply] using hi
     change answers i bit = true ↔ _
     rw [show answers i bit =
       value ((broadcastCircuit key tag (BitonicSort.arity d) width).eval interpretation y) i bit
         from rfl,
       eval_broadcastCircuit_value_eq_true_iff key tag y hs i ht bit]
-    simpa only [header, value, y, block_flatten, Function.comp_apply] using
+    simpa only [header, value, y, BitString.block_blocksEquiv_symm, Function.comp_apply] using
       List.Perm.exists_ofFn_iff (BitonicSort.sort_perm order d true rows)
         (fun row : BitString (h + width) =>
           (row ∘ Fin.castAdd width) ∘ key = (sorted i ∘ Fin.castAdd width) ∘ key ∧
