@@ -6,6 +6,8 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Crypto.Protocols.MPC.ComputationalComposition
+import CslibFrontier.Crypto.Protocols.MPC.Malicious
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
@@ -3052,3 +3054,28 @@ register_result "sperner-2d-ppad-completeness" where
     Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
+
+register_result "computational-sequential-composition-mpc" where
+  title := "Computational sequential composition of semi-honest privacy"
+  topic := "cryptography"
+  sources := [
+    { paper := Goldreich2004, theorem := unverified,
+      locator := "Theorem 7.5.7, pp. 702–703" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_compose_le
+  ]
+  scope := "Formalizes the hybrid argument behind Goldreich's sequential composition theorem for     semi-honest privacy (Theorem 7.5.7). The `semiHonestAdvantage_compose_le` theorem bounds     the distinguishing advantage of a composed protocol against an induced outer distinguisher     by `ε_out + sc₁.length * ε_sub`. The outer distinguisher expands simulated inner views,     and `sc₁.length` gives a crude bound counting both message rounds and ideal oracle calls."
+
+register_result "malicious-with-abort-mpc" where
+  title := "Malicious ideal/real execution with abort"
+  topic := "cryptography"
+  sources := [
+    { paper := Goldreich2004, theorem := unverified,
+      locator := "Theorem 7.3.3, pp. 637–638" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.MPC.adversaryAborts_characterization,
+    Cslib.Crypto.Protocols.MPC.naive_without_abort_failure
+  ]
+  scope := "Generalizes malicious execution with abort to general m-party functionalities, providing the     `adversaryAborts_characterization` characterization theorem and the     `naive_without_abort_failure` counterexample demonstrating the necessity of the abort     capability, formalizing Goldreich's Theorem 7.3.3."

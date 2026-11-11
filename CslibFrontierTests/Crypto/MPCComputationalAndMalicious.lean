@@ -1,0 +1,12 @@
+import CslibFrontier.Crypto.Protocols.MPC.ComputationalComposition
+import CslibFrontier.Crypto.Protocols.MPC.Malicious
+
+namespace CslibFrontierTests.Crypto.MPCComputationalAndMalicious
+
+open Cslib.Crypto.Protocols.MPC
+
+#check semiHonestAdvantage_compose_le
+#check adversaryAborts_characterization
+#check naive_without_abort_failure
+
+end CslibFrontierTests.Crypto.MPCComputationalAndMalicious
