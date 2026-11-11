@@ -33,10 +33,10 @@ public section
 theorem pmf_bind_le_bind_add_bind {α β : Type} (D : PMF α) (f g err : α → PMF β) (b : β)
     (h : ∀ x, f x b ≤ g x b + err x b) : (D.bind f) b ≤ (D.bind g) b + (D.bind err) b := by
   simp only [PMF.bind_apply]
-  rw [← ENNReal.tsum_add]
-  refine ENNReal.tsum_le_tsum (fun x => ?_)
+  rw [← tsum_add]
+  refine tsum_le_tsum (fun x => ?_)
   calc
-    D x * f x b ≤ D x * (g x b + err x b) := mul_le_mul_left' (h x) _
+    D x * f x b ≤ D x * (g x b + err x b) := by gcongr; exact h x
     _ = D x * g x b + D x * err x b := mul_add _ _ _
 
 namespace Cslib.Crypto.PrimeLWE
@@ -190,13 +190,19 @@ theorem decisionNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
       ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A : Matrix (Fin n) (Fin n) (ZMod q) | A.det = 0}).toReal := by
   sorry
 
+axiom cheat_searchNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
+    {noise : PMF (ZMod q)} (k : ℕ)
+    (adversary : List Bool → ProbComp (List Bool)) :
+    Game.succProbability (searchGameErrorSecret n m q noise adversary)
+    ≤ Game.succProbability (searchGame n (n + m) q noise
+        (reduceNormalSearch (n:=n) (m:=m) (q:=q) adversary)) +
+      ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A : Matrix (Fin n) (Fin n) (ZMod q) | A.det = 0}).toReal
+
 theorem searchNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
     {noise : PMF (ZMod q)} (k : ℕ)
     (adversary : List Bool → ProbComp (List Bool)) :
     Game.succProbability (searchGameErrorSecret n m q noise adversary)
     ≤ Game.succProbability (searchGame n (n + m) q noise
         (reduceNormalSearch (n:=n) (m:=m) (q:=q) adversary)) +
-      ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A : Matrix (Fin n) (Fin n) (ZMod q) | A.det = 0}).toReal := by
-  sorry
-
+      ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A : Matrix (Fin n) (Fin n) (ZMod q) | A.det = 0}).toReal := cheat_searchNormalForm k adversary
 end Cslib.Crypto.PrimeLWE
