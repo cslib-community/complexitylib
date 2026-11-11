@@ -1118,6 +1118,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Hamming
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore.Set
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Decode
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmp
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmpCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.Schedule

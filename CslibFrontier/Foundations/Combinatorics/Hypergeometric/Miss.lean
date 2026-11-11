@@ -8,11 +8,10 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.Foundations.Data.Nat.Choose
 public import Mathlib.Data.Finset.Powerset
 public import Mathlib.Analysis.SpecialFunctions.Exp
+import CslibFrontier.Foundations.Data.Nat.Choose
 import Mathlib.Data.Nat.Choose.Basic
-import Mathlib.Data.Nat.Factorial.Basic
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -60,7 +59,7 @@ theorem choose_sub_le_choose_mul_exp {n u : ℕ} (hu : u ≤ n) (ℓ : ℕ) :
     exact_mod_cast hu
   have hexp : (1 - (u : ℝ) / n) ^ ℓ ≤ Real.exp (-(u * ℓ / n)) := by
     calc (1 - (u : ℝ) / n) ^ ℓ ≤ Real.exp (-(u / n)) ^ ℓ :=
-          pow_le_pow_left₀ hbase (by linarith [Real.add_one_le_exp (-(u / n : ℝ))]) ℓ
+          pow_le_pow_left₀ hbase (Real.one_sub_le_exp_neg _) ℓ
       _ = Real.exp (-(u * ℓ / n)) := by
           rw [← Real.exp_nat_mul]
           congr 1
