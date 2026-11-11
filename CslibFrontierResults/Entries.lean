@@ -68,6 +68,7 @@ import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
 import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
+import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
@@ -699,6 +700,27 @@ register_result "magnification" where
     2^n·c·(n + s(n) + 1)^c, counting all operation gates. Hence if for some k and every c > 0 \
     some 2^n-bit slice of MCSP[n^k] needs more than 2^n·c·(n + 1)^c gates, then NP ⊄ P/poly \
     and P ≠ NP. Size-only lower-bound hypothesis."
+
+register_result "gap-mcsp-magnification" where
+  title := "Oliveira–Pich–Santhanam: N^(1+ε) lower bounds for Gap-MCSP imply NP ⊄ P/poly"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraPichSanthanam2019, theorem := "Theorem 1.4 (ECCC TR18-158 Theorem 4)",
+      locator := unverified }
+  ]
+  theorems := [
+    Cslib.MCSP.not_NP_subset_PPoly_of_gapMCSP_hard,
+    Cslib.MCSP.P_ne_NP_of_gapMCSP_hard,
+    Cslib.MCSP.exists_gapMCSP_separator_of_NP_subset_PPoly
+  ]
+  scope := "If for some ε > 0 and every small enough β > 0 (eventually as β → 0⁺), for \
+    infinitely many n no Boolean function on 2^n-bit truth tables that accepts every \
+    yes-instance and rejects every no-instance of Gap-MCSP[⌊2^(βn)/(10n)⌋₊, ⌊2^(βn)⌋₊] has \
+    De Morgan complexity at most N^(1+ε) (N = 2^n, all operation gates counted), then \
+    NP ⊄ P/poly and P ≠ NP. The source's constant c = 10. Proof route: the \
+    McKay–Murray–Williams circuits for MCSP[s] under NP ⊆ P/poly separate Gap-MCSP[s₁, s₂] \
+    whenever s₁ ≤ s₂; OPS's own proof through the efficient anti-checker (Lemma 4.1) is not \
+    formalized."
 
 register_result "matrix-multiplication" where
   title := "Matrix multiplication: the exponent is at most 9/4"
