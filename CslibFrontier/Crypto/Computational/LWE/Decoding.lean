@@ -1,52 +1,63 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Karn Seth, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Karn Seth, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.ZMod.Basic
 import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic.IntervalCases
 
 /-!
-# Scalar decoding for GSW ciphertexts
+# Scalar bit encoding, decoding, and binary noise bounds modulo `2 ^ w`
 
-For modulus `2 ^ w`, a bit is represented by zero or `2 ^ (w - 1)`, with an integer error.
-The decoder selects the half-open middle half of the canonical residue interval. Thus the
-lower quarter boundary decodes to `true` and the upper quarter boundary to `false`.
-Correctness uses a strict error bound, which excludes both ties and handles negative errors
-by modular wraparound.
+For modulus `2 ^ w`, a bit `μ` is encoded as `μ * 2 ^ (w - 1)` (`encodeBit`) and decoded by
+selecting the half-open middle half `[2 ^ w / 4, 3 * 2 ^ w / 4)` of the canonical residue
+interval (`decode`). Correctness holds whenever the additive integer error has magnitude strictly
+below one quarter of `2 ^ w` (`decode_eq_of_error`). This module also hosts the common magnitude
+bound `natAbs_binarySum_le` for integer subset sums over Boolean coefficients.
 
 ## Main definitions
 
-* `Cslib.Crypto.Homomorphic.GSW.decode`: the scalar bit decoder.
+* `Cslib.Crypto.LWE.encodeBit`: half-modulus encoding `false ↦ 0`, `true ↦ 2 ^ (w - 1)`.
+* `Cslib.Crypto.LWE.decode`: scalar bit decoder over `ZMod (2 ^ w)`.
 
 ## Main results
 
-* `Cslib.Crypto.Homomorphic.GSW.decode_eq_of_error`: errors of magnitude strictly below
-  one quarter of the modulus preserve the encoded bit.
-* `Cslib.Crypto.Homomorphic.GSW.decode_eq_xor_highBits`: for width at least two, decoding
-  is exclusive-or of the two highest bits of the canonical residue, on every input.
+* `Cslib.Crypto.LWE.decode_eq_of_error`: errors of magnitude strictly below one quarter of the
+  modulus preserve the encoded bit.
+* `Cslib.Crypto.LWE.decode_eq_xor_highBits`: for width at least two, decoding is exclusive-or of
+  the two highest bits of the canonical residue, on every input.
+* `Cslib.Crypto.LWE.natAbs_binarySum_le_sum`, `Cslib.Crypto.LWE.natAbs_binarySum_le`: integer
+  noise bounds for binary subset sums shared across GSW and Regev encryption.
 
 ## References
 
-* [C. Gentry, A. Sahai, B. Waters, *Homomorphic Encryption from Learning with Errors:
+* [O. Regev, *On lattices, learning with errors, random linear codes, and cryptography*]
+  [Regev2009], Section 5.
+* [C. Gentry, A. Sahai and B. Waters, *Homomorphic Encryption from Learning with Errors:
   Conceptually-Simpler, Asymptotically-Faster, Attribute-Based*][GentrySahaiWaters2013],
   Section 3.1.
 -/
 
 @[expose] public section
 
-namespace Cslib.Crypto.Homomorphic.GSW
+namespace Cslib.Crypto.LWE
+
+/-- Half-modulus encoding: `false ↦ 0` and `true ↦ 2 ^ (w - 1)`. -/
+def encodeBit (w : ℕ) (μ : Bool) : ZMod (2 ^ w) :=
+  (μ.toNat : ZMod (2 ^ w)) * 2 ^ (w - 1)
 
 /-- Decode the half-open middle half of the canonical residue interval as `true`. -/
 def decode (w : ℕ) (x : ZMod (2 ^ w)) : Bool :=
   decide (2 ^ w ≤ 4 * x.val ∧ 4 * x.val < 3 * 2 ^ w)
 
+/-- Characterization of decoding to `true` as the middle half of the canonical residue interval. -/
 @[simp] theorem decode_eq_true_iff (w : ℕ) (x : ZMod (2 ^ w)) :
     decode w x = true ↔ 2 ^ w ≤ 4 * x.val ∧ 4 * x.val < 3 * 2 ^ w := by
   simp [decode]
@@ -128,4 +139,18 @@ theorem decode_eq_of_error {w : ℕ} (hw : 0 < w) (μ : Bool) (error : ℤ)
     rw [decode_eq_true_iff]
     omega
 
-end Cslib.Crypto.Homomorphic.GSW
+/-- The magnitude of a binary-selected integer sum is at most the sum of term magnitudes. -/
+theorem natAbs_binarySum_le_sum {κ : Type*} [Fintype κ] (bits : κ → Bool) (error : κ → ℤ) :
+    (∑ j, ((bits j).toNat : ℤ) * error j).natAbs ≤ ∑ j, (error j).natAbs := by
+  refine (Int.natAbs_sum_le _ _).trans (Finset.sum_le_sum fun j _ => ?_)
+  cases bits j <;> simp
+
+/-- Errors bounded uniformly by `bound` yield a binary-selected sum of magnitude at most
+`|κ| * bound`. -/
+theorem natAbs_binarySum_le {κ : Type*} [Fintype κ] (bits : κ → Bool) (error : κ → ℤ)
+    {bound : ℕ} (herror : ∀ j, (error j).natAbs ≤ bound) :
+    (∑ j, ((bits j).toNat : ℤ) * error j).natAbs ≤ Fintype.card κ * bound := by
+  refine (natAbs_binarySum_le_sum bits error).trans ?_
+  simpa using Finset.sum_le_sum (s := Finset.univ) (fun j _ => herror j)
+
+end Cslib.Crypto.LWE
