@@ -191,6 +191,23 @@ lake build CslibFrontier.Foundations.LinearAlgebra.Matrix.Rigidity.TotallyRegula
 
 **Not certified here.** At `r = ε n` the bound is only `Ω(n)`, far below what Valiant's criterion needs (Lokam, p. 16). Shparlinsky's Vandermonde bound, the Sylvester–Hadamard bounds, the counting bounds `R_A(r) ≤ (n - r)²` and near-maximal rigidity of random matrices, and Alman–Williams non-rigidity of the Walsh–Hadamard matrices are open; see [ROADMAP.md](../../ROADMAP.md).
 
+## Hitting sets for small partial-derivative spaces
+
+Import [HittingSet/Basic.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Basic.lean). `IsHittingSet H 𝒞` says that the finite set of points `H : Finset (σ → F)` hits the class `𝒞 : Set (MvPolynomial σ F)`: every nonzero member of `𝒞` is nonzero at some point of `H`. It is a statement about formal polynomials and their values at field points, with no model of black-box access, running time or bit length.
+
+The endpoint [isHittingSet_logHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Basic.lean) is for `[Field F] [CharZero F]`: `logHittingSet F n r d` hits every polynomial `f` in `n` variables with `f.totalDegree ≤ d` that lies in some submodule `V` with `Module.Finite F V`, `Module.finrank F V ≤ r` and `pderiv i p ∈ V` for all `i` and `p ∈ V`; `card_logHittingSet_le` bounds its size by `d * (n * r ^ 2 + r) + 1`. The hypothesis is a derivative-closed space containing `f`, which covers the space of all partial derivatives of `f` without defining it. `aeval_logCurve_ne_zero` is the underlying statement, Theorem 1.1 of [Bhardwaj et al.](https://eccc.weizmann.ac.il/report/2026/217/): `f` does not vanish on the curve `logCurve F n (n * r ^ 2 + r)`, whose `i`-th coordinate is the series `ln (1 + (i + 1) t)` truncated below that degree. `isHittingSet_sum_pow s d` specializes to sums of `s` `d`-th powers of linear forms, with `r = s * (d + 1)`. The statements depend only on `propext`, `Classical.choice` and `Quot.sound`. The source is an unrefereed report whose authors disclose that the proof originated with an AI model; the proofs here are independent of any other formalization.
+
+**To use it for another class**, exhibit a derivative-closed space: a submodule spanned by a finite family that the partial derivatives map into its span, as `isHittingSet_sum_pow` does with the powers `ℓₖ ^ e`, `e ≤ d`. The reusable pieces are [Derivation.wronskian_ne_zero](../../CslibFrontier/Foundations/RingTheory/Derivation/Wronskian.lean) (the Wronskian of a derivation on a domain whose constants are the base field is nonzero on independent families), [PowerSeries.exists_eq_smul_of_mul_derivative_eq](../../CslibFrontier/Foundations/RingTheory/PowerSeries/Constants.lean) (constants of the derivative of power series) and [algebraicIndependent_logSeries](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AlgebraicIndependent.lean) (the series `ln (1 + (i + 1) t)` are algebraically independent over `F[X]`).
+
+Complete client: [HittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/HittingSet.lean) gives a hitting set of `157` points for sums of two squares of linear forms in two rational variables. Build it with
+
+```bash
+lake build CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic \
+  CslibFrontierTests.Computability.Circuit.Arithmetic.HittingSet
+```
+
+**Not certified here.** Characteristic zero is a genuine hypothesis: the Wronskian argument fails in positive characteristic. The source's extension to noncommutative algebraic branching programs is not formalized. Nothing is proved about the bit length of the points or the cost of computing them, and the bound `n * r ^ 2 + r` is the source's, not optimized. This is unrelated to the rational-formula hitting list of the next section, which concerns noncommutative rational formulas.
+
 ## Rational formulas and hitting lists
 
 [RatOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Rational/Defs.lean#L69) uses rational constants, addition, multiplication and inverse. Evaluation is a relation: an inverse node is defined only when both products with the proposed inverse are one. This supports noncommutative matrix substitution without silently assigning a value at poles. A formula is admissible if some positive-dimensional rational matrix substitution makes it defined, and nonzero if some defined value is nonzero.

@@ -136,7 +136,7 @@ the length of the encoded instance. The string is Arthur's hash seed of `m(n) M(
 with `M(n) = 5 N(n) + T(n)`, followed by Merlin's element of `M(n)` bits and five certificates of
 `c(n)` bits. The verifier accepts when the five blocks of the element have accepted certificates,
 the first `ℓ` padding bits are `false` and the element hashes to zero
-(`Cslib.Complexity.SetLowerBound.hashZero`). Bits missing from a short string read as `false`. -/
+(`Cslib.BitString.LinearHash.hashZero`). Bits missing from a short string read as `false`. -/
 def verifier (enc : α ↪ List Bool) (N c m T : Polynomial ℕ) (ℓ : α → ℕ)
     (R : α × List Bool → Bool) (x : α × List Bool) : Bool :=
   let n := (enc x.1).length
@@ -146,7 +146,7 @@ def verifier (enc : α ↪ List Bool) (N c m T : Polynomial ℕ) (ℓ : α → �
   ((List.range 5).all fun i => R (x.1, BitString.listRow (N.eval n) i (e.take (5 * N.eval n)) ++
       BitString.listRow (c.eval n) i (x.2.drop (P + M)))) &&
     (!((e.drop (5 * N.eval n)).take (ℓ x.1)).any fun b => b) &&
-    hashZero (m.eval n) M (x.2.take P) e
+    BitString.LinearHash.hashZero (m.eval n) M (x.2.take P) e
 
 /-- The verifier of the set lower bound protocol is polynomial-time. -/
 @[fun_prop]
@@ -171,7 +171,7 @@ private theorem verifier_ofFn_append {N c m T : Polynomial ℕ} {ℓ : α → �
         ((List.ofFn e).take (5 * N.eval (enc a).length))) i) ++
           List.ofFn (BitString.block z i)) = true) ∧
       (!(((List.ofFn e).drop (5 * N.eval (enc a).length)).take (ℓ a)).any fun b => b) = true ∧
-      BitString.LinearHash.affineHash (seedEquiv _ _ r) e = 0 := by
+      BitString.LinearHash.affineHash (BitString.LinearHash.affineSeedEquiv _ _ r) e = 0 := by
   simp only [verifier, Bool.and_eq_true, List.all_eq_true, List.mem_range]
   generalize (enc a).length = n at r e z ⊢
   have hdrop : (List.ofFn r ++ (List.ofFn e ++ List.ofFn z)).drop
@@ -185,7 +185,8 @@ private theorem verifier_ofFn_append {N c m T : Polynomial ℕ} {ℓ : α → �
   have htake : (List.ofFn r ++ (List.ofFn e ++ List.ofFn z)).take
       (m.eval n * (5 * N.eval n + T.eval n) + m.eval n) = List.ofFn r :=
     List.take_left' List.length_ofFn
-  rw [hdrop, hdrop', htake, List.take_left' List.length_ofFn, hashZero_ofFn, and_assoc]
+  rw [hdrop, hdrop', htake, List.take_left' List.length_ofFn, BitString.LinearHash.hashZero_ofFn,
+    and_assoc]
   refine and_congr ⟨fun h i => ?_, fun h i hi => ?_⟩ Iff.rfl
   · have := h i i.2
     rwa [BitString.listRow_eq_ofFn (count := 5) _ i, BitString.listRow_eq_ofFn (count := 5) _ i,
@@ -203,7 +204,7 @@ theorem exists_verifier_iff {N c m T : Polynomial ℕ} {ℓ : α → ℕ} {R : �
         5 * c.eval (enc a).length),
       verifier enc N c m T ℓ R (a, List.ofFn r ++ List.ofFn y) = true) ↔
       0 ∈ (amplifiedSet (certifiedSet enc N c R a) (T.eval (enc a).length) (ℓ a)).image
-        (BitString.LinearHash.affineHash (seedEquiv _ _ r)) := by
+        (BitString.LinearHash.affineHash (BitString.LinearHash.affineSeedEquiv _ _ r)) := by
   rw [mem_image]
   constructor
   · rintro ⟨y, hy⟩
@@ -231,7 +232,7 @@ private theorem forall_verifier_eq_false_iff (N c m T : Polynomial ℕ) (ℓ : �
       5 * c.eval (enc a).length), verifier enc N c m T ℓ R (a, List.ofFn r ++ List.ofFn y) =
         false) ↔
       0 ∉ (amplifiedSet (certifiedSet enc N c R a) (T.eval (enc a).length) (ℓ a)).image
-        (BitString.LinearHash.affineHash (seedEquiv _ _ r)) := by
+        (BitString.LinearHash.affineHash (BitString.LinearHash.affineSeedEquiv _ _ r)) := by
   rw [← exists_verifier_iff]
   simp
 
@@ -296,7 +297,7 @@ theorem mem_AM_of_card_certifiedSet {N c : Polynomial ℕ} {R : α × List Bool 
   simp only [forall_verifier_eq_false_iff, exists_verifier_iff]
   set n := (enc a).length
   have hh := (BitString.LinearHash.isPairwiseIndependentHash_affineHash
-    (m.eval n) (5 * N.eval n + T.eval n)).comp_seedEquiv (seedEquiv _ _)
+    (m.eval n) (5 * N.eval n + T.eval n)).comp_seedEquiv (BitString.LinearHash.affineSeedEquiv _ _)
   have hbnds := card_amplifiedSet_bounds (certifiedSet enc N c R a) (hKpos a)
     (show T.eval n = m.eval n + 2 by simp [hT, hm])
     (by simp only [hT, Polynomial.eval_add, Polynomial.eval_ofNat]; linarith [hB a])
