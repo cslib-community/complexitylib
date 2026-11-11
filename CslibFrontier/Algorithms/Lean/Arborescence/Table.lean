@@ -174,25 +174,30 @@ section Level
 
 variable {β : Type*} [LinearOrder β] {n : ℕ}
 
+/-- Result of selecting optimal parents. -/
+structure SelectParentsResult (n : ℕ) where
+  feasible : Bool
+  parents : ParentTable n
+
 /-- Select the cheapest outgoing candidate parent for every non-root vertex (`r` maps to `some r`),
 check feasibility, and materialize the parent vector `f`. -/
 @[expose] def selectParentsM (a : AdjTable n) (c : CostTable β n) (r : Fin n) :
-    TimeM ℕ (Bool × ParentTable n) := do
+    TimeM ℕ (SelectParentsResult n) := do
   let opts ← Vector.ofFnM fun v : Fin n =>
     if v = r then (pure (some r) : TimeM ℕ (Option (Fin n)))
     else argMinFinM n (fun w => a[v.1][w.1] && w != v) (fun w => c[v.1][w.1])
   let feas ← (List.finRange n).foldlM
     (fun acc v => do ✓ pure (acc && opts[v.1].isSome)) true
   let tbl ← Vector.ofFnM fun v : Fin n => do ✓ pure (opts[v.1].getD v)
-  pure (feas, tbl)
+  pure { feasible := feas, parents := tbl }
 
 private theorem ret_selectParentsM (a : AdjTable n) (c : CostTable β n) (r : Fin n) :
     let optFn : Fin n → Option (Fin n) := fun v =>
       if v = r then some r
       else ((List.finRange n).filter fun w => a[v.1][w.1] && w != v).argmin (fun w => c[v.1][w.1])
     (selectParentsM a c r).ret =
-      ((List.finRange n).all (fun v => (optFn v).isSome),
-        Vector.ofFn fun v => (optFn v).getD v) := by
+      { feasible := (List.finRange n).all (fun v => (optFn v).isSome)
+      , parents := Vector.ofFn fun v => (optFn v).getD v } := by
   intro optFn
   have hopts : (Vector.ofFnM fun v : Fin n =>
       if v = r then (pure (some r) : TimeM ℕ (Option (Fin n)))
@@ -204,7 +209,7 @@ private theorem ret_selectParentsM (a : AdjTable n) (c : CostTable β n) (r : Fi
     split_ifs <;> simp [ret_argMinFinM]
   unfold selectParentsM
   simp only [ret_bind, ret_pure, hopts, ret_foldlM, ret_vectorOfFnM]
-  refine Prod.ext ?_ ?_
+  congr 1
   · have hvec : ∀ v : Fin n, (Vector.ofFn optFn)[v.1] = optFn v := fun v => by simp
     have hfold : ∀ (l : List (Fin n)) (b : Bool),
         l.foldl (fun acc v => acc && (Vector.ofFn optFn)[v.1].isSome) b =
@@ -238,16 +243,21 @@ private theorem time_selectParentsM (a : AdjTable n) (c : CostTable β n) (r : F
   · rw [time_vectorOfFnM]
     simp
 
+/-- Fold state for cycle search. -/
+structure CycleSearchState (n : ℕ) where
+  current : Fin n
+  hit : Bool
+
 /-- Test whether iterating `f` starting from `x` returns to `x` within `n` steps (`n` ticks). -/
 @[expose] def hasCycleFromM (x : Fin n) (f : ParentTable n) : TimeM ℕ Bool := do
-  let (_, hit) ← (List.range n).foldlM
-    (fun (st : Fin n × Bool) _ => do
+  let st ← (List.range n).foldlM
+    (fun (st : CycleSearchState n) _ => do
       ✓
-      let (cur, hit) := st
+      let cur := st.current; let hit := st.hit
       let nxt := f[cur.1]
-      pure (nxt, hit || (nxt == x)))
-    (x, false)
-  pure hit
+      pure { current := nxt, hit := hit || (nxt == x) : CycleSearchState n })
+    ({ current := x, hit := false } : CycleSearchState n)
+  pure st.hit
 
 private theorem time_hasCycleFromM (x : Fin n) (f : ParentTable n) :
     (hasCycleFromM x f).time = n := by
@@ -262,11 +272,11 @@ private theorem ret_hasCycleFromM (x : Fin n) (f : ParentTable n) :
   simp only [ret_bind, ret_pure, ret_foldlM]
   have hinv : ∀ m : ℕ,
       (List.range m).foldl
-        (fun (st : Fin n × Bool) _ =>
-          let (cur, hit) := st
-          (f[cur.1], hit || (f[cur.1] == x))) (x, false) =
-      ((fun i : Fin n => f[i.1])^[m] x,
-        (List.range m).any fun k => (fun i : Fin n => f[i.1])^[k + 1] x == x) := by
+        (fun (st : CycleSearchState n) _ =>
+          let cur := st.current; let hit := st.hit
+          { current := f[cur.1], hit := hit || (f[cur.1] == x) : CycleSearchState n }) ({ current := x, hit := false } : CycleSearchState n) =
+      { current := ((fun i : Fin n => f[i.1])^[m] x),
+        hit := (List.range m).any fun k => (fun i : Fin n => f[i.1])^[k + 1] x == x } := by
     intro m
     induction m with
     | zero => rfl
@@ -274,7 +284,7 @@ private theorem ret_hasCycleFromM (x : Fin n) (f : ParentTable n) :
       rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil, ih]
       simp only [List.any_append, List.any_cons, List.any_nil, Bool.or_false,
         Function.iterate_succ_apply']
-  exact congrArg Prod.snd (hinv n)
+  exact congrArg CycleSearchState.hit (hinv n)
 
 /-- Find the first vertex `x ≠ r` lying on a cycle of `f`, if any (`≤ n ^ 2 + n` ticks). -/
 @[expose] def findCycleM (r : Fin n) (f : ParentTable n) : TimeM ℕ (Option (Fin n)) :=
@@ -382,16 +392,21 @@ private theorem ret_findCycleM (r : Fin n) (f : ParentTable n) :
       · simp [findStep, p, hxr, bne]
       · simp [findStep, p, hxr, bne, ret_hasCycleFromM]
 
+/-- Fold state for cycle masking. -/
+structure CycleMaskState (n : ℕ) where
+  current : Fin n
+  mask : Vector Bool n
+
 /-- Materialize the cycle indicator vector `inCycle` of the orbit `cycleOf f x0` (`2 * n` ticks). -/
 @[expose] def cycleMaskM (f : ParentTable n) (x0 : Fin n) : TimeM ℕ (Vector Bool n) := do
   let init ← Vector.ofFnM fun _ : Fin n => do ✓ pure false
-  let (_, mask) ← (List.range n).foldlM
-    (fun (st : Fin n × Vector Bool n) _ => do
+  let st ← (List.range n).foldlM
+    (fun (st : CycleMaskState n) _ => do
       ✓
-      let (cur, mask) := st
-      pure (f[cur.1], mask.set cur.1 true cur.2))
-    (x0, init)
-  pure mask
+      let cur := st.current; let mask := st.mask
+      pure { current := f[cur.1], mask := mask.set cur.1 true cur.2 : CycleMaskState n })
+    ({ current := x0, mask := init } : CycleMaskState n)
+  pure st.mask
 
 private theorem time_cycleMaskM (f : ParentTable n) (x0 : Fin n) :
     (cycleMaskM f x0).time = 2 * n := by
@@ -406,13 +421,13 @@ private theorem time_cycleMaskM (f : ParentTable n) (x0 : Fin n) :
 private theorem cycleMask_loop_spec (f : ParentTable n) (x0 : Fin n) :
     ∀ (m : ℕ) (init : Vector Bool n),
       let res := (List.range m).foldl
-        (fun (st : Fin n × Vector Bool n) _ =>
-          let (cur, mask) := st
-          (f[cur.1], mask.set cur.1 true cur.2))
-        (x0, init)
-      res.1 = (fun i : Fin n => f[i.1])^[m] x0 ∧
+        (fun (st : CycleMaskState n) _ =>
+          let cur := st.current; let mask := st.mask
+          { current := f[cur.1], mask := mask.set cur.1 true cur.2 : CycleMaskState n })
+        ({ current := x0, mask := init } : CycleMaskState n)
+      res.current = (fun i : Fin n => f[i.1])^[m] x0 ∧
         ∀ j : Fin n,
-          (res.2[j.1] = true ↔ init[j.1] = true ∨ ∃ k < m, (fun i : Fin n => f[i.1])^[k] x0 = j)
+          (res.mask[j.1] = true ↔ init[j.1] = true ∨ ∃ k < m, (fun i : Fin n => f[i.1])^[k] x0 = j)
   | 0, init => by
     simp
   | m + 1, init => by
@@ -424,10 +439,10 @@ private theorem cycleMask_loop_spec (f : ParentTable n) (x0 : Fin n) :
     · intro j
       simp only [Vector.getElem_set]
       by_cases hj : ((List.range m).foldl
-          (fun (st : Fin n × Vector Bool n) _ =>
-            let (cur, mask) := st
-            (f[cur.1], mask.set cur.1 true cur.2))
-          (x0, init)).1.1 = j.1
+          (fun (st : CycleMaskState n) _ =>
+            let cur := st.current; let mask := st.mask
+            { current := f[cur.1], mask := mask.set cur.1 true cur.2 })
+          ({ current := x0, mask := init } : CycleMaskState n)).1.1 = j.1
       · have hj' : (fun i : Fin n => f[i.1])^[m] x0 = j := Fin.ext (ih1 ▸ hj)
         simp only [hj, ↓reduceIte, true_iff]
         exact Or.inr ⟨m, Nat.lt_succ_self m, hj'⟩
@@ -689,13 +704,13 @@ variable {β : Type*} [LinearOrder β] [AddCommMonoid β]
   | 0, _, _ => pure none
   | fuel + 1, a, c =>
     let sel := selectParentsM a c r
-    if sel.ret.1 then
-      let cyc := findCycleM r sel.ret.2
+    if sel.ret.feasible then
+      let cyc := findCycleM r sel.ret.parents
       match cyc.ret with
-      | none => { ret := some sel.ret.2, time := sel.time + cyc.time }
+      | none => { ret := some sel.ret.parents, time := sel.time + cyc.time }
       | some x0 =>
-        let inCycle := cycleMaskM sel.ret.2 x0
-        let other := otherCycleCostM c sel.ret.2 inCycle.ret
+        let inCycle := cycleMaskM sel.ret.parents x0
+        let other := otherCycleCostM c sel.ret.parents inCycle.ret
         let bEntry := bestEntryTableM a c inCycle.ret
         let bExit := bestExitTableM a c inCycle.ret other.ret
         let a' := contractAdjTableM a inCycle.ret bEntry.ret bExit.ret x0 r
@@ -707,7 +722,7 @@ variable {β : Type*} [LinearOrder β] [AddCommMonoid β]
             time := sel.time + cyc.time + inCycle.time + other.time + bEntry.time + bExit.time +
               a'.time + c'.time + sub.time }
         | some q =>
-          let exp := expandParentTableM sel.ret.2 inCycle.ret bEntry.ret bExit.ret x0 q
+          let exp := expandParentTableM sel.ret.parents inCycle.ret bEntry.ret bExit.ret x0 q
           { ret := some exp.ret,
             time := sel.time + cyc.time + inCycle.time + other.time + bEntry.time + bExit.time +
               a'.time + c'.time + sub.time + exp.time }
@@ -804,9 +819,9 @@ private theorem selectParentsM_spec {V : Type*} [FinEnum V]
     (hc : ∀ u w, c[u.1][w.1] =
       cV ((@FinEnum.equiv V _).symm u) ((@FinEnum.equiv V _).symm w)) :
     let sel := (selectParentsM a c (@FinEnum.equiv V _ rV)).ret
-    (sel.1 = true ↔ ∀ v : V, v ≠ rV → candidates aV v ≠ []) ∧
+    (sel.feasible = true ↔ ∀ v : V, v ≠ rV → candidates aV v ≠ []) ∧
       ∀ i : Fin (FinEnum.card V),
-        (@FinEnum.equiv V _).symm (sel.2[i.1]) =
+        (@FinEnum.equiv V _).symm (sel.parents[i.1]) =
           cheapestParent aV cV rV ((@FinEnum.equiv V _).symm i) := by
   let e : V ≃ Fin (FinEnum.card V) := @FinEnum.equiv V _
   let n := FinEnum.card V
@@ -1239,13 +1254,13 @@ theorem edmondsTableAuxM_ret_eq_edmondsAux {V : Type*} [FinEnum V] :
     obtain ⟨hfeas, hf⟩ := selectParentsM_spec a c aV cV rV ha hc
     set sel := (selectParentsM a c (e rV)).ret
     set fV := cheapestParent aV cV rV
-    by_cases hcond : sel.1 = true
+    by_cases hcond : sel.feasible = true
     · have hcondV : ∀ v, v ≠ rV → candidates aV v ≠ [] := hfeas.mp hcond
-      have hcyc := findCycleM_spec sel.2 fV hf rV
-      cases hcycm : (findCycleM (e rV) sel.2).ret with
+      have hcyc := findCycleM_spec sel.parents fV hf rV
+      cases hcycm : (findCycleM (e rV) sel.parents).ret with
       | none =>
         have hcycV : findCycle rV fV = none := by rw [← hcyc, hcycm]; rfl
-        have hret : (edmondsTableAuxM (e rV) (fuel + 1) a c).ret = some sel.2 := by
+        have hret : (edmondsTableAuxM (e rV) (fuel + 1) a c).ret = some sel.parents := by
           dsimp only [edmondsTableAuxM, sel]
           rw [ite_eq_left_of_eq_true _ _ (eq_true hcond), hcycm]
         rw [hret, Option.map_some, edmondsAux, ite_eq_left hcondV, hcycV]
@@ -1255,17 +1270,17 @@ theorem edmondsTableAuxM_ret_eq_edmondsAux {V : Type*} [FinEnum V] :
       | some x0 =>
         have hcycV : findCycle rV fV = some (e.symm x0) := by rw [← hcyc, hcycm]; rfl
         set C := cycleOf fV (e.symm x0)
-        set inCycle := (cycleMaskM sel.2 x0).ret
-        set other := (otherCycleCostM c sel.2 inCycle).ret
+        set inCycle := (cycleMaskM sel.parents x0).ret
+        set other := (otherCycleCostM c sel.parents inCycle).ret
         set bEntry := (bestEntryTableM a c inCycle).ret
         set bExit := (bestExitTableM a c inCycle other).ret
         set a' := (contractAdjTableM a inCycle bEntry bExit x0 (e rV)).ret
         set c' := (contractCostTableM c inCycle other bEntry bExit x0).ret
         have hmask (y : Fin (FinEnum.card V)) : inCycle[y.1] = true ↔ e.symm y ∈ C :=
-          cycleMask_spec sel.2 fV hf x0 y
+          cycleMask_spec sel.parents fV hf x0 y
         have hother {x} (hx : inCycle[x.1] = true) :
             other[x.1] = ∑ y ∈ C.erase (e.symm x), cV y (fV y) :=
-          otherCycleCostM_spec c sel.2 inCycle cV fV C hc hf hmask hx
+          otherCycleCostM_spec c sel.parents inCycle cV fV C hc hf hmask hx
         have hbEntry (u : Fin (FinEnum.card V)) :
             bEntry[u.1].map e.symm = bestEntry aV cV C (e.symm u) :=
           bestEntryTableM_spec a c inCycle aV cV C ha hc hmask u
@@ -1299,7 +1314,7 @@ theorem edmondsTableAuxM_ret_eq_edmondsAux {V : Type*} [FinEnum V] :
             (edmondsTableAuxM (e rV) (fuel + 1) a c).ret =
               match (edmondsTableAuxM (e rV) fuel a' c').ret with
               | none => none
-              | some q => some (expandParentTableM sel.2 inCycle bEntry bExit x0 q).ret := by
+              | some q => some (expandParentTableM sel.parents inCycle bEntry bExit x0 q).ret := by
           dsimp only [edmondsTableAuxM, sel]
           rw [ite_eq_left_of_eq_true _ _ (eq_true hcond), hcycm]
           dsimp only
@@ -1313,7 +1328,7 @@ theorem edmondsTableAuxM_ret_eq_edmondsAux {V : Type*} [FinEnum V] :
           simp only [Option.map_some]
           congr 1
           funext v
-          exact expandParentTableM_spec sel.2 inCycle bEntry bExit x0 q aV cV fV C
+          exact expandParentTableM_spec sel.parents inCycle bEntry bExit x0 q aV cV fV C
             (fun w => e.symm q[(e w).1]) hf (fun _ => rfl) hmask hbEntry hbExit v
     · have hncondV : ¬ ∀ v, v ≠ rV → candidates aV v ≠ [] := fun h => hcond (hfeas.mpr h)
       have hret : (edmondsTableAuxM (e rV) (fuel + 1) a c).ret = none := by
@@ -1338,20 +1353,20 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
     have hn_le : n ≤ n ^ 2 := Nat.le_self_pow (by decide) n
     have hsel := time_selectParentsM a c r
     set sel := (selectParentsM a c r).ret
-    by_cases hfeas : sel.1 = true
-    · have hfind := time_findCycleM r sel.2
-      cases hcyc : (findCycleM r sel.2).ret with
+    by_cases hfeas : sel.feasible = true
+    · have hfind := time_findCycleM r sel.parents
+      cases hcyc : (findCycleM r sel.parents).ret with
       | none =>
         have ht : (edmondsTableAuxM r (fuel + 1) a c).time =
-            (selectParentsM a c r).time + (findCycleM r sel.2).time := by
+            (selectParentsM a c r).time + (findCycleM r sel.parents).time := by
           simp [edmondsTableAuxM, sel, hfeas, hcyc]
-        have hstep : (selectParentsM a c r).time + (findCycleM r sel.2).time ≤ 13 * n ^ 2 := by
+        have hstep : (selectParentsM a c r).time + (findCycleM r sel.parents).time ≤ 13 * n ^ 2 := by
           omega
         calc (edmondsTableAuxM r (fuel + 1) a c).time ≤ 13 * n ^ 2 := ht ▸ hstep
           _ ≤ (_ + 1) * (13 * n ^ 2) := Nat.le_mul_of_pos_left _ (Nat.succ_pos _)
       | some x0 =>
         have hx0_find : (List.finRange n).find? (fun x =>
-            x != r && (List.range n).any fun k => (fun i : Fin n => sel.2[i.1])^[k + 1] x == x) =
+            x != r && (List.range n).any fun k => (fun i : Fin n => sel.parents[i.1])^[k + 1] x == x) =
             some x0 := by
           simpa [ret_findCycleM] using hcyc
         have hx0_mem := List.find?_some hx0_find
@@ -1359,7 +1374,7 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
           beq_iff_eq] at hx0_mem
         obtain ⟨hx0r, kcyc, hkcyc, hper⟩ := hx0_mem
         set aV : Fin n → Fin n → Bool := fun u w => a[u.1][w.1]
-        set fV : Fin n → Fin n := fun i => sel.2[i.1]
+        set fV : Fin n → Fin n := fun i => sel.parents[i.1]
         set C : Finset (Fin n) := cycleOf fV x0
         have hm : Function.IsPeriodicPt fV (kcyc + 1) x0 := hper
         have hm0 : 0 < kcyc + 1 := Nat.succ_pos kcyc
@@ -1369,7 +1384,7 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
         have hx0C : x0 ∈ C := iterate_mem_cycleOf hm hm0 hmc 0
         have hfC : ∀ y ∈ C, fV y ∈ C := fun y hy => map_mem_cycleOf hm hm0 hmc hy
         have hfr : fV r = r := by
-          have hs := congrArg (fun p => p.2[r.1]) (ret_selectParentsM a c r)
+          have hs := congrArg (fun (p : SelectParentsResult n) => p.parents[r.1]) (ret_selectParentsM a c r)
           simpa [sel, fV] using hs
         have hrC : r ∉ C := root_notMem_cycleOf r hfr hx0r hm hm0 hmc
         have hCr : ∀ y ∈ C, y ≠ r := fun y hy h => hrC (h ▸ hy)
@@ -1382,13 +1397,13 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
               (if v = r then some r
               else ((List.finRange n).filter fun w => a[v.1][w.1] && w != v).argmin
                 (fun w => c[v.1][w.1])).isSome) = true := by
-            have := congrArg Prod.fst hs
+            have := congrArg SelectParentsResult.feasible hs
             simpa [sel] using this.symm.trans hfeas
           have hy_some := (List.all_eq_true.mp hall) y (List.mem_finRange y)
           simp only [hyr, ↓reduceIte, Option.isSome_iff_exists] at hy_some
           obtain ⟨m, hm_eq⟩ := hy_some
           refine ⟨m, hm_eq, ?_⟩
-          have htbl := congrArg (fun p => p.2[y.1]) hs
+          have htbl := congrArg (fun (p : SelectParentsResult n) => p.parents[y.1]) hs
           simpa [sel, fV, hyr, hm_eq] using htbl
         have hfa : ∀ y ∈ C, aV y (fV y) = true ∧ fV y ≠ y := by
           intro y hy
@@ -1399,8 +1414,8 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
           rw [hfy]
           exact hmem
         have hss := liveVertices_ssubset hfC hfa hx0C hrC
-        set inCycle := (cycleMaskM sel.2 x0).ret
-        set other := (otherCycleCostM c sel.2 inCycle).ret
+        set inCycle := (cycleMaskM sel.parents x0).ret
+        set other := (otherCycleCostM c sel.parents inCycle).ret
         set bEntry := (bestEntryTableM a c inCycle).ret
         set bExit := (bestExitTableM a c inCycle other).ret
         set a' := (contractAdjTableM a inCycle bEntry bExit x0 r).ret
@@ -1465,22 +1480,22 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
         have hsub_le : (edmondsTableAuxM r fuel a' c').time ≤
             (liveVertices aV r).card * (13 * n ^ 2) :=
           hih.trans (Nat.mul_le_mul_right _ hcard_le)
-        have h1 := time_cycleMaskM sel.2 x0
-        have h2 := time_otherCycleCostM c sel.2 inCycle
+        have h1 := time_cycleMaskM sel.parents x0
+        have h2 := time_otherCycleCostM c sel.parents inCycle
         have h3 := time_bestEntryTableM a c inCycle
         have h4 := time_bestExitTableM a c inCycle other
         have h5 := time_contractAdjTableM a inCycle bEntry bExit x0 r
         have h6 := time_contractCostTableM c inCycle other bEntry bExit x0
         have hrec_eq : (edmondsTableAuxM r (fuel + 1) a c).time =
-            (selectParentsM a c r).time + (findCycleM r sel.2).time +
-              (cycleMaskM sel.2 x0).time + (otherCycleCostM c sel.2 inCycle).time +
+            (selectParentsM a c r).time + (findCycleM r sel.parents).time +
+              (cycleMaskM sel.parents x0).time + (otherCycleCostM c sel.parents inCycle).time +
               (bestEntryTableM a c inCycle).time + (bestExitTableM a c inCycle other).time +
               (contractAdjTableM a inCycle bEntry bExit x0 r).time +
               (contractCostTableM c inCycle other bEntry bExit x0).time +
               (edmondsTableAuxM r fuel a' c').time +
               match (edmondsTableAuxM r fuel a' c').ret with
               | none => 0
-              | some q => (expandParentTableM sel.2 inCycle bEntry bExit x0 q).time := by
+              | some q => (expandParentTableM sel.parents inCycle bEntry bExit x0 q).time := by
           dsimp only [edmondsTableAuxM, sel]
           rw [ite_eq_left_of_eq_true _ _ (eq_true hfeas), hcyc]
           dsimp only
@@ -1488,19 +1503,19 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
             simp [sel, inCycle, other, bEntry, bExit, a', c', add_assoc]
         have hexp_le : (match (edmondsTableAuxM r fuel a' c').ret with
             | none => 0
-            | some q => (expandParentTableM sel.2 inCycle bEntry bExit x0 q).time) ≤ n := by
+            | some q => (expandParentTableM sel.parents inCycle bEntry bExit x0 q).time) ≤ n := by
           cases (edmondsTableAuxM r fuel a' c').ret with
           | none => exact Nat.zero_le n
-          | some q => exact (time_expandParentTableM sel.2 inCycle bEntry bExit x0 q).le
-        have hlocal : (selectParentsM a c r).time + (findCycleM r sel.2).time +
-            (cycleMaskM sel.2 x0).time + (otherCycleCostM c sel.2 inCycle).time +
+          | some q => exact (time_expandParentTableM sel.parents inCycle bEntry bExit x0 q).le
+        have hlocal : (selectParentsM a c r).time + (findCycleM r sel.parents).time +
+            (cycleMaskM sel.parents x0).time + (otherCycleCostM c sel.parents inCycle).time +
             (bestEntryTableM a c inCycle).time + (bestExitTableM a c inCycle other).time +
             (contractAdjTableM a inCycle bEntry bExit x0 r).time +
             (contractCostTableM c inCycle other bEntry bExit x0).time +
             (match (edmondsTableAuxM r fuel a' c').ret with
             | none => 0
             | some q =>
-              (expandParentTableM sel.2 inCycle bEntry bExit x0 q).time) ≤ 13 * n ^ 2 := by
+              (expandParentTableM sel.parents inCycle bEntry bExit x0 q).time) ≤ 13 * n ^ 2 := by
           omega
         calc (edmondsTableAuxM r (fuel + 1) a c).time ≤
               13 * n ^ 2 + (edmondsTableAuxM r fuel a' c').time := by
