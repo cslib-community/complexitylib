@@ -20,13 +20,13 @@ import Mathlib.Data.List.GetD
 /-!
 # Weighted Min-Rep: from Label Cover to CMMSA
 
-The **Min-Rep** construction [Kortsarz2001] turns a Label Cover instance into an instance of
-CMMSA [Hirahara2022, Section II.B, p. 974] (`Cslib.Complexity.GapCMMSA`). For an instance with `m`
-edges, left labels `β` and right labels `γ`:
+A library reduction, adapting the Min-Rep problem [Kortsarz2001], turns a Label Cover instance into
+an instance of CMMSA [Hirahara2022, Section II.B, p. 974] (`Cslib.Complexity.GapCMMSA`). For an
+instance with `m` edges, left labels `β` and right labels `γ`:
 
 * there is a variable `x_{u,a}` for each left end `u` of an edge and each label `a : β`, of weight
   the degree of `u`, and a variable `y_{v,b}` for each right end `v` and each `b : γ`, of weight
-  the degree of `v`;
+  the degree of `v` (with padding, described below);
 * each edge `e` from `u` to `v` with projection `π` gives the monotone DNF
   `φ_e = ⋁_a (x_{u,a} ∧ y_{v,π a})`, with `2 |β|` literals;
 * the threshold is `θ = 2m`.
@@ -39,10 +39,14 @@ random from its selected labels satisfies each edge `e` from `u` to `v` with pro
 the tangent line of `t ↦ 4 / t²` at `t = 2g` turns this into an expected `m / g²` satisfied edges.
 So a Label Cover instance of value at most `δ < 1 / g²` gives a no-instance (`minRep_mem_no`).
 
-Vertices are numbered by their first occurrence among the ends of the edges, and only ends of
-edges get variables, so that every weight is positive, as `CMMSAInstance.WellFormed` requires; an
-instance with no edges maps to a fixed yes-instance with threshold `1`. Labels are numbered through
-fixed equivalences `β ≃ Fin nβ` and `γ ≃ Fin nγ`.
+**Variable layout.** The left ends of the edges are listed with multiplicity (`srcs`), and so are
+the right ends (`dsts`). Every entry of these lists gets a block of `nβ` (respectively `nγ`)
+variables, so the instance has `m (nβ + nγ)` variables: a vertex of degree `d` gets `d` blocks.
+The formulas use only the block at the vertex's first occurrence (`blockVar`). The other `d - 1`
+blocks are padding: their variables weigh `d` like the used ones, appear in no formula and are
+never needed. Only ends of edges get variables, so every weight is positive, as
+`CMMSAInstance.WellFormed` requires. An instance with no edges maps to a fixed yes-instance with
+threshold `1`. Labels are numbered through fixed equivalences `β ≃ Fin nβ` and `γ ≃ Fin nγ`.
 
 The construction and the gap-preservation argument are library results adapting the Min-Rep idea
 to CMMSA, with proportion `σ = 1` and a constant gap `g`. The paper's hardness of CMMSA, for
@@ -80,12 +84,14 @@ open Cslib.Complexity Cslib.Logic.PL Finset Turing.MultiTapeTM
 /-! ### The construction -/
 
 /-- The variable of the label `a` of the vertex `u` in the block of the vertex list `L` starting
-at `off`, with `n` labels per vertex. The vertex is numbered by its first occurrence in `L`. -/
+at `off`, with `n` labels per entry: the block at the first occurrence of `u` in `L`. -/
 @[expose] def blockVar (L : List ℕ) (off n u a : ℕ) : ℕ :=
   off + L.idxOf u * n + a
 
-/-- The weights of the block of the vertex list `L`, with `n` labels per vertex: each variable
-weighs the number of occurrences of its vertex in `L`. -/
+/-- The weights of the blocks of the vertex list `L`, with `n` labels per entry: one block of `n`
+variables for every entry of `L`, repeated vertices included, each weighing the number of
+occurrences of its vertex in `L`. Only the block at a vertex's first occurrence is used by
+`blockVar`. -/
 @[expose] def blockWeights (L : List ℕ) (n : ℕ) : List ℕ :=
   (List.range (L.length * n)).map fun k => L.count (L.getD (k / n) 0)
 
@@ -111,8 +117,9 @@ variable {β γ : Type} {nβ nγ : ℕ} (eβ : β ≃ Fin nβ) (eγ : γ ≃ Fin
     [(blockVar (srcs G) 0 nβ d.src a, true),
       (blockVar (dsts G) ((srcs G).length * nβ) nγ d.dst (eγ (d.constraint (eβ.symm a))), true)]
 
-/-- The **weighted Min-Rep** instance of a Label Cover instance: degree weights on the variables
-of the ends of the edges, one formula per edge and the threshold `2m` (or `1` without edges). -/
+/-- The **weighted Min-Rep** instance of a Label Cover instance: one block of degree-weighted
+variables per edge end (so `m (nβ + nγ)` variables, the blocks after a vertex's first occurrence
+appearing in no formula), one formula per edge and the threshold `2m` (or `1` without edges). -/
 @[expose] def minRep (G : Graph (β → γ)) : CMMSAInstance where
   weights := blockWeights (srcs G) nβ ++ blockWeights (dsts G) nγ
   threshold := max (2 * G.edges.length) 1
@@ -659,7 +666,8 @@ namespace Cslib.Complexity
 
 open Cslib.PCP Cslib.PCP.Encoded Turing.MultiTapeTM
 
-/-- **Weighted Min-Rep reduction** [Kortsarz2001]: perfect-completeness Label Cover of soundness
+/-- **Weighted Min-Rep reduction**, a library reduction adapting the Min-Rep problem
+[Kortsarz2001]: perfect-completeness Label Cover of soundness
 `δ < 1 / g²` reduces to CMMSA with at most `2 |β|` literals per formula, gap `g` and proportion
 `1`. -/
 theorem polyTimeReducible_GapLabelCover_GapCMMSA {β γ : Type} [Fintype β] [Finite γ]

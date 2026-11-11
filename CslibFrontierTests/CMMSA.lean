@@ -90,8 +90,11 @@ example : pair ∈ (GapCMMSA 1 (3 / 2) (3 / 4)).no := by
     linarith
   have hcount : pair.satCount S ≤ 1 := by
     rcases hmiss with h | h <;>
-      simp [CMMSAInstance.satCount, pair, DNF.eval, Term.eval, Literal.eval, h,
-        List.countP_cons] <;> split <;> simp
+      simp only [CMMSAInstance.satCount, DNF.eval, pair, List.any_cons, Term.eval, List.all_cons,
+        Literal.eval, h, decide_false, beq_true, List.all_nil, Bool.and_true, List.any_nil,
+        Bool.or_self, Bool.false_eq_true, not_false_eq_true, List.countP_cons_of_neg,
+        List.countP_cons, List.countP_nil, Bool.or_false, decide_eq_true_eq, zero_add] <;>
+        split <;> simp
   have : (pair.satCount S : ℝ) ≤ 1 := by exact_mod_cast hcount
   linarith
 
