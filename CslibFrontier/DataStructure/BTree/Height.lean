@@ -55,10 +55,10 @@ variable {first : BTree α β} {rest : List (Triple α β)}
 /-- A node whose children each hold at least `n - 1` entries holds at least
 `(rest.length + 1) * n - 1`. -/
 theorem le_size_node {n : ℕ} (h₁ : n - 1 ≤ first.size)
-    (h₂ : ∀ e ∈ rest, n - 1 ≤ (Triple.child e).size) :
+    (h₂ : ∀ e ∈ rest, n - 1 ≤ e.child.size) :
     (rest.length + 1) * n - 1 ≤ (node first rest).size := by
   have hs :=
-    (rest.map fun e => (Triple.child e).size).length_nsmul_le_sum (n - 1) (List.forall_mem_map.2 h₂)
+    (rest.map fun e => e.child.size).length_nsmul_le_sum (n - 1) (List.forall_mem_map.2 h₂)
   rw [List.length_map, Nat.nsmul_eq_mul] at hs
   rw [size_node]
   obtain _ | n := n
@@ -70,10 +70,10 @@ theorem le_size_node {n : ℕ} (h₁ : n - 1 ≤ first.size)
 /-- A node whose children each hold at most `n - 1` entries, for positive `n`, holds at most
 `(rest.length + 1) * n - 1`. -/
 theorem size_node_le {n : ℕ} (hn : 0 < n) (h₁ : first.size ≤ n - 1)
-    (h₂ : ∀ e ∈ rest, (Triple.child e).size ≤ n - 1) :
+    (h₂ : ∀ e ∈ rest, e.child.size ≤ n - 1) :
     (node first rest).size ≤ (rest.length + 1) * n - 1 := by
   have hs :=
-    (rest.map fun e => (Triple.child e).size).sum_le_length_nsmul (n - 1) (List.forall_mem_map.2 h₂)
+    (rest.map fun e => e.child.size).sum_le_length_nsmul (n - 1) (List.forall_mem_map.2 h₂)
   rw [List.length_map, Nat.nsmul_eq_mul] at hs
   rw [size_node]
   obtain _ | n := n
@@ -94,7 +94,7 @@ theorem Occupied.pow_sub_one_le_size (ho : Occupied t tr) (hb : Balanced tr) :
   induction tr with
   | leaf => simp
   | node first rest ih₁ ih₂ =>
-    have hc : ∀ e ∈ rest, t ^ first.height - 1 ≤ (Triple.child e).size := fun e he =>
+    have hc : ∀ e : Triple α β, e ∈ rest → t ^ first.height - 1 ≤ e.child.size := fun e he =>
       hb.height_of_mem_rest he ▸ ih₂ e he (ho.of_mem_rest he) (hb.of_mem_rest he)
     refine le_trans ?_ (le_size_node (ih₁ ho.first hb.first) hc)
     rw [hb.height_node, Nat.pow_succ']
@@ -144,7 +144,7 @@ theorem Balanced.le_size (hb : Balanced tr) (hk : tr ≠ .leaf → 1 ≤ tr.root
   | node first rest =>
     have hk := hk hne
     rw [rootKeys_node] at hk
-    have hc : ∀ e ∈ rest, t ^ first.height - 1 ≤ (Triple.child e).size := fun e he =>
+    have hc : ∀ e : Triple α β, e ∈ rest → t ^ first.height - 1 ≤ e.child.size := fun e he =>
       hb.height_of_mem_rest he ▸
         (ho _ (List.mem_cons_of_mem _ (List.mem_map_of_mem he))).pow_sub_one_le_size
           (hb.of_mem_rest he)
