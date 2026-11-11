@@ -146,6 +146,8 @@ The Razborov–Rudich barrier is stated through concrete circuit distinguishers:
 
 [Scheme](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Approximation.lean#L55) compares exact and approximate interpretations of the same circuit program. A correctness relation can be one-sided; each gate has a finite exception set with bounded cardinality. The approximate value is correct outside the union of gate exceptions, giving a failure bound by total charged cost. A shared gate is charged once even if its output has many uses. This reusable statement supports the monotone approximation method rather than reproving the same union argument for every lower bound.
 
+Two finite counting lemmas in `Foundations/Combinatorics` turn a reconstruction or decoding argument into a count. [HybridPrediction.lean](../../CslibFrontier/Foundations/Combinatorics/HybridPrediction.lean) is Yao's hybrid argument with the predictor's coins fixed. Suppose a decoder recovers a bit `b` from `T` pairs `(z t, E t (z t) + b)`, so the same `b` masks every channel. Then `exists_card_add_decode_update_eq` returns a channel `t`, fixed pairs at the other positions and a trial bit whose guess agrees with `E t` on at least `|Z t| (T + 1) / (2T)` inputs. The proof follows the next-bit telescoping in [Boneh and Shoup, Section 3.5][bs23]. Use it, not `Crypto.PRG.Generator.exists_half_add_div_le_predictionExperiment`, when the predictor sees public inputs `z t`: that lemma would count the bits of each `z t` among its hybrid positions. [WeightedTail.lean](../../CslibFrontier/Foundations/Combinatorics/WeightedTail.lean) bounds how many functions `f : ∀ i, α i` hit fixed sets `C i` on a set of coordinates with a given property (`card_filter_pi_le_sum_prod`). With weights `w i` and `|C i| ≤ e^(-w i) |α i|`, at most a `2^|ι| e^(-T)` fraction of them hit coordinates of total weight at least `T` (`card_filter_le_sum_weight_le`). Union bounds over small circuits take their size from [CountingBound.lean](../../CslibFrontier/Computability/Circuit/Boolean/CountingBound.lean): at most `2 ^ computableFunctionsLogBound n s` functions have complexity at most `s`. The [checked examples](../../CslibFrontierTests/HybridPrediction.lean) instantiate all three, including the `1/2 + 1/(2T)` form of the prediction bound.
+
 These are mathematical proof interfaces, not automatically encoded certificates or proof-search procedures. Other reusable measures in the query and formula layers—sensitivity, certificate complexity, degree, Khrapchenko edge counts—play a similar role while using different objects and costs.
 
 ## Known Limitations
@@ -163,6 +165,7 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 
 [alonbabaisuzuki1991]: ../sources.md#alonbabaisuzuki1991
 [alonspencer2016]: ../sources.md#alonspencer2016
+[bs23]: ../sources.md#bs23
 [chenhiraharaoliveirapichrajgopalsanthanam2020]: ../sources.md#chenhiraharaoliveirapichrajgopalsanthanam2020
 [complexitylib]: ../sources.md#complexitylib
 [erdos1947]: ../sources.md#erdos1947
