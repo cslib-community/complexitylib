@@ -131,8 +131,6 @@
  "CslibFrontier/Computability/Complexity/Parameterized/ColorCoding.lean": 10,
  "CslibFrontier/Computability/Complexity/Parameterized/VertexCover.lean": 1,
  "CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean": 7,
- "CslibFrontier/Computability/Complexity/Parameterized/WHierarchy.lean": 1,
- "CslibFrontier/Computability/Complexity/Parameterized/WHierarchy/Clique/Graph.lean": 14,
  "CslibFrontier/Computability/Complexity/Problems/CSP/Incidence.lean": 1,
  "CslibFrontier/Computability/Complexity/Problems/CSP/SelfDualThreeSAT.lean": 2,
  "CslibFrontier/Computability/Complexity/Problems/CircuitSAT.lean": 4,
