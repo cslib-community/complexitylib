@@ -26,6 +26,8 @@ Values use the native signed encoding; addresses are natural numbers.
 
 ## Main results
 
+* `Fill.Args.filled_ab`, `Fill.Args.filled_bc`, `Fill.Args.filled_ac`: reading a cell of each
+  matrix prefix.
 * `Fill.Args.filled_succ`: one round consists of exactly three writes.
 * `Fill.Args.input_filled`: matrix writes preserve the input.
 * `Fill.Args.matrices_filled`: the completed memory contains the mathematical reduction.
@@ -92,6 +94,23 @@ theorem filled_zero (A : Args) (mem : ℕ → ℕ) : A.filled mem 0 = mem := by
   simp only [filled, Nat.add_zero]
   split_ifs <;> omega
 
+/-- Reading cell `p < q` of the AB prefix returns `A.valueAB p`. -/
+theorem filled_ab (A : Args) (mem : ℕ → ℕ) (q : ℕ) {p : ℕ} (hp : p < q) :
+    A.filled mem q (A.ab + p) = A.valueAB p := by
+  rw [filled, ite_eq_left ⟨by omega, by omega⟩, Nat.add_sub_cancel_left]
+
+/-- Reading cell `p < q` of the BC prefix returns `A.valueBC p`. -/
+theorem filled_bc (A : Args) (mem : ℕ → ℕ) (q : ℕ) {p : ℕ}
+    (hb : A.ab + q ≤ A.bc) (hp : p < q) : A.filled mem q (A.bc + p) = A.valueBC p := by
+  rw [filled, ite_eq_right (by omega), ite_eq_left ⟨by omega, by omega⟩, Nat.add_sub_cancel_left]
+
+/-- Reading cell `p < q` of the AC prefix returns `A.valueAC p`. -/
+theorem filled_ac (A : Args) (mem : ℕ → ℕ) (q : ℕ) {p : ℕ}
+    (hb : A.ab + q ≤ A.bc) (hc : A.bc + q ≤ A.ac) (hp : p < q) :
+    A.filled mem q (A.ac + p) = A.valueAC p := by
+  rw [filled, ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_left ⟨by omega, by omega⟩,
+    Nat.add_sub_cancel_left]
+
 /-- One round writes one cell of each matrix, in AB, BC, AC order. -/
 theorem filled_succ (A : Args) (mem : ℕ → ℕ) {q : ℕ}
     (hbc : A.ab + A.t * A.t ≤ A.bc) (hac : A.bc + A.t * A.t ≤ A.ac)
@@ -102,16 +121,15 @@ theorem filled_succ (A : Args) (mem : ℕ → ℕ) {q : ℕ}
   funext a
   by_cases hab : a = A.ab + q
   · subst a
-    simp [filled, show A.ab ≠ A.ac by omega,
-      show A.ab ≠ A.bc by omega]
+    rw [A.filled_ab mem (q + 1) (Nat.lt_succ_self q), Function.update_of_ne (by omega),
+      Function.update_of_ne (by omega), Function.update_self]
   by_cases hbc' : a = A.bc + q
   · subst a
-    simp [filled, show ¬(A.ab ≤ A.bc + q ∧ A.bc + q < A.ab + (q + 1)) by omega,
-      show A.bc ≠ A.ac by omega]
+    rw [A.filled_bc mem (q + 1) (by omega) (Nat.lt_succ_self q), Function.update_of_ne (by omega),
+      Function.update_self]
   by_cases hac' : a = A.ac + q
   · subst a
-    simp [filled, show ¬(A.ab ≤ A.ac + q ∧ A.ac + q < A.ab + (q + 1)) by omega,
-      show ¬(A.bc ≤ A.ac + q ∧ A.ac + q < A.bc + (q + 1)) by omega]
+    rw [A.filled_ac mem (q + 1) (by omega) (by omega) (Nat.lt_succ_self q), Function.update_self]
   have habiff : (A.ab ≤ a ∧ a < A.ab + (q + 1)) ↔ (A.ab ≤ a ∧ a < A.ab + q) := by omega
   have hbciff : (A.bc ≤ a ∧ a < A.bc + (q + 1)) ↔ (A.bc ≤ a ∧ a < A.bc + q) := by omega
   have haciff : (A.ac ≤ a ∧ a < A.ac + (q + 1)) ↔ (A.ac ≤ a ∧ a < A.ac + q) := by omega
@@ -147,9 +165,6 @@ theorem matrices_filled (A : Args) (mem : ℕ → ℕ)
   have hdiv (i j : Fin A.t) : (i.val * A.t + j.val) / A.t = i.val :=
     Nat.mul_add_div_of_lt _ j.isLt
   have hmod (i j : Fin A.t) : (i.val * A.t + j.val) % A.t = j.val := Nat.mul_add_mod_of_lt j.isLt
-  have hAB := hcell a b
-  have hBC := hcell b c
-  have hAC := hcell a c
   have vAB : A.valueAB (a.val * A.t + b.val) =
       encode (weightAB A.N A.values A.filler a b) := by
     rw [weightAB_eq_pick]
@@ -163,16 +178,12 @@ theorem matrices_filled (A : Args) (mem : ℕ → ℕ)
     rw [weightAC_eq_pick]
     simp only [valueAC, hdiv, hmod]
   refine ⟨?_, ?_, ?_⟩
-  · rw [show A.ab + a.val * A.t + b.val = A.ab + (a.val * A.t + b.val) by omega]
-    simp [filled, hAB, vAB]
-  · rw [show A.bc + b.val * A.t + c.val = A.bc + (b.val * A.t + c.val) by omega]
-    simp [filled, show ¬(A.ab ≤ A.bc + (b.val * A.t + c.val) ∧
-      A.bc + (b.val * A.t + c.val) < A.ab + A.t * A.t) by omega, hBC, vBC]
-  · rw [show A.ac + a.val * A.t + c.val = A.ac + (a.val * A.t + c.val) by omega]
-    simp [filled, show ¬(A.ab ≤ A.ac + (a.val * A.t + c.val) ∧
-      A.ac + (a.val * A.t + c.val) < A.ab + A.t * A.t) by omega,
-      show ¬(A.bc ≤ A.ac + (a.val * A.t + c.val) ∧
-      A.ac + (a.val * A.t + c.val) < A.bc + A.t * A.t) by omega, hAC, vAC]
+  · rw [show A.ab + a.val * A.t + b.val = A.ab + (a.val * A.t + b.val) by omega,
+      A.filled_ab mem _ (hcell a b), vAB]
+  · rw [show A.bc + b.val * A.t + c.val = A.bc + (b.val * A.t + c.val) by omega,
+      A.filled_bc mem _ hbc (hcell b c), vBC]
+  · rw [show A.ac + a.val * A.t + c.val = A.ac + (a.val * A.t + c.val) by omega,
+      A.filled_ac mem _ hbc hac (hcell a c), vAC]
 
 end Args
 end Cslib.Algorithms.WordRAM.ThreeSum.Fill
