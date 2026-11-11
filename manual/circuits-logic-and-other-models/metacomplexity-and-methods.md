@@ -2,6 +2,8 @@
 
 Metacomplexity treats a function's representation or truth table as input and asks about the cost of computing that function. cslib-frontier separates total tables, partial tables, sample constraints and promise gaps. Its general lower-bound interfaces then connect concrete circuits to covers, approximation schemes and cryptographic distinguishers. [cslib-frontier][complexitylib]
 
+This chapter points to declarations and modules; it does not restate proofs. The headline metacomplexity results are registered in the [results inventory](../../results/README.md) under the topics `meta-complexity` and `Kolmogorov complexity`. Each entry lists its theorems, its source locator and its exact scope, and the IDs are given below. Most of these results are conditional implications, and an entry's scope note says which hypotheses it keeps.
+
 ## MCSP variants and encodings
 
 | Variant | Instance and acceptance |
@@ -13,13 +15,52 @@ Metacomplexity treats a function's representation or truth table as input and as
 
 “Succinct” here means a sample-set specification, not an arbitrary circuit encoding of a longer truth table. Partial MCSP supplies both the default all-operation count and a binary AND/OR-only cost measure. The library also distinguishes unary and binary threshold encodings. A theorem stated in function arity n may become a qualitatively different bound when expressed in truth-table length `N=2^n`.
 
-The [partial-MCSP abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/PartialMCSPAbstract.lean) (since retired; the library statement is in [PartialETH.lean](../../CslibFrontier/Computability/MCSP/PartialETH.lean)) states NP membership and ETH-conditional hardness at the `2^o(n log n)` scale, equivalently `N^o(log log N)`. It preserves the different cost/threshold conventions. At this snapshot the library also contains a separate [native fixed-width SAT counting endpoint](../machines-and-classes/native-counting.md) deriving the negation of ETH. Consequently the historical ETH-conditional implication remains a valid formal theorem, but its premise is false within the combined development. That chapter gives the native encodings, quantitative contract, manuscript mapping and review limits; this interaction affects how the conditional result may be applied and is not a proof inconsistency.
+[PartialETH.lean](../../CslibFrontier/Computability/MCSP/PartialETH.lean) states NP membership and ETH-conditional hardness of Partial MCSP at the `2^o(n log n)` scale, equivalently `N^o(log log N)`, following Ilango [ilango2020focs][ilango2020focs] (registry ID `partial-mcsp`). It preserves the different cost/threshold conventions. The library also contains a separate [native fixed-width SAT counting endpoint](../machines-and-classes/native-counting.md) deriving the negation of ETH. Consequently the ETH-conditional implication remains a valid formal theorem, but its premise is false within the combined development. That chapter gives the native encodings, quantitative contract, manuscript mapping and review limits; this interaction affects how the conditional result may be applied and is not a proof inconsistency.
+
+## Time-bounded Kolmogorov complexity
+
+[TimeBounded.lean](../../CslibFrontier/Computability/Kolmogorov/TimeBounded.lean) defines `K^t` on the native multi-tape universal machine: `timeBoundedAt t x` is the shortest program producing `x` within `t` steps, `timeBounded t` uses the clock `t |x|`, and `timeBoundedNat` is the natural-valued wrapper. `levinKt` is Levin's `Kt`, minimizing program length plus the logarithm of running time. The [description-method chapter](../machines-and-classes/computability-and-description.md#clock-conventions) gives the clock conventions and the plain, conditional and Partrec-side models.
+
+Three decision problems use these measures, with membership only:
+
+- [MINKT.lean](../../CslibFrontier/Computability/Kolmogorov/MINKT.lean): `MINKT` takes a string with time and size thresholds in unary. `MINKT.mem_NP` and, for fixed thresholds computable in polynomial time, `MINKTAt.mem_NP` place it in NP (registry ID `minkt-np`). The problem follows Hirahara's Definition 9 (after Ko), and the fixed-threshold `MINKTAt` follows Liu and Pass, Section 2.2. [hirahara2018][hirahara2018] [ko1991][ko1991] [liupass20][liupass20]
+- [MINcKT.lean](../../CslibFrontier/Computability/Kolmogorov/MINcKT.lean): the conditional analogue, with `MINcKT.mem_NP`. No recorded source states this membership, so it has no registry entry.
+- [MKtP.lean](../../CslibFrontier/Computability/Kolmogorov/MKtP.lean): `MKtP.mem_E` and `MKtP.mem_EXP` place the minimum-`Kt` problem in E and EXP when the threshold is unary; `MKtPAt.mem_EXP` covers fixed thresholds (registry ID `mktp-exp`). Liu and Pass write the threshold in binary, so the unary form is a different encoding. [liupass2021crypto][liupass2021crypto]
+
+`GapMINKT`, `GapMINcKT` and `GapMKtP` are the corresponding promise problems. NP-hardness of `MINKT` or `MINcKT` is not formalized.
+
+For plain complexity, Kolmogorov–Levin symmetry of information ([SymmetryOfInformation.lean](../../CslibFrontier/Computability/Kolmogorov/SymmetryOfInformation.lean), registry ID `symmetry-of-information`) is described under [abstract description methods](../machines-and-classes/computability-and-description.md#abstract-description-methods). Chaitin's incompleteness theorem ([Incompleteness.lean](../../CslibFrontier/Computability/Kolmogorov/Incompleteness.lean), registry ID `chaitin-incompleteness`) is described under [clock conventions](../machines-and-classes/computability-and-description.md#clock-conventions).
+
+## MCSP and one-way functions
+
+[OneWay/MCSP.lean](../../CslibFrontier/Crypto/Computational/OneWay/MCSP.lean) proves the Kabanets–Cai implication [kabanetscai2000][kabanetscai2000] (registry ID `kabanets-cai`). If MCSP is in BPP, then `not_pseudorandomFunction_of_MCSP_mem_BPP` distinguishes every polynomial-time keyed family from a random function. `not_oneWay_of_MCSP_mem_BPP` and `not_oneWay_of_MCSP_mem_P` then rule out one-way functions. MCSP here is the total truth-table language with all gates counted and a binary threshold, and the adversary is a uniform strict oracle PPT machine.
+
+The Liu–Pass equivalence between one-way functions and mild average-case hardness of `K^t` is in [OneWay/LiuPass.lean](../../CslibFrontier/Crypto/Computational/OneWay/LiuPass.lean) (registry ID `liu-pass`). The [average-case hardness chapter](../programs-crypto-and-probability/average-case-hardness.md#main-equivalences-and-their-exact-scope) gives its heuristic model and quantifiers. Only the polynomial-threshold form of Theorem 3.1 (c) is proved. [liupass20][liupass20]
 
 ## Hardness magnification
 
-The [magnification abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/MagnificationAbstract.lean) (since retired; the library statement is in [Magnification.lean](../../CslibFrontier/Computability/MCSP/Magnification.lean)) gives decision, no-oracle and size-only specializations. Under `NP subset P/poly`, there is a constant c such that every threshold function s and every arity n admit a decision circuit for the corresponding MCSP slice of size at most `2^n c (n+s(n)+1)^c`; a polynomial threshold yields `2^n c(n+1)^c` after changing c. Contrapositive lower bounds therefore imply `NP` is not contained in P/poly and, through the native containment bridge, `P != NP`.
+[Magnification.lean](../../CslibFrontier/Computability/MCSP/Magnification.lean) (registry ID `magnification`) gives decision, no-oracle and size-only specializations following McKay, Murray and Williams [mckaymurraywilliams2019][mckaymurraywilliams2019]. Under `NP subset P/poly`, there is a constant c such that every threshold function s and every arity n admit a decision circuit for the corresponding MCSP slice of size at most `2^n c (n+s(n)+1)^c`; a polynomial threshold yields `2^n c(n+1)^c` after changing c. Contrapositive lower bounds therefore imply `NP` is not contained in P/poly and, through the native containment bridge, `P != NP`.
 
 The [implementation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Magnification.lean) explicitly maps this version to the cited McKay–Murray–Williams lemma/theorem and explains its stronger lower-bound premise and restricted scope. It uses fixed-threshold witness certificates, binary subcube merging and a polynomial-hierarchy collapse. It should not be cited as every search, oracle or fine quantitative formulation of magnification in the literature.
+
+Oliveira and Santhanam's formula magnification [oliveirasanthanam2018][oliveirasanthanam2018] is in [FormulaMagnification.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification.lean) and its submodules [StretchedExponential.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/StretchedExponential.lean), [Subexponential.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/Subexponential.lean) and [AverageCase.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/AverageCase.lean). Each theorem assumes a De Morgan formula lower bound, measured by leaf size, for approximate `(1, 1 - 1/k)`-MCSP (`ApproxMCSP`) or for one-sided average-case MCSP. The NP language is succinct MCSP. Source locators refer to ECCC TR18-139.
+
+| Registry ID | Source | Hypothesis scale | Conclusion |
+|---|---|---|---|
+| `formula-magnification` | Theorem 1(i) / 17(i) | for every c, leaf size `(2^n + 1) c (n + 1)^c` at some n; polynomially bounded parameters | `NP ⊄ Formula[poly]` |
+| `formula-magnification-stretched` | Theorem 17(ii) | leaf size `N^(1+ε)` at arbitrarily large `N`; polynomially bounded parameters | some δ > 0 and NP language whose formula size is not `O(2^(m^δ))` |
+| `formula-magnification-subexp` | Theorem 17(iii) | leaf size `2^(n + n/d)` or `N^(1+ε)`; subexponential parameters | `NP ⊄ Formula[poly]` |
+| `formula-magnification-average-case` | Theorem 27, one-sided | leaf size `2^(n/d)` for formulas accepting every yes-instance and at most `2^(2^n - n)` tables | `NP ⊄ Formula[poly]`, weaker than the source's `2^Ω(n)` |
+
+The average-case form covers formulas only, not the ternary zero-error devices of Theorem 5.
+
+## Consequences of NP-hardness of MCSP
+
+[HardnessConsequences.lean](../../CslibFrontier/Computability/MCSP/HardnessConsequences.lean) (registry ID `murray-williams`) assumes that total MCSP is NP-hard under polynomial-time many-one reductions. From this, `EXP_eq_NEXP_of_MCSP_npHard_of_EXP_subset_PPoly` derives `EXP = NEXP` when `EXP ⊆ P/poly`, and `EXP_ne_NP_inter_PPolyOn_of_MCSP_npHard` and `EXP_ne_ZPP_of_MCSP_npHard` give Murray and Williams's Theorems 4.1 and 1.6 [murraywilliams2017][murraywilliams2017]. Theorem 4.1 needs reductions only from sparse NP languages, so the library proves its full-NP-hardness specialization. `PH_eq_SigmaP_two_of_MCSP_npHard_of_mem_PPolyOn` adds the Karp–Lipton collapse when MCSP is also in P/poly. Consequences of hardness under local or weak reductions are not formalized.
+
+## Anti-checkers
+
+An anti-checker for `f` against a family `F` is a set of inputs on which every member of `F` differs from `f` (`IsAntiChecker` in [AntiChecker.lean](../../CslibFrontier/Computability/MCSP/AntiChecker.lean), registry ID `anti-checker`) [liptonyoung1994][liptonyoung1994] [oliveirapichsanthanam2019][oliveirapichsanthanam2019]. `exists_isAntiChecker` gives one of at most `16 b` inputs against a family of fewer than `2^b` functions on at most `2^m` inputs, if `m > 0` and no `m` members have `f` as strict majority. `exists_lt_complexityOn` and `exists_ofFunction_notMem` specialize this to circuits and to Succinct MCSP no-instances. Counting ordered tuples gives the share `1/16`, where the source counts sets and gets `1/(2m)`. [AntiChecker/Certificate.lean](../../CslibFrontier/Computability/MCSP/AntiChecker/Certificate.lean) counts circuit certificates instead of functions. Both are nonuniform existence results.
 
 ## Hardness versus randomness
 
@@ -83,7 +124,7 @@ Only the triangle case (`v = e = 3`) of the threshold `n ^ (-v / e)` for balance
 
 [NaturalProof.IsLarge](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof.lean#L147) separates largeness, constructivity and usefulness. A property is a family of sets of Boolean functions. Constructivity concerns deciding from a full truth table; polynomial in that input length is exponential in the function's arity. Usefulness excludes every easy language's slices eventually. Largeness is a quantitative density condition.
 
-The Razborov–Rudich barrier is stated through concrete circuit distinguishers: a property excluding a small-circuit keyed family distinguishes its truth tables from uniform random function tables with advantage equal to the property's density. An exponentially secure keyed family prevents a P/poly-natural useful property. A [generator-to-barrier bridge](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof/Generator.lean) uses the GGM construction and its circuit-size analysis. Security is an explicit hypothesis and belongs to the cryptographic model in the [programs section](../programs-crypto-and-probability/index.md), not an unconditional result.
+The Razborov–Rudich barrier is stated through concrete circuit distinguishers: a property excluding a small-circuit keyed family distinguishes its truth tables from uniform random function tables with advantage equal to the property's density. An exponentially secure keyed family prevents a P/poly-natural useful property. A [generator-to-barrier bridge](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/NaturalProof/Generator.lean) uses the GGM construction and its circuit-size analysis. In the current library, [not_isUseful_PPoly_of_isNatural_of_generator](../../CslibFrontier/Computability/Circuit/Boolean/NaturalProof/Generator.lean#L51) (registry ID `natural-proofs`) says that if some family of length-doubling generators of polynomial circuit complexity is subexponentially secure, then no P/poly-natural property is useful against P/poly. [razborovrudich1997][razborovrudich1997] [ggm86][ggm86] Security is an explicit hypothesis and belongs to the cryptographic model in the [programs section](../programs-crypto-and-probability/index.md), not an unconditional result.
 
 ## Lower-bound interfaces beyond one theorem
 
@@ -97,7 +138,16 @@ These are mathematical proof interfaces, not automatically encoded certificates 
 
 ## Known Limitations
 
-The conditional statements, truth-table scales and source-specific quantitative scope were inspected, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in this worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere.
+The baseline survey at `13e6a319` inspected the conditional statements, truth-table scales and source-specific quantitative scope, but the complete magnification and cryptographic reduction proofs were not independently reconstructed in that worker pass. Distinguish a valid conditional theorem, a conventional open assumption, and a premise that this same library proves false elsewhere; the registry scope notes for results added since then record which case applies.
+
+The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/issues/798) and the ROADMAP's Kolmogorov and metacomplexity entries list the remaining directions. A selection of those not formalized:
+
+- Liu–Pass Theorem 3.1 (c) in the near-linear range `t(n) ≥ (1 + ε) n`, which needs a rate-1 efficient conditional EP-PRG.
+- The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1), which needs approximate counting by circuits; only existence is proved.
+- The rounded `2^√n`, ternary zero-error-device form of Oliveira–Santhanam Theorem 5.
+- NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
+- The minimum formula size problem (MFSP) as a separate problem, and the locality barrier of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam.
+- Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.
 
 [alonbabaisuzuki1991]: ../sources.md#alonbabaisuzuki1991
 [alonspencer2016]: ../sources.md#alonspencer2016
@@ -105,11 +155,24 @@ The conditional statements, truth-table scales and source-specific quantitative 
 [erdos1947]: ../sources.md#erdos1947
 [erdosszekeres1935]: ../sources.md#erdosszekeres1935
 [franklwilson1981]: ../sources.md#franklwilson1981
+[ggm86]: ../sources.md#ggm86
+[hirahara2018]: ../sources.md#hirahara2018
 [holenstein05]: ../sources.md#holenstein05
+[ilango2020focs]: ../sources.md#ilango2020focs
 [impagliazzo95]: ../sources.md#impagliazzo95
 [impagliazzowigderson97]: ../sources.md#impagliazzowigderson97
 [jansonluczakrucinski2000]: ../sources.md#jansonluczakrucinski2000
+[kabanetscai2000]: ../sources.md#kabanetscai2000
+[ko1991]: ../sources.md#ko1991
+[liptonyoung1994]: ../sources.md#liptonyoung1994
+[liupass20]: ../sources.md#liupass20
+[liupass2021crypto]: ../sources.md#liupass2021crypto
+[mckaymurraywilliams2019]: ../sources.md#mckaymurraywilliams2019
+[murraywilliams2017]: ../sources.md#murraywilliams2017
 [nagy1972]: ../sources.md#nagy1972
 [nisanwigderson94]: ../sources.md#nisanwigderson94
+[oliveirapichsanthanam2019]: ../sources.md#oliveirapichsanthanam2019
+[oliveirasanthanam2018]: ../sources.md#oliveirasanthanam2018
 [raychaudhuriwilson1975]: ../sources.md#raychaudhuriwilson1975
+[razborovrudich1997]: ../sources.md#razborovrudich1997
 [sudantrevisanvadhan01]: ../sources.md#sudantrevisanvadhan01
