@@ -2053,6 +2053,7 @@ public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Pot
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Principles
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Sperner
+public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
 public import CslibFrontier.Computability.Complexity.Classes.Tally
 public import CslibFrontier.Computability.Complexity.Classes.Time
 public import CslibFrontier.Computability.Complexity.Classes.Time.AcceptCount
