@@ -1010,7 +1010,6 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Normal
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Operations
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Reduction
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Reparameterisation
-public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Rewiring
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.State
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Step
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n
@@ -1021,6 +1020,9 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Oper
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Reduction
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.State
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Step
+public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Operations
+public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Reduction
+public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.State
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast

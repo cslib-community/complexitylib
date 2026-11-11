@@ -33,9 +33,9 @@ The development is organised as follows.
 
 * `AffineDisperser.State`: the states of gate elimination, their potential, Proposition 2.2 and
   Lemma 2.3 of the source.
-* `AffineDisperser.Operations`, `AffineDisperser.Reparameterisation`, `AffineDisperser.Rewiring`:
-  the operations on states (restrictions and deletions; exchanging a parameter with an auxiliary
-  variable and the quadratic substitution; moving and rewiring gates), with validity.
+* `AffineDisperser.Operations`, `AffineDisperser.Reparameterisation`: the operations on states
+  (restrictions, exchanging a parameter with an auxiliary variable, and the quadratic
+  substitution), with validity.
 * `AffineDisperser.Reduction`: reductions, which restrict parameters and delete constraints, and
   their accounting, done once for all reductions.
 * `AffineDisperser.Deletion`, `AffineDisperser.Normal`: the preliminary reductions of
@@ -66,7 +66,7 @@ The development is organised as follows.
 
 namespace Cslib.Circuits.Boolean.AffineDisperser
 
-open Cslib.Circuits Cslib.BitString SemiCircuit
+open Cslib.Circuits Cslib.BitString SemiCircuit AffineDisperserCore
 
 variable {n : ℕ} {f : BooleanFunction n}
 
@@ -82,9 +82,10 @@ theorem State.Valid.fourteen_mul_a_le {d : ℕ} (hf : IsAffineDisperser f d) :
     intro hS
     by_cases ha : S.a ≤ d
     · omega
-    · obtain ⟨S', hstep⟩ := hS.exists_step hf (lt_of_not_ge ha)
+    · obtain ⟨S', hstep⟩ := State.Valid.exists_step hS hf (lt_of_not_ge ha)
       have := ih _ (h ▸ hstep.lt) S' rfl hstep.valid
       have := hstep.potential
+      rw [config_ca] at this
       omega
 
 /-! ### The initial state of a circuit -/
@@ -108,21 +109,22 @@ theorem initialState_valid {C : Circuit (fullSignature 2 Bool) n 1}
   phi_injective := fun val val' h j hj => by
     have := congrFun h ⟨j, Finset.mem_range.1 hj⟩
     simpa [initialState] using this
-  computes := fun val hval => by
+  computes := fun val hval _ => by
     rw [show (initialState C).out.eval val = _ from out_eval_ofCircuit C hval, hC]
     rfl
 
 /-- The initial state of an `n`-input circuit has affine dimension `n`. -/
 theorem initialState_a (C : Circuit (fullSignature 2 Bool) n 1) : (initialState C).a = n := by
-  simp [State.a, State.m, State.q, initialState]
+  simp [AffineDisperserCore.State.a, AffineDisperserCore.State.m, AffineDisperserCore.State.q,
+    initialState]
 
 private theorem initialState_W_le (C : Circuit (fullSignature 2 Bool) n 1) :
     (initialState C).W ≤ 2 * C.size + 7 * n := by
   have hs : (initialState C).s = C.size := by
-    simp [State.s, SemiCircuit.size, initialState]
-  have hq : (initialState C).q = 0 := by simp [State.q, initialState]
-  unfold State.W
-  rw [hs, hq]
+    simp [AffineDisperserCore.State.s, SemiCircuit.size, initialState]
+  have hq : (initialState C).q = 0 := by simp [AffineDisperserCore.State.q, initialState]
+  unfold AffineDisperserCore.State.W
+  rw [hs, hq, config_cs, config_cq, config_weight]
   have : ∑ x ∈ (initialState C).unpaired, weight ((initialState C).deg x) ≤ 7 * n := by
     calc ∑ x ∈ (initialState C).unpaired, weight ((initialState C).deg x)
         ≤ ∑ _x ∈ (initialState C).unpaired, 7 := Finset.sum_le_sum fun _ _ => weight_le_seven _
