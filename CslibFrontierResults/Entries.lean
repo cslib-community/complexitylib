@@ -3431,3 +3431,16 @@ register_result "yap-collapse" where
     coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
     decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
     from Σ_k ⊆ Π_k/poly are not part of this entry."
+
+register_result "btree-search-comparison-lower-bound" where
+  title := "Comparison lower bound for B-tree search"
+  topic := "algorithms"
+  sources := [
+    { paper := CLRS2009, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.DataStructure.BTree.rank_lowerBound_infinite
+  ]
+  scope := "The ⌈log₂(n + 1)⌉ comparison lower bound for comparison-based rank programs on B-trees \
+    over an infinite key type, proven in the FreeM (LEQuery α) model. This bounds the abstract \
+    program counting queries on a comparison oracle, not a machine-code lower bound."
