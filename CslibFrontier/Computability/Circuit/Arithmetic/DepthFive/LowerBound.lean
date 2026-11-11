@@ -171,10 +171,10 @@ theorem rpow_le_size {n : ℕ} [NeZero n] (hn : Real.exp 29200 ≤ n) {K : Type*
   have : NeZero (paramsOf n).n := ‹NeZero n›
   exact rpow_le_size_of_good (p := paramsOf n) (good_paramsOf h20) hn c hc
 
-/-- **Homogeneous depth-five lower bound for `IMM`**, the characteristic-zero corollary of
-[OpenAI, §6][OpenAI2026DepthFive]: there is an absolute `n₀` such that, over every field of
-characteristic zero and for every `n ≥ n₀`, every syntactically homogeneous `ΣΠΣΠΣ` circuit
-computing `IMM_{n,n}` has size at least `n ^ (√n / 400)`. -/
+/-- **Homogeneous depth-five lower bound for `IMM`**,
+[OpenAI, Corollary 6.1][OpenAI2026DepthFive]: there is an absolute `n₀` such that, over every
+field of characteristic zero and for every `n ≥ n₀`, every syntactically homogeneous `ΣΠΣΠΣ`
+circuit computing `IMM_{n,n}` has size at least `n ^ (√n / 400)`. -/
 theorem exists_forall_rpow_le_size :
     ∃ n₀ : ℕ, ∀ (K : Type*) [Field K] [CharZero K] (n : ℕ) [NeZero n], n₀ ≤ n →
       ∀ c : Circuit K (Fin n × Fin n × Fin n), c.polynomial = imm K n n →
