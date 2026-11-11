@@ -25,6 +25,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Probability.PMF.Finiteness
+import CslibFrontier.Tactic.PPT
 
 /-!
 # Unconditional `2n - 2` `B₂`-circuit size lower bound for pseudorandom functions
@@ -195,20 +196,7 @@ theorem isOraclePPT_firstBitDistinguisher {adversary : OracleDistinguisher}
   have hhandler : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
         firstBitHandler pair.2.1 pair.2.2) := by
-    have heq : (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
-        firstBitHandler pair.2.1 pair.2.2) = fun pair =>
-          (fun reply => (reply, ())) <$>
-            (List.take 1 <$>
-              ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
-                ((), pair.2.1.2)) := by
-      funext ⟨_, _, ⟨⟩⟩
-      rfl
-    rw [heq]
-    exact (IsOraclePPTOn.query_take' ()
-      ((ComputableInPolyTime.snd (encPair encUnary encBits)
-        (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))).fst'.snd')
-      (.const 1)).map'
-      ((ComputableInPolyTime.id' (encIn := encBits)).prod (.const ()))
+    ppt [firstBitHandler, firstBitQuery]
   have hrun := hadversary.run_interpret_preprocess_open' (External := Unit)
     (handler := fun _ => firstBitHandler)
     (prepare := fun c : ℕ × List Bool => c) (initial := fun _ => ())
@@ -634,10 +622,9 @@ private theorem computableInPolyTime_checkIsoAnswers :
 
 /-- `isolatedVarDistinguisher` is a uniform strict oracle-PPT adversary. -/
 theorem isOraclePPT_isolatedVarDistinguisher : IsOraclePPT encBool isolatedVarDistinguisher := by
-  apply IsOraclePPTOn.isOraclePPT
-  exact IsOraclePPTOn.map_with'
-    (KabanetsCai.isOraclePPTOn_queryTable.preprocess' computableInPolyTime_isoQueries)
-    computableInPolyTime_checkIsoAnswers
+  have hq := computableInPolyTime_isoQueries
+  have hc := computableInPolyTime_checkIsoAnswers
+  ppt [isolatedVarDistinguisher]
 
 private theorem evalBooleanOracle_isolatedVarDistinguisher (n : ℕ) (f : BooleanFunction n) :
     evalBooleanOracle isolatedVarDistinguisher n f =
@@ -925,10 +912,9 @@ private theorem computableInPolyTime_checkCritAnswers :
 
 /-- `criticalPathDistinguisher` is a uniform strict oracle-PPT adversary. -/
 theorem isOraclePPT_criticalPathDistinguisher : IsOraclePPT encBool criticalPathDistinguisher := by
-  apply IsOraclePPTOn.isOraclePPT
-  exact IsOraclePPTOn.map_with'
-    (KabanetsCai.isOraclePPTOn_queryTable.preprocess' computableInPolyTime_critQueries)
-    computableInPolyTime_checkCritAnswers
+  have hq := computableInPolyTime_critQueries
+  have hc := computableInPolyTime_checkCritAnswers
+  ppt [criticalPathDistinguisher]
 
 private theorem evalBooleanOracle_criticalPathDistinguisher (n : ℕ) (f : BooleanFunction n) :
     evalBooleanOracle criticalPathDistinguisher n f =

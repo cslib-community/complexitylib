@@ -72,6 +72,16 @@ its recommended strategy `s i` by `δ (s i)` while the others play according to 
   ∀ i (δ : S i → S i), σ.weights.sum (fun s w => w * G.cost i s)
     ≤ σ.weights.sum (fun s w => w * G.cost i (update s i (δ (s i))))
 
+/-- A finitely supported distribution `σ` on profiles is an **approximate correlated equilibrium**
+([Roughgarden2013CS364A], Lecture 18, Proposition 1.3): for every player `i` and switching function
+`δ : S i → S i`, the expected cost of `i` under `σ` exceeds its expected cost under the deviation
+`δ` by at most the additive slack `ε i`. -/
+@[expose] def IsApproxCorrelatedEquilibrium (ε : ι → ℝ)
+    (σ : Convexity.StdSimplex ℝ (∀ i, S i)) : Prop :=
+  ∀ i (δ : S i → S i), σ.weights.sum (fun s w => w * G.cost i s)
+    ≤ σ.weights.sum (fun s w => w * G.cost i (update s i (δ (s i)))) + ε i
+
+
 omit [DecidableEq ι] in
 /-- Grouping a sum over the support of `σ` by the recommendation `s i`. -/
 private theorem sum_eq_sum_image_sum_ite (σ : Convexity.StdSimplex ℝ (∀ i, S i)) (i : ι)
@@ -85,7 +95,54 @@ private theorem sum_eq_sum_image_sum_ite (σ : Convexity.StdSimplex ℝ (∀ i, 
   rw [sum_ite_eq (σ.weights.support.image fun s => s i) (s i) fun a => σ.weights s * f s a,
     ite_eq_left (mem_image_of_mem _ hs)]
 
+omit [DecidableEq ι] in
+private theorem sum_eq_sum_univ_sum_ite (σ : Convexity.StdSimplex ℝ (∀ i, S i)) (i : ι)
+    [Fintype (S i)] [DecidableEq (S i)] (f : (∀ j, S j) → S i → ℝ) :
+    σ.weights.sum (fun s w => w * f s (s i)) = ∑ a,
+      σ.weights.sum (fun s w => w * if s i = a then f s a else 0) := by
+  rw [sum_eq_sum_image_sum_ite σ i f]
+  refine Finset.sum_subset (Finset.subset_univ (σ.weights.support.image fun s => s i))
+    (fun a _ ha => ?_)
+  simp only [Finsupp.sum]
+  apply Finset.sum_eq_zero
+  intro s hs
+  have : s i ≠ a := fun hs_eq => ha (hs_eq ▸ Finset.mem_image_of_mem (fun s => s i) hs)
+  split_ifs with hs_eq
+  · exact (this hs_eq).elim
+  · rw [mul_zero]
+
 variable {G}
+
+/-- An approximate correlated equilibrium with zero slack is a correlated equilibrium. -/
+theorem isApproxCorrelatedEquilibrium_zero_iff {σ : Convexity.StdSimplex ℝ (∀ i, S i)} :
+    G.IsApproxCorrelatedEquilibrium 0 σ ↔ G.IsCorrelatedEquilibrium σ := by
+  dsimp [IsApproxCorrelatedEquilibrium, IsCorrelatedEquilibrium]
+  simp only [add_zero]
+
+
+/-- The conditional form of approximate correlated equilibria. -/
+theorem isApproxCorrelatedEquilibrium_iff [∀ i, DecidableEq (S i)] [∀ i, Fintype (S i)]
+    {ε : ι → ℝ} {σ : Convexity.StdSimplex ℝ (∀ i, S i)} :
+    G.IsApproxCorrelatedEquilibrium ε σ ↔ ∀ i (δ : S i → S i),
+      (∑ a, σ.weights.sum (fun s w => w * if s i = a then G.cost i s else 0))
+        ≤ (∑ a, σ.weights.sum (fun s w =>
+            w * if s i = a then G.cost i (update s i (δ a)) else 0)) + ε i := by
+  have H (i : ι) (δ : S i → S i) :
+      σ.weights.sum (fun s w => w * G.cost i (update s i (δ (s i)))) =
+        ∑ a, σ.weights.sum (fun s w =>
+          w * if s i = a then G.cost i (update s i (δ a)) else 0) :=
+    sum_eq_sum_univ_sum_ite σ i fun s a => G.cost i (update s i (δ a))
+  have H0 (i : ι) : σ.weights.sum (fun s w => w * G.cost i s) =
+      ∑ a, σ.weights.sum (fun s w => w * if s i = a then G.cost i s else 0) :=
+    sum_eq_sum_univ_sum_ite σ i fun s _ => G.cost i s
+  constructor
+  · intro h i δ
+    rw [← H0 i, ← H i δ]
+    exact h i δ
+  · intro h i δ
+    rw [H0 i, H i δ]
+    exact h i δ
+
 
 /-- The **conditional form** of correlated equilibria ([Roughgarden2013CS364A], Lecture 13,
 Definition 3.3): for every player `i`, recommendation `a` and deviation `b`, the expected cost of
@@ -142,7 +199,7 @@ variable [Fintype ι] [∀ i, Fintype (S i)]
 /-- Under the product distribution of `p`, the expected cost of `i` after switching to `b`, on the
 event that `i` is recommended `a`, is `p i a` times the expected cost of playing `b` against the
 others' mixed strategies. -/
-private theorem sum_ite_productWeight [∀ i, DecidableEq (S i)] (G : CostGame ι S)
+theorem sum_ite_productWeight [∀ i, DecidableEq (S i)] (G : CostGame ι S)
     (p : ∀ i, S i → ℝ) {i : ι} (hp : ∑ c, p i c = 1) (a b : S i) :
     ∑ s, productWeight p s * (if s i = a then G.cost i (update s i b) else 0)
       = p i a * G.deviationCost p i b := by

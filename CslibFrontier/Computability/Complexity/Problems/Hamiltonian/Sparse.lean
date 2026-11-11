@@ -92,8 +92,9 @@ def sparseSlots (φ : CNF ℕ) (i : ℕ) : ℕ :=
 /-- The detours: the occurrence at position `p` of `φ.vars`, a literal `(x, b)` of clause `j`,
 goes through the node of clause `j` across its slot in the row of `x`, in the direction `b`. -/
 def sparseDetours (φ : CNF ℕ) : List Detour :=
-  (occurrences φ).zipIdx.map fun o => (o.1.1, φ.distinctVars.idxOf o.1.2.2.1,
-    (occurrencePositions φ o.1.2.2.1).idxOf o.2, o.1.2.2.2)
+  (occurrences φ).zipIdx.map fun o =>
+    ⟨o.1.1, φ.distinctVars.idxOf o.1.2.2.1,
+      (occurrencePositions φ o.1.2.2.1).idxOf o.2, o.1.2.2.2⟩
 
 /-- The diamond graph with one diamond for each distinct variable of `φ` and a slot for each
 occurrence. -/
@@ -132,8 +133,8 @@ private theorem mem_occurrencePositions {x q : ℕ} :
 /-- The detours come from occurrences, numbered by their positions. -/
 private theorem mem_sparseDetours {d : Detour} :
     d ∈ sparseDetours φ ↔ ∃ o p, (occurrences φ)[p]? = some o ∧
-      d = (o.1, φ.distinctVars.idxOf o.2.2.1, (occurrencePositions φ o.2.2.1).idxOf p,
-        o.2.2.2) := by
+      d = ⟨o.1, φ.distinctVars.idxOf o.2.2.1, (occurrencePositions φ o.2.2.1).idxOf p,
+        o.2.2.2⟩ := by
   simp only [sparseDetours, List.mem_map]
   constructor
   · rintro ⟨⟨o, p⟩, h, rfl⟩

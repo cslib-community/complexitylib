@@ -165,7 +165,7 @@ theorem length_encList_le_of_mem_vars {φ : CNF ℕ} {answers : List (Literal �
 binary digits of `v`. -/
 private theorem length_encCNF_unit (l : Literal ℕ) :
     (encCNF [[l]]).length = 8 * (encNat l.1).length + 11 := by
-  enc_len [encCNF, encList_cons, encList_nil, List.append_nil]
+  enc_len [encCNF, List.append_nil]
 
 /-- The unit clause of a literal on a variable of `φ` takes at most `8 L + 11` bits, where `L`
 is the length of `φ`. -/
@@ -316,7 +316,7 @@ theorem computableInPolyTime_search {γ : Type} {encIn : γ ↪ List Bool}
       ⟨((PolyBounded.const 4).mul hφ.polyBounded_length).add (.const 5),
         fun x answers v hv => ?_⟩
     have := length_encNat_le_of_mem_vars hv
-    enc_len [selfReduceStep, encList_append, encList_cons, encList_nil, List.append_nil]
+    enc_len [selfReduceStep, encList_append, List.append_nil]
   unfold search
   exact listToBits.comp (map (snd encNat encBool) |>.comp hfold)
 

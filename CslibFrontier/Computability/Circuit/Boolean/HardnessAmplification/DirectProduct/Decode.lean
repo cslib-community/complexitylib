@@ -33,9 +33,9 @@ least half of the trial vectors give a hypothesis with error at most `ε #U`. It
 tuples consistent with the seed have density at least `δ / 2` and that at most an `ε / 64`
 fraction of them disagree with `f` in `ε k / 64` or more positions. The module
 `CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Density`
-discharges these hypotheses for a `δ / 4` fraction of seeds and proves the counting headline. The
-decoder's circuit size, and with it M6.3 of #4451, remains open. The analysis follows the shape
-of IJKW's Lemmas 3.8–3.10. Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`,
+discharges these hypotheses for a `δ / 4` fraction of seeds and proves the counting headline, and
+`DirectProduct.Complexity` bounds the decoder's circuit size. The analysis follows the shape of
+IJKW's Lemmas 3.8–3.10. Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`,
 `(16 / δ) log (8 / ε)`) are ours, derived for the tuple formulation; they are not IJKW's. The
 parameter roles are swapped relative to IJKW's Theorem 1.2: `ε` here is their output error `δ`,
 and `δ` here is their agreement `ε`. The tuple form also omits their Algorithm 1 lookup that
@@ -43,7 +43,8 @@ answers `x = aᵢ` with the corresponding output.
 
 ## Main definitions
 
-* `trialTuple`, `accepts`, `dpDecode`: the decoder.
+* `trialTuple`, `accepts`, `dpDecode`: the decoder. Other modules unfold them with `trialTuple_eq`,
+  `accepts_eq`, `dpDecode_zero` and `dpDecode_cons`.
 * `consistent`, `acceptedPairs`, `badPairs`, `disagreements`: the counting objects.
 
 ## Main results
@@ -67,42 +68,6 @@ namespace Cslib.Circuits.Boolean.DirectProduct
 open Finset Cslib.Probability
 
 variable {U : Type*} [Fintype U] [DecidableEq U] {k : ℕ}
-
-/-- **Fibres of overwriting on `P`**: summing `H` over the tuples `r` overwritten by `b₀` on `P`
-counts each tuple that agrees with `b₀` on `P` once for each of the `#U ^ #P` values `r` had
-there. -/
-theorem sum_piecewise_eq_card_pow_nsmul_sum {M : Type*} [AddCommMonoid M] (P : Finset (Fin k))
-    (b₀ : Fin k → U) (H : (Fin k → U) → M) :
-    ∑ r : Fin k → U, H (P.piecewise b₀ r) =
-      Fintype.card U ^ #P • ∑ y ∈ {y : Fin k → U | ∀ i ∈ P, y i = b₀ i}, H y := by
-  classical
-  rw [← sum_fiberwise_of_maps_to (s := univ) (t := {y : Fin k → U | ∀ i ∈ P, y i = b₀ i})
-    (g := fun r => P.piecewise b₀ r) (fun r _ => by
-      simp only [mem_filter, mem_univ, true_and]
-      intro i hi
-      exact P.piecewise_eq_of_mem _ _ hi), smul_sum]
-  refine sum_congr rfl fun y hy => ?_
-  have hy' : ∀ i ∈ P, y i = b₀ i := by simpa using hy
-  rw [sum_congr rfl fun r hr => by rw [(mem_filter.1 hr).2], sum_const]
-  congr 1
-  have hfib : ({r ∈ (univ : Finset (Fin k → U)) | P.piecewise b₀ r = y}) =
-      Fintype.piFinset fun i => if i ∈ P then univ else {y i} := by
-    ext r
-    simp only [mem_filter, mem_univ, true_and, Fintype.mem_piFinset]
-    constructor
-    · rintro rfl i
-      split_ifs with hi
-      · exact mem_univ _
-      · simp [P.piecewise_eq_of_notMem _ _ hi]
-    · intro h
-      funext i
-      by_cases hi : i ∈ P
-      · rw [P.piecewise_eq_of_mem _ _ hi, hy' i hi]
-      · have := h i
-        simp only [hi, ↓reduceIte, mem_singleton] at this
-        rw [P.piecewise_eq_of_notMem _ _ hi, this]
-  rw [hfib, Fintype.card_piFinset]
-  simp [apply_ite card, prod_ite_mem]
 
 /-- A trial: a free position `j` and a filler tuple `r`. -/
 abbrev Trial (U : Type*) (k : ℕ) := Fin k × (Fin k → U)
@@ -164,6 +129,38 @@ first accepted trial, or `dflt` if no trial is accepted. -/
 def dpDecode (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k)) (b₀ : Fin k → U)
     {m : ℕ} (v : Fin m → Trial U k) (x : U) : V :=
   ((firstAccepted (accepts C' P b₀ x) v).map fun t => C' (trialTuple P b₀ x t) t.1).getD dflt
+
+omit [Fintype U] [DecidableEq U] in
+/-- The trial tuple overwrites the free position of `b₀` on `P` and the filler elsewhere. -/
+theorem trialTuple_eq (P : Finset (Fin k)) (b₀ : Fin k → U) (x : U) (t : Trial U k) :
+    trialTuple P b₀ x t = Function.update (P.piecewise b₀ t.2) t.1 x := by
+  unfold trialTuple
+  rfl
+
+omit [Fintype U] [DecidableEq U] in
+/-- Unfolding the acceptance test. -/
+theorem accepts_eq (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k)) (b₀ : Fin k → U) (x : U)
+    (t : Trial U k) :
+    accepts C' P b₀ x t = decide (t.1 ∉ P ∧ ∀ i ∈ P, C' (trialTuple P b₀ x t) i = C' b₀ i) := by
+  unfold accepts
+  rfl
+
+omit [Fintype U] [DecidableEq U] in
+/-- With no trials, the decoder outputs the default. -/
+@[simp] theorem dpDecode_zero (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k))
+    (b₀ : Fin k → U) (v : Fin 0 → Trial U k) (x : U) : dpDecode C' dflt P b₀ v x = dflt := by
+  unfold dpDecode
+  simp
+
+omit [Fintype U] [DecidableEq U] in
+/-- The decoder answers from the first trial if it is accepted, and otherwise from the rest. -/
+theorem dpDecode_cons (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k))
+    (b₀ : Fin k → U) {m : ℕ} (t : Trial U k) (w : Fin m → Trial U k) (x : U) :
+    dpDecode C' dflt P b₀ (Fin.cons t w : Fin (m + 1) → Trial U k) x =
+      if accepts C' P b₀ x t then C' (trialTuple P b₀ x t) t.1 else dpDecode C' dflt P b₀ w x := by
+  unfold dpDecode
+  rw [firstAccepted_cons]
+  split_ifs <;> rfl
 
 /-- The pairs `(j, y)` that account for the trials accepted at `x`: `j ∉ P`, `y = b₀` on `P`,
 `y j = x` and `C' y = C' b₀` on `P`. -/
@@ -296,30 +293,6 @@ theorem sum_card_badPairs (C' : (Fin k → U) → Fin k → V) (f : U → V) (P 
   rw [← card_eq_sum_card_fiberwise (fun _ _ => mem_univ _), card_filter, sum_product, sum_comm]
   refine sum_congr rfl fun y _ => ?_
   rw [card_filter]
-
-omit [DecidableEq U] in
-/-- **Edges into a dense slice**: for a family `S` of tuples that agree on `P`, the free entries
-carry weight at least `(#S - #U ^ w exp (-μ w / 8)) μ w / 2`, where `w = #Pᶜ`. This applies the
-tuple-sampler weight bound to the coordinates outside `P`. -/
-theorem sub_mul_le_two_mul_sum_sum_compl [Nonempty U] (F : U → ℝ) (hF : ∀ x, F x ∈ Set.Icc 0 1)
-    {μ : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ * Fintype.card U ≤ ∑ x, F x) (P : Finset (Fin k))
-    (b₀ : Fin k → U) (S : Finset (Fin k → U)) (hS : ∀ y ∈ S, ∀ i ∈ P, y i = b₀ i) :
-    ((#S : ℝ) - Fintype.card U ^ #Pᶜ * Real.exp (-(μ * #Pᶜ / 8))) * (μ * #Pᶜ) ≤
-      2 * ∑ y ∈ S, ∑ j ∈ Pᶜ, F (y j) := by
-  classical
-  let ρ : (Fin k → U) → ({i // i ∈ Pᶜ} → U) := fun y i => y i
-  have hinj : Set.InjOn ρ S := by
-    intro y hy z hz h
-    funext i
-    by_cases hi : i ∈ P
-    · rw [hS y hy i hi, hS z hz i hi]
-    · exact congrFun h ⟨i, mem_compl.2 hi⟩
-  have h := sub_mul_le_two_mul_sum_sum (ι := {i // i ∈ Pᶜ}) F hF hμ0 hμ (S.image ρ)
-  rw [card_image_of_injOn hinj, sum_image hinj, Fintype.card_coe] at h
-  refine h.trans_eq ?_
-  congr 1
-  refine sum_congr rfl fun y _ => ?_
-  exact sum_coe_sort Pᶜ fun j => F (y j)
 
 /-- **Few inputs are rarely accepted**: if the consistent tuples have density at least `μ` among
 the tuples agreeing with `b₀` on `P`, the inputs with fewer than `#S w / (4 #U)` accepted pairs,

@@ -18,6 +18,9 @@ and steps that need GitHub context, tokens or secrets. `scripts/test_full_check.
 line that is neither one of its commands here nor the listed `BASE` plumbing; when such a step sets
 something the local run does not reproduce (another working directory or environment, `shell`,
 `continue-on-error`, a timeout); or when the mirrored steps are out of CI's order.
+
+`LOCAL_STEPS` run after the mirrored steps and have no CI counterpart. They check failures that
+only a local machine can produce.
 """
 
 from __future__ import annotations
@@ -80,6 +83,14 @@ STEPS = (
           "python3 -B -m unittest discover -s scripts -p 'test_mk_all.py'")),
     Step("lake exe lint-style", ("lake exe lint-style",)),
     Step("checkInitImports", ("lake exe checkInitImports",)),
+)
+
+# Run after `STEPS`; not CI steps, so `scripts/test_full_check.py` keeps their names apart from CI's.
+LOCAL_STEPS = (
+    # The local artifact cache restores outputs without their warnings, which `--wfail` and
+    # `--iofail` then miss (#4523). CI's remote cache is published only from `main`.
+    Step("Re-elaborate changed files restored from the artifact cache",
+         ('python3 -B scripts/check_cache_restores.py --base "$BASE"',)),
 )
 
 # Run by scripts/check.sh before the cache bootstrap, in both full and quick modes.
@@ -150,7 +161,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base", default="origin/main",
                         help="comparison ref; changes are taken from its merge base with HEAD")
     args = parser.parse_args(argv)
-    return run_steps(STEPS, args.base)
+    return run_steps(STEPS + LOCAL_STEPS, args.base)
 
 
 if __name__ == "__main__":
