@@ -14,6 +14,7 @@ import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -110,6 +111,7 @@ import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
+import CslibFrontier.GameTheory.Strategic.SwapRegretDynamics
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
@@ -146,7 +148,9 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
+import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
@@ -544,7 +548,7 @@ register_result "rank-property-natural-ac0-2" where
     the input length m = rankLength d x, which satisfies m + 1 ≤ 401·2^(2d(2d+7))·x^(2d) for \
     x ≥ 1, no circuit of depth at most d with at most 2^x gates computes a function with the \
     property. p = 2 only; the constants are this library's. \
-    The learning consequences (CIKK Theorem 5.1 class form, Corollary 5.4) are not included."
+    The learning consequence for p = 2 is the separate entry cikk-learning-ac0-2."
 
 register_result "braverman" where
   title := "Braverman: polylogarithmic independence fools AC⁰"
@@ -930,6 +934,27 @@ register_result "depth-five-imm-upper" where
     and bottom sums are not counted, and there are n^(r+1) upper products where the source \
     has n^(r-1). With depth-five-imm the size is n^Θ(√n) over characteristic zero."
 
+register_result "hitting-set-derivative-closed" where
+  title := "Polynomial hitting sets for small partial-derivative spaces"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BhardwajEtAl2026, theorem := "Theorems 1.1 and 4.1 (revision 1)",
+      locator := "§1, §4" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_logHittingSet,
+    Cslib.Circuits.Arithmetic.aeval_logCurve_ne_zero,
+    Cslib.Circuits.Arithmetic.isHittingSet_sum_pow
+  ]
+  scope := "Over a field of characteristic zero, a nonzero n-variate polynomial lying in a \
+    space of dimension at most r closed under all partial derivatives does not vanish on the \
+    curve ln(1 + (i+1)t) truncated below degree n·r² + r; the points of the curve at \
+    t = 0, …, d(n·r² + r) are a hitting set for such polynomials of degree at most d, and \
+    sums of s d-th powers of linear forms have a hitting set of d(n·(s(d+1))² + s(d+1)) + 1 \
+    points. Existence and size of an explicit set only: no bit complexity, no black-box \
+    algorithm model, nothing in positive characteristic, and not the source's extension to \
+    noncommutative ABPs."
+
 /-! ## Further collected results -/
 
 register_result "sharp-p-lowness" where
@@ -1169,6 +1194,28 @@ register_result "correlated-equilibrium-hierarchy" where
     conditional form. Strictness of the inclusions is checked on examples in the test suite \
     (traffic light, Rock-Paper-Scissors), not stated as library theorems. Swap regret and \
     convergence of learning dynamics are not covered."
+
+register_result "swap-regret-approx-ce" where
+  title := "Approximate Correlated Equilibrium via Swap Regret"
+  topic := "game theory"
+  sources := [
+    { paper := BlumMansour2007, theorem := "Theorem 3 and Corollary 7",
+      locator := "pp. 1311, 1313" },
+    { paper := Roughgarden2013CS364A, theorem := unverified,
+      locator := "Lecture 18, Section 1" }
+  ]
+  theorems := [
+    Cslib.GameTheory.CostGame.timeAverage_productDist_isApproxCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.blumMansourDynamics_eq_blumMansourProb,
+    Cslib.GameTheory.CostGame.blumMansour_isApproxCorrelatedEquilibrium
+  ]
+  scope := "Finite cost-minimization games under full-information expected-cost play over a \
+    fixed known finite horizon T > 0. Shows that swap regret at most R i yields an (R i / T)-\
+    approximate correlated equilibrium, explicitly constructs the coupled multi-player \
+    Blum–Mansour trajectory blumMansourDynamics G T (with Hedge learning rate \
+    √(m_i ln m_i / T)), and proves slack 2 √(m_i ln m_i / T) when costs lie in [-1, 1], \
+    m_i ≥ 2, and T ≥ m_i ln m_i. Does not cover anytime dynamics, sampled play, last-iterate \
+    convergence, or native running time."
 
 register_result "nash-existence-bimatrix" where
   title := "Every bimatrix game has a Nash equilibrium"
@@ -2745,7 +2792,8 @@ register_result "cikk-amp-reconstruction" where
     (d) the four parameter conditions are hypotheses, where the source fixes \
     k = ceil(3c (1/eps) ln(1/gamma)) + 1. The size s of the direct-product set is an explicit \
     argument, and the seed distribution needs k > 0 and s <= k. The circuit size of the \
-    hypotheses is not bounded here, and the running time of the learner is not certified."
+    hypotheses is not bounded here (see cikk-learner-hypothesis-size), and the running time of \
+    the learner is not certified."
 
 register_result "cikk-learning-from-dense-test" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning f from a dense test that rejects \
@@ -2774,10 +2822,71 @@ register_result "cikk-learning-from-dense-test" where
     1/5, and the Nisan-Wigderson advantage is delta/(2L) instead of 1/L; (3) error, \
     confidence and k are powers of two with this library's constants, where the source has \
     k = ceil(3c (1/eps) ln(1/gamma)) + 1, and the deviations of cikk-amp-reconstruction carry \
-    over; (4) the number of queries is certified, the hypothesis size is not part of this \
-    entry, and the running time is not certified; (5) p = 2 only; (6) the test is an \
-    arbitrary Boolean function, not a natural property, so the property-to-learner form of \
-    Theorem 5.1 and Corollary 5.4 is not included."
+    over; (4) the number of queries is certified, the hypothesis size is bounded in \
+    cikk-learner-hypothesis-size, and the running time is not certified; (5) p = 2 only; \
+    (6) the test is an arbitrary Boolean function, not a natural property, so the \
+    property-to-learner form of Theorem 5.1 and Corollary 5.4 is not included."
+
+register_result "cikk-learner-hypothesis-size" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the hypotheses of the learner from a \
+    dense test are small circuits relative to the test, p = 2"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016,
+      theorem := "Theorem 5.1, the size of the hypothesis circuit", locator := "p. 10:19" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_le,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_le_two_pow,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_ampLearner_le
+  ]
+  scope := "On every target and seed, the hypothesis of the learner of \
+    cikk-learning-from-dense-test has De Morgan circuit size at most \
+    T (F+1) ((2^K - 1)(c + N + 3) + 8 + 2 (2^K - 1)(2^K + 1)) + 3T + 1, where c is the circuit \
+    size of the test, N = 2^l (2^(l-1) (2(l-1) + 3) + 1), and T, F, K are the numbers of \
+    trials, fixed positions and masks; in closed form, at most 2^(11g + 9e + 3l + 80) (c + 1). \
+    The bound composes the Nisan-Wigderson hypothesis bound (nw-reconstruction-learner), the \
+    Goldreich-Levin candidate bound and the direct-product decoder bound \
+    (complexity_dpDecode_le); complexity_eval_ampLearner_le is the step for one run of the \
+    amplification reconstruction (cikk-amp-reconstruction). The bound is affine in c with \
+    T (F+1)(2^K - 1) copies of the test. Labelled deviations: (1) with unit-cost test gates \
+    it is the size that the source's oracle circuit would have, but that oracle circuit is not \
+    built; (2) the constants, including the closed form's, are this library's and not tight; \
+    (3) size only: depth and the running time of the learner are not certified."
+
+register_result "cikk-learning-ac0-2" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning AC⁰[2] with the rank property, \
+    with quasi-polynomially many membership queries"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016,
+      theorem := "Theorem 5.1 and Corollary 5.4, p = 2",
+      locator := "p. 10:19 (Theorem 5.1 and its proof); p. 10:20 (Corollary 5.4)" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.learns_cikkLearner_rankTest,
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest,
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest_le
+  ]
+  scope := "Corollary 5.4 for p = 2 with queries counted, for a fixed depth d and size s. With \
+    g = cikkAC0Gap d e n s and l = cikkAC0Len d e n s g, the CIKK learner \
+    (cikk-learning-from-dense-test) whose test accepts the truth tables of the rank property \
+    (rank-property-natural-ac0-2) at input length l learns every function on n bits computed \
+    by a circuit of NOT, unbounded fan-in AND/OR and MOD_2 gates of depth at most d and size at \
+    most s, under the uniform distribution with membership queries, with error 2^-e and \
+    confidence 1 - 2^-h. It makes at most (h+1) 2^(12g + 6e + 59) queries, and \
+    g <= 2^(2D(5D+25)) B^(2D) with D = d + 7 and B = floor(log2(M^2 (s + 6(n+1)^2 + 3))) + 1, \
+    M = 2^(e+10)(3e+42), so for fixed d the number of queries is quasi-polynomial in n, s and \
+    2^e. Labels: (1) the rank property is this library's variant (one square matrix, threshold \
+    C(n, a)/2, level sliceLevel) with density 1/2 where Theorem 5.1 assumes largeness 1/5, and \
+    its constructivity is not used; (2) p = 2 only, where Corollary 5.4 states every prime; \
+    (3) queries are certified, but the source's running-time bound is not, nor is the \
+    hypotheses' circuit size; (4) the target class is nonuniform, fixed by d and s; (5) g and \
+    l are explicit closed forms from the fixed point l + 2 <= g, replacing the source's choice \
+    of L with log L > u^-1(poly); the generator circuits add depth 7, and all constants are \
+    this library's; (6) the deviations of cikk-learning-from-dense-test carry over. The \
+    abstract form of Theorem 5.1, from any natural property useful against a class, is not \
+    included."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
