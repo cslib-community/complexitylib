@@ -20,19 +20,22 @@ error. Yes-instances always map to yes-instances, and no-instances map to no-ins
 probability at least `2/3` (`Complexity.PromiseProblem.RPReducible`).
 
 The results hold over every `Boolean.DeMorganBasis`. Over `Boolean.DeMorgan.interpretation`, the
-constant-free basis, Multi-MCSP is exactly Definition 1 of the source [p. 22:3];
+constant-free basis, Multi-MCSP on positive instances (`MultiMCSP.Instance.Positive`) is exactly
+Definition 1 of the source [p. 22:3], so `MultiMCSP.rpHard_pos` is the source's statement;
 `Boolean.interpretation` gives the library variant with constants.
 
 **The library route.** The proof composes the library's `NP`-hardness of `GapSetCover 3`
 (`Complexity.GapSetCover_npHard`) with the reduction `MultiMCSP.Reduction.reduce` of the source's
 §4.2 [pp. 22:20–22:21], which `MultiMCSP.Reduction.computableInPolyTime_reduce` shows runs in
-polynomial time. It deviates from the source in three places, none of which changes the statement:
+polynomial time. It deviates from the source in four places, none of which changes the statement:
 
 * The source reduces from Trevisan's `r`-bounded Set Cover; here the source problem is the
   library's `GapSetCover 3`.
-* Soundness counts the cheap tables with a union bound over the windows
-  (`MultiMCSP.Window.three_mul_card_cheap_lift_le`), with OR-chain windows, in place of the
-  compression argument of Lemma 16.
+* Soundness counts the cheap tables with a union bound over small circuits
+  (`MultiMCSP.Window.three_mul_card_cheap_lift_le`), in place of the compression argument of
+  Lemma 16.
+* Each window is an OR chain sharing negations and prefix conjunctions, in place of a canonical
+  DNF [pp. 22:19–22:20]; the locality is the same.
 * The elements to cover are the positions of the ground list, rather than its distinct elements;
   repeated elements repeat a covering obligation and change no cover.
 
@@ -88,9 +91,9 @@ theorem rpHard_pos : ∀ A ∈ NP encA,
 
 /-- **Multi-MCSP is `NP`-hard under randomized reductions** [IlangoLoffOliveira2020, Theorem 4,
 p. 22:5]: every problem in `NP` reduces to Multi-MCSP by a polynomial-time randomized reduction
-with one-sided error. Over `Boolean.DeMorgan.interpretation` this is the source's statement for
-Definition 1; `Boolean.interpretation` gives the library variant with constants. The proof is the
-library route of `rpHard_pos`. -/
+with one-sided error. This forgets the positivity restriction of `rpHard_pos`, which is the form
+that matches Definition 1 exactly over `Boolean.DeMorgan.interpretation`; `Boolean.interpretation`
+gives the library variant with constants. The proof is the library route of `rpHard_pos`. -/
 theorem rpHard : ∀ A ∈ NP encA, RPReducible encA encInstance (ofSet A) (ofSet (MultiMCSP I)) :=
   fun A hA => (rpHard_pos (I := I) A hA).of_subset Set.inter_subset_left Set.inter_subset_left
 
