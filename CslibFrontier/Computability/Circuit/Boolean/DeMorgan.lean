@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Circuit.MapOp
 public import Cslib.Computability.Circuit.Boolean.Basic
 public import Cslib.Computability.Circuit.Complexity
+public import Mathlib.SetTheory.Cardinal.Finite
 
 /-!
 # The constant-free De Morgan basis
@@ -29,8 +30,10 @@ no function on zero inputs has a circuit: the basis is not complete in cslib's s
 
 `Boolean.DeMorganBasis I` packages what results stated for both bases use: a meaning-keeping map
 from the constant-free basis into the signature of `I`, which supplies binary AND, binary OR and
-unary NOT gates, together with a bound of two on every arity and finitely many operations. It has
-instances for the constant-free basis and for cslib's `Boolean.interpretation`.
+unary NOT gates, together with a bound of two on every arity and at most five operations. It has
+instances for the constant-free basis and for cslib's `Boolean.interpretation`. Only the first has
+the size measure of the source: in the second a constant costs one gate, while without constants
+it costs two (`x ∧ ¬x`), so results over cslib's basis are library variants of the source's.
 
 ## Main definitions
 
@@ -38,7 +41,7 @@ instances for the constant-free basis and for cslib's `Boolean.interpretation`.
   the constant-free De Morgan basis and its Boolean meaning.
 * `Cslib.Circuits.Boolean.DeMorgan.toBoolean`: its map into cslib's `Boolean.signature`.
 * `Cslib.Circuits.Boolean.DeMorganBasis`: interpretations with AND, OR and NOT gates, fan-in at
-  most two and finitely many operations.
+  most two and at most five operations.
 
 ## Main results
 
@@ -174,9 +177,9 @@ namespace Boolean
 
 /-- An interpretation over a *De Morgan basis*: a meaning-keeping map from the constant-free De
 Morgan basis into its signature, which supplies binary AND, binary OR and unary NOT gates, with
-every operation of arity at most two and finitely many operations. Results proved under this class
+every operation of arity at most two and at most five operations. Results proved under this class
 hold for the constant-free basis of Ilango, Loff and Oliveira and for cslib's basis with constants
-alike. -/
+alike; only the first has the source's size measure. -/
 class DeMorganBasis {σ : Signature.{v}} (I : Interpretation σ Bool) where
   /-- The AND, OR and NOT gates of the basis. -/
   hom : DeMorgan.signature.Hom σ
@@ -186,6 +189,9 @@ class DeMorganBasis {σ : Signature.{v}} (I : Interpretation σ Bool) where
   arity_le_two : ∀ op, σ.Arity op ≤ 2
   /-- The basis has finitely many operations. -/
   finite_op : Finite σ.Op
+  /-- The basis has at most five operations, as many as cslib's basis with its two constants, so
+  that counting bounds over a De Morgan basis are uniform in the basis. -/
+  card_op_le : Nat.card σ.Op ≤ 5
 
 attribute [instance] DeMorganBasis.preserves
 
@@ -195,6 +201,7 @@ instance : DeMorganBasis DeMorgan.interpretation where
   preserves := inferInstance
   arity_le_two := DeMorgan.arity_le_two
   finite_op := inferInstance
+  card_op_le := by rw [Nat.card_eq_fintype_card]; decide
 
 /-- cslib's De Morgan basis with constants is a De Morgan basis. -/
 instance : DeMorganBasis Boolean.interpretation where
@@ -202,6 +209,7 @@ instance : DeMorganBasis Boolean.interpretation where
   preserves := inferInstance
   arity_le_two op := by cases op <;> simp
   finite_op := inferInstance
+  card_op_le := by rw [Nat.card_eq_fintype_card, Op.card]
 
 end Boolean
 
