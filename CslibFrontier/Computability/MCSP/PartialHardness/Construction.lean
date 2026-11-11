@@ -49,6 +49,8 @@ Slots are indexed by term and position within the term, `Δ × Δ` of them, inst
 * `Cslib.PartialMCSP.FromCMMSA.formulaIndex_lt_of_entry_eq_some`,
   `Cslib.PartialMCSP.FromCMMSA.termParity_eq_of_entry_eq_some`: a defined entry has a formula
   index below `m`, and every term of that formula has parity equal to the entry.
+* `Cslib.PartialMCSP.FromCMMSA.entry_eq_some_of_forall_termParity`: conversely, the entry is `b`
+  when the formula index is below `m`, the formula has a term, and every term has parity `b`.
 
 ## References
 
@@ -178,5 +180,33 @@ theorem termParity_eq_of_entry_eq_some {f : VarFunctions I lam}
   split_ifs at h with hj h₁ h₂ <;> cases h
   · exact h₁ t ht
   · exact h₂ t ht
+
+/-- The converse of `termParity_eq_of_entry_eq_some`: an entry is `b` when the formula index is
+below `m`, the formula has a term, and every term has parity `b`. -/
+theorem entry_eq_some_of_forall_termParity {f : VarFunctions I lam}
+    {x : BitString (inputLength I Δ k lam)} {b : Bool} (hj : formulaIndex x < I.formulas.length)
+    (hne : ∃ t : Fin Δ, (t : ℕ) < (I.formulas.getD (formulaIndex x) []).length)
+    (hb : ∀ t : Fin Δ, (t : ℕ) < (I.formulas.getD (formulaIndex x) []).length →
+      termParity f x t = b) :
+    entry f x = some b := by
+  unfold entry
+  rw [ite_eq_left hj]
+  cases b with
+  | true => rw [ite_eq_left hb]
+  | false =>
+    obtain ⟨t₀, ht₀⟩ := hne
+    have hnot : ¬ ∀ t : Fin Δ, (t : ℕ) < (I.formulas.getD (formulaIndex x) []).length →
+        termParity f x t = true := fun h => by simpa [hb t₀ ht₀] using h t₀ ht₀
+    rw [ite_eq_right hnot, ite_eq_left hb]
+
+/-- `ℓ v` is at most the seed width for a variable `v < n`. -/
+theorem varLength_le_seedWidth {v : ℕ} (hv : v < I.weights.length) :
+    varLength I lam v ≤ seedWidth I lam :=
+  Finset.le_sup (f := varLength I lam) (Finset.mem_range.2 hv)
+
+/-- Term `t < |φ_j|` of formula `j < m` is `φ_j[t]`. -/
+theorem term_eq_getElem {j t : ℕ} (hj : j < I.formulas.length)
+    (ht : t < I.formulas[j].length) : term I j t = I.formulas[j][t] := by
+  simp [term, List.getD_eq_getElem?_getD, hj, ht]
 
 end Cslib.PartialMCSP.FromCMMSA
