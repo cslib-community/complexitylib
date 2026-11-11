@@ -54,8 +54,15 @@ explicit parity-check matrix with row weights at most `|D|`.
 
 ## References
 
-* [M. Sipser, D. A. Spielman, *Expander codes*][SipserSpielman1996], IEEE Trans. Inf. Theory 42(6):1710–1722 (1996). Section VI Lemma 15 (pp. 1715–1716) provides the local-to-global distance formula. This formalization marks the two-code, asymmetric, arbitrary-alphabet, and finite-ring extensions as original adaptations.
-* [S. Hoory, N. Linial, A. Wigderson, *Expander graphs and their applications*][HooryLinialWigderson2006], May 3, 2006 draft (`expanderbookr1.pdf`). Section 2.4 (Lemma 2.5) covers the singular-value adaptation (separating the GV coding background in §12.3.1), mapping the adjacency-eigenvalue normalization to the normalized biadjacency singular value (including bipartite trivial modes) with `d = |D|`, `N = |L| = |R|`, and edge count `d * N`.
+* [M. Sipser, D. A. Spielman, *Expander codes*][SipserSpielman1996], IEEE Trans. Inf.
+  Theory 42(6):1710–1722 (1996). Section VI Lemma 15 (pp. 1715–1716) provides the local-to-global
+  distance formula. This formalization marks the two-code, asymmetric, arbitrary-alphabet, and
+  finite-ring extensions as original adaptations.
+* [S. Hoory, N. Linial, A. Wigderson, *Expander graphs and their applications*]
+  [HooryLinialWigderson2006], May 3, 2006 draft (`expanderbookr1.pdf`). Section 2.4 (Lemma 2.5)
+  covers the singular-value adaptation (separating the GV coding background in §12.3.1), mapping
+  the adjacency-eigenvalue normalization to the normalized biadjacency singular value (including
+  bipartite trivial modes) with `d = |D|`, `N = |L| = |R|`, and edge count `d * N`.
 -/
 
 
