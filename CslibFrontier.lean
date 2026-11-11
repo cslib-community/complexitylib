@@ -4409,6 +4409,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.SchnorrIdentification
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle.Simulation
+public import CslibFrontier.Crypto.Protocols.UC.Commitment
 public import CslibFrontier.Crypto.Protocols.UC.Composition
 public import CslibFrontier.Crypto.Protocols.UC.DummyAdversary
 public import CslibFrontier.Crypto.Protocols.UC.Emulation
