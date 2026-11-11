@@ -28,13 +28,12 @@ every `y : Y` is the image of an element of `S` under one of the functions `h (s
   family.
 
 With `Y` the strings of `u` bits, `q = 2` and `p = u + 1`, covering holds when `#S ≥ 2 ^ (u + 1)`
-and fails when `(u + 1) #S < 2 ^ u`, so the existence of covering seeds approximates `log₂ #S` to
-within `log₂ (u + 1) + 1`. The test is the surjective counterpart of the approximate counting with
-linear hash functions on Cartesian powers in
-[Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam, proof of Lemma 27]
-[ChenHiraharaOliveiraPichRajgopalSanthanam2020], which certifies an upper bound on a size by
-hash functions that are injective on pieces covering the set; here the hash functions certify a
-lower bound by being jointly surjective, as in Lautemann's covering lemma [Lautemann1983].
+and fails when `(u + 1) #S < 2 ^ u`: a test that separates sizes a factor `2 (u + 1)` apart. Like
+the hashing analysis of the set lower bound protocol of Goldwasser and Sipser
+[Arora and Barak, Section 8.2][AroraBarak09], covering certifies a lower bound on a size. The
+union bound over the targets is that of Lautemann's covering lemma [Lautemann1983]
+(`Cslib.exists_forall_exists_mul_mem_of_mul_card_compl_le`), with the seeds of a pairwise
+independent family in place of shifts.
 
 ## Main definitions
 
@@ -49,9 +48,8 @@ lower bound by being jointly surjective, as in Lautemann's covering lemma [Laute
 
 ## References
 
-* [L. Chen, S. Hirahara, I. C. Oliveira, J. Pich, N. Rajgopal, R. Santhanam, *Beyond natural
-  proofs: hardness magnification and locality*][ChenHiraharaOliveiraPichRajgopalSanthanam2020]
 * [C. Lautemann, *BPP and the polynomial hierarchy*][Lautemann1983]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
 public section

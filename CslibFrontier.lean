@@ -4816,6 +4816,7 @@ public import CslibFrontier.Foundations.Data.BitString.Balanced
 public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.Foundations.Data.BitString.Binary
 public import CslibFrontier.Foundations.Data.BitString.Block
+public import CslibFrontier.Foundations.Data.BitString.BlockPower
 public import CslibFrontier.Foundations.Data.BitString.Combination
 public import CslibFrontier.Foundations.Data.BitString.Convolution
 public import CslibFrontier.Foundations.Data.BitString.Counter
