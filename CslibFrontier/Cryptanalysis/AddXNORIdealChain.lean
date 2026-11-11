@@ -25,7 +25,8 @@ calls are experiment-internal, not charged as adversary calls.
 
 This module does not prove the security inequalities of Theorem 8 or Corollary 4. In particular,
 preinstalling the planted path does not make its hidden tables independent of the public target.
-A collision/covering coupling and its quantitative bounds remain necessary. The source's
+The hidden-cut route in `AddXNORIdealCoupling` supplies a valid stopped coupling; its
+quantitative collision/covering estimates remain open. The source's
 Lemma 10 literal frontier-only simulator can violate table injectivity after a collision;
 the search client records a checked example. No equivalence to that simulator is asserted.
 
@@ -106,7 +107,8 @@ The adversary's budget excludes the two internal walks. -/
   return decide (endpoint = target)
 
 omit [Fintype Word] [DecidableEq Word] [Nonempty Word] in
-private theorem walk_queryBound (path : List (Label q)) (seed : Word) :
+/-- A forward path lifted into a private-coin program makes one external call per label. -/
+theorem walk_queryBound (path : List (Label q)) (seed : Word) :
     ProbOracleComp.IsQueryBounded
       (liftRight (spec₁ := unifSpec) (walk path seed)) path.length := by
   induction path generalizing seed with

@@ -1518,8 +1518,8 @@ return zero, violating that table's injectivity. `planted_trace_impossible`
 proves that the same three answers are impossible in the true planted experiment.
 The parameters satisfy Theorem 8's range. This trace already has a collision
 (`BAD`), so it does not challenge the collision-free coupling. It refutes exact
-simulation as written, **not** Theorem 8's inequality; repairing the simulator
-and proving the adversary-quantified lower bound remain open.
+simulation as written, **not** Theorem 8's inequality. A valid hidden-cut planting law
+is supplied below; the adversary-quantified numerical lower bound remains open.
 
 The actual ideal experiment is now available in
 [AddXNORIdealChain.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealChain.lean).
@@ -1538,6 +1538,37 @@ it does not pretend the hidden tables are independent of the public target.
 The [client](../../CslibFrontierTests/AddXNORIdealChain.lean) exercises a three-cycle,
 inverse access, a private-coin adaptive program and the zero-layer boundary.
 
+The [hidden-cut construction](../../CslibFrontier/Cryptanalysis/AddXNORIdealCut.lean)
+now supplies a valid planted/independent coupling. `source_uniform_splice` changes one
+permutation by swapping its old image with the desired cut output. Prefix and suffix
+permutations are unchanged; forcing the old endpoint reverses the whole change of
+variables. This involution proves the actual planted joint law, including subsequent
+adaptive observations, even on collision traces. It repairs the displaced preimage too;
+no invalid partial injection or assumed frontier simulation is used.
+
+[AddXNORIdealCoupling.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealCoupling.lean)
+instantiates `identicalUntilBad` with concrete logged readers and a sticky
+answer-disagreement flag. `coupledDecision_planted` identifies the changed reader with
+the true planted law, and `coupledDecision_original` identifies the original reader with
+the independent-target law. `decision_advantage_le_visibleBad` bounds their actual
+advantage by the actual visible stopping game. `Visible.badGame_trace` erases the
+instrumentation: the stopping event is exactly a changed request in the original reader's
+ordinary transcript. `Visible.badGame_le_cutHit` bounds it by hitting the four explicit
+forward/inverse cut points computed from the original permutations and hidden word.
+The visible log has at most $T$ entries for a $T$-query decision adversary.
+`verifiedAdversary_queryBound` gives $T+q$ for search and verification; hidden installation
+calls never enter that log. `search_comparison` composes this with the original planted
+search law and an independent-target verification game. The
+[coupling client](../../CslibFrontierTests/AddXNORIdealCoupling.lean) checks a forced,
+already-occupied target, its repaired preimage, a genuine endpoint change, no-query
+public-input equality, and an exact private-coin stopping probability of $1/2$.
+
+These are proved coupling/experiment bounds, **not** numerical collision or covering
+estimates. The remaining obligation is to bound the actual cut-hit/stopping game on
+visible transcripts (and independent verification for the search comparison) using the
+no-collision forest and hidden-word counting argument. No source constant, improved
+constant, or asymptotic ideal-chain lower bound is concluded by this milestone.
+
 The repaired *claim to be proved* is precisely Section 6, Theorem 8 (PDF p. 25):
 $q\ge3$, $h=\lceil q/2\rceil$ and $\max(q,4)\le T\le2^{m-3}$ imply success at most
 $3T/2^h+10T^2/2^m+2^{-q}$. Corollary 4 (p. 28) omits the guessing term for
@@ -1546,12 +1577,11 @@ $\Omega(\min(2^{q/2},2^{m/2}))$, specializing to $\Omega(2^{q/2})$ when $m\ge q$
 The birthday term and the planted, independent-permutation oracle model are essential;
 this is not an unconditional arithmetic-instance or worst-case existence lower bound.
 The further simulator repair required by the checked trace above must replace the
-literal Lemma 10 law, not assume it. The exact experiments now avoid its invalid-table
-behavior, but their eager/lazy laws alone prove no security: the planted/independent
-`identicalUntilBad` coupling, collision and forest-covering bounds, and success analysis
-are still missing. These are distinct from the source's qualified claim and are not
-justified by calling a sampler “repaired”. Here the repair concerns the qualified oracle
-claim and a valid simulation law, not a new arithmetic hardness theorem.
+literal Lemma 10 law, not assume it. The exact experiments avoid its invalid-table
+behavior. The stopped coupling above compares the actual planted and independent games;
+numerical collision/forest-covering estimates and the final search-success analysis remain
+open. Here the repair concerns the qualified oracle claim and a valid simulation law,
+not a new arithmetic hardness theorem.
 
 ### STOC733 main-result coverage inventory
 
@@ -1584,8 +1614,8 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.plantedSearch`, `IdealChain.plantedSearch_eq_lazy`, `IdealChain.plantedProgram_queryBound` | Partial: actual experiment and exact lazy law; security inequality missing |
-| Corollary 4, p. 28 | `IdealChain.decision`, `IdealChain.decision_eq_lazy` | Partial: both actual laws; advantage bound missing |
+| Theorem 8, pp. 25–28 | `IdealChain.plantedSearch`, `IdealChain.search_comparison`, `IdealChain.verifiedAdversary_queryBound` | Partial: actual stopped search comparison; numerical security inequality missing |
+| Corollary 4, p. 28 | `IdealChain.coupledDecision_planted`, `IdealChain.decision_advantage_le_visibleBad` | Partial: actual coupling and visible-event advantage bound; numerical bound missing |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
 balanced yes-instance cannot satisfy width $0$ when $v=0$.

@@ -369,9 +369,15 @@ with private-coin bidirectional adversaries. Its exact lazy laws reuse independe
 indexed permutation tables and prove validity on supported prefixes, including collisions.
 Do not identify these laws with the false literal frontier simulator in source Lemma 10,
 or infer a security bound from them: preinstalled planted tables depend on the target.
-The next obligation is a genuine planted/independent stopping-event coupling and the
-collision/forest-covering inequalities, using `identicalUntilBad`. The Operator's Manual's
-STOC733 source inventory lists the missing Theorem 8/Corollary 4 security clauses and the
+In `AddXNORIdealCut`, `IdealChain.source_uniform_splice` proves the planted joint law
+by a reversible single-cut image swap, with no collision-free or simulation premise. `AddXNORIdealCoupling`
+instantiates `identicalUntilBad` on concrete visible readers and identifies both source
+worlds. `decision_advantage_le_visibleBad` and `search_comparison` charge their actual
+visible stopping event; `verifiedAdversary_queryBound` counts only $T+q$ calls for search
+and verification. The next obligation is numerical collision/forest-covering analysis of
+that event and independent verification, not another sampler or coupling contract.
+No numerical source constant or alternative asymptotic bound is yet proved.
+The Operator's Manual's STOC733 source inventory lists the missing Theorem 8/Corollary 4 security clauses and the
 retained width/MSB qualifications. ALL-main acceptance is not yet warranted.
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.

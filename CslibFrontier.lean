@@ -3778,6 +3778,8 @@ public import CslibFrontier.Cryptanalysis.AddXNORGroupedQuarter
 public import CslibFrontier.Cryptanalysis.AddXNORGuard
 public import CslibFrontier.Cryptanalysis.AddXNORGuardedChain
 public import CslibFrontier.Cryptanalysis.AddXNORIdealChain
+public import CslibFrontier.Cryptanalysis.AddXNORIdealCoupling
+public import CslibFrontier.Cryptanalysis.AddXNORIdealCut
 public import CslibFrontier.Cryptanalysis.AddXNORJoinedDissection
 public import CslibFrontier.Cryptanalysis.AddXNORJoinedProbe
 public import CslibFrontier.Cryptanalysis.AddXNORMatcherResources
@@ -5518,6 +5520,7 @@ public import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 public import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation.ExtPermsCard
+public import CslibFrontier.Languages.Probabilistic.RandomPermutation.Reprogramming
 public import CslibFrontier.Languages.Probabilistic.RandomPermutationFamily
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Retry
