@@ -955,8 +955,8 @@ when its numerical statement is already proved. The full objective in
 | Unrestricted Theorem 5 source coverage, PDF pp. 4–6, 11–12 | Native epoch/whole-policy representation and the preceding controller APIs | Partial: unrestricted source query/cutoff and external-machine realization, broader unbounded-horizon/divergent-path real-cost packaging and general measurable interfaces remain. Domination needed for measurable/unbounded progress is blocked on #4336; the other representation obligations are not blocked on that issue. |
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
-| Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. Actual receipt/raw-history parsing, certification, residual, guard and decoded runtime result are now derived for arbitrary X3C families. Canonical-role correspondence, source admission of the computed follow-up and the complete controller’s general optimal-output law remain unproved. |
-| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualOracle.response_factor`, `response_available`, `response_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`; `NativeResidualOptimum.accept_eq`, `two_lower` | Partial: clockless native epoch tables now preserve admitted sure success, and explicit per-call price/invoice identification transfers the behavioral two-turn lower bound to actual accrued bills, including divergent prefixes. The decoded source certificate equals optimal-cover acceptance; the lower bound specializes the existing common-oracle Theorem 5 native OPT over all admitted finite-control machines. Native attainment, the one-turn lower/equality, exact two-turn minimum/ratio and compiled cost-optimal uniform selectors remain open, as does arbitrary-real invoice representation. These paper-local obligations are not blocked on #4335 or #4336. |
+| Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. Actual receipt/raw-history parsing, certification, residual, guard and decoded runtime result are now derived for arbitrary X3C families. The legacy least-element controller still needs canonical-role specialization. `NativeResidualRouting.controller true` instead reads the known role subuniverses from original runtime metadata, and `NativeResidualAttainment.native_law`, `native_certified`, `native_selectionOnly` and `native_expected_cost` derive original-input dispatch, native admission, certified tape success and actual bills for arbitrary point labels. |
+| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualOracle.response_factor`, `response_available`, `response_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`; `NativeResidualOptimum.accept_eq`, `two_lower`; `NativeResidualAttainment.native_cost_mem`, `native_optimum_of_adaptive_le` | Partial: clockless native epoch tables now preserve admitted sure success, and explicit per-call price/invoice identification transfers the behavioral two-turn lower bound to actual accrued bills, including divergent prefixes. The decoded source certificate equals optimal-cover acceptance; the lower bound specializes the existing common-oracle Theorem 5 native OPT over all admitted finite-control machines. The uniform runtime-role adaptive controller now attains its exact actual bill in this same native class, and `NativeResidualAttainment.native_optimum_of_adaptive_le` proves OPT equality when near-then-residual is no dearer than all specialists. The complementary all-specialist attainment, native one-turn lower/equality, full two-turn equality/ratio and cost-aware uniform choice remain open, as does arbitrary-real invoice representation. These paper-local obligations are not blocked on #4335 or #4336. |
 
 Not everything outside #4335/#4336 is present. In particular, the native
 Theorem 6 obligations and the separate Theorem 5 representation obligations in
@@ -1184,8 +1184,10 @@ bills are exactly those of `BatchOptimum.optimum`; no finite hidden-state or loc
 clock bound is introduced. The source prices here are positive natural invoices
 cast to reals. Arbitrary-real invoice representation, native attainment, the
 one-turn lower/equality, the two-turn equality/ratio and compiled cost-aware
-uniform selectors remain open. The general adaptive upper program still needs
-canonical-role/follow-up admission and its arbitrary-family success law.
+uniform selectors remain open. The legacy component-order upper program still needs canonical-role specialization.
+The runtime-role adaptive variant below derives source admission and arbitrary-family
+certified output, and attains the adaptive cost; the complementary all-specialist
+attainment remains open.
 
 The [native-policy client](../../CslibFrontierTests/StochasticOracleNativeResidualPolicies.lean)
 uses the five overlapping-triple blocks and an actual full-reply native reader
@@ -1203,6 +1205,71 @@ This does not prove that every computed upper-program query is source valid. Run
 The Agent Operator's Manual needs no edit: workflow, ownership and human direction
 are unchanged. No curated abstract or result is promoted to an unrestricted
 Theorem 5/6 or ALL-main claim.
+
+### Submission 191: attained adaptive native optimum
+
+Import [NativeResidualAttainment](../../CslibFrontier/Probability/StochasticOracle/NativeResidualAttainment.lean).
+The new runtime-role routing variant uses the same approved clockless feedback
+compiler and the exact `GuardedStartup.encoding` input used by `BatchOptimum`.
+The source says the PTM knows the oracle roles and their guarantees (PDF p. 13).
+`universes` and `input` encode those known subuniverses in a leading private
+frame, alongside the original WSC data. They encode no hidden cover or prepared
+runtime state. `roles_initial` and `roles_afterNear` derive actual decoding and
+preservation of that metadata through arbitrary replies.
+
+The legacy component-order selector assigns roles by least original point. The
+routing variant compares the actual retained residual with the known role
+subuniverses, so original point and candidate enumerations are arbitrary.
+`second_slots`, `first_source` and `second_source` derive the exact preformed
+near/specialist requests, source acceptance and response law. `native_law`
+composes them with the original-input compiled controller and full reply reader;
+`native_resources` preserves joint native tape output, memory, invoices and
+oracle duration. Every missing block has its actual positive source mass.
+
+For this **same named program** `native_selectionOnly` proves admission on all
+finite halted executions, `native_certified` proves certified tape success one
+by the oracle deadline two, and `native_expected_cost` proves
+$$
+mathbb E[mathrm{bill}]=c_0+sum_j p_jc_j.
+$$
+Termination is derived from the concrete native law. The general
+`NativeBatch.Quantitative.expected_charge_eq_terminal` then identifies terminal
+invoices with the original whole-trace accrued-cost expectation, retaining the
+trace convention for divergent prefixes. No termination, integrability,
+bounded-total-bill or desired expected-cost premise is supplied to attainment.
+The per-call prices are explicitly the positive natural wire invoices cast to
+reals, as in the lower-bound convention.
+
+`native_cost_mem` places this exact cost in the existing Theorem 5 native
+competitor class; it is not a behavioral score or a fresh surrogate optimum.
+`native_optimum_of_adaptive_le` combines the attained upper bound with the
+universal lower bound, proving
+$$
+mathrm{OPT}_{mathrm{native},2}=c_0+sum_jp_jc_j
+quad	ext{when}quad c_0+sum_jp_jc_jlesum_jc_j.
+$$
+The proof-only reindexing of the decoded candidate count preserves the exact
+source sampler, query bytes, masks and invoices (`source_reindex`,
+`sample_reindex`). The adaptive program and all competitors use the same oracle and seed.
+
+The [attainment client](../../CslibFrontierTests/StochasticOracleNativeResidualAttainment.lean)
+uses five six-point overlapping-triple blocks and uniform near residuals, with
+near invoice two and specialist invoices one through five. It derives certified
+native success one, the response-dependent joint invoices and duration, exact
+accrued expectation five, and attained native OPT five. Different residuals select
+different actual requests and invoices. It also checks duplicate/order-insensitive
+subuniverse comparison and preservation of the role frame under arbitrary replies.
+Run `lake build CslibFrontierTests.StochasticOracleNativeResidualAttainment`.
+
+The complementary all-specialist attainment is still open. Although the fixed
+all-specialist mode has a compiled joint feedback law, its general source
+certification, native cost membership and optimum upper bound are not claimed.
+Native one-turn lower/equality, the full two-turn minimum/ratio and uniform
+cost-aware strategy choice also remain open. This section closes the adaptive
+attainment case, not unrestricted Theorem 6 or the whole paper. The Agent
+Operator's Manual needs no edit: roles, operating procedures and human direction
+are unchanged. The curated abstract/results inventory is not promoted.
+
 
 ### Submission 191: a concrete native-to-behavioral bridge
 

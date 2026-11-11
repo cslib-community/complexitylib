@@ -64,6 +64,13 @@ the `Block.witness` fields are not encoded. -/
     List.ofFn (fun c => rationalWeight T (candidates c)),
     List.ofFn (fun e => rationalDual T (points e)), 1⟩
 
+/-- Changing only a proof of the number of candidate labels preserves the
+original WSC bytes. This transports indices, not the mathematical instance. -/
+theorem source_reindex {m' : ℕ} (h : m' = m) :
+    source T points ((finCongr h).trans candidates) = source T points candidates := by
+  subst m'
+  rfl
+
 /-- The source universe has exactly its original finite point labels. -/
 theorem ground_length : (source T points candidates).dual.length = n := List.length_ofFn
 

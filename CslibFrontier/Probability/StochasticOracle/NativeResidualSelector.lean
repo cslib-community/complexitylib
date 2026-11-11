@@ -11,6 +11,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.SourceE
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Feedback
 public import CslibFrontier.Probability.StochasticOracle.ResidualCover
 public import CslibFrontier.Computability.Probabilistic.NativeBatch
+public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FlatEncoding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
@@ -49,7 +50,7 @@ native optimum and uniform optimal-output theorem are not yet proved here.
 ## Main results
 
 * `region_eq`: incidence scans recover blocks whenever common incidence identifies them.
-* `computable_request`: uniform native compilation of residual-directed source packets.
+* `computable_residual`, `computable_request`: native residual scans and source packet compilation.
 * `controller_law`: original-input same-code execution with arbitrary correlated environments.
 * `controller_protocol`: termination and exact accepted-source resource/provenance meters.
 -/
@@ -131,22 +132,10 @@ interface size is runtime data, not a compilation parameter. -/
     if selected state i then
       true :: Kolmogorov.selfDelimitingCode (queryEncoding (query state)) else [false]
 
-private def slotWord : Option Word → Word
-  | none => [false]
-  | some word => true :: Kolmogorov.selfDelimitingCode word
-
-private theorem encode_flatMap (n : ℕ) (f : Fin n → Option Word) :
-    encodeSlots n f = (List.ofFn f).flatMap slotWord := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    rw [List.ofFn_succ, List.flatMap_cons, encodeSlots, ih]
-    cases f 0 <;> rfl
-
 /-- The runtime-list implementation is precisely the original concurrent codec. -/
 theorem request_eq (state : RuntimeControl.State) :
     request state = encodeSlots state.work.opportunities (slots state) := by
-  rw [encode_flatMap, List.ofFn_eq_map, List.flatMap_map]
+  rw [encodeSlots_flatMap, List.ofFn_eq_map, List.flatMap_map]
   unfold request
   rw [← List.map_coe_finRange_eq_range, List.flatMap_map]
   apply List.flatMap_congr
@@ -203,7 +192,8 @@ private theorem retained_coverage_computable : ComputableInPolyTime
       RuntimeControl.encoding encInput := Packets.computable_assemble.comp work_computable
   exact NativeRetention.computable_covered.comp (ha.prod (computable_retain.comp ha))
 
-private theorem residual_computable : ComputableInPolyTime residual RuntimeControl.encoding
+/-- Compute the actual retained-cover residual from the original instance and raw history. -/
+theorem computable_residual : ComputableInPolyTime residual RuntimeControl.encoding
     (encList encUnary) := by
   have ha : ComputableInPolyTime (fun state : RuntimeControl.State => Packets.assemble state.work)
       RuntimeControl.encoding encInput := Packets.computable_assemble.comp work_computable
@@ -218,7 +208,7 @@ private theorem selected_computable : ComputableInPolyTime
     (fun p : RuntimeControl.State × ℕ => selected p.1 p.2)
     (encPair RuntimeControl.encoding encUnary) encBool := by
   have hr := representatives_computable
-  have ht := residual_computable
+  have ht := computable_residual
   unfold selected target
   fun_prop
 
@@ -233,7 +223,7 @@ private theorem query_computable : ComputableInPolyTime query RuntimeControl.enc
         if state.turns = 2 then ground state.work.system else residual state)
       RuntimeControl.encoding (encList encUnary) :=
     ComputableInPolyTime.ite_decide he (NativeRetention.computable_ground.comp hs)
-      residual_computable
+      computable_residual
   exact (hs.prod hp).of_enc_eq fun _ => rfl
 
 private theorem word_computable : ComputableInPolyTime

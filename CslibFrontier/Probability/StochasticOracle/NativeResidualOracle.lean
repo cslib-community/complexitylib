@@ -89,6 +89,15 @@ full-support missing-block law only after selection, even if its query is wrong.
   fun _ batch => ((reply P (calls batch)).toPMF).map fun r =>
     (paths T points candidates invoice batch r, ())
 
+/-- A proof-only reindexing of the candidate count preserves the same actual
+sampler, including query bytes, returned masks, invoices and source randomness. -/
+theorem sample_reindex {m' : ℕ} (h : m' = m) (P : Parameters z)
+    (invoice : Fin (z + 1) → ℕ) :
+    sample T points ((finCongr h).trans candidates) P invoice =
+      sample T points candidates P invoice := by
+  subst m'
+  rfl
+
 /-- Each original opportunity is selected exactly when its original source call
 label appears in the pre-response action. -/
 theorem mem_calls (batch : ConcurrentBatch.Batch (z + 1)) (i : Fin (z + 1)) :
