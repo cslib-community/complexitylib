@@ -14,11 +14,11 @@ import CslibFrontier.Foundations.Computability.ComputablePred
 /-!
 # Trakhtenbrot's theorem for Mathlib sentences
 
-**Trakhtenbrot's theorem** ([Trakhtenbrot1950]) in the form of [Libkin2004], Theorem 9.2 and
-Corollary 9.3, for Mathlib's `L.Sentence`: for a finite relational language `L` with a binary
-relation symbol, finite satisfiability of sentences is r.e. but undecidable, and finite validity is
-co-r.e. but not r.e., so no effective proof system is sound and complete for truth in all finite
-structures.
+**Trakhtenbrot's theorem** ([Trakhtenbrot1950]; compare [Libkin2004], Theorem 9.2 and
+Corollary 9.3, for the binary case) for Mathlib's `L.Sentence`: for a finite relational language `L`
+with a relation symbol of arity at least `2`, finite satisfiability of sentences is r.e. but
+undecidable, and finite validity is co-r.e. but not r.e., so no effective proof system is sound and
+complete for truth in all finite structures.
 
 The statements use the raw coding of sentences,
 `FirstOrder.Language.BoundedFormula.primcodableRaw`, through its scoped instance
@@ -31,23 +31,26 @@ The r.e. half follows from the raw result `Cslib.Logic.FO.RawFormula.rePred_finS
 primitive recursive translation `FirstOrder.Language.BoundedFormula.toRaw`, which preserves finite
 satisfiability (`FirstOrder.Language.Sentence.finSat_iff_toRaw`). The undecidability half reduces
 the raw theorem `Cslib.Logic.FO.RawFormula.not_computablePred_finSat` along
-`FirstOrder.Language.Sentence.binarize R`: a raw formula is reduced to a raw sentence over the one
-binary symbol `encode ⟨2, R⟩` (`Cslib.Logic.FO.RawFormula.binarize`), renamed into level-named form
-(`Cslib.Logic.FO.RawFormula.levels`) and decoded as an `L.Sentence`
+`FirstOrder.Language.Sentence.singleRel R`: a raw formula is reduced to a raw sentence over the one
+symbol `encode ⟨l, R⟩` of arity `l ≥ 2` (`Cslib.Logic.FO.RawFormula.singleRel`), renamed into
+level-named form (`Cslib.Logic.FO.RawFormula.levels`) and decoded as an `L.Sentence`
 (`FirstOrder.Language.BoundedFormula.fromRaw`).
 
-**Scope.** The language must be relational with finitely many relation symbols, one of them
-binary. Languages with function symbols, infinite vocabularies, and vocabularies whose only
-non-unary symbols have arity at least three are not covered.
+**Scope.** The language must be relational with finitely many relation symbols, at least one of
+arity `2` or more ([Libkin2004], Theorem 9.2, proves the binary case; higher arities pad binary
+atoms by repeating the second argument). Languages with function symbols, infinite vocabularies, and
+the decidable monadic converse (all relation symbols of arity at most `1`) are not covered here.
 
 ## Main definitions
 
-* `FirstOrder.Language.Sentence.binarize`: the reduction from raw formulas.
+* `FirstOrder.Language.Sentence.singleRel`: the reduction from raw formulas to sentences over a
+  single relation symbol of arity at least `2`.
 
 ## Main results
 
-* `FirstOrder.Language.Sentence.finSat_binarize`, `FirstOrder.Language.Sentence.primrec_binarize`:
-  the reduction.
+* `FirstOrder.Language.Sentence.toRaw_singleRel`,
+  `FirstOrder.Language.Sentence.finSat_singleRel`,
+  `FirstOrder.Language.Sentence.primrec_singleRel`: the reduction.
 * `FirstOrder.Language.Sentence.rePred_finSat`: finite satisfiability is r.e.
 * `FirstOrder.Language.Sentence.not_computablePred_finSat`: **Trakhtenbrot's theorem**.
 * `FirstOrder.Language.Sentence.not_rePred_finValid`,
@@ -74,38 +77,39 @@ open scoped BoundedFormula.RawCoding
 
 variable {L : Language} [Encodable (Σ l, L.Relations l)]
 
-/-- **The reduction from raw formulas to `L.Sentence`**: the sentence over the binary symbol `R`
-decoded from the level-named form of `Cslib.Logic.FO.RawFormula.binarize (encode ⟨2, R⟩) ψ`. The
-decoding always succeeds (`FirstOrder.Language.Sentence.toRaw_binarize`); `⊥` is a default. -/
-def binarize (R : L.Relations 2) (ψ : RawFormula) : L.Sentence :=
+/-- **The reduction from raw formulas to `L.Sentence`**: the sentence over the relation symbol `R`
+(of arity `l ≥ 2`) decoded from the level-named form of
+`Cslib.Logic.FO.RawFormula.singleRel (encode ⟨l, R⟩) l ψ`. When `2 ≤ l`, the decoding always
+succeeds (`FirstOrder.Language.Sentence.toRaw_singleRel`); `⊥` is a default. -/
+def singleRel {l : ℕ} (R : L.Relations l) (ψ : RawFormula) : L.Sentence :=
   (fromRaw 0 (RawFormula.levels
-    (RawFormula.binarize (encode (⟨2, R⟩ : Σ l, L.Relations l)) ψ))).getD ⊥
+    (RawFormula.singleRel (encode (⟨l, R⟩ : Σ l, L.Relations l)) l ψ))).getD ⊥
 
 variable [L.IsRelational]
 
-theorem toRaw_binarize (R : L.Relations 2) (ψ : RawFormula) :
-    toRaw (binarize R ψ) =
-      RawFormula.levels (RawFormula.binarize (encode (⟨2, R⟩ : Σ l, L.Relations l)) ψ) := by
+theorem toRaw_singleRel {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l) (ψ : RawFormula) :
+    toRaw (singleRel R ψ) =
+      RawFormula.levels (RawFormula.singleRel (encode (⟨l, R⟩ : Σ l, L.Relations l)) l ψ) := by
   have hw := RawFormula.wellScoped_levels_of_isSentenceOver
-    (RawFormula.isSentenceOver_binarize (encode (⟨2, R⟩ : Σ l, L.Relations l)) ψ)
+    (RawFormula.isSentenceOver_singleRel (s := encode (⟨l, R⟩ : Σ l, L.Relations l)) hl ψ)
   have hs : (fromRaw (L := L) (α := Empty) 0 (RawFormula.levels
-      (RawFormula.binarize (encode (⟨2, R⟩ : Σ l, L.Relations l)) ψ))).isSome := by
+      (RawFormula.singleRel (encode (⟨l, R⟩ : Σ l, L.Relations l)) l ψ))).isSome := by
     refine isSome_fromRaw.2 (hw.mono (fun _ h => h.elim) fun r k h => ?_)
     obtain ⟨hr, hk⟩ := Prod.ext_iff.1 (Set.mem_singleton_iff.1 h)
-    exact ⟨⟨2, R⟩, hr.symm, hk.symm⟩
+    exact ⟨⟨l, R⟩, hr.symm, hk.symm⟩
   obtain ⟨φ, hφ⟩ := Option.isSome_iff_exists.1 hs
-  rw [binarize, hφ, Option.getD_some]
+  rw [singleRel, hφ, Option.getD_some]
   exact toRaw_of_fromRaw hφ
 
-theorem finSat_binarize (R : L.Relations 2) (ψ : RawFormula) :
-    FinSat (binarize R ψ) ↔ RawFormula.FinSat ψ := by
-  rw [finSat_iff_toRaw, toRaw_binarize, RawFormula.finSat_levels, RawFormula.finSat_binarize]
+theorem finSat_singleRel {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l) (ψ : RawFormula) :
+    FinSat (singleRel R ψ) ↔ RawFormula.FinSat ψ := by
+  rw [finSat_iff_toRaw, toRaw_singleRel R hl, RawFormula.finSat_levels, RawFormula.finSat_singleRel]
 
 variable [Finite (Σ l, L.Relations l)]
 
-theorem primrec_binarize (R : L.Relations 2) : Primrec (binarize R) :=
+theorem primrec_singleRel {l : ℕ} (R : L.Relations l) : Primrec (singleRel R) :=
   Primrec.option_getD.comp (primrec_fromRaw.comp (RawFormula.primrec_levels.comp
-    (RawFormula.primrec_binarize _))) (Primrec.const ⊥)
+    (RawFormula.primrec_singleRel _ _))) (Primrec.const ⊥)
 
 /-- **Finite satisfiability is r.e.** ([Libkin2004], Chapter 9), for sentences of a finite
 relational language. -/
@@ -118,41 +122,50 @@ theorem rePred_not_finValid : REPred fun φ : L.Sentence => ¬FinValid φ :=
   (rePred_finSat.comp primrec_not.to_comp).of_eq fun φ => by
     rw [finValid_iff_not_finSat_not, not_not]
 
-/-- **Trakhtenbrot's theorem** ([Libkin2004], Theorem 9.2): for a finite relational language with
-a binary relation symbol `R`, finite satisfiability of sentences is undecidable. -/
-theorem not_computablePred_finSat (R : L.Relations 2) : ¬ComputablePred (FinSat (L := L)) :=
+/-- **Trakhtenbrot's theorem** (extending [Libkin2004], Theorem 9.2): for a finite relational
+language with a relation symbol `R` of arity `l ≥ 2`, finite satisfiability of sentences is
+undecidable. -/
+theorem not_computablePred_finSat {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l) :
+    ¬ComputablePred (FinSat (L := L)) :=
   fun h => RawFormula.not_computablePred_finSat <|
-    (h.comp (primrec_binarize R).to_comp).of_eq fun ψ => finSat_binarize R ψ
+    (h.comp (primrec_singleRel R).to_comp).of_eq fun ψ => finSat_singleRel R hl ψ
 
-/-- Finite unsatisfiability is not r.e., for a finite relational language with a binary relation
-symbol `R`. -/
-theorem not_rePred_not_finSat (R : L.Relations 2) : ¬REPred fun φ : L.Sentence => ¬FinSat φ :=
+/-- Finite unsatisfiability is not r.e., for a finite relational language with a relation symbol `R`
+of arity `l ≥ 2`. -/
+theorem not_rePred_not_finSat {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l) :
+    ¬REPred fun φ : L.Sentence => ¬FinSat φ :=
   fun h => RawFormula.not_rePred_not_finSat <|
-    (h.comp (primrec_binarize R).to_comp).of_eq fun ψ => by rw [finSat_binarize]
+    (h.comp (primrec_singleRel R).to_comp).of_eq fun ψ => by rw [finSat_singleRel R hl]
 
-/-- **Finite validity is not r.e.** ([Libkin2004], Corollary 9.3), for a finite relational language
-with a binary relation symbol `R`. -/
-theorem not_rePred_finValid (R : L.Relations 2) : ¬REPred (FinValid (L := L)) :=
-  fun h => not_rePred_not_finSat R <| (h.comp primrec_not.to_comp).of_eq fun φ =>
+/-- **Finite validity is not r.e.** (extending [Libkin2004], Corollary 9.3), for a finite relational
+language with a relation symbol `R` of arity `l ≥ 2`. -/
+theorem not_rePred_finValid {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l) :
+    ¬REPred (FinValid (L := L)) :=
+  fun h => not_rePred_not_finSat R hl <| (h.comp primrec_not.to_comp).of_eq fun φ =>
     finValid_not_iff φ
 
-/-- Finite validity is undecidable, for a finite relational language with a binary relation
-symbol `R`. -/
-theorem not_computablePred_finValid (R : L.Relations 2) : ¬ComputablePred (FinValid (L := L)) :=
-  fun h => not_rePred_finValid R h.to_re
+/-- Finite validity is undecidable, for a finite relational language with a relation symbol `R` of
+arity `l ≥ 2`. -/
+theorem not_computablePred_finValid {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l) :
+    ¬ComputablePred (FinValid (L := L)) :=
+  fun h => not_rePred_finValid R hl h.to_re
 
-/-- **Incompleteness for finite validity.** For a finite relational language with a binary relation
-symbol `R`, every r.e. set of finitely valid sentences misses some finitely valid sentence. -/
-theorem exists_finValid_not_of_rePred (R : L.Relations 2) {S : L.Sentence → Prop} (hS : REPred S)
-    (hsound : ∀ φ, S φ → FinValid φ) : ∃ φ, FinValid φ ∧ ¬S φ :=
-  hS.exists_not_of_not_rePred (not_rePred_finValid R) hsound
+/-- **Incompleteness for finite validity.** For a finite relational language with a relation symbol
+`R` of arity `l ≥ 2`, every r.e. set of finitely valid sentences misses some finitely valid
+sentence. -/
+theorem exists_finValid_not_of_rePred {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l)
+    {S : L.Sentence → Prop} (hS : REPred S) (hsound : ∀ φ, S φ → FinValid φ) :
+    ∃ φ, FinValid φ ∧ ¬S φ :=
+  hS.exists_not_of_not_rePred (not_rePred_finValid R hl) hsound
 
 /-- **No sound and complete proof system for finite validity.** For a finite relational language
-with a binary relation symbol `R`: if `P φ π` ("`π` is a proof of `φ`") is a decidable relation and
-only finitely valid sentences have proofs, then some finitely valid sentence has no proof. -/
-theorem exists_finValid_unprovable (R : L.Relations 2) {β : Type*} [Primcodable β]
-    {P : L.Sentence → β → Prop} (hP : ComputablePred (Function.uncurry P))
-    (hsound : ∀ φ π, P φ π → FinValid φ) : ∃ φ, FinValid φ ∧ ∀ π, ¬P φ π :=
-  hP.exists_forall_not_of_not_rePred (not_rePred_finValid R) hsound
+with a relation symbol `R` of arity `l ≥ 2`: if `P φ π` ("`π` is a proof of `φ`") is a decidable
+relation and only finitely valid sentences have proofs, then some finitely valid sentence has no
+proof. -/
+theorem exists_finValid_unprovable {l : ℕ} (R : L.Relations l) (hl : 2 ≤ l)
+    {β : Type*} [Primcodable β] {P : L.Sentence → β → Prop}
+    (hP : ComputablePred (Function.uncurry P)) (hsound : ∀ φ π, P φ π → FinValid φ) :
+    ∃ φ, FinValid φ ∧ ∀ π, ¬P φ π :=
+  hP.exists_forall_not_of_not_rePred (not_rePred_finValid R hl) hsound
 
 end FirstOrder.Language.Sentence
