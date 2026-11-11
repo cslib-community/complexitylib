@@ -862,10 +862,8 @@ private theorem length_frame_encHeader_add_le {n s : ℕ} {p : List Bool} (hp : 
     (frame (encHeader ((n, s), (p, (j : ℕ))))).length + (stateWidth n s + stateWidth n s) ≤
       48 * (n + s + 1) ^ 2 := by
   have hj : (j : ℕ) < stateWidth n s := j.isLt
-  have hcert : certLength n s ≤ 5 * (n + s + 1) ^ 2 := by
-    unfold certLength
-    nlinarith
-  have hsw : stateWidth n s ≤ 5 * (n + s + 1) ^ 2 + 1 := by
+  have hsw : stateWidth n s ≤ 3 * (n + s + 1) ^ 2 + 1 := by
+    have := certLength_le_three_mul_sq n s
     unfold stateWidth
     omega
   simp only [encHeader, length_frame, length_encPair, encUnary_apply, List.length_replicate,
