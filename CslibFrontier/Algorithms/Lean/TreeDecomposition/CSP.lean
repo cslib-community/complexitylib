@@ -56,7 +56,7 @@ theorems to arbitrary finite inhabited domains `[Fintype D] [Inhabited D]`.
   `Cslib.Algorithms.Lean.TreeDecomposition.time_cspDecideTreeM_le`: `N.size * q ^ (w + 1) * poly`
   tick bounds.
 * `Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountRootedM`,
-  `Cslib.Algorithms.Lean.TreeDecomposition.time_cspCountRootedM_le` (and `Decide` / `Active`
+  `Cslib.Algorithms.Lean.TreeDecomposition.time_cspCountRootedM_le` (and decision / active
   counterparts): exact correctness and explicit `(3 * w + 5) * (card V + 1) * q ^ (w + 1) * poly`
   tick bounds via `toNiceTreePruned`.
 * `Cslib.Algorithms.Lean.TreeDecomposition.modelCount_semFin`,
@@ -325,12 +325,18 @@ section Engine
 
 variable {Rel V : Type*} [DecidableEq V]
 
+/-- Semiring-like operations used by `dpTreeM` for both counting and decision. -/
 structure DPAlg (β : Type) where
+  /-- Additive identity (0 for counting, `false` for decision). -/
   zero : β
+  /-- Multiplicative identity (1 for counting, `true` for decision). -/
   one : β
+  /-- Aggregation across values of a forgotten variable. -/
   add : β → β → β
+  /-- Combination of two join-branch table entries. -/
   mul : β → β → β
 
+/-- Generic bottom-up DP engine over a `NiceTree`, parameterized by `DPAlg`. -/
 @[expose] def dpTreeM {β : Type} (A : DPAlg β) (q : ℕ) (hq : 0 < q)
     (sem : Rel → List (Fin q) → Bool) (F : CSP Rel V) (vars : List V) :
     NiceTree V → TimeM ℕ (Array β)
@@ -437,12 +443,14 @@ private noncomputable def dpSpec {β : Type} (A : DPAlg β) (q : ℕ) (hq : 0 < 
   | .join left right, α =>
     A.mul (dpSpec A q hq sem F U left α) (dpSpec A q hq sem F U right α)
 
+/-- `DPAlg` instance over `ℕ` for exact model counting. -/
 @[expose] def dpCountAlg : DPAlg ℕ where
   zero := 0
   one := 1
   add := (· + ·)
   mul := (· * ·)
 
+/-- `DPAlg` instance over `Bool` for satisfiability decision. -/
 @[expose] def dpDecideAlg : DPAlg Bool where
   zero := false
   one := true
@@ -831,8 +839,8 @@ private theorem getD_dpTreeM {β : Type} (A : DPAlg β) (q : ℕ) (hq : 0 < q)
         dsimp only [idx, ofRadixFin]
         rw [ret_projectUpdateM hq, ofRadix_toRadix hq hlt huC]
         by_cases huv : u = v
-        · simp [huv]
-        · simp [huv]
+        · simp only [huv, Function.update_self]
+        · simp only [Function.update_of_ne huv]
           rfl
       rw [ih, dpSpec_congr A q hq sem F F.vars.toFinset hval.2 hagree]
     simp only [dpTreeM, bagList, TimeM.ret_bind]

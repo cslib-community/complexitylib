@@ -333,7 +333,10 @@ theorem groupClique_snd {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
 
 /-- Vertex list length bound: `|V(SAT.groupClique r φ)| ≤ r * 2 ^ (3 * ⌈|φ| / r⌉)`. -/
 theorem length_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
-    (groupClique r φ).1.1.length ≤ r * 2 ^ (3 * ((φ.length + r - 1) / r)) := by
+    let graph := (groupClique r φ).1
+    let verts := graph.1
+    verts.length ≤ r * 2 ^ (3 * ((φ.length + r - 1) / r)) := by
+  dsimp only
   rw [groupClique, GroupClique.graphOfBound]
   by_cases hr0 : (r == 0) = true
   · simp [hr0]
@@ -356,7 +359,9 @@ theorem length_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
 
 /-- Vertex finset cardinality bound for `SAT.groupClique r φ`. -/
 theorem card_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
-    (groupClique r φ).1.1.toFinset.card ≤ r * 2 ^ (3 * ((φ.length + r - 1) / r)) :=
+    let graph := (groupClique r φ).1
+    let verts := graph.1
+    verts.toFinset.card ≤ r * 2 ^ (3 * ((φ.length + r - 1) / r)) :=
   le_trans (List.toFinset_card_le _) (length_groupClique_vertices_le r φ)
 
 /-- Soundness and completeness of `SAT.groupClique`: for every `r ≥ 1` and `φ : CNF ℕ`,
@@ -1258,8 +1263,11 @@ theorem DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
     (f g : ℕ → ℝ) (e : ℕ)
     (hg : ∀ ε : ℝ, 0 < ε → ∃ k₀, ∀ k ≥ k₀, g k ≤ ε * k)
     (hClique : DecidableInTimeO Clique (encPair encGraph encNat)
-      (fun x => f x.2 * ((x.1.1.length : ℝ) + 1) ^ g x.2 *
-        (((encPair encGraph encNat x).length : ℝ) + 1) ^ e)) :
+      (fun x =>
+        let graph := x.1
+        let verts := graph.1
+        f x.2 * ((verts.length : ℝ) + 1) ^ g x.2 *
+          (((encPair encGraph encNat x).length : ℝ) + 1) ^ e)) :
     DecidableInSubexpTime ThreeSAT encCNF List.length := by
   intro δ hδ
   rcases DecidableInTimeO.exists_computableInO hClique with ⟨dec, t₂, c₂, hdec, hmem, ht₂⟩
@@ -1598,8 +1606,11 @@ theorem ETH.not_clique_subexpVertex (hETH : ETH)
     (f g : ℕ → ℝ) (e : ℕ)
     (hg : ∀ ε : ℝ, 0 < ε → ∃ k₀, ∀ k ≥ k₀, g k ≤ ε * k) :
     ¬DecidableInTimeO Clique (encPair encGraph encNat)
-      (fun x => f x.2 * ((x.1.1.length : ℝ) + 1) ^ g x.2 *
-        (((encPair encGraph encNat x).length : ℝ) + 1) ^ e) := by
+      (fun x =>
+        let graph := x.1
+        let verts := graph.1
+        f x.2 * ((verts.length : ℝ) + 1) ^ g x.2 *
+          (((encPair encGraph encNat x).length : ℝ) + 1) ^ e) := by
   intro hClique
   exact (ETH_iff_not_decidableInSubexpTime_length.mp hETH)
     (DecidableInSubexpTime.threeSAT_of_clique_subexpVertex f g e hg hClique)

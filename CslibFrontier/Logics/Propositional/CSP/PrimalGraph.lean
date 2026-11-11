@@ -68,7 +68,7 @@ theorem primalGraph_adj {F : CSP Rel V} {u v : V} :
     F.primalGraph.Adj u v ↔ u ≠ v ∧ ∃ c ∈ F, u ∈ c.2 ∧ v ∈ c.2 :=
   Iff.rfl
 
-instance decidableRel_primalGraph_adj [DecidableEq V] (F : CSP Rel V) :
+instance instDecidableRelPrimalGraphAdj [DecidableEq V] (F : CSP Rel V) :
     DecidableRel F.primalGraph.Adj := fun u v =>
   inferInstanceAs (Decidable (u ≠ v ∧ ∃ c ∈ F, u ∈ c.2 ∧ v ∈ c.2))
 
@@ -96,9 +96,9 @@ theorem exists_bag_subset_scope_of_mem [DecidableEq V] {F : CSP Rel V} {n : ℕ}
     SimpleGraph {v : V // v ∈ F.vars.toFinset} :=
   F.primalGraph.induce (F.vars.toFinset : Set V)
 
-instance decidableRel_activePrimalGraph_adj [DecidableEq V] (F : CSP Rel V) :
+instance instDecidableRelActivePrimalGraphAdj [DecidableEq V] (F : CSP Rel V) :
     DecidableRel F.activePrimalGraph.Adj := fun u v =>
-  F.decidableRel_primalGraph_adj u.1 v.1
+  F.instDecidableRelPrimalGraphAdj u.1 v.1
 
 theorem mem_vars_finset_of_mem [DecidableEq V] {F : CSP Rel V} {c : Constraint Rel V}
     (hc : c ∈ F) {v : V} (hv : v ∈ c.2) : v ∈ F.vars.toFinset :=

@@ -87,7 +87,10 @@ example (hETH : ETH) : Clique ∉ FPT (Turing.MultiTapeTM.encPair encGraph Turin
 
 example (hETH : ETH) :
     ¬DecidableInTimeO Clique (Turing.MultiTapeTM.encPair encGraph Turing.MultiTapeTM.encNat)
-      (fun x => ((x.1.1.length : ℝ) + 1) ^ (0 : ℝ)) := by
+      (fun x =>
+        let graph := x.1
+        let verts := graph.1
+        ((verts.length : ℝ) + 1) ^ (0 : ℝ)) := by
   have h := ETH.not_clique_subexpVertex hETH (fun _ => 1) (fun _ => 0) 0
     (fun ε hε => ⟨0, fun k _ => by positivity⟩)
   simpa using h
