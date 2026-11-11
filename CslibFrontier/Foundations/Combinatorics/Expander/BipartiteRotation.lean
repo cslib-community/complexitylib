@@ -109,7 +109,6 @@ def neighborLeft (B : BipartiteRotationMap L R D) (v : R) (j : D) : L :=
   (B.toRight.symm (v, j)).1
 
 /-- Left neighbors in `B` are right neighbors in `B.flip`. -/
-@[simp]
 theorem neighborLeft_eq_flip_neighborRight (B : BipartiteRotationMap L R D) (v : R) (j : D) :
     B.neighborLeft v j = B.flip.neighborRight v j :=
   rfl
@@ -223,7 +222,7 @@ theorem expect_walkLeft [Nonempty D] (g : R → ℝ) :
 
 /-- `B.walkLeft` and `B.walkRight` are adjoint with respect to uniform expectations on `L` and `R`.
 -/
-theorem expect_mul_walkLeft [Nonempty D] (f : L → ℝ) (g : R → ℝ) :
+theorem expect_mul_walkLeft (f : L → ℝ) (g : R → ℝ) :
     𝔼 u : L, f u * B.walkLeft g u = 𝔼 v : R, B.walkRight f v * g v := by
   simp only [walkLeft_apply, walkRight_apply, mul_expect, expect_mul, neighborRight, neighborLeft,
     ← expect_product', univ_product_univ, Prod.mk.eta]
@@ -508,14 +507,6 @@ private theorem expect_boole_mem_walkLeft [Fintype L] [Fintype D]
   ext p
   simp
 
-private theorem card_compl_eq {α : Type*} [Fintype α] [DecidableEq α] (S : Finset α) :
-    (#Sᶜ : ℝ) = Fintype.card α - #S := by
-  rw [eq_sub_iff_add_eq, ← Nat.cast_add, card_compl_add_card]
-
-private theorem expect_sub_expect {α : Type*} [Fintype α] (f : α → ℝ) :
-    𝔼 v : α, (f v - 𝔼 w : α, f w) = 0 :=
-  Fintype.expect_balance f
-
 /-- **Bipartite expander mixing lemma**, sharper form: for `B : BipartiteRotationMap L R D` with
 `d = |D| > 0` and `N = |L| = |R|`, the number of edges from `U ⊆ L` to `W ⊆ R` differs from
 `d |U| |W| / N` by at most `σ₂(B) d √(|U| |Uᶜ| |W| |Wᶜ|) / N`. -/
@@ -544,27 +535,36 @@ theorem abs_card_interedges_sub_le [Fintype L] [Fintype R] [Fintype D]
     simp only [sub_mul, mul_sub, expect_sub_distrib, ← expect_mul, ← mul_expect,
       B.expect_walkLeft, Fintype.expect_const]
     ring
-  have hbd := expect_mul_walkLeft_sq_le (B := B) (expect_sub_expect f) (expect_sub_expect g)
+  have hf0 : 𝔼 u : L, (f u - 𝔼 u', f u') = 0 := Fintype.expect_balance f
+  have hg0 : 𝔼 v : R, (g v - 𝔼 v', g v') = 0 := Fintype.expect_balance g
+  have hbd := expect_mul_walkLeft_sq_le (B := B) hf0 hg0
   rw [← add_sub_cancel_left ((𝔼 u : L, f u) * 𝔼 v : R, g v)
     (𝔼 u : L, (f u - 𝔼 u', f u') * B.walkLeft (fun v => g v - 𝔼 v', g v') u), ← hcorr,
     Fintype.expect_sub_expect_sq, Fintype.expect_sub_expect_sq] at hbd
   simp only [f, g, expect_boole_mem_walkLeft, Fintype.expect_boole_mem,
     Fintype.expect_boole_mem_sq, nnratCast_dens, hLR] at hbd
   have hlam := B.nontrivialSingularValue_nonneg
-  refine abs_le_of_sq_le_sq ?_ (by positivity)
-  rw [div_pow, mul_pow, mul_pow, Real.sq_sqrt (by positivity), card_compl_eq, card_compl_eq, hLR]
   rw [hLR] at hn
-  generalize (#(B.interedges U W) : ℝ) = e at hbd ⊢
-  generalize (#U : ℝ) = s at hbd ⊢
-  generalize (#W : ℝ) = t at hbd ⊢
-  generalize (Fintype.card R : ℝ) = n at hbd hn ⊢
-  generalize (Fintype.card D : ℝ) = d at hbd hd ⊢
-  calc
-    _ = (n * d) ^ 2 * (e / (n * d) - s / n * (t / n)) ^ 2 := by field_simp
-    _ ≤ (n * d) ^ 2 *
-          (B.nontrivialSingularValue ^ 2 * (s / n - (s / n) ^ 2) * (t / n - (t / n) ^ 2)) := by
-        gcongr
-    _ = _ := by field_simp
+  refine abs_le_of_sq_le_sq ?_ (by positivity)
+  have hmul := mul_le_mul_of_nonneg_left hbd (sq_nonneg ((Fintype.card R : ℝ) * Fintype.card D))
+  have hlhs :
+      ((#(B.interedges U W) : ℝ) - Fintype.card D * #U * #W / Fintype.card R) ^ 2 =
+        (Fintype.card R * Fintype.card D : ℝ) ^ 2 *
+          (#(B.interedges U W) / (Fintype.card R * Fintype.card D) -
+            #U / Fintype.card R * (#W / Fintype.card R)) ^ 2 := by
+    field_simp
+  have hrhs :
+      (Fintype.card R * Fintype.card D : ℝ) ^ 2 *
+          (B.nontrivialSingularValue ^ 2 * (#U / Fintype.card R - (#U / Fintype.card R) ^ 2) *
+            (#W / Fintype.card R - (#W / Fintype.card R) ^ 2)) =
+        (B.nontrivialSingularValue * Fintype.card D *
+            √((#U : ℝ) * #Uᶜ * #W * #Wᶜ) / Fintype.card R) ^ 2 := by
+    conv_rhs =>
+      rw [div_pow, mul_pow, mul_pow, Real.sq_sqrt (by positivity), card_compl, card_compl,
+        Nat.cast_sub (card_le_univ U), Nat.cast_sub (card_le_univ W), hLR]
+    field_simp
+  rw [hLR, hlhs, ← hrhs]
+  exact hmul
 
 /-- **Bipartite expander mixing lemma**: `|e(U, W) - d |U| |W| / N| ≤ σ₂(B) d √(|U| |W|)`. -/
 theorem abs_card_interedges_sub_le_mul_sqrt [Fintype L] [Fintype R] [Fintype D]
