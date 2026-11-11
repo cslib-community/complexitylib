@@ -179,53 +179,146 @@ noncomputable def coinTossBiasedDist :
   else
     return ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
 
+
+
+
+
+
+@[expose]
+def extract_bool_from_malicious (y : (i : Fin 2) → if i = 0 then Unit else Bool) : Bool :=
+  if h : (1:Fin 2) = 0 then true else cast (by simp [h]) (y 1)
+
+@[expose]
+def extract_bool_from_biased (y : (i : Fin 2) → Option (if i = 0 then Unit else Bool)) : Bool :=
+  if h : (1:Fin 2) = 0 then true else
+  match y 1 with
+  | some v => cast (by simp [h]) v
+  | none => true
+
+
+
+noncomputable instance (i : Fin 2) : Fintype (if i = 0 then Unit else Bool) := by
+  split_ifs <;> infer_instance
+
+noncomputable instance (i : Fin 2) : DecidableEq (if i = 0 then Unit else Bool) := by
+  split_ifs <;> infer_instance
+
+lemma extract_bool_from_malicious_val (b : Bool) :
+  extract_bool_from_malicious (fun i => if h : i = 0 then cast (by simp [h]) ()
+    else cast (by simp [h]) b) = b := by
+  cases b <;> rfl
+
+lemma extract_bool_from_biased_val1 :
+  extract_bool_from_biased (fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = true := rfl
+
+lemma extract_bool_from_biased_val2 :
+  extract_bool_from_biased (fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true)) = true := rfl
+
+set_option linter.unusedFintypeInType false in
+lemma tsum_ite_eq_and_prop {α : Type} [Fintype α] [DecidableEq α] (A : α) (P : α → Prop)
+    [DecidablePred P] (c : ENNReal) :
+  (∑' x, if P x then if x = A then c else 0 else 0) = if P A then c else 0 := by
+  rw [tsum_fintype]
+  have H : (∑ x, if P x then if x = A then c else 0 else 0) =
+      ∑ x, if x = A then if P A then c else 0 else 0 := by
+    apply Finset.sum_congr rfl
+    intro x _
+    by_cases h1 : P x <;> by_cases h2 : x = A
+    · subst h2; simp [h1]
+    · simp [h1, h2]
+    · subst h2; simp [h1]
+    · simp [h1, h2]
+  rw [H, Finset.sum_ite_eq']
+  have H2 : A ∈ Finset.univ := Finset.mem_univ A
+  simp [H2]
+
+lemma ite_tsum_eq_ennreal {β : Type} (P : Prop) [Decidable P] (f : β → ENNReal) :
+  (if P then ∑' x, f x else 0) = ∑' x, if P then f x else 0 := by
+  split_ifs
+  · rfl
+  · exact tsum_zero.symm
+
+lemma ite_mul_eq_ennreal (P : Prop) [Decidable P] (c x : ENNReal) :
+  (if P then c * x else 0) = c * (if P then x else 0) := by
+  split_ifs
+  · rfl
+  · exact (mul_zero c).symm
+
+lemma sum_swap_3 {α β γ : Type} (f : α → β → γ → ENNReal) :
+  (∑' (a:α), ∑' (b:β), ∑' (c:γ), f a b c) = ∑' (b:β), ∑' (a:α), ∑' (c:γ), f a b c := by
+  rw [tsum_comm]
+
+lemma inner_sum_eval :
+  (∑' (b : Bool), if true = b then (↑(Fintype.card Bool) : ENNReal)⁻¹ else 0) = 1/2 := by
+  rw [tsum_fintype, Fintype.sum_bool]
+  have h1 : (Fintype.card Bool : ENNReal) = 2 := rfl
+  rw [h1]
+  simp [one_div]
+
 theorem naive_without_abort_failure :
-  ¬ (∃ S, ProbComp.eval (do
-            let (v, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
-            return (v, fun i => some (y i))) = 
-          ProbComp.eval coinTossBiasedDist) := by
+  ¬ (∃ (S : ((i : I0) → Unit) → ProbComp (((i : I0) → Unit) × (((i : I0) →
+      (if (↑i : Fin 2) = 0 then Unit else Bool)) → Unit))),
+        ProbComp.eval (do
+            let (_, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
+            return extract_bool_from_malicious y) = 
+        ProbComp.eval (do
+            let (_, y) ← coinTossBiasedDist
+            return extract_bool_from_biased y)) := by
   intro ⟨S, h⟩
-  have H := congr_arg (fun (p : PMF _)
-    => p ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)) h
-  have h_rhs : ProbComp.eval coinTossBiasedDist
-      ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = 1/2 := by
+  have H := congr_arg (fun (p : PMF _) => p true) h
+  have h_rhs : ProbComp.eval (do
+            let (_, y) ← coinTossBiasedDist
+            return extract_bool_from_biased y) true = 1 := by
     dsimp [coinTossBiasedDist]
     simp only [eval_bind, eval_uniform, PMF.bind_apply, PMF.uniformOfFintype_apply]
-    have h_true : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) :
-        (i : Fin 2) → Option (if i = 0 then Unit else Bool)) ≠ 
-      (fun i => if h : i = 0 then cast (by simp [h]) (some ())
-        else cast (by simp [h]) (some true)) := by
-      intro heq
-      have h2 := congr_fun heq 1
-      have h1 : (1 : Fin 2) ≠ 0 := by decide
-      revert h2
-      simp [h1]
-    simp [h_true]
-  have h_lhs : ProbComp.eval (do
-            let (v, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
-            return (v, fun i => some (y i)))
-      ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = 0 := by
-    simp only [PMF.map_apply, bind_pure_comp, eval_map, tsum_eq_zero_iff]
-    intro a
-    split_ifs with h
-    · have h_false
-        : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
-          : (i : Fin 2) → Option (if i = 0 then Unit else Bool)) ≠ fun i => some (a.2 i) := by
-        intro heq2
-        have h2 := congr_fun heq2 1
-        have h1 : (1 : Fin 2) ≠ 0 := by decide
-        revert h2
-        simp [h1]
-      have heq2
-        : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
-          : (i : Fin 2) → Option (if i = 0 then Unit else Bool)) = fun i => some (a.2 i) := by
-        have h_snd := congr_arg Prod.snd h
-        exact h_snd
-      contradiction
-    · rfl
-  rw [h_rhs, h_lhs] at H
-  apply_fun ENNReal.toReal at H
-  revert H
-  norm_num
+    simp only [apply_ite ProbComp.eval, eval_pure, tsum_fintype, Fintype.sum_bool, Fintype.card_bool, Nat.cast_ofNat]
+    simp only [reduceCtorEq, ite_true, ite_false, PMF.pure_apply, mul_ite, mul_one, mul_zero]
+    have h_split : ∀ a : Unit × ((i : Fin 2) → Option (if i = 0 then Unit else Bool)),
+      (if true = extract_bool_from_biased a.2 then (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true)) then (2⁻¹:ENNReal) else 0) + (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) then (2⁻¹:ENNReal) else 0) else 0) =
+      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true)) then if true = extract_bool_from_biased a.2 then (2⁻¹:ENNReal) else 0 else 0) +
+      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) then if true = extract_bool_from_biased a.2 then (2⁻¹:ENNReal) else 0 else 0) := by
+      intro a
+      split_ifs
+      all_goals { first | rfl | exact Eq.symm (zero_add 0) }
 
-end Cslib.Crypto.Protocols.MPC
+    simp_rw [h_split, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
+    simp only [extract_bool_from_biased_val1, extract_bool_from_biased_val2, ite_true]
+    rw [← one_div]
+    exact ENNReal.add_halves 1
+
+
+
+
+
+
+
+  have h_lhs : ProbComp.eval (do
+            let (_, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
+            return extract_bool_from_malicious y) true = 1/2 := by
+    dsimp [maliciousIdeal, coinTossPrivateFunc]
+    simp only [eval_bind, PMF.bind_apply, eval_map, PMF.map_apply, bind_pure_comp]
+    simp only [eval_uniform, PMF.uniformOfFintype_apply]
+    simp_rw [ite_tsum_eq_ennreal, ite_mul_eq_ennreal]
+    rw [tsum_comm]
+    conv_lhs =>
+      congr
+      intro b
+      rw [ENNReal.tsum_mul_left]
+      congr
+      · skip
+      · simp only [ite_tsum_eq_ennreal]
+        rw [sum_swap_3]
+        simp only [tsum_comm (f := fun _ (x : Bool) => _)]
+        simp only [tsum_ite_eq_and_prop]
+        simp only [extract_bool_from_malicious_val]
+        rw [inner_sum_eval]
+    have h_mul : (∑' b, (ProbComp.eval (S (I0.restrict fun _ => ()))) b * (1/2 : ENNReal)) =
+        (∑' b, (ProbComp.eval (S (I0.restrict fun _ => ()))) b) * (1/2 : ENNReal) := by
+      rw [ENNReal.tsum_mul_right]
+    rw [h_mul]
+    have h_sum_one : (∑' b, (ProbComp.eval (S (I0.restrict fun _ => ()))) b) = 1 := by
+      exact PMF.tsum_coe (ProbComp.eval (S (I0.restrict fun _ => ())))
+    rw [h_sum_one]
+    exact one_mul _
+  rw [h_lhs, h_rhs] at H
+  revert H; norm_num
