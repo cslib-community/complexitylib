@@ -121,7 +121,8 @@ theorem pow_sum_mul_le {I : Type*} [Fintype I] (P S : I → ℝ) (hP_nonneg : �
     (∑ x, P x * S x) ^ (2 * t) ≤ ∑ x, P x * S x ^ (2 * t) := by
   have heven : Even (2 * t) := even_two_mul t
   have h_conv : ConvexOn ℝ Set.univ (fun x : ℝ => x ^ (2 * t)) := Even.convexOn_pow heven
-  have h_jensen := ConvexOn.map_sum_le h_conv (fun i _ => hP_nonneg i) hP_sum (fun i _ => Set.mem_univ (S i))
+  have h_jensen := ConvexOn.map_sum_le h_conv (fun i _ => hP_nonneg i) hP_sum
+    (fun i _ => Set.mem_univ (S i))
   simp_rw [smul_eq_mul] at h_jensen
   exact h_jensen
 
@@ -148,7 +149,8 @@ theorem sum_x1_x2_eq_two_pow_corank (M : Matrix ι ι (ZMod 2)) :
   have h4 : (#{z : ι → ZMod 2 | M *ᵥ z = 0} : ℝ) * 2 ^ M.rank = (2 : ℝ) ^ Fintype.card ι := by
     exact_mod_cast card_ker_mul_two_pow_rank M
   have h5 : (#{z : ι → ZMod 2 | M *ᵥ z = 0} : ℝ) = (2 : ℝ) ^ Fintype.card ι / 2 ^ M.rank := by
-    calc (#{z : ι → ZMod 2 | M *ᵥ z = 0} : ℝ) = (#{z : ι → ZMod 2 | M *ᵥ z = 0} : ℝ) * 2 ^ M.rank / 2 ^ M.rank := by
+    calc (#{z : ι → ZMod 2 | M *ᵥ z = 0} : ℝ) =
+        (#{z : ι → ZMod 2 | M *ᵥ z = 0} : ℝ) * 2 ^ M.rank / 2 ^ M.rank := by
           rw [mul_div_cancel_right₀]
           positivity
       _ = (2 : ℝ) ^ Fintype.card ι / 2 ^ M.rank := by rw [h4]
