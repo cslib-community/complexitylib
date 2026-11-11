@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
 import CslibFrontier.Algorithms.Lean.DFS.SCC
+import CslibFrontier.DataStructure.BTree.Comparisons.LowerBound
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
@@ -3704,3 +3705,16 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
     real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
     recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
     accounting for the reduction; FO-⊥ and OW-PCVA are not covered."
+
+register_result "btree-search-comparison-lower-bound" where
+  title := "Comparison lower bound for B-tree search"
+  topic := "algorithms"
+  sources := [
+    { paper := CLRS2009, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.DataStructure.BTree.rank_lowerBound_infinite
+  ]
+  scope := "The ⌈log₂(n + 1)⌉ comparison lower bound for comparison-based rank programs on B-trees \
+    over an infinite key type, proven in the FreeM (LEQuery α) model. This bounds the abstract \
+    program counting queries on a comparison oracle, not a machine-code lower bound."
