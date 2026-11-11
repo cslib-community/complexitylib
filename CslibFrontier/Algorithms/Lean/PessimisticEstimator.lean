@@ -304,10 +304,9 @@ private theorem scanCandidatesM_spec (fixedNext : Finset ι) (x : ∀ i, α i) (
       · exact hle_next.trans hnext_le_a
       · exact hforall_cs b hb'
     · have ha_time := htime a
-      change (D.condExpM fixedNext (Function.update x i a)).time +
-          (D.compareCost + 0 + (D.scanCandidatesM fixedNext x i cs next).time) ≤
-        (a :: cs).length * (evalBound + D.compareCost)
-      simp only [List.length_cons, Nat.succ_mul]
+      dsimp only [next, val] at htime_cs
+      simp only [scanCandidatesM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure,
+        TimeM.ret_pure, List.length_cons, Nat.succ_mul]
       omega
 
 private theorem runFromM_spec [Fintype ι] [∀ i, Fintype (α i)]

@@ -107,6 +107,7 @@ public import CslibFrontier.Algorithms.Lean.Matroid.Intersection
 public import CslibFrontier.Algorithms.Lean.Matroid.Intersection.Konig
 public import CslibFrontier.Algorithms.Lean.Matroid.Intersection.Solver
 public import CslibFrontier.Algorithms.Lean.Matroid.PSystem
+public import CslibFrontier.Algorithms.Lean.MaxCut.Derandomized
 public import CslibFrontier.Algorithms.Lean.MaxCut.GoemansWilliamson
 public import CslibFrontier.Algorithms.Lean.MaxCut.GoemansWilliamsonCutWeight
 public import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -134,6 +135,7 @@ public import CslibFrontier.Algorithms.Lean.OptimalBST.Knuth
 public import CslibFrontier.Algorithms.Lean.OptimalBST.Yao
 public import CslibFrontier.Algorithms.Lean.Palindrome.Basic
 public import CslibFrontier.Algorithms.Lean.Palindrome.Manacher
+public import CslibFrontier.Algorithms.Lean.PessimisticEstimator
 public import CslibFrontier.Algorithms.Lean.Query.Arith.FFT.Correctness
 public import CslibFrontier.Algorithms.Lean.Query.Arith.FFT.Cost
 public import CslibFrontier.Algorithms.Lean.Query.Arith.FFT.Defs
@@ -2248,6 +2250,7 @@ public import CslibFrontier.Computability.Complexity.Problems.LinearProgramming
 public import CslibFrontier.Computability.Complexity.Problems.LongPath
 public import CslibFrontier.Computability.Complexity.Problems.LongPath.Hardness
 public import CslibFrontier.Computability.Complexity.Problems.MaxCut
+public import CslibFrontier.Computability.Complexity.Problems.MaxCut.Derandomized
 public import CslibFrontier.Computability.Complexity.Problems.MaxTwoSAT
 public import CslibFrontier.Computability.Complexity.Problems.MonotoneCircuitValue
 public import CslibFrontier.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness
@@ -3448,6 +3451,7 @@ public import CslibFrontier.Computability.PolyTime.LinearAlgebra.ExchangeReplace
 public import CslibFrontier.Computability.PolyTime.LinearAlgebra.ReplacementDesignBuilder
 public import CslibFrontier.Computability.PolyTime.PacketPacking
 public import CslibFrontier.Computability.PolyTime.ParityFactorEval
+public import CslibFrontier.Computability.PolyTime.PessimisticEstimator
 public import CslibFrontier.Computability.PolyTime.SparseMonomialJet
 public import CslibFrontier.Computability.PolyTime.ZMod.ModulusSwitch
 public import CslibFrontier.Computability.PostCorrespondence.Basic
@@ -3491,6 +3495,7 @@ public import CslibFrontier.Computability.Probabilistic.Presample
 public import CslibFrontier.Computability.Probabilistic.QueryBounds
 public import CslibFrontier.Computability.Probabilistic.Realization.OpenOracleSimulation
 public import CslibFrontier.Computability.Probabilistic.Realization.OracleSimulation
+public import CslibFrontier.Computability.Probabilistic.RejectionSampling
 public import CslibFrontier.Computability.Probabilistic.Repeat
 public import CslibFrontier.Computability.Probabilistic.Retry
 public import CslibFrontier.Computability.Probabilistic.Sampling
@@ -5490,6 +5495,7 @@ public import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 public import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation.ExtPermsCard
+public import CslibFrontier.Languages.Probabilistic.RejectionSampling
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Retry
 public import CslibFrontier.Languages.Probabilistic.Sampling.F4
@@ -5986,6 +5992,7 @@ public import CslibFrontier.Probability.CorrelatedSampling.Embeddability
 public import CslibFrontier.Probability.CorrelatedSampling.Embedding
 public import CslibFrontier.Probability.DDGTree
 public import CslibFrontier.Probability.DDGTree.KnuthYao
+public import CslibFrontier.Probability.DDGTree.Rejection
 public import CslibFrontier.Probability.Divergence
 public import CslibFrontier.Probability.Entropy
 public import CslibFrontier.Probability.Entropy.BitString
@@ -6113,6 +6120,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash.Universal
 public import CslibFrontier.Probability.PairwiseIndependentHash.ValidatedWords
 public import CslibFrontier.Probability.Pinsker
 public import CslibFrontier.Probability.Product
+public import CslibFrontier.Probability.Product.ConditionalExpectation
 public import CslibFrontier.Probability.Product.Estimator
 public import CslibFrontier.Probability.Product.Event
 public import CslibFrontier.Probability.Product.Reindex

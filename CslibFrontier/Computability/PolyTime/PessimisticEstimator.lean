@@ -8,6 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Capabilities
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Foundations.Combinatorics.PessimisticEstimator
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -142,6 +145,7 @@ theorem computableInPolyTime_run
     simpa only [decide_eq_true_eq] using ite hcmp (hbr true) (hbr false)
   refine foldlWithInput_of_bounded_growth hinit ⟨hrounds, hstep, inferInstance, inferInstance⟩
     ⟨hpoly, fun x s r hr => ?_⟩
+  dsimp only [greedyStep]
   split_ifs
   · exact hgrowth x s r true hr
   · exact hgrowth x s r false hr

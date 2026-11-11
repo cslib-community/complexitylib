@@ -581,7 +581,7 @@ private theorem singleLaw_finCutoffSpec_eq_mul {n k : ℕ} [NeZero n] (hnk : n �
     one_mul]
   exact singleLaw_finCutoffSpec_some hnk i
 
-theorem acceptProb_uniformFinRejectionSpec (n : ℕ) [NeZero n] :
+theorem acceptProb_uniformFinRejectionSpec (n : ℕ) :
     (uniformFinRejectionSpec n).acceptProb = (n : ℝ≥0∞) / ((2 ^ Nat.clog 2 n : ℕ) : ℝ≥0∞) :=
   acceptProb_finCutoffSpec (Nat.le_pow_clog Nat.one_lt_two n)
 
