@@ -1431,7 +1431,7 @@ private lemma cycleGraph_adj_eq_add_or_sub {n : ℕ} {a b : Fin (n + 3)}
   · right
     exact (eq_add_of_sub_eq h).trans (add_comm 1 a)
 
-private lemma cycleGraph_support_of_isCycle [Finite V] {n : ℕ} (e : W.graph ≃g cycleGraph (n + 3))
+private lemma cycleGraph_support_of_isCycle {n : ℕ} (e : W.graph ≃g cycleGraph (n + 3))
     {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : c.IsCycle) :
     (∀ v : V, v ∈ c.support) ∧ ∀ {u v : V}, W.graph.Adj u v → s(u, v) ∈ c.edges := by
   classical

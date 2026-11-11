@@ -872,7 +872,7 @@ private lemma dist_lt_of_edgeProj_lt [Finite V] (hT : W.graph.IsTree) (d : W.gra
       rw [hxz₁]
       linarith [hs₁_eq ▸ hlt]
 
-private lemma eq_of_forall_edgeProj_eq [Finite V] (hT : W.graph.IsTree) {z₁ z₂ : MetricGraph W}
+private lemma eq_of_forall_edgeProj_eq (hT : W.graph.IsTree) {z₁ z₂ : MetricGraph W}
     (h : ∀ d : W.graph.Dart, edgeProj hT d z₁ = edgeProj hT d z₂) : z₁ = z₂ := by
   induction z₁ using ind with
   | vertex u =>
@@ -1025,7 +1025,7 @@ theorem exists_min_dart_weight [Finite V] (d₀ : W.graph.Dart) :
   exact ⟨W.weight d₁.edge, W.dart_weight_pos d₁, fun d =>
     hd₁ d (hfin.mem_toFinset.mpr (Set.mem_univ d))⟩
 
-private lemma exists_edge_dart_of_ne [Finite V] {a b : MetricGraph W} (hab : a ≠ b) :
+private lemma exists_edge_dart_of_ne {a b : MetricGraph W} (hab : a ≠ b) :
     Nonempty W.graph.Dart := by
   induction a using ind with
   | vertex u =>

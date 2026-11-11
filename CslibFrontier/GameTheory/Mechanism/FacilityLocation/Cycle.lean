@@ -300,7 +300,7 @@ private theorem exists_walk_in_cycle_length_eq_dist {V : Type*} (W : WeightedGra
 
 open Classical in
 private theorem exists_cycle_of_path_concat_cycle_walk {V : Type*} (W : WeightedGraph V)
-    [Finite V] {v₀ v x : V} {c : W.graph.Walk v₀ v₀} (hs : IsShortestCycle W c)
+    {v₀ v x : V} {c : W.graph.Walk v₀ v₀} (hs : IsShortestCycle W c)
     {d : W.graph.Dart} (hd_fst : d.fst = v) (hd_not : d.edge ∉ c.edges)
     (p_d : W.graph.Path d.snd x) (hv_not : v ∉ (p_d : W.graph.Walk d.snd x).support)
     (p_c : W.graph.Walk x v) (hpc_sub : p_c.edges ⊆ c.edges) :

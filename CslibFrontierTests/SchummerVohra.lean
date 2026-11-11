@@ -45,10 +45,11 @@ local instance {V : Type*} (W : WeightedGraph V) [Finite V] :
 
 section IntervalClients
 
-private noncomputable def halfIcc : unitInterval := ⟨1 / 2, by norm_num, by norm_num⟩
+/-- Constant `1/2` point in `[0, 1]`. -/
+public noncomputable def halfIcc : unitInterval := ⟨1 / 2, by norm_num, by norm_num⟩
 
 /-- Symmetric 3-agent generalized median scheme on `[0, 1]` with interior phantom `1/2`. -/
-private noncomputable def symMedianScheme : MoulinScheme (Fin 3) 0 1 where
+public noncomputable def symMedianScheme : MoulinScheme (Fin 3) 0 1 where
   alpha S := if S = Finset.univ then 0 else if S = ∅ then 1 else 1 / 2
   mem_Icc S := by split_ifs <;> constructor <;> norm_num
   antitone S T hST := by
@@ -67,7 +68,8 @@ private noncomputable def symMedianScheme : MoulinScheme (Fin 3) 0 1 where
     simp only [hne, ↓reduceIte]
   boundary_univ := by simp only [↓reduceIte]
 
-example :
+/-- `symMedianScheme.eval` is group strategyproof, strategyproof, and surjective. -/
+public theorem symMedian_spec :
     (Mechanism.deterministic symMedianScheme.eval).IsGroupStrategyProof ∧
     (Mechanism.deterministic symMedianScheme.eval).IsStrategyProof ∧
     Function.Surjective symMedianScheme.eval ∧
@@ -77,7 +79,8 @@ example :
     (isStrategyProof_and_surjective_iff_exists_moulinScheme (by norm_num) _).mp
       ⟨symMedianScheme.eval_isStrategyProof, symMedianScheme.eval_surjective⟩⟩
 
-example :
+/-- Concrete `[0, 1]` evaluation `symMedianScheme.eval ![0, 1/4, 3/4] = 1/2`. -/
+public theorem symMedian_eval_half :
     symMedianScheme.eval ![⟨0, by norm_num, by norm_num⟩,
       ⟨1 / 4, by norm_num, by norm_num⟩, ⟨3 / 4, by norm_num, by norm_num⟩] = halfIcc := by
   let x : Fin 3 → Set.Icc (0 : ℝ) 1 :=
@@ -102,7 +105,7 @@ example :
 
 /-- A constant rule on `[0, 1]` is group strategyproof yet fails surjectivity, so it cannot be
 represented by any `MoulinScheme`. -/
-example :
+public theorem constantHalf_not_moulin :
     let f : (Fin 2 → Set.Icc (0 : ℝ) 1) → Set.Icc (0 : ℝ) 1 := fun _ => halfIcc
     (Mechanism.deterministic f).IsGroupStrategyProof ∧
     ¬ Function.Surjective f ∧
