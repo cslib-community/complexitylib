@@ -31,12 +31,19 @@ at most the truth-table bound on `t` inputs, so the whole map costs at most
 `r * (2 ^ t * (2 t + 3) + 1)` gates (`complexity_le_mul_of_forall_dependsOn`); for constant `t`
 this is linear in the number of outputs.
 
+A *selected answer* reads one of `q` answer bits `z`, chosen by the inputs in a set `s`. Updating
+one assignment of `s` at a time, as in the truth-table bound, it costs at most
+`2 ^ #s * (2 #s + 3) + 1` gates whatever `q` is (`complexity_select_le`). Learners use this to read
+the answers to their queries from input wires.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.complexity_le_lookup`: a table on `a` index bits with `r` output bits
   costs at most `2 ^ a * (2 * a + 1) + r * (2 ^ a + 1)` gates.
 * `Cslib.Circuits.Boolean.complexity_le_mul_of_forall_dependsOn`: a map whose `r` outputs each
   depend on at most `t` inputs costs at most `r * (2 ^ t * (2 * t + 3) + 1)` gates.
+* `Cslib.Circuits.Boolean.complexity_select_le`: reading the answer bit selected by the inputs in
+  `s` costs at most `2 ^ #s * (2 * #s + 3) + 1` gates.
 -/
 
 public section
@@ -85,5 +92,52 @@ theorem complexity_le_mul_of_forall_dependsOn (f : (Fin n → Bool) → Fin r �
         refine (complexity_le_of_dependsOn hdep).trans ?_
         gcongr
     _ = _ := by simp
+
+/-- **Reading a selected answer.** On inputs `z ++ x`, returning the answer bit
+`z (sel (x restricted to s))` costs at most `2 ^ #s * (2 * #s + 3) + 1` gates, the bound of
+`complexity_le_of_dependsOn` for a function of `s` alone: one minterm and two gates for each
+assignment of `s`. The answer bits `z` are not part of that count, whereas treating the map as a
+function of `s` and all of `z` would cost `2 ^ (#s + q)`. -/
+theorem complexity_select_le {q : ℕ} (s : Finset (Fin n)) (sel : (s → Bool) → Fin q) :
+    complexity interpretation (single fun zx : Fin (q + n) → Bool =>
+      zx (Fin.castAdd n (sel fun i => zx (Fin.natAdd q i)))) ≤ 2 ^ #s * (2 * #s + 3) + 1 := by
+  classical
+  let restr : (Fin (q + n) → Bool) → s → Bool := fun zx i => zx (Fin.natAdd q i)
+  have hmask (S : Finset (s → Bool)) :
+      complexity interpretation (single fun zx : Fin (q + n) → Bool =>
+        decide (restr zx ∈ S) && zx (Fin.castAdd n (sel (restr zx)))) ≤
+        #S * (2 * #s + 3) + 1 := by
+    induction S using Finset.induction_on with
+    | empty => simpa using (Synthesis.const (n := q + n) false).complexity_le
+    | @insert v S hv ih =>
+      let wires : Fin #s → Fin (q + n) := fun i => Fin.natAdd q (s.equivFin.symm i)
+      have hmin := (synthesis_minterm wires (v ∘ s.equivFin.symm)).complexity_le
+      have hmin_eq (zx : Fin (q + n) → Bool) :
+          decide ((fun i => zx (wires i)) = v ∘ s.equivFin.symm) = decide (restr zx = v) := by
+        refine decide_eq_decide.2 ⟨fun h => funext fun i => ?_, fun h => ?_⟩
+        · simpa [wires, restr] using congrFun h (s.equivFin i)
+        · subst h
+          rfl
+      have hread : complexity interpretation
+          (single fun zx : Fin (q + n) → Bool => zx (Fin.castAdd n (sel v))) ≤ 0 :=
+        (Synthesis.of_mem (s := inputs (q + n)) ⟨Fin.castAdd n (sel v), rfl⟩).complexity_le
+      have e : (fun zx : Fin (q + n) → Bool =>
+            decide (restr zx ∈ insert v S) && zx (Fin.castAdd n (sel (restr zx)))) =
+          fun zx => (decide (restr zx ∈ S) && zx (Fin.castAdd n (sel (restr zx)))) ||
+            (decide ((fun i => zx (wires i)) = v ∘ s.equivFin.symm) &&
+              zx (Fin.castAdd n (sel v))) := funext fun zx => by
+        rw [hmin_eq]
+        by_cases h : restr zx = v
+        · rw [h]
+          simp [hv]
+        · simp [h]
+      rw [e, Finset.card_insert_of_notMem hv, add_one_mul]
+      refine (complexity_or_le _ _).trans ?_
+      have hand := (complexity_and_le
+        (fun zx : Fin (q + n) → Bool => decide ((fun i => zx (wires i)) = v ∘ s.equivFin.symm))
+        fun zx => zx (Fin.castAdd n (sel v))).trans
+          (Nat.add_le_add_right (Nat.add_le_add hmin hread) 1)
+      omega
+  simpa [restr, Fintype.card_coe] using hmask Finset.univ
 
 end Cslib.Circuits.Boolean

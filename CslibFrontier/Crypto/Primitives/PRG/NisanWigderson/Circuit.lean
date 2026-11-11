@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Circuit.Boolean.Hierarchy
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Sampling
+public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Queries
+import CslibFrontier.Computability.Circuit.Boolean.Lookup
 import CslibFrontier.Computability.Circuit.Complexity
 
 /-!
@@ -30,6 +32,13 @@ every trial of the randomized reconstruction, not just for one good choice
 (`complexity_trialGuess_le`). Gates are counted as in `Cslib.Circuits.complexity` over the
 De Morgan basis, constants and negations included.
 
+A learner that runs a trial does not know `f`; it knows only the answers to its queries
+(`Cslib.Crypto.PRG.NisanWigderson.trialPoints`). The same bound holds for a single circuit that
+reads those answers from input wires (`complexity_trialGuess_answers_le`). Each earlier output bit
+selects its answer by the at most `a` overlap bits of the input
+(`Cslib.Circuits.Boolean.complexity_select_le`), so the number of answer wires does not enter the
+bound.
+
 ## Main results
 
 * `Cslib.Crypto.PRG.NisanWigderson.exists_complexity_le_half_add_div_le_card_eq`: a test of
@@ -39,8 +48,12 @@ De Morgan basis, constants and negations included.
 * `Cslib.Crypto.PRG.NisanWigderson.toReal_realExperiment_sub_toReal_idealExperiment_lt`: the
   generator fools circuits with `S` gates if `f` is hard to approximate with
   `S + m (2 ^ a (2 a + 3) + 1) + 1` gates.
+* `Cslib.Crypto.PRG.NisanWigderson.complexity_nextBitGuess_le`: the predictor built from a test
+  costs the test, `m` times the cost of each earlier bit, and one gate.
 * `Cslib.Crypto.PRG.NisanWigderson.complexity_trialGuess_le`: the guess of every trial has
   complexity at most `S + m (2 ^ a (2 a + 3) + 1) + 1`.
+* `Cslib.Crypto.PRG.NisanWigderson.complexity_trialGuess_answers_le`: the same bound for one circuit
+  that reads the answers to the trial's queries from input wires.
 
 ## References
 
@@ -58,8 +71,8 @@ variable {ℓ n a m : ℕ}
 
 /-- The guess of the predictor built from a test, with fixed random choices and with the first
 `i` bits computed by functions of complexity at most `B ≥ 1`, costs at most the test, `m * B`, and
-one gate. -/
-private theorem complexity_nextBitGuess_le (test : BooleanFunction m) (i : Fin m) (r : Bool)
+one gate. The functions may have any number of inputs. -/
+theorem complexity_nextBitGuess_le (test : BooleanFunction m) (i : Fin m) (r : Bool)
     (u : Fin m → Bool) (bit : Fin i → BooleanFunction n) {B : ℕ} (hB : 1 ≤ B)
     (hbit : ∀ j, complexity interpretation (single (bit j)) ≤ B) :
     complexity interpretation (single fun x => nextBitGuess test i r u fun j => bit j x) ≤
@@ -109,6 +122,55 @@ theorem complexity_trialGuess_le (D : Design ℓ n a m) (f : BooleanFunction n)
   have := D.card_overlap_le <|
     Fin.ne_of_gt (show Fin.castLE t.pos.isLt.le j < t.pos from j.isLt)
   gcongr
+
+/-- **The guess of every trial, reading its queries from input wires.** If the trial `t` makes at
+most `q` queries, one De Morgan circuit `F` on `q + n` inputs, with the same size bound as
+`complexity_trialGuess_le`, computes the guess for every hard function `f`: on inputs `z ++ x`
+where `z i` is the value of `f` at the `i`-th query, `F` outputs the guess at `x`. The remaining
+answer bits are ignored. Output bit `j` reads the answer selected by the at most `a` bits of `x`
+in `D.overlap t.pos j` (`Cslib.Circuits.Boolean.complexity_select_le`). -/
+theorem complexity_trialGuess_answers_le (D : Design ℓ n a m) (test : BooleanFunction m)
+    (t : Trial ℓ m) {q : ℕ} (hq : (trialPoints D t).length ≤ q) :
+    ∃ F : BooleanFunction (q + n),
+      complexity interpretation (single F) ≤
+          complexity interpretation (single test) + m * (2 ^ a * (2 * a + 3) + 1) + 1 ∧
+        ∀ (f : BooleanFunction n) (z : Fin q → Bool),
+          (∀ (i : Fin q) (hi : i.1 < (trialPoints D t).length),
+            z i = f ((trialPoints D t)[i.1])) →
+          ∀ x, trialGuess D f test t x = F (Fin.append z x) := by
+  classical
+  -- the point read by output bit `j`, as a function of the overlap bits of `x`
+  let pt (j : Fin t.pos) (x : Fin n → Bool) : Fin n → Bool :=
+    D.restrict (Fin.castLE t.pos.isLt.le j) (D.extend t.pos x t.seed)
+  let O (j : Fin t.pos) : Finset (Fin n) := D.overlap t.pos (Fin.castLE t.pos.isLt.le j)
+  let ext (j : Fin t.pos) (y : O j → Bool) : Fin n → Bool :=
+    fun k => if hk : k ∈ O j then y ⟨k, hk⟩ else false
+  have hlt (j : Fin t.pos) (x : Fin n → Bool) :
+      (trialPoints D t).idxOf (pt j x) < (trialPoints D t).length :=
+    List.idxOf_lt_length_of_mem (restrict_extend_mem_trialPoints D t j x)
+  -- the index of that point among the queries
+  let sel (j : Fin t.pos) (y : O j → Bool) : Fin q :=
+    ⟨(trialPoints D t).idxOf (pt j (ext j y)), (hlt j _).trans_le hq⟩
+  let bit (j : Fin t.pos) : BooleanFunction (q + n) := fun zx =>
+    zx (Fin.castAdd n (sel j fun i => zx (Fin.natAdd q i)))
+  refine ⟨fun zx => nextBitGuess test t.pos t.bit t.pad fun j => bit j zx,
+    complexity_nextBitGuess_le test t.pos t.bit t.pad bit (Nat.le_add_left 1 _) fun j => ?_,
+    fun f z hz x => ?_⟩
+  · refine (complexity_select_le (O j) (sel j)).trans ?_
+    have := D.card_overlap_le <|
+      Fin.ne_of_gt (show Fin.castLE t.pos.isLt.le j < t.pos from j.isLt)
+    gcongr
+  · simp only [trialGuess]
+    congr 1
+    funext j
+    have hpt : pt j (ext j fun i => x i) = pt j x :=
+      D.dependsOn_restrict_extend t.pos _ t.seed fun k hk => by
+        simp only [ext]
+        exact dite_eq_left (Finset.mem_coe.1 hk)
+    simp only [Fin.take_apply, generator_apply, bit, Fin.append_right, Fin.append_left]
+    rw [hz _ (hlt j _)]
+    simp only [sel, List.getElem_idxOf, hpt]
+    rfl
 
 /-- **The Nisan–Wigderson reconstruction with circuits**
 [Arora and Barak, Chapter 20][AroraBarak09]. If `0 < m` and a deterministic test accepts outputs of
