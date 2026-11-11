@@ -150,25 +150,11 @@ section PolynomialAndQuadraticMap
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-omit [NormedSpace ℝ E] in
-private lemma continuousOn_sum {ι : Type*} (s : Finset ι) {g : ι → E → ℝ} {S : Set E}
-    (hg : ∀ i ∈ s, ContinuousOn (g i) S) :
-    ContinuousOn (fun x => ∑ i ∈ s, g i x) S := by
-  classical
-  induction s using Finset.induction with
-  | empty =>
-    simp only [Finset.sum_empty]
-    exact continuousOn_const
-  | @insert a s ha ih =>
-    simp only [Finset.sum_insert ha]
-    exact (hg a (Finset.mem_insert_self a s)).add
-      (ih fun i hi => hg i (Finset.mem_insert_of_mem hi))
-
 theorem IsQuadraticOn.continuousOn [FiniteDimensional ℝ E] {f : E → ℝ} {S : Set E}
     (hf : IsQuadraticOn f S) : ContinuousOn f S := by
   rcases hf with ⟨n, a, b, h⟩
   have hcont : ContinuousOn (fun x => ∑ i : Fin n, a i x * b i x) S :=
-    continuousOn_sum Finset.univ fun i _ =>
+    continuousOn_finsetSum Finset.univ fun i _ =>
       ((a i).continuous_of_finiteDimensional.mul
         (b i).continuous_of_finiteDimensional).continuousOn
   exact hcont.congr h
@@ -532,6 +518,16 @@ theorem IsPQOn.exists_triangulation_mvPolynomial_basis {ι : Type*} [Finite ι]
     · exact ⟨0, fun h => False.elim (hs h)⟩
   choose p hp using hpoly
   exact ⟨K, hfin, hsp, p, fun s hs => hp s hs⟩
+
+/-- Specialization of `IsPQOn.exists_triangulation_mvPolynomial_basis` to `Fin d → ℝ`. -/
+theorem IsPQOn.exists_triangulation_mvPolynomial_pi {d : ℕ} {P : Set (Fin d → ℝ)}
+    {f : (Fin d → ℝ) → ℝ} (hf : IsPQOn P f) :
+    ∃ K : Geometry.SimplicialComplex ℝ (Fin d → ℝ), K.faces.Finite ∧ K.space = P ∧
+      ∃ p : Finset (Fin d → ℝ) → MvPolynomial (Fin d) ℝ,
+        ∀ s ∈ K.faces, (p s).totalDegree ≤ 2 ∧
+          Set.EqOn f (fun x => MvPolynomial.eval x (p s))
+            (convexHull ℝ (s : Set (Fin d → ℝ))) :=
+  hf.exists_triangulation_mvPolynomial_basis (Pi.basisFun ℝ (Fin d))
 
 /-- Every PQ function on `P` can be presented as a finite list of convex polytope cells covering
 `P` together with a multivariate polynomial of `totalDegree ≤ 2` (in coordinates of basis `e`)

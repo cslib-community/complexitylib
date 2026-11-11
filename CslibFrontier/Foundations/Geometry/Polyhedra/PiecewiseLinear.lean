@@ -162,46 +162,11 @@ theorem IsAffineOn.map_convex_combo {f : E → F} {S : Set E} (hf : IsAffineOn f
     (hxy : a • x + b • y ∈ S) :
     f (a • x + b • y) = a • f x + b • f y := by
   rcases hf with ⟨g, hg⟩
-  rw [hg hxy, hg hx, hg hy]
-  have h1 := g.map_vadd (0 : E) (a • x + b • y)
-  have hx0 := g.map_vadd (0 : E) x
-  have hy0 := g.map_vadd (0 : E) y
-  simp only [vadd_eq_add, add_zero] at h1 hx0 hy0
-  rw [h1, map_add, map_smul, map_smul, hx0, hy0]
-  have ha : a = 1 - b := by linarith
-  rw [ha]
-  module
+  have ha : a = 1 - b := eq_sub_of_add_eq hab
+  rw [hg hxy, hg hx, hg hy, ha, ← AffineMap.lineMap_apply_module, g.apply_lineMap,
+    AffineMap.lineMap_apply_module]
 
 end BasicAffine
-
-section Topological
-
-/-- A function is continuous on a finite union of closed sets whenever it is continuous on each
-piece. -/
-theorem continuousOn_biUnion_of_isClosed {E F : Type*} [TopologicalSpace E] [TopologicalSpace F]
-    {ι : Type*} {s : Set ι} (hs : s.Finite)
-    {t : ι → Set E} {f : E → F} (hclosed : ∀ i ∈ s, IsClosed (t i))
-    (hcont : ∀ i ∈ s, ContinuousOn f (t i)) :
-    ContinuousOn f (⋃ i ∈ s, t i) := by
-  have hmain : ∀ s : Set ι, s.Finite → (∀ i ∈ s, IsClosed (t i)) →
-      (∀ i ∈ s, ContinuousOn f (t i)) →
-      IsClosed (⋃ i ∈ s, t i) ∧ ContinuousOn f (⋃ i ∈ s, t i) := by
-    intro s hs hcl hct
-    induction s, hs using Set.Finite.induction_on with
-    | empty =>
-      simp only [Set.biUnion_empty]
-      exact ⟨isClosed_empty, continuousOn_empty f⟩
-    | @insert a s' _ _ ih =>
-      rw [Set.biUnion_insert]
-      have hca := hct a (Set.mem_insert a s')
-      have hcla := hcl a (Set.mem_insert a s')
-      obtain ⟨hcls', hcts'⟩ := ih
-        (fun i hi => hcl i (Set.mem_insert_of_mem a hi))
-        (fun i hi => hct i (Set.mem_insert_of_mem a hi))
-      exact ⟨hcla.union hcls', hca.union_of_isClosed hcts' hcla hcls'⟩
-  exact (hmain s hs hclosed hcont).2
-
-end Topological
 
 section GeneralTarget
 
@@ -233,9 +198,11 @@ theorem isPiecewiseOn_continuousOn {PropCell : (E → F) → Set E → Prop}
     (hcont : ∀ {g : E → F} {S : Set E}, PropCell g S → ContinuousOn g S)
     {P : Set E} {f : E → F} (hf : IsPiecewiseOn PropCell P f) : ContinuousOn f P := by
   rcases hf with ⟨_, C, rfl, hprop⟩
-  exact continuousOn_biUnion_of_isClosed C.finite_cells
-    (fun Q hQ => (C.isPolytope_of_mem hQ).isClosed)
-    (fun Q hQ => hcont (hprop Q hQ))
+  rw [PolytopalComplex.space, Set.biUnion_eq_iUnion]
+  have : Finite C.cells := C.finite_cells.to_subtype
+  exact (locallyFinite_of_finite fun Q : C.cells => (Q : Set E)).continuousOn_iUnion
+    (fun Q => (C.isPolytope_of_mem Q.2).isClosed)
+    (fun Q => hcont (hprop Q Q.2))
 
 /-- A map `f : E → F` is **piecewise-linear on `P`** (`IsPLOn P f`) if `P` is a compact
 polyhedron admitted as the space of a finite polytopal complex on whose cells `f` is affine. -/

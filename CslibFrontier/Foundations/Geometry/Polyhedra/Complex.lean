@@ -257,24 +257,6 @@ section HyperplaneSplit
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
 omit [FiniteDimensional ℝ E] in
-private lemma affineMap_convex_setOf_le (L : Set (E →ᵃ[ℝ] ℝ)) :
-    Convex ℝ {x : E | ∀ ℓ ∈ L, ℓ x ≤ 0} := by
-  intro x hx y hy a b ha hb hab ℓ hℓ
-  have h1 := hx ℓ hℓ
-  have h2 := hy ℓ hℓ
-  have hlin := ℓ.map_vadd (0 : E) (a • x + b • y)
-  have hx0 := ℓ.map_vadd (0 : E) x
-  have hy0 := ℓ.map_vadd (0 : E) y
-  simp only [vadd_eq_add, add_zero] at hlin hx0 hy0
-  have heq : ℓ (a • x + b • y) = a * ℓ x + b * ℓ y := by
-    rw [hlin, map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul, hx0, hy0]
-    have ha' : a = 1 - b := by linarith
-    rw [ha']
-    ring
-  rw [heq]
-  nlinarith
-
-omit [FiniteDimensional ℝ E] in
 private lemma neg_affineMap_apply (ℓ : E →ᵃ[ℝ] ℝ) (x : E) : (-ℓ) x = -(ℓ x) := rfl
 
 private lemma isPolytopeFace_halfSpace_inter (ℓ : E →ᵃ[ℝ] ℝ) {R₁ R₂ : Set E}
@@ -291,7 +273,7 @@ private lemma isPolytopeFace_halfSpace_inter (ℓ : E →ᵃ[ℝ] ℝ) {R₁ R�
       neg_affineMap_apply, neg_nonpos, le_antisymm_iff]
   have hface_le : IsPolytopeFace {x | ℓ x ≤ 0} {x | ℓ x = 0} := by
     have h := isPolytopeFace_of_eq_zero (LR := {ℓ}) (finite_singleton ℓ)
-      hL (hL ▸ affineMap_convex_setOf_le {ℓ}) (Subset.refl {ℓ})
+      hL (hL ▸ convex_setOf_forall_le {ℓ}) (Subset.refl {ℓ})
     have heq : {x ∈ {x | ℓ x ≤ 0} | ∀ m ∈ ({ℓ} : Set _), m x = 0} = {x | ℓ x = 0} := by
       ext x
       simp only [mem_ofPred_eq, mem_singleton_iff, forall_eq, and_iff_right_iff_imp]
@@ -299,7 +281,7 @@ private lemma isPolytopeFace_halfSpace_inter (ℓ : E →ᵃ[ℝ] ℝ) {R₁ R�
     rwa [heq] at h
   have hface_ge : IsPolytopeFace {x | 0 ≤ ℓ x} {x | ℓ x = 0} := by
     have h := isPolytopeFace_of_eq_zero (LR := {-ℓ}) (finite_singleton (-ℓ))
-      hG (hG ▸ affineMap_convex_setOf_le {-ℓ}) (Subset.refl {-ℓ})
+      hG (hG ▸ convex_setOf_forall_le {-ℓ}) (Subset.refl {-ℓ})
     have heq : {x ∈ {x | 0 ≤ ℓ x} | ∀ m ∈ ({-ℓ} : Set _), m x = 0} = {x | ℓ x = 0} := by
       ext x
       simp only [mem_ofPred_eq, mem_singleton_iff, forall_eq, neg_affineMap_apply, neg_eq_zero,
@@ -308,9 +290,9 @@ private lemma isPolytopeFace_halfSpace_inter (ℓ : E →ᵃ[ℝ] ℝ) {R₁ R�
     rwa [heq] at h
   have hc1 : Convex ℝ R₁ := by
     rcases h₁ with rfl | rfl | rfl
-    · exact hL ▸ affineMap_convex_setOf_le {ℓ}
-    · exact hG ▸ affineMap_convex_setOf_le {-ℓ}
-    · exact hZ ▸ affineMap_convex_setOf_le {ℓ, -ℓ}
+    · exact hL ▸ convex_setOf_forall_le {ℓ}
+    · exact hG ▸ convex_setOf_forall_le {-ℓ}
+    · exact hZ ▸ convex_setOf_forall_le {ℓ, -ℓ}
   have hLG : {x | ℓ x ≤ 0} ∩ {x | 0 ≤ ℓ x} = {x | ℓ x = 0} := by
     ext x; simp only [mem_inter_iff, mem_ofPred_eq, le_antisymm_iff]
   have hGL : {x | 0 ≤ ℓ x} ∩ {x | ℓ x ≤ 0} = {x | ℓ x = 0} := by
@@ -1641,48 +1623,6 @@ theorem exists_common_triangulation_of_complexes (K₁ K₂ : Geometry.Simplicia
   rcases hR₂ with ⟨t₂, ht₂, rfl⟩
   exact ⟨⟨t₁, ht₁, hs₁⟩, ⟨t₂, ht₂, hs₂⟩⟩
 
-omit [FiniteDimensional ℝ E] in
-private lemma finite_simplex_mem_face_subset
-    {s : Finset E} {Q R : Set E} (hQ : IsPolytope Q)
-    (hsQ : convexHull ℝ (s : Set E) ⊆ Q) (hQR : IsPolytopeFace Q R)
-    {x : E} (hx : x ∈ convexHull ℝ (s : Set E) ∩ R) :
-    ∃ t ⊆ s, t.Nonempty ∧ (t : Set E) ⊆ R ∧ x ∈ convexHull ℝ (t : Set E) := by
-  classical
-  have hxhull := hx.1
-  rw [Finset.convexHull_eq] at hxhull
-  obtain ⟨w, hw0, hw1, hwx⟩ := hxhull
-  rw [Finset.centerMass_eq_of_sum_1 _ id hw1] at hwx
-  simp only [id_eq] at hwx
-  let t := s.filter (fun v => 0 < w v)
-  have hw_pos : ∀ v ∈ t, 0 < w v := fun v hv => (Finset.mem_filter.1 hv).2
-  have hw_sum : ∑ v ∈ t, w v = 1 := by
-    rw [← hw1, Finset.sum_subset (Finset.filter_subset _ s)]
-    intro v hv hn
-    simp only [Finset.mem_filter, not_and, not_lt] at hn
-    exact le_antisymm (hn hv) (hw0 v hv)
-  have htne : t.Nonempty := by
-    by_contra hmt
-    rw [Finset.not_nonempty_iff_eq_empty] at hmt
-    rw [hmt, Finset.sum_empty] at hw_sum
-    linarith
-  have hx_comb : ∑ v ∈ t, w v • v = x := by
-    rw [← hwx]
-    refine Finset.sum_subset (Finset.filter_subset _ s) fun v hv hn => ?_
-    dsimp only [t] at hn
-    simp only [Finset.mem_filter, not_and, not_lt] at hn
-    have : w v = 0 := le_antisymm (hn hv) (hw0 v hv)
-    simp [this]
-  have htQ : (t : Set E) ⊆ Q :=
-    Subset.trans (Finset.coe_subset.2 (Finset.filter_subset _ s))
-      (Subset.trans (subset_convexHull ℝ _) hsQ)
-  have htR : ∀ v ∈ t, v ∈ R :=
-    isExtreme_mem_of_sum_pos hQR.isExtreme hQ.convex htne htQ w hw_pos hw_sum
-      (hx_comb.symm ▸ hx.2)
-  refine ⟨t, Finset.filter_subset _ s, htne, fun v hv => htR v hv, ?_⟩
-  rw [Finset.convexHull_eq]
-  exact ⟨w, fun v hv => (hw_pos v hv).le, hw_sum,
-    by rw [Finset.centerMass_eq_of_sum_1 _ id hw_sum]; simpa only [id_eq] using hx_comb⟩
-
 /-- Given a compact polyhedron `P` and a finite family of compact polyhedra `Q i`, there is a
 finite triangulation `K` of `P` that simultaneously induces a triangulation of each `P ∩ Q i` as a
 subcomplex (in particular of each `Q i` when `Q i ⊆ P`). Cited in issue #4325 notes as
@@ -1755,8 +1695,9 @@ theorem exists_triangulation_compatible_with_subpolyhedra {ι : Type*} [Finite �
       rcases hxCP with ⟨RP, hRP, hxRP⟩
       have hface := (PolytopalComplex.ofFinitePolytopes_inter_face_and_barycenter hℱ hpoly
         hQtopD (.inl hRP)).1
-      obtain ⟨t, hts, htne, htRP, hxt⟩ := finite_simplex_mem_face_subset
-        (D.isPolytope_of_mem hQtopD) hsQtop hface ⟨hxs, hsQtop hxs, hxRP⟩
+      obtain ⟨t, hts, htne, htRP, hxt⟩ := exists_finset_subset_convexHull_of_isExtreme
+        (D.isPolytope_of_mem hQtopD).convex (Subset.trans (subset_convexHull ℝ _) hsQtop)
+        hface.isExtreme ⟨hxs, hsQtop hxs, hxRP⟩
       exact Set.mem_biUnion ⟨Kall.down_closed ⟨𝒞, h𝒞, rfl⟩ hts htne,
         htRP.trans (inter_subset_right.trans ((CP.subset_space hRP).trans (hCP ▸ Subset.rfl)))⟩ hxt
   · refine ⟨subComplex (P ∩ Q i), ?_, ?_⟩
@@ -1788,8 +1729,9 @@ theorem exists_triangulation_compatible_with_subpolyhedra {ι : Type*} [Finite �
           rw [show Qtop ∩ (RP ∩ RQ) = (Qtop ∩ RP) ∩ (Qtop ∩ RQ) by
             ext y; simp only [mem_inter_iff]; tauto]
           exact hfaceP.inter hfaceQ
-        obtain ⟨t, hts, htne, htR, hxt⟩ := finite_simplex_mem_face_subset
-          (D.isPolytope_of_mem hQtopD) hsQtop hfacePQ ⟨hxs, hsQtop hxs, hxRP, hxRQ⟩
+        obtain ⟨t, hts, htne, htR, hxt⟩ := exists_finset_subset_convexHull_of_isExtreme
+          (D.isPolytope_of_mem hQtopD).convex (Subset.trans (subset_convexHull ℝ _) hsQtop)
+          hfacePQ.isExtreme ⟨hxs, hsQtop hxs, hxRP, hxRQ⟩
         refine Set.mem_biUnion ⟨Kall.down_closed hsf hts htne, fun v hv => ?_⟩ hxt
         have hv' := htR hv
         exact ⟨hCP ▸ CP.subset_space hRP hv'.2.1, (hCQ i) ▸ (CQ i).subset_space hRQ hv'.2.2⟩

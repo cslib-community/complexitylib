@@ -99,6 +99,29 @@ example : IsPolytope unitSquare2 ∧ IsHPolytope unitSquare2 := by
   have hP : IsPolytope unitSquare2 := isPolytope_rect2 zero_le_one zero_le_one
   exact ⟨hP, isPolytope_iff_isHPolytope.1 hP⟩
 
+private def stdSimplex2 : Set (Fin 2 → ℝ) :=
+  {x | 0 ≤ x 0 ∧ 0 ≤ x 1 ∧ x 0 + x 1 ≤ 1}
+
+example : IsHPolytope stdSimplex2 ∧ IsPolytope stdSimplex2 := by
+  have hsub : stdSimplex2 ⊆ unitSquare2 := fun x ⟨hx0, hx1, hsum⟩ =>
+    ⟨⟨hx0, by linarith⟩, ⟨hx1, by linarith⟩⟩
+  have hbd : Bornology.IsBounded stdSimplex2 :=
+    (isPolytope_rect2 zero_le_one zero_le_one).isBounded.subset hsub
+  let ℓ₀ : (Fin 2 → ℝ) →ᵃ[ℝ] ℝ := -coord2 0
+  let ℓ₁ : (Fin 2 → ℝ) →ᵃ[ℝ] ℝ := -coord2 1
+  let ℓ₂ : (Fin 2 → ℝ) →ᵃ[ℝ] ℝ :=
+    coord2 0 + coord2 1 - AffineMap.const ℝ (Fin 2 → ℝ) 1
+  have hH : IsHPolytope stdSimplex2 := by
+    refine ⟨hbd, {ℓ₀, ℓ₁, ℓ₂},
+      Set.Finite.insert _ (Set.Finite.insert _ (Set.finite_singleton _)), ?_⟩
+    ext x
+    simp only [stdSimplex2, Set.mem_ofPred_eq, Set.mem_insert_iff, Set.mem_singleton_iff,
+      forall_eq_or_imp, forall_eq, ℓ₀, ℓ₁, ℓ₂, coord2, AffineMap.coe_neg,
+      AffineMap.coe_sub, AffineMap.coe_add, AffineMap.coe_const, LinearMap.coe_toAffineMap,
+      LinearMap.proj_apply, Pi.neg_apply, Pi.sub_apply, Pi.add_apply, Function.const_apply,
+      neg_nonpos, sub_nonpos]
+  exact ⟨hH, isPolytope_iff_isHPolytope.2 hH⟩
+
 /-! ### Common refinement of diagonal triangulations and nonconvex L-shape -/
 
 private lemma vec2_eq_iff (x y : Fin 2 → ℝ) : x = y ↔ x 0 = y 0 ∧ x 1 = y 1 :=

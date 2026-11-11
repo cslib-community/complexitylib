@@ -184,35 +184,26 @@ theorem affineMap_apply_eq_linear_add (ℓ : E →ᵃ[ℝ] ℝ) (x : E) :
     ℓ x = ℓ.linear x + ℓ 0 := by
   simpa only [vadd_eq_add, add_zero] using ℓ.map_vadd (0 : E) x
 
-private lemma affineMap_apply_combo (ℓ : E →ᵃ[ℝ] ℝ) {a b : ℝ} (hab : a + b = 1) (x y : E) :
-    ℓ (a • x + b • y) = a * ℓ x + b * ℓ y := by
-  rw [affineMap_apply_eq_linear_add ℓ, affineMap_apply_eq_linear_add ℓ x,
-    affineMap_apply_eq_linear_add ℓ y, map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul]
-  have ha : a = 1 - b := by linarith
-  rw [ha]
-  ring
-
 private lemma affineMap_eval_sum_smul (ℓ : E →ᵃ[ℝ] ℝ) {S : Finset E} {w : E → ℝ}
     (hw : ∑ v ∈ S, w v = 1) :
     ℓ (∑ v ∈ S, w v • v) = ∑ v ∈ S, w v * ℓ v := by
-  rw [affineMap_apply_eq_linear_add ℓ, map_sum]
-  simp only [map_smul, smul_eq_mul]
-  have hsum : ∑ v ∈ S, w v * ℓ v = (∑ v ∈ S, w v * ℓ.linear v) + ℓ 0 := by
-    calc ∑ v ∈ S, w v * ℓ v
-        = ∑ v ∈ S, (w v * ℓ.linear v + w v * ℓ 0) :=
-          Finset.sum_congr rfl fun v _ => by rw [affineMap_apply_eq_linear_add ℓ v, mul_add]
-      _ = (∑ v ∈ S, w v * ℓ.linear v) + (∑ v ∈ S, w v) * ℓ 0 := by
-          rw [Finset.sum_add_distrib, ← Finset.sum_mul]
-      _ = (∑ v ∈ S, w v * ℓ.linear v) + ℓ 0 := by rw [hw, one_mul]
-  exact hsum.symm
+  have h : ℓ (S.affineCombination ℝ id w) = S.affineCombination ℝ (ℓ ∘ id) w :=
+    Finset.map_affineCombination S id w hw ℓ
+  simpa only [Finset.affineCombination_eq_linear_combination _ _ _ hw, Function.comp_apply,
+    id_eq, smul_eq_mul] using h
+
+/-- Any finite or infinite intersection of closed affine half-spaces is convex. -/
+theorem convex_setOf_forall_le (L : Set (E →ᵃ[ℝ] ℝ)) :
+    Convex ℝ {x : E | ∀ ℓ ∈ L, ℓ x ≤ 0} := by
+  have heq : {x : E | ∀ ℓ ∈ L, ℓ x ≤ 0} = ⋂ ℓ ∈ L, ℓ ⁻¹' Set.Iic (0 : ℝ) := by
+    ext x
+    simp only [mem_ofPred_eq, Set.mem_iInter, Set.mem_preimage, Set.mem_Iic]
+  rw [heq]
+  exact convex_iInter fun ℓ => convex_iInter fun _ => (convex_Iic (0 : ℝ)).affine_preimage ℓ
 
 theorem IsHPolytope.convex {P : Set E} (hP : IsHPolytope P) : Convex ℝ P := by
   rcases hP with ⟨_, L, _, rfl⟩
-  intro x hx y hy a b ha hb hab ℓ hℓ
-  rw [affineMap_apply_combo ℓ hab x y]
-  have hxℓ := hx ℓ hℓ
-  have hyℓ := hy ℓ hℓ
-  nlinarith
+  exact convex_setOf_forall_le L
 
 theorem IsHPolytope.inter {P Q : Set E} (hP : IsHPolytope P) (hQ : IsHPolytope Q) :
     IsHPolytope (P ∩ Q) := by
@@ -674,52 +665,51 @@ theorem isExtreme_mem_of_sum_pos {P F : Set E} (hPF : IsExtreme ℝ P F) (hP : C
       · exact haF
       · exact hS'F v hv'
 
+omit [FiniteDimensional ℝ E] in
+/-- Any point in `convexHull ℝ (s : Set E) ∩ R`, where `(s : Set E) ⊆ Q` and `R` is extreme in
+convex `Q`, lies in the convex hull of a nonempty subset `t ⊆ s` contained in `R`. -/
+theorem exists_finset_subset_convexHull_of_isExtreme {s : Finset E} {Q R : Set E}
+    (hQ : Convex ℝ Q) (hsQ : (s : Set E) ⊆ Q) (hQR : IsExtreme ℝ Q R)
+    {x : E} (hx : x ∈ convexHull ℝ (s : Set E) ∩ R) :
+    ∃ t ⊆ s, t.Nonempty ∧ (t : Set E) ⊆ R ∧ x ∈ convexHull ℝ (t : Set E) := by
+  classical
+  obtain ⟨w, hw0, hw1, hwx⟩ := Finset.mem_convexHull'.1 hx.1
+  let t := s.filter (fun v => 0 < w v)
+  have hwt0 : ∀ v ∈ s, v ∉ t → w v = 0 := fun v hv hn => by
+    simp only [t, Finset.mem_filter, not_and, not_lt] at hn
+    exact le_antisymm (hn hv) (hw0 v hv)
+  have hw_pos : ∀ v ∈ t, 0 < w v := fun v hv => (Finset.mem_filter.1 hv).2
+  have hw_sum : ∑ v ∈ t, w v = 1 :=
+    (Finset.sum_subset (Finset.filter_subset _ s) hwt0).trans hw1
+  have htne : t.Nonempty := by
+    by_contra hmt
+    rw [Finset.not_nonempty_iff_eq_empty] at hmt
+    rw [hmt, Finset.sum_empty] at hw_sum
+    exact one_ne_zero hw_sum.symm
+  have hx_comb : ∑ v ∈ t, w v • v = x := by
+    rw [← hwx]
+    exact Finset.sum_subset (Finset.filter_subset _ s) fun v hv hn => by
+      rw [hwt0 v hv hn, zero_smul]
+  have htR := isExtreme_mem_of_sum_pos hQR hQ htne
+    (Subset.trans (Finset.coe_subset.2 (Finset.filter_subset _ s)) hsQ)
+    w hw_pos hw_sum (hx_comb.symm ▸ hx.2)
+  exact ⟨t, Finset.filter_subset _ s, htne, fun v hv => htR v hv,
+    Finset.mem_convexHull'.2 ⟨w, fun v hv => (hw_pos v hv).le, hw_sum, hx_comb⟩⟩
+
 theorem IsPolytopeFace.eq_convexHull_extremePoints_inter {P F : Set E} (hP : IsPolytope P)
     (hPF : IsPolytopeFace P F) : F = convexHull ℝ (P.extremePoints ℝ ∩ F) := by
   classical
   refine Subset.antisymm (fun x hx => ?_) (convexHull_min inter_subset_right hPF.convex)
-  have hPeq : P = convexHull ℝ (P.extremePoints ℝ) := hP.eq_convexHull_extremePoints
   have hVfin := hP.finite_extremePoints
   set V : Finset E := hVfin.toFinset
   have hxV : x ∈ convexHull ℝ (V : Set E) := by
-    rw [hVfin.coe_toFinset, ← hPeq]
+    rw [hVfin.coe_toFinset, ← hP.eq_convexHull_extremePoints]
     exact hPF.subset hx
-  rw [Finset.convexHull_eq] at hxV
-  obtain ⟨w, hw0, hw1, hwx⟩ := hxV
-  rw [Finset.centerMass_eq_of_sum_1 _ id hw1] at hwx
-  set S : Finset E := V.filter (fun v => 0 < w v)
-  have hSne : S.Nonempty := by
-    by_contra hS
-    rw [Finset.not_nonempty_iff_eq_empty] at hS
-    have h0 : ∀ v ∈ V, w v = 0 := fun v hv => by
-      have : v ∉ S := by simp [hS]
-      simp only [S, Finset.mem_filter, not_and, not_lt] at this
-      exact le_antisymm (this hv) (hw0 v hv)
-    have hsum0 : ∑ v ∈ V, w v = 0 := Finset.sum_eq_zero h0
-    linarith
-  have hw_pos : ∀ v ∈ S, 0 < w v := fun v hv => (Finset.mem_filter.1 hv).2
-  have hw_sumS : ∑ v ∈ S, w v = 1 := by
-    rw [← hw1, Finset.sum_subset (Finset.filter_subset _ V)]
-    intro v hv hnS
-    simp only [Finset.mem_filter, not_and, not_lt] at hnS
-    exact le_antisymm (hnS hv) (hw0 v hv)
-  have hwxS : ∑ v ∈ S, w v • v = x := by
-    rw [← hwx]
-    refine Finset.sum_subset (Finset.filter_subset _ V) fun v hv hnS => ?_
-    simp only [Finset.mem_filter, not_and, not_lt, S] at hnS
-    have : w v = 0 := le_antisymm (hnS hv) (hw0 v hv)
-    simp [this]
-  have hSP : (S : Set E) ⊆ P := fun v hv =>
-    (hVfin.mem_toFinset.1 (Finset.filter_subset _ V hv)).1
-  have hSF := isExtreme_mem_of_sum_pos hPF.isExtreme hP.convex hSne hSP w hw_pos hw_sumS
-    (hwxS.symm ▸ hx)
-  have hxS : x ∈ convexHull ℝ (S : Set E) := by
-    rw [Finset.convexHull_eq]
-    exact ⟨w, fun v hv => (hw_pos v hv).le, hw_sumS,
-      by rwa [Finset.centerMass_eq_of_sum_1 _ id hw_sumS]⟩
+  have hVP : (V : Set E) ⊆ P := fun _ hv => (hVfin.mem_toFinset.1 hv).1
+  obtain ⟨S, hSV, _, hSF, hxS⟩ :=
+    exists_finset_subset_convexHull_of_isExtreme hP.convex hVP hPF.isExtreme ⟨hxV, hx⟩
   refine convexHull_mono ?_ hxS
-  intro v hv
-  exact ⟨hVfin.mem_toFinset.1 (Finset.filter_subset _ V hv), hSF v hv⟩
+  exact fun v hv => ⟨hVfin.mem_toFinset.1 (hSV hv), hSF hv⟩
 
 theorem IsPolytopeFace.isPolytope {P F : Set E} (hP : IsPolytope P) (hPF : IsPolytopeFace P F) :
     IsPolytope F :=
@@ -1108,13 +1098,7 @@ theorem exists_isPolytopeFace_inter_setOf_le {P R F : Set E} (hP : IsPolytope P)
     {LR : Set (E →ᵃ[ℝ] ℝ)} (hLR : LR.Finite) (hR : R = {x | ∀ m ∈ LR, m x ≤ 0})
     (hF : IsPolytopeFace (P ∩ R) F) (hne : F.Nonempty) :
     ∃ P' R', IsPolytopeFace P P' ∧ IsPolytopeFace R R' ∧ F = P' ∩ R' := by
-  have hRc : Convex ℝ R := by
-    rw [hR]
-    intro x hx y hy a b ha hb hab m hm
-    rw [affineMap_apply_combo m hab x y]
-    have hxm := hx m hm
-    have hym := hy m hm
-    nlinarith
+  have hRc : Convex ℝ R := hR ▸ convex_setOf_forall_le LR
   obtain ⟨P', L₀, hPP', hL₀, hFeq⟩ :=
     exists_isPolytopeFace_inter_setOf_le_eq_zero hP hLR hR hF hne
   exact ⟨P', {x ∈ R | ∀ m ∈ L₀, m x = 0}, hPP',
