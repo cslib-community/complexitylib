@@ -181,7 +181,8 @@ theorem realizes_step :
     | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.pos_lt hA hvp)
 
 /-- The actual index guard selects a native early exit; the logarithmic cutoff is proof data.
-No register contains a fuel counter or a computed logarithm. -/
+No register contains a fuel counter or a computed logarithm. The source guard `2 ≤ k` is tested
+as `1 < k`, using the prepared constant-one word. -/
 theorem realizes_loop :
     Realizes .exact
       (fun (d, k) => boundedWhile guard step d (Nat.log 2 k) k)
@@ -190,21 +191,17 @@ theorem realizes_loop :
       (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
       (fun w (d, k) s => Shape w d k s)
       (fun (d, k) s => whileWork guard step (fun _ _ => 0) d (Nat.log 2 k) k s) := by
-  have h := Realizes.whileMeasure (appendWords layoutWords oneWords)
-    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (.lt 4 5)
-    (fun (_, k) => Nat.log 2 k) realizes_step (fun w d k s => Shape w d k s)
-    (fun _ k _ => Nat.log 2 k)
-    (fun _ _ k _ _ hz => by
-      change ¬(1 < k)
-      intro hk
+  have hStep := realizes_step
+  realize
+  intro hv
+  refine whileSafe_of_measure _ _ _ w _ (Shape w d.1) (fun k _ => Nat.log 2 k)
+    (fun k _ _ hz hk => by
       have := Nat.log_of_one_lt_of_le one_lt_two hk
       omega)
-    (fun w d k s hi hg _ => by
-      change 1 < k at hg
-      obtain ⟨_, _, hp⟩ := triple_iff.mp (step_triple hi hg)
-      rw [clientResult_width w, clientState_width w] at hp
-      exact ⟨⟨hg, hi⟩, hp⟩)
-  exact h.consequence (fun _ _ _ _ _ hi => ⟨hi, le_rfl⟩) (fun _ _ => le_rfl)
+    (fun k t hi hg _ => ?_) h le_rfl hv
+  obtain ⟨_, _, hp⟩ := triple_iff.mp (step_triple hi hg)
+  rw [clientResult_width w, clientState_width w] at hp
+  exact ⟨⟨hg, hi⟩, hp⟩
 
 /-- Actual reached loop controls, plus two binds. Constant preparation and the Unit return are
 certified native glue, absorbed into the same fixed exchange factor. -/
