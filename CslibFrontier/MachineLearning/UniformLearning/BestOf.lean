@@ -51,7 +51,8 @@ least `1/2 + γ` with probability at least `p`, taking `θ = γ/4` gives agreeme
 (`UniformLearning.QueryLearner.learns_bestOf_of_weak`).
 
 As for the other query learners here, only the number of queries is certified; running time is
-not. Selection compares exact integer agreement counts; ties go to the first maximizing run.
+not. Selection compares exact integer agreement counts; ties go to the first maximizing run
+(`UniformLearning.QueryLearner.agreeCount_lt_selectBest`).
 
 ## Main definitions
 
@@ -114,6 +115,18 @@ theorem agreeCount_le_selectBest [NeZero k] (g : (ι → Bool) → Bool)
       (List.finRange k).argmax (fun j => agreeCount g (hs j) x) ≠ none)
   rw [selectBest, hm, Option.getD_some]
   exact List.le_of_mem_argmax (List.mem_finRange j) hm
+
+/-- Ties go to the first run: every earlier hypothesis has a smaller agreement count. -/
+theorem agreeCount_lt_selectBest [NeZero k] (g : (ι → Bool) → Bool)
+    (hs : Fin k → (ι → Bool) → Bool) (x : Fin t → ι → Bool) {j : Fin k}
+    (hj : j < selectBest g hs x) :
+    agreeCount g (hs j) x < agreeCount g (hs (selectBest g hs x)) x := by
+  obtain ⟨m, hm⟩ := Option.ne_none_iff_exists'.1
+    (mt List.argmax_eq_none.1 (List.ne_nil_of_mem (List.mem_finRange j)) :
+      (List.finRange k).argmax (fun j => agreeCount g (hs j) x) ≠ none)
+  rw [selectBest, hm, Option.getD_some] at hj ⊢
+  refine lt_of_not_ge fun h => absurd hj (not_lt.2 ?_)
+  simpa using List.index_of_argmax hm (List.mem_finRange j) h
 
 /-- Selection reads the target only at the sample points. -/
 theorem selectBest_congr [NeZero k] {g g' : (ι → Bool) → Bool} (hs : Fin k → (ι → Bool) → Bool)
