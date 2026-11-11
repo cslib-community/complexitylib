@@ -26,7 +26,7 @@ printed from a short description: the **generator witness** (`GenWitness`). It h
 `f v` for `v ∈ S` only. Its expansion (`GenWitness.generate`) prints, at the input numbered `x`, the
 parity of the chosen term of the indexed formula, computed from those tables by H5b1's evaluator
 (`PartialMCSP.FromCMMSA.termParityN`). At a defined entry every term has the entry's parity, so
-the printed table is consistent with the pattern (`GenWitness.consistent_generate`).
+the printed table is consistent with the pattern (`GenWitness.exists_consistent_generate`).
 
 The tables of the set variables have total length at most `2 w(S) λ ≤ 2 θ λ`
 (`PartialMCSP.FromCMMSA.sum_two_pow_varLength_le_two_mul_weight`), so the witness has encoded
@@ -51,7 +51,7 @@ polynomial time; the threshold of the `MINKT*` instance is chosen from that.
 ## References
 
 The generator and its analysis are the library's own. They give the yes case of the library's
-proof of the `MINKT*` clause of [Hirahara2022, Theorem I.2], which issue #4447 tracks.
+proof of the `MINKT*` clause of [Hirahara2022, Theorem I.2], `MINKTStar.rpHard` in `Hardness.lean`.
 
 * [S. Hirahara, *NP-Hardness of Learning Programs and Partial MCSP*][Hirahara2022]
 -/
