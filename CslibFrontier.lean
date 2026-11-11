@@ -2302,6 +2302,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamon
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Directed
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Sparse
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Undirected
+public import CslibFrontier.Computability.Complexity.Problems.HittingSet
 public import CslibFrontier.Computability.Complexity.Problems.HornSAT
 public import CslibFrontier.Computability.Complexity.Problems.IndependentSet
 public import CslibFrontier.Computability.Complexity.Problems.IndependentSet.Sparse
