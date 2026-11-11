@@ -85,7 +85,9 @@ Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016], for `p = 2
 `g = cikkAC0Gap d e n s` and `ℓ = cikkAC0Len d e n s g`, the CIKK learner whose test accepts the
 truth tables of the rank property at `ℓ` learns every function on `n` bits computed by a circuit
 with `MOD_2` gates of depth at most `d` and size at most `s`, with error `2^{-e}` and confidence
-`1 - 2^{-h}`. The labels are in the module docstring. -/
+`1 - 2^{-h}`. The class is the length-`n` part of `Cslib.Circuits.Boolean.AC0Mod 2`: a language in
+`AC0Mod 2` has, at length `n`, a circuit of this kind with `d` its depth bound and `s` its size
+bound at `n`. The labels are in the module docstring. -/
 theorem learns_cikkLearner_rankTest (d e h n s : ℕ) :
     (cikkLearner n (cikkAC0Len d e n s (cikkAC0Gap d e n s)) e (cikkAC0Gap d e n s) h
         (truthTableTest (rankProperty sliceLevel (cikkAC0Len d e n s (cikkAC0Gap d e n s))))).Learns
