@@ -721,7 +721,11 @@ private meta def polytimeConditionalFast : TacticM Unit := withMainContext do
           { Aesop.BaseRuleSet.empty with unsafeRules := index }
         withEnv env do
           evalTactic (← `(tactic| solve | all_goals
-            aesop (config := { terminal := true, assumptionTransparency := .reducible })
+            aesop
+              (config :=
+                { terminal := true
+                  enableSimp := false
+                  assumptionTransparency := .reducible })
               (rule_sets := [-builtin, -default, PolyTime])
               (add unsafe 100% tactic $known:ident)))
       if ← Aesop.hasSorry (mkMVar goal) then throwError "conditional premise was admitted"
@@ -842,7 +846,11 @@ private meta def polytimeRawFromPlain : TacticM Unit :=
     -- alternative after raw search fails, rather than vetoing it on application alone.
     replaceMainGoal (← goal.applyConst ``ComputableInPolyTime.tidy)
     evalTactic (← `(tactic| solve |
-      aesop (config := { terminal := true, assumptionTransparency := .reducible })
+      aesop
+        (config :=
+          { terminal := true
+            enableSimp := false
+            assumptionTransparency := .reducible })
         (rule_sets := [PolyTime])))
     if ← Aesop.hasSorry (mkMVar goal) then
       throwError "plain certificate search admitted a premise"
@@ -941,7 +949,11 @@ private meta def polytimeFold (guard : TacticM Unit → TacticM Unit) : TacticM 
         try
           liftMetaTactic fun goal => goal.applyConst rule
           evalTactic (← `(tactic| case hlist => solve |
-            aesop (config := { terminal := true, assumptionTransparency := .reducible })
+            aesop
+              (config :=
+                { terminal := true
+                  enableSimp := false
+                  assumptionTransparency := .reducible })
               (rule_sets := [PolyTime])))
           let afterList ← saveState
           try
@@ -985,6 +997,87 @@ private meta def polytimeIterate (guard : TacticM Unit → TacticM Unit) : Tacti
 attribute [aesop safe apply (rule_sets := [PolyTime])] Nat.le_refl
 
 attribute [aesop norm simp (rule_sets := [PolyTime])] forall_and
+
+open Lean Meta Elab Tactic in
+/-- Whether `type` is an efficiency goal (possibly under binders or conjunctions) whose program
+body must stay un-normalized until named certificates, local calls and `fun_prop` have tried. -/
+private meta partial def isEfficiencyGoal (type : Expr) : Bool :=
+  match type.consumeMData with
+  | .forallE _ _ body _ => isEfficiencyGoal body
+  | .letE _ _ _ body _ => isEfficiencyGoal body
+  | e =>
+    if e.isAppOfArity ``And 2 then
+      isEfficiencyGoal e.getAppArgs[0]! || isEfficiencyGoal e.getAppArgs[1]!
+    else
+      let fn := e.getAppFn
+      fn.isConstOf ``ComputableInPolyTime ||
+        fn.isConstOf ``ComputableTidilyInPolyTime ||
+        fn.isConstOf `Turing.MultiTapeTM.ComputableInLogSpace ||
+        fn.isConstOf `Cslib.Probability.IsPPTOn ||
+        fn.isConstOf `Cslib.Probability.IsPPT ||
+        fn.isConstOf `Cslib.Probability.IsOraclePPTOn ||
+        fn.isConstOf `Cslib.Probability.IsOraclePPT
+
+open Lean Meta Elab Tactic in
+/-- Run Aesop-style `simp_all` with the default and `PolyTime` simp sets, failing when nothing
+changes or when a metavariable from the goal or context would be dropped. When
+`preserveDefinitions` is true, `dsimp`, projection reduction, and `iota`/`zeta` reductions are
+disabled so reducible `abbrev` wrappers and projections stay intact while `@[simp]` rewrite lemmas
+still normalize associative/structural syntax. -/
+private meta def polytimeSimpAll (preserveDefinitions : Bool) : TacticM Unit := withMainContext do
+  let goal ← getMainGoal
+  let mut goalMVars : Std.HashSet MVarId := {}
+  for m in ← getMVars (← goal.getType) do goalMVars := goalMVars.insert m
+  for decl in ← getLCtx do
+    unless decl.isImplementationDetail do
+      for m in ← getMVars decl.type do goalMVars := goalMVars.insert m
+  let (_, _, simpExt, _, simprocExt) ← Aesop.Frontend.getGlobalRuleSetData `PolyTime
+  let config : Simp.Config :=
+    if preserveDefinitions then
+      { dsimp := false, proj := false, iota := false, zeta := false, zetaDelta := false }
+    else
+      {}
+  let ctx ← Simp.mkContext
+    (config := config)
+    (simpTheorems := #[← simpExt.getTheorems, ← getSimpTheorems])
+    (congrTheorems := ← getSimpCongrTheorems)
+  let ctx := ctx.setFailIfUnchanged false
+  let ctx ← if ctx.config.zetaDelta || preserveDefinitions then pure ctx else do
+    let mut thms := ctx.simpTheorems
+    if thms.isEmpty then thms := #[{}]
+    for decl in ← getLCtx do
+      if decl.hasValue && !decl.isImplementationDetail then
+        thms := thms.modify 0 (·.addLetDeclToUnfold decl.fvarId)
+    pure (ctx.setSimpTheorems thms)
+  let simprocs := #[← simprocExt.getSimprocs, ← Simp.getSimprocs]
+  let preState ← saveState
+  match ← Lean.Meta.simpAll goal ctx simprocs with
+  | (none, _) =>
+    if ← goalMVars.toList.anyM fun m => not <$> m.isAssignedOrDelayedAssigned then
+      preState.restore
+      throwError "polytime simp dropped goal metavariables"
+    replaceMainGoal []
+  | (some newGoal, _) =>
+    if newGoal == goal then
+      throwError "polytime simp left goal unchanged"
+    replaceMainGoal [newGoal]
+
+open Lean Meta Elab Tactic in
+/-- Normalize side goals with full `simp_all`, while preserving reducible wrappers, projections,
+and `match`/`let` terms on efficiency goals until certificates and composition have tried. -/
+@[aesop norm 10 tactic (rule_sets := [PolyTime])]
+private meta def polytimeNormSimp : TacticM Unit := withMainContext do
+  let target ← instantiateMVars (← getMainTarget)
+  polytimeSimpAll (isEfficiencyGoal target)
+
+open Lean Meta Elab Tactic in
+/-- Fallback full `simp_all` on an efficiency goal only after un-normalized certificates, local
+calls, `fun_prop`, and structural rules have failed. -/
+@[aesop unsafe 10% tactic (rule_sets := [PolyTime])]
+private meta def polytimeSimpFallback : TacticM Unit := withMainContext do
+  let target ← instantiateMVars (← getMainTarget)
+  unless isEfficiencyGoal target do throwError "expected an efficiency goal"
+  polytimeSimpAll false
 
 -- Keep inexpensive structural successes and failures when no local certificate competes.
 -- Aesop postpones safe rules that assign encoding metavariables. Complementary guards avoid
@@ -1145,7 +1238,11 @@ open Lean Elab Tactic in
   withMainContext do Internal.prepareGoal hints
   Internal.withFailureHint "polytime" <| Internal.withPlainRuleCache do
     evalTactic (← `(tactic| solve |
-      aesop (config := { terminal := true, assumptionTransparency := .reducible })
+      aesop
+        (config :=
+          { terminal := true
+            enableSimp := false
+            assumptionTransparency := .reducible })
         (rule_sets := [PolyTime])))
 
 end Cslib.Tactic.PolyTime
