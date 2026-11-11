@@ -8,9 +8,11 @@ module
 -- upstream: local-only (tests for Copositivity)
 
 public import CslibFrontier.Init
+public import CslibFrontier.Computability.Circuit.Arithmetic.Encoding
 public import CslibFrontier.Computability.Complexity.Problems.Copositivity
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.DotProduct
 import Mathlib.Combinatorics.SimpleGraph.Clique
@@ -392,7 +394,13 @@ example : cliqueToSymRatMatrix (emptyG, 1) ∈ Copositive := by
   have hv0 := hSG v hv
   simp only [emptyG, List.not_mem_nil] at hv0
 
-/-! ### Optional rational arithmetic circuit input encoding -/
+/-! ### Optional rational arithmetic circuit input encoding and `PolyTime.Rat` -/
+
+example : ComputableInPolyTime Rat.num encRat encIntBin := by fun_prop
+
+example : ComputableInPolyTime Rat.den encRat encNat := by fun_prop
+
+example : ComputableInPolyTime (fun z : ℤ => (z : ℚ)) encIntBin encRat := by fun_prop
 
 example :
     let c : Σ n, Circuit (arithSignature ℚ) n 1 :=
