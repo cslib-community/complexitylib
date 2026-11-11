@@ -1410,20 +1410,6 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
   · simpa only [assignVarVal, decide_eq_true_eq] using h10_iff (.diag i)
   · simpa only [assignVarVal, decide_eq_true_eq] using h10_iff (.off e)
 
-private theorem fin_sub_one_ne_add_one {N : ℕ} [NeZero N] (hN : 3 ≤ N) (t : Fin N) :
-    t - 1 ≠ t + 1 := by
-  intro h
-  have h1 : (1 : Fin N).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
-  have hsum : t + (1 + 1) = t + 0 := by
-    calc
-      t + (1 + 1) = t + 1 + 1 := (add_assoc t 1 1).symm
-      _ = t - 1 + 1 := by rw [← h]
-      _ = t + 0 := by rw [sub_add_cancel, add_zero]
-  have h20 : (1 + 1 : Fin N) = 0 := add_left_cancel hsum
-  have hv := congrArg Fin.val h20
-  rw [Fin.val_add, h1, Fin.val_zero, Nat.mod_eq_of_lt (by omega)] at hv
-  omega
-
 private theorem eq_slot_of_clauseAdj {p : ℕ} {v : CorrVar p} {ℓ ℓ' : Fin (chainSlots p v)}
     {r : ℕ} (hr : r = 1 ∨ r = 2) {c₁ c₂ : Bool} {e : CorrPairIdx p} {c : Fin 4} {lit : Bool}
     (_hs : slotClause p v ℓ' = some ((e, c), lit))
@@ -1796,95 +1782,36 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
     have hcL_in := (corrDigraphAdj_chainLast_in hp v _).1 (hpred_adj cL)
     have hcL_out := (corrDigraphAdj_chainLast_out hp v _).1 (hsucc_adj cL)
     have hg_out := (corrDigraphAdj_gate_out hp v _).1 (hsucc_adj (.gate v))
+    have hbranch : ∀ {a aN b bN : CorrDigraphV p}, a ≠ b →
+        τ (τ.symm (.gate v) + 1) = a →
+        (τ (τ.symm a + 1) = .gate (varNext hp v) ∨ τ (τ.symm a + 1) = aN) →
+        (τ (τ.symm b - 1) = .gate v ∨ τ (τ.symm b - 1) = bN) →
+        (τ (τ.symm b + 1) = .gate (varNext hp v) ∨ τ (τ.symm b + 1) = bN) →
+        τ (τ.symm a - 1) = .gate v ∧ τ (τ.symm a + 1) = aN ∧
+          τ (τ.symm b - 1) = bN ∧ τ (τ.symm b + 1) = .gate (varNext hp v) := by
+      intro a aN b bN hab hg ha_out hb_in hb_out
+      have hta_in : τ (τ.symm a - 1) = .gate v := by
+        have heq : τ.symm a = τ.symm (.gate v) + 1 := τ.symm_apply_eq.2 hg.symm
+        rw [heq, add_sub_cancel_right, τ.apply_symm_apply]
+      have htb_in_ne : τ (τ.symm b - 1) ≠ .gate v := fun hb => by
+        have ht_eq := congrArg (· + 1) (τ.injective (hta_in.trans hb.symm))
+        rw [sub_add_cancel, sub_add_cancel] at ht_eq
+        exact hab (τ.symm.injective ht_eq)
+      have htb_in : τ (τ.symm b - 1) = bN := hb_in.resolve_left htb_in_ne
+      have hta_out : τ (τ.symm a + 1) = aN := by
+        refine ha_out.resolve_left fun h => ?_
+        have htb_out_ne : τ (τ.symm b + 1) ≠ .gate (varNext hp v) := fun hb => by
+          have ht_eq := congrArg (· - 1) (τ.injective (h.trans hb.symm))
+          rw [add_sub_cancel_right, add_sub_cancel_right] at ht_eq
+          exact hab (τ.symm.injective ht_eq)
+        exact hnb_ne b (htb_in.trans (hb_out.resolve_left htb_out_ne).symm)
+      have htb_out : τ (τ.symm b + 1) = .gate (varNext hp v) :=
+        hb_out.resolve_right fun h => hnb_ne b (htb_in.trans h.symm)
+      exact ⟨hta_in, hta_out, htb_in, htb_out⟩
     rcases hg_out with hg | hg
-    · have ht0_in : τ (τ.symm c0 - 1) = .gate v := by
-        have : τ (τ.symm (.gate v) + 1) = c0 := hg
-        have heq : τ.symm c0 = τ.symm (.gate v) + 1 := τ.symm_apply_eq.2 this.symm
-        rw [heq, add_sub_cancel_right, τ.apply_symm_apply]
-      have ht0_out : τ (τ.symm c0 + 1) = c1 := by
-        rcases hc0_out with h | h
-        · exfalso
-          have hL_in_gate : τ (τ.symm cL - 1) ≠ .gate v := fun hL => by
-            have := τ.injective (ht0_in.trans hL.symm)
-            have ht_eq := congrArg (· + 1) this
-            rw [sub_add_cancel, sub_add_cancel] at ht_eq
-            exact hc0_ne_cL (τ.symm.injective ht_eq)
-          have hL_out_gate : τ (τ.symm cL + 1) ≠ .gate (varNext hp v) := fun hL => by
-            have := τ.injective (h.trans hL.symm)
-            have h1 := congrArg (· - 1) this
-            rw [add_sub_cancel_right, add_sub_cancel_right] at h1
-            exact hc0_ne_cL (τ.symm.injective h1)
-          rcases hcL_in with hLi | hLi
-          · exact absurd hLi hL_in_gate
-          · rcases hcL_out with hLo | hLo
-            · exact absurd hLo hL_out_gate
-            · exact hnb_ne cL (hLi.trans hLo.symm)
-        · exact h
-      have htL_out : τ (τ.symm cL + 1) = .gate (varNext hp v) := by
-        rcases hcL_out with h | h
-        · exact h
-        · exfalso
-          have hL_in : τ (τ.symm cL - 1) = cLm := by
-            rcases hcL_in with hLi | hLi
-            · exfalso
-              have := τ.injective (ht0_in.trans hLi.symm)
-              have ht_eq := congrArg (· + 1) this
-              rw [sub_add_cancel, sub_add_cancel] at ht_eq
-              exact hc0_ne_cL (τ.symm.injective ht_eq)
-            · exact hLi
-          exact hnb_ne cL (hL_in.trans h.symm)
-      have htL_in : τ (τ.symm cL - 1) = cLm := by
-        rcases hcL_in with h | h
-        · exfalso
-          have := τ.injective (ht0_in.trans h.symm)
-          have ht_eq := congrArg (· + 1) this
-          rw [sub_add_cancel, sub_add_cancel] at ht_eq
-          exact hc0_ne_cL (τ.symm.injective ht_eq)
-        · exact h
-      exact Or.inl ⟨ht0_in, ht0_out, htL_in, htL_out⟩
-    · have htL_in : τ (τ.symm cL - 1) = .gate v := by
-        have heq : τ.symm cL = τ.symm (.gate v) + 1 := τ.symm_apply_eq.2 hg.symm
-        rw [heq, add_sub_cancel_right, τ.apply_symm_apply]
-      have htL_out : τ (τ.symm cL + 1) = cLm := by
-        rcases hcL_out with h | h
-        · exfalso
-          have h0_in_gate : τ (τ.symm c0 - 1) ≠ .gate v := fun h0 => by
-            have := τ.injective (htL_in.trans h0.symm)
-            have ht_eq := congrArg (· + 1) this
-            rw [sub_add_cancel, sub_add_cancel] at ht_eq
-            exact hc0_ne_cL (τ.symm.injective ht_eq).symm
-          have h0_out_gate : τ (τ.symm c0 + 1) ≠ .gate (varNext hp v) := fun h0 => by
-            have := τ.injective (h.trans h0.symm)
-            have h1 := congrArg (· - 1) this
-            rw [add_sub_cancel_right, add_sub_cancel_right] at h1
-            exact hc0_ne_cL (τ.symm.injective h1).symm
-          rcases hc0_in with h0i | h0i
-          · exact absurd h0i h0_in_gate
-          · rcases hc0_out with h0o | h0o
-            · exact absurd h0o h0_out_gate
-            · exact hnb_ne c0 (h0i.trans h0o.symm)
-        · exact h
-      have ht0_out : τ (τ.symm c0 + 1) = .gate (varNext hp v) := by
-        rcases hc0_out with h | h
-        · exact h
-        · exfalso
-          have h0_in : τ (τ.symm c0 - 1) = c1 := by
-            rcases hc0_in with h0i | h0i
-            · exfalso
-              have := τ.injective (htL_in.trans h0i.symm)
-              have ht_eq := congrArg (· + 1) this
-              rw [sub_add_cancel, sub_add_cancel] at ht_eq
-              exact hc0_ne_cL (τ.symm.injective ht_eq).symm
-            · exact h0i
-          exact hnb_ne c0 (h0_in.trans h.symm)
-      have ht0_in : τ (τ.symm c0 - 1) = c1 := by
-        rcases hc0_in with h | h
-        · exfalso
-          have := τ.injective (htL_in.trans h.symm)
-          have ht_eq := congrArg (· + 1) this
-          rw [sub_add_cancel, sub_add_cancel] at ht_eq
-          exact hc0_ne_cL (τ.symm.injective ht_eq).symm
-        · exact h
+    · exact Or.inl (hbranch hc0_ne_cL hg hc0_out hcL_in hcL_out)
+    · obtain ⟨htL_in, htL_out, ht0_in, ht0_out⟩ :=
+        hbranch hc0_ne_cL.symm hg hcL_out hc0_in hc0_out
       exact Or.inr ⟨ht0_in, ht0_out, htL_in, htL_out⟩
   have hprev_of_next : ∀ {x y : CorrDigraphV p},
       τ (τ.symm x + 1) = y → τ (τ.symm y - 1) = x := fun {x y} h => by

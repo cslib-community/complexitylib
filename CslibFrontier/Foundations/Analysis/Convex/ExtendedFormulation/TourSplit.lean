@@ -679,7 +679,8 @@ private theorem tourEdgeSet_shift {V : Type*} [Fintype V] [Nonempty V] [Decidabl
     refine ⟨j - s, ?_⟩
     rwa [show s + (j - s) = j by abel, show s + (j - s + 1) = j + 1 by abel]
 
-private theorem adj_Fin_add_one_ne_sub_one {M : ℕ} [NeZero M] (hM : 3 ≤ M) (i : Fin M) :
+/-- For `3 ≤ M`, `i - 1 ≠ i + 1` in `Fin M`. -/
+theorem fin_sub_one_ne_add_one {M : ℕ} [NeZero M] (hM : 3 ≤ M) (i : Fin M) :
     i - 1 ≠ i + 1 := by
   intro h
   have h1 : (1 : Fin M).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
@@ -787,7 +788,7 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [Nonempty W] [
   have hmem_plus := (adj_vMid_iff v₀ pad adjD v₀ ⟨0, splitMidLen_pos v₀ pad v₀⟩ _).1 hnb0_plus
   have hmem_minus := (adj_vMid_iff v₀ pad adjD v₀ ⟨0, splitMidLen_pos v₀ pad v₀⟩ _).1 hnb0_minus
   have hne0 : σ₀ (k0 - 1) ≠ σ₀ (k0 + 1) :=
-    fun h => adj_Fin_add_one_ne_sub_one hM3 k0 (σ₀.injective h)
+    fun h => fin_sub_one_ne_add_one hM3 k0 (σ₀.injective h)
   have hprev0 : midPrev v₀ pad v₀ ⟨0, splitMidLen_pos v₀ pad v₀⟩ = .vIn v₀ := by
     simp only [midPrev, ↓reduceDIte]
   obtain ⟨σ₁, htour₁, k₁, hk₁_eq, hk₁_prev⟩ :
@@ -934,7 +935,7 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [Nonempty W] [
       have hr_minus :=
         (adj_vMid_iff v₀ pad adjD w' ⟨0, splitMidLen_pos v₀ pad w'⟩ (σ (r - 1))).1 hadj_rm
       have hne_r : σ (r - 1) ≠ σ (r + 1) :=
-        fun h => adj_Fin_add_one_ne_sub_one hM3 r (σ.injective h)
+        fun h => fin_sub_one_ne_add_one hM3 r (σ.injective h)
       have hprev_w' : midPrev v₀ pad w' ⟨0, splitMidLen_pos v₀ pad w'⟩ = .vIn w' := by
         simp only [midPrev, ↓reduceDIte]
       have hid : finOf (t + 2 + splitMidLen v₀ pad w) = r - 1 ∨
