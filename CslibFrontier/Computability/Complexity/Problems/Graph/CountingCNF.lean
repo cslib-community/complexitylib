@@ -7,10 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Boolean.ExactOne
 public import CslibFrontier.Computability.Complexity.Problems.Coloring
 public import CslibFrontier.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 public import CslibFrontier.Computability.Complexity.Problems.IndependentSet
-public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Circuit
 public import CslibFrontier.Logics.Propositional.CNF.GraphCountingEncodings
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount.Declared
 import CslibFrontier.Computability.Circuit.Boolean.Encoding
@@ -527,39 +527,6 @@ theorem length_toPerfectMatchingCNF_le (G : Graph) :
   rw [toPerfectMatchingCNF, length_tseitinSatCNF, List.length_nil]
   have h := length_perfectMatchingCircuit_le G
   omega
-
-/-- Every occurring variable of `tseitinSatCNF [] n gates o` is strictly below `n + gates.length`
-when `gates` is well-formed (`IsCodeFrom signature n 0 gates`) and `o < n + gates.length`. -/
-private theorem vars_tseitinSatCNF_subset {n : ℕ} {gates : List (Op × List ℕ)} {o : ℕ}
-    (hcode : Program.IsCodeFrom signature n 0 gates) (ho : o < n + gates.length)
-    (hpos : 0 < n + gates.length) :
-    (tseitinSatCNF [] n gates o).vars.toFinset ⊆ Finset.range (n + gates.length) := by
-  intro v hv
-  rw [List.mem_toFinset, CNF.vars, List.mem_map] at hv
-  obtain ⟨l, hl, rfl⟩ := hv
-  rw [List.mem_flatten] at hl
-  obtain ⟨c, hc, hl⟩ := hl
-  rw [tseitinSatCNF, List.mapIdx_nil, List.mem_append, List.mem_singleton] at hc
-  rcases hc with rfl | hc
-  · simp only [unitClause, List.mem_cons, List.not_mem_nil, or_false] at hl
-    rcases hl with rfl | rfl | rfl <;> exact Finset.mem_range.mpr ho
-  · simp only [tseitinCNF, List.mem_flatMap, List.mem_finRange, true_and, gateClauses,
-      List.mem_ofFn] at hc
-    obtain ⟨g, j, rfl⟩ := hc
-    have hlt := hcode.getElem g g.isLt
-    have harg (idx : ℕ) : gates[g].2.getD idx 0 ∈ Finset.range (n + gates.length) := by
-      by_cases hidx : idx < gates[g].2.length
-      · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hidx, Option.getD_some]
-        exact Finset.mem_range.mpr ((hlt.2 _ (List.getElem_mem hidx)).trans (by omega))
-      · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega), Option.getD_none]
-        exact Finset.mem_range.mpr hpos
-    rcases mem_tseitinClause hl with h1 | h1 | h1
-    · rw [h1]
-      exact Finset.mem_range.mpr (by omega)
-    · rw [h1]
-      exact harg 0
-    · rw [h1]
-      exact harg 1
 
 theorem vars_toPerfectMatchingCNF_subset (G : Graph) :
     G.toPerfectMatchingCNF.vars.toFinset ⊆

@@ -1074,6 +1074,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Encoding.Certificate
 public import CslibFrontier.Computability.Circuit.Boolean.EncodingSize
 public import CslibFrontier.Computability.Circuit.Boolean.Equality
 public import CslibFrontier.Computability.Circuit.Boolean.EvaluationTime
+public import CslibFrontier.Computability.Circuit.Boolean.ExactOne
 public import CslibFrontier.Computability.Circuit.Boolean.FanInTwo
 public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder
 public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder.Ordered
@@ -5712,7 +5713,6 @@ public import CslibFrontier.Logics.Propositional.CNF.ExactDistinct
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.BlockBounds
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Blocks
-public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Circuit
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Compile
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.FromSAT
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.Gadgets

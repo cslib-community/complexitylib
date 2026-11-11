@@ -29,6 +29,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Polynomial.FiniteDifference
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
+import CslibFrontier.Logics.Propositional.CNF.UnsatVal
 import Mathlib.Algebra.Polynomial.Degree.Lemmas
 import Mathlib.Data.Nat.Choose.Basic
 
@@ -751,18 +752,6 @@ private theorem eval_valiantTwoSAT_iff (φ : CNF ℕ) (r : ℕ)
             exact Or.inr
               (by simpa [huEq ⟨i, hi⟩ ⟨j + 1, by omega⟩] using hiPred.2.2 j (by omega) hfj)
 
-private theorem countUnsat_eq_card_filter (φ : CNF ℕ) (σ : ℕ → Bool) :
-    φ.countUnsat σ = (Finset.univ.filter fun i : Fin φ.length => φ[i].eval σ = false).card := by
-  rw [CNF.countUnsat]
-  induction φ with
-  | nil => simp
-  | cons c cs ih =>
-    simp only [List.countP_cons, List.length_cons, Fin.card_filter_univ_succ']
-    cases hc : c.eval σ
-    · simp [hc, ih]
-      omega
-    · simp [hc, ih]
-
 /-- **Exact model count of Valiant's `2-CNF` formula**:
 `SharpTwoSAT (valiantTwoSAT φ r) = ∑ σ : φ.vars.toFinset → Bool, (r + 1) ^ (φ.countUnsat ext(σ))`.
 -/
@@ -825,7 +814,7 @@ theorem modelCount_valiantTwoSAT (φ : CNF ℕ) (r : ℕ) :
     rw [Finset.prod_ite, Finset.prod_const_one, one_mul, Finset.prod_const, hfilt]
   rw [hpow]
   congr 1
-  exact (countUnsat_eq_card_filter φ σExt).symm
+  exact (CNF.countUnsat_eq_card σExt φ).symm
 
 /-! ### Binomial finite-difference interpolation over `ℤ` and `ℕ` -/
 
@@ -1261,7 +1250,7 @@ theorem countingTuringReducible_SharpSAT_SharpTwoSAT :
   exact size_SharpTwoSAT_valiantTwoSAT_le (by omega)
 
 /-- **`#2SAT` is `#P`-complete under polynomial-time counting Turing reductions**
-[Valiant 1979][Valiant1979]. -/
+([Valiant 1979][Valiant1979Enumeration], [Valiant 1979][Valiant1979]). -/
 theorem SharpTwoSAT_countingTuringComplete :
     CountingTuringComplete encCNF SharpTwoSAT :=
   And.intro SharpTwoSAT.mem_SharpP

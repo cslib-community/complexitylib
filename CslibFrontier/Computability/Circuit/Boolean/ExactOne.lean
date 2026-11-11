@@ -24,12 +24,15 @@ in `O(n + ∑ |ws|)` variables.
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.tseitinSatAssignmentEquiv`: explicit bijection between satisfying input
+  bitstrings and `tseitinSatCNF` models on `Finset.range (n + gates.length)`.
 * `Cslib.Circuits.Boolean.seqExactlyOneClause`: `O(d)`-gate sequential exact-one De Morgan gadget.
 * `Cslib.Circuits.Boolean.seqExactlyOneAll`: `O(|wss| + ∑ |ws|)`-gate conjunction of exact-one
   constraints.
 
 ## Main results
 
+* `Cslib.Circuits.Boolean.vars_tseitinSatCNF_subset`: occurring-variable bound for `tseitinSatCNF`.
 * `Cslib.Circuits.Boolean.isCodeFrom_seqExactlyOneClause`,
   `Cslib.Circuits.Boolean.isCodeFrom_seqExactlyOneAll`: well-formedness (`IsCodeFrom`).
 * `Cslib.Circuits.Boolean.evalOutput_seqExactlyOneAll`: exact evaluation correctness.
@@ -145,6 +148,39 @@ theorem card_evalOutput_eq_modelCountOn_tseitinSatCNF {n : ℕ} {gates : List (O
   rw [CNF.modelCountOn, ← Fintype.card_coe, ← Fintype.card_coe]
   exact Fintype.card_congr ((Equiv.subtypeEquivRight (by simp)).trans
     ((tseitinSatAssignmentEquiv hcode ho).trans (Equiv.subtypeEquivRight (by simp))))
+
+/-- Every occurring variable of `tseitinSatCNF [] n gates o` is strictly below `n + gates.length`
+when `gates` is well-formed (`IsCodeFrom signature n 0 gates`) and `o < n + gates.length`. -/
+theorem vars_tseitinSatCNF_subset {n : ℕ} {gates : List (Op × List ℕ)} {o : ℕ}
+    (hcode : Program.IsCodeFrom signature n 0 gates) (ho : o < n + gates.length)
+    (hpos : 0 < n + gates.length) :
+    (tseitinSatCNF [] n gates o).vars.toFinset ⊆ Finset.range (n + gates.length) := by
+  intro v hv
+  rw [List.mem_toFinset, CNF.vars, List.mem_map] at hv
+  obtain ⟨l, hl, rfl⟩ := hv
+  rw [List.mem_flatten] at hl
+  obtain ⟨c, hc, hl⟩ := hl
+  rw [tseitinSatCNF, List.mapIdx_nil, List.mem_append, List.mem_singleton] at hc
+  rcases hc with rfl | hc
+  · simp only [unitClause, List.mem_cons, List.not_mem_nil, or_false] at hl
+    rcases hl with rfl | rfl | rfl <;> exact Finset.mem_range.mpr ho
+  · simp only [tseitinCNF, List.mem_flatMap, List.mem_finRange, true_and, gateClauses,
+      List.mem_ofFn] at hc
+    obtain ⟨g, j, rfl⟩ := hc
+    have hlt := hcode.getElem g g.isLt
+    have harg (idx : ℕ) : gates[g].2.getD idx 0 ∈ Finset.range (n + gates.length) := by
+      by_cases hidx : idx < gates[g].2.length
+      · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hidx, Option.getD_some]
+        exact Finset.mem_range.mpr ((hlt.2 _ (List.getElem_mem hidx)).trans (by omega))
+      · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega), Option.getD_none]
+        exact Finset.mem_range.mpr hpos
+    rcases mem_tseitinClause hl with h1 | h1 | h1
+    · rw [h1]
+      exact Finset.mem_range.mpr (by omega)
+    · rw [h1]
+      exact harg 0
+    · rw [h1]
+      exact harg 1
 
 /-! ### `IsCodeFrom` and single-gate `evalCode` helpers -/
 
