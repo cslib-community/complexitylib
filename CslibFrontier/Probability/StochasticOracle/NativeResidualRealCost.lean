@@ -22,17 +22,20 @@ import Mathlib.Tactic
 # Fixed real expected prices in the actual residual oracle
 
 [Wang2027], model PDF p. 5 and Theorem 6 p. 13. Analytic costs may be real;
-algorithmic numerical inputs are binary rationals. Here fixed real means are
-realized by natural token reports, drawn freshly after each batch selection.
+algorithmic numerical inputs are binary rationals. Fixed real means are realized
+by natural token reports drawn freshly after each batch selection, from an arbitrary
+invoice PMF `ν` with the source batch means (`NativeResidualInvoice.HasMean`).
+Coordinates may be correlated; `FixedMeanInvoice.law` (`hasMean`) is one instance.
 The invoice vector is drawn independently of the residual index `J` and the
 preceding history. The compiled program reads ordinary report bytes, never a real-number encoding.
 
 ## Main definitions
 
-* `prices`, `sample`: primitive source means and one consistent invoice/report kernel.
+* `prices`: the primitive source means of the opportunities.
 
 ## Main results
 
+* `expected_finset`, `hasMean_bind`: source means on every opportunity set, and mixtures.
 * `batch_expected_cost`: the actual selected-batch invoice has the source mean.
 * `native_all_mixture`, `native_all_resources`: actual all-specialist native execution.
 * `native_all_expected_cost`, `native_all_certified`, `native_all_cost_mem`: attained
@@ -56,41 +59,58 @@ variable (points : Fin n ≃ Point T) (candidates : Fin m ≃ Candidate T)
 @[expose] def prices (P : Parameters z) : Fin (z + 1) → ℝ≥0 :=
   Fin.cases ⟨P.nearCost, P.near_pos.le⟩ (fun j => ⟨P.specialistCost j, (P.specialist_pos j).le⟩)
 
-/-- The constructed natural invoices have the source's arbitrary real batch means. -/
-theorem hasMean (P : Parameters z) :
-    NativeResidualInvoice.HasMean P (FixedMeanInvoice.law (prices P)) := by
-  classical
-  intro A
-  let B := A.map (finSuccEquiv z).symm.toEmbedding
-  have hi (f : Fin (z + 1) → ℕ) : NativeResidualOracle.invoiceCost f A = ∑ i ∈ B, f i := by
-    simp [B, NativeResidualOracle.invoiceCost]
-  simp_rw [hi]
-  simp only [Nat.cast_sum]
-  rw [FixedMeanInvoice.expected_batch, batchCost_eq_sum]
-  congr 1
-  change (∑ i ∈ A.map (finSuccEquiv z).symm.toEmbedding, (prices P i : ℝ)) = _
-  rw [Finset.sum_map]
+/-- The source batch price is the sum of the primitive prices of its opportunities. -/
+theorem batchCost_eq_prices (P : Parameters z) (A : ResidualCover.Batch z) :
+    batchCost P A = ∑ i ∈ A.map (finSuccEquiv z).symm.toEmbedding, (prices P i : ℝ) := by
+  rw [batchCost_eq_sum, Finset.sum_map]
   apply Finset.sum_congr rfl
-  intro i hi
+  intro i _
   cases i with
   | none => rfl
   | some j => rfl
 
-/-- Fresh natural invoices at each admitted batch, followed by the original
-conditional residual response. All competitors share this same oracle. -/
-@[expose] def sample (P : Parameters z) : Sampler (z + 1) Unit :=
-  mixture (FixedMeanInvoice.law (prices P))
-    (NativeResidualOracle.sample T points candidates P)
+theorem invoiceCost_eq (f : Fin (z + 1) → ℕ) (A : ResidualCover.Batch z) :
+    NativeResidualOracle.invoiceCost f A = ∑ i ∈ A.map (finSuccEquiv z).symm.toEmbedding, f i := by
+  simp [NativeResidualOracle.invoiceCost]
+
+/-- The constructed natural invoices have the source's arbitrary real batch means. -/
+theorem hasMean (P : Parameters z) :
+    NativeResidualInvoice.HasMean P (FixedMeanInvoice.law (prices P)) := by
+  intro A
+  simp_rw [invoiceCost_eq, Nat.cast_sum]
+  rw [FixedMeanInvoice.expected_batch, batchCost_eq_prices]
+
+/-- Every invoice law with the source batch means has the source mean on every set
+of opportunities; coordinates may be arbitrarily correlated. -/
+theorem expected_finset {P : Parameters z} {ν : PMF (Fin (z + 1) → ℕ)}
+    (hν : NativeResidualInvoice.HasMean P ν) (B : Finset (Fin (z + 1))) :
+    (∑' f, ν f * (∑ i ∈ B, (f i : ℝ≥0∞))) = ENNReal.ofReal (∑ i ∈ B, (prices P i : ℝ)) := by
+  have hB : (B.map (finSuccEquiv z).toEmbedding).map (finSuccEquiv z).symm.toEmbedding = B := by
+    ext i; simp
+  have h := hν (B.map (finSuccEquiv z).toEmbedding)
+  simp_rw [invoiceCost_eq, hB, Nat.cast_sum] at h
+  rw [h, batchCost_eq_prices, hB]
+
+/-- Mixtures of invoice laws with the source batch means keep those means, so
+correlated, heavy-tailed or partly deterministic fee laws are all admissible. -/
+theorem hasMean_bind {P : Parameters z} {ι : Type*} (μ : PMF ι)
+    (ν : ι → PMF (Fin (z + 1) → ℕ)) (h : ∀ i, NativeResidualInvoice.HasMean P (ν i)) :
+    NativeResidualInvoice.HasMean P (μ.bind ν) := by
+  intro A
+  rw [PMF.tsum_bind_mul]
+  simp_rw [h _ A]
+  rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 /-- The actual query-conditioned report kernel has the stated fixed expected
 bill, for every server history, cutoff and remaining deadline, including cancellation.
 No source mean or desired total-cost conclusion is supplied as a hypothesis. -/
-theorem batch_expected_cost (P : Parameters z) (limits : Limits (z + 1))
+theorem batch_expected_cost (P : Parameters z)
+    (ν : PMF (Fin (z + 1) → ℕ)) (hν : NativeResidualInvoice.HasMean P ν) (limits : Limits (z + 1))
     (s : ServerState (z + 1) Unit) (b : ConcurrentBatch.Batch (z + 1)) (remaining : ℝ≥0) :
-    (∑' result, sample T points candidates P s b result *
+    (∑' result, NativeResidualInvoice.sample T points candidates P ν s b result *
       ((observe limits remaining b result.1).tokens : ℝ≥0∞)) =
       ENNReal.ofReal (∑ i ∈ active b.slots, (prices P i : ℝ)) := by
-  rw [sample, mixture, PMF.tsum_bind_mul]
+  rw [NativeResidualInvoice.sample, mixture, PMF.tsum_bind_mul]
   have hfixed (invoice : Fin (z + 1) → ℕ) :
       (∑' result, NativeResidualOracle.sample T points candidates P invoice s b result *
         ((observe limits remaining b result.1).tokens : ℝ≥0∞)) =
@@ -100,7 +120,7 @@ theorem batch_expected_cost (P : Parameters z) (limits : Limits (z + 1))
     simp only [Nat.cast_sum]
     rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
   simp_rw [hfixed]
-  exact FixedMeanInvoice.expected_batch (prices P) (active b.slots)
+  exact expected_finset hν (active b.slots)
 
 private theorem raw_law {Private : Type} (env : Environment Unit Private)
     (data : GuardedStartup.Input) (memory : Memory Unit Private) :
@@ -140,18 +160,20 @@ theorem native_all_mixture {I : Type} (μ : PMF I) (samples : I → Sampler (z +
 
 /-- Actual joint accrued bill and oracle duration for the unchanged compiled
 all-specialist program. Invoice randomness is not hidden by a supplied bill bound. -/
-theorem native_all_resources (P : Parameters z) (hz : 3 ≤ z) (budget : ℕ) (hb : 0 < budget) :
+theorem native_all_resources (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z)
+    (budget : ℕ) (hb : 0 < budget) :
     (NativeUnboundedExecution.terminal (NativeResidualRouting.controller false).program
-      (environment (NativeResidualAll.config budget) (sample T points candidates P))
+      (environment (NativeResidualAll.config budget)
+        (NativeResidualInvoice.sample T points candidates P ν))
       ⟨(NativeResidualRouting.controller false).program.initialConfig
         (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)),
         NativeResidualAttainment.initialMemory⟩).map
       (Option.map fun w => (tokenBill w.memory.events, elapsed w.memory.events)) =
-    (FixedMeanInvoice.law (prices P)).map fun invoice =>
+    ν.map fun invoice =>
       some (((∑ j : Fin z, invoice j.succ : ℕ) : ℝ≥0), (1 : ℝ≥0)) := by
   have h := congrArg (PMF.map (Option.map fun p : Word × Memory Unit (ServerState (z + 1) Unit) =>
       (tokenBill p.2.events, elapsed p.2.events)))
-    (native_all_mixture (FixedMeanInvoice.law (prices P))
+    (native_all_mixture ν
       (NativeResidualOracle.sample T points candidates P) (NativeResidualAll.config budget)
       (NativeResidualAttainment.input T points candidates) NativeResidualAttainment.initialMemory)
   simp only [PMF.map_bind, PMF.map_comp, Function.comp_def, Option.map_map] at h
@@ -162,10 +184,12 @@ theorem native_all_resources (P : Parameters z) (hz : 3 ≤ z) (budget : ℕ) (h
 /-- Real expected all-specialist cost in the actual accrued native trace.
 Almost-sure termination and finite expectation are conclusions of the construction,
 not hypotheses about total cost. The per-call invoices remain natural numbers. -/
-theorem native_all_expected_cost (P : Parameters z) (hz : 3 ≤ z)
+theorem native_all_expected_cost (P : Parameters z)
+    (ν : PMF (Fin (z + 1) → ℕ)) (hν : NativeResidualInvoice.HasMean P ν) (hz : 3 ≤ z)
     (budget : ℕ) (hb : 0 < budget) :
     NativeBatch.Quantitative.expected (NativeResidualAll.config budget)
-      (sample T points candidates P) (NativeResidualRouting.controller false).program
+      (NativeResidualInvoice.sample T points candidates P ν)
+        (NativeResidualRouting.controller false).program
       NativeBatch.Trace.charge (budget + 1)
       ⟨(NativeResidualRouting.controller false).program.initialConfig
         (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)),
@@ -179,8 +203,9 @@ theorem native_all_expected_cost (P : Parameters z) (hz : 3 ≤ z)
         (NativeResidualRouting.controller false).Controls Unit (ServerState (z + 1) Unit)
         (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)))
   let μ := NativeUnboundedExecution.terminal program
-    (environment (NativeResidualAll.config budget) (sample T points candidates P)) world
-  have hlaw := native_all_resources T points candidates P hz budget hb
+    (environment (NativeResidualAll.config budget)
+      (NativeResidualInvoice.sample T points candidates P ν)) world
+  have hlaw := native_all_resources T points candidates P ν hz budget hb
   have hterm : μ none = 0 := by
     apply (PMF.apply_eq_zero_iff _ _).mpr
     intro hn
@@ -191,7 +216,7 @@ theorem native_all_expected_cost (P : Parameters z) (hz : 3 ≤ z)
     obtain ⟨invoice, _, he⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
     cases he
   have he := NativeBatch.Quantitative.expected_charge_eq_terminal (NativeResidualAll.config budget)
-    (sample T points candidates P) program world
+    (NativeResidualInvoice.sample T points candidates P ν) program world
     (NativeBatch.initial_invariant (NativeResidualAll.config budget) ()) rfl hterm
   change NativeBatch.Quantitative.expected _ _ _ NativeBatch.Trace.charge
     ((NativeResidualAll.config (z := z) budget).turns + 1) world = _
@@ -203,16 +228,17 @@ theorem native_all_expected_cost (P : Parameters z) (hz : 3 ≤ z)
   change (∑' result, μ result * result.elim 0
     (fun w => (tokenBill w.memory.events : ℝ≥0∞))) = _
   rw [← hm, hlaw, PMF.tsum_map_mul]
-  have hmean := FixedMeanInvoice.expected_batch (prices P) (univ.erase 0)
+  have hmean := expected_finset hν (univ.erase 0)
   have hspec (j : Fin z) : (prices P j.succ : ℝ) = P.specialistCost j := rfl
   simpa [Fin.univ_succ, hspec] using hmean
 
 /-- Certified actual tape success is preserved by the real-mean invoice kernel,
 since the same one-batch program certifies every realized natural report. -/
-theorem native_all_certified (P : Parameters z) (hz : 3 ≤ z)
+theorem native_all_certified (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z)
     (budget : ℕ) (hb : 0 < budget) :
     ((NativeUnboundedExecution.terminal (NativeResidualRouting.controller false).program
-      (environment (NativeResidualAll.config budget) (sample T points candidates P))
+      (environment (NativeResidualAll.config budget)
+        (NativeResidualInvoice.sample T points candidates P ν))
       ⟨(NativeResidualRouting.controller false).program.initialConfig
         (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)),
         NativeResidualAttainment.initialMemory⟩).map
@@ -220,7 +246,7 @@ theorem native_all_certified (P : Parameters z) (hz : 3 ≤ z)
         (NativeResidualAttainment.input T points candidates).startup.system
         (NativeResidualAttainment.valid T points candidates (by omega)))) true = 1 := by
   rw [BatchOutput.terminal_certified]
-  unfold sample
+  unfold NativeResidualInvoice.sample
   rw [native_all_mixture, PMF.map_bind]
   simp_rw [← BatchOutput.terminal_certified]
   simp only [PMF.bind_apply,
@@ -230,13 +256,14 @@ theorem native_all_certified (P : Parameters z) (hz : 3 ≤ z)
 /-- Every finite successful output of the same compiled code has source provenance
 under the fresh real-mean invoice kernel. This is derived from actual terminal
 support and the fixed-invoice executions, not imposed as an admission contract. -/
-theorem native_all_selectionOnly (P : Parameters z) (hz : 3 ≤ z)
+theorem native_all_selectionOnly (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z)
     (budget : ℕ) (hb : 0 < budget)
     (accept : Finset
       (Fin (NativeResidualAttainment.input T points candidates).startup.system.rows.length) →
         Bool) :
     NativeUnboundedExecution.SelectionOnly (NativeResidualRouting.controller false).program
-      (environment (NativeResidualAll.config budget) (sample T points candidates P))
+      (environment (NativeResidualAll.config budget)
+        (NativeResidualInvoice.sample T points candidates P ν))
       (NativeBatch.candidateParser (n := z + 1)
         (NativeResidualAttainment.input T points candidates).startup.system.rows.length)
       (decodeFamily (NativeResidualAttainment.input T points candidates).startup.system.rows.length)
@@ -244,7 +271,7 @@ theorem native_all_selectionOnly (P : Parameters z) (hz : 3 ≤ z)
         (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)),
         NativeResidualAttainment.initialMemory⟩ := by
   apply NativeUnboundedExecution.selectionOnly_of_output_memory_bind _ _
-    (FixedMeanInvoice.law (prices P)) (NativeResidualRouting.controller false).program
+    ν (NativeResidualRouting.controller false).program
     (fun f => environment (NativeResidualAll.config budget)
       (NativeResidualOracle.sample T points candidates P f)) _ _ accept _
     (fun _ => ⟨(NativeResidualRouting.controller false).program.initialConfig
@@ -256,26 +283,32 @@ theorem native_all_selectionOnly (P : Parameters z) (hz : 3 ≤ z)
 
 /-- The real all-specialist expected cost is attained in the original common-oracle
 native class for any positive source turn budget. -/
-theorem native_all_cost_mem (P : Parameters z) (hz : 3 ≤ z) (budget : ℕ) (hb : 0 < budget) :
+theorem native_all_cost_mem (P : Parameters z)
+    (ν : PMF (Fin (z + 1) → ℕ)) (hν : NativeResidualInvoice.HasMean P ν) (hz : 3 ≤ z) (budget : ℕ)
+      (hb : 0 < budget) :
     ENNReal.ofReal (∑ j, P.specialistCost j) ∈
-      BatchOptimum.costs (NativeResidualAll.config budget) (sample T points candidates P)
+      BatchOptimum.costs (NativeResidualAll.config budget)
+        (NativeResidualInvoice.sample T points candidates P ν)
         (NativeResidualAttainment.input T points candidates) ()
         (NativeResidualAttainment.valid T points candidates (by omega)) 1 := by
   exact ⟨(NativeResidualRouting.controller false).tapes,
     (NativeResidualRouting.controller false).Controls,
     (NativeResidualRouting.controller false).finite,
     (NativeResidualRouting.controller false).program,
-    native_all_selectionOnly T points candidates P hz budget hb _,
-    (native_all_certified T points candidates P hz budget hb).ge,
-    (native_all_expected_cost T points candidates P hz budget hb).symm⟩
+    native_all_selectionOnly T points candidates P ν hz budget hb _,
+    (native_all_certified T points candidates P ν hz budget hb).ge,
+    (native_all_expected_cost T points candidates P ν hν hz budget hb).symm⟩
 
 /-- A genuine native upper bound on the same real-mean source oracle; no
 restriction to handpicked competitors or a supplied finite optimum is used. -/
-theorem native_all_upper (P : Parameters z) (hz : 3 ≤ z) (budget : ℕ) (hb : 0 < budget) :
-    BatchOptimum.optimum (NativeResidualAll.config budget) (sample T points candidates P)
+theorem native_all_upper (P : Parameters z)
+    (ν : PMF (Fin (z + 1) → ℕ)) (hν : NativeResidualInvoice.HasMean P ν) (hz : 3 ≤ z) (budget : ℕ)
+      (hb : 0 < budget) :
+    BatchOptimum.optimum (NativeResidualAll.config budget)
+      (NativeResidualInvoice.sample T points candidates P ν)
       (NativeResidualAttainment.input T points candidates) ()
       (NativeResidualAttainment.valid T points candidates (by omega)) 1 ≤
         ENNReal.ofReal (∑ j, P.specialistCost j) :=
-  sInf_le (native_all_cost_mem T points candidates P hz budget hb)
+  sInf_le (native_all_cost_mem T points candidates P ν hν hz budget hb)
 
 end Cslib.Probability.StochasticOracle.NativeResidualRealCost

@@ -18,8 +18,9 @@ import Mathlib.Tactic
 
 [Wang2027], model p. 5 and Theorem 6 p. 13. The native program selects the
 specialist from the actual near report. The first and second source batches draw
-fresh invoice vectors. The joint law below is derived by executing both epochs;
-it is not a global-mixture assumption about arbitrary adaptive programs.
+fresh invoice vectors from one arbitrary fixed invoice PMF. The joint law below is
+derived by executing both epochs; it is not a global-mixture assumption about
+arbitrary adaptive programs.
 
 ## Main definitions
 
@@ -56,18 +57,17 @@ private theorem near_memory (f g : Fin (z + 1) → ℕ) (j : Fin z) :
 
 /-- The actual two-turn feedback has one residual draw and two fresh invoice
 draws, retaining complete updated runtime state and source memory. -/
-theorem feedback_law (P : Parameters z) (hz : 3 ≤ z) :
-    (Feedback.run (environment limits (NativeResidualRealCost.sample T points candidates P))
+theorem feedback_law (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z) :
+    (Feedback.run (environment limits (NativeResidualInvoice.sample T points candidates P ν))
       2 (NativeResidualRouting.initial true (input T points candidates))
       (fun _ => ⟨[], [], 0⟩) initialMemory request).map
         (fun outcome => (outcome.state, outcome.memory)) =
-    (FixedMeanInvoice.law (NativeResidualRealCost.prices P)).bind fun f =>
+    ν.bind fun f =>
       P.missing.toPMF.bind fun j =>
-        (FixedMeanInvoice.law (NativeResidualRealCost.prices P)).map fun g =>
+        ν.map fun g =>
           (afterSpecialist T points candidates (combine f g) j,
             afterSpecialistMemory T points candidates (combine f g) j) := by
-  let ν := FixedMeanInvoice.law (NativeResidualRealCost.prices P)
-  have henv : environment limits (NativeResidualRealCost.sample T points candidates P) =
+  have henv : environment limits (NativeResidualInvoice.sample T points candidates P ν) =
       fun q memory => ν.bind fun f =>
         environment limits (NativeResidualOracle.sample T points candidates P f) q memory := by
     funext q memory
@@ -123,31 +123,30 @@ theorem feedback_law (P : Parameters z) (hz : 3 ≤ z) :
 /-- The actual compiled adaptive program has the coupled fixed-invoice laws
 obtained by executing its near and selected specialist epochs. Fresh draws at
 those two epochs are kept separate; no arbitrary-policy mixture is assumed. -/
-theorem native_mixture (P : Parameters z) (hz : 3 ≤ z) :
+theorem native_mixture (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z) :
     (NativeUnboundedExecution.terminal (NativeResidualRouting.controller true).program
-      (environment limits (NativeResidualRealCost.sample T points candidates P))
+      (environment limits (NativeResidualInvoice.sample T points candidates P ν))
       ⟨(NativeResidualRouting.controller true).program.initialConfig
         (GuardedStartup.encoding (input T points candidates)), initialMemory⟩).map
         (Option.map fun w => (w.config.tapes.output, w.memory)) =
-    (FixedMeanInvoice.law (NativeResidualRealCost.prices P)).bind fun f =>
-      (FixedMeanInvoice.law (NativeResidualRealCost.prices P)).bind fun g =>
+    ν.bind fun f =>
+      ν.bind fun g =>
         (NativeUnboundedExecution.terminal (NativeResidualRouting.controller true).program
           (environment limits (NativeResidualOracle.sample T points candidates P (combine f g)))
           ⟨(NativeResidualRouting.controller true).program.initialConfig
             (GuardedStartup.encoding (input T points candidates)), initialMemory⟩).map
             (Option.map fun w => (w.config.tapes.output, w.memory)) := by
-  let ν := FixedMeanInvoice.law (NativeResidualRealCost.prices P)
   have hn := congrArg (PMF.map (Option.map fun o : NativeReplyContext.Observation
       (ServerState (z + 1) Unit) => (o.output, o.memory)))
     (NativeResidualRouting.controller_law true _
-      (environment limits (NativeResidualRealCost.sample T points candidates P))
+      (environment limits (NativeResidualInvoice.sample T points candidates P ν))
       (input T points candidates) initialMemory)
   simp only [PMF.map_comp, Function.comp_def, Option.map_map, NativeReplyContext.observe,
     ite_true, Option.map_some] at hn
   rw [hn]
   have hf := congrArg (PMF.map (fun pair : RuntimeControl.State ×
       Memory Unit (ServerState (z + 1) Unit) =>
-        some (RuntimeControl.result pair.1, pair.2))) (feedback_law T points candidates P hz)
+        some (RuntimeControl.result pair.1, pair.2))) (feedback_law T points candidates P ν hz)
   simp only [PMF.map_comp, Function.comp_def, PMF.map_bind] at hf
   refine hf.trans ?_
   simp_rw [NativeResidualAttainment.native_law T points candidates P _ hz]
@@ -157,20 +156,20 @@ theorem native_mixture (P : Parameters z) (hz : 3 ≤ z) :
 
 /-- Joint native resource law: the selected specialist depends on the actual
 near response, and each epoch pays its own freshly drawn natural invoice. -/
-theorem native_resources (P : Parameters z) (hz : 3 ≤ z) :
+theorem native_resources (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z) :
     (NativeUnboundedExecution.terminal (NativeResidualRouting.controller true).program
-      (environment limits (NativeResidualRealCost.sample T points candidates P))
+      (environment limits (NativeResidualInvoice.sample T points candidates P ν))
       ⟨(NativeResidualRouting.controller true).program.initialConfig
         (GuardedStartup.encoding (input T points candidates)), initialMemory⟩).map
         (Option.map fun w => (tokenBill w.memory.events, elapsed w.memory.events)) =
-    (FixedMeanInvoice.law (NativeResidualRealCost.prices P)).bind fun f =>
+    ν.bind fun f =>
       P.missing.toPMF.bind fun j =>
-        (FixedMeanInvoice.law (NativeResidualRealCost.prices P)).map fun g =>
+        ν.map fun g =>
           some ((((f 0 + g j.succ : ℕ) : ℝ≥0)), (2 : ℝ≥0)) := by
-  let ν := FixedMeanInvoice.law (NativeResidualRealCost.prices P)
   have h := congrArg (PMF.map (Option.map fun pair : Word ×
       Memory Unit (ServerState (z + 1) Unit) =>
-        (tokenBill pair.2.events, elapsed pair.2.events))) (native_mixture T points candidates P hz)
+        (tokenBill pair.2.events, elapsed pair.2.events))) (native_mixture T points candidates P
+          ν hz)
   simp only [PMF.map_bind, PMF.map_comp, Function.comp_def, Option.map_map] at h
   refine h.trans ?_
   simp_rw [NativeResidualAttainment.native_resources T points candidates P _ hz]
@@ -183,8 +182,9 @@ theorem native_resources (P : Parameters z) (hz : 3 ≤ z) :
 /-- The original adaptive program realizes arbitrary fixed real expected prices
 by actual natural token reports. Local termination, prefix accounting and the
 expected bill are derived, without integrability or bounded-bill premises. -/
-theorem native_expected_cost (P : Parameters z) (hz : 3 ≤ z) :
-    NativeBatch.Quantitative.expected limits (NativeResidualRealCost.sample T points candidates P)
+theorem native_expected_cost (P : Parameters z)
+    (ν : PMF (Fin (z + 1) → ℕ)) (hν : NativeResidualInvoice.HasMean P ν) (hz : 3 ≤ z) :
+    NativeBatch.Quantitative.expected limits (NativeResidualInvoice.sample T points candidates P ν)
       (NativeResidualRouting.controller true).program NativeBatch.Trace.charge 3
       ⟨(NativeResidualRouting.controller true).program.initialConfig
         (GuardedStartup.encoding (input T points candidates)), initialMemory⟩ =
@@ -195,9 +195,8 @@ theorem native_expected_cost (P : Parameters z) (hz : 3 ≤ z) :
       (NativeResidualRouting.controller true).Controls Unit (ServerState (z + 1) Unit)
       (GuardedStartup.encoding (input T points candidates)))
   let μ := NativeUnboundedExecution.terminal program
-    (environment limits (NativeResidualRealCost.sample T points candidates P)) world
-  let ν := FixedMeanInvoice.law (NativeResidualRealCost.prices P)
-  have hlaw := native_resources T points candidates P hz
+    (environment limits (NativeResidualInvoice.sample T points candidates P ν)) world
+  have hlaw := native_resources T points candidates P ν hz
   have hterm : μ none = 0 := by
     apply (PMF.apply_eq_zero_iff _ _).mpr
     intro hn
@@ -209,7 +208,7 @@ theorem native_expected_cost (P : Parameters z) (hz : 3 ≤ z) :
     obtain ⟨f, _, j, _, g, _, he⟩ := hm
     cases he
   have he := NativeBatch.Quantitative.expected_charge_eq_terminal limits
-    (NativeResidualRealCost.sample T points candidates P) program world
+    (NativeResidualInvoice.sample T points candidates P ν) program world
     (NativeBatch.initial_invariant limits ()) rfl hterm
   change NativeBatch.Quantitative.expected _ _ _ NativeBatch.Trace.charge
     ((limits (z := z)).turns + 1) world = _
@@ -226,12 +225,12 @@ theorem native_expected_cost (P : Parameters z) (hz : 3 ≤ z) :
   change (∑' f, ν f * ∑' j, P.missing.toPMF j *
     ∑' g, ν g * ((f 0 : ℝ≥0∞) + (g j.succ : ℝ≥0∞))) = _
   have hnear : (∑' f, ν f * (f 0 : ℝ≥0∞)) = ENNReal.ofReal P.nearCost := by
-    have h := FixedMeanInvoice.expected_batch (NativeResidualRealCost.prices P) {0}
+    have h := NativeResidualRealCost.expected_finset hν {0}
     have hp : (NativeResidualRealCost.prices P 0 : ℝ) = P.nearCost := rfl
     simpa only [sum_singleton, hp] using h
   have hspec (j : Fin z) : (∑' g, ν g * (g j.succ : ℝ≥0∞)) =
       ENNReal.ofReal (P.specialistCost j) := by
-    have h := FixedMeanInvoice.expected_batch (NativeResidualRealCost.prices P) {j.succ}
+    have h := NativeResidualRealCost.expected_finset hν {j.succ}
     have hp : (NativeResidualRealCost.prices P j.succ : ℝ) = P.specialistCost j := rfl
     simpa only [sum_singleton, hp] using h
   have hg (f : Fin (z + 1) → ℕ) (j : Fin z) :
@@ -250,16 +249,15 @@ theorem native_expected_cost (P : Parameters z) (hz : 3 ≤ z) :
 
 /-- Fresh natural invoices preserve successful-output selection provenance of
 all finite halted executions of the actual adaptive native program. -/
-theorem native_selectionOnly (P : Parameters z) (hz : 3 ≤ z)
+theorem native_selectionOnly (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z)
     (accept : Finset (Fin (input T points candidates).startup.system.rows.length) → Bool) :
     NativeUnboundedExecution.SelectionOnly (NativeResidualRouting.controller true).program
-      (environment limits (NativeResidualRealCost.sample T points candidates P))
+      (environment limits (NativeResidualInvoice.sample T points candidates P ν))
       (NativeBatch.candidateParser (n := z + 1) (input T points
         candidates).startup.system.rows.length)
       (decodeFamily (input T points candidates).startup.system.rows.length) accept
       ⟨(NativeResidualRouting.controller true).program.initialConfig
         (GuardedStartup.encoding (input T points candidates)), initialMemory⟩ := by
-  let ν := FixedMeanInvoice.law (NativeResidualRealCost.prices P)
   apply NativeUnboundedExecution.selectionOnly_of_output_memory_bind _ _
     (ν.bind fun f => ν.map fun g => (f, g)) (NativeResidualRouting.controller true).program
     (fun pair => environment limits
@@ -267,20 +265,20 @@ theorem native_selectionOnly (P : Parameters z) (hz : 3 ≤ z)
     (fun _ => ⟨(NativeResidualRouting.controller true).program.initialConfig
       (GuardedStartup.encoding (input T points candidates)), initialMemory⟩)
   · simpa only [PMF.bind_bind, PMF.bind_map, Function.comp_def] using
-      native_mixture T points candidates P hz
+      native_mixture T points candidates P ν hz
   · intro pair _
     exact NativeResidualAttainment.native_selectionOnly T points candidates P
       (combine pair.1 pair.2) hz accept
 
 /-- Certified actual tape success for the same adaptive program and real-mean source. -/
-theorem native_certified (P : Parameters z) (hz : 3 ≤ z) :
+theorem native_certified (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz : 3 ≤ z) :
     ((NativeUnboundedExecution.terminal (NativeResidualRouting.controller true).program
-      (environment limits (NativeResidualRealCost.sample T points candidates P))
+      (environment limits (NativeResidualInvoice.sample T points candidates P ν))
       ⟨(NativeResidualRouting.controller true).program.initialConfig
         (GuardedStartup.encoding (input T points candidates)), initialMemory⟩).map
       (BatchOutput.certified limits (input T points candidates).startup.system
         (valid T points candidates (by omega)))) true = 1 := by
-  rw [BatchOutput.terminal_certified, native_mixture T points candidates P hz, PMF.map_bind]
+  rw [BatchOutput.terminal_certified, native_mixture T points candidates P ν hz, PMF.map_bind]
   simp_rw [PMF.map_bind, ← BatchOutput.terminal_certified]
   simp only [PMF.bind_apply,
     NativeResidualAttainment.native_certified T points candidates P _ hz,
@@ -288,30 +286,32 @@ theorem native_certified (P : Parameters z) (hz : 3 ≤ z) :
 
 /-- The actual adaptive real expected bill is attained in the original native
 competitor class, on the same oracle and initial seed used by all competitors. -/
-theorem native_cost_mem (P : Parameters z) (hz : 3 ≤ z) :
+theorem native_cost_mem (P : Parameters z)
+    (ν : PMF (Fin (z + 1) → ℕ)) (hν : NativeResidualInvoice.HasMean P ν) (hz : 3 ≤ z) :
     ENNReal.ofReal (P.nearCost + P.missing.mean P.specialistCost) ∈
-      BatchOptimum.costs limits (NativeResidualRealCost.sample T points candidates P)
+      BatchOptimum.costs limits (NativeResidualInvoice.sample T points candidates P ν)
         (input T points candidates) () (valid T points candidates (by omega)) 1 := by
   exact ⟨(NativeResidualRouting.controller true).tapes,
     (NativeResidualRouting.controller true).Controls,
     (NativeResidualRouting.controller true).finite,
     (NativeResidualRouting.controller true).program,
-    native_selectionOnly T points candidates P hz _,
-    (native_certified T points candidates P hz).ge,
-    (native_expected_cost T points candidates P hz).symm⟩
+    native_selectionOnly T points candidates P ν hz _,
+    (native_certified T points candidates P ν hz).ge,
+    (native_expected_cost T points candidates P ν hν hz).symm⟩
 
 /-- Both source alternatives, with arbitrary real fixed means, are attained as
 actual native bills. This statement records feasibility; the universal real-price
 optimum equality is assembled downstream in `NativeResidualRealMinima`. -/
-theorem minimum_cost_mem (P : Parameters z) (hz : 3 ≤ z) :
+theorem minimum_cost_mem (P : Parameters z)
+    (ν : PMF (Fin (z + 1) → ℕ)) (hν : NativeResidualInvoice.HasMean P ν) (hz : 3 ≤ z) :
     ENNReal.ofReal (min (∑ j, P.specialistCost j)
       (P.nearCost + P.missing.mean P.specialistCost)) ∈
-      BatchOptimum.costs limits (NativeResidualRealCost.sample T points candidates P)
+      BatchOptimum.costs limits (NativeResidualInvoice.sample T points candidates P ν)
         (input T points candidates) () (valid T points candidates (by omega)) 1 := by
   by_cases h : P.nearCost + P.missing.mean P.specialistCost ≤ ∑ j, P.specialistCost j
   · rw [min_eq_right h]
-    exact native_cost_mem T points candidates P hz
+    exact native_cost_mem T points candidates P ν hν hz
   · rw [min_eq_left (le_of_not_ge h)]
-    exact NativeResidualRealCost.native_all_cost_mem T points candidates P hz 2 (by omega)
+    exact NativeResidualRealCost.native_all_cost_mem T points candidates P ν hν hz 2 (by omega)
 
 end Cslib.Probability.StochasticOracle.NativeResidualRealAdaptive

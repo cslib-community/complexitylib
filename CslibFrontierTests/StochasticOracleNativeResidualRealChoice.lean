@@ -60,32 +60,40 @@ example (invoice : ℕ) : (invoice : ℝ) ≠ parameters.nearCost := by
 
 -- Actual whole-trace expected bill of the one compiled cost-aware program.
 example : NativeBatch.Quantitative.expected NativeResidualAttainment.limits
-    (NativeResidualRealCost.sample blocks points candidates parameters)
+    (NativeResidualInvoice.sample blocks points candidates parameters (FixedMeanInvoice.law
+      (NativeResidualRealCost.prices parameters)))
     controller.program NativeBatch.Trace.charge 3
     ⟨controller.program.initialConfig
       (encoding ⟨NativeResidualAttainment.input blocks points candidates, prices⟩),
       NativeResidualAttainment.initialMemory⟩ = ENNReal.ofReal (3 / 4) := by
   rw [NativeResidualRealChoice.native_expected_cost blocks points candidates parameters
+    (FixedMeanInvoice.law (NativeResidualRealCost.prices parameters))
+      (NativeResidualRealCost.hasMean parameters)
     (by norm_num) prices reflects]
   norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ]
 
 example : ((NativeUnboundedExecution.terminal controller.program
     (environment NativeResidualAttainment.limits
-      (NativeResidualRealCost.sample blocks points candidates parameters))
+      (NativeResidualInvoice.sample blocks points candidates parameters (FixedMeanInvoice.law
+        (NativeResidualRealCost.prices parameters))))
     ⟨controller.program.initialConfig
       (encoding ⟨NativeResidualAttainment.input blocks points candidates, prices⟩),
       NativeResidualAttainment.initialMemory⟩).map
     (BatchOutput.certified NativeResidualAttainment.limits
       (NativeResidualAttainment.input blocks points candidates).startup.system
       (NativeResidualAttainment.valid blocks points candidates (by norm_num)))) true = 1 :=
-  NativeResidualRealChoice.native_certified blocks points candidates parameters (by norm_num) prices
+  NativeResidualRealChoice.native_certified blocks points candidates parameters
+    (FixedMeanInvoice.law (NativeResidualRealCost.prices parameters)) (by norm_num) prices
 
 example : ENNReal.ofReal (3 / 4) ∈ BatchOptimum.costs NativeResidualAttainment.limits
-    (NativeResidualRealCost.sample blocks points candidates parameters)
+    (NativeResidualInvoice.sample blocks points candidates parameters (FixedMeanInvoice.law
+      (NativeResidualRealCost.prices parameters)))
     (packed ⟨NativeResidualAttainment.input blocks points candidates, prices⟩) ()
     (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1 := by
   have h := NativeResidualRealChoice.native_cost_mem blocks points candidates parameters
+    (FixedMeanInvoice.law (NativeResidualRealCost.prices parameters))
+      (NativeResidualRealCost.hasMean parameters)
     (by norm_num) prices reflects
   norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ] at h ⊢
@@ -94,11 +102,14 @@ example : ENNReal.ofReal (3 / 4) ∈ BatchOptimum.costs NativeResidualAttainment
 -- The same compiled code is optimal over every admitted competitor at fractional
 -- mean prices; no constant natural invoice can realize the near price.
 example : BatchOptimum.optimum NativeResidualAttainment.limits
-    (NativeResidualRealCost.sample blocks points candidates parameters)
+    (NativeResidualInvoice.sample blocks points candidates parameters (FixedMeanInvoice.law
+      (NativeResidualRealCost.prices parameters)))
     (packed ⟨NativeResidualAttainment.input blocks points candidates, prices⟩) ()
     (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1 =
       ENNReal.ofReal (3 / 4) := by
   rw [NativeResidualRealChoice.native_optimum blocks points candidates parameters
+    (FixedMeanInvoice.law (NativeResidualRealCost.prices parameters))
+      (NativeResidualRealCost.hasMean parameters)
     (by norm_num) prices reflects]
   norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ]
@@ -117,22 +128,28 @@ private def dearReflects : Reflects dearPrices dear where
 -- Changing only the rational input table selects the cheaper all-specialist
 -- branch of this same code, now with real mean prices and attained optimum 5/2.
 example : NativeBatch.Quantitative.expected NativeResidualAttainment.limits
-    (NativeResidualRealCost.sample blocks points candidates dear)
+    (NativeResidualInvoice.sample blocks points candidates dear (FixedMeanInvoice.law
+      (NativeResidualRealCost.prices dear)))
     controller.program NativeBatch.Trace.charge 3
     ⟨controller.program.initialConfig
       (encoding ⟨NativeResidualAttainment.input blocks points candidates, dearPrices⟩),
       NativeResidualAttainment.initialMemory⟩ = ENNReal.ofReal (5 / 2) := by
   rw [NativeResidualRealChoice.native_expected_cost blocks points candidates dear
+    (FixedMeanInvoice.law (NativeResidualRealCost.prices dear))
+      (NativeResidualRealCost.hasMean dear)
     (by norm_num) dearPrices dearReflects]
   norm_num [dear, parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ]
 
 example : BatchOptimum.optimum NativeResidualAttainment.limits
-    (NativeResidualRealCost.sample blocks points candidates dear)
+    (NativeResidualInvoice.sample blocks points candidates dear (FixedMeanInvoice.law
+      (NativeResidualRealCost.prices dear)))
     (packed ⟨NativeResidualAttainment.input blocks points candidates, dearPrices⟩) ()
     (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1 =
       ENNReal.ofReal (5 / 2) := by
   rw [NativeResidualRealChoice.native_optimum blocks points candidates dear
+    (FixedMeanInvoice.law (NativeResidualRealCost.prices dear))
+      (NativeResidualRealCost.hasMean dear)
     (by norm_num) dearPrices dearReflects]
   norm_num [dear, parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ]
@@ -141,20 +158,25 @@ example : BatchOptimum.optimum NativeResidualAttainment.limits
 -- not assumed for an auxiliary bill function or a terminal-only cost.
 example :
     Integrable (fun ω => (NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω).toReal)
-      (NativeResidualPathCost.execution blocks points candidates parameters prices) ∧
+      (NativeResidualPathCost.execution blocks points candidates parameters (FixedMeanInvoice.law
+        (NativeResidualRealCost.prices parameters)) prices) ∧
     (∫ ω, (NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω).toReal
-      ∂NativeResidualPathCost.execution blocks points candidates parameters prices) = 3 / 4 := by
+      ∂NativeResidualPathCost.execution blocks points candidates parameters (FixedMeanInvoice.law
+        (NativeResidualRealCost.prices parameters)) prices) = 3 / 4 := by
   obtain ⟨_, hint, he⟩ := NativeResidualPathCost.integrable_totalBill blocks points candidates
-    parameters (by norm_num) prices reflects
+    parameters (FixedMeanInvoice.law (NativeResidualRealCost.prices parameters))
+    (NativeResidualRealCost.hasMean parameters) (by norm_num) prices reflects
   refine ⟨hint, ?_⟩
   norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ] at he
   exact he
 
 example : (∫ ω, (NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω).toReal
-    ∂NativeResidualPathCost.execution blocks points candidates dear dearPrices) = 5 / 2 := by
+    ∂NativeResidualPathCost.execution blocks points candidates dear (FixedMeanInvoice.law
+      (NativeResidualRealCost.prices dear)) dearPrices) = 5 / 2 := by
   obtain ⟨_, _, he⟩ := NativeResidualPathCost.integrable_totalBill blocks points candidates
-    dear (by norm_num) dearPrices dearReflects
+    dear (FixedMeanInvoice.law (NativeResidualRealCost.prices dear))
+    (NativeResidualRealCost.hasMean dear) (by norm_num) dearPrices dearReflects
   norm_num [dear, parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ] at he
   exact he
