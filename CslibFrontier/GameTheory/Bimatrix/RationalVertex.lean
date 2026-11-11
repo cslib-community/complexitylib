@@ -88,29 +88,10 @@ unperturbed Nash extraction on positive integer `m × n` games bounded by `H`. -
 @[expose] def bitBound (m n H : ℕ) : ℕ :=
   4 * (m + n) * (m + n + Nat.log 2 H + 3)
 
-private lemma succ_le_two_pow : ∀ k : ℕ, k + 1 ≤ 2 ^ k
-  | 0 => by norm_num
-  | k + 1 => by
-    have ih := succ_le_two_pow k
-    calc k + 1 + 1 ≤ 2 ^ k + 2 ^ k := by omega
-      _ = 2 ^ (k + 1) := by rw [pow_succ]; ring
-
-private lemma factorial_le_two_pow_sq : ∀ k : ℕ, k.factorial ≤ 2 ^ (k ^ 2)
-  | 0 => by simp
-  | k + 1 => by
-    have hpow : k + 1 ≤ 2 ^ (2 * k + 1) := by
-      have hk : k + 1 ≤ 2 ^ k * 2 := by
-        have h1 : (1 : ℕ) ≤ 2 ^ k := Nat.one_le_two_pow
-        calc k + 1 ≤ 2 ^ k + 2 ^ k := Nat.add_le_add Nat.lt_two_pow_self.le h1
-          _ = 2 ^ k * 2 := by ring
-      calc k + 1 ≤ 2 ^ k * 2 := hk
-        _ ≤ 2 ^ k * 2 ^ (k + 1) :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num : 0 < 2) (Nat.succ_pos k))
-        _ = 2 ^ (2 * k + 1) := by rw [← pow_add]; congr 1; ring
-    have ih := factorial_le_two_pow_sq k
-    calc (k + 1).factorial = (k + 1) * k.factorial := Nat.factorial_succ k
-      _ ≤ 2 ^ (2 * k + 1) * 2 ^ (k ^ 2) := Nat.mul_le_mul hpow ih
-      _ = 2 ^ ((k + 1) ^ 2) := by rw [← pow_add]; congr 1; ring
+private lemma factorial_le_two_pow_sq (k : ℕ) : k.factorial ≤ 2 ^ (k ^ 2) :=
+  calc k.factorial ≤ k ^ k := Nat.factorial_le_pow k
+    _ ≤ (2 ^ k) ^ k := Nat.pow_le_pow_left Nat.lt_two_pow_self.le k
+    _ = 2 ^ (k ^ 2) := by rw [← pow_mul, sq]
 
 private lemma kernelVecBound_mul_lt_two_pow_aux {a b H : ℕ} (ha : 0 < a) (hb : 0 < b) :
     Matrix.kernelVecBound a H * (b + 1) < 2 ^ bitBound a b H := by
@@ -125,7 +106,7 @@ private lemma kernelVecBound_mul_lt_two_pow_aux {a b H : ℕ} (ha : 0 < a) (hb :
     (factorial_le_two_pow_sq a).trans
       (Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_left ha_le 2))
   have hb1 : b + 1 ≤ 2 ^ s :=
-    (by omega : b + 1 ≤ s + 1).trans (succ_le_two_pow s)
+    (by omega : b + 1 ≤ s).trans Nat.lt_two_pow_self.le
   have hbase : a * ((a + 1) * H) ^ 2 + 1 ≤ 2 ^ (3 * s + 2 * L + 3) := by
     have hs1 : a + 1 ≤ 2 ^ (s + 1) := by
       calc a + 1 ≤ s + 1 := by omega

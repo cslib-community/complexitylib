@@ -12,8 +12,7 @@ public import CslibFrontier.GameTheory.Bimatrix.ShapleyOrientation
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses
 public import CslibFrontier.Computability.Circuit.Rational.Runtime.Determinant
 public import CslibFrontier.Computability.Circuit.Rational.Runtime.Point
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Rat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.PolyTime.Int.DotProduct
 public import CslibFrontier.Computability.PolyTime.Int.ExactDiv
@@ -27,9 +26,11 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 import CslibFrontier.Computability.PolyTime.Int.Table
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.BinarySize
@@ -42,9 +43,10 @@ Finding a mixed Nash equilibrium of a two-player bimatrix game with rational pay
 `PPAD` [Papadimitriou1994PPAD], [vonStengel2007], Chapter 3.
 
 Payoff matrices are encoded by the structure `BimatrixCode` (fields `matA`, `matB`) under
-`encBimatrix`.
+`encBimatrix` using `Turing.MultiTapeTM.encRat`, and rational mixed strategy pairs by
+`StrategyPair` under `encWitness`.
 For well-formed nonempty `m × n` matrices, `BimatrixNash c w` holds when `w` is a polynomially
-bounded canonical rational pair `(x, y)` forming an exact Nash equilibrium of `c.toGame`.
+bounded canonical rational strategy pair forming an exact Nash equilibrium of `c.toGame`.
 Non-well-formed inputs admit only the empty witness `[]`.
 
 The reduction to `EndOfLine` normalizes `(A, B)` to positive integers in `[1, H]`, perturbs the
@@ -58,7 +60,7 @@ polynomial-time search reduction to `endOfLineRel` (`BimatrixNash_mem_PPAD`).
 
 ## Main definitions
 
-* `Cslib.GameTheory.encRat`: canonical binary encoding of rationals `(num, den)`.
+* `Cslib.GameTheory.StrategyPair`, `Cslib.GameTheory.encWitness`: encoded rational strategy pair.
 * `Cslib.GameTheory.BimatrixCode`, `Cslib.GameTheory.encBimatrix`: encoded bimatrix games.
 * `Cslib.GameTheory.BimatrixCode.WellFormed`, `Cslib.GameTheory.BimatrixCode.toGame`:
   rectangularity predicate and induced `BimatrixGame`.
@@ -99,42 +101,22 @@ open Turing.MultiTapeTM ComputableInPolyTime
 
 /-! ### Section 1: Encodings, games, and the rational Nash search problem -/
 
-/-- Canonical encoding of a rational number as `(q.num, q.den)` via `encIntBin` and `encNat`. -/
-@[expose] def encRat : ℚ ↪ List Bool :=
-  ⟨fun q => encPair encIntBin encNat (q.num, q.den), fun q r h => by
-    have hp := (encPair encIntBin encNat).injective h
-    exact Rat.ext (Prod.ext_iff.1 hp).1 (Prod.ext_iff.1 hp).2⟩
-
-private abbrev encRatPair : (ℤ × ℕ) ↪ List Bool :=
-  encPair encIntBin encNat
-
 private abbrev encWitnessPairs : (List (ℤ × ℕ) × List (ℤ × ℕ)) ↪ List Bool :=
-  encPair (encList encRatPair) (encList encRatPair)
+  encPair (encList encRatData) (encList encRatData)
 
-/-- Canonical encoding of a pair of rational strategy lists. -/
-@[expose] def encWitness : (List ℚ × List ℚ) ↪ List Bool :=
-  ⟨fun p => encPair (encList encRat) (encList encRat) p, fun _ _ h =>
-    (encPair (encList encRat) (encList encRat)).injective h⟩
+/-- A pair of rational mixed strategy lists `(x, y)` for players 1 and 2. -/
+@[ext]
+structure StrategyPair where
+  /-- Player 1's rational mixed strategy list. -/
+  x : List ℚ
+  /-- Player 2's rational mixed strategy list. -/
+  y : List ℚ
+deriving DecidableEq, Repr
 
-private theorem ratToPair_polytime :
-    ComputableInPolyTime (fun q : ℚ => (q.num, q.den)) encRat encRatPair :=
-  .of_eq fun _ => rfl
-
-private lemma encRat_eq (q : ℚ) : encRat q = encRatPair (q.num, q.den) := rfl
-
-attribute [local irreducible] encRat
-
-@[local fun_prop]
-private theorem rat_num_polytime {α : Type} {encIn : α ↪ List Bool} {f : α → ℚ}
-    (hf : ComputableInPolyTime f encIn encRat) :
-    ComputableInPolyTime (fun x => (f x).num) encIn encIntBin :=
-  ((fst encIntBin encNat).comp ratToPair_polytime).comp hf
-
-@[local fun_prop]
-private theorem rat_den_polytime {α : Type} {encIn : α ↪ List Bool} {f : α → ℚ}
-    (hf : ComputableInPolyTime f encIn encRat) :
-    ComputableInPolyTime (fun x => (f x).den) encIn encNat :=
-  ((snd encIntBin encNat).comp ratToPair_polytime).comp hf
+/-- Canonical encoding of a rational strategy pair `(x, y)` via `Turing.MultiTapeTM.encRat`. -/
+enc_structure encWitness : StrategyPair where
+  x : (encList encRat),
+  y : (encList encRat)
 
 /-- An explicitly presented two-player game given by two lists of rational payoff rows. -/
 @[ext]
@@ -210,11 +192,6 @@ private lemma fin_sum_getD_eq_list_sum {α : Type*} [AddCommMonoid α] (l : List
     simp only [List.sum_cons]
     exact congrArg (a + ·) ih
 
-private lemma list_getD_mem {α : Type*} (l : List α) (d : α) {i : ℕ} (hi : i < l.length) :
-    l.getD i d ∈ l := by
-  rw [List.getD_eq_getElem?_getD, getElem?_pos l i hi]
-  exact List.getElem_mem hi
-
 theorem IsRationalNash.toGame_isNash {c : BimatrixCode} {x y : List ℚ}
     (hn : c.IsRationalNash x y) :
     c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
@@ -231,9 +208,13 @@ theorem IsRationalNash.toGame_isNash {c : BimatrixCode} {x y : List ℚ}
       rw [fin_sum_getD_eq_list_sum y 0 hylen, hysum]
     simpa only [yR, ← Rat.cast_sum, Rat.cast_one] using congrArg (Rat.cast : ℚ → ℝ) hq
   have hx_nn : ∀ i : Fin c.rows, 0 ≤ xR i := fun i =>
-    Rat.cast_nonneg.2 (hxnn _ (list_getD_mem x 0 (by omega)))
+    Rat.cast_nonneg.2 (hxnn _ (by
+      rw [List.getD_eq_getElem x 0 (by omega)]
+      exact List.getElem_mem (by omega)))
   have hy_nn : ∀ j : Fin c.cols, 0 ≤ yR j := fun j =>
-    Rat.cast_nonneg.2 (hynn _ (list_getD_mem y 0 (by omega)))
+    Rat.cast_nonneg.2 (hynn _ (by
+      rw [List.getD_eq_getElem y 0 (by omega)]
+      exact List.getElem_mem (by omega)))
   have hmx : IsMixedStrategy xR := by
     rw [isMixedStrategy_iff]
     exact ⟨hx_nn, hx_sum⟩
@@ -294,23 +275,24 @@ theorem witnessPoly_eval (L : ℕ) :
     Polynomial.eval_C, Polynomial.eval_X]
 
 /-- The rational bimatrix Nash search problem: given `c`, find a polynomially bounded canonical
-rational Nash equilibrium `(x, y)` of `c.toGame` (or `[]` on malformed `c`). -/
+rational strategy pair `s` forming an exact Nash equilibrium of `c.toGame` (or `[]` on malformed
+`c`). -/
 @[expose] def BimatrixNash (c : BimatrixCode) (w : List Bool) : Prop :=
   if c.wellFormedB then
     w.length ≤ 120 * (encBimatrix c).length ^ 3 + 400 * (encBimatrix c).length + 100 ∧
-      ∃ x y : List ℚ, w = encWitness (x, y) ∧ c.IsRationalNash x y
+      ∃ s : StrategyPair, w = encWitness s ∧ c.IsRationalNash s.x s.y
   else w = []
 
 /-- Every solution witness of a well-formed game decodes to a Nash equilibrium of `c.toGame`. -/
 theorem BimatrixNash.isNash {c : BimatrixCode} {w : List Bool}
     (hc : c.WellFormed) (hw : BimatrixNash c w) :
-    ∃ x y : List ℚ, w = encWitness (x, y) ∧
-      c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
-        (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) := by
+    ∃ s : StrategyPair, w = encWitness s ∧
+      c.toGame.IsNash (fun i : Fin c.rows => (s.x.getD i.1 0 : ℝ))
+        (fun j : Fin c.cols => (s.y.getD j.1 0 : ℝ)) := by
   have hwb : c.wellFormedB = true := (wellFormed_iff_wellFormedB c).1 hc
   simp only [BimatrixNash, hwb, ite_true] at hw
-  obtain ⟨-, x, y, rfl, hrat⟩ := hw
-  exact ⟨x, y, rfl, hrat.toGame_isNash⟩
+  obtain ⟨-, s, rfl, hrat⟩ := hw
+  exact ⟨s, rfl, hrat.toGame_isNash⟩
 
 /-! ### Section 2: Executable positive integer normalization -/
 
@@ -566,13 +548,13 @@ private theorem witnessDecoder_polytime :
 
 @[local fun_prop]
 private theorem isCanonicalNonnegPair_polytime :
-    ComputableInPolyTime isCanonicalNonnegPair encRatPair encBool := by
+    ComputableInPolyTime isCanonicalNonnegPair encRatData encBool := by
   unfold isCanonicalNonnegPair
   fun_prop
 
 @[local fun_prop]
 private theorem vecProdDen_polytime {α : Type} {encIn : α ↪ List Bool}
-    {v : α → List (ℤ × ℕ)} (hv : ComputableInPolyTime v encIn (encList encRatPair)) :
+    {v : α → List (ℤ × ℕ)} (hv : ComputableInPolyTime v encIn (encList encRatData)) :
     ComputableInPolyTime (fun x => vecProdDen (v x)) encIn encIntBin := by
   unfold vecProdDen
   fun_prop
@@ -581,10 +563,10 @@ private theorem vecProdDen_polytime {α : Type} {encIn : α ↪ List Bool}
 private theorem scaleVecNum_polytime {α : Type} {encIn : α ↪ List Bool}
     {D : α → ℤ} {v : α → List (ℤ × ℕ)}
     (hD : ComputableInPolyTime D encIn encIntBin)
-    (hv : ComputableInPolyTime v encIn (encList encRatPair)) :
+    (hv : ComputableInPolyTime v encIn (encList encRatData)) :
     ComputableInPolyTime (fun x => scaleVecNum (D x) (v x)) encIn (encList encIntBin) := by
   unfold scaleVecNum
-  refine mapWithInput (encA := encRatPair) hv ?_
+  refine mapWithInput (encA := encRatData) hv ?_
   exact intBin_mul' ((fst encIntBin encNat).comp (snd _ _))
     (intBin_tdiv' (hD.comp (fst _ _))
       (intBin_natCast.comp ((snd encIntBin encNat).comp (snd _ _))))
@@ -634,7 +616,7 @@ private theorem clearMatB_polytime :
 private theorem pay1Vec_polytime {α : Type} {encIn : α ↪ List Bool}
     {c : α → BimatrixCode} {yl : α → List (ℤ × ℕ)}
     (hc : ComputableInPolyTime c encIn encBimatrix)
-    (hyl : ComputableInPolyTime yl encIn (encList encRatPair)) :
+    (hyl : ComputableInPolyTime yl encIn (encList encRatData)) :
     ComputableInPolyTime (fun x => pay1Vec (c x) (yl x)) encIn (encList encIntBin) := by
   unfold pay1Vec
   exact rowPayoffs_polytime (clearMatA_polytime.comp hc) (codeCols_polytime.comp hc)
@@ -644,7 +626,7 @@ private theorem pay1Vec_polytime {α : Type} {encIn : α ↪ List Bool}
 private theorem pay2Vec_polytime {α : Type} {encIn : α ↪ List Bool}
     {c : α → BimatrixCode} {xl : α → List (ℤ × ℕ)}
     (hc : ComputableInPolyTime c encIn encBimatrix)
-    (hxl : ComputableInPolyTime xl encIn (encList encRatPair)) :
+    (hxl : ComputableInPolyTime xl encIn (encList encRatData)) :
     ComputableInPolyTime (fun x => pay2Vec (c x) (xl x)) encIn (encList encIntBin) := by
   unfold pay2Vec
   exact rowPayoffs_polytime
@@ -673,9 +655,9 @@ private theorem verifiesDecoded_polytime {α : Type} {encIn : α ↪ List Bool}
   have hreenc : ComputableInPolyTime (fun x => encWitnessPairs (dec x)) encIn encBits :=
     (of_eq (f := fun z => encWitnessPairs z) (encIn := encWitnessPairs)
       (encOut := encBits) fun _ => rfl).comp hdec
-  have hxl : ComputableInPolyTime (fun x => (dec x).1) encIn (encList encRatPair) :=
+  have hxl : ComputableInPolyTime (fun x => (dec x).1) encIn (encList encRatData) :=
     (fst _ _).comp hdec
-  have hyl : ComputableInPolyTime (fun x => (dec x).2) encIn (encList encRatPair) :=
+  have hyl : ComputableInPolyTime (fun x => (dec x).2) encIn (encList encRatData) :=
     (snd _ _).comp hdec
   have hDx := vecProdDen_polytime hxl
   have hDy := vecProdDen_polytime hyl
@@ -693,11 +675,11 @@ private theorem verifiesDecoded_polytime {α : Type} {encIn : α ↪ List Bool}
       encIn encIntBin := listDotProduct.comp ((codeCols_polytime.comp hc).prod (hys.prod hp2))
   have ha1 : ComputableInPolyTime
       (fun x => (dec x).1.all isCanonicalNonnegPair) encIn encBool := by
-    refine allWithInput (encA := encRatPair) hxl ?_
+    refine allWithInput (encA := encRatData) hxl ?_
     exact isCanonicalNonnegPair_polytime.comp (snd _ _)
   have ha2 : ComputableInPolyTime
       (fun x => (dec x).2.all isCanonicalNonnegPair) encIn encBool := by
-    refine allWithInput (encA := encRatPair) hyl ?_
+    refine allWithInput (encA := encRatData) hyl ?_
     exact isCanonicalNonnegPair_polytime.comp (snd _ _)
   unfold verifiesDecoded
   refine bool_and' ?_ (brCheck_polytime hDy hm2 hp2)
@@ -706,9 +688,9 @@ private theorem verifiesDecoded_polytime {α : Type} {encIn : α ↪ List Bool}
   refine bool_and' ?_ (decide_eq' (intBin_sum.comp hxs) hDx)
   refine bool_and' ?_ ha2
   refine bool_and' ?_ ha1
-  refine bool_and' ?_ (decide_eq' ((length_list encRatPair).comp hyl) (codeCols_polytime.comp hc))
+  refine bool_and' ?_ (decide_eq' ((length_list encRatData).comp hyl) (codeCols_polytime.comp hc))
   exact bool_and' (decide_eq' hreenc hw)
-    (decide_eq' ((length_list encRatPair).comp hxl) (codeRows_polytime.comp hc))
+    (decide_eq' ((length_list encRatData).comp hxl) (codeRows_polytime.comp hc))
 
 private theorem verifiesBimatrixNash_polytime :
     ComputableInPolyTime verifiesBimatrixNash (encPair encBimatrix encBits) encBool := by
@@ -720,18 +702,16 @@ private theorem verifiesBimatrixNash_polytime :
     simp only [verifiesBimatrixNash, Function.comp_apply]
 
 private lemma encWitness_eq_pairs (x y : List ℚ) :
-    encWitness (x, y) =
+    encWitness ⟨x, y⟩ =
       encWitnessPairs (x.map (fun q => (q.num, q.den)), y.map (fun q => (q.num, q.den))) := by
   have hmap : ∀ l : List ℚ,
-      encList encRat l = encList encRatPair (l.map fun q => (q.num, q.den)) := by
+      encList encRat l = encList encRatData (l.map fun q => (q.num, q.den)) := by
     intro l
     induction l with
     | nil => rfl
     | cons a l ih =>
-      simp only [encList_cons, List.map_cons, ih, encRat_eq]
-  change encPair (encList encRat) (encList encRat) (x, y) =
-    encPair (encList encRatPair) (encList encRatPair)
-      (x.map (fun q => (q.num, q.den)), y.map (fun q => (q.num, q.den)))
+      simp only [encList_cons, List.map_cons, ih, encRat_apply]
+  rw [encWitness_apply]
   simp only [encPair_apply, hmap]
 
 private lemma dotProduct_eq_fin_sum (k : ℕ) (a b : List ℤ) :
@@ -803,10 +783,11 @@ private lemma clearMat_getD_cast {c : BimatrixCode} (hc : c.WellFormed)
         (clearScale c : ℚ) * (M.getD i.1 []).getD j.1 0 := by
     intro M hM hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrmem : M.getD i.1 [] ∈ M := list_getD_mem M [] hi
+    have hrmem : M.getD i.1 [] ∈ M := List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi
     have hrlen : (M.getD i.1 []).length = c.cols := hrows _ hrmem
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrlen]; exact j.2
-    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] := list_getD_mem _ 0 hj
+    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] :=
+      List.getD_eq_getElem _ 0 hj ▸ List.getElem_mem hj
     have h1 : (clearMat (clearScale c) M).getD i.1 [] =
         (M.getD i.1 []).map (scaledEntry (clearScale c)) :=
       list_getD_map_lt (List.map (scaledEntry (clearScale c))) M [] [] hi
@@ -840,7 +821,7 @@ private lemma scaleVecNum_getD_cast {v : List (ℤ × ℕ)} (hv : v.all isCanoni
     ((scaleVecNum (vecProdDen v) v).getD i.1 0 : ℚ) =
       (vecProdDen v : ℚ) * (v.map mkRatOfPair).getD i.1 0 := by
   have hi : i.1 < v.length := by rw [hk]; exact i.2
-  have hpq : v.getD i.1 (0, 0) ∈ v := list_getD_mem v (0, 0) hi
+  have hpq : v.getD i.1 (0, 0) ∈ v := List.getD_eq_getElem v (0, 0) hi ▸ List.getElem_mem hi
   have hmem := (List.all_eq_true.1 hv) _ hpq
   simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq] at hmem
   have hdvd := den_dvd_vecProdDen hpq
@@ -939,7 +920,9 @@ private lemma brCheck_iff {D mix : ℤ} {pays : List ℤ} {k : ℕ} (hk : pays.l
   simp only [brCheck, List.all_eq_true, decide_eq_true_eq]
   constructor
   · intro h i
-    exact h _ (list_getD_mem pays 0 (by rw [hk]; exact i.2))
+    exact h _ (by
+      rw [List.getD_eq_getElem pays 0 (by omega)]
+      exact List.getElem_mem (by omega))
   · intro h v hv
     rcases List.mem_iff_getElem.1 hv with ⟨i, hi, rfl⟩
     have hi' : i < k := by omega
@@ -1041,6 +1024,47 @@ private lemma list_sum_eq_one_of_div {k : ℕ} {v : List ℚ} {num : List ℤ}
         rw [← Int.cast_sum, fin_sum_getD_eq_list_sum num 0 hnum_len]
     _ = 1 := div_self hne0
 
+private lemma scaleVecNum_sum_eq_vecProdDen_of_sum_eq_one {n : ℕ} {l : List (ℤ × ℕ)}
+    (hl_c : l.all isCanonicalNonnegPair = true) (hl_len : l.length = n)
+    (hsum : (l.map mkRatOfPair).sum = 1) :
+    (scaleVecNum (vecProdDen l) l).sum = vecProdDen l := by
+  have hq : ((scaleVecNum (vecProdDen l) l).sum : ℚ) = (vecProdDen l : ℚ) := by
+    rw [← fin_sum_getD_eq_list_sum (scaleVecNum (vecProdDen l) l) 0
+      (n := n) (by simp [scaleVecNum, hl_len])]
+    push_cast
+    have hsum' : ∑ i : Fin n, ((scaleVecNum (vecProdDen l) l).getD i.1 0 : ℚ) =
+        (vecProdDen l : ℚ) * ∑ i : Fin n, (l.map mkRatOfPair).getD i.1 0 := by
+      rw [Finset.mul_sum]
+      refine Finset.sum_congr rfl fun i _ => scaleVecNum_getD_cast hl_c hl_len i
+    rw [hsum', fin_sum_getD_eq_list_sum (l.map mkRatOfPair) 0 (n := n) (by simp [hl_len]),
+      hsum, mul_one]
+  exact_mod_cast hq
+
+private lemma map_pair_mkRatOfPair_eq {l : List (ℤ × ℕ)}
+    (hl : l.all isCanonicalNonnegPair = true) :
+    (l.map mkRatOfPair).map (fun q => (q.num, q.den)) = l := by
+  rw [List.map_map]
+  have hm : List.map ((fun q : ℚ => (q.num, q.den)) ∘ mkRatOfPair) l = List.map id l := by
+    refine List.map_congr_left fun pq hpq => ?_
+    have hmk := mkRatOfPair_num_den ((List.all_eq_true.1 hl) pq hpq)
+    exact Prod.ext hmk.1 hmk.2
+  simpa only [List.map_id] using hm
+
+private lemma all_isCanonicalNonnegPair_of_nonneg {l : List ℚ} (hl : ∀ q ∈ l, 0 ≤ q) :
+    (l.map fun q => (q.num, q.den)).all isCanonicalNonnegPair = true := by
+  rw [List.all_eq_true]
+  intro pq hpq
+  rcases List.mem_map.1 hpq with ⟨q, hq, rfl⟩
+  exact rat_isCanonical (hl q hq)
+
+private lemma map_mkRatOfPair_pair_eq (l : List ℚ) :
+    (l.map fun q => (q.num, q.den)).map mkRatOfPair = l := by
+  rw [List.map_map]
+  have hm : List.map (mkRatOfPair ∘ fun q : ℚ => (q.num, q.den)) l = List.map id l := by
+    refine List.map_congr_left fun q _ => ?_
+    simp only [Function.comp_apply, mkRatOfPair, Rat.num_div_den, id_eq]
+  simpa only [List.map_id] using hm
+
 private lemma verifiesDecoded_iff {c : BimatrixCode} (hc : c.WellFormed)
     (w : List Bool) (dec : List (ℤ × ℕ) × List (ℤ × ℕ)) :
     verifiesDecoded c w dec = true ↔
@@ -1103,30 +1127,10 @@ private lemma verifiesDecoded_iff {c : BimatrixCode} (hc : c.WellFormed)
     have hDx : (0 : ℚ) < (vecProdDen dec.1 : ℚ) := by exact_mod_cast vecProdDen_pos hcx
     have hDy : (0 : ℚ) < (vecProdDen dec.2 : ℚ) := by exact_mod_cast vecProdDen_pos hcy
     have hDc : (0 : ℚ) < (clearScale c : ℚ) := by exact_mod_cast clearScale_pos c
-    have hsx : (scaleVecNum (vecProdDen dec.1) dec.1).sum = vecProdDen dec.1 := by
-      have hq : ((scaleVecNum (vecProdDen dec.1) dec.1).sum : ℚ) = (vecProdDen dec.1 : ℚ) := by
-        rw [← fin_sum_getD_eq_list_sum (scaleVecNum (vecProdDen dec.1) dec.1) 0
-          (n := c.rows) (by simp [scaleVecNum, hdx])]
-        push_cast
-        have hsum' : ∑ i : Fin c.rows, ((scaleVecNum (vecProdDen dec.1) dec.1).getD i.1 0 : ℚ) =
-            (vecProdDen dec.1 : ℚ) * ∑ i : Fin c.rows, x.getD i.1 0 := by
-          rw [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun i _ => scaleVecNum_getD_cast hcx hdx i
-        have hx1 : x.sum = 1 := hxsum
-        rw [hsum', fin_sum_getD_eq_list_sum x 0 (n := c.rows) (by simp [x, hdx]), hx1, mul_one]
-      exact_mod_cast hq
-    have hsy : (scaleVecNum (vecProdDen dec.2) dec.2).sum = vecProdDen dec.2 := by
-      have hq : ((scaleVecNum (vecProdDen dec.2) dec.2).sum : ℚ) = (vecProdDen dec.2 : ℚ) := by
-        rw [← fin_sum_getD_eq_list_sum (scaleVecNum (vecProdDen dec.2) dec.2) 0
-          (n := c.cols) (by simp [scaleVecNum, hdy])]
-        push_cast
-        have hsum' : ∑ j : Fin c.cols, ((scaleVecNum (vecProdDen dec.2) dec.2).getD j.1 0 : ℚ) =
-            (vecProdDen dec.2 : ℚ) * ∑ j : Fin c.cols, y.getD j.1 0 := by
-          rw [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun j _ => scaleVecNum_getD_cast hcy hdy j
-        have hy1 : y.sum = 1 := hysum
-        rw [hsum', fin_sum_getD_eq_list_sum y 0 (n := c.cols) (by simp [y, hdy]), hy1, mul_one]
-      exact_mod_cast hq
+    have hsx : (scaleVecNum (vecProdDen dec.1) dec.1).sum = vecProdDen dec.1 :=
+      scaleVecNum_sum_eq_vecProdDen_of_sum_eq_one hcx hdx hxsum
+    have hsy : (scaleVecNum (vecProdDen dec.2) dec.2).sum = vecProdDen dec.2 :=
+      scaleVecNum_sum_eq_vecProdDen_of_sum_eq_one hcy hdy hysum
     have hmix1 := mix1_eq_cast hc hcx hcy hdx hdy
     have hmix2 := mix2_eq_cast hc hcx hcy hdx hdy
     have hb1 : brCheck (vecProdDen dec.1)
@@ -1162,7 +1166,7 @@ private lemma verifiesDecoded_iff {c : BimatrixCode} (hc : c.WellFormed)
 
 private lemma verifiesBimatrixNash_eq_true_iff (c : BimatrixCode) (w : List Bool) :
     verifiesBimatrixNash (c, w) = true ↔
-      if c.wellFormedB then ∃ x y : List ℚ, w = encWitness (x, y) ∧ c.IsRationalNash x y
+      if c.wellFormedB then ∃ s : StrategyPair, w = encWitness s ∧ c.IsRationalNash s.x s.y
       else w = [] := by
   by_cases hwb : c.wellFormedB = true
   · have hc : c.WellFormed := (wellFormed_iff_wellFormedB c).2 hwb
@@ -1172,55 +1176,17 @@ private lemma verifiesBimatrixNash_eq_true_iff (c : BimatrixCode) (w : List Bool
     · rintro ⟨hew, hcx, hcy, hrat⟩
       let x := (witnessDecoder.decode w).1.map mkRatOfPair
       let y := (witnessDecoder.decode w).2.map mkRatOfPair
-      have hx_pairs : x.map (fun q => (q.num, q.den)) = (witnessDecoder.decode w).1 := by
-        rw [List.map_map]
-        have hm : List.map ((fun q : ℚ => (q.num, q.den)) ∘ mkRatOfPair)
-            (witnessDecoder.decode w).1 = List.map id (witnessDecoder.decode w).1 := by
-          refine List.map_congr_left fun pq hpq => ?_
-          have hmk := mkRatOfPair_num_den ((List.all_eq_true.1 hcx) pq hpq)
-          exact Prod.ext hmk.1 hmk.2
-        simpa only [List.map_id] using hm
-      have hy_pairs : y.map (fun q => (q.num, q.den)) = (witnessDecoder.decode w).2 := by
-        rw [List.map_map]
-        have hm : List.map ((fun q : ℚ => (q.num, q.den)) ∘ mkRatOfPair)
-            (witnessDecoder.decode w).2 = List.map id (witnessDecoder.decode w).2 := by
-          refine List.map_congr_left fun pq hpq => ?_
-          have hmk := mkRatOfPair_num_den ((List.all_eq_true.1 hcy) pq hpq)
-          exact Prod.ext hmk.1 hmk.2
-        simpa only [List.map_id] using hm
-      refine ⟨x, y, ?_, hrat⟩
-      rw [hew, encWitness_eq_pairs x y, hx_pairs, hy_pairs]
-    · rintro ⟨x, y, rfl, hrat⟩
+      refine ⟨⟨x, y⟩, ?_, hrat⟩
+      rw [hew, encWitness_eq_pairs x y, map_pair_mkRatOfPair_eq hcx, map_pair_mkRatOfPair_eq hcy]
+    · rintro ⟨⟨x, y⟩, rfl, hrat⟩
       let dec0 : List (ℤ × ℕ) × List (ℤ × ℕ) :=
         (x.map (fun q => (q.num, q.den)), y.map (fun q => (q.num, q.den)))
-      have hdec0 : witnessDecoder.decode (encWitness (x, y)) = dec0 := by
+      have hdec0 : witnessDecoder.decode (encWitness ⟨x, y⟩) = dec0 := by
         rw [encWitness_eq_pairs x y, witnessDecoder.decode_enc]
       rw [hdec0]
-      have hxnn := hrat.2.2.1
-      have hynn := hrat.2.2.2.2.1
-      have hcx : dec0.1.all isCanonicalNonnegPair = true := by
-        rw [List.all_eq_true]
-        intro pq hpq
-        rcases List.mem_map.1 hpq with ⟨q, hq, rfl⟩
-        exact rat_isCanonical (hxnn q hq)
-      have hcy : dec0.2.all isCanonicalNonnegPair = true := by
-        rw [List.all_eq_true]
-        intro pq hpq
-        rcases List.mem_map.1 hpq with ⟨q, hq, rfl⟩
-        exact rat_isCanonical (hynn q hq)
-      have hxback : dec0.1.map mkRatOfPair = x := by
-        rw [List.map_map]
-        have hm : List.map (mkRatOfPair ∘ fun q : ℚ => (q.num, q.den)) x = List.map id x := by
-          refine List.map_congr_left fun q _ => ?_
-          simp only [Function.comp_apply, mkRatOfPair, Rat.num_div_den, id_eq]
-        simpa only [List.map_id] using hm
-      have hyback : dec0.2.map mkRatOfPair = y := by
-        rw [List.map_map]
-        have hm : List.map (mkRatOfPair ∘ fun q : ℚ => (q.num, q.den)) y = List.map id y := by
-          refine List.map_congr_left fun q _ => ?_
-          simp only [Function.comp_apply, mkRatOfPair, Rat.num_div_den, id_eq]
-        simpa only [List.map_id] using hm
-      rw [hxback, hyback]
+      have hcx := all_isCanonicalNonnegPair_of_nonneg hrat.2.2.1
+      have hcy := all_isCanonicalNonnegPair_of_nonneg hrat.2.2.2.2.1
+      rw [map_mkRatOfPair_pair_eq x, map_mkRatOfPair_pair_eq y]
       exact ⟨encWitness_eq_pairs x y, hcx, hcy, hrat⟩
   · have hwf : c.wellFormedB = false := Bool.eq_false_iff.2 hwb
     simp only [verifiesBimatrixNash, hwf, Bool.not_false, ite_true, List.isEmpty_iff,
@@ -1339,7 +1305,8 @@ private lemma posMat_getD_eq {c : BimatrixCode} (hc : c.WellFormed)
         scaledEntry (clearScale c) ((M.getD i.1 []).getD j.1 0) + shiftVal c := by
     intro M hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrlen : (M.getD i.1 []).length = c.cols := hrows _ (list_getD_mem M [] hi)
+    have hrlen : (M.getD i.1 []).length = c.cols :=
+      hrows _ (List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi)
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrlen]; exact j.2
     have h1 : (posMat c M).getD i.1 [] =
         (M.getD i.1 []).map fun q => scaledEntry (clearScale c) q + shiftVal c :=
@@ -1359,9 +1326,10 @@ private lemma abs_scaledEntry_lt_shiftVal {c : BimatrixCode} (hc : c.WellFormed)
         (M.map fun row => (row.map fun q => |scaledEntry (clearScale c) q|).sum).sum := by
     intro M hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrmem : M.getD i.1 [] ∈ M := list_getD_mem M [] hi
+    have hrmem : M.getD i.1 [] ∈ M := List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrows _ hrmem]; exact j.2
-    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] := list_getD_mem _ 0 hj
+    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] :=
+      List.getD_eq_getElem _ 0 hj ▸ List.getElem_mem hj
     have h1 : |scaledEntry (clearScale c) ((M.getD i.1 []).getD j.1 0)| ≤
         ((M.getD i.1 []).map fun q => |scaledEntry (clearScale c) q|).sum :=
       List.single_le_sum (fun x hx => by
@@ -1436,9 +1404,9 @@ private lemma isNash_posMat {c : BimatrixCode} (hc : c.WellFormed)
       (clearScale c : ℝ) * c.toGame.A i j + (shiftVal c : ℝ) := by
     intro i j
     have hi : i.1 < c.matA.length := i.2
-    have hrmem := list_getD_mem c.matA [] hi
+    have hrmem := List.getD_eq_getElem c.matA [] hi ▸ List.getElem_mem hi
     have hj : j.1 < (c.matA.getD i.1 []).length := by rw [hr1 _ hrmem]; exact j.2
-    have hqmem := list_getD_mem (c.matA.getD i.1 []) 0 hj
+    have hqmem := List.getD_eq_getElem (c.matA.getD i.1 []) 0 hj ▸ List.getElem_mem hj
     have hdvd := den_dvd_clearScale (Or.inl rfl) hrmem hqmem
     have hsc := congrArg (Rat.cast : ℚ → ℝ) (scaledEntry_cast hdvd)
     push_cast at hsc
@@ -1450,9 +1418,9 @@ private lemma isNash_posMat {c : BimatrixCode} (hc : c.WellFormed)
       (clearScale c : ℝ) * c.toGame.B i j + (shiftVal c : ℝ) := by
     intro i j
     have hi : i.1 < c.matB.length := by rw [hl2]; exact i.2
-    have hrmem := list_getD_mem c.matB [] hi
+    have hrmem := List.getD_eq_getElem c.matB [] hi ▸ List.getElem_mem hi
     have hj : j.1 < (c.matB.getD i.1 []).length := by rw [hr2 _ hrmem]; exact j.2
-    have hqmem := list_getD_mem (c.matB.getD i.1 []) 0 hj
+    have hqmem := List.getD_eq_getElem (c.matB.getD i.1 []) 0 hj ▸ List.getElem_mem hj
     have hdvd := den_dvd_clearScale (Or.inr rfl) hrmem hqmem
     have hsc := congrArg (Rat.cast : ℚ → ℝ) (scaledEntry_cast hdvd)
     push_cast at hsc
@@ -2169,7 +2137,7 @@ private lemma subRows_eq_basisMat {m n k : ℕ} (M_int : Matrix (Fin m ⊕ Fin n
         (List.range k) 0 0 (by simp [hj])).trans ?_
       simp only [List.getD_eq_getElem?_getD, List.getElem?_range hj, Option.getD_some]
     have hord := orderIsoOfFin_finsetOfList hsort hlt hlen hcard i
-    have hmem : T.getD i.1 0 ∈ T := list_getD_mem T 0 hi
+    have hmem : T.getD i.1 0 ∈ T := List.getD_eq_getElem T 0 hi ▸ List.getElem_mem hi
     have hlt_i : T.getD i.1 0 < m + n := hlt _ hmem
     have hhall := hall ⟨T.getD i.1 0, hlt_i⟩ j
     rw [hent, hhall]
@@ -2203,7 +2171,8 @@ private lemma cramerVecRows_eq_cramerVec {m n k : ℕ} (M_int : Matrix (Fin m �
     have h1 : (subRhs rhsAll T).getD r.1 0 = rowEntry [rhsAll] 0 (T.getD r.1 0) :=
       list_getD_map_lt _ T 0 0 hr
     rw [h1, rowEntry_single]
-    have hlt_r : T.getD r.1 0 < m + n := hlt _ (list_getD_mem T 0 hr)
+    have hlt_r : T.getD r.1 0 < m + n :=
+      hlt _ (List.getD_eq_getElem T 0 hr ▸ List.getElem_mem hr)
     rw [hrhs ⟨T.getD r.1 0, hlt_r⟩]
     have hord := orderIsoOfFin_finsetOfList hsort hlt hlen hcard r
     have hsymm : finSumFinEquiv.symm ⟨T.getD r.1 0, hlt_r⟩ =
@@ -2978,22 +2947,16 @@ private lemma halfEdgeIndexExec_eq (c : BimatrixCode) (hm : 0 < c.rows)
       (((intMatP (posMatB c)).map Int.cast : Matrix _ _ ℚ).submatrix
         (fun i => (T₁s.orderIsoOfFin hcard₁ i : Fin c.rows ⊕ Fin c.cols)) (Equiv.refl _)).det =
         ((basisMat (intMatP (posMatB c)) T₁s hcard₁).det : ℚ) := by
-    have hm :
-        ((intMatP (posMatB c)).map Int.cast : Matrix _ _ ℚ).submatrix
+    rw [show ((intMatP (posMatB c)).map Int.cast : Matrix _ _ ℚ).submatrix
           (fun i => (T₁s.orderIsoOfFin hcard₁ i : Fin c.rows ⊕ Fin c.cols)) (Equiv.refl _) =
-          (basisMat (intMatP (posMatB c)) T₁s hcard₁).map Int.cast := by
-      ext i j; rfl
-    rw [hm, ← Int.cast_det]
+          (basisMat (intMatP (posMatB c)) T₁s hcard₁).map Int.cast from rfl, ← Int.cast_det]
   have hm₂_det :
       (((intMatQ (posMatA c)).map Int.cast : Matrix _ _ ℚ).submatrix
         (fun j => (T₂s.orderIsoOfFin hcard₂ j : Fin c.rows ⊕ Fin c.cols)) (Equiv.refl _)).det =
         ((basisMat (intMatQ (posMatA c)) T₂s hcard₂).det : ℚ) := by
-    have hm :
-        ((intMatQ (posMatA c)).map Int.cast : Matrix _ _ ℚ).submatrix
+    rw [show ((intMatQ (posMatA c)).map Int.cast : Matrix _ _ ℚ).submatrix
           (fun j => (T₂s.orderIsoOfFin hcard₂ j : Fin c.rows ⊕ Fin c.cols)) (Equiv.refl _) =
-          (basisMat (intMatQ (posMatA c)) T₂s hcard₂).map Int.cast := by
-      ext i j; rfl
-    rw [hm, ← Int.cast_det]
+          (basisMat (intMatQ (posMatA c)) T₂s hcard₂).map Int.cast from rfl, ← Int.cast_det]
   dsimp only [halfEdgeIndexExec]
   dsimp only [T₁s, T₂s] at hbij hm₁_det hm₂_det ⊢
   rw [hdet_perm, hsub₁.2.2, hsub₂.2.2, hm₁_det, hm₂_det,
@@ -4223,7 +4186,7 @@ private theorem reduceIntPair_polytime {α : Type} {encIn : α ↪ List Bool}
     {num den : α → ℤ}
     (hnum : ComputableInPolyTime num encIn encIntBin)
     (hden : ComputableInPolyTime den encIn encIntBin) :
-    ComputableInPolyTime (fun x => reduceIntPair (num x) (den x)) encIn encRatPair := by
+    ComputableInPolyTime (fun x => reduceIntPair (num x) (den x)) encIn encRatData := by
   have ha := intBin_natAbs.comp hnum
   have hb := intBin_natAbs.comp hden
   have hg := binary_gcd' ha hb
@@ -4307,7 +4270,7 @@ private theorem extractStrategyNum_polytime {α : Type} {encIn : α ↪ List Boo
 
 private theorem normalizeRatPairs_polytime {α : Type} {encIn : α ↪ List Bool}
     {nums : α → List ℤ} (hnums : ComputableInPolyTime nums encIn (encList encIntBin)) :
-    ComputableInPolyTime (fun x => normalizeRatPairs (nums x)) encIn (encList encRatPair) := by
+    ComputableInPolyTime (fun x => normalizeRatPairs (nums x)) encIn (encList encRatData) := by
   have hS := intBin_sum.comp hnums
   unfold normalizeRatPairs
   refine mapWithInput (encA := encIntBin) hnums ?_
@@ -4391,7 +4354,8 @@ private lemma normalizeRatPairs_spec {k : ℕ} {nums : List ℤ} (hlen : nums.le
       (by rw [hlen]; exact i.2)]
     exact (reduceIntPair_spec (hnn i) hpos).2
 
-private lemma length_encList_ge_mul {α : Type*} (enc : α ↪ List Bool) (l : List α) (K : ℕ)
+/-- Lower bound on the framed bit-length of `encList enc l` from an elementwise lower bound. -/
+theorem length_encList_ge_mul {α : Type*} (enc : α ↪ List Bool) (l : List α) (K : ℕ)
     (hK : ∀ a ∈ l, K ≤ (enc a).length) : l.length * (2 * K + 1) ≤ (encList enc l).length := by
   rw [length_encList]
   induction l with
@@ -4402,27 +4366,25 @@ private lemma length_encList_ge_mul {α : Type*} (enc : α ↪ List Bool) (l : L
     have hl := ih fun b hb => hK b (by simp [hb])
     omega
 
-private lemma size_sum_le {α : Type*} (l : List α) (f : α → ℕ) (S : ℕ)
-    (hf : ∀ x ∈ l, (f x).size ≤ S) : (l.map f).sum.size ≤ S + l.length := by
+/-- Upper bound on the framed bit-length of `encList enc l` from an elementwise upper bound. -/
+theorem length_encList_le_mul {α : Type*} (enc : α ↪ List Bool) (l : List α) (K : ℕ)
+    (hK : ∀ a ∈ l, (enc a).length ≤ K) : (encList enc l).length ≤ l.length * (2 * K + 1) := by
+  rw [length_encList]
   induction l with
   | nil => simp
   | cons a l ih =>
-    simp only [List.map_cons, List.sum_cons, List.length_cons]
-    have h1 := Nat.size_add_le_max (f a) (l.map f).sum
-    have h2 := hf a (by simp)
-    have h3 := ih fun x hx => hf x (by simp [hx])
+    simp only [List.length_cons, List.map_cons, List.sum_cons, Nat.add_mul, Nat.one_mul]
+    have ha := hK a (by simp)
+    have hl := ih fun b hb => hK b (by simp [hb])
     omega
 
-private lemma size_prod_le {α : Type*} (l : List α) (f : α → ℕ) (w : α → ℕ)
+private lemma size_prod_le {α : Type*} (l : List α) (f w : α → ℕ)
     (h : ∀ x ∈ l, (f x).size ≤ w x) : (l.map f).prod.size ≤ (l.map w).sum + 1 := by
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    simp only [List.map_cons, List.prod_cons, List.sum_cons]
-    have h1 := Nat.size_mul_le (f a) (l.map f).prod
-    have h2 := h a (by simp)
-    have h3 := ih fun x hx => h x (by simp [hx])
-    omega
+  have hp := Int.size_natAbs_prod_le ((l.map f).map (Nat.cast : ℕ → ℤ))
+  rw [← Nat.cast_list_prod, Int.natAbs_natCast, List.map_map, List.map_map] at hp
+  have hsum : (l.map fun x => ((f x : ℤ).natAbs.size)).sum ≤ (l.map w).sum :=
+    List.sum_le_sum fun x hx => by simpa only [Int.natAbs_natCast] using h x hx
+  exact hp.trans (Nat.add_le_add_right hsum 1)
 
 private lemma natAbs_prod_mat (M : List (List ℚ)) :
     Int.natAbs ((M.map fun row : List ℚ => (row.map fun q => (q.den : ℤ)).prod).prod) =
@@ -4453,10 +4415,15 @@ private lemma natAbs_sum_mat (D : ℤ) (M : List (List ℚ)) :
       simp only [List.map_cons, List.sum_cons, Nat.cast_add, ih]
       exact congrArg (· + _) (Int.natCast_natAbs _)
 
-private lemma length_encRat_ge (q : ℚ) : 4 ≤ (encRat q).length := by
-  simp only [encRat_eq, length_encPair, length_encIntBin, encNat_apply]
+/-- Exact bit-length of `Turing.MultiTapeTM.encRat q` in terms of `q.num` and `q.den`. -/
+theorem length_encRat_eq (q : ℚ) :
+    (encRat q).length = 2 * (q.num.natAbs.size + 1) + 1 + q.den.size := by
+  simp only [encRat_apply, length_encPair, length_encIntBin, encNat_apply, Nat.size_eq_bits_len]
+
+/-- Every encoded rational number uses at least `4` bits. -/
+theorem length_encRat_ge (q : ℚ) : 4 ≤ (encRat q).length := by
+  rw [length_encRat_eq]
   have h1 : 1 ≤ q.den.size := Nat.size_pos.2 q.den_pos
-  rw [Nat.size_eq_bits_len]
   omega
 
 private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
@@ -4495,8 +4462,7 @@ private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
       have hrow_p : Nat.size (row.map fun q => q.den).prod ≤
           (row.map fun q => (encRat q).length).sum + 1 :=
         size_prod_le row _ (fun q => (encRat q).length) fun q _ => by
-          simp only [encRat_eq, length_encPair, length_encIntBin, encNat_apply,
-            Nat.size_eq_bits_len]
+          have hlen_eq := length_encRat_eq q
           omega
       have hsum_le :=
         hrow_p.trans (Nat.add_le_add_right (sum_length_le_length_encList encRat row) 1)
@@ -4524,24 +4490,38 @@ private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
           (row.map fun q => (scaledEntry (clearScale c) q).natAbs).sum).sum) ≤ 4 * L := by
     intro M hML
     have hM_len : M.length ≤ L := (length_le_length_encList (encList encRat) M).trans hML
-    refine size_sum_le M _ (3 * L) ?_ |>.trans (by omega)
-    intro row hrow
-    have hrow_enc : (encList encRat row).length ≤ L :=
-      (length_le_encList_of_mem (encList encRat) hrow).trans hML
-    have hrow_len : row.length ≤ L := (length_le_length_encList encRat row).trans hrow_enc
-    refine size_sum_le row _ (2 * L) ?_ |>.trans (by omega)
-    intro q hq
-    have hq_enc : (encRat q).length ≤ L := (length_le_encList_of_mem encRat hq).trans hrow_enc
-    have hq_num : q.num.natAbs.size ≤ L := by
-      have hlen_eq : (encRat q).length = 2 * (q.num.natAbs.size + 1) + 1 + q.den.size := by
-        simp only [encRat_eq, length_encPair, length_encIntBin, encNat_apply, Nat.size_eq_bits_len]
-      omega
-    have hsc_le : (scaledEntry (clearScale c) q).natAbs ≤ q.num.natAbs * (clearScale c).natAbs := by
-      dsimp only [scaledEntry]
-      rw [Int.natAbs_mul, Int.natAbs_tdiv, Int.natAbs_natCast]
-      exact Nat.mul_le_mul_left _ (Nat.div_le_self _ _)
-    have hsc_size := (Nat.size_le_size hsc_le).trans (Nat.size_mul_le _ _)
-    omega
+    have hM_sum := Nat.size_sum_le
+      (l := M.map fun row : List ℚ =>
+        (row.map fun q => (scaledEntry (clearScale c) q).natAbs).sum)
+      (b := 3 * L) fun s hs => by
+        rcases List.mem_map.1 hs with ⟨row, hrow, rfl⟩
+        have hrow_enc : (encList encRat row).length ≤ L :=
+          (length_le_encList_of_mem (encList encRat) hrow).trans hML
+        have hrow_len : row.length ≤ L := (length_le_length_encList encRat row).trans hrow_enc
+        have hrow_sum := Nat.size_sum_le
+          (l := row.map fun q => (scaledEntry (clearScale c) q).natAbs) (b := 2 * L)
+          fun s' hs' => by
+            rcases List.mem_map.1 hs' with ⟨q, hq, rfl⟩
+            have hq_enc : (encRat q).length ≤ L :=
+              (length_le_encList_of_mem encRat hq).trans hrow_enc
+            have hq_num : q.num.natAbs.size ≤ L := by
+              have hlen_eq := length_encRat_eq q
+              omega
+            have hsc_le : (scaledEntry (clearScale c) q).natAbs ≤
+                q.num.natAbs * (clearScale c).natAbs := by
+              dsimp only [scaledEntry]
+              rw [Int.natAbs_mul, Int.natAbs_tdiv, Int.natAbs_natCast]
+              exact Nat.mul_le_mul_left _ (Nat.div_le_self _ _)
+            have hsc_size := (Nat.size_le_size hsc_le).trans (Nat.size_mul_le _ _)
+            omega
+        rw [List.length_map] at hrow_sum
+        exact hrow_sum.trans (by
+          have hl := (Nat.size_le_self row.length).trans hrow_len
+          omega)
+    rw [List.length_map] at hM_sum
+    exact hM_sum.trans (by
+      have hl := (Nat.size_le_self M.length).trans hM_len
+      omega)
   have hs1 := hsum_mat_le c.matA hlen1_le
   have hs2 := hsum_mat_le c.matB hlen2_le
   have hshift_nat : (shiftVal c).natAbs =
@@ -4573,19 +4553,19 @@ private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
     omega
   exact ⟨hrows_cols, hH_size⟩
 
-private lemma length_encList_ratPair_le {ps : List (ℤ × ℕ)} {k B : ℕ} (hlen : ps.length = k)
+private lemma length_encList_ratData_le {ps : List (ℤ × ℕ)} {k B : ℕ} (hlen : ps.length = k)
     (hbd : ∀ p ∈ ps, p.1.natAbs.size ≤ B ∧ p.2.size ≤ B) :
-    (encList encRatPair ps).length ≤ k * (6 * B + 7) := by
+    (encList encRatData ps).length ≤ k * (6 * B + 7) := by
   rw [length_encList]
   have hsum : ∀ l : List (ℤ × ℕ),
       (∀ p ∈ l, p.1.natAbs.size ≤ B ∧ p.2.size ≤ B) →
-        (l.map fun p => 2 * (encRatPair p).length + 1).sum ≤ l.length * (6 * B + 7) := by
+        (l.map fun p => 2 * (encRatData p).length + 1).sum ≤ l.length * (6 * B + 7) := by
     intro l hl
     induction l with
     | nil => simp
     | cons a l ih =>
       have ⟨h1, h2⟩ := hl a List.mem_cons_self
-      have hlen_p : (encRatPair a).length = 2 * (a.1.natAbs.size + 1) + 1 + a.2.size := by
+      have hlen_p : (encRatData a).length = 2 * (a.1.natAbs.size + 1) + 1 + a.2.size := by
         simp only [length_encPair, length_encIntBin, encNat_apply, Nat.size_eq_bits_len]
       have hl_sum := ih fun p hp => hl p (List.mem_cons_of_mem _ hp)
       simp only [List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
@@ -4916,22 +4896,9 @@ theorem extractNash_sound {c : BimatrixCode} {u : List Bool}
       dsimp only [extractNash]
       simp only [hwb, ite_true]
       rfl
-    have hw_eq : extractNash (c, u) = encWitness (x, y) := by
-      have hx_pairs : x.map (fun q => (q.num, q.den)) = xp := by
-        rw [List.map_map]
-        have hm : List.map ((fun q : ℚ => (q.num, q.den)) ∘ mkRatOfPair) xp = List.map id xp := by
-          refine List.map_congr_left fun pq hpq => ?_
-          have hmk := mkRatOfPair_num_den ((List.all_eq_true.1 hxp_spec.2.1) pq hpq)
-          exact Prod.ext hmk.1 hmk.2
-        simpa only [List.map_id] using hm
-      have hy_pairs : y.map (fun q => (q.num, q.den)) = yp := by
-        rw [List.map_map]
-        have hm : List.map ((fun q : ℚ => (q.num, q.den)) ∘ mkRatOfPair) yp = List.map id yp := by
-          refine List.map_congr_left fun pq hpq => ?_
-          have hmk := mkRatOfPair_num_den ((List.all_eq_true.1 hyp_spec.2.1) pq hpq)
-          exact Prod.ext hmk.1 hmk.2
-        simpa only [List.map_id] using hm
-      rw [hex_pairs, encWitness_eq_pairs x y, hx_pairs, hy_pairs]
+    have hw_eq : extractNash (c, u) = encWitness ⟨x, y⟩ := by
+      rw [hex_pairs, encWitness_eq_pairs x y, map_pair_mkRatOfPair_eq hxp_spec.2.1,
+        map_pair_mkRatOfPair_eq hyp_spec.2.1]
     obtain ⟨hrc, hH_size⟩ := size_HVal_and_dims_le hc
     set L := (encBimatrix c).length
     have hm_le_L : c.rows ≤ L := by
@@ -4948,16 +4915,16 @@ theorem extractNash_sound {c : BimatrixCode} {u : List Bool}
       (fun i => by rw [hnumP_get i]; exact hP_bd i) (hS₁_eq ▸ hS₁_pos)
     have hB2 := strategy_pair_size_bd hn_le_L hH_size hnumQ_len
       (fun j => by rw [hnumQ_get j]; exact hQ_bd j) (hS₂_eq ▸ hS₂_pos)
-    have hlen_xp := length_encList_ratPair_le hxp_spec.1 hB1
-    have hlen_yp := length_encList_ratPair_le hyp_spec.1 hB2
+    have hlen_xp := length_encList_ratData_le hxp_spec.1 hB1
+    have hlen_yp := length_encList_ratData_le hyp_spec.1 hB2
     have hlen_w : (extractNash (c, u)).length ≤ 120 * L ^ 3 + 400 * L + 100 := by
       rw [hex_pairs]
-      change (encPair (encList encRatPair) (encList encRatPair) (xp, yp)).length ≤
+      change (encPair (encList encRatData) (encList encRatData) (xp, yp)).length ≤
         120 * L ^ 3 + 400 * L + 100
       rw [length_encPair]
       exact witness_length_arith hc.1 hc.2.1 hrc hlen_xp hlen_yp
     simp only [BimatrixNash, hwb, ite_true]
-    exact ⟨hlen_w, x, y, hw_eq, hRatNash⟩
+    exact ⟨hlen_w, ⟨x, y⟩, hw_eq, hRatNash⟩
   · have hwf : c.wellFormedB = false := Bool.eq_false_iff.2 hwb
     simp only [BimatrixNash, extractNash, hwf, Bool.false_eq_true, ite_false]
 

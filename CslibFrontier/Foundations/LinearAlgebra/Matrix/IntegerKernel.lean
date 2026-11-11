@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/LinearAlgebra/Matrix/IntegerKernel.lean`)
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BasicSolution

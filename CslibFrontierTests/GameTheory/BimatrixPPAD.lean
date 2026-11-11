@@ -21,7 +21,8 @@ Kernel-checked tests for `CslibFrontier/GameTheory/Bimatrix/PPAD.lean`:
   degenerate zero-payoff games: valid rational Nash witnesses (`BimatrixCode.IsRationalNash` and
   `BimatrixCode.BimatrixNash`) as well as non-Nash strategy pairs and negative-probability vectors.
 * Malformed, zero-dimension, and non-rectangular codes accept only `[]`.
-* Direct kernel check of the `encRat` and `encWitness` encodings and witness length bounds.
+* Direct kernel check of the `Turing.MultiTapeTM.encRat`, `StrategyPair`, and `encWitness`
+  encodings and witness length bounds.
 * `BimatrixNash.isNash`, `extractNash_sound`, `BimatrixNash_mem_PPAD`, `BimatrixNash_mem_TFNP`,
   `BimatrixNash_isTotalSearch`, `BimatrixNash_searchReducible_endOfLineRel`,
   `BimatrixNash_searchReducible_EndOfLine`, and strict `module` axiom checks.
@@ -74,58 +75,26 @@ example : nonRectCode.wellFormedB = false ∧ ¬nonRectCode.WellFormed ∧
 
 /-! ### Encoding opacity and witness-length checks -/
 
-private lemma encRat_length_eq (q : ℚ) :
-    (encRat q).length = 2 * (q.num.natAbs.size + 1) + 1 + q.den.size := by
-  change (encPair encIntBin encNat (q.num, q.den)).length = _
-  rw [length_encPair, length_encIntBin, encNat_apply, Nat.size_eq_bits_len]
-
 example : (encRat (-1 : ℚ)).length = 6 := by
-  rw [encRat_length_eq]
+  rw [length_encRat_eq]
   have h1 : (-1 : ℚ).num = -1 ∧ (-1 : ℚ).den = 1 := by norm_num
   rw [h1.1, h1.2]
   decide
 
 example : (encRat (4 / 5 : ℚ)).length = 12 := by
-  rw [encRat_length_eq]
+  rw [length_encRat_eq]
   have h45 : (4 / 5 : ℚ).num = 4 ∧ (4 / 5 : ℚ).den = 5 := by norm_num
   rw [h45.1, h45.2]
   decide
-
-private lemma encList_encRat_le {l : List ℚ} {K : ℕ} (hK : ∀ q ∈ l, (encRat q).length ≤ K) :
-    (encList encRat l).length ≤ l.length * (2 * K + 1) := by
-  rw [length_encList]
-  induction l with
-  | nil => simp
-  | cons q l ih =>
-    simp only [List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
-    have hq := hK q List.mem_cons_self
-    have hl := ih fun r hr => hK r (List.mem_cons_of_mem _ hr)
-    omega
-
-private lemma encList_encRat_ge {l : List ℚ} (K : ℕ) (hK : ∀ q ∈ l, K ≤ (encRat q).length) :
-    l.length * (2 * K + 1) ≤ (encList encRat l).length := by
-  rw [length_encList]
-  induction l with
-  | nil => simp
-  | cons q l ih =>
-    simp only [List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
-    have hq := hK q List.mem_cons_self
-    have hl := ih fun r hr => hK r (List.mem_cons_of_mem _ hr)
-    omega
-
-private lemma length_encRat_ge_four (q : ℚ) : 4 ≤ (encRat q).length := by
-  rw [encRat_length_eq]
-  have hden : 1 ≤ q.den.size := Nat.size_pos.2 q.den_pos
-  omega
 
 private lemma witness_len_le_of_entry_le {c : BimatrixCode} {x y : List ℚ} {K : ℕ}
     (hx_len : x.length ≤ 3) (hy_len : y.length ≤ 3)
     (hx : ∀ q ∈ x, (encRat q).length ≤ K) (hy : ∀ q ∈ y, (encRat q).length ≤ K)
     (hK : 2 * (3 * (2 * K + 1)) + 1 + 3 * (2 * K + 1) ≤ 500) :
-    (encWitness (x, y)).length ≤
+    (encWitness ⟨x, y⟩).length ≤
       120 * (encBimatrix c).length ^ 3 + 400 * (encBimatrix c).length + 100 := by
-  have hx' := encList_encRat_le hx
-  have hy' := encList_encRat_le hy
+  have hx' := length_encList_le_mul encRat x K hx
+  have hy' := length_encList_le_mul encRat y K hy
   have hxm : (encList encRat x).length ≤ 3 * (2 * K + 1) :=
     hx'.trans (Nat.mul_le_mul_right _ hx_len)
   have hym : (encList encRat y).length ≤ 3 * (2 * K + 1) :=
@@ -133,19 +102,18 @@ private lemma witness_len_le_of_entry_le {c : BimatrixCode} {x y : List ℚ} {K 
   have hL : 1 ≤ (encBimatrix c).length := by
     rw [encBimatrix_apply, length_encPair]
     omega
-  change (encPair (encList encRat) (encList encRat) (x, y)).length ≤ _
-  rw [length_encPair]
+  rw [encWitness_apply, length_encPair]
   dsimp only
   omega
 
 private lemma encRat_length_le_sixteen {q : ℚ} (hn : q.num.natAbs ≤ 10) (hd : q.den ≤ 10) :
     (encRat q).length ≤ 16 := by
-  rw [encRat_length_eq]
+  rw [length_encRat_eq]
   have h1 : q.num.natAbs.size ≤ 4 := Nat.size_le.2 (by omega)
   have h2 : q.den.size ≤ 4 := Nat.size_le.2 (by omega)
   omega
 
-example : (encWitness ([1 / 2, 1 / 2], [1 / 2, 1 / 2])).length ≤
+example : (encWitness ⟨[1 / 2, 1 / 2], [1 / 2, 1 / 2]⟩).length ≤
     120 * (encBimatrix coordCode).length ^ 3 + 400 * (encBimatrix coordCode).length + 100 := by
   refine witness_len_le_of_entry_le (K := 16) (by decide) (by decide) ?_ ?_ (by decide) <;>
     · intro q hq
@@ -153,8 +121,8 @@ example : (encWitness ([1 / 2, 1 / 2], [1 / 2, 1 / 2])).length ≤
       rcases hq with rfl | rfl <;> apply encRat_length_le_sixteen <;> norm_num
 
 example : 4 ≤ (encRat (0 : ℚ)).length ∧ 18 ≤ (encList encRat [1 / 2, 1 / 2]).length := by
-  refine ⟨length_encRat_ge_four 0, ?_⟩
-  have h := encList_encRat_ge (l := [1 / 2, 1 / 2]) 4 fun q _ => length_encRat_ge_four q
+  refine ⟨length_encRat_ge 0, ?_⟩
+  have h := length_encList_ge_mul encRat [1 / 2, 1 / 2] 4 fun q _ => length_encRat_ge q
   exact Nat.le_trans (by decide) h
 
 /-! ### Valid and invalid rational Nash witnesses -/
@@ -183,25 +151,25 @@ theorem coordCode_pure_isRationalNash : coordCode.IsRationalNash [1, 0] [1, 0] :
           List.getD_cons_zero, List.getD_cons_succ]
         norm_num
 
-example : coordCode.BimatrixNash (encWitness ([1, 0], [1, 0])) := by
+example : coordCode.BimatrixNash (encWitness ⟨[1, 0], [1, 0]⟩) := by
   have hw : coordCode.wellFormedB = true := by decide
   simp only [BimatrixNash, hw, ite_true]
   refine ⟨witness_len_le_of_entry_le (K := 16) (by decide) (by decide) ?_ ?_ (by decide),
-    [1, 0], [1, 0], rfl, coordCode_pure_isRationalNash⟩ <;>
+    ⟨[1, 0], [1, 0]⟩, rfl, coordCode_pure_isRationalNash⟩ <;>
     · intro q hq
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
       rcases hq with rfl | rfl <;> apply encRat_length_le_sixteen <;> norm_num
 
 /-- `BimatrixNash.isNash` bridges concrete `BimatrixCode` witnesses to `BimatrixGame.IsNash`. -/
-example : ∃ x y : List ℚ,
-    encWitness ([1, 0], [1, 0]) = encWitness (x, y) ∧
-    coordCode.toGame.IsNash (fun i : Fin coordCode.rows => (x.getD i.1 0 : ℝ))
-      (fun j : Fin coordCode.cols => (y.getD j.1 0 : ℝ)) :=
+example : ∃ s : StrategyPair,
+    encWitness ⟨[1, 0], [1, 0]⟩ = encWitness s ∧
+    coordCode.toGame.IsNash (fun i : Fin coordCode.rows => (s.x.getD i.1 0 : ℝ))
+      (fun j : Fin coordCode.cols => (s.y.getD j.1 0 : ℝ)) :=
   BimatrixNash.isNash ((wellFormed_iff_wellFormedB coordCode).2 (by decide)) <| by
     have hw : coordCode.wellFormedB = true := by decide
     simp only [BimatrixNash, hw, ite_true]
     refine ⟨witness_len_le_of_entry_le (K := 16) (by decide) (by decide) ?_ ?_ (by decide),
-      [1, 0], [1, 0], rfl, coordCode_pure_isRationalNash⟩ <;>
+      ⟨[1, 0], [1, 0]⟩, rfl, coordCode_pure_isRationalNash⟩ <;>
       · intro q hq
         simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
         rcases hq with rfl | rfl <;> apply encRat_length_le_sixteen <;> norm_num
@@ -233,21 +201,21 @@ theorem penniesCode_uniform_isRationalNash :
           List.getD_cons_zero, List.getD_cons_succ]
         norm_num
 
-example : penniesCode.BimatrixNash (encWitness ([1 / 2, 1 / 2], [1 / 2, 1 / 2])) := by
+example : penniesCode.BimatrixNash (encWitness ⟨[1 / 2, 1 / 2], [1 / 2, 1 / 2]⟩) := by
   have hw : penniesCode.wellFormedB = true := by decide
   simp only [BimatrixNash, hw, ite_true]
   refine ⟨witness_len_le_of_entry_le (K := 16) (by decide) (by decide) ?_ ?_ (by decide),
-    [1 / 2, 1 / 2], [1 / 2, 1 / 2], rfl, penniesCode_uniform_isRationalNash⟩ <;>
+    ⟨[1 / 2, 1 / 2], [1 / 2, 1 / 2]⟩, rfl, penniesCode_uniform_isRationalNash⟩ <;>
     · intro q hq
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
       rcases hq with rfl | rfl <;> apply encRat_length_le_sixteen <;> norm_num
 
 /-- Pure pair `([1, 0], [1, 0])` is NOT a Nash equilibrium of matching pennies. -/
-example : ¬penniesCode.BimatrixNash (encWitness ([1, 0], [1, 0])) := by
+example : ¬penniesCode.BimatrixNash (encWitness ⟨[1, 0], [1, 0]⟩) := by
   have hw : penniesCode.wellFormedB = true := by decide
   simp only [BimatrixNash, hw, ite_true]
-  rintro ⟨_, x, y, hxy, hrat⟩
-  rcases Prod.ext_iff.1 (encWitness.injective hxy) with ⟨hx, hy⟩
+  rintro ⟨_, ⟨x, y⟩, hxy, hrat⟩
+  rcases StrategyPair.ext_iff.1 (encWitness.injective hxy) with ⟨hx, hy⟩
   dsimp only at hx hy
   subst hx hy
   have h2 := hrat.2.2.2.2.2.2.2 ⟨1, by decide⟩
@@ -285,11 +253,11 @@ theorem stengelCode_mixed_isRationalNash :
           toMatB, stengelCode, List.getD_cons_zero, List.getD_cons_succ]
         norm_num
 
-example : stengelCode.BimatrixNash (encWitness ([4 / 5, 1 / 5, 0], [2 / 3, 1 / 3])) := by
+example : stengelCode.BimatrixNash (encWitness ⟨[4 / 5, 1 / 5, 0], [2 / 3, 1 / 3]⟩) := by
   have hw : stengelCode.wellFormedB = true := by decide
   simp only [BimatrixNash, hw, ite_true]
   refine ⟨witness_len_le_of_entry_le (K := 16) (by decide) (by decide) ?_ ?_ (by decide),
-    [4 / 5, 1 / 5, 0], [2 / 3, 1 / 3], rfl, stengelCode_mixed_isRationalNash⟩
+    ⟨[4 / 5, 1 / 5, 0], [2 / 3, 1 / 3]⟩, rfl, stengelCode_mixed_isRationalNash⟩
   · intro q hq
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
     rcases hq with rfl | rfl | rfl <;> apply encRat_length_le_sixteen <;> norm_num
@@ -298,11 +266,11 @@ example : stengelCode.BimatrixNash (encWitness ([4 / 5, 1 / 5, 0], [2 / 3, 1 / 3
     rcases hq with rfl | rfl <;> apply encRat_length_le_sixteen <;> norm_num
 
 /-- Degenerate `2 × 2` zero game admits mixed rational equilibria. -/
-example : zeroCode.BimatrixNash (encWitness ([1 / 3, 2 / 3], [1 / 4, 3 / 4])) := by
+example : zeroCode.BimatrixNash (encWitness ⟨[1 / 3, 2 / 3], [1 / 4, 3 / 4]⟩) := by
   have hw : zeroCode.wellFormedB = true := by decide
   simp only [BimatrixNash, hw, ite_true]
   refine ⟨witness_len_le_of_entry_le (K := 16) (by decide) (by decide) ?_ ?_ (by decide),
-    [1 / 3, 2 / 3], [1 / 4, 3 / 4], rfl,
+    ⟨[1 / 3, 2 / 3], [1 / 4, 3 / 4]⟩, rfl,
     ⟨by decide, by decide, ?_, by norm_num, ?_, by norm_num, ?_, ?_⟩⟩
   · intro q hq
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
@@ -334,11 +302,11 @@ example : zeroCode.BimatrixNash (encWitness ([1 / 3, 2 / 3], [1 / 4, 3 / 4])) :=
         norm_num
 
 /-- Negative entries summing to `1` are rejected by `IsRationalNash` / `BimatrixNash`. -/
-example : ¬coordCode.BimatrixNash (encWitness ([2, -1], [1, 0])) := by
+example : ¬coordCode.BimatrixNash (encWitness ⟨[2, -1], [1, 0]⟩) := by
   have hw : coordCode.wellFormedB = true := by decide
   simp only [BimatrixNash, hw, ite_true]
-  rintro ⟨_, x, y, hxy, hrat⟩
-  obtain ⟨rfl, rfl⟩ := Prod.ext_iff.1 (encWitness.injective hxy)
+  rintro ⟨_, ⟨x, y⟩, hxy, hrat⟩
+  obtain ⟨rfl, rfl⟩ := StrategyPair.ext_iff.1 (encWitness.injective hxy)
   have hneg := hrat.2.2.1 (-1) (by decide)
   norm_num at hneg
 
@@ -351,11 +319,12 @@ example : ¬coordCode.BimatrixNash [] ∧ emptyCode.BimatrixNash [] ∧ ¬emptyC
   have hmw : mismatchCode.wellFormedB = false := by decide
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · simp only [BimatrixNash, hcw, ite_true]
-    rintro ⟨_, x, y, hxy, _⟩
-    have hnil : (encPair (encList encRat) (encList encRat) (x, y)).length =
-        ([] : List Bool).length :=
-      congrArg List.length hxy.symm
-    have hpos := length_encPair (x, y) (enc₁ := encList encRat) (enc₂ := encList encRat)
+    rintro ⟨_, s, hxy, _⟩
+    have hnil : (encPair (encList encRat) (encList encRat) (s.x, s.y)).length =
+        ([] : List Bool).length := by
+      rw [← encWitness_apply]
+      exact congrArg List.length hxy.symm
+    have hpos := length_encPair (s.x, s.y) (enc₁ := encList encRat) (enc₂ := encList encRat)
     simp only [List.length_nil] at hnil
     omega
   · simp only [BimatrixNash, hew, Bool.false_eq_true, ite_false]
@@ -387,9 +356,9 @@ example : SearchReducible encBimatrix encEndOfLine BimatrixNash EndOfLine :=
 /-- Every end-of-line witness of `coordCode` extracts via `extractNash` to a genuine Nash
 equilibrium of `coordCode.toGame`. -/
 example (u : List Bool) (hu : endOfLineRel vertexLen pred succ coordCode u) :
-    ∃ x y : List ℚ, extractNash (coordCode, u) = encWitness (x, y) ∧
-      coordCode.toGame.IsNash (fun i : Fin coordCode.rows => (x.getD i.1 0 : ℝ))
-        (fun j : Fin coordCode.cols => (y.getD j.1 0 : ℝ)) :=
+    ∃ s : StrategyPair, extractNash (coordCode, u) = encWitness s ∧
+      coordCode.toGame.IsNash (fun i : Fin coordCode.rows => (s.x.getD i.1 0 : ℝ))
+        (fun j : Fin coordCode.cols => (s.y.getD j.1 0 : ℝ)) :=
   BimatrixNash.isNash ((wellFormed_iff_wellFormedB coordCode).2 (by decide))
     (extractNash_sound hu)
 

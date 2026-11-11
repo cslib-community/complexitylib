@@ -450,7 +450,9 @@ parity argument:
   `basisSignNum`, `IsFeasibleBasis`, `isNash_extractNum`) with polynomial numerator bounds
   `m! * H^m` and `n! * H^n`.
 - [Bimatrix/PPAD.lean](../../CslibFrontier/GameTheory/Bimatrix/PPAD.lean) defines the
-  structure `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix`),
+  structures `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix` using
+  `Turing.MultiTapeTM.encRat`) and `StrategyPair` (fields `x`, `y`, encoded via
+  `enc_structure encWitness`),
   the rational Nash search problem `BimatrixNash` (accepting `[]` on malformed codes),
   polynomial-time bit-encoded graph maps `pred` and `succ` on `2 * (m + n)` bits, and
   `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`, `BimatrixNash_mem_PPAD`,
@@ -531,7 +533,7 @@ game.
 checks `BimatrixCode.WellFormed` and `wellFormedB` on concrete games and malformed inputs
 (`emptyCode`, `nonRectCode`, `mismatchCode`), verifies valid and invalid `IsRationalNash` and
 `BimatrixNash` witnesses on the `2 × 2` coordination game, matching pennies, von Stengel's
-`3 × 2` game (3.3), and a degenerate `2 × 2` zero game, checks `encRat` and `encWitness` length
+`3 × 2` game (3.3), and a degenerate `2 × 2` zero game, checks `Turing.MultiTapeTM.encRat`, `StrategyPair`, and `encWitness` length
 bounds, and exercises `BimatrixNash.isNash`, `extractNash_sound`, `BimatrixNash_mem_PPAD`,
 `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`
 under strict `module` axiom checks.
