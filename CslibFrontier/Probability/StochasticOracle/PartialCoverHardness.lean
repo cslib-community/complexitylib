@@ -38,8 +38,11 @@ preserving with identity ratio, so the library's unconditional Lund–Yannakakis
 constant-factor Set Cover hardness transfers: `P_eq_NP_of_selection_approx_const`.
 The source's sharper $(1-\varepsilon)\ln n$ inapproximability (Dinur–Steurer) is
 **not** proved here: it needs low-soundness Label Cover beyond the library's
-constant-round base (#4335). `P_eq_NP_of_selection_approx` transfers any `NP`-hard
-`GapSetCover r`, so that strengthening applies here unchanged once available.
+constant-round base (#4335). `P_eq_NP_of_selection_approx` transfers `NP`-hardness of
+`GapSetCover r` only for a constant ratio `r`; a $\ln n$ bound additionally needs
+instance-dependent (`GapSetCoverFn`) versions of the hardness and `P = NP` wrappers. The
+reduction itself would carry over, since it maps ratios by the identity and keeps the
+ground set.
 
 ## Main definitions
 
