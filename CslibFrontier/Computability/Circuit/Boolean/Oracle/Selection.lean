@@ -275,9 +275,8 @@ theorem selectedWord_prop {P : BitString w → Prop} (O : Language Bool)
     (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
     (selectionRound src word dflt).program.cost OracleOp.queryWeight = N := by
   rw [selectionRound, Circuit.cost_program_append, Circuit.cost_program_comp,
-    Circuit.cost_program_comp, Circuit.cost_program_append, cost_mapOp_toOracle,
-    cost_program_queryLayer, cost_program_constLayer, Circuit.cost_program_wiring,
-    Circuit.cost_program_wiring]
+    Circuit.cost_program_comp, Circuit.cost_program_append, cost_program_queryLayer,
+    cost_program_constLayer, Circuit.cost_program_wiring, Circuit.cost_program_wiring]
   simp
 
 /-- A round has at most one oracle gate on any path. -/
