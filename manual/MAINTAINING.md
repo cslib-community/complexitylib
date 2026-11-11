@@ -63,11 +63,12 @@ with the untracked book products.
    the cited text starts: an unindented declaration (after modifiers such as `private` or
    `noncomputable`), an `@[…]` attribute or a `/--` docstring, outside any comment. A range may
    instead start at `/-!`, `section` or `namespace`, and `#L1` links a whole file. An edit that
-   adds or removes lines above an anchored declaration, even inside a proof, moves it: find the
-   links with `git grep -n 'File.lean#L' manual/` and repoint them in the same change. The checker
-   cannot tell that a link starts on the declaration its text names, so check the name when
-   repointing. `STALE_SOURCE_ANCHORS` in the checker lists links that are stale, or that queued
-   pull requests will make stale, and tolerates them until those pull requests land
+   adds or removes lines above an anchored declaration, even inside a proof, moves it: run
+   `python3 scripts/check_operator_manual.py --fix-anchors` to repoint `[Ns.name](File.lean#Ln)`
+   links at the current header line of the declaration they name, and find any remaining prose,
+   range or ambiguous links with `git grep -n 'File.lean#L' manual/` to update by hand.
+   `STALE_SOURCE_ANCHORS` in the checker lists links that are stale, or that queued pull requests
+   will make stale, and tolerates them until those pull requests land
    ([#3991](https://github.com/cslib-community/cslib-frontier/issues/3991)); repointing one of
    those links needs no edit to the list.
 4. When Lean examples or their imports change, check the complete affected source clients under
