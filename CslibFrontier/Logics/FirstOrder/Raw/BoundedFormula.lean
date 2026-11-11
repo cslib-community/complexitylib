@@ -8,6 +8,7 @@ module
 -- upstream: candidate (the `Primcodable` coding of Mathlib's `L.BoundedFormula` is a named
 -- definition with a scoped instance, so that it cannot clash with a future Mathlib instance)
 
+public import CslibFrontier.Logics.FirstOrder.QuantifierRank
 public import CslibFrontier.Logics.FirstOrder.Raw.Levels
 public import Mathlib.ModelTheory.Semantics
 import Mathlib.Data.Fintype.Card
@@ -69,13 +70,18 @@ Trakhtenbrot's theorem for `L.Sentence` is derived from these in
   `FirstOrder.Language.BoundedFormula.primrec_all`,
   `FirstOrder.Language.BoundedFormula.primrec_not`, `FirstOrder.Language.BoundedFormula.primrec_ex`,
   `FirstOrder.Language.BoundedFormula.primrec_rel`,
-  `FirstOrder.Language.BoundedFormula.primrec_equal`: the constructors are primitive recursive.
+  `FirstOrder.Language.BoundedFormula.primrec_equal`,
+  `FirstOrder.Language.BoundedFormula.primrec_quantifierRank`: the constructors and quantifier rank
+  are primitive recursive.
+* `FirstOrder.Language.BoundedFormula.quantifierDepth_toRaw`: the quantifier depth of `toRaw φ` is
+  the quantifier rank of `φ`.
 * `FirstOrder.Language.BoundedFormula.primrec_id_primcodableRaw`: the coding does not depend on the
   choice of symbol encoding, up to primitive recursive equivalence.
 * `FirstOrder.Language.BoundedFormula.realize_toRaw`: the translation preserves meaning.
-* `FirstOrder.Language.Sentence.finSat_iff_toRaw`,
-  `FirstOrder.Language.Sentence.finValid_iff_toRaw`: finite satisfiability and finite validity
-  transfer.
+* `FirstOrder.Language.Sentence.exists_structure_realize_iff_toRaw`,
+  `FirstOrder.Language.Sentence.finSat_iff_toRaw`,
+  `FirstOrder.Language.Sentence.finValid_iff_toRaw`: satisfaction on a given nonempty carrier,
+  finite satisfiability and finite validity transfer.
 -/
 
 public section
@@ -280,6 +286,19 @@ theorem toRaw_all (φ : L.BoundedFormula α (n + 1)) : (all φ).toRaw = .all (2 
 @[simp]
 theorem toRaw_not (φ : L.BoundedFormula α n) : φ.not.toRaw = RawFormula.neg φ.toRaw := rfl
 
+@[simp]
+theorem quantifierDepth_toRaw : ∀ {n} (φ : L.BoundedFormula α n),
+    φ.toRaw.quantifierDepth = quantifierRank φ
+  | _, falsum => quantifierRank_falsum.symm
+  | _, equal _ _ => (quantifierRank_equal _ _).symm
+  | _, rel _ _ => (quantifierRank_rel _ _).symm
+  | _, imp φ ψ => by
+    simp only [toRaw_imp, RawFormula.quantifierDepth_imp, quantifierRank_imp,
+      quantifierDepth_toRaw φ, quantifierDepth_toRaw ψ]
+  | _, all φ => by
+    simp only [toRaw_all, RawFormula.quantifierDepth_all, quantifierRank_all,
+      quantifierDepth_toRaw φ]
+
 theorem fromRaw_toRaw : ∀ {n} (φ : L.BoundedFormula α n), fromRaw n φ.toRaw = some φ
   | _, falsum => rfl
   | n, equal t₁ t₂ => by
@@ -452,6 +471,10 @@ theorem primrec_equal :
   primrec_iff_primrec_toRaw.2 (RawFormula.primrec_equal (primrec_rawVar.comp Primrec.fst)
     (primrec_rawVar.comp Primrec.snd))
 
+/-- Quantifier rank is primitive recursive under the raw coding. -/
+theorem primrec_quantifierRank : Primrec (quantifierRank : L.BoundedFormula α n → ℕ) :=
+  (RawFormula.primrec_quantifierDepth.comp primrec_toRaw).of_eq quantifierDepth_toRaw
+
 end Coding
 
 /-! ### Independence of the symbol encoding -/
@@ -574,10 +597,14 @@ variable [Encodable (Σ l, L.Relations l)] [L.IsRelational]
 
 open BoundedFormula
 
-/-- A sentence is finitely satisfiable iff its raw formula is. -/
-theorem finSat_iff_toRaw (φ : L.Sentence) : FinSat φ ↔ RawFormula.FinSat (toRaw φ) := by
+/-- A sentence holds in some `L`-structure on a nonempty type `M` iff its raw formula holds on `M`
+under some raw interpretation and assignment. -/
+theorem exists_structure_realize_iff_toRaw (M : Type*) [Nonempty M] (φ : L.Sentence) :
+    (∃ _ : L.Structure M, M ⊨ φ) ↔
+      ∃ (I : ℕ → List M → Prop) (ρ : ℕ → M), φ.toRaw.Realize I ρ := by
   constructor
-  · rintro ⟨M, _, hf, ⟨m⟩, h⟩
+  · rintro ⟨_, h⟩
+    obtain ⟨m⟩ := ‹Nonempty M›
     let I : ℕ → List M → Prop := fun r as =>
       ∃ (l : ℕ) (R : L.Relations l) (xs : Fin l → M),
         encode (⟨l, R⟩ : Σ l, L.Relations l) = r ∧ List.ofFn xs = as ∧ Structure.RelMap R xs
@@ -591,17 +618,27 @@ theorem finSat_iff_toRaw (φ : L.Sentence) : FinSat φ ↔ RawFormula.FinSat (to
         rw [List.ofFn_inj] at hx
         rwa [← hx]
       · exact fun h => ⟨l, R, xs, rfl, rfl, h⟩
-    refine ⟨M, hf, ⟨m⟩, I, fun _ => m, (realize_toRaw hI φ fun w => ?_).2 h⟩
+    refine ⟨I, fun _ => m, (realize_toRaw hI φ fun w => ?_).2 h⟩
     rcases w with a | i
     · exact a.elim
     · exact i.elim0
-  · rintro ⟨M, hf, hn, I, ρ, h⟩
+  · rintro ⟨I, ρ, h⟩
     let _ : L.Structure M :=
       { RelMap := fun {l} R xs => I (encode (⟨l, R⟩ : Σ l, L.Relations l)) (List.ofFn xs) }
-    refine ⟨M, inferInstance, hf, hn, (realize_toRaw (fun R xs => Iff.rfl) φ fun w => ?_).1 h⟩
+    refine ⟨inferInstance, (realize_toRaw (fun R xs => Iff.rfl) φ fun w => ?_).1 h⟩
     rcases w with a | i
     · exact a.elim
     · exact i.elim0
+
+/-- A sentence is finitely satisfiable iff its raw formula is. -/
+theorem finSat_iff_toRaw (φ : L.Sentence) : FinSat φ ↔ RawFormula.FinSat (toRaw φ) := by
+  constructor
+  · rintro ⟨M, hS, hf, hn, h⟩
+    obtain ⟨I, ρ, h'⟩ := (exists_structure_realize_iff_toRaw M φ).1 ⟨hS, h⟩
+    exact ⟨M, hf, hn, I, ρ, h'⟩
+  · rintro ⟨M, hf, hn, I, ρ, h⟩
+    obtain ⟨hS, h'⟩ := (exists_structure_realize_iff_toRaw M φ).2 ⟨I, ρ, h⟩
+    exact ⟨M, hS, hf, hn, h'⟩
 
 /-- A sentence is finitely valid iff its raw formula is. -/
 theorem finValid_iff_toRaw (φ : L.Sentence) : FinValid φ ↔ RawFormula.FinValid (toRaw φ) := by

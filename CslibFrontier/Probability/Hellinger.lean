@@ -76,7 +76,8 @@ private lemma sqrt_mul_le_add_div_two {u v : ℝ} (hu : 0 ≤ u) (hv : 0 ≤ v) 
   rw [Real.sqrt_mul hu]
   nlinarith [sq_nonneg (Real.sqrt u - Real.sqrt v), Real.mul_self_sqrt hu, Real.mul_self_sqrt hv]
 
-private lemma summable_sqrt_toReal_mul (p q : PMF α) :
+/-- Summability of the pointwise geometric mean `√((p a).toReal * (q a).toReal)`. -/
+theorem summable_sqrt_toReal_mul (p q : PMF α) :
     Summable (fun a => Real.sqrt ((p a).toReal * (q a).toReal)) :=
   Summable.of_nonneg_of_le (fun _ => Real.sqrt_nonneg _)
     (fun _ => sqrt_mul_le_add_div_two ENNReal.toReal_nonneg ENNReal.toReal_nonneg)

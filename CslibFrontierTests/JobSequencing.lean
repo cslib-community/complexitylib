@@ -21,8 +21,8 @@ open scoped List
 
 /-- Small instances are decided by enumerating the permutations (`List.permutations'` is
 structurally recursive, so the kernel evaluates it). -/
-theorem mem_JobSequencing_iff_permutations {x : List (ℕ × ℕ × ℕ) × ℕ} :
-    x ∈ JobSequencing ↔ ∃ σ ∈ x.1.permutations', JobSequencing.totalPenalty σ ≤ x.2 :=
+theorem mem_JobSequencing_iff_permutations {x : JobSequencingInstance} :
+    x ∈ JobSequencing ↔ ∃ σ ∈ x.jobs.permutations', JobSequencing.totalPenalty σ ≤ x.bound :=
   exists_congr fun _ => and_congr_left' List.mem_permutations'.symm
 
 /-! ### Headline results -/
@@ -35,40 +35,40 @@ example : JobSequencing ∈ NP encJobSequencing ∧
 /-! ### Total penalties -/
 
 -- Job `(2, 2, 7)` then `(3, 4, 10)`: the first completes at 2, on time; the second at 5, late.
-example : JobSequencing.totalPenalty [(2, 2, 7), (3, 4, 10)] = 10 := rfl
+example : JobSequencing.totalPenalty [⟨2, 2, 7⟩, ⟨3, 4, 10⟩] = 10 := rfl
 -- In the other order the first completes at 3, on time; the second at 5, late.
-example : JobSequencing.totalPenalty [(3, 4, 10), (2, 2, 7)] = 7 := rfl
+example : JobSequencing.totalPenalty [⟨3, 4, 10⟩, ⟨2, 2, 7⟩] = 7 := rfl
 -- Completing exactly at the deadline is on time.
-example : JobSequencing.totalPenalty [(4, 4, 1)] = 0 := rfl
-example : JobSequencing.totalPenalty [(5, 4, 1)] = 1 := rfl
+example : JobSequencing.totalPenalty [⟨4, 4, 1⟩] = 0 := rfl
+example : JobSequencing.totalPenalty [⟨5, 4, 1⟩] = 1 := rfl
 -- Jobs of time zero complete at once.
-example : JobSequencing.totalPenalty [(0, 0, 9), (0, 0, 9)] = 0 := rfl
+example : JobSequencing.totalPenalty [⟨0, 0, 9⟩, ⟨0, 0, 9⟩] = 0 := rfl
 -- Large numbers are added and compared in binary.
-example : JobSequencing.totalPenalty [(2 ^ 70, 2 ^ 70, 2 ^ 90), (1, 2 ^ 70, 3)] = 3 := by decide
+example : JobSequencing.totalPenalty [⟨2 ^ 70, 2 ^ 70, 2 ^ 90⟩, ⟨1, 2 ^ 70, 3⟩] = 3 := by decide
 
 /-! ### Instances -/
 
-example : ([(2, 2, 7), (3, 4, 10)], 7) ∈ JobSequencing :=
-  ⟨[(3, 4, 10), (2, 2, 7)], List.Perm.swap _ _ _, le_refl 7⟩
-example : ([(2, 2, 7), (3, 4, 10)], 6) ∉ JobSequencing :=
+example : (⟨[⟨2, 2, 7⟩, ⟨3, 4, 10⟩], 7⟩ : JobSequencingInstance) ∈ JobSequencing :=
+  ⟨[⟨3, 4, 10⟩, ⟨2, 2, 7⟩], List.Perm.swap _ _ _, le_refl 7⟩
+example : (⟨[⟨2, 2, 7⟩, ⟨3, 4, 10⟩], 6⟩ : JobSequencingInstance) ∉ JobSequencing :=
   fun h => absurd (mem_JobSequencing_iff_permutations.1 h) (by decide)
 
 -- Boundary cases: no jobs, and repeated jobs scheduled with multiplicity.
-example : ([], 0) ∈ JobSequencing := ⟨[], List.Perm.refl _, le_refl 0⟩
-example : ([(2, 3, 5), (2, 3, 5)], 5) ∈ JobSequencing :=
+example : (⟨[], 0⟩ : JobSequencingInstance) ∈ JobSequencing := ⟨[], List.Perm.refl _, le_refl 0⟩
+example : (⟨[⟨2, 3, 5⟩, ⟨2, 3, 5⟩], 5⟩ : JobSequencingInstance) ∈ JobSequencing :=
   mem_JobSequencing_iff_permutations.2 (by decide)
-example : ([(2, 3, 5), (2, 3, 5)], 4) ∉ JobSequencing :=
+example : (⟨[⟨2, 3, 5⟩, ⟨2, 3, 5⟩], 4⟩ : JobSequencingInstance) ∉ JobSequencing :=
   fun h => absurd (mem_JobSequencing_iff_permutations.1 h) (by decide)
 
 /-! ### Karp's reduction from `SubsetSum` -/
 
-example : SubsetSum.toJobSequencing ([3, 5], 5) = ([(3, 5, 3), (5, 5, 5)], 3) := rfl
+example : SubsetSum.toJobSequencing ([3, 5], 5) = ⟨[⟨3, 5, 3⟩, ⟨5, 5, 5⟩], 3⟩ := rfl
 
 -- `5` hits the target, so running its job first leaves penalty `3`.
 example : SubsetSum.toJobSequencing ([3, 5], 5) ∈ JobSequencing :=
-  ⟨[(5, 5, 5), (3, 5, 3)], List.Perm.swap _ _ _, le_refl 3⟩
+  ⟨[⟨5, 5, 5⟩, ⟨3, 5, 3⟩], List.Perm.swap _ _ _, le_refl 3⟩
 -- No sub-multiset of `[3, 5]` sums to `4`, so every order pays more than `4`.
-example : SubsetSum.toJobSequencing ([3, 5], 4) = ([(3, 4, 3), (5, 4, 5)], 4) := rfl
+example : SubsetSum.toJobSequencing ([3, 5], 4) = ⟨[⟨3, 4, 3⟩, ⟨5, 4, 5⟩], 4⟩ := rfl
 example : SubsetSum.toJobSequencing ([3, 5], 4) ∉ JobSequencing :=
   fun h => absurd (mem_JobSequencing_iff_permutations.1 h) (by decide)
 example : ([3, 5], 4) ∉ SubsetSum := fun h => by
@@ -77,7 +77,7 @@ example : ([3, 5], 4) ∉ SubsetSum := fun h => by
     (by decide)
 
 -- Targets above the total give an instance with no feasible order.
-example : SubsetSum.toJobSequencing ([3, 5], 9) = ([(1, 0, 1)], 0) := rfl
+example : SubsetSum.toJobSequencing ([3, 5], 9) = ⟨[⟨1, 0, 1⟩], 0⟩ := rfl
 example : SubsetSum.toJobSequencing ([3, 5], 9) ∉ JobSequencing :=
   fun h => absurd (mem_JobSequencing_iff_permutations.1 h) (by decide)
 
@@ -89,8 +89,13 @@ example : SubsetSum.toJobSequencing ([3, 5], 8) ∈ JobSequencing :=
 
 /-! ### Compositional `fun_prop` synthesis -/
 
-example : ComputableInPolyTime (fun σ : List (ℕ × ℕ × ℕ) => JobSequencing.totalPenalty (σ ++ σ))
-    (encList (encPair encNat (encPair encNat encNat))) encNat := by fun_prop
+example : ComputableInPolyTime
+    (fun σ : List JobSequencing.Job => JobSequencing.totalPenalty (σ ++ σ))
+    (encList JobSequencing.encJob) encNat := by fun_prop
+
+example : ComputableInPolyTime
+    (fun x : JobSequencingInstance => (x.jobs.headD ⟨0, 0, 0⟩).time + x.bound)
+    encJobSequencing encNat := by fun_prop
 
 example : ComputableInPolyTime (fun x : List ℕ × ℕ => SubsetSum.toJobSequencing (x.1, x.2 + 1))
     (encPair (encList encNat) encNat) encJobSequencing := by fun_prop
