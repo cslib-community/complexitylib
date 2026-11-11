@@ -463,7 +463,7 @@ theorem eval_errorVector_mod (m w η : ℕ) :
 /-- The generated public matrix is an exact decision-LWE sample. -/
 theorem eval_keyGen_publicMatrix (n m w η : ℕ) :
     (ProbComp.eval (keyGen n m w η)).map Prod.fst =
-      publicMatrixLaw n m w (noiseLaw w η) := by
+      publicMatrixLaw n m (noiseLaw w η) := by
   simp only [pmf_norm, keyGen, eval_sampleKeyInputs, publicMatrixLaw]
   rw [← eval_errorVector_mod m w η]
   simp only [PMF.bind_map, Function.comp_def]

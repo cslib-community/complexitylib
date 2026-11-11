@@ -55,14 +55,12 @@ open scoped _root_.Matrix
 namespace LWE
 
 /-- The deterministic LWE public matrix `[B * t + error | B]`. -/
-@[expose]
 def publicMatrix {n m : ℕ} {R : Type} [CommRing R] (B : Matrix (Fin m) (Fin n) R)
     (t : Fin n → R) (error : Fin m → R) : Matrix (Fin m) (Fin (n + 1)) R :=
   fun i => Fin.cons ((B *ᵥ t) i + error i) (B i)
 
 /-- Draw the public matrix `[B * t + e | B]`. The errors are independent of one another, of
 the uniform matrix, and of the uniform secret shared by all rows. -/
-@[expose]
 noncomputable def publicMatrixLaw {R : Type} [CommRing R] [Fintype R] [Nonempty R]
     (n m : ℕ) (noise : PMF R) : PMF (Matrix (Fin m) (Fin (n + 1)) R) := do
   let secret ← PMF.uniformOfFintype (Fin n → R)
