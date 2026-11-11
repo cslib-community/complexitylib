@@ -11,6 +11,7 @@ public import Cslib.Algorithms.Lean.TimeM
 public import CslibFrontier.Logics.Propositional.CSP.FactorTable
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 import Mathlib.Algebra.BigOperators.Pi
+import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.List.Dedup
 import Mathlib.Tactic.Ring
@@ -327,24 +328,6 @@ private theorem assignScope_map [DecidableEq V] (σ : V → ℕ) :
       · simp only [hvu, ↓reduceIte]
         exact assignScope_map σ us ((List.mem_cons.mp hv).resolve_left hvu)
 
-private theorem prod_filter_mul_filter_not [CommSemiring R] {α : Type*} (p : α → Bool)
-    (g : α → R) :
-    ∀ xs : List α,
-      ((xs.filter p).map g).prod * ((xs.filter fun a => !p a).map g).prod = (xs.map g).prod
-  | [] => by simp
-  | a :: xs => by
-      have ih := prod_filter_mul_filter_not p g xs
-      by_cases ha : p a = true
-      · simp only [List.filter_cons, ha, Bool.not_true, Bool.false_eq_true, ↓reduceIte,
-          List.map_cons, List.prod_cons, mul_assoc]
-        exact congrArg (g a * ·) ih
-      · simp only [List.filter_cons, ha, Bool.false_eq_true, ↓reduceIte, List.map_cons,
-          List.prod_cons]
-        calc ((xs.filter p).map g).prod * (g a * ((xs.filter fun a => !p a).map g).prod)
-            = g a * (((xs.filter p).map g).prod * ((xs.filter fun a => !p a).map g).prod) := by
-              rw [mul_left_comm]
-          _ = g a * (xs.map g).prod := congrArg (g a * ·) ih
-
 private theorem mem_bucketJointScope [DecidableEq V] (bucket : List (FactorTable R V)) (v : V) :
     v ∈ bucketJointScope bucket ↔ ∃ f ∈ bucket, v ∈ f.scope := by
   simp [bucketJointScope, List.mem_dedup]
@@ -500,10 +483,11 @@ theorem eval_elimVar [CommSemiring R] [DecidableEq V] (d : ℕ) (x : V) (s : Eli
         intro τ
         rw [Finset.sum_mul]
         refine Finset.sum_congr rfl fun a _ => ?_
-        rw [← hrest_eq]
-        have hsplit := prod_filter_mul_filter_not (fun f : FactorTable R V => decide (x ∈ f.scope))
-          (fun f => f.evalAt d (ext τ a)) s.live
-        rw [← hsplit, hrest_eq]
+        have hsplit := ((List.filter_append_perm
+          (fun f : FactorTable R V => decide (x ∈ f.scope)) s.live).map
+          fun f => f.evalAt d (ext τ a)).prod_eq
+        simp only [List.map_append, List.prod_append, hrest_eq] at hsplit
+        rw [← hsplit]
         congr 1
         congr 1
         refine List.map_congr_left fun f hf => FactorTable.evalAt_congr fun v hv => ?_
@@ -783,13 +767,6 @@ private theorem mem_le_foldl_max {l : List ℕ} {a x : ℕ} (hx : x ∈ l) : x �
       · exact le_trans (le_max_right a x) (le_foldl_max_self ys _)
       · exact ih hx
 
-private theorem length_filter_add_length_filter_not {α : Type*} (p : α → Bool) :
-    ∀ xs : List α, (xs.filter p).length + (xs.filter fun a => !p a).length = xs.length
-  | [] => rfl
-  | a :: xs => by
-      have ih := length_filter_add_length_filter_not p xs
-      by_cases ha : p a = true <;> simp [ha] <;> omega
-
 private theorem length_elimVar_live_le [Semiring R] [DecidableEq V] (d : ℕ) (x : V)
     (s : ElimState R V) : (elimVar d x s).live.length ≤ s.live.length := by
   by_cases hx : x ∈ s.remaining
@@ -800,8 +777,11 @@ private theorem length_elimVar_live_le [Semiring R] [DecidableEq V] (d : ℕ) (x
     · simp only [List.length_cons]
       let bucket := s.live.filter fun f => decide (x ∈ f.scope)
       let rest := s.live.filter fun f => decide (x ∉ f.scope)
-      have hlen := length_filter_add_length_filter_not
-        (fun f : FactorTable R V => decide (x ∈ f.scope)) s.live
+      have hlen : (s.live.filter fun f => decide (x ∈ f.scope)).length +
+          (s.live.filter fun f => !decide (x ∈ f.scope)).length = s.live.length := by
+        simpa [List.length_append] using
+          (List.filter_append_perm (fun f : FactorTable R V => decide (x ∈ f.scope))
+            s.live).length_eq
       have hrest : (s.live.filter fun f => !decide (x ∈ f.scope)) = rest := by
         simp only [decide_not, rest]
       rw [hrest] at hlen
@@ -829,8 +809,11 @@ private theorem bucketFactors_add_live_le [Semiring R] [DecidableEq V] (d : ℕ)
     split_ifs with hb
     · simp
     · dsimp only [List.length_cons]
-      have hlen := length_filter_add_length_filter_not
-        (fun f : FactorTable R V => decide (x ∈ f.scope)) s.live
+      have hlen : (s.live.filter fun f => decide (x ∈ f.scope)).length +
+          (s.live.filter fun f => !decide (x ∈ f.scope)).length = s.live.length := by
+        simpa [List.length_append] using
+          (List.filter_append_perm (fun f : FactorTable R V => decide (x ∈ f.scope))
+            s.live).length_eq
       have hrest : (s.live.filter fun f => !decide (x ∈ f.scope)) =
           s.live.filter fun f => decide (x ∉ f.scope) := by
         simp only [decide_not]
@@ -1037,19 +1020,6 @@ private theorem elimVar_scope_length_le [Semiring R] [DecidableEq V] (d : ℕ)
   · simp only [elimVar, hx, ↓reduceIte] at hf
     exact hs f hf
 
-private theorem liveEntries_le_of_each_le {live : List (FactorTable R V)} {B : ℕ}
-    (h : ∀ f ∈ live, f.entries.size ≤ B) : liveEntries live ≤ live.length * B := by
-  induction live with
-  | nil => simp [liveEntries]
-  | cons f fs ih =>
-      unfold liveEntries
-      simp only [List.map_cons, List.sum_cons, List.length_cons]
-      have hf : f.entries.size ≤ B := h f (by simp)
-      have hfs : (fs.map fun g => g.entries.size).sum ≤ fs.length * B :=
-        ih fun g hg => h g (by simp [hg])
-      rw [Nat.succ_mul]
-      omega
-
 private theorem each_mem_le_maxTableEntries {live : List (FactorTable R V)} :
     ∀ f ∈ live, f.entries.size ≤ maxTableEntries live := fun f hf =>
   mem_le_foldl_max (List.mem_map.mpr ⟨f, hf, rfl⟩)
@@ -1057,19 +1027,6 @@ private theorem each_mem_le_maxTableEntries {live : List (FactorTable R V)} :
 private theorem each_mem_le_maxScopeLen {live : List (FactorTable R V)} :
     ∀ f ∈ live, f.scope.length ≤ maxScopeLen live := fun f hf =>
   mem_le_foldl_max (List.mem_map.mpr ⟨f, hf, rfl⟩)
-
-private theorem sum_scope_le_of_each_le {live : List (FactorTable R V)} {S : ℕ}
-    (h : ∀ f ∈ live, f.scope.length ≤ S) :
-    (live.map fun f => f.scope.length).sum ≤ live.length * S := by
-  induction live with
-  | nil => simp
-  | cons f fs ih =>
-      simp only [List.map_cons, List.sum_cons, List.length_cons] at ih ⊢
-      have hf : f.scope.length ≤ S := h f (by simp)
-      have hfs : (fs.map fun g => g.scope.length).sum ≤ fs.length * S :=
-        ih fun g hg => h g (by simp [hg])
-      rw [Nat.succ_mul]
-      omega
 
 private theorem stepStats_liveEntriesAfter [Semiring R] [DecidableEq V] (d : ℕ) (x : V)
     (s : ElimState R V) :
@@ -1112,17 +1069,52 @@ theorem peakLiveEntries_le [Semiring R] [DecidableEq V] {d : ℕ} (hd : 0 < d)
           le_trans (length_elimVar_live_le d x s) hlen
         have hlive_after : (stepStats d x s).liveEntriesAfter ≤ M * B := by
           rw [stepStats_liveEntriesAfter]
-          exact le_trans (liveEntries_le_of_each_le hs') (Nat.mul_le_mul_right B hlen')
+          have hsum : liveEntries (elimVar d x s).live ≤ (elimVar d x s).live.length * B := by
+            simpa [liveEntries, smul_eq_mul] using List.sum_le_length_nsmul
+              ((elimVar d x s).live.map fun f => f.entries.size) B fun _ hn => by
+                rcases List.mem_map.mp hn with ⟨f, hf, rfl⟩
+                exact hs' f hf
+          exact le_trans hsum (Nat.mul_le_mul_right B hlen')
         simp only [traceOrder, List.map_cons, List.foldl_cons]
         exact ih (elimVar d x s) (max acc (stepStats d x s).liveEntriesAfter)
           (max_le hacc hlive_after) hlen' hs' fun st hst => hW st (by simp [traceOrder, hst])
   rw [peakLiveEntries]
-  exact hgen order init (liveEntries init.live)
-    (liveEntries_le_of_each_le fun f hf =>
-      le_trans (each_mem_le_maxTableEntries f hf) (le_max_left E (d ^ W)))
-    le_rfl
+  have hinit_sum : liveEntries init.live ≤ init.live.length * B := by
+    simpa [liveEntries, smul_eq_mul] using List.sum_le_length_nsmul
+      (init.live.map fun f => f.entries.size) B fun _ hn => by
+        rcases List.mem_map.mp hn with ⟨f, hf, rfl⟩
+        exact le_trans (each_mem_le_maxTableEntries f hf) (le_max_left E (d ^ W))
+  exact hgen order init (liveEntries init.live) hinit_sum le_rfl
     (fun f hf => le_trans (each_mem_le_maxTableEntries f hf) (le_max_left E (d ^ W)))
     (fun st hst => mem_traceOrder_out_le d order init hst)
+
+/-- At every prefix `order.take k`, live-table entry count is bounded by `peakLiveEntries`. -/
+theorem liveEntries_eliminateOrder_take_le [Semiring R] [DecidableEq V] (d : ℕ)
+    (order : List V) (init : ElimState R V) (k : ℕ) :
+    liveEntries (eliminateOrder d (order.take k) init).live ≤ peakLiveEntries d order init := by
+  rw [peakLiveEntries]
+  suffices h : ∀ (ord : List V) (s : ElimState R V) (acc k : ℕ),
+      liveEntries s.live ≤ acc →
+      liveEntries (eliminateOrder d (ord.take k) s).live ≤
+        ((traceOrder d ord s).map ElimStepStats.liveEntriesAfter).foldl max acc by
+    exact h order init (liveEntries init.live) k le_rfl
+  intro ord
+  induction ord with
+  | nil =>
+      intro s acc k hacc
+      simpa [eliminateOrder, traceOrder] using hacc
+  | cons x xs ih =>
+      intro s acc k hacc
+      cases k with
+      | zero =>
+          simp only [List.take_zero, eliminateOrder, traceOrder, List.map_cons, List.foldl_cons]
+          exact le_trans hacc (le_trans (le_max_left _ _) (le_foldl_max_self _ _))
+      | succ k' =>
+          simp only [List.take_succ_cons, eliminateOrder, traceOrder, List.map_cons,
+            List.foldl_cons]
+          exact ih (elimVar d x s) (max acc (stepStats d x s).liveEntriesAfter) k' (by
+            rw [stepStats_liveEntriesAfter]
+            exact le_max_right _ _)
 
 private theorem time_elimVarM_le {R V : Type} [Semiring R] [DecidableEq V] {d : ℕ}
     (hd : 0 < d) (x : V) (s : ElimState R V) {M S W : ℕ}
@@ -1163,8 +1155,11 @@ private theorem time_elimVarM_le {R V : Type} [Semiring R] [DecidableEq V] {d : 
         rw [← pow_succ, hjoint_eq]
         exact Nat.pow_le_pow_right hd hjoint_le
       have hscope_sum : (bucket.map fun f => f.scope.length).sum ≤
-          bucket.length * max S W :=
-        sum_scope_le_of_each_le fun f hf => hs f (List.mem_filter.mp hf).1
+          bucket.length * max S W := by
+        simpa [smul_eq_mul] using List.sum_le_length_nsmul
+          (bucket.map fun f => f.scope.length) (max S W) fun _ hn => by
+            rcases List.mem_map.mp hn with ⟨f, hf, rfl⟩
+            exact hs f (List.mem_filter.mp hf).1
       have hbk_eq : (stepStats d x s).bucketFactors = bucket.length := by
         simp [stepStats, hx, hb, bucket]
       rw [hbk_eq]

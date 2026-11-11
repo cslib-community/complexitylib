@@ -278,16 +278,22 @@ private def modFactors : List (FactorTable (ZMod 5) ℕ) :=
 
 theorem mod5_elimination_exact_and_bounded :
     (eliminateOrderM 2 [0, 1] (ElimState.ofFactors modFactors [0, 1])).ret.result = (2 : ZMod 5) ∧
-    liveEntries (eliminateOrder 2 [0, 1] (ElimState.ofFactors modFactors [0, 1])).live *
-        (5 : ℕ).size ≤
-      modFactors.length *
-        max (maxTableEntries modFactors)
-          (2 ^ maxOutScopeLen 2 [0, 1] (ElimState.ofFactors modFactors [0, 1])) *
-        (5 : ℕ).size := by
-  constructor
-  · decide
-  · exact liveFieldBits_eliminateOrder_le (by decide) [0, 1]
-      (ElimState.ofFactors modFactors [0, 1])
+    0 < liveFieldBits 5
+      (eliminateOrder 2 (([0, 1] : List ℕ).take 1) (ElimState.ofFactors modFactors [0, 1])).live ∧
+    ∀ k : ℕ,
+      liveFieldBits 5 (eliminateOrder 2 (([0, 1] : List ℕ).take k)
+          (ElimState.ofFactors modFactors [0, 1])).live ≤
+        peakLiveEntries 2 [0, 1] (ElimState.ofFactors modFactors [0, 1]) * (5 : ℕ).size ∧
+      liveFieldBits 5 (eliminateOrder 2 (([0, 1] : List ℕ).take k)
+          (ElimState.ofFactors modFactors [0, 1])).live ≤
+        modFactors.length *
+          max (maxTableEntries modFactors)
+            (2 ^ maxOutScopeLen 2 [0, 1] (ElimState.ofFactors modFactors [0, 1])) *
+          (5 : ℕ).size := by
+  refine ⟨by decide, by decide, fun k =>
+    ⟨liveFieldBits_eliminateOrder_take_le_peak 2 [0, 1] (ElimState.ofFactors modFactors [0, 1]) k,
+     liveFieldBits_eliminateOrder_le (by decide) [0, 1]
+       (ElimState.ofFactors modFactors [0, 1]) k⟩⟩
 
 private def ratDenoms : List ℕ := [2, 3]
 
@@ -320,7 +326,7 @@ theorem rat_cleared_elimination_exact_and_bounded :
     simp only [ratDenoms, List.prod_cons, List.prod_nil, mul_one, Int.cast_ofNat, Nat.cast_mul,
       Nat.cast_ofNat]
     ring
-  · exact length_encRat_cleared_result_le (by decide) (by decide) (by decide)
+  · exact length_encRat_cleared_result_le (by decide) (by decide)
       ratDenoms ratIntFactors [0, 1] [0, 1] rfl (by decide) (by decide) (by decide)
       Finset.Subset.rfl
 

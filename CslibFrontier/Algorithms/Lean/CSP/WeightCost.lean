@@ -15,8 +15,10 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.St
 public import CslibFrontier.Computability.TreeEval.Ary.IterativeEncoding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.Nat.BinarySize
 import Mathlib.Algebra.BigOperators.Group.List.Basic
+import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Nat.Size
 import Mathlib.Data.Rat.Lemmas
@@ -35,9 +37,10 @@ This module analyses weight growth and binary representation cost of variable el
   and keeping `encIntBin z` within `order.length * d.size + init.live.length * W.size + 3` bits
   (`natAbs_entry_eliminateOrder_le`, `length_encIntBin_entry_eliminateOrder_le`).
 * **Finite fields (`ZMod p`, `NeZero p`):** Every intermediate entry remains below `p`, so
-  `Cslib.TreeEval.Ary.Iter.encField p` uses at most `p.size` bits per entry and peak live bit
-  memory across `order` is at most `peakLiveEntries d order init * p.size`
-  (`liveFieldBits_eliminateOrder_le`).
+  `Cslib.TreeEval.Ary.Iter.encField p` uses at most `p.size` bits per entry and actual encoded
+  bit storage `liveFieldBits p` at any prefix step `order.take k` is bounded by
+  `peakLiveEntries d order init * p.size` (`liveFieldBits_eliminateOrder_take_le_peak`,
+  `liveFieldBits_eliminateOrder_le`).
 * **Rationals (`ℚ`):** Direct fraction reduction satisfies `den (a + b) ≤ a.den * b.den`,
   `|num (a + b)| ≤ |a.num| * b.den + |b.num| * a.den`, and multiplicative step bounds on
   `elimBucketTable` (`rat_elimBucketTable_bounds`, bounded under `Turing.MultiTapeTM.encRat`).
@@ -53,6 +56,8 @@ This module analyses weight growth and binary representation cost of variable el
 
 * `Cslib.Algorithms.Lean.CSP.mapFactorHom`,
   `Cslib.Algorithms.Lean.CSP.scaleFactor`: ring-homomorphism transport and factor scaling.
+* `Cslib.Algorithms.Lean.CSP.liveFieldBits`: total `encField p` bit length of live finite-field
+  tables.
 * `Cslib.Algorithms.Lean.CSP.NatFactorRecord`, `Cslib.Algorithms.Lean.CSP.IntFactorRecord`,
   `Cslib.Algorithms.Lean.CSP.RatFactorRecord`, `Cslib.Algorithms.Lean.CSP.ModFactorRecord`:
   documented monomorphic factor records with `enc_structure` encodings.
@@ -62,7 +67,9 @@ This module analyses weight growth and binary representation cost of variable el
 * `Cslib.Algorithms.Lean.CSP.natAbs_entry_eliminateOrder_le`,
   `Cslib.Algorithms.Lean.CSP.length_encIntBin_entry_eliminateOrder_le`: integer weight and
   bit-length bounds across `eliminateOrder`.
-* `Cslib.Algorithms.Lean.CSP.liveFieldBits_eliminateOrder_le`: finite-field bit-storage bound.
+* `Cslib.Algorithms.Lean.CSP.liveFieldBits_eliminateOrder_take_le_peak`,
+  `Cslib.Algorithms.Lean.CSP.liveFieldBits_eliminateOrder_le`: finite-field bit-storage bounds at
+  every elimination prefix `order.take k`.
 * `Cslib.Algorithms.Lean.CSP.rat_elimBucketTable_bounds`,
   `Cslib.Algorithms.Lean.CSP.result_eliminateOrder_ratScaled`,
   `Cslib.Algorithms.Lean.CSP.length_encRat_cleared_result_le`: rational elimination fraction and
@@ -74,25 +81,6 @@ public section
 namespace Cslib.Algorithms.Lean.CSP
 
 open Cslib.Logic.PL.CSP Turing.MultiTapeTM
-
-/-! ### Binary bit-length helpers -/
-
-section BitLengthHelpers
-
-/-- Exact encoded bit length of a rational under `Turing.MultiTapeTM.encRat`. -/
-theorem length_encRat (q : ℚ) :
-    (encRat q).length = 2 * (q.num.natAbs.size + 1) + 1 + q.den.size := by
-  rw [encRat_apply, length_encPair, length_encIntBin, length_encNat_eq_size]
-
-/-- Upper bound on `(encRat q).length` in terms of `|q.num|` and `q.den` binary sizes. -/
-theorem length_encRat_le (q : ℚ) {A B : ℕ} (hnum : q.num.natAbs ≤ A) (hden : q.den ≤ B) :
-    (encRat q).length ≤ 2 * A.size + B.size + 3 := by
-  rw [length_encRat]
-  have hn : q.num.natAbs.size ≤ A.size := Nat.size_le_size hnum
-  have hd : q.den.size ≤ B.size := Nat.size_le_size hden
-  omega
-
-end BitLengthHelpers
 
 /-! ### Integer (`ℤ`) weight growth and `encIntBin` bounds -/
 
@@ -327,37 +315,49 @@ section FiniteFieldCost
 
 variable {V : Type*}
 
-/-- Peak encoded bit storage across all live `ZMod p` factor tables during `eliminateOrder` is
-bounded by `peakLiveEntries d order init * p.size` and hence by the intermediate-scope table bound
-times `p.size`. -/
-theorem liveFieldBits_eliminateOrder_le [DecidableEq V] {d p : ℕ} (hd : 0 < d)
-    (order : List V) (init : ElimState (ZMod p) V) :
-    (liveEntries (eliminateOrder d order init).live) * p.size ≤
+/-- Total encoded bit length across all live `ZMod p` factor tables using
+`Cslib.TreeEval.Ary.Iter.encField p`. -/
+@[expose] def liveFieldBits (p : ℕ) [NeZero p] (live : List (FactorTable (ZMod p) V)) : ℕ :=
+  (live.map fun f =>
+    (f.entries.toList.map fun x => (Cslib.TreeEval.Ary.Iter.encField p x).length).sum).sum
+
+/-- Any list of `ZMod p` factor tables has total `encField` bit length at most
+`liveEntries live * p.size`. -/
+theorem liveFieldBits_le_liveEntries_mul_size (p : ℕ) [NeZero p]
+    (live : List (FactorTable (ZMod p) V)) :
+    liveFieldBits p live ≤ liveEntries live * p.size := by
+  have h1 : liveFieldBits p live ≤ (live.map fun f => f.entries.size * p.size).sum := by
+    unfold liveFieldBits
+    refine List.Forall₂.sum_le_sum ?_
+    simp only [List.forall₂_map_left_iff, List.forall₂_map_right_iff, List.forall₂_same]
+    intro f _
+    simpa [Array.length_toList, smul_eq_mul] using
+      List.sum_le_length_nsmul (f.entries.toList.map fun x =>
+        (Cslib.TreeEval.Ary.Iter.encField p x).length) p.size fun b hb => by
+          rcases List.mem_map.mp hb with ⟨x, _, rfl⟩
+          exact Cslib.TreeEval.Ary.Iter.length_encField_le p x
+  have h2 : (live.map fun f => f.entries.size * p.size).sum = liveEntries live * p.size := by
+    simpa [liveEntries] using List.sum_map_mul_right live (fun f => f.entries.size) p.size
+  exact h2 ▸ h1
+
+/-- Encoded bit storage across all live `ZMod p` factor tables at every prefix `order.take k`
+is bounded by `peakLiveEntries d order init * p.size`. -/
+theorem liveFieldBits_eliminateOrder_take_le_peak [DecidableEq V] (d : ℕ) {p : ℕ} [NeZero p]
+    (order : List V) (init : ElimState (ZMod p) V) (k : ℕ) :
+    liveFieldBits p (eliminateOrder d (order.take k) init).live ≤
+      peakLiveEntries d order init * p.size :=
+  le_trans (liveFieldBits_le_liveEntries_mul_size p _)
+    (Nat.mul_le_mul_right p.size (liveEntries_eliminateOrder_take_le d order init k))
+
+/-- Encoded bit storage across all live `ZMod p` factor tables at every prefix `order.take k`
+is bounded by `init.live.length` times the intermediate-scope table bound times `p.size`. -/
+theorem liveFieldBits_eliminateOrder_le [DecidableEq V] {d p : ℕ} [NeZero p] (hd : 0 < d)
+    (order : List V) (init : ElimState (ZMod p) V) (k : ℕ) :
+    liveFieldBits p (eliminateOrder d (order.take k) init).live ≤
       init.live.length * max (maxTableEntries init.live) (d ^ maxOutScopeLen d order init) *
-        p.size := by
-  have hpeak : liveEntries (eliminateOrder d order init).live ≤ peakLiveEntries d order init := by
-    rw [peakLiveEntries]
-    clear hd
-    suffices h : ∀ (ord : List V) (s : ElimState (ZMod p) V) (acc : ℕ),
-        liveEntries s.live ≤ acc →
-        liveEntries (eliminateOrder d ord s).live ≤
-          ((traceOrder d ord s).map ElimStepStats.liveEntriesAfter).foldl max acc by
-      exact h order init (liveEntries init.live) le_rfl
-    intro ord
-    induction ord with
-    | nil =>
-        intro s acc hacc
-        simpa [eliminateOrder, traceOrder] using hacc
-    | cons x xs ih =>
-        intro s acc hacc
-        simp only [eliminateOrder, traceOrder, List.map_cons, List.foldl_cons]
-        exact ih (elimVar d x s) (max acc (stepStats d x s).liveEntriesAfter) (by
-          have heq : (stepStats d x s).liveEntriesAfter = liveEntries (elimVar d x s).live := by
-            simp only [stepStats]
-            split_ifs <;> rfl
-          rw [heq]
-          exact le_max_right _ _)
-  exact Nat.mul_le_mul_right p.size (le_trans hpeak (peakLiveEntries_le hd order init))
+        p.size :=
+  le_trans (liveFieldBits_eliminateOrder_take_le_peak d order init k)
+    (Nat.mul_le_mul_right p.size (peakLiveEntries_le hd order init))
 
 end FiniteFieldCost
 
@@ -653,7 +653,7 @@ theorem result_eliminateOrder_ratScaled {V : Type*} [DecidableEq V] (d : ℕ)
 
 /-- Cleared-denominator rational contraction height and denominator bounds. -/
 theorem rat_cleared_result_bounds {V : Type*} [DecidableEq V] {d W D : ℕ}
-    (hd : 0 < d) (hW : 0 < W) (_hD : 0 < D)
+    (hd : 0 < d) (hW : 0 < W)
     (denoms : List ℕ) (factorsℤ : List (FactorTable ℤ V)) (declared order : List V)
     (hlen : denoms.length = factorsℤ.length)
     (hDpos : ∀ q ∈ denoms, 0 < q)
@@ -680,13 +680,7 @@ theorem rat_cleared_result_bounds {V : Type*} [DecidableEq V] {d W D : ℕ}
     exact Nat.lt_irrefl 0 (hDpos 0 (List.prod_eq_zero_iff.mp hPe))
   have hPle : P ≤ D ^ factorsℤ.length := by
     rw [← hlen]
-    clear hlen hWle hcover hPpos z hres
-    induction denoms with
-    | nil => simp [P]
-    | cons q qs ih =>
-        have hqs := ih (fun r hr => hDpos r (by simp [hr])) (fun r hr => hDle r (by simp [hr]))
-        have hq := hDle q (by simp)
-        simpa [P, pow_succ'] using Nat.mul_le_mul hq hqs
+    exact List.prod_le_pow_length denoms D hDle
   have hmk : (z : ℚ) / (P : ℚ) = Rat.divInt z P := by
     rw [← Int.cast_natCast P, ← Rat.divInt_eq_div]
   rw [hmk]
@@ -697,7 +691,7 @@ theorem rat_cleared_result_bounds {V : Type*} [DecidableEq V] {d W D : ℕ}
 /-- Under cleared denominators, the `encRat` bit length of the final contraction result is linear
 in `order.length` and `factorsℤ.length`. -/
 theorem length_encRat_cleared_result_le {V : Type*} [DecidableEq V] {d W D : ℕ}
-    (hd : 0 < d) (hW : 0 < W) (hD : 0 < D)
+    (hd : 0 < d) (hW : 0 < W)
     (denoms : List ℕ) (factorsℤ : List (FactorTable ℤ V)) (declared order : List V)
     (hlen : denoms.length = factorsℤ.length)
     (hDpos : ∀ q ∈ denoms, 0 < q)
@@ -710,7 +704,7 @@ theorem length_encRat_cleared_result_le {V : Type*} [DecidableEq V] {d W D : ℕ
     (encRat res).length ≤
       2 * (order.length * d.size + factorsℤ.length * W.size) + factorsℤ.length * D.size + 8 := by
   dsimp only
-  rcases rat_cleared_result_bounds hd hW hD denoms factorsℤ declared order hlen hDpos hDle hWle
+  rcases rat_cleared_result_bounds hd hW denoms factorsℤ declared order hlen hDpos hDle hWle
       hcover with ⟨hnum, hden⟩
   have hr :
       (encRat (eliminateOrder d order (ElimState.ofFactors
@@ -803,20 +797,6 @@ enc_structure encModFactorRecord : ModFactorRecord where
     FactorTable (ZMod rec.modulus) ℕ :=
   { scope := rec.scope, entries := (rec.entries.map fun k : ℕ => (k : ZMod rec.modulus)).toArray }
 
-private theorem length_encList_nat_le (l : List ℕ) {B : ℕ} (h : ∀ x ∈ l, x.size ≤ B) :
-    (encList encNat l).length ≤ l.length * (2 * B + 1) := by
-  rw [length_encList]
-  simp only [length_encNat_eq_size]
-  revert h
-  induction l with
-  | nil => intro _; simp
-  | cons v vs ih =>
-      intro h
-      have hv0 : v.size ≤ B := h v (by simp)
-      have hvs := ih fun u hu => h u (by simp [hu])
-      simp only [List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
-      omega
-
 /-- Encoded bit length of an `IntFactorRecord` bounded by variable and entry bit lengths. -/
 theorem length_encIntFactorRecord_le (rec : IntFactorRecord) {VBits WBits : ℕ}
     (hv : ∀ v ∈ rec.scope, v.size ≤ VBits)
@@ -825,20 +805,14 @@ theorem length_encIntFactorRecord_le (rec : IntFactorRecord) {VBits WBits : ℕ}
       2 * (rec.scope.length * (2 * VBits + 1)) + 1 + rec.entries.length * (2 * WBits + 1) := by
   rw [encIntFactorRecord_apply, length_encPair]
   dsimp only
-  have hs := length_encList_nat_le rec.scope hv
-  have he : (encList encIntBin rec.entries).length ≤ rec.entries.length * (2 * WBits + 1) := by
-    rw [length_encList]
-    simp only [length_encIntBin]
-    clear hs hv
-    revert hw
-    induction rec.entries with
-    | nil => intro _; simp
-    | cons z zs ih =>
-        intro hw
-        have hz0 : z.natAbs.size + 1 ≤ WBits := hw z (by simp)
-        have hzs := ih fun y hy => hw y (by simp [hy])
-        simp only [List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
-        omega
+  have hs : (encList encNat rec.scope).length ≤ rec.scope.length * (2 * VBits + 1) :=
+    length_encList_le encNat rec.scope fun v hvm => by
+      rw [length_encNat_eq_size]
+      exact hv v hvm
+  have he : (encList encIntBin rec.entries).length ≤ rec.entries.length * (2 * WBits + 1) :=
+    length_encList_le encIntBin rec.entries fun z hzm => by
+      rw [length_encIntBin]
+      exact hw z hzm
   omega
 
 /-- Encoded bit length of a `RatFactorRecord` bounded by scope variable and `encRat` entry
@@ -850,19 +824,11 @@ theorem length_encRatFactorRecord_le (rec : RatFactorRecord) {VBits RBits : ℕ}
       2 * (rec.scope.length * (2 * VBits + 1)) + 1 + rec.entries.length * (2 * RBits + 1) := by
   rw [encRatFactorRecord_apply, length_encPair]
   dsimp only
-  have hs := length_encList_nat_le rec.scope hv
-  have he : (encList encRat rec.entries).length ≤ rec.entries.length * (2 * RBits + 1) := by
-    rw [length_encList]
-    clear hs hv
-    revert hq
-    induction rec.entries with
-    | nil => intro _; simp
-    | cons q qs ih =>
-        intro hq
-        have hq0 := hq q (by simp)
-        have hqs := ih fun y hy => hq y (by simp [hy])
-        simp only [List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
-        omega
+  have hs : (encList encNat rec.scope).length ≤ rec.scope.length * (2 * VBits + 1) :=
+    length_encList_le encNat rec.scope fun v hvm => by
+      rw [length_encNat_eq_size]
+      exact hv v hvm
+  have he := length_encList_le encRat rec.entries hq
   omega
 
 /-- Encoded bit length of a `ModFactorRecord` bounded by modulus, scope variable, and residue bit
@@ -875,9 +841,15 @@ theorem length_encModFactorRecord_le (rec : ModFactorRecord) {VBits : ℕ}
         rec.entries.length * (2 * rec.modulus.size + 1) := by
   rw [encModFactorRecord_apply, length_encPair, length_encPair]
   dsimp only
-  have hs := length_encList_nat_le rec.scope hv
-  have he := length_encList_nat_le rec.entries fun k hk =>
-    Nat.size_le_size (Nat.le_of_lt (hw k hk))
+  have hs : (encList encNat rec.scope).length ≤ rec.scope.length * (2 * VBits + 1) :=
+    length_encList_le encNat rec.scope fun v hvm => by
+      rw [length_encNat_eq_size]
+      exact hv v hvm
+  have he : (encList encNat rec.entries).length ≤
+      rec.entries.length * (2 * rec.modulus.size + 1) :=
+    length_encList_le encNat rec.entries fun k hkm => by
+      rw [length_encNat_eq_size]
+      exact Nat.size_le_size (Nat.le_of_lt (hw k hkm))
   rw [length_encNat_eq_size]
   omega
 

@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import Mathlib.Data.Rat.Init
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import Mathlib.Data.Nat.Size
 
 /-!
 # Binary encoding of rational numbers
@@ -27,6 +29,8 @@ public import Mathlib.Data.Rat.Init
 * `Turing.MultiTapeTM.encRat_apply`: unfolding of `encRat q`.
 * `Turing.MultiTapeTM.length_encRat_num_le`: `(encIntBin q.num).length ≤ (encRat q).length`.
 * `Turing.MultiTapeTM.length_encRat_den_le`: `(encNat q.den).length ≤ (encRat q).length`.
+* `Turing.MultiTapeTM.length_encRat`, `Turing.MultiTapeTM.length_encRat_le`: exact bit length
+  of `encRat q` and upper bound from numerator/denominator sizes.
 -/
 
 public section
@@ -52,5 +56,18 @@ theorem length_encRat_num_le (q : ℚ) : (encIntBin q.num).length ≤ (encRat q)
 
 theorem length_encRat_den_le (q : ℚ) : (encNat q.den).length ≤ (encRat q).length :=
   length_le_encPair_right encIntBin encNat (q.num, q.den)
+
+/-- Exact encoded bit length of a rational under `Turing.MultiTapeTM.encRat`. -/
+theorem length_encRat (q : ℚ) :
+    (encRat q).length = 2 * (q.num.natAbs.size + 1) + 1 + q.den.size := by
+  rw [encRat_apply, length_encPair, length_encIntBin, encNat_apply, Nat.size_eq_bits_len]
+
+/-- Upper bound on `(encRat q).length` in terms of `|q.num|` and `q.den` binary sizes. -/
+theorem length_encRat_le (q : ℚ) {A B : ℕ} (hnum : q.num.natAbs ≤ A) (hden : q.den ≤ B) :
+    (encRat q).length ≤ 2 * A.size + B.size + 3 := by
+  rw [length_encRat]
+  have hn : q.num.natAbs.size ≤ A.size := Nat.size_le_size hnum
+  have hd : q.den.size ≤ B.size := Nat.size_le_size hden
+  omega
 
 end Turing.MultiTapeTM

@@ -226,18 +226,7 @@ theorem contractionOn_eq_card_pow_mul_of_subset [Semiring R] [DecidableEq V] (d 
     (hvars : vars factors ⊆ S) (hST : S ⊆ T) :
     contractionOn d factors T = ((d : R) ^ (T \ S).card) * contractionOn d factors S := by
   classical
-  let eSplit : (T → Fin d) ≃ (S → Fin d) × ((T \ S : Finset V) → Fin d) :=
-    { toFun := fun σ => (fun v => σ ⟨v.1, hST v.2⟩, fun v => σ ⟨v.1, (Finset.mem_sdiff.mp v.2).1⟩)
-      invFun := fun p v =>
-        if hv : v.1 ∈ S then p.1 ⟨v.1, hv⟩
-        else p.2 ⟨v.1, Finset.mem_sdiff.mpr ⟨v.2, hv⟩⟩
-      left_inv := fun σ => funext fun v => by
-        by_cases hv : v.1 ∈ S <;> simp [hv]
-      right_inv := fun p => by
-        ext v
-        · simp [v.2]
-        · have hv : v.1 ∉ S := (Finset.mem_sdiff.mp v.2).2
-          simp [hv] }
+  let eSplit := sdiffPiEquiv (D := Fin d) hST
   rw [contractionOn, contractionOn]
   calc ∑ σ : T → Fin d,
           (factors.map fun f => f.evalAt d fun v => if h : v ∈ T then (σ ⟨v, h⟩).1 else 0).prod
@@ -253,7 +242,7 @@ theorem contractionOn_eq_card_pow_mul_of_subset [Semiring R] [DecidableEq V] (d 
         refine Finset.sum_congr rfl fun p _ => prod_map_evalAt_congr fun f hf v hv => ?_
         have hvS : v ∈ S := hvars (List.mem_toFinset.mpr (List.mem_flatMap.mpr ⟨f, hf, hv⟩))
         have hvT : v ∈ T := hST hvS
-        simp [eSplit, hvS, hvT]
+        simp [eSplit, sdiffPiEquiv, hvS, hvT]
     _ = ∑ _ : (T \ S : Finset V) → Fin d, ∑ σ₁ : S → Fin d,
           (factors.map fun f =>
             f.evalAt d fun v => if h : v ∈ S then (σ₁ ⟨v, h⟩).1 else 0).prod := by
@@ -275,20 +264,7 @@ theorem contractionOn_append_of_disjoint [CommSemiring R] [DecidableEq V] (d : �
     (hdisj : Disjoint d₁ d₂) (h₁ : vars fs₁ ⊆ d₁) (h₂ : vars fs₂ ⊆ d₂) :
     contractionOn d (fs₁ ++ fs₂) (d₁ ∪ d₂) =
       contractionOn d fs₁ d₁ * contractionOn d fs₂ d₂ := by
-  let eSplit : ((d₁ ∪ d₂ : Finset V) → Fin d) ≃ (d₁ → Fin d) × (d₂ → Fin d) :=
-    { toFun := fun σ =>
-        (fun v => σ ⟨v.1, Finset.mem_union_left d₂ v.2⟩,
-         fun v => σ ⟨v.1, Finset.mem_union_right d₁ v.2⟩)
-      invFun := fun p v =>
-        if hv : v.1 ∈ d₁ then p.1 ⟨v.1, hv⟩
-        else p.2 ⟨v.1, (Finset.mem_union.mp v.2).resolve_left hv⟩
-      left_inv := fun σ => funext fun v => by
-        by_cases hv : v.1 ∈ d₁ <;> simp [hv]
-      right_inv := fun p => by
-        ext v
-        · simp [v.2]
-        · have hv : v.1 ∉ d₁ := Finset.disjoint_right.mp hdisj v.2
-          simp [hv] }
+  let eSplit := unionPiEquiv (D := Fin d) hdisj
   rw [contractionOn, contractionOn, contractionOn]
   calc ∑ σ : (d₁ ∪ d₂ : Finset V) → Fin d,
           ((fs₁ ++ fs₂).map fun f =>
@@ -310,12 +286,12 @@ theorem contractionOn_append_of_disjoint [CommSemiring R] [DecidableEq V] (d : �
         · refine prod_map_evalAt_congr fun f hf v hv => ?_
           have hv₁ : v ∈ d₁ := h₁ (List.mem_toFinset.mpr (List.mem_flatMap.mpr ⟨f, hf, hv⟩))
           have hvu : v ∈ d₁ ∪ d₂ := Finset.mem_union_left d₂ hv₁
-          simp [eSplit, hv₁, hvu]
+          simp [eSplit, unionPiEquiv, hv₁, hvu]
         · refine prod_map_evalAt_congr fun f hf v hv => ?_
           have hv₂ : v ∈ d₂ := h₂ (List.mem_toFinset.mpr (List.mem_flatMap.mpr ⟨f, hf, hv⟩))
           have hv₁ : v ∉ d₁ := Finset.disjoint_right.mp hdisj hv₂
           have hvu : v ∈ d₁ ∪ d₂ := Finset.mem_union_right d₁ hv₂
-          simp [eSplit, hv₁, hv₂, hvu]
+          simp [eSplit, unionPiEquiv, hv₁, hv₂, hvu]
     _ = (∑ σ₁ : d₁ → Fin d,
           (fs₁.map fun f => f.evalAt d fun v => if h : v ∈ d₁ then (σ₁ ⟨v, h⟩).1 else 0).prod) *
           (∑ σ₂ : d₂ → Fin d,
