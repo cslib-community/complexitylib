@@ -9,8 +9,10 @@ module
 
 public import CslibFrontier.Crypto.Computational.OneWay.Weak
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
@@ -314,131 +316,119 @@ private theorem runTrials_fail_imp_all_fail {k w t seedLen : ℕ → ℕ} {f : L
 
 /-! ### Polynomial-time certificates for the reduction -/
 
-private theorem uAdd {f g : ℕ → ℕ}
-    (hf : ComputableTidilyInPolyTime f encUnary encUnary)
-    (hg : ComputableTidilyInPolyTime g encUnary encUnary) :
-    ComputableTidilyInPolyTime (fun a => f a + g a) encUnary encUnary :=
-  ComputableTidilyInPolyTime.unary_add.comp (hf.prod hg)
-
-private theorem uMul {f g : ℕ → ℕ}
-    (hf : ComputableTidilyInPolyTime f encUnary encUnary)
-    (hg : ComputableTidilyInPolyTime g encUnary encUnary) :
-    ComputableTidilyInPolyTime (fun a => f a * g a) encUnary encUnary :=
-  ComputableTidilyInPolyTime.unary_mul.comp (hf.prod hg)
-
-private theorem computableTidily_pickPreimage {α : Type} {input : α ↪ List Bool}
+private theorem computable_pickPreimage {α : Type} {input : α ↪ List Bool}
     {f : List Bool → List Bool} {y : α → List Bool} {cands : α → List (List Bool)}
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hy : ComputableTidilyInPolyTime y input encBits)
-    (hcands : ComputableTidilyInPolyTime cands input (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => pickPreimage f (y a) (cands a)) input encBits := by
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hy : ComputableInPolyTime y input encBits)
+    (hcands : ComputableInPolyTime cands input (encList encBits)) :
+    ComputableInPolyTime (fun a => pickPreimage f (y a) (cands a)) input encBits := by
   unfold pickPreimage
-  have hfilt : ComputableTidilyInPolyTime
+  have hfilt : ComputableInPolyTime
       (fun a => (cands a).filter (fun z => f z == y a)) input (encList encBits) := by
-    apply ComputableTidilyInPolyTime.filterWithInput hcands
-    exact (hf.comp (ComputableTidilyInPolyTime.snd input encBits)).beq
-      (hy.comp (ComputableTidilyInPolyTime.fst input encBits))
-  exact (ComputableTidilyInPolyTime.headD []).comp hfilt
+    apply ComputableInPolyTime.filterWithInput hcands
+    exact (hf.comp (ComputableInPolyTime.snd input encBits)).beq
+      (hy.comp (ComputableInPolyTime.fst input encBits))
+  exact (ComputableInPolyTime.headD []).comp hfilt
 
-private theorem computableTidily_plantedImage {α : Type} {input : α ↪ List Bool}
+private theorem computable_plantedImage {α : Type} {input : α ↪ List Bool}
     {k w : ℕ → ℕ} {f : List Bool → List Bool}
     {n j : α → ℕ} {y Z : α → List Bool}
-    (hk : ComputableTidilyInPolyTime k encUnary encUnary)
-    (hw : ComputableTidilyInPolyTime w encUnary encUnary)
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hj : ComputableTidilyInPolyTime j input encUnary)
-    (hy : ComputableTidilyInPolyTime y input encBits)
-    (hZ : ComputableTidilyInPolyTime Z input encBits) :
-    ComputableTidilyInPolyTime
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary)
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hn : ComputableInPolyTime n input encUnary)
+    (hj : ComputableInPolyTime j input encUnary)
+    (hy : ComputableInPolyTime y input encBits)
+    (hZ : ComputableInPolyTime Z input encBits) :
+    ComputableInPolyTime
       (fun a => plantedImage k w f (n a) (j a) (y a) (Z a)) input encBits := by
   unfold plantedImage
-  apply ComputableTidilyInPolyTime.flatMapToBitsWithInput
-    (ComputableTidilyInPolyTime.range.comp (hk.comp hn))
-  have hfst := ComputableTidilyInPolyTime.fst input encUnary
-  have hsnd := ComputableTidilyInPolyTime.snd input encUnary
-  have hrow := ComputableTidilyInPolyTime.bitsRowWithInput
+  apply ComputableInPolyTime.flatMapToBitsWithInput
+    (ComputableInPolyTime.range.comp (hk.comp hn))
+  have hfst := ComputableInPolyTime.fst input encUnary
+  have hsnd := ComputableInPolyTime.snd input encUnary
+  have hrow := ComputableInPolyTime.bitsRowWithInput
     ((hw.comp hn).comp hfst) hsnd (hZ.comp hfst)
-  exact ComputableTidilyInPolyTime.ite_decide
-    (ComputableTidilyInPolyTime.unary_beq hsnd (hj.comp hfst))
+  exact ComputableInPolyTime.ite_decide
+    (ComputableInPolyTime.unary_beq' hsnd (hj.comp hfst))
     (hy.comp hfst) (hf.comp hrow)
 
-private theorem computableTidily_slotCand {α : Type} {input : α ↪ List Bool}
+private theorem computable_slotCand {α : Type} {input : α ↪ List Bool}
     {k w : ℕ → ℕ} {f : List Bool → List Bool}
     {evalA : (ℕ × List Bool) → List Bool → List Bool}
     {n j : α → ℕ} {y seed : α → List Bool}
-    (hk : ComputableTidilyInPolyTime k encUnary encUnary)
-    (hw : ComputableTidilyInPolyTime w encUnary encUnary)
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hevalA : ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × List Bool => evalA p.1 p.2)
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary)
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hevalA : ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => evalA p.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBits)
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hj : ComputableTidilyInPolyTime j input encUnary)
-    (hy : ComputableTidilyInPolyTime y input encBits)
-    (hseed : ComputableTidilyInPolyTime seed input encBits) :
-    ComputableTidilyInPolyTime
+    (hn : ComputableInPolyTime n input encUnary)
+    (hj : ComputableInPolyTime j input encUnary)
+    (hy : ComputableInPolyTime y input encBits)
+    (hseed : ComputableInPolyTime seed input encBits) :
+    ComputableInPolyTime
       (fun a => slotCand k w f evalA (n a) (y a) (seed a) (j a)) input encBits := by
   unfold slotCand
-  have hkw : ComputableTidilyInPolyTime (fun a => k (n a) * w (n a)) input encUnary :=
-    ComputableTidilyInPolyTime.unary_mul.comp ((hk.comp hn).prod (hw.comp hn))
-  have hZ : ComputableTidilyInPolyTime (fun a => (seed a).take (k (n a) * w (n a)))
+  have hkw : ComputableInPolyTime (fun a => k (n a) * w (n a)) input encUnary :=
+    ComputableInPolyTime.unary_mul.comp ((hk.comp hn).prod (hw.comp hn))
+  have hZ : ComputableInPolyTime (fun a => (seed a).take (k (n a) * w (n a)))
       input encBits :=
-    ComputableTidilyInPolyTime.bitsTakeWithInput hseed hkw
-  have hcoins : ComputableTidilyInPolyTime (fun a => (seed a).drop (k (n a) * w (n a)))
+    ComputableInPolyTime.bitsTakeWithInput hseed hkw
+  have hcoins : ComputableInPolyTime (fun a => (seed a).drop (k (n a) * w (n a)))
       input encBits :=
-    ComputableTidilyInPolyTime.bitsDropWithInput hseed hkw
-  have hplant := computableTidily_plantedImage hk hw hf hn hj hy hZ
+    ComputableInPolyTime.bitsDropWithInput hseed hkw
+  have hplant := computable_plantedImage hk hw hf hn hj hy hZ
   have hout := hevalA.comp ((hn.prod hplant).prod hcoins)
-  exact ComputableTidilyInPolyTime.bitsRowWithInput (hw.comp hn) hj hout
+  exact ComputableInPolyTime.bitsRowWithInput (hw.comp hn) hj hout
 
-private theorem computableTidily_megaTrial {α : Type} {input : α ↪ List Bool}
+private theorem computable_megaTrial {α : Type} {input : α ↪ List Bool}
     {k w : ℕ → ℕ} {f : List Bool → List Bool}
     {evalA : (ℕ × List Bool) → List Bool → List Bool}
     {n : α → ℕ} {y seed : α → List Bool}
-    (hk : ComputableTidilyInPolyTime k encUnary encUnary)
-    (hw : ComputableTidilyInPolyTime w encUnary encUnary)
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hevalA : ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × List Bool => evalA p.1 p.2)
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary)
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hevalA : ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => evalA p.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBits)
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hy : ComputableTidilyInPolyTime y input encBits)
-    (hseed : ComputableTidilyInPolyTime seed input encBits) :
-    ComputableTidilyInPolyTime
+    (hn : ComputableInPolyTime n input encUnary)
+    (hy : ComputableInPolyTime y input encBits)
+    (hseed : ComputableInPolyTime seed input encBits) :
+    ComputableInPolyTime
       (fun a => megaTrial k w f evalA (n a) (y a) (seed a)) input encBits := by
   unfold megaTrial
-  apply computableTidily_pickPreimage hf hy
-  apply ComputableTidilyInPolyTime.mapWithInput (encA := encUnary)
-    (ComputableTidilyInPolyTime.range.comp (hk.comp hn))
-  have hfst := ComputableTidilyInPolyTime.fst input encUnary
-  have hsnd := ComputableTidilyInPolyTime.snd input encUnary
-  exact computableTidily_slotCand hk hw hf hevalA
+  apply computable_pickPreimage hf hy
+  apply ComputableInPolyTime.mapWithInput (encA := encUnary)
+    (ComputableInPolyTime.range.comp (hk.comp hn))
+  have hfst := ComputableInPolyTime.fst input encUnary
+  have hsnd := ComputableInPolyTime.snd input encUnary
+  exact computable_slotCand hk hw hf hevalA
     (hn.comp hfst) hsnd (hy.comp hfst) (hseed.comp hfst)
 
-private theorem computableTidily_runTrials {α : Type} {input : α ↪ List Bool}
+private theorem computable_runTrials {α : Type} {input : α ↪ List Bool}
     {k w t seedLen : ℕ → ℕ} {f : List Bool → List Bool}
     {evalA : (ℕ × List Bool) → List Bool → List Bool}
     {n : α → ℕ} {y allSeeds : α → List Bool}
-    (hk : ComputableTidilyInPolyTime k encUnary encUnary)
-    (hw : ComputableTidilyInPolyTime w encUnary encUnary)
-    (ht : ComputableTidilyInPolyTime t encUnary encUnary)
-    (hseedLen : ComputableTidilyInPolyTime seedLen encUnary encUnary)
-    (hf : ComputableTidilyInPolyTime f encBits encBits)
-    (hevalA : ComputableTidilyInPolyTime (fun p : (ℕ × List Bool) × List Bool => evalA p.1 p.2)
+    (hk : ComputableInPolyTime k encUnary encUnary)
+    (hw : ComputableInPolyTime w encUnary encUnary)
+    (ht : ComputableInPolyTime t encUnary encUnary)
+    (hseedLen : ComputableInPolyTime seedLen encUnary encUnary)
+    (hf : ComputableInPolyTime f encBits encBits)
+    (hevalA : ComputableInPolyTime (fun p : (ℕ × List Bool) × List Bool => evalA p.1 p.2)
       (encPair (encPair encUnary encBits) encBits) encBits)
-    (hn : ComputableTidilyInPolyTime n input encUnary)
-    (hy : ComputableTidilyInPolyTime y input encBits)
-    (hallSeeds : ComputableTidilyInPolyTime allSeeds input encBits) :
-    ComputableTidilyInPolyTime
+    (hn : ComputableInPolyTime n input encUnary)
+    (hy : ComputableInPolyTime y input encBits)
+    (hallSeeds : ComputableInPolyTime allSeeds input encBits) :
+    ComputableInPolyTime
       (fun a => runTrials k w t seedLen f evalA (n a) (y a) (allSeeds a)) input encBits := by
   unfold runTrials
-  apply computableTidily_pickPreimage hf hy
-  apply ComputableTidilyInPolyTime.mapWithInput (encA := encUnary)
-    (ComputableTidilyInPolyTime.range.comp (ht.comp hn))
-  have hfst := ComputableTidilyInPolyTime.fst input encUnary
-  have hsnd := ComputableTidilyInPolyTime.snd input encUnary
-  have hrow := ComputableTidilyInPolyTime.bitsRowWithInput
+  apply computable_pickPreimage hf hy
+  apply ComputableInPolyTime.mapWithInput (encA := encUnary)
+    (ComputableInPolyTime.range.comp (ht.comp hn))
+  have hfst := ComputableInPolyTime.fst input encUnary
+  have hsnd := ComputableInPolyTime.snd input encUnary
+  have hrow := ComputableInPolyTime.bitsRowWithInput
     ((hseedLen.comp hn).comp hfst) hsnd (hallSeeds.comp hfst)
-  exact computableTidily_megaTrial hk hw hf hevalA (hn.comp hfst) (hy.comp hfst) hrow
+  exact computable_megaTrial hk hw hf hevalA (hn.comp hfst) (hy.comp hfst) hrow
 
 /-! ### Quantitative probability bounds at a fixed security parameter -/
 
@@ -646,32 +636,34 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
     runTrials k w t seedLen f evalA (N - 1) y <$>
       BitString.sampleList (t (N - 1) * seedLen (N - 1))
   have hB_ppt : IsPPT encBits B_inv := by
-    open ComputableTidilyInPolyTime in
+    open ComputableInPolyTime in
     apply IsPPTOn.isPPT
     have hsnd := snd encUnary encBits
-    have hw : ComputableTidilyInPolyTime w encUnary encUnary := uAdd id' (const 1)
-    have hq : ComputableTidilyInPolyTime (fun N => q.eval N) encUnary encUnary := unary_eval q
-    have hk : ComputableTidilyInPolyTime k encUnary encUnary :=
-      uMul (uMul (const 2) (hq.comp hw)) hw
-    have hp : ComputableTidilyInPolyTime p encUnary encUnary := (unary_pow (deg + 1)).comp hw
-    have ht : ComputableTidilyInPolyTime t encUnary encUnary :=
-      uMul (uMul (const 4) (hq.comp hw)) (uMul hk hp)
-    have hB : ComputableTidilyInPolyTime B encUnary encUnary :=
-      uMul (const cA) ((unary_pow dA).comp
-        (uAdd (uAdd (uMul (const 2) id') (uMul hk (houtLen.tidy.comp hw))) (const 2)))
-    have hseedLen : ComputableTidilyInPolyTime seedLen encUnary encUnary := uAdd (uMul hk hw) hB
-    have hn : ComputableTidilyInPolyTime (fun pair : ℕ × List Bool => pair.1 - 1)
+    have hw : ComputableInPolyTime w encUnary encUnary := unary_add' id' (const 1)
+    have hq : ComputableInPolyTime (fun N => q.eval N) encUnary encUnary := unary_eval q
+    have hk : ComputableInPolyTime k encUnary encUnary :=
+      unary_mul' (unary_mul' (const 2) (hq.comp hw)) hw
+    have hp : ComputableInPolyTime p encUnary encUnary := (unary_pow (deg + 1)).comp hw
+    have ht : ComputableInPolyTime t encUnary encUnary :=
+      unary_mul' (unary_mul' (const 4) (hq.comp hw)) (unary_mul' hk hp)
+    have hB : ComputableInPolyTime B encUnary encUnary :=
+      unary_mul' (const cA) ((unary_pow dA).comp
+        (unary_add' (unary_add' (unary_mul' (const 2) id') (unary_mul' hk (houtLen.comp hw)))
+          (const 2)))
+    have hseedLen : ComputableInPolyTime seedLen encUnary encUnary :=
+      unary_add' (unary_mul' hk hw) hB
+    have hn : ComputableInPolyTime (fun pair : ℕ × List Bool => pair.1 - 1)
         (encPair encUnary encBits) encUnary :=
       unary_sub.comp ((fst encUnary encBits).prod (const 1))
-    have hsample_len : ComputableTidilyInPolyTime
+    have hsample_len : ComputableInPolyTime
         (fun pair : ℕ × List Bool => t (pair.1 - 1) * seedLen (pair.1 - 1))
         (encPair encUnary encBits) encUnary :=
-      (uMul ht hseedLen).comp hn
+      (unary_mul' ht hseedLen).comp hn
     have hfst2 := fst (encPair encUnary encBits) encBits
     have hsnd2 := snd (encPair encUnary encBits) encBits
-    have hrun := computableTidily_runTrials hk hw ht hseedLen hweak.polyTime.tidy hevalA.tidy
+    have hrun := computable_runTrials hk hw ht hseedLen hweak.polyTime hevalA
       (hn.comp hfst2) (hsnd.comp hfst2) hsnd2
-    exact IsPPTOn.map_with (ComputableInPolyTime.of_tidy hsample_len).sampleList (.of_tidy hrun)
+    exact IsPPTOn.map_with hsample_len.sampleList hrun
   have hweak_w : ∀ᶠ n in atTop,
       (Game.succProbability (ProbComp.eval (inversionGame f B_inv (w n))) : ℝ) <
         1 - 1 / ((q.eval (w n) : ℕ) : ℝ) :=
@@ -734,28 +726,28 @@ theorem WeakOneWay.exists_oneWay {f : List Bool → List Bool} (hf : WeakOneWay 
   have hm_ge : ∀ n, n + 1 ≤ m n := fun n =>
     Nat.le_mul_of_pos_left (w n)
       (Nat.mul_pos (Nat.mul_pos (by decide) (hq_pos (w n))) (Nat.succ_pos n))
-  have hw_comp : ComputableTidilyInPolyTime w encUnary encUnary :=
-    OneWayAmplification.uAdd .id' (.const 1)
-  have hq_comp : ComputableTidilyInPolyTime (fun N => q.eval N) encUnary encUnary :=
-    ComputableTidilyInPolyTime.unary_eval q
-  have hk_comp : ComputableTidilyInPolyTime k encUnary encUnary :=
-    OneWayAmplification.uMul (OneWayAmplification.uMul (.const 2) (hq_comp.comp hw_comp)) hw_comp
+  have hw_comp : ComputableInPolyTime w encUnary encUnary :=
+    ComputableInPolyTime.unary_add' .id' (.const 1)
+  have hq_comp : ComputableInPolyTime (fun N => q.eval N) encUnary encUnary :=
+    ComputableInPolyTime.unary_eval q
+  have hk_comp : ComputableInPolyTime k encUnary encUnary :=
+    ComputableInPolyTime.unary_mul'
+      (ComputableInPolyTime.unary_mul' (.const 2) (hq_comp.comp hw_comp)) hw_comp
   have hm_comp : ComputableInPolyTime m encUnary encUnary :=
-    .of_tidy (OneWayAmplification.uMul hk_comp hw_comp)
+    ComputableInPolyTime.unary_mul' hk_comp hw_comp
   have hcore_comp : ComputableInPolyTime
       (fun p : ℕ × List Bool => OneWayAmplification.parallelCore k w g p.1 p.2)
       (encPair encUnary encBits) encBits := by
-    apply ComputableInPolyTime.of_tidy
     unfold OneWayAmplification.parallelCore
-    have hfst := ComputableTidilyInPolyTime.fst encUnary encBits
-    have hsnd := ComputableTidilyInPolyTime.snd encUnary encBits
-    apply ComputableTidilyInPolyTime.flatMapToBitsWithInput
-      (ComputableTidilyInPolyTime.range.comp (hk_comp.comp hfst))
-    have hfst2 := ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encUnary
-    have hsnd2 := ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encUnary
-    have hrow := ComputableTidilyInPolyTime.bitsRowWithInput
+    have hfst := ComputableInPolyTime.fst encUnary encBits
+    have hsnd := ComputableInPolyTime.snd encUnary encBits
+    apply ComputableInPolyTime.flatMapToBitsWithInput
+      (ComputableInPolyTime.range.comp (hk_comp.comp hfst))
+    have hfst2 := ComputableInPolyTime.fst (encPair encUnary encBits) encUnary
+    have hsnd2 := ComputableInPolyTime.snd (encPair encUnary encBits) encUnary
+    have hrow := ComputableInPolyTime.bitsRowWithInput
       ((hw_comp.comp hfst).comp hfst2) hsnd2 (hsnd.comp hfst2)
-    exact hg_at.polyTime.tidy.comp hrow
+    exact hg_at.polyTime.comp hrow
   refine ⟨OneWayReindex.reindex m (OneWayAmplification.parallelCore k w g), ?_⟩
   exact OneWayReindex.oneWay hm_comp hm_ge hcore_comp fun A hA =>
     OneWayAmplification.familyInversionGame_parallelCore_negligible

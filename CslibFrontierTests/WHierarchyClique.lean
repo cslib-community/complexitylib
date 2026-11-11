@@ -94,14 +94,14 @@ example : toClique (WCS.noInstance 1) ∉ Clique :=
 
 /-- The conjunction of three inputs, as a circuit of weft at most `1` and depth at most `1`. -/
 def and3 : WeftCircuit 1 1 :=
-  ⟨⟨3, ⟨Program.empty.gate ⟨.and 3, fun i => .input i⟩, fun _ => .gate 0⟩⟩, by decide⟩
+  ⟨⟨3, ⟨Program.empty.gate ⟨.and 3, fun i => .input i⟩, fun _ => .gate 0⟩⟩, by decide, by decide⟩
 
 -- The graph of the conjunction of three inputs has a clique of the size for weight `3`, and none
 -- for weight `2`.
-example : toClique (and3, 3) ∈ Clique :=
+example : toClique ⟨and3, 3⟩ ∈ Clique :=
   (toClique_mem_Clique_iff _).2 ⟨fun _ => true, by decide, by decide⟩
 
-example : toClique (and3, 2) ∉ Clique := by
+example : toClique ⟨and3, 2⟩ ∉ Clique := by
   rw [toClique_mem_Clique_iff]
   rintro ⟨x, hk, hx⟩
   revert hk hx
@@ -115,18 +115,18 @@ example : size 0 3 1 = 4 ∧ size 0 3 5 = 22 := by decide
 
 /-- The first of two inputs, as a circuit of weft and depth `0`. -/
 def fst2 : WeftCircuit 1 0 :=
-  ⟨⟨2, ⟨Program.empty, fun _ => .input 0⟩⟩, by decide⟩
+  ⟨⟨2, ⟨Program.empty, fun _ => .input 0⟩⟩, by decide, by decide⟩
 
 -- The graph itself, computed by `decide`. For weight `0` it has two vertices, the certificate and
 -- the empty bracket, and no edge: the empty bracket says that input `0` is not selected, which
 -- refutes the certificate. The clique size is `2`, so there is no clique of the size.
-example : (toClique (fst2, 0)).1.1.length = 2 ∧ (toClique (fst2, 0)).1.2 = [] ∧
-    (toClique (fst2, 0)).2 = 2 := by decide
+example : (toClique ⟨fst2, 0⟩).1.1.length = 2 ∧ (toClique ⟨fst2, 0⟩).1.2 = [] ∧
+    (toClique ⟨fst2, 0⟩).2 = 2 := by decide
 
 -- For weight `1` the graph has eight vertices and clique size `4`.
-example : (toClique (fst2, 1)).1.1.length = 8 ∧ (toClique (fst2, 1)).2 = 4 := by decide
+example : (toClique ⟨fst2, 1⟩).1.1.length = 8 ∧ (toClique ⟨fst2, 1⟩).2 = 4 := by decide
 
-example : toClique (fst2, 0) ∉ Clique := by
+example : toClique ⟨fst2, 0⟩ ∉ Clique := by
   rw [toClique_mem_Clique_iff]
   rintro ⟨x, hk, hx⟩
   revert hk hx
@@ -134,7 +134,7 @@ example : toClique (fst2, 0) ∉ Clique := by
   unfold BitString.weight
   decide
 
-example : toClique (fst2, 1) ∈ Clique :=
+example : toClique ⟨fst2, 1⟩ ∈ Clique :=
   (toClique_mem_Clique_iff _).2 ⟨fun i => decide (i.1 = 0), by decide, by decide⟩
 
 /-! ### Hardness -/
@@ -154,13 +154,13 @@ example : IndependentSet ∈ W 1 (encPair encGraph encNat) Prod.snd ∧
   ⟨IndependentSet_mem_W, IndependentSet_wHard⟩
 
 -- A problem of `W[1]` fpt-reduces to `IndependentSet`.
-example : FPTReducible (encWCS 1 5) (encPair encGraph encNat) Prod.snd Prod.snd (WCS 1 5)
+example : FPTReducible (encWCS 1 5) (encPair encGraph encNat) WCSInstance.weight Prod.snd (WCS 1 5)
     IndependentSet :=
   IndependentSet_wHard _ _ _ (WCS_mem_W 1 5)
 
 -- If `Clique` is in `FPT`, so is weighted satisfiability of every class of weft-one circuits.
 example (h : Clique ∈ FPT (encPair encGraph encNat) Prod.snd) (d : ℕ) :
-    WCS 1 d ∈ FPT (encWCS 1 d) Prod.snd := by
+    WCS 1 d ∈ FPT (encWCS 1 d) WCSInstance.weight := by
   rw [← W_one_eq_FPT_iff.2 h]
   exact WCS_mem_W 1 d
 

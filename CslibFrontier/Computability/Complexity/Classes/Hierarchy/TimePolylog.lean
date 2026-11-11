@@ -92,8 +92,7 @@ private theorem computableInO_verdict_linear :
     rw [decide_eq_decide.mpr eq_comm]
   all_goals
     have h₁ := length_le_encPair_left (encList encUnary) encBool r
-    have h₂ : (encList encUnary [eBit true]).length = 3 := rfl
-    enc_len [Function.comp_apply, h₂] at h₁ ⊢
+    enc_len [Function.comp_apply, show eBit true = 1 from rfl] at h₁ ⊢
 
 /-- The numeric core of the resources of the clocked diagonal with the `O(t log t)` universal
 machine, for the exponent `E` of its overhead: for an input of length `n` with a short framed
