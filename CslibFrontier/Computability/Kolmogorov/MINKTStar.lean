@@ -10,11 +10,13 @@ module
 public import CslibFrontier.Computability.Kolmogorov.MINKT
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Option
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import CslibFrontier.Foundations.Data.Option
 
 /-!
 # Partial-string time-bounded Kolmogorov complexity (`MINKT*`)
@@ -23,7 +25,10 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 is a partial string `x ∈ {0, 1, *}*` with a time bound `t` and a size threshold `s`, and it is a
 yes-instance when some total string `y` that is *consistent* with `x`, meaning that every bit of
 `x` is `*` or equal to the bit of `y` at the same position [Hirahara2022, footnote 5], satisfies
-`K^t(y) ≤ s`. Here `K^t` is the library's `timeBoundedAt`, the same measure as for `MINKT`.
+`K^t(y) ≤ s`. Here `K^t` is the library's `timeBoundedAt`, the same measure as for `MINKT`. It is a
+variant of the source's measure, which charges the running time as in KT complexity, with oracle
+access to the description of the machine [Hirahara2022, footnote 6, p. 971]: `timeBoundedAt`
+counts the steps of the described machine, which outputs the whole string.
 
 This file defines the problem, its encoding and its witness check, and proves that it lies in `NP`
 and that `MINKT` reduces to it. NP-hardness under randomized reductions
@@ -51,8 +56,8 @@ empty word and a bit `b` as `[true, b]` (`encList (encOption encBool)`, the sche
 * `Cslib.Kolmogorov.MINKTStar.mem_of_size_le`, `Cslib.Kolmogorov.MINKTStar.mem_of_time_le`:
   monotonicity in the thresholds.
 * `Cslib.Kolmogorov.MINKTStar.mem_NP`: `MINKTStar ∈ NP MINKTStar.enc`.
-* `Cslib.Kolmogorov.MINKTStar.polyTimeReducible_MINKT`: `MINKT` reduces to `MINKTStar` in
-  polynomial time, by `ofTotal`.
+* `Cslib.Kolmogorov.MINKTStar.polyTimeReducible_MINKT_MINKTStar`: `MINKT` reduces to `MINKTStar`
+  in polynomial time, by `ofTotal`.
 
 ## References
 
@@ -120,18 +125,8 @@ namespace MINKTStar
 
 /-- Encoding of `MINKTStar.Instance`: the framed list of entries of the partial string
 (`encList (encOption encBool)`), followed by `1^time` and `1^size` in unary. -/
-@[expose]
-def enc : Instance ↪ List Bool :=
-  (⟨fun i => (i.pattern, (i.time, i.size)), fun i j h => by
-    cases i; cases j; simpa using h⟩ : Instance ↪ List (Option Bool) × (ℕ × ℕ)).trans
-    (encPair (encList (encOption encBool)) (encPair encUnary encUnary))
-
-/-- Applying `MINKTStar.enc` encodes `(i.pattern, (i.time, i.size))` via `encPair`. -/
-@[simp]
-theorem enc_apply (i : Instance) :
-    enc i = encPair (encList (encOption encBool)) (encPair encUnary encUnary)
-      (i.pattern, (i.time, i.size)) :=
-  rfl
+enc_structure enc : Instance where
+  pattern : (encList (encOption encBool)), time : encUnary, size : encUnary
 
 /-- The unary size threshold is at most the encoded instance length. -/
 theorem size_le_length_enc (i : Instance) : i.size ≤ (enc i).length := by
@@ -198,12 +193,8 @@ theorem consistentCheck_eq_true_iff {x : List (Option Bool)} {y : List Bool} :
     consistentCheck x y = true ↔ Consistent x y := by
   rw [Consistent, List.forall₂_iff_zip]
   simp only [consistentCheck, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
-    beq_iff_eq, Prod.forall, Option.mem_def]
-  refine and_congr_right fun _ => ⟨fun h a b hab c hc => ?_, fun h a b hab => ?_⟩
-  · simpa [hc] using h a b hab
-  · cases a with
-    | none => rfl
-    | some c => simpa using h hab c rfl
+    Option.getD_beq_self_eq_true_iff, Prod.forall, Option.mem_def]
+  exact and_congr_right fun _ => forall₃_congr fun _ _ _ => forall₂_congr fun _ _ => eq_comm
 
 /-- The consistency test is computable in polynomial time. -/
 theorem computableInPolyTime_consistentCheck :
@@ -230,8 +221,8 @@ theorem computableInPolyTime_consistentCheck :
 /-- The witness check for `MINKT*`: given an instance `i` and a pair `(y, p)` of a candidate
 string and program, checks that `y` is consistent with `i.pattern` and that `p` witnesses
 `⟨y, i.time, i.size⟩ ∈ MINKT` (`MINKT.check`). -/
-def check (iw : Instance × (List Bool × List Bool)) : Bool :=
-  consistentCheck iw.1.pattern iw.2.1 && MINKT.check (⟨iw.2.1, iw.1.time, iw.1.size⟩, iw.2.2)
+def check : Instance × (List Bool × List Bool) → Bool
+  | (i, (y, p)) => consistentCheck i.pattern y && MINKT.check (⟨y, i.time, i.size⟩, p)
 
 /-- `check (i, (y, p)) = true` iff `y` is consistent with `i.pattern`, `p.length ≤ i.size` and `p`
 outputs `y` within `i.time` steps. -/
@@ -246,16 +237,11 @@ theorem computableInPolyTime_check :
   open ComputableInPolyTime in
   have hi := fst enc (encPair encBits encBits)
   have hw := snd enc (encPair encBits encBits)
-  have hraw : ComputableInPolyTime (fun i : Instance => (i.pattern, (i.time, i.size))) enc
-      (encPair (encList (encOption encBool)) (encPair encUnary encUnary)) :=
-    .of_eq fun _ => rfl
-  have hpat := (fst _ _).comp (hraw.comp hi)
-  have htime := (fst encUnary encUnary).comp ((snd _ _).comp (hraw.comp hi))
-  have hsize := (snd encUnary encUnary).comp ((snd _ _).comp (hraw.comp hi))
   have hy := (fst encBits encBits).comp hw
   have hp := (snd encBits encBits).comp hw
-  have hcons := computableInPolyTime_consistentCheck.comp (hpat.prod hy)
-  have hinst := MINKT.Instance.computableInPolyTime_mk.comp (hy.prod (htime.prod hsize))
+  have hcons := computableInPolyTime_consistentCheck.comp ((enc_pattern_polyTime hi).prod hy)
+  have hinst := MINKT.Instance.computableInPolyTime_mk.comp
+    (hy.prod ((enc_time_polyTime hi).prod (enc_size_polyTime hi)))
   have hmink := MINKT.computableInPolyTime_check.comp (hinst.prod hp)
   exact bool_and.comp (hcons.prod hmink)
 
@@ -301,15 +287,12 @@ theorem computableInPolyTime_ofTotal : ComputableInPolyTime ofTotal MINKT.enc en
       (encList (encOption encBool)) :=
     .of_tidy ((ComputableTidilyInPolyTime.map
       (ComputableTidilyInPolyTime.optionSome encBool)).comp hlist.tidy)
-  have hraw : ComputableInPolyTime
-      (fun i : MINKT.Instance => (i.string.map some, (i.time, i.size)))
-      MINKT.enc (encPair (encList (encOption encBool)) (encPair encUnary encUnary)) :=
-    hmap.prod (MINKT.Instance.computableInPolyTime_time.prod
-      MINKT.Instance.computableInPolyTime_size)
-  exact hraw.of_enc_eq fun _ => rfl
+  exact enc_mk_polyTime hmap MINKT.Instance.computableInPolyTime_time
+    MINKT.Instance.computableInPolyTime_size
 
 /-- `MINKT` reduces to `MINKT*` in polynomial time via `ofTotal`. -/
-theorem polyTimeReducible_MINKT : PolyTimeReducible MINKT.enc enc MINKT MINKTStar :=
+theorem polyTimeReducible_MINKT_MINKTStar :
+    PolyTimeReducible MINKT.enc enc MINKT MINKTStar :=
   ⟨ofTotal, computableInPolyTime_ofTotal, fun _ => ofTotal_mem_iff.symm⟩
 
 end MINKTStar

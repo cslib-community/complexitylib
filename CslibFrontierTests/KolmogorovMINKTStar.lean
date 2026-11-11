@@ -58,6 +58,6 @@ example : MINKTStar ∈ NP MINKTStar.enc := MINKTStar.mem_NP
 example (p q : Polynomial ℕ) :
     PolyTimeReducible encBits MINKTStar.enc (MINKTAt p.eval q.eval) MINKTStar :=
   (MINKTAt.polyTimeReducible_MINKT (ComputableInPolyTime.unary_eval p)
-    (ComputableInPolyTime.unary_eval q)).trans MINKTStar.polyTimeReducible_MINKT
+    (ComputableInPolyTime.unary_eval q)).trans MINKTStar.polyTimeReducible_MINKT_MINKTStar
 
 end CslibFrontierTests.KolmogorovMINKTStar
