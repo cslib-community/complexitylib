@@ -444,15 +444,7 @@ private theorem markingStep_on_union {k : ℕ} {M U : Finset α} {p : α}
     by_cases heU : e ∈ U
     · have heM : e ∉ M := Finset.disjoint_right.mp hdisj heU
       have herase : (M ∪ U).erase e = M ∪ U.erase e := by
-        ext x
-        simp only [Finset.mem_erase, Finset.mem_union]
-        constructor
-        · rintro ⟨hne, hxM | hxU⟩
-          · exact Or.inl hxM
-          · exact Or.inr ⟨hne, hxU⟩
-        · rintro (hxM | ⟨hne, hxU⟩)
-          · exact ⟨fun hxe => heM (hxe ▸ hxM), Or.inl hxM⟩
-          · exact ⟨hne, Or.inr hxU⟩
+        rw [Finset.erase_union_distrib, Finset.erase_eq_of_notMem heM]
       simp only [herase, Finset.insert_union]
     · simp only [uniformOfFinset_apply, heU, ↓reduceIte, ite_self]
 
@@ -866,24 +858,14 @@ private theorem cleanCount_active_bound {k : ℕ} (hk : 0 < k) {tr : MarkTracker
             simp only [Bool.false_eq_true, ↓reduceIte, zero_add]
             have hpP : p ∈ P_prev := (Finset.mem_sdiff.mp (hstale ▸ hpS)).1
             have hstale' : tr.stale.erase p = P_prev \ insert p tr.marked := by
-              rw [hstale]
-              ext x
-              simp only [Finset.mem_erase, Finset.mem_sdiff, Finset.mem_insert]
-              tauto
+              rw [hstale, Finset.sdiff_insert]
             have hsum' : (insert p tr.marked).card + (tr.staleCached - 1) = k := by
               rw [Finset.card_insert_of_notMem hpM]
               omega
             have hM'_sub : insert p tr.marked ⊆ s_start ∪ B' :=
               Finset.insert_subset hp_in_B' hM_sub'
-            have hsdiff_eq : insert p tr.marked \ P_prev = tr.marked \ P_prev := by
-              ext x
-              simp only [Finset.mem_sdiff, Finset.mem_insert]
-              constructor
-              · rintro ⟨rfl | hxM, hxP⟩
-                · exact absurd hpP hxP
-                · exact ⟨hxM, hxP⟩
-              · rintro ⟨hxM, hxP⟩
-                exact ⟨Or.inr hxM, hxP⟩
+            have hsdiff_eq : insert p tr.marked \ P_prev = tr.marked \ P_prev :=
+              Finset.insert_sdiff_of_mem tr.marked hpP
             have hih := ih (tr := ⟨insert p tr.marked, tr.stale.erase p, tr.staleCached - 1⟩)
               (hstep_tr ▸ htr') hP_card hstale' hsum' hs_start hs_off'_sub hM'_sub hrest
             dsimp only at hih
@@ -899,14 +881,7 @@ private theorem cleanCount_active_bound {k : ℕ} (hk : 0 < k) {tr : MarkTracker
               intro hp_in_P
               exact hpS (hstale ▸ Finset.mem_sdiff.mpr ⟨hp_in_P, hpM⟩)
             have hstale' : tr.stale = P_prev \ insert p tr.marked := by
-              rw [hstale]
-              ext x
-              simp only [Finset.mem_sdiff, Finset.mem_insert]
-              constructor
-              · rintro ⟨hxP, hxM⟩
-                exact ⟨hxP, by rintro (rfl | h); exacts [hpP hxP, hxM h]⟩
-              · rintro ⟨hxP, hnot⟩
-                exact ⟨hxP, fun hxM => hnot (Or.inr hxM)⟩
+              rw [hstale, Finset.sdiff_insert_of_notMem hpP]
             have hsum' : (insert p tr.marked).card + (tr.staleCached - 1) = k := by
               rw [Finset.card_insert_of_notMem hpM]
               omega
@@ -914,16 +889,8 @@ private theorem cleanCount_active_bound {k : ℕ} (hk : 0 < k) {tr : MarkTracker
               Finset.insert_subset hp_in_B' hM_sub'
             have hsdiff_card :
                 (insert p tr.marked \ P_prev).card = (tr.marked \ P_prev).card + 1 := by
-              have hset : insert p tr.marked \ P_prev = insert p (tr.marked \ P_prev) := by
-                ext x
-                simp only [Finset.mem_sdiff, Finset.mem_insert]
-                constructor
-                · rintro ⟨rfl | hxM, hxP⟩
-                  · exact Or.inl rfl
-                  · exact Or.inr ⟨hxM, hxP⟩
-                · rintro (rfl | ⟨hxM, hxP⟩)
-                  · exact ⟨Or.inl rfl, hpP⟩
-                  · exact ⟨Or.inr hxM, hxP⟩
+              have hset : insert p tr.marked \ P_prev = insert p (tr.marked \ P_prev) :=
+                Finset.insert_sdiff_of_notMem tr.marked hpP
               have hp_not : p ∉ tr.marked \ P_prev := fun h => hpM (Finset.mem_sdiff.mp h).1
               rw [hset, Finset.card_insert_of_notMem hp_not]
             have hih := ih (tr := ⟨insert p tr.marked, tr.stale, tr.staleCached - 1⟩)

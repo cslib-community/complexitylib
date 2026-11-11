@@ -112,9 +112,10 @@ example :
   rw [expectedCost_markingStrategy_eq (by omega) hvalid, htr]
   simpa using ofReal_div_nat 5 2 (by omega)
 
-/-- On the cyclic nemesis sequence `[2, 0, 1, 2, 0, 1]` from `{0, 1}` (`k = 2`), where
-deterministic LRU faults on all `6` steps, randomized marking incurs expected cost `9 / 2 < 6`
-across three phase resets. -/
+/-- On the cyclic nemesis sequence `[2, 0, 1, 2, 0, 1]` from `{0, 1}` (`k = 2`), randomized marking
+incurs expected cost `9 / 2` across three phase resets, whereas computable `lruFaults` incurs `5`
+faults from initial recency list `[0, 1]` and `6` faults from `[1, 0]` (`9 / 2 < 5 < 6`;
+`lruStrategy.init` uses noncomputable `Finset.toList`). -/
 example :
     (markingStrategy 2 (by omega)).expectedCost ({0, 1} : Finset ℕ) [2, 0, 1, 2, 0, 1] =
       9 / 2 := by
@@ -125,6 +126,31 @@ example :
     norm_num
   rw [expectedCost_markingStrategy_eq (by omega) hvalid, htr]
   simpa using ofReal_div_nat 9 2 (by omega)
+
+example :
+    lruFaults 2 [0, 1] [2, 0, 1, 2, 0, 1] = 5 ∧
+      lruFaults 2 [1, 0] [2, 0, 1, 2, 0, 1] = 6 ∧
+      (markingStrategy 2 (by omega)).expectedCost ({0, 1} : Finset ℕ) [2, 0, 1, 2, 0, 1] <
+        (lruFaults 2 [0, 1] [2, 0, 1, 2, 0, 1] : ℝ≥0∞) ∧
+      (markingStrategy 2 (by omega)).expectedCost ({0, 1} : Finset ℕ) [2, 0, 1, 2, 0, 1] <
+        (lruFaults 2 [1, 0] [2, 0, 1, 2, 0, 1] : ℝ≥0∞) := by
+  have hlru01 : lruFaults 2 [0, 1] [2, 0, 1, 2, 0, 1] = 5 := by decide
+  have hlru10 : lruFaults 2 [1, 0] [2, 0, 1, 2, 0, 1] = 6 := by decide
+  have hvalid : ValidCache 2 ({0, 1} : Finset ℕ) := by simp [ValidCache]
+  have htr :
+      trackerExpectedCost 2 (initTracker ({0, 1} : Finset ℕ)) [2, 0, 1, 2, 0, 1] = 9 / 2 := by
+    simp only [trackerExpectedCost, stepTrackerCost, stepTracker, initTracker]
+    norm_num
+  have hmark :
+      (markingStrategy 2 (by omega)).expectedCost ({0, 1} : Finset ℕ) [2, 0, 1, 2, 0, 1] =
+        ENNReal.ofReal ((9 : ℝ) / 2) := by
+    rw [expectedCost_markingStrategy_eq (by omega) hvalid, htr]
+    norm_num
+  refine ⟨hlru01, hlru10, ?_, ?_⟩
+  · rw [hlru01, hmark, ← ENNReal.ofReal_natCast 5]
+    exact (ENNReal.ofReal_lt_ofReal_iff (by norm_num)).mpr (by norm_num)
+  · rw [hlru10, hmark, ← ENNReal.ofReal_natCast 6]
+    exact (ENNReal.ofReal_lt_ofReal_iff (by norm_num)).mpr (by norm_num)
 
 /-! ### Non-lazy offline schedules -/
 
