@@ -8,7 +8,6 @@ module
 -- upstream: local-only (test driver)
 
 import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
-import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Reduction
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
@@ -245,42 +244,94 @@ example : (optimumByBinarySearchM bruteSolveM fourClauseInst).time ≤ 3 := by
 example : (optimumByBinarySearchM bruteSolveM ⟨2, []⟩).ret = 0 :=
   (optimumByBinarySearchM_ret (k := 3) le_rfl bruteSolveM_spec ⟨2, []⟩).trans (by decide)
 
-/-- End-to-end subsampled binary-search guarantee instantiated on `fourClauseInst`. -/
-theorem fourClause_sample_bsearch_spec :
-    1 - 2 ^ (fourClauseInst.numVars + 1) * Real.exp (-2 * (8 : ℝ) * (1 / 2 : ℝ) ^ 2) ≤
+/-- Nonvacuous instantiation of the `η = 1 / 4` failure-probability sample-size bound on
+`xorCycleCSP` (`n = 3`, `δ = 1 / 2`, `s = 9`: `(3 + 1) * log 2 + log 4 = 6 * log 2 < 4.2 ≤ 4.5`). -/
+theorem nonvacuous_sample_size_eta :
+    (3 / 4 : ℝ) ≤
+      ((xorCycleCSP.samplePMF (by decide) 9).toOuterMeasure
+        {ω | (∀ xHat : BitString xorCycleCSP.numVars,
+            (∀ x, (xorCycleCSP.sample ω).score xor2Sem x ≤
+              (xorCycleCSP.sample ω).score xor2Sem xHat) →
+              (xorCycleCSP.optimum xor2Sem : ℝ) -
+                (xorCycleCSP.score xor2Sem xHat : ℝ) ≤
+                2 * (1 / 2 : ℝ) * (xorCycleCSP.constraints.length : ℝ)) ∧
+          |(xorCycleCSP.constraints.length : ℝ) / (9 : ℝ) *
+              ((xorCycleCSP.sample ω).optimum xor2Sem : ℝ) -
+            (xorCycleCSP.optimum xor2Sem : ℝ)| ≤
+              (1 / 2 : ℝ) * (xorCycleCSP.constraints.length : ℝ)}).toReal := by
+  have hs : (xorCycleCSP.numVars + 1 : ℝ) * Real.log 2 + Real.log (1 / (1 / 4 : ℝ)) ≤
+      2 * (9 : ℝ) * (1 / 2 : ℝ) ^ 2 := by
+    have h2 : Real.log 2 < 0.6931471808 := Real.log_two_lt_d9
+    have hn : (xorCycleCSP.numVars : ℝ) = 3 := rfl
+    have h4 : (1 : ℝ) / (1 / 4 : ℝ) = 2 ^ 2 := by norm_num
+    rw [hn, h4, Real.log_pow]
+    push_cast
+    linarith
+  have h := xorCycleCSP.one_sub_le_boolean_sample_good_of_sample_size xor2Sem (by decide)
+    (s := 9) (by norm_num) (by norm_num) hs
+  linarith
+
+/-- Witness recovery (`optimizeByBinarySearchM`) finds both `optimum = 3` and an assignment `xHat`
+scoring `3` on `fourClauseInst` within `⌊log₂ 4⌋ + 1 + 2 = 5` oracle calls. -/
+theorem fourClause_optimize_witness :
+    (optimizeByBinarySearchM bruteSolveM fourClauseInst).ret.1 = 3 ∧
+      fourClauseInst.score (optimizeByBinarySearchM bruteSolveM fourClauseInst).ret.2 = 3 ∧
+      (optimizeByBinarySearchM bruteSolveM fourClauseInst).time ≤ 5 := by
+  obtain ⟨hopt, hscore⟩ :=
+    optimizeByBinarySearchM_ret (k := 3) le_rfl bruteSolveM_spec fourClauseInst
+  have h3 : fourClauseInst.optimum = 3 := by decide
+  have ht := optimizeByBinarySearchM_time_le fourClauseInst (solveM := bruteSolveM) (C := 1)
+    (fun _ _ _ => le_rfl)
+  have h5 : Nat.log 2 fourClauseInst.clauses.length + 1 + fourClauseInst.numVars = 5 := by decide
+  exact ⟨hopt.trans h3, hscore.trans h3, ht.trans_eq (by rw [one_mul, h5])⟩
+
+/-- End-to-end subsampled witness-recovery guarantee under the `η = 1 / 2` sample-size bound on
+`fourClauseInst` (`n = 2`, `w = 2`, `δ = 1 / 2`, `s = 8`: `4 * log 2 < 2.8 ≤ 4`). -/
+theorem fourClause_sample_optimize_eta_spec :
+    (∀ ω : Fin 8 → Fin fourClauseInst.clauses.length,
+      (optimizeByBinarySearchM bruteSolveM (fourClauseInst.sample ω)).time ≤ 6) ∧
+    (1 / 2 : ℝ) ≤
       ((fourClauseInst.samplePMF (by decide) 8).toOuterMeasure
-        {ω | (∀ xHat : BitString fourClauseInst.numVars,
-            (∀ x, (fourClauseInst.sample ω).score x ≤ (fourClauseInst.sample ω).score xHat) →
-              (fourClauseInst.optimum : ℝ) - (fourClauseInst.score xHat : ℝ) ≤
-                2 * (1 / 2 : ℝ) * (fourClauseInst.clauses.length : ℝ)) ∧
+        {ω | (fourClauseInst.optimum : ℝ) -
+              (fourClauseInst.score
+                (optimizeByBinarySearchM bruteSolveM (fourClauseInst.sample ω)).ret.2 : ℝ) ≤
+              2 * (1 / 2 : ℝ) * (fourClauseInst.clauses.length : ℝ) ∧
           |(fourClauseInst.clauses.length : ℝ) / (8 : ℝ) *
-              ((optimumByBinarySearchM bruteSolveM (fourClauseInst.sample ω)).ret : ℝ) -
+              ((optimizeByBinarySearchM bruteSolveM (fourClauseInst.sample ω)).ret.1 : ℝ) -
             (fourClauseInst.optimum : ℝ)| ≤
-              (1 / 2 : ℝ) * (fourClauseInst.clauses.length : ℝ)}).toReal :=
-  (sample_optimumByBinarySearchM_spec (k := 3) (w := 2) le_rfl bruteSolveM_spec (by decide)
-    (by decide) 8 (C := 1) (fun _ _ _ => le_rfl) (by norm_num)).2
+              (1 / 2 : ℝ) * (fourClauseInst.clauses.length : ℝ)}).toReal := by
+  have hs : (fourClauseInst.numVars + 1 : ℝ) * Real.log 2 + Real.log (1 / (1 / 2 : ℝ)) ≤
+      2 * (8 : ℝ) * (1 / 2 : ℝ) ^ 2 := by
+    have h2 : Real.log 2 < 0.6931471808 := Real.log_two_lt_d9
+    have hn : (fourClauseInst.numVars : ℝ) = 2 := rfl
+    have hdiv : (1 : ℝ) / (1 / 2 : ℝ) = 2 := by norm_num
+    rw [hn, hdiv]
+    linarith
+  obtain ⟨ht, hprob⟩ := sample_optimizeByBinarySearchM_spec_of_sample_size (k := 3) (w := 2)
+    le_rfl bruteSolveM_spec (F := fourClauseInst) (by decide) (by decide) (s := 8) (C := 1)
+    (fun _ _ _ => le_rfl) (by norm_num) (η := 1 / 2) (by norm_num) hs
+  have h6 : Nat.log 2 8 + 1 + fourClauseInst.numVars = 6 := by decide
+  exact ⟨fun ω => (ht ω).trans_eq (by rw [one_mul, h6]), by linarith⟩
 
-/-- Subexponential decision transfer instantiated unconditionally from
-`CountingNativeEndpoint.decidableInSubexpTime_KSAT 3`. -/
-theorem thresholdLanguage_subexp :
-    DecidableInSubexpTime ThresholdLanguage encThresholdQuery ThresholdQuery.workSize :=
-  decidableInSubexpTime_thresholdLanguage_of_KSAT (k := 3) le_rfl
-    (CountingNativeEndpoint.decidableInSubexpTime_KSAT 3)
+/-- Exponential-time decision transfer instantiated from `KSAT_decidableInExpTime_one 3`. -/
+theorem thresholdLanguage_expTime_bruteForce :
+    DecidableInExpTime ThresholdLanguage encThresholdQuery ThresholdQuery.workSize 957 := by
+  simpa only [mul_one] using
+    decidableInExpTime_thresholdLanguage_of_KSAT (k := 3) le_rfl zero_le_one
+      (KSAT_decidableInExpTime_one 3)
 
-/-- Native `FixedWidthSATSolver 3` instantiated via `FixedWidthSATSolver.exists_subexp` to verify
-`FixedWidthSATSolver.exists_optimum_algorithm` end-to-end in subexponential time and polynomial
-space. -/
-theorem exists_subexp_optimum_from_solver :
-    ∃ A d : ℕ,
+/-- Native `FixedWidthSATSolver 3` instantiated via `FixedWidthSATSolver.exists_bruteForce` to
+verify `FixedWidthSATSolver.exists_optimum_algorithm` end-to-end in `2 ^ (957 * workSize + 957)`
+time and polynomial space. -/
+theorem exists_bruteForce_optimum_from_solver :
+    ∃ d : ℕ,
       ComputableInO StructInstance.optimum encStructInstance encNat
-        (fun F =>
-          ⌈(2 : ℝ) ^ ((A : ℝ) * SubexponentialSAT.interpolationScale (957 * F.workSize + 957))⌉₊ *
-            ((encStructInstance F).length + 1) ^ d)
+        (fun F => 2 ^ (957 * F.workSize + 957) * ((encStructInstance F).length + 1) ^ d)
         (fun F => ((encStructInstance F).length + 1) ^ d) := by
-  obtain ⟨A, solver, hrate⟩ := FixedWidthSATSolver.exists_subexp 3
+  obtain ⟨solver, -, hrate⟩ := FixedWidthSATSolver.exists_bruteForce 3
   obtain ⟨d, hinO⟩ := solver.exists_optimum_algorithm (k := 3) le_rfl
   rw [hrate] at hinO
-  exact ⟨A, d, hinO⟩
+  exact ⟨d, hinO⟩
 
 /-- Binary-search `Max-CSP` optimization instantiated on `xorCycleCSP` (`optimum = 2`). -/
 example : (optimumMaxCSPByBinarySearchM 2 xor2Sem bruteSolveM xorCycleCSP).ret = 2 :=

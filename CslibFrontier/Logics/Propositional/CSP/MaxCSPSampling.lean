@@ -49,7 +49,7 @@ independently with replacement (`uniformSamplePMF`) produces a sparse `s`-constr
 ## References
 
 * [N. Alon, J. H. Spencer, *The Probabilistic Method*][AlonSpencer2016]
-* [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], proof of Corollary 1.2.
+* [M. Mitzenmacher, E. Upfal, *Probability and Computing*][MitzenmacherUpfal2017]
 -/
 
 public section
@@ -166,6 +166,40 @@ private theorem abs_scale_sup_sub_le {α : Type*} {c optS optF ε : ℝ} (hc : 0
   have hsamp_le := mul_le_mul_of_nonneg_left (hs_le xStar) hc
   rw [abs_le]
   exact ⟨by linarith, by linarith⟩
+
+/-- When `0 < η` and `n * log |D| + log (2 / η) ≤ 2 * s * δ ^ 2`, the union-bound factor
+`|D| ^ n * 2 * exp (-2 * s * δ ^ 2)` is at most `η`. -/
+theorem card_pow_two_mul_exp_le_eta {D : Type*} [Fintype D] [Nonempty D]
+    {n s : ℕ} {δ η : ℝ} (hη : 0 < η)
+    (hs : (n : ℝ) * Real.log (Fintype.card D) + Real.log (2 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
+    (Fintype.card D : ℝ) ^ n * 2 * Real.exp (-2 * (s : ℝ) * δ ^ 2) ≤ η := by
+  have hc : (0 : ℝ) < Fintype.card D := Nat.cast_pos.mpr Fintype.card_pos
+  have h2η : 0 < 2 / η := div_pos zero_lt_two hη
+  have hpow : (Fintype.card D : ℝ) ^ n = Real.exp ((n : ℝ) * Real.log (Fintype.card D)) := by
+    rw [← Real.rpow_natCast, Real.rpow_def_of_pos hc, mul_comm]
+  have hdiv : 2 / η = Real.exp (Real.log (2 / η)) := (Real.exp_log h2η).symm
+  have hrew : (Fintype.card D : ℝ) ^ n * 2 * Real.exp (-2 * (s : ℝ) * δ ^ 2) =
+      η * ((Fintype.card D : ℝ) ^ n * (2 / η) * Real.exp (-2 * (s : ℝ) * δ ^ 2)) := by
+    field_simp
+  rw [hrew, hpow, hdiv, ← Real.exp_add, ← Real.exp_add]
+  have hexp : Real.exp ((n : ℝ) * Real.log (Fintype.card D) + Real.log (2 / η) +
+      (-2 * (s : ℝ) * δ ^ 2)) ≤ 1 :=
+    Real.exp_le_one_iff.mpr (by linarith)
+  nlinarith
+
+/-- Boolean specialization: when `0 < η` and `(n + 1) * log 2 + log (1 / η) ≤ 2 * s * δ ^ 2`,
+`2 ^ (n + 1) * exp (-2 * s * δ ^ 2) ≤ η`. -/
+theorem two_pow_succ_mul_exp_le_eta {n s : ℕ} {δ η : ℝ} (hη : 0 < η)
+    (hs : (n + 1 : ℝ) * Real.log 2 + Real.log (1 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
+    2 ^ (n + 1) * Real.exp (-2 * (s : ℝ) * δ ^ 2) ≤ η := by
+  have hlog : (n : ℝ) * Real.log (Fintype.card Bool) + Real.log (2 / η) ≤
+      2 * (s : ℝ) * δ ^ 2 := by
+    have hmul : (2 : ℝ) / η = 2 * (1 / η) := by ring
+    rw [Fintype.card_bool, Nat.cast_ofNat, hmul,
+      Real.log_mul two_ne_zero (one_div_pos.mpr hη).ne']
+    linarith
+  have h := card_pow_two_mul_exp_le_eta (D := Bool) hη hlog
+  simpa only [Fintype.card_bool, Nat.cast_ofNat, pow_succ, mul_assoc] using h
 
 end MaxCSP
 
@@ -330,6 +364,38 @@ theorem boolean_exists_sample_score_abs_sub_ge_le (sem : Rel → List Bool → B
   refine (F.exists_sample_score_abs_sub_ge_le sem hm s hw hδ).trans_eq ?_
   rw [Fintype.card_bool, Nat.cast_ofNat, pow_succ]
   ring
+
+/-- **Sample-size bound for failure probability `η` over a finite domain `D`:** when `0 < η` and
+`n * log |D| + log (2 / η) ≤ 2 * s * δ ^ 2`, the uniform deviation failure probability is at most
+`η`. -/
+theorem exists_sample_score_abs_sub_ge_le_of_sample_size [Fintype D] [Inhabited D]
+    (sem : Rel → List D → Bool) (F : WeightedMaxCSP Rel ℕ ℝ) (hm : 0 < F.constraints.length)
+    {s : ℕ} (hw : ∀ c ∈ F.constraints, c.weight ∈ Set.Icc (0 : ℝ) 1) {δ η : ℝ}
+    (hδ : 0 ≤ δ) (hη : 0 < η)
+    (hs : (F.numVars : ℝ) * Real.log (Fintype.card D) + Real.log (2 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
+    ((F.samplePMF hm s).toOuterMeasure
+      {ω | ∃ x : Fin F.numVars → D,
+        δ * (F.constraints.length : ℝ) ≤
+          |(F.constraints.length : ℝ) / (s : ℝ) * (F.sample ω).score sem x -
+            F.score sem x|}).toReal ≤ η :=
+  (F.exists_sample_score_abs_sub_ge_le sem hm s hw hδ).trans
+    (MaxCSP.card_pow_two_mul_exp_le_eta hη hs)
+
+/-- **Boolean sample-size bound for failure probability `η`:** when `0 < η` and
+`(n + 1) * log 2 + log (1 / η) ≤ 2 * s * δ ^ 2`, the uniform deviation failure probability is at
+most `η`. -/
+theorem boolean_exists_sample_score_abs_sub_ge_le_of_sample_size (sem : Rel → List Bool → Bool)
+    (F : WeightedMaxCSP Rel ℕ ℝ) (hm : 0 < F.constraints.length) {s : ℕ}
+    (hw : ∀ c ∈ F.constraints, c.weight ∈ Set.Icc (0 : ℝ) 1) {δ η : ℝ}
+    (hδ : 0 ≤ δ) (hη : 0 < η)
+    (hs : (F.numVars + 1 : ℝ) * Real.log 2 + Real.log (1 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
+    ((F.samplePMF hm s).toOuterMeasure
+      {ω | ∃ x : BitString F.numVars,
+        δ * (F.constraints.length : ℝ) ≤
+          |(F.constraints.length : ℝ) / (s : ℝ) * (F.sample ω).score sem x -
+            F.score sem x|}).toReal ≤ η :=
+  (F.boolean_exists_sample_score_abs_sub_ge_le sem hm s hw hδ).trans
+    (MaxCSP.two_pow_succ_mul_exp_le_eta hη hs)
 
 end WeightedMaxCSP
 
@@ -531,6 +597,52 @@ theorem one_sub_le_boolean_sample_good (sem : Rel → List Bool → Bool)
     rcases hω with ⟨xHat, hmax, hgt⟩ | hopt
     · exact Or.inl ⟨xHat, hmax, hgt⟩
     · exact Or.inr hopt
+  linarith
+
+/-- **Unweighted sample-size bound for failure probability `η` over a finite domain `D`.** -/
+theorem exists_sample_score_abs_sub_ge_le_of_sample_size [Fintype D] [Inhabited D]
+    (sem : Rel → List D → Bool) (F : MaxCSPInstance Rel ℕ) (hm : 0 < F.constraints.length)
+    {s : ℕ} {δ η : ℝ} (hδ : 0 ≤ δ) (hη : 0 < η)
+    (hs : (F.numVars : ℝ) * Real.log (Fintype.card D) + Real.log (2 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
+    ((F.samplePMF hm s).toOuterMeasure
+      {ω | ∃ x : Fin F.numVars → D,
+        δ * (F.constraints.length : ℝ) ≤
+          |(F.constraints.length : ℝ) / (s : ℝ) * ((F.sample ω).score sem x : ℝ) -
+            (F.score sem x : ℝ)|}).toReal ≤ η :=
+  (F.exists_sample_score_abs_sub_ge_le sem hm s hδ).trans
+    (MaxCSP.card_pow_two_mul_exp_le_eta hη hs)
+
+/-- **Boolean `2 * δ * m` loss failure bound `≤ η` under `(n + 1) * log 2 + log (1 / η) ≤ 2 s δ²`.**
+-/
+theorem boolean_sample_loss_gt_le_of_sample_size (sem : Rel → List Bool → Bool)
+    (F : MaxCSPInstance Rel ℕ) (hm : 0 < F.constraints.length) {s : ℕ} {δ η : ℝ}
+    (hδ : 0 ≤ δ) (hη : 0 < η)
+    (hs : (F.numVars + 1 : ℝ) * Real.log 2 + Real.log (1 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
+    ((F.samplePMF hm s).toOuterMeasure
+      {ω | (∃ xHat : BitString F.numVars,
+          (∀ x, (F.sample ω).score sem x ≤ (F.sample ω).score sem xHat) ∧
+            2 * δ * (F.constraints.length : ℝ) <
+              (F.optimum sem : ℝ) - (F.score sem xHat : ℝ)) ∨
+        δ * (F.constraints.length : ℝ) <
+          |(F.constraints.length : ℝ) / (s : ℝ) * ((F.sample ω).optimum sem : ℝ) -
+            (F.optimum sem : ℝ)|}).toReal ≤ η :=
+  (F.boolean_sample_loss_gt_le sem hm s hδ).trans (MaxCSP.two_pow_succ_mul_exp_le_eta hη hs)
+
+/-- **Boolean `1 - η` success bound under `(n + 1) * log 2 + log (1 / η) ≤ 2 * s * δ ^ 2`.** -/
+theorem one_sub_le_boolean_sample_good_of_sample_size (sem : Rel → List Bool → Bool)
+    (F : MaxCSPInstance Rel ℕ) (hm : 0 < F.constraints.length) {s : ℕ} {δ η : ℝ}
+    (hδ : 0 ≤ δ) (hη : 0 < η)
+    (hs : (F.numVars + 1 : ℝ) * Real.log 2 + Real.log (1 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
+    1 - η ≤
+      ((F.samplePMF hm s).toOuterMeasure
+        {ω | (∀ xHat : BitString F.numVars,
+            (∀ x, (F.sample ω).score sem x ≤ (F.sample ω).score sem xHat) →
+              (F.optimum sem : ℝ) - (F.score sem xHat : ℝ) ≤
+                2 * δ * (F.constraints.length : ℝ)) ∧
+          |(F.constraints.length : ℝ) / (s : ℝ) * ((F.sample ω).optimum sem : ℝ) -
+            (F.optimum sem : ℝ)| ≤ δ * (F.constraints.length : ℝ)}).toReal := by
+  have h1 := MaxCSP.two_pow_succ_mul_exp_le_eta hη hs
+  have h2 := F.one_sub_le_boolean_sample_good sem hm s hδ
   linarith
 
 /-- **Existence of an `s`-constraint uniform approximator** whenever

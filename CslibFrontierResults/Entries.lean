@@ -53,7 +53,6 @@ import CslibFrontier.Computability.Complexity.Fagin.Converse
 import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
-import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Reduction
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
@@ -78,6 +77,7 @@ import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.PartialETH
+import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
@@ -122,7 +122,6 @@ import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Infinitary
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
-import CslibFrontier.Logics.Propositional.CSP.MaxCSPSampling
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
 import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
@@ -681,40 +680,6 @@ register_result "subexponential-sat-count" where
     O(⌈2^(A·s(n))⌉·(L + 1)^e) and space O((L + 1)^b) for constants A, e, b, where n is the \
     number of variables, L the length of encCNF φ and s(n) = n(log log(n + 16))²/√log(n + 16) \
     the interpolation scale. Not the manuscript's sharper headline runtime."
-
-register_result "max-csp-subsampling" where
-  title := "Max-CSP uniform constraint subsampling concentration and 2·δ·m optimality loss"
-  topic := "SAT algorithms"
-  sources := [
-    { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
-  ]
-  theorems := [
-    Cslib.Logic.PL.WeightedMaxCSP.exists_sample_score_abs_sub_ge_le,
-    Cslib.Logic.PL.WeightedMaxCSP.optimum_sub_score_le_two_mul,
-    Cslib.Logic.PL.MaxCSPInstance.exists_boolean_sample_approx
-  ]
-  scope := "Uniform i.i.d. s-constraint subsampling of an m-constraint [0, 1]-weighted Max-CSP \
-    over finite domain D concentrates uniformly across D^n assignments within δ·m with failure \
-    probability at most |D|^n · 2 · exp(-2 s δ²) (2^(n+1) · exp(-2 s δ²) over Bool), certifying \
-    rescaled-optimum accuracy δ·m and at most 2·δ·m optimality loss for every sampled maximizer."
-
-register_result "max-sat-solver-reduction" where
-  title := "MAX-SAT and Max-CSP optimization reduced to a supplied fixed-width SAT solver"
-  topic := "SAT algorithms"
-  sources := [
-    { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
-  ]
-  theorems := [
-    Cslib.Complexity.MaxSAT.FixedWidthSATSolver.exists_optimum_algorithm,
-    Cslib.Complexity.MaxSAT.FixedWidthSATSolver.exists_subexp,
-    Cslib.Complexity.MaxSAT.sample_optimumByBinarySearchM_spec
-  ]
-  scope := "Polynomial-time threshold compilation via MaxSAT.thresholdCircuit and \
-    Compiler.toSatCNF (at most 957·workSize + 957 variables, clause width at most 3) reduces \
-    MAX-SAT and bounded-arity Boolean Max-CSP optimization to any supplied fixed-width k-SAT \
-    solver (3 ≤ k), transferring native ComputableInO bounds (instantiated unconditionally at \
-    interpolationScale) and O(log m)-query TimeM binary search on exact and subsampled instances. \
-    Native probabilistic-TM sampling and assignment extraction are not formalized."
 
 register_result "partial-mcsp" where
   title := "Ilango: Partial MCSP is hard under the Exponential Time Hypothesis"
@@ -2620,3 +2585,25 @@ register_result "nayak-wu-median" where
     ε = 1/3 (hence 1/δ <= 432T when 1 <= δ n), 12T (216T) for involutive-difference oracle \
     steps, and the same bound on T + 1 for index-returning algorithms. Derived via adversary \
     weight-layer bounds rather than polynomials; comparison-tree oracles are not formalized."
+
+register_result "unique-games-perfect-completeness" where
+  title := "Satisfiable unique games are in P"
+  topic := "interactive proofs"
+  sources := [
+    { paper := Khot2010, theorem := unverified,
+      locator := "Section 2.4, after Definition 2.4 (author copy, p. 6)" }
+  ]
+  theorems := [
+    Cslib.Complexity.gapUniqueGames_one_mem_PromiseP,
+    Cslib.Complexity.gapUniqueGames_one_mem_PromiseP_of_pos,
+    Cslib.Complexity.gapUniqueGames_zero_mem_PromiseP,
+    Cslib.Complexity.isUniqueGame_mem_P,
+    Cslib.Complexity.satisfiable_uniqueGame_mem_P
+  ]
+  scope := "Native multi-tape PromiseP and P membership for each fixed finite alphabet Fin L \
+    under Graph.encoding (encPi (encFinEnum (Fin L))), the encoding of UniqueGamesConjecture. \
+    For 0 < L, label propagation over List.finRange L is certified by reading the final \
+    table directly without constructing ℕ → Fin L closures at runtime. For L = 0, Fin 0 is \
+    empty so every unique game vacuously has unsatVal = 0 and GapUniqueGames (Fin 0) 1 s \
+    has no no-instances, while no graph is satisfiable. This fixes L rather than taking it \
+    as part of the input."
