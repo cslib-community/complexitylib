@@ -141,7 +141,6 @@
  "CslibFrontier/Computability/Complexity/Problems/Graph.lean": 5,
  "CslibFrontier/Computability/Complexity/Problems/GraphIsomorphism.lean": 1,
  "CslibFrontier/Computability/Complexity/Problems/Hamiltonian.lean": 15,
- "CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Diamond/Defs.lean": 28,
  "CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Sparse.lean": 4,
  "CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Undirected.lean": 2,
  "CslibFrontier/Computability/Complexity/Problems/IndependentSet.lean": 9,

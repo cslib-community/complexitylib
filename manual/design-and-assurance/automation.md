@@ -80,7 +80,7 @@ The tactics search simp sets and Aesop rule sets that modules extend by register
 simp sets `wram_simps` (used by `wram_exec` and `wram_simp`), `cp_simps` (used by `cp_step`),
 `fo_realize` (used by `fo_simp`), `supp_norm` (used by `supp_cases`) and `runWith_norm` (used with
 `pmf_norm` on oracle experiments), and the Aesop rule sets
-`PolyTime`, `PPT`, `LogSpace`, `FirstOrder` and `FODefinable`.
+`PolyTime`, `PPT`, `OraclePPT`, `LogSpace`, `FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
 
@@ -203,7 +203,7 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 | Tactic/interface | Input contract and strategy | Boundary |
 |---|---|---|
 | [`logspace`](../../CslibFrontier/Tactic/LogSpace.lean) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
-| [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
+| [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin (`IsPPTOn`, `IsPPT`) and strict oracle (`IsOraclePPTOn`, `IsOraclePPT`) certificates by Aesop search (`[PPT, PolyTime]` and `[OraclePPT, PPT, PolyTime]` with `simp` disabled on oracle goals), tuple routine-call preparation, plain conditional guards (`cond'`, `ite'`), charged reply prefixes (`query_take'`), sequencing, captured maps, closed sampling and bounded-growth `OracleComp.iterate` loops | Arbitrary ideal PMFs need realization theorems; uncharged raw `ProbOracleComp.query` calls are rejected; handler substitution (`run_interpret_preprocess'`) and general loop invariants (`iterate_spec'`, `iterateWith_spec'`) keep their explicit rules |
 
 This is a family of focused proof tools, not one universal automatic complexity analyzer. Their common interface makes reusable algorithms easier to recognize without conflating the predicates they prove.
 
@@ -278,7 +278,10 @@ the check that local opens do not leak into later declarations.
 
 Place a callee's zero-local-work `Realizes` certificate in the local context to reuse an opaque
 method before unfolding it. The tactic checks its basis and output encoding and uses existing
-`Realizes.reindex` to wire every encoded argument coordinate to an already live word. The
+`Realizes.reindex` to wire encoded argument coordinates to live words. When some coordinates
+need computation, it first certifies a charged `pure` stage for the whole argument using the
+callee's input encoding, then wires the call to those new words. This supports custom and
+dependent input encodings without a `WordEncoding` instance for the argument type. The
 complete [method-call clients](../../CslibFrontierTests/WordRAMRealizationCall.lean) cover
 projections, aliased inputs, curried and dependent arguments, and optional-pair replies.
 Word-vector type abbreviations in the callee's input and output encodings are accepted without
@@ -289,13 +292,17 @@ Zero local work is an absorbed grading: the callee still has its certified nativ
 against memory charge. It does not mean zero machine instructions.
 
 The called method's domain must hold at the memory actually reached by earlier queries.
-The call client after a write demonstrates that obligation explicitly. Computed arguments
-such as `d+1` need an explicit certified `pure` stage and its fit/domain proof; they cannot be
-supplied by static register wiring. The same file contrasts the rejected unstaged call with
-its successful staged version and includes dependent pair/scalar staging.
+The call client after a write demonstrates that obligation explicitly. Write computed arguments
+directly, such as `method (d + 1)`: `realize` leaves the result's `Fits w (d + 1)` obligation and
+the method's domain as goals. Exact subtraction and division retain their definedness conditions.
+The same file checks automatic and explicit staging, dependent arguments, standard-basis
+truncated subtraction, and rejection when fit or exact-operation evidence is missing.
+Automatic staging computes the whole encoded argument when any coordinate needs computation;
+an explicit `pure` stage remains useful to share a computed value between several calls.
 
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
-certificate's basis, output encoding, zero local work and live input coordinates, then inspect
+certificate's basis, output encoding, zero local work and whether its argument coordinates use
+supported word glue, then inspect
 the domain at the reached memory. Retain the fit and safety obligations left by the tactic;
 unfolding the method or dropping a resource premise does not supply those proofs. The
 [realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
@@ -317,11 +324,13 @@ This contract answers a recurrent concern in the transcript: removing proof book
 
 ## Close encoded-length arithmetic
 
-Import `CslibFrontier.Tactic.EncLen` and use `enc_len` to expand standard encoded lengths with
-a fixed `simp only` list, then close the resulting arithmetic with `omega`. The complete
-[checked clients](../../CslibFrontierTests/EncLenTactic.lean) cover nested and variable pairs,
-leaf encodings, local encodings, locations, scaling facts and diagnostics. This proves encoding
-arithmetic; it does not construct a computation or resource certificate.
+Import `CslibFrontier.Tactic.EncLen` and use `enc_len` to expand standard encoded lengths
+(pairs, frames, unary numbers, raw bit lists, Booleans, options, sums, and `nil`/`cons` of
+`encList`) with a fixed `simp only` list, then close the resulting arithmetic with `omega`. The
+complete [checked clients](../../CslibFrontierTests/EncLenTactic.lean) cover nested and variable
+pairs, leaf encodings, framed list constructors, local encodings, locations, scaling facts and
+diagnostics. This proves encoding arithmetic; it does not construct a computation or resource
+certificate.
 
 By default only the current goal is expanded. Supply a local encoding lemma explicitly with
 `enc_len [eFoo_apply]`. Use `enc_len at h ⊢` to expand one hypothesis and the goal, or `enc_len at *`
