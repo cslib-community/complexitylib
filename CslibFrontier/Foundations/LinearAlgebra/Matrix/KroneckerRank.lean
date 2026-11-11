@@ -12,6 +12,7 @@ public import Mathlib.Data.Fintype.Pi
 import Mathlib.LinearAlgebra.Dimension.DivisionRing
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
@@ -92,25 +93,8 @@ theorem exists_submatrix_det_ne_zero {m n K : Type*} [Field K] [Finite m] [Finty
     rw [h2]
     exact h1.map' (LinearEquiv.funCongrLeft K K ec).toLinearMap
       (LinearEquiv.ker _)
-  have hS_rank : S.rank = Fintype.card (Fin A.rank) := hS_li.rank_matrix
-  obtain ⟨V, U, e, _, _, hVSU⟩ := exists_rank_normal_form S
-  have h1 : (fromBlocks (1 : Matrix (Fin S.rank) (Fin S.rank) K)
-      (0 : Matrix (Fin S.rank) (Fin (Fintype.card (Fin A.rank) - S.rank)) K) 0 0).submatrix e e =
-      1 := by
-    ext i j
-    have h0 : Fintype.card (Fin A.rank) - S.rank = 0 := by omega
-    rcases hi : e i with a | b
-    · rcases hj : e j with c | d
-      · have heq : (a = c) ↔ (i = j) := by
-          rw [← Sum.inl.inj_iff, ← hi, ← hj]
-          exact e.injective.eq_iff
-        simp [hi, hj, Matrix.one_apply, heq]
-      · exact Fin.elim0 (h0 ▸ d)
-    · exact Fin.elim0 (h0 ▸ b)
-  intro hdet0
-  have hdet1 : (V * S * U).det = 1 := by rw [hVSU, h1, det_one]
-  rw [det_mul, det_mul, hdet0, mul_zero, zero_mul] at hdet1
-  exact zero_ne_one hdet1
+  exact IsUnit.ne_zero ((Matrix.isUnit_iff_isUnit_det _).mp
+    (Matrix.linearIndependent_row_iff_isUnit.mp hS_li))
 
 /-- Eigenvector and eigenvalue equations transfer along any ring homomorphism. -/
 theorem mulVec_map_eq_smul {m R S : Type*} [Semiring R] [Semiring S] [Fintype m]
