@@ -5,7 +5,7 @@ Authors: Vincent Palma, Samuel Schlesinger
 -/
 
 import CslibFrontier.Logics.Propositional.Algebraic.FunctionalPigeonhole
-import Mathlib.Data.ZMod.Basic
+import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Tests: algebraic functional pigeonhole principle (`algFPHP`)
@@ -122,6 +122,7 @@ example :
     PC.RefutableInDegree (algFPHP 2 1 (ZMod 2)) 2 ∧
     PC.RefutableInDegree (algFPHP 2 1 ℚ) 4 ∧
     (∃ d, PC.RefutableInDegree (algFPHP 2 1 (ZMod 2)) d) := by
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   refine ⟨?_, ?_, refutableInDegree_two_algFPHP21 ℤ, refutableInDegree_two_algFPHP21 ℚ,
     refutableInDegree_two_algFPHP21 (ZMod 2),
     pc_refutableInDegree_algFPHP_of_lt (by decide : 1 < 2),
