@@ -31,7 +31,7 @@ two parts. A seed whose class among the agreeing tuples is small is rare
 `f` only outside `P`, and a random `s`-subset rarely misses `ε k / 64` positions, so heavy
 consistent tuples are rare (`sum_sum_card_heavy_le`, via
 `card_filter_disjoint_powersetCard_le`). In the tuple formulation this takes the place of IJKW's
-Lemmas 3.11–3.12 (excellent sets are abundant, and a random seed is good with noticeable
+Lemmas 3.11–3.12 (excellent edges are abundant, and a random seed is good with noticeable
 probability); the per-seed analysis of their Lemmas 3.8–3.10 is in the decoder module.
 
 The constants (`2 s ≤ k`, `s ≥ (64 / ε) log (512 / (ε δ ^ 2))`, `m ≥ (16 / δ) log (8 / ε)` and the
@@ -40,7 +40,8 @@ are counting statements about a pure function: the decoder's circuit size is a s
 
 ## Main definitions
 
-* `agreeing`: the tuples on which `C'` agrees with the direct product of `f`.
+* `agreeing`: the tuples on which `C'` agrees with the direct product of `f`; `mem_agreeing`
+  characterizes membership.
 
 ## Main results
 
@@ -68,6 +69,13 @@ variable {U V : Type*} [Fintype U] [DecidableEq U] [DecidableEq V] {k : ℕ}
 /-- The tuples on which `C'` agrees with the direct product of `f`. -/
 def agreeing (C' : (Fin k → U) → Fin k → V) (f : U → V) : Finset (Fin k → U) :=
   {y | ∀ j, C' y j = f (y j)}
+
+omit [DecidableEq U] in
+@[simp]
+theorem mem_agreeing {C' : (Fin k → U) → Fin k → V} {f : U → V} {y : Fin k → U} :
+    y ∈ agreeing C' f ↔ ∀ j, C' y j = f (y j) := by
+  unfold agreeing
+  simp
 
 /-- **Small classes are rare**: grouping tuples by their values on `P`, the tuples of a set `G`
 whose class meets `G` in fewer than `t` tuples number at most `#U ^ #P * t`. -/
@@ -145,7 +153,7 @@ theorem sum_sum_card_heavy_le (C' : (Fin k → U) → Fin k → V) (f : U → V)
         #{y ∈ consistent C' P b₀ | α * k ≤ #(disagreements C' f y)} ≤
           #{y ∈ H' | ∀ i ∈ P, b₀ i = y i} := by
       intro b₀ hb₀
-      have hagree : ∀ j, C' b₀ j = f (b₀ j) := by simpa [agreeing] using hb₀
+      have hagree : ∀ j, C' b₀ j = f (b₀ j) := by simpa using hb₀
       refine card_le_card fun y hy => ?_
       simp only [mem_consistent, H', heavy, mem_filter, mem_univ, true_and] at hy ⊢
       obtain ⟨⟨hyP, hyC⟩, hyH⟩ := hy
@@ -166,9 +174,7 @@ theorem sum_sum_card_heavy_le (C' : (Fin k → U) → Fin k → V) (f : U → V)
           have hc : ∀ y ∈ H', #{b₀ : Fin k → U | ∀ i ∈ P, b₀ i = y i} = n ^ (k - s) :=
             fun y _ => by rw [← hPc]; convert Fintype.card_filter_forall_mem_eq P y
           rw [sum_const_nat hc, mul_comm]
-    have := (Nat.cast_le (α := ℝ)).2 hcount
-    push_cast at this
-    exact this
+    exact_mod_cast hcount
   refine (sum_le_sum hP).trans ?_
   rw [← mul_sum]
   have hmiss : ∑ P ∈ univ.powersetCard s, (#{y ∈ heavy | Disjoint (disagreements C' f y) P} : ℝ)
@@ -270,8 +276,8 @@ theorem sum_card_filter_good_ge (C' : (Fin k → U) → Fin k → V) (f : U → 
       refine ⟨hb.1, lt_of_le_of_lt ?_ hb.2⟩
       refine Nat.cast_le.2 (card_le_card fun y hy => ?_)
       simp only [mem_filter] at hy
-      have hyG : ∀ j, C' y j = f (y j) := by simpa [agreeing] using hy.1
-      have hbG : ∀ j, C' b j = f (b j) := by simpa [agreeing] using hb.1
+      have hyG : ∀ j, C' y j = f (y j) := by simpa using hy.1
+      have hbG : ∀ j, C' b j = f (b j) := by simpa using hb.1
       rw [mem_consistent]
       exact ⟨hy.2, fun i hi => by rw [hyG, hbG, hy.2 i hi]⟩
     · rw [hPc, hPs', mul_left_comm, ← pow_add, Nat.add_sub_of_le hsk]
@@ -331,13 +337,14 @@ theorem card_filter_seed_dpDecode_err_le_ge (C' : (Fin k → U) → Fin k → V)
     (hG : δ * Fintype.card U ^ k ≤ #(agreeing C' f)) (hsk : 2 * s ≤ k)
     (hs : 64 / ε * Real.log (512 / (ε * δ ^ 2)) ≤ s) (hm : 16 / δ * Real.log (8 / ε) ≤ m) :
     δ / 8 * k.choose s * Fintype.card U ^ k * Fintype.card (Trial U k) ^ m ≤
-      #{σ ∈ univ.powersetCard s ×ˢ (univ : Finset ((Fin k → U) × (Fin m → Trial U k))) |
-        (#{x | dpDecode C' dflt σ.1 σ.2.1 σ.2.2 x ≠ f x} : ℝ) ≤ ε * Fintype.card U} := by
+      #((univ.powersetCard s ×ˢ (univ : Finset ((Fin k → U) × (Fin m → Trial U k)))).filter
+        fun (P, b₀, v) => (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U) := by
   classical
   have hsk' : s ≤ k := by omega
   have hgood := sum_card_filter_good_ge C' f hε hδ hε1 hδ1 hG hsk' hs
-  have hcount : (#{σ ∈ univ.powersetCard s ×ˢ (univ : Finset ((Fin k → U) × (Fin m → Trial U k))) |
-        (#{x | dpDecode C' dflt σ.1 σ.2.1 σ.2.2 x ≠ f x} : ℝ) ≤ ε * Fintype.card U} : ℝ) =
+  have hcount : (#((univ.powersetCard s ×ˢ
+        (univ : Finset ((Fin k → U) × (Fin m → Trial U k)))).filter fun (P, b₀, v) =>
+          (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U) : ℝ) =
       ∑ P ∈ univ.powersetCard s, ∑ b₀ : Fin k → U,
         (#{v : Fin m → Trial U k |
           (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U} : ℝ) := by

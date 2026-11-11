@@ -4,15 +4,23 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: candidate
+
 import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Density
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! # Concrete instances of the direct-product density lemmas
 
 The tuple count is compared with a direct computation. The headline is instantiated for a
 perfect direct product of `not` on `Bool` at `ε = 1/2`, `δ = 1`, which shows that its hypotheses
-are satisfiable.
+are satisfiable. This file is a module, so it sees `agreeing` only through `mem_agreeing`, as a
+downstream module does; an agreement count stated without `agreeing` supplies the headline's
+density hypothesis.
 -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.IJKWDensity
 
@@ -35,6 +43,18 @@ example : (#{b ∈ (univ : Finset (Fin 3 → Bool)) |
       ℝ) ≤ Fintype.card Bool ^ #({0} : Finset (Fin 3)) * 1 :=
   card_filter_card_filter_agree_lt_le univ {0} zero_le_one
 
+/-! ### The agreement hypothesis -/
+
+-- A downstream module states agreement as a count of the tuples on which `C'` agrees with the
+-- direct product of `f`; `mem_agreeing` turns it into the headline's hypothesis `hG`.
+example {U V : Type} [Fintype U] [DecidableEq U] [DecidableEq V] {k : ℕ}
+    (C' : (Fin k → U) → Fin k → V) (f : U → V) {δ : ℝ}
+    (h : δ * Fintype.card U ^ k ≤ #{y : Fin k → U | ∀ i, C' y i = f (y i)}) :
+    δ * Fintype.card U ^ k ≤ #(agreeing C' f) := by
+  convert h using 3
+  ext y
+  simp
+
 /-! ### The headline -/
 
 /-- The perfect direct product of `not`. -/
@@ -54,12 +74,12 @@ private theorem log_sixteen_lt : Real.log 16 < 2.7726 := by
 -- `m = 45`: an eighth of the seeds decode `not` with error at most `1`.
 example : (1 : ℝ) / 8 * (1776).choose 888 * Fintype.card Bool ^ 1776 *
       Fintype.card (Trial Bool 1776) ^ 45 ≤
-    #{σ ∈ univ.powersetCard 888 ×ˢ
-        (univ : Finset ((Fin 1776 → Bool) × (Fin 45 → Trial Bool 1776))) |
-      (#{x | dpDecode (notK 1776) false σ.1 σ.2.1 σ.2.2 x ≠ !x} : ℝ) ≤
-        1 / 2 * Fintype.card Bool} := by
+    #((univ.powersetCard 888 ×ˢ
+        (univ : Finset ((Fin 1776 → Bool) × (Fin 45 → Trial Bool 1776)))).filter
+      fun (P, b₀, v) => (#{x | dpDecode (notK 1776) false P b₀ v x ≠ !x} : ℝ) ≤
+        1 / 2 * Fintype.card Bool) := by
   have hagree : agreeing (notK 1776) (fun x => !x) = univ := by
-    ext y; simp [agreeing, notK]
+    ext y; simp [notK]
   refine card_filter_seed_dpDecode_err_le_ge (notK 1776) (fun x => !x) false (ε := 1 / 2)
     (δ := 1) (by norm_num) (by norm_num) (by norm_num) le_rfl ?_ (by norm_num) ?_ ?_
   · rw [hagree, card_univ, Fintype.card_fun, Fintype.card_fin, one_mul, Nat.cast_pow]
