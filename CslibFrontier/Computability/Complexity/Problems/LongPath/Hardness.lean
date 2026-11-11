@@ -31,7 +31,7 @@ consecutive ones adjacent. A path on `k` vertices extends to an ordering by appe
 declared vertices. The first `k` entries, for `k` in binary, are the first `min (length) k`
 entries, a count in unary, so the verifier is polynomial-time.
 
-**Hardness.** The pendant copy (`Cslib.Complexity.HamPath.pendantCopy`) of an instance `(G, s, t)`
+**Hardness.** The pendant copy (`Cslib.Complexity.HamPath.pendantCopy`) of an instance `⟨G, s, t⟩`
 of undirected Hamiltonian path relabels every declared vertex `v` as `Nat.pair i (p + 2)`
 (`Cslib.Complexity.HamPath.copyLabel`), for `p` the position of the first occurrence of `v`, and
 attaches two pendant vertices `Nat.pair i 0` and `Nat.pair i 1` to the copies of `s` and `t`. A
@@ -166,11 +166,11 @@ def copyLabel (G : Graph) (i v : ℕ) : ℕ := Nat.pair i (G.vertices.idxOf v + 
 
 /-- Copy `i` of the instance `x = ⟨G, s, t⟩`: the vertices of `G`, relabeled by `copyLabel`, with
 two pendant vertices `Nat.pair i 0` and `Nat.pair i 1` attached to `s` and to `t`. -/
-def pendantCopy (x : Graph × ℕ × ℕ) (i : ℕ) : Graph :=
-  ⟨Nat.pair i 0 :: Nat.pair i 1 :: x.1.vertices.map (copyLabel x.1 i),
-    (Nat.pair i 0, copyLabel x.1 i x.2.1) ::
-      (Nat.pair i 1, copyLabel x.1 i x.2.2) ::
-      x.1.edges.map fun e => (copyLabel x.1 i e.1, copyLabel x.1 i e.2)⟩
+def pendantCopy (x : PathInstance) (i : ℕ) : Graph :=
+  ⟨Nat.pair i 0 :: Nat.pair i 1 :: x.graph.vertices.map (copyLabel x.graph i),
+    (Nat.pair i 0, copyLabel x.graph i x.source) ::
+      (Nat.pair i 1, copyLabel x.graph i x.target) ::
+      x.graph.edges.map fun e => (copyLabel x.graph i e.1, copyLabel x.graph i e.2)⟩
 
 /-! ### Polynomial time -/
 
@@ -188,36 +188,36 @@ private theorem computableInPolyTime_copyLabel {γ : Type} {enc : γ ↪ List Bo
 
 /-- Building a pendant copy is polynomial-time, with the copy index in unary. -/
 theorem computableInPolyTime_pendantCopy :
-    ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => pendantCopy p.1 p.2)
+    ComputableInPolyTime (fun p : PathInstance × ℕ => pendantCopy p.1 p.2)
       (encPair encPathInstance encUnary) encGraph := by
   have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
       (encPair encUnary encUnary) encUnary := by fun_prop
-  have hG : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => p.1.1)
+  have hG : ComputableInPolyTime (fun p : PathInstance × ℕ => p.1.graph)
       (encPair encPathInstance encUnary) encGraph := by fun_prop
-  have hi : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => p.2)
+  have hi : ComputableInPolyTime (fun p : PathInstance × ℕ => p.2)
       (encPair encPathInstance encUnary) encUnary := by fun_prop
-  have h0 : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => Nat.pair p.2 0)
+  have h0 : ComputableInPolyTime (fun p : PathInstance × ℕ => Nat.pair p.2 0)
       (encPair encPathInstance encUnary) encNat :=
     unary_to_binary.comp (hpair.comp (hi.prod (const 0)))
-  have h1 : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => Nat.pair p.2 1)
+  have h1 : ComputableInPolyTime (fun p : PathInstance × ℕ => Nat.pair p.2 1)
       (encPair encPathInstance encUnary) encNat :=
     unary_to_binary.comp (hpair.comp (hi.prod (const 1)))
   have hs : ComputableInPolyTime
-      (fun p : (Graph × ℕ × ℕ) × ℕ => copyLabel p.1.1 p.2 p.1.2.1)
+      (fun p : PathInstance × ℕ => copyLabel p.1.graph p.2 p.1.source)
       (encPair encPathInstance encUnary) encNat :=
     computableInPolyTime_copyLabel hG hi (by fun_prop)
   have ht : ComputableInPolyTime
-      (fun p : (Graph × ℕ × ℕ) × ℕ => copyLabel p.1.1 p.2 p.1.2.2)
+      (fun p : PathInstance × ℕ => copyLabel p.1.graph p.2 p.1.target)
       (encPair encPathInstance encUnary) encNat :=
     computableInPolyTime_copyLabel hG hi (by fun_prop)
   have hV : ComputableInPolyTime
-      (fun p : (Graph × ℕ × ℕ) × ℕ => p.1.1.vertices.map (copyLabel p.1.1 p.2))
+      (fun p : PathInstance × ℕ => p.1.graph.vertices.map (copyLabel p.1.graph p.2))
       (encPair encPathInstance encUnary) (encList encNat) := by
     refine mapWithInput (by fun_prop) ?_
     exact computableInPolyTime_copyLabel (hG.comp (fst _ _)) (hi.comp (fst _ _)) (snd _ _)
   have hE : ComputableInPolyTime
-      (fun p : (Graph × ℕ × ℕ) × ℕ =>
-        p.1.1.edges.map fun e => (copyLabel p.1.1 p.2 e.1, copyLabel p.1.1 p.2 e.2))
+      (fun p : PathInstance × ℕ =>
+        p.1.graph.edges.map fun e => (copyLabel p.1.graph p.2 e.1, copyLabel p.1.graph p.2 e.2))
       (encPair encPathInstance encUnary) (encList (encPair encNat encNat)) := by
     refine mapWithInput (by fun_prop) ?_
     exact (computableInPolyTime_copyLabel (hG.comp (fst _ _)) (hi.comp (fst _ _))
@@ -250,19 +250,19 @@ private theorem pair_zero_ne_pair_one (i i' : ℕ) : Nat.pair i 0 ≠ Nat.pair i
 
 /-! ### One copy -/
 
-private theorem mem_pendantCopy_fst {x : Graph × ℕ × ℕ} {i w : ℕ} :
+private theorem mem_pendantCopy_fst {x : PathInstance} {i w : ℕ} :
     w ∈ (pendantCopy x i).vertices ↔
-      w = Nat.pair i 0 ∨ w = Nat.pair i 1 ∨ ∃ v ∈ x.1.vertices, copyLabel x.1 i v = w := by
+      w = Nat.pair i 0 ∨ w = Nat.pair i 1 ∨ ∃ v ∈ x.graph.vertices, copyLabel x.graph i v = w := by
   simp only [pendantCopy, List.mem_cons, List.mem_map]
 
-private theorem mem_pendantCopy_snd {x : Graph × ℕ × ℕ} {i : ℕ} {e : ℕ × ℕ} :
-    e ∈ (pendantCopy x i).edges ↔ e = (Nat.pair i 0, copyLabel x.1 i x.2.1) ∨
-      e = (Nat.pair i 1, copyLabel x.1 i x.2.2) ∨
-      ∃ d ∈ x.1.edges, (copyLabel x.1 i d.1, copyLabel x.1 i d.2) = e := by
+private theorem mem_pendantCopy_snd {x : PathInstance} {i : ℕ} {e : ℕ × ℕ} :
+    e ∈ (pendantCopy x i).edges ↔ e = (Nat.pair i 0, copyLabel x.graph i x.source) ∨
+      e = (Nat.pair i 1, copyLabel x.graph i x.target) ∨
+      ∃ d ∈ x.graph.edges, (copyLabel x.graph i d.1, copyLabel x.graph i d.2) = e := by
   simp only [pendantCopy, List.mem_cons, List.mem_map]
 
 /-- Every vertex of copy `i` is a pair with first component `i`. -/
-theorem unpair_of_mem_pendantCopy_fst {x : Graph × ℕ × ℕ} {i w : ℕ}
+theorem unpair_of_mem_pendantCopy_fst {x : PathInstance} {i w : ℕ}
     (h : w ∈ (pendantCopy x i).vertices) : (Nat.unpair w).1 = i := by
   rcases mem_pendantCopy_fst.1 h with rfl | rfl | ⟨v, -, rfl⟩
   · simp only [Nat.unpair_pair]
@@ -270,7 +270,7 @@ theorem unpair_of_mem_pendantCopy_fst {x : Graph × ℕ × ℕ} {i w : ℕ}
   · exact unpair_copyLabel_fst _ _ _
 
 /-- Both ends of every edge of copy `i` are pairs with first component `i`. -/
-theorem unpair_of_mem_pendantCopy_snd {x : Graph × ℕ × ℕ} {i : ℕ} {e : ℕ × ℕ}
+theorem unpair_of_mem_pendantCopy_snd {x : PathInstance} {i : ℕ} {e : ℕ × ℕ}
     (h : e ∈ (pendantCopy x i).edges) : (Nat.unpair e.1).1 = i ∧ (Nat.unpair e.2).1 = i := by
   rcases mem_pendantCopy_snd.1 h with rfl | rfl | ⟨d, -, rfl⟩
   · exact ⟨by simp only [Nat.unpair_pair], unpair_copyLabel_fst _ _ _⟩
@@ -389,7 +389,7 @@ private theorem mem_HamPath_of_path {q : List ℕ} (hnd : q.Nodup)
     (hV : ∀ w ∈ q, w ∈ (pendantCopy ⟨G, s, t⟩ i).vertices)
     (hch : q.IsChain (pendantCopy ⟨G, s, t⟩ i).toSimpleGraph.Adj)
     (hcov : ∀ v ∈ G.vertices, copyLabel G i v ∈ q) (ha : q.head? = some (Nat.pair i 0))
-    (hb : q.getLast? = some (Nat.pair i 1)) : (G, s, t) ∈ HamPath := by
+    (hb : q.getLast? = some (Nat.pair i 1)) : (⟨G, s, t⟩ : PathInstance) ∈ HamPath := by
   obtain ⟨l, rfl⟩ := List.getLast?_eq_some_iff.1 hb
   obtain ⟨m, rfl⟩ : ∃ m, l = Nat.pair i 0 :: m := by
     cases l with
@@ -450,8 +450,8 @@ private theorem mem_HamPath_of_path {q : List ℕ} (hnd : q.Nodup)
 
 /-- A path of a copy on two more vertices than `G` has gives a Hamiltonian path of `G`. -/
 private theorem mem_HamPath_of_mem_LongPath
-    (h : ⟨pendantCopy (G, s, t) i, G.distinctVertices.length + 2⟩ ∈ LongPath) :
-    (G, s, t) ∈ HamPath := by
+    (h : ⟨pendantCopy ⟨G, s, t⟩ i, G.distinctVertices.length + 2⟩ ∈ LongPath) :
+    (⟨G, s, t⟩ : PathInstance) ∈ HamPath := by
   obtain ⟨q, ⟨hnd, hV, hch⟩, hlen⟩ := mem_LongPath_iff.1 h
   have hfin : q.toFinset = (pendantCopy ⟨G, s, t⟩ i).vertices.toFinset := by
     refine Finset.eq_of_subset_of_card_le
@@ -482,8 +482,8 @@ private theorem mem_HamPath_of_mem_LongPath
 
 /-- A Hamiltonian path of `G` from `s` to `t`, with the pendant vertices at its ends, is a path of
 the copy on two more vertices than `G` has. -/
-private theorem mem_LongPath_of_mem_HamPath (h : (G, s, t) ∈ HamPath) :
-    ⟨pendantCopy (G, s, t) i, G.distinctVertices.length + 2⟩ ∈ LongPath := by
+private theorem mem_LongPath_of_mem_HamPath (h : (⟨G, s, t⟩ : PathInstance) ∈ HamPath) :
+    ⟨pendantCopy ⟨G, s, t⟩ i, G.distinctVertices.length + 2⟩ ∈ LongPath := by
   obtain ⟨p, hnd, hcov, hs, ht, hch⟩ := mem_HamPath_iff.1 h
   have hpV : ∀ v ∈ p, v ∈ G.vertices := fun v hv => (hcov v).1 hv
   have hlen : p.length = G.distinctVertices.length := by
@@ -531,8 +531,8 @@ private theorem mem_LongPath_of_mem_HamPath (h : (G, s, t) ∈ HamPath) :
 /-- **One copy**: the copy of `⟨G, s, t⟩` has a path on two more vertices than `G` has exactly
 when `G` has a Hamiltonian path from `s` to `t`. -/
 theorem pendantCopy_mem_LongPath_iff :
-    ⟨pendantCopy (G, s, t) i, G.distinctVertices.length + 2⟩ ∈ LongPath ↔
-      (G, s, t) ∈ HamPath :=
+    ⟨pendantCopy ⟨G, s, t⟩ i, G.distinctVertices.length + 2⟩ ∈ LongPath ↔
+      (⟨G, s, t⟩ : PathInstance) ∈ HamPath :=
   ⟨mem_HamPath_of_mem_LongPath, mem_LongPath_of_mem_HamPath⟩
 
 end Copy
@@ -543,22 +543,21 @@ end HamPath
 Hamiltonian path from `s` to `t` exactly when its pendant copy has a path on two more vertices than
 the graph has. -/
 theorem LongPath_npHard : NPHard encLongPath LongPath := by
-  have hk : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length + 2)
+  have hk : ComputableInPolyTime (fun x : PathInstance => x.graph.distinctVertices.length + 2)
       encPathInstance encNat := by
-    have hn : ComputableInPolyTime
-        (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length)
+    have hn : ComputableInPolyTime (fun x : PathInstance => x.graph.distinctVertices.length)
         encPathInstance encUnary :=
       (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))
     exact unary_to_binary.comp (by fun_prop)
-  have hf : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => HamPath.pendantCopy x 0)
+  have hf : ComputableInPolyTime (fun x : PathInstance => HamPath.pendantCopy x 0)
       encPathInstance encGraph := by
     change ComputableInPolyTime
-      ((fun p : (Graph × ℕ × ℕ) × ℕ => HamPath.pendantCopy p.1 p.2) ∘ fun a => (a, 0))
+      ((fun p : PathInstance × ℕ => HamPath.pendantCopy p.1 p.2) ∘ fun a => (a, 0))
       encPathInstance encGraph
     exact HamPath.computableInPolyTime_pendantCopy.comp (id'.prod (const 0))
   have hr : ComputableInPolyTime
-      (fun x : Graph × ℕ × ℕ =>
-        (⟨HamPath.pendantCopy x 0, x.1.distinctVertices.length + 2⟩ : LongPathInstance))
+      (fun x : PathInstance =>
+        (⟨HamPath.pendantCopy x 0, x.graph.distinctVertices.length + 2⟩ : LongPathInstance))
       encPathInstance encLongPath :=
     encLongPath_mk_polyTime hf hk
   refine HamPath_npHard.trans ⟨_, hr, fun x => ?_⟩

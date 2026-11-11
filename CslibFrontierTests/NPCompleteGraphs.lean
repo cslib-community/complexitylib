@@ -265,7 +265,7 @@ example : SAT.toKColoring 2 [[(0, true)], [(0, false)]] ∉ KColoring 5 := by
 
 -- A directed path through all vertices, and the boundary conventions for cycles: a single
 -- vertex needs a self-loop.
-example : ((⟨[0, 1, 2], [(0, 1), (1, 2)]⟩ : Graph), 0, 2) ∈ DirHamPath :=
+example : (⟨⟨[0, 1, 2], [(0, 1), (1, 2)]⟩, 0, 2⟩ : PathInstance) ∈ DirHamPath :=
   ⟨[0, 1, 2], by decide, fun _ => Iff.rfl, rfl, rfl, by decide⟩
 
 example : (⟨[0], [(0, 0)]⟩ : Graph) ∈ DirHamCycle :=
@@ -287,17 +287,17 @@ example : (⟨[0, 1, 2], [(2, 0), (0, 1), (1, 2)]⟩ : Graph) ∈ DirHamCycle :=
 
 -- The diamond graph of the empty formula is the single top node, and that of a unit clause has
 -- one diamond with a row of six nodes and one clause node.
-example : SAT.toDirHamPath [] = (⟨[0], []⟩, 0, 0) := by decide
+example : SAT.toDirHamPath [] = ⟨⟨[0], []⟩, 0, 0⟩ := by decide
 example : SAT.toDirHamPath [] ∈ DirHamPath := (SAT.toDirHamPath_mem_iff _).2 ⟨fun _ => true, rfl⟩
 
 example : SAT.toDirHamPath [[(0, true)]] =
-    (⟨[0, 1, 2, 3, 17, 82, 257, 626, 6],
+    ⟨⟨[0, 1, 2, 3, 17, 82, 257, 626, 6],
       [(0, 2), (0, 626), (2, 1), (626, 1), (2, 3), (3, 2), (3, 17), (17, 3), (17, 82), (82, 17),
-        (82, 257), (257, 82), (257, 626), (626, 257), (17, 6), (6, 82)]⟩, 0, 1) := by
+        (82, 257), (257, 82), (257, 626), (626, 257), (17, 6), (6, 82)]⟩, 0, 1⟩ := by
   decide
 
 -- The rightward traversal with the detour through the clause node.
-example : (SAT.toDirHamPath [[(0, true)]]).1.IsDirHamPath 0 1
+example : (SAT.toDirHamPath [[(0, true)]]).graph.IsDirHamPath 0 1
     [0, 2, 3, 17, 6, 82, 257, 626, 1] :=
   ⟨by decide, fun _ => (show [0, 2, 3, 17, 6, 82, 257, 626, 1].Perm
     [0, 1, 2, 3, 17, 82, 257, 626, 6] by decide).mem_iff, rfl, rfl, by decide⟩
