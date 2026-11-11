@@ -2478,6 +2478,7 @@ public import CslibFrontier.Computability.Kolmogorov.Incompleteness
 public import CslibFrontier.Computability.Kolmogorov.Incompressibility
 public import CslibFrontier.Computability.Kolmogorov.Invariance
 public import CslibFrontier.Computability.Kolmogorov.MINKT
+public import CslibFrontier.Computability.Kolmogorov.MINKTStar
 public import CslibFrontier.Computability.Kolmogorov.MINcKT
 public import CslibFrontier.Computability.Kolmogorov.MKtP
 public import CslibFrontier.Computability.Kolmogorov.MultiTape
@@ -2653,6 +2654,7 @@ public import CslibFrontier.Computability.MCSP.HardnessConsequences
 public import CslibFrontier.Computability.MCSP.Magnification
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree
+public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Circuit
 public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.Multi.NP
 public import CslibFrontier.Computability.MCSP.MultiNPHard.Reduction
@@ -4826,6 +4828,7 @@ public import CslibFrontier.Foundations.Combinatorics.ShiftColoring
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Acyclic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.BallPath
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Berge
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
@@ -5517,6 +5520,7 @@ public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.BijectiveGame
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CFI
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
