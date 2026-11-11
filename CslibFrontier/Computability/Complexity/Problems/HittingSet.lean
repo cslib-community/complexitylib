@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Shriya Thakur, Hugo Akitaya, Freddy Stock, and Adriano Corbellino. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Shriya Thakur
+Authors: Hugo Akitaya, Shriya Thakur, Freddy Stock, and Adriano Corbellino
 -/
 module
 
