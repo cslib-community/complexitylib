@@ -301,4 +301,51 @@ theorem fanInAtMost_round {K N q w : ℕ} (src : Fin N → Fin q → Source K)
       ((Circuit.fanInAtMost_wiring _ _).append
         ((fanInAtMost_queryLayer src).mono (le_max_left _ _))).comp (fanInAtMost_constLayer _ _)
 
+/-! ### Chaining rounds -/
+
+/-- Rounds `step r : K₀ + w * r → K₀ + w * r + w` chained `R` times; a wiring cast realigns
+`K₀ + w * r + w` with `K₀ + w * (r + 1)`. -/
+def chain {σ : Signature} {K₀ w : ℕ} (step : ∀ r, Circuit σ (K₀ + w * r) (K₀ + w * r + w)) :
+    (R : ℕ) → Circuit σ K₀ (K₀ + w * R)
+  | 0 => Circuit.wiring σ (Fin.cast (by simp))
+  | R + 1 =>
+    (Circuit.wiring σ (Fin.cast (by rw [Nat.mul_succ, Nat.add_assoc]))).comp
+      ((step R).comp (chain step R))
+
+theorem size_chain {σ : Signature} {K₀ w : ℕ}
+    (step : ∀ r, Circuit σ (K₀ + w * r) (K₀ + w * r + w)) (R : ℕ) :
+    (chain step R).size = ∑ r ∈ Finset.range R, (step r).size := by
+  induction R with
+  | zero => rfl
+  | succ R ih => rw [chain, Circuit.size_comp, Circuit.size_comp, ih, Finset.sum_range_succ]; rfl
+
+theorem cost_chain {σ : Signature} {K₀ w : ℕ}
+    (step : ∀ r, Circuit σ (K₀ + w * r) (K₀ + w * r + w)) (cost : σ.Op → ℕ) (R : ℕ) :
+    (chain step R).program.cost cost = ∑ r ∈ Finset.range R, (step r).program.cost cost := by
+  induction R with
+  | zero => rfl
+  | succ R ih =>
+    rw [chain, Circuit.cost_comp, Circuit.cost_comp, ih, Finset.sum_range_succ,
+      Circuit.cost_wiring, Nat.add_zero]
+
+theorem depthWith_chain_le {σ : Signature} {K₀ w : ℕ}
+    (step : ∀ r, Circuit σ (K₀ + w * r) (K₀ + w * r + w)) (cost : σ.Op → ℕ) {D : ℕ}
+    (h : ∀ r, (step r).depthWith cost ≤ D) (R : ℕ) : (chain step R).depthWith cost ≤ R * D := by
+  induction R with
+  | zero => simp [chain]
+  | succ R ih =>
+    rw [chain]
+    refine (Circuit.depthWith_comp_le _ _ _).trans ?_
+    rw [Circuit.depthWith_wiring, Nat.zero_add]
+    refine (Circuit.depthWith_comp_le _ _ _).trans ?_
+    rw [Nat.succ_mul, Nat.add_comm (R * D)]
+    exact Nat.add_le_add (h R) ih
+
+theorem fanInAtMost_chain {σ : Signature} {K₀ w : ℕ}
+    (step : ∀ r, Circuit σ (K₀ + w * r) (K₀ + w * r + w)) {f : ℕ}
+    (h : ∀ r, (step r).FanInAtMost f) (R : ℕ) : (chain step R).FanInAtMost f := by
+  induction R with
+  | zero => exact Circuit.fanInAtMost_wiring _ _
+  | succ R ih => exact (Circuit.fanInAtMost_wiring _ _).comp ((h R).comp ih)
+
 end Cslib.Circuits.Boolean
