@@ -402,12 +402,6 @@ private theorem computableInPolyTime_hash
     ComputableInPolyTime (fun a => H (k a) (x a)) encIn encBits :=
   hH.comp (hk.prod hx)
 
-private theorem computableInPolyTime_pairWord {x y : γ → List Bool}
-    (hx : ComputableInPolyTime x encIn encBits)
-    (hy : ComputableInPolyTime y encIn encBits) :
-    ComputableInPolyTime (fun a => encPair encBits encBits (x a, y a)) encIn encBits :=
-  (hx.prod hy).encoding_comp
-
 private theorem computableInPolyTime_merkleLeafLevel
     (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
@@ -455,7 +449,7 @@ private theorem computableInPolyTime_merkleParents
       (fun p : γ × ℕ => (level p.1).getD (2 * p.2) []) (encPair encIn encUnary) encBits := by
     simpa using hget 0
   exact computableInPolyTime_hash hH (hk.comp (ComputableInPolyTime.fst _ _))
-    (computableInPolyTime_pairWord hleft (hget 1))
+    (hleft.prod (hget 1)).encoding_comp
 
 private theorem computableInPolyTime_iterate_merkleParents
     (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
@@ -646,8 +640,8 @@ private theorem computableInPolyTime_merkleInputs
       polytime
     have hnode := computableInPolyTime_hash hH hk'
       (ComputableInPolyTime.listHeadDWithInput hinputs (.const []))
-    have hleft := computableInPolyTime_pairWord hnode hsib
-    have hright := computableInPolyTime_pairWord hsib hnode
+    have hleft := (hnode.prod hsib).encoding_comp
+    have hright := (hsib.prod hnode).encoding_comp
     have hnext : ComputableInPolyTime
         (fun p : (List Bool × (List (List Bool) × ℕ)) × List Bool =>
           if p.1.2.2 % 2 = 0 then

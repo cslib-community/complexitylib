@@ -316,18 +316,6 @@ private theorem runTrials_fail_imp_all_fail {k w t seedLen : ℕ → ℕ} {f : L
 
 /-! ### Polynomial-time certificates for the reduction -/
 
-private theorem uAdd {f g : ℕ → ℕ}
-    (hf : ComputableInPolyTime f encUnary encUnary)
-    (hg : ComputableInPolyTime g encUnary encUnary) :
-    ComputableInPolyTime (fun a => f a + g a) encUnary encUnary :=
-  ComputableInPolyTime.unary_add.comp (hf.prod hg)
-
-private theorem uMul {f g : ℕ → ℕ}
-    (hf : ComputableInPolyTime f encUnary encUnary)
-    (hg : ComputableInPolyTime g encUnary encUnary) :
-    ComputableInPolyTime (fun a => f a * g a) encUnary encUnary :=
-  ComputableInPolyTime.unary_mul.comp (hf.prod hg)
-
 private theorem computable_pickPreimage {α : Type} {input : α ↪ List Bool}
     {f : List Bool → List Bool} {y : α → List Bool} {cands : α → List (List Bool)}
     (hf : ComputableInPolyTime f encBits encBits)
@@ -651,24 +639,26 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
     open ComputableInPolyTime in
     apply IsPPTOn.isPPT
     have hsnd := snd encUnary encBits
-    have hw : ComputableInPolyTime w encUnary encUnary := uAdd id' (const 1)
+    have hw : ComputableInPolyTime w encUnary encUnary := unary_add' id' (const 1)
     have hq : ComputableInPolyTime (fun N => q.eval N) encUnary encUnary := unary_eval q
     have hk : ComputableInPolyTime k encUnary encUnary :=
-      uMul (uMul (const 2) (hq.comp hw)) hw
+      unary_mul' (unary_mul' (const 2) (hq.comp hw)) hw
     have hp : ComputableInPolyTime p encUnary encUnary := (unary_pow (deg + 1)).comp hw
     have ht : ComputableInPolyTime t encUnary encUnary :=
-      uMul (uMul (const 4) (hq.comp hw)) (uMul hk hp)
+      unary_mul' (unary_mul' (const 4) (hq.comp hw)) (unary_mul' hk hp)
     have hB : ComputableInPolyTime B encUnary encUnary :=
-      uMul (const cA) ((unary_pow dA).comp
-        (uAdd (uAdd (uMul (const 2) id') (uMul hk (houtLen.comp hw))) (const 2)))
-    have hseedLen : ComputableInPolyTime seedLen encUnary encUnary := uAdd (uMul hk hw) hB
+      unary_mul' (const cA) ((unary_pow dA).comp
+        (unary_add' (unary_add' (unary_mul' (const 2) id') (unary_mul' hk (houtLen.comp hw)))
+          (const 2)))
+    have hseedLen : ComputableInPolyTime seedLen encUnary encUnary :=
+      unary_add' (unary_mul' hk hw) hB
     have hn : ComputableInPolyTime (fun pair : ℕ × List Bool => pair.1 - 1)
         (encPair encUnary encBits) encUnary :=
       unary_sub.comp ((fst encUnary encBits).prod (const 1))
     have hsample_len : ComputableInPolyTime
         (fun pair : ℕ × List Bool => t (pair.1 - 1) * seedLen (pair.1 - 1))
         (encPair encUnary encBits) encUnary :=
-      (uMul ht hseedLen).comp hn
+      (unary_mul' ht hseedLen).comp hn
     have hfst2 := fst (encPair encUnary encBits) encBits
     have hsnd2 := snd (encPair encUnary encBits) encBits
     have hrun := computable_runTrials hk hw ht hseedLen hweak.polyTime hevalA
@@ -737,13 +727,14 @@ theorem WeakOneWay.exists_oneWay {f : List Bool → List Bool} (hf : WeakOneWay 
     Nat.le_mul_of_pos_left (w n)
       (Nat.mul_pos (Nat.mul_pos (by decide) (hq_pos (w n))) (Nat.succ_pos n))
   have hw_comp : ComputableInPolyTime w encUnary encUnary :=
-    OneWayAmplification.uAdd .id' (.const 1)
+    ComputableInPolyTime.unary_add' .id' (.const 1)
   have hq_comp : ComputableInPolyTime (fun N => q.eval N) encUnary encUnary :=
     ComputableInPolyTime.unary_eval q
   have hk_comp : ComputableInPolyTime k encUnary encUnary :=
-    OneWayAmplification.uMul (OneWayAmplification.uMul (.const 2) (hq_comp.comp hw_comp)) hw_comp
+    ComputableInPolyTime.unary_mul'
+      (ComputableInPolyTime.unary_mul' (.const 2) (hq_comp.comp hw_comp)) hw_comp
   have hm_comp : ComputableInPolyTime m encUnary encUnary :=
-    OneWayAmplification.uMul hk_comp hw_comp
+    ComputableInPolyTime.unary_mul' hk_comp hw_comp
   have hcore_comp : ComputableInPolyTime
       (fun p : ℕ × List Bool => OneWayAmplification.parallelCore k w g p.1 p.2)
       (encPair encUnary encBits) encBits := by
