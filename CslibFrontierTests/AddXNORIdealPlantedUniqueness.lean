@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 public import CslibFrontier.Cryptanalysis.AddXNORIdealPlantedUniqueness
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
+import Mathlib.Tactic.NormNum
 
 /-! # Actual planted uniqueness boundary and counter-candidate clients -/
 
@@ -50,3 +51,16 @@ example :
           return (fun _ : Fin 3 => decide (coin.val = 0)))).map
         (fun r => r.guessed && !r.stopped)) true).toReal := by
   exact PlantedUniqueness.search_transport 1 _
+
+/-- Coarse separate rates do not prove the desired collision coefficient even at T >= 12.
+This concerns upper-bound arithmetic only, not an attainable probability or counterexample. -/
+example : (10 : ℝ) * 13 ^ 2 / 2 ^ 40 <
+    Collisions.rate (2 ^ 40) (13 + 13) + Collisions.rate (2 ^ 40) (13 + 13 + 13) := by
+  norm_num [Collisions.rate]
+
+/-- The audit's stopped guessing event has the actual source exponent. -/
+example (adversary : Fin 5 → Fin 5 → ProbOracleComp (Spec 3 (Fin 5)) (Operators 3)) :
+    (((challenges.bind fun draw => PlantedUniqueness.audit draw (1 : Fin 3) adversary).map
+      (fun r => r.guessed && !r.stopped)) true).toReal ≤ 1 / 8 := by
+  simpa only [show (2 : ℝ) ^ 3 = 8 by norm_num] using
+    PlantedUniqueness.audit_guess_bound 1 adversary

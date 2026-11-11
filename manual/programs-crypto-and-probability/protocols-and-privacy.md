@@ -1699,9 +1699,9 @@ percent without enumerating the permutation space.
 The stopped guessing term is now isolated in `IdealChain.Guessing.stopped_guess_le`
 ([AddXNORIdealGuessing.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealGuessing.lean)). Good final-state equality in the actual cut
 coupling transfers candidate equality with the hidden word, and independence bounds its
-probability by $2^{-q}$. This does not prove Lemma 13 in the actual planted world:
-non-planted successful verification still needs to be charged to a precisely defined
-collision event with a derived probability bound. The sharp odd-length clause remains open.
+probability by $2^{-q}$. This stopped-guess bound alone supplies no collision budget
+for actual planted verification; the successful non-planted case still needs a derived
+quantitative collision charge. The sharp odd-length clause remains open.
 The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `coarse_source_search_bound`; the best unconditional all-length bounds remain in
 `VerificationCovering`. No deprecated aliases are retained.
@@ -1709,16 +1709,20 @@ The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `PlantedUniqueness.accepted_eq` now proves actual planted verification uniqueness using the
 native planting/adversary/verification execution and computed forest witnesses. Its ledger
 includes planting's queries, so this is not the cheaper source collision event. The exact
-open `PlantedUniqueness.RemainingCharge` proposition records a phase-separated actual cut
-audit's joint stopping/collision charge and stopped guessing charge. It is unproved, and
-may be stronger than necessary because it counts planting collisions. No source theorem
-assumes it. `PlantedUniqueness.search_transport` now proves the actual-game transport: success is at
-most the audit stopping/collision union plus the stopped guessing event. Audit erasure
+open `PlantedUniqueness.RemainingCharge` proposition now records only the phase-separated
+audit's joint stopping/collision charge. It is unproved and may be stronger than necessary because it counts planting collisions. Only the explicitly
+conditional composition assumes it. `PlantedUniqueness.search_transport` proves that
+success is at most the audit stopping/collision union plus the stopped guessing event. Audit erasure
 is proved from the valid cut law and native replay; no quantitative bound is a premise.
-Only `RemainingCharge` is still open. In particular its guessing half still needs the
-phase-transcript connection to `Guessing.stopped_guess_le`; its joint collision half
-cannot be obtained by adding the older separate estimates. The sharp odd-length
-inequality and coverage of all source main results remain open.
+`PlantedUniqueness.audit_guess_law` now proves that phase-transcript connection, and
+`audit_guess_bound` proves the actual audit guessing half with exponent $2^{-q}$.
+`RemainingCharge` therefore now names only the open joint stopping/collision inequality.
+`source_theorem_eight_of_remaining_charge` states the final all-length assembly explicitly
+as conditional on that open proposition. It is not an unconditional proof of Theorem 8.
+The existing coarse separate rates exceed the target collision allowance even at
+$q=T=13,m=40$, as a kernel-checked arithmetic client shows. Sharper phase-sensitive rates
+or a joint union estimate are needed before treating the remaining small cases separately.
+The sharp odd-length inequality and coverage of all stated main results remain open.
 
 ### STOC733 main-result coverage inventory
 
@@ -1752,7 +1756,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.PlantedUniqueness.search_transport`, `IdealChain.PlantedUniqueness.RemainingCharge`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; full-ledger planted uniqueness proved; odd-length sharp collision composition remains open |
+| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.PlantedUniqueness.search_transport`, `IdealChain.PlantedUniqueness.audit_guess_bound`, `IdealChain.PlantedUniqueness.RemainingCharge`, `IdealChain.PlantedUniqueness.source_theorem_eight_of_remaining_charge`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; transport and audit guessing proved; joint `RemainingCharge` open; final assembly conditional |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
