@@ -64,7 +64,7 @@ decision queries followed by witness search at the optimal threshold
 
 The Max-SAT client here works in `P^NP`: instances are bare `φ : CNF ℕ`, every assignment
 `ℕ → Bool` is admissible, the query `MaxSATQuery` carries a binary target, and the oracle is the
-`NP` language `MaxSATThreshold` itself. `FineGrained/MaxSAT/Reduction.lean` instead fixes a declared
+`NP` language `MaxSATThreshold` itself. `FineGrained.MaxSAT.Reduction` instead fixes a declared
 variable count (`MaxSAT.StructInstance`, assignments in `BitString n`), takes a unary cutoff
 (`MaxSAT.ThresholdQuery`), and compiles each threshold query through `MaxSAT.thresholdCircuit` to a
 3-CNF for a supplied fixed-width `k`-SAT solver (`optimumByBinarySearchM`,
@@ -1070,7 +1070,7 @@ theorem optimum_le_maxClauseScore (n : ℕ) (φ : CNF ℕ) : optimum (n, φ) ≤
 
 /-- When every variable of `φ` is below `n`, the binary-search value `maxClauseScore φ` over
 `ℕ → Bool` equals the declared-variable optimum `MaxSAT.optimum (n, φ)` over `BitString n` from
-`FineGrained/MaxSAT/Histogram.lean`. Without the hypothesis, undeclared variables read `false` in
+`FineGrained.MaxSAT.Histogram`. Without the hypothesis, undeclared variables read `false` in
 `MaxSAT.score`, so the inequality `optimum_le_maxClauseScore` can be strict. -/
 theorem maxClauseScore_eq_optimum {n : ℕ} {φ : CNF ℕ} (hφ : ∀ v ∈ φ.vars, v < n) :
     maxClauseScore φ = optimum (n, φ) := by
