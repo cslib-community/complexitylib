@@ -77,7 +77,7 @@ open Finset BitString LineCode
 
 /-- If some source matches a query and every matching source carries the value `V`, the shared
 OR lookup returns `V` to that query. -/
-theorem directProductInput_eval_batchOrCircuit {input sources requests k v : ℕ}
+theorem block_eval_batchOrCircuit {input sources requests k v : ℕ}
     (sourceKeys : Fin sources → Fin k → Fin input ⊕ Bool)
     (sourceValues : Fin sources → Fin v → Fin input ⊕ Bool)
     (queryKeys : Fin requests → Fin k → Fin input ⊕ Bool) (x : BitString input)
@@ -85,7 +85,7 @@ theorem directProductInput_eval_batchOrCircuit {input sources requests k v : ℕ
     (hex : ∃ source, substitute (sourceKeys source) x = substitute (queryKeys request) x)
     (hall : ∀ source, substitute (sourceKeys source) x = substitute (queryKeys request) x →
       substitute (sourceValues source) x = V) :
-    directProductInput ((batchOrCircuit sourceKeys sourceValues queryKeys).eval interpretation x)
+    BitString.block ((batchOrCircuit sourceKeys sourceValues queryKeys).eval interpretation x)
       request = V := by
   funext bit
   apply Bool.eq_iff_iff.mpr
@@ -272,8 +272,8 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
       directProduct f t x := by
   funext i
   -- The requests, their targets and the scheduled lines.
-  set a : Fin t → BitString p := fun i k => directProductInput x i (Fin.castAdd w k) with ha
-  set z : Fin t → BitString w := fun i k => directProductInput x i (Fin.natAdd p k) with hz
+  set a : Fin t → BitString p := fun i k => BitString.block x i (Fin.castAdd w k) with ha
+  set z : Fin t → BitString w := fun i k => BitString.block x i (Fin.natAdd p k) with hz
   set targets : Fin t → Fin ℓ → K := fun i => ((place (a i)).2.1 : Fin ℓ → K) with htargets
   obtain ⟨dirs, hdirs, hdisj, hlines⟩ := hsched targets
   set point : Fin t → Fin s → Fin ℓ → K := fun i j => targets i + (scalar j : K) • dirs i
@@ -286,7 +286,7 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
       M (finProdFinEquiv (i, k)) = metadata bits C place (a i) k := by
     rw [hM, blockMap_apply]
     congr 1 with k : 1
-    simp only [directProductInput, prefixWires, Function.comp_apply, Equiv.symm_apply_apply, ha]
+    simp only [BitString.block, prefixWires, Function.comp_apply, Equiv.symm_apply_apply, ha]
   have h1 : (lookupStage bits C place t w).eval interpretation x = Fin.append M x := by
     simp only [lookupStage, Circuit.eval_append, Circuit.eval_comp, Circuit.eval_wiring,
       eval_batchLookupCircuit]
@@ -318,8 +318,8 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
       substitute (Sum.inr ∘ slotKey q) W = slotKey q := rfl
   set S := (scatterCircuit t p w ℓ b s copies).eval interpretation W with hS
   have hscatter (i : Fin t) (j : Fin s) :
-      directProductInput S (slotEquiv ((place (a i)).1, pointBits bits (point i j))) = z i := by
-    apply directProductInput_eval_batchOrCircuit
+      BitString.block S (slotEquiv ((place (a i)).1, pointBits bits (point i j))) = z i := by
+    apply block_eval_batchOrCircuit
     · exact ⟨finProdFinEquiv (i, j), by rw [hkey, hslot, slotKey_slotEquiv]⟩
     · intro y hy
       obtain ⟨⟨i', j'⟩, rfl⟩ := finProdFinEquiv.surjective y
@@ -334,7 +334,7 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
   -- Stage four.
   set B := (bankCircuit members).eval interpretation S with hB
   have hbank (q : Fin (copies * 2 ^ (ℓ * b))) (r : Fin b) :
-      B (finProdFinEquiv (q, r)) = slotResource bits C place f q r (directProductInput S q) := by
+      B (finProdFinEquiv (q, r)) = slotResource bits C place f q r (BitString.block S q) := by
     rw [hB, bankCircuit, Circuit.eval_parallelFamily_apply, Circuit.eval_pi]
     exact congrFun (hmembers q r _) 0
   have h3 : (((bankCircuit members).comp (scatterCircuit t p w ℓ b s copies)).append
@@ -359,10 +359,10 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
     · simp only [substitute, Function.comp_apply, Sum.elim_inl, Fin.append_right, hW,
         Fin.append_left, Equiv.symm_apply_apply, hMapply, metadata]
   have hgather (i : Fin t) (j : Fin s) :
-      directProductInput ((gatherCircuit t p w ℓ b s copies).eval interpretation (Fin.append B W))
+      BitString.block ((gatherCircuit t p w ℓ b s copies).eval interpretation (Fin.append B W))
         (finProdFinEquiv (i, j)) =
       fun _ => resource bits C place f (place (a i)).1 (point i j) (place (a i)).2.2 (z i) := by
-    apply directProductInput_eval_batchOrCircuit
+    apply block_eval_batchOrCircuit
     · refine ⟨finProdFinEquiv (slotEquiv ((place (a i)).1, pointBits bits (point i j)),
         (place (a i)).2.2), ?_⟩
       rw [hquery]

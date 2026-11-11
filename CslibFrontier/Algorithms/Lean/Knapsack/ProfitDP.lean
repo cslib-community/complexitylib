@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Data.List.Basic
 public import Mathlib.Algebra.BigOperators.Group.List.Basic
 import Mathlib.Algebra.Order.BigOperators.Group.List
+import Mathlib.Data.List.GetD
 import Mathlib.Order.Basic
 
 /-!
@@ -137,12 +138,9 @@ theorem getElem?_profitStep (T : List (Option (List ι))) (a : ι) (q : ℕ) :
   · rw [ite_eq_left hq]
     have hX : (T ++ List.replicate (p a) none)[q]? = some (T.getD q none) := by
       by_cases h1 : q < T.length
-      · rw [List.getElem?_append_left h1, List.getD_eq_getElem?_getD,
-          List.getElem?_eq_getElem h1]
-        rfl
+      · rw [List.getElem?_append_left h1, List.getElem?_eq_getElem h1, List.getD_eq_getElem _ _ h1]
       · rw [List.getElem?_append_right (by omega), List.getElem?_replicate,
-          ite_eq_left (by omega), List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)]
-        rfl
+          ite_eq_left (by omega), List.getD_eq_default _ _ (by omega)]
     have hY : (List.replicate (p a) none ++ T.map (Option.map (· ++ [a])))[q]? =
         some (if p a ≤ q then (T.getD (q - p a) none).map (· ++ [a]) else none) := by
       by_cases h1 : q < p a
@@ -150,8 +148,7 @@ theorem getElem?_profitStep (T : List (Option (List ι))) (a : ι) (q : ℕ) :
           ite_eq_left h1, ite_eq_right (by omega)]
       · rw [List.getElem?_append_right (by simp only [List.length_replicate]; omega),
           List.getElem?_map, ite_eq_left (by omega), List.length_replicate,
-          List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega)]
-        rfl
+          List.getElem?_eq_getElem (by omega), List.getD_eq_getElem _ _ (by omega), Option.map_some]
     rw [hX, hY]
   · have hlen : (T ++ List.replicate (p a) none).length ≤ q := by grind
     rw [ite_eq_right hq, List.getElem?_eq_none hlen]
@@ -217,22 +214,17 @@ theorem TableSpec.step {l : List ι} {T : List (Option (List ι))} (hT : TableSp
   · intro s hs
     obtain ⟨l₁, l₂, rfl, h₁, h₂⟩ := List.sublist_append_iff.mp hs
     obtain ⟨r, hr, hrw⟩ := hT.complete l₁ h₁
-    have hlt : (l₁.map p).sum < T.length := (List.getElem?_eq_some_iff.mp hr).1
+    obtain ⟨hlt, hr'⟩ := List.getElem?_eq_some_iff.mp hr
+    have hget : T.getD (l₁.map p).sum none = some r := (List.getD_eq_getElem _ _ hlt).trans hr'
     rcases List.sublist_singleton.mp h₂ with rfl | rfl
-    · rw [List.append_nil, getElem?_profitStep, ite_eq_left (by omega)]
-      have hX : T.getD (l₁.map p).sum none = some r := by
-        rw [List.getD_eq_getElem?_getD, hr]; rfl
-      rw [hX]
+    · rw [List.append_nil, getElem?_profitStep, ite_eq_left (by omega), hget]
       obtain ⟨r', hr', hr'w⟩ := exists_lighter_left (w := w) r
         (if p a ≤ (l₁.map p).sum then (T.getD ((l₁.map p).sum - p a) none).map (· ++ [a])
           else none)
       exact ⟨r', by rw [hr'], hr'w.trans hrw⟩
     · have hsum : ((l₁ ++ [a]).map p).sum = (l₁.map p).sum + p a := by simp
       rw [hsum, getElem?_profitStep, ite_eq_left (by omega), ite_eq_left (by omega),
-        Nat.add_sub_cancel]
-      have hY : T.getD (l₁.map p).sum none = some r := by
-        rw [List.getD_eq_getElem?_getD, hr]; rfl
-      rw [hY]
+        Nat.add_sub_cancel, hget]
       obtain ⟨r', hr', hr'w⟩ := exists_lighter_right (w := w)
         (T.getD ((l₁.map p).sum + p a) none) (r ++ [a])
       refine ⟨r', by rw [Option.map_some, hr'], hr'w.trans ?_⟩

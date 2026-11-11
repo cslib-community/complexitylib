@@ -213,7 +213,7 @@ def complementSize : Interpretation sizedGraph sizedGraph Unit where
     | .size => ∼(rel₁ sizedGraph.size (0, ()))
 
 /-- A set of vertices is independent exactly when its complement is a vertex cover. -/
-private theorem pairwise_not_adj_iff_compl {M : Type*} [sizedGraph.Structure M] (s : Set M) :
+theorem pairwise_not_adj_iff_compl {M : Type*} [sizedGraph.Structure M] (s : Set M) :
     (s.Pairwise fun x y => ¬ RelMap sizedGraph.adj ![x, y]) ↔
       ∀ x y, x ≠ y → RelMap sizedGraph.adj ![x, y] → x ∈ sᶜ ∨ y ∈ sᶜ := by
   refine ⟨fun h x y hxy hadj => ?_, fun h x hx y hy hxy hadj => ?_⟩
@@ -222,7 +222,8 @@ private theorem pairwise_not_adj_iff_compl {M : Type*} [sizedGraph.Structure M] 
     exact h hc.1 hc.2 hxy hadj
   · rcases h x y hxy hadj with hc | hc <;> contradiction
 
-private theorem ncard_compl_eq_iff {α : Type*} [Finite α] {s t : Set α} :
+/-- On a finite type, two sets have equal `ncard` iff their complements have equal `ncard`. -/
+theorem ncard_compl_eq_iff {α : Type*} [Finite α] {s t : Set α} :
     sᶜ.ncard = tᶜ.ncard ↔ s.ncard = t.ncard := by
   have := Set.ncard_add_ncard_compl s
   have := Set.ncard_add_ncard_compl t

@@ -67,7 +67,10 @@ Two theorems state the same thing when their *statement keys* are equal. The key
   depends on allow, so that the order of hypotheses and of instance arguments does not matter;
 * the notations `a ≥ b`, `a > b` and `a ≠ b` unfolded into `b ≤ a`, `b < a` and `¬ a = b`, as
   Lean defines them, the two sides of each `=` and `↔` put in a fixed order, and the default
-  values of `optParam` and `autoParam` arguments dropped.
+  values of `optParam` and `autoParam` arguments dropped;
+* built-in list lookup by a `Fin` index written as lookup by its natural-number value, ignoring
+  only the bounds-proof argument of that lookup. Lists, indices and other arguments are kept;
+  this does not unfold arbitrary definitions or identify custom indexing instances.
 
 It prints one line per group of two or more theorems with the same key, at least one of them
 examined, by decreasing size of the key: `{"group": size of the key (nodes counted as a tree),
@@ -499,8 +502,27 @@ unsafe def canonicalBinders (e : Expr) : Expr := Id.run do
 /-- The key of a statement up to binder names and kinds, universe levels and metadata only. -/
 unsafe def exactKey (type : Expr) : Expr := (erase false type).run' {}
 
+/-- Normalize the core `Fin` adapter for built-in list lookup and ignore its bounds proof.
+The proof marker is only part of a comparison key, never an expression to elaborate. -/
+partial def normalizeListGetElem (e : Expr) : Expr :=
+  e.replace fun t => Id.run do
+    unless t.isAppOfArity ``GetElem.getElem 8 do return none
+    let mut args := t.getAppArgs
+    let inst := args[4]!
+    if inst.isAppOfArity ``Fin.instGetElemFinVal 5 then
+      let finArgs := inst.getAppArgs
+      args := args.set! 1 (.const ``Nat [])
+      args := args.set! 3 finArgs[2]!
+      args := args.set! 4 finArgs[4]!
+      args := args.set! 6 (mkApp2 (.const ``Fin.val []) finArgs[3]! args[6]!)
+    unless args[1]!.isConstOf ``Nat &&
+        args[4]!.isAppOfArity ``List.instGetElemNatLtLength 1 do return none
+    args := args.set! 7 (.sort .zero)
+    return some (mkAppN t.getAppFn (args.map normalizeListGetElem))
+
 /-- The statement key (see the module documentation). -/
-unsafe def key (type : Expr) : Expr := (erase true (canonicalBinders type)).run' {}
+unsafe def key (type : Expr) : Expr :=
+  (erase true (canonicalBinders (normalizeListGetElem type))).run' {}
 
 /-- `e` with every `optParam` and `autoParam` replaced by its type, dropping the default value as
 `unfold` does. -/
@@ -510,15 +532,16 @@ partial def dropDefaults (e : Expr) : Expr :=
       some (dropDefaults e.appFn!.appArg!)
     else none
 
-/-- A hash of the constants of a statement, with `≥`, `>` and `≠` counted as what they unfold to
-and the default values of arguments left out: equal for statements with equal keys, and cheap to
-compute. -/
+/-- A hash of the constants of a statement, normalizing built-in list lookup, counting `≥`, `>`
+and `≠` as what they unfold to, and leaving out default values: equal for statements with equal
+keys, and cheap to compute. -/
 def fingerprint (type : Expr) : UInt64 :=
-  let s : NameSet := (dropDefaults type).getUsedConstants.foldl (init := {}) fun s c =>
-    if c == ``GE.ge then s.insert ``LE.le
-    else if c == ``GT.gt then s.insert ``LT.lt
-    else if c == ``Ne then (s.insert ``Not).insert ``Eq
-    else s.insert c
+  let s : NameSet := (dropDefaults (normalizeListGetElem type)).getUsedConstants.foldl (init := {})
+    fun s c =>
+      if c == ``GE.ge then s.insert ``LE.le
+      else if c == ``GT.gt then s.insert ``LT.lt
+      else if c == ``Ne then (s.insert ``Not).insert ``Eq
+      else s.insert c
   s.foldl (fun h c => mixHash h (hash c)) 7
 
 /-- The tree size of an expression, computed once per shared node. -/

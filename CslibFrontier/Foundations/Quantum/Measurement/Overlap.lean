@@ -138,3 +138,13 @@ theorem one_sub_two_mul_sqrt_nonneg (ε : ℝ) : 0 ≤ 1 - 2 * √(ε * (1 - ε)
   linarith
 
 end Cslib.Quantum
+
+/-- Weighted AM–GM: for `w² ≤ a b` with `a, b, x, y ≥ 0`, `2 w (x y) ≤ a x² + b y²`. -/
+theorem two_mul_mul_le_of_sq_le_mul {w x y a b : ℝ}
+    (hx : 0 ≤ x) (hy : 0 ≤ y) (ha : 0 ≤ a) (hb : 0 ≤ b) (h : w ^ 2 ≤ a * b) :
+    2 * w * (x * y) ≤ a * x ^ 2 + b * y ^ 2 := by
+  have hw : w ≤ √a * √b := (Real.le_sqrt_of_sq_le h).trans_eq (Real.sqrt_mul ha b)
+  calc
+    2 * w * (x * y) ≤ 2 * (√a * x) * (√b * y) := by nlinarith [mul_nonneg hx hy]
+    _ ≤ (√a * x) ^ 2 + (√b * y) ^ 2 := two_mul_le_add_sq _ _
+    _ = a * x ^ 2 + b * y ^ 2 := by simp [mul_pow, Real.sq_sqrt ha, Real.sq_sqrt hb]

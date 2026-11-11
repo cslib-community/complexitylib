@@ -642,10 +642,13 @@ theorem value_le_cutCapacity [DecidableEq V] (f : N.Flow) {S : Finset V} (hS : N
     simp only [cutCapacity, Nat.cast_sum]
   omega
 
-/-- Singleton source cut bound when `N.s ≠ N.t`. -/
-theorem value_le_source_outCap [DecidableEq V] (f : N.Flow) (hst : N.s ≠ N.t) :
-    f.value ≤ (N.cutCapacity {N.s} : ℤ) :=
-  f.value_le_cutCapacity ⟨Finset.mem_singleton_self N.s, by simp [hst.symm]⟩
+/-- Every feasible flow has value bounded above by the outgoing capacity of `{N.s}`. -/
+theorem value_le_source_outCap [DecidableEq V] (f : N.Flow) :
+    f.value ≤ (N.cutCapacity {N.s} : ℤ) := by
+  by_cases hst : N.s = N.t
+  · rw [f.value_eq_zero_of_s_eq_t hst]
+    exact Int.natCast_nonneg _
+  · exact f.value_le_cutCapacity ⟨Finset.mem_singleton_self N.s, by simp [Ne.symm hst]⟩
 
 /-- Residual capacity of directed pair `(u, v)` with respect to `f`: unused forward capacity
 `N.cap u v - f u v` plus cancellable reverse flow `f v u`. -/
@@ -990,7 +993,7 @@ theorem exists_maxFlow_eq_minCut [DecidableEq V] (hst : N.s ≠ N.t) :
       by_cases haug : ∃ p, f.IsAugmentingPath p
       · obtain ⟨p, hp⟩ := haug
         have hlt := f.lt_value_augmentByBottleneck hst hp
-        have hcap := (f.augmentByBottleneck p hp).value_le_source_outCap hst
+        have hcap := (f.augmentByBottleneck p hp).value_le_source_outCap
         omega
       · exact ⟨f, haug⟩
     | succ k ih =>
@@ -999,7 +1002,7 @@ theorem exists_maxFlow_eq_minCut [DecidableEq V] (hst : N.s ≠ N.t) :
       · obtain ⟨p, hp⟩ := haug
         let f' := f.augmentByBottleneck p hp
         have hlt : f.value < f'.value := f.lt_value_augmentByBottleneck hst hp
-        have hcap : f'.value ≤ (N.cutCapacity {N.s} : ℤ) := f'.value_le_source_outCap hst
+        have hcap : f'.value ≤ (N.cutCapacity {N.s} : ℤ) := f'.value_le_source_outCap
         exact ih f' (by omega)
       · exact ⟨f, haug⟩
   obtain ⟨f, hno⟩ := hstep (N.cutCapacity {N.s}) (Flow.zero N) (by simp)

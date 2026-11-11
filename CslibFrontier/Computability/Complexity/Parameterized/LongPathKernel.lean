@@ -24,9 +24,11 @@ Bodlaender, Downey, Fellows and Hermelin [BodlaenderDowneyFellowsHermelin2009]; 
 in the latter is not verified here. This file derives it from the cross-composition theorem
 [BodlaenderJansenKratsch2014, Corollary 2] (`Cslib.Complexity.not_hasPolyKernel_LongPath`,
 `Cslib.Complexity.not_hasPolyCompression_LongPath`), with `coNP ⊄ NP/poly` an explicit
-hypothesis. Like `Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`, only the
-`NP ⊆ coNP/poly` conclusion of Corollary 2 is stated; the failure of the OR-distillation
-conjecture and the collapse of the polynomial hierarchy are not formalized.
+hypothesis, and by Yap's theorem [Yap][Yap1983] also under `PH ≠ Σ₃`
+(`Cslib.Complexity.not_hasPolyKernel_LongPath_of_PH_ne_SigmaP_three`,
+`Cslib.Complexity.not_hasPolyCompression_LongPath_of_PH_ne_SigmaP_three`). Like
+`Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`, the failure of the OR-distillation
+conjecture in Corollary 2 is not stated as a named conjecture here.
 
 The OR-cross-composition from undirected Hamiltonian path (`Cslib.Complexity.HamPath`) into
 k-Path is a construction within the framework of [BodlaenderJansenKratsch2014, Section 3]; it is
@@ -45,7 +47,7 @@ when some entry has a Hamiltonian path (`Cslib.Complexity.HamPath.toLongPath_mem
 target is at most two more than the length of an encoded entry, independent of the number of
 entries.
 
-Instances are encoded as `encPair encGraph encNat`, with the target in binary, as for
+Instances are encoded as `encLongPath`, with the target in binary, as for
 `Cslib.Complexity.ColorfulPath_mem_FPT`; [BodlaenderJansenKratsch2014, Section 2] writes the
 parameter in unary. A compression (`Cslib.Complexity.HasPolyCompression`) runs in time polynomial
 in the encoded length plus the parameter, which covers the time bound of the source's
@@ -64,8 +66,11 @@ alone.
 * `Cslib.Complexity.HamPath.orCrossComposes_LongPath`: `HamPath` OR-cross-composes into k-Path.
 * `Cslib.Complexity.not_hasPolyKernel_LongPath`,
   `Cslib.Complexity.not_hasPolyCompression_LongPath`,
-  `Cslib.Complexity.coNP_subset_NPPoly_of_hasPolyCompression_LongPath`: k-Path has no polynomial
-  kernel and no polynomial compression unless `coNP ⊆ NP/poly`.
+  `Cslib.Complexity.coNP_subset_NPPoly_of_hasPolyCompression_LongPath`,
+  `Cslib.Complexity.PH_eq_SigmaP_three_of_hasPolyCompression_LongPath`,
+  `Cslib.Complexity.not_hasPolyKernel_LongPath_of_PH_ne_SigmaP_three`,
+  `Cslib.Complexity.not_hasPolyCompression_LongPath_of_PH_ne_SigmaP_three`: k-Path has no polynomial
+  kernel and no polynomial compression unless `coNP ⊆ NP/poly` (and hence `PH = Σ₃`).
 
 ## References
 
@@ -73,6 +78,7 @@ alone.
   kernels*][BodlaenderDowneyFellowsHermelin2009]
 * [H. L. Bodlaender, B. M. P. Jansen, S. Kratsch, *Kernelization lower bounds by
   cross-composition*][BodlaenderJansenKratsch2014]
+* [C.-K. Yap, *Some consequences of non-uniform conditions on uniform classes*][Yap1983]
 -/
 
 public section
@@ -84,19 +90,19 @@ open Turing.MultiTapeTM ComputableInPolyTime
 namespace HamPath
 
 /-- The disjoint union of the pendant copies of a list of instances, copy `i` for entry `i`. -/
-def pendantUnion (l : List (Graph × ℕ × ℕ)) : Graph :=
+def pendantUnion (l : List PathInstance) : Graph :=
   (l.zipIdx.flatMap fun p => (pendantCopy p.1 p.2).1,
     l.zipIdx.flatMap fun p => (pendantCopy p.1 p.2).2)
 
 /-- The cross-composition of `HamPath` into `LongPath`: the disjoint union of the pendant copies,
 with target two more than the number of distinct vertices of the first entry. -/
-def toLongPath (l : List (Graph × ℕ × ℕ)) : Graph × ℕ :=
-  (pendantUnion l, (l.headD default).1.distinctVertices.length + 2)
+def toLongPath (l : List PathInstance) : LongPathInstance :=
+  ⟨pendantUnion l, (l.headD default).graph.distinctVertices.length + 2⟩
 
 /-- The cross-composition `toLongPath` is polynomial-time. -/
 theorem computableInPolyTime_toLongPath :
-    ComputableInPolyTime toLongPath (encList encPathInstance) (encPair encGraph encNat) := by
-  have hz : ComputableInPolyTime (fun l : List (Graph × ℕ × ℕ) => l.zipIdx)
+    ComputableInPolyTime toLongPath (encList encPathInstance) encLongPath := by
+  have hz : ComputableInPolyTime (fun l : List PathInstance => l.zipIdx)
       (encList encPathInstance) (encList (encPair encPathInstance encUnary)) :=
     (ComputableTidilyInPolyTime.zipIdx encPathInstance).computableInPolyTime
   have hc := computableInPolyTime_pendantCopy
@@ -106,29 +112,30 @@ theorem computableInPolyTime_toLongPath :
     exact (flatMapWithInput hz (hc.fst'.comp (snd _ _))).prod
       (flatMapWithInput hz (hc.snd'.comp (snd _ _)))
   have hk : ComputableInPolyTime
-      (fun l : List (Graph × ℕ × ℕ) => (l.headD default).1.distinctVertices.length + 2)
+      (fun l : List PathInstance => (l.headD default).graph.distinctVertices.length + 2)
       (encList encPathInstance) encNat := by
-    have hh : ComputableInPolyTime (fun l : List (Graph × ℕ × ℕ) => (l.headD default).1)
-        (encList encPathInstance) encGraph := (headD (encA := encPathInstance) default).fst'
+    have hh : ComputableInPolyTime (fun l : List PathInstance => (l.headD default).graph)
+        (encList encPathInstance) encGraph :=
+      encPathInstance_graph_polyTime (headD (encA := encPathInstance) default)
     have hn : ComputableInPolyTime
-        (fun l : List (Graph × ℕ × ℕ) => (l.headD default).1.distinctVertices.length)
+        (fun l : List PathInstance => (l.headD default).graph.distinctVertices.length)
         (encList encPathInstance) encUnary :=
       (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp hh)
     exact unary_to_binary.comp (by fun_prop)
-  exact hU.prod hk
+  exact encLongPath_mk_polyTime hU hk
 
 /-! ### The disjoint union -/
 
-private theorem mem_pendantUnion_fst {l : List (Graph × ℕ × ℕ)} {w : ℕ} :
+private theorem mem_pendantUnion_fst {l : List PathInstance} {w : ℕ} :
     w ∈ (pendantUnion l).1 ↔ ∃ x i, l[i]? = some x ∧ w ∈ (pendantCopy x i).1 := by
   simp only [pendantUnion, List.mem_flatMap, List.mem_zipIdx_iff_getElem?, Prod.exists]
 
-private theorem mem_pendantUnion_snd {l : List (Graph × ℕ × ℕ)} {e : ℕ × ℕ} :
+private theorem mem_pendantUnion_snd {l : List PathInstance} {e : ℕ × ℕ} :
     e ∈ (pendantUnion l).2 ↔ ∃ x i, l[i]? = some x ∧ e ∈ (pendantCopy x i).2 := by
   simp only [pendantUnion, List.mem_flatMap, List.mem_zipIdx_iff_getElem?, Prod.exists]
 
 /-- On the vertices of copy `i`, the union has the vertices of copy `i`. -/
-private theorem mem_pendantUnion_fst_iff {l : List (Graph × ℕ × ℕ)} {x : Graph × ℕ × ℕ}
+private theorem mem_pendantUnion_fst_iff {l : List PathInstance} {x : PathInstance}
     {i w : ℕ} (hx : l[i]? = some x) (hw : (Nat.unpair w).1 = i) :
     w ∈ (pendantUnion l).1 ↔ w ∈ (pendantCopy x i).1 := by
   refine ⟨fun h => ?_, fun h => mem_pendantUnion_fst.2 ⟨x, i, hx, h⟩⟩
@@ -138,7 +145,7 @@ private theorem mem_pendantUnion_fst_iff {l : List (Graph × ℕ × ℕ)} {x : G
   exact hwy
 
 /-- On the edges at copy `i`, the union has the edges of copy `i`. -/
-private theorem mem_pendantUnion_snd_iff {l : List (Graph × ℕ × ℕ)} {x : Graph × ℕ × ℕ}
+private theorem mem_pendantUnion_snd_iff {l : List PathInstance} {x : PathInstance}
     {i : ℕ} {e : ℕ × ℕ} (hx : l[i]? = some x) (he : (Nat.unpair e.1).1 = i) :
     e ∈ (pendantUnion l).2 ↔ e ∈ (pendantCopy x i).2 := by
   refine ⟨fun h => ?_, fun h => mem_pendantUnion_snd.2 ⟨x, i, hx, h⟩⟩
@@ -148,7 +155,7 @@ private theorem mem_pendantUnion_snd_iff {l : List (Graph × ℕ × ℕ)} {x : G
   exact hey
 
 /-- Adjacent vertices of the union lie in the same copy. -/
-private theorem unpair_fst_eq_of_adj {l : List (Graph × ℕ × ℕ)} {u v : ℕ}
+private theorem unpair_fst_eq_of_adj {l : List PathInstance} {u v : ℕ}
     (h : (pendantUnion l).toSimpleGraph.Adj u v) : (Nat.unpair u).1 = (Nat.unpair v).1 := by
   rw [Graph.toSimpleGraph_adj] at h
   rcases h.2 with h | h
@@ -160,7 +167,7 @@ private theorem unpair_fst_eq_of_adj {l : List (Graph × ℕ × ℕ)} {u v : ℕ
     exact this.2.trans this.1.symm
 
 /-- Adjacency of the union at copy `i` is adjacency of copy `i`. -/
-private theorem adj_pendantUnion_iff {l : List (Graph × ℕ × ℕ)} {x : Graph × ℕ × ℕ}
+private theorem adj_pendantUnion_iff {l : List PathInstance} {x : PathInstance}
     {i u v : ℕ} (hx : l[i]? = some x) (hu : (Nat.unpair u).1 = i)
     (hv : (Nat.unpair v).1 = i) :
     (pendantUnion l).toSimpleGraph.Adj u v ↔ (pendantCopy x i).toSimpleGraph.Adj u v := by
@@ -168,9 +175,9 @@ private theorem adj_pendantUnion_iff {l : List (Graph × ℕ × ℕ)} {x : Graph
     mem_pendantUnion_snd_iff (e := (u, v)) hx hu, mem_pendantUnion_snd_iff (e := (v, u)) hx hv]
 
 /-- **The union has a path on `k + 1` vertices exactly when some copy has one.** -/
-private theorem pendantUnion_mem_LongPath_iff {l : List (Graph × ℕ × ℕ)} {k : ℕ} :
-    (pendantUnion l, k + 1) ∈ LongPath ↔
-      ∃ x i, l[i]? = some x ∧ (pendantCopy x i, k + 1) ∈ LongPath := by
+private theorem pendantUnion_mem_LongPath_iff {l : List PathInstance} {k : ℕ} :
+    ⟨pendantUnion l, k + 1⟩ ∈ LongPath ↔
+      ∃ x i, l[i]? = some x ∧ ⟨pendantCopy x i, k + 1⟩ ∈ LongPath := by
   constructor
   · rintro ⟨q, ⟨hnd, hV, hch⟩, hlen⟩
     obtain ⟨w, q', rfl⟩ : ∃ w q', q = w :: q' := by
@@ -195,21 +202,22 @@ private theorem pendantUnion_mem_LongPath_iff {l : List (Graph × ℕ × ℕ)} {
 /-- **Correctness of the cross-composition**: on a nonempty list of instances whose graphs have
 equally many distinct vertices, `toLongPath` gives a yes-instance of `LongPath` exactly when some
 entry is a yes-instance of `HamPath`. -/
-theorem toLongPath_mem_iff {l : List (Graph × ℕ × ℕ)} (hl : l ≠ [])
-    (hkey : ∀ x ∈ l, ∀ y ∈ l, x.1.distinctVertices.length = y.1.distinctVertices.length) :
+theorem toLongPath_mem_iff {l : List PathInstance} (hl : l ≠ [])
+    (hkey : ∀ x ∈ l, ∀ y ∈ l,
+      x.graph.distinctVertices.length = y.graph.distinctVertices.length) :
     toLongPath l ∈ LongPath ↔ ∃ x ∈ l, x ∈ HamPath := by
   obtain ⟨y, l', rfl⟩ := List.exists_cons_of_ne_nil hl
-  change (pendantUnion (y :: l'), y.1.distinctVertices.length + 1 + 1) ∈ LongPath ↔ _
+  change ⟨pendantUnion (y :: l'), y.graph.distinctVertices.length + 1 + 1⟩ ∈ LongPath ↔ _
   rw [pendantUnion_mem_LongPath_iff]
   constructor
   · rintro ⟨⟨G, s, t⟩, j, hx, hmem⟩
     have hxl := List.mem_of_getElem? hx
-    refine ⟨(G, s, t), hxl, ?_⟩
+    refine ⟨⟨G, s, t⟩, hxl, ?_⟩
     rw [hkey y List.mem_cons_self _ hxl] at hmem
     exact pendantCopy_mem_LongPath_iff.1 hmem
   · rintro ⟨⟨G, s, t⟩, hxl, hx⟩
     obtain ⟨j, hj⟩ := List.mem_iff_getElem?.1 hxl
-    refine ⟨(G, s, t), j, hj, ?_⟩
+    refine ⟨⟨G, s, t⟩, j, hj, ?_⟩
     rw [hkey y List.mem_cons_self _ hxl]
     exact pendantCopy_mem_LongPath_iff.2 hx
 
@@ -222,19 +230,20 @@ the polynomial equivalence relation of having equally many distinct vertices: `t
 the disjoint union of the pendant copies, whose target is two more than the common number of
 distinct vertices. -/
 theorem HamPath.orCrossComposes_LongPath :
-    ORCrossComposes encPathInstance HamPath (encPair encGraph encNat) Prod.snd LongPath := by
-  have hkey : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length)
+    ORCrossComposes encPathInstance HamPath encLongPath LongPathInstance.target LongPath := by
+  have hkey : ComputableInPolyTime (fun x : PathInstance => x.graph.distinctVertices.length)
       encPathInstance encUnary :=
     (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))
   refine ⟨_, HamPath.toLongPath, fun n => n + 2, IsPolyEquivalence.of_key hkey, by fun_prop,
     HamPath.computableInPolyTime_toLongPath, fun l hl hrel => ?_, fun n l hl _ hlen => ?_⟩
   · exact HamPath.toLongPath_mem_iff hl fun x hx y hy => of_decide_eq_true (hrel x hx y hy)
   · obtain ⟨y, l', rfl⟩ := List.exists_cons_of_ne_nil hl
-    have h1 := Graph.length_distinctVertices_le y.1
-    have h2 : (encGraph y.1).length ≤ (encPathInstance y).length :=
-      length_le_encPair_left encGraph (encPair encNat encNat) y
+    have h1 := Graph.length_distinctVertices_le y.graph
+    have h2 : (encGraph y.graph).length ≤ (encPathInstance y).length := by
+      rw [encPathInstance_apply]
+      exact length_le_encPair_left encGraph (encPair encNat encNat) (y.graph, (y.source, y.target))
     have h3 := hlen y List.mem_cons_self
-    change y.1.distinctVertices.length + 2 ≤ n + Nat.log 2 (l'.length + 1) + 2
+    change y.graph.distinctVertices.length + 2 ≤ n + Nat.log 2 (l'.length + 1) + 2
     omega
 
 /-- **k-Path has no polynomial kernel unless `coNP ⊆ NP/poly`**, attributed to
@@ -244,7 +253,7 @@ here from [BodlaenderJansenKratsch2014, Corollary 2] (its `NP ⊆ coNP/poly` con
 binary. -/
 theorem not_hasPolyKernel_LongPath {δ : Type} {encC : δ ↪ List Bool}
     (hcoNP : ¬ coNP encC ⊆ NPPoly encC) :
-    ¬ HasPolyKernel (encPair encGraph encNat) Prod.snd LongPath :=
+    ¬ HasPolyKernel encLongPath LongPathInstance.target LongPath :=
   not_hasPolyKernel_of_orCrossComposes HamPath_npHard HamPath.orCrossComposes_LongPath hcoNP
 
 /-- **k-Path has no polynomial compression unless `coNP ⊆ NP/poly`**
@@ -255,14 +264,40 @@ polynomial in the encoded length plus `k`, the time bound of
 instances with that time bound. -/
 theorem not_hasPolyCompression_LongPath {δ : Type} {encC : δ ↪ List Bool}
     (hcoNP : ¬ coNP encC ⊆ NPPoly encC) :
-    ¬ HasPolyCompression (encPair encGraph encNat) Prod.snd LongPath :=
+    ¬ HasPolyCompression encLongPath LongPathInstance.target LongPath :=
   not_hasPolyCompression_of_orCrossComposes HamPath_npHard HamPath.orCrossComposes_LongPath hcoNP
 
 /-- A polynomial compression of k-Path gives `coNP ⊆ NP/poly`, for every encoding of instances
 [BodlaenderJansenKratsch2014, Corollary 2]. -/
 theorem coNP_subset_NPPoly_of_hasPolyCompression_LongPath
-    (h : HasPolyCompression (encPair encGraph encNat) Prod.snd LongPath) {δ : Type}
+    (h : HasPolyCompression encLongPath LongPathInstance.target LongPath) {δ : Type}
     (encC : δ ↪ List Bool) : coNP encC ⊆ NPPoly encC :=
   coNP_subset_NPPoly_of_orCrossComposes HamPath_npHard HamPath.orCrossComposes_LongPath h encC
+
+/-- A polynomial compression of k-Path collapses the polynomial hierarchy to `Σ₃`, for every
+encoding of instances [BodlaenderJansenKratsch2014, Corollary 2], [Yap][Yap1983]. -/
+theorem PH_eq_SigmaP_three_of_hasPolyCompression_LongPath
+    (h : HasPolyCompression encLongPath LongPathInstance.target LongPath) {δ : Type}
+    (encC : δ ↪ List Bool) : PH encC = SigmaP 3 encC :=
+  PH_eq_SigmaP_three_of_orCrossComposes HamPath_npHard HamPath.orCrossComposes_LongPath h encC
+
+/-- **k-Path has no polynomial compression unless `PH = Σ₃`**
+[BodlaenderJansenKratsch2014, Corollary 2], [Yap][Yap1983], with `PH ≠ Σ₃` for some encoding as an
+explicit hypothesis. -/
+theorem not_hasPolyCompression_LongPath_of_PH_ne_SigmaP_three {δ : Type} {encC : δ ↪ List Bool}
+    (hPH : PH encC ≠ SigmaP 3 encC) :
+    ¬ HasPolyCompression encLongPath LongPathInstance.target LongPath :=
+  not_hasPolyCompression_of_orCrossComposes_of_PH_ne_SigmaP_three HamPath_npHard
+    HamPath.orCrossComposes_LongPath hPH
+
+/-- **k-Path has no polynomial kernel unless `PH = Σ₃`**, attributed to
+[BodlaenderDowneyFellowsHermelin2009] by [BodlaenderJansenKratsch2014, Section 1] and derived here
+from [BodlaenderJansenKratsch2014, Corollary 2] and [Yap][Yap1983], with `PH ≠ Σ₃` for some
+encoding as an explicit hypothesis. -/
+theorem not_hasPolyKernel_LongPath_of_PH_ne_SigmaP_three {δ : Type} {encC : δ ↪ List Bool}
+    (hPH : PH encC ≠ SigmaP 3 encC) :
+    ¬ HasPolyKernel encLongPath LongPathInstance.target LongPath :=
+  not_hasPolyKernel_of_orCrossComposes_of_PH_ne_SigmaP_three HamPath_npHard
+    HamPath.orCrossComposes_LongPath hPH
 
 end Cslib.Complexity

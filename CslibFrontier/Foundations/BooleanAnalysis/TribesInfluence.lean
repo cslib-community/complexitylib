@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.BooleanAnalysis.Tribes
 public import CslibFrontier.Foundations.BooleanAnalysis.Variance
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import CslibFrontier.Foundations.Data.BitString.AgreeExpect
 import Mathlib.Analysis.Complex.ExponentialBounds
 
@@ -258,10 +259,7 @@ private theorem log_div_le_influence_tribes_of (hw : 1 ≤ w) (hs₁ : 2 ^ (w - 
       rw [← Real.log_pow]
       exact Real.log_le_log hspos hs₂'.le
     have h2 : Real.log w ≤ w - 1 := Real.log_le_sub_one_of_pos (by positivity)
-    have h3 : Real.log 2 < 1 := by
-      have := Real.log_two_lt_d9
-      norm_num at this ⊢
-      linarith
+    have h3 : Real.log 2 < 1 := Real.log_two_lt_one
     nlinarith
   -- `w ≤ 2 ^ (-(w - 1)) n`
   have hyN : (w : ℝ) ≤ (2⁻¹ : ℝ) ^ (w - 1) * ((s * w : ℕ) : ℝ) := by

@@ -54,8 +54,7 @@ theorem Readback.transport {L m t D V AA BB F : ℕ} {a b : Leaf L → ℤ}
     rw [hf _ (by omega)]
     exact h.directory s hs
   · intro s hs hv
-    have hr := Nat.count_strict_mono hv hs
-    rw [BoxTable.count_eligible_eq_card_boxes] at hr
+    have hr := BoxTable.count_lt_card_boxes hs hv
     rw [hf _ (by omega)]
     exact h.values s hs hv
 
@@ -70,8 +69,7 @@ theorem Readback.key {L m t D V AA BB : ℕ} {a b : Leaf L → ℤ} {μ : ℕ �
   let s := BoxTable.cubeSlot π
   have hs : s < (m - t + 1) * 10 ^ L := BoxTable.cubeSlot_lt hπ
   have hv : BoxTable.Eligible L (m - t) s := BoxTable.eligible_cubeSlot hπ
-  have hr := Nat.count_strict_mono hv hs
-  rw [BoxTable.count_eligible_eq_card_boxes] at hr
+  have hr := BoxTable.count_lt_card_boxes hs hv
   refine ⟨hs, hr, ?_, ?_⟩
   · rw [h.directory s hs, BoxTable.directoryWord, ite_eq_left hv]
   · rw [h.values s hs hv, BoxTable.slotValue, BoxTable.slotCube_cubeSlot hπ]
