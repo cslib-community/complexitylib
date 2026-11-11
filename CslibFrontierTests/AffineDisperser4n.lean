@@ -10,9 +10,9 @@ import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n
 # Tests for the `4n - 10d` circuit lower bound
 
 Non-vacuous client examples checking `0/6` parameter weights, zero-locus pair operations (`addPair`,
-`restrict`), concrete `2`- and `4`-input circuits against `four_mul_le_size_add`,
-`exists_affine_subspace_const_of_size_lt`, `exists_disagreeing_input_of_size_lt`, and concrete
-numerical consequences (`390 ≤ C.size` at `n = 100, d = 1`).
+`restrict`), concrete `2`- and `4`-input circuits against `four_mul_le_size_add` and
+`exists_affine_subspace_const_of_size_lt`, non-vacuous `d = 11` witnesses via
+`exists_isAffineDisperser` (`290 ≤ C.size` and `exists_disagreeing_input_of_size_lt` at `n = 100`).
 -/
 
 namespace CslibFrontierTests.AffineDisperser4n
@@ -55,7 +55,7 @@ example : and2Circuit.size = 1 ∧ 4 * 2 ≤ and2Circuit.size + 10 * 2 := by
   exact ⟨rfl, four_mul_le_size_add and2Fn_disperser and2Circuit hcomp⟩
 
 /-- A `0`-gate circuit on `4` bits has `size + 10 * 1 < 4 * 4`, so it is constant on some
-`1`-dimensional injective affine subspace and must disagree with any `1`-affine disperser. -/
+`1`-dimensional injective affine subspace. -/
 private def proj4Circuit : Circuit (fullSignature 2 Bool) 4 1 :=
   ⟨Program.empty, fun _ => Wire.input ⟨0, by decide⟩⟩
 
@@ -63,17 +63,24 @@ example : ∃ g : BitString 1 → BitString 4, IsAffine g ∧ Function.Injective
     ∃ b : Bool, ∀ u, proj4Circuit.eval fullInterpretation (g u) 0 = b :=
   exists_affine_subspace_const_of_size_lt proj4Circuit (by decide)
 
-example {f : BooleanFunction 4} (hf : IsAffineDisperser f 1) :
-    ∃ x : BitString 4, proj4Circuit.eval fullInterpretation x 0 ≠ f x :=
-  exists_disagreeing_input_of_size_lt hf proj4Circuit (by decide)
+/-- A `0`-gate circuit on `100` bits has `size + 10 * 11 < 4 * 100`, so it disagrees on some input
+with a genuine `11`-affine disperser obtained from `exists_isAffineDisperser`. -/
+private def proj100Circuit : Circuit (fullSignature 2 Bool) 100 1 :=
+  ⟨Program.empty, fun _ => Wire.input ⟨0, by decide⟩⟩
 
-/-- Non-trivial numerical consequence at `n = 100, d = 1`: `390 ≤ C.size`, strictly improving on
-the earlier `3.5n - 7d` bound (`343 ≤ C.size`). -/
-example {f : BooleanFunction 100} (hf : IsAffineDisperser f 1)
-    (C : Circuit (fullSignature 2 Bool) 100 1)
-    (hC : C.Computes fullInterpretation (single f)) : 390 ≤ C.size := by
-  have h := four_mul_le_size_add hf C hC
-  omega
+example : ∃ f : BitString 100 → Bool, IsAffineDisperser f 11 ∧
+    ∃ x : BitString 100, proj100Circuit.eval fullInterpretation x 0 ≠ f x := by
+  obtain ⟨f, hf⟩ := exists_isAffineDisperser (n := 100) (d := 11) (by norm_num)
+  exact ⟨f, hf, exists_disagreeing_input_of_size_lt hf proj100Circuit (by decide)⟩
+
+/-- Non-vacuous numerical consequence at `n = 100, d = 11`: any circuit computing a genuine
+`11`-affine disperser on `100` bits satisfies `290 ≤ C.size` (whereas `3.5n - 7d` gives only
+`273 ≤ C.size`). -/
+example : ∃ f : BitString 100 → Bool, IsAffineDisperser f 11 ∧
+    ∀ C : Circuit (fullSignature 2 Bool) 100 1, C.Computes fullInterpretation (single f) →
+      290 ≤ C.size := by
+  obtain ⟨f, hf⟩ := exists_isAffineDisperser (n := 100) (d := 11) (by norm_num)
+  exact ⟨f, hf, fun C hC => by have := four_mul_le_size_add hf C hC; omega⟩
 
 /-- Exercise `(PC)` (`addPair`) on an initial state of `and2Circuit`: pairing `(0, false, 1, false)`
 preserves validity and lowers potential by `8`. -/

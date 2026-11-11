@@ -23,17 +23,18 @@ This module packages two consequences of `four_mul_le_size_add`:
   `eventually_four_mul_le_size_add_explicitDisperser`). Achieving `4n - O(log n)` (`Theorem 1.1`
   per issue `#4322`, unverified against [Mishra and Santhanam][MishraSanthanam2027]) remains open
   pending an `O(log n)`-dimension affine disperser (`#4323`).
-* **Weight optimality (`Remark 4.3` per `#4322`, unverified)**: for any choice of non-negative
-  weights `α` (per used unpaired parameter) and `β` (per pair) satisfying the linear constraints of
-  `Valid.exists_step`, the leading coefficient `c - α` is at most `4` (`remark_4_3_bound`), and
-  equality forces `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and `α = β + 2` (`remark_4_3_optimal`).
+* **Weight optimality (from the `#4322` LP constraints)**: for any rational weights `α` (per used
+  unpaired parameter), `β` (per pair), and `c` (per eliminated bit) satisfying the linear
+  constraints recorded in `#4322` (not produced by `Valid.exists_step` itself), the leading
+  coefficient `c - α` is at most `4` (`weight_sub_le_four`), and equality forces `4 ≤ β`, `6 ≤ α`,
+  `10 ≤ c`, and `α = β + 2` (`weight_lower_bounds_of_sub_eq_four`).
 
 ## Main results
 
-* `Cslib.Circuits.Boolean.AffineDisperser4n.remark_4_3_bound`: the leading coefficient `c - α`
+* `Cslib.Circuits.Boolean.AffineDisperser4n.weight_sub_le_four`: the leading coefficient `c - α`
   cannot exceed `4`.
-* `Cslib.Circuits.Boolean.AffineDisperser4n.remark_4_3_optimal`: achieving `c - α = 4` forces
-  `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and `α = β + 2`.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.weight_lower_bounds_of_sub_eq_four`: achieving
+  `c - α = 4` forces `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and `α = β + 2`.
 * `Cslib.Circuits.Boolean.AffineDisperser4n.four_mul_le_size_add_explicitThreshold`: the
   `4n - 10d` bound instantiated at `explicitDisperser`.
 * `Cslib.Circuits.Boolean.AffineDisperser4n.eventually_four_mul_le_size_add_explicitDisperser`:
@@ -56,18 +57,18 @@ open Filter Cslib.Circuits Cslib.Complexity Cslib.AffineDisperser
 
 /-! ### Optimality of the potential weights (`Remark 4.3` per `#4322`) -/
 
-/-- Upper bound on the coefficient of `n` (label `Remark 4.3` per `#4322`, unverified against
-[MishraSanthanam2027]): under the linear constraints from degenerate pairs / equations
-(`α ≤ β + 2`) and pair creation (`c ≤ 2 α - β + 2`), the leading coefficient `c - α` cannot
-exceed `4`. -/
-theorem remark_4_3_bound {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 2 * α - β + 2) :
+/-- Upper bound on the coefficient of `n` (recorded in `#4322`, label `Remark 4.3` unverified
+against [MishraSanthanam2027]): under the `#4322` linear constraints (`α ≤ β + 2` and
+`c ≤ 2 * α - β + 2`), the leading coefficient `c - α` cannot exceed `4`. -/
+theorem weight_sub_le_four {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 2 * α - β + 2) :
     c - α ≤ 4 := by
   linarith
 
-/-- Optimality of `α = 6, β = 4, c = 10` (label `Remark 4.3` per `#4322`, unverified against
-[MishraSanthanam2027]): any weight triple `(α, β, c)` satisfying the constraints and achieving
-`c - α = 4` satisfies `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and `α = β + 2`. -/
-theorem remark_4_3_optimal {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 2 * β + 2)
+/-- Optimality of `α = 6, β = 4, c = 10` (recorded in `#4322`, label `Remark 4.3` unverified
+against [MishraSanthanam2027]): any rational weight triple `(α, β, c)` satisfying the `#4322`
+linear constraints and achieving `c - α = 4` satisfies `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and
+`α = β + 2`. -/
+theorem weight_lower_bounds_of_sub_eq_four {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 2 * β + 2)
     (h₃ : c ≤ 2 * α - β + 2) (h₄ : c - α = 4) :
     4 ≤ β ∧ 6 ≤ α ∧ 10 ≤ c ∧ α = β + 2 :=
   ⟨by linarith, by linarith, by linarith, by linarith⟩
@@ -107,16 +108,13 @@ theorem eventually_four_mul_sub_le_size_of_computes_explicitDisperser :
     ∀ᶠ N in atTop, ∀ (C : Circuit (fullSignature 2 Bool) N 1),
       C.Computes fullInterpretation (single (explicitDisperser N)) →
       4 * (N : ℝ) - 60 * (N : ℝ) / ((Nat.log 2 N : ℝ) + 1) - 10 ≤ (C.size : ℝ) := by
-  filter_upwards [eventually_explicitThreshold_le] with N hth C hC
-  have hlb : (4 * N : ℝ) ≤ (C.size : ℝ) + 10 * ((explicitThreshold N : ℝ) + 1) := by
-    exact_mod_cast four_mul_le_size_add_explicitThreshold C hC
-  have hlog : (0 : ℝ) < (Nat.log 2 N : ℝ) + 1 := by positivity
-  have hthR : ((Nat.log 2 N : ℝ) + 1) * (explicitThreshold N : ℝ) ≤ 6 * (N : ℝ) := by
-    exact_mod_cast hth
-  have hdiv : (explicitThreshold N : ℝ) ≤ 6 * (N : ℝ) / ((Nat.log 2 N : ℝ) + 1) :=
-    (le_div_iff₀ hlog).2 (by linarith)
-  have hmul : 10 * (6 * (N : ℝ) / ((Nat.log 2 N : ℝ) + 1)) =
-      60 * (N : ℝ) / ((Nat.log 2 N : ℝ) + 1) := by ring
+  filter_upwards [eventually_four_mul_le_size_add_explicitDisperser] with N hN C hC
+  have hlb : (4 * N : ℝ) ≤ (C.size : ℝ) + ((60 * N / (Nat.log 2 N + 1) : ℕ) : ℝ) + 10 := by
+    exact_mod_cast hN C hC
+  have hdiv : ((60 * N / (Nat.log 2 N + 1) : ℕ) : ℝ) ≤
+      60 * (N : ℝ) / ((Nat.log 2 N : ℝ) + 1) := by
+    simpa [Nat.cast_add, Nat.cast_mul] using
+      (Nat.cast_div_le (α := ℝ) (m := 60 * N) (n := Nat.log 2 N + 1))
   linarith
 
 /-- There exists an explicit language in `P` whose `N`-bit slices require Boolean circuits of

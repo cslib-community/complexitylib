@@ -433,6 +433,60 @@ theorem Valid.exists_out_ne_of_le {f : BooleanFunction n} {d : ℕ} (hS : S.Vali
   rw [hS.computes val hc hl, hS.computes val' hc' hl', ← hg1, ← hg2]
   exact huv
 
+private theorem Valid.exists_affine_subspace_const_of_erased {n d : ℕ} {S : State n}
+    {f : BooleanFunction n} (hS : S.Valid f) (ha : d < S.a) (c : Bool) {x : ℕ}
+    (hx : x ∈ S.params) {R : Finset ℕ} (hR : R ⊆ S.params) (b : Bool)
+    (hout : ∀ val, S.Consistent val → S.InZeroLocus val → val x = c + ∑ j ∈ R, val j →
+      S.out.eval val = b)
+    (rep : ZeroPair → ℕ) (hrep : ∀ pr ∈ S.pairs, pr.Contains (rep pr))
+    {z : ℕ} (hzp : z ∈ S.params) (hrepz : ∀ pr ∈ S.pairs, rep pr ≠ z)
+    (rhs : (ℕ → Bool) → Bool)
+    (hrhs_aff : ∀ {g : BitString (S.a - 1) → ℕ → Bool}, IsAffine g →
+      IsAffine fun u => rhs (g u))
+    (hrhs_eq : ∀ g : ℕ → Bool, (∀ pr ∈ S.pairs, g (rep pr) = pr.bias (rep pr)) →
+      Function.update g z (rhs g) x = c + ∑ j ∈ R, Function.update g z (rhs g) j) :
+    ∃ g : BitString d → BitString n, IsAffine g ∧ Function.Injective g ∧
+      ∀ u, ∃ val, S.Consistent val ∧ S.InZeroLocus val ∧ S.out.eval val = b ∧
+        g u = S.phi val := by
+  classical
+  set F := S.params \ S.pairs.image rep
+  have hF : F.card = S.a := hS.card_sdiff_image rep hrep
+  have hzF : z ∈ F := Finset.mem_sdiff.2 ⟨hzp, fun h => by
+    obtain ⟨pr, hpr, he⟩ := Finset.mem_image.1 h
+    exact hrepz pr hpr he⟩
+  set F' := F.erase z
+  have hF' : F'.card = S.a - 1 := by rw [Finset.card_erase_of_mem hzF, hF]
+  have hF'p : F' ⊆ S.params := (Finset.erase_subset _ _).trans Finset.sdiff_subset
+  have hF'disj : ∀ pr ∈ S.pairs, rep pr ∉ F' := fun pr hpr h =>
+    (Finset.mem_sdiff.1 (Finset.mem_of_mem_erase h)).2 (Finset.mem_image_of_mem _ hpr)
+  let base := locusAssign S rep F' hF'
+  have hbase_rep : ∀ u pr, pr ∈ S.pairs → base u (rep pr) = pr.bias (rep pr) := fun u pr hpr =>
+    locusAssign_rep hS hrep hF' hF'disj u hpr
+  let σ : BitString (S.a - 1) → ℕ → Bool := fun u => Function.update (base u) z (rhs (base u))
+  have hσaff : IsAffine σ :=
+    AffineDisperser.State.isAffine_update (isAffine_locusAssign S rep F' hF') z
+      (hrhs_aff (isAffine_locusAssign S rep F' hF'))
+  have hlocus : ∀ u pr, pr ∈ S.pairs → pr.Holds (σ u) := fun u pr hpr =>
+    ZeroPair.holds_of_eq_bias (hrep pr hpr) (by
+      dsimp only [σ]
+      rw [Function.update_of_ne (hrepz pr hpr)]
+      exact hbase_rep u pr hpr)
+  refine hS.exists_affine_subspace_const_of_family σ hσaff hlocus
+    (fun u v h => AffineDisperser.State.eq_of_spread hF' fun i hi => ?_) (by omega)
+    fun u val hcons hval => ?_
+  · have hi' := h i (hF'p hi)
+    have hiz : i ≠ z := Finset.ne_of_mem_erase hi
+    dsimp only [σ, base] at hi'
+    rw [Function.update_of_ne hiz, Function.update_of_ne hiz,
+      locusAssign_of_mem hF' hF'disj u hi,
+      locusAssign_of_mem hF' hF'disj v hi] at hi'
+    exact hi'
+  · refine hout val hcons (fun pr hpr => ?_) ?_
+    · exact (ZeroPair.holds_congr (hval _ (hS.pair_mem pr hpr).1)
+        (hval _ (hS.pair_mem pr hpr).2.1)).2 (hlocus u pr hpr)
+    · rw [hval x hx, Finset.sum_congr rfl fun j hj => hval j (hR hj)]
+      exact hrhs_eq (base u) (hbase_rep u)
+
 /-- If `d < a` and the output of a valid state is constant `b` on consistent assignments in `Z(P)`
 satisfying one affine equation `x = c + ∑ j ∈ R, val j`, then there is an injective affine map
 `BitString d → BitString n` into `Φ(Z(P))` whose consistent lifts all evaluate to `b`. -/
@@ -470,67 +524,18 @@ theorem Valid.exists_affine_subspace_const_of_fix {f : BooleanFunction n} {d : �
         have hne : pr ≠ pr₀ := fun h' => h (h' ▸ hx0)
         have hdisj := hS.pairs_disjoint pr hpr pr₀ hpr₀ hne
         rcases hy0 with h1 | h1 <;> rw [← h1] at heq <;> tauto
-    set F := S.params \ S.pairs.image rep
-    have hF : F.card = S.a := hS.card_sdiff_image rep hrep
-    have hyF : y ∈ F := Finset.mem_sdiff.2 ⟨hyp, fun h => by
-      obtain ⟨pr, hpr, he⟩ := Finset.mem_image.1 h
-      exact hrepy pr hpr he⟩
-    set F' := F.erase y
-    have hF' : F'.card = S.a - 1 := by rw [Finset.card_erase_of_mem hyF, hF]
-    have hF'p : F' ⊆ S.params := (Finset.erase_subset _ _).trans Finset.sdiff_subset
-    have hF'disj : ∀ pr ∈ S.pairs, rep pr ∉ F' := fun pr hpr h =>
-      (Finset.mem_sdiff.1 (Finset.mem_of_mem_erase h)).2 (Finset.mem_image_of_mem _ hpr)
-    let base := locusAssign S rep F' hF'
-    let bx := pr₀.bias x
-    have hbasex : ∀ u, base u x = bx := fun u => by
-      have hrepx : rep pr₀ = x := by simp [rep, hx0]
-      simpa only [hrepx] using locusAssign_rep hS hrep hF' hF'disj u hpr₀
-    let σ : BitString (S.a - 1) → ℕ → Bool := fun u =>
-      Function.update (base u) y ((c ^^ bx) + ∑ j ∈ R.erase y, base u j)
-    have hσy : ∀ u, σ u y = (c ^^ bx) + ∑ j ∈ R.erase y, σ u j := fun u => by
-      simp only [σ, Function.update_self]
-      congr 1
-      exact Finset.sum_congr rfl fun j hj =>
-        (Function.update_of_ne (Finset.ne_of_mem_erase hj) _ _).symm
-    have hσx : ∀ u, σ u x = bx := fun u => by
-      simp only [σ, Function.update_of_ne hyx.symm]
-      exact hbasex u
-    have hσeq : ∀ u, σ u x = c + ∑ j ∈ R, σ u j := fun u => by
-      rw [← Finset.add_sum_erase R _ hyR, hσy, hσx]
-      generalize ∑ j ∈ R.erase y, σ u j = s
-      cases c <;> cases bx <;> cases s <;> rfl
-    have hσaff : IsAffine σ :=
-      AffineDisperser.State.isAffine_update (isAffine_locusAssign S rep F' hF') y
-        (AffineDisperser.State.isAffine_const_add_sum
-          (isAffine_locusAssign S rep F' hF') (c ^^ bx) (R.erase y))
-    have hlocus : ∀ u pr, pr ∈ S.pairs → pr.Holds (σ u) := fun u pr hpr =>
-      ZeroPair.holds_of_eq_bias (hrep pr hpr) (by
-        by_cases hpx : pr.Contains x
-        · have hrepx : rep pr = x := by simp [rep, hpx]
-          have heq : pr = pr₀ := by
-            by_contra hne
-            have := hS.pairs_disjoint pr hpr pr₀ hpr₀ hne
-            rcases hpx with h1 | h1 <;> rcases hx0 with h2 | h2 <;>
-              rw [← h1] at h2 <;> tauto
-          subst heq
-          rw [hrepx, hσx]
-        · dsimp only [σ]
-          rw [Function.update_of_ne (hrepy pr hpr)]
-          exact locusAssign_rep hS hrep hF' hF'disj u hpr)
-    refine hS.exists_affine_subspace_const_of_family σ hσaff hlocus
-      (fun u v h => AffineDisperser.State.eq_of_spread hF' fun i hi => ?_) (by omega)
-      fun u val hcons hval => ?_
-    · have hi' := h i (hF'p hi)
-      have hiy : i ≠ y := Finset.ne_of_mem_erase hi
-      dsimp only [σ, base] at hi'
-      rw [Function.update_of_ne hiy, Function.update_of_ne hiy,
-        locusAssign_of_mem hF' hF'disj u hi,
-        locusAssign_of_mem hF' hF'disj v hi] at hi'
-      exact hi'
-    · refine hout val hcons (fun pr hpr => ?_) ?_
-      · exact (ZeroPair.holds_congr (hval _ (hS.pair_mem pr hpr).1)
-          (hval _ (hS.pair_mem pr hpr).2.1)).2 (hlocus u pr hpr)
-      · rw [hval x hx, hσeq u, Finset.sum_congr rfl fun j hj => hval j (hR hj)]
+    refine hS.exists_affine_subspace_const_of_erased ha c hx hR b hout rep hrep hyp hrepy
+      (fun g => (c ^^ pr₀.bias x) + ∑ j ∈ R.erase y, g j)
+      (fun hg => AffineDisperser.State.isAffine_const_add_sum hg _ _) fun g hgrep => ?_
+    have hrepx : rep pr₀ = x := by simp [rep, hx0]
+    have hgx : Function.update g y ((c ^^ pr₀.bias x) + ∑ j ∈ R.erase y, g j) x = pr₀.bias x := by
+      rw [Function.update_of_ne hyx.symm, ← hrepx]
+      exact hgrep pr₀ hpr₀
+    have hsum : ∑ j ∈ R.erase y, Function.update g y
+        ((c ^^ pr₀.bias x) + ∑ j ∈ R.erase y, g j) j = ∑ j ∈ R.erase y, g j :=
+      Finset.sum_congr rfl fun j hj => Function.update_of_ne (Finset.ne_of_mem_erase hj) _ _
+    rw [← Finset.add_sum_erase R _ hyR, Function.update_self, hgx, hsum]
+    cases c <;> cases pr₀.bias x <;> cases ∑ j ∈ R.erase y, g j <;> rfl
   · push Not at hcase
     let rep : ZeroPair → ℕ := fun pr => if pr.Contains x then pr.partner x else pr.fst
     have hrep : ∀ pr ∈ S.pairs, pr.Contains (rep pr) := fun pr _ => by
@@ -546,47 +551,13 @@ theorem Valid.exists_affine_subspace_const_of_fix {f : BooleanFunction n} {d : �
       · simp only [rep, h, ite_false]
         intro heq
         exact h (Or.inl heq)
-    set F := S.params \ S.pairs.image rep
-    have hF : F.card = S.a := hS.card_sdiff_image rep hrep
-    have hxF : x ∈ F := Finset.mem_sdiff.2 ⟨hx, fun h => by
-      obtain ⟨pr, hpr, he⟩ := Finset.mem_image.1 h
-      exact hrepx pr hpr he⟩
-    set F' := F.erase x
-    have hF' : F'.card = S.a - 1 := by rw [Finset.card_erase_of_mem hxF, hF]
-    have hF'p : F' ⊆ S.params := (Finset.erase_subset _ _).trans Finset.sdiff_subset
-    have hF'disj : ∀ pr ∈ S.pairs, rep pr ∉ F' := fun pr hpr h =>
-      (Finset.mem_sdiff.1 (Finset.mem_of_mem_erase h)).2 (Finset.mem_image_of_mem _ hpr)
-    let base := locusAssign S rep F' hF'
-    let σ : BitString (S.a - 1) → ℕ → Bool := fun u =>
-      Function.update (base u) x (c + ∑ j ∈ R, base u j)
-    have hσx : ∀ u, σ u x = c + ∑ j ∈ R, σ u j := fun u => by
-      simp only [σ, Function.update_self]
-      congr 1
-      exact Finset.sum_congr rfl fun j hj =>
-        (Function.update_of_ne (by rintro rfl; exact hxR hj) _ _).symm
-    have hσaff : IsAffine σ :=
-      AffineDisperser.State.isAffine_update (isAffine_locusAssign S rep F' hF') x
-        (AffineDisperser.State.isAffine_const_add_sum
-          (isAffine_locusAssign S rep F' hF') c R)
-    have hlocus : ∀ u pr, pr ∈ S.pairs → pr.Holds (σ u) := fun u pr hpr =>
-      ZeroPair.holds_of_eq_bias (hrep pr hpr) (by
-        dsimp only [σ]
-        rw [Function.update_of_ne (hrepx pr hpr)]
-        exact locusAssign_rep hS hrep hF' hF'disj u hpr)
-    refine hS.exists_affine_subspace_const_of_family σ hσaff hlocus
-      (fun u v h => AffineDisperser.State.eq_of_spread hF' fun i hi => ?_) (by omega)
-      fun u val hcons hval => ?_
-    · have hi' := h i (hF'p hi)
-      have hix : i ≠ x := Finset.ne_of_mem_erase hi
-      dsimp only [σ, base] at hi'
-      rw [Function.update_of_ne hix, Function.update_of_ne hix,
-        locusAssign_of_mem hF' hF'disj u hi,
-        locusAssign_of_mem hF' hF'disj v hi] at hi'
-      exact hi'
-    · refine hout val hcons (fun pr hpr => ?_) ?_
-      · exact (ZeroPair.holds_congr (hval _ (hS.pair_mem pr hpr).1)
-          (hval _ (hS.pair_mem pr hpr).2.1)).2 (hlocus u pr hpr)
-      · rw [hval x hx, hσx u, Finset.sum_congr rfl fun j hj => hval j (hR hj)]
+    refine hS.exists_affine_subspace_const_of_erased ha c hx hR b hout rep hrep hx hrepx
+      (fun g => c + ∑ j ∈ R, g j)
+      (fun hg => AffineDisperser.State.isAffine_const_add_sum hg c R) fun g _ => by
+        rw [Function.update_self]
+        congr 1
+        exact Finset.sum_congr rfl fun j hj =>
+          (Function.update_of_ne (by rintro rfl; exact hxR hj) _ _).symm
 
 /-- If `d < a`, the output of a valid state for an affine disperser for dimension `d` is not
 constant on the consistent assignments in `Z(P)` satisfying one more affine equation

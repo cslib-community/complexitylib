@@ -19,9 +19,10 @@ any general Boolean circuit (`fullSignature 2 Bool`) computing a `d`-affine disp
 bits has size at least `4 * n - 10 * d`, i.e., `4 * n ≤ C.size + 10 * d`
 (`Cslib.Circuits.Boolean.AffineDisperser4n.four_mul_le_size_add`).
 
-Circuits are formalized over `fullSignature 2 Bool`, where constant gates also cost a gate; in a
-model with free constants the bound holds a fortiori (`AffineDisperser.lean` uses the same
-convention). This module proves only the size bound and the non-constructive existence of a
+Circuits are formalized over `fullSignature 2 Bool`, where a constant also costs a gate; the
+source lets circuits read constants for free, so the bound holds here a fortiori (Lean's bound
+is weaker than the source's by at most the two constant gates; `AffineDisperser.lean` uses the
+same convention). This module proves only the size bound and the non-constructive existence of a
 constant affine subspace / disagreeing input (`exists_affine_subspace_const_of_size_lt`,
 `exists_disagreeing_input_of_size_lt`); the deterministic `poly(n, 2^d)`-time refuter clause
 reported on `#4322` remains open (Milestone 4).

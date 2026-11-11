@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Corollary
 
 /-!
-# Tests for Remark 4.3 and the explicit `4N - O(N / log N)` lower bound
+# Tests for weight optimality and the explicit `4N - O(N / log N)` lower bound
 -/
 
 namespace CslibFrontierTests.AffineDisperser4nCorollary
@@ -15,16 +15,17 @@ namespace CslibFrontierTests.AffineDisperser4nCorollary
 open Filter Cslib.BitString Cslib.Circuits Cslib.Complexity
 open Cslib.Circuits.Boolean.AffineDisperser4n
 
-/-- Remark 4.3 optimality check: `(α, β, c) = (6, 4, 10)` attains `c - α = 4` tightly across all
-three LP constraints, and any valid solution achieving `c - α = 4` has `10 ≤ c`. -/
+/-- Weight-constraint optimality check (constraints recorded in `#4322`): `(α, β, c) = (6, 4, 10)`
+attains `c - α = 4` tightly across all three inequalities, any solution has `c - α ≤ 4`, and
+equality forces `10 ≤ c`. -/
 example :
     (6 : ℚ) ≤ 4 + 2 ∧ (10 : ℚ) ≤ 2 * 4 + 2 ∧ (10 : ℚ) ≤ 2 * 6 - 4 + 2 ∧ (10 : ℚ) - 6 = 4 := by
   norm_num
 
 example {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 2 * β + 2) (h₃ : c ≤ 2 * α - β + 2)
-    (h₄ : c - α = 4) : 10 ≤ c := by
-  obtain ⟨_, _, hc, _⟩ := remark_4_3_optimal h₁ h₂ h₃ h₄
-  exact hc
+    (h₄ : c - α = 4) : c - α ≤ 4 ∧ 10 ≤ c := by
+  obtain ⟨_, _, hc, _⟩ := weight_lower_bounds_of_sub_eq_four h₁ h₂ h₃ h₄
+  exact ⟨weight_sub_le_four h₁ h₃, hc⟩
 
 /-- An explicit language in `P` whose `N`-bit slices eventually require Boolean circuit size at
 least `3.6 * N` (strictly exceeding `3.5 * N`). -/
