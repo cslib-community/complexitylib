@@ -84,16 +84,9 @@ def checkClauses (φ : CNF V) : Bool :=
 def checkClausesM (φ : CNF V) : TimeM ℕ Bool :=
   φ.foldlM (fun ok c => do ✓ return (ok && isValidTwoClause c)) true
 
-private theorem foldl_and_all {α : Type*} (p : α → Bool) :
-    ∀ (xs : List α) (init : Bool),
-      xs.foldl (fun ok x => ok && p x) init = (init && xs.all p)
-  | [], init => by simp
-  | x :: xs, init => by
-    rw [List.foldl_cons, foldl_and_all p xs, List.all_cons, Bool.and_assoc]
-
 theorem checkClauses_eq_true_iff (φ : CNF V) :
     checkClauses φ = true ↔ (∀ c ∈ φ, c.length ≤ 2) ∧ [] ∉ φ := by
-  rw [checkClauses, foldl_and_all, Bool.true_and, List.all_eq_true]
+  rw [checkClauses, List.foldl_and_eq_and_all, Bool.true_and, List.all_eq_true]
   simp only [isValidTwoClause]
   constructor
   · intro h
@@ -439,7 +432,7 @@ theorem solve_eq_some (hvs : ∀ v, v ∈ vs) {σ : V → Bool} (h : solve vs φ
     · injection h with hσ
       subst hσ
       have hdist_all : ∀ v, compIdx (v, true) ≠ compIdx (v, false) := by
-        rw [foldl_and_all, Bool.true_and, List.all_eq_true] at hdist
+        rw [List.foldl_and_eq_and_all, Bool.true_and, List.all_eq_true] at hdist
         exact fun v => of_decide_eq_true (hdist v (hvs v))
       refine ⟨hw, (CNF.eval_eq_true_iff _ _).2 fun c hc => ?_⟩
       have hc2 : c.length ≤ 2 := hw c hc
@@ -512,7 +505,7 @@ theorem isSome_solve_iff (hvs : ∀ v, v ∈ vs) :
                 (indexComponents (sccs (implicationAdj φ) (literalList vs)) (v, true) ≠
                   indexComponents (sccs (implicationAdj φ) (literalList vs)) (v, false)))
             true = true := by
-      rw [foldl_and_all, Bool.true_and, List.all_eq_true]
+      rw [List.foldl_and_eq_and_all, Bool.true_and, List.all_eq_true]
       intro v _
       refine decide_eq_true fun heq => ?_
       obtain ⟨h₁, h₂⟩ := (hcond.indexComponents_eq_iff (v, true) (v, false)).1 heq

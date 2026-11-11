@@ -123,12 +123,6 @@ private theorem rangeStateSize (n : ℕ) :
 
 private def rangeOutputBound (n : ℕ) : ℕ := n * (2 * n + 1)
 
-private theorem foldlAll {α : Type} (test : α → Bool) (list : List α) (init : Bool) :
-    list.foldl (fun state value => state && test value) init = (init && list.all test) := by
-  induction list generalizing init with
-  | nil => simp
-  | cons a list ih => simp [ih, Bool.and_assoc]
-
 /-- Appending mapped elements in a left fold retains the initial output prefix. -/
 theorem foldlMap {α β : Type} (f : α → β) (list : List α) (acc : List β) :
     list.foldl (fun mapped value => mapped ++ [f value]) acc = acc ++ list.map f := by
@@ -261,7 +255,7 @@ theorem allWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ Li
     (encB := encBool) (par := id) (list := list) (init := fun _ => true)
     (step := fun par state value => state && test par value)
     id' hlist (const true) hstep (PolyBounded.const 1) (by simp)
-  simpa only [foldlAll, Bool.true_and, id_eq] using hfold
+  simpa only [List.foldl_and_eq_and_all, Bool.true_and, id_eq] using hfold
 
 /-- For a fixed list, only its members need callback certificates. The index type may live in
 any universe and needs neither an encoding nor a finite-type instance. -/

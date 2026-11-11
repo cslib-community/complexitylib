@@ -354,10 +354,6 @@ theorem bitsFoldl (op : Bool → Bool → Bool) (init : Bool) :
     ComputableInLogSpace (fun xs : List Bool => xs.foldl op init) encBits encBool :=
   of_foldl_bool init op _root_.id fun _ => rfl
 
-private lemma foldl_and_eq_all (p : Bool → Bool) (acc : Bool) (xs : List Bool) :
-    xs.foldl (fun a b => a && p b) acc = (acc && xs.all p) := by
-  induction xs generalizing acc <;> simp [Bool.and_assoc, *]
-
 private lemma foldl_or_eq_any (p : Bool → Bool) (acc : Bool) (xs : List Bool) :
     xs.foldl (fun a b => a || p b) acc = (acc || xs.any p) := by
   induction xs generalizing acc <;> simp [Bool.or_assoc, *]
@@ -366,7 +362,7 @@ private lemma foldl_or_eq_any (p : Bool → Bool) (acc : Bool) (xs : List Bool) 
 theorem bitsAll (p : Bool → Bool) :
     ComputableInLogSpace (fun xs : List Bool => xs.all p) encBits encBool :=
   of_foldl_bool true (fun a b => a && p b) _root_.id fun xs => by
-    simpa using (foldl_and_eq_all p true xs).symm
+    simpa using (List.foldl_and_eq_and_all p xs true).symm
 
 /-- Testing whether any bit of a word satisfies `p` is computable in logarithmic space. -/
 theorem bitsAny (p : Bool → Bool) :
