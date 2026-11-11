@@ -5536,6 +5536,7 @@ public import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Infinitary
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.PebbleGame
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.WeisfeilerLeman
 public import CslibFrontier.Logics.FirstOrder.Interpretation
@@ -5658,6 +5659,7 @@ public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BernoulliStructure
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
+public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Infinitary
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.RandomGraph
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
