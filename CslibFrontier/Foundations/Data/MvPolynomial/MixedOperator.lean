@@ -76,24 +76,24 @@ theorem commute_mixedGen (i j : σ) : Commute (mixedGen (R := R) s i) (mixedGen 
 
 /-- A commutative subalgebra containing the operators of all variables: the double centralizer
 of the set of these operators. -/
-noncomputable def mixedSubalgebra : Subalgebra R (Module.End R (MvPolynomial σ R)) :=
+private noncomputable def mixedSubalgebra : Subalgebra R (Module.End R (MvPolynomial σ R)) :=
   Subalgebra.centralizer R (Subalgebra.centralizer R (Set.range (mixedGen (R := R) s)) : Set _)
 
-theorem mixedGen_mem (i : σ) : mixedGen (R := R) s i ∈ mixedSubalgebra (R := R) s :=
+private theorem mixedGen_mem (i : σ) : mixedGen (R := R) s i ∈ mixedSubalgebra (R := R) s :=
   fun _ hx => (hx _ ⟨i, rfl⟩).symm
 
-theorem mixedSubalgebra_le :
+private theorem mixedSubalgebra_le :
     mixedSubalgebra (R := R) s ≤ Subalgebra.centralizer R (Set.range (mixedGen (R := R) s)) := by
   refine Subalgebra.centralizer_le R _ _ ?_
   rintro _ ⟨i, rfl⟩ _ ⟨j, rfl⟩
   exact commute_mixedGen s j i
 
-noncomputable instance : CommSemiring (mixedSubalgebra (R := R) s) where
+private noncomputable instance : CommSemiring (mixedSubalgebra (R := R) s) where
   mul_comm a b := Subtype.ext (b.2 a (mixedSubalgebra_le s a.2))
 
 /-- The action of a polynomial `Q` on polynomials, with `∂ᵢ` substituted for the variables `i`
 in `s` and multiplication by `X j` for the variables `j` outside `s`. -/
-noncomputable def mixedOp : MvPolynomial σ R →ₐ[R] Module.End R (MvPolynomial σ R) :=
+@[no_expose] noncomputable def mixedOp : MvPolynomial σ R →ₐ[R] Module.End R (MvPolynomial σ R) :=
   (mixedSubalgebra s).val.comp (aeval fun i => ⟨mixedGen s i, mixedGen_mem s i⟩)
 
 @[simp]

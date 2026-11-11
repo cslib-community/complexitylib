@@ -34,4 +34,15 @@ example (t : ℕ) (d : Fin 2 → ℕ) :
         ∏ i, (((d i).factorial : ℝ) * ((t : ℝ) / Fintype.card (Fin 2)) ^ d i) :=
   sum_finsuppAntidiag_prod_descFactorial_le t d
 
+/-- The lower comparison for one factor of order `1` and `t = 2`: its side condition
+`2 * H ≤ t` is `2 * 1 ≤ 2`. -/
+example :
+    Real.exp (-(((∑ i, ![1, 0] i : ℕ) : ℝ) ^ 2 / (2 : ℕ)) -
+        ((∑ i, ![1, 0] i : ℕ) : ℝ) ^ 2 / (2 * Fintype.card (Fin 2))) *
+      ((Fintype.card (Fin 2)).multichoose 2 *
+        ∏ i, (((![1, 0] i).factorial : ℝ) * (((2 : ℕ) : ℝ) / Fintype.card (Fin 2)) ^ ![1, 0] i)) ≤
+      ((∑ M ∈ (univ : Finset (Fin 2)).finsuppAntidiag 2,
+        ∏ i, (M i).descFactorial (![1, 0] i) : ℕ) : ℝ) :=
+  le_sum_finsuppAntidiag_prod_descFactorial 2 ![1, 0] (by simp [Fin.sum_univ_two])
+
 end CslibFrontierTests.CompositionMoment
