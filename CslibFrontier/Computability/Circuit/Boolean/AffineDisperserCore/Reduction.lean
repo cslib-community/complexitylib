@@ -428,7 +428,7 @@ theorem Valid.terms_eq_empty_of_subset {S : State cfg n} (hS : S.Valid f) {e : �
 its literal `Gate.lit`. An equation containing an auxiliary variable is deleted as `v = U + rhs`,
 where `v` is its least auxiliary variable and `U` its least other term, or as `v = rhs` if it has
 no other term. An equation without auxiliary variables is dropped. -/
-def deleteConstraint (S : State cfg n) : ℕ ⊕ ℕ → State cfg n
+@[expose] def deleteConstraint (S : State cfg n) : ℕ ⊕ ℕ → State cfg n
   | .inl J => S.deleteGate J (S.gate J).lit
   | .inr e =>
     if hA : ((S.eqn e).terms.filter (· ∈ S.aux)).Nonempty then
