@@ -24,10 +24,11 @@ instrumentation, including on wrong-query cancellations; it is not assumed to
 have been revealed to the native code. The posterior construction still retains
 the code’s actual raw queries and responses.
 
-Native token minima are not yet proved: successful-only provenance must show
-that output completion preserves native success, and actual accrued bills must
-be identified with the source batch-cost score. General compiled upper-selector
-admission/attainment also remains separate.
+Successful-only native provenance now preserves probability-one source success
+under output completion. Explicit per-call price/invoice identification transfers
+the exact behavioral two-turn lower bound to actual native accrued bills, retaining
+divergent prefixes. Native attainment, the one-turn equality and general compiled
+upper-selector admission remain separate.
 
 ## Main definitions
 
@@ -41,6 +42,9 @@ admission/attainment also remains separate.
 * `terminal_law`: output readback is the original unbounded stopped native output.
 * `policy_nonreuse`, `selection_admissible`: source no-reuse and behavioral admission are derived.
 * `selection_cost`: output completion preserves the source batch-cost score.
+* `selection_success_one`: admitted native sure success survives output completion.
+* `policy_cost_le_native`: actual accrued invoices dominate the source score.
+* `native_two_lower`: universal two-turn native token lower bound.
 -/
 
 public section
@@ -396,7 +400,7 @@ theorem terminal_law (world : World tapes Control Unit (ServerState (z + 1) Unit
 open scoped Classical in
 /-- Harmless selection-only completion of the observed output table. Intersection
 can delete unproposed candidates but never add candidates to the native output.
-Its agreement on admitted successful outputs is a separate obligation. -/
+Its probability-one success preservation is proved by `selection_success_one`. -/
 def selectionPolicy
     (world : World tapes Control Unit (ServerState (z + 1) Unit) input) : TwoPolicy T :=
   { policy T points candidates P limits invoice machine world with
@@ -429,5 +433,346 @@ theorem selection_cost
       (policy T points candidates P limits invoice machine world).cost P := by
   rw [TwoPolicy.cost_eq, TwoPolicy.cost_eq]
   rfl
+
+private theorem last_record
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (hi : Invariant limits world.memory) (ht : limits.turns = 2)
+    (state final : NativeState (z := z) (tapes := tapes) (Control := Control) (input := input))
+    (hs : state ∈ (Trace.law limits (NativeResidualOracle.sample T points candidates P invoice)
+      machine 2 world).support)
+    (hf : final ∈ (Trace.step limits (NativeResidualOracle.sample T points candidates P invoice)
+      machine state).support) : final.records = none :: state.records := by
+  have hv := Trace.law_valid limits (NativeResidualOracle.sample T points candidates P invoice)
+    machine 2 world hi state hs
+  simp only [Trace.step, PMF.mem_support_bind_iff, Trace.respond,
+    PMF.mem_support_map_iff] at hf
+  obtain ⟨hit, hh, next, hn, rfl⟩ := hf
+  suffices Trace.receipt hit next = none by simp only [this]
+  cases he : state.hidden with
+  | none =>
+    simp only [he, seekSourceFrom, PMF.mem_support_pure_iff] at hh
+    subst hit
+    rfl
+  | some phase =>
+    cases phase with
+    | pending tx => simp [Trace.Valid, he] at hv
+    | ready before =>
+      rw [he] at hh
+      by_cases halted : NativeUnboundedExecution.halted before
+      · have hseek : seekSourceFrom limits
+            (NativeResidualOracle.sample T points candidates P invoice)
+            machine (some (.ready before)) = PMF.pure (some (.ready before)) := by
+          unfold seekSourceFrom
+          exact StoppedProcess.terminal_halted _ _ _ _ halted
+        rw [hseek, PMF.mem_support_pure_iff] at hh
+        subst hit
+        rfl
+      · have hc := Trace.law_live_count limits
+          (NativeResidualOracle.sample T points candidates P invoice) machine 2 world before
+          hi state hs he halted
+        cases hit with
+        | none => rfl
+        | some hit =>
+          have hserver := Trace.seek_state limits
+            (NativeResidualOracle.sample T points candidates P invoice) machine
+            (.ready before) hit hh
+          cases hit with
+          | ready after => rfl
+          | pending chosen =>
+            simp only [seekSourceFrom] at hh
+            have hb := ((StoppedProcess.terminal_support _ _ _ _ _).mp hh).1
+            cases chosen with
+            | halted after => exact hb.elim
+            | «local» after => exact hb.elim
+            | query after op control =>
+              cases op
+              cases ha : admit limits after.memory.privateState
+                  (after.config.channels ()).queryBuffer with
+              | none => simp [sourceBoundary, ha] at hb
+              | some batch =>
+                have hb := (admit_sound _ _ _ _ ha).2.2.2.1
+                change after.memory.privateState = before.memory.privateState at hserver
+                rw [hserver, ht] at hb
+                omega
+
+/-- In the actual two-turn execution, all raw parsed candidates came from the
+ideal payloads of the two selected source batches. The third epoch performs
+only local work: its zero-call receipt is derived from the source budget. -/
+theorem joint_available
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (hi : Invariant limits world.memory) (ht : limits.turns = 2)
+    (outcome : Outcome z tapes Control input)
+    (ho : outcome ∈ (joint T points candidates P limits invoice machine world).support) :
+    NativeResidualOracle.available T candidates outcome.hidden.records ⊆
+      payload T (received outcome.first outcome.firstReply ∪
+        received outcome.second outcome.secondReply) := by
+  simp only [joint, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at ho
+  obtain ⟨first, hf, r, hr, afterFirst, hn, second, hs, t, ht', afterSecond, hm,
+    final, hfinal, rfl⟩ := ho
+  have hfirst := NativeResidualOracle.response_available T points candidates limits invoice
+    machine
+    first.before afterFirst first.checkpoint
+    (choose_boundary T points candidates P limits invoice machine _ first hf) r hn
+  have hsecond := NativeResidualOracle.response_available T points candidates limits invoice
+    machine
+    second.before afterSecond second.checkpoint
+    (choose_boundary T points candidates P limits invoice machine _ second hs) t hm
+  rw [choose_before T points candidates P limits invoice machine _ first hf] at hfirst
+  rw [choose_before T points candidates P limits invoice machine _ second hs] at hsecond
+  have hfirstStep := supported_step T points candidates P limits invoice machine
+    (Trace.initial world) afterFirst first hf r hr hn
+  have hsecondStep := supported_step T points candidates P limits invoice machine
+    afterFirst afterSecond second hs t ht' hm
+  have htwo : afterSecond ∈ (Trace.law limits
+      (NativeResidualOracle.sample T points candidates P invoice) machine 2 world).support := by
+    change afterSecond ∈ ((PMF.pure (Trace.initial world)).bind
+      (Trace.step limits
+        (NativeResidualOracle.sample T points candidates P invoice) machine) |>.bind
+      (Trace.step limits
+        (NativeResidualOracle.sample T points candidates P invoice) machine)).support
+    simp only [PMF.pure_bind, PMF.mem_support_bind_iff]
+    exact ⟨afterFirst, hfirstStep, hsecondStep⟩
+  have he := last_record T points candidates P limits invoice machine world hi ht
+    afterSecond final htwo hfinal
+  change NativeResidualOracle.available T candidates final.records ⊆ _
+  rw [he]
+  change NativeResidualOracle.available T candidates afterSecond.records ⊆ _
+  rw [payload_union]
+  exact hsecond.trans (union_subset_union hfirst subset_rfl) |>.trans (by
+    simp [NativeResidualOracle.available, Trace.initial, sourceAvailable, action])
+
+open scoped Classical in
+/-- The source's weight-one optimal-cover acceptance predicate on the actual
+native candidate mask. Optimality one is derived for this WSC construction; it
+is not a supplied optimum certificate or a condition on failed outputs. -/
+@[expose] def optimalAccept (hz : 0 < z) (C : Finset (Fin m)) : Bool :=
+  decide (optimalOutput (T := T) hz (C.map candidates.toEmbedding) = 1)
+
+private theorem joint_provenance
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (hi : Invariant limits world.memory) (hzero : world.memory.privateState.history = [])
+    (ht : limits.turns = 2) (hz : 0 < z)
+    (hadmit : NativeUnboundedExecution.SelectionOnly machine
+      (environment limits (NativeResidualOracle.sample T points candidates P invoice))
+      (candidateParser (n := z + 1) m) (decodeFamily m)
+      (optimalAccept T candidates hz) world)
+    (outcome : Outcome z tapes Control input)
+    (ho : outcome ∈ (joint T points candidates P limits invoice machine world).support)
+    (hopt : optimalOutput hz (readOutput T candidates outcome.hidden) = 1) :
+    readOutput T candidates outcome.hidden ⊆ payload T
+      (received outcome.first outcome.firstReply ∪
+        received outcome.second outcome.secondReply) := by
+  have hs : outcome.hidden ∈ (Trace.law limits
+      (NativeResidualOracle.sample T points candidates P invoice) machine (limits.turns + 1)
+      world).support := by
+    rw [ht, ← joint_hidden]
+    exact (PMF.mem_support_map_iff _ _ _).mpr ⟨outcome, ho, rfl⟩
+  cases he : outcome.hidden.hidden with
+  | none => simp [readOutput, he, optimalOutput, PartialCover.Instance.cost] at hopt
+  | some phase =>
+    cases phase with
+    | pending tx => simp [readOutput, he, optimalOutput, PartialCover.Instance.cost] at hopt
+    | ready next =>
+      cases hc : NativeOpenSelection.result (decodeFamily m) next with
+      | none => simp [readOutput, he, hc, optimalOutput, PartialCover.Instance.cost] at hopt
+      | some C =>
+        have ha : optimalAccept T candidates hz C = true := by
+          simpa [optimalAccept, readOutput, he, hc] using hopt
+        have hp := Trace.terminal_provenance limits
+          (NativeResidualOracle.sample T points candidates P invoice) machine m
+          (optimalAccept T candidates hz) world next hi hzero hadmit outcome.hidden hs he C hc ha
+        have hm : C.map candidates.toEmbedding ⊆
+            (sourceAvailable m (outcome.hidden.records.filterMap id)).map
+              candidates.toEmbedding := Finset.map_subset_map.mpr hp
+        change C.map candidates.toEmbedding ⊆ NativeResidualOracle.available T candidates
+          outcome.hidden.records at hm
+        simpa [readOutput, he, hc] using
+          hm.trans (joint_available T points candidates P limits invoice machine
+            world hi ht outcome ho)
+
+/-- Every probability-one successful native selection-only competitor yields a
+probability-one successful admitted behavioral residual policy. The success
+premise is the source's competitor requirement on actual stopped tape output;
+selection provenance and the representation law are derived, not assumed. -/
+theorem selection_success_one
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (hi : Invariant limits world.memory) (hzero : world.memory.privateState.history = [])
+    (ht : limits.turns = 2) (hz : 0 < z)
+    (hadmit : NativeUnboundedExecution.SelectionOnly machine
+      (environment limits (NativeResidualOracle.sample T points candidates P invoice))
+      (candidateParser (n := z + 1) m) (decodeFamily m)
+      (optimalAccept T candidates hz) world)
+    (hsuccess : ((NativeUnboundedExecution.terminal machine
+      (environment limits (NativeResidualOracle.sample T points candidates P invoice)) world).map
+        (fun result => decide (optimalOutput hz
+          (terminalOutput T candidates result) = 1))) true = 1) :
+    (selectionPolicy T points candidates P limits invoice machine world).success P hz = 1 := by
+  classical
+  let π := policy T points candidates P limits invoice machine world
+  have hone : ∀ outcome ∈ (joint T points candidates P limits invoice machine world).support,
+      optimalOutput hz (readOutput T candidates outcome.hidden) = 1 := by
+    have h := congrArg (fun μ => (μ.map
+        (fun C => decide (optimalOutput (T := T) hz C = 1))) true)
+      (terminal_law T points candidates P limits invoice machine world hi ht)
+    simp only [PMF.map_comp, Function.comp_def] at h
+    rw [hsuccess] at h
+    rw [policy_law, PMF.map_comp] at h
+    simp only [Function.comp_def] at h
+    intro outcome ho
+    have hm : decide (optimalOutput hz (readOutput T candidates outcome.hidden) = 1) ∈
+        ((joint T points candidates P limits invoice machine world).map
+          (fun o => decide (optimalOutput hz (readOutput T candidates o.hidden) = 1))).support :=
+      (PMF.mem_support_map_iff _ _ _).mpr ⟨outcome, ho, rfl⟩
+    rw [(PMF.apply_eq_one_iff _ _).mp h] at hm
+    exact of_decide_eq_true (Set.mem_singleton_iff.mp hm)
+  have htable : ∀ t ∈ (π.run P).support,
+      optimalOutput hz (t.2.2.2.2 ∩ payload T (received t.1 t.2.1 ∪
+        received t.2.2.1 t.2.2.2.1)) = 1 := by
+    intro t ht'
+    have hm : t ∈ (π.run P).toPMF.support := by
+      intro he
+      have he' := (π.run P).toPMF_real t
+      rw [he, ENNReal.toReal_zero] at he'
+      have hpos := (Finset.mem_filter.mp ht').2
+      linarith
+    rw [policy_law] at hm
+    obtain ⟨outcome, ho, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
+    have hp := joint_provenance T points candidates P limits invoice machine
+      world hi hzero ht hz hadmit outcome ho (hone outcome ho)
+    simpa only [Finset.inter_eq_left.mpr hp] using hone outcome ho
+  have hrun : (selectionPolicy T points candidates P limits invoice machine world).run P =
+      (π.run P).map (fun (A, r, B, t, C) =>
+        (A, r, B, t, C ∩ payload T (received A r ∪ received B t))) := by
+    apply Distribution.toPMF_injective
+    simp only [selectionPolicy, TwoPolicy.run, Distribution.toPMF_bind,
+      Distribution.toPMF_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
+    rfl
+  unfold TwoPolicy.success
+  rw [hrun, Distribution.mean_map]
+  exact (Distribution.mean_eq_iff_of_le (π.run P) _ 1
+    (fun t _ => by
+      dsimp only [Function.comp_def, optimalOutput]
+      split_ifs <;> norm_num)).mpr htable
+
+open scoped ENNReal in
+/-- Every actual instrumented outcome retains the invoices of its two selected
+batches. A subsequent silent divergence cannot discard these charges. -/
+theorem joint_bill_lower
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (outcome : Outcome z tapes Control input)
+    (ho : outcome ∈ (joint T points candidates P limits invoice machine world).support) :
+    (NativeResidualOracle.invoiceCost invoice outcome.first : ℝ≥0∞) +
+      (NativeResidualOracle.invoiceCost invoice outcome.second : ℝ≥0∞) ≤
+        Trace.accrued Trace.charge outcome.hidden := by
+  simp only [joint, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at ho
+  obtain ⟨first, hf, r, _, afterFirst, hn, second, hs, t, _, afterSecond, hm,
+    final, hfinal, rfl⟩ := ho
+  have hfirst := NativeResidualOracle.response_charge T points candidates limits invoice machine
+    first.before afterFirst first.checkpoint
+    (choose_boundary T points candidates P limits invoice machine _ first hf) r hn
+  have hsecond := NativeResidualOracle.response_charge T points candidates limits invoice machine
+    second.before afterSecond second.checkpoint
+    (choose_boundary T points candidates P limits invoice machine _ second hs) t hm
+  rw [choose_before T points candidates P limits invoice machine _ first hf] at hfirst
+  rw [choose_before T points candidates P limits invoice machine _ second hs, hfirst] at hsecond
+  have hz : Trace.accrued Trace.charge (Trace.initial world) = 0 := rfl
+  rw [hz, zero_add] at hsecond
+  change (NativeResidualOracle.invoiceCost invoice (NativeResidualOracle.selectedCalls limits
+    first.checkpoint) : ℝ≥0∞) + (NativeResidualOracle.invoiceCost invoice
+    (NativeResidualOracle.selectedCalls limits second.checkpoint) : ℝ≥0∞) ≤ _
+  rw [← hsecond]
+  simp only [Trace.step, PMF.mem_support_bind_iff, Trace.respond,
+    PMF.mem_support_map_iff] at hfinal
+  obtain ⟨hit, _, next, _, rfl⟩ := hfinal
+  exact le_add_of_nonneg_left zero_le
+
+open scoped ENNReal in
+/-- The source table's analytic token score is bounded by the actual accrued
+native expectation, not by a supplied resource certificate. Per-call source
+prices are identified explicitly with the actual discrete invoices. This holds
+for every native machine, including silent divergence and invalid requests. -/
+theorem policy_cost_le_native
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (hprice : ∀ i, (invoice i : ℝ) =
+      (finSuccEquiv z i).elim P.nearCost P.specialistCost) :
+    ENNReal.ofReal ((policy T points candidates P limits invoice machine world).cost P) ≤
+      Quantitative.expected limits (NativeResidualOracle.sample T points candidates P invoice)
+        machine Trace.charge 3 world := by
+  classical
+  let score : ResidualCover.Batch z × Option (Fin z) × ResidualCover.Batch z ×
+      Option (Fin z) × Finset (Candidate T) → ℝ :=
+    fun (A, _, B, _, _) => batchCost P A + batchCost P B
+  have hnonneg (x) : 0 ≤ score x := by
+    dsimp only [score]
+    rw [NativeResidualOracle.batchCost_invoice P invoice hprice,
+      NativeResidualOracle.batchCost_invoice P invoice hprice]
+    positivity
+  have hexpect : ENNReal.ofReal
+      ((policy T points candidates P limits invoice machine world).cost P) =
+      ∑' x, ((policy T points candidates P limits invoice machine world).run P).toPMF x *
+        ENNReal.ofReal (score x) := by
+    rw [tsum_fintype]
+    change ENNReal.ofReal (∑ x,
+      ((policy T points candidates P limits invoice machine world).run P).weight x * score x) = _
+    rw [ENNReal.ofReal_sum_of_nonneg (fun x _ =>
+      mul_nonneg (((policy T points candidates P limits invoice machine world).run P).nonneg x)
+        (hnonneg x))]
+    apply Finset.sum_congr rfl
+    intro x _
+    rw [ENNReal.ofReal_mul
+      (((policy T points candidates P limits invoice machine world).run P).nonneg x)]
+    rfl
+  rw [hexpect, policy_law, PMF.tsum_map_mul]
+  change _ ≤ ∑' state, Trace.law limits
+    (NativeResidualOracle.sample T points candidates P invoice) machine 3 world state *
+      Trace.accrued Trace.charge state
+  rw [← joint_hidden, PMF.tsum_map_mul]
+  apply tsum_le_tsum
+  intro outcome
+  by_cases ho : outcome ∈ (joint T points candidates P limits invoice machine world).support
+  · apply mul_le_mul' le_rfl
+    dsimp only [score]
+    rw [NativeResidualOracle.batchCost_invoice P invoice hprice,
+      NativeResidualOracle.batchCost_invoice P invoice hprice,
+      ENNReal.ofReal_add (by positivity) (by positivity)]
+    simpa only [ENNReal.ofReal_natCast] using
+      joint_bill_lower T points candidates P limits invoice machine world outcome ho
+  · simp [(PMF.apply_eq_zero_iff _ _).mpr ho]
+
+open scoped ENNReal in
+/-- Theorem 6's two-turn universal native token lower bound for this concrete
+source oracle. Competitors have arbitrary native hidden memory and randomness,
+with no local execution clock. Only the paper's actual probability-one optimal
+output and successful-output-only selection provenance are required; table
+admission, success preservation and accrued-bill comparison are all derived. -/
+theorem native_two_lower
+    (world : World tapes Control Unit (ServerState (z + 1) Unit) input)
+    (hi : Invariant limits world.memory) (hzero : world.memory.privateState.history = [])
+    (ht : limits.turns = 2) (hz : 0 < z)
+    (hprice : ∀ i, (invoice i : ℝ) =
+      (finSuccEquiv z i).elim P.nearCost P.specialistCost)
+    (hadmit : NativeUnboundedExecution.SelectionOnly machine
+      (environment limits (NativeResidualOracle.sample T points candidates P invoice))
+      (candidateParser (n := z + 1) m) (decodeFamily m)
+      (optimalAccept T candidates hz) world)
+    (hsuccess : ((NativeUnboundedExecution.terminal machine
+      (environment limits (NativeResidualOracle.sample T points candidates P invoice)) world).map
+        (fun result => decide (optimalOutput hz
+          (terminalOutput T candidates result) = 1))) true = 1) :
+    ENNReal.ofReal (min (∑ j, P.specialistCost j)
+      (P.nearCost + P.missing.mean P.specialistCost)) ≤
+      Quantitative.expected limits (NativeResidualOracle.sample T points candidates P invoice)
+        machine Trace.charge (limits.turns + 1) world := by
+  have hA := selection_admissible T points candidates P limits invoice machine world hi hzero
+  have hS := selection_success_one T points candidates P limits invoice machine
+    world hi hzero ht hz hadmit hsuccess
+  have hl := (selectionPolicy T points candidates P limits invoice machine world).lower_cost
+    P hz hA hS
+  rw [selection_cost] at hl
+  rw [ht]
+  exact (ENNReal.ofReal_le_ofReal hl).trans
+    (policy_cost_le_native T points candidates P limits invoice machine world hprice)
 
 end Cslib.Probability.StochasticOracle.NativeResidualPolicies

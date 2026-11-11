@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.NativeResidualPolicies
+import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 import CslibFrontier.Computability.Probabilistic.NativeQueryAll
 import CslibFrontierTests.StochasticOracleResidualCover
 import Mathlib.Tactic
@@ -25,7 +25,7 @@ namespace CslibFrontierTests.StochasticOracleNativeResidualPolicies
 open Cslib.Probability StochasticOracle NativeRetention ResidualCover
 open NativeResidualOracle ConcurrentBatch NativeOpenExecution Turing
 open Cslib.Optimization.OneConstraint
-open scoped NNReal
+open scoped NNReal ENNReal
 
 private abbrev blocks := StochasticOracleResidualCover.blocks
 private abbrev parameters := StochasticOracleResidualCover.parameters
@@ -188,5 +188,98 @@ example (j : Fin 5) :
   have hs : wrongBatch.slots 0 = some (query blocks points candidates 0 ++ [false]) := rfl
   simp [NativeResidualReplies.report, NativeResidualReplies.answersFor,
     hs, wrong_near, invoice]
+
+private theorem prices : ∀ i, (invoice i : ℝ) =
+    (finSuccEquiv 5 i).elim parameters.nearCost parameters.specialistCost := by
+  intro i
+  refine Fin.cases ?_ (fun j => ?_) i
+  · norm_num [invoice, finSuccEquiv, parameters, StochasticOracleResidualCover.parameters]
+  · have he : finSuccEquiv 5 j.succ = some j := by
+      exact finSuccEquiv_succ j
+    rw [he]
+    norm_num [invoice, parameters, StochasticOracleResidualCover.parameters]
+
+-- Positive, source-matching invoices instantiate the comparison with the same
+-- actual correlated reader. These are no longer unrelated analytic price fields.
+example : ENNReal.ofReal ((NativeResidualPolicies.policy blocks points candidates parameters
+    limits invoice (NativeQueryAll.machine () 0) start).cost parameters) ≤
+    NativeBatch.Quantitative.expected limits sampler (NativeQueryAll.machine () 0)
+      NativeBatch.Trace.charge 3 start := by
+  exact NativeResidualPolicies.policy_cost_le_native blocks points candidates parameters
+    limits invoice _ start prices
+
+example : batchCost parameters (calls nearBatch) = 2 ∧
+    NativeResidualOracle.invoiceCost invoice (calls nearBatch) = 2 := by
+  rw [near_calls]
+  norm_num [batchCost, parameters, StochasticOracleResidualCover.parameters,
+    NativeResidualOracle.invoiceCost, finSuccEquiv, invoice]
+
+-- The numerical lower bound is universal over actual native competitors, not a
+-- pre-assumed behavioral policy. Sure success is exactly the source's competitor
+-- requirement. This does not assert that the reader above is a cover solver.
+example {k : ℕ} {Control : Type} {input : List Bool}
+    (machine : MultiTapePTM k Bool Control Unit)
+    (world : World k Control Unit (ServerState 6 Unit) input)
+    (hi : NativeBatch.Invariant limits world.memory)
+    (hzero : world.memory.privateState.history = [])
+    (hadmit : NativeUnboundedExecution.SelectionOnly machine (environment limits sampler)
+      (NativeBatch.candidateParser (n := 6) (Fintype.card (Candidate blocks)))
+      (decodeFamily (Fintype.card (Candidate blocks)))
+      (NativeResidualPolicies.optimalAccept blocks candidates (by norm_num)) world)
+    (hsuccess : ((NativeUnboundedExecution.terminal machine
+      (environment limits sampler) world).map
+      (fun result => decide (optimalOutput (T := blocks) (by norm_num)
+        (NativeResidualPolicies.terminalOutput blocks candidates result) = 1))) true = 1) :
+    3 ≤ NativeBatch.Quantitative.expected limits sampler machine
+      NativeBatch.Trace.charge 3 world := by
+  have h := NativeResidualPolicies.native_two_lower blocks points candidates parameters limits
+    invoice machine world hi hzero rfl (by norm_num) prices hadmit hsuccess
+  norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean] at h
+  exact h
+
+private def optimumInput : GuardedStartup.Input :=
+  ⟨⟨SourceEncoding.toNative (NativeResidualEncoding.source blocks points candidates),
+    2, 6, []⟩, 2⟩
+
+private def optimumCandidates : Fin optimumInput.startup.system.rows.length ≃ Candidate blocks :=
+  candidates
+
+private theorem optimum_valid : Valid optimumInput.startup.system :=
+  SourceEncoding.valid_toNative _
+    (NativeResidualEncoding.source_valid blocks points candidates (by norm_num))
+
+-- The existing Theorem 5 native OPT, with all finite-control admitted competitors,
+-- specializes to a strictly positive numerical lower bound on this residual input.
+example : 3 ≤ BatchOptimum.optimum limits
+    (sample blocks points optimumCandidates parameters invoice)
+      optimumInput () optimum_valid 1 := by
+  have h := NativeResidualOptimum.two_lower blocks points optimumInput optimumCandidates
+    parameters limits invoice (by norm_num) optimum_valid rfl rfl prices
+  norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean] at h
+  exact h
+
+-- Native certification is optimality for the actual decoded input. Its weight-one
+-- cover is constructed, without being supplied to a competitor in the startup data.
+example : NativeResidualPolicies.optimalAccept blocks optimumCandidates (by norm_num)
+    (NativeResidualReplies.family blocks optimumCandidates
+      (payload blocks Finset.univ)) = true := by
+  have h := primal_optimum blocks (by norm_num)
+  simp [NativeResidualPolicies.optimalAccept, optimalOutput, NativeResidualReplies.family,
+    Finset.map_eq_image, Finset.image_image, Function.comp_def, h.1, h.2.1]
+
+-- The comparison survives literal deadline cancellation: visible proposals are
+-- deleted, while the issued near-cover invoice is still present.
+example (j : Fin 5) :
+    (observe limits 0 nearBatch
+      (paths blocks points candidates invoice nearBatch (some j))).tokens = 2 ∧
+    proposals (Fintype.card (Candidate blocks))
+      (observe limits 0 nearBatch
+        (paths blocks points candidates invoice nearBatch (some j))).report = [] := by
+  constructor
+  · rw [observe_tokens, near_active, Finset.sum_singleton]
+    rfl
+  · simp [proposals, observe, paths, NativeResidualReplies.path,
+      CallTrace.report, CallTrace.response, families, nearBatch, limits,
+      answer, finSuccEquiv, List.ofFn_succ, List.ofFn_zero]
 
 end CslibFrontierTests.StochasticOracleNativeResidualPolicies
