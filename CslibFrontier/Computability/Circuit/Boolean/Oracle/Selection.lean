@@ -191,7 +191,8 @@ def queryLayer (src : Fin N → Fin q → Source K) : Circuit oracleSignature (K
     (x : BitString K) (i : Fin N) :
     (queryLayer src).eval (oracleInterpretation O) ((constLayer K).eval (oracleInterpretation O) x)
         i = O.slice q (substitute (src i) x) := by
-  simp [queryLayer]
+  simp only [queryLayer, Circuit.eval_pi, Circuit.eval_oneGate, eval_constLayer_idx,
+    oracleInterpretation_query]
   rfl
 
 @[simp] theorem size_queryLayer (src : Fin N → Fin q → Source K) : (queryLayer src).size = N := by
