@@ -49,8 +49,9 @@ def queryTree (y : ι → Bool) : DecisionTree (ι → Bool) Bool :=
 
 /-- The trivial reduction, which answers each query by asking it and keeps the hypothesis, has the
 success probability of the learner. -/
-example {Ω : Type*} {A : QueryLearner ι Ω} {μ : PMF Ω} {C : PACLearning.ConceptClass (ι → Bool) Bool}
-    {ε p : ℝ} (hA : A.Learns μ C ε (1 - p)) (hp : p ≤ 1) :
+example {Ω : Type*} {A : QueryLearner ι Ω} {μ : PMF Ω}
+    {C : PACLearning.ConceptClass (ι → Bool) Bool} {ε p : ℝ} (hA : A.Learns μ C ε (1 - p))
+    (hp : p ≤ 1) :
     (reduce A queryTree fun h (_ : Unit) => h).Learns (reduceSeed μ Unit) C ε (1 - p * 1) := by
   refine learns_reduce (amp := id) (fun f _ y => ?_) (by simpa using hA) hp zero_le_one
     fun f _ h hh => ?_
