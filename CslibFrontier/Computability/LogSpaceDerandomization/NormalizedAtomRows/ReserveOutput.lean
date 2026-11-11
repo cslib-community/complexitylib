@@ -120,7 +120,8 @@ theorem actualEstimatedResidual_output_from_cost_reserves
     have hk : (0 : ℝ) < HP.K := by linarith
     exact_mod_cast hk
   have htol : 0 < (ctx.tolerance ε) := by dsimp only [ReserveOutputContext.tolerance]; positivity
-  have hamp : 0 ≤ (ctx.amplification ζ) := by dsimp only [ReserveOutputContext.amplification];
+  have hamp : 0 ≤ (ctx.amplification ζ) := by
+    dsimp only [ReserveOutputContext.amplification]
     positivity
   have hden : (1 : ℝ) < 155648 * (J + 1) * (4 : ℝ) ^ 4 := by
     have : (0 : ℝ) ≤ J := Nat.cast_nonneg J
@@ -187,8 +188,8 @@ theorem actualEstimatedResidual_output_from_cost_reserves
       ctx.preparationLipschitz ctx.gateLipschitz ζ (ctx.input children) (ctx.rawWalk children ζ ε)
       ctx.residual) ?_ hBrow ?_ ?_
   · exact actualTwoSignal_mean_le_common HP hHPK ctx.direction ctx.roles ctx.sourceExponent
-    ctx.terminalExponent ctx.usageExponent ctx.prefixLength ctx.terminal_le_usage ctx.sourceSuffix
-    ctx.terminalSuffix (ctx.input children) (ctx.rawSteps ζ ε)
+      ctx.terminalExponent ctx.usageExponent ctx.prefixLength ctx.terminal_le_usage
+      ctx.sourceSuffix ctx.terminalSuffix (ctx.input children) (ctx.rawSteps ζ ε)
       (ctx.prepSteps ζ ε)
       ctx.gateLipschitz_nonneg ctx.preparation_lipschitz ctx.gate_lipschitz ζ ctx.residual
   · intro ν i hi
@@ -207,7 +208,9 @@ theorem actualEstimatedResidual_output_from_cost_reserves
         ctx.sourceExponent ctx.midpointExponent ctx.terminalExponent ctx.lastBin
           ctx.source_in_horizon ctx.sourceSuffix ctx.midpointSuffix ctx.terminalSuffix
           ctx.binExponent ctx.correctionRank
-        ctx.bounded (estimatedBinCap ctx.densityCap) (fun i => by unfold estimatedBinCap;
+        ctx.bounded (estimatedBinCap ctx.densityCap) (fun i => by
+          have hcap := ctx.densityCap_nonneg
+          unfold estimatedBinCap
           split_ifs <;> positivity)
         (boundedRoutedBinCutoff_grid_range ctx.binCutoff ctx.binExponent ctx.densityCap_nonneg
           ctx.cutoff_monotone ctx.cutoff_zero ctx.cutoff_one ctx.cutoff_range ctx.rates_antitone
@@ -233,8 +236,9 @@ theorem actualEstimatedResidual_output_from_cost_reserves
         ctx.roles ctx.horizon ctx.sourceExponent
         ctx.terminalExponent ctx.usageExponent ctx.terminal_le_usage ctx.source_in_horizon
           ctx.sourceSuffix ctx.terminalSuffix (ctx.rawWalk children ζ ε) (ctx.rawWalk children ζ ε)
-        (ctx.prepSteps ζ ε) ζ ctx.residual i ctx.prefixLength hε (by simp only
-          [ReserveOutputContext.prepSteps, Nat.add_sub_cancel]; exact le_rfl)
+        (ctx.prepSteps ζ ε) ζ ctx.residual i ctx.prefixLength hε (by
+          simp only [ReserveOutputContext.prepSteps, Nat.add_sub_cancel]
+          exact le_rfl)
   · intro i σ x y hy
     exact (actualTwoSignal_zero_off ctx.roles.source ctx.roles.terminal (side P
       ctx.sourceExponent) (side P ctx.usageExponent) ctx.direction ctx.sourceSuffix

@@ -83,7 +83,6 @@ theorem actualEstimatedResidual_output_from_root_budgets
   dsimp only
   intro hroot
   apply hout P J ctx children ε hε
-  dsimp only
   intro j hj
   have hp := actual_conditionalChildCost_le_of_root_budgets HP ctx.direction ctx.roles ctx.level
     ctx.sourceExponent ctx.midpointExponent ctx.terminalExponent ctx.lastBin ctx.sourceSuffix
@@ -96,7 +95,7 @@ theorem actualEstimatedResidual_output_from_root_budgets
     (δ := (ctx.tolerance ε) ^ 4 / (1 + (rate ctx.terminalExponent)⁻¹ ^ 4 + (ctx.amplification ζ)))
     (by dsimp only [ReserveOutputContext.amplification]; positivity)
     (hroot j hj)
-  dsimp only [ReserveOutputContext.cost]
+  unfold ReserveOutputContext.cost ReserveOutputContext.channelsV
   unfold HierarchyTask.conditionalChildCost at hp ⊢
   unfold retainedMask
   convert hp using 1;

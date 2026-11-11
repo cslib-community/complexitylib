@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 module
 -- upstream: local-only (tests of common envelopes and actual finite reserve output)
+import CslibFrontier.Computability.LogSpaceDerandomization.NormalizedAtomRows.CommonEnvelope
 import CslibFrontier.Computability.LogSpaceDerandomization.NormalizedAtomRows.ReserveOutput
 
 /-! Actual full-matrix two-bin input, nonzero common envelopes and empty prefixes. -/
@@ -261,10 +262,12 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) {amplification : ℝ}
 
 -- Every finite-context assumption is inhabited for the existing regular hierarchy. The fixture
 -- has two bins, a positive prefix horizon and a usage mask narrower than its full terminal rank.
-example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
-    ∃ ctx : ReserveOutputContext HP 5 4,
+example : ∃ (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (ctx : ReserveOutputContext HP 5 4),
       ctx.sourceExponent = 0 ∧ ctx.usageExponent = 1 ∧ ctx.prefixLength = 1 ∧
       ctx.tolerance 2 = 1 / 2 := by
+  obtain ⟨HP⟩ := FourthRootHierarchyParams.nonempty
+    (by norm_num : (0 : ℝ) < 16) (by norm_num : (0 : ℝ) < 1)
   obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
   let ctx : ReserveOutputContext HP 5 4 := {
     direction := 1
@@ -321,7 +324,7 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) :
     gate_lipschitz := hρ
     prefixLength := 1
     prefixLength_pos := by decide }
-  refine ⟨ctx, rfl, rfl, rfl, ?_⟩
+  refine ⟨HP, ctx, rfl, rfl, rfl, ?_⟩
   norm_num [ReserveOutputContext.tolerance, ctx]
 
 end ReserveOutputRegression

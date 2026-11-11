@@ -239,12 +239,15 @@ abbrev estimated (ctx : ReserveOutputContext HP P J) (children : ReserveOutputCh
     (children.raw precision i) (children.prep precision i) (children.maximum precision i) r σ
 
 /-- Canonical normalized children for the supplied kernel and request cutoffs. -/
-abbrev canonical (ctx : ReserveOutputContext HP P J) :=
+abbrev canonical (ctx : ReserveOutputContext HP P J) :
+    ℕ → Environment P J → HierarchyTask.Request HP.k (Fin J) (ZMod P) →
+      Matrix (ZMod P) (ZMod P) ℝ :=
   fun i σ r => canonicalRequestChild HP ctx.direction id ctx.kernel
     (ctx.cutoff i) (ctx.preparationCutoff i) ctx.requestGate ctx.requestRank r σ
 
 /-- Retained channel interpretation on the field vertices. -/
-abbrev channelsV (ctx : ReserveOutputContext HP P J) :=
+abbrev channelsV (ctx : ReserveOutputContext HP P J) :
+    Fin J → ℝ → List (ZMod P) → Environment P J → ZMod P → Prop :=
   fun role b suffix σ v => channels ctx.direction role b suffix σ (id v)
 
 /-- Actual signed residual input from the child families. -/
