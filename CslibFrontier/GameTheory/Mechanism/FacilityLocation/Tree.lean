@@ -15,10 +15,18 @@ import Mathlib.Tactic.Linarith
 /-!
 # Strategyproof facility location on tree metric graphs
 
-This module formalizes the tree characterization theorem of [SchummerVohra2002]: on a finite tree
-metric graph `MetricGraph W` (`W.graph.IsTree`), a deterministic facility-location mechanism is
-strategyproof and surjective if and only if it is the evaluation map of an extended median voter
-scheme (`TreeEMVS`), and moreover every such mechanism is strongly group strategyproof.
+This module formalizes the tree characterization theorem of [SchummerVohra2002] (Theorem 1,
+p. 15 of the January 2001 author preprint): on a finite tree metric graph `MetricGraph W`
+(`W.graph.IsTree`), a deterministic facility-location mechanism is strategyproof and surjective
+if and only if it is the evaluation map of an extended median voter scheme (`TreeEMVS`).
+
+`TreeEMVS` adapts the source's definition. The source builds an extended median voter scheme from
+a consistent family of generalized median voter schemes on leaf-to-leaf paths (Section 3,
+pp. 9–15); `TreeEMVS` instead records, at every point and in every direction, which coalitions
+win. The `TreeEMVS` docstring describes the correspondence.
+
+The module also proves that every such mechanism is strongly group strategyproof. This
+strengthening is not stated in the source, whose Theorem 1 concerns individual strategyproofness.
 
 ## Main definitions
 
@@ -140,7 +148,27 @@ section TreeEMVS
 /-- An **extended median voter scheme** (`TreeEMVS`) on a finite tree metric graph `MetricGraph W`
 for agents `ι`, represented by a monotone family of winning coalitions `win y q` for each
 direction `branch y q` (`q ≠ y`) satisfying branch invariance, nesting, pairwise duality,
-disjoint-branch exclusivity, and interior openness ([SchummerVohra2002]). -/
+disjoint-branch exclusivity, and interior openness.
+
+This adapts the definition of [SchummerVohra2002] (January 2001 author preprint, Section 3,
+pp. 9–15), which uses a consistent family of generalized median voter schemes, one on each path
+`[x, z]` between leaves. Such a scheme has a point `α_S` on `[x, z]` for each coalition `S`, and
+its outcome is the point at distance `max_S min (min_{i ∈ S} d(p_i, x), d(α_S, x))` from `x`.
+The outcome thus lies strictly beyond a point `y` towards `z` exactly when some coalition `S`
+with `α_S` strictly beyond `y` has all its reports strictly beyond `y`. Reading `win y z S` as
+"`α_S` lies strictly beyond `y` towards `z`":
+
+* the equilibrium `IsEquilibrium`, where no branch at `y` holds a winning coalition of reports,
+  is the source's outcome, its unique critical point;
+* `duality` relates the parameters read from the two ends of a path, where complementary
+  coalitions exchange roles;
+* `branch_eq` and `nesting` express the source's consistency condition between overlapping paths
+  (p. 12), and `exclusive` rules out complementary coalitions pulling into different branches;
+* `open_interior` reflects the strict inequality in "strictly beyond".
+
+This correspondence is explanatory. The library does not prove an equivalence with the
+path-based definition; `isStrategyProof_and_surjective_iff_exists_treeEMVS` characterizes
+strategyproof onto rules directly in terms of `TreeEMVS`. -/
 structure TreeEMVS {V : Type*} (W : WeightedGraph V) [Finite V]
     (ι : Type*) [Fintype ι] [Nonempty ι] [DecidableEq ι] where
   /-- Winning coalition predicate `win y q S` for direction `branch y q`. -/
@@ -2269,7 +2297,8 @@ private lemma branchInvOn_all
       exact hinv_w
 
 omit [Finite ι] in
-/-- Schummer–Vohra characterization on tree metric graphs: a deterministic mechanism on a finite
+/-- Schummer–Vohra characterization on tree metric graphs ([SchummerVohra2002], Theorem 1, with
+`TreeEMVS` in place of the source's path-based definition): a deterministic mechanism on a finite
 tree metric graph is strategyproof and surjective if and only if it is the evaluation map of a
 `TreeEMVS`. -/
 theorem isStrategyProof_and_surjective_iff_exists_treeEMVS [Fintype ι]
@@ -2458,7 +2487,8 @@ theorem isStrategyProof_and_surjective_iff_exists_treeEMVS [Fintype ι]
     exact ⟨E.eval_isStrategyProof hT, E.eval_surjective hT⟩
 
 /-- Every deterministic, surjective, strategyproof facility-location mechanism on a finite tree
-metric graph is strongly group strategyproof ([SchummerVohra2002]). -/
+metric graph is strongly group strategyproof. This strengthens Theorem 1 of [SchummerVohra2002],
+which states only individual strategyproofness; the strengthening is not stated in the source. -/
 theorem isGroupStrategyProof_of_isStrategyProof_of_surjective_tree
     [Nonempty V] [MeasurableSpace (MetricGraph W)] [OpensMeasurableSpace (MetricGraph W)]
     (hT : W.graph.IsTree) {f : (ι → MetricGraph W) → MetricGraph W}

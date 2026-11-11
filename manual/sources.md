@@ -1420,7 +1420,7 @@ Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscie
 <a id="schummervohra02"></a>
 ## schummervohra02
 
-James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Journal of Economic Theory* 104(2), 405–428, 2002. https://doi.org/10.1006/jeth.2001.2865 . Bibliographic metadata checked via web search; the primary PDF was not read directly, so no internal theorem or section numbering from the paper is claimed beyond the interval, tree, and cycle characterizations verified directly in Lean.
+James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Journal of Economic Theory* 104(2), 405–428, 2002. https://doi.org/10.1006/jeth.2001.2807 . The published version is paywalled and was not inspected. The [authors' January 23, 2001 preprint](https://www.kellogg.northwestern.edu/faculty/schummer/ftp/research/circle.pdf) was read on 2026-11-11, and the locators below refer to its pages. Section 2 (pp. 5–6) sets up finite connected length graphs and preferences given by negative path distance. Section 3 (pp. 9–16) defines generalized median voter schemes on paths, their consistency (p. 12) and extended median voter schemes, and Theorem 1 (p. 15) characterizes strategy-proof onto rules on trees. Section 4 proves Theorem 2 (p. 21): every strategy-proof onto rule has a dictator on each cycle. `TreeEMVS` represents extended median voter schemes by branch-winning coalitions rather than by consistent path schemes; see its docstring for the correspondence. Strong group strategyproofness of these rules is proved in the library and is not stated in the paper. The cycle results cover shortest cycles only.
 
 <a id="schummervohra07"></a>
 ## schummervohra07

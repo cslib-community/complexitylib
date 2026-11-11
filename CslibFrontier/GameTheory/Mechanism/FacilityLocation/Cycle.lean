@@ -17,12 +17,13 @@ import Mathlib.Tactic.Linarith
 /-!
 # Schummer–Vohra cycle dictatorship on metric graphs
 
-This module proves the cycle dictatorship result of [SchummerVohra2002]: any deterministic
-strategyproof and onto facility-location mechanism on a finite metric graph `MetricGraph W`
-acts as a dictatorship on the points of any shortest cycle `c` (without assuming the range
-stays in the cycle, and without assuming group strategyproofness). When `W.graph` is itself
-isomorphic to a cycle graph `cycleGraph (n + 3)`, every deterministic strategyproof onto
-mechanism is globally a dictatorship.
+This module proves the shortest-cycle case of the cycle dictatorship theorem of
+[SchummerVohra2002] (Theorem 2, p. 21 of the January 2001 author preprint, which covers every
+cycle): any deterministic strategyproof and onto facility-location mechanism on a finite metric
+graph `MetricGraph W` acts as a dictatorship on the points of any shortest cycle `c` (without
+assuming the range stays in the cycle, and without assuming group strategyproofness). When
+`W.graph` is itself isomorphic to a cycle graph `cycleGraph (n + 3)`, every deterministic
+strategyproof onto mechanism is globally a dictatorship.
 
 ## Main results
 
@@ -3550,7 +3551,8 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
           simpa only [↓reduceIte] using hval'
         exact hab (hval.symm.trans hagree_val)
 
-/-- **Schummer–Vohra cycle dictatorship** ([SchummerVohra2002]): every deterministic strategyproof
+/-- **Schummer–Vohra cycle dictatorship** on shortest cycles ([SchummerVohra2002], Theorem 2,
+for shortest cycles): every deterministic strategyproof
 and onto facility-location mechanism on a finite metric graph `MetricGraph W` acts as a
 dictatorship on the points of any shortest cycle `c` (without assuming the image on `C^ι` lies in
 `C`, and without assuming group strategyproofness). -/

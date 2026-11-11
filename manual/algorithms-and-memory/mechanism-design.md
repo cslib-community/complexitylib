@@ -430,7 +430,7 @@ evaluation (`expectedCost = 1/4` at `1/2`), and `constantZero2` failing every ap
 
 Building on single-peaked metric preferences over `MetricGraph` tree and cycle geometry, three
 modules characterize deterministic strategyproof onto mechanisms following
-[Moulin][moulin80] and [Schummer and Vohra][schummervohra02] (primary papers not read directly):
+[Moulin][moulin80] (primary paper not read directly) and [Schummer and Vohra][schummervohra02] (author preprint, Theorems 1 and 2):
 
 * [FacilityLocation.Interval](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Interval.lean):
   shows that surjective deterministic strategyproof rules satisfy unanimity
@@ -447,13 +447,20 @@ modules characterize deterministic strategyproof onto mechanisms following
   `TreeEMVS.eval_surjective`, `TreeEMVS.eval_isGroupStrategyProof`), and proving
   `isStrategyProof_and_surjective_iff_exists_treeEMVS` and automatic amplification from strategyproofness
   to strong group strategyproofness (`isGroupStrategyProof_of_isStrategyProof_of_surjective_tree`).
+  `TreeEMVS` adapts the source's definition (consistent generalized median schemes on leaf-to-leaf
+  paths, preprint Section 3, p. 12) to winning coalitions per direction at each point; its docstring
+  describes the correspondence. The source's Theorem 1 (p. 15) states only strategyproofness; the
+  strong group strategyproofness is an extension proved here.
 * [FacilityLocation.Cycle](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Cycle.lean):
   proves cycle dictatorship on graphs with cycles: for any shortest closed cycle (`IsShortestCycle W c`),
   `exists_cycleDictator_of_isShortestCycle` shows every deterministic strategyproof onto mechanism
   restricts to a dictatorship on profiles supported on `Set.range (circleMap ...)`,
   `exists_cycleDictator_of_not_isAcyclic` yields a shortest-cycle dictatorship whenever
   `¬ W.graph.IsAcyclic`, and `exists_dictatorship_of_cycleGraph` proves global dictatorship whenever
-  `W.graph` is isomorphic to `SimpleGraph.cycleGraph n`.
+  `W.graph` is isomorphic to `SimpleGraph.cycleGraph (n + 3)`. The offset matters: Mathlib's
+  `cycleGraph 2` is a single edge, whose realization is an interval with non-dictatorial median
+  rules. The source's Theorem 2 (preprint p. 21) covers every cycle; only shortest cycles are
+  formalized here.
 
 The [Schummer–Vohra examples](../../CslibFrontierTests/SchummerVohra.lean) use strict `module`
 visibility with `borel` measurable spaces on `MetricGraph` to instantiate a symmetric 3-agent
