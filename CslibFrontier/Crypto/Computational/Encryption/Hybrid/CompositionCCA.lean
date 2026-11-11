@@ -10,7 +10,10 @@ module
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.DEMCCA
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Computational.Encryption.DecryptionBound
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -240,12 +243,8 @@ theorem eval_kemCCAIdealGame_hybridToKEMCCA (E : SymmetricCipher)
       ProbComp.eval (hybridDEMGame E keyGen
         (fun n pk => (fun kc => (F n kc.1, kc.2)) <$> encaps n pk)
         (fun n sk ct => (decaps n sk ct).map (F n)) adversary bit n) := by
-  simp only [kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, hybridDEMGame,
-    ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map, Function.comp_def]
-  apply PMF.bind_congr_on_support
-  intro keys hkeys
-  apply PMF.bind_congr_on_support
-  intro kc _
+  simp only [kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, hybridDEMGame, pmf_norm]
+  peel_binds keys kc
   rw [← hlaw, PMF.bind_map]
   simp only [BitString.eval_sampleList]
   congr 1 with raw : 1
@@ -253,7 +252,7 @@ theorem eval_kemCCAIdealGame_hybridToKEMCCA (E : SymmetricCipher)
     unframe_frame_append, dropFrame_frame_append]
   exact congrArg ProbComp.eval
     (run_hybridKEMCCAContinuation E F decaps decBound adversary bit n keys.1 keys.2
-      (F n raw) kc.2 (hbound keys hkeys))
+      (F n raw) kc.2 (hbound keys keys_mem))
 
 /-- Supported encapsulation correctness removes the local override in the real world.
 Encapsulation is commuted with Phase 1 only after the original keypair has been fixed. -/
@@ -275,11 +274,8 @@ theorem eval_kemCCARealGame_hybridToKEMCCA (E : SymmetricCipher)
         (hybridEncrypt (fun n pk => (fun kc => (F n kc.1, kc.2)) <$> encaps n pk) E.encrypt)
         (hybridDecrypt (fun n sk ct => (decaps n sk ct).map (F n)) E.decrypt)
         adversary bit n) := by
-  simp only [kemCCARealGame, kemRealGameWith, ProbComp.eval_bind]
-  unfold cca2GameOn
-  simp only [ProbComp.eval_bind]
-  apply PMF.bind_congr_on_support
-  intro keys hkeys
+  simp only [kemCCARealGame, kemRealGameWith, cca2GameOn, pmf_norm]
+  peel_binds keys
   have hfixed : ∀ kc ∈ (ProbComp.eval (encaps n keys.1)).support,
       ProbComp.eval (kemCCAContinuation decaps
         (hybridToKEMCCA E F decBound adversary bit) n keys.2 keys.1 kc.1 kc.2) =
@@ -294,7 +290,7 @@ theorem eval_kemCCARealGame_hybridToKEMCCA (E : SymmetricCipher)
     simp only [kemCCAContinuation, hybridToKEMCCA, encPair_apply, encBits_apply,
       unframe_frame_append, dropFrame_frame_append]
     rw [run_hybridKEMCCAContinuation E F decaps decBound adversary bit n keys.1 keys.2
-      (F n kc.1) kc.2 (hbound keys hkeys)]
+      (F n kc.1) kc.2 (hbound keys keys_mem)]
     have hdec : ∀ ct, hybridDecrypt
         (fun m sk ct => if ct == kc.2 then some (F n kc.1)
           else (decaps m sk ct).map (F m)) E.decrypt n keys.2 ct =
@@ -305,7 +301,7 @@ theorem eval_kemCCARealGame_hybridToKEMCCA (E : SymmetricCipher)
           (decaps n keys.2 (unframe ct)).map (F n) := by
         split_ifs with hk
         · simp only [beq_iff_eq] at hk
-          rw [hk, hcorrect keys hkeys kc hkc]
+          rw [hk, hcorrect keys keys_mem kc hkc]
           rfl
         · rfl
       simp only [hybridDecrypt, hk]
@@ -581,13 +577,9 @@ private theorem eval_kemCCARealGame_hiddenBit (E : SymmetricCipher)
         (ProbComp.eval (kemCCARealGame keyGen encaps decaps
           (hybridToKEMCCA E F decBound adversary bit) n)).map (fun guess => guess ^^ bit)) := by
   simp only [kemCCARealGame, kemRealGameWith, kemCCAContinuation, hybridToKEMCCAHiddenBit,
-    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret_eq_runWith,
-    OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.runWith_sample,
-    ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind, Function.comp_def,
-    OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind, PMF.map_bind, PMF.pure_map]
-  rw [PMF.bind_comm]
-  congr 1 with keys : 1
-  rw [PMF.bind_comm]
+    runWith_norm, pmf_norm, ProbComp.eval_uniform]
+  peel_binds keys kc bit
+  rfl
 
 private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
     (keyLen : ℕ → ℕ) (F : ℕ → List Bool → List Bool)
@@ -601,16 +593,9 @@ private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
         (ProbComp.eval (kemCCAIdealGame keyLen keyGen encaps decaps
           (hybridToKEMCCA E F decBound adversary bit) n)).map (fun guess => guess ^^ bit)) := by
   simp only [kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, kemCCAContinuation,
-    hybridToKEMCCAHiddenBit, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbOracleComp.eval_run_interpret_eq_runWith, OracleComp.interpret_bind, StateT.run_bind,
-    ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind,
-    Function.comp_def, OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind,
-    PMF.map_bind, PMF.pure_map]
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with keys : 1
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with kc : 1
-  rw [PMF.bind_comm]
+    hybridToKEMCCAHiddenBit, runWith_norm, pmf_norm, ProbComp.eval_uniform]
+  peel_binds keys kc raw bit
+  rfl
 
 /-- Exact signed real-world selector identity, before taking any absolute values. -/
 theorem probability_kemCCARealGame_hybridToKEMCCAHiddenBit (E : SymmetricCipher)
@@ -751,9 +736,7 @@ theorem hybrid_indcca2On (E : SymmetricCipher)
     (decaps := fun n sk ct => (decaps n sk ct).map (F n)) hkeyGen
     (isPPTOn_postprocessed_encaps hF hencaps)
     (computableInPolyTime_postprocessed_decaps hF hdecaps) adversary hA
-  apply negligible_of_le ((hk.add hk).add hd)
-  intro n
-  simpa only [two_mul, Pi.add_apply] using
+  negligible using fun n =>
     advantage_hybridCCA_le_two_mul E keyLen F keyGen encaps decaps decBound adversary n
       (hlaw n) (hcorrect n) (hdecBound n)
 
