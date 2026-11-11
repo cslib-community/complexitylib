@@ -5,9 +5,10 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Problems.CMMSA
+import CslibFrontier.Computability.Complexity.Problems.CMMSA.Size
 
 /-! Nonvacuity of `GapCMMSA`: a small yes-instance, a small no-instance at `σ = 1`, and a
-no-instance at a proportion `σ < 1`. -/
+no-instance at a proportion `σ < 1`; the size bounds and monotonicity in `Δ` of `CMMSA/Size`. -/
 
 namespace CslibFrontierTests.CMMSA
 
@@ -97,5 +98,24 @@ example : pair ∈ (GapCMMSA 1 (3 / 2) (3 / 4)).no := by
         split <;> simp
   have : (pair.satCount S : ℝ) ≤ 1 := by exact_mod_cast hcount
   linarith
+
+/-! ### Sizes and monotonicity in `Δ` -/
+
+/-- The parts of `small` are bounded by its encoding, whose length the bounds do not need. -/
+example : small.formulas.length ≤ (CMMSAInstance.encoding small).length ∧
+    small.weights.length ≤ (CMMSAInstance.encoding small).length ∧
+    (∀ w ∈ small.weights, w ≤ (CMMSAInstance.encoding small).length) ∧
+    small.threshold ≤ (CMMSAInstance.encoding small).length :=
+  ⟨small.length_formulas_le, small.length_weights_le, fun _ => small.le_of_mem_weights,
+    small.threshold_le⟩
+
+/-- A yes-instance for `Δ = 2` stays one for `Δ = 5`. -/
+example : small ∈ (GapCMMSA 5 5 (1 / 2)).yes :=
+  GapCMMSA.yes_mono (by decide) <|
+    mem_yes_GapCMMSA.2 ⟨wellFormed_small, {0}, by decide, by decide, by decide⟩
+
+/-- A no-instance for `Δ = 1` stays one for `Δ = 3`. -/
+example (h : heavy ∈ (GapCMMSA 1 (3 / 2) 1).no) : heavy ∈ (GapCMMSA 3 (3 / 2) 1).no :=
+  GapCMMSA.no_mono (by decide) h
 
 end CslibFrontierTests.CMMSA
