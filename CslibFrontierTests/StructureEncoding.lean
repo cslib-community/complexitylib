@@ -1,11 +1,12 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+import CslibFrontier.Tactic.PolyTime
 
 /-! Tests of `enc_structure`. -/
 
@@ -48,6 +49,53 @@ example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoi
   · simp only [ePoint_apply, length_encPair]
     have := ((List.tail_sublist p.z).flatMap (frame ∘ encUnary)).length_le
     omega
+
+-- Direct and composed polynomial-time field projections and structure construction.
+example : ComputableInPolyTime Point.x ePoint encNat := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {f : α → Point}
+    (hf : ComputableInPolyTime f enc ePoint) :
+    ComputableInPolyTime (fun a => Point.mk (f a).x (f a).y (f a).z) enc ePoint := by
+  fun_prop
+
+/-- A single-field structure, where `eSFields` is the field encoding itself rather than a pair. -/
+structure Single where
+  /-- Binary payload list. -/
+  items : List ℕ
+
+/-- Single-field records, encoded directly by their field encoding. -/
+enc_structure eSingle : Single where items : (encList encNat)
+
+example : ComputableInPolyTime Single.items eSingle (encList encNat) := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {xs : α → List ℕ}
+    (hxs : ComputableInPolyTime xs enc (encList encNat)) :
+    ComputableInPolyTime (fun a => Single.mk (xs a)) enc eSingle := by
+  fun_prop
+
+/-- A multi-field problem instance encoded with `enc_structure` for `polytime` clients. -/
+structure HittingSetInstance where
+  /-- Finite ground set of elements, encoded in binary. -/
+  ground : List ℕ
+  /-- Subsets that must each be hit. -/
+  sets : List (List ℕ)
+  /-- Target cardinality, encoded in binary. -/
+  k : ℕ
+
+/-- Ground set, framed, followed by framed subsets, framed, followed by binary target `k`. -/
+enc_structure encHittingSet : HittingSetInstance where
+  ground : (encList encNat), sets : (encList (encList encNat)), k : encNat
+
+/-- Transform a problem instance using named fields without unfolding `encHittingSet`. -/
+def prependZeroToSets (I : HittingSetInstance) : HittingSetInstance where
+  ground := 0 :: I.ground
+  sets := I.sets.map fun S => 0 :: S
+  k := I.k
+
+example : ComputableInPolyTime prependZeroToSets encHittingSet encHittingSet := by
+  polytime [prependZeroToSets]
 
 /-! The command resolves the structure through `open`, a parent structure is the single field
 `toParent`, as in the constructor, and the constructor need not be called `mk`. The projections
@@ -97,6 +145,10 @@ enc_structure eRenamed : Renamed where n : encNat, b : encBool
 example :
     ComputableInDegree (fun r : Renamed => Renamed.mkRenamed r.n r.b) eRenamed eRenamed 1 1 := by
   fun_prop (disch := lia)
+
+example :
+    ComputableInPolyTime (fun r : Renamed => Renamed.mkRenamed r.n r.b) eRenamed eRenamed := by
+  fun_prop
 
 /-! The command checks the field list before declaring anything. Each error names the field. -/
 
