@@ -827,13 +827,9 @@ private theorem findCycleM_spec {V : Type*} [FinEnum V] (f : ParentTable (FinEnu
   let e : V ≃ Fin (FinEnum.card V) := @FinEnum.equiv V _
   let n := FinEnum.card V
   let f' : Fin n → Fin n := fun i => f[i.1]
-  have hiter : ∀ k (x : Fin n), e.symm (f'^[k] x) = fV^[k] (e.symm x) := by
-    intro k
-    induction k with
-    | zero => intro x; rfl
-    | succ k ih =>
-      intro x
-      rw [Function.iterate_succ_apply', Function.iterate_succ_apply', hf, ih]
+  have hsem : Function.Semiconj e.symm f' fV := hf
+  have hiter : ∀ k (x : Fin n), e.symm (f'^[k] x) = fV^[k] (e.symm x) := fun k x =>
+    hsem.iterate_right k x
   rw [ret_findCycleM]
   unfold findCycle FinEnum.toList
   rw [List.find?_map]
@@ -873,13 +869,9 @@ private theorem cycleMask_spec {V : Type*} [FinEnum V] (f : ParentTable (FinEnum
   let e : V ≃ Fin (FinEnum.card V) := @FinEnum.equiv V _
   let n := FinEnum.card V
   let f' : Fin n → Fin n := fun i => f[i.1]
-  have hiter : ∀ k (x : Fin n), e.symm (f'^[k] x) = fV^[k] (e.symm x) := by
-    intro k
-    induction k with
-    | zero => intro x; rfl
-    | succ k ih =>
-      intro x
-      rw [Function.iterate_succ_apply', Function.iterate_succ_apply', hf, ih]
+  have hsem : Function.Semiconj e.symm f' fV := hf
+  have hiter : ∀ k (x : Fin n), e.symm (f'^[k] x) = fV^[k] (e.symm x) := fun k x =>
+    hsem.iterate_right k x
   rw [ret_cycleMaskM, mem_cycleOf]
   constructor
   · rintro ⟨k, hk, hky⟩
