@@ -2022,14 +2022,17 @@ register_result "gap-mcsp-oracle-circuits" where
       locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
   ]
   theorems := [
-    Cslib.MCSP.exists_oracleCircuit_gapMCSP
+    Cslib.MCSP.exists_oracleCircuit_gapMCSP,
+    Cslib.MCSP.localCircuitClass_gapMCSP
   ]
   scope := "Unconditional. Whenever n·s₁ + 2 + 2n(n + 2) ≤ s₂ at length n, one oracle circuit on \
     N = 2^n inputs with the fixed oracle antiCheckerOracle accepts the yes-instances of \
     Gap-MCSP[s₁, s₂] and rejects its no-instances. It has at most 5000·N·s₂^5 gates, at most \
     610·N·s₂^4 + 1 oracle gates, fan-in at most 5000·s₂^5 and at most 610·s₂^4 + 1 oracle gates \
-    on any path. The [q, ℓ, a]-Circuit class is not defined, so the bounds are stated directly; \
-    the gap condition replaces the source's constructive s(n) ≤ 2^n/poly(n)."
+    on any path. localCircuitClass_gapMCSP states this in the class LocalCircuitClass \
+    (Definition 11) at input length m with n = log₂ m, the gap condition holding at every n; its \
+    size bound has a + 1 for input length 0, which has no instances. The gap condition replaces \
+    the source's constructive s(n) ≤ 2^n/poly(n)."
 
 register_result "natural-proofs" where
   title := "Razborov–Rudich: subexponentially secure generators rule out natural proofs \
