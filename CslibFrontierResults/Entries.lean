@@ -14,6 +14,7 @@ import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -903,6 +904,27 @@ register_result "depth-five-imm-upper" where
     is r·n^(t+1) + r·n² + n^(r+1). Normalized model Cslib.Circuits.DepthFive.Circuit: leaves \
     and bottom sums are not counted, and there are n^(r+1) upper products where the source \
     has n^(r-1). With depth-five-imm the size is n^Θ(√n) over characteristic zero."
+
+register_result "hitting-set-derivative-closed" where
+  title := "Polynomial hitting sets for small partial-derivative spaces"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BhardwajEtAl2026, theorem := "Theorems 1.1 and 4.1 (revision 1)",
+      locator := "§1, §4" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_logHittingSet,
+    Cslib.Circuits.Arithmetic.aeval_logCurve_ne_zero,
+    Cslib.Circuits.Arithmetic.isHittingSet_sum_pow
+  ]
+  scope := "Over a field of characteristic zero, a nonzero n-variate polynomial lying in a \
+    space of dimension at most r closed under all partial derivatives does not vanish on the \
+    curve ln(1 + (i+1)t) truncated below degree n·r² + r; the points of the curve at \
+    t = 0, …, d(n·r² + r) are a hitting set for such polynomials of degree at most d, and \
+    sums of s d-th powers of linear forms have a hitting set of d(n·(s(d+1))² + s(d+1)) + 1 \
+    points. Existence and size of an explicit set only: no bit complexity, no black-box \
+    algorithm model, nothing in positive characteristic, and not the source's extension to \
+    noncommutative ABPs."
 
 /-! ## Further collected results -/
 

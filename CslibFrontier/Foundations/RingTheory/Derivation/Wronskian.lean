@@ -24,8 +24,8 @@ ordinary derivative this is the classical Wronskian.
 If `A` is a domain and `F` is its field of constants, in the fraction-free form
 `b * δ a = a * δ b → a ∈ F • b`, then the Wronskian of an `F`-linearly independent family is
 nonzero (`Derivation.wronskian_ne_zero`). The proof is the classical induction on the size of the
-family [OpenAI and others, Lemma 2.2 of the first version][BhardwajSaptharishi2026], with a
-kernel vector over `A` instead of over its fraction field.
+family [Bhardwaj et al., Lemma 2.2 of the first version][BhardwajEtAl2026], with a kernel
+vector over `A` instead of over its fraction field.
 
 A derivation applied to a determinant is the sum of the determinants in which one column is
 replaced by its derivative (`Derivation.map_det`).
@@ -41,8 +41,9 @@ replaced by its derivative (`Derivation.map_det`).
 
 ## References
 
-* [S. Bhardwaj, R. Saptharishi et al., *Hitting Sets for Polynomials with Small Partial
-  Derivative Spaces*][BhardwajSaptharishi2026]
+* [S. Bhardwaj, F. Lakhani, P. Mukhopadhyay, R. Saptharishi, P. Shastri,
+  A. K. Sinhababu, *Hitting sets from derivations: Waring rank and noncommutative
+  ABPs*][BhardwajEtAl2026]
 -/
 
 @[expose] public section

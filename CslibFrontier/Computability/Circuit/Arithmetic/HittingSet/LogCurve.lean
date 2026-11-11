@@ -15,7 +15,7 @@ public import Mathlib.Algebra.Algebra.Rat
 /-!
 # The logarithmic curve and its derivation
 
-The hitting-set generator of [Bhardwaj, Saptharishi et al.][BhardwajSaptharishi2026] substitutes
+The hitting-set generator of [Bhardwaj et al.][BhardwajEtAl2026] substitutes
 the power series `Pᵢ = ln (1 + (i + 1) t)` for the variable `xᵢ`. Its derivative is the rational
 function `(i + 1) / (1 + (i + 1) t)`. Clearing the common denominator
 `Q = ∏ᵢ (1 + (i + 1) t)` gives polynomials `bᵢ = (i + 1) Q / (1 + (i + 1) t)` with
@@ -42,8 +42,9 @@ needed.
 
 ## References
 
-* [S. Bhardwaj, R. Saptharishi et al., *Hitting Sets for Polynomials with Small Partial
-  Derivative Spaces*][BhardwajSaptharishi2026], §2
+* [S. Bhardwaj, F. Lakhani, P. Mukhopadhyay, R. Saptharishi, P. Shastri,
+  A. K. Sinhababu, *Hitting sets from derivations: Waring rank and noncommutative
+  ABPs*][BhardwajEtAl2026], §2
 -/
 
 @[expose] public section
@@ -72,6 +73,7 @@ noncomputable def logSeries (i : Fin n) : F⟦X⟧ :=
 
 variable {F n}
 
+omit [CharZero F] in
 theorem logCoeff_mul (i : Fin n) :
     logCoeff F n i * (1 + Polynomial.C ((i : ℕ) + 1 : F) * Polynomial.X) =
       Polynomial.C ((i : ℕ) + 1 : F) * logDenom F n := by
@@ -105,6 +107,7 @@ variable {σ : Type*}
 noncomputable def coeffDerivFun (g : MvPolynomial σ F[X]) : MvPolynomial σ F[X] :=
   ∑ m ∈ g.support, MvPolynomial.monomial m (Polynomial.derivative (g.coeff m))
 
+omit [CharZero F] in
 theorem coeff_coeffDerivFun (g : MvPolynomial σ F[X]) (m : σ →₀ ℕ) :
     (coeffDerivFun g).coeff m = Polynomial.derivative (g.coeff m) := by
   classical
@@ -124,16 +127,21 @@ noncomputable def coeffDeriv : Derivation F (MvPolynomial σ F[X]) (MvPolynomial
     fun p q => MvPolynomial.ext _ _ fun m => by
       classical
       change (coeffDerivFun (p * q)).coeff m = (p * coeffDerivFun q + q * coeffDerivFun p).coeff m
-      rw [mul_comm q]
-      simp only [coeff_coeffDerivFun, MvPolynomial.coeff_add, MvPolynomial.coeff_mul,
-        map_sum, Polynomial.derivative_mul, sum_add_distrib]
+      have hadd : (p * coeffDerivFun q + q * coeffDerivFun p).coeff m =
+          (p * coeffDerivFun q).coeff m + (coeffDerivFun p * q).coeff m := by
+        rw [mul_comm q]; simp
+      rw [hadd]
+      simp only [coeff_coeffDerivFun, MvPolynomial.coeff_mul, map_sum, Polynomial.derivative_mul,
+        sum_add_distrib]
       exact add_comm _ _
 
+omit [CharZero F] in
 @[simp]
 theorem coeff_coeffDeriv (g : MvPolynomial σ F[X]) (m : σ →₀ ℕ) :
     (coeffDeriv g).coeff m = Polynomial.derivative (g.coeff m) :=
   coeff_coeffDerivFun g m
 
+omit [CharZero F] in
 theorem coeffDeriv_C (a : F[X]) :
     coeffDeriv (MvPolynomial.C a : MvPolynomial σ F[X]) =
       MvPolynomial.C (Polynomial.derivative a) := by
@@ -142,6 +150,7 @@ theorem coeffDeriv_C (a : F[X]) :
   rw [coeff_coeffDeriv, MvPolynomial.coeff_C, MvPolynomial.coeff_C]
   split_ifs <;> simp
 
+omit [CharZero F] in
 theorem coeffDeriv_X (i : σ) : coeffDeriv (MvPolynomial.X i : MvPolynomial σ F[X]) = 0 := by
   classical
   ext m
@@ -158,35 +167,41 @@ noncomputable def logDeriv :
     ∑ i, (MvPolynomial.C (logCoeff F n i) : MvPolynomial (Fin n) F[X]) •
       (MvPolynomial.pderiv (R := F[X]) (σ := Fin n) i).restrictScalars F
 
+omit [CharZero F] in
 theorem logDeriv_apply (g : MvPolynomial (Fin n) F[X]) :
     logDeriv F n g = MvPolynomial.C (logDenom F n) * coeffDeriv g +
       ∑ i, MvPolynomial.C (logCoeff F n i) * MvPolynomial.pderiv i g := by
-  have hsum : (∑ i, (MvPolynomial.C (logCoeff F n i) : MvPolynomial (Fin n) F[X]) •
-      (MvPolynomial.pderiv (R := F[X]) (σ := Fin n) i).restrictScalars F) g =
-      ∑ i, MvPolynomial.C (logCoeff F n i) * MvPolynomial.pderiv i g := by
-    have h := congrFun (map_sum (Derivation.coeFnAddMonoidHom (R := F)
-      (A := MvPolynomial (Fin n) F[X]) (M := MvPolynomial (Fin n) F[X]))
-      (fun i => (MvPolynomial.C (logCoeff F n i) : MvPolynomial (Fin n) F[X]) •
-        (MvPolynomial.pderiv (R := F[X]) (σ := Fin n) i).restrictScalars F) univ) g
-    simpa using h
-  rw [logDeriv, Derivation.add_apply, hsum, Derivation.smul_apply, smul_eq_mul]
+  have hsum (s : Finset (Fin n)) :
+      (∑ i ∈ s, (MvPolynomial.C (logCoeff F n i) : MvPolynomial (Fin n) F[X]) •
+        (MvPolynomial.pderiv (R := F[X]) (σ := Fin n) i).restrictScalars F) g =
+      ∑ i ∈ s, MvPolynomial.C (logCoeff F n i) * MvPolynomial.pderiv i g := by
+    classical
+    induction s using Finset.induction_on with
+    | empty => simp
+    | insert a s ha ih =>
+      rw [sum_insert ha, sum_insert ha, add_apply, ih, smul_apply, smul_eq_mul]
+      rfl
+  rw [logDeriv, add_apply, hsum, smul_apply, smul_eq_mul]
 
+omit [CharZero F] in
 theorem logDeriv_C (a : F[X]) :
     logDeriv F n (MvPolynomial.C a) = MvPolynomial.C (logDenom F n * Polynomial.derivative a) := by
   simp [logDeriv_apply, coeffDeriv_C]
 
+omit [CharZero F] in
 theorem logDeriv_X (i : Fin n) :
     logDeriv F n (MvPolynomial.X i) = MvPolynomial.C (logCoeff F n i) := by
   classical
   simp [logDeriv_apply, coeffDeriv_X, MvPolynomial.pderiv_X, Pi.single_apply]
 
+omit [CharZero F] in
 /-- The coefficients of `D g`. -/
 theorem coeff_logDeriv (g : MvPolynomial (Fin n) F[X]) (m : Fin n →₀ ℕ) :
     (logDeriv F n g).coeff m = logDenom F n * Polynomial.derivative (g.coeff m) +
       ∑ i, logCoeff F n i * (g.coeff (m + Finsupp.single i 1) * (m i + 1)) := by
-  simp [logDeriv_apply, MvPolynomial.coeff_sum, MvPolynomial.coeff_C_mul,
-    MvPolynomial.coeff_pderiv]
+  simp [logDeriv_apply, MvPolynomial.coeff_C_mul, MvPolynomial.coeff_pderiv]
 
+omit [CharZero F] in
 /-- `D` commutes with the partial derivatives in `x`. -/
 theorem logDeriv_pderiv (i : Fin n) (g : MvPolynomial (Fin n) F[X]) :
     logDeriv F n (MvPolynomial.pderiv i g) = MvPolynomial.pderiv i (logDeriv F n g) := by

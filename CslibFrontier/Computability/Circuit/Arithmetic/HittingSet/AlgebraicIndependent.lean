@@ -17,7 +17,7 @@ import Mathlib.Data.Finsupp.Weight
 
 Over a field `F` of characteristic zero, the power series `ln (1 + (i + 1) t)`, `i : Fin n`, are
 algebraically independent over `F[t]`
-([Bhardwaj, Saptharishi et al.][BhardwajSaptharishi2026], Lemmas 2.3 and 2.4).
+([Bhardwaj et al.][BhardwajEtAl2026], Lemmas 2.3 and 2.4).
 
 The proof is the source's, with denominators cleared. Take a nonzero `g` in the kernel of the
 substitution `Φ` with the lowest degree `d` in `x` and, among those, the fewest monomials of degree
@@ -36,8 +36,9 @@ derivative of `γ / α`, which has no simple pole, whereas `bᵢ / Q` has a simp
 
 ## References
 
-* [S. Bhardwaj, R. Saptharishi et al., *Hitting Sets for Polynomials with Small Partial
-  Derivative Spaces*][BhardwajSaptharishi2026], Lemmas 2.3 and 2.4 of revision 1
+* [S. Bhardwaj, F. Lakhani, P. Mukhopadhyay, R. Saptharishi, P. Shastri,
+  A. K. Sinhababu, *Hitting sets from derivations: Waring rank and noncommutative
+  ABPs*][BhardwajEtAl2026], Lemmas 2.3 and 2.4 of revision 1
 -/
 
 public section
