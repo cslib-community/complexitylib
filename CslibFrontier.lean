@@ -35,6 +35,8 @@ public import CslibFrontier.Algorithms.Lean.BinPacking.OnlineLowerBound
 public import CslibFrontier.Algorithms.Lean.BinarySearch
 public import CslibFrontier.Algorithms.Lean.BurrowsWheeler.Basic
 public import CslibFrontier.Algorithms.Lean.BurrowsWheeler.Decode
+public import CslibFrontier.Algorithms.Lean.CSP.VariableElimination
+public import CslibFrontier.Algorithms.Lean.CSP.WeightCost
 public import CslibFrontier.Algorithms.Lean.CYK.Basic
 public import CslibFrontier.Algorithms.Lean.DFS.Basic
 public import CslibFrontier.Algorithms.Lean.DFS.TopologicalSort
@@ -5700,10 +5702,12 @@ public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Subpath
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Visits
 public import CslibFrontier.Logics.Propositional.CSP.ExactlyOne
+public import CslibFrontier.Logics.Propositional.CSP.FactorTable
 public import CslibFrontier.Logics.Propositional.CSP.HardCore
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Enumeration
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
+public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction.Properties
 public import CslibFrontier.Logics.Propositional.CSP.Permanent
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Constants
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Construction
