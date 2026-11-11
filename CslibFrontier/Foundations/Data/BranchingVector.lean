@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import CslibFrontier.Foundations.Data.List.Blocks
 
 /-!
 # Search-tree recurrences and branching-vector bounds
@@ -138,72 +139,34 @@ theorem charSum_antitone (steps : List ℕ) {r₁ r₂ : ℝ} (hr₁ : 0 < r₁)
 
 /-! ### Generic branching-vector recurrence -/
 
-private theorem list_sum_map_le_of_le {α : Type*} [AddCommMonoid α] [PartialOrder α]
-    [IsOrderedAddMonoid α] {ι : Type*} (xs : List ι) {f g : ι → α}
-    (hfg : ∀ x ∈ xs, f x ≤ g x) :
-    (xs.map f).sum ≤ (xs.map g).sum := by
-  induction xs with
-  | nil => simp only [List.map_nil, List.sum_nil, le_refl]
-  | cons x rest ih =>
-    simp only [List.map_cons, List.sum_cons]
-    exact add_le_add (hfg x List.mem_cons_self)
-      (ih fun y hy => hfg y (List.mem_cons_of_mem _ hy))
-
-private theorem list_sum_map_mul_left {α : Type*} [Semiring α] {ι : Type*}
-    (c : α) (xs : List ι) (f : ι → α) :
-    (xs.map fun x => c * f x).sum = c * (xs.map f).sum := by
-  induction xs with
-  | nil => simp only [List.map_nil, List.sum_nil, mul_zero]
-  | cons x rest ih => simp only [List.map_cons, List.sum_cons, ih, mul_add]
-
-private theorem list_sum_flatMap {α : Type*} [AddCommMonoid α] {ι : Type*}
-    (xs : List ι) (f : ι → List α) :
-    (xs.flatMap f).sum = (xs.map fun x => (f x).sum).sum := by
-  induction xs with
-  | nil => simp only [List.flatMap_nil, List.sum_nil, List.map_nil]
-  | cons x rest ih =>
-    simp only [List.flatMap_cons, List.sum_append, List.map_cons, List.sum_cons, ih]
-
-private theorem natCast_list_sum (xs : List ℕ) :
-    ((xs.sum : ℕ) : ℝ) = (xs.map fun x : ℕ => (x : ℝ)).sum := by
-  induction xs with
-  | nil => simp only [List.sum_nil, Nat.cast_zero, List.map_nil]
-  | cons x rest ih => simp only [List.sum_cons, Nat.cast_add, List.map_cons, ih]
-
-/-- A sequence `T : ℕ → ℝ` governed by positive integer decreases `steps` with base bound `C ≥ 0`:
-`T 0 ≤ C`, every `d ∈ steps` is positive, and for `n > 0`, `T n` is bounded by summing any strict
-prefix upper bound `S` at `n - d` across `d ∈ steps` with `d ≤ n`. -/
 structure BranchingRecurrence (T : ℕ → ℝ) (steps : List ℕ) (C : ℝ) : Prop where
   /-- Nonnegativity of the base factor `C`. -/
   base_nonneg : 0 ≤ C
   /-- Every branching decrease is strictly positive. -/
   steps_pos : ∀ d ∈ steps, 0 < d
-  /-- Base bound at measure `0`. -/
-  zero_le : T 0 ≤ C
-  /-- Inductive step bound for `n > 0`. -/
-  step_le : ∀ n, 0 < n → ∀ S : ℕ → ℝ, (∀ m < n, T m ≤ S m) →
-    T n ≤ ((steps.filter (· ≤ n)).map fun d : ℕ => S (n - d)).sum
+  /-- Inductive step bound. -/
+  step_le : ∀ n, ∀ S : ℕ → ℝ, (∀ m < n, T m ≤ S m) →
+    T n ≤ max C ((steps.filter (· ≤ n)).map fun d : ℕ => S (n - d)).sum
 
 namespace BranchingRecurrence
 
 /-- Build a `BranchingRecurrence` directly from the self-referential inequality
 `T n ≤ ∑_{d ∈ steps, d ≤ n} T (n - d)`. -/
 theorem of_step {T : ℕ → ℝ} {steps : List ℕ} {C : ℝ}
-    (hC : 0 ≤ C) (hpos : ∀ d ∈ steps, 0 < d) (h0 : T 0 ≤ C)
-    (hstep : ∀ n, 0 < n → T n ≤ ((steps.filter (· ≤ n)).map fun d : ℕ => T (n - d)).sum) :
+    (hC : 0 ≤ C) (hpos : ∀ d ∈ steps, 0 < d)
+    (hstep : ∀ n, T n ≤ max C ((steps.filter (· ≤ n)).map fun d : ℕ => T (n - d)).sum) :
     BranchingRecurrence T steps C where
   base_nonneg := hC
   steps_pos := hpos
-  zero_le := h0
-  step_le n hn S hS := (hstep n hn).trans <|
-    list_sum_map_le_of_le (steps.filter (· ≤ n)) fun d hd => by
-      obtain ⟨hd_mem, _⟩ := List.mem_filter.mp hd
-      exact hS (n - d) (Nat.sub_lt hn (hpos d hd_mem))
+  step_le n S hS := (hstep n).trans <| max_le_max le_rfl <|
+    List.sum_le_sum fun d hd => by
+      obtain ⟨hd_mem, hd_le⟩ := List.mem_filter.mp hd
+      exact hS (n - d) (Nat.sub_lt_of_pos_le (hpos d hd_mem) (of_decide_eq_true hd_le))
 
 private theorem sum_pow_sub_eq {steps : List ℕ} {r : ℝ} (hr : 0 < r) (n : ℕ)
     (hle : ∀ d ∈ steps, d ≤ n) :
     (steps.map fun d : ℕ => r ^ (n - d)).sum = r ^ n * charSum steps r := by
-  rw [charSum_eq_sum_inv_pow steps hr.le, ← list_sum_map_mul_left]
+  rw [charSum_eq_sum_inv_pow steps hr.le, ← List.sum_map_mul_left]
   congr 1
   refine List.map_congr_left fun d hd => ?_
   have hd_le : d ≤ n := hle d hd
@@ -214,21 +177,23 @@ private theorem sum_pow_sub_eq {steps : List ℕ} {r : ℝ} (hr : 0 < r) (n : �
     _ = (r ^ (n - d) * r ^ d) * (r⁻¹) ^ d := by ring
     _ = r ^ n * (r⁻¹) ^ d := by rw [← pow_add, Nat.sub_add_cancel hd_le]
 
-/-- **Generic branching-vector theorem.** If `r > 0` satisfies `charSum steps r ≤ 1`, then every
+/-- **Generic branching-vector theorem.** If `1 ≤ r` satisfies `charSum steps r ≤ 1`, then every
 `BranchingRecurrence T steps C` satisfies `T n ≤ C * r ^ n` for all `n`. -/
 theorem le_mul_pow {T : ℕ → ℝ} {steps : List ℕ} {C : ℝ}
-    (hrec : BranchingRecurrence T steps C) {r : ℝ} (hr : 0 < r)
+    (hrec : BranchingRecurrence T steps C) {r : ℝ} (hr : 1 ≤ r)
     (hchar : charSum steps r ≤ 1) (n : ℕ) :
     T n ≤ C * r ^ n := by
+  have hr_pos : 0 < r := by positivity
   induction n using Nat.strong_induction_on with
   | ind n ih =>
-    rcases Nat.eq_zero_or_pos n with rfl | hn
-    · simpa only [pow_zero, mul_one] using hrec.zero_le
-    · refine (hrec.step_le n hn (fun m => C * r ^ m) ih).trans ?_
-      rw [list_sum_map_mul_left,
-        sum_pow_sub_eq hr n (fun d hd => of_decide_eq_true (List.mem_filter.mp hd).2)]
+    refine (hrec.step_le n (fun m => C * r ^ m) ih).trans ?_
+    rw [max_le_iff]
+    constructor
+    · exact (mul_one C).symm.trans_le <| mul_le_mul_of_nonneg_left (one_le_pow₀ hr) hrec.base_nonneg
+    · rw [List.sum_map_mul_left,
+        sum_pow_sub_eq hr_pos n (fun d hd => of_decide_eq_true (List.mem_filter.mp hd).2)]
       have hfilt : charSum (steps.filter (· ≤ n)) r ≤ 1 :=
-        (charSum_filter_le (· ≤ n) steps hr.le).trans hchar
+        (charSum_filter_le (· ≤ n) steps hr_pos.le).trans hchar
       have hCr : 0 ≤ C * r ^ n := mul_nonneg hrec.base_nonneg (by positivity)
       calc
         C * (r ^ n * charSum (steps.filter (· ≤ n)) r)
@@ -238,7 +203,7 @@ theorem le_mul_pow {T : ℕ → ℝ} {steps : List ℕ} {C : ℝ}
 
 /-- Unit-base specialization `T n ≤ r ^ n` when `C = 1`. -/
 theorem le_pow {T : ℕ → ℝ} {steps : List ℕ}
-    (hrec : BranchingRecurrence T steps 1) {r : ℝ} (hr : 0 < r)
+    (hrec : BranchingRecurrence T steps 1) {r : ℝ} (hr : 1 ≤ r)
     (hchar : charSum steps r ≤ 1) (n : ℕ) :
     T n ≤ r ^ n := by
   simpa only [one_mul] using hrec.le_mul_pow hr hchar n
@@ -436,7 +401,7 @@ theorem sum_leaves_eq {s : σ} {w : σ → ℕ}
   induction hm : T.measure u using Nat.strong_induction_on generalizing u with
   | ind m ih =>
     cases hleaf : T.isLeaf u
-    · rw [T.leaves_of_not_isLeaf hleaf, List.map_flatMap, list_sum_flatMap,
+    · rw [T.leaves_of_not_isLeaf hleaf, List.sum_map_flatMap,
         hadd u hreach hleaf]
       congr 1
       refine List.map_congr_left fun c hc => ?_
@@ -453,8 +418,8 @@ theorem le_sum_leaves {s : σ} {w : σ → ℕ}
   induction hm : T.measure u using Nat.strong_induction_on generalizing u with
   | ind m ih =>
     cases hleaf : T.isLeaf u
-    · rw [T.leaves_of_not_isLeaf hleaf, List.map_flatMap, list_sum_flatMap]
-      refine (hsub u hreach hleaf).trans (list_sum_map_le_of_le (T.children u) fun c hc => ?_)
+    · rw [T.leaves_of_not_isLeaf hleaf, List.sum_map_flatMap]
+      refine (hsub u hreach hleaf).trans (List.sum_le_sum fun c hc => ?_)
       exact ih (T.measure c) (hm ▸ T.measure_child_lt hleaf hc) c (hreach.snoc hleaf hc) rfl
     · simp only [T.leaves_of_isLeaf hleaf, List.map_singleton, List.sum_singleton, le_refl]
 
@@ -492,7 +457,7 @@ theorem leafCount_le_pow {r : ℝ} (hr : 1 ≤ r) (hchar : charSum T.steps r ≤
   | ind m ih =>
     intro s hm
     cases hleaf : T.isLeaf s
-    · rw [T.leafCount_of_not_isLeaf hleaf, natCast_list_sum, List.map_map]
+    · rw [T.leafCount_of_not_isLeaf hleaf, Nat.cast_list_sum, List.map_map]
       obtain ⟨steps', hsub, hrel⟩ := T.children_steps s hleaf
       have hrel' : List.Forall₂ (fun child d => T.measure child + d ≤ m) (T.children s) steps' :=
         hm ▸ hrel
@@ -522,7 +487,7 @@ theorem nodeCount_le_mul_pow {r : ℝ} (hr : 1 ≤ r) (hchar : charSum T.steps r
     intro s hm
     have hrm1 : 1 ≤ r ^ m := one_le_pow₀ hr
     cases hleaf : T.isLeaf s
-    · rw [T.nodeCount_of_not_isLeaf hleaf, Nat.cast_add, Nat.cast_one, natCast_list_sum,
+    · rw [T.nodeCount_of_not_isLeaf hleaf, Nat.cast_add, Nat.cast_one, Nat.cast_list_sum,
         List.map_map]
       rcases hcs : T.children s with _ | ⟨c₀, cs⟩
       · simp only [List.map_nil, List.sum_nil, add_zero]
@@ -541,8 +506,8 @@ theorem nodeCount_le_mul_pow {r : ℝ} (hr : 1 ≤ r) (hchar : charSum T.steps r
           exact hih.trans (mul_le_mul_of_nonneg_right hle_m (by positivity))
         have hsum1 : ((c₀ :: cs).map ((Nat.cast : ℕ → ℝ) ∘ T.nodeCount)).sum ≤
             ((c₀ :: cs).map fun c => (m : ℝ) * r ^ T.measure c).sum :=
-          list_sum_map_le_of_le (c₀ :: cs) hchild_bound
-        have hfactor := list_sum_map_mul_left (m : ℝ) (c₀ :: cs) (fun c => r ^ T.measure c)
+          List.sum_le_sum hchild_bound
+        have hfactor := List.sum_map_mul_left (c₀ :: cs) (fun c => r ^ T.measure c) (m : ℝ)
         have hsum2 := T.sum_children_pow_le hr hrel' (f := fun c => r ^ T.measure c)
           fun _ _ => le_rfl
         have hchar' : charSum steps' r ≤ 1 :=
@@ -578,9 +543,9 @@ theorem workCost_le_mul_nodeCount {nodeWork : σ → ℕ} {W : ℕ} {s : σ}
       refine Nat.add_le_add hu ?_
       have hchildren : ((T.children u).map (T.workCost nodeWork)).sum ≤
           ((T.children u).map fun c => W * T.nodeCount c).sum :=
-        list_sum_map_le_of_le (T.children u) fun c hc =>
+        List.sum_le_sum fun c hc =>
           ih (T.measure c) (hm ▸ T.measure_child_lt hleaf hc) c (hreach.snoc hleaf hc) rfl
-      rwa [list_sum_map_mul_left] at hchildren
+      rwa [List.sum_map_mul_left] at hchildren
     · rw [T.workCost_of_isLeaf nodeWork hleaf, T.nodeCount_of_isLeaf hleaf, Nat.mul_one]
       exact hu
 

@@ -13,23 +13,18 @@ public import CslibFrontier.Computability.Probabilistic.PPT
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Space
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.CopyWord
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop.Space
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile.Space
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition.Space
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile.Space
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
-import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.ClearWork
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Bind
-import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.Linarith
 
@@ -75,7 +70,6 @@ namespace Cslib.Probability
 open _root_.Turing _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapeTM
   _root_.Turing.MultiTapePTM
 
-/-! ### Private closed `iterateWhile` phase with workspace tracking -/
 
 namespace ExpIterateInternal
 
@@ -381,7 +375,7 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
     have h1 := Turing.MultiTapePTM.ComputesTidily.iterateWhile true inv hbase'
       hround hpreserve' hlast hlength
     have h2 := Turing.MultiTapePTM.RunsInSpace.iterateWhile true inv hbase'
-      hround hpreserve' hlength
+      hround hpreserve' hlast hlength
     have hboth : _ ∧ _ := ⟨h1, h2⟩
     have hword_sample : OracleComp.iterate (count a) wordStep (start a) =
         ProbOracleComp.sample

@@ -3311,6 +3311,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilisti
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalSimulation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalTensor
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.OrElse

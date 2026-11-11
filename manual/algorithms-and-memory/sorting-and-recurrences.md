@@ -85,7 +85,7 @@ lake build CslibFrontier.Foundations.Data.Nat.MasterTheoremAsymptotics CslibFron
 
 ## Branching-vector recurrences and SAT search trees
 
-[BranchingVector.lean](../../CslibFrontier/Foundations/Data/BranchingVector.lean) solves exact-exponential search-tree recurrences governed by a positive integer decrease vector `steps = [a₁, …, a_b]` (`aᵢ > 0`) via the characteristic sum `Cslib.BranchingVector.charSum steps r = ∑_{d ∈ steps} r ^ (-d)` [Fomin–Kratsch][fominkratsch10]. Whenever `r > 0` satisfies `charSum steps r ≤ 1`, any `BranchingRecurrence T steps C` (`T 0 ≤ C` and `T n ≤ ∑_{d ∈ steps, d ≤ n} S (n - d)` for strict-prefix upper bounds `S`) obeys `T n ≤ C * r ^ n` (`BranchingRecurrence.le_mul_pow`, and `T n ≤ r ^ n` at `C = 1` via `le_pow`).
+[BranchingVector.lean](../../CslibFrontier/Foundations/Data/BranchingVector.lean) solves exact-exponential search-tree recurrences governed by a positive integer decrease vector `steps = [a₁, …, a_b]` (`aᵢ > 0`) via the characteristic sum `Cslib.BranchingVector.charSum steps r = ∑_{d ∈ steps} r ^ (-d)` [Fomin–Kratsch][fominkratsch10]. Whenever `1 ≤ r` satisfies `charSum steps r ≤ 1`, any `BranchingRecurrence T steps C` (`T n ≤ max C (∑_{d ∈ steps, d ≤ n} S (n - d))` for strict-prefix upper bounds `S`) obeys `T n ≤ C * r ^ n` (`BranchingRecurrence.le_mul_pow`, and `T n ≤ r ^ n` at `C = 1` via `le_pow`).
 
 For explicit multi-way search trees, `Cslib.BranchingVector.BranchingTree σ` equips states with `isLeaf`, `children`, `measure : σ → ℕ`, and `steps : List ℕ` such that every non-leaf expansion has child measure drops dominating some sublist of `steps`. When `1 ≤ r` and `charSum T.steps r ≤ 1`:
 

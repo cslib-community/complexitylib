@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -81,12 +81,16 @@ theorem step_withCoin_seq_right {S₀ S₁ : Type} (first : MultiTapePTM k Symbo
 
 variable {k : ℕ} {Symbol State : Type} {input : List Symbol}
 
+/-- Running a sequential concatenation of coin sequences is equivalent to
+running them consecutively. -/
 theorem replay_append (machine : MultiTapePTM k Symbol State)
     (before after : List Bool) (cfg : Config k Symbol State Empty input) :
     machine.runClosedConfigFromCoins (before ++ after) cfg =
       machine.runClosedConfigFromCoins after (machine.runClosedConfigFromCoins before cfg) :=
   List.foldl_append
 
+/-- Replaying a sequence of coins on a sequentially composed machine either stays in the
+first phase or transitions to the second. -/
 theorem replay_seq_cases {State₀ State₁ : Type}
     (first : MultiTapePTM k Symbol State₀) (second : MultiTapePTM k Symbol State₁)
     (initial : Config k Symbol State₀ Empty input) (coins : List Bool) :
@@ -119,6 +123,7 @@ theorem replay_seq_cases {State₀ State₁ : Type}
       rw [hs, replay_append]
       exact step_withCoin_seq_right first second bit _
 
+/-- The output tape length is monotonically non-decreasing during a run. -/
 theorem output_length_le_replay (machine : MultiTapePTM k Symbol State)
     (coins : List Bool) (cfg : Config k Symbol State Empty input) :
     cfg.tapes.output.length ≤
@@ -130,6 +135,7 @@ theorem output_length_le_replay (machine : MultiTapePTM k Symbol State)
   rw [hhead, hlast] at h
   simpa only [tapes_runClosedConfigFromCoins] using h
 
+/-- A halted configuration does not change when further coins are replayed. -/
 theorem replay_halted (machine : MultiTapePTM k Symbol State)
     (coins : List Bool) (cfg : Config k Symbol State Empty input)
     (h : cfg.tapes.state = none) : machine.runClosedConfigFromCoins coins cfg = cfg := by
@@ -137,8 +143,9 @@ theorem replay_halted (machine : MultiTapePTM k Symbol State)
   | nil => rfl
   | cons bit coins ih =>
     change machine.runClosedConfigFromCoins coins ((machine.withCoin bit).step cfg) = cfg
-    rw [show (machine.withCoin bit).step cfg = cfg by simp [MultiTapeMachine.step, h], ih]
+    rw [show (machine.withCoin bit).step cfg = cfg by simp only [MultiTapeMachine.step, h], ih]
 
+/-- A replay that halts belongs to the support of the closed run evaluation. -/
 theorem completed_replay_mem_support (machine : MultiTapePTM k Symbol State)
     (initial : Config k Symbol State Empty input) (time : ℕ)
     (hhalt : ∀ final ∈ (ProbComp.eval
@@ -161,6 +168,7 @@ theorem completed_replay_mem_support (machine : MultiTapePTM k Symbol State)
       (machine.runClosedConfigFromCoins coins initial) ∈ _ at h
     rwa [replay_halted machine _ _ hcoins] at h
 
+/-- Bounds the output length of any replay given a bound on the support of the closed run. -/
 theorem replay_output_length_le (machine : MultiTapePTM k Symbol State)
     (time bound : ℕ)
     (hhalt : ∀ final ∈ (ProbComp.eval
@@ -181,7 +189,8 @@ theorem replay_output_length_le (machine : MultiTapePTM k Symbol State)
     rw [runClosed_eq_map, ProbComp.eval_map]
     exact (PMF.mem_support_map_iff _ _ _).mpr ⟨_, hfull, rfl⟩
   have hlen := hbound _ hout
-  have hmono := output_length_le_replay machine extra (machine.runClosedConfigFromCoins coins (machine.initialConfig input))
+  have hmono := output_length_le_replay machine extra
+    (machine.runClosedConfigFromCoins coins (machine.initialConfig input))
   rw [← replay_append] at hmono
   exact hmono.trans hlen
 

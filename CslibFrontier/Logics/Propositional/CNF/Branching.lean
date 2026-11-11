@@ -151,7 +151,7 @@ theorem PartitionsModels.satisfiable_iff {φ : CNF V} {branches : List (CNF V)}
     φ.Satisfiable ↔ ∃ ψ ∈ branches, ψ.Satisfiable :=
   h.coversModels.satisfiable_iff
 
-private theorem countP_eq_sum_ite {α : Type*} (p : α → Bool) (xs : List α) :
+private theorem (by simp only [List.countP_eq_length_filter, List.length_filter_eq_sum]) {α : Type*} (p : α → Bool) (xs : List α) :
     xs.countP p = (xs.map fun x => if p x then 1 else 0).sum := by
   induction xs with
   | nil => rfl
@@ -161,7 +161,7 @@ private theorem countP_eq_sum_ite {α : Type*} (p : α → Bool) (xs : List α) 
     · simp only [Bool.false_eq_true, ↓reduceIte, Nat.zero_add, Nat.add_zero]
     · simp only [↓reduceIte, Nat.add_comm _ 1]
 
-private theorem finset_sum_list_sum {ι α : Type*} (s : Finset ι) (xs : List α)
+private theorem Finset.sum_list_sum_comm {ι α : Type*} (s : Finset ι) (xs : List α)
     (f : ι → α → ℕ) :
     ∑ i ∈ s, (xs.map (f i)).sum = (xs.map fun x => ∑ i ∈ s, f i x).sum := by
   induction xs with
@@ -189,13 +189,13 @@ theorem CoversModels.modelCountOn_le_sum [DecidableEq V] {φ : CNF V} {branches 
       (if φ.eval (extDeclared declared σ) then 1 else 0) ≤
         (branches.map fun ψ : CNF V => if ψ.eval (extDeclared declared σ) then 1 else 0).sum := by
     intro σ
-    rw [← countP_eq_sum_ite (fun ψ : CNF V => ψ.eval (extDeclared declared σ)) branches]
+    rw [← (by simp only [List.countP_eq_length_filter, List.length_filter_eq_sum]) (fun ψ : CNF V => ψ.eval (extDeclared declared σ)) branches]
     cases heval : φ.eval (extDeclared declared σ)
     · simp only [Bool.false_eq_true, ↓reduceIte, Nat.zero_le]
     · simp only [↓reduceIte]
       exact Nat.succ_le_of_lt (List.countP_pos_iff.mpr ((h _).mp heval))
   refine (Finset.sum_le_sum fun σ _ => hpoint σ).trans ?_
-  rw [finset_sum_list_sum]
+  rw [Finset.sum_list_sum_comm]
   simp only [← modelCountOn_eq_sum_ite, le_refl]
 
 /-- **Additivity of partitioning rules.** If `PartitionsModels φ branches`, then
@@ -208,7 +208,7 @@ theorem PartitionsModels.modelCountOn_eq_sum [DecidableEq V] {φ : CNF V} {branc
       (if φ.eval (extDeclared declared σ) then 1 else 0) =
         (branches.map fun ψ : CNF V => if ψ.eval (extDeclared declared σ) then 1 else 0).sum := by
     intro σ
-    rw [← countP_eq_sum_ite (fun ψ : CNF V => ψ.eval (extDeclared declared σ)) branches]
+    rw [← (by simp only [List.countP_eq_length_filter, List.length_filter_eq_sum]) (fun ψ : CNF V => ψ.eval (extDeclared declared σ)) branches]
     exact (h _).symm
   calc
     ∑ σ : declared → Bool, (if φ.eval (extDeclared declared σ) then 1 else 0)
@@ -216,7 +216,7 @@ theorem PartitionsModels.modelCountOn_eq_sum [DecidableEq V] {φ : CNF V} {branc
             if ψ.eval (extDeclared declared σ) then 1 else 0).sum :=
       Finset.sum_congr rfl fun σ _ => hpoint σ
     _ = (branches.map fun ψ => ψ.modelCountOn declared).sum := by
-      rw [finset_sum_list_sum]
+      rw [Finset.sum_list_sum_comm]
       simp only [← modelCountOn_eq_sum_ite]
 
 /-! ### Explicit formula-level SAT branching rules -/

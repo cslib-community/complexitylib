@@ -57,7 +57,33 @@ theorem fibRec_le_goldenBranchFactor_pow (n : ℕ) :
           simp only [fibRec, List.map_cons, List.map_nil, show k + 1 + 1 - 1 = k + 1 by omega,
             show k + 1 + 1 - 2 = k by omega, List.sum_cons, List.sum_nil, add_zero, Nat.cast_add]
           exact le_rfl)
-  exact hrec.le_pow (zero_lt_one.trans one_lt_goldenBranchFactor) charSum_fibonacci.le n
+  exact hrec.le_pow one_le_goldenBranchFactor charSum_fibonacci.le n
+
+def skippedRec : ℕ → ℕ
+  | 0 => 1
+  | 1 => 1
+  | 2 => 1
+  | n + 3 => skippedRec (n + 1) + skippedRec n
+
+theorem skippedRec_le_pow (n : ℕ) :
+    (skippedRec n : ℝ) ≤ (2 : ℝ) ^ n := by
+  have hrec : BranchingRecurrence (fun m => (skippedRec m : ℝ)) [2, 3] 1 :=
+    BranchingRecurrence.of_step zero_le_one (by decide)
+      (fun m => by
+        rcases m with _ | _ | _ | k
+        · simp only [skippedRec, Nat.cast_one, le_max_iff, le_refl, true_or]
+        · simp only [skippedRec, Nat.cast_one, le_max_iff, le_refl, true_or]
+        · simp only [skippedRec, Nat.cast_one, le_max_iff, le_refl, true_or]
+        · have hfilt : List.filter (· ≤ k + 3) [2, 3] = [2, 3] := by
+            have h2 : 2 ≤ k + 3 := by omega
+            have h3 : 3 ≤ k + 3 := by omega
+            simp [h2, h3]
+          rw [hfilt]
+          simp only [skippedRec, List.map_cons, List.map_nil, show k + 2 + 1 - 2 = k + 1 by omega,
+            show k + 2 + 1 - 3 = k by omega, List.sum_cons, List.sum_nil, add_zero, Nat.cast_add,
+            le_max_iff, or_true]
+          exact Or.inr le_rfl)
+  exact hrec.le_pow one_le_two (by norm_num [charSum]) n
 
 theorem prefixBranchFactor_three_eq : prefixBranchFactor 3 = (15 / 8 : ℝ) := by
   unfold prefixBranchFactor

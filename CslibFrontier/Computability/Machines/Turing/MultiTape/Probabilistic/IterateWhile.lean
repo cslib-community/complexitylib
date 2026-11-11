@@ -65,7 +65,7 @@ variable (k)
 abbrev curTape : Fin (k + 1 + 2) := Fin.natAdd (k + 1) 0
 
 /-- The tape holding the next word: the output tape of `Turing.MultiTapePTM.onWords`. -/
-abbrev nextTape : Fin (k + 1 + 2) := (Fin.last k).castAdd 2
+public abbrev nextTape : Fin (k + 1 + 2) := (Fin.last k).castAdd 2
 
 /-- The flag tape of `Turing.MultiTapePTM.onWords`. -/
 abbrev flagTape : Fin (k + 1 + 2) := Fin.natAdd (k + 1) 1
@@ -108,7 +108,7 @@ theorem flagTape_ne_curTape : flagTape k ≠ curTape k := Fin.ne_of_val_ne (by s
 
 /-- The words between two phases: `vc` on the current tape, `vn` on the next tape, all other
 tapes blank. -/
-def words (vc vn : List Bool) : Fin (k + 1 + 2) → List Bool :=
+public def words (vc vn : List Bool) : Fin (k + 1 + 2) → List Bool :=
   Function.update (Function.update (fun _ => []) (curTape k) vc) (nextTape k) vn
 
 /-- The current tape holds the current word. -/
@@ -118,7 +118,7 @@ theorem words_cur (vc vn : List Bool) : words (k := k) vc vn (curTape k) = vc :=
 
 /-- The next tape holds the next word. -/
 @[simp]
-theorem words_next (vc vn : List Bool) : words (k := k) vc vn (nextTape k) = vn := by
+public theorem words_next (vc vn : List Bool) : words (k := k) vc vn (nextTape k) = vn := by
   simp [words]
 
 /-- The flag tape is blank. -/
@@ -151,7 +151,7 @@ theorem words_nil_nil : words (k := k) [] [] = fun _ => [] := by
   rw [words_nil_next, Function.update_eq_self]
 
 /-- The words on the current and next tapes determine the tapes. -/
-theorem words_injective : Function.Injective (fun p : List Bool × List Bool =>
+public theorem words_injective : Function.Injective (fun p : List Bool × List Bool =>
     words (k := k) p.1 p.2) := by
   rintro ⟨vc, vn⟩ ⟨vc', vn'⟩ h
   have hcur := congrFun h (curTape k)
@@ -183,17 +183,17 @@ public abbrev MachineState (State : Type) : Type :=
 variable (k) in
 /-- Prepare a round: clear the current tape, copy the next word to it and clear the next tape,
 using `mark` to flag the left end of words. -/
-noncomputable def prepareRound (mark : Bool) : MultiTapeTM (k + 1 + 2) Bool PrepareState :=
+public noncomputable def prepareRound (mark : Bool) : MultiTapeTM (k + 1 + 2) Bool PrepareState :=
   ((clearWork Bool).extendTapes (tapeEmb (curTape k))).seq
     ((copyWord (copyEmb k) mark).seq ((clearWork Bool).extendTapes (tapeEmb (nextTape k))))
 
 variable (k) in
 /-- Finish the iteration: output the current word and clear its tape. -/
-noncomputable def finish (mark : Bool) : MultiTapeTM (k + 1 + 2) Bool FinishState :=
+public noncomputable def finish (mark : Bool) : MultiTapeTM (k + 1 + 2) Bool FinishState :=
   (emitWord (emitEmb k) mark).seq ((clearWork Bool).extendTapes (tapeEmb (curTape k)))
 
 /-- Preparing a round moves the next word `v` to the current tape, replacing `vp`. -/
-theorem transformsTapes_prepareRound (mark : Bool) (vp v : List Bool) :
+public theorem transformsTapes_prepareRound (mark : Bool) (vp v : List Bool) :
     TransformsTapes (prepareRound k mark) (fun _ ws => ws = words vp v)
       (fun _ _ ws' e => ws' = words v [] ∧ e = [])
       (3 * vp.length + 6 * v.length + 16) (vp.length + 5 * v.length + 3 * (k + 1 + 2) + 17) := by
@@ -213,7 +213,7 @@ theorem transformsTapes_prepareRound (mark : Bool) (vp v : List Bool) :
     (fun _ _ _ _ _ ⟨h', he⟩ => ⟨h', by simp [he]⟩) (by omega) (by omega)
 
 /-- Finishing outputs the current word `v` and leaves every tape blank. -/
-theorem transformsTapes_finish (mark : Bool) (v : List Bool) :
+public theorem transformsTapes_finish (mark : Bool) (v : List Bool) :
     TransformsTapes (finish k mark) (fun _ ws => ws = words v [])
       (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = v)
       (5 * v.length + 11) (3 * v.length + 2 * (k + 1 + 2) + 11) := by
@@ -251,7 +251,7 @@ public noncomputable def iterateWhile (tm : MultiTapePTM k Bool State Operation)
 
 /-- A round moves `v` to the current tape and replaces it on the next tape by the result of
 `tm` on `v`, making exactly the oracle calls of `tm`. -/
-theorem RunsWords.iterateWhileRound {tm : MultiTapePTM k Bool State Operation} (mark : Bool)
+public theorem RunsWords.iterateWhileRound {tm : MultiTapePTM k Bool State Operation} (mark : Bool)
     {vp v : List Bool} {t l : ℕ}
     {program : ProbOracleComp (fun _ : Operation × List Bool => List Bool) (List Bool)}
     (h : tm.ComputesTidily v t program)

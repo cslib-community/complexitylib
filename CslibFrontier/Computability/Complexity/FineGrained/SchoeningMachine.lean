@@ -320,18 +320,6 @@ theorem le_fairWalk_toReal [Finite V] {w k : ℕ} {φ : CNF V} (hlen : ∀ c ∈
             mul_le_mul h1 h2 (mul_nonneg (pow_nonneg hα0 t) ENNReal.toReal_nonneg)
               ENNReal.toReal_nonneg
 
-private theorem one_sub_mul_le_pow {δ : ℝ} (h1 : δ ≤ 1) (m : ℕ) :
-    1 - (m : ℝ) * δ ≤ (1 - δ) ^ m := by
-  induction m with
-  | zero => simp only [Nat.cast_zero, zero_mul, sub_zero, pow_zero, le_refl]
-  | succ m ih =>
-    rw [pow_succ, Nat.cast_add, Nat.cast_one]
-    have hnonneg : 0 ≤ 1 - δ := by linarith
-    have hmul : (1 - (m : ℝ) * δ) * (1 - δ) ≤ (1 - δ) ^ m * (1 - δ) :=
-      mul_le_mul_of_nonneg_right ih hnonneg
-    have hsq : 0 ≤ (m : ℝ) * δ ^ 2 := by positivity
-    nlinarith
-
 private theorem half_le_bernoulli_factor (n k : ℕ) :
     (1 / 2 : ℝ) ≤ (1 - (k : ℝ) / (2 : ℝ) ^ (2 * n + k + 3)) ^ (3 * n) := by
   let w := 2 * n + k + 3
@@ -370,7 +358,7 @@ private theorem half_le_bernoulli_factor (n k : ℕ) :
         = ((3 * n : ℝ) * k) / (2 * (2 : ℝ) ^ (2 * n + k + 2)) := by ring
       _ ≤ (2 : ℝ) ^ (2 * n + k + 2) / (2 * (2 : ℝ) ^ (2 * n + k + 2)) := by gcongr
       _ = 1 / 2 := by field_simp
-  have hbern := one_sub_mul_le_pow hδ1 (3 * n)
+  have hbern := one_add_mul_le_pow (a := -δ) (by linarith) (3 * n)
   push_cast at hbern
   linarith
 
