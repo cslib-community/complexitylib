@@ -179,6 +179,22 @@ theorem eval_assignment_of_satisfiable {φ : CNF V} (hφ : φ.IsHorn)
     obtain ⟨k, hk, hs, hm⟩ := hn
     exact (Clause.eval_eq_true_iff _ _).mpr ⟨k, hk, by simp [assignment, hs, hm]⟩
 
+/-- The forward-chaining candidate is pointwise at most every satisfying assignment. -/
+theorem assignment_le_of_eval {φ : CNF V} (hφ : φ.IsHorn) {σ : V → Bool}
+    (hσ : φ.eval σ = true) (v : V) : assignment φ v ≤ σ v := by
+  by_cases h : assignment φ v = true
+  · have hm : v ∈ forced φ (φ.numVars + 1) := List.contains_iff_mem.mp h
+    rw [h, forced_le_model hφ hσ (φ.numVars + 1) v hm]
+  · simp only [Bool.not_eq_true] at h
+    rw [h]
+    exact Bool.false_le _
+
+/-- Among all satisfying assignments of a satisfiable Horn formula, `assignment φ` is the
+pointwise-least model. -/
+theorem isLeast_assignment {φ : CNF V} (hφ : φ.IsHorn) (hsat : φ.Satisfiable) :
+    IsLeast {σ : V → Bool | φ.eval σ = true} (assignment φ) :=
+  ⟨eval_assignment_of_satisfiable hφ hsat, fun _ hσ v => assignment_le_of_eval hφ hσ v⟩
+
 /-- Correctness of the executable decider for ordinary HornSAT. -/
 theorem solve_eq_true_iff (φ : CNF V) : solve φ = true ↔ φ.IsHorn ∧ φ.Satisfiable := by
   have hsyntax : φ.all (fun c => decide ((c.filter Prod.snd).length ≤ 1)) = true ↔
@@ -226,6 +242,15 @@ theorem computableInPolyTime_solve :
 /-- Ordinary HornSAT is in native multi-tape polynomial time under `encCNF`. -/
 theorem mem_P : HornSAT ∈ P encCNF :=
   ⟨solve, computableInPolyTime_solve, fun φ => (solve_eq_true_iff φ).symm⟩
+
+/-- **The least Horn model need not be the only model**: `[[(0, false), (1, true)]]` (`x₀ → x₁`) is
+in `HornSAT`, its least model `assignment` sets every variable to `false`, yet `v ↦ (v == 1)` is a
+second satisfying model differing on the occurring variable `1`. -/
+theorem exists_multiple_models :
+    ∃ (φ : CNF ℕ) (σ : ℕ → Bool),
+      φ ∈ HornSAT ∧ φ.eval σ = true ∧ (∃ v ∈ φ.vars, σ v ≠ assignment φ v) :=
+  ⟨[[(0, false), (1, true)]], fun v => v == 1, (solve_eq_true_iff _).mp (by decide), by decide,
+    1, by decide, by decide⟩
 
 end HornSAT
 

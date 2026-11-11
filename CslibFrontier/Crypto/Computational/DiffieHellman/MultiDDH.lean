@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Crypto.Computational.DiffieHellman
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.PolyTime
 
 /-!
 # Fixed-first-coordinate DDH rerandomization and Multi-DDH
@@ -73,6 +75,30 @@ theorem ddhFixedUWordRerandomize_encode (d : F.Desc) (u v w : F.Carrier d) (σ �
         F.encode d (F.ddhFixedURerandomize d u v w σ τ).2)) := by
   simp [ddhFixedUWordRerandomize, ddhFixedURerandomize, F.smul_encode, F.add_encode]
 
+@[local fun_prop]
+private theorem computableInPolyTime_generator_comp {α : Type} {encIn : α ↪ List Bool}
+    {d : α → F.Desc} (hd : ComputableInPolyTime d encIn F.encDesc) :
+    ComputableInPolyTime (fun a => F.encode (d a) (F.generator (d a))) encIn encBits :=
+  F.computableInPolyTime_generator.comp hd
+
+@[local fun_prop]
+private theorem computableInPolyTime_add_comp {α : Type} {encIn : α ↪ List Bool}
+    {d : α → F.Desc} {x y : α → List Bool}
+    (hd : ComputableInPolyTime d encIn F.encDesc)
+    (hx : ComputableInPolyTime x encIn encBits)
+    (hy : ComputableInPolyTime y encIn encBits) :
+    ComputableInPolyTime (fun a => F.add (d a, x a, y a)) encIn encBits :=
+  F.computableInPolyTime_add.comp (hd.prod (hx.prod hy))
+
+@[local fun_prop]
+private theorem computableInPolyTime_smul_comp {α : Type} {encIn : α ↪ List Bool}
+    {d : α → F.Desc} {k : α → ℕ} {x : α → List Bool}
+    (hd : ComputableInPolyTime d encIn F.encDesc)
+    (hk : ComputableInPolyTime k encIn encNat)
+    (hx : ComputableInPolyTime x encIn encBits) :
+    ComputableInPolyTime (fun a => F.smul (d a, k a, x a)) encIn encBits :=
+  F.computableInPolyTime_smul.comp (hd.prod (hk.prod hx))
+
 /-- `ddhFixedUWordRerandomize` is computable in polynomial time. -/
 theorem computableInPolyTime_ddhFixedUWordRerandomize :
     ComputableInPolyTime
@@ -82,44 +108,8 @@ theorem computableInPolyTime_ddhFixedUWordRerandomize :
       (encPair F.encDesc
         (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
       (encPair encBits encBits) := by
-  have hd : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × List Bool × List Bool × ℕ × ℕ => input.1)
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
-      F.encDesc := by fun_prop
-  have hu : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × List Bool × List Bool × ℕ × ℕ => input.2.1)
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
-      encBits := by fun_prop
-  have hv : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × List Bool × List Bool × ℕ × ℕ => input.2.2.1)
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
-      encBits := by fun_prop
-  have hw : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × List Bool × List Bool × ℕ × ℕ => input.2.2.2.1)
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
-      encBits := by fun_prop
-  have hσ : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × List Bool × List Bool × ℕ × ℕ => input.2.2.2.2.1)
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
-      encNat := by fun_prop
-  have hτ : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × List Bool × List Bool × ℕ × ℕ => input.2.2.2.2.2)
-      (encPair F.encDesc
-        (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat)))))
-      encNat := by fun_prop
-  have hgen := F.computableInPolyTime_generator.comp hd
-  have hσg := F.computableInPolyTime_smul.comp (hd.prod (hσ.prod hgen))
-  have hτv := F.computableInPolyTime_smul.comp (hd.prod (hτ.prod hv))
-  have hσu := F.computableInPolyTime_smul.comp (hd.prod (hσ.prod hu))
-  have hτw := F.computableInPolyTime_smul.comp (hd.prod (hτ.prod hw))
-  have hv' := F.computableInPolyTime_add.comp (hd.prod (hσg.prod hτv))
-  have hw' := F.computableInPolyTime_add.comp (hd.prod (hσu.prod hτw))
-  exact hv'.prod hw'
+  unfold ddhFixedUWordRerandomize
+  fun_prop
 
 /-- The distribution of `(v*, w*)` obtained by drawing `σ, τ : ZMod (F.order d)` independently and
 uniformly in `ddhFixedURerandomize` ([BonehShoup2023], Exercise 10.8, p. 425). -/
@@ -294,43 +284,34 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
         (F.multiDDHRerandomizeLaw d ι u v w).bind (test u)) +
       (F.order d : ℝ≥0)⁻¹ := by
   have hreal :
-      ((F.ddhRealTupleLaw d).bind fun t =>
-        (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) =
+      ((F.ddhRealTupleLaw d).bind fun (u, v, w) =>
+        (F.multiDDHRerandomizeLaw d ι u v w).bind (test u)) =
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (F.multiDDHRealTupleLaw d ι α).bind (test (α • F.generator d))) := by
     simp only [pmf_norm, ddhRealTupleLaw, multiDDHRerandomizeLaw_real, PMF.bind_const]
-  rw [← hreal]
-  refine (Game.advantage_triangle _
-    ((F.ddhIdealTupleLaw d).bind fun t =>
-      (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) _).trans ?_
-  refine add_le_add le_rfl ?_
-  simp only [pmf_norm, ddhIdealTupleLaw]
-  -- Bound the advantage inside the outer `α, β` averages using `Game.advantage_bind_le`.
-  have hpoint (α β : ZMod (F.order d)) :
-      (Game.advantage
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-          (F.multiDDHRerandomizeLaw d ι (α • F.generator d) (β • F.generator d)
-            (γ • F.generator d)).bind (test (α • F.generator d)))
-        ((F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) : ℝ) ≤
-      (((F.order d : ℝ≥0)⁻¹ : ℝ≥0) : ℝ) := by
-    refine NNReal.coe_le_coe.mpr ?_
+  have hideal :
+      Game.advantage
+        ((F.ddhIdealTupleLaw d).bind fun (u, v, w) =>
+          (F.multiDDHRerandomizeLaw d ι u v w).bind (test u))
+        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
+          (F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) ≤
+      (F.order d : ℝ≥0)⁻¹ := by
+    simp only [pmf_norm, ddhIdealTupleLaw]
+    peel_binds α
+    rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
+      ((F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d)))]
+    peel_binds β
     simpa only [ZMod.card] using
       Game.advantage_bind_uniformOfFintype_of_ne_le (α * β)
         (fun γ => (F.multiDDHRerandomizeLaw d ι (α • F.generator d) (β • F.generator d)
           (γ • F.generator d)).bind (test (α • F.generator d)))
         ((F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d)))
         (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_ideal d ι hγ])
-  have hβ (α : ZMod (F.order d)) :
-      (Game.advantage
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
-          (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-            (F.multiDDHRerandomizeLaw d ι (α • F.generator d) (β • F.generator d)
-              (γ • F.generator d)).bind (test (α • F.generator d)))
-        ((F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) : ℝ) ≤
-      (((F.order d : ℝ≥0)⁻¹ : ℝ≥0) : ℝ) := by
-    rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
-      ((F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d)))]
-    exact Game.advantage_bind_le _ _ _ (hpoint α)
-  exact NNReal.coe_le_coe.mp (Game.advantage_bind_le _ _ _ hβ)
+  game_trans
+    [(F.ddhRealTupleLaw d).bind fun (u, v, w) =>
+       (F.multiDDHRerandomizeLaw d ι u v w).bind (test u),
+     (F.ddhIdealTupleLaw d).bind fun (u, v, w) =>
+       (F.multiDDHRerandomizeLaw d ι u v w).bind (test u)]
+    using [hreal, le_rfl, hideal]
 
 end Cslib.Crypto.PrimeOrderGroupFamily

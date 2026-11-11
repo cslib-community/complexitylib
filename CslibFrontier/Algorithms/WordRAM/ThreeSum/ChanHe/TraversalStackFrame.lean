@@ -25,6 +25,9 @@ so they share this argument.
 
 ## Main results
 
+* `Arena.stack_frame`: memory outside `[a.stack, a.stack + a.capacity)` survives a stack-only step.
+* `Entry.Stored.of_arena_frame`, `StoredNodes.of_arena_frame`: entry and emitted-node readbacks
+  survive a stack-only step.
 * `Arena.preserved_of_stack_frame`: the worklist facts preserved by a stack-only step.
 
 These invariant proofs are original.
@@ -35,6 +38,38 @@ public section
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 
 open Cslib.WordRAM
+open Cslib.Algorithms.ThreeSum.ChanHe (Node)
+
+/-- A step that modifies only the reserved native stack leaves memory outside
+`[a.stack, a.stack + a.capacity)` unchanged. -/
+theorem Arena.stack_frame (a : Arena) {mem₁ mem₂ : ℕ → ℕ}
+    (hframe : Modifies (WordStack.footprint a.stack a.capacity) mem₁ mem₂) (q : ℕ)
+    (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : mem₂ q = mem₁ q := by
+  apply hframe
+  simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
+  omega
+
+/-- An entry whose arrays avoid `[a.stack, a.floor)` retains its readback across a stack-only
+memory modification. -/
+theorem Entry.Stored.of_arena_frame {a : Arena} {e : Entry} {mem₁ mem₂ : ℕ → ℕ}
+    (hs : e.Stored mem₁) (ha : a.Separated) (har : e.Around a.stack (a.floor - a.stack))
+    (hframe : Modifies (WordStack.footprint a.stack a.capacity) mem₁ mem₂) :
+    e.Stored mem₂ :=
+  hs.of_stack_frame (har.mono_capacity ha.capacity_le_gap) hframe
+
+/-- Emitted pointer-table entries and packed node arrays above `a.floor` retain their readback
+across a stack-only memory modification. -/
+theorem StoredNodes.of_arena_frame {a : Arena} {ns : List (ℕ × Node)} {mem₁ mem₂ : ℕ → ℕ}
+    (ho : StoredNodes a.U a.N a.table ns mem₁) (ha : a.Separated)
+    (hb : ∀ i : Fin ns.length, a.floor ≤ ns[i.val].1)
+    (hframe : Modifies (WordStack.footprint a.stack a.capacity) mem₁ mem₂) :
+    StoredNodes a.U a.N a.table ns mem₂ := by
+  refine ho.congr (fun q _ _ => a.stack_frame hframe q (Or.inr (by have := ha.2.1; omega)))
+    fun i _ _ => a.stack_frame hframe _ (Or.inr ?_)
+  have hi := hb i
+  have ht := ha.2.1
+  have hf := ha.2.2.1
+  omega
 
 /-- A step that changes memory only inside the reserved native stack and keeps the persistent
 caller registers `71`–`95` preserves the worklist facts shared by the catalogue and visitor
@@ -61,26 +96,10 @@ theorem Arena.preserved_of_stack_frame {a : Arena} {es : List Entry} (x y : Data
       (∀ d ∈ es, ∀ j, d.source j + (d.data j).length ≤ y.regs heap) ∧
       a.Bitmap y.mem ∧ a.floor ≤ y.regs heap := by
   have hheap : y.regs heap = x.regs heap := hregs _ (by decide) (by decide)
-  have hmem (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : y.mem q = x.mem q := by
-    apply hframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    omega
-  have gap : a.capacity ≤ a.floor - a.stack := by
-    have ht := ha.2.1
-    have hf := ha.2.2.1
-    omega
-  refine ⟨hheap, hregs _ (by decide) (by decide), hc.congr ?_, hmem, gap,
-    fun d hd => (hs d hd).of_stack_frame ((har d hd).mono_capacity gap) hframe, ?_, ?_, ?_⟩
-  · intro i hi
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-    exact hregs i (by omega) (by omega)
-  · intro d hd j
-    rw [hheap]
-    exact hen d hd j
-  · intro q hq
-    rw [hmem _ (Or.inl (by have := ha.1; omega))]
-    exact hb q hq
-  · rw [hheap]
-    exact hfl
+  have hmem := a.stack_frame hframe
+  exact ⟨hheap, hregs _ (by decide) (by decide), hc.of_regs_71_96 hregs, hmem,
+    ha.capacity_le_gap, fun d hd => (hs d hd).of_arena_frame ha (har d hd) hframe,
+    fun d hd j => hheap ▸ hen d hd j,
+    fun q hq => (hmem _ (Or.inl (by have := ha.1; omega))).trans (hb q hq), hheap ▸ hfl⟩
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal

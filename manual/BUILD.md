@@ -29,6 +29,11 @@ CI and both full and quick `scripts/check.sh` runs require these checks. They ne
 tools, Lean build or generated research data, and do not replace independent review of the
 manuals' meaning and usability.
 
+The checker rejects unresolved Git conflict opening markers outside code fences, reporting
+the document and line. Resolve the competing content, remove the conflict markers and rerun
+the checks before building either PDF. Deliberately quoted conflict examples must be in a
+code fence; ordinary heading underlines and blockquotes remain valid Markdown.
+
 To produce the books, also install Pandoc, XeLaTeX and `pdfinfo` (Poppler).
 The main book's model diagrams require
 Graphviz (`dot`); the short agent manual does not invoke it. The TeX installation needs

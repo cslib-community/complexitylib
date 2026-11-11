@@ -1158,6 +1158,17 @@ noncomputable instance instCompactSpace [Finite V] : CompactSpace (MetricGraph W
   rw [← isCompact_univ_iff, ← hf_surj.range_eq]
   exact isCompact_range hf_cont
 
+/-- Minimum weight among all darts in a nonempty finite weighted graph. -/
+theorem exists_min_dart_weight [Finite V] (d₀ : W.graph.Dart) :
+    ∃ wmin : ℝ, 0 < wmin ∧ ∀ d : W.graph.Dart, wmin ≤ W.weight d.edge := by
+  classical
+  have : Finite W.graph.Dart := Finite.of_injective Dart.toProd Dart.toProd_injective
+  have hfin : (Set.univ : Set W.graph.Dart).Finite := Set.finite_univ
+  obtain ⟨d₁, _, hd₁⟩ := hfin.toFinset.exists_min_image (fun d : W.graph.Dart => W.weight d.edge)
+    ⟨d₀, hfin.mem_toFinset.mpr (Set.mem_univ d₀)⟩
+  exact ⟨W.weight d₁.edge, W.dart_weight_pos d₁, fun d =>
+    hd₁ d (hfin.mem_toFinset.mpr (Set.mem_univ d))⟩
+
 end MetricGraph
 
 end SimpleGraph

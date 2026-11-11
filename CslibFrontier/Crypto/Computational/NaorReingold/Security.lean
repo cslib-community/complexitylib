@@ -21,6 +21,8 @@ import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
@@ -2145,30 +2147,29 @@ private theorem isOraclePPTOn_hashedAdvGroup (F : PrimeOrderGroupFamily) {inLen 
           (List.take (bound p.2.1) <$>
             ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), request.2))
       else pure ([], ())
-  have hprep : ComputableTidilyInPolyTime
+  have hprep : ComputableInPolyTime
       (fun p : ℕ × F.withSeed.Desc => (p.1, F.withSeed.encDesc p.2))
       ECaller (encPair encUnary encBits) :=
-    (ComputableTidilyInPolyTime.fst encUnary F.withSeed.encDesc).prod
-      (ComputableTidilyInPolyTime.encoded
-        (ComputableTidilyInPolyTime.snd encUnary F.withSeed.encDesc))
-  have hguard : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.fst encUnary F.withSeed.encDesc).prod
+      (ComputableInPolyTime.snd encUnary F.withSeed.encDesc).encoding_comp
+  have hguard : ComputableInPolyTime
       (fun pair : (ℕ × F.withSeed.Desc) × (Unit × List Bool) × Unit =>
         pair.2.1.2.length == inLen pair.1.1)
       EHandler encBool :=
-    ComputableTidilyInPolyTime.unary_beq
+    ComputableInPolyTime.unary_beq'
       (by dsimp only [EHandler]; fun_prop)
-      (hinLen.tidy.comp (by dsimp only [EHandler, ECaller]; fun_prop))
+      (hinLen.comp (by dsimp only [EHandler, ECaller]; fun_prop))
   have htake : IsOraclePPTOn EHandler encBits
       (fun pair : (ℕ × F.withSeed.Desc) × (Unit × List Bool) × Unit =>
         List.take (bound pair.1.2.1) <$>
           ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
             ((), pair.2.1.2)) :=
-    IsOraclePPTOn.query_take ()
+    IsOraclePPTOn.query_take' ()
       (request := fun pair : (ℕ × F.withSeed.Desc) × (Unit × List Bool) × Unit => pair.2.1.2)
       (limit := fun pair => bound pair.1.2.1)
       (by dsimp only [EHandler]; fun_prop)
-      (hbound.tidy.comp (by dsimp only [EHandler, ECaller, withSeed]; fun_prop))
-  have hhash_post : ComputableTidilyInPolyTime
+      (hbound.comp (by dsimp only [EHandler, ECaller, withSeed]; fun_prop))
+  have hhash_post : ComputableInPolyTime
       (fun pair : ((ℕ × F.withSeed.Desc) × (Unit × List Bool) × Unit) × List Bool =>
         (F.linearHashKDF (fun _ => outLen pair.1.1.1) bound (pair.1.1.2, pair.2), ()))
       (encPair EHandler encBits) (encPair encBits (encFinEnum Unit)) := by
@@ -2188,37 +2189,37 @@ private theorem isOraclePPTOn_hashedAdvGroup (F : PrimeOrderGroupFamily) {inLen 
         (encPair EHandler encBits) encBits :=
       ComputableInPolyTime.bitsPadWord
         (hbound.comp (by dsimp only [EHandler, ECaller, withSeed]; fun_prop)) (by fun_prop)
-    have hkdf := (Cslib.BitString.LinearHash.computableInPolyTime_wordHash
-      hout_t hseed_t hpad_t).tidy
-    exact hkdf.prod (ComputableTidilyInPolyTime.const ())
+    have hkdf := Cslib.BitString.LinearHash.computableInPolyTime_wordHash
+      hout_t hseed_t hpad_t
+    exact hkdf.prod (ComputableInPolyTime.const ())
   have hvalid : IsOraclePPTOn EHandler (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × F.withSeed.Desc) × (Unit × List Bool) × Unit =>
         (fun raw => (F.linearHashKDF (fun _ => outLen pair.1.1) bound (pair.1.2, raw), ())) <$>
           (List.take (bound pair.1.2.1) <$>
             ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
               ((), pair.2.1.2))) :=
-    htake.map_with hhash_post
+    htake.map_with' hhash_post
   have hinvalid : IsOraclePPTOn EHandler (encPair encBits (encFinEnum Unit))
       (fun _ => (pure ([], ()) : WordOracleComp Unit (List Bool × Unit))) := by
     simpa only [ProbOracleComp.sample_pure] using
       (ComputableInPolyTime.const ([], ())).isPPTOn.isOraclePPTOn (Operation := Unit)
   have hhandler : IsOraclePPTOn EHandler (encPair encBits (encFinEnum Unit))
       (fun pair => handler pair.1 pair.2.1 pair.2.2) := by
-    refine (IsOraclePPTOn.cond hguard hvalid hinvalid).congr
+    refine (IsOraclePPTOn.cond' hguard hvalid hinvalid).congr
       fun pair State oracle s => ?_
     by_cases h : pair.2.1.2.length = inLen pair.1.1 <;> simp [handler, h]
-  have hres : ComputableTidilyInPolyTime
+  have hres : ComputableInPolyTime
       (fun pair : (ℕ × F.withSeed.Desc) × List Bool => outLen pair.1.1 + 1)
       (encPair ECaller encBits) encUnary :=
-    (by fun_prop : ComputableTidilyInPolyTime (fun n => n + 1) encUnary encUnary).comp
-      (houtLen.tidy.comp (by dsimp only [ECaller]; fun_prop))
-  have hsub := hadversary.on.run_interpret_preprocess_open (State := Unit)
+    (by fun_prop : ComputableInPolyTime (fun n => n + 1) encUnary encUnary).comp
+      (houtLen.comp (by dsimp only [ECaller]; fun_prop))
+  have hsub := hadversary.on.run_interpret_preprocess_open' (State := Unit)
     (operationEncoding := encFinEnum Unit) (stateEncoding := encFinEnum Unit)
     (handler := handler)
     (prepare := fun p : ℕ × F.withSeed.Desc => (p.1, F.withSeed.encDesc p.2))
     (initial := fun _ => ())
     (resources := fun p _ => outLen p.1 + 1)
-    hprep hhandler (ComputableTidilyInPolyTime.const ())
+    hprep hhandler (ComputableInPolyTime.const ())
     (fun _ _ => True) (fun _ => trivial) hres
     (fun a request _ _ result hresult => by
       dsimp only [handler] at hresult
@@ -2229,7 +2230,7 @@ private theorem isOraclePPTOn_hashedAdvGroup (F : PrimeOrderGroupFamily) {inLen 
       · simp only [hq, ↓reduceIte] at hresult
         obtain rfl := OracleComp.eq_of_mem_supportWith_pure hresult
         exact ⟨trivial, by simp, Nat.le_add_right _ _⟩)
-  exact hsub.map (ComputableTidilyInPolyTime.fst encBool (encFinEnum Unit))
+  exact hsub.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))
 
 private theorem naorReingoldWordRun_hashedAdvGroup (F : PrimeOrderGroupFamily)
     (inLen outLen : ℕ → ℕ) (bound : F.Desc → ℕ) (adversary : OracleDistinguisher)
