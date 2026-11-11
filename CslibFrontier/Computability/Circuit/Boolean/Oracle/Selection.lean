@@ -245,4 +245,60 @@ theorem fanInAtMost_queryLayer {K N q : ℕ} (src : Fin N → Fin q → Source K
     (queryLayer src).FanInAtMost q :=
   Circuit.fanInAtMost_pi fun _ => (Circuit.fanInAtMost_oneGate _ _ _).2 le_rfl
 
+/-- **One selection round.** Candidate `i` is accepted when the oracle accepts the word read from
+the sources `src i`; the round outputs its inputs followed by the word `word i` of the first
+accepted candidate, or the default word `dflt`. Every word is read from sources, so a candidate
+can contribute constants and input wires. -/
+def round {K N q w : ℕ} (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
+    (dflt : Fin w → Source K) : Circuit oracleSignature K (K + w) :=
+  (Circuit.id oracleSignature K).append
+    (((selectFirst (K := K + 2 + N) (fun b => Fin.castAdd N (dflt b).idx)
+        (fun i => Fin.natAdd (K + 2) i) (fun i b => Fin.castAdd N (word i b).idx)).mapOp
+      toOracle).comp
+      (((Circuit.id oracleSignature (K + 2)).append (queryLayer src)).comp (constLayer K)))
+
+@[simp] theorem eval_round {K N q w : ℕ} (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) (O : Language Bool)
+    (x : BitString K) :
+    (round src word dflt).eval (oracleInterpretation O) x =
+      Fin.append x (firstSel (fun b => (dflt b).val x)
+        (fun i => O.slice q fun a => (src i a).val x) (fun i b => (word i b).val x)) := by
+  rw [round, Circuit.eval_append, Circuit.eval_wiring, Circuit.eval_comp, Circuit.eval_comp,
+    Circuit.eval_append, Circuit.eval_wiring, Circuit.eval_mapOp (I := interpretation),
+    eval_selectFirst]
+  simp only [Function.comp_def, Fin.append_left, Fin.append_right, eval_constLayer_idx,
+    eval_queryLayer, id]
+
+theorem size_round {K N q w : ℕ} (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
+    (round src word dflt).size = 2 + N + N * (3 * w + 1) := by
+  simp [round]
+
+theorem cost_round {K N q w : ℕ} (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
+    (round src word dflt).program.cost OracleOp.queryWeight = N := by
+  rw [round, Circuit.cost_append, Circuit.cost_comp, Circuit.cost_comp, Circuit.cost_append,
+    cost_mapOp_toOracle, cost_queryLayer, cost_constLayer, Circuit.cost_wiring,
+    Circuit.cost_wiring]
+  simp
+
+theorem depthWith_round_le {K N q w : ℕ} (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
+    (round src word dflt).depthWith OracleOp.queryWeight ≤ 1 := by
+  refine (Circuit.depthWith_append_le _ _ _).trans (max_le (by simp) ?_)
+  refine (Circuit.depthWith_comp_le _ _ _).trans ?_
+  rw [depthWith_mapOp_toOracle, Nat.zero_add]
+  refine (Circuit.depthWith_comp_le _ _ _).trans ?_
+  rw [depthWith_constLayer, Nat.add_zero]
+  exact (Circuit.depthWith_append_le _ _ _).trans
+    (max_le (by simp) (depthWith_queryLayer_le src))
+
+theorem fanInAtMost_round {K N q w : ℕ} (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
+    (round src word dflt).FanInAtMost (max q 2) :=
+  (Circuit.fanInAtMost_wiring _ _).append <|
+    (((Circuit.fanInAtMost_mapOp _ _).2 (fanInAtMost_two _)).mono (le_max_right _ _)).comp <|
+      ((Circuit.fanInAtMost_wiring _ _).append
+        ((fanInAtMost_queryLayer src).mono (le_max_left _ _))).comp (fanInAtMost_constLayer _ _)
+
 end Cslib.Circuits.Boolean
