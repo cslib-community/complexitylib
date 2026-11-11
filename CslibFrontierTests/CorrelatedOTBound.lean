@@ -194,7 +194,7 @@ private def beaverView1 (b : Fin 4) (msg : beaverMsg) :
 private noncomputable def beaverSim :
     (I : Finset (Fin 2)) →
       CorrelatedSimulator beaverSchedule (Fin 4 × Fin 4) (Fin 4) beaverCoins beaverOut I
-  | I => CorrelatedSimulator.ofProbComp fun out =>
+  | I => fun out =>
     if h0 : (0 : Fin 2) ∈ I then
       if h1 : (1 : Fin 2) ∈ I then
         pure fun ⟨i, _⟩ => match i with
@@ -506,7 +506,7 @@ private theorem beaver_priv0 :
           let out : (i : Fin 2) → beaverOut i :=
             Fin.cases s (fun _ j => (c j, otSelect (s j) (c j)))
           (v0, out) := by
-    dsimp only [idealCorrelatedJoint, idealROT, beaverSim, CorrelatedSimulator.ofProbComp]
+    dsimp only [idealCorrelatedJoint, idealROT, beaverSim]
     simp only [Finset.mem_singleton, one_ne_zero, ↓reduceDIte,
       ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
       PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def, Finset.restrict, Fin.cases_zero]
@@ -712,7 +712,7 @@ private theorem beaver_priv1 :
           let out : (i : Fin 2) → beaverOut i :=
             Fin.cases s (fun _ j => (c j, otSelect (s j) (c j)))
           (v1, out) := by
-    dsimp only [idealCorrelatedJoint, idealROT, beaverSim, CorrelatedSimulator.ofProbComp,
+    dsimp only [idealCorrelatedJoint, idealROT, beaverSim,
       Finset.restrict]
     simp only [Finset.mem_singleton, zero_ne_one, ↓reduceDIte,
       ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
