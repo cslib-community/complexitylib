@@ -83,6 +83,132 @@ example (S : Sampler) :
   fail_if_success fun_prop
   ppt
 
+/-- A structure bundling a parameterized oracle-PPT routine, exercising post-`prepareGoal`
+unfolding of `IsOraclePPT` fields. -/
+private structure OracleSubroutine where
+  /-- Parameterized oracle routine returning a bit. -/
+  run : ℕ → List Bool → WordOracleComp Unit Bool
+  /-- Uniform strict oracle-PPT certificate for `run`. -/
+  run_ppt : IsOraclePPT encBool run
+
+-- Structure-field `IsOraclePPT` certificates are exposed by `prepareGoal` and unfolded so
+-- `oraclePptKnownCall` prepares tuple arguments across monadic sequencing and mapped queries.
+example (A : OracleSubroutine) (S : Sampler) :
+    IsOraclePPT encBool (fun n word => do
+      let b ← A.run (n + 1) word.reverse
+      if b then
+        let masked ← ProbOracleComp.sample (S.run (b :: word))
+        (fun reply => reply == masked) <$>
+          (List.take n <$>
+            ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
+              ((), masked ++ word))
+      else
+        (fun reply => !reply.isEmpty) <$>
+          (List.take 1 <$>
+            ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), word))) := by
+  fail_if_success fun_prop
+  ppt
+
+-- Local `IsOraclePPT` certificates over an abstract operation type expose `Finite Op` from the
+-- certificate itself and prepare curried arguments.
+example {Op : Type} [DecidableEq Op]
+    (routine : ℕ → List Bool → WordOracleComp Op Bool)
+    (hroutine : IsOraclePPT encBool routine) :
+    IsOraclePPT encBool (fun n word => do
+      let flag ← routine (n + word.length) (word ++ word)
+      if word.length < n then
+        routine n (flag :: word)
+      else
+        pure (!flag)) := by
+  ppt
+
+-- Multi-component tuple arguments and competing local intermediate encodings resolve jointly
+-- across oracle binds.
+example (shared firstOnly secondOnly : ℕ ↪ List Bool)
+    (first : (List Bool × ℕ) × List Bool → WordOracleComp Unit ℕ)
+    (second : List Bool → ℕ → WordOracleComp Unit Bool)
+    (hfShared : IsOraclePPTOn (encPair (encPair encBits encUnary) encBits) shared first)
+    (_hfOther : IsOraclePPTOn (encPair (encPair encBits encUnary) encBits) firstOnly first)
+    (hsShared : IsOraclePPTOn (encPair encBits shared) encBool (fun p => second p.1 p.2))
+    (_hsOther : IsOraclePPTOn (encPair encBits secondOnly) encBool (fun p => second p.1 p.2)) :
+    IsOraclePPTOn encBits encBool (fun word => do
+      let k ← first ((word.reverse, word.length), word ++ word)
+      second word k) := by
+  ppt
+
+-- Boolean conditional guards on oracle goals use full `PolyTime` (here a list fold) while keeping
+-- `List.take` reply prefixes intact inside branches, and combine with curried closed `IsPPTOn`
+-- sampling.
+example (test : ℕ → List Bool → ProbComp Bool)
+    (htest : IsPPTOn (encPair encUnary encBits) encBool (fun p => test p.1 p.2)) :
+    IsOraclePPT encBool (fun n word =>
+      if word.foldl (fun parity _ => !parity) true then do
+        let reply ← List.take n <$>
+          ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), word)
+        ProbOracleComp.sample (test n (reply ++ word))
+      else
+        pure false) := by
+  fail_if_success (clear htest; ppt)
+  ppt
+
+/-- A reducible wrapper around `OracleComp.iterate` keeps oracle loop dispatch active. -/
+private abbrev wrappedOracleIterate {Op State : Type}
+    (count : ℕ) (step : State → WordOracleComp Op State) (initial : State) :
+    WordOracleComp Op State :=
+  OracleComp.iterate count step initial
+
+-- Bounded-growth oracle iteration supports nonincreasing state, constant additive growth, and
+-- captured input-dependent polynomial growth.
+example (step : List Bool → WordOracleComp Unit (List Bool))
+    (hstep : IsOraclePPTOn encBits encBits step)
+    (hshrink : ∀ state, ∀ next ∈ OracleComp.support (step state),
+      next.length ≤ state.length)
+    (growth : ℕ)
+    (hgrowth : ∀ state, ∀ next ∈ OracleComp.support (step state),
+      next.length ≤ state.length + growth)
+    (step2 : List Bool → List Bool → WordOracleComp Unit (List Bool))
+    (hstep2 : IsOraclePPTOn (encPair encBits encBits) encBits (fun pair => step2 pair.1 pair.2))
+    (growth2 : List Bool → ℕ) (hpoly2 : PolyBounded List.length growth2)
+    (hgrowth2 : ∀ word state, ∀ next ∈ OracleComp.support (step2 word state),
+      next.length ≤ state.length + growth2 word) :
+    IsOraclePPTOn encBits encBits (fun word => OracleComp.iterate word.length step word) ∧
+    IsOraclePPTOn encBits encBits (fun word => wrappedOracleIterate word.length step word) ∧
+    IsOraclePPTOn encBits encBits
+      (fun word => wrappedOracleIterate word.length (step2 word) word) := by
+  refine ⟨?_, ?_, ?_⟩
+  · clear growth hgrowth step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hstep; ppt)
+    fail_if_success (clear hshrink; ppt)
+    ppt
+  · clear hshrink step2 hstep2 growth2 hpoly2 hgrowth2
+    fail_if_success (clear hgrowth; ppt)
+    ppt
+  · clear step hstep hshrink growth hgrowth
+    fail_if_success (clear hstep2; ppt)
+    fail_if_success (clear hpoly2; ppt)
+    fail_if_success (clear hgrowth2; ppt)
+    ppt
+
+/-- A raw-only Boolean guard with no plain `ComputableInPolyTime` certificate. -/
+@[irreducible] private def rawOnlyGuard (word : List Bool) : Bool := word.isEmpty
+
+@[fun_prop] private theorem rawOnlyGuard_tidy :
+    ComputableTidilyInPolyTime rawOnlyGuard encBits encBool := by
+  unfold rawOnlyGuard
+  fun_prop
+
+-- Uncharged raw `ProbOracleComp.query` calls without `List.take` (directly or under a post-map)
+-- and raw-only conditional guards are rejected by `ppt`.
+example : True := by
+  fail_if_success have : IsOraclePPTOn encBits encBits (fun word =>
+      ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), word)) := by ppt
+  fail_if_success have : IsOraclePPTOn encBits encBool (fun word =>
+      (fun reply => reply.headD false) <$>
+        ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), word)) := by ppt
+  fail_if_success have : IsOraclePPTOn (Operation := Unit) encBits encBool (fun word =>
+      if rawOnlyGuard word then pure true else pure false) := by ppt
+  trivial
+
 -- `polytime` takes the same hints and exposes deterministic fields.
 example (E : SymmetricCipher) :
     ComputableInPolyTime (fun input : ℕ × List Bool × List Bool =>

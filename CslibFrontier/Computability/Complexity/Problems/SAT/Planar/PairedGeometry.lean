@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDr
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
 public import CslibFrontier.Foundations.Geometry.Orthogonal.PairedBoundary
 import CslibFrontier.Computability.Complexity.Problems.SAT.Incidence.Compact
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Range
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Nodup
@@ -1039,10 +1040,7 @@ theorem ordinaryClause_mem_openCell {c : Point} {pc : PlacedClause}
   have hi : ci.2 < OrdinaryRing.clausePositions.length := by
     rw [OrdinaryRing.drawing_sizes.1]
     simpa only [Nat.zero_add, OrdinaryRing.formula_sizes.1] using (List.mem_zipIdx hci).2.1
-  apply translated_point_mem_openCell
-  apply OrdinaryRing.clause_bounds
-  rw [List.getD_eq_getElem _ _ hi]
-  exact List.getElem_mem hi
+  exact translated_point_mem_openCell _ _ (OrdinaryRing.clause_bounds _ (List.getD_mem (0, 0) hi))
 
 /-- Crossover clause positions are strictly inside their cell. -/
 theorem crossingClause_mem_openCell {c : Point} {pc : PlacedClause}
@@ -1051,10 +1049,8 @@ theorem crossingClause_mem_openCell {c : Point} {pc : PlacedClause}
   have hi : ci.2 < PairedCrossover.clausePositions.length := by
     rw [PairedCrossover.drawing_sizes.1]
     simpa only [Nat.zero_add, PairedCrossover.length_formula] using (List.mem_zipIdx hci).2.1
-  apply translated_point_mem_openCell
-  apply PairedCrossover.clause_bounds
-  rw [List.getD_eq_getElem _ _ hi]
-  exact List.getElem_mem hi
+  exact translated_point_mem_openCell _ _
+    (PairedCrossover.clause_bounds _ (List.getD_mem (0, 0) hi))
 
 /-- An ordinary tile retains the fixed ring's clause-position order. -/
 theorem ordinaryClause_positions (c : Point) :
@@ -2021,8 +2017,8 @@ private theorem drawingPosition_mem {φ : CNF ℕ} {v : ℕ}
     (hv : v ∈ (SAT.incidenceGraph (formula φ)).1) :
     Graph.drawingPosition (SAT.incidenceGraph (formula φ)) (positions φ, routes φ) v ∈
       positions φ := by
-  rw [drawingPosition_eq_getD hv, List.getD_eq_getElem _ _ (declared_position_index_lt hv)]
-  exact List.getElem_mem _
+  rw [drawingPosition_eq_getD hv]
+  exact List.getD_mem (0, 0) (declared_position_index_lt hv)
 
 private theorem drawingPosition_injective {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3)
@@ -2039,10 +2035,8 @@ private theorem drawingPosition_injective {φ : CNF ℕ}
 
 private theorem indexed_route_mem {φ : CNF ℕ} {i : ℕ}
     (hi : i < (SAT.incidenceGraph (formula φ)).2.length) :
-    (routes φ).getD i [] ∈ routes φ := by
-  have hir : i < (routes φ).length := by rwa [routes_length]
-  rw [List.getD_eq_getElem _ _ hir]
-  exact List.getElem_mem hir
+    (routes φ).getD i [] ∈ routes φ :=
+  List.getD_mem [] (by rwa [routes_length])
 
 /-- Actual indexed routes avoid all nonincident declared graph vertices. -/
 theorem routes_avoid_vertices {φ : CNF ℕ}

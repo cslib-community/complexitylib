@@ -239,7 +239,11 @@ private theorem scopeLength_polyTime (encRel : Rel ↪ List Bool) (encV : V ↪ 
   fun_prop
 
 omit [DecidableEq V] in
-private theorem argumentNextIndex_polyTime (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
+/-- Compute a cyclic argument successor from unary constraint and argument occurrence indices.
+The clock comes from actual scope/occurrence lists. This native runtime certificate covers
+all raw CSPs and indices, including missing positions, without arity or rotation-validity
+premises. -/
+theorem argumentNextIndex_polyTime (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
     ComputableInPolyTime (fun p : (CSP Rel V × ℕ) × ℕ => argumentNextIndex p.1.1 p.1.2 p.2)
       (encPair (encPair (encCSP encRel encV) encUnary) encUnary) encUnary := by
   have hpos := argumentPositions_polyTime encRel encV
