@@ -47,6 +47,7 @@ private def S₁ : SetSystem := ⟨[5, 5, 7], [[5], [7, 9]]⟩
 /-- Set `0` holds the positions `0` and `1` of the repeated element `5`. -/
 example : residues S₁ ⟨0, by decide⟩ = {0, 1} := by decide
 
+/-- Set `1` holds the position of `7`; its element `9` is not in the ground list and is ignored. -/
 example : residues S₁ ⟨1, by decide⟩ = {2} := by decide
 
 /-- Both sets cover the positions, hence cover `S₁`. -/
@@ -71,9 +72,7 @@ private theorem S₀_yes : (S₀, 2) ∈ (GapSetCover 3).yes := by
   have hC : S₀.IsCover univ := (forall_residues_iff S₀ univ).mp (by decide)
   have hopt := SetSystem.optCoverSize_le hC
   simp only [card_univ, Fintype.card_fin] at hopt
-  simp only [GapSetCover, GapSetCoverFn, PromiseProblem.yes_restrict, Set.mem_inter_iff,
-    PromiseProblem.mem_yes_gapMin, Set.mem_ofPred_eq]
-  exact ⟨by exact_mod_cast hopt, ⟨univ, hC⟩⟩
+  exact mem_yes_iff.mpr ⟨⟨univ, hC⟩, hopt⟩
 
 example (r : List Bool) : reduce ((S₀, 2), r) ∈ MultiMCSP Boolean.DeMorgan.interpretation :=
   reduce_mem_of_yes S₀_yes r
@@ -94,11 +93,10 @@ private theorem S₂_no : (S₂, 1) ∈ (GapSetCover 3).no := by
     rw [← forall_residues_iff] at hC
     revert C
     decide
-  simp only [GapSetCover, GapSetCoverFn, PromiseProblem.no_restrict, Set.mem_inter_iff,
-    PromiseProblem.mem_no_gapMin, Set.mem_ofPred_eq]
-  refine ⟨⟨?_, by norm_num⟩, hcov⟩
-  push_cast
-  exact_mod_cast hopt
+  exact mem_no_iff.mpr ⟨hcov, hopt, Nat.one_pos⟩
+
+/-- A no-instance has a nonempty ground list. -/
+example : S₂.ground ≠ [] := ground_ne_nil_of_mem_no S₂_no
 
 open scoped Classical in
 example : 3 * #{T : Fin (2 ^ arity S₂) → Bool |

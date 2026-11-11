@@ -53,6 +53,7 @@ Results proved for both use the class `Boolean.DeMorganBasis`.
 * `Cslib.MultiMCSP.encInstance`: the encoding of Definition 1.
 * `Cslib.MultiMCSP`: the yes-instances over an interpretation `I`.
 * `Cslib.MultiMCSP.Instance.ofMCSP`: a single-output MCSP instance as an instance with one output.
+* `Cslib.MultiMCSP.Instance.ofFunction`: the instance with a given function and threshold.
 
 ## Main results
 
@@ -62,6 +63,8 @@ Results proved for both use the class `Boolean.DeMorganBasis`.
 * `Cslib.MultiMCSP.length_encInstance`: the length of the encoding.
 * `Cslib.MultiMCSP.ofMCSP_mem_iff`: with one output, Multi-MCSP over `Boolean.interpretation` is
   MCSP.
+* `Cslib.MultiMCSP.ofFunction_mem_iff`: the instance with function `f` and threshold `s` is a
+  yes-instance exactly when `f` costs at most `s`.
 * `Cslib.MultiMCSP.subset_of_preserves`, `Cslib.MultiMCSP.deMorgan_subset_boolean`: a larger basis
   has more yes-instances.
 
@@ -249,6 +252,21 @@ theorem ofMCSP_mem_iff {x : MCSP.Instance} :
     complexity Boolean.interpretation (single x.function) ≤ x.threshold
   rw [← natCast_complexity]
   exact Nat.cast_le
+
+/-- The instance with arity `n`, `m` outputs and threshold `s` whose function is `f`. -/
+@[expose] def Instance.ofFunction (n m s : ℕ) (f : (Fin n → Bool) → Fin m → Bool) : Instance :=
+  ⟨n, m, s, fun i => MCSP.truthTable n fun x => f x i⟩
+
+@[simp] theorem Instance.function_ofFunction (n m s : ℕ) (f : (Fin n → Bool) → Fin m → Bool) :
+    (Instance.ofFunction n m s f).function = f :=
+  funext fun x => funext fun _ => congrFun ((MCSP.truthTable n).symm_apply_apply _) x
+
+/-- The instance with function `f` and threshold `s` is a yes-instance exactly when `f` costs at
+most `s`. -/
+theorem ofFunction_mem_iff {n m s : ℕ} {f : (Fin n → Bool) → Fin m → Bool} :
+    Instance.ofFunction n m s f ∈ MultiMCSP I ↔ ecomplexity I f ≤ s := by
+  rw [mem_iff, Instance.function_ofFunction]
+  rfl
 
 end MultiMCSP
 

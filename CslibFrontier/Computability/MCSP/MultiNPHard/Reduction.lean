@@ -33,7 +33,9 @@ Given `(S, k)`, write `N` for the length of `S.ground` and `t` for the number of
 
 * **Positions.** The elements to cover are the positions `j < N` of the ground list: `residues S i`
   holds the positions whose element lies in set `i`. Repeated ground elements only repeat a covering
-  obligation, so the sets covering the positions are exactly the covers (`forall_residues_iff`).
+  obligation, and set elements outside the ground list give no position and are ignored, as they
+  are by `SetSystem.IsCover`; so the sets covering the positions are exactly the covers
+  (`forall_residues_iff`).
 * **Parameters.** The arity is `p = 6 · size (N + t + 4)` (`arity`), so `2^p` is polynomial in the
   input yet exceeds `(N + t + 4)^6` (`bound_pow_six_lt`, `two_pow_arity_le`).
 * **The instance** (`ofTable`). For a table `T : Fin (2^p) → Bool`, the outputs are the window
@@ -52,7 +54,6 @@ Given `(S, k)`, write `N` for the length of `S.ground` and `t` for the number of
 
 ## Main definitions
 
-* `Cslib.MultiMCSP.Instance.ofFunction`: the instance with a given function and threshold.
 * `Cslib.MultiMCSP.Reduction.residues`: the positions of the ground list in each set.
 * `Cslib.MultiMCSP.Reduction.arity`: the arity of the output instances.
 * `Cslib.MultiMCSP.Reduction.ofTable`, `Cslib.MultiMCSP.Reduction.reduce`: the output instance,
@@ -60,6 +61,8 @@ Given `(S, k)`, write `N` for the length of `S.ground` and `t` for the number of
 
 ## Main results
 
+* `Cslib.MultiMCSP.Reduction.mem_yes_iff`, `Cslib.MultiMCSP.Reduction.mem_no_iff`: the yes- and
+  no-instances of `GapSetCover 3`, over `ℕ`.
 * `Cslib.MultiMCSP.Reduction.forall_residues_iff`: covers of the positions are covers.
 * `Cslib.MultiMCSP.Reduction.reduce_positive`: every output satisfies Definition 1's positivity.
 * `Cslib.MultiMCSP.Reduction.reduce_mem_of_yes`: completeness, for every random string.
@@ -84,35 +87,68 @@ open Circuits Finset Complexity Turing.MultiTapeTM
 
 namespace MultiMCSP
 
-/-- The instance with arity `n`, `m` outputs and threshold `s` whose function is `f`. -/
-@[expose] def Instance.ofFunction (n m s : ℕ) (f : (Fin n → Bool) → Fin m → Bool) : Instance :=
-  ⟨n, m, s, fun i => MCSP.truthTable n fun x => f x i⟩
-
-@[simp] theorem Instance.function_ofFunction (n m s : ℕ) (f : (Fin n → Bool) → Fin m → Bool) :
-    (Instance.ofFunction n m s f).function = f :=
-  funext fun x => funext fun _ => congrFun ((MCSP.truthTable n).symm_apply_apply _) x
-
 universe v
 
 variable {σ : Signature.{v}} {I : Interpretation σ Bool}
 
-/-- The instance with function `f` and threshold `s` is a yes-instance exactly when `f` costs at
-most `s`. -/
-theorem ofFunction_mem_iff {n m s : ℕ} {f : (Fin n → Bool) → Fin m → Bool} :
-    Instance.ofFunction n m s f ∈ MultiMCSP I ↔ ecomplexity I f ≤ s := by
-  rw [mem_iff, Instance.function_ofFunction]
-  rfl
+/-- `Window.tableFun T` is the function whose truth table is `T`. -/
+theorem Window.tableFun_eq {p : ℕ} (T : Fin (2 ^ p) → Bool) :
+    Window.tableFun T = (MCSP.truthTable p).symm T :=
+  funext fun x => by simp
 
 /-- The truth table of `Window.tableFun T` is `T`. -/
 theorem Window.truthTable_tableFun {p : ℕ} (T : Fin (2 ^ p) → Bool) :
-    MCSP.truthTable p (Window.tableFun T) = T :=
-  funext fun y => by simp
+    MCSP.truthTable p (Window.tableFun T) = T := by
+  rw [Window.tableFun_eq, Equiv.apply_symm_apply]
 
 namespace Reduction
 
+/-! ### Yes- and no-instances of `GapSetCover 3` -/
+
+/-- A yes-instance of `GapSetCover 3` is a coverable system with optimum at most `k`. -/
+theorem mem_yes_iff {S : SetSystem} {k : ℕ} :
+    (S, k) ∈ (GapSetCover 3).yes ↔ S.Coverable ∧ S.optCoverSize ≤ k :=
+  mem_yes_GapSetCoverFn
+
+/-- A no-instance of `GapSetCover 3` is a coverable system with optimum at least `3k`, for a
+positive `k`. -/
+theorem mem_no_iff {S : SetSystem} {k : ℕ} :
+    (S, k) ∈ (GapSetCover 3).no ↔ S.Coverable ∧ 3 * k ≤ S.optCoverSize ∧ 0 < k := by
+  rw [GapSetCover, mem_no_GapSetCoverFn]
+  refine and_congr_right fun _ => and_congr (by exact_mod_cast Iff.rfl) ?_
+  constructor
+  · intro h
+    by_contra hk
+    rw [show k = 0 by omega] at h
+    norm_num at h
+  · intro hk
+    have : (0 : ℝ) < k := by exact_mod_cast hk
+    linarith
+
+/-- The optimum of a coverable system is at most its number of sets. -/
+private theorem optCoverSize_le_length {S : SetSystem} (hS : S.Coverable) :
+    S.optCoverSize ≤ S.sets.length := by
+  obtain ⟨C, hC⟩ := hS
+  refine (SetSystem.optCoverSize_le (C := univ) fun u hu => ?_).trans_eq
+    (card_univ.trans (Fintype.card_fin _))
+  obtain ⟨i, -, hi⟩ := hC u hu
+  exact ⟨i, mem_univ _, hi⟩
+
+/-- A no-instance of `GapSetCover 3` has a nonempty ground list: the empty family covers an empty
+one at cost `0 < 3k`. -/
+theorem ground_ne_nil_of_mem_no {S : SetSystem} {k : ℕ} (hno : (S, k) ∈ (GapSetCover 3).no) :
+    S.ground ≠ [] := by
+  obtain ⟨-, hopt, hk⟩ := mem_no_iff.mp hno
+  intro hS
+  have hnil : S.IsCover ∅ := fun u hu => by simp [hS] at hu
+  have h0 := SetSystem.optCoverSize_le hnil
+  simp only [card_empty] at h0
+  omega
+
 /-! ### Positions and parameters -/
 
-/-- The positions `j` of the ground list whose element lies in set `i`. -/
+/-- The positions `j` of the ground list whose element lies in set `i`. Elements of the set that
+are not in the ground list give no position, so they are ignored. -/
 @[expose] def residues (S : SetSystem) (i : Fin S.sets.length) : Finset ℕ :=
   (range S.ground.length).filter fun j => S.ground.getD j 0 ∈ S.sets[i]
 
@@ -126,7 +162,8 @@ theorem mem_residues {S : SetSystem} {i : Fin S.sets.length} {j : ℕ} :
     exact ⟨h, by rwa [List.getD_eq_getElem _ _ h]⟩
 
 /-- **Relabelling.** The sets `C` cover every position of the ground list exactly when they cover
-`S`. -/
+`S`. A repeated ground element repeats a covering obligation, and set elements outside the ground
+list play no part on either side. -/
 theorem forall_residues_iff (S : SetSystem) (C : Finset (Fin S.sets.length)) :
     (∀ u < S.ground.length, ∃ i ∈ C, u ∈ residues S i) ↔ S.IsCover C := by
   constructor
@@ -185,7 +222,8 @@ theorem two_pow_arity_le (S : SetSystem) : 2 ^ arity S ≤ 64 * bound S ^ 6 := b
 
 /-- The output instance for the table `T`: the window template of the lifted position sets followed
 by `T`, with threshold the template's number of distinct non-input gate functions plus
-`min k t`. -/
+`min k t`. The clamp keeps the threshold, written in unary, polynomial in the binary `k`; it
+changes nothing that matters, since a cover never needs more than the `t` sets. -/
 @[expose] noncomputable def ofTable (S : SetSystem) (k : ℕ) (T : Fin (2 ^ arity S) → Bool) :
     Instance :=
   Instance.ofFunction (arity S) (Window.gateCount (arity S) S.sets.length + 1)
@@ -253,9 +291,7 @@ yes-instance of Multi-MCSP: the at most `min k t` sets of an optimal cover give 
 windows. -/
 theorem reduce_mem_of_yes {S : SetSystem} {k : ℕ} (hyes : (S, k) ∈ (GapSetCover 3).yes)
     (r : List Bool) : reduce ((S, k), r) ∈ MultiMCSP I := by
-  simp only [GapSetCover, GapSetCoverFn, PromiseProblem.yes_restrict, Set.mem_inter_iff,
-    PromiseProblem.mem_yes_gapMin, Set.mem_ofPred_eq, Nat.cast_le] at hyes
-  obtain ⟨hopt, hcov⟩ := hyes
+  obtain ⟨hcov, hopt⟩ := mem_yes_iff.mp hyes
   by_cases hS : S.ground = []
   · rw [reduce_of_ground_eq_nil hS, fallback, ofFunction_mem_iff]
     have h := ecomplexity_wiring (I := I) (fun _ : Fin 1 => (0 : Fin 1))
@@ -274,30 +310,11 @@ the tables give a yes-instance of Multi-MCSP. -/
 theorem three_mul_card_ofTable_mem_le {S : SetSystem} {k : ℕ}
     (hno : (S, k) ∈ (GapSetCover 3).no) :
     3 * #{T : Fin (2 ^ arity S) → Bool | ofTable S k T ∈ MultiMCSP I} ≤ 2 ^ 2 ^ arity S := by
-  simp only [GapSetCover, GapSetCoverFn, PromiseProblem.no_restrict, Set.mem_inter_iff,
-    PromiseProblem.mem_no_gapMin, Set.mem_ofPred_eq] at hno
-  obtain ⟨⟨hopt, hk⟩, hcov⟩ := hno
-  have hopt' : 3 * k ≤ S.optCoverSize := by exact_mod_cast hopt
-  have hk1 : 1 ≤ k := by
-    by_contra h
-    have : (k : ℝ) = 0 := by exact_mod_cast (show k = 0 by omega)
-    rw [this] at hk
-    norm_num at hk
+  obtain ⟨hcov, hopt', hk1⟩ := mem_no_iff.mp hno
   -- The optimum is at most the number of sets, so `min k t = k`.
-  have hoptt : S.optCoverSize ≤ S.sets.length := by
-    obtain ⟨C, hC⟩ := hcov
-    refine (SetSystem.optCoverSize_le (C := univ) fun u hu => ?_).trans_eq
-      (card_univ.trans (Fintype.card_fin _))
-    obtain ⟨i, -, hi⟩ := hC u hu
-    exact ⟨i, mem_univ _, hi⟩
+  have hoptt := optCoverSize_le_length hcov
   have hmin : min k S.sets.length = k := min_eq_left (by omega)
-  -- The ground list is nonempty, since otherwise no set covers with cost zero.
-  have hN : 0 < S.ground.length := by
-    by_contra h
-    have hnil : S.IsCover ∅ := fun u hu => absurd (List.length_pos_of_mem hu) h
-    have := SetSystem.optCoverSize_le hnil
-    simp only [card_empty] at this
-    omega
+  have hN : 0 < S.ground.length := List.length_pos_iff.mpr (ground_ne_nil_of_mem_no hno)
   -- Every set of at most `k + 1` sets misses a position.
   have hmiss : ∀ B : Finset (Fin S.sets.length), #B ≤ k + 1 →
       ∃ u < S.ground.length, ∀ i ∈ B, u ∉ residues S i := by
@@ -366,17 +383,7 @@ open scoped Classical in
 theorem three_mul_card_reduce_mem_le {S : SetSystem} {k : ℕ} (hno : (S, k) ∈ (GapSetCover 3).no)
     {q : ℕ} (hq : 2 ^ arity S ≤ q) :
     3 * #{r : Fin q → Bool | reduce ((S, k), List.ofFn r) ∈ MultiMCSP I} ≤ 2 ^ q := by
-  have hS : S.ground ≠ [] := by
-    intro hS
-    simp only [GapSetCover, GapSetCoverFn, PromiseProblem.no_restrict, Set.mem_inter_iff,
-      PromiseProblem.mem_no_gapMin, Set.mem_ofPred_eq] at hno
-    obtain ⟨⟨hopt, hk⟩, -⟩ := hno
-    have hnil : S.IsCover ∅ := fun u hu => by simp [hS] at hu
-    have h0 := SetSystem.optCoverSize_le hnil
-    simp only [card_empty, Nat.le_zero] at h0
-    rw [h0] at hopt
-    push_cast at hopt
-    linarith
+  have hS := ground_ne_nil_of_mem_no hno
   -- The table is the first `2^p` bits of the random string.
   have htable (l : List Bool) :
       (fun y : Fin (2 ^ arity S) => l.getD y false) =
