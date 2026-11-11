@@ -36,8 +36,9 @@ every problem in `coNP` (`Cslib.Complexity.coNP_subset_NPPoly_of_coNPComplete`),
 
 `coNP ⊆ NP/poly` is the conclusion of the theorem of Fortnow and Santhanam on OR-distillations
 (`CslibFrontier.Computability.Complexity.Parameterized.Distillation`), and the hypothesis of Yap's
-theorem that it collapses the polynomial hierarchy to its third level [Yap][Yap1983], which is not
-formalized here.
+theorem that it collapses the polynomial hierarchy to its third level [Yap][Yap1983]
+(`Cslib.Complexity.PH_eq_SigmaP_three_of_coNP_subset_NPPoly`, in
+`CslibFrontier.Computability.Complexity.Classes.PH.Yap`).
 
 ## Main definitions
 

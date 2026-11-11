@@ -1965,7 +1965,9 @@ public import CslibFrontier.Computability.Complexity.Classes.PH.Kannan
 public import CslibFrontier.Computability.Complexity.Classes.PH.KarpLipton
 public import CslibFrontier.Computability.Complexity.Classes.PH.OracleNP
 public import CslibFrontier.Computability.Complexity.Classes.PH.Projection
+public import CslibFrontier.Computability.Complexity.Classes.PH.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
+public import CslibFrontier.Computability.Complexity.Classes.PH.Yap
 public import CslibFrontier.Computability.Complexity.Classes.PP
 public import CslibFrontier.Computability.Complexity.Classes.PP.Bit
 public import CslibFrontier.Computability.Complexity.Classes.PP.Characterization
@@ -5483,6 +5485,7 @@ public import CslibFrontier.Foundations.Probability.Multilinear.Invariance
 public import CslibFrontier.Foundations.Probability.ProductDensity
 public import CslibFrontier.Foundations.Probability.SecondMoment
 public import CslibFrontier.Foundations.Probability.SpectralPayment
+public import CslibFrontier.Foundations.Probability.TwoStage
 public import CslibFrontier.Foundations.Quantum.Bell
 public import CslibFrontier.Foundations.Quantum.Bipartite
 public import CslibFrontier.Foundations.Quantum.DensityMatrix
@@ -6034,6 +6037,7 @@ public import CslibFrontier.MachineLearning.StatisticalQuery.Simulation
 public import CslibFrontier.MachineLearning.UniformLearning.AC0
 public import CslibFrontier.MachineLearning.UniformLearning.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.BestOf
+public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Parameters
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
