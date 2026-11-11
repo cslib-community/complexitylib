@@ -160,19 +160,19 @@ instance [DecidableEq ι] [DecidableEq V] (vbl : ι → Finset V) (i j : ι) :
     Decidable (Adj vbl i j) :=
   inferInstanceAs (Decidable (i = j ∨ ¬Disjoint (vbl i) (vbl j)))
 
-theorem adj_comm [DecidableEq V] (vbl : ι → Finset V) {i j : ι} :
+theorem adj_comm (vbl : ι → Finset V) {i j : ι} :
     Adj vbl i j ↔ Adj vbl j i := by
   unfold Adj
   rw [eq_comm, disjoint_comm]
 
-theorem adj_refl [DecidableEq V] (vbl : ι → Finset V) (i : ι) : Adj vbl i i :=
+theorem adj_refl (vbl : ι → Finset V) (i : ι) : Adj vbl i i :=
   Or.inl rfl
 
-theorem adj_of_mem [DecidableEq V] (vbl : ι → Finset V) {i j : ι} {v : V}
+theorem adj_of_mem (vbl : ι → Finset V) {i j : ι} {v : V}
     (hi : v ∈ vbl i) (hj : v ∈ vbl j) : Adj vbl i j :=
   Or.inr (Finset.not_disjoint_iff.2 ⟨v, hi, hj⟩)
 
-theorem adj_iff [DecidableEq V] (vbl : ι → Finset V) {i j : ι} :
+theorem adj_iff (vbl : ι → Finset V) {i j : ι} :
     Adj vbl i j ↔ i = j ∨ ¬Disjoint (vbl i) (vbl j) := by
   rw [Adj]
 
@@ -206,7 +206,7 @@ def witness [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V) (i : ι) (w
 /-- A structure is proper if distinct vertices on one level are not adjacent. This is the level
 independence established in the proof of [MoserTardos2010, Lemma 2.1(i)]; it implies the paper's
 properness (distinct children of a vertex receive distinct labels). -/
-def Proper [DecidableEq V] (vbl : ι → Finset V) (S : Finset (ι × ℕ)) : Prop :=
+def Proper (vbl : ι → Finset V) (S : Finset (ι × ℕ)) : Prop :=
   ProperRel (Adj vbl) S
 
 theorem witness_eq_witnessRel [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V) (i : ι)
@@ -704,7 +704,7 @@ end Shapes
 
 section Counting
 
-private theorem mem_nbrRel_self (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+private theorem mem_nbrRel_self (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
     (hRr : ∀ i, R i i) (B : ι) : B ∈ nbrRel R {B} :=
   mem_filter.2 ⟨mem_univ _, B, mem_singleton_self B, hRr B⟩
 
@@ -721,9 +721,10 @@ private theorem prod_union_le_mul [DecidableEq ι] {s t : Finset ι} {f : ι →
   exact le_mul_of_one_le_right (prod_nonneg fun i _ => zero_le_one.trans (hf i))
     (one_le_prod₀ fun i _ => hf i)
 
-private theorem prod_nbrRel_le (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+private theorem prod_nbrRel_le (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
     {f : ι → ℝ} (hf : ∀ i, 1 ≤ f i) (I : Finset ι) :
     ∏ B ∈ nbrRel R I, f B ≤ ∏ C ∈ I, ∏ B ∈ nbrRel R {C}, f B := by
+  classical
   induction I using Finset.induction_on with
   | empty => simp [nbrRel]
   | insert C I hC ih =>
@@ -765,7 +766,7 @@ private theorem disjoint_image_level [DecidableEq ι] {S : Finset (ι × ℕ)} {
   omega
 
 /-- `∏ B ∈ Γ⁺ C, (1 - x B)⁻¹`, the weight charged to a label `C` on the deepest level. -/
-private noncomputable def zfRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+private noncomputable def zfRel (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
     (x : ι → ℝ) (C : ι) : ℝ :=
   ∏ B ∈ nbrRel R {C}, (1 - x B)⁻¹
 
@@ -776,11 +777,11 @@ private theorem one_le_inv_one_sub {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico
   rw [one_le_inv₀ (by linarith)]
   linarith
 
-private theorem one_le_zfRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+private theorem one_le_zfRel (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
     {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (C : ι) : 1 ≤ zfRel R x C :=
   one_le_prod₀ fun B _ => one_le_inv_one_sub hx B
 
-private theorem one_add_le_inv (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+private theorem one_add_le_inv (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
     {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1)
     (hyz : ∀ B, y B * zfRel R x B ≤ x B / (1 - x B)) (B : ι) :
     1 + y B * zfRel R x B ≤ (1 - x B)⁻¹ := by
@@ -845,11 +846,12 @@ private theorem nbrRel_singleton (R : ι → ι → Prop) [DecidableRel R] [Deci
     simp [nbrRel, nbhdRel, hRr]
   · simp [nbrRel, nbhdRel, h]
 
-private theorem mul_zfRel_le (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+private theorem mul_zfRel_le (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
     (hRr : ∀ i, R i i) {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (Γ : ι → Finset ι)
     (hΓ : ∀ i j, j ≠ i → R i j → j ∈ Γ i)
     (hy : ∀ B, y B ≤ x B * ∏ C ∈ Γ B, (1 - x C)) (B : ι) :
     y B * zfRel R x B ≤ x B / (1 - x B) := by
+  classical
   have hpos : ∀ C, 0 < 1 - x C := fun C => by linarith [(hx C).2]
   have hsub : nbhdRel R B ⊆ Γ B := fun C hC => by
     simp only [nbhdRel, mem_filter, mem_univ, true_and] at hC
