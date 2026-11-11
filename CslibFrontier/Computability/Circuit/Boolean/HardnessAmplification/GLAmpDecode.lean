@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmp
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLSynthesis
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.Nonuniform
 import CslibFrontier.Foundations.Data.BitString.Basic
 
@@ -41,8 +42,10 @@ Two deviations from the source are labelled here:
   statement is a fraction `δ₀ = γ / 2 ^ (K + 3)` of seeds with agreement `δ₀`. That is at least
   `γ³ / (36 k)` for the least admissible `K` when `γ ≤ 1 / 2`.
 
-Only the decoded functions are certified; running time is not. Their circuit complexity is a
-separate result.
+Each output bit of the candidate, as a function of the flat input `x` read in blocks
+(`BitString.block x`), has a De Morgan circuit with at most
+`(2 ^ K - 1) * (s + 1) + (4 + 2 * (2 ^ K - 1) * (2 ^ K + 1))` gates when `h` has one with `s`
+(`Cslib.Circuits.Boolean.complexity_glAmpCandidate_apply_le`). Running time is not certified.
 
 ## Main definitions
 
@@ -53,6 +56,8 @@ separate result.
 
 * `Cslib.Circuits.Boolean.glAmpCandidate_glAmp`: the true guess recovers `f^k` exactly.
 * `Cslib.Circuits.Boolean.dens_filter_glAmpCandidate_agree`: Claim 4.4 in library form.
+* `Cslib.Circuits.Boolean.complexity_glAmpCandidate_apply_le`: the circuit complexity of each
+  output bit.
 
 ## References
 
@@ -151,5 +156,29 @@ theorem dens_filter_glAmpCandidate_agree (f : BooleanFunction n) (h : BooleanFun
     _ ≤ _ := by
         rw [div_le_iff₀ (by positivity)]
         linarith
+
+/-- The candidate at the blocks of a flat input `x` is the Goldreich–Levin candidate for
+`r ↦ h (x, r)`. -/
+theorem glAmpCandidate_block (h : BooleanFunction (k * n + k)) (masks : Fin K → BitString k)
+    (guess : BitString K) (x : BitString (k * n)) :
+    glAmpCandidate h masks guess (BitString.block x) =
+      Crypto.GoldreichLevin.candidate (fun r => h (Fin.append x r)) masks guess := by
+  rw [glAmpCandidate, ← BitString.blocksEquiv_apply, Equiv.symm_apply_apply]
+
+/-- **The circuit complexity of the candidate.** If `h` has a De Morgan circuit with at most `s`
+gates, each output bit of the candidate, as a function of the flat input read in blocks, has one
+with at most `(2 ^ K - 1) * (s + 1) + (4 + 2 * (2 ^ K - 1) * (2 ^ K + 1))` gates: two constants,
+`2 ^ K - 1` copies of `h`, each with at most one negation, and a strict majority. -/
+theorem complexity_glAmpCandidate_apply_le {h : BooleanFunction (k * n + k)} {s : ℕ}
+    (hh : complexity interpretation (single h) ≤ s) (masks : Fin K → BitString k)
+    (guess : BitString K) (j : Fin k) :
+    complexity interpretation
+        (single fun x : BitString (k * n) => glAmpCandidate h masks guess (BitString.block x) j) ≤
+      (2 ^ K - 1) * (s + 1) + (4 + 2 * (2 ^ K - 1) * (2 ^ K + 1)) := by
+  simp only [glAmpCandidate_block]
+  refine (complexity_candidate_apply_le hh masks guess j).trans_eq ?_
+  have hK : 1 ≤ 2 ^ K := Nat.one_le_two_pow
+  rw [glBitCost, show 2 ^ K - 1 + 2 = 2 ^ K + 1 by omega]
+  ring
 
 end Cslib.Circuits.Boolean
