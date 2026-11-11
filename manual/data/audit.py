@@ -37,7 +37,7 @@ def main():
     args = parser.parse_args()
     repository = str(Path(args.repository).resolve())
     output = args.output_dir.resolve()
-    census_dir, history_dir = output / 'data', output / 'development-history/data'
+    census_dir, history_dir = output / 'data', output / 'history/data'
     env = {**os.environ, 'GIT_NO_LAZY_FETCH': '1', 'GIT_OPTIONAL_LOCKS': '0', 'PYTHONDONTWRITEBYTECODE': '1'}
     checks = []
 
@@ -50,7 +50,7 @@ def main():
         checks.append(script)
 
     run('data/census.py', repository, '--output', census_dir)
-    run('development-history/data/git_history.py', repository, '--output', history_dir)
+    run('history/data/git_history.py', repository, '--output', history_dir)
     read = lambda path: json.loads(path.read_text())
     totals = reconcile(read(census_dir / 'source_census.json'), read(history_dir / 'git_summary.json'),
                        read(history_dir / 'git_daily.json'))

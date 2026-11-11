@@ -1,4 +1,19 @@
-# Build the two manuals
+# Build the documentation
+
+The repository has four kinds of documentation. The manuals are read as Markdown or built as
+PDFs. The **API documentation** workflow rebuilds the API reference, guide and source history
+dashboard from `main` nightly and publishes them on the
+[documentation site](https://www.cslib.io/cslib-frontier/). Run the commands below from the
+repository root.
+
+| Output | Source | Build |
+|---|---|---|
+| Operator’s Manual and Agent Operator’s Manual | `manual/*.md` | [Build the manuals](#build-the-manuals) |
+| API reference | Module docstrings | [Build the API reference](#build-the-api-reference) |
+| Checked guide | `guide/` (Verso) | [Build the checked guide](#build-the-checked-guide) |
+| Source history dashboard | Git history | [Live repository source statistics](#live-repository-source-statistics) |
+
+## Build the manuals
 
 Read the Markdown without any publishing tools. The default build produces the substantial
 Operator’s Manual; `--agent-manual` selects the short Agent Operator’s Manual for humans
@@ -88,7 +103,7 @@ logs, research exports or auxiliary files. The source files and converters are s
 The Operator’s Manual includes the workflows, full reference, historical study and bibliography;
 it links to the separate short manual without duplicating that manual’s content. Both builds omit
 link-only navigation paragraphs. The original academic paper plan remains in
-[paper-plan.md](paper-plan.md) as historical editorial context.
+[history/paper-plan.md](history/paper-plan.md) as historical editorial context.
 
 Coordinator review must cover the impact on both manuals before integration. When either
 manual changes, check its rendered pages and retain its matching manifest when distributing
@@ -133,6 +148,53 @@ and diagram syntax as well as excerpt identity; it does not establish diagram se
 Generated figure PDFs and the source manifest stay in the ignored build directory. The
 freshness check includes figure hashes, so replacing or losing a figure requires a rebuild.
 
+## Build the API reference
+
+For a cold checkout, first restore the available caches with `scripts/cache/ensure.sh`. To build
+searchable API documentation from the module docstrings:
+
+```bash
+python3 scripts/check_docs.py --config-only
+lake -d docbuild build CslibFrontier:docs
+python3 scripts/check_docs.py
+python3 -m http.server --bind 127.0.0.1 --directory docbuild/.lake/build/doc
+```
+
+Open `http://localhost:8000` to browse and search. A manual run of the **API documentation**
+workflow on another branch produces an `api-docs` artifact instead; serve it by replacing the
+directory argument above with the extracted artifact directory.
+
+If removing a source module leaves `check_docs.py` reporting obsolete modules, rebuild the
+generated documentation after any documentation build has stopped:
+
+```bash
+lake -d docbuild clean docbuild
+lake -d docbuild build CslibFrontier:docs
+python3 scripts/check_docs.py
+```
+
+The named clean removes only `docbuild/.lake/build`, including HTML, per-module data and the
+SQLite database; deleting HTML alone leaves stale data behind. Library and dependency build
+outputs, package checkouts and Lake's artifact cache are retained. Documentation for all imported
+modules is regenerated, which can take substantial time even with warm library build outputs.
+
+## Build the checked guide
+
+The [guide](../guide/CslibFrontierGuide.lean) introduces the library area by area, with Lean
+examples that are checked against the library whenever the guide is built. It is written with
+[Verso](https://github.com/leanprover/verso) in a separate `guide` project. To build and preview
+it:
+
+```bash
+scripts/guide.sh
+python3 -m http.server --bind 127.0.0.1 --directory guide/.lake/build/site/html-multi
+```
+
+The first build compiles Verso and links the guide's generator, which takes a few minutes. The
+**API documentation** workflow publishes the guide from `main` at
+[/guide/](https://www.cslib.io/cslib-frontier/guide/). The **Guide** workflow builds pull
+requests that change the guide and uploads the pages as a `guide` artifact.
+
 ## Regenerating research outputs
 
 The historical study reports a fixed observation at `13e6a319`, dated November 2, 2026.
@@ -149,7 +211,7 @@ python3 manual/data/audit.py .
 ```
 
 This writes the source census under `_generated/data/`, the Git chronology under
-`_generated/development-history/data/`, a navigation index derived from the maintained model
+`_generated/history/data/`, a navigation index derived from the maintained model
 map, and `_generated/audit.json`. A successful audit reports `"status": "pass"`: the first-parent
 net line count agrees with the source census, daily commit totals agree with the history, and
 the current manual passes its link, excerpt and citation checks. It does not compile Lean or
@@ -162,9 +224,9 @@ These are not included in the repository. With authorized access to the original
 a private output directory outside the checkout and replace the example paths below:
 
 ```bash
-python3 manual/development-history/data/session_census.py /path/to/codex/sessions --private-output /private/path/manual-provenance
-python3 manual/development-history/data/claude_census.py /path/to/claude/projects --private-output /private/path/manual-provenance
-python3 manual/development-history/data/transcript_excerpts.py /private/path/manual-provenance
+python3 manual/history/data/session_census.py /path/to/codex/sessions --private-output /private/path/manual-provenance
+python3 manual/history/data/claude_census.py /path/to/claude/projects --private-output /private/path/manual-provenance
+python3 manual/history/data/transcript_excerpts.py /private/path/manual-provenance
 ```
 
 The two censuses write aggregate and timing exports to the ignored history directory and
@@ -176,7 +238,7 @@ reproduced; the public Git audit remains usable.
 An installed, authenticated GitHub CLI can collect the selected public records:
 
 ```bash
-python3 manual/development-history/data/collect_github.py
+python3 manual/history/data/collect_github.py
 ```
 
 The collector makes read-only requests and records retrieval timestamps. Use
@@ -188,14 +250,14 @@ the study's historical totals.
 Once the required census, Git, private-session and GitHub exports are present, run:
 
 ```bash
-python3 manual/development-history/data/analyze.py
-python3 manual/development-history/data/plot_history.py --data-only
-python3 manual/development-history/data/plot_history.py
+python3 manual/history/data/analyze.py
+python3 manual/history/data/plot_history.py --data-only
+python3 manual/history/data/plot_history.py
 ```
 
-Analysis reads `_generated/development-history/data/`; plotting also reads the source census
+Analysis reads `_generated/history/data/`; plotting also reads the source census
 under `_generated/data/` and writes JSON, SVG and PNG under
-`_generated/development-history/figures/`. The final command requires Matplotlib. Use
+`_generated/history/figures/`. The final command requires Matplotlib. Use
 `--data-dir` for another history directory, and the plotter's `--census-dir` and `--output`
 for other census and figure directories. A missing-input error means an earlier extraction
 is absent; do not substitute empty data. Neither generated analysis nor plots are book inputs.

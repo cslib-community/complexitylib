@@ -41,6 +41,12 @@ the original input universe.
 
 * `Cslib.Complexity.ConfigurationGraph.realize_acceptanceSentence`: the acceptance sentence holds
   exactly when the machine accepts, on every universe containing all reachable registers.
+  `realize_acceptanceSentence_closureBy` states this for every transported closure semantics
+  whose transform fixes the register step relation.
+* `Cslib.Logic.Vocabulary.exists_pow_fits`: a power universe `n ^ K` holds every reachable
+  configuration of a logarithmic-space machine.
+* `Cslib.Logic.FO.Ordered.exists_sentence_of_decidesInSpace`: the sentence for a
+  logarithmic-space decider, under every such closure semantics.
 * `Cslib.Logic.FO.Ordered.PosTCDefinable.of_encodedLanguage_mem_NL`: NL ⊆ FO(positive TC).
 * `Cslib.Logic.FO.Ordered.posTCDefinable_iff_encodedLanguage_mem_NL`,
   `Cslib.Logic.FO.Ordered.tcDefinable_iff_encodedLanguage_mem_NL`: FO(positive TC) and FO(TC)
@@ -104,31 +110,43 @@ private theorem pair_right_id {A : Type*} {m : ℕ} (xs ys : Fin m → A) (i : F
 
 variable {N : ℕ} [Fact (2 ≤ N)] [L.Structure (Fin N)]
 
-/-- **The acceptance sentence decides acceptance**: on a universe `Fin N` that contains the
-input length and every register of every reachable configuration, the acceptance sentence holds
-exactly when the machine accepts. -/
-theorem realize_acceptanceSentence {inputFormula : Option Bool → (language L).Formula (Fin 1)}
+/-- **The acceptance sentence decides acceptance** under every transported closure semantics
+`TC.Tuple.closureBy T` whose transform fixes the register step relation on `Fin N`: on a universe
+`Fin N` that contains the input length and every register of every reachable configuration, the
+sentence holds exactly when the machine accepts. Ordinary closure is `T = id`
+(`realize_acceptanceSentence`); deterministic closure is the deterministic reduct, which fixes the
+step relation of a deterministic machine. -/
+theorem realize_acceptanceSentence_closureBy
+    {T : ∀ {β : Type}, (β → β → Prop) → β → β → Prop} (hT : TC.Tuple.Transports T)
+    {inputFormula : Option Bool → (language L).Formula (Fin 1)}
     {lengthFormula : (language L).Formula (Fin 1)} {w : List Bool}
     (hinput : ∀ s (a : Fin N), (inputFormula s).Realize ![a] ↔ inputAt w a.val = s)
     (hlen : ∀ a : Fin N, lengthFormula.Realize ![a] ↔ w.length = a.val) (hn : w.length < N)
     (ntm : MultiTapeNTM k Bool State)
+    (hstep : T (fun x y : Register k → Fin N =>
+        RegisterStep ntm w (fun i => (x i).val) (fun i => (y i).val)) =
+      fun x y => RegisterStep ntm w (fun i => (x i).val) (fun i => (y i).val))
     (hfit : ∀ v, Relation.ReflTransGen ntm.ViewStep (ntm.initView w) v →
       Fits N (registers v)) :
     (acceptanceSentence L inputFormula lengthFormula ntm).Realize (M := Fin N)
-        TC.interpretation Operator.RelEnv.empty Empty.elim ↔ ntm.Accepts w := by
+        (TC.Tuple.closureBy T) Operator.RelEnv.empty Empty.elim ↔ ntm.Accepts w := by
   let E : (Fin (Fintype.card (Register k)) → Fin N) ≃ (Register k → Fin N) :=
     { toFun := fun x i => x (Fintype.equivFin (Register k) i)
       invFun := fun x i => x ((Fintype.equivFin (Register k)).symm i)
       left_inv := fun x => funext fun i => by simp only [Equiv.apply_symm_apply]
       right_inv := fun x => funext fun i => by simp only [Equiv.symm_apply_apply] }
+  let S := fun x y : Register k → Fin N =>
+    RegisterStep ntm w (fun i => (x i).val) (fun i => (y i).val)
   -- closure tuples are register tuples, read through the enumeration of the registers
-  have hpath := Relation.reflTransGen_equiv_iff E (s := fun x y : Register k → Fin N =>
-    RegisterStep ntm w (fun i => (x i).val) (fun i => (y i).val)) (fun _ _ => Iff.rfl)
+  have hpath : ∀ a b, Relation.ReflTransGen (T fun x y => S (E x) (E y)) a b ↔
+      Relation.ReflTransGen S (E a) (E b) :=
+    Relation.reflTransGen_equiv_iff E fun a b =>
+      (hT E (s := S) (fun _ _ => Iff.rfl) a b).trans (iff_of_eq (congrFun (congrFun hstep _) _))
   rw [accepts_iff_registerStep_fin hfit]
   simp only [acceptanceSentence, Operator.Formula.realize_exs, Operator.Formula.realize_conj,
-    Operator.Formula.realize_ofFO, TC.realize_tc_pair, realize_startFormula,
-    realize_acceptFormula, realize_stepFormula hinput hlen hn, Term.realize_var, Sum.elim_inr,
-    pair_left_id, pair_right_id]
+    Operator.Formula.realize_ofFO, TC.Tuple.realize_tc_closureBy, TC.left_pair, TC.right_pair,
+    realize_startFormula, realize_acceptFormula, realize_stepFormula hinput hlen hn,
+    Term.realize_var, Sum.elim_inr, pair_left_id, pair_right_id]
   constructor
   · rintro ⟨xs, hs, ⟨hc, ho⟩, hr⟩
     exact ⟨E (TC.left xs), E (TC.right xs), hs, (hpath _ _).mp hr, hc, ho⟩
@@ -140,11 +158,95 @@ theorem realize_acceptanceSentence {inputFormula : Option Bool → (language L).
     · simp only [pair_left_id, pair_right_id]
       exact (hpath _ _).mpr (by simpa only [Equiv.apply_symm_apply] using hr)
 
+/-- **The acceptance sentence decides acceptance**: on a universe `Fin N` that contains the
+input length and every register of every reachable configuration, the acceptance sentence holds
+exactly when the machine accepts. -/
+theorem realize_acceptanceSentence {inputFormula : Option Bool → (language L).Formula (Fin 1)}
+    {lengthFormula : (language L).Formula (Fin 1)} {w : List Bool}
+    (hinput : ∀ s (a : Fin N), (inputFormula s).Realize ![a] ↔ inputAt w a.val = s)
+    (hlen : ∀ a : Fin N, lengthFormula.Realize ![a] ↔ w.length = a.val) (hn : w.length < N)
+    (ntm : MultiTapeNTM k Bool State)
+    (hfit : ∀ v, Relation.ReflTransGen ntm.ViewStep (ntm.initView w) v →
+      Fits N (registers v)) :
+    (acceptanceSentence L inputFormula lengthFormula ntm).Realize (M := Fin N)
+        TC.interpretation Operator.RelEnv.empty Empty.elim ↔ ntm.Accepts w :=
+  realize_acceptanceSentence_closureBy TC.Tuple.transports_id hinput hlen hn ntm rfl hfit
+
 end Cslib.Complexity.ConfigurationGraph
+
+namespace Cslib.Logic.Vocabulary
+
+open Cslib.Complexity
+
+/-- **Logarithmic-space configurations fit a power universe**: for a vocabulary and a space
+constant there is a power `K ≥ 1` bounding all relation arities such that on every well-formed
+input of cardinality at least two, the power universe `a.1 ^ K` is longer than the encoding and
+contains every register of every view reachable by a machine with states `State` that runs within
+space `c * (log₂ n + 1)`. -/
+theorem exists_pow_fits {L : Language} (v : Vocabulary L) (State : Type) [Fintype State]
+    (c : ℕ) :
+    ∃ K : ℕ, 1 ≤ K ∧ (∀ i : Fin v.count, v.arity i ≤ K) ∧
+      ∀ a : EncodedStructure, v.WellFormed a → 2 ≤ a.1 →
+        ∀ {k : ℕ} {ntm : MultiTapeNTM k Bool State},
+          ntm.RunsInSpace (encStructure a) (c * (Nat.log2 (encStructure a).length + 1)) →
+          (encStructure a).length < a.1 ^ K ∧
+            ∀ u, Relation.ReflTransGen ntm.ViewStep (ntm.initView (encStructure a)) u →
+              Fits (a.1 ^ K) (registers u) := by
+  obtain ⟨K, hK, har, hpow⟩ := v.exists_pow_bound 0 1 (radixExponent State c)
+  refine ⟨K, hK, har, fun a ha h2 k ntm hs => ?_⟩
+  obtain ⟨hinput, hclock⟩ := hpow a ha h2
+  simp only [Polynomial.eval_zero, Nat.add_zero, Nat.one_mul, Turing.MultiTapeTM.length_frame]
+    at hinput hclock
+  have hradix : radix (radixExponent State c) (encStructure a).length ≤ a.1 ^ K := by
+    have hle : (encStructure a).length + 2 ≤ 2 * (encStructure a).length + 1 + 1 := by omega
+    exact (Nat.pow_le_pow_left hle _).trans (by omega)
+  exact ⟨by omega, fun _ hv i => (fits_of_runsInSpace c hs hv i).trans_le hradix⟩
+
+end Cslib.Logic.Vocabulary
 
 namespace Cslib.Logic.FO.Ordered
 
 open Cslib.Complexity Cslib.Complexity.ConfigurationGraph Turing.MultiTapeTM
+
+/-- **A machine sentence for every logarithmic-space decider**: a query whose source-only encoded
+language is decided by a native machine within logarithmic space is defined by one sentence with a
+single positive closure, read under every transported closure semantics `TC.Tuple.closureBy T`
+whose transform fixes the machine's register step relation on every `Fin N`. Ordinary closure
+gives NL ⊆ FO(positive TC); deterministic closure and a deterministic machine give
+L ⊆ FO(DTC). -/
+theorem exists_sentence_of_decidesInSpace {L : Language} [L.IsRelational] (v : Vocabulary L)
+    {K : Query L} {T : ∀ {β : Type}, (β → β → Prop) → β → β → Prop}
+    (hT : TC.Tuple.Transports T) {k : ℕ} {State : Type} [Fintype State]
+    {ntm : MultiTapeNTM k Bool State} {c : ℕ}
+    (hdec : ntm.DecidesInSpace encStructure (K.encodedLanguage v)
+      fun a => c * (Nat.log2 (encStructure a).length + 1))
+    (hstep : ∀ (w : List Bool) (N : ℕ), T (fun x y : Register k → Fin N =>
+        RegisterStep ntm w (fun i => (x i).val) (fun i => (y i).val)) =
+      fun x y => RegisterStep ntm w (fun i => (x i).val) (fun i => (y i).val)) :
+    ∃ φ : Operator.Formula (language L) TC.shape [] Empty, TC.Positive φ true ∧
+      ∀ M : Structure L,
+        M ∈ K ↔ φ.Realize (M := M) (TC.Tuple.closureBy T) Operator.RelEnv.empty Empty.elim := by
+  obtain ⟨K', hK', har, hpow⟩ := v.exists_pow_fits State c
+  let I := v.orderedPowerInterpretation K' har
+  let ψ := acceptanceSentence v.powerLanguage v.inputSymbol v.inputLength ntm
+  refine ⟨I.onTCSentence ψ, (I.positive_onTCSentence ψ true).mpr
+    (positive_acceptanceSentence _ _ ntm), fun M => ?_⟩
+  let a := encode v M
+  have ha : v.WellFormed a := v.wellFormed_encode M (Equiv.refl M)
+  obtain ⟨hn, hfit⟩ := hpow a ha M.size_ge_two ((hdec.1 a).1)
+  change _ < M.size ^ K' at hn
+  change ∀ u, _ → Fits (M.size ^ K') _ at hfit
+  let _ : Fact (2 ≤ M.size ^ K') := ⟨FullTupleInterpretation.two_le_pow (n := M.size) hK'⟩
+  let _ := v.powerStructure a (M.size ^ K')
+  have haccept : ψ.Realize (M := Fin (M.size ^ K')) (TC.Tuple.closureBy T)
+      Operator.RelEnv.empty Empty.elim ↔ ntm.Accepts (encStructure a) :=
+    realize_acceptanceSentence_closureBy hT (v.realize_inputSymbol ha hn)
+      (v.realize_inputLength ha hn) hn ntm (hstep _ _) hfit
+  rw [I.realize_onTCSentence_closureBy hT hK' ψ]
+  have he := v.inputStructure_orderedPowerInterpretation K' har hK' M
+  change I.inputStructure (n := M.size) = v.powerStructure a (M.size ^ K') at he
+  rw [he]
+  exact (mem_encodedLanguage_encode v K M).symm.trans ((hdec.1 a).2.trans haccept.symm)
 
 /-- **NL ⊆ FO(positive TC)** on canonically ordered structures: a query whose source-only
 encoded language is decided by a native nondeterministic logarithmic-space machine is defined by
@@ -154,31 +256,7 @@ theorem PosTCDefinable.of_encodedLanguage_mem_NL {L : Language} [L.IsRelational]
     PosTCDefinable K := by
   obtain ⟨tapes, State, _, ntm, c, hdec⟩ := hK
   let _ := Fintype.ofFinite State
-  obtain ⟨k, hk, har, hpow⟩ := v.exists_pow_bound 0 1 (radixExponent State c)
-  let I := v.orderedPowerInterpretation k har
-  let ψ := acceptanceSentence v.powerLanguage v.inputSymbol v.inputLength ntm
-  refine ⟨I.onTCSentence ψ, (I.positive_onTCSentence ψ true).mpr
-    (positive_acceptanceSentence _ _ ntm), fun M => ?_⟩
-  let a := encode v M
-  have ha : v.WellFormed a := v.wellFormed_encode M (Equiv.refl M)
-  obtain ⟨hinput, hclock⟩ := hpow a ha M.size_ge_two
-  change _ ≤ M.size ^ k at hinput hclock
-  simp only [Polynomial.eval_zero, Nat.add_zero, Nat.one_mul, length_frame] at hinput hclock
-  let _ : Fact (2 ≤ M.size ^ k) := ⟨FullTupleInterpretation.two_le_pow (n := M.size) hk⟩
-  let _ := v.powerStructure a (M.size ^ k)
-  have hn : (encStructure a).length < M.size ^ k := by omega
-  have hradix : radix (radixExponent State c) (encStructure a).length ≤ M.size ^ k := by
-    have hle : (encStructure a).length + 2 ≤ 2 * (encStructure a).length + 1 + 1 := by omega
-    exact (Nat.pow_le_pow_left hle _).trans (by omega)
-  have haccept : ψ.Realize (M := Fin (M.size ^ k)) TC.interpretation Operator.RelEnv.empty
-      Empty.elim ↔ ntm.Accepts (encStructure a) :=
-    realize_acceptanceSentence (v.realize_inputSymbol ha hn) (v.realize_inputLength ha hn) hn
-      ntm fun _ hv i => (fits_of_runsInSpace c ((hdec.1 a).1) hv i).trans_le hradix
-  rw [I.realize_onTCSentence hk ψ]
-  have he := v.inputStructure_orderedPowerInterpretation k har hk M
-  change I.inputStructure (n := M.size) = v.powerStructure a (M.size ^ k) at he
-  rw [he]
-  exact (mem_encodedLanguage_encode v K M).symm.trans ((hdec.1 a).2.trans haccept.symm)
+  exact exists_sentence_of_decidesInSpace v TC.Tuple.transports_id hdec fun _ _ => rfl
 
 /-- **FO(positive TC) captures NL**: a single FO(TC) sentence with positive closures defines an
 ordered query exactly when its source-only language is in native nondeterministic logarithmic
