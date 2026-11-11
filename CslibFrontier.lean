@@ -4482,6 +4482,7 @@ public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlotInv
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctTailOps
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctValidHistory
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.UniformProbing
+public import CslibFrontier.DataStructure.DisjointSet.LogStar
 public import CslibFrontier.DataStructure.DisjointSet.Spec
 public import CslibFrontier.DataStructure.DisjointSet.UnionFind
 public import CslibFrontier.DataStructure.DynamicArray.WordRAM.Basic

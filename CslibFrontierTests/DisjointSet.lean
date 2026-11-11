@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import CslibFrontier.DataStructure.DisjointSet.UnionFind
+public import CslibFrontier.DataStructure.DisjointSet.LogStar
 
 /-!
 # Worked disjoint-set and union-find examples
@@ -168,5 +169,11 @@ example :
   have hrk : unrankedChain.rank 3 = 3 := rfl
   have hsz : Nat.log 2 unrankedChain.size = 2 := rfl
   omega
+
+-- The amortized cost per operation is bounded by `2 * Nat.logStar n + 3`.
+example (n : ℕ) :
+    Cslib.DataStructure.Amortized (impl n) id (fun _ c => potential c.uf)
+      (fun _ _ => 2 * Nat.logStar n + 3) :=
+  amortizedBound n
 
 end CslibFrontierTests.DisjointSet
