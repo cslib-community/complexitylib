@@ -17,7 +17,8 @@ The raw coding of sentences in the language of graphs: a computed raw formula, d
 well-scoped code, rejection of ill-scoped codes (wrong binder, out-of-scope bound name, free name,
 unknown symbol, wrong arity), the level-naming of a raw sentence, a finitely satisfiable and a
 finitely valid sentence on both sides of the translation, the reduction on a finitely satisfiable
-formula and on the axiom of infinity, and the headline theorems for the language of graphs. -/
+formula and on the axiom of infinity, and the headline theorems for both the language of graphs and
+a finite relational language whose only relation symbol is ternary (no binary symbol). -/
 
 @[expose] public section
 
@@ -153,25 +154,106 @@ example : Sentence.FinValid (∀' (&0 =' &0) : Language.graph.Sentence) := by
 /-! ### The reduction -/
 
 /-- The reduction of the axiom of infinity has no finite model. -/
-example : ¬Sentence.FinSat (Sentence.binarize adj infAx) :=
-  fun h => not_finSat_infAx ((Sentence.finSat_binarize adj infAx).1 h)
+example : ¬Sentence.FinSat (Sentence.singleRel adj infAx) :=
+  fun h => not_finSat_infAx ((Sentence.finSat_singleRel adj le_rfl infAx).1 h)
 
 /-- The reduction of `x₀ = x₀` has a finite model. -/
-example : Sentence.FinSat (Sentence.binarize adj (.equal 0 0)) :=
-  (Sentence.finSat_binarize adj _).2 finSat_equal
+example : Sentence.FinSat (Sentence.singleRel adj (.equal 0 0)) :=
+  (Sentence.finSat_singleRel adj le_rfl _).2 finSat_equal
 
 /-! ### The headline theorems for the language of graphs -/
 
 /-- **Trakhtenbrot's theorem** for the language of graphs. -/
 example : ¬ComputablePred (Sentence.FinSat (L := Language.graph)) :=
-  Sentence.not_computablePred_finSat adj
+  Sentence.not_computablePred_finSat adj le_rfl
 
 /-- Finite satisfiability of graph sentences is r.e. -/
 example : REPred (Sentence.FinSat (L := Language.graph)) := Sentence.rePred_finSat
 
 /-- Finite validity of graph sentences is not r.e. -/
 example : ¬REPred (Sentence.FinValid (L := Language.graph)) :=
-  Sentence.not_rePred_finValid adj
+  Sentence.not_rePred_finValid adj le_rfl
+
+/-! ### A finite relational language whose only relation symbol is ternary -/
+
+/-- Relation symbols of `ternaryLang`: a single ternary symbol `rel3` and no symbols of any other
+arity. -/
+inductive TernaryRel : ℕ → Type
+  | rel3 : TernaryRel 3
+  deriving DecidableEq
+
+/-- The relational language with a single ternary relation symbol and no binary, unary or nullary
+symbols. -/
+def ternaryLang : Language := ⟨fun _ => Empty, TernaryRel⟩
+  deriving Language.IsRelational
+
+/-- The single ternary relation symbol of `ternaryLang`. -/
+abbrev rel3 : ternaryLang.Relations 3 := .rel3
+
+/-- `ternaryLang` has no relation symbols of arity other than `3` (in particular no binary
+symbol). -/
+example (l : ℕ) (hl : l ≠ 3) : IsEmpty (ternaryLang.Relations l) :=
+  ⟨fun r => by cases r; exact hl rfl⟩
+
+example : IsEmpty (ternaryLang.Relations 2) := ⟨fun r => nomatch r⟩
+
+/-- Equivalence of `ternaryLang` relation symbols with `Unit`. -/
+def ternarySymbols : (Σ l, ternaryLang.Relations l) ≃ Unit where
+  toFun _ := ()
+  invFun _ := ⟨3, .rel3⟩
+  left_inv := fun ⟨_, .rel3⟩ => rfl
+  right_inv := fun _ => rfl
+
+instance : Encodable (Σ l, ternaryLang.Relations l) := Encodable.ofEquiv Unit ternarySymbols
+
+instance : Finite (Σ l, ternaryLang.Relations l) := .of_equiv Unit ternarySymbols.symm
+
+/-- Diagonal irreflexivity `∀ x, ¬R(x, x, x)` in `ternaryLang`. -/
+def irrefl3 : ternaryLang.Sentence :=
+  ∀' ∼(BoundedFormula.rel rel3 ![&0, &0, &0])
+
+/-- The one-point empty ternary structure. -/
+@[instance_reducible]
+def emptyTernary : ternaryLang.Structure Unit where
+  RelMap _ _ := False
+
+/-- The one-point full ternary structure. -/
+@[instance_reducible]
+def fullTernary : ternaryLang.Structure Unit where
+  RelMap _ _ := True
+
+example : Sentence.FinSat irrefl3 := by
+  refine ⟨Unit, emptyTernary, inferInstance, inferInstance, ?_⟩
+  simp only [irrefl3, Sentence.Realize, Formula.Realize, realize_all, realize_not]
+  exact fun _ h => h
+
+example : ¬Sentence.FinValid irrefl3 := fun h => by
+  have := @h Unit fullTernary _ _
+  simp only [irrefl3, Sentence.Realize, Formula.Realize, realize_all, realize_not] at this
+  exact this () trivial
+
+/-- The ternary reduction of the axiom of infinity has no finite model. -/
+example : ¬Sentence.FinSat (Sentence.singleRel rel3 infAx) :=
+  fun h => not_finSat_infAx ((Sentence.finSat_singleRel rel3 (by decide) infAx).1 h)
+
+/-- The ternary reduction of `x₀ = x₀` has a finite model. -/
+example : Sentence.FinSat (Sentence.singleRel rel3 (.equal 0 0)) :=
+  (Sentence.finSat_singleRel rel3 (by decide) _).2 finSat_equal
+
+/-- **Trakhtenbrot's theorem** for a language whose only relation symbol has arity `3`. -/
+example : ¬ComputablePred (Sentence.FinSat (L := ternaryLang)) :=
+  Sentence.not_computablePred_finSat rel3 (by decide)
+
+/-- Finite satisfiability of `ternaryLang` sentences is r.e. -/
+example : REPred (Sentence.FinSat (L := ternaryLang)) := Sentence.rePred_finSat
+
+/-- Finite validity of `ternaryLang` sentences is not r.e. -/
+example : ¬REPred (Sentence.FinValid (L := ternaryLang)) :=
+  Sentence.not_rePred_finValid rel3 (by decide)
+
+/-- Finite validity of `ternaryLang` sentences is undecidable. -/
+example : ¬ComputablePred (Sentence.FinValid (L := ternaryLang)) :=
+  Sentence.not_computablePred_finValid rel3 (by decide)
 
 /-! ### Independence of the symbol encoding -/
 
