@@ -2246,6 +2246,7 @@ public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Faces
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Graph
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Nullary
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Rotation
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Schaefer
 public import CslibFrontier.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
@@ -3486,6 +3487,17 @@ public import CslibFrontier.Computability.PolyTime.CNF.SparsePolyCompile
 public import CslibFrontier.Computability.PolyTime.CSP.AffineTemplate
 public import CslibFrontier.Computability.PolyTime.CSP.Boolean
 public import CslibFrontier.Computability.PolyTime.CSP.CNFTemplate
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.BlackCounts
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.FaceParity
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Native
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Parity
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Program
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Rotation
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Semantics
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Size
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Spec
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.WhiteChains
+public import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.WhiteFaces
 public import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 public import CslibFrontier.Computability.PolyTime.CSP.Edge.Buffer
 public import CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Agreement
@@ -5029,6 +5041,7 @@ public import CslibFrontier.Foundations.Data.BitString.List.Positions
 public import CslibFrontier.Foundations.Data.BitString.List.PrefixFree
 public import CslibFrontier.Foundations.Data.BitString.List.Single
 public import CslibFrontier.Foundations.Data.BitString.List.Vote
+public import CslibFrontier.Foundations.Data.BitString.ListParity
 public import CslibFrontier.Foundations.Data.BitString.MajorityVote
 public import CslibFrontier.Foundations.Data.BitString.PadBlocks
 public import CslibFrontier.Foundations.Data.BitString.Parity
@@ -5890,6 +5903,7 @@ public import CslibFrontier.Logics.Propositional.CSP.HardCore
 public import CslibFrontier.Logics.Propositional.CSP.MaxCSP
 public import CslibFrontier.Logics.Propositional.CSP.MaxCSPSampling
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence
+public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Count
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Enumeration
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction.Properties
@@ -5907,7 +5921,9 @@ public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import CslibFrontier.Logics.Propositional.CSP.Table
+public import CslibFrontier.Logics.Propositional.CSP.Table.CyclicDifference
 public import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
+public import CslibFrontier.Logics.Propositional.CSP.Table.ParityChain
 public import CslibFrontier.Logics.Propositional.CSP.ToBoolean
 public import CslibFrontier.Logics.Propositional.CSP.ToCNF
 public import CslibFrontier.Logics.Propositional.CSP.ToCNF.Count
