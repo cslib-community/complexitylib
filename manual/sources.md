@@ -39,11 +39,6 @@ Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibli
 
 Rudolf Ahlswede and Imre Csiszár. "Common Randomness in Information Theory and Cryptography. Part I: Secret Sharing." *IEEE Transactions on Information Theory* 39(4), 1121–1132, 1993. https://doi.org/10.1109/18.243431 . Kept as background for the finite exact derivation, which is an original adaptation: the Lean formalization bounds finite exact batch-bit OT with independent choices, which is explicitly distinct from the source's asymptotic string-OT model with one choice bit.
 
-<a id="nascimentowinter08"></a>
-## nascimentowinter08
-
-Anderson C. A. Nascimento and Andreas Winter. "On the Oblivious-Transfer Capacity of Noisy Resources." *IEEE Transactions on Information Theory* 54(6), 2572-2581, 2008. https://doi.org/10.1109/TIT.2008.921856 . Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8).
-
 <a id="aik11"></a>
 ## aik11
 
@@ -1265,7 +1260,7 @@ Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptogra
 <a id="nascimentowinter08"></a>
 ## nascimentowinter08
 
-Anderson C. A. Nascimento and Andreas Winter. "On the Oblivious-Transfer Capacity of Noisy Resources." *IEEE Transactions on Information Theory* 54(6), 2572–2581, 2008. https://doi.org/10.1109/TIT.2008.921856 . Bibliographic metadata checked via secondary search summaries on 2026-11-11; the full paper was not audited, so no internal theorem numbers are claimed.
+Anderson C. A. Nascimento and Andreas Winter. "On the Oblivious-Transfer Capacity of Noisy Resources." *IEEE Transactions on Information Theory* 54(6), 2572–2581, 2008. https://doi.org/10.1109/TIT.2008.921856 . Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8).
 
 <a id="nash51"></a>
 ## nash51
