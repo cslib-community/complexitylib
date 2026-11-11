@@ -32,7 +32,6 @@ condensation DAG: every edge `u → v` goes from a component of index `i` to a c
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.DFS.StronglyConnected`: mutual reachability in `Edge adj`.
 * `Cslib.Algorithms.Lean.DFS.IsSCCCondensation`: specification of a duplicate-free partition of `V`
   into nonempty `StronglyConnected` classes ordered topologically.
 * `Cslib.Algorithms.Lean.DFS.transposeAdj`, `Cslib.Algorithms.Lean.DFS.transposeAdjM`: transpose
@@ -68,26 +67,7 @@ open TimeM
 
 variable {V : Type*}
 
-/-! ### Mutual reachability and condensation specification -/
-
-/-- Two vertices lie in the same strongly connected component when each reaches the other. -/
-def StronglyConnected (adj : V → List V) (u v : V) : Prop :=
-  Relation.ReflTransGen (Edge adj) u v ∧ Relation.ReflTransGen (Edge adj) v u
-
-namespace StronglyConnected
-
-variable {adj : V → List V}
-
-theorem refl (u : V) : StronglyConnected adj u u := ⟨.refl, .refl⟩
-
-theorem symm {u v : V} (h : StronglyConnected adj u v) : StronglyConnected adj v u :=
-  ⟨h.2, h.1⟩
-
-theorem trans {u v w : V} (h₁ : StronglyConnected adj u v) (h₂ : StronglyConnected adj v w) :
-    StronglyConnected adj u w :=
-  ⟨h₁.1.trans h₂.1, h₂.2.trans h₁.2⟩
-
-end StronglyConnected
+/-! ### Condensation specification -/
 
 /-- A topological decomposition of `(V, adj)` into strongly connected components: nonempty lists
 partitioning `V` without duplicates, each an equivalence class of `StronglyConnected adj`, ordered
@@ -169,15 +149,9 @@ theorem edge_transposeAdj_iff {vs : List V} (hvs : ∀ v, v ∈ vs) {u v : V} :
 theorem reflTransGen_edge_transposeAdj_iff {vs : List V} (hvs : ∀ v, v ∈ vs) {u v : V} :
     Relation.ReflTransGen (Edge (transposeAdj adj vs)) u v ↔
       Relation.ReflTransGen (Edge adj) v u := by
-  constructor
-  · intro h
-    induction h with
-    | refl => exact .refl
-    | tail _ hbc ih => exact ih.head ((edge_transposeAdj_iff hvs).1 hbc)
-  · intro h
-    induction h with
-    | refl => exact .refl
-    | tail _ hbc ih => exact ih.head ((edge_transposeAdj_iff hvs).2 hbc)
+  have hrel : Edge (transposeAdj adj vs) = Function.swap (Edge adj) :=
+    funext fun a => funext fun b => propext (edge_transposeAdj_iff hvs)
+  rw [hrel, Relation.reflTransGen_swap]
 
 theorem ret_transposeAdjM (adj : V → List V) (vs : List V) :
     (transposeAdjM adj vs).ret = transposeAdj adj vs := by
@@ -193,24 +167,28 @@ theorem time_transposeAdjM (adj : V → List V) (vs : List V) :
     rw [TimeM.time_foldlM_of_time_eq _ _ _ (c := 1) (fun _ _ => rfl)]
     omega
 
+omit [DecidableEq V] in
+/-- Consing onto one adjacency-list entry increases the total adjacency-list length by `1`. -/
+theorem sum_length_update_cons {α β : Type*} [DecidableEq α] [Fintype α] (f : α → List β)
+    (u : α) (v : β) :
+    (∑ w, (Function.update f u (v :: f u) w).length) = (∑ w, (f w).length) + 1 := by
+  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ u),
+    ← Finset.add_sum_erase _ (fun w => (f w).length) (Finset.mem_univ u)]
+  have heq :
+      ∑ x ∈ Finset.univ.erase u, (Function.update f u (v :: f u) x).length =
+        ∑ x ∈ Finset.univ.erase u, (f x).length := by
+    refine Finset.sum_congr rfl fun x hx => ?_
+    rw [Function.update_of_ne (Finset.ne_of_mem_erase hx)]
+  rw [Function.update_self, List.length_cons, heq]
+  omega
+
 private theorem sum_length_foldl_update [Fintype V] (u : V) :
     ∀ (l : List V) (rev : V → List V),
       (∑ w, ((l.foldl (fun rev v => Function.update rev v (u :: rev v)) rev) w).length) =
         (∑ w, (rev w).length) + l.length
   | [], rev => by simp
   | v :: l, rev => by
-    rw [List.foldl_cons, sum_length_foldl_update u l, List.length_cons]
-    have hsum :
-        (∑ w, (Function.update rev v (u :: rev v) w).length) = (∑ w, (rev w).length) + 1 := by
-      rw [← Finset.add_sum_erase _ _ (Finset.mem_univ v),
-        ← Finset.add_sum_erase _ (fun w => (rev w).length) (Finset.mem_univ v)]
-      have heq :
-          ∑ x ∈ Finset.univ.erase v, (Function.update rev v (u :: rev v) x).length =
-            ∑ x ∈ Finset.univ.erase v, (rev x).length := by
-        refine Finset.sum_congr rfl fun x hx => ?_
-        rw [Function.update_of_ne (Finset.ne_of_mem_erase hx)]
-      rw [Function.update_self, List.length_cons, heq]
-      omega
+    rw [List.foldl_cons, sum_length_foldl_update u l, List.length_cons, sum_length_update_cons]
     omega
 
 private theorem sum_length_foldl_vs [Fintype V] :
@@ -530,9 +508,9 @@ theorem isSCCCondensation_sccs {vs : List V} (hvs : ∀ v, v ∈ vs) :
         ∃ z ∈ topologicalSort adj vs,
           StronglyConnected adj w z ∧ [z, r] <+ topologicalSort adj vs := by
     intro r _ w hwr hnrw
-    obtain ⟨z, hwz, hzw, hsub⟩ :=
+    obtain ⟨z, hwz, hsub⟩ :=
       dfs_scc_finished_order (adj := adj) hk vs (hmem_ord w) hwr hnrw
-    exact .inr ⟨z, hmem_ord z, ⟨hwz, hzw⟩, hsub⟩
+    exact .inr ⟨z, hmem_ord z, hwz, hsub⟩
   obtain ⟨hne, hnd_flat, hmem_flat, hscc, hcond⟩ :=
     peelSCCs_spec (adj := adj) hvs hk (topologicalSort adj vs) ∅ hnd (by simp) hord
   refine ⟨hne, hnd_flat, ?_, ?_, hcond⟩

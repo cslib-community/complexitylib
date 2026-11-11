@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Algorithms.Lean.DFS.SCC
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT
-public import CslibFrontier.Logics.Propositional.CNF.Compact
 import CslibFrontier.Algorithms.Lean.TimeM.Loops
 
 /-!
@@ -85,17 +84,16 @@ def checkClauses (φ : CNF V) : Bool :=
 def checkClausesM (φ : CNF V) : TimeM ℕ Bool :=
   φ.foldlM (fun ok c => do ✓ return (ok && isValidTwoClause c)) true
 
-private theorem checkClauses_foldl :
-    ∀ (cs : CNF V) (init : Bool),
-      cs.foldl (fun ok c => ok && isValidTwoClause c) init =
-        (init && cs.all isValidTwoClause)
+private theorem foldl_and_all {α : Type*} (p : α → Bool) :
+    ∀ (xs : List α) (init : Bool),
+      xs.foldl (fun ok x => ok && p x) init = (init && xs.all p)
   | [], init => by simp
-  | c :: cs, init => by
-    rw [List.foldl_cons, checkClauses_foldl, List.all_cons, Bool.and_assoc]
+  | x :: xs, init => by
+    rw [List.foldl_cons, foldl_and_all p xs, List.all_cons, Bool.and_assoc]
 
 theorem checkClauses_eq_true_iff (φ : CNF V) :
     checkClauses φ = true ↔ (∀ c ∈ φ, c.length ≤ 2) ∧ [] ∉ φ := by
-  rw [checkClauses, checkClauses_foldl, Bool.true_and, List.all_eq_true]
+  rw [checkClauses, foldl_and_all, Bool.true_and, List.all_eq_true]
   simp only [isValidTwoClause]
   constructor
   · intro h
@@ -301,30 +299,17 @@ theorem edge_implicationAdj_iff {φ : CNF V} (hw : ∀ c ∈ φ, c.length ≤ 2)
     | cons _ _ => simp
   simpa [Edge, implicationAdj] using foldl_addClauseEdges_mem φ (fun _ => []) hcs ℓ ℓ'
 
-private theorem sum_update_cons [Fintype V] (adj : Literal V → List (Literal V))
-    (u v : Literal V) :
-    (∑ w, (Function.update adj u (v :: adj u) w).length) = (∑ w, (adj w).length) + 1 := by
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ u),
-    ← Finset.add_sum_erase _ (fun w => (adj w).length) (Finset.mem_univ u)]
-  have heq :
-      ∑ x ∈ Finset.univ.erase u, (Function.update adj u (v :: adj u) x).length =
-        ∑ x ∈ Finset.univ.erase u, (adj x).length := by
-    refine Finset.sum_congr rfl fun x hx => ?_
-    rw [Function.update_of_ne (Finset.ne_of_mem_erase hx)]
-  rw [Function.update_self, List.length_cons, heq]
-  omega
-
 private theorem sum_addClauseEdges_le [Fintype V] (adj : Literal V → List (Literal V))
     (c : Clause V) :
     (∑ w, (addClauseEdges adj c w).length) ≤ (∑ w, (adj w).length) + 2 := by
   rcases c with _ | ⟨a, _ | ⟨b, _ | ⟨d, cs⟩⟩⟩
   · exact Nat.le_add_right _ _
   · change (∑ w, (Function.update adj a.negate (a :: adj a.negate) w).length) ≤ _
-    rw [sum_update_cons]
+    rw [sum_length_update_cons]
     omega
   · change (∑ w, (Function.update (Function.update adj a.negate (b :: adj a.negate))
         b.negate (a :: Function.update adj a.negate (b :: adj a.negate) b.negate) w).length) ≤ _
-    rw [sum_update_cons, sum_update_cons]
+    rw [sum_length_update_cons, sum_length_update_cons]
   · exact Nat.le_add_right _ _
 
 private theorem sum_foldl_addClauseEdges_le [Fintype V] :
@@ -369,14 +354,6 @@ def extractAssignmentM (vs : List V) (compIdx : Literal V → ℕ) : TimeM ℕ (
     fun ok =>
       if ok then pure (some fun v => decide (compIdx (v, false) < compIdx (v, true)))
       else pure none
-
-private theorem extract_foldl (compIdx : Literal V → ℕ) :
-    ∀ (vs : List V) (init : Bool),
-      vs.foldl (fun ok v => ok && decide (compIdx (v, true) ≠ compIdx (v, false))) init =
-        (init && vs.all fun v => decide (compIdx (v, true) ≠ compIdx (v, false)))
-  | [], init => by simp
-  | v :: vs, init => by
-    rw [List.foldl_cons, extract_foldl, List.all_cons, Bool.and_assoc]
 
 theorem ret_extractAssignmentM (vs : List V) (compIdx : Literal V → ℕ) :
     (extractAssignmentM vs compIdx).ret = extractAssignment vs compIdx := by
@@ -462,7 +439,7 @@ theorem solve_eq_some (hvs : ∀ v, v ∈ vs) {σ : V → Bool} (h : solve vs φ
     · injection h with hσ
       subst hσ
       have hdist_all : ∀ v, compIdx (v, true) ≠ compIdx (v, false) := by
-        rw [extract_foldl, Bool.true_and, List.all_eq_true] at hdist
+        rw [foldl_and_all, Bool.true_and, List.all_eq_true] at hdist
         exact fun v => of_decide_eq_true (hdist v (hvs v))
       refine ⟨hw, (CNF.eval_eq_true_iff _ _).2 fun c hc => ?_⟩
       have hc2 : c.length ≤ 2 := hw c hc
@@ -509,12 +486,9 @@ private theorem reach_iff_implies (hw : ∀ c ∈ φ, c.length ≤ 2) (hnil : []
     {ℓ ℓ' : Literal V} :
     Relation.ReflTransGen (Edge (implicationAdj φ)) ℓ ℓ' ↔
       Relation.ReflTransGen φ.Implies ℓ ℓ' := by
-  constructor <;> intro h <;> induction h with
-  | refl => exact .refl
-  | tail _ hbc ih =>
-    first
-    | exact ih.tail ((edge_implicationAdj_iff hw hnil _ _).1 hbc)
-    | exact ih.tail ((edge_implicationAdj_iff hw hnil _ _).2 hbc)
+  have hrel : Edge (implicationAdj φ) = φ.Implies :=
+    funext fun a => funext fun b => propext (edge_implicationAdj_iff hw hnil a b)
+  rw [hrel]
 
 /-- **Completeness and characterization of `solve`**: when `vs` covers `V`, `(solve vs φ).isSome`
 holds if and only if every clause of `φ` has width at most `2` and `φ` is satisfiable. -/
@@ -538,7 +512,7 @@ theorem isSome_solve_iff (hvs : ∀ v, v ∈ vs) :
                 (indexComponents (sccs (implicationAdj φ) (literalList vs)) (v, true) ≠
                   indexComponents (sccs (implicationAdj φ) (literalList vs)) (v, false)))
             true = true := by
-      rw [extract_foldl, Bool.true_and, List.all_eq_true]
+      rw [foldl_and_all, Bool.true_and, List.all_eq_true]
       intro v _
       refine decide_eq_true fun heq => ?_
       obtain ⟨h₁, h₂⟩ := (hcond.indexComponents_eq_iff (v, true) (v, false)).1 heq

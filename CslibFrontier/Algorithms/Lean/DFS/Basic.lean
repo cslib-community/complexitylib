@@ -31,6 +31,7 @@ state.
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.DFS.Edge`: the edge relation of adjacency lists.
+* `Cslib.Algorithms.Lean.DFS.StronglyConnected`: mutual reachability in `Edge adj`.
 * `Cslib.Algorithms.Lean.DFS.visit`, `Cslib.Algorithms.Lean.DFS.dfs`: depth-first search.
 * `Cslib.Algorithms.Lean.DFS.dfsM`: depth-first search in `TimeM`.
 
@@ -77,6 +78,25 @@ def Edge (adj : V → List V) (u v : V) : Prop := v ∈ adj u
 
 instance [DecidableEq V] (adj : V → List V) : DecidableRel (Edge adj) := fun u v =>
   inferInstanceAs (Decidable (v ∈ adj u))
+
+/-- Two vertices lie in the same strongly connected component when each reaches the other. -/
+def StronglyConnected (adj : V → List V) (u v : V) : Prop :=
+  Relation.ReflTransGen (Edge adj) u v ∧ Relation.ReflTransGen (Edge adj) v u
+
+namespace StronglyConnected
+
+variable {adj : V → List V}
+
+theorem refl (u : V) : StronglyConnected adj u u := ⟨.refl, .refl⟩
+
+theorem symm {u v : V} (h : StronglyConnected adj u v) : StronglyConnected adj v u :=
+  ⟨h.2, h.1⟩
+
+theorem trans {u v w : V} (h₁ : StronglyConnected adj u v) (h₂ : StronglyConnected adj v w) :
+    StronglyConnected adj u w :=
+  ⟨h₁.1.trans h₂.1, h₂.2.trans h₁.2⟩
+
+end StronglyConnected
 
 /-- The state of depth-first search. -/
 structure State (V : Type*) where
@@ -155,9 +175,6 @@ private theorem exists_step_notMem {R : V → V → Prop} {S : Finset V} {x y : 
     · exact ⟨b, c, hb, hy, hab, hbc⟩
     · exact ih hb
 
-private def MutualReach (adj : V → List V) (x z : V) : Prop :=
-  Relation.ReflTransGen (Edge adj) x z ∧ Relation.ReflTransGen (Edge adj) z x
-
 /-- The invariant of depth-first search. -/
 private structure Inv (adj : V → List V) (s : State V) : Prop where
   nodup : s.finished.Nodup
@@ -167,8 +184,8 @@ private structure Inv (adj : V → List V) (s : State V) : Prop where
     [x, y] <+ s.finished ∨ Relation.ReflTransGen (Edge adj) y x
   scc_order : ∀ x ∈ s.finished, ∀ y, Relation.ReflTransGen (Edge adj) x y →
     ¬ Relation.ReflTransGen (Edge adj) y x →
-    (∃ z, MutualReach adj x z ∧ [z, y] <+ s.finished) ∨
-      ∃ z ∈ s.visited, z ∉ s.finished ∧ MutualReach adj x z
+    (∃ z, StronglyConnected adj x z ∧ [z, y] <+ s.finished) ∨
+      ∃ z ∈ s.visited, z ∉ s.finished ∧ StronglyConnected adj x z
 
 /-- `s'` extends `s`: finishing prepends new vertices that were undiscovered in `s`. -/
 private def Ext (s s' : State V) : Prop :=
@@ -436,11 +453,10 @@ theorem dfs_finished_order (hk : Fintype.card V ≤ k) (roots : List V) {u v : V
 theorem dfs_scc_finished_order (hk : Fintype.card V ≤ k) (roots : List V) {u v : V}
     (hu : u ∈ (dfs adj k roots).finished) (huv : Relation.ReflTransGen (Edge adj) u v)
     (hnvu : ¬ Relation.ReflTransGen (Edge adj) v u) :
-    ∃ z, Relation.ReflTransGen (Edge adj) u z ∧ Relation.ReflTransGen (Edge adj) z u ∧
-      [z, v] <+ (dfs adj k roots).finished := by
+    ∃ z, StronglyConnected adj u z ∧ [z, v] <+ (dfs adj k roots).finished := by
   obtain ⟨hI, hb, -, -⟩ := dfs_spec (adj := adj) hk roots
-  rcases hI.scc_order u hu v huv hnvu with ⟨z, ⟨huz, hzu⟩, hsub⟩ | ⟨z, hzv, hzf, -⟩
-  · exact ⟨z, huz, hzu, hsub⟩
+  rcases hI.scc_order u hu v huv hnvu with ⟨z, huz, hsub⟩ | ⟨z, hzv, hzf, -⟩
+  · exact ⟨z, huz, hsub⟩
   · exact absurd (hb z hzv) hzf
 
 end Results
