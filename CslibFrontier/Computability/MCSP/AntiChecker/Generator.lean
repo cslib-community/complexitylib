@@ -14,10 +14,10 @@ public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle
 # The anti-checker generator as an oracle circuit
 
 `generator n s ℓ R` is an explicit oracle circuit that, given the truth table of a function `f`
-on `n` inputs, runs `R` rounds of the threshold greedy of
-[Threshold.lean](./Threshold.lean) and appends the chosen samples. Each greedy round is one
-selection round (`Cslib.Circuits.Boolean.selectionRound`): round `r` has one oracle gate for each
-of the `2 ^ n` inputs `y`, in the order of `Cslib.BitString.enum`. The gate for `y` asks about the
+on `n` inputs, runs `R` rounds of the threshold greedy (`Cslib.MCSP.AntiChecker.greedy`) and
+appends the chosen samples. Each greedy round is one selection round
+(`Cslib.Circuits.Boolean.selectionRound`): round `r` has one oracle gate for each of the `2 ^ n`
+inputs `y`, in the order of `Cslib.BitString.enum`. The gate for `y` asks about the
 exact query word `encQuery (Query.ofSamples n s ℓ (R - 1 - r) (P ++ [(y, f y)]))`, where `P` are
 the samples chosen in the earlier rounds. Its bits are read from constants (the unary parameters,
 the bits of `y` and the framing) and from wires (the earlier samples and the table entry of `y`).
@@ -31,7 +31,8 @@ pair `(y, f y)` (`snd_eq_of_mem_samplesOf_eval_generator`). With power `ℓ = L 
 `antiCheckerOracle` on query words, such as the `P/poly` language of
 `exists_mem_PPoly_agrees_antiCheckerOracle`, the chosen inputs are an anti-checker for the circuits
 with at most `s` gates against every `f` that needs more gates than `n` of them and their strict
-majority (`isAntiChecker_samplesOf_generator`).
+majority (`isAntiChecker_samplesOf_generator`). A later query about the samples of an output can
+read them from its blocks (`map_querySources_blockSources`).
 
 The generator has `R (2 + 2 ^ n (3 n + 5))` gates, `R 2 ^ n` oracle gates and at most `R` oracle
 gates on any path. Round `r` asks queries with `r + 1` samples, so query lengths differ between
@@ -47,7 +48,8 @@ circuits for the oracle, under `NP ⊆ P/poly`, is not done here.
 
 * `Cslib.MCSP.AntiChecker.querySources`: a query word read from constants and wires.
 * `Cslib.MCSP.AntiChecker.generator`: the greedy as an oracle circuit over the truth table.
-* `Cslib.MCSP.AntiChecker.samplesOf`: the samples in an output of the generator.
+* `Cslib.MCSP.AntiChecker.samplesOf`, `Cslib.MCSP.AntiChecker.blockSources`: the samples in an
+  output of the generator, and the wires that hold them.
 * `Cslib.MCSP.AntiChecker.queryOracle`: a language's answers to the greedy's queries.
 
 ## Main results
@@ -55,6 +57,7 @@ circuits for the oracle, under `NP ⊆ P/poly`, is not done here.
 * `Cslib.MCSP.AntiChecker.samplesOf_eval_generator`: the generator runs the greedy.
 * `Cslib.MCSP.AntiChecker.snd_eq_of_mem_samplesOf_eval_generator`: every sample is `(y, f y)`.
 * `Cslib.MCSP.AntiChecker.isAntiChecker_samplesOf_generator`: the anti-checker generator.
+* `Cslib.MCSP.AntiChecker.map_querySources_blockSources`: a query about the samples of an output.
 * `Cslib.MCSP.AntiChecker.size_generator`, `Cslib.MCSP.AntiChecker.cost_generator`,
   `Cslib.MCSP.AntiChecker.depthWith_generator_le`,
   `Cslib.MCSP.AntiChecker.fanInAtMost_generator`: the measures of the generator.
@@ -141,34 +144,38 @@ def blockSources {r : ℕ} (j : Fin r) :
 
 /-- The sources of the sample `(y, T y)`: the bits of `y` as constants, then the table wire of
 `y`. -/
-def inputSources (r : ℕ) (y : BitString n) :
+private def inputSources (r : ℕ) (y : BitString n) :
     List (Source (2 ^ n + (n + 1) * r)) × Source (2 ^ n + (n + 1) * r) :=
   ((List.ofFn y).map .inr, .inl (Fin.castAdd _ (BitString.equivFin n y)))
 
 /-- The sources of round `r`'s query about the input `y`: the samples of the `r` earlier blocks and
 the sample `(y, T y)`, with threshold `R - 1 - r`. -/
-def roundSources (s ℓ R r : ℕ) (y : BitString n) : List (Source (2 ^ n + (n + 1) * r)) :=
+private def roundSources (s ℓ R r : ℕ) (y : BitString n) :
+    List (Source (2 ^ n + (n + 1) * r)) :=
   querySources n s ℓ (R - 1 - r) (List.ofFn (fun j : Fin r => blockSources j) ++ [inputSources r y])
 
-theorem length_roundSources (s ℓ R r : ℕ) (y : BitString n) :
+/-- Round `r`'s queries have `r + 1` samples and threshold `R - 1 - r`. -/
+private theorem length_roundSources (s ℓ R r : ℕ) (y : BitString n) :
     (roundSources s ℓ R r y).length = queryLength n s ℓ (R - 1 - r) (r + 1) := by
   simp [roundSources, length_querySources, blockSources, inputSources, queryLength, List.sum_ofFn]
   ring
 
 /-- Round `r`'s query about the `i`-th input, read from sources. -/
-def roundSrc (s ℓ R r : ℕ) (i : Fin (2 ^ n)) (a : Fin (queryLength n s ℓ (R - 1 - r) (r + 1))) :
+private def roundSrc (s ℓ R r : ℕ) (i : Fin (2 ^ n))
+    (a : Fin (queryLength n s ℓ (R - 1 - r) (r + 1))) :
     Source (2 ^ n + (n + 1) * r) :=
   (roundSources s ℓ R r ((BitString.equivFin n).symm i)).get
     (a.cast (length_roundSources s ℓ R r _).symm)
 
 /-- The word of the sample `(y, T y)`: the bits of `y` as constants, then the table wire of `y`. -/
-def inputWord (r : ℕ) (y : BitString n) : Fin (n + 1) → Source (2 ^ n + (n + 1) * r) :=
+private def inputWord (r : ℕ) (y : BitString n) :
+    Fin (n + 1) → Source (2 ^ n + (n + 1) * r) :=
   Fin.snoc (α := fun _ => Source (2 ^ n + (n + 1) * r)) (fun b => .inr (y b))
     (.inl (Fin.castAdd _ (BitString.equivFin n y)))
 
 /-- Round `r` of `R`: the selection with threshold `R - 1 - r` over all `2 ^ n` inputs, with
 default `(default, T default)`. -/
-def generatorRound (s ℓ R r : ℕ) :
+private def generatorRound (s ℓ R r : ℕ) :
     Circuit oracleSignature (2 ^ n + (n + 1) * r) (2 ^ n + (n + 1) * r + (n + 1)) :=
   selectionRound (roundSrc s ℓ R r) (fun i => inputWord r ((BitString.equivFin n).symm i))
     (inputWord r default)
@@ -184,9 +191,24 @@ label. -/
 def samplesOf {R : ℕ} (z : BitString (2 ^ n + (n + 1) * R)) : List (BitString n × Bool) :=
   List.ofFn fun j : Fin R => (fun b => z (blockWire j b.castSucc), z (blockWire j (Fin.last n)))
 
+/-- An output of `R` rounds holds `R` samples. -/
 @[simp] theorem length_samplesOf {R : ℕ} (z : BitString (2 ^ n + (n + 1) * R)) :
     (samplesOf z).length = R := by
   simp [samplesOf]
+
+/-- On an output `z`, the sources of the blocks read the samples of `z`. -/
+theorem map_ofFn_blockSources {r : ℕ} (z : BitString (2 ^ n + (n + 1) * r)) :
+    (List.ofFn fun j : Fin r => blockSources j).map
+        (fun p => (p.1.map (Sum.elim z id), Sum.elim z id p.2)) =
+      (samplesOf z).map fun p => (List.ofFn p.1, p.2) := by
+  simp [samplesOf, blockSources, List.map_ofFn, Function.comp_def]
+
+/-- **Reading the samples of an output as a query.** On an output `z`, the sources of the query
+whose samples are the blocks read the `encQuery` word of the samples of `z`. -/
+theorem map_querySources_blockSources {r : ℕ} (z : BitString (2 ^ n + (n + 1) * r)) (s ℓ u : ℕ) :
+    (querySources n s ℓ u (List.ofFn fun j : Fin r => blockSources j)).map (Sum.elim z id) =
+      encQuery (Query.ofSamples n s ℓ u (samplesOf z)) := by
+  rw [map_querySources, map_ofFn_blockSources, Query.ofSamples]
 
 /-- The answers of a language `O` to the greedy's queries `(P, u)` for circuits on `n` inputs with
 at most `s` gates and power `ℓ`. -/
@@ -194,6 +216,7 @@ noncomputable def queryOracle (O : Language Bool) (n s ℓ : ℕ) (P : List (Bit
     (u : ℕ) : Bool :=
   @decide (encQuery (Query.ofSamples n s ℓ u P) ∈ O) (Classical.propDecidable _)
 
+/-- `O` answers a greedy query yes exactly when its `encQuery` word is in `O`. -/
 theorem queryOracle_eq_true {O : Language Bool} {s ℓ u : ℕ} {P : List (BitString n × Bool)} :
     queryOracle O n s ℓ P u = true ↔ encQuery (Query.ofSamples n s ℓ u P) ∈ O :=
   @decide_eq_true_iff _ (Classical.propDecidable _)
@@ -249,12 +272,6 @@ private theorem substitute_inputWord (r : ℕ) (y : BitString n)
   funext b
   induction b using Fin.lastCases <;> simp [inputWord, substitute]
 
-private theorem map_blockSources {r : ℕ} (z : BitString (2 ^ n + (n + 1) * r)) :
-    (List.ofFn fun j : Fin r => blockSources j).map
-        (fun p => (p.1.map (Sum.elim z id), Sum.elim z id p.2)) =
-      (samplesOf z).map fun p => (List.ofFn p.1, p.2) := by
-  simp [samplesOf, blockSources, List.map_ofFn, Function.comp_def]
-
 /-- **One round selects as the greedy does.** If the table wires carry the truth table of `f`,
 round `r` appends the sample that the greedy selects after the samples already in the blocks. -/
 private theorem selectedWord_generatorRound (O : Language Bool) (f : BooleanFunction n)
@@ -280,7 +297,7 @@ private theorem selectedWord_generatorRound (O : Language Bool) (f : BooleanFunc
       · intro a h₁ h₂
         simp [substitute, roundSrc]
     rw [Bool.eq_iff_iff, Language.slice_eq_true_iff, queryOracle_eq_true, hofFn, roundSources,
-      map_querySources, List.map_append, map_blockSources]
+      map_querySources, List.map_append, map_ofFn_blockSources]
     simp [Query.ofSamples, inputSources, hz, Function.comp_def]
   have hspec := selectedWord_spec O (roundSrc s ℓ R r)
     (fun i => inputWord r ((BitString.equivFin n).symm i)) (inputWord r default) z
@@ -396,7 +413,8 @@ theorem fanInAtMost_generator (n s ℓ R : ℕ) :
       (Nat.mul_le_mul_right _ hr)) (by unfold queryLength; omega)
 
 /-- The certificate length is at most `3 (n + s + 1) ^ 2`. -/
-theorem certLength_le (n s : ℕ) : certLength n s ≤ 3 * (n + s + 1) ^ 2 := by
+private theorem certLength_le_three_mul_sq (n s : ℕ) :
+    certLength n s ≤ 3 * (n + s + 1) ^ 2 := by
   have h : 3 * (n + s + 1) ^ 2 =
       certLength n s + (3 * n ^ 2 + s ^ 2 + 4 * n * s + 5 * n + s + 3) := by
     unfold certLength
@@ -405,7 +423,7 @@ theorem certLength_le (n s : ℕ) : certLength n s ≤ 3 * (n + s + 1) ^ 2 := by
 
 /-- The anti-checker generator has at most `610 (n + s + 1) ^ 4` rounds. -/
 theorem antiCheckerRounds_le (n s : ℕ) : antiCheckerRounds n s ≤ 610 * (n + s + 1) ^ 4 := by
-  have hL := certLength_le n s
+  have hL := certLength_le_three_mul_sq n s
   have hm : 1 ≤ n + s + 1 := Nat.le_add_left 1 _
   set m := n + s + 1
   have hm2 : 1 ≤ m ^ 2 := Nat.one_le_pow _ _ hm
@@ -418,7 +436,7 @@ theorem antiCheckerRounds_le (n s : ℕ) : antiCheckerRounds n s ≤ 610 * (n + 
 theorem queryLength_antiChecker_le (n s : ℕ) :
     queryLength n s (antiCheckerPower n s) (antiCheckerRounds n s) (antiCheckerRounds n s) ≤
       5000 * (n + s + 1) ^ 5 := by
-  have hL := certLength_le n s
+  have hL := certLength_le_three_mul_sq n s
   have hR := antiCheckerRounds_le n s
   have hm : 1 ≤ n + s + 1 := Nat.le_add_left 1 _
   set m := n + s + 1 with hmdef
