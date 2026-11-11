@@ -26,8 +26,11 @@ calls are experiment-internal, not charged as adversary calls.
 This module does not prove the security inequalities of Theorem 8 or Corollary 4. In particular,
 preinstalling the planted path does not make its hidden tables independent of the public target.
 The hidden-cut route in `AddXNORIdealCoupling` supplies a valid stopped coupling; its
-fresh-ledger collision/covering estimates are in `AddXNORIdealCollisions`, but the
-bridge from its analysis event to the stopped game remains open. The source's
+fresh-ledger collision/covering estimates are in `AddXNORIdealCollisions`. The extension
+to actual stopping probabilities charges a hidden-path reveal in `AddXNORIdealReveal`
+and `AddXNORIdealCutBounds`. The resulting
+`AddXNORIdealSecurity` endpoint proves Corollary 4 and a weaker-constant Theorem 8 bound;
+the latter's literal sharper constants remain unproved. The source's
 Lemma 10 literal frontier-only simulator can violate table injectivity after a collision;
 the search client records a checked example. No equivalence to that simulator is asserted.
 

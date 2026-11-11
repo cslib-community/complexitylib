@@ -15,12 +15,10 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 
 ## STOC submission 733
 
-- **Remaining Add/XNOR source clauses** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
-  Repaired ideal-chain planted search and decision security bounds: the actual indexed
-  permutation experiments, exact lazy laws and hidden-cut visible stopped coupling are installed;
-  relate its cut-hit event to the fresh-ledger collision/two-sided covering event and derive
-  the final numerical security inequalities, including independent-search verification.
-  Preserve typed inputs, explicit bit resources and the width condition on uniform class means.
+- **Sharp ideal-chain planted-search constants** ([#2527](https://github.com/cslib-community/cslib-frontier/issues/2527)):
+  Recover Theorem 8's displayed $3T/2^h+10T^2/2^m+2^{-q}$ search bound from the actual
+  planted experiment, without the false literal Lemma 10 simulation claim or free hidden-path
+  observations. Preserve typed inputs, explicit resources and the uniform-class width condition.
 
 ## Programs
 

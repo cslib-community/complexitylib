@@ -27,6 +27,8 @@ This connects the deterministic forest ledger to actual adaptive private-coin ex
 ## Main results
 
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Ledger.project_run`: actual sampler cache correspondence.
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.Ledger.run_recorded`: every executed transcript
+  entry has an oriented representative in the actual fresh ledger, including cache hits.
 -/
 
 public section
@@ -172,6 +174,86 @@ theorem run_length {Output : Type} (program : ProbOracleComp (Family.Spec Index 
     program ([], []) (by simp)
     out (records, trace) hfull
   exact hsize.trans (hQ.length_transcript_le answer hfull)
+
+/-- The actual oriented entry answering a request belongs to its reconstructed cache. -/
+@[expose] def Recorded (records : List (Forest.Record Index Word))
+    (query : Index × PermQuery Word) (value : Word) : Prop :=
+  PermQuery.toCacheEntry ⟨query.2, value⟩ ∈ tables records query.1
+
+omit [Fintype Word] [DecidableEq Word] [Nonempty Word] in
+/-- Cache membership has a concrete fresh-entry representative with the same label. -/
+theorem recorded_entry (records : List (Forest.Record Index Word))
+    (query : Index × PermQuery Word) (value : Word) (hr : Recorded records query value) :
+    ∃ r ∈ records, r.label = query.1 ∧ r.entry = PermQuery.toCacheEntry ⟨query.2, value⟩ := by
+  simp only [Recorded, tables, List.mem_map, List.mem_filter, decide_eq_true_eq] at hr
+  obtain ⟨r, ⟨hm, hl⟩, he⟩ := hr
+  exact ⟨r, hm, hl, he⟩
+
+omit [Fintype Word] [DecidableEq Word] [Nonempty Word] in
+/-- Growing the fresh ledger preserves the entries of all earlier requests. -/
+theorem recorded_mono {records more : List (Forest.Record Index Word)} (hm : records ⊆ more)
+    (query : Index × PermQuery Word) (value : Word) (hr : Recorded records query value) :
+    Recorded more query value := by
+  obtain ⟨r, hr, hl, he⟩ := recorded_entry records query value hr
+  simp only [Recorded, tables, List.mem_map, List.mem_filter, decide_eq_true_eq]
+  exact ⟨r, ⟨hm hr, hl⟩, he⟩
+
+/-- A supported answer, including a cache hit in either direction, has an actual recorded edge. -/
+theorem answer_recorded (query : Index × PermQuery Word)
+    (records : List (Forest.Record Index Word)) (value : Word)
+    (next : List (Forest.Record Index Word))
+    (hout : (value, next) ∈ (answer query records).support) :
+    Recorded next query value := by
+  simp only [answer, PMF.mem_support_map_iff] at hout
+  obtain ⟨⟨value, cache⟩, hcache, he⟩ := hout
+  cases he
+  cases hm : cachedAnswer (tables records query.1) query.2 with
+  | none =>
+    simp only [update, hm, ↓reduceIte, Recorded, tables_cons, Function.update_self]
+    exact List.mem_cons_self
+  | some old =>
+    simp only [Family.answer, answer_of_cachedAnswer_eq_some hm,
+      PMF.pure_map, PMF.mem_support_pure_iff] at hcache
+    cases hcache
+    simp only [update, hm, reduceCtorEq, ↓reduceIte, Recorded]
+    obtain ⟨label, query⟩ := query
+    cases query with
+    | forward point => exact mem_of_lookup_eq_some hm
+    | inverse point => exact mem_of_invLookup_eq_some hm
+
+omit [Fintype Word] [Nonempty Word] in
+/-- Every original request input and answer is seen, including those served by cache hits. -/
+theorem recorded_seen (initial : Finset Word) (records : List (Forest.Record Index Word))
+    (query : Index × PermQuery Word) (value : Word) (hr : Recorded records query value) :
+    query.2.argument ∈ Forest.seen initial records ∧ value ∈ Forest.seen initial records := by
+  obtain ⟨r, hr, _, he⟩ := recorded_entry records query value hr
+  have hh := Forest.endpoints_seen initial records r hr
+  change r.entry.1 ∈ Forest.seen initial records ∧ r.entry.2 ∈ Forest.seen initial records at hh
+  rw [he] at hh
+  obtain ⟨label, query⟩ := query
+  cases query with
+  | forward point => exact hh
+  | inverse point => exact hh.symm
+
+/-- Every entry of an executed visible transcript has a representative in the actual final
+fresh ledger. Starting from empty state discharges the transcript invariant itself. -/
+theorem run_recorded {Output : Type} (program : ProbOracleComp (Family.Spec Index Word) Output)
+    (value : Output) (records : List (Forest.Record Index Word))
+    (trace : Transcript (Family.Spec Index Word))
+    (hout : (value, (records, trace)) ∈
+      (ProbOracleComp.runWith (withTranscript answer) program ([], [])).support) :
+    ∀ entry ∈ trace, Recorded records entry.1 entry.2 := by
+  apply ProbOracleComp.runWith_invariant (withTranscript answer)
+    (fun (records, trace) => ∀ entry ∈ trace, Recorded records entry.1 entry.2) ?_
+    program ([], []) (by simp) value (records, trace) hout
+  rintro query ⟨records, trace⟩ hs reply next hn
+  simp only [withTranscript, PMF.mem_support_map_iff] at hn
+  obtain ⟨⟨reply, rows⟩, hrows, he⟩ := hn
+  cases he
+  intro entry hentry
+  rcases List.mem_cons.mp hentry with rfl | hm
+  · exact answer_recorded query records reply rows hrows
+  · exact recorded_mono (answer_retains query records reply rows hrows) _ _ (hs entry hm)
 
 /-- The actual ledger instrument preserves the independent uniform family's output law. -/
 theorem uniform_output [Fintype Index] {Output : Type}

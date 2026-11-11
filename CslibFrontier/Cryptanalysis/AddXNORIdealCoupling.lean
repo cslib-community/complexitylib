@@ -23,7 +23,9 @@ coins neither change the log nor set the flag. `identicalUntilBad` is proved fro
 handlers, not supplied as a simulation/security contract.
 
 This module reduces the actual decision advantage to its actual visible bad-flag experiment.
-Estimating that experiment by the source's collision and covering expressions is separate.
+`AddXNORIdealSecurity` bounds that experiment using the actual charged reveal: it proves
+Corollary 4 and a weaker-constant search inequality, without validating the source's false
+literal Lemma 10 simulation claim.
 
 ## Main definitions
 

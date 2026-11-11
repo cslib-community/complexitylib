@@ -69,6 +69,16 @@ theorem pathEquiv_append {Index Word : Type} (perms : Index → Equiv.Perm Word)
   | nil => rfl
   | cons i rest ih => simp only [List.cons_append, pathEquiv, ih, Equiv.trans_assoc]
 
+/-- Reversing a path and inverting each permutation computes the inverse of the whole path. -/
+theorem pathEquiv_reverse_symm {Index Word : Type} (perms : Index → Equiv.Perm Word)
+    (path : List Index) :
+    pathEquiv (fun label => (perms label).symm) path.reverse = (pathEquiv perms path).symm := by
+  induction path with
+  | nil => rfl
+  | cons label rest ih =>
+    simp only [List.reverse_cons, pathEquiv_append, pathEquiv, ih, Equiv.symm_trans,
+      Equiv.trans_refl]
+
 /-- Updating a label absent from a path leaves its whole permutation unchanged. -/
 theorem pathEquiv_update {Index Word : Type} [DecidableEq Index]
     (perms : Index → Equiv.Perm Word) (path : List Index) (edge : Index)

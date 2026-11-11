@@ -366,7 +366,7 @@ used as the source-rate implementation. Public packet/source statements now use
 named program, width, clock and quarter accessors; callback contexts bind their
 components by name. The tuple layouts and resource conclusions are unchanged.
 Theorem 7's pipeline, the small-operand algorithm and the source-rate sparse
-reduction are assembled. Repaired ideal-model clauses remain open in #2527/ROADMAP.
+reduction are assembled. The sharper ideal-model search constants remain open in #2527/ROADMAP.
 `AddXNORIdealChain` now defines actual planted-search and both decision experiments,
 with private-coin bidirectional adversaries. Its exact lazy laws reuse independently
 indexed permutation tables and prove validity on supported prefixes, including collisions.
@@ -379,15 +379,25 @@ worlds. `decision_advantage_le_visibleBad` and `search_comparison` charge their 
 visible stopping event; `verifiedAdversary_queryBound` counts only $T+q$ calls for search
 and verification. `AddXNORIdealLedger` now derives actual fresh ledgers from the indexed
 sampler, with exact cache/output laws and at most one new entry per external call.
-`AddXNORIdealCollisions.source_collision_le_eight` charges up to $T+q$ visible draws and
-proves collision probability at most $8T^2/2^m$ under the source budget assumptions.
-`source_forest_bound` derives $3T/2^h+8T^2/2^m$ for its explicitly defined
-collision-or-covered analysis event after a $T$-query program. This is not a bound on
-`visibleBadGame`: prove the cut-hit-to-analysis-event bridge and independent verification
-before claiming either security inequality. In particular, do not silently add another
-$q$ auxiliary calls to the existing $T+q$ search verifier and retain the same constants.
-The Operator's Manual's STOC733 source inventory lists the missing Theorem 8/Corollary 4 security clauses and the
-retained width/MSB qualifications. ALL-main acceptance is not yet warranted.
+`AddXNORIdealReplay` now retains the full hidden family and visible log, with exact joint
+completion/erasure laws. `Reveal.cutHit_bridge` proves that a hit forces a collision during
+the actual hidden reveal or a hidden side already covered by the old ledger. `CutBounds`
+keeps before/after ledgers separate; `Covering` derives the projected hidden-word marginals.
+All $q$ auxiliary calls are charged. Thus `Security.source_corollary_four` proves the
+literal Corollary 4 decision bound under the source hypotheses, with internal collision
+coefficient $8$ instead of $10$.
+
+Search verification is now proved too: independent-target acceptance forces a collision,
+and `Reveal.source_independent_verification` bounds the original-input averaged game.
+`Security.source_search_rate` composes the actual verifier and reveal at horizon $T+2q$.
+`source_search_bound` gives $6T/2^{\lceil q/2\rceil}+26T^2/2^m$, and
+`source_search_half_budget` gives the same half-chain/birthday query barrier. These are
+honest weaker constants: do not claim Theorem 8's displayed
+$3T/2^h+10T^2/2^m+2^{-q}$ without the still-missing tighter planted-verification/guessing
+argument. The Operator's Manual's STOC733 inventory distinguishes that gap from the proved
+decision inequality and weaker search bound. ALL-main with literal source constants is
+not yet warranted. The checked security client includes a guessed hidden endpoint with no
+old collision/covering, for which charging the actual reveal is essential.
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.
 The older solvers and their charges remain intact. Binary min/max certificates

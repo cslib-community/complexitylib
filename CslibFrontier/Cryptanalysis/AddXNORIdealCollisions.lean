@@ -30,8 +30,9 @@ extension outside that horizon is used only to apply the library's bad-event uni
 
 `source_forest_bound` gives `3*T/2^h + 8*T^2/2^m` for the executed analysis event
 `collisionOrCovered`. Its collision coefficient is smaller than the source's `10`, but
-this is not yet the Theorem 8 or Corollary 4 bound: the implication from an actual cut
-hit to this event and the independent-search verification estimate remain unproved.
+this module's analysis event alone is not a security endpoint. `AddXNORIdealSecurity`
+composes the proved cut-hit bridge and verification: Corollary 4 has its literal source
+bound; search has weaker constants with its additional reveal calls charged.
 
 ## Main results
 
@@ -206,17 +207,21 @@ theorem collision_le (seed target : Word) (Q : ℕ)
   rw [bounded_run_eq_original Q seed program hQ] at h
   simpa only [size, List.length_nil, Nat.zero_add, rate] using h
 
-/-- The actual `Q`-query collision probability is at most `8*T^2/|Word|` when `Q≤2*T`,
-`T≥4` and `8*T≤|Word|`. This is stronger than the collision allowance in source Lemma 12;
-it does not by itself bound the hidden-cut stopping or search events. -/
-theorem collision_le_eight (seed target : Word) (T Q : ℕ) (hT : 4 ≤ T)
-    (hQ : Q ≤ 2 * T) (hwidth : 8 * T ≤ Fintype.card Word)
+/-- The real-valued expression obtained by summing all conditional fresh-hit bounds. -/
+@[expose] noncomputable def rate (N Q : ℕ) : ℝ := ((Q : ℝ) ^ 2 + 3 * Q) / (N - Q)
+
+omit [DecidableEq Index] [Fintype Word] [DecidableEq Word] [Nonempty Word] in
+/-- The finite-denominator collision rate is nonnegative. -/
+theorem rate_nonneg (N Q : ℕ) (hQ : Q ≤ N) : 0 ≤ rate N Q := by
+  apply div_nonneg (by positivity)
+  exact sub_nonneg.mpr (by exact_mod_cast hQ)
+
+/-- Exact finite-denominator version of the actual adaptive collision bound. -/
+theorem collision_le_real (seed target : Word) (Q : ℕ) (hQN : Q < Fintype.card Word)
     (program : ProbOracleComp (Family.Spec Index Word) Output)
     (hbudget : ProbOracleComp.IsQueryBounded program Q) :
     ((ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
-        {out | ¬Forest.NoCollision {seed, target} out.2}).toReal ≤
-      8 * (T : ℝ) ^ 2 / Fintype.card Word := by
-  have hQN : Q < Fintype.card Word := by omega
+        {out | ¬Forest.NoCollision {seed, target} out.2}).toReal ≤ rate (Fintype.card Word) Q := by
   have hd : 0 < Fintype.card Word - Q := Nat.sub_pos_of_lt hQN
   have hd0 : ((Fintype.card Word - Q : ℕ) : ℝ≥0∞) ≠ 0 := by exact_mod_cast hd.ne'
   have hfinite : (((Q * 2 + Q.choose 2 : ℕ) : ℝ≥0∞) *
@@ -231,30 +236,68 @@ theorem collision_le_eight (seed target : Word) (T Q : ℕ) (hT : 4 ≤ T)
         {out | ¬Forest.NoCollision {seed, target} out.2}).toReal ≤
       ((Q : ℝ) ^ 2 + 3 * Q) / (Fintype.card Word - Q) := by
     convert hprob using 1; field_simp; ring
+  exact hprob'
+
+omit [DecidableEq Index] [Fintype Word] [DecidableEq Word] [Nonempty Word] in
+/-- Normalize the summed fresh-hit rate for at most `2*T` draws at the source word width. -/
+theorem rate_le_eight (N T Q : ℕ) (hT : 4 ≤ T) (hQ : Q ≤ 2 * T) (hwidth : 8 * T ≤ N) :
+    rate N Q ≤ 8 * (T : ℝ) ^ 2 / N := by
+  have hQN : Q < N := by omega
+  change ((Q : ℝ) ^ 2 + 3 * Q) / (N - Q) ≤ _
   have ht : (4 : ℝ) ≤ T := by exact_mod_cast hT
   have hq : (Q : ℝ) ≤ 2 * T := by exact_mod_cast hQ
-  have hn : 8 * (T : ℝ) ≤ Fintype.card Word := by exact_mod_cast hwidth
+  have hn : 8 * (T : ℝ) ≤ N := by exact_mod_cast hwidth
   have htn : (0 : ℝ) ≤ T := Nat.cast_nonneg _
   have hqn : (0 : ℝ) ≤ Q := Nat.cast_nonneg _
-  have hnpos : (0 : ℝ) < Fintype.card Word := by exact_mod_cast Fintype.card_pos
-  have hdpos : (0 : ℝ) < Fintype.card Word - Q := by
+  have hnpos : (0 : ℝ) < N := by exact_mod_cast (show 0 < N by omega)
+  have hdpos : (0 : ℝ) < N - Q := by
     exact sub_pos.mpr (by exact_mod_cast hQN)
   have hnum : (Q : ℝ) ^ 2 + 3 * Q ≤ (11 / 2 : ℝ) * T ^ 2 := by nlinarith
-  have hden : 3 * (Fintype.card Word : ℝ) ≤ 4 * (Fintype.card Word - Q) := by linarith
+  have hden : 3 * (N : ℝ) ≤ 4 * (N - Q) := by linarith
   have hnum' := mul_le_mul_of_nonneg_left hnum hnpos.le
   have hden' := mul_le_mul_of_nonneg_left hden (sq_nonneg (T : ℝ))
-  refine hprob'.trans ((div_le_div_iff₀ hdpos hnpos).mpr ?_)
+  apply (div_le_div_iff₀ hdpos hnpos).mpr
   nlinarith [mul_nonneg (sq_nonneg (T : ℝ)) hnpos.le]
 
-/-- A source-width specialisation: an actual `T+q`-query run with `q≤T`, `T≥4` and
-`T≤2^(m-3)` has fresh-collision probability at most `8*T^2/2^m`. -/
-theorem source_collision_le_eight (m q T : ℕ) (seed target : Fin (2 ^ m))
-    (hq : q ≤ T) (hT : 4 ≤ T) (hlimit : T ≤ 2 ^ (m - 3))
-    (program : ProbOracleComp (Family.Spec Index (Fin (2 ^ m))) Output)
-    (hbudget : ProbOracleComp.IsQueryBounded program (T + q)) :
+omit [DecidableEq Index] [Fintype Word] [DecidableEq Word] [Nonempty Word] in
+/-- A separately verified and then revealed search run uses at most `3*T` draws. Its honest
+summed collision rate is at most `18*T^2/N`, without strengthening the source width hypothesis. -/
+theorem rate_le_eighteen (N T Q : ℕ) (hT : 4 ≤ T) (hQ : Q ≤ 3 * T) (hwidth : 8 * T ≤ N) :
+    rate N Q ≤ 18 * (T : ℝ) ^ 2 / N := by
+  have hQN : Q < N := by omega
+  change ((Q : ℝ) ^ 2 + 3 * Q) / (N - Q) ≤ _
+  have ht : (4 : ℝ) ≤ T := by exact_mod_cast hT
+  have hq : (Q : ℝ) ≤ 3 * T := by exact_mod_cast hQ
+  have hn : 8 * (T : ℝ) ≤ N := by exact_mod_cast hwidth
+  have htn : (0 : ℝ) ≤ T := Nat.cast_nonneg _
+  have hqn : (0 : ℝ) ≤ Q := Nat.cast_nonneg _
+  have hnpos : (0 : ℝ) < N := by exact_mod_cast (show 0 < N by omega)
+  have hdpos : (0 : ℝ) < N - Q := by
+    exact sub_pos.mpr (by exact_mod_cast hQN)
+  have hnum : (Q : ℝ) ^ 2 + 3 * Q ≤ (45 / 4 : ℝ) * T ^ 2 := by nlinarith
+  have hden : 5 * (N : ℝ) ≤ 8 * (N - Q) := by linarith
+  have hnum' := mul_le_mul_of_nonneg_left hnum hnpos.le
+  have hden' := mul_le_mul_of_nonneg_left hden (sq_nonneg (T : ℝ))
+  apply (div_le_div_iff₀ hdpos hnpos).mpr
+  nlinarith [mul_nonneg (sq_nonneg (T : ℝ)) hnpos.le]
+
+/-- The actual `Q`-query collision probability is at most `8*T^2/|Word|` when `Q≤2*T`,
+`T≥4` and `8*T≤|Word|`. This is stronger than the collision allowance in source Lemma 12;
+it does not by itself bound the hidden-cut stopping or search events. -/
+theorem collision_le_eight (seed target : Word) (T Q : ℕ) (hT : 4 ≤ T)
+    (hQ : Q ≤ 2 * T) (hwidth : 8 * T ≤ Fintype.card Word)
+    (program : ProbOracleComp (Family.Spec Index Word) Output)
+    (hbudget : ProbOracleComp.IsQueryBounded program Q) :
     ((ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
         {out | ¬Forest.NoCollision {seed, target} out.2}).toReal ≤
-      8 * (T : ℝ) ^ 2 / 2 ^ m := by
+      8 * (T : ℝ) ^ 2 / Fintype.card Word := by
+  exact (collision_le_real seed target Q (by omega) program hbudget).trans
+    (rate_le_eight _ T Q hT hQ hwidth)
+
+omit [DecidableEq Index] [Fintype Word] [DecidableEq Word] [Nonempty Word] in
+/-- The source query-range hypothesis implies the physical alphabet has at least `8*T` words. -/
+theorem source_word_budget (m T : ℕ) (hT : 4 ≤ T) (hlimit : T ≤ 2 ^ (m - 3)) :
+    8 * T ≤ 2 ^ m := by
   have hm : 3 ≤ m := by
     by_contra hnot
     have hsub : m - 3 = 0 := by omega
@@ -265,9 +308,19 @@ theorem source_collision_le_eight (m q T : ℕ) (seed target : Fin (2 ^ m))
     calc
       2 ^ m = 2 ^ ((m - 3) + 3) := by rw [Nat.sub_add_cancel hm]
       _ = 8 * 2 ^ (m - 3) := by rw [pow_add]; norm_num; omega
+  omega
+
+/-- A source-width specialisation: an actual `T+q`-query run with `q≤T`, `T≥4` and
+`T≤2^(m-3)` has fresh-collision probability at most `8*T^2/2^m`. -/
+theorem source_collision_le_eight (m q T : ℕ) (seed target : Fin (2 ^ m))
+    (hq : q ≤ T) (hT : 4 ≤ T) (hlimit : T ≤ 2 ^ (m - 3))
+    (program : ProbOracleComp (Family.Spec Index (Fin (2 ^ m))) Output)
+    (hbudget : ProbOracleComp.IsQueryBounded program (T + q)) :
+    ((ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
+        {out | ¬Forest.NoCollision {seed, target} out.2}).toReal ≤
+      8 * (T : ℝ) ^ 2 / 2 ^ m := by
   have hw : 8 * T ≤ Fintype.card (Fin (2 ^ m)) := by
-    rw [Fintype.card_fin _, hpow]
-    omega
+    simpa only [Fintype.card_fin] using source_word_budget m T hT hlimit
   simpa only [Fintype.card_fin _,
     Nat.cast_pow, Nat.cast_ofNat] using
     collision_le_eight seed target T (T + q) hT (by omega) hw program hbudget
@@ -336,9 +389,26 @@ theorem collisionOrCovered_le {q h d : ℕ} (hh : 0 < h) (hd : 0 < d)
     PMF.map, kernel, Function.comp_def,
     Set.compl_ofPred, add_assoc] using hbound
 
+omit [DecidableEq Index] [Fintype Word] [DecidableEq Word] [Nonempty Word] in
+/-- The two half-word covering fractions have the source's factor three for a balanced cut. -/
+theorem covering_fractions_le_three (T h d : ℕ) (hsplit : h = d ∨ h = d + 1) :
+    (T : ℝ) / 2 ^ h + T / 2 ^ d ≤ 3 * T / 2 ^ h := by
+  rcases hsplit with heq | heq
+  · rw [heq]
+    have hn : (0 : ℝ) ≤ T / 2 ^ d := by positivity
+    have he : (3 * T : ℝ) / 2 ^ d = 3 * (T / 2 ^ d) := by ring
+    rw [he]
+    linarith
+  · rw [heq, pow_succ]
+    have hp : (2 : ℝ) ^ d ≠ 0 := by positivity
+    field_simp
+    ring_nf
+    exact le_rfl
+
 /-- The numerical collision/forest event has the source's `3*T/2^h` covering term, and even
-`8` in place of `10` in its collision term. This is an analysis-event bound: relating the
-actual stopped coupling to this event is a separate obligation. -/
+`8` in place of `10` in its collision term. This event alone does not bound the actual
+stopped coupling: `AddXNORIdealCutBounds` additionally charges a hidden-path reveal while
+keeping the old covering ledger separate. -/
 theorem source_forest_bound {q h d : ℕ} (hh : 0 < h) (hd : 0 < d)
     (hsplit : h = d ∨ h = d + 1) (m T : ℕ)
     (seed target : Fin (2 ^ m)) (left : Fin h → Fin q) (right : Fin d → Fin q)
@@ -350,18 +420,7 @@ theorem source_forest_bound {q h d : ℕ} (hh : 0 < h) (hd : 0 < d)
   have hc := source_collision_le_eight m 0 T seed target (Nat.zero_le _) hT hlimit
     program (by simpa only [Nat.add_zero] using hbudget)
   have hf := collisionOrCovered_le hh hd seed target left right T program hbudget
-  have hcover : (T : ℝ) / 2 ^ h + T / 2 ^ d ≤ 3 * T / 2 ^ h := by
-    rcases hsplit with heq | heq
-    · rw [heq]
-      have hn : (0 : ℝ) ≤ T / 2 ^ d := by positivity
-      have he : (3 * T : ℝ) / 2 ^ d = 3 * (T / 2 ^ d) := by ring
-      rw [he]
-      linarith
-    · rw [heq, pow_succ]
-      have hp : (2 : ℝ) ^ d ≠ 0 := by positivity
-      field_simp
-      ring_nf
-      exact le_rfl
+  have hcover := covering_fractions_le_three T h d hsplit
   linarith
 
 end Cslib.Cryptanalysis.AddXNOR.IdealChain.Collisions

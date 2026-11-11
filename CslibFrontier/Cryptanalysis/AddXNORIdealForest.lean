@@ -25,8 +25,10 @@ proved from the ledger. Consequently distinct nonempty queried label strings hav
 endpoints, and their number is at most the number of fresh entries.
 
 `AddXNORIdealLedger` derives these ledgers from the actual oracle sampler, and
-`AddXNORIdealCollisions` bounds their collision/covering analysis event. Relating that
-event to the hidden-cut stopping event is still required for the security inequalities.
+`AddXNORIdealCollisions` bounds their collision/covering analysis event. That old-ledger
+event alone does not bound a hidden-cut hit. `AddXNORIdealReveal` and `AddXNORIdealCutBounds`
+add a charged hidden-path reveal while retaining the old covering ledger.
+`AddXNORIdealSecurity` supplies the resulting decision and weaker-constant search bounds.
 
 ## Main definitions
 
@@ -41,6 +43,8 @@ event to the hidden-cut stopping event is still required for the security inequa
   label string.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.covered_card_le`: the derived forest
   covering count.
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.follows_of_suffix_of_seen`: collision-free
+  reveals recover paths already present at old seen words.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Forest.uniform_two_sided_covered_le`: both
   directional hidden-word covering fractions from the same fresh ledger.
 -/
@@ -79,6 +83,11 @@ abbrev target {Index Word : Type} (r : Record Index Word) : Word := r.entry.2
   ⟨r.label, match r.query with
     | .forward point => .inverse point
     | .inverse point => .forward point, r.answer⟩
+
+/-- Reversing a request swaps the oriented cache entry. -/
+theorem reverse_entry {Index Word : Type} (r : Record Index Word) :
+    r.reverse.entry = r.entry.swap := by
+  cases r with | mk label query answer => cases query <;> rfl
 
 end Record
 
@@ -348,6 +357,56 @@ theorem no_nonempty_initial_path (initial : Finset Word) (seed : Word) (hs : see
   split at hw
   · exact hn (Option.some.inj hw).symm
   · contradiction
+
+/-- Appending older entries preserves their seen words. -/
+theorem seen_append (initial : Finset Word) (newer older : List (Record Index Word)) :
+    seen initial older ⊆ seen initial (newer ++ older) := by
+  induction newer with
+  | nil => exact Finset.Subset.refl _
+  | cons r rest ih =>
+    exact fun _ hw => Finset.mem_insert_of_mem (Finset.mem_insert_of_mem (ih hw))
+
+/-- Collision freedom of the full ledger implies collision freedom of an earlier suffix. -/
+theorem noCollision_append_right (initial : Finset Word)
+    (newer older : List (Record Index Word)) (hc : NoCollision initial (newer ++ older)) :
+    NoCollision initial older := by
+  induction newer with
+  | nil => exact hc
+  | cons r rest ih => exact ih hc.1
+
+/-- A collision-free continuation cannot change the rooted witness at an already seen word.
+This includes a previously unreachable word, whose witness remains `none`. -/
+theorem paths_append_of_seen (initial : Finset Word) (seed : Word)
+    (newer older : List (Record Index Word)) (hc : NoCollision initial (newer ++ older))
+    (point : Word) (hp : point ∈ seen initial older) :
+    paths seed (newer ++ older) point = paths seed older point := by
+  induction newer with
+  | nil => rfl
+  | cons r rest ih =>
+    have hn : point ≠ r.answer := fun he =>
+      hc.2 (Finset.mem_insert_of_mem (he ▸ seen_append initial rest older hp))
+    cases hq : r.query <;>
+      simpa only [List.cons_append, paths, hq, Function.update_of_ne hn] using ih hc.1
+
+/-- Revealing a path ending at an old seen word cannot discover a new rooted path without a
+fresh collision. The old path is reconstructed from the preserved computed witness. -/
+theorem follows_of_append_of_seen (initial : Finset Word) (seed : Word) (hs : seed ∈ initial)
+    (newer older : List (Record Index Word)) (hc : NoCollision initial (newer ++ older))
+    {point : Word} (hp : point ∈ seen initial older) {labels : List Index}
+    (hpath : Follows (newer ++ older) seed labels point) : Follows older seed labels point := by
+  have hw := follows_witness initial seed hs (newer ++ older) hc hpath
+  rw [paths_append_of_seen initial seed newer older hc point hp] at hw
+  exact paths_sound seed older hw
+
+/-- The path-recovery rule for an earlier suffix of a collision-free ledger. -/
+theorem follows_of_suffix_of_seen (initial : Finset Word) (seed : Word) (hs : seed ∈ initial)
+    (older newer : List (Record Index Word)) (hsub : older <:+ newer)
+    (hc : NoCollision initial newer) {point : Word} (hp : point ∈ seen initial older)
+    {labels : List Index} (hpath : Follows newer seed labels point) :
+    Follows older seed labels point := by
+  obtain ⟨more, he⟩ := hsub
+  apply follows_of_append_of_seen initial seed hs more older (by simpa only [he] using hc) hp
+  simpa only [he] using hpath
 
 open scoped Classical in
 /-- The finite set of label words whose complete paths have been queried. -/

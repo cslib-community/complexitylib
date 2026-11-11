@@ -1519,7 +1519,8 @@ proves that the same three answers are impossible in the true planted experiment
 The parameters satisfy Theorem 8's range. This trace already has a collision
 (`BAD`), so it does not challenge the collision-free coupling. It refutes exact
 simulation as written, **not** Theorem 8's inequality. A valid hidden-cut planting law
-is supplied below; the adversary-quantified numerical lower bound remains open.
+is supplied below, together with the decision bound and a weaker-constant search bound.
+The displayed sharper search constants remain open.
 
 The actual ideal experiment is now available in
 [AddXNORIdealChain.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealChain.lean).
@@ -1583,38 +1584,79 @@ $q\le T$, $T\ge4$ and $T\le2^{m-3}$. `collisionOrCovered` runs the actual
 adaptive/private-coin program, then samples independent hidden prefix/suffix words.
 `source_forest_bound` bounds this analysis event after $T$ calls by
 $3T/2^h+8T^2/2^m$, for positive side lengths $h,d$ with $h=d$ or $h=d+1$.
-The coefficient $8$ is an honest collision bound, not a claimed improvement to the
-source's security theorem. The
+The coefficient alone does not establish a security inequality; the actual games are
+handled by the composition below. The
 [numerical clients](../../CslibFrontierTests/AddXNORIdealNumerics.lean) check forks,
 inverse fresh answers and cache hits, coincident roots, and a private-coin observer with
 $q=9$, $h=5$, $T=9$, $m=14$; its analysis-event bound is $1809/2048<1$.
 
-The remaining security bridge is substantive: prove that every actual hidden-cut hit
-is covered by this fresh-ledger event when the hidden path is revealed, while preserving
-the visible-call budget and full joint law of the permutation family. Search additionally
-needs the independent-target verification estimate; adding a hidden-path reveal to the
-already $T+q$ verifier must be charged explicitly. Thus these numerical analysis-event
-bounds do not yet bound `visibleBadGame` or prove either security inequality.
+The [full replay law](../../CslibFrontier/Cryptanalysis/AddXNORIdealReplay.lean) now
+retains the entire hidden family together with the visible transcript and actual fresh
+ledger. Its completion identity is derived from `Family.answer_complete`, and its erasure
+laws recover both the original reader and the exact lazy result/ledger distribution.
+`Ledger.run_recorded` covers cache hits as well as misses. A collision-free reveal cannot
+change a computed rooted witness at an old seen word (`follows_of_suffix_of_seen`).
+The [executed reveal](../../CslibFrontier/Cryptanalysis/AddXNORIdealReveal.lean)
+uses these facts to prove `Reveal.cutHit_bridge`: an actual cut hit forces either a fresh
+collision during the reveal or an already covered hidden side in the old adversary ledger.
+`cutProgram_queryBound` charges every prefix/suffix observation, for exactly $q$ additional
+calls at a source cut. The before/after states are kept separate by
+[CutBounds.expose](../../CslibFrontier/Cryptanalysis/AddXNORIdealCutBounds.lean), so
+covering still counts only the original visible calls. The full source word's projected
+prefix and reversed suffix are proved uniform by finite equivalences in
+[AddXNORIdealCovering.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealCovering.lean);
+independence from the old transcript is derived from the actual independent-world sampling.
 
-The repaired *claim to be proved* is precisely Section 6, Theorem 8 (PDF p. 25):
-$q\ge3$, $h=\lceil q/2\rceil$ and $\max(q,4)\le T\le2^{m-3}$ imply success at most
-$3T/2^h+10T^2/2^m+2^{-q}$. Corollary 4 (p. 28) omits the guessing term for
-planted-versus-independent decision advantage. Thus the general query barrier is
-$\Omega(\min(2^{q/2},2^{m/2}))$, specializing to $\Omega(2^{q/2})$ when $m\ge q$.
-The birthday term and the planted, independent-permutation oracle model are essential;
-this is not an unconditional arithmetic-instance or worst-case existence lower bound.
-The further simulator repair required by the checked trace above must replace the
-literal Lemma 10 law, not assume it. The exact experiments avoid its invalid-table
-behavior. The stopped coupling above compares the actual planted and independent games;
-the cut-hit-to-analysis-event bridge and the final search-success analysis remain open. Here the repair concerns the qualified oracle claim and a valid simulation law,
-not a new arithmetic hardness theorem.
+[AddXNORIdealSecurity.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealSecurity.lean)
+now proves Corollary 4 (PDF p. 28) for the actual planted-versus-independent decision
+experiments: $q\ge3$, $h=\lceil q/2\rceil$ and
+$\max(q,4)\le T\le2^{m-3}$ imply advantage at most
+$3T/2^h+10T^2/2^m$ (`Security.source_corollary_four`). Internally the collision
+coefficient is $8$. The word alphabet is $\mathrm{Fin}(2^m)$, the finite set underlying
+$m$-bit words; no arithmetic operation is part of the independent-permutation model.
+The birthday term and the oracle model are essential. This is not an unconditional
+arithmetic-instance or worst-case existence lower bound, and it does not validate the
+false literal Lemma 10 simulation claim.
+
+For search, `Reveal.verification_collision` proves that independent-target acceptance of
+a nonempty candidate forces a fresh collision, including coincident public roots.
+`source_independent_verification` averages the original seed/target and charges the
+candidate-dependent $q$-call walk. Composing with `search_comparison` and the actual cut
+reveal gives the honest unrounded bound (`Security.source_search_rate`)
+$$
+\Pr[\mathrm{search\ succeeds}]\le
+ R(2^m,T+2q)+\frac{T+q}{2^h}+\frac{T+q}{2^{q-h}}+\frac{8T^2}{2^m},
+\qquad R(N,Q)=\frac{Q^2+3Q}{N-Q}.
+$$
+The denominator is positive under the same source hypotheses. Normalizing this actual
+$T+2q$ horizon gives
+$$
+\Pr[\mathrm{search\ succeeds}]\le \frac{6T}{2^h}+\frac{26T^2}{2^m}
+$$
+(`Security.source_search_bound`). Success at least $1/2$ therefore forces
+$2^h\le24T$ or $2^m\le104T^2$ (`source_search_half_budget`), giving the source's
+$\Omega(\min(2^{q/2},2^{m/2}))$ query barrier and its $m\ge q$ specialization.
+The source's sharper displayed Theorem 8 bound (PDF pp. 25–28),
+$3T/2^h+10T^2/2^m+2^{-q}$, is **not proved**. The deviation is specific: this valid
+comparison couples the $T+q$ verifier and then reveals $q$ hidden edges, enlarging the
+covering allowance and collision horizon. Recovering the source constants needs a tighter
+planted-verification/guessing argument; that argument is not supplied as a premise.
+No counterexample to the sharper inequality is asserted.
+
+The [security client](../../CslibFrontierTests/AddXNORIdealSecurity.lean) checks the
+important guessed-endpoint case: a one-query visible cut hit with no old collision or
+covered side becomes a collision only when the actual hidden reveal is charged. It also
+instantiates both whole-game bounds with input-dependent private-coin forward/inverse
+observers at $q=T=31$, $m=30$, obtaining decision advantage and search success below one
+percent without enumerating the permutation space.
 
 ### STOC733 main-result coverage inventory
 
 Locators below refer to the pinned [WangLvShenZhang2027] manuscript's printed PDF pages.
 Names are in `Cslib.Cryptanalysis.AddXNOR` unless a narrower namespace is given.
 “Covered” records the implemented endpoint and the stated qualifications, not a new
-independent whole-paper acceptance verdict. The ideal-chain rows remain incomplete.
+independent whole-paper acceptance verdict. The literal sharp search inequality remains
+incomplete; its weaker bound and the decision inequality are recorded separately.
 The supporting lemmas cited here explain the main-result bridge; this is not a claim
 that every incidental proof assertion or experimental plot has a separate Lean theorem.
 
@@ -1640,8 +1682,8 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.plantedSearch`, `IdealChain.search_comparison`, `IdealChain.verifiedAdversary_queryBound`, `IdealChain.Collisions.source_forest_bound` | Partial: stopped search comparison and numerical fresh-ledger bounds; security bridge missing |
-| Corollary 4, p. 28 | `IdealChain.coupledDecision_planted`, `IdealChain.decision_advantage_le_visibleBad`, `IdealChain.Collisions.source_forest_bound` | Partial: actual coupling and numerical collision/covering analysis; cut-hit probability bridge missing |
+| Theorem 8, pp. 25–28 | `IdealChain.Security.source_search_rate`, `IdealChain.Security.source_search_bound`, `IdealChain.Security.source_search_half_budget` | Same source hypotheses and query barrier; weaker constants $6,26$; literal $3,10,2^{-q}$ inequality still unproved |
+| Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
 balanced yes-instance cannot satisfy width $0$ when $v=0$.
@@ -1653,9 +1695,9 @@ no expectation-of-maximum, concentration or typical-space theorem is claimed.
 Section 7's finite CDCL observations are not formal asymptotic lower bounds.
 Accordingly the main-result inventory does **not** yet support ALL-main acceptance.
 
-The full-paper objective remains open: repaired ideal-model search/decision
-lower bounds are still missing. The source-rate sparse reduction above now
-charges family multiplicity and generation. The full source dissection pipeline, including
+The full-paper objective remains open for the sharper displayed Theorem 8 search constants.
+Corollary 4 and the weaker-constant Theorem 8 query barrier are now proved. The source-rate
+sparse reduction above now charges family multiplicity and generation. The full source dissection pipeline, including
 the faster count prepass, is supplied by the later `DPDissection` route. The
 positional-cut result is not a universal
 algorithmic barrier, and experimental CDCL exponents remain finite observations.
