@@ -3082,7 +3082,7 @@ register_result "malicious-with-abort-mpc" where
     Cslib.Crypto.Protocols.MPC.adversaryAborts_characterization,
     Cslib.Crypto.Protocols.MPC.naive_without_abort_failure
   ]
-  scope := "Formalizes malicious ideal wrappers with explicit abort for general m-party functionalities, \
+  scope := "Formalizes malicious ideal wrappers with explicit abort for general functionalities, \
     providing the `adversaryAborts_characterization` equivalence theorem and the \
     `naive_without_abort_failure` counterexample demonstrating the necessity of the abort \
-    capability (Cleve 1986)."
+    capability (a without-abort ideal simulator cannot match an aborting honest party)."
