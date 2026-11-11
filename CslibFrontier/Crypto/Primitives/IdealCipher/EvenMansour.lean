@@ -27,10 +27,12 @@ variable {n : ℕ}
 def evenMansour (k : BitString n) (P : BitString n → BitString n) (x : BitString n) : BitString n :=
   P (x + k) + k
 
-def evenMansourInv (k : BitString n) (P_inv : BitString n → BitString n) (y : BitString n) : BitString n :=
+def evenMansourInv (k : BitString n) (P_inv : BitString n → BitString n) (y : BitString n) :
+    BitString n :=
   P_inv (y + k) + k
 
-def evenMansourPerm (P : Equiv.Perm (BitString n)) (k : BitString n) : Equiv.Perm (BitString n) where
+def evenMansourPerm (P : Equiv.Perm (BitString n)) (k : BitString n) :
+    Equiv.Perm (BitString n) where
   toFun := evenMansour k P
   invFun := evenMansourInv k P.symm
   left_inv x := by

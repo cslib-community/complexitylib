@@ -225,7 +225,7 @@ theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     {program : OracleComp (Spec Key Block) β} {n : ℕ}
     (hn : IsQueryBounded program n) (cache : Key → Cache Block) :
     ((OracleComp.interpret forgetfulWithBad program).run (cache, false)).toOuterMeasure
-      {x | x.2.2 = true} ≤
+      {x | x.snd.snd = true} ≤
       (n * (Finset.univ.sum (fun k => (cache k).length)) + n.choose 2 : ℕ) * (Fintype.card Block : ℝ≥0∞)⁻¹ := by
   refine OracleComp.toOuterMeasure_bad_choose_two_le (bad := fun st : (Key → Cache Block) × Bool => st.2 = true)
     (fun st : (Key → Cache Block) × Bool => Finset.univ.sum (fun k => (st.1 k).length))
@@ -295,7 +295,7 @@ theorem exactWithBad_preserve_isPartialBijection (q : Query Key Block)
   · subst h
     simp only [Function.update_self]
     exact RandomPermutation.exactWithBad_preserve_isPartialBijection q.2 (st.1 q.1, st.2) (hst q.1) b (c', bad') hmem
-  · simp [h]
+  · simp only [Function.update_of_ne h]
     exact hst k
 
 theorem exactWithBad_map_fst (q : Query Key Block) (st : (Key → Cache Block) × Bool) (hcache : ∀ k, IsPartialBijection (st.1 k)) :

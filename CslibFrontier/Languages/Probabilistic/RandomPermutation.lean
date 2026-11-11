@@ -375,7 +375,7 @@ private `cachedAnswer` and the facts about it below put both directions in this 
 
 /-- The recorded answer to `q` in `cache`: its image for a forward query, its preimage for an
 inverse query. -/
-private def cachedAnswer (cache : Cache α) : PermQuery α → Option α
+def cachedAnswer (cache : Cache α) : PermQuery α → Option α
   | .forward x => cache.lookup x
   | .inverse y => invLookup cache y
 
