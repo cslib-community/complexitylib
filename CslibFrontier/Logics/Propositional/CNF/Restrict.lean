@@ -90,16 +90,11 @@ namespace CNF
 `Function.update σ v b`. -/
 @[simp] theorem eval_restrict (φ : CNF V) (v : V) (b : Bool) (σ : V → Bool) :
     (φ.restrict v b).eval σ = φ.eval (Function.update σ v b) := by
-  rw [Bool.eq_iff_iff, CNF.eval_eq_true_iff, CNF.eval_eq_true_iff]
+  rw [Bool.eq_iff_iff]
   constructor
-  · intro h c hc
-    by_cases hmem : (v, b) ∈ c
-    · exact (Clause.eval_eq_true_iff _ _).mpr ⟨(v, b), hmem, by simp⟩
-    · have hcf : c.filter (· ≠ (v, !b)) ∈ φ.restrict v b :=
-        CNF.mem_restrict.mpr ⟨c, hc, hmem, rfl⟩
-      rw [← Clause.eval_filter_ne_neg σ hmem]
-      exact h _ hcf
-  · intro h c' hc'
+  · exact CNF.eval_update_of_eval_restrict
+  · rw [CNF.eval_eq_true_iff, CNF.eval_eq_true_iff]
+    intro h c' hc'
     obtain ⟨c, hc, hmem, rfl⟩ := CNF.mem_restrict.mp hc'
     rw [Clause.eval_filter_ne_neg σ hmem]
     exact h c hc
@@ -168,22 +163,9 @@ of clauses. -/
 theorem length_restrict_lt {φ : CNF V} {v : V} {b : Bool} {c : Clause V}
     (hc : c ∈ φ) (hl : (v, b) ∈ c) :
     (φ.restrict v b).length < φ.length := by
-  induction φ with
-  | nil => simp at hc
-  | cons d ψ ih =>
-    unfold CNF.restrict at ih ⊢
-    rcases List.mem_cons.mp hc with rfl | hψ
-    · have hf : decide ((v, b) ∉ c) = false := decide_eq_false (by simp [hl])
-      rw [List.filter_cons_of_neg (by simp [hf]), List.length_map, List.length_cons]
-      exact (List.length_filter_le _ _).trans_lt (Nat.lt_succ_self _)
-    · by_cases hmem : (v, b) ∈ d
-      · have hf : decide ((v, b) ∉ d) = false := decide_eq_false (by simp [hmem])
-        rw [List.filter_cons_of_neg (by simp [hf]), List.length_map, List.length_cons]
-        exact (List.length_filter_le _ _).trans_lt (Nat.lt_succ_self _)
-      · have hf : decide ((v, b) ∉ d) = true := decide_eq_true hmem
-        rw [List.filter_cons_of_pos (by simp [hf]), List.map_cons, List.length_cons,
-          List.length_cons]
-        exact Nat.succ_lt_succ (by simpa [List.length_map] using ih hψ)
+  unfold CNF.restrict
+  rw [List.length_map, List.length_filter_lt_length_iff_exists]
+  exact ⟨c, hc, decide_eq_false (not_not.mpr hl)⟩
 
 /-- Restricting on `v` removes all occurrences of `v`. -/
 @[simp] theorem occurrences_restrict_self (φ : CNF V) (v : V) (b : Bool) :
