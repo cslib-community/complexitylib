@@ -35,7 +35,8 @@ thresholds, only `s₁ ≤ s₂`.
 
 **Statement conventions.**
 * Circuits are the library's fan-in-two De Morgan circuits, and size counts every gate
-  (`Cslib.Circuits.Boolean.complexity` with `interpretation`), as in `MCSP/Magnification.lean`.
+  (`Cslib.Circuits.Boolean.complexity` with `interpretation`), as in
+  `CslibFrontier/Computability/MCSP/Magnification.lean`.
   OPS fix fan-in-two circuits and remark that gate types do not matter for their results. Sizes
   over another basis differ by a constant factor, so this Gap-MCSP is not literally the same
   promise problem as one over that basis, and no translation is claimed.
@@ -44,7 +45,8 @@ thresholds, only `s₁ ≤ s₂`.
 * "`Gap-MCSP ∉ Circuit[N^{1+ε}]`" is read as: for infinitely many `n`, no Boolean function on
   `2 ^ n`-bit truth tables that accepts every yes-instance and rejects every no-instance has
   complexity at most `N^{1+ε}`. "For every small enough `β > 0`" is `∀ᶠ β in 𝓝[>] 0`.
-* `NP ⊆ Circuit[poly]` is `NP encBits ⊆ PPolyOn encBits`, as in `MCSP/Magnification.lean`.
+* `NP ⊆ Circuit[poly]` is `NP encBits ⊆ PPolyOn encBits`, as in
+  `CslibFrontier/Computability/MCSP/Magnification.lean`.
 
 ## Main results
 
