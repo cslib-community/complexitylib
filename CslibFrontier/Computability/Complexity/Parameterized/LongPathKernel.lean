@@ -24,9 +24,11 @@ Bodlaender, Downey, Fellows and Hermelin [BodlaenderDowneyFellowsHermelin2009]; 
 in the latter is not verified here. This file derives it from the cross-composition theorem
 [BodlaenderJansenKratsch2014, Corollary 2] (`Cslib.Complexity.not_hasPolyKernel_LongPath`,
 `Cslib.Complexity.not_hasPolyCompression_LongPath`), with `coNP ⊄ NP/poly` an explicit
-hypothesis. Like `Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`, only the
-`NP ⊆ coNP/poly` conclusion of Corollary 2 is stated; the failure of the OR-distillation
-conjecture and the collapse of the polynomial hierarchy are not formalized.
+hypothesis, and by Yap's theorem [Yap][Yap1983] also under `PH ≠ Σ₃`
+(`Cslib.Complexity.not_hasPolyKernel_LongPath_of_PH_ne_SigmaP_three`,
+`Cslib.Complexity.not_hasPolyCompression_LongPath_of_PH_ne_SigmaP_three`). Like
+`Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`, the failure of the OR-distillation
+conjecture in Corollary 2 is not stated as a named conjecture here.
 
 The OR-cross-composition from undirected Hamiltonian path (`Cslib.Complexity.HamPath`) into
 k-Path is a construction within the framework of [BodlaenderJansenKratsch2014, Section 3]; it is
@@ -64,8 +66,11 @@ alone.
 * `Cslib.Complexity.HamPath.orCrossComposes_LongPath`: `HamPath` OR-cross-composes into k-Path.
 * `Cslib.Complexity.not_hasPolyKernel_LongPath`,
   `Cslib.Complexity.not_hasPolyCompression_LongPath`,
-  `Cslib.Complexity.coNP_subset_NPPoly_of_hasPolyCompression_LongPath`: k-Path has no polynomial
-  kernel and no polynomial compression unless `coNP ⊆ NP/poly`.
+  `Cslib.Complexity.coNP_subset_NPPoly_of_hasPolyCompression_LongPath`,
+  `Cslib.Complexity.PH_eq_SigmaP_three_of_hasPolyCompression_LongPath`,
+  `Cslib.Complexity.not_hasPolyKernel_LongPath_of_PH_ne_SigmaP_three`,
+  `Cslib.Complexity.not_hasPolyCompression_LongPath_of_PH_ne_SigmaP_three`: k-Path has no polynomial
+  kernel and no polynomial compression unless `coNP ⊆ NP/poly` (and hence `PH = Σ₃`).
 
 ## References
 
@@ -73,6 +78,7 @@ alone.
   kernels*][BodlaenderDowneyFellowsHermelin2009]
 * [H. L. Bodlaender, B. M. P. Jansen, S. Kratsch, *Kernelization lower bounds by
   cross-composition*][BodlaenderJansenKratsch2014]
+* [C.-K. Yap, *Some consequences of non-uniform conditions on uniform classes*][Yap1983]
 -/
 
 public section
@@ -264,5 +270,31 @@ theorem coNP_subset_NPPoly_of_hasPolyCompression_LongPath
     (h : HasPolyCompression (encPair encGraph encNat) Prod.snd LongPath) {δ : Type}
     (encC : δ ↪ List Bool) : coNP encC ⊆ NPPoly encC :=
   coNP_subset_NPPoly_of_orCrossComposes HamPath_npHard HamPath.orCrossComposes_LongPath h encC
+
+/-- A polynomial compression of k-Path collapses the polynomial hierarchy to `Σ₃`, for every
+encoding of instances [BodlaenderJansenKratsch2014, Corollary 2], [Yap][Yap1983]. -/
+theorem PH_eq_SigmaP_three_of_hasPolyCompression_LongPath
+    (h : HasPolyCompression (encPair encGraph encNat) Prod.snd LongPath) {δ : Type}
+    (encC : δ ↪ List Bool) : PH encC = SigmaP 3 encC :=
+  PH_eq_SigmaP_three_of_orCrossComposes HamPath_npHard HamPath.orCrossComposes_LongPath h encC
+
+/-- **k-Path has no polynomial compression unless `PH = Σ₃`**
+[BodlaenderJansenKratsch2014, Corollary 2], [Yap][Yap1983], with `PH ≠ Σ₃` for some encoding as an
+explicit hypothesis. -/
+theorem not_hasPolyCompression_LongPath_of_PH_ne_SigmaP_three {δ : Type} {encC : δ ↪ List Bool}
+    (hPH : PH encC ≠ SigmaP 3 encC) :
+    ¬ HasPolyCompression (encPair encGraph encNat) Prod.snd LongPath :=
+  not_hasPolyCompression_of_orCrossComposes_of_PH_ne_SigmaP_three HamPath_npHard
+    HamPath.orCrossComposes_LongPath hPH
+
+/-- **k-Path has no polynomial kernel unless `PH = Σ₃`**, attributed to
+[BodlaenderDowneyFellowsHermelin2009] by [BodlaenderJansenKratsch2014, Section 1] and derived here
+from [BodlaenderJansenKratsch2014, Corollary 2] and [Yap][Yap1983], with `PH ≠ Σ₃` for some
+encoding as an explicit hypothesis. -/
+theorem not_hasPolyKernel_LongPath_of_PH_ne_SigmaP_three {δ : Type} {encC : δ ↪ List Bool}
+    (hPH : PH encC ≠ SigmaP 3 encC) :
+    ¬ HasPolyKernel (encPair encGraph encNat) Prod.snd LongPath :=
+  not_hasPolyKernel_of_orCrossComposes_of_PH_ne_SigmaP_three HamPath_npHard
+    HamPath.orCrossComposes_LongPath hPH
 
 end Cslib.Complexity

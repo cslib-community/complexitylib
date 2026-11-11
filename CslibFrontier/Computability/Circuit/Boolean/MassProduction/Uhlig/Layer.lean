@@ -91,7 +91,7 @@ theorem restriction_equivFin (f : BooleanFunction (p + w)) (x : BitString (p + w
 
 /-- The number of the prefix of copy `c`. -/
 def rank {k : ℕ} (x : BitString (k * (p + w))) (c : Fin k) : ℕ :=
-  BitString.equivFin p (directProductInput x c ∘ Fin.castAdd w)
+  BitString.equivFin p (BitString.block x c ∘ Fin.castAdd w)
 
 /-- Copy `s` of pair `i`: pair `i` consists of copies `i` and `t + i`. -/
 abbrev pairCopy (s : Fin 2) (i : Fin t) : Fin (2 * t) :=
@@ -114,13 +114,13 @@ theorem pairSelect_comp_pairWires (s : Fin 2) (j : ℕ) (i : Fin t)
     pairSelect s j (x ∘ pairWires i) =
       ![first, second] s (rank x (pairCopy 0 i)) (rank x (pairCopy 1 i)) j := by
   have h0 : (x ∘ pairWires i) ∘ Fin.castAdd p =
-      directProductInput x (pairCopy 0 i) ∘ Fin.castAdd w := by
+      BitString.block x (pairCopy 0 i) ∘ Fin.castAdd w := by
     funext a
-    simp only [pairWires, directProductInput, Function.comp_apply, Fin.append_left]
+    simp only [pairWires, BitString.block, Function.comp_apply, Fin.append_left]
   have h1 : (x ∘ pairWires i) ∘ Fin.natAdd p =
-      directProductInput x (pairCopy 1 i) ∘ Fin.castAdd w := by
+      BitString.block x (pairCopy 1 i) ∘ Fin.castAdd w := by
     funext a
-    simp only [pairWires, directProductInput, Function.comp_apply, Fin.append_right]
+    simp only [pairWires, BitString.block, Function.comp_apply, Fin.append_right]
   simp only [pairSelect, rank, h0, h1]
 
 /-- The suffix bit `k` routed to resource `j` from pair `i`. -/
@@ -173,17 +173,17 @@ theorem decoded_eq (f : BooleanFunction (p + w)) (s : Fin 2) (i : Fin t)
     (hx : y ∘ Fin.castAdd _ = x)
     (hy : ∀ j : Fin (2 ^ p + 1), y (Fin.natAdd _ (finProdFinEquiv (j, i))) =
       resource f j (if first (rank x (pairCopy 0 i)) (rank x (pairCopy 1 i)) j then
-        directProductInput x (pairCopy 0 i) ∘ Fin.natAdd p
-      else directProductInput x (pairCopy 1 i) ∘ Fin.natAdd p)) :
-    decoded s i y = f (directProductInput x (pairCopy s i)) := by
+        BitString.block x (pairCopy 0 i) ∘ Fin.natAdd p
+      else BitString.block x (pairCopy 1 i) ∘ Fin.natAdd p)) :
+    decoded s i y = f (BitString.block x (pairCopy s i)) := by
   have hrank (c : Fin (2 * t)) : rank x c < 2 ^ p := Fin.is_lt _
   simp only [decoded] at hy ⊢
   rw [← Function.comp_assoc, hx]
   simp only [pairSelect_comp_pairWires, hy, resource]
   rw [Fin.sum_univ_eq_sum_range (fun j => ![first, second] s (rank x (pairCopy 0 i))
     (rank x (pairCopy 1 i)) j && code (restriction f (if first (rank x (pairCopy 0 i))
-      (rank x (pairCopy 1 i)) j then directProductInput x (pairCopy 0 i) ∘ Fin.natAdd p
-    else directProductInput x (pairCopy 1 i) ∘ Fin.natAdd p)) j)]
+      (rank x (pairCopy 1 i)) j then BitString.block x (pairCopy 0 i) ∘ Fin.natAdd p
+    else BitString.block x (pairCopy 1 i) ∘ Fin.natAdd p)) j)]
   match s with
   | 0 =>
     rw [Matrix.cons_val_zero, sum_first_code_route (restriction_two_pow f) (hrank _)]
@@ -238,7 +238,7 @@ theorem complexity_directProduct_two_mul_le {B : ℕ}
     rw [Fin.append_right, Circuit.eval_parallelFamily_apply, hbank j]
     simp only [directProduct, resource]
     congr 2 with k : 1
-    simp only [directProductInput, Equiv.symm_apply_apply, routedBit]
+    simp only [BitString.block, Equiv.symm_apply_apply, routedBit]
     split <;> rfl
   · have hbankSize : ∑ j, (bank j).size ≤ (2 ^ p + 1) * B := by
       simpa using Finset.sum_le_sum fun j (_ : j ∈ univ) => hsBank j

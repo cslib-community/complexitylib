@@ -119,14 +119,14 @@ def outputs (count : ℕ) : Circuit signature (count * 1) count :=
   Circuit.wiring signature fun i => finProdFinEquiv (i, 0)
 
 private theorem eval_outputs (count : ℕ) (x : BitString (count * 1)) (i : Fin count) :
-    (outputs count).eval interpretation x i = directProductInput x i 0 := by
+    (outputs count).eval interpretation x i = BitString.block x i 0 := by
   rw [outputs, Circuit.eval_wiring]
   rfl
 
 private theorem eval_rows (count : ℕ) (x : BitString count) :
-    directProductInput ((rows count).eval interpretation x) = fun i _ => x i := by
+    BitString.block ((rows count).eval interpretation x) = fun i _ => x i := by
   funext i bit
-  simp only [rows, Circuit.eval_wiring, directProductInput, Function.comp_apply,
+  simp only [rows, Circuit.eval_wiring, BitString.block, Function.comp_apply,
     Equiv.symm_apply_apply]
 
 end duplicateFlagsCircuit
@@ -144,9 +144,9 @@ def duplicateFlagsCircuit {r k : ℕ} (key : Fin k → Fin r) (d : ℕ) :
 private theorem eval_duplicateFlagsCircuit {r k : ℕ} (key : Fin k → Fin r) (d : ℕ)
     (x : BitString (BitonicSort.arity d * r)) (i : Fin (BitonicSort.arity d)) :
     let order := fun row : BitString r => toLex (row ∘ key)
-    let sorted := BitonicSort.sort order d true (directProductInput x)
+    let sorted := BitonicSort.sort order d true (BitString.block x)
     (duplicateFlagsCircuit key d).eval interpretation x i =
-      BitonicSort.unrouteSort d (BitonicSort.sortTrace order d true (directProductInput x))
+      BitonicSort.unrouteSort d (BitonicSort.sortTrace order d true (BitString.block x))
         (fun j (_ : Fin 1) => (adjacentDuplicateCircuit fun row bit =>
           finProdFinEquiv (row, key bit)).eval interpretation (flatten sorted) j) i 0 := by
   dsimp only
@@ -160,9 +160,9 @@ private theorem eval_duplicateFlagsCircuit {r k : ℕ} (key : Fin k → Fin r) (
 theorem eval_duplicateFlagsCircuit_iff {r k : ℕ} (key : Fin k → Fin r) (d : ℕ)
     (x : BitString (BitonicSort.arity d * r)) (i : Fin (BitonicSort.arity d)) :
     (duplicateFlagsCircuit key d).eval interpretation x i = true ↔
-      ∃ j, j ≠ i ∧ directProductInput x j ∘ key = directProductInput x i ∘ key := by
+      ∃ j, j ≠ i ∧ BitString.block x j ∘ key = BitString.block x i ∘ key := by
   let order := fun row : BitString r => toLex (row ∘ key)
-  let rows := directProductInput x
+  let rows := BitString.block x
   let sorted := BitonicSort.sort order d true rows
   let answers := fun j (_ : Fin 1) => (adjacentDuplicateCircuit fun row bit =>
     finProdFinEquiv (row, key bit)).eval interpretation (flatten sorted) j

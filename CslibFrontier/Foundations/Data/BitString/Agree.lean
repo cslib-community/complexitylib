@@ -9,14 +9,14 @@ module
 
 public import Cslib.Foundations.Data.BitString
 public import Mathlib.Data.Fintype.Pi
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
-import Mathlib.Data.Fintype.BigOperators
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 
 /-!
 # Words agreeing off a set of positions
 
 The words `ι → Bool` agreeing with a word `x` outside a set `F` of positions are free exactly on
-`F`, so there are `2 ^ |F|` of them (`BitString.card_filter_forall_notMem_eq`).
+`F`, so there are `2 ^ |F|` of them (`BitString.card_filter_forall_notMem_eq`). This is the case
+`β = Bool`, `P = Fᶜ` of `Fintype.card_filter_forall_mem_eq`.
 
 ## Main results
 
@@ -36,14 +36,8 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 theorem card_filter_forall_notMem_eq (F : Finset ι) (x : ι → Bool)
     [DecidablePred fun y : ι → Bool => ∀ i ∉ F, y i = x i] :
     #{y : ι → Bool | ∀ i ∉ F, y i = x i} = 2 ^ #F := by
-  have h : ({y : ι → Bool | ∀ i ∉ F, y i = x i} : Finset _) =
-      Fintype.piFinset fun i => if i ∈ F then univ else {x i} := by
-    ext y
-    simp only [mem_filter, mem_univ, true_and, Fintype.mem_piFinset]
-    refine forall_congr' fun i => ?_
-    by_cases hi : i ∈ F <;> simp [hi]
-  rw [h, Fintype.card_piFinset]
-  simp only [apply_ite card, card_univ, Fintype.card_bool, card_singleton]
-  rw [prod_ite, prod_const, prod_const_one, mul_one, filter_mem_eq_inter, univ_inter]
+  calc #{y : ι → Bool | ∀ i ∉ F, y i = x i} = #{y : ι → Bool | ∀ i ∈ Fᶜ, y i = x i} :=
+        congrArg card (filter_congr fun y _ => by simp only [mem_compl])
+    _ = 2 ^ #F := by rw [Fintype.card_filter_forall_mem_eq, Fintype.card_bool, compl_compl]
 
 end Cslib.BitString
