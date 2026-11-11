@@ -35,7 +35,7 @@ from the same seed lemma, which supplies `2 ^ n` seeds.
 
 * `Cslib.Circuits.Boolean.succinctMCSPOracle`: the oracle language.
 * `Cslib.ApproxMCSP.noSetReal`: the no-instances of `MCSP[(s, 0), (s, δ)]` for a real error `δ`
-  [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.3, Definition 6, p. 12].
+  [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.3, Definition 6, p. 13].
 
 ## Main results
 
@@ -44,7 +44,7 @@ from the same seed lemma, which supplies `2 ^ n` seeds.
   adaptivity one, and leaf size at most `2 ^ n` times the fan-in.
 * `Cslib.Circuits.Boolean.localFormulaClass_approxMCSP`: the same as membership in
   `LocalFormulaClass`.
-* `Cslib.Circuits.Boolean.approxMCSPQueryEncLength_le`: the fan-in is at most
+* `Cslib.Circuits.Boolean.approxMCSPQueryEncLength_le_poly`: the fan-in is at most
   `98 * (k * (s + 1)) ^ 3` when `n ≤ s`.
 * `Cslib.Circuits.Boolean.localFormulaClass_approxMCSP_real_poly`: Proposition 63's \[OS18\]
   bullet with a real error `δ`, with explicit polynomials in `s` and `⌈1 / δ⌉₊`.
@@ -168,7 +168,7 @@ theorem localFormulaClass_approxMCSP {s₁ s₂ k : ℕ → ℕ} (hk : ∀ n, 1 
 
 /-- An explicit polynomial bound on the fan-in of the oracle gates, `poly(s * k)`, when
 `n ≤ s`. -/
-theorem approxMCSPQueryEncLength_le {n s k : ℕ} (hn : n ≤ s) (hk : 1 ≤ k) :
+theorem approxMCSPQueryEncLength_le_poly {n s k : ℕ} (hn : n ≤ s) (hk : 1 ≤ k) :
     approxMCSPQueryEncLength n s k ≤ 98 * (k * (s + 1)) ^ 3 := by
   have hlog := computableFunctionsLogBound_le_poly n s
   have hlog' : computableFunctionsLogBound n s + 2 ≤ 7 * (s + 1) ^ 2 := by nlinarith
@@ -197,7 +197,7 @@ namespace Cslib.ApproxMCSP
 open MCSP Circuits.Boolean
 
 /-- The no-instances of `MCSP[(s, 0), (s, δ)]` with a real error `δ`
-[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.3, Definition 6, p. 12]: truth tables of
+[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.3, Definition 6, p. 13]: truth tables of
 functions `f` such that no function of circuit complexity at most `s n` agrees with `f` on at least
 a `(1 - δ n)`-fraction of inputs. -/
 def noSetReal (s : ℕ → ℕ) (δ : ℕ → ℝ) : Language Bool :=
@@ -265,7 +265,7 @@ theorem localFormulaClass_approxMCSP_real_poly {s : ℕ → ℕ} {δ : ℕ → �
       (GapMCSP.yesSet s) (ApproxMCSP.noSetReal s δ) := by
   have hb : ∀ m, approxMCSPQueryEncLength (Nat.log 2 m) (s (Nat.log 2 m))
       ⌈1 / δ (Nat.log 2 m)⌉₊ ≤ 98 * (⌈1 / δ (Nat.log 2 m)⌉₊ * (s (Nat.log 2 m) + 1)) ^ 3 :=
-    fun m => approxMCSPQueryEncLength_le (hs _)
+    fun m => approxMCSPQueryEncLength_le_poly (hs _)
       (Nat.ceil_pos.mpr (by have := hδ (Nat.log 2 m); positivity))
   exact (localFormulaClass_approxMCSP_real hδ).mono le_rfl hb le_rfl
     fun m => Nat.mul_le_mul_left m (hb m)

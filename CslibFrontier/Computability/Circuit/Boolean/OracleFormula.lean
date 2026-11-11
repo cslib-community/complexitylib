@@ -172,14 +172,19 @@ def query (fs : List (Formula signature n)) : OracleFormula n :=
     maxQueryArity (query fs) = fs.length := by
   simp [query]
 
+/-- The leaves of an oracle gate are those of its arguments. -/
+@[simp] theorem leafSize_query (fs : List (Formula signature n)) :
+    (query fs).leafSize = (fs.map Formula.leafSize).sum := by
+  simp only [query, Formula.leafSize_gate, Formula.leafSize_mapOp]
+  exact Fin.sum_univ_fun_getElem fs Formula.leafSize
+
 /-- An oracle gate on formulas of at most one leaf each has at most as many leaves as
 arguments. -/
 theorem leafSize_query_le {fs : List (Formula signature n)} (hfs : ∀ F ∈ fs, F.leafSize ≤ 1) :
     (query fs).leafSize ≤ fs.length := by
-  simp only [query, Formula.leafSize_gate, Formula.leafSize_mapOp]
-  calc ∑ i : Fin fs.length, fs[i].leafSize ≤ ∑ _i : Fin fs.length, 1 :=
-        Finset.sum_le_sum fun i _ => hfs _ (List.getElem_mem i.2)
-    _ = fs.length := by simp
+  rw [leafSize_query]
+  refine (List.sum_le_length_nsmul _ 1 ?_).trans (by simp)
+  simpa using hfs
 
 /-! ### Conjunctions -/
 
@@ -189,7 +194,7 @@ def tt : OracleFormula n :=
 
 /-- The conjunction of two oracle formulas. -/
 def and (F G : OracleFormula n) : OracleFormula n :=
-  .gate (.base .and) ![F, G]
+  Formula.gate₂ (.base .and) rfl F G
 
 /-- The conjunction of a list of oracle formulas. -/
 def all : List (OracleFormula n) → OracleFormula n
@@ -203,8 +208,7 @@ def all : List (OracleFormula n) → OracleFormula n
 @[simp] theorem eval_and (O : Language Bool) (F G : OracleFormula n) (x : Fin n → Bool) :
     (and F G).eval (oracleInterpretation O) x =
       (F.eval (oracleInterpretation O) x && G.eval (oracleInterpretation O) x) := by
-  simp only [and, Formula.eval_gate, oracleInterpretation_base, interpretation,
-    Matrix.cons_val_zero, Matrix.cons_val_one]
+  simp only [and, Formula.eval_gate₂, oracleInterpretation_base, interpretation]; rfl
 
 @[simp] theorem queryCount_tt : queryCount (tt : OracleFormula n) = 0 := by
   simp [tt]
@@ -220,35 +224,19 @@ def all : List (OracleFormula n) → OracleFormula n
 
 @[simp] theorem queryCount_and (F G : OracleFormula n) :
     queryCount (and F G) = queryCount F + queryCount G := by
-  simp only [and, queryCount_gate, OracleOp.queryWeight_base, add_zero]
-  exact Fin.sum_univ_two _
+  simp only [and, queryCount, Formula.cost_gate₂, OracleOp.queryWeight_base, add_zero]
 
 @[simp] theorem adaptivity_and (F G : OracleFormula n) :
     adaptivity (and F G) = max (adaptivity F) (adaptivity G) := by
-  simp only [and, adaptivity_gate, OracleOp.queryWeight_base, add_zero]
-  apply le_antisymm
-  · refine Finset.sup_le fun j _ => ?_
-    fin_cases j
-    · exact le_max_left _ _
-    · exact le_max_right _ _
-  · exact max_le (Finset.le_sup (f := fun j => adaptivity (![F, G] j)) (Finset.mem_univ 0))
-      (Finset.le_sup (f := fun j => adaptivity (![F, G] j)) (Finset.mem_univ 1))
+  simp only [and, adaptivity, Formula.depthWith_gate₂, OracleOp.queryWeight_base, add_zero]
 
 @[simp] theorem maxQueryArity_and (F G : OracleFormula n) :
     maxQueryArity (and F G) = max (maxQueryArity F) (maxQueryArity G) := by
-  simp only [and, maxQueryArity_gate, OracleOp.queryArity_base, zero_max]
-  apply le_antisymm
-  · refine Finset.sup_le fun j _ => ?_
-    fin_cases j
-    · exact le_max_left _ _
-    · exact le_max_right _ _
-  · exact max_le (Finset.le_sup (f := fun j => maxQueryArity (![F, G] j)) (Finset.mem_univ 0))
-      (Finset.le_sup (f := fun j => maxQueryArity (![F, G] j)) (Finset.mem_univ 1))
+  simp [and, Formula.gate₂, Fin.univ_succ]
 
 @[simp] theorem leafSize_and (F G : OracleFormula n) :
-    (and F G).leafSize = F.leafSize + G.leafSize := by
-  simp only [and, Formula.leafSize_gate]
-  exact Fin.sum_univ_two _
+    (and F G).leafSize = F.leafSize + G.leafSize :=
+  Formula.leafSize_gate₂ F G
 
 /-- The conjunction of `Fs` is true exactly when every formula of `Fs` is. -/
 @[simp] theorem eval_all (O : Language Bool) (Fs : List (OracleFormula n)) (x : Fin n → Bool) :
@@ -299,8 +287,11 @@ that, for every input length `m`, some oracle formula on `m` inputs with
 - at most `a m` oracle gates on any path from a leaf to the root (adaptivity),
 answers `true` on the yes-instances and `false` on the no-instances of length `m` under `O`.
 
-Leaves are input leaves; constants are free. Paths ending at constants count too, so the adaptivity
-here is at least the source's, which counts only paths from inputs. -/
+Only input leaves count towards `S m`: constant leaves are free here, while the source's
+`Formula[s]` counts constant leaves too [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.1,
+p. 12], so for a fixed `S` this class can be larger than the source's. Paths ending at constants
+count towards the adaptivity, so the adaptivity here is at least the source's, which counts only
+paths from inputs. -/
 @[expose] def LocalFormulaClass (q ℓ a S : ℕ → ℕ) (Yes No : Language Bool) : Prop :=
   ∃ O : Language Bool, ∀ m, ∃ E : OracleFormula m,
     E.leafSize ≤ S m ∧ OracleFormula.queryCount E ≤ q m ∧ OracleFormula.maxQueryArity E ≤ ℓ m ∧

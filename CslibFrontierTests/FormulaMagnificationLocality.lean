@@ -24,7 +24,7 @@ private def twoQueries : OracleFormula 2 :=
 
 example : twoQueries.queryCount = 2 ∧ twoQueries.maxQueryArity = 2 ∧
     twoQueries.adaptivity ≤ 1 ∧ twoQueries.leafSize = 3 := by
-  refine ⟨by simp [twoQueries], ?_, ?_, by simp [twoQueries, OracleFormula.query]⟩
+  refine ⟨by simp [twoQueries], ?_, ?_, by simp [twoQueries]⟩
   · simp [twoQueries, OracleFormula.all]
   · refine OracleFormula.adaptivity_all_le fun E hE => ?_
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hE
@@ -60,7 +60,7 @@ example : approxMCSPQueryEncLength 20 20 2 < 2 ^ 20 := by
 
 /-- The explicit polynomial bound applies at those parameters. -/
 example : approxMCSPQueryEncLength 20 20 2 ≤ 98 * (2 * (20 + 1)) ^ 3 :=
-  approxMCSPQueryEncLength_le le_rfl (by decide)
+  approxMCSPQueryEncLength_le_poly le_rfl (by decide)
 
 /-- The class form is inhabited at concrete parameters. -/
 example : LocalFormulaClass (fun m => m)
@@ -69,5 +69,15 @@ example : LocalFormulaClass (fun m => m)
     (GapMCSP.yesSet id) (ApproxMCSP.noSet id fun _ => 2) :=
   localFormulaClass_approxMCSP (s₁ := id) (s₂ := id) (k := fun _ => 2) (fun _ => by decide)
     fun _ => le_rfl
+
+/-- The real-error form at `δ = 1 / 4` and `s = id`: fan-in `98 * (4 * (n + 1)) ^ 3`, where
+`n = log₂ m`. -/
+example : LocalFormulaClass (fun m => m) (fun m => 98 * (4 * (Nat.log 2 m + 1)) ^ 3) (fun _ => 1)
+    (fun m => m * (98 * (4 * (Nat.log 2 m + 1)) ^ 3))
+    (GapMCSP.yesSet id) (ApproxMCSP.noSetReal id fun _ => 1 / 4) := by
+  have h : ⌈(1 : ℝ) / (1 / 4)⌉₊ = 4 := by norm_num
+  simpa only [h, id_eq] using
+    localFormulaClass_approxMCSP_real_poly (s := id) (δ := fun _ => 1 / 4) (fun _ => by norm_num)
+      fun _ => le_rfl
 
 end CslibFrontierTests.FormulaMagnificationLocality
