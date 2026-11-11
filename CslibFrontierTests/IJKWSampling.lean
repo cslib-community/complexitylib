@@ -80,6 +80,19 @@ example : ∑ x : Bool, ∑ r : Fin 2 → Bool, indTrue (Function.update r 0 x 1
     Fintype.card Bool • ∑ b : Fin 2 → Bool, indTrue (b 1) :=
   sum_sum_update_eq_card_nsmul_sum 0 fun _ b => indTrue (b 1)
 
+-- Overwriting coordinate `0` of a pair with `true` yields each pair starting with `true` twice.
+example : ∑ r : Fin 2 → Bool, indTrue (({0} : Finset (Fin 2)).piecewise (fun _ => true) r 1) =
+    Fintype.card Bool ^ #({0} : Finset (Fin 2)) •
+      ∑ y ∈ {y : Fin 2 → Bool | ∀ i ∈ ({0} : Finset (Fin 2)), y i = true}, indTrue (y 1) :=
+  sum_piecewise_eq_card_pow_nsmul_sum {0} (fun _ => true) fun y => indTrue (y 1)
+
+-- Tuples in `Bool⁴` that are `true` on `P` carry weight on the entries outside `P`.
+example (P : Finset (Fin 4)) (W : Finset (Fin 4 → Bool)) (hW : ∀ y ∈ W, ∀ i ∈ P, y i = true) :
+    ((#W : ℝ) - Fintype.card Bool ^ #Pᶜ * Real.exp (-(1 / 2 * #Pᶜ / 8))) * (1 / 2 * #Pᶜ) ≤
+      2 * ∑ y ∈ W, ∑ j ∈ Pᶜ, indTrue (y j) :=
+  sub_mul_le_two_mul_sum_sum_compl indTrue indTrue_mem (by norm_num) indTrue_mean P
+    (fun _ => true) W hW
+
 example (W : Finset (Fin 2 → Bool)) : ∑ b ∈ W, ∑ i, indTrue (b i) =
     ∑ x, (#((W ×ˢ (univ : Finset (Fin 2))).filter fun p => p.1 p.2 = x) : ℝ) * indTrue x :=
   sum_sum_comp_eq_sum_mul indTrue W
