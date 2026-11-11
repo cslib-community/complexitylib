@@ -46,8 +46,8 @@ squarefree integer and rational polynomials.
 
 ## References
 
-* [@Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified)
-* [@BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
+* [Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified)
+* [BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
   unverified; `Polynomial.mignotte_sep_sqNorm_rat` packages the cleared-denominator `ℓ²` form for
   this library)
 -/
@@ -145,13 +145,6 @@ theorem norm_lt_cauchyBound_of_forall_coeff_le {p : ℚ[X]} (hp : p ≠ 0) {M : 
   rw [hcb_eq, Rat.cast_add, Rat.cast_div, Rat.cast_abs, Rat.cast_one, ← hlead]
   gcongr
 
-private theorem isRoot_map_of_isRoot {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S)
-    {p : R[X]} {x : R} (hx : p.IsRoot x) : (p.map f).IsRoot (f x) := by
-  have hev : (p.map f).eval (f x) = f (p.eval x) := by
-    rw [Polynomial.eval_map, ← Polynomial.eval₂_id (x := x) (p := p), Polynomial.hom_eval₂,
-      RingHom.comp_id]
-  rw [IsRoot.def, hev, hx.eq_zero, map_zero]
-
 /-- Real-root specialization of `norm_lt_cauchyBound_of_forall_coeff_le`. -/
 theorem abs_lt_cauchyBound_of_forall_coeff_le {p : ℚ[X]} (hp : p ≠ 0) {M : ℚ} (hM0 : 0 ≤ M)
     (hM : ∀ i < p.natDegree, |p.coeff i| ≤ M) {r : ℝ}
@@ -162,7 +155,7 @@ theorem abs_lt_cauchyBound_of_forall_coeff_le {p : ℚ[X]} (hp : p ≠ 0) {M : �
       rw [Polynomial.map_map, Subsingleton.elim ((algebraMap ℝ ℂ).comp (algebraMap ℚ ℝ))
         (algebraMap ℚ ℂ)]
     rw [hmap]
-    exact isRoot_map_of_isRoot (algebraMap ℝ ℂ) hr
+    exact hr.map (algebraMap ℝ ℂ)
   simpa only [Complex.norm_real, Real.norm_eq_abs] using
     norm_lt_cauchyBound_of_forall_coeff_le hp hM0 hM hz
 
@@ -629,10 +622,10 @@ theorem mignotte_sep_sqNorm_real {p : ℤ[X]} (hd : 2 ≤ p.natDegree)
       (algebraMap ℤ ℂ)]
   have hαC : (p.map (algebraMap ℤ ℂ)).IsRoot (α : ℂ) := by
     rw [hmap]
-    exact isRoot_map_of_isRoot (algebraMap ℝ ℂ) hα
+    exact hα.map (algebraMap ℝ ℂ)
   have hβC : (p.map (algebraMap ℤ ℂ)).IsRoot (β : ℂ) := by
     rw [hmap]
-    exact isRoot_map_of_isRoot (algebraMap ℝ ℂ) hβ
+    exact hβ.map (algebraMap ℝ ℂ)
   have hneC : (α : ℂ) ≠ (β : ℂ) := fun h => hne (Complex.ofReal_injective h)
   have hbound := mignotte_sep_sqNorm_complex hd hsep hαC hβC hneC
   simpa only [← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs] using hbound

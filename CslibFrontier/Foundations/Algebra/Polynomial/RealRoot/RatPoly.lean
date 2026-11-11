@@ -53,9 +53,9 @@ over `ℝ`.
 
 ## References
 
-* [@BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
+* [BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
   unverified)
-* [@Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified)
+* [Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified)
 -/
 
 public section
@@ -228,37 +228,13 @@ theorem ofCoeffList_addList (as bs : List ℚ) :
       simp only [addList, ofCoeffList_cons, ih, C_add, mul_add]
       ring
 
-theorem ofCoeffList_negList (as : List ℚ) :
-    ofCoeffList (negList as) = -ofCoeffList as := by
-  induction as with
-  | nil => simp only [negList, List.map_nil, ofCoeffList_nil, neg_zero]
-  | cons a as ih =>
-    simp only [negList, List.map_cons, ofCoeffList_cons]
-    change C (-a) + X * ofCoeffList (negList as) = -(C a + X * ofCoeffList as)
-    rw [ih, C_neg, mul_neg, neg_add]
-
 theorem ofCoeffList_subList (as bs : List ℚ) :
     ofCoeffList (subList as bs) = ofCoeffList as - ofCoeffList bs := by
-  rw [subList, ofCoeffList_addList, ofCoeffList_negList, sub_eq_add_neg]
-
-theorem ofCoeffList_scaleList (c : ℚ) (as : List ℚ) :
-    ofCoeffList (scaleList c as) = C c * ofCoeffList as := by
-  induction as with
-  | nil => simp only [scaleList, List.map_nil, ofCoeffList_nil, mul_zero]
-  | cons a as ih =>
-    simp only [scaleList, List.map_cons, ofCoeffList_cons]
-    change C (c * a) + X * ofCoeffList (scaleList c as) = C c * (C a + X * ofCoeffList as)
-    rw [ih, C_mul]
-    ring
+  rw [subList, ofCoeffList_addList, negList, ofCoeffList_map_neg, sub_eq_add_neg]
 
 theorem ofCoeffList_shiftZero (k : ℕ) (bs : List ℚ) :
     ofCoeffList (shiftZero k bs) = X ^ k * ofCoeffList bs := by
-  induction k with
-  | zero => simp only [shiftZero, List.replicate_zero, List.nil_append, pow_zero, one_mul]
-  | succ k ih =>
-    rw [shiftZero, List.replicate_succ, List.cons_append, ofCoeffList_cons, C_0, zero_add]
-    change X * ofCoeffList (shiftZero k bs) = X ^ (k + 1) * ofCoeffList bs
-    rw [ih, pow_succ', mul_assoc]
+  rw [shiftZero, ofCoeffList_append, ofCoeffList_replicate_zero, zero_add, List.length_replicate]
 
 private theorem derivAux_length (k : ℕ) (as : List ℚ) :
     (derivAux k as).length = as.length := by
@@ -353,8 +329,9 @@ private theorem subList_step_length_lt {u' v : List ℚ} (_hu' : IsTrimmed u') (
     omega
   have hcoeff_zero : ∀ i, u'.length - 1 ≤ i → (ofCoeffList uNext).coeff i = 0 := by
     intro i hi
-    rw [ofCoeffList_trim, ofCoeffList_subList, coeff_sub, ofCoeffList_scaleList,
-      ofCoeffList_shiftZero, coeff_C_mul]
+    rw [ofCoeffList_trim, ofCoeffList_subList, coeff_sub]
+    dsimp only [subtrahend, scaleList]
+    rw [ofCoeffList_map_mul, ofCoeffList_shiftZero, coeff_C_mul]
     rcases eq_or_lt_of_le hi with hEq | hLt
     · subst hEq
       have hshift_le : shift ≤ u'.length - 1 := by
@@ -372,7 +349,8 @@ private theorem subList_step_length_lt {u' v : List ℚ} (_hu' : IsTrimmed u') (
       rw [coeff_ofCoeffList_eq_zero_of_le u' hi_ge]
       have hsub0 : (ofCoeffList subtrahend).coeff i = 0 :=
         coeff_ofCoeffList_eq_zero_of_le subtrahend (hsub_len ▸ hi_ge)
-      rw [ofCoeffList_scaleList, ofCoeffList_shiftZero, coeff_C_mul] at hsub0
+      dsimp only [subtrahend, scaleList] at hsub0
+      rw [ofCoeffList_map_mul, ofCoeffList_shiftZero, coeff_C_mul] at hsub0
       rw [hsub0, sub_self]
   change uNext.length < u'.length
   by_cases hun : uNext = []
@@ -426,7 +404,9 @@ private theorem divModAux_spec : ∀ (n : ℕ) (u v : List ℚ),
         rw [← ofCoeffList_trim u]
         have huNext_eq : ofCoeffList uNext =
             ofCoeffList (trim u) - C factor * (X ^ shift * ofCoeffList v) := by
-          rw [ofCoeffList_trim, ofCoeffList_subList, ofCoeffList_scaleList, ofCoeffList_shiftZero]
+          rw [ofCoeffList_trim, ofCoeffList_subList]
+          dsimp only [subtrahend, scaleList]
+          rw [ofCoeffList_map_mul, ofCoeffList_shiftZero]
         rw [huNext_eq]
         ring
       rw [hstep, heq, ofCoeffList_addList, ofCoeffList_shiftZero, ofCoeffList_cons,
@@ -458,7 +438,7 @@ theorem ofCoeffList_negModList {u v : List ℚ} (hv0 : ofCoeffList v ≠ 0) :
     exact htr.degree_lt_of_length_lt hv_trim hv_ne hrlen
   have hneg : -(ofCoeffList u) =
       ofCoeffList (divModList (negList u) v).1 * ofCoeffList v + ofCoeffList (negModList u v) := by
-    rw [← ofCoeffList_negList]
+    rw [← ofCoeffList_map_neg u]
     exact heq
   rw [hneg, Polynomial.add_mod, EuclideanDomain.mod_eq_zero.mpr (dvd_mul_left _ _), zero_add,
     (Polynomial.mod_eq_self_iff hv0).mpr hdeg_lt]
@@ -625,8 +605,7 @@ theorem sturmVariationsList_eq_sturmVariations (cs : List ℚ) (x : ℚ) :
     refine List.map_congr_left fun g _ => ?_
     have heval : eval ((algebraMap ℚ ℝ) x) ((ofCoeffList g).map (algebraMap ℚ ℝ)) =
         (algebraMap ℚ ℝ) (eval x (ofCoeffList g)) := by
-      rw [Polynomial.eval_map, ← Polynomial.eval₂_id (x := x) (p := ofCoeffList g),
-        Polynomial.hom_eval₂, RingHom.comp_id]
+      rw [Polynomial.eval_map, Polynomial.eval₂_hom]
     change eval ((algebraMap ℚ ℝ) x) ((ofCoeffList g).map (algebraMap ℚ ℝ)) = _
     rw [heval, eval_ofCoeffList]
     rfl

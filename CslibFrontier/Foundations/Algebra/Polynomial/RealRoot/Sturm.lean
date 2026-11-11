@@ -450,7 +450,7 @@ private theorem isLocallyConstant_sturmVariations_add_card {p : ℝ[X]} (hp : p.
     exact eventually_nhds_of_lt_of_gt rfl hlt hgt
 
 /-- **Sturm's theorem** on half-open intervals `(a, b]` for separable `p : ℝ[X]`
-([BasuPollackRoy2006], Theorem 2.50): the drop `sturmVariations p a - sturmVariations p b`
+([BasuPollackRoy2006], locator unverified): the drop `sturmVariations p a - sturmVariations p b`
 equals the number of distinct real roots of `p` in `(a, b]`, with no nonvanishing assumption
 on the endpoints. -/
 theorem sturmVariations_sub_eq_card_roots_Ioc {p : ℝ[X]} (hp : p.Separable) {a b : ℝ}

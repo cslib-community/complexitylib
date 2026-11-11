@@ -19,7 +19,14 @@ This module implements executable Sturm-count bisection over `ℚ[X]` using `Tim
 list operations (`isolateRootsM` and its pure return value `isolateRoots`), returning sorted
 rational isolating intervals `RootInterval`. It proves soundness, completeness, strict root
 ordering, exact bijection with the real roots of any squarefree rational polynomial, and an
-explicit arithmetic operation-count bound from Mignotte's separation theorem.
+explicit `TimeM ℕ` count bound from Mignotte's separation theorem.
+
+**Cost model convention.** `isolateRootsM` runs preprocessing (`trim cs`, `sturmSeqList cs`
+polynomial divisions, `cauchyBoundNat cs`, and `mignotteBisectionDepth cs` including `lcmDens`,
+`clearDenomsList`, `sqNormList`, and `Nat.clog`) outside `TimeM` (`0` ticks), and inside bisection
+and left-root refinement charges only `sturmVariationsM` (`sturmSeqOpCost`) and `evalListM`
+(`t.length`); rational arithmetic (`(u + v) / 2`), subtraction (`vu - vv`), and list
+concatenation (`left ++ right`) are uncharged (`0` ticks).
 
 ## Main definitions
 
@@ -31,8 +38,8 @@ explicit arithmetic operation-count bound from Mignotte's separation theorem.
   `Cslib.RealRoot.isolateRoots`: computable Sturm-bisection real-root isolator.
 * `Cslib.RealRoot.isolatedRoot`: subtype map sending each interval index to the unique real root
   inside that interval.
-* `Cslib.RealRoot.isolatePolyRoots`, `Cslib.RealRoot.isolatePolyRootsM`: wrappers on arbitrary
-  `p : Polynomial ℚ` via `Polynomial.coeffsBelow`.
+* `Cslib.RealRoot.isolatePolyRoots`, `Cslib.RealRoot.isolatePolyRootsM`,
+  `Cslib.RealRoot.polyIsolatedRoot`: `Polynomial ℚ` wrappers via `Polynomial.coeffsBelow`.
 
 ## Main results
 
@@ -41,16 +48,17 @@ explicit arithmetic operation-count bound from Mignotte's separation theorem.
   `Cslib.RealRoot.isolatedRoot_strictMono`, `Cslib.RealRoot.isolateRoots_bijective`:
   correctness, ordering, completeness, and strictly monotone bijection onto real roots of any
   separable (squarefree) polynomial.
-* `Cslib.RealRoot.isolateRootsM_time_le`: explicit operation-count upper bound in terms of
-  `natDegree` and `mignotteBisectionDepth`.
-* `Cslib.RealRoot.isolatePolyRoots_bijective` and `Cslib.RealRoot.isolatePolyRootsM_time_le`:
+* `Cslib.RealRoot.isolateRootsM_time_le`: upper bound on the `TimeM ℕ` bisection/evaluation ticks
+  in terms of `natDegree` and `mignotteBisectionDepth`.
+* `Cslib.RealRoot.polyIsolatedRoot_mem`, `Cslib.RealRoot.polyIsolatedRoot_strictMono`,
+  `Cslib.RealRoot.isolatePolyRoots_bijective`, and `Cslib.RealRoot.isolatePolyRootsM_time_le`:
   squarefree `Polynomial ℚ` versions.
 
 ## References
 
-* [@BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
+* [BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
   unverified)
-* [@Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified;
+* [Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified;
   `isolateRootsM_time_le` and left-root refinement packaging are specific to this module)
 -/
 
@@ -195,8 +203,10 @@ isolating interval `[a, b] ⊆ [u, v]`, strictly separating `u` when `t` vanishe
         let right ← isolateIocM t seq depthBound fuel' m v vm vv
         pure (left ++ right)
 
-/-- Execute Sturm-count real-root isolation on `ofCoeffList cs`, tracking operation count in
-`TimeM ℕ`. -/
+/-- Execute Sturm-count real-root isolation on `ofCoeffList cs`. Preprocessing (`trim`,
+`sturmSeqList`, `cauchyBoundNat`, `mignotteBisectionDepth`) and scalar/list control work run outside
+`TimeM` (`0` ticks); bisection and left-root refinement charge `sturmVariationsM` and `evalListM`
+in `TimeM ℕ`. -/
 @[expose] def isolateRootsM (cs : List ℚ) : TimeM ℕ (List RootInterval) :=
   let t := trim cs
   if t.isEmpty then
@@ -349,8 +359,7 @@ private theorem eval_rat_eq_zero_iff (cs : List ℚ) (x : ℚ) :
     rw [← ofCoeffList_trim cs]
     have hmap : (algebraMap ℚ ℝ) (eval x (ofCoeffList (trim cs))) =
         ((ofCoeffList (trim cs)).map (algebraMap ℚ ℝ)).eval ((algebraMap ℚ ℝ) x) := by
-      rw [Polynomial.eval_map, ← Polynomial.eval₂_id (x := x) (p := ofCoeffList (trim cs)),
-        Polynomial.hom_eval₂, RingHom.comp_id]
+      rw [Polynomial.eval_map, Polynomial.eval₂_hom]
     change ((ofCoeffList (trim cs)).map (algebraMap ℚ ℝ)).eval ((algebraMap ℚ ℝ) x) = _
     rw [← hmap, eval_ofCoeffList]
     rfl
@@ -997,8 +1006,8 @@ theorem isolateRoots_bijective {cs : List ℚ} (hsep : (ofCoeffList cs).Separabl
     have hri := isolatedRoot_mem hsep i
     exact huniq.unique ⟨hri.1, hri.2, (isolatedRoot hsep i).2⟩ ⟨hi_mem.1, hi_mem.2, hr⟩
 
-/-- Operation-count upper bound for `isolateRootsM cs` in terms of `natDegree` and
-`mignotteBisectionDepth cs`. -/
+/-- `TimeM ℕ` bisection/evaluation tick upper bound for `isolateRootsM cs` in terms of `natDegree`
+and `mignotteBisectionDepth cs` (preprocessing and scalar/list control steps cost `0` ticks). -/
 theorem isolateRootsM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
     let d := (ofCoeffList cs).natDegree
     let k := mignotteBisectionDepth cs
@@ -1102,11 +1111,50 @@ theorem isolatePolyRoots_pairwise {p : ℚ[X]} (hsq : Squarefree p) :
     Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree)
   exact isolateRoots_pairwise (PerfectField.separable_iff_squarefree.mpr (heq.symm ▸ hsq))
 
+private theorem polySeparable {p : ℚ[X]} (hsq : Squarefree p) :
+    (ofCoeffList (p.coeffsBelow (p.natDegree + 1))).Separable :=
+  PerfectField.separable_iff_squarefree.mpr
+    ((Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree)).symm ▸ hsq)
+
+/-- The unique real root of `p.map (algebraMap ℚ ℝ)` inside the `i`-th isolating interval of
+`isolatePolyRoots p`. -/
+noncomputable def polyIsolatedRoot {p : ℚ[X]} (hsq : Squarefree p)
+    (i : Fin (isolatePolyRoots p).length) :
+    {r : ℝ // (p.map (algebraMap ℚ ℝ)).IsRoot r} :=
+  let r := (isolatedRoot (polySeparable hsq) i).1
+  ⟨r, (congrArg (fun q : ℚ[X] => (q.map (algebraMap ℚ ℝ)).IsRoot r)
+      (Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree))).mp
+      (isolatedRoot (polySeparable hsq) i).2⟩
+
+theorem polyIsolatedRoot_mem {p : ℚ[X]} (hsq : Squarefree p)
+    (i : Fin (isolatePolyRoots p).length) :
+    let I := (isolatePolyRoots p)[i]
+    let r := (polyIsolatedRoot hsq i).1
+    (I.lower : ℝ) ≤ r ∧ r ≤ (I.upper : ℝ) :=
+  isolatedRoot_mem (polySeparable hsq) i
+
+/-- The isolated real roots of `p.map (algebraMap ℚ ℝ)` are strictly increasing across
+`Fin (isolatePolyRoots p).length`. -/
+theorem polyIsolatedRoot_strictMono {p : ℚ[X]} (hsq : Squarefree p) :
+    StrictMono (fun i : Fin (isolatePolyRoots p).length => (polyIsolatedRoot hsq i).1) :=
+  isolatedRoot_strictMono (polySeparable hsq)
+
+/-- For any squarefree `p : ℚ[X]`, `polyIsolatedRoot hsq` is a bijection from
+`Fin (isolatePolyRoots p).length` onto the real roots of `p.map (algebraMap ℚ ℝ)`. -/
 theorem isolatePolyRoots_bijective {p : ℚ[X]} (hsq : Squarefree p) :
-    Function.Bijective (isolatedRoot
-      (PerfectField.separable_iff_squarefree.mpr
-        ((Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree)).symm ▸ hsq))) :=
-  isolateRoots_bijective _
+    Function.Bijective (polyIsolatedRoot hsq) := by
+  have heq : ofCoeffList (p.coeffsBelow (p.natDegree + 1)) = p :=
+    Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree)
+  have hbij := isolateRoots_bijective (polySeparable hsq)
+  refine ⟨fun i j hij => ?_, fun ⟨r, hr⟩ => ?_⟩
+  · have hij' : (polyIsolatedRoot hsq i).1 = (polyIsolatedRoot hsq j).1 :=
+      congrArg Subtype.val hij
+    exact hbij.1 (Subtype.ext hij')
+  · have hr' : ((ofCoeffList (p.coeffsBelow (p.natDegree + 1))).map (algebraMap ℚ ℝ)).IsRoot r :=
+      heq.symm ▸ hr
+    obtain ⟨i, hi⟩ := hbij.2 ⟨r, hr'⟩
+    have hi' : (polyIsolatedRoot hsq i).1 = r := congrArg Subtype.val hi
+    exact ⟨i, Subtype.ext hi'⟩
 
 theorem isolatePolyRootsM_time_le {p : ℚ[X]} (hsq : Squarefree p) :
     let cs := p.coeffsBelow (p.natDegree + 1)

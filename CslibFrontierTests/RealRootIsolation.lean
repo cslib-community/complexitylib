@@ -12,10 +12,10 @@ import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
 /-!
 # Real-root isolation and Mignotte separation tests
 
-Kernel-checked evaluations (`decide +kernel`, without `native_decide`) and nonvacuous theorem
-instantiations for the computable Sturm real-root isolator (`isolateRoots`, `isolateRootsM`,
-`isolatePolyRoots`), Hadamard's inequality (`Matrix.hadamard_det_sq_le`), and Mignotte-type
-root-separation bounds (`Polynomial.mignotte_sep_sqNorm_real`,
+Kernel-checked evaluations (`decide +kernel`, without `native_decide`) and nonvacuous
+theorem instantiations for the computable Sturm real-root isolator (`isolateRoots`,
+`isolateRootsM`, `isolatePolyRoots`), Hadamard's inequality (`Matrix.hadamard_det_sq_le`), and
+Mignotte-type root-separation bounds (`Polynomial.mignotte_sep_sqNorm_real`,
 `Polynomial.mignotte_sep_sqNorm_rat`).
 -/
 
@@ -273,5 +273,100 @@ example :
       Matrix.cons_val_one, norm_one, one_pow]
     norm_num
   exact hhad.trans_eq hrhs
+
+-- Instantiation of `isolateRoots_bijective` and `isolateRoots_bijective_of_squarefree` on
+-- `x^2 - 2`.
+example :
+    ∃! i : Fin (isolateRoots [(-2 : ℚ), 0, 1]).length,
+      (isolatedRoot (PerfectField.separable_iff_squarefree.mpr squarefree_sqSubTwo) i).1 = √2 := by
+  have hbij₁ := isolateRoots_bijective
+    (PerfectField.separable_iff_squarefree.mpr squarefree_sqSubTwo)
+  have hbij₂ := isolateRoots_bijective_of_squarefree squarefree_sqSubTwo
+  have hmap : (ofCoeffList [(-2 : ℚ), 0, 1]).map (algebraMap ℚ ℝ) = X ^ 2 - 2 := by
+    rw [ofCoeffList_sqSubTwo, Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X,
+      Polynomial.map_ofNat]
+  have hroot : ((ofCoeffList [(-2 : ℚ), 0, 1]).map (algebraMap ℚ ℝ)).IsRoot (√2) := by
+    rw [IsRoot.def, hmap, eval_sub, eval_pow, eval_X, eval_ofNat, Real.sq_sqrt (by norm_num),
+      sub_self]
+  obtain ⟨i, hi, huniq⟩ := hbij₂.existsUnique ⟨√2, hroot⟩
+  refine ⟨i, congrArg Subtype.val hi, fun j hj => hbij₁.1 (congrArg (isolatedRoot _) ?_)⟩
+  exact huniq j (Subtype.ext hj)
+
+-- Concrete instantiations of `polyIsolatedRoot`, `polyIsolatedRoot_mem`,
+-- `polyIsolatedRoot_strictMono`, `isolatePolyRoots_bijective`, and `isolatePolyRootsM_time_le` on
+-- `x^3 - 7x + 7`.
+private theorem wilkCubicQ_natDegree : wilkCubicQ.natDegree = 3 := by
+  have hmap : wilkCubicQ = X ^ 3 - 7 * X + 7 := by
+    simp only [wilkCubicQ, wilkCubicZ, Polynomial.map_add, Polynomial.map_sub,
+      Polynomial.map_pow, Polynomial.map_X, Polynomial.map_mul, Polynomial.map_ofNat]
+  rw [hmap]
+  compute_degree!
+
+private theorem wilkCubicQ_coeffsBelow :
+    wilkCubicQ.coeffsBelow (wilkCubicQ.natDegree + 1) = [7, -7, 0, 1] := by
+  have hmap : wilkCubicQ = X ^ 3 - 7 * X + 7 := by
+    simp only [wilkCubicQ, wilkCubicZ, Polynomial.map_add, Polynomial.map_sub,
+      Polynomial.map_pow, Polynomial.map_X, Polynomial.map_mul, Polynomial.map_ofNat]
+  rw [wilkCubicQ_natDegree, hmap]
+  simp only [coeffsBelow, List.range_succ, List.range_zero, List.map_nil, List.map_cons,
+    List.nil_append, List.cons_append]
+  simp only [coeff_add, coeff_sub, coeff_X_pow, coeff_ofNat_mul, coeff_X, coeff_ofNat_zero]
+  norm_num
+
+example :
+    let hsq : Squarefree wilkCubicQ :=
+      PerfectField.separable_iff_squarefree.mp separable_wilkCubicQ
+    have hlen : (isolatePolyRoots wilkCubicQ).length = 3 := by
+      rw [isolatePolyRoots, wilkCubicQ_coeffsBelow]
+      decide +kernel
+    let r₀ := (polyIsolatedRoot hsq ⟨0, by omega⟩).1
+    let r₁ := (polyIsolatedRoot hsq ⟨1, by omega⟩).1
+    let r₂ := (polyIsolatedRoot hsq ⟨2, by omega⟩).1
+    (-9 : ℝ) ≤ r₀ ∧ r₀ ≤ (0 : ℝ) ∧
+      ((9 / 8 : ℚ) : ℝ) ≤ r₁ ∧ r₁ ≤ ((27 / 16 : ℚ) : ℝ) ∧
+      ((27 / 16 : ℚ) : ℝ) ≤ r₂ ∧ r₂ ≤ ((9 / 4 : ℚ) : ℝ) ∧
+      r₀ < r₁ ∧ r₁ < r₂ ∧
+      Function.Bijective (polyIsolatedRoot hsq) ∧
+      (isolatePolyRootsM wilkCubicQ).time ≤ 1352 := by
+  intro hsq hlen r₀ r₁ r₂
+  have hmem0 := polyIsolatedRoot_mem hsq ⟨0, by omega⟩
+  have hmem1 := polyIsolatedRoot_mem hsq ⟨1, by omega⟩
+  have hmem2 := polyIsolatedRoot_mem hsq ⟨2, by omega⟩
+  have hlist : isolatePolyRoots wilkCubicQ =
+      [{ lower := -9, upper := 0 },
+       { lower := 9 / 8, upper := 27 / 16 },
+       { lower := 27 / 16, upper := 9 / 4 }] := by
+    rw [isolatePolyRoots, wilkCubicQ_coeffsBelow]
+    decide +kernel
+  simp only [Fin.getElem_fin, hlist, List.getElem_cons_zero, List.getElem_cons_succ]
+    at hmem0 hmem1 hmem2
+  have h01 : r₀ < r₁ :=
+    polyIsolatedRoot_strictMono hsq (by decide : (⟨0, by omega⟩ : Fin _) < ⟨1, by omega⟩)
+  have h12 : r₁ < r₂ :=
+    polyIsolatedRoot_strictMono hsq (by decide : (⟨1, by omega⟩ : Fin _) < ⟨2, by omega⟩)
+  have hbij : Function.Bijective (polyIsolatedRoot hsq) := isolatePolyRoots_bijective hsq
+  have htime := isolatePolyRootsM_time_le hsq
+  have hcb : wilkCubicQ.coeffsBelow (3 + 1) = [7, -7, 0, 1] := by
+    rw [← wilkCubicQ_natDegree]
+    exact wilkCubicQ_coeffsBelow
+  have hdepth : mignotteBisectionDepth [7, -7, 0, 1] = 14 := by decide +kernel
+  rw [wilkCubicQ_natDegree] at htime
+  dsimp only at htime
+  rw [hcb, hdepth] at htime
+  exact ⟨by simpa only [Rat.cast_neg, Rat.cast_ofNat] using hmem0.1,
+    by simpa only [Rat.cast_zero] using hmem0.2,
+    hmem1.1, hmem1.2, hmem2.1, hmem2.2, h01, h12, hbij, htime.trans (by decide)⟩
+
+/--
+info: 'Cslib.RealRoot.isolateRoots' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.RealRoot.isolateRoots
+
+/--
+info: 'Cslib.RealRoot.isolateRootsM' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.RealRoot.isolateRootsM
 
 end CslibFrontierTests.RealRootIsolation
