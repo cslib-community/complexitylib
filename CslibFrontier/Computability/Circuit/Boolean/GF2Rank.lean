@@ -54,8 +54,8 @@ The bounds count gates only. The construction chains one stage per column, so it
 ## References
 
 Computing a rank over `ZMod 2` by a polynomial-size circuit is the constructivity step of the
-rank property in [Razborov and Rudich, §3.2][RazborovRudich1997], which states it without a
-circuit or a gate count.
+rank property in [Razborov and Rudich, §3.2][RazborovRudich1997], who note that rank is in NC²
+without giving an explicit circuit or a gate count.
 -/
 
 public section
