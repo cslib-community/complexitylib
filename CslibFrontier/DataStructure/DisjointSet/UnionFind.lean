@@ -759,8 +759,341 @@ private theorem step_union_uf_eq {n : ℕ} (s : State n) (x y : Fin n) :
   fun s o a s' steps => step s o = (s', a, steps)
 
 /-- Representation relation coupling an abstract `Partition n` with a concrete `State n`. -/
+@[expose] def RankCount (uf : Batteries.UnionFind) : Prop :=
+  ∀ ⦃r a : ℕ⦄, r < uf.size → uf.parent r = r →
+    2 ^ a * ((equivClass uf r).filter (fun x => a ≤ uf.rank x)).card ≤ 2 * (equivClass uf r).card
+
+namespace RankCount
+
+private theorem unionFind_ext {u v : Batteries.UnionFind} (h : u.arr = v.arr) : u = v := by
+  cases u; cases v; cases h; rfl
+
+theorem init (n : ℕ) : RankCount (UnionFind.ofSize n) := by
+  intro r a _ _
+  rcases eq_or_ne a 0 with rfl | ha
+  · simp
+    omega
+  · simp [ha]
+
+theorem find {uf : Batteries.UnionFind} (h : RankCount uf) (x : Fin uf.size) :
+    RankCount (uf.find x).1 := by
+  intro r a hr hp'
+  rw [Batteries.UnionFind.find_size] at hr
+  have hroot_r : uf.rootD r = r := by
+    rw [← Batteries.UnionFind.find_root_1 uf x r]
+    exact Batteries.UnionFind.rootD_eq_self.mpr hp'
+  have hp : uf.parent r = r := Batteries.UnionFind.rootD_eq_self.mp hroot_r
+  have heq : equivClass (uf.find x).1 r = equivClass uf r := by
+    ext i
+    simp [Batteries.UnionFind.find_size, Batteries.UnionFind.find_root_1]
+  have hfilter : ((equivClass (uf.find x).1 r).filter (fun z => a ≤ (uf.find x).1.rank z)) =
+      (equivClass uf r).filter (fun z => a ≤ uf.rank z) := by
+    rw [heq]
+    refine Finset.filter_congr fun z _ => ?_
+    rw [find_rank]
+  rw [hfilter, heq]
+  exact h hr hp
+
+theorem compressWithSteps (uf : Batteries.UnionFind) (x : Fin uf.size) (h : RankCount uf) :
+    RankCount (UnionFind.compressWithSteps uf x).1 := by
+  rw [compressWithSteps_fst]
+  exact h.find x
+
+private theorem rank_link (uf : Batteries.UnionFind) (x y : Fin uf.size)
+    (hy : uf.parent y.1 = y.1) (i : ℕ) :
+    (uf.link x y hy).rank i =
+      if x.1 ≠ y.1 ∧ uf.rank x.1 = uf.rank y.1 ∧ y.1 = i then
+        uf.rank y.1 + 1
+      else
+        uf.rank i := by
+  simp only [Batteries.UnionFind.rank, Batteries.UnionFind.arr_link, Batteries.UnionFind.linkAux]
+  by_cases hxy : x.1 = y.1
+  · simp [hxy]
+  · simp only [hxy, ↓reduceIte, ne_eq, not_false_eq_true, true_and]
+    have hrx : Batteries.UnionFind.rankD uf.arr x.1 = uf.arr[x.1].rank :=
+      Batteries.UnionFind.rankD_eq x.2
+    have hry : Batteries.UnionFind.rankD uf.arr y.1 = uf.arr[y.1].rank :=
+      Batteries.UnionFind.rankD_eq y.2
+    rw [hrx, hry]
+    by_cases hlt : uf.arr[y.1].rank < uf.arr[x.1].rank
+    · have hne_rk : uf.arr[x.1].rank ≠ uf.arr[y.1].rank := Nat.ne_of_gt hlt
+      simp only [hlt, ↓reduceIte, hne_rk, false_and, Batteries.UnionFind.rankD_set]
+      by_cases hyi : y.1 = i
+      · subst hyi
+        simp [hry]
+      · simp [hyi]
+    · simp only [hlt, ↓reduceIte]
+      by_cases heq_rk : uf.arr[x.1].rank = uf.arr[y.1].rank
+      · simp only [heq_rk, ↓reduceIte, true_and, Batteries.UnionFind.rankD_set]
+        by_cases hyi : y.1 = i
+        · simp [hyi]
+        · simp only [hyi, ↓reduceIte]
+          by_cases hxi : x.1 = i
+          · subst hxi
+            simp [heq_rk, hrx]
+          · simp [hxi]
+      · simp only [heq_rk, ↓reduceIte, false_and, Batteries.UnionFind.rankD_set]
+        by_cases hxi : x.1 = i
+        · subst hxi
+          simp [hrx]
+        · simp [hxi]
+
+theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank uf) {x y : Fin uf.size}
+    (hx : uf.parent x.1 = x.1) (hy : uf.parent y.1 = y.1) :
+    RankCount (uf.link x y hy) := by
+  intro r a hr hp'
+  have hsize : (uf.link x y hy).size = uf.size := by simp [Batteries.UnionFind.size]
+  rw [hsize] at hr
+  by_cases hxy : x.1 = y.1
+  · have heq : uf.link x y hy = uf := by
+      apply unionFind_ext
+      simp [Batteries.UnionFind.linkAux, hxy]
+    rw [heq] at hp' ⊢
+    exact h hr hp'
+  · obtain ⟨r₀, hr₀, hroot⟩ := Batteries.UnionFind.root_link hx hy
+    have hx_rootD : uf.rootD x.1 = x.1 := Batteries.UnionFind.rootD_eq_self.mpr hx
+    have hr₀_eq : (uf.link x y hy).rootD x.1 = r₀.1 := by
+      simpa [hx_rootD] using hroot x.1
+    have hr₀_parent : (uf.link x y hy).parent r₀.1 = r₀.1 := by
+      rw [← hr₀_eq]
+      exact Batteries.UnionFind.parent_rootD _ _
+    by_cases hlt : uf.rank y.1 < uf.rank x.1
+    · have hparent : ∀ i, (uf.link x y hy).parent i = if y.1 = i then x.1 else uf.parent i := by
+        intro i
+        rw [Batteries.UnionFind.parent_link hy]
+        simp [hxy, hlt]
+      have hy_not_root : (uf.link x y hy).parent y.1 ≠ y.1 := by
+        rw [hparent y.1, ite_eq_left rfl]
+        exact hxy
+      have hr₀_x : r₀ = x := by
+        rcases hr₀ with hrx | hry
+        · exact hrx
+        · rw [hry] at hr₀_parent
+          exact absurd hr₀_parent hy_not_root
+      rw [hr₀_x] at hroot
+      have hyr : y.1 ≠ r := fun heq => by
+        rw [← heq] at hp'
+        exact hy_not_root hp'
+      have hp : uf.parent r = r := by
+        have hp₁ := hp'
+        rw [hparent r, ite_eq_right hyr] at hp₁
+        exact hp₁
+      have hrank : ∀ i, (uf.link x y hy).rank i = uf.rank i := by
+        intro i
+        rw [rank_link]
+        split
+        · next hcond =>
+          obtain ⟨_, heq_rk, _⟩ := hcond
+          exact absurd heq_rk (ne_of_gt hlt)
+        · rfl
+      have heq_class : equivClass (uf.link x y hy) r =
+          if r = x.1 then equivClass uf x.1 ∪ equivClass uf y.1 else equivClass uf r := by
+        by_cases hxr : r = x.1
+        · rw [ite_eq_left hxr]
+          ext i
+          simp only [mem_equivClass, hsize, Finset.mem_union, hxr, hroot]
+          by_cases hxyi : uf.rootD i = x.1 ∨ uf.rootD i = y.1 <;>
+            · simp [hxyi]
+              tauto
+        · rw [ite_eq_right hxr]
+          ext i
+          simp only [mem_equivClass, hsize, hroot]
+          by_cases hxyi : uf.rootD i = x.1 ∨ uf.rootD i = y.1
+          · simp only [hxyi, ↓reduceIte]
+            rcases hxyi with hxi | hyi
+            · simp [hxi, Ne.symm hxr]
+            · simp [hyi, Ne.symm hxr, hyr]
+          · simp [hxyi]
+      by_cases hxr : r = x.1
+      · rw [hxr] at hp heq_class ⊢
+        rw [heq_class, ite_eq_left rfl]
+        have h_filter_eq :
+            ((equivClass uf x.1 ∪ equivClass uf y.1).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
+              ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z)) ∪
+              ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) := by
+          ext i
+          simp only [Finset.mem_filter, Finset.mem_union]
+          rw [hrank i]
+          tauto
+        rw [h_filter_eq]
+        have h_disj : Disjoint (equivClass uf x.1) (equivClass uf y.1) :=
+          disjoint_equivClass_of_ne uf hxy
+        have h_disj_filter :
+            Disjoint ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z))
+              ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) :=
+          Finset.disjoint_filter_filter h_disj
+        rw [Finset.card_union_of_disjoint h_disj_filter, Finset.card_union_of_disjoint h_disj,
+          Nat.mul_add, Nat.mul_add]
+        exact Nat.add_le_add (h x.2 hp) (h y.2 hy)
+      · rw [heq_class, ite_eq_right hxr]
+        have h_filter_eq :
+            ((equivClass uf r).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
+              ((equivClass uf r).filter (fun z => a ≤ uf.rank z)) := by
+          ext i
+          simp only [Finset.mem_filter]
+          rw [hrank i]
+        rw [h_filter_eq]
+        exact h hr hp
+    · have hparent : ∀ i, (uf.link x y hy).parent i = if x.1 = i then y.1 else uf.parent i := by
+        intro i
+        rw [Batteries.UnionFind.parent_link hy]
+        simp [hxy, hlt]
+      have hx_not_root : (uf.link x y hy).parent x.1 ≠ x.1 := by
+        rw [hparent x.1, ite_eq_left rfl]
+        exact Ne.symm hxy
+      have hr₀_y : r₀ = y := by
+        rcases hr₀ with hrx | hry
+        · rw [hrx] at hr₀_parent
+          exact absurd hr₀_parent hx_not_root
+        · exact hry
+      rw [hr₀_y] at hroot
+      have hxr : x.1 ≠ r := fun heq => by
+        rw [← heq] at hp'
+        exact hx_not_root hp'
+      have hp : uf.parent r = r := by
+        have hp₁ := hp'
+        rw [hparent r, ite_eq_right hxr] at hp₁
+        exact hp₁
+      have heq_class : equivClass (uf.link x y hy) r =
+          if r = y.1 then equivClass uf x.1 ∪ equivClass uf y.1 else equivClass uf r := by
+        by_cases hyr : r = y.1
+        · rw [ite_eq_left hyr]
+          ext i
+          simp only [mem_equivClass, hsize, Finset.mem_union, hyr, hroot]
+          by_cases hxyi : uf.rootD i = x.1 ∨ uf.rootD i = y.1 <;>
+            · simp [hxyi]
+              tauto
+        · rw [ite_eq_right hyr]
+          ext i
+          simp only [mem_equivClass, hsize, hroot]
+          by_cases hxyi : uf.rootD i = x.1 ∨ uf.rootD i = y.1
+          · simp only [hxyi, ↓reduceIte]
+            rcases hxyi with hxi | hyi
+            · simp [hxi, Ne.symm hyr, hxr]
+            · simp [hyi, Ne.symm hyr]
+          · simp [hxyi]
+      by_cases hyr : r = y.1
+      · rw [hyr] at hp heq_class ⊢
+        rw [heq_class, ite_eq_left rfl]
+        have h_disj : Disjoint (equivClass uf x.1) (equivClass uf y.1) :=
+          disjoint_equivClass_of_ne uf hxy
+        have h_rank_le_y : ∀ z ∈ equivClass uf x.1 ∪ equivClass uf y.1, uf.rank z ≤ uf.rank y.1 := by
+          intro z hz
+          have hle_root : uf.rank z ≤ uf.rank (uf.rootD z) := Batteries.UnionFind.le_rank_root
+          rcases Finset.mem_union.mp hz with hzx | hzy
+          · rw [(mem_equivClass.mp hzx).2] at hle_root
+            omega
+          · rw [(mem_equivClass.mp hzy).2] at hle_root
+            exact hle_root
+        by_cases ha : a ≤ uf.rank y.1
+        · have h_filter_eq :
+              ((equivClass uf x.1 ∪ equivClass uf y.1).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
+                ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z)) ∪
+                ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) := by
+            ext i
+            simp only [Finset.mem_filter, Finset.mem_union]
+            have hiff : a ≤ (uf.link x y hy).rank i ↔ a ≤ uf.rank i := by
+              rw [rank_link]
+              split
+              · next hcond =>
+                obtain ⟨_, _, hyi⟩ := hcond
+                subst hyi
+                omega
+              · rfl
+            rw [hiff]
+            tauto
+          rw [h_filter_eq]
+          have h_disj_filter :
+              Disjoint ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z))
+                ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) :=
+            Finset.disjoint_filter_filter h_disj
+          rw [Finset.card_union_of_disjoint h_disj_filter, Finset.card_union_of_disjoint h_disj,
+            Nat.mul_add, Nat.mul_add]
+          exact Nat.add_le_add (h x.2 hx) (h y.2 hy)
+        · by_cases ha1 : a = uf.rank y.1 + 1
+          · subst ha1
+            have h_sub :
+                ((equivClass uf x.1 ∪ equivClass uf y.1).filter
+                  (fun z => uf.rank y.1 + 1 ≤ (uf.link x y hy).rank z)) ⊆ {y.1} := by
+              intro z hz
+              obtain ⟨hz_mem, hz_rk⟩ := Finset.mem_filter.mp hz
+              have hz_le := h_rank_le_y z hz_mem
+              rw [rank_link] at hz_rk
+              split at hz_rk
+              · next hcond =>
+                exact Finset.mem_singleton.mpr hcond.2.2.symm
+              · omega
+            have h_card_le :
+                ((equivClass uf x.1 ∪ equivClass uf y.1).filter
+                  (fun z => uf.rank y.1 + 1 ≤ (uf.link x y hy).rank z)).card ≤ 1 :=
+              (Finset.card_le_card h_sub).trans (by simp)
+            have hy_valid : 2 ^ uf.rank y.1 ≤ (equivClass uf y.1).card := h_valid y.2 hy
+            have hy_sub : (equivClass uf y.1).card ≤ (equivClass uf x.1 ∪ equivClass uf y.1).card :=
+              Finset.card_le_card Finset.subset_union_right
+            calc 2 ^ (uf.rank y.1 + 1) *
+                  ((equivClass uf x.1 ∪ equivClass uf y.1).filter
+                    (fun z => uf.rank y.1 + 1 ≤ (uf.link x y hy).rank z)).card
+                ≤ 2 ^ (uf.rank y.1 + 1) * 1 := Nat.mul_le_mul_left _ h_card_le
+              _ = 2 * 2 ^ uf.rank y.1 := by rw [pow_succ]; omega
+              _ ≤ 2 * (equivClass uf y.1).card := Nat.mul_le_mul_left 2 hy_valid
+              _ ≤ 2 * (equivClass uf x.1 ∪ equivClass uf y.1).card := Nat.mul_le_mul_left 2 hy_sub
+          · have h_empty :
+                ((equivClass uf x.1 ∪ equivClass uf y.1).filter
+                  (fun z => a ≤ (uf.link x y hy).rank z)) = ∅ := by
+              rw [Finset.filter_eq_empty_iff]
+              intro z hz
+              have hz_le := h_rank_le_y z hz
+              rw [rank_link]
+              split <;> omega
+            rw [h_empty, Finset.card_empty, Nat.mul_zero]
+            exact Nat.zero_le _
+      · rw [heq_class, ite_eq_right hyr]
+        have h_filter_eq :
+            ((equivClass uf r).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
+              ((equivClass uf r).filter (fun z => a ≤ uf.rank z)) := by
+          refine Finset.filter_congr fun i hi => ?_
+          have hyi : y.1 ≠ i := by
+            intro heq
+            subst heq
+            have hi_root := (mem_equivClass.mp hi).2
+            rw [Batteries.UnionFind.rootD_eq_self.mpr hy] at hi_root
+            exact hyr hi_root.symm
+          rw [rank_link, ite_eq_right]
+          rintro ⟨_, _, hyi'⟩
+          exact hyi hyi'
+        rw [h_filter_eq]
+        exact h hr hp
+
+theorem union {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank uf) (x y : Fin uf.size) :
+    RankCount (uf.union x y) := by
+  unfold Batteries.UnionFind.union
+  dsimp only
+  have h₁ : RankCount (uf.find x).1 := h.find x
+  have hrx_eq : ((uf.find x).2.1 : ℕ) = uf.rootD x.1 := Batteries.UnionFind.find_root_2 uf x
+  generalize hfx : uf.find x = fx at h₁ hrx_eq ⊢
+  rcases fx with ⟨uf₁, rx, ex⟩
+  dsimp only at h₁ hrx_eq ⊢
+  have hy : y.1 < uf₁.size := by rw [ex]; exact y.2
+  have h₂ : RankCount (uf₁.find ⟨y.1, hy⟩).1 := h₁.find ⟨y.1, hy⟩
+  have h_valid₁ : ValidRank uf₁ := by
+    have h_v_find := h_valid.find x
+    rw [hfx] at h_v_find
+    exact h_v_find
+  have hrx_root₁ : uf₁.rootD rx.1 = rx.1 := by
+    have hfind1 := Batteries.UnionFind.find_root_1 uf x rx.1
+    rw [hfx] at hfind1
+    dsimp only at hfind1
+    rw [hfind1, hrx_eq, Batteries.UnionFind.rootD_rootD]
+  have hfind2 := Batteries.UnionFind.find_root_1 uf₁ ⟨y.1, hy⟩ rx.1
+  refine h₂.link ?_ ?_ _
+  · exact h_valid₁.find ⟨y.1, hy⟩
+  · exact Batteries.UnionFind.rootD_eq_self.mp (hfind2.trans hrx_root₁)
+
+
+end RankCount
+
 @[expose] def Rep {n : ℕ} (p : Partition n) (s : State n) : Prop :=
-  ValidRank s.uf ∧
+  ValidRank s.uf ∧ RankCount s.uf ∧
     (∀ x y : Fin n, p.rel x y = true ↔ s.uf.Equiv x.1 y.1) ∧
     s.numComp = p.numComponents
 
@@ -768,17 +1101,21 @@ private theorem step_union_uf_eq {n : ℕ} (s : State n) (x y : Fin n) :
 theorem Rep.validRank {n : ℕ} {p : Partition n} {s : State n} (h : Rep p s) :
     ValidRank s.uf := h.1
 
+/-- Extract the element-count rank invariant from `Rep`. -/
+theorem Rep.rankCount {n : ℕ} {p : Partition n} {s : State n} (h : Rep p s) :
+    RankCount s.uf := h.2.1
+
 /-- Extract the element-equivalence coupling from `Rep`. -/
 theorem Rep.rel_iff_equiv {n : ℕ} {p : Partition n} {s : State n} (h : Rep p s) (x y : Fin n) :
-    p.rel x y = true ↔ s.uf.Equiv x.1 y.1 := h.2.1 x y
+    p.rel x y = true ↔ s.uf.Equiv x.1 y.1 := h.2.2.1 x y
 
 /-- Extract the maintained component-count equality from `Rep`. -/
 theorem Rep.numComp_eq {n : ℕ} {p : Partition n} {s : State n} (h : Rep p s) :
-    s.numComp = p.numComponents := h.2.2
+    s.numComp = p.numComponents := h.2.2.2
 
 /-- `init n` represents the discrete partition `Partition.discrete n` of `n` singletons. -/
 theorem rep_init (n : ℕ) : Rep (Partition.discrete n) (init n) := by
-  refine ⟨ValidRank.ofSize n, ?_, ?_⟩
+  refine ⟨ValidRank.ofSize n, RankCount.init n, ?_, ?_⟩
   · intro x y
     simp [init, Fin.ext_iff]
   · simp [init]
@@ -787,10 +1124,10 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
     (hr : Rep p s) :
     (step s o).2.1 = ((spec n).stepFn p o).2 ∧
       Rep ((spec n).stepFn p o).1 (step s o).1 := by
-  obtain ⟨hrank, hrel, hcomp⟩ := hr
+  obtain ⟨hrank, hrankcount, hrel, hcomp⟩ := hr
   cases o with
   | numComponents =>
-    exact ⟨hcomp, hrank, hrel, hcomp⟩
+    exact ⟨hcomp, hrank, hrankcount, hrel, hcomp⟩
   | same x y =>
     let x' : Fin s.uf.size := ⟨x.1, s.size_eq.symm ▸ x.2⟩
     let c₁ := compressWithSteps s.uf x'
@@ -800,10 +1137,11 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
     have hans : (c₁.2.1.1 == c₂.2.1.1) = p.rel x y :=
       Bool.eq_iff_iff.mpr ((compressWithSteps_root_beq_iff s.uf x' y').trans (hrel x y).symm)
     have hrank₂ : ValidRank c₂.1 := (hrank.compressWithSteps x').compressWithSteps y'
+    have hrankcount₂ : RankCount c₂.1 := RankCount.compressWithSteps c₁.1 y' (RankCount.compressWithSteps s.uf x' hrankcount)
     have hequiv₂ : ∀ u v : Fin n, p.rel u v = true ↔ c₂.1.Equiv u.1 v.1 := fun u v =>
       (hrel u v).trans ((equiv_compressWithSteps c₁.1 y' u.1 v.1).trans
         (equiv_compressWithSteps s.uf x' u.1 v.1)).symm
-    exact ⟨hans, hrank₂, hequiv₂, hcomp⟩
+    exact ⟨hans, hrank₂, hrankcount₂, hequiv₂, hcomp⟩
   | union x y =>
     let x' : Fin s.uf.size := ⟨x.1, s.size_eq.symm ▸ x.2⟩
     let y₀ : Fin s.uf.size := ⟨y.1, s.size_eq.symm ▸ y.2⟩
@@ -815,9 +1153,11 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
       congrArg (!·) <| Bool.eq_iff_iff.mpr
         ((compressWithSteps_root_beq_iff s.uf x' y').trans (hrel x y).symm)
     have huf_eq : (step s (.union x y)).1.uf = s.uf.union x' y₀ := step_union_uf_eq s x y
-    refine ⟨hmerged, ?_, ?_, ?_⟩
+    refine ⟨hmerged, ?_, ?_, ?_, ?_⟩
     · rw [huf_eq]
       exact hrank.union x' y₀
+    · rw [huf_eq]
+      exact RankCount.union hrankcount hrank x' y₀
     · intro u v
       rw [huf_eq, Batteries.UnionFind.equiv_union]
       change (p.merge x y).rel u v = true ↔ _
@@ -834,6 +1174,7 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
 
 /-- Semantic realization of `DisjointSet.spec n` by `Batteries.UnionFind` with path compression
 and union by rank. -/
+@[expose]
 def impl (n : ℕ) : StateTransitionImpl (spec n) (Exec n) :=
   StateTransitionImpl.ofFn
     (rep := Rep)
