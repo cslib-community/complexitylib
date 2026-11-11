@@ -29,7 +29,7 @@ binomial (factorial) moment of the count `X ω = Nat.card {i : ι // ω ∈ A i}
 * `ProbabilityTheory.measureReal_natCard_eq_le_bonferroni` and
   `ProbabilityTheory.bonferroni_le_measureReal_natCard_eq`: the truncated inclusion-exclusion
   (**Bonferroni**) upper and lower bounds for `μ.real {ω | Nat.card {i // ω ∈ A i} = k}` at any
-  odd (`2 * m + 1`) or even (`2 * m`) truncation depth (see [friezekaronski2016] Lemma 33.10, pp. 696–697).
+  odd (`2 * m + 1`) or even (`2 * m`) truncation depth (see [FriezeKaronski2016] Lemma 33.10, pp. 696–697).
 * `ProbabilityTheory.measureReal_forall_notMem_le_bonferroni` and
   `ProbabilityTheory.bonferroni_le_measureReal_forall_notMem`: the `k = 0` specialization for
   `μ.real {ω | ∀ i, ω ∉ A i}`.
@@ -37,7 +37,7 @@ binomial (factorial) moment of the count `X ω = Nat.card {i : ι // ω ∈ A i}
   (Poisson convergence from factorial moments): if for every fixed `r : ℕ` the `r`-th binomial
   moment converges to `lam ^ r / r!`, then
   `(μ n).real {ω | Nat.card {i // ω ∈ A n i} = k} → exp (-lam) * (lam ^ k / k!)` for every
-  `k : ℕ` (see [friezekaronski2016] Theorem 33.11, pp. 697–698).
+  `k : ℕ` (see [FriezeKaronski2016] Theorem 33.11, pp. 697–698).
 
 The source's `B_r` (written `B_k = E[choose(S_n, k)]`) is formalized here as the sum of `r`-fold
 intersection measures with limit `lam ^ r / r!` (binomial-moment normalization). The formalization
