@@ -1169,6 +1169,25 @@ theorem exists_min_dart_weight [Finite V] (d₀ : W.graph.Dart) :
   exact ⟨W.weight d₁.edge, W.dart_weight_pos d₁, fun d =>
     hd₁ d (hfin.mem_toFinset.mpr (Set.mem_univ d))⟩
 
+/-- Distinct vertices of a finite metric graph are uniformly separated: some `vmin > 0` bounds
+the distance between any two of them from below. -/
+theorem exists_pos_le_dist_vertex [Finite V] :
+    ∃ vmin : ℝ, 0 < vmin ∧ ∀ u v : V, u ≠ v → vmin ≤ dist (vertex u : MetricGraph W) (vertex v) := by
+  classical
+  let _ : Fintype V := Fintype.ofFinite V
+  let P := (Finset.univ : Finset (V × V)).filter fun p => p.1 ≠ p.2
+  by_cases hP : P.Nonempty
+  · refine ⟨P.inf' hP (fun p => dist (vertex p.1 : MetricGraph W) (vertex p.2)), ?_, ?_⟩
+    · rw [Finset.lt_inf'_iff]
+      intro p hp
+      simp only [P, Finset.mem_filter, Finset.mem_univ, true_and] at hp
+      exact dist_pos.mpr (vertex_inj.ne.mpr hp)
+    · intro u v hne
+      exact Finset.inf'_le (fun p : V × V => dist (vertex p.1 : MetricGraph W) (vertex p.2))
+        (Finset.mem_filter.mpr ⟨Finset.mem_univ (u, v), hne⟩)
+  · exact ⟨1, one_pos, fun u v hne =>
+      (hP ⟨(u, v), Finset.mem_filter.mpr ⟨Finset.mem_univ _, hne⟩⟩).elim⟩
+
 end MetricGraph
 
 end SimpleGraph
