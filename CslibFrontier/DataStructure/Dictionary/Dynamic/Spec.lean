@@ -95,6 +95,9 @@ abbrev Op.Result {U : ℕ} : Op U → Type
   | .insert _ _ => Unit
   | .delete _ => Unit
 
+instance Op.instInhabitedResult {U : ℕ} (o : Op U) : Inhabited o.Result := by
+  cases o <;> dsimp [Op.Result] <;> infer_instance
+
 /-- Pure transition function for dynamic dictionary operations. -/
 abbrev step {U : ℕ} (s : State U) : (o : Op U) → State U × o.Result
   | .query u => (s, s u)
