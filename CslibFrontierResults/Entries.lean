@@ -118,6 +118,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
+import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -2113,8 +2114,32 @@ register_result "nw-reconstruction-learner" where
     replaces the source's 1/5, and advantage delta/(2m) replaces 1/L. It makes at most \
     m 2^a queries, and every hypothesis has De Morgan circuit size at most that of the test \
     plus m (2^a (2a + 3) + 1) + 1. The running time of the learner is not certified. Repeating \
-    poly(m) runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is not \
-    part of this entry."
+    runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is the entry \
+    nw-reconstruction-best-of."
+
+register_result "nw-reconstruction-best-of" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning from a dense test that avoids the \
+    Nisan–Wigderson generator"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 2.11",
+      locator := "p. 10:9" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns_of_dens,
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_queriesAtMost,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_bestOf_nwLearner_le
+  ]
+  scope := "Theorem 2.11 in a library form. For an (l, n, a)-design with m > 0 blocks and a \
+    deterministic test accepting at least a delta > 0 fraction of m-bit strings but no output \
+    of the generator of any f in the class, best-of-k selection on t uniform sample points over \
+    the reconstruction learner built from the negated test learns the class under the uniform \
+    distribution with membership queries, error 1/2 - delta/(4m) and confidence 1 - eta, when \
+    log(2/eta) <= (delta/(2m)) k and 8 log(4k/eta) <= t (delta/(2m))^2. Any delta replaces the \
+    source's advantage above 1/5, error 1/2 - delta/(4m) replaces 1/2 - 1/L (the source's L is \
+    the output length m), and explicit k and t replace poly(L). It makes at most k m 2^a + t \
+    queries, and every hypothesis has the De Morgan circuit bound of one run. The running time \
+    of the learner is not certified."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
