@@ -16,6 +16,8 @@ This chapter points to declarations and modules; it does not restate proofs. The
 
 “Succinct” here means a sample-set specification, not an arbitrary circuit encoding of a longer truth table. Partial MCSP supplies both the default all-operation count and a binary AND/OR-only cost measure. The library also distinguishes unary and binary threshold encodings. A theorem stated in function arity n may become a qualitatively different bound when expressed in truth-table length `N=2^n`.
 
+[Multi/NP.lean](../../CslibFrontier/Computability/MCSP/Multi/NP.lean) places Multi-output MCSP in NP: `MultiMCSP.mem_NP` over the constant-free basis and `MultiMCSP.mem_NP_boolean` for the variant with constants. A certificate is a circuit in the single-output certificate format, followed by each component's output wire in unary.
+
 [PartialETH.lean](../../CslibFrontier/Computability/MCSP/PartialETH.lean) states NP membership and ETH-conditional hardness of Partial MCSP at the `2^o(n log n)` scale, equivalently `N^o(log log N)`, following Ilango [ilango2020focs][ilango2020focs] (registry ID `partial-mcsp`). It preserves the different cost/threshold conventions. The library also contains a separate [native fixed-width SAT counting endpoint](../machines-and-classes/native-counting.md) deriving the negation of ETH. Consequently the ETH-conditional implication remains a valid formal theorem, but its premise is false within the combined development. That chapter gives the native encodings, quantitative contract, manuscript mapping and review limits; this interaction affects how the conditional result may be applied and is not a proof inconsistency.
 
 ## Time-bounded Kolmogorov complexity
@@ -155,7 +157,7 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 - Liu–Pass Theorem 3.1 (c) in the near-linear range `t(n) ≥ (1 + ε) n`, which needs a rate-1 efficient conditional EP-PRG.
 - The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1). Existence, the greedy against a threshold oracle and, under `NP ⊆ P/poly`, `P/poly` circuits for the oracle on its queries are proved, but circuits for the selection are not ([#4383](https://github.com/cslib-community/cslib-frontier/issues/4383)). Their Theorem 1.4 is proved by another route (see [Hardness magnification](#hardness-magnification)).
 - NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
-- NP-hardness of Multi-output MCSP under randomized reductions (Ilango, Loff and Oliveira, CCC 2020); only the problem and its encoding are formalized so far ([#4405](https://github.com/cslib-community/cslib-frontier/issues/4405)).
+- NP-hardness of Multi-output MCSP under randomized reductions (Ilango, Loff and Oliveira, CCC 2020); only the problem, its encoding and its NP membership are formalized so far ([#4405](https://github.com/cslib-community/cslib-frontier/issues/4405)).
 - The minimum formula size problem (MFSP) as a separate problem, and the locality barrier (Theorem 59) of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam; of their Proposition 63, only the MCSP `[OS18]` bullet is formalized.
 - Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.
 
