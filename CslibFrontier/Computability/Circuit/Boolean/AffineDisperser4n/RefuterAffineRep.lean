@@ -36,7 +36,7 @@ open Cslib.Complexity.XORSAT.Dense Cslib.Circuits Cslib.BitString
 
 variable {n : ℕ}
 
-theorem dot_append {l₁ m₁ : List Bool} (h : l₁.length = m₁.length) (l₂ m₂ : List Bool) :
+private theorem dot_append {l₁ m₁ : List Bool} (h : l₁.length = m₁.length) (l₂ m₂ : List Bool) :
     dot (l₁ ++ l₂) (m₁ ++ m₂) = dot l₁ m₁ + dot l₂ m₂ := by
   induction l₁ generalizing m₁ with
   | nil =>
@@ -48,7 +48,7 @@ theorem dot_append {l₁ m₁ : List Bool} (h : l₁.length = m₁.length) (l₂
     · simp only [List.cons_append, dot]
       rw [ih (by simpa using h), add_assoc]
 
-theorem dot_toDenseRow (N : ℕ) (T : Finset ℕ) (w : ℕ → Bool) (hT : ∀ i ∈ T, i < N) :
+private theorem dot_toDenseRow (N : ℕ) (T : Finset ℕ) (w : ℕ → Bool) (hT : ∀ i ∈ T, i < N) :
     dot ((List.range N).map fun i => decide (i ∈ T)) ((List.range N).map w) = ∑ i ∈ T, w i := by
   have key : ∀ M, dot ((List.range M).map fun i => decide (i ∈ T)) ((List.range M).map w) =
       ∑ i ∈ Finset.range M, (if i ∈ T then w i else 0) := by
@@ -69,34 +69,34 @@ theorem dot_toDenseRow (N : ℕ) (T : Finset ℕ) (w : ℕ → Bool) (hT : ∀ i
     Finset.inter_eq_right.2 fun i hi => Finset.mem_range.2 (hT i hi)]
 
 /-- The dense system queried by `evaluateAux S a val`. -/
-abbrev auxSystem (S : State n) (a : ℕ) (val : ℕ → Bool) : System :=
+private abbrev auxSystem (S : State n) (a : ℕ) (val : ℕ → Bool) : System :=
   ((S.eqns.sort (· ≤ ·)).map fun e => toDenseRow (varBound S) (S.eqn e).terms (S.eqn e).rhs) ++
     ((S.params.sort (· ≤ ·)).map fun p => toDenseRow (varBound S) {p} (val p)) ++
     [toDenseRow (varBound S) {a} false]
 
-theorem evaluateAux_eq_auxSystem (S : State n) (a : ℕ) (val : ℕ → Bool) :
+private theorem evaluateAux_eq_auxSystem (S : State n) (a : ℕ) (val : ℕ → Bool) :
     evaluateAux S a val =
       if Cslib.Complexity.XORSAT.Dense.decide ⟨varBound S, auxSystem S a val⟩ then false
       else true := by
   unfold evaluateAux
   rfl
 
-theorem width_auxSystem (S : State n) (a : ℕ) (val : ℕ → Bool) :
+private theorem width_auxSystem (S : State n) (a : ℕ) (val : ℕ → Bool) :
     Width (varBound S) (auxSystem S a val) := by
   intro e he
   simp only [List.mem_append, List.mem_map, List.mem_singleton] at he
   rcases he with (⟨_, _, rfl⟩ | ⟨_, _, rfl⟩) | rfl <;> simp [toDenseRow]
 
-theorem lt_varBound {S : State n} {i : ℕ} (hi : i ∈ S.params ∪ S.aux) : i < varBound S :=
+private theorem lt_varBound {S : State n} {i : ℕ} (hi : i ∈ S.params ∪ S.aux) : i < varBound S :=
   Nat.lt_succ_of_le (Finset.le_sup (f := id) hi)
 
-theorem dot_toDenseRow_varBound {S : State n} {T : Finset ℕ} (hT : T ⊆ S.params ∪ S.aux)
+private theorem dot_toDenseRow_varBound {S : State n} {T : Finset ℕ} (hT : T ⊆ S.params ∪ S.aux)
     (c : Bool) (v : ℕ → Bool) :
     dot (toDenseRow (varBound S) T c).coeffs ((List.range (varBound S)).map v) =
       ∑ i ∈ T, v i :=
   dot_toDenseRow _ _ _ fun _ hi => lt_varBound (hT hi)
 
-theorem holds_auxSystem_iff {S : State n} (hwf : S.WellFormed) {a : ℕ}
+private theorem holds_auxSystem_iff {S : State n} (hwf : S.WellFormed) {a : ℕ}
     (ha : a ∈ S.params ∪ S.aux) (val v : ℕ → Bool) :
     Holds (auxSystem S a val) ((List.range (varBound S)).map v) ↔
       S.EqnsHold v ∧ (∀ p ∈ S.params, v p = val p) ∧ v a = false := by
@@ -115,7 +115,7 @@ theorem holds_auxSystem_iff {S : State n} (hwf : S.WellFormed) {a : ℕ}
   · rw [dot_toDenseRow_varBound (Finset.singleton_subset_iff.2 ha), Finset.sum_singleton]
     rfl
 
-theorem satisfiable_auxSystem_iff {S : State n} (hwf : S.WellFormed) {a : ℕ}
+private theorem satisfiable_auxSystem_iff {S : State n} (hwf : S.WellFormed) {a : ℕ}
     (ha : a ∈ S.params ∪ S.aux) (val : ℕ → Bool) :
     Satisfiable (varBound S) (auxSystem S a val) ↔
       ∃ v, S.EqnsHold v ∧ (∀ p ∈ S.params, v p = val p) ∧ v a = false := by

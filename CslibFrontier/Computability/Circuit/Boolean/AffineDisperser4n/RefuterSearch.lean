@@ -37,66 +37,43 @@ open Cslib.Complexity.XORSAT.Dense Cslib.Circuits Cslib.BitString
 
 /-! ### List utilities -/
 
-theorem mem_allAssignments : ∀ {d : ℕ} {A : List Bool}, A.length = d → A ∈ allAssignments d
+private theorem mem_allAssignments : ∀ {d : ℕ} {A : List Bool}, A.length = d → A ∈ allAssignments d
   | 0, A, h => by simp [allAssignments, List.eq_nil_of_length_eq_zero h]
   | d + 1, [], h => by simp at h
   | d + 1, b :: A, h => by
     have hA : A ∈ allAssignments d := mem_allAssignments (by simpa using h)
     cases b <;> simp [allAssignments, hA]
 
-theorem findSome?_isSome_of_mem {α β : Type*} {l : List α} {p : α → Option β} {a : α}
-    (ha : a ∈ l) (hp : (p a).isSome) : (l.findSome? p).isSome := by
-  induction l with
-  | nil => simp at ha
-  | cons b l ih =>
-    rw [List.findSome?_cons]
-    rcases List.mem_cons.1 ha with rfl | ha
-    · revert hp; cases p a <;> simp
-    · cases hpb : p b with
-      | none => exact ih ha
-      | some _ => rfl
-
-theorem findSome?_spec_of_eq_some {α β : Type*} {l : List α} {p : α → Option β} {b : β}
-    (h : l.findSome? p = some b) : ∃ a ∈ l, p a = some b := by
-  induction l with
-  | nil => simp at h
-  | cons a l ih =>
-    rw [List.findSome?_cons] at h
-    cases hpa : p a with
-    | none =>
-      rw [hpa] at h
-      obtain ⟨a', ha', h'⟩ := ih h
-      exact ⟨a', List.mem_cons_of_mem _ ha', h'⟩
-    | some c =>
-      rw [hpa] at h
-      exact ⟨a, List.mem_cons_self, hpa.trans h⟩
-
 /-! ### `findPair` and `terminalVal` -/
 
 variable {n : ℕ}
 
+/-- A pair found by `findPair S x` is a pair of `S` containing `x`. -/
 theorem findPair_spec {S : State n} {x : ℕ} {pr : ZeroPair} (h : findPair S x = some pr) :
     pr ∈ S.pairs ∧ (pr.fst = x ∨ pr.snd = x) := by
-  obtain ⟨r, -, hr⟩ := findSome?_spec_of_eq_some h
+  obtain ⟨r, -, hr⟩ := List.exists_of_findSome?_eq_some h
   have hmem := List.mem_of_find?_eq_some hr
   have hp := List.find?_some hr
   refine ⟨by simpa using hp, ?_⟩
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hmem
   rcases hmem with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp
 
-theorem findPair_isSome {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {pr : ZeroPair}
+/-- On a valid state, `findPair S x` finds a pair whenever `x` belongs to one. -/
+theorem findPair_isSome {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
+    {pr : ZeroPair}
     (hpr : pr ∈ S.pairs) {x : ℕ} (hx : pr.Contains x) : (findPair S x).isSome := by
   have hmem := hS.pair_mem pr hpr
   obtain ⟨fst, b₁, snd, b₂⟩ := pr
   rcases hx with hx | hx <;> simp only at hx <;> subst hx
-  · refine findSome?_isSome_of_mem (a := snd) ((Finset.mem_sort _).2 hmem.2.1) ?_
+  · refine List.findSome?_isSome_iff.2 ⟨snd, (Finset.mem_sort _).2 hmem.2.1, ?_⟩
     exact List.find?_isSome.2 ⟨⟨fst, b₁, snd, b₂⟩, by cases b₁ <;> cases b₂ <;> simp,
       by simpa using hpr⟩
-  · refine findSome?_isSome_of_mem (a := fst) ((Finset.mem_sort _).2 hmem.1) ?_
+  · refine List.findSome?_isSome_iff.2 ⟨fst, (Finset.mem_sort _).2 hmem.1, ?_⟩
     exact List.find?_isSome.2 ⟨⟨fst, b₁, snd, b₂⟩, by cases b₁ <;> cases b₂ <;> simp,
       by simpa using hpr⟩
 
-theorem eq_of_findPair_eq_some {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {x : ℕ}
+private theorem eq_of_findPair_eq_some {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
+    {x : ℕ}
     {pr pr' : ZeroPair} (h : findPair S x = some pr') (hpr : pr ∈ S.pairs) (hx : pr.fst = x) :
     pr' = pr := by
   obtain ⟨hpr', hx'⟩ := findPair_spec h
@@ -104,7 +81,7 @@ theorem eq_of_findPair_eq_some {f : BooleanFunction n} {S : State n} (hS : S.Val
   have := hS.pairs_disjoint pr' hpr' pr hpr hne
   rcases hx' with h' | h' <;> simp only at this <;> omega
 
-theorem isFstOfAnyPair_eq_true_iff {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
+private theorem isFstOfAnyPair_eq_true_iff {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
     {x : ℕ} : isFstOfAnyPair S x = true ↔ ∃ pr ∈ S.pairs, pr.fst = x := by
   constructor
   · unfold isFstOfAnyPair
@@ -121,7 +98,7 @@ theorem isFstOfAnyPair_eq_true_iff {f : BooleanFunction n} {S : State n} (hS : S
     rw [h']
     simpa using hx
 
-theorem terminalVal_fst {f : BooleanFunction n} {S : State n} (hS : S.Valid f) (L : List ℕ)
+private theorem terminalVal_fst {f : BooleanFunction n} {S : State n} (hS : S.Valid f) (L : List ℕ)
     (A : List Bool) {pr : ZeroPair} (hpr : pr ∈ S.pairs) :
     terminalVal S L A pr.fst = pr.fstBias := by
   obtain ⟨pr', h'⟩ := Option.isSome_iff_exists.1 (findPair_isSome hS hpr (Or.inl rfl))
@@ -131,14 +108,14 @@ theorem terminalVal_fst {f : BooleanFunction n} {S : State n} (hS : S.Valid f) (
   rw [h']
   simp
 
-theorem findIdx?_eq_some_of_nodup {L : List ℕ} (hL : L.Nodup) {j : ℕ} (hj : j < L.length) :
+private theorem findIdx?_eq_some_of_nodup {L : List ℕ} (hL : L.Nodup) {j : ℕ} (hj : j < L.length) :
     L.findIdx? (· = L[j]) = some j := by
   rw [List.findIdx?_eq_some_iff_getElem]
   refine ⟨hj, by simp, fun k hk => ?_⟩
   have := (hL.getElem_inj_iff (i := k) (j := j) (hi := by omega) (hj := hj)).not.2 (by omega)
   simpa using this
 
-theorem terminalVal_of_getElem {S : State n} {L : List ℕ} (hL : L.Nodup) (A : List Bool)
+private theorem terminalVal_of_getElem {S : State n} {L : List ℕ} (hL : L.Nodup) (A : List Bool)
     {j : ℕ} (hj : j < L.length) (hfst : isFstOfAnyPair S L[j] = false) :
     terminalVal S L A L[j] = A.getD j false := by
   unfold terminalVal
@@ -151,10 +128,10 @@ theorem terminalVal_of_getElem {S : State n} {L : List ℕ} (hL : L.Nodup) (A : 
     simp [this]
   · rfl
 
-theorem isAffine_const_bool {d : ℕ} (c : Bool) : IsAffine fun _ : BitString d => c :=
+private theorem isAffine_const_bool {d : ℕ} (c : Bool) : IsAffine fun _ : BitString d => c :=
   fun _ _ _ => by cases c <;> rfl
 
-theorem isAffine_getD_ofFn {d : ℕ} (i : ℕ) :
+private theorem isAffine_getD_ofFn {d : ℕ} (i : ℕ) :
     IsAffine fun u : BitString d => (List.ofFn u).getD i false := by
   intro a b c
   simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn]
@@ -163,7 +140,7 @@ theorem isAffine_getD_ofFn {d : ℕ} (i : ℕ) :
   · simp [hi]
     rfl
 
-theorem isAffine_terminalVal {d : ℕ} (S : State n) (L : List ℕ) (x : ℕ) :
+private theorem isAffine_terminalVal {d : ℕ} (S : State n) (L : List ℕ) (x : ℕ) :
     IsAffine fun u : BitString d => terminalVal S L (List.ofFn u) x := by
   unfold terminalVal
   rcases findPair S x with _ | pr
@@ -180,17 +157,17 @@ theorem isAffine_terminalVal {d : ℕ} (S : State n) (L : List ℕ) (x : ℕ) :
 /-! ### The free parameters -/
 
 /-- The free parameters scanned by `findCounterexample`. -/
-abbrev freeParams (S : State n) : List ℕ :=
+private abbrev freeParams (S : State n) : List ℕ :=
   (S.params.sort (· ≤ ·)).filter (fun x => !(isFstOfAnyPair S x))
 
-theorem nodup_freeParams (S : State n) : (freeParams S).Nodup :=
+private theorem nodup_freeParams (S : State n) : (freeParams S).Nodup :=
   (Finset.sort_nodup _ _).filter _
 
-theorem mem_freeParams {S : State n} {x : ℕ} :
+private theorem mem_freeParams {S : State n} {x : ℕ} :
     x ∈ freeParams S ↔ x ∈ S.params ∧ isFstOfAnyPair S x = false := by
   simp [freeParams]
 
-theorem length_freeParams {f : BooleanFunction n} {S : State n} (hS : S.Valid f) :
+private theorem length_freeParams {f : BooleanFunction n} {S : State n} (hS : S.Valid f) :
     (freeParams S).length = S.a := by
   rw [← List.toFinset_card_of_nodup (nodup_freeParams S),
     ← hS.card_sdiff_image ZeroPair.fst (fun _ _ => Or.inl rfl)]
@@ -202,7 +179,7 @@ theorem length_freeParams {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
 
 /-! ### The generic search -/
 
-theorem inj_of_coords {d : ℕ} {S : State n} (σ : List Bool → ℕ → Bool) {L : List ℕ}
+private theorem inj_of_coords {d : ℕ} {S : State n} (σ : List Bool → ℕ → Bool) {L : List ℕ}
     (hLp : ∀ x ∈ L, x ∈ S.params) (hlen : L.length = d)
     (hcoord : ∀ A j (hj : j < L.length), σ A L[j] = A.getD j false) :
     ∀ u v : BitString d, (∀ j ∈ S.params, σ (List.ofFn u) j = σ (List.ofFn v) j) → u = v := by
@@ -213,7 +190,7 @@ theorem inj_of_coords {d : ℕ} {S : State n} (σ : List Bool → ℕ → Bool) 
   rw [hcoord _ _ hj', hcoord _ _ hj'] at this
   simpa [List.getD_eq_getElem?_getD, hj] using this
 
-theorem findSome_isSome_of_family {d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
+private theorem findSome_isSome_of_family {d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
     (f : BitString n → Bool) (hf : IsAffineDisperser f d) {S : State n}
     (hS : S.Valid (fun x => C.eval fullInterpretation x 0)) (σ : List Bool → ℕ → Bool)
     (hσ : ∀ x, IsAffine fun u : BitString d => σ (List.ofFn u) x)
@@ -251,22 +228,24 @@ theorem findSome_isSome_of_family {d : ℕ} (C : Circuit (fullSignature 2 Bool) 
     · exact ⟨v, fun hv => huv (by rw [← hu, ← hv, hval, hval])⟩
     · exact ⟨u, hu⟩
   obtain ⟨w, hw⟩ := key
-  refine findSome?_isSome_of_mem (mem_allAssignments (A := List.ofFn w) (by simp)) ?_
+  refine List.findSome?_isSome_iff.2
+    ⟨List.ofFn w, mem_allAssignments (A := List.ofFn w) (by simp), ?_⟩
   simp only [hx w]
   simp [hw]
 
-theorem terminalVal_coord {S : State n} {L : List ℕ} (hLn : L.Nodup)
+private theorem terminalVal_coord {S : State n} {L : List ℕ} (hLn : L.Nodup)
     (hLF : ∀ x ∈ L, x ∈ freeParams S) (A : List Bool) (j : ℕ) (hj : j < L.length) :
     terminalVal S L A L[j] = A.getD j false :=
   terminalVal_of_getElem hLn A hj (mem_freeParams.1 (hLF _ (List.getElem_mem hj))).2
 
-theorem take_props {S : State n} {L₀ : List ℕ} (hn : L₀.Nodup) (hF : ∀ x ∈ L₀, x ∈ freeParams S)
+private theorem take_props {S : State n} {L₀ : List ℕ} (hn : L₀.Nodup)
+    (hF : ∀ x ∈ L₀, x ∈ freeParams S)
     {d : ℕ} (hd : d ≤ L₀.length) :
     (L₀.take d).Nodup ∧ (∀ x ∈ L₀.take d, x ∈ freeParams S) ∧ (L₀.take d).length = d :=
   ⟨hn.sublist (List.take_sublist _ _), fun x hx => hF x (List.mem_of_mem_take hx),
     by rw [List.length_take]; omega⟩
 
-theorem fst_ne_of_mem_freeParams {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
+private theorem fst_ne_of_mem_freeParams {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
     {p : ℕ} (hp : p ∈ freeParams S) {pr : ZeroPair} (hpr : pr ∈ S.pairs) : pr.fst ≠ p := by
   rintro rfl
   have := (mem_freeParams.1 hp).2
@@ -275,7 +254,7 @@ theorem fst_ne_of_mem_freeParams {f : BooleanFunction n} {S : State n} (hS : S.V
 
 /-- The search over the free parameters `L` with `terminalVal` succeeds when the output is
 constant on the corresponding consistent assignments. -/
-theorem findSome_isSome_terminalVal {d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
+private theorem findSome_isSome_terminalVal {d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
     (f : BitString n → Bool) (hf : IsAffineDisperser f d) {S : State n}
     (hS : S.Valid (fun x => C.eval fullInterpretation x 0)) {L : List ℕ}
     (hL : L.Nodup ∧ (∀ x ∈ L, x ∈ freeParams S) ∧ L.length = d) (b : Bool)
@@ -289,19 +268,19 @@ theorem findSome_isSome_terminalVal {d : ℕ} (C : Circuit (fullSignature 2 Bool
     (fun x hx => (mem_freeParams.1 (hL.2.1 x hx)).1) hL.2.2 (terminalVal_coord hL.1 hL.2.1)
     (fun A _ hpr => terminalVal_fst hS L A hpr) b hout
 
-theorem foldl_xor_eq_add_sum (g : ℕ → Bool) :
+private theorem foldl_xor_eq_add_sum (g : ℕ → Bool) :
     ∀ (l : List ℕ) (a : Bool), l.foldl (fun acc y => acc ^^ g y) a = a + (l.map g).sum
   | [], a => by simp
   | x :: l, a => by
     rw [List.foldl_cons, foldl_xor_eq_add_sum g l, List.map_cons, List.sum_cons, ← add_assoc]
     rfl
 
-theorem foldl_xor_eq_sum (g : ℕ → Bool) (T : Finset ℕ) :
+private theorem foldl_xor_eq_sum (g : ℕ → Bool) (T : Finset ℕ) :
     (T.sort (· ≤ ·)).foldl (fun acc y => acc ^^ g y) false = ∑ y ∈ T, g y := by
   rw [foldl_xor_eq_add_sum, ← List.sum_toFinset _ (Finset.sort_nodup _ _), Finset.sort_toFinset]
   exact zero_add _
 
-theorem filter_ne_take_props {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {p : ℕ}
+private theorem filter_ne_take_props {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {p : ℕ}
     (hp : p ∈ freeParams S) {d : ℕ} (hd : d < S.a) :
     ((((freeParams S).filter (fun x => decide (x ≠ p))).take d).Nodup ∧
       (∀ x ∈ ((freeParams S).filter (fun x => decide (x ≠ p))).take d, x ∈ freeParams S) ∧
@@ -315,14 +294,14 @@ theorem filter_ne_take_props {f : BooleanFunction n} {S : State n} (hS : S.Valid
   rw [hfe, List.length_erase_of_mem hp, length_freeParams hS]
   omega
 
-theorem op_const_of_not_isAffineOp :
+private theorem op_const_of_not_isAffineOp :
     ∀ op : Bool → Bool → Bool, ¬ IsAffineOp op →
       op (decide ((op true false == op true true) = true)) false =
         op (decide ((op true false == op true true) = true)) true := by
   unfold IsAffineOp
   decide
 
-theorem terminal_gate {S : State n} {u : ℕ} (hterm : chooseStep? S = none)
+private theorem terminal_gate {S : State n} {u : ℕ} (hterm : chooseStep? S = none)
     (hu : S.out.arg = .node u) (hup : u ∉ S.params) (hne : S.gates.Nonempty) :
     findD1 S = none ∧ findMovable S = none ∧ findAndOnPair S = none ∧
       S.auxIn (S.gates.min' hne) = 0 ∧ u = S.gates.min' hne := by
@@ -341,7 +320,7 @@ theorem terminal_gate {S : State n} {u : ℕ} (hterm : chooseStep? S = none)
           ‹∀ G p, findAndOnPair S = some (G, p) → False› p.1 p.2 hp,
         Nat.eq_zero_of_not_pos ‹_›, ‹u = S.gates.min' _›⟩
 
-theorem terminal_gate_shape {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {u : ℕ}
+private theorem terminal_gate_shape {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {u : ℕ}
     (hterm : chooseStep? S = none) (hu : S.out.arg = .node u) (hup : u ∉ S.params)
     (hne : S.gates.Nonempty) :
     ∃ t₁ t₂, (S.gate (S.gates.min' hne)).left = .node t₁ ∧
@@ -387,6 +366,8 @@ theorem terminal_gate_shape {f : BooleanFunction n} {S : State n} (hS : S.Valid 
     exact h12 this
   exact ⟨t₁, t₂, hl, hr, ht₁p, hpaired, hnaff, huG⟩
 
+/-- On a valid terminal state of the refuter for the function of `C` with `d < S.a`, the final
+search of `findCounterexample` succeeds. -/
 theorem findCounterexample_isSome {d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
     (f : BitString n → Bool) (hf : IsAffineDisperser f d) {S : State n}
     (hS : S.Valid (fun x => C.eval fullInterpretation x 0)) (hterm : chooseStep? S = none)
@@ -517,12 +498,13 @@ theorem findCounterexample_isSome {d : ℕ} (C : Circuit (fullSignature 2 Bool) 
         have hcard : S.gates.card ≠ 0 := fun h => by simp [h] at hcase
         exact hne (Finset.card_pos.1 (Nat.pos_of_ne_zero hcard))
 
-theorem findSome_neq {d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool)
+private theorem findSome_neq {d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
+    (f : BitString n → Bool)
     {g : List Bool → BitString n} {x : BitString n}
     (h : (allAssignments d).findSome? (fun A =>
       if C.eval fullInterpretation (g A) 0 != f (g A) then some (g A) else none) = some x) :
     C.eval fullInterpretation x 0 ≠ f x := by
-  obtain ⟨A, -, hA⟩ := findSome?_spec_of_eq_some h
+  obtain ⟨A, -, hA⟩ := List.exists_of_findSome?_eq_some h
   split at hA
   · rename_i hne
     cases hA
