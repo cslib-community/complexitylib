@@ -18,6 +18,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
+import CslibFrontier.Foundations.Data.List.Counting
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 
 /-!
@@ -309,19 +311,6 @@ private lemma clause_eval_congr {c : Clause ℕ} {τ₁ τ₂ : ℕ → Bool}
   exact exists_congr fun lit => and_congr_right fun hlit => by
     simp only [Literal.eval, h lit hlit]
 
-private lemma length_flatMap_le {α β : Type} (l : List α) (f : α → List β) (M : ℕ)
-    (hM : ∀ x ∈ l, (f x).length ≤ M) :
-    (l.flatMap f).length ≤ l.length * M := by
-  induction l with
-  | nil => simp
-  | cons x xs ih =>
-    have hx := hM x List.mem_cons_self
-    have hxs := ih fun y hy => hM y (List.mem_cons_of_mem x hy)
-    simp only [List.flatMap_cons, List.length_append, List.length_cons]
-    calc
-      (f x).length + (xs.flatMap f).length ≤ M + xs.length * M := Nat.add_le_add hx hxs
-      _ = (xs.length + 1) * M := by ring
-
 /-! ### Correctness and vertex-count bounds -/
 
 /-- For every `r ≥ 1` and `φ : CNF ℕ`, `SAT.groupClique r φ` sets target clique size `r`. -/
@@ -347,7 +336,7 @@ theorem length_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
       have hlen : (GroupClique.verticesOfBound r φ
           (2 ^ (3 * GroupClique.blockSize φ r))).length ≤
           (List.range r).length * 2 ^ (3 * GroupClique.blockSize φ r) := by
-        apply length_flatMap_le
+        apply List.length_flatMap_le
         intro i _
         rw [List.length_map]
         calc
@@ -571,10 +560,6 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
 
 /-! ### Polynomial-time computability of the bounded builder -/
 
-private theorem computableInPolyTime_id_enc {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun a : α => a) enc enc :=
-  ComputableInPolyTime.of_eq fun _ => rfl
-
 private theorem computableInPolyTime_takeClause {γ : Type} {encIn : γ ↪ List Bool}
     {xs : γ → CNF ℕ} {n : γ → ℕ}
     (hxs : ComputableInPolyTime xs encIn encCNF)
@@ -701,19 +686,6 @@ private theorem computableInPolyTime_vertex {γ : Type} {encIn : γ ↪ List Boo
       (ComputableInPolyTime.unary_to_binary.comp hb))
     (ComputableInPolyTime.unary_to_binary.comp ha)
 
-private theorem computableInPolyTime_ite_bool {α β : Type}
-    {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    {cond : α → Bool} {yes no : α → β}
-    (hc : ComputableInPolyTime cond encA encBool)
-    (hy : ComputableInPolyTime yes encA encB)
-    (hn : ComputableInPolyTime no encA encB) :
-    ComputableInPolyTime (fun a => if cond a then yes a else no a) encA encB := by
-  have hc' : ComputableInPolyTime (fun a => decide (cond a = true)) encA encBool := by
-    have heq : (fun a => decide (cond a = true)) = cond :=
-      funext fun a => by cases cond a <;> rfl
-    rwa [heq]
-  exact ComputableInPolyTime.ite_decide hc' hy hn
-
 private theorem computableInPolyTime_verticesOfBound :
     ComputableInPolyTime
       (fun p : (ℕ × CNF ℕ) × ℕ => GroupClique.verticesOfBound p.1.1 p.1.2 p.2)
@@ -795,7 +767,9 @@ private theorem computableInPolyTime_edgesOfBound :
       encA encUnary := ComputableInPolyTime.snd encI encUnary
   have hcondA := ComputableInPolyTime.bool_not.comp
     (computableInPolyTime_evalBlock hφA hrA hiA haA)
-  refine computableInPolyTime_ite_bool hcondA (ComputableInPolyTime.const []) ?_
+  dsimp only [Function.comp_def] at hcondA
+  refine ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hcondA)
+    (ComputableInPolyTime.const []) ?_
   refine ComputableInPolyTime.flatMapWithInput (ComputableInPolyTime.range.comp hrA) ?_
   let encJ := encPair encA encUnary
   have hrJ : ComputableInPolyTime (fun q : ((((ℕ × CNF ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.1.1.1.1.1)
@@ -811,7 +785,8 @@ private theorem computableInPolyTime_edgesOfBound :
   have hjJ : ComputableInPolyTime (fun q : ((((ℕ × CNF ℕ) × ℕ) × ℕ) × ℕ) × ℕ => q.2)
       encJ encUnary := ComputableInPolyTime.snd encA encUnary
   have hji := ComputableInPolyTime.beq hjJ hiJ
-  refine computableInPolyTime_ite_bool hji (ComputableInPolyTime.const []) ?_
+  refine ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hji)
+    (ComputableInPolyTime.const []) ?_
   have hfilt :
       ComputableInPolyTime
         (fun q =>
@@ -899,8 +874,10 @@ private theorem computableInPolyTime_graphOfBound :
         encIn (encPair encGraph encNat) :=
     ComputableInPolyTime.prod (ComputableInPolyTime.const ([], []))
       (ComputableInPolyTime.unary_to_binary.comp hr)
-  refine computableInPolyTime_ite_bool hr0 (ComputableInPolyTime.const (([], []), 1)) ?_
-  exact computableInPolyTime_ite_bool hnot3 hbad3 hmain
+  refine ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hr0)
+    (ComputableInPolyTime.const (([], []), 1)) ?_
+  exact ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hnot3)
+    hbad3 hmain
 
 /-- Uniform runtime and output-size bound for `(r, φ) ↦ SAT.groupClique r φ`: the exponential
 exponent scales linearly in `3 * ((φ.length + r - 1) / r)` with polynomial degree `D` independent
@@ -1096,8 +1073,7 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
     DecidableInExpTime ThreeSAT encCNF List.length δ := by
   let prep : CNF ℕ → ℕ × CNF ℕ := fun φ => (r, φ)
   have hprep_poly : ComputableInPolyTime prep encCNF (encPair encUnary encCNF) :=
-    ComputableInPolyTime.prod (ComputableInPolyTime.const r)
-      (computableInPolyTime_id_enc encCNF)
+    ComputableInPolyTime.prod (ComputableInPolyTime.const r) ComputableInPolyTime.id'
   rcases hprep_poly.exists_computableInO with ⟨T₀, S₀, hT₀, hS₀, hprepO⟩
   rcases polyBounded_le_const_mul_pow hT₀ with ⟨C₀', d₀, hT₀_le⟩
   have hcomp₁ := hred.comp hprepO
