@@ -91,24 +91,25 @@ theorem binomialRandom_real_forall_not_adj [Fintype V] (p : I) (S : Finset V) :
   have hset : {G : SimpleGraph V | ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} =
       {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} := by
     ext G
-    simp only [Set.mem_setOf_eq, Set.disjoint_left, Finset.mem_coe, t, Finset.mem_image,
+    simp only [Set.mem_ofPred_eq, Set.disjoint_left, Finset.mem_coe, t, Finset.mem_image,
       Finset.mem_product, Finset.mem_compl]
     constructor
-    · intro h e ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩
+    · rintro h _ ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩
       exact h u hu v hv
     · intro h u hu v hv huv
-      exact h (s(u, v)) ⟨(u, v), ⟨hu, hv⟩, rfl⟩ huv
+      exact h ⟨(u, v), ⟨hu, hv⟩, rfl⟩ huv
   have hdiag : ∀ e ∈ t, ¬e.IsDiag := by
+    simp only [t, Finset.mem_image, Finset.mem_product, Finset.mem_compl]
     rintro _ ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ huv
     exact hv (Sym2.mk_isDiag_iff.1 huv ▸ hu)
   have hcard : #t = #S * (Fintype.card V - #S) := by
-    have hinj : Set.InjOn Sym2.mk.uncurry (S ×ˢ Sᶜ : Finset (V × V)) := by
+    have hinj : Set.InjOn Sym2.mk.uncurry (↑(S ×ˢ Sᶜ) : Set (V × V)) := by
       rintro ⟨u, v⟩ huv ⟨u', v'⟩ huv' h
-      simp only [Finset.coe_product, Finset.coe_compl, Set.mem_prod, Finset.mem_coe,
-        Set.mem_compl_iff] at huv huv'
-      rcases Sym2.eq_iff.1 h with ⟨h1, h2⟩ | ⟨h1, h2⟩
-      · simp [h1, h2]
-      · exact absurd (h1 ▸ huv.1) huv'.2
+      simp only [Finset.mem_coe, Finset.mem_product, Finset.mem_compl] at huv huv'
+      have heq : s(u, v) = s(u', v') := h
+      rcases Sym2.eq_iff.1 heq with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · rfl
+      · exact absurd huv.1 huv'.2
     rw [Finset.card_image_of_injOn hinj, Finset.card_product, Finset.card_compl]
   rw [hset, binomialRandom_real_disjoint_edgeSet p t hdiag, hcard]
 
