@@ -100,6 +100,7 @@ theorem realCutWeight_sdiff_add_realCutWeight_sdiff_le [IsStrictOrderedRing K] {
   rw [hu, realCutWeight_compl' hWs] at h
   rwa [add_comm (realCutWeight W (A \ B))]
 
+/-- The weights of the vertex sets containing `s` and missing `t`. -/
 def minCutBetweenSet (W : V → V → K) (s t : V) : Finset K :=
   Finset.image (fun X => realCutWeight W X) (Finset.filter (fun X => s ∈ X ∧ t ∉ X) Finset.univ)
 
