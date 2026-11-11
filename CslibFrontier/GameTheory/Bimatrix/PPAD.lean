@@ -4120,17 +4120,8 @@ private lemma reduceIntPair_spec {num den : ℤ} (hnum : 0 ≤ num) (hden : 0 < 
   have hg_pos : 0 < g := Nat.gcd_pos_of_pos_right _ hden_pos
   have hdiv_pos : 0 < den.natAbs / g :=
     Nat.div_pos (Nat.le_of_dvd hden_pos (Nat.gcd_dvd_right _ _)) hg_pos
-  have hcop : Nat.gcd (num.natAbs / g) (den.natAbs / g) = 1 := by
-    let k := Nat.gcd (num.natAbs / g) (den.natAbs / g)
-    have hk_pos : 0 < k := Nat.gcd_pos_of_pos_right _ hdiv_pos
-    have hk1 : k * g ∣ num.natAbs := by
-      have hd := Nat.mul_dvd_mul_right (Nat.gcd_dvd_left (num.natAbs / g) (den.natAbs / g)) g
-      rwa [Nat.div_mul_cancel (Nat.gcd_dvd_left num.natAbs den.natAbs)] at hd
-    have hk2 : k * g ∣ den.natAbs := by
-      have hd := Nat.mul_dvd_mul_right (Nat.gcd_dvd_right (num.natAbs / g) (den.natAbs / g)) g
-      rwa [Nat.div_mul_cancel (Nat.gcd_dvd_right num.natAbs den.natAbs)] at hd
-    have hkle : k * g ≤ g := Nat.le_of_dvd hg_pos (Nat.dvd_gcd hk1 hk2)
-    nlinarith
+  have hcop : Nat.gcd (num.natAbs / g) (den.natAbs / g) = 1 :=
+    Nat.gcd_div_gcd_div_gcd_of_pos_right hden_pos
   refine ⟨?_, ?_⟩
   · simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq, Int.natAbs_natCast]
     exact ⟨⟨Int.natCast_nonneg _, hdiv_pos⟩, hcop⟩
