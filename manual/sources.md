@@ -149,6 +149,11 @@ Richard Bellman. “Dynamic Programming Treatment of the Travelling Salesman Pro
 
 Charles H. Bennett. *Time/Space Trade-Offs for Reversible Computation*. SIAM Journal on Computing 18(4), 766–776, 1989. https://doi.org/10.1137/0218053 . Bibliographic metadata only; the paper was not inspected in this pass. The manual credits it with the recursive checkpointing strategy as described in [ltv98](#ltv98), Sections 6 and 7.
 
+<a id="bensassonkopparty12"></a>
+## bensassonkopparty12
+
+Eli Ben-Sasson and Swastik Kopparty. *Affine Dispersers from Subspace Polynomials*. SIAM Journal on Computing 41(4), 880–914, 2012. https://doi.org/10.1137/110826254 . Bibliographic metadata as in the library bibliography; the primary PDF was not directly inspected, so ECCC report theorem locators recorded in the source remain unverified against the primary text.
+
 <a id="berge57"></a>
 ## berge57
 
@@ -193,6 +198,11 @@ Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuit
 ## bhr12b
 
 Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Adaptively Secure Garbling with Applications to One-Time Programs and Secure Outsourcing." *Advances in Cryptology – ASIACRYPT 2012*, LNCS 7658, 134–153, Springer, 2012. https://doi.org/10.1007/978-3-642-34961-4_10 . Full version: Cryptology ePrint Archive, Report 2012/564 (`BellareHoangRogaway2012b`). `Garbling/Adaptive.lean` formalizes the coarse-grained adaptive privacy game `Prv1` of Section 3.1, Figure 2, in which a two-stage adversary first receives `(F, d)` from `Garble(f)` and then adaptively queries `Input(x)` to receive `X` from a stateful two-stage simulator.
+
+<a id="birge83"></a>
+## birge83
+
+Lucien Birgé. "Approximation dans les espaces métriques et théorie de l'estimation." *Zeitschrift für Wahrscheinlichkeitstheorie und Verwandte Gebiete* 65(2), 181–237, 1983. https://doi.org/10.1007/BF00532480 . Bibliographic metadata checked via search summaries on 2026-11-11; the article text was not inspected, and no theorem number is claimed. Cited as background origin for bounded likelihood-ratio Hellinger tests (`leCamBirgeTest`) and Hellinger tournament localization (`birgeTournamentSelect`); the explicit `1/3`–`2/3` clipped `birgeWeight` formulation and constants (`1 - h² / 25`, `10 * r`, `11 * r`, `2 * (M - 1) * exp (-4 n r²)`) are proved from first principles in `CslibFrontier/Probability/HypothesisSelection/{LeCamBirge,Tournament}.lean`.
 
 <a id="bjkst02"></a>
 ## bjkst02
@@ -324,6 +334,11 @@ Moses Charikar, Kevin Chen, Martin Farach-Colton. “Finding Frequent Items in D
 
 Eshan Chattopadhyay and Jyun-Jie Liao. *Optimal Error Pseudodistributions for Read-Once Branching Programs*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 25:1–25:27, 2020. https://doi.org/10.4230/LIPIcs.CCC.2020.25 ; cited from arXiv:2002.07208v4. Appendix A.1 (Definition A.2, Lemmas A.3 and A.4) was checked against the arXiv v4 text on 2026-11-08. Hoza (2021) cites the CCC version's Lemma 43 for the same material.
 
+<a id="chenhiraharaoliveirapichrajgopalsanthanam2020"></a>
+## chenhiraharaoliveirapichrajgopalsanthanam2020
+
+Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` bullet of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
+
 <a id="christofides76"></a>
 ## christofides76
 
@@ -415,6 +430,11 @@ Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, M
 ## dasguptagupta03
 
 Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
+
+<a id="devroyelugosi01"></a>
+## devroyelugosi01
+
+Luc Devroye and Gábor Lugosi. *Combinatorial Methods in Density Estimation*. Springer Series in Statistics, Springer, New York, 2001. ISBN 978-0-387-95117-1. https://doi.org/10.1007/978-1-4613-0125-7 . Bibliographic metadata checked via search summaries on 2026-11-11; the book text was not inspected, so Chapter 6 attribution is unverified against the printed book. Cited as background for Scheffé sets (`scheffeSet`), pairwise Scheffé tests (`scheffeTest`), and `3 * OPT + 2 * γ` minimum-distance TV selection (`scheffeSelect`); the one-sided `scheffeScore` formulation and Hoeffding union-bound proofs in `CslibFrontier/Probability/HypothesisSelection/{LeCamBirge,Tournament}.lean` are this library's formulation.
 
 <a id="dewolf19"></a>
 ## dewolf19
@@ -610,6 +630,11 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 ## gomoryhu61
 
 Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
+
+<a id="goosetal22"></a>
+## goosetal22
+
+Mika Göös, Alexandros Hollender, Siddhartha Jain, Gilbert Maystre, William Pires, Robert Robere and Ran Tao. "Further Collapses in TFNP." *37th Computational Complexity Conference (CCC 2022)*, LIPIcs 234, 33:1–33:15, 2022. https://doi.org/10.4230/LIPIcs.CCC.2022.33 . Checked on 2026-11-10 against the arXiv TeX source of `arXiv:2202.07761v2` (https://arxiv.org/abs/2202.07761 , dated 20 May 2022): Section 1, Theorem 1 (`EOPL = PLS ∩ PPAD`) and Theorem 2 (`SOPL = PLS ∩ PPADS`); Section 2, Lemma 1 (`inj-PHP` and `bij-PHP` as `PPADS`- and `PPAD`-complete formulations); Section 3, Lemma 2 (the path-pigeonhole reduction `inj-PHP ≤ Path-inj-PHP_f`); Section 4, Lemma 3 (`SoD ∧ inj-PHP ≤ SoPL`); and Section 5, Lemma 4 (`SoPL ∧ bij-PHP ≤ EoPL`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLineCollapse.lean` implements Lemma 4 directly from `SOPL` and `PPAD` (`SOPL_inter_PPAD_subset_EOPL`, `EOPL_eq_SOPL_inter_PPAD`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/SOPLCollapse.lean` implements Lemmas 1–3 directly on `PLS` and `PPADS` families over width `n₁(a) + 2(n₁(a) + n₂(a))` (`plsPpads_sink`, `mem_SOPL_of_localOpt_sinkOfLine`, `PLS_inter_PPADS_subset_SOPL`) and deduces Theorem 2 (`SOPL_eq_PLS_inter_PPADS`) and Theorem 1 (`EOPL_eq_PLS_inter_PPAD`). `UEOPL` and the query-model results of the paper are not formalized.
 
 <a id="grenet11"></a>
 ## grenet11
@@ -932,6 +957,11 @@ Leslie Lamport, Robert Shostak and Marshall Pease. "The Byzantine Generals Probl
 
 Lean development team. *Validating a Lean Proof*, The Lean Language Reference, accessed 2026-11-02 UTC. https://lean-lang.org/doc/reference/latest/ValidatingProofs/ . The page was inspected live; the requested version-specific URL was unavailable, and no verified archival snapshot was obtained. Version-specific library assertions in this dossier instead rely on pinned repository sources.
 
+<a id="lecam73"></a>
+## lecam73
+
+Lucien Le Cam. "Convergence of Estimates Under Dimensionality Restrictions." *The Annals of Statistics* 1(1), 38–53, 1973. https://doi.org/10.1214/aos/1193342380 . Bibliographic metadata checked via search summaries on 2026-11-11; the article text was not inspected, and no theorem number is claimed. Cited as background origin for bounded pairwise Hellinger tests and tournament localization (`leCamBirgeTest`, `birgeTournamentSelect`).
+
 <a id="lemkehowson64"></a>
 ## lemkehowson64
 
@@ -957,6 +987,11 @@ Leonid A. Levin. *Average Case Complete Problems*. SIAM Journal on Computing 15(
 
 Carsten Lund, Lance Fortnow, Howard Karloff and Noam Nisan. *Algebraic Methods for Interactive Proof Systems*. JACM 39(4), 859–868, 1992. https://doi.org/10.1145/146585.146605 .
 
+<a id="li2023"></a>
+## li2023
+
+Xin Li. *Two Source Extractors for Asymptotically Optimal Entropy, and (Many) More*. FOCS 2023, 1271–1281. https://doi.org/10.1109/FOCS57990.2023.00075 . Bibliographic metadata checked; secondary search summaries indicate Definition 3.1 (affine sources), Lemma 3.9 (affine conditioning), Lemma 3.10 (block decomposition), Theorem 7.13 (sumset extractor), and Corollary 7.14 in preprint versions, while the full primary PDF was not read line by line, so individual numbered locators in `AffineSource.lean` remain unverified against the typeset FOCS version.
+
 <a id="liptonyoung1994"></a>
 ## liptonyoung1994
 
@@ -971,6 +1006,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## liupass2021crypto
 
 Yanyi Liu and Rafael Pass. *On the Possibility of Basing Cryptography on EXP ≠ BPP*. CRYPTO 2021, LNCS 12825, 11–40. https://doi.org/10.1007/978-3-030-84242-0_2 . Full version ECCC TR21-056. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation cites its Section 2.2 for `MKtP` and Fact 3.1 with ECCC numbering.
+
+<a id="lizhong2024"></a>
+## lizhong2024
+
+Xin Li and Yan Zhong. *Explicit Directional Affine Extractors and Improved Hardness for Linear Branching Programs*. CCC 2024, LIPIcs 300, 10:1–10:14. https://doi.org/10.4230/LIPIcs.CCC.2024.10 ; preprint arXiv:2304.11495. Bibliographic metadata checked on 2026-11-11 UTC; secondary search summaries confirm Definition 21 (affine somewhere condenser), Theorem 18, and Lemma 20 in Section 3, while the full primary PDF was not read line by line, so the remaining numbered locators cited in `AffineSource.lean` and `SomewhereCondenser.lean` remain unverified against the typeset CCC version.
 
 <a id="ll24"></a>
 ## ll24
@@ -1051,6 +1091,11 @@ L. Mirsky. "A Dual of Dilworth's Decomposition Theorem." *The American Mathemati
 ## mishrasanthanam2027
 
 Om Swostik Mishra and Rahul Santhanam. *An Explicit `4n - O(log n)` Size Lower Bound against General Boolean Circuits*. STOC 2027 submission 1241, 2027. https://stoc2027.sigact-ec.workers.dev/submissions/1241.pdf . The submission PDF was inaccessible in this pass (HTTP error 1042) and was not inspected directly; bibliographic details and cited labels (`Lemma 2.2`, `Theorem 4.1`, `Lemma 4.2`, `Remark 4.3`, and the `Theorem 1.1` target) come from repository issue `#4322` and remain unverified against the primary manuscript.
+
+<a id="mishrasanthanam26"></a>
+## mishrasanthanam26
+
+Om Swostik Mishra and Rahul Santhanam. *An Explicit `3.5n - o(n)` Size Lower Bound against General Boolean Circuits*. Electronic Colloquium on Computational Complexity (ECCC) TR26-260, 2026, https://eccc.weizmann.ac.il/report/2026/260/ . Bibliographic metadata as in the library bibliography; the primary text was not directly inspected.
 
 <a id="misragries82"></a>
 ## misragries82
@@ -1155,7 +1200,7 @@ Ryan O'Donnell. *Analysis of Boolean Functions*. Cambridge University Press, 201
 <a id="oliveirapichsanthanam2019"></a>
 ## oliveirapichsanthanam2019
 
-Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean modules cite its Lemmas 4.1 and 4.7.
+Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography. The Lean modules cite its Lemmas 4.1 and 4.7 and Theorem 1.4. For Theorem 1.4, worker meta-proj read the authors' copy of ECCC TR18-158 revision 1 (https://www.dcs.warwick.ac.uk/~igorcarb/documents/papers/OPS19.pdf) on 2026-11-11 UTC: Theorem 4 there is the same statement with an unspecified universal constant `c ≥ 1`, its proof in Section 4.1 uses `c = 10`, Definition 9 has no-instances of size `> s₂`, and Section 2 says gate types do not matter. The journal numbering `1.4` was not checked against the journal text.
 
 <a id="oliveirasanthanam2018"></a>
 ## oliveirasanthanam2018
@@ -1351,6 +1396,11 @@ Alexander Shen, Vladimir A. Uspensky and Nikolay Vereshchagin. *Kolmogorov Compl
 ## shi03
 
 Yaoyun Shi. "Both Toffoli and Controlled-NOT Need Little Help to Do Universal Quantum Computing." *Quantum Information and Computation* 3(1), 84–92, 2003. https://doi.org/10.26421/QIC3.1-7 ; arXiv version (v2, titled "Both Toffoli and Controlled-NOT need little help to do universal quantum computation") https://arxiv.org/abs/quant-ph/0205115 . The arXiv v2 PDF was read on 2026-11-08 UTC for §2 (the notation `U[A]` for a gate on chosen qubits), §4 (Propositions 4.1 and 4.2, Definition 4.3, Lemmas 4.4 and 4.5, Algorithm 2, Theorem 4.6) and Figure 1. The library's controlled circuits, phase oracles, reflection about zero and plane rotation follow the proof of Lemma 4.5 in §4.2. With the Hadamard gate, `σ_z = H σ_x H` holds exactly, so §4.1 is not used. Journal pagination is taken from the bibliographic record.
+
+<a id="shoup1990"></a>
+## shoup1990
+
+Victor Shoup. "New Algorithms for Finding Irreducible Polynomials over Finite Fields." *Mathematics of Computation* 54(189), 435–447, 1990. https://doi.org/10.1090/s0025-5718-1990-0993933-0 . Bibliographic metadata checked on 2026-11-11 UTC; the full primary PDF was not read directly, so the library relies on the standard deterministic Frobenius/trace construction and deterministic Berlekamp splitting verified directly in Lean without claiming section/theorem locators from the paper.
 
 <a id="sipser13"></a>
 ## sipser13

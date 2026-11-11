@@ -62,11 +62,11 @@ example (security : ℕ) :
 private theorem supported_correct (n m w η : ℕ) (hw : 0 < w)
     (hfresh : 4 * (m * η) < 2 ^ w)
     (hnand : 4 * ((1 + (n + 1) * w) * (m * η)) < 2 ^ w) (left right : Bool) :
-    ∃ keys ∈ (ProbComp.eval (keyGen n m w η)).support,
+    ∃ keys ∈ (ProbComp.eval (LWE.keyGen n m w η)).support,
       ∃ c₁ ∈ (ProbComp.eval (encrypt keys.1 left)).support,
         ∃ c₂ ∈ (ProbComp.eval (encrypt keys.1 right)).support,
           decrypt keys.2 c₁ = left ∧ decrypt keys.2 (nand c₁ c₂) = !(left && right) := by
-  obtain ⟨keys, hkeys⟩ := (ProbComp.eval (keyGen n m w η)).support_nonempty
+  obtain ⟨keys, hkeys⟩ := (ProbComp.eval (LWE.keyGen n m w η)).support_nonempty
   obtain ⟨c₁, hc₁⟩ := (ProbComp.eval (encrypt keys.1 left)).support_nonempty
   obtain ⟨c₂, hc₂⟩ := (ProbComp.eval (encrypt keys.1 right)).support_nonempty
   refine ⟨keys, hkeys, c₁, hc₁, c₂, hc₂, ?_, ?_⟩
@@ -95,10 +95,10 @@ example : PolynomiallyBounded (fun security => DepthParameters.rows security ^ 2
   fun_prop
 
 example : IsPPTOn encUnary (encPair encBits encBits)
-    (fun security => keyGenSerialized (Parameters.dimension security)
+    (fun security => LWE.keyGenSerialized (Parameters.dimension security)
       (DepthParameters.samples security) (DepthParameters.width security)
       (Parameters.noise security)) :=
-  isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
+  LWE.isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
     DepthParameters.computableInPolyTime_samples
     DepthParameters.computableInPolyTime_width Parameters.computableInPolyTime_noise
 
@@ -120,17 +120,17 @@ private theorem firstBitAdversary_isPPT : firstBitAdversary.IsPPT := by
 -- assumption, efficient-width premise, or unproved decryption-circuit contract is added.
 example
     (hLWE : DecisionLWE Parameters.dimension DepthParameters.samples DepthParameters.width
-      (fun k => noiseLaw (DepthParameters.width k) (Parameters.noise k))) :
+      (fun k => LWE.noiseLaw (DepthParameters.width k) (Parameters.noise k))) :
     Negligible (fun k =>
       Game.advantage
         (ProbComp.eval (Encryption.game
-          (fun k => keyGenSerialized (Parameters.dimension k) (DepthParameters.samples k)
+          (fun k => LWE.keyGenSerialized (Parameters.dimension k) (DepthParameters.samples k)
             (DepthParameters.width k) (Parameters.noise k))
           (fun k => encryptSerialized (Parameters.dimension k) (DepthParameters.samples k)
             (DepthParameters.width k))
           firstBitAdversary false k))
         (ProbComp.eval (Encryption.game
-          (fun k => keyGenSerialized (Parameters.dimension k) (DepthParameters.samples k)
+          (fun k => LWE.keyGenSerialized (Parameters.dimension k) (DepthParameters.samples k)
             (DepthParameters.width k) (Parameters.noise k))
           (fun k => encryptSerialized (Parameters.dimension k) (DepthParameters.samples k)
             (DepthParameters.width k))
