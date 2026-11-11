@@ -2969,7 +2969,7 @@ register_result "sturm-real-root-counting" where
   title := "Sturm's theorem for separable real polynomials"
   topic := "algebraic complexity"
   sources := [
-    { paper := BasuPollackRoy2006, theorem := "Theorem 2.50", locator := "Chapter 2" }
+    { paper := BasuPollackRoy2006, theorem := unverified, locator := unverified }
   ]
   theorems := [
     Polynomial.sturmSeq_map,
@@ -2987,10 +2987,9 @@ register_result "mahler-mignotte-root-separation" where
   title := "Hadamard's determinant inequality and Mahler–Mignotte root-separation bounds"
   topic := "algebraic complexity"
   sources := [
-    { paper := Mahler1964, theorem := "Lemma 1; Theorem 2", locator := "pp. 257–262" },
+    { paper := Mahler1964, theorem := unverified, locator := "pp. 257–262" },
     { paper := Mignotte1982, theorem := unverified, locator := "pp. 259–263" },
-    { paper := BasuPollackRoy2006, theorem := unverified,
-      locator := "Chapter 10, Sections 10.1–10.2" }
+    { paper := BasuPollackRoy2006, theorem := unverified, locator := unverified }
   ]
   theorems := [
     Matrix.hadamard_det_sq_le,
@@ -3008,9 +3007,9 @@ register_result "certified-real-root-isolation" where
   title := "Certified Sturm-bisection real-root isolation with Mignotte depth and TimeM bounds"
   topic := "algorithms"
   sources := [
-    { paper := BasuPollackRoy2006, theorem := "Theorem 2.50",
-      locator := "Chapter 2; Chapter 10, Sections 10.1–10.2" },
-    { paper := Mahler1964, theorem := "Theorem 2", locator := "pp. 257–262" }
+    { paper := BasuPollackRoy2006, theorem := unverified, locator := unverified },
+    { paper := Mahler1964, theorem := unverified, locator := "pp. 257–262" },
+    { paper := Mignotte1982, theorem := unverified, locator := "pp. 259–263" }
   ]
   theorems := [
     Cslib.RealRoot.isolateRootsTotal_isIsolatingFor,
@@ -3022,12 +3021,15 @@ register_result "certified-real-root-isolation" where
     Cslib.RealRoot.isolatePolyRootsTotal_bijective,
     Cslib.RealRoot.isolatePolyRootsTotalM_time_le_of_bitBound
   ]
-  scope := "Computable end-to-end TimeM ℕ-charged Sturm-bisection real-root isolator over ℚ[X] \
-    (isolateRootsTotalM / isolateRootsTotal on List ℚ, wrapped as isolatePolyRootsTotalM / \
-    isolatePolyRootsTotal on Polynomial ℚ) charging all preprocessing (trim, Euclidean Sturm \
-    sequence, Cauchy bound, denominator clearing, l^2 norm, and Nat.clog), bisection, left-root \
-    refinement, and Mignotte-fueled boundary separation into strictly disjoint closed intervals \
-    (J₁.upper < J₂.lower). Certifies strict monotone bijection onto {x : ℝ // aeval x p = 0} for \
+  scope := "End-to-end TimeM ℕ-charged Sturm-bisection real-root isolator over ℚ[X]: \
+    isolateRootsTotalM / isolateRootsTotal on List ℚ is executable (decide +kernel / #eval), \
+    charging all preprocessing (trim, Euclidean Sturm sequence, Cauchy bound, denominator \
+    clearing, l^2 norm, and Nat.clog), bisection, left-root refinement, and Mignotte-fueled \
+    boundary separation into strictly disjoint closed intervals (J₁.upper < J₂.lower), whereas \
+    isolatePolyRootsTotalM / isolatePolyRootsTotal on Polynomial ℚ is noncomputable (inheriting \
+    Polynomial's noncomputable Finsupp representation) and measures the TimeM ℕ cost of \
+    isolateRootsTotalM on p.coeffsBelow (p.natDegree + 1) without charging coefficient extraction \
+    from Polynomial ℚ. Certifies strict monotone bijection onto {x : ℝ // aeval x p = 0} for \
     every squarefree p : ℚ[X], dyadic endpoint numerator/denominator bit bounds, and O(n^5 (B+2)) \
     TimeM ℕ operation count under HasCoeffBitBound B cs. TimeM ℕ counts unit-cost algebraic/RAM \
     scalar operations on ℚ/ℤ/ℕ rather than bit-level Turing complexity along Euclidean Sturm \

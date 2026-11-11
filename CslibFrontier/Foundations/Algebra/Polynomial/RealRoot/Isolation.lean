@@ -57,9 +57,9 @@ concatenation (`left ++ right`) are uncharged (`0` ticks).
 ## References
 
 * [BasuPollackRoy2006] (locator unverified)
-* [Mahler1964], Lemma 1 and Theorem 2 (pp. 257–262)
-* [Mignotte1982], pp. 259–263 (internal theorem number unverified; `isolateRootsM_time_le` and
-  left-root refinement packaging are specific to this module)
+* [Mahler1964], pp. 257–262 (locator unverified)
+* [Mignotte1982], pp. 259–263 (locator unverified; `isolateRootsM_time_le` and left-root
+  refinement packaging are specific to this module)
 -/
 
 public section
@@ -271,7 +271,7 @@ private theorem refineLeftRootM_time_le (t : List ℚ) (seq : List (List ℚ)) (
       have hloop := refineLeftLoopM_time_le t seq fuel u v vu
       omega
 
-private theorem sturmVariationsList_antitone {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
+theorem sturmVariationsList_antitone {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     {u v : ℚ} (huv : u ≤ v) :
     sturmVariationsList (sturmSeqList cs) v ≤ sturmVariationsList (sturmSeqList cs) u := by
   let pR := (ofCoeffList cs).map (algebraMap ℚ ℝ)

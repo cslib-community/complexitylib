@@ -38,6 +38,13 @@ coefficient bit-length bound `B`.
 * `Cslib.RealRoot.DyadicBounded.den_le`, `Cslib.RealRoot.DyadicBounded.natAbs_num_le`,
   and `Cslib.RealRoot.isolateRoots_dyadicBounded`: dyadic numerator and denominator bounds on all
   endpoints produced by Sturm bisection.
+
+## References
+
+* [BasuPollackRoy2006] (locator unverified)
+* [Mahler1964], pp. 257–262 (locator unverified)
+* [Mignotte1982], pp. 259–263 (locator unverified; `HasCoeffBitBound`, `DyadicBounded`, and
+  `mignotteBisectionDepth_le_of_bitBound` are specific to this module)
 -/
 
 public section

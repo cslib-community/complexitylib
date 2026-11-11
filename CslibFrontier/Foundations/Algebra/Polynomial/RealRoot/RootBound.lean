@@ -47,12 +47,12 @@ squarefree integer and rational polynomials.
 
 ## References
 
-* [Mahler1964], Lemma 1 (Hadamard's determinant inequality) and Theorem 2 (root-separation lower
-  bound via discriminant and Mahler's measure, pp. 257–262).
+* [Mahler1964], pp. 257–262 (Hadamard's determinant inequality and root-separation lower bound via
+  discriminant and Mahler's measure; internal lemma/theorem numbers unverified).
 * [Mignotte1982], pp. 259–263 (coefficient `ℓ²` root-separation specialization via Landau's
   inequality; internal theorem number unverified).
-* [BasuPollackRoy2006], Chapter 10, Sections 10.1–10.2 (`Polynomial.mignotte_sep_sqNorm_rat`
-  packages the cleared-denominator rational `ℓ²` form for this library).
+* [BasuPollackRoy2006] (locator unverified; `Polynomial.mignotte_sep_sqNorm_rat` packages the
+  cleared-denominator rational `ℓ²` form for this library).
 -/
 
 public section

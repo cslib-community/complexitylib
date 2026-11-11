@@ -44,6 +44,12 @@ logarithm loops (`clog4M`) charge ticks proportional to their actual recursion l
   counterpart in `RatPoly.lean`.
 * `sturmSeqListM_time_le`, `sturmVariationsListM_time_le`, `cauchyBoundNatM_time_le`,
   `mignotteBisectionDepthM_time_le`: explicit `TimeM ℕ` operation-count upper bounds.
+
+## References
+
+* [BasuPollackRoy2006] (locator unverified)
+* [Mignotte1982], pp. 259–263 (locator unverified; `TimeM ℕ`-charged `List ℚ` preprocessing and
+  operation-count bounds are specific to this module)
 -/
 
 public section
@@ -418,13 +424,8 @@ theorem derivListM_time_le (cs : List ℚ) : (derivListM cs).time ≤ 5 * cs.len
   | cons _ as =>
     simp only [derivListM, TimeM.time_bind, TimeM.time_tick, derivAuxM_time, derivAuxM_ret,
       List.length_cons]
-    have hlen : ∀ (k : ℕ) (xs : List ℚ), (derivAux k xs).length = xs.length := by
-      intro k xs
-      induction xs generalizing k with
-      | nil => rfl
-      | cons _ tl ihtl => simp only [derivAux, List.length_cons, ihtl]
     have htr := trimM_time_le (derivAux 1 as)
-    rw [hlen 1 as] at htr
+    rw [derivAux_length 1 as] at htr
     omega
 
 /-- `TimeM ℕ`-charged fuel-bounded polynomial Euclidean division `divModAux`. -/
@@ -910,27 +911,6 @@ theorem signVariationsM_ret (xs : List ℚ) : (signVariationsM xs).ret = xs.sign
   simp only [signVariationsM, List.signVariations, TimeM.ret_bind, mapSignM_ret,
     filterNonzeroSignM_ret, destutterNeM_ret, lengthM_ret, TimeM.ret_pure]
 
-private theorem destutterNeAux_length_le (b : SignType) (l : List SignType) :
-    (List.destutter' (· ≠ ·) b l).length ≤ l.length + 1 := by
-  induction l generalizing b with
-  | nil =>
-    simp only [List.destutter'_nil, List.length_singleton, List.length_nil]
-    omega
-  | cons a l ih =>
-    by_cases hne : b ≠ a
-    · rw [List.destutter'_cons_pos l hne, List.length_cons, List.length_cons]
-      exact Nat.add_le_add_right (ih a) 1
-    · rw [List.destutter'_cons_neg l hne, List.length_cons]
-      exact (ih b).trans (Nat.le_succ _)
-
-private theorem destutterNe_length_le (l : List SignType) :
-    (List.destutter (· ≠ ·) l).length ≤ l.length := by
-  cases l with
-  | nil => simp only [List.destutter_nil, List.length_nil, le_refl]
-  | cons a l =>
-    rw [List.destutter_cons', List.length_cons]
-    exact destutterNeAux_length_le a l
-
 theorem signVariationsM_time_le (xs : List ℚ) :
     (signVariationsM xs).time ≤ 4 * xs.length + 6 := by
   simp only [signVariationsM, TimeM.time_bind, mapSignM_time, mapSignM_ret,
@@ -941,7 +921,8 @@ theorem signVariationsM_time_le (xs : List ℚ) :
     calc fs.length ≤ (xs.map SignType.sign).length := List.length_filter_le _ _
       _ = xs.length := List.length_map _
   have hds_t := destutterNeM_time_le fs
-  have hds_len : (List.destutter (· ≠ ·) fs).length ≤ fs.length := destutterNe_length_le fs
+  have hds_len : (List.destutter (· ≠ ·) fs).length ≤ fs.length :=
+    (List.destutter_sublist _ _).length_le
   dsimp only [fs] at hfs_len hds_t hds_len
   omega
 

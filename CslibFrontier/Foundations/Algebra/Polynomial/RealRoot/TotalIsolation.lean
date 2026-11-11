@@ -32,12 +32,17 @@ Unlike the bisection-only `isolateRootsM` in `Isolation.lean`:
    `{x : ℝ // Polynomial.aeval x p = 0}`, with proved `TimeM ℕ` operation-count bounds and dyadic
    endpoint numerator/denominator bounds in `(cs.length, B)` under `HasCoeffBitBound B cs`.
 
-**Model boundary note.** `TimeM ℕ` counts algebraic/RAM operations where primitive `ℚ`, `ℤ`, and
-`ℕ` scalar operations cost `O(1)` ticks; compiling Euclidean Sturm remainders to a multi-tape
-bit-level Turing machine would additionally track intermediate rational remainder bit-lengths (or
-use subresultant pseudo-remainders), whereas all bisection query points and returned interval
-endpoints here are dyadic rationals whose bit-lengths are bounded polynomially by
-`isolateRootsTotal_endpoint_bounds` and `mignotteBisectionDepth_le_of_bitBound`.
+**Model boundary note.** `isolateRootsTotalM` and `isolateRootsTotal` on `List ℚ` are executable
+(`decide +kernel` / `#eval`), whereas the `Polynomial ℚ` wrappers `isolatePolyRootsTotalM` and
+`isolatePolyRootsTotal` are `noncomputable` (inheriting `Polynomial`'s noncomputable `Finsupp`
+representation) and measure the `TimeM ℕ` cost of `isolateRootsTotalM` on
+`p.coeffsBelow (p.natDegree + 1)` without charging coefficient extraction from `Polynomial ℚ`.
+`TimeM ℕ` counts algebraic/RAM operations where primitive `ℚ`, `ℤ`, and `ℕ` scalar operations cost
+`O(1)` ticks; compiling Euclidean Sturm remainders to a multi-tape bit-level Turing machine would
+additionally track intermediate rational remainder bit-lengths (or use subresultant
+pseudo-remainders), whereas all bisection query points and returned interval endpoints here are
+dyadic rationals whose bit-lengths are bounded polynomially by `isolateRootsTotal_endpoint_bounds`
+and `mignotteBisectionDepth_le_of_bitBound`.
 
 ## Main definitions
 
@@ -68,6 +73,13 @@ endpoints here are dyadic rationals whose bit-lengths are bounded polynomially b
   `Cslib.RealRoot.isolatePolyRootsTotal_pairwise_disjoint`,
   `Cslib.RealRoot.isolatePolyRootsTotalM_time_le`,
   `Cslib.RealRoot.isolatePolyRootsTotalM_time_le_of_bitBound`: `Polynomial ℚ` theorems.
+
+## References
+
+* [BasuPollackRoy2006] (locator unverified)
+* [Mahler1964], pp. 257–262 (locator unverified)
+* [Mignotte1982], pp. 259–263 (locator unverified; end-to-end `TimeM ℕ` cost charging and
+  `separateTouchingM` boundary refinement are specific to this module)
 -/
 
 public section
@@ -266,18 +278,8 @@ private theorem isolateIocM_length_le {cs : List ℚ} (hsep : (ofCoeffList cs).S
         let vm := sturmVariationsList (sturmSeqList cs) m
         have hum : u ≤ m := by dsimp only [m]; linarith
         have hmv : m ≤ v := by dsimp only [m]; linarith
-        have h1 : vm ≤ vu := by
-          rw [hvu]
-          dsimp only [vm]
-          have hsepR : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).Separable := hsep.map
-          rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
-          exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr hum)
-        have h2 : vv ≤ vm := by
-          rw [hvv]
-          dsimp only [vm]
-          have hsepR : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).Separable := hsep.map
-          rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
-          exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr hmv)
+        have h1 : vm ≤ vu := hvu ▸ sturmVariationsList_antitone hsep hum
+        have h2 : vv ≤ vm := hvv ▸ sturmVariationsList_antitone hsep hmv
         have ihL := isolateIocM_length_le hsep t depthBound fuel' u m vu vm hum hvu rfl
         have ihR := isolateIocM_length_le hsep t depthBound fuel' m v vm vv hmv rfl hvv
         dsimp only [m, vm] at ihL ihR h1 h2
@@ -349,17 +351,8 @@ private theorem isolateIocTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs
           let vm := sturmVariationsList seq m
           have hum : u ≤ m := by dsimp only [m]; linarith
           have hmv : m ≤ v := by dsimp only [m]; linarith
-          have hsepR : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).Separable := hsep.map
-          have hle_left : vm ≤ vu := by
-            rw [hvu]
-            dsimp only [vm, seq]
-            rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
-            exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr hum)
-          have hle_right : vv ≤ vm := by
-            rw [hvv]
-            dsimp only [vm, seq]
-            rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
-            exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr hmv)
+          have hle_left : vm ≤ vu := hvu ▸ sturmVariationsList_antitone hsep hum
+          have hle_right : vv ≤ vm := hvv ▸ sturmVariationsList_antitone hsep hmv
           have hsv := sturmVariationsListM_time_le seq m
           have hlenL :
               ((isolateIocM t seq depthBound fuel' u m vu vm).ret).length ≤ seq.length := by
@@ -534,16 +527,14 @@ private theorem separateMidLoopM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).S
     have hm1m : m₁ < m := by dsimp only [m₁]; linarith
     have hmm2 : m < m₂ := by dsimp only [m₂]; linarith
     have hm2b : m₂ < b := by dsimp only [m₂]; linarith
-    have hsepR : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).Separable := hsep.map
-    have hanti : ∀ {x y : ℚ}, x ≤ y → sturmVariationsList seq y ≤ sturmVariationsList seq x := by
-      intro x y hxy
-      dsimp only [seq]
-      rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
-      exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr hxy)
-    have hva_m1 : sturmVariationsList seq m₁ ≤ sturmVariationsList seq a := hanti ham1.le
-    have hvm1_m : vm ≤ sturmVariationsList seq m₁ := hvm ▸ hanti hm1m.le
-    have hvm_m2 : sturmVariationsList seq m₂ ≤ vm := hvm ▸ hanti hmm2.le
-    have hvm2_b : sturmVariationsList seq b ≤ sturmVariationsList seq m₂ := hanti hm2b.le
+    have hva_m1 : sturmVariationsList seq m₁ ≤ sturmVariationsList seq a :=
+      sturmVariationsList_antitone hsep ham1.le
+    have hvm1_m : vm ≤ sturmVariationsList seq m₁ :=
+      hvm ▸ sturmVariationsList_antitone hsep hm1m.le
+    have hvm_m2 : sturmVariationsList seq m₂ ≤ vm :=
+      hvm ▸ sturmVariationsList_antitone hsep hmm2.le
+    have hvm2_b : sturmVariationsList seq b ≤ sturmVariationsList seq m₂ :=
+      sturmVariationsList_antitone hsep hm2b.le
     dsimp only [seq, m₁, m₂] at hva_m1 hvm1_m hvm_m2 hvm2_b
     dsimp only [separateMidLoopM]
     simp only [TimeM.ret_bind, sturmVariationsListM_ret]

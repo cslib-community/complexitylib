@@ -55,9 +55,9 @@ constant, yielding the exact root-count identity on half-open intervals `(a, b]`
 
 ## References
 
-* [S. Basu, R. Pollack, and M.-F. Roy, *Algorithms in Real Algebraic Geometry*][BasuPollackRoy2006],
-  Chapter 2, Theorem 2.50 (Sturm's theorem over real closed fields; proved here on `(a, b]` over `ℝ`
-  by local constancy of `sturmVariations p x + #{r ≤ x}` on top of Mathlib's `Polynomial.sturmSeq`).
+* [S. Basu, R. Pollack, and M.-F. Roy, *Algorithms in Real Algebraic Geometry*][BasuPollackRoy2006]
+  (locator unverified; Sturm's theorem proved here on `(a, b]` over `ℝ` by local constancy of
+  `sturmVariations p x + #{r ≤ x}` on top of Mathlib's `Polynomial.sturmSeq`).
 -/
 
 public section
