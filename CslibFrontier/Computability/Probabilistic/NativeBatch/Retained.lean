@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Coverage
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import Mathlib.Tactic
 
 /-!

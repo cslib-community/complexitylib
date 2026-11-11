@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper
 import CslibFrontier.Probability.PMF.Map
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import Mathlib.Tactic
 
 /-!

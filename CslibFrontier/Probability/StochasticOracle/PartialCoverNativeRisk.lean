@@ -11,7 +11,7 @@ public import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeOptim
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverDisintegration
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverReindex
 import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchReceipts
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import Mathlib.Tactic
 
 /-!

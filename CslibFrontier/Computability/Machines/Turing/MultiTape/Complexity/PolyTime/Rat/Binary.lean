@@ -133,7 +133,7 @@ theorem ratBin_le : ComputableInPolyTime (fun p : ℚ × ℚ => decide (p.1 ≤ 
         (encPair encRatBin encRatBin) encIntBin := by fun_prop
     have hr : ComputableInPolyTime (fun p : ℚ × ℚ => p.2.num * (p.1.den : ℤ))
         (encPair encRatBin encRatBin) encIntBin := by fun_prop
-    exact of_tidy (ComputableTidilyInPolyTime.intBin_le.comp (hl.tidy.prod hr.tidy))
+    exact intBin_le.comp (hl.prod hr)
   simpa only [← Rat.le_iff] using h
 
 /-- Inversion on binary rationals; zero is handled by the canonical representation. -/
