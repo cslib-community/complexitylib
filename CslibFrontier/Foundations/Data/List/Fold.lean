@@ -29,7 +29,7 @@ Adapts the selection identity from Computability/Probabilistic/Finite.lean on th
 `crypto` branch at `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
-@[expose] public section
+public section
 
 /-- An invariant depending on the number of consumed elements holds after every bounded prefix
 fold if it holds initially and is preserved by the next list element. Unlike `List.foldlRecOn`,
