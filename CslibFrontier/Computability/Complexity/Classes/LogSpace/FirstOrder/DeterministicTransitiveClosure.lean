@@ -77,7 +77,7 @@ theorem encodedLanguage_mem_L {φ : Formula (language L) TC.shape [] Empty} {K :
       obtain ⟨res, regs', hres, hreach, hk⟩ := correct hE φ rfl hwidth (fun e : Empty => e.elim)
         3 Empty.elim RelEnv.empty b T F regs hP (by decide) (fun e => e.elim) (by omega) h0
         (fun e => e.elim) hB
-      refine ⟨res, regs', ?_, hreach, hk.2.2⟩
+      refine ⟨res, regs', ?_, hreach, hk.bounded⟩
       rw [hres]
       exact ⟨fun h => ⟨hwf, hn, (hφ (decoded v a hn)).mpr h⟩,
         fun ⟨_, _, h⟩ => (hφ (decoded v a hn)).mp h⟩
