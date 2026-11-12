@@ -24,6 +24,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from proof_lengths import masks  # noqa: E402
 
 ROOTS = ("CslibFrontier", "CslibFrontierTests")
+# The test target also imports this root-package library. It is an inventory prerequisite,
+# not an additional declaration-analysis root. Keep library-only probes independent of it.
+ROOT_OUTPUT_DEPENDENCIES = {"CslibFrontierTests": ("CslibFrontier", "CslibFrontierResults")}
 # Libraries that Lake builds from a glob (`lakefile.toml`) have no root aggregator file: their
 # modules are exactly the source files under their directory.
 GLOB_ROOTS = ("CslibFrontierTests",)
@@ -52,10 +55,10 @@ def glob_modules(root: str) -> list[str]:
                   for p in (ROOT / root).rglob("*.lean"))
 
 
-def root_modules(glob=glob_modules) -> list[str]:
+def root_modules(glob=glob_modules, roots: tuple[str, ...] | None = None) -> list[str]:
     """Modules whose imports cover both libraries: the aggregator roots and every module of a
     glob-built library."""
-    return [m for root in ROOTS
+    return [m for root in (ROOTS if roots is None else roots)
             for m in (glob(root) if root in GLOB_ROOTS else [root])]
 
 
@@ -82,9 +85,60 @@ def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
 
 # --- Freshness ----------------------------------------------------------------------------------
 
-def lake_outputs_current() -> bool:
-    """Whether Lake finds the default build outputs of the two libraries current."""
-    return subprocess.run(["lake", "build", "--no-build", *ROOTS], cwd=ROOT,
+def module_outputs_present(build_dir: Path, module: str) -> bool:
+    """Check physical artifacts using Lake's ModuleOutputDescrs trace format.
+
+    An archive is not a substitute for an unpacked artifact. Lake's --no-build can unpack it,
+    or restore local cache entries, before reaching the compilation guard.
+    """
+    base = build_dir / module.replace(".", "/")
+    ir = build_dir.parent.parent / "ir" / module.replace(".", "/")
+    try:
+        outputs = json.loads(base.with_suffix(".trace").read_text())["outputs"]
+        if not isinstance(outputs, dict) or set(outputs) - {"m", "o", "i", "rs", "r", "c", "b", "l"}:
+            return False
+        parts = outputs["o"]
+        if not isinstance(parts, list):
+            return False
+        is_module = outputs.get("m", len(parts) > 1)
+        if not isinstance(is_module, bool) or len(parts) != (3 if is_module else 1):
+            return False
+        required = [(base, ext, desc) for ext, desc in
+                    zip(("olean", "olean.server", "olean.private"), parts)]
+        required.append((base, "ilean", outputs["i"]))
+        for key, ext in (("rs", "ir.sig"), ("r", "ir"), ("c", "c"), ("b", "bc"), ("l", "ltar")):
+            if key in outputs:
+                required.append((base if key in {"rs", "r"} else ir, ext, outputs[key]))
+        return all(isinstance(desc, str)
+                   and re.fullmatch(r"[0-9a-fA-F]{16}\." + re.escape(ext), desc)
+                   and Path(str(path) + "." + ext).is_file()
+                   for path, ext, desc in required)
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+
+
+def output_inventory_complete(build_dir: Path, roots: tuple[str, ...] | None = None) -> bool:
+    """Refuse cold/partial project outputs before asking Lake about freshness.
+
+    Include current sources, not just saved import headers: a changed aggregate can import a
+    newly added module absent from its old .ilean. This is deliberately conservative for the
+    two source-root layouts supported by this reader.
+    """
+    roots = ROOTS if roots is None else roots
+    dependencies = tuple(dependency for root in roots
+                         for dependency in ROOT_OUTPUT_DEPENDENCIES.get(root, ()))
+    inventory_roots = tuple(dict.fromkeys((*roots, *dependencies)))
+    modules = set(root_modules(glob_modules, inventory_roots))
+    modules.update(m for root in inventory_roots for m in glob_modules(root))
+    return all(module_outputs_present(build_dir, module) for module in sorted(modules))
+
+
+def lake_outputs_current(roots: tuple[str, ...] | None = None) -> bool:
+    """Check complete outputs with Lake; complete-tree cache mutation remains possible (#4700)."""
+    roots = ROOTS if roots is None else roots
+    if not output_inventory_complete(DEFAULT_BUILD_DIR, roots):
+        return False
+    return subprocess.run(["lake", "build", "--no-build", *roots], cwd=ROOT,
                           capture_output=True).returncode == 0
 
 

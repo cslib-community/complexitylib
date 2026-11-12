@@ -183,21 +183,28 @@ example (n i : ℕ) (s : Memory.State) :
 def halve (a : ℕ) : Memory.Prog ℕ :=
   boundedWhile (fun _ a => 0 < a) (fun ((_ : ℕ), a) => pure (a >>> 1)) a (a + 1) a
 
-/--
-error: realize: a loop body must begin with a memory query, which pays for the iteration;
-the body begins with
-  PFunctor.FreeM.pure (x.2 >>> 1)
--/
-#guard_msgs in
-example : Realizes .exact halve word word (fun _ _ _ => True) (fun _ _ => 0) := by
+/-- The query-free source retains one control-work unit per reached iteration. -/
+example : Realizes .exact halve word word (fun _ _ _ => True)
+    (fun a s => whileWork (fun _ a => 0 < a)
+      (fun ((_ : ℕ), a) => pure (a >>> 1)) (fun _ _ => 0) a (a + 1) a s) := by
   realize
+  intro hvalid
+  refine whileSafe_of_measure (fun _ a => 0 < a)
+    (fun ((_ : ℕ), a) => pure (a >>> 1)) _ w d (fun a _ => Fits w a) (fun a _ => a)
+    (fun a _ _ hr hg => by change 0 < a at hg; omega)
+    (fun a t ha hg _ => ⟨ha.of_le hg, ?_, ?_⟩)
+    (show Fits w d from hwords 0) (Nat.le_succ d) hvalid
+  · exact ha.of_le (Nat.shiftRight_le a 1)
+  · change a >>> 1 < a
+    rw [Nat.shiftRight_eq_div_pow]
+    exact Nat.div_lt_self hg (by decide)
 
-/-- A non-strict comparison is not a native test. -/
+/-- A general non-strict comparison is not a native test. -/
 def upTo (n : ℕ) : Memory.Prog ℕ :=
   boundedWhile (fun n i => i ≤ n) (fun (_, i) => do let _ ← Memory.read i; pure (i + 1)) n (n + 1) 0
 
 /--
-error: realize: a loop guard must be `a = b`, `a < b`, `a > b` or `a ≠ 0` on words, got
+error: realize: a loop guard must be `a = b`, `a < b`, `a > b`, `a ≠ 0` or `a + 1 ≤ b` on words, got
   a ≤ d
 -/
 #guard_msgs in

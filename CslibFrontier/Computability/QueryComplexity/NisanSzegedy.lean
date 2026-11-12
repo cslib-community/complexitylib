@@ -70,6 +70,8 @@ The sharper exact-degree bound `D(f) ≤ 2 deg(f)³` is proved in
 
 @[expose] public section
 
+open scoped NNReal
+
 namespace Cslib
 
 open Finset BitString Polynomial
@@ -249,15 +251,16 @@ theorem blockSensitivity_le_two_mul_degree_sq (f : BooleanFunction n) :
   exact_mod_cast this
 
 /-- **Nisan–Szegedy for approximate degree**: `(1 - 2ε) bs(f) ≤ 2 adeg_ε(f)²` for `ε ≥ 0`. -/
-theorem one_sub_two_mul_mul_blockSensitivity_le {ε : ℝ} (hε : 0 ≤ ε) (f : BooleanFunction n) :
-    (1 - 2 * ε) * blockSensitivity f ≤ 2 * approxDegree ε f ^ 2 := by
-  obtain ⟨p, hp, hpf⟩ := exists_mem_lowDegree_approxDegree (f := f) hε
+theorem one_sub_two_mul_mul_blockSensitivity_le {ε : ℝ≥0} (f : BooleanFunction n) :
+    (1 - 2 * (ε : ℝ)) * blockSensitivity f ≤ 2 * approxDegree ε f ^ 2 := by
+  obtain ⟨p, hp, hpf⟩ := exists_mem_lowDegree_approxDegree (ε := ε) (f := f)
   exact one_sub_two_mul_mul_blockSensitivity_le_of_mem_lowDegree hp hpf
 
 /-- **Nisan–Szegedy**: `bs(f) ≤ 6 adeg(f)²`, for the approximate degree `adeg = adeg_{1/3}`. -/
 theorem blockSensitivity_le_six_mul_approxDegree_sq (f : BooleanFunction n) :
     blockSensitivity f ≤ 6 * approxDegree (1 / 3) f ^ 2 := by
-  have := one_sub_two_mul_mul_blockSensitivity_le (by norm_num : (0 : ℝ) ≤ 1 / 3) f
+  have := one_sub_two_mul_mul_blockSensitivity_le (ε := 1 / 3) f
+  norm_num only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] at this
   have h : (blockSensitivity f : ℝ) ≤ 6 * approxDegree (1 / 3) f ^ 2 := by linarith
   exact_mod_cast h
 

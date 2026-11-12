@@ -220,6 +220,14 @@ class WorkflowParityTests(unittest.TestCase):
         for audit in ("Tidy statement ratchet", "Result registry references", "Changed-file lints"):
             self.assertGreater(names.index(audit), names.index("lake build"))
 
+    def test_local_steps_are_not_ci_steps(self):
+        # A local step must neither pass for a mirror of a CI step nor hide one from the parity check.
+        ci = {step["name"] for step in self.named}
+        others = {step.name for step in full.STEPS} | set(full.PREFLIGHT) | set(full.CI_ONLY)
+        for step in full.LOCAL_STEPS:
+            with self.subTest(step=step.name):
+                self.assertNotIn(step.name, ci | others)
+
 
 TIDY = "          python3 -B scripts/check_tidy_surface.py\n"
 REGISTRY = ('      - name: "Result registry references"\n'
@@ -329,9 +337,9 @@ class RunnerTests(unittest.TestCase):
     def test_main_passes_the_base_to_the_steps(self):
         with patch.object(full, "run_steps", return_value=0) as run:
             self.assertEqual(full.main(["--base", "abc123"]), 0)
-            self.assertEqual(run.call_args.args, (full.STEPS, "abc123"))
+            self.assertEqual(run.call_args.args, (full.STEPS + full.LOCAL_STEPS, "abc123"))
             full.main([])
-            self.assertEqual(run.call_args.args, (full.STEPS, "origin/main"))
+            self.assertEqual(run.call_args.args, (full.STEPS + full.LOCAL_STEPS, "origin/main"))
 
 
 if __name__ == "__main__":

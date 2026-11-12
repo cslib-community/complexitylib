@@ -910,25 +910,7 @@ theorem realizes_appendTailItemGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
       AppendTailItemGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
-      let r_idx ← pure (4 + 3 * d.2.2 + 1)
-      let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
-      let i1 ← pure 1
-      let t_new ← readGMGenProg (d.1, (d.2.1, i1))
-      let d_new ← pure (d.2.2 * dpTailCap d.1 + r_b)
-      let ptr_idx ← pure (dpGmTailPtrBase d.1 + d_new)
-      writeGMGenProg (d.1, ((d.2.1, ptr_idx), t_new))
-      let own_idx ← pure (dpGmTailOwnerBase d.1 + t_new)
-      writeGMGenProg (d.1, ((d.2.1, own_idx), d_new))
-      let r_b1 ← pure (r_b + 1)
-      writeGMGenProg (d.1, ((d.2.1, r_idx), r_b1))
-      let t_new1 ← pure (t_new + 1)
-      writeGMGenProg (d.1, ((d.2.1, i1), t_new1))
-      pure t_new) ?_
-    (fun d => by simp [appendTailItemGenProg, ← PFunctor.FreeM.bind_eq_bind])
-  realizeDictWith [appendTailItemGenPre_mk]
+  realizeDictWith [appendTailItemGenPre_mk] using [realizes_readGMGen, realizes_writeGMGen]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (appendTailItem_bounds h.2).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
@@ -936,13 +918,13 @@ theorem realizes_appendTailItemGen :
   · exact (appendTailItem_bounds h.2).1
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact (appendTailItem_bounds h.2).2.1
-  · have hbnd := (appendTailItem_bounds h.2).2.2.1
-    exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU (by omega)
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (appendTailItem_bounds h.2).2.2.1)
   · exact (appendTailItem_bounds h.2).2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (appendTailItem_bounds h.2).2.2.2.1)
+  · have hbnd := (appendTailItem_bounds h.2).2.2.1
+    exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU (by omega)
   · exact (appendTailItem_bounds h.2).2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (appendTailItem_bounds h.2).2.2.2.2.1
@@ -1248,37 +1230,9 @@ theorem realizes_removeLastTailItemGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
       RemoveLastTailItemGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
-  have hrq := realizes_readQuotGen
-  have hwq := realizes_writeQuotGen
-  have hrv := realizes_readValGen
-  have hwv := realizes_writeValGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
-      let r_idx ← pure (4 + 3 * d.2.2 + 1)
-      let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
-      let r_del ← pure (r_b - 1)
-      let ptr_del_idx ← pure (dpGmTailPtrBase d.1 + (d.2.2 * dpTailCap d.1 + r_del))
-      let t_del ← readGMGenProg (d.1, (d.2.1, ptr_del_idx))
-      let i1 ← pure 1
-      let n_tails ← readGMGenProg (d.1, (d.2.1, i1))
-      let t_last ← pure (n_tails - 1)
-      let own_last_idx ← pure (dpGmTailOwnerBase d.1 + t_last)
-      let d_last ← readGMGenProg (d.1, (d.2.1, own_last_idx))
-      let g_last ← pure (dpNMaxSubOne d.1 - t_last)
-      let g_del ← pure (dpNMaxSubOne d.1 - t_del)
-      let q_move ← readQuotGenProg (d.1, (d.2.1, g_last))
-      writeQuotGenProg (d.1, ((d.2.1, g_del), q_move))
-      let v_move ← readValGenProg (d.1, (d.2.1, g_last))
-      writeValGenProg (d.1, ((d.2.1, g_del), v_move))
-      let ptr_last_idx ← pure (dpGmTailPtrBase d.1 + d_last)
-      writeGMGenProg (d.1, ((d.2.1, ptr_last_idx), t_del))
-      let own_del_idx ← pure (dpGmTailOwnerBase d.1 + t_del)
-      writeGMGenProg (d.1, ((d.2.1, own_del_idx), d_last))
-      writeGMGenProg (d.1, ((d.2.1, r_idx), r_del))
-      writeGMGenProg (d.1, ((d.2.1, i1), t_last))) ?_
-    (fun d => by simp [removeLastTailItemGenProg, ← PFunctor.FreeM.bind_eq_bind])
-  realizeDictWith [removeLastTailItemGenPre_mk]
+  realizeDictWith [removeLastTailItemGenPre_mk] using
+    [realizes_readGMGen, realizes_writeGMGen, realizes_readQuotGen, realizes_writeQuotGen,
+      realizes_readValGen, realizes_writeValGen]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (removeLastTailItem_bounds h.2).1)
   · exact fits_const_of_dictEnv h.1 (by omega)
@@ -1295,8 +1249,8 @@ theorem realizes_removeLastTailItemGen :
       (le_of_lt (removeLastTailItem_bounds h.2).2.2.2.2.2.1)
   · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.1
   · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.1
-  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.1
   · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.1
+  · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.1
   · exact (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (removeLastTailItem_bounds h.2).2.2.2.2.2.2.2.2.2.2.1)

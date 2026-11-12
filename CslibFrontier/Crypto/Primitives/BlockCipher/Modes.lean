@@ -353,6 +353,76 @@ theorem uniformBlocks_succ (k : ℕ) :
       (PMF.uniformOfFintype (BitString n)).bind fun u => (uniformBlocks k).map (u :: ·) := by
   simp only [uniformBlocks, PMF.iid, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp,
     Function.comp_def, List.ofFn_succ, Fin.cons_zero, Fin.cons_succ]
+
+/-- Reading `k` independent uniform `n`-bit blocks as a function on `Fin k` and converting via
+  `List.ofFn` equals `uniformBlocks k`. -/
+theorem uniformBlocks_eq (k : ℕ) :
+    uniformBlocks (n := n) k = (PMF.uniformOfFintype (Fin k → BitString n)).map List.ofFn := by
+  rw [uniformBlocks, PMF.iid_uniformOfFintype]
+
+/-- Every list in the support of `uniformBlocks k` has length `k`. -/
+theorem length_of_mem_support_uniformBlocks {k : ℕ} {us : List (BitString n)}
+    (h : us ∈ (uniformBlocks (n := n) k).support) : us.length = k := by
+  rw [uniformBlocks, PMF.support_map] at h
+  obtain ⟨f, -, rfl⟩ := h
+  simp
+
+/-- Every `(iv, us)` pair in the support of a uniform IV paired with `uniformBlocks k` has
+  `us.length = k`. -/
+theorem length_snd_of_mem_support_uniformDraws {k : ℕ}
+    {p : BitString n × List (BitString n)}
+    (h : p ∈ ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
+      (uniformBlocks (n := n) k).map (iv, ·)).support) : p.2.length = k := by
+  rw [PMF.mem_support_bind_iff] at h
+  obtain ⟨iv, -, hp⟩ := h
+  rw [PMF.support_map] at hp
+  obtain ⟨us, hus, rfl⟩ := hp
+  exact length_of_mem_support_uniformBlocks hus
+
+/-- XORing a fixed block sequence `ms` into `uniformBlocks ms.length` preserves the uniform
+  distribution `uniformBlocks ms.length`. -/
+theorem map_zipWith_uniformBlocks :
+    ∀ ms : List (BitString n),
+      (uniformBlocks ms.length).map (fun us => List.zipWith (· + ·) us ms) =
+        uniformBlocks ms.length
+  | [] => by simp
+  | m :: ms => by
+    have hshift : (PMF.uniformOfFintype (BitString n)).map (· + m) =
+        PMF.uniformOfFintype (BitString n) :=
+      PMF.uniformOfFintype_map_equiv (Equiv.addRight m)
+    calc (uniformBlocks (m :: ms).length).map (fun us => List.zipWith (· + ·) us (m :: ms))
+        = (PMF.uniformOfFintype (BitString n)).bind fun u =>
+            ((uniformBlocks ms.length).map fun us => List.zipWith (· + ·) us ms).map
+              ((u + m) :: ·) := by
+          rw [List.length_cons, uniformBlocks_succ, PMF.map_bind]
+          congr 1
+          funext u
+          rw [PMF.map_comp, PMF.map_comp]
+          rfl
+      _ = (PMF.uniformOfFintype (BitString n)).bind fun u =>
+            (uniformBlocks ms.length).map ((u + m) :: ·) := by
+          rw [map_zipWith_uniformBlocks ms]
+      _ = ((PMF.uniformOfFintype (BitString n)).map (· + m)).bind fun u =>
+            (uniformBlocks ms.length).map (u :: ·) :=
+          (PMF.bind_map (PMF.uniformOfFintype (BitString n)) (· + m) fun u =>
+            (uniformBlocks ms.length).map (u :: ·)).symm
+      _ = uniformBlocks (m :: ms).length := by
+          rw [hshift, List.length_cons, uniformBlocks_succ]
+
+/-- XORing a fixed block sequence `ms` into the uniform block draws paired with an independent
+  uniform IV leaves the joint `(iv, blocks)` distribution invariant. -/
+theorem map_iv_uniformBlocks_zipWith (ms : List (BitString n)) :
+    ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
+        (uniformBlocks (n := n) ms.length).map (iv, ·)).map
+      (fun p => (p.1, List.zipWith (· + ·) p.2 ms)) =
+      (PMF.uniformOfFintype (BitString n)).bind fun iv =>
+        (uniformBlocks (n := n) ms.length).map (iv, ·) := by
+  rw [PMF.map_bind]
+  refine congrArg _ (funext fun iv => ?_)
+  rw [PMF.map_comp]
+  conv_rhs => rw [← map_zipWith_uniformBlocks ms, PMF.map_comp]
+  rfl
+
 /-- **Lazy-sampled multi-block chain collision lemma**: when the initial chaining block `iv` and
   the `bs.length` step outputs are drawn independently and uniformly from `BitString n`, the outer
   measure of the bad event `¬goodChain ks iv bs draws` (some step input `cᵢ₋₁ + bᵢ` collides with

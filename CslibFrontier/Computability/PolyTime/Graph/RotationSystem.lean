@@ -46,7 +46,8 @@ open Turing.MultiTapeTM
     ComputableInPolyTime RotationCertificate.successor encRotationCertificate (encList encNat) :=
   encRotationCertificate_successor_deg.computableInPolyTime
 
-private theorem incidenceVertices_polyTime :
+/-- Enumerating listed endpoint occurrences is native polynomial-time on every raw graph. -/
+theorem incidenceVertices_polyTime :
     ComputableInPolyTime incidenceVertices encGraph (encList encNat) := by
   unfold incidenceVertices encGraph
   fun_prop
@@ -111,7 +112,10 @@ theorem computableInPolyTime_orbitBool :
       (by unfold encRotationWalk; fun_prop)
   · fun_prop
 
-private theorem orbitBool_polyTime {α : Type} {enc : α ↪ List Bool}
+/-- Bounded orbit scanning composes native table, binary endpoint and unary clock computations.
+The clock is explicit; the runtime certificate applies to every raw table and index, without
+a graph, permutation or certificate-validity premise. -/
+theorem orbitBool_polyTime {α : Type} {enc : α ↪ List Bool}
     {n i j : α → ℕ} {table : α → List ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
     (ht : ComputableInPolyTime table enc (encList encNat))
@@ -121,7 +125,8 @@ private theorem orbitBool_polyTime {α : Type} {enc : α ↪ List Bool}
 
 attribute [local fun_prop] orbitBool_polyTime
 
-private theorem range_binary :
+/-- A unary-funded range can be enumerated with binary-encoded entries in polynomial time. -/
+theorem range_binary :
     ComputableInPolyTime List.range encUnary (encList encNat) := by
   have h := (ComputableTidilyInPolyTime.map
     ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range
@@ -211,7 +216,10 @@ private theorem reverseIndex_polyTime : ComputableInPolyTime reverseIndex encNat
 
 attribute [local fun_prop] reverseIndex_polyTime
 
-private theorem faceTable_polyTime :
+/-- Construct the inverse-successor face table by bounded scans of actual graph darts.
+Runtime is native polynomial time on all raw graphs and certificates, including oversized
+binary successors; no validity or endpoint-declaration premise is used. -/
+theorem faceTable_polyTime :
     ComputableInPolyTime (fun p : Graph × RotationCertificate => faceTable p.1 p.2)
       encGraphRotationCertificate (encList encNat) := by
   unfold faceTable encGraphRotationCertificate encGraph

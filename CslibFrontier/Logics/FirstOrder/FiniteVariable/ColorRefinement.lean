@@ -63,6 +63,8 @@ unions `G ⊕g H`.
 * `SimpleGraph.exists_equiv_adj_iff_refineColoring_eq`: a color-preserving bijection carrying `v`
   to `w` and neighbors of `v` to neighbors of `w` exists iff `v` and `w` have equal refined colors
   and the overall color multisets agree.
+* `Cslib.Logic.FO.partialIsoOn_graph_iff`: partial isomorphisms on simple graphs reduce to
+  coordinatewise equality and adjacency on placed pebbles.
 * `Cslib.Logic.FO.bijPebbleWins_graph_iff`, `Cslib.Logic.FO.bijPebbleWins_graph_empty_iff`,
   `Cslib.Logic.FO.bijPebbleWins_graph_singleton_iff`,
   `Cslib.Logic.FO.bijPebbleWins_graph_univ_iff`: round-by-round equivalence between the bijective
@@ -256,7 +258,9 @@ private theorem fin_two_add_one_add_one (p : Fin 2) : p + 1 + 1 = p := by
 private theorem comp_vec_two {α β : Type*} (a : α → β) (i j : α) : a ∘ ![i, j] = ![a i, a j] :=
   (FinVec.map_eq a ![i, j]).symm
 
-private theorem partialIsoOn_graph_two_iff {S : Set (Fin 2)} {a : Fin 2 → V} {b : Fin 2 → W} :
+/-- On simple graphs, placed pebbles in `S` form a partial isomorphism iff equality and adjacency
+agree on all pairs in `S`. -/
+theorem partialIsoOn_graph_iff {m : ℕ} {S : Set (Fin m)} {a : Fin m → V} {b : Fin m → W} :
     (letI := G.structure; letI := H.structure; PartialIsoOn Language.graph S a b) ↔
       ∀ i ∈ S, ∀ j ∈ S, (a i = a j ↔ b i = b j) ∧ (G.Adj (a i) (a j) ↔ H.Adj (b i) (b j)) := by
   let := G.structure
@@ -276,7 +280,7 @@ private theorem partialIsoOn_graph_two_iff {S : Set (Fin 2)} {a : Fin 2 → V} {
 private theorem partialIsoOn_graph_singleton (i : Fin 2) (a : Fin 2 → V) (b : Fin 2 → W) :
     letI := G.structure; letI := H.structure
     PartialIsoOn Language.graph {i} a b := by
-  rw [partialIsoOn_graph_two_iff]
+  rw [partialIsoOn_graph_iff]
   rintro p rfl q rfl
   exact ⟨iff_of_true rfl rfl, iff_of_false G.irrefl H.irrefl⟩
 
@@ -286,7 +290,7 @@ private theorem partialIsoOn_graph_insert_iff {S : Set (Fin 2)} {a : Fin 2 → V
       PartialIsoOn Language.graph (insert p S) (Function.update a p c) (Function.update b p d)) ↔
       (p + 1 ∈ S → (c = a (p + 1) ↔ d = b (p + 1)) ∧
         (G.Adj (a (p + 1)) c ↔ H.Adj (b (p + 1)) d)) := by
-  rw [partialIsoOn_graph_two_iff]
+  rw [partialIsoOn_graph_iff]
   have hupd_a : Function.update a p c (p + 1) = a (p + 1) :=
     Function.update_of_ne (fin_two_add_one_ne p) c a
   have hupd_b : Function.update b p d (p + 1) = b (p + 1) :=

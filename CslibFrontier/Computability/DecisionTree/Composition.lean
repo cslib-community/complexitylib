@@ -8,11 +8,13 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.DecisionTree.Cost
+public import Mathlib.Basic.Finite.Sigma
 
 /-!
 # Composition of decision trees
 
-`bind` replaces each output leaf by a continuation. `substitute` replaces each query by a
+`bind` replaces each output leaf by a continuation; `seqFin` runs finitely many trees one after
+another and outputs all their outputs. `substitute` replaces each query by a
 Boolean-valued decision tree and continues according to its answer. These are executable tree
 constructions, with exact evaluation and per-input cost laws. The input variables of different
 subroutines may overlap, and repeated queries are charged each time; substitution does not cache
@@ -27,10 +29,13 @@ including empty blocks. No multiplicative lower bound is asserted.
 ## Main definitions
 
 * `Cslib.DecisionTree.bind`: replace output leaves by continuations.
+* `Cslib.DecisionTree.seqFin`: run `k` trees in sequence and output all their outputs.
 * `Cslib.DecisionTree.substitute`: replace queries by Boolean-valued subroutines.
 
 ## Main results
 
+* `Cslib.DecisionTree.eval_seqFin`, `Cslib.DecisionTree.depth_seqFin_le`: the outputs and the
+  depth of a sequence of trees.
 * `Cslib.DecisionTree.eval_substitute`: query substitution computes function composition.
 * `Cslib.DecisionTree.weightedCost_substitute`: exact input-dependent composition cost.
 * `Cslib.DecisionTree.weightedDepth_substitute_le`: composition with heterogeneous query costs.
@@ -101,6 +106,36 @@ theorem depth_bind_le (t : DecisionTree ι β) (k : β → DecisionTree ι γ)
     {d : ℕ} (hk : ∀ b, (k b).depth ≤ d) : (t.bind k).depth ≤ t.depth + d := by
   simpa only [weightedDepth_const, Nat.mul_one] using
     t.weightedDepth_bind_le k (fun _ => 1) (fun b => by simpa using hk b)
+
+/-- Run the trees `t 0, …, t (k - 1)` one after another on the same input and output all their
+outputs. -/
+@[expose] def seqFin : {k : ℕ} → (Fin k → DecisionTree ι β) → DecisionTree ι (Fin k → β)
+  | 0, _ => leaf Fin.elim0
+  | _ + 1, t => (t 0).bind fun b => (seqFin fun j => t j.succ).bind fun bs => leaf (Fin.cons b bs)
+
+/-- Running trees in sequence outputs each tree's output. -/
+@[simp] theorem eval_seqFin {k : ℕ} (t : Fin k → DecisionTree ι β) (x : ι → Bool) :
+    (seqFin t).eval x = fun j => (t j).eval x := by
+  induction k with
+  | zero => exact funext fun j => j.elim0
+  | succ k ih =>
+    simp only [seqFin, eval_bind, ih, eval_leaf]
+    exact funext fun j => Fin.cases rfl (fun _ => rfl) j
+
+/-- Running `k` trees of depth at most `d` in sequence has depth at most `k * d`. -/
+theorem depth_seqFin_le {k d : ℕ} (t : Fin k → DecisionTree ι β) (ht : ∀ j, (t j).depth ≤ d) :
+    (seqFin t).depth ≤ k * d := by
+  induction k with
+  | zero => simp [seqFin]
+  | succ k ih =>
+    have hrest (b : β) : ((seqFin fun j => t j.succ).bind fun bs =>
+        leaf (Fin.cons b bs : Fin (k + 1) → β)).depth ≤ k * d := by
+      have := depth_bind_le (seqFin fun j => t j.succ)
+        (fun bs => leaf (Fin.cons b bs : Fin (k + 1) → β)) (d := 0) fun _ => (depth_leaf _).le
+      exact this.trans (ih _ fun j => ht j.succ)
+    refine (depth_bind_le _ _ hrest).trans ?_
+    rw [Nat.succ_mul, Nat.add_comm (k * d)]
+    exact Nat.add_le_add_right (ht 0) _
 
 /-- Replace a query of `i` by the Boolean subroutine `s i`, then follow its answer.
 Every occurrence is replaced independently; answers are not memoized. -/
@@ -226,20 +261,31 @@ theorem complexity_substitute_le_mul [Finite ι] [Finite κ] (f : (ι → Bool) 
   exact (complexity_substitute_le ht g).trans
     ((t.weightedDepth_le_depth_mul hg).trans_eq (congrArg (· * d) hd))
 
-/-- A weighted bound for composition on disjoint, possibly differently sized finite blocks. -/
-theorem complexity_blockCompose_le {κ : ι → Type*} [∀ i, Finite (κ i)]
+/-- An outer tree can be implemented over disjoint finite blocks with the optimal inner query
+costs. The block index type may be infinite: the conclusion supplies an actual finite tree. -/
+theorem exists_computes_depth_le_blockCompose {κ : ι → Type*} [∀ i, Finite (κ i)]
     {t : DecisionTree ι β} {f : (ι → Bool) → β} (ht : t.Computes f)
     (g : (i : ι) → (κ i → Bool) → Bool) :
-    complexity (fun x : (Σ i, κ i) → Bool => f (fun i => g i (fun j => x ⟨i, j⟩))) ≤
-      t.weightedDepth (fun i => complexity (g i)) := by
+    ∃ u : DecisionTree (Σ i, κ i) β,
+      u.Computes (fun x => f (fun i => g i (fun j => x ⟨i, j⟩))) ∧
+        u.depth ≤ t.weightedDepth (fun i => complexity (g i)) := by
   classical
   choose s hs hd using fun i => exists_computes_depth_eq_complexity (g i)
   let lifted (i : ι) : DecisionTree (Σ i, κ i) Bool := (s i).mapQueries (Sigma.mk i)
   have hlifted (i : ι) : (lifted i).Computes (fun x => g i (fun j => x ⟨i, j⟩)) := by
     intro x
     exact (eval_mapQueries (Sigma.mk i) (s i) x).trans (hs i _)
-  exact (complexity_le_depth (ht.substitute hlifted)).trans
-    ((t.depth_substitute_le lifted).trans_eq (by simp only [lifted, depth_mapQueries, hd]))
+  exact ⟨t.substitute lifted, ht.substitute hlifted,
+    (t.depth_substitute_le lifted).trans_eq (by simp only [lifted, depth_mapQueries, hd])⟩
+
+/-- A weighted complexity bound for composition with a finite total coordinate domain. -/
+theorem complexity_blockCompose_le {κ : ι → Type*} [Finite (Σ i, κ i)] [∀ i, Finite (κ i)]
+    {t : DecisionTree ι β} {f : (ι → Bool) → β} (ht : t.Computes f)
+    (g : (i : ι) → (κ i → Bool) → Bool) :
+    complexity (fun x : (Σ i, κ i) → Bool => f (fun i => g i (fun j => x ⟨i, j⟩))) ≤
+      t.weightedDepth (fun i => complexity (g i)) := by
+  obtain ⟨u, hu, hd⟩ := exists_computes_depth_le_blockCompose ht g
+  exact (complexity_le_depth hu).trans hd
 
 /-- Uniform-cost composition on disjoint finite blocks; empty blocks and constant functions
 are included. The construction proves an upper bound only. -/

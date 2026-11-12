@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingScale
-import Mathlib.Analysis.Complex.ExponentialBounds
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 
 /-!
 # Monotonicity and linear-scaling bounds for `interpolationScale`
@@ -115,7 +115,7 @@ theorem interpolationScale_two_mul_le (n : ℕ) :
       _ = 2 * Real.log x := by rw [Real.log_pow]; norm_num
   have hlly_le : Real.log (Real.log y) ≤ 2 * Real.log (Real.log x) := by
     have h1 := one_lt_log_log_add_sixteen n
-    have hlog2 : Real.log 2 < 1 := by linarith [Real.log_two_lt_d9]
+    have hlog2 : Real.log 2 < 1 := Real.log_two_lt_one
     calc Real.log (Real.log y)
         ≤ Real.log (2 * Real.log x) := Real.log_le_log hlogy hlogy_le
       _ = Real.log 2 + Real.log (Real.log x) := Real.log_mul (by norm_num) hlogx.ne'

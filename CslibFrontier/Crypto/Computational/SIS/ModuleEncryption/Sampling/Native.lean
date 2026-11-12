@@ -35,7 +35,7 @@ public section
 
 namespace Cslib.Crypto
 
-open Turing.MultiTapeTM Probability ProbComp Interactive
+open Turing.MultiTapeTM Probability ProbComp
 open scoped ENNReal
 
 private abbrev Params := ((ℕ × ℕ) × ℕ × ℕ) × ℕ × ℕ

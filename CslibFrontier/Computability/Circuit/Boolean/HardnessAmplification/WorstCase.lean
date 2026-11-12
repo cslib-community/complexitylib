@@ -122,8 +122,7 @@ embed the blocks of `x`, it is `1` if `f x` and `0` otherwise. -/
 theorem truthTableExtension_block (h : BitString b ↪ F) (f : BooleanFunction (m * b))
     (x : BitString (m * b)) :
     truthTableExtension h f (fun i => h (BitString.block x i)) = if f x then 1 else 0 := by
-  rw [truthTableExtension, lowDegreeExtension_apply_embed]
-  exact congrArg (fun z => if f z then (1 : F) else 0) (BitString.blocksEquiv.symm_apply_apply x)
+  rw [truthTableExtension, lowDegreeExtension_apply_embed, BitString.blocksEquiv_symm_block]
 
 /-- **The worst-case-to-average-case encoding** [SudanTrevisanVadhan2001]. On an input of
 `m * w + w` bits, read the first `m * w` bits as a point `x` of `F ^ m` and the last `w` bits as
@@ -184,68 +183,22 @@ theorem exists_glPredictor_agree (enc : F ≃ BitString w) (h : BitString b ↪ 
   let pred : BitString (m * w) → BitString w → Bool := fun x r => C (Fin.append x r)
   let target : BitString (m * w) → BitString w :=
     fun x => enc (p ((BitString.pointEquiv enc).symm x))
-  -- the agreement splits over the points
-  have hsplit : (#{y | C y = hardnessEncode enc h f y} : ℝ) =
-      ∑ x : BitString (m * w), (#{r | pred x r = target x ⬝ᵥ r} : ℝ) := by
-    rw [← Nat.cast_sum]
-    congr 1
-    rw [show (#{y | C y = hardnessEncode enc h f y} : ℕ) =
-        #{xr : BitString (m * w) × BitString w |
-          C (Fin.append xr.1 xr.2) = hardnessEncode enc h f (Fin.append xr.1 xr.2)} from
-      (card_equiv (Fin.appendEquiv (m * w) w).symm fun y => by
-        simp [Fin.append_castAdd_natAdd, -hardnessEncode_append]).trans rfl]
-    rw [card_filter, Fintype.sum_prod_type]
-    refine sum_congr rfl fun x _ => ?_
-    rw [card_filter]
-    refine sum_congr rfl fun r _ => ?_
-    rw [hardnessEncode_append]
-  have hagr : ∀ x, Crypto.GoldreichLevin.agreement (pred x) (target x) =
-      (#{r | pred x r = target x ⬝ᵥ r} : ℝ) / 2 ^ w := fun x =>
-    Crypto.GoldreichLevin.agreement_eq_card_div _ _
-  have hagr_le : ∀ x, Crypto.GoldreichLevin.agreement (pred x) (target x) ≤ 1 := fun x =>
-    Crypto.GoldreichLevin.agreement_le_one _ _
-  have hsum : (1 / 2 + ε) * 2 ^ (m * w) ≤
-      ∑ x : BitString (m * w), Crypto.GoldreichLevin.agreement (pred x) (target x) := by
-    simp only [hagr, ← sum_div]
-    rw [le_div_iff₀ (by positivity), ← hsplit, mul_assoc, ← pow_add]
-    exact hagree
+  -- the agreement as a count of pairs
+  have hpairs : #{y | C y = hardnessEncode enc h f y} =
+      #{xr : BitString (m * w) × BitString w | pred xr.1 xr.2 = target xr.1 ⬝ᵥ xr.2} :=
+    card_equiv (Fin.appendEquiv (m * w) w).symm fun y => by
+      simp [pred, target, p, Fin.append_castAdd_natAdd, -hardnessEncode_append,
+        ← hardnessEncode_append]
+  have hcard : (Fintype.card (BitString (m * w)) : ℝ) = 2 ^ (m * w) := by
+    rw [BitString.card, Nat.cast_pow, Nat.cast_ofNat]
   -- many points are good
   set good := (univ : Finset (BitString (m * w))).filter fun x =>
     1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x)
   have hgood : ε / 2 * 2 ^ (m * w) ≤ #good := by
-    have hle : ∑ x : BitString (m * w), Crypto.GoldreichLevin.agreement (pred x) (target x) ≤
-        #good + (2 ^ (m * w) - #good) * (1 / 2 + ε / 2) := by
-      rw [← sum_filter_add_sum_filter_not univ
-        (fun x => 1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x))]
-      have h1 : ∑ x ∈ good, Crypto.GoldreichLevin.agreement (pred x) (target x) ≤ #good := by
-        calc _ ≤ ∑ _x ∈ good, (1 : ℝ) := sum_le_sum fun x _ => hagr_le x
-          _ = #good := by rw [sum_const, nsmul_eq_mul, mul_one]
-      have hcard : (#(univ.filter fun x : BitString (m * w) =>
-          ¬(1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x))) : ℝ) =
-            2 ^ (m * w) - #good := by
-        have := card_filter_add_card_filter_not (s := (univ : Finset (BitString (m * w))))
-          (fun x => 1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x))
-        rw [card_univ] at this
-        have hc : (Fintype.card (BitString (m * w)) : ℝ) = 2 ^ (m * w) := by
-          rw [BitString.card, Nat.cast_pow, Nat.cast_ofNat]
-        rw [← hc, ← this]
-        push_cast
-        ring
-      have h2 : ∑ x ∈ univ.filter (fun x : BitString (m * w) =>
-          ¬(1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x))),
-          Crypto.GoldreichLevin.agreement (pred x) (target x) ≤
-            (2 ^ (m * w) - #good) * (1 / 2 + ε / 2) := by
-        calc _ ≤ ∑ _x ∈ univ.filter (fun x : BitString (m * w) =>
-              ¬(1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x))),
-              (1 / 2 + ε / 2) := sum_le_sum fun x hx => (not_le.1 (mem_filter.1 hx).2).le
-          _ = _ := by rw [sum_const, nsmul_eq_mul, hcard]
-      linarith
-    have hgood_le : (#good : ℝ) ≤ 2 ^ (m * w) := by
-      have := card_le_univ good
-      rw [BitString.card] at this
-      exact_mod_cast this
-    have hε1 : ε ≤ 1 / 2 := le_half_of_agree hagree
-    nlinarith
+    have hcount := Crypto.GoldreichLevin.card_filter_agreement_ge pred target hε.le (by
+      rw [← hpairs, hcard, ← mul_assoc, mul_assoc (1 / 2 + ε), ← pow_add]
+      exact hagree)
+    rwa [hcard] at hcount
   -- Goldreich–Levin with fixed masks and guess
   obtain ⟨masks, guess, hgl⟩ := Crypto.GoldreichLevin.exists_card_candidate_eq pred target
     (ε / 2) (by positivity) hK hsize good fun x hx => (mem_filter.1 hx).2
