@@ -67,4 +67,22 @@ Classical.choice, Quot.sound]
 #guard_msgs in
 #print axioms pi_estimatorLaw_guessSecret_ne_le
 
+/-- A positive-gap LWE distinguisher testing whether the first entry b is 0. -/
+def posGapDistinguisher (bits : List Bool) : ProbComp Bool :=
+  let valid := (Finset.univ : Finset (Matrix (Fin 1) (Fin 2) (ZMod 2))).filter
+    (fun M => encMatrix 1 2 2 M = bits ∧ M 0 0 = 0)
+  pure (0 < valid.card)
+
+/-- The concrete reduction bound for the positive gap distinguisher. -/
+example (N : ℕ) :
+    1 - (1 * 2 + 1) * (2 * Real.exp (-(N * (Game.advantage
+        (distinguishingGame (realEnsemble (fun _ => 1) (fun _ => 1) (fun _ => 2)
+          (fun _ => pure 0) 0) posGapDistinguisher)
+        (distinguishingGame (uniformEnsemble (fun _ => 1) (fun _ => 1) (fun _ => 2) 0)
+          posGapDistinguisher) : ℝ) ^ 2) / 8)) ≤
+      Game.succProbability (searchGame 1 (searchSamples 1 2 N 1) 2
+        (pure 0)
+        (reduceSearchToDecision (n := 1) (m := 1) (q := 2) N posGapDistinguisher)) := by
+  exact_mod_cast searchToDecision posGapDistinguisher N
+
 end CslibFrontierTests.Crypto.LWESearchToDecision

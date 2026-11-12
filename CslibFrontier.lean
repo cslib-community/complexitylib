@@ -5682,6 +5682,7 @@ public import CslibFrontier.Languages.Probabilistic.RandomPermutation.ExtPermsCa
 public import CslibFrontier.Languages.Probabilistic.RejectionSampling
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Retry
+public import CslibFrontier.Languages.Probabilistic.SampleEach
 public import CslibFrontier.Languages.Probabilistic.Sampling.F4
 public import CslibFrontier.Languages.Probabilistic.Selection
 public import CslibFrontier.Languages.Probabilistic.Semantics

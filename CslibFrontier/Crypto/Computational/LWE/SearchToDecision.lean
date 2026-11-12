@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.LWE.NormalForm
-public import CslibFrontier.Languages.Probabilistic.Vector
+public import CslibFrontier.Languages.Probabilistic.SampleEach
 public import Mathlib.Analysis.SpecialFunctions.Exp
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.Concentration
@@ -58,8 +58,13 @@ statement is given here.
 
 ## References
 
-* [O. Regev, *On lattices, learning with errors, random linear codes, and cryptography*][Regev2009],
-  Lemmas 4.1 and 4.2 (model mapping via averaged advantage).
+* [O. Regev, *On lattices, learning with errors, random linear codes, and cryptography*][Regev2009]
+  (May 2, 2009 version), Lemma 4.1 (pp. 30-31) and Lemma 4.2 (p. 31). This fixed-batch
+  averaged-acceptance-gap
+  theorem differs from Regev by explicitly mapping matrix encodings, using a fresh re-randomization
+  per trial, quantifying over arbitrary finite parameters (without asymptotics), giving
+  an explicit Hoeffding bound constant (instead of Chernoff limits), and leaving open the remaining
+  computational resource gap (the uniform noncomputable choice of the max-accepting guess).
 * [C. Peikert, *A Decade of Lattice Cryptography*][Peikert2016], Section 4.2.1.
 -/
 
@@ -295,22 +300,6 @@ theorem sampleLaw_bind_estimatorTrial {n m q : ℕ} [Fact (Nat.Prime q)] (noise 
   · exact sampleLaw_bind_coordinateTrial noise distinguisher s j g
 
 /-! ### Independent blocks -/
-
-/-- Run one program for each element of a finite type, independently. -/
-noncomputable def sampleEach {ι β : Type} [Fintype ι] (programs : ι → ProbComp β) :
-    ProbComp (ι → β) :=
-  (fun x i => x (Fintype.equivFin ι i)) <$>
-    OracleComp.pi fun k => programs ((Fintype.equivFin ι).symm k)
-
-/-- The programs run by `sampleEach` are independent. -/
-theorem eval_sampleEach {ι β : Type} [Fintype ι] [Finite β] (programs : ι → ProbComp β) :
-    eval (sampleEach programs) = PMF.pi fun i => eval (programs i) := by
-  rw [sampleEach, eval_map, eval_pi]
-  have h := PMF.pi_map_piCongrLeft_symm
-    (fun k => eval (programs ((Fintype.equivFin ι).symm k))) (Fintype.equivFin ι)
-  simp only [Equiv.symm_apply_apply] at h
-  rw [← h]
-  rfl
 
 /-- The law of one row `[a ⬝ᵥ s + x | a]` of an LWE sample with secret `s`. -/
 noncomputable def rowLaw (n q : ℕ) [Fact (Nat.Prime q)] (noise : PMF (ZMod q))

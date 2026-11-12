@@ -3599,37 +3599,37 @@ register_result "lwe-normal-form-decision" where
   title := "Reduction of general Decision LWE to Decision LWE in normal form"
   topic := "cryptography"
   sources := [
-    { paper := Peikert2016, theorem := "Section 4.2.1", locator := "Page 23" }
+    { paper := Peikert2016, theorem := "Normal form", locator := "§4.2.1, p. 23" }
   ]
   theorems := [
     Cslib.Crypto.PrimeLWE.decisionNormalForm
   ]
-  scope := "Concrete distinguishing advantage bound showing that if Decision LWE is hard
-    with uniform secrets, it is also hard when the secret is drawn from the error
-    distribution (normal form), proved for prime moduli via `decisionNormalForm`.
-    Note: The reduction algorithm uses `gaussInv?` which does not yet have a formalised
-    PPT bound, so this leaves an asymptotic non-PPT gap."
+  scope := "Proved finite inequalities bounding the standard Decision LWE distinguishing \
+    advantage by the normal-form advantage (plus the probability of a singular top block). \
+    The reduction is executed on explicitly encoded words via `decisionNormalForm`. \
+    The underlying reduction uses `gaussInv?` and lacks a formalized PPT closure \
+    (an open M07 objective)."
 
 register_result "lwe-normal-form-search" where
   title := "Reduction of general Search LWE to Search LWE in normal form"
   topic := "cryptography"
   sources := [
-    { paper := Peikert2016, theorem := "Section 4.2.1", locator := "Page 23" }
+    { paper := Peikert2016, theorem := "Normal form", locator := "§4.2.1, p. 23" }
   ]
   theorems := [
     Cslib.Crypto.PrimeLWE.searchNormalForm
   ]
-  scope := "Concrete success probability bound showing that if Search LWE is hard with
-    uniform secrets, it is also hard when the secret is drawn from the error
-    distribution (normal form), proved for prime moduli via `searchNormalForm`.
-    Note: The reduction algorithm uses `gaussInv?` which does not yet have a formalised
-    PPT bound, so this leaves an asymptotic non-PPT gap."
+  scope := "Proved finite inequalities bounding the standard Search LWE success probability \
+    by the normal-form success probability (plus the singular top block probability). \
+    Executed on explicitly encoded words via `searchNormalForm`. Like the decision reduction, \
+    it lacks a formalized PPT closure for `gaussInv?` (an open M07 objective)."
 
 register_result "lwe-search-to-decision" where
   title := "Search-to-Decision reduction for LWE"
   topic := "cryptography"
   sources := [
-    { paper := Regev2009, theorem := "Lemma 4.1-4.2", locator := "Pages 30-31" }
+    { paper := Regev2009, theorem := "Lemmas 4.1 & 4.2",
+      locator := "pp. 30-31 & p. 31 (May 2, 2009 version)" }
   ]
   theorems := [
     Cslib.Crypto.PrimeLWE.searchToDecision
