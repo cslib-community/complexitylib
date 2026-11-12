@@ -32,6 +32,15 @@ open scoped NNReal
 def d23 : schnorrGroups.Desc :=
   ⟨(23, 11, 2), ⟨by norm_num, by norm_num, by norm_num, by norm_num, by norm_num⟩⟩
 
+/-- The CDH input layout: the unary security parameter, the group parameters and the two encoded
+elements, in field order. -/
+example (F : PrimeOrderGroupFamily) (x : F.CDHInput) :
+    F.encCDHInput x =
+      encPair encUnary (encPair F.encDesc (encPair encBits encBits))
+        (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
+          F.encode x.groupParameters x.rightPublic) :=
+  rfl
+
 /-- The DDH input layout: the unary security parameter, the group parameters and the three encoded
 elements, in field order. -/
 example (F : PrimeOrderGroupFamily) (x : F.DDHInput) :
@@ -40,6 +49,15 @@ example (F : PrimeOrderGroupFamily) (x : F.DDHInput) :
         (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
           F.encode x.groupParameters x.rightPublic,
           F.encode x.groupParameters x.candidateShared) :=
+  rfl
+
+/-- The key-derivation input layout is the DDH layout with the key word in place of the encoded
+candidate shared element. -/
+example (F : PrimeOrderGroupFamily) (x : F.KDFInput) :
+    F.encKDFInput x =
+      encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
+        (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
+          F.encode x.groupParameters x.rightPublic, x.key) :=
   rfl
 
 /-- The elementary CDH-to-DDH reduction tests the candidate shared element. On `d23`, the public
@@ -550,7 +568,7 @@ noncomputable def firstBitKDFDistinguisher : schnorrGroups.KDFDistinguisher :=
 theorem isPPT_firstBitKDFDistinguisher : firstBitKDFDistinguisher.IsPPT := by
   have hhead : ComputableInPolyTime (fun s : List Bool => s.headD false) encBits encBool := by
     fun_prop
-  have hproj : ComputableInPolyTime (fun x : schnorrGroups.CDHInput × List Bool => x.2)
+  have hproj : ComputableInPolyTime (fun x : schnorrGroups.KDFInput => x.key)
       schnorrGroups.encKDFInput encBits := by
     fun_prop
   exact (hhead.comp hproj).isPPTOn

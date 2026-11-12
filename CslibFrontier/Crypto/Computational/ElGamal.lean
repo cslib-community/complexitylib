@@ -114,11 +114,14 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
 * `Cslib.Crypto.PrimeOrderGroupFamily.KDFDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.kdfRealGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.kdfIdealGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.KDFInput`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encKDFInput`,
   `Cslib.Crypto.PrimeOrderGroupFamily.KDFDistinguisher.IsPPT`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.KDFDistinguisher.IsPPT.comp`,
   `Cslib.Crypto.PrimeOrderGroupFamily.SecureKDF`: typed key-derivation distinguishers, the
-  key-derivation experiments, their uniform strict PPT predicate, and secure key derivation
-  ([BonehShoup2023], Section 11.5.2, Attack Game 11.3 and Definition 11.5, pp. 448–449).
+  key-derivation experiments, their input record and its encoding, their uniform strict PPT
+  predicate and its composition rule, and secure key derivation ([BonehShoup2023], Section 11.5.2,
+  Attack Game 11.3 and Definition 11.5, pp. 448–449).
 * `Cslib.Crypto.PrimeOrderGroupFamily.kdfToDDHDistinguisher`: a key-derivation distinguisher run
   on the key `H (d, encode w)` derived from a DDH candidate `w`; its random DDH game is the real
   key-derivation game.
@@ -915,10 +918,20 @@ noncomputable def kdfIdealGame (setup : ℕ → PMF F.Desc) (msgLen : ℕ → �
   let key ← Cslib.BitString.uniformList (msgLen n)
   ProbComp.eval (distinguisher n d (a • F.generator d) (b • F.generator d) key)
 
-/-- The input encoding of a key-derivation distinguisher: the CDH input `encCDHInput`, framed,
-followed by the candidate key word. -/
-abbrev encKDFInput : F.CDHInput × List Bool ↪ List Bool :=
-  encPair F.encCDHInput encBits
+/-- The input of a key-derivation distinguisher: a CDH input and a candidate key word, which is
+`H (d, encode (c • g))` in the real experiment and uniform in the ideal one. -/
+structure KDFInput extends F.CDHInput where
+  /-- The candidate key word. -/
+  key : List Bool
+
+/-- The encoding of a key-derivation input: the fields of its CDH input followed by the key word,
+each framed except the last. This is the layout of `encDDHInput` with the key word in place of the
+encoded candidate shared element. -/
+enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F where
+  secParam : encUnary, groupParameters : F.encDesc,
+  leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
+  rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
+  key : encBits
 
 variable {F} in
 /-- A key-derivation distinguisher is uniform strict PPT: one machine reading the `encKDFInput`
@@ -926,7 +939,20 @@ encoding of its security parameter, group parameters, two group elements and key
 it. -/
 def KDFDistinguisher.IsPPT (distinguisher : F.KDFDistinguisher) : Prop :=
   IsPPTOn F.encKDFInput encBool fun x =>
-    distinguisher x.1.secParam x.1.groupParameters x.1.leftPublic x.1.rightPublic x.2
+    distinguisher x.secParam x.groupParameters x.leftPublic x.rightPublic x.key
+
+variable {F} in
+/-- A PPT key-derivation distinguisher run on computed inputs is uniform strict PPT. -/
+theorem KDFDistinguisher.IsPPT.comp {distinguisher : F.KDFDistinguisher}
+    (hD : distinguisher.IsPPT)
+    {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {d : α → F.Desc}
+    {u v : (a : α) → F.Carrier (d a)} {key : α → List Bool}
+    (hn : ComputableInPolyTime n enc encUnary) (hd : ComputableInPolyTime d enc F.encDesc)
+    (hu : ComputableInPolyTime (fun a => F.encode (d a) (u a)) enc encBits)
+    (hv : ComputableInPolyTime (fun a => F.encode (d a) (v a)) enc encBits)
+    (hkey : ComputableInPolyTime key enc encBits) :
+    IsPPTOn enc encBool fun a => distinguisher (n a) (d a) (u a) (v a) (key a) :=
+  IsPPTOn.preprocess hD (F.encKDFInput_mk_polyTime hn hd hu hv hkey)
 
 /-- Secure key derivation for `H` over `F` ([BonehShoup2023], Section 11.5.2, Attack Game 11.3,
 p. 448, and Definition 11.5, p. 449): every uniform strict PPT key-derivation distinguisher
@@ -958,11 +984,7 @@ theorem isPPT_kdfToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     {distinguisher : F.KDFDistinguisher} (hD : distinguisher.IsPPT) :
     (F.kdfToDDHDistinguisher H distinguisher).IsPPT :=
-  hD.preprocess
-    (prepare := fun x : F.DDHInput =>
-      (x.toCDHInput, H (x.groupParameters, F.encode _ x.candidateShared)))
-    ((show ComputableInPolyTime (fun x : F.DDHInput => x.toCDHInput) _ F.encCDHInput by
-      fun_prop).prod (hH.comp (by fun_prop)))
+  hD.comp (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (hH.comp (by fun_prop))
 
 /-- The KDF distinguisher constructed from a Hashed ElGamal IND-CPA adversary ([BonehShoup2023],
 Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, pad)`, pass `(d, encode u)`
@@ -1003,46 +1025,22 @@ theorem isPPT_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdvers
     (hA : adversary.IsPPT) (bit : Bool) :
     (F.hashedElGamalToKDFDistinguisher adversary bit).IsPPT := by
   let E := encPair F.encKDFInput (Encryption.encChoiceOut encBits)
-  have hn : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) => p.1.1.secParam) E
-      encUnary := by
-    fun_prop
-  have hst : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) => p.2.2) E encBits := by
-    fun_prop
-  have hv : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) =>
-        F.encode _ p.1.1.rightPublic) E encBits := by
-    fun_prop
-  have hpad : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) => p.1.2) E encBits := by
-    fun_prop
-  have hm₀ : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) => p.2.1.1) E
-      encBits := by
-    fun_prop
-  have hm₁ : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) => p.2.1.2) E
-      encBits := by
-    fun_prop
   have hm : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) =>
-        if bit then p.2.1.2 else p.2.1.1) E encBits := by
-    cases bit
-    · exact hm₀
-    · exact hm₁
+      (fun p : F.KDFInput × Encryption.ChoiceOut (List Bool) =>
+        if bit then p.2.1.2 else p.2.1.1) E encBits :=
+    .ite' (encC := encBool) (.const bit) (by fun_prop) (by fun_prop)
   simp only [KDFDistinguisher.IsPPT, hashedElGamalToKDFDistinguisher]
   refine (hA.choose.on.preprocess
-    (prepare := fun x : F.CDHInput × List Bool =>
-      (x.1.secParam, encPair F.encDesc encBits (x.1.groupParameters, F.encode _ x.1.leftPublic)))
-    ((show ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.1.secParam) _ encUnary by
-      fun_prop).prod (ComputableInPolyTime.encoding_comp (by fun_prop)))).bind_with ?_
+    (prepare := fun x : F.KDFInput =>
+      (x.secParam, encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic)))
+    (.prod (by fun_prop) (.encoding_comp (by fun_prop)))).bind_with ?_
   exact hA.guess.preprocess
-    (prepare := fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) =>
-      (p.1.1.secParam, p.2.2, encPair encBits encBits
-        (F.encode _ p.1.1.rightPublic,
-          Cslib.BitString.listXor p.1.2.length [p.1.2, if bit then p.2.1.2 else p.2.1.1])))
-    (hn.prod (hst.prod (hv.prod (computableInPolyTime_listXor_pair hpad hm)).encoding_comp))
+    (prepare := fun p : F.KDFInput × Encryption.ChoiceOut (List Bool) =>
+      (p.1.secParam, p.2.2, encPair encBits encBits
+        (F.encode _ p.1.rightPublic,
+          Cslib.BitString.listXor p.1.key.length [p.1.key, if bit then p.2.1.2 else p.2.1.1])))
+    (.prod (by fun_prop) (.prod (by fun_prop)
+      (.encoding_comp (.prod (by fun_prop) (computableInPolyTime_listXor_pair (by fun_prop) hm)))))
 
 /-- In `kdfIdealGame`, the uniform `msgLen n`-bit pad masks any challenge message word perfectly
 via `Cslib.BitString.listXor pad.length [pad, m]`, so `hashedElGamalToKDFDistinguisher` accepts
