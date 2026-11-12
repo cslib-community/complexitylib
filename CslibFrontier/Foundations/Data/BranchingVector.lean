@@ -139,6 +139,8 @@ theorem charSum_antitone (steps : List ℕ) {r₁ r₂ : ℝ} (hr₁ : 0 < r₁)
 
 /-! ### Generic branching-vector recurrence -/
 
+/-- A recurrence inequality representing a tree of recursive calls where each call branching on a node
+of size `n` spawns subproblems of size `n - d` for `d ∈ steps`. The base cost is bounded by `C`. -/
 structure BranchingRecurrence (T : ℕ → ℝ) (steps : List ℕ) (C : ℝ) : Prop where
   /-- Nonnegativity of the base factor `C`. -/
   base_nonneg : 0 ≤ C
