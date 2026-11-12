@@ -1356,22 +1356,23 @@ private theorem time_edmondsTableAuxM_le_of_live {n : ℕ} (r : Fin n) :
             simp only [List.any_eq_true]
             exact ⟨fun ⟨x, _, hqx⟩ => ⟨x, FinEnum.mem_toList x, hqx⟩,
               fun ⟨x, _, hqx⟩ => ⟨x, List.mem_finRange x, hqx⟩⟩
+          have hany (q : Fin n → Bool) :
+              (List.finRange n).any (fun x => inCycle[x.1] && q x) =
+                (FinEnum.toList (Fin n)).any (fun x => decide (x ∈ C) && q x) := by
+            rw [← hany_congr]
+            refine congrArg _ (funext fun x => ?_)
+            rw [show inCycle[x.1] = decide (x ∈ C) from
+              Bool.eq_iff_iff.mpr (by simpa using hmask x)]
           have hex : bExit[w.1].isSome =
               (FinEnum.toList (Fin n)).any (fun x => decide (x ∈ C) && aV x w) := by
             dsimp only [bExit]
-            rw [ret_bestExitTableM, List.isSome_argmin_filter, ← hany_congr]
-            refine congrArg (List.any (List.finRange n)) (funext fun x => ?_)
-            have hxbool : inCycle[x.1] = decide (x ∈ C) :=
-              Bool.eq_iff_iff.mpr (by simpa using hmask x)
-            rw [hxbool]
+            rw [ret_bestExitTableM, List.isSome_argmin_filter]
+            exact hany fun x => aV x w
           have hen : bEntry[u.1].isSome =
               (FinEnum.toList (Fin n)).any (fun y => decide (y ∈ C) && aV u y) := by
             dsimp only [bEntry]
-            rw [ret_bestEntryTableM, List.isSome_argmin_filter, ← hany_congr]
-            refine congrArg (List.any (List.finRange n)) (funext fun y => ?_)
-            have hybool : inCycle[y.1] = decide (y ∈ C) :=
-              Bool.eq_iff_iff.mpr (by simpa using hmask y)
-            rw [hybool]
+            rw [ret_bestEntryTableM, List.isSome_argmin_filter]
+            exact hany (aV u)
           dsimp only [a']
           rw [ret_contractAdjTableM]
           unfold contractAdj
