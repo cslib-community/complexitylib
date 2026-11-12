@@ -246,15 +246,15 @@ table of binary counts evaluate the number of accepting coin strings at the poly
 exactly. -/
 theorem BPL_subset_P : BPL enc ⊆ P enc := by
   intro A h
-  obtain ⟨k, State, hfin, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
-  set T : α → ℕ := fun a => 2 * (2 * ((enc a).length + 1)) ^ d
+  obtain ⟨k, State, hfin, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_BPL h
+  set T : α → ℕ := fun a => polyClock d (enc a).length
   obtain ⟨rounds, hrounds, hsearch⟩ :=
-    MultiTapeNTM.exists_computableInPolyTime_search (ntm := M.toNTM) fun a => (hM a).1
+    MultiTapeNTM.exists_computableInPolyTime_search (ntm := M.toNTM) hM.runsInSpace
   set views : α → List (FiniteCfg k Bool State) := fun a =>
     Cslib.Reachability.search M.toNTM.viewSucc (rounds a) (M.toNTM.initView (enc a))
   have hmem (a : α) (finite : FiniteCfg k Bool State) : finite ∈ views a ↔
       Relation.ReflTransGen M.toNTM.ViewStep (M.toNTM.initView (enc a)) finite :=
-    MultiTapeNTM.mem_search_iff (hM a).1 (hrounds a)
+    MultiTapeNTM.mem_search_iff (hM.runsInSpace a) (hrounds a)
   have hclosed (a : α) : ∀ finite ∈ views a, ∀ bit, M.viewCoinStep finite bit ∈ views a :=
     fun finite hf bit => (hmem a _).mpr (((hmem a _).mp hf).tail
       (MultiTapePTM.viewStep_toNTM_iff.mpr ⟨bit, rfl⟩))
@@ -318,13 +318,13 @@ theorem BPL_subset_P : BPL enc ⊆ P enc := by
       have hreach (finite) (hf : finite ∈ views a) :=
         (hmem a finite).mp hf
       have hlen : (views a).length ≤ 2 * (2 * ((enc a).length + 1)) ^ D :=
-        (MultiTapeNTM.length_le_of_nodup_reachable (hM a).1
+        (MultiTapeNTM.length_le_of_nodup_reachable (hM.runsInSpace a)
           (Cslib.Reachability.nodup_search _ _) hreach).trans
           (MultiTapeNTM.two_pow_coreLengthBound_log_le k State c _)
       refine (length_encList_le _ _ (b := 2 * viewBound a + 1 + (T a + 1)) ?_).trans ?_
       · intro entry hentry
         obtain ⟨view, hview, rfl⟩ := List.mem_map.mp hentry
-        have hv := MultiTapeNTM.length_encFiniteCfg_le (hM a).1 (hreach view hview)
+        have hv := MultiTapeNTM.length_encFiniteCfg_le (hM.runsInSpace a) (hreach view hview)
         have hn : (encNat (M.viewAcceptCount i view)).length ≤ i + 1 := by
           have := length_encNat_le_log2 (MultiTapePTM.viewAcceptCount_le (machine := M) i view)
           rwa [Nat.log2_two_pow] at this
@@ -345,7 +345,7 @@ theorem BPL_subset_P : BPL enc ⊆ P enc := by
   · change a ∈ A ↔
       decide (2 * 2 ^ T a ≤ 3 * lookupCount (table a) (M.toNTM.initView (enc a))) = true
     rw [hvalue, decide_eq_true_iff]
-    obtain ⟨-, -, hmemA, hnotA⟩ := hM a
+    obtain ⟨hmemA, hnotA⟩ := herr a
     refine ⟨hmemA, fun hle => by_contra fun ha => ?_⟩
     have hle' := (hnotA ha).trans' (Nat.mul_le_mul_left 3 (le_refl _))
     have hpos := Nat.two_pow_pos (T a)

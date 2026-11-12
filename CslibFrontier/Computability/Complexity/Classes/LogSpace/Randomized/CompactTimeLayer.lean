@@ -85,7 +85,7 @@ theorem exists_compactTimeLayer_of_mem_BPL (h : A ∈ BPL enc) :
         let D := radixExponent State c
         let B := radix D w.length
         let N := vertexBound (k := k) B
-        let T := 2 * (2 * (w.length + 1)) ^ d
+        let T := polyClock d w.length
         let P := compactCoinMatrix M ℝ B w
         let e₀ := compactAcceptVec (k := k) (State := State) ℝ B w.length
         let S := finTimeLayer T P
@@ -100,17 +100,16 @@ theorem exists_compactTimeLayer_of_mem_BPL (h : A ∈ BPL enc) :
         p ∈ Set.Icc 0 1 ∧
         (a ∈ A → 2 / 3 ≤ p x₀) ∧ (a ∉ A → p x₀ ≤ 1 / 3) := by
   classical
-  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
+  obtain ⟨k, State, _, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_BPL h
   let : Fintype State := Fintype.ofFinite State
-  refine ⟨k, State, inferInstance, M, c, d, fun a => ?_⟩
-  obtain ⟨hs, hT, hmem, hnot⟩ := hM a
-  refine ⟨hs, ?_⟩
+  refine ⟨k, State, inferInstance, M, c, d, fun a => ⟨hM.runsInSpace a, ?_⟩⟩
+  obtain ⟨hmem, hnot⟩ := herr a
   dsimp only
   have hP0 := compactCoinMatrix_nonneg (machine := M) (R := ℝ)
     (radix (radixExponent State c) (enc a).length) (enc a)
   have hP1 := compactCoinMatrix_mulVec_one_le (machine := M) (R := ℝ)
     (radix (radixExponent State c) (enc a).length) (enc a)
-  refine ⟨hT, ?_, finTimeLayer_isStrictUpperTriangular _ _, finTimeLayer_nonneg hP0 _,
+  refine ⟨hM.runsInTime a, ?_, finTimeLayer_isStrictUpperTriangular _ _, finTimeLayer_nonneg hP0 _,
     finTimeLayer_mulVec_one_le hP1 _, ?_, one_sub_finTimeLayer_mulVec _ _ _,
     inv_one_sub_finTimeLayer_mulVec _ _ _,
     finTimeLayerPotential_mem_Icc hP0 hP1 (compactAcceptVec_mem_Icc _ _) _, ?_, ?_⟩
