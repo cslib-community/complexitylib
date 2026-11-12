@@ -323,8 +323,11 @@ theorem realizes_gmPushSlabGen :
   realizeDictWith [gmPushSlabGenPre_mk] using [realizes_readGMGen, realizes_writeGMGen]
   all_goals
     obtain ⟨hdict, hslab, hb, hp_lt, hb_pos⟩ := h
-    obtain ⟨hq, h0, htop, hownB, hownS, hbel, habv, hdir, hq_le, hp_le⟩ :=
-      gmPushSlab_bounds (V := V) (h_space := h_space) ⟨hslab, hb, hp_lt, hb_pos⟩
+    -- Fix the entry state before unpacking the bounds, and keep its read programs opaque.
+    with_reducible
+      obtain ⟨hq, h0, htop, hownB, hownS, hbel, habv, hdir, hq_le, hp_le⟩ :=
+        gmPushSlab_bounds (U := U) (V := V) (w₀ := w₀) (n_max := n_max)
+          (h_space := h_space) (d := d) (s := s) ⟨hslab, hb, hp_lt, hb_pos⟩
   all_goals dictSide
 
 /-! ## Section 3: `gmUnlinkTopSlabProg`, `gmCompactSlabProg`, `gmPopSlabProg` -/
