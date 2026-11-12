@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedCompile
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathGeometry
 public import CslibFrontier.Logics.Propositional.CNF.Compact.Relabel
+import CslibFrontier.Logics.Propositional.CNF.Vars
 import Mathlib.Data.List.Nodup
 import Mathlib.Algebra.BigOperators.Ring.List
 import Mathlib.Tactic.FinCases
@@ -83,7 +84,7 @@ private theorem lastLiteral_cons_cons_cons (sites : List Point) (positive : Bool
 
 private theorem count_vars_append (φ ψ : CNF Variable) (v : Variable) :
     (φ ++ ψ).vars.count v = φ.vars.count v + ψ.vars.count v := by
-  simp [CNF.vars]
+  rw [CNF.vars_append, List.count_append]
 
 private theorem count_two_links (sites : List Point) (a b : Point) (v : Variable) :
     (CNF.vars [(link sites a b 0).1, (link sites a b 1).1]).count v =
@@ -165,15 +166,12 @@ private theorem count_external_blocks_le {φ : CNF ℕ} (sites : List Point)
     rw [hc] at ho
     omega
 
-private theorem vars_append (φ ψ : CNF Variable) : (φ ++ ψ).vars = φ.vars ++ ψ.vars := by
-  simp [CNF.vars]
-
 private theorem vars_flatMap (ps : List Point) (f : Point → List PlacedClause) :
     CNF.vars ((ps.flatMap f).map Prod.fst) =
       ps.flatMap fun p => CNF.vars ((f p).map Prod.fst) := by
   induction ps with
   | nil => rfl
-  | cons p ps ih => rw [List.flatMap_cons, List.map_append, vars_append, ih]; rfl
+  | cons p ps ih => rw [List.flatMap_cons, List.map_append, CNF.vars_append, ih]; rfl
 
 private theorem vars_ordinaryBlock (p : Point) :
     CNF.vars ((ordinaryClauses p).map Prod.fst) =
