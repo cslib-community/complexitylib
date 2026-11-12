@@ -16,8 +16,10 @@ into another authored manifest.
 
 The [Arora–Barak 2007 draft audit](arora-barak-2007.md) records a source-pinned chapter-level
 coverage comparison, including missing endpoints, partial matches and source/model problems.
-Its Chapter 14 record includes a checked degree obstruction to the draft's literal
-circuit-to-determinant statement; it is not a claim of book-wide coverage.
+Its records for chapters 11–15, 21 and 22 distinguish exact endpoints, model restrictions and
+source defects. Chapter 14 includes a checked degree obstruction to the literal circuit-to-determinant
+statement; Chapter 22 preserves the constant-free formula restriction and the open corrected
+density-amplification objective. This is not a claim of book-wide coverage.
 
 ## Authoring
 
