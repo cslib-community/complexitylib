@@ -837,7 +837,7 @@ private theorem computableInPolyTime_graphOfBound :
     ComputableInPolyTime.prod (ComputableInPolyTime.const (⟨[], []⟩ : Graph))
       (ComputableInPolyTime.unary_to_binary.comp hr)
   refine ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hr0)
-    (ComputableInPolyTime.const (⟨[], []⟩, 1)) ?_
+    (ComputableInPolyTime.const ((⟨[], []⟩, 1) : Graph × ℕ)) ?_
   exact ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hnot3)
     hbad3 hmain
 

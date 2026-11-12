@@ -93,7 +93,7 @@ private theorem occurrences_finBoundary (r : Rel) (n : ℕ) :
 
 private theorem incidenceGraph_finBoundary (r : Rel) (n : ℕ) :
     incidenceGraph (finBoundary r n) = doubleStarGraph n := by
-  apply Prod.ext
+  apply Graph.ext
   · rw [incidenceGraph_vertices, numVars_finBoundary]
     rfl
   · rw [incidenceGraph_edges, occurrences_finBoundary, distinctVars_finBoundary,

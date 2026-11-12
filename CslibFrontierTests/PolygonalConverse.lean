@@ -168,7 +168,7 @@ example : (starRotation 5).NumericalGenusZero :=
   (PolygonalDrawing.star_isEmbedding 5).numericalGenusZero (by decide) star_five_realizes
 
 -- Arbitrary sparse/duplicate declarations, including empty declarations and isolates.
-example (vs : List ℕ) (r : RotationSystem (vs, [])) : r.NumericalGenusZero := by
+example (vs : List ℕ) (r : RotationSystem ⟨vs, []⟩) : r.NumericalGenusZero := by
   apply (PolygonalDrawing.points_isEmbedding vs).numericalGenusZero
     (by intro v hv; simp [incidenceVertices] at hv)
   exact PolygonalDrawing.points_realizes vs r

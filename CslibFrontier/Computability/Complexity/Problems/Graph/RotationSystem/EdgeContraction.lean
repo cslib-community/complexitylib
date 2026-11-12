@@ -43,8 +43,9 @@ theorem mergeGraph_lastEdgeDart (G : Graph) (u v : ℕ) :
       lastEdgeGraph (contractLastEdgeGraph G u v) v v := by
   unfold mergeGraph
   rw [vertex_lastEdgeDart, vertex_lastEdgeDart]
-  change (G.1.map (Function.update id u v),
-    (G.2 ++ [(u, v)]).map (Prod.map (Function.update id u v) (Function.update id u v))) = _
+  change (⟨G.vertices.map (Function.update id u v),
+    (G.edges ++ [(u, v)]).map (Prod.map (Function.update id u v) (Function.update id u v))⟩ :
+      Graph) = _
   simp [lastEdgeGraph, contractLastEdgeGraph, Graph.relabel, Function.update_apply]
 
 /-- Reinterpret the actual corner splice as a graph with one final loop. No numerical
@@ -116,9 +117,9 @@ theorem contractLastEdge_coordinates (G : Graph) (u v : ℕ) :
   change (if h : i < (contractLastEdgeGraph G u v).2.length then
       some (some (⟨i, h⟩, b)) else if b then none else some none) =
     (Dart.relabelEquiv G (Function.update id u v)).optionCongr.optionCongr
-      (if h : i < G.2.length then some (some (⟨i, h⟩, b))
+      (if h : i < G.edges.length then some (some (⟨i, h⟩, b))
         else if b then none else some none)
-  by_cases h : i < G.2.length
+  by_cases h : i < G.edges.length
   · have he : i < (contractLastEdgeGraph G u v).2.length := by
       simpa only [contractLastEdgeGraph, Graph.relabel, List.length_map] using h
     rw [dite_eq_left he, dite_eq_left h]

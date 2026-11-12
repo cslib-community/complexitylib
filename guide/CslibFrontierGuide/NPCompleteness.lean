@@ -1201,7 +1201,7 @@ retaining every edge, dart and rotation successor:
 open Cslib.Complexity Graph.RotationSystem in
 example {vertices : List ℕ} {edges : List (ℕ × ℕ)} {v : ℕ}
     (hv : v ∈ vertices)
-    (r : Graph.RotationSystem (vertices ++ [v], edges)) :
+    (r : Graph.RotationSystem ⟨vertices ++ [v], edges⟩) :
     (redeclare r vertices).NumericalGenusZero ↔ r.NumericalGenusZero :=
   numericalGenusZero_append_duplicate_iff hv r
 ```

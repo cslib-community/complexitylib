@@ -81,7 +81,7 @@ example : digonRotation.NumericalGenusZero := by
   refine ⟨q, funext fun i => ?_⟩
   fin_cases i <;> simp [faceBoundary, q, c, hbits]
 
-private def pointsRotation (vertices : List ℕ) : RotationSystem (vertices, []) where
+private def pointsRotation (vertices : List ℕ) : RotationSystem ⟨vertices, []⟩ where
   rotate := Equiv.refl _
   sameCycle_iff d := d.1.elim0
 

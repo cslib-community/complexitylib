@@ -113,7 +113,7 @@ private def splitHub : RotationSystem (lastEdgeGraph splitBody 3 1) where
 example : contractLastEdgeGraph splitBody 3 1 = ⟨[0, 1, 2, 1], [(1, 0), (1, 2)]⟩ := by
   decide +kernel
 
-example : contractLastEdgeGraph splitBody 3 1 ≠ (List.range 3, [(1, 0), (1, 2)]) := by
+example : contractLastEdgeGraph splitBody 3 1 ≠ ⟨List.range 3, [(1, 0), (1, 2)]⟩ := by
   decide +kernel
 
 example : RotationCertificate.ofRotation
@@ -126,7 +126,7 @@ example : ((splitHub.contractLastEdge (by decide)).redeclare (List.range 3)).Num
       (splitHub.numericalGenusZero_contractLastEdge (by decide) (by decide)
         (checkedGenus splitHub (by decide) (by decide +kernel)))
 
-example : RotationCertificate.verifyGenusZero (List.range 3, [(1, 0), (1, 2)])
+example : RotationCertificate.verifyGenusZero ⟨List.range 3, [(1, 0), (1, 2)]⟩
     (RotationCertificate.ofRotation
       ((splitHub.contractLastEdge (by decide)).redeclare (List.range 3))) = true := by
   decide +kernel

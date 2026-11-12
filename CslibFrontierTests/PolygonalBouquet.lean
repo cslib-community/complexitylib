@@ -161,8 +161,8 @@ example : ¬interlacedRotation.NumericalGenusZero := by
     (by decide) (by decide) hcross
 
 -- No edges, repeated sparse isolates, and no declared vertices at all.
-example (vs : List ℕ) (r : RotationSystem (vs, [])) :
-    ∃ D : PolygonalDrawing (vs, []), D.IsEmbedding ∧ D.Realizes r := by
+example (vs : List ℕ) (r : RotationSystem ⟨vs, []⟩) :
+    ∃ D : PolygonalDrawing ⟨vs, []⟩, D.IsEmbedding ∧ D.Realizes r := by
   apply r.exists_polygonalDrawing_of_loops
   · simp [Graph.incidenceVertices]
   · intro root _
