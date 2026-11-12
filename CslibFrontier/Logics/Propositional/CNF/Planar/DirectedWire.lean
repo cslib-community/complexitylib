@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
 public import Mathlib.Data.List.Defs
+import CslibFrontier.Logics.Propositional.CNF.Vars
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Bool.Basic
 
@@ -277,11 +278,7 @@ theorem length_vars_allLinks (φ : CNF V) (wire : Occurrence V → List (W × W)
     induction os with
     | nil => rfl
     | cons o os ih =>
-      simp only [List.flatMap_cons, CNF.vars, List.flatten_append, List.map_append,
-        List.length_append]
-      change (links o.2.2.2 (wire o)).vars.length +
-        (CNF.vars (os.flatMap fun o => links o.2.2.2 (wire o))).length = _
-      rw [length_vars_links, ih]
+      rw [List.flatMap_cons, CNF.vars_append, List.length_append, length_vars_links, ih]
       simp only [List.map_cons, List.sum_cons, Nat.mul_add]
   exact total _
 
@@ -289,11 +286,8 @@ theorem length_vars_allLinks (φ : CNF V) (wire : Occurrence V → List (W × W)
 theorem length_vars_assemble (φ : CNF V) (wire : Occurrence V → List (W × W)) (fallback : W) :
     (assemble φ wire fallback).vars.length = φ.vars.length +
       2 * ((Cslib.Logic.PL.occurrences φ).map fun o => (wire o).length - 1).sum := by
-  unfold assemble
-  simp only [CNF.vars, List.flatten_append, List.map_append, List.length_append]
-  change (replacementClauses φ wire fallback).vars.length + (allLinks φ wire).vars.length = _
-  rw [length_vars_replacementClauses, length_vars_allLinks]
-  rfl
+  rw [assemble, CNF.vars_append, List.length_append, length_vars_replacementClauses,
+    length_vars_allLinks]
 
 /-- Source clause widths are preserved and every added clause is binary. -/
 theorem width_assemble (φ : CNF V) (wire : Occurrence V → List (W × W)) (fallback : W)
