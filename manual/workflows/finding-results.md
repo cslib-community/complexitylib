@@ -14,6 +14,11 @@ Read the defining module's imports and namespace before importing it. A file und
 
 Before applying a result, identify its input/output types and encoding, quantified witnesses, size parameter, charged resource, uniformity and side conditions. In particular, check whether a machine is chosen once before all inputs, whether the bound is eventually or pointwise, and whether the theorem requires a valid representation. If these disagree with the [contract you chose](choosing-models.md), find a transport theorem or prove the missing conversion. Changing notation does not establish a model bridge.
 
+For textbook-oriented searches, the [Goldreich draft audit](../../results/goldreich-2007.md)
+maps chapters 5–7 to declarations and remaining endpoints. Check its snapshot and model notes:
+space-accounting constants, expected-time ZPP and uniform versus nonuniform hardness can prevent
+a nearby theorem from establishing the source statement.
+
 ## Build a shared Boolean circuit
 
 <!-- worked-example -->
