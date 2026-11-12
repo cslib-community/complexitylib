@@ -76,12 +76,6 @@ theorem ddhFixedUWordRerandomize_encode (d : F.Desc) (u v w : F.Carrier d) (σ �
   simp [ddhFixedUWordRerandomize, ddhFixedURerandomize, F.smul_encode, F.add_encode]
 
 @[local fun_prop]
-private theorem computableInPolyTime_generator_comp {α : Type} {encIn : α ↪ List Bool}
-    {d : α → F.Desc} (hd : ComputableInPolyTime d encIn F.encDesc) :
-    ComputableInPolyTime (fun a => F.encode (d a) (F.generator (d a))) encIn encBits :=
-  F.computableInPolyTime_generator.comp hd
-
-@[local fun_prop]
 private theorem computableInPolyTime_add_comp {α : Type} {encIn : α ↪ List Bool}
     {d : α → F.Desc} {x y : α → List Bool}
     (hd : ComputableInPolyTime d encIn F.encDesc)

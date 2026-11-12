@@ -46,9 +46,8 @@ open scoped ENNReal NNReal Cslib.Probability.PMF
 private def ddhZeroDistinguisher (F : PrimeOrderGroupFamily) : F.DDHDistinguisher :=
   fun _ _ _ _ w => pure (decide (w = 0))
 
-private theorem isPPTOn_ddhZeroDistinguisher (F : PrimeOrderGroupFamily) :
-    IsPPTOn F.encDDHInput encBool fun x => ddhZeroDistinguisher F x.secParam
-      x.groupParameters x.leftPublic x.rightPublic x.candidateShared := by
+private theorem isPPT_ddhZeroDistinguisher (F : PrimeOrderGroupFamily) :
+    (ddhZeroDistinguisher F).IsPPT := by
   refine (ComputableInPolyTime.isPPTOn (f := fun x : F.DDHInput =>
     decide (F.encode x.groupParameters x.candidateShared = F.encode x.groupParameters 0))
     (by fun_prop)).congr fun x => ?_
@@ -196,7 +195,7 @@ theorem DDH.negligible_expected_inv_order {F : PrimeOrderGroupFamily} {setup : �
     (hDDH : F.DDH setup) :
     Negligible fun n => (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal :=
   negligible_of_le
-    ((hDDH (ddhZeroDistinguisher F) (isPPTOn_ddhZeroDistinguisher F)).const_mul 2)
+    ((hDDH (ddhZeroDistinguisher F) (isPPT_ddhZeroDistinguisher F)).const_mul 2)
     (expected_inv_order_le_two_mul_advantage_ddh F setup)
 
 end Cslib.Crypto.PrimeOrderGroupFamily
