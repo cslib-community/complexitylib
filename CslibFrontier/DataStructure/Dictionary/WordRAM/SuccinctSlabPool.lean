@@ -320,8 +320,7 @@ theorem realizes_gmPushSlabGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
       GmPushSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
+  -- Retain shared argument stages: the inline-argument proof exceeds the default budget.
   refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
       let q_idx ← pure (4 + 3 * d.2.2)
       let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
@@ -349,7 +348,7 @@ theorem realizes_gmPushSlabGen :
       let p_next ← pure (p_new + 1)
       writeGMGenProg (d.1, ((d.2.1, i0), p_next))) ?_
     (fun d => by simp only [gmPushSlabGenProg, pure_bind])
-  realizeDictWith [gmPushSlabGenPre_mk]
+  realizeDictWith [gmPushSlabGenPre_mk] using [realizes_readGMGen, realizes_writeGMGen]
   all_goals
     obtain ⟨hdict, hslab, hb, hp_lt, hb_pos⟩ := h
     obtain ⟨hq, h0, htop, hownB, hownS, hbel, habv, hdir, hq_le, hp_le⟩ :=
@@ -508,21 +507,7 @@ theorem realizes_gmUnlinkTopSlabGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
       GmPopSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
-      let q_idx ← pure (4 + 3 * d.2.2)
-      let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
-      let top_idx ← pure (4 + 3 * d.2.2 + 2)
-      let p_del ← readGMGenProg (d.1, (d.2.1, top_idx))
-      let bel_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_del + 2)
-      let bel_del ← readGMGenProg (d.1, (d.2.1, bel_idx))
-      writeGMGenProg (d.1, ((d.2.1, top_idx), bel_del))
-      let q_prev ← pure (q_b - 1)
-      let _ ← writeGMGenProg (d.1, ((d.2.1, q_idx), q_prev))
-      pure p_del) ?_
-    (fun d => by simp only [gmUnlinkTopSlabGenProg, pure_bind])
-  realizeDictWith [gmPopSlabGenPre_mk]
+  realizeDictWith [gmPopSlabGenPre_mk] using [realizes_readGMGen, realizes_writeGMGen]
   all_goals
     obtain ⟨hdict, hslab, hb, hq_pos, hb_pos⟩ := h
     obtain ⟨hq, htop, hbel, hq_le⟩ :=
@@ -796,26 +781,7 @@ theorem realizes_gmRelinkMovedSlabGen :
       (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
       GmMovedSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
-  refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) => do
-      let ownB_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2)
-      let b_last ← readGMGenProg (d.1, (d.2.1.1, ownB_idx))
-      let ownS_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 1)
-      let s_last ← readGMGenProg (d.1, (d.2.1.1, ownS_idx))
-      let q_idx ← pure (4 + 3 * b_last)
-      let q_last ← readGMGenProg (d.1, (d.2.1.1, q_idx))
-      (if s_last < dpDirSlabs d.1 then do
-        let dir_idx ← pure (dpGmSlabDirBase d.1 + b_last * dpDirSlabs d.1 + s_last)
-        writeGMGenProg (d.1, ((d.2.1.1, dir_idx), d.2.1.2))
-      else pure ()) >>= fun _ => do
-        let s_next ← pure (s_last + 1)
-        if s_next = q_last then do
-          let top_idx ← pure (4 + 3 * b_last + 2)
-          writeGMGenProg (d.1, ((d.2.1.1, top_idx), d.2.1.2))
-        else pure ()) ?_
-    (fun d => by simp only [gmRelinkMovedSlabGenProg, pure_bind])
-  realizeDictWith [gmMovedSlabGenPre_mk]
+  realizeDictWith [gmMovedSlabGenPre_mk] using [realizes_readGMGen, realizes_writeGMGen]
   all_goals
     obtain ⟨hdict, hinv⟩ := h
     obtain ⟨-, -, -, -, -, -, hb_pos⟩ := id hinv
@@ -1040,39 +1006,7 @@ theorem realizes_gmLinkMovedNeighborsGen :
       (WordEncoding.encode (α := DictParams × ((ℕ × ℕ) × ℕ))) (WordEncoding.encode (α := Unit))
       GmMovedSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
-  refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) => do
-      let ownB_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2)
-      let b_last ← readGMGenProg (d.1, (d.2.1.1, ownB_last_idx))
-      let ownS_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 1)
-      let s_last ← readGMGenProg (d.1, (d.2.1.1, ownS_last_idx))
-      let bel_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 2)
-      let bel_last ← readGMGenProg (d.1, (d.2.1.1, bel_last_idx))
-      let abv_last_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.2 + 3)
-      let abv_last ← readGMGenProg (d.1, (d.2.1.1, abv_last_idx))
-      let q_last_idx ← pure (4 + 3 * b_last)
-      let q_last ← readGMGenProg (d.1, (d.2.1.1, q_last_idx))
-      let i0 ← pure 0
-      (if i0 < s_last then do
-        let abv_bel_idx ← pure (dpGmSlabMetaBase d.1 + 4 * bel_last + 3)
-        writeGMGenProg (d.1, ((d.2.1.1, abv_bel_idx), d.2.1.2))
-      else pure ()) >>= fun _ => do
-        let s_last_next ← pure (s_last + 1)
-        (if s_last_next < q_last then do
-          let bel_abv_idx ← pure (dpGmSlabMetaBase d.1 + 4 * abv_last + 2)
-          writeGMGenProg (d.1, ((d.2.1.1, bel_abv_idx), d.2.1.2))
-        else pure ()) >>= fun _ => do
-          let ownB_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2)
-          writeGMGenProg (d.1, ((d.2.1.1, ownB_del_idx), b_last))
-          let ownS_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2 + 1)
-          writeGMGenProg (d.1, ((d.2.1.1, ownS_del_idx), s_last))
-          let bel_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2 + 2)
-          writeGMGenProg (d.1, ((d.2.1.1, bel_del_idx), bel_last))
-          let abv_del_idx ← pure (dpGmSlabMetaBase d.1 + 4 * d.2.1.2 + 3)
-          writeGMGenProg (d.1, ((d.2.1.1, abv_del_idx), abv_last))) ?_
-    (fun d => by simp only [gmLinkMovedNeighborsGenProg, pure_bind])
-  realizeDictWith [gmMovedSlabGenPre_mk]
+  realizeDictWith [gmMovedSlabGenPre_mk] using [realizes_readGMGen, realizes_writeGMGen]
   all_goals
     obtain ⟨hdict, hinv⟩ := h
     obtain ⟨-, -, -, -, -, -, hb_pos⟩ := id hinv
@@ -1242,37 +1176,24 @@ theorem realizes_gmCompactSlabGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
       GmCompactSlabGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
-  have hrel := realizes_gmRelinkMovedSlabGen
-  have hlnk := realizes_gmLinkMovedNeighborsGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
-      let i0 ← pure 0
-      let n_slabs ← readGMGenProg (d.1, (d.2.1, i0))
-      let p_last ← pure (n_slabs - 1)
-      if d.2.2 < p_last then do
-        gmRelinkMovedSlabGenProg (d.1, (d.2, p_last))
-        gmLinkMovedNeighborsGenProg (d.1, (d.2, p_last))
-        writeGMGenProg (d.1, ((d.2.1, i0), p_last))
-      else
-        writeGMGenProg (d.1, ((d.2.1, i0), p_last))) ?_
-    (fun d => by simp only [gmCompactSlabGenProg, pure_bind])
   realizeDictWith [gmCompactSlabGenPre_mk, gmMovedSlabGenPre_mk,
-    gmRelinkMovedSlabGenProg_mk, gmLinkMovedNeighborsGenProg_mk]
+    gmRelinkMovedSlabGenProg_mk, gmLinkMovedNeighborsGenProg_mk] using
+    [realizes_readGMGen, realizes_writeGMGen, realizes_gmRelinkMovedSlabGen,
+      realizes_gmLinkMovedNeighborsGen]
+  all_goals have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
   · exact h.1
-  · unfold globalMetaLen; omega
-  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-    rw [clientResult_readGMProg s h0_lt]; exact h.2.1
-  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-    rw [clientResult_readGMProg s h0_lt] at hc ⊢
+  · exact h0_lt
+  · rw [clientResult_readGMProg s h0_lt]; exact h.2.1
+  · rw [clientResult_readGMProg s h0_lt]; exact h.2.1
+  · rw [clientResult_readGMProg s h0_lt] at hc ⊢
     exact h.2.2.2.2 hc
-  · have h0_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
-    rw [clientResult_readGMProg s h0_lt] at hc ⊢
+  · rw [clientResult_readGMProg s h0_lt] at hc ⊢
     exact gmMovedSlabPre_after_relink hw (h.2.2.2.2 hc)
   · exact h.1
-  · unfold globalMetaLen; omega
+  · exact h0_lt
+  · rw [clientResult_readGMProg s h0_lt]; exact h.2.1
   · exact h.1
-  · unfold globalMetaLen; omega
+  · exact h0_lt
 
 /-- Parameter-free `Memory.Prog` operation popping the top slab of bucket `b = d.2.2` at
 `base = d.2.1` and compacting the physical slab pool. -/

@@ -402,53 +402,28 @@ theorem realizes_demoteStepGen :
       (WordEncoding.encode (α := (DictParams × (ℕ × ℕ)) × ℕ)) (WordEncoding.encode (α := ℕ))
       DemoteStepGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hrq := realizes_readQuotGen
-  have hwq := realizes_writeQuotGen
-  have hrv := realizes_readValGen
-  have hwv := realizes_writeValGen
-  have happ := realizes_appendTailItemGen
-  refine Realizes.congr (p := fun d : (DictParams × (ℕ × ℕ)) × ℕ => do
-      let u ← pure (dpSlabSizeSubOne d.1.1 - d.2)
-      let top_idx ← pure (4 + 3 * d.1.2.2 + 2)
-      let p_del ← readGMGenProg (d.1.1, (d.1.2.1, top_idx))
-      let i0 ← pure 0
-      let n_slabs ← readGMGenProg (d.1.1, (d.1.2.1, i0))
-      let p_last ← pure (n_slabs - 1)
-      let g_del ← pure (p_del * dpSlabSize d.1.1 + u)
-      let g_last ← pure (p_last * dpSlabSize d.1.1 + u)
-      let q_del ← readQuotGenProg (d.1.1, (d.1.2.1, g_del))
-      let v_del ← readValGenProg (d.1.1, (d.1.2.1, g_del))
-      let q_last ← readQuotGenProg (d.1.1, (d.1.2.1, g_last))
-      let v_last ← readValGenProg (d.1.1, (d.1.2.1, g_last))
-      let t_new ← appendTailItemGenProg (d.1.1, d.1.2)
-      let g_tail ← pure (dpNMaxSubOne d.1.1 - t_new)
-      writeQuotGenProg (d.1.1, ((d.1.2.1, g_del), q_last))
-      writeValGenProg (d.1.1, ((d.1.2.1, g_del), v_last))
-      writeQuotGenProg (d.1.1, ((d.1.2.1, g_tail), q_del))
-      let _ ← writeValGenProg (d.1.1, ((d.1.2.1, g_tail), v_del))
-      pure (d.2 + 1)) ?_
-    (fun d => by simp only [demoteStepGenProg, pure_bind])
   realize
+    [realizes_readGMGen, realizes_readQuotGen, realizes_writeQuotGen, realizes_readValGen,
+      realizes_writeValGen, realizes_appendTailItemGen]
   all_goals (
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     let d := (d1, d2)
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
     simpDictParamsWith [demoteStepGenPre_mk, appendTailItemGenPre_mk, appendTailItemGenProg_mk]
   )
-  · exact (demoteStep_bounds hw h.2).1
   · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
       (le_of_lt (demoteStep_bounds hw h.2).2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
   · exact (demoteStep_bounds hw h.2).2.1
   · exact (demoteStep_bounds hw h.2).2.2.1
-  · exact (demoteStep_bounds hw h.2).2.2.2.1
+  · exact (demoteStep_bounds hw h.2).1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
       (le_trans (le_of_lt (demoteStep_bounds hw h.2).2.2.2.2.1) (le_max_left n_max 1))
+  · exact (demoteStep_bounds hw h.2).2.2.2.2.1
+  · exact (demoteStep_bounds hw h.2).2.2.2.1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
       (le_trans (le_of_lt (demoteStep_bounds hw h.2).2.2.2.2.2.1) (le_max_left n_max 1))
-  · exact (demoteStep_bounds hw h.2).2.2.2.2.1
   · exact (demoteStep_bounds hw h.2).2.2.2.2.2.1
   · exact ⟨h.1, (demoteStep_bounds hw h.2).2.2.2.2.2.2.1⟩
   · exact (demoteStep_bounds hw h.2).2.2.2.2.2.2.2.1

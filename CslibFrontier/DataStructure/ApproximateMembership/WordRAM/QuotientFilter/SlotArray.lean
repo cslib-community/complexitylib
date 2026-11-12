@@ -432,7 +432,7 @@ theorem space_le {w w₀ n k : ℕ} (hw₀ : 0 < w₀) (hw : 2 * w₀ ≤ w) (hb
 
 /-- Extract the remainder seed `γ : RemSeed w₀` from `mem (remSeedAddr base w w₀ n)`. -/
 @[expose] def extractRemSeed (base w w₀ n : ℕ) (mem : ℕ → ℕ) : RemSeed w₀ :=
-  Tabulation.extractWord (w₀ - 1) (mem (remSeedAddr base w w₀ n))
+  Cslib.WordRAM.wordOfNat (w₀ - 1) (mem (remSeedAddr base w w₀ n))
 
 /-- Extract the full seed `(θ, γ) : FilterSeed w₀ n` from memory at `base`. -/
 @[expose] def extractFilterSeed (base w w₀ n : ℕ) (mem : ℕ → ℕ) : FilterSeed w₀ n :=

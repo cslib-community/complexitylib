@@ -92,3 +92,10 @@ circuit bounds, communication and descriptive complexity contain substantial add
 Original results without external sources need an explicit representation before adding
 them. Publication and search are also tracked in #2012. Passing compilation and reference checks
 does not complete these objectives.
+
+The original [accepted-certificate measure example](../CslibFrontier/Computability/Circuit/Boolean/FormalComplexityMeasure/Certificate.lean)
+is also awaiting representation for source-free results. A singleton has measure `n` while at
+least half the truth tables have measure zero. This explains why the additive `-n` in
+Razborov–Rudich Theorem 5.1(b) cannot simply be omitted as in the 2007 Arora–Barak draft's
+Theorem 22.3. It is not registered as a proof of either source theorem; the corrected density
+amplification endpoint remains open under [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).

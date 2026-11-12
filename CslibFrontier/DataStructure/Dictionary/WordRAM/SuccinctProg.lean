@@ -717,29 +717,34 @@ scoped macro "simpDictParamsWith" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" :
       readLMGenProg_mk, writeLMGenProg_mk, readGMGenProg_mk, writeGMGenProg_mk,
       readBucketCountGenProg_mk, resolveIndexedSlotGenProg_mk] at *)
 
-set_option hygiene false in
-/-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D`:
-runs `realize` and unpacks `d = (dp, d)` and `DictEnvGen` (`h.1`) in every resulting goal. -/
-scoped macro "realizeDict" : tactic =>
-  `(tactic| (
-    realize
-    all_goals (
-      rcases d with ⟨dp, d⟩
-      obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
-      simpDictParamsWith [p_w_mk]
-    )))
+/-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D` with extra
+simplification lemmas for sub-programs and preconditions. Optional `using [certificates]`
+forwards method certificates to `realize`. -/
+scoped syntax "realizeDictWith" "[" Lean.Parser.Tactic.simpLemma,* "]"
+    (" using " "[" term,* "]")? : tactic
 
 set_option hygiene false in
-/-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D` with extra
-simplification lemmas for sub-programs and preconditions. -/
-scoped macro "realizeDictWith" "[" extra:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
-  `(tactic| (
-    realize
-    all_goals (
-      rcases d with ⟨dp, d⟩
-      obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
-      simpDictParamsWith [$extra,*]
-    )))
+macro_rules
+  | `(tactic| realizeDictWith [$extra,*] $[using [$certificates,*]]?) => do
+    let certificates := certificates.map (·.getElems) |>.getD #[]
+    `(tactic| (
+      realize [$certificates,*]
+      all_goals (
+        rcases d with ⟨dp, d⟩
+        obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
+        simpDictParamsWith [$extra,*]
+      )))
+
+/-- Helper tactic for parameter-free `Realizes` proofs over `DictParams × D`:
+runs `realize` and unpacks `d = (dp, d)` and `DictEnvGen` (`h.1`) in every resulting goal.
+Optional `using [certificates]` supplies local method certificates. -/
+scoped syntax "realizeDict" (" using " "[" term,* "]")? : tactic
+
+set_option hygiene false in
+macro_rules
+  | `(tactic| realizeDict $[using [$certificates,*]]?) => do
+    let certificates := certificates.map (·.getElems) |>.getD #[]
+    `(tactic| realizeDictWith [p_w_mk] using [$certificates,*])
 
 theorem realizes_readQuotGen :
     Realizes .exact readQuotGenProg
@@ -978,19 +983,7 @@ theorem realizes_readBucketCountGen :
           (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem) ∧
         d.2.2 < numBuckets (dpNMax d.1))
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) =>
-      if dpBucketBits d.1 = 0 then do
-        let i0 ← pure 0
-        readGMGenProg (d.1, (d.2.1, i0))
-      else do
-        let q_idx ← pure (4 + 3 * d.2.2)
-        let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
-        let r_idx ← pure (q_idx + 1)
-        let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
-        pure (q_b * dpSlabSize d.1 + r_b)) ?_
-    (fun d => by simp [readBucketCountGenProg, ← PFunctor.FreeM.bind_eq_bind])
-  realizeDict
+  realizeDict using [realizes_readGMGen]
   all_goals
     obtain ⟨hdict, hinv, hb⟩ := h
     try
@@ -1178,26 +1171,7 @@ theorem realizes_resolveIndexedSlotGen :
           d.2.1.2 ∧
         d.2.2 < effBucketCap (dpNMax d.1))
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  refine Realizes.congr (p := fun d : DictParams × ((ℕ × ℕ) × ℕ) =>
-      if dpBucketBits d.1 = 0 then
-        pure d.2.2
-      else do
-        let q_idx ← pure (4 + 3 * d.2.1.2)
-        let q_b ← readGMGenProg (d.1, (d.2.1.1, q_idx))
-        let qK ← pure (q_b * dpSlabSize d.1)
-        if d.2.2 < qK then do
-          let dir_idx ←
-            pure (dpGmSlabDirBase d.1 + d.2.1.2 * dpDirSlabs d.1 + d.2.2 / dpSlabSize d.1)
-          let p ← readGMGenProg (d.1, (d.2.1.1, dir_idx))
-          pure (p * dpSlabSize d.1 + (dpSlabSizeSubOne d.1 - d.2.2 % dpSlabSize d.1))
-        else do
-          let ptr_idx ←
-            pure (dpGmTailPtrBase d.1 + (d.2.1.2 * dpTailCap d.1 + (d.2.2 - qK)))
-          let t ← readGMGenProg (d.1, (d.2.1.1, ptr_idx))
-          pure (dpNMaxSubOne d.1 - t)) ?_
-    (fun d => by simp [resolveIndexedSlotGenProg, ← PFunctor.FreeM.bind_eq_bind])
-  realizeDict
+  realizeDict using [realizes_readGMGen]
   all_goals
     obtain ⟨hdict, hinv, hb, hj_bc, hj_cap⟩ := h
     try
@@ -1279,6 +1253,17 @@ theorem memoryCost_writeLMProg (U V w n_max h_space c : ℕ) (d : (ℕ × ℕ) �
 theorem memoryCost_writeGMProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (writeGMProg U V w n_max h_space d) s = 4 := rfl
 
+/-- A packed write updates the bounded logical array and preserves its zero padding. -/
+private theorem readPacked_writePacked_bounded {base N k w idx val : ℕ}
+    (hw : 0 < w) (hidx : idx < N) (hval : val < 2 ^ k) (mem : ℕ → ℕ) :
+    (fun j => if j < N then readPacked base k w (writePacked base k w mem idx val) j else 0) =
+      Function.update (fun j => if j < N then readPacked base k w mem j else 0) idx val := by
+  refine Function.eq_update_iff.mpr ⟨?_, fun j hj => ?_⟩
+  · simpa only [hidx, ↓reduceIte] using readPacked_writePacked_self base k w mem idx hval
+  · split_ifs
+    · exact readPacked_writePacked_of_ne hw mem hj val
+    · rfl
+
 /-- Pure state effect of `writeQuotProg`. -/
 theorem writeQuotProg_effect {U V w n_max h_space base idx val : ℕ}
     (hw : 0 < w) (hidx_lt : idx < n_max) (hval_lt : val < 2 ^ quotientBits U n_max)
@@ -1301,13 +1286,9 @@ theorem writeQuotProg_effect {U V w n_max h_space base idx val : ℕ}
     rw [hmem]
     exact writePacked_outside hw s.mem hidx_lt _ (by dsimp only [offVal] at ha; omega)
   refine ⟨rfl, hout_mem, ?_, ?_, ?_, ?_⟩
-  · funext j; unfold quotAt
-    by_cases hj : j = idx
-    · subst hj; rw [Function.update_self]; simp only [hidx_lt, ↓reduceIte, hmem]
-      exact readPacked_writePacked_self _ _ _ _ _ hval_lt
-    · rw [Function.update_of_ne hj]; split_ifs with hj_lt
-      · rw [hmem]; exact readPacked_writePacked_of_ne hw s.mem hj _
-      · rfl
+  · unfold quotAt
+    rw [hmem]
+    exact readPacked_writePacked_bounded hw hidx_lt hval_lt s.mem
   · funext j; unfold valAt; split_ifs with hj_lt
     · exact readPacked_congr hw (fun a ⟨ha1, _⟩ => hout_mem a (by omega)) hj_lt
     · rfl
@@ -1346,13 +1327,9 @@ theorem writeValProg_effect {U V w n_max h_space base idx val : ℕ}
     · exact readPacked_congr hw (fun a ⟨_, ha2⟩ =>
         hout_mem a (by dsimp only [offVal, offQuot] at ha2 ⊢; omega)) hj_lt
     · rfl
-  · funext j; unfold valAt
-    by_cases hj : j = idx
-    · subst hj; rw [Function.update_self]; simp only [hidx_lt, ↓reduceIte, hmem]
-      exact readPacked_writePacked_self _ _ _ _ _ hval_lt
-    · rw [Function.update_of_ne hj]; split_ifs with hj_lt
-      · rw [hmem]; exact readPacked_writePacked_of_ne hw s.mem hj _
-      · rfl
+  · unfold valAt
+    rw [hmem]
+    exact readPacked_writePacked_bounded hw hidx_lt hval_lt s.mem
   · funext ⟨c, j⟩; unfold lmAt; split_ifs with hp
     · exact readPacked_congr hw (fun a ⟨ha1, _⟩ =>
         hout_mem a (by dsimp only [offLMSub] at ha1; omega)) hp.2
@@ -1514,13 +1491,9 @@ theorem gmAt_writeGMProg {U V w n_max h_space base idx val : ℕ}
   have hmem : ((Memory.spec 0).clientState s
       (writeGMProg U V w n_max h_space ((base, idx), val))).mem =
       writePacked (base + offGM U V w n_max h_space) (globalPtrBits n_max) w s.mem idx val := rfl
-  funext j; unfold gmAt
-  by_cases hj : j = idx
-  · subst hj; rw [Function.update_self]; simp only [hidx, ↓reduceIte, hmem]
-    exact readPacked_writePacked_self _ _ _ _ _ hval
-  · rw [Function.update_of_ne hj]; split_ifs with hj_lt
-    · rw [hmem]; exact readPacked_writePacked_of_ne hw s.mem hj _
-    · rfl
+  unfold gmAt
+  rw [hmem]
+  exact readPacked_writePacked_bounded hw hidx hval s.mem
 
 /-- Pure state effect of `writeGMProg`. -/
 theorem writeGMProg_effect {U V w n_max h_space base idx val : ℕ}
