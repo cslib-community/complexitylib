@@ -448,13 +448,14 @@ private theorem computably_batchOTWordEval :
 
 /-- Shared deterministic postprocessing mapping `(n, XWords, rWord, sWord, tFlat, qFlat)` to the
 encoded IKNP `(senderView, receiverView, output)` triple. -/
-@[expose] def iknpWordPost (H : CorrelationRobustHash) (n : ℕ)
+def iknpWordPost (H : CorrelationRobustHash) (n : ℕ)
     (XWords : List (List Bool × List Bool)) (rWord sWord tFlat qFlat : List Bool) :
     List Bool × List Bool × List Bool :=
   let κ := H.keyLength n
   let m := H.queries n
   let ℓ := H.outLength n
   let qRows := BitString.listRows κ m qFlat
+  let tRows := BitString.listRows m κ tFlat
   let yWords := (List.range m).map fun j =>
     let qRow := (List.range κ).map fun i => (qRows.getD i []).getD j false
     let p := XWords.getD j ([], [])
@@ -462,11 +463,11 @@ encoded IKNP `(senderView, receiverView, output)` triple. -/
       BitString.listXor ℓ [BitString.listRow ℓ 0 p.2,
         H.eval n j (BitString.listXor κ [qRow, sWord])])
   let zWords := (List.range m).map fun j =>
-    let p := XWords.getD j ([], [])
-    BitString.listRow ℓ 0 (if rWord.getD j false then p.2 else p.1)
+    let y := yWords.getD j ([], [])
+    let ySel := if rWord.getD j false then y.2 else y.1
+    BitString.listXor ℓ [ySel, H.eval n j (tRows.getD j [])]
   let sv := encIKNPSenderViewRaw (normalizeIKNPSenderPairs m ℓ XWords, sWord, qRows)
-  let rv := encIKNPReceiverViewRaw
-    (normalizeIKNPReceiverBits m rWord, BitString.listRows m κ tFlat, yWords)
+  let rv := encIKNPReceiverViewRaw (normalizeIKNPReceiverBits m rWord, tRows, yWords)
   let ov := encList encBits zWords
   (sv, rv, ov)
 
@@ -487,7 +488,7 @@ private theorem computably_iknpWordPost (H : CorrelationRobustHash) {α : Type}
   fun_prop
 
 /-- Oracle-PPT word-level IKNP OT extension calling one batched `batchOT` base-OT oracle. -/
-@[expose] noncomputable def iknpWordOracle (H : CorrelationRobustHash) (n : ℕ)
+noncomputable def iknpWordOracle (H : CorrelationRobustHash) (n : ℕ)
     (XWords : List (List Bool × List Bool)) (rWord : List Bool) :
     WordOracleComp Unit (List Bool × List Bool × List Bool) := do
   let κ := H.keyLength n
@@ -535,7 +536,7 @@ theorem isOraclePPTOn_iknpWordOracle (H : CorrelationRobustHash) :
   exact hsSample.bind_with (htSample.bind_with htail)
 
 /-- Closed `ProbComp` realization of word-level IKNP using `batchOTWordEval`. -/
-@[expose] noncomputable def iknpWordClosed (H : CorrelationRobustHash) (n : ℕ)
+noncomputable def iknpWordClosed (H : CorrelationRobustHash) (n : ℕ)
     (XWords : List (List Bool × List Bool)) (rWord : List Bool) :
     ProbComp (List Bool × List Bool × List Bool) := do
   let κ := H.keyLength n
@@ -547,7 +548,7 @@ theorem isOraclePPTOn_iknpWordOracle (H : CorrelationRobustHash) :
 
 /-- Closed word-level IKNP protocol obtained by instantiating the base-OT oracle with
 `batchOTWordHandler`. -/
-@[expose] noncomputable def iknpWordRun (H : CorrelationRobustHash) (n : ℕ)
+noncomputable def iknpWordRun (H : CorrelationRobustHash) (n : ℕ)
     (XWords : List (List Bool × List Bool)) (rWord : List Bool) :
     ProbComp (List Bool × List Bool × List Bool) :=
   OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin batchOTWordHandler)
@@ -604,6 +605,7 @@ private theorem iknpWordClosed_body_eq (H : CorrelationRobustHash) (n : ℕ)
     let ℓ := H.outLength n
     let qFlat := batchOTWordEval (batchOTWordQuery m κ rWord tFlat sWord)
     let qRows := BitString.listRows κ m qFlat
+    let tRows := BitString.listRows m κ tFlat
     let yWords := (List.range m).map fun j =>
       let qRow := (List.range κ).map fun i => (qRows.getD i []).getD j false
       let p := XWords.getD j ([], [])
@@ -611,11 +613,11 @@ private theorem iknpWordClosed_body_eq (H : CorrelationRobustHash) (n : ℕ)
         BitString.listXor ℓ [BitString.listRow ℓ 0 p.2,
           H.eval n j (BitString.listXor κ [qRow, sWord])])
     let zWords := (List.range m).map fun j =>
-      let p := XWords.getD j ([], [])
-      BitString.listRow ℓ 0 (if rWord.getD j false then p.2 else p.1)
+      let y := yWords.getD j ([], [])
+      let ySel := if rWord.getD j false then y.2 else y.1
+      BitString.listXor ℓ [ySel, H.eval n j (tRows.getD j [])]
     let sv := encIKNPSenderViewRaw (normalizeIKNPSenderPairs m ℓ XWords, sWord, qRows)
-    let rv := encIKNPReceiverViewRaw
-      (normalizeIKNPReceiverBits m rWord, BitString.listRows m κ tFlat, yWords)
+    let rv := encIKNPReceiverViewRaw (normalizeIKNPReceiverBits m rWord, tRows, yWords)
     let ov := encList encBits zWords
     (sv, rv, ov) =
       let s := BitString.ofList κ sWord
@@ -626,7 +628,7 @@ private theorem iknpWordClosed_body_eq (H : CorrelationRobustHash) (n : ℕ)
       (encodeIKNPSenderViewWord X s Q,
         encodeIKNPReceiverViewWord r T (iknpMasked (H.toFinite n) X s Q),
         encodeIKNPOutputsWord (batchOTAnswer (decodeIKNPInput m ℓ XWords rWord) 1)) := by
-  intro κ m ℓ qFlat qRows yWords zWords sv rv ov
+  intro κ m ℓ qFlat qRows tRows yWords zWords sv rv ov
   set s := BitString.ofList κ sWord
   set T := BitString.block (BitString.ofList (m * κ) tFlat)
   set X := decodeIKNPSender m ℓ XWords
@@ -706,6 +708,8 @@ private theorem iknpWordClosed_body_eq (H : CorrelationRobustHash) (n : ℕ)
           (BitString.ofFn_ofList (H.eval_length n j _ hj (by rw [← harg]; exact hargLen))).symm
       rw [hx, hhash, BitString.listXor_pair, BitString.ofList_ofFn, BitString.ofList_ofFn]
     exact ⟨by simpa using hmask false, by simpa using hmask true⟩
+  have htRows : tRows = List.ofFn fun j : Fin m => List.ofFn (T j) := by
+    simp [tRows, T, BitString.listRows_eq_ofFn]
   have hzWords :
       zWords = List.ofFn fun j : Fin m =>
         List.ofFn (batchOTAnswer (decodeIKNPInput m ℓ XWords rWord) 1 j) := by
@@ -713,18 +717,41 @@ private theorem iknpWordClosed_body_eq (H : CorrelationRobustHash) (n : ℕ)
     intro j hj hj'
     simp only [zWords, List.length_map, List.length_range] at hj
     simp only [zWords, List.getElem_map, List.getElem_range, List.getElem_ofFn,
-      batchOTAnswer_decodeIKNPInput, decodeIKNPSender]
-    have hrj : rWord.getD j false = BitString.ofList m rWord ⟨j, hj⟩ := by
-      simp [BitString.ofList, List.getD_eq_getElem?_getD]
-    rw [hrj]
-    cases BitString.ofList m rWord ⟨j, hj⟩ <;> simp [BitString.listRow_zero]
+      batchOTAnswer_decodeIKNPInput]
+    have hrj : rWord.getD j false = r ⟨j, hj⟩ := by
+      simp [r, BitString.ofList, List.getD_eq_getElem?_getD]
+    have hjm : j < H.queries n := hj
+    have hyj :
+        yWords.getD j ([], []) =
+          (List.ofFn (iknpMasked (H.toFinite n) X s Q ⟨j, hjm⟩ false),
+           List.ofFn (iknpMasked (H.toFinite n) X s Q ⟨j, hjm⟩ true)) := by
+      simp only [hyWords, encodeIKNPSender, List.getD_eq_getElem?_getD,
+        List.getElem?_ofFn, hjm, ↓reduceDIte, Option.getD_some]
+    have htj : tRows.getD j [] = List.ofFn (T ⟨j, hj⟩) := by
+      simp only [htRows, List.getD_eq_getElem?_getD, List.getElem?_ofFn, hj, ↓reduceDIte,
+        Option.getD_some]
+    have hhash :
+        H.eval n j (tRows.getD j []) = List.ofFn (H.toFinite n ⟨j, hj⟩ (T ⟨j, hj⟩)) := by
+      rw [htj]
+      simpa [CorrelationRobustHash.toFinite] using
+        (BitString.ofFn_ofList (H.eval_length n j (List.ofFn (T ⟨j, hj⟩)) hj (by simp [κ]))).symm
+    have hsel :
+        (if rWord.getD j false then (yWords.getD j ([], [])).2
+          else (yWords.getD j ([], [])).1) =
+          List.ofFn (iknpMasked (H.toFinite n) X s Q ⟨j, hj⟩ (r ⟨j, hj⟩)) := by
+      rw [hrj, hyj]
+      cases r ⟨j, hj⟩ <;> rfl
+    rw [hsel, hhash, BitString.listXor_pair, BitString.ofList_ofFn, BitString.ofList_ofFn]
+    refine congrArg List.ofFn ?_
+    simp only [iknpMasked, Q]
+    rw [iknp_mask_input]
+    simp [X, r]
   have hsv : sv = encodeIKNPSenderViewWord X s Q := by
     have hsWordEq : sWord = List.ofFn s := (BitString.ofFn_ofList (n := κ) hsLen).symm
     simp only [sv, encodeIKNPSenderViewWord, normalizeIKNPSenderPairs_eq_encode, X,
       hsWordEq, hqRows]
   have hrv : rv = encodeIKNPReceiverViewWord r T (iknpMasked (H.toFinite n) X s Q) := by
-    simp [rv, encodeIKNPReceiverViewWord, normalizeIKNPReceiverBits_eq_ofFn, r, T,
-      BitString.listRows_eq_ofFn, hyWords]
+    simp [rv, encodeIKNPReceiverViewWord, normalizeIKNPReceiverBits_eq_ofFn, r, htRows, hyWords]
   have hov : ov = encodeIKNPOutputsWord (batchOTAnswer (decodeIKNPInput m ℓ XWords rWord) 1) := by
     simp [ov, encodeIKNPOutputsWord, hzWords]
   exact Prod.ext hsv (Prod.ext hrv hov)
@@ -855,7 +882,7 @@ theorem iknpWordRun_eq_realJoint_receiver (H : CorrelationRobustHash) (n : ℕ)
 /-! ### Sender simulator and unconditional sender privacy -/
 
 /-- PPT word-level sender simulator matching `iknpSenderSim`. -/
-@[expose] noncomputable def iknpSenderSimWord (H : CorrelationRobustHash) (n : ℕ)
+noncomputable def iknpSenderSimWord (H : CorrelationRobustHash) (n : ℕ)
     (XWords : List (List Bool × List Bool)) : ProbComp (List Bool) := do
   let κ := H.keyLength n
   let m := H.queries n
@@ -885,7 +912,7 @@ theorem isPPTOn_iknpSenderSimWord (H : CorrelationRobustHash) :
   exact hsSample.bind_with (hqSample.bind_with hpost.tidy.isPPTOn)
 
 /-- Ideal word-level sender experiment pairing `iknpSenderSimWord` with honest output. -/
-@[expose] noncomputable def iknpWordSenderIdealSample (H : CorrelationRobustHash) (n : ℕ)
+noncomputable def iknpWordSenderIdealSample (H : CorrelationRobustHash) (n : ℕ)
     (XWords : List (List Bool × List Bool)) (rWord : List Bool) :
     ProbComp (List Bool × List Bool) := do
   let sv ← iknpSenderSimWord H n XWords
@@ -971,7 +998,7 @@ theorem iknpWord_asymptotic_sender_private (H : CorrelationRobustHash)
 /-! ### Receiver simulator, reduction, and asymptotic receiver privacy -/
 
 /-- Word-level receiver simulator matching `iknpReceiverSim`. -/
-@[expose] noncomputable def iknpReceiverSimWord (H : CorrelationRobustHash) (n : ℕ)
+noncomputable def iknpReceiverSimWord (H : CorrelationRobustHash) (n : ℕ)
     (rWord : List Bool) (zWords : List (List Bool)) : ProbComp (List Bool) := do
   let κ := H.keyLength n
   let m := H.queries n
@@ -1024,7 +1051,7 @@ theorem isPPTOn_iknpReceiverSimWord (H : CorrelationRobustHash) :
   exact htSample.bind_with (huSample.bind_with hpost.tidy.isPPTOn)
 
 /-- Ideal word-level receiver experiment pairing `iknpReceiverSimWord` with honest output. -/
-@[expose] noncomputable def iknpWordReceiverIdealSample (H : CorrelationRobustHash) (n : ℕ)
+noncomputable def iknpWordReceiverIdealSample (H : CorrelationRobustHash) (n : ℕ)
     (XWords : List (List Bool × List Bool)) (rWord : List Bool) :
     ProbComp (List Bool × List Bool) := do
   let m := H.queries n
@@ -1146,7 +1173,7 @@ theorem iknpWordReceiverIdealSample_eval_eq (H : CorrelationRobustHash) (n : ℕ
 
 /-- Word-level correlation-robustness adversary induced by a receiver distinguisher `D` on
 inputs `(X, r)`. -/
-@[expose] noncomputable def iknpWordReduction (H : CorrelationRobustHash)
+noncomputable def iknpWordReduction (H : CorrelationRobustHash)
     (X : ℕ → List (List Bool × List Bool)) (r : ℕ → List Bool)
     (D : ℕ → List Bool × List Bool → ProbComp Bool) :
     CorrelationRobust.WordAdversary :=

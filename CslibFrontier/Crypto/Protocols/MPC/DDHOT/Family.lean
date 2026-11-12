@@ -58,7 +58,9 @@ constructs strict-PPT (`IsPPTOn`) word-level realizations, simulators, and reduc
 
 ## References
 
-* [M. Naor, B. Pinkas, *Efficient Oblivious Transfer Protocols*][NaorPinkas2001], Section 3.
+* [M. Naor, B. Pinkas, *Efficient Oblivious Transfer Protocols*][NaorPinkas2001].
+* [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
+  Section 23.5.7, Figure 23.17, Remark 23.6.
 * [O. Goldreich, *Foundations of Cryptography, Volume 2*][Goldreich2004], Section 7.2.2.1.
 -/
 
@@ -407,6 +409,40 @@ private theorem computableInPolyTime_ddhOTEncryptBranchWord :
   have hc2 := F.computableInPolyTime_add.comp' (hd.prod (hsum1.prod hm))
   exact hc1.prod hc2
 
+private theorem decodeElGamal_sub_one (desc : F.Desc) (u v : F.Carrier desc) :
+    F.decodeElGamal (desc, 1, F.encode desc v, F.encode desc u) = F.encode desc (u - v) := by
+  simp only [F.decodeElGamal_encode, PrimeOrderGroupFamily.elGamalDecrypt, Nat.cast_one, one_smul]
+
+private theorem decodeElGamal_encryptBranchWord (desc : F.Desc) (m : F.Carrier desc)
+    (a b r s : ℕ) :
+    let u_w := F.encodeElGamalPublicKey (desc, a)
+    let v_w := F.encodeElGamalPublicKey (desc, b)
+    let ct := ddhOTEncryptBranchWord F desc u_w v_w (F.encode desc m) r s a
+    F.decodeElGamal (desc, b, ct.1, ct.2) = F.encode desc m := by
+  dsimp only
+  rw [F.encodeElGamalPublicKey_eq_encode, F.encodeElGamalPublicKey_eq_encode,
+    ← smul_natCast_eq_nsmul, ← smul_natCast_eq_nsmul, ddhOTEncryptBranchWord_encode,
+    F.decodeElGamal_encode, PrimeOrderGroupFamily.elGamalDecrypt, ← smul_natCast_eq_nsmul]
+  exact congrArg (F.encode desc) (by
+    simpa using ddhOTReceiverOutput_encryptBranch (F.generator desc) m
+      (a : ZMod (F.order desc)) (b : ZMod (F.order desc))
+      (r : ZMod (F.order desc)) (s : ZMod (F.order desc)))
+
+private theorem decodeElGamal_selCt_eq (desc : F.Desc) (m₀ m₁ : F.Carrier desc) (σ : Bool)
+    (a r₀ s₀ r₁ s₁ b : ℕ) :
+    let u_w := F.encodeElGamalPublicKey (desc, a)
+    let v_w := F.encodeElGamalPublicKey (desc, b)
+    let u_sub_v_w := F.decodeElGamal (desc, 1, v_w, u_w)
+    let w_w := if σ then (u_sub_v_w, v_w) else (v_w, u_sub_v_w)
+    let ct₀ := ddhOTEncryptBranchWord F desc u_w w_w.1 (F.encode desc m₀) r₀ s₀ a
+    let ct₁ := ddhOTEncryptBranchWord F desc u_w w_w.2 (F.encode desc m₁) r₁ s₁ a
+    let sel_ct := if σ then ct₁ else ct₀
+    F.decodeElGamal (desc, b, sel_ct.1, sel_ct.2) =
+      if σ then F.encode desc m₁ else F.encode desc m₀ := by
+  cases σ
+  · simpa using decodeElGamal_encryptBranchWord F desc m₀ a b r₀ s₀
+  · simpa using decodeElGamal_encryptBranchWord F desc m₁ a b r₁ s₁
+
 /-- Word-level execution of DDH-OT on `(n, desc, ((m₀_w, m₁_w), σ))`, returning
 `(senderView_w, receiverView_w, out_w)`. -/
 noncomputable def ddhOTRealWordWithDesc
@@ -430,7 +466,8 @@ noncomputable def ddhOTRealWordWithDesc
     let senderView_w := encDDHOTSenderViewRaw
       ((m₀_w, m₁_w), (a % q, r₀ % q, s₀ % q, r₁ % q, s₁ % q), w_w)
     let receiverView_w := encDDHOTReceiverViewRaw (σ, b % q, u_w, (ct₀, ct₁))
-    let out_w := if σ then m₁_w else m₀_w
+    let sel_ct := if σ then ct₁ else ct₀
+    let out_w := F.decodeElGamal (desc, b, sel_ct.1, sel_ct.2)
     return (senderView_w, receiverView_w, out_w)
 
 /-- Word-level execution of DDH-OT for group schedule `d : ℕ → F.Desc`. -/
@@ -440,8 +477,8 @@ noncomputable def ddhOTRealWordRun (d : ℕ → F.Desc)
   ddhOTRealWordWithDesc F (inp.1, d inp.1, inp.2)
 
 /-- Correctness on `ddhOTRealWordWithDesc`: every supported run outputs `F.encode desc (if σ
-then m₁ else m₀)`, and the receiver's `F.decodeElGamal` decryption of its selected ciphertext
-equals `F.encode desc (if σ then m₁ else m₀)`. -/
+then m₁ else m₀)`, obtained by decrypting the receiver's selected ciphertext `sel_ct` with
+`F.decodeElGamal` under secret `b`. -/
 theorem ddhOTRealWordWithDesc_correctness (n : ℕ) (desc : F.Desc) (m₀ m₁ : F.Carrier desc)
     (σ : Bool) {res : List Bool × List Bool × List Bool}
     (hres : res ∈ (ProbComp.eval
@@ -450,6 +487,8 @@ theorem ddhOTRealWordWithDesc_correctness (n : ℕ) (desc : F.Desc) (m₀ m₁ :
   simp only [ddhOTRealWordWithDesc, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hres
   rcases hres with ⟨a, _, r₀, _, s₀, _, r₁, _, s₁, _, b, _, rfl⟩
+  dsimp only [ddhOTRunOut]
+  rw [decodeElGamal_selCt_eq]
   cases σ <;> rfl
 
 private theorem isPPTOn_bind3_sampleExp {P B : Type} (eP : P ↪ List Bool) (eB : B ↪ List Bool)
@@ -624,7 +663,8 @@ theorem isPPTOn_ddhOTRealWordWithDesc :
         let senderView_w := encDDHOTSenderViewRaw
           ((m₀_w, m₁_w), (a % q, r₀ % q, s₀ % q, r₁ % q, s₁ % q), w_w)
         let receiverView_w := encDDHOTReceiverViewRaw (σ, b % q, u_w, (ct₀, ct₁))
-        let out_w := if σ then m₁_w else m₀_w
+        let sel_ct := if σ then ct₁ else ct₀
+        let out_w := F.decodeElGamal (desc, b, sel_ct.1, sel_ct.2)
         (senderView_w, receiverView_w, out_w))
       e6 encDDHOTRunOut := by
     have hcore := computableInPolyTime_senderCoinsAndKeys F encDDHOTWordPair
@@ -650,7 +690,8 @@ theorem isPPTOn_ddhOTRealWordWithDesc :
       (hd.prod (hu.prod (hw.snd'.prod (hm1.prod (hr1.prod (hs1.prod ha))))))
     have hsv := ((hm0.prod hm1).prod (hcore.fst'.prod hw)).encoding_comp
     have hrv := (hσ.prod (hb_mod.prod (hu.prod (hct0.prod hct1)))).encoding_comp
-    have hout := ComputableInPolyTime.ite' hσ hm1 hm0
+    have hsel := ComputableInPolyTime.ite' hσ hct1 hct0
+    have hout := F.computableInPolyTime_decodeElGamal.comp' (hd.prod (hb.prod hsel))
     exact hsv.prod (hrv.prod hout)
   refine isPPTOn_bind6_sampleExp F encDDHOTWordPair encDDHOTRunOut hfin (fun inp => ?_)
   rcases inp with ⟨n, desc, ⟨m₀_w, m₁_w⟩, σ⟩
@@ -884,10 +925,6 @@ theorem isPPTOn_ddhOTWordReduction
 
 /-! ### Exact and statistical bridges between word-level and typed DDH-OT -/
 
-private theorem decodeElGamal_sub_one (desc : F.Desc) (u v : F.Carrier desc) :
-    F.decodeElGamal (desc, 1, F.encode desc v, F.encode desc u) = F.encode desc (u - v) := by
-  simp only [F.decodeElGamal_encode, PrimeOrderGroupFamily.elGamalDecrypt, Nat.cast_one, one_smul]
-
 private theorem ddhOTRealWordRun_eval_bind (d : ℕ → F.Desc) (n : ℕ)
     (x : (i : Fin 2) → OTIn (F.Carrier (d n)) i)
     (k : ZMod (F.order (d n)) → ZMod (F.order (d n)) → ZMod (F.order (d n)) →
@@ -916,7 +953,11 @@ private theorem ddhOTRealWordRun_eval_bind (d : ℕ → F.Desc) (n : ℕ)
         (fun a r₀ s₀ r₁ s₁ b => k a r₀ s₀ r₁ s₁ b) := by
   simp only [ddhOTRealWordRun, ddhOTRealWordWithDesc, encodeDDHOTInputWord,
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  exact bind6_eq _ hf
+  refine bind6_eq _ fun a r₀ s₀ r₁ s₁ b => ?_
+  let x₀ : F.Carrier (d n) × F.Carrier (d n) := x 0
+  rw [← hf a r₀ s₀ r₁ s₁ b]
+  congr 4
+  exact decodeElGamal_selCt_eq F (d n) x₀.1 x₀.2 (x 1) a r₀ s₀ r₁ s₁ b
 
 private theorem ddhOTRealWordRun_advantage_bind6_le (d : ℕ → F.Desc) (n : ℕ)
     (x : (i : Fin 2) → OTIn (F.Carrier (d n)) i)

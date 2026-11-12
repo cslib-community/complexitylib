@@ -172,4 +172,31 @@ theorem sender_advantage_concrete :
         toyDistinguisher 3 pair)) = 0 :=
   iknpWord_sender_advantage_zero constZeroHash 3 (constX 3) (constR 3) (toyDistinguisher 3)
 
+/-- Concrete correctness on `iknpWordRun` at `n = 3`: every supported output matches
+`encodeIKNPOutputsWord (batchOTAnswer (decodeIKNPInput ...) 1)`. -/
+theorem correctness_concrete {sv rv ov : List Bool}
+    (hsupp : (sv, rv, ov) ∈
+      (ProbComp.eval (iknpWordRun constZeroHash 3 (constX 3) (constR 3))).support) :
+    ov = encodeIKNPOutputsWord
+      (batchOTAnswer (decodeIKNPInput (constZeroHash.queries 3)
+        (constZeroHash.outLength 3) (constX 3) (constR 3)) 1) :=
+  iknpWordRun_correctness constZeroHash 3 (constX 3) (constR 3) hsupp
+
+/-- Concrete receiver privacy reduction equating the IKNP receiver distinguishing advantage at
+`n = 3` with the `CorrelationRobust` word-game advantage of `iknpWordReduction`. -/
+theorem receiver_advantage_concrete :
+    Game.advantage
+        (ProbComp.eval (do
+          let (_, rv, ov) ← iknpWordRun constZeroHash 3 (constX 3) (constR 3)
+          toyDistinguisher 3 (rv, ov)))
+        (ProbComp.eval (do
+          let pair ← iknpWordReceiverIdealSample constZeroHash 3 (constX 3) (constR 3)
+          toyDistinguisher 3 pair)) =
+      Game.advantage
+        (CorrelationRobust.wordRealGame constZeroHash
+          (iknpWordReduction constZeroHash constX constR toyDistinguisher) 3)
+        (CorrelationRobust.wordIdealGame constZeroHash
+          (iknpWordReduction constZeroHash constX constR toyDistinguisher) 3) :=
+  iknpWord_receiver_advantage_eq constZeroHash constX constR toyDistinguisher 3
+
 end CslibFrontierTests.Crypto.IKNPPolyTime

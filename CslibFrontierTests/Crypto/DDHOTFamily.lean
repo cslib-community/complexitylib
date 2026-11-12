@@ -108,4 +108,13 @@ theorem receiver_advantage_concrete :
     ddhOTWord_receiver_advantage_le schnorrGroups sched23 4 constWordX23 sampleX23 rfl
       toyDistinguisher
 
+/-- Concrete correctness on `ddhOTRealWordWithDesc` at `d23`: every supported output decrypts to
+the receiver's chosen message `schnorrGroups.encode d23 (schnorrGroups.generator d23)`. -/
+theorem correctness_concrete {res : List Bool × List Bool × List Bool}
+    (hres : res ∈ (ProbComp.eval (ddhOTRealWordWithDesc schnorrGroups
+      (4, d23, (schnorrGroups.encode d23 0,
+        schnorrGroups.encode d23 (schnorrGroups.generator d23)), true))).support) :
+    ddhOTRunOut res = schnorrGroups.encode d23 (schnorrGroups.generator d23) :=
+  ddhOTRealWordWithDesc_correctness schnorrGroups 4 d23 0 (schnorrGroups.generator d23) true hres
+
 end CslibFrontierTests.Crypto.DDHOTFamily
