@@ -9,24 +9,27 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum.Mask
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
 import CslibFrontier.Computability.Complexity.Problems.SubsetSum.Digits
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Foundations.Data.List.Blocks
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import Mathlib.Data.List.GetD
 
 /-!
 # Subset sum
 
-`SubsetSum` is the set of pairs `(a, t)` of a list `a` of natural numbers, possibly with
-repetitions, and a target `t` such that some sub-multiset of `a` sums to `t` [Sipser, Section
-7.3][Sipser2013]. All numbers are encoded in binary (`Turing.MultiTapeTM.encNat`, digits least
-significant first); the `NP`-hardness proved here is for this encoding and is not strong
-`NP`-hardness. A certificate is a mask selecting entries of `a` (`Cslib.Complexity.maskSelect`),
-and the verifier adds the selected numbers in binary.
+`SubsetSum` is the set of instances `x : SubsetSumInstance` of a list `x.numbers` of natural
+numbers, possibly with repetitions, and a target `x.target` such that some sub-multiset of
+`x.numbers` sums to `x.target` [Sipser, Section 7.3][Sipser2013]. All numbers are encoded in
+binary (`Turing.MultiTapeTM.encNat`, digits least significant first); the `NP`-hardness proved here
+is for this encoding and is not strong `NP`-hardness. A certificate is a mask selecting entries of
+`x.numbers` (`Cslib.Complexity.maskSelect`), and the verifier adds the selected numbers in binary.
 
 Sipser's reduction from 3SAT [Sipser, Theorem 7.56][Sipser2013] gives each of the `n` variables
 of a formula, numbered by first occurrence (`Cslib.Logic.PL.CNF.distinctVars`), and each of its `m`
@@ -45,7 +48,8 @@ by both of its literal numbers. Formulas with a clause of more than three litera
 
 ## Main definitions
 
-* `Cslib.Complexity.SubsetSum`, `Cslib.Complexity.SubsetSum.verifier`.
+* `Cslib.Complexity.SubsetSumInstance`, `Cslib.Complexity.SubsetSum`,
+  `Cslib.Complexity.encSubsetSum`, `Cslib.Complexity.SubsetSum.verifier`.
 * `Cslib.Complexity.ThreeSAT.literalDigits`,
   `Cslib.Complexity.ThreeSAT.digitNumbers`, `Cslib.Complexity.ThreeSAT.digitTarget`.
 * `Cslib.Complexity.ThreeSAT.toSubsetSum`: Sipser's reduction.
@@ -54,7 +58,7 @@ by both of its literal numbers. Formulas with a clause of more than three litera
 
 * `Cslib.Complexity.mem_SubsetSum_iff_sublist`: solutions are subsequences of the numbers.
 * `Cslib.Complexity.SubsetSum.isVerifier`, `Cslib.Complexity.SubsetSum.mem_NP`:
-  `SubsetSum ∈ NP (encPair (encList encNat) encNat)`.
+  `SubsetSum ∈ NP encSubsetSum`.
 * `Cslib.Complexity.ThreeSAT.digit_mem_SubsetSum_iff_counts`,
   `Cslib.Complexity.ThreeSAT.counts_iff_satisfiable`: the digit construction has a solution
   exactly when the digit positions can be filled, exactly when the formula is satisfiable.
@@ -72,32 +76,50 @@ by both of its literal numbers. Formulas with a clause of more than three litera
 * [R. M. Karp, *Reducibility among combinatorial problems*][Karp1972]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 open scoped List
 
-/-- The instances `(a, t)` of subset sum: some sub-multiset of the numbers `a` sums to `t`
-[Karp1972], [Sipser, Chapter 7][Sipser2013]. -/
-def SubsetSum : Set (List ℕ × ℕ) := {x | ∃ s ≤ (x.1 : Multiset ℕ), s.sum = x.2}
+/-- An instance of subset sum: a list of candidate natural numbers and a target sum. -/
+@[ext]
+structure SubsetSumInstance where
+  /-- The candidate natural numbers, possibly with repetitions. -/
+  numbers : List ℕ
+  /-- The target sum. -/
+  target : ℕ
+  deriving DecidableEq, Repr
 
-theorem mem_SubsetSum {x : List ℕ × ℕ} :
-    x ∈ SubsetSum ↔ ∃ s ≤ (x.1 : Multiset ℕ), s.sum = x.2 :=
+/-- Instances `⟨a, t⟩` of `SubsetSum`: the list `a`, framed, each of its numbers framed, then the
+target `t`; all numbers in binary. -/
+enc_structure encSubsetSum : SubsetSumInstance where
+  numbers : (encList encNat), target : encNat
+
+attribute [fun_prop] encSubsetSum_numbers_polyTime encSubsetSum_target_polyTime
+  encSubsetSum_mk_polyTime
+
+/-- The instances of subset sum: some sub-multiset of `x.numbers` sums to `x.target` [Karp1972],
+[Sipser, Chapter 7][Sipser2013]. -/
+@[expose] def SubsetSum : Set SubsetSumInstance :=
+  {x | ∃ s ≤ (x.numbers : Multiset ℕ), s.sum = x.target}
+
+theorem mem_SubsetSum {x : SubsetSumInstance} :
+    x ∈ SubsetSum ↔ ∃ s ≤ (x.numbers : Multiset ℕ), s.sum = x.target :=
   Iff.rfl
 
 /-- Subset sum asks for a subsequence of the numbers with the target sum. -/
-theorem mem_SubsetSum_iff_sublist {x : List ℕ × ℕ} :
-    x ∈ SubsetSum ↔ ∃ s, s <+ x.1 ∧ s.sum = x.2 := by
+theorem mem_SubsetSum_iff_sublist {x : SubsetSumInstance} :
+    x ∈ SubsetSum ↔ ∃ s, s <+ x.numbers ∧ s.sum = x.target := by
   simpa only [Multiset.sum_coe] using
-    mem_SubsetSum.trans (exists_le_coe_iff_exists_sublist (fun s => s.sum = x.2))
+    mem_SubsetSum.trans (exists_le_coe_iff_exists_sublist (fun s => s.sum = x.target))
 
 /-- A sub-multiset of the values of a duplicate-free list sums to `t` exactly when a subset of
 the list does. -/
 theorem map_mem_SubsetSum_iff {ι : Type*} [DecidableEq ι] {xs : List ι} (hxs : xs.Nodup)
     (f : ι → ℕ) (t : ℕ) :
-    (xs.map f, t) ∈ SubsetSum ↔ ∃ F ⊆ xs.toFinset, ∑ x ∈ F, f x = t := by
+    (⟨xs.map f, t⟩ : SubsetSumInstance) ∈ SubsetSum ↔ ∃ F ⊆ xs.toFinset, ∑ x ∈ F, f x = t := by
   rw [mem_SubsetSum_iff_sublist]
   constructor
   · rintro ⟨s, hs, rfl⟩
@@ -124,28 +146,31 @@ namespace SubsetSum
 
 /-- The verifier for `SubsetSum`: the numbers selected by the certificate mask sum to the
 target. -/
-def verifier (x : (List ℕ × ℕ) × List Bool) : Bool := decide ((maskSelect x.1.1 x.2).sum = x.1.2)
+@[expose] def verifier (x : SubsetSumInstance × List Bool) : Bool :=
+  decide ((maskSelect x.1.numbers x.2).sum = x.1.target)
 
 /-- `SubsetSum.verifier` verifies `SubsetSum` with certificates as long as the encoded
 instance. -/
 theorem isVerifier :
-    IsVerifier (encPair (encList encNat) encNat) Polynomial.X verifier SubsetSum := by
+    IsVerifier encSubsetSum Polynomial.X verifier SubsetSum := by
   intro x
   simp only [mem_SubsetSum, Polynomial.eval_X, verifier, decide_eq_true_eq]
+  have hlen : x.numbers.length ≤ (encSubsetSum x).length := by
+    rw [encSubsetSum_apply]
+    exact length_le_length_encPair encNat encNat (x.numbers, x.target)
   simpa only [Multiset.sum_coe] using exists_le_iff_exists_maskSelect
-    (length_le_length_encPair encNat encNat x) (fun s => s.sum = x.2)
+    hlen (fun s => s.sum = x.target)
 
 /-- The `SubsetSum` verifier is polynomial-time: it selects the masked numbers, adds them in
 binary and compares the sum with the target. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier
-      (encPair (encPair (encList encNat) encNat) encBits) encBool := by
+    ComputableInPolyTime verifier (encPair encSubsetSum encBits) encBool := by
   unfold verifier
   fun_prop
 
 /-- `SubsetSum` belongs to `NP`. -/
-theorem mem_NP : SubsetSum ∈ NP (encPair (encList encNat) encNat) :=
+theorem mem_NP : SubsetSum ∈ NP encSubsetSum :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end SubsetSum
@@ -156,21 +181,21 @@ namespace ThreeSAT
 
 /-- Whether clause `j` of `φ` contains the literal of sign `b` of variable number `i` of
 `φ.distinctVars`. -/
-def covers (φ : CNF ℕ) (i : ℕ) (b : Bool) (j : ℕ) : Bool :=
+@[expose] def covers (φ : CNF ℕ) (i : ℕ) (b : Bool) (j : ℕ) : Bool :=
   (φ.getD j []).any fun l => φ.distinctVars.idxOf l.1 == i && l.2 == b
 
 /-- The digit positions of the number of a literal: the position `i` of its variable, and the
 position `φ.distinctVars.length + j` of every clause `j` containing it. -/
-def literalDigits (φ : CNF ℕ) (i : ℕ) (b : Bool) : List ℕ :=
+@[expose] def literalDigits (φ : CNF ℕ) (i : ℕ) (b : Bool) : List ℕ :=
   i :: ((List.range φ.length).filter (covers φ i b)).map (φ.distinctVars.length + ·)
 
 /-- The number whose base-8 digits are one at the positions `ps` and zero elsewhere, for distinct
 positions. -/
-def octal (ps : List ℕ) : ℕ := (ps.map (8 ^ ·)).sum
+@[expose] def octal (ps : List ℕ) : ℕ := (ps.map (8 ^ ·)).sum
 
 /-- The numbers of the digit construction: two literal numbers for each variable, and two slack
 numbers with the single digit of each clause. -/
-def digitNumbers (φ : CNF ℕ) : List ℕ :=
+@[expose] def digitNumbers (φ : CNF ℕ) : List ℕ :=
   ((List.range φ.distinctVars.length).flatMap fun i =>
       [octal (literalDigits φ i true), octal (literalDigits φ i false)]) ++
     (List.range φ.length).flatMap fun j =>
@@ -178,14 +203,14 @@ def digitNumbers (φ : CNF ℕ) : List ℕ :=
 
 /-- The target of the digit construction: digit one at each variable position and digit three at
 each clause position. -/
-def digitTarget (φ : CNF ℕ) : ℕ :=
+@[expose] def digitTarget (φ : CNF ℕ) : ℕ :=
   ((List.range φ.distinctVars.length).map (8 ^ ·)).sum +
     ((List.range φ.length).map fun j => 3 * 8 ^ (φ.distinctVars.length + j)).sum
 
 /-- Sipser's reduction from `ThreeSAT` to `SubsetSum`: the digit construction for formulas whose
 clauses have at most three literals, and an instance without solutions otherwise. -/
-def toSubsetSum (φ : CNF ℕ) : List ℕ × ℕ :=
-  if φ.all fun c => decide (c.length ≤ 3) then (digitNumbers φ, digitTarget φ) else ([], 1)
+@[expose] def toSubsetSum (φ : CNF ℕ) : SubsetSumInstance :=
+  if φ.all fun c => decide (c.length ≤ 3) then ⟨digitNumbers φ, digitTarget φ⟩ else ⟨[], 1⟩
 
 /-! ### Correctness -/
 
@@ -200,8 +225,7 @@ private theorem mem_distinctVars_of_mem {j : ℕ} {l : Literal ℕ} (hl : l ∈ 
     l.1 ∈ φ.distinctVars := by
   refine CNF.mem_distinctVars.2 ?_
   rcases Nat.lt_or_ge j φ.length with hj | hj
-  · rw [List.getD_eq_getElem _ _ hj] at hl
-    exact List.mem_map.2 ⟨l, List.mem_flatten.2 ⟨_, List.getElem_mem hj, hl⟩, rfl⟩
+  · exact List.mem_map.2 ⟨l, List.mem_flatten.2 ⟨_, List.getD_mem [] hj, hl⟩, rfl⟩
   · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none hj] at hl
     simp at hl
 
@@ -345,9 +369,8 @@ positions. -/
 private theorem digitTarget_eq :
     digitTarget φ = ∑ p ∈ range (φ.distinctVars.length + φ.length),
       (if p < φ.distinctVars.length then 1 else 3) * 8 ^ p := by
-  have hlist (n : ℕ) (f : ℕ → ℕ) : ((List.range n).map f).sum = ∑ i ∈ range n, f i := by
-    rw [sum_eq_multiset_sum, range_val, Multiset.range, Multiset.map_coe, Multiset.sum_coe]
-  rw [sum_range_add, digitTarget, hlist, hlist]
+  rw [sum_range_add, digitTarget, List.sum_map_range_eq_sum_range,
+    List.sum_map_range_eq_sum_range]
   congr 1
   · exact sum_congr rfl fun p hp => by simp [mem_range.1 hp]
   · exact sum_congr rfl fun j _ => by simp
@@ -405,7 +428,7 @@ private theorem forall_lt_add_iff {L k : ℕ} {P : ℕ → Prop} :
 slack numbers `B` so that each variable position holds one chosen literal number and each clause
 position three chosen numbers. -/
 theorem digit_mem_SubsetSum_iff_counts (hφ : ∀ c ∈ φ, c.length ≤ 3) :
-    (digitNumbers φ, digitTarget φ) ∈ SubsetSum ↔
+    (⟨digitNumbers φ, digitTarget φ⟩ : SubsetSumInstance) ∈ SubsetSum ↔
       ∃ A ⊆ range φ.distinctVars.length ×ˢ (univ : Finset Bool),
         ∃ B ⊆ range φ.length ×ˢ (univ : Finset Bool),
           (∀ i < φ.distinctVars.length, #{a ∈ A | a.1 = i} = 1) ∧
@@ -420,8 +443,7 @@ theorem digit_mem_SubsetSum_iff_counts (hφ : ∀ c ∈ φ, c.length ≤ 3) :
     · rw [itemSet, card_filter_clause subset_rfl hj]
       have h₁ := card_filter_covers_le (φ := φ)
         (range φ.distinctVars.length ×ˢ (univ : Finset Bool)) j
-      rw [List.getD_eq_getElem _ _ hj] at h₁
-      have h₂ := hφ _ (List.getElem_mem hj)
+      have h₂ := hφ _ (List.getD_mem [] hj)
       have h₃ := card_filter_fst_le (range φ.length ×ˢ (univ : Finset Bool)) j
       lia
   have hcounts {A B : Finset (ℕ × Bool)} (hA : A ⊆ range φ.distinctVars.length ×ˢ univ) :
@@ -515,16 +537,14 @@ theorem counts_iff_satisfiable (hφ : ∀ c ∈ φ, c.length ≤ 3) :
         exact ⟨rfl, rfl⟩
       · rintro ⟨rfl, rfl⟩
         exact ⟨⟨hi, rfl⟩, rfl⟩
-    · have hle : cnt j ≤ 3 := (card_filter_covers_le A j).trans
-        (by rw [List.getD_eq_getElem _ _ hj]; exact hφ _ (List.getElem_mem hj))
+    · have hle : cnt j ≤ 3 := (card_filter_covers_le A j).trans (hφ _ (List.getD_mem [] hj))
       have hpos : 1 ≤ cnt j := by
         obtain ⟨l, hl, hσl⟩ := (Clause.eval_eq_true_iff _ _).1
-          ((CNF.eval_eq_true_iff _ _).1 hσ _ (List.getElem_mem hj))
-        have hl' : l ∈ φ.getD j [] := by rwa [List.getD_eq_getElem _ _ hj]
+          ((CNF.eval_eq_true_iff _ _).1 hσ _ (List.getD_mem [] hj))
         have hidx : φ.distinctVars.idxOf l.1 < φ.distinctVars.length :=
-          List.idxOf_lt_length_iff.2 (mem_distinctVars_of_mem hl')
+          List.idxOf_lt_length_iff.2 (mem_distinctVars_of_mem hl)
         refine card_pos.2 ⟨(φ.distinctVars.idxOf l.1, l.2), mem_filter.2 ⟨(hmemA _).2
-          ⟨hidx, ?_⟩, covers_eq_true_iff.2 ⟨l, hl', rfl, rfl⟩⟩⟩
+          ⟨hidx, ?_⟩, covers_eq_true_iff.2 ⟨l, hl, rfl, rfl⟩⟩⟩
         simp only [hb, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hidx,
           List.getElem_idxOf hidx, Option.getD_some, hσl]
       have hBj : ({c ∈ B | c.1 = j} : Finset (ℕ × Bool)) =
@@ -627,7 +647,7 @@ theorem computableInPolyTime_digitTarget :
 /-- Sipser's reduction is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toSubsetSum :
-    ComputableInPolyTime toSubsetSum encCNF (encPair (encList encNat) encNat) := by
+    ComputableInPolyTime toSubsetSum encCNF encSubsetSum := by
   unfold toSubsetSum encCNF
   fun_prop
 
@@ -635,17 +655,17 @@ end ThreeSAT
 
 /-- `ThreeSAT` reduces to `SubsetSum` in polynomial time by Sipser's digit construction. -/
 theorem polyTimeReducible_ThreeSAT_SubsetSum :
-    PolyTimeReducible encCNF (encPair (encList encNat) encNat) ThreeSAT SubsetSum :=
+    PolyTimeReducible encCNF encSubsetSum ThreeSAT SubsetSum :=
   ⟨ThreeSAT.toSubsetSum, ThreeSAT.computableInPolyTime_toSubsetSum,
     fun φ => (ThreeSAT.toSubsetSum_mem_iff φ).symm⟩
 
 /-- `SubsetSum` is `NP`-hard. -/
-theorem SubsetSum_npHard : NPHard (encPair (encList encNat) encNat) SubsetSum :=
+theorem SubsetSum_npHard : NPHard encSubsetSum SubsetSum :=
   ThreeSAT_npHard.trans polyTimeReducible_ThreeSAT_SubsetSum
 
 /-- **Subset sum is NP-complete**, with the numbers and the target in binary [Karp1972],
 [Sipser, Theorem 7.56][Sipser2013]. -/
-theorem SubsetSum_npComplete : NPComplete (encPair (encList encNat) encNat) SubsetSum :=
+theorem SubsetSum_npComplete : NPComplete encSubsetSum SubsetSum :=
   ⟨SubsetSum.mem_NP, SubsetSum_npHard⟩
 
 end Cslib.Complexity

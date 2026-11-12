@@ -352,6 +352,16 @@ theorem Grows.imps_of_mem {Γ L : List (Formula V)} (hL : IsProof Γ L) {φ : Fo
     have g₃ := grows_mp g₂.proof (List.mem_cons_of_mem _ h₁) List.mem_cons_self
     exact ⟨_, (g₁.trans g₂).trans g₃ |>.mono (by simp; omega), List.mem_cons_self⟩
 
+/-- One step of the deduction theorem: if `L₁` translates the lines `M` and `n ≤ 10 (|Δ| + 1)` more
+lines reach a proof `L₂` containing `Δ ⇒ φ`, then `L₂` translates `φ :: M`. -/
+private theorem deduction_cons {Γ Δ M L L₁ L₂ : List (Formula V)} {φ : Formula V} {n : ℕ}
+    (g₁ : Grows Γ L L₁ (10 * (Δ.length + 1) * M.length)) (h₁ : ∀ ψ ∈ M, imps Δ ψ ∈ L₁)
+    (g₂ : Grows Γ L₁ L₂ n) (hn : n ≤ 10 * (Δ.length + 1)) (h₂ : imps Δ φ ∈ L₂) :
+    ∃ L', Grows Γ L L' (10 * (Δ.length + 1) * (φ :: M).length) ∧
+      ∀ ψ ∈ φ :: M, imps Δ ψ ∈ L' :=
+  ⟨L₂, (g₁.trans g₂).mono (by simp only [List.length_cons]; nlinarith),
+    List.forall_mem_cons.2 ⟨h₂, fun ψ hψ => g₂.subset (h₁ ψ hψ)⟩⟩
+
 /-- **Deduction theorem with linear overhead**: a proof from `Γ ++ Δ` becomes a proof from `Γ` of
 `Δ ⇒ φ` for each of its lines `φ`, with at most `10 (|Δ| + 1)` lines per original line. -/
 theorem IsProof.deduction {Γ Δ M : List (Formula V)} (hM : IsProof (Γ ++ Δ) M)
@@ -362,29 +372,19 @@ theorem IsProof.deduction {Γ Δ M : List (Formula V)} (hM : IsProof (Γ ++ Δ) 
   | @hyp M φ _ hφ ih =>
     obtain ⟨L₁, g₁, h₁⟩ := ih
     rcases List.mem_append.1 hφ with hφ | hφ
-    · have g₂ := grows_hyp g₁.proof hφ
+    · -- `φ ∈ Γ`: add it as a hypothesis, then weaken it under `Δ`.
+      have g₂ := grows_hyp g₁.proof hφ
       obtain ⟨L₃, g₃, h₃⟩ := Grows.imps_of_mem g₂.proof List.mem_cons_self Δ
-      refine ⟨L₃, ((g₁.trans g₂).trans g₃).mono (by simp only [List.length_cons]; nlinarith), ?_⟩
-      intro ψ hψ
-      rcases List.mem_cons.1 hψ with rfl | hψ
-      · exact h₃
-      · exact g₃.subset (g₂.subset (h₁ ψ hψ))
-    · obtain ⟨L₂, g₂, h₂⟩ := Grows.of_derivableInSize g₁.proof
+      exact deduction_cons g₁ h₁ (g₂.trans g₃) (by omega) h₃
+    · -- `φ ∈ Δ`: `Δ ⇒ φ` has a short direct proof.
+      obtain ⟨L₂, g₂, h₂⟩ := Grows.of_derivableInSize g₁.proof
         (DerivableInSize.imps_mem (Γ := Γ) hφ)
-      refine ⟨L₂, (g₁.trans g₂).mono (by simp only [List.length_cons]; nlinarith), ?_⟩
-      intro ψ hψ
-      rcases List.mem_cons.1 hψ with rfl | hψ
-      · exact h₂
-      · exact g₂.subset (h₁ ψ hψ)
+      exact deduction_cons g₁ h₁ g₂ (by omega) h₂
   | @ax M φ _ hφ ih =>
     obtain ⟨L₁, g₁, h₁⟩ := ih
     have g₂ := grows_ax g₁.proof hφ
     obtain ⟨L₃, g₃, h₃⟩ := Grows.imps_of_mem g₂.proof List.mem_cons_self Δ
-    refine ⟨L₃, ((g₁.trans g₂).trans g₃).mono (by simp only [List.length_cons]; nlinarith), ?_⟩
-    intro ψ hψ
-    rcases List.mem_cons.1 hψ with rfl | hψ
-    · exact h₃
-    · exact g₃.subset (g₂.subset (h₁ ψ hψ))
+    exact deduction_cons g₁ h₁ (g₂.trans g₃) (by omega) h₃
   | @mp M φ ψ _ hφ hφψ ih =>
     obtain ⟨L₁, g₁, h₁⟩ := ih
     obtain ⟨L₂, g₂, h₂⟩ := Grows.of_derivableInSize g₁.proof
@@ -392,12 +392,7 @@ theorem IsProof.deduction {Γ Δ M : List (Formula V)} (hM : IsProof (Γ ++ Δ) 
     have g₃ := grows_mp g₂.proof (g₂.subset (h₁ _ hφψ)) h₂
     have g₄ := grows_mp g₃.proof (List.mem_cons_of_mem _ (g₂.subset (h₁ _ hφ)))
       List.mem_cons_self
-    refine ⟨_, (((g₁.trans g₂).trans g₃).trans g₄).mono
-      (by simp only [List.length_cons]; nlinarith), ?_⟩
-    intro χ hχ
-    rcases List.mem_cons.1 hχ with rfl | hχ
-    · exact List.mem_cons_self
-    · exact g₄.subset (g₃.subset (g₂.subset (h₁ χ hχ)))
+    exact deduction_cons g₁ h₁ ((g₂.trans g₃).trans g₄) (by omega) List.mem_cons_self
 
 /-- Detaching the antecedents `Δ` of an available line `Δ ⇒ φ`, one line per antecedent, when
 every antecedent is available. -/

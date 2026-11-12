@@ -18,12 +18,17 @@ public import CslibFrontier.Computability.WordRAM.Time
 The basic Karger and recursive Karger–Stein programs share the same final step: compile a
 structured code whose observed word has a law supported on non-trivial cut weights. This module
 transports that law to halted configurations, retaining supported-path halt and random-call
-bounds, bounded data and the exact memory frame.
+bounds, bounded data and the exact memory frame. Their amplification loops also share the update
+of the best cut weight after each trial.
 
 ## Main results
 
 * `Cslib.Algorithms.WordRAM.Karger.program_of_law`: compiled halt, call, cut and probability
   contracts from the existing `ExecRandLaw`.
+* `Cslib.Algorithms.WordRAM.Karger.program_failure_le_inv_n`: unconditional `1 / n` failure
+  probability bound for compiled amplified minimum-cut programs.
+* `Cslib.Algorithms.WordRAM.Karger.minUpdate_exec`: the running-minimum update on any registers,
+  with its register frame.
 
 ## References
 
@@ -35,11 +40,27 @@ public section
 
 namespace Cslib.Algorithms.WordRAM.Karger
 
+open scoped ENNReal
 open Cslib.WeightedCut Cslib.WordRAM
 
+private theorem evalRand_miss_le_of_law {r R T T' w : ℕ} {c : Code .standard r} {out : Fin r}
+    {input : List ℕ} {P : Data r → Prop} {μ : PMF ℕ}
+    (h : ExecRandLaw w c (.init input) P T R (fun y => y.regs out) μ) (hT : T + 1 ≤ T') (m : ℕ) :
+    (evalRand w (c.program out) T' (.init input)).toOuterMeasure
+        {cfg | ∀ y, cfg ≠ .halted m y} ≤ μ.toOuterMeasure {v | v ≠ m} := by
+  let output : RandCfg r → ℕ := fun | .halted v _ => v | _ => 0
+  obtain ⟨-, -, hpost, hlaw⟩ := h.program out hT output fun _ _ => rfl
+  rw [← hlaw, PMF.toOuterMeasure_map_apply]
+  refine PMF.toOuterMeasure_mono _ ?_
+  rintro cfg ⟨hne, hcfg⟩ hv
+  obtain ⟨y, rfl, -⟩ := hpost cfg (by rwa [support_evalRand] at hcfg)
+  change y.regs out = m at hv
+  exact hne y (by rw [hv])
+
 /-- A compiled program whose output word has the law `μ`, supported on the weights of non-trivial
-cuts of `W`, halts on every path with such a weight, and outputs `minCut W` with the probability
-that `μ` gives it. -/
+cuts of `W`, halts on every path with such a weight, and outputs `minCut W` with at least the
+probability that `μ` gives it; it fails to do so with at most the probability that `μ` gives the
+other values. -/
 theorem program_of_law {r R T T' n w : ℕ} {c : Code .standard r} {out : Fin r}
     {input : List ℕ} {F : Finset ℕ} {W : Fin n → Fin n → ℕ} {μ : PMF ℕ}
     (h : ExecRandLaw w c (.init input) (fun y => Modifies F (Data.init (r := r) input).mem y.mem)
@@ -62,7 +83,7 @@ theorem program_of_law {r R T T' n w : ℕ} {c : Code .standard r} {out : Fin r}
       ∃ y : Data r, cfg = .halted (y.regs out) y := fun cfg hcfg => by
     obtain ⟨y, rfl, -⟩ := hpost cfg (by rwa [support_evalRand] at hcfg)
     exact ⟨y, rfl⟩
-  refine ⟨hhalt, hcalls, fun cfg hcfg => ?_, ?_, ?_⟩
+  refine ⟨hhalt, hcalls, fun cfg hcfg => ?_, ?_, evalRand_miss_le_of_law h hT (minCut W)⟩
   · obtain ⟨y, rfl, hmod⟩ := hpost cfg hcfg
     obtain ⟨C, hC, hv⟩ := hμ (y.regs out) (by
       rw [← hlaw, PMF.mem_support_map_iff]
@@ -75,11 +96,68 @@ theorem program_of_law {r R T T' n w : ℕ} {c : Code .standard r} {out : Fin r}
     obtain ⟨y, rfl⟩ := hhalted cfg hcfg
     change y.regs out = minCut W at hv
     exact ⟨y, by rw [hv]⟩
-  · rw [← hlaw, PMF.toOuterMeasure_map_apply]
-    refine PMF.toOuterMeasure_mono _ ?_
-    rintro cfg ⟨hne, hcfg⟩ hv
-    obtain ⟨y, rfl⟩ := hhalted cfg hcfg
-    change y.regs out = minCut W at hv
-    exact hne y (by rw [hv])
+
+/-- Unconditional `1 / n` failure-probability bound for a compiled minimum-cut program `c.program
+out`: for `n < 2` the right-hand side `1 / n` is at least `1`; for `2 ≤ n`, the program's miss
+probability is bounded by `μ.toOuterMeasure {v | v ≠ minCut W}`, which is `0` when `minCut W = 0`
+and `μ` is supported on `{0}`, and at most `1 / (2 * n) ≤ 1 / n` when `0 < minCut W`. -/
+theorem program_failure_le_inv_n {r T' n w : ℕ} {c : Code .standard r} {out : Fin r}
+    {input : List ℕ} {W : Fin n → Fin n → ℕ}
+    (hlaw : 2 ≤ n → ∃ R T P μ,
+      ExecRandLaw w c (.init input) P T R (fun y => y.regs out) μ ∧
+      T + 1 ≤ T' ∧
+      (0 < minCut W → μ.toOuterMeasure {v | v ≠ minCut W} ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞)) ∧
+      (minCut W = 0 → ∀ v ∈ μ.support, v = 0)) :
+    (evalRand w (c.program out) T' (.init input)).toOuterMeasure
+        {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
+      (1 : ℝ≥0∞) / (n : ℝ≥0∞) := by
+  by_cases hn : n < 2
+  · refine (Cslib.Probability.PMF.toOuterMeasure_le_one _ _).trans ?_
+    rw [one_div, ENNReal.one_le_inv]
+    exact_mod_cast (by omega : n ≤ 1)
+  obtain ⟨R, T, P, μ, h, hT, hpos, hzero⟩ := hlaw (by omega)
+  have hmiss := evalRand_miss_le_of_law h hT (minCut W)
+  rcases Nat.eq_zero_or_pos (minCut W) with hmin0 | hmin_pos
+  · have hμ0 : μ.toOuterMeasure {v | v ≠ minCut W} = 0 :=
+      (PMF.toOuterMeasure_apply_eq_zero_iff _ _).mpr
+        (Set.disjoint_left.mpr fun v hv hne => hne (hmin0 ▸ hzero hmin0 v hv))
+    exact (hmiss.trans_eq hμ0).trans zero_le
+  · refine (hmiss.trans (hpos hmin_pos)).trans ?_
+    apply ENNReal.div_le_div_left
+    exact_mod_cast (by omega : n ≤ 2 * n)
+
+/-- The running-minimum update shared by the amplification loops, on any registers: on the first
+trial (`trial` equal to the zero register) it records `val` in `best`, and afterwards the smaller
+of `val` and `best`. It runs within five instructions and changes no other register or memory. -/
+theorem minUpdate_exec {r w : ℕ} {trial zero val best : Fin r} (hbz : best ≠ zero)
+    {x : Data r} (hz : x.regs zero = 0) :
+    ∃ y, ExecWithin (B := .standard) w ram[
+        if trial = zero then [ best ← val ] else [
+          if val < best then [ best ← val ] else [ zero ← #0 ] ]] x y 5 ∧
+      y.mem = x.mem ∧
+      y.regs best = (if x.regs trial = 0 then x.regs val else min (x.regs val) (x.regs best)) ∧
+      ∀ i, i ≠ best → y.regs i = x.regs i := by
+  have hset (v : ℕ) : ∀ i, i ≠ best → (x.set best v).regs i = x.regs i := fun i hi => by
+    simp only [Data.set_regs, Function.update_of_ne hi]
+  have e_copy : ExecWithin (B := .standard) w ram[ best ← val ] x (x.set best (x.regs val)) 1 :=
+    (Exec.copy (B := .standard) (w := w) (d := best) (s := val) (x := x)).within
+  by_cases hi0 : x.regs trial = 0
+  · have hc : (Cond.eq trial zero).Holds x := by simp [Cond.holds_eq, hz, hi0]
+    exact ⟨_, (ExecWithin.branch_pos hc e_copy).mono (by omega), rfl, by simp [hi0], hset _⟩
+  have hc : ¬(Cond.eq trial zero).Holds x := by simp [Cond.holds_eq, hz, hi0]
+  by_cases hlt : x.regs val < x.regs best
+  · have hc2 : (Cond.lt val best).Holds x := hlt
+    exact ⟨_, (ExecWithin.branch_neg hc (ExecWithin.branch_pos hc2 e_copy)).mono (by omega), rfl,
+      by simp [hi0, Nat.min_eq_left hlt.le], hset _⟩
+  · have hc2 : ¬(Cond.lt val best).Holds x := hlt
+    have e_zero : ExecWithin (B := .standard) w ram[ zero ← #0 ] x (x.set zero 0) 1 :=
+      ExecWithin.const (fits_zero w)
+    refine ⟨_, (ExecWithin.branch_neg hc (ExecWithin.branch_neg hc2 e_zero)).mono (by omega),
+      rfl, ?_, fun i _ => ?_⟩
+    · simp only [Data.set_regs, Function.update_of_ne hbz, hi0, ↓reduceIte]
+      exact (Nat.min_eq_right (Nat.le_of_not_lt hlt)).symm
+    · by_cases hiz : i = zero
+      · subst hiz; simp [hz]
+      · simp only [Data.set_regs, Function.update_of_ne hiz]
 
 end Cslib.Algorithms.WordRAM.Karger

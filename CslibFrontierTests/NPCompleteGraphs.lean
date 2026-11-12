@@ -34,12 +34,12 @@ example :
         PolyTimeReducible encCNF encGraph SAT ThreeColoring) ∧
       (KColoring 4 ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT (KColoring 4)) ∧
-      (DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat)) ∧
-        PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath) ∧
+      (DirHamPath ∈ NP encPathInstance ∧
+        PolyTimeReducible encCNF encPathInstance SAT DirHamPath) ∧
       (DirHamCycle ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT DirHamCycle) ∧
-      (HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) ∧
-        PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT HamPath) ∧
+      (HamPath ∈ NP encPathInstance ∧
+        PolyTimeReducible encCNF encPathInstance SAT HamPath) ∧
       (HamCycle ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT HamCycle) :=
   ⟨⟨VertexCover_npComplete.1, VertexCover_npComplete.2 encCNF SAT SAT.mem_NP⟩,
@@ -55,7 +55,7 @@ example :
 example :
     PolyTimeReducible encCNF encGraph SAT ThreeColoring ∧
       PolyTimeReducible encCNF (encPair encGraph encNat) SAT VertexCover ∧
-      PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath :=
+      PolyTimeReducible encCNF encPathInstance SAT DirHamPath :=
   ⟨ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP |>.trans polyTimeReducible_ThreeSAT_ThreeColoring,
     polyTimeReducible_SAT_IndependentSet.trans polyTimeReducible_IndependentSet_VertexCover,
     ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP |>.trans polyTimeReducible_ThreeSAT_DirHamPath⟩
@@ -70,8 +70,7 @@ example :
       ComputableInPolyTime (KColoring.verifier 3) (encPair encGraph encBits) encBool ∧
       ComputableInPolyTime SAT.toThreeColoring encCNF encGraph ∧
       ComputableInPolyTime (SAT.toKColoring 2) encCNF encGraph ∧
-      ComputableInPolyTime SAT.toDirHamPath encCNF
-        (encPair encGraph (encPair encNat encNat)) ∧
+      ComputableInPolyTime SAT.toDirHamPath encCNF encPathInstance ∧
       ComputableInPolyTime SAT.toDirHamCycle encCNF encGraph ∧
       ComputableInPolyTime
         (fun φ => IndependentSet.toVertexCover (SAT.toIndependentSet φ))
@@ -263,7 +262,7 @@ example : SAT.toKColoring 2 [[(0, true)], [(0, false)]] ∉ KColoring 5 := by
 
 -- A directed path through all vertices, and the boundary conventions for cycles: a single
 -- vertex needs a self-loop.
-example : (([0, 1, 2], [(0, 1), (1, 2)]), 0, 2) ∈ DirHamPath :=
+example : (⟨([0, 1, 2], [(0, 1), (1, 2)]), 0, 2⟩ : PathInstance) ∈ DirHamPath :=
   ⟨[0, 1, 2], by decide, fun _ => Iff.rfl, rfl, rfl, by decide⟩
 
 example : ([0], [(0, 0)]) ∈ DirHamCycle :=
@@ -285,17 +284,17 @@ example : ([0, 1, 2], [(2, 0), (0, 1), (1, 2)]) ∈ DirHamCycle :=
 
 -- The diamond graph of the empty formula is the single top node, and that of a unit clause has
 -- one diamond with a row of six nodes and one clause node.
-example : SAT.toDirHamPath [] = (([0], []), 0, 0) := by decide
+example : SAT.toDirHamPath [] = ⟨([0], []), 0, 0⟩ := by decide
 example : SAT.toDirHamPath [] ∈ DirHamPath := (SAT.toDirHamPath_mem_iff _).2 ⟨fun _ => true, rfl⟩
 
 example : SAT.toDirHamPath [[(0, true)]] =
-    (([0, 1, 2, 3, 17, 82, 257, 626, 6],
+    ⟨([0, 1, 2, 3, 17, 82, 257, 626, 6],
       [(0, 2), (0, 626), (2, 1), (626, 1), (2, 3), (3, 2), (3, 17), (17, 3), (17, 82), (82, 17),
-        (82, 257), (257, 82), (257, 626), (626, 257), (17, 6), (6, 82)]), 0, 1) := by
+        (82, 257), (257, 82), (257, 626), (626, 257), (17, 6), (6, 82)]), 0, 1⟩ := by
   decide
 
 -- The rightward traversal with the detour through the clause node.
-example : (SAT.toDirHamPath [[(0, true)]]).1.IsDirHamPath 0 1
+example : (SAT.toDirHamPath [[(0, true)]]).graph.IsDirHamPath 0 1
     [0, 2, 3, 17, 6, 82, 257, 626, 1] :=
   ⟨by decide, fun _ => (show [0, 2, 3, 17, 6, 82, 257, 626, 1].Perm
     [0, 1, 2, 3, 17, 82, 257, 626, 6] by decide).mem_iff, rfl, rfl, by decide⟩
@@ -318,5 +317,43 @@ example : SAT.toDirHamCycle [[(0, true)], [(0, false)]] ∉ DirHamCycle := by
 example : SAT.toDirHamPath [[(0, false), (1, false), (0, true), (2, false)], [(1, true)]] ∈
     DirHamPath :=
   (SAT.toDirHamPath_mem_iff _).2 ⟨fun _ => true, rfl⟩
+
+/-! ### Diamond detours -/
+
+example :
+    Diamond.detourArcs { clause := 1, row := 0, slot := 2, leftToRight := true } =
+      [(Diamond.rowNode 0 8, Diamond.clauseNode 1),
+        (Diamond.clauseNode 1, Diamond.rowNode 0 9)] := rfl
+
+example :
+    Diamond.detourArcs ⟨1, 0, 2, false⟩ =
+      [(Diamond.rowNode 0 9, Diamond.clauseNode 1),
+        (Diamond.clauseNode 1, Diamond.rowNode 0 8)] := rfl
+
+example {a b : Diamond.Detour} (h0 : a.clause = b.clause) (h1 : a.row = b.row)
+    (h2 : a.slot = b.slot) (h3 : a.leftToRight = b.leftToRight) : a = b :=
+  Diamond.Detour.ext h0 h1 h2 h3
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.clause)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.row)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.slot)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.leftToRight)
+    Diamond.encDetour encBool := by
+  fun_prop
+
+example :
+    ComputableInPolyTime
+      (fun d : Diamond.Detour => Diamond.Detour.mk d.clause d.row d.slot (!d.leftToRight))
+      Diamond.encDetour Diamond.encDetour := by
+  fun_prop
 
 end CslibFrontierTests.NPCompleteGraphs

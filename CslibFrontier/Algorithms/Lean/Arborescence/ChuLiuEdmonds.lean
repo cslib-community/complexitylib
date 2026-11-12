@@ -16,6 +16,7 @@ public import Mathlib.Data.Fintype.Prod
 public import Mathlib.Data.List.MinMax
 public import Mathlib.Dynamics.PeriodicPts.Defs
 import CslibFrontier.Foundations.Combinatorics.FunctionalGraph
+import CslibFrontier.Foundations.Data.List.ArgMin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
@@ -168,7 +169,7 @@ theorem isInArborescenceParent_iff {G : Digraph V} {r : V} {p : V → V} (hr : p
     fun h => ⟨hr, fun v hv => h.2 ⟨hv, rfl⟩, h.1⟩⟩
 
 /-- The arc cost `∑_{v → w ∈ T} c v w` of a digraph. -/
-def arcCost [Fintype V] [AddCommMonoid β] (T : Digraph V) [DecidableRel T.Adj]
+@[expose] def arcCost [Fintype V] [AddCommMonoid β] (T : Digraph V) [DecidableRel T.Adj]
     (c : V → V → β) : β :=
   ∑ e ∈ Finset.univ.filter (fun e : V × V => T.Adj e.1 e.2), c e.1 e.2
 
@@ -213,7 +214,7 @@ theorem cheapestParent_root : cheapestParent a c r r = r := by simp [cheapestPar
 theorem cheapestParent_spec {v : V} (hv : v ≠ r) (hne : candidates a v ≠ []) :
     a v (cheapestParent a c r v) = true ∧ cheapestParent a c r v ≠ v ∧
       ∀ w, a v w = true → w ≠ v → c v (cheapestParent a c r v) ≤ c v w := by
-  obtain ⟨m, hm⟩ := Option.ne_none_iff_exists'.mp (mt (List.argmin_eq_none (f := c v)).mp hne)
+  obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := c v) hne
   have hsel : cheapestParent a c r v = m := by simp [cheapestParent, hv, hm]
   rw [hsel]
   have hmem := (mem_candidates a).mp (List.argmin_mem hm)
@@ -399,8 +400,8 @@ private theorem bestExit_spec {w : V} (h : ∃ x ∈ C, a x w = true) :
   obtain ⟨y, hy, hyw⟩ := h
   have hmem : y ∈ (FinEnum.toList V).filter (fun x => decide (x ∈ C) && a x w) := by
     simp [FinEnum.mem_toList, hy, hyw]
-  obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.mp
-    (mt (List.argmin_eq_none (f := fun x => exitCost c f C x w)).mp (List.ne_nil_of_mem hmem))
+  obtain ⟨x, hx⟩ :=
+    List.exists_argmin_eq_some (f := fun x => exitCost c f C x w) (List.ne_nil_of_mem hmem)
   have hxm := List.argmin_mem hx
   simp only [List.mem_filter, FinEnum.mem_toList, true_and, Bool.and_eq_true,
     decide_eq_true_eq] at hxm
@@ -414,8 +415,7 @@ private theorem bestEntry_spec {u : V} (h : ∃ y ∈ C, a u y = true) :
   obtain ⟨y, hy, hyw⟩ := h
   have hmem : y ∈ (FinEnum.toList V).filter (fun z => decide (z ∈ C) && a u z) := by
     simp [FinEnum.mem_toList, hy, hyw]
-  obtain ⟨x, hx⟩ := Option.ne_none_iff_exists'.mp
-    (mt (List.argmin_eq_none (f := c u)).mp (List.ne_nil_of_mem hmem))
+  obtain ⟨x, hx⟩ := List.exists_argmin_eq_some (f := c u) (List.ne_nil_of_mem hmem)
   have hxm := List.argmin_mem hx
   simp only [List.mem_filter, FinEnum.mem_toList, true_and, Bool.and_eq_true,
     decide_eq_true_eq] at hxm
@@ -667,10 +667,11 @@ variable [FinEnum V]
 
 /-- The vertices other than `r` with an arc to a vertex other than themselves and `r`. Contraction
 strictly shrinks this set (`liveVertices_ssubset`). -/
-private def liveVertices (a : V → V → Bool) (r : V) : Finset V :=
+@[expose] def liveVertices (a : V → V → Bool) (r : V) : Finset V :=
   Finset.univ.filter fun v => v ≠ r ∧ ∃ w, w ≠ v ∧ w ≠ r ∧ a v w = true
 
-private theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : Finset V} {x0 r : V}
+/-- Contraction strictly shrinks the set of live vertices. -/
+theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : Finset V} {x0 r : V}
     (hfC : ∀ y ∈ C, f y ∈ C) (hfa : ∀ y ∈ C, a y (f y) = true ∧ f y ≠ y)
     (hx0 : x0 ∈ C) (hrC : r ∉ C) :
     liveVertices (contractAdj a C x0 r) r ⊂ liveVertices a r := by
@@ -693,7 +694,8 @@ private theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : F
     obtain ⟨-, w, -, hwr, hadj⟩ := (Finset.mem_filter.mp h).2
     exact hwr ((contractAdj_mem_iff hz (hfa x0 hx0).2).mp hadj)
 
-private theorem liveVertices_card_lt (a : V → V → Bool) (r : V) :
+/-- A graph has strictly fewer live vertices than `FinEnum.card V` (since `r` is not live). -/
+theorem liveVertices_card_lt (a : V → V → Bool) (r : V) :
     (liveVertices a r).card < FinEnum.card V := by
   rw [FinEnum.card_eq_fintypeCard, ← Finset.card_univ]
   refine Finset.card_lt_card ⟨Finset.subset_univ _, fun h => ?_⟩

@@ -370,8 +370,7 @@ theorem support_sumHandler (left : (q : ι₁) → PMF (spec₁ q))
     (right : (q : ι₂) → Set (spec₂ q)) (program : OracleComp spec₁ α) :
     supportWith (sumHandler left right) (liftLeft program) = supportWith left program := by
   rw [liftLeft, supportWith_interpret]
-  congr 1
-  funext q
+  congr 1 with q : 1
   exact supportWith_query _ _
 
 /-- An embedded right program has the possible results allowed by the right answers alone. -/
@@ -379,8 +378,7 @@ theorem support_sumHandler (left : (q : ι₁) → PMF (spec₁ q))
     (right : (q : ι₂) → Set (spec₂ q)) (program : OracleComp spec₂ α) :
     supportWith (sumHandler left right) (liftRight program) = supportWith right program := by
   rw [liftRight, supportWith_interpret]
-  congr 1
-  funext q
+  congr 1 with q : 1
   exact supportWith_query _ _
 
 /-- An embedded left program has the same possible results for any replies. -/
@@ -433,8 +431,7 @@ every uniform reply has positive probability. -/
 theorem support_eval (program : ProbComp α) :
     (eval program).support = OracleComp.support program := by
   rw [eval_eq_evalWith, OracleComp.support_evalWith]
-  congr 1
-  funext n
+  congr 1 with n : 1
   exact Set.eq_univ_of_forall fun a => by simp [unifOracle, PMF.mem_support_iff]
 
 /-- Every closed probabilistic program has at least one possible result. -/

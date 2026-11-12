@@ -9,6 +9,7 @@ module
 public import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
 public import CslibFrontier.Crypto.Computational.PedersenCommitment.ProbComp
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Tactic.NormNum.Prime
 
@@ -81,6 +82,21 @@ example (continuation : (List Bool × List Bool) → Game) :
       ((schnorrGroups.pedersenScheme.commitDist key23 (Nat.bits 4)).bind continuation) ≤
         1 / 16 := by
   have h := schnorrGroups.advantage_bind_pedersenCommitProb_le 4 key23 (Nat.bits 4) continuation
+  norm_num at h ⊢
+  exact h
+
+/-- Two independent `sampleExp 4 d23` draws at accuracy four have at most `1/8` advantage against
+two independent exact uniform draws on `ZMod 11`. -/
+example (continuation : ZMod (schnorrGroups.order d23) → ZMod (schnorrGroups.order d23) → Game) :
+    Game.advantage
+      ((ProbComp.eval (schnorrGroups.sampleExp 4 d23)).bind fun a =>
+        (ProbComp.eval (schnorrGroups.sampleExp 4 d23)).bind fun b =>
+          continuation (a : ZMod (schnorrGroups.order d23)) (b : ZMod (schnorrGroups.order d23)))
+      ((PMF.uniformOfFintype (ZMod (schnorrGroups.order d23))).bind fun α =>
+        (PMF.uniformOfFintype (ZMod (schnorrGroups.order d23))).bind fun β =>
+          continuation α β) ≤
+        1 / 8 := by
+  have h := schnorrGroups.advantage_bind_sampleExp_pair_le 4 d23 continuation
   norm_num at h ⊢
   exact h
 

@@ -57,32 +57,17 @@ theorem exists_twoCNF_templates (arity : Rel → ℕ) (sem : Rel → List Bool �
     obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
     simpa [Clause.relabel] using hwidth R d hd
 
-private def toTwoSAT (arity : Rel → ℕ) (template : Rel → CNF ℕ) (F : CSP Rel ℕ) : CNF ℕ :=
-  if F.validArity arity then F.instantiateCNF 0 template else [[]]
-
 /-- Fixed correct width-two templates induce a native polynomial-time reduction to 2SAT. -/
 theorem polyTimeReducible_TwoSAT_of_templates [Finite Rel] (encRel : Rel ↪ List Bool)
     (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (template : Rel → CNF ℕ)
     (ht : CSP.CNFTemplates arity sem template)
     (hw : ∀ R c, c ∈ template R → c.length ≤ 2) :
     PolyTimeReducible (encCSP encRel encNat) encCNF (CSPSAT arity sem) TwoSAT := by
-  have hp : ComputableInPolyTime (toTwoSAT arity template) (encCSP encRel encNat) encCNF :=
-    (CSP.computableInPolyTime_validArity encRel arity).ite
-      (CSP.computableInPolyTime_instantiateCNF encRel template)
-      (ComputableInPolyTime.const [[]])
-  refine ⟨toTwoSAT arity template, hp, fun F => ?_⟩
-  by_cases hF : F.WellFormed arity
-  · have hwidth : ∀ c ∈ F.instantiateCNF 0 template, c.length ≤ 2 :=
-      fun _ hc => CSP.length_clause_mem_instantiateCNF hw 0 hc
-    have heq : toTwoSAT arity template F = F.instantiateCNF 0 template := by
-      simp [toTwoSAT, (CSP.validArity_eq_true_iff arity F).mpr hF]
-    rw [mem_iff, mem_TwoSAT, heq, CSP.satisfiable_instantiateCNF ht 0 hF]
-    exact ⟨fun h => ⟨hwidth, h.2⟩, fun h => ⟨hF, h.2⟩⟩
-  · have hguard : F.validArity arity = false := by
-      cases hg : F.validArity arity
-      · rfl
-      · exact (hF ((CSP.validArity_eq_true_iff arity F).mp hg)).elim
-    simp [toTwoSAT, hguard, mem_iff, hF, mem_TwoSAT, CNF.Satisfiable, CNF.eval, Clause.eval]
+  refine polyTimeReducible_of_guard encRel arity sem [[]]
+    (CSP.computableInPolyTime_instantiateCNF encRel template) (fun F hF => ?_)
+    (by simp [mem_TwoSAT, CNF.Satisfiable, CNF.eval, Clause.eval])
+  rw [mem_TwoSAT, CSP.satisfiable_instantiateCNF ht 0 hF,
+    and_iff_right fun _ hc => CSP.length_clause_mem_instantiateCNF hw 0 hc]
 
 /-- **Native polynomial-time tractability of a fixed finite majority-preserved language.** -/
 theorem mem_P_of_majority [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel → ℕ)

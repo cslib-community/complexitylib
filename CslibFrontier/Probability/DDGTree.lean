@@ -28,7 +28,7 @@ Running on `n` fair bits gives `run T n : PMF (Option α)`. `run T n none` is th
 `P(T > n)` that more than `n` flips are needed. The output law is the monotone limit
 `outputProb T a = ⨆ n, run T n (some a)`. The expected number of flips is the tail sum
 `expectedFlips T = ∑ₙ P(T > n)`. `expectedFlips_eq_tsum_mul` identifies it with
-`∑ₖ (k + 1) P(T = k + 1)` whenever the tree halts almost surely, as every tree generating a finite
+`∑ₖ (k + 1) P(T = k + 1)` whenever the tree halts almost surely, as every tree generating a `PMF`
 distribution does (`tendsto_run_none_of_generates`). `expectedFlips_eq_top` covers trees that
 fail to halt with positive probability.
 
@@ -48,7 +48,7 @@ fail to halt with positive probability.
   and fit the Kraft-type budget `∑ₐ t k a ≤ 2 ^ k`.
 * `Cslib.Probability.DDGTree.expectedFlips_eq_tsum_mul`: tail-sum formula for the expected
   stopping time.
-* `Cslib.Probability.DDGTree.tendsto_run_none_of_generates`: generators of finite distributions halt
+* `Cslib.Probability.DDGTree.tendsto_run_none_of_generates`: generators of `PMF` distributions halt
   almost surely.
 
 ## References
@@ -194,21 +194,42 @@ theorem run_succ_none_le (T : DDGTree α) (n : ℕ) : T.run (n + 1) none ≤ T.r
 theorem antitone_run_none (T : DDGTree α) : Antitone fun n => T.run n none :=
   antitone_nat_of_succ_le T.run_succ_none_le
 
-/-- A tree generating a distribution on a finite type halts almost surely. -/
-theorem tendsto_run_none_of_generates [Finite α] {T : DDGTree α} {p : PMF α}
+/-- A tree generating a `PMF` distribution halts almost surely. -/
+theorem tendsto_run_none_of_generates {T : DDGTree α} {p : PMF α}
     (hT : T.Generates p) : Tendsto (fun n => T.run n none) atTop (𝓝 0) := by
-  have := Fintype.ofFinite α
-  have hsum : Tendsto (fun n => ∑ a, T.run n (some a)) atTop (𝓝 1) := by
-    have h := tendsto_finsetSum (Finset.univ : Finset α) fun a _ => T.tendsto_run_outputProb a
-    have hT' : ∀ a, T.outputProb a = p a := hT
-    simp only [hT'] at h
-    rwa [← tsum_fintype (L := SummationFilter.unconditional _), PMF.tsum_coe] at h
-  have hfin : ∀ n, ∑ a, T.run n (some a) ≠ ⊤ := fun n =>
-    ne_top_of_le_ne_top ENNReal.one_ne_top ((T.run_none_add_sum n) ▸ le_add_self)
-  have heq : (fun n => T.run n none) = fun n => 1 - ∑ a, T.run n (some a) := funext fun n =>
-    ENNReal.eq_sub_of_add_eq (hfin n) (T.run_none_add_sum n)
-  rw [heq, ← tsub_self (1 : ℝ≥0∞)]
-  exact ENNReal.Tendsto.sub tendsto_const_nhds hsum (Or.inl ENNReal.one_ne_top)
+  classical
+  rw [ENNReal.tendsto_atTop_zero]
+  intro ε hε
+  let δ := min ε 1
+  have hδpos : 0 < δ := lt_min hε zero_lt_one
+  have hδle1 : δ ≤ 1 := min_le_right ε 1
+  have hδleε : δ ≤ ε := min_le_left ε 1
+  have hlt1 : 1 - δ < 1 := ENNReal.sub_lt_self ENNReal.one_ne_top one_ne_zero hδpos.ne'
+  have hsup : (1 : ℝ≥0∞) = ⨆ s : Finset α, ∑ a ∈ s, p a := by
+    rw [← tsum_eq_iSup_sum, p.tsum_coe]
+  nth_rw 2 [hsup] at hlt1
+  obtain ⟨s, hs⟩ := lt_iSup_iff.mp hlt1
+  have htend : Tendsto (fun n => ∑ a ∈ s, T.run n (some a)) atTop (𝓝 (∑ a ∈ s, p a)) := by
+    refine tendsto_finsetSum s fun a _ => ?_
+    simpa only [hT a] using T.tendsto_run_outputProb a
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp (htend.eventually (lt_mem_nhds hs))
+  refine ⟨N, fun n hn => ?_⟩
+  have hnm := hN n hn
+  let sm : Finset (Option α) := s.map ⟨Option.some, Option.some_injective α⟩
+  have hdisj : (none : Option α) ∉ sm := by simp [sm]
+  have hle1 : T.run n none + ∑ a ∈ s, T.run n (some a) ≤ 1 := by
+    have hsum : ∑ o ∈ insert none sm, T.run n o =
+        T.run n none + ∑ a ∈ s, T.run n (some a) := by
+      rw [Finset.sum_insert hdisj, Finset.sum_map]
+      rfl
+    rw [← hsum, ← (T.run n).tsum_coe]
+    exact sum_le_tsum _
+  by_contra! hgt
+  have hgt' : δ < T.run n none := hδleε.trans_lt hgt
+  have hcontr : (1 : ℝ≥0∞) < T.run n none + ∑ a ∈ s, T.run n (some a) := by
+    calc (1 : ℝ≥0∞) = δ + (1 - δ) := (add_tsub_cancel_of_le hδle1).symm
+      _ < T.run n none + ∑ a ∈ s, T.run n (some a) := ENNReal.add_lt_add hgt' hnm
+  exact absurd hcontr hle1.not_gt
 
 /-! ## The tail-sum formula -/
 

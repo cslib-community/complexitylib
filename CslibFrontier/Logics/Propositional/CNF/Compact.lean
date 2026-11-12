@@ -24,6 +24,8 @@ are unary without expanding binary input names into unary integers.
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.satisfiable_relabel_idxOf`: renaming variables by their positions in a list
+  containing them preserves satisfiability.
 * `Cslib.Logic.PL.CNF.satisfiable_compact`: compaction preserves satisfiability.
 
 ## References
@@ -62,20 +64,31 @@ theorem mem_vars_compact_lt (φ : CNF V) {v : ℕ} (hv : v ∈ φ.compact.vars) 
   exact List.idxOf_lt_length_of_mem
     (List.mem_map.2 ⟨l, List.mem_flatten.2 ⟨c, hclause, hl⟩, rfl⟩)
 
-/-- Reading original names at the compact positions recovers the original evaluation. -/
-theorem eval_compact (φ : CNF V) (σ : V → Bool) :
-    φ.compact.eval (fun i => φ.vars[i]?.elim false σ) = φ.eval σ := by
-  rw [compact, CNF.eval_relabel]
+/-- Renaming each variable by its position in a list `l` containing all variables of `φ` is undone
+by reading the names back from `l`. -/
+theorem eval_relabel_idxOf (φ : CNF V) {l : List V} (hl : ∀ v ∈ φ.vars, v ∈ l) (σ : V → Bool) :
+    (φ.relabel l.idxOf).eval (fun i => l[i]?.elim false σ) = φ.eval σ := by
+  rw [CNF.eval_relabel]
   apply CNF.eval_congr
   intro v hv
-  simp [List.getElem?_idxOf hv]
+  simp [List.getElem?_idxOf (hl v hv)]
 
-/-- Compaction preserves satisfiability, without requiring a finite variable type. -/
-theorem satisfiable_compact (φ : CNF V) : φ.compact.Satisfiable ↔ φ.Satisfiable := by
+/-- Renaming by positions in a list containing all variables preserves satisfiability. -/
+theorem satisfiable_relabel_idxOf (φ : CNF V) {l : List V} (hl : ∀ v ∈ φ.vars, v ∈ l) :
+    (φ.relabel l.idxOf).Satisfiable ↔ φ.Satisfiable := by
   constructor
   · rintro ⟨σ, hσ⟩
-    exact ⟨σ ∘ φ.vars.idxOf, by simpa only [compact, CNF.eval_relabel] using hσ⟩
+    exact ⟨σ ∘ l.idxOf, by simpa only [CNF.eval_relabel] using hσ⟩
   · rintro ⟨σ, hσ⟩
-    exact ⟨fun i => φ.vars[i]?.elim false σ, (eval_compact φ σ).trans hσ⟩
+    exact ⟨fun i => l[i]?.elim false σ, (eval_relabel_idxOf φ hl σ).trans hσ⟩
+
+/-- Reading original names at the compact positions recovers the original evaluation. -/
+theorem eval_compact (φ : CNF V) (σ : V → Bool) :
+    φ.compact.eval (fun i => φ.vars[i]?.elim false σ) = φ.eval σ :=
+  eval_relabel_idxOf φ (fun _ h => h) σ
+
+/-- Compaction preserves satisfiability, without requiring a finite variable type. -/
+theorem satisfiable_compact (φ : CNF V) : φ.compact.Satisfiable ↔ φ.Satisfiable :=
+  satisfiable_relabel_idxOf φ fun _ h => h
 
 end Cslib.Logic.PL.CNF

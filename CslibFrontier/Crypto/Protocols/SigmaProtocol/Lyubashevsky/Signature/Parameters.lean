@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signatur
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signature.Failure
 public import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
 
 /-!
@@ -48,13 +49,13 @@ open scoped ENNReal NNReal _root_.Matrix
 /-- Explicit availability parameters. No hardness of the resulting SIS instances is asserted. -/
 @[expose] def lyubashevskySigningParams (security : ℕ) : LyubashevskyParams :=
   let t := security + 1
-  ((t, t, t, security), (2 ^ t, 4 * t ^ 2, t))
+  { n := t, m := t, k := t, width := security, q := 2 ^ t, γ := 4 * t ^ 2, β := t }
 
 /-- The schedule is polynomial-time: the exponential modulus is produced in binary. -/
 @[fun_prop]
 theorem computableInPolyTime_lyubashevskySigningParams :
     ComputableInPolyTime lyubashevskySigningParams encUnary encLyubashevskyParams := by
-  unfold lyubashevskySigningParams encLyubashevskyParams
+  unfold lyubashevskySigningParams
   fun_prop
 
 /-- The instantiated signer is strict PPT jointly in unary security and raw matrix/message
@@ -65,7 +66,7 @@ theorem isPPTOn_lyubashevskySigningParams
     IsPPTOn
       (encPair encUnary
         (encPair (encList (encList encIntBin)) (encPair (encList (encList encIntBin)) encBits)))
-      (encOption (encPair encBits encBits))
+      encCommitResponseOrAbort
       (fun input : ℕ × List (List ℤ) × List (List ℤ) × List Bool =>
         let (security, secret, matrix, msg) := input
         lyubashevskySignBoundedNative hash
@@ -85,8 +86,7 @@ theorem lyubashevskySigningParams_attempt_none_le (security : ℕ)
     let p := lyubashevskySigningParams security
     lyubashevskySignAttempt p.n p.m p.k p.q p.γ p.β
       (lyubashevskyNativeHash hash p) S y msg none ≤ (1 / 2 : ℝ≥0∞) := by
-  dsimp only [lyubashevskySigningParams, LyubashevskyParams.n, LyubashevskyParams.m,
-    LyubashevskyParams.k, LyubashevskyParams.q, LyubashevskyParams.γ, LyubashevskyParams.β]
+  dsimp only [lyubashevskySigningParams]
   have hβ : 2 * (security + 1) ≤ 4 * (security + 1) ^ 2 := by nlinarith
   have h := lyubashevskySignAttempt_none_le hβ (by omega : (security + 1) * 1 ≤ security + 1)
     hS y (lyubashevskyNativeHash hash (lyubashevskySigningParams security)) msg
@@ -114,8 +114,7 @@ theorem lyubashevskySigningParams_failure_le (security : ℕ)
   refine h.trans ((add_le_add hp le_rfl).trans ?_)
   apply le_of_eq
   congr 1
-  dsimp only [lyubashevskySigningParams, LyubashevskyParams.m, LyubashevskyParams.γ,
-    LyubashevskyParams.width]
+  dsimp only [lyubashevskySigningParams]
   push_cast
   simp only [div_eq_mul_inv]
   ring
@@ -124,16 +123,7 @@ theorem lyubashevskySigningParams_failure_le (security : ℕ)
 theorem negligible_lyubashevskySigningParams_bound :
     Negligible (fun security => (1 / 2 : ℝ≥0) ^ (security + 1) +
       (security + 1) ^ 2 * (8 * (security + 1) ^ 2 + 1) / 2 ^ security) := by
-  have hg := (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num)).shift 1
-  have hpoly : PolynomiallyBounded
-      (fun security : ℕ => (security + 1) ^ 2 * (8 * (security + 1) ^ 2 + 1)) := by
-    fun_prop
-  have hs := (negligible_const_div_two_pow 1).polynomiallyBounded_mul hpoly
-  have hs' : Negligible (fun security =>
-      (security + 1 : ℝ≥0) ^ 2 * (8 * (security + 1) ^ 2 + 1) / 2 ^ security) := by
-    simpa only [Nat.cast_mul, Nat.cast_pow, Nat.cast_add, Nat.cast_ofNat, Nat.cast_one,
-      mul_one_div] using hs
-  exact hg.add hs'
+  negligible
 
 /-- For every bounded secret-matrix sequence and arbitrary public matrices/messages, the
 actual native bounded signer has negligible failure. This is uniform over deterministic hashes;

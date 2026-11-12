@@ -10,6 +10,7 @@ module
 public import Mathlib.Data.Finset.Lattice.Fold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 
 /-!
@@ -27,29 +28,32 @@ namespace Turing.MultiTapePTM.BlockComputation.OuterSearch
 open MultiTapeTM
 
 /-- Actual binary input length and largest time guess, including the optional decision. -/
-@[expose] noncomputable def callerSpace (N A : ℕ) : ℕ :=
-  8 * ((encNat N).length + (encNat A).length + 1)
+@[expose] noncomputable def callerSpace (N G : ℕ) : ℕ :=
+  8 * ((encNat N).length + (encNat G).length + 1)
 
-/-- Maximum storage of one candidate search through the largest permitted guess. -/
-@[expose] noncomputable def candidateSpace (k s : ℕ) (Q : Type) (N A : ℕ) : ℕ :=
-  (Finset.range (A + 1)).sup fun guess => ScheduleSearch.space k s Q N
-    (BalancedParameters.blockWidth guess) (BalancedParameters.horizon guess)
+/-- Maximum storage of one candidate search through the largest permitted guess `G`, for
+evaluator allowance `A` and parameters `P`. -/
+@[expose] noncomputable def candidateSpace (k : ℕ) (A : ℕ → ℕ → ℕ → ℕ) (P : Parameters)
+    (N G : ℕ) : ℕ :=
+  (Finset.range (G + 1)).sup fun guess =>
+    ScheduleSearch.space k A N (P.blockWidth guess) (P.horizon guess)
 
 /-- One suspended caller beside one candidate, with complete sum and product framing. -/
-@[expose] noncomputable def space (k s : ℕ) (Q : Type) (N A : ℕ) : ℕ :=
-  2 * callerSpace N A + candidateSpace k s Q N A + 2
+@[expose] noncomputable def space (k : ℕ) (A : ℕ → ℕ → ℕ → ℕ) (P : Parameters) (N G : ℕ) : ℕ :=
+  2 * callerSpace N G + candidateSpace k A P N G + 2
 
 /-- Any candidate through the bounded guess fits the same supremum allowance. -/
-theorem candidate_space_le (k s : ℕ) (Q : Type) (N A guess : ℕ) (hguess : guess ≤ A) :
-    ScheduleSearch.space k s Q N (BalancedParameters.blockWidth guess)
-      (BalancedParameters.horizon guess) ≤ candidateSpace k s Q N A :=
-  Finset.le_sup (f := fun guess => ScheduleSearch.space k s Q N
-    (BalancedParameters.blockWidth guess) (BalancedParameters.horizon guess))
+theorem candidate_space_le (k : ℕ) (A : ℕ → ℕ → ℕ → ℕ) (P : Parameters) (N G guess : ℕ)
+    (hguess : guess ≤ G) :
+    ScheduleSearch.space k A N (P.blockWidth guess) (P.horizon guess) ≤
+      candidateSpace k A P N G :=
+  Finset.le_sup (f := fun guess =>
+    ScheduleSearch.space k A N (P.blockWidth guess) (P.horizon guess))
     (Finset.mem_range.mpr (by omega))
 
 /-- Binary caller storage is uniform through the largest permitted time guess. -/
-theorem caller_encoding_le (N A guess : ℕ) (result : Option Bool) (hguess : guess ≤ A) :
-    (encCaller (N, guess, result)).length ≤ callerSpace N A := by
+theorem caller_encoding_le (N G guess : ℕ) (result : Option Bool) (hguess : guess ≤ G) :
+    (encCaller (N, guess, result)).length ≤ callerSpace N G := by
   have hg := length_encNat_mono hguess
   have hr : (encOption encBool result).length ≤ 2 := by
     cases result <;> simp only [encOption_none, encOption_some, List.length_nil,
@@ -58,65 +62,31 @@ theorem caller_encoding_le (N A guess : ℕ) (result : Option Bool) (hguess : gu
   omega
 
 /-- Every physical clock of a bounded candidate call charges its suspended caller and callee. -/
-theorem runFrom_one_encoding_le {k s : ℕ} {Q : Type} [Finite Q]
-    (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) (N guess A : ℕ) (result : Option Bool)
+theorem runFrom_one_encoding_le {k : ℕ} (E : ScheduleSearch.Evaluator) (A : ℕ → ℕ → ℕ → ℕ)
+    (P : Parameters) (N guess G : ℕ) (result : Option Bool)
     (w : List Bool) (T : ℕ) (hpending : pending (N, guess, result) = true)
-    (hguess : guess ≤ A)
-    (hpre : ∀ u < T, (ScheduleSearch.machine M e).halted
-      ((ScheduleSearch.machine M e).runFrom w (ScheduleSearch.initial
-        (N, BalancedParameters.blockWidth guess, BalancedParameters.horizon guess)) u) = false)
-    (hhalt : (ScheduleSearch.machine M e).halted ((ScheduleSearch.machine M e).runFrom w
-      (ScheduleSearch.initial
-        (N, BalancedParameters.blockWidth guess, BalancedParameters.horizon guess)) T) = true)
-    (hsize : ∀ u ≤ T, (ScheduleSearch.encState ((ScheduleSearch.machine M e).runFrom w
-      (ScheduleSearch.initial
-        (N, BalancedParameters.blockWidth guess, BalancedParameters.horizon guess)) u)).length ≤
-          candidateSpace k s Q N A)
-    (hnext : (encCaller (resume (N, guess, result) ((ScheduleSearch.machine M e).runFrom w
-      (ScheduleSearch.initial
-        (N, BalancedParameters.blockWidth guess, BalancedParameters.horizon guess)) T))).length ≤
-          callerSpace N A)
+    (hguess : guess ≤ G)
+    (hpre : ∀ u < T, (ScheduleSearch.machine E k).halted
+      ((ScheduleSearch.machine E k).runFrom w (ScheduleSearch.initial E
+        (N, P.blockWidth guess, P.horizon guess)) u) = false)
+    (hhalt : (ScheduleSearch.machine E k).halted ((ScheduleSearch.machine E k).runFrom w
+      (ScheduleSearch.initial E (N, P.blockWidth guess, P.horizon guess)) T) = true)
+    (hsize : ∀ u ≤ T, (ScheduleSearch.encState E ((ScheduleSearch.machine E k).runFrom w
+      (ScheduleSearch.initial E (N, P.blockWidth guess, P.horizon guess)) u)).length ≤
+          candidateSpace k A P N G)
+    (hnext : (encCaller (resume E (N, guess, result) ((ScheduleSearch.machine E k).runFrom w
+      (ScheduleSearch.initial E (N, P.blockWidth guess, P.horizon guess)) T))).length ≤
+          callerSpace N G)
     (t : ℕ) (ht : t ≤ T + 2) :
-    (encState ((machine M e).runFrom w (.inl (N, guess, result)) t)).length ≤
-      space k s Q N A := by
-  let c : CallerState := (N, guess, result)
-  let start := ScheduleSearch.initial (k := k) (Q := Q)
-    (N, BalancedParameters.blockWidth guess, BalancedParameters.horizon guess)
-  have hcaller := caller_encoding_le N A guess result hguess
-  have hreq : request (k := k) (Q := Q) c = some start := by
-    simp only [request, c, hpending, ↓reduceIte, start, parameters]
-  have hlive : caller.halted c = false := by
-    simp only [caller, c, hpending, Bool.not_true]
-  by_cases hzero : t = 0
-  · subst t
-    change (encCaller c).length + 1 ≤ _
-    dsimp only [space, c, start] at hnext ⊢
-    omega
-  by_cases hfinal : t = T + 2
-  · subst t
-    rw [show (machine M e).runFrom w (.inl c) (T + 2) =
-        .inl (resume c ((ScheduleSearch.machine M e).runFrom w start T)) from
-      QueryMachine.withCalls_runFrom_call caller (ScheduleSearch.machine M e)
-        request resume w c start T hlive hreq hpre hhalt]
-    change (encCaller (resume c
-      ((ScheduleSearch.machine M e).runFrom w start T))).length + 1 ≤ _
-    dsimp only [space, c, start] at hnext ⊢
-    omega
-  have hentry : (machine M e).runFrom w (.inl c) 1 = .inr (c, start) :=
-    QueryMachine.withCalls_step_call caller (ScheduleSearch.machine M e)
-      request resume w c start hlive hreq
-  rw [show t = 1 + (t - 1) by omega, QueryMachine.runFrom_add, hentry]
-  have hpref := QueryMachine.withCalls_runFrom_subroutine_prefix caller
-    (ScheduleSearch.machine M e) request resume w c start (t - 1)
-    (fun u hu => hpre u (by omega))
-  rw [show (machine M e).runFrom w (.inr (c, start)) (t - 1) =
-      .inr (c, (ScheduleSearch.machine M e).runFrom w start (t - 1)) from hpref]
-  have hcallee := hsize (t - 1) (by omega)
-  change (encSum encCaller (encPair encCaller ScheduleSearch.encState)
-    (.inr (c, (ScheduleSearch.machine M e).runFrom w start (t - 1)))).length ≤ _
-  rw [QueryMachine.withCalls_encoding_inr_length]
-  dsimp only [space, c, start] at hcallee ⊢
-  omega
-
+    (encState E ((machine E k P).runFrom w (.inl (N, guess, result)) t)).length ≤
+      space k A P N G := by
+  have hreq : request E P (N, guess, result) = some (ScheduleSearch.initial E
+      (N, P.blockWidth guess, P.horizon guess)) := by
+    simp only [request, hpending, ↓reduceIte, parameters]
+  have hlive : caller.halted (N, guess, result) = false := by
+    simp only [caller, hpending, Bool.not_true]
+  exact QueryMachine.withCalls_runFrom_call_encoding_le caller (ScheduleSearch.machine E k)
+    (request E P) (resume E) w encCaller (ScheduleSearch.encState E) hlive hreq hpre hhalt
+    (caller_encoding_le N G guess result hguess) hnext hsize t ht
 
 end Turing.MultiTapePTM.BlockComputation.OuterSearch

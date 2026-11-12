@@ -118,9 +118,7 @@ theorem length_values_le (c D j : ℕ) :
     (b := D.size + 1) (by
       intro z hz
       have hr := Cslib.Radix.measurementValues_bounds c D j z hz
-      have ha : (z.natAbs : ℤ) ≤ D := by
-        rw [Int.natCast_natAbs]
-        exact abs_le.mpr hr
+      have ha : (z.natAbs : ℤ) ≤ D := by grind
       have hs := Nat.size_le_size (Int.ofNat_le.mp ha)
       rw [length_encIntBin]
       omega)

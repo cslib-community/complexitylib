@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Input
-import CslibFrontier.Foundations.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.ClogPow
 
 /-!
 # Original-input logarithmic width of the callable solver
@@ -76,21 +76,9 @@ theorem sourceWidth_le_log {n d g p A κ : ℕ} (values : List ℤ)
 theorem windowSize_le_pow {n d g p A κ : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hv : ∀ z ∈ values, z.natAbs ≤ A)
     (hd : d ≤ n) (hg : g ≤ n) (hp : p ≤ n) (hA : A ≤ (n + 2) ^ κ) :
-    windowSize n d g p (rawTotal n values) ≤ (n + 2) ^ (12332 * (κ + 9)) := by
-  have hb : 2 ≤ n + 2 := by omega
-  have hbase : 2 ^ Nat.clog 2 (n + 2) ≤ (n + 2) ^ 2 :=
-    (Nat.pow_clog_le_mul (by decide : 1 < (2 : ℕ)) (by omega : n + 2 ≠ 0)).trans
-      (by nlinarith only [hb])
-  calc
-    _ ≤ 2 ^ ((6166 * (κ + 9)) * Nat.clog 2 (n + 2)) :=
-      Nat.pow_le_pow_right (by decide) (sourceWidth_le_log values hlen hv hd hg hp hA)
-    _ = (2 ^ Nat.clog 2 (n + 2)) ^ (6166 * (κ + 9)) := by
-      rw [← Nat.pow_mul, Nat.mul_comm]
-    _ ≤ ((n + 2) ^ 2) ^ (6166 * (κ + 9)) := Nat.pow_le_pow_left hbase _
-    _ = _ := by
-      rw [← Nat.pow_mul]
-      exact congrArg (fun e : ℕ => (n + 2) ^ e)
-        (by omega : 2 * (6166 * (κ + 9)) = 12332 * (κ + 9))
+    windowSize n d g p (rawTotal n values) ≤ (n + 2) ^ (12332 * (κ + 9)) :=
+  (Nat.pow_le_pow_right (by decide) (sourceWidth_le_log values hlen hv hd hg hp hA)).trans
+    (Nat.two_pow_mul_clog_le_pow (by omega) (by omega))
 
 private theorem envelope_le_pow {n d g p A κ β b P : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hv : ∀ z ∈ values, z.natAbs ≤ A)

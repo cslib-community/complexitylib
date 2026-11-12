@@ -288,10 +288,6 @@ lemma streamState_foldNext (s : St) (l : List Bool) (j : ℕ) :
     streamState s foldNext l j = (s.1, (s.2.1, (l.take j).foldl scan s.2.2)) :=
   List.foldl_hom (fun a => (s.1, (s.2.1, a))) (fun _ _ => rfl)
 
-public lemma run_succ' (d : Desc) (x : List ℕ) (j : ℕ) :
-    run d x (j + 1) = (step d x (run d x j)).1 := by
-  simp only [run, Function.iterate_succ_apply', stepOut]
-
 /-- The end of pass `i`, after the countdown over the input. -/
 public lemma stepAt_scan (d : Desc) (x : List ℕ) (c : SCfg) (r : ℕ) :
     stepAt ((d, c), (r, (events x).foldl scan (c.inputPos, 0))) =
@@ -313,7 +309,7 @@ public theorem passState_fold (d : Desc) (x : List ℕ) (t i : ℕ) :
     · rw [show min (i + 1) t = min i t by omega]
       simp only [Prod.mk.injEq, true_and, and_true]
       omega
-    · rw [show min (i + 1) t = min i t + 1 by omega, run_succ']
+    · rw [show min (i + 1) t = min i t + 1 by omega, run_succ]
       simp only [Prod.mk.injEq, true_and, and_true]
       omega
 
@@ -340,7 +336,7 @@ public lemma simulate_eq (d : Desc) (x : List ℕ) (t : ℕ) : simulate d x t =
   | zero => rfl
   | succ t ih =>
     simp only [simulate, Prod.mk.injEq] at ih ⊢
-    rw [Function.iterate_succ_apply', run_succ', List.range_succ, List.map_append,
+    rw [Function.iterate_succ_apply', run_succ, List.range_succ, List.map_append,
       List.flatten_append]
     exact ⟨by rw [← ih.1]; simp [stepOut, run], by rw [stepOut]; rfl⟩
 
@@ -492,8 +488,7 @@ public lemma foldEnd_inO : ComputableTidilyInO foldEnd eSt eSt
     (g := foldEnd) fun s => rfl).mono 100 (fun s => ?_) fun s => ?_
   all_goals
     have hr : (encNat s.2.1).length ≤ (eSt s).length := by simp only [length_encPair]; omega
-    have h₁ : ((encNat s.2.1).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 2 :=
-      Nat.pow_le_pow_left (by omega) 2
+    have h₁ : ((encNat s.2.1).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 2 := by gcongr
     have h₂ : ((eSt s).length + 1) ^ 2 ≤ ((eSt s).length + 1) ^ 3 :=
       Nat.pow_le_pow_right (by omega) (by omega)
     have hL : (eSt s).length + 1 ≤ ((eSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
@@ -685,8 +680,8 @@ public lemma length_eSt_le (d : Desc) (x : List ℕ) (t i j : ℕ) :
     gcongr)
   have hpos := (inv_iterate d x (min i t)).1.inputPos
   obtain ⟨hk, hcur⟩ := scan_take x (run d x (min i t)).inputPos 0 j
-  have hr := ComputableTidilyInO.length_encNat_mono (show t - i ≤ t by omega)
-  have hk' := ComputableTidilyInO.length_encNat_mono (hk.trans hpos)
+  have hr := length_encNat_mono (show t - i ≤ t by omega)
+  have hk' := length_encNat_mono (hk.trans hpos)
   simp only [length_encPair, encUnary_apply, List.length_replicate, stateSpace, descLen] at *
   omega
 

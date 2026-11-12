@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Header
+import CslibFrontier.Foundations.Data.List.GetD
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.IntervalCases
 
@@ -62,11 +63,8 @@ theorem rawTotal_le {n A : ℕ} (values : List ℤ)
     _ ≤ ∑ _q ∈ Finset.range (3 * (n * n)), (2 * A + 1) := by
       apply Finset.sum_le_sum
       intro q hq
-      have hql : q < values.length := by have := Finset.mem_range.mp hq; omega
-      have hmem : values.getD q 0 ∈ values := by
-        rw [List.getD_eq_getElem _ _ hql]
-        exact List.getElem_mem _
-      have hb := hv _ hmem
+      have hb := hv (values.getD q 0)
+        (List.getD_mem 0 (by have := Finset.mem_range.mp hq; omega))
       unfold Signed.encode
       split_ifs <;> omega
     _ = _ := by simp

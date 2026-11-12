@@ -350,8 +350,7 @@ private theorem backward_adjointSum (hadd : ∀ a b, D (a + b) = D a + D b)
     rw [← State.adjointSum_step hadd hmul hconst h line.op line.wires
       (by
         rw [Program.trace_gate_last]
-        congr 1
-        funext a
+        congr 1 with a : 1
         exact (Program.trace_gate_castSucc p line I x _).symm), hv]
 
 private theorem init_represents (c : Circuit (arithSignature C) n m) (j : Fin m)

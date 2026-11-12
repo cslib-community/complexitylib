@@ -21,35 +21,6 @@ public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
 
-/-- Within either source block, retained rank comparisons are original rank comparisons. -/
-theorem contractionRank_lt_iff_sourceDistance_lt {G : Graph} {u v : ℕ}
-    (r : RotationSystem (lastEdgeGraph G u v)) (huv : u ≠ v)
-    (a b : {d : Dart (contractLastEdgeGraph G u v) // d.vertex = v}) (side : Bool)
-    (ha : (contractionLift G u v a.val).vertex = (lastEdgeDart G u v side).vertex)
-    (hb : (contractionLift G u v b.val).vertex = (lastEdgeDart G u v side).vertex) :
-    (r.contractionRank a).val < (r.contractionRank b).val ↔
-      r.rotationDistance (lastEdgeDart G u v side) (contractionLift G u v a.val) <
-        r.rotationDistance (lastEdgeDart G u v side) (contractionLift G u v b.val) := by
-  have hapos := r.rotationDistance_pos_of_ne _ _ ha.symm
-    (contractionLift_ne_lastEdgeDart G u v a.val side)
-  have hbpos := r.rotationDistance_pos_of_ne _ _ hb.symm
-    (contractionLift_ne_lastEdgeDart G u v b.val side)
-  rw [r.val_contractionRank, r.val_contractionRank]
-  cases side
-  · have hau : (contractionLift G u v a.val).vertex = u := by
-      simpa only [vertex_lastEdgeDart, Bool.false_eq_true, ↓reduceIte] using ha
-    have hbu : (contractionLift G u v b.val).vertex = u := by
-      simpa only [vertex_lastEdgeDart, Bool.false_eq_true, ↓reduceIte] using hb
-    rw [ite_eq_right (fun h => huv (hau.symm.trans h)),
-      ite_eq_right (fun h => huv (hbu.symm.trans h))]
-    omega
-  · have hav : (contractionLift G u v a.val).vertex = v := by
-      simpa only [vertex_lastEdgeDart, ↓reduceIte] using ha
-    have hbv : (contractionLift G u v b.val).vertex = v := by
-      simpa only [vertex_lastEdgeDart, ↓reduceIte] using hb
-    rw [ite_eq_left hav, ite_eq_left hbv]
-    omega
-
 /-- All distinct retained triples in either original endpoint cycle retain literal
 cyclic order after the outgoing swap and two deletions. -/
 theorem mem_rotationInterval_contractionLift_active {G : Graph} {u v : ℕ}

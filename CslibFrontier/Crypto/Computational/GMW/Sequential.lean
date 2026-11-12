@@ -32,12 +32,20 @@ import CslibFrontier.Probability.PMF.Map
 # Sequential soundness amplification for the 3-copy GMW zero-knowledge protocol
 
 This module sequentially composes `k n` independent executions of the 3-copy masked-3SAT GMW
-protocol (`CslibFrontier.Crypto.Computational.GMW.Protocol`), amplifying soundness error from `1 /
-3`
-to `(1 / 3) ^ (k n)` against arbitrary unbounded stateful provers while preserving perfect
-completeness (`acceptProb = 1`) and computational zero-knowledge against arbitrary uniform strict
-oracle PPT malicious verifiers whenever `k` is polynomially bounded (`ComputableInPolyTime k
-encUnary encUnary`).
+protocol (`CslibFrontier.Crypto.Computational.GMW.Protocol`), where `generator` maps seeds of
+length `m` to words of length `length m`. Perfect completeness (`acceptProb = 1`) is preserved for
+every `k`. If `3 * m + 1 ≤ length m` for all `m`, the soundness error drops from `1 / 3` to
+`(1 / 3) ^ (k n)` against arbitrary unbounded stateful provers, again for every `k`.
+
+Computational zero-knowledge is proved in
+`CslibFrontier.Crypto.Computational.GMW.Sequential.Simulator`, which builds `gmwSeqSimulator` from
+the single-session attempt and machine-slicing primitives of Sections 2 and 3 below. It holds
+against arbitrary uniform strict oracle PPT malicious verifiers when the map `f` from instances to
+formulas is computable in polynomial time and `k` is computable in polynomial time in unary
+(`ComputableInPolyTime k encUnary encUnary`), and it is conditional: under `PseudorandomGenerator`
+it covers instance, witness and auxiliary-input families computable in polynomial time from the
+unary parameter, and under `AdvicePRG` it covers arbitrary such families of polynomially bounded
+length. In both cases the witnesses are valid `ThreeSAT` witnesses.
 
 ## Main definitions
 
@@ -131,8 +139,8 @@ theorem eval_runSeq {α : Type} (generator : List Bool → List Bool) (s m : ℕ
         (fun q state =>
           PMF.pure (seqStep (honestReply1 generator m φ) (honestReply2 s φ) q.2 state))
         prog st := by
-  simpa [runSeq, ProbOracleComp.runWith, OracleComp.runWith] using
-    ProbOracleComp.eval_run_interpret
+  simpa [runSeq] using
+    ProbOracleComp.eval_run_interpret_eq_runWith
       (fun q state => pure (seqStep (honestReply1 generator m φ) (honestReply2 s φ) q.2 state))
       prog st
 
@@ -166,14 +174,13 @@ theorem run_gmwSeqProver_fst {α : Type} (generator : List Bool → List Bool) (
     | some st => PMF.pure st
   let oracle' : Unit × List Bool → StateT State' PMF (List Bool) := fun q state =>
     PMF.pure (seqStep (honestReply1 generator m φ) (honestReply2 s φ) q.2 state)
-  have hsim := ProbOracleComp.run_interpret_simulation P.respond oracle' relate
+  have hsim := ProbOracleComp.runWith_simulation P.respond oracle' relate
     (fun q state => by
       cases state <;>
         simp [P, gmwSeqProver, relate, oracle', PMF.bind_map, Function.comp_def]) prog P.init
   have hmap := congrArg (PMF.map Prod.fst) hsim
-  have hlhs : (((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
-        prog).run P.init).bind (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
+  have hlhs : ((ProbOracleComp.runWith P.respond prog P.init).bind
+        (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
       (P.run prog P.init).map Prod.fst := by
     simp only [pmf_norm, Prover.run]
     have hconst : ∀ x : α × P.State, PMF.map (fun _ : State' => x.1) (relate x.2) = PMF.pure x.1 :=
@@ -181,7 +188,7 @@ theorem run_gmwSeqProver_fst {α : Type} (generator : List Bool → List Bool) (
     simp only [hconst]; rfl
   rw [hlhs] at hmap; rw [hmap]
   simp only [pmf_norm, P, gmwSeqProver, relate]
-  exact congrArg (PMF.bind _) (funext fun coinsList => by rw [eval_runSeq]; rfl)
+  exact congrArg (PMF.bind _) (funext fun coinsList => by rw [eval_runSeq])
 
 /-- The PPT program realizing `gmwSeqProver`'s interaction with a verifier `prog`. -/
 noncomputable def gmwSeqInteract (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
@@ -678,7 +685,7 @@ theorem map_encOption_game0Opt {β : Type} (enc : β ↪ List Bool)
 theorem map_encOption_bernoulliAttemptOpt {β : Type} (enc : β ↪ List Bool) (out : β) :
     (bernoulliAttemptOpt out).map (encOption enc) = bernoulliAttempt (enc out) := by
   simp only [bernoulliAttemptOpt, bernoulliAttempt, PMF.map_comp, Function.comp_def]
-  congr 1; funext ch_guess
+  congr 1 with ch_guess : 1
   cases [false, false, false] == ch_guess <;> rfl
 
 theorem eval_game0Opt_eq_bind_bernoulliAttemptOpt {β : Type} (enc : β ↪ List Bool)
@@ -917,14 +924,12 @@ theorem spaceBound_of_encFiniteConfig {k : ℕ} {Control : Type} [Finite Control
     FiniteConfig.SpaceBound (encFiniteConfig cfg).length (encFiniteConfig cfg).length 0 cfg := by
   have htape (tape : Cslib.Turing.BiTape Bool) :
       tape.spaceUsed ≤ (encBiTape encBool tape).length + 1 := by
-    have hL : tape.left.length ≤ (encStackTape encBool tape.left).length := by
+    have hstack (t : Cslib.Turing.StackTape Bool) : t.length ≤ (encStackTape encBool t).length := by
       rw [encStackTape_apply]
       exact SizedListEncoding.length_le (encA := encOption encBool)
-        (encL := encList (encOption encBool)) tape.left.toList
-    have hR : tape.right.length ≤ (encStackTape encBool tape.right).length := by
-      rw [encStackTape_apply]
-      exact SizedListEncoding.length_le (encA := encOption encBool)
-        (encL := encList (encOption encBool)) tape.right.toList
+        (encL := encList (encOption encBool)) t.toList
+    have hL := hstack tape.left
+    have hR := hstack tape.right
     simp only [Cslib.Turing.BiTape.spaceUsed, encBiTape_apply, length_encPair]; omega
   have hpi {Index Value : Type} [Fintype Index] (enc : Value ↪ List Bool)
       (values : Index → Value) (i : Index) :

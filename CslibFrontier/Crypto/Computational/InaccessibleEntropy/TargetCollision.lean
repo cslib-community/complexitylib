@@ -23,7 +23,7 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 
 /-!

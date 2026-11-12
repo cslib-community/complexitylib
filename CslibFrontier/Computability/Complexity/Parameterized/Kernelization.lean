@@ -158,9 +158,21 @@ theorem HasKernel.mem_FPT (h : HasKernel enc κ A) {t : ℕ → ℕ} (hA : A ∈
 /-! ### Fixed-parameter tractability gives kernels -/
 
 /-- A constant map is a kernelization of a problem with no instance or every instance. -/
-private theorem hasKernel_of_forall (a₀ : α) (h : ∀ a, a ∈ A ↔ a₀ ∈ A) : HasKernel enc κ A :=
-  ⟨fun _ => a₀, fun _ => (enc a₀).length + κ a₀,
-    ⟨.const a₀, fun a => (h a).symm, fun _ => Nat.le_add_right _ _, fun _ => Nat.le_add_left _ _⟩⟩
+private theorem isKernelization_const (a₀ : α) (h : ∀ a, a ∈ A ↔ a₀ ∈ A) :
+    IsKernelization enc κ A (fun _ => a₀) fun _ => (enc a₀).length + κ a₀ :=
+  ⟨.const a₀, fun a => (h a).symm, fun _ => Nat.le_add_right _ _, fun _ => Nat.le_add_left _ _⟩
+
+/-- Over a nonempty type, a problem has both a member and a non-member, or contains all or none of
+the instances. -/
+private theorem exists_mem_exists_notMem_or_forall_iff [Nonempty α] :
+    ((∃ y, y ∈ A) ∧ ∃ n, n ∉ A) ∨ ∃ a₀ : α, ∀ a, a ∈ A ↔ a₀ ∈ A := by
+  by_cases hy : ∃ y, y ∈ A
+  · by_cases hn : ∃ n, n ∉ A
+    · exact .inl ⟨hy, hn⟩
+    · simp only [not_exists, not_not] at hn
+      exact .inr ⟨Classical.arbitrary α, fun a => iff_of_true (hn a) (hn _)⟩
+  · simp only [not_exists] at hy
+    exact .inr ⟨Classical.arbitrary α, fun a => iff_of_false (hy a) (hy _)⟩
 
 /-- The arithmetic of the clocked run: if `(c + 1) (L + 1) ^ (e + 1) < c (F (L + 1) ^ e) + c`,
 then `L < F`. -/
@@ -180,17 +192,9 @@ private theorem lt_of_clock_lt {c e L F : ℕ}
 /-- **Fixed-parameter tractable problems have kernels** [CaiChenDowneyFellows1997]: run the
 decider with a clock `(c + 1) (L + 1) ^ (e + 1)`; on timeout the instance is short. -/
 theorem hasKernel_of_mem_FPT [Nonempty α] (hA : A ∈ FPT enc κ) : HasKernel enc κ A := by
-  by_cases hy : ∃ y, y ∈ A
+  obtain ⟨⟨y, hyA⟩, n, hnA⟩ | ⟨a₀, h⟩ := exists_mem_exists_notMem_or_forall_iff (A := A)
   swap
-  · simp only [not_exists] at hy
-    exact hasKernel_of_forall (Classical.arbitrary α) fun a =>
-      ⟨fun h => absurd h (hy a), fun h => absurd h (hy _)⟩
-  by_cases hn : ∃ n, n ∉ A
-  swap
-  · simp only [not_exists, not_not] at hn
-    exact hasKernel_of_forall (Classical.arbitrary α) fun a => ⟨fun _ => hn _, fun _ => hn a⟩
-  obtain ⟨y, hyA⟩ := hy
-  obtain ⟨n, hnA⟩ := hn
+  · exact ⟨_, _, isKernelization_const a₀ h⟩
   obtain ⟨f, e, c, t, s, ht, k, State, hfin, tm, htm⟩ := hA
   have ht' : ∀ a, t a ≤ c * (f (κ a) * ((enc a).length + 1) ^ e) + c := fun a => by
     have := ht a
@@ -282,31 +286,15 @@ theorem mem_FPT_iff_hasKernel [Nonempty α] {t : ℕ → ℕ} (hA : A ∈ DTIME 
 
 /-! ### Problems in `P` -/
 
-/-- Constant size bounds are polynomially bounded. -/
-private theorem polynomiallyBounded_const (C : ℕ) : PolynomiallyBounded fun _ => C :=
-  polynomiallyBounded_iff_le.mpr ⟨C, 0, fun _ => by simp⟩
-
 /-- **Problems in `P` have kernels of constant size**, over a nonempty type of instances: decide
 the instance, and output a fixed instance with the same answer. -/
 theorem hasPolyKernel_of_mem_P [Nonempty α] (hA : A ∈ P enc) : HasPolyKernel enc κ A := by
-  have hconst : ∀ a₀ : α, (∀ a, a ∈ A ↔ a₀ ∈ A) → HasPolyKernel enc κ A := fun a₀ h =>
-    ⟨fun _ => a₀, fun _ => (enc a₀).length + κ a₀, polynomiallyBounded_const _,
-      ⟨.const a₀, fun a => (h a).symm, fun _ => Nat.le_add_right _ _,
-        fun _ => Nat.le_add_left _ _⟩⟩
-  by_cases hy : ∃ y, y ∈ A
+  obtain ⟨⟨y, hyA⟩, n, hnA⟩ | ⟨a₀, h⟩ := exists_mem_exists_notMem_or_forall_iff (A := A)
   swap
-  · simp only [not_exists] at hy
-    exact hconst (Classical.arbitrary α) fun a =>
-      ⟨fun h => absurd h (hy a), fun h => absurd h (hy _)⟩
-  by_cases hn : ∃ n, n ∉ A
-  swap
-  · simp only [not_exists, not_not] at hn
-    exact hconst (Classical.arbitrary α) fun a => ⟨fun _ => hn _, fun _ => hn a⟩
-  obtain ⟨y, hyA⟩ := hy
-  obtain ⟨n, hnA⟩ := hn
+  · exact ⟨_, _, .const _, isKernelization_const a₀ h⟩
   obtain ⟨dec, hdec, hdecA⟩ := hA
   refine ⟨fun a => if dec a then y else n,
-    fun _ => (enc y).length + (enc n).length + κ y + κ n, polynomiallyBounded_const _,
+    fun _ => (enc y).length + (enc n).length + κ y + κ n, .const _,
     ⟨by fun_prop, fun a => ?_, fun a => ?_, fun a => ?_⟩⟩
   · rw [hdecA a]
     cases dec a

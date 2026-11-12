@@ -583,7 +583,7 @@ theorem simon_two_pow_le_randomizedComplexity_sq (F : (Fin N → Bool) → Bool)
     (hF : ∀ X s, SimonPromise (simonFun E X) s → F X = decide (s ≠ 0)) (hn : 1 ≤ n) :
     2 ^ n ≤ randomizedComplexity (1 / 3) F ^ 2 := by
   obtain ⟨μ, hμ, hd⟩ :=
-    exists_computes_depth_eq_randomizedComplexity (ε := 1 / 3) (by norm_num) F
+    exists_computes_depth_eq_randomizedComplexity (ε := 1 / 3) F
   rw [← hd]
   exact simon_two_pow_le_depth_sq E μ F hF (fun X _ _ => hμ X) hn
 

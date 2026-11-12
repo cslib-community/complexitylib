@@ -139,28 +139,11 @@ theorem ChangesAtMost.decide_le [LinearOrder α] (θ : α) [DecidableRel (· ≤
   · have hle : θ ≤ z i := (hcut j hj).2.trans (hz (Nat.succ_le_of_lt h))
     exact not_lt_of_ge hle (hcut i hi).1
 
-/-- A threshold predicate `decide (· ≤ θ)` on a linear order changes at most once. -/
+/-- A threshold predicate `decide (· ≤ θ)` on a linear order changes at most once: it is
+`decide_le` in the order dual, precomposed with the antitone `toDual`. -/
 theorem ChangesAtMost.decide_ge [LinearOrder α] (θ : α) [DecidableRel (· ≤ · : α → α → Prop)] :
-    ChangesAtMost (fun u : α => decide (u ≤ θ)) 1 := by
-  intro z hz S hS
-  have hcut (i : ℕ) (hi : i ∈ S) : z i ≤ θ ∧ θ < z (i + 1) := by
-    have hp : z i ≤ θ := by
-      by_contra hn'
-      have hgt : θ < z i := not_le.mp hn'
-      have hsucc : ¬ z (i + 1) ≤ θ := not_le.mpr (hgt.trans_le (hz (Nat.le_succ i)))
-      exact hS i hi (by simp [hn', hsucc])
-    have hn : ¬ z (i + 1) ≤ θ := by
-      intro hc
-      exact hS i hi (by simp [hp, hc])
-    exact ⟨hp, not_le.mp hn⟩
-  apply Finset.card_le_one.mpr
-  intro i hi j hj
-  by_contra hne
-  rcases Nat.lt_or_gt_of_ne hne with h | h
-  · have hlt : θ < z j := (hcut i hi).2.trans_le (hz (Nat.succ_le_of_lt h))
-    exact not_le_of_gt hlt (hcut j hj).1
-  · have hlt : θ < z i := (hcut j hj).2.trans_le (hz (Nat.succ_le_of_lt h))
-    exact not_le_of_gt hlt (hcut i hi).1
+    ChangesAtMost (fun u : α => decide (u ≤ θ)) 1 :=
+  (decide_le (α := αᵒᵈ) (OrderDual.toDual θ)).comp_antitone (g := OrderDual.toDual) fun _ _ h => h
 
 /-- A tuple of functions indexed by a finite type changes at most the sum of the individual
 change bounds. -/
@@ -311,10 +294,11 @@ private theorem exists_sorted_list {ι : Type*} (P : Finset ι) (key : ι → α
   · simpa using List.pairwise_iff_getElem.mp hsorted i j hi hj h
   · subst h; exact le_rfl
 
-/-- **Lemma 1 (sorted groups).** Sort `P` by the key `key` and cut it into `G` consecutive
-groups of `⌊|P| / G⌋` elements. If every `Ψ q` changes at most `T` times, some group `P'` is
-such that the functions `p ↦ Ψ q (key p)` are constant on `P'` for every `q ∈ Q` outside a set
-`Qbad` with `G |Qbad| ≤ T |Q|`. -/
+/-- **Lemma 1 (sorted groups).** If every `Ψ q` with `q ∈ Q` changes at most `T` times, there are
+a subset `P'` of `P` with at least `⌊|P| / G⌋` elements and a subset `Qbad` of `Q` with
+`G |Qbad| ≤ T |Q|` such that the functions `p ↦ Ψ q (key p)` are constant on `P'` for every
+`q ∈ Q` outside `Qbad`. In the proof, `P'` is one of the `G` consecutive groups of `⌊|P| / G⌋`
+elements of `P` sorted by `key`. -/
 theorem ChangesAtMost.exists_sorted_group {ι κ : Type*} (P : Finset ι) (Q : Finset κ) (key : ι → α)
     (Ψ : κ → α → β) {T G : ℕ} (hG : 0 < G) (hΨ : ∀ q ∈ Q, ChangesAtMost (Ψ q) T) :
     ∃ P' ⊆ P, ∃ Qbad ⊆ Q, P.card / G ≤ P'.card ∧ G * Qbad.card ≤ T * Q.card ∧

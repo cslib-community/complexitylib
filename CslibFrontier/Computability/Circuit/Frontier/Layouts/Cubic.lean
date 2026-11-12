@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Frontier.Layouts.Compression
+import CslibFrontier.Computability.Circuit.Frontier.Layouts.Core
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Tactic.Linarith
 
@@ -85,16 +86,9 @@ private theorem Saturated.ncard_edgeCut_inter_le_one [Finite E] (hc : c.Saturate
 blocks, exactly three edges leave each block. -/
 private theorem Saturated.ncard_edgeCut_eq_three [Finite E] (hc : c.Saturated)
     (hG : G.toSimpleGraph.Connected) (two : 1 < Nat.card c.blocks) (B : c.blocks) :
-    (G.edgeCut {v | v ∈ B.1}).ncard = 3 := by
-  obtain ⟨e, he⟩ := c.edgeCut_nonempty hG two B
-  obtain ⟨B', hB'B, he'⟩ := c.exists_ne_mem_edgeCut he
-  have hjoin : (G.edgeCut {v | v ∈ B.1} ∩ G.edgeCut {v | v ∈ B'.1}).Nonempty := ⟨e, he, he'⟩
-  have := hc _ B.2 _ B'.2 (fun h => hB'B (Subtype.ext h).symm) hjoin
-  have := G.ncard_edgeCut_union_add (c.disjoint_of_ne hB'B.symm)
-  have := hjoin.ncard_pos
-  have := c.ncard_edgeCut_le _ B.2
-  have := c.ncard_edgeCut_le _ B'.2
-  omega
+    (G.edgeCut {v | v ∈ B.1}).ncard = 3 :=
+  le_antisymm (c.ncard_edgeCut_le _ B.2)
+    ((hc.three_le_ncard_incidenceSet_quotient hG two B).trans_eq (c.ncard_incidenceSet_quotient B))
 
 /-- The quotient of a saturated compression with budget three has no parallel edges. -/
 theorem Saturated.injective_ends_quotient [Finite E] (hc : c.Saturated) :
@@ -136,38 +130,15 @@ end Multigraph.Compression
 gives the layout hypothesis for maximum degree three with coefficient `2c`. -/
 theorem LayoutBound.of_cubic {c : ℝ} (hc : 0 ≤ c) (h : CubicLayoutBound c) :
     LayoutBound 3 (2 * c) := by
-  refine LayoutBound.of_natLog (D := 3) fun η hη => ?_
+  refine LayoutBound.of_saturated (by positivity) fun η hη => ?_
   obtain ⟨N₀, hN₀⟩ := h (η / 2) (by positivity)
-  refine ⟨3 * (N₀ + 1), fun V E _ _ G hG _ hdeg => ?_⟩
-  obtain ⟨Q, hQ⟩ := Multigraph.Compression.exists_saturated hdeg
-  have hβ : 0 ≤ (2 * c + η) * G.cycleRank := by positivity
-  -- A layout of the quotient.
-  obtain ⟨σ, hσ⟩ : ∃ σ : Layout Q.blocks,
-      (Q.quotient.width σ : ℝ) ≤ (2 * c + η) * G.cycleRank + 3 * (N₀ + 1) := by
-    by_cases hbig : 1 < Nat.card Q.blocks ∧ N₀ < Nat.card Q.blocks
-    · -- A large quotient is laid out by the cubic layout bound.
-      obtain ⟨σ, hσ⟩ := hN₀ Q.blocks Q.external Q.quotient Q.quotient_loopless
-        hQ.injective_ends_quotient (hQ.ncard_incidenceSet_quotient hG hbig.1) hbig.2
-      refine ⟨σ, hσ.trans ?_⟩
-      have : (Nat.card Q.blocks : ℝ) ≤ 2 * G.cycleRank := by
-        exact_mod_cast hQ.card_blocks_le hG hbig.1
-      nlinarith [mul_le_mul_of_nonneg_left this (by positivity : (0 : ℝ) ≤ c + η / 2)]
-    · -- A small quotient has few edges.
-      refine ⟨Classical.arbitrary _, ?_⟩
-      have hw := Q.quotient.width_le_card (Classical.arbitrary _)
-      have hsum := Q.sum_ncard_edgeCut
-      have hle : ∑ B : Q.blocks, (G.edgeCut {v | v ∈ B.1}).ncard ≤ ∑ _B : Q.blocks, 3 :=
-        Finset.sum_le_sum fun B _ => Q.ncard_edgeCut_le _ B.2
-      rw [Finset.sum_const, Finset.card_univ, smul_eq_mul, ← Nat.card_eq_fintype_card] at hle
-      have : Q.quotient.width (Classical.arbitrary _) ≤ 3 * (N₀ + 1) := by omega
-      have : (Q.quotient.width (Classical.arbitrary _) : ℝ) ≤ 3 * (N₀ + 1) := by
-        exact_mod_cast this
-      linarith
-  obtain ⟨π, hπ⟩ := Q.exists_width_le σ
-  refine ⟨π, ?_⟩
-  have : (G.width π : ℝ) ≤ Q.quotient.width σ + 3 * Nat.log 2 (Nat.card V) := by
-    exact_mod_cast hπ
-  push_cast
-  linarith
+  refine ⟨N₀, fun V E _ _ G Q hG hQ two big => ?_⟩
+  -- A large quotient is laid out by the cubic layout bound.
+  obtain ⟨σ, hσ⟩ := hN₀ Q.blocks Q.external Q.quotient Q.quotient_loopless
+    hQ.injective_ends_quotient (hQ.ncard_incidenceSet_quotient hG two) big
+  refine ⟨σ, hσ.trans ?_⟩
+  have : (Nat.card Q.blocks : ℝ) ≤ 2 * G.cycleRank := by
+    exact_mod_cast hQ.card_blocks_le hG two
+  nlinarith [mul_le_mul_of_nonneg_left this (by positivity : (0 : ℝ) ≤ c + η / 2)]
 
 end Cslib.Circuits.Frontier

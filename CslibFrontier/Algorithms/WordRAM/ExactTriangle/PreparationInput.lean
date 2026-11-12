@@ -12,6 +12,8 @@ public import CslibFrontier.Computability.WordRAM.Width
 public import CslibFrontier.Computability.GenericRAM.Signed.Fits
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Computability.WordRAM.Admission
+import CslibFrontier.Foundations.Data.List.GetD
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Initialized native ExactTriangle preparation
@@ -237,12 +239,9 @@ theorem exec_at {n D g p A W : ℕ} (values : List ℤ)
   have hmod : GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (p : ℤ) :=
     hmag.of_natAbs_le (by simp only [Int.natAbs_natCast]; omega)
   have hvalues (q : ℕ) (hq : q < 3 * (n * n)) :
-      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) := by
-    have hq' : q < values.length := by omega
-    have hmem : values.getD q 0 ∈ values := by
-      rw [List.getD_eq_getElem _ _ hq']
-      exact List.getElem_mem hq'
-    exact hmag.of_natAbs_le ((hv _ hmem).trans (by omega : A ≤ A + p + 1))
+      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) :=
+    hmag.of_natAbs_le ((hv (values.getD q 0) (List.getD_mem 0 (by omega))).trans
+      (by omega : A ≤ A + p + 1))
   obtain ⟨y, hy, hout⟩ := Instances.exec_at n D g p (fun q => values.getD q 0)
     initial hDHeader hgHeader hnHeader hpHeader hinput
     hD hDn hg hp hmod hvalues hbudget
@@ -305,15 +304,10 @@ private theorem pow_width_lt (n D g p A : ℕ) :
   let V := envelope n D g p A
   let k := Nat.clog 2 V
   have hV : 1 < V := by dsimp only [V, envelope]; omega
-  have hkpos : 0 < k := Nat.clog_pos (by decide) hV
-  have hk : k.pred + 1 = k := Nat.succ_pred_eq_of_pos hkpos
-  have hpred : 2 ^ k.pred < V := Nat.pow_pred_clog_lt_self (by decide) hV
+  have h : 2 ^ k < 2 * V := Nat.pow_clog_lt_mul Nat.one_lt_two (by omega)
   change 2 ^ (k + 3) < 16 * V
-  calc
-    2 ^ (k + 3) = 2 ^ k * 8 := by rw [Nat.pow_add]
-    _ = 2 ^ (k.pred + 1) * 8 := congrArg (fun j => 2 ^ j * 8) hk.symm
-    _ = (2 ^ k.pred * 2) * 8 := by rw [Nat.pow_succ]
-    _ < 16 * V := by omega
+  rw [pow_add]
+  omega
 
 /-- All actual run prefixes, at every admitted physical width, have bounded words and zero
 memory beyond one original-input polynomial. Width independence identifies each such prefix

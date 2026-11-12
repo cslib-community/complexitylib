@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.Substitution
 public import CslibFrontier.Computability.Circuit.Complexity
+import CslibFrontier.Computability.Circuit.Boolean.Combinators
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
@@ -63,18 +64,11 @@ private theorem complexity_guesses_le (f : BooleanFunction (n + p)) :
 private theorem complexity_bigOp_le {m : ℕ} (all : Bool) :
     complexity interpretation (single fun y : Fin m → Bool =>
       if all then decide (∀ i, y i = true) else decide (∃ i, y i = true)) ≤ m + 1 := by
-  have hin : ∀ i ∈ (Finset.univ : Finset (Fin m)),
-      Synthesis interpretation (inputs m) {fun y : Fin m → Bool => y i} 0 :=
-    fun i _ => Synthesis.of_mem ⟨i, rfl⟩
   cases all
-  · obtain ⟨g, hg, hs⟩ := Synthesis.exists_exists_mem (m := m) Finset.univ _ (by simp) hin
-    have : g = fun y => decide (∃ i, y i = true) :=
-      funext fun y => Bool.eq_iff_iff.2 ((hg y).trans (by simp))
-    simpa [this] using hs.complexity_le
-  · obtain ⟨g, hg, hs⟩ := Synthesis.exists_forall_mem (m := m) Finset.univ _ (by simp) hin
-    have : g = fun y => decide (∀ i, y i = true) :=
-      funext fun y => Bool.eq_iff_iff.2 ((hg y).trans (by simp))
-    simpa [this] using hs.complexity_le
+  · simpa using complexity_decide_exists_mem_le (Finset.univ : Finset (Fin m))
+      (fun i y => y i) (c := 0) fun i _ => (complexity_single_proj i).le
+  · simpa using complexity_decide_forall_mem_le (Finset.univ : Finset (Fin m))
+      (fun i y => y i) (c := 0) fun i _ => (complexity_single_proj i).le
 
 /-- Guessing with a disjunction or conjunction of all the guesses. -/
 private theorem complexity_guess_le (f : BooleanFunction (n + p)) (all : Bool) :

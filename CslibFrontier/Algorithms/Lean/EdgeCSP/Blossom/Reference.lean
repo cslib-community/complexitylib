@@ -25,6 +25,7 @@ public section
 namespace Cslib.Logic.PL.CSP.Blossom
 
 open Table Finset
+open Cslib.BitString
 
 variable {F : CSP Table ℕ}
 
@@ -163,8 +164,8 @@ theorem scope_constraint_touched (f : OccurrenceLabeling F Bool) (vs : List ℕ)
   change ((referenceRows f vs).getD F.length []).getD k.val false = _
   rw [get_referenceRows_central]
   rw [List.getD_eq_getElem _ _ (by
-    simpa only [oneHot, List.length_map, List.length_range] using k.isLt)]
-  simp only [oneHot, List.getElem_map, List.getElem_range]
+    simpa only [listSingle, List.length_map, List.length_range] using k.isLt)]
+  simp only [listSingle, List.getElem_map, List.getElem_range]
 
 /-- Every old outside variable retains its exact defect status under reference transport. -/
 theorem inconsistent_reference_old (hF : EdgeInstance F) (f : OccurrenceLabeling F Bool)

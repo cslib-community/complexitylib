@@ -47,7 +47,7 @@ example :
 -- Every single-prover interactive proof embeds into a two-prover interactive proof via channel 0,
 -- giving `GraphNonIsomorphism` completeness `1`, soundness `(17 / 32) ^ 2`, and membership in
 -- `MIP₂`, `MIP`, and `NEXP` alongside `TQBF`.
-example (x : Graph × Graph) :
+example (x : GraphIsomorphismInstance) :
     (x ∈ GraphNonIsomorphism →
       ∃ P : Fin 2 → Prover Unit,
         1 ≤ acceptProb
@@ -64,9 +64,9 @@ example (x : Graph × Graph) :
       (0 : Fin 2)).sound x⟩
 
 example :
-    GraphNonIsomorphism ∈ MIP₂ (encPair encGraph encGraph) ∧
-    GraphNonIsomorphism ∈ MIP (encPair encGraph encGraph) ∧
-    GraphNonIsomorphism ∈ NEXP (encPair encGraph encGraph) ∧
+    GraphNonIsomorphism ∈ MIP₂ encGraphIsomorphism ∧
+    GraphNonIsomorphism ∈ MIP encGraphIsomorphism ∧
+    GraphNonIsomorphism ∈ NEXP encGraphIsomorphism ∧
     TQBF ∈ MIP₂ encQBF ∧
     TQBF ∈ NEXP encQBF :=
   ⟨IP_subset_MIP₂ _ GraphNonIsomorphism.mem_IP,

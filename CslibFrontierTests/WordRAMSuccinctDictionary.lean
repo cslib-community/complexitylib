@@ -119,7 +119,7 @@ example (h₁ : ℕ → ℕ) (u : Fin (2 ^ 32)) :
 example :
     16 * (quotientBits (2 ^ 32) 16 + valBits (2 ^ 16)) ≤
       Dynamic.optBits (2 ^ 32) (2 ^ 16) 16 + 5 * 16 * Dynamic.logLogFactor 16 :=
-  quotient_val_bits_le_optBits (by decide : 16 ≤ 2 ^ 32)
+  quotient_val_bits_le_optBits
 
 /-! ## 3. Bit-Packed Array Primitive (`BitPackedArray`) -/
 

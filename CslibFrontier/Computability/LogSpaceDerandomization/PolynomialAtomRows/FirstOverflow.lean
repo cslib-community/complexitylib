@@ -129,8 +129,7 @@ theorem exists_firstOverflow_root_bound (hθ : 0 < θ) :
   rw [hjr] at hbudget
   calc
     _ ≤ C * prefixErrorBudget (preloadedError ε j) (m - j) := hlocal
-    _ ≤ C * (4 * ∑ i ∈ Ico j m, 28 ^ (m - i) * ε i) :=
-      mul_le_mul_of_nonneg_left hbudget hC
+    _ ≤ C * (4 * ∑ i ∈ Ico j m, 28 ^ (m - i) * ε i) := by gcongr
     _ = (4 * C) * ∑ i ∈ Ico j m, 28 ^ (m - i) * ε i := by ring
 
 /-- The actual compressed output is compared with the true zero-padded row by adding the

@@ -75,9 +75,8 @@ theorem IsEmbedding.arg_germ_outsideRoute {H : Graph} {D : PolygonalDrawing H}
     (hlen : ∀ d : Dart H, d.vertex = v → 3 * ρ < ‖D.germ d‖)
     (e : Fin H.2.length) (side : Bool) :
     ((D.outsideRoute v ρ e).germ side).arg = (D.germ (e, side)).arg := by
-  have h₀ := hD.restrictionTime_mem v hρ hlen (e, false)
-  have h₁ := hD.restrictionTime_mem v hρ hlen (e, true)
-  exact (D.route e).arg_germ_cutEnds h₀.1 h₁.1 (by linarith [h₀.2, h₁.2]) side
+  obtain ⟨h₀, h₁, hsum⟩ := hD.restrictionTime_bounds v hρ hlen e
+  exact (D.route e).arg_germ_cutEnds h₀ h₁ hsum side
 
 /-- A retained actual source dart has exactly its attached route's outgoing germ. -/
 theorem germ_restoration_retained {G : Graph} {u v : ℕ}

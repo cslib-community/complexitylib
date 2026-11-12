@@ -195,6 +195,12 @@ theorem mem_rotationInterval_iff_portRank (a b c : Dart G)
   exact r.mem_rotationInterval_iff_ranks o a b c hoa (hoa.trans hab)
     (hoa.trans (hab.trans hbc)) hneab hnebc hneac
 
+/-- A vertex cycle first reaches its starting dart at exponent zero. -/
+@[simp] theorem rotationDistance_self (a : Dart G) : r.rotationDistance a a = 0 := by
+  apply r.rotationDistance_eq a a rfl 0 rfl
+  intro k hk
+  omega
+
 /-- A different dart in the same source cycle has positive first-hit rank. -/
 theorem rotationDistance_pos_of_ne {G : Graph} (r : RotationSystem G)
     (o a : Dart G) (hoa : o.vertex = a.vertex) (hne : a ≠ o) :
@@ -258,10 +264,9 @@ order. A unary vertex cycle gives `Fin 0`, without inventing a corner dart. -/
     refine ⟨hv, ?_⟩
     intro heq
     have hi : i.val + 1 < Function.minimalPeriod r.rotate o := by omega
-    have hzero := r.rotationDistance_pow o 0
+    have hzero := r.rotationDistance_self o
     have hrank := r.rotationDistance_pow o (i.val + 1)
     rw [heq, Nat.mod_eq_of_lt hi] at hrank
-    simp only [pow_zero, Equiv.Perm.one_apply, Nat.zero_mod] at hzero
     omega⟩
   left_inv d := by
     apply Subtype.ext
@@ -279,12 +284,6 @@ reusing contracted distances that have changed when the selected darts were remo
 theorem sourceTailEquiv_symm_val {G : Graph} (r : RotationSystem G) (o : Dart G)
     (i : Fin (Function.minimalPeriod r.rotate o - 1)) :
     ((r.sourceTailEquiv o).symm i).val = (r.rotate ^ (i.val + 1)) o := rfl
-
-/-- A vertex cycle first reaches its starting dart at exponent zero. -/
-@[simp] theorem rotationDistance_self (a : Dart G) : r.rotationDistance a a = 0 := by
-  apply r.rotationDistance_eq a a rfl 0 rfl
-  intro k hk
-  omega
 
 /-- A strict interval based at its rank origin compares the two terminal ranks. -/
 theorem mem_rotationInterval_iff_lt_distance (a b c : Dart G)

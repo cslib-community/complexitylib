@@ -25,6 +25,10 @@ of length `n` have complexity below `n - c` [Li and Vitányi, Chapter 2][LiVitan
 * `Cslib.Kolmogorov.DescriptionMethod.encard_setOf_ecomplexity_lt`,
   `Cslib.Kolmogorov.DescriptionMethod.encard_setOf_etimeBoundedComplexity_lt`: fewer than `2 ^ r`
   objects have (time-bounded) complexity below `r`.
+* `Cslib.Kolmogorov.DescriptionMethod.encard_setOf_ecomplexity_le_lt`,
+  `Cslib.Kolmogorov.DescriptionMethod.encard_setOf_etimeBoundedComplexity_le_lt`: under an
+  injective encoding, fewer than `2 ^ (s + 1)` values have encodings of (time-bounded) complexity
+  at most `s`.
 * `Cslib.Kolmogorov.DescriptionMethod.exists_mem_le_ecomplexity`: a set of at least `2 ^ r`
   objects has an element of complexity at least `r`.
 * `Cslib.Kolmogorov.DescriptionMethod.ncard_lt_ncard_setOf_le_ecomplexity_add`: all but fewer than
@@ -42,7 +46,7 @@ of length `n` have complexity below `n - c` [Li and Vitányi, Chapter 2][LiVitan
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Kolmogorov
 
@@ -77,6 +81,24 @@ theorem encard_setOf_etimeBoundedComplexity_lt (t r : ℕ) :
   (Set.encard_le_encard fun _ hx =>
     (M.ecomplexity_le_etimeBoundedComplexity t _).trans_lt hx).trans_lt
     (M.encard_setOf_ecomplexity_lt r)
+
+/-- Under an injective encoding `enc`, fewer than `2 ^ (s + 1)` values `b` have
+`C(enc b) ≤ s`. -/
+theorem encard_setOf_ecomplexity_le_lt {β : Type*} {enc : β → α} (henc : enc.Injective)
+    (s : ℕ) : {b | M.ecomplexity (enc b) ≤ s}.encard < 2 ^ (s + 1) := by
+  rw [← henc.encard_image]
+  refine (Set.encard_le_encard ?_).trans_lt (M.encard_setOf_ecomplexity_lt (s + 1))
+  rintro _ ⟨b, hb, rfl⟩
+  exact (show M.ecomplexity (enc b) ≤ s from hb).trans_lt (by exact_mod_cast s.lt_succ_self)
+
+/-- Under an injective encoding `enc`, fewer than `2 ^ (s + 1)` values `b` have time-bounded
+complexity of `enc b` at most `s`, for every time bound. -/
+theorem encard_setOf_etimeBoundedComplexity_le_lt {β : Type*} {enc : β → α}
+    (henc : enc.Injective) (t s : ℕ) :
+    {b | M.etimeBoundedComplexity t (enc b) ≤ s}.encard < 2 ^ (s + 1) :=
+  (Set.encard_le_encard fun _ hb =>
+    (M.ecomplexity_le_etimeBoundedComplexity t _).trans hb).trans_lt
+    (M.encard_setOf_ecomplexity_le_lt henc s)
 
 /-- A set of at least `2 ^ r` objects has an element of complexity at least `r`. -/
 theorem exists_mem_le_ecomplexity {s : Set α} {r : ℕ} (hs : 2 ^ r ≤ s.encard) :

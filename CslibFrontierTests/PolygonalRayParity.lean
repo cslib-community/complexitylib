@@ -66,6 +66,31 @@ example : ∃ u : ℂ, u ≠ 0 ∧ Set.InjOn (fun z => (u * z).im)
     (↑({0, 1, Complex.I, 1 + Complex.I} : Finset ℂ) : Set ℂ) :=
   exists_mul_im_injOn _
 
+-- A single selected segment has odd incidence at its ends, but its endpoint jumps vanish
+-- below both ends. The weaker shared criterion still proves local constancy there.
+open Classical in
+example :
+    ¬(∀ p : ℂ, (∑ _ : Unit, ((if (⟨1, 1⟩ : ℂ) = p then true else 0) +
+      (if (⟨1, 2⟩ : ℂ) = p then true else 0))) = false) ∧
+    ∀ᶠ w in nhds (0 : ℂ),
+      rayParity (fun _ : Unit => (⟨1, 1⟩ : ℂ)) (fun _ => ⟨1, 2⟩) (fun _ => true) w =
+        rayParity (fun _ : Unit => (⟨1, 1⟩ : ℂ)) (fun _ => ⟨1, 2⟩) (fun _ => true) 0 := by
+  constructor
+  · intro h
+    have hp := h ⟨1, 1⟩
+    norm_num at hp
+  · apply eventually_rayParity_eq_of_endpoint_jumps_eq_zero
+      (fun _ : Unit => (⟨1, 1⟩ : ℂ)) (fun _ => ⟨1, 2⟩) (fun _ => true)
+    · intro i
+      norm_num
+    · intro i hi h
+      rw [segment_eq_image_lineMap] at h
+      obtain ⟨t, ht, heq⟩ := h
+      have hre := congrArg Complex.re heq
+      norm_num [AffineMap.lineMap_apply_module'] at hre
+    · norm_num [Bool.zero_eq_false, Bool.mul_eq_and, Bool.add_eq_xor]
+      rfl
+
 private abbrev loopGraph : Graph := ([7, 7], [(7, 7)])
 
 private def loopDrawing : PolygonalDrawing loopGraph where

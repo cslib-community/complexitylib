@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Crypto.Computational.Kilian
+import CslibFrontier.Tactic.PolyTime
 
 /-!
 # Tests for Kilian's protocol
@@ -19,7 +20,7 @@ are all rejected. The completeness theorem applies to the honest execution.
 
 namespace CslibFrontierTests.Crypto.Kilian
 
-open Cslib Cslib.Complexity Cslib.Crypto
+open Cslib Cslib.Complexity Cslib.Crypto Turing.MultiTapeTM
 
 /-- A hash that returns its message. -/
 def idHash (_ x : List Bool) : List Bool := x
@@ -73,11 +74,12 @@ abbrev root : List Bool := kilianCommit idHash toyVerifier key x [true, true]
 -- Flipping the bit opened in the second repetition is rejected by the Merkle check (and by the
 -- PCP verifier).
 example : kilianVerify idHash toyVerifier key x root challenges
-    [honest.getD 0 [], [(false, ((honest.getD 1 []).getD 0 (false, [])).2)]] = false := by decide
+    [honest.getD 0 [], [⟨false, ((honest.getD 1 []).getD 0 ⟨false, []⟩).path⟩]] = false := by
+  decide
 
 -- Opening the right bit with a path of the wrong length is rejected.
 example : kilianVerify idHash toyVerifier key x root challenges
-    [honest.getD 0 [], [(true, [])]] = false := by decide
+    [honest.getD 0 [], [⟨true, []⟩]] = false := by decide
 
 -- A missing repetition, or a missing opening, is rejected.
 example : kilianVerify idHash toyVerifier key x root challenges [honest.getD 0 []] = false := by
@@ -96,5 +98,18 @@ example : kilianCheck idHash toyVerifier key x (kilianCommit idHash toyVerifier 
 example (n : ℕ) :
     ProbComp.eval (kilianHonestGame idHash toyVerifier x [true, true] n) = PMF.pure true :=
   eval_kilianHonestGame idHash toyVerifier (by decide) n
+
+-- Extensionality and compositional polynomial-time certificates for `KilianOpening`.
+example (o₁ o₂ : KilianOpening) (hbit : o₁.bit = o₂.bit) (hpath : o₁.path = o₂.path) :
+    o₁ = o₂ := by
+  ext1 <;> assumption
+
+example : ComputableInPolyTime
+    (fun p : Bool × KilianOpening => (⟨!p.1, p.2.path⟩ : KilianOpening))
+    (encPair encBool encKilianOpening) encKilianOpening := by
+  fun_prop
+
+example : ComputableInPolyTime (fun o : KilianOpening => o.bit) encKilianOpening encBool := by
+  fun_prop
 
 end CslibFrontierTests.Crypto.Kilian

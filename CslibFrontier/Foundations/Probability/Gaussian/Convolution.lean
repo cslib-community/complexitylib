@@ -227,11 +227,8 @@ theorem tvDist_conv_discreteGaussian_le_of_dual_mass_le (r s t : ℝ)
   have hh : 0 < r * s / t := div_pos (mul_pos hr hs) ht
   have hst : s ≤ t := by nlinarith [sq_pos_of_pos hr]
   have hhr : r * s / t ≤ r := (div_le_iff₀ ht).mpr (by nlinarith)
-  have hm : gaussianMass D (1 / r) 0 ≤ gaussianMass D (1 / (r * s / t)) 0 := by
-    exact Summable.tsum_le_tsum (fun z : D ↦ gaussianWeight_le_of_le (one_div_pos.mpr hr)
-      (one_div_le_one_div_of_le hh hhr) ((z : E) - 0))
-      (summable_gaussianWeight D (1 / r) (one_div_pos.mpr hr) 0)
-      (summable_gaussianWeight D (1 / (r * s / t)) (one_div_pos.mpr hh) 0)
+  have hm : gaussianMass D (1 / r) 0 ≤ gaussianMass D (1 / (r * s / t)) 0 :=
+    gaussianMass_le_of_le D (one_div_pos.mpr hr) (one_div_le_one_div_of_le hh hhr) 0
   have hdr : gaussianMass D (1 / r) 0 - 1 ≤ ε := by linarith
   have hA := (abs_le.mp ((abs_gaussianMass_normalized_sub_one_le L r hr (-u)).trans hdr)).1
   have hpos : 0 < covolume L / r ^ finrank ℝ E * gaussianMass L r (-u) :=

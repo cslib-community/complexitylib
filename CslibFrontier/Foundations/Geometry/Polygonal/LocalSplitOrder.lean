@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Geometry.Polygonal.LocalSplitFan
-public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Angle
+public import CslibFrontier.Foundations.Geometry.Polygonal.AngleOrder
 import Mathlib.Topology.LocallyConstant.Basic
 import Mathlib.Analysis.Convex.PathConnected
 import Mathlib.Analysis.Normed.Module.Convex
@@ -25,31 +25,6 @@ rational-coordinate hypothesis is imposed. No ambient map or PL transport is ass
 public section
 
 namespace Cslib.Polygonal
-
-/-- Increasing real representatives with span less than a full turn give the literal
-counterclockwise strict angle order, without a principal-argument cut restriction. -/
-theorem sbtw_angle_of_lt_of_span_lt {a b c : ℝ} (hab : a < b) (hbc : b < c)
-    (hspan : c - a < 2 * Real.pi) :
-    sbtw (a : Real.Angle) (b : Real.Angle) (c : Real.Angle) := by
-  have hp := Real.two_pi_pos
-  let : Fact ((0 : ℝ) < 2 * Real.pi) := ⟨hp⟩
-  rw [sbtw_iff_not_btw]
-  change ¬btw (c : ℝ ⧸ AddSubgroup.zmultiples (2 * Real.pi))
-    (b : ℝ ⧸ AddSubgroup.zmultiples (2 * Real.pi))
-    (a : ℝ ⧸ AddSubgroup.zmultiples (2 * Real.pi))
-  rw [QuotientAddGroup.btw_coe_iff]
-  have hb : toIcoMod hp c b = b + 2 * Real.pi := by
-    apply (toIcoMod_eq_iff hp).mpr
-    refine ⟨⟨by linarith, by linarith⟩, -1, ?_⟩
-    simp only [neg_one_zsmul]
-    ring
-  have ha : toIocMod hp c a = a + 2 * Real.pi := by
-    apply (toIocMod_eq_iff hp).mpr
-    refine ⟨⟨by linarith, by linarith⟩, -1, ?_⟩
-    simp only [neg_one_zsmul]
-    ring
-  rw [hb, ha]
-  linarith
 
 /-- Three distinct real representatives in any one turn have exactly their cyclic
 linear order as angles. In particular the cut may cross the principal argument branch. -/

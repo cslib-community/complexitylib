@@ -141,13 +141,15 @@ vertices and `2` from the other vertices. -/
   ((A (domMatrix G, k)).filter fun i => decide (i < G.distinctVertices.length)).map
     fun i => G.distinctVertices.getD i 0
 
-/-- The decider for `DominatingSet` built from a k-center algorithm `A`: accept `(G, k)` when `k`
-is at most the number of distinct vertices, `k > 0` unless `G` has no vertices, and the vertices
-named by the centers that `A` chooses on `(domMatrix G, k)` dominate `G`. -/
-@[expose] def decideDominatingSet (A : List (List ℕ) × ℕ → List ℕ) (x : Graph × ℕ) : Bool :=
-  decide (x.2 ≤ x.1.distinctVertices.length) &&
-    (decide (x.1.distinctVertices.length = 0) || decide (0 < x.2)) &&
-      DominatingSet.isDominating x.1 (centerLabels A x.1 x.2)
+/-- The decider for `DominatingSet` built from a k-center algorithm `A`: accept `x` when
+`x.bound` is at most the number of distinct vertices of `x.graph`, `x.bound > 0` unless `x.graph`
+has no vertices, and the vertices named by the centers that `A` chooses on
+`(domMatrix x.graph, x.bound)` dominate `x.graph`. -/
+@[expose] def decideDominatingSet (A : List (List ℕ) × ℕ → List ℕ)
+    (x : DominatingSetInstance) : Bool :=
+  decide (x.bound ≤ x.graph.distinctVertices.length) &&
+    (decide (x.graph.distinctVertices.length = 0) || decide (0 < x.bound)) &&
+      DominatingSet.isDominating x.graph (centerLabels A x.graph x.bound)
 
 @[simp]
 theorem length_domMatrix (G : Graph) : (domMatrix G).length = G.distinctVertices.length :=
@@ -224,7 +226,7 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
       optRadius (fun i j => (TSP.finDist D i j : ℝ)) k ≤ r →
         radius (fun i j => (TSP.finDist D i j : ℝ)) (centers D (A (D, k))) ≤ ((ρ * r : ℝ) :
           WithTop ℝ))
-    (x : Graph × ℕ) : decideDominatingSet A x = true ↔ x ∈ DominatingSet := by
+    (x : DominatingSetInstance) : decideDominatingSet A x = true ↔ x ∈ DominatingSet := by
   obtain ⟨G, k⟩ := x
   classical
   rw [mem_DominatingSet_iff_exists_card_le, ← Graph.length_distinctVertices]
@@ -238,9 +240,7 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
   · rintro ⟨⟨hk, hpos⟩, hdom⟩
     refine ⟨hk, (centerLabels A G k).toFinset, fun v hv => ?_, fun v hv => ?_, ?_⟩
     · obtain ⟨i, -, rfl⟩ := mem_centerLabels.1 (List.mem_toFinset.1 hv)
-      have hi : (i : ℕ) < G.distinctVertices.length := by simpa using i.2
-      rw [List.getD_eq_getElem _ _ hi]
-      exact Graph.mem_distinctVertices.1 (List.getElem_mem hi)
+      exact G.vertexEquiv_apply (Fin.cast (length_domMatrix G) i) ▸ (G.vertexEquiv _).2
     · simpa only [List.mem_toFinset] using hdom v hv
     · rw [hfs]
       refine Finset.card_image_le.trans ?_
@@ -273,20 +273,15 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
     have hk0 : 0 < k := hpos.resolve_left (by omega)
     have : NeZero (domMatrix G).length := ⟨by simp only [length_domMatrix]; omega⟩
     let f : Fin (domMatrix G).length → ℕ := fun i => G.distinctVertices.getD i 0
-    have hf : ∀ i : Fin (domMatrix G).length, ∃ h : (i : ℕ) < G.distinctVertices.length,
-        f i = G.distinctVertices[(i : ℕ)] := fun i => by
-      have h : (i : ℕ) < G.distinctVertices.length := by simpa using i.2
-      exact ⟨h, List.getD_eq_getElem _ _ h⟩
-    have hfinj : Function.Injective f := by
-      intro i j hij
-      obtain ⟨hi, hfi⟩ := hf i
-      obtain ⟨hj, hfj⟩ := hf j
-      rw [hfi, hfj, G.nodup_distinctVertices.getElem_inj_iff] at hij
-      exact Fin.ext hij
-    have hsurj : ∀ u ∈ G.distinctVertices, ∃ i : Fin (domMatrix G).length, f i = u := by
-      intro u hu
-      obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hu
-      exact ⟨⟨i, by simpa using hi⟩, (hf ⟨i, by simpa using hi⟩).2⟩
+    -- `f` is `Graph.vertexEquiv` after reindexing by `length_domMatrix`
+    let e := (finCongr (length_domMatrix G)).trans G.vertexEquiv
+    have hfe (i : Fin (domMatrix G).length) : f i = e i :=
+      (G.vertexEquiv_apply (Fin.cast (length_domMatrix G) i)).symm
+    have hfinj : Function.Injective f := fun i j h =>
+      e.injective (Subtype.ext ((hfe i).symm.trans (h.trans (hfe j))))
+    have hsurj : ∀ u ∈ G.distinctVertices, ∃ i : Fin (domMatrix G).length, f i = u := fun u hu =>
+      let ⟨i, hi⟩ := e.surjective ⟨u, Graph.mem_distinctVertices.1 hu⟩
+      ⟨i, (hfe i).trans (congrArg Subtype.val hi)⟩
     let T : Finset (Fin (domMatrix G).length) := Finset.univ.filter fun i => f i ∈ S
     have hT : T.card ≤ k := by
       refine le_trans ?_ hSk
@@ -294,10 +289,7 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
         (hfinj.injOn)
     have hTdom : (indexGraph G).IsDominatingSet T := by
       refine SimpleGraph.isDominatingSet_iff.2 fun i => ?_
-      have hfiV : f i ∈ G.1 := by
-        obtain ⟨hi, hfi⟩ := hf i
-        rw [hfi]
-        exact Graph.mem_distinctVertices.1 (List.getElem_mem hi)
+      have hfiV : f i ∈ G.1 := hfe i ▸ (e i).2
       rcases hS (f i) hfiV with h | ⟨s, hs, hadj⟩
       · exact Or.inl (by simpa [T] using h)
       · obtain ⟨j, rfl⟩ := hsurj s (Graph.mem_distinctVertices.2 (hSV s hs))
@@ -331,27 +323,32 @@ theorem computableInPolyTime_domMatrix :
 /-- The decider built from a polynomial-time k-center algorithm is polynomial-time. -/
 theorem computableInPolyTime_decideDominatingSet {A : List (List ℕ) × ℕ → List ℕ}
     (hA : ComputableInPolyTime A encKCenter (encList encNat)) :
-    ComputableInPolyTime (decideDominatingSet A) (encPair encGraph encNat) encBool := by
-  have hV : ComputableInPolyTime (fun x : Graph × ℕ => x.1.distinctVertices)
-      (encPair encGraph encNat) (encList encNat) :=
-    Graph.computableInPolyTime_distinctVertices.comp (fst _ _)
-  have hAx : ComputableInPolyTime (fun x : Graph × ℕ => A (domMatrix x.1, x.2))
-      (encPair encGraph encNat) (encList encNat) :=
-    hA.comp ((computableInPolyTime_domMatrix.comp (fst _ _)).prod (snd _ _))
-  have hlabels : ComputableInPolyTime (fun x : Graph × ℕ => centerLabels A x.1 x.2)
-      (encPair encGraph encNat) (encList encNat) := by
+    ComputableInPolyTime (decideDominatingSet A) encDominatingSet encBool := by
+  have hg : ComputableInPolyTime DominatingSetInstance.graph encDominatingSet encGraph := by
+    fun_prop
+  have hb : ComputableInPolyTime DominatingSetInstance.bound encDominatingSet encNat := by
+    fun_prop
+  have hV : ComputableInPolyTime (fun x : DominatingSetInstance => x.graph.distinctVertices)
+      encDominatingSet (encList encNat) :=
+    Graph.computableInPolyTime_distinctVertices.comp hg
+  have hAx : ComputableInPolyTime (fun x : DominatingSetInstance => A (domMatrix x.graph, x.bound))
+      encDominatingSet (encList encNat) :=
+    hA.comp ((computableInPolyTime_domMatrix.comp hg).prod hb)
+  have hlabels : ComputableInPolyTime (fun x : DominatingSetInstance =>
+      centerLabels A x.graph x.bound) encDominatingSet (encList encNat) := by
     unfold centerLabels
-    have hfilter : ComputableInPolyTime (fun x : Graph × ℕ =>
-        (A (domMatrix x.1, x.2)).filter fun i => decide (i < x.1.distinctVertices.length))
-        (encPair encGraph encNat) (encList encNat) :=
+    have hfilter : ComputableInPolyTime (fun x : DominatingSetInstance =>
+        (A (domMatrix x.graph, x.bound)).filter fun i =>
+          decide (i < x.graph.distinctVertices.length))
+        encDominatingSet (encList encNat) :=
       filterWithInput hAx (binary_lt' (snd _ _)
         ((length_list_binary encNat).comp (hV.comp (fst _ _))))
     exact mapWithInput hfilter (listGetD_binary 0 (hV.comp (fst _ _)) (snd _ _))
   unfold decideDominatingSet
-  exact bool_and' (bool_and' (binary_le' (snd _ _) ((length_list_binary encNat).comp hV))
+  exact bool_and' (bool_and' (binary_le' hb ((length_list_binary encNat).comp hV))
     (bool_or.comp (((length_list_binary encNat).comp hV |>.decide_eq' (const 0)).prod
-      (binary_lt' (const 0) (snd _ _)))))
-    (DominatingSet.computableInPolyTime_isDominating.comp ((fst _ _).prod hlabels))
+      (binary_lt' (const 0) hb))))
+    (DominatingSet.computableInPolyTime_isDominating.comp (hg.prod hlabels))
 
 end KCenter
 

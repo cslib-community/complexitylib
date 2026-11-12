@@ -169,6 +169,16 @@ theorem IsEmbedding.restrictionTime_mem {G : Graph} {D : PolygonalDrawing G}
     linarith [hlen d hd]
   · constructor <;> norm_num
 
+/-- The two independent end cuts leave a nonempty parameter interval on every route. -/
+theorem IsEmbedding.restrictionTime_bounds {G : Graph} {D : PolygonalDrawing G}
+    (hD : D.IsEmbedding) (v : ℕ) {ρ : ℝ} (hρ : 0 < ρ)
+    (hlen : ∀ d : Dart G, d.vertex = v → 3 * ρ < ‖D.germ d‖) (e : Fin G.2.length) :
+    0 ≤ D.restrictionTime v ρ (e, false) ∧ 0 ≤ D.restrictionTime v ρ (e, true) ∧
+      D.restrictionTime v ρ (e, false) + D.restrictionTime v ρ (e, true) < 1 := by
+  have hs := hD.restrictionTime_mem v hρ hlen (e, false)
+  have ht := hD.restrictionTime_mem v hρ hlen (e, true)
+  exact ⟨hs.1, ht.1, by linarith [hs.2, ht.2]⟩
+
 /-- The two ends of the exterior piece are their respective cut ports or unchanged
 original endpoints, according to actual incidence with the named vertex. -/
 theorem endpoint_outsideRoute {G : Graph} (D : PolygonalDrawing G)
@@ -185,18 +195,16 @@ theorem IsEmbedding.outsideRoute_simple {G : Graph} {D : PolygonalDrawing G}
     (hD : D.IsEmbedding) (v : ℕ) {ρ : ℝ} (hρ : 0 < ρ)
     (hlen : ∀ d : Dart G, d.vertex = v → 3 * ρ < ‖D.germ d‖) (e : Fin G.2.length) :
     (D.outsideRoute v ρ e).IsSimple := by
-  have hs := hD.restrictionTime_mem v hρ hlen (e, false)
-  have ht := hD.restrictionTime_mem v hρ hlen (e, true)
-  exact (hD.simple e).cutEnds hs.1 ht.1 (by linarith [hs.2, ht.2])
+  obtain ⟨hs, ht, hst⟩ := hD.restrictionTime_bounds v hρ hlen e
+  exact (hD.simple e).cutEnds hs ht hst
 
 /-- Cutting the star does not create any point outside an old edge's continuous support. -/
 theorem IsEmbedding.support_outsideRoute_subset {G : Graph} {D : PolygonalDrawing G}
     (hD : D.IsEmbedding) (v : ℕ) {ρ : ℝ} (hρ : 0 < ρ)
     (hlen : ∀ d : Dart G, d.vertex = v → 3 * ρ < ‖D.germ d‖) (e : Fin G.2.length) :
     (D.outsideRoute v ρ e).support ⊆ (D.route e).support := by
-  have hs := hD.restrictionTime_mem v hρ hlen (e, false)
-  have ht := hD.restrictionTime_mem v hρ hlen (e, true)
-  exact (D.route e).support_cutEnds_subset hs.1 ht.1 (by linarith [hs.2, ht.2])
+  obtain ⟨hs, ht, hst⟩ := hD.restrictionTime_bounds v hρ hlen e
+  exact (D.route e).support_cutEnds_subset hs ht hst
 
 /-- Every point where an exterior piece meets the closed replacement ball is its own
 boundary port at an original end incident to the replaced vertex. Thus an interior patch
@@ -216,13 +224,11 @@ theorem IsEmbedding.outsideRoute_ball_contact {G : Graph} {D : PolygonalDrawing 
       (D.outsideRoute v ρ e).eval i u = D.cutPort ρ (e, b) := by
   let s := D.restrictionTime v ρ (e, false)
   let t := D.restrictionTime v ρ (e, true)
-  have hs := hD.restrictionTime_mem v hρ hlen (e, false)
-  have ht := hD.restrictionTime_mem v hρ hlen (e, true)
-  have hst : s + t < 1 := by dsimp [s, t]; linarith [hs.2, ht.2]
+  obtain ⟨hs, ht, hst⟩ := hD.restrictionTime_bounds v hρ hlen e
   change Fin (D.route e).segments at i
   let τ := (D.route e).cutTime s t i u
-  have hτ := (D.route e).cutTime_mem hs.1 ht.1 hst i hu
-  have hbounds := (D.route e).cutTime_bounds hs.1 ht.1 hst i hu
+  have hτ := (D.route e).cutTime_mem hs ht hst i hu
+  have hbounds := (D.route e).cutTime_bounds hs ht hst i hu
   have heval : (D.outsideRoute v ρ e).eval i u = (D.route e).eval i τ :=
     (D.route e).eval_cutEnds s t i u
   have hτball : (D.route e).eval i τ ∈ Metric.closedBall (D.vertex v) ρ := heval ▸ hz
@@ -247,7 +253,7 @@ theorem IsEmbedding.outsideRoute_ball_contact {G : Graph} {D : PolygonalDrawing 
       have hle : τ ≤ ρ / ‖D.germ (e, false)‖ := (le_div_iff₀ hn).mpr hdist
       rw [hlo] at hbounds
       exact le_antisymm (hle.trans_eq hsval.symm) hbounds.1
-    have hu0 : u = 0 := ((D.route e).cutTime_eq_lower_iff hs.1 ht.1 hst i u).mp
+    have hu0 : u = 0 := ((D.route e).cutTime_eq_lower_iff hs ht hst i u).mp
       (hτs.trans hlo.symm)
     refine ⟨false, ?_, hv, ?_⟩
     · simp [Route.AtEnd, Route.position, hi, hu0]
@@ -278,7 +284,7 @@ theorem IsEmbedding.outsideRoute_ball_contact {G : Graph} {D : PolygonalDrawing 
       rw [hhi] at hbounds
       rw [← htval] at hle
       linarith [hbounds.2]
-    have hu1 : u = 1 := ((D.route e).cutTime_eq_upper_iff hs.1 ht.1 hst i u).mp
+    have hu1 : u = 1 := ((D.route e).cutTime_eq_upper_iff hs ht hst i u).mp
       (hτt.trans hhi.symm)
     refine ⟨true, ?_, hv, ?_⟩
     · simp only [Route.AtEnd, Route.position, hu1, ↓reduceIte]

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.WordRAM.Structured
 public import CslibFrontier.Computability.WordRAM.SymbolicExec.Init
+public import CslibFrontier.Tactic.Fits
 
 /-!
 # Symbolic execution of structured word-RAM code
@@ -18,19 +19,30 @@ within some number `T` of instructions such that `Q y T`. It is the weakest-prec
 `Cslib.WordRAM.ExecWithin`: its rules run backwards through a program, one instruction at a time,
 and hand the rest of the program the data in closed form. A goal `∃ y, ExecWithin w c x y T ∧ P y`
 is the special case `WP w c x fun y t => t ≤ T ∧ P y` (`Cslib.WordRAM.WP.exists_execWithin`).
+`Cslib.WordRAM.WP.Exact` is the same form of `Cslib.WordRAM.Exec`, for specifications that state
+the exact instruction count: `∃ y, Exec w c x y T ∧ P y` is `WP.Exact w c x fun y t => t = T ∧ P y`,
+and its rules have the same names and premises.
 
 The tactic `wram_exec` applies these rules along the syntax of the program. It is meant for the
 straight-line glue of correctness proofs, between loops and calls of subprograms with their own
 specifications: it executes data instructions and conditionals, and stops at a loop, at a random
 sample and at a program given by name, leaving the goal `WP w c y Q` with the data `y` reached.
 `Cslib.WordRAM.WP.of_execWithin` then continues from a specification of `c`, and `wram_exec`
-resumes on the remaining program.
+resumes on the remaining program; on a `WP.Exact` goal, `Cslib.WordRAM.WP.Exact.of_exec` continues
+from an exact specification. At a loop whose condition holds, `Cslib.WordRAM.WP.loop_iter` continues
+into its body, leaving at its end the loop again from the data reached, where an induction
+hypothesis applies; `Cslib.WordRAM.WP.Exact.loop_iter` is the same rule for exact counts.
 
 The registers and memory cells an instruction reads are simplified as it executes, with the simp
 set `wram_simps`. Reads after `Cslib.WordRAM.Data.set` and `Cslib.WordRAM.Data.write` reduce by
-the simplification procedures `Cslib.WordRAM.Data.reduceRegs`, which compares register names that
-evaluate to literals, and `Cslib.WordRAM.Data.reduceMem`, which asks the discharger whether two
-addresses are equal; the given simp lemmas rewrite the values, so facts such as
+the simplification procedures `Cslib.WordRAM.Data.reduceRegs` and `Cslib.WordRAM.Data.reduceMem`.
+The first compares register names by evaluation when they are literals, and otherwise by hypotheses
+`j ≠ i`, `j ∉ Set.range f`, `Function.Injective f` and instances of `∀ xs, a ≠ b`, such as
+`∀ i j, src i ≠ tmp j` for two renamed banks, or by the discharger on their values, as for
+`Fin.castAdd` and names `⟨k + 9, _⟩`; the second asks the discharger whether two addresses are
+equal. Memory that is not read at an address, such as an argument of a definition, becomes
+`Function.update` (`Cslib.WordRAM.Data.reduceWriteMem`). The given simp lemmas rewrite the values,
+so facts such as
 `x.regs zeroP = 0` replace the registers of the initial data. A conditional takes the branch its
 simplified condition decides, by `simp` or by the discharger, and otherwise splits into both
 alternatives with the hypothesis `hc`; `wram_exec -split` stops there instead, so that
@@ -42,7 +54,8 @@ or `hb`.
 Every side condition goes through the same steps (`Cslib.WordRAM.WP.Exec.discharge`): a
 proposition without free variables, such as a comparison of register names, is decided by
 evaluation and is never passed on when it is false; a hypothesis of the same statement proves it;
-only then does the discharger run, `omega` by default. The search for a hypothesis compares
+only then does the discharger run. By default it is `fits` on a word-size bound, which uses the
+`Fits` facts in context, and `omega` on anything else. The search for a hypothesis compares
 statements syntactically, because unifying arithmetic with every hypothesis of a long proof costs
 more than the discharger.
 
@@ -53,11 +66,13 @@ a program.
 ## Main definitions
 
 * `Cslib.WordRAM.WP`: the weakest-precondition form of `ExecWithin`.
+* `Cslib.WordRAM.WP.Exact`: the weakest-precondition form of `Exec`, with exact counts.
 * `wram_exec`: symbolic execution of the straight-line parts of structured code.
 * `wram_simp`: reads of registers and memory after writes, with the simp set of `wram_exec`.
 * `wram_bounded`: word-sizedness of data built by writes.
-* `Cslib.WordRAM.Data.reduceRegs`, `Cslib.WordRAM.Data.reduceMem`: simplification procedures
-  reading registers and memory after writes.
+* `Cslib.WordRAM.Data.reduceRegs`, `Cslib.WordRAM.Data.reduceMem`,
+  `Cslib.WordRAM.Data.reduceWriteMem`: simplification procedures reading registers and memory
+  after writes; `Cslib.WordRAM.Basis.reduceInterp`, evaluating an operation of a basis.
 
 ## Main results
 
@@ -69,6 +84,11 @@ a program.
   before the rest of a program.
 * `Cslib.WordRAM.WP.bounded`: the data reached from word-sized data is word-sized.
 * `Cslib.WordRAM.WP.name`: a name for the data reached, at a stop.
+* `Cslib.WordRAM.WP.loop_iter`, `Cslib.WordRAM.WP.Exact.loop_iter`: an iteration of a loop whose
+  condition holds, to continue into its body at a stop.
+* `Cslib.WordRAM.WP.Exact.exists_exec`, `Cslib.WordRAM.WP.Exact.exec`: back to `Exec`; the rules
+  `Cslib.WordRAM.WP.Exact.seq`, `Cslib.WordRAM.WP.Exact.const`, … are those of `WP`, and
+  `Cslib.WordRAM.WP.Exact.toWP` weakens an exact count to a bound.
 -/
 
 @[expose] public section
@@ -195,6 +215,15 @@ theorem branch_eq {i j : Fin r} {a b : ℕ} (hi : x.regs i = a) (hj : x.regs j =
     WP w (.branch (.eq i j) pos neg) x Q :=
   branch (fun hc => hpos (hi ▸ hj ▸ hc)) (fun hc => hneg (hi ▸ hj ▸ hc))
 
+/-- An iteration of a loop whose condition holds: run the body, then the loop again from the data
+it reaches. The test and the jump back count two instructions, as in `ExecWithin.loop_iter`; the
+count of the body is added last, as in `WP.seq`. -/
+theorem loop_iter {body : Code B r} (hc : cond.Holds x)
+    (h : WP w body x fun y T₁ => WP w (.loop cond body) y fun z T₂ => Q z (T₂ + T₁ + 2)) :
+    WP w (.loop cond body) x Q :=
+  let ⟨_, T₁, he₁, _, T₂, he₂, hz⟩ := h
+  ⟨_, T₁ + T₂ + 2, ExecWithin.loop_iter hc he₁ he₂, Nat.add_comm T₁ T₂ ▸ hz⟩
+
 /-! ### Data instructions
 
 Each rule names the values the instruction reads (`hi`, `hj`, `hs`, `ha`) and computes (`hv`),
@@ -258,9 +287,179 @@ theorem exactMod (hi : x.regs i = u) (hj : x.regs j = b') (hb : b' ≠ 0) (hv : 
 theorem exactWidth (h : Q (x.set d w) 1) : WP w (.op (.exactWidth d)) x Q :=
   of_execWithin (ExecWithin.op (Op.eval_exactWidth w d x)) h
 
+/-- An operation `f` of any basis on the registers `args`, with fitting value `v`, as over
+`Basis.additive`; `hv` evaluates `f` on the values of the registers. -/
+theorem alu {f : B.Op} {args : Fin (B.Arity f) → Fin r}
+    (hv : B.interp w f (fun a => x.regs (args a)) = some v) (hfit : Fits w v)
+    (h : Q (x.set d v) 1) : WP w (.op (.alu f d args)) x Q :=
+  of_execWithin (ExecWithin.alu hv hfit) h
+
 end Ops
 
 end WP
+
+/-! ## Exact instruction counts -/
+
+/-- `WP.Exact w c x Q`: at word size `w`, the structured program `c` leads from data `x` to some
+data `y` in exactly some number `T` of instructions such that `Q y T`. It is the
+weakest-precondition form of `Cslib.WordRAM.Exec`, with the same rules as `Cslib.WordRAM.WP`; a
+goal `∃ y, Exec w c x y T ∧ P y` is the special case `WP.Exact w c x fun y t => t = T ∧ P y`. -/
+def WP.Exact (w : ℕ) (c : Code B r) (x : Data r) (Q : Data r → ℕ → Prop) : Prop :=
+  ∃ y T, Exec w c x y T ∧ Q y T
+
+namespace WP.Exact
+
+variable {w : ℕ} {c c₁ c₂ pos neg : Code B r} {cond : Cond r} {x y : Data r} {T : ℕ}
+  {Q Q' : Data r → ℕ → Prop}
+
+/-- Continue from an execution of `c` in exactly `T` instructions. -/
+theorem of_exec (h : Exec w c x y T) (hQ : Q y T) : WP.Exact w c x Q := ⟨y, T, h, hQ⟩
+
+/-- Weaken the postcondition. -/
+theorem mono (h : WP.Exact w c x Q) (hQ : ∀ y T, Q y T → Q' y T) : WP.Exact w c x Q' :=
+  let ⟨y, T, he, hy⟩ := h
+  ⟨y, T, he, hQ y T hy⟩
+
+/-- An exact count is in particular a bound. -/
+theorem toWP (h : WP.Exact w c x Q) : WP w c x Q :=
+  let ⟨y, T, he, hy⟩ := h
+  ⟨y, T, ⟨T, le_rfl, he⟩, hy⟩
+
+/-- Name the data reached: continue from a variable `y` with the equation `y = x`. -/
+theorem name (h : ∀ y, y = x → WP.Exact w c y Q) : WP.Exact w c x Q := h x rfl
+
+/-- Executions from word-sized data reach word-sized data, so the postcondition may assume it. -/
+theorem bounded (hx : x.Bounded w) (h : WP.Exact w c x fun y T => y.Bounded w → Q y T) :
+    WP.Exact w c x Q :=
+  let ⟨y, T, he, hy⟩ := h
+  ⟨y, T, he, hy (he.bounded hx)⟩
+
+/-- A run in exactly `T` instructions reaching data with property `P`. -/
+theorem exists_exec {P : Data r → Prop} (h : WP.Exact w c x fun y t => t = T ∧ P y) :
+    ∃ y, Exec w c x y T ∧ P y :=
+  let ⟨y, _, he, ht, hy⟩ := h
+  ⟨y, ht ▸ he, hy⟩
+
+/-- A run in exactly `T` instructions reaching the given data `y`. -/
+theorem exec (h : WP.Exact w c x fun y' t => t = T ∧ y' = y) : Exec w c x y T :=
+  let ⟨_, _, he, ht, hy⟩ := h
+  hy ▸ ht ▸ he
+
+/-- Run `c₁`, then `c₂` from the data it reaches, adding the instruction counts, the count of `c₁`
+last, as in `WP.seq`. -/
+theorem seq (h : WP.Exact w c₁ x fun y T₁ => WP.Exact w c₂ y fun z T₂ => Q z (T₂ + T₁)) :
+    WP.Exact w (.seq c₁ c₂) x Q :=
+  let ⟨_, T₁, he₁, _, T₂, he₂, hz⟩ := h
+  ⟨_, T₁ + T₂, he₁.seq he₂, Nat.add_comm T₁ T₂ ▸ hz⟩
+
+/-- Run `c` to data satisfying an intermediate assertion `R`, and continue from any such data. -/
+theorem cut (R : Data r → ℕ → Prop) (h : WP.Exact w c x R) (hR : ∀ y T, R y T → Q y T) :
+    WP.Exact w c x Q :=
+  h.mono hR
+
+/-- A conditional, by cases on its condition. -/
+theorem branch (hpos : cond.Holds x → WP.Exact w pos x fun y T => Q y (T + 1))
+    (hneg : ¬cond.Holds x → WP.Exact w neg x fun y T => Q y (T + 2)) :
+    WP.Exact w (.branch cond pos neg) x Q := by
+  by_cases hc : cond.Holds x
+  · obtain ⟨y, T, he, hy⟩ := hpos hc
+    exact ⟨y, T + 1, .branch_pos hc he, hy⟩
+  · obtain ⟨y, T, he, hy⟩ := hneg hc
+    exact ⟨y, T + 2, .branch_neg hc he, hy⟩
+
+/-- A conditional on `x.regs i < x.regs j`, with the compared values in closed form. -/
+theorem branch_lt {i j : Fin r} {a b : ℕ} (hi : x.regs i = a) (hj : x.regs j = b)
+    (hpos : a < b → WP.Exact w pos x fun y T => Q y (T + 1))
+    (hneg : ¬a < b → WP.Exact w neg x fun y T => Q y (T + 2)) :
+    WP.Exact w (.branch (.lt i j) pos neg) x Q :=
+  branch (fun hc => hpos (hi ▸ hj ▸ hc)) (fun hc => hneg (hi ▸ hj ▸ hc))
+
+/-- A conditional on `x.regs i = x.regs j`, with the compared values in closed form. -/
+theorem branch_eq {i j : Fin r} {a b : ℕ} (hi : x.regs i = a) (hj : x.regs j = b)
+    (hpos : a = b → WP.Exact w pos x fun y T => Q y (T + 1))
+    (hneg : ¬a = b → WP.Exact w neg x fun y T => Q y (T + 2)) :
+    WP.Exact w (.branch (.eq i j) pos neg) x Q :=
+  branch (fun hc => hpos (hi ▸ hj ▸ hc)) (fun hc => hneg (hi ▸ hj ▸ hc))
+
+/-- An iteration of a loop whose condition holds: run the body, then the loop again from the data
+it reaches, adding the two counts and the two instructions of the test and the jump back. -/
+theorem loop_iter {body : Code B r} (hc : cond.Holds x)
+    (h : WP.Exact w body x fun y T₁ =>
+      WP.Exact w (.loop cond body) y fun z T₂ => Q z (T₂ + T₁ + 2)) :
+    WP.Exact w (.loop cond body) x Q :=
+  let ⟨_, T₁, he₁, _, T₂, he₂, hz⟩ := h
+  ⟨_, T₁ + T₂ + 2, .loop_iter hc he₁ he₂, Nat.add_comm T₁ T₂ ▸ hz⟩
+
+section Ops
+
+variable {d s a i j : Fin r} {u v b' : ℕ}
+
+/-- Setting register `d` to a fitting constant `v`. -/
+theorem const (hfit : Fits w v) (h : Q (x.set d v) 1) :
+    WP.Exact (B := B) w (.op (.const d v)) x Q :=
+  of_exec (Exec.const hfit) h
+
+/-- Copying register `s`, which holds `v`, into register `d`. -/
+theorem copy (hs : x.regs s = v) (h : Q (x.set d v) 1) :
+    WP.Exact (B := B) w (.op (.copy d s)) x Q :=
+  of_exec Exec.copy (hs ▸ h)
+
+/-- Loading the memory cell at address `u`, held by register `a`, into register `d`. -/
+theorem load (ha : x.regs a = u) (hv : x.mem u = v) (h : Q (x.set d v) 1) :
+    WP.Exact (B := B) w (.op (.load d a)) x Q :=
+  of_exec Exec.load (ha ▸ hv ▸ h)
+
+/-- Storing register `s`, which holds `v`, at address `u`, held by register `a`. -/
+theorem store (ha : x.regs a = u) (hs : x.regs s = v) (h : Q (x.write u v) 1) :
+    WP.Exact (B := B) w (.op (.store a s)) x Q :=
+  of_exec Exec.store (ha ▸ hs ▸ h)
+
+/-- A standard binary operation on registers holding `u` and `b'`, with fitting value `v`. -/
+theorem bin {f : BinOp} (hi : x.regs i = u) (hj : x.regs j = b') (hv : f.eval u b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.bin f d i j)) x Q :=
+  of_exec (Exec.bin (hi ▸ hj ▸ hv ▸ hfit)) (hi ▸ hj ▸ hv ▸ h)
+
+/-- Reading the word size into register `d`. -/
+theorem width (h : Q (x.set d w) 1) : WP.Exact w (.op (.width d)) x Q :=
+  of_exec Exec.width h
+
+/-- An exact binary operation on registers holding `u` and `b'`, defined with fitting value `v`. -/
+theorem exactBin {f : BinOp} (hi : x.regs i = u) (hj : x.regs j = b')
+    (hv : f.evalExact u b' = some v) (hfit : Fits w v) (h : Q (x.set d v) 1) :
+    WP.Exact w (.op (.exactBin f d i j)) x Q :=
+  of_exec (Exec.op (by
+    rw [Op.eval_exactBin, hi, hj, hv, Option.bind_some]
+    exact Data.put_of_fits hfit)) h
+
+/-- An exact subtraction `u - b'`, defined since `b' ≤ u`. -/
+theorem exactSub (hi : x.regs i = u) (hj : x.regs j = b') (hle : b' ≤ u) (hv : u - b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.exactBin .sub d i j)) x Q :=
+  exactBin hi hj (by simp only [BinOp.evalExact, hle, ↓reduceIte, hv]) hfit h
+
+/-- An exact division `u / b'`, defined since `b' ≠ 0`. -/
+theorem exactDiv (hi : x.regs i = u) (hj : x.regs j = b') (hb : b' ≠ 0) (hv : u / b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.exactBin .div d i j)) x Q :=
+  exactBin hi hj (by simp only [BinOp.evalExact, hb, ↓reduceIte, hv]) hfit h
+
+/-- An exact remainder `u % b'`, defined since `b' ≠ 0`. -/
+theorem exactMod (hi : x.regs i = u) (hj : x.regs j = b') (hb : b' ≠ 0) (hv : u % b' = v)
+    (hfit : Fits w v) (h : Q (x.set d v) 1) : WP.Exact w (.op (.exactBin .mod d i j)) x Q :=
+  exactBin hi hj (by simp only [BinOp.evalExact, hb, ↓reduceIte, hv]) hfit h
+
+/-- Reading the word size into register `d`, over the exact basis. -/
+theorem exactWidth (h : Q (x.set d w) 1) : WP.Exact w (.op (.exactWidth d)) x Q :=
+  of_exec (Exec.op (Op.eval_exactWidth w d x)) h
+
+/-- An operation `f` of any basis on the registers `args`, with fitting value `v`, as over
+`Basis.additive`; `hv` evaluates `f` on the values of the registers. -/
+theorem alu {f : B.Op} {args : Fin (B.Arity f) → Fin r}
+    (hv : B.interp w f (fun a => x.regs (args a)) = some v) (hfit : Fits w v)
+    (h : Q (x.set d v) 1) : WP.Exact w (.op (.alu f d args)) x Q :=
+  of_exec (Exec.alu hv hfit) h
+
+end Ops
+
+end WP.Exact
 
 /-! ## The tactic
 
@@ -309,8 +508,93 @@ meta def discharge (tac : Simp.Discharge) (p : Expr) : SimpM (Option Expr) := do
   if let some h ← assumption? p then return some h
   tac p
 
-/-- Read a register after `Data.set` and `Data.write`, one layer at a time. Register names are
-compared by evaluation, so a name with free variables is left to the simp lemmas. -/
+/-- The value of the register name `i : Fin n`, and whether it unfolds to a constructor `⟨k, _⟩`, as
+`Fin.castAdd`, `Fin.natAdd` and abbreviations such as `⟨k + 9, _⟩` do; otherwise `i.val`. -/
+private meta def finVal (n i : Expr) : MetaM (Expr × Bool) := do
+  let i' ← whnfD i
+  if i'.isAppOfArity ``Fin.mk 3 then return (i'.getArg! 1, true)
+  return (mkApp2 (mkConst ``Fin.val) n i, false)
+
+/-- A hypothesis `j ∉ Set.range f` when `i` is `f a`, giving `j ≠ i`. -/
+private meta def outsideRange? (j i : Expr) : MetaM (Option Expr) := do
+  let .app f a := i | return none
+  let some hj ← (← getLCtx).findDeclRevM? fun d => do
+      if d.isImplementationDetail then return none
+      let_expr Not p := (← instantiateMVars d.type).cleanupAnnotations | return none
+      let_expr Membership.mem _ _ _ s j' := p | return none
+      let_expr Set.range _ _ f' := s | return none
+      return if f' == f && j' == j then some d.toExpr else none
+    | return none
+  let hmem ← mkAppOptM ``Set.mem_range_self #[none, none, some f, some a]
+  mkAppM ``Ne.symm #[← mkAppM ``ne_of_mem_of_not_mem #[hmem, hj]]
+
+/-- A hypothesis `Function.Injective f`. -/
+private meta def injective? (f : Expr) : MetaM (Option Expr) := do
+  (← getLCtx).findDeclRevM? fun d => do
+    if d.isImplementationDetail then return none
+    let_expr Function.Injective _ _ f' := (← instantiateMVars d.type).cleanupAnnotations
+      | return none
+    return if f' == f then some d.toExpr else none
+
+/-- The sides `a` and `b` of a statement `a ≠ b` or `¬a = b`. -/
+private meta def neSides? (p : Expr) : Option (Expr × Expr) :=
+  if p.isAppOfArity ``Ne 3 then some (p.getArg! 1, p.getArg! 2)
+  else if p.isAppOfArity ``Not 1 && p.appArg!.isAppOfArity ``Eq 3 then
+    some (p.appArg!.getArg! 1, p.appArg!.getArg! 2)
+  else none
+
+/-- A hypothesis `∀ xs, a ≠ b`, or `∀ xs, ¬a = b`, with an instance `j ≠ i` or `i ≠ j`, as
+`hd : ∀ i j, src i ≠ tmp j` separates two renamed banks of registers. The instance is found by
+unifying `a` and `b` with the names at reducible transparency, and every bound variable must be
+determined by them, so that a hypothesis with premises is not used. Gives `j ≠ i`. -/
+private meta def forallNe? (j i : Expr) : MetaM (Option Expr) := do
+  (← getLCtx).findDeclRevM? fun d => do
+    if d.isImplementationDetail then return none
+    let ty := (← instantiateMVars d.type).cleanupAnnotations
+    unless ty.isForall && (neSides? ty.getForallBody).isSome do return none
+    withNewMCtxDepth do
+      let (xs, _, body) ← forallMetaTelescope ty
+      let some (a, b) := neSides? body | return none
+      for (l, r, symm) in [(j, i, false), (i, j, true)] do
+        let s ← saveState
+        if ← withReducible (isDefEq a l <&&> isDefEq b r) then
+          let h ← instantiateMVars (mkAppN d.toExpr xs)
+          unless h.hasMVar do
+            return some (← if symm then mkAppM ``Ne.symm #[h] else pure h)
+        s.restore
+      return none
+
+/-- A proof that the register names `j` and `i` differ, for names that need not evaluate to
+literals: by evaluation if they have no free variables; by a hypothesis `j ≠ i` or `i ≠ j`, also
+stated as `¬j = i` as `by_cases` gives it; by a hypothesis `j ∉ Set.range f` when `i` is `f a`, or
+symmetrically; by an instance of a hypothesis `∀ xs, a ≠ b` (`forallNe?`); by a hypothesis
+`Function.Injective f` when they are `f b` and `f a` with `b` and `a` different; and otherwise by
+the discharger on their values, when one of them unfolds to a constructor `⟨k, _⟩` (`finVal`). -/
+private meta partial def regNe? (j i : Expr) : SimpM (Option Expr) := do
+  let p ← mkAppM ``Ne #[j, i]
+  if let some r ← decideClosed? p then return r
+  for q in [p, mkNot (← mkEq j i)] do
+    if let some h ← assumption? q then return some h
+  for q in [← mkAppM ``Ne #[i, j], mkNot (← mkEq i j)] do
+    if let some h ← assumption? q then return some (← mkAppM ``Ne.symm #[h])
+  if let some h ← outsideRange? j i then return some h
+  if let some h ← outsideRange? i j then return some (← mkAppM ``Ne.symm #[h])
+  if let some h ← forallNe? j i then return some h
+  if let (.app f b, .app f' a) := (j, i) then
+    if f == f' then
+      if let some hf ← injective? f then
+        if let some h ← regNe? b a then return some (← mkAppM ``Function.Injective.ne #[hf, h])
+  let_expr Fin n := ← whnfR (← inferType j) | return none
+  let (vj, cj) ← finVal n j
+  let (vi, ci) ← finVal n i
+  unless cj || ci do return none
+  let some h ← Simp.withPreservedCache <| (← Simp.getMethods).discharge? (← mkAppM ``Ne #[vj, vi])
+    | return none
+  return some (mkApp4 (mkConst ``Fin.ne_of_val_ne) n j i h)
+
+/-- Read a register after `Data.set` and `Data.write`, one layer at a time. Register names that
+evaluate to literals are compared by evaluation; others are equal when they are the same term or
+unfold to constructors with the same value, and different by `regNe?`. -/
 meta def reduceRegsStep (e : Expr) : SimpM Simp.Step := do
   let_expr Data.regs r d j := e | return .continue
   let read x := mkApp3 (mkConst ``Data.regs) r x j
@@ -319,19 +603,26 @@ meta def reduceRegsStep (e : Expr) : SimpM Simp.Step := do
     return .visit
       { expr := read x, proof? := mkAppN (mkConst ``Data.write_regs_apply) #[r, x, a, v, j] }
   | Data.set _ x i v =>
-    let some iv ← regValue? r i | return .continue
-    let some jv ← regValue? r j | return .continue
-    if iv = jv then
-      let h ← mkDecideProof (← mkEq j i)
-      return .visit
-        { expr := v, proof? := mkAppN (mkConst ``Data.set_regs_of_eq) #[r, x, i, j, h, v] }
-    let h ← mkDecideProof (mkNot (← mkEq j i))
-    return .visit
+    let same (h : Expr) : Simp.Step :=
+      .visit { expr := v, proof? := mkAppN (mkConst ``Data.set_regs_of_eq) #[r, x, i, j, h, v] }
+    let other (h : Expr) : Simp.Step := .visit
       { expr := read x, proof? := mkAppN (mkConst ``Data.set_regs_of_ne) #[r, x, i, j, h, v] }
+    if let (some iv, some jv) := (← regValue? r i, ← regValue? r j) then
+      if iv = jv then return same (← mkDecideProof (← mkEq j i))
+      return other (← mkDecideProof (mkNot (← mkEq j i)))
+    let i ← instantiateMVars i
+    if i == (← instantiateMVars j) then return same (← mkEqRefl i)
+    let (vi, ci) ← finVal r i
+    let (vj, cj) ← finVal r j
+    if ci && cj && vi == vj then
+      return same (mkApp4 (mkConst ``Fin.ext) r j i (← mkEqRefl vj))
+    let some h ← regNe? j i | return .continue
+    return other h
   | _ => return .continue
 
 /-- Read memory after `Data.set` and `Data.write`, one layer at a time. Two addresses are equal
-when they are the same term; otherwise the discharger decides them, first unequal, then equal. -/
+when they are the same term; otherwise the discharger decides them, first unequal, then equal.
+A read after a write it cannot decide is final, so that `reduceWriteMemStep` leaves it alone. -/
 meta def reduceMemStep (e : Expr) : SimpM Simp.Step := do
   let_expr Data.mem r d b := e | return .continue
   let read x := mkApp3 (mkConst ``Data.mem) r x b
@@ -351,8 +642,26 @@ meta def reduceMemStep (e : Expr) : SimpM Simp.Step := do
     if let some h ← Simp.withPreservedCache <| disch (← mkEq b a) then
       return .visit
         { expr := v, proof? := mkAppN (mkConst ``Data.write_mem_of_eq) #[r, x, a, b, h, v] }
-    return .continue
+    return .done { expr := e }
   | _ => return .continue
+
+/-- The memory after `Data.write` as a whole, `(x.write a v).mem = Function.update x.mem a v`
+(`Data.write_mem`). A read `(x.write a v).mem b` is the same expression applied to `b`, so `simp`
+offers it to this procedure too, but only after `reduceMemStep`, whose exact match comes first and
+which ends the simplification of every read after a write. -/
+private meta def reduceWriteMemStep (e : Expr) : SimpM Simp.Step := do
+  let_expr Data.mem r d := e | return .continue
+  let_expr Data.write _ x a v := d | return .continue
+  let proof := mkAppN (mkConst ``Data.write_mem) #[r, x, a, v]
+  let some (_, _, rhs) := (← inferType proof).eq? | return .continue
+  return .visit { expr := rhs, proof? := proof }
+
+/-- Evaluate an operation of a basis, `B.interp w f vals`, by unfolding it, when it unfolds to a
+value `some v`; otherwise leave it. -/
+private meta def reduceInterpStep (e : Expr) : SimpM Simp.DStep := do
+  let_expr Basis.interp _ _ _ _ := e | return .continue
+  let e ← whnfD e
+  return if e.isAppOfArity ``Option.some 2 then .visit e else .continue
 
 /-- Close the goal `g` with the tactic `tac`, or restore the state and report failure. -/
 meta def closesWith (tac : TSyntax `tactic) (g : MVarId) : TacticM Bool := do
@@ -369,14 +678,19 @@ end WP.Exec
 
 namespace Data
 
-/-- `simp` procedure reading a register after `Data.set` with a register name that evaluates to a
-literal, and after `Data.write`. It is a pre-procedure (`↓`), so that the data is not simplified
-first. -/
+/-- `simp` procedure reading a register after `Data.set` and `Data.write`. Register names that
+evaluate to literals are compared by evaluation; others by hypotheses `j ≠ i`, `j ∉ Set.range f`,
+`Function.Injective f` and instances of `∀ xs, a ≠ b`, or by the discharger on their values. It is
+a pre-procedure (`↓`), so that the data is not simplified first. -/
 simproc ↓ [wram_simps] reduceRegs (Data.regs _ _) := WP.Exec.reduceRegsStep
 
 /-- `simp` procedure reading memory after `Data.set` and `Data.write`, deciding whether two
 addresses are equal with the discharger. -/
 simproc [wram_simps] reduceMem (Data.mem _ _) := WP.Exec.reduceMemStep
+
+/-- `simp` procedure rewriting the memory after `Data.write`, when it is not read at an address, to
+`Function.update` (`Data.write_mem`), for instance as the argument of a definition. -/
+simproc [wram_simps] reduceWriteMem (Data.mem _) := WP.Exec.reduceWriteMemStep
 
 end Data
 
@@ -384,6 +698,14 @@ attribute [wram_simps] Data.set_regs_self Data.set_regs_of_ne Data.set_mem Data.
   BinOp.eval BinOp.evalExact fits_zero Nat.add_zero Nat.zero_add Nat.add_sub_cancel
   Nat.add_sub_cancel_left Nat.sub_zero Nat.sub_self Nat.lt_irrefl Nat.not_lt_zero Nat.zero_lt_succ
   Nat.add_one_ne_zero not_true_eq_false not_false_eq_true and_self and_true true_and
+
+/-- `simp` procedure evaluating an operation `B.interp w f vals` of a basis given by a definition,
+such as `Basis.additive`, when it unfolds to a value `some v` (`WP.alu`). It is a pre-procedure
+(`↓`), so that it sees the basis before simplification unfolds it. -/
+dsimproc ↓ [wram_simps] Basis.reduceInterp (Basis.interp _ _ _ _) := WP.Exec.reduceInterpStep
+
+/- The arguments `![i, j]` of a binary operation, for `WP.alu`. -/
+attribute [wram_simps] Matrix.cons_val_zero Matrix.cons_val_one
 
 namespace WP.Exec
 
@@ -483,6 +805,9 @@ meta def opRule? (o : Expr) : Option Name :=
   | some ``Op.bin => some ``WP.bin
   | some ``Op.width => some ``WP.width
   | some ``Op.exactWidth => some ``WP.exactWidth
+  -- `Op.addAdditive` is defined in `WordRAM.Allocation`, which this module does not import, so its
+  -- name is not resolved here; `CslibFrontierTests/WordRAMSymbolicExec.lean` runs it.
+  | some ``Op.alu | some `Cslib.WordRAM.Op.addAdditive => some ``WP.alu
   | some ``Op.exactBin =>
     match (o.getArg! 1).constName? with
     | some ``BinOp.sub => some ``WP.exactSub
@@ -491,27 +816,34 @@ meta def opRule? (o : Expr) : Option Name :=
     | _ => some ``WP.exactBin
   | _ => none
 
+/-- The rule of `WP.Exact` with the same name as the rule `rule` of `WP`. -/
+private meta def exactRule (rule : Name) : Name :=
+  .str ``WP.Exact rule.getString!
+
 mutual
 
-/-- Execute the program of the goal `g : WP w c x Q` instruction by instruction, and return the
-goals where execution stops: `Q y T` at the end of the program, and `WP w c' y Q'` at a loop, a
-random sample or a program given by name. -/
+/-- Execute the program of the goal `g : WP w c x Q`, or `g : WP.Exact w c x Q`, instruction by
+instruction, and return the goals where execution stops: `Q y T` at the end of the program, and
+`WP w c' y Q'` (respectively `WP.Exact w c' y Q'`) at a loop, a random sample or a program given by
+name. -/
 meta partial def walk (cfg : Config) (g : MVarId) : TacticM (Array MVarId) := g.withContext do
   let tgt := headBetaAll (← instantiateMVars (← g.getType))
   let g ← g.replaceTargetDefEq tgt
   let tgt := tgt.consumeMData
-  unless tgt.isAppOfArity ``WP 6 do return #[g]
+  let exact := tgt.isAppOfArity ``WP.Exact 6
+  unless exact || tgt.isAppOfArity ``WP 6 do return #[g]
+  let rule (r : Name) := if exact then exactRule r else r
   let code ← whnfR (tgt.getArg! 3)
   match code.getAppFn.constName? with
-  | some ``Code.seq => step cfg g ``WP.seq
+  | some ``Code.seq => step cfg g (rule ``WP.seq)
   | some ``Code.op =>
     match opRule? (code.getArg! 2) with
-    | some rule => step cfg g rule
+    | some r => step cfg g (rule r)
     | none => return #[g]
   | some ``Code.branch =>
     match (code.getArg! 2).getAppFn.constName? with
-    | some ``Cond.lt => branch cfg g ``WP.branch_lt
-    | some ``Cond.eq => branch cfg g ``WP.branch_eq
+    | some ``Cond.lt => branch cfg g (rule ``WP.branch_lt)
+    | some ``Cond.eq => branch cfg g (rule ``WP.branch_eq)
     | _ => return #[g]
   | _ => return #[g]
 
@@ -579,33 +911,39 @@ meta partial def branch (cfg : Config) (g : MVarId) (rule : Name) : TacticM (Arr
 end
 
 /-- Turn a goal `∃ y, ExecWithin w c x y T ∧ P y`, `ExecWithin w c x y T` or
-`∃ y T, ExecWithin w c x y T ∧ Q y T` into a `WP` goal. Returns the new goal, and whether its
-postcondition states the data reached, `t ≤ T ∧ y' = y`. -/
-meta def toWP (g : MVarId) : MetaM (MVarId × Bool) := g.withContext do
+`∃ y T, ExecWithin w c x y T ∧ Q y T` into a `WP` goal, and the same goals with `Exec` into a
+`WP.Exact` goal. Returns the new goal, whether its postcondition states the data reached,
+`t ≤ T ∧ y' = y` (respectively `t = T ∧ y' = y`), and whether it counts instructions exactly. -/
+meta def toWP (g : MVarId) : MetaM (MVarId × Bool × Bool) := g.withContext do
   let tgt := (headBetaAll (← instantiateMVars (← g.getType))).consumeMData
-  if tgt.isAppOfArity ``WP 6 then return (g, false)
+  if tgt.isAppOfArity ``WP 6 then return (g, false, false)
+  if tgt.isAppOfArity ``WP.Exact 6 then return (g, false, true)
   let s ← saveState
-  for (rule, eq) in [(``WP.exists_execWithin, false), (``WP.execWithin, true)] do
+  for (rule, eq, exact) in [(``WP.exists_execWithin, false, false), (``WP.execWithin, true, false),
+      (``WP.Exact.exists_exec, false, true), (``WP.Exact.exec, true, true)] do
     try
       let [g'] ← g.apply (← mkConstWithFreshMVarLevels rule) | failure
-      return (g', eq)
+      return (g', eq, exact)
     catch _ => s.restore
-  let wp ← mkConstWithFreshMVarLevels ``WP
-  let (args, _, _) ← forallMetaTelescope (← inferType wp)
-  let e := mkAppN wp args
-  if ← isDefEq e tgt then return (← g.replaceTargetDefEq (← instantiateMVars e), false)
-  s.restore
+  for (pred, exact) in [(``WP, false), (``WP.Exact, true)] do
+    let wp ← mkConstWithFreshMVarLevels pred
+    let (args, _, _) ← forallMetaTelescope (← inferType wp)
+    let e := mkAppN wp args
+    if ← isDefEq e tgt then return (← g.replaceTargetDefEq (← instantiateMVars e), false, exact)
+    s.restore
   throwError "wram_exec: expected a goal `WP w c x Q`, `∃ y, ExecWithin w c x y T ∧ P y`, \
-    `ExecWithin w c x y T` or `∃ y T, ExecWithin w c x y T ∧ Q y T`, got{indentExpr tgt}"
+    `ExecWithin w c x y T` or `∃ y T, ExecWithin w c x y T ∧ Q y T`, or one of these with `Exec` \
+    and `WP.Exact`, got{indentExpr tgt}"
 
-/-- At the end of a program, prove a leading instruction bound `t ≤ T` of the postcondition by
-`omega`, and leave the rest, unless `eq` and it is an equation between data closed by reducible
-`rfl`. -/
-meta def closeBound (cfg : Config) (eq : Bool) (g : MVarId) : TacticM (Option MVarId) :=
+/-- At the end of a program, prove a leading instruction bound `t ≤ T` of the postcondition, or an
+instruction count `t = T` if `exact`, by `omega`, and leave the rest, unless `eq` and it is an
+equation between data closed by reducible `rfl`. -/
+meta def closeBound (cfg : Config) (eq exact : Bool) (g : MVarId) : TacticM (Option MVarId) :=
     g.withContext do
   let tgt := (← instantiateMVars (← g.getType)).consumeMData
   let some (A, B) := tgt.and? | return some g
-  unless A.isAppOfArity ``LE.le 4 do return some g
+  let count := exact && A.isAppOfArity ``Eq 3 && (A.getArg! 0).isConstOf ``Nat
+  unless A.isAppOfArity ``LE.le 4 || count do return some g
   let some prf := (← tryProve cfg (closesWith (← `(tactic| omega))) A).1 | return some g
   let g' ← mkFreshExprSyntheticOpaqueMVar B (← g.getTag)
   g.assign (← mkAppM ``And.intro #[prf, g'])
@@ -703,9 +1041,15 @@ it can. It stops at a loop, a random sample or a program given by name, leaving 
 continue with `refine WP.of_execWithin h ?_` from a specification `h` of `c'`, then `wram_exec`
 again. Unfold programs given by name to execute them instead.
 
+On the exact-count goals `∃ y, Exec w c x y T ∧ P y`, `Exec w c x y T` and
+`Cslib.WordRAM.WP.Exact w c x Q` it works the same way with the rules of `WP.Exact`: the count
+`t = T` is closed by `omega` when it can, and `refine WP.Exact.of_exec h ?_` continues from an
+exact specification `h` at a stop.
+
 * `wram_exec [h₁, h₂]` adds simp lemmas for the values read, typically the contents of the
   registers of `x`, such as `x.regs zeroP = 0`, and the memory cells it reads.
-* `wram_exec (disch := tac)` sets the discharger, `omega` by default. It proves side conditions
+* `wram_exec (disch := tac)` sets the discharger, by default `fits` on a word-size bound and
+  `omega` on anything else. It proves side conditions
   (`Fits w v`, `b ≤ a` for an exact subtraction, a nonzero divisor), decides conditions of
   branches, and decides whether two memory addresses are equal. Register names, and side
   conditions without free variables, are decided by evaluation, and a side condition that is a
@@ -723,7 +1067,8 @@ syntax (name := wramExec) "wram_exec" Lean.Parser.Tactic.optConfig (Lean.Parser.
 
 /-- `wram_simp [h₁, h₂]` simplifies reads of registers and memory after `Data.set` and
 `Data.write` with the simp set of `wram_exec`, typically in the postcondition `wram_exec` leaves.
-`wram_simp (disch := tac)` sets the discharger, `omega` by default, and `wram_simp at h` works on
+`wram_simp (disch := tac)` sets the discharger, by default `fits` on a word-size bound and `omega`
+on anything else, and `wram_simp at h` works on
 hypotheses. -/
 syntax (name := wramSimp) "wram_simp" (Lean.Parser.Tactic.discharger)?
   (" [" (Lean.Parser.Tactic.simpStar <|> Lean.Parser.Tactic.simpErase <|>
@@ -739,12 +1084,13 @@ elab_rules : tactic
   | `(tactic| wram_bounded) => liftMetaTactic WP.Exec.boundedGoals
 
 open Lean in
-/-- The discharger of a `wram_exec` or `wram_simp` call. -/
+/-- The discharger of a `wram_exec` or `wram_simp` call: the given one, or by default `fits` on
+a word-size bound and `omega` on anything else. -/
 meta def WP.Exec.dischOf (d? : Option (TSyntax ``Lean.Parser.Tactic.discharger)) :
     MacroM (TSyntax ``Lean.Parser.Tactic.tacticSeq) :=
   match d? with
   | some d => pure ⟨d.raw[3]⟩
-  | none => `(Lean.Parser.Tactic.tacticSeq| omega)
+  | none => `(Lean.Parser.Tactic.tacticSeq| first | fits | omega)
 
 open Lean Meta Elab Tactic in
 elab_rules : tactic
@@ -769,14 +1115,14 @@ elab_rules : tactic
       let sideGoals ← IO.mkRef #[]
       let steps ← IO.mkRef 0
       let cfg : WP.Exec.Config := { ctx, simprocs, simpDischarge, disch, sideGoals, steps, split }
-      let (g, eq) ← WP.Exec.toWP (← getMainGoal)
+      let (g, eq, exact) ← WP.Exec.toWP (← getMainGoal)
       let mains ← WP.Exec.walk cfg g
       if (← cfg.steps.get) == 0 then
         let tgt ← instantiateMVars (← g.getType)
         throwError "wram_exec: nothing to execute in{indentExpr tgt}\nThe program starts with a \
           loop, a random sample or a program given by name. Apply its specification with \
           `WP.of_execWithin`, or unfold it."
-      let mains ← mains.filterMapM (WP.Exec.closeBound cfg eq)
+      let mains ← mains.filterMapM (WP.Exec.closeBound cfg eq exact)
       replaceMainGoal (mains ++ (← cfg.sideGoals.get)).toList
 
 end Cslib.WordRAM

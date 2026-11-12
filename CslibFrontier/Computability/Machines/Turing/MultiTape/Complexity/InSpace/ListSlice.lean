@@ -24,6 +24,8 @@ large binary counts never cause a list of that length to be allocated.
 
 * `Turing.MultiTapeTM.ComputableInSpace.listReverse`: reverse a framed list.
 * `Turing.MultiTapeTM.ComputableInSpace.listDrop`, `.listTake`: slice with a binary counter.
+* `Turing.MultiTapeTM.ComputableInSpace.bitsDrop`, `.bitsGetD`, `.bitsReverse`: the same for a
+  plain bit word, and reading one of its bits.
 -/
 
 public section
@@ -95,5 +97,33 @@ theorem listTake {α : Type} (enc : α ↪ List Bool) :
   refine (budget_comp_linear (listReverse enc) hdrop).of_enc_eq ?_
   intro q
   rw [← List.reverse_take, List.reverse_reverse]
+
+/-- Drop a binary-counted prefix of a bit word in space linear in the word and counter. -/
+theorem bitsDrop : ComputableInSpace (fun p : List Bool × ℕ => p.1.drop p.2)
+    (encPair encBits encNat) encBits (fun p => (encPair encBits encNat p).length) := by
+  have htail : ComputableInSpace List.tail encBits encBits (fun w => w.length) :=
+    of_inO (.of_linear (ListEncoding.tail encBool))
+  have h := iterate (snd encBits encNat) (fst encBits encNat) htail
+    (Q := fun p => p.1.length) (B := fun p => p.1.length)
+    (fun p i _ => by simp [List.tail_iterate]) (fun p i _ => by simp [List.tail_iterate])
+  refine h.weaken (.of_le_linear 8 8 fun p => ?_) |>.of_enc_eq ?_
+  · enc_len
+  · intro p
+    rw [List.tail_iterate]
+
+/-- Read the bit of a bit word at a binary index, or `fallback` beyond its end, in space linear in
+the word and index. -/
+theorem bitsGetD (fallback : Bool) : ComputableInSpace
+    (fun p : List Bool × ℕ => p.1.getD p.2 fallback) (encPair encBits encNat) encBool
+    (fun p => (encPair encBits encNat p).length) := by
+  have hhead : ComputableInSpace (fun w : List Bool => w.headD fallback) encBits encBool
+      (fun w => w.length) := of_inO (.of_linear (ListEncoding.headD fallback))
+  refine (budget_comp_linear hhead bitsDrop).of_enc_eq ?_
+  intro p
+  rw [List.getD_eq_getElem?_getD, List.headD_eq_head?_getD, List.head?_drop]
+
+/-- Reverse a bit word in space linear in its length. -/
+theorem bitsReverse : ComputableInSpace List.reverse encBits encBits (fun w => w.length) :=
+  of_inO ComputableInDegree.bitsReverse.inO_one
 
 end Turing.MultiTapeTM.ComputableInSpace

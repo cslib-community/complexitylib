@@ -15,31 +15,17 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
 /-!
-# Linear time and space, and encodings of pairs, options and lists
+# Tidy computability in linear time and space
 
 Tidy computability (`Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace`) is relative to encodings of
-values as words. Tidy computability in linear time and space is closed under composition, case
-distinctions, concatenation of encoded values and pairing, and contains constant functions and the
-functions computed by finite-state transducers.
-
-This file also states, as classes indexed by the encodings, what is required of encodings of
-pairs, options and lists: their basic operations are tidily computable in linear time and space,
-and pairing, which builds a value from a common input, preserves tidy computability. Theorems take
-these classes as instance arguments, so they hold for every encoding with the required
-capabilities.
+values as words. Tidy computability in linear time and space is closed under case distinctions and
+concatenation of encoded values, and contains constant functions and the functions computed by
+finite-state transducers.
 
 ## Main definitions
 
-* `Turing.MultiTapeTM.encBool`: the encoding `b ↦ [b]` of `Bool`. Case distinctions
-  (`Turing.MultiTapeTM.ComputableTidilyInTimeAndSpace.ite`) accept any encoding of `Bool`, so the
-  choice matters only up to a constant.
 * `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace`: tidy computability in linear time and
   space, up to a constant.
-* `Turing.MultiTapeTM.PairEncoding enc₁ enc₂ enc`: `enc` encodes pairs compatibly with `enc₁` and
-  `enc₂`.
-* `Turing.MultiTapeTM.OptionEncoding enc₁ enc`: `enc` encodes options compatibly with `enc₁`, with
-  `none` encoded by the empty word.
-* `Turing.MultiTapeTM.ListEncoding enc₁ enc`: `enc` encodes lists compatibly with `enc₁`.
 
 ## Main results
 
@@ -47,12 +33,10 @@ capabilities.
   with the same machine and exact time and space bounds.
 
 * `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace.ite`, `.append`: closure properties of
-  linear time and space.
+  linear time and space. Case distinctions accept any encoding of `Bool`.
 * `Turing.MultiTapeTM.ComputableTidilyInLinearTimeAndSpace.const`: constant functions.
 * `Turing.MultiTapeTM.Transducer.computableTidilyInLinearTimeAndSpace`: functions computed by
   finite-state transducers.
-* `Turing.MultiTapeTM.PairEncoding.pair_mono`: pairing functions computable within different
-  bounds.
 -/
 
 namespace Turing.MultiTapeTM

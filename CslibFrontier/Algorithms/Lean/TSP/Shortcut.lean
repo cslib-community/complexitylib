@@ -70,19 +70,19 @@ private theorem sum_walk_le_of_sublist (δ : α → α → ℕ) (htri : ∀ x y 
   | cons x _ ih =>
     refine (ih a).trans ?_
     rename_i l₁ l₂ _
-    simp only [List.cons_append, consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
+    simp only [List.cons_append, List.consecutivePairs_cons_cons]
     cases l₂ with
     | nil =>
-      simp only [List.nil_append, consecutivePairs_cons_cons, consecutivePairs_singleton,
+      simp only [List.nil_append, List.consecutivePairs_cons_cons, List.consecutivePairs_singleton,
         List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
       have := htri a x b
       omega
     | cons y l₂ =>
-      simp only [List.cons_append, consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
+      simp only [List.cons_append, List.consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
       have := htri a x y
       omega
   | cons_cons x _ ih =>
-    simp only [List.cons_append, consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
+    simp only [List.cons_append, List.consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
     have := ih x
     simp only [List.cons_append] at this
     omega
@@ -97,7 +97,7 @@ theorem cycleCost_le_of_sublist (δ : α → α → ℕ) (htri : ∀ x y z, δ x
     obtain ⟨r₁, r₂, rfl, ha, hl⟩ := List.cons_sublist_iff.1 h
     obtain ⟨P, Q, rfl⟩ := List.append_of_mem ha
     have hrot : cycleCost δ (P ++ a :: Q ++ r₂) = cycleCost δ (a :: (Q ++ r₂ ++ P)) := by
-      rw [← cycleCost_rotate δ _ P.length, List.append_assoc, List.rotate_append_length_eq]
+      rw [List.append_assoc, cycleCost_append_comm]
       simp
     rw [hrot, cycleCost_cons_eq_sum_consecutivePairs, cycleCost_cons_eq_sum_consecutivePairs]
     exact sum_walk_le_of_sublist δ htri
@@ -118,7 +118,7 @@ theorem cycleCost_dedup_le_of_isEulerCircuit {δ : α → α → ℕ}
     cases w' with
     | nil =>
       have := hw.perm
-      simp only [consecutivePairs_singleton, List.map_nil] at this
+      simp only [List.consecutivePairs_singleton, List.map_nil] at this
       exact absurd (List.map_eq_nil_iff.1 this.symm.eq_nil) hH
     | cons b w' =>
       have := hw.getLast
@@ -127,8 +127,7 @@ theorem cycleCost_dedup_le_of_isEulerCircuit {δ : α → α → ℕ}
   subst hR
   rw [List.dedup_cons_of_mem (by simp)]
   refine (cycleCost_le_of_sublist δ htri (List.dedup_sublist _)).trans ?_
-  rw [show R ++ [u] = (u :: R).rotate 1 by simp [List.rotate_cons_succ], cycleCost_rotate,
-    cycleCost_cons_eq_sum_consecutivePairs]
+  rw [cycleCost_append_comm, List.singleton_append, cycleCost_cons_eq_sum_consecutivePairs]
   simp
 
 end Cslib.Algorithms.Lean.TSP

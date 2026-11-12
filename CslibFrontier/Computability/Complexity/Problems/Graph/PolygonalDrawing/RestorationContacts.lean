@@ -216,10 +216,8 @@ theorem IsEmbedding.outsideRoute_edge_contacts {G : Graph} {D : PolygonalDrawing
       (D.outsideRoute v ρ f).AtEnd j t tag ∧ Dart.vertex (e, side) = Dart.vertex (f, tag) := by
   let lo (e : Fin G.2.length) := D.restrictionTime v ρ (e, false)
   let hi (e : Fin G.2.length) := D.restrictionTime v ρ (e, true)
-  have hbounds (e : Fin G.2.length) : 0 ≤ lo e ∧ 0 ≤ hi e ∧ lo e + hi e < 1 := by
-    have h₀ := hD.restrictionTime_mem v hρ hlen (e, false)
-    have h₁ := hD.restrictionTime_mem v hρ hlen (e, true)
-    exact ⟨h₀.1, h₁.1, by dsimp [lo, hi]; linarith [h₀.2, h₁.2]⟩
+  have hbounds (e : Fin G.2.length) : 0 ≤ lo e ∧ 0 ≤ hi e ∧ lo e + hi e < 1 :=
+    hD.restrictionTime_bounds v hρ hlen e
   change Fin (D.route e).segments at i
   change Fin (D.route f).segments at j
   let σ := (D.route e).cutTime (lo e) (hi e) i s
@@ -245,16 +243,14 @@ theorem IsEmbedding.outsideRoute_vertex_contacts {G : Graph} {D : PolygonalDrawi
     ∃ side, (D.outsideRoute v ρ e).AtEnd i t side ∧ Dart.vertex (e, side) = w := by
   let lo := D.restrictionTime v ρ (e, false)
   let hi := D.restrictionTime v ρ (e, true)
-  have hlo := hD.restrictionTime_mem v hρ hlen (e, false)
-  have hhi := hD.restrictionTime_mem v hρ hlen (e, true)
-  have hsum : lo + hi < 1 := by dsimp [lo, hi]; linarith [hlo.2, hhi.2]
+  obtain ⟨hlo, hhi, hsum⟩ := hD.restrictionTime_bounds v hρ hlen e
   change Fin (D.route e).segments at i
   let τ := (D.route e).cutTime lo hi i t
-  have hτ := (D.route e).cutTime_mem hlo.1 hhi.1 hsum i ht
+  have hτ := (D.route e).cutTime_mem hlo hhi hsum i ht
   have heval : (D.route e).eval i τ = D.vertex w :=
     ((D.route e).eval_cutEnds lo hi i t).symm.trans heq
   obtain ⟨side, hside, hv⟩ := hD.vertex_contacts e i τ hτ w hw heval
-  exact ⟨side, Route.atEnd_cutEnds_of_atEnd hlo.1 hhi.1 hsum i ht side hside, hv⟩
+  exact ⟨side, Route.atEnd_cutEnds_of_atEnd hlo hhi hsum i ht side hside, hv⟩
 
 /-- Attach a new first spoke to an actual exterior piece, preserving full continuous
 simplicity. Its only contact with that piece is the intended first cut port. -/

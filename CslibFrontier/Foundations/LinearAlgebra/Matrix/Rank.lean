@@ -30,6 +30,7 @@ matrix of rank `r` factors through `r`-dimensional space (`Matrix.exists_eq_mul_
 * `Matrix.rank_smul_le`: scaling does not increase rank.
 * `Matrix.natCast_rank_eq_rank_toLin'`: the natural matrix rank agrees with linear-map rank.
 * `Matrix.exists_eq_mul_rank`: rank factorization `A = C * D` through `Fin A.rank`.
+* `Matrix.rank_map_of_field`: the rank over a field is invariant under a change of scalars.
 * `Matrix.rank_eq_zero_iff`: only the zero matrix has rank zero.
 
 ## References
@@ -40,7 +41,7 @@ matrices in [E. Kushilevitz and N. Nisan, *Communication Complexity*][Kushilevit
 [S. Schlesinger, *Algebraic circuit formalizations in Complexitylib*][Schlesinger2026Algebraic].
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 
@@ -89,6 +90,51 @@ theorem exists_eq_mul_rank (A : Matrix m n K) :
   simp only [Submodule.coe_sum, Submodule.coe_smul, Finset.sum_apply, Pi.smul_apply,
     smul_eq_mul] at h
   simpa [Matrix.mul_apply, col, mul_comm] using h.symm
+
+/-- A matrix over a field whose rank is its number of rows has a right inverse. -/
+theorem exists_mul_eq_one_of_rank_eq_card [Fintype m] [DecidableEq m] {A : Matrix m n K}
+    (h : A.rank = Fintype.card m) : ∃ B : Matrix n m K, A * B = 1 := by
+  refine mulVec_surjective_iff_exists_right_inverse.1 fun y => ?_
+  have hA : LinearMap.range A.mulVecLin = ⊤ :=
+    Submodule.eq_top_of_finrank_eq (h.trans (Module.finrank_fintype_fun_eq_card K).symm)
+  exact LinearMap.range_eq_top.1 hA y
+
+/-- The rank of a matrix over a field does not change when its entries are mapped along a ring
+homomorphism, in particular under a field extension. Both directions use a rank factorization
+`A = C * D`: its image factors `A.map f`, and one-sided inverses of `C` and `D` map to one-sided
+inverses, so the identity of size `A.rank` factors through `A.map f`. -/
+theorem rank_map_of_field [Finite m] {L : Type*} [CommSemiring L] [StrongRankCondition L]
+    (f : K →+* L) (A : Matrix m n K) : (A.map f).rank = A.rank := by
+  classical
+  have := Fintype.ofFinite m
+  obtain ⟨r, hr, C, D, hA⟩ : ∃ r, r = A.rank ∧ ∃ (C : Matrix m (Fin r) K)
+      (D : Matrix (Fin r) n K), A = C * D := ⟨_, rfl, A.exists_eq_mul_rank⟩
+  have hmap : A.map f = C.map f * D.map f := by rw [hA, Matrix.map_mul]
+  have hD : D.rank = Fintype.card (Fin r) :=
+    le_antisymm D.rank_le_card_height <| by
+      calc Fintype.card (Fin r) = A.rank := (Fintype.card_fin r).trans hr
+        _ = (C * D).rank := congrArg rank hA
+        _ ≤ D.rank := rank_mul_le_right C D
+  have hC : Cᵀ.rank = Fintype.card (Fin r) := by
+    rw [rank_transpose]
+    refine le_antisymm C.rank_le_card_width ?_
+    calc Fintype.card (Fin r) = A.rank := (Fintype.card_fin r).trans hr
+      _ = (C * D).rank := congrArg rank hA
+      _ ≤ C.rank := rank_mul_le_left C D
+  obtain ⟨D', hD'⟩ := exists_mul_eq_one_of_rank_eq_card hD
+  obtain ⟨E, hE⟩ := exists_mul_eq_one_of_rank_eq_card hC
+  have hE' : Eᵀ * C = 1 := by rw [← transpose_transpose C, ← transpose_mul, hE, transpose_one]
+  have hone : Eᵀ.map f * A.map f * D'.map f = 1 := by
+    rw [← Matrix.map_mul, ← Matrix.map_mul, hA, ← Matrix.mul_assoc, hE', Matrix.one_mul, hD',
+      Matrix.map_one _ f.map_zero f.map_one]
+  refine le_antisymm ?_ ?_
+  · calc (A.map f).rank ≤ (C.map f).rank := hmap ▸ rank_mul_le_left _ _
+      _ ≤ Fintype.card (Fin r) := rank_le_card_width _
+      _ = A.rank := (Fintype.card_fin r).trans hr
+  · calc A.rank = (1 : Matrix (Fin r) (Fin r) L).rank := by rw [rank_one, Fintype.card_fin, hr]
+      _ = (Eᵀ.map f * A.map f * D'.map f).rank := by rw [hone]
+      _ ≤ (Eᵀ.map f * A.map f).rank := rank_mul_le_left _ _
+      _ ≤ (A.map f).rank := rank_mul_le_right _ _
 
 /-- The natural rank of a finite matrix agrees with the cardinal rank of its linear map. -/
 theorem natCast_rank_eq_rank_toLin' [DecidableEq n] (M : Matrix m n K) :

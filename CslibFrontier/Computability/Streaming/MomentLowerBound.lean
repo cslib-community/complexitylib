@@ -185,6 +185,11 @@ theorem Algorithm.le_of_approx_freqMoment {σ : Type*} {L b k : ℕ} {η : ℝ} 
     nlinarith [mul_pos hLpos hq, mul_nonneg hη0 (by linarith : (0 : ℝ) ≤
       (P + 2) * L - 2 * (P * (L - δ) + 2 * δ))]
 
+/-- The embedding of `Fin (N / k) × Fin k` into `Fin N` by consecutive blocks of `k` items,
+which transfers the lower bounds over product universes to the universe `Fin N`. -/
+private def blockEmbedding (N k : ℕ) : Fin (N / k) × Fin k ↪ Fin N :=
+  finProdFinEquiv.toEmbedding.trans (Fin.castLEEmb (Nat.div_mul_le_self N k))
+
 /-- **Approximating `F_k` deterministically needs `Ω(n)` bits of memory** for `k ≠ 1`, over the
 universe `Fin N` [AlonMatiasSzegedy1999, Proposition 3.7]: a deterministic streaming algorithm whose
 answer on every stream of at most `2 ⌊N / 16⌋` items of `Fin N` is within `η F_k` of `F_k`, for some
@@ -195,13 +200,10 @@ theorem Algorithm.div_le_of_approx_freqMoment {σ : Type*} {N b k : ℕ} {η : �
     (hA : ∀ s : List (Fin N), s.length ≤ 2 * (N / 16) →
       |A.run s - freqMoment k s| ≤ η * freqMoment k s)
     (hspace : A.SpaceLE (N / 16) b) : N / 16 ≤ b := by
-  have hN : N / 16 * 16 ≤ N := Nat.div_mul_le_self N 16
-  let e : Fin (N / 16) × Fin 16 → Fin N := fun p => Fin.castLE hN (finProdFinEquiv p)
-  have he : Function.Injective e := fun p q h =>
-    finProdFinEquiv.injective (Fin.castLE_injective hN h)
+  let e := blockEmbedding N 16
   refine (A.reduce [] e id).le_of_approx_freqMoment hk hη (fun s hs => ?_)
     (Algorithm.SpaceLE.reduce [] (by rwa [List.length_nil, Nat.zero_add]) e id)
-  rw [Algorithm.run_reduce, List.nil_append, id, ← freqMoment_map he]
+  rw [Algorithm.run_reduce, List.nil_append, id, ← freqMoment_map e.injective]
   exact hA _ (by rwa [List.length_map])
 
 /-! ### Exact computation -/
@@ -264,15 +266,12 @@ theorem div_le_of_solves_freqMoment {σ : Type*} {N b r k : ℕ} {ε : ℝ} (hk 
     (hε : ε ≤ 1 / 2) (hr : (4 * ε * (1 - ε)) ^ r ≤ 1 / 64) (μ : Randomized σ (Fin N) ℕ)
     (hμ : μ.Solves ε (fun s c => c = freqMoment k s) (2 * (N / 3)))
     (hspace : μ.SpaceLE (N / 3) b) : N / 3 ≤ 2 ^ 10 * r * (b + 1) + 2 ^ 12 := by
-  have hN : N / 3 * 3 ≤ N := Nat.div_mul_le_self N 3
-  let e : Fin (N / 3) × Fin 3 → Fin N := fun p => Fin.castLE hN (finProdFinEquiv p)
-  have he : Function.Injective e := fun p q h =>
-    finProdFinEquiv.injective (Fin.castLE_injective hN h)
+  let e := blockEmbedding N 3
   refine le_of_solves_freqMoment hk hε hr (μ.map fun A => A.reduce [] e id) (fun s hs => ?_)
     (Randomized.SpaceLE.map_reduce [] (by rwa [List.length_nil, Nat.zero_add]) e id)
   refine (μ.errorProb_map_reduce_le [] e id s fun c hc => ?_).trans
     (hμ _ (by rwa [List.nil_append, List.length_map]))
-  rw [hc, List.nil_append, freqMoment_map he]
+  rw [hc, List.nil_append, freqMoment_map e.injective]
   rfl
 
 /-- **Computing `F_k` exactly and deterministically needs `n` bits of memory**, for `k ≠ 1`: a
@@ -304,13 +303,10 @@ theorem Algorithm.div_le_of_run_eq_freqMoment {σ : Type*} {N b k : ℕ} (hk : k
     (A : Algorithm σ (Fin N) ℕ)
     (hA : ∀ s : List (Fin N), s.length ≤ 2 * (N / 3) → A.run s = freqMoment k s)
     (hspace : A.SpaceLE (N / 3) b) : N / 3 ≤ b := by
-  have hN : N / 3 * 3 ≤ N := Nat.div_mul_le_self N 3
-  let e : Fin (N / 3) × Fin 3 → Fin N := fun p => Fin.castLE hN (finProdFinEquiv p)
-  have he : Function.Injective e := fun p q h =>
-    finProdFinEquiv.injective (Fin.castLE_injective hN h)
+  let e := blockEmbedding N 3
   refine (A.reduce [] e id).le_of_run_eq_freqMoment hk (fun s hs => ?_)
     (Algorithm.SpaceLE.reduce [] (by rwa [List.length_nil, Nat.zero_add]) e id)
-  rw [Algorithm.run_reduce, List.nil_append, id, ← freqMoment_map he]
+  rw [Algorithm.run_reduce, List.nil_append, id, ← freqMoment_map e.injective]
   exact hA _ (by rwa [List.length_map])
 
 end Cslib.Streaming

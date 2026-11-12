@@ -32,7 +32,7 @@ these statements.
 * [C. H. Papadimitriou, *Computational Complexity*][Papadimitriou94], Theorem 8.2.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.CookLevin
 

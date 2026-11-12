@@ -318,6 +318,35 @@ theorem val_contractionRank {G : Graph} {u v : ℕ}
   unfold contractionRank contractionBlock
   split_ifs <;> rfl
 
+/-- Within either source block, retained rank comparisons are original rank comparisons. -/
+theorem contractionRank_lt_iff_sourceDistance_lt {G : Graph} {u v : ℕ}
+    (r : RotationSystem (lastEdgeGraph G u v)) (huv : u ≠ v)
+    (a b : {d : Dart (contractLastEdgeGraph G u v) // d.vertex = v}) (side : Bool)
+    (ha : (contractionLift G u v a.val).vertex = (lastEdgeDart G u v side).vertex)
+    (hb : (contractionLift G u v b.val).vertex = (lastEdgeDart G u v side).vertex) :
+    (r.contractionRank a).val < (r.contractionRank b).val ↔
+      r.rotationDistance (lastEdgeDart G u v side) (contractionLift G u v a.val) <
+        r.rotationDistance (lastEdgeDart G u v side) (contractionLift G u v b.val) := by
+  have hapos := r.rotationDistance_pos_of_ne _ _ ha.symm
+    (contractionLift_ne_lastEdgeDart G u v a.val side)
+  have hbpos := r.rotationDistance_pos_of_ne _ _ hb.symm
+    (contractionLift_ne_lastEdgeDart G u v b.val side)
+  rw [r.val_contractionRank, r.val_contractionRank]
+  cases side
+  · have hau : (contractionLift G u v a.val).vertex = u := by
+      simpa only [vertex_lastEdgeDart, Bool.false_eq_true, ↓reduceIte] using ha
+    have hbu : (contractionLift G u v b.val).vertex = u := by
+      simpa only [vertex_lastEdgeDart, Bool.false_eq_true, ↓reduceIte] using hb
+    rw [ite_eq_right (fun h => huv (hau.symm.trans h)),
+      ite_eq_right (fun h => huv (hbu.symm.trans h))]
+    omega
+  · have hav : (contractionLift G u v a.val).vertex = v := by
+      simpa only [vertex_lastEdgeDart, ↓reduceIte] using ha
+    have hbv : (contractionLift G u v b.val).vertex = v := by
+      simpa only [vertex_lastEdgeDart, ↓reduceIte] using hb
+    rw [ite_eq_left hav, ite_eq_left hbv]
+    omega
+
 /-- Source block ranks are an equivalence onto one finite consecutive interval. -/
 @[expose] noncomputable def contractionRankEquiv {G : Graph} {u v : ℕ}
     (r : RotationSystem (lastEdgeGraph G u v)) (huv : u ≠ v) :
@@ -362,8 +391,6 @@ theorem val_contractionRank_rotate {G : Graph} {u v : ℕ}
   have haU : a ≠ oU := contractionLift_ne_lastEdgeDart G u v d.val false
   have hbV : b ≠ oV := contractionLift_ne_lastEdgeDart G u v d'.val true
   have hbU : b ≠ oU := contractionLift_ne_lastEdgeDart G u v d'.val false
-  have hzero (o : Dart (lastEdgeGraph G u v)) : r.rotationDistance o o = 0 := by
-    simpa only [pow_zero, Equiv.Perm.one_apply, Nat.zero_mod] using r.rotationDistance_pow o 0
   have next (h : l = k + 1) : l = (k + 1) % (nV + nU) := by
     rw [← h, Nat.mod_eq_of_lt hbl]
   have wrap (h : k + 1 = nV + nU) (hzero : l = 0) : l = (k + 1) % (nV + nU) := by
@@ -401,7 +428,7 @@ theorem val_contractionRank_rotate {G : Graph} {u v : ℕ}
     have hlast := r.rotationDistance_of_rotate_eq oV a (hvV.trans hav.symm) h
     have hpos := r.rotationDistance_pos_of_ne oV a (hvV.trans hav.symm) haV
     have hfirst := r.rotationDistance_rotate_of_ne oU oU rfl (h' ▸ hbU)
-    rw [h', hzero] at hfirst
+    rw [h', r.rotationDistance_self] at hfirst
     rw [ite_eq_left hav] at hk
     rw [ite_eq_right hbv] at hl
     exact next (by dsimp [nV] at *; omega)
@@ -415,7 +442,7 @@ theorem val_contractionRank_rotate {G : Graph} {u v : ℕ}
     have hlast := r.rotationDistance_of_rotate_eq oU a (hvU.trans hau.symm) h
     have hpos := r.rotationDistance_pos_of_ne oU a (hvU.trans hau.symm) haU
     have hfirst := r.rotationDistance_rotate_of_ne oV oV rfl (h' ▸ hbV)
-    rw [h', hzero] at hfirst
+    rw [h', r.rotationDistance_self] at hfirst
     rw [ite_eq_right hav] at hk
     rw [ite_eq_left hbv] at hl
     exact wrap (by dsimp [nU] at *; omega) (by omega)
@@ -431,7 +458,7 @@ theorem val_contractionRank_rotate {G : Graph} {u v : ℕ}
     have hfirst := r.rotationDistance_rotate_of_ne oV oV rfl (h' ▸ hbV)
     have hperiod := Function.minimalPeriod_eq_one_iff_isFixedPt.mpr hfix
     have hU : nU = 0 := by simp only [nU, hperiod, Nat.sub_self]
-    rw [h', hzero] at hfirst
+    rw [h', r.rotationDistance_self] at hfirst
     rw [ite_eq_left hav] at hk
     rw [ite_eq_left hbv] at hl
     exact wrap (by dsimp [nV] at *; omega) (by omega)
@@ -449,7 +476,7 @@ theorem val_contractionRank_rotate {G : Graph} {u v : ℕ}
     have hfirst := r.rotationDistance_rotate_of_ne oU oU rfl (h' ▸ hbU)
     have hperiod := Function.minimalPeriod_eq_one_iff_isFixedPt.mpr hfix
     have hV : nV = 0 := by simp only [nV, hperiod, Nat.sub_self]
-    rw [h', hzero] at hfirst
+    rw [h', r.rotationDistance_self] at hfirst
     rw [ite_eq_right hav] at hk
     rw [ite_eq_right hbv] at hl
     exact wrap (by dsimp [nU] at *; omega) (by omega)

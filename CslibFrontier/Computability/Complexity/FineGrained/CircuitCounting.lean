@@ -121,32 +121,6 @@ open ComputableInPolyTime
 
 variable {σ : Signature}
 
-private theorem computableInPolyTime_zipIdx {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun list : List α => list.zipIdx)
-      (encList enc) (encList (encPair enc encUnary)) := by
-  rcases isEmpty_or_nonempty α with h | h
-  · exact of_finite _
-  · obtain ⟨fallback⟩ := h
-    have heq (list : List α) : list.zipIdx =
-        (List.range list.length).map (fun i => (list.getD i fallback, i)) := by
-      apply List.ext_getElem (by simp)
-      intro i hi hi'
-      simp only [List.length_zipIdx] at hi
-      simp only [List.getElem_zipIdx, List.getElem_map, List.getElem_range,
-        List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some, Nat.zero_add]
-    simp_rw [heq]
-    fun_prop
-
-private theorem computableInPolyTime_mapConst {α ι γ : Type} {encIn : α ↪ List Bool}
-    {encC : γ ↪ List Bool} (items : List ι) {f : α → ι → γ}
-    (hf : ∀ i ∈ items, ComputableInPolyTime (fun a => f a i) encIn encC) :
-    ComputableInPolyTime (fun a => items.map (f a)) encIn (encList encC) := by
-  induction items with
-  | nil => exact const []
-  | cons item rest ih =>
-    exact cons' (hf item List.mem_cons_self)
-      (ih fun i hi => hf i (List.mem_cons_of_mem _ hi))
-
 private abbrev RawCode (σ : Signature) := ℕ × (List (σ.Op × List ℕ) × List ℕ)
 
 private abbrev encRaw (encOp : σ.Op ↪ List Bool) : RawCode σ ↪ List Bool :=

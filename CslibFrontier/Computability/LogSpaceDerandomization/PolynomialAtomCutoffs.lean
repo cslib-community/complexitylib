@@ -28,7 +28,7 @@ the concrete row functions, suitable for the stationary-reference compression co
 The first argument is the full raw entry and the second is the prescribed full-row rank;
 only function evaluation applies the switches' scalar clipping.
 
-This is the fourth-moment adaptation in complexitylib issue #1721. The pinned preprint uses
+This is the fourth-moment adaptation in cslib-frontier issue #1721. The pinned preprint uses
 eighth roots. These polynomial cutoffs do not replace the existing exponential `AtomCutoffs`
 API, which proves regularity for every positive power. Normalized main atom functions, access
 enumeration, eighth-root regularity, and machine-resource bounds are separate obligations.

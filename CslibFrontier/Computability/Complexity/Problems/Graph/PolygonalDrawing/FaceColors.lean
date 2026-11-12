@@ -131,6 +131,21 @@ private noncomputable def Frame.color (F : Frame D) (x : Fin G.2.length → Bool
     (k : D.SegmentIndex × Bool) : Bool :=
   rayGermColor F.a F.b (fun i => x i.1) (rayEndpoint F.a F.b k) (rayEndVector F.a F.b k)
 
+private theorem Frame.color_adjacent (F : Frame D) (hD : D.IsEmbedding)
+    (x : Fin G.2.length → Bool) (hx : G.VertexEven x) (p : ℂ)
+    (k l : D.SegmentIndex × Bool)
+    (hk : rayEndpoint F.a F.b k = p) (hl : rayEndpoint F.a F.b l = p) (hkl : k ≠ l)
+    (hgap : ∀ j : D.SegmentIndex × Bool, rayEndpoint F.a F.b j = p → j ≠ k → j ≠ l →
+      ¬sbtw ((rayEndVector F.a F.b k).arg : Real.Angle)
+        ((rayEndVector F.a F.b j).arg : Real.Angle)
+        ((rayEndVector F.a F.b l).arg : Real.Angle)) :
+    F.color x k + F.color x l = x k.1.1 := by
+  unfold Frame.color
+  rw [hk, hl]
+  exact rayGermColor_adjacent F.a F.b (fun i => x i.1) (F.height hD) p
+    (F.even x hx p) k l hk hl hkl
+    (fun j f hj hf h => F.distinct hD f j (hj.trans hf.symm) h) hgap
+
 private theorem Frame.color_ends (F : Frame D) (hD : D.IsEmbedding)
     (x : Fin G.2.length → Bool) (hx : G.VertexEven x) (i : D.SegmentIndex) :
     F.color x (i, false) + F.color x (i, true) = x i.1 := by
@@ -160,15 +175,7 @@ private theorem Frame.color_bend (F : Frame D) (hD : D.IsEmbedding)
         ((rayEndVector F.a F.b j).arg : Real.Angle)
         ((rayEndVector F.a F.b l).arg : Real.Angle) := by
     exact ((hclass j hj).elim hjk hjl).elim
-  have hsum := rayGermColor_adjacent F.a F.b (fun i => x i.1) (F.height hD) p
-    (F.even x hx p) k l hk hl hkl
-    (fun j f hj hf h => F.distinct hD f j (hj.trans hf.symm) h) hgap
-  change rayGermColor F.a F.b (fun i => x i.1) (rayEndpoint F.a F.b k)
-      (rayEndVector F.a F.b k) +
-    rayGermColor F.a F.b (fun i => x i.1) (rayEndpoint F.a F.b l)
-      (rayEndVector F.a F.b l) = x e
-  rw [hk, hl]
-  exact hsum
+  exact F.color_adjacent hD x hx p k l hk hl hkl hgap
 
 private theorem Frame.color_bend_transport (F : Frame D) (hD : D.IsEmbedding)
     (x : Fin G.2.length → Bool) (hx : G.VertexEven x)
@@ -248,15 +255,7 @@ private theorem Frame.color_vertex (F : Frame D) (hD : D.IsEmbedding)
       rw [sbtw_arg_mul_iff F.u (D.germ d) (D.germ c) (D.germ a) F.nonzero
         (hR.nonzero d) (hR.nonzero c) (hR.nonzero a)]
       exact hR.not_sbtw_inverse_rotate d c hcv hcd hca
-    have hsum := rayGermColor_adjacent F.a F.b (fun i => x i.1) (F.height hD) p
-      (F.even x hx p) k l hk hl hkl
-      (fun j f hj hf h => F.distinct hD f j (hj.trans hf.symm) h) hgap
-    change rayGermColor F.a F.b (fun i => x i.1) (rayEndpoint F.a F.b k)
-        (rayEndVector F.a F.b k) +
-      rayGermColor F.a F.b (fun i => x i.1) (rayEndpoint F.a F.b l)
-        (rayEndVector F.a F.b l) = x d.1
-    rw [hk, hl]
-    exact hsum
+    exact F.color_adjacent hD x hx p k l hk hl hkl hgap
 
 /-- Every vertex-even indexed edge label of an actual polygonal embedding is the
 boundary of colors on the actual face quotient of the literally realized clockwise

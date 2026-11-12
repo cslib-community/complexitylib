@@ -23,7 +23,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
 This is an internal implementation API of the complete routing program.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 
@@ -57,12 +57,7 @@ theorem exec_prefix {w L m N Q : ℕ} (key : ℕ → ℕ)
   let start := (x.set index 0).set total 0
   have hs : ExecWithin w (ram[index ← #0; total ← #0] : Code .standard 96) x start 2 := by
     ram_eval [start]
-  have hp : Parameters L m N Q start := hx.reframe (by
-    intro i hi
-    apply hs.regs_eq
-    have h : ∀ i ∈ parameterRegisters,
-        (ram[index ← #0; total ← #0] : Code .standard 96).Preserves i := by decide +kernel
-    exact h i hi)
+  have hp : Parameters L m N Q start := hx.of_exec hs (by decide +kernel)
   have hi : P (start.regs index) start := by
     refine ⟨hp, ?_, by simp [start, index, total],
       hcounts, by simp [start]⟩
@@ -123,13 +118,7 @@ theorem exec_prefix {w L m N Q : ℕ} (key : ℕ → ℕ)
       Code .standard 96) y z 2 := by
     ram_eval [z, hy.1.offsets, hy.1.tileCount, hsum, haddr, T,
       pointer, offsets, tileCount, total, Fin.mk.injEq]
-  have zp : Parameters L m N Q z := hy.1.reframe (by
-    intro i hi
-    apply hz.regs_eq
-    have h : ∀ i ∈ parameterRegisters,
-        (ram[pointer ← offsets + tileCount; *pointer ← total] : Code .standard 96).Preserves i := by
-      decide +kernel
-    exact h i hi)
+  have zp : Parameters L m N Q z := hy.1.of_exec hz (by decide +kernel)
   have hlast : Nat.count (fun k => key k < T) Q = Q := Nat.count_of_forall hkey
   refine ⟨z, ?_, zp, ?_, ?_, ?_, ?_⟩
   · apply (ExecWithin.seq_assoc.mp (hs.seq (he.seq hz))).mono

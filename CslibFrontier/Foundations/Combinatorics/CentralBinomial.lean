@@ -34,6 +34,8 @@ binomial coefficients), are at most `6 / 10` of all sets when `100 (t + 1)² ≤
 * `Cslib.two_pow_succ_le_centralBinom`: `2 ^ (B + 1) ≤ B.centralBinom` for `B ≥ 3`.
 * `Cslib.choose_half_sq_mul_le`: `C(n, ⌊n/2⌋)² (n + 1) ≤ 4 ^ n`.
 * `Cslib.ten_mul_card_filter_card_le_le`: few sets are much larger than half.
+* `Cslib.four_mul_two_pow_le_mul_choose_sub`: `4 · 2 ^ n ≤ 5 (n + 1) C(n, ⌈n/2⌉ - s)` when
+  `1 ≤ s` and `100 s² ≤ n + 1`, a binomial coefficient near the middle is large.
 
 ## References
 
@@ -41,7 +43,7 @@ binomial coefficients), are at most `6 / 10` of all sets when `100 (t + 1)² ≤
   complexity*][Smolensky1987]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
@@ -185,5 +187,56 @@ theorem ten_mul_card_filter_card_le_le (n t : ℕ) (h : 100 * (t + 1) ^ 2 ≤ n 
     _ ≤ 6 * 2 ^ n := by
       have : 10 * M.card ≤ 10 * ((t + 1) * n.choose (n / 2)) := Nat.mul_le_mul_left _ hM
       omega
+
+/-- Below `n / 2`, the binomial coefficients `C(n, k)` increase with `k`. -/
+private theorem choose_le_choose_of_le_of_le_half {n k a : ℕ} (hka : k ≤ a) (ha : a ≤ n / 2) :
+    n.choose k ≤ n.choose a := by
+  induction hka using Nat.decreasingInduction with
+  | self => exact le_rfl
+  | of_succ j hj ih => exact (Nat.choose_le_succ_of_lt_half_left (by omega)).trans ih
+
+/-- **A binomial coefficient near the middle is large**: when `1 ≤ s` and
+`100 s² ≤ n + 1`, the coefficient `C(n, ⌈n/2⌉ - s)` is at least `4 · 2 ^ n / (5 (n + 1))`. The
+sets of at most `⌈n/2⌉ - s` elements are the complements of the sets of more than `n / 2 + s - 1`
+elements, so they are at least `4 / 10` of all sets (`ten_mul_card_filter_card_le_le`), and each
+of their sizes contributes at most `C(n, ⌈n/2⌉ - s)` of them. -/
+theorem four_mul_two_pow_le_mul_choose_sub {n s : ℕ} (hs : 1 ≤ s) (h : 100 * s ^ 2 ≤ n + 1) :
+    4 * 2 ^ n ≤ 5 * (n + 1) * n.choose ((n + 1) / 2 - s) := by
+  set a := (n + 1) / 2 - s
+  have hs2 : s ≤ s ^ 2 := Nat.le_self_pow two_ne_zero s
+  have ha : a ≤ n / 2 := by omega
+  set L := univ.filter fun S : Finset (Fin n) => S.card ≤ n / 2 + (s - 1)
+  set A := univ.filter fun S : Finset (Fin n) => S.card ≤ a
+  have hL : 10 * L.card ≤ 6 * 2 ^ n :=
+    ten_mul_card_filter_card_le_le n (s - 1) (by rwa [Nat.sub_add_cancel hs])
+  have htotal : L.card + (univ.filter fun S : Finset (Fin n) => ¬S.card ≤ n / 2 + (s - 1)).card =
+      2 ^ n := by
+    rw [card_filter_add_card_filter_not, card_univ, Fintype.card_finset, Fintype.card_fin]
+  -- complementation maps the large sets into the sets of at most `a` elements
+  have hcompl : (univ.filter fun S : Finset (Fin n) => ¬S.card ≤ n / 2 + (s - 1)).card ≤
+      A.card := by
+    refine card_le_card_of_injOn (fun S => Sᶜ) (fun S hS => ?_) compl_injective.injOn
+    simp only [A, coe_filter, mem_univ, true_and, Set.mem_ofPred_eq] at hS ⊢
+    rw [card_compl, Fintype.card_fin]
+    omega
+  -- each size `k ≤ a` contributes at most `C(n, k) ≤ C(n, a)` sets
+  have hA : A.card ≤ n.choose a * (range (a + 1)).card := by
+    refine card_le_mul_card_image_of_maps_to (f := card) (fun S hS => ?_) _ fun k hk => ?_
+    · simp only [A, mem_filter, mem_univ, true_and] at hS
+      exact mem_range.mpr (Nat.lt_succ_of_le hS)
+    · calc (A.filter fun S => S.card = k).card
+          ≤ (powersetCard k (univ : Finset (Fin n))).card := by
+            refine card_le_card fun S hS => ?_
+            simp only [mem_filter] at hS
+            exact mem_powersetCard.mpr ⟨subset_univ S, hS.2⟩
+        _ = n.choose k := by rw [card_powersetCard, card_univ, Fintype.card_fin]
+        _ ≤ n.choose a := choose_le_choose_of_le_of_le_half (Nat.lt_succ_iff.mp
+            (mem_range.mp hk)) ha
+  rw [card_range] at hA
+  have hmul : 10 * (n.choose a * (a + 1)) ≤ 5 * (n + 1) * n.choose a := by
+    have : 10 * (a + 1) ≤ 5 * (n + 1) := by omega
+    calc 10 * (n.choose a * (a + 1)) = 10 * (a + 1) * n.choose a := by ring
+      _ ≤ 5 * (n + 1) * n.choose a := Nat.mul_le_mul_right _ this
+  omega
 
 end Cslib

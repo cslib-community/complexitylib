@@ -24,7 +24,7 @@ open Cslib Cslib.Circuits Cslib.Circuits.Boolean CslibFrontierTests.CircuitMater
 example {r k : ℕ} (key : Fin k → Fin r) (d : ℕ)
     (x : BitString (BitonicSort.arity d * r)) (i : Fin (BitonicSort.arity d)) :
     (duplicateFlagsCircuit key d).eval interpretation x i = true ↔
-      ∃ j, j ≠ i ∧ directProductInput x j ∘ key = directProductInput x i ∘ key :=
+      ∃ j, j ≠ i ∧ BitString.block x j ∘ key = BitString.block x i ∘ key :=
   eval_duplicateFlagsCircuit_iff key d x i
 
 -- Every four-record input with three bits per record. The key reads positions 2 then 0;
@@ -35,7 +35,7 @@ example {r k : ℕ} (key : Fin k → Fin r) (d : ℕ)
   let c := materialize (duplicateFlagsCircuit (![2, 0] : Fin 2 → Fin 3) 2)
   (List.finRange 4096).all fun raw =>
     let x := (BitString.equivFin 12).symm raw
-    let rows : Fin 4 → BitString 3 := directProductInput x
+    let rows : Fin 4 → BitString 3 := BitString.block x
     let out := (c.evalVector interpretation x).get
     (List.finRange 4).all fun i =>
       out i == (List.finRange 4).any fun j =>

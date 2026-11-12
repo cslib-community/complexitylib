@@ -80,8 +80,7 @@ private theorem computableInPolyTime_profitStep (hw : ComputableInPolyTime w enc
   have hm : ∀ (T : List (Option (List ι))) (a : ι),
       T.map (Option.map (· ++ [a])) = T.map fun o => o.elim none fun s => some (s ++ [a]) := by
     intro T a
-    congr 1
-    funext o
+    congr 1 with o : 1
     cases o <;> rfl
   unfold profitStep
   simp only [hz, hm]
@@ -93,7 +92,7 @@ private theorem sum_map_le_length_encList (hpl : ∀ a, p a ≤ (encI a).length)
   | nil => simp
   | cons a l ih =>
     have := hpl a
-    enc_len [List.map_cons, List.sum_cons, encList_cons]
+    enc_len [List.map_cons, List.sum_cons]
 
 private theorem length_encList_table_le (hpl : ∀ a, p a ≤ (encI a).length) {l : List ι}
     {T : List (Option (List ι))} (hT : TableSpec w p l T) :

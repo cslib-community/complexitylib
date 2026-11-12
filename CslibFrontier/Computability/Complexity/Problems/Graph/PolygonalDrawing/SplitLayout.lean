@@ -133,13 +133,8 @@ theorem Realizes.exists_contraction_split {G : Graph} {u v : ℕ}
   have hsphere (d : I) : P d ∈ Metric.sphere (D.vertex v) ρ := by
     rw [Metric.mem_sphere]
     simpa only [d.property] using hD.dist_cutPort hρ.le d.val
-  have hA (x : ℂ) (hx : x ∈ A) : x ∈ Metric.sphere (D.vertex v) ρ ∧
-      θ x ∈ Set.Ioo cut (cut + 2 * Real.pi) ∧
-      ((x - D.vertex v).arg : Real.Angle) = (θ x : Real.Angle) := by
-    obtain ⟨d, _, rfl⟩ := Finset.mem_image.mp hx
-    exact ⟨hsphere d, (hθ d).symm ▸ hmem d, (hcoe _).symm⟩
-  have hB (x : ℂ) (hx : x ∈ B) : x ∈ Metric.sphere (D.vertex v) ρ ∧
-      θ x ∈ Set.Ioo cut (cut + 2 * Real.pi) ∧
+  have hports (S : Finset I) (x : ℂ) (hx : x ∈ S.image P) :
+      x ∈ Metric.sphere (D.vertex v) ρ ∧ θ x ∈ Set.Ioo cut (cut + 2 * Real.pi) ∧
       ((x - D.vertex v).arg : Real.Angle) = (θ x : Real.Angle) := by
     obtain ⟨d, _, rfl⟩ := Finset.mem_image.mp hx
     exact ⟨hsphere d, (hθ d).symm ▸ hmem d, (hcoe _).symm⟩
@@ -162,7 +157,7 @@ theorem Realizes.exists_contraction_split {G : Graph} {u v : ℕ}
       (b := contractionLift G u v e.val) (by simpa using hev.symm)
     omega
   obtain ⟨a, ha, b, hb, f, hsep, hpa, hpb, horderA, horderB⟩ :=
-    exists_split_fans_of_finite_blocks hρ A B θ cut hA hB hAB
+    exists_split_fans_of_finite_blocks hρ A B θ cut (hports U) (hports V) hAB
   have hUA (d : I) (hd : (contractionLift G u v d.val).vertex = u) : P d ∈ A :=
     Finset.mem_image.mpr ⟨d, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hd⟩, rfl⟩
   have hVB (d : I) (hd : (contractionLift G u v d.val).vertex = v) : P d ∈ B :=
@@ -175,28 +170,14 @@ theorem Realizes.exists_contraction_split {G : Graph} {u v : ℕ}
   · intro x y hxu hyu hxy
     have h := horderA (P x) (hUA x hxu) (P y) (hUA y hyu) (hne x y hxy)
     rw [hθ, hθ, hlt] at h
-    have hxv : (contractionLift G u v x.val).vertex ≠ v := fun h => huv (hxu.symm.trans h)
-    have hyv : (contractionLift G u v y.val).vertex ≠ v := fun h => huv (hyu.symm.trans h)
-    rw [r.val_contractionRank, r.val_contractionRank, ite_eq_right hxv,
-      ite_eq_right hyv] at h
-    have hxpos := r.rotationDistance_pos_of_ne (lastEdgeDart G u v false)
-      (contractionLift G u v x.val) (by simpa using hxu.symm)
-      (contractionLift_ne_lastEdgeDart G u v x.val false)
-    have hypos := r.rotationDistance_pos_of_ne (lastEdgeDart G u v false)
-      (contractionLift G u v y.val) (by simpa using hyu.symm)
-      (contractionLift_ne_lastEdgeDart G u v y.val false)
-    exact h.trans (by omega)
+    exact h.trans (r.contractionRank_lt_iff_sourceDistance_lt huv y x false
+      (by simpa only [vertex_lastEdgeDart, Bool.false_eq_true, ↓reduceIte] using hyu)
+      (by simpa only [vertex_lastEdgeDart, Bool.false_eq_true, ↓reduceIte] using hxu))
   · intro x y hxv hyv hxy
     have h := horderB (P x) (hVB x hxv) (P y) (hVB y hyv) (hne x y hxy)
     rw [hθ, hθ, hlt] at h
-    rw [r.val_contractionRank, r.val_contractionRank, ite_eq_left hxv,
-      ite_eq_left hyv] at h
-    have hxpos := r.rotationDistance_pos_of_ne (lastEdgeDart G u v true)
-      (contractionLift G u v x.val) (by simpa using hxv.symm)
-      (contractionLift_ne_lastEdgeDart G u v x.val true)
-    have hypos := r.rotationDistance_pos_of_ne (lastEdgeDart G u v true)
-      (contractionLift G u v y.val) (by simpa using hyv.symm)
-      (contractionLift_ne_lastEdgeDart G u v y.val true)
-    exact h.trans (by omega)
+    exact h.trans (r.contractionRank_lt_iff_sourceDistance_lt huv y x true
+      (by simpa only [vertex_lastEdgeDart, ↓reduceIte] using hyv)
+      (by simpa only [vertex_lastEdgeDart, ↓reduceIte] using hxv))
 
 end Cslib.Complexity.Graph.PolygonalDrawing

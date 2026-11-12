@@ -35,7 +35,8 @@ whose allocation does nothing.
 specification issues only admissible memory operations, answers as the specification does, and
 costs at most the allocation's cost, the potential once allocated, and the upper charges of its
 operations. A certificate `Allocator.Amortized` carries the cost side. `Allocator.run_cost_isBigO`
-exports a constant per-operation charge as `O(m)` in the number `m` of operations.
+exports a constant per-operation charge as `O(m)` in the number `m` of operations, for one
+allocator and start memory; the constant depends on the allocation's cost and the potential.
 
 Allocators combine as their structures do.
 
@@ -250,7 +251,9 @@ theorem run_cost_le {K Φ₀ : ℕ} (hA : A.Amortized (fun _ _ => K) Φ₀) {β 
   exact h
 
 /-- **The exported form.** For a constant charge per operation, the memory cost of a run is
-`O(m)` in the number `m` of operations, over admissible clients. -/
+`O(m)` in the number `m` of operations, over admissible clients of one allocator `A` from one
+memory `s`. The bound is `A.cost + Φ₀ + K * m` (`run_cost_le`), so the constant depends on
+`A.cost` and `Φ₀`. -/
 theorem run_cost_isBigO {K Φ₀ : ℕ} (hA : A.Amortized (fun _ _ => K) Φ₀) {β : Type} {s : State}
     (hs : A.Pre s) (hroom : Fits w (s.frontier + A.room)) :
     CostIsBigO Filter.atTop (fun m : ℕ => (m : ℝ))
@@ -323,23 +326,20 @@ def allocPair : Prog (A₁.Handle × A₂.Handle) := do
 theorem clientHistory_allocPair (s : State) :
     (spec w).clientHistory s (allocPair A₁ A₂) = (spec w).clientHistory s A₁.alloc ++
       (spec w).clientHistory ((spec w).clientState s A₁.alloc) A₂.alloc := by
-  rw [allocPair, (spec w).clientHistory_bind, (spec w).clientHistory_bind]
-  exact congrArg (_ ++ ·) (List.append_nil _)
+  simp only [allocPair, client_simps, List.append_nil]
 
 /-- The memory after both allocations. -/
 theorem clientState_allocPair (s : State) :
     (spec w).clientState s (allocPair A₁ A₂) =
       (spec w).clientState ((spec w).clientState s A₁.alloc) A₂.alloc := by
-  rw [allocPair, (spec w).clientState_bind, (spec w).clientState_bind]
-  rfl
+  simp only [allocPair, client_simps]
 
 /-- Both handles. -/
 theorem clientResult_allocPair (s : State) :
     (spec w).clientResult s (allocPair A₁ A₂) =
       ((spec w).clientResult s A₁.alloc,
         (spec w).clientResult ((spec w).clientState s A₁.alloc) A₂.alloc) := by
-  rw [allocPair, (spec w).clientResult_bind, (spec w).clientResult_bind]
-  rfl
+  simp only [allocPair, client_simps]
 
 variable {A₁}
 

@@ -15,6 +15,7 @@ public import CslibFrontier.Logics.Propositional.CNF.UnsatVal
 public import CslibFrontier.Probability.BitString.AffineHash.ThreeWise
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
 # Searching a three-wise independent sample space for MAX-SAT
@@ -118,19 +119,9 @@ seed. -/
 theorem length_parityCandidates_lt {vs : List V} (hvs : vs ≠ []) :
     (parityCandidates vs).length < 4 * vs.length := by
   rw [length_parityCandidates]
-  have hn : 0 < vs.length := List.length_pos_iff.2 hvs
-  rcases Nat.lt_or_ge vs.length 2 with h | h
-  · have h1 : vs.length = 1 := by omega
-    rw [h1]
-    simp
-  · have hpos := Nat.clog_pos (b := 2) (by norm_num) h
-    have hlt := Nat.pow_pred_clog_lt_self (b := 2) (by norm_num) h
-    obtain ⟨m, hm⟩ : ∃ m, Nat.clog 2 vs.length = m + 1 :=
-      ⟨_, (Nat.succ_pred_eq_of_pos hpos).symm⟩
-    rw [hm] at hlt ⊢
-    simp only [Nat.pred_succ] at hlt
-    rw [pow_succ, pow_succ]
-    omega
+  have hlt := Nat.pow_clog_lt_mul Nat.one_lt_two (List.length_pos_iff.2 hvs).ne'
+  rw [pow_succ]
+  omega
 
 /-! ### Binary positions -/
 

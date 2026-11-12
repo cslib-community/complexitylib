@@ -128,7 +128,7 @@ example : ¬ IsOraclePPTOn encUnary (encPair encBits encBits) (fun n =>
   have hlength := hbound 0 Unit (fun _ s => PMF.pure (reply, s)) () () ([], reply) (by
     simp only [requestHead, OracleComp.interpret_map, ProbOracleComp.interpret_query,
       StateT.run_map, run_copyReply]
-    simp [StateT.run])
+    simp)
   simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, reply,
     List.length_nil] at hlength
   lia
@@ -154,7 +154,7 @@ private noncomputable def repeatHead (n : ℕ) : WordOracleComp Unit (List Bool)
 
 -- The repeated client is strict oracle PPT.
 example : IsOraclePPTOn encUnary encBits repeatHead := by
-  refine IsOraclePPTOn.iterate_of_bounded_growth (count := fun n => n) (initial := fun _ => [])
+  refine IsOraclePPTOn.iterate_of_bounded_growth' (count := fun n => n) (initial := fun _ => [])
     (by fun_prop) (.const []) (by fun_prop) (growth := 1) ?_
   intro _ next hnext
   obtain ⟨reply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext

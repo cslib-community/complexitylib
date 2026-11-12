@@ -13,6 +13,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.SupportTsum
 
 /-!
 # Oblivious-Sequence Word-RAM Implementation Certificates
@@ -257,8 +258,9 @@ structure ObliviousSequenceImpl {B : Basis} {r_ds k_init : ℕ}
   /-- Distributional invariant on the initial coupled state distribution produced by `P.initSetup`.
   -/
   initInv : PMF (LatentState Latent r_ds) → Prop
-  /-- Predicate identifying operations admissible from a latent state (`fun _ _ => True` when
-  operation encoding is unconditionally word-bounded). -/
+  /-- Predicate on a latent state and an operation under which `arguments_fit` bounds the encoded
+  arguments (`fun _ _ => True` when operation encoding is unconditionally word-bounded). No field
+  relates it to `S.ValidOpSeq`, and `steps_exec` does not use it. -/
   validOp : Latent → S.Op → Prop := fun _ _ => True
   /-- Standalone register encoding for argument delivery. -/
   encode : S.Op → Fin r_ds → ℕ
@@ -266,7 +268,8 @@ structure ObliviousSequenceImpl {B : Basis} {r_ds k_init : ℕ}
   decode : (o : S.Op) → (Fin r_ds → ℕ) → Option (S.Result o)
   /-- Initial distributions satisfying `initInv` are supported on word-bounded states. -/
   bounded : ∀ {ν : PMF (LatentState Latent r_ds)}, initInv ν → ∀ t ∈ ν.support, t.data.Bounded w
-  /-- Standalone encoded arguments fit in `w`-bit words on admissible calls. -/
+  /-- Standalone encoded arguments fit in `w`-bit words on operations satisfying `validOp` at some
+  latent state. -/
   arguments_fit : ∀ {z : Latent} (o : S.Op),
     validOp z o → ∀ i, P.input i = true → Fits w (encode o i)
   /-- Distinctness of registers used by `zeroFillCode` relative to `baseReg` and `frontierReg`. -/
@@ -528,145 +531,98 @@ private def projCoupled (C : StateTransitionImpl P D w base params s₀)
     CoupledState C.Seed D.State r_ds :=
   ⟨t.latent.seed, t.latent.state, t.data⟩
 
-/-- Multi-step execution and potential-telescope helper for
+/-- Transport a relational `ExecSteps` derivation of `C` to the oblivious-sequence execution
+relation over `TraceLatent D C.Seed`: every step appends its decoded observation to the
+transcript and the relational trace, and the total operation charge is bounded by `opCharge`.
+Combined with `steps_expected_amortized`, this is the multi-step telescope of
 `StateTransitionImpl.toObliviousSequenceImpl`. -/
 private theorem steps_toObliviousSequenceImpl (C : StateTransitionImpl P D w base params s₀)
     (opCharge : D.Op → ℕ)
     (hcharge : ∀ s o, D.valid s o → C.charge s o ≤ opCharge o)
-    (prefOps remOps : List D.Op)
-    (ν : PMF (SeqOutcome (TraceLatent D C.Seed) D.Result r_ds))
-    (hseed : ∀ θ, ((ν.map C.projCoupled).map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ)
-    (hsingle : C.singleState → ∃ s, ∀ t ∈ (ν.map C.projCoupled).support, t.state = s)
+    {remOps : List D.Op} {ν_rel ν_final_rel : PMF (CoupledState C.Seed D.State r_ds)}
+    {T_ops C_ops : ℝ≥0∞} (hex : C.ExecSteps remOps ν_rel ν_final_rel T_ops C_ops)
+    (prefOps : List D.Op) (ν : PMF (SeqOutcome (TraceLatent D C.Seed) D.Result r_ds))
+    (hproj : ν.map C.projCoupled = ν_rel)
     (hsupp : ∀ t ∈ ν.support,
       t.latent.trace.ops = prefOps ∧
       t.latent.trace.labels = t.transcript ∧
       D.ValidTranscript s₀ t.latent.trace t.latent.state ∧
       D.ValidOpSeq t.latent.state remOps ∧
       C.rep t.latent.seed t.latent.state t.data) :
-    ∃ (ν_final : PMF (SeqOutcome (TraceLatent D C.Seed) D.Result r_ds)) (T_ops : ℝ≥0∞),
+    ∃ ν_final : PMF (SeqOutcome (TraceLatent D C.Seed) D.Result r_ds),
       DataStructure.WordRAM.Randomized.ExecSteps P (D.toObliviousSequenceSpec s₀)
         (TraceLatent D C.Seed) w base C.space C.encode C.decode remOps ν ν_final T_ops ∧
       (∀ t ∈ ν_final.support,
         t.latent.trace.ops = prefOps ++ remOps ∧
         t.latent.trace.labels = t.transcript ∧
         D.ValidTranscript s₀ t.latent.trace t.latent.state) ∧
-      T_ops + (∑' q, ν_final q * (C.potential q.latent.seed q.data : ℝ≥0∞)) ≤
-        (((remOps.map opCharge).sum : ℕ) : ℝ≥0∞) +
-          ∑' t, ν t * (C.potential t.latent.seed t.data : ℝ≥0∞) := by
-  induction remOps generalizing prefOps ν with
-  | nil =>
-    refine ⟨ν, 0,
-      DataStructure.WordRAM.Randomized.ExecSteps.nil
-        (S := D.toObliviousSequenceSpec s₀) ν, fun t ht => ?_, by simp⟩
+      C_ops ≤ (((remOps.map opCharge).sum : ℕ) : ℝ≥0∞) := by
+  induction hex generalizing prefOps ν with
+  | nil _ =>
+    refine ⟨ν, DataStructure.WordRAM.Randomized.ExecSteps.nil
+      (S := D.toObliviousSequenceSpec s₀) ν, fun t ht => ?_, zero_le⟩
     obtain ⟨hops, hlbl, htr, _, _⟩ := hsupp t ht
     rw [List.append_nil]
     exact ⟨hops, hlbl, htr⟩
-  | cons o os ih =>
-    let prepCoupled : SeqOutcome (TraceLatent D C.Seed) D.Result r_ds →
-        CoupledState C.Seed D.State r_ds :=
-      fun t => ⟨t.latent.seed, t.latent.state, C.toDynamicProgram.prepare o t.data⟩
-    let ν_prep : PMF (CoupledState C.Seed D.State r_ds) := ν.map prepCoupled
-    have hsingle_prep : C.singleState → ∃ s, ∀ t' ∈ ν_prep.support, t'.state = s := by
-      intro hd
-      obtain ⟨s, hs⟩ := hsingle hd
-      refine ⟨s, fun t' ht' => ?_⟩
-      rw [PMF.mem_support_map_iff] at ht'
-      obtain ⟨t, ht, rfl⟩ := ht'
-      exact hs (C.projCoupled t) ((PMF.mem_support_map_iff _ _ _).mpr ⟨t, ht, rfl⟩)
-    have hseed_prep : ∀ θ, (ν_prep.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-      intro θ
-      have hmap : ν_prep.map CoupledState.seed = (ν.map C.projCoupled).map CoupledState.seed := by
-        rw [PMF.map_comp, PMF.map_comp]
-        rfl
-      rw [hmap]
-      exact hseed θ
-    have hsupp_prep : ∀ t' ∈ ν_prep.support,
-        D.valid t'.state o ∧ C.rep t'.seed t'.state t'.data ∧ C.argMatch o t'.data.regs := by
-      intro t' ht'
-      rw [PMF.mem_support_map_iff] at ht'
-      obtain ⟨t, ht, rfl⟩ := ht'
-      obtain ⟨_, _, _, hv_t, hrep_t⟩ := hsupp t ht
-      exact ⟨hv_t.1, C.prepare_rep hrep_t hv_t.1, C.prepare_argMatch o t.data⟩
-    obtain ⟨μ_rel, T_rel, hstep_rel, hseed₁, hsingle₁, hamort₁⟩ :=
-      C.step_exec o ν_prep hsingle_prep hseed_prep hsupp_prep
+  | @cons o os ν_rel ν_final_rel μ_rel T_rel T_rest C_rest hstep _ ih =>
+    subst hproj
+    have hmem : ∀ t ∈ ν.support, C.projCoupled t ∈ (ν.map C.projCoupled).support :=
+      fun t ht => (PMF.mem_support_map_iff _ _ _).mpr ⟨t, ht, rfl⟩
     have h_a_nonempty : Nonempty (D.Result o) := by
       obtain ⟨t₀, ht₀⟩ := ν.support_nonempty
-      have ht₀' : prepCoupled t₀ ∈ ν_prep.support :=
-        (PMF.mem_support_map_iff _ _ _).mpr ⟨t₀, ht₀, rfl⟩
-      obtain ⟨q₀, hq₀⟩ := (μ_rel (prepCoupled t₀)).support_nonempty
-      obtain ⟨a₀, _, _, _, _⟩ := (hstep_rel (prepCoupled t₀) ht₀').2 q₀ hq₀
+      obtain ⟨q₀, hq₀⟩ := (μ_rel (C.projCoupled t₀)).support_nonempty
+      obtain ⟨a₀, _⟩ := (hstep _ (hmem t₀ ht₀)).2 q₀ hq₀
       exact ⟨a₀⟩
-    let a_default : D.Result o := Classical.choice h_a_nonempty
     let outOf : CoupledState C.Seed D.State r_ds → D.Result o :=
-      fun q => (C.decode o q.data.regs).getD a_default
+      fun q => (C.decode o q.data.regs).getD (Classical.choice h_a_nonempty)
     let liftStep (t : SeqOutcome (TraceLatent D C.Seed) D.Result r_ds)
         (q : CoupledState C.Seed D.State r_ds) :
         StepOutcome (TraceLatent D C.Seed) (D.Result o) r_ds :=
       ⟨⟨q.seed, q.state, t.latent.trace ++ [⟨o, outOf q, q.state⟩]⟩, q.data, outOf q⟩
     let μ_step (t : SeqOutcome (TraceLatent D C.Seed) D.Result r_ds) :
         PMF (StepOutcome (TraceLatent D C.Seed) (D.Result o) r_ds) :=
-      (μ_rel (prepCoupled t)).map (liftStep t)
-    let T_step (t : SeqOutcome (TraceLatent D C.Seed) D.Result r_ds) : ℝ≥0∞ :=
-      T_rel (prepCoupled t)
+      (μ_rel (C.projCoupled t)).map (liftStep t)
     let ν₁ : PMF (SeqOutcome (TraceLatent D C.Seed) D.Result r_ds) :=
       ν.bind fun t => (μ_step t).map (t.appendStep o)
-    have hproj_ν₁ : ν₁.map C.projCoupled = ν_prep.bind μ_rel := by
-      dsimp only [ν₁, ν_prep, μ_step]
+    have hproj₁ : ν₁.map C.projCoupled = (ν.map C.projCoupled).bind μ_rel := by
+      dsimp only [ν₁, μ_step]
       rw [PMF.map_bind, PMF.bind_map]
       refine congrArg (ν.bind ·) (funext fun t => ?_)
       rw [PMF.map_comp, PMF.map_comp]
-      exact PMF.map_id (μ_rel (prepCoupled t))
-    have hseed₁' : ∀ θ, ((ν₁.map C.projCoupled).map CoupledState.seed) θ ≤
-        C.seedSlack * C.seedLaw θ := by
-      rw [hproj_ν₁]
-      exact hseed₁
-    have hsingle₁' : C.singleState → ∃ s', ∀ q ∈ (ν₁.map C.projCoupled).support, q.state = s' := by
-      rw [hproj_ν₁]
-      exact hsingle₁
-    have hsupp₁ : ∀ q_seq ∈ ν₁.support,
-        q_seq.latent.trace.ops = (prefOps ++ [o]) ∧
-        q_seq.latent.trace.labels = q_seq.transcript ∧
-        D.ValidTranscript s₀ q_seq.latent.trace q_seq.latent.state ∧
-        D.ValidOpSeq q_seq.latent.state os ∧
-        C.rep q_seq.latent.seed q_seq.latent.state q_seq.data := by
-      intro q_seq hq_seq
-      rw [PMF.mem_support_bind_iff] at hq_seq
-      obtain ⟨t, ht, hq_map⟩ := hq_seq
-      rw [PMF.mem_support_map_iff] at hq_map
-      obtain ⟨u, hu, rfl⟩ := hq_map
-      dsimp only [μ_step] at hu
+      exact PMF.map_id (μ_rel (C.projCoupled t))
+    have hsupp₁ : ∀ u ∈ ν₁.support,
+        u.latent.trace.ops = prefOps ++ [o] ∧
+        u.latent.trace.labels = u.transcript ∧
+        D.ValidTranscript s₀ u.latent.trace u.latent.state ∧
+        D.ValidOpSeq u.latent.state os ∧
+        C.rep u.latent.seed u.latent.state u.data := by
+      intro u hu
+      rw [PMF.mem_support_bind_iff] at hu
+      obtain ⟨t, ht, hu⟩ := hu
       rw [PMF.mem_support_map_iff] at hu
-      obtain ⟨q, hq, rfl⟩ := hu
+      obtain ⟨u', hu', rfl⟩ := hu
+      dsimp only [μ_step] at hu'
+      rw [PMF.mem_support_map_iff] at hu'
+      obtain ⟨q, hq, rfl⟩ := hu'
       obtain ⟨hops_t, hlbl_t, htr_t, hv_t, _⟩ := hsupp t ht
-      have ht' : prepCoupled t ∈ ν_prep.support :=
-        (PMF.mem_support_map_iff _ _ _).mpr ⟨t, ht, rfl⟩
-      obtain ⟨a, hstep_a, hdec_a, hrep_q, _⟩ := (hstep_rel (prepCoupled t) ht').2 q hq
+      obtain ⟨a, hstep_a, hdec_a, hrep_q, _⟩ := (hstep _ (hmem t ht)).2 q hq
       have hout_eq : outOf q = a := by simp [outOf, hdec_a]
-      refine ⟨?_, ?_, ?_, ?_, hrep_q⟩
+      refine ⟨?_, ?_, ?_, hv_t.2 q.state a hstep_a, hrep_q⟩
       · simp [SeqOutcome.appendStep, liftStep, hops_t]
       · simp [SeqOutcome.appendStep, liftStep, hlbl_t]
       · refine htr_t.append ?_
         rw [hout_eq]
         exact .cons ⟨o, a, q.state⟩ hv_t.1 hstep_a (.nil q.state)
-      · exact hv_t.2 q.state a hstep_a
-    obtain ⟨ν_final, T_rest, hex_rest, htr_final, hamort_rest⟩ :=
-      ih (prefOps ++ [o]) ν₁ hseed₁' hsingle₁' hsupp₁
-    let T₁ : ℝ≥0∞ := ∑' t, ν t * T_step t
-    have hex_cons :
-        DataStructure.WordRAM.Randomized.ExecSteps P (D.toObliviousSequenceSpec s₀)
-          (TraceLatent D C.Seed) w base C.space C.encode C.decode (o :: os) ν ν_final
-          (T₁ + T_rest) := by
+    obtain ⟨ν_final, hex_rest, htr_final, hC_rest⟩ := ih (prefOps ++ [o]) ν₁ hproj₁ hsupp₁
+    refine ⟨ν_final, ?_, fun t ht => ?_, ?_⟩
+    · rw [Cslib.Probability.PMF.tsum_map_mul]
       refine DataStructure.WordRAM.Randomized.ExecSteps.cons (S := D.toObliviousSequenceSpec s₀)
-        (μ_step := μ_step) (T_step := T_step) (fun t ht => ?_) hex_rest
+        (μ_step := μ_step) (T_step := fun t => T_rel (C.projCoupled t)) (fun t ht => ?_) hex_rest
       obtain ⟨_, _, _, hv_t, hrep_t⟩ := hsupp t ht
       have hbdd_t : t.data.Bounded w := C.bounded hrep_t
       have hfit_t : ∀ i, P.input i = true → Fits w (C.encode o i) := C.arguments_fit o hv_t.1
-      have hprep_t : ((P.toDynamicProgram C.encode C.decode).prepare o t.data).Bounded w :=
-        C.toDynamicProgram.prepare_bounded hbdd_t hfit_t
-      have ht' : prepCoupled t ∈ ν_prep.support :=
-        (PMF.mem_support_map_iff _ _ _).mpr ⟨t, ht, rfl⟩
-      obtain ⟨he_rel, hq_rel⟩ := hstep_rel (prepCoupled t) ht'
-      refine ⟨hbdd_t, hfit_t, hprep_t, ?_, ?_⟩
+      obtain ⟨he_rel, hq_rel⟩ := hstep _ (hmem t ht)
+      refine ⟨hbdd_t, hfit_t, C.toDynamicProgram.prepare_bounded hbdd_t hfit_t, ?_, ?_⟩
       · refine he_rel.congr_dist ?_ le_rfl
         dsimp only [μ_step]
         rw [PMF.map_comp]
@@ -678,62 +634,12 @@ private theorem steps_toObliviousSequenceImpl (C : StateTransitionImpl P D w bas
         obtain ⟨a, _, hdec_a, hrep_q, hmod_q⟩ := hq_rel q hq
         have hout_eq : outOf q = a := by simp [outOf, hdec_a]
         exact ⟨C.bounded hrep_q, by simp [liftStep, hout_eq, hdec_a], hmod_q⟩
-    have hT₁_eq : T₁ = ∑' t', ν_prep t' * T_rel t' :=
-      (Cslib.Probability.PMF.tsum_map_mul ν prepCoupled T_rel).symm
-    have hpot_ν₁ :
-        (∑' q, ν₁ q * (C.potential q.latent.seed q.data : ℝ≥0∞)) =
-          ∑' t', ν_prep t' * ∑' q, μ_rel t' q * (C.potential q.seed q.data : ℝ≥0∞) := by
-      have hmap_pot :
-          (∑' q, ν₁ q * (C.potential q.latent.seed q.data : ℝ≥0∞)) =
-            ∑' q, (ν₁.map C.projCoupled) q * (C.potential q.seed q.data : ℝ≥0∞) :=
-        (Cslib.Probability.PMF.tsum_map_mul ν₁ C.projCoupled
-          fun q => (C.potential q.seed q.data : ℝ≥0∞)).symm
-      rw [hmap_pot, hproj_ν₁, Cslib.Probability.PMF.tsum_bind_mul]
-    have hstep_split :
-        T₁ + (∑' q, ν₁ q * (C.potential q.latent.seed q.data : ℝ≥0∞)) =
-          ∑' t', ν_prep t' *
-            (T_rel t' + ∑' q, μ_rel t' q * (C.potential q.seed q.data : ℝ≥0∞)) := by
-      rw [hT₁_eq, hpot_ν₁]
-      simp only [← tsum_add, mul_add]
-    have hpot_prep :
-        (∑' t', ν_prep t' *
-            ((C.charge t'.state o : ℝ≥0∞) + (C.potential t'.seed t'.data : ℝ≥0∞))) ≤
-          (opCharge o : ℝ≥0∞) + ∑' t, ν t * (C.potential t.latent.seed t.data : ℝ≥0∞) := by
-      rw [Cslib.Probability.PMF.tsum_map_mul]
-      calc
-        (∑' t, ν t * ((C.charge (prepCoupled t).state o : ℝ≥0∞) +
-            (C.potential (prepCoupled t).seed (prepCoupled t).data : ℝ≥0∞)))
-          ≤ ∑' t, ν t * ((opCharge o : ℝ≥0∞) + (C.potential t.latent.seed t.data : ℝ≥0∞)) := by
-              refine tsum_le_tsum fun t => ?_
-              by_cases ht : t ∈ ν.support
-              · obtain ⟨_, _, _, hv_t, hrep_t⟩ := hsupp t ht
-                refine mul_le_mul_right ?_ _
-                dsimp only [prepCoupled]
-                rw [C.prepare_potential hrep_t]
-                exact add_le_add (Nat.cast_le.mpr (hcharge t.latent.state o hv_t.1)) le_rfl
-              · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
-        _ = (opCharge o : ℝ≥0∞) + ∑' t, ν t * (C.potential t.latent.seed t.data : ℝ≥0∞) := by
-              simp_rw [mul_add, tsum_add, ENNReal.tsum_mul_right, ν.tsum_coe, one_mul]
-    refine ⟨ν_final, T₁ + T_rest, hex_cons, fun t ht => ?_, ?_⟩
     · obtain ⟨hops, hlbl, htr⟩ := htr_final t ht
       rw [List.append_assoc, List.singleton_append] at hops
       exact ⟨hops, hlbl, htr⟩
-    · simp only [List.map_cons, List.sum_cons, Nat.cast_add]
-      calc
-        (T₁ + T_rest) + ∑' q, ν_final q * (C.potential q.latent.seed q.data : ℝ≥0∞)
-          = T₁ + (T_rest + ∑' q, ν_final q * (C.potential q.latent.seed q.data : ℝ≥0∞)) := by
-            ac_rfl
-        _ ≤ T₁ + ((((os.map opCharge).sum : ℕ) : ℝ≥0∞) +
-              ∑' q, ν₁ q * (C.potential q.latent.seed q.data : ℝ≥0∞)) :=
-            add_le_add le_rfl hamort_rest
-        _ = (((os.map opCharge).sum : ℕ) : ℝ≥0∞) +
-              (T₁ + ∑' q, ν₁ q * (C.potential q.latent.seed q.data : ℝ≥0∞)) := by ac_rfl
-        _ ≤ (((os.map opCharge).sum : ℕ) : ℝ≥0∞) +
-              ((opCharge o : ℝ≥0∞) + ∑' t, ν t * (C.potential t.latent.seed t.data : ℝ≥0∞)) := by
-            rw [hstep_split]
-            exact add_le_add le_rfl (hamort₁.trans hpot_prep)
-        _ = ((opCharge o : ℝ≥0∞) + (((os.map opCharge).sum : ℕ) : ℝ≥0∞)) +
-              ∑' t, ν t * (C.potential t.latent.seed t.data : ℝ≥0∞) := by ac_rfl
+    · rw [List.map_cons, List.sum_cons, Nat.cast_add, Cslib.Probability.PMF.tsum_map_mul]
+      refine add_le_add (Cslib.Probability.PMF.tsum_mul_le_of_support ν fun t ht => ?_) hC_rest
+      exact Nat.cast_le.mpr (hcharge _ o (hsupp t ht).2.2.2.1.1)
 
 /-- Canonical embedding of any relational
 `Cslib.DataStructure.WordRAM.Randomized.StateTransitionImpl` certificate into
@@ -802,20 +708,12 @@ operation charge bound `opCharge : D.Op → ℕ` such that
     obtain ⟨hseed₀, hsingle₀, hsupp₀⟩ := hinv
     let ν_seq : PMF (SeqOutcome (TraceLatent D C.Seed) D.Result r_ds) :=
       ν₀.map SeqOutcome.ofLatentState
-    have hproj_eq : ν_seq.map C.projCoupled =
-        ν₀.map fun t => (⟨t.latent.seed, t.latent.state, t.data⟩ :
-          CoupledState C.Seed D.State r_ds) := by
+    let ν_rel : PMF (CoupledState C.Seed D.State r_ds) :=
+      ν₀.map fun t => ⟨t.latent.seed, t.latent.state, t.data⟩
+    have hproj_eq : ν_seq.map C.projCoupled = ν_rel := by
       dsimp only [ν_seq]
       rw [PMF.map_comp]
       rfl
-    have hseed_seq : ∀ θ, ((ν_seq.map C.projCoupled).map CoupledState.seed) θ ≤
-        C.seedSlack * C.seedLaw θ := by
-      rw [hproj_eq]
-      exact hseed₀
-    have hsingle_seq : C.singleState →
-        ∃ s, ∀ t ∈ (ν_seq.map C.projCoupled).support, t.state = s := by
-      rw [hproj_eq]
-      exact hsingle₀
     have hsupp_seq : ∀ t ∈ ν_seq.support,
         t.latent.trace.ops = [] ∧
         t.latent.trace.labels = t.transcript ∧
@@ -829,21 +727,22 @@ operation charge bound `opCharge : D.Op → ℕ` such that
       dsimp only [SeqOutcome.ofLatentState]
       rw [hs_u, htr_u]
       exact ⟨rfl, rfl, .nil s₀, hv, hrep_u⟩
-    obtain ⟨ν_final, T_ops, hex, htr_final, hamort⟩ :=
-      C.steps_toObliviousSequenceImpl opCharge hcharge [] ops ν_seq hseed_seq hsingle_seq hsupp_seq
+    have hsupp_rel : ∀ t ∈ ν_rel.support,
+        D.ValidOpSeq t.state ops ∧ C.rep t.seed t.state t.data := by
+      intro t ht
+      rw [← hproj_eq, PMF.mem_support_map_iff] at ht
+      obtain ⟨u, hu, rfl⟩ := ht
+      exact ⟨(hsupp_seq u hu).2.2.2.1, (hsupp_seq u hu).2.2.2.2⟩
+    obtain ⟨_, T_ops, C_ops, hex_rel, _, _, hamort⟩ :=
+      C.steps_expected_amortized ops ν_rel (fun t ht => (hsupp_rel t ht).1) hseed₀
+        (fun t ht => (hsupp_rel t ht).2) hsingle₀
+    obtain ⟨ν_final, hex, htr_final, hC_ops⟩ :=
+      C.steps_toObliviousSequenceImpl opCharge hcharge hex_rel [] ν_seq hproj_eq hsupp_seq
     have hpot₀ :
-        (∑' t, ν_seq t * (C.potential t.latent.seed t.data : ℝ≥0∞)) ≤ (C.initPotential : ℝ≥0∞) := by
-      dsimp only [ν_seq]
+        (∑' t, ν_rel t * (C.potential t.seed t.data : ℝ≥0∞)) ≤ (C.initPotential : ℝ≥0∞) := by
       rw [Cslib.Probability.PMF.tsum_map_mul]
-      calc
-        (∑' u, ν₀ u * (C.potential u.latent.seed u.data : ℝ≥0∞))
-          ≤ ∑' u, ν₀ u * (C.initPotential : ℝ≥0∞) := by
-            refine tsum_le_tsum fun u => ?_
-            by_cases hu : u ∈ ν₀.support
-            · exact mul_le_mul_right (Nat.cast_le.mpr (hsupp₀ u hu).2.2.2) _
-            · rw [(PMF.apply_eq_zero_iff _ _).mpr hu, zero_mul, zero_mul]
-        _ = (C.initPotential : ℝ≥0∞) := by
-            rw [ENNReal.tsum_mul_right, ν₀.tsum_coe, one_mul]
+      exact Cslib.Probability.PMF.tsum_mul_le_of_support ν₀ fun u hu =>
+        Nat.cast_le.mpr (hsupp₀ u hu).2.2.2
     refine ⟨ν_final, T_ops, hex, ?_, ?_⟩
     · intro out hout
       rw [PMF.mem_support_map_iff] at hout
@@ -851,14 +750,8 @@ operation charge bound `opCharge : D.Op → ℕ` such that
       obtain ⟨hops_q, hlbl_q, htr_q⟩ := htr_final q hq
       rw [List.nil_append] at hops_q
       exact ⟨q.latent.trace, q.latent.state, hops_q, hlbl_q, htr_q⟩
-    · calc
-        T_ops
-          ≤ T_ops + ∑' q, ν_final q * (C.potential q.latent.seed q.data : ℝ≥0∞) := le_self_add
-        _ ≤ (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) +
-              ∑' t, ν_seq t * (C.potential t.latent.seed t.data : ℝ≥0∞) := hamort
-        _ ≤ (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) + (C.initPotential : ℝ≥0∞) :=
-            add_le_add le_rfl hpot₀
-        _ = (C.initPotential : ℝ≥0∞) + (((ops.map opCharge).sum : ℕ) : ℝ≥0∞) := add_comm _ _
+    · rw [add_comm]
+      exact le_self_add.trans (hamort.trans (add_le_add hC_ops hpot₀))
 
 @[simp]
 theorem toObliviousSequenceImpl_space (C : StateTransitionImpl P D w base params s₀)

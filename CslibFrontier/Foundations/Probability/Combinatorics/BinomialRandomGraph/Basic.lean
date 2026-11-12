@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Combinatorics.SimpleGraph.Copy
 public import Mathlib.MeasureTheory.Integral.Bochner.Basic
 public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
+import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
 import CslibFrontier.Foundations.Probability.SecondMoment
 import Mathlib.Data.Fintype.CardEmbedding
 
@@ -22,7 +23,9 @@ graph on `V` in which each pair of distinct vertices is an edge independently wi
 `p`. This file computes the basic probabilities of `G(V, p)` for countable `V`:
 
 * `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`
-  (`SimpleGraph.binomialRandom_real_subset_edgeSet`), so it contains a fixed subgraph `H` on its
+  (`SimpleGraph.binomialRandom_real_subset_edgeSet`) and avoids a fixed finite set `t` of
+  non-diagonal edges with probability `(1 - p) ^ |t|`
+  (`SimpleGraph.binomialRandom_real_disjoint_edgeSet`), so it contains a fixed subgraph `H` on its
   own vertex set with probability `p ^ e(H)` (`SimpleGraph.binomialRandom_real_setOf_le`);
 * for finite `V` the expected number of labelled copies of a finite graph `H` is the falling
   factorial `|V| (|V| - 1) ⋯ (|V| - v(H) + 1)` times `p ^ e(H)`
@@ -40,8 +43,10 @@ graph on `V` in which each pair of distinct vertices is an edge independently wi
 
 * `SimpleGraph.measurableSet_subset_edgeSet`, `SimpleGraph.measurableSet_setOf_le`: events
   defined by required edges are measurable.
-* `SimpleGraph.binomialRandom_real_subset_edgeSet`, `SimpleGraph.binomialRandom_real_setOf_le`:
-  the probability of a fixed set of edges or a fixed subgraph.
+* `SimpleGraph.binomialRandom_real_subset_edgeSet`,
+  `SimpleGraph.binomialRandom_real_disjoint_edgeSet`,
+  `SimpleGraph.binomialRandom_real_setOf_le`:
+  the probability of containing or avoiding a fixed set of edges or containing a fixed subgraph.
 * `SimpleGraph.integral_labelledCopyCount`: the expected number of labelled copies of `H`.
 * `SimpleGraph.binomialRandom_real_isContained_le`: the first-moment bound for containing `H`.
 * `SimpleGraph.tendsto_binomialRandom_real_isContained`: its asymptotic form.
@@ -66,45 +71,47 @@ variable {V W : Type*}
 /-- The graphs containing a given set of edges form a measurable set. -/
 theorem measurableSet_subset_edgeSet [Countable V] (s : Set (Sym2 V)) :
     MeasurableSet {G : SimpleGraph V | s ⊆ G.edgeSet} := by
-  have : {G : SimpleGraph V | s ⊆ G.edgeSet} = ⋂ e ∈ s, {G | e ∈ G.edgeSet} := by
-    ext G; simp [Set.subset_def]
-  rw [this]
-  refine MeasurableSet.biInter (Set.to_countable s) fun e _ => ?_
-  exact measurableSet_setOfPred.2 ((measurable_set_iff.1 measurable_edgeSet) e)
+  simpa [Set.subset_def] using measurableSet_edgePattern s fun _ => true
 
 /-- The supergraphs of a given graph form a measurable set. -/
 theorem measurableSet_setOf_le [Countable V] (H : SimpleGraph V) :
     MeasurableSet {G : SimpleGraph V | H ≤ G} := by
   simpa only [← edgeSet_subset_edgeSet] using measurableSet_subset_edgeSet H.edgeSet
 
-/-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`.
-This is a statement about `setBernoulli` transported along `fromEdgeSet`; upstream it belongs
-next to the `setBernoulli` API. -/
+/-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`:
+the constant pattern `true` in `SimpleGraph.binomialRandom_edgePattern`. -/
 theorem binomialRandom_subset_edgeSet [Countable V] (p : I) (s : Finset (Sym2 V))
     (hs : ∀ e ∈ s, ¬e.IsDiag) :
     G(V, p) {G | (s : Set (Sym2 V)) ⊆ G.edgeSet} = toNNReal p ^ #s := by
-  rw [binomialRandom_eq_map, Measure.map_apply measurable_fromEdgeSet
-    (measurableSet_subset_edgeSet _), setBernoulli_apply']
-  have : (fun q : Sym2 V → Prop => {i | q i}) ⁻¹'
-      (fromEdgeSet ⁻¹' {G | (s : Set (Sym2 V)) ⊆ G.edgeSet}) =
-      Set.pi (s : Set (Sym2 V)) (fun _ => {True}) := by
-    ext q
-    simp only [Set.mem_preimage, Set.mem_ofPred_eq, edgeSet_fromEdgeSet, Set.subset_def,
-      Set.mem_sdiff, Set.mem_pi, Finset.mem_coe, Set.mem_singleton_iff, eq_iff_iff, iff_true]
-    exact ⟨fun h e he => (h e he).1, fun h e he => ⟨h e he, hs e he⟩⟩
-  rw [this, Measure.infinitePi_pi _ (fun _ _ => measurableSet_singleton _)]
-  rw [Finset.prod_congr rfl (g := fun _ => (toNNReal p : ENNReal))]
-  · simp
-  intro e he
-  rw [bernoulliMeasure_apply_of_mem_of_notMem p (measurableSet_singleton _)]
-  · simpa using hs e he
-  · simp
+  have h := binomialRandom_edgePattern p s hs fun _ => true
+  simp only [iff_true, ↓reduceIte, Finset.prod_const] at h
+  exact h
 
 /-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`. -/
 theorem binomialRandom_real_subset_edgeSet [Countable V] (p : I) (s : Finset (Sym2 V))
     (hs : ∀ e ∈ s, ¬e.IsDiag) :
     G(V, p).real {G | (s : Set (Sym2 V)) ⊆ G.edgeSet} = (p : ℝ) ^ #s := by
   rw [measureReal_def, binomialRandom_subset_edgeSet p s hs]
+  simp
+
+/-- `G(V, p)` has no edge in a fixed finite set `t` of non-diagonal edges with probability
+`(1 - p) ^ |t|`: the constant pattern `false` in `SimpleGraph.binomialRandom_edgePattern`. -/
+theorem binomialRandom_disjoint_edgeSet [Countable V] (p : I) (t : Finset (Sym2 V))
+    (ht : ∀ e ∈ t, ¬e.IsDiag) :
+    G(V, p) {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} = toNNReal (σ p) ^ #t := by
+  have h := binomialRandom_edgePattern p t ht fun _ => false
+  simp only [Bool.false_eq_true, iff_false, ↓reduceIte, Finset.prod_const] at h
+  rw [← h]
+  congr 1
+  ext G
+  simp [Set.disjoint_left]
+
+/-- `G(V, p)` has no edge in a fixed finite set `t` of non-diagonal edges with probability
+`(1 - p) ^ |t|`. -/
+theorem binomialRandom_real_disjoint_edgeSet [Countable V] (p : I) (t : Finset (Sym2 V))
+    (ht : ∀ e ∈ t, ¬e.IsDiag) :
+    G(V, p).real {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} = (1 - p : ℝ) ^ #t := by
+  rw [measureReal_def, binomialRandom_disjoint_edgeSet p t ht]
   simp
 
 /-- `G(V, p)` contains a fixed subgraph `H` with finitely many edges with probability

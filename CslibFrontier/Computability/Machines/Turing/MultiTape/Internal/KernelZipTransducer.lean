@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OneWorkTape
 public import Mathlib.Data.Fintype.Option
 import Mathlib.Basic.Finite.Prod
 import Mathlib.Basic.Finite.Sum
@@ -158,120 +159,20 @@ public def toTM : MultiTapeTM 1 Bool (State Q) :=
 
 /-! ### Configurations -/
 
-variable {w : List Bool}
+open OneWorkTape
 
-/-- The configuration in state `st` with the input head at `p` (clamped to the input), the work
-tape `tape` with its head at `h`, and the output `o`. -/
-private def cfgAt (w : List Bool) (st : Option (State Q)) (p : ℕ) (tape : ℤ → Option Bool) (h : ℤ)
-    (o : List Bool) : Cfg 1 Bool (State Q) w :=
-  ⟨st, ⟨min p (w.length + 1), by omega⟩, fun _ => tape, fun _ => h, o⟩
+variable {τ} {u v : List Bool}
 
-private lemma moveInputPosNat_le (n j : ℕ) (d : SignType) (hj : j < n + 2) :
-    moveInputPosNat n j d ≤ n + 1 := by
-  have := (moveInputPos (⟨j, hj⟩ : Fin (n + 2)) d).isLt
-  rw [val_moveInputPos_eq_moveInputPosNat] at this
-  exact Nat.lt_succ_iff.mp this
-
-/-- One step of `τ.toTM`, read off its transition function. -/
-private lemma step_cfgAt (s : State Q) (p : ℕ) (tape : ℤ → Option Bool) (h : ℤ) (o : List Bool) :
-    τ.toTM.step (cfgAt w (some s) p tape h o) =
-      cfgAt w (τ.tr s (inputAt w (min p (w.length + 1))) (tape h)).state
-        (moveInputPosNat w.length (min p (w.length + 1))
-          (τ.tr s (inputAt w (min p (w.length + 1))) (tape h)).inputTape)
-        (match ((τ.tr s (inputAt w (min p (w.length + 1))) (tape h)).workTapes 0).1 with
-          | none => tape
-          | some x => Function.update tape h x)
-        (h + (((τ.tr s (inputAt w (min p (w.length + 1))) (tape h)).workTapes 0).2 : ℤ))
-        (o ++ (τ.tr s (inputAt w (min p (w.length + 1))) (tape h)).output.toList) := by
-  have hw : (cfgAt w (some s) p tape h o).workTapeSymbols = fun _ => tape h := rfl
-  have hp : ((cfgAt w (some s) p tape h o).inputPos : ℕ) = min p (w.length + 1) := rfl
-  rw [step_of_state rfl, Cfg.inputSymbol_eq_inputAt, hw, hp]
-  simp only [toTM, tr_ofTr]
-  refine Cfg.ext rfl (Fin.ext ?_) (funext fun i => ?_) (funext fun i => ?_) rfl
-  · rw [Action.apply_inputPos, val_moveInputPos_eq_moveInputPosNat, hp]
-    exact (min_eq_left (moveInputPosNat_le _ _ _ (by omega))).symm
-  · obtain rfl : i = 0 := Subsingleton.elim _ _
-    simp only [cfgAt, Action.apply_workTapes]
-    rcases ((τ.tr s (inputAt w (min p (w.length + 1))) (tape h)).workTapes 0).1 with _ | _ <;> rfl
-  · obtain rfl : i = 0 := Subsingleton.elim _ _
-    simp only [cfgAt, Action.apply_workTapePos]
-
-private lemma cfgAt_congr {st : Option (State Q)} {p p' : ℕ} {tape : ℤ → Option Bool} {h h' : ℤ}
-    {o : List Bool} (hp : min p (w.length + 1) = min p' (w.length + 1)) (hh : h = h') :
-    cfgAt w st p tape h o = cfgAt w st p' tape h' o := by
-  subst hh
-  simp only [cfgAt, hp]
-
-private lemma moveInputPosNat_one {n j : ℕ} (hj : j ≤ n) : moveInputPosNat n j 1 = j + 1 := by
-  simp only [moveInputPosNat, SignType.coe_one]
-  omega
-
-private lemma moveInputPosNat_zero {n j : ℕ} (hj : j ≤ n + 1) : moveInputPosNat n j 0 = j := by
-  simp only [moveInputPosNat, SignType.coe_zero]
-  omega
-
-/-! ### Runs through a set of work-head positions -/
-
-/-- From `c`, `τ.toTM` reaches `c'` within `t` steps, its work head staying in `S`. -/
-private def Seg (S : Finset ℤ) (c c' : Cfg 1 Bool (State Q) w) (t : ℕ) : Prop :=
-  ∃ n ≤ t, τ.toTM.runFrom c n = c' ∧ ∀ j ≤ n, (τ.toTM.runFrom c j).workTapePos 0 ∈ S
-
-variable {τ} {S : Finset ℤ} {c c' c'' : Cfg 1 Bool (State Q) w} {t t' : ℕ}
-
-private lemma Seg.refl (hc : c.workTapePos 0 ∈ S) : τ.Seg S c c 0 :=
-  ⟨0, le_rfl, rfl, fun j hj => by
-    obtain rfl : j = 0 := by omega
-    exact hc⟩
-
-private lemma Seg.single (hc : c.workTapePos 0 ∈ S) (h : τ.toTM.step c = c')
-    (hc' : c'.workTapePos 0 ∈ S) : τ.Seg S c c' 1 :=
-  ⟨1, le_rfl, h, fun j hj => by
-    rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hj with rfl | rfl
-    · exact hc
-    · rw [runFrom_one, h]
-      exact hc'⟩
-
-private lemma Seg.trans (h₁ : τ.Seg S c c' t) (h₂ : τ.Seg S c' c'' t') :
-    τ.Seg S c c'' (t + t') := by
-  obtain ⟨n₁, hn₁, hr₁, hs₁⟩ := h₁
-  obtain ⟨n₂, hn₂, hr₂, hs₂⟩ := h₂
-  refine ⟨n₁ + n₂, by omega, by rw [runFrom_add, hr₁, hr₂], fun j hj => ?_⟩
-  rcases Nat.lt_or_ge n₁ j with h | h
-  · obtain ⟨d, rfl⟩ : ∃ d, j = n₁ + d := ⟨j - n₁, by omega⟩
-    rw [runFrom_add, hr₁]
-    exact hs₂ d (by omega)
-  · exact hs₁ j h
-
-private lemma Seg.mono (h : τ.Seg S c c' t) (ht : t ≤ t') : τ.Seg S c c' t' :=
-  let ⟨n, hn, hr, hs⟩ := h
-  ⟨n, hn.trans ht, hr, hs⟩
-
-/-! ### The framed input -/
+/-- The transition function of `τ.toTM` on its single work tape. -/
+private lemma tr_toTM (s : State Q) (x y : Option Bool) :
+    τ.toTM.tr s x (fun _ => y) = τ.tr s x y :=
+  tr_ofTr _ _ s x _
 
 /-! ### The phases of the machine -/
 
-variable {u v : List Bool}
-
-/-- The work head stays within the cells `-1, …, u.length`. -/
-private abbrev cells (u : List Bool) : Finset ℤ := Finset.Icc (-1) u.length
-
-@[simp]
-private lemma cfgAt_workTapePos (st : Option (State Q)) (p : ℕ) (tape : ℤ → Option Bool) (h : ℤ)
-    (o : List Bool) : (cfgAt w st p tape h o).workTapePos 0 = h :=
-  rfl
-
-private lemma cfgAt_mem_cells {st : Option (State Q)} {p : ℕ} {tape : ℤ → Option Bool} {h : ℤ}
-    {o : List Bool} (h₀ : -1 ≤ h) (h₁ : h ≤ u.length) :
-    (cfgAt w st p tape h o).workTapePos 0 ∈ cells u :=
-  Finset.mem_Icc.mpr ⟨h₀, h₁⟩
-
-private lemma length_frame_append (u v : List Bool) :
-    (frame u ++ v).length = 2 * u.length + 1 + v.length := by
-  rw [List.length_append, length_frame]
-
 /-- Copying the first word to the work tape, digit by digit. -/
 private lemma seg_copy {i : ℕ} (hi : i ≤ u.length) :
-    τ.Seg (cells u)
+    Seg τ.toTM (cells u.length)
       (cfgAt (frame u ++ v) (some .copy) (2 * i + 1) (tapeOfList (u.take i)) i [])
       (cfgAt (frame u ++ v) (some .copy) (2 * u.length + 1) (tapeOfList u) u.length [])
       (2 * (u.length - i)) := by
@@ -288,7 +189,7 @@ private lemma seg_copy {i : ℕ} (hi : i ≤ u.length) :
     have s₁ : τ.toTM.step
         (cfgAt (frame u ++ v) (some .copy) (2 * i + 1) (tapeOfList (u.take i)) i []) =
         cfgAt (frame u ++ v) (some .copyBit) (2 * i + 2) (tapeOfList (u.take i)) i [] := by
-      rw [step_cfgAt]
+      rw [step_cfgAt tr_toTM]
       have hp : min (2 * i + 1) ((frame u ++ v).length + 1) = 2 * i + 1 := by omega
       have hx : inputAt (frame u ++ v) (2 * i + 1) = some true := by simpa [inputAt] using h₁
       simp only [hp, hx, tr, moveInputPosNat_one (by omega : 2 * i + 1 ≤ (frame u ++ v).length),
@@ -297,7 +198,7 @@ private lemma seg_copy {i : ℕ} (hi : i ≤ u.length) :
         (cfgAt (frame u ++ v) (some .copyBit) (2 * i + 2) (tapeOfList (u.take i)) i []) =
         cfgAt (frame u ++ v) (some .copy) (2 * (i + 1) + 1) (tapeOfList (u.take (i + 1)))
           ((i + 1 : ℕ) : ℤ) [] := by
-      rw [step_cfgAt]
+      rw [step_cfgAt tr_toTM]
       have hp : min (2 * i + 2) ((frame u ++ v).length + 1) = 2 * i + 2 := by omega
       have hx : inputAt (frame u ++ v) (2 * i + 2) = some u[i] := by simpa [inputAt] using h₂
       have ht : Function.update (tapeOfList (u.take i)) (i : ℤ) (some u[i]) =
@@ -356,7 +257,7 @@ private lemma step_endFrame :
       cfgAt (frame u ++ v) (some .rewind) (2 * u.length + 2) (tapeOfList u)
         ((u.length : ℤ) - 1) [] := by
   have hn := length_frame_append u v
-  rw [step_cfgAt]
+  rw [step_cfgAt tr_toTM]
   have hp : min (2 * u.length + 1) ((frame u ++ v).length + 1) = 2 * u.length + 1 := by omega
   have hx : inputAt (frame u ++ v) (2 * u.length + 1) = some false := by
     simpa [inputAt] using getElem?_frame_append_length u v
@@ -366,7 +267,7 @@ private lemma step_endFrame :
 
 /-- Rewinding the work tape. -/
 private lemma seg_rewind {i : ℕ} (hi : i ≤ u.length) :
-    τ.Seg (cells u)
+    Seg τ.toTM (cells u.length)
       (cfgAt (frame u ++ v) (some .rewind) (2 * u.length + 2) (tapeOfList u) ((i : ℤ) - 1) [])
       (cfgAt (frame u ++ v) (some (.zip τ.q₀ none)) (2 * u.length + 2) (tapeOfList u) 0 [])
       (i + 1) := by
@@ -376,7 +277,7 @@ private lemma seg_rewind {i : ℕ} (hi : i ≤ u.length) :
   | zero =>
     refine Seg.single (cfgAt_mem_cells (by omega) (by omega)) ?_
       (cfgAt_mem_cells (by omega) (by omega))
-    rw [step_cfgAt, hp, (by simp : ((0 : ℕ) : ℤ) - 1 = Int.negSucc 0), tapeOfList_negSucc,
+    rw [step_cfgAt tr_toTM, hp, (by simp : ((0 : ℕ) : ℤ) - 1 = Int.negSucc 0), tapeOfList_negSucc,
       tr_rewind_none, moveInputPosNat_zero (by omega)]
     simp only [SignType.coe_one, List.append_nil, Option.toList_none]
     exact cfgAt_congr rfl (by omega)
@@ -385,7 +286,7 @@ private lemma seg_rewind {i : ℕ} (hi : i ≤ u.length) :
     have hs : τ.toTM.step (cfgAt (frame u ++ v) (some .rewind) (2 * u.length + 2) (tapeOfList u)
         (((i + 1 : ℕ) : ℤ) - 1) []) =
         cfgAt (frame u ++ v) (some .rewind) (2 * u.length + 2) (tapeOfList u) ((i : ℤ) - 1) [] := by
-      rw [step_cfgAt, hp, (by omega : ((i + 1 : ℕ) : ℤ) - 1 = ((i : ℕ) : ℤ)),
+      rw [step_cfgAt tr_toTM, hp, (by omega : ((i + 1 : ℕ) : ℤ) - 1 = ((i : ℕ) : ℤ)),
         tapeOfList_ofNat, List.getElem?_eq_getElem hi', tr_rewind_some,
         moveInputPosNat_zero (by omega)]
       simp only [SignType.coe_neg_one, List.append_nil, Option.toList_none]
@@ -396,13 +297,13 @@ private lemma seg_rewind {i : ℕ} (hi : i ≤ u.length) :
 /-- Emitting a pending output symbol. -/
 private lemma seg_flush {q : Q} (pend : Option Bool) {p : ℕ} (hp : p ≤ (frame u ++ v).length + 1)
     {tape : ℤ → Option Bool} {h : ℤ} (h₀ : -1 ≤ h) (h₁ : h ≤ u.length) (o : List Bool) :
-    τ.Seg (cells u) (cfgAt (frame u ++ v) (some (.zip q pend)) p tape h o)
+    Seg τ.toTM (cells u.length) (cfgAt (frame u ++ v) (some (.zip q pend)) p tape h o)
       (cfgAt (frame u ++ v) (some (.zip q none)) p tape h (o ++ pend.toList)) 1 := by
   rcases pend with _ | b
   · rw [Option.toList_none, List.append_nil]
     exact (Seg.refl (cfgAt_mem_cells h₀ h₁)).mono (Nat.zero_le _)
   · refine Seg.single (cfgAt_mem_cells h₀ h₁) ?_ (cfgAt_mem_cells h₀ h₁)
-    rw [step_cfgAt, tr_zip_some, min_eq_left hp, moveInputPosNat_zero hp]
+    rw [step_cfgAt tr_toTM, tr_zip_some, min_eq_left hp, moveInputPosNat_zero hp]
     simp only [SignType.coe_zero, add_zero, Option.toList_some]
 
 private lemma getElem?_min_length {α : Type*} (l : List α) (r : ℕ) :
@@ -414,7 +315,7 @@ private lemma getElem?_min_length {α : Type*} (l : List α) (r : ℕ) :
 
 /-- Running `τ` on both words in lockstep, from round `r` on. -/
 private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : List Bool) :
-    τ.Seg (cells u)
+    Seg τ.toTM (cells u.length)
       (cfgAt (frame u ++ v) (some (.zip q none)) (2 * u.length + 2 + min r v.length)
         (tapeOfList u) (min r u.length : ℕ) o)
       (cfgAt (frame u ++ v) none (2 * u.length + 2 + v.length) (tapeOfList u) u.length
@@ -439,7 +340,7 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
         (2 * u.length + 2 + min r v.length) (tapeOfList u) (min r u.length : ℕ) o) =
         cfgAt (frame u ++ v) ((τ.final q).tail.head?.map .flush) (2 * u.length + 2 + v.length)
           (tapeOfList u) u.length (o ++ (τ.final q).head?.toList) := by
-      rw [step_cfgAt, hp, hx, hy]
+      rw [step_cfgAt tr_toTM, hp, hx, hy]
       simp only [tr, SignType.coe_zero, add_zero,
         moveInputPosNat_zero (by omega : 2 * u.length + 2 + v.length ≤ (frame u ++ v).length + 1)]
       exact cfgAt_congr rfl (by omega)
@@ -457,7 +358,7 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
           (tapeOfList u) u.length (o ++ (τ.final q).head?.toList)) =
           cfgAt (frame u ++ v) none (2 * u.length + 2 + v.length) (tapeOfList u) u.length
             (o ++ τ.final q) := by
-        rw [step_cfgAt, tr_flush, moveInputPosNat_zero (by omega)]
+        rw [step_cfgAt tr_toTM, tr_flush, moveInputPosNat_zero (by omega)]
         rw [hb, Option.toList_some] at hfin
         simp only [SignType.coe_zero, add_zero, Option.toList_some, List.append_assoc, hfin]
         exact cfgAt_congr (by omega) rfl
@@ -514,7 +415,7 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
         cfgAt (frame u ++ v) (some (.zip (τ.step q (y, x)).1 (τ.step q (y, x)).2.tail.head?))
           (2 * u.length + 2 + min (r + 1) v.length) (tapeOfList u) (min (r + 1) u.length : ℕ)
           (o ++ (τ.step q (y, x)).2.head?.toList) := by
-      rw [step_cfgAt, hp, hx, hy, tr_zip_step q hne]
+      rw [step_cfgAt tr_toTM, hp, hx, hy, tr_zip_step q hne]
       simp only [hmove, hhead]
     have hrun : o ++ τ.run q (u.drop r) (v.drop r) =
         o ++ (τ.step q (y, x)).2.head?.toList ++ (τ.step q (y, x)).2.tail.head?.toList ++
@@ -532,7 +433,7 @@ private lemma seg_zip (q : Q) {r : ℕ} (hr : r ≤ max u.length v.length) (o : 
 
 /-- The complete run on `frame u ++ v`. -/
 private lemma seg_run (u v : List Bool) :
-    τ.Seg (cells u) (τ.toTM.initCfg (frame u ++ v))
+    Seg τ.toTM (cells u.length) (τ.toTM.initCfg (frame u ++ v))
       (cfgAt (frame u ++ v) none (2 * u.length + 2 + v.length) (tapeOfList u) u.length
         (τ.run τ.q₀ u v))
       (3 * (frame u ++ v).length + 1) := by
