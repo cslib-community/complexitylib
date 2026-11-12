@@ -233,6 +233,8 @@ public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Repetition
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorTrial
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Basic
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Kasai
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Search
@@ -251,6 +253,7 @@ public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
 public import CslibFrontier.Algorithms.Lean.TrimmedYates
 public import CslibFrontier.Algorithms.Lean.TwoSAT
+public import CslibFrontier.Algorithms.Lean.VectorConvolution
 public import CslibFrontier.Algorithms.Lean.VertexCover.Matching
 public import CslibFrontier.Algorithms.Lean.Yates
 public import CslibFrontier.Algorithms.Lean.ZFunction.Basic
@@ -5114,6 +5117,7 @@ public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Threshold
 public import CslibFrontier.Foundations.Combinatorics.ApproximateMajority
 public import CslibFrontier.Foundations.Combinatorics.BalancedSchedules
 public import CslibFrontier.Foundations.Combinatorics.BinomialTail
+public import CslibFrontier.Foundations.Combinatorics.BinomialZeta
 public import CslibFrontier.Foundations.Combinatorics.Bregman
 public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial

@@ -30,7 +30,9 @@ the uniform seeds `seeds p`: the triples `(ξ, α, β) ∈ ZMod p ^ 3` with `ξ 
   is congruent to `c` modulo `p` but different from `c` (`falsePairs`), and `P` the ordered pairs of
   disjoint `t`-sets of `[d]`, as numbers (`rankedPairs`). Then
   `#accepting seeds + #P · #L · (2 t choose t) ≥ #P · (p - 1)`.
-  This is inequality (1)–(2) of the paper without its `Õ` and with explicit counts. With the
+  This is inequality (1)–(2) of the paper without its `Õ` and with explicit counts. The counting
+  argument holds for any acceptance test and set of pairs of hash values
+  (`card_mul_le_card_filter_add`), and the base-`r` trial reuses it. With the
   paper's goodness condition `4 #L (2 t choose t) ≤ p - 1`, a trial accepts with probability at
   least `(3/4) #P / p ^ 2` (`four_mul_card_accepts_ge`), and
   `#P = (d choose 2 t) (2 t choose t)` (`card_rankedPairs`).
@@ -44,6 +46,7 @@ the uniform seeds `seeds p`: the triples `(ξ, α, β) ∈ ZMod p ^ 3` with `ξ 
 
 ## Main results
 
+* `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_mul_le_card_filter_add`: the counting argument.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_accepts_add_ge`,
   `four_mul_card_accepts_ge`: the success probability of one trial.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_rankedPairs`.
@@ -220,6 +223,63 @@ theorem natCast_ne_of_mem_falsePairs {A B Ag Bg : List ℕ} (hAg : ∀ x ∈ Ag,
     exact add_left_cancel this)
   exact hne (by rw [e1, e2, habc])
 
+/-- **The counting argument of a trial**, for any acceptance test `Acc` and any set `P` of pairs of
+hash values below `p`. Suppose `c = a + b` with `a ∈ Ag ⊆ A` and `b ∈ Bg ⊆ B` isolated in `A` and
+`B`, and that a seed hashing `a` to `x` and `b` to `y` with `(x, y) ∈ P` that rejects `c` hashes the
+left element of some false pair to one of at most `K` candidates `cand (x, y)`. Then
+`#P · (p - 1) ≤ #accepting seeds + #P · #L · K`. -/
+theorem card_mul_le_card_filter_add {A B Ag Bg : List ℕ} (hAg : ∀ x ∈ Ag, x ∈ A)
+    (hBg : ∀ x ∈ Bg, x ∈ B) {a b c : ℕ} (ha : a ∈ Ag) (hb : b ∈ Bg) (hia : Isolated p A a)
+    (hib : Isolated p B b) (habc : a + b = c) (Acc : Seed p → Prop) [DecidablePred Acc]
+    {P : Finset (ℕ × ℕ)} (hP : ∀ xy ∈ P, xy.1 < p ∧ xy.2 < p) (cand : ℕ × ℕ → Finset ℕ) {K : ℕ}
+    (hK : ∀ xy ∈ P, #(cand xy) ≤ K)
+    (hrej : ∀ xy ∈ P, ∀ s ∈ seeds p, s.left a = xy.1 → s.right b = xy.2 → ¬ Acc s →
+      ∃ ab ∈ falsePairs p c Ag Bg, s.left ab.1 ∈ cand xy) :
+    #P * (p - 1) ≤ #((seeds p).filter Acc) + #P * (#(falsePairs p c Ag Bg) * K) := by
+  set L := falsePairs p c Ag Bg
+  let E : ℕ × ℕ → Finset (Seed p) := fun xy =>
+    (seeds p).filter fun s => s.left a = xy.1 ∧ s.right b = xy.2
+  have hE : ∀ xy ∈ P, #(E xy) = p - 1 := fun xy hxy =>
+    card_seeds_left_right a b (hP xy hxy).1 (hP xy hxy).2
+  -- the rejecting seeds of a pair of hash values are covered by the false pairs
+  have hBad : ∀ xy ∈ P, #((E xy).filter fun s => ¬ Acc s) ≤ #L * K := by
+    intro xy hxy
+    have hsub : (E xy).filter (fun s => ¬ Acc s) ⊆ L.biUnion fun ab =>
+        (cand xy).biUnion fun z =>
+          (seeds p).filter fun s => s.left a = xy.1 ∧ s.right b = xy.2 ∧ s.left ab.1 = z := by
+      intro s hs
+      obtain ⟨hsE, hrej'⟩ := mem_filter.mp hs
+      obtain ⟨hseed, hfa, hgb⟩ := mem_filter.mp hsE
+      obtain ⟨ab, hab, hz⟩ := hrej xy hxy s hseed hfa hgb hrej'
+      exact mem_biUnion.mpr ⟨ab, hab, mem_biUnion.mpr ⟨s.left ab.1, hz,
+        mem_filter.mpr ⟨hseed, hfa, hgb, rfl⟩⟩⟩
+    refine (card_le_card hsub).trans ((card_biUnion_le).trans ?_)
+    rw [← smul_eq_mul]
+    refine sum_le_card_nsmul _ _ _ fun ab hab => (card_biUnion_le).trans ?_
+    refine (sum_le_card_nsmul _ _ 1 fun z _ => card_seeds_left_right_left_le
+      (natCast_ne_of_mem_falsePairs hAg hBg (hAg a ha) (hBg b hb) hia hib habc hab) _ _ _ _).trans
+      ?_
+    simpa using hK xy hxy
+  have hsplit : ∀ xy ∈ P, p - 1 ≤ #((E xy).filter fun s => Acc s) + #L * K := by
+    intro xy hxy
+    rw [← hE xy hxy, ← card_filter_add_card_filter_not (s := E xy) (fun s => Acc s)]
+    exact Nat.add_le_add_left (hBad xy hxy) _
+  have hdisj : (P : Set (ℕ × ℕ)).PairwiseDisjoint fun xy => (E xy).filter fun s => Acc s := by
+    intro xy _ xy' _ hne
+    refine disjoint_left.mpr fun s hs hs' => hne ?_
+    obtain ⟨-, h1, h2⟩ := mem_filter.mp (mem_filter.mp hs).1
+    obtain ⟨-, h1', h2'⟩ := mem_filter.mp (mem_filter.mp hs').1
+    exact Prod.ext (h1.symm.trans h1') (h2.symm.trans h2')
+  have hunion : P.biUnion (fun xy => (E xy).filter fun s => Acc s) ⊆ (seeds p).filter Acc := by
+    intro s hs
+    obtain ⟨xy, -, hs⟩ := mem_biUnion.mp hs
+    exact mem_filter.mpr ⟨(mem_filter.mp (mem_filter.mp hs).1).1, (mem_filter.mp hs).2⟩
+  calc #P * (p - 1) = ∑ _xy ∈ P, (p - 1) := by rw [sum_const, smul_eq_mul]
+    _ ≤ ∑ xy ∈ P, (#((E xy).filter fun s => Acc s) + #L * K) := sum_le_sum hsplit
+    _ = #(P.biUnion fun xy => (E xy).filter fun s => Acc s) + #P * (#L * K) := by
+        rw [sum_add_distrib, card_biUnion hdisj, sum_const, smul_eq_mul]
+    _ ≤ _ := Nat.add_le_add_right (card_le_card hunion) _
+
 /-- **The success count of one trial** ([ChanItakuraMaYu2026], Theorem 2.3, inequalities (1) and
 (2)): if `c = a + b` with `a ∈ Ag ⊆ A` and `b ∈ Bg ⊆ B` isolated in `A` and `B`, and
 `2 ^ d ≤ p`, then
@@ -229,77 +289,44 @@ theorem card_accepts_add_ge {d t : ℕ} (hp : 2 ^ d ≤ p) {A B Ag Bg : List ℕ
     (hia : Isolated p A a) (hib : Isolated p B b) (habc : a + b = c) :
     #(rankedPairs d t) * (p - 1) ≤ #((seeds p).filter fun s => Accepts d t s Ag Bg c) +
       #(rankedPairs d t) * (#(falsePairs p c Ag Bg) * (2 * t).choose t) := by
-  set P := rankedPairs d t
-  set L := falsePairs p c Ag Bg
-  let E : ℕ × ℕ → Finset (Seed p) := fun xy =>
-    (seeds p).filter fun s => s.left a = xy.1 ∧ s.right b = xy.2
-  have hE : ∀ xy ∈ P, #(E xy) = p - 1 := fun xy hxy => by
-    obtain ⟨hmem, -⟩ := mem_filter.mp hxy
+  refine card_mul_le_card_filter_add hAg hBg ha hb hia hib habc _
+    (fun xy hxy => ?_) (fun xy => candidates d t xy.1 xy.2) (fun xy hxy => ?_) ?_
+  · obtain ⟨hmem, -⟩ := mem_filter.mp hxy
     obtain ⟨hx, hy⟩ := mem_product.mp hmem
-    exact card_seeds_left_right a b ((mem_range.mp hx).trans_le hp) ((mem_range.mp hy).trans_le hp)
-  -- the rejecting seeds of a pair of hash values are covered by the false pairs
-  have hBad : ∀ xy ∈ P, #((E xy).filter fun s => ¬ Accepts d t s Ag Bg c) ≤
-      #L * (2 * t).choose t := by
-    intro xy hxy
-    obtain ⟨-, hx, hy, hxy'⟩ := mem_filter.mp hxy
-    have hsub : (E xy).filter (fun s => ¬ Accepts d t s Ag Bg c) ⊆ L.biUnion fun ab =>
-        (candidates d t xy.1 xy.2).biUnion fun z =>
-          (seeds p).filter fun s => s.left a = xy.1 ∧ s.right b = xy.2 ∧ s.left ab.1 = z := by
-      intro s hs
-      obtain ⟨hsE, hrej⟩ := mem_filter.mp hs
-      obtain ⟨hseed, hfa, hgb⟩ := mem_filter.mp hsE
-      have hξ := mem_seeds.mp hseed
-      rw [← hfa] at hx hxy'
-      rw [← hgb] at hy hxy'
-      obtain hacc | ⟨a', ha', b', hb', hcov, hne⟩ :=
-        accepts_or_exists_covers_ne hp ha hb habc hx hy hxy'
-      · exact absurd hacc hrej
-      have hrA := (by simpa using (List.mem_filter.mp ha').2 : Ranked d t (s.left a'))
-      have hrB := (by simpa using (List.mem_filter.mp hb').2 : Ranked d t (s.right b'))
-      obtain ⟨hlt, hmask⟩ := maskSet_add hx.1 hy.1 hxy'
-      have htarget := target_eq_add (s := s) habc (hlt.trans_le hp)
-      have hcong := natCast_add_eq_of_covers hξ hrA.1 hrB.1 (htarget ▸ hlt) hcov
-      refine mem_biUnion.mpr ⟨(a', b'), ?_, mem_biUnion.mpr ⟨s.left a', ?_, ?_⟩⟩
-      · exact mem_filter.mpr ⟨mem_product.mpr ⟨List.mem_toFinset.mpr (List.mem_of_mem_filter ha'),
-          List.mem_toFinset.mpr (List.mem_of_mem_filter hb')⟩, hcong, hne⟩
-      · refine mem_image.mpr ⟨maskSet d (s.left a'), mem_powersetCard.mpr ⟨?_, hrA.2⟩, ?_⟩
-        · have h1 : maskSet d (s.left a') ⊆ maskSet d (s.target c) := by
-            rw [← hcov.2]; exact subset_union_left
-          rw [htarget, hmask] at h1
-          simpa [hfa, hgb] using h1
-        · exact congrArg Fin.val (maskIndex_maskSet ⟨_, hrA.1⟩)
-      · exact mem_filter.mpr ⟨hseed, hfa, hgb, rfl⟩
-    refine (card_le_card hsub).trans ((card_biUnion_le).trans ?_)
-    rw [← smul_eq_mul]
-    refine sum_le_card_nsmul _ _ _ fun ab hab => (card_biUnion_le).trans ?_
-    refine (sum_le_card_nsmul _ _ 1 fun z _ => card_seeds_left_right_left_le
-      (natCast_ne_of_mem_falsePairs hAg hBg (hAg a ha) (hBg b hb) hia hib habc hab) _ _ _ _).trans
-      ?_
-    simpa using card_candidates_le hx hy hxy'
-  have hsplit : ∀ xy ∈ P, p - 1 ≤ #((E xy).filter fun s => Accepts d t s Ag Bg c) +
-      #L * (2 * t).choose t := by
-    intro xy hxy
-    rw [← hE xy hxy, ← card_filter_add_card_filter_not (s := E xy) (fun s => Accepts d t s Ag Bg c)]
-    exact Nat.add_le_add_left (hBad xy hxy) _
-  have hdisj : (P : Set (ℕ × ℕ)).PairwiseDisjoint fun xy =>
-      (E xy).filter fun s => Accepts d t s Ag Bg c := by
-    intro xy _ xy' _ hne
-    refine disjoint_left.mpr fun s hs hs' => hne ?_
-    obtain ⟨-, h1, h2⟩ := mem_filter.mp (mem_filter.mp hs).1
-    obtain ⟨-, h1', h2'⟩ := mem_filter.mp (mem_filter.mp hs').1
-    exact Prod.ext (h1.symm.trans h1') (h2.symm.trans h2')
-  have hunion : P.biUnion (fun xy => (E xy).filter fun s => Accepts d t s Ag Bg c) ⊆
-      (seeds p).filter fun s => Accepts d t s Ag Bg c := by
-    intro s hs
-    obtain ⟨xy, -, hs⟩ := mem_biUnion.mp hs
-    exact mem_filter.mpr ⟨(mem_filter.mp (mem_filter.mp hs).1).1, (mem_filter.mp hs).2⟩
-  calc #P * (p - 1) = ∑ _xy ∈ P, (p - 1) := by rw [sum_const, smul_eq_mul]
-    _ ≤ ∑ xy ∈ P, (#((E xy).filter fun s => Accepts d t s Ag Bg c) + #L * (2 * t).choose t) :=
-        sum_le_sum hsplit
-    _ = #(P.biUnion fun xy => (E xy).filter fun s => Accepts d t s Ag Bg c) +
-          #P * (#L * (2 * t).choose t) := by
-        rw [sum_add_distrib, card_biUnion hdisj, sum_const, smul_eq_mul]
-    _ ≤ _ := Nat.add_le_add_right (card_le_card hunion) _
+    exact ⟨(mem_range.mp hx).trans_le hp, (mem_range.mp hy).trans_le hp⟩
+  · obtain ⟨-, hx, hy, hxy'⟩ := mem_filter.mp hxy
+    exact card_candidates_le hx hy hxy'
+  intro xy hxy s hseed hfa hgb hrej
+  obtain ⟨-, hx, hy, hxy'⟩ := mem_filter.mp hxy
+  have hξ := mem_seeds.mp hseed
+  rw [← hfa] at hx hxy'
+  rw [← hgb] at hy hxy'
+  obtain hacc | ⟨a', ha', b', hb', hcov, hne⟩ :=
+    accepts_or_exists_covers_ne hp ha hb habc hx hy hxy'
+  · exact absurd hacc hrej
+  have hrA := (by simpa using (List.mem_filter.mp ha').2 : Ranked d t (s.left a'))
+  have hrB := (by simpa using (List.mem_filter.mp hb').2 : Ranked d t (s.right b'))
+  obtain ⟨hlt, hmask⟩ := maskSet_add hx.1 hy.1 hxy'
+  have htarget := target_eq_add (s := s) habc (hlt.trans_le hp)
+  have hcong := natCast_add_eq_of_covers hξ hrA.1 hrB.1 (htarget ▸ hlt) hcov
+  refine ⟨(a', b'), ?_, ?_⟩
+  · exact mem_filter.mpr ⟨mem_product.mpr ⟨List.mem_toFinset.mpr (List.mem_of_mem_filter ha'),
+      List.mem_toFinset.mpr (List.mem_of_mem_filter hb')⟩, hcong, hne⟩
+  · refine mem_image.mpr ⟨maskSet d (s.left a'), mem_powersetCard.mpr ⟨?_, hrA.2⟩, ?_⟩
+    · have h1 : maskSet d (s.left a') ⊆ maskSet d (s.target c) := by
+        rw [← hcov.2]; exact subset_union_left
+      rw [htarget, hmask] at h1
+      simpa [hfa, hgb] using h1
+    · exact congrArg Fin.val (maskIndex_maskSet ⟨_, hrA.1⟩)
+
+/-- From the success count to a good prime: if `P q ≤ acc + P X` and `4 X ≤ q`, then
+`3 P q ≤ 4 acc`. -/
+theorem three_mul_le_four_mul_of_le_add {P q acc X : ℕ} (h : P * q ≤ acc + P * X)
+    (hgood : 4 * X ≤ q) : 3 * (P * q) ≤ 4 * acc := by
+  have h2 : 4 * (P * X) ≤ P * q := by
+    calc _ = P * (4 * X) := by ring
+      _ ≤ _ := Nat.mul_le_mul_left _ hgood
+  omega
 
 /-- **A good prime** ([ChanItakuraMaYu2026], inequality (2)): if moreover
 `4 #L (2 t choose t) ≤ p - 1`, a trial accepts `c` with probability at least `(3/4) #P / p ^ 2`,
@@ -309,13 +336,9 @@ theorem four_mul_card_accepts_ge {d t : ℕ} (hp : 2 ^ d ≤ p) {A B Ag Bg : Lis
     (hia : Isolated p A a) (hib : Isolated p B b) (habc : a + b = c)
     (hgood : 4 * (#(falsePairs p c Ag Bg) * (2 * t).choose t) ≤ p - 1) :
     3 * (#(rankedPairs d t) * (p - 1)) ≤
-      4 * #((seeds p).filter fun s => Accepts d t s Ag Bg c) := by
-  have h := card_accepts_add_ge (d := d) (t := t) hp hAg hBg ha hb hia hib habc
-  have h2 : 4 * (#(rankedPairs d t) * (#(falsePairs p c Ag Bg) * (2 * t).choose t)) ≤
-      #(rankedPairs d t) * (p - 1) := by
-    calc _ = #(rankedPairs d t) * (4 * (#(falsePairs p c Ag Bg) * (2 * t).choose t)) := by ring
-      _ ≤ _ := Nat.mul_le_mul_left _ hgood
-  omega
+      4 * #((seeds p).filter fun s => Accepts d t s Ag Bg c) :=
+  three_mul_le_four_mul_of_le_add
+    (card_accepts_add_ge (d := d) (t := t) hp hAg hBg ha hb hia hib habc) hgood
 
 /-- The ordered pairs of disjoint `t`-sets of `[d]`: `(d choose 2 t) (2 t choose t)`. -/
 theorem card_rankedPairs (d t : ℕ) : #(rankedPairs d t) = d.choose (2 * t) * (2 * t).choose t := by

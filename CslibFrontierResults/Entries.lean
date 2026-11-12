@@ -15,6 +15,8 @@ import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
+import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
+import CslibFrontier.Algorithms.Lean.VectorConvolution
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
@@ -3771,6 +3773,55 @@ register_result "integer-3sum-via-subset-convolution-timem" where
     exact cost for given random choices, and the miss probability over uniform seeds and a \
     uniform prime of [2^d, 2^(d+1)) as explicit counts. The paper's parameter choices, expected \
     running time and Corollary 2.4's exponent are not formalized."
+
+register_result "selected-entries-vector-convolution-timem" where
+  title := "Selected entries of ranked convolution in [r]^d by trimmed binomial passes"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Lemma 3.2 and Theorem 3.3",
+      locator := "Section 3.1, p. 12" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.VectorConvolution.ret_solveM,
+    Cslib.Algorithms.Lean.VectorConvolution.ret_solveM_factorial,
+    Cslib.Algorithms.Lean.VectorConvolution.time_solveM
+  ]
+  scope := "TimeM unit-cost model (one tick per input read or product, r ticks per pass at one \
+    vector; enumeration and dictionary construction uncharged), not Word-RAM time. The passes act \
+    on multiplicity vectors directly instead of on representatives of sets in [d r]. Answers are \
+    (prod_i C_i!) times the vector convolution (division left to the caller); inputs are look-up \
+    functions, so the paper's n term is absent. The bound 3 (r d + 1) (H_r(d, <= s) + \
+    sum_C #{y <= C : |y| >= s}) is exact. Weights in a commutative ring."
+
+register_result "integer-3sum-base-r-trial-timem" where
+  title := "One base-r hashing trial of the reduction from integer 3SUM to convolution in [r]^d"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.4", locator := "Section 3.2, pp. 12-14" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.ret_vtrialM,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.time_vtrialM,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.exists_add_eq_of_vaccepts
+  ]
+  scope := "One trial for a given prime and seed in the TimeM unit-cost model: what it returns, \
+    its exact cost and soundness. The per-trial success count is recorded separately. Not \
+    formalized: the full reduction (A_bad, repetition, random prime), the expected running time, \
+    the choice of d and mu, Corollaries 3.5 and 3.6."
+
+register_result "integer-3sum-base-r-trial-success-count" where
+  title := "Per-trial success count for base-r hashing from integer 3SUM to vector convolution"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.4", locator := "Section 3.2, pp. 12-14" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.card_vaccepts_add_ge
+  ]
+  scope := "Given isolated witnesses a in Ag subset A and b in Bg subset B with a + b = c and \
+    r^d <= p, #P (p - 1) <= #accepting seeds + #P #L (r!)^(d/r). This is a count over seeds \
+    supporting the TimeM reduction, not the full reduction (A_bad, repetition, random prime), \
+    expected running time, parameter choices, or Corollaries 3.5 and 3.6."
 
 register_result "selected-entries-subset-convolution-timem" where
   title := "Selected entries of ranked subset convolution by the trimmed fast zeta transform"
