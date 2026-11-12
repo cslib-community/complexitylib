@@ -1244,11 +1244,17 @@ abbrev encLCSParseState : LCSParseState ↪ List Bool :=
 
 namespace LIn
 
+/-- The first parser state flag. -/
 abbrev s1 (p : LCSParseState × Bool) := p.1.1.1.1.1
+/-- The second parser state flag. -/
 abbrev s2 (p : LCSParseState × Bool) := p.1.1.1.1.2
+/-- The marker bit in the parser state. -/
 abbrev marker (p : LCSParseState × Bool) := p.1.1.1.2
+/-- The coordinate value in the parser state. -/
 abbrev coord (p : LCSParseState × Bool) := p.1.1.2
+/-- The vector index in the parser state. -/
 abbrev vec (p : LCSParseState × Bool) := p.1.2
+/-- The current input bit. -/
 abbrev bit (p : LCSParseState × Bool) := p.2
 
 end LIn

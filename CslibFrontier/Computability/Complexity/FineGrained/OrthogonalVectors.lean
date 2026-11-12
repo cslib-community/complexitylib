@@ -689,6 +689,21 @@ theorem length_encOV_le (p : List (List Bool) × List (List Bool)) :
   rw [encOV, length_encPair]
   nlinarith
 
+/-- Helper for edit distance and diameter lower bounds: bounds the powers of lengths. -/
+lemma enc_length_rpow_le (L : ℕ) {ε ε₀ : ℝ} (_hε₀ : 0 ≤ ε₀) (hε : ε₀ ≤ ε) (h2 : ε ≤ 2) :
+    (L : ℝ) ^ (2 - ε) ≤ (L + 1 : ℝ) ^ (2 - ε₀) := by
+  rcases Nat.eq_zero_or_pos L with h0 | h0
+  · rw [h0, Nat.cast_zero, zero_add, Real.one_rpow]
+    by_cases hz : 2 - ε = 0
+    · rw [hz, Real.rpow_zero]
+    · rw [Real.zero_rpow hz]
+      exact zero_le_one
+  · have h1 : (1 : ℝ) ≤ L := by exact_mod_cast h0
+    calc (L : ℝ) ^ (2 - ε) ≤ (L : ℝ) ^ (2 - ε₀) :=
+          Real.rpow_le_rpow_of_exponent_le h1 (by linarith)
+      _ ≤ (L + 1 : ℝ) ^ (2 - ε₀) :=
+          Real.rpow_le_rpow (by linarith) (by linarith) (by linarith)
+
 /-- A bound on the length of an encoded `OV` instance in terms of its dimension and
 number of vectors, useful for proving time bounds that depend on the encoding length. -/
 theorem encOV_length_rpow_le (p : List (List Bool) × List (List Bool))

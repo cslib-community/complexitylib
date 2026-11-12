@@ -964,19 +964,8 @@ theorem DecidableInTimeO.decidableInTimeO_OV_of_diameter {ε : ℝ} (hε : 0 < �
       have := mul_le_mul_of_nonneg_left hT hcR0
       nlinarith
     have hpowLG : ((encGraph (toDiameter p)).length : ℝ) ^ (2 - ε) ≤
-        (((encGraph (toDiameter p)).length : ℝ) + 1) ^ (2 - ε₀) := by
-      rcases Nat.eq_zero_or_pos (encGraph (toDiameter p)).length with h0 | h0
-      · rw [h0, Nat.cast_zero, zero_add, Real.one_rpow]
-        by_cases h2 : 2 - ε = 0
-        · rw [h2, Real.rpow_zero]
-        · rw [Real.zero_rpow h2]
-          exact zero_le_one
-      · have h1 : (1 : ℝ) ≤ (encGraph (toDiameter p)).length := by exact_mod_cast h0
-        calc ((encGraph (toDiameter p)).length : ℝ) ^ (2 - ε)
-            ≤ ((encGraph (toDiameter p)).length : ℝ) ^ (2 - ε₀) :=
-              Real.rpow_le_rpow_of_exponent_le h1 (by linarith)
-          _ ≤ (((encGraph (toDiameter p)).length : ℝ) + 1) ^ (2 - ε₀) :=
-              Real.rpow_le_rpow (by linarith) (by linarith) (by linarith)
+        (((encGraph (toDiameter p)).length : ℝ) + 1) ^ (2 - ε₀) :=
+      OV.enc_length_rpow_le _ (by positivity) hεε (by linarith)
     have hLGr : (((encGraph (toDiameter p)).length : ℝ) + 1) ^ (2 - ε₀) ≤ C₁ ^ 2 * X ^ r := by
       calc (((encGraph (toDiameter p)).length : ℝ) + 1) ^ (2 - ε₀)
           ≤ (C₁ * X ^ (1 + ε₀ / 4)) ^ (2 - ε₀) :=

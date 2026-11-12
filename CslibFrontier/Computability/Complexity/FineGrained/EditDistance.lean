@@ -49,6 +49,8 @@ open Turing.MultiTapeTM
 
 open LCSSymbol
 
+
+/-- The reduction mapping an Orthogonal Vectors instance to an edit distance instance. -/
 @[expose] def toEditDistance (p : List (List Bool) × List (List Bool)) :
     List LCSSymbol × List LCSSymbol :=
   toLCS p
@@ -135,19 +137,8 @@ theorem not_decidableInTimeO_editDist_of_OVH (hOVH : OVH) {ε : ℝ} (hε : 0 < 
       have hK0 : (0 : ℝ) ≤ K := by linarith
       nlinarith
     have hpowLG : ((encE (toEditDistance p)).length : ℝ) ^ (2 - ε) ≤
-        (((encE (toEditDistance p)).length : ℝ) + 1) ^ (2 - ε₀) := by
-      rcases Nat.eq_zero_or_pos (encE (toEditDistance p)).length with h0 | h0
-      · rw [h0, Nat.cast_zero, zero_add, Real.one_rpow]
-        by_cases h2 : 2 - ε = 0
-        · rw [h2, Real.rpow_zero]
-        · rw [Real.zero_rpow h2]
-          exact zero_le_one
-      · have h1 : (1 : ℝ) ≤ (encE (toEditDistance p)).length := by exact_mod_cast h0
-        calc ((encE (toEditDistance p)).length : ℝ) ^ (2 - ε)
-            ≤ ((encE (toEditDistance p)).length : ℝ) ^ (2 - ε₀) :=
-              Real.rpow_le_rpow_of_exponent_le h1 (by linarith)
-          _ ≤ (((encE (toEditDistance p)).length : ℝ) + 1) ^ (2 - ε₀) :=
-              Real.rpow_le_rpow (by linarith) (by linarith) (by linarith)
+        (((encE (toEditDistance p)).length : ℝ) + 1) ^ (2 - ε₀) :=
+      OV.enc_length_rpow_le _ (by positivity) hεε (by linarith)
     have hCW : 1 ≤ C₁ * W := one_le_mul_of_one_le_of_one_le hC₁1 hW1
     have hLGr : (((encE (toEditDistance p)).length : ℝ) + 1) ^ (2 - ε₀) ≤
         C₁ ^ 2 * W ^ 2 * X ^ r := by
