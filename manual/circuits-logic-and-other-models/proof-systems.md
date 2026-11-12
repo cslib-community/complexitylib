@@ -1443,6 +1443,115 @@ optimality theorem and concrete decisions. Geometric realization/recognition, or
 hardness transfer and final dichotomy assembly remain open under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
+## Ordered boundaries and static gadget closure
+
+From the repository root, import
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary`,
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Projection` and
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic` and
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Equality`.
+The namespace is `Cslib.Complexity.CSP.OrderedBoundary`; gadgets remain the existing
+`Cslib.Logic.PL.CSP.PPGadget`. The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean)
+shows ordinary-import clients, including empty alphabets and nullaries.
+
+`probeBody F ports` retains every original constraint position and appends one structural
+probe with the reversed boundary word. The probe has no original-language relation semantics;
+it is certificate scaffolding, not an added Gamma constraint. Repeated names retain separate
+probe occurrences; unused ports become leaves. `Witness F ports` stores one successor table,
+checking both the ordered numerical probe rotation and its first-return restriction to the
+actual body. `GadgetWitness g` uses exactly `g.body` and `List.ofFn Sum.inl`. Neither interface
+stores a geometric embedding or oracle.
+
+`Witness.atom arity sem r` supplies the actual boundary of the existing `PPGadget.atom`
+at every arity, including zero, without a truth or planarity premise. The explicit
+`atomBoundaryCertificate` uses opposite leaf orders in an indexed double star, with one
+four-dart face per port. At arity zero both nullary centers use the isolated-point convention.
+A false relation can have an accepted structural certificate: this does not imply SAT.
+`Witness.empty ports hn` supplies an empty-body boundary when `hn : ports.Nodup`.
+The [atom tests](../../CslibFrontierTests/PlanarAtomBoundary.lean) keep duplicate constraint
+positions and reject reflected argument order even when the raw graph rotation has genus zero.
+
+`bodyCertificate F c` follows successors to the first original-body dart and has exactly
+`2 * F.occurrences.length` entries. The search clock is the supplied list length, not a
+binary entry or vertex name. `bodyCertificate_accepted_of_probe F ports hn c h` derives
+full body acceptance from probe acceptance with explicit `hn : ports.Nodup`.
+`Witness.ofProbe hn c h` packages both checks. This extraction theorem is not asserted for
+arbitrary repeated words; the underlying witness interface still permits repeated markers.
+
+`verifyRotationCertificate_restrictPrefix_lastArgument F r scope v c h` applies to the
+original CSP lists: acceptance of `F ++ [(r, scope ++ [v])]` implies acceptance of the literal
+restricted table on `F ++ [(r, scope)]`. Occurrence and endpoint maps internally handle dense
+renumbering, disappearing variables, repeated labels and nullaries. In gadget recipes this
+edits a structural probe. It makes no SAT-preservation claim for deleting an argument of a
+Gamma constraint. Zero-port extraction removes only the structural nullary, retaining
+original false or true nullary constraints.
+
+`Witness.forgetAt k w hn hk` deletes position `k` from the boundary of the same body, retaining
+`ports.eraseIdx k` in its original order. It requires the whole word to be duplicate-free and
+`hk : k < ports.length`. Directed cyclic transport, deletion and inverse transport discharge
+the target checks. The earlier `forgetHead` has the weaker tail-Nodup contract and retains its
+repeated-marker regression; do not infer that contract for arbitrary positions.
+
+`GadgetWitness.project w j` supplies a witness for exactly `g.project j`, at every valid free
+coordinate. The hidden label becomes auxiliary zero before the old auxiliary block; original
+relation scopes are retained through the existing substitution map. Canonical port distinctness
+and the required injection are proved internally. `projectHead_certificate` retains the simpler
+literal prefix equation for first-port projection. The existing `PPGadget` theorem supplies
+the semantics; these constructors add ordered numerical realization without primitive relations.
+
+`GadgetWitness.rotate w` realizes exactly `g.relabelFree (fun i => i + 1)` at positive arity,
+the existing cyclic constructor used by `Construction.gadget`. The reversed probe word requires
+the opposite directed scope shift. Numerical incidence transport alone can handle a scope
+permutation; ordered acceptance additionally requires commuting with positive `finRotate`.
+Arbitrary permutations or higher-arity reflection are not asserted.
+The [cyclic tests](../../CslibFrontierTests/PlanarCyclicBoundary.lean) prove equality of the entire
+constructed twelve-entry table from all dart successors, then execute the full checkers.
+The [projection tests](../../CslibFrontierTests/PlanarProjectionAll.lean) check middle/wrap bodies
+and semantics, canonical Nodup extraction, degree five, unused sparse names, an empty alphabet
+and retained nullaries.
+
+`GadgetWitness.equalDrop w` supplies the boundary of exactly the existing `g.equalDrop`,
+identifying its first two free labels without adding an equality symbol. Their consecutive
+directed probe arguments give the selected variable corners two literal face steps apart;
+cofaciality is proved internally before applying the outgoing corner swap. Original argument
+cycles, indexed duplicates, cut vertices and closed/nullary components are retained. The label
+map needs only the selected-pair kernel on occurring names, not global injectivity.
+
+Identification leaves a duplicate probe marker. It is deleted before the surviving canonical
+ports are proved Nodup and body extraction is applied. `equalDrop_certificate` identifies the
+entire output with `equalDropCertificate g.body n w.certificate`: bounded predecessor lookup,
+an outgoing successor swap and first-return restriction. Residual arity `n` is static; there
+is no uniform native runtime bound for arbitrary binary arity or language/template size.
+The [equality client](../../CslibFrontierTests/PlanarEqualityBoundary.lean) proves the complete
+NAE-derived table, executes both checkers, derives disequality with original symbols, and checks
+both OneHot-derived pins. These concrete examples do not replace arbitrary-language attachment
+or expanded recipe proofs. Empty alphabets/bodies, degree five, repeated constraints and false
+nullaries also have nonvacuous tests.
+
+These are static finite constructors. Some inverse occurrence maps use finite choice, so
+general projection and cyclic constructors are intentionally `noncomputable`. Fixing a language
+and its templates permits nonuniform certificate preprocessing; it does not supply the
+input-varying native compiler's target-checker and framed polynomial-time proof. No unbounded
+embedding search is claimed. The Figure 1 and NAND-triangle tables in `Embedding.Crossover`
+are macro skeletons, not yet expanded original-language substitution.
+
+The lower APIs preserve existing access: import
+`CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Darts` for
+`incidenceDartEquiv` and its application lemma without polygon construction. The old
+`Primal.Graph` import retains both names. `List.idxOf_map_injOn` moved unchanged to
+`CslibFrontier.Foundations.Data.List.IdxOfInjective`, with CNF clients migrated.
+`RotationCertificate.length_of_verifyRotation` applies to any accepted raw table, independently
+of numerical genus. Equal-edge point-declaration transport keeps both endpoint-declaration guards.
+
+Run `scripts/build.sh CslibFrontierTests.PlanarProjectionAll CslibFrontierTests.PlanarCyclicBoundary CslibFrontierTests.PlanarProbeProjection --wfail --iofail`.
+The boundary convention is Dvořák–Kupec's reverse outer port order, printed p. 436; the probe
+and finite surgery are original. Fulla–Živný's indexed positive-arity model and the original
+decision/nullary extension are distinguished from DK's constraint sets; no deduplication or
+geometric equivalence is assumed. Pin/disequality attachment, remaining
+expanded-language recipes, native whole-instance target acceptance, geometric/source comparison
+and bare recognition remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+
 ## Finite crossover gadget semantics
 
 Import `CslibFrontier.Logics.Propositional.CSP.Planar.Crossover` for Dvořák–Kupec, ICALP 2015,
