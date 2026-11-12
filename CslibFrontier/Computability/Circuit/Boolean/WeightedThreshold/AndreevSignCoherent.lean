@@ -36,7 +36,7 @@ the first `s j` positions. A **cube** is `q : Fin b → Fin m`; the `2 ^ b` poin
 (`andreevCubePoint_add`). On it, `andreev` reads `x` at `(q mod 2) + z`, so the restricted function
 determines the table (`eq_of_andreev_andreevCubePoint_add`).
 
-* **Lemma 14** (`two_pow_mul_andreevCubeSplitBound_le_sum`): for every circuit of depth at most two
+* **Lemma 14** (`two_pow_mul_andreevCubeSplitBound_le`): for every circuit of depth at most two
   computing `andreev b m` and every cube `q`, the number of bottom gates splitting `q`
   (`andreevCubeSplitCount`) averages at least `D₀` over the tables. A restricted circuit is
   described by its splitting gates, their nonconstant threshold shifts and one level set of a
