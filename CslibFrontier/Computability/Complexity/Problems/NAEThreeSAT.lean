@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Complexity.Classes.NP.Closure
 import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Reduction
 import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Syntax
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+import CslibFrontier.Computability.Complexity.Reduction.Guard
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -103,28 +104,19 @@ theorem mem_NP : NAESAT ∈ NP encCNF :=
 end NAESAT
 
 /-- Width-three NAE satisfiability belongs to NP. -/
-theorem NAEThreeSAT.mem_NP : NAEThreeSAT ∈ NP encCNF := by
-  have h : NAEThreeSAT = {φ | (φ.all fun c => decide (c.length ≤ 3)) = true} ∩ NAESAT := by
-    ext φ
-    simp [NAEThreeSAT, NAESAT]
-  rw [h]
-  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop [encCNF], fun _ => Iff.rfl⟩) NAESAT.mem_NP
+theorem NAEThreeSAT.mem_NP : NAEThreeSAT ∈ NP encCNF :=
+  mem_NP_of_guard (c := fun φ => φ.all fun c => decide (c.length ≤ 3)) (by fun_prop [encCNF])
+    NAESAT.mem_NP fun φ => by simp [NAEThreeSAT, NAESAT]
 
 /-- Exact-three distinct-variable NAE satisfiability belongs to NP. -/
-theorem NAEEUThreeSAT.mem_NP : NAEEUThreeSAT ∈ NP encCNF := by
-  have h : NAEEUThreeSAT = {φ | EUThreeSAT.syntaxCheck φ = true} ∩ NAESAT := by
-    ext φ
+theorem NAEEUThreeSAT.mem_NP : NAEEUThreeSAT ∈ NP encCNF :=
+  mem_NP_of_guard EUThreeSAT.computableInPolyTime_syntaxCheck NAESAT.mem_NP fun φ => by
     simp [NAEEUThreeSAT, NAESAT, EUThreeSAT.syntaxCheck_iff]
-  rw [h]
-  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop, fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 /-- Width-three occurrence-three NAE satisfiability belongs to NP. -/
-theorem NAEThreeSATThree.mem_NP : NAEThreeSATThree ∈ NP encCNF := by
-  have h : NAEThreeSATThree = {φ | ThreeSATThree.syntaxCheck φ = true} ∩ NAESAT := by
-    ext φ
+theorem NAEThreeSATThree.mem_NP : NAEThreeSATThree ∈ NP encCNF :=
+  mem_NP_of_guard ThreeSATThree.computableInPolyTime_syntaxCheck NAESAT.mem_NP fun φ => by
     simp [NAEThreeSATThree, NAESAT, ThreeSATThree.syntaxCheck_iff, and_assoc]
-  rw [h]
-  exact inter_mem_NP (P_subset_NP ⟨_, by fun_prop, fun _ => Iff.rfl⟩) NAESAT.mem_NP
 
 namespace NAEEUThreeSAT
 
@@ -224,16 +216,10 @@ theorem NAEEUThreeSAT_npComplete : NPComplete encCNF NAEEUThreeSAT :=
 /-- Forget exact-three syntax after rejecting formulas outside that source syntax. -/
 theorem polyTimeReducible_NAEEUThreeSAT_NAEThreeSAT :
     PolyTimeReducible encCNF encCNF NAEEUThreeSAT NAEThreeSAT := by
-  refine ⟨fun φ => if EUThreeSAT.syntaxCheck φ then φ else [[]], by fun_prop, ?_⟩
-  intro φ
-  dsimp only
-  split_ifs with hg
-  · have he := (EUThreeSAT.syntaxCheck_iff φ).mp hg
-    have hw : ∀ c ∈ φ, c.length ≤ 3 := fun c hc => (he c hc).1.le
-    change (_ ∧ _) ↔ _ ∧ _
-    exact ⟨fun h => ⟨hw, h.2⟩, fun h => ⟨he, h.2⟩⟩
-  · have he : ¬φ.IsExactThreeDistinct := fun h => hg ((EUThreeSAT.syntaxCheck_iff φ).mpr h)
-    simp [NAEEUThreeSAT, NAEThreeSAT, he, CNF.NAESatisfiable, CNF.evalNAE]
+  refine .of_guard [[]] EUThreeSAT.computableInPolyTime_syntaxCheck ComputableInPolyTime.id'
+    (by simp [NAEThreeSAT, CNF.NAESatisfiable, CNF.evalNAE]) fun φ => ?_
+  rw [EUThreeSAT.syntaxCheck_iff]
+  exact ⟨fun h => ⟨h.1, fun c hc => (h.1 c hc).1.le, h.2⟩, fun h => ⟨h.1, h.2.2⟩⟩
 
 /-- Width-at-most-three NAE SAT is NP-hard. -/
 theorem NAEThreeSAT_npHard : NPHard encCNF NAEThreeSAT :=

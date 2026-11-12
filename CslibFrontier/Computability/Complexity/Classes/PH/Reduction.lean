@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Reduction
 import CslibFrontier.Computability.Complexity.Classes.PH.Projection
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Foundations.Data.List.TakeQuantifiers
 
 /-!
 # Reduction and bounded-quantifier closure of the polynomial hierarchy
@@ -102,15 +103,7 @@ theorem mem_SigmaP_of_exists_length (hk : 1 ≤ k) {N : α → ℕ}
       fun _ => Iff.rfl⟩
   convert mem_SigmaP_of_exists hk (hred.mem_SigmaP hC) p using 1
   ext a
-  have hle : N a ≤ p.eval (enc a).length := hp a
-  simp only [Set.mem_ofPred_eq, C']
-  constructor
-  · rintro ⟨u, hu, huC⟩
-    refine ⟨u ++ List.replicate (p.eval (enc a).length - N a) false,
-      by rw [List.length_append, List.length_replicate, hu, Nat.add_sub_cancel' hle], ?_⟩
-    rwa [← hu, List.take_left]
-  · rintro ⟨w, hw, hwC⟩
-    exact ⟨w.take (N a), by rw [List.length_take, hw, Nat.min_eq_left hle], hwC⟩
+  exact (List.exists_length_eq_take_iff (P := fun u => (a, u) ∈ C) (hp a)).symm
 
 /-- **`Πₖ` is closed under universal quantification of computed unary polynomial-time length**,
 for `k ≥ 1`, by quantifier duality from `Cslib.Complexity.mem_SigmaP_of_exists_length`. -/

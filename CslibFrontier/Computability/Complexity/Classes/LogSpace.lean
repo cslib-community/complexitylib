@@ -75,7 +75,8 @@ second conjunct of `LogSpaceComplete` is stated as `LogSpaceHard`.
 * `Cslib.Complexity.mem_L_iff`: `L` in terms of upstream `DecidableInTimeAndSpace`.
 * `Cslib.Complexity.mem_L_iff_mem_DSPACE`: the specialization `DSPACE Nat.log2`.
 * `Cslib.Complexity.L_subset_NL`: a deterministic machine is a nondeterministic machine.
-* `Cslib.Complexity.compl_mem_L`: `L` is closed under complement.
+* `Cslib.Complexity.compl_mem_L`, `Cslib.Complexity.L_eq_preimage_compl_L`: `L` is closed under
+  complement.
 * `Cslib.Complexity.L_subset_P`: logarithmic space is within polynomial time.
 * `Cslib.Complexity.L_subset_PSPACE`, `Cslib.Complexity.NL_subset_NPSPACE`: logarithmic space is
   within polynomial space.
@@ -151,6 +152,10 @@ functions. -/
 theorem compl_mem_L (h : A ∈ L enc) : Aᶜ ∈ L enc :=
   let ⟨f, hf, hA⟩ := h
   ⟨fun a => !f a, by fun_prop, fun a => by simp [hA a]⟩
+
+/-- `L` equals its preimage under complement. -/
+theorem L_eq_preimage_compl_L (enc : α ↪ List Bool) : L enc = compl ⁻¹' L enc :=
+  Set.ext fun _ => ⟨compl_mem_L, fun h => by simpa using compl_mem_L h⟩
 
 /-- **Logarithmic space is within polynomial time**: a deterministic machine that halts within
 logarithmic space repeats no configuration it can read, of which there are polynomially many. -/

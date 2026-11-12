@@ -68,6 +68,8 @@ inner existential quantifier used in the Karp–Lipton argument.
   encoded witness that passes the check, followed by any bits.
 * `Cslib.Complexity.isVerifier_witnessVerifier`, `Cslib.Complexity.mem_NP_of_witness`: a relation
   with polynomially short witnesses decided in polynomial time defines a problem in `NP`.
+* `Cslib.Complexity.mem_NP_of_check`: the same for a problem given by a sound check under which
+  every member has a short accepted witness.
 * `Cslib.Complexity.isVerifier_subsetVerifier`, `Cslib.Complexity.mem_NP_of_subsetWitness`:
   subset problems over polynomial-time candidate lists with polynomial-time checks are in `NP`.
 * `Cslib.Complexity.PolyTimeReducible.mem_NP`: `NP` is closed under polynomial-time reductions.
@@ -167,6 +169,19 @@ theorem mem_NP_of_witness (D : Decoder encW) {check : α × β → Bool} {R : α
   exact mem_NP.mpr
     ⟨_, _, computableInPolyTime_witnessVerifier D hcheck,
       isVerifier_witnessVerifier D hR hp⟩
+
+/-- **NP membership from a sound and complete check.** If `check` accepts a witness only for
+members of `A`, and every member has a witness accepted by `check` whose encoding has length at
+most `p (enc a).length`, then `A` is in `NP`. This is `mem_NP_of_witness` for the relation
+`check (a, b) = true`, stated for the problem `A` itself. -/
+theorem mem_NP_of_check (D : Decoder encW) {check : α × β → Bool}
+    (hcheck : ComputableInPolyTime check (encPair enc encW) encBool)
+    (sound : ∀ a b, check (a, b) = true → a ∈ A)
+    (complete : ∀ a ∈ A, ∃ b, check (a, b) = true ∧ (encW b).length ≤ p.eval (enc a).length) :
+    A ∈ NP enc := by
+  have hA : {a | ∃ b, check (a, b) = true} = A :=
+    Set.ext fun a => ⟨fun ⟨b, hb⟩ => sound a b hb, fun ha => (complete a ha).imp fun _ => And.left⟩
+  exact hA ▸ mem_NP_of_witness D hcheck (fun _ _ => Iff.rfl) fun a b hb => complete a (sound a b hb)
 
 end Witness
 
