@@ -100,6 +100,12 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
+For changed APIs and reuse refactors, authors and reviewers
+[check the API through its callers](AGENTS.md#check-the-api-through-its-callers): inspect named
+access, semantic matcher/range facts, shared operational definitions, representation bridges and
+the intended public surface. Identify a representative caller that benefits, with evidence
+proportional to the change; a successful build alone does not establish these design properties.
+
 **Structures for domain objects and records**
 ([#4385](https://github.com/cslib-community/cslib-frontier/issues/4385)). Model domain objects,
 problem instances, certificates, configurations, and multi-field algorithm contexts, states or
@@ -305,9 +311,15 @@ options. On pull requests CI also runs
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
 library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has, up to binder names,
-universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
+universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`.
+It also handles reversed equalities and built-in list lookup by a `Fin` index versus its natural
+value, ignoring that lookup's bounds proof while retaining the list and index. It does not unfold
+arbitrary definitions or custom indexing instances, or match specializations of a general theorem.
 CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
 --theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
+The reports link project declarations at the checked revision and disclose skipped or incomplete
+comparisons. Reviewers inspect the notices and resolve relevant candidates before approval under
+[the review cycle](AGENTS.md#review-cycle); a successful advisory exit alone is not a clean audit.
 On pull requests CI also runs a third advisory notice, `python3 scripts/proof_copies.py`, which
 reads only the sources. It lists tactic blocks of four or more lines, on lines a change adds or
 modifies, that repeat a block of another proof, or of the same proof, in the same file or

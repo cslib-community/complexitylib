@@ -178,6 +178,8 @@ example : properSupportTrace.reductions = 4 ∧ properSupportTrace.caps = 0 := b
 example : List.ofFn (@capPort 2) =
     [Sum.inl 0, Sum.inl 1, Sum.inr 0, Sum.inl 1, Sum.inl 2, Sum.inl 3] := by decide
 example : List.ofFn (@capDifferencePort 2) = [0, 3, 4, 5] := by decide
+-- At the smallest arity the retained differences still skip exactly coordinates 1 and 2.
+example : List.ofFn (@capDifferencePort 0) = [0, 3] := by decide
 example : cyclicDifference ((Sum.elim ![false, true, false, true]
     (fun _ : Fin 1 => false)) ∘ capPort) 1 =
       cyclicDifference ((Sum.elim ![false, true, false, true]

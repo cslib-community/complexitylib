@@ -34,6 +34,16 @@ Divesh Aggarwal. *Secret Sharing Despite Non-Extractable Randomness*. arXiv:2610
 
 Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibliographic Search." *Communications of the ACM* 18(6), 333–340, 1975. https://doi.org/10.1145/360825.360855 . Scanned copy in D. J. Bernstein's bibliography archive, https://cr.yp.to/bib/1975/aho.pdf , checked 2026-11-08 for Algorithms 1 and 3, Lemmas 1–3, Theorems 1, 2 and 4, and Figures 1 and 2.
 
+<a id="ahlswedecsiszar93"></a>
+## ahlswedecsiszar93
+
+Rudolf Ahlswede and Imre Csiszár. "Common Randomness in Information Theory and Cryptography. Part I: Secret Sharing." *IEEE Transactions on Information Theory* 39(4), 1121–1132, 1993. https://doi.org/10.1109/18.243431 . Bibliographic metadata checked via secondary search summaries on 2026-11-11.
+
+<a id="ahlswedecsiszar07"></a>
+## ahlswedecsiszar07
+
+Rudolf Ahlswede and Imre Csiszár. "On Oblivious Transfer Capacity." ISIT 2007, Nice, France, pp. 2061–2064, https://doi.org/10.1109/ISIT.2007.4557524, https://www.math.uni-bielefeld.de/ahlswede/homepage/public/242.pdf. Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8). Used for the asymptotic single-choice-bit string-OT bound (which the Lean formalization adapts to finite exact batch-bit OT with independent choices).
+
 <a id="aik11"></a>
 ## aik11
 
@@ -123,6 +133,16 @@ Boaz Barak and David Steurer. *Proofs, beliefs, and algorithms through the lens 
 ## barrett26
 
 Clark Barrett, Swarat Chaudhuri, Fabrizio Montesi, Jim Grundy, Pushmeet Kohli, Leonardo de Moura, Alexandre Rademaker and Sorrachai Yingchareonthawornchai. *CSLib: The Lean Computer Science Library*. arXiv:2602.04846v1, 2026. https://doi.org/10.48550/arXiv.2602.04846 . Author/title/version metadata checked against https://arxiv.org/abs/2602.04846 on 2026-11-02 UTC.
+
+<a id="basupollackroy06"></a>
+## basupollackroy06
+
+Saugata Basu, Richard Pollack and Marie-Françoise Roy. *Algorithms in Real Algebraic Geometry*, 2nd edition. Algorithms and Computation in Mathematics 10, Springer, 2006. https://doi.org/10.1007/3-540-33099-2 . Bibliographic metadata from `references.bib`; the primary textbook was not directly inspected (the retired author-hosted URL `perso.univ-rennes1.fr` returned HTTP 404), so internal chapter, section, and theorem numbers reported in secondary summaries (such as Chapter 2, Theorem 2.50 for Sturm's theorem over real closed fields and Chapter 10, §§10.1–10.2 for root bounds, root-separation bounds, and Sturm bisection) remain unverified against the printed text and are not claimed as verified locators. Local adaptations in `CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/`: [`Sturm.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/Sturm.lean) proves Sturm's theorem on `(a, b]` over `ℝ` via local constancy of `sturmVariations p x + #{r ≤ x}`; [`RootBound.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/RootBound.lean) packages the cleared-denominator rational `ℓ²` root-separation form (`Polynomial.mignotte_sep_sqNorm_rat`); and [`TotalRatPoly.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalRatPoly.lean) with [`TotalIsolation.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalIsolation.lean) implements an end-to-end `TimeM ℕ`-charged `List ℚ` Sturm-bisection isolator (`isolateRootsTotalM`, `isolateRootsTotal`) with left-endpoint root refinement and boundary separation into strictly disjoint closed rational intervals (`J₁.upper < J₂.lower`).
+
+<a id="bax93"></a>
+## bax93
+
+Eric T. Bax. “Inclusion and Exclusion Algorithm for the Hamiltonian Path Problem.” *Information Processing Letters* 47(4), 203–207, 1993. https://doi.org/10.1016/0020-0190(93)90033-6 . Bibliographic metadata checked via DOI/DBLP on 2026-11-11; the article body (paywalled) was not inspected, so the manual cites it for the inclusion–exclusion walk-counting algorithm without a theorem or page locator.
 
 <a id="bcgl92"></a>
 ## bcgl92
@@ -319,6 +339,11 @@ Gruia Călinescu, Chandra Chekuri, Martin Pál, Jan Vondrák. “Maximizing a Mo
 
 Ran Canetti, Yevgeniy Dodis, Rafael Pass and Shabsi Walfish. *Universally Composable Security with Global Setup*. TCC 2007, Lecture Notes in Computer Science 4392, 61–85; full version Cryptology ePrint Archive 2006/432. https://doi.org/10.1007/978-3-540-70936-7_4 . The primary text was not inspected, and no theorem number is claimed. The manual attributes to this paper only the setting of sessions that share a global functionality which the environment also queries directly.
 
+<a id="cf01"></a>
+## cf01
+
+Ran Canetti and Marc Fischlin. *Universally Composable Commitments*. CRYPTO 2001, Lecture Notes in Computer Science 2139, 19–40, 2001; full version Cryptology ePrint Archive 2001/055. https://doi.org/10.1007/3-540-44647-8_2 . Section 2.2, Figure 2 (`F_com`, p. 10) and Section 3, Theorem 6 (p. 12) were checked against the full version, Cryptology ePrint Archive 2001/055. The library proves an adaptation and special case of Theorem 6: one commitment message and one opening message, a constant completeness gap, a single simulator fixed before the environment, and call-counted (not machine-efficiency) bounds. Theorem 6 for general bilateral protocols and the computational setting is not formalized.
+
 <a id="cgks98"></a>
 ## cgks98
 
@@ -357,7 +382,7 @@ Xi Chen and Xiaotie Deng. "On the Complexity of 2D Discrete Fixed Point Problem.
 <a id="chenhiraharaoliveirapichrajgopalsanthanam2020"></a>
 ## chenhiraharaoliveirapichrajgopalsanthanam2020
 
-Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` and `[MMW19]` bullets of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
+Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 3 (learning by circuits with non-adaptive membership queries, Section 2.2, p. 12), Lemma 34 (its use of a non-adaptive learner with the seed fixed by Adleman's trick, pp. 25–27), Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` and `[MMW19]` bullets of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
 
 <a id="christofides76"></a>
 ## christofides76
@@ -444,7 +469,7 @@ CSLib contributors. *CSLib*, pinned dependency snapshot `254e30e6d4299c51323aaea
 <a id="cygan2015"></a>
 ## cygan2015
 
-Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. On 2026-11-08 the same PDF returned HTTP 403, so the crown material of Section 2.3 cited by [Crown](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Crown.lean) was not inspected. Secondary sources number the crown lemma Lemma 2.14 and the `3k` kernel Theorem 2.16; these numbers are unverified and are not used in the Lean docstrings. The color-coding locators Section 5.2 and Lemma 5.5, the fpt-reduction locator Section 13.1, and the tree-decomposition locator Section 7.3.1 (weighted independent set, stated for `n`-vertex graphs), used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected. Section 4.4 (iterative compression for odd cycle transversal), cited by [OddCycleTransversal](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/OddCycleTransversal.lean) and its algorithm, was not inspected either; its locator comes from secondary sources.
+Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. On 2026-11-08 the same PDF returned HTTP 403, so the crown material of Section 2.3 cited by [Crown](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Crown.lean) was not inspected. Secondary sources number the crown lemma Lemma 2.14 and the `3k` kernel Theorem 2.16; these numbers are unverified and are not used in the Lean docstrings. The color-coding locators Section 5.2 and Lemma 5.5, the fpt-reduction locator Section 13.1, and the tree-decomposition locator Section 7.3.1 (weighted independent set, stated for `n`-vertex graphs), used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected. Section 4.4 (iterative compression for odd cycle transversal), cited by [OddCycleTransversal](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/OddCycleTransversal.lean) and its algorithm, was not inspected either; its locator comes from secondary sources. Likewise, nice tree-decomposition normalization (Lemma 7.4, p. 161), bounded-treewidth CSP dynamic programming, and the clause-grouping `3-SAT`-to-`Clique` ETH lower bound (Theorem 14.21, p. 485) were inspected in the companion PDF and verified, matching the locators in the [results registry](../CslibFrontierResults/Entries.lean).
 
 <a id="dasguptagupta03"></a>
 ## dasguptagupta03
@@ -469,7 +494,7 @@ Ronald de Wolf. *Quantum Computing: Lecture Notes*. arXiv:1907.09415, read in v6
 <a id="diestel25"></a>
 ## diestel25
 
-Reinhard Diestel. *Graph Theory*, sixth edition. Graduate Texts in Mathematics 173, Springer, 2025. The author's free preview chapters (https://www.math.uni-hamburg.de/home/diestel/books/graph.theory/preview/Ch3.pdf and Ch1.pdf) were consulted on 2026-11-08 UTC for Section 1.4 (separating sets), Section 3.3, Corollary 3.3.5 (i) (vertex form, `ab ∉ E`) and (ii) (edge form), and the statements of Theorems 3.3.1 and 3.3.6, which are cited only as remaining work.
+Reinhard Diestel. *Graph Theory*, sixth edition. Graduate Texts in Mathematics 173, Springer, 2025. The author's free preview chapters (https://www.math.uni-hamburg.de/home/diestel/books/graph.theory/preview/Ch3.pdf and Ch1.pdf) were consulted on 2026-11-08 and 2026-11-11 UTC for Section 1.4 (`k`-connectedness `|G| > k`, separating sets, Proposition 1.4.2 `κ(G) ≤ λ(G)`), Section 3.3, Theorem 3.3.1 (`A`–`B` Menger), Corollary 3.3.5 (i) (vertex form, `ab ∉ E`) and (ii) (edge form), and Theorem 3.3.6 (i)–(ii) (global `k`-connectivity Menger).
 
 <a id="dilworth1950"></a>
 ## dilworth1950
@@ -504,7 +529,7 @@ Jack Edmonds. "Maximum Matching and a Polyhedron with 0,1-Vertices." *Journal of
 <a id="edmonds67b"></a>
 ## edmonds67b
 
-Jack Edmonds. "Optimum Branchings." *Journal of Research of the National Bureau of Standards, Section B* 71B(4), 233–240, 1967. https://doi.org/10.6028/jres.071B.032 . Bibliographic metadata checked against the Crossref record on 2026-11-08. Section 2 (the reduction of optimum spanning arborescences with a prescribed root to optimum branchings; arcs are directed away from the root), Theorem 1 (stated in Section 3: a *good*, that is polynomially bounded, algorithm for optimum branchings exists) and Section 4 (the algorithm, which selects the best arc into each node and contracts cycles, and its proof) were checked against the open NIST PDF on 2026-11-08. The library proves correctness and optimality of the Section 4 contraction algorithm, specialised to rooted minimum-cost spanning arborescences. It does not prove the polynomial-time content of Theorem 1, optimum branchings, or Theorem 2 (Section 5, the branching polytope).
+Jack Edmonds. "Optimum Branchings." *Journal of Research of the National Bureau of Standards, Section B* 71B(4), 233–240, 1967. https://doi.org/10.6028/jres.071B.032 . Bibliographic metadata checked against the Crossref record on 2026-11-08. Section 2 (the reduction of optimum spanning arborescences with a prescribed root to optimum branchings; arcs are directed away from the root), Theorem 1 (stated in Section 3: a *good*, that is polynomially bounded, algorithm for optimum branchings exists) and Section 4 (the algorithm, which selects the best arc into each node and contracts cycles, and its proof) were checked against the open NIST PDF on 2026-11-08. The library formalizes the Section 1 branching characterization, the Section 2 weight-shift reductions, the Section 4 contraction algorithm (including materialized `O(n³)` `TimeM` table solvers), and the polynomial-time content of Theorem 1 on binary-weighted adjacency tables (`minArborescenceDec_mem_P`, `minOutArborescenceDec_mem_P`, `maxBranchingDec_mem_P`). Theorem 2 (Section 5, the branching polytope) and sparse `O(m log n)` / `O(m + n log n)` implementations are not formalized.
 
 <a id="epsteinfeldmanmansour09"></a>
 ## epsteinfeldmanmansour09
@@ -541,6 +566,11 @@ Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the 
 
 John Fearnley, Spencer Gordon, Ruta Mehta and Rahul Savani. "Unique End of Potential Line." *Journal of Computer and System Sciences* 114, 1–35, 2020. https://doi.org/10.1016/j.jcss.2020.05.007 . Checked on 2026-11-11 against the arXiv TeX source of `arXiv:1811.03841v1` (https://arxiv.org/abs/1811.03841 , dated 9 November 2018): Section 2 ("Unique End of Potential Line"), Definition 9 (`EndOfPotentialLine`, `\label{def:EOPL}`, solution types `(R1)` and `(R2)` under `P(0^n) = 0^n ≠ S(0^n)` and `V(0^n) = 0` with `V : {0, 1}^n → {0, …, 2^m - 1}`) and the complexity class `EOPL` with `EOPL ⊆ PLS ∩ PPAD`. `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLine.lean` formalizes uniform polynomial-time `EOPL` and `SOPL` families, totalized `(R1)/(R2)` violation relations (`mem_EOPL_iff_violation`, `mem_SOPL_iff_violation`), and `EOPL ⊆ PLS ∩ PPAD`. `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLineNormalization.lean` formalizes the uniform polynomial-time `(n + 1)`-bit normalization to the exact syntactic source conditions `PromisedPotentialLine` (`P(0^n) = 0^n ≠ S(0^n)` and `V(0^n) = 0`), pure `(R1)/(R2)` relations (`endOfPotentialLinePromisedRel`, `sinkOfPotentialLinePromisedRel`), and unary potential bit-bounds (`mem_EOPL_iff_promised_bounded`, `mem_SOPL_iff_promised_bounded`). Both modules use uniform polynomial-time families rather than canonical Boolean circuit codes; `UEOPL`, `CLS`, and the journal version's numbering were not formalized or separately checked.
 
+<a id="fiatkarplubymcgeochsleatoryoung91"></a>
+## fiatkarplubymcgeochsleatoryoung91
+
+Amos Fiat, Richard M. Karp, Michael Luby, Lyle A. McGeoch, Daniel D. Sleator and Neal E. Young. "Competitive Paging Algorithms." *Journal of Algorithms* 12(4), 685–699, 1991. https://doi.org/10.1016/0196-6774(91)90040-6 . Checked on 2026-11-11 against the arXiv TeX source of `arXiv:cs/0205038v1` (https://arxiv.org/abs/cs/0205038 , submitted 24 May 2002): Section 3 ("The marking algorithm") and Theorem 1 (`\label{markingthm1}`, stating that the marking algorithm is a `2 H_k`-competitive algorithm for the uniform `k`-server problem on `n` vertices). `CslibFrontier/DataStructure/Paging/Marking.lean` formalizes the marking algorithm over `Paging.problem α k` via `Online.BehavioralStrategy` with three local adaptations: (1) pages range over any `[DecidableEq α]` type rather than a finite `n`-vertex uniform metric; (2) initialization covers any admissible cache `|s₀| ≤ k` (inserting without eviction while `|cache| < k`) with additive constant `0`, rather than only a full initial cache `{1, …, k}`; and (3) `cleanCount_le_two_mul_scheduleCost` proves `#clean ≤ 2 · OPT` directly against arbitrary (not necessarily lazy) valid offline schedules without invoking the Manasse–McGeoch–Sleator lazy-schedule reduction. The `H_k` randomized lower bound against an oblivious adversary (Theorem 4 and Corollary 5, Section 5), unequal-capacity bounds, and the published journal's pagination were not formalized or separately checked.
+
 <a id="fips203"></a>
 ## fips203
 
@@ -574,7 +604,7 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locator (Section 1.2, the dynamic program for TSP in the introductory chapter) was taken from secondary descriptions and review; the book body was not inspected in this pass.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
@@ -594,7 +624,7 @@ Rūsiņš Freivalds. "Fast Probabilistic Algorithms." *Mathematical Foundations 
 <a id="friezekaronski2016"></a>
 ## friezekaronski2016
 
-Alan Frieze and Michał Karoński. *Introduction to Random Graphs*. Cambridge University Press, 2016. https://doi.org/10.1017/CBO9781316339831 . Inspected the author-hosted version dated August 7, 2026 (https://www.math.cmu.edu/~af1p/BOOK.pdf), §4.1, Theorem 4.1 and its proof; §1.2, Lemma 1.11 (sharp threshold for isolated vertices, stated and proved in `G(n, m)` with `m = n (log n + ω) / 2` by the first and second moment methods); and §3.1, `E X_0 = n (1 - p) ^ (n - 1)` in `G(n, p)` with its limits (3.1). The theorem is stated for `G_m` with `m = n (log n + c_n) / 2`; the proof works in `G(n, p)` with `p = (log n + c) / n`, and the text later cites it for "`G(n, p)` is connected w.h.p. for `np − log n → ∞`". The book attributes the theorem to Erdős and Rényi, "On random graphs I", *Publ. Math. Debrecen* 6 (1959), 290–297; that paper was not inspected. The publisher's ISBN and DOI are from catalogue records.
+Alan Frieze and Michał Karoński. *Introduction to Random Graphs*. Cambridge University Press, 2016. https://doi.org/10.1017/CBO9781316339831 . Inspected the author-hosted version dated August 7, 2026 (https://www.math.cmu.edu/~af1p/BOOK.pdf), §4.1, Theorem 4.1 and its proof; §1.2, Lemma 1.11 (sharp threshold for isolated vertices, stated and proved in `G(n, m)` with `m = n (log n + ω) / 2` by the first and second moment methods); and §3.1, `E X_0 = n (1 - p) ^ (n - 1)` in `G(n, p)` with its limits (3.1). The theorem is stated for `G_m` with `m = n (log n + c_n) / 2`; the proof works in `G(n, p)` with `p = (log n + c) / n`, and the text later cites it for "`G(n, p)` is connected w.h.p. for `np − log n → ∞`". The book attributes the theorem to Erdős and Rényi, "On random graphs I", *Publ. Math. Debrecen* 6 (1959), 290–297; that paper was not inspected. Also inspected Lemma 33.10 (pp. 696–697, truncated inclusion-exclusion/Bonferroni bounds) and Theorem 33.11 (pp. 697–698, Brun's sieve). The source's `B_r` (written `B_k = E[choose(S_n, k)]`) is formalized as the sum of `r`-fold intersection measures with limit `lam^r / r!` (binomial-moment normalization). The formalization deliberately extends the result to finite measures by using the `r = 0` hypothesis to require that the total mass converges to 1. The publisher's ISBN and DOI are from catalogue records.
 
 <a id="fulkerson1956"></a>
 ## fulkerson1956
@@ -664,7 +694,7 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 <a id="gomoryhu61"></a>
 ## gomoryhu61
 
-Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
+Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4. The review of PR #4586 reports the triangle inequality on pp. 551–552, the observation that there are at most `n - 1` distinct minimum cut values on p. 553 and the tree-path lemma (Lemma 2) on p. 556; these locators were not rechecked here.
 
 <a id="goosetal22"></a>
 ## goosetal22
@@ -922,6 +952,11 @@ Anna R. Karlin, Mark S. Manasse, Larry Rudolph, Daniel D. Sleator. "Competitive 
 
 Anna R. Karlin, Mark S. Manasse, Lyle A. McGeoch, Susan Owicki. "Competitive Randomized Algorithms for Nonuniform Problems." *Algorithmica* 11(6), 542–571, 1994 (preliminary version in SODA 1990). https://doi.org/10.1007/BF01189993 . Bibliographic data from secondary indexes and the DOI record; the full text was not inspected, so no theorem number is cited. The manual credits this paper with the equalizing randomized rent-or-buy strategy and its ratio `1/(1 - (1 - 1/B)^B) → e/(e-1)` against an oblivious adversary, which secondary sources attribute to it.
 
+<a id="karp82"></a>
+## karp82
+
+Richard M. Karp. “Dynamic Programming Meets the Principle of Inclusion and Exclusion.” *Operations Research Letters* 1(2), 49–51, 1982. https://doi.org/10.1016/0167-6377(82)90044-X . Bibliographic metadata checked via DOI on 2026-11-11; the article body (paywalled) was not inspected, so the manual cites it for the inclusion–exclusion formulation of sequencing/Hamiltonian-path counting without a theorem or page locator.
+
 <a id="kasai01"></a>
 ## kasai01
 
@@ -1112,6 +1147,11 @@ Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Co
 
 Carsten Lund and Mihalis Yannakakis. "On the Hardness of Approximating Minimization Problems." *Journal of the ACM* 41(5), 960–981, 1994. https://doi.org/10.1145/185675.306789 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the constant-factor and logarithmic Set Cover inapproximability reductions from Label Cover using set-system partition gadgets.
 
+<a id="mahler64"></a>
+## mahler64
+
+Kurt Mahler. "An inequality for the discriminant of a polynomial." *Michigan Mathematical Journal* 11(3), 257–262, 1964. https://doi.org/10.1307/mmj/1028999140 . Bibliographic metadata from `references.bib`; the Project Euclid full text was gated behind an automated challenge and was not directly inspected, so internal lemma and theorem numbers reported in secondary mathematical records (Lemma 1 for Hadamard's determinant inequality and Theorem 2 for the root-separation lower bound `|α - β| > √3 · m^{-(m+2)/2} · |D(f)|^{1/2} · M(f)^{-(m-1)}` for degree `m ≥ 2` in terms of discriminant `D(f)` and Mahler measure `M(f)`) remain unverified against the primary article. In [`RootBound.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/RootBound.lean), `Polynomial.mignotte_sep_mahler_complex` proves the squared non-strict complex form `3 · ‖D(f)‖ ≤ ‖α - β‖² · d^{d+2} · M(f)^{2(d-1)}`, and `Polynomial.mignotte_sep_sqNorm_real` / `Polynomial.mignotte_sep_sqNorm_rat` combine it with `|D(f)| ≥ 1` for separable integer polynomials and Landau's coefficient `ℓ²` bound `M(f) ≤ ‖f‖₂`.
+
 <a id="manacher75"></a>
 ## manacher75
 
@@ -1156,6 +1196,11 @@ Karl Menger. "Zur allgemeinen Kurventheorie." *Fundamenta Mathematicae* 10, 96�
 ## mignonressayre04
 
 Thierry Mignon and Nicolas Ressayre. *A quadratic bound for the determinant and permanent problem*. International Mathematics Research Notices 2004(79), 4241–4253, 2004. https://doi.org/10.1155/S1073792804142566 . Bibliographic metadata checked on 2026-11-08; the publisher copy was not inspected, so no theorem number is claimed. The statement (`dc(perm_n) ≥ n²/2` in characteristic zero), the point `X₀` (all ones with `1 - n` in one corner), and the two Hessian lemmas were checked against R. Saptharishi, *A survey of lower bounds in arithmetic circuit complexity*, chapter "Determinantal Complexity Lower Bounds" (Theorem `thm:Mignon-Ressayre-mainthm`, Lemmas `lem:MR-det-ub` and `lem:MR-perm-lb`), at GitHub revision `af95c539`. The full rank of the Hessian at `X₀` is proved in the library by its own sandwich-identity argument, not by the survey's eigenvalue or block-matrix computation.
+
+<a id="mignotte82"></a>
+## mignotte82
+
+Maurice Mignotte. "Some Useful Bounds." In Bruno Buchberger, George E. Collins and Rüdiger Loos (eds.), *Computer Algebra: Symbolic and Algebraic Computation*, Computing Supplementum 4, 259–263, Springer, 1982. https://doi.org/10.1007/978-3-7091-7551-4_16 . Bibliographic metadata checked against DOI and secondary computer-algebra records on 2026-11-11 UTC; the primary Springer supplement pages 259–263 were not directly inspected, so internal theorem numbers are unverified. Cited alongside [`mahler64`](#mahler64) for the Mignotte coefficient `ℓ²` root-separation specialization (`Polynomial.mignotte_sep_sqNorm_real`, `Polynomial.mignotte_sep_sqNorm_rat`) governing `mignotteBisectionDepth`.
 
 <a id="mirsky1971"></a>
 ## mirsky1971
@@ -1236,6 +1281,11 @@ Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungari
 ## naoryung89
 
 Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptographic Applications.” *Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing (STOC 1989)*, 33–43, 1989. https://doi.org/10.1145/73007.73011 . Authors' revised manuscript (March 13, 1995): https://www.wisdom.weizmann.ac.il/~naor/PAPERS/uowhf.ps (§2, §2.3, §3 and §4).
+
+<a id="nascimentowinter08"></a>
+## nascimentowinter08
+
+Anderson C. A. Nascimento and Andreas Winter. "On the Oblivious-Transfer Capacity of Noisy Resources." *IEEE Transactions on Information Theory* 54(6), 2572–2581, 2008. https://doi.org/10.1109/TIT.2008.921856 . Bibliographic metadata checked via secondary search summaries on 2026-11-11; the full paper was not audited, so no internal theorem numbers are claimed.
 
 <a id="nash51"></a>
 ## nash51
@@ -1440,12 +1490,12 @@ Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th
 <a id="schrijver03"></a>
 ## schrijver03
 
-Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Algorithms and Combinatorics 24, Springer, 2003. Cited for Gomory–Hu trees. The locator (Chapter 15, “Connectivity and Gomory–Hu trees”, Section 15.4) is taken from secondary descriptions of the table of contents only: the book itself was not inspected, and no theorem or page locator is claimed. It is also cited for Dinitz's algorithm: the locator Section 10.6 (on Dinitz's `O(n²m)` maximum-flow algorithm) was likewise taken from secondary descriptions of the table of contents. It is also cited for minimum-cost arborescences: the locator Section 52.1 (“Finding a shortest r-arborescence”) was likewise taken from secondary descriptions of the table of contents.
+Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Algorithms and Combinatorics 24, Springer, 2003. Cited for Gomory–Hu trees. The locator (Chapter 15, “Connectivity and Gomory–Hu trees”, Section 15.4) is taken from secondary descriptions of the table of contents only: the book itself was not inspected, and no theorem or page locator is claimed. It is also cited for Dinitz's algorithm: the locator Section 10.6 (on Dinitz's `O(n²m)` maximum-flow algorithm) was likewise taken from secondary descriptions of the table of contents. It is also cited for minimum-cost arborescences: the locator Section 52.1 (“Finding a shortest r-arborescence”) was likewise taken from secondary descriptions of the table of contents. A [hosted copy of Part I](https://www.lamsade.dauphine.fr/~cornaz/Enseignement/M2_MODO/DATA/A1.PDF) (Volume A, “Paths and Flows”, with the book's pagination) was inspected on 2026-11-11 for the real-capacity flow and Gomory–Hu results: Section 10.1 (pp. 148–149) defines flows with capacities `c : A → ℝ₊`, conservation and the value; Theorem 10.3 (Section 10.2, p. 150) is the max-flow min-cut theorem; in Section 15.4, Theorem 15.13 (p. 249) is the path-minimum property of a Gomory–Hu tree and Theorem 15.14 (p. 250) its existence. `isMaxRealFlow_minRealCutBetween` extends Theorem 10.3 from `ℝ` to any linearly ordered field, encodes arcs as ordered pairs and obtains the maximum by linear-programming duality.
 
 <a id="schrijver17"></a>
 ## schrijver17
 
-Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. It was also consulted on 2026-11-08 UTC for Section 3.2 (display (6) and Theorem 3.2), Section 5.1 (Theorem 5.1 and Corollary 5.1a) and Theorem 5.2; the general-matching modules `Berge` and `TutteBerge` cite these locators. Section 4.1 (Theorem 4.1, Corollaries 4.1a and 4.1b, and the vertex-splitting and undirected remarks after them) was consulted on the same date for the Menger modules. Section 7.3 (display (17), Theorems 7.5 and 7.6) was consulted on 2026-11-08 for the Mirsky and Dilworth modules. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
+Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. It was also consulted on 2026-11-08 UTC for Section 3.2 (display (6) and Theorem 3.2), Section 5.1 (Theorem 5.1 and Corollary 5.1a) and Theorem 5.2; the general-matching modules `Berge` and `TutteBerge` cite these locators. Section 4.1 (Theorem 4.1, Corollaries 4.1a and 4.1b including directed multigraphs, the vertex-splitting and undirected remarks after them, and Theorem 4.2's remark on integer-capacity path packing) was consulted on 2026-11-08 and 2026-11-11 UTC for the Menger modules. Section 7.3 (display (17), Theorems 7.5 and 7.6) was consulted on 2026-11-08 for the Mirsky and Dilworth modules. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
 
 <a id="schrijver78"></a>
 ## schrijver78
@@ -1456,6 +1506,11 @@ Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinato
 ## schrijver86
 
 Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. An independent agent review checked the primary book on 2026-11-11 UTC for Section 3.2, Theorem 3.2 (pp. 29–30, determinant encoding-size bound) and Section 3.3, "The Gaussian elimination method": Theorem 3.3 (pp. 32–33, polynomial-time rational Gaussian elimination), Corollary 3.3a (pp. 33–34, polynomial-time determinant, rank, inverse, linear-independence testing, and linear system solving), and the Gauss–Jordan discussion with Equations (28)–(30) (p. 35). Local adaptations in [`BareissElimination.lean`](../CslibFrontier/Algorithms/LinearAlgebra/BareissElimination.lean) and [`RationalElimination.lean`](../CslibFrontier/Computability/PolyTime/LinearAlgebra/RationalElimination.lean): (1) rather than Schrijver's normalized rational elimination, row denominators are cleared upfront and fraction-free Sylvester–Bareiss minor-scaled Gauss–Jordan updates are executed over `ℤ` with an explicit Hadamard/factorial bound (`stageEntryBound`); and (2) native multi-tape Turing `ComputableInPolyTime` time and workspace bounds are certified using `enc_structure` codecs with explicit unary dimension headers (`numRows`, `numCols`, `rank`, `pivotRows`, `pivotCols`, `nonPivotCols`) and framed signed-binary/rational entries.
+
+<a id="schummervohra02"></a>
+## schummervohra02
+
+James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Journal of Economic Theory* 104(2), 405–428, 2002. https://doi.org/10.1006/jeth.2001.2807 . The published version is paywalled and was not inspected. The [authors' January 23, 2001 preprint](https://www.kellogg.northwestern.edu/faculty/schummer/ftp/research/circle.pdf) was read on 2026-11-11, and the locators below refer to its pages. Section 2 (pp. 5–6) sets up finite connected length graphs and preferences given by negative path distance. Section 3 (pp. 9–16) defines generalized median voter schemes on paths, their consistency (p. 12) and extended median voter schemes, and Theorem 1 (p. 15) characterizes strategy-proof onto rules on trees. Section 4 proves Theorem 2 (p. 21): every strategy-proof onto rule has a dictator on each cycle. `TreeEMVS` represents extended median voter schemes by branch-winning coalitions rather than by consistent path schemes; see its docstring for the correspondence. Strong group strategyproofness of these rules is proved in the library and is not stated in the paper. The cycle results cover shortest cycles only.
 
 <a id="schummervohra07"></a>
 ## schummervohra07
@@ -1530,7 +1585,7 @@ Robert I. Soare. *Recursively Enumerable Sets and Degrees*. Perspectives in Math
 <a id="stanley13"></a>
 ## stanley13
 
-Richard P. Stanley. *Topics in Algebraic Combinatorics*. Course notes, version of 1 February 2013, author-hosted at https://math.mit.edu/~rstan/algcomb/algcomb.pdf ; published as *Algebraic Combinatorics: Walks, Trees, Tableaux, and More*, Springer, 2013. Read in the author-hosted version on 2026-11-08 UTC, Chapter 10 ("Eulerian digraphs and oriented trees"): the definitions of tours, Eulerian tours, balanced digraphs and oriented trees (pp. 189–190); Theorem 10.2, the BEST theorem `ε(D, e) = τ(D, v) ∏_u (outdeg(u) − 1)!` for a connected balanced digraph, with the last-exit proof (pp. 191–192); Theorem 10.4, the directed matrix-tree theorem `det L₀ = τ(D, v_p)` for a connected digraph with parallel edges and loops (p. 193); Corollary 10.5, the determinant form of the BEST theorem (p. 194); and the chapter notes (pp. 198–199), which attribute Theorem 10.2 to van Aardenne-Ehrenfest and de Bruijn, Theorem 5a, and Theorem 10.4 to Tutte, Theorem 3.6. The page numbers are those of the notes; the printed book was not checked.
+Richard P. Stanley. *Topics in Algebraic Combinatorics*. Course notes, version of 1 February 2013, author-hosted at https://math.mit.edu/~rstan/algcomb/algcomb.pdf ; published as *Algebraic Combinatorics: Walks, Trees, Tableaux, and More*, Springer, 2013. Checked in the author-hosted version on 2026-11-08 UTC (Corollary 10.3 re-checked 2026-11-11 UTC), Chapter 10 ("Eulerian digraphs and oriented trees"): the definitions of tours, Eulerian tours, balanced digraphs and oriented trees (pp. 189–190); Theorem 10.2, the BEST theorem `ε(D, e) = τ(D, v) ∏_u (outdeg(u) − 1)!` for a connected balanced digraph, with the last-exit proof (pp. 191–192); Corollary 10.3, root independence `τ(D, v) = τ(D, v')` via cyclic rotation of Eulerian tours in display `(10.1)` (p. 193); Theorem 10.4, the directed matrix-tree theorem `det L₀ = τ(D, v_p)` for a connected digraph with parallel edges and loops (p. 193); Corollary 10.5, the determinant form of the BEST theorem (p. 194); and the chapter notes (pp. 198–199), which attribute Theorem 10.2 to van Aardenne-Ehrenfest and de Bruijn, Theorem 5a, and Theorem 10.4 to Tutte, Theorem 3.6. The page numbers are those of the notes; the printed book was not checked.
 
 <a id="stoerwagner97"></a>
 ## stoerwagner97
@@ -1685,3 +1740,13 @@ Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-
 ## zre15
 
 Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.
+
+<a id="hoorylinialwigderson06"></a>
+## hoorylinialwigderson06
+
+Shlomo Hoory, Nathan Linial and Avi Wigderson. "Expander graphs and their applications." *Bulletin of the American Mathematical Society* 43(4):439-561, 2006. The library formalization pins the May 3, 2006 draft (`expanderbookr1.pdf`). Section 2.4 (Lemma 2.5) covers the singular-value adaptation (separated from the GV coding background in §12.3.1), mapping the adjacency-eigenvalue normalization to the normalized biadjacency singular value (including bipartite trivial modes) with `d = |D|`, `N = |L| = |R|`, and edge count `d*N`.
+
+<a id="sipserspielman96"></a>
+## sipserspielman96
+
+Michael Sipser and Daniel A. Spielman. "Expander codes." *IEEE Transactions on Information Theory* 42(6):1710-1722, 1996. Section VI (Lemma 15, pp. 1715-1716) provides the local-to-global distance formula. The formalization marks two-code, asymmetric, arbitrary-alphabet, and finite-ring extensions as original adaptations.

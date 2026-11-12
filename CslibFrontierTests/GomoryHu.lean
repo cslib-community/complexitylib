@@ -170,7 +170,7 @@ example : ¬ IsGomoryHuTree (cutWeight W') (SimpleGraph.pathGraph 4) := by
 
 /-- The abstract theorem with values in `ℤ` rather than `ℕ`: the integer cut function of `W` is
 symmetric and submodular, so it has a Gomory–Hu tree. -/
-example : ∃ T : SimpleGraph (Fin 4), IsGomoryHuTree (fun X => (cutWeight W X : ℤ)) T :=
+example : ∃ T : SimpleGraph (Fin 4), IsGomoryHuTree (fun X => ((cutWeight W X : ℕ) : ℤ)) T :=
   exists_isGomoryHuTree (fun X => by simp only [cutWeight_compl' hW])
     (fun A B => by exact_mod_cast cutWeight_union_add_cutWeight_inter_le W A B)
 

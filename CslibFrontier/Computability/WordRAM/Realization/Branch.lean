@@ -23,6 +23,7 @@ The two-instruction allowance includes the jump on the negative path.
 ## Main results
 
 * `test_rename`: a renamed native condition tests the words in its source registers.
+* `branchPrefix_layout`, `branch_cost_le`: prefix-bank layout, frame weakening and cost relaxation.
 * `Realizes.Witness.branch`: retain a native conditional with one shared temporary bank.
 * `Realizes.branch`: erase the supplied branch witness when only existence is needed.
 -/
@@ -50,6 +51,27 @@ theorem test_rename {r : ℕ} (c : Cond k) (src : Fin k → Fin r)
   cases c <;> simp only [Cond.rename, Cond.Holds, test] <;>
     simp only [← h, Function.comp_apply]
 
+/-- Restricting a temporary bank `tmp` to a prefix `Fin.castLE h` preserves injectivity and
+disjointness from `src` and `frontier`, and weakens a prefix frame to a frame on `tmp`. -/
+theorem branchPrefix_layout {r k m M : ℕ} {frontier : Fin r} {src : Fin k → Fin r}
+    {tmp : Fin M → Fin r} (h : m ≤ M) (hi : Function.Injective tmp)
+    (hd : ∀ i j, src i ≠ tmp j) (hf : ∀ j, tmp j ≠ frontier) :
+    Function.Injective (tmp ∘ Fin.castLE h) ∧
+      (∀ i j, src i ≠ (tmp ∘ Fin.castLE h) j) ∧
+      (∀ j, (tmp ∘ Fin.castLE h) j ≠ frontier) ∧
+      ∀ {x y : Data r},
+        (∀ i, i ≠ frontier → (∀ j, (tmp ∘ Fin.castLE h) j ≠ i) → y.regs i = x.regs i) →
+        ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i :=
+  ⟨hi.comp (Fin.castLE_injective h), fun i j => hd i (Fin.castLE h j),
+    fun j => hf (Fin.castLE h j), fun hframe i hif htmp => hframe i hif fun _ => htmp _⟩
+
+/-- Relax a branch alternative's cost `C * (t + 1) + e` (with `e ≤ 2` control steps) under
+`max Cp Cn + 2` and an enlarged work bound `t ≤ t'`. -/
+theorem branch_cost_le {C Cp Cn t t' e : ℕ} (hC : C ≤ max Cp Cn) (ht : t ≤ t') (he : e ≤ 2) :
+    C * (t + 1) + e ≤ (max Cp Cn + 2) * (t' + 1) := by
+  have := Nat.mul_le_mul hC (Nat.add_le_add_right ht 1)
+  nlinarith
+
 namespace Realizes
 
 /-- Both alternatives reuse the same temporary prefix: only the larger scratch bank is
@@ -76,66 +98,21 @@ def Witness.branch {pos neg : δ → Memory.Prog α}
       intro r frontier src tmp hi hd hf hs
       let ip : Fin (l + np + 1) → Fin (l + max np nn + 1) := Fin.castLE (by omega)
       let ineg : Fin (l + nn + 1) → Fin (l + max np nn + 1) := Fin.castLE (by omega)
-      have hip : Function.Injective (tmp ∘ ip) := by
-        intro a b hab
-        apply Fin.ext
-        exact congrArg (fun z : Fin (l + max np nn + 1) => z.val) (hi hab)
-      have hin : Function.Injective (tmp ∘ ineg) := by
-        intro a b hab
-        apply Fin.ext
-        exact congrArg (fun z : Fin (l + max np nn + 1) => z.val) (hi hab)
-      obtain ⟨hnp, hrp⟩ := hp.code_spec frontier src (tmp ∘ ip) hip
-        (fun i j => hd i (ip j)) (fun j => hf (ip j)) hs
-      obtain ⟨hnn, hrn⟩ := hn.code_spec frontier src (tmp ∘ ineg) hin
-        (fun i j => hd i (ineg j)) (fun j => hf (ineg j)) hs
-      refine ⟨fun h => h.elim hnp hnn, ?_⟩
-      intro w d x hx hin hsafe hv
-      have hc := test_rename c src x (input d) hin
+      obtain ⟨hip, hdp, hfp, hframep⟩ := branchPrefix_layout (m := l + np + 1) (by omega) hi hd hf
+      obtain ⟨hin, hdn, hfn, hframen⟩ := branchPrefix_layout (m := l + nn + 1) (by omega) hi hd hf
+      obtain ⟨hnp, hrp⟩ := hp.code_spec frontier src (tmp ∘ ip) hip hdp hfp hs
+      obtain ⟨hnn, hrn⟩ := hn.code_spec frontier src (tmp ∘ ineg) hin hdn hfn hs
+      refine ⟨fun h => h.elim hnp hnn, fun w d x hx hin' hsafe hv => ?_⟩
+      have hc := test_rename c src x (input d) hin'
       by_cases ht : test c (input d)
       · simp only [ite_eq_left ht] at hsafe hv ⊢
-        obtain ⟨y, hy, hm, hout, hframe⟩ := hrp w d x hx hin hsafe hv
-        refine ⟨y, (hy.branch_pos (hc.mpr ht)).mono ?_, hm, ?_, ?_⟩
-        · have hC : hp.factor ≤ max hp.factor hn.factor + 2 := by omega
-          have hmul := Nat.mul_le_mul_right
-            (memoryCost (pos d) (memoryState frontier x) +
-              workPos d (memoryState frontier x) + 1) hC
-          calc
-            _ ≤ (max hp.factor hn.factor + 2) *
-                (memoryCost (pos d) (memoryState frontier x) +
-                  workPos d (memoryState frontier x) + 1) + 2 := by omega
-            _ ≤ (max hp.factor hn.factor + 2) *
-                (memoryCost (pos d) (memoryState frontier x) +
-                  workPos d (memoryState frontier x) + 1) +
-                  (max hp.factor hn.factor + 2) * 2 := by omega
-            _ = _ := by ring
-        · intro i
-          have heq : Fin.castAdd (max np nn + 1) i = ip (Fin.castAdd (np + 1) i) := Fin.ext rfl
-          rw [heq]
-          exact hout i
-        · intro i hif htmp
-          exact hframe i hif (fun j => htmp (ip j))
+        obtain ⟨y, hy, hm, hout, hframe⟩ := hrp w d x hx hin' hsafe hv
+        exact ⟨y, (hy.branch_pos (hc.mpr ht)).mono
+          (branch_cost_le (Nat.le_max_left _ _) (by omega) (by omega)), hm, hout, hframep hframe⟩
       · simp only [ite_eq_right ht] at hsafe hv ⊢
-        obtain ⟨y, hy, hm, hout, hframe⟩ := hrn w d x hx hin hsafe hv
-        refine ⟨y, (hy.branch_neg (fun h => ht (hc.mp h))).mono ?_, hm, ?_, ?_⟩
-        · have hC : hn.factor ≤ max hp.factor hn.factor + 2 := by omega
-          have hmul := Nat.mul_le_mul_right
-            (memoryCost (neg d) (memoryState frontier x) +
-              workNeg d (memoryState frontier x) + 1) hC
-          calc
-            _ ≤ (max hp.factor hn.factor + 2) *
-                (memoryCost (neg d) (memoryState frontier x) +
-                  workNeg d (memoryState frontier x) + 1) + 2 := by omega
-            _ ≤ (max hp.factor hn.factor + 2) *
-                (memoryCost (neg d) (memoryState frontier x) +
-                  workNeg d (memoryState frontier x) + 1) +
-                  (max hp.factor hn.factor + 2) * 2 := by omega
-            _ = _ := by ring
-        · intro i
-          have heq : Fin.castAdd (max np nn + 1) i = ineg (Fin.castAdd (nn + 1) i) := Fin.ext rfl
-          rw [heq]
-          exact hout i
-        · intro i hif htmp
-          exact hframe i hif (fun j => htmp (ineg j))
+        obtain ⟨y, hy, hm, hout, hframe⟩ := hrn w d x hx hin' hsafe hv
+        exact ⟨y, (hy.branch_neg (fun h => ht (hc.mp h))).mono
+          (branch_cost_le (Nat.le_max_right _ _) (by omega) le_rfl), hm, hout, hframen hframe⟩
   }
 
 /-- Both branch emitters precede all runtime values. Shared result slots and disjointness from
@@ -174,55 +151,21 @@ theorem branch {pos neg : δ → Memory.Prog α}
   intro r frontier src tmp hi hd hf hs
   let ip : Fin (l + np + 1) → Fin (l + max np nn + 1) := Fin.castLE (by omega)
   let ineg : Fin (l + nn + 1) → Fin (l + max np nn + 1) := Fin.castLE (by omega)
-  have hip : Function.Injective (tmp ∘ ip) := fun a b hab =>
-    Fin.ext (congrArg (fun z : Fin (l + max np nn + 1) => z.val) (hi hab))
-  have hin : Function.Injective (tmp ∘ ineg) := fun a b hab =>
-    Fin.ext (congrArg (fun z : Fin (l + max np nn + 1) => z.val) (hi hab))
-  obtain ⟨hnp, hrp⟩ := hsp frontier src (tmp ∘ ip) hip
-    (fun i j => hd i (ip j)) (fun j => hf (ip j)) hs
-  obtain ⟨hnn, hrn⟩ := hsn frontier src (tmp ∘ ineg) hin
-    (fun i j => hd i (ineg j)) (fun j => hf (ineg j)) hs
+  obtain ⟨hip, hdp, hfp, hframep⟩ := branchPrefix_layout (m := l + np + 1) (by omega) hi hd hf
+  obtain ⟨hin, hdn, hfn, hframen⟩ := branchPrefix_layout (m := l + nn + 1) (by omega) hi hd hf
+  obtain ⟨hnp, hrp⟩ := hsp frontier src (tmp ∘ ip) hip hdp hfp hs
+  obtain ⟨hnn, hrn⟩ := hsn frontier src (tmp ∘ ineg) hin hdn hfn hs
   refine ⟨fun h => h.elim hnp hnn, fun w d x hx hin' hsafe hv => ?_⟩
   have hc := test_rename c src x (input d) hin'
   by_cases ht : test c (input d)
   · simp only [ite_eq_left ht] at hsafe hv ⊢
     obtain ⟨y, hy, hm, hout, hframe⟩ := hrp w d x hx hin' hsafe hv
-    refine ⟨y, (ExecBounded.branch_pos (hc.mpr ht) hy).mono ?_, hm, ?_,
-      fun i hif htmp => hframe i hif (fun j => htmp (ip j))⟩
-    · have hC : Cp ≤ max Cp Cn + 2 := by omega
-      have hmul := Nat.mul_le_mul_right
-        (memoryCost (pos d) (memoryState frontier x) +
-          workPos d (memoryState frontier x) + 1) hC
-      calc
-        _ ≤ (max Cp Cn + 2) *
-            (memoryCost (pos d) (memoryState frontier x) +
-              workPos d (memoryState frontier x) + 1) + 2 := by omega
-        _ ≤ (max Cp Cn + 2) *
-            (memoryCost (pos d) (memoryState frontier x) +
-              workPos d (memoryState frontier x) + 1) +
-              (max Cp Cn + 2) * 2 := by omega
-        _ = _ := by ring
-    · intro i
-      exact hout i
+    exact ⟨y, (ExecBounded.branch_pos (hc.mpr ht) hy).mono
+      (branch_cost_le (Nat.le_max_left _ _) (by omega) (by omega)), hm, hout, hframep hframe⟩
   · simp only [ite_eq_right ht] at hsafe hv ⊢
     obtain ⟨y, hy, hm, hout, hframe⟩ := hrn w d x hx hin' hsafe hv
-    refine ⟨y, (ExecBounded.branch_neg (fun h => ht (hc.mp h)) hy).mono ?_, hm, ?_,
-      fun i hif htmp => hframe i hif (fun j => htmp (ineg j))⟩
-    · have hC : Cn ≤ max Cp Cn + 2 := by omega
-      have hmul := Nat.mul_le_mul_right
-        (memoryCost (neg d) (memoryState frontier x) +
-          workNeg d (memoryState frontier x) + 1) hC
-      calc
-        _ ≤ (max Cp Cn + 2) *
-            (memoryCost (neg d) (memoryState frontier x) +
-              workNeg d (memoryState frontier x) + 1) + 2 := by omega
-        _ ≤ (max Cp Cn + 2) *
-            (memoryCost (neg d) (memoryState frontier x) +
-              workNeg d (memoryState frontier x) + 1) +
-              (max Cp Cn + 2) * 2 := by omega
-        _ = _ := by ring
-    · intro i
-      exact hout i
+    exact ⟨y, (ExecBounded.branch_neg (fun h => ht (hc.mp h)) hy).mono
+      (branch_cost_le (Nat.le_max_right _ _) (by omega) le_rfl), hm, hout, hframen hframe⟩
 
 /-- Frontier-bounded branching with the test and jump absorbed (`work = 0`). -/
 theorem branch₀ {B : Basis} {δ α : Type} {k l : ℕ}

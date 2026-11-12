@@ -67,6 +67,9 @@ in `P/poly` (`truthTableLanguage_setOf_lt_complexity_notMem_PPoly`) [KabanetsCai
 
 ## Main results
 
+* `Cslib.Circuits.Boolean.NaturalProof.IsUseful.eventually_forall_not`: a property useful against
+  a class containing every language whose slices satisfy `P` eventually contains no function
+  satisfying `P`; usefulness against `SIZE s` and against constant-depth classes are instances.
 * `Cslib.Circuits.Boolean.isUseful_PPoly_iff`: usefulness against `P/poly` as a bound on the
   circuit complexity of every function with the property.
 * `Cslib.Circuits.Boolean.NaturalProof.IsNatural.PPoly_of_P`: `P`-natural properties, decided
@@ -198,27 +201,38 @@ theorem IsUseful.anti (hC : IsUseful Λ C) (hΛ : Λ' ⊆ Λ) (h : ∀ n, C' n �
     IsUseful Λ' C' :=
   fun L hL => (hC L (hΛ hL)).mono fun _ hn hmem => hn (h _ hmem)
 
+/-- **Usefulness by patching**: if `Λ` contains every language whose slices all satisfy `P`, and
+`P` holds for some function at every input length, then a property useful against `Λ` eventually
+contains no function satisfying `P`. The language patched together from a function in `C n`
+satisfying `P`, wherever there is one, and from any function satisfying `P` elsewhere, lies in
+`Λ`, so its slices eventually leave `C`. -/
+theorem IsUseful.eventually_forall_not (hC : IsUseful Λ C) {P : ∀ n, BooleanFunction n → Prop}
+    (hΛ : ∀ g : ∀ n, BooleanFunction n, (∀ n, P n (g n)) → Language.ofSlices g ∈ Λ)
+    (hP : ∀ n, ∃ f, P n f) :
+    ∀ᶠ n in atTop, ∀ f ∈ C n, ¬ P n f := by
+  classical
+  -- wherever possible, a function in `C n` satisfying `P`
+  let g : ∀ n, BooleanFunction n := fun n =>
+    if h : ∃ f ∈ C n, P n f then h.choose else (hP n).choose
+  have hg : ∀ n, P n (g n) := fun n => by
+    by_cases h : ∃ f ∈ C n, P n f
+    · simpa only [g, dite_eq_left h] using h.choose_spec.2
+    · simpa only [g, dite_eq_right h] using (hP n).choose_spec
+  filter_upwards [hC _ (hΛ g hg)] with n hn f hf hPf
+  have h : ∃ f ∈ C n, P n f := ⟨f, hf, hPf⟩
+  rw [Language.slice_ofSlices] at hn
+  exact hn (by simpa only [g, dite_eq_left h] using h.choose_spec.1)
+
 /-- If `Λ` contains `SIZE s`, with `s` positive, a property useful against `Λ` eventually holds
 only for functions needing more than `s n` gates. -/
 theorem IsUseful.eventually_lt_complexity (hC : IsUseful Λ C) {s : ℕ → ℕ} (hΛ : SIZE s ⊆ Λ)
     (hs : ∀ n, 1 ≤ s n) :
     ∀ᶠ n in atTop, ∀ f ∈ C n, s n < complexity interpretation (single f) := by
-  classical
-  by_contra h
-  rw [not_eventually] at h
-  -- a language choosing, wherever possible, a function in `C n` with at most `s n` gates
-  let g : ∀ n, BooleanFunction n := fun n =>
-    if h : ∃ f ∈ C n, complexity interpretation (single f) ≤ s n then h.choose else fun _ => false
-  have hg : Language.ofSlices g ∈ SIZE s := fun n => by
-    rw [Language.slice_ofSlices]
-    by_cases h : ∃ f ∈ C n, complexity interpretation (single f) ≤ s n
-    · simpa only [g, dite_eq_left h] using h.choose_spec.2
-    · simpa only [g, dite_eq_right h] using (Synthesis.const false).complexity_le.trans (hs n)
-  obtain ⟨n, hn, hgn⟩ := (h.and_eventually (hC _ (hΛ hg))).exists
-  have hex : ∃ f ∈ C n, complexity interpretation (single f) ≤ s n := by
-    simpa only [not_forall, not_lt, exists_prop] using hn
-  rw [Language.slice_ofSlices] at hgn
-  exact hgn (by simpa only [g, dite_eq_left hex] using hex.choose_spec.1)
+  filter_upwards [hC.eventually_forall_not
+    (P := fun n f => complexity interpretation (single f) ≤ s n)
+    (fun g hg => hΛ fun n => by rw [Language.slice_ofSlices]; exact hg n)
+    fun n => ⟨fun _ => false, (Synthesis.const false).complexity_le.trans (hs n)⟩] with n hn f hf
+  exact not_le.1 (hn f hf)
 
 end NaturalProof
 
