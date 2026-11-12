@@ -81,8 +81,8 @@ theorem mildlyHardOnAverageENat_timeBounded_iff {t : ℕ → ℕ} (ht : ∀ n, n
 `MildlyHardOnAverageIO (timeBoundedNat t)`. -/
 theorem mildlyHardOnAverageIOENat_timeBounded_iff {t : ℕ → ℕ} (ht : ∀ n, n + 1 ≤ t n) :
     MildlyHardOnAverageIOENat (timeBounded t) ↔ MildlyHardOnAverageIO (timeBoundedNat t) := by
-  have heq (H : List Bool → ℕ) (x : List Bool) :
-      ((H x : ℕ∞) = timeBounded t x) ↔ (H x = timeBoundedNat t x) := by
+  have heq (v : ℕ) (x : List Bool) :
+      ((v : ℕ∞) = timeBounded t x) ↔ (v = timeBoundedNat t x) := by
     rw [← natCast_timeBoundedNat (timeBounded_ne_top (ht x.length)), ENat.natCast_inj]
   simp only [MildlyHardOnAverageIOENat, MildlyHardOnAverageIO, heq]
 
