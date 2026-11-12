@@ -3778,8 +3778,8 @@ register_result "selected-entries-vector-convolution-timem" where
   title := "Selected entries of ranked convolution in [r]^d by trimmed binomial passes"
   topic := "algorithms"
   sources := [
-    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.3", locator := "Section 3.1, p. 12" },
-    { paper := ChanItakuraMaYu2026, theorem := "Lemma 3.2", locator := "Section 3.1, p. 12" }
+    { paper := ChanItakuraMaYu2026, theorem := "Lemma 3.2 and Theorem 3.3",
+      locator := "Section 3.1, p. 12" }
   ]
   theorems := [
     Cslib.Algorithms.Lean.VectorConvolution.ret_solveM,
@@ -3802,13 +3802,26 @@ register_result "integer-3sum-base-r-trial-timem" where
   theorems := [
     Cslib.Algorithms.Lean.SubsetConvThreeSum.ret_vtrialM,
     Cslib.Algorithms.Lean.SubsetConvThreeSum.time_vtrialM,
-    Cslib.Algorithms.Lean.SubsetConvThreeSum.exists_add_eq_of_vaccepts,
-    Cslib.Algorithms.Lean.SubsetConvThreeSum.card_vaccepts_add_ge
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.exists_add_eq_of_vaccepts
   ]
   scope := "One trial for a given prime and seed in the TimeM unit-cost model: what it returns, \
-    its exact cost, soundness, and the per-trial success count #P (p - 1) <= #accepting seeds + \
-    #P #L (r!)^(d/r) over uniform seeds. Not formalized: the full reduction (A_bad, repetition, \
-    random prime), the expected running time, the choice of d and mu, Corollaries 3.5 and 3.6."
+    its exact cost and soundness. The per-trial success count is recorded separately. Not \
+    formalized: the full reduction (A_bad, repetition, random prime), the expected running time, \
+    the choice of d and mu, Corollaries 3.5 and 3.6."
+
+register_result "integer-3sum-base-r-trial-success-count" where
+  title := "Per-trial success count for base-r hashing from integer 3SUM to vector convolution"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.4", locator := "Section 3.2, pp. 12-14" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.card_vaccepts_add_ge
+  ]
+  scope := "Given isolated witnesses a in Ag subset A and b in Bg subset B with a + b = c and \
+    r^d <= p, #P (p - 1) <= #accepting seeds + #P #L (r!)^(d/r). This is a count over seeds \
+    supporting the TimeM reduction, not the full reduction (A_bad, repetition, random prime), \
+    expected running time, parameter choices, or Corollaries 3.5 and 3.6."
 
 register_result "selected-entries-subset-convolution-timem" where
   title := "Selected entries of ranked subset convolution by the trimmed fast zeta transform"
