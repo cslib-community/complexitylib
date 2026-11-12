@@ -11,14 +11,16 @@ public import CslibFrontier.Init
 public import Mathlib.Data.Nat.Bitwise
 
 /-!
-# Bits of successors, predecessors and packed fields
+# Bits of successors, predecessors, sums without carries and packed fields
 
-Incrementing a number flips bit `q` exactly when all lower bits are one, and decrementing a
-positive number flips it exactly when all lower bits are zero. A number packed from fields of
-fixed widths has, in each window of bits, the bits of the corresponding field.
+Adding two numbers without common binary digits is their bitwise or. Incrementing a number flips
+bit `q` exactly when all lower bits are one, and decrementing a positive number flips it exactly
+when all lower bits are zero. A number packed from fields of fixed widths has, in each window of
+bits, the bits of the corresponding field.
 
 ## Main results
 
+* `Nat.add_eq_or_of_and_eq_zero`: addition without carries.
 * `Nat.testBit_add_one_eq_xor`, `Nat.testBit_sub_one_eq_xor`: the bits of `c + 1` and `c - 1`.
 * `Nat.testBit_sub_two_pow`, `Nat.eq_two_pow_of_testBit`: removing a set bit, and the numbers
   with a single set bit.
@@ -29,6 +31,34 @@ fixed widths has, in each window of bits, the bits of the corresponding field.
 public section
 
 namespace Nat
+
+/-- **Addition without carries**: numbers without common binary digits add to their bitwise or. -/
+theorem add_eq_or_of_and_eq_zero {a b : ℕ} (h : a &&& b = 0) : a + b = a ||| b := by
+  induction b using Nat.div2Induction generalizing a with
+  | ind b hb =>
+    obtain rfl | hpos := Nat.eq_zero_or_pos b
+    · simp
+    have hbit : ∀ i, (a.testBit i && b.testBit i) = false := fun i => by
+      rw [← Nat.testBit_and, h, Nat.zero_testBit]
+    have hpar : a % 2 = 0 ∨ b % 2 = 0 := by
+      have := hbit 0
+      simp only [Nat.testBit_zero, Bool.and_eq_false_iff, decide_eq_false_iff_not] at this
+      omega
+    have h2 : a / 2 &&& b / 2 = 0 := by
+      apply Nat.eq_of_testBit_eq
+      intro i
+      rw [Nat.testBit_and, Nat.testBit_div_two, Nat.testBit_div_two, hbit, Nat.zero_testBit]
+    have ih := hb hpos h2
+    apply Nat.eq_of_testBit_eq
+    intro i
+    rcases i with _ | i
+    · simp only [Nat.testBit_zero]
+      rw [Nat.add_mod]
+      rcases hpar with ha | ha <;> simp [ha]
+    · rw [← Nat.testBit_div_two, Nat.testBit_or, ← Nat.testBit_div_two, ← Nat.testBit_div_two,
+        ← Nat.testBit_or, ← ih]
+      congr 1
+      omega
 
 /-- Bit `q` of `c - 1`, for `1 ≤ c`: bit `q` of `c`, flipped when the lower bits of `c` are
 zero. -/

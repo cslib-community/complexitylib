@@ -225,6 +225,9 @@ public import CslibFrontier.Algorithms.Lean.StoerWagner.Basic
 public import CslibFrontier.Algorithms.Lean.Submodular.Basic
 public import CslibFrontier.Algorithms.Lean.Submodular.Greedy
 public import CslibFrontier.Algorithms.Lean.Submodular.MatroidGreedy
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Basic
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Kasai
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Search
@@ -5545,6 +5548,7 @@ public import CslibFrontier.Foundations.Data.Nat.Fields
 public import CslibFrontier.Foundations.Data.Nat.HalvingRecurrence
 public import CslibFrontier.Foundations.Data.Nat.IntermediateValue
 public import CslibFrontier.Foundations.Data.Nat.IterLog
+public import CslibFrontier.Foundations.Data.Nat.LargePrimeDivisors
 public import CslibFrontier.Foundations.Data.Nat.Log
 public import CslibFrontier.Foundations.Data.Nat.LogRpow
 public import CslibFrontier.Foundations.Data.Nat.LogStar

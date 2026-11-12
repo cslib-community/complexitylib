@@ -241,8 +241,8 @@ Chan, Itakura, Ma and Yu (STOC submission 1421, `[ChanItakuraMaYu2026]`) reach i
 through selected entries of the ranked subset convolution instead of selected-entries matrix
 multiplication. Their Theorem 2.2 is formalized in the unit-cost time monad `TimeM`, not on the
 Word-RAM: import `CslibFrontier.Algorithms.Lean.TrimmedYates`, namespace
-`Cslib.Algorithms.Lean.TrimmedYates`. The hashing reduction from 3SUM (Theorem 2.3) and the
-other endpoints of the submission are open in
+`Cslib.Algorithms.Lean.TrimmedYates`. The hashing reduction from 3SUM (Theorem 2.3) is in the
+next subsection; Corollary 2.4 and the other endpoints of the submission are open in
 [#4667](https://github.com/cslib-community/cslib-frontier/issues/4667).
 
 The inputs are look-up functions `f g : Finset ι → R` into a commutative ring, the coordinates
@@ -274,6 +274,43 @@ lake env lean CslibFrontierTests/Algorithms/Lean/TrimmedYates.lean
 
 If `ret_solveM` does not apply, check the support hypotheses `∀ A, f A ≠ 0 → #A = t₁`, that
 every query is a subset of `l.toFinset` with `t₁ + t₂` elements, and `s ≤ t₁ + t₂`.
+
+### The hashing reduction (Theorem 2.3)
+
+Import `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction`, namespace
+`Cslib.Algorithms.Lean.SubsetConvThreeSum`. `threeSumM d t s p seeds A B C` decides `c ∈ A + B`
+for every `c ∈ C` (lists of natural numbers) for given random choices: a modulus `p` and a list of
+`Seed p` values `(ξ, α, β)`, one per trial. It splits off the elements of `A` and `B` that share
+a residue class modulo `p` and lists their sums exactly, then runs `trialM` per seed. A trial
+hashes `a ↦ a ξ + α`, `b ↦ b ξ + β` and `c ↦ c ξ + α + β` modulo `p`, keeps the hashes with `t`
+(for queries `2 t`) binary digits `1` below `2 ^ d`, and computes six moments per query with one
+`solveM` run over `ℤ ^ 6`.
+
+- `exists_add_eq_of_mem_ret_threeSumM`: every reported `c` is a sum, for every `p` and all seeds.
+- `ret_threeSumM`, `time_threeSumM`: the output and the exact tick count, which depends on the
+  random choices through `|A_bad|`, `|B_bad|` and the per-trial `|A*|`, `|B*|`, `|C*|`.
+- `miss_le`: for `c = a + b ∈ C`, a prime `p ≥ 2 ^ d` that is good for `c`
+  (`4 #falsePairs (2 t choose t) ≤ p - 1`) and `μ` uniform seeds, the miss probability is at most
+  `(1 - 3 #P / (4 p ^ 2)) ^ μ` with `#P = (d choose 2 t) (2 t choose t)` (`card_rankedPairs`).
+- `average_miss_le`, `card_badPrimes_le`, `two_pow_le_card_primeWindow`: for a uniform prime of
+  `[2 ^ d, 2 ^ (d + 1))`, the miss probability is at most
+  `#bad / #window + (1 - 3 #P / 4 ^ (d + 2)) ^ μ`, and bad primes are few.
+
+The probabilities are counts over finite uniform sample spaces (`seeds p`, tuples of seeds, the
+prime window); sampling is not charged. Not formalized: the paper's choice of `μ` and `d`, bounds
+on the expected values of the cost terms, the conversion to worst-case time, and the exponent of
+Corollary 2.4. The [tests](../../CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSum.lean) run
+the reduction with `p = 17`, `d = 4`, `t = 1` by kernel reduction and apply
+`card_accepts_add_ge` and `miss_le` to a sum with no false pairs. Check with
+
+```bash
+lake build --wfail CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
+lake env lean CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSum.lean
+```
+
+If `miss_le` does not apply, check that `p` carries a `Fact p.Prime` instance, that `2 ^ d ≤ p`,
+and the goodness hypothesis, which is stated for the isolated sublists
+`A.filter fun a => decide (Isolated p A a)` and its counterpart for `B`.
 
 ## Conservative ordinary integer 3SUM
 
