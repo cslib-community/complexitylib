@@ -61,9 +61,10 @@ sharing ([Shamir][Shamir1979]; `Cslib.Crypto.Protocols.SecretSharing.Shamir`):
 * **Weaker finite-field communication variant:** at `d = c - 1` (`c ≥ 2`, `t ≥ 1`),
   `hasTPrivateScheme_rows_of_le_pow` and `hasTPrivateScheme_prime_rows_of_le_pow` match CGKS
   Section 1.1's exact server count `k = c · t` and fixed-`t` database exponent `n ^ (1 / c)`, but
-  retain the field bit-width factor `⌈log₂ |F|⌉` with `|F| > c · t`. This establishes a weaker
-  finite-field communication bound `O(t · log(c t) · n ^ (1 / c))` rather than CGKS Section 1.1's
-  unconstructed varying-`t(n)` `O(t(n) · n ^ (1 / c))` headline bound.
+  retain the field bit-width factor `⌈log₂ |F|⌉` with `|F| > c · t`. This is a weaker finite-field
+  communication bound than CGKS Section 1.1's varying-`t(n)` `O(t(n) · n ^ (1 / c))` headline
+  bound. The checked endpoints impose no upper bound on `|F|` in terms of `c · t`, so they do not
+  replace the field factor by `log(c t)`.
 * **Computation and randomness model:** CGKS Section 2.4 (p. 6) requires polynomial-time user and
   server computations over uniform bit strings `r ∈ {0, 1}^{ℓ_rnd}`. As in `PIR.Basic`, this module
   certifies exact `ProbComp` correctness, coalition privacy, and fixed-length communication bit
