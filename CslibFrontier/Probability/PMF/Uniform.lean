@@ -34,7 +34,8 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_equiv`: reparametrizing a uniform draw by a
   bijection leaves an experiment unchanged.
 * `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`,
-  `Cslib.Probability.PMF.uniformOfFintype_bind_map`: the first component of a uniform pair is
+  `Cslib.Probability.PMF.uniformOfFintype_prod_map_snd`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_map`: each component of a uniform pair is
   uniform, and mapping over two independent uniform draws is mapping over a uniform pair.
 * `Cslib.Probability.PMF.uniformOfFintype_pi_map_restrict`,
   `Cslib.Probability.PMF.uniformOfFintype_pi_bind_restrict`: restricting a uniform dependent
@@ -100,6 +101,12 @@ theorem uniformOfFintype_prod_map_fst :
         congr 1 with a : 1
         exact PMF.map_const _ _
     _ = _ := PMF.bind_pure _
+
+/-- The second component of a uniform pair is uniform. -/
+theorem uniformOfFintype_prod_map_snd :
+    (uniformOfFintype (α × β)).map Prod.snd = uniformOfFintype β := by
+  rw [← uniformOfFintype_map_equiv (Equiv.prodComm β α), PMF.map_comp]
+  exact uniformOfFintype_prod_map_fst
 
 /-- Mapping a curried binary function over two independent uniform draws is equivalent to
 mapping the uncurried function over a uniform pair. Iterating this rewrite collapses `n`-ary
