@@ -106,14 +106,8 @@ theorem compl_logSpaceComplete : LogSpaceComplete NL encSTCON STCONᶜ := by
 /-- **Directed `s`–`t` connectivity is in `L` exactly when `NL = L`**, for every encoding of
 instances [Sipser, Corollary 8.24][Sipser2013]. -/
 theorem mem_L_iff_forall_NL_eq_L :
-    STCON ∈ L encSTCON ↔ ∀ {α : Type} (enc : α ↪ List Bool), NL enc = L enc := by
-  constructor
-  · intro h α enc
-    ext A
-    exact ⟨fun hA => (logSpaceReducible_of_mem_NL hA).mem_L h, fun hA => L_subset_NL hA⟩
-  · intro h
-    rw [← h]
-    exact mem_NL
+    STCON ∈ L encSTCON ↔ ∀ {α : Type} (enc : α ↪ List Bool), NL enc = L enc :=
+  logSpaceComplete.mem_L_iff fun _ => L_subset_NL
 
 end STCON
 

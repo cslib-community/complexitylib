@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
 public import Mathlib.Topology.Order.Real
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 
 /-!
 # The exponents of `k`-SAT
@@ -121,29 +122,18 @@ theorem DecidableInExpTime.length_of_numVars {k : ℕ} {δ : ℝ} (hδ : 0 ≤ �
   obtain ⟨e', h⟩ := h.inter (computableInPolyTime_all_length_le k) fun φ => by positivity
   rw [← KSAT_eq_inter k le_rfl (KSAT_subset_SAT k)] at h
   refine ⟨e + e', h.mono 2 (fun φ => ?_) fun φ => by positivity⟩
-  have hL : (1 : ℝ) ≤ (encCNF φ).length + 1 := by
-    linarith [(Nat.cast_nonneg (encCNF φ).length : (0 : ℝ) ≤ _)]
-  have h₁ : (1 : ℝ) ≤ 2 ^ (k * δ * φ.length) := Real.one_le_rpow (by norm_num) (by positivity)
-  have h₂ : (((encCNF φ).length : ℝ) + 1) ^ e ≤ ((encCNF φ).length + 1) ^ (e + e') :=
-    pow_le_pow_right₀ hL (Nat.le_add_right e e')
-  have h₃ : (((encCNF φ).length : ℝ) + 1) ^ e' ≤ ((encCNF φ).length + 1) ^ (e + e') :=
-    pow_le_pow_right₀ hL (Nat.le_add_left e' e)
-  have h₅ : (((encCNF φ).length : ℝ) + 1) ^ (e + e') ≤
-      2 ^ (k * δ * φ.length) * ((encCNF φ).length + 1) ^ (e + e') :=
-    le_mul_of_one_le_left (by positivity) h₁
-  have h₆ : (if (φ.all fun c => decide (c.length ≤ k)) = true then
-      2 ^ (δ * φ.numVars) * (((encCNF φ).length : ℝ) + 1) ^ e else 0) ≤
-      2 ^ (k * δ * φ.length) * ((encCNF φ).length + 1) ^ (e + e') := by
-    split_ifs with hw
-    · simp only [List.all_eq_true, decide_eq_true_eq] at hw
-      have hn : (φ.numVars : ℝ) ≤ k * φ.length := by
-        exact_mod_cast CNF.numVars_le_mul_length hw
-      have h₇ : (2 : ℝ) ^ (δ * φ.numVars) ≤ 2 ^ (k * δ * φ.length) :=
-        Real.rpow_le_rpow_of_exponent_le (by norm_num) (by nlinarith)
-      exact mul_le_mul h₇ h₂ (by positivity) (by positivity)
-    · positivity
-  push_cast
-  nlinarith
+  have h₂ := pow_le_two_rpow_mul_pow (L := (encCNF φ).length) (by positivity : 0 ≤ k * δ * φ.length)
+    (Nat.le_add_left e' e)
+  have h₃ : (0 : ℝ) ≤ 2 ^ (k * δ * φ.length) * ((encCNF φ).length + 1) ^ (e + e') := by positivity
+  split_ifs with hw
+  · simp only [List.all_eq_true, decide_eq_true_eq] at hw
+    have hn : (φ.numVars : ℝ) ≤ k * φ.length := by exact_mod_cast CNF.numVars_le_mul_length hw
+    have h₁ := two_rpow_mul_pow_le_two_rpow_mul_pow (L := (encCNF φ).length)
+      (by nlinarith : δ * φ.numVars ≤ k * δ * φ.length) (Nat.le_add_right e e')
+    push_cast
+    linarith
+  · push_cast
+    linarith
 
 /-- **From variables to clauses.** If `k`-SAT is decidable in subexponential time in the number of
 variables, it is decidable in subexponential time in the number of clauses. -/
@@ -151,10 +141,8 @@ theorem DecidableInSubexpTime.length_of_numVars {k : ℕ}
     (h : DecidableInSubexpTime (KSAT k) encCNF CNF.numVars) :
     DecidableInSubexpTime (KSAT k) encCNF List.length := by
   intro δ hδ
-  have h' := (h (δ / (k + 1)) (by positivity)).length_of_numVars (by positivity)
-  refine h'.mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+  exact ((h (δ / (k + 1)) (by positivity)).length_of_numVars (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le k)
 
 /-- **The exponential time hypothesis from clauses**: if 3SAT is not decidable in subexponential
 time in the number of clauses, then `ETH`. -/
