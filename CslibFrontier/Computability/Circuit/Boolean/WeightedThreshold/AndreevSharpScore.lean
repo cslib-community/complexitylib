@@ -158,7 +158,8 @@ theorem cast_andreevSharpMult (c : BitString b) :
   rw [← ite_isSingle_eq_onSingles, andreevSharpMult]
   by_cases h0 : c = 0
   · subst h0
-    have : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ => single_true_ne_zero i h.symm
+    have : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ =>
+      Pi.single_ne_zero_iff.mpr (by decide) h.symm
     simp [this]
   · by_cases hu : IsSingle c <;> simp [h0, hu]
 
@@ -170,7 +171,8 @@ theorem cast_andreevSharpMult_sq (c : BitString b) :
   rw [← ite_isSingle_eq_onSingles, andreevSharpMult]
   by_cases h0 : c = 0
   · subst h0
-    have : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ => single_true_ne_zero i h.symm
+    have : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ =>
+      Pi.single_ne_zero_iff.mpr (by decide) h.symm
     simp [this]
   · by_cases hu : IsSingle c <;> simp [h0, hu]
     ring

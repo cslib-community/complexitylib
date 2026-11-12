@@ -64,11 +64,6 @@ theorem sum_chi_eq_ite (c : ι → Bool) :
     ∑ S, chi ℝ S c = if c = 0 then 2 ^ Fintype.card ι else 0 := by
   simpa only [chi_zero, mul_one] using sum_chi_mul_chi c 0
 
-omit [Fintype ι] [DecidableEq ι] in
-private theorem add_eq_zero_iff_eq' {c d : ι → Bool} : c + d = 0 ↔ c = d := by
-  have hb : ∀ a b : Bool, a + b = 0 ↔ a = b := by decide
-  simp only [funext_iff, Pi.add_apply, Pi.zero_apply, hb]
-
 omit [DecidableEq ι] in
 /-- **Pair counts of odd sets.** The number of sets `S` with both `S · c` and `S · d` odd,
 times four, is `2 ^ |ι| * (1 - [c = 0] - [d = 0] + [c = d])`. -/
@@ -83,8 +78,10 @@ theorem four_mul_sum_toNat_parityOn_mul (c d : ι → Bool) :
       (1 - chi ℝ S c) * two_mul_toNat_parityOn S d
   rw [mul_sum, sum_congr rfl fun S _ => h S, sum_add_distrib, sum_sub_distrib, sum_sub_distrib,
     sum_chi_eq_ite, sum_chi_eq_ite, sum_chi_eq_ite]
+  have hcd : c + d = 0 ↔ c = d := by
+    simp only [funext_iff, Pi.add_apply, Pi.zero_apply, BooleanRing.add_eq_zero']
   simp only [sum_const, card_univ, Fintype.card_finset, nsmul_eq_mul, mul_one, Nat.cast_pow,
-    Nat.cast_ofNat, add_eq_zero_iff_eq']
+    Nat.cast_ofNat, hcd]
   split_ifs <;> ring
 
 omit [DecidableEq ι] in
@@ -162,18 +159,6 @@ section Single
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
 omit [Fintype ι] in
-/-- A unit vector `Pi.single i true` is nonzero. -/
-theorem single_true_ne_zero (i : ι) : (Pi.single i true : ι → Bool) ≠ 0 := fun h => by
-  simpa using congrFun h i
-
-omit [Fintype ι] in
-/-- The unit vectors `Pi.single i true` are pairwise distinct. -/
-theorem single_true_injective : Function.Injective fun i : ι => (Pi.single i true : ι → Bool) :=
-  fun i j h => by
-    by_contra hij
-    simpa [Pi.single_apply, hij] using congrFun h i
-
-omit [Fintype ι] in
 /-- The parity of `Pi.single i true` on `S` is membership of `i` in `S`. -/
 theorem parityOn_single (S : Finset ι) (i : ι) :
     parityOn S (Pi.single i true) = decide (i ∈ S) := by
@@ -199,7 +184,7 @@ def onSingles (a : ι → ℝ) (c : ι → Bool) : ℝ :=
 /-- `onSingles a` takes the value `a i` at `Pi.single i true`. -/
 @[simp]
 theorem onSingles_single (a : ι → ℝ) (i : ι) : onSingles a (Pi.single i true) = a i := by
-  simp [onSingles, single_true_injective.eq_iff, eq_comm (a := i)]
+  simp [onSingles, Pi.single_left_inj (show (true : Bool) ≠ 0 by decide), eq_comm (a := i)]
 
 /-- `onSingles a` vanishes off the unit vectors. -/
 theorem onSingles_of_not_isSingle (a : ι → ℝ) {c : ι → Bool} (hc : ¬IsSingle c) :
@@ -209,7 +194,7 @@ theorem onSingles_of_not_isSingle (a : ι → ℝ) {c : ι → Bool} (hc : ¬IsS
 /-- `onSingles a` vanishes at the zero vector. -/
 @[simp]
 theorem onSingles_zero (a : ι → ℝ) : onSingles a 0 = 0 :=
-  onSingles_of_not_isSingle a fun ⟨i, h⟩ => single_true_ne_zero i h.symm
+  onSingles_of_not_isSingle a fun ⟨i, h⟩ => Pi.single_ne_zero_iff.mpr (by decide) h.symm
 
 /-- Summing against `onSingles a` evaluates at the unit vectors. -/
 theorem sum_onSingles_mul (a : ι → ℝ) (F : (ι → Bool) → ℝ) :
