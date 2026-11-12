@@ -42,6 +42,7 @@ example : (⟨seriesAnd3, 2⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuit
 
 example : (⟨seriesAnd3, 4⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuitSAT := by
   rintro ⟨x, hk, -⟩
+  change BitString.weight x = 4 at hk
   have hle : 4 ≤ seriesAnd3.1 := hk ▸ BitString.weight_le_length x
   exact absurd hle (by decide)
 
@@ -52,7 +53,8 @@ example : (⟨WCS.trueCircuit, 0⟩ : WeightedCircuitSATInstance) ∈ WeightedCi
 
 example : (⟨WCS.trueCircuit, 1⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuitSAT := by
   rintro ⟨x, hk, -⟩
-  have hle := BitString.weight_le_length x
+  change BitString.weight x = 1 at hk
+  have hle : BitString.weight x ≤ WCS.trueCircuit.1 := BitString.weight_le_length x
   have h0 : WCS.trueCircuit.1 = 0 := rfl
   omega
 
