@@ -11,6 +11,8 @@ The [Arora–Barak draft chapters 1–5 audit](../../results/arora-barak-2007.md
 compares the computational-model, NP, hierarchy, space and alternation results at a recorded
 revision. It distinguishes exact native endpoints from missing tape-model conversions, general
 integer programming, prenex-QBF normalization, sharp time hierarchies and PH oracle equivalences.
+Its space comparisons explicitly distinguish the library's visited cells from the draft's
+ever-nonblank cells; a bound-preserving equivalence is not claimed.
 
 ## Completeness and containment map
 
