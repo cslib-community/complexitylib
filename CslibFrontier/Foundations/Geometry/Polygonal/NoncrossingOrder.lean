@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Geometry.Polygonal.Route
-public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Angle
+public import CslibFrontier.Foundations.Geometry.Polygonal.AngleOrder
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Arctan
 
 /-!
@@ -48,26 +48,8 @@ theorem arg_port_strictAnti : StrictAntiOn (fun x : ℝ => (⟨x, 1⟩ : ℂ).ar
 
 /-- Increasing real arguments within one turn have their literal counterclockwise order. -/
 theorem sbtw_angle_of_lt {a b c : ℝ} (ha : 0 ≤ a) (hab : a < b) (hbc : b < c)
-    (hc : c < 2 * Real.pi) : sbtw (a : Real.Angle) (b : Real.Angle) (c : Real.Angle) := by
-  have hp := Real.two_pi_pos
-  let : Fact ((0 : ℝ) < 2 * Real.pi) := ⟨hp⟩
-  rw [sbtw_iff_not_btw]
-  change ¬btw (c : ℝ ⧸ AddSubgroup.zmultiples (2 * Real.pi))
-    (b : ℝ ⧸ AddSubgroup.zmultiples (2 * Real.pi))
-    (a : ℝ ⧸ AddSubgroup.zmultiples (2 * Real.pi))
-  rw [QuotientAddGroup.btw_coe_iff]
-  have hb : toIcoMod hp c b = b + 2 * Real.pi := by
-    apply (toIcoMod_eq_iff hp).mpr
-    refine ⟨⟨by linarith, by linarith⟩, -1, ?_⟩
-    simp only [neg_one_zsmul]
-    ring
-  have hac : toIocMod hp c a = a + 2 * Real.pi := by
-    apply (toIocMod_eq_iff hp).mpr
-    refine ⟨⟨by linarith, by linarith⟩, -1, ?_⟩
-    simp only [neg_one_zsmul]
-    ring
-  rw [hb, hac]
-  linarith
+    (hc : c < 2 * Real.pi) : sbtw (a : Real.Angle) (b : Real.Angle) (c : Real.Angle) :=
+  sbtw_angle_of_lt_of_span_lt hab hbc (by linarith)
 
 /-- Positive ports in increasing order give the required reversed argument triple. -/
 theorem clockwise_ports {a b c : ℝ} (ha : 0 < a) (hab : a < b) (hbc : b < c) :

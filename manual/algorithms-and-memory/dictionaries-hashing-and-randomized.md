@@ -15,6 +15,22 @@ The [examples](../../CslibFrontierTests/BTreeInsert.lean) include a root split a
 
 ## Hash families and dictionaries
 
+For pure cuckoo tables, import `CslibFrontier.DataStructure.Dictionary.CuckooHashing.Basic`
+([source](../../CslibFrontier/DataStructure/Dictionary/CuckooHashing/Basic.lean)). Its
+`Cslib.DataStructure.Dictionary.CuckooHashing` namespace contains `PureTable`, `pureReplay`,
+`GoodForSet`, and the table-scale parameters. Add
+`CslibFrontier.DataStructure.Dictionary.CuckooHashing.HashFamily` for the generic
+`IsCuckooHashPair` contract, or
+`CslibFrontier.DataStructure.Dictionary.CuckooHashing` for the graph and probability bounds;
+these imports do not depend on Word RAM. The [graph examples](../../CslibFrontierTests/CuckooGraph.lean)
+exercise successful and failed replay and concrete uniform and polynomial hash pairs. The concrete
+regime-switched family is connected to the analysis by
+`CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing.Analysis`, exporting
+`Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.isCuckooHashPair_provableFamily`.
+Import `CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing` for the complete dictionary;
+its [checked client](../../CslibFrontierTests/WordRAMCuckooHashing.lean) opens both cuckoo namespaces
+to use the pure table API alongside the machine implementation.
+
 [abstracts/CslibFrontierAbstracts/HashTablesAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/CslibFrontierAbstracts/HashTablesAbstract.lean) (retired; its bridge applied [ChainedHash.lean](../../CslibFrontier/DataStructure/Dictionary/WordRAM/ChainedHash.lean), [LinearProbing.lean](../../CslibFrontier/DataStructure/Dictionary/WordRAM/LinearProbing.lean), [UniformProbing.lean](../../CslibFrontier/DataStructure/Dictionary/WordRAM/UniformProbing.lean) and [CuckooHashing.lean](../../CslibFrontier/DataStructure/Dictionary/WordRAM/CuckooHashing.lean)) selected four expected-amortized dictionary implementations: multiply-shift chained hashing, five-wise linear probing, odd-stride uniform probing and cuckoo hashing. Each supports `query` and `insert` with overwrite, up to bounded distinct-key capacity. **Deletion is not included.** The operation list is fixed before initialization randomness; these are oblivious-sequence guarantees.
 
 The initializer and operation programs are independent of runtime word width and base address, but their dependence on capacity/universe differs by theorem. The abstract did not bound static program-list length. Executed steps exclude caller argument preparation/dispatch. Universe restrictions include the chosen exponent-four polynomial regime; load-factor assumptions and exact initialization costs are visible. These distinctions prohibit a blanket claim of fully dynamic adaptive constant-time dictionaries. The uniform-probing and cuckoo per-operation constants are derived from the capacity threshold `2^320000`: below it they only cap quantities that grow with capacity (the deterministic probe count for uniform probing, the polynomial-hash degree for cuckoo hashing). Their constant bounds are therefore asymptotic statements met trivially at realizable sizes: a linear scan of the stored keys meets the uniform-probing charge at every capacity below `2^320000` and the cuckoo charges (over `8*10^11` instructions per operation) up to about `10^10` keys. For uniform probing the abstract also stated the threshold-free bound: at capacity `2^320000` or more, at most three expected probes give at most `13778` expected instructions per operation (`upLargeOpCharge`). No threshold-free charge is stated for cuckoo hashing.
