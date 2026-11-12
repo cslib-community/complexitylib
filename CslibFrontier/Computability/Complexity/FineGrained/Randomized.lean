@@ -37,7 +37,6 @@ import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Probability.MajorityVote
 import CslibFrontier.Probability.PMF.Bind
-import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # Parameterized randomized runtime rates, error models, `rETH`, and `rSETH`
@@ -1653,18 +1652,17 @@ theorem SolvesWithErrorInExpTime.KSAT_of_le {k k' : ℕ} (hk : k ≤ k') {E : Er
       (fun φ hφ => (hmem φ).mp hφ)
       (fun φ hφ hmem' => hφ ((hmem φ).mpr hmem')) hμ hδ
 
-/-- The bounded-error randomized `k`-SAT exponent `s^r_k`: the infimum of `δ ≥ 0` for which
-`KSAT k` is solved with bounded two-sided error within time `2 ^ (δ * n) · poly(L)`. -/
+/-- The bounded-error randomized `k`-SAT exponent `s^r_k`: the infimum (`Cslib.rateExponent`) of
+`δ ≥ 0` for which `KSAT k` is solved with bounded two-sided error within time
+`2 ^ (δ * n) · poly(L)`. -/
 @[expose] noncomputable def rSatExponent (k : ℕ) : ℝ :=
-  sInf {δ | 0 ≤ δ ∧
-    SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ}
+  rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars)
 
-/-- The one-sided (`RP`) randomized `k`-SAT exponent `s^{RP}_k`: the infimum of `δ ≥ 0` for which
-`KSAT k` is solved with `RP` error (`yesErr = 1 / 2`, `noErr = 0`) within time
+/-- The one-sided (`RP`) randomized `k`-SAT exponent `s^{RP}_k`: the infimum (`Cslib.rateExponent`)
+of `δ ≥ 0` for which `KSAT k` is solved with `RP` error (`yesErr = 1 / 2`, `noErr = 0`) within time
 `2 ^ (δ * n) · poly(L)`. -/
 @[expose] noncomputable def rpSatExponent (k : ℕ) : ℝ :=
-  sInf {δ | 0 ≤ δ ∧
-    SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars δ}
+  rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars)
 
 /-- **`rETH` (the randomized exponential time hypothesis):** for some `δ > 0`, `3`-SAT cannot be
 solved with bounded two-sided error within time `2 ^ (δ * n) · poly(L)`. -/
@@ -1680,99 +1678,87 @@ width `k` such that `k`-SAT cannot be solved with bounded two-sided error within
     ¬SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars (1 - ε)
 
 /-- `rSatExponent k` is independent of the choice of two-sided error threshold `ε ∈ (0, 1 / 2)`. -/
-theorem rSatExponent_eq_sInf_twoSided (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1 / 2) :
-    rSatExponent k = sInf {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      (ErrorModel.twoSided ε h0.le h1) CNF.numVars δ} := by
-  unfold rSatExponent ErrorModel.bounded
-  congr 1
-  ext δ
-  exact and_congr_right fun _ =>
-    solvesWithErrorInExpTime_twoSided_iff (by norm_num) (by norm_num) h0 h1
+theorem rSatExponent_eq_rateExponent_twoSided (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1 / 2) :
+    rSatExponent k = rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
+      (ErrorModel.twoSided ε h0.le h1) CNF.numVars) :=
+  congrArg rateExponent <| funext fun _ =>
+    propext (solvesWithErrorInExpTime_twoSided_iff (by norm_num) (by norm_num) h0 h1)
 
 /-- `rpSatExponent k` is independent of the choice of one-sided `RP` threshold `ε ∈ (0, 1)`. -/
-theorem rpSatExponent_eq_sInf_oneSidedRP (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1) :
-    rpSatExponent k = sInf {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      (ErrorModel.oneSidedRP ε h0.le h1) CNF.numVars δ} := by
-  unfold rpSatExponent ErrorModel.rp
-  congr 1
-  ext δ
-  exact and_congr_right fun _ =>
-    solvesWithErrorInExpTime_oneSidedRP_iff (by norm_num) (by norm_num) h0 h1
+theorem rpSatExponent_eq_rateExponent_oneSidedRP (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1) :
+    rpSatExponent k = rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
+      (ErrorModel.oneSidedRP ε h0.le h1) CNF.numVars) :=
+  congrArg rateExponent <| funext fun _ =>
+    propext (solvesWithErrorInExpTime_oneSidedRP_iff (by norm_num) (by norm_num) h0 h1)
 
-private theorem one_mem_rSatExponents (k : ℕ) :
-    (1 : ℝ) ∈ {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      ErrorModel.bounded CNF.numVars δ} :=
-  ⟨zero_le_one, (solvesPromiseInExpTime_ofSet_iff.mpr
-    (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.bounded⟩
-
-private theorem one_mem_rpSatExponents (k : ℕ) :
-    (1 : ℝ) ∈ {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      ErrorModel.rp CNF.numVars δ} :=
-  ⟨zero_le_one, (solvesPromiseInExpTime_ofSet_iff.mpr
-    (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.rp⟩
+/-- **Exhaustive search** solves `KSAT k` in randomized time `2 ^ n * poly(L)` under any error
+profile. -/
+theorem KSAT_solvesWithErrorInExpTime_one (k : ℕ) (E : ErrorModel) :
+    SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF E CNF.numVars 1 :=
+  (solvesPromiseInExpTime_ofSet_iff.mpr (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime
+    zero_le_one E
 
 /-- `rSatExponent k` is nonnegative. -/
 theorem rSatExponent_nonneg (k : ℕ) : 0 ≤ rSatExponent k :=
-  le_csInf ⟨1, one_mem_rSatExponents k⟩ fun _ h => h.1
+  rateExponent_nonneg _
 
 /-- `rpSatExponent k` is nonnegative. -/
 theorem rpSatExponent_nonneg (k : ℕ) : 0 ≤ rpSatExponent k :=
-  le_csInf ⟨1, one_mem_rpSatExponents k⟩ fun _ h => h.1
+  rateExponent_nonneg _
 
 /-- `rSatExponent k ≤ 1` for every `k`. -/
 theorem rSatExponent_le_one (k : ℕ) : rSatExponent k ≤ 1 :=
-  csInf_le ⟨0, fun _ h => h.1⟩ (one_mem_rSatExponents k)
+  rateExponent_le_one (KSAT_solvesWithErrorInExpTime_one k ErrorModel.bounded)
 
 /-- `rpSatExponent k ≤ 1` for every `k`. -/
 theorem rpSatExponent_le_one (k : ℕ) : rpSatExponent k ≤ 1 :=
-  csInf_le ⟨0, fun _ h => h.1⟩ (one_mem_rpSatExponents k)
+  rateExponent_le_one (KSAT_solvesWithErrorInExpTime_one k ErrorModel.rp)
 
 /-- `rSatExponent k` is bounded by every attainable bounded-error rate `δ ≥ 0`. -/
 theorem rSatExponent_le {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ) :
     rSatExponent k ≤ δ :=
-  csInf_le ⟨0, fun _ h => h.1⟩ ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 /-- `rpSatExponent k` is bounded by every attainable `RP` rate `δ ≥ 0`. -/
 theorem rpSatExponent_le {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars δ) :
     rpSatExponent k ≤ δ :=
-  csInf_le ⟨0, fun _ h => h.1⟩ ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 /-- Below `rSatExponent k` there is no bounded-error `k`-SAT solver. -/
 theorem not_solvesWithErrorInExpTime_of_lt_rSatExponent {k : ℕ} {δ : ℝ} (hδ₀ : 0 ≤ δ)
     (hδ : δ < rSatExponent k) :
     ¬SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ :=
-  fun h => absurd (rSatExponent_le hδ₀ h) (not_le.mpr hδ)
+  not_of_lt_rateExponent hδ₀ hδ
 
 /-- An unattainable bounded-error rate bounds `rSatExponent k` from below. -/
 theorem le_rSatExponent_of_not_solvesWithErrorInExpTime {k : ℕ} {δ : ℝ}
     (h : ¬SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ) :
     δ ≤ rSatExponent k :=
-  le_csInf ⟨1, one_mem_rSatExponents k⟩ fun _ hδ' =>
-    le_of_not_gt fun hlt => h (hδ'.2.mono hlt.le)
+  le_rateExponent (fun _ _ hle h => h.mono hle)
+    (KSAT_solvesWithErrorInExpTime_one k ErrorModel.bounded) h
 
 /-- `rSatExponent` is monotone in the clause width `k`. -/
 theorem rSatExponent_mono : Monotone rSatExponent := fun _ k' hk =>
-  csInf_le_csInf ⟨0, fun _ h => h.1⟩ ⟨1, one_mem_rSatExponents k'⟩ fun _ hδ =>
-    ⟨hδ.1, hδ.2.KSAT_of_le hk hδ.1⟩
+  rateExponent_le_rateExponent (KSAT_solvesWithErrorInExpTime_one k' ErrorModel.bounded)
+    fun _ hδ h => h.KSAT_of_le hk hδ
 
 /-- `rpSatExponent` is monotone in the clause width `k`. -/
 theorem rpSatExponent_mono : Monotone rpSatExponent := fun _ k' hk =>
-  csInf_le_csInf ⟨0, fun _ h => h.1⟩ ⟨1, one_mem_rpSatExponents k'⟩ fun _ hδ =>
-    ⟨hδ.1, hδ.2.KSAT_of_le hk hδ.1⟩
+  rateExponent_le_rateExponent (KSAT_solvesWithErrorInExpTime_one k' ErrorModel.rp)
+    fun _ hδ h => h.KSAT_of_le hk hδ
 
 /-- **Two-sided vs. one-sided `RP` exponent:** `rSatExponent k ≤ rpSatExponent k`. -/
 theorem rSatExponent_le_rpSatExponent (k : ℕ) : rSatExponent k ≤ rpSatExponent k :=
-  le_csInf ⟨1, one_mem_rpSatExponents k⟩ fun _ ⟨hδ, e, h⟩ =>
-    rSatExponent_le hδ ⟨e, h.oneSidedRP_to_twoSided (fun _ => by positivity)
+  rateExponent_le_rateExponent (KSAT_solvesWithErrorInExpTime_one k ErrorModel.rp)
+    fun _ _ ⟨e, h⟩ => ⟨e, h.oneSidedRP_to_twoSided (fun _ => by positivity)
       (by norm_num) (by norm_num)⟩
 
 /-- **One-sided `RP` vs. deterministic exponent:** `rpSatExponent k ≤ satExponent k`. -/
 theorem rpSatExponent_le_satExponent (k : ℕ) : rpSatExponent k ≤ satExponent k :=
-  le_csInf ⟨1, zero_le_one, KSAT_decidableInExpTime_one k⟩ fun _ ⟨hδ, hdec⟩ =>
-    rpSatExponent_le hδ
-      ((solvesPromiseInExpTime_ofSet_iff.mpr hdec).solvesWithErrorInExpTime hδ ErrorModel.rp)
+  rateExponent_le_rateExponent (KSAT_decidableInExpTime_one k) fun _ hδ hdec =>
+    (solvesPromiseInExpTime_ofSet_iff.mpr hdec).solvesWithErrorInExpTime hδ ErrorModel.rp
 
 /-- **Two-sided vs. deterministic exponent:** `rSatExponent k ≤ satExponent k`. -/
 theorem rSatExponent_le_satExponent (k : ℕ) : rSatExponent k ≤ satExponent k :=
@@ -1785,59 +1771,16 @@ theorem rETH_iff_not_solvesWithErrorInSubexpTime :
   simp only [rETH, SolvesWithErrorInSubexpTime, not_forall, exists_prop]
 
 /-- **`rETH` in terms of `rSatExponent`:** `rETH ↔ 0 < rSatExponent 3`. -/
-theorem rETH_iff_rSatExponent_pos : rETH ↔ 0 < rSatExponent 3 := by
-  constructor
-  · rintro ⟨δ, hδ, h⟩
-    exact hδ.trans_le (le_rSatExponent_of_not_solvesWithErrorInExpTime h)
-  · intro h
-    exact ⟨rSatExponent 3 / 2, half_pos h,
-      not_solvesWithErrorInExpTime_of_lt_rSatExponent (half_pos h).le (half_lt_self h)⟩
+theorem rETH_iff_rSatExponent_pos : rETH ↔ 0 < rSatExponent 3 :=
+  (rateExponent_pos_iff (fun _ _ hle h => h.mono hle)
+    (KSAT_solvesWithErrorInExpTime_one 3 ErrorModel.bounded)).symm
 
 /-- **`rSETH` in terms of `rSatExponent`:** `rSETH ↔ rSatExponent k → 1`. -/
-theorem rSETH_iff_tendsto : rSETH ↔ Tendsto rSatExponent atTop (𝓝 1) := by
-  constructor
-  · intro h
-    rw [Metric.tendsto_atTop]
-    intro ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η < ε := (half_lt_self (lt_min hε one_pos)).trans_le (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      dsimp only [η]
-      linarith [min_le_right ε 1]
-    obtain ⟨k, hk⟩ := h η hη
-    refine ⟨k, fun k' hk' => ?_⟩
-    have h₁ : 1 - η ≤ rSatExponent k' :=
-      le_rSatExponent_of_not_solvesWithErrorInExpTime fun h' => hk (h'.KSAT_of_le hk' hη₁)
-    have h₂ := rSatExponent_le_one k'
-    rw [Real.dist_eq, abs_sub_lt_iff]
-    constructor <;> linarith
-  · intro h ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η ≤ ε := (half_lt_self (lt_min hε one_pos)).le.trans (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      dsimp only [η]
-      linarith [min_le_right ε 1]
-    obtain ⟨k, hk⟩ := (h.eventually (lt_mem_nhds (by linarith : 1 - η < 1))).exists
-    exact ⟨k, fun h' => not_solvesWithErrorInExpTime_of_lt_rSatExponent hη₁ hk
-      (h'.mono (by linarith))⟩
-
-/-- `rSatExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem rSatExponent_eq_sInf_pos (k : ℕ) :
-    rSatExponent k = sInf {δ : ℝ | 0 < δ ∧
-      SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle)
-    ((solvesPromiseInExpTime_ofSet_iff.mpr
-      (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.bounded)
-
-/-- `rpSatExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem rpSatExponent_eq_sInf_pos (k : ℕ) :
-    rpSatExponent k = sInf {δ : ℝ | 0 < δ ∧
-      SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle)
-    ((solvesPromiseInExpTime_ofSet_iff.mpr
-      (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.rp)
+theorem rSETH_iff_tendsto : rSETH ↔ Tendsto rSatExponent atTop (𝓝 1) :=
+  (tendsto_rateExponent_iff (P := fun k =>
+      SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars)
+    (fun _ _ _ hle h => h.mono hle) (fun k => KSAT_solvesWithErrorInExpTime_one k _)
+    rSatExponent_mono).symm
 
 /-- Dropping any finite prefix `k < K` leaves `⨆ k, rSatExponent k` unchanged. -/
 theorem iSup_ge_rSatExponent_eq_iSup (K : ℕ) :
@@ -1861,18 +1804,8 @@ theorem rETH.eth (h : rETH) : ETH := by
   exact h.trans_le (rSatExponent_le_satExponent 3)
 
 /-- Randomized `SETH` implies deterministic `SETH` (`rSETH → SETH`). -/
-theorem rSETH.seth (h : rSETH) : SETH := by
-  intro ε hε
-  by_cases h1 : 1 ≤ ε
-  · obtain ⟨k, hk⟩ := h 1 one_pos
-    refine ⟨k, fun hdec => hk ?_⟩
-    have h0 : DecidableInExpTime (KSAT k) encCNF CNF.numVars 0 := hdec.mono (by linarith)
-    simpa only [sub_self] using
-      (solvesPromiseInExpTime_ofSet_iff.mpr h0).solvesWithErrorInExpTime le_rfl
-        ErrorModel.bounded
-  · obtain ⟨k, hk⟩ := h ε hε
-    exact ⟨k, fun hdec => hk
-      ((solvesPromiseInExpTime_ofSet_iff.mpr hdec).solvesWithErrorInExpTime (by linarith)
-        ErrorModel.bounded)⟩
+theorem rSETH.seth (h : rSETH) : SETH :=
+  SETH_iff_tendsto.2 <| tendsto_of_tendsto_of_tendsto_of_le_of_le (rSETH_iff_tendsto.1 h)
+    tendsto_const_nhds rSatExponent_le_satExponent satExponent_le_one
 
 end Cslib.Complexity

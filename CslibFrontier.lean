@@ -5004,6 +5004,7 @@ public import CslibFrontier.Foundations.Analysis.LpNormMeasure
 public import CslibFrontier.Foundations.Analysis.MarkovBrothersInequality
 public import CslibFrontier.Foundations.Analysis.Normed.Ring.PowSub
 public import CslibFrontier.Foundations.Analysis.Normed.UnitSphere
+public import CslibFrontier.Foundations.Analysis.RateExponent
 public import CslibFrontier.Foundations.Analysis.RootError
 public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Basic
 public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Elementary
