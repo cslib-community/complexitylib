@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.NP
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Foundations.Data.BitString.List
 
+import CslibFrontier.Computability.Complexity.Classes.TruncatedVerifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -47,7 +48,8 @@ interactive machines are not proved.
 Both classes contain `NP` (no coins) and `BPP` (no proof), and are closed under polynomial-time
 many-one reductions. A reduction changes the lengths the verifier expects, so the new verifier
 reads only prefixes of the proof and of the random string of the lengths it needs; the ignored
-random bits multiply every count by the same power of two (`Cslib.BitString.card_filter_take`).
+random bits multiply every count by the same power of two
+(`Cslib.Complexity.mul_two_pow_le_mul_card_filter_take`).
 Error reduction, `MA ⊆ AM` and `MA ⊆ SBP` are in
 `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification`, and the placements in
 the second level of the polynomial hierarchy in
@@ -190,17 +192,9 @@ theorem BPP_subset_MA : BPP enc ⊆ MA enc := by
 
 /-! ### Closure under reductions -/
 
-private theorem two_mul_two_pow_le_card_filter_take {m M : ℕ} (hle : m ≤ M)
-    (g : List Bool → Prop) [DecidablePred g]
-    (h : 2 * 2 ^ m ≤ 3 * (univ.filter fun r : Fin m → Bool => g (List.ofFn r)).card) :
-    2 * 2 ^ M ≤ 3 * (univ.filter fun r : Fin M → Bool => g ((List.ofFn r).take m)).card := by
-  rw [BitString.card_filter_take hle g]
-  have hpow : 2 ^ M = 2 ^ (M - m) * 2 ^ m := by
-    rw [← pow_add, Nat.sub_add_cancel hle]
-  rw [hpow, mul_left_comm, mul_left_comm 3]
-  exact Nat.mul_le_mul_left _ h
-
-private theorem exists_truncated_verifier {encB : β ↪ List Bool} {f : α → β}
+/-- Two-block form of `Cslib.Complexity.exists_truncated_verifier`: the verifier reads a prefix of
+each of two consecutive blocks. -/
+private theorem exists_truncated_verifier_append {encB : β ↪ List Bool} {f : α → β}
     (hf : ComputableInPolyTime f enc encB) (p₁ p₂ : Polynomial ℕ)
     {V : β × List Bool → Bool}
     (hV : ComputableInPolyTime V (encPair encB encBits) encBool) :
@@ -240,7 +234,7 @@ theorem PolyTimeReducible.mem_MA {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ MA encB) : A ∈ MA enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, p, V, hV, hVB⟩ := hB
-  obtain ⟨Q, P, V', hV', hQe, hPe, hsplit⟩ := exists_truncated_verifier hf q p hV
+  obtain ⟨Q, P, V', hV', hQe, hPe, hsplit⟩ := exists_truncated_verifier_append hf q p hV
   refine ⟨Q, P, V', hV', fun a => ?_⟩
   dsimp only [BoundedErrorAt]
   simp only [hsplit]
@@ -249,13 +243,13 @@ theorem PolyTimeReducible.mem_MA {encB : β ↪ List Bool} {B : Set β}
     obtain ⟨y, hy⟩ := (hVB (f a)).1 ((hAB a).1 ha)
     refine ⟨BitString.ofList _ (List.ofFn y), ?_⟩
     rw [BitString.take_ofFn_ofList (hQe a)]
-    exact two_mul_two_pow_le_card_filter_take (hPe a)
+    exact mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => V (f a, List.ofFn y ++ w) = true) hy
   · intro ha y
     have hy := (hVB (f a)).2 (fun hb => ha ((hAB a).2 hb))
       (BitString.ofList _ ((List.ofFn y).take (q.eval (encB (f a)).length)))
     rw [BitString.ofFn_ofList (by simp [hQe a])] at hy
-    exact two_mul_two_pow_le_card_filter_take (hPe a)
+    exact mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => V (f a, (List.ofFn y).take (q.eval (encB (f a)).length) ++ w) = false) hy
 
 /-- **`AM` is closed under polynomial-time reductions.** The verifier runs the verifier of the
@@ -265,7 +259,7 @@ theorem PolyTimeReducible.mem_AM {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ AM encB) : A ∈ AM enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨p, q, V, hV, hVB⟩ := hB
-  obtain ⟨P, Q, V', hV', hPe, hQe, hsplit⟩ := exists_truncated_verifier hf p q hV
+  obtain ⟨P, Q, V', hV', hPe, hQe, hsplit⟩ := exists_truncated_verifier_append hf p q hV
   refine ⟨P, Q, V', hV', fun a => ?_⟩
   have hex (r : Fin (P.eval (enc a).length) → Bool) :
       (∃ y : Fin (Q.eval (enc a).length) → Bool, V (f a, (List.ofFn r).take
@@ -283,10 +277,10 @@ theorem PolyTimeReducible.mem_AM {encB : β ↪ List Bool} {B : Set β}
     BitString.forall_take_ofFn_iff (hQe a)
       (g := fun w => V (f a, (List.ofFn r).take (p.eval (encB (f a)).length) ++ w) = false)
   simp only [hsplit, hex, hall]
-  exact ⟨fun ha => two_mul_two_pow_le_card_filter_take (hPe a)
+  exact ⟨fun ha => mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => ∃ y : Fin (q.eval (encB (f a)).length) → Bool, V (f a, w ++ List.ofFn y) = true)
       ((hVB (f a)).1 ((hAB a).1 ha)),
-    fun ha => two_mul_two_pow_le_card_filter_take (hPe a)
+    fun ha => mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => ∀ y : Fin (q.eval (encB (f a)).length) → Bool, V (f a, w ++ List.ofFn y) = false)
       ((hVB (f a)).2 fun hb => ha ((hAB a).2 hb))⟩
 
