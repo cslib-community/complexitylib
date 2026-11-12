@@ -90,16 +90,13 @@ noncomputable def hybridKEMCCAContinuation (E : SymmetricCipher)
     (adversary : WordCCA2Adversary) (bit : Bool) (n : ℕ) (pk key ctK : List Bool) :
     WordOracleComp Unit Bool := do
   let handler := hybridKEMCCAHandler E F decBound n key ctK
-  let choice ← OracleComp.interpret
-    (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
-    (adversary.choose n pk)
+  let choice ← ProbOracleComp.simulate handler (adversary.choose n pk)
   if (ChoiceOut.msg₀ choice).length == n && (ChoiceOut.msg₁ choice).length == n then
     let ctD ← ProbOracleComp.sample
       (E.encrypt n key (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice))
     let ct := encPair encBits encBits (ctK, ctD)
-    OracleComp.interpret
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m))
-        (fun request => if request.2 == ct then pure [] else handler request))
+    ProbOracleComp.simulate
+      (fun request => if request.2 == ct then pure [] else handler request)
       (adversary.guess n (ChoiceOut.state choice) ct)
   else pure false
 
@@ -148,22 +145,15 @@ private theorem interpret_substituted_unit {α : Type}
     (program : WordOracleComp Unit α) :
     OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m)) oracle)
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
-        program) =
+      (ProbOracleComp.simulate handler program) =
       OracleComp.interpret
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (fun request s => pure (reply request, s))) program := by
-  rw [OracleComp.interpret_interpret]
-  congr 1 with q : 1
-  cases q with
-  | inl m =>
-    simp only [OracleComp.sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
-      OracleComp.interpret_query]
-  | inr request =>
-    funext s
-    cases s
-    exact hstep request
+  rw [ProbOracleComp.interpret_simulate]
+  congr 2 with request : 1
+  funext s
+  cases s
+  exact hstep request
 
 private theorem run_hybridKEMCCAContinuation (E : SymmetricCipher)
     (F : ℕ → List Bool → List Bool)
@@ -402,10 +392,9 @@ private theorem isOraclePPTOn_hybridKEMCCAInterpret (E : SymmetricCipher)
     {reject : α → List Bool → Bool}
     (hreject : ComputableInPolyTime (fun p : α × List Bool => reject p.1 p.2)
       (encPair input encBits) encBool) :
-    IsOraclePPTOn input output (fun a => OracleComp.interpret
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m))
-        (fun request => if reject a request.2 then pure [] else
-          hybridKEMCCAHandler E F decBound (n a) (key a) (ctK a) request)) (program a)) := by
+    IsOraclePPTOn input output (fun a => ProbOracleComp.simulate
+      (fun request => if reject a request.2 then pure [] else
+        hybridKEMCCAHandler E F decBound (n a) (key a) (ctK a) request) (program a)) := by
   have hhandler : IsOraclePPTOn (encPair input (encPair (encFinEnum Unit) encBits)) encBits
       (fun p : α × (Unit × List Bool) => if reject p.1 p.2.2 then pure [] else
         hybridKEMCCAHandler E F decBound (n p.1) (key p.1) (ctK p.1) p.2) :=
