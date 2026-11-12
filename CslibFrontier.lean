@@ -1628,6 +1628,9 @@ public import CslibFrontier.Computability.Circuit.Monotone.Set
 public import CslibFrontier.Computability.Circuit.Monotone.Synthesis
 public import CslibFrontier.Computability.Circuit.NNF.Basic
 public import CslibFrontier.Computability.Circuit.NNF.Disjunction
+public import CslibFrontier.Computability.Circuit.NNF.Negation.LowerBound
+public import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
+public import CslibFrontier.Computability.Circuit.NNF.Negation.UpperBound
 public import CslibFrontier.Computability.Circuit.NNF.ReadOnce
 public import CslibFrontier.Computability.Circuit.NNF.Rectangle
 public import CslibFrontier.Computability.Circuit.Normalization
@@ -5215,6 +5218,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.C
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.EdgeConnectivity
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.VertexConnectivity
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Crown
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CubicEdgeColoring
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CutRank
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.DominatingSet
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.EdgeSide
