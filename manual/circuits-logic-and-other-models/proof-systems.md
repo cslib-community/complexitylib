@@ -499,6 +499,105 @@ These are original permutation/algebraic proofs, with no native runtime or geome
 realization claim. Full gadget-recipe realization, recognition, Hanani–Tutte and the planar
 dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
+## Polygonal geometry prerequisites
+
+Loop-only numerical-genus-zero rotations now have actual polygonal embeddings with their
+exact clockwise order, as documented below. The general numerical-genus / polygonal-realization
+equivalence remains unproved. Its two remaining obligations are geometric restoration of nonloop
+contractions by directed contiguous vertex splits and a finite segment-to-face-color converse
+including subdivision and suppression. Topological taming, indexed FZ versus DK set conventions
+and source comparison, frozen-switch completeness, Hanani–Tutte recognition and the full
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) endpoint remain open.
+
+**Start:** complete [checkout setup](../workflows/getting-started.md#prerequisites-and-the-checkouts-version)
+and work from the repository root. Open the checked guide's “Polygonal Geometry Prerequisites”
+section in [the complete chapter](../../guide/CslibFrontierGuide/NPCompleteness.lean), including its
+ordinary imports and local `open` context. For a small client, import the required modules:
+
+- `CslibFrontier.Foundations.Geometry.Polygonal.Route` defines `Cslib.Polygonal.Route`;
+  `Segment` at the same prefix adds `Route.line` and `isSimple_line_iff`, `Germs` gives
+  end-segment interpolation, and `Neighborhood` separates finite compact segment families.
+- `CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing` defines drawings;
+  `.Germs` adds incident-direction injectivity, `.Neighborhood` adds vertex balls,
+  `.Points` supplies edgeless drawings and `.Star` supplies arbitrary-degree star embeddings.
+- `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Basic`
+  defines literal clockwise realization. `CslibFrontier.Computability.Complexity.Problems.Graph.ClosedPassages.Loop`
+  exposes the extracted single-loop passage and the numerical noninterlacing theorem.
+
+A route lists `bends + 2` points in `ℂ` and has `bends + 1` actual real affine segments.
+`eval i t` ranges over all real parameters in `[0,1]`; `support` is the union of those segments.
+`IsSimple` identifies adjacent segment junctions by their equal global parameter and permits
+first/last closure, excluding other contacts. Thus `Route.isSimple_line_iff a b` says a
+one-segment route is simple exactly when `a ≠ b`; a one-segment loop is rejected.
+
+In `Cslib.Complexity.Graph`, `PolygonalDrawing G` uses the existing natural-number names and
+listed edge occurrences. Its only fields are vertex coordinates, a route per edge position
+and endpoint equations. `IsEmbedding` requires injectivity on distinct declared names,
+route simplicity, declared-vertex avoidance except at corresponding ends, and contacts of
+different routes only at common named ends. Repeated declarations name one point; identical
+listed endpoint pairs retain separate routes. Undeclared names are unconstrained. A loop
+retains two end parameters and two outgoing germs. No genus certificate or geometry provider
+is stored in a drawing.
+
+For `hD : D.IsEmbedding`, `hD.directions_injective a b hv hdir` proves `a = b` from equal
+vertex names and directions, including the same-loop case. `hD.exists_vertex_ball v hv`,
+where `hv : v ∈ G.1`, constructs `ε > 0` such that every segment meeting the ball at
+`D.vertex v` is a first segment starting at `v` or a last segment ending at `v`. It uses
+finite compact-segment separation internally; it is not a topological disk or splitting patch.
+
+`D.Realizes r` is separate from embedding. It requires nonzero germs, distinct incident
+directions and literal clockwise order for every distinct incident triple `a,b,c`:
+`sbtw (D.direction c) (D.direction b) (D.direction a) ↔ b ∈ r.rotationInterval a c`.
+The reversed `Real.Angle` betweenness makes forward `rotate` clockwise in the fixed complex
+plane, without reflection. `faceNext = rotate⁻¹ ∘ reversal` (`σ⁻¹ α`) keeps the right-side face.
+
+`PolygonalDrawing.star_isEmbedding n` proves embedding for every finite degree, including
+zero; it does not prove arbitrary-degree star realization. `points_isEmbedding vertices`
+and `points_realizes vertices r` handle any declared isolate list and any rotation of that
+edgeless graph. The guide checks degree 20 and sparse repeated point declarations.
+`ClosedPassages.loop e he` pairs the two indexed ends of a loop with singleton edge support.
+`r.not_alternates_loops hG hr e f hef he hf` excludes alternating ends of distinct loops,
+assuming all incident endpoints are declared (`hG`), numerical genus zero (`hr`), distinct
+edge positions (`hef`) and the two loop equations. It needs no connectedness or degree bound
+and supplies no drawing.
+
+From the repository root, run
+`scripts/build.sh CslibFrontierTests.PolygonalDrawing CslibFrontierTests.PolygonalDrawingAudit CslibFrontierTests.RotationIntersection --wfail --iofail`.
+All three modules should elaborate; use [artifact troubleshooting](../workflows/troubleshooting.md#diagnose-missing-or-stale-artifacts)
+for missing imports, and retain the ordinary imports if a declaration is unavailable.
+The [geometric clients](../../CslibFrontierTests/PolygonalDrawing.lean) also check actual bridge,
+closed-loop and parallel-digon realizations, degrees 0 and 5, sparse isolate separation,
+clockwise sign and reverse-order rejection. The [scoped audit](../../CslibFrontierTests/PolygonalDrawingAudit.lean)
+checks stored declarations and environment linters; the [intersection clients](../../CslibFrontierTests/RotationIntersection.lean)
+reuse the extracted loop constructor. This is original geometric infrastructure, with no
+DK, FKP or Hanani–Tutte formalization, coordinate bit bound or native runtime theorem.
+
+### Loop-only clockwise realization
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet`.
+For `r : RotationSystem G`, `r.exists_polygonalDrawing_of_loops hG hr hloop` returns
+`∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r`. Its hypotheses declare every
+incident endpoint (`hG`), require `r.NumericalGenusZero` (`hr`), and require each listed edge's
+two endpoint names to agree (`hloop`). There is no noncrossing, drawing, disk or provider
+hypothesis. Repeated loop pairs, disconnected vertices, sparse or duplicate declarations,
+isolates and the empty graph are included, with no degree bound.
+
+The construction derives nonalternation from numerical genus zero, ranks actual darts in
+clockwise order, and draws each loop with five real affine segments. Disjoint or nested rank
+intervals have disjoint interiors; positive port coordinates fix the clockwise germ order.
+A common spacing separates distinct vertex names. `PolygonalDrawing.bouquet` is the explicit
+drawing, with `bouquet_isEmbedding` and `bouquet_realizes` supplying its contracts. This is an
+original coordinate construction, with no coordinate-bit or native-runtime bound claimed.
+
+The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean) applies the theorem and
+constructs a two-loop embedding with a repeated declaration and a disconnected isolate.
+The [bouquet tests](../../CslibFrontierTests/PolygonalBouquet.lean) supply a nonvacuous family
+at every degree, nested/disjoint loops, negative interlacing and reversed-order cases;
+[their audit](../../CslibFrontierTests/PolygonalBouquetAudit.lean) checks stored declarations.
+Run `scripts/build.sh CslibFrontierTests.PolygonalBouquet CslibFrontierTests.PolygonalBouquetAudit --wfail --iofail`.
+This proves the loop-only forward direction. Nonloop restoration and the geometric converse
+remain open, along with the full planar objective.
+
 ## Ordered incidence-to-polygon rotations
 
 Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.

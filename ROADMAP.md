@@ -234,8 +234,6 @@ Containments, separations, closure properties, complete problems and reductions 
   Exact count preservation alone does not supply the ASP runtime certificates.
 - **Counting reductions and hierarchies:** counting reductions and further oracle results preserving exact multiplicities; permanent #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's approximate counting.
 - **Exact counting by determinants** ([#3081](https://github.com/cslib-community/cslib-frontier/issues/3081)): Kasteleyn's Pfaffian method for counting perfect matchings of planar graphs in polynomial time, in contrast with permanent #P-completeness (polynomial-time counting for unweighted and weighted spanning trees, simple and multi-digraph arborescences, and BEST Eulerian circuits, along with root independence for balanced graphs, are formalized).
-- **Composite moduli** ([#3495](https://github.com/cslib-community/cslib-frontier/issues/3495)): the prime-power collapse `Mod_{p^e}P = Mod_pP`, and union closure for every modulus through Hertrampf's characterization of `Mod_{jk}P` for coprime `j, k` (Beigel–Gill, Theorem 32 and Corollary 35).
-  Complement closure for moduli that are not prime powers is open, and relativizing proofs cannot give it (Barrington–Beigel–Rudich), so it is not a library direction.
 - **Target-relativized counting classes:** `LWPP^A`, `WPP^A` and `SBP^A` with `FP^A` targets; adaptive WPP closure and UP-oracle containment.
 - **Native oracle counting machines:** efficient encoded oracle checking, response-access costs and oracle-machine characterizations, with resource bounds uniform over admissible oracles.
 
