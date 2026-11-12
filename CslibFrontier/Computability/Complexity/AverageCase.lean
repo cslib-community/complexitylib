@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
 
@@ -137,30 +138,17 @@ def MildlyHardOnAverageIOWith (correct : ℕ → List Bool → ℕ → Bool) : P
 private theorem bind_map_le_of_imp {n : ℕ} (q : List Bool → PMF ℕ) {c₁ c₂ : List Bool → ℕ → Bool}
     (himp : ∀ x : List Bool, x.length = n → ∀ v, c₁ x v = true → c₂ x v = true) :
     (((BitString.uniformList n).bind fun x => (q x).map (c₁ x)) true).toReal ≤
-      (((BitString.uniformList n).bind fun x => (q x).map (c₂ x)) true).toReal := by
-  apply ENNReal.toReal_mono (PMF.apply_ne_top _ _)
-  apply PMF.bind_apply_mono_on_support _ true
-  intro x hx
-  apply PMF.bind_apply_mono_on_support _ true
-  intro v _
-  have himp := himp x (BitString.length_of_mem_support_uniformList hx) v
-  simp only [Function.comp_apply, PMF.pure_apply]
-  cases h₁ : c₁ x v
-  · simp
-  · simp [himp h₁]
+      (((BitString.uniformList n).bind fun x => (q x).map (c₂ x)) true).toReal :=
+  ENNReal.toReal_mono (PMF.apply_ne_top _ _) <|
+    PMF.bind_apply_mono_on_support _ true fun x hx =>
+      map_true_mono _ fun v _ => himp x (BitString.length_of_mem_support_uniformList hx) v
 
 private theorem map_le_of_imp {n : ℕ} {c₁ c₂ : List Bool → Bool}
     (himp : ∀ x : List Bool, x.length = n → c₁ x = true → c₂ x = true) :
     (((BitString.uniformList n).map c₁) true).toReal ≤
-      (((BitString.uniformList n).map c₂) true).toReal := by
-  apply ENNReal.toReal_mono (PMF.apply_ne_top _ _)
-  apply PMF.bind_apply_mono_on_support _ true
-  intro x hx
-  have himp := himp x (BitString.length_of_mem_support_uniformList hx)
-  simp only [Function.comp_apply, PMF.pure_apply]
-  cases h₁ : c₁ x
-  · simp
-  · simp [himp h₁]
+      (((BitString.uniformList n).map c₂) true).toReal :=
+  ENNReal.toReal_mono (PMF.apply_ne_top _ _) <|
+    map_true_mono _ fun x hx => himp x (BitString.length_of_mem_support_uniformList hx)
 
 /-- **Monotonicity in the correctness test**: if, for all sufficiently large `n`, every output
 passing `correct₁` on an input of length `n` also passes `correct₂`, then hardness for `correct₂`
@@ -365,19 +353,13 @@ theorem MildlyHardOnAverageToOneSidedApprox.mildlyHardOnAverageToApprox {g : ℕ
     hppt.map_with hsub
   filter_upwards [hH (fun x => (fun v => v - g x.length) <$> H x) hppt'] with n hn
   refine (ENNReal.toReal_mono (PMF.apply_ne_top _ _) ?_).trans hn
-  apply PMF.bind_apply_mono_on_support _ true
-  intro x hx
+  refine PMF.bind_apply_mono_on_support _ true fun x hx => ?_
   have hlen : x.length = n := BitString.length_of_mem_support_uniformList hx
   rw [ProbComp.eval_map, PMF.map_comp]
-  apply PMF.bind_apply_mono_on_support _ true
-  intro v _
-  simp only [Function.comp_apply, PMF.pure_apply, hlen]
-  by_cases hdist : Nat.dist v (f x) ≤ g n
-  · have h_one_sided : f x - 2 * g n ≤ v - g n ∧ v - g n ≤ f x := by
-      unfold Nat.dist at hdist
-      omega
-    simp [hdist, h_one_sided]
-  · simp [hdist]
+  refine map_true_mono _ fun v _ hdist => ?_
+  simp only [Function.comp_apply, decide_eq_true_eq, hlen] at hdist ⊢
+  unfold Nat.dist at hdist
+  omega
 
 /-- Deterministic counterpart of
 `MildlyHardOnAverageToOneSidedApprox.mildlyHardOnAverageToApprox`. -/
