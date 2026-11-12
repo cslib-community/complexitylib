@@ -1079,6 +1079,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinearLower
 public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinearize
 public import CslibFrontier.Computability.Circuit.Arithmetic.SigmaPi
 public import CslibFrontier.Computability.Circuit.Arithmetic.SumFlatten
+public import CslibFrontier.Computability.Circuit.Arithmetic.Synthesis
 public import CslibFrontier.Computability.Circuit.Arithmetic.VNP
 public import CslibFrontier.Computability.Circuit.Arithmetic.VP
 public import CslibFrontier.Computability.Circuit.Arithmetic.Waring

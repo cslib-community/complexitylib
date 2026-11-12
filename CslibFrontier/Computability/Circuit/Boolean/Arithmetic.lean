@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic
 public import Cslib.Computability.Circuit.Boolean.Basic
 public import Cslib.Computability.Circuit.Simulation
 public import Mathlib.Algebra.Ring.BooleanRing
-import CslibFrontier.Computability.Circuit.Arithmetic.VP
+import CslibFrontier.Computability.Circuit.Arithmetic.Synthesis
 import CslibFrontier.Computability.Circuit.Boolean.Synthesis
 
 /-!

@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 -- upstream: candidate
 import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import Cslib.Computability.Circuit.Composition
+import CslibFrontier.Computability.Circuit.Pi
 
 /-! # Two-element arithmetic/Boolean circuit clients
 

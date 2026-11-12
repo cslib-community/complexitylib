@@ -19,6 +19,21 @@ Theorem 14.7 should not be used as an unrestricted circuit-to-determinant specif
 linear dimension bound fails the existing repeated-squaring degree check. See the audit's
 [checked client](../../CslibFrontierTests/AroraBarakAlgebraic.lean) and exact model conventions.
 
+## Arithmetic synthesis without polynomial families
+
+Import [Arithmetic.Synthesis](../../CslibFrontier/Computability/Circuit/Arithmetic/Synthesis.lean)
+for `Synthesis.arith_const`, `arith_add`, `arith_mul` and `arith_sum`. The constant symbols
+have arbitrary type `K`, interpreted by a supplied map into the value carrier `R`; no semiring
+structure on `K` is required. The primitive rules need addition and multiplication on `R`,
+and the finite-sum rule needs an additive commutative monoid. VP publicly re-exports the same
+rules and names for existing clients; `Synthesis.exists_circuit_polynomial` stays in VP.
+
+The Boolean simulation below and the
+[matrix-multiplication exponent module](../../CslibFrontier/Computability/Circuit/Arithmetic/MatrixMultiplication/Exponent.lean)
+use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.ArithmeticSynthesis`
+for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
+constants as natural-number lengths, without importing VP or giving the labels a semiring.
+
 ## Boolean and two-element arithmetic circuits
 
 Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
