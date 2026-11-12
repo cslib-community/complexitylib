@@ -186,15 +186,6 @@ theorem PiP_three_subset_SigmaP_three_of_coNP_subset_NPPoly
     PiP_subset_PiP_succ 1
       (mem_PiP_of_forall_length le_rfl hNm (compl_mem_PiP_of_mem_SigmaP hBadPair))
   -- Main check: for every `u₁`, some `u₂` has `(unframe w, (a, u₁ ++ u₂)) ∈ B`
-  let StepB : Set (((α × List Bool) × List Bool) × List Bool) :=
-    {z | (unframe z.1.1.2, (z.1.1.1, z.1.2 ++ z.2)) ∈ B}
-  have hStepRed : PolyTimeReducible
-      (encPair (encPair (encPair enc encBits) encBits) encBits)
-      (encPair encBits (encPair enc encBits)) StepB B :=
-    ⟨fun z => (unframe z.1.1.2, (z.1.1.1, z.1.2 ++ z.2)),
-      (unframe.comp ((fst _ _).fst').snd').prod
-        (((fst _ _).fst').fst'.prod (bitsAppend (fst _ _).snd' (snd _ _))),
-      fun _ => Iff.rfl⟩
   have hNp₂ : ComputableInPolyTime
       (fun y : (α × List Bool) × List Bool => p₂.eval (enc y.1.1).length)
       (encPair (encPair enc encBits) encBits) encUnary :=
@@ -203,10 +194,11 @@ theorem PiP_three_subset_SigmaP_three_of_coNP_subset_NPPoly
       (encPair enc encBits) encUnary :=
     (unary_eval p₁).comp ((encoding_length enc).comp (fst enc encBits))
   let InnerSet : Set ((α × List Bool) × List Bool) :=
-    {y | ∃ u₂ : List Bool, u₂.length = p₂.eval (enc y.1.1).length ∧ (y, u₂) ∈ StepB}
+    {y | ∃ u₂ : List Bool, u₂.length = p₂.eval (enc y.1.1).length ∧
+      (y.1, y.2 ++ u₂) ∈ {z : (α × List Bool) × List Bool | (unframe z.1.2, (z.1.1, z.2)) ∈ B}}
   have hInner : InnerSet ∈ PiP 2 (encPair (encPair enc encBits) encBits) :=
     SigmaP_subset_PiP_succ 1
-      (mem_SigmaP_of_exists_length le_rfl hNp₂ (SigmaP_one ▸ hStepRed.mem_NP hB))
+      (mem_SigmaP_of_exists_append le_rfl hNp₂ (SigmaP_one ▸ hBadB.mem_NP hB))
   let MainSet : Set (α × List Bool) :=
     {x | ∀ u₁ : List Bool, u₁.length = p₁.eval (enc x.1).length → (x, u₁) ∈ InnerSet}
   have hMainSet : MainSet ∈ PiP 2 (encPair enc encBits) :=
@@ -248,7 +240,7 @@ theorem PiP_three_subset_SigmaP_three_of_coNP_subset_NPPoly
       obtain ⟨u₂, hu₂, hnotE⟩ := ha u₁ hu₁
       have hs : (u₁ ++ u₂).length = m.eval (enc a).length := by simp [m, hu₁, hu₂]
       refine ⟨u₂, hu₂, ?_⟩
-      dsimp only [StepB, Set.mem_ofPred_eq]
+      dsimp only [Set.mem_ofPred_eq]
       rw [hunf, ← hlen a (u₁ ++ u₂) hs]
       exact (hEB (a, u₁ ++ u₂)).1 hnotE
   · rintro ⟨w, -, hSound, hMain⟩ u₁ hu₁

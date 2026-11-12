@@ -11,8 +11,8 @@ public import CslibFrontier.Computability.Complexity.Classes.BooleanHierarchy.PH
 public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
 public import CslibFrontier.Computability.Complexity.Problems.SATUNSAT
 import CslibFrontier.Computability.Complexity.Classes.NP.Witness
+import CslibFrontier.Computability.Complexity.Classes.PH.Reduction
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
@@ -104,248 +104,25 @@ open Turing.MultiTapeTM ComputableInPolyTime Polynomial
 
 variable {α β : Type} {enc : α ↪ List Bool}
 
-/-! ### Alternating verifiers on fixed-length bit-string slices -/
+/-! ### Slices of the word component -/
 
-/-- The encoded length of `(a, s)` under `encPair enc encBits` when `s` has length `q |enc a|`. -/
-private noncomputable def pairPoly (q : Polynomial ℕ) : Polynomial ℕ := 2 * X + 1 + q
+/-- Dropping the first `q |enc a|` bits of the word component is polynomial-time. -/
+private theorem polyTimeReducible_drop (q : Polynomial ℕ) (C : Set (α × List Bool)) :
+    PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
+      {x : α × List Bool | (x.1, x.2.drop (q.eval (enc x.1).length)) ∈ C} C :=
+  ⟨fun x => (x.1, x.2.drop (q.eval (enc x.1).length)),
+    (fst _ _).prod (bitsDropWithInput (snd _ _)
+      ((unary_eval q).comp ((encoding_length enc).comp (fst _ _)))),
+    fun _ => Iff.rfl⟩
 
-private theorem length_encPair_eq_eval_pairPoly {q : Polynomial ℕ} {a : α} {s : List Bool}
-    (hs : s.length = q.eval (enc a).length) :
-    (encPair enc encBits (a, s)).length = (pairPoly q).eval (enc a).length := by
-  simp [pairPoly, hs]
-
-/-- Shift the first `p |enc a|` certificate bits from the quantifier stream onto the accumulated
-bit-string prefix `s`. -/
-private def shiftVerifier (enc : α ↪ List Bool) (p : Polynomial ℕ)
-    (V : (α × List Bool) × List Bool → Bool) (x : (α × List Bool) × List Bool) : Bool :=
-  let n := p.eval (enc x.1.1).length
-  V ((x.1.1, x.1.2 ++ x.2.take n), x.2.drop n)
-
-@[simp]
-private theorem shiftVerifier_append {p : Polynomial ℕ} {V : (α × List Bool) × List Bool → Bool}
-    {a : α} {s u v : List Bool} (hu : u.length = p.eval (enc a).length) :
-    shiftVerifier enc p V ((a, s), u ++ v) = V ((a, s ++ u), v) := by
-  simp [shiftVerifier, ← hu]
-
-private theorem computableInPolyTime_shiftVerifier (p : Polynomial ℕ)
-    {V : (α × List Bool) × List Bool → Bool}
-    (hV : ComputableInPolyTime V (encPair (encPair enc encBits) encBits) encBool) :
-    ComputableInPolyTime (shiftVerifier enc p V)
-      (encPair (encPair enc encBits) encBits) encBool := by
-  have hn : ComputableInPolyTime
-      (fun x : (α × List Bool) × List Bool => p.eval (enc x.1.1).length)
-      (encPair (encPair enc encBits) encBits) encUnary :=
-    (unary_eval p).comp ((encoding_length enc).comp (fst _ _).fst')
-  exact hV.comp (((fst _ _).fst'.prod
-    (bitsAppend (fst _ _).snd' (bitsTakeWithInput (snd _ _) hn))).prod
-    (bitsDropWithInput (snd _ _) hn))
-
-/-- `R : α → List Bool → Prop` is verified at `(b, k)` on prefixes `s` of length `q |enc a|` by a
-polynomial-time alternating verifier whose certificate block lengths are polynomials in
-`|enc a|`. -/
-private def OnSliceAlt (enc : α ↪ List Bool) (b : Bool) (k : ℕ) (q : Polynomial ℕ)
-    (R : α → List Bool → Prop) : Prop :=
-  ∃ (ps : List (Polynomial ℕ)) (V : (α × List Bool) × List Bool → Bool),
-    ps.length = k ∧
-    ComputableInPolyTime V (encPair (encPair enc encBits) encBits) encBool ∧
-    ∀ a : α, ∀ s : List Bool, s.length = q.eval (enc a).length →
-      (R a s ↔ Alternation b (ps.map fun p => p.eval (enc a).length) fun v => V ((a, s), v) = true)
-
-namespace OnSliceAlt
-
-variable {b : Bool} {k : ℕ} {p q : Polynomial ℕ} {R R₁ R₂ : α → List Bool → Prop}
-
-private theorem congr (h : OnSliceAlt enc b k q R₁)
-    (hR : ∀ a s, s.length = q.eval (enc a).length → (R₁ a s ↔ R₂ a s)) :
-    OnSliceAlt enc b k q R₂ := by
-  obtain ⟨ps, V, hk, hV, hA⟩ := h
-  exact ⟨ps, V, hk, hV, fun a s hs => (hR a s hs).symm.trans (hA a s hs)⟩
-
-private theorem congr_poly (h : OnSliceAlt enc b k q R) {q' : Polynomial ℕ}
-    (hq : ∀ n, q.eval n = q'.eval n) :
-    OnSliceAlt enc b k q' R := by
-  obtain ⟨ps, V, hk, hV, hA⟩ := h
-  exact ⟨ps, V, hk, hV, fun a s hs => hA a s (hs.trans (hq _).symm)⟩
-
-/-- At slice length `0`, an existential `OnSliceAlt` relation defines a `SigmaP k` language on
-`α`. -/
-private theorem mem_SigmaP (h : OnSliceAlt enc true k 0 R) : {a | R a []} ∈ SigmaP k enc := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine Complexity.mem_SigmaP.mpr ⟨ps, fun x => V ((x.1, []), x.2), hk, ?_, fun a => ?_⟩
-  · exact hV.comp (((fst enc encBits).prod (.const [])).prod (snd enc encBits))
-  · exact hR a [] (by simp)
-
-/-- Negating the verifier swaps quantifier polarities. -/
-private theorem not (h : OnSliceAlt enc b k q R) : OnSliceAlt enc (!b) k q (fun a s => ¬R a s) := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine ⟨ps, fun x => !V x, hk, by fun_prop, fun a s hs => ?_⟩
-  dsimp only
-  rw [hR a s hs, not_alternation]
-  exact alternation_congr fun v => by simp
-
-/-- Prepending a length-zero block flips the leading quantifier polarity and increments the
-level. -/
-private theorem zero_cons (h : OnSliceAlt enc b k q R) : OnSliceAlt enc (!b) (k + 1) q R := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine ⟨0 :: ps, V, by simp [hk], hV, fun a s hs => ?_⟩
-  rw [hR a s hs, List.map_cons, Polynomial.eval_zero, alternation_zero_cons, Bool.not_not]
-
-/-- Appending a length-zero block increments the level without changing the leading polarity. -/
-private theorem append_zero (h : OnSliceAlt enc b k q R) : OnSliceAlt enc b (k + 1) q R := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine ⟨ps ++ [0], V, by simp [hk], hV, fun a s hs => ?_⟩
-  rw [hR a s hs, List.map_append, List.map_singleton, Polynomial.eval_zero, alternation_append_zero]
-
-/-- Conjoining two `OnSliceAlt` relations at the same polarity and level. -/
-private theorem and (h₁ : OnSliceAlt enc b k q R₁) (h₂ : OnSliceAlt enc b k q R₂) :
-    OnSliceAlt enc b k q (fun a s => R₁ a s ∧ R₂ a s) := by
-  obtain ⟨ps, V, hp, hV, hR₁⟩ := h₁
-  obtain ⟨qs, W, hq, hW, hR₂⟩ := h₂
-  have hlen : ps.length = qs.length := hp.trans hq.symm
-  let pqs := ps.zip qs
-  refine ⟨pqs.map fun pq => pq.1 + pq.2,
-    fun x =>
-      let w := splitAlternatingBlocks
-        (pqs.map fun pq => (pq.1.eval (enc x.1.1).length, pq.2.eval (enc x.1.1).length)) x.2
-      V (x.1, w.1) && W (x.1, w.2),
-    by simp [pqs, hp, hq], ?_, fun a s hs => ?_⟩
-  · have hn : ComputableInPolyTime
-        (fun x : (α × List Bool) × List Bool => (enc x.1.1).length)
-        (encPair (encPair enc encBits) encBits) encUnary :=
-      (encoding_length enc).comp (fst _ _).fst'
-    have hs := computableInPolyTime_splitAlternatingBlocks pqs hn (.snd _ _)
-    have h := bool_and.comp ((hV.comp ((fst _ _).prod hs.fst')).prod
-      (hW.comp ((fst _ _).prod hs.snd')))
-    exact h
-  · dsimp only
-    rw [hR₁ a s hs, hR₂ a s hs]
-    have hfst : pqs.map Prod.fst = ps := List.map_fst_zip hlen.le
-    have hsnd : pqs.map Prod.snd = qs := List.map_snd_zip hlen.ge
-    rw [← hfst, ← hsnd]
-    simp only [List.map_map, Function.comp_def, Polynomial.eval_add, Bool.and_eq_true]
-    simpa only [List.map_map, Function.comp_def] using (alternation_splitAlternatingBlocks
-      (pqs.map fun pq => (pq.1.eval (enc a).length, pq.2.eval (enc a).length)) b
-      (fun v => V ((a, s), v) = true) (fun v => W ((a, s), v) = true)).symm
-
-/-- Disjoining two `OnSliceAlt` relations at the same polarity and level. -/
-private theorem or (h₁ : OnSliceAlt enc b k q R₁) (h₂ : OnSliceAlt enc b k q R₂) :
-    OnSliceAlt enc b k q (fun a s => R₁ a s ∨ R₂ a s) := by
-  have h : OnSliceAlt enc (!!b) k q (fun a s => ¬(¬R₁ a s ∧ ¬R₂ a s)) := (h₁.not.and h₂.not).not
-  rw [Bool.not_not] at h
-  exact h.congr fun a s _ => by tauto
-
-/-- Implication from a negated `OnSliceAlt` relation to a positive one at the same polarity. -/
-private theorem imp (h₁ : OnSliceAlt enc (!b) k q R₁) (h₂ : OnSliceAlt enc b k q R₂) :
-    OnSliceAlt enc b k q (fun a s => R₁ a s → R₂ a s) := by
-  have h₁' : OnSliceAlt enc b k q (fun a s => ¬R₁ a s) := by
-    simpa using h₁.not
-  refine (h₁'.or h₂).congr fun a s _ => ?_
-  tauto
-
-/-- Embed a `SigmaP k (encPair enc encBits)` language at any slice polynomial `q`. -/
-private theorem of_mem_SigmaP {C : Set (α × List Bool)} (hC : C ∈ SigmaP k (encPair enc encBits))
-    (q : Polynomial ℕ) :
-    OnSliceAlt enc true k q (fun a s => (a, s) ∈ C) := by
-  obtain ⟨ps, V, hk, hV, hA⟩ := hC
-  refine ⟨ps.map fun p => p.comp (pairPoly q), V, by simp [hk], hV, fun a s hs => ?_⟩
-  dsimp only
-  rw [hA (a, s), length_encPair_eq_eval_pairPoly hs]
-  simp [List.map_map, Function.comp_def, Polynomial.eval_comp]
-
-/-- Embed a `PiP k (encPair enc encBits)` language at any slice polynomial `q`. -/
-private theorem of_mem_PiP {C : Set (α × List Bool)} (hC : C ∈ PiP k (encPair enc encBits))
-    (q : Polynomial ℕ) :
-    OnSliceAlt enc false k q (fun a s => (a, s) ∈ C) := by
-  obtain ⟨ps, V, hk, hV, hA⟩ := hC
-  refine ⟨ps.map fun p => p.comp (pairPoly q), V, by simp [hk], hV, fun a s hs => ?_⟩
-  dsimp only
-  rw [hA (a, s), length_encPair_eq_eval_pairPoly hs]
-  simp [List.map_map, Function.comp_def, Polynomial.eval_comp]
-
-/-- Drop the first `p |enc a|` bits of the slice prefix before evaluating `R`. -/
-private theorem drop (p : Polynomial ℕ) (h : OnSliceAlt enc b k q R) :
-    OnSliceAlt enc b k (p + q) (fun a s => R a (s.drop (p.eval (enc a).length))) := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine ⟨ps, fun x => V ((x.1.1, x.1.2.drop (p.eval (enc x.1.1).length)), x.2), hk, ?_,
-    fun a s hs => ?_⟩
-  · have hn : ComputableInPolyTime
-        (fun x : (α × List Bool) × List Bool => p.eval (enc x.1.1).length)
-        (encPair (encPair enc encBits) encBits) encUnary :=
-      (unary_eval p).comp ((encoding_length enc).comp (fst _ _).fst')
-    exact hV.comp (((fst _ _).fst'.prod
-      (bitsDropWithInput (fst _ _).snd' hn)).prod (snd _ _))
-  · refine hR a (s.drop (p.eval (enc a).length)) ?_
-    simp [hs]
-
-/-- Prepend an existential quantifier over words of length `p |enc a|` to a universal relation. -/
-private theorem exists_append_flip (p : Polynomial ℕ) (h : OnSliceAlt enc false k (q + p) R) :
-    OnSliceAlt enc true (k + 1) q
-      (fun a s => ∃ u : List Bool, u.length = p.eval (enc a).length ∧ R a (s ++ u)) := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine ⟨p :: ps, shiftVerifier enc p V, by simp [hk],
-    computableInPolyTime_shiftVerifier p hV, fun a s hs => ?_⟩
-  simp only [List.map_cons, alternation_true_cons]
-  refine exists_congr fun u => and_congr_right fun hu => ?_
-  have hsu : (s ++ u).length = (q + p).eval (enc a).length := by
-    simp [hs, hu]
-  rw [hR a (s ++ u) hsu]
-  exact alternation_congr fun v => by rw [shiftVerifier_append hu]
-
-/-- Prepend a universal quantifier over words of length `p |enc a|` to an existential relation. -/
-private theorem forall_append_flip (p : Polynomial ℕ) (h : OnSliceAlt enc true k (q + p) R) :
-    OnSliceAlt enc false (k + 1) q
-      (fun a s => ∀ u : List Bool, u.length = p.eval (enc a).length → R a (s ++ u)) := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  refine ⟨p :: ps, shiftVerifier enc p V, by simp [hk],
-    computableInPolyTime_shiftVerifier p hV, fun a s hs => ?_⟩
-  simp only [List.map_cons, alternation_false_cons]
-  refine forall_congr' fun u => imp_congr_right fun hu => ?_
-  have hsu : (s ++ u).length = (q + p).eval (enc a).length := by
-    simp [hs, hu]
-  rw [hR a (s ++ u) hsu]
-  exact alternation_congr fun v => by rw [shiftVerifier_append hu]
-
-/-- Merge an existential quantifier over words of length `p |enc a|` into the leading existential
-block. -/
-private theorem exists_append_same (p : Polynomial ℕ) (h : OnSliceAlt enc true (k + 1) (q + p) R) :
-    OnSliceAlt enc true (k + 1) q
-      (fun a s => ∃ u : List Bool, u.length = p.eval (enc a).length ∧ R a (s ++ u)) := by
-  obtain ⟨ps, V, hk, hV, hR⟩ := h
-  rcases ps with _ | ⟨p₁, ps⟩
-  · cases hk
-  refine ⟨(p + p₁) :: ps, shiftVerifier enc p V, by simpa using hk,
-    computableInPolyTime_shiftVerifier p hV, fun a s hs => ?_⟩
-  simp only [List.map_cons, Polynomial.eval_add, alternation_true_cons]
-  constructor
-  · rintro ⟨u, hu, hRu⟩
-    have hsu : (s ++ u).length = (q + p).eval (enc a).length := by simp [hs, hu]
-    obtain ⟨w₁, hw₁, hA⟩ := (hR a (s ++ u) hsu).1 hRu
-    refine ⟨u ++ w₁, by simp [hu, hw₁], ?_⟩
-    refine hA.mono fun v hv => ?_
-    simpa only [List.append_assoc, shiftVerifier_append hu] using hv
-  · rintro ⟨w, hw, hA⟩
-    let n := p.eval (enc a).length
-    have hu : (w.take n).length = n := by simp [n, hw]
-    have hw₁ : (w.drop n).length = p₁.eval (enc a).length := by simp [n, hw]
-    have hsu : (s ++ w.take n).length = (q + p).eval (enc a).length := by simp [hs, hu, n]
-    refine ⟨w.take n, hu, (hR a (s ++ w.take n) hsu).2 ⟨w.drop n, hw₁, ?_⟩⟩
-    refine hA.mono fun v hv => ?_
-    have htake : (w.take n ++ (w.drop n ++ v)) = w ++ v := by
-      rw [← List.append_assoc, List.take_append_drop]
-    rw [← htake, shiftVerifier_append hu] at hv
-    exact hv
-
-/-- Merge a universal quantifier over words of length `p |enc a|` into the leading universal
-block. -/
-private theorem forall_append_same (p : Polynomial ℕ) (h : OnSliceAlt enc false (k + 1) (q + p) R) :
-    OnSliceAlt enc false (k + 1) q
-      (fun a s => ∀ u : List Bool, u.length = p.eval (enc a).length → R a (s ++ u)) := by
-  have hnot : OnSliceAlt enc (!!false) (k + 1) q
-      (fun a s => ¬∃ u : List Bool, u.length = p.eval (enc a).length ∧ ¬R a (s ++ u)) :=
-    (h.not.exists_append_same p).not
-  exact hnot.congr fun a s _ => by simp
-
-end OnSliceAlt
+/-- Keeping the first `q |enc a|` bits of the word component is polynomial-time. -/
+private theorem polyTimeReducible_take (q : Polynomial ℕ) (C : Set (α × List Bool)) :
+    PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
+      {x : α × List Bool | (x.1, x.2.take (q.eval (enc x.1).length)) ∈ C} C :=
+  ⟨fun x => (x.1, x.2.take (q.eval (enc x.1).length)),
+    (fst _ _).prod (bitsTakeWithInput (snd _ _)
+      ((unary_eval q).comp ((encoding_length enc).comp (fst _ _)))),
+    fun _ => Iff.rfl⟩
 
 /-! ### Kadin's alternating tuple chain and word-tuple predicates -/
 
@@ -376,21 +153,8 @@ theorem kadinChain_mem_BH {m : Polynomial ℕ} {E : Set (α × List Bool)}
   induction r with
   | zero => simp [kadinChain]
   | succ r ih =>
-    have hn : ComputableInPolyTime
-        (fun x : α × List Bool => (r • m).eval (enc x.1).length)
-        (encPair enc encBits) encUnary :=
-      (unary_eval (r • m)).comp ((encoding_length enc).comp (fst _ _))
-    have hdrop : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-        {x : α × List Bool | (x.1, x.2.drop ((r • m).eval (enc x.1).length)) ∈ E} E :=
-      ⟨fun x => (x.1, x.2.drop ((r • m).eval (enc x.1).length)),
-        (fst _ _).prod (bitsDropWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
-    have htake : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-        {x : α × List Bool |
-          (x.1, x.2.take ((r • m).eval (enc x.1).length)) ∈ kadinChain enc m E r}
-        (kadinChain enc m E r) :=
-      ⟨fun x => (x.1, x.2.take ((r • m).eval (enc x.1).length)),
-        (fst _ _).prod (bitsTakeWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
-    exact ⟨_, hdrop.mem_NP hE, _, htake.mem_BH ih, rfl⟩
+    exact ⟨_, (polyTimeReducible_drop (r • m) E).mem_NP hE, _,
+      (polyTimeReducible_take (r • m) _).mem_BH ih, rfl⟩
 
 /-- The `NP` language checking that each of the first `d` consecutive blocks of length `m |enc a|`
 in `z` belongs to `E`. -/
@@ -417,20 +181,8 @@ theorem allWordsIn_mem_NP {m : Polynomial ℕ} {E : Set (α × List Bool)}
   induction d with
   | zero => exact ⟨0, fun _ => true, .const _, by simp [IsVerifier]⟩
   | succ d ih =>
-    have hn : ComputableInPolyTime
-        (fun x : α × List Bool => m.eval (enc x.1).length)
-        (encPair enc encBits) encUnary :=
-      (unary_eval m).comp ((encoding_length enc).comp (fst _ _))
-    have htake : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-        {x : α × List Bool | (x.1, x.2.take (m.eval (enc x.1).length)) ∈ E} E :=
-      ⟨fun x => (x.1, x.2.take (m.eval (enc x.1).length)),
-        (fst _ _).prod (bitsTakeWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
-    have hdrop : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-        {x : α × List Bool | (x.1, x.2.drop (m.eval (enc x.1).length)) ∈ allWordsIn enc m E d}
-        (allWordsIn enc m E d) :=
-      ⟨fun x => (x.1, x.2.drop (m.eval (enc x.1).length)),
-        (fst _ _).prod (bitsDropWithInput (snd _ _) hn), fun _ => Iff.rfl⟩
-    exact inter_mem_NP (htake.mem_NP hE) (hdrop.mem_NP ih)
+    exact inter_mem_NP ((polyTimeReducible_take m E).mem_NP hE)
+      ((polyTimeReducible_drop m _).mem_NP ih)
 
 /-- Unpack a `BH (r + 1)` language `D ⊆ U` (where `U ∈ NP`) into `D = B \ D₁` with
 `D₁ ⊆ B ⊆ U`, so that `D₁ = B \ D ⊆ U \ D`. -/
@@ -479,93 +231,58 @@ private def kadinHardBranch (enc : α ↪ List Bool) (p₁ p₂ m : Polynomial �
     kadinIsHard enc m E r d D₁ a s ∧
     kadinMain enc p₁ p₂ m E d B a s}
 
-/-- `kadinIsHard` is an `OnSliceAlt enc false 2 (r • m)` slice predicate. -/
-private theorem onSliceAlt_kadinIsHard {m : Polynomial ℕ} {E : Set (α × List Bool)}
-    (hE : E ∈ NP (encPair enc encBits)) (r d : ℕ) {D₁ : Set (α × List Bool)}
-    (hD₁ : D₁ ∈ BH (encPair enc encBits) r) :
-    OnSliceAlt enc false 2 (r • m) (kadinIsHard enc m E r d D₁) := by
-  -- `kadinIsHard` is `OnSliceAlt enc false 2 (r • m)`
-  have hLr_compl : (kadinChain enc m E r)ᶜ ∈ PiP 2 (encPair enc encBits) :=
-    (BooleanHierarchy_subset_SigmaP_two_inter_PiP_two
-      (compl_mem_BooleanHierarchy
-        (BH_subset_BooleanHierarchy r (kadinChain_mem_BH hE r)))).2
-  have hD₁_compl : D₁ᶜ ∈ PiP 2 (encPair enc encBits) :=
-    (BooleanHierarchy_subset_SigmaP_two_inter_PiP_two
-      (compl_mem_BooleanHierarchy (BH_subset_BooleanHierarchy r hD₁))).2
-  have hAll : allWordsIn enc m E d ∈ SigmaP 1 (encPair enc encBits) :=
-    SigmaP_one (enc := encPair enc encBits) ▸ allWordsIn_mem_NP hE d
-  have hHard1 : OnSliceAlt enc false 2 (r • m) (fun a s => (a, s) ∉ kadinChain enc m E r) :=
-    OnSliceAlt.of_mem_PiP hLr_compl (r • m)
-  have hAll_drop1 : OnSliceAlt enc true 2 ((r • m + m) + d • m)
-      (fun a sw => (a, sw.drop ((r • m + m).eval (enc a).length)) ∈ allWordsIn enc m E d) :=
-    ((OnSliceAlt.of_mem_SigmaP hAll (d • m)).append_zero).drop (r • m + m)
-  have hAll_drop1' : OnSliceAlt enc (!false) 2 (r • m + (1 + d) • m)
-      (fun a sw => (a, sw.drop ((r • m + m).eval (enc a).length)) ∈ allWordsIn enc m E d) :=
-    hAll_drop1.congr_poly fun n => by simp [add_smul, one_smul, add_assoc]
-  have hD₁_slice : OnSliceAlt enc false 2 (r • m + (1 + d) • m) (fun a sw => (a, sw) ∉ D₁) :=
-    OnSliceAlt.of_mem_PiP hD₁_compl (r • m + (1 + d) • m)
-  have hHard2 : OnSliceAlt enc false 2 (r • m)
-      (fun a s => ∀ w : List Bool, w.length = ((1 + d) • m).eval (enc a).length →
-        (a, w.drop (m.eval (enc a).length)) ∈ allWordsIn enc m E d →
-        (a, s ++ w) ∉ D₁) := by
-    refine ((hAll_drop1'.imp hD₁_slice).forall_append_same ((1 + d) • m)).congr fun a s hs => ?_
-    refine forall_congr' fun w => imp_congr_right fun _ => ?_
-    have hlen : (r • m + m).eval (enc a).length = s.length + m.eval (enc a).length := by
-      rw [Polynomial.eval_add, hs]
-    rw [hlen, ← List.drop_drop, List.drop_left]
-  exact hHard1.and hHard2
-
-/-- `kadinMain` is an `OnSliceAlt enc false 2 (r • m)` slice predicate. -/
-private theorem onSliceAlt_kadinMain {p₁ p₂ m : Polynomial ℕ} {E : Set (α × List Bool)}
-    (hE : E ∈ NP (encPair enc encBits)) (r d : ℕ) {B : Set (α × List Bool)}
-    (hB : B ∈ NP (encPair enc encBits)) :
-    OnSliceAlt enc false 2 (r • m) (kadinMain enc p₁ p₂ m E d B) := by
-  -- `kadinMain` is `OnSliceAlt enc false 2 (r • m)`
-  have hAll : allWordsIn enc m E d ∈ SigmaP 1 (encPair enc encBits) :=
-    SigmaP_one (enc := encPair enc encBits) ▸ allWordsIn_mem_NP hE d
-  have hB' : B ∈ SigmaP 1 (encPair enc encBits) :=
-    SigmaP_one (enc := encPair enc encBits) ▸ hB
-  have hAll_drop2 : OnSliceAlt enc true 1 ((r • m + p₁ + p₂) + d • m)
-      (fun a suw =>
-        (a, suw.drop ((r • m + p₁ + p₂).eval (enc a).length)) ∈ allWordsIn enc m E d) :=
-    (OnSliceAlt.of_mem_SigmaP hAll (d • m)).drop (r • m + p₁ + p₂)
-  have hAll_drop2' : OnSliceAlt enc true 1 ((r • m + p₁) + (p₂ + d • m))
-      (fun a suw =>
-        (a, suw.drop ((r • m + p₁ + p₂).eval (enc a).length)) ∈ allWordsIn enc m E d) :=
-    hAll_drop2.congr_poly fun n => by simp [add_assoc]
-  have hB_slice : OnSliceAlt enc true 1 ((r • m + p₁) + (p₂ + d • m))
-      (fun a suw => (a, suw) ∈ B) :=
-    OnSliceAlt.of_mem_SigmaP hB' ((r • m + p₁) + (p₂ + d • m))
-  have hMain_exists : OnSliceAlt enc true 1 (r • m + p₁)
-      (fun a su₁ => ∃ w : List Bool, w.length = (p₂ + d • m).eval (enc a).length ∧
-        (a, (su₁ ++ w).drop ((r • m + p₁ + p₂).eval (enc a).length)) ∈ allWordsIn enc m E d ∧
-        (a, su₁ ++ w) ∈ B) :=
-    (hAll_drop2'.and hB_slice).exists_append_same (p₂ + d • m)
-  refine (hMain_exists.forall_append_flip p₁).congr fun a s hs => ?_
-  refine forall_congr' fun u₁ => imp_congr_right fun hu₁ => ?_
-  refine exists_congr fun w => and_congr_right fun _ => ?_
-  have hsu₁ : (r • m + p₁ + p₂).eval (enc a).length =
-      (s ++ u₁).length + p₂.eval (enc a).length := by
-    simp [hs, hu₁]
-  rw [hsu₁, ← List.drop_drop, List.drop_left]
-
+/-- The level-`r` hard-prefix branch is in `Σ₃ᴾ`: an existential prefix `s` of `r` words followed
+by the two `Π₂ᴾ` checks `kadinIsHard` and `kadinMain`, whose quantifiers extend `s` in place
+(`Cslib.Complexity.mem_PiP_of_forall_append`, `Cslib.Complexity.mem_SigmaP_of_exists_append`). -/
 private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
     {E : Set (α × List Bool)} (hE : E ∈ NP (encPair enc encBits)) (r d : ℕ)
     {D₁ B : Set (α × List Bool)} (hD₁ : D₁ ∈ BH (encPair enc encBits) r)
     (hB : B ∈ NP (encPair enc encBits)) :
     kadinHardBranch enc p₁ p₂ m E r d D₁ B ∈ SigmaP 3 enc := by
-  -- `kadinIsHard` is `OnSliceAlt enc false 2 (r • m)`
-  have hIsHard := onSliceAlt_kadinIsHard (m := m) hE r d hD₁
-  have hMain := onSliceAlt_kadinMain (p₁ := p₁) (p₂ := p₂) (m := m) hE r d hB
-  -- Combine `kadinIsHard` and `kadinMain`, then existentially quantify over `s`
-  have hBoth : OnSliceAlt enc false 2 (0 + r • m)
-      (fun a s => kadinIsHard enc m E r d D₁ a s ∧ kadinMain enc p₁ p₂ m E d B a s) :=
-    (hIsHard.and hMain).congr_poly fun n => by simp
-  have hBranch : OnSliceAlt enc true 3 0
-      (fun a s => ∃ u : List Bool, u.length = (r • m).eval (enc a).length ∧
-        kadinIsHard enc m E r d D₁ a (s ++ u) ∧ kadinMain enc p₁ p₂ m E d B a (s ++ u)) :=
-    hBoth.exists_append_flip (r • m)
-  exact hBranch.mem_SigmaP
+  have hN (q : Polynomial ℕ) : ComputableInPolyTime
+      (fun x : α × List Bool => q.eval (enc x.1).length) (encPair enc encBits) encUnary :=
+    (unary_eval q).comp ((encoding_length enc).comp (fst _ _))
+  -- the words after the first `q |enc a|` bits are `d` words in `E`
+  have hAll (q : Polynomial ℕ) : {x : α × List Bool |
+      (x.1, x.2.drop (q.eval (enc x.1).length)) ∈ allWordsIn enc m E d} ∈
+        SigmaP 1 (encPair enc encBits) :=
+    SigmaP_one (enc := encPair enc encBits) ▸
+      (polyTimeReducible_drop q _).mem_NP (allWordsIn_mem_NP (m := m) hE d)
+  -- `kadinIsHard`: `s` is outside the chain, and no extension `w` whose last `d` words are in `E`
+  -- reaches `D₁`
+  have hHard : (kadinChain enc m E r)ᶜ ∩ {x : α × List Bool | ∀ w : List Bool,
+      w.length = ((1 + d) • m).eval (enc x.1).length →
+        (x.1, x.2 ++ w) ∈ ({y : α × List Bool |
+          (y.1, y.2.drop ((r • m + m).eval (enc y.1).length)) ∈ allWordsIn enc m E d} ∩ D₁)ᶜ} ∈
+      PiP 2 (encPair enc encBits) :=
+    inter_mem_PiP (BooleanHierarchy_subset_SigmaP_two_inter_PiP_two (compl_mem_BooleanHierarchy
+        (BH_subset_BooleanHierarchy r (kadinChain_mem_BH (m := m) hE r)))).2
+      (mem_PiP_of_forall_append (by decide) (hN _) (compl_mem_PiP_of_mem_SigmaP
+        (inter_mem_SigmaP (SigmaP_subset_SigmaP_succ 1 (hAll _))
+          (BooleanHierarchy_subset_SigmaP_two_inter_PiP_two (BH_subset_BooleanHierarchy r hD₁)).1)))
+  -- `kadinMain`: every `u₁` extends by some `w` whose last `d` words are in `E` and
+  -- `(a, s ++ u₁ ++ w) ∈ B`
+  have hMain : {x : α × List Bool | ∀ u₁ : List Bool, u₁.length = p₁.eval (enc x.1).length →
+      (x.1, x.2 ++ u₁) ∈ {y : α × List Bool | ∃ w : List Bool,
+        w.length = (p₂ + d • m).eval (enc y.1).length ∧ (y.1, y.2 ++ w) ∈ {z : α × List Bool |
+          (z.1, z.2.drop ((r • m + p₁ + p₂).eval (enc z.1).length)) ∈ allWordsIn enc m E d} ∩ B}} ∈
+      PiP 2 (encPair enc encBits) :=
+    mem_PiP_of_forall_append (by decide) (hN _) (SigmaP_subset_PiP_succ 1
+      (mem_SigmaP_of_exists_append le_rfl (hN _)
+        (inter_mem_SigmaP (hAll _) (SigmaP_one (enc := encPair enc encBits) ▸ hB))))
+  convert mem_SigmaP_of_exists (k := 3) (by decide)
+    (PiP_subset_SigmaP_succ 2 (inter_mem_PiP hHard hMain)) (r • m) using 1
+  ext a
+  simp only [kadinHardBranch, kadinIsHard, kadinMain, Set.mem_ofPred_eq, Set.mem_inter_iff,
+    Set.mem_compl_iff, not_and]
+  refine exists_congr fun s => and_congr_right fun hs => and_congr
+    (and_congr_right fun _ => forall_congr' fun w => imp_congr_right fun _ => imp_congr_left ?_)
+    (forall_congr' fun u₁ => imp_congr_right fun hu₁ => exists_congr fun w =>
+      and_congr_right fun _ => and_congr_left' ?_)
+  · rw [show (r • m + m).eval (enc a).length = s.length + m.eval (enc a).length by
+      rw [Polynomial.eval_add, hs], ← List.drop_drop, List.drop_left]
+  · rw [show (r • m + p₁ + p₂).eval (enc a).length = (s ++ u₁).length + p₂.eval (enc a).length by
+      simp [hs, hu₁], ← List.drop_drop, List.drop_left]
 
 /-! ### Downward induction along the Boolean hierarchy -/
 
