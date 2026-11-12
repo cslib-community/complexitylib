@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.P.Closure
-public import CslibFrontier.Computability.Complexity.Classes.P.Finite
+import CslibFrontier.Computability.Complexity.Classes.P.Finite
 
 /-!
 # Immune and bi-immune sets
