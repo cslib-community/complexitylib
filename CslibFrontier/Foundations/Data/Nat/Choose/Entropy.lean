@@ -28,7 +28,9 @@ of a fixed word of length `n`, so this is the entropy bound on the volume of a H
 term with the binomial expansion of `(α + (1 - α)) ^ n = 1`: since `α ≤ (q - 1) (1 - α)`, every
 term of weight `j ≤ α n` satisfies `(q - 1) ^ j exp (-n H_q(α)) ≤ α ^ j (1 - α) ^ (n - j)`. In base
 `q` this reads `Vol_q(n, α n) ≤ q ^ (H_q(α) n)` with `H_q` measured in base `q`, the form in the
-source. The binary case `q = 2` is `Cslib.sum_choose_le_exp_mul_binEntropy`.
+source. The binary case `q = 2` is `Cslib.sum_choose_le_exp_mul_binEntropy`; its integer form, with
+the matching lower bound on a single coefficient, is `Nat.sum_choose_mul_pow_mul_pow_le_pow` in
+`CslibFrontier/Foundations/Data/Nat/Choose/MaxTerm.lean`.
 
 Conversely, a single binomial coefficient is within a factor `n + 1` of the entropy bound:
 `exp (n h(w / n)) ≤ (n + 1) C(n, w)` (`Cslib.exp_mul_binEntropy_le_succ_mul_choose`), because the

@@ -225,8 +225,13 @@ public import CslibFrontier.Algorithms.Lean.StoerWagner.Basic
 public import CslibFrontier.Algorithms.Lean.Submodular.Basic
 public import CslibFrontier.Algorithms.Lean.Submodular.Greedy
 public import CslibFrontier.Algorithms.Lean.Submodular.MatroidGreedy
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Expectation
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.ExpectedCost
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Parameters
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Repetition
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Basic
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Kasai
@@ -5576,6 +5581,7 @@ public import CslibFrontier.Foundations.Data.Nat.CeilQuarter
 public import CslibFrontier.Foundations.Data.Nat.Choose
 public import CslibFrontier.Foundations.Data.Nat.Choose.Central
 public import CslibFrontier.Foundations.Data.Nat.Choose.Entropy
+public import CslibFrontier.Foundations.Data.Nat.Choose.MaxTerm
 public import CslibFrontier.Foundations.Data.Nat.Choose.Multichoose
 public import CslibFrontier.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import CslibFrontier.Foundations.Data.Nat.Choose.Real

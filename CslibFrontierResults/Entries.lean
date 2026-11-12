@@ -14,6 +14,7 @@ import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
+import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
@@ -3736,6 +3737,22 @@ register_result "kosaraju-scc" where
     order at exact cost 3 * (|vs| + ∑ v, |adj v|) for duplicate-free vertex lists covering V, \
     plus O(|V|) component-index lookup. Visited-set membership, insertion, and function-update \
     array steps are counted as unit-cost operations."
+
+register_result "integer-3sum-subquadratic-subset-convolution-timem" where
+  title := "Truly subquadratic randomized integer 3SUM via selected-entries subset convolution"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Corollary 2.4", locator := "Section 2.2, p. 9" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.corollary_2_4
+  ]
+  scope := "Balanced case only (|A|, |B|, |C| <= n = 2^(100 m), duplicate-free A and B, entries \
+    below n^kappa, one budget for preprocessing and queries), TimeM unit-cost model: worst-case \
+    cost R (T + n) + n with T = O(n^(2 - 1/100)) for every choice of the random numbers, \
+    one-sided error, miss probability (1/5)^R per query. Not covered: the paper's unbalanced \
+    form with error O(1/N) and per-query term |C| n^0.965, the 3SUM-indexing form, and the \
+    exponent 1.965. Sampling and the step counter are uncharged."
 
 register_result "integer-3sum-via-subset-convolution-timem" where
   title := "Hashing reduction from integer 3SUM to selected entries of ranked subset convolution"

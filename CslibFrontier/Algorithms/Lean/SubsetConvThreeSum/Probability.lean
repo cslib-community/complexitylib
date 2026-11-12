@@ -112,6 +112,51 @@ theorem card_seeds_left_right (a b : ℕ) {x y : ℕ} (hx : x < p) (hy : y < p) 
   · intro ξ _
     rfl
 
+/-- **One target hash value** `h c = z` below `p` is hit by exactly `(p - 1) p` seeds: `ξ` and `α`
+are free, and `β` is determined. -/
+theorem card_seeds_target (c : ℕ) {z : ℕ} (hz : z < p) :
+    #((seeds p).filter fun s => s.target c = z) = (p - 1) * p := by
+  have h : #((seeds p).filter fun s => s.target c = z) =
+      #((univ.filter fun ξ : ZMod p => ξ ≠ 0) ×ˢ (univ : Finset (ZMod p))) := by
+    refine card_bij' (fun s _ => (s.ξ, s.α)) (fun x _ => ⟨x.1, x.2, z - c * x.1 - x.2⟩)
+      ?_ ?_ ?_ ?_
+    · intro s hs
+      exact mem_product.mpr ⟨mem_filter.mpr ⟨mem_univ _, mem_seeds.mp (mem_filter.mp hs).1⟩,
+        mem_univ _⟩
+    · intro x hx
+      refine mem_filter.mpr ⟨mem_seeds.mpr (mem_filter.mp (mem_product.mp hx).1).2, ?_⟩
+      change ((c : ZMod p) * x.1 + x.2 + (z - c * x.1 - x.2)).val = z
+      rw [show (c : ZMod p) * x.1 + x.2 + (z - c * x.1 - x.2) = z by ring,
+        ZMod.val_natCast_of_lt hz]
+    · intro s hs
+      have hβ := eq_natCast_of_val_eq (mem_filter.mp hs).2
+      obtain ⟨ξ, α, β⟩ := s
+      change (c : ZMod p) * ξ + α + β = z at hβ
+      change (⟨ξ, α, z - c * ξ - α⟩ : Seed p) = ⟨ξ, α, β⟩
+      rw [Seed.mk.injEq]
+      exact ⟨rfl, rfl, by linear_combination (-1 : ZMod p) * hβ⟩
+    · intro x _
+      rfl
+  rw [h, card_product, card_ne_zero_zmod, card_univ, ZMod.card]
+
+/-- The numbers below `2 ^ d` with `k` binary digits `1`: `d choose k`. -/
+theorem card_ranked (d k : ℕ) : #((range (2 ^ d)).filter fun x => Ranked d k x) = d.choose k := by
+  have : d.choose k = #((univ : Finset (Fin d)).powersetCard k) := by
+    rw [card_powersetCard, card_univ, Fintype.card_fin]
+  rw [this]
+  · symm
+    refine card_bij' (fun S _ => (maskIndex S : ℕ)) (fun x _ => maskSet d x) ?_ ?_ ?_ ?_
+    · intro S hS
+      refine mem_filter.mpr ⟨mem_range.mpr (maskIndex S).isLt, (maskIndex S).isLt, ?_⟩
+      rw [show maskSet d (maskIndex S : ℕ) = S from maskSet_maskIndex S]
+      exact (mem_powersetCard.mp hS).2
+    · intro x hx
+      exact mem_powersetCard.mpr ⟨subset_univ _, (mem_filter.mp hx).2.2⟩
+    · intro S _
+      exact maskSet_maskIndex S
+    · intro x hx
+      exact congrArg Fin.val (maskIndex_maskSet ⟨x, (mem_filter.mp hx).2.1⟩)
+
 /-- **Three hash values**, two of them left hashes of elements in different residue classes, are
 hit by at most one seed. -/
 theorem card_seeds_left_right_left_le {a a' : ℕ} (ha : (a : ZMod p) ≠ a') (b x y z : ℕ) :
