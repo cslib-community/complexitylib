@@ -17,7 +17,9 @@ into another authored manifest.
 The [Arora–Barak 2007 draft audit](arora-barak-2007.md) records a source-pinned chapter-level
 coverage comparison, including missing endpoints, partial matches and source/model problems.
 Its Chapter 14 record includes a checked degree obstruction to the draft's literal
-circuit-to-determinant statement; it is not a claim of book-wide coverage.
+circuit-to-determinant statement. Chapters 16–17 distinguish finite pseudorandomness/coding
+results from uniform machine bounds and general-hardness endpoints; this is not a claim of
+book-wide coverage.
 
 ## Authoring
 
