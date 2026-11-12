@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTable
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTableVariants
+import CslibFrontier.Computability.Complexity.Reduction.TruthTable.Composition
 import CslibFrontier.Tactic.LogSpace
 import CslibFrontier.Foundations.Data.List.Filter
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
@@ -481,7 +482,6 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
     (hAB : LogSpaceKTruthTableReducible k₁ encA encB A B)
     (hBC : LogSpaceKTruthTableReducible k₂ encB encC B C) :
     LogSpaceKTruthTableReducible (k₁ * k₂) encA encC A C := by
-  classical
   obtain ⟨r₁, q₁, d₁, hr₁, hq₁, hd₁, hr₁k, hA⟩ := hAB
   obtain ⟨r₂, q₂, d₂, hr₂, hq₂, hd₂, hr₂k, hB⟩ := hBC
   let r (a : α) : ℕ := r₁ a * k₂
@@ -506,41 +506,20 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
     have hbound : ∀ p : α × List Bool, r₁ p.1 ≤ k₁ := fun p => hr₁k p.1
     simp only [d]
     logspace
-  refine ⟨r, q, d, hr, hq, hd, fun a => Nat.mul_le_mul_right k₂ (hr₁k a), fun a => ?_⟩
-  rw [hA a, truthTableAnswers_eq_map_range]
-  dsimp only [d]
-  suffices hmap :
-      ((List.range (r₁ a)).map fun i =>
-          innerAns ((a, truthTableAnswers (q ⁻¹' C) r a), i)) =
-        (List.range (r₁ a)).map fun i => decide ((a, i) ∈ q₁ ⁻¹' B) by
-    rw [hmap]
-  refine List.map_congr_left fun i hi => ?_
-  have hi_lt : i < r₁ a := List.mem_range.mp hi
-  have hslice_eq :
-      ((truthTableAnswers (q ⁻¹' C) r a).drop (i * k₂)).take (r₂ (q₁ (a, i))) =
-        truthTableAnswers (q₂ ⁻¹' C) r₂ (q₁ (a, i)) := by
-    rw [truthTableAnswers_eq_map_range, truthTableAnswers_eq_map_range]
-    have h_end : i * k₂ + r₂ (q₁ (a, i)) ≤ r a := by
-      calc i * k₂ + r₂ (q₁ (a, i))
-          ≤ i * k₂ + k₂ := Nat.add_le_add_left (hr₂k _) _
-        _ = (i + 1) * k₂ := by ring
-        _ ≤ r₁ a * k₂ := Nat.mul_le_mul_right k₂ (Nat.succ_le_of_lt hi_lt)
-    refine List.ext_getElem ?_ fun j hj₁ hj₂ => ?_
-    · simp only [List.length_take, List.length_drop, List.length_map, List.length_range]
-      omega
-    · simp only [List.length_map, List.length_range] at hj₂
-      have hk₂_pos : 0 < k₂ := lt_of_le_of_lt (Nat.zero_le j) (lt_of_lt_of_le hj₂ (hr₂k _))
-      have hj_lt_k₂ : j < k₂ := lt_of_lt_of_le hj₂ (hr₂k _)
-      have hm_lt_r : i * k₂ + j < r a := lt_of_lt_of_le (Nat.add_lt_add_left hj₂ _) h_end
-      have hm_le_M : i * k₂ + j ≤ k₁ * k₂ :=
-        le_trans (le_of_lt hm_lt_r) (Nat.mul_le_mul_right k₂ (hr₁k a))
-      have hdiv_eq : (i * k₂ + j) / k₂ = i := by
-        rw [mul_comm i k₂, Nat.mul_add_div hk₂_pos, Nat.div_eq_of_lt hj_lt_k₂, add_zero]
-      have hmod_eq : (i * k₂ + j) % k₂ = j := by
-        rw [mul_comm i k₂, Nat.mul_add_mod, Nat.mod_eq_of_lt hj_lt_k₂]
-      simp [q, Nat.min_eq_left hm_le_M, hdiv_eq, hmod_eq]
-  simp only [innerAns, hslice_eq]
-  exact Bool.eq_iff_iff.mpr (by simpa using (hB (q₁ (a, i))).symm)
+  -- Block `i` of the composite queries lists the inner queries of `q₁ (a, i)`.
+  have hQ : ∀ a, ∀ i < r₁ a, ∀ j < r₂ (q₁ (a, i)), q (a, i * k₂ + j) = q₂ (q₁ (a, i), j) := by
+    intro a i hi j hj
+    have hj : j < k₂ := hj.trans_le (hr₂k _)
+    have hle : i * k₂ + j ≤ k₁ * k₂ :=
+      calc i * k₂ + j ≤ (i + 1) * k₂ := by rw [Nat.succ_mul]; omega
+        _ ≤ k₁ * k₂ := Nat.mul_le_mul_right _ ((Nat.succ_le_of_lt hi).trans (hr₁k a))
+    have hdiv : (i * k₂ + j) / k₂ = i := by
+      rw [mul_comm, Nat.mul_add_div (Nat.zero_lt_of_lt hj), Nat.div_eq_of_lt hj, add_zero]
+    have hmod : (i * k₂ + j) % k₂ = j := by
+      rw [mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hj]
+    simp only [q, Nat.min_eq_left hle, hdiv, hmod]
+  exact ⟨r, q, d, hr, hq, hd, fun a => Nat.mul_le_mul_right k₂ (hr₁k a),
+    mem_iff_truthTableCompCombiner (M := fun _ => k₂) hA hB (fun _ _ _ => hr₂k _) hQ⟩
 
 /-- **Logspace bounded-truth-table reductions compose.** -/
 @[trans]

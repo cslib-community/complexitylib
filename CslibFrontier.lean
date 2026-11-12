@@ -2654,6 +2654,7 @@ public import CslibFrontier.Computability.Complexity.Reduction.ManyOne
 public import CslibFrontier.Computability.Complexity.Reduction.Nontrivial
 public import CslibFrontier.Computability.Complexity.Reduction.OneOne
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTable
+public import CslibFrontier.Computability.Complexity.Reduction.TruthTable.Composition
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTableVariants
 public import CslibFrontier.Computability.Complexity.Reduction.Turing
 public import CslibFrontier.Computability.Complexity.Reduction.TuringAutoreducible
