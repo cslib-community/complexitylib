@@ -1152,6 +1152,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder.Ordered
 public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder.Ordered.Parity
 public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder.Parity
 public import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure
+public import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure.Certificate
 public import CslibFrontier.Computability.Circuit.Boolean.Formula
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
@@ -3801,6 +3802,7 @@ public import CslibFrontier.Computability.QueryComplexity.AndOrTree.Randomized
 public import CslibFrontier.Computability.QueryComplexity.ApproximateDegree
 public import CslibFrontier.Computability.QueryComplexity.ApproximateDegree.Or
 public import CslibFrontier.Computability.QueryComplexity.BernsteinVazirani
+public import CslibFrontier.Computability.QueryComplexity.CertificateComposition
 public import CslibFrontier.Computability.QueryComplexity.Degree
 public import CslibFrontier.Computability.QueryComplexity.DeutschJozsa
 public import CslibFrontier.Computability.QueryComplexity.Huang

@@ -71,11 +71,25 @@ this library, while the source axioms do not force their measure to be zero.
 `FormalComplexityMeasure.card_le_four_mul_card f hc` gives Lemma 22.2: if `c ≤ μ.measure f`,
 then `Fintype.card (BooleanFunction n) ≤ 4 * card {g | c ≤ 4 * μ.measure g}`. This is the
 uniform fraction of all truth tables, with denominators cleared over natural numbers; it
-also applies when `n = 0`. Theorem 22.3's stronger density bound remains open under
+also applies when `n = 0`. The corrected stronger density bound remains open under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 Run `scripts/build.sh CslibFrontierTests.FormalComplexityMeasure` for
 [clients](../../CslibFrontierTests/FormalComplexityMeasure.lean) using an asymmetric measure,
 internal negations, zero inputs, and the constant-formula counterexample.
+
+For a nontrivial measure instance, import
+[FormalComplexityMeasure.Certificate](../../CslibFrontier/Computability/Circuit/Boolean/FormalComplexityMeasure/Certificate.lean).
+The shared [certificate-composition rules](../../CslibFrontier/Computability/QueryComplexity/CertificateComposition.lean)
+include `IsCertificate.comp₂` for union certificates and `certificateComplexityAt_comp₂_le`
+for the corresponding subadditive size bound.
+`acceptedCertificateMeasure a` is `certificateComplexityAt f a` when `f a = true`, and zero
+otherwise. Its singleton indicator has measure `n`, but at least half of all truth tables have
+measure zero. The 2007 draft's Theorem 22.3 therefore cannot hold as an unconditional positive
+near-total-density bound. The published Razborov–Rudich Theorem 5.1(b) (printed p. 33) retains an
+additive `-n` after the scaled witness measure; that corrected endpoint remains unproved here.
+Run `scripts/build.sh CslibFrontierTests.FormalComplexityMeasureCertificate` for
+[checked examples](../../CslibFrontierTests/FormalComplexityMeasureCertificate.lean), including
+concrete AND/OR certificate sizes and the growing singleton family.
 
 ## Boolean bases and related models
 
