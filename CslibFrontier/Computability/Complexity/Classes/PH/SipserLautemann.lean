@@ -468,8 +468,8 @@ theorem BPP_subset_SigmaP_two : BPP enc ⊆ SigmaP 2 enc := by
 
 /-- **The Sipser–Gács–Lautemann theorem (`Π₂` form)**: every problem in `BPP` lies in `Π₂`,
 obtained from `BPP_subset_SigmaP_two` by complement closure of `BPP` and quantifier duality. -/
-theorem BPP_subset_PiP_two : BPP enc ⊆ PiP 2 enc := fun A hA => by
-  simpa using compl_mem_PiP_of_mem_SigmaP (BPP_subset_SigmaP_two (compl_mem_BPP hA))
+theorem BPP_subset_PiP_two : BPP enc ⊆ PiP 2 enc := fun _ hA =>
+  compl_mem_SigmaP_iff.mp (BPP_subset_SigmaP_two (compl_mem_BPP hA))
 
 /-- **The Sipser–Gács–Lautemann theorem**: `BPP ⊆ Σ₂ ∩ Π₂` [Sipser][Sipser1983],
 [Lautemann][Lautemann1983], [Arora and Barak, Theorem 7.15][AroraBarak09]. -/

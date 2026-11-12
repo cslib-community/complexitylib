@@ -117,11 +117,34 @@ The [projected-rectangle client](../../CslibFrontierTests/CommunicationOneOutRec
 checks actual equality computation at depth two, singleton/empty sampling edges and a
 nonempty light-atom instance. Run
 `scripts/build.sh CslibFrontierTests.CommunicationOneOutRectangle` from the repository root.
-These facts do not yet select a coordinate and background with a large enough forcing rectangle.
 
-This is infrastructure and the upper-bound portion of submission 865. The large solvable
-rectangle bound, minimax/majority construction, headline lower bounds and later formula/core
-results remain open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
+[OneOutLargeRectangle](../../CslibFrontier/Computability/Communication/OneOutLargeRectangle.lean)
+proves the paper's Lemma 5.2. `exists_large_solvable_rectangle` takes a protocol `p`
+for `OneOut.Relation R`, with `R` total on finite types, and distributions `μ` and `ν`.
+It returns sets `A'`, `B'` and a protocol of depth at most
+`max p.depth (Nat.clog 2 (Fintype.card Z))` that solves `R` on `A' × B'`, with
+`μ A' + ν B' ≥ 1 + 1/k²` in real probability units. The theorem holds for every such `p`,
+not only an optimal one. If an atom has mass at least `1/k²`, the other player announces a
+valid answer with `Protocol.exists_run_eq_left` or `exists_run_eq_right` from
+[Announce](../../CslibFrontier/Computability/Communication/Announce.lean).
+Otherwise `hybridGoal p j x y` is the source's leaf set `L_j`, with coordinates numbered
+from `0`, and `hybrid μ ν p j` is the probability that Alice can force it.
+`exists_hybrid_step` finds a step gaining `1/k²`. `hybrid_succ_sub_hybrid` writes that step
+as an average of forcing-rectangle advantages over the background `stepBackground`.
+`exists_large_forcing_rectangle` then fixes a background at least as good as the average.
+The averaging steps are general probability facts.
+[Product.Resample](../../CslibFrontier/Probability/Product/Resample.lean) redraws one
+coordinate of a product (`sum_pi_mul_update`), and
+[Minimax](../../CslibFrontier/Probability/Minimax.lean) finds a possible outcome at least
+the mean (`exists_mem_support_sum_mul_le`). The
+[large-rectangle client](../../CslibFrontierTests/CommunicationOneOutLargeRectangle.lean)
+applies the lemma to equality on two distinct bits, a heavy-atom case. It also applies the
+light-atom case to uniform inputs on `Fin 4` with `k = 2`, at the boundary mass `1/4`. Run
+`scripts/build.sh CslibFrontierTests.CommunicationOneOutLargeRectangle` to check it.
+
+This is infrastructure, the upper-bound portion and Lemma 5.2 of submission 865. The
+minimax/majority construction, headline lower bounds and later formula/core results remain
+open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
 
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).
 
@@ -414,7 +437,24 @@ Tanner codes on general `d`-regular bipartite spectral expanders sit in [Expande
 
 The Gilbert–Varshamov bound for linear codes comes from a union bound over a random parity-check matrix: if `2 ^ m > V`, where `V = |B|` counts the nonzero words of weight less than `d`, some `m × n` matrix over `𝔽₂` kills no word of `B`. Saglam's STOC 2027 submission 1516 [saglam27][saglam27] chooses `2 ^ m ≈ V / (c n)` instead, about `log₂ n` fewer rows. It then asks only that no *odd circuit* of `B` lies in the kernel, and appends one more row. [Code/OddCircuit](../../CslibFrontier/Foundations/Data/Code/OddCircuit.lean) formalizes the deterministic part over `ι → ZMod 2`. `IsZeroSumCircuit S` says that `S` is nonempty, sums to zero and has no nonempty proper zero-sum subset; over `𝔽₂` these are the minimal dependent sets. Its fields are reached through `isZeroSumCircuit_iff` and `IsZeroSumCircuit.sum_eq_zero`. If every zero-sum subset of a finite set `K` is even, `exists_dotProduct_eq_one_of_even` gives a row `v` with `v ⬝ᵥ x = 1` on all of `K`. An odd zero-sum set contains an odd circuit (`exists_isZeroSumCircuit_odd`), and a circuit has rank at least `|S| - 1` (`card_sub_one_le_finrank_span`). So at most a `2 ^ (-m (|S| - 1))` fraction of `m`-row matrices kill it (`card_filter_forall_mulVec_eq_zero_mul_le`). Counting matrices gives `exists_mulVec_ne_zero_of_sum_lt_one`: if the odd circuits of `B` satisfy `∑_S (2 ^ m)⁻¹ ^ (|S| - 1) < 1`, some `(m + 1)`-row matrix maps all of `B` to nonzero vectors. `exists_le_minDist_parityCheckCode_of_sum_lt_one` restates this for `B = {x ≠ 0 | hammingNorm x < d}` as a `parityCheckCode` with `d ≤ minDist` and at least `2 ^ (n - (m + 1))` words. The argument is counting, not a `PMF`: the sum is the expected number of odd circuits in the kernel.
 
-[Code/OddCircuitFourier](../../CslibFrontier/Foundations/Data/Code/OddCircuitFourier.lean) bounds that sum. `charSum B y = ∑_{x ∈ B} (-1) ^ (y ⬝ᵥ x)` is the unnormalized Fourier transform of the indicator of `B`, so Saglam's `μ̂(y)` is `charSum B y / |B|`. Character orthogonality (`Matrix.sum_neg_one_pow_val_dotProduct` from [Lindsey](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/Lindsey.lean)) counts zero-sum `ℓ`-tuples (`card_filter_sum_eq_zero_mul_two_pow`). Each zero-sum `ℓ`-set gives `ℓ!` of them (`card_filter_sum_eq_zero_mul_factorial_le`). The power series of `sinh` then gives `sum_odd_circuit_le_sum_sinh_sub_self`: for `0 ∉ B` and `q > 0`, `∑_S q⁻¹ ^ (|S| - 1) ≤ (q / 2 ^ n) ∑_y s(charSum B y / q)` with `s(z) = sinh z - z`. The paper's continuous-time random walk only proves this identity and is not modelled. `sinh_sub_self_le` is the three-range estimate `s(z) ≤ (sinh 1 - 1) |z| ^ 3 + [z > 1] e ^ z / 2`. It gives the moment-and-tail bound `sum_odd_circuit_le_moment_add_tail`, and in the paper's normalization `exists_le_minDist_parityCheckCode_of_moment_tail`. With `τ = V / 2 ^ m`, if `(V / τ) ((sinh 1 - 1) τ ^ 3 𝔼_y |μ̂ y| ^ 3 + (e ^ τ / 2) Pr_y[μ̂ y > 1 / τ]) < 1`, there is a distance-`d` linear code with `m + 1` parity checks. This is the reduction of the paper's Section 3.3 to its Lemma 3.1. The Fourier estimates of Lemma 3.1 (from Kirshner–Samorodnitsky's Krawtchouk moment and tail bounds), the choice of `m` and the asymptotic theorem `|C| ≥ c_ε n 2 ^ n / V` for `log n ≪ d ≤ (1/2 - ε) n` remain open; see [#4666](https://github.com/cslib-community/cslib-frontier/issues/4666). The [checked examples](../../CslibFrontierTests/Code/OddCircuit.lean) build the extension row for a standard basis and derive the even-weight code (`d = 2`, `m = 0`) from the odd-circuit theorem. They also check that the moment-and-tail hypothesis holds for `n = 4`, `d = 2`, `m = 4`.
+[Code/OddCircuitFourier](../../CslibFrontier/Foundations/Data/Code/OddCircuitFourier.lean) bounds that sum. `charSum B y = ∑_{x ∈ B} (-1) ^ (y ⬝ᵥ x)` is the unnormalized Fourier transform of the indicator of `B`, so Saglam's `μ̂(y)` is `charSum B y / |B|`. Character orthogonality (`Matrix.sum_neg_one_pow_val_dotProduct` from [Lindsey](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/Lindsey.lean)) counts zero-sum `ℓ`-tuples (`card_filter_sum_eq_zero_mul_two_pow`). Each zero-sum `ℓ`-set gives `ℓ!` of them (`card_filter_sum_eq_zero_mul_factorial_le`). The power series of `sinh` then gives `sum_odd_circuit_le_sum_sinh_sub_self`: for `0 ∉ B` and `q > 0`, `∑_S q⁻¹ ^ (|S| - 1) ≤ (q / 2 ^ n) ∑_y s(charSum B y / q)` with `s(z) = sinh z - z`. The paper's continuous-time random walk only proves this identity and is not modelled. `sinh_sub_self_le` is the three-range estimate `s(z) ≤ (sinh 1 - 1) |z| ^ 3 + [z > 1] e ^ z / 2`. It gives the moment-and-tail bound `sum_odd_circuit_le_moment_add_tail`, and in the paper's normalization `exists_le_minDist_parityCheckCode_of_moment_tail`. With `τ = V / 2 ^ m`, if `(V / τ) ((sinh 1 - 1) τ ^ 3 𝔼_y |μ̂ y| ^ 3 + (e ^ τ / 2) Pr_y[μ̂ y > 1 / τ]) < 1`, there is a distance-`d` linear code with `m + 1` parity checks. This is the reduction of the paper's Section 3.3 to its Lemma 3.1. The [checked examples](../../CslibFrontierTests/Code/OddCircuit.lean) build the extension row for a standard basis and derive the even-weight code (`d = 2`, `m = 0`) from the odd-circuit theorem. They also check that the moment-and-tail hypothesis holds for `n = 4`, `d = 2`, `m = 4`.
+
+[Code/PuncturedBallFourier](../../CslibFrontier/Foundations/Data/Code/PuncturedBallFourier.lean) handles Lemma 3.1, the Fourier estimates for the punctured ball `B = {x ≠ 0 | hammingNorm x < w + 1}`. `PuncturedBallFourierBounds n w C` states both: `𝔼_y |μ̂ y| ^ 3 ≤ C / (V n ^ 3)` and `Pr_y[|μ̂ y| > 1 / n] ≤ 2 ^ (-n + 2 n (log₂ n / w) log₂ (e w / log₂ n))`. Saglam derives them in Appendix A from Kirshner and Samorodnitsky's Corollary 1.4 and Theorem 1.5 [kirshnersamorodnitsky21][kirshnersamorodnitsky21]. Those two results are **not proved**. `KSThirdMomentBound n w` and `KSTailBound n w` state them as hypotheses, in Saglam's specialization converted to nats (`ksGamma`, `ksTailExponent`). A polynomial of degree at most `w` is given by Fourier coefficients that vanish above weight `w`, and the hypotheses are only required for `0 < w` and `2 w < n`. The restriction `0 < w` and a strict tail event are needed, because KS Theorem 1.5 as printed fails at degree `0` (`f ≡ 1`). An independent review checked Saglam's specializations against KS (Proposition 2.6 at `p = 3`, §2.1.1–2.1.2); see [kirshnersamorodnitsky21][kirshnersamorodnitsky21]. Everything else in the appendix is proved:
+
+- Parseval, `sum_charSum_sq`;
+- `γ(ρ) ≥ c ρ` on `(0, 1/2 - ε]`, `exists_mul_le_ksGamma`. This is weaker than Saglam's `(ρ/2) log₂ (1/ρ)` asymptotics, but enough because `w ≥ K log₂ n`;
+- `T(ρ, y) ≤ h(ρ) - 2 ρ y`, `ksTailExponent_le`;
+- the binomial lower bound `exp (n h(w / n)) ≤ (n + 1) C(n, w)` and `h(y) ≤ y log (e / y)` in [Nat/Choose/Entropy](../../CslibFrontier/Foundations/Data/Nat/Choose/Entropy.lean).
+
+`exists_puncturedBallFourierBounds_of_ks` assembles them into Lemma 3.1 with `C = 2`, for all `n ≥ N` and `K log₂ n ≤ w ≤ (1/2 - ε) n`.
+
+[Code/OddCircuitAsymptotic](../../CslibFrontier/Foundations/Data/Code/OddCircuitAsymptotic.lean) chooses `m` and proves the main theorem with explicit quantifiers. `exists_parityCheckCode_of_fourierBounds` assumes Lemma 3.1 in that form for some `C`, `K₀`, `N₀`. It gives `c > 0`, `K` and `N` such that for all `n ≥ N` and `K log₂ n ≤ d ≤ (1/2 - ε) n`, some parity-check matrix `H` has `d ≤ minDist` and `c n 2 ^ n ≤ |C| ∑_{1 ≤ i < d} C(n, i)`. The size of the punctured ball is `card_filter_ne_zero_hammingNorm_lt` in [Code/BallVolume](../../CslibFrontier/Foundations/Data/Code/BallVolume.lean). The constant is `c = (log 2 - h(1/2 - ε)) / 8`, from Saglam's choice `τ = V / 2 ^ m ∈ [R / 4, R / 2)`, that is `ζ = 1/2`. The sharper `lim inf 4 V |C| / (2 ^ n ln (2 ^ n / V)) ≥ 1` is not formalized. `exists_parityCheckCode_of_ks` chains the two modules. It takes the Kirshner–Samorodnitsky hypotheses for all sufficiently large `n`, so the theorem is conditional on exactly those two imported statements. Lemma 3.1 enters only through its two inequalities. Remark 3.2 (linear independence of the kernel) and a proof of the Kirshner–Samorodnitsky bounds themselves, via Krawtchouk polynomials, remain open; see [#4666](https://github.com/cslib-community/cslib-frontier/issues/4666). The [checked examples](../../CslibFrontierTests/Code/OddCircuitAsymptotic.lean) cover:
+
+- the size of a small punctured ball;
+- an instance of the binomial lower bound;
+- the exponents at sample points;
+- Parseval for a singleton;
+- the main theorem at `ε = 1/4`.
 
 ## Channel coding on the binary symmetric channel
 
@@ -457,6 +497,7 @@ The surveyed lower bounds concern total Boolean functions or explicitly stated r
 [fmptw15]: ../sources.md#fmptw15
 [gkst06]: ../sources.md#gkst06
 [guruswamirudrasudan25]: ../sources.md#guruswamirudrasudan25
+[kirshnersamorodnitsky21]: ../sources.md#kirshnersamorodnitsky21
 [kaibelweltge15]: ../sources.md#kaibelweltge15
 [kdw04]: ../sources.md#kdw04
 [lamportshostakpease1982]: ../sources.md#lamportshostakpease1982

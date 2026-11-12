@@ -855,10 +855,8 @@ theorem PiP_three_subset_SigmaP_three_of_coBH_subset_BH {k : ℕ}
 encoding `encPair enc encBits`, then `SigmaP 3 enc = PiP 3 enc`. -/
 theorem SigmaP_three_eq_PiP_three_of_coBH_subset_BH {k : ℕ}
     (h : coBH (encPair enc encBits) k ⊆ BH (encPair enc encBits) k) :
-    SigmaP 3 enc = PiP 3 enc := by
-  have hsub := PiP_three_subset_SigmaP_three_of_coBH_subset_BH h
-  refine Set.Subset.antisymm (fun A hA => ?_) hsub
-  simpa using compl_mem_PiP_of_mem_SigmaP (hsub (compl_mem_PiP_of_mem_SigmaP hA))
+    SigmaP 3 enc = PiP 3 enc :=
+  (PiP_eq_SigmaP_of_PiP_subset_SigmaP (PiP_three_subset_SigmaP_three_of_coBH_subset_BH h)).symm
 
 /-- **Kadin's theorem** [Kadin][Kadin1988]: if `coBH encBits k ⊆ BH encBits k`, the polynomial
 hierarchy collapses to `Σ₃ᴾ`. The deeper collapse into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, due to later
@@ -900,9 +898,8 @@ theorem PiP_three_subset_SigmaP_three_of_coDP_subset_DP
 DP (encPair enc encBits)`, then `SigmaP 3 enc = PiP 3 enc`. -/
 theorem SigmaP_three_eq_PiP_three_of_coDP_subset_DP
     (h : coDP (encPair enc encBits) ⊆ DP (encPair enc encBits)) :
-    SigmaP 3 enc = PiP 3 enc := by
-  rw [← coBH_two, ← BH_two] at h
-  exact SigmaP_three_eq_PiP_three_of_coBH_subset_BH h
+    SigmaP 3 enc = PiP 3 enc :=
+  (PiP_eq_SigmaP_of_PiP_subset_SigmaP (PiP_three_subset_SigmaP_three_of_coDP_subset_DP h)).symm
 
 /-- **Kadin's theorem for `coDP ⊆ DP`** [Kadin][Kadin1988]: if `coDP encBits ⊆ DP encBits`,
 then `PH = Σ₃ᴾ`. -/
@@ -935,7 +932,7 @@ theorem DPComplete.DP_eq_coDP_of_mem_coDP {encB : β ↪ List Bool} {B : Set β}
     (hB : DPComplete encB B) (h : B ∈ coDP encB) (enc : α ↪ List Bool) :
     DP enc = coDP enc := by
   have hsub := hB.coDP_subset_DP_of_mem_coDP h enc
-  exact Set.Subset.antisymm (fun A hA => hsub (by simpa [coDP] using hA)) hsub
+  exact Set.Subset.antisymm (fun _ hA => hsub (compl_mem_coDP_iff.mpr hA)) hsub
 
 /-- **Kadin's theorem for a `DP`-complete problem** [Kadin][Kadin1988]: if a `DP`-complete problem
 belongs to `coDP`, then `PH = Σ₃ᴾ`. -/
