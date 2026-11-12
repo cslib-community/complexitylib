@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Order.Filter.AtTopBot.Basic
+import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import Mathlib.Data.Finset.Lattice.Fold
 
 /-!
@@ -26,8 +27,9 @@ a bound of the shape `t₁ n ≤ C * t₂ n + C` for all `n` puts the class of `
   constants of a class.
 
 It also records the affine bound `(n + 1) ^ k ≤ 2 ^ k * n ^ k + 2 ^ k`
-(`Nat.add_one_pow_le_two_pow_mul_add`), which makes polynomial bounds in `n + 1` and in `n`
-interchangeable in such classes.
+(`Nat.add_one_pow_le_two_pow_mul_add`), the case `c = 1` of `Nat.mul_add_one_pow_le_two_pow` in the
+shape `C * g n + C`, which makes polynomial bounds in `n + 1` and in `n` interchangeable in such
+classes.
 
 ## Main results
 
@@ -74,13 +76,12 @@ theorem mul_add_le_mul_add_of_le_mul_add {a b c d : ℕ} (h : a ≤ c * b + d) (
   omega
 
 /-- Shifting the base of a power by one costs a constant factor and summand:
-`(n + 1) ^ k ≤ 2 ^ k * n ^ k + 2 ^ k`. -/
+`(n + 1) ^ k ≤ 2 ^ k * n ^ k + 2 ^ k`, the shape `C * g n + C` of
+`Nat.mul_add_one_pow_le_two_pow 1 k n`. -/
 theorem add_one_pow_le_two_pow_mul_add (k n : ℕ) : (n + 1) ^ k ≤ 2 ^ k * n ^ k + 2 ^ k := by
-  rcases n with _ | n
-  · rw [Nat.zero_add, Nat.one_pow]
-    exact Nat.one_le_two_pow.trans (Nat.le_add_left _ _)
-  · calc (n + 1 + 1) ^ k ≤ (2 * (n + 1)) ^ k := Nat.pow_le_pow_left (by omega) k
-      _ = 2 ^ k * (n + 1) ^ k := Nat.mul_pow _ _ _
-      _ ≤ 2 ^ k * (n + 1) ^ k + 2 ^ k := Nat.le_add_right _ _
+  have h := Nat.mul_add_one_pow_le_two_pow 1 k n
+  simp only [Nat.one_mul] at h
+  have := Nat.one_le_two_pow (n := k)
+  omega
 
 end Nat
