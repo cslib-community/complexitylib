@@ -552,7 +552,7 @@ so repeating a positive literal twice is rejected as non-Horn syntax.
 
 {name}`Cslib.Logic.PL.isPolymorphism_parity_iff_exists_affineSystem`
 characterizes ternary parity preservation by affine equations.
-{name}`XORSAT.satisfiable_mem_P` certifies ordinary sparse XOR-SAT with binary
+{name}`XORSAT.mem_P` certifies ordinary sparse XOR-SAT with binary
 variable names; repeated variables cancel modulo two. The dense Gaussian
 elimination algorithm and sparse compiler both have native certificates.
 Their fixed-language compilers give {name}`CSPSAT.mem_P_of_and`,

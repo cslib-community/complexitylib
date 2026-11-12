@@ -232,7 +232,7 @@ variables and include empty/nullary relations. See the [majority examples](../..
 
 The ordinary solvers are also reusable: `TwoSAT.mem_P`
 ([TwoSAT/PolyTime.lean](../../CslibFrontier/Computability/Complexity/Problems/TwoSAT/PolyTime.lean)),
-`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.satisfiable_mem_P`. For `TwoSAT`,
+`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.mem_P`. For `TwoSAT`,
 `TwoSAT.assignment` constructs a satisfying assignment in polynomial time on binary CNF encodings
 (`TwoSAT.computableInPolyTime_assignment`, `TwoSAT.eval_assignment_of_mem`) by filtering
 occurrence-bounded implication-graph reachability lists (`TwoSAT.reach`). Horn syntax counts
