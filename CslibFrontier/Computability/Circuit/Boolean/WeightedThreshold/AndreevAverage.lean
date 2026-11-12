@@ -244,9 +244,7 @@ theorem pow_two_mul_sub_one_sq_le {K : ℕ} (hK : 1 ≤ K) :
 /-- Underlying map of `andreevShiftTable b m`: shifts each truth-table index `c : BitString b` by
 `andreevParities b m w` (coordinatewise XOR) and leaves all block bits unchanged. -/
 def andreevShiftTableFun (b m : ℕ) (w : BitString (2 ^ b + b * m)) : BitString (2 ^ b + b * m) :=
-  Fin.addCases (fun idx => w (andreevTableIndex b m
-    (BitString.equivFin b ((BitString.equivFin b).symm idx + andreevParities b m w))))
-    (fun u => w (Fin.natAdd (2 ^ b) u))
+  andreevTranslateTableFun b m (andreevParities b m w) false w
 
 @[simp]
 theorem andreevShiftTableFun_tableIndex (b m : ℕ) (w : BitString (2 ^ b + b * m))
