@@ -241,9 +241,9 @@ Chan, Itakura, Ma and Yu (STOC submission 1421, `[ChanItakuraMaYu2026]`) reach i
 through selected entries of the ranked subset convolution instead of selected-entries matrix
 multiplication. Their Theorem 2.2 is formalized in the unit-cost time monad `TimeM`, not on the
 Word-RAM: import `CslibFrontier.Algorithms.Lean.TrimmedYates`, namespace
-`Cslib.Algorithms.Lean.TrimmedYates`. The hashing reduction from 3SUM (Theorem 2.3) is in the
-next subsection; Corollary 2.4 and the other endpoints of the submission are open in
-[#4667](https://github.com/cslib-community/cslib-frontier/issues/4667).
+`Cslib.Algorithms.Lean.TrimmedYates`. The hashing reduction from 3SUM (Theorem 2.3),
+Corollary 2.4 and the Section 3 results are in the subsections below; the remaining endpoints of
+the submission are open in [#4667](https://github.com/cslib-community/cslib-frontier/issues/4667).
 
 The inputs are look-up functions `f g : Finset ι → R` into a commutative ring, the coordinates
 a duplicate-free list `l` of length `d`, and a threshold `s`. `solveM l s f g Cs` runs
@@ -274,6 +274,12 @@ lake env lean CslibFrontierTests/Algorithms/Lean/TrimmedYates.lean
 
 If `ret_solveM` does not apply, check the support hypotheses `∀ A, f A ≠ 0 → #A = t₁`, that
 every query is a subset of `l.toFinset` with `t₁ + t₂` elements, and `s ≤ t₁ + t₂`.
+
+The algorithm is written once for a *scheme of passes* (`Passes`: coordinates, a zeta and a
+Möbius pass per coordinate, a grading of the cells and a tick cost per pass at one cell);
+`solveM` is the instance `setPasses l` for subsets. A new scheme proves `Passes.Local` (each pass at
+a cell reads only cells below it, the grading is monotone, the cells of interest are closed
+downwards) and then gets `Passes.ret_solveM` and the exact `Passes.time_solveM`.
 
 ### The hashing reduction (Theorem 2.3)
 
@@ -349,6 +355,51 @@ check the binomial and seed counts on small instances. Check with
 lake build --wfail CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
 lake env lean CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSumCorollary.lean
 ```
+
+### Convolution in `[r]^d` and base-`r` trials (Section 3)
+
+Import `CslibFrontier.Algorithms.Lean.VectorConvolution`, namespace
+`Cslib.Algorithms.Lean.VectorConvolution`, for Lemma 3.2 and Theorem 3.3. Vectors are functions
+`ι → ℕ` with a duplicate-free list `l` of all coordinates (for `Fin d`, `List.finRange d` with
+`List.nodup_finRange` and `List.mem_finRange`), the cube `[r]^d` is the vectors with every
+coordinate below `r`, and the size is `∑ i, x i`. `solveM l r s f g Cs` is the trimmed algorithm
+for the binomial passes `Cslib.binomPass` (`vecPasses`); the paper's multiplicity-invariant sets in
+`[d r]` are replaced by their multiplicity vectors.
+
+- `ret_solveM`: for `f` supported on size `t₁`, `g` on size `t₂` and queries in the cube of size
+  `t₁ + t₂`, the answers are `binomConvolution f g C = ∑_{a ≤ C} (∏ i, (C i choose a i)) f a g (C - a)`.
+- `ret_solveM_factorial`: with inputs weighted by `vecFactorial`, the answers are
+  `vecFactorial C * vecConvolution f g C`, the convolution of Problem 3.1 times a nonzero factor.
+- `time_solveM`: exactly `3 (r d + 1)` ticks per cube vector of size at most `s` and per vector
+  below a query of size at least `s`. A pass at one vector costs `r` ticks.
+
+The identity behind it is `Cslib.binomTransform_neg_one_mul_eq_binomConvolution` in
+`CslibFrontier.Foundations.Combinatorics.BinomialZeta`: in one coordinate it is a finite-difference
+identity for `k ↦ (k choose a) (k choose b)`.
+
+For Theorem 3.4, import `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability`.
+`vtrialM r d s σ Ag Bg C` is one trial: hashes are read as base-`r` digit vectors (`digitVec`),
+queries need a balanced target (each digit `k < r` occurs `d / r` times), and the moments come
+from one `VectorConvolution.solveM` run per split of `balancedSize r d`.
+
+- `ret_vtrialM`, `time_vtrialM`: the accepted queries (`VAccepts`) and the exact cost, for
+  `s ≤ balancedSize r d`.
+- `exists_add_eq_of_vaccepts`: soundness for every modulus and seed.
+- `card_vaccepts_add_ge`, `four_mul_card_vaccepts_ge`: for a witness `c = a + b` with isolated
+  `a`, `b` and `r ^ d ≤ p`, `#balancedPairs (p - 1) ≤ #accepting seeds + #balancedPairs #L (r !) ^ (d / r)`.
+
+The full reduction of Theorem 3.4 (handling `A_bad`, repetition, a random prime, the choice of `d`
+and `μ`, the expected cost and `#balancedPairs`), Corollary 3.5 and odd k-SUM (Corollary 3.6) are
+not formalized. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
+`solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with
+
+```bash
+lake build --wfail CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
+lake env lean CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean
+```
+
+If `ret_solveM` does not apply, check the size hypotheses `∀ a, f a ≠ 0 → ∑ i, a i = t₁`, that
+every query has all coordinates below `r` and size `t₁ + t₂`, and `s ≤ t₁ + t₂`.
 
 ## Conservative ordinary integer 3SUM
 
