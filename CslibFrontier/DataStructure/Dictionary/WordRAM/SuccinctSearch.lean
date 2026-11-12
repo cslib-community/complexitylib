@@ -566,11 +566,8 @@ theorem realizes_ovfStepGen :
 theorem iterate_ovfStepGenProg_mk (U V w n_max h_space : ℕ)
     (ctx : (ℕ × ℕ) × ℕ) (m : ℕ) (acc : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) :
     iterate ovfStepGenProg (mkDictParams U V w n_max h_space, ctx) m acc =
-      iterate (ovfStepProg U V w n_max h_space) ctx m acc := by
-  induction m generalizing acc with
-  | zero => rfl
-  | succ m ih =>
-    simp only [iterate, ovfStepGenProg_mk, ih]
+      iterate (ovfStepProg U V w n_max h_space) ctx m acc :=
+  iterate_congr (fun a => ovfStepGenProg_mk U V w n_max h_space ctx a) m acc
 
 @[simp]
 theorem ovfLoopGenProg_mk (U V w n_max h_space : ℕ)
@@ -585,11 +582,9 @@ theorem iterationSafe_ovfStepGenProg_mk (U V w₀ n_max h_space w : ℕ)
     iterationSafe ovfStepGenProg OvfStepGenPre w
       (mkDictParams U V w₀ n_max h_space, ctx) m acc s ↔
     iterationSafe (ovfStepProg U V w₀ n_max h_space) (OvfStepPre U V w₀ n_max h_space)
-      w ctx m acc s := by
-  induction m generalizing acc s with
-  | zero => rfl
-  | succ m ih =>
-    simp only [iterationSafe, ovfStepGenPre_mk, ovfStepGenProg_mk, ih]
+      w ctx m acc s :=
+  iterationSafe_congr (fun a => ovfStepGenProg_mk U V w₀ n_max h_space ctx a)
+    (fun a t => ovfStepGenPre_mk U V w₀ n_max h_space w ctx a t) m acc s
 
 theorem realizes_ovfLoopGen :
     Realizes .exact ovfLoopGenProg

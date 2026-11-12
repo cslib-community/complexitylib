@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Re-elaborate changed Lean files whose build outputs came from Lake's artifact cache (#4523).
+"""Re-elaborate local Lean files whose build outputs came from Lake's artifact cache (#4523).
 
-Usage: python3 scripts/check_cache_restores.py [--base REF]
+Usage: python3 scripts/check_cache_restores.py [--files-from JSON] [--built-under PATH ...]
 
 `lakefile.toml` enables Lake's local artifact cache, which checkouts on the same machine share.
 Lake stores a module's outputs there whenever it builds them, also when the build logged warnings.
@@ -11,23 +11,24 @@ outputs and writes a trace marked `"synthetic": true` with an empty log, so
 `lake build --wfail --iofail` and `lake test --wfail --iofail` pass without showing the warnings.
 CI does not hit this, because its remote cache is published only from `main`.
 
-After the Lean gates, `scripts/full_check.py` and `scripts/quick_check.py` run this check. It runs
-`lake -q lean` on each library or test file that the change adds or modifies (against the merge
-base of REF, default `origin/main`, and the working tree, untracked files included, as
-`scripts/check_changed_files.py` computes them) and whose trace is synthetic. It fails when that
-command fails or prints anything at all: `lake lean` exits 0 after warnings, and `--iofail` rejects
-informational output too. `lake lean` first builds the file's imports and replays their logs, so
-a reported message can also come from an import. A changed file with no trace was not built,
-which the gates report. Files are elaborated one at a time.
+After the Lean gates, `scripts/full_check.py` runs this check for all built sources of the root
+package, including unchanged clients, tests and executables. This also covers deletions and
+configuration changes, which cannot use quick mode's bounded import graph. `scripts/quick_check.py`
+passes its affected source files as a JSON list, plus built import aggregates and executable
+source directories whose helpers may import the edited library indirectly. Missing or unreadable
+traces are checked too.
 
-The check does not cover unchanged modules restored from a local entry that another checkout built
-with warnings. Lake would have to keep each entry's messages and replay them on restore to close
-that gap.
+It runs `lake -q lean` on each selected file whose trace is synthetic and fails when the command
+fails or prints anything at all: `lake lean` exits 0 after warnings, and `--iofail` rejects
+informational output too. `lake lean` first builds the file's imports and replays their logs, so
+a reported message can also come from an import. Files are elaborated one at a time. This local
+audit does not change Lake: a bare `lake build` still cannot replay a cached module's messages.
 """
 
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 import json
 from pathlib import Path
 import subprocess
@@ -35,8 +36,6 @@ import sys
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-from check_changed_files import changed_files  # noqa: E402
 
 
 def layout(root: Path) -> tuple[Path, list[Path]]:
@@ -46,7 +45,8 @@ def layout(root: Path) -> tuple[Path, list[Path]]:
     lib_dir = root / config.get("buildDir", ".lake/build") / config.get("leanLibDir", "lib/lean")
     package = Path(config.get("srcDir", "."))
     targets = config.get("lean_lib", []) + config.get("lean_exe", [])
-    dirs = {package / target.get("srcDir", ".") for target in targets} | {package}
+    dirs = {(root / package / target.get("srcDir", ".")).resolve().relative_to(root.resolve())
+            for target in targets} | {(root / package).resolve().relative_to(root.resolve())}
     return lib_dir, sorted(dirs, key=lambda path: len(path.parts), reverse=True)
 
 
@@ -70,27 +70,61 @@ def restored(trace: Path) -> bool:
     return not isinstance(data, dict) or data.get("synthetic") is True
 
 
-def restored_files(root: Path, base: str) -> list[str]:
-    """The changed Lean files whose build trace says they were restored from a cache."""
-    added, modified = changed_files(root, base)
+def built_files(root: Path, lib_dir: Path, dirs: list[Path]) -> set[str]:
+    """Sources corresponding to root-package outputs, without scanning dependency checkouts.
+
+    Include `.olean` files as well as traces: losing a trace must not silently omit an output.
+    Stale outputs whose source was deleted are ignored; the build gates check their clients.
+    """
+    modules = {path.relative_to(lib_dir).with_suffix(".lean")
+               for suffix in ("*.trace", "*.olean") for path in lib_dir.rglob(suffix)}
+    return {(directory / module).as_posix() for directory in dirs for module in modules
+            if (root / directory / module).is_file()}
+
+
+def restored_files(root: Path, files: list[str] | None = None,
+                   built_under: Sequence[str] = ()) -> list[str]:
+    """Selected sources with restored, missing or unreadable build traces.
+
+    Without an explicit list, cover all root-package build outputs. Extra paths select built
+    aggregates or executable helper directories without forcing unbuilt sources into the audit.
+    """
     lib_dir, dirs = layout(root)
-    return [rel for rel in sorted(added + modified) if rel.endswith(".lean")
-            and (trace := trace_path(rel, lib_dir, dirs)) is not None and restored(trace)]
+    built = built_files(root, lib_dir, dirs) if files is None or built_under else set()
+    selected = built if files is None else set(files)
+    selected |= {rel for rel in built if any(Path(rel).is_relative_to(path) for path in built_under)}
+    for rel in selected:
+        path = Path(rel)
+        if (path.is_absolute() or ".." in path.parts or path.suffix != ".lean"
+                or not (root / path).is_file()):
+            raise ValueError(f"not an existing checkout-relative Lean source: {rel!r}")
+    return [rel for rel in sorted(selected)
+            if (trace := trace_path(rel, lib_dir, dirs)) is None or restored(trace)]
 
 
 def elaborate(root: Path, rel: str) -> subprocess.CompletedProcess:
     """Elaborate `rel` with its library's options, without writing build outputs."""
-    return subprocess.run(["lake", "-q", "lean", rel], cwd=root, text=True,
+    return subprocess.run(["lake", "-q", "lean", f"./{rel}"], cwd=root, text=True,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
 def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--base", default="origin/main",
-                        help="comparison ref; changes are taken from its merge base with HEAD")
+    parser.add_argument("--files-from", type=Path,
+                        help="JSON list of affected source paths; default: all built root sources")
+    parser.add_argument("--built-under", action="append", default=[],
+                        help="also check built sources at this file or under this directory")
     args = parser.parse_args(argv)
-    files = restored_files(root, args.base)
+    try:
+        selected = json.loads(args.files_from.read_text()) if args.files_from else None
+        if args.files_from and (not isinstance(selected, list)
+                                or any(not isinstance(rel, str) for rel in selected)):
+            raise ValueError("--files-from must contain a JSON list of source paths")
+        files = restored_files(root, selected, args.built_under)
+    except (OSError, ValueError) as error:
+        print(f"Cannot audit restored sources: {error}", file=sys.stderr)
+        return 1
     failed = []
     for rel in files:
         result = elaborate(root, rel)
@@ -98,14 +132,14 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
             failed.append(rel)
             # `lake lean` first builds the file's imports and replays their logs, so a message can
             # also come from an import that this checkout built with warnings.
-            print(f"FAIL  {rel} (restored from the artifact cache; messages from it or its "
+            print(f"FAIL  {rel} (restored or missing trace; messages from it or its "
                   f"imports)\n{result.stdout.rstrip()}", flush=True)
     if failed:
-        print(f"Re-elaborating {len(failed)} changed file(s) restored from the artifact cache "
+        print(f"Re-elaborating {len(failed)} file(s) with restored or missing traces "
               "printed messages that `lake build --wfail --iofail` did not replay; see #4523.",
               file=sys.stderr)
         return 1
-    print(f"Changed files restored from the artifact cache re-elaborated cleanly ({len(files)}).")
+    print(f"Files with restored or missing traces re-elaborated cleanly ({len(files)}).")
     return 0
 
 

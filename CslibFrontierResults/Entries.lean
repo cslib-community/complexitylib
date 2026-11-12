@@ -6,12 +6,14 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
+import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -31,6 +33,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
+import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
 import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
@@ -66,6 +69,7 @@ import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Converse
 import CslibFrontier.Computability.Complexity.Fagin.Ordered.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
+import CslibFrontier.Computability.Complexity.FineGrained.CliqueGrouping
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
@@ -103,12 +107,19 @@ import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
+import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
+import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
+import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
+import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Cut
+import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.StableSet
+import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.TSP
 import CslibFrontier.DataStructure.NearNeighbor.Angular
 import CslibFrontier.DataStructure.NearNeighbor.PStable
 import CslibFrontier.DataStructure.Paging.Marking
@@ -3209,6 +3220,29 @@ register_result "tfnp-eopl-sopl-promised-normalization" where
     potentialLineBack. Presented on uniform families rather than canonical circuit codes; UEOPL \
     and CLS are not formalized."
 
+register_result "edmonds-optimum-branchings" where
+  title := "Edmonds: optimum branchings and minimum-cost spanning arborescences are in P"
+  topic := "algorithms"
+  sources := [
+    { paper := Edmonds1967Branchings, theorem := "Theorem 1",
+      locator := "Section 3 (Section 2 reduction, Section 4 algorithm and proof)" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_edmondsList,
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_edmondsOutList,
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_optimumBranchingList,
+    Cslib.Algorithms.Lean.Arborescence.minArborescenceDec_mem_P,
+    Cslib.Algorithms.Lean.Arborescence.minOutArborescenceDec_mem_P,
+    Cslib.Algorithms.Lean.Arborescence.maxBranchingDec_mem_P
+  ]
+  scope := "Adjacency matrices in Boolean row-major tables and integer arc weights and \
+    thresholds in binary (encIntBin); roots are binary naturals (encNat). Subtraction-free \
+    contraction keeps intermediate table entries within (n + 1) ^ i · M₀, yielding native \
+    multi-tape P deciders for bounded-cost spanning in- and out-arborescences and \
+    bounded-weight branchings. Related O(n³) TimeM bounds and weight-shift reductions live \
+    in the sibling Arborescence.Table and Arborescence.Branching modules; Edmonds' Theorem 2 \
+    (the branching polytope) and sparse O(m log n) / O(m + n log n) implementations are not \
+    formalized."
 register_result "simhash" where
   title := "Charikar's SimHash collision law"
   topic := "algorithms"
@@ -3593,6 +3627,102 @@ register_result "sperner-2d-ppad-completeness" where
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
 
+section
+open Cslib.Communication
+
+register_result "unique-disjointness-cover-lower-bound" where
+  title := "Kaibel–Weltge: (3/2)^n rectangle-cover lower bound for unique disjointness"
+  topic := "communication complexity"
+  sources := [
+    { paper := KaibelWeltge2015, theorem := "Theorem 1",
+      locator := "Sections 2–3 (arXiv:1307.3543v6)" }
+  ]
+  theorems := [
+    Nondeterministic.three_pow_le_two_pow_mul_coverNumber_uniqueDisjointnessRel,
+    Nondeterministic.three_div_two_pow_le_of_coverNumber_uniqueDisjointnessRel_le,
+    Nondeterministic.clog_ceil_div_le_ecomplexity_uniqueDisjointnessRel
+  ]
+  scope := "Exponential (3/2)^|alpha| lower bound on the 1-rectangle covering number and \
+    ceil(log2 ceil((3/2)^|alpha|)) bound on N^1 communication complexity of uniqueDisjointnessRel \
+    over subsets of a finite type alpha, via card_le_two_pow_of_isValidDisjointSet."
+
+end
+
+register_result "correlation-polytope-extension-complexity" where
+  title := "Kaibel–Weltge: (3/2)^n extension-complexity lower bound for the correlation polytope"
+  topic := "combinatorial optimization"
+  sources := [
+    { paper := KaibelWeltge2015, theorem := "Theorem 1",
+      locator := "Section 2 (arXiv:1307.3543v6)" },
+    { paper := FioriniMassarPokuttaTiwaryDeWolf2015, theorem := "Lemma 6 and Theorem 7",
+      locator := "Section 3.2 (arXiv:1111.0837v4)" }
+  ]
+  theorems := [
+    three_pow_le_two_pow_mul_extensionComplexity_corrPolytope,
+    HasExtendedFormulation.three_div_two_pow_le_of_corrPolytope
+  ]
+  scope := "Over any linearly ordered field K and nonempty finite index type alpha, \
+    extensionComplexity (corrPolytope K alpha) satisfies 3^|alpha| <= 2^|alpha| * xc and \
+    (3/2 : F)^|alpha| <= r for every extended formulation with r inequalities, via the valid \
+    inequalities 2 diag(a) - a a^T and the unique-disjointness cover bound."
+
+register_result "cut-polytope-extension-complexity" where
+  title := "FMPTW: exponential extension-complexity lower bound for the cut polytope"
+  topic := "combinatorial optimization"
+  sources := [
+    { paper := DeSimone1990, theorem := unverified, locator := unverified },
+    { paper := FioriniMassarPokuttaTiwaryDeWolf2015, theorem := "Theorems 5 and 7",
+      locator := "Section 3.2 (arXiv:1111.0837v4)" },
+    { paper := KaibelWeltge2015, theorem := "Theorem 1",
+      locator := "Section 2 (arXiv:1307.3543v6)" }
+  ]
+  theorems := [
+    extensionComplexity_cutPolytope_option_eq,
+    three_pow_le_two_pow_mul_extensionComplexity_cutPolytope,
+    HasExtendedFormulation.three_div_two_pow_le_of_cutPolytope
+  ]
+  scope := "Linear isomorphism between cutPolytope K (Option alpha) and corrPolytope K alpha, \
+    yielding (3/2 : F)^(|V| - 1) <= r for every extended formulation of cutPolytope K V with \
+    r inequalities over any finite vertex type V with |V| >= 2."
+
+register_result "stable-set-polytope-extension-complexity" where
+  title := "FMPTW: 2^{Omega(sqrt n)} extension-complexity lower bound for the stable-set polytope"
+  topic := "combinatorial optimization"
+  sources := [
+    { paper := FioriniMassarPokuttaTiwaryDeWolf2015, theorem := "Lemma 8 and Theorem 10",
+      locator := "Section 3.3 (arXiv:1111.0837v4)" },
+    { paper := KaibelWeltge2015, theorem := "Theorem 1",
+      locator := "Section 2 (arXiv:1307.3543v6)" }
+  ]
+  theorems := [
+    extensionComplexity_corrPolytope_le_corrGadgetGraph,
+    three_pow_le_two_pow_mul_extensionComplexity_stabPolytope,
+    HasExtendedFormulation.three_div_two_pow_le_of_stabPolytope
+  ]
+  scope := "For every m >= 2, the explicit m-vertex graph stabHardGraph m (built from the \
+    2 p^2-vertex gadget graph corrGadgetGraph p with p = Nat.sqrt (m / 2) and isolated padding) \
+    satisfies (3/2 : F)^Nat.sqrt (m / 2) <= r for any extended formulation of \
+    stabPolytope K (stabHardGraph m) with r inequalities."
+
+register_result "tsp-polytope-extension-complexity" where
+  title := "FMPTW: 2^{Omega(sqrt n)} extension-complexity lower bound for the TSP polytope"
+  topic := "combinatorial optimization"
+  sources := [
+    { paper := FioriniMassarPokuttaTiwaryDeWolf2015, theorem := "Lemma 11 and Theorem 12",
+      locator := "Section 3.4 (arXiv:1111.0837v4)" },
+    { paper := KaibelWeltge2015, theorem := "Theorem 1",
+      locator := "Section 2 (arXiv:1307.3543v6)" }
+  ]
+  theorems := [
+    extensionComplexity_corrPolytope_le_tspPolytope_splitV,
+    extensionComplexity_corrPolytope_le_tspHardGraph_face,
+    three_pow_le_two_pow_mul_extensionComplexity_tspPolytope,
+    HasExtendedFormulation.three_div_two_pow_le_of_tspPolytope
+  ]
+  scope := "Via the 3-SAT correlation digraph corrDigraphAdj (at most 23 p^2 vertices) and the \
+    padded directed-to-undirected 3-split, corrPolytope K (Fin p) projects linearly from a face \
+    of tspPolytope K V whenever |V| >= 69 with p = Nat.sqrt (|V| / 69), giving (3/2 : F)^p <= r \
+    for every extended formulation of tspPolytope K V with r inequalities."
 register_result "sturm-real-root-counting" where
   title := "Sturm's theorem for separable real polynomials"
   topic := "algebraic complexity"
@@ -3709,6 +3839,61 @@ register_result "randomized-marking-paging" where
     via non-evicting warmup while |cache| < k, and bounds clean requests by 2 * OPT directly \
     against arbitrary (not necessarily lazy) valid offline schedules."
 
+
+register_result "quantum-weighted-adversaries" where
+  title := "Weighted quantum adversary lower bounds (Alb₂ and Alb₃)"
+  topic := "quantum complexity"
+  sources := [
+    { paper := Ambainis2006, theorem := "Lemma 1",
+      locator := "Section 4.1 (arXiv:quant-ph/0305028v4)" },
+    { paper := Zhang2005, theorem := "Theorem 3 and Theorem 5",
+      locator := "Section 1 and Section 2 (arXiv:quant-ph/0311060v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.WeightScheme.one_sub_mul_sum_le,
+    Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sum_le,
+    Cslib.Quantum.WeightScheme.one_sub_mul_sqrt_le_of_load_le,
+    Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sqrt_le_of_load_le,
+    Cslib.Quantum.WeightScheme.ofUnweighted_loadFst_le,
+    Cslib.Quantum.WeightScheme.ofUnweighted_loadSnd_le
+  ]
+  scope := "T-query bit-query phase-oracle quantum algorithms over finite workspace, for general \
+    promise relations (x, y) with P x ∧ P y ∧ f x ≠ f y and arbitrary finite output alphabets α \
+    (using pairwise disjoint measurement regions S_out : α → Finset _). Covers nonnegative \
+    WeightScheme (Ambainis's weighted adversary and Zhang's strong Alb₃ method), its reduction \
+    from strong to weak load bounds, and the WeightScheme.ofUnweighted embedding used in \
+    AmbainisAdversary.lean to derive the unweighted adversary bound (Alb₂). Spectral matrices \
+    and negative weights are in SpectralAdversary.lean."
+
+register_result "quantum-general-adversaries" where
+  title := "Spectral and negative-weight quantum adversary lower bounds (ADV and ADV±)"
+  topic := "quantum complexity"
+  sources := [
+    { paper := BarnumSaksSzegedy2003, theorem := unverified, locator := unverified },
+    { paper := HoyerLeeSpalek2007, theorem := "Theorem 1 and Theorem 2",
+      locator := "Section 1.1 (arXiv:quant-ph/0611054v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_opNorm_le_spectral,
+    Cslib.Quantum.one_sub_mul_spectralAdversary_le,
+    Cslib.Quantum.one_sub_mul_opNorm_le_general_boolean,
+    Cslib.Quantum.one_sub_mul_generalAdversary_le_boolean,
+    Cslib.Quantum.one_sub_mul_opNorm_le_general,
+    Cslib.Quantum.one_sub_mul_generalAdversary_le,
+    Cslib.Quantum.spectralSensitivity_le_spectralAdversary,
+    Cslib.Quantum.WeightScheme.le_spectralAdversary,
+    Cslib.Quantum.spectralAdversary_le_generalAdversary,
+    Cslib.Quantum.spectralAdversary_le_div_of_hammingDist_ge
+  ]
+  scope := "T-query bit-query phase-oracle quantum algorithms over finite workspace, for general \
+    promise relations (x, y) with P x ∧ P y ∧ f x ≠ f y and arbitrary finite output alphabets α \
+    (using pairwise disjoint measurement regions S_out : α → Finset _). Covers Barnum–Saks–Szegedy \
+    spectral adversary ADV (norm quotient over nonnegative symmetric Γ, cited via HLS07 §1.1 since \
+    CCC'03 was not directly inspected), Høyer–Lee–Špalek negative-weight adversary ADV± \
+    (strengthened to (1 - 2√(ε(1-ε)) - ε) ADV± ≤ 2T and exact Boolean 1 - 2√(ε(1-ε))), the \
+    hierarchy λ(f) ≤ ADV(f) ≤ ADV±(f) and Alb₃ ≤ ADV(f), and the Hamming-distance barrier \
+    ADV(f) ≤ N / k. Non-Boolean input alphabets (value queries / permutation inversion) and \
+    general composition theorems are not formalized here."
 register_result "fujisaki-okamoto-notbot-ind-cca" where
   title := "ROM IND-CCA security of the implicit-rejection Fujisaki–Okamoto transform FO-notbot"
   topic := "cryptography"
@@ -3727,4 +3912,67 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
     composes the T and U-notbot hops directly instead of through OW-PCA; roIndCcaGame draws both \
     real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
     recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
-    accounting for the reduction; FO-⊥ and OW-PCVA are not covered."
+    accounting for the reduction; FO^⊥ is registered separately as fujisaki-okamoto-bot-ind-cca."
+
+register_result "fujisaki-okamoto-bot-ind-cca" where
+  title := "ROM IND-CCA security of the explicit-rejection Fujisaki–Okamoto transform FO^⊥"
+  topic := "cryptography"
+  sources := [
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := unverified,
+      locator := "§3.1 and §3.2.1 (IACR ePrint 2017/604, full version of 2 November 2021)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaBotAdvantage_le
+  ]
+  scope := "Explicit-rejection FO^⊥ = U^⊥ ∘ T over an explicit-coin PKE: for uniform messages, \
+    a δ-correct and γ-spread PKE, and a deterministic oracle adversary making at most qG queries \
+    to G, qH queries to H, and qD queries to decapsulation (ROFullQueryBounds A qG qH qD), the \
+    ROM IND-CCA advantage is at most 2·Adv^{IND-CPA}(romBotCpaReduction) + 2(qG + qH)/|M| + \
+    2(qG + qH + 1)δ + 2(qG + qH + qD)2^{-γ} for some distinct fixed challenge messages. \
+    Necessity of the qD·2^{-γ} ciphertext-validity spreadness term is proved in \
+    FujisakiOkamoto.SpreadNecessity (advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv). \
+    Composes the T and U^⊥ hops directly instead of through standalone OW-PCVA; \
+    roIndCcaBotGame and eagerIndCcaBotGame draw both real (H) replies and the independent ideal \
+    challenge key from the arbitrary sampler S.sampleKey (uniform sampleKey recovers the \
+    standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4); information-\
+    theoretic games with no running-time accounting for the reduction."
+
+register_result "clique-eth-lower-bound" where
+  title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"
+  topic := "fine-grained complexity"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "Theorem 14.21", locator := "p.485" }
+  ]
+  theorems := [
+    Cslib.Complexity.ETH.not_clique_subexpVertex,
+    Cslib.Complexity.ETH.not_clique_subexpEnc,
+    Cslib.Complexity.ETH.clique_not_mem_FPT,
+    Cslib.Complexity.DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
+  ]
+  scope := "Clause-grouping reduction SAT.groupClique on Clique (encPair encGraph encNat) and \
+    ThreeSAT (encCNF). Under ETH (relative to the library's native DecidableInTimeO model), no \
+    decider for Clique runs in time f(k) · (|V| + 1)^o(k) · poly(|enc|) or f(k) · (|enc| + 1)^o(k) \
+    with arbitrary f and real exponent g(k) satisfying g(k) ≤ ε k for large k; in particular \
+    Clique ∉ FPT. Unconditional subexponential-time transfers to ThreeSAT hold without ETH. \
+    This adapts the source's 3-Coloring vertex grouping to 3-CNF clauses and arbitrary f."
+
+register_result "csp-bounded-treewidth" where
+  title := "Exact counting and decision for finite-domain CSPs over bounded treewidth"
+  topic := "parameterized algorithms"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "Lemma 7.4 (nice trees)", locator := "p.161" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspDecideRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.time_cspCountRootedM_le,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountActiveRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountNiceM_equiv
+  ]
+  scope := "Finite constraint domains Fin q (and arbitrary Fintype/Inhabited D via Equiv D \
+    (Fin q)) over a supplied RootedTreeDecomposition of the primal or active primal graph. \
+    Normalizes via toNiceTreePruned to at most (3 w + 5)(|V| + 1) nice nodes (size, not runtime \
+    bound) and charges unit-cost TimeM inner-loop ticks bounded by (3 w + 5)(|V| + 1) · q^(w + 1) \
+    · dpNodeCost w F (excluding recursive list-manipulation overhead like bagList, sem \
+    evaluations, and unbounded integer arithmetic). The generic CSP-counting DP extension is an \
+    adaptation/original implementation. Computing the tree decomposition is external."

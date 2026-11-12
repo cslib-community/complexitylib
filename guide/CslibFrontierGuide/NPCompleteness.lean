@@ -45,6 +45,11 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Size
@@ -61,6 +66,7 @@ import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality
 import CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Spec
 import CslibFrontier.Algorithms.Lean.EdgeCSP.Blossom.Optimality
 import CslibFrontier.Algorithms.Lean.EdgeCSP.Blossom.Size
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Endpoint
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -91,6 +97,11 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
@@ -724,8 +735,8 @@ example {ι : Type} [Fintype ι] [DecidableEq ι]
 
 Twists, coordinate transport and feasible two-bit connectivity are also proved.
 The difference tests show that ternary NAE has an even delta-matroid difference
-relation. These are mathematical prerequisites; a planar embedding algorithm,
-general edge-CSP solver and full planar dichotomy remain to be formalized.
+relation. These are mathematical prerequisites. Geometry, recognition and the full planar
+dichotomy remain open; the complete edge solver appears below.
 
 
 # Indexed CSP and Table Operations
@@ -822,7 +833,7 @@ Original variable labels remain binary. Iteration uses actual list lengths,
 never a maximum label or supplied successor index. Nullary port order is
 vacuous; semantic rejection and exact relation arity remain separate guards.
 These supplied-certificate theorems leave bare-instance construction, geometric
-correspondence, an edge solver and the dichotomy open. The finite duality and
+correspondence and the dichotomy open. The complete edge solver appears below. The finite duality and
 Boolean difference interface is proved below.
 
 
@@ -872,9 +883,120 @@ example {G : Graph} (r : Graph.RotationSystem G) (spin : ℕ → Bool) :
 `CslibFrontierTests/RotationDual.lean` contains concrete bridge, loop, digon,
 torus and disconnected sparse-name cases. These are finite combinatorial
 results. The checked compiler below provides the native supplied-certificate
-CSP reduction. Geometric realization, bare recognition and recursive solving
-remain open.
+CSP reduction, followed by the complete native edge solver below. Geometric
+realization, bare recognition and final planar assembly remain open.
 
+
+# Face Boundaries and Intersection Parity
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity`.
+Vertex parity sums indexed dart incidences; the two ends of a loop cancel.
+On a componentwise numerically genus-zero rotation, every vertex-even edge
+labeling is the boundary of colors on its actual face orbits:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hgenus : r.NumericalGenusZero) (x : Fin G.2.length → Bool) :
+    G.VertexEven x ↔ ∃ q : r.Face → Bool, r.faceBoundary q = x :=
+  r.vertexEven_iff_exists_faceColors hG hgenus x
+```
+
+`ClosedPassages` pairs every dart in an edge support exactly once, with distinct
+ports at the same vertex. It permits multiple visits and arbitrary local pairings.
+Literal cyclic intervals determine whether two passages alternate. Two closed
+systems with disjoint edge supports have even total local intersection parity:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (hgenus : r.NumericalGenusZero)
+    {x y : Fin G.2.length → Bool} (P : Graph.ClosedPassages G x)
+    (Q : Graph.ClosedPassages G y)
+    (hdisj : ∀ e, x e = true → y e = true → False) :
+    r.intersectionParity P Q = false :=
+  r.intersectionParity_eq_false hG hgenus P Q hdisj
+```
+
+The proof reuses lifting on the actual dual, then telescopes face colors along
+rotation intervals and closed passages. No intersection theorem is assumed.
+`CslibFrontierTests/RotationIntersection.lean` includes high-degree, repeated-visit,
+disconnected and empty cases, plus an interlaced two-loop torus with odd parity.
+These original finite-map results leave drawing operations, geometric realization,
+Hanani–Tutte, recognition and the full planar dichotomy open.
+
+# Indexed Rotation Surgery
+
+The ordinary imports above expose actual indexed rotation operations in
+`Cslib.Complexity.Graph.RotationSystem`. Inserting an edge at two cofacial
+dart corners preserves componentwise numerical genus zero, even when the
+corners or their vertices coincide:
+
+```lean
+open Cslib.Complexity in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (hr : r.NumericalGenusZero)
+    (h k : Graph.Dart G) (hf : r.faceNext.SameCycle h k) :
+    (r.insertEdge h k).NumericalGenusZero :=
+  r.numericalGenusZero_insertEdge hG hr h k hf
+```
+
+`VertexMergeGenus` also identifies distinct cofacial vertices, preserving
+the directed port blocks and retaining listed edge positions. Its cofacial
+hypothesis is essential to that theorem. Arbitrary edge deletion uses an
+internally proved face-even extension instead, including splitting bridges,
+loops and new isolated points:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {G : Graph} {u v : ℕ}
+    (r : Graph.RotationSystem (lastEdgeGraph G u v))
+    (hH : ∀ w ∈ (lastEdgeGraph G u v).incidenceVertices,
+      w ∈ (lastEdgeGraph G u v).1) (hr : r.NumericalGenusZero) :
+    r.deleteLastEdge.NumericalGenusZero :=
+  r.numericalGenusZero_deleteLastEdge hH hr
+```
+
+Contracting an actual nonloop edge needs neither a bridge nor cofaciality
+nor connectedness. It removes the last edge, splices the directed blocks
+without reflection, and updates every remaining endpoint named `u` to `v`:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {G : Graph} {u v : ℕ}
+    (r : Graph.RotationSystem (lastEdgeGraph G u v)) (huv : u ≠ v)
+    (hH : ∀ w ∈ (lastEdgeGraph G u v).incidenceVertices,
+      w ∈ (lastEdgeGraph G u v).1) (hr : r.NumericalGenusZero) :
+    (r.contractLastEdge huv).NumericalGenusZero :=
+  r.numericalGenusZero_contractLastEdge huv hH hr
+```
+
+The target is exactly `G.relabel (Function.update id u v)`, including its
+mapped declaration list. Repeated declarations can then be removed while
+retaining every edge, dart and rotation successor:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {vertices : List ℕ} {edges : List (ℕ × ℕ)} {v : ℕ}
+    (hv : v ∈ vertices)
+    (r : Graph.RotationSystem (vertices ++ [v], edges)) :
+    (redeclare r vertices).NumericalGenusZero ↔ r.NumericalGenusZero :=
+  numericalGenusZero_append_duplicate_iff hv r
+```
+
+The complete regression clients are `RotationCornerFaces`,
+`VertexIdentification`, `RotationDeletionComponents`, `RotationContraction`
+and `RotationLiftingConverse` under `CslibFrontierTests/`. They check actual
+tables and numerical certificates, nonbridge and empty-block cases, and
+reflected-order rejection. The proofs are original finite permutation and
+algebraic arguments. No native runtime, geometric realization, full recipe
+closure, recognition or Hanani–Tutte theorem is asserted here.
+
+For permutation-only proofs, import `CslibFrontier.Foundations.GroupTheory.Perm.InsertAfter`,
+`CycleSurgery` or `SelectedOrbits`. The APIs live in `Equiv.Perm.Insertion`,
+`Equiv.Perm.CycleSurgery` and `Equiv.Perm.SelectedOrbits`, with no graph dependency.
+`CslibFrontierTests/PermutationSurgery.lean` is a complete standalone client.
 
 # Ordered Incidence-to-Polygon Rotations
 
@@ -975,7 +1097,7 @@ exponentially on fixed arity. Runtime has no input-validity premise.
 `CslibFrontierTests/CSPCyclicCompiler.lean` gives concrete SAT/UNSAT NAE runs,
 long chains, nullaries, repeated arguments, bad guards and huge binary labels.
 This proves the supplied numerical-certificate compiler stage, without a bare
-recognizer, geometric correspondence, edge solver or full planar dichotomy.
+recognizer, geometric correspondence or full planar dichotomy. The edge solver is below.
 
 
 # Delta-Matroid Closure for Local Contraction
@@ -1004,8 +1126,7 @@ example {table : Table} {reference : List Bool} {positions : List ℕ}
 
 The new connector's exactly-one relation is even for every nonempty scope,
 with odd common parity. Empty scopes are excluded. These local mathematical
-closures feed the whole-instance layer below; the edge solver and its native
-cost remain open.
+closures feed the whole-instance layer and complete native edge solver below.
 
 
 # Prefix-Valid Edge-CSP Augmentation
@@ -1042,8 +1163,8 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
   h.isOptimalLabeling_iff_no_augmentingWalk hM
 ```
 
-The test module also rejects final-only validity. A complete solver still needs
-DAG/forest/blossom search and certification of the complete solver.
+The test module also rejects final-only validity. The search, contraction and
+complete native edge solver are documented below.
 
 
 For explicit tables, {name}`Cslib.Complexity.CSP.EdgeAugmenting.run` takes the CSP,
@@ -1105,7 +1226,8 @@ example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
 Arbitrary f-walk reversal need not preserve prefix validity, even for even
 delta-matroid relations. Operation tests give a counterexample. These results
 feed the fresh forest search and whole-instance contraction/lifting below.
-Native recursive solving and the full planar dichotomy remain open.
+The complete native edge solver follows those layers. Geometric recognition
+and the full planar dichotomy remain open.
 
 
 # Fresh Forest Search
@@ -1180,8 +1302,8 @@ Complete actual-run clients are in `CslibFrontierTests/EdgeCSPForestEvents.lean`
 `CslibFrontierTests/EdgeCSPForestOptimality.lean`. They include nonempty preparation,
 repeated original constraints, timestamp zero, odd parity and sparse labels.
 These mathematical endpoints compose with the native compiler and whole-instance
-contraction/lifting below. Recursive solving and the full planar dichotomy remain
-open.
+contraction/lifting and complete native edge solver below. The full planar
+dichotomy remains open.
 
 
 # Native Fresh Forest Search
@@ -1240,8 +1362,8 @@ count-preserving preparation for a blossom. This is a native fresh-search routin
 without an improving comparison input. The existing augmentation API is preserved
 through the shared buffer module. `CslibFrontierTests/EdgeCSPForestNative.lean` checks
 actual executions, including an end-to-end valid augmentation to zero defects.
-The next entry supplies mathematical whole-blossom contraction/lifting. Native
-recursive solving, geometric recognition and the full planar dichotomy remain open.
+The next entries supply whole-blossom contraction/lifting and the complete
+native edge solver. Geometric recognition and the full planar dichotomy remain open.
 
 
 # Whole-Instance Blossom Contraction and Lifting
@@ -1301,8 +1423,75 @@ and shortest exit using the full no-shortcut blossom. Forward projection is
 constraints, nonempty preparation, changed outside values, sparse binary names,
 and exact `r=b` accounting. Old table row counts do not increase; the new
 exactly-one table has `r` rows of width `r`. These mathematical and executable
-results do not yet certify native cost or compile the complete recursive solver.
+results feed the complete native recursive solver documented next.
 Geometric recognition, planar hardness and the full dichotomy remain open.
+
+
+# Complete Native Even Edge-CSP Solver
+
+Import `CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Endpoint`.
+The ordinary decision problem checks the actual edge/even-delta-matroid model
+internally and accepts exactly its satisfiable instances:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity
+  Cslib.Complexity.CSP Turing.MultiTapeTM in
+example : EdgeSolver.evenEdgeSAT ∈ P (encCSP encTable encNat) :=
+  EdgeSolver.evenEdgeSAT_mem_P
+```
+
+Each scope has distinct names; every occurring name appears twice in distinct
+constraints. Relations are nonempty even delta-matroids, with either common
+parity permitted. Duplicate constraints/rows, empty CSPs and true nullaries are
+included. Empty/false or malformed relations, wrong arities, repeated scope
+names and non-even relations reject. The all-raw runtime has no model premise:
+
+```lean
+open Cslib.Logic.PL.CSP Cslib.Complexity Cslib.Complexity.CSP
+  Turing.MultiTapeTM in
+example : ComputableInPolyTime EdgeSolver.solve
+    (encCSP encTable encNat) (encOption (encList encBool)) :=
+  EdgeSolver.computableInPolyTime_solve
+```
+
+{name}`Cslib.Complexity.CSP.EdgeSolver.optimize` returns one original-order
+occurrence bit per port and minimizes the actual number of defective variables:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity.CSP in
+example (F : CSP Table ℕ) (h : EdgeSolver.checkModel F = true) :
+    ∃ bits, EdgeSolver.optimize F = some bits ∧
+      IsOptimalLabeling Table.sem (EdgeAugmenting.labeling F bits) :=
+  EdgeSolver.optimize_spec F h
+```
+
+`optimize = none` means model rejection. An accepted unsatisfiable instance still
+has an optimal buffer; `solve = none` also covers positive minimum defect count.
+The actual finite program agrees with the semantic optimizer and decision:
+
+```lean
+open Cslib.Complexity.CSP.EdgeSolver in
+example : Program.decideSAT [] = true := by decide
+
+open Cslib.Complexity.CSP.EdgeSolver in
+example : Program.decideSAT
+    [(⟨1, [[false]]⟩, [2 ^ 100]), (⟨1, [[true]]⟩, [2 ^ 100])] = false := by
+  decide +kernel
+```
+
+One improvement makes one recursive child call per blossom and immediately
+returns its lifted improvement or transferred optimum. The strict measure
+`2*numVars−positiveCount` bounds contraction depth by `2*numVars`; at most
+`numVars+1` outer rounds are needed. Complete native bounds include framed rows,
+binary names/arities/positions, parent frames and quadratic central table data.
+Clocks traverse actual lists rather than intervals below binary values.
+
+This completes the explicit-table edge layer of KKR v6 Theorem 21, using its
+Algorithm 1 and contraction/lifting mathematics; the recursion organization and
+encoded bookkeeping are original. `CslibFrontierTests/EdgeCSPSolver.lean` executes
+nonempty preparation, repeated copied constraints, changed outside values,
+multiple improvements, `r=b` and sparse `2^250` names. Geometry/recognition,
+ordered planar hardness and full #3091 remain open.
 
 
 # Finite Crossover Gadget Semantics

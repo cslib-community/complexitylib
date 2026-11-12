@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
+import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Challenge
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Correctness
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Fallback
@@ -125,20 +126,9 @@ theorem indCcaRomAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [F
   have hF := S.advantage_eagerIndCcaGame_simGame_le A hq hmsg hδ false
   have hT := S.advantage_eagerIndCcaGame_simGame_le A hq hmsg hδ true
   rw [indCcaRomAdvantage_eq_eager]
-  have htri : (Game.advantage (S.eagerIndCcaGame A false) (S.eagerIndCcaGame A true) : ℝ) ≤
-      Game.advantage (S.eagerIndCcaGame A false) (ProbComp.eval (S.simGame A false)) +
-        Game.advantage (ProbComp.eval (S.simGame A false)) (ProbComp.eval (S.simGame A true)) +
-        Game.advantage (S.eagerIndCcaGame A true) (ProbComp.eval (S.simGame A true)) := by
-    rw [Game.advantage_comm (S.eagerIndCcaGame A true)]
-    have h := (Game.advantage_triangle (S.eagerIndCcaGame A false)
-      (ProbComp.eval (S.simGame A false)) (S.eagerIndCcaGame A true)).trans
-      (add_le_add le_rfl (Game.advantage_triangle (ProbComp.eval (S.simGame A false))
-        (ProbComp.eval (S.simGame A true)) (S.eagerIndCcaGame A true)))
-    rw [← add_assoc] at h
-    exact_mod_cast h
   have hcard : (0 : ℝ) < Fintype.card M := by exact_mod_cast Fintype.card_pos
-  calc _ ≤ _ := htri
-    _ ≤ _ := add_le_add (add_le_add hF hsim) hT
+  calc _ ≤ _ := Game.advantage_four_le (S.eagerIndCcaGame A)
+          (fun b => ProbComp.eval (S.simGame A b)) hF hsim hT
     _ = _ := by field_simp; ring
 
 end Scheme
