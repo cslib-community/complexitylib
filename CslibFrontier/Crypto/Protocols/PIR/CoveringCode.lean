@@ -45,10 +45,12 @@ agree when the cover is *balanced*, `k (m + 1) = 2 ^ d`
 server emulates `m` distinct neighbours and no word is produced twice. The count is then the bound
 `k + (2 ^ d + (d - 1) k) ℓ` of Theorem 1. Balance is a property of the cover; the source's
 "balancing" (end of Section 3.2, Section 3.4) refers instead to the split of communication between
-the user and the servers. Variable-length answers are not formalized, so Theorem 1 is covered for
-balanced covers only. Every radius-`1` covering code gives a cover with `M = D`, emulating all
-neighbours (`PIR.RadiusOneCover.ofHammingDist`), with `k (2 d ℓ + 1)` bits; this is the bound of
-Theorem 1 exactly when the code is perfect.
+the user and the servers. Variable-length per-server answers and radius-`r` covers are formalized
+in `PIR.Indexed` and `PIR.GeneralCover` (`PIR.hasIndexedScheme_of_hammingDist` proves Theorem 1 for
+arbitrary injective radius-`1` covering codes); in the uniform fixed-length model here, Theorem 1 is
+covered for balanced covers only. Every radius-`1` covering code gives a cover with `M = D`,
+emulating all neighbours (`PIR.RadiusOneCover.ofHammingDist`), with `k (2 d ℓ + 1)` bits; this is
+the bound of Theorem 1 exactly when the code is perfect.
 
 A new cover of a concrete cube `Fin d → Bool` can be supplied by discharging `coveredWord_cover`
 with `decide`, as for `PIR.RadiusOneCover.cubeThree` and `PIR.RadiusOneCover.cubeFour`.
