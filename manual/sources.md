@@ -84,6 +84,11 @@ Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4)
 
 Andris Ambainis. "Quantum lower bounds by quantum arguments." *Journal of Computer and System Sciences* 64(4), 750–767, 2002 (preliminary version in STOC 2000). https://doi.org/10.1006/jcss.2002.1826 ; open preprint arXiv:quant-ph/0002066v1 (24 February 2000), https://arxiv.org/abs/quant-ph/0002066 . Checked in arXiv:quant-ph/0002066v1 (`density4.tex`) on 2026-11-11: Section 2 (query model and extension to larger input/output alphabets), Section 3 Lemma 1 (multi-outcome distinguishing state-overlap bound `2√(ε(1-ε))`, proved in `Overlap.lean` and `ReadoutOverlap.lean`), Section 6.1 Theorem 6 (relational adversary bound `(1 - 2√(ε(1-ε))) √(m m') = O(T √l_max)` for non-Boolean input alphabets and pairwise conflict product `l_{x,i} l_{y,i} ≤ l_max`, proved in `ValueAdversary.lean` with constant `2` for arbitrary unitary value oracles), and Section 6.2 Theorem 7 (`Ω(√N)` query lower bound for inverting a permutation via single-transposition pairs across a balanced bipartition, proved in `PermutationInversion.lean`). Journal pagination comes from `references.bib` and was not directly inspected.
 
+<a id="ambainis06"></a>
+## ambainis06
+
+Andris Ambainis. "Polynomial degree vs. quantum query complexity." *Journal of Computer and System Sciences* 72(2), 220–238, 2006; preliminary version FOCS 2003; arXiv:quant-ph/0305028v4 (23 November 2004). https://arxiv.org/abs/quant-ph/0305028 . Read in arXiv:quant-ph/0305028v4 on 2026-11-11: Section 3.3 Definitions 1–3 (relation weights, `w'(x, y, i)`, and adversary bound), Section 4.1 Lemma 1 (the weighted adversary lower bound), Lemma 4 (`w'` formulation), and Section 4.3 Lemma 3 (`4`-bit base function with weight `w = 1` at Hamming distance `1` and `2/3` at Hamming distance `2`, `w' ∈ {1, 1/3, 4/3}`, and maximum load `wt/v = 2.5`). Journal pagination was checked through DBLP/search metadata and was not inspected directly.
+
 <a id="ambainismoscatappdewolf00"></a>
 ## ambainismoscatappdewolf00
 
@@ -128,6 +133,11 @@ János Balogh, József Békési, György Dósa, Leah Epstein and Asaf Levin. *A 
 ## barak-steurer16
 
 Boaz Barak and David Steurer. *Proofs, beliefs, and algorithms through the lens of sum-of-squares*. Lecture notes, 2016, https://www.sumofsquares.org/ . On 2026-11-08 UTC worker w96-sos consulted these author-hosted lectures: "Mathematical definitions" (https://www.sumofsquares.org/public/lec01-2_definitions.pdf), for Theorem 19, the duality of sum-of-squares certificates and pseudo-distributions; "The sos algorithm over general domains" (https://www.sumofsquares.org/public/lec-definitions-general.pdf), for Definition 1 (sos proofs), the remark after Theorem 2 (degree-`d` sos refutations), Definitions 5 and 7 (pseudo-distributions and the constraints they satisfy) and Theorem 8; and "Higher-degree integrality gaps" (https://www.sumofsquares.org/public/lec03-2_lowerbounds_csp.pdf), for Theorem 2, Lemmas 7 and 9, and Lemma 24 (Grigoriev's bound for Tseitin tautologies on vertex expanders). The sum-of-squares modules cite these locators. The notes are a living document, and the numbering may change.
+
+<a id="barnumsaksszegedy03"></a>
+## barnumsaksszegedy03
+
+Howard Barnum, Michael E. Saks and Márió Szegedy. "Quantum query complexity and semi-definite programming." *Proceedings of the 18th IEEE Annual Conference on Computational Complexity (CCC 2003)*, 179–193, 2003. https://doi.org/10.1109/CCC.2003.1214419 . Bibliographic metadata checked through search records on 2026-11-11; the full CCC 2003 text was not inspected directly. Cited via [Høyer, Lee and Špalek 2007](#hoyerleespalek07) (Section 1.1, Definition 1 and Theorem 1) for the nonnegative spectral adversary `ADV(f) = max_{Γ ≥ 0} ‖Γ‖ / max_i ‖Γ ∘ D_i‖`.
 
 <a id="barrett26"></a>
 ## barrett26
@@ -846,6 +856,11 @@ Thomas Holenstein. “Pseudorandom Generators from One-Way Functions: A Simple C
 ## holenstein09
 
 Thomas Holenstein. “Parallel Repetition: Simplifications and the No-Signaling Case.” *Theory of Computing* 5(8), 141–172, 2009. https://doi.org/10.4086/toc.2009.v005a008 . Journal PDF inspected (Definition 2.4 and Theorem 2.5, p. 146; Definition 5.1, p. 151; Lemma 5.4 and (5.5), p. 153; Claims 6.2 and 6.3, p. 154; Lemma 6.4 and (6.3)–(6.7) of its proof, p. 155; (6.8)–(6.16), p. 156; the first stage of the embedding, from (6.15) and (6.16) by Corollary 5.3, (6.17)–(6.19) and the second stage, and Lemma 6.5, (6.20) and its proof, p. 157; Lemma 7.1, p. 158; the proof of Theorem 2.5, (7.6) and (7.7), p. 159).
+
+<a id="hoyerleespalek07"></a>
+## hoyerleespalek07
+
+Peter Høyer, Troy Lee and Robert Špalek. "Negative weights make adversaries stronger." *Proceedings of the 39th Annual ACM Symposium on Theory of Computing (STOC 2007)*, 526–535, 2007. https://doi.org/10.1145/1250790.1250867 ; open version arXiv:quant-ph/0611054v2 (24 April 2007), https://arxiv.org/abs/quant-ph/0611054 . Checked in arXiv:quant-ph/0611054v2 on 2026-11-11: Section 1.1 Definitions 1–2 and Theorems 1–2 (`ADV` and `ADV±`, with the Boolean bound `(1 - 2√(ε(1-ε))) ADV±(f) ≤ 2T` matching Theorem 2, and the arbitrary-output bound strengthened to `1 - 2√(ε(1-ε)) - ε` vs. the weaker `- 2ε` form stated there), Section 7.1 Theorem 20 (Ambainis's 4-bit function), and Section 7.2 Theorem 21 (the 6-bit Hamming-weight-3 partial function separating `ADV ≤ 3` from `ADV± ≥ 2 + 3√5/5`, and its `(3/5, -1/5, 1/5)` specialization giving `16/5`).
 
 <a id="hoza21"></a>
 ## hoza21
@@ -1725,6 +1740,11 @@ Sergey Yekhanin. *Locally Decodable Codes*. Foundations and Trends in Theoretica
 ## younger67
 
 Daniel H. Younger. "Recognition and Parsing of Context-Free Languages in Time n³." *Information and Control* 10(2), 189–208, 1967. https://doi.org/10.1016/S0019-9958(67)80007-X . Bibliographic metadata was checked on 2026-11-08; the article body was not inspected. It is cited, with [Kasami 1965](#kasami65), as an original source of the CYK algorithm.
+
+<a id="zhang05"></a>
+## zhang05
+
+Shengyu Zhang. "On the power of Ambainis's lower bounds." *Theoretical Computer Science* 339(2–3), 241–256, 2005. https://doi.org/10.1016/j.tcs.2005.01.019 ; open version arXiv:quant-ph/0311060v2, https://arxiv.org/abs/quant-ph/0311060 . Checked in arXiv:quant-ph/0311060v2 on 2026-11-11: Section 1 Definition 1 and Theorem 3 (the general weighted adversary `Alb₃`, proved in `WeightedAdversary.lean`), Section 2 Theorem 5 (`Alb₂ ≤ Alb₃`, realized via `WeightScheme.ofUnweighted` and used to prove `one_sub_mul_sqrt_le_two_mul_mul_sqrt` in `AmbainisAdversary.lean`), The `Alb₃ ≤ ADV` mapping (`WeightScheme.le_spectralAdversary`) is an original proof; the cited Theorem 6 maps `Alb₃` to `√(N C_-(f))` instead. Journal pagination was not inspected directly.
 
 <a id="zivlempel77"></a>
 ## zivlempel77
