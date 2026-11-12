@@ -430,9 +430,12 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
     (fun _ _ => []) id
   have hprogram : Prod.fst <$> (OracleComp.iterate r (liftedStep step) ([], w₀) >>= liftedLast) =
       OracleComp.iterate r step w₀ := by
-    simpa only [liftedLast, bind_pure_comp, Functor.map_map] using
-      (OracleComp.iterate_map r (liftedStep step) step Prod.snd
-        (fun p => by simp only [liftedStep, Functor.map_map, id_map']) ([], w₀)).symm
+    calc
+      _ = Prod.snd <$> OracleComp.iterate r (liftedStep step) ([], w₀) := by
+        simp only [map_bind, liftedLast, map_pure, bind_pure_comp]
+      _ = _ :=
+        (OracleComp.iterate_map r (liftedStep step) step Prod.snd
+          (fun p => by simp only [liftedStep, Functor.map_map, id_map']) ([], w₀)).symm
   rw [hprogram] at hall
   have := hlength 0 (Nat.zero_le _) w₀ hbase
   refine hall.mono ?_
