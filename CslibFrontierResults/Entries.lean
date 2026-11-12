@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConstantDepth
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
@@ -1117,6 +1118,32 @@ register_result "hitting-set-set-multilinear-depth-three" where
     from a source; the perfect hash family is the library's, so the size bound differs from \
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
+
+register_result "hitting-set-constant-depth" where
+  title := "Subexponential hitting sets for constant-depth formulas from the LST lower bound"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := LimayeSrinivasanTavenas2021, theorem := "Corollary 6, via Lemma 18",
+      locator := "§1 (statement) and §6 (Lemma 18, proof of Corollary 6), ECCC TR21-081 rev. 1" },
+    { paper := ChouKumarSolomon2019, theorem := "Theorem 2.3",
+      locator := "§2.2 (arXiv:1803.05933v1)" },
+    { paper := BhattacharjeeEtAl2025, theorem := "Theorems 4.1 and 6.1",
+      locator := "§4.1 and §6.1 (arXiv:2506.23214v1)" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet,
+    Cslib.Circuits.Arithmetic.eventually_card_constantDepthHittingSet_le,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit
+  ]
+  scope := "Over a field of characteristic zero, for every product-depth Δ, exponent c and \
+    t ≥ 1, for all large n: an explicit set of at most 2^(n^(1/t)) points of Kⁿ containing a \
+    non-root of every nonzero polynomial computed by an unbounded fan-in formula of \
+    product-depth at most Δ with at most n^c nodes, and, at a larger exponent, by a simple \
+    circuit of product-depth at most Δ with at most n^c gates. Built from the formula form of \
+    the library's IMM lower bound, a root theorem by Lagrange inversion, and the \
+    Nisan–Wigderson generator over Reed–Solomon designs. Constant Δ only (not \
+    o(log log log n)); ε of the source is 1/t; existence and size of an explicit set, not a \
+    running time; the large-n thresholds are not explicit; characteristic zero only."
 
 register_result "hitting-set-sparse" where
   title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"

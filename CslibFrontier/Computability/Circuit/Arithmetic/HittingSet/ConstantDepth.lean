@@ -192,37 +192,17 @@ private theorem prime_le (t n : ℕ) : prime t n ≤ 2 * max (numVars t n) 2 := 
 
 /-! ### The hard polynomial -/
 
-/-- A set-multilinear polynomial is multilinear. -/
-private theorem degreeOf_le_one_of_isSetMultilinear {σ K : Type*} [CommSemiring K] {d : ℕ}
-    {blk : σ → Fin d} {S : Finset (Fin d)} {f : MvPolynomial σ K}
-    (hf : MvPolynomial.IsSetMultilinear blk S f) (v : σ) : f.degreeOf v ≤ 1 := by
-  classical
-  refine (degreeOf_le_iff).2 fun m hm => ?_
-  obtain ⟨x, rfl⟩ := hf m hm
-  rw [blockMonomial_apply]
-  split_ifs <;> omega
-
-/-- A set-multilinear polynomial on `S` has total degree at most `#S`. -/
-private theorem totalDegree_le_of_isSetMultilinear {σ K : Type*} [CommSemiring K] {d : ℕ}
-    {blk : σ → Fin d} {S : Finset (Fin d)} {f : MvPolynomial σ K}
-    (hf : MvPolynomial.IsSetMultilinear blk S f) : f.totalDegree ≤ #S := by
-  refine Finset.sup_le fun m hm => ?_
-  obtain ⟨x, rfl⟩ := hf m hm
-  change Finsupp.degree (blockMonomial blk S x) ≤ #S
-  simp [blockMonomial]
-
 /-- The hard polynomial is multilinear. -/
 private theorem degreeOf_immFormula_le (K : Type*) [Field K] (t n : ℕ)
     (v : Fin (numVars t n)) :
     (immFormula K (dim t n) (depth t n)).polynomial.degreeOf v ≤ 1 :=
-  degreeOf_le_one_of_isSetMultilinear
-    (isSetMultilinear_immFormula (K := K) (dim t n)).isSetMultilinear_polynomial v
+  (isSetMultilinear_immFormula (K := K) (dim t n)).isSetMultilinear_polynomial.degreeOf_le_one v
 
 /-- The hard polynomial has total degree at most `δ`. -/
 private theorem totalDegree_immFormula_le (K : Type*) [Field K] (t n : ℕ) :
     (immFormula K (dim t n) (depth t n)).polynomial.totalDegree ≤ depth t n := by
-  have := totalDegree_le_of_isSetMultilinear
-    (isSetMultilinear_immFormula (K := K) (d := depth t n) (dim t n)).isSetMultilinear_polynomial
+  have := (isSetMultilinear_immFormula (K := K) (d := depth t n)
+    (dim t n)).isSetMultilinear_polynomial.totalDegree_le
   simpa using this
 
 /-! ### Hardness -/
@@ -296,17 +276,6 @@ private theorem eventually_le_prime_pow (ht : 1 ≤ t) :
     _ ≤ prime t n ^ (8 * t + 2) := by gcongr
 
 /-! ### Size -/
-
-/-- A linear function is eventually below `2 ^ r`. -/
-private theorem eventually_mul_succ_le_two_pow (A : ℕ) :
-    ∀ᶠ r : ℕ in atTop, A * (r + 1) ≤ 2 ^ r := by
-  have hlim := tendsto_pow_const_div_const_pow_of_one_lt 1 (r := (2 : ℝ)) one_lt_two
-  have hε : (0 : ℝ) < 1 / (2 * A + 1) := by positivity
-  filter_upwards [(tendsto_order.1 hlim).2 _ hε, eventually_ge_atTop 1] with r hr hr1
-  have h2 : (0 : ℝ) < 2 ^ r := by positivity
-  rw [div_lt_div_iff₀ h2 (by positivity), one_mul, pow_one] at hr
-  have hr' : r * (2 * A + 1) < 2 ^ r := by exact_mod_cast hr
-  nlinarith
 
 /-- The hitting set has at most `2 ^ 2 ^ ⌊L / t⌋` points once `48 t (c + 1) (r + 1) ≤ 2 ^ r` for
 `r = ⌊L / 8t⌋`. -/
@@ -386,8 +355,9 @@ theorem eventually_card_constantDepthHittingSet_le (K : Type*) [Field K] (c t : 
     (ht : 1 ≤ t) :
     ∀ᶠ n in atTop, ((constantDepthHittingSet K c t n).card : ℝ) ≤ 2 ^ ((n : ℝ) ^ (1 / t : ℝ)) := by
   filter_upwards [(tendsto_log_div ht).eventually
-      (eventually_mul_succ_le_two_pow (48 * t * (c + 1))), eventually_ge_atTop 1] with n hr hn
-  have hcard := card_le_two_pow_two_pow K c ht hn hr
+      (eventually_mul_sq_le_two_pow (48 * t * (c + 1))), eventually_ge_atTop 1] with n hr hn
+  have hcard := card_le_two_pow_two_pow K c ht hn
+    ((Nat.mul_le_mul_left _ (Nat.le_self_pow two_ne_zero _)).trans hr)
   have hexp : ((2 ^ (Nat.log 2 n / t) : ℕ) : ℝ) ≤ (n : ℝ) ^ (1 / t : ℝ) := by
     have ht' : (0 : ℝ) < t := by exact_mod_cast ht
     have h2L : ((2 ^ Nat.log 2 n : ℕ) : ℝ) ≤ n := by

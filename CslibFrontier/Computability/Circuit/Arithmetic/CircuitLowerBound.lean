@@ -104,7 +104,7 @@ theorem SPFormula.smCost_le_two_pow {d b : ℕ} (hd : d + 1 ≤ 2 ^ b) :
         ring
 
 /-- A quadratic is eventually below `2 ^ d`. -/
-private theorem eventually_mul_sq_le_two_pow (a : ℕ) :
+theorem eventually_mul_sq_le_two_pow (a : ℕ) :
     ∀ᶠ d : ℕ in atTop, a * (d + 1) ^ 2 ≤ 2 ^ d := by
   have hlim := tendsto_pow_const_div_const_pow_of_one_lt 2 (r := 2) one_lt_two
   have hε : (0 : ℝ) < 1 / (4 * a + 1) := by positivity

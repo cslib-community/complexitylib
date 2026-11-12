@@ -271,6 +271,31 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.SetMultilinearHit
 
 **Not certified here.** Positive characteristic. Blocks are indexed by `Fin n × Fin d`; no statement for a general partition is given. The factor `(d + 1) ^ (Nat.log 2 s + 1)` is not removed. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
 
+## Subexponential hitting sets for constant-depth formulas
+
+Import [HittingSet/ConstantDepth.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean). This is Corollary 6 of Limaye, Srinivasan and Tavenas: their lower bound for iterated matrix multiplication (the section on constant-depth lower bounds, `SPFormula.eventually_pow_lt_nodeCount_of_imm`) turned into a hitting set by hardness versus randomness. For `[Field K] [CharZero K]`, a product-depth `Δ`, an exponent `c` and `t ≥ 1`:
+
+- [eventually_isHittingSet_constantDepthHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean): for all large `n`, `constantDepthHittingSet K c t n` hits `{p | ∃ C : SPFormula K n, C.polynomial = p ∧ C.productDepth ≤ Δ ∧ C.nodeCount ≤ n ^ c}`.
+- `eventually_card_constantDepthHittingSet_le`: for all large `n` the set has at most `2 ^ (n ^ (1 / t))` points (as a real inequality).
+- `eventually_isHittingSet_constantDepthHittingSet_circuit`: the set at exponent `(c + 2) * (2 * Δ + 1)` hits simple circuits (`SPCircuit.IsSimple`) of product-depth at most `Δ` with at most `n ^ c` gates.
+
+The set does not depend on `Δ`. It is the set of values of the Nisan–Wigderson generator of `IMM_{ν,δ}`, with `ν = 2 ^ ⌊log₂ n / 8t⌋` and `δ = ⌊log₂ ⌊log₂ ν⌋⌋`, over a Reed–Solomon design, on a grid; the parameters are the definitions in the namespace `ConstantDepthHittingSet`.
+
+The pieces, each usable alone:
+
+- [isHittingSet_generatorHittingSet_of_hard](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/HardnessToHittingSet.lean): an explicit hardness hypothesis on one multilinear polynomial `f` — no formula of product-depth `Δ + 2` with at most `SPFormula.rootCost (s * (2 ^ a * (a + 1) + 2)) d` nodes — gives that `generatorHittingSet f S (s * d)` hits the formulas of product-depth `Δ` with at most `s` nodes, for blocks `S` meeting pairwise in at most `a` points. Through the hybrid argument `exists_root_formula_of_generator_vanishing` ([HittingSet/NWGenerator.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NWGenerator.lean)).
+- [SPFormula.exists_formula_of_root](../../CslibFrontier/Computability/Circuit/Arithmetic/RootFormula.lean): a root `f` of the polynomial of a formula of product-depth `Δ` (its last variable being `y`) has a formula of product-depth `Δ + 1` with at most `SPFormula.rootCost F.nodeCount f.totalDegree` nodes. It implements the closed formula `MvPolynomial.exists_shift_eq_truncate_sum_of_root` ([LowDegreeRoot.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/LowDegreeRoot.lean)), itself from Lagrange inversion `Polynomial.sub_sum_coeff_pow_mem_of_eval_eq` ([LagrangeInversion.lean](../../CslibFrontier/Foundations/Algebra/Polynomial/LagrangeInversion.lean)).
+- Operations on formulas with exact product-depth and size bounds: `substFormula`, `affineInput`, `ofSparse` ([FormulaOps.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaOps.lean)), and `coeffLast`, `lowPartFormula` by interpolation ([FormulaInterpolation.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaInterpolation.lean)).
+- `Cslib.IsDesign` and `Cslib.isDesign_rsDesign` ([Design/ReedSolomon.lean](../../CslibFrontier/Foundations/Combinatorics/Design/ReedSolomon.lean)); `MvPolynomial.exists_aeval_sumElim_ne_zero` ([PartialEval.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/PartialEval.lean)).
+
+Complete client: [ConstantDepthHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConstantDepthHittingSet.lean) instantiates the three theorems at `Δ = 1`, `c = 1`, `t = 1` over `ℚ`. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConstantDepthHittingSet
+```
+
+**Not certified here.** Positive characteristic. Circuits that are not simple, and depth growing with `n` (the source allows `Δ = o(log log log n)`). The source's statement is a running time `(s n D) ^ O(n ^ 2ε)` for an identity test; here it is the existence and size of an explicit set, with no algorithm, no bit complexity and no bound on the cost of computing the points. The parameter `ε` is `1 / t`. The thresholds "for all large `n`" are not explicit.
+
 ## Support-concentrating shifts and perfect hash families
 
 Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of the previous section takes from earlier work.
