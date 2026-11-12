@@ -594,7 +594,7 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locators (Section 1.2 for the TSP dynamic program, and Section 4.1 for inclusion–exclusion counting of Hamiltonian paths) were taken from secondary descriptions and issue #3013; the book body was not inspected in this pass.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost vs. `n`-bit log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011

@@ -4984,6 +4984,7 @@ public import CslibFrontier.Foundations.Combinatorics.HybridPrediction
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.Miss
 public import CslibFrontier.Foundations.Combinatorics.HypergraphCut
+public import CslibFrontier.Foundations.Combinatorics.InclusionExclusion
 public import CslibFrontier.Foundations.Combinatorics.InclusionMatrix
 public import CslibFrontier.Foundations.Combinatorics.Janson
 public import CslibFrontier.Foundations.Combinatorics.KovariSosTuran

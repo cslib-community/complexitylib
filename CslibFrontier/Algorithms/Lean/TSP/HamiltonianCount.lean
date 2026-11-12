@@ -10,40 +10,50 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Lean.TimeM.Loops
 public import CslibFrontier.Algorithms.Lean.Yates
-public import Mathlib.Combinatorics.Enumerative.InclusionExclusion
+public import CslibFrontier.Foundations.Combinatorics.InclusionExclusion
 
 /-!
 # Inclusion–exclusion counting of Hamiltonian paths
 
-Karp's inclusion–exclusion algorithm [Karp1982] [Bax1993] ([FominKratsch2010], Section 4.1) counts
-the Hamiltonian paths of a directed graph on `Fin n` in `O(2ⁿ · n³)` operations while keeping only
-one length-`n` walk-count vector at a time.
+Karp's inclusion–exclusion algorithm [Karp1982] [Bax1993] ([FominKratsch2010], Section 4.2.2,
+Theorem 4.5 and Eq. (4.4), printed pp. 56–57 / PDF pp. 68–69) counts the Hamiltonian paths of a
+directed graph on `Fin n` in `O(2ⁿ · n³)` operations while keeping only one length-`n` walk-count
+vector at a time.
 
-## Mathematical identity
+## Mathematical identity and source adaptation
 
 A sequence `w : Fin n → Fin n` of `n` vertices is a Hamiltonian path of `adj` when consecutive
-vertices are joined by arcs (`IsWalk adj w`) and `w` is injective. Since `Fin n` is finite,
-`w : Fin n → Fin n` is injective iff it is surjective (`Finite.injective_iff_surjective`),
-that is, it misses no vertex of `Fin n`. Applying the inclusion–exclusion principle for an
-intersection of complements (`Finset.inclusion_exclusion_sum_inf_compl`) to the sets of sequences
-missing each vertex expresses the number of Hamiltonian paths as the alternating sum
+vertices are joined by arcs (`IsWalk adj w`) and `w` is injective. Specializing the general
+inclusion–exclusion identity for injective self-maps
+(`Finset.card_filter_injective_eq_sum_powerset` in
+`CslibFrontier.Foundations.Combinatorics.InclusionExclusion`; cf. [FominKratsch2010], Section 4.1,
+Theorem 4.2) to `IsWalk adj` expresses the number of Hamiltonian paths as the alternating sum
 `(#(hamPaths adj) : ℤ) = ∑ S : Finset (Fin n), (-1 : ℤ) ^ (n - #S) * #(walksIn adj S n)`,
 where `walksIn adj S k` is the set of `k`-vertex walks of `adj` whose vertices all lie in `S`
 (`card_hamPaths_eq_sum_walksIn`).
 
+In [FominKratsch2010], Section 4.2.2, Theorem 4.5 and Eq. (4.4), the algorithm fixes start and end
+vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices. Here `hamPaths adj` and `walksIn adj`
+range over all start and end vertices in `Fin n`, so `totalWalkCount adj S` sums the `(n - 1)`-step
+walk counts across all starting vertices `u : Fin n`.
+
 ## Algorithm and cost model
 
-For each subset `S ⊆ Fin n` (indexed by its bitmask `k : Fin (2 ^ n)` via
-`Cslib.Algorithms.Lean.Yates.maskSet`), the number of `n`-vertex walks inside `S` is computed by
+Subsets `S ⊆ Fin n` are enumerated incrementally by their bitmasks `k : Fin (2 ^ n)` via
+`Fin.foldlM (2 ^ n)` (using `Cslib.Algorithms.Lean.Yates.maskSet`), without materializing a list of
+all `2 ^ n` masks. For each `k`, the number of `n`-vertex walks inside `maskSet n k` is computed by
 `n - 1` rounds of restricted vector–adjacency multiplication (`walkCountFrom`, `roundsM`). Each
 round updates the `n`-entry vector in `n²` charged additions, summing the final vector costs `n`
 ticks, and adding the signed contribution to the running total costs `1` tick.
 
 In `TimeM`, `countHamPathsM adj` returns `(#(hamPaths adj) : ℤ)` in at most `2 ^ n * (n ^ 3 + 1)`
 ticks for every `n` (`time_countHamPathsM_le`), and at most `2 ^ n * n ^ 3` ticks for `2 ≤ n`
-(`time_countHamPathsM_le_of_two_le`). Because subsets are processed one by one and each subset
-retains only its current length-`n` vector and the running total, the algorithm uses polynomial
-working space; `TimeM` charges time only, so this space property is structural.
+(`time_countHamPathsM_le_of_two_le`). Because `Fin.foldlM` advances the bitmask index `k` in place
+and each step retains only its current length-`n` vector and the running total, the algorithm uses
+polynomial working space structurally. The `TimeM` bound counts selected unit-cost integer
+additions (with mask popcount, bit tests, and adjacency lookups uncharged), rather than the
+unit-cost vs. `n`-bit log-cost RAM/Turing-machine model discussed in [FominKratsch2010],
+Section 4.2.2, and `TimeM` does not provide a formal space certificate.
 
 ## Main definitions
 
@@ -55,8 +65,6 @@ working space; `TimeM` charges time only, so this space property is structural.
 
 ## Main results
 
-* `Cslib.Algorithms.Lean.TSP.card_filter_injective_eq_sum_powerset`: inclusion–exclusion for
-  injective self-maps satisfying any predicate `P : (V → V) → Prop`.
 * `Cslib.Algorithms.Lean.TSP.card_hamPaths_eq_sum_walksIn`: Karp–Bax inclusion–exclusion formula
   for Hamiltonian paths.
 * `Cslib.Algorithms.Lean.TSP.card_walksFrom`, `card_walksIn_eq_totalWalkCount`: correctness of the
@@ -69,6 +77,7 @@ working space; `TimeM` charges time only, so this space property is structural.
 
 * [E. T. Bax, *Inclusion and exclusion algorithm for the Hamiltonian path problem*][Bax1993]
 * [F. V. Fomin and D. Kratsch, *Exact Exponential Algorithms*][FominKratsch2010], Section 4.1
+  (Theorem 4.2) and Section 4.2.2 (Theorem 4.5 and Eq. (4.4), pp. 56–57)
 * [R. M. Karp, *Dynamic programming meets the principle of inclusion and exclusion*][Karp1982]
 -/
 
@@ -77,59 +86,6 @@ public section
 namespace Cslib.Algorithms.Lean.TSP
 
 open Finset Cslib.Algorithms.Lean Cslib.Algorithms.Lean.TimeM Cslib.Algorithms.Lean.Yates
-
-/-! ### Inclusion–exclusion for injective self-maps -/
-
-section InclusionExclusion
-
-variable {V : Type*} [Fintype V] [DecidableEq V]
-
-/-- **Inclusion–exclusion for injective self-maps.** On a finite type `V`, a map `w : V → V` is
-injective iff it is surjective, i.e., misses no element of `V`. Filtering by any predicate `P` and
-applying inclusion–exclusion over the sets of maps missing each `v : V` expresses the count of
-injective maps satisfying `P` as an alternating sum over subsets `S ⊆ V` of the counts of maps
-satisfying `P` with range in `S`. -/
-theorem card_filter_injective_eq_sum_powerset (P : (V → V) → Prop) [DecidablePred P] :
-    (#(univ.filter fun w : V → V => P w ∧ Function.Injective w) : ℤ) =
-      ∑ S : Finset V, (-1 : ℤ) ^ (Fintype.card V - #S) *
-        #(univ.filter fun w : V → V => P w ∧ ∀ i, w i ∈ S) := by
-  let miss : V → Finset (V → V) := fun v => univ.filter fun w => ∀ i, w i ≠ v
-  let f : (V → V) → ℤ := fun w => if P w then 1 else 0
-  have hIE := Finset.inclusion_exclusion_sum_inf_compl (univ : Finset V) miss f
-  have hLHS : ∑ w ∈ (univ : Finset V).inf (fun v => (miss v)ᶜ), f w =
-      (#(univ.filter fun w : V → V => P w ∧ Function.Injective w) : ℤ) := by
-    have hset : ((univ : Finset V).inf fun v => (miss v)ᶜ) =
-        univ.filter (fun w : V → V => Function.Injective w) := by
-      ext w
-      simp only [Finset.mem_inf, Finset.mem_univ, forall_true_left, Finset.mem_compl,
-        Finset.mem_filter, true_and, miss, not_forall, not_ne_iff]
-      exact Finite.injective_iff_surjective.symm
-    rw [hset, ← Finset.sum_filter]
-    simp only [Finset.filter_filter, and_comm, Finset.sum_const, nsmul_one]
-  have hRHS_term : ∀ T : Finset V, ∑ w ∈ T.inf miss, f w =
-      (#(univ.filter fun w : V → V => P w ∧ ∀ i, w i ∈ Tᶜ) : ℤ) := by
-    intro T
-    have hset : T.inf miss = univ.filter (fun w : V → V => ∀ i, w i ∈ Tᶜ) := by
-      ext w
-      simp only [Finset.mem_inf, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_compl,
-        miss]
-      exact ⟨fun h i hiT => h (w i) hiT i rfl, fun h v hvT i hwi => h i (hwi ▸ hvT)⟩
-    rw [hset, ← Finset.sum_filter]
-    simp only [Finset.filter_filter, and_comm, Finset.sum_const, nsmul_one]
-  rw [hLHS] at hIE
-  rw [hIE, Finset.powerset_univ]
-  simp only [zsmul_eq_mul, Int.cast_pow, Int.cast_neg, Int.cast_one, hRHS_term]
-  refine Finset.sum_bij (fun T _ => Tᶜ) (fun _ _ => Finset.mem_univ _) ?_ ?_ ?_
-  · intro T₁ _ T₂ _ h
-    exact compl_involutive.injective h
-  · intro S _
-    exact ⟨Sᶜ, Finset.mem_univ _, compl_compl S⟩
-  · intro T _
-    have hcard : #T = Fintype.card V - #Tᶜ := by
-      rw [Finset.card_compl, Nat.sub_sub_self (Finset.card_le_univ T)]
-    rw [hcard]
-
-end InclusionExclusion
 
 /-! ### Walks and Hamiltonian paths on `Fin n` -/
 
@@ -180,13 +136,13 @@ theorem mem_hamPaths_iff_ofFn (adj : Fin n → Fin n → Bool) (w : Fin n → Fi
   simp
 
 /-- **Karp–Bax inclusion–exclusion formula for Hamiltonian paths** [Karp1982] [Bax1993]
-([FominKratsch2010], Theorem 4.2): the number of Hamiltonian paths of `adj` on `Fin n` equals the
-alternating sum over `S ⊆ Fin n` of the number of `n`-vertex walks inside `S`. -/
+([FominKratsch2010], Section 4.2.2, Eq. (4.4)): the number of Hamiltonian paths of `adj` on `Fin n`
+equals the alternating sum over `S ⊆ Fin n` of the number of `n`-vertex walks inside `S`. -/
 theorem card_hamPaths_eq_sum_walksIn (adj : Fin n → Fin n → Bool) :
     (#(hamPaths adj) : ℤ) =
       ∑ S : Finset (Fin n), (-1 : ℤ) ^ (n - #S) * #(walksIn adj S n) := by
   unfold hamPaths walksIn
-  convert card_filter_injective_eq_sum_powerset (V := Fin n) (IsWalk adj)
+  convert Finset.card_filter_injective_eq_sum_powerset (V := Fin n) (IsWalk adj)
   exact (Fintype.card_fin n).symm
 
 end Walks
@@ -229,50 +185,43 @@ theorem card_walksFrom_zero (adj : Fin n → Fin n → Bool) (S : Finset (Fin n)
       exact hu (hw0 ▸ hS 0)
     rw [hset, Finset.card_empty, walkCountFrom, ite_eq_right hu]
 
-/-- Inductive step: removing the first vertex `u` bijects `(k + 2)`-vertex walks starting at `u`
-with `(k + 1)`-vertex walks starting at some out-neighbour `v` of `u`. -/
+/-- Inductive step: partitioning `(k + 2)`-vertex walks starting at `u` by their second vertex
+`w 1` (`Finset.card_eq_sum_card_fiberwise`) and removing `u` bijects each fiber with
+`(k + 1)`-vertex walks starting at an out-neighbour `v` of `u`. -/
 theorem card_walksFrom_succ (adj : Fin n → Fin n → Bool) (S : Finset (Fin n)) (k : ℕ) (u : Fin n) :
     #(walksFrom adj S (k + 1) u) =
       ∑ v : Fin n, if u ∈ S ∧ adj u v then #(walksFrom adj S k v) else 0 := by
-  have hpart : walksFrom adj S (k + 1) u =
-      univ.biUnion fun v : Fin n =>
-        (walksFrom adj S (k + 1) u).filter fun w => w 1 = v := by
-    ext w
-    simp
-  rw [hpart, Finset.card_biUnion]
-  · refine Finset.sum_congr rfl fun v _ => ?_
-    by_cases huv : u ∈ S ∧ adj u v = true
-    · rw [ite_eq_left huv]
-      refine Finset.card_bij (fun w _ => w ∘ Fin.succ) ?_ ?_ ?_
-      · intro w hw
-        simp only [Finset.mem_filter, walksFrom, Finset.mem_univ, true_and,
-          isWalk_succ_succ] at hw ⊢
-        exact ⟨hw.2, hw.1.2.1.2, fun i => hw.1.2.2 i.succ⟩
-      · intro w₁ hw₁ w₂ hw₂ h
-        simp only [Finset.mem_filter, walksFrom, Finset.mem_univ, true_and] at hw₁ hw₂
-        funext i
-        refine Fin.cases ?_ (fun j => congrFun h j) i
-        exact hw₁.1.1.trans hw₂.1.1.symm
-      · intro w' hw'
-        simp only [walksFrom, Finset.mem_filter, Finset.mem_univ, true_and] at hw'
-        have htail : Fin.cons u w' ∘ Fin.succ = w' := rfl
-        refine ⟨Fin.cons u w', ?_, htail⟩
-        simp only [Finset.mem_filter, walksFrom, Finset.mem_univ, true_and, isWalk_succ_succ,
-          Fin.cons_zero, Fin.cons_one]
-        rw [htail, hw'.1]
-        exact ⟨⟨⟨huv.2, hw'.2.1⟩, fun i => Fin.cases huv.1 (fun j => hw'.2.2 j) i⟩, rfl⟩
-    · rw [ite_eq_right huv, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-      intro w hw
-      simp only [walksFrom, Finset.mem_filter, Finset.mem_univ, true_and, isWalk_succ_succ] at hw
-      intro hw1
-      have hadj : adj u v = true := by
-        rw [← hw.1, ← hw1]
-        exact hw.2.1.1
-      exact huv ⟨hw.1 ▸ hw.2.2 0, hadj⟩
-  · intro v₁ _ v₂ _ hne
-    refine Finset.disjoint_left.mpr fun w hw₁ hw₂ => ?_
-    simp only [Finset.mem_filter] at hw₁ hw₂
-    exact hne (hw₁.2.symm.trans hw₂.2)
+  rw [Finset.card_eq_sum_card_fiberwise
+    (f := fun w : Fin (k + 2) → Fin n => w 1) (t := univ) (fun _ _ => Finset.mem_univ _)]
+  refine Finset.sum_congr rfl fun v _ => ?_
+  by_cases huv : u ∈ S ∧ adj u v = true
+  · rw [ite_eq_left huv]
+    refine Finset.card_bij (fun w _ => w ∘ Fin.succ) ?_ ?_ ?_
+    · intro w hw
+      simp only [Finset.mem_filter, walksFrom, Finset.mem_univ, true_and,
+        isWalk_succ_succ] at hw ⊢
+      exact ⟨hw.2, hw.1.2.1.2, fun i => hw.1.2.2 i.succ⟩
+    · intro w₁ hw₁ w₂ hw₂ h
+      simp only [Finset.mem_filter, walksFrom, Finset.mem_univ, true_and] at hw₁ hw₂
+      funext i
+      refine Fin.cases ?_ (fun j => congrFun h j) i
+      exact hw₁.1.1.trans hw₂.1.1.symm
+    · intro w' hw'
+      simp only [walksFrom, Finset.mem_filter, Finset.mem_univ, true_and] at hw'
+      have htail : Fin.cons u w' ∘ Fin.succ = w' := rfl
+      refine ⟨Fin.cons u w', ?_, htail⟩
+      simp only [Finset.mem_filter, walksFrom, Finset.mem_univ, true_and, isWalk_succ_succ,
+        Fin.cons_zero, Fin.cons_one]
+      rw [htail, hw'.1]
+      exact ⟨⟨⟨huv.2, hw'.2.1⟩, fun i => Fin.cases huv.1 (fun j => hw'.2.2 j) i⟩, rfl⟩
+  · rw [ite_eq_right huv, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+    intro w hw
+    simp only [walksFrom, Finset.mem_filter, Finset.mem_univ, true_and, isWalk_succ_succ] at hw
+    intro hw1
+    have hadj : adj u v = true := by
+      rw [← hw.1, ← hw1]
+      exact hw.2.1.1
+    exact huv ⟨hw.1 ▸ hw.2.2 0, hadj⟩
 
 /-- **`walkCountFrom` counts `(k + 1)`-vertex walks inside `S` starting at `u`.** -/
 theorem card_walksFrom (adj : Fin n → Fin n → Bool) (S : Finset (Fin n)) (k : ℕ) (u : Fin n) :
@@ -287,15 +236,13 @@ theorem card_walksFrom (adj : Fin n → Fin n → Bool) (S : Finset (Fin n)) (k 
 /-- Partitioning `(k + 1)`-vertex walks inside `S` by their starting vertex `w 0`. -/
 theorem card_walksIn_succ (adj : Fin n → Fin n → Bool) (S : Finset (Fin n)) (k : ℕ) :
     #(walksIn adj S (k + 1)) = ∑ u : Fin n, walkCountFrom adj S k u := by
-  have hpart : walksIn adj S (k + 1) = univ.biUnion (walksFrom adj S k) := by
-    ext w
-    simp [walksIn, walksFrom]
-  rw [hpart, Finset.card_biUnion]
-  · refine Finset.sum_congr rfl fun u _ => card_walksFrom adj S k u
-  · intro u₁ _ u₂ _ hne
-    refine Finset.disjoint_left.mpr fun w hw₁ hw₂ => ?_
-    simp only [walksFrom, Finset.mem_filter] at hw₁ hw₂
-    exact hne (hw₁.2.1.symm.trans hw₂.2.1)
+  rw [Finset.card_eq_sum_card_fiberwise
+    (f := fun w : Fin (k + 1) → Fin n => w 0) (t := univ) (fun _ _ => Finset.mem_univ _)]
+  refine Finset.sum_congr rfl fun u _ => ?_
+  rw [← card_walksFrom]
+  congr 1
+  ext w
+  simp [walksIn, walksFrom, and_comm]
 
 /-- **`totalWalkCount` counts `n`-vertex walks inside `S`.** -/
 theorem card_walksIn_eq_totalWalkCount (adj : Fin n → Fin n → Bool) (S : Finset (Fin n)) :
@@ -365,12 +312,12 @@ variable {n : ℕ}
       let dp ← roundsM adj k m
       sumVecM dp
 
-/-- **Karp–Bax inclusion–exclusion Hamiltonian path counter in `TimeM`** [Karp1982] [Bax1993]:
-iterates over all `2 ^ n` subsets `S = maskSet n k` (`k : Fin (2 ^ n)`), computes
-`#(walksIn adj S n)` by `n - 1` rounds of restricted vector–adjacency multiplication, and
-accumulates the signed sum in `ℤ`. -/
+/-- **Karp–Bax inclusion–exclusion Hamiltonian path counter in `TimeM`** [Karp1982] [Bax1993]
+([FominKratsch2010], Section 4.2.2, Theorem 4.5): enumerates all `2 ^ n` subsets `S = maskSet n k`
+incrementally via `Fin.foldlM (2 ^ n)`, computes `#(walksIn adj S n)` by `n - 1` rounds of
+restricted vector–adjacency multiplication, and accumulates the signed sum in `ℤ`. -/
 @[expose] def countHamPathsM (adj : Fin n → Fin n → Bool) : TimeM ℕ ℤ :=
-  (List.finRange (2 ^ n)).foldlM
+  Fin.foldlM (2 ^ n)
     (fun acc (k : Fin (2 ^ n)) => do
       let w ← subsetWalksM adj k
       ✓ pure (acc + (-1 : ℤ) ^ (n - maskCard n k) * (w : ℤ)))
@@ -381,29 +328,12 @@ accumulates the signed sum in `ℤ`. -/
   let c ← countHamPathsM adj
   pure (decide (0 < c))
 
-private theorem foldl_add_eq_sum {α : Type*} (f : α → ℕ) (l : List α) (init : ℕ) :
-    l.foldl (fun acc a => acc + f a) init = init + (l.map f).sum := by
-  induction l generalizing init with
-  | nil => simp
-  | cons a l ih =>
-    simp only [List.foldl_cons, List.map_cons, List.sum_cons, ih]
-    omega
-
-private theorem foldl_int_add_eq_sum {α : Type*} (f : α → ℤ) (l : List α) (init : ℤ) :
-    l.foldl (fun acc a => acc + f a) init = init + (l.map f).sum := by
-  induction l generalizing init with
-  | nil => simp
-  | cons a l ih =>
-    simp only [List.foldl_cons, List.map_cons, List.sum_cons, ih]
-    ring
-
 @[simp] theorem ret_stepCellM (adj : Fin n → Fin n → Bool) (k : ℕ) (dp : Vector ℕ n)
     (u : Fin n) :
     (stepCellM adj k dp u).ret =
       ∑ v : Fin n, if u ∈ maskSet n k ∧ adj u v then dp[v.1] else 0 := by
-  simp only [stepCellM, ret_foldlM, ret_bind, ret_pure, foldl_add_eq_sum, zero_add,
-    Bool.and_eq_true, mem_maskSet]
-  rw [← Fin.sum_univ_def]
+  simp only [stepCellM, ret_foldlM, ret_bind, ret_pure, Bool.and_eq_true, mem_maskSet]
+  rw [← List.foldl_map, ← List.sum_eq_foldl, ← Fin.sum_univ_def]
 
 @[simp] theorem time_stepCellM (adj : Fin n → Fin n → Bool) (k : ℕ) (dp : Vector ℕ n)
     (u : Fin n) :
@@ -447,8 +377,8 @@ theorem ret_roundsM (adj : Fin n → Fin n → Bool) (k r : ℕ) :
 
 @[simp] theorem ret_sumVecM (dp : Vector ℕ n) :
     (sumVecM dp).ret = ∑ u : Fin n, dp[u.1] := by
-  simp only [sumVecM, ret_foldlM, ret_bind, ret_pure, foldl_add_eq_sum, zero_add]
-  rw [← Fin.sum_univ_def]
+  simp only [sumVecM, ret_foldlM, ret_bind, ret_pure]
+  rw [← List.foldl_map, ← List.sum_eq_foldl, ← Fin.sum_univ_def]
 
 @[simp] theorem time_sumVecM (dp : Vector ℕ n) : (sumVecM dp).time = n := by
   rw [sumVecM, time_foldlM_of_time_eq _ _ _ (c := 1) (fun _ _ => rfl), List.length_finRange,
@@ -473,10 +403,10 @@ theorem time_subsetWalksM (adj : Fin n → Fin n → Bool) (k : ℕ) :
 number of Hamiltonian paths of `adj`. -/
 @[simp] theorem ret_countHamPathsM (adj : Fin n → Fin n → Bool) :
     (countHamPathsM adj).ret = (#(hamPaths adj) : ℤ) := by
-  rw [countHamPathsM, ret_foldlM]
+  rw [countHamPathsM, Fin.foldlM_eq_foldlM_finRange, ret_foldlM]
   simp only [ret_bind, ret_subsetWalksM, ret_pure, maskCard_eq_card_maskSet,
     ← card_walksIn_eq_totalWalkCount]
-  rw [foldl_int_add_eq_sum, zero_add, ← Fin.sum_univ_def, card_hamPaths_eq_sum_walksIn]
+  rw [← List.foldl_map, ← List.sum_eq_foldl, ← Fin.sum_univ_def, card_hamPaths_eq_sum_walksIn]
   refine Finset.sum_bij (fun (k : Fin (2 ^ n)) _ => maskSet n k)
     (fun _ _ => Finset.mem_univ _) ?_ ?_ (fun _ _ => rfl)
   · intro k₁ _ k₂ _ h
@@ -493,7 +423,8 @@ theorem card_hamPaths_eq_toNat_ret_countHamPathsM (adj : Fin n → Fin n → Boo
 /-- Exact tick count of `countHamPathsM`: `2 ^ n * ((n - 1) * n ^ 2 + n + 1)`. -/
 theorem time_countHamPathsM (adj : Fin n → Fin n → Bool) :
     (countHamPathsM adj).time = 2 ^ n * ((n - 1) * n ^ 2 + n + 1) := by
-  rw [countHamPathsM, time_foldlM_of_time_eq _ _ _ (c := (n - 1) * n ^ 2 + n + 1)]
+  rw [countHamPathsM, Fin.foldlM_eq_foldlM_finRange,
+    time_foldlM_of_time_eq _ _ _ (c := (n - 1) * n ^ 2 + n + 1)]
   · rw [List.length_finRange]
   · intro acc k
     simp only [time_bind, time_subsetWalksM, time_tick, time_pure, add_zero]

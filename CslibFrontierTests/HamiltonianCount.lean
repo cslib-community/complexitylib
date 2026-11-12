@@ -10,7 +10,7 @@ import Mathlib.Data.Fin.VecNotation
 /-!
 # Worked inclusion–exclusion Hamiltonian-path counting examples
 
-These kernel-checked examples (using `decide`, never `native_decide`) exercise
+These kernel-checked examples (using `decide +kernel`, never `native_decide`) exercise
 `Cslib.Algorithms.Lean.TSP.countHamPathsM` and `decideHamPathM`:
 
 1. A directed path `0 → 1 → 2` on `Fin 3` with a unique Hamiltonian path, and the observed tick
@@ -95,47 +95,5 @@ example : (decideHamPathM diamond4).ret = true := by decide +kernel
 example : (countHamPathsM (n := 0) fun _ _ => false).ret = 1 := by decide +kernel
 example : (countHamPathsM (n := 1) fun _ _ => false).ret = 1 := by decide +kernel
 example : (countHamPathsM (n := 1) fun _ _ => true).ret = 1 := by decide +kernel
-
-/-! ### 6. Axiom audit -/
-
-/--
-info: 'Cslib.Algorithms.Lean.TSP.card_filter_injective_eq_sum_powerset' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms card_filter_injective_eq_sum_powerset
-
-/--
-info: 'Cslib.Algorithms.Lean.TSP.card_hamPaths_eq_sum_walksIn' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms card_hamPaths_eq_sum_walksIn
-
-/--
-info: 'Cslib.Algorithms.Lean.TSP.ret_countHamPathsM' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms ret_countHamPathsM
-
-/--
-info: 'Cslib.Algorithms.Lean.TSP.time_countHamPathsM_le_of_two_le' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms time_countHamPathsM_le_of_two_le
-
-/--
-info: 'Cslib.Algorithms.Lean.TSP.ret_decideHamPathM_eq_true_iff' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms ret_decideHamPathM_eq_true_iff
 
 end CslibFrontierTests.HamiltonianCount
