@@ -120,7 +120,7 @@ theorem andreevCubePoint_add (x : BitString (2 ^ b)) (q : Fin b → Fin m) (z : 
 theorem andreev_andreevCubePoint (x : BitString (2 ^ b)) {s : Fin b → ℕ} (hs : ∀ j, s j ≤ m) :
     andreev b m (andreevCubePoint b m x s) =
       x (BitString.equivFin b fun j => decide (s j % 2 = 1)) := by
-  rw [andreev_eq_table_parities, andreevCubePoint_andreevTableIndex]
+  rw [andreev_eq_table_parities, andreevTable, andreevCubePoint_andreevTableIndex]
   congr 2
   funext j
   simp only [andreevParities, parity, parityOn, andreevCubePoint_andreevBlockVar,

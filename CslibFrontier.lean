@@ -1030,16 +1030,22 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.Hessian.SourceCompl
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AlgebraicIndependent
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.BoundedDegreeShifts
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ClosedWronskian
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPart
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPartDerivative
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPartEval
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Concentrating
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingMonomial
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingReduction
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShift
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Defs
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LogCurve
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetPartitioned
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
@@ -1391,6 +1397,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andr
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevOddErrors
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharp
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharpScore
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSignCoherent
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevTruncatedCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
@@ -5049,6 +5057,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.Mobius
 public import CslibFrontier.Foundations.BooleanAnalysis.Monotone
 public import CslibFrontier.Foundations.BooleanAnalysis.MultilinearExtension
 public import CslibFrontier.Foundations.BooleanAnalysis.Noise
+public import CslibFrontier.Foundations.BooleanAnalysis.OddForm
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialCorrelation
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialThreshold
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialThresholdWeight
@@ -5502,6 +5511,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.DualNumber
 public import CslibFrontier.Foundations.Data.MvPolynomial.Hessian
 public import CslibFrontier.Foundations.Data.MvPolynomial.HessianChainRule
 public import CslibFrontier.Foundations.Data.MvPolynomial.HessianRank
+public import CslibFrontier.Foundations.Data.MvPolynomial.InitialMonomial
 public import CslibFrontier.Foundations.Data.MvPolynomial.MixedOperator
 public import CslibFrontier.Foundations.Data.MvPolynomial.PDerivConst
 public import CslibFrontier.Foundations.Data.MvPolynomial.PartialDerivatives
@@ -5510,9 +5520,11 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinear
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjectionProd
+public import CslibFrontier.Foundations.Data.MvPolynomial.SetPartitioned
 public import CslibFrontier.Foundations.Data.MvPolynomial.Shift
 public import CslibFrontier.Foundations.Data.MvPolynomial.SliceMatrix
 public import CslibFrontier.Foundations.Data.MvPolynomial.SplitRank
+public import CslibFrontier.Foundations.Data.MvPolynomial.SubstituteOne
 public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
@@ -5576,6 +5588,7 @@ public import CslibFrontier.Foundations.Data.Nat.Primrec
 public import CslibFrontier.Foundations.Data.Nat.Radix
 public import CslibFrontier.Foundations.Data.Nat.Radix.Digit
 public import CslibFrontier.Foundations.Data.Nat.Radix.Measurement
+public import CslibFrontier.Foundations.Data.Nat.Radix.Unique
 public import CslibFrontier.Foundations.Data.Nat.RadixUpdate
 public import CslibFrontier.Foundations.Data.Nat.RecursionTree
 public import CslibFrontier.Foundations.Data.Nat.ResidueSum

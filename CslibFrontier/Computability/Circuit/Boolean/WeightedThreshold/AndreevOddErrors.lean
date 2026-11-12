@@ -136,8 +136,8 @@ theorem andreevTableScore_translateTable (b m : ℕ) (S : Finset (Fin b)) (u : B
   have hxor (v : Bool) :
       (1 - 2 * ((xor v β).toNat : ℤ)) = (-1) ^ β.toNat * (1 - 2 * (v.toNat : ℤ)) := by
     cases v <;> cases β <;> rfl
-  simp only [andreevTableScore, andreevTranslateTable_apply, andreevTranslateTableFun_tableIndex,
-    Equiv.symm_apply_apply, hxor, mul_sum]
+  simp only [andreevTableScore, andreevTranslateTable_apply, andreevTable_translateTableFun, hxor,
+    mul_sum]
   rw [← Equiv.sum_comp (Equiv.addRight u)]
   refine sum_congr rfl fun c _ => ?_
   simp only [Equiv.coe_addRight, add_add_cancel_right_bitString, chi_add]
@@ -300,13 +300,12 @@ theorem andreevTruncatedVote_eq_subcubeEval {b m r R : ℕ} (hr : r ≤ b)
     andreevTruncatedVote b m r R w = andreevSubcubeEval b m r w := by
   -- `P_* = 2 q s` with `s = L - 2 k`, where `L = 2 ^ (b - r)` and `0 ≤ k ≤ L`.
   set p := andreevParities b m w
-  set k : ℤ := ∑ c ∈ andreevSubcube b r p,
-    ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ)
+  set k : ℤ := ∑ c ∈ andreevSubcube b r p, ((andreevTable b m w c).toNat : ℤ)
   have hk : 0 ≤ k ∧ k ≤ 2 ^ (b - r) := by
     refine ⟨sum_nonneg fun c _ => by positivity, ?_⟩
     calc k ≤ ∑ _c ∈ andreevSubcube b r p, (1 : ℤ) :=
           sum_le_sum fun c _ => by
-            cases w (andreevTableIndex b m (BitString.equivFin b c)) <;> simp
+            cases andreevTable b m w c <;> simp
       _ = 2 ^ (b - r) := by simp [card_andreevSubcube hr]
   have hscore : andreevSubcubeScore b m r w = 2 ^ r * (2 ^ (b - r) - 2 * k) := by
     rw [andreevSubcubeScore_eq_two_pow_mul_sum, card_andreevPrefixCoords hr, sum_sub_distrib,
@@ -423,8 +422,8 @@ theorem cast_andreevReflectedForm_eq (b m : ℕ) (S : Finset (Fin b)) (τ : Bool
         (((w (Fin.castAdd (b * m) idx)).toNat : ℝ) - 1 / 2) := by
     rw [andreevTableScore, Int.cast_sum, ← (BitString.equivFin b).sum_comp]
     refine sum_congr rfl fun c _ => ?_
-    simp only [Equiv.symm_apply_apply, andreevTableIndex, Int.cast_mul, Int.cast_sub,
-      Int.cast_one, Int.cast_ofNat, Int.cast_natCast]
+    simp only [Equiv.symm_apply_apply, andreevTable, andreevTableIndex, Int.cast_mul,
+      Int.cast_sub, Int.cast_one, Int.cast_ofNat, Int.cast_natCast]
     rw [show ((chi ℤ S c : ℤ) : ℝ) = chi ℝ S c by simp [chi]]
     ring
   have ht : (andreevBlockSum b m S w : ℝ) - #S * m / 2 = ∑ i : Fin (b * m),
