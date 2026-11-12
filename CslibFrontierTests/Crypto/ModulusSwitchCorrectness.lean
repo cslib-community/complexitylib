@@ -11,7 +11,7 @@ import CslibFrontier.Crypto.Computational.SIS.ModulusSwitch.Native
 
 namespace CslibFrontierTests.Crypto.ModulusSwitchCorrectness
 
-open Cslib.Crypto
+open Cslib Cslib.Crypto
 open scoped Matrix
 
 private def secret (q : ℕ) : Fin 1 → Fin 2 → ZMod q := ![![1, -1]]

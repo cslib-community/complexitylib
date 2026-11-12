@@ -11,12 +11,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.De
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Crypto.Computational.SIS.Basic
+public import CslibFrontier.Foundations.Algebra.Negacyclic
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
-import Mathlib.Tactic.Abel
-import Mathlib.Tactic.Ring
 
 /-!
 # General-Modulus SIS, Negacyclic Polynomial Rings, Module-SIS and Module-LWE
@@ -40,10 +39,9 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
    `β` and `q`. When `q ≤ β` and the answer has at least one coordinate, the integer vector with
    one coordinate `q` and all others `0` is a short solution for every matrix, so for such
    parameters a winning answer does not depend on the matrix.
-2. **Negacyclic polynomial rings (`rotMatrix`, `negacyclicMul`)**:
-   Elements of `R[X] / (X^n + 1)` are represented by their coefficient vectors `Fin n → R`.
-   Multiplication by `a : Fin n → R` is the linear action of its `n × n` negacyclic
-   (anticirculant) matrix `rotMatrix a`, so `negacyclicMul a b = rotMatrix a *ᵥ b`.
+2. **Negacyclic polynomial rings**: elements of `R[X] / (X^n + 1)` are represented by their
+   coefficient vectors `Fin n → R`, multiplied by `negacyclicMul a b = rotMatrix a *ᵥ b`; these
+   and the ring `Negacyclic R n` are in `CslibFrontier.Foundations.Algebra.Negacyclic`.
 3. **Module-SIS, Ring-SIS and the structured-to-unstructured embedding (`ModuleSIS`, `RingSIS`)**:
    A `d × k` module matrix `A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)` defines the linear map
    `moduleSISMap A z i = ∑ j, negacyclicMul (A i j) (z j)` (`RingSIS` is the rank-`1` case).
@@ -81,8 +79,6 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
   `Cslib.Crypto.GeneralSIS.isAjtaiCollision`, `Cslib.Crypto.GeneralSIS.ajtaiCollisionGame`,
   `Cslib.Crypto.GeneralSIS.extractSISWord`: Ajtai's hash function, collision extraction and
   collision experiment for arbitrary moduli.
-* `Cslib.Crypto.rotMatrix`, `Cslib.Crypto.negacyclicMul`: the `n × n` negacyclic multiplication
-  matrix and convolution in `R[X] / (X^n + 1)`.
 * `Cslib.Crypto.moduleSISMap`, `Cslib.Crypto.ringSISMap`: the Module-SIS and Ring-SIS linear maps.
 * `Cslib.Crypto.ModuleSISParams`, `Cslib.Crypto.RingSISParams`,
   `Cslib.Crypto.RingSISParams.toModuleSISParams`,
@@ -115,9 +111,6 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
   `Cslib.Crypto.GeneralSIS.isSolution_of_isAjtaiCollision`,
   `Cslib.Crypto.GeneralSIS.succProbability_ajtaiCollisionGame_le`: collision extraction and game
   reduction for Ajtai's hash function over arbitrary moduli.
-* `Cslib.Crypto.negacyclicMul_add`, `Cslib.Crypto.add_negacyclicMul`,
-  `Cslib.Crypto.map_negacyclicMul`, `Cslib.Crypto.abs_negacyclicMul_le`: bilinearity, ring-map
-  compatibility and `ℓ_∞` norm bound for negacyclic polynomial multiplication.
 * `Cslib.Crypto.expandModuleMatrix_mulVec`,
   `Cslib.Crypto.expandModuleMatrix_mulVec_eq_zero_iff`: block-anticirculant matrix-vector
   product agrees with `moduleSISMap` after coefficient flattening.
@@ -431,115 +424,6 @@ theorem succProbability_ajtaiCollisionGame_le (P : GeneralSISParams)
   · simp [h]
 
 end GeneralSIS
-
-/-! ### Part 2: Negacyclic Polynomial Ring `R[X] / (X^n + 1)` -/
-
-/-- The `n × n` negacyclic (anticirculant) multiplication matrix of a degree-`< n` polynomial
-`a : Fin n → R` in `R[X] / (X^n + 1)`. Column `j` represents `X^j · a(X) mod (X^n + 1)`. -/
-def rotMatrix {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) : Matrix (Fin n) (Fin n) R :=
-  Matrix.of fun i j =>
-    if h : j.val ≤ i.val then
-      a ⟨i.val - j.val, by omega⟩
-    else
-      -a ⟨n + i.val - j.val, by omega⟩
-
-/-- Negacyclic polynomial multiplication `a * b mod (X^n + 1)` on coefficient vectors
-`Fin n → R`, defined as the matrix-vector product `rotMatrix a *ᵥ b`. -/
-def negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) : Fin n → R :=
-  rotMatrix a *ᵥ b
-
-/-- Negacyclic multiplication is the matrix-vector product with `rotMatrix a`. -/
-@[simp] theorem rotMatrix_mulVec {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    rotMatrix a *ᵥ b = negacyclicMul a b :=
-  rfl
-
-/-- The negacyclic matrix of the zero polynomial is the zero matrix. -/
-@[simp] theorem rotMatrix_zero {n : ℕ} {R : Type*} [Ring R] :
-    rotMatrix (0 : Fin n → R) = 0 := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.zero_apply, Matrix.zero_apply]
-  split_ifs <;> simp
-
-/-- `rotMatrix` preserves addition of coefficient vectors. -/
-theorem rotMatrix_add {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    rotMatrix (a + b) = rotMatrix a + rotMatrix b := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.add_apply, Matrix.add_apply]
-  split_ifs <;> abel
-
-/-- `rotMatrix` commutes with negation of coefficient vectors. -/
-theorem rotMatrix_neg {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) :
-    rotMatrix (-a) = -rotMatrix a := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.neg_apply, Matrix.neg_apply]
-  split_ifs <;> abel
-
-/-- `rotMatrix` commutes with subtraction of coefficient vectors. -/
-theorem rotMatrix_sub {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    rotMatrix (a - b) = rotMatrix a - rotMatrix b := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.sub_apply, Matrix.sub_apply]
-  split_ifs <;> abel
-
-/-- `rotMatrix` commutes with ring homomorphisms. -/
-theorem map_rotMatrix {n : ℕ} {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a : Fin n → R) :
-    (rotMatrix a).map f = rotMatrix (f ∘ a) := by
-  ext i j
-  simp only [Matrix.map_apply, rotMatrix, Matrix.of_apply, Function.comp_apply]
-  split_ifs <;> simp
-
-/-- Negacyclic multiplication distributes over addition on the right. -/
-theorem negacyclicMul_add {n : ℕ} {R : Type*} [Ring R] (a b c : Fin n → R) :
-    negacyclicMul a (b + c) = negacyclicMul a b + negacyclicMul a c :=
-  Matrix.mulVec_add (rotMatrix a) b c
-
-/-- Negacyclic multiplication distributes over addition on the left. -/
-theorem add_negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b c : Fin n → R) :
-    negacyclicMul (a + b) c = negacyclicMul a c + negacyclicMul b c := by
-  simp only [negacyclicMul, rotMatrix_add, Matrix.add_mulVec]
-
-/-- Negacyclic multiplication with zero on the right is zero. -/
-@[simp] theorem negacyclicMul_zero {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) :
-    negacyclicMul a 0 = 0 :=
-  Matrix.mulVec_zero (rotMatrix a)
-
-/-- Negacyclic multiplication with zero on the left is zero. -/
-@[simp] theorem zero_negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) :
-    negacyclicMul 0 a = 0 := by
-  simp only [negacyclicMul, rotMatrix_zero, Matrix.zero_mulVec]
-
-/-- Negacyclic multiplication commutes with ring homomorphisms applied to coefficients. -/
-theorem map_negacyclicMul {n : ℕ} {R S : Type*} [Ring R] [Ring S] (f : R →+* S)
-    (a b : Fin n → R) :
-    f ∘ negacyclicMul a b = negacyclicMul (f ∘ a) (f ∘ b) := by
-  funext i
-  have h := RingHom.map_mulVec f (rotMatrix a) b i
-  rw [map_rotMatrix] at h
-  exact h
-
-/-- Entrywise absolute-value bound for `rotMatrix` over `ℤ`. -/
-theorem abs_rotMatrix_le {n α : ℕ} {a : Fin n → ℤ} (ha : ∀ i, |a i| ≤ α) (i j : Fin n) :
-    |rotMatrix a i j| ≤ α := by
-  simp only [rotMatrix, Matrix.of_apply]
-  split_ifs with h
-  · exact ha ⟨i.val - j.val, by omega⟩
-  · rw [abs_neg]
-    exact ha ⟨n + i.val - j.val, by omega⟩
-
-/-- **Infinity-norm bound for negacyclic multiplication**: if `‖a‖_∞ ≤ α` and `‖b‖_∞ ≤ β`, then
-every coefficient of `negacyclicMul a b` has absolute value at most `n * α * β`. -/
-theorem abs_negacyclicMul_le {n α β : ℕ} {a b : Fin n → ℤ}
-    (ha : ∀ i, |a i| ≤ α) (hb : ∀ j, |b j| ≤ β) (i : Fin n) :
-    |negacyclicMul a b i| ≤ n * α * β := by
-  calc |negacyclicMul a b i|
-      = |∑ j : Fin n, rotMatrix a i j * b j| := rfl
-    _ ≤ ∑ j : Fin n, |rotMatrix a i j * b j| := Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ _j : Fin n, ((α : ℤ) * β) := Finset.sum_le_sum fun j _ => by
-      rw [abs_mul]
-      exact mul_le_mul (abs_rotMatrix_le ha i j) (hb j) (abs_nonneg _) (by positivity)
-    _ = n * α * β := by
-      simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-      ring
 
 /-! ### Part 3: Module-SIS, Ring-SIS and Structured-to-Unstructured Expansion -/
 
