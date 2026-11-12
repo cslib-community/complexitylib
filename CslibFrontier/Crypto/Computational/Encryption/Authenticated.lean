@@ -1435,24 +1435,19 @@ noncomputable def ccaGame (E : SymmetricCipher) (adversary : CCAAdversary)
       (E.ccaOracle n k bit)) (adversary n [])).run []
   return out.1
 
-/-- Running an oracle-PPT CCA adversary against `ccaOracle` is uniformly strict PPT in `(n, k)` for
-each challenge bit `bit`. -/
-@[program_certificate]
-theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
-    (hadversary : IsOraclePPT encBool adversary) (bit : Bool) :
-    IsPPTOn (encPair encUnary encBits) (encPair encBool (encList encBits))
-      (fun caller : ℕ × List Bool =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-            (E.ccaOracle caller.1 caller.2 bit)) (adversary caller.1 [])).run []) := by
-  obtain ⟨ce, de, hlenEnc⟩ := E.encrypt_ppt.length_le
-  obtain ⟨cd, dd, hlenDec⟩ := E.decrypt_polyTime.polyBounded_length.exists_le
+/-- The shared CCA decryption branch rejects logged ciphertexts and preserves the ciphertext log. -/
+private theorem isPPTOn_ccaDecryptBranch (E : SymmetricCipher) :
+    IsPPTOn
+      (encPair (encPair encUnary encBits)
+        (encPair (encPair (encFinEnum Bool) encBits) (encList encBits)))
+      (encPair encBits (encList encBits))
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
+        if p.2.2.contains p.2.1.2 then
+          pure ([], p.2.2)
+        else
+          pure (encOption encBits (E.decrypt p.1.1 p.1.2 p.2.1.2), p.2.2)) := by
   let EIn := encPair (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Bool) encBits) (encList encBits))
-  have hop : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.1)
-      EIn encBool :=
-    (ComputableInPolyTime.of_finite id).comp (by dsimp only [EIn]; fun_prop)
   have hcontains : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         p.2.2.contains p.2.1.2)
@@ -1474,14 +1469,32 @@ theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
         pure ([], p.2.2)) :=
     (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
       (by dsimp only [EIn]; fun_prop)).isPPTOn
-  have hdecBranch : IsPPTOn EIn (encPair encBits (encList encBits))
+  exact IsPPTOn.cond' hcontains hnoReply
+    ((ComputableInPolyTime.prod hdecWord (by dsimp only [EIn]; fun_prop)).isPPTOn)
+
+/-- Running an oracle-PPT CCA adversary against `ccaOracle` is uniformly strict PPT in `(n, k)` for
+each challenge bit `bit`. -/
+@[program_certificate]
+theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
+    (hadversary : IsOraclePPT encBool adversary) (bit : Bool) :
+    IsPPTOn (encPair encUnary encBits) (encPair encBool (encList encBits))
+      (fun caller : ℕ × List Bool =>
+        (OracleComp.interpret
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+            (E.ccaOracle caller.1 caller.2 bit)) (adversary caller.1 [])).run []) := by
+  obtain ⟨ce, de, hlenEnc⟩ := E.encrypt_ppt.length_le
+  obtain ⟨cd, dd, hlenDec⟩ := E.decrypt_polyTime.polyBounded_length.exists_le
+  let EIn := encPair (encPair encUnary encBits)
+    (encPair (encPair (encFinEnum Bool) encBits) (encList encBits))
+  have hop : ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.1)
+      EIn encBool :=
+    (ComputableInPolyTime.of_finite id).comp (by dsimp only [EIn]; fun_prop)
+  have hnoReply : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
-        if p.2.2.contains p.2.1.2 then
-          pure ([], p.2.2)
-        else
-          pure (encOption encBits (E.decrypt p.1.1 p.1.2 p.2.1.2), p.2.2)) :=
-    IsPPTOn.cond' hcontains hnoReply
-      ((ComputableInPolyTime.prod hdecWord (by dsimp only [EIn]; fun_prop)).isPPTOn)
+        pure ([], p.2.2)) :=
+    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
+      (by dsimp only [EIn]; fun_prop)).isPPTOn
   have hreq : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.2)
       EIn encBits := by
@@ -1535,7 +1548,7 @@ theorem isPPTOn_run_ccaOracle (E : SymmetricCipher) {adversary : CCAAdversary}
       (fun pair : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         E.ccaOracle pair.1.1 pair.1.2 bit pair.2.1 pair.2.2) := by
     unfold ccaOracle
-    exact IsPPTOn.cond' hop hdecBranch hencBranch
+    exact IsPPTOn.cond' hop (isPPTOn_ccaDecryptBranch E) hencBranch
   apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
     (initial := fun _ => ([] : List (List Bool)))
@@ -1667,35 +1680,11 @@ theorem isPPTOn_run_oneTimeCCAOracle (E : SymmetricCipher) {adversary : CCAAdver
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.1)
       EIn encBool :=
     (ComputableInPolyTime.of_finite id).comp (by dsimp only [EIn]; fun_prop)
-  have hcontains : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
-        p.2.2.contains p.2.1.2)
-      EIn encBool :=
-    ComputableInPolyTime.contains
-      (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
-  have hdecArg : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
-        (p.1.1, p.1.2, p.2.1.2))
-      EIn (encPair encUnary (encPair encBits encBits)) := by
-    dsimp only [EIn]; fun_prop
-  have hdecWord : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
-        encOption encBits (E.decrypt p.1.1 p.1.2 p.2.1.2))
-      EIn encBits :=
-    (E.decrypt_polyTime.comp hdecArg).encoding_comp
   have hnoReply : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         pure ([], p.2.2)) :=
     (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
       (by dsimp only [EIn]; fun_prop)).isPPTOn
-  have hdecBranch : IsPPTOn EIn (encPair encBits (encList encBits))
-      (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
-        if p.2.2.contains p.2.1.2 then
-          pure ([], p.2.2)
-        else
-          pure (encOption encBits (E.decrypt p.1.1 p.1.2 p.2.1.2), p.2.2)) :=
-    IsPPTOn.cond' hcontains hnoReply
-      ((ComputableInPolyTime.prod hdecWord (by dsimp only [EIn]; fun_prop)).isPPTOn)
   have hreq : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) => p.2.1.2)
       EIn encBits := by
@@ -1755,7 +1744,7 @@ theorem isPPTOn_run_oneTimeCCAOracle (E : SymmetricCipher) {adversary : CCAAdver
       (fun pair : (ℕ × List Bool) × ((Bool × List Bool) × List (List Bool)) =>
         E.oneTimeCCAOracle pair.1.1 pair.1.2 bit pair.2.1 pair.2.2) := by
     unfold oneTimeCCAOracle
-    exact IsPPTOn.cond' hop hdecBranch hencBranch
+    exact IsPPTOn.cond' hop (isPPTOn_ccaDecryptBranch E) hencBranch
   apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
     (initial := fun _ => ([] : List (List Bool)))

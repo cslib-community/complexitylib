@@ -808,23 +808,19 @@ private theorem computableInPolyTime_handlerBound
   have hL := hfst.encoding_comp.trans ComputableInPolyTime.length_bits
   have hW := (ComputableInPolyTime.snd enc encBits).trans ComputableInPolyTime.length_bits
   have hb := hfst.trans hbound
-  have add {f g} (hf : ComputableInPolyTime f (encPair enc encBits) encUnary)
-      (hg : ComputableInPolyTime g (encPair enc encBits) encUnary) :
-      ComputableInPolyTime (fun x => f x + g x) (encPair enc encBits) encUnary :=
-    ComputableInPolyTime.unary_add.comp (hf.prod hg)
-  have mul {f g} (hf : ComputableInPolyTime f (encPair enc encBits) encUnary)
-      (hg : ComputableInPolyTime g (encPair enc encBits) encUnary) :
-      ComputableInPolyTime (fun x => f x * g x) (encPair enc encBits) encUnary :=
-    ComputableInPolyTime.unary_mul.comp (hf.prod hg)
-  have pow (d : ℕ) {f} (hf : ComputableInPolyTime f (encPair enc encBits) encUnary) :
-      ComputableInPolyTime (fun x => f x ^ d) (encPair enc encBits) encUnary :=
-    (ComputableInPolyTime.unary_pow d).comp hf
-  have cst (k : ℕ) : ComputableInPolyTime (fun _ => k) (encPair enc encBits) encUnary :=
-    ComputableInPolyTime.const k
-  have h2L1 := add (mul (cst 2) hL) (cst 1)
-  exact add (add (add (add (add (mul (cst 2) hb)
-    (mul (cst 2) (mul (cst cs) (pow ds (add (mul (cst 3) hL) (cst 2))))))
-    (mul (cst 2) (mul h2L1 h2L1))) (mul (cst 4) hL)) (mul (cst 6) hW)) (cst 8)
+  open ComputableInPolyTime in
+  have h2L1 := unary_add' (unary_mul' (const 2) hL) (const 1)
+  exact unary_add'
+    (unary_add'
+      (unary_add'
+        (unary_add'
+          (unary_add' (unary_mul' (const 2) hb)
+            (unary_mul' (const 2) (unary_mul' (const cs)
+              ((unary_pow ds).comp (unary_add' (unary_mul' (const 3) hL) (const 2))))))
+          (unary_mul' (const 2) (unary_mul' h2L1 h2L1)))
+        (unary_mul' (const 4) hL))
+      (unary_mul' (const 6) hW))
+    (const 8)
 
 private theorem length_encList_merklePath_le (hlen : ∀ k m, (H k m).length = k.length)
     {k : List Bool} {vks : List (List Bool)} {u L : ℕ} (hk : k.length ≤ L)
