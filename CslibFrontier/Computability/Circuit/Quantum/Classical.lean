@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Quantum.Code
+import Mathlib.Data.List.GetD
 
 /-!
 # Classical gate codes on basis states
@@ -71,9 +72,7 @@ theorem readBit_inputState_of_le {x : List Bool} {c : ℕ} (hc : x.length ≤ c)
     readBit (inputState m x) c = false := by
   by_cases h : c < m
   · rw [readBit_of_lt _ h]
-    change x.getD c false = false
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none hc]
-    rfl
+    exact List.getD_eq_default x false hc
   · exact readBit_of_le _ (not_lt.mp h)
 
 /-- The bits of the input state are those of the input, when the input fits in the register. -/
@@ -82,9 +81,7 @@ theorem readBit_inputState {x : List Bool} (hx : x.length ≤ m) (c : ℕ) :
   by_cases hc : c < m
   · rw [readBit_of_lt _ hc]
     rfl
-  · rw [readBit_inputState_of_le (by omega), List.getD_eq_getElem?_getD,
-      List.getElem?_eq_none (by omega)]
-    rfl
+  · rw [readBit_inputState_of_le (by omega), List.getD_eq_default x false (by omega)]
 
 namespace GateCode
 

@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.BQP
 public import CslibFrontier.Computability.Circuit.Quantum.Counter
 public import CslibFrontier.Computability.Circuit.Quantum.Parallel
 import CslibFrontier.Foundations.Combinatorics.MajorityVote.Weighted
+import CslibFrontier.Foundations.Data.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
@@ -132,16 +133,6 @@ theorem base_le_answer : base w k ≤ answer w k t := by
 
 theorem le_base : w ≤ base w k := Nat.le_mul_of_pos_left w (Nat.succ_pos k)
 
-/-- Division with remainder by `W` is unique. -/
-theorem eq_of_add_mul_eq {W a a' b b' : ℕ} (ha : a < W) (ha' : a' < W)
-    (h : a + b * W = a' + b' * W) : a = a' ∧ b = b' := by
-  have hW : 0 < W := Nat.lt_of_le_of_lt (Nat.zero_le _) ha
-  have hmod := congrArg (· % W) h
-  have hdiv := congrArg (· / W) h
-  simp only [Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt ha, Nat.mod_eq_of_lt ha'] at hmod
-  simp only [Nat.add_mul_div_right _ _ hW, Nat.div_eq_of_lt ha, Nat.div_eq_of_lt ha'] at hdiv
-  exact ⟨hmod, by omega⟩
-
 variable {m : ℕ}
 
 /-- The first `m ≤ w` qubits of each of the blocks `1, …, k` of the threshold register. -/
@@ -150,7 +141,7 @@ def blocks (w k t : ℕ) (hm : m ≤ w) : Fin k × Fin m ↪ Fin (width w k t) w
     (block_lt p.1.2 (lt_of_lt_of_le p.2.2 hm)).trans base_lt_width⟩
   inj' p p' h := by
     have h' : (p.2 : ℕ) + (p.1 + 1) * w = p'.2 + (p'.1 + 1) * w := congrArg Fin.val h
-    have := eq_of_add_mul_eq (lt_of_lt_of_le p.2.2 hm) (lt_of_lt_of_le p'.2.2 hm) h'
+    have := Nat.eq_of_add_mul_eq (lt_of_lt_of_le p.2.2 hm) (lt_of_lt_of_le p'.2.2 hm) h'
     exact Prod.ext (Fin.ext (by omega)) (Fin.ext this.1)
 
 @[simp] theorem blocks_apply_val (hm : m ≤ w) (p : Fin k × Fin m) :
@@ -238,7 +229,7 @@ theorem readBit_classicalRun_copyCodes (hn : n ≤ w) (hw : 0 < w) (X : Fin (wid
 /-- **After the copy step every block holds the input**: started from the input `x` of length
 `n ≤ m ≤ w`, the first `m` qubits of each block read `x`. -/
 theorem classicalRun_copyCodes_comp_block (hn : n ≤ m) (hm : m ≤ w) {x : List Bool}
-    (hx : x.length = n) (j : Fin k) :
+    (hx : x.length ≤ n) (j : Fin k) :
     classicalRun (copyCodes n w k) (inputState (width w k t) x) ∘ block hm j =
       inputState m x := by
   funext i
@@ -257,7 +248,7 @@ theorem classicalRun_copyCodes_comp_block (hn : n ≤ m) (hm : m ≤ w) {x : Lis
 /-- **The copy step keeps the counter's ancillas zero**: started from the input `x` of length
 `n ≤ w`, the qubits from `base w k` on read zero. -/
 theorem readBit_classicalRun_copyCodes_of_base_le (hn : n ≤ w) (hw : 0 < w) {x : List Bool}
-    (hx : x.length = n) {c : ℕ} (hc : base w k ≤ c) :
+    (hx : x.length ≤ n) {c : ℕ} (hc : base w k ≤ c) :
     readBit (classicalRun (copyCodes n w k) (inputState (width w k t) x)) c = false := by
   have : w ≤ base w k := le_base
   rw [readBit_classicalRun_copyCodes hn hw (inputState _ x)
@@ -400,9 +391,9 @@ theorem acceptProb_threshold_codes {n w k t : ℕ} {gs : List GateCode} (hw : 0 
   set X := classicalRun (copyCodes n w k) (inputState N x) with hXdef
   -- the copy step puts the input in every block and keeps zeros from the counter on
   have hXblock (j : Fin k) : X ∘ block (t := t) (le_refl w) j = inputState w x :=
-    classicalRun_copyCodes_comp_block hn le_rfl hx j
+    classicalRun_copyCodes_comp_block hn le_rfl hx.le j
   have hXhigh (p : ℕ) (hp : base w k ≤ p) : readBit X p = false :=
-    readBit_classicalRun_copyCodes_of_base_le hn hw hx hp
+    readBit_classicalRun_copyCodes_of_base_le hn hw hx.le hp
   -- the amplitudes of the copies are products
   have hamp (Y : Fin N → Bool) :
       (Circuit.eval (Circuit.ofCodes N (copiesCodes w k gs)) (ket X)).ofLp Y =

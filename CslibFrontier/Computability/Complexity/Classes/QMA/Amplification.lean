@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.BQP.Amplification
 public import CslibFrontier.Foundations.Data.BitString.Block
 public import CslibFrontier.Foundations.Quantum.TensorPower
 import CslibFrontier.Foundations.Combinatorics.MajorityVote.Weighted
+import CslibFrontier.Foundations.Data.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
@@ -134,7 +135,7 @@ theorem nodup_moveInCodes {n p W k : ℕ} (hW : n + p ≤ W) :
   refine (List.nodup_range).pairwise_of_forall_ne fun j _ j' _ hjj' => ?_
   simp only [List.Disjoint, List.mem_map, List.mem_range]
   rintro _ ⟨i, hi, rfl⟩ ⟨i', hi', h⟩
-  have h' := Amplify.eq_of_add_mul_eq (W := W) (a := i' + n) (a' := i + n) (b := j' + 1)
+  have h' := Nat.eq_of_add_mul_eq (W := W) (a := i' + n) (a' := i + n) (b := j' + 1)
     (b' := j + 1) (by omega) (by omega) (by omega)
   omega
 
@@ -148,7 +149,7 @@ theorem nodup_moveOutCodes {n p W k : ℕ} :
   simp only [List.Disjoint, List.mem_map, List.mem_range]
   rintro _ ⟨i, hi, rfl⟩ ⟨i', hi', h⟩
   have h' : i' + j' * p = i + j * p := by rw [Nat.mul_comm j', Nat.mul_comm j]; omega
-  have := Amplify.eq_of_add_mul_eq hi' hi h'
+  have := Nat.eq_of_add_mul_eq hi' hi h'
   omega
 
 /-! ### The registers of the amplified verifier -/
@@ -332,7 +333,7 @@ theorem classicalRun_prep (hnp : n + p ≤ m) (hm : m ≤ W) (hW : n + 2 * R * p
     obtain ⟨⟨j', i'⟩, rfl⟩ := finProdFinEquiv.surjective q
     rw [slotsEmb_finProdFinEquiv, slotEmb_apply_val]
     intro h
-    have := Amplify.eq_of_add_mul_eq (W := W) (a := i' + n) (a' := i) (b := j' + 1) (b' := j + 1)
+    have := Nat.eq_of_add_mul_eq (W := W) (a := i' + n) (a' := i) (b := j' + 1) (b' := j + 1)
       (by omega) (by omega) (by simpa only [Nat.add_assoc] using h)
     omega
   · simp only [Amplify.copyCodes, List.mem_flatMap, List.mem_range, List.mem_map] at hg
@@ -374,7 +375,7 @@ theorem glue_slotsEmb_comp_block (hnp : n + p ≤ m) (hm : m ≤ W) (Z : Fin (2 
     obtain ⟨⟨j', i'⟩, rfl⟩ := finProdFinEquiv.surjective q
     rw [slotsEmb_finProdFinEquiv] at h
     have h' : (i' : ℕ) + n + (j' + 1) * W = i + (j + 1) * W := congrArg Fin.val h
-    have := Amplify.eq_of_add_mul_eq (lt_of_lt_of_le (show (i' : ℕ) + n < m by omega) hm)
+    have := Nat.eq_of_add_mul_eq (lt_of_lt_of_le (show (i' : ℕ) + n < m by omega) hm)
       (lt_of_lt_of_le i.2 hm) h'
     exact hi i' (Fin.ext (by simp; omega))
 
@@ -418,9 +419,9 @@ theorem measureProb_codes (hnp : n + p ≤ m) (hm : m ≤ W) (hW : n + 2 * R * p
   have hX0high (c : ℕ) (hc : n ≤ c) : readBit X0 c = false := readBit_inputState_of_le (by omega)
   set X1 := classicalRun (Amplify.copyCodes n W (2 * R)) X0 with hX1def
   have hX1copy (j : Fin (2 * R)) : X1 ∘ Amplify.block (t := R) hm j = inputState m x :=
-    Amplify.classicalRun_copyCodes_comp_block (by omega) hm hx j
+    Amplify.classicalRun_copyCodes_comp_block (by omega) hm hx.le j
   have hX1high (c : ℕ) (hc : Amplify.base W (2 * R) ≤ c) : readBit X1 c = false :=
-    Amplify.readBit_classicalRun_copyCodes_of_base_le (by omega) hW0 hx hc
+    Amplify.readBit_classicalRun_copyCodes_of_base_le (by omega) hW0 hx.le hc
   set T := tensorPowerApply (amp hnp gs x) (Ψ.ofLp ∘ BitString.blocksEquiv.symm) with hT
   -- off the copies, writing the witness blocks changes nothing
   have hoff (Z : Fin (2 * R * p) → Bool) (c : Fin (Amplify.width W (2 * R) R))
