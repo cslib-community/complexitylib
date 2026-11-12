@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.NoncommABP
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ROABP
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
@@ -1120,6 +1121,33 @@ register_result "hitting-set-set-multilinear-depth-three" where
     from a source; the perfect hash family is the library's, so the size bound differs from \
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
+
+register_result "hitting-set-noncommutative-abp" where
+  title := "Quasipolynomial hitting sets of matrices for non-commutative ABPs"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := ForbesShpilka2013,
+      theorem := "Construction 4.1, Lemmas 4.2, 4.3, 4.5 and Theorem 4.6, for homogeneous \
+        layered programs; not Corollary 4.7",
+      locator := "§1.1 pp. 2–3, §4 pp. 22–24 (arXiv:1209.2408v2)" },
+    { paper := AgrawalGurjarKorwarSaxena2015,
+      theorem := "Theorem 1, in the adapted form of hitting-set-roabp-unknown-order",
+      locator := "§1 and §3 of arXiv:1406.7535" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.exists_mem_noncommABPHittingSet_lift_ne_zero,
+    Cslib.Circuits.Arithmetic.card_noncommABPHittingSet_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of n-tuples of \
+    (d + 1) × (d + 1) matrices such that every nonzero polynomial computed by a homogeneous \
+    layered non-commutative branching program of degree d in n variables with all layers of \
+    width at most W is nonzero at one of the tuples. The set is the image of the hitting set \
+    for read-once oblivious programs in d variables, width W and layer degree n - 1, so its \
+    size is (ndW)^O(log d). The reduction to read-once oblivious programs is that of \
+    Forbes–Shpilka; the hitting set for those is the library's adaptation of \
+    Agrawal–Gurjar–Korwar–Saxena (a different weight family, levels combined one at a \
+    time), not Forbes–Shpilka's generator, so the size is neither paper's bound. Homogeneous \
+    layered programs only. No white-box algorithm and no bit complexity."
 
 register_result "hitting-set-roabp-unknown-order" where
   title := "Quasipolynomial hitting sets for ROABPs in an unknown order"

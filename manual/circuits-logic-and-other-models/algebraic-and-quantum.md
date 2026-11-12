@@ -293,6 +293,20 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ROABPHittingSet
 
 **Not certified here.** Positive characteristic and small fields. Layers that are sparse polynomials in several variables, sums of set-multilinear circuits, and the other theorems of the source. The source's bound: the weights are `a ^ (i + 1) % p` for one prime and the levels are combined one at a time, so the constants differ. The bit length of the points and the cost of computing them; `roabpPrime` is defined by `Nat.find`.
 
+## Hitting sets of matrices for non-commutative branching programs
+
+Import [HittingSet/NoncommABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean). A non-commutative polynomial is tested on tuples of matrices: `P : Fin n → Matrix (Fin (d + 1)) (Fin (d + 1)) F` hits `f : FreeAlgebra F (Fin n)` when `FreeAlgebra.lift F P f ≠ 0`. The endpoint [exists_mem_noncommABPHittingSet_lift_ne_zero](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean) is for `[Field F] [CharZero F]`, `A : NoncommABP F (Fin n) d` (the homogeneous layered programs of [Noncommutative/ABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/Noncommutative/ABP.lean)) with `A.width k ≤ W` for all `k ≤ d` and `A.polynomial ≠ 0`: some `P ∈ noncommABPHittingSet F n d W` has `FreeAlgebra.lift F P A.polynomial ≠ 0`. `card_noncommABPHittingSet_le n d W` bounds the set by the size of `roabpHittingSet F d W (n - 1)` of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), which is `(n d W) ^ O(log d)`.
+
+The tuples are `superdiagPoint a` for the points `a` of that set: the variable `x` becomes the matrix with entry `a k ^ x` at `(k, k + 1)` and zero elsewhere. `eval_roabpProd` ([ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean)) evaluates a read-once oblivious program as an entry of the product of its evaluated layers.
+
+Complete client: [NoncommABPHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/NoncommABPHittingSet.lean) builds the width-one program computing `x₀ x₁` and obtains a tuple of the set where it does not vanish. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NoncommABPHittingSet
+```
+
+**Not certified here.** The reduction is that of [Forbes and Shpilka][forbesshpilka2013] (Construction 4.1 to Theorem 4.6), for homogeneous layered programs; the hitting set for read-once oblivious programs is the one of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), the library's adaptation of Agrawal–Gurjar–Korwar–Saxena with a different weight family, not their generator, so the size is neither paper's bound; their Corollary 4.7 is not formalized. Programs that are not homogeneous and layered. Positive characteristic. White-box identity testing (Raz–Shpilka). The bit length of the matrix entries.
+
 ## Support-concentrating shifts and perfect hash families
 
 Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) takes from earlier work.
@@ -531,6 +545,7 @@ The selected definitions and headline statements have been source-inspected; the
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [dewolf19]: ../sources.md#dewolf19
+[forbesshpilka2013]: ../sources.md#forbesshpilka2013
 [grenet11]: ../sources.md#grenet11
 [hoyerleespalek07]: ../sources.md#hoyerleespalek07
 [mahler64]: ../sources.md#mahler64
