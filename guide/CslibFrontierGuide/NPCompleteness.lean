@@ -48,6 +48,8 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lift
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.VertexJoinGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.DisjointGenus
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query
@@ -69,6 +71,7 @@ import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Projection
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Equality
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.SelfDual
+import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Construction
 import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Size
@@ -1132,7 +1135,36 @@ example {G : Graph} (r : Graph.RotationSystem G)
 
 `VertexMergeGenus` also identifies distinct cofacial vertices, preserving
 the directed port blocks and retaining listed edge positions. Its cofacial
-hypothesis is essential to that theorem. Arbitrary edge deletion uses an
+hypothesis is essential to that theorem. The separate `VertexJoinGenus`
+theorem handles different actual components:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {G : Graph} (r : Graph.RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hr : r.NumericalGenusZero) (h k : Graph.Dart G)
+    (hk : h.vertex ≠ k.vertex)
+    (hc : ¬Graph.RotationCertificate.SameComponent
+      G h.vertex k.vertex) :
+    (r.mergeVertices h k hk).NumericalGenusZero :=
+  r.numericalGenusZero_mergeVertices_of_not_sameComponent hG hr h k hk hc
+```
+
+Disjoint union tags names by parity and concatenates actual declaration and
+edge lists. Loops, indexed duplicates, sparse names and points remain:
+
+```lean
+open Cslib.Complexity Graph.RotationSystem in
+example {G H : Graph} (r : Graph.RotationSystem G)
+    (s : Graph.RotationSystem H)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hH : ∀ v ∈ H.incidenceVertices, v ∈ H.1)
+    (hr : r.NumericalGenusZero) (hs : s.NumericalGenusZero) :
+    (r.disjointUnion s).NumericalGenusZero :=
+  numericalGenusZero_disjointUnion r s hG hH hr hs
+```
+
+Arbitrary edge deletion uses an
 internally proved face-even extension instead, including splitting bridges,
 loops and new isolated points:
 
@@ -1178,8 +1210,9 @@ The complete regression clients are `RotationCornerFaces`,
 and `RotationLiftingConverse` under `CslibFrontierTests/`. They check actual
 tables and numerical certificates, nonbridge and empty-block cases, and
 reflected-order rejection. The proofs are original finite permutation and
-algebraic arguments. No native runtime, geometric realization, full recipe
-closure, recognition or Hanani–Tutte theorem is asserted here.
+algebraic arguments. Static grammar closure is supplied below; these graph
+operations assert no native runtime, geometric realization, recognition or
+Hanani–Tutte theorem.
 
 For permutation-only proofs, import `CslibFrontier.Foundations.GroupTheory.Perm.InsertAfter`,
 `CycleSurgery` or `SelectedOrbits`. The APIs live in `Equiv.Perm.Insertion`,
@@ -1970,6 +2003,7 @@ ordered planar hardness and full #3091 remain open.
 
 Ordinary imports are `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary`,
 `...Embedding.Projection`, `...Embedding.GadgetCyclic` and `...Embedding.Equality`.
+Import `...Embedding.Construction` for every existing construction-tree branch.
 The actual semantic
 objects remain `Cslib.Logic.PL.CSP.PPGadget`; numerical boundary witnesses live
 in `Cslib.Complexity.CSP.OrderedBoundary`.
@@ -2099,7 +2133,8 @@ example :
 
 `CslibFrontierTests/PlanarEqualityBoundary.lean` ties that table to the exact
 original-language NAE body and derives disequality and both OneHot pins.
-General attachment and expanded-language recipes remain separate obligations.
+Generic attachment and the complete static grammar are supplied below;
+expanded-language macros remain separate obligations.
 The raw table program uses bounded predecessor lookup, an outgoing swap and
 prefix restriction. Its residual arity is static; it carries no uniform native
 runtime claim for arbitrary binary arity or language/template size.
@@ -2145,13 +2180,100 @@ full checkers. `CslibFrontierTests/PlanarProjectionAll.lean` checks exact
 middle/wrap bodies and semantics, canonical Nodup extraction, degree five,
 unused ports, an empty alphabet and true/false nullaries.
 
+Every existing `RelationMinor.Construction` now supplies a witness on exactly
+its original-language interpreter, recursively including enabling pin and
+disequality trees:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP.RelationMinor in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin n → Bool)} (c : Construction arity sem R) :
+    GadgetWitness c.gadget := c.orderedWitness
+```
+
+The witness checks the actual body and reversed structural probe; it stores
+no geometric embedding or supplied target-genus oracle:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP.RelationMinor in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin n → Bool)} (c : Construction arity sem R) :
+    verify c.gadget.body (List.ofFn Sum.inl)
+      c.orderedWitness.certificate = true := c.orderedWitness.accepted
+```
+
+Availability also supplies an actual gadget with its witness:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.RelationMinor in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ} {R : Set (Fin n → Bool)}
+    (h : Available arity sem R) :
+    ∃ g : PPGadget arity sem R, Nonempty (GadgetWitness g) :=
+  h.nonempty_orderedGadget
+```
+
+There is no finite-language, body-occurrence, degree or connectedness premise.
+The primitive attachment APIs target the exact existing bodies:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.RelationMinor in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 1) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) (j : Fin (n + 1)) (b : Bool)
+    {p : PPGadget arity sem (pin b)} (v : GadgetWitness p) :
+    GadgetWitness (g.cofactor j b p) := w.cofactor j b v
+
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.RelationMinor in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 2) → Bool)} {g : PPGadget arity sem R}
+    {d : PPGadget arity sem disequality}
+    (w : GadgetWitness g) (v : GadgetWitness d) :
+    GadgetWitness (g.differentDrop d) := w.differentDrop v
+
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.RelationMinor in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin n → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) (j : Fin n)
+    {d : PPGadget arity sem disequality} (v : GadgetWitness d) :
+    GadgetWitness (g.flip j d) := w.flip j v
+
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {R S : Set (Fin 2 → Bool)}
+    {g : PPGadget arity sem R} {h : PPGadget arity sem S}
+    (w : GadgetWitness g) (v : GadgetWitness h) :
+    GadgetWitness (g.conj h) := w.binaryMeet v
+```
+
+The meet is arity two, with no arbitrary higher-arity intersection claim.
+Flip uses the enlarged noncanonical port word directly, removes the old
+marker, swaps names and hides last. Probe corners exist even at unused ports;
+different-component and cofacial joins derive their guards internally.
+`CslibFrontierTests/PlanarConstructionBoundary.lean` exercises all eight
+branches over one original one-in-three symbol, satisfying/rejecting semantic
+rows, exact auxiliary scopes, empty/unused attachments and a closed result.
+Run `scripts/build.sh CslibFrontierTests.PlanarConstructionBoundary CslibFrontierTests.PlanarConstructionAudit --wfail --iofail`.
+
 These are static finite constructors. General projection/cyclic inverses use
 finite choice and are intentionally `noncomputable`. Fixing a language and
 its templates permits nonuniform certificate preprocessing; it does not prove
 the input-varying native compiler's target acceptance or framed time bound.
 Figure 1/NAND boundary tables are macro skeletons until original-language
-substitution is supplied. Remaining pin/disequality
-recipes, expanded language endpoints, native target acceptance, geometric/
+substitution is supplied. OneHot3/CROSS macro expansion, normalization caps
+and Figure-1 substitution, native target acceptance, geometric/
 source comparison, recognition and full #3091 remain open.
 
 
@@ -2228,7 +2350,8 @@ satisfying assignments; the gadget theorem handles existential auxiliaries.
 and checks repeated scopes, nullary operations and false nullary constraints.
 
 The descent follows DK Lemma 3, printed pp. 437–438; actual-body ordered
-reconstruction is original. General attachments and expanded-language recipes,
+reconstruction is original. The existing static grammar has ordered witnesses;
+expanded-language macros,
 native target acceptance, geometry/source comparison, recognition and full
 #3091 remain open.
 

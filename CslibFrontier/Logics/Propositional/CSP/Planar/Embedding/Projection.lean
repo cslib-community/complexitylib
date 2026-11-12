@@ -32,7 +32,9 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP
 
 variable {Rel : Type} {arity : Rel → ℕ} {sem : Rel → List Bool → Bool}
 
-private theorem projectPort_injective (n a : ℕ) (j : Fin (n + 1)) :
+/-- Hiding one free port is injective on all labels: its fresh auxiliary comes first,
+and every old auxiliary remains in the separate following block. -/
+theorem projectPort_injective (n a : ℕ) (j : Fin (n + 1)) :
     Function.Injective (PPGadget.substitutePort a (PPGadget.hidePort j)) := by
   let back : Fin n ⊕ Fin (1 + a) → Fin (n + 1) ⊕ Fin a :=
     Sum.elim (fun i => Sum.inl (j.succAbove i)) (Fin.addCases (fun _ => Sum.inl j) Sum.inr)
