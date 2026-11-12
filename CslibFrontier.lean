@@ -1977,6 +1977,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Formula
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Decider
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.NondeterministicDecider
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Projection
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reachability
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reduction
