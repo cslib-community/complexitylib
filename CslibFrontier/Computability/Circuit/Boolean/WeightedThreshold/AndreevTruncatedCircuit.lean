@@ -20,17 +20,18 @@ for Andreev's Function* (preprint, November 2026), issue
 analysis is in `AndreevOddErrors.lean`; here the truncated vote `andreevTruncatedVote b m r R`
 becomes a depth-two threshold circuit, and the parameters are chosen.
 
-`f_R` is a staircase of `2 R + 2` steps (`altLinearTrunc_eq_sum`), so the truncated score `P_R` is
-`2 X_∅` plus a weighted sum of the indicators `[θ_k ≤ X_S ± D_S]` over the nonempty prefix
-subsets `S`, both reflected forms and the steps `k` (`andreevTruncatedScore_eq_sum`).
-`andreevTruncatedCircuit b m r R` has these `4 (2 ^ r - 1) (R + 1)` indicators as bottom gates.
-Their weights are `-2 χ_S(c)` on the table and `±1` on the blocks in `S`, so they are
-sign-coherent (`isSignCoherent_andreevTruncatedBottomOp`). The output gate, built with
-`depthTwoInputs`, also reads the table bits for the affine term
+`f_R` is a staircase of `2 R + 2` steps (`altLinearTrunc_eq_sum`, in `DepthTwo.lean`), so the
+truncated score `P_R` is `2 X_∅` plus a weighted sum of the indicators `[θ_k ≤ X_S ± D_S]` over
+the nonempty prefix subsets `S`, both reflected forms and the steps `k`
+(`andreevTruncatedScore_eq_sum`). `andreevTruncatedCircuit b m r R` has these
+`4 (2 ^ r - 1) (R + 1)` indicators as bottom gates. Their weights are `-2 χ_S(c)` on the table and
+`±1` on the blocks in `S`, so they are sign-coherent (`isSignCoherent_andreevTruncatedBottomOp`).
+The output gate, built with `depthTwoInputs`, also reads the table bits for the affine term
 (`eval_andreevTruncatedCircuit`).
 
 ## Main definitions
 
+* `AndreevTruncatedBottomIndex`: the bottom gates, by subset, reflected form and step.
 * `andreevTruncatedCircuit`: the truncated circuit.
 * `andreevVoteLevel`: the number `r` of characters kept in Part 2.
 
@@ -69,34 +70,6 @@ sign-coherent (`isSignCoherent_andreevTruncatedBottomOp`). The output gate, buil
 namespace Cslib.Circuits.Boolean.WeightedThreshold
 
 open BitString Finset Real
-
-/-! ### The staircase of `f_R` -/
-
-/-- **The staircase of `f_R`**: `f_R(u) = ∑_{k < 2 R + 2} (f_R(θ_k) - f_R(θ_k - 1)) [θ_k ≤ u]` for
-every integer `u`, with thresholds `θ_k = -R + k`. -/
-theorem altLinearTrunc_eq_sum (R : ℕ) (u : ℤ) :
-    altLinearTrunc R u = ∑ k : Fin (2 * R + 2),
-      (altLinearTrunc R (-(R : ℤ) - 1 + k + 1) - altLinearTrunc R (-(R : ℤ) - 1 + k)) *
-        (decide (-(R : ℤ) - 1 + k + 1 ≤ u)).toNat := by
-  set ℓ : ℤ := -(R : ℤ) - 1
-  set u' : ℤ := max ℓ (min u (ℓ + (2 * R + 2 : ℕ)))
-  have h := sum_sub_mul_decide_le (altLinearTrunc R) (ℓ := ℓ) (u := u') (L := 2 * R + 2)
-    (le_max_left _ _) (max_le (by push_cast; omega) (min_le_right _ _))
-  have hℓ : altLinearTrunc R ℓ = 0 := by
-    simp only [altLinearTrunc, ℓ]
-    split_ifs <;> first | rfl | omega
-  have hu : altLinearTrunc R u' = altLinearTrunc R u := by
-    simp only [altLinearTrunc, u', ℓ]
-    push_cast
-    split_ifs <;> first | rfl | omega | (congr 1; omega)
-  rw [hℓ, zero_add, hu] at h
-  rw [← h]
-  refine sum_congr rfl fun k _ => ?_
-  have hk := k.isLt
-  congr 3
-  simp only [u', ℓ, decide_eq_decide]
-  push_cast
-  omega
 
 /-! ### Wire count of `depthTwoInputs` -/
 
@@ -139,31 +112,40 @@ theorem wireCount_depthTwoInputs_le {n G : ℕ} (bottom : Fin G → Op)
 
 /-! ### The circuit -/
 
-/-- Index type of the bottom gates of `andreevTruncatedCircuit b m r R`: a nonempty prefix
-subset `S`, a reflected form `τ` (`X_S + D_S` for `true`, `X_S - D_S` for `false`), and a step
-`k < 2 R + 2` of the staircase of `f_R`. -/
-abbrev AndreevTruncatedBottomIndex (b r R : ℕ) : Type :=
-  {S : Finset (Fin b) // S ∈ andreevPrefixSubsetsNonempty b r} × Bool × Fin (2 * R + 2)
+/-- A bottom gate of `andreevTruncatedCircuit b m r R`, the indicator `[θ_k ≤ X_S ± D_S]`. -/
+structure AndreevTruncatedBottomIndex (b r R : ℕ) where
+  /-- The nonempty prefix subset `S`. -/
+  subset : Finset (Fin b)
+  /-- `S` is a nonempty subset of the first `r` blocks. -/
+  mem : subset ∈ andreevPrefixSubsetsNonempty b r
+  /-- The reflected form: `X_S + D_S` for `true` and `X_S - D_S` for `false`. -/
+  form : Bool
+  /-- The step `k < 2 R + 2` of the staircase of `f_R`. -/
+  step : Fin (2 * R + 2)
+
+/-- The bottom-gate index as a triple of a subset, a form and a step. -/
+def AndreevTruncatedBottomIndex.equivProd (b r R : ℕ) :
+    AndreevTruncatedBottomIndex b r R ≃
+      {S : Finset (Fin b) // S ∈ andreevPrefixSubsetsNonempty b r} × Bool × Fin (2 * R + 2) where
+  toFun i := (⟨i.subset, i.mem⟩, i.form, i.step)
+  invFun := fun ⟨⟨S, hS⟩, τ, k⟩ => ⟨S, hS, τ, k⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+noncomputable instance (b r R : ℕ) : Fintype (AndreevTruncatedBottomIndex b r R) :=
+  Fintype.ofEquiv _ (AndreevTruncatedBottomIndex.equivProd b r R).symm
 
 theorem card_andreevTruncatedBottomIndex (b r R : ℕ) :
     Fintype.card (AndreevTruncatedBottomIndex b r R) =
       4 * #(andreevPrefixSubsetsNonempty b r) * (R + 1) := by
-  simp only [AndreevTruncatedBottomIndex, Fintype.card_prod, Fintype.card_coe, Fintype.card_bool,
-    Fintype.card_fin]
+  rw [Fintype.card_congr (AndreevTruncatedBottomIndex.equivProd b r R)]
+  simp only [Fintype.card_prod, Fintype.card_coe, Fintype.card_bool, Fintype.card_fin]
   ring
 
 /-- Numbering of the bottom gates of `andreevTruncatedCircuit b m r R`. -/
 noncomputable def andreevTruncatedBottomEquiv (b r R : ℕ) :
     AndreevTruncatedBottomIndex b r R ≃ Fin (4 * #(andreevPrefixSubsetsNonempty b r) * (R + 1)) :=
   Fintype.equivFinOfCardEq (card_andreevTruncatedBottomIndex b r R)
-
-/-- The threshold `θ_k = -R + k` of step `k` of the staircase of `f_R`. -/
-def altLinearTruncThreshold (R : ℕ) (k : Fin (2 * R + 2)) : ℤ :=
-  -(R : ℤ) - 1 + k + 1
-
-/-- The height `f_R(θ_k) - f_R(θ_k - 1)` of step `k` of the staircase of `f_R`. -/
-def altLinearTruncStep (R : ℕ) (k : Fin (2 * R + 2)) : ℤ :=
-  altLinearTrunc R (-(R : ℤ) - 1 + k + 1) - altLinearTrunc R (-(R : ℤ) - 1 + k)
 
 /-- The shift `±(|S| m / 2 - ⌊|S| m / 2⌋)` of the reflected form `X_S ± D_S` from its centred
 weighted bit sum (`cast_andreevReflectedForm_eq`). -/
@@ -176,16 +158,16 @@ noncomputable abbrev andreevTruncatedBottomOp (b m r R : ℕ)
     (j : Fin (4 * #(andreevPrefixSubsetsNonempty b r) * (R + 1))) : Op :=
   let idx := (andreevTruncatedBottomEquiv b r R).symm j
   { arity := 2 ^ b + b * m
-    weight := andreevReflectedWeight b m idx.1.1 idx.2.1
-    threshold := (altLinearTruncThreshold R idx.2.2 : ℝ) -
-      andreevReflectedOffset m idx.1.1 idx.2.1 +
-        (∑ i, andreevReflectedWeight b m idx.1.1 idx.2.1 i) / 2 }
+    weight := andreevReflectedWeight b m idx.subset idx.form
+    threshold := (altLinearTruncThreshold R idx.step : ℝ) -
+      andreevReflectedOffset m idx.subset idx.form +
+        (∑ i, andreevReflectedWeight b m idx.subset idx.form i) / 2 }
 
 /-- The weight of the output gate on bottom gate `(S, τ, k)`: `-η_S (f_R(θ_k) - f_R(θ_k - 1))`. -/
 noncomputable def andreevTruncatedTopWeight (b m r R : ℕ)
     (j : Fin (4 * #(andreevPrefixSubsetsNonempty b r) * (R + 1))) : ℝ :=
-  -((andreevReflectionSign m ((andreevTruncatedBottomEquiv b r R).symm j).1.1 *
-    altLinearTruncStep R ((andreevTruncatedBottomEquiv b r R).symm j).2.2 : ℤ) : ℝ)
+  -((andreevReflectionSign m ((andreevTruncatedBottomEquiv b r R).symm j).subset *
+    altLinearTruncStep R ((andreevTruncatedBottomEquiv b r R).symm j).step : ℤ) : ℝ)
 
 /-- The input weights of the output gate: `4` on the table bits (the affine term `-2 X_∅`) and `0`
 on the address bits. -/
@@ -207,12 +189,13 @@ theorem interpretation_andreevTruncatedBottomOp (b m r R : ℕ)
     (w : BitString (2 ^ b + b * m)) :
     interpretation (andreevTruncatedBottomOp b m r R j) w =
       let idx := (andreevTruncatedBottomEquiv b r R).symm j
-      decide (altLinearTruncThreshold R idx.2.2 ≤ andreevReflectedForm b m idx.1.1 idx.2.1 w) := by
+      decide (altLinearTruncThreshold R idx.step ≤
+        andreevReflectedForm b m idx.subset idx.form w) := by
   set idx := (andreevTruncatedBottomEquiv b r R).symm j
-  have hU := cast_andreevReflectedForm_eq b m idx.1.1 idx.2.1 w
-  have hsum : ∑ i, andreevReflectedWeight b m idx.1.1 idx.2.1 i * (((w i).toNat : ℝ) - 1 / 2) =
-      ∑ i, andreevReflectedWeight b m idx.1.1 idx.2.1 i * ((w i).toNat : ℝ) -
-        (∑ i, andreevReflectedWeight b m idx.1.1 idx.2.1 i) / 2 := by
+  have hU := cast_andreevReflectedForm_eq b m idx.subset idx.form w
+  have hsum : ∑ i, andreevReflectedWeight b m idx.subset idx.form i * (((w i).toNat : ℝ) - 1 / 2) =
+      ∑ i, andreevReflectedWeight b m idx.subset idx.form i * ((w i).toNat : ℝ) -
+        (∑ i, andreevReflectedWeight b m idx.subset idx.form i) / 2 := by
     simp only [mul_sub, sum_sub_distrib, ← sum_mul]
     ring
   unfold interpretation andreevTruncatedBottomOp
@@ -226,10 +209,11 @@ theorem interpretation_andreevTruncatedBottomOp (b m r R : ℕ)
 theorem andreevTruncatedScore_eq_sum (b m r R : ℕ) (w : BitString (2 ^ b + b * m)) :
     andreevTruncatedScore b m r R w = 2 * andreevTableScore b m ∅ w +
       ∑ idx : AndreevTruncatedBottomIndex b r R,
-        andreevReflectionSign m idx.1.1 * altLinearTruncStep R idx.2.2 *
-          (decide (altLinearTruncThreshold R idx.2.2 ≤
-            andreevReflectedForm b m idx.1.1 idx.2.1 w)).toNat := by
-  rw [andreevTruncatedScore, Fintype.sum_prod_type, ← sum_coe_sort]
+        andreevReflectionSign m idx.subset * altLinearTruncStep R idx.step *
+          (decide (altLinearTruncThreshold R idx.step ≤
+            andreevReflectedForm b m idx.subset idx.form w)).toNat := by
+  rw [andreevTruncatedScore, ← (AndreevTruncatedBottomIndex.equivProd b r R).symm.sum_comp,
+    Fintype.sum_prod_type, ← sum_coe_sort]
   congr 1
   refine sum_congr rfl fun S _ => ?_
   rw [Fintype.sum_prod_type, Fintype.sum_bool, altLinearTrunc_eq_sum,
@@ -255,8 +239,8 @@ theorem eval_andreevTruncatedCircuit (b m r R : ℕ) (w : BitString (2 ^ b + b *
   simp only [id, interpretation_andreevTruncatedBottomOp]
   have htop : ∑ j, andreevTruncatedTopWeight b m r R j *
       ((let idx := (andreevTruncatedBottomEquiv b r R).symm j
-        decide (altLinearTruncThreshold R idx.2.2 ≤
-          andreevReflectedForm b m idx.1.1 idx.2.1 w)).toNat : ℝ) =
+        decide (altLinearTruncThreshold R idx.step ≤
+          andreevReflectedForm b m idx.subset idx.form w)).toNat : ℝ) =
       -((andreevTruncatedScore b m r R w - 2 * andreevTableScore b m ∅ w : ℤ) : ℝ) := by
     rw [andreevTruncatedScore_eq_sum, add_sub_cancel_left, Int.cast_sum, ← sum_neg_distrib,
       ← (andreevTruncatedBottomEquiv b r R).symm.sum_comp]
@@ -315,15 +299,16 @@ theorem isSignCoherent_andreevTruncatedBottomOp (b m r R : ℕ)
     IsSignCoherent (andreevBlockVar b m) (argWeight (andreevTruncatedBottomOp b m r R j) id) := by
   set idx := (andreevTruncatedBottomEquiv b r R).symm j
   have hw : argWeight (andreevTruncatedBottomOp b m r R j) id =
-      andreevReflectedWeight b m idx.1.1 idx.2.1 := argWeight_id _ _
+      andreevReflectedWeight b m idx.subset idx.form := argWeight_id _ _
   rw [hw]
   intro i
-  have hblock (t : Fin m) : andreevReflectedWeight b m idx.1.1 idx.2.1 (andreevBlockVar b m i t) =
-      if i ∈ idx.1.1 then (if idx.2.1 then 1 else -1) else 0 := by
+  have hblock (t : Fin m) :
+      andreevReflectedWeight b m idx.subset idx.form (andreevBlockVar b m i t) =
+        if i ∈ idx.subset then (if idx.form then 1 else -1) else 0 := by
     simp only [andreevReflectedWeight, andreevBlockVar, Fin.addCases_right, Equiv.symm_apply_apply]
   simp only [hblock]
-  by_cases hi : i ∈ idx.1.1
-  · cases idx.2.1
+  by_cases hi : i ∈ idx.subset
+  · cases idx.form
     · exact .inr fun t => by simp [hi]
     · exact .inl fun t => by simp [hi]
   · exact .inl fun t => by simp [hi]
