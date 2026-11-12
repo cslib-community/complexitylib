@@ -1391,12 +1391,14 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andr
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevOddErrors
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSignCoherent
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Components
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwoInputs
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.KaneWilliamsB
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.LTF
@@ -1406,6 +1408,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Pote
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SharedBottom
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SplitCounting
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
@@ -1788,6 +1791,7 @@ public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Advice
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Collapse
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games
+public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games.PolyRounds
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games.Repetition
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.PH
@@ -1902,6 +1906,8 @@ public import CslibFrontier.Computability.Complexity.Classes.IP.GameTree
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.Emulation
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.GoldwasserSipser
+public import CslibFrontier.Computability.Complexity.Classes.IP.Games.Oracle
+public import CslibFrontier.Computability.Complexity.Classes.IP.Games.PolyRounds
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.Repetition
 public import CslibFrontier.Computability.Complexity.Classes.IP.GraphNonIsomorphism
 public import CslibFrontier.Computability.Complexity.Classes.IP.Guessing
@@ -2293,6 +2299,7 @@ public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Cl
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Clique.Bracket
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
+public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import CslibFrontier.Computability.Complexity.Problems.BoundedHalting
@@ -4966,8 +4973,10 @@ public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Multiplicatio
 public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Reciprocal
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Arccos
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
+public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpExpect
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
+public import CslibFrontier.Foundations.Analysis.SpecialFunctions.FiberCount
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliamson
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliamsonDicut
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Hyperbolic
@@ -5079,6 +5088,7 @@ public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial
 public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
+public import CslibFrontier.Foundations.Combinatorics.CubeSplitting
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Branching
