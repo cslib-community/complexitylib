@@ -506,8 +506,7 @@ theorem schnorrGroups_encode_d23_length_le (x : schnorrGroups.Carrier d23) :
 /-- Unconditional concrete finite quantitative bound on `d23` (`order d23 = 11`, `B = 6`, `k = 4`):
 for any KDF distinguisher, the advantage of distinguishing `linearHashKDF (fun _ => 4) (fun _ => 6)`
 from a truly uniform 4-bit key on `d23` is bounded by `NNReal.sqrt (2 ^ 4 / 11) / 2`. -/
-example (distinguisher : ℕ → DDHChallenge (GroupParameters := schnorrGroups.withSeed.Desc) →
-      ProbComp Bool) (n : ℕ) :
+example (distinguisher : schnorrGroups.withSeed.KDFDistinguisher) (n : ℕ) :
     Game.advantage
       (schnorrGroups.withSeed.kdfRealGame
         (schnorrGroups.seededSetup (fun _ => PMF.pure d23)
@@ -553,24 +552,20 @@ always outputs `[false]` instead of a uniform 1-bit key. -/
 def constZeroKDF : schnorrGroups.Desc × List Bool → List Bool :=
   fun _ => [false]
 
-/-- A uniform strict-PPT KDF distinguisher that inspects the first bit of the candidate key
-`input.candidateShared`. -/
-noncomputable def firstBitKDFDistinguisher (_ : ℕ)
-    (input : DDHChallenge (GroupParameters := schnorrGroups.Desc)) : ProbComp Bool :=
-  pure (input.candidateShared.headD false)
+/-- A uniform strict-PPT KDF distinguisher that inspects the first bit of the candidate key. -/
+noncomputable def firstBitKDFDistinguisher : schnorrGroups.KDFDistinguisher :=
+  fun _ _ _ _ key => pure (key.headD false)
 
 /-- `firstBitKDFDistinguisher` is uniform strict PPT. -/
 theorem isPPTOn_firstBitKDFDistinguisher :
-    IsPPTOn
-      schnorrGroups.encDDHInput
-      encBool (fun input => firstBitKDFDistinguisher input.1 input.2) := by
+    IsPPTOn schnorrGroups.encKDFInput encBool fun x =>
+      firstBitKDFDistinguisher x.1.secParam x.1.groupParameters x.1.leftPublic x.1.rightPublic
+        x.2 := by
   have hhead : ComputableInPolyTime (fun s : List Bool => s.headD false) encBits encBool := by
     fun_prop
-  have hproj : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (GroupParameters := schnorrGroups.Desc) =>
-        input.2.candidateShared)
-      schnorrGroups.encDDHInput
-      encBits := by fun_prop
+  have hproj : ComputableInPolyTime (fun x : schnorrGroups.CDHInput × List Bool => x.2)
+      schnorrGroups.encKDFInput encBits := by
+    fun_prop
   exact (hhead.comp hproj).isPPTOn
 
 /-- `firstBitKDFDistinguisher` achieves KDF advantage `1 / 2` against `constZeroKDF` for
