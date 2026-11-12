@@ -1030,7 +1030,7 @@ theorem commitHalted_spec {r : ℕ} {input : Fin r → Bool} {base S w regCells 
       cases hwb : writeBuf idx with
       | some v =>
         rw [hymem]
-        simp [hwb, liftCellWord, wordOfNat_val_of_lt v.isLt]
+        simp [hwb, liftCellWord]
       | none =>
         have hlt_m : (m (Fin.castAdd regCells idx)).1 < 2 ^ w := L.validMem_data hm idx
         rw [hymem]
