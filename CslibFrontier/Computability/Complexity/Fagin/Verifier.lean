@@ -7,12 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Logics.FirstOrder.Encoding.PolyTime
+public import CslibFrontier.Logics.FirstOrder.Encoding
 public import CslibFrontier.Logics.SecondOrder.Existential
 public import CslibFrontier.Computability.Complexity.Classes.NP
 public import Mathlib.SetTheory.Cardinal.NatCard
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Logics.FirstOrder.Encoding.PolyTime
 
 /-!
 # Existential second-order definable classes are in NP

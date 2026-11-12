@@ -68,12 +68,11 @@ theorem LFPDefinable.of_encodedLanguage_mem_P {L : Language} [L.IsRelational]
   let instSize (a : A) : Fact (2 ≤ size a) := by
     let _ : Fact (2 ≤ a.val.1) := ⟨a.property.2⟩
     exact ⟨FullTupleInterpretation.two_le_pow (n := a.val.1) hk⟩
+  have hbA (a : A) := hb a.val a.property.1 a.property.2
   obtain ⟨ψ, hψ⟩ := ImmermanVardi.Tableau.exists_acceptance_sentence
     (L := v.powerLanguage) (size := size) tm (fun a => encStructure a.val) v.inputSymbol
-    (fun a s p => v.realize_inputSymbol a.property.1
-      ((Nat.lt_succ_self _).trans (hb a.val a.property.1 a.property.2).1) s p)
-    (fun a => (hb a.val a.property.1 a.property.2).1)
-    (fun a => (hb a.val a.property.1 a.property.2).2)
+    (fun a s p => v.realize_inputSymbol a.property.1 ((Nat.lt_succ_self _).trans (hbA a).1) s p)
+    (fun a => (hbA a).1) (fun a => (hbA a).2)
   let I := v.orderedPowerInterpretation k har
   refine ⟨I.onLFPSentence ψ, fun M => ?_⟩
   let a : A := ⟨encode v M, v.wellFormed_encode M (Equiv.refl M), M.size_ge_two⟩

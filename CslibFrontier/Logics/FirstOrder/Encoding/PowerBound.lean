@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
+public import CslibFrontier.Logics.FirstOrder.Encoding
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 
 /-!
 # Polynomial bounds in the length of an encoded structure
