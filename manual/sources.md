@@ -1591,6 +1591,11 @@ Yaoyun Shi. "Both Toffoli and Controlled-NOT Need Little Help to Do Universal Qu
 
 Victor Shoup. "New Algorithms for Finding Irreducible Polynomials over Finite Fields." *Mathematics of Computation* 54(189), 435–447, 1990. https://doi.org/10.1090/s0025-5718-1990-0993933-0 . Bibliographic metadata checked on 2026-11-11 UTC; the full primary PDF was not read directly, so the library relies on the standard deterministic Frobenius/trace construction and deterministic Berlekamp splitting verified directly in Lean without claiming section/theorem locators from the paper.
 
+<a id="simpson05"></a>
+## simpson05
+
+Stephen G. Simpson. *Topics in Logic and Foundations: Spring 2004*. Draft dated November 1, 2005. [Author-hosted PDF](https://sgslogic.net/t20/notes/topics-s04.pdf), inspected on 2026-11-12: §2.6, Theorem 2.6.4 and its finite-extension proof, pp. 30–31; register-machine conventions in §1.1.1 and halting-on-input-0 in §2.5. This is the checked exposition for `KleenePostJump`; the original Kleene–Post article and Soare locators remain unverified.
+
 <a id="sipser13"></a>
 ## sipser13
 
