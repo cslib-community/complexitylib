@@ -1,5 +1,7 @@
 # Verifiers, counting, and interaction
 
+The [Chapter 7 draft coverage audit](../../results/arora-barak-2007.md#chapter-7-randomized-computation) records the seeded-verifier and expected-time model boundaries, the weak-gap amplification gap, and the distinction between expander hitting and occupation-time concentration. It also identifies defects in the literal draft statements before treating them as formalization targets.
+
 [Chapter index](index.md) · [Endpoint map](endpoints-and-hierarchies.md)
 
 Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [cslib-frontier][complexitylib]
