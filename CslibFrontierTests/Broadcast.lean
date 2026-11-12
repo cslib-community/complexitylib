@@ -99,7 +99,7 @@ example :
   intro x
   funext i
   obtain ⟨⟨record, bit⟩, rfl⟩ := (finProdFinEquiv (m := 4) (n := 2)).surjective i
-  simpa only [header, directProductInput, Function.comp_apply, Fin.castAdd_zero,
+  simpa only [header, BitString.block, Function.comp_apply, Fin.castAdd_zero,
     Fin.cast_refl, id_eq] using
     congrFun (eval_broadcastCircuit_header (width := 0) key 1 x record) bit
 

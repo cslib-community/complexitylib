@@ -4,11 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Probabilistic.LinearHash
+import CslibFrontier.Computability.Probabilistic.AffineHash
 import CslibFrontier.Probability.BitString.LinearHash.Collisions
 import CslibFrontier.Tactic.PPT
 
-/-! Matrix hashing through ordinary functional programs and arbitrary public-output tests. -/
+/-! Matrix and affine hashing through ordinary functional programs and public-output tests. -/
 
 namespace CslibFrontierTests.LinearHash
 
@@ -95,6 +95,51 @@ example : ¬ ∃ rows : Fin 0 → BitString 1,
 #guard_msgs in
 #eval decide (∀ S : Finset (BitString 2), ∃ rows : Fin 1 → BitString 2,
   2 * (S.offDiag.filter fun p => hash rows p.1 = hash rows p.2).card ≤ S.offDiag.card)
+
+/-! ### Word-level affine seeds, affine hashes, and zero tests -/
+
+-- Identity matrix with shift `(1, 1)` sends `(1, 1)` to `(0, 0)` and `(1, 0)` to `(0, 1)`.
+example :
+    wordAffineHash 2 [true, false, false, true, true, true] [true, true] = [false, false] ∧
+    hashZero 2 2 [true, false, false, true, true, true] [true, true] = true ∧
+    wordAffineHash 2 [true, false, false, true, true, true] [true, false] = [false, true] ∧
+    hashZero 2 2 [true, false, false, true, true, true] [true, false] = false := by decide
+
+-- `hashZero k n` pads short inputs with `false` to width `n` before reading the `k * n` matrix
+-- bits and `k` shift bits, ignores extra input bits past `n`, and pads short seeds with `false`.
+example :
+    hashZero 1 2 [false, true, true] [true] = false ∧
+    hashZero 1 2 [true, false, true] [true] = true ∧
+    hashZero 1 2 [true, false, true] [true, false, true] = true ∧
+    hashZero 1 2 [true] [false, true] = true ∧
+    hashZero 1 2 [true] [true, true] = false := by decide
+
+-- Exhaustive check on `k = 2, n = 2` (64 seeds, 4 inputs): `packAffineSeed` and `affineSeedEquiv`
+-- round-trip, `hashZero` agrees with the kernel of `affineHash`, and every input hits zero on
+-- exactly `64 / 4 = 16` seeds.
+example :
+    (∀ r : BitString 6, packAffineSeed (affineSeedEquiv 2 2 r) = List.ofFn r) ∧
+    (∀ (r : BitString 6) (x : BitString 2),
+      hashZero 2 2 (List.ofFn r) (List.ofFn x) =
+        decide (LinearHash.affineHash (affineSeedEquiv 2 2 r) x = 0)) ∧
+    (∀ x : BitString 2,
+      (Finset.univ.filter fun r : BitString 6 =>
+        hashZero 2 2 (List.ofFn r) (List.ofFn x) = true).card = 16) := by decide
+
+-- `fun_prop` synthesizes plain polynomial-time certificates for `wordAffineHash` and `hashZero`,
+-- and `ppt` certifies uniform seed sampling followed by `hashZero`.
+example : ComputableInPolyTime
+    (fun p : List Bool × ℕ => wordAffineHash (p.2 + 1) (p.1 ++ [true]) p.1)
+    (encPair (encList encBool) encUnary) encBits := by fun_prop
+
+example : ComputableInPolyTime
+    (fun p : List Bool × (ℕ × ℕ) => hashZero (p.2.1 + 1) p.2.2 (p.1 ++ [true]) p.1)
+    (encPair (encList encBool) (encPair encUnary encUnary)) encBool := by fun_prop
+
+example : IsPPTOn (encPair encBits (encPair encUnary encUnary)) encBool
+    (fun p : List Bool × (ℕ × ℕ) => do
+      let seed ← sampleList (p.2.1 * p.2.2 + p.2.1)
+      return hashZero p.2.1 p.2.2 seed p.1) := by ppt
 
 end CslibFrontierTests.LinearHash
 

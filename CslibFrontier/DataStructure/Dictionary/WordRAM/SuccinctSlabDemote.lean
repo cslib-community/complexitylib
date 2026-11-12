@@ -743,14 +743,8 @@ def demoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ
 @[simp] theorem iterate_demoteStepGenProg_mk (U V w n_max h_space : ℕ)
     (d : ℕ × ℕ) (m k : ℕ) :
     iterate demoteStepGenProg (mkDictParams U V w n_max h_space, d) m k =
-      iterate (demoteStepProg U V w n_max h_space) d m k := by
-  induction m generalizing k with
-  | zero => rfl
-  | succ m ih =>
-    unfold iterate
-    rw [demoteStepGenProg_mk]
-    congr 1 with s' : 1
-    exact ih s'
+      iterate (demoteStepProg U V w n_max h_space) d m k :=
+  iterate_congr (fun a => demoteStepGenProg_mk U V w n_max h_space d a) m k
 
 @[simp] theorem demoteLoopGenProg_mk (U V w n_max h_space : ℕ)
     (d1 : ℕ × ℕ) (d2 d3 : ℕ) :
@@ -764,13 +758,9 @@ def demoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ
         (mkDictParams U V w₀ n_max h_space, d) m k s ↔
       iterationSafe (demoteStepProg U V w₀ n_max h_space)
         (fun w x s => DemoteStepPre U V w₀ n_max h_space w x.1.1 x.1.2 x.2 s)
-        w d m k s := by
-  induction m generalizing k s with
-  | zero => exact Iff.rfl
-  | succ m ih =>
-    unfold iterationSafe
-    rw [demoteStepGenPre_mk, demoteStepGenProg_mk]
-    exact and_congr_right fun _ => ih _ _
+        w d m k s :=
+  iterationSafe_congr (fun a => demoteStepGenProg_mk U V w₀ n_max h_space d a)
+    (fun a t => demoteStepGenPre_mk U V w₀ n_max h_space w d a t) m k s
 
 theorem iterate_demoteStepProg_spec {U V w₀ n_max h_space base b w : ℕ} {s₀ : Memory.State}
     (hw : 0 < w₀) (hb_pos : 0 < bucketBits n_max)

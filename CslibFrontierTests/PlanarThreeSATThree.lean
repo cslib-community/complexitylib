@@ -29,9 +29,9 @@ example : ThreeSATThree.syntaxCheck [[(0, true)], [(0, true)], [(0, true)], [(0,
 
 -- Width and literal-count violations independently trigger the total rejection branch.
 example : toDrawnPlanarThreeSATThree [[(0, true), (1, true), (2, true), (3, true)]] =
-    ([[]], [(0, 0)], []) := by decide +kernel
+    ⟨[[]], ([(0, 0)], [])⟩ := by decide +kernel
 example : toDrawnPlanarThreeSATThree [[(0, true)], [(0, false)], [(0, true)], [(0, false)]] =
-    ([[]], [(0, 0)], []) := by decide +kernel
+    ⟨[[]], ([(0, 0)], [])⟩ := by decide +kernel
 
 -- A succinct binary label takes the actual paired compilation branch.
 example : (toPlanarThreeSATThree [[(2 ^ 100, true)]]).length = 319 := by
@@ -54,7 +54,7 @@ example : ¬(toPlanarThreeSAT [[(7, true)], [(7, false)]]).Satisfiable := by
   cases hv : σ 7 <;> simp [CNF.eval, Clause.eval, Literal.eval, hv] at hs
 
 -- The quantitative statement measures the composed output against original clause/literal size.
-example : Graph.drawingFits (toDrawnPlanarThreeSAT [[(2 ^ 100, true)]]).2 40320 40320 :=
+example : Graph.drawingFits (toDrawnPlanarThreeSAT [[(2 ^ 100, true)]]).drawing 40320 40320 :=
   toDrawnPlanarThreeSAT_fits _
 
 -- The final language theorem includes the generated continuous drawing certificate.
@@ -66,11 +66,28 @@ example : toDrawnPlanarThreeSAT [[(2 ^ 100, true)]] ∈ DrawnPlanarThreeSATThree
 example : Graph.IsPlanarOrthogonalDrawing
     (SAT.incidenceGraph (toPlanarThreeSATThree
       [[(0, true), (1, true), (2, true), (3, true)]]))
-    (toDrawnPlanarThreeSATThree [[(0, true), (1, true), (2, true), (3, true)]]).2 :=
+    (toDrawnPlanarThreeSATThree [[(0, true), (1, true), (2, true), (3, true)]]).drawing :=
   isPlanarOrthogonalDrawing_toDrawnPlanarThreeSATThree _
 
-example : ([[]], [(0, 0)], []) ∉ DrawnPlanarThreeSATThree := by
+example : ⟨[[]], ([(0, 0)], [])⟩ ∉ DrawnPlanarThreeSATThree := by
   simp [DrawnPlanarThreeSATThree, ThreeSATThree, CNF.Satisfiable]
+
+-- The generated `enc_structure` rules compose for `DrawnPlanarThreeSATThreeInstance`.
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    DrawnPlanarThreeSATThreeInstance.formula encDrawnPlanarThreeSATThree encCNF := by
+  fun_prop
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    DrawnPlanarThreeSATThreeInstance.drawing
+    encDrawnPlanarThreeSATThree Graph.encOrthogonalDrawing := by
+  fun_prop
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun p : CNF ℕ × Graph.OrthogonalDrawing =>
+      (⟨p.1, p.2⟩ : DrawnPlanarThreeSATThreeInstance))
+    (Turing.MultiTapeTM.encPair encCNF Graph.encOrthogonalDrawing)
+    encDrawnPlanarThreeSATThree := by
+  fun_prop
 
 -- The paired-port variable and placed-clause encodings are computable via `FinEnum`.
 example : SAT.ParsimoniousPlanar.encVariable ((0, 0), .inl (0, 0)) ≠

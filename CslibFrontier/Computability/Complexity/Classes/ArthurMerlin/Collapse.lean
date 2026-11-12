@@ -108,7 +108,7 @@ theorem PiP_two_eq_SigmaP_two_of_coNP_subset_AM
 [Arora and Barak, Section 8.2][AroraBarak09]: graph non-isomorphism is then `coNP`-hard, and it
 is in `AM`, which is closed under reductions, so `coNP ⊆ AM`. -/
 theorem PH_eq_SigmaP_two_of_npComplete_GraphIsomorphism
-    (hGI : NPComplete (encPair encGraph encGraph) GraphIsomorphism) : PH enc = SigmaP 2 enc :=
+    (hGI : NPComplete encGraphIsomorphism GraphIsomorphism) : PH enc = SigmaP 2 enc :=
   PH_eq_SigmaP_two_of_coNP_subset_AM fun encB A hA =>
     (NPHard.compl hGI.2 encB A hA).mem_AM GraphNonIsomorphism.mem_AM
 

@@ -66,6 +66,8 @@ evaluated at `κ` plus the adversary's budget.
 
 ## Main results
 
+* `Cslib.Crypto.Protocols.UC.handle_corruptRouter_map_state`: state representations of protocol
+  machines lift through `corruptRouter`.
 * `Cslib.Crypto.Protocols.UC.advantage_self`, `Cslib.Crypto.Protocols.UC.advantage_comm`,
   `Cslib.Crypto.Protocols.UC.advantage_triangle`: the advantage is a pseudometric on executions.
 * `Cslib.Crypto.Protocols.UC.SimPolyBound.refl`, `Cslib.Crypto.Protocols.UC.SimPolyBound.trans`:
@@ -162,6 +164,30 @@ network query of the adversary is forwarded to the protocol. -/
     | .inr (.inl (i, x)) =>
         if i ∈ C then Sum.inl <$> P.handle (.inl (i, x)) else pure (.inl none)
     | .inr (.inr q) => Sum.inr <$> P.handle (.inr q)
+
+/-- Intertwining two protocol machines intertwines their `corruptRouter` wrappers for any static
+corruption set `C`. -/
+theorem handle_corruptRouter_map_state (C : Finset (Fin n))
+    (P₁ P₂ : Machine OracleSpec.empty (protocolSpec n In Out NetQ NetR))
+    (f : P₂.State → P₁.State)
+    (h : ∀ q s, (P₁.handle q).run (f s) = Prod.map _root_.id f <$> (P₂.handle q).run s)
+    (q : (Fin n × In) ⊕ ((Fin n × In) ⊕ NetQ)) (s : P₂.State) :
+    ((corruptRouter C P₁).handle q).run (f s) =
+      Prod.map _root_.id f <$> ((corruptRouter C P₂).handle q).run s := by
+  rcases q with ⟨i, x⟩ | ⟨⟨i, x⟩ | q⟩
+  · by_cases hi : i ∈ C
+    · simp only [corruptRouter, hi, ↓reduceIte, StateT.run_pure, map_pure, Prod.map_apply,
+        _root_.id_eq]
+    · simp only [corruptRouter, hi, ↓reduceIte, h (Sum.inl (i, x)) s]
+  · by_cases hi : i ∈ C
+    · simp only [corruptRouter, hi, ↓reduceIte, StateT.run_map]
+      rw [h (Sum.inl (i, x)) s, Functor.map_map, Functor.map_map]
+      rfl
+    · simp only [corruptRouter, hi, ↓reduceIte, StateT.run_pure, map_pure, Prod.map_apply,
+        _root_.id_eq]
+  · simp only [corruptRouter, StateT.run_map]
+    rw [h (Sum.inr q) s, Functor.map_map, Functor.map_map]
+    rfl
 
 /-- A program calling only the network port, as a program calling the ports of a protocol. -/
 @[expose] def liftNet {α : Type} (program : ProbOracleComp (netSpec NetQ NetR) α) :

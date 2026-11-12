@@ -65,18 +65,11 @@ theorem exec_stage_zero {w p k A B a b out scratch frames frame : ℕ}
   have houtside (d : ℕ) (hd : d < out ∨ out + 4 ^ (k + 1) * p ≤ d) : s.mem d = x.mem d := by
     rw [hm, hx.output_eq, hx.size_eq]
     exact WordRAM.clear_of_not_owns (by simp only [Block.Owns]; omega)
+  obtain ⟨hleft', hright'⟩ := hl.inputs_of_outside houtside
   obtain ⟨y, hy, ready, leftValues, rightValues, parentPhase, memory⟩ := exec_prepareChild 0
     s u v sh sc hl hu hv
-    (by
-      intro i hi
-      rw [houtside _ ?_]
-      · exact hleft i hi
-      · rcases hl.left_disjoint with h | h <;> omega)
-    (by
-      intro i hi
-      rw [houtside _ ?_]
-      · exact hright i hi
-      · rcases hl.right_disjoint with h | h <;> omega)
+    (fun i hi => (hleft' i hi).trans (hleft i hi))
+    (fun i hi => (hright' i hi).trans (hright i hi))
     hmag haddr
   refine ⟨y, (he.seq hy).mono (by rw [hx.size_eq, hsize]; omega), ready,
     leftValues, rightValues, ?_, parentPhase, ?_⟩

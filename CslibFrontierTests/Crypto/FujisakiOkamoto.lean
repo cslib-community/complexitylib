@@ -240,10 +240,10 @@ probability `1`. -/
 theorem identityScheme_simHitProb_diag (m : Fin 4) :
     identityScheme.simHitProb queryCiphertextGAdv m m = 1 := by
   simp [-bind_pure_comp, -_root_.PMF.bind_apply,
-    Scheme.simHitProb, Scheme.romCpaReduction, queryCiphertextGAdv,
+    Scheme.simHitProb, Scheme.romCpaReduction, Scheme.romFilterCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
-    OracleComp.interpret_pure]
+    Scheme.simFilterHandler, Scheme.simFilterDispatch, simHashG, OracleComp.interpret_bind,
+    OracleComp.interpret_query, OracleComp.interpret_pure]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ m [] rfl]
 
@@ -252,10 +252,10 @@ only `G(0)` and never `G(1)`, so `simHitProb = 0`. -/
 theorem identityScheme_simHitProb_zero_one :
     identityScheme.simHitProb queryCiphertextGAdv 0 1 = 0 := by
   simp [-bind_pure_comp, -_root_.PMF.bind_apply,
-    Scheme.simHitProb, Scheme.romCpaReduction, queryCiphertextGAdv,
+    Scheme.simHitProb, Scheme.romCpaReduction, Scheme.romFilterCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
-    OracleComp.interpret_pure]
+    Scheme.simFilterHandler, Scheme.simFilterDispatch, simHashG, OracleComp.interpret_bind,
+    OracleComp.interpret_query, OracleComp.interpret_pure]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ (0 : Fin 4) [] rfl]
 

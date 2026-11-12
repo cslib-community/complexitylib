@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
 public import CslibFrontier.Probability.BitString.AffineHash
+public import CslibFrontier.Probability.BitString.AffineHash.Word
 public import CslibFrontier.Probability.KWiseIndependent
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Uniform
@@ -39,9 +40,9 @@ Theorem 4.5 (pp. 21–25).
 * `Cslib.BitString.LinearHash.pivotMask`, `Cslib.BitString.LinearHash.adjustRow`,
   `Cslib.BitString.LinearHash.adjustAffineSeed`: additive projection onto the prefix-collision
   seed subgroup.
-* `Cslib.BitString.LinearHash.packAffineSeed`, `Cslib.BitString.LinearHash.unpackAffineSeed`,
-  `Cslib.BitString.LinearHash.wordAffineHash`,
-  `Cslib.BitString.LinearHash.wordAdjustAffineSeed`: total word-level implementations.
+* `Cslib.BitString.LinearHash.wordAdjustAffineSeed`: total word-level implementation of
+  `adjustAffineSeed` (with word-level seed packing and evaluation in
+  `CslibFrontier.Probability.BitString.AffineHash.Word`).
 
 ## Main results
 
@@ -54,9 +55,8 @@ Theorem 4.5 (pp. 21–25).
   affine hashing is `3`-wise independent.
 * `Cslib.BitString.LinearHash.toReal_map_adjustAffineSeed_eq`: mapping a uniform seed by
   `adjustAffineSeed r (y + y₀)` scales every prefix-colliding seed's mass by `2 ^ (min r k)`.
-* `Cslib.BitString.LinearHash.wordAffineHash_eq_ofFn`,
-  `Cslib.BitString.LinearHash.wordAdjustAffineSeed_eq_packAffineSeed`: exact agreement between the
-  word implementations and the finite operations.
+* `Cslib.BitString.LinearHash.wordAdjustAffineSeed_eq_packAffineSeed`: exact agreement between
+  `wordAdjustAffineSeed` and `adjustAffineSeed`.
 
 ## References
 
@@ -511,60 +511,7 @@ theorem toReal_map_adjustAffineSeed_eq {k n : ℕ} (r : ℕ)
     card_fiber_adjustAffineSeed r hy hs₀]
   simp [PMF.uniformOfFintype_apply, div_eq_mul_inv]
 
-/-! ### Word-level implementations and exact agreement -/
-
-/-- Pack an affine seed `(A, b) : (Fin k → BitString n) × BitString k` as a `(k * n + k)`-bit
-word. -/
-@[expose] def packAffineSeed {k n : ℕ} (s : (Fin k → BitString n) × BitString k) : List Bool :=
-  List.ofFn (blocksEquiv.symm s.1) ++ List.ofFn s.2
-
-/-- Unpack a word into an affine seed `(A, b) : (Fin k → BitString n) × BitString k`, padding
-missing bits with `false` and ignoring extra trailing bits. -/
-@[expose] def unpackAffineSeed (k n : ℕ) (seed : List Bool) :
-    (Fin k → BitString n) × BitString k :=
-  (block (ofList (k * n) (seed.take (k * n))), ofList k (seed.drop (k * n)))
-
-@[simp] theorem length_packAffineSeed {k n : ℕ} (s : (Fin k → BitString n) × BitString k) :
-    (packAffineSeed s).length = k * n + k := by
-  simp [packAffineSeed]
-
-@[simp] theorem unpackAffineSeed_packAffineSeed {k n : ℕ}
-    (s : (Fin k → BitString n) × BitString k) :
-    unpackAffineSeed k n (packAffineSeed s) = s := by
-  ext i j
-  · simp only [unpackAffineSeed, packAffineSeed,
-      List.take_left' (List.length_ofFn (f := blocksEquiv.symm s.1)), ofList_ofFn]
-    exact congrFun (congrFun (blocksEquiv.apply_symm_apply s.1) i) j
-  · simp [unpackAffineSeed, packAffineSeed,
-      List.drop_left' (List.length_ofFn (f := blocksEquiv.symm s.1))]
-
-theorem packAffineSeed_unpackAffineSeed {k n : ℕ} {seed : List Bool}
-    (hseed : seed.length = k * n + k) :
-    packAffineSeed (unpackAffineSeed k n seed) = seed := by
-  have htake : (seed.take (k * n)).length = k * n := by simp [hseed]
-  have hdrop : (seed.drop (k * n)).length = k := by simp [hseed]
-  have hblock : blocksEquiv.symm (block (ofList (k * n) (seed.take (k * n)))) =
-      ofList (k * n) (seed.take (k * n)) := by
-    rw [← blocksEquiv_apply]
-    exact blocksEquiv.symm_apply_apply _
-  rw [packAffineSeed, unpackAffineSeed, hblock, ofFn_ofList htake, ofFn_ofList hdrop,
-    List.take_append_drop]
-
-/-- Word-level Boolean affine hash `x ↦ A x + b`, reading `k * input.length` matrix bits followed
-by `k` shift bits. -/
-@[expose] def wordAffineHash (k : ℕ) (seed input : List Bool) : List Bool :=
-  listXor k [wordHash k (seed.take (k * input.length)) input, seed.drop (k * input.length)]
-
-@[simp] theorem length_wordAffineHash (k : ℕ) (seed input : List Bool) :
-    (wordAffineHash k seed input).length = k := by
-  simp [wordAffineHash]
-
-/-- On a fixed-width input, `wordAffineHash` computes `affineHash` on the unpacked seed. -/
-theorem wordAffineHash_eq_ofFn {k n : ℕ} (seed : List Bool) (x : BitString n) :
-    wordAffineHash k seed (List.ofFn x) =
-      List.ofFn (affineHash (unpackAffineSeed k n seed) x) := by
-  simp only [wordAffineHash, List.length_ofFn, wordHash_eq_ofFn, listXor_pair, ofList_ofFn,
-    affineHash, unpackAffineSeed]
+/-! ### Word-level seed adjustment and exact agreement -/
 
 /-- Word-level implementation of `adjustAffineSeed`: adjust each of the first `min r k` rows of the
 `k × n` matrix prefix of `seed` to be orthogonal to `y + y₀`, preserving the remaining rows and the
@@ -603,7 +550,7 @@ theorem wordAdjustAffineSeed_eq_packAffineSeed (k n r : ℕ) (y y₀ seed : List
     simp only [List.length_map, List.length_range] at hi₁
     let idx : Fin k := ⟨i, hi₁⟩
     have hrow : listRow n idx.val (seed.take (k * n)) = List.ofFn (s.1 idx) :=
-      listRow_eq_ofFn n idx (seed.take (k * n))
+      (ofFn_unpackAffineSeed_fst seed idx).symm
     simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn]
     change (let diff := listXor n [y, y₀]
       let mask := listSingle n (diff.idxOf true)
@@ -620,10 +567,9 @@ theorem wordAdjustAffineSeed_eq_packAffineSeed (k n r : ℕ) (y y₀ seed : List
       · simp
       · simp [listXor_pair]
     · simp [hir]
-  simp only [wordAdjustAffineSeed, packAffineSeed, adjustAffineSeed, AddMonoidHom.coe_mk,
-    ZeroHom.coe_mk]
-  rw [hadjRows, ← ofFn_blocksEquiv_symm, listRow_zero]
-  rfl
+  rw [packAffineSeed_eq_flatten_append]
+  simp only [wordAdjustAffineSeed, adjustAffineSeed, AddMonoidHom.coe_mk, ZeroHom.coe_mk]
+  rw [hadjRows, ← ofFn_unpackAffineSeed_snd]
 
 @[simp] theorem length_wordAdjustAffineSeed (k n r : ℕ) (y y₀ seed : List Bool) :
     (wordAdjustAffineSeed k n r y y₀ seed).length = k * n + k := by

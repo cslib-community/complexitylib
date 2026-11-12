@@ -68,25 +68,20 @@ theorem Geometry.catalogue {L m t N Q : ℕ} {μ : ℕ → ℕ} (h : Geometry L 
 theorem Geometry.reframe {L m t N Q : ℕ} {μ ν : ℕ → ℕ} (h : Geometry L m t N Q μ)
     (hf : ∀ p, directoryBase L m N Q ≤ p → p < valueBase L m t N Q → ν p = μ p) :
     Geometry L m t N Q ν := by
-  have hK (s : ℕ) (hs : s < (m - t + 1) * 10 ^ L)
-      (hv : BoxTable.Eligible L (m - t) s) :
-      Nat.count (BoxTable.Eligible L (m - t)) s < (boxes L m t).card := by
-    have h := Nat.count_strict_mono hv hs
-    rwa [BoxTable.count_eligible_eq_card_boxes] at h
   constructor
   · intro s hs
     rw [hf _ (by omega) (by unfold valueBase recordBase; omega)]
     exact h.directory s hs
   · intro s hs hv
-    have hk := hK s hs hv
+    have hk := BoxTable.count_lt_card_boxes hs hv
     rw [hf _ (by unfold recordBase; omega) (by unfold valueBase; omega)]
     exact h.code s hs hv
   · intro s hs hv
-    have hk := hK s hs hv
+    have hk := BoxTable.count_lt_card_boxes hs hv
     rw [hf _ (by unfold recordBase; omega) (by unfold valueBase; omega)]
     exact h.stars s hs hv
   · intro s hs hv
-    have hk := hK s hs hv
+    have hk := BoxTable.count_lt_card_boxes hs hv
     rw [hf _ (by unfold recordBase; omega) (by unfold valueBase; omega)]
     exact h.stride s hs hv
 

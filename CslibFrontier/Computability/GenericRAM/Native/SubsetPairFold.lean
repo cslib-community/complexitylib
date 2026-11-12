@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Poly
 import Mathlib.Algebra.Ring.Parity
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Card
+import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Data.Nat.Size
 
@@ -169,8 +170,7 @@ private theorem pascalStep_iterate_spec (n k : ℕ) :
         prevRows ++ [nextRow] := by
       rw [Function.iterate_succ_apply', Internal.pascalStep]; simp only [hlast, prevRows, nextRow]
     have hk_lt : k < prevRows.length := by omega
-    have hprev_k : prevRows.getD k [] = prevRows[k] := by
-      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk_lt, Option.getD_some]
+    have hprev_k : prevRows.getD k [] = prevRows[k] := List.getD_eq_getElem _ _ hk_lt
     have hk_row := hrows k hk_lt; have hnext_len : nextRow.length = n + 1 := by simp [nextRow]
     have hnext_entry : ∀ s (hs : s < nextRow.length), nextRow[s] = (k + 1).choose s := by
       intro s hs; simp only [nextRow, List.getElem_map, List.getElem_range]
@@ -180,13 +180,12 @@ private theorem pascalStep_iterate_spec (n k : ℕ) :
         have hs1 : s < prevRows[k].length := by omega
         have hs2 : s + 1 < prevRows[k].length := by omega
         simp only [beq_iff_eq, Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte,
-          Nat.add_sub_cancel, hprev_k, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hs1,
-          List.getElem?_eq_getElem hs2, Option.getD_some, hk_row.2 s hs1, hk_row.2 (s + 1) hs2,
+          Nat.add_sub_cancel, hprev_k, List.getD_eq_getElem _ _ hs1,
+          List.getD_eq_getElem _ _ hs2, hk_row.2 s hs1, hk_row.2 (s + 1) hs2,
           Nat.choose_succ_succ]
     refine ⟨by simp only [hstep, List.length_append, hlen, List.length_singleton], ?_, ?_⟩
-    · simp only [hstep, List.reverse_append, List.reverse_singleton, List.singleton_append,
-        List.headD_cons, List.getD_eq_getElem?_getD]
-      rw [List.getElem?_append_right (by omega)]; simp [hlen]
+    · rw [hstep, List.getD_append_right _ _ _ _ (by omega)]
+      simp [hlen]
     · simp only [hstep]; intro i hi
       simp only [List.length_append, hlen, List.length_singleton] at hi
       by_cases hik : i < k + 1
@@ -212,16 +211,13 @@ theorem getElem_pascalTable_eq_choose {n i s : ℕ} (hi : i < (pascalTable n).le
 theorem getD_pascalTable_eq_choose {n i : ℕ} (hi : i ≤ n) (s : ℕ) :
     ((pascalTable n).getD i []).getD s 0 = i.choose s := by
   have hi_lt : i < (pascalTable n).length := by simp only [length_pascalTable]; omega
-  have hrow : (pascalTable n).getD i [] = (pascalTable n)[i] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi_lt, Option.getD_some]
   have hrow_len : (pascalTable n)[i].length = n + 1 := ((pascalStep_iterate_spec n n).2.2 i hi_lt).1
-  rw [hrow]
+  rw [List.getD_eq_getElem _ _ hi_lt]
   by_cases hs : s ≤ n
   · have hs_lt : s < (pascalTable n)[i].length := by omega
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hs_lt, Option.getD_some]
+    rw [List.getD_eq_getElem _ _ hs_lt]
     exact getElem_pascalTable_eq_choose hi_lt hs_lt
-  · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega), Option.getD_none,
-      Nat.choose_eq_zero_of_lt (by omega)]
+  · rw [List.getD_eq_default _ _ (by omega), Nat.choose_eq_zero_of_lt (by omega)]
 
 /-- Every binomial coefficient `i.choose s` for `i ≤ n` has binary length at most `n + 1`. -/
 theorem length_encNat_choose_le {n i : ℕ} (hi : i ≤ n) (s : ℕ) :

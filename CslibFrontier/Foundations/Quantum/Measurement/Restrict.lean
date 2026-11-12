@@ -32,6 +32,10 @@ projections on `p` and on `¬p` (`Cslib.Quantum.projOutcomes_add_projOutcomes_no
 * `Cslib.Quantum.norm_restrictOutcomes_sq`: `‖R_S ψ‖² = measureProb ψ S`.
 * `Cslib.Quantum.inner_restrictOutcomes`: `⟪R_S φ, R_S ψ⟫ = ∑_{y ∈ S} conj(φ_y) ψ_y`.
 * `Cslib.Quantum.projOutcomes_add_projOutcomes_not`: `P_p ψ + P_{¬p} ψ = ψ`.
+* `Cslib.Quantum.norm_projOutcomes_sq`, `Cslib.Quantum.norm_projOutcomes_sq_mem`: squared norm of
+  `projOutcomes` as `measureProb`.
+* `Cslib.Quantum.inner_projOutcomes_eq_zero`: orthogonality of `projOutcomes` for disjoint
+  predicates.
 -/
 
 public section
@@ -99,5 +103,35 @@ theorem projOutcomes_projOutcomes (p q : ι → Prop) [DecidablePred p] [Decidab
   ext y
   simp only [projOutcomes_apply]
   split_ifs <;> simp_all
+
+/-- The squared norm of `projOutcomes p ψ` is the probability of outcomes satisfying `p`. -/
+theorem norm_projOutcomes_sq [Fintype ι] (p : ι → Prop) [DecidablePred p]
+    (ψ : EuclideanSpace ℂ ι) : ‖projOutcomes p ψ‖ ^ 2 = measureProb ψ (univ.filter p) := by
+  rw [EuclideanSpace.norm_sq_eq, measureProb, ← sum_filter_add_sum_filter_not univ p]
+  have hzero : ∑ y ∈ univ.filter (fun y => ¬p y), ‖(projOutcomes p ψ).ofLp y‖ ^ 2 = 0 := by
+    refine sum_eq_zero fun y hy => ?_
+    simp only [projOutcomes_apply, (mem_filter.1 hy).2, ↓reduceIte, norm_zero, ne_eq,
+      OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow]
+  rw [hzero, add_zero]
+  refine sum_congr rfl fun y hy => ?_
+  simp only [projOutcomes_apply, (mem_filter.1 hy).2, ↓reduceIte]
+
+/-- The squared norm of `projOutcomes (· ∈ S) ψ` is `measureProb ψ S`. -/
+theorem norm_projOutcomes_sq_mem [Fintype ι] [DecidableEq ι] (S : Finset ι)
+    (ψ : EuclideanSpace ℂ ι) : ‖projOutcomes (· ∈ S) ψ‖ ^ 2 = measureProb ψ S := by
+  have hS : univ.filter (· ∈ S) = S := by ext y; simp only [mem_filter, mem_univ, true_and]
+  simpa only [hS] using norm_projOutcomes_sq (· ∈ S) ψ
+
+/-- Projections onto disjoint outcome predicates are orthogonal. -/
+theorem inner_projOutcomes_eq_zero [Fintype ι] (p q : ι → Prop)
+    [DecidablePred p] [DecidablePred q] (hpq : ∀ y, ¬(p y ∧ q y))
+    (φ ψ : EuclideanSpace ℂ ι) :
+    inner ℂ (projOutcomes p φ) (projOutcomes q ψ) = 0 := by
+  rw [PiLp.inner_apply]
+  refine sum_eq_zero fun y _ => ?_
+  by_cases hp : p y
+  · have hq : ¬q y := fun hq => hpq y ⟨hp, hq⟩
+    simp only [projOutcomes_apply, hp, ↓reduceIte, hq, inner_zero_right]
+  · simp only [projOutcomes_apply, hp, ↓reduceIte, inner_zero_left]
 
 end Cslib.Quantum

@@ -50,8 +50,6 @@ theorem exec_step_resume_next {w p k A B a b out scratch frames frame : ℕ}
   let current : Fin 7 := ⟨phase.val, by omega⟩
   let next : Fin 7 := ⟨phase.val + 1, by omega⟩
   let selected : Fin 8 := ⟨phase.val + 1, by omega⟩
-  have ha := hl.left_before
-  have hb := hl.right_before
   have ho := hl.output_before
   have hs := hl.scratch_before
   have hf := hl.frames_before
@@ -87,15 +85,11 @@ theorem exec_step_resume_next {w p k A B a b out scratch frames frame : ℕ}
     (load.seq (ExecWithin.branch_neg depthTest (locate.seq dispatched))).mono (by
       dsimp only [current] at *
       omega)
-  refine ⟨y, he, ⟨ready, leftValues, rightValues, ?_, ?_, outputs, ?_⟩, ?_⟩
-  · intro j hj
-    rw [memory _ ?_ (Or.inl (by omega)) (Or.inl (by omega)), zm]
-    · exact originalA j hj
-    · rcases hl.left_disjoint with h | h <;> omega
-  · intro j hj
-    rw [memory _ ?_ (Or.inl (by omega)) (Or.inl (by omega)), zm]
-    · exact originalB j hj
-    · rcases hl.right_disjoint with h | h <;> omega
+  obtain ⟨hleft', hright'⟩ := hl.inputs_of_stage memory
+  refine ⟨y, he, ⟨ready, leftValues, rightValues,
+    fun j hj => (hleft' j hj).trans ((congrFun zm _).trans (originalA j hj)),
+    fun j hj => (hright' j hj).trans ((congrFun zm _).trans (originalB j hj)),
+    outputs, ?_⟩, ?_⟩
   · intro j
     by_cases heq : j.val = 6
     · have hj : j = 6 := Fin.ext heq

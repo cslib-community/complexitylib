@@ -91,32 +91,8 @@ structure WeightedEdge where
 enc_structure encWeightedEdge : WeightedEdge where
   u : encNat, v : encNat, weight : encNat
 
-/-- Reading the first endpoint `u` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_weightedEdge_u :
-    ComputableInPolyTime WeightedEdge.u encWeightedEdge encNat :=
-  encWeightedEdge_u_deg.computableInPolyTime
-
-/-- Reading the second endpoint `v` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_weightedEdge_v :
-    ComputableInPolyTime WeightedEdge.v encWeightedEdge encNat :=
-  encWeightedEdge_v_deg.computableInPolyTime
-
-/-- Reading the weight `weight` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_weightedEdge_weight :
-    ComputableInPolyTime WeightedEdge.weight encWeightedEdge encNat :=
-  encWeightedEdge_weight_deg.computableInPolyTime
-
-/-- Constructing a `WeightedEdge` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_weightedEdge_mk {γ : Type} {enc : γ ↪ List Bool}
-    {u v w : γ → ℕ} (hu : ComputableInPolyTime u enc encNat)
-    (hv : ComputableInPolyTime v enc encNat)
-    (hw : ComputableInPolyTime w enc encNat) :
-    ComputableInPolyTime (fun x => WeightedEdge.mk (u x) (v x) (w x)) enc encWeightedEdge :=
-  encWeightedEdge_mk_deg.computableInPolyTime.comp (hu.prod (hv.prod hw))
+attribute [fun_prop] encWeightedEdge_u_polyTime encWeightedEdge_v_polyTime
+  encWeightedEdge_weight_polyTime encWeightedEdge_mk_polyTime
 
 /-- Whether the edge `e` crosses the cut whose sides are given by `side`. -/
 @[expose] def crosses (side : ℕ → Bool) (e : WeightedEdge) : Bool := side e.u != side e.v
@@ -167,6 +143,8 @@ all in binary. -/
 enc_structure encMaxCut : MaxCutInstance where
   edges : (encList MaxCut.encWeightedEdge), bound : encNat
 
+attribute [fun_prop] encMaxCut_edges_polyTime encMaxCut_bound_polyTime encMaxCut_mk_polyTime
+
 /-- **Weighted maximum cut** [Karp1972]: the weighted edges `edges` have a cut of weight at least
 `bound`, a set `S` of vertices such that the edges with exactly one endpoint in `S` have total
 weight at least `bound`. -/
@@ -174,27 +152,6 @@ weight at least `bound`. -/
   {x | ∃ S : Finset ℕ, x.bound ≤ MaxCut.cutWeight x.edges (fun v => decide (v ∈ S))}
 
 namespace MaxCut
-
-/-- Reading the edge list `edges` of a `MaxCutInstance` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_edges :
-    ComputableInPolyTime MaxCutInstance.edges encMaxCut (encList encWeightedEdge) :=
-  encMaxCut_edges_deg.computableInPolyTime
-
-/-- Reading the bound `bound` of a `MaxCutInstance` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_bound :
-    ComputableInPolyTime MaxCutInstance.bound encMaxCut encNat :=
-  encMaxCut_bound_deg.computableInPolyTime
-
-/-- Constructing a `MaxCutInstance` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_mk {γ : Type} {enc : γ ↪ List Bool}
-    {edges : γ → List WeightedEdge} {bound : γ → ℕ}
-    (hedges : ComputableInPolyTime edges enc (encList encWeightedEdge))
-    (hbound : ComputableInPolyTime bound enc encNat) :
-    ComputableInPolyTime (fun x => MaxCutInstance.mk (edges x) (bound x)) enc encMaxCut :=
-  encMaxCut_mk_deg.computableInPolyTime.comp (hedges.prod hbound)
 
 /-- The check of a side `S` of a cut, given as a list: the cut has weight at least the bound. -/
 @[expose] def check (x : MaxCutInstance) (S : List ℕ) : Bool :=

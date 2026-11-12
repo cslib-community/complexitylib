@@ -275,7 +275,7 @@ private theorem computableTidilyInPolyTime_chainTrace
   have hhlen : (h (k a) (padOrTake (k a).length state.1 ++ padOrTake (k a).length b)).length =
       (k a).length :=
     hlen (k a) _ hxlen
-  enc_len [chainTraceStep, encList_cons, hhlen, hxlen]
+  enc_len [chainTraceStep, hhlen, hxlen]
 
 /-- Computing `chainTrace` is polynomial-time for any polynomial-time compression function `h`. -/
 @[program_certificate]

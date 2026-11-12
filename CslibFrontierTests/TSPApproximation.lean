@@ -66,7 +66,7 @@ example : tourLength line4 (approxTour line4) = 6 := by
 
 /-- The guarantee applied to the tour `[0, 1, 2, 3]` of length `6`. -/
 example : tourLength line4 (approxTour line4) ≤ 2 * 6 :=
-  tourLength_approxTour_le_two_mul_of_mem line4_isMetric
+  tourLength_approxTour_le_two_mul_of_mem (x := ⟨line4, 6⟩) line4_isMetric
     ⟨[0, 1, 2, 3], by decide +kernel, by decide +kernel⟩
 
 /-! ### 2. The metric hypothesis is needed -/

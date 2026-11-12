@@ -19,10 +19,12 @@ Tags the lemmas of the simp set `runWith_norm`. Combined with `pmf_norm`,
 to `PMF.bind`, `PMF.pure`, and `PMF.map` in one pass, while stopping cleanly at
 `ProbOracleComp.runWith oracle (adversary n pk) s` when `adversary` is a black-box parameter:
 
-* folding spelled-out runs into `ProbOracleComp.runWith`:
-  `ProbOracleComp.eval_run_interpret_eq_runWith`, `ProbOracleComp.run_interpret_eq_runWith`;
-* composing handlers inside `ProbOracleComp.runWith`:
-  `ProbOracleComp.runWith_interpret_sumHandler_eta`, `ProbOracleComp.runWith_run_interpret`;
+* folding spelled-out runs into `ProbOracleComp.runWith` or `OracleComp.evalWith`:
+  `ProbOracleComp.eval_interpret_eq_evalWith`, `ProbOracleComp.eval_run_interpret_eq_runWith`,
+  `ProbOracleComp.run_interpret_eq_runWith`;
+* composing handlers inside `ProbOracleComp.runWith` or `OracleComp.evalWith`:
+  `ProbOracleComp.evalWith_run_interpret`, `ProbOracleComp.runWith_interpret_sumHandler_eta`,
+  `ProbOracleComp.runWith_run_interpret`;
 * stepping `ProbOracleComp.runWith` over program syntax, lifted sub-interfaces, and lifted
   memoryless oracles:
   `ProbOracleComp.runWith_lift`, `ProbOracleComp.runWith_sample_bind`,
@@ -54,6 +56,10 @@ rules.
 
 ## Main results
 
+* `Cslib.ProbOracleComp.eval_interpret_eq_evalWith`: folds a closed stateless `ProbComp.eval`
+  sum-handler run into `OracleComp.evalWith`.
+* `Cslib.ProbOracleComp.evalWith_run_interpret`: folds a stateful reduction run inside a stateless
+  `OracleComp.evalWith` into `ProbOracleComp.runWith`.
 * `Cslib.ProbOracleComp.run_interpret_eq_runWith`: folds the spelled-out `ProbComp.unifOracle` sum
   handler run into `ProbOracleComp.runWith`.
 * `Cslib.ProbOracleComp.runWith_interpret_sumHandler_eta`: eta-expanded form of
@@ -70,6 +76,46 @@ rules.
 public section
 
 namespace Cslib
+
+/-- Evaluating a `ProbOracleComp` against a stateless `ProbComp` oracle is `OracleComp.evalWith`
+with `ProbComp.unifOracle` and the evaluated oracle. -/
+theorem ProbOracleComp.eval_interpret_eq_evalWith {Query α : Type} {spec : Query → Type}
+    (oracle : (q : Query) → ProbComp (spec q)) (program : ProbOracleComp spec α) :
+    ProbComp.eval (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin oracle) program) =
+      OracleComp.evalWith
+        (OracleComp.sumHandler ProbComp.unifOracle (fun q => ProbComp.eval (oracle q)))
+        program :=
+  ProbOracleComp.eval_interpret oracle program
+
+/-- Evaluating a stateful `ProbOracleComp` handler run under a stateless `PMF` external oracle is
+`ProbOracleComp.runWith` against the evaluated handler. -/
+theorem ProbOracleComp.evalWith_run_interpret {Query Query' State α : Type}
+    {spec : Query → Type} {spec' : Query' → Type}
+    (oracle : (q : Query) → PMF (spec q))
+    (handler : (q : Query') → StateT State (ProbOracleComp spec) (spec' q))
+    (program : ProbOracleComp spec' α) (s : State) :
+    OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle oracle)
+      ((OracleComp.interpret
+        (OracleComp.sumHandler (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
+          handler)
+        program).run s) =
+      ProbOracleComp.runWith
+        (fun q state =>
+          OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle oracle)
+            ((handler q).run state))
+        program s := by
+  induction program using ProbOracleComp.induction generalizing s with
+  | pure a => rfl
+  | sample_bind n cont ih =>
+    rw [ProbOracleComp.runWith_sample_bind]
+    simp only [OracleComp.interpret_bind, StateT.run_bind, OracleComp.evalWith_bind,
+      ProbOracleComp.run_interpret_lift_sample, OracleComp.evalWith_map, PMF.bind_map,
+      Function.comp_def, ih]
+    rfl
+  | query_bind q cont ih =>
+    simp only [OracleComp.interpret_bind, StateT.run_bind, OracleComp.evalWith_bind,
+      ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query, ProbOracleComp.interpret_query,
+      ih]
 
 /-- Running a `ProbOracleComp` against the lifted uniform sampler and a stateful `PMF` oracle is
 `ProbOracleComp.runWith`. -/
@@ -149,6 +195,8 @@ end Cslib
 -- `runWith` folds composite handlers and `StateT.lift` oracles before unfolding concrete `do`
 -- syntax.
 attribute [runWith_norm 1200]
+  Cslib.ProbOracleComp.eval_interpret_eq_evalWith
+  Cslib.ProbOracleComp.evalWith_run_interpret
   Cslib.ProbOracleComp.eval_run_interpret_eq_runWith
   Cslib.ProbOracleComp.run_interpret_eq_runWith
   Cslib.ProbOracleComp.runWith_interpret_sumHandler_eta

@@ -167,7 +167,7 @@ theorem unary_halvings {emit finish : ℕ → List Bool}
     (R := fun x i => (cE + 9) * (x.1 / 2 ^ i + 1)) (Q := fun x => cE * (x.1 + 1))
     (B := fun x => x.1)
     (fun x i _ => by
-      simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two]
+      simp only [encUnary_apply, List.length_replicate, Nat.iterate_div]
       have : x.1 / 2 ^ (i + 1) ≤ x.1 / 2 ^ i :=
         Nat.div_le_div_left (Nat.pow_le_pow_right (by norm_num) (Nat.le_succ i)) (by positivity)
       generalize x.1 / 2 ^ (i + 1) = w' at this ⊢
@@ -175,12 +175,12 @@ theorem unary_halvings {emit finish : ℕ → List Bool}
       rw [Nat.add_mul]
       omega)
     (fun x i _ => by
-      simp only [Nat.iterate_div_two, zero_add]
+      simp only [Nat.iterate_div, zero_add]
       exact Nat.mul_le_mul_left _ (Nat.succ_le_succ (Nat.div_le_self _ _)))
     (fun x i _ => by
-      simp only [encUnary_apply, List.length_replicate, Nat.iterate_div_two]
+      simp only [encUnary_apply, List.length_replicate, Nat.iterate_div]
       exact Nat.div_le_self _ _)
-  simp only [Nat.iterate_div_two] at h
+  simp only [Nat.iterate_div] at h
   have hM (x : ℕ × ℕ) : c * (cF * (x.1 / 2 ^ x.2 + 1) +
       (∑ i ∈ Finset.range x.2, (cE + 9) * (x.1 / 2 ^ i + 1)) + x.1 + 1) ≤
       c * (cF + 2 * cE + 20) * (x.1 + x.2 + 1) := by
@@ -220,7 +220,7 @@ theorem unaryToNat : ComputableInO (fun n : ℕ => n) encUnary encNat (fun n => 
   refine (((unary_halvings hbit hnil).comp (hid.prod hid)).of_enc_eq (g := fun n : ℕ => n)
     (encC := encNat) fun n => ?_).mono 4 (fun n => ?_) (fun n => ?_)
   · have := Nat.flatten_map_range_halfBit (le_refl n)
-    simp only [Nat.iterate_div_two] at this
+    simp only [Nat.iterate_div] at this
     simp only [encNat_apply, encBits_apply, Function.comp_apply, List.append_nil]
     exact this.symm
   all_goals dsimp only; omega

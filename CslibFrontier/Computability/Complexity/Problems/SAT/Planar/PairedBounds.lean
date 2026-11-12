@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathBou
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathGeometry
 import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalPath
+import CslibFrontier.Foundations.Data.List.GetD
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
@@ -136,10 +137,8 @@ private theorem lastLiteral_bounds {φ : CNF ℕ} {o : Occurrence ℕ}
       ∀ a ∈ (lastLiteral sites (occurrencePath φ o) o.2.2.2).2, OutputBound φ a := by
   let r := occurrencePath φ o
   have hlen : 2 ≤ r.length := PlanarCompile.occurrencePath_length_ge_two ho
-  have hp : CellBound φ (r.getD (r.length - 2) (0, 0)) := by
-    apply cellBound_occurrencePath ho
-    rw [List.getD_eq_getElem _ _ (show r.length - 2 < r.length by omega)]
-    exact List.getElem_mem _
+  have hp : CellBound φ (r.getD (r.length - 2) (0, 0)) :=
+    cellBound_occurrencePath ho (List.getD_mem (0, 0) (show r.length - 2 < r.length by omega))
   have hq : CellBound φ (r.getLastD (0, 0)) := by
     rw [List.getLastD_eq_getLast?, (PlanarCompile.occurrencePath_endpoints ho).2,
       Option.getD_some]
@@ -189,8 +188,7 @@ private theorem ordinaryClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     have hi : ci.2 < OrdinaryRing.clausePositions.length := by
       rw [OrdinaryRing.drawing_sizes.1]
       exact (OrdinaryRing.formula_sizes.1 ▸ (List.mem_zipIdx' hci).1)
-    have hb := OrdinaryRing.clause_bounds _ (List.getElem_mem hi)
-    rw [List.getD_eq_getElem _ _ hi]
+    have hb := OrdinaryRing.clause_bounds _ (List.getD_mem (0, 0) hi)
     omega
   · intro l hl
     obtain ⟨v, _, rfl⟩ := List.mem_map.mp hl
@@ -212,8 +210,7 @@ private theorem crossingClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     have hi : ci.2 < PairedCrossover.clausePositions.length := by
       rw [show PairedCrossover.clausePositions.length = 78 by decide +kernel]
       exact (PairedCrossover.length_formula ▸ (List.mem_zipIdx' hci).1)
-    have hb := PairedCrossover.clause_bounds _ (List.getElem_mem hi)
-    rw [List.getD_eq_getElem _ _ hi]
+    have hb := PairedCrossover.clause_bounds _ (List.getD_mem (0, 0) hi)
     omega
   · intro l hl
     obtain ⟨v, _, rfl⟩ := List.mem_map.mp hl
