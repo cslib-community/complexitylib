@@ -86,6 +86,20 @@ variable {N : ℕ}
 
 section Helpers
 
+private theorem norm_identity_helper {κ ι : Type*} [Fintype κ] [Fintype ι]
+    (u : EuclideanSpace ℝ κ) (φ : κ → EuclideanSpace ℂ ι)
+    (coord : κ → ι × Bool → ℝ)
+    (hcoord : ∀ x p, coord x p = if p.2 then ((φ x).ofLp p.1).im else ((φ x).ofLp p.1).re) :
+    ∑ p : ι × Bool, ‖(WithLp.toLp 2 fun x => u.ofLp x * coord x p : EuclideanSpace ℝ κ)‖ ^ 2 =
+      ∑ x, (u.ofLp x * ‖φ x‖) ^ 2 := by
+  simp only [EuclideanSpace.real_norm_sq_eq]
+  rw [sum_comm]
+  refine sum_congr rfl fun x _ => ?_
+  rw [Fintype.sum_prod_type, mul_pow, EuclideanSpace.norm_sq_eq, mul_sum]
+  refine sum_congr rfl fun k _ => ?_
+  rw [← Complex.normSq_eq_norm_sq, Complex.normSq_apply]
+  simp [hcoord]; ring
+
 /-- Vector-matrix-inner-product Cauchy–Schwarz bound:
 `|∑ x y, M[x, y] u_x v_y Re⟨φ_x, ψ_y⟩| ≤ ‖M‖ √(∑ x u_x² ‖φ_x‖²) √(∑ y v_y² ‖ψ_y‖²)`. -/
 private theorem abs_sum_mul_re_inner_le {κ ι : Type*} [Fintype κ] [DecidableEq κ] [Fintype ι]
@@ -127,22 +141,10 @@ private theorem abs_sum_mul_re_inner_le {κ ι : Type*} [Fintype κ] [DecidableE
     refine sum_congr rfl fun x _ => sum_congr rfl fun y _ => by ring
   have hcs := Real.sum_mul_le_sqrt_mul_sqrt (univ : Finset (ι × Bool))
     (fun p => ‖vecφ p‖) (fun p => ‖vecψ p‖)
-  have hnormφ : ∑ p : ι × Bool, ‖vecφ p‖ ^ 2 = ∑ x, (u.ofLp x * ‖φ x‖) ^ 2 := by
-    simp only [vecφ, EuclideanSpace.real_norm_sq_eq]
-    rw [sum_comm]
-    refine sum_congr rfl fun x _ => ?_
-    rw [Fintype.sum_prod_type, mul_pow, EuclideanSpace.norm_sq_eq, mul_sum]
-    refine sum_congr rfl fun k _ => ?_
-    rw [← Complex.normSq_eq_norm_sq, Complex.normSq_apply]
-    simp [coord]; ring
-  have hnormψ : ∑ p : ι × Bool, ‖vecψ p‖ ^ 2 = ∑ y, (v.ofLp y * ‖ψ y‖) ^ 2 := by
-    simp only [vecψ, EuclideanSpace.real_norm_sq_eq]
-    rw [sum_comm]
-    refine sum_congr rfl fun y _ => ?_
-    rw [Fintype.sum_prod_type, mul_pow, EuclideanSpace.norm_sq_eq, mul_sum]
-    refine sum_congr rfl fun k _ => ?_
-    rw [← Complex.normSq_eq_norm_sq, Complex.normSq_apply]
-    simp [coordψ]; ring
+  have hnormφ : ∑ p : ι × Bool, ‖vecφ p‖ ^ 2 = ∑ x, (u.ofLp x * ‖φ x‖) ^ 2 :=
+    norm_identity_helper u φ coord fun _ _ => rfl
+  have hnormψ : ∑ p : ι × Bool, ‖vecψ p‖ ^ 2 = ∑ y, (v.ofLp y * ‖ψ y‖) ^ 2 :=
+    norm_identity_helper v ψ coordψ fun _ _ => rfl
   calc |∑ x, ∑ y, M x y * u.ofLp x * v.ofLp y * RCLike.re (inner ℂ (φ x) (ψ y))|
       = |∑ p : ι × Bool, inner ℝ (vecφ p) (Matrix.toEuclideanCLM (𝕜 := ℝ) M (vecψ p))| := by
           rw [hrewrite]; simp only [hcoord]
@@ -1225,41 +1227,24 @@ private theorem wsMatrix_hadamard_bilin_eq (S : WeightScheme N) (i : Fin N)
       · obtain ⟨_, hne, hpq⟩ := mem_filter.1 hp
         rw [hpq] at hne; exact absurd (Ne.symm hne) hxi
   simp only [hΓdiff, sum_add_distrib]
+  have hcollapse (f : BitString N × BitString N → ℝ) :
+      (∑ x, ∑ y, ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p = (x, y), f p) =
+      ∑ p ∈ S.R with p.1 i ≠ p.2 i, f p := by
+    rw [← Fintype.sum_prod_type]
+    have h_fiber := (sum_fiberwise_of_maps_to (s := S.R.filter fun p => p.1 i ≠ p.2 i)
+      (g := id) (t := univ) (fun _ _ => mem_univ _)).symm
+    refine Eq.trans ?_ h_fiber
+    refine sum_congr rfl fun _ _ => sum_congr (by ext; simp [id_eq, and_assoc]) fun _ _ => rfl
   have hf1 : ∑ x, ∑ y, ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p = (x, y),
       S.w p / (z p.1 * z p.2) * (|a.ofLp p.1| * |b.ofLp p.2|) =
       ∑ p ∈ S.R with p.1 i ≠ p.2 i,
-        S.w p / (z p.1 * z p.2) * (|a.ofLp p.1| * |b.ofLp p.2|) := by
-    calc _ = ∑ x, ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p.1 = x,
-          S.w p / (z p.1 * z p.2) * (|a.ofLp p.1| * |b.ofLp p.2|) := by
-          refine sum_congr rfl fun x _ => ?_
-          rw [← sum_fiberwise_of_maps_to (s := S.R.filter fun p => p.1 i ≠ p.2 i ∧ p.1 = x)
-            (g := Prod.snd) (t := univ) (fun _ _ => mem_univ _)]
-          refine sum_congr rfl fun y _ => sum_congr ?_ fun _ _ => rfl
-          ext p; simp only [mem_filter, Prod.ext_iff, and_assoc]
-      _ = ∑ p ∈ S.R with p.1 i ≠ p.2 i,
-          S.w p / (z p.1 * z p.2) * (|a.ofLp p.1| * |b.ofLp p.2|) := by
-          rw [← sum_fiberwise_of_maps_to (s := S.R.filter fun p => p.1 i ≠ p.2 i)
-            (g := Prod.fst) (t := univ) (fun _ _ => mem_univ _)]
-          refine sum_congr rfl fun x _ => sum_congr ?_ fun _ _ => rfl
-          ext p; simp only [mem_filter, and_assoc]
+        S.w p / (z p.1 * z p.2) * (|a.ofLp p.1| * |b.ofLp p.2|) := hcollapse _
   have hf2 : ∑ x, ∑ y, ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p = (y, x),
       S.w p / (z p.1 * z p.2) * (|a.ofLp p.2| * |b.ofLp p.1|) =
       ∑ p ∈ S.R with p.1 i ≠ p.2 i,
         S.w p / (z p.1 * z p.2) * (|a.ofLp p.2| * |b.ofLp p.1|) := by
     rw [sum_comm]
-    calc _ = ∑ y, ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p.1 = y,
-          S.w p / (z p.1 * z p.2) * (|a.ofLp p.2| * |b.ofLp p.1|) := by
-          refine sum_congr rfl fun y _ => ?_
-          rw [← sum_fiberwise_of_maps_to (s := S.R.filter fun p => p.1 i ≠ p.2 i ∧ p.1 = y)
-            (g := Prod.snd) (t := univ) (fun _ _ => mem_univ _)]
-          refine sum_congr rfl fun x _ => sum_congr ?_ fun _ _ => rfl
-          ext p; simp only [mem_filter, Prod.ext_iff, and_assoc]
-      _ = ∑ p ∈ S.R with p.1 i ≠ p.2 i,
-          S.w p / (z p.1 * z p.2) * (|a.ofLp p.2| * |b.ofLp p.1|) := by
-          rw [← sum_fiberwise_of_maps_to (s := S.R.filter fun p => p.1 i ≠ p.2 i)
-            (g := Prod.fst) (t := univ) (fun _ _ => mem_univ _)]
-          refine sum_congr rfl fun y _ => sum_congr ?_ fun _ _ => rfl
-          ext p; simp only [mem_filter, and_assoc]
+    exact hcollapse _
   rw [hf1, hf2, ← sum_add_distrib]
   refine sum_congr rfl fun p _ => by ring
 
