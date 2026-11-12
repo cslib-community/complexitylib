@@ -29,6 +29,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+import CslibFrontier.Computability.Circuit.Boolean.ArithmeticRing
 import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -676,6 +677,20 @@ register_result "formal-complexity-measure-quarter-density" where
     at least one quarter of all truth tables have measure at least c/4. \
     Natural-number cardinalities with denominators cleared; no computational claim. \
     Theorem 22.3's stronger near-total-density endpoint is not included."
+
+register_result "boolean-ring-arithmetic-simulation" where
+  title := "Boolean circuits simulated over any ring with size factor five"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (Boolean-to-arithmetic direction)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.exists_ring_simulation]
+  scope := "Any De Morgan circuit has an arithmetic circuit over any ring with at most \
+    five times its gate count, preserving all outputs on zero/one-represented Boolean inputs. \
+    Arithmetic uses constant/addition/multiplication gates; constants count and wires are free. \
+    The zero/one representation is injective for nontrivial rings. No arbitrary ring-input \
+    agreement, reverse simulation, formal polynomial identity or compiler-runtime claim."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"

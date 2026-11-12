@@ -34,6 +34,24 @@ use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.A
 for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
 constants as natural-number lengths, without importing VP or giving the labels a semiring.
 
+## Boolean circuits over a ring
+
+Import [Boolean.ArithmeticRing](../../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean)
+and use `Boolean.exists_ring_simulation (R := R) c` for a ring `R`. It returns an arithmetic
+circuit with at most `5 * c.size` gates. Represent Boolean input `x i` by
+`((x i).toNat : R)`; every output represents the corresponding Boolean output the same way.
+This works in odd characteristic and over infinite rings. It does not assert agreement on
+arbitrary ring-valued inputs. Constants, addition and multiplication are the only arithmetic
+gates; subtraction is implemented using the constant `-1`, which is counted in the budget.
+Wiring is free. The zero/one representation is faithful when `R` is nontrivial.
+
+This supplies the Boolean-to-arithmetic direction of the finite-field exercise independently
+of characteristic. The arithmetic-to-Boolean direction needs an encoding of field elements.
+These are value simulations, without compiler-runtime or formal-polynomial identity claims.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[complete clients](../../CslibFrontierTests/BooleanArithmetic.lean), including all Boolean
+inputs to a two-output circuit over `ZMod 3`, zero-input constants and zero-cost integer wiring.
+
 ## Boolean and two-element arithmetic circuits
 
 Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
@@ -48,7 +66,7 @@ The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budge
 also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
 and nonuniform size results, not formal polynomial identities or certified translation runtimes.
 They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
-still needs bit encodings and the general-field directions. Existing `Synthesis.bitBlast`
+still needs finite-field encodings and the arithmetic-to-Boolean direction. Existing `Synthesis.bitBlast`
 handles an equivalence to a fixed-width bit cube and should be reused where applicable.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT

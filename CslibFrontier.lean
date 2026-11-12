@@ -1125,6 +1125,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.St
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
+public import CslibFrontier.Computability.Circuit.Boolean.ArithmeticRing
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
