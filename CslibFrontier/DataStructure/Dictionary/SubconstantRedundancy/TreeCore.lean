@@ -85,7 +85,6 @@ variable (P : TreeSchedule)
 abbrev LeafNode.dom {P : TreeSchedule} (ln : P.LeafNode) : Finset (Fin (2 ^ P.idBits P.depth)) :=
   Minimap.activeSet ln.toFixedEncoded
 
-@[simp]
 theorem LeafNode.card_dom {P : TreeSchedule} (ln : P.LeafNode) :
     ln.dom.card = P.nLow P.depth :=
   Minimap.card_activeSet ln.toFixedEncoded

@@ -63,6 +63,7 @@ open Finset
 components ([LiLiangYuZhou2024, Section 5.2];
 [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF p. 28 / printed p. 27). -/
 structure WaitingList (I_cur I_prev cap : ℕ) where
+  /-- Ordered `(currentId, parentId)` pairs currently held in the waiting list. -/
   entries : List (Fin (2 ^ I_cur) × Fin (2 ^ I_prev))
   len_le : entries.length ≤ cap
   nodup_fst : (entries.map Prod.fst).Nodup
@@ -237,29 +238,34 @@ def pop (w : WaitingList I_cur I_prev cap) (hne : w.dom.Nonempty) :
   let hd := w.entries.head hlen
   (hd, w.remove hd.1)
 
+/-- Popped `(currentId, parentId)` pair returned by `w.pop hne`. -/
+abbrev popEntry (w : WaitingList I_cur I_prev cap) (hne : w.dom.Nonempty) :
+    Fin (2 ^ I_cur) × Fin (2 ^ I_prev) :=
+  (w.pop hne).1
+
 theorem pop_fst_mem_dom (w : WaitingList I_cur I_prev cap) (hne : w.dom.Nonempty) :
-    (w.pop hne).1.1 ∈ w.dom := by
-  dsimp only [pop]
+    (w.popEntry hne).1 ∈ w.dom := by
+  dsimp only [popEntry, pop]
   have hlen : w.entries ≠ [] := by
     intro hemp; rcases hne with ⟨x, hx⟩; rw [w.mem_dom_iff, hemp] at hx; cases hx
   exact (w.mem_dom_iff _).mpr (List.mem_map_of_mem (List.head_mem hlen))
 
 theorem lookup_pop_fst (w : WaitingList I_cur I_prev cap) (hne : w.dom.Nonempty) :
-    w.lookup (w.pop hne).1.1 = some (w.pop hne).1.2 := by
-  dsimp only [pop]
+    w.lookup (w.popEntry hne).1 = some (w.popEntry hne).2 := by
+  dsimp only [popEntry, pop]
   have hlen : w.entries ≠ [] := by
     intro hemp; rcases hne with ⟨x, hx⟩; rw [w.mem_dom_iff, hemp] at hx; cases hx
   exact (w.lookup_eq_some_iff _ _).mpr (List.head_mem hlen)
 
 @[simp]
 theorem dom_pop_snd (w : WaitingList I_cur I_prev cap) (hne : w.dom.Nonempty) :
-    (w.pop hne).2.dom = w.dom.erase (w.pop hne).1.1 :=
+    (w.pop hne).2.dom = w.dom.erase (w.popEntry hne).1 :=
   w.dom_remove _
 
 @[simp]
 theorem lookup_pop_snd (w : WaitingList I_cur I_prev cap) (hne : w.dom.Nonempty)
     (k : Fin (2 ^ I_cur)) :
-    (w.pop hne).2.lookup k = Function.update w.lookup (w.pop hne).1.1 none k :=
+    (w.pop hne).2.lookup k = Function.update w.lookup (w.popEntry hne).1 none k :=
   w.lookup_remove _ k
 
 /-- Build a waiting list from a finite set `S` (`#S ≤ cap`) and parent-ID map `f`. -/
@@ -298,6 +304,7 @@ end WaitingList
 component of `SuccinctBucket`, bit width `succinctTableMetaBits I m`, independent of `Q` and `V`).
 -/
 structure StorageTableMeta (I m : ℕ) where
+  /-- Slot-to-active-ID assignment across the `m` table slots. -/
   slots : Fin m → Option (Fin (2 ^ I))
   inj_slots : ∀ i j k, slots i = some k → slots j = some k → i = j
   deriving DecidableEq
@@ -387,7 +394,9 @@ end StorageTableMeta
 /-- Inner or root storage table separating `tableMeta : StorageTableMeta I m` (`Section 5.6`
 metadata) from `payload : Fin m → Fin Q × Fin V` (`(quot, val)` payload slots). -/
 structure StorageTable (I m Q V : ℕ) where
+  /-- Active-ID slot metadata separated from payload values (`Section 5.6`). -/
   tableMeta : StorageTableMeta I m
+  /-- Per-slot `(quotient, value)` payload array. -/
   payload : Fin m → Fin Q × Fin V
   deriving DecidableEq
 
@@ -804,8 +813,11 @@ variable (P : TreeSchedule)
 /-- Leaf metadata (`Section 5.6`): hash seed `g_u`, waiting list, and `Minimap` subset/spillover
 header, decoupled from `nLow depth` payload slots. -/
 structure LeafMeta where
+  /-- Per-node hash seed at `ℓ = depth`. -/
   seed : P.NodeSeed P.depth
+  /-- Leaf waiting list of capacity `waitCap depth`. -/
   wait : WaitingList (P.idBits P.depth) (P.idBits (P.depth - 1)) (P.waitCap P.depth)
+  /-- `Minimap` subset, spillover, and round header index. -/
   header : Fin (Minimap.headerUniv (2 ^ P.idBits P.depth) (P.nLow P.depth)
     (P.quotUniv P.depth * P.valBound) (P.nLow P.depth))
   deriving DecidableEq
@@ -822,7 +834,9 @@ def LeafMeta.locateSlot
 /-- Leaf node (`ℓ = depth`) combining `LeafMeta` with `nLow depth` spillover memory slots
 (`Minimap.FixedEncoded`). -/
 structure LeafNode where
+  /-- Leaf metadata (`seed`, `wait`, and `Minimap` header). -/
   leafMeta : P.LeafMeta
+  /-- Fixed-capacity `nLow depth` spillover memory slots. -/
   slots : Fin (P.nLow P.depth) →
     Fin (2 ^ Spillover.memBits (P.quotUniv P.depth * P.valBound) (P.nLow P.depth))
   deriving DecidableEq
@@ -847,16 +861,22 @@ def LeafNode.ofFixedEncoded (seed : P.NodeSeed P.depth)
 /-- Inner-node metadata (`2 ≤ ℓ < depth`, `Section 5.6`): hash seed, waiting list, and
 `StorageTableMeta` (independent of `quotUniv ℓ` and `valBound`). -/
 structure InnerMeta (ℓ : ℕ) where
+  /-- Per-node hash seed at level `ℓ`. -/
   seed : P.NodeSeed ℓ
+  /-- Waiting list of capacity `waitCap ℓ`. -/
   wait : WaitingList (P.idBits ℓ) (P.idBits (ℓ - 1)) (P.waitCap ℓ)
+  /-- Active-ID slot metadata of the node's storage table. -/
   tableMeta : StorageTableMeta (P.idBits ℓ) (P.tableCap ℓ)
   deriving DecidableEq
 
 /-- Inner node (`2 ≤ ℓ < depth`) combining `InnerMeta` with `tableCap ℓ` `(quot, val)` payload
 slots. -/
 structure InnerNode (ℓ : ℕ) where
+  /-- Per-node hash seed at level `ℓ`. -/
   seed : P.NodeSeed ℓ
+  /-- Waiting list of capacity `waitCap ℓ`. -/
   wait : WaitingList (P.idBits ℓ) (P.idBits (ℓ - 1)) (P.waitCap ℓ)
+  /-- Full storage table (`tableMeta` + `(quot, val)` payload). -/
   table : StorageTable (P.idBits ℓ) (P.tableCap ℓ) (P.quotUniv ℓ) P.valBound
   deriving DecidableEq
 
@@ -869,13 +889,17 @@ def InnerNode.toMeta {ℓ : ℕ} (nd : P.InnerNode ℓ) : P.InnerMeta ℓ where
 /-- Root-node metadata (`ℓ = 1`, `Section 5.6`): hash seed and `StorageTableMeta` (no waiting list
 at `ℓ = 1`). -/
 structure RootMeta where
+  /-- Per-node hash seed at `ℓ = 1`. -/
   seed : P.NodeSeed 1
+  /-- Active-ID slot metadata of the root storage table. -/
   tableMeta : StorageTableMeta (P.idBits 1) (P.tableCap 1)
   deriving DecidableEq
 
 /-- Root node (`ℓ = 1`). -/
 structure RootNode where
+  /-- Per-node hash seed at `ℓ = 1`. -/
   seed : P.NodeSeed 1
+  /-- Full root storage table (`tableMeta` + `(quot, val)` payload). -/
   table : StorageTable (P.idBits 1) (P.tableCap 1) (P.quotUniv 1) P.valBound
   deriving DecidableEq
 
@@ -886,6 +910,7 @@ def RootNode.toMeta (nd : P.RootNode) : P.RootMeta where
 
 /-- Shared root value pool of `rootValPoolCap = cap - N_2 * nLow 2` slots (`Section 5.2`). -/
 structure RootValPool where
+  /-- Shared root value slots indexed by `Fin rootValPoolCap`. -/
   slots : Fin P.rootValPoolCap → Option (Fin P.valBound)
   deriving DecidableEq
 

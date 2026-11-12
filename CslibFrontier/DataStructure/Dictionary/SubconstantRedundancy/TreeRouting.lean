@@ -57,16 +57,12 @@ private def fiberPermEquiv {α β : Type*} (perm : α → Equiv.Perm β)
   left_inv p := Prod.ext rfl (hinv p.1 p.2)
   right_inv p := Prod.ext rfl (hinv p.1 p.2)
 
-@[simp]
-private theorem fiberPermEquiv_apply {α β : Type*} (perm : α → Equiv.Perm β)
+@[simp] private theorem fiberPermEquiv_apply {α β : Type*} (perm : α → Equiv.Perm β)
     (hinv : ∀ a, Function.Involutive (perm a)) (p : α × β) :
-    fiberPermEquiv perm hinv p = (p.1, perm p.1 p.2) :=
-  rfl
+    fiberPermEquiv perm hinv p = (p.1, perm p.1 p.2) := rfl
 
-@[simp]
-private theorem prodAssoc_symm_apply {α β γ : Type*} (x : α × β × γ) :
-    (Equiv.prodAssoc α β γ).symm x = ((x.1, x.2.1), x.2.2) :=
-  rfl
+@[simp] private theorem prodAssoc_symm_apply {α β γ : Type*} (x : α × β × γ) :
+    (Equiv.prodAssoc α β γ).symm x = ((x.1, x.2.1), x.2.2) := rfl
 
 namespace TreeSchedule
 
@@ -77,12 +73,10 @@ instance instSubsingletonFinNumNodesZero : Subsingleton (Fin (P.numNodes 0)) :=
 
 /-! ## Section 1: Sentinel-padded key universe and external dictionary correspondence -/
 
-theorem univ_add_cap_le_paddedUniv : P.univ + P.cap ≤ P.paddedUniv :=
-  P.univ_le_padded
+theorem univ_add_cap_le_paddedUniv : P.univ + P.cap ≤ P.paddedUniv := P.univ_le_padded
 
 /-- Embed an external dictionary key `u : Fin P.univ` into `Fin P.paddedUniv`. -/
-@[expose]
-def embedReal (u : Fin P.univ) : Fin P.paddedUniv :=
+@[expose] def embedReal (u : Fin P.univ) : Fin P.paddedUniv :=
   ⟨u.val, u.isLt.trans_le ((Nat.le_add_right P.univ P.cap).trans P.univ_le_padded)⟩
 
 theorem embedReal_injective : Function.Injective P.embedReal := fun u₁ u₂ h =>
@@ -90,8 +84,7 @@ theorem embedReal_injective : Function.Injective P.embedReal := fun u₁ u₂ h 
 
 /-- `i`-th sentinel padding key `P.univ + i` in `Fin P.paddedUniv` (`Section 4, Footnote 5`,
 [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF p. 12 / printed p. 11). -/
-@[expose]
-def sentinelKey (i : Fin P.cap) : Fin P.paddedUniv :=
+@[expose] def sentinelKey (i : Fin P.cap) : Fin P.paddedUniv :=
   ⟨P.univ + i.val, (Nat.add_lt_add_left i.isLt P.univ).trans_le P.univ_le_padded⟩
 
 theorem sentinelKey_injective : Function.Injective P.sentinelKey := fun i₁ i₂ h =>
@@ -105,21 +98,18 @@ theorem embedReal_ne_sentinelKey (u : Fin P.univ) (i : Fin P.cap) :
 abbrev PaddedDict : Type := Fin P.paddedUniv → Option (Fin P.valBound)
 
 /-- Active key domain `{x : Fin P.paddedUniv | (d x).isSome}` of a `PaddedDict`. -/
-@[expose]
-def paddedDom (d : P.PaddedDict) : Finset (Fin P.paddedUniv) :=
+@[expose] def paddedDom (d : P.PaddedDict) : Finset (Fin P.paddedUniv) :=
   Finset.univ.filter fun x => (d x).isSome
 
-@[simp]
-theorem mem_paddedDom_iff (d : P.PaddedDict) (x : Fin P.paddedUniv) :
+@[simp] theorem mem_paddedDom_iff (d : P.PaddedDict) (x : Fin P.paddedUniv) :
     x ∈ P.paddedDom d ↔ (d x).isSome := by simp [paddedDom]
 
-@[simp]
-theorem paddedDom_update_some (d : P.PaddedDict) (x : Fin P.paddedUniv) (v : Fin P.valBound) :
+@[simp] theorem paddedDom_update_some (d : P.PaddedDict) (x : Fin P.paddedUniv)
+    (v : Fin P.valBound) :
     P.paddedDom (Function.update d x (some v)) = Insert.insert x (P.paddedDom d) := by
   ext y; by_cases h : y = x <;> simp [h]
 
-@[simp]
-theorem paddedDom_update_none (d : P.PaddedDict) (x : Fin P.paddedUniv) :
+@[simp] theorem paddedDom_update_none (d : P.PaddedDict) (x : Fin P.paddedUniv) :
     P.paddedDom (Function.update d x none) = (P.paddedDom d).erase x := by
   ext y; by_cases h : y = x <;> simp [h]
 
@@ -317,10 +307,16 @@ abbrev PrimCoord (ℓ : ℕ) : Type :=
 /-- Level-`ℓ` routed `(node, compressedId, quotient)` coordinate (`1 ≤ ℓ ≤ depth`). -/
 abbrev LevelCoord (ℓ : ℕ) : Type :=
   Fin (P.numNodes ℓ) × Fin (2 ^ P.idBits ℓ) × Fin (P.quotUniv ℓ)
+/-- Node component of `c : P.LevelCoord ℓ`. -/
+abbrev LevelCoord.node {P : TreeSchedule} {ℓ : ℕ} (c : P.LevelCoord ℓ) : Fin (P.numNodes ℓ) := c.1
+/-- Compressed-ID component of `c : P.LevelCoord ℓ`. -/
+abbrev LevelCoord.id {P : TreeSchedule} {ℓ : ℕ} (c : P.LevelCoord ℓ) : Fin (2 ^ P.idBits ℓ) := c.2.1
+/-- Quotient component of `c : P.LevelCoord ℓ`. -/
+abbrev LevelCoord.quot {P : TreeSchedule} {ℓ : ℕ} (c : P.LevelCoord ℓ) : Fin (P.quotUniv ℓ) := c.2.2
 
 /-- Full-forest hash seed assignment storing `g_u : P.NodeSeed ℓ` at every node `0 ≤ ℓ ≤ depth`. -/
-@[ext]
-structure SeedAssignment (P : TreeSchedule) where
+@[ext] structure SeedAssignment (P : TreeSchedule) where
+  /-- Per-node hash seed `g_u` at `(ℓ, u)`. -/
   seed : ∀ (ℓ : ℕ), ℓ ≤ P.depth → Fin (P.numNodes ℓ) → P.NodeSeed ℓ
 
 /-- Equivalence `Fin P.paddedUniv ≃ P.PrimCoord 0` at the top router (`numNodes 0 = 1`). -/
@@ -377,7 +373,6 @@ noncomputable def primOneToCoordOneEquiv (seeds : P.SeedAssignment) :
       (P.idSeedOfNodeSeed (seeds.seed 1 (Nat.one_le_of_lt P.two_le_depth) u₁)))
     (fun _ => FeistelPerm.idCompressorPerm_involutive _ _ _)
 
-@[simp]
 theorem primOneToCoordOneEquiv_apply (seeds : P.SeedAssignment) (p : P.PrimCoord 1) :
     seeds.primOneToCoordOneEquiv p =
       (p.1, FeistelPerm.feistelPair
@@ -478,7 +473,8 @@ noncomputable def stepCoordEquiv (seeds : P.SeedAssignment) {m : ℕ} (h1 : 1 �
   toFun := fun (u_m, id_m, q_m) =>
     let prim_next := seeds.routeIdToPrimEquiv h1 hm (u_m, id_m)
     let ir := seeds.primSuccToIdRemEquiv h1 hm prim_next
-    (ir.1, ir.2.1, quotMergeEquiv h1 (q_m, ir.2.2))
+    let ir2 := ir.2
+    (ir.1, ir2.1, quotMergeEquiv h1 (q_m, ir2.2))
   invFun := fun (u_next, id_next, q_next) =>
     let qr := (quotMergeEquiv (P := P) h1).symm q_next
     let prim_next := (seeds.primSuccToIdRemEquiv h1 hm).symm (u_next, id_next, qr.2)
@@ -494,9 +490,10 @@ noncomputable def stepCoordEquiv (seeds : P.SeedAssignment) {m : ℕ} (h1 : 1 �
 @[simp] theorem stepCoordEquiv_apply (seeds : P.SeedAssignment) {m : ℕ} (h1 : 1 ≤ m)
     (hm : m < P.depth) (c : P.LevelCoord m) :
     seeds.stepCoordEquiv h1 hm c =
-      let prim_next := seeds.routeIdToPrimEquiv h1 hm (c.1, c.2.1)
+      let prim_next := seeds.routeIdToPrimEquiv h1 hm (c.node, c.id)
       let ir := seeds.primSuccToIdRemEquiv h1 hm prim_next
-      (ir.1, ir.2.1, quotMergeEquiv h1 (c.2.2, ir.2.2)) := by rfl
+      let ir2 := ir.2
+      (ir.1, ir2.1, quotMergeEquiv h1 (c.quot, ir2.2)) := by rfl
 
 /-- Multi-level coordinate bijection `Fin P.paddedUniv ≃ P.LevelCoord ℓ` for `1 ≤ ℓ ≤ depth`. -/
 noncomputable def levelCoordEquiv (seeds : P.SeedAssignment) :
@@ -523,7 +520,7 @@ noncomputable def primCoordAt (seeds : P.SeedAssignment) :
   | 1, _, x => seeds.primZeroToOneEquiv (P.paddedToPrimZeroEquiv x)
   | m + 2, _, x =>
     let c := seeds.levelCoordEquiv (m + 1) (by omega) (by omega) x
-    seeds.routeIdToPrimEquiv (by omega) (by omega) (c.1, c.2.1)
+    seeds.routeIdToPrimEquiv (by omega) (by omega) (c.node, c.id)
 
 /-- Node reached by `x : Fin P.paddedUniv` at level `0 ≤ ℓ ≤ depth`. -/
 @[expose] noncomputable def nodeAt (seeds : P.SeedAssignment) (ℓ : ℕ) (hℓ : ℓ ≤ P.depth)
@@ -531,12 +528,12 @@ noncomputable def primCoordAt (seeds : P.SeedAssignment) :
 
 /-- Compressed `I_ℓ`-bit ID of `x : Fin P.paddedUniv` at level `1 ≤ ℓ ≤ depth`. -/
 @[expose] noncomputable def idAt (seeds : P.SeedAssignment) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (hℓ : ℓ ≤ P.depth)
-    (x : Fin P.paddedUniv) : Fin (2 ^ P.idBits ℓ) := (seeds.levelCoordEquiv ℓ h1 hℓ x).2.1
+    (x : Fin P.paddedUniv) : Fin (2 ^ P.idBits ℓ) := (seeds.levelCoordEquiv ℓ h1 hℓ x).id
 
 /-- Quotient `x_quot^[ℓ]` of `x : Fin P.paddedUniv` at level `1 ≤ ℓ ≤ depth`. -/
 @[expose] noncomputable def quotAt (seeds : P.SeedAssignment) (ℓ : ℕ) (h1 : 1 ≤ ℓ)
     (hℓ : ℓ ≤ P.depth) (x : Fin P.paddedUniv) : Fin (P.quotUniv ℓ) :=
-  (seeds.levelCoordEquiv ℓ h1 hℓ x).2.2
+  (seeds.levelCoordEquiv ℓ h1 hℓ x).quot
 
 theorem levelCoordEquiv_fst (seeds : P.SeedAssignment) {ℓ : ℕ} (h1 : 1 ≤ ℓ) (hℓ : ℓ ≤ P.depth)
     (x : Fin P.paddedUniv) : (seeds.levelCoordEquiv ℓ h1 hℓ x).1 = seeds.nodeAt ℓ hℓ x := by

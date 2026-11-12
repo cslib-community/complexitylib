@@ -209,8 +209,9 @@ theorem deleteAndGetQuotient_spec
         P.nLow j <
           (st.seeds.activeAt (P.paddedDom d) j (hj.trans hℓ) (P.ancestorAt hj u)).card) →
       let res := st.deleteAndGetQuotient scheme ℓ h1 hℓ u (st.seeds.idAt ℓ h1 hℓ z)
-      res.2.1 = st.seeds.quotAt ℓ h1 hℓ z ∧
-      res.2.2 = vz ∧
+      let out := res.2
+      out.1 = st.seeds.quotAt ℓ h1 hℓ z ∧
+      out.2 = vz ∧
       ∃ storeLvl' : Fin P.paddedUniv → ℕ,
         DeletePrefixPost scheme st res.1 d storeLvl storeLvl' ℓ hℓ z := by
   intro ℓ

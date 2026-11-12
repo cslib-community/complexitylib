@@ -192,7 +192,8 @@ noncomputable def rawInsertFresh (hcr : P.ConcentrationReady)
   if h_norm : ∃ storeLvl, st.WellFormedPadded scheme d_cur storeLvl ∧
       x ∉ S_cur ∧ st.seeds.AllGoodSeeds (Insert.insert x S_cur) then
     let spec := Classical.choose_spec h_norm
-    st.normalInsertFresh spec.1 x v spec.2.1 spec.2.2
+    let spec2 := spec.2
+    st.normalInsertFresh spec.1 x v spec2.1 spec2.2
   else if h_pre : st.seeds.AllGoodSeeds S_cur ∧ (P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0) then
     if h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ then
       repairBadSeedsTree hcr scheme st.seeds S_cur d' st.sentCount x h_pre.1 h_pre.2

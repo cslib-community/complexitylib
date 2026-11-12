@@ -536,7 +536,9 @@ theorem expectedSubseqSuccesses_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
 /-- Batch of `K` maximal ancestor-rehash-free subsequences across level-`ℓ` nodes during `M`
 oblivious updates (`∑ r, lengths r ≤ M`). -/
 structure LevelSubseqBatch (ℓ K M : ℕ) where
+  /-- Update count of each maximal ancestor-rehash-free subsequence. -/
   lengths : Fin K → ℕ
+  /-- Oblivious `PrimId ℓ` set trajectory along each subsequence. -/
   trajectories : ∀ r : Fin K, Fin (lengths r + 1) → Finset (P.PrimId ℓ)
   valid : ∀ r : Fin K, P.ValidPrimIdSeq ℓ (lengths r) (trajectories r)
   sum_lengths_le : ∑ r : Fin K, lengths r ≤ M

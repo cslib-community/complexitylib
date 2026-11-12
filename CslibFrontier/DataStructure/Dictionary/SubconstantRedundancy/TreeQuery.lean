@@ -60,9 +60,9 @@ noncomputable def rawQueryLoop
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (hℓ : ℓ ≤ P.depth) (c : P.LevelCoord ℓ) :
     Option (Fin P.valBound) :=
-  match st.nodeQuery scheme ℓ h1 hℓ c.1 c.2.1 with
+  match st.nodeQuery scheme ℓ h1 hℓ c.1 c.id with
   | some (q, v) =>
-    if q == c.2.2 then some v
+    if q == c.quot then some v
     else if hlt : ℓ < P.depth then
       st.rawQueryLoop scheme (ℓ + 1) (by omega) hlt (st.seeds.stepCoordEquiv h1 hlt c)
     else none
@@ -162,7 +162,7 @@ theorem rawQuery_eq
         by_cases hxin : x ∈ P.paddedDom d
         · have := hwf.storeLvl_bounds x hxin; omega
         · have := hwf.storeLvl_outside x hxin; omega
-      rw [hc_eq]; dsimp only
+      rw [hc_eq]; dsimp only [LevelCoord.id, LevelCoord.quot]
       rcases hq : st.nodeQuery scheme P.depth h1 hml (st.seeds.nodeAt P.depth hml x)
           (st.seeds.idAt P.depth h1 hml x) with _ | ⟨q, v⟩
       · rw [hq] at hm; simp only [dite_eq_right (lt_irrefl _), hle_iff] at hm ⊢; exact hm
@@ -502,10 +502,10 @@ noncomputable def rawOverwriteLoop
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (v_new : Fin P.valBound) (ℓ : ℕ) (h1 : 1 ≤ ℓ) (hℓ : ℓ ≤ P.depth)
     (c : P.LevelCoord ℓ) : P.TreeState :=
-  match st.nodeQuery scheme ℓ h1 hℓ c.1 c.2.1 with
+  match st.nodeQuery scheme ℓ h1 hℓ c.1 c.id with
   | some (q, _) =>
-    if q == c.2.2 then
-      st.overwriteAtNode scheme ℓ h1 hℓ c.1 c.2.1 (q, v_new)
+    if q == c.quot then
+      st.overwriteAtNode scheme ℓ h1 hℓ c.1 c.id (q, v_new)
     else if hlt : ℓ < P.depth then
       st.rawOverwriteLoop scheme v_new (ℓ + 1) (by omega) hlt
         (st.seeds.stepCoordEquiv h1 hlt c)
