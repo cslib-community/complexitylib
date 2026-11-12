@@ -1176,6 +1176,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.
 public import CslibFrontier.Computability.Circuit.Boolean.Hastad
 public import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 public import CslibFrontier.Computability.Circuit.Boolean.Hierarchy
+public import CslibFrontier.Computability.Circuit.Boolean.IntThreshold
 public import CslibFrontier.Computability.Circuit.Boolean.Iteration
 public import CslibFrontier.Computability.Circuit.Boolean.Iteration.Active
 public import CslibFrontier.Computability.Circuit.Boolean.Iteration.AffineController
@@ -1351,6 +1352,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.SymAnd.Mobius
 public import CslibFrontier.Computability.Circuit.Boolean.SymAnd.Restrict
 public import CslibFrontier.Computability.Circuit.Boolean.Synthesis
 public import CslibFrontier.Computability.Circuit.Boolean.TC0
+public import CslibFrontier.Computability.Circuit.Boolean.TCSubsetNC
 public import CslibFrontier.Computability.Circuit.Boolean.Tableau.Basic
 public import CslibFrontier.Computability.Circuit.Boolean.Tableau.Correct
 public import CslibFrontier.Computability.Circuit.Boolean.Tableau.Decoder.Assembly
@@ -1396,6 +1398,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Pote
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.RandomRestriction
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.ScalarActivity
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SharedBottom
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SmallWeights
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SupportBound
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SupportBoundAsymptotics
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
