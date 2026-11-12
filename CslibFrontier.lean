@@ -2033,6 +2033,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Oracle.PolyTime
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.QueryBit
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.SelfReduction
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.Space
+public import CslibFrontier.Computability.Complexity.Classes.Oracle.Substitution
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.TQBF
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.ThresholdSearch
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.WitnessBit
@@ -2650,6 +2651,7 @@ public import CslibFrontier.Computability.Complexity.Reduction.LogSpaceBoundedAu
 public import CslibFrontier.Computability.Complexity.Reduction.LogSpaceBoundedTruthTable
 public import CslibFrontier.Computability.Complexity.Reduction.LogSpaceTruthTable
 public import CslibFrontier.Computability.Complexity.Reduction.ManyOne
+public import CslibFrontier.Computability.Complexity.Reduction.Nontrivial
 public import CslibFrontier.Computability.Complexity.Reduction.OneOne
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTable
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTableVariants
