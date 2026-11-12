@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.WordRAM.Width
 public import CslibFrontier.Computability.GenericRAM.Signed.Fits
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Computability.WordRAM.Admission
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.Nat.PowClog
 
 /-!
@@ -238,12 +239,9 @@ theorem exec_at {n D g p A W : ℕ} (values : List ℤ)
   have hmod : GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (p : ℤ) :=
     hmag.of_natAbs_le (by simp only [Int.natAbs_natCast]; omega)
   have hvalues (q : ℕ) (hq : q < 3 * (n * n)) :
-      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) := by
-    have hq' : q < values.length := by omega
-    have hmem : values.getD q 0 ∈ values := by
-      rw [List.getD_eq_getElem _ _ hq']
-      exact List.getElem_mem hq'
-    exact hmag.of_natAbs_le ((hv _ hmem).trans (by omega : A ≤ A + p + 1))
+      GenericRAM.Signed.Fits (Nat.clog 2 (envelope n D g p A) + 1) (values.getD q 0) :=
+    hmag.of_natAbs_le ((hv (values.getD q 0) (List.getD_mem 0 (by omega))).trans
+      (by omega : A ≤ A + p + 1))
   obtain ⟨y, hy, hout⟩ := Instances.exec_at n D g p (fun q => values.getD q 0)
     initial hDHeader hgHeader hnHeader hpHeader hinput
     hD hDn hg hp hmod hvalues hbudget

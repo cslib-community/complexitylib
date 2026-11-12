@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Foundations.Data.Nat.Radix
+import CslibFrontier.Foundations.Data.Nat.Bits.Halving
 
 /-!
 # Direct signed shifts and runtime radix digits
@@ -47,13 +48,6 @@ theorem intBin_subNatNat : ComputableInPolyTime (fun p : ℕ × ℕ => Int.subNa
     rw [he]
     simp [Nat.sub_eq_zero_of_le hr]
 
-private theorem quotientFold (B x k : ℕ) :
-    (List.replicate k true).foldl (fun acc _ => acc / B) x = x / B ^ k := by
-  induction k generalizing x with
-  | zero => simp
-  | succ k ih =>
-    rw [List.replicate_succ, List.foldl_cons, ih, Nat.div_div_eq_div_mul, Nat.pow_succ']
-
 /-- Read the existing radix digit with binary base/value and a unary runtime position.
 The certificate is total, including bases zero and one. -/
 theorem radix_digit :
@@ -63,23 +57,19 @@ theorem radix_digit :
   have hb := (fst encNat encNat).comp hp
   have hx := (snd encNat encNat).comp hp
   have hi := snd (encPair encNat encNat) encUnary
-  have hlist := (of_eq (encIn := encUnary) (encOut := encBits) fun _ => rfl).comp hi
-  have hs := fst (encPair encNat encNat) encBool
-  have hstep := binary_div.comp (hs.snd'.prod hs.fst')
-  have hfold := foldlWith (encP := encNat) (encA := encBool) (encL := encBits) (encB := encNat)
-    (par := fun p : (ℕ × ℕ) × ℕ => p.1.1) (list := fun p => List.replicate p.2 true)
-    (init := fun p => p.1.2) (step := fun B acc _ => acc / B) hb hlist hx hstep
-    (B := fun p => (encPair (encPair encNat encNat) encUnary p).length) .self (by
+  have hstep := binary_div.comp ((snd encNat encNat).prod (fst encNat encNat))
+  have hit := iterateWith (par := fun p : (ℕ × ℕ) × ℕ => p.1.1) (count := fun p => p.2)
+    (init := fun p => p.1.2) (step := fun B acc => acc / B) hb hi hx hstep
+    (bound := fun p => (encPair (encPair encNat encNat) encUnary p).length) .self (by
       intro p i _
-      rw [List.take_replicate, quotientFold]
-      have hq : (encNat (p.1.2 / p.1.1 ^ min i p.2)).length ≤ (encNat p.1.2).length := by
-        simpa [Nat.size_eq_bits_len] using
-          Nat.size_le_size (Nat.div_le_self p.1.2 (p.1.1 ^ min i p.2))
+      rw [Nat.iterate_div]
+      have hq : (encNat (p.1.2 / p.1.1 ^ i)).length ≤ (encNat p.1.2).length := by
+        simpa [Nat.size_eq_bits_len] using Nat.size_le_size (Nat.div_le_self p.1.2 (p.1.1 ^ i))
       exact hq.trans ((length_le_encPair_right encNat encNat p.1).trans
         (length_le_encPair_left (encPair encNat encNat) encUnary p)))
-  have h := binary_mod.comp (hfold.prod hb)
+  have h := binary_mod.comp (hit.prod hb)
   convert h using 1
   funext p
-  simp only [Cslib.Radix.digit_eq_div_pow_mod, quotientFold, Function.comp_def]
+  simp only [Cslib.Radix.digit_eq_div_pow_mod, Nat.iterate_div, Function.comp_def]
 
 end Turing.MultiTapeTM.ComputableInPolyTime

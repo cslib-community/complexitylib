@@ -31,6 +31,8 @@ while keeping `Δa = 0` and `ΔW ≤ -1`.
 
 * `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.not_out_reads_param`: when `d < S.a`, the
   output does not read a parameter directly.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.unitDelete`: performing `(D4)` with a
+  given swap partner, without any disperser hypothesis.
 * `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.exists_unit_delete`: performing `(D4)` on a
   unit-degree unpaired parameter.
 * `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.step_of_deletion`: every available
@@ -63,20 +65,19 @@ theorem Valid.not_out_reads_param {S : State n} {f : BooleanFunction n} {d : ℕ
   not_out_reads_param_of
     (Valid.out_not_affine hS hf ha S.out.neg (Finset.singleton_subset_iff.2 hx))
 
-/-- `(D4)` (unit delete): an unpaired parameter `x` with `S.children x = {.inr e}` swaps with an
-auxiliary variable occurring in `e`, and then drops `e` and `x`, lowering `s` and `W` by `1`
-while preserving `m`, `q`, and `a`. -/
-theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
-    (hS : S.Valid f) (hf : IsAffineDisperser f d) (ha : d < S.a)
-    {x e : ℕ} (hx : x ∈ S.unpaired) (hcx : S.children x = {.inr e}) :
-    ∃ S' : State n, S'.Valid f ∧ S'.m = S.m ∧ S'.s + 1 = S.s ∧ S'.q = S.q ∧ S'.a = S.a ∧
-      S'.W + 1 ≤ S.W := by
+/-- `(D4)` (unit delete), concretely: an unpaired parameter `x` with `S.children x = {.inr e}`,
+not read by the output, swaps with an auxiliary variable `Q` that is affine in parameters `T`
+containing `x`; then `(S.swap x Q c T).dropEqn e x` drops `e` and `x`, lowering `s` and `W` by
+`1` while preserving `m`, `q`, and `a`. -/
+theorem Valid.unitDelete {S : State n} {f : BooleanFunction n} (hS : S.Valid f)
+    {x e Q : ℕ} {c : Bool} {T : Finset ℕ} (hx : x ∈ S.unpaired) (hcx : S.children x = {.inr e})
+    (hout : ¬ S.out.Reads x) (hQaux : Q ∈ S.aux) (haff : S.AffineIn Q c T) (hxT : x ∈ T) :
+    let S' := (S.swap x Q c T).dropEqn e x
+    S'.Valid f ∧ S'.m = S.m ∧ S'.s + 1 = S.s ∧ S'.q = S.q ∧ S'.a = S.a ∧ S'.W + 1 ≤ S.W := by
   have hxpar : x ∈ S.params := (mem_unpaired.1 hx).1
   have hxu : ¬ S.Paired x := (mem_unpaired.1 hx).2
   obtain ⟨he, hxe⟩ := (SemiCircuit.inr_mem_children _).1 (by
     rw [hcx]; exact Finset.mem_singleton_self _)
-  obtain ⟨Q, hQaux, c, T, haff, hxT⟩ :=
-    SemiCircuit.exists_affineIn_of_mem_terms hS.wf hxpar he hxe
   let S₁ := S.swap x Q c T
   have hswap : S.SwapOK x Q c T := ⟨hxpar, hxu, hQaux, haff, hxT⟩
   have hS₁ : S₁.Valid f := Valid.swap hS hswap
@@ -96,7 +97,7 @@ theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
         have : Sum.inl K ∈ S.children x := (SemiCircuit.inl_mem_children _).2 ⟨hK, hread⟩
         rw [hcx, Finset.mem_singleton] at this
         cases this
-      out := Valid.not_out_reads_param hS hf ha hxpar }
+      out := hout }
   let S₂ := S₁.dropEqn e x
   have hS₂ : S₂.Valid f := hS₁.dropEqn hdrop
   have hm₂ : S₂.m = S.m := by
@@ -123,7 +124,22 @@ theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
             exact Finset.card_le_card (Finset.erase_subset _ _))
     simp only [Finset.sum_const_zero, add_zero, hq₂, ← hq₁] at h
     omega
-  exact ⟨S₂, hS₂, hm₂, hs₂, hq₂, ha₂, hW₂⟩
+  exact ⟨hS₂, hm₂, hs₂, hq₂, ha₂, hW₂⟩
+
+/-- `(D4)` (unit delete): an unpaired parameter `x` with `S.children x = {.inr e}` swaps with an
+auxiliary variable occurring in `e`, and then drops `e` and `x`, lowering `s` and `W` by `1`
+while preserving `m`, `q`, and `a`. -/
+theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
+    (hS : S.Valid f) (hf : IsAffineDisperser f d) (ha : d < S.a)
+    {x e : ℕ} (hx : x ∈ S.unpaired) (hcx : S.children x = {.inr e}) :
+    ∃ S' : State n, S'.Valid f ∧ S'.m = S.m ∧ S'.s + 1 = S.s ∧ S'.q = S.q ∧ S'.a = S.a ∧
+      S'.W + 1 ≤ S.W := by
+  have hxpar : x ∈ S.params := (mem_unpaired.1 hx).1
+  obtain ⟨he, hxe⟩ := (SemiCircuit.inr_mem_children _).1 (by
+    rw [hcx]; exact Finset.mem_singleton_self _)
+  obtain ⟨Q, hQaux, c, T, haff, hxT⟩ :=
+    SemiCircuit.exists_affineIn_of_mem_terms hS.wf hxpar he hxe
+  exact ⟨_, Valid.unitDelete hS hx hcx (Valid.not_out_reads_param hS hf ha hxpar) hQaux haff hxT⟩
 
 /-- Whether one of the four deletion rules `(D1)`–`(D4)` applies to `S`:
 * `(D1)`: a gate computing a literal or constant on `EqnsHold val ∧ Locus val` whose inputs

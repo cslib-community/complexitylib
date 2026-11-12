@@ -89,14 +89,14 @@ example : (Supplier.prepare (k := 1) code (0, 1000000000, 0, 0, 1, 0, 14)).elim
 
 -- The counter-based supplier is the explicit-word supplier on the counter's labels.
 example (σ : ℕ) : prepared σ = Supplier.prepareWords code (1, 1, σ, 0,
-    Assignments.labels 1 (2 ^ 56, counter, 14, Encoding.width 1 1 1)) := rfl
+    Assignments.labels 1 ⟨2 ^ 56, counter, 14, Encoding.width 1 1 1⟩) := rfl
 
 -- Stored encoded views need no parsing argument: a FAIL previous view gives the FAIL word.
 example (input : List Bool) (providers : Fin 1 → Fin 3 → Option (View 1 (Fin 1) 1)) :
     supplier.finish (supplier.runFrom input (Supplier.prepareWords code
       (input.length, 1, 0, ((0 : Fin 1) : ℕ),
-        (List.ofFn (Encoding.encode (k := 1) (b := 1) code none),
-        fun h δ => List.ofFn (Encoding.encode code (providers h δ))))) 1) =
+        ⟨List.ofFn (Encoding.encode (k := 1) (b := 1) code none),
+        fun h δ => List.ofFn (Encoding.encode code (providers h δ))⟩)) 1) =
       List.replicate (Encoding.width 1 1 1) false := by
   rw [supplier, Supplier.finish_prepareWords_encode]
   simp [gate, Supplier.ofFn_encode_none]

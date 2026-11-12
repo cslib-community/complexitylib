@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -371,13 +372,8 @@ private theorem le_maxTwo {l : List ℕ} (hl : l.length ≤ 2) {v : ℕ} (hv : v
   · simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
   · simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
 
-private theorem maxTwo_le {l : List ℕ} {D : ℕ} (h : ∀ v ∈ l, v ≤ D) : maxTwo l ≤ D := by
-  have key (i : ℕ) : l.getD i 0 ≤ D := by
-    rw [List.getD_eq_getElem?_getD]
-    rcases hi : l[i]? with _ | v
-    · simp
-    · exact h v (List.mem_of_getElem? hi)
-  exact max_le (key 0) (key 1)
+private theorem maxTwo_le {l : List ℕ} {D : ℕ} (h : ∀ v ∈ l, v ≤ D) : maxTwo l ≤ D :=
+  max_le (List.getD_le_of_forall_le h 0) (List.getD_le_of_forall_le h 1)
 
 /-- **Wires of small depth are determined by few inputs.** A wire of small depth `D ≤ d` has a set
 of at most `2 ^ D` inputs such that Kleene evaluation from partial inputs that agree with an

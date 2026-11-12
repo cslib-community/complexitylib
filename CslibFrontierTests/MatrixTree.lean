@@ -205,6 +205,79 @@ example : ¬ twoCycle.IsInArborescence 0 := by
   have hpos := Nat.card_pos (α := {T : Digraph (Fin 3) // T ≤ twoCycle ∧ T.IsInArborescence 0})
   omega
 
+-- Zero-row-sum and zero-column-sum matrix determinant cofactor independence (`Matrix`).
+example :
+    let A : Matrix (Fin 3) (Fin 3) ℤ := !![3, -2, -1; -1, 2, -1; -2, 0, 2]
+    (A.submatrix (Subtype.val : {v : Fin 3 // v ≠ 0} → Fin 3) Subtype.val).det =
+        (A.submatrix (Subtype.val : {v : Fin 3 // v ≠ 1} → Fin 3) Subtype.val).det ∧
+      (A.submatrix (Subtype.val : {v : Fin 3 // v ≠ 0} → Fin 3) Subtype.val).det = 4 := by
+  intro A
+  have hrow : ∀ i : Fin 3, ∑ j, A i j = 0 := by intro i; fin_cases i <;> decide
+  have hcol : ∀ j : Fin 3, ∑ i, A i j = 0 := by intro j; fin_cases j <;> decide
+  refine ⟨_root_.Matrix.det_submatrix_eq_of_sum_eq_zero (L := A) hrow hcol 0 1, ?_⟩
+  decide
+
+/-- Asymmetric balanced 4-vertex digraph: `0 → 1 → 2 → 3 → 0` plus `0 ⇄ 2`. -/
+def bal4 : _root_.Digraph (Fin 4) where
+  Adj v w := (v = 0 ∧ (w = 1 ∨ w = 2)) ∨ (v = 1 ∧ w = 2) ∨
+    (v = 2 ∧ (w = 3 ∨ w = 0)) ∨ (v = 3 ∧ w = 0)
+
+instance : DecidableRel bal4.Adj := fun v w =>
+  inferInstanceAs (Decidable ((v = 0 ∧ (w = 1 ∨ w = 2)) ∨ (v = 1 ∧ w = 2) ∨
+    (v = 2 ∧ (w = 3 ∨ w = 0)) ∨ (v = 3 ∧ w = 0)))
+
+-- Stanley Corollary 10.3 on `bal4`: arborescence count is `2` at every root (`0`, `1`, `2`).
+example :
+    Nat.card {T : _root_.Digraph (Fin 4) // T ≤ bal4 ∧ T.IsInArborescence 0} =
+        Nat.card {T : _root_.Digraph (Fin 4) // T ≤ bal4 ∧ T.IsInArborescence 1} ∧
+      Nat.card {T : _root_.Digraph (Fin 4) // T ≤ bal4 ∧ T.IsInArborescence 0} = 2 := by
+  have hbal : ∀ v : Fin 4,
+      (Finset.univ.filter fun w => bal4.Adj v w).card =
+        (Finset.univ.filter fun u => bal4.Adj u v).card := by
+    intro v
+    fin_cases v <;> decide
+  refine ⟨_root_.Digraph.natCard_isInArborescence_eq_of_balanced bal4 hbal 0 1, ?_⟩
+  have h := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ bal4 0
+  have hdet : ((bal4.adjMatrix ℤ).laplacian.submatrix
+      (Subtype.val : {v : Fin 4 // v ≠ 0} → Fin 4) Subtype.val).det = 2 := by
+    decide
+  rw [hdet] at h
+  exact_mod_cast h.symm
+
+-- Weighted balanced digraph weights: `0→1→2→0` with weight `2` and `0→2→1→0` with weight `3`.
+private def balWeight (u v : Fin 3) : ℤ :=
+  if (u = 0 ∧ v = 1) ∨ (u = 1 ∧ v = 2) ∨ (u = 2 ∧ v = 0) then 2
+  else if (u = 0 ∧ v = 2) ∨ (u = 2 ∧ v = 1) ∨ (u = 1 ∧ v = 0) then 3
+  else 0
+
+private lemma balWeight_balanced : ∀ v : Fin 3, ∑ w, balWeight v w = ∑ u, balWeight u v := by
+  intro v
+  fin_cases v <;> decide
+
+example :
+    (∑ᶠ (T : _root_.Digraph (Fin 3)) (_ : T.IsInArborescence 0),
+      ∏ᶠ (p : Fin 3 × Fin 3) (_ : T.Adj p.1 p.2), balWeight p.1 p.2) =
+    (∑ᶠ (T : _root_.Digraph (Fin 3)) (_ : T.IsInArborescence 1),
+      ∏ᶠ (p : Fin 3 × Fin 3) (_ : T.Adj p.1 p.2), balWeight p.1 p.2) :=
+  _root_.Digraph.finsum_isInArborescence_eq_of_balanced balWeight balWeight_balanced 0 1
+
+-- Counterexample showing balance is required: `path3` (`2 → 1 → 0`) has `1` arborescence at `0`
+-- and `0` at `1`.
+example :
+    Nat.card {T : _root_.Digraph (Fin 3) // T ≤ path3 ∧ T.IsInArborescence 0} = 1 ∧
+      Nat.card {T : _root_.Digraph (Fin 3) // T ≤ path3 ∧ T.IsInArborescence 1} = 0 := by
+  have h0 := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ path3 0
+  have hdet0 : ((path3.adjMatrix ℤ).laplacian.submatrix
+      (Subtype.val : {v : Fin 3 // v ≠ 0} → Fin 3) Subtype.val).det = 1 := by
+    decide
+  rw [hdet0] at h0
+  have h1 := det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ path3 1
+  have hdet1 : ((path3.adjMatrix ℤ).laplacian.submatrix
+      (Subtype.val : {v : Fin 3 // v ≠ 1} → Fin 3) Subtype.val).det = 0 := by
+    decide
+  rw [hdet1] at h1
+  exact ⟨by exact_mod_cast h0.symm, by exact_mod_cast h1.symm⟩
+
 end Directed
 
 end CslibFrontierTests.MatrixTree

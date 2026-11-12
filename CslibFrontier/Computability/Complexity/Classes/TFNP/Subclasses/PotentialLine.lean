@@ -713,26 +713,20 @@ theorem sinkOfPotentialLineRel_mem_SOPL
 /-- `EOPL` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_EOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ EOPL encB) : R ∈ EOPL enc := by
-  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT_red⟩ := Complexity.mem_EOPL.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  have hpair := (hf.comp (.fst enc encBits)).prod (.snd enc encBits)
-  refine Complexity.mem_EOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    fun p => V (f p.1, p.2), hn.comp hf, hP.comp hpair, hS.comp hpair, hV.comp hpair,
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_endOfPotentialLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_EOPL.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_EOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
+    fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-- `SOPL` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_SOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ SOPL encB) : R ∈ SOPL enc := by
-  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT_red⟩ := Complexity.mem_SOPL.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  have hpair := (hf.comp (.fst enc encBits)).prod (.snd enc encBits)
-  refine Complexity.mem_SOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    fun p => V (f p.1, p.2), hn.comp hf, hP.comp hpair, hS.comp hpair, hV.comp hpair,
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_sinkOfPotentialLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_SOPL.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_SOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
+    fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-! ### Equivalence with the circuit-style solution types -/
 

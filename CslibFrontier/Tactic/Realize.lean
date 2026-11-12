@@ -30,16 +30,18 @@ the client syntax, unfolding definitions, with one rule per form:
 * a method with a local zero-work `Realizes` certificate: `Realizes.reindex`, selecting its
   arguments from live words before unfolding its implementation. Computed arguments are first
   staged by certified glue using the method's input encoding.
-* `if` on `a = b`, `a < b` or `a > b`: `Realizes.branch₀`.
+* `if` on natural `=`, `≠`, `<`, `≤`, `>` or `≥`, combined with `¬`, `∧` and `∨`:
+  `Realizes.branch₀`, retaining short-circuiting. Named guards unfold to these forms.
 * `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
   adapting `D` and any captured live words to the whole environment. The source and reached-state
   domain are transported back to the client's original loop.
 * `boundedWhile G step D n a` whose step begins with a query: `Realizes.while₀`. The guard
-  `G D r` may be `a = b`, `a < b`, `a > b` or `a ≠ 0` (tested as `0 < a`), with any decidability
-  instance, over the live words and the state's words; an operand independent of the state, such
-  as a constant, is computed before the loop. The cutoff `n` is a ghost bound and is not computed.
+  `G D r` may be `a = b`, `a < b`, `a > b`, `a ≠ 0` (tested as `0 < a`), or `a + 1 ≤ b`
+  (tested as `a < b`), with any decidability instance, over the live words and the state's words.
+  An operand independent of the state is computed before the loop. The cutoff `n` is a ghost
+  bound and is not computed.
   The certificate is transported to the client's guard, step and `D` (`boundedWhile_congr`,
   `whileSafe_imp`), so the loop's domain is `whileSafe G step …` in the client's terms, under
   the loop's valid history (`Realizes.consequence_valid`), ready for `whileSafe_of_measure`.
@@ -643,23 +645,99 @@ private def cond? (c : Expr) : MetaM (Option (Name × Expr × Expr)) := do
 /-- The comparison of a branch condition: equality or `<`, with its operands. -/
 private def parseCond (c : Expr) : MetaM (Name × Expr × Expr) := do
   if let some r ← cond? c then return r
-  throwError "realize: a branch condition must be `a = b`, `a < b` or `a > b` on words, \
+  throwError "realize: a branch condition must combine word comparisons \
+    (`=`, `≠`, `<`, `≤`, `>` or `≥`) using `¬`, `∧` or `∨`, \
     got{indentExpr c}"
 
-/-- The comparison of a loop guard, after unfolding definitions. `a = b`, `a < b` and `a > b`
-are tested as written. `a ≠ 0` is tested as `0 < a`; the flag records this rewriting. -/
+/-- Expose named predicates throughout the logical guard while leaving word comparisons intact. -/
+private partial def unfoldGuard (c : Expr) (fuel : Nat := 64) : MetaM Expr := do
+  if let some name := c.getAppFn.constName? then
+    if [``Eq, ``Ne, ``LT.lt, ``LE.le, ``GT.gt, ``GE.ge].contains name then
+      return c
+  if fuel == 0 then throwError "realize: branch guard unfolding exceeded its limit at{indentExpr c}"
+  if c.isAppOfArity ``And 2 || c.isAppOfArity ``Or 2 then
+    return mkApp2 c.getAppFn (← unfoldGuard (c.getArg! 0) (fuel - 1))
+      (← unfoldGuard (c.getArg! 1) (fuel - 1))
+  if c.isAppOfArity ``Not 1 then
+    return mkApp c.getAppFn (← unfoldGuard c.appArg! (fuel - 1))
+  let c' ← whnfR c
+  if c' != c then return ← unfoldGuard c' (fuel - 1)
+  if let some c' ← withTransparency .default (unfoldDefinition? c) then
+    return ← unfoldGuard c' (fuel - 1)
+  return c
+
+/-- Lower a compound word test to native comparisons. Leave word operands and alternatives
+untouched so their own rules retain live values, fit and selected-path safety. -/
+private def normalizeBranch? (body : Expr) : MetaM (Option Simp.Result) := do
+  let guard ← unfoldGuard (body.getArg! 1)
+  let mut guardThms : SimpTheorems := {}
+  guardThms ← guardThms.addConst ``ne_eq
+  guardThms ← guardThms.addConst ``not_lt (inv := true)
+  let ctx ← Simp.mkContext
+    (config := { dsimp := false, zeta := false, proj := false, iota := false })
+    (simpTheorems := #[guardThms]) (congrTheorems := ← getSimpCongrTheorems)
+  let defaults := Simp.mkDefaultMethodsCore #[]
+  let guardMethods : Simp.Methods := { defaults with
+    pre := fun e => do
+      if (← whnfR (← inferType e)).isConstOf ``Nat then return .done { expr := e }
+      if e != guard && (← isProp e) then return .done { expr := e }
+      defaults.pre e }
+  let (condition, _) ← Simp.main guard ctx (methods := guardMethods)
+  -- Rebuild decidability from the exposed formula. Its original instance can be hidden
+  -- behind a named guard; conditional congruence checks the bridge for either instance.
+  let h ← mkAppOptM ``ite_cond_congr #[some (body.getArg! 0), some (body.getArg! 1),
+    some condition.expr, some (body.getArg! 2), none, some (body.getArg! 3),
+    some (body.getArg! 4), some (← condition.getProof)]
+  let some (_, _, canonical) := (← inferType h).eq?
+    | throwError "realize: internal error rebuilding a branch condition"
+  let mut thms : SimpTheorems := {}
+  for name in [``ite_not, ``ite_and, ``ite_or] do
+    thms ← thms.addConst name
+  let methods : Simp.Methods := { defaults with
+    pre := fun e => do
+      if e == body.getArg! 3 || e == body.getArg! 4 then return .done { expr := e }
+      if ← isProp e then return .done { expr := e }
+      defaults.pre e }
+  let (normalized, _) ← Simp.main canonical (ctx.setSimpTheorems #[thms]) (methods := methods)
+  -- Each recursive call exposes an alias or simplifies the outer condition. Do not
+  -- recurse merely because an unsupported condition acquired a different instance.
+  if normalized.expr.isAppOfArity ``ite 5 &&
+      normalized.expr.getArg! 1 != body.getArg! 1 then
+    return some { normalized with proof? := some (← mkEqTrans h (← normalized.getProof)) }
+  return none
+
+/-- The comparison of a loop guard, with a checked equivalence to its native test.
+Successor lower bounds use the predecessor directly, without computing a successor word. -/
 private partial def parseGuard (g : Expr) (orig : Expr := g.headBeta) (fuel : Nat := 64) :
-    MetaM (Name × Expr × Expr × Bool) := do
+    MetaM (Name × Expr × Expr × Expr) := do
   let g := g.headBeta
-  if let some (kind, a, b) ← cond? g then return (kind, a, b, false)
+  if let some (kind, a, b) ← cond? g then
+    return (kind, a, b, ← mkAppM ``Iff.refl #[g])
   if let some (ty, a, z) := g.ne?.orElse fun _ => g.not?.bind Expr.eq? then
     if (← whnfR ty).isConstOf ``Nat && (← withNewMCtxDepth (isDefEq z (mkNatLit 0))) then
-      return (``Cond.lt, z, a, true)
+      return (``Cond.lt, z, a,
+        ← mkAppM ``Iff.symm #[← mkAppOptM ``Nat.pos_iff_ne_zero #[a]])
+  if (g.isAppOfArity ``LE.le 4 || g.isAppOfArity ``GE.ge 4) &&
+      (g.getArg! 0).isConstOf ``Nat then
+    let (a, b) := if g.isAppOfArity ``GE.ge 4 then (g.getArg! 3, g.getArg! 2)
+      else (g.getArg! 2, g.getArg! 3)
+    let a ← whnfR a
+    let literal? ← getNatValue? a
+    let add? := if let some (.add, p, q) := binOp? a then some (p, q)
+      else if a.isAppOfArity ``Nat.add 2 then some (a.getArg! 0, a.getArg! 1) else none
+    let pred? ← if let some (p, q) := add? then do
+        let one ← withNewMCtxDepth (isDefEq q (mkNatLit 1))
+        pure (if one then some p else none)
+      else pure <| if a.isAppOfArity ``Nat.succ 1 then some (a.getArg! 0)
+        else literal?.bind fun n => if n == 0 then none else some (mkNatLit (n - 1))
+    if let some pred := pred? then
+      return (``Cond.lt, pred, b, ← mkAppOptM ``Nat.succ_le_iff #[pred, b])
   if fuel != 0 then
     let g' ← whnfR g
     if g' != g then return ← parseGuard g' orig (fuel - 1)
     if let some g' ← unfoldDefinition? g then return ← parseGuard g' orig (fuel - 1)
-  throwError "realize: a loop guard must be `a = b`, `a < b`, `a > b` or `a ≠ 0` on words, \
+  throwError "realize: a loop guard must be `a = b`, `a < b`, `a > b`, `a ≠ 0` \
+    or `a + 1 ≤ b` on words, \
     got{indentExpr orig}"
 
 /-- Rebuild a branch condition with new operands. -/
@@ -987,6 +1065,11 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
     return { proof, output, safe := ← trueSafe env.ty }
   -- branching
   if body.isAppOfArity ``ite 5 then
+    if (← cond? (body.getArg! 1)).isNone then
+      if let some normalized ← normalizeBranch? body then
+        let out ← realizeBody ctx env d atoms normalized.expr output?
+        let eq ← mkLambdaFVars #[d] (← mkEqSymm (← normalized.getProof))
+        return { out with proof := ← mkAppM ``Realizes.congr #[out.proof, eq] }
     let c := body.getArg! 1
     let inst := body.getArg! 2
     let t := body.getArg! 3
@@ -1198,9 +1281,9 @@ private partial def realizeWhile (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arr
   let nat := mkConst ``Nat
   let state := mkConst ``Memory.State
   -- the comparison, its operands among the live words and the state's words (`none` for a
-  -- computed operand), the computed operand, and the operand of a guard `x ≠ 0`
-  let (kind, posA, posB, pre?, neFn?) ← withLocalDeclD `a σ fun x => do
-    let (kind, oa, ob, ne) ← parseGuard (mkApp2 G D x)
+  -- computed operand), the computed operand, and the source-to-native guard equivalence
+  let (kind, posA, posB, pre?, guardIff) ← withLocalDeclD `a σ fun x => do
+    let (kind, oa, ob, hg) ← parseGuard (mkApp2 G D x)
     let words := atoms ++ (← encodingAtoms out x l)
     let locate (o : Expr) : MetaM (Option Nat) := do
       if let some i ← findAtom words o then return some i
@@ -1215,8 +1298,7 @@ private partial def realizeWhile (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arr
       | none, _ => pure (some oa)
       | _, none => pure (some ob)
       | _, _ => pure none
-    let neFn? ← if ne then pure (some (← mkLambdaFVars #[x] ob)) else pure none
-    return (kind, ia, ib, pre?, neFn?)
+    return (kind, ia, ib, pre?, ← mkLambdaFVars #[x] hg)
   let word ← encodingOf nat
   let envP ← if pre?.isSome then extend env nat word 1 else pure env
   let cmp := envP.k + l
@@ -1261,10 +1343,7 @@ private partial def realizeWhile (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arr
   let (hgU, hgN, hbU, hbN) ← withLocalDeclD `a σ fun x => do
     let gU := mkApp2 G D x
     let gn := mkApp2 gN e₀ x
-    let iff ← match neFn? with
-      | some f => mkAppM ``Iff.symm #[← mkAppOptM ``Nat.pos_iff_ne_zero #[f.beta #[x]]]
-      | none => mkAppM ``Iff.refl #[gU]
-    let hgU ← mkExpectedTypeHint iff (mkApp2 (mkConst ``Iff) gU gn)
+    let hgU ← mkExpectedTypeHint (guardIff.beta #[x]) (mkApp2 (mkConst ``Iff) gU gn)
     let bU := mkApp step (← mkAppM ``Prod.mk #[D, x])
     let bN := mkApp bodyN (← mkAppM ``Prod.mk #[e₀, x])
     let hbU ← mkExpectedTypeHint (← mkEqRefl bU) (← mkEq bU bN)

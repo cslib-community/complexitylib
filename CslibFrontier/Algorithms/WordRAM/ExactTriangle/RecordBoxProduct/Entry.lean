@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Producer
-public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Entry
+public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Initialized
 
 /-!
 # Initialized producer-to-adapter composition
@@ -67,69 +67,13 @@ theorem exec_input {W m n g p A : ℕ} (values : List ℤ)
           y.mem u = a.mem u) ∧
         (∀ j : Fin 64, y.regs (producerBank j) = a.regs j) ∧
         qs.length * 2 ^ m ≤ n ^ 2 := by
-  have hDn : D m ≤ n := (Nat.le_self_pow (by decide : 18 ≠ 0) (D m)).trans hN
-  have hw : PreparationInput.width n (D m) g p A ≤ W := by
-    unfold admissionWidth at hW
-    omega
-  obtain ⟨a, ha, houtput, hinput, abound⟩ := PreparationInput.exec_input values hlen
-    (by omega) hDn hg hp hv hw
-  have ha' : ExecWithin W Instances.program (.init (PreparationInput.input n (D m) g p values)) a
-      (preparationTime n (D m) g p values - 1) := ha
-  let x₀ : Data 320 := .init (PreparationInput.input n (D m) g p values)
-  let x := a.extend producerBank x₀
-  have hx : ExecWithin W produce x₀ x (preparationTime n (D m) g p values - 1) :=
-    ha'.rename producerBank_injective
-  obtain ⟨t, ht, he⟩ := ha'
-  have hr : Runs W PreparationInput.flatProgram
-      (State.init (PreparationInput.input n (D m) g p values))
-      ⟨Instances.program.size, a⟩ t := by
-    simpa only [Nat.zero_add, State.init] using he.runs (pc := 0)
-      (p := PreparationInput.flatProgram) (Program.Contains.self _).append_left
-  have hwords := PreparationInput.bounded_reachable values hlen (by omega) hDn hg hp hv hw
-    ⟨Instances.program.size, a⟩ t hr
-  obtain ⟨idx, hidx, hord⟩ := first_index (n := n) (D := D m) (g := g) (p := p)
-    (fun q => values.getD q 0) hD hDn hg (by omega)
-  let z := x.set Reg.ordinal 0
-  have hz : ExecWithin (B := .standard) W (.op (.const Reg.ordinal 0)) x z 1 :=
-    ExecWithin.const (fits_zero W)
-  have zmap : z.comap producerBank = a := by
-    ext j
-    · change Function.update x.regs Reg.ordinal 0 (producerBank j) = a.regs j
-      have hne : producerBank j ≠ Reg.ordinal := by
-        intro heq
-        have hh := congrArg Fin.val heq
-        change j.val = 64 at hh
-        omega
-      rw [Function.update_of_ne hne]
-      exact producerBank_injective.extend_apply _ _ j
-    · rfl
-  have hheap : z.regs 42 = a.regs Instances.heap := by
-    exact congrArg (fun d : Data 64 => d.regs Instances.heap) zmap
-  have hQ : recordQueryCount n (D m) p (fun q => values.getD q 0) idx ≤ n ^ 2 := by
-    unfold recordQueryCount
-    rw [pow_two]
-    exact (min_le_right _ _).trans ((Nat.sub_le _ _).trans (Nat.count_le _))
-  have hfit := physical_fits (b := z.regs 42) (n := n) (D := D m) (g := g) (p := p) (A := A)
-    (Q := recordQueryCount n (D m) p (fun q => values.getD q 0) idx)
-    (by rw [hheap]; exact (hwords.1 Instances.heap).le) hQ hW
-  have zout : Instances.Output n (D m) g p (fun q => values.getD q 0)
-      (.init (PreparationInput.input n (D m) g p values)) (z.comap producerBank) := by
-    rw [zmap]
-    exact houtput
+  obtain ⟨hinput, ⟨ready⟩⟩ := prepare_first_input values hlen hD hg hp hN hv hW
   obtain ⟨y, hy, yr, yv, yf, yg, yQ⟩ := exec_of_output (fun q => values.getD q 0)
-    (.init (PreparationInput.input n (D m) g p values)) z zout hD hg (by omega) hN
-    rfl rfl idx hidx (by
-      simpa only [z, Data.set_regs, Function.update_self] using hord.symm) hfit
-  have hmem : z.mem = a.mem := rfl
-  simp only [hheap, hmem] at hy yr yv yf yQ
-  refine ⟨hinput, a, idx, ⟨t, ht, he⟩, hidx, hord, y, ?_, yr, yv, yf, ?_, yQ⟩
-  · have hpos : 1 ≤ preparationTime n (D m) g p values := by
-      dsimp only [preparationTime, Instances.timeBound]
-      omega
-    exact (hx.seq (hz.seq hy)).mono (by omega)
-  · intro j
-    have hj : j.val < 64 := j.isLt
-    rw [yg (producerBank j) (by change j.val < 65; omega)]
-    exact congrArg (fun d : Data 64 => d.regs j) zmap
+    (.init (PreparationInput.input n (D m) g p values)) ready.state ready.output
+    hD hg (by omega) hN rfl rfl ready.index ready.index_mem ready.selected ready.fits
+  simp only [ready.heap_eq, ready.mem_eq] at hy yr yf yQ
+  rw [ready.heap_eq, ready.mem_eq] at yv
+  exact ⟨hinput, ready.producer, ready.index, ready.producerExec, ready.index_mem,
+    ready.ordinal_zero, y, ready.exec_consumer hy, yr, yv, yf, ready.producer_frame yg, yQ⟩
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct

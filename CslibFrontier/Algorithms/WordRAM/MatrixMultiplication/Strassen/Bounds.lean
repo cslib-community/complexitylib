@@ -40,28 +40,33 @@ theorem magnitudeBound_pos (p A B k : ℕ) : 0 < magnitudeBound p A B k := by
   unfold magnitudeBound CyclicConvolution.magnitudeBound
   positivity
 
-/-- Original coefficient operands fit the node envelope at every depth. -/
-theorem inputs_le_magnitudeBound (p A B k : ℕ) :
-    A ≤ magnitudeBound p A B k ∧ B ≤ magnitudeBound p A B k := by
-  have hp : 1 ≤ 16 ^ k := by
-    have h : 0 < 16 ^ k := by positivity
-    omega
-  have hm := Nat.mul_le_mul_left (2 * CyclicConvolution.magnitudeBound p A B) hp
-  simp only [Nat.mul_one] at hm
-  exact ⟨(CyclicConvolution.le_magnitudeBound_left p A B).trans (by unfold magnitudeBound; omega),
-    (CyclicConvolution.le_magnitudeBound_right p A B).trans (by unfold magnitudeBound; omega)⟩
+/-- Twice the scalar convolution bound fits the node magnitude envelope at every depth. -/
+theorem two_scalar_le_magnitudeBound (p A B k : ℕ) :
+    2 * CyclicConvolution.magnitudeBound p A B ≤ magnitudeBound p A B k := by
+  have hp : 1 ≤ 16 ^ k := Nat.one_le_pow k 16 (by decide)
+  simpa only [magnitudeBound, Nat.mul_one] using
+    Nat.mul_le_mul_left (2 * CyclicConvolution.magnitudeBound p A B) hp
+
+/-- Stepping up one recursion level multiplies the scalar factor in `magnitudeBound` by `16`. -/
+theorem magnitudeBound_succ (p A B k : ℕ) :
+    magnitudeBound p A B (k + 1) = 32 * CyclicConvolution.magnitudeBound p A B * 16 ^ k := by
+  unfold magnitudeBound
+  rw [pow_succ]
+  ring
 
 /-- Both native operand-form sums have enough signed range. -/
 theorem forms_le_magnitudeBound (p A B k : ℕ) :
     A + A ≤ magnitudeBound p A B k ∧ B + B ≤ magnitudeBound p A B k := by
-  have hp : 1 ≤ 16 ^ k := by
-    have h : 0 < 16 ^ k := by positivity
-    omega
-  have hm := Nat.mul_le_mul_left (2 * CyclicConvolution.magnitudeBound p A B) hp
-  simp only [Nat.mul_one] at hm
+  have hm := two_scalar_le_magnitudeBound p A B k
   have ha := CyclicConvolution.le_magnitudeBound_left p A B
   have hb := CyclicConvolution.le_magnitudeBound_right p A B
-  constructor <;> unfold magnitudeBound <;> omega
+  omega
+
+/-- Original coefficient operands fit the node envelope at every depth. -/
+theorem inputs_le_magnitudeBound (p A B k : ℕ) :
+    A ≤ magnitudeBound p A B k ∧ B ≤ magnitudeBound p A B k := by
+  have h := forms_le_magnitudeBound p A B k
+  omega
 
 /-- At scalar leaves the original cyclic kernel admission follows from the node admission. -/
 theorem scalar_le_magnitudeBound (p A B : ℕ) :
@@ -76,14 +81,8 @@ theorem child_magnitudeBound_le (p A B k : ℕ) :
       4 * CyclicConvolution.magnitudeBound p A B := by
     unfold CyclicConvolution.magnitudeBound
     nlinarith [Nat.zero_le ((p + 1) * (A * B))]
-  have hm := Nat.mul_le_mul_right (16 ^ k)
-    (show 2 * CyclicConvolution.magnitudeBound p (2 * A) (2 * B) ≤
-        32 * CyclicConvolution.magnitudeBound p A B from by omega)
-  convert hm using 1
-  · rfl
-  · unfold magnitudeBound
-    rw [pow_succ]
-    ring
+  rw [magnitudeBound_succ, magnitudeBound]
+  exact Nat.mul_le_mul_right (16 ^ k) (by omega)
 
 /-- Four previous child contributions and one next contribution fit without relying on
 an unproved cancellation or sparsity bound. -/
@@ -92,13 +91,9 @@ theorem accumulation_le_magnitudeBound (p A B k : ℕ) :
   have hscalar : p * (A * B) ≤ CyclicConvolution.magnitudeBound p A B := by
     unfold CyclicConvolution.magnitudeBound
     nlinarith [Nat.zero_le (A * B)]
-  have hm := Nat.mul_le_mul_right (16 ^ k)
-    (show 20 * (p * (A * B)) ≤ 32 * CyclicConvolution.magnitudeBound p A B from by omega)
-  convert hm using 1
-  · ring
-  · unfold magnitudeBound
-    rw [pow_succ]
-    ring
+  rw [show 5 * (p * ((2 * A) * (2 * B)) * 16 ^ k) = 20 * (p * (A * B)) * 16 ^ k by ring,
+    magnitudeBound_succ]
+  exact Nat.mul_le_mul_right (16 ^ k) (by omega)
 
 /-- The actual child-buffer advancement and its child size exactly fill the parent scratch span. -/
 theorem child_scratch_end (scratch p k : ℕ) :
