@@ -20,10 +20,12 @@ computing Andreev's function `andreev b m` on all `n = 2 ^ b + b m` inputs, in t
 `depthTwoInputs`: a top gate reading the bottom gates and the inputs. With `N = 2 ^ b` and
 `α = ⌊(m - 1) / 2⌋` it has exactly
 `N (N - 1) / 2 + b N (m + α) / 2 + 2 (N - 1) + 2 α b + 3 b m + ⌈b m / 2⌉`
-bottom gates and one top gate. This is Theorem 5 of the preprint cited in
-[#4640](https://github.com/cslib-community/cslib-frontier/issues/4640) (C. Reitwiessner,
-*Depth-Two Threshold Circuits for Andreev's Function*, November 2026, proof in Appendix A); it
-improves the `(3/4) n ^ 2` circuit of `WeightedThreshold.Andreev`.
+bottom gates and one top gate, improving the `(3/4) n ^ 2` circuit of `WeightedThreshold.Andreev`.
+The mathematics is original, AI-assisted work under
+[#4640](https://github.com/cslib-community/cslib-frontier/issues/4640). Statement numbers and
+labels ("preprint, Theorem 5", proof in Appendix A) refer to the author's unpublished draft
+(C. Reitwiessner, *Depth-Two Threshold Circuits for Andreev's Function*), which is not publicly
+accessible; the correspondence with it is not verifiable by third parties.
 
 The top gate tests the sign of the score `P` of `AndreevSharpScore`. Its non-affine terms are
 realized by six families of bottom gates (`AndreevSharpIndex`):
@@ -39,7 +41,7 @@ Every bottom gate has integer weights and thresholds and gives each address bit 
 `1`, constant on each block, so it is sign-coherent (`isSignCoherent_andreevSharpBottomOp`). The
 top weights and threshold are integers.
 
-## Source correspondence
+## Correspondence with the unpublished draft (not publicly verifiable)
 
 * Theorem 5, gate count `eq:bestcount`: `card_andreevSharpIndex`, `size_andreevSharpCircuit`.
 * Theorem 5, exact computation: `computes_andreevSharpCircuit`.
@@ -55,8 +57,8 @@ top weights and threshold are integers.
 ## References
 
 * [cslib-frontier#4640](https://github.com/cslib-community/cslib-frontier/issues/4640):
-  C. Reitwiessner, *Depth-Two Threshold Circuits for Andreev's Function* (unpublished preprint,
-  November 2026), Theorem 5 and Appendix A.
+  original AI-assisted work, following C. Reitwiessner, *Depth-Two Threshold Circuits for
+  Andreev's Function* (unpublished draft, not publicly accessible), Theorem 5 and Appendix A.
 -/
 
 @[expose] public section

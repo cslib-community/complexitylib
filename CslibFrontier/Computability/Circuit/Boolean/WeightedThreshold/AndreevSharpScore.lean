@@ -15,10 +15,11 @@ import Mathlib.Tactic.LinearCombination
 
 This module proves the score identity behind the exact depth-two threshold circuit for Andreev's
 function with `(5/16 + o(1)) n ^ 2` gates (`AndreevSharp`), stated over the table bits
-`x : BitString b → Bool` and the block counts `s : Fin b → ℕ` only. The source is the preprint
-cited in [#4640](https://github.com/cslib-community/cslib-frontier/issues/4640) (C. Reitwiessner,
-*Depth-Two Threshold Circuits for Andreev's Function*, November 2026, Theorem 5 and Appendix A).
-It is unpublished, so the source correspondence below refers to that version.
+`x : BitString b → Bool` and the block counts `s : Fin b → ℕ` only. The mathematics is original,
+AI-assisted work under [#4640](https://github.com/cslib-community/cslib-frontier/issues/4640).
+Statement numbers and labels refer to the author's unpublished draft (C. Reitwiessner,
+*Depth-Two Threshold Circuits for Andreev's Function*, Theorem 5 and Appendix A), which is not
+publicly accessible; the correspondence with it is not verifiable by third parties.
 
 With `N = 2 ^ b`, block parities `p` (`blockParities`), `α = ⌊(m - 1) / 2⌋`, multipliers
 `μ_c` (`0` at `c = 0`, `1 + α` at the weight-one addresses `e_i`, `1` elsewhere),
@@ -54,8 +55,8 @@ displayed identities of Appendix A, and the sum over `S` includes `S = ∅`, whi
 ## References
 
 * [cslib-frontier#4640](https://github.com/cslib-community/cslib-frontier/issues/4640):
-  C. Reitwiessner, *Depth-Two Threshold Circuits for Andreev's Function* (unpublished preprint,
-  November 2026), Theorem 5 and Appendix A.
+  original AI-assisted work, following C. Reitwiessner, *Depth-Two Threshold Circuits for
+  Andreev's Function* (unpublished draft, not publicly accessible), Theorem 5 and Appendix A.
 -/
 
 @[expose] public section
