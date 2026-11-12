@@ -5502,6 +5502,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.SplitRank
 public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
+public import CslibFrontier.Foundations.Data.MvPolynomial.WeightSubstitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.WeightedHomogeneous
 public import CslibFrontier.Foundations.Data.Nat.AlignedPacking
 public import CslibFrontier.Foundations.Data.Nat.ArithmeticProgression
@@ -5686,6 +5687,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.ExchangeReplacement
 public import CslibFrontier.Foundations.LinearAlgebra.FreeAlgebra
 public import CslibFrontier.Foundations.LinearAlgebra.ImageSparsification
 public import CslibFrontier.Foundations.LinearAlgebra.Interpolation
+public import CslibFrontier.Foundations.LinearAlgebra.IsolatedBasis
 public import CslibFrontier.Foundations.LinearAlgebra.KernelVector
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Bareiss
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BasicSolution
@@ -5778,6 +5780,7 @@ public import CslibFrontier.Foundations.NumberTheory.AKS.PerfectPower
 public import CslibFrontier.Foundations.NumberTheory.AKS.SmallR
 public import CslibFrontier.Foundations.NumberTheory.CentralBinomPrimes
 public import CslibFrontier.Foundations.NumberTheory.Harmonic
+public import CslibFrontier.Foundations.NumberTheory.ModularWeights
 public import CslibFrontier.Foundations.NumberTheory.Padics.AdjoinRootDigitLift
 public import CslibFrontier.Foundations.NumberTheory.Padics.AdjoinRootReduction
 public import CslibFrontier.Foundations.NumberTheory.Padics.AdjoinRootValuation
