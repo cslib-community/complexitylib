@@ -65,13 +65,13 @@ example (b m : ℕ) (x : BitString (2 ^ b)) (s : Fin b → ℕ) (hs : ∀ j, s j
 -- its bottom gates are sign-coherent; at balance it gives `N (N - 3 b - 1) / (3 b ^ 3)` gates.
 example (b m : ℕ) (c : Circuit signature (2 ^ b + b * m) 1)
     (hd : c.depth ≤ 2) (hcomp : c.Computes interpretation (single (Boolean.andreev b m)))
-    (hcoh : ∀ k ∈ circuitBottomGates c 0,
+    (hcoh : ∀ k ∈ outputBottomGates c 0,
       IsSignCoherent (Boolean.andreevBlockVar b m) (inputWeight c.program k))
     (hbal : b * m = 2 ^ b) :
-    (2 : ℝ) ^ b * ((2 : ℝ) ^ b - 3 * b - 1) / (3 * (b : ℝ) ^ 3) ≤ #(circuitBottomGates c 0) ∧
-      (m : ℝ) * andreevCubeSplitBound b #(circuitBottomGates c 0) ≤
-        b * #(circuitBottomGates c 0) :=
-  ⟨le_card_circuitBottomGates_of_balanced c hd hcomp hcoh hbal,
+    (2 : ℝ) ^ b * ((2 : ℝ) ^ b - 3 * b - 1) / (3 * (b : ℝ) ^ 3) ≤ #(outputBottomGates c 0) ∧
+      (m : ℝ) * andreevCubeSplitBound b #(outputBottomGates c 0) ≤
+        b * #(outputBottomGates c 0) :=
+  ⟨le_card_outputBottomGates_of_balanced c hd hcomp hcoh hbal,
     mul_andreevCubeSplitBound_le c hd hcomp hcoh⟩
 
 -- Lemma 14 needs no sign condition: every depth-two circuit for `andreev b m` has many splitting
@@ -79,7 +79,7 @@ example (b m : ℕ) (c : Circuit signature (2 ^ b + b * m) 1)
 example (b m : ℕ) (c : Circuit signature (2 ^ b + b * m) 1)
     (hd : c.depth ≤ 2) (hcomp : c.Computes interpretation (single (Boolean.andreev b m)))
     (q : Fin b → Fin m) :
-    (2 : ℝ) ^ 2 ^ b * andreevCubeSplitBound b #(circuitBottomGates c 0) ≤
+    (2 : ℝ) ^ 2 ^ b * andreevCubeSplitBound b #(outputBottomGates c 0) ≤
       ∑ x : BitString (2 ^ b), (andreevCubeSplitCount c q x : ℝ) :=
   two_pow_mul_andreevCubeSplitBound_le c hd hcomp q
 
@@ -133,11 +133,11 @@ theorem andreevOneOne_coherent (j : Fin 2) :
   · exact Or.inl fun t => by fin_cases t; exact h
   · exact Or.inr fun t => by fin_cases t; exact h
 
-example : ∀ k ∈ circuitBottomGates andreevOneOne 0,
+example : ∀ k ∈ outputBottomGates andreevOneOne 0,
     IsSignCoherent (Boolean.andreevBlockVar 1 1) (inputWeight andreevOneOne.program k) := by
   obtain ⟨top, htop⟩ : ∃ top, andreevOneOne.outputs 0 = .gate top := ⟨_, rfl⟩
   intro k hk
-  rw [circuitBottomGates_eq_gateSupport htop] at hk
+  rw [outputBottomGates_of_gate htop] at hk
   exact isSignCoherent_inputWeight_depthTwoInputs _ _ _ _ _ andreevOneOne_coherent htop hk
 
 -- Theorem 13 applied to the concrete circuit, with `G = 2` bottom gates.

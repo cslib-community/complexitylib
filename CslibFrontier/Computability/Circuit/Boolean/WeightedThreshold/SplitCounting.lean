@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.ThresholdCounting
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.SharedBottom
 
 /-!
 # Counting subcube restrictions of depth-two threshold circuits by splitting gates
@@ -31,7 +31,6 @@ gate, it uses that the top weights are fixed.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.WeightedThreshold.circuitBottomGates`: the gates read by the output gate.
 * `Cslib.Circuits.Boolean.WeightedThreshold.circuitSplitGates`: the bottom gates that are not
   constant on a subcube.
 * `Cslib.Circuits.Boolean.WeightedThreshold.circuitLiveForm`: the top gate's linear form on the
@@ -43,8 +42,6 @@ gate, it uses that the top weights are fixed.
   circuit is an upper level set of its live form.
 * `Cslib.Circuits.Boolean.WeightedThreshold.card_image_eval_embedUpdate_le`: the count of
   restricted functions with `D` splitting gates.
-* `Cslib.Circuits.Boolean.WeightedThreshold.card_circuitBottomGates_lt_size`: an output gate has
-  fewer bottom gates than the circuit has gates.
 -/
 
 public section
@@ -78,32 +75,6 @@ theorem forcedToConst_image_iff {κ ι : Type*} [Fintype κ] [DecidableEq ι] {e
 
 variable {κ : Type*} [Fintype κ] {n : ℕ}
 
-/-- The **bottom gates** of output `o`: the gates with a nonzero weight in the output gate (none if
-`o` is an input wire). In a circuit of depth at most two they read only inputs. -/
-noncomputable def circuitBottomGates (c : Circuit signature n 1) (o : Fin 1) :
-    Finset (Fin c.size) :=
-  match c.outputs o with | .input _ => ∅ | .gate top => gateSupport c.program top
-
-/-- When output `o` is the gate `top`, its bottom gates are the gates `top` reads. -/
-theorem circuitBottomGates_eq_gateSupport {c : Circuit signature n 1} {o : Fin 1}
-    {top : Fin c.size} (h : c.outputs o = .gate top) :
-    circuitBottomGates c o = gateSupport c.program top := by
-  unfold circuitBottomGates
-  rw [h]
-
-/-- The output gate is not among its own bottom gates, so there are fewer bottom gates than
-gates. -/
-theorem card_circuitBottomGates_lt_size {c : Circuit signature n 1} {o : Fin 1}
-    {top : Fin c.size} (h : c.outputs o = .gate top) :
-    #(circuitBottomGates c o) < c.size := by
-  classical
-  rw [circuitBottomGates_eq_gateSupport h]
-  have htop : top ∉ gateSupport c.program top := by
-    rw [mem_gateSupport, not_not]; exact gateWeight_eq_zero_of_le _ _ _ le_rfl
-  calc #(gateSupport c.program top) < #(univ : Finset (Fin c.size)) :=
-        card_lt_card ⟨subset_univ _, fun hsub => htop (hsub (mem_univ top))⟩
-    _ = c.size := by rw [card_univ, Fintype.card_fin]
-
 /-- The bottom gates of output `o` that are not forced to a constant outside `B` by `w`, i.e. the
 bottom gates that **split** the subcube. -/
 noncomputable def circuitSplitGates (c : Circuit signature n 1) (o : Fin 1) (B : Finset (Fin n))
@@ -117,10 +88,11 @@ noncomputable def circuitSplitGates (c : Circuit signature n 1) (o : Fin 1) (B :
   cases c.outputs o <;> rfl
 
 theorem circuitSplitGates_subset (c : Circuit signature n 1) (o : Fin 1) (B : Finset (Fin n))
-    (w : Fin n → Bool) : circuitSplitGates c o B w ⊆ circuitBottomGates c o := by
-  unfold circuitSplitGates circuitBottomGates
-  cases c.outputs o
-  exacts [subset_rfl, filter_subset _ _]
+    (w : Fin n → Bool) : circuitSplitGates c o B w ⊆ outputBottomGates c o := by
+  unfold circuitSplitGates
+  cases h : c.outputs o
+  · exact empty_subset _
+  · rw [outputBottomGates_of_gate h]; exact filter_subset _ _
 
 /-- A splitting gate is not forced to a constant. -/
 theorem not_forcedToConst_of_mem_circuitSplitGates {c : Circuit signature n 1} {o : Fin 1}
@@ -224,10 +196,10 @@ theorem card_image_eval_embedUpdate_le [DecidableEq κ] (c : Circuit signature n
     (s : Finset (Fin n → Bool)) (D : ℕ)
     (hs : ∀ w ∈ s, circuitUnforcedConstCount c o (univ.image emb) w = D) :
     #(s.image fun w u => c.eval interpretation (embedUpdate emb w u) o) ≤
-      (#(circuitBottomGates c o)).choose D * (2 ^ Fintype.card κ - 1) ^ D *
+      (#(outputBottomGates c o)).choose D * (2 ^ Fintype.card κ - 1) ^ D *
         (2 ^ Fintype.card κ + 1) := by
   classical
-  set B := circuitBottomGates c o
+  set B := outputBottomGates c o
   let f : (Fin n → Bool) → (κ → Bool) → Bool := fun w u =>
     c.eval interpretation (embedUpdate emb w u) o
   let R : (Fin n → Bool) → Fin c.size → (κ → Bool) → Bool := fun w k u =>
