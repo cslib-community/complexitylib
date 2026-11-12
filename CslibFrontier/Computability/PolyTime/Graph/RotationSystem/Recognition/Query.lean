@@ -204,7 +204,10 @@ theorem referenceOrder_polyTime :
     apply ComputableTidilyInPolyTime.mapWithInput
       ((ComputableTidilyInPolyTime.listReverse encNat).comp word_polyTime)
     exact ComputableTidilyInPolyTime.binary_add'
-      (binaryVertexCount_polyTime.comp (by fun_prop)) (ComputableTidilyInPolyTime.snd _ _)
+      (binaryVertexCount_polyTime.comp
+        ((ComputableTidilyInPolyTime.fst encFixedRotationInput encNat).comp
+          (ComputableTidilyInPolyTime.fst (encPair encFixedRotationInput encNat) encNat)))
+      (ComputableTidilyInPolyTime.snd (encPair encFixedRotationInput encNat) encNat)
   have hr : ComputableTidilyInPolyTime
       (fun I : FixedRotationInput => List.range (2 * I.graph.edges.length))
       encFixedRotationInput (encList encNat) :=
@@ -213,7 +216,20 @@ theorem referenceOrder_polyTime :
         ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
           (ComputableInPolyTime.of_tidy edges_polyTime))).tidy
   unfold referenceOrder
-  fun_prop
+  apply ComputableTidilyInPolyTime.listAppend' hblocks
+  apply ComputableTidilyInPolyTime.filterWithInput
+    (ComputableTidilyInPolyTime.mapWithInput hr
+      (ComputableTidilyInPolyTime.binary_add'
+        (binaryVertexCount_polyTime.comp
+          (ComputableTidilyInPolyTime.fst encFixedRotationInput encNat))
+        (ComputableTidilyInPolyTime.snd encFixedRotationInput encNat)))
+  apply ComputableTidilyInPolyTime.bool_not.comp
+  apply ComputableTidilyInPolyTime.anyWithInput
+    (hblocks.comp (ComputableTidilyInPolyTime.fst encFixedRotationInput encNat))
+  exact ComputableTidilyInPolyTime.decide_eq'
+    (ComputableTidilyInPolyTime.snd (encPair encFixedRotationInput encNat) encNat)
+    ((ComputableTidilyInPolyTime.snd encFixedRotationInput encNat).comp
+      (ComputableTidilyInPolyTime.fst (encPair encFixedRotationInput encNat) encNat))
 
 /-- Frame construction is native, with its unary stride funded by actual list lengths. -/
 theorem frame_polyTime : ComputableInPolyTime frame encFixedRotationInput encFrame := by
