@@ -1126,26 +1126,27 @@ register_result "hitting-set-constant-depth" where
   topic := "algebraic complexity"
   sources := [
     { paper := LimayeSrinivasanTavenas2021, theorem := "Corollary 6, via Lemma 18",
-      locator := "§1 (statement) and §6 (Lemma 18, proof of Corollary 6), ECCC TR21-081 rev. 1" },
+      locator := "printed p. 5 and §6 p. 13, ECCC TR21-081 rev. 1" },
     { paper := ChouKumarSolomon2019, theorem := "Theorem 2.3",
-      locator := "§2.2 (arXiv:1803.05933v1)" },
+      locator := "printed p. 3 (arXiv:1803.05933v1)" },
     { paper := BhattacharjeeEtAl2025, theorem := "Theorems 4.1 and 6.1",
-      locator := "§4.1 and §6.1 (arXiv:2506.23214v1)" }
+      locator := "printed pp. 19–20 and 28 (arXiv:2506.23214v1)" }
   ]
   theorems := [
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit_rpow,
     Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet,
     Cslib.Circuits.Arithmetic.eventually_card_constantDepthHittingSet_le,
     Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit
   ]
   scope := "Over a field of characteristic zero, for every product-depth Δ, exponent c and \
-    t ≥ 1, for all large n: an explicit set of at most 2^(n^(1/t)) points of Kⁿ containing a \
+    real ε > 0, for all large n: an explicit set of at most 2^(n^ε) points of Kⁿ containing a \
     non-root of every nonzero polynomial computed by an unbounded fan-in formula of \
     product-depth at most Δ with at most n^c nodes, and, at a larger exponent, by a simple \
-    circuit of product-depth at most Δ with at most n^c gates. Built from the formula form of \
-    the library's IMM lower bound, a root theorem by Lagrange inversion, and the \
-    Nisan–Wigderson generator over Reed–Solomon designs. Constant Δ only (not \
-    o(log log log n)); ε of the source is 1/t; existence and size of an explicit set, not a \
-    running time; the large-n thresholds are not explicit; characteristic zero only."
+    circuit of product-depth at most Δ with at most n^c gates. A finite form of LST \
+    Corollary 6, which is an identity test with running time (s^(Δ+1) n)^O(n^μ) for depth \
+    o(log log log n): here constant product-depth, existence and size of an explicit set with \
+    non-explicit large-n thresholds, no running time or uniformity, characteristic zero only."
 
 register_result "hitting-set-sparse" where
   title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"

@@ -22,10 +22,13 @@ hits every nonzero polynomial computed by a formula of product-depth at most `Δ
 `n ^ c` nodes (`eventually_isHittingSet_constantDepthHittingSet`,
 `eventually_card_constantDepthHittingSet_le`). At the exponent `(c + 2)(2Δ + 1)` it also hits
 every nonzero polynomial computed by a simple circuit of product-depth at most `Δ` with at most
-`n ^ c` gates (`eventually_isHittingSet_constantDepthHittingSet_circuit`). This is Corollary 6
-of Limaye, Srinivasan and Tavenas [LimayeSrinivasanTavenas2021]: their lower bound for iterated
-matrix multiplication, fed into the hardness-to-randomness theorem of Chou, Kumar and Solomon
-[ChouKumarSolomon2019, Theorem 2.3] in the form of [BhattacharjeeEtAl2025, Theorem 6.1].
+`n ^ c` gates (`eventually_isHittingSet_constantDepthHittingSet_circuit`). For a real `ε > 0`
+the same holds with `2 ^ (n ^ ε)` points, at `t = ⌈ε⁻¹⌉`
+(`eventually_isHittingSet_constantDepthHittingSet_rpow` and its circuit form). This is a finite
+form of Corollary 6 of Limaye, Srinivasan and Tavenas [LimayeSrinivasanTavenas2021]: their lower
+bound for iterated matrix multiplication, fed into the hardness-to-randomness route of Chou,
+Kumar and Solomon [ChouKumarSolomon2019, Theorem 2.3], with the root step of
+[BhattacharjeeEtAl2025, Theorem 4.1]; see "Departures from the sources" below.
 
 ## Construction
 
@@ -43,21 +46,29 @@ values of the generator on the grid `{0, …, n ^ c δ} ^ (m q)`.
   of product-depth `Δ + 2` with at most `rootCost (n ^ c (2 ^ (8t + 1) (8t + 2) + 2)) δ` nodes.
   Since `n < (2 ν) ^ 8t`, this cost is at most `ν ^ (64 t c + 7)` for large `ν`, and the lower
   bound `SPFormula.eventually_pow_lt_nodeCount_of_imm` at `ν` excludes such formulas; `ν` grows
-  with `n`. The blocks are distinct once `n ≤ q ^ (8t + 2)`, which holds since `q ≥ ν²`.
+  with `n`. The blocks are indexed by coefficient vectors, which are distinct once
+  `n ≤ q ^ (8t + 2)`, true since `q ≥ ν²`; the restricted graphs themselves need not be
+  distinct (there are at most `q ^ m` of them), and only the intersection bound is used.
 * **Size.** The set has at most `(n ^ c δ + 1) ^ (m q)` points, with `m q ≤ 6 ν ^ 6` and
   `n ^ c δ + 1 ≤ 2 ^ ((L + 1)(c + 1))`; the exponent `(L + 1)(c + 1) · 6 ν ^ 6` is at most
   `2 ^ ⌊L / t⌋ ≤ n ^ (1 / t)` for large `n`, since `ν ^ 8 ≤ 2 ^ ⌊L / t⌋`.
 
-## Departures from the source
+## Departures from the sources
 
-* The class is that of formulas (`SPFormula`) of bounded product-depth, and of simple circuits
-  (`SPCircuit.IsSimple`) through their unfolding into formulas; the source states the result
-  for circuits of constant depth.
-* The parameter `ε` of the source is `1 / t` for a natural number `t ≥ 1`.
-* The result is an explicit set of points for each `n`; the running time of computing it, and of
-  the identity test that evaluates at its points, is not formalized.
-* The field has characteristic zero, as required by `isHittingSet_generatorHittingSet_of_hard`;
-  the source allows characteristic zero or large enough.
+* [LimayeSrinivasanTavenas2021, Corollary 6] assumes characteristic zero and gives a
+  deterministic identity test for circuits of size `s`, depth `Δ = o(log log log n)` and `n`
+  variables in time `(s ^ (Δ + 1) n) ^ O(n ^ μ)`; it derives this from
+  [ChouKumarSolomon2019, Theorem 2.3] (stated for circuits over `ℚ`, with running time
+  `(s n D) ^ O(n ^ (2 ε))` from hardness at depth `Δ + 5`). [BhattacharjeeEtAl2025, Theorem 6.1]
+  states the hardness-to-randomness step over fields of characteristic zero or large enough.
+* Here: formulas (`SPFormula`) of constant product-depth, and simple circuits
+  (`SPCircuit.IsSimple`) through their unfolding into formulas; characteristic zero; and the
+  existence and size of an explicit set of points for each `n`, with thresholds "for all large
+  `n`" that are not explicit. No running time, uniformity or bit complexity is formalized.
+* The exponent is `ε = 1 / t` for a natural number `t ≥ 1` in the main theorems; the corollaries
+  `eventually_isHittingSet_constantDepthHittingSet_rpow` and
+  `eventually_isHittingSet_constantDepthHittingSet_circuit_rpow` take any real `ε > 0`, with
+  `t = ⌈ε⁻¹⌉`.
 * The set does not depend on the product-depth `Δ`: one set serves all `Δ`, for `n` large
   enough depending on `Δ`.
 
@@ -74,16 +85,20 @@ values of the generator on the grid `{0, …, n ^ c δ} ^ (m q)`.
   `2 ^ (n ^ (1 / t))` points.
 * `Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit`: it hits
   simple constant-depth circuits of polynomial size.
+* `Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_rpow`,
+  `Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit_rpow`: both
+  properties together, for every real `ε > 0`.
 
 ## References
 
 * [N. Limaye, S. Srinivasan, S. Tavenas, *Superpolynomial lower bounds against low-depth algebraic
-  circuits*][LimayeSrinivasanTavenas2021], ECCC TR21-081 revision 1, Corollary 6 and §6
+  circuits*][LimayeSrinivasanTavenas2021], ECCC TR21-081 revision 1, Corollary 6 (printed p. 5)
+  and §6, Lemma 18 (printed p. 13)
 * [C.-N. Chou, M. Kumar, N. Solomon, *Closure results for polynomial
-  factorization*][ChouKumarSolomon2019], Theorem 2.3 (arXiv:1803.05933 numbering)
+  factorization*][ChouKumarSolomon2019], Theorem 2.3 (arXiv:1803.05933v1, printed p. 3)
 * [S. Bhattacharjee, M. Kumar, S. Rai, V. Ramanathan, R. Saptharishi, S. Saraf, *Closure under
-  factorization from a result of Furstenberg*][BhattacharjeeEtAl2025], Theorem 6.1 (unrefereed
-  preprint)
+  factorization from a result of Furstenberg*][BhattacharjeeEtAl2025], Theorems 4.1 and 6.1
+  (arXiv:2506.23214v1, printed pp. 19–20 and 28; unrefereed preprint)
 -/
 
 @[expose] public section
@@ -127,7 +142,7 @@ polynomial `p_i` with coefficients `coeffs t n i`, a set of the Reed–Solomon d
 `rsDesign`. -/
 noncomputable def block (t n : ℕ) (i : Fin n) :
     Fin (numVars t n) ↪ Fin (numVars t n) × ZMod (prime t n) :=
-  ⟨fun x => (x, (Polynomial.ofFn (8 * t + 2) (coeffs t n i)).eval ((x : ℕ) : ZMod (prime t n))),
+  ⟨fun x => (x, ∑ j, coeffs t n i j * ((x : ℕ) : ZMod (prime t n)) ^ (j : ℕ)),
     fun _ _ h => (Prod.ext_iff.1 h).1⟩
 
 end ConstantDepthHittingSet
@@ -405,6 +420,57 @@ theorem eventually_isHittingSet_constantDepthHittingSet_circuit (K : Type*) [Fie
         (Nat.pow_le_pow_left hbase _).trans
           (Nat.pow_le_pow_right (Nat.one_le_pow _ _ (by omega)) (by omega))
     _ = n ^ ((c + 2) * (2 * Δ + 1)) := by rw [← pow_mul]
+
+/-- From an exponent `1 / t` to every real exponent `ε ≥ 1 / t`: `n ^ (1 / t) ≤ n ^ ε` for
+`n ≥ 1`. -/
+private theorem two_rpow_rpow_le {ε : ℝ} {t : ℕ} (ht : 1 / (t : ℝ) ≤ ε) {n : ℕ} (hn : 1 ≤ n)
+    {x : ℝ} (hx : x ≤ 2 ^ ((n : ℝ) ^ (1 / t : ℝ))) : x ≤ 2 ^ ((n : ℝ) ^ ε) :=
+  hx.trans (Real.rpow_le_rpow_of_exponent_le one_le_two
+    (Real.rpow_le_rpow_of_exponent_le (by exact_mod_cast hn) ht))
+
+/-- `t = ⌈ε⁻¹⌉` satisfies `1 ≤ t` and `1 / t ≤ ε`. -/
+private theorem one_le_ceil_inv_and {ε : ℝ} (hε : 0 < ε) :
+    1 ≤ ⌈ε⁻¹⌉₊ ∧ 1 / (⌈ε⁻¹⌉₊ : ℝ) ≤ ε := by
+  have hpos : (0 : ℝ) < ⌈ε⁻¹⌉₊ := (inv_pos.2 hε).trans_le (Nat.le_ceil _)
+  refine ⟨by exact_mod_cast hpos, ?_⟩
+  rw [one_div, inv_le_comm₀ hpos hε]
+  exact Nat.le_ceil _
+
+/-- **Subexponential hitting sets for constant-depth formulas, for every `ε > 0`**
+([LimayeSrinivasanTavenas2021], Corollary 6, in this finite form): over a field of characteristic
+zero, for every product-depth `Δ`, exponent `c` and real `ε > 0`, for all sufficiently large `n`
+the explicit set `constantDepthHittingSet K c ⌈ε⁻¹⌉ n` has at most `2 ^ (n ^ ε)` points and hits
+every nonzero polynomial computed by a formula over `K` in `n` variables of product-depth at most
+`Δ` with at most `n ^ c` nodes. -/
+theorem eventually_isHittingSet_constantDepthHittingSet_rpow (K : Type*) [Field K] [CharZero K]
+    (Δ c : ℕ) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ n in atTop,
+      IsHittingSet (constantDepthHittingSet K c ⌈ε⁻¹⌉₊ n)
+        {p | ∃ C : SPFormula K n, C.polynomial = p ∧ C.productDepth ≤ Δ ∧ C.nodeCount ≤ n ^ c} ∧
+      ((constantDepthHittingSet K c ⌈ε⁻¹⌉₊ n).card : ℝ) ≤ 2 ^ ((n : ℝ) ^ ε) := by
+  obtain ⟨ht, htε⟩ := one_le_ceil_inv_and hε
+  filter_upwards [eventually_isHittingSet_constantDepthHittingSet K Δ c _ ht,
+    eventually_card_constantDepthHittingSet_le K c _ ht, eventually_ge_atTop 1] with n hH hc hn
+  exact ⟨hH, two_rpow_rpow_le htε hn hc⟩
+
+/-- **Subexponential hitting sets for simple constant-depth circuits, for every `ε > 0`**: for
+every product-depth `Δ`, exponent `c` and real `ε > 0`, for all sufficiently large `n` the
+explicit set `constantDepthHittingSet K ((c + 2) (2 Δ + 1)) ⌈ε⁻¹⌉ n` has at most `2 ^ (n ^ ε)`
+points and hits every nonzero polynomial computed by a simple circuit over `K` with `n` inputs,
+of product-depth at most `Δ` and at most `n ^ c` gates. -/
+theorem eventually_isHittingSet_constantDepthHittingSet_circuit_rpow (K : Type*) [Field K]
+    [CharZero K] (Δ c : ℕ) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ n in atTop,
+      IsHittingSet (constantDepthHittingSet K ((c + 2) * (2 * Δ + 1)) ⌈ε⁻¹⌉₊ n)
+        {p | ∃ C : SPCircuit K n, C.IsSimple ∧ C.polynomial = p ∧ C.productDepth ≤ Δ ∧
+          C.size ≤ n ^ c} ∧
+      ((constantDepthHittingSet K ((c + 2) * (2 * Δ + 1)) ⌈ε⁻¹⌉₊ n).card : ℝ) ≤
+        2 ^ ((n : ℝ) ^ ε) := by
+  obtain ⟨ht, htε⟩ := one_le_ceil_inv_and hε
+  filter_upwards [eventually_isHittingSet_constantDepthHittingSet_circuit K Δ c _ ht,
+    eventually_card_constantDepthHittingSet_le K ((c + 2) * (2 * Δ + 1)) _ ht,
+    eventually_ge_atTop 1] with n hH hc hn
+  exact ⟨hH, two_rpow_rpow_le htε hn hc⟩
 
 end Cslib.Circuits.Arithmetic
 
