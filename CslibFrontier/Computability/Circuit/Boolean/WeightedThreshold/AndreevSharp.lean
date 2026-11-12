@@ -130,6 +130,19 @@ theorem isSignCoherent_andreevFormWeight (a : BitString b → ℤ) (β : Fin b �
   IsSignCoherent.of_mem_zero_one fun j t => by
     rcases hβ j with h | h <;> simp [h]
 
+/-- **Gates on integer forms**: the gate with weights `andreevFormWeight b m a β` and threshold
+`θ`, reading the inputs in order, compares `θ` with `∑_c a c x_c + ∑_j β j s_j`. -/
+theorem interpretation_andreevFormWeight (a : BitString b → ℤ) (β : Fin b → ℤ) (θ : ℤ)
+    (w : BitString (2 ^ b + b * m)) :
+    interpretation (⟨2 ^ b + b * m, fun i => (andreevFormWeight b m a β i : ℝ), (θ : ℝ)⟩ : Op)
+        (fun i => w (id i)) =
+      decide (θ ≤ ∑ c, a c * (andreevTable b m w c).toNat +
+        ∑ j, β j * andreevBlockCount b m w j) := by
+  unfold interpretation
+  dsimp only [id]
+  rw [← sum_andreevFormWeight_mul]
+  exact decide_eq_decide.mpr (by rw [← @Int.cast_le ℝ]; push_cast; rfl)
+
 /-! ### Staircases -/
 
 /-- Unit staircase: `∑_{j < L} [j + 1 ≤ q] = q` for `q ≤ L`. -/
@@ -674,11 +687,8 @@ counts. -/
 theorem interpretation_andreevSharpBottomOp (idx : AndreevSharpIndex b m)
     (w : BitString (2 ^ b + b * m)) :
     interpretation (andreevSharpBottomOp b m idx) (fun a => w (id a)) =
-      andreevSharpGate idx (andreevTable b m w) (andreevBlockCount b m w) := by
-  unfold interpretation andreevSharpBottomOp andreevSharpGate andreevSharpForm
-  dsimp only [id]
-  rw [← sum_andreevFormWeight_mul]
-  exact decide_eq_decide.mpr (by rw [← @Int.cast_le ℝ]; push_cast; rfl)
+      andreevSharpGate idx (andreevTable b m w) (andreevBlockCount b m w) :=
+  interpretation_andreevFormWeight _ _ _ w
 
 /-- The circuit compares `2 N` with the top sum on the table bits and block counts. -/
 theorem eval_andreevSharpCircuit (w : BitString (2 ^ b + b * m)) (o : Fin 1) :
