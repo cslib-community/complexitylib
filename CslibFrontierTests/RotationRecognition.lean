@@ -19,6 +19,26 @@ open Cslib.Logic.PL
 
 private def body (scopes : List (List ℕ)) : CSP Bool ℕ := scopes.map fun scope => (true, scope)
 
+-- The named components preserve the literal compiler used by the native certificates.
+example (I : FixedRotationInput) : subdivide I =
+    I.graph.2.zipIdx.flatMap (fun entry =>
+      let a := I.graph.1.length + 2 * entry.2
+      let b := a + 1
+      [((entry.1.1, a), (I.orders.getD entry.1.1 none).isSome),
+        ((a, b), false), ((b, entry.1.2), (I.orders.getD entry.1.2 none).isSome)]) := rfl
+
+example (F : Frame) (e f : Segment × ℕ) : row F e f =
+    (moveLabels F.vertexCount e.2 e.1 f.1.1 ++
+      moveLabels F.vertexCount f.2 f.1 e.1.1, crossing F.order e.1.1 f.1.1) := rfl
+
+example (I : FixedRotationInput) (v : ℕ) (block : List ℕ) : split I v block =
+    ⟨(List.range (I.graph.1.length + 1),
+        I.graph.2.zipIdx.map (fun e =>
+          (redirectEnd I.graph.1.length block (2 * e.2) e.1.1,
+           redirectEnd I.graph.1.length block (2 * e.2 + 1) e.1.2)) ++
+          [(I.graph.1.length, v)]),
+      I.orders ++ [some (block ++ [2 * I.graph.2.length])]⟩ := rfl
+
 example : query (ofCSP (body [])) = true := by decide +kernel
 example : query (ofCSP (body [[]])) = true := by decide +kernel
 example : recoverCSP (body []) = some ⟨[]⟩ := by decide +kernel

@@ -46,9 +46,9 @@ position/end tag, then append connector `(n,v)`. The hub's complete word is `blo
 For the intended split contract `v` is free and the nonempty duplicate-free block lies at `v`. -/
 @[expose] def split (I : FixedRotationInput) (v : ℕ) (block : List ℕ) : FixedRotationInput :=
   ⟨(List.range (I.graph.1.length + 1),
-      I.graph.2.zipIdx.map (fun e =>
-        (redirectEnd I.graph.1.length block (2 * e.2) e.1.1,
-         redirectEnd I.graph.1.length block (2 * e.2 + 1) e.1.2)) ++
+      I.graph.2.zipIdx.map (fun ((source, target), index) =>
+        (redirectEnd I.graph.1.length block (2 * index) source,
+         redirectEnd I.graph.1.length block (2 * index + 1) target)) ++
         [(I.graph.1.length, v)]),
     I.orders ++ [some (block ++ [2 * I.graph.2.length])]⟩
 

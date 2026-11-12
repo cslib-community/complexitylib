@@ -28,7 +28,7 @@ open Turing.MultiTapeTM Cslib.Logic.PL
 
 /-- Every endpoint in an algebraic frame lies below its declared stride. -/
 @[expose] def BoundedEndpoints (F : Frame) : Prop :=
-  ∀ e ∈ F.segments, e.1.1 < F.vertexCount ∧ e.1.2 < F.vertexCount
+  ∀ e ∈ F.segments, e.source < F.vertexCount ∧ e.target < F.vertexCount
 
 /-- A segment emitted by twice subdivision is closed on its dense declared vertex range. -/
 theorem boundedEndpoints_frame {I : FixedRotationInput} (hI : Valid I) :
@@ -79,7 +79,7 @@ theorem label_lt_row {F : Frame} (hF : BoundedEndpoints F)
 /-- Every compiled row comes from an actual independent pair of segment occurrences. -/
 theorem mem_compileFrame {F : Frame} {r : AffineEquation ℕ} :
     r ∈ compileFrame F ↔ ∃ e ∈ F.segments.zipIdx, ∃ f ∈ F.segments.zipIdx,
-      f.2 < e.2 ∧ independent e.1.1 f.1.1 = true ∧ r = row F e f := by
+      f.2 < e.2 ∧ independent e.1.endpoints f.1.endpoints = true ∧ r = row F e f := by
   simp only [compileFrame, List.mem_flatMap, List.mem_map, List.mem_filter,
     Bool.and_eq_true, decide_eq_true_eq]
   constructor

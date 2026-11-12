@@ -37,15 +37,15 @@ abbrev Moves (F : Frame) := Fin F.segments.length → Fin F.vertexCount → Bool
 
 /-- Frozen edges contribute zero; all other entries are read from the finite move rectangle. -/
 @[expose] def finiteMoveValue (F : Frame) (moves : Moves F) (e : Segment × ℕ) (v : ℕ) : Bool :=
-  if e.1.2 then false else readMove F moves e.2 v
+  if e.1.frozen then false else readMove F moves e.2 v
 
 /-- The literal independent-pair switch equations, with all frozen contributions zero. -/
 @[expose] def MoveEquations (F : Frame) (moves : Moves F) : Prop :=
   ∀ e ∈ F.segments.zipIdx, ∀ f ∈ F.segments.zipIdx,
-    f.2 < e.2 → independent e.1.1 f.1.1 = true →
-      finiteMoveValue F moves e f.1.1.1 + finiteMoveValue F moves e f.1.1.2 +
-        (finiteMoveValue F moves f e.1.1.1 + finiteMoveValue F moves f e.1.1.2) =
-          crossing F.order e.1.1 f.1.1
+    f.2 < e.2 → independent e.1.endpoints f.1.endpoints = true →
+      finiteMoveValue F moves e f.1.source + finiteMoveValue F moves e f.1.target +
+        (finiteMoveValue F moves f e.1.source + finiteMoveValue F moves f e.1.target) =
+          crossing F.order e.1.endpoints f.1.endpoints
 
 /-- Decode a binary move label by quotient and remainder, with a total zero fallback. -/
 @[expose] def assignmentOfMoves (F : Frame) (moves : Moves F) (label : ℕ) : Bool :=
@@ -53,7 +53,7 @@ abbrev Moves (F : Frame) := Fin F.segments.length → Fin F.vertexCount → Bool
 
 private theorem entry_bounds {F : Frame} (hF : BoundedEndpoints F)
     {e : Segment × ℕ} (he : e ∈ F.segments.zipIdx) :
-    e.2 < F.segments.length ∧ e.1.1.1 < F.vertexCount ∧ e.1.1.2 < F.vertexCount := by
+    e.2 < F.segments.length ∧ e.1.source < F.vertexCount ∧ e.1.target < F.vertexCount := by
   obtain ⟨hi, hv⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp he)
   exact ⟨hi, hF e.1 (hv ▸ List.getElem_mem hi)⟩
 

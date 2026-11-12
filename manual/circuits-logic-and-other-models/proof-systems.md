@@ -395,6 +395,8 @@ inside a directed block. `Feasible` is existence of the existing `RotationSystem
 
 `query` computes `validate I && XORSAT.solve (compile I)`. Each edge is twice subdivided;
 fixed vertices freeze their incident first/last segments, and middle segments stay movable.
+The stored segment components have named accessors `Segment.endpoints`, `Segment.source`,
+`Segment.target` and `Segment.frozen`; their tuple representation and encoding are unchanged.
 The reference order reverses prescribed leaves within each center block. Each independent
 unordered segment pair emits one sparse affine row of width at most four, with frozen
 contributions omitted. `query_eq_true_iff` proves exactly `Valid I` and affine satisfiability.

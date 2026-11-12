@@ -45,6 +45,18 @@ open Turing.MultiTapeTM Cslib.Logic.PL
 /-- A segment retains its two endpoints and whether edge/vertex moves of this edge are frozen. -/
 abbrev Segment := (ℕ × ℕ) × Bool
 
+/-- The ordered endpoint pair of a subdivision segment. -/
+abbrev Segment.endpoints (segment : Segment) : ℕ × ℕ := segment.1
+
+/-- The source vertex of a subdivision segment. -/
+abbrev Segment.source (segment : Segment) : ℕ := segment.endpoints.1
+
+/-- The target vertex of a subdivision segment. -/
+abbrev Segment.target (segment : Segment) : ℕ := segment.endpoints.2
+
+/-- Whether edge/vertex moves of this subdivision segment are frozen. -/
+abbrev Segment.frozen (segment : Segment) : Bool := segment.2
+
 /-- Two binary endpoints, framed together, then the frozen bit. -/
 abbrev encSegment := encPair (encPair encNat encNat) encBool
 
@@ -55,11 +67,11 @@ abbrev encSegment := encPair (encPair encNat encNat) encBool
 /-- Replace edge `e=(u,v)` by `u--a_e--b_e--v`, retaining all occurrence indices. A fixed endpoint
 freezes its entire first/last segment. Even loops and parallel edges get distinct fresh points. -/
 @[expose] def subdivide (I : FixedRotationInput) : List Segment :=
-  I.graph.2.zipIdx.flatMap fun entry =>
-    let a := I.graph.1.length + 2 * entry.2
+  I.graph.2.zipIdx.flatMap fun ((source, target), index) =>
+    let a := I.graph.1.length + 2 * index
     let b := a + 1
-    [((entry.1.1, a), (I.orders.getD entry.1.1 none).isSome),
-      ((a, b), false), ((b, entry.1.2), (I.orders.getD entry.1.2 none).isSome)]
+    [((source, a), (I.orders.getD source none).isSome),
+      ((a, b), false), ((b, target), (I.orders.getD target none).isSome)]
 
 /-- Existing listed graph underlying the twice subdivision. -/
 @[expose] def subdivisionGraph (I : FixedRotationInput) : Graph :=
@@ -118,15 +130,15 @@ enc_structure encFrame : Frame where
 
 /-- Literal sparse row for two indexed segment records. No label deduplication is performed. -/
 @[expose] def row (F : Frame) (e f : Segment × ℕ) : AffineEquation ℕ :=
-  (moveLabels F.vertexCount e.2 e.1 f.1.1 ++
-    moveLabels F.vertexCount f.2 f.1 e.1.1, crossing F.order e.1.1 f.1.1)
+  (moveLabels F.vertexCount e.2 e.1 f.1.endpoints ++
+    moveLabels F.vertexCount f.2 f.1 e.1.endpoints, crossing F.order e.1.endpoints f.1.endpoints)
 
 /-- Every unordered independent pair appears once, in increasing first segment index and then
 increasing second index. All scans traverse actual segment lists, never move-label intervals. -/
 @[expose] def compileFrame (F : Frame) : XORSAT.System :=
   F.segments.zipIdx.flatMap fun e =>
-    (F.segments.zipIdx.filter fun f => decide (f.2 < e.2) && independent e.1.1 f.1.1).map
-      fun f => row F e f
+    (F.segments.zipIdx.filter fun f =>
+      decide (f.2 < e.2) && independent e.1.endpoints f.1.endpoints).map fun f => row F e f
 
 /-- The concrete sparse system on the twice-subdivided existing graph. -/
 @[expose] def compile (I : FixedRotationInput) : XORSAT.System := compileFrame (frame I)
@@ -140,14 +152,14 @@ no result identifying it with `Feasible` is assumed or asserted. -/
 its actual binary move label. -/
 @[expose] def moveValue (F : Frame) (assignment : ℕ → Bool)
     (e : Segment × ℕ) (v : ℕ) : Bool :=
-  if e.1.2 then false else assignment (moveLabel F.vertexCount e.2 v)
+  if e.1.frozen then false else assignment (moveLabel F.vertexCount e.2 v)
 
 /-- A sparse row states exactly the four endpoint moves with the frozen zeros retained. -/
 theorem row_holds_iff (F : Frame) (assignment : ℕ → Bool) (e f : Segment × ℕ) :
     (row F e f).Holds assignment ↔
-      moveValue F assignment e f.1.1.1 + moveValue F assignment e f.1.1.2 +
-        (moveValue F assignment f e.1.1.1 + moveValue F assignment f e.1.1.2) =
-          crossing F.order e.1.1 f.1.1 := by
+      moveValue F assignment e f.1.source + moveValue F assignment e f.1.target +
+        (moveValue F assignment f e.1.source + moveValue F assignment f e.1.target) =
+          crossing F.order e.1.endpoints f.1.endpoints := by
   simp only [AffineEquation.Holds, row, List.map_append, List.sum_append,
     moveLabels, moveValue]
   split_ifs <;> simp [← Bool.zero_eq_false]
@@ -156,7 +168,7 @@ theorem row_holds_iff (F : Frame) (assignment : ℕ → Bool) (e f : Segment × 
 theorem holds_compileFrame_iff (F : Frame) (assignment : ℕ → Bool) :
     (compileFrame F).Holds assignment ↔
       ∀ e ∈ F.segments.zipIdx, ∀ f ∈ F.segments.zipIdx,
-        f.2 < e.2 → independent e.1.1 f.1.1 = true → (row F e f).Holds assignment := by
+        f.2 < e.2 → independent e.1.endpoints f.1.endpoints = true → (row F e f).Holds assignment := by
   simp only [AffineSystem.Holds, compileFrame, List.mem_flatMap, List.mem_map,
     List.mem_filter, Bool.and_eq_true, decide_eq_true_eq]
   constructor
@@ -194,10 +206,12 @@ theorem length_compileFrame_le (F : Frame) :
   rw [List.length_flatMap]
   have h : ∀ e ∈ F.segments.zipIdx,
       ((F.segments.zipIdx.filter fun f => decide (f.2 < e.2) &&
-        independent e.1.1 f.1.1).map fun f => row F e f).length ≤ F.segments.length := by
+        independent e.1.endpoints f.1.endpoints).map fun f => row F e f).length ≤
+      F.segments.length := by
     intro e _
     simpa only [List.length_map, List.length_zipIdx] using List.length_filter_le
-      (fun f : Segment × ℕ => decide (f.2 < e.2) && independent e.1.1 f.1.1) F.segments.zipIdx
+      (fun f : Segment × ℕ =>
+        decide (f.2 < e.2) && independent e.1.endpoints f.1.endpoints) F.segments.zipIdx
   calc
     _ ≤ (F.segments.zipIdx.map fun _ => F.segments.length).sum := List.sum_le_sum h
     _ = F.segments.length ^ 2 := by simp [pow_two]
