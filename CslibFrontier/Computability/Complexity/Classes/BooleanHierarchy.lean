@@ -192,12 +192,6 @@ theorem differenceHierarchy_eq_of_succ_subset {C : Set (Set α)} (h0 : ∅ ∈ C
 
 variable {α β : Type} {enc : α ↪ List Bool} {A : Set α}
 
-private theorem empty_mem_NP : (∅ : Set α) ∈ NP enc :=
-  P_subset_NP empty_mem_P
-
-private theorem univ_mem_NP : (Set.univ : Set α) ∈ NP enc :=
-  P_subset_NP univ_mem_P
-
 /-- The `n`th level of the Boolean hierarchy over NP, with level zero containing only `∅`
 [Cai et al.][CaiEtAl1988]. -/
 def BH (enc : α ↪ List Bool) (n : ℕ) : Set (Set α) := differenceHierarchy (NP enc) n
