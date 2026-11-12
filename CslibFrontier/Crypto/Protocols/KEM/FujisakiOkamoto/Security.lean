@@ -66,25 +66,26 @@ On top of those definitions, this module formalizes:
    `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`).
 2. **Keyless ROM simulator and IND-CPA reduction** (`Scheme.simHandler`,
    `Scheme.romCpaReduction`, `Scheme.simHitProb`). Neither is a verbatim construction from
-   [HofheinzHoevelmannsKiltz2017]; both are adapted to domain-separated `FO-notbot`.
-   `simHandler` is adapted from the `G`/`H` simulations in two proofs of the full version: the
-   proof of the §3.1 theorem for `T` (IND-CPA security of the PKE implies OW-PCVA security of
-   `T[PKE, G]`), which answers `G` lazily, and the proof of the §3.2.2 IND-CCA theorem for
-   `U-notbot`, which answers decapsulation queries and the matching `H` queries from a
-   ciphertext-indexed table. Here `simHandler` answers `H(false, m, c)` via a lazy table `H_q(c)`
-   whenever the §3.1 Fig. 5 re-encryption check `Enc(pk, m; G(m)) = c` holds, and answers
-   punctured decapsulation queries `c ≠ cStar` from `H_q(c)` without using `sk` (its consistency
-   with `roHandler` / `eagerIndCcaGame` is deferred to a follow-up). `romCpaReduction` is modelled
-   on the IND-CPA adversary in the proof of the §3.1 theorem for `T`, with two differences: the
-   challenge messages `m₀, m₁ : M` are explicit parameters rather than sampled uniformly inside the
-   reduction, and the wrapped adversary is an `FO-notbot` IND-CCA adversary rather than an
-   OW-PCVA adversary against `T[PKE, G]`. It runs `A` against `simHandler` on an
-   `ExplicitCoinPKE.indCpaGame` challenge `(pk, cStar)` and outputs whether `m₁` was recorded in
-   `gCache`. We prove that the reduction's IND-CPA advantage unfolds to the difference
-   of simulator hit probabilities (`Scheme.indCpaAdvantage_romCpaReduction`), the query-budget row
-   bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
-   `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`. No IND-CCA bound for `FO-notbot` is
-   proved in this module; `simHitProb` is not yet related to `indCcaRomAdvantage`.
+   [HofheinzHoevelmannsKiltz2017]; both are adapted to domain-separated `FO-notbot`. `simHandler` is
+   adapted from the `G`/`H` simulations in two proofs of the full version: the proof of the §3.1
+   theorem for `T` (IND-CPA security of the PKE implies OW-PCVA security of `T[PKE, G]`), which
+   answers `G` lazily, and the proof of the §3.2.2 IND-CCA theorem for `U-notbot`, which answers
+   decapsulation queries and the matching `H` queries from a ciphertext-indexed table. Here
+   `simHandler` answers `H(false, m, c)` via a lazy table `H_q(c)` whenever the §3.1 Fig. 5
+   re-encryption check `Enc(pk, m; G(m)) = c` holds, and answers punctured decapsulation queries
+   `c ≠ cStar` from `H_q(c)` without using `sk` (its consistency with `roHandler` /
+   `eagerIndCcaGame` is proved in the `NotBot` modules). `romCpaReduction` is modelled on the
+   IND-CPA adversary in the proof of the §3.1 theorem for `T`, with two differences: the challenge
+   messages `m₀, m₁ : M` are explicit parameters rather than sampled uniformly inside the reduction,
+   and the wrapped adversary is an `FO-notbot` IND-CCA adversary rather than an OW-PCVA adversary
+   against `T[PKE, G]`. It runs `A` against `simHandler` on an `ExplicitCoinPKE.indCpaGame`
+   challenge `(pk, cStar)` and outputs whether `m₁` was recorded in `gCache`. We prove that the
+   reduction's IND-CPA advantage unfolds to the difference of simulator hit probabilities
+   (`Scheme.indCpaAdvantage_romCpaReduction`), the query-budget row bound
+   `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
+   `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`. The IND-CCA bound for `FO-notbot`
+   relating `indCcaRomAdvantage` to these terms is `Scheme.indCcaRomAdvantage_le` in
+   `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot`.
 
 ## Main definitions
 
@@ -299,6 +300,15 @@ noncomputable def indCcaRomAdvantage (S : Scheme PK SK M R CT K)
     (ProbComp.eval (S.roIndCcaGame A false))
     (ProbComp.eval (S.roIndCcaGame A true))
 
+/-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
+decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
+noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
+    (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) : PMF (ROResp R K q) :=
+  match q with
+  | .G m => PMF.pure (G m)
+  | .H x => PMF.pure (H x)
+  | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNotBot G H dk c))
+
 /-- The eager random-oracle IND-CCA game for `FO-notbot` (standard KEM IND-CCA experiment, not
 separately located in the source map above), defined directly from `S.keyGenNotBot`,
 `S.encapsNotBot`, and `S.decapsNotBot` over eagerly sampled random functions `G : M → R` and
@@ -312,18 +322,14 @@ noncomputable def eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   let kStar := if b then kRand else kReal
-  OracleComp.interpret (fun (q : ROQuery M CT) => match q with
-    | .G m => PMF.pure (G m)
-    | .H x => PMF.pure (H x)
-    | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNotBot G H dk c)))
-    (A (pk, cStar, kStar))
+  OracleComp.interpret (S.eagerHandler G H dk cStar) (A (pk, cStar, kStar))
 
 /-- Simulated `H` oracle of `simHandler`: on key-derivation queries `(false, m, c)`, checks whether
 `S.pke.encDet pk m (G(m)) = c` and if so returns `H_q(c)`. This is designed so that decapsulation
 queries can be answered from `H_q(c)` without the secret key `sk`; its consistency with the real
-game is proved in a follow-up. The `H_q` table is adapted from the proof of the §3.2.2 IND-CCA
-theorem for `U-notbot` in [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated
-2 November 2021), with that proof's plaintext check replaced by the re-encryption check of `T`
+game is proved in the `NotBot` modules. The `H_q` table is adapted from the proof of the §3.2.2
+IND-CCA theorem for `U-notbot` in [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version
+dated 2 November 2021), with that proof's plaintext check replaced by the re-encryption check of `T`
 and with `H` domain-separated. -/
 def simHashH (S : Scheme PK SK M R CT K) (pk : PK)
     (x : Bool × M × CT) : StateT (SimState M R CT K) ProbComp K :=
@@ -337,9 +343,9 @@ def simHashH (S : Scheme PK SK M R CT K) (pk : PK)
   | (true, m, c) =>
     simHashHRaw S.sampleKey (true, m, c)
 
-/-- Stateful oracle handler for a keyless ROM simulator of the domain-separated `FO-notbot`
-IND-CCA game, designed to answer decapsulation queries for `c ≠ cStar` directly from `H_q(c)`
-without using `sk` (consistency with the real game is proved in a follow-up). It is not a verbatim
+/-- Stateful oracle handler for a keyless ROM simulator of the domain-separated `FO-notbot` IND-CCA
+game, designed to answer decapsulation queries for `c ≠ cStar` directly from `H_q(c)` without using
+`sk` (consistency with the real game is proved in the `NotBot` modules). It is not a verbatim
 construction from [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated
 2 November 2021): it is adapted from the lazy `G` simulation in the proof of the §3.1 theorem for
 `T` (IND-CPA implies OW-PCVA) and the `H`/decapsulation simulation in the proof of the §3.2.2
@@ -433,7 +439,7 @@ noncomputable def roAnswerHandler (S : Scheme PK SK M R CT K)
 
 /-- Evaluating `(do let k ← roHashH sampleKey x; return some k) st` and mapping `ROCache` via
 `RandomOracle.ofList`. -/
-theorem eval_roHashH_some_map_ofList (sampleKey : ProbComp K) (x : Bool × M × CT)
+private theorem eval_roHashH_some_map_ofList (sampleKey : ProbComp K) (x : Bool × M × CT)
     (st : ROCache M R CT K) :
     (ProbComp.eval ((do let k ← roHashH sampleKey x; return some k) st)).map
       (fun (res, st') =>
@@ -647,15 +653,6 @@ theorem eval_roIndCcaGame_eq_h1 [Fintype M] [Finite R]
       (RandomOracle.ofList [((false, mStar, cStar), kReal)])).map Prod.fst)]
   congr 1 with rStar : 1
   pmf_swap
-
-/-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
-decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
-noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
-    (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) : PMF (ROResp R K q) :=
-  match q with
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (H x)
-  | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNotBot G H dk c))
 
 /-- Single-step simulation from `S.h1Handler` to `S.eagerHandler` via
 `RandomOracle.answer_complete`. -/

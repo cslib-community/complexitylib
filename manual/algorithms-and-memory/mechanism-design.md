@@ -426,6 +426,49 @@ from `IsGroupStrategyProof` (on `![0, 1, 2]` deviating to `![1, 1, 1]`) and
 line weak GSP in §3.2 fourth remark), a continuous uniform `[0, 1]` `ProbabilityMeasure ℝ`
 evaluation (`expectedCost = 1/4` at `1/2`), and `constantZero2` failing every approximation ratio.
 
+## Deterministic Strategyproof Location on Intervals, Trees, and Cyclic Graphs
+
+Building on single-peaked metric preferences over `MetricGraph` tree and cycle geometry, three
+modules characterize deterministic strategyproof onto mechanisms following
+[Moulin][moulin80] (primary paper not read directly) and [Schummer and Vohra][schummervohra02] (author preprint, Theorems 1 and 2):
+
+* [FacilityLocation.Interval](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Interval.lean):
+  shows that surjective deterministic strategyproof rules satisfy unanimity
+  (`unanimous_of_surjective_isStrategyProof`) and formalizes Moulin's generalized median rules via
+  `MoulinScheme ι a b` (`MoulinScheme.eval`, `MoulinScheme.eval_surjective`,
+  `MoulinScheme.eval_isGroupStrategyProof`). `isStrategyProof_and_surjective_iff_exists_moulinScheme`
+  equates deterministic strategyproofness plus surjectivity on `Set.Icc a b` (`a < b`) with
+  `MoulinScheme.eval`, `moulinScheme_of_isometry` transfers the characterization across any isometry
+  from `Set.Icc a b`, and `moulinScheme_finTwo_eq` characterizes two-agent schemes.
+* [FacilityLocation.Tree](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Tree.lean):
+  formalizes extended median voter schemes `TreeEMVS W ι` for finite nonempty agents on a tree
+  metric graph (`W.graph.IsTree`), proving unique equilibrium existence (`TreeEMVS.existsUnique_equilibrium`),
+  defining `TreeEMVS.eval` (`TreeEMVS.eval_eq_iff`, `TreeEMVS.eval_const`,
+  `TreeEMVS.eval_surjective`, `TreeEMVS.eval_isGroupStrategyProof`), and proving
+  `isStrategyProof_and_surjective_iff_exists_treeEMVS` and automatic amplification from strategyproofness
+  to strong group strategyproofness (`isGroupStrategyProof_of_isStrategyProof_of_surjective_tree`).
+  `TreeEMVS` adapts the source's definition (consistent generalized median schemes on leaf-to-leaf
+  paths, preprint Section 3, p. 12) to winning coalitions per direction at each point; its docstring
+  describes the correspondence. The source's Theorem 1 (p. 15) states only strategyproofness; the
+  strong group strategyproofness is an extension proved here.
+* [FacilityLocation.Cycle](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Cycle.lean):
+  proves cycle dictatorship on graphs with cycles: for any shortest closed cycle (`IsShortestCycle W c`),
+  `exists_cycleDictator_of_isShortestCycle` shows every deterministic strategyproof onto mechanism
+  restricts to a dictatorship on profiles supported on `Set.range (circleMap ...)`,
+  `exists_cycleDictator_of_not_isAcyclic` yields a shortest-cycle dictatorship whenever
+  `¬ W.graph.IsAcyclic`, and `exists_dictatorship_of_cycleGraph` proves global dictatorship whenever
+  `W.graph` is isomorphic to `SimpleGraph.cycleGraph (n + 3)`. The offset matters: Mathlib's
+  `cycleGraph 2` is a single edge, whose realization is an interval with non-dictatorial median
+  rules. The source's Theorem 2 (preprint p. 21) covers every cycle; only shortest cycles are
+  formalized here.
+
+The [Schummer–Vohra examples](../../CslibFrontierTests/SchummerVohra.lean) use strict `module`
+visibility with `borel` measurable spaces on `MetricGraph` to instantiate a symmetric 3-agent
+`MoulinScheme` alongside a constant non-onto counterexample, a 2-of-3 majority `TreeEMVS` on a
+3-leaf star `star3` that evaluates `![vertex 1, vertex 2, vertex 3]` to `vertex 0` (non-dictatorial),
+global dictatorship on `cycleGraph 3`, and a `Triangle + Tail` (`Fin 4`) group-strategyproof onto rule
+that acts as player `0` on the shortest 3-cycle without being globally dictatorial.
+
 ## Known Limitations
 
 Only deterministic, sealed-bid mechanisms are covered for auctions and VCG: dominant-strategy incentive compatibility in general, and Bayes–Nash equilibrium for single-parameter mechanisms. Not yet formalized:
@@ -440,10 +483,13 @@ single-parameter mechanisms as general ones (for example VCG specializing to Vic
 computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001 and #3173.
 
 For facility location, only single-facility mechanisms optimizing expected social cost (sum of
-distances) are formalized. Not yet formalized: maximum-cost (egalitarian) objectives,
-multiple-facility (`k ≥ 2`) location, characterization of strategyproof mechanisms on general
-metric graphs and trees/cycles (Schummer–Vohra, issue #4327), and impossibility/lower-bound
-theorems beyond `1 ≤ α`.
+distances) are formalized. Strategyproof onto rules are characterized on intervals, trees, and
+single shortest cycles / cycle graphs (`isStrategyProof_and_surjective_iff_exists_treeEMVS`,
+`exists_cycleDictator_of_isShortestCycle`, `exists_dictatorship_of_cycleGraph`); arbitrary
+non-shortest cycles, multi-cycle/block consistency, and the full cyclic-network quotient-tree
+characterization (issue #4327) remain open. Also not yet formalized: maximum-cost (egalitarian)
+objectives, multiple-facility (`k ≥ 2`) location, and impossibility/lower-bound theorems beyond
+`1 ≤ α`.
 
 For social choice, Arrow's theorem and the Gibbard–Satterthwaite theorem are formalized for strict
 individual rankings. A finite electorate is necessary, but the infinite-electorate counterexample
@@ -457,3 +503,4 @@ theorem, and the complexity of winner determination and manipulation. See `ROADM
 [moulin80]: ../sources.md#moulin80
 [nisan07]: ../sources.md#nisan07
 [procacciatennenholtz13]: ../sources.md#procacciatennenholtz13
+[schummervohra02]: ../sources.md#schummervohra02

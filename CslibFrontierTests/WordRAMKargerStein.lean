@@ -23,7 +23,8 @@ Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Karger` 
    singleton degree `≥ 30`): exercises recursive branching (`8 → 6 → 2`) in `fastCutProgram_spec`,
    `fastCutHighProbProgram_spec`, and `fastCutHighProbProgram_failure_le_inv_n` at `w = 16`.
 3. Disconnected and zero-weight 8-vertex multigraphs (`minCut = 0`): verifies fault-free halting
-   across the recursive frame stack along the deterministic `totS = 0` contraction branch.
+   across the recursive frame stack along the deterministic `totS = 0` contraction branch and the
+   unconditional `fastCutHighProbProgram_failure_le_inv_n` bound on `disconnected8W`.
 -/
 
 @[expose] public section
@@ -292,8 +293,7 @@ theorem fastCutHighProbProgram_barbell8 :
   have hspec := fastCutHighProbProgram_spec (by decide : 2 ≤ 8) isMultigraph_barbell8W hw htot
   have hpos : 0 < minCut barbell8W := by rw [minCut_barbell8W]; decide
   have hFail := hspec.2.2.2 hpos
-  have hInv :=
-    fastCutHighProbProgram_failure_le_inv_n isMultigraph_barbell8W hw htot hpos
+  have hInv := fastCutHighProbProgram_failure_le_inv_n isMultigraph_barbell8W hw htot
   have hset : {cfg : RandCfg 24 | ∀ y, cfg ≠ .halted (minCut barbell8W) y} =
       {cfg : RandCfg 24 | ∀ y, cfg ≠ .halted 2 y} := by
     rw [minCut_barbell8W]
@@ -328,6 +328,19 @@ theorem minCut_disconnected8W : minCut disconnected8W = 0 := by
     split_ifs <;> omega
   exact hcw ▸ minCut_le_cutWeight disconnected8W hnt
 
+private theorem fits_totalDoubledWeight_disconnected8W :
+    Fits 16 (totalDoubledWeight disconnected8W) := by
+  have hentry : ∀ u v : Fin 8, disconnected8W u v ≤ 4 := fun u v => by
+    unfold disconnected8W
+    split_ifs <;> omega
+  refine (by decide : Fits 16 256).of_le ?_
+  unfold totalDoubledWeight rowDeg
+  calc
+    ∑ u : Fin 8, ∑ v : Fin 8, disconnected8W u v
+        ≤ ∑ _u : Fin 8, ∑ _v : Fin 8, 4 :=
+      Finset.sum_le_sum fun u _ => Finset.sum_le_sum fun v _ => hentry u v
+    _ = 256 := by simp
+
 theorem fastCutProgram_disconnected8 :
     RandHaltsWithin 16 fastCutProgram
       (.init (8 :: flattenMatrix disconnected8W)) (fastCutTime 8) ∧
@@ -338,27 +351,25 @@ theorem fastCutProgram_disconnected8 :
       ∃ (y : Data 24) (C : Finset (Fin 8)),
         cfg = .halted (cutWeight disconnected8W C) y ∧ IsNonTrivialCut C) := by
   have hw : logWidth 4 8 ≤ 16 := by decide
-  have hentry : ∀ u v : Fin 8, disconnected8W u v ≤ 4 := fun u v => by
-    unfold disconnected8W
-    split_ifs <;> omega
-  have hrow : ∀ u : Fin 8, rowDeg disconnected8W u ≤ 32 := fun u => by
-    unfold rowDeg
-    calc
-      ∑ v : Fin 8, disconnected8W u v ≤ ∑ _v : Fin 8, 4 := Finset.sum_le_sum fun v _ => hentry u v
-      _ = 32 := by simp
-  have htot : Fits 16 (totalDoubledWeight disconnected8W) := by
-    have hle : totalDoubledWeight disconnected8W ≤ 256 := by
-      unfold totalDoubledWeight
-      calc
-        ∑ u : Fin 8, rowDeg disconnected8W u ≤ ∑ _u : Fin 8, 32 :=
-          Finset.sum_le_sum fun u _ => hrow u
-        _ = 256 := by simp
-    exact (by decide : Fits 16 256).of_le hle
-  have h1 := fastCutProgram_spec (by decide : 2 ≤ 8) isMultigraph_disconnected8W hw htot
-  have h2 := fastCutHighProbProgram_spec (by decide : 2 ≤ 8) isMultigraph_disconnected8W hw htot
+  have h1 := fastCutProgram_spec (by decide : 2 ≤ 8) isMultigraph_disconnected8W hw
+    fits_totalDoubledWeight_disconnected8W
+  have h2 := fastCutHighProbProgram_spec (by decide : 2 ≤ 8) isMultigraph_disconnected8W hw
+    fits_totalDoubledWeight_disconnected8W
   refine ⟨h1.1, h2.1, fun cfg hcfg => ?_⟩
   obtain ⟨y, C, hcfg_eq, -, hC_nt, -⟩ := h1.2.2.1 cfg hcfg
   exact ⟨y, C, hcfg_eq, hC_nt⟩
+
+theorem fastCutHighProbProgram_disconnected8 :
+    (evalRand 16 fastCutHighProbProgram (fastCutHighProbTime 8)
+        (.init (8 :: flattenMatrix disconnected8W))).toOuterMeasure
+        {cfg | ∀ y, cfg ≠ .halted 0 y} ≤
+      (1 : ℝ≥0∞) / 8 := by
+  have h := fastCutHighProbProgram_failure_le_inv_n isMultigraph_disconnected8W
+    (by decide : logWidth 4 8 ≤ 16) fits_totalDoubledWeight_disconnected8W
+  have hset : {cfg : RandCfg 24 | ∀ y, cfg ≠ .halted (minCut disconnected8W) y} =
+      {cfg : RandCfg 24 | ∀ y, cfg ≠ .halted 0 y} := by
+    rw [minCut_disconnected8W]
+  rwa [hset, Nat.cast_ofNat] at h
 
 /-- Empty 8-vertex multigraph (`totalDoubledWeight = 0`), exercising the `totS = 0` deterministic
 contraction branch across the recursive `FastCut` frame stack. -/
