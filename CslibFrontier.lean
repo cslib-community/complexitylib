@@ -1132,6 +1132,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.BatchLookup
 public import CslibFrontier.Computability.Circuit.Boolean.BatchOr
 public import CslibFrontier.Computability.Circuit.Boolean.BinaryCost
 public import CslibFrontier.Computability.Circuit.Boolean.BitBlast
+public import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
 public import CslibFrontier.Computability.Circuit.Boolean.BoundedError
 public import CslibFrontier.Computability.Circuit.Boolean.Braverman.Approximation
 public import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling

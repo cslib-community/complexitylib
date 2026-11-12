@@ -17,6 +17,20 @@ with `Function.LeftInverse decode enc`; it need not fill the bit cube, so odd-si
 are supported. The budget and all-output guarantee are unchanged from bijective bit-blasting.
 No behavior on unused code words or reverse Boolean-to-field simulation is asserted.
 
+To obtain a circuit on free Boolean input wires, import
+[Boolean.BitBlastCompiler](../../CslibFrontier/Computability/Circuit/Boolean/BitBlastCompiler.lean)
+and use `c.exists_encoded_boolean I hArity enc decode hdecode`. This returns a Boolean circuit
+with `N * w` inputs, `M * w` outputs and at most `c.size * bitBlastCost w` gates, for any
+interpretation `I` whose operations have arity at most two. Pack source inputs with
+`BitString.blocksEquiv.symm (enc ∘ x)`; the output is the same packing of `enc ∘ c.eval I x`.
+Bit `j` of source wire `i` occupies position `finProdFinEquiv (i, j)`. Correctness is required
+on valid encoded inputs, with no source semantics promised for unused code words. Constants
+count as gates and wiring is free, with no additive input-size cost. The linked
+[clients](../../CslibFrontierTests/BitBlastEncoding.lean) check addition over `ZMod 3` on all
+field inputs and a zero-cost wiring circuit with repeated outputs. This supplies the forward
+circuit simulation with an explicit encoding; constructing encodings and the reverse general-field
+simulation remain separate obligations of the finite-field exercise.
+
 The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 [Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
 `enc`, `decode` and the left-inverse proof explicitly. Existing equivalence callers pass
