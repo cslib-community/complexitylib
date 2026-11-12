@@ -92,7 +92,7 @@ structure VertexCoverInstance where
   k : ℕ
   deriving DecidableEq, Repr, Inhabited
 
-/-- Encoding of `VertexCoverInstance` as `(graph, k)`. -/
+/-- Framed `encGraph` followed by binary target `encNat`, encoding `VertexCoverInstance`. -/
 enc_structure encVertexCoverInstance : VertexCoverInstance where
   graph : encGraph,
   k : encNat

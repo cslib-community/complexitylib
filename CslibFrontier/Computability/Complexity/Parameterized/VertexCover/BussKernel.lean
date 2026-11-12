@@ -552,8 +552,7 @@ theorem computableInPolyTime_edges :
       ComputableInPolyTime (fun x : VertexCoverInstance => List.range (active x).length)
         encVertexCoverInstance (encList encUnary) :=
     ComputableInPolyTime.range.comp
-      ((ComputableTidilyInPolyTime.length_list encNat).computableInPolyTime.comp
-        computableInPolyTime_active)
+      ((ComputableInPolyTime.length_list encNat).comp computableInPolyTime_active)
   refine flatMapWithInput hrange ?_
   have hfilt_range :
       ComputableInPolyTime (fun p : VertexCoverInstance × ℕ => List.range (active p.1).length)

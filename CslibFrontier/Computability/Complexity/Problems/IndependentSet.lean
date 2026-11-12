@@ -90,7 +90,7 @@ structure IndependentSetInstance where
   m : ℕ
   deriving DecidableEq, Repr, Inhabited
 
-/-- Encoding of `IndependentSetInstance` as `(graph, m)`. -/
+/-- Framed `encGraph` followed by binary target `encNat`, encoding `IndependentSetInstance`. -/
 enc_structure encIndependentSetInstance : IndependentSetInstance where
   graph : encGraph,
   m : encNat
