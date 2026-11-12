@@ -128,15 +128,15 @@ theorem natCast_partialFormulaDepth_agreement [NeZero n] [NeZero k]
       Protocol.ecomplexity (OneOut.Relation (k := k) (kwRelation f)) Set.univ Set.univ := by
   rw [natCast_partialFormulaDepth_eq_ecomplexity, ecomplexity_kwRelation_agreement]
 
-/-- **[ChukhinKulikovMihajlinSmal2026], Corollary 1.3, upper bound.** For `k ≥ 1`,
-`D(Agr_k(f)) ≤ D(f)`: a formula for `f` applied to the first block computes `Agr_k(f)`. -/
-theorem partialFormulaDepth_agreement_le [NeZero k] (f : BitString n → Option Bool) :
+/-- **[ChukhinKulikovMihajlinSmal2026], Corollary 1.3, upper bound.** For `k, n ≥ 1`,
+`D(Agr_k(f)) ≤ D(f)`. The source applies a formula for `f` to the first block; here the same
+step is `OneOut.ecomplexity_le`, which runs a protocol for the game of `f` on the first
+coordinate, under Remark 3.5 and the Karchmer–Wigderson theorem. -/
+theorem partialFormulaDepth_agreement_le [NeZero n] [NeZero k] (f : BitString n → Option Bool) :
     partialFormulaDepth (agreement k f) ≤ partialFormulaDepth f := by
-  obtain ⟨F, hF, hd⟩ := exists_computesPartial_depthWith_eq f
-  refine (partialFormulaDepth_le (F := F.rename fun j => finProdFinEquiv (0, j))
-    fun z b h => ?_).trans (by simp [hd])
-  rw [Formula.eval_rename]
-  exact hF _ _ ((agreement_eq_some_iff.1 h).2 0)
+  have h := OneOut.ecomplexity_le (kwRelation f) (0 : Fin k)
+  rw [← natCast_partialFormulaDepth_eq_ecomplexity, ← natCast_partialFormulaDepth_agreement] at h
+  exact_mod_cast h
 
 /-- The Karchmer–Wigderson game of a partial function is total. -/
 theorem kwRelation_total (x : {x // f x = some true}) (y : {y // f y = some false}) :
