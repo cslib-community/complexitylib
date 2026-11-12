@@ -20,7 +20,7 @@ The random string for an instance `a` of `A` must have a length fixed by the len
 so it is taken polynomially long enough for the reduced instance, and the decider reads only the
 prefix it expects (`Cslib.Complexity.exists_truncated_verifier`). Every prefix is extended by the
 same number of strings, so the fractions of right answers are unchanged
-(`Cslib.Complexity.mul_two_pow_le_mul_card_filter_take`).
+(`Cslib.BitString.mul_two_pow_le_mul_card_filter_take`).
 
 ## Main results
 
@@ -47,7 +47,7 @@ theorem PolyTimeReducible.mem_BPP (h : PolyTimeReducible enc encB A B) (hB : B �
   have key (a : α) (b : Bool) (hb : BoundedErrorAt encB q W (f a) b) :
       BoundedErrorAt enc P V a b := by
     simp only [BoundedErrorAt, hVW]
-    exact mul_two_pow_le_mul_card_filter_take (hle a) (fun w => W (f a, w) = b) hb
+    exact BitString.mul_two_pow_le_mul_card_filter_take (hle a) (fun w => W (f a, w) = b) hb
   exact ⟨P, V, hV, fun a => ⟨fun ha => key a true ((hWB (f a)).1 ((hAB a).1 ha)),
     fun ha => key a false ((hWB (f a)).2 fun hb => ha ((hAB a).2 hb))⟩⟩
 

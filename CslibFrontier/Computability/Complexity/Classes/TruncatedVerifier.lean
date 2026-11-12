@@ -30,22 +30,37 @@ length fixed by `|a|`. The new verifier therefore reads strings of a polynomial 
 Every prefix extends to the same number of longer strings, so counting through a prefix multiplies
 the number of accepted strings by a power of two
 (`Cslib.Complexity.acceptCount_eq_two_pow_mul_of_take`), and a bound on the fraction of strings with
-a property survives (`Cslib.Complexity.mul_two_pow_le_mul_card_filter_take`).
+a property survives (`Cslib.BitString.mul_two_pow_le_mul_card_filter_take`).
 
 ## Main results
 
 * `Cslib.Complexity.exists_truncated_verifier`: a polynomial-time verifier that runs `V` on the
   reduced instance and a prefix of a polynomially long string.
 * `Cslib.Complexity.acceptCount_eq_two_pow_mul_of_take`: accepted strings counted through a prefix.
-* `Cslib.Complexity.mul_two_pow_le_mul_card_filter_take`: a fraction bound carried through a
+* `Cslib.BitString.mul_two_pow_le_mul_card_filter_take`: a fraction bound carried through a
   prefix.
 -/
 
 public section
 
+namespace Cslib.BitString
+
+open Finset
+
+/-- **Fraction bounds through a prefix.** If at least a `c / d` fraction of the strings of length
+`k` satisfy `g`, then at least a `c / d` fraction of the strings of length `K ≥ k` have a prefix of
+length `k` satisfying `g`. -/
+theorem mul_two_pow_le_mul_card_filter_take {k K : ℕ} (hk : k ≤ K) (g : List Bool → Prop)
+    [DecidablePred g] {c d : ℕ} (h : c * 2 ^ k ≤ d * #{r : Fin k → Bool | g (List.ofFn r)}) :
+    c * 2 ^ K ≤ d * #{r : Fin K → Bool | g ((List.ofFn r).take k)} := by
+  rw [card_filter_take hk g, ← pow_sub_mul_pow 2 hk, mul_left_comm c, mul_left_comm d]
+  exact Nat.mul_le_mul_left _ h
+
+end Cslib.BitString
+
 namespace Cslib.Complexity
 
-open Finset Turing.MultiTapeTM
+open Turing.MultiTapeTM
 
 variable {α β γ : Type} {enc : α ↪ List Bool} {encB : β ↪ List Bool}
 
@@ -76,14 +91,5 @@ theorem acceptCount_eq_two_pow_mul_of_take {V : β × List Bool → Bool}
     acceptCount V' a K = 2 ^ (K - k) * acceptCount V b k := by
   simp only [acceptCount, hV]
   exact BitString.card_filter_take hk fun w => V (b, w) = true
-
-/-- **Fraction bounds through a prefix.** If at least a `c / d` fraction of the strings of length
-`k` satisfy `g`, then at least a `c / d` fraction of the strings of length `K ≥ k` have a prefix of
-length `k` satisfying `g`. -/
-theorem mul_two_pow_le_mul_card_filter_take {k K : ℕ} (hk : k ≤ K) (g : List Bool → Prop)
-    [DecidablePred g] {c d : ℕ} (h : c * 2 ^ k ≤ d * #{r : Fin k → Bool | g (List.ofFn r)}) :
-    c * 2 ^ K ≤ d * #{r : Fin K → Bool | g ((List.ofFn r).take k)} := by
-  rw [BitString.card_filter_take hk g, ← pow_sub_mul_pow 2 hk, mul_left_comm c, mul_left_comm d]
-  exact Nat.mul_le_mul_left _ h
 
 end Cslib.Complexity

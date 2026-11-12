@@ -13,10 +13,8 @@ public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Foundations.Data.BitString.List
 
 import CslibFrontier.Computability.Complexity.Classes.TruncatedVerifier
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Foundations.Data.BitString.WordCount
 
 /-!
 # The Arthur–Merlin classes MA and AM
@@ -49,7 +47,7 @@ Both classes contain `NP` (no coins) and `BPP` (no proof), and are closed under 
 many-one reductions. A reduction changes the lengths the verifier expects, so the new verifier
 reads only prefixes of the proof and of the random string of the lengths it needs; the ignored
 random bits multiply every count by the same power of two
-(`Cslib.Complexity.mul_two_pow_le_mul_card_filter_take`).
+(`Cslib.BitString.mul_two_pow_le_mul_card_filter_take`).
 Error reduction, `MA ⊆ AM` and `MA ⊆ SBP` are in
 `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification`, and the placements in
 the second level of the polynomial hierarchy in
@@ -207,24 +205,16 @@ private theorem exists_truncated_verifier_append {encB : β ↪ List Bool} {f : 
         V' (a, List.ofFn u ++ List.ofFn v) =
           V (f a, (List.ofFn u).take (p₁.eval (encB (f a)).length) ++
             (List.ofFn v).take (p₂.eval (encB (f a)).length)) := by
-  have hp₁ : ComputableInPolyTime (fun a => p₁.eval (encB (f a)).length) enc encUnary :=
-    (ComputableInPolyTime.unary_eval p₁).comp
-      ((ComputableInPolyTime.encoding_length encB).comp hf)
-  have hp₂ : ComputableInPolyTime (fun a => p₂.eval (encB (f a)).length) enc encUnary :=
-    (ComputableInPolyTime.unary_eval p₂).comp
-      ((ComputableInPolyTime.encoding_length encB).comp hf)
-  obtain ⟨P₁, hP₁⟩ := hp₁.polyBounded.exists_polynomial
-  obtain ⟨P₂, hP₂⟩ := hp₂.polyBounded.exists_polynomial
+  obtain ⟨P₁, T₁, hT₁, hP₁, hT₁e⟩ := exists_truncated_verifier hf p₁ (.snd encB encBits)
+  obtain ⟨P₂, T₂, hT₂, hP₂, hT₂e⟩ := exists_truncated_verifier hf p₂ (.snd encB encBits)
   have hP₁u : ComputableInPolyTime (fun a => P₁.eval (enc a).length) enc encUnary :=
     (ComputableInPolyTime.unary_eval P₁).comp (ComputableInPolyTime.encoding_length enc)
-  refine ⟨P₁, P₂, fun x => V (f x.1, x.2.take (p₁.eval (encB (f x.1)).length) ++
-      (x.2.drop (P₁.eval (enc x.1).length)).take (p₂.eval (encB (f x.1)).length)),
-    hV.comp ((hf.comp (.fst enc encBits)).prod
-      (.bitsAppend (.bitsTakeWithInput (.snd enc encBits) (hp₁.comp (.fst enc encBits)))
-        (.bitsTakeWithInput (.bitsDropWithInput (.snd enc encBits) (hP₁u.comp (.fst enc encBits)))
-          (hp₂.comp (.fst enc encBits))))),
+  refine ⟨P₁, P₂, fun x => V (f x.1, T₁ x ++ T₂ (x.1, x.2.drop (P₁.eval (enc x.1).length))),
+    hV.comp ((hf.comp (.fst enc encBits)).prod (.bitsAppend hT₁
+      (hT₂.comp ((ComputableInPolyTime.fst enc encBits).prod
+        (.bitsDropWithInput (.snd enc encBits) (hP₁u.comp (.fst enc encBits))))))),
     hP₁, hP₂, fun a u v => ?_⟩
-  dsimp only
+  simp only [hT₁e, hT₂e]
   rw [List.take_append_of_le_length (by simpa using hP₁ a), List.drop_left' List.length_ofFn]
 
 /-- **`MA` is closed under polynomial-time reductions.** The verifier runs the verifier of the
@@ -243,13 +233,13 @@ theorem PolyTimeReducible.mem_MA {encB : β ↪ List Bool} {B : Set β}
     obtain ⟨y, hy⟩ := (hVB (f a)).1 ((hAB a).1 ha)
     refine ⟨BitString.ofList _ (List.ofFn y), ?_⟩
     rw [BitString.take_ofFn_ofList (hQe a)]
-    exact mul_two_pow_le_mul_card_filter_take (hPe a)
+    exact BitString.mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => V (f a, List.ofFn y ++ w) = true) hy
   · intro ha y
     have hy := (hVB (f a)).2 (fun hb => ha ((hAB a).2 hb))
       (BitString.ofList _ ((List.ofFn y).take (q.eval (encB (f a)).length)))
     rw [BitString.ofFn_ofList (by simp [hQe a])] at hy
-    exact mul_two_pow_le_mul_card_filter_take (hPe a)
+    exact BitString.mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => V (f a, (List.ofFn y).take (q.eval (encB (f a)).length) ++ w) = false) hy
 
 /-- **`AM` is closed under polynomial-time reductions.** The verifier runs the verifier of the
@@ -277,10 +267,10 @@ theorem PolyTimeReducible.mem_AM {encB : β ↪ List Bool} {B : Set β}
     BitString.forall_take_ofFn_iff (hQe a)
       (g := fun w => V (f a, (List.ofFn r).take (p.eval (encB (f a)).length) ++ w) = false)
   simp only [hsplit, hex, hall]
-  exact ⟨fun ha => mul_two_pow_le_mul_card_filter_take (hPe a)
+  exact ⟨fun ha => BitString.mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => ∃ y : Fin (q.eval (encB (f a)).length) → Bool, V (f a, w ++ List.ofFn y) = true)
       ((hVB (f a)).1 ((hAB a).1 ha)),
-    fun ha => mul_two_pow_le_mul_card_filter_take (hPe a)
+    fun ha => BitString.mul_two_pow_le_mul_card_filter_take (hPe a)
       (fun w => ∀ y : Fin (q.eval (encB (f a)).length) → Bool, V (f a, w ++ List.ofFn y) = false)
       ((hVB (f a)).2 fun hb => ha ((hAB a).2 hb))⟩
 

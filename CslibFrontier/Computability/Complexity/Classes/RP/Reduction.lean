@@ -50,10 +50,11 @@ theorem PolyTimeReducible.mem_RP (h : PolyTimeReducible enc encB A B) (hB : B �
   refine ⟨P, V, hV, fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
   · have hyes : 2 ^ q.eval (encB (f a)).length ≤
         2 * acceptCount W (f a) (q.eval (encB (f a)).length) := (hWB (f a)).1 ((hAB a).1 ha)
-    change 2 ^ P.eval (enc a).length ≤ 2 * acceptCount V a (P.eval (enc a).length)
-    rw [acceptCount_eq_two_pow_mul_of_take (hle a) (hVW a), ← pow_sub_mul_pow 2 (hle a),
-      mul_left_comm]
-    exact Nat.mul_le_mul_left _ hyes
+    have hacc : 2 ^ P.eval (enc a).length ≤ 2 * acceptCount V a (P.eval (enc a).length) := by
+      rw [acceptCount_eq_two_pow_mul_of_take (hle a) (hVW a), ← pow_sub_mul_pow 2 (hle a),
+        mul_left_comm]
+      exact Nat.mul_le_mul_left _ hyes
+    exact hacc
   · rw [hVW]
     exact (BitString.forall_take_ofFn_iff (hle a) (g := fun w => W (f a, w) = false)).2
       ((hWB (f a)).2 fun hb => ha ((hAB a).2 hb)) r
