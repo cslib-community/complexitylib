@@ -1099,6 +1099,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Op
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Reduction
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.State
 public import CslibFrontier.Computability.Circuit.Boolean.Agreement
+public import CslibFrontier.Computability.Circuit.Boolean.AgreementTwo
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
@@ -1430,6 +1431,7 @@ public import CslibFrontier.Computability.Circuit.Evaluation
 public import CslibFrontier.Computability.Circuit.FanIn
 public import CslibFrontier.Computability.Circuit.Formula
 public import CslibFrontier.Computability.Circuit.Formula.NodeCount
+public import CslibFrontier.Computability.Circuit.Formula.RestrictionCount
 public import CslibFrontier.Computability.Circuit.Frontier.AverageCase
 public import CslibFrontier.Computability.Circuit.Frontier.BoundedFanIn
 public import CslibFrontier.Computability.Circuit.Frontier.BranchingProgram
@@ -5114,6 +5116,7 @@ public import CslibFrontier.Foundations.Combinatorics.FunctionalGraph.Powers
 public import CslibFrontier.Foundations.Combinatorics.FunctionalGraph.Projection
 public import CslibFrontier.Foundations.Combinatorics.FunctionalGraph.Spectrum
 public import CslibFrontier.Foundations.Combinatorics.GreedySchedules
+public import CslibFrontier.Foundations.Combinatorics.HalvingCover
 public import CslibFrontier.Foundations.Combinatorics.Hoeffding
 public import CslibFrontier.Foundations.Combinatorics.HybridPrediction
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric

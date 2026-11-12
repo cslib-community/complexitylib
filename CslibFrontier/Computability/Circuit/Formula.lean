@@ -79,8 +79,8 @@ depth `⌈log₂ k⌉` above them, the usual way to replace a gate of unbounded 
 * `Cslib.Circuits.Formula.leafSize_le_pow_depth`, `Cslib.Circuits.Formula.leafSize_le`: leaf size
   under bounded fan-in.
 * `Cslib.Circuits.Formula.size_lt_pow_depth`: size under bounded fan-in.
-* `Cslib.Circuits.Formula.depth_bind_le`, `Cslib.Circuits.Formula.size_bind_le`: depth and size
-  after substitution.
+* `Cslib.Circuits.Formula.depthWith_bind_le`, `Cslib.Circuits.Formula.depth_bind_le`,
+  `Cslib.Circuits.Formula.size_bind_le`: depth and size after substitution.
 * `Cslib.Circuits.Formula.size_balanced_add_one`, `Cslib.Circuits.Formula.depthWith_balanced_le`:
   a balanced tree over `k ≥ 1` formulas adds `k - 1` nodes and `⌈log₂ k⌉` levels.
 * `Cslib.Circuits.Formula.Computes.toCircuit`, `Cslib.Circuits.Formula.size_toCircuit`,
@@ -626,18 +626,26 @@ theorem leafSize_bind_le {s : Fin n → Formula σ m} (hs : ∀ i, (s i).leafSiz
     rw [gate_bind, leafSize_gate, leafSize_gate]
     exact Finset.sum_le_sum fun j _ => ih j
 
-/-- Substituting formulas of depth at most `c` for the inputs raises the depth by at most `c`. -/
-theorem depth_bind_le {s : Fin n → Formula σ m} {c : ℕ} (hs : ∀ i, (s i).depth ≤ c)
-    (F : Formula σ n) : (F.bind s).depth ≤ F.depth + c := by
+/-- Substituting formulas of weighted depth at most `c` for the inputs raises the weighted depth by
+at most `c`. -/
+theorem depthWith_bind_le {cost : σ.Op → ℕ} {s : Fin n → Formula σ m} {c : ℕ}
+    (hs : ∀ i, (s i).depthWith cost ≤ c) (F : Formula σ n) :
+    (F.bind s).depthWith cost ≤ F.depthWith cost + c := by
   induction F with
   | input i => simpa using hs i
   | gate op args ih =>
-    rw [gate_bind, depth_gate, depth_gate]
-    have : (Finset.univ.sup fun j => ((args j).bind s).depth) ≤
-        (Finset.univ.sup fun j => (args j).depth) + c :=
+    rw [gate_bind, depthWith_gate, depthWith_gate]
+    have : (Finset.univ.sup fun j => ((args j).bind s).depthWith cost) ≤
+        (Finset.univ.sup fun j => (args j).depthWith cost) + c :=
       Finset.sup_le fun j _ => (ih j).trans (Nat.add_le_add_right
-        (Finset.le_sup (f := fun j => (args j).depth) (Finset.mem_univ j)) c)
+        (Finset.le_sup (f := fun j => (args j).depthWith cost) (Finset.mem_univ j)) c)
     omega
+
+
+/-- Substituting formulas of depth at most `c` for the inputs raises the depth by at most `c`. -/
+theorem depth_bind_le {s : Fin n → Formula σ m} {c : ℕ} (hs : ∀ i, (s i).depth ≤ c)
+    (F : Formula σ n) : (F.bind s).depth ≤ F.depth + c := by
+  simpa using depthWith_bind_le (cost := 1) (fun i => by simpa using hs i) F
 
 /-- Substituting formulas of at most `c` operation nodes for the inputs adds at most `c` nodes for
 each leaf. -/
