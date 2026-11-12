@@ -371,7 +371,7 @@ theorem ofUnweighted_loadFst_le {R : Finset (BitString N × BitString N)} {L : �
   calc (ofUnweighted R L hL).loadFst x i = ∑ _p ∈ S, √L / (#S : ℝ) :=
         sum_congr rfl fun p hp => by simp only [ofUnweighted, S, (mem_filter.1 hp).2.2]
     _ = (#S : ℝ) * (√L / (#S : ℝ)) := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ √L := by simpa only [div_one, mul_one] using mul_div_mul_left_le (↑#S : ℝ) √L 1 (Real.sqrt_nonneg L)
+    _ ≤ √L := by simpa only [div_one, mul_one] using mul_div_mul_left_le (#S : ℝ) √L 1 (Real.sqrt_nonneg L)
 
 theorem ofUnweighted_loadSnd_le {R : Finset (BitString N × BitString N)} {L : ℕ}
     (hL : ∀ p ∈ R, ∀ i, p.1 i ≠ p.2 i →
@@ -383,7 +383,7 @@ theorem ofUnweighted_loadSnd_le {R : Finset (BitString N × BitString N)} {L : �
   calc (ofUnweighted R L hL).loadSnd y i = ∑ _p ∈ S, √L / (#S : ℝ) :=
         sum_congr rfl fun p hp => by simp only [ofUnweighted, S, (mem_filter.1 hp).2.2]
     _ = (#S : ℝ) * (√L / (#S : ℝ)) := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ √L := by simpa only [div_one, mul_one] using mul_div_mul_left_le (↑#S : ℝ) √L 1 (Real.sqrt_nonneg L)
+    _ ≤ √L := by simpa only [div_one, mul_one] using mul_div_mul_left_le (#S : ℝ) √L 1 (Real.sqrt_nonneg L)
 
 end WeightScheme
 
