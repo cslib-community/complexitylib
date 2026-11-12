@@ -37,7 +37,10 @@ statements of `ThresholdCounting.lean` with every bottom gate of the circuit cou
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.WeightedThreshold.circuitBottomGates`: the gates read by output gates.
+* `Cslib.Circuits.Boolean.WeightedThreshold.outputBottomGates`: the gates read by the gate of
+  one output.
+* `Cslib.Circuits.Boolean.WeightedThreshold.circuitBottomGates`: the gates read by output gates,
+  the union of `outputBottomGates` (`circuitBottomGates_eq_biUnion`).
 * `Cslib.Circuits.Boolean.WeightedThreshold.circuitBottomWeights`: their live weight vectors.
 * `Cslib.Circuits.Boolean.WeightedThreshold.circuitBottomUnforcedConstCount`,
   `Cslib.Circuits.Boolean.WeightedThreshold.circuitBottomUnforcedAtMostOneCount`: the bottom gates
@@ -45,6 +48,8 @@ statements of `ThresholdCounting.lean` with every bottom gate of the circuit cou
 
 ## Main results
 
+* `Cslib.Circuits.Boolean.WeightedThreshold.card_outputBottomGates_lt_size`: an output gate has
+  fewer bottom gates than the circuit has gates.
 * `Cslib.Circuits.Boolean.WeightedThreshold.card_circuitBottomGates_le_size`,
   `Cslib.Circuits.Boolean.WeightedThreshold.card_circuitBottomGates_le_wireCount`: there are at
   most `c.size` and at most `c.wireCount` bottom gates.
@@ -72,16 +77,54 @@ variable {n t : ℕ}
 
 /-! ### Bottom gates and their live weight vectors -/
 
+/-- The **bottom gates of one output** `o`: the gates with nonzero weight in the gate of `o`, or
+none if `o` is an input wire. -/
+noncomputable def outputBottomGates (c : Circuit signature n t) (o : Fin t) :
+    Finset (Fin c.size) :=
+  (c.outputs o).elim (fun _ => ∅) (gateSupport c.program)
+
+/-- An output that is the gate `top` has the gates read by `top` as its bottom gates. -/
+theorem outputBottomGates_of_gate {c : Circuit signature n t} {o : Fin t} {top : Fin c.size}
+    (h : c.outputs o = .gate top) : outputBottomGates c o = gateSupport c.program top := by
+  rw [outputBottomGates, h]; rfl
+
+/-- An output that is an input wire has no bottom gates. -/
+theorem outputBottomGates_of_input {c : Circuit signature n t} {o : Fin t} {i : Fin n}
+    (h : c.outputs o = .input i) : outputBottomGates c o = ∅ := by
+  rw [outputBottomGates, h]; rfl
+
+/-- The output gate is not among its own bottom gates, so an output gate has fewer bottom gates
+than the circuit has gates. -/
+theorem card_outputBottomGates_lt_size {c : Circuit signature n t} {o : Fin t} {top : Fin c.size}
+    (h : c.outputs o = .gate top) : #(outputBottomGates c o) < c.size := by
+  classical
+  rw [outputBottomGates_of_gate h]
+  have htop : top ∉ gateSupport c.program top := by
+    rw [mem_gateSupport, not_not]; exact gateWeight_eq_zero_of_le _ _ _ le_rfl
+  calc #(gateSupport c.program top) < #(univ : Finset (Fin c.size)) :=
+        card_lt_card ⟨subset_univ _, fun hsub => htop (hsub (mem_univ top))⟩
+    _ = c.size := by rw [card_univ, Fintype.card_fin]
+
 /-- The **bottom gates** of a weighted threshold circuit: the gates with nonzero weight in the gate
-of some designated output. An output that is an input wire contributes none. -/
+of some designated output, i.e. the union of `outputBottomGates c o` over the outputs `o`. -/
 noncomputable def circuitBottomGates (c : Circuit signature n t) : Finset (Fin c.size) :=
-  univ.biUnion fun o => (c.outputs o).elim (fun _ => ∅) (gateSupport c.program)
+  univ.biUnion (outputBottomGates c)
+
+/-- The bottom gates of the circuit are the union of the bottom gates of its outputs. -/
+theorem circuitBottomGates_eq_biUnion (c : Circuit signature n t) :
+    circuitBottomGates c = univ.biUnion (outputBottomGates c) := by
+  unfold circuitBottomGates; rfl
+
+/-- The bottom gates of an output are bottom gates of the circuit. -/
+theorem outputBottomGates_subset_circuitBottomGates (c : Circuit signature n t) (o : Fin t) :
+    outputBottomGates c o ⊆ circuitBottomGates c := fun _ hk =>
+  mem_biUnion.mpr ⟨o, mem_univ o, hk⟩
 
 /-- The gates read by the gate of an output are bottom gates. -/
 theorem gateSupport_subset_circuitBottomGates (c : Circuit signature n t) {o : Fin t}
     {top : Fin c.size} (h : c.outputs o = .gate top) :
-    gateSupport c.program top ⊆ circuitBottomGates c := fun k hk =>
-  mem_biUnion.mpr ⟨o, mem_univ o, by rw [h]; exact hk⟩
+    gateSupport c.program top ⊆ circuitBottomGates c :=
+  outputBottomGates_of_gate h ▸ outputBottomGates_subset_circuitBottomGates c o
 
 /-- A bottom gate is read by the gate of some designated output. -/
 theorem exists_mem_gateSupport_of_mem_circuitBottomGates (c : Circuit signature n t)
@@ -89,8 +132,13 @@ theorem exists_mem_gateSupport_of_mem_circuitBottomGates (c : Circuit signature 
     ∃ o top, c.outputs o = .gate top ∧ k ∈ gateSupport c.program top := by
   obtain ⟨o, -, ho⟩ := mem_biUnion.mp hk
   cases h : c.outputs o with
-  | input _ => rw [h] at ho; exact absurd ho (notMem_empty k)
-  | gate top => rw [h] at ho; exact ⟨o, top, h, ho⟩
+  | input _ => rw [outputBottomGates_of_input h] at ho; exact absurd ho (notMem_empty k)
+  | gate top => rw [outputBottomGates_of_gate h] at ho; exact ⟨o, top, h, ho⟩
+
+/-- A single-output circuit has the bottom gates of its output. -/
+theorem circuitBottomGates_eq_outputBottomGates (c : Circuit signature n 1) (o : Fin 1) :
+    circuitBottomGates c = outputBottomGates c o := by
+  rw [circuitBottomGates_eq_biUnion, univ_unique, singleton_biUnion, Subsingleton.elim default o]
 
 /-- A circuit has at most `c.size` bottom gates. -/
 theorem card_circuitBottomGates_le_size (c : Circuit signature n t) :
