@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Fagin.Layout
-public import CslibFrontier.Computability.Complexity.Fagin.StrictVerifier
+public import CslibFrontier.Computability.Complexity.Classes.NP.StrictVerifier
 public import CslibFrontier.Computability.Complexity.Fagin.Tableau
 public import CslibFrontier.Computability.Complexity.Fagin.Verifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat

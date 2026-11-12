@@ -137,7 +137,7 @@ theorem diff_mem_BH (hA : A ∈ BH enc n) (hB : B ∈ BH enc m) :
 /-- The union of two finite `BH` levels stays at a finite level. -/
 theorem union_mem_BH (hA : A ∈ BH enc n) (hB : B ∈ BH enc m) :
     A ∪ B ∈ BH enc ((n + 1) * (m + 1) + 1) :=
-  union_mem_differenceHierarchy (P_subset_NP univ_mem_P)
+  union_mem_differenceHierarchy univ_mem_NP
     (fun _ h₁ _ h₂ => union_mem_NP h₁ h₂) (fun _ h₁ _ h₂ => inter_mem_NP h₁ h₂) hA hB
 
 /-- The Boolean hierarchy is closed under intersection. -/
@@ -149,7 +149,7 @@ theorem inter_mem_BooleanHierarchy (hA : A ∈ BooleanHierarchy enc)
 
 /-- `BooleanHierarchy` as a Boolean subalgebra of `Set α`. -/
 def BooleanHierarchy.booleanSubalgebra (enc : α ↪ List Bool) : BooleanSubalgebra (Set α) :=
-  .ofComplInf (BooleanHierarchy enc) (NP_subset_BooleanHierarchy (P_subset_NP empty_mem_P))
+  .ofComplInf (BooleanHierarchy enc) (NP_subset_BooleanHierarchy empty_mem_NP)
     (fun _ => compl_mem_BooleanHierarchy) (fun _ _ => inter_mem_BooleanHierarchy)
 
 @[simp]
