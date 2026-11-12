@@ -237,6 +237,13 @@ private lemma mem_verticesOfBound_iff {r : ℕ} {φ : CNF ℕ} {bound v : ℕ} :
   · rintro ⟨i, hi, a, ha, heval, rfl⟩
     exact ⟨i, hi, a, ⟨ha, heval⟩, rfl⟩
 
+/-- `compat vs₁ vs₂ a₁ a₂` holds when the two partial assignments agree on shared variables. -/
+private lemma compat_iff {vs₁ vs₂ : List ℕ} {a₁ a₂ : ℕ} :
+    GroupClique.compat vs₁ vs₂ a₁ a₂ = true ↔
+      ∀ x ∈ vs₁, x ∈ vs₂ → bitsAssignment vs₁ a₁ x = bitsAssignment vs₂ a₂ x := by
+  simp only [GroupClique.compat, List.all_eq_true, Bool.or_eq_true, Bool.not_eq_true',
+    List.contains_eq_mem, decide_eq_false_iff_not, beq_iff_eq, imp_iff_not_or]
+
 private lemma compat_symm {vs₁ vs₂ : List ℕ} {a₁ a₂ : ℕ} :
     GroupClique.compat vs₁ vs₂ a₁ a₂ = true ↔ GroupClique.compat vs₂ vs₁ a₂ a₁ = true := by
   simp only [GroupClique.compat, List.all_eq_true, Bool.or_eq_true, Bool.not_eq_true',
@@ -289,6 +296,130 @@ private lemma mem_edgesOfBound_iff {r : ℕ} {φ : CNF ℕ} {bound : ℕ} {e : �
       List.mem_range, Bool.and_eq_true]
     exact ⟨b, ⟨hb, he₂, hcomp⟩, rfl⟩
 
+/-- Adjacency between two vertices of the bounded graph: their blocks differ and their partial
+assignments are compatible. -/
+private lemma adj_vertex_iff {r : ℕ} {φ : CNF ℕ} {bound i j a b : ℕ}
+    (ha : a < bound) (hb : b < bound) (hi : i < r) (hj : j < r)
+    (hea : (GroupClique.block φ r i).eval
+      (bitsAssignment (GroupClique.block φ r i).distinctVars a) = true)
+    (heb : (GroupClique.block φ r j).eval
+      (bitsAssignment (GroupClique.block φ r j).distinctVars b) = true) :
+    (Graph.mk (GroupClique.verticesOfBound r φ bound)
+        (GroupClique.edgesOfBound r φ bound)).toSimpleGraph.Adj
+        (GroupClique.vertex bound i a) (GroupClique.vertex bound j b) ↔
+      i ≠ j ∧ GroupClique.compat (GroupClique.block φ r i).distinctVars
+        (GroupClique.block φ r j).distinctVars a b = true := by
+  rw [Graph.toSimpleGraph_adj]
+  constructor
+  · rintro ⟨-, hedge | hedge⟩
+    · obtain ⟨p, -, a', ha', q, -, b', hb', hqp, -, -, hc, he⟩ := mem_edgesOfBound_iff.mp hedge
+      obtain ⟨rfl, rfl⟩ := vertex_inj ha ha' (Prod.mk.inj he).1
+      obtain ⟨rfl, rfl⟩ := vertex_inj hb hb' (Prod.mk.inj he).2
+      exact ⟨Ne.symm hqp, hc⟩
+    · obtain ⟨p, -, a', ha', q, -, b', hb', hqp, -, -, hc, he⟩ := mem_edgesOfBound_iff.mp hedge
+      obtain ⟨rfl, rfl⟩ := vertex_inj hb ha' (Prod.mk.inj he).1
+      obtain ⟨rfl, rfl⟩ := vertex_inj ha hb' (Prod.mk.inj he).2
+      exact ⟨hqp, compat_symm.mp hc⟩
+  · rintro ⟨hij, hc⟩
+    refine ⟨fun h => hij (vertex_inj ha hb h).1, Or.inl ?_⟩
+    exact mem_edgesOfBound_iff.mpr ⟨i, hi, a, ha, j, hj, b, hb, Ne.symm hij, hea, heb, hc, rfl⟩
+
+/-- A clique of size `r` in the bounded graph picks one compatible satisfying partial assignment
+per block, and these glue to a satisfying assignment of `φ`. -/
+private lemma satisfiable_of_mem_Clique {r : ℕ} (hr : 1 ≤ r) {φ : CNF ℕ} {bound : ℕ}
+    (h : (⟨⟨GroupClique.verticesOfBound r φ bound, GroupClique.edgesOfBound r φ bound⟩, r⟩ :
+      CliqueInstance) ∈ Clique) :
+    φ.Satisfiable := by
+  rw [mem_Clique_iff_mk] at h
+  obtain ⟨S, hSV, hclique⟩ := h
+  have hV := fun v hv => mem_verticesOfBound_iff.mp (hSV v hv)
+  have hinj : Set.InjOn (fun v => v / bound) S := by
+    intro v₁ hv₁ v₂ hv₂ hdiv
+    by_contra hne
+    obtain ⟨i, hi, a, ha, hea, rfl⟩ := hV v₁ hv₁
+    obtain ⟨j, hj, b, hb, heb, rfl⟩ := hV v₂ hv₂
+    have hij := ((adj_vertex_iff ha hb hi hj hea heb).mp (hclique.1 hv₁ hv₂ hne)).1
+    simp only [vertex_div ha, vertex_div hb] at hdiv
+    exact hij hdiv
+  have himg : S.image (fun v => v / bound) = Finset.range r := by
+    refine Finset.eq_of_subset_of_card_le (fun i hi => ?_) ?_
+    · obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hi
+      obtain ⟨i', hi', a', ha', -, rfl⟩ := hV v hv
+      simpa only [vertex_div ha', Finset.mem_range] using hi'
+    · rw [Finset.card_image_of_injOn hinj, hclique.2, Finset.card_range]
+  have hpick : ∀ i < r, ∃ a < bound, (GroupClique.block φ r i).eval
+      (bitsAssignment (GroupClique.block φ r i).distinctVars a) = true ∧
+      GroupClique.vertex bound i a ∈ S := by
+    intro i hi
+    obtain ⟨v, hv, hvi⟩ := Finset.mem_image.mp (himg ▸ Finset.mem_range.mpr hi)
+    obtain ⟨i', -, a, ha, hea, rfl⟩ := hV v hv
+    rw [vertex_div ha] at hvi
+    subst hvi
+    exact ⟨a, ha, hea, hv⟩
+  choose! code hcode_lt hcode_eval hcode_mem using hpick
+  have hagree : ∀ i < r, ∀ j < r, ∀ x ∈ (GroupClique.block φ r i).distinctVars,
+      x ∈ (GroupClique.block φ r j).distinctVars →
+      bitsAssignment (GroupClique.block φ r i).distinctVars (code i) x =
+        bitsAssignment (GroupClique.block φ r j).distinctVars (code j) x := by
+    intro i hi j hj x hxi hxj
+    by_cases hij : i = j
+    · subst hij
+      rfl
+    · have hne : GroupClique.vertex bound i (code i) ≠ GroupClique.vertex bound j (code j) :=
+        fun h => hij (vertex_inj (hcode_lt i hi) (hcode_lt j hj) h).1
+      have hc := ((adj_vertex_iff (hcode_lt i hi) (hcode_lt j hj) hi hj (hcode_eval i hi)
+        (hcode_eval j hj)).mp (hclique.1 (hcode_mem i hi) (hcode_mem j hj) hne)).2
+      exact compat_iff.mp hc x hxi hxj
+  classical
+  let τ : ℕ → Bool := fun x =>
+    if hx : ∃ i < r, x ∈ (GroupClique.block φ r i).distinctVars then
+      bitsAssignment (GroupClique.block φ r (Nat.find hx)).distinctVars (code (Nat.find hx)) x
+    else false
+  have hτ : ∀ i < r, ∀ x ∈ (GroupClique.block φ r i).distinctVars,
+      bitsAssignment (GroupClique.block φ r i).distinctVars (code i) x = τ x := by
+    intro i hi x hx
+    have hex : ∃ i < r, x ∈ (GroupClique.block φ r i).distinctVars := ⟨i, hi, hx⟩
+    simp only [τ, hex, ↓reduceDIte]
+    exact hagree i hi _ (Nat.find_spec hex).1 x hx (Nat.find_spec hex).2
+  refine ⟨τ, (CNF.eval_eq_true_iff _ _).mpr fun c hc => ?_⟩
+  obtain ⟨i, hi, hci⟩ := mem_block_of_mem hr hc
+  have hblock : (GroupClique.block φ r i).eval τ = true :=
+    (CNF.eval_congr fun x hx => hτ i hi x (CNF.mem_distinctVars.mpr hx)).symm.trans
+      (hcode_eval i hi)
+  exact (CNF.eval_eq_true_iff _ _).mp hblock c hci
+
+/-- A satisfying assignment of `φ` restricts to one satisfying code per block; these `r`
+vertices form a clique in the bounded graph once `bound` covers every block's codes. -/
+private lemma mem_Clique_of_satisfiable {r : ℕ} {φ : CNF ℕ} {bound : ℕ}
+    (hbound : ∀ i, 2 ^ (GroupClique.block φ r i).distinctVars.length ≤ bound)
+    (hφ : φ.Satisfiable) :
+    (⟨⟨GroupClique.verticesOfBound r φ bound, GroupClique.edgesOfBound r φ bound⟩, r⟩ :
+      CliqueInstance) ∈ Clique := by
+  obtain ⟨τ, hτ⟩ := hφ
+  choose code hcode_lt hcode_eq using fun i =>
+    exists_lt_two_pow_bitsAssignment_eq (vs := (GroupClique.block φ r i).distinctVars) τ
+  have hcode_bound : ∀ i, code i < bound := fun i => (hcode_lt i).trans_le (hbound i)
+  have hcode_eval : ∀ i, (GroupClique.block φ r i).eval
+      (bitsAssignment (GroupClique.block φ r i).distinctVars (code i)) = true := fun i =>
+    (CNF.eval_congr fun x hx => hcode_eq i x (CNF.mem_distinctVars.mpr hx)).trans
+      ((CNF.eval_eq_true_iff _ _).mpr fun c hc =>
+        (CNF.eval_eq_true_iff _ _).mp hτ c (mem_of_mem_block hc))
+  let f : ℕ → ℕ := fun i => GroupClique.vertex bound i (code i)
+  have hf_inj : Set.InjOn f (Finset.range r) := fun i _ j _ hij =>
+    (vertex_inj (hcode_bound i) (hcode_bound j) hij).1
+  rw [mem_Clique_iff_mk]
+  refine ⟨(Finset.range r).image f, fun v hv => ?_, ⟨fun u hu v hv huv => ?_, ?_⟩⟩
+  · obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp hv
+    exact mem_verticesOfBound_iff.mpr
+      ⟨i, Finset.mem_range.mp hi, code i, hcode_bound i, hcode_eval i, rfl⟩
+  · obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp hu
+    obtain ⟨j, hj, rfl⟩ := Finset.mem_image.mp hv
+    refine (adj_vertex_iff (hcode_bound i) (hcode_bound j) (Finset.mem_range.mp hi)
+      (Finset.mem_range.mp hj) (hcode_eval i) (hcode_eval j)).mpr
+      ⟨fun h => huv (by rw [h]), compat_iff.mpr fun x hxi hxj => ?_⟩
+    rw [hcode_eq i x hxi, hcode_eq j x hxj]
+  · rw [Finset.card_image_of_injOn hf_inj, Finset.card_range]
+
 /-! ### Correctness and vertex-count bounds -/
 
 /-- For every `r ≥ 1` and `φ : CNF ℕ`, `SAT.groupClique r φ` sets target clique size `r`. -/
@@ -336,207 +467,21 @@ theorem card_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
 theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
     groupClique r φ ∈ Clique ↔ φ ∈ ThreeSAT := by
   have hr0 : (r == 0) = false := beq_false_of_ne (by omega)
-  by_cases h3bool : φ.all (fun c => decide (c.length ≤ 3)) = true
-  · have h3 : ∀ c ∈ φ, c.length ≤ 3 := by
-      simpa only [List.all_eq_true, decide_eq_true_eq] using h3bool
-    have hnot : (!φ.all fun c => decide (c.length ≤ 3)) = false := by simp [h3bool]
-    have hgrp : groupClique r φ =
-        ⟨⟨GroupClique.verticesOfBound r φ (2 ^ (3 * GroupClique.blockSize φ r)),
-          GroupClique.edgesOfBound r φ (2 ^ (3 * GroupClique.blockSize φ r))⟩, r⟩ := by
-      simp [groupClique, GroupClique.graphOfBound, hr0, hnot]
-    rw [hgrp, mem_Clique_iff_mk]
-    set bound := 2 ^ (3 * GroupClique.blockSize φ r)
-    constructor
-    · rintro ⟨S, hSV, hclique⟩
-      have hV : ∀ v ∈ S, ∃ i < r, ∃ a < bound,
-          (GroupClique.block φ r i).eval
-            (bitsAssignment (GroupClique.block φ r i).distinctVars a) = true ∧
-          v = GroupClique.vertex bound i a :=
-        fun v hv => mem_verticesOfBound_iff.mp (hSV v hv)
-      have hinj : ∀ v₁ ∈ S, ∀ v₂ ∈ S, v₁ / bound = v₂ / bound → v₁ = v₂ := by
-        intro v₁ hv₁ v₂ hv₂ hdiv
-        by_contra hne
-        have hadj := hclique.1 hv₁ hv₂ hne
-        rw [Graph.toSimpleGraph, SimpleGraph.fromRel_adj] at hadj
-        rcases hadj with ⟨_, hedge | hedge⟩
-        · rcases mem_edgesOfBound_iff.mp hedge with
-            ⟨i, _, a₁, ha₁, j, _, b₁, hb₁, hji, _, _, _, he⟩
-          rw [Prod.mk.injEq] at he
-          rcases he with ⟨he₁, he₂⟩
-          rw [he₁, vertex_div ha₁, he₂, vertex_div hb₁] at hdiv
-          exact hji hdiv.symm
-        · rcases mem_edgesOfBound_iff.mp hedge with
-            ⟨i, _, a₁, ha₁, j, _, b₁, hb₁, hji, _, _, _, he⟩
-          rw [Prod.mk.injEq] at he
-          rcases he with ⟨he₁, he₂⟩
-          rw [he₂, vertex_div hb₁, he₁, vertex_div ha₁] at hdiv
-          exact hji hdiv
-      have himg_sub : S.image (fun v => v / bound) ⊆ Finset.range r := by
-        intro i hi
-        rcases Finset.mem_image.mp hi with ⟨v, hv, rfl⟩
-        rcases hV v hv with ⟨i', hi', a', ha', _, rfl⟩
-        simpa [vertex_div ha'] using hi'
-      have himg_card : (Finset.range r).card ≤ (S.image (fun v => v / bound)).card := by
-        rw [Finset.card_image_of_injOn (fun v₁ hv₁ v₂ hv₂ => hinj v₁ hv₁ v₂ hv₂),
-          hclique.2, Finset.card_range]
-      have himg_eq : S.image (fun v => v / bound) = Finset.range r :=
-        Finset.eq_of_subset_of_card_le himg_sub himg_card
-      have hsurj : ∀ i < r, ∃ v ∈ S, v / bound = i := by
-        intro i hi
-        have hi' : i ∈ S.image (fun v => v / bound) := himg_eq ▸ Finset.mem_range.mpr hi
-        exact Finset.mem_image.mp hi'
-      choose sel hselS hsel_div using fun i (hi : i < r) => hsurj i hi
-      let τ : ℕ → Bool := fun x =>
-        if hx : ∃ i < r, x ∈ (GroupClique.block φ r i).distinctVars then
-          let k := Nat.find hx
-          have hk : k < r := (Nat.find_spec hx).1
-          bitsAssignment (GroupClique.block φ r k).distinctVars (sel k hk % bound) x
-        else
-          false
-      refine ⟨h3, τ, ?_⟩
-      rw [CNF.eval_eq_true_iff]
-      intro c hc
-      rcases mem_block_of_mem hr hc with ⟨i, hi, hcb⟩
-      have hiS : sel i hi ∈ S := hselS i hi
-      rcases hV (sel i hi) hiS with ⟨i', hi', a', ha', ha'_eval, hs_eq⟩
-      have hi'_eq : i' = i := by
-        have := hsel_div i hi
-        rw [hs_eq, vertex_div ha'] at this
-        exact this
-      rw [hi'_eq] at ha'_eval hs_eq
-      have hclause_eval : Clause.eval
-          (bitsAssignment (GroupClique.block φ r i).distinctVars a') c = true :=
-        (CNF.eval_eq_true_iff _ _).mp ha'_eval c hcb
-      have hcongr : Clause.eval τ c =
-          Clause.eval (bitsAssignment (GroupClique.block φ r i).distinctVars a') c := by
-        refine Clause.eval_congr fun ⟨x, pol⟩ hlit => ?_
-        have hx_vars : x ∈ (GroupClique.block φ r i).vars :=
-          CNF.mem_vars.2 ⟨c, hcb, pol, hlit⟩
-        have hx_dvars : x ∈ (GroupClique.block φ r i).distinctVars :=
-          CNF.mem_distinctVars.mpr hx_vars
-        have hex : ∃ k < r, x ∈ (GroupClique.block φ r k).distinctVars := ⟨i, hi, hx_dvars⟩
-        dsimp only [τ]
-        split_ifs
-        set j := Nat.find hex
-        have hj : j < r := (Nat.find_spec hex).1
-        have hxj : x ∈ (GroupClique.block φ r j).distinctVars := (Nat.find_spec hex).2
-        by_cases hji : j = i
-        · subst hji
-          rw [hs_eq, vertex_mod ha']
-        · rcases hV (sel j hj) (hselS j hj) with ⟨j', hj', b', hb', _, hsj_eq⟩
-          have hj'_eq : j' = j := by
-            have := hsel_div j hj
-            rw [hsj_eq, vertex_div hb'] at this
-            exact this
-          rw [hj'_eq] at hsj_eq
-          have hj_mod : sel j hj % bound = b' := by rw [hsj_eq, vertex_mod hb']
-          rw [hj_mod]
-          have hne_v : sel j hj ≠ sel i hi := by
-            intro hEq
-            have h1 := hsel_div j hj
-            rw [hEq, hsel_div i hi] at h1
-            exact hji h1.symm
-          have hadj := hclique.1 (hselS j hj) hiS hne_v
-          rw [Graph.toSimpleGraph, SimpleGraph.fromRel_adj] at hadj
-          have hcomp : GroupClique.compat (GroupClique.block φ r j).distinctVars
-              (GroupClique.block φ r i).distinctVars b' a' = true := by
-            rcases hadj with ⟨_, hedge | hedge⟩
-            · rcases mem_edgesOfBound_iff.mp hedge with
-                ⟨p, _, ap, hap, q, _, bq, hbq, _, _, _, hcp, he⟩
-              rw [Prod.mk.injEq] at he
-              rcases he with ⟨h1, h2⟩
-              rw [hsj_eq] at h1
-              rw [hs_eq] at h2
-              rcases vertex_inj hb' hap h1 with ⟨rfl, rfl⟩
-              rcases vertex_inj ha' hbq h2 with ⟨rfl, rfl⟩
-              exact hcp
-            · rcases mem_edgesOfBound_iff.mp hedge with
-                ⟨p, _, ap, hap, q, _, bq, hbq, _, _, _, hcp, he⟩
-              rw [Prod.mk.injEq] at he
-              rcases he with ⟨h1, h2⟩
-              rw [hs_eq] at h1
-              rw [hsj_eq] at h2
-              rcases vertex_inj ha' hap h1 with ⟨rfl, rfl⟩
-              rcases vertex_inj hb' hbq h2 with ⟨rfl, rfl⟩
-              exact compat_symm.mp hcp
-          simp only [GroupClique.compat, List.all_eq_true, Bool.or_eq_true, Bool.not_eq_true',
-            List.contains_eq_mem, beq_iff_eq] at hcomp
-          exact (hcomp x hxj).resolve_left (by simp [hx_dvars])
-      rw [hcongr, hclause_eval]
-    · rintro ⟨_, τ, hτ⟩
-      have hcode_exists : ∀ i, ∃ ci < 2 ^ (GroupClique.block φ r i).distinctVars.length,
-          ∀ v ∈ (GroupClique.block φ r i).distinctVars,
-            bitsAssignment (GroupClique.block φ r i).distinctVars ci v = τ v := fun i =>
-        exists_lt_two_pow_bitsAssignment_eq τ
-      let code : ℕ → ℕ := fun i => (hcode_exists i).choose
-      have hcode_lt : ∀ i, code i < bound := fun i =>
-        lt_of_lt_of_le (hcode_exists i).choose_spec.1
-          (Nat.pow_le_pow_right (by omega) (length_distinctVars_block_le h3))
-      have hcode_eval : ∀ i,
-          (GroupClique.block φ r i).eval
-            (bitsAssignment (GroupClique.block φ r i).distinctVars (code i)) = true := by
-        intro i
-        rw [CNF.eval_eq_true_iff]
-        intro c hc
-        have hτc : Clause.eval τ c = true :=
-          (CNF.eval_eq_true_iff _ _).mp hτ c (mem_of_mem_block hc)
-        have hcongr :
-            Clause.eval (bitsAssignment (GroupClique.block φ r i).distinctVars (code i)) c =
-              Clause.eval τ c := by
-          refine Clause.eval_congr fun ⟨x, pol⟩ hlit => ?_
-          exact (hcode_exists i).choose_spec.2 x
-            (CNF.mem_distinctVars.mpr (CNF.mem_vars.2 ⟨c, hc, pol, hlit⟩))
-        rw [hcongr, hτc]
-      let f : ℕ → ℕ := fun i => GroupClique.vertex bound i (code i)
-      have hf_inj : Set.InjOn f (Finset.range r) := by
-        intro i _ j _ hij
-        exact (vertex_inj (hcode_lt i) (hcode_lt j) hij).1
-      refine ⟨(Finset.range r).image f, ?_, ?_⟩
-      · intro v hv
-        rcases Finset.mem_image.mp hv with ⟨i, hi, rfl⟩
-        exact mem_verticesOfBound_iff.mpr
-          ⟨i, Finset.mem_range.mp hi, code i, hcode_lt i, hcode_eval i, rfl⟩
-      · refine ⟨?_, ?_⟩
-        · intro u hu v hv huv
-          rcases Finset.mem_image.mp hu with ⟨i, hi, rfl⟩
-          rcases Finset.mem_image.mp hv with ⟨j, hj, rfl⟩
-          have hij : i ≠ j := fun h => huv (by rw [h])
-          rw [Graph.toSimpleGraph, SimpleGraph.fromRel_adj]
-          refine ⟨huv, Or.inl ?_⟩
-          refine mem_edgesOfBound_iff.mpr
-            ⟨i, Finset.mem_range.mp hi, code i, hcode_lt i,
-              j, Finset.mem_range.mp hj, code j, hcode_lt j, hij.symm,
-              hcode_eval i, hcode_eval j, ?_, rfl⟩
-          simp only [GroupClique.compat, List.all_eq_true, Bool.or_eq_true, Bool.not_eq_true',
-            List.contains_eq_mem, beq_iff_eq]
-          intro x hx₁
-          by_cases hx₂ : x ∈ (GroupClique.block φ r j).distinctVars
-          · refine Or.inr ?_
-            rw [(hcode_exists i).choose_spec.2 x hx₁, (hcode_exists j).choose_spec.2 x hx₂]
-          · exact Or.inl (by simp [hx₂])
-        · rw [Finset.card_image_of_injOn hf_inj, Finset.card_range]
-  · have hnot3 : ¬∀ c ∈ φ, c.length ≤ 3 := by
-      intro h3
-      exact h3bool (by simpa only [List.all_eq_true, decide_eq_true_eq] using h3)
-    have hnot : (!φ.all fun c => decide (c.length ≤ 3)) = true := by
-      cases h : φ.all fun c => decide (c.length ≤ 3)
-      · rfl
-      · exfalso; exact h3bool h
-    have hgrp : groupClique r φ = ⟨⟨[], []⟩, r⟩ := by
-      simp [groupClique, GroupClique.graphOfBound, hr0, hnot]
-    rw [hgrp, mem_Clique_iff_mk]
-    constructor
-    · rintro ⟨S, hSV, hclique⟩
-      have hS0 : S = ∅ := by
-        ext v
-        simp only [Finset.notMem_empty, iff_false]
-        intro hv
-        exact absurd (hSV v hv) List.not_mem_nil
-      have hcard := hclique.2
-      rw [hS0, Finset.card_empty] at hcard
-      omega
-    · rintro ⟨h3, _⟩
-      exact absurd h3 hnot3
+  by_cases h3 : ∀ c ∈ φ, c.length ≤ 3
+  · have hnot : (!φ.all fun c => decide (c.length ≤ 3)) = false := by
+      simpa only [Bool.not_eq_false', List.all_eq_true, decide_eq_true_eq] using h3
+    simp only [groupClique, GroupClique.graphOfBound, hr0, hnot, Bool.false_eq_true, ↓reduceIte]
+    refine ⟨fun h => ⟨h3, satisfiable_of_mem_Clique hr h⟩,
+      fun h => mem_Clique_of_satisfiable (fun i => ?_) h.2⟩
+    exact Nat.pow_le_pow_right (by omega) (length_distinctVars_block_le h3)
+  · have hnot : (!φ.all fun c => decide (c.length ≤ 3)) = true := by
+      simpa only [Bool.not_eq_true', List.all_eq_false, decide_eq_true_eq, not_le,
+        not_forall, not_le, exists_prop] using h3
+    simp only [groupClique, GroupClique.graphOfBound, hr0, hnot, Bool.false_eq_true, ↓reduceIte,
+      mem_Clique_iff_mk]
+    refine ⟨fun ⟨S, hSV, hclique⟩ => ?_, fun h => absurd h.1 h3⟩
+    obtain ⟨v, hv⟩ := Finset.card_pos.mp (hclique.2 ▸ hr)
+    exact absurd (hSV v hv) List.not_mem_nil
 
 /-! ### Polynomial-time computability of the bounded builder -/
 
@@ -1007,7 +952,7 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
       (fun p => C₀ * 2 ^ (D * (3 * GroupClique.blockSize p.2 p.1)) *
         ((encPair encUnary encCNF p).length + 1) ^ D))
     {δ : ℝ} (hδ : 0 ≤ δ) (hDr : (3 * (D : ℝ)) / (r : ℝ) ≤ δ)
-    {A B : ℝ} {d : ℕ} (hA : 0 ≤ A) (_hB : 0 ≤ B) (hBδ : B ≤ δ)
+    {A B : ℝ} {d : ℕ} (hA : 0 ≤ A) (hBδ : B ≤ δ)
     (ht₂ : ∀ φ : CNF ℕ,
       (t₂ (groupClique r φ) : ℝ) ≤
         A * (2 : ℝ) ^ (B * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ d + c₂) :
@@ -1163,209 +1108,77 @@ private lemma decidableInExpTime_threeSAT_of_groupClique_bound
     DecidableInTimeO.of_computableInO hcomp₂ heqv (fun _ => le_rfl)
   exact DecidableInTimeO.mono hO K hK (fun φ => by positivity)
 
-end SAT
 
-/-- An `f(k) * |V| ^ o(k) * poly(|enc|)` algorithm for `Clique` places `ThreeSAT` in
-subexponential time parameterized by clause count `List.length`. -/
-theorem DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
-    (f g : ℕ → ℝ) (e : ℕ)
-    (hg : ∀ ε : ℝ, 0 < ε → ∃ k₀, ∀ k ≥ k₀, g k ≤ ε * k)
-    (hClique : DecidableInTimeO Clique encCliqueInstance
-      (fun x =>
-        let graph := x.graph
-        let verts := graph.vertices
-        f x.m * ((verts.length : ℝ) + 1) ^ g x.m *
-          (((encCliqueInstance x).length : ℝ) + 1) ^ e)) :
-    DecidableInSubexpTime ThreeSAT encCNF List.length := by
-  intro δ hδ
-  rcases DecidableInTimeO.exists_computableInO hClique with ⟨dec, t₂, c₂, hdec, hmem, ht₂⟩
-  rcases SAT.exists_computableInO_groupClique with ⟨C₀, D, hred⟩
-  have hδ6 : 0 < δ / 6 := by positivity
-  rcases hg (δ / 6) hδ6 with ⟨k₀, hk₀⟩
-  let r : ℕ := max 1 (max k₀ (Nat.ceil (6 * (((e + 1 : ℕ) : ℝ) * (D : ℝ)) / δ)))
+/-- The encoded size of `SAT.groupClique r φ` is at most `K * 2 ^ (3 D / r * |φ|) * poly`, for a
+constant `K ≥ 0` depending on `r`. -/
+private lemma exists_enc_groupClique_length_le {C₀ D : ℕ} {r : ℕ} (hr : 1 ≤ r)
+    (hred : ComputableInO (fun p : ℕ × CNF ℕ => groupClique p.1 p.2)
+      (encPair encUnary encCNF) encCliqueInstance
+      (fun p => C₀ * 2 ^ (D * (3 * GroupClique.blockSize p.2 p.1)) *
+        ((encPair encUnary encCNF p).length + 1) ^ D)
+      (fun p => C₀ * 2 ^ (D * (3 * GroupClique.blockSize p.2 p.1)) *
+        ((encPair encUnary encCNF p).length + 1) ^ D)) :
+    ∃ K : ℝ, 0 ≤ K ∧ ∀ φ : CNF ℕ,
+      ((encCliqueInstance (groupClique r φ)).length : ℝ) + 1 ≤
+        K * (2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
+          (((encCNF φ).length : ℝ) + 1) ^ D := by
+  obtain ⟨c_len, -, hlen_red⟩ := hred
+  exact ⟨_, by positivity, enc_groupClique_length_le r hr hlen_red⟩
+
+/-- A block count `r ≥ 1` past the growth threshold for which both the `3 D / r` factor and its
+product with `max (g r) 0` are at most `δ`. -/
+private lemma exists_blockCount {g : ℕ → ℝ} (hg : ∀ ε : ℝ, 0 < ε → ∃ k₀, ∀ k ≥ k₀, g k ≤ ε * k)
+    (D : ℕ) {δ : ℝ} (hδ : 0 < δ) :
+    ∃ r : ℕ, 1 ≤ r ∧ 3 * (D : ℝ) / r ≤ δ ∧ 3 * (D : ℝ) / r * max (g r) 0 ≤ δ := by
+  set c : ℝ := 3 * ((D : ℝ) + 1)
+  have hc : 0 < c := by positivity
+  obtain ⟨k₀, hk₀⟩ := hg (δ / c) (by positivity)
+  set r : ℕ := max 1 (max k₀ ⌈c / δ⌉₊)
   have hr : 1 ≤ r := le_max_left _ _
-  have hrk : k₀ ≤ r := le_trans (le_max_left _ _) (le_max_right _ _)
-  have hrc : 6 * (((e + 1 : ℕ) : ℝ) * (D : ℝ)) / δ ≤ (r : ℝ) :=
-    le_trans (Nat.le_ceil _) (Nat.cast_le.mpr (le_trans (le_max_right _ _) (le_max_right _ _)))
-  have hr_pos : (0 : ℝ) < (r : ℝ) := by exact_mod_cast hr
-  have hmul_r : 6 * (((e + 1 : ℕ) : ℝ) * (D : ℝ)) ≤ δ * (r : ℝ) :=
-    ((div_le_iff₀ hδ).mp hrc).trans_eq (mul_comm _ _)
-  have hDe_r : 3 * (((e + 1 : ℕ) : ℝ) * (D : ℝ)) / (r : ℝ) ≤ δ / 2 := by
+  have hr_pos : (0 : ℝ) < r := by exact_mod_cast hr
+  have hcr : c ≤ δ * r := by
+    have h := (Nat.le_ceil (c / δ)).trans
+      (Nat.cast_le.mpr ((le_max_right _ _).trans (le_max_right _ _)) : (⌈c / δ⌉₊ : ℝ) ≤ r)
+    rw [div_le_iff₀ hδ] at h
+    linarith
+  have hD : 3 * (D : ℝ) ≤ c := by linarith
+  have hDr : 3 * (D : ℝ) / r ≤ δ := by
     rw [div_le_iff₀ hr_pos]
     linarith
-  have hDr : (3 * (D : ℝ)) / (r : ℝ) ≤ δ := by
-    have hD_le : (D : ℝ) ≤ ((e + 1 : ℕ) : ℝ) * (D : ℝ) := by
-      have : (1 : ℝ) ≤ ((e + 1 : ℕ) : ℝ) := by exact_mod_cast Nat.succ_pos e
-      exact le_mul_of_one_le_left (Nat.cast_nonneg _) this
-    calc
-      3 * (D : ℝ) / (r : ℝ) ≤ 3 * (((e + 1 : ℕ) : ℝ) * (D : ℝ)) / (r : ℝ) := by gcongr
-      _ ≤ δ / 2 := hDe_r
-      _ ≤ δ := by linarith
-  let g' : ℝ := max (g r) 0
-  have hg'0 : 0 ≤ g' := le_max_right _ _
-  have hgr_le : g r ≤ g' := le_max_left _ _
-  have hg' : g' ≤ (δ / 6) * (r : ℝ) :=
-    max_le (hk₀ r hrk) (mul_nonneg hδ6.le hr_pos.le)
-  let B : ℝ := (3 * g' + 3 * (e : ℝ) * (D : ℝ)) / (r : ℝ)
-  have hB0 : 0 ≤ B := by positivity
-  have hBδ : B ≤ δ := by
-    have h1 : 3 * g' / (r : ℝ) ≤ δ / 2 := by
-      rw [div_le_iff₀ hr_pos]
-      linarith
-    have h2 : 3 * (e : ℝ) * (D : ℝ) / (r : ℝ) ≤ δ / 2 := by
-      have he_le : (e : ℝ) * (D : ℝ) ≤ ((e + 1 : ℕ) : ℝ) * (D : ℝ) := by
-        have : (e : ℝ) ≤ ((e + 1 : ℕ) : ℝ) := by exact_mod_cast Nat.le_succ e
-        exact mul_le_mul_of_nonneg_right this (Nat.cast_nonneg _)
-      calc
-        3 * (e : ℝ) * (D : ℝ) / (r : ℝ)
-            = 3 * ((e : ℝ) * (D : ℝ)) / (r : ℝ) := by ring
-        _ ≤ 3 * (((e + 1 : ℕ) : ℝ) * (D : ℝ)) / (r : ℝ) := by gcongr
-        _ ≤ δ / 2 := hDe_r
-    calc
-      B = 3 * g' / (r : ℝ) + 3 * (e : ℝ) * (D : ℝ) / (r : ℝ) := by ring
-      _ ≤ δ / 2 + δ / 2 := add_le_add h1 h2
-      _ = δ := by ring
-  have hred' := hred
-  rcases hred' with ⟨c_len, _, hlen_red⟩
-  let Lr : ℕ := (frame (encUnary r)).length + 1
-  let K_enc : ℝ := (c_len : ℝ) * (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + (c_len : ℝ) + 1
-  have hK_enc0 : 0 ≤ K_enc := by positivity
-  have henc_le := SAT.enc_groupClique_length_le r hr hlen_red
-  let A : ℝ :=
-    (c₂ : ℝ) * |f r| * ((r + 1 : ℝ) ^ g' * (2 : ℝ) ^ (3 * g')) * K_enc ^ e
-  have hA0 : 0 ≤ A := by positivity
-  have ht₂_le : ∀ φ : CNF ℕ,
-      (t₂ (SAT.groupClique r φ) : ℝ) ≤
-        A * (2 : ℝ) ^ (B * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ (e * D) + c₂ := by
-    intro φ
-    have h1 := ht₂ (SAT.groupClique r φ)
-    rw [SAT.groupClique_snd hr] at h1
-    have hV_nat : (SAT.groupClique r φ).graph.vertices.length + 1 ≤
-        (r + 1) * 2 ^ (3 * ((φ.length + r - 1) / r)) := by
-      have hv := SAT.length_groupClique_vertices_le r φ
-      have hpow_pos : 1 ≤ 2 ^ (3 * ((φ.length + r - 1) / r)) := Nat.one_le_two_pow
-      nlinarith
-    have hV_r : ((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1 ≤
-        (r + 1 : ℝ) * (2 : ℝ) ^ ((3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1)) := by
-      have hbs := SAT.blockSize_real_le (m := φ.length) hr
-      have hv1 : ((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1 ≤
-          (r + 1 : ℝ) * ((2 ^ (3 * ((φ.length + r - 1) / r)) : ℕ) : ℝ) := by
-        exact_mod_cast hV_nat
-      have hpow_nat :
-          ((2 ^ (3 * ((φ.length + r - 1) / r)) : ℕ) : ℝ) =
-            (2 : ℝ) ^ ((3 * ((φ.length + r - 1) / r) : ℕ) : ℝ) := by
-        rw [Real.rpow_natCast]
-        push_cast
-        rfl
-      have hv2 : ((2 ^ (3 * ((φ.length + r - 1) / r)) : ℕ) : ℝ) ≤
-          (2 : ℝ) ^ ((3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1)) := by
-        rw [hpow_nat]
-        apply Real.rpow_le_rpow_of_exponent_le (by norm_num)
-        push_cast
-        linarith
-      exact le_trans hv1 (mul_le_mul_of_nonneg_left hv2 (by positivity))
-    have hV_pow :
-        (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r ≤
-          ((r + 1 : ℝ) ^ g' * (2 : ℝ) ^ (3 * g')) *
-            (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ)) := by
-      have hge1 : (1 : ℝ) ≤ ((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1 := by
-        linarith [Nat.cast_nonneg (α := ℝ) (SAT.groupClique r φ).graph.vertices.length]
-      have hstepA :
-          (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r ≤
-            (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g' :=
-        Real.rpow_le_rpow_of_exponent_le hge1 hgr_le
-      have hstepB :
-          (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g' ≤
-            ((r + 1 : ℝ) * (2 : ℝ) ^ ((3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1))) ^ g' :=
-        Real.rpow_le_rpow (by positivity) hV_r hg'0
-      have hmul :
-          ((r + 1 : ℝ) * (2 : ℝ) ^ ((3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1))) ^ g' =
-            (r + 1 : ℝ) ^ g' *
-              ((2 : ℝ) ^ ((3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1))) ^ g' :=
-        Real.mul_rpow (by positivity) (Real.rpow_nonneg (by norm_num) _)
-      have hpow_rpow :
-          ((2 : ℝ) ^ ((3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1))) ^ g' =
-            (2 : ℝ) ^ (3 * g') * (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ)) := by
-        rw [← Real.rpow_mul (by norm_num)]
-        have hexp_eq :
-            (3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1) * g' =
-              3 * g' + (3 * g' / (r : ℝ)) * (φ.length : ℝ) := by ring
-        rw [hexp_eq, Real.rpow_add (by norm_num)]
-      have hstepEq :
-          ((r + 1 : ℝ) * (2 : ℝ) ^ ((3 : ℝ) * ((φ.length : ℝ) / (r : ℝ) + 1))) ^ g' =
-            ((r + 1 : ℝ) ^ g' * (2 : ℝ) ^ (3 * g')) *
-              (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ)) := by
-        rw [hmul, hpow_rpow]; ring
-      exact le_trans hstepA (hstepB.trans_eq hstepEq)
-    have henc_pow :
-        (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ e ≤
-          K_enc ^ e * (2 : ℝ) ^ ((3 * (e : ℝ) * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
-            (((encCNF φ).length : ℝ) + 1) ^ (e * D) := by
-      have he1 := pow_le_pow_left₀ (by positivity) (henc_le φ) e
-      calc
-        (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ e
-            ≤ (K_enc * (2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
-                (((encCNF φ).length : ℝ) + 1) ^ D) ^ e := he1
-        _ = K_enc ^ e *
-              ((2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ))) ^ e *
-              ((((encCNF φ).length : ℝ) + 1) ^ D) ^ e := by rw [mul_pow, mul_pow]
-        _ = K_enc ^ e *
-              (2 : ℝ) ^ ((3 * (e : ℝ) * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
-              (((encCNF φ).length : ℝ) + 1) ^ (e * D) := by
-          rw [← Real.rpow_natCast ((2 : ℝ) ^ _), ← Real.rpow_mul (by norm_num),
-            ← pow_mul]
-          have hexp :
-              (3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ) * (e : ℝ) =
-                (3 * (e : ℝ) * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ) := by ring
-          rw [hexp, Nat.mul_comm D e]
-    have hf_le : f r ≤ |f r| := le_abs_self (f r)
-    have hcomb :
-        (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ)) *
-            (2 : ℝ) ^ ((3 * (e : ℝ) * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) =
-          (2 : ℝ) ^ (B * (φ.length : ℝ)) := by
-      rw [← Real.rpow_add (by norm_num)]
-      congr 1
-      simp only [B]; ring
-    have hV0 : 0 ≤ (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r := by positivity
-    have henc0 :
-        0 ≤ (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ e := by
-      positivity
-    have hfa : f r * (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r ≤
-        |f r| * (((r + 1 : ℝ) ^ g' * (2 : ℝ) ^ (3 * g')) *
-          (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ))) := by
-      calc
-        f r * (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r
-            ≤ |f r| * (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r :=
-          mul_le_mul_of_nonneg_right hf_le hV0
-        _ ≤ |f r| * (((r + 1 : ℝ) ^ g' * (2 : ℝ) ^ (3 * g')) *
-              (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ))) :=
-          mul_le_mul_of_nonneg_left hV_pow (abs_nonneg _)
-    have hterm :
-        f r * (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r *
-            (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ e ≤
-          |f r| *
-              (((r + 1 : ℝ) ^ g' * (2 : ℝ) ^ (3 * g')) *
-                (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ))) *
-              (K_enc ^ e * (2 : ℝ) ^ ((3 * (e : ℝ) * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
-                (((encCNF φ).length : ℝ) + 1) ^ (e * D)) :=
-      mul_le_mul hfa henc_pow henc0 (by positivity)
-    calc
-      (t₂ (SAT.groupClique r φ) : ℝ)
-          ≤ (c₂ : ℝ) * (f r * (((SAT.groupClique r φ).graph.vertices.length : ℝ) + 1) ^ g r *
-              (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ e) + c₂ := h1
-      _ ≤ (c₂ : ℝ) * (|f r| *
-              (((r + 1 : ℝ) ^ g' * (2 : ℝ) ^ (3 * g')) *
-                (2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ))) *
-              (K_enc ^ e * (2 : ℝ) ^ ((3 * (e : ℝ) * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
-                (((encCNF φ).length : ℝ) + 1) ^ (e * D))) + c₂ := by gcongr
-      _ = A * ((2 : ℝ) ^ ((3 * g' / (r : ℝ)) * (φ.length : ℝ)) *
-              (2 : ℝ) ^ ((3 * (e : ℝ) * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ))) *
-            (((encCNF φ).length : ℝ) + 1) ^ (e * D) + c₂ := by
-        simp only [A]; ring
-      _ = A * (2 : ℝ) ^ (B * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ (e * D) + c₂ := by
-        rw [hcomb]
-  exact SAT.decidableInExpTime_threeSAT_of_groupClique_bound
-    hdec hmem C₀ D r hr hred hδ.le hDr hA0 hB0 hBδ ht₂_le
+  refine ⟨r, hr, hDr, ?_⟩
+  have hgr : max (g r) 0 ≤ δ / c * r :=
+    max_le (hk₀ r ((le_max_left _ _).trans (le_max_right _ _))) (by positivity)
+  calc
+    3 * (D : ℝ) / r * max (g r) 0 ≤ c / r * (δ / c * r) := by gcongr
+    _ = δ := by field_simp
+
+/-- Raising a bound `1 ≤ x ≤ K * 2 ^ a * p ^ D` to a real power `y`, with the exponent clamped at
+zero and rounded up on the polynomial factor. -/
+private lemma rpow_le_of_le_mul_two_rpow {x K a p y : ℝ} {D : ℕ} (hx : 1 ≤ x) (hK : 0 ≤ K)
+    (hp : 1 ≤ p) (hxle : x ≤ K * (2 : ℝ) ^ a * p ^ D) :
+    x ^ y ≤ K ^ max y 0 * (2 : ℝ) ^ (a * max y 0) * p ^ (D * ⌈max y 0⌉₊) := by
+  have hy : 0 ≤ max y 0 := le_max_right _ _
+  have hpD : 1 ≤ p ^ D := one_le_pow₀ hp
+  calc
+    x ^ y ≤ x ^ max y 0 := Real.rpow_le_rpow_of_exponent_le hx (le_max_left _ _)
+    _ ≤ (K * (2 : ℝ) ^ a * p ^ D) ^ max y 0 := Real.rpow_le_rpow (by linarith) hxle hy
+    _ = K ^ max y 0 * (2 : ℝ) ^ (a * max y 0) * (p ^ D) ^ max y 0 := by
+      rw [Real.mul_rpow (by positivity) (by positivity), Real.mul_rpow hK (by positivity),
+        ← Real.rpow_mul (by norm_num)]
+    _ ≤ K ^ max y 0 * (2 : ℝ) ^ (a * max y 0) * (p ^ D) ^ (⌈max y 0⌉₊ : ℝ) := by
+      gcongr
+      exact Nat.le_ceil _
+    _ = K ^ max y 0 * (2 : ℝ) ^ (a * max y 0) * p ^ (D * ⌈max y 0⌉₊) := by
+      rw [Real.rpow_natCast, ← pow_mul]
+
+end SAT
+
+/-- A graph instance has no more declared vertices than the length of its encoding. -/
+private lemma length_vertices_le_encCliqueInstance (x : CliqueInstance) :
+    x.graph.vertices.length ≤ (encCliqueInstance x).length := by
+  have h := length_le_encPair_left encGraph encNat (x.graph, x.m)
+  rw [encCliqueInstance_apply]
+  exact x.graph.length_vertices_le_encGraph.trans h
 
 /-- An `f(k) * |enc| ^ o(k)` algorithm for `Clique` places `ThreeSAT` in subexponential time
 parameterized by clause count `List.length`. -/
@@ -1376,138 +1189,79 @@ theorem DecidableInSubexpTime.threeSAT_of_clique_subexpEnc
       (fun x => f x.m * (((encCliqueInstance x).length : ℝ) + 1) ^ g x.m)) :
     DecidableInSubexpTime ThreeSAT encCNF List.length := by
   intro δ hδ
-  rcases DecidableInTimeO.exists_computableInO hClique with ⟨dec, t₂, c₂, hdec, hmem, ht₂⟩
-  rcases SAT.exists_computableInO_groupClique with ⟨C₀, D, hred⟩
-  have hε_pos : 0 < δ / (6 * ((D + 1 : ℕ) : ℝ)) := by positivity
-  rcases hg (δ / (6 * ((D + 1 : ℕ) : ℝ))) hε_pos with ⟨k₀, hk₀⟩
-  let r : ℕ := max 1 (max k₀ (Nat.ceil (6 * ((D + 1 : ℕ) : ℝ) / δ)))
-  have hr : 1 ≤ r := le_max_left _ _
-  have hrk : k₀ ≤ r := le_trans (le_max_left _ _) (le_max_right _ _)
-  have hrc : 6 * ((D + 1 : ℕ) : ℝ) / δ ≤ (r : ℝ) :=
-    le_trans (Nat.le_ceil _) (Nat.cast_le.mpr (le_trans (le_max_right _ _) (le_max_right _ _)))
-  have hr_pos : (0 : ℝ) < (r : ℝ) := by exact_mod_cast hr
-  have hDr : (3 * (D : ℝ)) / (r : ℝ) ≤ δ := by
-    have h1 : 6 * ((D + 1 : ℕ) : ℝ) ≤ δ * (r : ℝ) :=
-      ((div_le_iff₀ hδ).mp hrc).trans_eq (mul_comm _ _)
-    have hD_le : (D : ℝ) ≤ ((D + 1 : ℕ) : ℝ) := by exact_mod_cast Nat.le_succ D
-    rw [div_le_iff₀ hr_pos]
+  obtain ⟨dec, t₂, c₂, hdec, hmem, ht₂⟩ := DecidableInTimeO.exists_computableInO hClique
+  obtain ⟨C₀, D, hred⟩ := SAT.exists_computableInO_groupClique
+  obtain ⟨r, hr, hDr, hB⟩ := SAT.exists_blockCount hg D hδ
+  obtain ⟨K, hK, henc⟩ := SAT.exists_enc_groupClique_length_le hr hred
+  refine SAT.decidableInExpTime_threeSAT_of_groupClique_bound hdec hmem C₀ D r hr hred hδ.le hDr
+    (A := c₂ * |f r| * K ^ max (g r) 0) (d := D * ⌈max (g r) 0⌉₊) (c₂ := c₂) (by positivity)
+    hB (fun φ => ?_)
+  have h1 := ht₂ (SAT.groupClique r φ)
+  rw [SAT.groupClique_snd hr] at h1
+  have hone : ∀ n : ℕ, (1 : ℝ) ≤ n + 1 := fun _ =>
+    (le_add_iff_nonneg_left 1).mpr (Nat.cast_nonneg _)
+  have hpow :=
+    SAT.rpow_le_of_le_mul_two_rpow (y := g r) (hone _) hK (hone _) (henc φ)
+  calc
+    (t₂ (SAT.groupClique r φ) : ℝ)
+        ≤ c₂ * (f r * (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g r) + c₂ :=
+      h1
+    _ ≤ c₂ * (|f r| * (K ^ max (g r) 0 *
+          (2 : ℝ) ^ (3 * (D : ℝ) / r * (φ.length : ℝ) * max (g r) 0) *
+          (((encCNF φ).length : ℝ) + 1) ^ (D * ⌈max (g r) 0⌉₊))) + c₂ := by
+      gcongr
+      exact le_abs_self _
+    _ = c₂ * |f r| * K ^ max (g r) 0 *
+          (2 : ℝ) ^ (3 * (D : ℝ) / r * max (g r) 0 * (φ.length : ℝ)) *
+          (((encCNF φ).length : ℝ) + 1) ^ (D * ⌈max (g r) 0⌉₊) + c₂ := by
+      rw [mul_right_comm (3 * (D : ℝ) / r) (φ.length : ℝ)]
+      ring
+
+/-- An `f(k) * |V| ^ o(k) * poly(|enc|)` algorithm for `Clique` places `ThreeSAT` in
+subexponential time parameterized by clause count `List.length`: since `|V| ≤ |enc|`, it is an
+`|f(k)| * |enc| ^ (max (g k) 0 + e)` algorithm, and `max g 0 + e` is still `o(k)`. -/
+theorem DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
+    (f g : ℕ → ℝ) (e : ℕ)
+    (hg : ∀ ε : ℝ, 0 < ε → ∃ k₀, ∀ k ≥ k₀, g k ≤ ε * k)
+    (hClique : DecidableInTimeO Clique encCliqueInstance
+      (fun x =>
+        let graph := x.graph
+        let verts := graph.vertices
+        f x.m * ((verts.length : ℝ) + 1) ^ g x.m *
+          (((encCliqueInstance x).length : ℝ) + 1) ^ e)) :
+    DecidableInSubexpTime ThreeSAT encCNF List.length := by
+  refine threeSAT_of_clique_subexpEnc (fun k => |f k|) (fun k => max (g k) 0 + e)
+    (fun ε hε => ?_) (hClique.mono 1 (fun x => ?_) (fun x => by positivity))
+  · obtain ⟨k₀, hk₀⟩ := hg (ε / 2) (by positivity)
+    refine ⟨max k₀ ⌈2 * e / ε⌉₊, fun k hk => ?_⟩
+    have hk' : (⌈2 * e / ε⌉₊ : ℝ) ≤ k := Nat.cast_le.mpr ((le_max_right _ _).trans hk)
+    have he : (e : ℝ) ≤ ε / 2 * k := by
+      have := (Nat.le_ceil _).trans hk'
+      rw [div_le_iff₀ hε] at this
+      linarith
+    have hgk : max (g k) 0 ≤ ε / 2 * k :=
+      max_le (hk₀ k ((le_max_left _ _).trans hk)) (by positivity)
     linarith
-  let g' : ℝ := max (g r) 0
-  have hg'0 : 0 ≤ g' := le_max_right _ _
-  have hgr_le : g r ≤ g' := le_max_left _ _
-  have hg' : g' ≤ (δ / (6 * ((D + 1 : ℕ) : ℝ))) * (r : ℝ) :=
-    max_le (hk₀ r hrk) (mul_nonneg hε_pos.le hr_pos.le)
-  let N_g : ℕ := Nat.ceil g'
-  have hNg : g' ≤ (N_g : ℝ) := Nat.le_ceil g'
-  let B : ℝ := (3 * (D : ℝ) * g') / (r : ℝ)
-  have hB0 : 0 ≤ B := by positivity
-  have hBδ : B ≤ δ := by
-    have hD_le : (D : ℝ) ≤ ((D + 1 : ℕ) : ℝ) := by exact_mod_cast Nat.le_succ D
-    have hmul : 3 * (D : ℝ) * g' ≤ 3 * ((D + 1 : ℕ) : ℝ) * g' := by gcongr
-    have hmul2 : 3 * ((D + 1 : ℕ) : ℝ) * g' ≤ (δ / 2) * (r : ℝ) := by
-      have heq : 3 * ((D + 1 : ℕ) : ℝ) * ((δ / (6 * ((D + 1 : ℕ) : ℝ))) * (r : ℝ)) =
-          (δ / 2) * (r : ℝ) := by
-        have hpos : ((D + 1 : ℕ) : ℝ) ≠ 0 := by positivity
-        field_simp
-        ring
-      calc
-        3 * ((D + 1 : ℕ) : ℝ) * g'
-            ≤ 3 * ((D + 1 : ℕ) : ℝ) * ((δ / (6 * ((D + 1 : ℕ) : ℝ))) * (r : ℝ)) := by gcongr
-        _ = (δ / 2) * (r : ℝ) := heq
-    have hhalf : (δ / 2) * (r : ℝ) ≤ δ * (r : ℝ) :=
-      mul_le_mul_of_nonneg_right (by linarith) hr_pos.le
-    exact (div_le_iff₀ hr_pos).mpr (le_trans hmul (le_trans hmul2 hhalf))
-  have hred' := hred
-  rcases hred' with ⟨c_len, _, hlen_red⟩
-  let Lr : ℕ := (frame (encUnary r)).length + 1
-  let K_enc : ℝ := (c_len : ℝ) * (C₀ : ℝ) * (2 : ℝ) ^ (3 * D) * (Lr : ℝ) ^ D + (c_len : ℝ) + 1
-  have hK_enc0 : 0 ≤ K_enc := by positivity
-  have henc_le := SAT.enc_groupClique_length_le r hr hlen_red
-  let A : ℝ := (c₂ : ℝ) * |f r| * K_enc ^ g'
-  have hA0 : 0 ≤ A := by positivity
-  have ht₂_le : ∀ φ : CNF ℕ,
-      (t₂ (SAT.groupClique r φ) : ℝ) ≤
-        A * (2 : ℝ) ^ (B * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ (D * N_g) + c₂ := by
-    intro φ
-    have h1 := ht₂ (SAT.groupClique r φ)
-    rw [SAT.groupClique_snd hr] at h1
-    have henc_pow :
-        (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g r ≤
-          K_enc ^ g' * (2 : ℝ) ^ (B * (φ.length : ℝ)) *
-            (((encCNF φ).length : ℝ) + 1) ^ (D * N_g) := by
-      have hge1 :
-          (1 : ℝ) ≤ ((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1 := by
-        linarith [Nat.cast_nonneg (α := ℝ)
-          (encCliqueInstance (SAT.groupClique r φ)).length]
-      have hsA :
-          (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g r ≤
-            (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g' :=
-        Real.rpow_le_rpow_of_exponent_le hge1 hgr_le
-      have hsB :
-          (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g' ≤
-            (K_enc * (2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
-              (((encCNF φ).length : ℝ) + 1) ^ D) ^ g' :=
-        Real.rpow_le_rpow (by positivity) (henc_le φ) hg'0
-      have hmul1 :
-          (K_enc * (2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ)) *
-              (((encCNF φ).length : ℝ) + 1) ^ D) ^ g' =
-            (K_enc * (2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ))) ^ g' *
-              ((((encCNF φ).length : ℝ) + 1) ^ D) ^ g' :=
-        Real.mul_rpow (by positivity) (by positivity)
-      have hmul2 :
-          (K_enc * (2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ))) ^ g' =
-            K_enc ^ g' * ((2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ))) ^ g' :=
-        Real.mul_rpow hK_enc0 (Real.rpow_nonneg (by norm_num) _)
-      have hpow2g :
-          ((2 : ℝ) ^ ((3 * (D : ℝ) / (r : ℝ)) * (φ.length : ℝ))) ^ g' =
-            (2 : ℝ) ^ (B * (φ.length : ℝ)) := by
-        rw [← Real.rpow_mul (by norm_num)]
-        congr 1
-        simp only [B]; ring
-      have hpolyg :
-          ((((encCNF φ).length : ℝ) + 1) ^ D) ^ g' ≤
-            (((encCNF φ).length : ℝ) + 1) ^ (D * N_g) := by
-        have hge_poly : (1 : ℝ) ≤ (((encCNF φ).length : ℝ) + 1) ^ D :=
-          one_le_pow₀ (by linarith [Nat.cast_nonneg (α := ℝ) (encCNF φ).length])
-        calc
-          ((((encCNF φ).length : ℝ) + 1) ^ D) ^ g'
-              ≤ ((((encCNF φ).length : ℝ) + 1) ^ D) ^ (N_g : ℝ) :=
-            Real.rpow_le_rpow_of_exponent_le hge_poly hNg
-          _ = (((encCNF φ).length : ℝ) + 1) ^ (D * N_g) := by
-            rw [Real.rpow_natCast, ← pow_mul]
-      have hpoly_part :
-          0 ≤ K_enc ^ g' * (2 : ℝ) ^ (B * (φ.length : ℝ)) := by positivity
-      have hsAB :
-          (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g r ≤
-            (K_enc ^ g' * (2 : ℝ) ^ (B * (φ.length : ℝ))) *
-              ((((encCNF φ).length : ℝ) + 1) ^ D) ^ g' :=
-        le_trans hsA (hsB.trans_eq (by rw [hmul1, hmul2, hpow2g]))
-      calc
-        (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g r
-            ≤ (K_enc ^ g' * (2 : ℝ) ^ (B * (φ.length : ℝ))) *
-                ((((encCNF φ).length : ℝ) + 1) ^ D) ^ g' := hsAB
-        _ ≤ (K_enc ^ g' * (2 : ℝ) ^ (B * (φ.length : ℝ))) *
-              (((encCNF φ).length : ℝ) + 1) ^ (D * N_g) :=
-          mul_le_mul_of_nonneg_left hpolyg hpoly_part
-        _ = K_enc ^ g' * (2 : ℝ) ^ (B * (φ.length : ℝ)) *
-              (((encCNF φ).length : ℝ) + 1) ^ (D * N_g) := by ring
-    have hf_le : f r ≤ |f r| := le_abs_self (f r)
-    have henc0 :
-        0 ≤ (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g r := by
-      positivity
+  · dsimp only
+    have hL : (1 : ℝ) ≤ ((encCliqueInstance x).length : ℝ) + 1 :=
+      (le_add_iff_nonneg_left 1).mpr (Nat.cast_nonneg _)
+    have hV : ((x.graph.vertices.length : ℝ) + 1) ^ g x.m ≤
+        (((encCliqueInstance x).length : ℝ) + 1) ^ max (g x.m) 0 :=
+      (Real.rpow_le_rpow_of_exponent_le
+        ((le_add_iff_nonneg_left 1).mpr (Nat.cast_nonneg _)) (le_max_left _ _)).trans
+        (Real.rpow_le_rpow (by positivity)
+          (by exact_mod_cast Nat.add_le_add_right (length_vertices_le_encCliqueInstance x) 1)
+          (le_max_right _ _))
+    rw [Nat.cast_one, one_mul, Real.rpow_add (by linarith), Real.rpow_natCast]
     calc
-      (t₂ (SAT.groupClique r φ) : ℝ)
-          ≤ (c₂ : ℝ) * (f r *
-              (((encCliqueInstance (SAT.groupClique r φ)).length : ℝ) + 1) ^ g r) + c₂ :=
-        h1
-      _ ≤ (c₂ : ℝ) * (|f r| *
-              (K_enc ^ g' * (2 : ℝ) ^ (B * (φ.length : ℝ)) *
-                (((encCNF φ).length : ℝ) + 1) ^ (D * N_g))) + c₂ := by
+      f x.m * ((x.graph.vertices.length : ℝ) + 1) ^ g x.m *
+          (((encCliqueInstance x).length : ℝ) + 1) ^ e
+          ≤ |f x.m| * ((((encCliqueInstance x).length : ℝ) + 1) ^ max (g x.m) 0 *
+            (((encCliqueInstance x).length : ℝ) + 1) ^ e) := by
+        rw [← mul_assoc]
         gcongr
-      _ = A * (2 : ℝ) ^ (B * (φ.length : ℝ)) * (((encCNF φ).length : ℝ) + 1) ^ (D * N_g) + c₂ := by
-        simp only [A]; ring
-  exact SAT.decidableInExpTime_threeSAT_of_groupClique_bound
-    hdec hmem C₀ D r hr hred hδ.le hDr hA0 hB0 hBδ ht₂_le
+        exact le_abs_self _
+      _ ≤ _ := le_add_of_nonneg_right zero_le_one
 
 /-- Under `ETH`, `Clique` cannot be decided in `f(k) * |V| ^ o(k) * poly(|enc|)` time. -/
 theorem ETH.not_clique_subexpVertex (hETH : ETH)
