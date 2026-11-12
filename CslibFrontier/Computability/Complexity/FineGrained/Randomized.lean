@@ -599,11 +599,8 @@ theorem SolvesWithErrorInExpTime.of_promiseReduction {X : PromiseProblem α} {Y 
     have hn0 : ((encB (r a)).length : ℝ) ≤ l * ((((enc a).length : ℝ) + 1) ^ d + 1) := by
       exact_mod_cast hl a
     nlinarith [(Nat.cast_nonneg l : (0 : ℝ) ≤ l)]
-  have hexp : (2 : ℝ) ^ (δ * μB (r a)) ≤ 2 ^ (δ * c) * X := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have : (μB (r a) : ℝ) ≤ c * μA a + c := by exact_mod_cast hμ a
-    nlinarith
+  have hexp : (2 : ℝ) ^ (δ * μB (r a)) ≤ 2 ^ (δ * c) * X :=
+    two_rpow_le_two_rpow_mul_of_le_mul_add hδ (hμ a)
   have hpow : (((encB (r a)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
     rw [← mul_pow]
     exact pow_le_pow_left₀ (by positivity) (by nlinarith) e

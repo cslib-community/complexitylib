@@ -25,7 +25,8 @@ without mentioning a machine or error model.
 
 ## Main results
 
-* `Cslib.Complexity.two_rpow_le_natCeil_mul_of_le_mul_add`,
+* `Cslib.Complexity.two_rpow_le_two_rpow_mul_of_le_mul_add`,
+  `Cslib.Complexity.two_rpow_le_natCeil_mul_of_le_mul_add`,
   `Cslib.Complexity.two_rpow_mul_pow_le_natCeil_mul_add`: rescale an exponential rate, alone or
   in an envelope, under an additive linear parameter bound.
 * `Cslib.Complexity.two_rpow_mul_pow_le_natCeil_mul_add_of_le`: replace the exponential factor of
