@@ -50,7 +50,6 @@ The output gate, built with `depthTwoInputs`, also reads the table bits for the 
   at balance `k m = N`, Part 1 with at most `64 n √(n log (1 / δ))` gates, and Part 2 with at most
   `2600 ε² n √(n log (1 / ε))` gates and `5300 ε² n² √(n log (1 / ε))` active wires, for
   `1 / √N ≤ ε ≤ 1 / 8`.
-* `wireCount_depthTwoInputs_le`: the active wire count of any `depthTwoInputs` circuit.
 
 ## Differences from the preprint
 
@@ -70,45 +69,6 @@ The output gate, built with `depthTwoInputs`, also reads the table bits for the 
 namespace Cslib.Circuits.Boolean.WeightedThreshold
 
 open BitString Finset Real
-
-/-! ### Wire count of `depthTwoInputs` -/
-
-/-- The active wire count of `depthTwoInputs` with `G` bottom gates of arity at most `A` is at most
-`(G + 1) A + G + 1 + n`: each gate has at most `A` active wires, and the output gate at most
-`G + 1 + n` more. -/
-theorem wireCount_depthTwoInputs_le {n G : ℕ} (bottom : Fin G → Op)
-    (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ) (v : Fin n → ℝ) (θ : ℝ) {A : ℕ}
-    (hA : ∀ j, (bottom j).arity ≤ A) :
-    (depthTwoInputs bottom args u v θ).wireCount ≤ (G + 1) * A + (G + 1 + n) := by
-  classical
-  set c := depthTwoInputs bottom args u v θ
-  have hsize : c.size = G + 1 := size_depthTwoInputs bottom args u v θ
-  have hk (k : Fin c.size) : #(lineSupport (c.program.lines k)) ≤
-      A + if c.outputs 0 = .gate k then G + 1 + n else 0 := by
-    rcases lines_depthTwoInputs_bottom_or_output bottom args u v θ k with ⟨j, hj⟩ | hout
-    · refine (card_lineSupport_le_arity _).trans ?_
-      rw [hj]
-      exact (hA j).trans (Nat.le_add_right _ _)
-    · have hout' : c.outputs 0 = .gate k := hout
-      simp only [hout', ↓reduceIte]
-      refine (card_le_univ _).trans ?_
-      rw [Fintype.card_congr (Wire.equiv n c.size), Fintype.card_sum, Fintype.card_fin,
-        Fintype.card_fin, hsize]
-      omega
-  have hone : #({k : Fin c.size | c.outputs 0 = .gate k} : Finset _) ≤ 1 := by
-    refine card_le_one.mpr fun k hk k' hk' => ?_
-    simp only [mem_filter, mem_univ, true_and] at hk hk'
-    exact Wire.gate.inj (hk.symm.trans hk')
-  calc c.wireCount = ∑ k : Fin c.size, #(lineSupport (c.program.lines k)) := rfl
-    _ ≤ ∑ k : Fin c.size, (A + if c.outputs 0 = .gate k then G + 1 + n else 0) :=
-        sum_le_sum fun k _ => hk k
-    _ = c.size * A + #({k : Fin c.size | c.outputs 0 = .gate k} : Finset _) * (G + 1 + n) := by
-        rw [sum_add_distrib, sum_const, card_univ, Fintype.card_fin, smul_eq_mul, ← sum_filter,
-          sum_const, smul_eq_mul]
-    _ ≤ (G + 1) * A + (G + 1 + n) := by
-        have h1 : c.size * A = (G + 1) * A := by rw [hsize]
-        have h2 := Nat.mul_le_mul_right (G + 1 + n) hone
-        omega
 
 /-! ### The circuit -/
 
