@@ -1134,6 +1134,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.PolyTim
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.Query
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.Query.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave
+public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.CountingQuery
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.IteratedQuery
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Local
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.MultiplicationQuery
@@ -1572,6 +1573,7 @@ public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.RowsFir
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Schedule
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ScheduleCount
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion
+public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.SeededRankQuery
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Truncated
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgebraBridge
@@ -2963,11 +2965,15 @@ public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Nativ
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Simulation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.CarrySaveStream
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicPhase
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Game
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Marking
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Space
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.StateSimulation
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.TruthTable
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Views
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.WordGame
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.WordGameTime
@@ -3772,7 +3778,10 @@ public import CslibFrontier.Computability.PolyTime.LinearAlgebra.ReplacementDesi
 public import CslibFrontier.Computability.PolyTime.PacketPacking
 public import CslibFrontier.Computability.PolyTime.ParityFactorEval
 public import CslibFrontier.Computability.PolyTime.PessimisticEstimator
+public import CslibFrontier.Computability.PolyTime.SeededPredecessor
 public import CslibFrontier.Computability.PolyTime.SparseMonomialJet
+public import CslibFrontier.Computability.PolyTime.TrinomialArithmetic
+public import CslibFrontier.Computability.PolyTime.TrinomialParameters
 public import CslibFrontier.Computability.PolyTime.ZMod.ModulusSwitch
 public import CslibFrontier.Computability.PostCorrespondence.Basic
 public import CslibFrontier.Computability.PostCorrespondence.Modified
@@ -5109,6 +5118,7 @@ public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Threshold
 public import CslibFrontier.Foundations.Combinatorics.ApproximateMajority
 public import CslibFrontier.Foundations.Combinatorics.BalancedSchedules
 public import CslibFrontier.Foundations.Combinatorics.BinomialTail
+public import CslibFrontier.Foundations.Combinatorics.BoundedPacketPacking
 public import CslibFrontier.Foundations.Combinatorics.Bregman
 public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial

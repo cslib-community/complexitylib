@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicPhase
 
 /-!
 # Word games on an alternating machine
@@ -56,6 +56,8 @@ exponential time to `APSPACE`.
 
 * `Turing.MultiTapeATM.WordGame.wins_false_cons_cons_iff`,
   `Turing.MultiTapeATM.WordGame.wins_true_cons_cons_iff`: won positions of each player.
+* `Turing.MultiTapeATM.WordGame.accepts_storage_iff` and `.haltsWithin_storage_of_potential`:
+  acceptance and native branch time without copying positions or resetting other work cursors.
 * `Turing.MultiTapeATM.runsInTime_wordGame_of_potential`: a decreasing potential pays for
   position- and move-dependent round times.
 * `Turing.MultiTapeATM.wordGame_spec`: the machine stays within the space of the preparation and of
@@ -368,19 +370,6 @@ private theorem next_move (b u : Bool) {w : List Bool} (hw : 1 < w.length)
 
 /-! ### Phases -/
 
-private theorem iterate_next_liftCfg {S : Type} {M : MultiTapeTM k Bool S}
-    (f : S → State S₁ S₂)
-    (hstep : ∀ b (c : Cfg k Bool S input), c.state ≠ none →
-      (wordGame P R N).next b (liftCfg f c) = liftCfg f (M.step c))
-    (c : Cfg k Bool S input) : ∀ j, (∀ i < j, (M.runFrom c i).state ≠ none) →
-      ((wordGame P R N).next false)^[j] (liftCfg f c) = liftCfg f (M.runFrom c j)
-  | 0, _ => rfl
-  | j + 1, h => by
-    rw [Function.iterate_succ_apply',
-      iterate_next_liftCfg f hstep c j (fun i hi => h i (by omega)),
-      hstep false _ (h j (by omega))]
-    simp only [MultiTapeTM.runFrom, Function.iterate_succ_apply']
-
 /-- A deterministic phase finishes on arbitrary work storage; its transitions are independent
 of the alternating choice until the handoff to dispatch. No tape normalization is required. -/
 theorem exists_phase {S : Type} {M : MultiTapeTM k Bool S} (f : S → State S₁ S₂)
@@ -392,16 +381,8 @@ theorem exists_phase {S : Type} {M : MultiTapeTM k Bool S} (f : S → State S₁
         ((wordGame P R N).next false)^[j + 1] (liftCfg f c)) ∧
       (∀ j ≤ τ, (((wordGame P R N).next false)^[j] (liftCfg f c)).state ≠ none) ∧
       ((wordGame P R N).next false)^[τ] (liftCfg f c) = liftCfg f (M.runFrom c t) := by
-  classical
-  have hex : ∃ τ, (M.runFrom c τ).state = none := ⟨t, ht⟩
-  refine ⟨Nat.find hex, Nat.find_min' hex ht, fun j hj b => ?_, fun j hj => ?_, ?_⟩
-  · have hrun : ∀ i < j, (M.runFrom c i).state ≠ none := fun i hi => Nat.find_min hex (by omega)
-    rw [Function.iterate_succ_apply', iterate_next_liftCfg f hstep c j hrun,
-      hstep b _ (Nat.find_min hex hj), hstep false _ (Nat.find_min hex hj)]
-  · rw [iterate_next_liftCfg f hstep c j fun i hi => Nat.find_min hex (by omega)]
-    simp [liftCfg]
-  · rw [iterate_next_liftCfg f hstep c _ fun i hi => Nat.find_min hex hi,
-      MultiTapeTM.runFrom_eq_of_halt M c (Nat.find_min' hex ht) (Nat.find_spec hex)]
+  exact exists_deterministic_phase (wordGame P R N) (liftCfg f) hstep
+    (fun _ => by simp [liftCfg]) ht
 
 /-! ### Acceptance and halting -/
 
@@ -719,44 +700,6 @@ private theorem haltsWithin_of_potential (potential : List Bool → ℕ)
   · simpa only [List.set_cons_succ, List.set_cons_zero] using ht
   · simpa only [List.set_cons_succ, List.set_cons_zero] using Reach.move b hw
 
-private theorem haltsWithin_of_potential (potential : List Bool → ℕ)
-    (hR : ∀ u x r, Reach U w₀ (u :: x :: r) → ∀ b, ∃ t,
-      R.runFrom (wordsCfg input (some R.q₀)
-          (Function.update (fun _ => []) N (u :: b :: r)) []) t =
-        wordsCfg input none (Function.update (fun _ => []) N (U (u :: b :: r))) [] ∧
-      t + 3 + potential (U (u :: b :: r)) ≤ potential (u :: x :: r)) :
-    ∀ w, Reach U w₀ w →
-      (wordGame P R N).HaltsWithin (potential w + 2) (dcfg (input := input) N w) := by
-  have h (n : ℕ) : ∀ w, potential w = n → Reach U w₀ w →
-      (wordGame P R N).HaltsWithin (n + 2) (dcfg (input := input) N w) := by
-    induction n using Nat.strong_induction_on with
-    | ind n ih =>
-      intro w hn hreach
-      rcases w with _ | ⟨u, _ | ⟨x, r⟩⟩
-      · exact haltsWithin_succ.mpr fun b => by
-          rw [next_disp0_nil P R N]
-          exact haltsWithin_of_halted rfl
-      · exact haltsWithin_succ.mpr fun b => by
-          rw [next_disp0_cons P R N b u []]
-          exact haltsWithin_succ.mpr fun b' => by
-            rw [next_disp1_halt P R N b' u rfl]
-            exact haltsWithin_of_halted rfl
-      · have hnpos : 1 ≤ n := by
-          obtain ⟨t, _, ht⟩ := hR u x r hreach false
-          omega
-        obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
-        refine haltsWithin_succ.mpr fun b₀ => ?_
-        rw [next_disp0_cons P R N b₀ u (x :: r)]
-        refine haltsWithin_succ.mpr fun b₁ => ?_
-        rw [next_disp1_move P R N b₁ u x rfl]
-        refine haltsWithin_succ.mpr fun b => ?_
-        obtain ⟨t, hrunR, ht⟩ := hR u x r hreach b
-        obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_round (P := P) hrunR
-        rw [next_move P R N b u (by simp), List.set_cons_succ, List.set_cons_zero,
-          haltsWithin_iff_of_phase hnext hrun hd]
-        exact ⟨by omega, (ih _ (by omega) _ rfl (.move b hreach)).mono (by omega)⟩
-  exact fun w hw => h _ w rfl hw
-
 private theorem haltsWithin_of_ends (hR : RoundSpec R N input U w₀ tR sR) (n : ℕ) :
     ∀ w, Reach U w₀ w → Ends U n w →
       (wordGame P R N).HaltsWithin (n * (tR + 3) + 2) (dcfg (input := input) N w) := by
@@ -1017,7 +960,6 @@ theorem wordGame_spec {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
         (wordGame P R N).toPTM.toNTM.RunsInTime input (tP + (n * (tR + 3) + 2)) := by
   obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_prep (R := R) hP.1
   refine ⟨fun p => ?_, accepts_wordGame_iff_of_computes hP.1 hR.computes, fun n hn => ?_⟩
-  refine ⟨fun p => ?_, ⟨fun ⟨n, hn⟩ => ?_, fun hw => ?_⟩, fun n hn => ?_⟩
   · refine MultiTapeNTM.RunPath.InWindow.space_le fun c hc i => ?_
     exact (good_of_mem hP hR p c hc).workTapePos_mem hP hR
       ((le_max_left _ _).trans (le_max_left _ _)) ((le_max_right _ _).trans (le_max_left _ _))
