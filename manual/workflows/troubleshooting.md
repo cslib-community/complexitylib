@@ -48,11 +48,13 @@ The output-based audits (`audit_queries.py`, `check_changed_files.py`, `check_ti
 and `check_tidy_usage.py`) need a complete build of the library and tests. Their shared
 [`lean_outputs.py`](../../scripts/lean_outputs.py) preflight checks the physical output inventory
 before invoking Lake: current source modules, including the root aggregate and glob-built tests,
-must have their recorded module artifacts. Ordinary single-part modules and split module-system
+must have their recorded module artifacts. The test-inclusive inventory also includes its
+root-package `CslibFrontierResults` dependency, its aggregate and current result source modules.
+Ordinary single-part modules and split module-system
 outputs are distinguished by their traces. A cache entry or local `.ltar` archive does not count
 as an unpacked artifact. A cold or partial tree is refused as missing or stale without asking
 Lake to restore its missing outputs. `parallel_defs.py` uses the same guard with its existing
-library-only scope; it does not require test outputs. Run `scripts/check.sh` explicitly when the checkout and
+library-only scope; it does not require test or results outputs. Run `scripts/check.sh` explicitly when the checkout and
 resources are ready for full validation, then retry the audit. `--no-build-check` disables
 freshness verification; it does not repair missing artifacts or certify a partial audit.
 

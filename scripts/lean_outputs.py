@@ -24,6 +24,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from proof_lengths import masks  # noqa: E402
 
 ROOTS = ("CslibFrontier", "CslibFrontierTests")
+# The test target also imports this root-package library. It is an inventory prerequisite,
+# not an additional declaration-analysis root. Keep library-only probes independent of it.
+ROOT_OUTPUT_DEPENDENCIES = {"CslibFrontierTests": ("CslibFrontier", "CslibFrontierResults")}
 # Libraries that Lake builds from a glob (`lakefile.toml`) have no root aggregator file: their
 # modules are exactly the source files under their directory.
 GLOB_ROOTS = ("CslibFrontierTests",)
@@ -122,8 +125,11 @@ def output_inventory_complete(build_dir: Path, roots: tuple[str, ...] | None = N
     two source-root layouts supported by this reader.
     """
     roots = ROOTS if roots is None else roots
-    modules = set(root_modules(glob_modules, roots))
-    modules.update(m for root in roots for m in glob_modules(root))
+    dependencies = tuple(dependency for root in roots
+                         for dependency in ROOT_OUTPUT_DEPENDENCIES.get(root, ()))
+    inventory_roots = tuple(dict.fromkeys((*roots, *dependencies)))
+    modules = set(root_modules(glob_modules, inventory_roots))
+    modules.update(m for root in inventory_roots for m in glob_modules(root))
     return all(module_outputs_present(build_dir, module) for module in sorted(modules))
 
 
