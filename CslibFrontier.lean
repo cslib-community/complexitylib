@@ -2319,6 +2319,16 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.Arborescence
 public import CslibFrontier.Computability.Complexity.Problems.Graph.DartConnectivity
 public import CslibFrontier.Computability.Complexity.Problems.Graph.DirectedCycle
 public import CslibFrontier.Computability.Complexity.Problems.Graph.EulerianCircuits
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Algorithm
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Comparison
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Correctness
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Endpoint
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Incidence
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Instance
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Labeling
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.PolyTime
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Positions
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Subgraph
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalLayout
@@ -6077,6 +6087,7 @@ public import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths.Preparation
 public import CslibFrontier.Logics.Propositional.CSP.Edge.DAGSurgery
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Defects
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Ports
+public import CslibFrontier.Logics.Propositional.CSP.Edge.Selected
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Size
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Boundary
