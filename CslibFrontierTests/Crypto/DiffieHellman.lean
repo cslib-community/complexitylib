@@ -32,33 +32,35 @@ open scoped NNReal
 def d23 : schnorrGroups.Desc :=
   ⟨(23, 11, 2), ⟨by norm_num, by norm_num, by norm_num, by norm_num, by norm_num⟩⟩
 
-/-- Named challenges retain the original byte order and unary security parameter, even for
-arbitrary words that do not encode group elements. -/
-example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) (u v : List Bool) :
-    F.encCDHInput (n, { groupParameters := d, leftPublic := u, rightPublic := v }) =
-      encPair encUnary (encPair F.encDesc (encPair encBits encBits)) (n, d, u, v) := rfl
-
-example (F : PrimeOrderGroupFamily) (n : ℕ) (d : F.Desc) (u v w : List Bool) :
-    F.encDDHInput
-        (n, { groupParameters := d, leftPublic := u, rightPublic := v, candidateShared := w }) =
+/-- The DDH input layout: the unary security parameter, the group parameters and the three encoded
+elements, in field order. -/
+example (F : PrimeOrderGroupFamily) (x : F.DDHInput) :
+    F.encDDHInput x =
       encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
-        (n, d, u, v, w) := rfl
+        (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
+          F.encode x.groupParameters x.rightPublic,
+          F.encode x.groupParameters x.candidateShared) :=
+  rfl
 
-/-- The elementary CDH-to-DDH reduction tests the named candidate shared word. On `d23`, the
-public elements `8 = 2^3` and `9 = 2^5` share `16 = 2^(3*5)`. -/
+/-- The elementary CDH-to-DDH reduction tests the candidate shared element. On `d23`, the public
+elements `3 • g` and `5 • g` share `4 • g` (`3 * 5 = 4` in `ZMod 11`). -/
 example :
-    schnorrGroups.cdhToDDHDistinguisher (fun _ _ => pure (Nat.bits 16)) 7
-      { groupParameters := d23
-        leftPublic := Nat.bits 8
-        rightPublic := Nat.bits 9
-        candidateShared := Nat.bits 16 } = pure true := rfl
+    let g := schnorrGroups.generator d23
+    schnorrGroups.cdhToDDHDistinguisher
+      (fun _ d _ _ => pure ((4 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d)) 7 d23
+      ((3 : ZMod (schnorrGroups.order d23)) • g) ((5 : ZMod (schnorrGroups.order d23)) • g)
+      ((4 : ZMod (schnorrGroups.order d23)) • g) = pure true := by
+  simp [cdhToDDHDistinguisher, cdhToDDH]
 
 example :
-    schnorrGroups.cdhToDDHDistinguisher (fun _ _ => pure (Nat.bits 16)) 7
-      { groupParameters := d23
-        leftPublic := Nat.bits 8
-        rightPublic := Nat.bits 9
-        candidateShared := Nat.bits 7 } = pure false := rfl
+    let g := schnorrGroups.generator d23
+    schnorrGroups.cdhToDDHDistinguisher
+      (fun _ d _ _ => pure ((4 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d)) 7 d23
+      ((3 : ZMod (schnorrGroups.order d23)) • g) ((5 : ZMod (schnorrGroups.order d23)) • g)
+      ((7 : ZMod (schnorrGroups.order d23)) • g) = pure false := by
+  have h : decide ((4 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 =
+      (7 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23) = false := by decide
+  simp only [cdhToDDHDistinguisher, cdhToDDH, pure_bind, h]
 
 /-- `false` encodes as the identity residue `1` in `(ZMod 23)ˣ`, and `true` as the generator `2`. -/
 example : schnorrGroups.encodeBit d23 false = Nat.bits 1 := by decide
@@ -90,12 +92,15 @@ example :
     let ct := schnorrGroups.encodeHashedElGamalEncrypt Prod.snd (d23, pk, m, 5)
     schnorrGroups.decodeHashedElGamal Prod.snd (d23, 3, ct.1, ct.2) = m := by decide
 
-/-- Word-level DDH re-randomization on `d23` with `(r, s₁, s₂) = (2, 1, 4)` evaluates
-`encodeDDHRerandomize` on encoded group elements. -/
+/-- DDH re-randomization on `d23` of the triple `(3 • g, 5 • g, 4 • g) = (8, 9, 16)` with
+`(r, s₁, s₂) = (2, 1, 4)` gives `(13, 6, 3)`. -/
 example :
-    schnorrGroups.encodeDDHRerandomize
-      (d23, (Nat.bits 8, Nat.bits 9, Nat.bits 16), 2, 1, 4) =
-      (Nat.bits 13, Nat.bits 6, Nat.bits 3) := by decide
+    let g := schnorrGroups.generator d23
+    let (u', v', w') := schnorrGroups.ddhRerandomize d23 ((3 : ZMod (schnorrGroups.order d23)) • g)
+      ((5 : ZMod (schnorrGroups.order d23)) • g) ((4 : ZMod (schnorrGroups.order d23)) • g) 2 1 4
+    (schnorrGroups.encode d23 u', schnorrGroups.encode d23 v', schnorrGroups.encode d23 w') =
+      (Nat.bits 13, Nat.bits 6, Nat.bits 3) := by
+  decide
 
 /-- A trivial IND-CPA adversary that chooses `(false, true)` with empty saved state and outputs
 `false`. -/
@@ -244,20 +249,19 @@ example (setup : ℕ → PMF schnorrGroups.Desc) (hDDH : schnorrGroups.DDH setup
 /-- Concrete quantitative single-invocation bound `advantage_ddhRealGame_le_ddhWorstCaseGame` on
 `d23` at `n = 4` with non-zero exponents `(α, β) = (3, 5)` and `(α', β', γ') = (3, 5, 7)` in
 `ZMod 11` (`3 * 5 = 4 ≠ 7`). -/
-example
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := schnorrGroups.Desc) → ProbComp Bool) :
+example (distinguisher : schnorrGroups.DDHDistinguisher) :
     Game.advantage (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23) distinguisher 4)
-      (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23) distinguisher 4) ≤
+      (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23) distinguisher 4) ≤
       Game.advantage
         (schnorrGroups.ddhWorstCaseGame (fun _ => PMF.pure d23)
-          (fun d => ((3 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d,
-            (5 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d,
-            ((3 : ZMod (schnorrGroups.order d)) * 5) • schnorrGroups.generator d))
+          (fun d => (3 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d)
+          (fun d => (5 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d)
+          (fun d => ((3 : ZMod (schnorrGroups.order d)) * 5) • schnorrGroups.generator d)
           (schnorrGroups.ddhSelfReduceDistinguisher distinguisher) 4)
         (schnorrGroups.ddhWorstCaseGame (fun _ => PMF.pure d23)
-          (fun d => ((3 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d,
-            (5 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d,
-            (7 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d))
+          (fun d => (3 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d)
+          (fun d => (5 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d)
+          (fun d => (7 : ZMod (schnorrGroups.order d)) • schnorrGroups.generator d)
           (schnorrGroups.ddhSelfReduceDistinguisher distinguisher) 4) +
       (6 / 2 ^ 4 : ℝ≥0) := by
   refine schnorrGroups.advantage_ddhRealGame_le_ddhWorstCaseGame
@@ -319,48 +323,34 @@ example :
 
 /-! ### Exercise 10.10: Worst-case DDH decider tests -/
 
-/-- On `d23`, the canonical reference DH tuple `ddhRealRefTuple d23` is
-`(0 • g, 0 • g, 0 • g) = (Nat.bits 1, Nat.bits 1, Nat.bits 1)` and the canonical reference non-DH
-tuple `ddhIdealRefTuple d23` is `(0 • g, 0 • g, 1 • g) = (Nat.bits 1, Nat.bits 1, Nat.bits 2)`. -/
-example : schnorrGroups.ddhRealRefTuple d23 = (Nat.bits 1, Nat.bits 1, Nat.bits 1) := by decide
-example : schnorrGroups.ddhIdealRefTuple d23 = (Nat.bits 1, Nat.bits 1, Nat.bits 2) := by decide
-
-/-- Negative-side DDH distinguisher: a constant `false` distinguisher has identical real and ideal
+/-- Negative-side DDH distinguisher: a constant `false` distinguisher has identical real and random
 DDH games and therefore advantage `0`, so it cannot satisfy `1 / invEps n ≤ advantage` for any
 positive `invEps n`. -/
-noncomputable def constFalseDDHDistinguisher (_ : ℕ)
-    (_ : DDHChallenge (GroupParameters := schnorrGroups.Desc)) : ProbComp Bool :=
-  pure false
+noncomputable def constFalseDDHDistinguisher : schnorrGroups.DDHDistinguisher :=
+  fun _ _ _ _ _ => pure false
 
 /-- `constFalseDDHDistinguisher` is uniform strict PPT. -/
-theorem isPPTOn_constFalseDDHDistinguisher :
-    IsPPTOn
-      schnorrGroups.encDDHInput
-      encBool (fun input => constFalseDDHDistinguisher input.1 input.2) :=
+theorem isPPT_constFalseDDHDistinguisher : constFalseDDHDistinguisher.IsPPT :=
   (ComputableInPolyTime.const false).isPPTOn
 
 /-- `constFalseDDHDistinguisher` has DDH advantage `0` at every security parameter. -/
 example (setup : ℕ → PMF schnorrGroups.Desc) (n : ℕ) :
     Game.advantage (schnorrGroups.ddhRealGame setup constFalseDDHDistinguisher n)
-      (schnorrGroups.ddhIdealGame setup constFalseDDHDistinguisher n) = 0 := by
+      (schnorrGroups.ddhRandomGame setup constFalseDDHDistinguisher n) = 0 := by
   have hreal : schnorrGroups.ddhRealGame setup constFalseDDHDistinguisher n = PMF.pure false := by
-    simp [PrimeOrderGroupFamily.ddhRealGame, PrimeOrderGroupFamily.eval_ddhRealExperiment,
-      constFalseDDHDistinguisher]
-  have hideal : schnorrGroups.ddhIdealGame setup constFalseDDHDistinguisher n = PMF.pure false := by
-    simp [PrimeOrderGroupFamily.ddhIdealGame, PrimeOrderGroupFamily.eval_ddhIdealExperiment,
-      constFalseDDHDistinguisher]
-  simp [hreal, hideal]
+    simp [ddhRealGame, eval_ddhRealExperiment, constFalseDDHDistinguisher]
+  have hrandom :
+      schnorrGroups.ddhRandomGame setup constFalseDDHDistinguisher n = PMF.pure false := by
+    simp [ddhRandomGame, eval_ddhRandomExperiment, constFalseDDHDistinguisher]
+  simp [hreal, hrandom]
 
-/-- Concrete instantiation of `isPPTOn_ddhAmplifiedDecider` on `schnorrGroups` with inverse
-advantage bound `fun n => n + 1`. -/
-example :
-    IsPPTOn
-      schnorrGroups.encDDHInput
-      encBool
-      (fun input =>
-        schnorrGroups.ddhAmplifiedDecider constFalseDDHDistinguisher (fun n => n + 1)
-          input.1 input.2) :=
-  schnorrGroups.isPPTOn_ddhAmplifiedDecider isPPTOn_constFalseDDHDistinguisher (by fun_prop)
+/-- Concrete instantiations of `isPPT_ddhSelfReduceDistinguisher` and `isPPT_ddhAmplifiedDecider`
+on `schnorrGroups`, the latter with inverse advantage bound `fun n => n + 1`. -/
+example : (schnorrGroups.ddhSelfReduceDistinguisher constFalseDDHDistinguisher).IsPPT :=
+  schnorrGroups.isPPT_ddhSelfReduceDistinguisher isPPT_constFalseDDHDistinguisher
+
+example : (schnorrGroups.ddhAmplifiedDecider constFalseDDHDistinguisher (fun n => n + 1)).IsPPT :=
+  schnorrGroups.isPPT_ddhAmplifiedDecider isPPT_constFalseDDHDistinguisher (by fun_prop)
 
 /-- Idealized discrete-logarithm oracle for `schnorrGroups`, inverting `α ↦ encode d (α • g)` via
 `Function.invFun`. Used to witness non-vacuity of the inverse-polynomial advantage hypothesis in
@@ -402,8 +392,7 @@ theorem discreteLogGame_exactDLAdversary (d : schnorrGroups.Desc) (n : ℕ) :
 
 /-- Idealized DDH distinguisher obtained from `exactDLAdversary` via `dlToCDHAdversary` and
 `cdhToDDHDistinguisher`. -/
-noncomputable abbrev exactDDHDistinguisher :
-    ℕ → DDHChallenge (GroupParameters := schnorrGroups.Desc) → ProbComp Bool :=
+noncomputable abbrev exactDDHDistinguisher : schnorrGroups.DDHDistinguisher :=
   schnorrGroups.cdhToDDHDistinguisher (schnorrGroups.dlToCDHAdversary exactDLAdversary)
 
 /-- On `d23` (order `11`), `exactDDHDistinguisher` achieves average-case DDH advantage at least
@@ -411,7 +400,7 @@ noncomputable abbrev exactDDHDistinguisher :
 theorem one_half_le_advantage_exactDDHDistinguisher (n : ℕ) :
     1 / (2 : ℝ) ≤
       Game.advantage (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23) exactDDHDistinguisher n)
-        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23) exactDDHDistinguisher n) := by
+        (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23) exactDDHDistinguisher n) := by
   have hdl : Game.succProbability
       (schnorrGroups.discreteLogGame (fun _ => PMF.pure d23) exactDLAdversary n) = 1 := by
     rw [discreteLogGame_exactDLAdversary, Game.succProbability, PMF.pure_apply_self,
@@ -427,26 +416,31 @@ theorem one_half_le_advantage_exactDDHDistinguisher (n : ℕ) :
       decide)
   have hle : (1 : ℝ) ≤
       (Game.advantage (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23) exactDDHDistinguisher n)
-        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23) exactDDHDistinguisher n) : ℝ) +
+        (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23) exactDDHDistinguisher n) : ℝ) +
         1 / 11 := by
     exact_mod_cast (hdl ▸ hcdh).trans hddh
   linarith
+
+/-- The same bound for the fixed-group advantage in `d23`, in the form that the amplified decider
+takes with `invEps = fun _ => 2`. -/
+theorem one_half_le_ddhAdvantage_exactDDHDistinguisher (n : ℕ) :
+    1 / ((2 : ℕ) : ℝ) ≤ ddhAdvantage (schnorrGroups.order d23) (schnorrGroups.generator d23)
+      (exactDDHDistinguisher n d23) := by
+  simpa only [ddhRealGame, ddhRandomGame, ddhAdvantage, PMF.monad_bind_eq_bind, PMF.pure_bind,
+    Nat.cast_ofNat] using one_half_le_advantage_exactDDHDistinguisher n
 
 /-- Non-vacuous positive-side instantiation of `ddhAmplifiedDecider_correct_ge_one_sub_pow` on a
 real DH triple `(3 • g, 5 • g, 4 • g)` (`4 = 3 * 5` in `ZMod 11`) over `d23` at `n = 7`:
 `ddhAmplifiedDecider` outputs `true` with probability at least `1 - (1 / 2) ^ 7`. -/
 example :
     1 - (1 / 2 : ℝ) ^ 7 ≤
-      (ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) 7
-        ⟨d23, schnorrGroups.encode d23 ((3 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23),
-          schnorrGroups.encode d23 ((5 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23),
-          schnorrGroups.encode d23 ((4 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23)⟩) true).toReal := by
+      (ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) 7 d23
+        ((3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23)
+        ((5 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23)
+        ((4 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23)) true).toReal := by
   have h := schnorrGroups.ddhAmplifiedDecider_correct_ge_one_sub_pow exactDDHDistinguisher
     (fun _ => 2) 7 d23 3 5 4 (by decide)
-    (one_half_le_advantage_exactDDHDistinguisher 7) (by norm_num)
+    (one_half_le_ddhAdvantage_exactDDHDistinguisher 7) (by norm_num)
   have hdec :
       decide ((4 : ZMod (schnorrGroups.order d23)) = 3 * 5) = true := by decide
   rwa [hdec] at h
@@ -456,16 +450,13 @@ non-DH triple `(3 • g, 5 • g, 7 • g)` (`7 ≠ 3 * 5` in `ZMod 11`) over `d
 `ddhAmplifiedDecider` outputs `false` with probability at least `1 - (1 / 2) ^ 7`. -/
 example :
     1 - (1 / 2 : ℝ) ^ 7 ≤
-      (ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) 7
-        ⟨d23, schnorrGroups.encode d23 ((3 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23),
-          schnorrGroups.encode d23 ((5 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23),
-          schnorrGroups.encode d23 ((7 : ZMod (schnorrGroups.order d23)) •
-            schnorrGroups.generator d23)⟩) false).toReal := by
+      (ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) 7 d23
+        ((3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23)
+        ((5 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23)
+        ((7 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23)) false).toReal := by
   have h := schnorrGroups.ddhAmplifiedDecider_correct_ge_one_sub_pow exactDDHDistinguisher
     (fun _ => 2) 7 d23 3 5 7 (by decide)
-    (one_half_le_advantage_exactDDHDistinguisher 7) (by norm_num)
+    (one_half_le_ddhAdvantage_exactDDHDistinguisher 7) (by norm_num)
   have hdec :
       decide ((7 : ZMod (schnorrGroups.order d23)) = 3 * 5) = false := by decide
   rwa [hdec] at h
@@ -474,16 +465,15 @@ example :
 for any worst-case sequence of exponent triples `(α n, β n, γ n)`. -/
 example (α β γ : ℕ → ZMod (schnorrGroups.order d23)) :
     Negligible fun n =>
-      ((ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) n
-        ⟨d23, schnorrGroups.encode d23 (α n • schnorrGroups.generator d23),
-          schnorrGroups.encode d23 (β n • schnorrGroups.generator d23),
-          schnorrGroups.encode d23 (γ n • schnorrGroups.generator d23)⟩)).toOuterMeasure
+      ((ProbComp.eval (schnorrGroups.ddhAmplifiedDecider exactDDHDistinguisher (fun _ => 2) n d23
+        (α n • schnorrGroups.generator d23) (β n • schnorrGroups.generator d23)
+        (γ n • schnorrGroups.generator d23))).toOuterMeasure
         {b | b ≠ decide (γ n = α n * β n)}).toNNReal :=
   schnorrGroups.negligible_ddhAmplifiedDecider_error
     (ComputableInPolyTime.const 2)
     (fun _ => d23) α β γ
     (Filter.Eventually.of_forall fun _ => by decide)
-    (Filter.Eventually.of_forall one_half_le_advantage_exactDDHDistinguisher)
+    (Filter.Eventually.of_forall one_half_le_ddhAdvantage_exactDDHDistinguisher)
 
 /-! ### Non-degenerate `SecureKDF` (`linearHashKDF`) and strict-PPT ElGamal tests -/
 

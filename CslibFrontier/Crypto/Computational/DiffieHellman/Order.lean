@@ -53,13 +53,6 @@ private theorem isPPT_ddhZeroDistinguisher (F : PrimeOrderGroupFamily) :
     (by fun_prop)).congr fun x => ?_
   simp [ddhZeroDistinguisher, (F.encode_injective _).eq_iff]
 
-/-- The identity test accepts `γ • g` exactly when `γ = 0`. -/
-private theorem decide_smul_generator_eq_zero_iff (F : PrimeOrderGroupFamily) (d : F.Desc)
-    (γ : ZMod (F.order d)) :
-    decide (γ • F.generator d = 0) = decide (γ = 0) :=
-  decide_eq_decide.mpr ⟨fun h => F.smul_generator_injective d (h.trans (zero_smul _ _).symm),
-    fun h => by rw [h, zero_smul]⟩
-
 private theorem uniform_mul_decide_eq_zero_apply (F : PrimeOrderGroupFamily) (d : F.Desc) :
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
@@ -110,7 +103,7 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
         (∑' d, setup n d *
           (((F.order d - 1 : ℕ) : ℝ≥0∞) * ((F.order d : ℝ≥0∞)⁻¹ * (F.order d : ℝ≥0∞)⁻¹))) := by
     simp only [ddhRealGame, ddhRealExperiment, ddhZeroDistinguisher, ProbComp.eval_bind,
-      ProbComp.eval_uniform, ProbComp.eval_pure, decide_smul_generator_eq_zero_iff F,
+      ProbComp.eval_uniform, ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
       PMF.monad_bind_eq_bind]
     rw [PMF.bind_apply, ← tsum_add]
     refine tsum_congr fun d => ?_
@@ -119,7 +112,7 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
       (F.ddhRandomGame setup (ddhZeroDistinguisher F) n) true =
         ∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹ := by
     simp only [ddhRandomGame, ddhRandomExperiment, ddhZeroDistinguisher, ProbComp.eval_bind,
-      ProbComp.eval_uniform, ProbComp.eval_pure, decide_smul_generator_eq_zero_iff F,
+      ProbComp.eval_uniform, ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
       PMF.bind_const, PMF.monad_bind_eq_bind]
     rw [PMF.bind_apply]
     refine tsum_congr fun d => congrArg (setup n d * ·) ?_
