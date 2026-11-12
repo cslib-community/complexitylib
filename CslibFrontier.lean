@@ -1401,6 +1401,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andr
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharp
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharpScore
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSignCoherent
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevTruncatedCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
