@@ -83,10 +83,10 @@ private theorem horizontal_vertical_neighbors {p q : Point}
     have h' := congrArg Prod.fst h <;> simp at h'
 
 private theorem canonical_neighbor_unique (G : Graph)
-    (hG : ∀ e ∈ G.2, e.1 ∈ G.1 ∧ e.2 ∈ G.1)
-    (hloop : ∀ e ∈ G.2, e.1 ≠ e.2)
+    (hG : ∀ e ∈ G.edges, e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices)
+    (hloop : ∀ e ∈ G.edges, e.1 ≠ e.2)
     (hdeg : ∀ v, G.incidenceVertices.count v ≤ 3) {i j : ℕ}
-    (hi : i < G.2.length) (hj : j < G.2.length) (hij : i ≠ j) {p q : Point}
+    (hi : i < G.edges.length) (hj : j < G.edges.length) (hij : i ≠ j) {p q : Point}
     (hcenter : p ∉ G.orthogonalPositions)
     (hiadj : (p, q) ∈ (G.unitPath i).consecutivePairs ∨
       (q, p) ∈ (G.unitPath i).consecutivePairs)
@@ -118,17 +118,17 @@ theorem paths_shared_step_index {φ : CNF ℕ}
     (hf : (p, q) ∈ ((paths φ).getD j []).consecutivePairs ∨
       (q, p) ∈ ((paths φ).getD j []).consecutivePairs) : i = j := by
   by_contra hij
-  have hi' : i < (SAT.incidenceGraph φ).2.length := by
+  have hi' : i < (SAT.incidenceGraph φ).edges.length := by
     simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hi
-  have hj' : j < (SAT.incidenceGraph φ).2.length := by
+  have hj' : j < (SAT.incidenceGraph φ).edges.length := by
     simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hj
   change (p, q) ∈ ((SAT.incidenceGraph φ).unitPath i).consecutivePairs at he
   change (p, q) ∈ ((SAT.incidenceGraph φ).unitPath j).consecutivePairs ∨
     (q, p) ∈ ((SAT.incidenceGraph φ).unitPath j).consecutivePairs at hf
-  have hG : ∀ e ∈ (SAT.incidenceGraph φ).2,
-      e.1 ∈ (SAT.incidenceGraph φ).1 ∧ e.2 ∈ (SAT.incidenceGraph φ).1 :=
+  have hG : ∀ e ∈ (SAT.incidenceGraph φ).edges,
+      e.1 ∈ (SAT.incidenceGraph φ).vertices ∧ e.2 ∈ (SAT.incidenceGraph φ).vertices :=
     fun _ => SAT.incidenceGraph_endpoints
-  have hloop : ∀ e ∈ (SAT.incidenceGraph φ).2, e.1 ≠ e.2 :=
+  have hloop : ∀ e ∈ (SAT.incidenceGraph φ).edges, e.1 ≠ e.2 :=
     fun _ => SAT.incidenceGraph_loopless
   have hdeg := SAT.incidenceGraph_degree_le hw hv
   by_cases hp : p ∈ (SAT.incidenceGraph φ).orthogonalPositions
@@ -217,7 +217,7 @@ theorem pathPorts_nodup {φ : CNF ℕ}
     ((paths φ).flatMap fun r => r.consecutivePairs.flatMap fun e =>
       [(e.1, side e.1 e.2), (e.2, side e.2 e.1)]).Nodup := by
   have hi_edge {i : ℕ} (hi : i < (paths φ).length) :
-      i < (SAT.incidenceGraph φ).2.length := by
+      i < (SAT.incidenceGraph φ).edges.length := by
     simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hi
   have hn {i : ℕ} (hi : i < (paths φ).length) : ((paths φ)[i]).Nodup := by
     have h := Graph.unitPath_nodup (SAT.incidenceGraph φ)
@@ -272,7 +272,7 @@ theorem pathMidpoints_nodup {φ : CNF ℕ}
   have hu {e : Point × Point} (he : e ∈ steps) : Orthogonal.length e.1 e.2 = 1 := by
     obtain ⟨r, hr, he⟩ := List.mem_flatMap.mp he
     obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hr
-    have hi' : i < (SAT.incidenceGraph φ).2.length := by
+    have hi' : i < (SAT.incidenceGraph φ).edges.length := by
       simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hi
     apply Graph.unitPath_unit (SAT.incidenceGraph φ)
       (fun _ => SAT.incidenceGraph_endpoints) (fun _ => SAT.incidenceGraph_loopless) hi'

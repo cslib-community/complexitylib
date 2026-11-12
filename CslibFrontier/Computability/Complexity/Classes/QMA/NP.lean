@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.BQP.Classical
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import Mathlib.Data.List.GetD
 
 /-!
 # `NP ⊆ QMA`
@@ -165,10 +166,9 @@ theorem readBit_classicalRun_frameCodes (h : o + 2 * n + 1 + p ≤ M) (ho : n + 
   have hX (q : ℕ) : readBit X q = (x ++ List.ofFn z).getD q false := by
     by_cases hq : q < M
     · rw [readBit_of_lt _ hq]; rfl
-    · rw [readBit_of_le _ (not_lt.mp hq), List.getD_eq_getElem?_getD,
-        List.getElem?_eq_none (by simp; omega)]; rfl
+    · rw [readBit_of_le _ (not_lt.mp hq), List.getD_eq_default _ _ (by simp; omega)]
   have hXo (k : ℕ) : readBit X (o + k) = false := by
-    rw [hX, List.getD_eq_getElem?_getD, List.getElem?_eq_none (by simp; omega)]; rfl
+    rw [hX, List.getD_eq_default _ _ (by simp; omega)]
   have hmem {g : GateCode} (hg : g ∈ frameCodes n p o) :
       readBit (classicalRun (frameCodes n p o) X) g.2.1 =
         (readBit X g.2.1 ^^ g.2.2.all (readBit X)) :=
@@ -183,14 +183,12 @@ theorem readBit_classicalRun_frameCodes (h : o + 2 * n + 1 + p ≤ M) (ho : n + 
       else if k = 2 * n then false
       else (List.ofFn z).getD (k - (2 * n + 1)) false := by
     by_cases hk : k < 2 * n + 1
-    · rw [List.getD_eq_getElem?_getD, List.getElem?_append_left (by simp [length_frame]; omega),
-        ← List.getD_eq_getElem?_getD, getD_frame, hx]
+    · rw [List.getD_append _ _ _ _ (by simp [length_frame]; omega), getD_frame, hx]
       by_cases hk' : k < 2 * n
       · simp [hk']
       · simp [show k = 2 * n by omega]
-    · rw [List.getD_eq_getElem?_getD, List.getElem?_append_right (by simp [length_frame]; omega),
-        ← List.getD_eq_getElem?_getD, length_frame, hx, ite_eq_right (by omega),
-        ite_eq_right (by omega)]
+    · rw [List.getD_append_right _ _ _ _ (by simp [length_frame]; omega), length_frame, hx,
+        ite_eq_right (by omega), ite_eq_right (by omega)]
   rw [hfr]
   by_cases hk : k < 2 * n
   · rw [ite_eq_left hk]
@@ -206,8 +204,7 @@ theorem readBit_classicalRun_frameCodes (h : o + 2 * n + 1 + p ≤ M) (ho : n + 
       have := hmem hg
       simp only [List.all_cons, List.all_nil, Bool.and_true] at this
       rw [show o + 2 * (k / 2) + 1 = o + k by omega, hXo, hX,
-        List.getD_eq_getElem?_getD, List.getElem?_append_left (by omega),
-        ← List.getD_eq_getElem?_getD] at this
+        List.getD_append _ _ _ _ (by omega)] at this
       rw [this, ite_eq_right hpar]; simp
   · rw [ite_eq_right hk]
     by_cases hk2 : k = 2 * n
@@ -220,13 +217,11 @@ theorem readBit_classicalRun_frameCodes (h : o + 2 * n + 1 + p ≤ M) (ho : n + 
         have := hmem hg
         simp only [List.all_cons, List.all_nil, Bool.and_true] at this
         rw [show o + 2 * n + 1 + (k - (2 * n + 1)) = o + k by omega, hXo, hX,
-          List.getD_eq_getElem?_getD, List.getElem?_append_right (by omega), hx,
-          show n + (k - (2 * n + 1)) - n = k - (2 * n + 1) by omega,
-          ← List.getD_eq_getElem?_getD] at this
+          List.getD_append_right _ _ _ _ (by omega), hx,
+          show n + (k - (2 * n + 1)) - n = k - (2 * n + 1) by omega] at this
         rw [this]; simp
       · rw [readBit_classicalRun_of_forall_ne (fun g hg => ?_), hXo,
-          List.getD_eq_getElem?_getD, List.getElem?_eq_none (by simp; omega)]
-        · rfl
+          List.getD_eq_default _ _ (by simp; omega)]
         rcases mem_frameCodes.mp hg with ⟨i, hi, rfl | rfl⟩ | ⟨j, hj, rfl⟩ <;> simp <;> omega
 
 theorem computableInPolyTime_frameCodes {γ : Type} {enc : γ ↪ List Bool} {n p o : γ → ℕ}

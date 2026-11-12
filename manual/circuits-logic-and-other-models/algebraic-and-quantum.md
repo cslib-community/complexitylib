@@ -12,6 +12,13 @@ Algebraic and quantum developments reuse the generic circuit architecture while 
 
 The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean), since retired, states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.
 
+The [Chapter 14 coverage audit](../../results/arora-barak-2007.md#chapter-14-algebraic-computation-models)
+distinguishes the available arithmetic-circuit results from algebraic computation trees and
+complex-number machines whose endpoints were not located. In particular, the 2007 draft's
+Theorem 14.7 should not be used as an unrestricted circuit-to-determinant specification: its
+linear dimension bound fails the existing repeated-squaring degree check. See the audit's
+[checked client](../../CslibFrontierTests/AroraBarakAlgebraic.lean) and exact model conventions.
+
 ## Valiant classes and term models
 
 [PolynomialFamily](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/VP.lean#L188) stores a variable-count function and a polynomial at each family index, with no bounds. `PolynomialFamily.IsPFamily` requires the variable count and actual total degree to be polynomially bounded in the family index. `VP` additionally requires circuits of polynomially bounded size computing the family's formal polynomials. The class is nonuniform and includes degree as an independent restriction. The library's repeated-squaring example has small circuits but exponential degree and is therefore excluded from VP. A p-projection substitutes variables/constants and permits a polynomially bounded family reindexing.
@@ -208,7 +215,155 @@ lake build CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic \
   CslibFrontierTests.Computability.Circuit.Arithmetic.HittingSet
 ```
 
-**Not certified here.** Characteristic zero is a genuine hypothesis: the Wronskian argument fails in positive characteristic. The source's extension to noncommutative algebraic branching programs is not formalized. Nothing is proved about the bit length of the points or the cost of computing them, and the bound `n * r ^ 2 + r` is the source's, not optimized. This is unrelated to the rational-formula hitting list of the next section, which concerns noncommutative rational formulas.
+**Not certified here.** Characteristic zero is a genuine hypothesis: the Wronskian argument fails in positive characteristic. The source's extension to noncommutative algebraic branching programs is not formalized. Nothing is proved about the bit length of the points or the cost of computing them, and the bound `n * r ^ 2 + r` is the source's, not optimized. This is unrelated to the rational-formula hitting list of [Rational formulas and hitting lists](#rational-formulas-and-hitting-lists), which concerns noncommutative rational formulas.
+
+## Hitting sets for affine orbits of sparse polynomials
+
+Import [HittingSet/SparseOrbit.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SparseOrbit.lean). The endpoint [isHittingSet_sparseOrbitHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SparseOrbit.lean) is for `[Field F] [CharZero F]`: `sparseOrbitHittingSet F n s d` hits every `f` with `f.totalDegree ≤ d` that equals `aeval (fun i => ∑ j, C (A i j) * X j + C (b i)) p` for some `p` with `p.support.card ≤ s`, a matrix `A` with `IsUnit A.det` and a point `b`: the polynomials `p (A x + b)` with `p` sparse. `card_sparseOrbitHittingSet_le s d` bounds the set by `(n ^ 2 + 1) * (2 * d * (n * s ^ 2 + s) + 1)`. The points are those of the curves `sparseOrbitCurve`, `t ↦ (β, β ^ 2, …, β ^ n) + t ^ B • G (t)` with `G` the truncated logarithmic curve of [Hitting sets for small partial-derivative spaces](#hitting-sets-for-small-partial-derivative-spaces) and `B = n * s ^ 2 + s`.
+
+The pieces, each usable alone:
+
+- [finrank_iteratedPDerivSpan_homogeneousComponent_shift_le](../../CslibFrontier/Foundations/Data/MvPolynomial/SparseShift.lean): if all coordinates of `u` are nonzero and `shift u p` has no homogeneous component below degree `m`, the partial derivatives of its component of degree `m` span a space of dimension at most `p.support.card`. `prod_X_add_C_mul_iteratedPDeriv_shift_mem` puts `∏ (X (α i) + C (u (α i))) * iteratedPDeriv α (shift u p)` in the image under the shift of Mathlib's `MvPolynomial.restrictSupport K ↑p.support`, the span of the monomials of `p`.
+- [iteratedPDerivSpan p](../../CslibFrontier/Foundations/Data/MvPolynomial/IteratedPDerivSpan.lean): the span of all iterated partial derivatives of `p`, closed under `pderiv` (`pderiv_mem_iteratedPDerivSpan`).
+- [linearIndependent_of_homogeneousComponent](../../CslibFrontier/Foundations/Data/MvPolynomial/LowestComponent.lean): polynomials `F i` with no homogeneous component below degree `e i` whose components of degree `e i` are linearly independent are linearly independent.
+- [linearSubst A](../../CslibFrontier/Foundations/Data/MvPolynomial/LinearSubstitution.lean), `p ↦ p (A x)`, with the chain rule `pderiv_linearSubst` (from the general `MvPolynomial.pderiv_aeval`, now in [Substitution.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/Substitution.lean)), `pderiv_mem_map_linearSubst` (the image of a derivative-closed space is derivative-closed) and `linearSubst_injective` for `IsUnit A.det`.
+- `not_X_pow_dvd_aeval_logCurve` ([Basic.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Basic.lean)): a nonzero polynomial in a derivative-closed space of dimension at most `r` is not divisible by `X ^ (n * r ^ 2 + r)` on the truncated curve.
+
+Complete client: [SparseOrbit.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/SparseOrbit.lean) shows that `(X 0 + X 1) ^ 2` is `p (A x)` for the monomial `p = X 0 ^ 2` and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.SparseOrbit
+```
+
+**Not certified here.** Positive characteristic: ordinary partial derivatives replace the source's Hasse derivatives, and the hitting set of [Hitting sets for small partial-derivative spaces](#hitting-sets-for-small-partial-derivative-spaces) needs characteristic zero. The source's curve `-ln (1 - i t)`; the library's is used. The degree-free hitting set over the reals, the lower bound on the number of monomials in every coordinate system, the applications to other orbit classes, and the operation count. The bit length of the points.
+
+## Hitting sets for multilinear any-order ROABPs
+
+Import [HittingSet/AnyOrder.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrder.lean). `IsAnyOrderROABP w f` says that `f : MvPolynomial (Fin n) F` is computed by a read-once oblivious branching program of width `w` in every order of the variables: for every list `l` of all the variables without repetition there are matrices `M : Fin n → Matrix (Fin w) (Fin w) F[X]` and indices `s t` with `f = roabpProd M l s t`, the `(s, t)` entry of the product of the `M i` evaluated at `X i` in the order of `l`. The matrices may depend on the order.
+
+The endpoint [isHittingSet_anyOrderHittingSet_roabp](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrder.lean) is for `[Field F] [CharZero F]`: `anyOrderHittingSet F n w` hits `{f | (∀ i, f.degreeOf i ≤ 1) ∧ IsAnyOrderROABP w f}`. `card_anyOrderHittingSet_le F n w` bounds the set by an explicit expression in `n`, `w` and `Nat.log 2 w` that is polynomial in `n` and `w`, since `2 ^ Nat.log 2 w ≤ w + 1` (for `w = 0` the left side is `1`).
+
+**To use it for another class**, apply `isHittingSet_anyOrderHittingSet`, which hits every `f` with `f.degreeOf i ≤ 1` for all `i` and `SplitRankLE ↑U w f` for every `U : Finset (Fin n)`, and prove the split-rank bound as `IsAnyOrderROABP.splitRankLE` does. For variables grouped in blocks, or for your own set of shifts, use `exists_mem_setPartitionedHittingSet_eval_ne_zero` of [Hitting sets for set-multilinear depth-three circuits with small variable sets](#hitting-sets-for-set-multilinear-depth-three-circuits-with-small-variable-sets). The pieces are the shifts and hash families of [Support-concentrating shifts and perfect hash families](#support-concentrating-shifts-and-perfect-hash-families), [colorPart](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ColorPart.lean) with `colorPart_ne_zero`, `exists_eval_ne_zero_of_eval_colorPart_ne_zero` and `exists_pderiv_closed_colorPart`, and the hitting set for small partial-derivative spaces above. The interpolation behind the second of these reads weighted homogeneous components off a monomial substitution: `MvPolynomial.coeff_aeval_monomial` ([WeightedHomogeneous.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/WeightedHomogeneous.lean)) holds for any weight over a commutative semiring.
+
+Complete client: [AnyOrderHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/AnyOrderHittingSet.lean) shows that `X 0 * X 1` is computed by width-one programs in every order and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.AnyOrderHittingSet
+```
+
+**Not certified here.** Positive characteristic. Polynomials of individual degree above one, and orbits. The converse of `IsAnyOrderROABP.splitRankLE`. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
+
+## Hitting sets for set-multilinear depth-three circuits with small variable sets
+
+Import [HittingSet/SetMultilinear.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SetMultilinear.lean). The variables are `X (j, t)` with `j : Fin n` the block and `t : Fin d` the position in the block. The endpoint [isHittingSet_setMultilinearHittingSet_sum_prod](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SetMultilinear.lean) is for `[Field F] [CharZero F]`: `setMultilinearHittingSet F n d s` hits `{f | ∃ c : Fin s → Fin n → Fin d → F, f = ∑ i, ∏ j, ∑ t, C (c i j t) * X (j, t)}`, the sums of `s` products of `n` linear forms, the `j`-th in the variables of block `j`. `card_setMultilinearHittingSet_le s` bounds the set by an explicit expression that is a polynomial in `n`, `d` and `s` times `(d + 1) ^ (Nat.log 2 s + 1)`. A block with fewer than `d` variables is covered by taking the coefficients of the missing variables to be zero.
+
+**To use it for another class**, apply `isHittingSet_setMultilinearHittingSet s`, which hits every `f` with `IsSetPartitioned Prod.fst f` and `SplitRankLE (Prod.fst ⁻¹' ↑I) s f` for every `I : Finset (Fin n)`. `MvPolynomial.IsSetPartitioned blk f` ([SetPartitioned.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SetPartitioned.lean)) says that every monomial of `f` has at most one variable of each block of `blk`, to the first power; `IsSetMultilinear.isSetPartitioned` gives it for set-multilinear polynomials, `IsSetPartitioned.shift` for shifts, and `isSetPartitioned_id_iff` says that for `blk = id` it means `f.degreeOf i ≤ 1` for all `i`.
+
+**To use your own shifts**, apply [exists_mem_setPartitionedHittingSet_eval_ne_zero](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SetPartitioned.lean). It is for a finite type `σ` of variables, `blk : σ → Fin n`, a set-partitioned `f` with `SplitRankLE (blk ⁻¹' ↑I) w f` for every `I`, and a shift `a ∈ A` such that `shift a f` has a monomial with at most `L` variables; it gives a point of `setPartitionedHittingSet F blk A L w` where `f` is nonzero. `card_setPartitionedHittingSet_le` bounds that set by `A.card` times an explicit polynomial in `n`, `Fintype.card σ`, `w` and `2 ^ L`. `logHittingSetOn F σ r d` with `isHittingSet_logHittingSetOn` is the hitting set for derivative-closed spaces of [Hitting sets for small partial-derivative spaces](#hitting-sets-for-small-partial-derivative-spaces), for variables indexed by a finite type.
+
+The shifts of the endpoint come from `blockPower F n d`, the substitution `X (j, t) ↦ X j ^ (t + 1)`: `blockPower_ne_zero`, `degreeOf_blockPower_le` and `SplitRankLE.blockPower` put the image of a set-partitioned polynomial in the class of `exists_mem_boundedDegreeShifts` of [Support-concentrating shifts and perfect hash families](#support-concentrating-shifts-and-perfect-hash-families), and `exists_mem_support_shift_blockPowerPoint` carries a shift `b` of the image back to the shift `blockPowerPoint b` of the polynomial.
+
+Complete client: [SetMultilinearHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/SetMultilinearHittingSet.lean) obtains a point of the hitting set where `(x₀₀ + x₀₁) (x₁₀ + x₁₁)` is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.SetMultilinearHittingSet
+```
+
+**Not certified here.** Positive characteristic. Blocks are indexed by `Fin n × Fin d`; no statement for a general partition is given. The factor `(d + 1) ^ (Nat.log 2 s + 1)` is not removed. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
+
+## Quasipolynomial hitting sets for ROABPs in an unknown order
+
+Import [HittingSet/ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABP.lean). `IsROABP w δ f` ([ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean)) says that `f : MvPolynomial (Fin n) F` is computed by a read-once oblivious branching program of width `w` in some order: there are a list `l` without repetition, matrices `M : Fin n → Matrix (Fin w) (Fin w) F[X]` with all entries of `natDegree ≤ δ`, and indices `s t` with `f = roabpProd M l s t`. The degree bound is on the layers, not on `f`. `roabpProd` and `IsAnyOrderROABP` of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) live in the same module.
+
+The endpoint [isHittingSet_roabpHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABP.lean) is for `[Field F] [CharZero F]`: `roabpHittingSet F n w δ` hits `{f | IsROABP w δ f}`. The set depends on `n`, `w` and `δ` only, not on the order. `card_roabpHittingSet_le F n w δ` bounds it by `(Nat.clog 2 n + 1) * p ^ Nat.clog 2 n * (n * δ * (n * δ * p + 1 + p) ^ Nat.clog 2 n + 1)` with `p = roabpPrime n w δ`, and `roabpPrime_le` gives `p ≤ 2 * (2 * n * (w ^ 2) ^ 4 * n + δ + 1)`: the size is `(n δ w) ^ O(log n)`. For multilinear programs that are narrow in every order the set of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) is of polynomial size; this one needs only one order and allows any degree.
+
+The pieces, each usable alone:
+
+- [coeff_roabpProd](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean): the coefficient of a monomial `m` in `roabpProd M l s t` is the `(s, t)` entry of the product over `l` of the coefficient matrices `layerCoeff M i (m i)`, for `l` without repetition and `m` supported in `l`; `coeff_roabpProd_eq_zero` for the other monomials.
+- [Cslib.Isolates F wt D T S](../../CslibFrontier/Foundations/LinearAlgebra/IsolatedBasis.lean), for `D : M → A` with values in a vector space, a weight `wt : M → ℕ` and finite sets `S ⊆ T`: `wt` is injective on `S` and every `D m`, `m ∈ T \ S`, is in the span of the `D m'` with `m' ∈ S` and `wt m' < wt m`. `exists_isolates_of_injOn` gives such an `S` of at most `finrank F A` elements when `wt` is injective on `T`; `Isolates.of_span_lt` weakens `m' ∈ S` to `m' ∈ T`; `exists_isolates_add` treats `D (m₁ + m₂) = D₁ m₁ * D₂ m₂`. `S` is not required to give a basis.
+- [MvPolynomial.aeval_X_pow_ne_zero_of_isolates](../../CslibFrontier/Foundations/Data/MvPolynomial/WeightSubstitution.lean): if `f.coeff m = ℓ (D m)` on `T ⊇ f.support` for a linear `ℓ` and `Finsupp.weight c` isolates, then `f ≠ 0` stays nonzero under `X i ↦ X ^ c i`.
+- [Cslib.exists_modWeight_separating](../../CslibFrontier/Foundations/NumberTheory/ModularWeights.lean): for a prime `p > δ` and fewer than `p / n` pairs of distinct exponent vectors with entries at most `δ`, some `a < p` gives the two members of every pair different weights for `modWeight p a i = a ^ (i + 1) % p`.
+- [exists_isolating_weight](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABPWeights.lean): the weight `levelWeight p (n * δ * p + 1) a` of some list `a` of at most `Nat.clog 2 n` parameters below `p` isolates a set of monomials among the matrices `segmentCoeff M l`. It goes by induction on the height of the subtrees of a [Cslib.Bracketing](../../CslibFrontier/Foundations/Data/Bracketing.lean) of `l` (`Bracketing.exists_leaves_eq`: height at most `Nat.clog 2 l.length`).
+
+Complete client: [ROABPHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ROABPHittingSet.lean) shows that `X 1 ^ 2 * X 0` is computed by a width-one program in the order `1, 0` and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ROABPHittingSet
+```
+
+**Not certified here.** Positive characteristic and small fields. Layers that are sparse polynomials in several variables, sums of set-multilinear circuits, and the other theorems of the source. The source's bound: the weights are `a ^ (i + 1) % p` for one prime and the levels are combined one at a time, so the constants differ. The bit length of the points and the cost of computing them; `roabpPrime` is defined by `Nat.find`.
+
+## Hitting sets of matrices for non-commutative branching programs
+
+Import [HittingSet/NoncommABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean). A non-commutative polynomial is tested on tuples of matrices: `P : Fin n → Matrix (Fin (d + 1)) (Fin (d + 1)) F` hits `f : FreeAlgebra F (Fin n)` when `FreeAlgebra.lift F P f ≠ 0`. The endpoint [exists_mem_noncommABPHittingSet_lift_ne_zero](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean) is for `[Field F] [CharZero F]`, `A : NoncommABP F (Fin n) d` (the homogeneous layered programs of [Noncommutative/ABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/Noncommutative/ABP.lean)) with `A.width k ≤ W` for all `k ≤ d` and `A.polynomial ≠ 0`: some `P ∈ noncommABPHittingSet F n d W` has `FreeAlgebra.lift F P A.polynomial ≠ 0`. `card_noncommABPHittingSet_le n d W` bounds the set by the size of `roabpHittingSet F d W (n - 1)` of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), which is `(n d W) ^ O(log d)`.
+
+The tuples are `superdiagPoint a` for the points `a` of that set: the variable `x` becomes the matrix with entry `a k ^ x` at `(k, k + 1)` and zero elsewhere. `eval_roabpProd` ([ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean)) evaluates a read-once oblivious program as an entry of the product of its evaluated layers.
+
+Complete client: [NoncommABPHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/NoncommABPHittingSet.lean) builds the width-one program computing `x₀ x₁` and obtains a tuple of the set where it does not vanish. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NoncommABPHittingSet
+```
+
+**Not certified here.** The reduction is that of [Forbes and Shpilka][forbesshpilka2013] (Construction 4.1 to Theorem 4.6), for homogeneous layered programs; the hitting set for read-once oblivious programs is the one of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), the library's adaptation of Agrawal–Gurjar–Korwar–Saxena with a different weight family, not their generator, so the size is neither paper's bound; their Corollary 4.7 is not formalized. Programs that are not homogeneous and layered. Positive characteristic. White-box identity testing (Raz–Shpilka). The bit length of the matrix entries.
+
+## Support-concentrating shifts and perfect hash families
+
+Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) takes from earlier work.
+
+`MvPolynomial.SplitRankLE U w f` ([SplitRank.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SplitRank.lean)) says that `f` is a sum of `w` products `p * q` with `p` in the variables of `U` and `q` in the others. It stands for "the coefficient matrix of `f` across the split has rank at most `w`", but no matrix is defined and that equivalence is not proved. `MvPolynomial.shift a` ([Shift.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/Shift.lean)) is `f ↦ f (X + a)`; the point may have coordinates in an algebra over the coefficient ring.
+
+The endpoint [exists_mem_concentratingShifts_perfectHashFamily](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean) is for `[Field F] [CharZero F]` and `f : MvPolynomial (Fin n) F` with `f ≠ 0`, `f.degreeOf i ≤ 1` for all `i`, and `SplitRankLE ↑Y w f` for every `Y : Finset (Fin n)` with `Y.card = Nat.log 2 w + 1`. It gives a point `a` of `concentratingShifts F (perfectHashFamily n (Nat.log 2 w + 1))` and a monomial of `shift a f` with at most `Nat.log 2 w` variables; `card_concentratingShifts_perfectHashFamily_le` bounds the set by `(n * (n * 2 ^ (25 * (Nat.log 2 w + 1))) + 1) * (n * 2 ^ (Nat.log 2 w + 1) + 1)`. `exists_mem_concentratingShifts` is the same for any `P` with `IsPerfectHashFamily P k` and `w < 2 ^ k`.
+
+**To use a different shift**, apply [exists_mem_support_shift_card_lt](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShift.lean): it needs a point `γ` over a domain `R` that is an `F`-algebra such that, for every set `Y` of `k` variables, the products `∏ j ∈ T, γ j` over `T ⊆ Y` are linearly independent over `F`. It has no characteristic hypothesis.
+
+**For individual degree above one**, [exists_mem_boundedDegreeShifts](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/BoundedDegreeShifts.lean) is for `IsPerfectHashFamily P k`, `w < 2 ^ k` and `f ≠ 0` with `f.degreeOf i ≤ δ` for all `i` and `SplitRankLE ↑Y w f` for every `Y` with `Y.card = k`. It gives a point `a` of `boundedDegreeShifts F δ P` and a monomial of `shift a f` with fewer than `k` variables; `card_boundedDegreeShifts_le` bounds the set by `(n * δ * P.card + 1) * (n * δ * (δ + 1) ^ k + 1)`. The statement is that of Corollary 2.4 of Shpilka's paper, which cites Forbes, Saptharishi and Shpilka; the proof is not theirs and is not taken from a source. It goes through `IsConcentrating` ([Concentrating.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Concentrating.lean)), `exists_mem_support_shift_card_lt_of_isConcentrating` ([ConcentratingReduction.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingReduction.lean)) and `eq_zero_of_scale_X_pow_vanishing` ([ConcentratingMonomial.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingMonomial.lean)), with `MvPolynomial.two_pow_card_le_card_support` (a nonzero polynomial that vanishes when any of `k` variables is set to one has at least `2 ^ k` monomials), `MvPolynomial.linearIndependent_of_initial_monomial` and `Nat.eq_of_sum_mul_pow_eq` from the foundations.
+
+`Cslib.IsPerfectHashFamily P s` ([PerfectHashFamily/Defs.lean](../../CslibFrontier/Foundations/Combinatorics/PerfectHashFamily/Defs.lean)) says that every `s`-element set is mapped injectively by some member of `P`. [perfectHashFamily n r](../../CslibFrontier/Foundations/Combinatorics/PerfectHashFamily/Basic.lean) is such a family of maps `Fin n → Fin r` for `0 < r` (`isPerfectHashFamily_perfectHashFamily`) with at most `n * 2 ^ (25 * r)` members (`card_perfectHashFamily_le`). The construction is the library's own and the bound is not the best known.
+
+Complete clients: [ConcentratingShift.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConcentratingShift.lean) gives `X 0 * X 1` a constant term by a shift from the explicit set, and [PerfectHashFamily.lean](../../CslibFrontierTests/Foundations/Combinatorics/PerfectHashFamily.lean) separates two points of `Fin 5`. Build them with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShift \
+  CslibFrontierTests.Foundations.Combinatorics.PerfectHashFamily
+```
+
+**Not certified here.** The proof of Forbes, Saptharishi and Shpilka by rank condensers, and their size bound: for every individual degree the statement is proved by the argument of `boundedDegreeShifts` above, and `concentratingShifts F P` is `boundedDegreeShifts F 1 P`. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
+
+## Roots of polynomial equations and hardness versus randomness
+
+This section collects the pieces of the hardness-versus-randomness route for constant-depth formulas (issue #4734); each is usable alone.
+
+**Lagrange inversion.** Import [LagrangeInversion.lean](../../CslibFrontier/Foundations/Algebra/Polynomial/LagrangeInversion.lean). For a commutative ring `R` that is an algebra over a field `F` of characteristic zero, an ideal `J` of `R`, a polynomial `G : R[X]` with `G.coeff 0 ∈ J` and `G.coeff 1 ∈ J`, and `f ∈ J` with `G.eval f = f`, `Polynomial.sub_sum_coeff_pow_mem_of_eval_eq` gives `f - ∑ m ∈ range N, ((m : F) + 1)⁻¹ • (G ^ (m + 1)).coeff m ∈ J ^ e` whenever `2 * e ≤ N`. `Polynomial.sum_coeff_mul_pow_sub_eval_mem` is the Lagrange–Good form for `H.eval f`. The proof is finite (no power series), with the weight filtration `Polynomial.HasWeight`.
+
+**Roots.** Import [LowDegreeRoot.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/LowDegreeRoot.lean); `J` is Mathlib's `MvPolynomial.idealOfVars`. For `P : Polynomial (MvPolynomial σ F)` in characteristic zero:
+
+- a *simple root at the origin* — `constantCoeff f = 0`, `P.eval f = 0`, `constantCoeff (P.coeff 1) ≠ 0` — has, for every `D`, `truncateTotalDegree D f` equal to the truncation of `∑ m ∈ range (2 * (D + 1)), ((m : F) + 1)⁻¹ • ((X - C (C a⁻¹) * P) ^ (m + 1)).coeff m` with `a = constantCoeff (P.coeff 1)` (`MvPolynomial.truncateTotalDegree_root_eq`);
+- *any root* of `P ≠ 0` reduces to that case after the `j`-th `y`-derivative and a shift of the variables by a point `x₀` (`MvPolynomial.exists_shift_eq_truncate_sum_of_root`, through `exists_iterate_derivative_eval_ne_zero`): `shift x₀ f = C (eval x₀ f) + truncateTotalDegree D (…)` for every `D ≥ f.totalDegree`.
+
+Complete clients: [LagrangeInversion.lean](../../CslibFrontierTests/Foundations/Algebra/Polynomial/LagrangeInversion.lean) (the fixed point `t` of `G = t` over `ℚ[t]`) and [LowDegreeRoot.lean](../../CslibFrontierTests/Foundations/Data/MvPolynomial/LowDegreeRoot.lean) (the root `x₀ x₁` of `y - x₀ x₁`, simple, and of `(y - x₀ x₁) ^ 2`, double). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Foundations.Algebra.Polynomial.LagrangeInversion \
+  CslibFrontierTests.Foundations.Data.MvPolynomial.LowDegreeRoot
+```
+
+**Formulas for roots.** Import [RootFormula.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/RootFormula.lean). For `[Field K] [CharZero K]` and a formula `F : SPFormula K (N + 1)` whose *last* input plays the role of `y`, with `F.productDepth ≤ Δ` and `F.polynomial ≠ 0`, a root `f : MvPolynomial (Fin N) K`, meaning `aeval (Fin.lastCases f X) F.polynomial = 0`, has a formula `G : SPFormula K N` with `G.polynomial = f`, `G.productDepth ≤ Δ + 1` and `G.nodeCount ≤ SPFormula.rootCost F.nodeCount f.totalDegree`, where `rootCost s D = 2 ^ 36 * (s + 1) ^ 8 * (D + 1) ^ 6` (`SPFormula.exists_formula_of_root`). It implements the formula for roots above: the powers are the only extra product layer.
+
+The formula operations it uses, each with exact `polynomial`, `productDepth` and `nodeCount` lemmas:
+
+- [FormulaOps.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaOps.lean): `substFormula` (formulas for the inputs; product-depths add), `constInput` and `affineInput` (constants and `a * x + b` for inputs; no product-depth), `ofSparse` (a polynomial as a sum of monomials, product-depth `≤ 1`, at most `p.support.card * (p.totalDegree + 1) + 1` nodes), and `totalDegree_polynomial_le_nodeCount`.
+- [FormulaInterpolation.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaInterpolation.lean), in characteristic zero and with no increase of product-depth: `coeffLast i r F`, the coefficient of the `i`-th power of the last input when the degree in it is at most `r`, and `lowPartFormula d r F`, the homogeneous components of degree at most `d` when the total degree is at most `r`. Both rest on `Lagrange.coeff_eq_sum_coeff_basis_smul_eval` ([InterpolationCoeff.lean](../../CslibFrontier/Foundations/Data/Polynomial/InterpolationCoeff.lean)).
+
+Complete clients: [RootFormula.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/RootFormula.lean) (the root `x₀ x₁` of the formula `y - x₀ x₁` gets a formula of product-depth at most `2`), [FormulaOps.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/FormulaOps.lean) and [FormulaInterpolation.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/FormulaInterpolation.lean). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.RootFormula \
+  CslibFrontierTests.Computability.Circuit.Arithmetic.FormulaOps \
+  CslibFrontierTests.Computability.Circuit.Arithmetic.FormulaInterpolation
+```
+
+**Not certified here.** Positive characteristic (the formula divides by `m`, interpolation by node differences). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots. Circuits (only formulas), depth as opposed to product-depth, and any algorithm or bit-cost bound; `rootCost` is not optimized.
 
 ## Rational formulas and hitting lists
 
@@ -405,6 +560,7 @@ The selected definitions and headline statements have been source-inspected; the
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [dewolf19]: ../sources.md#dewolf19
+[forbesshpilka2013]: ../sources.md#forbesshpilka2013
 [grenet11]: ../sources.md#grenet11
 [hoyerleespalek07]: ../sources.md#hoyerleespalek07
 [mahler64]: ../sources.md#mahler64

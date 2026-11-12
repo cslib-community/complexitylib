@@ -68,10 +68,10 @@ example : loopRotation.NumericalGenusZero :=
 -- the two actual face orbits. No face colors or genus fact are supplied.
 example : ∃ q : loopRotation.Face → Bool,
     q (Quotient.mk _ (0, false)) ≠ q (Quotient.mk _ (0, true)) := by
-  have hx : Graph.VertexEven ([7, 7], [(7, 7)]) (fun _ => true) := by
+  have hx : Graph.VertexEven ⟨[7, 7], [(7, 7)]⟩ (fun _ => true) := by
     intro v
     change (∑ d : Fin 1 × Bool,
-      if Dart.vertex (G := ([7, 7], [(7, 7)])) d = v then (true : Bool) else 0) = false
+      if Dart.vertex (G := ⟨[7, 7], [(7, 7)]⟩) d = v then (true : Bool) else 0) = false
     rw [Fintype.sum_prod_type, Fin.sum_univ_one, Fintype.sum_bool]
     change (if 7 = v then (true : Bool) else 0) + (if 7 = v then true else 0) = false
     rw [BooleanRing.add_self, Bool.zero_eq_false]
@@ -168,23 +168,23 @@ example : (starRotation 5).NumericalGenusZero :=
   (PolygonalDrawing.star_isEmbedding 5).numericalGenusZero (by decide) star_five_realizes
 
 -- Arbitrary sparse/duplicate declarations, including empty declarations and isolates.
-example (vs : List ℕ) (r : RotationSystem (vs, [])) : r.NumericalGenusZero := by
+example (vs : List ℕ) (r : RotationSystem ⟨vs, []⟩) : r.NumericalGenusZero := by
   apply (PolygonalDrawing.points_isEmbedding vs).numericalGenusZero
     (by intro v hv; simp [incidenceVertices] at hv)
   exact PolygonalDrawing.points_realizes vs r
 
-example (r : RotationSystem ([7, 7, 1000000000, 3, 1000000000], [])) :
+example (r : RotationSystem ⟨[7, 7, 1000000000, 3, 1000000000], []⟩) :
     r.NumericalGenusZero :=
   (PolygonalDrawing.points_isEmbedding _).numericalGenusZero
     (by intro v hv; simp [incidenceVertices] at hv) (PolygonalDrawing.points_realizes _ r)
 
-example (r : RotationSystem ([], [])) : r.NumericalGenusZero :=
+example (r : RotationSystem ⟨[], []⟩) : r.NumericalGenusZero :=
   (PolygonalDrawing.points_isEmbedding _).numericalGenusZero
     (by intro v hv; simp [incidenceVertices] at hv) (PolygonalDrawing.points_realizes _ r)
 
 -- This rules out realization of this interlaced rotation of a planar underlying bouquet.
 -- It does not assert nonplanarity of the underlying graph.
-example (D : PolygonalDrawing ([0, 9, 9], [(0, 0), (0, 0)])) (hD : D.IsEmbedding) :
+example (D : PolygonalDrawing ⟨[0, 9, 9], [(0, 0), (0, 0)]⟩) (hD : D.IsEmbedding) :
     ¬D.Realizes torusRotation := by
   intro hR
   have hg := hD.numericalGenusZero (by decide) hR

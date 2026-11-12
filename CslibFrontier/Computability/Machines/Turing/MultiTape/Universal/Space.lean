@@ -118,7 +118,7 @@ lemma getD_applyTapes (ts : List Tape) (as : List TapeAct) {i : ℕ} (hi : i < t
   | nil => simp at hi
   | cons t ts ih =>
     rcases as with _ | ⟨a, as⟩
-    · rcases i with _ | i <;> simp [applyTapes, Tape.apply_none_zero, List.getD_eq_getElem?_getD]
+    · rcases i with _ | i <;> simp [applyTapes, Tape.apply_none_zero]
     · rcases i with _ | i
       · simp [applyTapes]
       · simpa [applyTapes] using ih as (by simpa using hi)
@@ -185,19 +185,14 @@ lemma headAt_mem (j i : ℕ) : headAt d x j i ∈ visited d x j i :=
   Finset.mem_image.mpr ⟨j, by simp, rfl⟩
 
 lemma headAt_zero (i : ℕ) : headAt d x 0 i = 0 := by
-  simp only [headAt, run, Function.iterate_zero_apply, init]
-  rcases Nat.lt_or_ge i d.tapes with h | h
-  · simp [List.getD_eq_getElem?_getD, h]
-  · simp [List.getD_eq_getElem?_getD, h, Tape.blank]
+  simp [headAt, run, init, Tape.blank]
 
 /-- Every work tape is covered by the positions its head has visited. -/
 lemma covered (j i : ℕ) : ((run d x j).workTapes.getD i .blank).Covered (visited d x j i) := by
   induction j with
   | zero =>
     refine ⟨fun k hk => ?_, fun k hk => ?_⟩ <;>
-    · simp only [run, Function.iterate_zero_apply, init] at hk
-      rcases Nat.lt_or_ge i d.tapes with h | h <;>
-        simp [List.getD_eq_getElem?_getD, h, Tape.blank] at hk
+      simp [run, init, Tape.blank] at hk
   | succ j ih =>
     obtain ⟨a, ha⟩ := step_tape d x (run d x j) i
     rw [run_succ, ha]
@@ -312,7 +307,7 @@ variable {k : ℕ} {Symbol State : Type} [Fintype State] [Fintype Symbol]
 lemma headAt_desc (tm : MultiTapeTM k Symbol State) (x : List Symbol) (j : ℕ) (i : Fin k) :
     headAt (desc eS eY tm) (x.map eY) j i = (tm.runFrom (tm.initCfg x) j).workTapePos i := by
   have := congrArg (·.workTapePos i) (toCfg_iterate eS eY tm x j).1
-  simpa [SCfg.toCfg, Cfg.map, headAt, run, List.getD_eq_getElem?_getD] using this.symm
+  simpa [SCfg.toCfg, Cfg.map, headAt, run] using this.symm
 
 /-- **The space of the simulation** of the description of a machine is the space of the machine. -/
 public theorem simSpace_desc (tm : MultiTapeTM k Symbol State) (x : List Symbol) (j : ℕ) :

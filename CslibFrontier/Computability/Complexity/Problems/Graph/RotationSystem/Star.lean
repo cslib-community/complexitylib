@@ -29,7 +29,7 @@ open Equiv
 
 /-- One distinct leaf per argument and one constraint center, including the arity-zero point. -/
 @[expose] def starGraph (n : ℕ) : Graph :=
-  (List.range (n + 1), (List.finRange n).map fun i => (i.val, n))
+  ⟨List.range (n + 1), (List.finRange n).map fun i => (i.val, n)⟩
 
 /-- Argument/end coordinates on the actual listed star. -/
 @[expose] def starDartEquiv (n : ℕ) : Fin n × Bool ≃ Dart (starGraph n) :=
@@ -138,7 +138,7 @@ theorem card_faces_starRotation {n : ℕ} (hn : 0 < n) :
 
 /-- Every indexed endpoint is declared, without a bound on the arity. -/
 theorem starGraph_endpoints_declared (n : ℕ) :
-    ∀ v ∈ (starGraph n).incidenceVertices, v ∈ (starGraph n).1 := by
+    ∀ v ∈ (starGraph n).incidenceVertices, v ∈ (starGraph n).vertices := by
   intro v hv
   obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
   obtain ⟨i, _, rfl⟩ := List.mem_map.mp he
@@ -149,10 +149,10 @@ theorem starGraph_endpoints_declared (n : ℕ) :
     simp [starGraph]
 
 /-- All declared star vertices lie in its center's component. -/
-theorem starGraph_connected (n : ℕ) : ∀ u ∈ (starGraph n).1,
-    ∀ v ∈ (starGraph n).1, Graph.RotationCertificate.SameComponent (starGraph n) u v := by
-  have hcenter : n ∈ (starGraph n).1 := by simp [starGraph]
-  have connect (u : ℕ) (hu : u ∈ (starGraph n).1) :
+theorem starGraph_connected (n : ℕ) : ∀ u ∈ (starGraph n).vertices,
+    ∀ v ∈ (starGraph n).vertices, Graph.RotationCertificate.SameComponent (starGraph n) u v := by
+  have hcenter : n ∈ (starGraph n).vertices := by simp [starGraph]
+  have connect (u : ℕ) (hu : u ∈ (starGraph n).vertices) :
       Graph.RotationCertificate.SameComponent (starGraph n) u n := by
     by_cases he : u = n
     · subst u

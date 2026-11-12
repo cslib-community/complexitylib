@@ -154,9 +154,9 @@ theorem RecognizesInSpace.mem_P {c : ℕ}
     A ∈ P enc := by
   -- the number of reachable views is at most `N a`, a polynomial
   set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
-  set N : α → ℕ := fun a => 2 * (2 * ((enc a).length + 1)) ^ D
+  set N : α → ℕ := fun a => polyClock D (enc a).length
   have hN : ComputableInPolyTime N enc encUnary := by
-    simp only [N]
+    simp only [N, polyClock]
     fun_prop
   have hΨ := (computableInPolyTime_boundedAccepts (fun a => (h a).1)
     (polyBounded_log (fun a => (enc a).length) c)).comp (ComputableInPolyTime.id'.prod hN)

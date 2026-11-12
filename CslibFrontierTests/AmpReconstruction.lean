@@ -49,6 +49,16 @@ example {k n s : ℕ} {h : BooleanFunction (k * n + k)}
       s + 11 :=
   (complexity_glAmpCandidate_apply_le hh masks guess j).trans_eq (by norm_num)
 
+/-- The same bound when the predictor is computed from `q` answer bits and its input, and the
+candidate reads the answer bits as inputs too. -/
+example {k n q s : ℕ} {F : BooleanFunction (q + (k * n + k))}
+    (hF : complexity interpretation (single F) ≤ s) (masks : Fin 1 → BitString k)
+    (guess : BitString 1) (j : Fin k) :
+    complexity interpretation (single fun wx : BitString (q + k * n) =>
+      glAmpCandidate (fun y => F (Fin.append (fun i => wx (Fin.castAdd (k * n) i)) y)) masks guess
+        (BitString.block fun i => wx (Fin.natAdd q i)) j) ≤ s + 11 :=
+  (complexity_glAmpCandidate_answers_apply_le hF masks guess j).trans_eq (by norm_num)
+
 /-! ### Black-box reductions -/
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]

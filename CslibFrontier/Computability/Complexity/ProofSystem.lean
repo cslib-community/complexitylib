@@ -197,10 +197,8 @@ theorem PolynomiallyBounded.mem_NP {P : ProofSystem enc L} (hP : P.PolynomiallyB
   have hcheck : ComputableInPolyTime (fun x : α × List Bool => decide (P x.2 = x.1))
       (encPair enc encBits) encBool :=
     decide_eq' (P.computable.comp (snd enc encBits)) (fst enc encBits)
-  have h := mem_NP_of_witness (p := p) Decoder.bits hcheck (R := fun a π => P π = a)
-    (fun _ _ => decide_eq_true_iff) fun a π hπ => hp a (hπ ▸ P.mem π)
-  have hL : {a | ∃ π, P π = a} = L := P.range_eq
-  rwa [hL] at h
+  exact mem_NP_of_check Decoder.bits hcheck (fun a π h => (of_decide_eq_true h : P π = a) ▸ P.mem π)
+    fun a ha => (hp a ha).imp fun _ h => ⟨decide_eq_true h.1, h.2⟩
 
 section OfVerifier
 

@@ -544,7 +544,7 @@ theorem initSetup_exec {U base w w₀ n k : ℕ}
       omega
     have hrem_y : y.mem (remSeedAddr base w w₀ n) =
         (extractRemSeed base w w₀ n y.mem).val := by
-      dsimp only [extractRemSeed, y, remInitData, Data.write, Data.set, Tabulation.extractWord]
+      dsimp only [extractRemSeed, y, remInitData, Data.write, Data.set, Cslib.WordRAM.wordOfNat]
       simp [hγ_lt]
     have hzero_slots : ∀ a, fullBase base w w₀ n ≤ a → a < base + space w w₀ n k →
         y.mem a = 0 := by

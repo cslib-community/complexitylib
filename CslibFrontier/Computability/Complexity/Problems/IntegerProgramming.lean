@@ -36,7 +36,6 @@ already `NP`-complete. A subset sum instance is a single equation, so `SubsetSum
 
 ## Main results
 
-* `Cslib.Complexity.sum_maskSelect`: the masked sum is the scalar product with the mask.
 * `Cslib.Complexity.ZeroOneIP.mem_NP`: `ZeroOneIP ∈ NP encZeroOneIP`.
 * `Cslib.Complexity.polyTimeReducible_SubsetSum_ZeroOneIP`,
   `Cslib.Complexity.polyTimeReducible_ThreeSAT_ZeroOneIP`, `Cslib.Complexity.ZeroOneIP_npHard`,
@@ -82,17 +81,6 @@ list `coeffs` of coefficients, framed, each coefficient framed, then its right-h
 all numbers in binary. -/
 abbrev encZeroOneIP : List ZeroOneIP.Equation ↪ List Bool := encList ZeroOneIP.encEquation
 
-/-- The numbers selected by a mask sum to the scalar product with the mask. -/
-theorem sum_maskSelect (a : List ℕ) (w : List Bool) :
-    (maskSelect a w).sum = ∑ j ∈ range a.length, a.getD j 0 * (w.getD j false).toNat := by
-  induction a generalizing w with
-  | nil => simp
-  | cons n a ih =>
-    rw [maskSelect_cons, List.sum_append, ih, List.length_cons, sum_range_succ']
-    cases w with
-    | nil => simp
-    | cons b w => cases b <;> simp [Nat.add_comm]
-
 namespace ZeroOneIP
 
 /-- The verifier for `ZeroOneIP`: the certificate, read as the values of the variables, satisfies
@@ -109,9 +97,8 @@ theorem isVerifier :
   set n := (encZeroOneIP C).length
   have hlen : ∀ c ∈ C, c.coeffs.length ≤ n := by
     intro c hc
-    have hc_len : c.coeffs.length ≤ (encEquation c).length := by
-      rw [encEquation_apply]
-      exact length_le_length_encPair encNat encNat (c.coeffs, c.rhs)
+    have hc_len : c.coeffs.length ≤ (encEquation c).length :=
+      (length_le_length_encList _ _).trans (length_le_encPair_left _ _ (c.coeffs, c.rhs))
     exact hc_len.trans (length_le_encList_of_mem _ hc)
   constructor
   · rintro ⟨x, hx⟩

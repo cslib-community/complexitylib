@@ -16,7 +16,7 @@ namespace CslibFrontierTests.RotationCycleSpaceConverse
 
 open Cslib.Complexity Graph Graph.RotationSystem
 
-private abbrev bridge : Graph := ([2 ^ 100, 7, 7, 19], [(2 ^ 100, 7)])
+private abbrev bridge : Graph := ⟨[2 ^ 100, 7, 7, 19], [(2 ^ 100, 7)]⟩
 
 private def bridgeRotation : RotationSystem bridge where
   rotate := Equiv.refl _
@@ -37,7 +37,7 @@ example : bridgeRotation.NumericalGenusZero := by
   subst i
   simpa only [faceBoundary, Bool.false_xor] using hzero.symm
 
-private abbrev twoLoops : Graph := ([2 ^ 100, 7, 7, 19, 23], [(2 ^ 100, 2 ^ 100), (7, 7)])
+private abbrev twoLoops : Graph := ⟨[2 ^ 100, 7, 7, 19, 23], [(2 ^ 100, 2 ^ 100), (7, 7)]⟩
 
 private def twoLoopRotation : RotationSystem twoLoops where
   rotate := Dart.reversal twoLoops
@@ -59,7 +59,7 @@ example : twoLoopRotation.NumericalGenusZero := by
   refine ⟨q, funext fun i => ?_⟩
   simp [faceBoundary, q]
 
-private abbrev digon : Graph := ([7, 100, 7, 123], [(7, 100), (7, 100)])
+private abbrev digon : Graph := ⟨[7, 100, 7, 123], [(7, 100), (7, 100)]⟩
 
 private def digonRotation : RotationSystem digon where
   rotate := Equiv.prodCongr (Equiv.swap (0 : Fin 2) 1) (Equiv.refl Bool)
@@ -81,7 +81,7 @@ example : digonRotation.NumericalGenusZero := by
   refine ⟨q, funext fun i => ?_⟩
   fin_cases i <;> simp [faceBoundary, q, c, hbits]
 
-private def pointsRotation (vertices : List ℕ) : RotationSystem (vertices, []) where
+private def pointsRotation (vertices : List ℕ) : RotationSystem ⟨vertices, []⟩ where
   rotate := Equiv.refl _
   sameCycle_iff d := d.1.elim0
 
@@ -97,7 +97,7 @@ example : (pointsRotation []).NumericalGenusZero := by
   intro x _
   exact ⟨fun _ => false, funext fun i => i.elim0⟩
 
-private abbrev torus : Graph := ([0, 9, 9], [(0, 0), (0, 0)])
+private abbrev torus : Graph := ⟨[0, 9, 9], [(0, 0), (0, 0)]⟩
 
 private def torusRotation : RotationSystem torus where
   rotate := ((Dart.indexEquiv torus).trans

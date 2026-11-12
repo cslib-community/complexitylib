@@ -42,7 +42,7 @@ abbrev ComponentFace {G : Graph} (r : RotationSystem G) (root : ℕ) :=
 
 /-- A face represented by a dart belongs precisely to that dart's component. -/
 theorem componentFace_mk_iff {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) (d : Graph.Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (root : ℕ) (d : Graph.Dart G) :
     (∃ e : Graph.Dart G, SameComponent G root e.vertex ∧
       (Quotient.mk _ e : r.Face) = Quotient.mk _ d) ↔ SameComponent G root d.vertex := by
   constructor
@@ -52,7 +52,7 @@ theorem componentFace_mk_iff {G : Graph} (r : Graph.RotationSystem G)
 
 /-- Exactly one representative in a component is counted for each actual face. -/
 theorem card_componentFaceRepresentatives {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (root : ℕ) :
     Nat.card {d : Graph.Dart G // SameComponent G root d.vertex ∧ r.IsFaceRepresentative d} =
       Nat.card (ComponentFace r root) := by
   let f : {d : Graph.Dart G // SameComponent G root d.vertex ∧ r.IsFaceRepresentative d} →
@@ -73,8 +73,8 @@ theorem card_componentFaceRepresentatives {G : Graph} (r : Graph.RotationSystem 
 open Classical in
 /-- The numerical face count equals the cardinality of the full component face quotient. -/
 theorem count_faceRepresentatives_eq_card_componentFace {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (root : ℕ) :
-    ((List.finRange (2 * G.2.length)).countP fun i =>
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (root : ℕ) :
+    ((List.finRange (2 * G.edges.length)).countP fun i =>
       decide (SameComponent G root ((Dart.indexEquiv G).symm i).vertex ∧
         r.IsFaceRepresentative ((Dart.indexEquiv G).symm i))) =
       Nat.card (ComponentFace r root) := by
@@ -101,7 +101,7 @@ end RotationSystem
 
 open Classical in
 /-- Declared dense vertex names can be counted directly as a subtype of `Fin n`. -/
-theorem countP_vertices_range (G : Graph) (n : ℕ) (hG : G.1 = List.range n) (root : ℕ) :
+theorem countP_vertices_range (G : Graph) (n : ℕ) (hG : G.vertices = List.range n) (root : ℕ) :
     G.distinctVertices.countP (fun v => decide (SameComponent G root v)) =
       Nat.card {v : Fin n // SameComponent G root v.val} := by
   rw [← card_componentVertexSet, ← Nat.card_eq_finsetCard]

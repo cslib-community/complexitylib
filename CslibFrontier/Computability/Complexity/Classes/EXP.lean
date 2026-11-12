@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy
 public import CslibFrontier.Computability.Complexity.Classes.Time
 public import CslibFrontier.Computability.Complexity.Reduction
+import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
@@ -54,6 +55,7 @@ in `E` (`Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`): the padding
 * `Cslib.Complexity.DTIME_two_pow_subset_EXP`, `Cslib.Complexity.NTIME_two_pow_subset_NEXP`: time
   `2 ^ h n` for a polynomially bounded `h` is exponential time.
 * `Cslib.Complexity.P_ssubset_EXP`: polynomial time is strictly within exponential time.
+* `Cslib.Complexity.compl_mem_E`, `Cslib.Complexity.compl_mem_EXP`: closure under complement.
 * `Cslib.Complexity.setOf_mem_E_of_computableInPolyTime_pad`: polynomial time on inputs
   padded to length `2 ^ n` gives `E`.
 * `Cslib.Complexity.PolyTimeReducible.mem_EXP`: `EXP` is closed under polynomial-time many-one
@@ -166,6 +168,17 @@ theorem NTIME_two_pow_subset_NEXP {h : ℕ → ℕ} (hh : PolynomiallyBounded h)
   let ⟨k, hk⟩ := hh
   mem_NEXP_iff.mpr ⟨k, NTIME_mono_of_eventually_le
     (hk.mono fun _ hn => Nat.pow_le_pow_right (by norm_num) hn) hA⟩
+
+/-- `E` is closed under complement (`Cslib.Complexity.compl_mem_DTIME`). -/
+theorem compl_mem_E {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ E enc) : Aᶜ ∈ E enc :=
+  let ⟨k, hk⟩ := mem_E_iff.mp h
+  mem_E_iff.mpr ⟨k, compl_mem_DTIME hk⟩
+
+/-- `EXP` is closed under complement (`Cslib.Complexity.compl_mem_DTIME`). -/
+theorem compl_mem_EXP {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ EXP enc) :
+    Aᶜ ∈ EXP enc :=
+  let ⟨k, hk⟩ := mem_EXP_iff.mp h
+  mem_EXP_iff.mpr ⟨k, compl_mem_DTIME hk⟩
 
 /-- The diagonal problem is in exponential time. -/
 theorem setOf_diagonal_mem_EXP : {x | diagonal x = true} ∈ EXP encBits :=

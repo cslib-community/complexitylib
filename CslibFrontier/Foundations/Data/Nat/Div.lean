@@ -25,6 +25,7 @@ and exact quotient identities for division by `m` with remainder strictly below 
 * `Nat.mul_add_div_of_lt`, `Nat.add_mul_div_of_lt`: dividing `k * m + i` or `i + k * m` by `m`
   when `i < m` yields `k`.
 * `Nat.mul_add_div_fin`: the same for `i : Fin m`.
+* `Nat.eq_of_add_mul_eq`: `a + b * W = a' + b' * W` with `a, a' < W` forces `a = a'` and `b = b'`.
 * `Nat.add_sub_mod_mod_eq_ite`: difference of remainders modulo `d`, in the form
   `(a + d - b % d) % d`.
 * `Nat.add_sub_mod_mod_eq_of_modEq`: a modular difference is determined by its congruence.
@@ -55,6 +56,15 @@ theorem mul_add_div_of_lt (k : ℕ) {i m : ℕ} (hi : i < m) : (k * m + i) / m =
 /-- Dividing `i + k * m` by `m` when `i < m` yields `k`. -/
 theorem add_mul_div_of_lt (k : ℕ) {i m : ℕ} (hi : i < m) : (i + k * m) / m = k := by
   rw [Nat.add_mul_div_right _ _ (Nat.zero_lt_of_lt hi), Nat.div_eq_of_lt hi, Nat.zero_add]
+
+/-- Division with remainder by `W` is unique: `a + b * W = a' + b' * W` with `a, a' < W` forces
+`a = a'` and `b = b'`. -/
+theorem eq_of_add_mul_eq {W a a' b b' : ℕ} (ha : a < W) (ha' : a' < W)
+    (h : a + b * W = a' + b' * W) : a = a' ∧ b = b' := by
+  have hW : 0 < W := Nat.zero_lt_of_lt ha
+  have e := (Nat.div_mod_unique (a := a + b * W) hW).2 ⟨by rw [Nat.mul_comm], ha⟩
+  have e' := (Nat.div_mod_unique (a := a + b * W) hW).2 ⟨by rw [h, Nat.mul_comm], ha'⟩
+  exact ⟨e.2.symm.trans e'.2, e.1.symm.trans e'.1⟩
 
 /-- Dividing `k * m + i` by `m` for `i : Fin m` yields `k`. -/
 theorem mul_add_div_fin (k : ℕ) {m : ℕ} (i : Fin m) : (k * m + i) / m = k :=

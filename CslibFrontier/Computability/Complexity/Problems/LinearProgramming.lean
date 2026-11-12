@@ -431,19 +431,6 @@ theorem computableInPolyTime_certCheck : ComputableInPolyTime certCheck
     apply allWithInput (by fun_prop)
     fun_prop
 
-/-- Membership in `NP` from a sound and complete polynomial-time check with short witnesses. -/
-private theorem mem_NP_of_check {α β : Type} {enc : α ↪ List Bool} {encW : β ↪ List Bool}
-    (D : Decoder encW) {A : Set α} {chk : α × β → Bool} {p : Polynomial ℕ}
-    (hchk : ComputableInPolyTime chk (encPair enc encW) encBool)
-    (hsound : ∀ a b, chk (a, b) = true → a ∈ A)
-    (hcomplete : ∀ a ∈ A, ∃ b, chk (a, b) = true ∧ (encW b).length ≤ p.eval (enc a).length) :
-    A ∈ NP enc := by
-  have hA : A = {a | ∃ b, chk (a, b) = true} := by
-    ext a
-    exact ⟨fun ha => (hcomplete a ha).imp fun _ hb => hb.1, fun ⟨b, hb⟩ => hsound a b hb⟩
-  rw [hA]
-  exact mem_NP_of_witness D hchk (fun _ _ => Iff.rfl) fun a b hb => hcomplete a (hsound a b hb)
-
 /-- **Rational LP feasibility is in `NP`.** -/
 theorem mem_NP : LPFeasibility ∈ NP (encSystem) :=
   mem_NP_of_check (.pair .intBin (.list .intBin)) computableInPolyTime_check

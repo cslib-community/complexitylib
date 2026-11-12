@@ -21,8 +21,9 @@ block on well-formed inputs of cardinality at least two, with every register bou
 `(N + 1) ^ (d + k)` for input length `N` and maximal input arity `d`. The extra exponent `k` lets
 the block hold `k`-tuples of universe elements in single registers.
 
-Ordered first-order model checking and FO(DTC) model checking are the two clients. The FO(TC)
-decider is nondeterministic, so it shares only `decider_bounds`.
+Ordered first-order model checking and FO(DTC) model checking are the two clients. The
+nondeterministic analogue, used by FO(TC) model checking, is `nblockDecider` in
+`Classes.LogSpace.FirstOrder.Ordered.NondeterministicDecider`.
 
 ## Main definitions
 
@@ -33,6 +34,8 @@ decider is nondeterministic, so it shares only `decider_bounds`.
 
 * `Cslib.Logic.FO.Ordered.decider_bounds`: the register bound dominates the cardinality, its
   `k`-th power, the input length and the table sizes.
+* `Cslib.Logic.FO.Ordered.decider_layout`: where the shape check, the guard, the block, accept
+  and reject sit in a decider's code.
 * `Cslib.Logic.FO.Ordered.mem_L_of_decidingBlock`: a correct block puts the query in `L`.
 -/
 
@@ -80,6 +83,27 @@ registers for the block. -/
 
 variable {v}
 
+/-- The layout of a decider whose code is a prefix of length `4 + 6 * v.count` (the shape check),
+a guard instruction, a block of length `c`, accept and reject: the guard at `4 + 6 * v.count`, the
+block at `5 + 6 * v.count`, accept and reject right after it. -/
+theorem decider_layout {P : CounterProgram} {pre blk : List Instr} {g : Instr} {c : ℕ}
+    (hcode : P.code = pre ++ [g] ++ blk ++ [.accept, .reject])
+    (hpre : pre.length = 4 + 6 * v.count) (hblk : blk.length = c) :
+    P.CodeAt 0 pre ∧ P.instr (4 + 6 * v.count) = g ∧ P.CodeAt (5 + 6 * v.count) blk ∧
+    P.instr (5 + 6 * v.count + c) = .accept ∧ P.instr (6 + 6 * v.count + c) = .reject := by
+  have h : P.CodeAt 0 (pre ++ [g] ++ blk ++ [.accept, .reject]) :=
+    codeAt_of_code_eq (pre := []) (post := []) (by simp [hcode])
+  rw [codeAt_append, codeAt_append, codeAt_append] at h
+  obtain ⟨⟨⟨hshape, hguard⟩, hcomp⟩, hhalt⟩ := h
+  simp only [List.length_append, hpre, hblk, List.length_singleton, Nat.zero_add]
+    at hguard hcomp hhalt
+  obtain ⟨hacc, hrest⟩ := codeAt_cons.mp hhalt
+  refine ⟨hshape, (codeAt_cons.mp hguard).1, ?_, ?_, ?_⟩
+  · rwa [show 4 + 6 * v.count + 1 = 5 + 6 * v.count by omega] at hcomp
+  · rwa [show 4 + 6 * v.count + 1 + c = 5 + 6 * v.count + c by omega] at hacc
+  · have := (codeAt_cons.mp hrest).1
+    rwa [show 4 + 6 * v.count + 1 + c + 1 = 6 + 6 * v.count + c by omega] at this
+
 private theorem blockDecider_layout {C : ℕ → ℕ → ℕ → List Instr} {c : ℕ}
     (hC : ∀ b T F, (C b T F).length = c) (s : ℕ) :
     (blockDecider v C c s).CodeAt 0 (shapeCode v 0 (4 + 6 * v.count) (6 + 6 * v.count + c)) ∧
@@ -88,23 +112,8 @@ private theorem blockDecider_layout {C : ℕ → ℕ → ℕ → List Instr} {c 
     (blockDecider v C c s).CodeAt (5 + 6 * v.count)
       (C (5 + 6 * v.count) (5 + 6 * v.count + c) (6 + 6 * v.count + c)) ∧
     (blockDecider v C c s).instr (5 + 6 * v.count + c) = .accept ∧
-    (blockDecider v C c s).instr (6 + 6 * v.count + c) = .reject := by
-  have hcode : (blockDecider v C c s).CodeAt 0 (blockDecider v C c s).code :=
-    codeAt_of_code_eq (pre := []) (post := []) (by simp)
-  change (blockDecider v C c s).CodeAt 0 (shapeCode v 0 (4 + 6 * v.count) (6 + 6 * v.count + c) ++
-    [.lt (reg 0) (const 2) (6 + 6 * v.count + c) (5 + 6 * v.count)] ++
-    C (5 + 6 * v.count) (5 + 6 * v.count + c) (6 + 6 * v.count + c) ++ [.accept, .reject])
-    at hcode
-  rw [codeAt_append, codeAt_append, codeAt_append] at hcode
-  obtain ⟨⟨⟨hshape, hguard⟩, hcomp⟩, hhalt⟩ := hcode
-  simp only [List.length_append, length_shapeCode, hC, List.length_singleton, Nat.zero_add]
-    at hguard hcomp hhalt
-  obtain ⟨hacc, hrest⟩ := codeAt_cons.mp hhalt
-  refine ⟨hshape, (codeAt_cons.mp hguard).1, ?_, ?_, ?_⟩
-  · rwa [show 4 + 6 * v.count + 1 = 5 + 6 * v.count by omega] at hcomp
-  · rwa [show 4 + 6 * v.count + 1 + c = 5 + 6 * v.count + c by omega] at hacc
-  · have := (codeAt_cons.mp hrest).1
-    rwa [show 4 + 6 * v.count + 1 + c + 1 = 6 + 6 * v.count + c by omega] at this
+    (blockDecider v C c s).instr (6 + 6 * v.count + c) = .reject :=
+  decider_layout rfl (length_shapeCode ..) (hC ..)
 
 variable (v) in
 /-- **A deciding block puts an ordered query in `L`.** Let `S` contain only well-formed inputs

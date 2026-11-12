@@ -802,41 +802,41 @@ theorem orderedThreeColorable_polyTimeReducible_threeColoring :
 
 /-- **`Complexity.IndependentSet` reduces in polynomial time to `Ordered.IndependentSet`.** -/
 theorem independentSet_polyTimeReducible_orderedIndependentSet :
-    PolyTimeReducible (encPair encGraph encNat) encStructure
+    PolyTimeReducible encIndependentSetInstance encStructure
       Complexity.IndependentSet (IndependentSet.encodedLanguage sizedGraphVocabulary) :=
-  independentSet_npHard (encPair encGraph encNat) Complexity.IndependentSet
+  independentSet_npHard encIndependentSetInstance Complexity.IndependentSet
     Complexity.IndependentSet.mem_NP
 
 /-- **`Ordered.IndependentSet` reduces in polynomial time to `Complexity.IndependentSet`.** -/
 theorem orderedIndependentSet_polyTimeReducible_independentSet :
-    PolyTimeReducible encStructure (encPair encGraph encNat)
+    PolyTimeReducible encStructure encIndependentSetInstance
       (IndependentSet.encodedLanguage sizedGraphVocabulary) Complexity.IndependentSet :=
   IndependentSet_npHard encStructure (IndependentSet.encodedLanguage sizedGraphVocabulary)
     independentSet_encodedLanguage_mem_NP
 
 /-- **`Complexity.Clique` reduces in polynomial time to `Ordered.Clique`.** -/
 theorem clique_polyTimeReducible_orderedClique :
-    PolyTimeReducible (encPair encGraph encNat) encStructure
+    PolyTimeReducible encCliqueInstance encStructure
       Complexity.Clique (Clique.encodedLanguage sizedGraphVocabulary) :=
-  clique_npHard (encPair encGraph encNat) Complexity.Clique Complexity.Clique.mem_NP
+  clique_npHard encCliqueInstance Complexity.Clique Complexity.Clique.mem_NP
 
 /-- **`Ordered.Clique` reduces in polynomial time to `Complexity.Clique`.** -/
 theorem orderedClique_polyTimeReducible_clique :
-    PolyTimeReducible encStructure (encPair encGraph encNat)
+    PolyTimeReducible encStructure encCliqueInstance
       (Clique.encodedLanguage sizedGraphVocabulary) Complexity.Clique :=
   Clique_npHard encStructure (Clique.encodedLanguage sizedGraphVocabulary)
     clique_encodedLanguage_mem_NP
 
 /-- **`Complexity.VertexCover` reduces in polynomial time to `Ordered.VertexCover`.** -/
 theorem vertexCover_polyTimeReducible_orderedVertexCover :
-    PolyTimeReducible (encPair encGraph encNat) encStructure
+    PolyTimeReducible encVertexCoverInstance encStructure
       Complexity.VertexCover (VertexCover.encodedLanguage sizedGraphVocabulary) :=
-  vertexCover_npHard (encPair encGraph encNat) Complexity.VertexCover
+  vertexCover_npHard encVertexCoverInstance Complexity.VertexCover
     Complexity.VertexCover.mem_NP
 
 /-- **`Ordered.VertexCover` reduces in polynomial time to `Complexity.VertexCover`.** -/
 theorem orderedVertexCover_polyTimeReducible_vertexCover :
-    PolyTimeReducible encStructure (encPair encGraph encNat)
+    PolyTimeReducible encStructure encVertexCoverInstance
       (VertexCover.encodedLanguage sizedGraphVocabulary) Complexity.VertexCover :=
   VertexCover_npHard encStructure (VertexCover.encodedLanguage sizedGraphVocabulary)
     vertexCover_encodedLanguage_mem_NP

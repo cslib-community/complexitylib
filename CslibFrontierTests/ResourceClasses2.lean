@@ -21,11 +21,11 @@ open Cslib Cslib.Complexity Turing Turing.MultiTapeTM
 namely `2` and `2`. -/
 example : truncateBlocks [.X + 1, 2] 1 2 [true, false, true, false, true] =
     [true, false, false, true] := by
-  simp [truncateBlocks]
+  simp [truncateBlocks, takeBlocks]
 
 /-- Cutting at equal lengths keeps the concatenated blocks. -/
 example : truncateBlocks [.X, .X] 2 2 [true, false, true, true] = [true, false, true, true] := by
-  simp [truncateBlocks]
+  simp [truncateBlocks, takeBlocks]
 
 /-- The quantifiers over longer blocks, cut, are the quantifiers over shorter blocks. -/
 example :

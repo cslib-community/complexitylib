@@ -224,7 +224,10 @@ From a bootstrapped repository root, import
 [guide chapter](../../guide/CslibFrontierGuide/Matching.lean) show both endpoints and their certificates.
 Run `lake build CslibFrontierTests.NativeMatching --wfail --iofail` to check the client.
 
-A `Graph` is a pair of lists: declared binary natural-number names and original endpoint pairs.
+A `Graph` stores two named list fields: `vertices` for declared binary natural-number names and
+`edges` for original endpoint pairs. Construct it as `⟨vertices, edges⟩`, as in the checked clients
+above. `encGraph` frames the vertex list before the edge list, preserving the original order and
+multiplicity of both lists.
 `G.maximumMatching` returns a list of selected original pairs; `G.perfectMatching` returns
 `some edges` exactly when a perfect matching exists, and `G.decidePerfectMatching` is its Boolean
 decision. On the path with edge order `[(1, 2), (0, 1), (2, 3)]`, both searches select
