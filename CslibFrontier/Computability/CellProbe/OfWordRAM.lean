@@ -24,8 +24,8 @@ import Mathlib.Data.Finset.Sort
 
 This file builds the computational simulation bridge (`Cslib.CellProbe`) from deterministic,
 finite-tree randomized, and unbounded Las Vegas Word-RAM executions (`Cslib.WordRAM`) to adaptive
-deterministic cell-probe trees (`ProbeTree`; [Miltersen1999], §1.2, pp. 1–2) and distributional
-randomized cell-probe trees (`RandProbeTree`; [Yao1977]).
+deterministic cell-probe trees (`ProbeTree`; [Miltersen1999], §1.2, pp. 1–2) and internal-coin
+randomized cell-probe trees (`RandProbeTree`; coin-fixing reduction after [Yao1977]).
 
 On a `w`-bit Word RAM with `r` registers and contiguous memory footprint `[base, base + S)`, two
 model differences require explicit accounting in a formal simulation:
@@ -58,12 +58,13 @@ model differences require explicit accounting in a formal simulation:
      correctness** at finite tree depth while achieving expected probes `≤ T + overhead + η` for any
      `η > 0`.
 
-While [Miltersen1999], §1.2, p. 2 sketches only the informal unit-cost RAM-to-cell-probe transfer
-by storing a single accumulator register in an extra cell, the `zeroOutside` footprint framing,
-multi-register `persistentRegCount` / wide-cell spill layouts, intra-operation write buffering, and
-finite-horizon Las Vegas truncation are local library constructions connecting `Cslib.WordRAM` to
-`Cslib.CellProbe`. For data-structure `Impl` bridges and contrapositive lower-bound transfer
-corollaries, see `CslibFrontier.DataStructure.CellProbe.OfWordRAM`.
+While [Miltersen1999], §1.2, p. 2 notes only that cell-probe lower bounds transfer up to a
+constant factor to unit-cost RAMs of the same word size whose instructions touch a constant number
+of registers, the `zeroOutside` footprint framing, multi-register `persistentRegCount` / wide-cell
+spill layouts, intra-operation write buffering, and finite-horizon Las Vegas truncation are local
+library constructions connecting `Cslib.WordRAM` to `Cslib.CellProbe`. For data-structure `Impl`
+bridges and contrapositive lower-bound transfer corollaries, see
+`CslibFrontier.DataStructure.CellProbe.OfWordRAM`.
 
 ## Main definitions
 

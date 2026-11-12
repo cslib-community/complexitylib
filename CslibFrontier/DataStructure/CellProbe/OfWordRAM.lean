@@ -19,15 +19,16 @@ import CslibFrontier.Probability.PMF.Map
 # Word-RAM-to-Cell-Probe Data-Structure Simulation Bridges and Lower-Bound Transfer
 
 This file lifts the program-level Word-RAM-to-cell-probe simulators of
-`CslibFrontier.Computability.CellProbe.OfWordRAM` (deterministic cell-probe model and informal RAM
-transfer sketch after [Miltersen1999], §1.2, pp. 1–2; multi-register spilling, wide-cell packing,
-`zeroOutside` framing, and Las Vegas truncation are local library constructions) to the relational
-and oblivious-sequence data-structure `Impl` hierarchies (`Cslib.DataStructure.WordRAM` →
-`Cslib.DataStructure.CellProbe`, [CLRS2009], Section 17.3). Combining these bridges with the
-zero-error averaging direction of Yao's principle [Yao1977] transfers deterministic step-indexed
-`IndexedScheme` lower bounds against zero-error implementations on oblivious sequences: the
-`StateTransitionImpl` and `ObliviousSequenceImpl` transfers lower-bound the certified
-potential-amortized resource budget (`initPotential + E[totalCost charge + overhead · length]` and
+`CslibFrontier.Computability.CellProbe.OfWordRAM` (deterministic cell-probe model and
+constant-register RAM lower-bound note in [Miltersen1999], §1.2, pp. 1–2; multi-register spilling,
+wide-cell packing, `zeroOutside` framing, and Las Vegas truncation are local library constructions)
+to the relational and oblivious-sequence data-structure `Impl` hierarchies
+(`Cslib.DataStructure.WordRAM` → `Cslib.DataStructure.CellProbe`, [CLRS2009], Section 17.3).
+Combining these bridges with the zero-error averaging direction of Yao's principle [Yao1977]
+transfers deterministic step-indexed `IndexedScheme` lower bounds against zero-error
+implementations on oblivious sequences: the `StateTransitionImpl` and `ObliviousSequenceImpl`
+transfers lower-bound the certified potential-amortized resource budget
+(`initPotential + E[totalCost charge + overhead · length]` and
 `initPotential + E[(ops.map charge).sum + overhead · length]`), while the flat `(ν₀, p_op)`
 transfers directly lower-bound expected `ExecFlatProgramOps` instructions
 (`E[timeBound ops + overhead · length]`). Bounded-error (Monte Carlo) and adaptive-adversary

@@ -21,7 +21,7 @@ import CslibFrontier.Probability.PMF.SupportTsum
 
 This file extends `Cslib.DataStructure.CellProbe.StateTransitionImpl` to randomized cell-probe
 schemes (`Cslib.CellProbe.Randomized.Scheme`; deterministic cell-probe model from [Miltersen1999],
-§1.2, distributional randomized trees after [Yao1977]) implementing relational state-transition
+§1.2, internal-coin randomized trees) implementing relational state-transition
 specifications (`Cslib.DataStructure.StateTransitionSpec`, [CLRS2009], Section 17.3;
 [MitzenmacherUpfal2017], Sections 2.1 and 2.3).
 
@@ -79,7 +79,6 @@ amortized-in-expectation probe inequality:
 ## References
 
 * [P. B. Miltersen, *Cell Probe Complexity — a Survey*, §1.2][Miltersen1999]
-* [A. C.-C. Yao, *Probabilistic Computations: Toward a Unified Measure of Complexity*][Yao1977]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
   Section 17.3][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing: Randomization and Probabilistic
