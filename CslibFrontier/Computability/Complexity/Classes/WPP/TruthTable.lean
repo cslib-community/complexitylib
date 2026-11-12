@@ -34,6 +34,9 @@ normalizes the possible prefix targets for an input-dependent query count.
   of one jointly uniform family over a computed unary bound.
 * `PolyTimeTruthTableReducible.mem_WPP`, `PolyTimeTruthTableReducible.mem_LWPP`:
   closure under polynomial-time truth-table reductions.
+* `forall_lt_mem_WPP`, `exists_lt_mem_WPP`, `forall_lt_mem_LWPP`, `exists_lt_mem_LWPP`:
+  conjunction and disjunction over a polynomial-time unary bound, which for LWPP may vary between
+  inputs of the same length.
 
 ## References
 
@@ -187,5 +190,46 @@ theorem PolyTimeTruthTableReducible.mem_LWPP {β : Type} {encB : β ↪ List Boo
   convert truthTable_mem_LWPP hqB hr hd using 1
   ext a
   exact hL a
+
+/-! ### Bounded quantifiers -/
+
+private theorem computableInPolyTime_all_answers :
+    ComputableInPolyTime (fun x : α × List Bool => x.2.all id) (encPair enc encBits) encBool :=
+  ComputableInPolyTime.allWithEncoding (encA := encBool) (encL := encBits)
+    (test := fun p : α × Bool => p.2) (.snd enc encBool) (.fst enc encBits) (.snd enc encBits)
+
+/-- A jointly WPP family is closed under conjunction over a polynomial-time unary bound. -/
+theorem forall_lt_mem_WPP (hA : A ∈ WPP (encPair enc encUnary))
+    (hr : ComputableInPolyTime r enc encUnary) :
+    {a | ∀ i < r a, (a, i) ∈ A} ∈ WPP enc := by
+  convert truthTable_mem_WPP hA hr computableInPolyTime_all_answers using 1
+  ext a
+  simp [truthTableAnswers, List.all_eq_true, Fin.forall_iff]
+
+/-- A jointly WPP family is closed under disjunction over a polynomial-time unary bound. -/
+theorem exists_lt_mem_WPP (hA : A ∈ WPP (encPair enc encUnary))
+    (hr : ComputableInPolyTime r enc encUnary) :
+    {a | ∃ i < r a, (a, i) ∈ A} ∈ WPP enc := by
+  convert compl_mem_WPP (forall_lt_mem_WPP (compl_mem_WPP hA) hr) using 1
+  ext a
+  simp
+
+/-- A jointly LWPP family is closed under conjunction over a polynomial-time unary bound, which
+may vary between inputs of the same length. -/
+theorem forall_lt_mem_LWPP (hA : A ∈ LWPP (encPair enc encUnary))
+    (hr : ComputableInPolyTime r enc encUnary) :
+    {a | ∀ i < r a, (a, i) ∈ A} ∈ LWPP enc := by
+  convert truthTable_mem_LWPP hA hr computableInPolyTime_all_answers using 1
+  ext a
+  simp [truthTableAnswers, List.all_eq_true, Fin.forall_iff]
+
+/-- A jointly LWPP family is closed under disjunction over a polynomial-time unary bound, which
+may vary between inputs of the same length. -/
+theorem exists_lt_mem_LWPP (hA : A ∈ LWPP (encPair enc encUnary))
+    (hr : ComputableInPolyTime r enc encUnary) :
+    {a | ∃ i < r a, (a, i) ∈ A} ∈ LWPP enc := by
+  convert compl_mem_LWPP (forall_lt_mem_LWPP (compl_mem_LWPP hA) hr) using 1
+  ext a
+  simp
 
 end Cslib.Complexity

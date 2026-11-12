@@ -2173,7 +2173,6 @@ public import CslibFrontier.Computability.Complexity.Classes.ValiantVazirani
 public import CslibFrontier.Computability.Complexity.Classes.ValiantVazirani.Collapse
 public import CslibFrontier.Computability.Complexity.Classes.ValiantVazirani.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.WPP
-public import CslibFrontier.Computability.Complexity.Classes.WPP.Bounded
 public import CslibFrontier.Computability.Complexity.Classes.WPP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.WPP.Robustness
 public import CslibFrontier.Computability.Complexity.Classes.WPP.TruthTable
