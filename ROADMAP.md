@@ -239,9 +239,6 @@ Containments, separations, closure properties, complete problems and reductions 
 ### Interactive proofs
 
 - **MIP = NEXP** ([#892](https://github.com/cslib-community/cslib-frontier/issues/892)): `NEXP ⊆ MIP₂` through the BFL multilinearity test and arithmetization of exponential-time tableaux; an efficient GKR verifier under log-space uniformity.
-- **Goldwasser–Sipser** ([#2981](https://github.com/cslib-community/cslib-frontier/issues/2981), [#3425](https://github.com/cslib-community/cslib-frontier/issues/3425)): `IP[k] ⊆ AM[k + 2]` for the private-coin games `IPk`, by the set lower bound protocol on the gap-amplified game.
-  In the oracle model, oracle-PPT `IP` verifiers with at most `k` queries give exactly the count-based `IPk`, by coin fixing and padding to `k` rounds, which carries `IP[k] = AM` for constant `k ≥ 2` to that model.
-  The inclusion extends to `IP[k(n)] ⊆ AM[k(n) + 2]` for round patterns that depend on the input length.
 - **Arthur–Merlin classes:** the Babai–Moran speedup `AM[2 t(n)] = AM[t(n)]` for polynomially many rounds (patterns that depend on the input length), interactive-machine characterizations of Arthur–Merlin classes, and statistical and perfect zero knowledge.
 - **Statistical zero knowledge** ([#3205](https://github.com/cslib-community/cslib-frontier/issues/3205)): Sahai–Vadhan polarization as a polynomial-time map on encoded Statistical Difference instances with error `2^-(|x|+1)`, honest-verifier SZK containing `SD`, `SD` being SZK-complete, Entropy Difference (Goldreich–Vadhan), closure under complement (Okamoto), and `SZK ⊆ AM ∩ coAM` (Fortnow; Aiello–Håstad).
   Instances are pairs of De Morgan circuits, with general pairs padded to common input and output counts.
