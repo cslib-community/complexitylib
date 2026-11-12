@@ -1764,11 +1764,8 @@ theorem realizes_microStepGen :
       (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ))
       MicroStepGenPre
       (fun _ _ => 0) := by
-  have hrn := realizes_readLMNextGen
-  have hres := realizes_resolveIndexedSlotGen
-  have hrq := realizes_readQuotGen
   unfold microStepGenProg
-  realize
+  realize [realizes_readLMNextGen, realizes_resolveIndexedSlotGen, realizes_readQuotGen]
   all_goals (
     rcases d with ⟨⟨⟨dp, d1⟩, z0⟩, a⟩
     let d := ((d1, z0), a)
