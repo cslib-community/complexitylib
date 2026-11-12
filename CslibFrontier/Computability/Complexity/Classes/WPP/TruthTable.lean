@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.WPP.Robustness
 public import CslibFrontier.Computability.Complexity.Classes.SharpP.Products
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTable
 import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Foundations.Data.List.Lookup
@@ -193,16 +193,11 @@ theorem PolyTimeTruthTableReducible.mem_LWPP {β : Type} {encB : β ↪ List Boo
 
 /-! ### Bounded quantifiers -/
 
-private theorem computableInPolyTime_all_answers :
-    ComputableInPolyTime (fun x : α × List Bool => x.2.all id) (encPair enc encBits) encBool :=
-  ComputableInPolyTime.allWithEncoding (encA := encBool) (encL := encBits)
-    (test := fun p : α × Bool => p.2) (.snd enc encBool) (.fst enc encBits) (.snd enc encBits)
-
 /-- A jointly WPP family is closed under conjunction over a polynomial-time unary bound. -/
 theorem forall_lt_mem_WPP (hA : A ∈ WPP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary) :
     {a | ∀ i < r a, (a, i) ∈ A} ∈ WPP enc := by
-  convert truthTable_mem_WPP hA hr computableInPolyTime_all_answers using 1
+  convert truthTable_mem_WPP (d := fun x => x.2.all id) hA hr (by fun_prop) using 1
   ext a
   simp [truthTableAnswers, List.all_eq_true, Fin.forall_iff]
 
@@ -219,7 +214,7 @@ may vary between inputs of the same length. -/
 theorem forall_lt_mem_LWPP (hA : A ∈ LWPP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary) :
     {a | ∀ i < r a, (a, i) ∈ A} ∈ LWPP enc := by
-  convert truthTable_mem_LWPP hA hr computableInPolyTime_all_answers using 1
+  convert truthTable_mem_LWPP (d := fun x => x.2.all id) hA hr (by fun_prop) using 1
   ext a
   simp [truthTableAnswers, List.all_eq_true, Fin.forall_iff]
 
