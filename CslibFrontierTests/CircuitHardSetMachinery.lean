@@ -25,8 +25,8 @@ example : (majTreeFormula 1 fun i : Fin (3 ^ 1) => (Formula.input (Fin.cast (by 
     Formula signature 3)).depthWith binaryCost ≤ 0 + 3 * 1 :=
   depthWith_majTreeFormula_le 1 _ fun _ => by simp
 
-/-- Lemma 3.7 for formulas: three equally weighted copies of the parity-free formula `x₀`, each
-always correct for `f x = x 0`, give a correct formula on all of `BitString 1`. -/
+/-- Lemma 3.7 for formulas: the deterministic family containing only `x₀`, with weight one,
+is always correct for `f x = x 0` and gives a correct formula on all of `BitString 1`. -/
 example : ∃ G : Formula signature 1, (∀ x ∈ (Finset.univ : Finset (BitString 1)),
     G.eval interpretation x = x 0) ∧ G.depthWith binaryCost ≤ 0 + 3 * (5 + 1) + 3 * 1 := by
   refine exists_eq_of_forall_sum_ne_le (Ω := Fin 1) (w := fun _ => 1) (fun _ => zero_le_one)

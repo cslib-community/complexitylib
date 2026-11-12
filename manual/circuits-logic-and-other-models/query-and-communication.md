@@ -254,7 +254,7 @@ core is `density_le_of_forall_accuracy_le`: if every formula of depth `d + 1` ha
 `1/2 + α`, then `ρ ≤ 2⁻ᵐ + 2α(1 - 2⁻ᵐ)`. It is the source's recursion `M_{r+1} ≤ M_r / 2 + α`,
 which fixes all rows but one with `Probability.PMF.sum_pi_mul_update`. The
 [predictor client](../../CslibFrontierTests/CircuitDenseRestrictionPredictor.lean) applies
-Lemma 6.2 to a three-bit protocol on one-row matrices; run
+Lemma 6.2 to a two-bit protocol on one-row matrices, giving formula depth at most three; run
 `scripts/build.sh CslibFrontierTests.CircuitDenseRestrictionPredictor`.
 Three general formula tools prepare Lemma 6.3; the lemma itself is not proved yet.
 [MajorityFormula](../../CslibFrontier/Computability/Circuit/Boolean/MajorityFormula.lean) gives
@@ -262,6 +262,8 @@ Lemma 3.7 for formulas. `majTreeFormula L V` computes `Cslib.majTree` of the val
 three AND/OR levels per majority level. `exists_eq_of_forall_sum_ne_le` turns a weighted family
 of depth-`d` formulas that is right with weight at least `1/2 + ε` at every point of `S` into one
 formula of depth at most `d + 3 (m₁ + 1) + 3 m₂` that is right on `S`.
+Choose `ε ≥ 0` and natural numbers `m₁`, `m₂` satisfying
+`(11/8)^m₁ · ε ≥ 1/4` and `|S| ≤ 2^(2^m₂)`; the depth bound requires both conditions.
 [Memorize](../../CslibFrontier/Computability/Circuit/Boolean/Memorize.lean) gives
 `exists_memorize`: a formula of depth at most `⌈log₂ n⌉ + ⌈log₂ |T|⌉` that equals `g` on `T` and
 a constant `b` elsewhere, built from the shared equality test `Formula.eqFormula`.
@@ -274,6 +276,7 @@ depth are infinitely many. The [machinery client](../../CslibFrontierTests/Circu
 checks all three on small inputs; run `scripts/build.sh CslibFrontierTests.CircuitHardSetMachinery`.
 The rest of Lemma 6.3 (the hard distribution, removing heavy points and the rounding with
 Bernstein's inequality) and Lemmas 6.4–6.5 and Theorem 6.6 are not formalized yet.
+
 
 This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
 and 1.5, and Corollaries 1.3 and 1.4. The composition/core results (Theorems 1.6–1.8) remain
