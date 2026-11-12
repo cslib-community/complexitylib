@@ -21,6 +21,8 @@ and a polynomial-time Boolean combiner. The combiner receives the original input
 The query generator is total even outside the used range; unused outputs do not affect semantics.
 The answer word `truthTableAnswers` and the resource-free kernel `TruthTableReducibleBy` live in
 `CslibFrontier.Computability.Reduction.TruthTable`, publicly re-exported here.
+`PolyTimeTruthTableReducible` is by definition `TruthTableReducibleBy` with polynomial-time data,
+so the kernel lemmas prove its complementation and many-one embedding below.
 
 ## Main definitions
 
@@ -28,7 +30,6 @@ The answer word `truthTableAnswers` and the resource-free kernel `TruthTableRedu
 
 ## Main results
 
-* `polyTimeTruthTableReducible_iff_truthTableReducibleBy`: the bridge to the kernel.
 * `truthTable_mem_P`, `PolyTimeTruthTableReducible.mem_P`: `P` is closed under polynomial-time
   truth-table reductions.
 * `PolyTimeReducible.polyTimeTruthTableReducible`: every polynomial-time many-one reduction is a
@@ -64,15 +65,6 @@ def PolyTimeTruthTableReducible {β : Type} (encA : α ↪ List Bool) (encB : β
     ∀ a, a ∈ L ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true
 
 variable {β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {L : Set α} {B : Set β}
-
-/-- Polynomial-time truth-table reducibility is truth-table reducibility by polynomial-time
-data. -/
-theorem polyTimeTruthTableReducible_iff_truthTableReducibleBy :
-    PolyTimeTruthTableReducible encA encB L B ↔
-      TruthTableReducibleBy (fun r q d => ComputableInPolyTime r encA encUnary ∧
-        ComputableInPolyTime q (encPair encA encUnary) encB ∧
-        ComputableInPolyTime d (encPair encA encBits) encBool) L B :=
-  Iff.rfl
 
 /-- Every polynomial-time many-one reduction is a polynomial-time truth-table reduction making a
 single query. -/

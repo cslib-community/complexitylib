@@ -31,6 +31,12 @@ Restrictions of polynomial-time truth-table reductions
   is taken semantically, as a monotone polynomial-time combiner; it is not the syntactic notion
   of a Boolean formula built from `∧` and `∨`.
 
+Each definition is by definition an instance of a resource-free kernel of
+`CslibFrontier.Computability.Reduction.TruthTable` (`Cslib.Complexity.TruthTableReducibleBy`,
+`Cslib.Complexity.DTTReducibleBy` or `Cslib.Complexity.CTTReducibleBy`), with the query bound or
+monotonicity condition grouped with the resource conditions. The inclusions, complementation and
+duality below are applications of the kernel lemmas.
+
 ## Main definitions
 
 * `Cslib.Complexity.PolyTimeKTruthTableReducible`, `Cslib.Complexity.PolyTimeBTTReducible`.
@@ -51,11 +57,6 @@ Restrictions of polynomial-time truth-table reductions
   `Cslib.Complexity.PolyTimePTTReducible.polyTimeTruthTableReducible`.
 * `Cslib.Complexity.polyTimeDTTReducible_iff_polyTimeCTTReducible_compl`: disjunctive reductions
   of `L` to `B` are the conjunctive reductions of `Lᶜ` to `Bᶜ`.
-* Bridges to the kernels of `CslibFrontier.Computability.Reduction.TruthTable`:
-  `Cslib.Complexity.polyTimeKTruthTableReducible_iff_truthTableReducibleBy`,
-  `Cslib.Complexity.polyTimeDTTReducible_iff_dttReducibleBy`,
-  `Cslib.Complexity.polyTimeCTTReducible_iff_cttReducibleBy`,
-  `Cslib.Complexity.polyTimePTTReducible_iff_truthTableReducibleBy`.
 * Transitivity: `Cslib.Complexity.PolyTimeTruthTableReducible.trans`,
   `Cslib.Complexity.PolyTimeKTruthTableReducible.trans` (`k`- and `k'`-query reductions compose to a
   `k * k'`-query reduction), `Cslib.Complexity.PolyTimeBTTReducible.trans`,
@@ -93,15 +94,6 @@ def PolyTimeKTruthTableReducible (k : ℕ) (encA : α ↪ List Bool) (encB : β 
       ComputableInPolyTime d (encPair encA encBits) encBool ∧
       ∀ a, r a ≤ k) ∧
     ∀ a, a ∈ L ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true
-
-/-- `k`-truth-table reducibility is truth-table reducibility by polynomial-time data making at
-most `k` queries. -/
-theorem polyTimeKTruthTableReducible_iff_truthTableReducibleBy {k : ℕ} :
-    PolyTimeKTruthTableReducible k encA encB L B ↔
-      TruthTableReducibleBy (fun r q d => ComputableInPolyTime r encA encUnary ∧
-        ComputableInPolyTime q (encPair encA encUnary) encB ∧
-        ComputableInPolyTime d (encPair encA encBits) encBool ∧ ∀ a, r a ≤ k) L B :=
-  Iff.rfl
 
 /-- A truth-table reduction making a bounded number of queries. -/
 def PolyTimeBTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (L : Set α)
@@ -271,20 +263,6 @@ def PolyTimeCTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (L 
     (ComputableInPolyTime r encA encUnary ∧ ComputableInPolyTime q (encPair encA encUnary) encB) ∧
     ∀ a, a ∈ L ↔ ∀ i < r a, q (a, i) ∈ B
 
-/-- Disjunctive truth-table reducibility is disjunctive reducibility by polynomial-time data. -/
-theorem polyTimeDTTReducible_iff_dttReducibleBy :
-    PolyTimeDTTReducible encA encB L B ↔
-      DTTReducibleBy (fun r q => ComputableInPolyTime r encA encUnary ∧
-        ComputableInPolyTime q (encPair encA encUnary) encB) L B :=
-  Iff.rfl
-
-/-- Conjunctive truth-table reducibility is conjunctive reducibility by polynomial-time data. -/
-theorem polyTimeCTTReducible_iff_cttReducibleBy :
-    PolyTimeCTTReducible encA encB L B ↔
-      CTTReducibleBy (fun r q => ComputableInPolyTime r encA encUnary ∧
-        ComputableInPolyTime q (encPair encA encUnary) encB) L B :=
-  Iff.rfl
-
 /-- Disjunctive reductions of `L` to `B` are the conjunctive reductions of `Lᶜ` to `Bᶜ`, with the
 same queries. -/
 theorem polyTimeDTTReducible_iff_polyTimeCTTReducible_compl :
@@ -365,16 +343,6 @@ def PolyTimePTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (L 
       ComputableInPolyTime d (encPair encA encBits) encBool ∧
       ∀ a u v, List.Forall₂ (· ≤ ·) u v → d (a, u) ≤ d (a, v)) ∧
     ∀ a, a ∈ L ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true
-
-/-- Positive truth-table reducibility is truth-table reducibility by polynomial-time data with a
-monotone combiner. -/
-theorem polyTimePTTReducible_iff_truthTableReducibleBy :
-    PolyTimePTTReducible encA encB L B ↔
-      TruthTableReducibleBy (fun r q d => ComputableInPolyTime r encA encUnary ∧
-        ComputableInPolyTime q (encPair encA encUnary) encB ∧
-        ComputableInPolyTime d (encPair encA encBits) encBool ∧
-        ∀ a u v, List.Forall₂ (· ≤ ·) u v → d (a, u) ≤ d (a, v)) L B :=
-  Iff.rfl
 
 /-- A positive truth-table reduction is a truth-table reduction. -/
 theorem PolyTimePTTReducible.polyTimeTruthTableReducible (h : PolyTimePTTReducible encA encB L B) :

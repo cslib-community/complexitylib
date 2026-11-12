@@ -18,6 +18,10 @@ uniform bound on the active count. These are the `k`-dtt and `k`-ctt restriction
 [LadnerLynchSelman1975], with the logspace and encoding conventions of that module. The bound
 means at most `k`, including zero; an empty disjunction is false and an empty conjunction is true.
 
+Both definitions are by definition instances of the kernels `Cslib.Complexity.DTTReducibleBy` and
+`Cslib.Complexity.CTTReducibleBy` of `CslibFrontier.Computability.Reduction.TruthTable`, whose
+lemmas prove the results below.
+
 ## Main definitions
 
 * `Cslib.Complexity.LogSpaceKDTTReducible`: at most `k` disjunctive queries.
@@ -27,9 +31,6 @@ means at most `k`, including zero; an empty disjunction is false and an empty co
 
 * `Cslib.Complexity.LogSpaceKDTTReducible.logSpaceKTruthTableReducible`: evaluate OR.
 * `Cslib.Complexity.LogSpaceKCTTReducible.logSpaceKTruthTableReducible`: evaluate AND.
-* `Cslib.Complexity.logSpaceKDTTReducible_iff_dttReducibleBy`,
-  `Cslib.Complexity.logSpaceKCTTReducible_iff_cttReducibleBy`: bridges to the kernels of
-  `CslibFrontier.Computability.Reduction.TruthTable`.
 -/
 
 public section
@@ -56,22 +57,6 @@ variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     (ComputableInLogSpace r encA encUnary ∧
       ComputableInLogSpace q (encPair encA encUnary) encB ∧ ∀ a, r a ≤ k) ∧
     ∀ a, a ∈ A ↔ ∀ i < r a, q (a, i) ∈ B
-
-/-- Bounded disjunctive reducibility is disjunctive reducibility by logspace data making at most
-`k` queries. -/
-theorem logSpaceKDTTReducible_iff_dttReducibleBy :
-    LogSpaceKDTTReducible k encA encB A B ↔
-      DTTReducibleBy (fun r q => ComputableInLogSpace r encA encUnary ∧
-        ComputableInLogSpace q (encPair encA encUnary) encB ∧ ∀ a, r a ≤ k) A B :=
-  Iff.rfl
-
-/-- Bounded conjunctive reducibility is conjunctive reducibility by logspace data making at most
-`k` queries. -/
-theorem logSpaceKCTTReducible_iff_cttReducibleBy :
-    LogSpaceKCTTReducible k encA encB A B ↔
-      CTTReducibleBy (fun r q => ComputableInLogSpace r encA encUnary ∧
-        ComputableInLogSpace q (encPair encA encUnary) encB ∧ ∀ a, r a ≤ k) A B :=
-  Iff.rfl
 
 /-- Forgetting the query bound gives disjunctive reducibility. -/
 theorem LogSpaceKDTTReducible.logSpaceDTTReducible (h : LogSpaceKDTTReducible k encA encB A B) :

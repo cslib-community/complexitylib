@@ -37,7 +37,9 @@ bounded-query truth-table reductions preserve membership in `L` and compose in `
 with the formula/`NC¹` convention is claimed.
 
 This module also defines the standard restricted logspace truth-table notions mirroring
-`TruthTableVariants`:
+`TruthTableVariants`. As there, each definition is by definition an instance of a resource-free
+kernel of `CslibFrontier.Computability.Reduction.TruthTable`, whose lemmas prove the inclusions,
+embeddings, complementation and duality below:
 
 * **`k`-query truth-table** (`LogSpaceKTruthTableReducible k`): at most `k` nonadaptive queries per
   input (`∀ a, r a ≤ k`).
@@ -85,11 +87,6 @@ This module also defines the standard restricted logspace truth-table notions mi
   `compl_left`, `compl_right`, `compl` for `LogSpaceTruthTableReducible`,
   `LogSpaceKTruthTableReducible`, `LogSpaceBTTReducible`;
   `logSpaceDTTReducible_iff_logSpaceCTTReducible_compl`.
-* Bridges to the kernels of `CslibFrontier.Computability.Reduction.TruthTable`:
-  `logSpaceTruthTableReducible_iff_truthTableReducibleBy`,
-  `logSpaceKTruthTableReducible_iff_truthTableReducibleBy`,
-  `logSpaceDTTReducible_iff_dttReducibleBy`, `logSpaceCTTReducible_iff_cttReducibleBy`,
-  `logSpacePTTReducible_iff_truthTableReducibleBy`.
 * Closure of `L` and transitivity for bounded-query reductions:
   `kTruthTable_mem_L`, `LogSpaceKTruthTableReducible.mem_L`, `LogSpaceBTTReducible.mem_L`,
   `LogSpaceKTruthTableReducible.trans`, `LogSpaceBTTReducible.trans`.
@@ -167,49 +164,6 @@ def LogSpacePTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A 
       ComputableInLogSpace d (encPair encA encBits) encBool ∧
       ∀ a u v, List.Forall₂ (· ≤ ·) u v → d (a, u) ≤ d (a, v)) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true
-
-/-! ### Bridges to the resource-free kernels -/
-
-/-- Logspace truth-table reducibility is truth-table reducibility by logspace data. -/
-theorem logSpaceTruthTableReducible_iff_truthTableReducibleBy :
-    LogSpaceTruthTableReducible encA encB A B ↔
-      TruthTableReducibleBy (fun r q d => ComputableInLogSpace r encA encUnary ∧
-        ComputableInLogSpace q (encPair encA encUnary) encB ∧
-        ComputableInLogSpace d (encPair encA encBits) encBool) A B :=
-  Iff.rfl
-
-/-- Logspace `k`-truth-table reducibility is truth-table reducibility by logspace data making at
-most `k` queries. -/
-theorem logSpaceKTruthTableReducible_iff_truthTableReducibleBy {k : ℕ} :
-    LogSpaceKTruthTableReducible k encA encB A B ↔
-      TruthTableReducibleBy (fun r q d => ComputableInLogSpace r encA encUnary ∧
-        ComputableInLogSpace q (encPair encA encUnary) encB ∧
-        ComputableInLogSpace d (encPair encA encBits) encBool ∧ ∀ a, r a ≤ k) A B :=
-  Iff.rfl
-
-/-- Logspace disjunctive truth-table reducibility is disjunctive reducibility by logspace data. -/
-theorem logSpaceDTTReducible_iff_dttReducibleBy :
-    LogSpaceDTTReducible encA encB A B ↔
-      DTTReducibleBy (fun r q => ComputableInLogSpace r encA encUnary ∧
-        ComputableInLogSpace q (encPair encA encUnary) encB) A B :=
-  Iff.rfl
-
-/-- Logspace conjunctive truth-table reducibility is conjunctive reducibility by logspace data. -/
-theorem logSpaceCTTReducible_iff_cttReducibleBy :
-    LogSpaceCTTReducible encA encB A B ↔
-      CTTReducibleBy (fun r q => ComputableInLogSpace r encA encUnary ∧
-        ComputableInLogSpace q (encPair encA encUnary) encB) A B :=
-  Iff.rfl
-
-/-- Logspace positive truth-table reducibility is truth-table reducibility by logspace data with a
-monotone combiner. -/
-theorem logSpacePTTReducible_iff_truthTableReducibleBy :
-    LogSpacePTTReducible encA encB A B ↔
-      TruthTableReducibleBy (fun r q d => ComputableInLogSpace r encA encUnary ∧
-        ComputableInLogSpace q (encPair encA encUnary) encB ∧
-        ComputableInLogSpace d (encPair encA encBits) encBool ∧
-        ∀ a u v, List.Forall₂ (· ≤ ·) u v → d (a, u) ≤ d (a, v)) A B :=
-  Iff.rfl
 
 /-! ### Inclusions within logarithmic space -/
 
