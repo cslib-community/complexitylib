@@ -189,7 +189,7 @@ theorem exists_occurrence_of_mem_originalClauses {φ : CNF ℕ} {sites : List Po
   obtain ⟨rfl, -, rfl⟩ := heq
   constructor <;> intro y hy <;> obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hy <;>
     obtain ⟨⟨x, j⟩, hxj, rfl⟩ := List.mem_map.mp hlr <;>
-    exact ⟨i, j, x, List.mem_flatMap.mpr ⟨(d, i), hdi, List.mem_map.mpr ⟨(x, j), hxj, rfl⟩⟩, rfl⟩
+    exact ⟨i, j, x, mk_mem_occurrences_of_mem_zipIdx hdi hxj, rfl⟩
 
 /-- A point receives an ordinary ring exactly when a retained path uses it outside a crossing. -/
 theorem mem_ordinaryCells (φ : CNF ℕ) (p : Point) :
