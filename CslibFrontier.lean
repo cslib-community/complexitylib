@@ -1124,7 +1124,11 @@ public import CslibFrontier.Computability.Circuit.Boolean.Broadcast
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.Local
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.PolyTime
+public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.Query
+public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.Query.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave
+public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.IteratedQuery
+public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Local
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce.PolyTime
@@ -3411,6 +3415,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Spac
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Map
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.OutView
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrement
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Branch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ClearShadowed
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.CopyBlock
@@ -3441,6 +3446,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Tra
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WhileCond
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WordMoves
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WordUpdate
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
@@ -3723,6 +3729,7 @@ public import CslibFrontier.Computability.PolyTime.CSP.Vars
 public import CslibFrontier.Computability.PolyTime.CommonCountingAccum
 public import CslibFrontier.Computability.PolyTime.FineGrained.ParameterCheck
 public import CslibFrontier.Computability.PolyTime.GaloisRingArithmetic
+public import CslibFrontier.Computability.PolyTime.GaloisRingArithmetic.FastInverse
 public import CslibFrontier.Computability.PolyTime.GaloisRingInterpolation
 public import CslibFrontier.Computability.PolyTime.GaloisRingSeries
 public import CslibFrontier.Computability.PolyTime.GaloisRingUnits
@@ -5303,6 +5310,7 @@ public import CslibFrontier.Foundations.Data.BitString.Counter
 public import CslibFrontier.Foundations.Data.BitString.CoverCoding
 public import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 public import CslibFrontier.Foundations.Data.BitString.CyclicDifference.Boundary
+public import CslibFrontier.Foundations.Data.BitString.Decrement
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Basic
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Composition
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.ExchangeBound
