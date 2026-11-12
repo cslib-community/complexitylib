@@ -502,11 +502,12 @@ theorem WCS_mem_XP (t d : ℕ) : WCS t d ∈ XP (encWCS t d) WCSInstance.weight 
   W_subset_XP t (WCS_mem_W t d)
 
 /-- **`IndependentSet ∈ XP`** for the target size parameter `k`. -/
-theorem IndependentSet_mem_XP : IndependentSet ∈ XP (encPair encGraph encNat) Prod.snd :=
+theorem IndependentSet_mem_XP :
+    IndependentSet ∈ XP encIndependentSetInstance IndependentSetInstance.m :=
   W_subset_XP 1 IndependentSet_mem_W
 
 /-- **`Clique ∈ XP`** for the target size parameter `k`. -/
-theorem Clique_mem_XP : Clique ∈ XP (encPair encGraph encNat) Prod.snd :=
+theorem Clique_mem_XP : Clique ∈ XP encCliqueInstance CliqueInstance.m :=
   W_subset_XP 1 Clique_mem_W
 
 end XPConsequences

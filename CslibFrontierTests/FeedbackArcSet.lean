@@ -33,7 +33,7 @@ example : FeedbackArcSet ∈ NP encFeedbackArcSet ∧
 
 -- Karp's chain: `VertexCover` reduces to `FeedbackArcSet` through `FeedbackVertexSet`.
 example :
-    PolyTimeReducible (encPair encGraph encNat) encFeedbackArcSet VertexCover FeedbackArcSet :=
+    PolyTimeReducible encVertexCoverInstance encFeedbackArcSet VertexCover FeedbackArcSet :=
   polyTimeReducible_VertexCover_FeedbackVertexSet.trans
     polyTimeReducible_FeedbackVertexSet_FeedbackArcSet
 
@@ -48,6 +48,7 @@ example : ComputableInPolyTime (fun x : FeedbackArcSetInstance => x.bound)
 example : ComputableInPolyTime (fun p : Graph × ℕ => (⟨p.1, p.2⟩ : FeedbackArcSetInstance))
     (encPair encGraph encNat) encFeedbackArcSet := by
   fun_prop
+
 
 /-! ### Feedback arc sets -/
 

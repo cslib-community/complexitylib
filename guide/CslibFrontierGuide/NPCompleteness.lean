@@ -162,8 +162,8 @@ example : encCNF = encList (encList (encPair encNat encBool)) := rfl
 ```
 
 A graph is a list of vertices and a list of edges ({name}`Graph`), encoded by {name}`encGraph`.
-{name}`Clique` asks whether a graph has a clique of a given size, so its instances are pairs,
-encoded by `encPair encGraph encNat`.
+{name}`Clique` asks whether a graph has a clique of a given size, so its instances have structure
+{name}`CliqueInstance`, encoded by {name}`encCliqueInstance`.
 
 # Polynomial Time
 %%%
@@ -271,7 +271,7 @@ proof goes. An NP-complete problem is in {name}`P` exactly when {name}`P` and {n
 it ({name}`NPComplete.mem_P_iff_mem_P`):
 
 ```lean
-example : Clique ∈ P (encPair encGraph encNat) ↔ SAT ∈ P encCNF :=
+example : Clique ∈ P encCliqueInstance ↔ SAT ∈ P encCNF :=
   Clique_npComplete.mem_P_iff_mem_P CookLevin.SAT_npComplete
 ```
 
@@ -422,7 +422,7 @@ Chaining reductions with {name}`NPHard.trans` gives the hardness of any problem 
 directly from Cook–Levin:
 
 ```lean
-example : NPHard (encPair encGraph encNat) Clique :=
+example : NPHard encCliqueInstance Clique :=
   (CookLevin.SAT_npHard.trans polyTimeReducible_SAT_IndependentSet).trans
     polyTimeReducible_IndependentSet_Clique
 ```
@@ -552,7 +552,7 @@ so repeating a positive literal twice is rejected as non-Horn syntax.
 
 {name}`Cslib.Logic.PL.isPolymorphism_parity_iff_exists_affineSystem`
 characterizes ternary parity preservation by affine equations.
-{name}`XORSAT.satisfiable_mem_P` certifies ordinary sparse XOR-SAT with binary
+{name}`XORSAT.mem_P` certifies ordinary sparse XOR-SAT with binary
 variable names; repeated variables cancel modulo two. The dense Gaussian
 elimination algorithm and sparse compiler both have native certificates.
 Their fixed-language compilers give {name}`CSPSAT.mem_P_of_and`,
@@ -590,8 +590,8 @@ An instance is a graph and a target size. The graph has a clique of that size wh
 its declared vertices is pairwise adjacent and has exactly that many elements:
 
 ```lean
-example : Clique = {x | ∃ S : Finset {v // v ∈ x.1.1},
-    x.1.induced.IsNClique x.2 S} :=
+example : Clique = {x | ∃ S : Finset {v // v ∈ x.graph.vertices},
+    x.graph.induced.IsNClique x.m S} :=
   rfl
 ```
 
@@ -607,15 +607,17 @@ problems that ask for a set of vertices with a pairwise property share this veri
 which leaves only the pairwise test to check:
 
 ```lean
-example : IsVerifier (encPair encGraph encNat) Polynomial.X
+example : IsVerifier encCliqueInstance Polynomial.X
     Clique.verifier Clique := by
   have h := Graph.isVerifier_verifySubset (rel := Graph.adjBool)
     (P := fun G u v => G.toSimpleGraph.Adj u v)
     (fun G u v _ => by rw [Graph.adjBool_eq_true_iff])
   intro x
+  have hx := h (x.graph, x.m)
   simp only [Clique, Set.mem_ofPred_eq, SimpleGraph.isNClique_iff,
     SimpleGraph.IsClique, Clique.verifier]
-  exact h x
+  rw [encCliqueInstance_apply]
+  exact hx
 ```
 
 The certificate length is `Polynomial.X`, one bit per bit of the encoded instance, which is at
@@ -623,7 +625,7 @@ least one bit per vertex. The verifier is executable, so you can test it on a tr
 
 ```lean (name := triangle)
 #eval Clique.verifier
-  ((⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩, 3), [true, true, true])
+  (⟨⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩, 3⟩, [true, true, true])
 ```
 ```leanOutput triangle
 true
@@ -639,10 +641,10 @@ give membership in {name}`NP`:
 
 ```lean
 example : ComputableInPolyTime Clique.verifier
-    (encPair (encPair encGraph encNat) encBits) encBool := by
+    (encPair encCliqueInstance encBits) encBool := by
   fun_prop
 
-example : Clique ∈ NP (encPair encGraph encNat) :=
+example : Clique ∈ NP encCliqueInstance :=
   ⟨Polynomial.X, Clique.verifier, by fun_prop, Clique.isVerifier⟩
 ```
 
@@ -687,12 +689,12 @@ The reduction is the triple of map, cost and correctness. Hardness transfers fro
 {name}`IndependentSet`, and membership with hardness is completeness:
 
 ```lean
-example : PolyTimeReducible (encPair encGraph encNat)
-    (encPair encGraph encNat) IndependentSet Clique :=
-  ⟨fun x => (x.1.compl, x.2), by fun_prop,
-    fun ⟨G, m⟩ => (Graph.compl_mem_Clique_iff G m).symm⟩
+example : PolyTimeReducible encIndependentSetInstance
+    encCliqueInstance IndependentSet Clique :=
+  ⟨independentSetToClique, computableInPolyTime_independentSetToClique,
+    fun x => (independentSetToClique_mem_iff x).symm⟩
 
-example : NPComplete (encPair encGraph encNat) Clique :=
+example : NPComplete encCliqueInstance Clique :=
   ⟨Clique.mem_NP,
     IndependentSet_npHard.trans polyTimeReducible_IndependentSet_Clique⟩
 ```

@@ -70,7 +70,7 @@ structure ChromaticNumberInstance where
   graph : Graph
   /-- The maximum number of colors allowed. -/
   colors : ℕ
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `ChromaticNumberInstance` as a pair `(graph, colors)`. -/
 enc_structure encChromaticNumber : ChromaticNumberInstance where

@@ -112,7 +112,7 @@ example : ([] : CSP (Fin 5) ℕ) ∈ CSPSAT arity sem := by
 
 -- Concrete templates exercise the native reduction certificate as well as its semantics.
 example : PolyTimeReducible (encCSP (encFinite (Fin 5)) encNat) XORSAT.encoding (CSPSAT arity sem)
-    {F | XORSAT.Satisfiable F} :=
+    XORSAT :=
   CSPSAT.polyTimeReducible_XORSAT_of_templates (encFinite (Fin 5)) arity sem template templates
 
 end CslibFrontierTests.CSPAffine

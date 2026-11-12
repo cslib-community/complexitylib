@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.SingleSubexp
 import CslibFrontier.Computability.Complexity.FineGrained.Randomized
 import CslibFrontier.Computability.Complexity.FineGrained.GapETH
 import CslibFrontier.Computability.Complexity.FineGrained.RatesNativeEndpoint
-import CslibFrontier.Foundations.Analysis.SublinearEnvelope
+import CslibFrontier.Foundations.Analysis.RateExponent
 import CslibFrontier.Probability.MajorityVote
 
 /-!
@@ -204,18 +204,15 @@ example (P : GapKSATSpec) :
 
 -- Threshold invariance of `rSatExponent`, `rpSatExponent`, `rGapSatExponent`, and `rGapETH`.
 example (k : ℕ) (P : GapKSATSpec) :
-    rSatExponent k = sInf {δ | 0 ≤ δ ∧
-      SolvesWithErrorInExpTime (.ofSet (KSAT k)) encCNF
-        (ErrorModel.twoSided (1 / 10) (by norm_num) (by norm_num)) CNF.numVars δ} ∧
-    rpSatExponent k = sInf {δ | 0 ≤ δ ∧
-      SolvesWithErrorInExpTime (.ofSet (KSAT k)) encCNF
-        (ErrorModel.oneSidedRP (9 / 10) (by norm_num) (by norm_num)) CNF.numVars δ} ∧
-    rGapSatExponent P = sInf {δ | 0 ≤ δ ∧
-      SolvesWithErrorInExpTime (GapKSAT P) encCNF
-        (ErrorModel.twoSided (1 / 10) (by norm_num) (by norm_num)) CNF.numVars δ} :=
-  ⟨rSatExponent_eq_sInf_twoSided k (by norm_num) (by norm_num),
-    rpSatExponent_eq_sInf_oneSidedRP k (by norm_num) (by norm_num),
-    rGapSatExponent_eq_sInf_twoSided P (by norm_num) (by norm_num)⟩
+    rSatExponent k = rateExponent (SolvesWithErrorInExpTime (.ofSet (KSAT k)) encCNF
+        (ErrorModel.twoSided (1 / 10) (by norm_num) (by norm_num)) CNF.numVars) ∧
+    rpSatExponent k = rateExponent (SolvesWithErrorInExpTime (.ofSet (KSAT k)) encCNF
+        (ErrorModel.oneSidedRP (9 / 10) (by norm_num) (by norm_num)) CNF.numVars) ∧
+    rGapSatExponent P = rateExponent (SolvesWithErrorInExpTime (GapKSAT P) encCNF
+        (ErrorModel.twoSided (1 / 10) (by norm_num) (by norm_num)) CNF.numVars) :=
+  ⟨rSatExponent_eq_rateExponent_twoSided k (by norm_num) (by norm_num),
+    rpSatExponent_eq_rateExponent_oneSidedRP k (by norm_num) (by norm_num),
+    rGapSatExponent_eq_rateExponent_twoSided P (by norm_num) (by norm_num)⟩
 
 -- Single-machine quantifier characterizations and positive implication chains from `rGapETH`.
 example :
@@ -252,8 +249,12 @@ example (k : ℕ) (P : GapKSATSpec) :
     (rSETH ↔ (⨆ m : {m : ℕ // 3 ≤ m}, rSatExponent m.val) = 1) ∧
     (⨆ m : ℕ, satExponent m) ≤ unrestrictedSatExponent ∧
     (SETH → unrestrictedSatExponent = 1) :=
-  ⟨satExponent_eq_sInf_pos k, sharpSatExponent_eq_sInf_pos k, rSatExponent_eq_sInf_pos k,
-    gapSatExponent_eq_sInf_pos P, SETH_iff_iSup_ge_three_eq_one,
+  ⟨rateExponent_eq_sInf_pos (fun _ _ hle h => h.mono hle) (KSAT_decidableInExpTime_one k),
+    rateExponent_eq_sInf_pos (fun _ _ hle h => h.mono hle) (SharpKSAT_computableInExpTime_one k),
+    rateExponent_eq_sInf_pos (fun _ _ hle h => h.mono hle)
+      (KSAT_solvesWithErrorInExpTime_one k _),
+    rateExponent_eq_sInf_pos (fun _ _ hle h => h.mono hle) (GapKSAT_solvesPromiseInExpTime_one P),
+    SETH_iff_iSup_ge_three_eq_one,
     SharpSETH_iff_iSup_ge_three_eq_one, rSETH_iff_iSup_ge_three_eq_one,
     iSup_satExponent_le_unrestrictedSatExponent, SETH.unrestrictedSatExponent_eq_one⟩
 

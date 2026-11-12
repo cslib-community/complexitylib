@@ -40,6 +40,7 @@ Nisan's characterisation and the hitting sets for these programs use them.
 * `roabpProd_mem_supported`: the entries are polynomials in the variables that are read.
 * `coeff_roabpProd`: coefficients of a program as entries of a product of coefficient matrices.
 * `coeff_roabpProd_eq_zero`: a monomial with a variable that is not read has coefficient zero.
+* `eval_roabpProd`: values of a program as entries of a product of evaluated layers.
 
 ## References
 
@@ -184,5 +185,20 @@ theorem coeff_roabpProd_eq_zero (M : Fin n → Matrix (Fin w) (Fin w) F[X]) (l :
   exact hi (mem_supported.1 hsup
     (mem_coe.2 ((mem_vars_iff_mem_support i).2
       ⟨m, mem_support_iff.2 hne, Finsupp.mem_support_iff.2 hm⟩)))
+
+/-- Evaluating an entry of a branching program at a point evaluates each layer at the coordinate
+of its variable. -/
+theorem eval_roabpProd (M : Fin n → Matrix (Fin w) (Fin w) F[X]) (l : List (Fin n))
+    (a : Fin n → F) (s t : Fin w) :
+    eval a (roabpProd M l s t) =
+      (l.map fun i => (M i).map (Polynomial.eval (a i))).prod s t := by
+  have h : (eval a).mapMatrix (roabpProd M l) =
+      (l.map fun i => (M i).map (Polynomial.eval (a i))).prod := by
+    rw [roabpProd, map_list_prod, List.map_map]
+    refine congrArg List.prod (List.map_congr_left fun i _ => ?_)
+    ext s t
+    have hC : (eval a).comp C = RingHom.id F := RingHom.ext fun r => eval_C r
+    simp [Polynomial.aeval_def, Polynomial.hom_eval₂, hC, Polynomial.eval₂_id]
+  exact congrFun (congrFun h s) t
 
 end Cslib.Circuits.Arithmetic

@@ -20,6 +20,8 @@ visited-cell versus binary-space accounting and uniform versus nonuniform hardne
 a nearby theorem from establishing the source statement. Goldreich 6.10 uses bounded-time
 partial answers, matching the library’s ZPP; expected-time ZPP is a separate alternative interface.
 
+For source-specific comparisons, consult the [Goldreich draft audit, chapters 8–9](../../results/goldreich-2007.md#chapter-8-pseudorandom-generators). It distinguishes distribution security from certified generator runtime, and the class-level PCP theorem from stronger verification-time and witness-conversion claims. Its negative searches refer to a recorded snapshot.
+
 ## Build a shared Boolean circuit
 
 <!-- worked-example -->

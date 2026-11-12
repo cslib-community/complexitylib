@@ -68,7 +68,7 @@ theorem P_subset_RP : P enc ⊆ RP enc := by
   rintro A ⟨f, hf, hA⟩
   refine ⟨0, fun x => f x.1, hf.comp (.fst enc encBits),
     fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
-  · simp [(hA a).mp ha]
+  · simp [acceptCount_zero, (hA a).mp ha]
   · simpa [hA a] using ha
 
 /-- **`P ⊆ coRP`**: `P` is closed under complement. -/
@@ -92,9 +92,7 @@ theorem union_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A 
   obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_RP.mp hB
   refine ⟨p₁ + p₂, orVerifier (fun a => p₁.eval (enc a).length) V₁ V₂, by fun_prop,
     fun a => ⟨fun ha => ?_, fun (ha : a ∉ A ∪ B) r => ?_⟩⟩
-  · change 2 ^ (p₁ + p₂).eval (enc a).length ≤
-      2 * acceptCount _ a ((p₁ + p₂).eval (enc a).length)
-    rw [Polynomial.eval_add]
+  · rw [Polynomial.eval_add]
     generalize hk₁ : p₁.eval (enc a).length = k₁
     generalize hk₂ : p₂.eval (enc a).length = k₂
     have hc := acceptCount_orVerifier (fun a => p₁.eval (enc a).length) V₁ V₂ a k₂
@@ -126,20 +124,16 @@ theorem inter_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A 
   obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_RP_iff_forall_decidesWithOneSidedErrorExponent.1 hB 2
   refine ⟨p₁ + p₂, andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂, by fun_prop,
     fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
-  · have e₁ := (h₁ a).1 ha.1
-    have e₂ := (h₂ a).1 ha.2
-    have hs₁ := acceptCount_add_card_filter_eq_false (V := V₁) (a := a)
-      (n := p₁.eval (enc a).length)
-    have hs₂ := acceptCount_add_card_filter_eq_false (V := V₂) (a := a)
-      (n := p₂.eval (enc a).length)
+  · have e₁ := errorExponentAt_true_iff.1 ((h₁ a).1 ha.1)
+    have e₂ := errorExponentAt_true_iff.1 ((h₂ a).1 ha.2)
+    have hs₁ := acceptCount_le_two_pow (V := V₁) (a := a) (n := p₁.eval (enc a).length)
+    have hs₂ := acceptCount_le_two_pow (V := V₂) (a := a) (n := p₂.eval (enc a).length)
     simp only [Polynomial.eval_ofNat] at e₁ e₂
     -- each decider accepts at least three quarters of its random strings
     have f₁ : 3 * 2 ^ p₁.eval (enc a).length ≤ 4 * acceptCount V₁ a (p₁.eval (enc a).length) := by
       omega
     have f₂ : 3 * 2 ^ p₂.eval (enc a).length ≤ 4 * acceptCount V₂ a (p₂.eval (enc a).length) := by
       omega
-    change 2 ^ (p₁ + p₂).eval (enc a).length ≤
-      2 * acceptCount _ a ((p₁ + p₂).eval (enc a).length)
     rw [Polynomial.eval_add, acceptCount_andVerifier, pow_add]
     nlinarith [Nat.mul_le_mul f₁ f₂]
   · have hA' := DecidesWithOneSidedError.isVerifier (h₁.solvesWithOneSidedError fun _ => by simp) a

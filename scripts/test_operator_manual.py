@@ -641,7 +641,7 @@ class PortableLinks(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-links-")
         self.addCleanup(self.temp.cleanup)
-        self.repo = Path(self.temp.name)
+        self.repo = Path(self.temp.name).resolve()
         self.root = self.repo / 'manual'
         self.root.mkdir()
         (self.repo / 'CslibFrontierTests').mkdir()

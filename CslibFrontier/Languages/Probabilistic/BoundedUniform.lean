@@ -9,10 +9,12 @@ module
 
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import CslibFrontier.Languages.Probabilistic.Repeat
+public import CslibFrontier.Languages.Probabilistic.Retry
 import CslibFrontier.Probability.Option
 import CslibFrontier.Probability.PMF.Option.Bind
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Data.Fintype.Fin
+import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
 import CslibFrontier.Probability.PMF.Bool
@@ -36,9 +38,15 @@ attempts is zero; radius zero is a singleton reference box but can still suffer 
 These samplers are only a foundation for cryptographic realizations: a simulator's full
 transcript/error and an extractor's implementation require separate proofs.
 
+`sampleUniformIntervalRetry` stops at the first accepted attempt (`OracleComp.retry`), drawing
+`bound.size` fair bits per attempt. It has the law of `sampleUniformInterval` and draws at most
+`2 * bound.size` fair bits in expectation, whatever the attempt budget.
+
 ## Main definitions
 
 * `Cslib.ProbComp.sampleUniformInterval`: bounded retry with an explicit failure result.
+* `Cslib.ProbComp.sampleUniformIntervalRetry`: the same law, stopping at the first accepted
+  binary attempt (`Cslib.ProbComp.sampleUniformIntervalAttempt`).
 * `Cslib.ProbComp.intervalFailure`, `Cslib.ProbComp.intervalSuccess`: exact event masses.
 * `Cslib.ProbComp.collectBox`, `Cslib.ProbComp.sampleIntegerBox`: coordinate gathering and
   coordinatewise finite-attempt integer-box sampling.
@@ -48,6 +56,11 @@ transcript/error and an extractor's implementation require separate proofs.
 
 * `Cslib.ProbComp.eval_sampleUniformInterval_none`,
   `Cslib.ProbComp.eval_sampleUniformInterval_some_toReal`: the full interval law.
+* `Cslib.ProbComp.le_eval_sampleUniformInterval_some`: each valid index has mass at least
+  `(1 - (1 / 2) ^ attempts) / bound`.
+* `Cslib.ProbComp.eval_sampleUniformIntervalRetry`,
+  `Cslib.ProbComp.expectedCost_sampleUniformIntervalRetry_le`: early stopping keeps the law and
+  draws at most `2 * bound.size` fair bits in expectation.
 * `Cslib.ProbComp.sampleUniformInterval_conditional`: conditional uniformity at observable
   success events.
 * `Cslib.ProbComp.sampleUniformInterval_test_error_le`: unconditional interval error,
@@ -271,6 +284,117 @@ theorem eval_sampleUniformInterval_some_toReal {bound : ℕ} (hbound : 0 < bound
       _ = (1 - (intervalFailure bound : ℝ) ^ attempts) * dyadicSize bound := by
           rw [← mul_assoc, geom_sum_mul_neg]
   · simp [hv]
+
+/-- Every valid index has mass at least `(1 - (1 / 2) ^ attempts) / bound` at a positive bound. -/
+theorem le_eval_sampleUniformInterval_some {bound : ℕ} (hbound : 0 < bound) (attempts : ℕ)
+    {value : ℕ} (hvalue : value < bound) :
+    ENNReal.ofReal ((1 - (1 / 2 : ℝ) ^ attempts) / bound) ≤
+      ProbComp.eval (sampleUniformInterval bound attempts) (some value) := by
+  rw [ENNReal.ofReal_le_iff_le_toReal (PMF.apply_ne_top _ _),
+    eval_sampleUniformInterval_some_toReal hbound, ite_eq_left hvalue]
+  have hhalf : (intervalFailure bound : ℝ) ≤ 1 / 2 := by
+    exact_mod_cast intervalFailure_le_half hbound
+  gcongr
+
+/-! ### Early stopping -/
+
+/-- One binary attempt for `[0, bound)`: draw `bound.size` fair bits and keep the value when it is
+strictly below `bound`. -/
+noncomputable def sampleUniformIntervalAttempt (bound : ℕ) : ProbComp (Option ℕ) :=
+  (fun value => if value < bound then some value else none) <$> sampleBinaryNat bound.size
+
+/-- At most `attempts` binary attempts for `[0, bound)`, stopping at the first accepted value.
+Its law is that of `sampleUniformInterval` (`eval_sampleUniformIntervalRetry`), and it draws at
+most `2 * bound.size` fair bits in expectation (`expectedCost_sampleUniformIntervalRetry_le`). -/
+noncomputable def sampleUniformIntervalRetry (bound attempts : ℕ) : ProbComp (Option ℕ) :=
+  Option.join <$>
+    OracleComp.retry (fun o => o.isSome = true) (sampleUniformIntervalAttempt bound) attempts
+
+/-- A binary draw of `bound.size` bits accepts each valid index with the same mass as a capped
+draw, and rejects with the same mass. -/
+private theorem bind_sampleBinaryNat_size (bound : ℕ) (next : PMF (Option ℕ)) :
+    ((ProbComp.eval (sampleBinaryNat bound.size)).bind fun value =>
+      if value < bound then PMF.pure (some value) else next) =
+      (ProbComp.eval (sampleBoundedIndex bound)).bind fun value =>
+        if value < bound then PMF.pure (some value) else next := by
+  rcases Nat.eq_zero_or_pos bound with rfl | hbound
+  · simp [PMF.bind_const]
+  have hsize : bound.size = Nat.log 2 bound + 1 :=
+    le_antisymm (Nat.size_le.mpr (Nat.lt_pow_succ_log_self (by decide) bound))
+      (Nat.lt_size.mpr (Nat.pow_log_le_self 2 hbound.ne'))
+  rw [sampleBoundedIndex_eq_binary, ProbComp.eval_map, PMF.bind_map, hsize]
+  refine congrArg (PMF.bind _) (funext fun value => ?_)
+  by_cases hv : value < bound
+  · simp [hv, Nat.min_eq_right hv.le]
+  · simp [hv, Nat.min_eq_left (not_lt.mp hv)]
+
+/-- Stopping at the first accepted attempt does not change the law. -/
+theorem eval_sampleUniformIntervalRetry (bound attempts : ℕ) :
+    ProbComp.eval (sampleUniformIntervalRetry bound attempts) =
+      ProbComp.eval (sampleUniformInterval bound attempts) := by
+  induction attempts with
+  | zero => simp [sampleUniformIntervalRetry]
+  | succ attempts ih =>
+    rw [eval_sampleUniformInterval_succ, ← ih, ← bind_sampleBinaryNat_size]
+    simp only [sampleUniformIntervalRetry, OracleComp.retry_succ, sampleUniformIntervalAttempt,
+      map_bind, bind_map_left, ProbComp.eval_bind, ProbComp.eval_map]
+    refine congrArg (PMF.bind _) (funext fun value => ?_)
+    by_cases hv : value < bound
+    · simp [hv]
+    · simp [hv]
+
+/-- One attempt has the law of a one-attempt `sampleUniformInterval`. -/
+private theorem eval_sampleUniformIntervalAttempt (bound : ℕ) :
+    ProbComp.eval (sampleUniformIntervalAttempt bound) =
+      ProbComp.eval (sampleUniformInterval bound 1) := by
+  rw [eval_sampleUniformInterval_succ, ← bind_sampleBinaryNat_size, sampleUniformIntervalAttempt,
+    ProbComp.eval_map]
+  refine (PMF.bind_pure_comp _ _).symm.trans (congrArg (PMF.bind _) (funext fun value => ?_))
+  by_cases hv : value < bound
+  · simp [hv]
+  · simp [hv]
+
+private theorem expectedCost_sampleList (width : ℕ) :
+    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (BitString.sampleList width) =
+      width := by
+  have hu : OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
+      (ProbComp.uniform Bool) = 1 := by
+    simp [ProbComp.uniform, ProbComp.unifFin]
+  induction width with
+  | zero => simp [BitString.sampleList]
+  | succ k ih =>
+    rw [BitString.sampleList, OracleComp.expectedCost_bind, hu]
+    have htail : ∀ b : Bool,
+        OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
+          (BitString.sampleList k >>= fun xs => pure (b :: xs)) = k := by
+      intro b
+      rw [OracleComp.expectedCost_bind, ih]
+      simp
+    simp_rw [htail]
+    rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul, Nat.cast_succ, add_comm]
+
+/-- **Expected fair-bit cost of early stopping.** Whatever the attempt budget,
+`sampleUniformIntervalRetry bound attempts` draws at most `2 * bound.size` fair bits in
+expectation: each attempt draws `bound.size` bits and, at a positive bound, rejects with
+probability at most `1 / 2`. -/
+theorem expectedCost_sampleUniformIntervalRetry_le (bound attempts : ℕ) :
+    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
+      (sampleUniformIntervalRetry bound attempts) ≤ 2 * (bound.size : ℝ≥0∞) := by
+  have hcost : OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
+      (sampleUniformIntervalAttempt bound) = bound.size := by
+    simp [sampleUniformIntervalAttempt, sampleBinaryNat, expectedCost_sampleList]
+  rw [sampleUniformIntervalRetry, OracleComp.expectedCost_map]
+  rcases Nat.eq_zero_or_pos bound with rfl | hbound
+  · simp [OracleComp.expectedCost_retry, hcost]
+  have hset : {o : Option ℕ | ¬o.isSome = true} = {none} := by
+    ext o
+    cases o <;> simp
+  have hfail : (ProbComp.eval (sampleUniformIntervalAttempt bound)).toOuterMeasure
+      {o : Option ℕ | ¬o.isSome = true} ≤ 2⁻¹ := by
+    rw [hset, PMF.toOuterMeasure_apply_singleton, eval_sampleUniformIntervalAttempt]
+    simpa using eval_sampleUniformInterval_none_le hbound 1
+  rw [← hcost]
+  exact OracleComp.expectedCost_retry_le_two_mul _ _ ProbComp.unifOracle _ hfail attempts
 
 private theorem option_false {α : Type} (μ : PMF (Option α)) :
     (μ.map Option.isSome) false = μ none := by
