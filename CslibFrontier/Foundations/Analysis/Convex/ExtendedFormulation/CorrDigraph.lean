@@ -1453,23 +1453,22 @@ private theorem corrDigraphAdj_chain_iff {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p
   | chain v' k' =>
       dsimp only [corrDigraphAdj]
       simp only [reduceCtorEq, false_and, exists_false, or_false]
+      have hchain : (v' = v ∧ (k'.1 + 1 = k.1 ∨ k.1 + 1 = k'.1)) ↔
+          (CorrDigraphV.chain v' k' : CorrDigraphV p) = .chain v k_prev ∨
+          (CorrDigraphV.chain v' k' : CorrDigraphV p) = .chain v k_next := by
+        constructor
+        · rintro ⟨heq, h⟩; subst v'
+          rcases h with h | h
+          · exact Or.inl (congrArg (CorrDigraphV.chain v) (Fin.ext (show k'.1 = k_prev.1 by omega)))
+          · exact Or.inr (congrArg (CorrDigraphV.chain v) (Fin.ext (show k'.1 = k_next.1 by omega)))
+        · rintro (h | h) <;> obtain ⟨heq, hk⟩ := CorrDigraphV.chain.inj h <;> subst v'
+          · exact ⟨rfl, Or.inl (by have := congrArg Fin.val (eq_of_heq hk); omega)⟩
+          · exact ⟨rfl, Or.inr (by have := congrArg Fin.val (eq_of_heq hk); omega)⟩
       constructor
-      · constructor
-        · rintro ⟨heq, h⟩; subst v'
-          rcases h with h | h
-          · exact Or.inr (congrArg (CorrDigraphV.chain v) (Fin.ext (show k'.1 = k_next.1 by omega)))
-          · exact Or.inl (congrArg (CorrDigraphV.chain v) (Fin.ext (show k'.1 = k_prev.1 by omega)))
-        · rintro (h | h) <;> obtain ⟨heq, hk⟩ := CorrDigraphV.chain.inj h <;> subst v'
-          · exact ⟨rfl, Or.inr (by have := congrArg Fin.val (eq_of_heq hk); omega)⟩
-          · exact ⟨rfl, Or.inl (by have := congrArg Fin.val (eq_of_heq hk); omega)⟩
-      · constructor
-        · rintro ⟨heq, h⟩; subst v'
-          rcases h with h | h
-          · exact Or.inl (congrArg (CorrDigraphV.chain v) (Fin.ext (show k'.1 = k_prev.1 by omega)))
-          · exact Or.inr (congrArg (CorrDigraphV.chain v) (Fin.ext (show k'.1 = k_next.1 by omega)))
-        · rintro (h | h) <;> obtain ⟨heq, hk⟩ := CorrDigraphV.chain.inj h <;> subst v'
-          · exact ⟨rfl, Or.inl (by have := congrArg Fin.val (eq_of_heq hk); omega)⟩
-          · exact ⟨rfl, Or.inr (by have := congrArg Fin.val (eq_of_heq hk); omega)⟩
+      · exact Iff.trans
+          (by exact ⟨fun ⟨heq, h⟩ => ⟨heq.symm, h.symm⟩, fun ⟨heq, h⟩ => ⟨heq.symm, h.symm⟩⟩)
+          hchain
+      · exact hchain
   | clause e c =>
       constructor <;>
         · constructor
