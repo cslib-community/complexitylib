@@ -1144,11 +1144,7 @@ theorem mem_PromiseRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} 
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP, zero_mul] at hn
       have h0 : acceptCount V a (p.eval (enc a).length) = 0 :=
         Nat.eq_zero_of_le_zero (by exact_mod_cast hn)
-      by_contra hne
-      have htrue : V (a, List.ofFn r) = true := Bool.eq_true_of_not_eq_false hne
-      have hpos : 0 < acceptCount V a (p.eval (enc a).length) :=
-        acceptCount_pos_iff.mpr ⟨List.ofFn r, List.length_ofFn, htrue⟩
-      omega
+      exact acceptCount_eq_zero_iff.1 h0 r
 
 /-- **`PromiseCoRP` in terms of `SolvesWithErrorInTimeO`.** -/
 theorem mem_PromiseCoRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} :
