@@ -4381,7 +4381,9 @@ register_result "cubic-edge-coloured-expanders" where
   ]
   scope := "Weaker than the source: the vertex counts are 8·257^12·m for every m ≥ 2, not every \
     even n ≥ 6, the constant γ > 0 is explicit but tiny, and no polynomial-time algorithm is \
-    proved; the graphs are computable definitions. The source cites [KMPS24, Alo21] and König's \
+    proved; `cubicReplacement` and `arithmeticExpander` are computable, but the renamed family \
+    `cubicArithmeticExpander` is noncomputable (it relabels via Fintype.equivFinOfCardEq). The \
+    source cites [KMPS24, Alo21] and König's \
     theorem; here a K-regular multigraph with edge expansion h ≥ 0 is reduced to a simple cubic \
     graph with a proper 3-edge-colouring on 4K|V| vertices that is a balanced-cut \
     h/(12K(h+K+1))-edge expander, applied to the library's arithmetic expanders (#4668)."
