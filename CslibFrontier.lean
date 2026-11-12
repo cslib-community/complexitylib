@@ -1390,6 +1390,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andr
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevApproxMajority
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevOddErrors
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
@@ -5258,6 +5259,7 @@ public import CslibFrontier.Foundations.Combinatorics.Sunflower.Closure
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.Implication
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.LowerBound
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.Pluck
+public import CslibFrontier.Foundations.Combinatorics.TailSum
 public import CslibFrontier.Foundations.Combinatorics.TupleCover
 public import CslibFrontier.Foundations.Combinatorics.UniformSchedules
 public import CslibFrontier.Foundations.Combinatorics.WeightBudget

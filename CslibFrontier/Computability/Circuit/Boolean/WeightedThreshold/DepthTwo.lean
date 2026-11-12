@@ -58,6 +58,9 @@ count `p.cost Op.arity`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.negOnePow_mul_altLinear_add_sub_altLinear`,
   `Cslib.Circuits.Boolean.WeightedThreshold.sum_sub_mul_decide_le`: alternating linear shift
   identity and integer interval telescoping into threshold indicators.
+* `Cslib.Circuits.Boolean.WeightedThreshold.altLinear_neg`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.altLinear_sq`: `altLinear` is odd and preserves
+  squares.
 
 ## References
 
@@ -293,6 +296,14 @@ theorem altLinear_add_one_sub (u : ℤ) :
     altLinear (u + 1) - altLinear u = ((u + 1).negOnePow : ℤ) * (2 * u + 1) := by
   simp only [altLinear, Int.negOnePow_succ, Units.val_neg]
   ring
+
+/-- `altLinear` is odd. -/
+theorem altLinear_neg (u : ℤ) : altLinear (-u) = -altLinear u := by
+  simp [altLinear, Int.negOnePow_neg]
+
+/-- `altLinear` preserves squares: `φ(u)² = u²`. -/
+theorem altLinear_sq (u : ℤ) : altLinear u ^ 2 = u ^ 2 := by
+  rw [altLinear, mul_pow, ← Units.val_pow_eq_pow_val, Int.units_sq, Units.val_one, one_mul]
 
 /-- **Integer interval telescoping**: any function `f : ℤ → ℤ` on an integer `u ∈ [ℓ, ℓ + L]`
 equals `f ℓ` plus the sum of its step differences weighted by threshold indicators
