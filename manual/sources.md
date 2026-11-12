@@ -1023,6 +1023,11 @@ Iordanis Kerenidis and Ronald de Wolf. "Exponential Lower Bound for 2-Query Loca
 
 Subhash Khot. "On the Unique Games Conjecture (Invited Survey)." *2010 IEEE 25th Annual Conference on Computational Complexity (CCC)*, 99–121, 2010. https://doi.org/10.1109/CCC.2010.19 . Author-hosted copy inspected: https://cs.nyu.edu/~khot/papers/UGCSurvey.pdf (Section 2.4, p. 6 of the author copy: the second paragraph after Definition 2.4, beginning "Let us return", on finding a satisfying labelling of a value-1 instance by trying every label for one vertex and propagating along each connected component, and the remark after Conjecture 2.5 that the conjecture would be false with `ε = 0`). The page range and DOI are from the bibliographic record and were not checked against the typeset proceedings.
 
+<a id="kirshnersamorodnitsky21"></a>
+## kirshnersamorodnitsky21
+
+Naomi Kirshner and Alex Samorodnitsky. "A Moment Ratio Bound for Polynomials and Some Extremal Properties of Krawtchouk Polynomials and Hamming Spheres." *IEEE Transactions on Information Theory* 67(6), 3509–3541, 2021. https://doi.org/10.1109/TIT.2021.3071597 ; arXiv:1909.11929v1. The statements of Theorem 1.3, Corollary 1.4 and Theorem 1.5 in arXiv v1 were read on 2026-11-12. They hold for every `n`, with no `o(1)` terms, for polynomials of degree `s ≤ n / 2`. The independent review of [#4735](https://github.com/cslib-community/cslib-frontier/pull/4735) checked Saglam's specializations against the same version. Saglam's explicit `γ` is `H(ρ)/2 - ψ(3, ρ)`, by Proposition 2.6 at `p = 3` with `t = 1 - 2δ` (so `t² = ρ/(2 - 3ρ)`). His integral form is their `τ(x, y) = H(x) + I(y, x) - I(0, x)` for `y ≤ 1/2 - √(x(1 - x))` (§2.1.1–2.1.2). As printed, Theorem 1.5 fails at degree `0`: for `f ≡ 1` and `i = 0` the `≥` event has probability `1 > 2^{-n}`. The library's hypotheses therefore use a strict event and require `0 < w`. [Code/PuncturedBallFourier](../CslibFrontier/Foundations/Data/Code/PuncturedBallFourier.lean) states Corollary 1.4 (third moment) and Theorem 1.5 (tail) as hypotheses (`KSThirdMomentBound`, `KSTailBound`), in the specialization quoted in [Saglam](#saglam27), Appendix A. They are not proved.
+
 <a id="kleeminty72"></a>
 ## kleeminty72
 
@@ -1522,6 +1527,11 @@ Tim Roughgarden and Éva Tardos. *How Bad Is Selfish Routing?* Journal of the AC
 ## roughgardentardos07
 
 Tim Roughgarden and Éva Tardos. "Introduction to the Inefficiency of Equilibria." Chapter 17 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 443–459. A university-hosted PDF of the book was consulted on 2026-11-08 for §17.1.3 (the definitions of the price of anarchy and the price of stability) and Example 17.3 with Figure 17.3 (the `H_k` lower bound for Shapley network design games).
+
+<a id="saglam27"></a>
+## saglam27
+
+Mert Saglam. *Linear Codes Exceeding the Gilbert–Varshamov Bound*. STOC 2027 submission 1516. https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1516.pdf (PDF SHA-256 `ac6f2bba913aa15cfec8dda07a8e9e37b7186e145fef4719cb623dd04d15baa3`). The submission PDF was read on 2026-11-12: the abstract (main theorem), Section 1, Section 2 (odd circuits, the extension row and the bound on the expected number of odd circuits), Section 3.1, Lemma 3.1 (statement only), Section 3.3 (the three-range estimate on `sinh z - z` and the moment/tail split) and Appendix A. [Code/OddCircuit](../CslibFrontier/Foundations/Data/Code/OddCircuit.lean) and [Code/OddCircuitFourier](../CslibFrontier/Foundations/Data/Code/OddCircuitFourier.lean) formalize Section 2 and the reduction of Section 3.3 to the moment and tail estimates. [Code/PuncturedBallFourier](../CslibFrontier/Foundations/Data/Code/PuncturedBallFourier.lean) derives Lemma 3.1, with explicit constants, from the Kirshner–Samorodnitsky bounds quoted in Appendix A ([kirshnersamorodnitsky21](#kirshnersamorodnitsky21)), which are hypotheses. [Code/OddCircuitAsymptotic](../CslibFrontier/Foundations/Data/Code/OddCircuitAsymptotic.lean) proves the main theorem from Lemma 3.1 with `ζ = 1 / 2`, so the leading constant `(1 - ζ) / 4` with `ζ → 0` is not formalized. These are submissions, not confirmed acceptances.
 
 <a id="sakszhou99"></a>
 ## sakszhou99
