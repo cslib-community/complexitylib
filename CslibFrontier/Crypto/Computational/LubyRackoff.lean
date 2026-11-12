@@ -13,12 +13,16 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
+import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Product
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 
 /-!
 # The Luby–Rackoff block ciphers from a pseudorandom function
@@ -497,7 +501,7 @@ end Queries
 oracle PPT, when the handler is oracle PPT and its replies are bounded by an efficient allowance.
 -/
 private theorem isOraclePPT_interpret_handler {Operation External : Type} [DecidableEq Operation]
-    [FinEnum Operation] [DecidableEq External] [Finite External]
+    [FinEnum Operation] [DecidableEq External]
     {adversary : ℕ → List Bool → WordOracleComp Operation Bool}
     (hadversary : IsOraclePPT encBool adversary)
     {handler : ℕ → Operation × List Bool → WordOracleComp External (List Bool)}
@@ -617,19 +621,19 @@ theorem eval_prpRealGame_lubyRackoffCipher {family : List Bool → List Bool →
     ProbComp.eval ((lubyRackoffCipher family hfamily.polyTime hfamily.length_eq).prpRealGame
         adversary n) =
       ProbComp.eval (prfMultiRealGame family 3 (lubyRackoffAdversary adversary) n) := by
-  simp only [BlockCipher.prpRealGame, prfMultiRealGame, ProbComp.eval_bind,
-    BitString.eval_sampleList, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
-  refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
-  have hkeyLength : key.length = 3 * n := BitString.length_of_mem_support_uniformList hkey
+  simp only [BlockCipher.prpRealGame, BlockCipher.prpOracle, lubyRackoffCipher, prfMultiRealGame,
+    BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
+  peel_binds key
+  have hkeyLength : key.length = 3 * n := BitString.length_of_mem_support_uniformList key_mem
   rw [interpret_lubyRackoffAdversary]; congr 2; funext request; congr 1
-  change (if request.2.length = 2 * n then lubyRackoffEncrypt family n key request.2 else []) = _
-  split_ifs with hblock
-  · rw [lubyRackoffEncrypt_eq hfamily.length_eq hkeyLength hblock]
+  by_cases hblock : request.2.length = 2 * n
+  · simp only [hblock, ↓reduceIte]
+    rw [lubyRackoffEncrypt_eq hfamily.length_eq hkeyLength hblock]
     conv_rhs => rw [← joinBlock_splitBlock hblock]
     have hrep {i} (hi : i < 3) := represents_prfOracle_take hfamily.length_eq hkeyLength hi
     exact (feistelNetworkWord_joinBlock
       (.cons (hrep (by decide)) (.cons (hrep (by decide)) (.cons (hrep (by decide)) .nil))) _).symm
-  · rfl
+  · simp only [hblock, ↓reduceIte]
 
 /-! ### Random rounds against a random permutation -/
 
@@ -722,7 +726,7 @@ private theorem bind_uniformOfFintype_fin_three {X β : Type} [Fintype X] [Nonem
       left_inv := fun _ => rfl, right_inv := fun f => by funext i; fin_cases i <;> rfl }
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
     ← PMF.uniformOfFintype_prod]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
+  simp only [pmf_norm]; rfl
 
 /-- **Three random Feistel rounds against a random permutation**, for randomized word-oracle
 adversaries ([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round
@@ -751,7 +755,7 @@ theorem advantage_lubyRackoffRandomRounds_prpIdealGame_le (adversary : OracleDis
     ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
       (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))) (fun σ p => σ p)
       (pairAdversary adversary n)]
-  refine Game.advantage_bind_le _ _ _ fun ω => ?_
+  peel_binds ω
   have h := LubyRackoff.advantage_feistel3RandomRoundsGame_idealPermGame_le
     (ProbOracleComp.isQueryBounded_fixCoins hadaptedQ ω)
   rw [bind_uniformOfFintype_fin_three (fun f₁ f₂ f₃ => OracleComp.interpret
@@ -768,36 +772,23 @@ against oracle-PPT distinguishers. -/
 theorem PseudorandomFunction.prp_lubyRackoffCipher {family : List Bool → List Bool → List Bool}
     (hfamily : PseudorandomFunction family) :
     (lubyRackoffCipher family hfamily.polyTime hfamily.length_eq).PRP := by
-  intro adversary hadversary
-  obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
-  let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
-  have hQ : PolynomiallyBounded fun n => 3 * (Q n).choose 2 := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => 3 * Q n ^ 2)
-      ((PolynomiallyBounded.const 3).mul
-        (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2))
-      fun n => ?_
-    change 3 * (Q n).choose 2 ≤ 3 * Q n ^ 2
-    rw [Nat.choose_two_right, sq]
-    exact Nat.mul_le_mul_left _
-      ((Nat.div_le_self _ 2).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _)))
-  have hgeometric : Negligible fun n => ((2 : ℝ≥0) ^ n)⁻¹ := by
-    simpa only [inv_pow] using negligible_geometric (ratio := (2 : ℝ≥0)⁻¹) (by norm_num)
-  refine negligible_of_le ((hfamily.multiKey 3 (lubyRackoffAdversary adversary)
-    (isOraclePPT_lubyRackoffAdversary hadversary)).add
-      (hgeometric.polynomiallyBounded_mul hQ)) fun n => ?_
-  dsimp only [Pi.add_apply]
-  rw [eval_prpRealGame_lubyRackoffCipher hfamily]
-  refine (Game.advantage_triangle _
-    (ProbComp.eval (prfMultiIdealGame 3 (lubyRackoffAdversary adversary) n)) _).trans
-      (add_le_add le_rfl ?_)
-  rw [← NNReal.coe_le_coe]
-  have hrandom := advantage_lubyRackoffRandomRounds_prpIdealGame_le adversary n (Q n)
-    (by simpa only [List.length_nil, Nat.add_zero, Q] using (hbounds n []).1)
+  have hreal : Game.Indistinguishable
+      (fun adversary n => ProbComp.eval
+        ((lubyRackoffCipher family hfamily.polyTime hfamily.length_eq).prpRealGame adversary n))
+      (fun adversary n => ProbComp.eval (prfMultiIdealGame 3 (lubyRackoffAdversary adversary) n))
+      (IsOraclePPT encBool) := by
+    intro adversary hadversary
+    simpa only [eval_prpRealGame_lubyRackoffCipher hfamily] using
+      hfamily.multiKey 3 (lubyRackoffAdversary adversary)
+        (isOraclePPT_lubyRackoffAdversary hadversary)
+  refine hreal.trans (Game.Indistinguishable.of_birthday_queryBounded_real
+    (base := fun n => ((2 : ℝ≥0) ^ n)⁻¹) 3 (by negligible) fun n Q adversary hQ => ?_)
+  have hrandom := advantage_lubyRackoffRandomRounds_prpIdealGame_le adversary n Q hQ
   have hsmall : (((2 : ℝ) ^ n)⁻¹) ^ 2 ≤ ((2 : ℝ) ^ n)⁻¹ := by
     have h₀ : 0 ≤ ((2 : ℝ) ^ n)⁻¹ := by positivity
     have h₁ : ((2 : ℝ) ^ n)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
     nlinarith
-  have hchoose : (0 : ℝ) ≤ (Q n).choose 2 := Nat.cast_nonneg _
+  have hchoose : (0 : ℝ) ≤ Q.choose 2 := Nat.cast_nonneg _
   refine hrandom.trans ?_
   push_cast
   nlinarith
@@ -976,10 +967,10 @@ theorem eval_strongPRPRealGame_lubyRackoff4Cipher {family : List Bool → List B
     ProbComp.eval ((lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).strongPRPRealGame
         adversary n) =
       ProbComp.eval (prfMultiRealGame family 4 (strongLubyRackoffAdversary adversary) n) := by
-  simp only [BlockCipher.strongPRPRealGame, prfMultiRealGame, ProbComp.eval_bind,
-    BitString.eval_sampleList, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
-  refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
-  have hkeyLength : key.length = 4 * n := BitString.length_of_mem_support_uniformList hkey
+  simp only [BlockCipher.strongPRPRealGame, BlockCipher.strongPRPOracle, lubyRackoff4Cipher,
+    prfMultiRealGame, BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
+  peel_binds key
+  have hkeyLength : key.length = 4 * n := BitString.length_of_mem_support_uniformList key_mem
   have hrep {i} (hi : i < 4) := represents_prfOracle_take hfamily.length_eq hkeyLength hi
   have hrounds : List.Forall₂ Represents
       ([0, 1, 2, 3].map fun (i : Fin 4) query =>
@@ -989,9 +980,6 @@ theorem eval_strongPRPRealGame_lubyRackoff4Cipher {family : List Bool → List B
     .cons (hrep (by decide))
       (.cons (hrep (by decide)) (.cons (hrep (by decide)) (.cons (hrep (by decide)) .nil)))
   rw [interpret_strongLubyRackoffAdversary]; congr 2; funext ⟨inverse, block⟩; congr 1
-  change (if block.length = 2 * n then
-    (if inverse then lubyRackoff4Decrypt family n key block
-    else lubyRackoff4Encrypt family n key block) else []) = _
   by_cases hblock : block.length = 2 * n
   · simp only [hblock, ↓reduceIte]
     conv_rhs => rw [← joinBlock_splitBlock hblock]
@@ -1119,7 +1107,7 @@ private theorem bind_uniformOfFintype_fin_four {X β : Type} [Fintype X] [Nonemp
       right_inv := fun f => by funext i; fin_cases i <;> rfl }
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
     ← PMF.uniformOfFintype_prod, ← PMF.uniformOfFintype_prod]
-  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
+  simp only [pmf_norm]; rfl
 
 /-- **Four random Feistel rounds against a random permutation, in both directions**
 ([LubyRackoff1988]), for randomized bidirectional word-oracle adversaries: with independent
@@ -1150,7 +1138,7 @@ theorem advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le
     ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
       (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n)))
       (fun σ request => strongTable σ request) (strongPairAdversary adversary n)]
-  refine Game.advantage_bind_le _ _ _ fun ω => ?_
+  peel_binds ω
   have h := LubyRackoff.advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
     (ProbOracleComp.isQueryBounded_fixCoins hadaptedQ ω)
   rw [bind_uniformOfFintype_fin_four (fun f₁ f₂ f₃ f₄ => OracleComp.interpret
@@ -1168,36 +1156,25 @@ permutation against oracle-PPT distinguishers. -/
 theorem PseudorandomFunction.strongPRP_lubyRackoff4Cipher
     {family : List Bool → List Bool → List Bool} (hfamily : PseudorandomFunction family) :
     (lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).StrongPRP := by
-  intro adversary hadversary
-  obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
-  let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
-  have hQ : PolynomiallyBounded fun n => 4 * (Q n).choose 2 := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => 4 * Q n ^ 2)
-      ((PolynomiallyBounded.const 4).mul
-        (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2))
-      fun n => ?_
-    change 4 * (Q n).choose 2 ≤ 4 * Q n ^ 2
-    rw [Nat.choose_two_right, sq]
-    exact Nat.mul_le_mul_left _
-      ((Nat.div_le_self _ 2).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _)))
-  have hgeometric : Negligible fun n => ((2 : ℝ≥0) ^ n)⁻¹ := by
-    simpa only [inv_pow] using negligible_geometric (ratio := (2 : ℝ≥0)⁻¹) (by norm_num)
-  refine negligible_of_le ((hfamily.multiKey 4 (strongLubyRackoffAdversary adversary)
-    (isOraclePPT_strongLubyRackoffAdversary hadversary)).add
-      (hgeometric.polynomiallyBounded_mul hQ)) fun n => ?_
-  dsimp only [Pi.add_apply]
-  rw [eval_strongPRPRealGame_lubyRackoff4Cipher hfamily]
-  refine (Game.advantage_triangle _
-    (ProbComp.eval (prfMultiIdealGame 4 (strongLubyRackoffAdversary adversary) n)) _).trans
-      (add_le_add le_rfl ?_)
-  rw [← NNReal.coe_le_coe]
-  have hrandom := advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le adversary n (Q n)
-    (by simpa only [List.length_nil, Nat.add_zero, Q] using (hbounds n []).1)
+  have hreal : Game.Indistinguishable
+      (fun adversary n => ProbComp.eval
+        ((lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).strongPRPRealGame
+          adversary n))
+      (fun adversary n =>
+        ProbComp.eval (prfMultiIdealGame 4 (strongLubyRackoffAdversary adversary) n))
+      (IsOraclePPT encBool) := by
+    intro adversary hadversary
+    simpa only [eval_strongPRPRealGame_lubyRackoff4Cipher hfamily] using
+      hfamily.multiKey 4 (strongLubyRackoffAdversary adversary)
+        (isOraclePPT_strongLubyRackoffAdversary hadversary)
+  refine hreal.trans (Game.Indistinguishable.of_birthday_queryBounded_real
+    (base := fun n => ((2 : ℝ≥0) ^ n)⁻¹) 4 (by negligible) fun n Q adversary hQ => ?_)
+  have hrandom := advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le adversary n Q hQ
   have hsmall : (((2 : ℝ) ^ n)⁻¹) ^ 2 ≤ ((2 : ℝ) ^ n)⁻¹ := by
     have h₀ : 0 ≤ ((2 : ℝ) ^ n)⁻¹ := by positivity
     have h₁ : ((2 : ℝ) ^ n)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
     nlinarith
-  have hchoose : (0 : ℝ) ≤ (Q n).choose 2 := Nat.cast_nonneg _
+  have hchoose : (0 : ℝ) ≤ Q.choose 2 := Nat.cast_nonneg _
   refine hrandom.trans ?_
   push_cast
   nlinarith

@@ -115,6 +115,41 @@ theorem readBit_argQubit {z t : ℕ} (hz : t ≤ z) {Y : Fin W → Bool} {vals :
     simp only [hi, ite_false, lt_irrefl, Option.elim_none]
     rw [hY, hfalse z hz]
 
+/-- Every gate code of `g` writes qubit `t`: it is a NOT, a CNOT controlled by an argument qubit,
+or a Toffoli gate controlled by two distinct argument qubits. -/
+private theorem forall_mem_gateCodes {z t : ℕ} {g : Op × List ℕ} {P : GateCode → Prop}
+    (hnot : P (false, t, [])) (hcnot : ∀ i, P (false, t, [argQubit z t g.2 i]))
+    (htof : argQubit z t g.2 0 ≠ argQubit z t g.2 1 →
+      P (false, t, [argQubit z t g.2 0, argQubit z t g.2 1])) :
+    ∀ c ∈ gateCodes z t g, P c := by
+  intro c hc
+  obtain ⟨op, args⟩ := g
+  cases op with
+  | const b =>
+    cases b
+    · simp only [gateCodes, Bool.false_eq_true, ite_false, List.not_mem_nil] at hc
+    · simp only [gateCodes, ite_true, List.mem_singleton] at hc
+      exact hc ▸ hnot
+  | not =>
+    simp only [gateCodes, List.mem_cons, List.not_mem_nil, or_false] at hc
+    rcases hc with rfl | rfl
+    · exact hcnot 0
+    · exact hnot
+  | and =>
+    simp only [gateCodes] at hc
+    split_ifs at hc with h
+    · exact (List.mem_singleton.mp hc) ▸ hcnot 0
+    · exact (List.mem_singleton.mp hc) ▸ htof h
+  | or =>
+    simp only [gateCodes] at hc
+    split_ifs at hc with h
+    · exact (List.mem_singleton.mp hc) ▸ hcnot 0
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
+      rcases hc with rfl | rfl | rfl
+      · exact hcnot 0
+      · exact hcnot 1
+      · exact htof h
+
 theorem isClassical_gateCodes {z t : ℕ} (htz : t < z) (hz : z < W) (g : Op × List ℕ) :
     IsClassical W (gateCodes z t g) := by
   have ha (i : ℕ) := argQubit_lt_or_eq z t g.2 i
@@ -127,33 +162,7 @@ theorem isClassical_gateCodes {z t : ℕ} (htz : t < z) (hz : z < W) (g : Op × 
   have htof (h : argQubit z t g.2 0 ≠ argQubit z t g.2 1) :
       WellFormed W ((false, t, [argQubit z t g.2 0, argQubit z t g.2 1]) : GateCode) :=
     ⟨by simp, by simp [hne 0, hne 1, h], by simp [ht, hlt 0, hlt 1]⟩
-  intro c hc
-  obtain ⟨op, args⟩ := g
-  cases op with
-  | const b =>
-    cases b
-    · simp only [gateCodes, Bool.false_eq_true, ite_false, List.not_mem_nil] at hc
-    · simp only [gateCodes, ite_true, List.mem_singleton] at hc
-      exact hc ▸ ⟨rfl, hnot⟩
-  | not =>
-    simp only [gateCodes, List.mem_cons, List.not_mem_nil, or_false] at hc
-    rcases hc with rfl | rfl
-    · exact ⟨rfl, hcnot 0⟩
-    · exact ⟨rfl, hnot⟩
-  | and =>
-    simp only [gateCodes] at hc
-    split_ifs at hc with h
-    · exact (List.mem_singleton.mp hc) ▸ ⟨rfl, hcnot 0⟩
-    · exact (List.mem_singleton.mp hc) ▸ ⟨rfl, htof h⟩
-  | or =>
-    simp only [gateCodes] at hc
-    split_ifs at hc with h
-    · exact (List.mem_singleton.mp hc) ▸ ⟨rfl, hcnot 0⟩
-    · simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
-      rcases hc with rfl | rfl | rfl
-      · exact ⟨rfl, hcnot 0⟩
-      · exact ⟨rfl, hcnot 1⟩
-      · exact ⟨rfl, htof h⟩
+  exact forall_mem_gateCodes ⟨rfl, hnot⟩ (fun i => ⟨rfl, hcnot i⟩) fun h => ⟨rfl, htof h⟩
 
 /-- **One compiled gate appends its value**: if the qubits hold the wire values `vals` computed
 before the gate `g` and zeros after them, its codes add the value of `g` on qubit `t`. -/
@@ -163,25 +172,14 @@ theorem readBit_classicalRun_gateCodes {z t : ℕ} (htz : t < z) (hz : z < W)
     readBit (classicalRun (gateCodes z t g) Y) p =
       (vals ++ [interpretation g.1 fun a => g.2[a.val]?.elim false (vals.getD · false)]).getD p
         false := by
+  -- Every code writes `t`, which is not a control of any code since that code is well formed.
   have hread : ∀ c ∈ gateCodes z t g, ∀ c' ∈ gateCodes z t g, c.2.1 ∉ c'.2.2 := by
-    have hne (i : ℕ) : t ≠ argQubit z t g.2 i := by
-      rcases argQubit_lt_or_eq z t g.2 i with h | h <;> omega
+    have ht : ∀ c ∈ gateCodes z t g, c.2.1 = t :=
+      forall_mem_gateCodes rfl (fun _ => rfl) fun _ => rfl
     intro c hc c' hc'
-    obtain ⟨op, args⟩ := g
-    cases op with
-    | const b => cases b <;> simp_all [gateCodes]
-    | not => simp only [gateCodes, List.mem_cons, List.not_mem_nil, or_false] at hc hc'
-             rcases hc with rfl | rfl <;> rcases hc' with rfl | rfl <;> simp [hne 0]
-    | and =>
-      simp only [gateCodes] at hc hc'
-      split_ifs at hc hc' <;> simp only [List.mem_singleton] at hc hc' <;> subst hc hc' <;>
-        simp [hne 0, hne 1]
-    | or =>
-      simp only [gateCodes] at hc hc'
-      split_ifs at hc hc' <;>
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hc hc' <;>
-        (try rcases hc with rfl | rfl | rfl) <;> (try rcases hc' with rfl | rfl | rfl) <;>
-        simp [hne 0, hne 1]
+    have h := isClassical_gateCodes htz hz g c' hc'
+    rw [ht c hc, ← ht c' hc']
+    exact target_notMem_of_wellFormed h.1 h.2
   rw [readBit_classicalRun_of_forall_notMem (isClassical_gateCodes htz hz g) hread, hY]
   have harg (i : ℕ) := readBit_argQubit htz.le hvals hY g.2 i
   have hget : (vals ++ [interpretation g.1 fun a => g.2[a.val]?.elim false

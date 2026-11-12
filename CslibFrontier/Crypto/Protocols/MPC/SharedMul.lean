@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Crypto.Protocols.MPC.Basic
 public import CslibFrontier.Probability.PMF.Bind
 public import Mathlib.Algebra.Ring.BooleanRing
+import CslibFrontier.Foundations.Data.List.Blocks
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Ideal $\text{OT}_1^4$, 2-Party Shared Multiplication, and Pairwise $m$-Party Reduction
@@ -251,9 +253,8 @@ private theorem evalWith_twoPartyMulProtocol (x : Fin 2 → Bool × Bool) :
       (ProbComp.eval (sharedMulFunctionality 2 x)).map fun y =>
         (fun i => twoPartyMulViewOfInOut i (x i) (y i), y) := by
   rw [Protocol.evalWith_eq, eval_pi_twoPartyMulCoins]
-  simp only [Protocol.outputOfView, twoPartyMulProtocol, ot14World,
-    Steps.evalWith_oracle, Steps.evalWith_done, Steps.outputAt, ProbComp.eval_pure,
-    PMF.bind_map, PMF.pure_bind, PMF.pure_map, Function.comp_def]
+  simp only [pmf_norm, Protocol.outputOfView, twoPartyMulProtocol, ot14World, Steps.evalWith_oracle,
+    Steps.evalWith_done, Steps.outputAt]
   rw [sharedMulFunctionality, sampleAdditiveShares, ProbComp.eval_map, ProbComp.eval_uniform,
     PMF.map_comp, uniformOfFintype_fin1_bool, PMF.map_comp]
   refine congrArg (PMF.map · (PMF.uniformOfFintype Bool)) (funext fun c₀ => ?_)
@@ -450,13 +451,6 @@ theorem extractPairShare_receivedPairOfRow {m : ℕ} (p : OrderedPair m) (i : Fi
       rfl
     · simp [h0, h1]
 
-private theorem sum_map_flatMap {α β M : Type} [AddCommMonoid M] (l : List α)
-    (f : α → List β) (g : β → M) :
-    ((l.flatMap f).map g).sum = (l.map fun a => ((f a).map g).sum).sum := by
-  induction l with
-  | nil => rfl
-  | cons a l ih => simp [List.flatMap_cons, ih]
-
 private theorem sum_map_filterMap {α β M : Type} [AddCommMonoid M] (l : List α)
     (f : α → Option β) (g : β → M) :
     ((l.filterMap f).map g).sum =
@@ -470,7 +464,7 @@ private theorem sum_map_orderedPairs {m : ℕ} {M : Type} [AddCommMonoid M]
     (g : OrderedPair m → M) :
     ((orderedPairs m).map g).sum =
       ∑ u : Fin m, ∑ v : Fin m, if h : u < v then g ⟨(u, v), h⟩ else 0 := by
-  rw [orderedPairs, sum_map_flatMap, Fin.sum_univ_def]
+  rw [orderedPairs, List.sum_map_flatMap, Fin.sum_univ_def]
   congr 1
   refine List.map_congr_left fun u _ => ?_
   rw [sum_map_filterMap, Fin.sum_univ_def]
@@ -1078,8 +1072,7 @@ theorem perfectSemiHonestPrivate_multiPartyMul (m : ℕ) [NeZero m] :
   intro I x
   rw [Protocol.realJoint, evalWith_multiPartyMulProtocol, PMF.map_comp]
   dsimp [idealJoint, multiPartyMulSim]
-  simp only [ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.bind_map]
+  simp only [pmf_norm, ProbComp.eval_uniform]
   let F : (OrderedPair m → Bool) →
       ((i : I) → PartyView (fun _ => Bool × Bool) (fun _ => Unit) (multiPartyMulSchedule m) i.1) ×
         (Fin m → Bool) :=

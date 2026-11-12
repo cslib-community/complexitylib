@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Conversion
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # Cardinality words and full-word bit indices
@@ -77,9 +78,7 @@ theorem realize_cardinality {m : ℕ} (B : (language L).Term α)
     realize_decode (d := m) (B.relabel Sum.inl) x' z' (Sum.elim v w)
       (by simpa only [Term.realize_relabel, Function.comp_def, Sum.elim_inl] using
         Nat.le_of_lt hB)
-  simp only [cardinality, Formula.realize_iExs, Formula.realize_inf, ha, hd,
-    Term.realize_var, Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr,
-    realize_max_val, realize_one_val, Nat.one_mul, and_assoc]
+  fo_simp [cardinality, ha, hd, Function.comp_def, Nat.one_mul, and_assoc]
   have hn := Fact.out (p := 2 ≤ n)
   constructor
   · rintro ⟨w, _, hmax, _, hone, _, _, _, hN, he⟩
@@ -122,12 +121,10 @@ theorem realize_bitIndex {d : ℕ} (B e : (language L).Term α)
       (by simpa only [Term.realize_relabel, Function.comp_def, Sum.elim_inl] using hB)
       (by simpa only [Term.realize_relabel, Function.comp_def, Sum.elim_inl] using hBn)
       (by simp)
-  simp only [bitIndex, Formula.realize_iSup, Formula.realize_iExs, Formula.realize_inf,
-    Formula.realize_not, realize_le, realize_bit, hc, Term.realize_var, Term.realize_relabel,
-    Function.comp_def, Sum.elim_inl, Sum.elim_inr, realize_one_val, List.ofFn_const,
-    List.replicate_one, Nat.ofDigits_singleton, Nat.ofDigits_one, List.sum_replicate,
-    smul_eq_mul, Nat.ofDigits_ofFn_succ,
-    Fin.cons_zero, Fin.cons_succ, Nat.one_mul, Fin.le_def, not_le, and_assoc]
+  fo_simp [bitIndex, hc, Function.comp_def, List.ofFn_const, List.replicate_one,
+    Nat.ofDigits_singleton, Nat.ofDigits_one, List.sum_replicate, smul_eq_mul,
+    Nat.ofDigits_ofFn_succ, Fin.cons_zero, Fin.cons_succ, Nat.one_mul, Fin.le_def, not_le,
+    and_assoc]
   rw [hBe, Nat.testBit_ofDigits_ofFn he _ (fun i => hBe ▸ hx i)]
   constructor
   · rintro ⟨r, w, hwe, hb, _, _, hi⟩
@@ -135,7 +132,7 @@ theorem realize_bitIndex {d : ℕ} (B e : (language L).Term α)
     simpa only [← hBe, Nat.add_comm] using hi
   · rintro ⟨r, b, hi, hb⟩
     let w : Unit → Fin n := fun _ => ⟨b.val, lt_trans b.isLt (e.realize v).isLt⟩
-    refine ⟨r, w, b.isLt, hb, (fun _ => hBe ▸ hB), (fun i => hBe ▸ hy i), ?_⟩
+    refine ⟨r, w, b.isLt, hb, hBe ▸ hB, (fun i => hBe ▸ hy i), ?_⟩
     simpa only [w, hBe, Nat.add_comm] using hi
 
 end Cslib.Logic.FO.Ordered.Radix

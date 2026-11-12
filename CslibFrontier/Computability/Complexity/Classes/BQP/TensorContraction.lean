@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.
 public import CslibFrontier.Computability.Complexity.Classes.Time
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace
+import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ContractionCall
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -192,7 +193,6 @@ theorem exists_expTimePolySpace_gapValue {S : α → List ℕ}
     ∃ (A : ℕ) (c : NativeCertificate (fun a => gapValue (S a) (gs a) (X a)) enc encNat),
       c.ExpTimePolySpace fun a =>
         A * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2)) := by
-  obtain ⟨K, hK⟩ := fastContractionAlgorithm.bound 6 1
   -- the polynomial-time parts
   have hh : ComputableInPolyTime (fun a => hadamardCount (gs a)) enc encUnary := by
     simp only [hadamardCount_eq_countP]
@@ -207,104 +207,18 @@ theorem exists_expTimePolySpace_gapValue {S : α → List ℕ}
   have hfb : ComputableInPolyTime (fun a => fallback (S a) (X a)) enc encNat :=
     ite_decide (decide_eq' (allWithInput hS (bitsGetDWithInput (hX.comp (fst _ _)) (snd _ _)
       false)) (const true)) (const 1) (const 0)
-  -- the machine
-  let cv : NativeCertificate (fun a => gapValue (S a) (gs a) (X a)) enc encNat :=
-    (NativeCertificate.branch (NativeCertificate.ofPolyTime hguard)
-      (fastContractionAlgorithm.certificate.comp (NativeCertificate.ofPolyTime hinput))
-      (NativeCertificate.ofPolyTime hfb)).congr fun _ => rfl
-  refine ⟨12 * K, cv, ?_⟩
-  -- polynomial bounds
-  have hpg := NativeCertificate.ofPolyTime_isPolynomial hguard
-  have hpi := NativeCertificate.ofPolyTime_isPolynomial hinput
-  have hpf := NativeCertificate.ofPolyTime_isPolynomial hfb
-  obtain ⟨cg, dg, htg⟩ := hpg.1.exists_le
-  obtain ⟨cg', dg', hsg⟩ := hpg.2.exists_le
-  obtain ⟨ci, di, hti⟩ := hpi.1.exists_le
-  obtain ⟨ci', di', hsi⟩ := hpi.2.exists_le
-  obtain ⟨cf, df, htf⟩ := hpf.1.exists_le
-  obtain ⟨cf', df', hsf⟩ := hpf.2.exists_le
-  obtain ⟨p, q, hlen⟩ := hinput.polyBounded_length.exists_le
-  -- the contraction on guarded inputs
-  have hinlen (a : α) : (((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-      (contractionInput (S a) (gs a) (X a))).length + 1) ^ K ≤
-        (p + 1) ^ K * ((enc a).length + 1) ^ (q * K) := by
-    have h1 := hlen a
-    have h2 : 1 ≤ ((enc a).length + 1) ^ q := Nat.one_le_pow _ _ (Nat.le_add_left 1 _)
-    calc _ ≤ ((p + 1) * ((enc a).length + 1) ^ q) ^ K := Nat.pow_le_pow_left (by nlinarith) K
-      _ = _ := by rw [mul_pow, pow_mul]
-  have hfast (a : α) (hga : guard (gs a) = true) :
-      fastContractionAlgorithm.certificate.time (contractionInput (S a) (gs a) (X a)) ≤
-          K * (p + 1) ^ K *
-            (2 ^ (12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) *
-              ((enc a).length + 1) ^ (q * K)) ∧
-        fastContractionAlgorithm.certificate.space (contractionInput (S a) (gs a) (X a)) ≤
-          K * (p + 1) ^ K * ((enc a).length + 1) ^ (q * K) := by
-    have hne : gs a ≠ [] := by simpa [guard] using hga
-    have hL : 1 ≤ (gs a).length := List.length_pos_iff.mpr hne
-    have hLN := length_le_length_occurrences (gs a)
-    have hhL : hadamardCount (gs a) ≤ (gs a).length := by
-      rw [hadamardCount_eq_countP]
-      exact List.countP_le_length
-    have hb := hK (4 * (occurrences (gs a)).length) (hadamardCount (gs a) + 1)
-      (network (2 ^ (hadamardCount (gs a) + 1) - 1 : ℕ) (S a) (X a) (gs a)) (by omega) (by omega)
-      (by omega) (explicitAdmissible_network _ (S a) (X a) (hwf a) hne)
-    constructor
-    · refine hb.1.trans ?_
-      calc _ ≤ K * ((p + 1) ^ K * ((enc a).length + 1) ^ (q * K)) *
-            2 ^ (12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2))) :=
-            Nat.mul_le_mul (Nat.mul_le_mul_left _ (hinlen a))
-              (Nat.pow_le_pow_right (by norm_num) (exponent_le K (hwf a) hne))
-        _ = _ := by ring
-    · exact hb.2.trans ((Nat.mul_le_mul_left K (hinlen a)).trans (Nat.mul_assoc _ _ _).ge)
-  -- the totals
-  set d := dg + di + df + dg' + di' + df' + q * K
-  refine ⟨cg + ci + cf + cg' + ci' + cf' + K * (p + 1) ^ K, d, fun a => ?_⟩
-  set Y := ((enc a).length + 1) ^ d
-  set Z := 2 ^ (12 * K * ((gs a).length + 1) / Nat.sqrt (Nat.log 2 ((gs a).length + 2)))
-  have hY {e : ℕ} (he : e ≤ d) : ((enc a).length + 1) ^ e ≤ Y :=
-    Nat.pow_le_pow_right (Nat.le_add_left 1 _) he
-  have hZ : Y ≤ Z * Y := Nat.le_mul_of_pos_left Y (Nat.two_pow_pos _)
-  change (NativeCertificate.ofPolyTime hguard).time a + (if guard (gs a) then
-        (NativeCertificate.ofPolyTime hinput).time a +
-          fastContractionAlgorithm.certificate.time (contractionInput (S a) (gs a) (X a))
-        else (NativeCertificate.ofPolyTime hfb).time a) ≤ _ ∧
-      (NativeCertificate.ofPolyTime hguard).space a + (if guard (gs a) then
-        (NativeCertificate.ofPolyTime hinput).space a +
-          fastContractionAlgorithm.certificate.space (contractionInput (S a) (gs a) (X a))
-        else (NativeCertificate.ofPolyTime hfb).space a) ≤ _
-  have e1 := (htg a).trans (Nat.mul_le_mul_left cg ((hY (e := dg) (by omega)).trans hZ))
-  have e2 := (hti a).trans (Nat.mul_le_mul_left ci ((hY (e := di) (by omega)).trans hZ))
-  have e3 := (htf a).trans (Nat.mul_le_mul_left cf ((hY (e := df) (by omega)).trans hZ))
-  have e1' := (hsg a).trans (Nat.mul_le_mul_left cg' (hY (e := dg') (by omega)))
-  have e2' := (hsi a).trans (Nat.mul_le_mul_left ci' (hY (e := di') (by omega)))
-  have e3' := (hsf a).trans (Nat.mul_le_mul_left cf' (hY (e := df') (by omega)))
-  have hqK : ((enc a).length + 1) ^ (q * K) ≤ Y := hY (by omega)
-  split
-  · next hga =>
-    have e4 := (hfast a hga).1.trans (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left Z hqK))
-    have e4' := (hfast a hga).2.trans (Nat.mul_le_mul_left _ hqK)
-    constructor
-    · calc _ ≤ cg * (Z * Y) + (ci * (Z * Y) + K * (p + 1) ^ K * (Z * Y)) :=
-            Nat.add_le_add e1 (Nat.add_le_add e2 e4)
-        _ ≤ _ := by
-          rw [show cg * (Z * Y) + (ci * (Z * Y) + K * (p + 1) ^ K * (Z * Y)) =
-            (cg + ci + K * (p + 1) ^ K) * Z * Y by ring]
-          exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by omega))
-    · calc _ ≤ cg' * Y + (ci' * Y + K * (p + 1) ^ K * Y) :=
-            Nat.add_le_add e1' (Nat.add_le_add e2' e4')
-        _ ≤ _ := by
-          rw [show cg' * Y + (ci' * Y + K * (p + 1) ^ K * Y) =
-            (cg' + ci' + K * (p + 1) ^ K) * Y by ring]
-          exact Nat.mul_le_mul_right _ (by omega)
-  · constructor
-    · calc _ ≤ cg * (Z * Y) + cf * (Z * Y) := Nat.add_le_add e1 e3
-        _ ≤ _ := by
-          rw [show cg * (Z * Y) + cf * (Z * Y) = (cg + cf) * Z * Y by ring]
-          exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by omega))
-    · calc _ ≤ cg' * Y + cf' * Y := Nat.add_le_add e1' e3'
-        _ ≤ _ := by
-          rw [show cg' * Y + cf' * Y = (cg' + cf') * Y by ring]
-          exact Nat.mul_le_mul_right _ (by omega)
+  -- the machine: the guard, then the contraction algorithm on the network or the direct answer
+  obtain ⟨K, h⟩ := fastContractionAlgorithm.expTimePolySpace_branch hguard hinput hfb 6 1
+    (fun a => 4 * (occurrences (gs a)).length) fun a hga => by
+      have hne : gs a ≠ [] := by simpa [guard] using hga
+      have hL : 1 ≤ (gs a).length := List.length_pos_iff.mpr hne
+      have hLN := length_le_length_occurrences (gs a)
+      have hhL : hadamardCount (gs a) ≤ (gs a).length := by
+        rw [hadamardCount_eq_countP]
+        exact List.countP_le_length
+      dsimp only [contractionInput]
+      exact ⟨by omega, by omega, by omega, explicitAdmissible_network _ (S a) (X a) (hwf a) hne⟩
+  exact ⟨12 * K, _, h _ fun a hga => exponent_le K (hwf a) (by simpa [guard] using hga)⟩
 
 /-- **The simulator.** For polynomial-time computed measured qubits `S a` and gate codes `gs a`,
 well formed on the polynomial-time computed register `X a`, one machine computes

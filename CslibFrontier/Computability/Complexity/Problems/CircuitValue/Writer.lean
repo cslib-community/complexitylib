@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceL
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.List.GetD
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Tactic.Space
 
 /-!
 # Writing circuits chunk by chunk in logarithmic space
@@ -72,15 +73,7 @@ private theorem writerAddr_inSpace :
     ComputableInSpace writerAddr encNat3 (encOption encNat) wBudget := by
   have hin : (fun s => (encNat3 s).length) ≼ wBudget := .of_le fun _ => by
     simp only [wBudget]; omega
-  have hph := (ComputableInSpace.fst encNat (encPair encNat encNat)).weaken hin
-  have hi := snd' ((ComputableInSpace.snd encNat (encPair encNat encNat)).weaken hin)
-  have h2i := budget_natMul (budget_const (encB := encNat) 2 hin) hi
-  refine (budget_ite (budget_natEq hph (budget_const (encB := encNat) 0 hin))
-    (budget_optionSome h2i)
-    (budget_ite (budget_natEq hph (budget_const (encB := encNat) 2 hin))
-      (budget_optionSome (budget_natAdd h2i (budget_const 1 hin)))
-      (budget_const (encB := encOption encNat) none hin))).of_enc_eq fun s => ?_
-  simp only [writerAddr, decide_eq_true_eq]
+  space [writerAddr]
 
 /-- The states of the writer on an input of length `n`, with `N` gates. -/
 private def WInv (n N : ℕ) (s : ℕ × ℕ × ℕ) : Prop :=
@@ -285,52 +278,7 @@ private theorem step_inSpace
     .of_le_linear 2 0 fun p => by
       simp only [length_encPair, encBool_apply, wBudget]
       enc_len [encNat_apply, zero_add, add_zero, Order.add_one_le_iff]
-  have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
-  have hb := (ComputableInSpace.snd encNat3 encBool).weaken hin
-  have hph := fst' hs
-  have hn := fst' (snd' hs)
-  have hi := snd' (snd' hs)
-  have hst {a b c : (ℕ × ℕ × ℕ) × Bool → ℕ}
-      (ha : ComputableInSpace a encStepIn encNat fun p => wBudget p.1)
-      (hb : ComputableInSpace b encStepIn encNat fun p => wBudget p.1)
-      (hc : ComputableInSpace c encStepIn encNat fun p => wBudget p.1) :
-      ComputableInSpace (fun p => (a p, b p, c p)) encStepIn encNat3
-        fun p => wBudget p.1 :=
-    budget_prod ha (budget_prod hb hc)
-  have hc (m : ℕ) := budget_const (encB := encNat) m hin
-  have hw (l : List Bool) := budget_const (encB := encBits) l hin
-  have hsucc := budget_natAdd hi (hc 1)
-  have hcopy := budget_finite (encC := encBits) S.copyBit hb
-  refine (budget_ite (budget_natEq hph (hc 0))
-    (budget_ite hb (budget_prod (hst (hc 0) (hc 0) hsucc) (hw S.countUnit))
-      (budget_prod (hst (hc 1) hi (hc 0)) (hw S.countEnd)))
-    (budget_ite (budget_natEq hph (hc 1))
-      (budget_ite (budget_natLt hi hN) (budget_prod (hst (hc 1) hn hsucc) hC)
-        (budget_prod (hst (hc 2) hn (hc 0)) hT))
-      (budget_ite (budget_natEq hph (hc 2))
-        (budget_ite (budget_natLt hi hn) (budget_prod (hst (hc 2) hn hsucc) hcopy)
-          (budget_prod (hst (hc 3) hn (hc 0)) (hw [])))
-        (budget_prod hs (hw []))))).of_enc_eq fun p => ?_
-  simp only [step, decide_eq_true_eq]
-
-private theorem machine_resourceCertificate
-    (hN : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.numChunks p.1.2.1) encStepIn
-      encNat fun p => wBudget p.1)
-    (hC : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.chunk p.1.2.1 p.1.2.2)
-      encStepIn encBits fun p => wBudget p.1)
-    (hT : ComputableInSpace (fun p : (ℕ × ℕ × ℕ) × Bool => S.trailer p.1.2.1) encStepIn
-      encBits fun p => wBudget p.1) :
-    ∃ T, S.machine.toStepMachine.ResourceCertificate (encPair encNat3 encNat)
-      (ReadMachine.stateT encNat3 T wBudget) (ReadMachine.stateS encNat3 wBudget) := by
-  obtain ⟨T₁, h₁⟩ := S.halt_inSpace.exists_inO
-  obtain ⟨T₂, h₂⟩ := writerAddr_inSpace.exists_inO
-  obtain ⟨T₃, h₃⟩ := (step_inSpace hN hC hT).exists_inO
-  let T : ℕ × ℕ × ℕ → ℕ := fun s => T₁ s + T₂ s + T₃ (s, false) + T₃ (s, true)
-  exact ⟨T, ReadMachine.toStepMachine_resourceCertificate
-    (h₁.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
-    (h₂.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
-    (h₃.mono_le (fun p => by rcases p with ⟨s, _ | _⟩ <;> simp only [T] <;> omega)
-      fun _ => le_rfl)⟩
+  space [step]
 
 variable (S) in
 private theorem stateS_le (w : List Bool) {q : (ℕ × ℕ × ℕ) × ℕ}
@@ -360,7 +308,8 @@ theorem computableInLogSpace {β : Type} {encOut : β ↪ List Bool} {g : List B
       encBits fun p => wBudget p.1)
     (hpoly : PolynomiallyBounded S.numChunks) :
     ComputableInLogSpace g (encFramed encBits) encOut := by
-  obtain ⟨T, hT'⟩ := machine_resourceCertificate hN hC hT
+  obtain ⟨T, hT'⟩ := ReadMachine.exists_toStepMachine_resourceCertificate S.halt_inSpace
+    writerAddr_inSpace (step_inSpace hN hC hT)
   have hc (w : List Bool) : S.machine.toStepMachine.Computes (encFramed encBits w)
       (encOut (g w)) := by
     have hrun := S.run_machine w

@@ -264,9 +264,7 @@ private theorem min_le_mul_min {c : ℝ≥0∞} (hc : 1 ≤ c) (x y : ℝ≥0∞
   · rw [min_eq_left h]
     exact min_le_right _ _
   · rw [min_eq_right h]
-    calc min y (c * x) ≤ y := min_le_left _ _
-      _ = 1 * (1 * y) := by rw [one_mul, one_mul]
-      _ ≤ c * (c * y) := by gcongr
+    exact (min_le_left _ _).trans ((le_mul_of_one_le_left' hc).trans (le_mul_of_one_le_left' hc))
 
 private theorem exists_mix {P : α → ℝ≥0∞} {c : ℝ≥0∞} (hc : 1 ≤ c) (p₀ q₀ : α → ℝ≥0∞)
     (hp₀ : ∀ a, p₀ a ≤ P a) (hpq : ∀ a, p₀ a ≤ c * q₀ a) (hqp : ∀ a, q₀ a ≤ c * p₀ a)
@@ -291,14 +289,12 @@ private theorem exists_mix {P : α → ℝ≥0∞} {c : ℝ≥0∞} (hc : 1 ≤ 
   have hθ : ENNReal.ofReal (1 - s) + ENNReal.ofReal s = 1 := by
     rw [← ENNReal.ofReal_add (by linarith) hs0, sub_add_cancel, ENNReal.ofReal_one]
   have hcu : ∀ a, q₀ a ≤ c * u a := fun a => by
+    change q₀ a ≤ c * min (p₀ a) (q₀ a)
     rcases le_total (p₀ a) (q₀ a) with h | h
-    · change q₀ a ≤ c * min (p₀ a) (q₀ a)
-      rw [min_eq_left h]
+    · rw [min_eq_left h]
       exact hqp a
-    · change q₀ a ≤ c * min (p₀ a) (q₀ a)
-      rw [min_eq_right h]
-      calc q₀ a = 1 * q₀ a := (one_mul _).symm
-        _ ≤ c * q₀ a := by gcongr
+    · rw [min_eq_right h]
+      exact le_mul_of_one_le_left' hc
   refine ⟨fun a => ENNReal.ofReal (1 - s) * p₀ a + ENNReal.ofReal s * u a, fun a => ?_,
     fun a => ?_, fun a => ?_, ?_⟩
   · calc ENNReal.ofReal (1 - s) * p₀ a + ENNReal.ofReal s * u a
@@ -311,9 +307,7 @@ private theorem exists_mix {P : α → ℝ≥0∞} {c : ℝ≥0∞} (hc : 1 ≤ 
         ≤ ENNReal.ofReal (1 - s) * (c * q₀ a) + ENNReal.ofReal s * (c * q₀ a) := by
           gcongr
           · exact hpq a
-          · calc u a ≤ q₀ a := huq a
-              _ = 1 * q₀ a := (one_mul _).symm
-              _ ≤ c * q₀ a := by gcongr
+          · exact (huq a).trans (le_mul_of_one_le_left' hc)
       _ = c * q₀ a := by rw [← add_mul, hθ, one_mul]
   · calc q₀ a = ENNReal.ofReal (1 - s) * q₀ a + ENNReal.ofReal s * q₀ a := by
           rw [← add_mul, hθ, one_mul]

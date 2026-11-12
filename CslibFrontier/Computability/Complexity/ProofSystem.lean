@@ -247,8 +247,7 @@ def ofVerifier (D : Decoder enc) (hV : ComputableInPolyTime V (encPair enc encBi
       have hi : verifierInstance D (frame (enc a) ++ w) = a := by
         rw [verifierInstance, unframe_frame_append, D.decode_enc]
       have hacc : verifierAccepts D p V (frame (enc a) ++ w) = true := by
-        simp only [verifierAccepts, hi, dropFrame_frame_append, hVw, hw, decide_true,
-          Bool.and_self]
+        grind [verifierAccepts, dropFrame_frame_append, decide_true, Bool.and_self]
       simp only [hacc, ↓reduceIte, hi]
 
 /-- A framed encoded instance followed by an accepted certificate of the prescribed length proves

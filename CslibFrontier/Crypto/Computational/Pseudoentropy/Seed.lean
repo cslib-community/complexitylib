@@ -14,6 +14,7 @@ public import CslibFrontier.Probability.EntropyConcentration
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -27,7 +28,7 @@ The entropy chain rule accounts for every seed bit, including coins unused by th
 `H(observation) + H(bit | observation) + H(seed | observation, bit) = seed length`.
 Thus the third source in the later extraction argument retains the unused randomness too.
 The seed also bounds the information in a single outcome, giving an explicit exponential
-concentration bound for independent repetitions of the pair.
+lower-tail bound on the total conditional information of independent repetitions of the pair.
 
 ## Main definitions
 
@@ -80,7 +81,7 @@ theorem exists_observationBound (pair : SamplablePair) :
   have hsupported : pair.encode n observation ∈ (ProbComp.eval
       (Prod.fst <$> pair.sample n)).support := by
     obtain ⟨result, hresult, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hobservation
-    simp only [ProbComp.eval_map, pair.eval_sample, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, pair.eval_sample]
     exact (PMF.mem_support_map_iff _ _ _).mpr ⟨result, hresult, rfl⟩
   simpa only [encBits, Function.Embedding.refl_apply, encUnary_apply, List.length_replicate] using
     hbound n (pair.encode n observation) hsupported
@@ -211,8 +212,7 @@ theorem isPPTOn_sampleWithSeed : IsPPTOn encUnary
 theorem eval_sampleWithSeed (n : ℕ) : ProbComp.eval (seed.sampleWithSeed n) =
     (seed.jointWithSeed n).map (fun ((obs, label), bits) =>
       ((pair.encode n obs, label), List.ofFn bits)) := by
-  simp only [sampleWithSeed, bind_pure_comp, ProbComp.eval_map, jointWithSeed, PMF.map_comp,
-    Function.comp_def, seed.encode_output]
+  simp only [pmf_norm, sampleWithSeed, bind_pure_comp, jointWithSeed, seed.encode_output]
   simp only [BitString.eval_sampleList, BitString.uniformList, PMF.map_comp, Function.comp_def]
 
 /-- Every possible output has at least the probability of one complete seed. -/
@@ -223,8 +223,11 @@ theorem mass_ge (n : ℕ) (result : pair.Observation n × Bool)
   simpa [Fintype.card_fun, Real.logb_pow] using
     PMF.uniform_map_mass_ge (seed.output n) result hresult
 
-/-- Independent repetitions concentrate their conditional information around the Shannon
-entropy of the pair. The loss accounts for the sampler's full saved seed length. -/
+/-- Lower-tail bound for independent repetitions: for `0 ≤ ε`, the total conditional information
+of the hidden bits given their observations is at most `repetitions` times the conditional entropy
+`PMF.conditionalEntropy (pair.joint n)` of the bit given the observation, minus `ε`, with
+probability at most `Real.exp (-2 * ε ^ 2 / (repetitions * (seed.length n : ℝ) ^ 2))`. No
+upper-tail bound is stated. The loss accounts for the sampler's full saved seed length. -/
 theorem conditionalSurprisal_concentration (n repetitions : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
     ((PMF.pi (fun _ : Fin repetitions => pair.joint n)).toOuterMeasure {outcomes |
       ∑ i, PMF.surprisal (PMF.conditionalSnd (pair.joint n) (outcomes i).1) (outcomes i).2 ≤

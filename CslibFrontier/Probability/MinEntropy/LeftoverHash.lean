@@ -42,7 +42,7 @@ states the resulting extraction bound directly.
   Function*][HILL1999]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

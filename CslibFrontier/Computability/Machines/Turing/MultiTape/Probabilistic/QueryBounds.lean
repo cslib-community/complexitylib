@@ -245,8 +245,7 @@ theorem finiteRunFrom_take_eq {spec : OracleSpec.{0, 0} Query}
       simp only [finiteStep, h.tapes.state, h.tapes.inputSymbol,
         h.tapes.workTapeSymbols, hans, bind_assoc, runFrom, runConfigFrom,
         MultiTapeMachine.runConfigFrom, hs, map_bind]
-      congr 1
-      funext action
+      congr 1 with action : 1
       cases action with
       | step action symbol move =>
         simp only [pure_bind]
@@ -257,8 +256,7 @@ theorem finiteRunFrom_take_eq {spec : OracleSpec.{0, 0} Query}
         lia
       | query op next =>
         simp only [h.queries, bind_map_left, bind_assoc, pure_bind, map_bind]
-        congr 1
-        funext answer
+        congr 1 with answer : 1
         refine ih _ _ (h.receive op next answer) (by lia) (fun other => ?_)
         by_cases heq : other = op
         · subst other

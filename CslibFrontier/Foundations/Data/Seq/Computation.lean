@@ -28,7 +28,7 @@ The steps add up along `bind` (`Computation.mem_runFor_bind`), and `map` takes n
 * `Computation.runFor_map`, `Computation.mem_runFor_bind`: `map` and `bind` against the clock.
 -/
 
-@[expose] public section
+public section
 
 namespace Computation
 

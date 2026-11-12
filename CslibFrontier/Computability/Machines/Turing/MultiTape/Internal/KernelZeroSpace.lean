@@ -31,7 +31,6 @@ section NoWorkTapes
 
 variable {State : Type*} {tm : MultiTapeTM 0 Symbol State}
 
-open Sequential in
 /-- If a machine without work tapes has a run path from its start to a halted configuration, then
 following it with `Turing.MultiTapeTM.rewindInput` computes the output of that configuration
 tidily: the rewind returns the input head from its position `p` in `p - 1 + 2` further steps. -/
@@ -44,8 +43,8 @@ public theorem computesTidily_seq_rewindInput_of_runPath {q : tm.RunPath input}
   have hr : r.last = wordsCfg input none (fun _ => []) q.last.output :=
     (runFrom_rewindInput q.last.inputPos q.last.workTapes q.last.workTapePos q.last.output).trans
       (Cfg.ext_zero_tapes rfl rfl rfl)
-  obtain ⟨p, hph, hpl, hpt, -⟩ := exists_runPath_seq hl rfl (by rw [hr]; rfl)
-  exact computesTidily_iff.mpr ⟨p, by rw [hph, hh]; rfl, by simp [hpl, hr, rightCfg], hpt,
+  obtain ⟨p, hph, hpl, hpt, -⟩ := exists_runPath_seq (p₁ := r) hl rfl
+  exact computesTidily_iff.mpr ⟨p, by rw [hph, hh]; rfl, by simp [hpl, hr], hpt,
     by simp [MultiTapeNTM.RunPath.space]⟩
 
 /-- A machine without work tapes that computes `output` in time `t`, followed by

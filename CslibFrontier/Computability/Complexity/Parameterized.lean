@@ -395,9 +395,7 @@ private theorem decidableInTimeO_natCast_iff {A : Set α} {T : α → ℕ} :
   · intro h
     obtain ⟨g, t, k, hg, hA, ht⟩ := h.exists_computableInO
     have ht' : ∀ a, t a ≤ k * (T a + 1) := fun a => by
-      have : (t a : ℝ) ≤ ((k * (T a + 1) : ℕ) : ℝ) := by
-        push_cast
-        linarith [ht a]
+      have : (t a : ℝ) ≤ ((k * (T a + 1) : ℕ) : ℝ) := by grind
       exact_mod_cast this
     exact ⟨g, hg.mono k ht' ht', hA⟩
   · rintro ⟨g, hg, hA⟩

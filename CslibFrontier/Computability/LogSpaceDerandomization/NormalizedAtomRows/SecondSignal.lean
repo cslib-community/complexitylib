@@ -191,11 +191,7 @@ theorem selectedPreparation_moment_le
       (fun σ x y => selectedPreparation HP D R st k A σ x y) ≤ 16 * HP.K := by
   have hP : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
   have hr := rate_pos ks
-  have hd := (affineRetains_rates (P := P) (H := 4) (horizon_admissible H hks)
-    (show ((2 : ℝ) ^ ks)⁻¹ ≤ 1 from inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num)))).2.2.1
-  rw [← side_eq_ceil] at hd
-  norm_num only [show (2 : ℝ) ^ 4 = 16 by norm_num] at hd
-  change ((side P ks : ℝ) / P) ^ 4 ≤ 16 * rate ks at hd
+  have hd := side_div_pow_four_le H hks
   have hb := selectedPreparation_support_moment HP hK D R ks k kt
     husage ss st A (mul_pos hP hr).le
   rw [source_density_sum] at hb
@@ -229,8 +225,7 @@ lemma actualPrefix_twoSignal_second
   convert uncompressed_second_telescope (fun j y => ζ * H j σ x y)
     (fun j y => (F (j + 1) σ x y - (if j = 0 then 0 else F j σ x y)) / rate k)
     (fun _ _ => 0) (by intros; rfl) i y using 1
-  congr 1
-  funext j z ν
+  congr 1 with j z ν : 3
   simp only [firstSignalIncrement, secondSignalIncrement]
   split_ifs <;> ring
 

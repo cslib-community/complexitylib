@@ -34,7 +34,7 @@ open MultiTapeNTM.ChoiceTable
 @[expose] noncomputable def metadataSpace
     (N b σ q m alphabet limit p d r : ℕ) : ℕ :=
   (QueryGate.encParams Interpolation.encContext
-    ((N, b, σ, q, m, r, r * m), (p, alphabet, d * r), [], limit)).length
+    (⟨N, b, σ, q, m, r, r * m⟩, (p, alphabet, d * r), [], limit)).length
 
 /-- Uniform replay allowance: origins are binary horizon counts and the head family is fixed. -/
 @[expose] noncomputable def replaySpace (k s : ℕ) (Q : Type)
@@ -66,7 +66,7 @@ private theorem normalized_point_encoding_le {p d r : ℕ} (point : List ℕ)
 /-- The replay's two origin counters never exceed the supplied horizon. -/
 theorem calleeSpace_le_replaySpace {k s : ℕ} {Q : Type}
     (N b σ q m r i : ℕ) (hi : i ≤ q) :
-    Interpolation.calleeSpace k s Q (N, b, σ, i, m, r, r * m) ≤
+    Interpolation.calleeSpace k s Q ⟨N, b, σ, i, m, r, r * m⟩ ≤
       replaySpace k s Q N b q m r := by
   have hp := length_encNat_mono ((ScheduleRead.iterate_snd_le k 0 2 σ i).trans hi)
   have hn := length_encNat_mono ((ScheduleRead.iterate_snd_le k 0 0 σ i).trans hi)
@@ -81,12 +81,13 @@ private theorem interpolation_params_encoding_le
     (hi : i ≤ q) (hc : chunk ≤ r)
     (hpoint : (encList encNat point).length ≤ d * r * (2 * (encNat p).length + 1)) :
     (QueryGate.encParams Interpolation.encContext
-      ((N, b, σ, i, m, chunk, r * m), (p, alphabet, d * r), point, limit)).length ≤
+      (⟨N, b, σ, i, m, chunk, r * m⟩, (p, alphabet, d * r), point, limit)).length ≤
         metadataSpace N b σ q m alphabet limit p d r +
           2 * (d * r * (2 * (encNat p).length + 1)) := by
   have hi' := length_encNat_mono hi
   have hc' := length_encNat_mono hc
-  simp only [metadataSpace, QueryGate.encParams, Interpolation.encContext, encNat3,
+  simp only [metadataSpace, QueryGate.encParams, Interpolation.encContext_apply,
+    Interpolation.encContextFields, encNat3,
     length_encPair]
   have hempty : (encList encNat []).length = 0 := rfl
   rw [hempty]
@@ -110,12 +111,12 @@ theorem allowance_le {k s : ℕ} {Q : Type}
   have hcallee := calleeSpace_le_replaySpace (k := k) (s := s) (Q := Q)
     N b σ q m r i hi
   change 2 * GateVector.callerSpace
-      (((N, b, σ, i, m, 0, r * m), (p, alphabet, d * r),
+      ((⟨N, b, σ, i, m, 0, r * m⟩, (p, alphabet, d * r),
         NormalizePoint.normalize p point, limit), r) +
       16 * ((QueryGate.encParams Interpolation.encContext
-        ((N, b, σ, i, m, r, r * m), (p, alphabet, d * r),
+        (⟨N, b, σ, i, m, r, r * m⟩, (p, alphabet, d * r),
           NormalizePoint.normalize p point, limit)).length + 1) +
-      Interpolation.calleeSpace k s Q (N, b, σ, i, m, r, r * m) + 5 ≤ _
+      Interpolation.calleeSpace k s Q ⟨N, b, σ, i, m, r, r * m⟩ + 5 ≤ _
   simp only [GateVector.callerSpace, GateVector.encParams, length_encPair, gateSpace]
     at hparams hmax ⊢
   simp only [Nat.mul_assoc] at hparams hmax ⊢
@@ -148,9 +149,7 @@ theorem node_reply_encoding_le {k s p r m : ℕ} {Q : Type}
   have hlength : (InitialVector.values M e (limit, m, r)).length = r := by
     rw [InitialVector.length_values, Nat.min_eq_left hcapacity]
   rw [hlength] at hvalues
-  have htag : ImplicitNode.classify k (σ, q, path) ≤ 2 := by
-    simp only [ImplicitNode.classify]
-    split <;> (try split) <;> omega
+  have htag : ImplicitNode.classify k (σ, q, path) ≤ 2 := by grind [ImplicitNode.classify]
   have htaglen := length_encNat_mono htag
   have htwo : (encNat 2).length = 2 := rfl
   have hone : (encNat 1).length = 1 := rfl

@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.TreeEval.Reader.Tuple
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Weight
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Regs
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Offset
+import CslibFrontier.Tactic.Space
 
 /-!
 # The step of the Tree Evaluation read machine within its space budget
@@ -135,9 +136,6 @@ theorem tag_inSpace : ComputableInSpace (fun y : Tuple × Bool => y.1.tag) encSt
 theorem n₁_inSpace : ComputableInSpace (fun y : Tuple × Bool => y.1.n₁) encStepInT encNat
     stepBudget := fst' (snd' hCtl)
 
-private theorem hN₂ : ComputableInSpace (fun y : Tuple × Bool => y.1.n₂) encStepInT encNat
-    stepBudget := fst' (snd' (snd' hCtl))
-
 private theorem hAcc : ComputableInSpace (fun y : Tuple × Bool => y.1.acc) encStepInT
     (encList encNat) stepBudget := snd' (snd' (snd' hCtl))
 
@@ -247,15 +245,9 @@ private theorem branch0_inSpace :
     ComputableInSpace (fun y : Tuple × Bool => if y.2 then
         (y.1.withCtl (0, y.1.n₁ + 1, 0, []), ([] : List Bool))
       else ((((y.1.n₁, y.1.height, y.1.p), y.1.regs), y.1.2.1, (1, 0, 0, [])), []))
-      encStepInT encStepOut stepBudget :=
-  budget_ite hBit
-    (out_inSpace
-      (withCtl_inSpace
-        (mkCtl_inSpace (hConstTag 0) (succ_inSpace n₁_inSpace) (hConstNat 0) hNil)))
-    (out_inSpace
-      (budget_prod
-        (budget_prod (budget_prod n₁_inSpace (budget_prod height_inSpace hP)) hRegs)
-      (budget_prod hStackMode (mkCtl_inSpace (hConstTag 1) (hConstNat 0) (hConstNat 0) hNil))))
+      encStepInT encStepOut stepBudget := by
+  have := len_le_stepBudget
+  space
 
 /-- The header: reading the height. -/
 private theorem branch1_inSpace :
@@ -263,17 +255,8 @@ private theorem branch1_inSpace :
         (y.1.withCtl (1, y.1.n₁ + 1, 0, []), ([] : List Bool))
       else ((((y.1.ell, y.1.n₁, y.1.p), y.1.regs), y.1.2.1, (2, 2 * y.1.ell + 2, 2, [])), []))
       encStepInT encStepOut stepBudget := by
-  have h2e : ComputableInSpace (fun y : Tuple × Bool => 2 * y.1.ell + 2) encStepInT encNat
-      stepBudget :=
-    (succ_inSpace (succ_inSpace (budget_natAdd ell_inSpace ell_inSpace))).of_enc_eq
-      fun _ => by congr 1; omega
-  exact budget_ite hBit
-    (out_inSpace
-      (withCtl_inSpace
-        (mkCtl_inSpace (hConstTag 1) (succ_inSpace n₁_inSpace) (hConstNat 0) hNil)))
-    (out_inSpace (budget_prod
-      (budget_prod (budget_prod ell_inSpace (budget_prod n₁_inSpace hP)) hRegs)
-      (budget_prod hStackMode (mkCtl_inSpace (hConstTag 2) h2e (hConstNat 2) hNil))))
+  have := len_le_stepBudget
+  space
 
 private theorem hReplicate :
     ComputableInSpace (fun y : Tuple × Bool => List.replicate y.1.ell 0) encStepInT
@@ -292,30 +275,9 @@ private theorem branch2_inSpace :
         (List.replicate y.1.ell 0, List.replicate y.1.ell 0, List.replicate y.1.ell 0)),
         ([], .call false 2), runCtl), []))
       encStepInT encStepOut stepBudget := by
-  have hlt := budget_natLt hN₂ n₁_inSpace
-  have hmod := budget_natMod n₁_inSpace hN₂
-  have hz := budget_natIsZero hmod
-  have hzeros : ComputableInSpace (fun y : Tuple × Bool =>
-      ((List.replicate y.1.ell 0, List.replicate y.1.ell 0, List.replicate y.1.ell 0) : Regs))
-      encStepInT encRegs stepBudget :=
-    budget_prod hReplicate (budget_prod hReplicate hReplicate)
-  have hfound : ComputableInSpace (fun y : Tuple × Bool =>
-      ((((y.1.ell, y.1.height, y.1.n₁),
-        (List.replicate y.1.ell 0, List.replicate y.1.ell 0, List.replicate y.1.ell 0)),
-        ([], Mode.call false 2), runCtl) : Tuple)) encStepInT encTuple stepBudget :=
-    mkTuple_inSpace ell_inSpace height_inSpace n₁_inSpace hzeros
-      (budget_const (encB := encList encFrame) [] len_le_stepBudget)
-      (budget_const (encB := encMode) (.call false 2) len_le_stepBudget)
-      (mkCtl_inSpace (hConstTag 3) (hConstNat 0) (hConstNat 0) hNil)
-  refine (budget_ite hlt (budget_ite hz
-    (out_inSpace
-      (withCtl_inSpace
-        (mkCtl_inSpace (hConstTag 2) (succ_inSpace n₁_inSpace) (hConstNat 2) hNil)))
-    (out_inSpace
-      (withCtl_inSpace
-        (mkCtl_inSpace (hConstTag 2) n₁_inSpace (succ_inSpace hN₂) hNil))))
-    (out_inSpace hfound)).of_enc_eq fun y => ?_
-  simp only [decide_eq_true_eq]
+  have := len_le_stepBudget
+  have := hReplicate
+  space
 
 private theorem hLt {a b : Tuple × Bool → ℕ}
     (ha : ComputableInSpace a encStepInT encNat stepBudget)
@@ -351,20 +313,11 @@ private theorem branch4_inSpace :
         else (y.1.with y.1.regs y.1.stack .ret runCtl, [])
       else (y.1, []))
       encStepInT encStepOut stepBudget := by
-  have ht := hModeFinite (encB := encReg) Mode.target
-  have hneg := hModeFinite (encB := encBool) Mode.neg
-  have hcall := hModeFinite (encB := encBool) Mode.isCall
-  have hc := budget_ite hBit (hSgnVal hP hneg) (hConstNat 0)
-  have hmod := modifyAt_inSpace (get_inSpace hRegs ht) n₁_inSpace hP hc
-  have hset := set_inSpace hRegs ht hmod
-  refine (budget_ite hcall (budget_ite (hLt n₁_inSpace ell_inSpace)
-    (out_inSpace (withRegsModeCtl_inSpace hset stack_inSpace hMode
-      (mkCtl_inSpace (hConstTag 4) (succ_inSpace n₁_inSpace) (hConstNat 0) hNil)))
-    (out_inSpace (withRegsModeCtl_inSpace hRegs stack_inSpace
-      (budget_const (encB := encMode) .ret len_le_stepBudget)
-      (mkCtl_inSpace (hConstTag 3) (hConstNat 0) (hConstNat 0) hNil))))
-    (out_inSpace hTup)).of_enc_eq fun y => ?_
-  simp only [decide_eq_true_eq]
+  have := len_le_stepBudget
+  have := @get_inSpace
+  have := @set_inSpace
+  have := @modifyAt_inSpace
+  space [sgnVal]
 
 private theorem hFrTarget : ComputableInSpace
     (fun y : Tuple × Bool => (y.1.stack.headD dfr).target)

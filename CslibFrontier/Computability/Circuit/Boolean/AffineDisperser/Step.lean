@@ -40,13 +40,15 @@ algorithm, and no running time is claimed.
   Boolean Circuits*][MishraSanthanam2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.AffineDisperser
 
-open Finset Cslib.BitString SemiCircuit
+open Finset Cslib.BitString SemiCircuit AffineDisperserCore
 
 namespace State
+
+open AffineDisperserCore.State
 
 variable {n : ℕ} {f : BooleanFunction n}
 
@@ -65,25 +67,25 @@ private theorem Valid.exists_step_aux {d : ℕ} (hf : IsAffineDisperser f d) :
   -- move affine gates into the affine system
   by_cases hmov : ∃ J, S.Movable J
   · obtain ⟨J, hJ⟩ := hmov
-    have hp := hS.preparation_moveAffine hJ
+    have hp := Valid.preparation_moveAffine hS hJ
     have hcard := moveAffine_gates_card (S := S) ⟨hJ.1, S.freshEqn_notMem, hJ.2.1, hJ.2.2⟩
     obtain ⟨S', hstep⟩ := ih₁ _ (by omega) _ _ _ rfl rfl rfl hp.valid (hp.a_eq ▸ ha)
     exact ⟨S', hstep.of_preparation hp⟩
   push Not at hmov
   -- the preliminary reductions
-  rcases hS.step_or_normal hf ha hmov with hstep | hN
+  rcases Valid.step_or_normal hS hf ha hmov with hstep | hN
   · exact hstep
   -- the minimal AND
   obtain ⟨hne, hand, t₁, t₂, hl, hr, ht12, ht₁, ht₂⟩ :=
-    hS.exists_minGate hf ha hN.not_movable hN.no_deletion
+    Valid.exists_minGate hS hf ha hN.not_movable hN.no_deletion
   have hG : S.gates.min' hne ∈ S.gates := Finset.min'_mem _ _
   -- an auxiliary input is exchanged with a parameter
   by_cases haux : t₁ ∈ S.aux ∨ t₂ ∈ S.aux
   · obtain ⟨S₁, hp, hgates, hlt⟩ : ∃ S₁ : State n, Preparation f S S₁ ∧ S₁.gates = S.gates ∧
         S₁.auxIn < S.auxIn := by
       rcases haux with h | h
-      · exact hS.exists_preparation_auxIn_lt hN hne (Or.inl ⟨hl, hr⟩) h ht12
-      · exact hS.exists_preparation_auxIn_lt hN hne (Or.inr ⟨hl, hr⟩) h ht12.symm
+      · exact Valid.exists_preparation_auxIn_lt hS hN hne (Or.inl ⟨hl, hr⟩) h ht12
+      · exact Valid.exists_preparation_auxIn_lt hS hN hne (Or.inr ⟨hl, hr⟩) h ht12.symm
     obtain ⟨S', hstep⟩ := ih₂ _ (hk₂ ▸ hlt) _ S₁ (hgates ▸ hk₁) rfl rfl hp.valid (hp.a_eq ▸ ha)
     exact ⟨S', hstep.of_preparation hp⟩
   push Not at haux
@@ -96,15 +98,15 @@ private theorem Valid.exists_step_aux {d : ℕ} (hf : IsAffineDisperser f d) :
       ((S.gate K).Reads t₁ ∨ (S.gate K).Reads t₂)
   · obtain ⟨K, hK, hKG, hKt⟩ := hch
     obtain ⟨S₁, hp, hgates, hauxeq, hlt⟩ :=
-      hS.exists_preparation_childIn_lt hne hl hr ht12 hx hy hxdeg hydeg hK hKG hKt
+      Valid.exists_preparation_childIn_lt hS hne hl hr ht12 hx hy hxdeg hydeg hK hKG hKt
     obtain ⟨S', hstep⟩ := ih₃ _ (hk₃ ▸ hlt) S₁ (hgates ▸ hk₁) (hauxeq.trans hk₂) rfl hp.valid
       (hp.a_eq ▸ ha)
     exact ⟨S', hstep.of_preparation hp⟩
   push Not at hch
   -- eliminating the minimal AND
-  obtain ⟨x, y, hmin⟩ := hS.exists_minimalAnd hf ha hN hG hand hl hr ht12 hx hy
+  obtain ⟨x, y, hmin⟩ := Valid.exists_minimalAnd hS hf ha hN hG hand hl hr ht12 hx hy
     fun K hK hKG => ⟨(hch K hK hKG).1, (hch K hK hKG).2⟩
-  exact hS.step_of_minimalAnd hf ha hN hmin
+  exact Valid.step_of_minimalAnd hS hf ha hN hmin
 
 /-- **Lemma 4.2** of [Mishra and Santhanam][MishraSanthanam2026]: if `d < a`, a valid state for
 an affine disperser for dimension `d` has a step of gate elimination: a valid state with smaller

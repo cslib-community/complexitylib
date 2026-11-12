@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation.Certificate
 public import CslibFrontier.Logics.FirstOrder.Ordered.Tuple.Flatten
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # Composition of certified ordered interpretations
@@ -79,8 +80,7 @@ theorem realize_comp_domain (x : Fin (l * k) → Fin M.size) :
     (J.comp C).domain.Realize x ↔
       (∀ j, I.domain.Realize fun i => x (finProdFinEquiv (j, i))) ∧
         (C.onFormula J.domain).Realize fun p => x (finProdFinEquiv p) := by
-  simp only [comp, Formula.realize_inf, Formula.realize_iInf, Formula.realize_relabel,
-    Function.comp_def]
+  fo_simp [comp, Function.comp_def]
 
 private theorem exists_unrank_comp (hI : I.Admissible) :
     ∃ h : (J.comp C).card M = J.card (I.map hI M), ∀ i, (J.comp C).unrank M i =
@@ -105,8 +105,7 @@ private theorem exists_unrank_comp (hI : I.Admissible) :
     refine ⟨i, ?_⟩
     rw [hi]
     conv_rhs => rw [← flattenTuple_finProdFinEquiv x]
-    congr 1
-    funext j
+    congr 1 with j : 1
     exact unrank_rank (hb j)
   have hφ : StrictMono fun r : Fin (I.card M) => lexEquiv (I.unrank M r) :=
     fun _ _ h => Fin.lt_def.mpr (strictMono_lexRank_unrank h)
@@ -139,8 +138,7 @@ theorem realize_pullback_comp (hI : I.Admissible) {β : Type*}
     (C.pullback φ).Realize (fun p => (J.comp C).unrank M (v p.1) p.2) ↔
       φ.Realize (M := I.map hI M)
         (fun p => J.unrank (I.map hI M) (Fin.cast (J.card_comp C hI M) (v p.1)) p.2) := by
-  simp only [Certificate.pullback, Formula.realize_relabel, Function.comp_def,
-    J.unrank_comp C hI, flattenTuple_apply]
+  fo_simp [Certificate.pullback, Function.comp_def, J.unrank_comp C hI, flattenTuple_apply]
   exact C.realize_onFormula hI φ
     (fun q => J.unrank (I.map hI M) (Fin.cast (J.card_comp C hI M) (v q.1)) q.2)
 
@@ -168,8 +166,7 @@ noncomputable def comp {J : DomainInterpretation L' L'' l} (C' : J.Certificate)
     exact (C'.realize_bit (I.map hI M) fun a => Fin.cast _ (v a)).trans
       (by simp only [Fin.val_cast])
   realize_const M c i := by
-    simp only [Formula.realize_relabel, Function.comp_def, J.unrank_comp C hI,
-      flattenTuple_finProdFinEquiv_apply]
+    fo_simp [Function.comp_def, J.unrank_comp C hI, flattenTuple_finProdFinEquiv_apply]
     rw [C.realize_onFormula hI (C'.const c) (J.unrank (I.map hI M) (Fin.cast _ i)),
       C'.realize_const (I.map hI M), Fin.val_cast, ← J.card_comp C hI M]
 

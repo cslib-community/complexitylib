@@ -23,8 +23,11 @@ import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.PolyTime.Init
+import CslibFrontier.Probability.PMF.Finiteness
+import CslibFrontier.Crypto.Game.Order
+import Mathlib.Data.List.GetD
 
 /-!
 # Naor–Yung universal one-way hash functions from one-way permutations
@@ -259,8 +262,8 @@ private theorem eq_of_take_append_drop_eq {m p : ℕ} (hp : p < m) {c₀ c₁ : 
     rwa [List.getElem?_eq_getElem hlen_L, List.getElem?_eq_getElem hlen_R, Option.some.injEq,
       List.getElem_append_left (by omega), List.getElem_append_left (by omega),
       List.getElem_take, List.getElem_take] at hget
-  · simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi₀,
-      List.getElem?_eq_getElem hi₁, Option.getD_some] using hp₀.trans hp₁.symm
+  · simpa only [List.getD_eq_getElem _ _ hi₀, List.getD_eq_getElem _ _ hi₁] using
+      hp₀.trans hp₁.symm
   · have hget := congrArg (fun l => l[i - 1]?) heq
     rwa [List.getElem?_append_right (by omega), List.getElem?_append_right (by omega),
       htake₀, htake₁, List.getElem?_drop, List.getElem?_drop,
@@ -416,8 +419,7 @@ private theorem exists_true_listXor_of_ne {m : ℕ} {u v : List Bool}
   rw [BitString.getD_listXor_pair m u v i hi_m] at hzero
   have heq_bit : u.getD i false = v.getD i false := by
     cases h1 : u.getD i false <;> cases h2 : v.getD i false <;> simp_all
-  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi_u,
-    List.getElem?_eq_getElem hi_v, Option.getD_some] using heq_bit
+  simpa only [List.getD_eq_getElem _ _ hi_u, List.getD_eq_getElem _ _ hi_v] using heq_bit
 
 private theorem naorYungStep_inversion_eval_eq
     {f : List Bool → List Bool} (hf_len : ∀ w, (f w).length = w.length)
@@ -467,8 +469,7 @@ theorem succProbability_targetCollisionGame_naorYungStep_le
       Game.succProbability
         (ProbComp.eval (inversionGame f (naorYungStepInverter f adversary) (n + 2))) := by
   let validStep (m : ℕ) (w : List Bool) : Bool := w.length == m + 2
-  unfold Game.succProbability
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+  apply Game.succProbability_mono
   rw [naorYungStep_inversion_eval_eq hf_len hf_bij adversary n]
   simp only [targetCollisionGame, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList]
   apply PMF.bind_apply_mono_on_support; intro choice _
@@ -727,13 +728,11 @@ private theorem listRow_lt_take {width count j : ℕ} (hj : j < count) (word : L
   by_cases hlt : j * width + col < word.length
   · have hlt_take : j * width + col < (word.take (count * width)).length := by
       rw [List.length_take]; omega
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt,
-      List.getElem?_eq_getElem hlt_take, List.getElem_take]
+    rw [List.getD_eq_getElem _ _ hlt_take, List.getD_eq_getElem _ _ hlt, List.getElem_take]
   · have hge_w : word.length ≤ j * width + col := by omega
     have hge_take : (word.take (count * width)).length ≤ j * width + col := by
       rw [List.length_take]; omega
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none hge_w,
-      List.getElem?_eq_none hge_take]
+    rw [List.getD_eq_default _ _ hge_take, List.getD_eq_default _ _ hge_w]
 
 theorem naorYungCascadeInput_take_eq (f : List Bool → List Bool) {n i : ℕ}
     (K x : List Bool) :
@@ -829,8 +828,7 @@ theorem exists_naorYungCascadeInput_collision
     intro j hj₀ hj₁
     have hj_lt : j < n + 1 := by simpa only [BitString.length_listRow] using hj₀
     have hget := hbits_all j (Nat.zero_le j) hj_lt
-    simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj₀,
-      List.getElem?_eq_getElem hj₁, Option.getD_some] using hget
+    simpa only [List.getD_eq_getElem _ _ hj₀, List.getD_eq_getElem _ _ hj₁] using hget
   apply hne
   rw [← eq_listRow_zero_append_one hx₀, ← eq_listRow_zero_append_one hx₁, hS0, hrow1_eq]
 
@@ -1069,9 +1067,7 @@ theorem succProbability_targetCollisionGame_naorYungCompressionEval_le
   have hpos : (0 : ℝ≥0) < dyadicSize (n + 1) := by exact_mod_cast dyadicSize_pos (n + 1)
   rw [hcomp_eq, hred_eq, Game.succProbability_uniform, Fintype.card_fin,
     mul_div_cancel₀ _ hpos.ne']
-  have hsum_ne_top : (∑ s : Fin (dyadicSize (n + 1)), (slotTrial s.val) true) ≠ ⊤ :=
-    ne_of_lt (ENNReal.sum_lt_top.mpr fun s _ => (PMF.apply_ne_top _ _).lt_top)
-  have hmono := ENNReal.toNNReal_mono hsum_ne_top hsum_le
+  have hmono := ENNReal.toNNReal_mono (by finiteness) hsum_le
   rwa [ENNReal.toNNReal_sum fun s _ => PMF.apply_ne_top _ _] at hmono
 
 /-- **Naor–Yung `KeyedCompressionFamily`** ([NaorYung1989], Section 3; [Goldreich2004],

@@ -73,7 +73,7 @@ def ciphertextWidth (security : ℕ) : ℕ := rows security * rows security
 reads no key. The permitted circuits are those of depth at most `depthBudget / 2`, the depth
 whose compiled NAND schedule the noise margin covers. -/
 noncomputable def scheme : Scheme where
-  keyGen security := keyGenSerialized (dimension security) (samples security) (width security)
+  keyGen security := LWE.keyGenSerialized (dimension security) (samples security) (width security)
     (noise security)
   encrypt security := encryptSerialized (dimension security) (samples security) (width security)
   decrypt security := decryptSerialized (dimension security) (width security)
@@ -96,10 +96,10 @@ theorem correct : scheme.Correct where
 /-- Secret keys, fresh ciphertexts and evaluation outputs have fixed widths. -/
 theorem fixedWidth : scheme.FixedWidth secretWidth ciphertextWidth where
   secret_length security keys hkeys := by
-    change keys ∈ (ProbComp.eval (keyGenSerialized _ _ _ _)).support at hkeys
-    rw [eval_keyGenSerialized, PMF.mem_support_map_iff] at hkeys
+    change keys ∈ (ProbComp.eval (LWE.keyGenSerialized _ _ _ _)).support at hkeys
+    rw [LWE.eval_keyGenSerialized, PMF.mem_support_map_iff] at hkeys
     obtain ⟨typedKeys, _, rfl⟩ := hkeys
-    exact length_serializeSecret _
+    exact LWE.length_serializeSecret _
   encrypt_length security keys hkeys μ ciphertext hciphertext :=
     (boundedError_encryptSerialized hkeys μ hciphertext).1.trans (pow_two _)
   evaluate_length security keys hkeys C _ bits inputs hbits hinputs ciphertext hciphertext := by
@@ -133,7 +133,7 @@ private theorem native_width : ComputableInPolyTime width encUnary encUnary :=
 
 /-- Key generation is strict PPT in the unary security parameter. -/
 theorem isPPTOn_keyGen : IsPPTOn encUnary (encPair encBits encBits) scheme.keyGen :=
-  isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
+  LWE.isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
     computableInPolyTime_samples computableInPolyTime_width
     Parameters.computableInPolyTime_noise
 
@@ -190,7 +190,7 @@ theorem computableInPolyTime_decryptionCircuits :
 /-- The scheme's key generation and encryption are IND-CPA under decision LWE for exactly this
 family's dimensions, modulus and centered-binomial noise. -/
 theorem indCPA_scheme
-    (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k))) :
+    (hLWE : DecisionLWE dimension samples width (fun k => LWE.noiseLaw (width k) (noise k))) :
     Encryption.INDCPA scheme.keyGen scheme.encrypt :=
   indCPA hLWE
 

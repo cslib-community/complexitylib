@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.IncidenceEntryPolyTime
 public import CslibFrontier.Computability.GenericRAM.Native.BooleanFold
 public import CslibFrontier.Computability.GenericRAM.Native.Combinators
+import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives
@@ -40,7 +41,10 @@ so the exponent is bounded by the incidences of the group.
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.IncidenceNetwork.exists_incCertificate_le`: time and space.
+* `Cslib.Circuits.Frontier.IncidenceNetwork.incCertificate_bounds`: time `2 ^ N` times a
+  polynomial and polynomial space.
+* `Cslib.Circuits.Frontier.IncidenceNetwork.exists_incCertificate_le`: the same bounds with
+  explicit constants.
 
 ## References
 
@@ -52,6 +56,47 @@ public section
 namespace Cslib.Circuits.Frontier.IncidenceNetwork
 
 open Turing.MultiTapeTM Cslib.GenericRAM GaloisRingArith Cslib.BitString
+
+/-- Composing `d` after a polynomial-time preprocessing step keeps polynomial space and carries a
+conditional `2 ^ N * T` time bound. -/
+private theorem comp_ofPolyTime_bounds_of_two_pow {α β γ : Type}
+    {enc : α ↪ List Bool} {eβ : β ↪ List Bool} {eγ : γ ↪ List Bool}
+    {pre : α → β} {g : β → γ} (hpre : ComputableInPolyTime pre enc eβ)
+    {d : NativeCertificate g eβ eγ} (hdS : PolyBounded (fun b => (eβ b).length) d.space)
+    {N : α → ℕ} {Td : β → ℕ} (hdT : PolyBounded (fun b => (eβ b).length) Td)
+    {P : α → Prop} (hdt : ∀ a, P a → d.time (pre a) ≤ 2 ^ N a * Td (pre a)) :
+    PolyBounded (fun a => (enc a).length) (d.comp (NativeCertificate.ofPolyTime hpre)).space ∧
+      ∃ Ty : α → ℕ, PolyBounded (fun a => (enc a).length) Ty ∧
+        ∀ a, P a → (d.comp (NativeCertificate.ofPolyTime hpre)).time a ≤ 2 ^ N a * Ty a := by
+  have hc := NativeCertificate.ofPolyTime_isPolynomial hpre
+  have hlen := hpre.polyBounded_length
+  refine ⟨hc.2.add (hdS.comp hlen),
+    fun a => (NativeCertificate.ofPolyTime hpre).time a + Td (pre a),
+    hc.1.add (hdT.comp hlen), fun a ha => ?_⟩
+  have h1 : 1 ≤ 2 ^ N a := Nat.one_le_two_pow
+  have hd := hdt a ha
+  simp only [NativeCertificate.comp_time]
+  nlinarith
+
+/-- A branch on a polynomial-time test whose `yes` arm runs `d` after polynomial-time
+preprocessing and whose `no` arm is polynomial runs in polynomial space and time `2 ^ N * T`. -/
+private theorem branch_comp_ofPolyTime_bounds_of_two_pow {α β γ : Type}
+    {enc : α ↪ List Bool} {eβ : β ↪ List Bool} {eγ : γ ↪ List Bool}
+    {cond : α → Bool} {pre : α → β} {g : β → γ} {f₂ : α → γ}
+    (hcond : ComputableInPolyTime cond enc encBool)
+    (hpre : ComputableInPolyTime pre enc eβ)
+    {no : NativeCertificate f₂ enc eγ} (hno : no.IsPolynomial)
+    {d : NativeCertificate g eβ eγ} (hdS : PolyBounded (fun b => (eβ b).length) d.space)
+    {N : α → ℕ} {Td : β → ℕ} (hdT : PolyBounded (fun b => (eβ b).length) Td)
+    (hdt : ∀ a, cond a = true → d.time (pre a) ≤ 2 ^ N a * Td (pre a)) :
+    let cert := NativeCertificate.branch (NativeCertificate.ofPolyTime hcond)
+      (d.comp (NativeCertificate.ofPolyTime hpre)) no
+    PolyBounded (fun a => (enc a).length) cert.space ∧
+      ∃ T : α → ℕ, PolyBounded (fun a => (enc a).length) T ∧
+        ∀ a, cert.time a ≤ 2 ^ N a * T a := by
+  obtain ⟨hyS, Ty, hTy, hyt⟩ := comp_ofPolyTime_bounds_of_two_pow hpre hdS hdT hdt
+  exact NativeCertificate.branch_bounds_of_two_pow
+    (NativeCertificate.ofPolyTime_isPolynomial hcond) hno hyS hTy hyt
 
 /-! ### The sum of a row -/
 
@@ -212,43 +257,16 @@ theorem rowCertificate_bounds :
         PolyBounded (fun q => (encPair encRowDesc encBits q).length) T ∧
         ∀ q, rowCertificate.time q ≤ 2 ^ rowInc q.1 * T q := by
   obtain ⟨hS, Tl, hTl, hle⟩ := rowSumCertificate_bounds
-  have hv := NativeCertificate.ofPolyTime_isPolynomial rowValid_polyTime
-  have hc := NativeCertificate.ofPolyTime_isPolynomial rowContext_polyTime
-  have hlen := rowContext_polyTime.polyBounded_length
-  refine ⟨(((hv.2.add hc.2).add (hS.comp hlen)).add .self).mono fun q => ?_,
-    fun q => (NativeCertificate.ofPolyTime rowValid_polyTime).time q +
-      (NativeCertificate.ofPolyTime rowContext_polyTime).time q +
-      (encPair encRowDesc encBits q).length + 2 * Tl (rowContext q.1 q.2),
-    (((hv.1.add hc.1).add .self).add ((PolyBounded.const 2).mul (hTl.comp hlen))),
-    fun q => ?_⟩
-  · have hsp : rowCertificate.space q = (NativeCertificate.ofPolyTime rowValid_polyTime).space q +
-        if validIndices q.1.2.2.2 (blockIndices q.1.2.2.2 q.2) then
-          (NativeCertificate.ofPolyTime rowContext_polyTime).space q +
-            rowSumCertificate.space (rowContext q.1 q.2)
-        else (encPair encRowDesc encBits q).length := rfl
-    rw [hsp]
-    split_ifs <;> omega
-  · obtain ⟨⟨P, ℓ, tests, blocks⟩, bs⟩ := q
-    have htm : rowCertificate.time ((P, ℓ, tests, blocks), bs) =
-        (NativeCertificate.ofPolyTime rowValid_polyTime).time ((P, ℓ, tests, blocks), bs) +
-        if validIndices blocks (blockIndices blocks bs) then
-          (NativeCertificate.ofPolyTime rowContext_polyTime).time ((P, ℓ, tests, blocks), bs) +
-            rowSumCertificate.time (P, ℓ, tests, selected blocks (blockIndices blocks bs))
-        else (encPair encRowDesc encBits ((P, ℓ, tests, blocks), bs)).length := rfl
-    rw [htm]
-    dsimp only [rowContext]
-    have hdim : (selected blocks (blockIndices blocks bs)).length ≤ rowInc (P, ℓ, tests, blocks) :=
-      length_selected_le _ _
-    have h2 : 2 ^ (selected blocks (blockIndices blocks bs)).length ≤
-        2 ^ rowInc (P, ℓ, tests, blocks) :=
-      Nat.pow_le_pow_right (by norm_num) hdim
-    have h1 : 1 ≤ 2 ^ rowInc (P, ℓ, tests, blocks) := Nat.one_le_two_pow
-    have hl := hle P ℓ tests (selected blocks (blockIndices blocks bs))
-    have h3 := Nat.mul_le_mul_right (Tl (P, ℓ, tests, selected blocks (blockIndices blocks bs)))
-      (Nat.add_le_add h2 h1)
-    split_ifs
-    · nlinarith
-    · nlinarith
+  refine branch_comp_ofPolyTime_bounds_of_two_pow rowValid_polyTime rowContext_polyTime
+    (NativeCertificate.const_isPolynomial []) hS ((PolyBounded.const 2).mul hTl)
+    fun ⟨⟨P, ℓ, tests, blocks⟩, bs⟩ _ => ?_
+  have h2 : 2 ^ (selected blocks (blockIndices blocks bs)).length ≤
+      2 ^ rowInc (P, ℓ, tests, blocks) :=
+    Nat.pow_le_pow_right (by norm_num) (length_selected_le _ _)
+  have h1 : 1 ≤ 2 ^ rowInc (P, ℓ, tests, blocks) := Nat.one_le_two_pow
+  have hl := hle P ℓ tests (selected blocks (blockIndices blocks bs))
+  dsimp only [rowContext]
+  nlinarith
 
 /-! ### All descriptors -/
 
@@ -304,57 +322,36 @@ noncomputable def incCertificate :
   | .inl row => rowInc row
   | .inr _ => 0
 
+/-- **The entry procedure in time `2 ^ N` times a polynomial and polynomial space**, for `N` the
+incidences of the descriptor. -/
+theorem incCertificate_bounds :
+    PolyBounded (fun q => (encPair encDesc encBits q).length) incCertificate.space ∧
+      ∃ T : Desc × List Bool → ℕ,
+        PolyBounded (fun q => (encPair encDesc encBits q).length) T ∧
+        ∀ q, incCertificate.time q ≤ 2 ^ descInc q.1 * T q := by
+  obtain ⟨hS, T, hT, hle⟩ := rowCertificate_bounds
+  refine branch_comp_ofPolyTime_bounds_of_two_pow isRow_polyTime leftInput_polyTime
+    (NativeCertificate.ofPolyTime_isPolynomial restEntry_polyTime) hS hT fun q hq => ?_
+  rcases q with ⟨row | _, bs⟩
+  · exact hle (row, bs)
+  · nomatch hq
+
 /-- **Time and space of the entry procedure.** On a descriptor and bits of encoded length `m`, the
 certificate takes time at most `c (m + 1) ^ c 2 ^ N`, for `N` the incidences of the descriptor,
 and space at most `c (m + 1) ^ c`. -/
 theorem exists_incCertificate_le : ∃ c : ℕ, ∀ q : Desc × List Bool,
     incCertificate.time q ≤ c * ((encPair encDesc encBits q).length + 1) ^ c * 2 ^ descInc q.1 ∧
       incCertificate.space q ≤ c * ((encPair encDesc encBits q).length + 1) ^ c := by
-  obtain ⟨hS, T, hT, hle⟩ := rowCertificate_bounds
-  have hi := NativeCertificate.ofPolyTime_isPolynomial isRow_polyTime
-  have hl := NativeCertificate.ofPolyTime_isPolynomial leftInput_polyTime
-  have hr := NativeCertificate.ofPolyTime_isPolynomial restEntry_polyTime
-  have hlen := leftInput_polyTime.polyBounded_length
-  obtain ⟨c₁, d₁, h₁⟩ := ((((hi.1.add hl.1).add hr.1).add (hT.comp hlen))).exists_le
-  obtain ⟨c₂, d₂, h₂⟩ := ((((hi.2.add hl.2).add hr.2).add (hS.comp hlen))).exists_le
+  obtain ⟨hS, T, hT, hle⟩ := incCertificate_bounds
+  obtain ⟨c₁, d₁, h₁⟩ := hT.exists_le
+  obtain ⟨c₂, d₂, h₂⟩ := hS.exists_le
   refine ⟨c₁ + c₂ + d₁ + d₂ + 1, fun q => ?_⟩
-  obtain ⟨m, hm⟩ : ∃ m, (encPair encDesc encBits q).length = m := ⟨_, rfl⟩
   have hpow (c d : ℕ) (hc : c ≤ c₁ + c₂ + d₁ + d₂ + 1) (hd : d ≤ c₁ + c₂ + d₁ + d₂ + 1) :
-      c * (m + 1) ^ d ≤ (c₁ + c₂ + d₁ + d₂ + 1) * (m + 1) ^ (c₁ + c₂ + d₁ + d₂ + 1) :=
+      c * ((encPair encDesc encBits q).length + 1) ^ d ≤ (c₁ + c₂ + d₁ + d₂ + 1) *
+        ((encPair encDesc encBits q).length + 1) ^ (c₁ + c₂ + d₁ + d₂ + 1) :=
     Nat.mul_le_mul hc (Nat.pow_le_pow_right (by omega) hd)
-  have h1 := h₁ q
-  have h2 := h₂ q
-  rw [hm] at h1 h2
-  rw [hm]
-  have hp1 := hpow c₁ d₁ (by omega) (by omega)
-  have hp2 := hpow c₂ d₂ (by omega) (by omega)
-  have htm : incCertificate.time q = (NativeCertificate.ofPolyTime isRow_polyTime).time q +
-      if (q.1.getLeft?).isSome then
-        (NativeCertificate.ofPolyTime leftInput_polyTime).time q +
-          rowCertificate.time ((q.1.getLeft?).getD default, q.2)
-      else (NativeCertificate.ofPolyTime restEntry_polyTime).time q := rfl
-  have hsp : incCertificate.space q = (NativeCertificate.ofPolyTime isRow_polyTime).space q +
-      if (q.1.getLeft?).isSome then
-        (NativeCertificate.ofPolyTime leftInput_polyTime).space q +
-          rowCertificate.space ((q.1.getLeft?).getD default, q.2)
-      else (NativeCertificate.ofPolyTime restEntry_polyTime).space q := rfl
-  rw [htm, hsp]
-  rcases q with ⟨row | rest, bs⟩
-  · have hrow := hle (row, bs)
-    have hd : descInc (Sum.inl row) = rowInc row := rfl
-    simp only [Sum.getLeft?_inl, Option.isSome_some, Option.getD_some, ↓reduceIte, hd] at h1 h2 ⊢
-    have h2p : 1 ≤ 2 ^ rowInc row := Nat.one_le_two_pow
-    constructor
-    · calc _ ≤ 2 ^ rowInc row * ((NativeCertificate.ofPolyTime isRow_polyTime).time (.inl row, bs) +
-            (NativeCertificate.ofPolyTime leftInput_polyTime).time (.inl row, bs) +
-            (NativeCertificate.ofPolyTime restEntry_polyTime).time (.inl row, bs) +
-            T (row, bs)) := by nlinarith
-        _ ≤ 2 ^ rowInc row * (c₁ * (m + 1) ^ d₁) := Nat.mul_le_mul_left _ h1
-        _ ≤ _ := by rw [Nat.mul_comm]; exact Nat.mul_le_mul_right _ hp1
-    · omega
-  · have hd : descInc (Sum.inr rest) = 0 := rfl
-    simp only [Sum.getLeft?_inr, Option.isSome_none, Bool.false_eq_true, ↓reduceIte, hd,
-      pow_zero, mul_one] at h1 h2 ⊢
-    exact ⟨by omega, by omega⟩
+  refine ⟨(hle q).trans ?_, (h₂ q).trans (hpow c₂ d₂ (by omega) (by omega))⟩
+  rw [Nat.mul_comm (2 ^ descInc q.1)]
+  exact Nat.mul_le_mul_right _ ((h₁ q).trans (hpow c₁ d₁ (by omega) (by omega)))
 
 end Cslib.Circuits.Frontier.IncidenceNetwork

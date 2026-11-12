@@ -157,6 +157,14 @@ theorem insertAfter_removeNone (f : Perm (Option α)) (h : α)
       obtain ⟨b, hb⟩ := Option.ne_none_iff_exists'.mp hn
       exact removeNone_some f ⟨b, hb⟩
 
+/-- A nonfixed optional point can be reinserted after its old predecessor. -/
+private theorem exists_insertAfter_removeNone (f : Perm (Option α)) (hn : f none ≠ none) :
+    ∃ h, insertAfter (removeNone f) h = f := by
+  have hp : f.symm none ≠ none := fun he => hn ((f.symm_apply_eq.mp he).symm)
+  obtain ⟨h, hh⟩ := Option.ne_none_iff_exists'.mp hp
+  refine ⟨h, insertAfter_removeNone f h ?_⟩
+  rw [← hh, f.apply_symm_apply]
+
 omit [DecidableEq α] in
 /-- Removing a dart from a cycle of length at least two preserves all remaining orbit
 identifications; the two adjacent successors are joined with their original direction. -/
@@ -164,12 +172,8 @@ theorem sameCycle_removeNone_iff [Finite α] (f : Perm (Option α))
     (hn : f none ≠ none) (a b : α) :
     Perm.SameCycle (removeNone f) a b ↔ f.SameCycle (some a) (some b) := by
   classical
-  have hp : f.symm none ≠ none := by
-    intro he
-    exact hn (by simpa only [he] using f.apply_symm_apply none)
-  obtain ⟨h, hh⟩ := Option.ne_none_iff_exists'.mp hp
-  have he : f (some h) = none := by rw [← hh, f.apply_symm_apply]
-  conv_rhs => rw [← insertAfter_removeNone f h he]
+  obtain ⟨h, hf⟩ := exists_insertAfter_removeNone f hn
+  conv_rhs => rw [← hf]
   rw [sameCycle_iff]
   rfl
 
@@ -179,12 +183,8 @@ theorem card_orbits_removeNone [Finite α] (f : Perm (Option α)) (hn : f none �
     Nat.card (Quotient (Perm.SameCycle.setoid (removeNone f))) =
       Nat.card (Quotient (Perm.SameCycle.setoid f)) := by
   classical
-  have hp : f.symm none ≠ none := by
-    intro he
-    exact hn (by simpa only [he] using f.apply_symm_apply none)
-  obtain ⟨h, hh⟩ := Option.ne_none_iff_exists'.mp hp
-  have he : f (some h) = none := by rw [← hh, f.apply_symm_apply]
-  conv_rhs => rw [← insertAfter_removeNone f h he]
+  obtain ⟨h, hf⟩ := exists_insertAfter_removeNone f hn
+  conv_rhs => rw [← hf]
   exact (card_orbits_insertAfter (removeNone f) h).symm
 
 /-- Inserting two points gives the two literal outgoing-successor swaps. -/

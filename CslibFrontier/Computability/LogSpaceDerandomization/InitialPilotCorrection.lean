@@ -191,12 +191,7 @@ theorem initialPilotNormalized_root_moment_coarse
   refine ⟨Cr, Cp, Cm, hCr, hCp, hCm, ?_⟩
   intro P J inst D R bin ks kt kb ss st cutoff h C rawSteps prepSteps detectorSteps r X Y truePrep
   have hr : Admissible r := ⟨R.source_terminal, rfl, rfl⟩
-  have hKc : 0 < ⌈4 * (1 + 32 * HP.R)⌉₊ := by
-    have hj : (0:ℝ) < HP.J := by exact_mod_cast HP.J_pos
-    have hR := HP.R_rank
-    norm_num only [one_mul] at hR
-    apply Nat.ceil_pos.mpr
-    linarith
+  have hKc := HP.incomingCap_pos
   have hp := hc P J (ZMod P) HP.k D id r hr (rate_pos kt) _ hKc
     (initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps) (fun _ => C)
     (initialPilotPreparationWalk HP D R bin ks kt kb ss st cutoff h C rawSteps prepSteps)
@@ -252,12 +247,7 @@ theorem initialPilotNormalized_root_moment
   refine ⟨Cr, Cp, Cm, hCr, hCp, hCm, ?_⟩
   intro P J inst D R bin ks kt kb ss st cutoff h C rawSteps prepSteps detectorSteps r X Y truePrep
   have hr : Admissible r := ⟨R.source_terminal, rfl, rfl⟩
-  have hKc : 0 < ⌈4 * (1 + 32 * HP.R)⌉₊ := by
-    have hj : (0:ℝ) < HP.J := by exact_mod_cast HP.J_pos
-    have hR := HP.R_rank
-    norm_num only [one_mul] at hR
-    apply Nat.ceil_pos.mpr
-    linarith
+  have hKc := HP.incomingCap_pos
   have hp := hc P J (ZMod P) HP.k D id r hr (rate_pos kt) _ hKc
     (initialPilotWalk HP D R bin ks kt kb ss st cutoff h C rawSteps) (fun _ => C)
     (initialPilotPreparation HP D R bin ks kt kb ss st cutoff h C rawSteps)
@@ -320,12 +310,7 @@ theorem initialPilotNormalized_raw_detector_moment
   obtain ⟨Lp, hLp, hp⟩ := HP.correction_preparation_row_moment
   refine ⟨Cr, Cp, Cm, Lp, hCr, hCp, hCm, hLp, ?_⟩
   intro P J inst D R bin ks kt kb ss st cutoff h C rawSteps prepSteps detectorSteps r X Y truePrep
-  have hKc : 0 < ⌈4 * (1 + 32 * HP.R)⌉₊ := by
-    have hj : (0:ℝ) < HP.J := by exact_mod_cast HP.J_pos
-    have hR := HP.R_rank
-    norm_num only [one_mul] at hR
-    apply Nat.ceil_pos.mpr
-    linarith
+  have hKc := HP.incomingCap_pos
   have hprep := hp (Environment P J) (ZMod P)
     (H4RankEnvironment.X R.source (side P ks) (CopyPadding.identifier D ss))
     (H4RankEnvironment.Y R.terminal (side P kt) (CopyPadding.identifier D st))

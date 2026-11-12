@@ -13,8 +13,9 @@ public import CslibFrontier.Computability.Interactive.GKR.Summand
 import CslibFrontier.Foundations.FieldTheory.Finite.UnitSum
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.PolynomialAgreement
 import CslibFrontier.Probability.PMF.Uniform
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 
 /-!
 # The GKR protocol
@@ -220,24 +221,12 @@ theorem lineStep_rbrSound (W : (Fin (C.width i) → Bool) → F) :
           (C.width i : ℝ≥0∞) / Fintype.card F
     by_cases hacc : C.lineAccepts i x q
     · set q' := restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W
-      have hne : q - q' ≠ 0 := by
-        refine sub_ne_zero.mpr fun h => hS ?_
+      have hne : q ≠ q' := fun h => hS <| by
         rw [C.mem_endLang, ← C.combine_restrictLine i W x]
         exact (h ▸ hacc.2).symm
-      classical
-      rw [ProbComp.eval_uniform, Probability.PMF.toOuterMeasure_uniformOfFintype, div_eq_mul_inv]
-      gcongr
-      have hsub : Finset.univ.filter (· ∈ {t | x ∈ C.endLang i W ∨
-          (C.lineAccepts i x q ∧ q.eval t = q'.eval t)}) ⊆ (q - q').roots.toFinset := by
-        intro t ht
-        simp only [Finset.mem_filter, Set.mem_ofPred_eq, Finset.mem_univ, true_and] at ht
-        rcases ht with ht | ht
-        · exact absurd ht hS
-        rw [Multiset.mem_toFinset, Polynomial.mem_roots hne, Polynomial.IsRoot,
-          Polynomial.eval_sub, ht.2, sub_self]
-      exact_mod_cast (Finset.card_le_card hsub).trans ((Multiset.toFinset_card_le _).trans
-        ((Polynomial.card_roots' _).trans ((Polynomial.natDegree_sub_le _ _).trans
-          (max_le hacc.1 (natDegree_restrictLine_le _ _ W)))))
+      rw [ProbComp.eval_uniform]
+      exact Probability.PMF.toOuterMeasure_uniformOfFintype_le_of_eval_eq hne hacc.1
+        (natDegree_restrictLine_le _ _ W) fun _ ht => (ht.resolve_left hS).2
     · simp [hacc, hS]
   · rintro hS ⟨y, hy, hout⟩
     rw [lineStep_outputOn] at hout
@@ -393,14 +382,9 @@ theorem toOuterMeasure_eval_eq_zero_le {k d : ℕ} {p : MvPolynomial (Fin k) F} 
       (d : ℝ≥0∞) / Fintype.card F := by
   classical
   have hq : 0 < Fintype.card F := Fintype.card_pos
-  have hsz := schwartz_zippel_totalDegree hp (Finset.univ : Finset F)
-  rw [Fintype.piFinset_univ, Finset.card_univ, div_le_div_iff₀ (by positivity) (by positivity)]
-    at hsz
   have hN : (Finset.univ.filter fun r : Fin k → F => eval r p = 0).card * Fintype.card F ≤
-      d * Fintype.card F ^ k := by
-    have : ((Finset.univ.filter fun r : Fin k → F => eval r p = 0).card * Fintype.card F : ℚ≥0) ≤
-        d * Fintype.card F ^ k := hsz.trans (by gcongr)
-    exact_mod_cast this
+      d * Fintype.card F ^ k :=
+    card_filter_eval_eq_zero_mul_card_le hp hdeg
   rw [ProbComp.eval_uniform, Probability.PMF.toOuterMeasure_uniformOfFintype, Fintype.card_fun,
     Fintype.card_fin]
   set N := (Finset.univ.filter (· ∈ {r : Fin k → F | eval r p = 0})).card

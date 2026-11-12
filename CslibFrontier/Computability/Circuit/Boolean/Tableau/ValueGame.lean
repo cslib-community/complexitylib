@@ -216,6 +216,7 @@ theorem wins_position_iff (x : List Bool) (T : ℕ) :
       ih i (by have := hlt i hi; omega) (by have := hlt i hi; omega) v'
     generalize hG : gateCode tm x.length T g = G at hgate hlen hlt harg
     obtain ⟨op, args⟩ := G
+    -- A constant gate is terminal; the other gates move to an argument.
     cases op with
     | const b =>
       have ho : Claim.outcome tm (x, T, x.length + g, v) = some (b == v) := by
@@ -235,36 +236,19 @@ theorem wins_position_iff (x : List Bool) (T : ℕ) :
         cases b <;> simp [Claim.next, hgate]
       simp only [hp, hn, harg a (by simp), Bool.false_eq_true, ↓reduceIte, exists_const]
       cases v <;> simp [interpretation]
-    | and =>
+    | and | or =>
+      -- The move `b` picks the argument `b`; the player is universal exactly when every argument
+      -- must carry the claimed value.
       have ho : Claim.outcome tm (x, T, x.length + g, v) = none := by
         simp [Claim.outcome, Claim.input, Claim.wire, hgate]
       rw [wins_position_nonterminal ho]
       obtain ⟨a₀, a₁, rfl⟩ : ∃ a₀ a₁, args = [a₀, a₁] := by
         match args, hlen with
         | [a₀, a₁], _ => exact ⟨a₀, a₁, rfl⟩
-      have hp : Claim.player tm (x, T, x.length + g, v) = v := by
-        simp [Claim.player, hgate]
       have hn (b : Bool) : Claim.next tm (x, T, x.length + g, v) b =
           (x, T, if b then a₁ else a₀, v) := by
         cases b <;> simp [Claim.next, hgate]
-      simp only [hp, hn]
-      have h₀ := harg a₀ (by simp)
-      have h₁ := harg a₁ (by simp)
-      cases v <;> cases e₀ : val tm T x a₀ <;> cases e₁ : val tm T x a₁ <;>
-        simp [Bool.forall_bool, Bool.exists_bool, h₀, h₁, e₀, e₁, interpretation]
-    | or =>
-      have ho : Claim.outcome tm (x, T, x.length + g, v) = none := by
-        simp [Claim.outcome, Claim.input, Claim.wire, hgate]
-      rw [wins_position_nonterminal ho]
-      obtain ⟨a₀, a₁, rfl⟩ : ∃ a₀ a₁, args = [a₀, a₁] := by
-        match args, hlen with
-        | [a₀, a₁], _ => exact ⟨a₀, a₁, rfl⟩
-      have hp : Claim.player tm (x, T, x.length + g, v) = !v := by
-        simp [Claim.player, hgate]
-      have hn (b : Bool) : Claim.next tm (x, T, x.length + g, v) b =
-          (x, T, if b then a₁ else a₀, v) := by
-        cases b <;> simp [Claim.next, hgate]
-      simp only [hp, hn]
+      simp only [Claim.player, hgate, hn]
       have h₀ := harg a₀ (by simp)
       have h₁ := harg a₁ (by simp)
       cases v <;> cases e₀ : val tm T x a₀ <;> cases e₁ : val tm T x a₁ <;>

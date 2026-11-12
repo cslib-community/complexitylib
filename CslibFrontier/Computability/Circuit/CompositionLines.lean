@@ -82,15 +82,13 @@ theorem lines_append_natAdd (q : Program σ k g₂) (j : Fin g₂) :
       refine (Program.lines_gate_last (p.append feed q) _).trans ?_
       rw [Program.lines_gate_last]
       simp only [Line.mapWires]
-      congr 1
-      funext a
+      congr 1 with a : 1
       simp only [Function.comp_apply, Wire.Renaming.castSucc_apply, appendedWire_castSucc]
     | cast j =>
       refine (Program.lines_gate_castSucc (p.append feed q) _ (Fin.natAdd g₁ j)).trans ?_
       rw [ih, Program.lines_gate_castSucc]
       simp only [Line.mapWires]
-      congr 1
-      funext a
+      congr 1 with a : 1
       simp only [Function.comp_apply, Wire.Renaming.castSucc_apply, appendedWire_castSucc]
 
 end Program

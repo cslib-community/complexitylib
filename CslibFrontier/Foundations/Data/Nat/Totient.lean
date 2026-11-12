@@ -14,7 +14,7 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Tactic.Linarith
 
 /-!
-# An elementary lower bound for Euler's totient function
+# An elementary lower bound for Euler's totient function, and the totient of a square
 
 Euler's product formula `φ n / n = ∏_{p ∣ n} (1 - 1/p)` together with the fact that the `i`-th
 smallest prime factor of `n` is at least `i + 1` gives `φ n / n ≥ 1 / (ω n + 1)`, where `ω n` is the
@@ -22,7 +22,7 @@ number of distinct prime factors; since `2 ^ ω n ≤ n`, also `φ n / n ≥ 1 /
 bound is much weaker than the optimal order `φ n / n ≫ 1 / log log n` (Hardy and Wright's
 Theorem 328, as cited in [de Wolf][deWolf2019], §5.3), but it already shows that a uniformly random
 residue modulo `n` is a unit with inverse-logarithmic probability, as needed in the classical
-post-processing of Shor's algorithm.
+post-processing of Shor's algorithm. The file also records `φ(n ^ 2) = n * φ(n)`.
 
 ## Main results
 
@@ -31,6 +31,7 @@ post-processing of Shor's algorithm.
 * `Nat.le_totient_mul_card_primeFactors_add_one`: `n ≤ φ n * (#n.primeFactors + 1)`.
 * `Nat.card_primeFactors_le_log`: `#n.primeFactors ≤ Nat.log 2 n`.
 * `Nat.le_totient_mul_log_add_one`: `n ≤ φ n * (Nat.log 2 n + 1)`.
+* `Nat.totient_sq`: `φ (n ^ 2) = n * φ n`.
 
 ## References
 
@@ -93,5 +94,13 @@ theorem card_primeFactors_le_log (n : ℕ) : #n.primeFactors ≤ Nat.log 2 n := 
 theorem le_totient_mul_log_add_one (n : ℕ) : n ≤ φ n * (Nat.log 2 n + 1) :=
   (le_totient_mul_card_primeFactors_add_one n).trans
     (Nat.mul_le_mul_left _ (Nat.add_le_add_right (card_primeFactors_le_log n) 1))
+
+/-- The totient of a square: `φ (n ^ 2) = n * φ n`. -/
+theorem totient_sq (n : ℕ) : φ (n ^ 2) = n * φ n := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  have key := totient_gcd_mul_totient_mul n n
+  rw [Nat.gcd_self, ← pow_two n] at key
+  exact Nat.eq_of_mul_eq_mul_left (totient_pos.mpr hn) (by rw [key]; ring)
 
 end Nat

@@ -11,7 +11,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signatur
 public import CslibFrontier.Probability.Guessing.Leakage
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Nonzero SIS extraction from public-key-only lattice forks
@@ -38,7 +38,7 @@ conference version, Lemmas 4.2 and 4.4, pp. 748–750. That source uses Gaussian
 ternary challenges; the present statement concerns this library's box secrets and binary challenges.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.SigmaProtocol
 

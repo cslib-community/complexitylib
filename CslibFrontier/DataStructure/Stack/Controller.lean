@@ -11,7 +11,6 @@ public import CslibFrontier.Computability.WordRAM.Realization.Client.MemoryStack
 public import CslibFrontier.Computability.WordRAM.Realization.Backend
 public import CslibFrontier.Computability.WordRAM.Realization.Function
 import CslibFrontier.Tactic.Realize
-import CslibFrontier.Tactic.WordRAM
 
 /-!
 # An adaptive stack client compiled to one word-RAM program
@@ -174,13 +173,14 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
 
 /-- The client, compiled to one flat word-RAM program, computes `positive` in constant time at
 every width of at least three bits per input bit. -/
-@[fun_prop, program_certificate]
+@[fun_prop]
 public theorem positive_polytime :
     UniformComputableInPolyTime .standard positive (fun _ n => [n]) id :=
   realizes_program.uniformComputableInPolyTime .exactStandard 0 (.const 15) 3 (by decide)
     (fun _ _ j => by fin_cases j; rfl) fun n w hw hin => by
       have h4 : Fits w 4 := (show Fits 3 4 by decide).mono (le_trans (by simp [logWidth]) hw)
-      have hroom : Fits w ((inputState [n]).frontier + 2) := h4.of_le (by simp [inputState])
+      have hroom : Fits w ((Memory.State.init [n]).frontier + 2) :=
+        h4.of_le (by simp [Memory.State.init])
       have hp := program_spec hroom (hin.2 n (by simp))
       refine ⟨by simp, h4.of_le (by simp), hroom, hp.2.1, ?_, by have := hp.2.2; omega⟩
       simpa only [Equiv.coe_toEmbedding, Equiv.funUnique_symm_apply, uniqueElim_const] using hp.1

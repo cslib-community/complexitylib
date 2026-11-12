@@ -84,7 +84,7 @@ statements; the reductions and size bounds behind them are unconditional.
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -185,8 +185,8 @@ theorem ETH.not_decidableInSubexpTime_DirHamCycle (h : ETH) :
 `2 ^ (δ (|V| + |E|))` times any polynomial in the length of the encoded instance, for graphs with
 `|V|` declared vertices and `|E|` arcs. -/
 theorem ETH.not_decidableInSubexpTime_DirHamPath (h : ETH) :
-    ¬DecidableInSubexpTime DirHamPath (encPair encGraph (encPair encNat encNat))
-      fun x => x.1.1.length + x.1.2.length :=
+    ¬DecidableInSubexpTime DirHamPath encPathInstance
+      fun x => x.graph.1.length + x.graph.2.length :=
   h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseDirHamPath
     (fun φ _ => SAT.toSparseDirHamPath_mem_iff φ) (k := 70) fun φ hφ => by
       have := SAT.length_sparseDiamondGraph_le hφ
@@ -198,8 +198,8 @@ Chapter 14]: for some `δ > 0`, `HamPath` is not decidable within time `2 ^ (δ 
 any polynomial in the length of the encoded instance, for graphs with `|V|` declared vertices and
 `|E|` edges. -/
 theorem ETH.not_decidableInSubexpTime_HamPath (h : ETH) :
-    ¬DecidableInSubexpTime HamPath (encPair encGraph (encPair encNat encNat))
-      fun x => x.1.1.length + x.1.2.length :=
+    ¬DecidableInSubexpTime HamPath encPathInstance
+      fun x => x.graph.1.length + x.graph.2.length :=
   h.not_decidableInSubexpTime_of_reduction
     (DirHamPath.computableInPolyTime_toHamPath.comp
       SAT.computableInPolyTime_toSparseDirHamPath)

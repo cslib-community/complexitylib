@@ -160,9 +160,7 @@ theorem special_correction_available {A a f u : ℝ} (M c i L : ℕ) (h : ℤ)
   have hiR : (1 : ℝ) ≤ i := by exact_mod_cast hi
   have hAi : 1 + (L : ℝ) ≤ A * i := hA.trans (le_mul_of_one_le_right (zero_le_one.trans hA1) hiR)
   have hM : (16 * c : ℝ) * (1 + (L : ℝ)) < M := by
-    have hdiv : 1 + (L : ℝ) < (M : ℝ) / (16 * c) := by
-      dsimp only [precision] at hactive
-      linarith
+    have hdiv : 1 + (L : ℝ) < (M : ℝ) / (16 * c) := by grind [precision]
     have hcR : (0 : ℝ) < c := by exact_mod_cast hc
     simpa only [mul_comm] using
       (lt_div_iff₀ (show (0 : ℝ) < 16 * c by positivity)).mp hdiv

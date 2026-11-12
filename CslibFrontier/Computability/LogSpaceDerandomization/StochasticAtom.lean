@@ -158,8 +158,7 @@ theorem abs_denseAtom_le (hρ0 : ∀ r, 0 ≤ ρ r) (hρ1 : ∀ r, ρ r ≤ 1) (
     have hc0 : 0 < max (1 / 2) (min 1 (atomNormalizer Y Yt h ρ K a G x y)) :=
       lt_of_lt_of_le (by norm_num) hc
     rw [abs_div, abs_mul, abs_of_nonneg hR0, abs_of_pos hc0, div_le_iff₀ hc0]
-    calc |k (G x y / a)| * rowGate ρ K a G {w | Y s w} x ≤ |k (G x y / a)| * 1 :=
-          mul_le_mul_of_nonneg_left hR1 (abs_nonneg _)
+    calc |k (G x y / a)| * rowGate ρ K a G {w | Y s w} x ≤ |k (G x y / a)| * 1 := by gcongr
       _ = 2 * |k (G x y / a)| * (1 / 2) := by ring
       _ ≤ _ := mul_le_mul_of_nonneg_left hc (by positivity)
   · simp

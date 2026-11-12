@@ -337,8 +337,7 @@ theorem isQueryBounded_nonadaptive (coins : ProbComp R) (Q : R → Fin q → P)
   induction q with
   | zero =>
     rw [readAll, decodeLaw_pure]
-    congr 1
-    funext k
+    congr 1 with k : 1
     exact k.elim0
   | succ q ih =>
     simp only [readAll, decodeLaw_bind, decodeLaw_query, PMF.pure_bind, ih, decodeLaw_pure]

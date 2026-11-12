@@ -28,7 +28,7 @@ private def parityKey : Circuit signature 3 1 :=
 
 example (x : BitString 12) :
     Monotone (fun j => toLex (parityKey.eval interpretation
-      (directProductInput ((keyedSortCircuit parityKey 2 true).eval interpretation x) j))) :=
+      (BitString.block ((keyedSortCircuit parityKey 2 true).eval interpretation x) j))) :=
   monotone_keyedSortCircuit parityKey 2 x
 
 example : (keyedSortCircuit parityKey 2 true).size = 212 := by
@@ -90,7 +90,7 @@ example : (keyedSortCircuit (Circuit.oneGate (.const true) (Fin.elim0 : Fin 0 â†
     (List.finRange 4096).all fun raw =>
       let input := (BitString.equivFin 12).symm raw
       let output := (c.evalVector interpretation input).get
-      let records := fun x : BitString 12 => List.ofFn (directProductInput (k := 4) (n := 3) x)
+      let records := fun x : BitString 12 => List.ofFn (BitString.block (m := 4) (k := 3) x)
       let values := fun x => (records x).map fun row => (BitString.equivFin 3 row).val
       let keys := fun x => (records x).map fun row => row 0 ^^ row 1
       let sortedKeys := (keys input).mergeSort

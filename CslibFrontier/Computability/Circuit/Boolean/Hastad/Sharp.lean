@@ -80,7 +80,7 @@ The proof refines the one of `Unbounded.two_pow_le_size_of_computes_parity` in t
 * [Lecomte and Ramakrishnan][LecomteRamakrishnan2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Unbounded
 
