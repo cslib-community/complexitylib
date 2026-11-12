@@ -61,9 +61,10 @@ in `CslibFrontier/Crypto/Computational/ElGamal.lean` directly to `Encryption.KEM
 * `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalEncapsProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalDecaps`: uniform strict-PPT Hashed ElGamal KEM
   encapsulation and deterministic polynomial-time decapsulation.
-* `Cslib.Crypto.PrimeOrderGroupFamily.kemToDDHDistinguisher`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.kemToKDFDistinguisher`: DDH and KDF reductions from a KEM
-  distinguisher.
+* `Cslib.Crypto.PrimeOrderGroupFamily.kemToKDFDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.kemToDDHDistinguisher`: typed KDF and DDH reductions from a
+  KEM distinguisher; the DDH reduction derives the key from the candidate shared element and runs
+  the KDF reduction (`kdfToDDHDistinguisher`).
 * `Cslib.Crypto.PrimeOrderGroupFamily.elGamalEncryptProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.elGamalDecryptDet`: uniform strict-PPT multiplicative ElGamal
   encryption and deterministic polynomial-time decryption.
@@ -197,57 +198,47 @@ theorem hashedElGamalDecaps_hashedElGamalEncapsProb (H : F.Desc × List Bool →
   simp only [hashedElGamalDecaps, ofBits_encNat, dropFrame_encPair_encBits,
     encodeElGamalPublicKey_eq_encode, F.smul_encode, smul_smul, mul_comm (a : ZMod (F.order (d n)))]
 
-/-- DDH distinguisher constructed from a `KEMAdversary` (`Distinguisher`) for
-`(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`. -/
-def kemToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
-    (distinguisher : Distinguisher) (n : ℕ)
-    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
-  distinguisher n
-    (encPair encBits (encPair encBits encBits)
-      (pk, (H (input.groupParameters, input.candidateShared), input.rightPublic)))
-
 /-- KDF distinguisher constructed from a `KEMAdversary` (`Distinguisher`) for
-`(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`. -/
-def kemToKDFDistinguisher (distinguisher : Distinguisher) (n : ℕ)
-    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
-  distinguisher n
-    (encPair encBits (encPair encBits encBits) (pk, (input.candidateShared, input.rightPublic)))
+`(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`: given `(d, u, v, key)`, pass the public key
+`(d, encode u)` and the encapsulation `(key, encode v)` to the KEM distinguisher. -/
+def kemToKDFDistinguisher (distinguisher : Distinguisher) : F.KDFDistinguisher :=
+  fun n d u v key =>
+    distinguisher n (encPair encBits (encPair encBits encBits)
+      (encPair F.encDesc encBits (d, F.encode d u), (key, F.encode d v)))
 
-/-- `ddhIdealGame` for `kemToDDHDistinguisher` is identical to `kdfRealGame` for
-`kemToKDFDistinguisher`. -/
-theorem ddhIdealGame_kemToDDHDistinguisher_eq_kdfRealGame (setup : ℕ → PMF F.Desc)
-    (H : F.Desc × List Bool → List Bool) (distinguisher : Distinguisher) (n : ℕ) :
-    F.ddhIdealGame setup (F.kemToDDHDistinguisher H distinguisher) n =
-      F.kdfRealGame setup H (F.kemToKDFDistinguisher distinguisher) n := by
-  simp only [ddhIdealGame, eval_ddhIdealExperiment, kdfRealGame,
-    kemToDDHDistinguisher, kemToKDFDistinguisher]
+/-- DDH distinguisher constructed from a `KEMAdversary` (`Distinguisher`) for
+`(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`: `kemToKDFDistinguisher` run with the key
+`H (d, encode w)` derived from the candidate shared element `w`. -/
+abbrev kemToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
+    (distinguisher : Distinguisher) : F.DDHDistinguisher :=
+  F.kdfToDDHDistinguisher H (F.kemToKDFDistinguisher distinguisher)
 
-/-- `kemToDDHDistinguisher` is uniform strict PPT whenever `H` is polynomial time and
-`distinguisher` is uniform strict PPT. -/
-theorem isPPTOn_kemToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    {distinguisher : Distinguisher} (hD : IsPPT encBool distinguisher) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.kemToDDHDistinguisher H distinguisher input.1 input.2) := by
-  let hchallenge := ComputableInPolyTime.snd encUnary F.encDDHChallenge
-  let hd := F.encDDHChallenge_groupParameters_polyTime hchallenge
-  let hu := F.encDDHChallenge_leftPublic_polyTime hchallenge
-  let hv := F.encDDHChallenge_rightPublic_polyTime hchallenge
-  let hw := F.encDDHChallenge_candidateShared_polyTime hchallenge
-  have hprep := (ComputableInPolyTime.fst encUnary F.encDDHChallenge).prod
-    (((hd.prod hu).encoding_comp.prod ((hH.comp' (hd.prod hw)).prod hv)).encoding_comp)
-  exact hD.on.preprocess hprep
-
-/-- `kemToKDFDistinguisher` is uniform strict PPT whenever `distinguisher` is: it is
-`kemToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/
+/-- `kemToKDFDistinguisher` is uniform strict PPT whenever `distinguisher` is. -/
 theorem isPPTOn_kemToKDFDistinguisher {distinguisher : Distinguisher}
     (hD : IsPPT encBool distinguisher) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.kemToKDFDistinguisher distinguisher input.1 input.2) :=
-  F.isPPTOn_kemToDDHDistinguisher (H := fun p => p.2) (ComputableInPolyTime.snd F.encDesc encBits)
-    hD
+    IsPPTOn F.encKDFInput encBool fun x =>
+      F.kemToKDFDistinguisher distinguisher x.1.secParam x.1.groupParameters x.1.leftPublic
+        x.1.rightPublic x.2 := by
+  have hn : ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.1.secParam) F.encKDFInput
+      encUnary := by
+    fun_prop
+  have hpk : ComputableInPolyTime
+      (fun x : F.CDHInput × List Bool =>
+        encPair F.encDesc encBits (x.1.groupParameters, F.encode _ x.1.leftPublic))
+      F.encKDFInput encBits :=
+    ComputableInPolyTime.encoding_comp (by fun_prop)
+  have hkey : ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.2) F.encKDFInput
+      encBits := by
+    fun_prop
+  have hv : ComputableInPolyTime (fun x : F.CDHInput × List Bool => F.encode _ x.1.rightPublic)
+      F.encKDFInput encBits := by
+    fun_prop
+  exact hD.on.preprocess
+    (prepare := fun x : F.CDHInput × List Bool =>
+      (x.1.secParam, encPair encBits (encPair encBits encBits)
+        (encPair F.encDesc encBits (x.1.groupParameters, F.encode _ x.1.leftPublic),
+          (x.2, F.encode _ x.1.rightPublic))))
+    (hn.prod (hpk.prod (hkey.prod hv)).encoding_comp)
 
 private theorem advantage_eval_kemRealGame_ddhRealGame_le
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
@@ -278,8 +269,8 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
       F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n =
       (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
-    simp only [ddhRealGame, eval_ddhRealExperiment, kemToDDHDistinguisher,
-      PMF.monad_bind_eq_bind, PMF.pure_bind, k]
+    simp only [ddhRealGame, eval_ddhRealExperiment, kdfToDDHDistinguisher,
+      kemToKDFDistinguisher, PMF.monad_bind_eq_bind, PMF.pure_bind, k]
   rw [hreal, hddh]
   exact F.advantage_bind_sampleExp_pair_le n (d n) k
 
@@ -322,7 +313,8 @@ private theorem advantage_kdfIdealGame_eval_kemIdealGame_le (keyLen : ℕ → �
 /-- **Quantitative KEM IND-CPA bound for Hashed ElGamal**: the KEM distinguishing advantage of
 `distinguisher` against `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)` is bounded by the DDH
 advantage of `kemToDDHDistinguisher H distinguisher` plus the KDF advantage of
-`kemToKDFDistinguisher distinguisher` plus `4 / 2 ^ n`. -/
+`kemToKDFDistinguisher distinguisher` plus `4 / 2 ^ n`. The middle hybrid is the random DDH
+game, which is the real KDF game (`ddhRandomGame_kdfToDDHDistinguisher`). -/
 theorem advantage_kemGame_hashedElGamalEncapsProb_le (keyLen : ℕ → ℕ)
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (distinguisher : Distinguisher) (n : ℕ) :
@@ -334,7 +326,7 @@ theorem advantage_kemGame_hashedElGamalEncapsProb_le (keyLen : ℕ → ℕ)
         (F.hashedElGamalEncapsProb H d) distinguisher n)) ≤
       Game.advantage
         (F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
-        (F.ddhIdealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n) +
+        (F.ddhRandomGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n) +
       Game.advantage
         (F.kdfRealGame (fun m => PMF.pure (d m)) H (F.kemToKDFDistinguisher distinguisher) n)
         (F.kdfIdealGame (fun m => PMF.pure (d m)) keyLen
@@ -345,10 +337,10 @@ theorem advantage_kemGame_hashedElGamalEncapsProb_le (keyLen : ℕ → ℕ)
     (F.advantage_kdfIdealGame_eval_kemIdealGame_le keyLen H d distinguisher n)
   have hmid := Game.advantage_triangle
     (F.ddhRealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
-    (F.ddhIdealGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
+    (F.ddhRandomGame (fun m => PMF.pure (d m)) (F.kemToDDHDistinguisher H distinguisher) n)
     (F.kdfIdealGame (fun m => PMF.pure (d m)) keyLen
       (F.kemToKDFDistinguisher distinguisher) n)
-  conv at hmid => rhs; arg 2; arg 1; rw [F.ddhIdealGame_kemToDDHDistinguisher_eq_kdfRealGame]
+  conv at hmid => rhs; arg 2; arg 1; rw [F.ddhRandomGame_kdfToDDHDistinguisher]
   exact (Game.advantage_four_hop_le h0 h1).trans
     ((add_le_add (add_le_add le_rfl hmid) le_rfl).trans_eq (by ring))
 
@@ -365,7 +357,7 @@ theorem DDH.kemINDCPA_hashedElGamalEncapsProb {F : PrimeOrderGroupFamily} {keyLe
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits) :
     KEMINDCPA keyLen (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) := by
   intro distinguisher hD
-  have hddh := hDDH _ (F.isPPTOn_kemToDDHDistinguisher hH hD)
+  have hddh := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH (F.isPPTOn_kemToKDFDistinguisher hD))
   have hkdf := hKDF _ (F.isPPTOn_kemToKDFDistinguisher hD)
   have h4 : Negligible fun n => (4 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 4
   refine negligible_of_le ((hddh.add hkdf).add h4) fun n => ?_
