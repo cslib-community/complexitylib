@@ -436,6 +436,8 @@ lake build CslibFrontier.Computability.QueryComplexity.Quantum.DeutschJozsa \
 
 ## Quantum Fourier transform and exact period finding
 
+The [2007 draft Chapter 20 audit](../../results/arora-barak-2007.md#chapter-20-quantum-computation) maps the numbered quantum results to their precise models. It distinguishes exact period finding from efficient QFT synthesis and general order finding, and records source defects in the factoring and continued-fraction statements.
+
 This is the quantum core of Shor's algorithm in the case where the period divides the register size. It works at the level of states and unitary matrices, using `unitaryEquiv`, `ket` and `measure`; it is not phrased in the query model of the previous section or in the uniform circuits of `BQP`.
 
 [Fourier.lean](../../CslibFrontier/Foundations/Quantum/Fourier.lean) defines `Cslib.Quantum.qft N : unitaryGroup (ZMod N) ℂ`, the matrix `F_N(j, k) = ω^{jk}/√N` with `ω = e^{2πi/N}`, for `[NeZero N]`. `qft_apply` gives its entries as `ZMod.stdAddChar (j * k) / √N` and `qft_apply_eq_exp` as `exp(2πi · j.val · k.val / N) / √N`. `qft_mulVec` identifies its action on amplitude vectors with `√N • 𝓕⁻`, Mathlib's inverse DFT `ZMod.dft.symm`, so the sign convention is Shor's eq. (4.1) and Mathlib's inverse transform. Unitarity is character orthogonality (`AddChar.sum_mulShift`). For a register pair `ι × κ`, [Register.lean](../../CslibFrontier/Foundations/Quantum/Register.lean) gives `onFirst U = U ⊗ I` (`onFirst_apply`).
