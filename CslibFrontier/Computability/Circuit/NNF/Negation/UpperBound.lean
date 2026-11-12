@@ -202,7 +202,7 @@ def cycleProgram (blocks : List (List V)) :
     BranchingPrograms.ReadOnceProgram (blocks.flatMap (M.cycleItems α β)).length
       (Bool × Bool × Bool × Bool) Bool :=
   .ofList (blocks.flatMap (M.cycleItems α β)) (false, false, false, false) cycleStep
-    fun q => q.2.2.1 && !q.2.2.2
+    fun (_, _, s, d) => s && !d
 
 /-- The order in which the cycle program reads the vertices. -/
 def cycleOrder (blocks : List (List V)) : Fin (blocks.flatMap (M.cycleItems α β)).length → V :=

@@ -110,7 +110,7 @@ example : k4.someButNotAllColors ![true, true, false, false] = true := by decide
 example : k4.someButNotAllColors ![true, true, true, true] = false := by decide
 /-- An independent set: `f_G` is false. -/
 example : k4.someButNotAllColors ![true, false, false, false] = false := by decide
-/-- Two colours, through a path of two edges. -/
+/-- All three colours, around a triangle. -/
 example : k4.someButNotAllColors ![true, true, true, false] = false := by decide
 
 example : k4.toSimpleGraph.IsRegularOfDegree 3 := k4.isRegularOfDegree

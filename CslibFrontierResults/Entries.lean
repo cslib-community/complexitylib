@@ -4360,6 +4360,7 @@ register_result "ddnnf-negation-separation" where
   ]
   scope := "For every cubic graph with a proper 3-edge-colouring on n ≥ 2 vertices that is a \
     balanced-cut γ-edge expander, f_G has a d-DNNF with at most 150n + 50 nodes and every DNNF \
-    for ¬f_G has at least (48/47)^(γn/126) nodes. Theorem 1.1 itself is derived from a family \
-    of such expanders on unboundedly many vertex counts, which is Proposition 5.2 of the paper \
+    for ¬f_G has at least (48/47)^(γn/126) nodes. Theorem 1.1 itself (a 2^(cn) lower bound \
+    with c > 0) is derived from a family of such expanders with γ > 0 on unboundedly many \
+    vertex counts, which is Proposition 5.2 of the paper \
     and is a hypothesis, not proved (#4668)."

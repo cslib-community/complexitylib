@@ -24,7 +24,10 @@ DNNF for `¬f`, this bounds `Cov^m_0(f)` by the DNNF size of `¬f`
 a child of an occurring `∧` gate, or a child of an occurring `∨` gate that accepts `x`. If a node
 `v` occurs for `y`, then every input that `v` accepts and that agrees with `y` outside the
 variables of `v` is accepted (`NNF.Occurs.toFun_eq_true`): decomposability keeps the siblings
-along the way independent of the replaced variables.
+along the way independent of the replaced variables. This is the unsmoothed analogue of
+`DecomposableDAG.Occurs.mem_accepted` for smooth decomposable DAGs
+(`CslibFrontier/Computability/Circuit/Decomposable.lean`); that model requires smoothness, which can
+cost more than a constant factor in size, so it is not reused here.
 
 **One rectangle per node.** Let `n = |ι|`. A node whose variable set `X` is balanced contributes
 the inputs it accepts whose part outside `X` comes from an input for which it occurs: a rectangle

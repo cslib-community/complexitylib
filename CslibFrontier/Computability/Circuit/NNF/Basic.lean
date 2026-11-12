@@ -31,6 +31,15 @@ These are the definitions of [ArenasBroadrickLiewVanDenBroeck2026, Section 3.1],
 leaves also allowed, as in [Darwiche2001]. Allowing constants only enlarges the class against
 which lower bounds hold.
 
+**Relation to `DecomposableDAG`.** `Cslib.Circuits.DecomposableDAG`
+(`CslibFrontier/Computability/Circuit/Decomposable.lean`) is a semantic model of *smooth* DNNF:
+every union's children share its scope. NNF circuits here need not be smooth, and smoothing a DNNF
+can cost more than a constant factor in size, so size lower bounds for `DecomposableDAG` do not
+transfer to the paper's DNNF size. This file therefore keeps a separate syntactic model with literal
+leaves, explicit node sharing and size counting every node. The certificate argument of `NNF.Occurs`
+(`CslibFrontier/Computability/Circuit/NNF/Rectangle.lean`) is the unsmoothed counterpart of
+`DecomposableDAG.Occurs`.
+
 Evaluation and variable sets are both instances of one bottom-up fold (`NNF.fold`, with the
 unfolding equation `NNF.fold_eq`), defined by structural recursion on a bound for the node
 number, so concrete circuits evaluate by `decide`.
