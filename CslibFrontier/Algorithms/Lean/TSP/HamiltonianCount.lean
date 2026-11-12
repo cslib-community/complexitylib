@@ -52,7 +52,7 @@ ticks for every `n` (`time_countHamPathsM_le`), and at most `2 ^ n * n ^ 3` tick
 and each step retains only its current length-`n` vector and the running total, the algorithm uses
 polynomial working space structurally. The `TimeM` bound counts selected unit-cost integer
 additions (with mask popcount, bit tests, and adjacency lookups uncharged), rather than the
-unit-cost vs. `n`-bit log-cost RAM/Turing-machine model discussed in [FominKratsch2010],
+unit-cost versus log-cost RAM/Turing-machine model discussed in [FominKratsch2010],
 Section 4.2.2, and `TimeM` does not provide a formal space certificate.
 
 ## Main definitions
