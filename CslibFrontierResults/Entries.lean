@@ -116,6 +116,9 @@ import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
+import CslibFrontier.Crypto.Protocols.PIR.Block
+import CslibFrontier.Crypto.Protocols.PIR.Collusion
+import CslibFrontier.Crypto.Protocols.PIR.Shamir
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Cut
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.StableSet
@@ -3936,6 +3939,108 @@ register_result "fujisaki-okamoto-bot-ind-cca" where
     challenge key from the arbitrary sampler S.sampleKey (uniform sampleKey recovers the \
     standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4); information-\
     theoretic games with no running-time accounting for the reduction."
+
+register_result "cgks-pir-coalition-lower-bound" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: coalition t-privacy and full-coalition \
+    communication lower bound"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998, theorem := unverified,
+      locator := "Sections 2.2, 2.4 and 5.1 (pp. 4–6 and 14 of the April 21, 1998 journal \
+        version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.Scheme.isTPrivate_one_iff,
+    Cslib.Crypto.Protocols.PIR.Scheme.isTPrivate_iff_tuple,
+    Cslib.Crypto.Protocols.PIR.Scheme.exists_injective_answers_of_card_le,
+    Cslib.Crypto.Protocols.PIR.Scheme.card_le_communication_of_card_le,
+    Cslib.Crypto.Protocols.PIR.HasTPrivateScheme.card_le_of_le
+  ]
+  scope := "One-round information-theoretic PIR over arbitrary payload types β (defaulting to \
+    Bool) with perfect correctness and perfect t-privacy against coalitions of at most t servers \
+    (equivalent at t = 1 to single-server IsPrivate and for every t to t-tuple query \
+    independence; machine runtime in CGKS §2.4, p. 6 is not modeled). Generalizing CGKS §5.1 \
+    (p. 14) from k = 1 to full coalitions |S| ≤ t, some joint query vector makes the combined \
+    server answers determine the database, and any perfectly correct t-private Boolean scheme \
+    with |S| ≤ t communicates at least |ι| bits."
+
+register_result "cgks-pir-shamir" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: explicit finite-field polynomial Shamir \
+    t-private PIR schemes"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998, theorem := unverified,
+      locator := "Sections 1.1, 2.2, 2.4 and 3.4 (pp. 1–2, 4–6 and 11 of the April 21, 1998 \
+        journal version)" },
+    { paper := Shamir1979, theorem := unverified, locator := "whole paper" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.isCorrect_shamir,
+    Cslib.Crypto.Protocols.PIR.isTPrivate_shamir,
+    Cslib.Crypto.Protocols.PIR.not_isTPrivate_succ_shamir,
+    Cslib.Crypto.Protocols.PIR.isCorrect_shamirCube,
+    Cslib.Crypto.Protocols.PIR.isTPrivate_shamirCube,
+    Cslib.Crypto.Protocols.PIR.not_isTPrivate_succ_shamirCube,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_of_le_mul_self,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_of_le_pow,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_rows_of_le_pow,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_of_le_pow,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_rows_of_le_pow
+  ]
+  scope := "Because CGKS §1.1 (pp. 1–2) omits the polynomial construction details, PIR.Shamir \
+    gives an explicit finite-field adaptation over Shamir.Params F S (|F| > |S|, instantiated \
+    over ZMod p for primes p > k): linear Shamir PIR with matrix balancing gives \
+    |S| * 2 m * ⌈log₂ |F|⌉ bits for n ≤ m², unbalanced degree-d hypercube PIR gives \
+    |S| * ((d * ℓ + 1) * ⌈log₂ |F|⌉) bits for d * t < |S| and n ≤ ℓ^d, and applying §3.4's \
+    rows balancing step (p. 11) gives |S| * ((d + 1) * ℓ * ⌈log₂ |F|⌉) bits for n ≤ ℓ^(d + 1). \
+    At d = c - 1 (c ≥ 2, t ≥ 1), this is a weaker finite-field communication variant of CGKS \
+    §1.1's headline claim: it matches the exact server count k = c * t and fixed-t database \
+    exponent n^(1/c), but retains the field bit-width factor ⌈log₂ |F|⌉ (with |F| > c * t) \
+    rather than proving §1.1's varying-t(n) O(t(n) * n^(1/c)) bound. Machine runtime (CGKS \
+    §2.4, p. 6) and fair-coin realization of finite-uniform ProbComp sampling are not certified. \
+    Any t + 1 colluding servers break privacy whenever |ι| ≥ 2 (for shamir) and whenever D is \
+    nonempty (d ≥ 1) and |ι| ≥ 2 (for shamirCube; at empty D, D → ι is a singleton so privacy \
+    holds trivially)."
+
+register_result "cgks-pir-block-retrieval" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: private block retrieval transformations and \
+    constant-overhead schemes"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := "Propositions 4–5 and Corollaries 6–8",
+      locator := "Section 4 (pp. 11–13 of the April 21, 1998 journal version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.Scheme.card_mul_le_communication_of_card_le,
+    Cslib.Crypto.Protocols.PIR.Scheme.card_mul_le_communication,
+    Cslib.Crypto.Protocols.PIR.hasBlockScheme_one_iff,
+    Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.toBlock,
+    Cslib.Crypto.Protocols.PIR.Scheme.IsTPrivate.toBlock,
+    Cslib.Crypto.Protocols.PIR.communication_toBlock_le,
+    Cslib.Crypto.Protocols.PIR.communication_toBlock_of_card_answer,
+    Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.mapAnswerHom,
+    Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.sumChunks,
+    Cslib.Crypto.Protocols.PIR.Scheme.IsTPrivate.sumChunks,
+    Cslib.Crypto.Protocols.PIR.hasBlockScheme_of_xorReconstruct,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateBlockScheme_of_xorReconstruct,
+    Cslib.Crypto.Protocols.PIR.hasBlockScheme_two_of_le,
+    Cslib.Crypto.Protocols.PIR.hasBlockScheme_four_of_le_sq,
+    Cslib.Crypto.Protocols.PIR.hasBlockScheme_four_of_le_half_sq
+  ]
+  scope := "One-round private retrieval of ℓ-bit blocks (Scheme ι S R Q A (κ → Bool)) from n \
+    blocks with fixed-length binary encoding communication |S| * (⌈log₂ |Q|⌉ + ⌈log₂ |A|⌉) \
+    (machine runtime in CGKS §2.4 is not modeled). Single-server (and full-coalition |S| ≤ t) \
+    block retrieval requires at least n * ℓ bits (attained at k = 1 by PIR.download). \
+    Proposition 4 (Scheme.toBlock) lifts any scheme by repeating answers across block \
+    coordinates; Proposition 5 (Scheme.sumChunks) and its AddCommGroup homomorphism reduction \
+    (Scheme.mapAnswerHom) compress m parallel XOR-reconstructed instances on Option ι into 1-bit \
+    server answers, preserving t-privacy without finiteness assumptions on R or Q. Composing \
+    them gives Corollary 6; specializing Proposition 4 to twoServer and cube (Fin 2) gives 4 * ℓ \
+    bits with 2 servers for n ≤ ℓ (Corollary 7) and 8 * ℓ bits with 4 servers when n ≤ m² and \
+    2 * m ≤ ℓ, in particular n ≤ (ℓ / 2)^2 (Corollary 8, replacing the paper's unrounded \
+    n ≤ ℓ² / 4 with the integer subcube condition 2 * m ≤ ℓ, matching n ≤ ℓ² / 4 when ℓ is \
+    even)."
 
 register_result "clique-eth-lower-bound" where
   title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"

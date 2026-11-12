@@ -106,21 +106,14 @@ variable (M : DescriptionMethod ℕ)
 private theorem finite_ncard_setOf_ecomplexity_le_lt (k : ℕ) :
     {z | M.ecomplexity z ≤ k}.Finite ∧ {z | M.ecomplexity z ≤ k}.ncard < 2 ^ (k + 1) := by
   rw [← Set.encard_lt_coe_iff_finite_ncard_lt]
-  refine (Set.encard_le_encard fun z hz => ?_).trans_lt
-    (by exact_mod_cast M.encard_setOf_ecomplexity_lt (k + 1))
-  exact (show M.ecomplexity z ≤ k from hz).trans_lt (by exact_mod_cast k.lt_succ_self)
+  exact_mod_cast M.encard_setOf_ecomplexity_le_lt Function.injective_id k
 
 private theorem finite_ncard_setOf_ecomplexity_pair_le_lt (k x : ℕ) :
     {v | M.ecomplexity (Nat.pair x v) ≤ k}.Finite ∧
       {v | M.ecomplexity (Nat.pair x v) ≤ k}.ncard < 2 ^ (k + 1) := by
   rw [← Set.encard_lt_coe_iff_finite_ncard_lt]
-  have hinj : Function.Injective (Nat.pair x) := fun a b h => (Nat.pair_eq_pair.mp h).2
-  rw [← hinj.encard_image]
-  refine (Set.encard_le_encard ?_).trans_lt
-    (by exact_mod_cast M.encard_setOf_ecomplexity_lt (k + 1))
-  rintro _ ⟨v, hv, rfl⟩
-  exact (show M.ecomplexity (Nat.pair x v) ≤ k from hv).trans_lt
-    (by exact_mod_cast k.lt_succ_self)
+  exact_mod_cast M.encard_setOf_ecomplexity_le_lt (enc := Nat.pair x)
+    (fun _ _ h => (Nat.pair_eq_pair.mp h).2) k
 
 /-- Only finitely many `v` have `C(x, v) ≤ k`. -/
 theorem finite_setOf_ecomplexity_pair_le (k x : ℕ) :
