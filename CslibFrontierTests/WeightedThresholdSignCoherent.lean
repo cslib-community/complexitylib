@@ -83,4 +83,67 @@ example (b m : ℕ) (c : Circuit signature (2 ^ b + b * m) 1)
       ∑ x : BitString (2 ^ b), (andreevCubeSplitCount c q x : ℝ) :=
   two_pow_mul_andreevCubeSplitBound_le c hd hcomp q
 
+/-! ### A concrete circuit: `andreev 1 1` with two bottom gates
+
+Inputs `x 0, x 1` are the table and `x 2` the single address bit, so `andreev 1 1 x` is `x 1` if
+`x 2` and `x 0` otherwise. The bottom gates are `x 1 ∧ x 2` (`x 1 + x 2 ≥ 2`) and `x 0 ∧ ¬x 2`
+(`x 0 - x 2 ≥ 1`), and the top gate is their disjunction. -/
+
+/-- A depth-two circuit for `andreev 1 1` with two bottom gates. -/
+noncomputable def andreevOneOne : Circuit signature (2 ^ 1 + 1 * 1) 1 :=
+  depthTwoInputs (G := 2) (fun j => ⟨2, ![![1, 1], ![1, -1]] j, ![2, 1] j⟩)
+    (fun j => ![![1, 2], ![0, 2]] j) ![1, 1] 0 1
+
+theorem andreev_one_one (x : BitString (2 ^ 1 + 1 * 1)) :
+    Boolean.andreev 1 1 x = if x 2 then x 1 else x 0 := by
+  rw [andreev_eq_table_parities]
+  have hp : andreevParities 1 1 x = fun _ => x 2 := by
+    funext j
+    fin_cases j
+    have huniv : (univ : Finset (Fin 1)) = {0} := rfl
+    simp only [andreevParities, parity, huniv, parityOn_singleton]
+    rfl
+  rw [hp]
+  cases x 2 <;> rfl
+
+theorem andreevOneOne_computes :
+    andreevOneOne.Computes interpretation (single (Boolean.andreev 1 1)) := by
+  intro x
+  funext o
+  fin_cases o
+  change andreevOneOne.eval interpretation x 0 = Boolean.andreev 1 1 x
+  rw [andreevOneOne, eval_depthTwoInputs, andreev_one_one]
+  simp only [interpretation, Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Pi.zero_apply, zero_mul, sum_const_zero, add_zero]
+  have key (a b c : Bool) :
+      decide ((1 : ℝ) ≤ 1 * ((decide ((2 : ℝ) ≤ 1 * (b.toNat : ℝ) + 1 * (c.toNat : ℝ))).toNat : ℝ)
+        + 1 * ((decide ((1 : ℝ) ≤ 1 * (a.toNat : ℝ) + -1 * (c.toNat : ℝ))).toNat : ℝ)) =
+        if c = true then b else a := by
+    cases a <;> cases b <;> cases c <;> norm_num
+  exact key (x 0) (x 1) (x 2)
+
+-- With one bit per block every weight vector is sign-coherent; Theorem 13's coherence hypothesis
+-- for the general circuit is discharged through `isSignCoherent_inputWeight_depthTwoInputs`.
+theorem andreevOneOne_coherent (j : Fin 2) :
+    IsSignCoherent (Boolean.andreevBlockVar 1 1)
+      (argWeight (⟨2, ![![(1 : ℝ), 1], ![1, -1]] j, ![(2 : ℝ), 1] j⟩ : Op)
+        (![![(1 : Fin (2 ^ 1 + 1 * 1)), 2], ![0, 2]] j)) := by
+  intro i
+  rcases le_total 0 (argWeight _ _ (Boolean.andreevBlockVar 1 1 i 0)) with h | h
+  · exact Or.inl fun t => by fin_cases t; exact h
+  · exact Or.inr fun t => by fin_cases t; exact h
+
+example : ∀ k ∈ circuitBottomGates andreevOneOne 0,
+    IsSignCoherent (Boolean.andreevBlockVar 1 1) (inputWeight andreevOneOne.program k) := by
+  obtain ⟨top, htop⟩ : ∃ top, andreevOneOne.outputs 0 = .gate top := ⟨_, rfl⟩
+  intro k hk
+  rw [circuitBottomGates_eq_gateSupport htop] at hk
+  exact isSignCoherent_inputWeight_depthTwoInputs _ _ _ _ _ andreevOneOne_coherent htop hk
+
+-- Theorem 13 applied to the concrete circuit, with `G = 2` bottom gates.
+example : ((1 : ℕ) : ℝ) ^ 1 * andreevCubeSplitBound 1 2 ≤
+    ((1 ^ 1 - (1 - 1) ^ 1 : ℕ) : ℝ) * ((2 : ℕ) : ℝ) :=
+  pow_mul_andreevCubeSplitBound_le_of_depthTwoInputs _ _ _ _ _ andreevOneOne_computes
+    andreevOneOne_coherent
+
 end WeightedThresholdSignCoherentTests
