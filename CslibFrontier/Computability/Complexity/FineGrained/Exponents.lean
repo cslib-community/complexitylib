@@ -53,7 +53,7 @@ sparsified formulas searched within time `2 ^ (ε * n)` times a polynomial; it i
   complexity?*][ImpagliazzoPaturiZane2001]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
