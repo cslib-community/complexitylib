@@ -412,8 +412,7 @@ open Turing.MultiTapeTM
 space polynomial in the length of the encoded formula. -/
 theorem TQBF_mem_PSPACE : TQBF ∈ PSPACE encQBF := by
   obtain ⟨e, c, h, -⟩ := TQBF.exists_computableInO_evaluate
-  refine ⟨TQBF.evaluate, ⟨_, _, ?_, h⟩,
-    fun φ => TQBF.evaluate_eq_true_iff.symm⟩
+  refine mem_PSPACE_of_computableInTimeAndSpace ?_ h fun φ => TQBF.evaluate_eq_true_iff.symm
   refine PolyBounded.of_forall_le (2 * c) e fun φ => ?_
   have := Nat.one_le_pow e ((encQBF φ).length + 1) (by omega)
   nlinarith
