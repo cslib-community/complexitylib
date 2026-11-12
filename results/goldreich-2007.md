@@ -71,7 +71,7 @@ superscripts and proof-size conventions, which the plain-text extraction loses.
 
 | Draft result | File / PDF page / printed page | Disposition and remaining endpoint |
 |---|---|---|
-| Theorem B.3, monotone CLIQUE lower bound | r6 / 14 / 522 | **Covered.** `Cslib.Circuits.Monotone.two_pow_two_mul_sqrt_lt_size` in [Clique/Asymptotic](../CslibFrontier/Computability/Circuit/Monotone/Clique/Asymptotic.lean) gives size $>2^{2\lfloor\sqrt k\rfloor}$ for $2\le k$, $k^4\le n$, on binary monotone AND/OR circuits over the $\binom n2$ edge bits. Taking $k=\lfloor n^{1/4}\rfloor$ yields the source's superpolynomial and $\exp(\Omega(n^{1/8}))$ conclusions. The parameter $n$ here is vertices, not input bits. |
+| Theorem B.3, monotone CLIQUE lower bound | r6 / 13–14 / 521–522 | **Covered via a source-inspected padding argument.** `Cslib.Circuits.Monotone.two_pow_two_mul_sqrt_lt_size` in [Clique/Asymptotic](../CslibFrontier/Computability/Circuit/Monotone/Clique/Asymptotic.lean) gives size $>2^{2\lfloor\sqrt k\rfloor}$ for $2\le k$, $k^4\le m$, on binary monotone AND/OR/constant circuits over the $\binom m2$ edge bits. Goldreich instead fixes target size $\lfloor\sqrt N\rfloor$ on $N$ vertices. The padding below transfers the bound to that family, yielding $\exp(\Omega(N^{1/8}))$; merely substituting $k=\lfloor m^{1/4}\rfloor$ would not suffice. The parameters $m,N$ count vertices, not input bits. |
 | Theorem B.4, PAR and MAJ outside constant depth | r6 / 14 / 522 | **Covered.** `Cslib.Circuits.Boolean.parity_notMem_AC0` in [AC0](../CslibFrontier/Computability/Circuit/Boolean/AC0.lean) and `majority_notMem_AC0` in [Majority](../CslibFrontier/Computability/Circuit/Boolean/Majority.lean) exclude nonuniform polynomial-size constant-depth unbounded-fanin AND/OR/NOT circuits. [Hastad/Sharp](../CslibFrontier/Computability/Circuit/Boolean/Hastad/Sharp.lean), `Unbounded.two_rpow_le_two_mul_size_of_computes_parity_of_depth_le`, supplies the sharper parity bound under explicit positive-depth/size hypotheses; the theorem row does not claim MOD-gate extensions. |
 | Theorem B.5, quadratic formula lower bounds | r6 / 15 / 523 | **Covered.** `Cslib.Circuits.Boolean.sq_le_leafSize_of_computes_parity` and `sq_div_four_le_leafSize_of_computes_majority` in [Khrapchenko](../CslibFrontier/Computability/Circuit/Boolean/Khrapchenko.lean) give $n^2$ and $\lfloor(n+1)^2/4\rfloor$ leaves. This is the binary De Morgan formula basis, not arbitrary Boolean gates (a primitive XOR changes parity's complexity); binary-tree leaf and total-node sizes differ by a constant factor. |
 | Proposition B.8, factorial polynomial and factoring | r6 / 17 / 525 | **Endpoint not located.** Polynomial-size circuits for $q_d(X)=\prod_{i=1}^d(X+i)$, measured as poly$(\log d)$, imply nonuniform polynomial-size integer-factoring circuits. Existing arithmetic circuit evaluation and separate factoring algorithms do not certify the modular factorial/binary-search reduction. Constant encodings and the arithmetic coefficient domain must be fixed before transferring arithmetic circuits to Boolean circuits. |
@@ -80,6 +80,29 @@ superscripts and proof-size conventions, which the plain-text extraction loses.
 | Theorem B.13, polynomially bounded proof systems | r6 / 19 / 527 | **Partial.** `Cslib.Complexity.ProofSystem.NP_eq_coNP_iff_exists_polynomiallyBounded` in [ProofSystem](../CslibFrontier/Computability/Complexity/ProofSystem.lean) proves the existential Cook–Reckhow equivalence for CNF refutations, with native encoded polynomial time; `coNP_subset_NP_iff_exists_polynomiallyBounded` covers any nonempty decodable coNP-complete set. The draft instead fixes one tautology system $M$ whose polynomial boundedness is equivalent to NP=coNP. A fixed universal system/tautology presentation is not furnished by that existential statement alone. |
 | Theorem B.14, Frege versus resolution PHP | r6 / 21 / 529 | **Partial.** `Cslib.Logic.PL.CNF.two_pow_le_of_refutableInSize_pigeonhole` in [Resolution/Pigeonhole](../CslibFrontier/Logics/Propositional/Resolution/Pigeonhole.lean) gives $2^{\lfloor n/24\rfloor}\le s$ for $(n+1)$-pigeon/$n$-hole refutations, in clause-line size. [Frege](../CslibFrontier/Logics/Propositional/Frege.lean) defines a sound Hilbert-style system, but no polynomial-size Frege PHP proof family was located. The source's total-symbol proof length needs an explicit comparison to line count; [#271](https://github.com/cslib-community/cslib-frontier/issues/271) owns resolution lower bounds and [#3069](https://github.com/cslib-community/cslib-frontier/issues/3069) supplied the basic Frege/simulation API. |
 | Theorem B.15, polynomial-calculus PHP | r6 / 22 / 530 | **Partial.** [FunctionalPigeonhole](../CslibFrontier/Logics/Propositional/Algebraic/FunctionalPigeonhole.lean) supplies `Cslib.Logic.PL.Algebraic.algFPHP` and its semantics, not the displayed $2^{n/2}$ size lower bound for every $m>n$ over every field. [#3569](https://github.com/cslib-community/cslib-frontier/issues/3569) explicitly owns the degree/size continuation. Preserve its distinction between ordinary PC, PCR, functional/algebraic PHP, and total monomial size; CNF resolution hardness cannot be substituted. |
+
+### Padding to Goldreich's clique-size regime
+
+For $N\ge25$, put $s=\lfloor\sqrt N\rfloor$, $m=N-s$ and
+$k=\lfloor m^{1/4}\rfloor$. Then $2\le k\le s$ and $k^4\le m$, so the cited Lean
+theorem applies to $k$-CLIQUE on $m$ vertices. Given such a graph $G$, retain its $m$
+vertices, add $s-k$ vertices forming a clique and adjacent to every original vertex,
+and add $k$ isolated vertices. The padded graph has exactly $N$ vertices. A $k$-clique
+in $G$ extends with all $s-k$ added clique vertices to an $s$-clique. Conversely, an
+$s$-clique cannot use an isolated vertex, since $s\ge2$, and uses at most $s-k$ added
+clique vertices, so at least $k$ of its vertices form a clique in $G$.
+
+Thus $k$-CLIQUE is a monotone projection of Goldreich's $s$-CLIQUE: original edge
+inputs remain variables, edges within the added clique or between it and original vertices
+are set to one, and all edges incident to isolated vertices are set to zero. Restricting
+an $N$-vertex circuit of size $S$ by this substitution gives an $m$-vertex circuit of size
+at most $S+2$, using at most two shared constant gates. Constants are operations of the
+library's [monotone basis](../CslibFrontier/Computability/Circuit/Monotone/Basic.lean).
+The theorem therefore gives $S+2>2^{2\lfloor\sqrt k\rfloor}$. Since $m=\Theta(N)$ and
+$\lfloor\sqrt k\rfloor=\Theta(N^{1/8})$, the additive overhead preserves
+$S=\exp(\Omega(N^{1/8}))$, hence the absence of polynomial-size circuits for the exact
+source family. This projection and its asymptotic specialization are inspection arguments;
+no new Lean bridge or checked client was added under the documentation-only brief.
 
 ## Appendix C: On the Foundations of Modern Cryptography
 
