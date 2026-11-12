@@ -55,8 +55,6 @@ functions (`PMF`), whose supports may be infinite. On a finite type the two corr
   `Cslib.Probability.PMF.exists_mem_support_le_tsum_mul`: some outcome is at most the mean.
 * `Cslib.Probability.PMF.exists_mem_support_sum_mul_le`: some possible outcome is at least the
   mean of a real-valued function on a finite type.
-* `Cslib.Probability.PMF.toReal_toOuterMeasure_eq_sum`: an event's probability as the mean of its
-  indicator.
 * `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul`,
   `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le`,
   `Cslib.Probability.PMF.exists_mem_support_toOuterMeasure_le`: the averaging argument.
@@ -323,13 +321,6 @@ theorem exists_forall_sum_mul_le [Nonempty I] (M : I → J → ℝ) {ε : ℝ}
     simpa using h (ofStdSimplex q)
   exact ⟨ofStdSimplex p, by simpa using hp⟩
 
-/-- The probability of an event in a finite space, as the mean of its indicator. -/
-theorem toReal_toOuterMeasure_eq_sum {γ : Type*} [Fintype γ] (π : PMF γ) (s : Set γ)
-    [DecidablePred (· ∈ s)] :
-    (π.toOuterMeasure s).toReal = ∑ c, (π c).toReal * if c ∈ s then 1 else 0 := by
-  rw [toOuterMeasure_apply_toReal]
-  exact sum_congr rfl fun c _ => by by_cases hc : c ∈ s <;> simp [hc]
-
 /-- **Yao's minimax principle** for finite sets of inputs. Let `E i j` say that a strategy `i`
 fails on an input `j`, where there may be infinitely many strategies but only finitely many inputs.
 If against every distribution `ν` on the inputs some strategy fails with probability at most `ε`,
@@ -353,9 +344,9 @@ theorem exists_forall_toOuterMeasure_le {I J : Type*} [Finite J] [Nonempty I] (E
     (ε := ε) fun ν => by
       obtain ⟨i, hi⟩ := h ν
       refine ⟨⟨r i, i, rfl⟩, ?_⟩
-      rwa [toReal_toOuterMeasure_eq_sum] at hi
+      rwa [toOuterMeasure_toReal_eq_sum_ite] at hi
   refine ⟨μ.map rep, by rw [PMF.support_map]; exact (Set.toFinite _).image _, fun j => ?_⟩
-  rw [PMF.toOuterMeasure_map_apply, toReal_toOuterMeasure_eq_sum]
+  rw [PMF.toOuterMeasure_map_apply, toOuterMeasure_toReal_eq_sum_ite]
   refine le_of_eq_of_le (sum_congr rfl fun s _ => ?_) (hμ j)
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, hrep]
 
