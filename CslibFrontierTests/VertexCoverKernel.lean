@@ -23,7 +23,7 @@ vertices `20` and `30` share an edge (active low), and `40, 50` have no low neig
 low). The kernel relabels `20, 30` to `0, 1`, pads with one isolated vertex `2` to reach
 `numVertices = 3`, and reduces the target to `param = 1`. -/
 private def sampleGraph : Graph :=
-  ([10, 20, 30, 40, 50], [(10, 20), (10, 30), (10, 40), (20, 30)])
+  ⟨[10, 20, 30, 40, 50], [(10, 20), (10, 30), (10, 40), (20, 30)]⟩
 
 example :
     high (sampleGraph, 2) = [10] ∧
@@ -31,7 +31,7 @@ example :
       active (sampleGraph, 2) = [20, 30] ∧
       param (sampleGraph, 2) = 1 ∧
       numVertices (sampleGraph, 2) = 3 ∧
-      bussKernel (sampleGraph, 2) = (([0, 1, 2], [(0, 1), (1, 0)]), 1) ∧
+      bussKernel (sampleGraph, 2) = (⟨[0, 1, 2], [(0, 1), (1, 0)]⟩, 1) ∧
       (sampleGraph, 2) ∈ VertexCover ∧
       bussKernel (sampleGraph, 2) ∈ VertexCover :=
   ⟨by decide, by decide, by decide, by decide, by decide, by decide,
@@ -43,11 +43,11 @@ example :
 leaves no active vertices (`active = []`) and reduced target `param = 1`, so one isolated low
 vertex is kept as padding to witness the cover `{10, 20}` of size `2`. -/
 private def starGraph : Graph :=
-  ([10, 20, 30, 40], [(10, 20), (10, 30), (10, 40)])
+  ⟨[10, 20, 30, 40], [(10, 20), (10, 30), (10, 40)]⟩
 
 example :
     active (starGraph, 2) = [] ∧
-      bussKernel (starGraph, 2) = (([0], []), 1) ∧
+      bussKernel (starGraph, 2) = (⟨[0], []⟩, 1) ∧
       (starGraph, 2) ∈ VertexCover ∧
       bussKernel (starGraph, 2) ∈ VertexCover :=
   ⟨by decide, by decide,
@@ -59,12 +59,12 @@ example :
 has one high vertex, leaving `param = 0`, whereas two stars on `{0, 1, 2, 3, 4, 5}` with centres
 `0` and `3` have two high vertices of degree `2 > 1`. -/
 private def twoStars : Graph :=
-  ([0, 1, 2, 3, 4, 5], [(0, 1), (0, 2), (3, 4), (3, 5)])
+  ⟨[0, 1, 2, 3, 4, 5], [(0, 1), (0, 2), (3, 4), (3, 5)]⟩
 
 /-- Rejection when the number of active low vertices exceeds `k (k + 1)`: three disjoint edges with
 `k = 1` have no high vertices (`degree = 1 ≤ 1`) and `6 > 1 * 2` active vertices. -/
 private def threeEdges : Graph :=
-  ([0, 1, 2, 3, 4, 5], [(0, 1), (2, 3), (4, 5)])
+  ⟨[0, 1, 2, 3, 4, 5], [(0, 1), (2, 3), (4, 5)]⟩
 
 example :
     high (twoStars, 1) = [0, 3] ∧

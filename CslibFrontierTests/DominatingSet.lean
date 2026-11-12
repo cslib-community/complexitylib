@@ -20,13 +20,13 @@ namespace CslibFrontierTests.DominatingSet
 open Cslib.Complexity Turing.MultiTapeTM
 
 /-- The path `0 - 1 - 2`. -/
-private def path : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+private def path : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
 /-- The edge `0 - 1` with the isolated vertex `2`. -/
-private def edgeIso : Graph := ([0, 1, 2], [(0, 1)])
+private def edgeIso : Graph := ⟨[0, 1, 2], [(0, 1)]⟩
 
 /-- A self-loop at `0`, an edge to the undeclared vertex `5`, and a repeated vertex entry. -/
-private def junk : Graph := ([0, 0], [(0, 0), (0, 5)])
+private def junk : Graph := ⟨[0, 0], [(0, 0), (0, 5)]⟩
 
 /-! ### Headline results -/
 
@@ -60,7 +60,7 @@ example : DominatingSet.isDominating edgeIso [0, 2] = true := by decide
 example : DominatingSet.isDominating junk [] = false := by decide
 example : DominatingSet.isDominating junk [0] = true := by decide
 -- The test reads adjacency off the edge list, so the undeclared `5` passes it. Certificates
--- select declared vertices only (`mem_DominatingSet_iff` asks for `S ⊆ G.1`).
+-- select declared vertices only (`mem_DominatingSet_iff` asks for `S ⊆ G.vertices`).
 example : DominatingSet.isDominating junk [5] = true := by decide
 
 /-! ### Dominating sets -/
@@ -96,12 +96,12 @@ example : VertexCover.properEdges path = [(0, 1), (1, 2)] := by decide
 example : VertexCover.properEdges junk = [] := by decide
 
 -- The graph of `junk`: hub, pendant and copies only.
-example : VertexCover.dominationGraph junk = ([1, 3, 0, 0], [(1, 3), (1, 0), (1, 0)]) := by decide
+example : VertexCover.dominationGraph junk = ⟨[1, 3, 0, 0], [(1, 3), (1, 0), (1, 0)]⟩ := by decide
 
 -- The edge `0 - 1` gets the vertex `2 * Nat.pair 0 1 + 5 = 7`, adjacent to the copies `0` and `2`.
 example : VertexCover.edgeVertex (0, 1) = 7 := by decide
-example : VertexCover.dominationGraph ([0, 1], [(0, 1)]) =
-    ([1, 3, 0, 2, 7], [(1, 3), (1, 0), (1, 2), (7, 0), (7, 2)]) := by decide
+example : VertexCover.dominationGraph ⟨[0, 1], [(0, 1)]⟩ =
+    ⟨[1, 3, 0, 2, 7], [(1, 3), (1, 0), (1, 2), (7, 0), (7, 2)]⟩ := by decide
 
 -- The target becomes `k + 1`, or `0` when `k` exceeds the number of distinct vertices.
 example : VertexCover.toDominatingSet (path, 1) = ⟨VertexCover.dominationGraph path, 2⟩ := by

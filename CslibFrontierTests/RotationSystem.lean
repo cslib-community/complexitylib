@@ -10,8 +10,8 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem
 
 open Cslib.Complexity Cslib.Complexity.Graph
 
-private abbrev bridge : Graph := ([0, 1], [(0, 1)])
-private abbrev loopGraph : Graph := ([0], [(0, 0)])
+private abbrev bridge : Graph := ⟨[0, 1], [(0, 1)]⟩
+private abbrev loopGraph : Graph := ⟨[0], [(0, 0)]⟩
 
 private def bridgeRotation : RotationSystem bridge where
   rotate := Equiv.refl _
@@ -44,11 +44,11 @@ example : (Quotient.mk _ (0, false) : bridgeRotation.Face) = Quotient.mk _ (0, t
   change bridgeRotation.faceNext.SameCycle (0, false) (0, true)
   decide
 
-example : ((⟨0, by decide⟩, false) : Dart ([0, 1], [(0, 1), (0, 1)])) ≠
+example : ((⟨0, by decide⟩, false) : Dart ⟨[0, 1], [(0, 1), (0, 1)]⟩) ≠
     (⟨1, by decide⟩, false) := by decide
 
-example : Fintype.card (Dart ([], [])) = 0 := by decide
+example : Fintype.card (Dart ⟨[], []⟩) = 0 := by decide
 
-example : RotationSystem ([], []) where
+example : RotationSystem ⟨[], []⟩ where
   rotate := Equiv.refl _
   sameCycle_iff := by intro d; exact d.1.elim0

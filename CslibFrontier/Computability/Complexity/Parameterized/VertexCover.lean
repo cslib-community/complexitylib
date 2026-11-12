@@ -102,13 +102,14 @@ private theorem headD_mem_uncoveredEdges {G : Graph} {C : List ℕ}
 
 /-- Outside a cover, a branching step adds one vertex of `G` to `C`. -/
 private theorem exists_branchStep_eq_cons {G : Graph} {C : List ℕ} (b : Bool)
-    (h : isCover G C = false) : ∃ w ∈ G.1, branchStep G C b = w :: C := by
+    (h : isCover G C = false) : ∃ w ∈ G.vertices, branchStep G C b = w :: C := by
   obtain ⟨_, he₁, he₂, _, _, _⟩ := mem_uncoveredEdges_iff.mp (headD_mem_uncoveredEdges h)
   refine ⟨_, ?_, by rw [branchStep, h]; rfl⟩
   split_ifs <;> assumption
 
-private theorem mem_of_mem_branchStep {G : Graph} {C : List ℕ} {b : Bool} (hC : ∀ v ∈ C, v ∈ G.1) :
-    ∀ v ∈ branchStep G C b, v ∈ G.1 := by
+private theorem mem_of_mem_branchStep {G : Graph} {C : List ℕ} {b : Bool}
+    (hC : ∀ v ∈ C, v ∈ G.vertices) :
+    ∀ v ∈ branchStep G C b, v ∈ G.vertices := by
   cases h : isCover G C
   · obtain ⟨w, hw, hstep⟩ := exists_branchStep_eq_cons b h
     rw [hstep]
@@ -122,7 +123,7 @@ private theorem length_branchStep_le (G : Graph) (C : List ℕ) (b : Bool) :
 
 /-- Every vertex added along a search-tree path is a declared vertex of `G`. -/
 private theorem mem_of_mem_foldBranch (G : Graph) (bs : List Bool) :
-    ∀ v ∈ foldBranch G bs, v ∈ G.1 := by
+    ∀ v ∈ foldBranch G bs, v ∈ G.vertices := by
   induction bs using List.reverseRecOn with
   | nil => simp [foldBranch]
   | append_singleton bs b ih =>
@@ -142,7 +143,7 @@ private theorem length_foldBranch_le (G : Graph) (bs : List Bool) :
 /-- Along any vertex cover `S`, at each depth `m` some path of length `m` either has already found
 a cover or has accumulated `m` distinct vertices of `S`. -/
 private theorem exists_foldBranch_subset (G : Graph) {S : Finset ℕ}
-    (hS : ∀ u ∈ G.1, ∀ v ∈ G.1, G.toSimpleGraph.Adj u v → u ∈ S ∨ v ∈ S) (m : ℕ) :
+    (hS : ∀ u ∈ G.vertices, ∀ v ∈ G.vertices, G.toSimpleGraph.Adj u v → u ∈ S ∨ v ∈ S) (m : ℕ) :
     ∃ bs : List Bool, bs.length = m ∧ (∀ v ∈ foldBranch G bs, v ∈ S) ∧
       (foldBranch G bs).Nodup ∧
       (isCover G (foldBranch G bs) = true ∨ (foldBranch G bs).length = m) := by
@@ -185,7 +186,7 @@ private theorem exists_foldBranch_subset (G : Graph) {S : Finset ℕ}
 /-- If `G` has a vertex cover of at most `m` vertices, some branching word `bs` of length `m`
 produces a cover. -/
 private theorem exists_isCover_foldBranch {G : Graph} {S : Finset ℕ}
-    (hS : ∀ u ∈ G.1, ∀ v ∈ G.1, G.toSimpleGraph.Adj u v → u ∈ S ∨ v ∈ S) {m : ℕ}
+    (hS : ∀ u ∈ G.vertices, ∀ v ∈ G.vertices, G.toSimpleGraph.Adj u v → u ∈ S ∨ v ∈ S) {m : ℕ}
     (hm : S.card ≤ m) :
     ∃ bs : List Bool, bs.length = m ∧ isCover G (foldBranch G bs) = true := by
   obtain ⟨bs, hbs, hsub, hnodup, hcov | hlen⟩ := exists_foldBranch_subset G hS m
@@ -205,8 +206,8 @@ private theorem exists_isCover_foldBranch {G : Graph} {S : Finset ℕ}
 declared vertices if and only if some `i < 2 ^ m` leads to a cover along the path of length `m`
 given by the binary digits of `i`. -/
 theorem exists_lt_two_pow_isCover_foldBranch (G : Graph) (m : ℕ) :
-    (∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
-      (∀ u ∈ G.1, ∀ v ∈ G.1, G.toSimpleGraph.Adj u v → u ∈ S ∨ v ∈ S) ∧ S.card ≤ m) ↔
+    (∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.vertices) ∧
+      (∀ u ∈ G.vertices, ∀ v ∈ G.vertices, G.toSimpleGraph.Adj u v → u ∈ S ∨ v ∈ S) ∧ S.card ≤ m) ↔
       ∃ i < 2 ^ m, isCover G (foldBranch G ((List.range m).map i.testBit)) = true := by
   constructor
   · rintro ⟨S, _, hS, hm⟩
@@ -233,7 +234,7 @@ theorem exists_lt_two_pow_isCover_foldBranch (G : Graph) (m : ℕ) :
 def cap (x : Graph × ℕ) : ℕ :=
   min x.1.distinctVertices.length x.2
 
-theorem cap_eq (x : Graph × ℕ) : cap x = min x.1.1.toFinset.card x.2 := by
+theorem cap_eq (x : Graph × ℕ) : cap x = min x.1.vertices.toFinset.card x.2 := by
   rw [cap, Graph.length_distinctVertices]
 
 theorem cap_le_snd (x : Graph × ℕ) : cap x ≤ x.2 :=
@@ -283,8 +284,8 @@ private theorem length_encList_branchStep_le (G : Graph) (C : List ℕ) (b : Boo
   · obtain ⟨w, hw, hstep⟩ := exists_branchStep_eq_cons b h
     have hlen : (encNat w).length ≤ (encGraph G).length := by
       calc (encNat w).length
-          ≤ (encList encNat G.1).length := length_le_encList_of_mem encNat hw
-        _ ≤ (encGraph G).length := by simp only [encGraph, length_encPair]; omega
+          ≤ (encList encNat G.vertices).length := length_le_encList_of_mem encNat hw
+        _ ≤ (encGraph G).length := by rw [encGraph_apply, length_encPair]; dsimp only; omega
     simp only [hstep, encList_cons, List.length_append, length_frame]
     omega
   · simp only [branchStep, h, ↓reduceIte]

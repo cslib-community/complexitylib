@@ -18,10 +18,10 @@ namespace CslibFrontierTests.FeedbackArcSet
 open Cslib.Complexity Turing.MultiTapeTM
 
 /-- The directed triangle `0 → 1 → 2 → 0`. -/
-private def tri : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def tri : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 /-- The two-cycle `0 ⇄ 1`. -/
-private def two : Graph := ([0, 1], [(0, 1), (1, 0)])
+private def two : Graph := ⟨[0, 1], [(0, 1), (1, 0)]⟩
 
 /-! ### Headline results -/
 
@@ -84,7 +84,7 @@ example : (⟨two, 1⟩ : FeedbackArcSetInstance) ∈ FeedbackArcSet := by
   · exact absurd (Finset.mem_singleton_self _) hS
 
 -- A self-loop must be removed.
-example : (⟨(([0], [(0, 0)]) : Graph), 0⟩ : FeedbackArcSetInstance) ∉ FeedbackArcSet := by
+example : (⟨(⟨[0], [(0, 0)]⟩ : Graph), 0⟩ : FeedbackArcSetInstance) ∉ FeedbackArcSet := by
   rintro ⟨S, -, hcard, hacyc⟩
   obtain rfl : S = ∅ := Finset.card_eq_zero.1 (Nat.le_zero.1 hcard)
   obtain ⟨f, -, hf⟩ := Graph.exists_rank_of_isDirAcyclic hacyc
@@ -100,8 +100,8 @@ example : FeedbackArcSet.backArcs tri [1, 2, 3] = [(2, 0)] := by
 /-! ### The vertex-splitting reduction -/
 
 -- The arc `0 → 1` between the vertices `0` and `1` becomes `0 → 1`, `2 → 3` and `1 → 2`.
-example : FeedbackVertexSet.toFeedbackArcSet ⟨(([0, 1], [(0, 1)]) : Graph), 1⟩ =
-    ⟨(([0, 2, 1, 3], [(0, 1), (2, 3), (1, 2)]) : Graph), 1⟩ := by
+example : FeedbackVertexSet.toFeedbackArcSet ⟨(⟨[0, 1], [(0, 1)]⟩ : Graph), 1⟩ =
+    ⟨(⟨[0, 2, 1, 3], [(0, 1), (2, 3), (1, 2)]⟩ : Graph), 1⟩ := by
   decide
 
 -- The split triangle has a feedback arc set of size one, the arc of the vertex `0`.

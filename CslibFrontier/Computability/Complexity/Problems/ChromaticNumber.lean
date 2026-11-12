@@ -104,18 +104,18 @@ namespace ChromaticNumber
 /-- The check of a list of colors: every declared vertex gets a color below the bound, and
 adjacent declared vertices get different colors. -/
 private def check (x : ChromaticNumberInstance × List ℕ) : Bool :=
-  x.1.graph.1.all fun u => decide (colorOf x.1.graph x.2 u < x.1.colors) &&
-    x.1.graph.1.all fun v =>
+  x.1.graph.vertices.all fun u => decide (colorOf x.1.graph x.2 u < x.1.colors) &&
+    x.1.graph.vertices.all fun v =>
       !(x.1.graph.adjBool u v && decide (colorOf x.1.graph x.2 u = colorOf x.1.graph x.2 v))
 
 private theorem computableInPolyTime_check :
     ComputableInPolyTime check (encPair encChromaticNumber (encList encNat)) encBool := by
   unfold check
-  fun_prop [Graph.computableInPolyTime_fst]
+  fun_prop
 
 private theorem check_iff (x : ChromaticNumberInstance × List ℕ) :
-    check x = true ↔ (∀ v ∈ x.1.graph.1, colorOf x.1.graph x.2 v < x.1.colors) ∧
-      ∀ u ∈ x.1.graph.1, ∀ v ∈ x.1.graph.1, x.1.graph.toSimpleGraph.Adj u v →
+    check x = true ↔ (∀ v ∈ x.1.graph.vertices, colorOf x.1.graph x.2 v < x.1.colors) ∧
+      ∀ u ∈ x.1.graph.vertices, ∀ v ∈ x.1.graph.vertices, x.1.graph.toSimpleGraph.Adj u v →
         colorOf x.1.graph x.2 u ≠ colorOf x.1.graph x.2 v := by
   simp only [check, List.all_eq_true, Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true',
     Bool.and_eq_false_iff, Graph.adjBool_eq_false_iff, decide_eq_false_iff_not]
@@ -134,10 +134,11 @@ below the number of declared vertices, so witnesses stay polynomial although the
 is written in binary. -/
 theorem mem_NP : ChromaticNumber ∈ NP encChromaticNumber := by
   have hcert : ∀ (G : Graph) (k : ℕ), (⟨G, k⟩ : ChromaticNumberInstance) ∈ ChromaticNumber →
-      ∃ g : ℕ → ℕ, (∀ v ∈ G.1, g v ≤ G.1.length) ∧ check (⟨G, k⟩, G.1.map g) = true := by
+      ∃ g : ℕ → ℕ, (∀ v ∈ G.vertices, g v ≤ G.vertices.length) ∧
+        check (⟨G, k⟩, G.vertices.map g) = true := by
     intro G k h
     obtain ⟨c, hc, hadj⟩ := mem_KColoring_iff.1 h
-    refine ⟨fun v => if k ≤ G.1.length then c v else G.1.idxOf v, fun v hv => ?_,
+    refine ⟨fun v => if k ≤ G.vertices.length then c v else G.vertices.idxOf v, fun v hv => ?_,
       (check_iff _).2 ⟨fun v hv => ?_, fun u hu v hv huv => ?_⟩⟩
     · split
       · exact (hc v hv).le.trans ‹_›

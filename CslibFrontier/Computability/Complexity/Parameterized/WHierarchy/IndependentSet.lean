@@ -68,7 +68,7 @@ namespace IndependentSet
 /-- The edges of `G` between distinct declared vertices, as pairs of positions in
 `G.distinctVertices`. -/
 def edgeIndices (G : Graph) : List (ℕ × ℕ) :=
-  (G.2.filter fun e => decide (e.1 ∈ G.1 ∧ e.2 ∈ G.1 ∧ e.1 ≠ e.2)).map fun e =>
+  (G.edges.filter fun e => decide (e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices ∧ e.1 ≠ e.2)).map fun e =>
     (G.distinctVertices.idxOf e.1, G.distinctVertices.idxOf e.2)
 
 /-- The gates of the circuit on `n` inputs for the edges `E`: the negation of every input, the
@@ -218,7 +218,7 @@ private def vertexSet (G : Graph) (x : BitString (toCircuit G).1) : Finset ℕ :
       Fin.ext ((List.Nodup.getElem_inj_iff G.nodup_distinctVertices).1 h)⟩
 
 private theorem mem_vertexSet {G : Graph} {x : BitString (toCircuit G).1} {v : ℕ} :
-    v ∈ vertexSet G x ↔ ∃ h : v ∈ G.1,
+    v ∈ vertexSet G x ↔ ∃ h : v ∈ G.vertices,
       x ⟨G.distinctVertices.idxOf v,
         List.idxOf_lt_length_iff.2 (Graph.mem_distinctVertices.2 h)⟩ = true := by
   simp only [vertexSet, Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and]
@@ -234,7 +234,7 @@ private theorem edgeIndices_iff (G : Graph) (x : BitString (toCircuit G).1) :
     (∀ e ∈ edgeIndices G, ¬((List.ofFn x).getD e.1 false = true ∧
       (List.ofFn x).getD e.2 false = true)) ↔
       G.toSimpleGraph.IsIndepSet (vertexSet G x : Set ℕ) := by
-  have hget : ∀ a (ha : a ∈ G.1), (List.ofFn x).getD (G.distinctVertices.idxOf a) false =
+  have hget : ∀ a (ha : a ∈ G.vertices), (List.ofFn x).getD (G.distinctVertices.idxOf a) false =
       x ⟨G.distinctVertices.idxOf a,
         List.idxOf_lt_length_iff.2 (Graph.mem_distinctVertices.2 ha)⟩ := fun a ha => by
     rw [List.getD_eq_getElem _ _ (by
