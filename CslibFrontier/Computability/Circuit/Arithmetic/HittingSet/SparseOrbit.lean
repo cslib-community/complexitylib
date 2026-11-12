@@ -90,11 +90,7 @@ theorem card_sparseOrbitHittingSet_le (s d : ℕ) :
 
 private theorem natDegree_sparseOrbitCurve_le (B : ℕ) (β : F) (i : Fin n) :
     (sparseOrbitCurve F n B β i).natDegree ≤ 2 * B := by
-  have hB : (logCurve F n B i).natDegree ≤ B := by
-    rw [logCurve]
-    cases B with
-    | zero => simp
-    | succ B => exact (PowerSeries.natDegree_trunc_lt _ B).le
+  have hB := natDegree_logCurve_le (F := F) B i
   refine (Polynomial.natDegree_add_le _ _).trans (max_le ?_ (Polynomial.natDegree_mul_le.trans ?_))
   · rw [Polynomial.natDegree_C]
     exact Nat.zero_le _

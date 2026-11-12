@@ -26,7 +26,8 @@ form* of `g`. Then the space of all partial derivatives of `h` has dimension at 
 The proof uses the *correlated shifted partials* `(X + u) ^ β * ∂ ^ β g`, where the multiplier and
 the derivative are indexed by the same tuple `β` of variables. For a monomial `q`, the polynomial
 `X ^ β * ∂ ^ β q` is a scalar multiple of `q`, so all correlated shifted partials of `g` lie in the
-image under the translation of the span of the monomials of `p`, a space of dimension at most `s`
+image under the translation of the span of the monomials of `p`
+(`MvPolynomial.restrictSupport`), a space of dimension at most `s`
 (Lemma 3.1 of the source, there quoted from Forbes).
 
 ## Departures from the source
@@ -41,13 +42,9 @@ independent because their lowest homogeneous components are
 (`MvPolynomial.linearIndependent_of_homogeneousComponent`), so the family has at most `s`
 members.
 
-## Main definitions
-
-* `MvPolynomial.supportSpan`: the span of the monomials of a polynomial.
-
 ## Main results
 
-* `MvPolynomial.prod_X_mul_iteratedPDeriv_mem_supportSpan`,
+* `MvPolynomial.prod_X_mul_iteratedPDeriv_mem_restrictSupport`,
   `MvPolynomial.prod_X_add_C_mul_iteratedPDeriv_shift_mem`: Lemma 3.1 of the source.
 * `MvPolynomial.finrank_iteratedPDerivSpan_homogeneousComponent_shift_le`: Lemma 3.2 of the
   source.
@@ -63,10 +60,6 @@ members.
 namespace MvPolynomial
 
 variable {σ R : Type*} [CommSemiring R]
-
-/-- The span of the monomials of a polynomial. -/
-noncomputable def supportSpan (p : MvPolynomial σ R) : Submodule R (MvPolynomial σ R) :=
-  Submodule.span R ((fun μ => monomial μ (1 : R)) '' (p.support : Set (σ →₀ ℕ)))
 
 /-- An iterated partial derivative of a monomial is a monomial which is either zero or gives back
 the exponent of the original monomial when multiplied by the variables of the derivative. -/
@@ -97,8 +90,10 @@ private theorem exists_iteratedPDeriv_monomial {k : ℕ} (α : Fin k → σ) (μ
 /-- **Lemma 3.1 of the source**, before translation. Multiplying an iterated partial derivative
 of `p` by the variables of the derivative gives a polynomial in the span of the monomials of
 `p`. -/
-theorem prod_X_mul_iteratedPDeriv_mem_supportSpan {k : ℕ} (α : Fin k → σ)
-    (p : MvPolynomial σ R) : (∏ i, X (α i)) * iteratedPDeriv α p ∈ supportSpan p := by
+theorem prod_X_mul_iteratedPDeriv_mem_restrictSupport {k : ℕ} (α : Fin k → σ)
+    (p : MvPolynomial σ R) :
+    (∏ i, X (α i)) * iteratedPDeriv α p ∈ restrictSupport R (p.support : Set (σ →₀ ℕ)) := by
+  rw [restrictSupport_eq_span]
   have hp : iteratedPDeriv α p =
       ∑ μ ∈ p.support, iteratedPDeriv α (monomial μ (p.coeff μ)) := by
     conv_lhs => rw [p.as_sum, map_sum]
@@ -118,25 +113,15 @@ the span of the monomials of `p`. -/
 theorem prod_X_add_C_mul_iteratedPDeriv_shift_mem (u : σ → R) {k : ℕ} (α : Fin k → σ)
     (p : MvPolynomial σ R) :
     (∏ i, (X (α i) + C (u (α i)))) * iteratedPDeriv α (shift u p) ∈
-      (supportSpan p).map (shift u : MvPolynomial σ R →ₐ[R] MvPolynomial σ R).toLinearMap := by
-  refine ⟨_, prod_X_mul_iteratedPDeriv_mem_supportSpan α p, ?_⟩
+      (restrictSupport R (p.support : Set (σ →₀ ℕ))).map
+        (shift u : MvPolynomial σ R →ₐ[R] MvPolynomial σ R).toLinearMap := by
+  refine ⟨_, prod_X_mul_iteratedPDeriv_mem_restrictSupport α p, ?_⟩
   rw [AlgHom.toLinearMap_apply, map_mul, map_prod, iteratedPDeriv_shift]
   simp only [shift_X]
 
 section Field
 
 variable {K : Type*} [Field K]
-
-theorem finite_supportSpan (p : MvPolynomial σ K) : Module.Finite K (supportSpan p) :=
-  Module.Finite.span_of_finite K ((Finset.finite_toSet _).image _)
-
-/-- The span of the monomials of a polynomial has dimension at most the number of monomials. -/
-theorem finrank_supportSpan_le (p : MvPolynomial σ K) :
-    Module.finrank K (supportSpan p) ≤ p.support.card := by
-  classical
-  have h := finrank_span_finset_le_card (R := K) (p.support.image fun μ => monomial μ (1 : K))
-  rw [Finset.coe_image] at h
-  exact h.trans Finset.card_image_le
 
 /-- **Lemma 3.2 of the source.** Let `p` be a polynomial over a field and `u` a point with all
 coordinates nonzero, and suppose that the translate `p (X + u)` has no homogeneous component of
@@ -151,11 +136,13 @@ theorem finrank_iteratedPDerivSpan_homogeneousComponent_shift_le {p : MvPolynomi
   classical
   set g : MvPolynomial σ K := shift u p with hg
   set h := homogeneousComponent m g with hh
-  set V := (supportSpan p).map (shift u : MvPolynomial σ K →ₐ[K] MvPolynomial σ K).toLinearMap
-    with hV
-  have := finite_supportSpan p
+  set V := (restrictSupport K (p.support : Set (σ →₀ ℕ))).map
+    (shift u : MvPolynomial σ K →ₐ[K] MvPolynomial σ K).toLinearMap with hV
+  have : Module.Finite K (restrictSupport K (p.support : Set (σ →₀ ℕ))) :=
+    Module.Finite.of_basis (basisRestrictSupport K _)
   have hVrank : Module.finrank K V ≤ p.support.card :=
-    (Submodule.finrank_map_le _ _).trans (finrank_supportSpan_le p)
+    (Submodule.finrank_map_le _ _).trans
+      ((Module.finrank_eq_card_basis (basisRestrictSupport K _)).trans (Fintype.card_coe _)).le
   -- a linearly independent family of derivatives of `h` spanning all of them
   obtain ⟨b, hbsub, hbspan, hbli⟩ := exists_linearIndependent K
     (Set.range fun x : Σ k, Fin k → σ => iteratedPDeriv x.2 h)

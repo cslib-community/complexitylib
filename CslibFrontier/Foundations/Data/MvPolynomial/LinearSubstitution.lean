@@ -7,7 +7,7 @@ Authors: Aviv Bar Natan
 module
 -- upstream: candidate (Mathlib, linear substitutions in multivariate polynomials)
 
-public import CslibFrontier.Foundations.Data.MvPolynomial.HessianChainRule
+public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!
