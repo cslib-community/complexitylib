@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger, Mayank Rathee
 -/
 
 import CslibFrontier.Crypto.Protocols.PIR.Block
+import CslibFrontier.Crypto.Protocols.PIR.Shamir
 import CslibFrontier.Probability.Uniform
 import Mathlib.Tactic.NormNum
 
@@ -12,7 +13,7 @@ import Mathlib.Tactic.NormNum
 # Tests: private block retrieval (CGKS Section 4)
 
 * Tight one-server and full-coalition block lower bounds (`hasBlockScheme_one_iff`,
-  `HasTPrivateBlockScheme.card_mul_le_of_le`): `4` blocks of `4` bits need `16` bits with one
+  `HasTPrivateScheme.card_mul_le_of_le`): `4` blocks of `4` bits need `16` bits with one
   server (or when all `2` of `2` servers collude), so `15` bits is impossible.
 * Proposition 4 (`Scheme.toBlock`, `communication_toBlock_of_card_answer`, and
   `communication_toBlock_le`):
@@ -43,14 +44,14 @@ open Cslib Cslib.Crypto.Protocols.PIR Cslib.Crypto.Protocols.SecretSharing Proba
 
 /-! ### One-server and full-coalition block lower bounds -/
 
-example : HasBlockScheme (Fin 4) (Fin 4 → Bool) 1 16 :=
+example : HasScheme (Fin 4) 1 16 (Fin 4 → Bool) :=
   (hasBlockScheme_one_iff (Fin 4) (Fin 4) 16).mpr (by decide)
 
-example : ¬ HasBlockScheme (Fin 4) (Fin 4 → Bool) 1 15 := by
+example : ¬ HasScheme (Fin 4) 1 15 (Fin 4 → Bool) := by
   rw [hasBlockScheme_one_iff]
   decide
 
-example : ¬ HasTPrivateBlockScheme (Fin 4) (Fin 4 → Bool) 2 2 15 := fun h => by
+example : ¬ HasTPrivateScheme (Fin 4) 2 2 15 (Fin 4 → Bool) := fun h => by
   have hlb := h.card_mul_le_of_le le_rfl
   rw [Fintype.card_fin] at hlb
   omega
@@ -74,7 +75,7 @@ example :
     let params := zmodShamirParams (t := 2) (k := 3) (p := 5) (by decide) (by decide)
     ((shamir (Fin 4) params).toBlock (Fin 8)).IsCorrect ∧
       ((shamir (Fin 4) params).toBlock (Fin 8)).IsTPrivate 2 ∧
-      HasTPrivateBlockScheme (Fin 4) (Fin 8 → Bool) 2 3 108 := by
+      HasTPrivateScheme (Fin 4) 2 3 108 (Fin 8 → Bool) := by
   intro params
   have hC := (isCorrect_shamir (ι := Fin 4) params).toBlock (Fin 8)
   have hP := (isTPrivate_shamir (ι := Fin 4) params).toBlock (Fin 8)
@@ -86,7 +87,7 @@ example :
   have hclogA : Nat.clog 2 5 = 3 := by decide
   rw [threshold_zmodShamirParams] at hP
   refine ⟨hC, hP, ?_⟩
-  have hB := hC.hasTPrivateBlockScheme hP
+  have hB := hC.hasTPrivateScheme hP
   rw [Fintype.card_fin] at hB
   apply hB.mono
   rw [Fintype.card_fin, Fintype.card_fin, hcardQ, ZMod.card, hclogQ, hclogA] at hle
@@ -97,11 +98,8 @@ example :
 /-- Additive homomorphism `(b₁, b₂) ↦ b₁ + b₂` from `Bool × Bool` to `Bool` (`BooleanRing` XOR). -/
 private def xorPairHom : Bool × Bool →+ Bool where
   toFun p := p.1 + p.2
-  map_zero' := rfl
-  map_add' p q := by
-    rcases p with ⟨p₁, p₂⟩
-    rcases q with ⟨q₁, q₂⟩
-    cases p₁ <;> cases p₂ <;> cases q₁ <;> cases q₂ <;> rfl
+  map_zero' := add_zero false
+  map_add' p q := add_add_add_comm p.1 q.1 p.2 q.2
 
 /-- A two-server scheme on `Option (Fin 3)` whose server answers are `2`-bit pairs in `Bool × Bool`
 (`(parity + q 0, q 0)`), reconstructing via `xorPairHom (a false + a true)`. -/
@@ -121,12 +119,9 @@ private theorem isCorrect_pairedTwoServer : pairedTwoServer.IsCorrect := by
   change (((twoServer (Option (Fin 3))).answer true x (q true) + q true none) +
       ((twoServer (Option (Fin 3))).answer false x (q false) + q false none)) +
     (q true none + q false none) = x o
-  rw [← hbase]
-  generalize (twoServer (Option (Fin 3))).answer false x (q false) = a₀
-  generalize (twoServer (Option (Fin 3))).answer true x (q true) = a₁
-  generalize q false none = m₀
-  generalize q true none = m₁
-  cases a₀ <;> cases a₁ <;> cases m₀ <;> cases m₁ <;> rfl
+  rw [add_add_add_comm]
+  simp only [add_assoc, BooleanRing.add_self, add_zero]
+  rw [add_comm, hbase]
 
 private theorem isPrivate_pairedTwoServer : pairedTwoServer.IsPrivate := by
   rw [Scheme.isPrivate_iff]
@@ -196,11 +191,7 @@ private theorem isCorrect_threeServerXor (ι : Type) [Fintype ι] [DecidableEq �
     ← dotProduct_add]
   have hcancel : u.1 + u.2 + (u.1 + u.2 + Pi.single i true) = (Pi.single i true : ι → Bool) := by
     funext j
-    simp only [Pi.add_apply]
-    generalize (u.1 j) = b₀
-    generalize (u.2 j) = b₁
-    generalize (Pi.single i true : ι → Bool) j = e
-    cases b₀ <;> cases b₁ <;> cases e <;> rfl
+    simp only [Pi.add_apply, ← add_assoc, BooleanRing.add_self, zero_add]
   rw [hcancel]
   exact dotProduct_single_one x i
 
@@ -222,9 +213,8 @@ private theorem eval_coalitionQuery_threeServerXor {ι : Type} [Fintype ι] [Dec
         fin_cases s
         · rfl
         · rfl
-        · dsimp only [threeServerQuery]
-          simp only [add_zero, Prod.fst_add, Prod.snd_add, Pi.add_apply]
-          cases u.1 j <;> cases v.1 j <;> cases u.2 j <;> cases v.2 j <;> rfl }
+        · simp only [threeServerQuery, Prod.fst_add, Prod.snd_add, Pi.add_apply, Pi.zero_apply,
+            add_zero, add_add_add_comm] }
   have hnotAll : ¬ (∀ s : Fin 3, s ∈ T) := by
     intro hall
     have huniv : T = Finset.univ := Finset.eq_univ_iff_forall.mpr hall
@@ -243,15 +233,17 @@ private theorem eval_coalitionQuery_threeServerXor {ι : Type} [Fintype ι] [Dec
         · exact (hs rfl).elim
         · rfl
         · ext j
-          change (g 1 j + g 2 j) + g 1 j + 0 = g 2 j
-          cases g 1 j <;> cases g 2 j <;> rfl
+          simp only [threeServerQuery, Pi.add_apply, Pi.zero_apply, add_zero,
+            add_right_comm (g 1 j) (g 2 j) (g 1 j), BooleanRing.add_self, zero_add]
+          rfl
       · refine ⟨(g 0, g 0 + g 2), fun s hs => ?_⟩
         fin_cases s
         · rfl
         · exact (hs rfl).elim
         · ext j
-          change g 0 j + (g 0 j + g 2 j) + 0 = g 2 j
-          cases g 0 j <;> cases g 2 j <;> rfl
+          simp only [threeServerQuery, Pi.add_apply, Pi.zero_apply, add_zero, ← add_assoc,
+            BooleanRing.add_self, zero_add]
+          rfl
       · refine ⟨(g 0, g 1), fun s hs => ?_⟩
         fin_cases s
         · rfl
@@ -279,7 +271,7 @@ private theorem isTPrivate_threeServerXor (ι : Type) [Fintype ι] [DecidableEq 
 
 /-- Corollary 6: `N = 12 ≤ 3 * 4` blocks of `ℓ = 10` bits with `twoServer (Option (Fin 4))`
 (`|Q| = 32`, `⌈log₂ |Q|⌉ = 5`) uses `2 * (3 * 5 + 10) = 50` bits (vs. `120` bits for `1` server). -/
-example : HasBlockScheme (Fin 12) (Fin 10 → Bool) 2 50 := by
+example : HasScheme (Fin 12) 2 50 (Fin 10 → Bool) := by
   have h := hasBlockScheme_of_xorReconstruct (N := 12) (m := 3) (n := 4) (ℓ := 10)
     (isCorrect_twoServer (ι := Option (Fin 4)))
     (isPrivate_twoServer (ι := Option (Fin 4)))
@@ -292,12 +284,12 @@ example : HasBlockScheme (Fin 12) (Fin 10 → Bool) 2 50 := by
 
 /-- Genuine `t = 2` Corollary 6 (`hasTPrivateBlockScheme_of_xorReconstruct` on `threeServerXor`):
 `N = 12 ≤ 3 * 4` blocks of `ℓ = 10` bits with `3` servers and `2`-collusion privacy uses
-`3 * (3 * 5 + 10) = 75 < 120` bits (and downgrades cleanly to `HasBlockScheme` via
-`HasTPrivateBlockScheme.hasBlockScheme`). -/
+`3 * (3 * 5 + 10) = 75 < 120` bits (and downgrades cleanly to `HasScheme` via
+`HasTPrivateScheme.hasScheme`). -/
 example :
-    HasTPrivateBlockScheme (Fin 12) (Fin 10 → Bool) 2 3 75 ∧
-      HasBlockScheme (Fin 12) (Fin 10 → Bool) 3 75 := by
-  have h2 : HasTPrivateBlockScheme (Fin 12) (Fin 10 → Bool) 2 3 75 := by
+    HasTPrivateScheme (Fin 12) 2 3 75 (Fin 10 → Bool) ∧
+      HasScheme (Fin 12) 3 75 (Fin 10 → Bool) := by
+  have h2 : HasTPrivateScheme (Fin 12) 2 3 75 (Fin 10 → Bool) := by
     have h :=
       hasTPrivateBlockScheme_of_xorReconstruct (N := 12) (m := 3) (n := 4) (ℓ := 10) (t := 2)
         (isCorrect_threeServerXor (Option (Fin 4)))
@@ -308,20 +300,20 @@ example :
     have hclog : Nat.clog 2 32 = 5 := by decide
     rw [Fintype.card_fin, hcardQ, hclog] at h
     exact h
-  exact ⟨h2, h2.hasBlockScheme (by decide)⟩
+  exact ⟨h2, h2.hasScheme (by decide)⟩
 
 /-- Corollary 7: `n = 8 ≤ ℓ = 8` uses `4 * 8 = 32` bits with `2` servers (vs. `64` for `1`). -/
-example : HasBlockScheme (Fin 8) (Fin 8 → Bool) 2 32 :=
+example : HasScheme (Fin 8) 2 32 (Fin 8 → Bool) :=
   hasBlockScheme_two_of_le (n := 8) (ℓ := 8) le_rfl
 
 /-- Corollary 8 (`n ≤ (ℓ / 2) ^ 2`): `n = 16`, `ℓ = 8` uses `8 * 8 = 64` bits with `4` servers
 (vs. `128` for `1` server). -/
-example : HasBlockScheme (Fin 16) (Fin 8 → Bool) 4 64 :=
+example : HasScheme (Fin 16) 4 64 (Fin 8 → Bool) :=
   hasBlockScheme_four_of_le_half_sq (n := 16) (ℓ := 8) (by decide)
 
 /-- Corollary 8 (`n ≤ m ^ 2`, `2 * m ≤ ℓ`): for odd `ℓ = 9`, `n = 16 ≤ 4 * 4` and `2 * 4 ≤ 9` gives
 `8 * 9 = 72` bits with `4` servers (vs. `144` for `1` server). -/
-example : HasBlockScheme (Fin 16) (Fin 9 → Bool) 4 72 :=
+example : HasScheme (Fin 16) 4 72 (Fin 9 → Bool) :=
   hasBlockScheme_four_of_le_sq (n := 16) (m := 4) (ℓ := 9) (by decide) (by decide)
 
 end CslibFrontierTests.Crypto.PIRBlock

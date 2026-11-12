@@ -9,8 +9,9 @@ module
 
 public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
+public import CslibFrontier.Crypto.Protocols.PIR.SingleServer
 public import CslibFrontier.Languages.Probabilistic.Vector
-import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Foundations.Data.Nat.Clog
 
 /-!
 # Private block retrieval
@@ -19,16 +20,19 @@ import CslibFrontier.Languages.Probabilistic.Norm
 private information retrieval from single bits to databases of `n` blocks of `ℓ` bits each
 (`PIR_k(n, ℓ)`), hiding the block index `i` while amortizing communication across the block.
 
-* **Block schemes (`PIR.BlockScheme`).** `BlockScheme ι β S R Q A` retrieves an entire block
-  `x i : β` from `x : ι → β` replicated across servers `S`, with `IsCorrect`, `IsPrivate`,
-  `IsTPrivate`, restriction `comap`, and bit-scheme projection `toBitScheme` reducing full-coalition
-  and single-server `n · ℓ`-bit lower bounds (`BlockScheme.card_mul_le_communication_of_card_le`,
-  `BlockScheme.card_mul_le_communication`, attained by `PIR.blockDownload`) to single-bit PIR.
-* **Bit-to-block transformation (`Scheme.toBlock`, Proposition 4, Section 4.1).** Sending one query
-  of a single-bit scheme `P` and having each server answer once for every coordinate `b : κ` of the
-  `ℓ`-bit block (`κ → Bool`, `ℓ = |κ|`) multiplies only the server-to-user communication by `ℓ`
-  (`communication_toBlock_le`, `communication_toBlock_of_card_answer`), preserving `IsCorrect`,
-  `IsPrivate`, and `IsTPrivate`.
+In our one-round framework (`PIR.Basic`, `PIR.Collusion`, `PIR.SingleServer`), block schemes reuse
+`Scheme ι S R Q A β`, `HasScheme ι k c β`, `HasTPrivateScheme ι t k c β`, and `PIR.download ι β`
+directly by instantiating the payload type `β` with `κ → Bool` (`ℓ = |κ|`).
+
+* **Block-to-bit projection (`Scheme.toBitScheme`) and `n · ℓ` lower bounds.** Viewing a scheme for
+  `κ → Bool` blocks on `ι` as a single-bit scheme on `ι × κ` reduces full-coalition and
+  single-server `n · ℓ`-bit lower bounds (`Scheme.card_mul_le_communication_of_card_le`,
+  `Scheme.card_mul_le_communication`, attained by `PIR.download ι (κ → Bool)` in
+  `hasBlockScheme_one_iff`) directly to `PIR.Collusion` and `PIR.SingleServer`.
+* **Entry-to-block transformation (`Scheme.toBlock`, Proposition 4, Section 4.1).** Sending one
+  query of a scheme `P` and having each server answer once for every coordinate `b : κ` of the
+  block multiplies only the server-to-user communication by `|κ|` (`communication_toBlock_le`,
+  `communication_toBlock_of_card_answer`), preserving `IsCorrect`, `IsPrivate`, and `IsTPrivate`.
 * **Answer-compressing XOR-sum transformation (`Scheme.sumChunks`, Proposition 5, Section 4.1) and
   homomorphism reduction (`Scheme.mapAnswerHom`, Section 4.1, p. 12).** When a `PIR_k(n + 1, 1)`
   scheme (`Option ι`, with `none` as the dummy zero bit) reconstructs by XORing one-bit answers
@@ -50,14 +54,10 @@ private information retrieval from single bits to databases of `n` blocks of `�
 
 ## Main definitions
 
-* `Cslib.Crypto.Protocols.PIR.BlockScheme`,
-  `Cslib.Crypto.Protocols.PIR.HasBlockScheme`,
-  `Cslib.Crypto.Protocols.PIR.HasTPrivateBlockScheme`: one-round block PIR schemes and existence
-  predicates.
-* `Cslib.Crypto.Protocols.PIR.BlockScheme.toBitScheme`: view an `ℓ`-bit block scheme on `ι` as a
+* `Cslib.Crypto.Protocols.PIR.Scheme.toBitScheme`: view an `ℓ`-bit block scheme on `ι` as a
   single-bit scheme on `ι × κ`.
-* `Cslib.Crypto.Protocols.PIR.blockDownload`: single-server whole-database block download.
-* `Cslib.Crypto.Protocols.PIR.Scheme.toBlock`: Proposition 4's bit-to-block transformation.
+* `Cslib.Crypto.Protocols.PIR.Scheme.toBlock`: Proposition 4's coordinatewise block-lifting
+  transformation.
 * `Cslib.Crypto.Protocols.PIR.Scheme.HasXorReconstruct`,
   `Cslib.Crypto.Protocols.PIR.Scheme.mapAnswerHom`,
   `Cslib.Crypto.Protocols.PIR.Scheme.sumChunks`: Proposition 5's XOR-sum predicate, group
@@ -65,10 +65,10 @@ private information retrieval from single bits to databases of `n` blocks of `�
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.PIR.BlockScheme.card_mul_le_communication_of_card_le`,
-  `Cslib.Crypto.Protocols.PIR.BlockScheme.card_mul_le_communication`,
-  `Cslib.Crypto.Protocols.PIR.HasTPrivateBlockScheme.card_mul_le_of_le`,
-  `Cslib.Crypto.Protocols.PIR.HasBlockScheme.card_mul_le`,
+* `Cslib.Crypto.Protocols.PIR.Scheme.card_mul_le_communication_of_card_le`,
+  `Cslib.Crypto.Protocols.PIR.Scheme.card_mul_le_communication`,
+  `Cslib.Crypto.Protocols.PIR.HasTPrivateScheme.card_mul_le_of_le`,
+  `Cslib.Crypto.Protocols.PIR.HasScheme.card_mul_le`,
   `Cslib.Crypto.Protocols.PIR.hasBlockScheme_one_iff`: full-coalition and single-server block
   retrieval require `|ι| * |κ|` bits.
 * `Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.toBlock`,
@@ -91,7 +91,7 @@ private information retrieval from single bits to databases of `n` blocks of `�
 
 * [B. Chor, O. Goldreich, E. Kushilevitz, M. Sudan, *Private information
   retrieval*][ChorGoldreichKushilevitzSudan1998], Section 4 (Propositions 4 and 5, Corollaries
-  6, 7 and 8); numbering of the authors' journal version of April 21, 1998
+  6, 7 and 8, pp. 11–13); numbering of the authors' journal version of April 21, 1998
 -/
 
 public section
@@ -100,218 +100,50 @@ namespace Cslib.Crypto.Protocols.PIR
 
 open Probability
 
-/-! ### Block PIR schemes -/
-
-/-- A one-round private block retrieval scheme for databases `x : ι → β` of blocks in `β` held by
-servers `S`, with user state `R`, queries `Q` and answers `A`
-[CGKS, Section 4][ChorGoldreichKushilevitzSudan1998]. -/
-structure BlockScheme (ι β S R Q A : Type) where
-  /-- The user's query generator: for the block index `i`, a retained state and server queries. -/
-  query : ι → ProbComp (R × (S → Q))
-  /-- The answer of server `s`, holding the block database `x`, to a query. -/
-  answer : S → (ι → β) → Q → A
-  /-- The user's reconstruction of the block `x i` from the retained state and the answers. -/
-  reconstruct : ι → R → (S → A) → β
-
-namespace BlockScheme
-
-variable {ι β S R Q A : Type}
-
-section Defs
-
-variable (P : BlockScheme ι β S R Q A)
-
-/-- The user's output block on database `x` and block index `i`. -/
-def run (x : ι → β) (i : ι) : ProbComp β := do
-  let (r, q) ← P.query i
-  pure (P.reconstruct i r fun s => P.answer s x (q s))
-
-/-- The query received by server `s` when the user requests block `i`. -/
-def serverQuery (s : S) (i : ι) : ProbComp Q :=
-  (fun (_, q) => q s) <$> P.query i
-
-/-- The joint query marginal received by a coalition `T : Finset S` on block index `i`. -/
-def coalitionQuery (T : Finset S) (i : ι) : ProbComp (T → Q) :=
-  (fun (_, q) (s : T) => q s) <$> P.query i
-
-/-- Perfect correctness: on every block database `x` and index `i`, the user recovers `x i` with
-probability one. -/
-def IsCorrect : Prop :=
-  ∀ x i, ProbComp.eval (P.run x i) = PMF.pure (x i)
-
-/-- Perfect single-server privacy: each server's query law is independent of the block index `i`. -/
-def IsPrivate : Prop :=
-  ∀ s i i', ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i')
-
-/-- Perfect `t`-privacy for block retrieval: every coalition of at most `t` servers sees an
-index-independent joint query distribution. -/
-def IsTPrivate (t : ℕ) : Prop :=
-  ∀ T : Finset S, T.card ≤ t → ∀ i i',
-    ProbComp.eval (P.coalitionQuery T i) = ProbComp.eval (P.coalitionQuery T i')
-
-theorem serverQuery_eq (s : S) (i : ι) :
-    P.serverQuery s i = (fun (_, q) => q s) <$> P.query i := by
-  rw [serverQuery]
-
-theorem coalitionQuery_eq (T : Finset S) (i : ι) :
-    P.coalitionQuery T i = (fun (_, q) (s : T) => q s) <$> P.query i := by
-  rw [coalitionQuery]
-
-theorem eval_run (x : ι → β) (i : ι) :
-    ProbComp.eval (P.run x i) =
-      (ProbComp.eval (P.query i)).map
-        (fun rq => P.reconstruct i rq.1 fun s => P.answer s x (rq.2 s)) := by
-  rw [run, ProbComp.eval_bind]
-  rfl
-
-theorem eval_serverQuery (s : S) (i : ι) :
-    ProbComp.eval (P.serverQuery s i) = (ProbComp.eval (P.query i)).map (fun rq => rq.2 s) := by
-  rw [serverQuery, ProbComp.eval_map]
-
-theorem eval_coalitionQuery (T : Finset S) (i : ι) :
-    ProbComp.eval (P.coalitionQuery T i) =
-      (ProbComp.eval (P.query i)).map (fun (_, q) (s : T) => q s) := by
-  rw [coalitionQuery, ProbComp.eval_map]
-
-theorem isPrivate_iff :
-    P.IsPrivate ↔
-      ∀ s i i', ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i') := by
-  rw [IsPrivate]
-
-theorem isTPrivate_iff (t : ℕ) :
-    P.IsTPrivate t ↔ ∀ T : Finset S, T.card ≤ t → ∀ i i',
-      ProbComp.eval (P.coalitionQuery T i) = ProbComp.eval (P.coalitionQuery T i') := by
-  rw [IsTPrivate]
-
-theorem isCorrect_iff :
-    P.IsCorrect ↔ ∀ x i r q, (r, q) ∈ (ProbComp.eval (P.query i)).support →
-      P.reconstruct i r (fun s => P.answer s x (q s)) = x i := by
-  refine forall_congr' fun x => forall_congr' fun i => ⟨fun h r q hrq => ?_, fun h => ?_⟩
-  · have hsupp := congrArg PMF.support ((P.eval_run x i).symm.trans h)
-    rw [PMF.support_map, PMF.support_pure] at hsupp
-    exact Set.mem_singleton_iff.mp ((Set.ext_iff.mp hsupp _).mp (Set.mem_image_of_mem _ hrq))
-  · rw [eval_run, Cslib.Probability.PMF.map_congr_on_support _ _ (Function.const _ (x i))
-      fun rq hrq => h rq.1 rq.2 hrq, PMF.map_const]
-
-end Defs
-
-variable {P : BlockScheme ι β S R Q A}
-
-theorem IsCorrect.reconstruct_eq (h : P.IsCorrect) (x : ι → β) (i : ι) {r : R} {q : S → Q}
-    (hrq : (r, q) ∈ (ProbComp.eval (P.query i)).support) :
-    P.reconstruct i r (fun s => P.answer s x (q s)) = x i :=
-  P.isCorrect_iff.mp h x i r q hrq
-
-theorem IsPrivate.eval_serverQuery_eq (h : P.IsPrivate) (s : S) (i i' : ι) :
-    ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i') :=
-  h s i i'
-
-theorem IsTPrivate.eval_coalitionQuery_eq {t : ℕ} (h : P.IsTPrivate t) (T : Finset S)
-    (hT : T.card ≤ t) (i i' : ι) :
-    ProbComp.eval (P.coalitionQuery T i) = ProbComp.eval (P.coalitionQuery T i') :=
-  h T hT i i'
-
-private def queryScheme (P : BlockScheme ι β S R Q A) : Scheme ι S R Q Unit where
-  query := P.query
-  answer _ _ _ := ()
-  reconstruct _ _ _ := false
-
-private theorem isTPrivate_iff_queryScheme (P : BlockScheme ι β S R Q A) (t : ℕ) :
-    P.IsTPrivate t ↔ (queryScheme P).IsTPrivate t := by
-  simp only [isTPrivate_iff, Scheme.isTPrivate_iff, eval_coalitionQuery, Scheme.eval_coalitionQuery,
-    queryScheme]
-
-private theorem isPrivate_iff_queryScheme (P : BlockScheme ι β S R Q A) :
-    P.IsPrivate ↔ (queryScheme P).IsPrivate := by
-  simp only [isPrivate_iff, Scheme.isPrivate_iff, eval_serverQuery, Scheme.eval_serverQuery,
-    queryScheme]
-
-/-- Every block scheme is `0`-private. -/
-theorem isTPrivate_zero (P : BlockScheme ι β S R Q A) : P.IsTPrivate 0 :=
-  (isTPrivate_iff_queryScheme P 0).mpr (queryScheme P).isTPrivate_zero
-
-theorem IsTPrivate.mono {t₁ t₂ : ℕ} (hle : t₁ ≤ t₂) (h : P.IsTPrivate t₂) : P.IsTPrivate t₁ :=
-  fun T hT => h T (hT.trans hle)
-
-/-- `1`-privacy for block schemes agrees with `IsPrivate`. -/
-theorem isTPrivate_one_iff : P.IsTPrivate 1 ↔ P.IsPrivate := by
-  rw [isTPrivate_iff_queryScheme, isPrivate_iff_queryScheme, Scheme.isTPrivate_one_iff]
-
-theorem IsTPrivate.isPrivate {t : ℕ} (ht : 1 ≤ t) (h : P.IsTPrivate t) : P.IsPrivate :=
-  isTPrivate_one_iff.mp (h.mono ht)
-
-/-- Restrict a block scheme along an embedding `e : ι ↪ ι'`, padding outside `e` with `pad`. -/
-noncomputable def comap {ι' : Type} (P : BlockScheme ι' β S R Q A) (e : ι ↪ ι') (pad : β) :
-    BlockScheme ι β S R Q A where
-  query i := P.query (e i)
-  answer s x q := P.answer s (Function.extend e x fun _ => pad) q
-  reconstruct i r a := P.reconstruct (e i) r a
-
-theorem query_comap {ι' : Type} (P : BlockScheme ι' β S R Q A) (e : ι ↪ ι') (pad : β) (i : ι) :
-    (P.comap e pad).query i = P.query (e i) := by
-  rfl
-
-theorem serverQuery_comap {ι' : Type} (P : BlockScheme ι' β S R Q A) (e : ι ↪ ι') (pad : β)
-    (s : S) (i : ι) : (P.comap e pad).serverQuery s i = P.serverQuery s (e i) := by
-  rw [serverQuery_eq, query_comap, serverQuery_eq]
-
-theorem coalitionQuery_comap {ι' : Type} (P : BlockScheme ι' β S R Q A) (e : ι ↪ ι') (pad : β)
-    (T : Finset S) (i : ι) : (P.comap e pad).coalitionQuery T i = P.coalitionQuery T (e i) := by
-  rw [coalitionQuery_eq, query_comap, coalitionQuery_eq]
-
-theorem IsCorrect.comap {ι' : Type} {P : BlockScheme ι' β S R Q A} (h : P.IsCorrect)
-    (e : ι ↪ ι') (pad : β) : (P.comap e pad).IsCorrect := fun x i => by
-  have := h (Function.extend e x fun _ => pad) (e i)
-  rwa [e.injective.extend_apply] at this
-
-theorem IsPrivate.comap {ι' : Type} {P : BlockScheme ι' β S R Q A} (h : P.IsPrivate)
-    (e : ι ↪ ι') (pad : β) : (P.comap e pad).IsPrivate :=
-  fun s i i' => h s (e i) (e i')
-
-theorem IsTPrivate.comap {ι' : Type} {P : BlockScheme ι' β S R Q A} {t : ℕ} (h : P.IsTPrivate t)
-    (e : ι ↪ ι') (pad : β) : (P.comap e pad).IsTPrivate t :=
-  fun T hT i i' => h T hT (e i) (e i')
-
 /-! ### Reduction of block lower bounds to single-bit PIR -/
+
+namespace Scheme
+
+variable {ι S R Q A β : Type}
 
 /-- View a block scheme retrieving `κ → Bool` blocks as a single-bit scheme on `ι × κ` that sends
 the block query for `ib.1` and extracts bit `ib.2` from the reconstructed block. -/
-def toBitScheme {κ : Type} (P : BlockScheme ι (κ → Bool) S R Q A) :
+def toBitScheme {κ : Type} (P : Scheme ι S R Q A (κ → Bool)) :
     Scheme (ι × κ) S R Q A where
   query ib := P.query ib.1
   answer s x q := P.answer s (fun i b => x (i, b)) q
   reconstruct ib r a := P.reconstruct ib.1 r a ib.2
 
-theorem query_toBitScheme {κ : Type} (P : BlockScheme ι (κ → Bool) S R Q A) (ib : ι × κ) :
+theorem query_toBitScheme {κ : Type} (P : Scheme ι S R Q A (κ → Bool)) (ib : ι × κ) :
     P.toBitScheme.query ib = P.query ib.1 := by
   rfl
 
-theorem coalitionQuery_toBitScheme {κ : Type} (P : BlockScheme ι (κ → Bool) S R Q A)
+theorem coalitionQuery_toBitScheme {κ : Type} (P : Scheme ι S R Q A (κ → Bool))
     (T : Finset S) (ib : ι × κ) :
     P.toBitScheme.coalitionQuery T ib = P.coalitionQuery T ib.1 := by
-  rw [Scheme.coalitionQuery_eq, query_toBitScheme, coalitionQuery_eq]
+  rw [Scheme.coalitionQuery_eq, query_toBitScheme, Scheme.coalitionQuery_eq]
 
-theorem IsCorrect.toBitScheme {κ : Type} {P : BlockScheme ι (κ → Bool) S R Q A}
+theorem IsCorrect.toBitScheme {κ : Type} {P : Scheme ι S R Q A (κ → Bool)}
     (h : P.IsCorrect) : P.toBitScheme.IsCorrect := by
   rw [Scheme.isCorrect_iff]
   intro x ib r q hrq
   exact congrFun (h.reconstruct_eq (fun i b => x (i, b)) ib.1 hrq) ib.2
 
-theorem IsTPrivate.toBitScheme {κ : Type} {P : BlockScheme ι (κ → Bool) S R Q A} {t : ℕ}
+theorem IsTPrivate.toBitScheme {κ : Type} {P : Scheme ι S R Q A (κ → Bool)} {t : ℕ}
     (h : P.IsTPrivate t) : P.toBitScheme.IsTPrivate t := by
   rw [Scheme.isTPrivate_iff]
   intro T hT ib ib'
   rw [coalitionQuery_toBitScheme, coalitionQuery_toBitScheme]
   exact h.eval_coalitionQuery_eq T hT ib.1 ib'.1
 
-theorem IsPrivate.toBitScheme {κ : Type} {P : BlockScheme ι (κ → Bool) S R Q A}
+theorem IsPrivate.toBitScheme {κ : Type} {P : Scheme ι S R Q A (κ → Bool)}
     (h : P.IsPrivate) : P.toBitScheme.IsPrivate :=
-  Scheme.isTPrivate_one_iff.mp ((isTPrivate_one_iff.mpr h).toBitScheme)
+  Scheme.isTPrivate_one_iff.mp ((Scheme.isTPrivate_one_iff.mpr h).toBitScheme)
 
 /-- Full-coalition (`|S| ≤ t`) private block retrieval of `|ι|` blocks of `|κ|` bits requires at
 least `|ι| * |κ|` bits of communication. -/
 theorem card_mul_le_communication_of_card_le {κ : Type} [Fintype S] [Fintype ι] [Fintype κ]
-    [Fintype Q] [Fintype A] {P : BlockScheme ι (κ → Bool) S R Q A} {t : ℕ}
+    [Fintype Q] [Fintype A] {P : Scheme ι S R Q A (κ → Bool)} {t : ℕ}
     (hcorrect : P.IsCorrect) (hprivate : P.IsTPrivate t) (hcard : Fintype.card S ≤ t) :
     Fintype.card ι * Fintype.card κ ≤ communication S Q A := by
   simpa only [Fintype.card_prod] using
@@ -320,120 +152,45 @@ theorem card_mul_le_communication_of_card_le {κ : Type} [Fintype S] [Fintype ι
 /-- One-server private block retrieval of `|ι|` blocks of `|κ|` bits requires at least `|ι| * |κ|`
 bits of communication. -/
 theorem card_mul_le_communication {κ : Type} [Fintype S] [Unique S] [Fintype ι] [Fintype κ]
-    [Fintype Q] [Fintype A] {P : BlockScheme ι (κ → Bool) S R Q A}
+    [Fintype Q] [Fintype A] {P : Scheme ι S R Q A (κ → Bool)}
     (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
     Fintype.card ι * Fintype.card κ ≤ communication S Q A :=
   card_mul_le_communication_of_card_le hcorrect (isTPrivate_one_iff.mpr hprivate)
     (by simp [Fintype.card_unique])
 
-end BlockScheme
-
-/-- The trivial one-server block scheme sending the entire database `ι → β`. -/
-def blockDownload (ι β : Type) : BlockScheme ι β Unit Unit Unit (ι → β) where
-  query _ := pure ((), fun _ => ())
-  answer _ x _ := x
-  reconstruct i _ a := a () i
-
-theorem isCorrect_blockDownload (ι β : Type) : (blockDownload ι β).IsCorrect :=
-  (blockDownload ι β).isCorrect_iff.mpr fun _ _ _ _ _ => rfl
-
-theorem isPrivate_blockDownload (ι β : Type) : (blockDownload ι β).IsPrivate :=
-  fun _ _ _ => rfl
-
-/-- Some `k`-server block scheme for `ι → β` is perfectly correct, perfectly private, and
-communicates at most `c` bits. -/
-def HasBlockScheme (ι β : Type) (k c : ℕ) : Prop :=
-  ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : BlockScheme ι β S R Q A),
-    P.IsCorrect ∧ P.IsPrivate ∧ Fintype.card S = k ∧ communication S Q A ≤ c
-
-/-- Some `k`-server block scheme for `ι → β` is perfectly correct, perfectly `t`-private, and
-communicates at most `c` bits. -/
-def HasTPrivateBlockScheme (ι β : Type) (t k c : ℕ) : Prop :=
-  ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : BlockScheme ι β S R Q A),
-    P.IsCorrect ∧ P.IsTPrivate t ∧ Fintype.card S = k ∧ communication S Q A ≤ c
-
-theorem BlockScheme.IsCorrect.hasBlockScheme {ι β S R Q A : Type} [Fintype S] [Fintype Q]
-    [Fintype A] {P : BlockScheme ι β S R Q A} (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
-    HasBlockScheme ι β (Fintype.card S) (communication S Q A) :=
-  ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, rfl, le_rfl⟩
-
-theorem BlockScheme.IsCorrect.hasTPrivateBlockScheme {ι β S R Q A : Type} [Fintype S] [Fintype Q]
-    [Fintype A] {P : BlockScheme ι β S R Q A} {t : ℕ}
-    (hcorrect : P.IsCorrect) (hprivate : P.IsTPrivate t) :
-    HasTPrivateBlockScheme ι β t (Fintype.card S) (communication S Q A) :=
-  ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, rfl, le_rfl⟩
-
-theorem HasBlockScheme.mono {ι β : Type} {k c c' : ℕ} (h : HasBlockScheme ι β k c) (hc : c ≤ c') :
-    HasBlockScheme ι β k c' := by
-  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := h
-  exact ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm.trans hc⟩
-
-theorem HasTPrivateBlockScheme.mono {ι β : Type} {t k c c' : ℕ}
-    (h : HasTPrivateBlockScheme ι β t k c) (hc : c ≤ c') :
-    HasTPrivateBlockScheme ι β t k c' := by
-  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := h
-  exact ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm.trans hc⟩
-
-theorem HasTPrivateBlockScheme.mono_threshold {ι β : Type} {t₁ t₂ k c : ℕ} (ht : t₁ ≤ t₂)
-    (h : HasTPrivateBlockScheme ι β t₂ k c) :
-    HasTPrivateBlockScheme ι β t₁ k c := by
-  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := h
-  exact ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate.mono ht, hk, hcomm⟩
-
-theorem hasBlockScheme_iff {ι β : Type} {k c : ℕ} :
-    HasBlockScheme ι β k c ↔
-      ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A)
-        (P : BlockScheme ι β S R Q A),
-        P.IsCorrect ∧ P.IsPrivate ∧ Fintype.card S = k ∧ communication S Q A ≤ c := by
-  rw [HasBlockScheme]
-
-theorem hasTPrivateBlockScheme_iff {ι β : Type} {t k c : ℕ} :
-    HasTPrivateBlockScheme ι β t k c ↔
-      ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A)
-        (P : BlockScheme ι β S R Q A),
-        P.IsCorrect ∧ P.IsTPrivate t ∧ Fintype.card S = k ∧ communication S Q A ≤ c := by
-  rw [HasTPrivateBlockScheme]
-
-theorem hasTPrivateBlockScheme_one_iff {ι β : Type} {k c : ℕ} :
-    HasTPrivateBlockScheme ι β 1 k c ↔ HasBlockScheme ι β k c := by
-  simp only [hasTPrivateBlockScheme_iff, hasBlockScheme_iff, BlockScheme.isTPrivate_one_iff]
-
-theorem HasTPrivateBlockScheme.hasBlockScheme {ι β : Type} {t k c : ℕ} (ht : 1 ≤ t)
-    (h : HasTPrivateBlockScheme ι β t k c) : HasBlockScheme ι β k c :=
-  hasTPrivateBlockScheme_one_iff.mp (h.mono_threshold ht)
+end Scheme
 
 /-- Every `t`-private block scheme for `κ → Bool` blocks induces a `t`-private single-bit scheme on
 `ι × κ` with the same server count and communication bound. -/
-theorem HasTPrivateBlockScheme.hasTPrivateScheme {ι κ : Type} {t k c : ℕ}
-    (h : HasTPrivateBlockScheme ι (κ → Bool) t k c) :
+theorem HasTPrivateScheme.toBitScheme {ι κ : Type} {t k c : ℕ}
+    (h : HasTPrivateScheme ι t k c (κ → Bool)) :
     HasTPrivateScheme (ι × κ) t k c := by
-  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := h
+  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := hasTPrivateScheme_iff.mp h
   exact hasTPrivateScheme_iff.mpr
     ⟨S, R, Q, A, _, _, _, P.toBitScheme, hcorrect.toBitScheme, hprivate.toBitScheme, hk, hcomm⟩
 
 /-- Every block scheme for `κ → Bool` blocks induces a single-bit scheme on `ι × κ` with the same
 server count and communication bound. -/
-theorem HasBlockScheme.hasScheme {ι κ : Type} {k c : ℕ}
-    (h : HasBlockScheme ι (κ → Bool) k c) : HasScheme (ι × κ) k c :=
-  hasTPrivateScheme_one_iff.mp (hasTPrivateBlockScheme_one_iff.mpr h).hasTPrivateScheme
+theorem HasScheme.toBitScheme {ι κ : Type} {k c : ℕ}
+    (h : HasScheme ι k c (κ → Bool)) : HasScheme (ι × κ) k c :=
+  hasTPrivateScheme_one_iff.mp (hasTPrivateScheme_one_iff.mpr h).toBitScheme
 
-theorem HasTPrivateBlockScheme.card_mul_le_of_le {ι κ : Type} [Fintype ι] [Fintype κ] {t k c : ℕ}
-    (h : HasTPrivateBlockScheme ι (κ → Bool) t k c) (hkt : k ≤ t) :
+theorem HasTPrivateScheme.card_mul_le_of_le {ι κ : Type} [Fintype ι] [Fintype κ] {t k c : ℕ}
+    (h : HasTPrivateScheme ι t k c (κ → Bool)) (hkt : k ≤ t) :
     Fintype.card ι * Fintype.card κ ≤ c := by
-  simpa only [Fintype.card_prod] using h.hasTPrivateScheme.card_le_of_le hkt
+  simpa only [Fintype.card_prod] using h.toBitScheme.card_le_of_le hkt
 
-theorem HasBlockScheme.card_mul_le {ι κ : Type} [Fintype ι] [Fintype κ] {c : ℕ}
-    (h : HasBlockScheme ι (κ → Bool) 1 c) :
+theorem HasScheme.card_mul_le {ι κ : Type} [Fintype ι] [Fintype κ] {c : ℕ}
+    (h : HasScheme ι 1 c (κ → Bool)) :
     Fintype.card ι * Fintype.card κ ≤ c :=
-  (hasTPrivateBlockScheme_one_iff.mpr h).card_mul_le_of_le le_rfl
+  (hasTPrivateScheme_one_iff.mpr h).card_mul_le_of_le le_rfl
 
-/-- **One-server block retrieval needs exactly `|ι| * |κ|` bits.** -/
+/-- **One-server block retrieval needs exactly `|ι| * |κ|` bits**, attained by `PIR.download`. -/
 theorem hasBlockScheme_one_iff (ι κ : Type) [Fintype ι] [Fintype κ] (c : ℕ) :
-    HasBlockScheme ι (κ → Bool) 1 c ↔ Fintype.card ι * Fintype.card κ ≤ c := by
+    HasScheme ι 1 c (κ → Bool) ↔ Fintype.card ι * Fintype.card κ ≤ c := by
   classical
-  refine ⟨HasBlockScheme.card_mul_le, fun hc => ?_⟩
-  have hdl := (isCorrect_blockDownload ι (κ → Bool)).hasBlockScheme
-    (isPrivate_blockDownload ι (κ → Bool))
+  refine ⟨HasScheme.card_mul_le, fun hc => ?_⟩
+  have hdl := (isCorrect_download ι (κ → Bool)).hasScheme (isPrivate_download ι (κ → Bool))
   rw [Fintype.card_unit,
     communication_of_card_answer Unit Unit (ι → κ → Bool)
       (by rw [Fintype.card_fun, Fintype.card_fun, Fintype.card_bool, ← pow_mul,
@@ -441,49 +198,49 @@ theorem hasBlockScheme_one_iff (ι κ : Type) [Fintype ι] [Fintype κ] (c : ℕ
     Fintype.card_unit, Nat.clog_one_right, zero_add, one_mul] at hdl
   exact hdl.mono hc
 
-/-! ### Proposition 4: single-bit PIR to `ℓ`-bit block PIR -/
+/-! ### Proposition 4: single-entry PIR to `κ`-coordinate block PIR -/
 
 namespace Scheme
 
-variable {ι S R Q A : Type}
+variable {ι S R Q A β : Type}
 
 /-- **Proposition 4** [CGKS, Section 4.1, p. 11][ChorGoldreichKushilevitzSudan1998]: lift a
-single-bit scheme `P` to retrieve `κ`-indexed blocks `κ → Bool` by sending one query of `P` for
-the block index `i` and answering it once for each bit coordinate `b : κ` of the block. -/
-def toBlock (κ : Type) (P : Scheme ι S R Q A) : BlockScheme ι (κ → Bool) S R Q (κ → A) where
+scheme `P` to retrieve `κ`-indexed blocks `κ → β` by sending one query of `P` for the block index
+`i` and answering it once for each coordinate `b : κ` of the block. -/
+def toBlock (κ : Type) (P : Scheme ι S R Q A β) : Scheme ι S R Q (κ → A) (κ → β) where
   query i := P.query i
   answer s x q b := P.answer s (fun i' => x i' b) q
   reconstruct i r a b := P.reconstruct i r (fun s => a s b)
 
-theorem query_toBlock (κ : Type) (P : Scheme ι S R Q A) (i : ι) :
+theorem query_toBlock (κ : Type) (P : Scheme ι S R Q A β) (i : ι) :
     (P.toBlock κ).query i = P.query i := by
   rfl
 
-theorem eval_serverQuery_toBlock (κ : Type) (P : Scheme ι S R Q A) (s : S) (i : ι) :
-    ProbComp.eval ((P.toBlock κ).serverQuery s i) = ProbComp.eval (P.serverQuery s i) := by
-  rw [BlockScheme.eval_serverQuery, query_toBlock, ← P.eval_serverQuery]
+theorem serverQuery_toBlock (κ : Type) (P : Scheme ι S R Q A β) (s : S) (i : ι) :
+    (P.toBlock κ).serverQuery s i = P.serverQuery s i := by
+  rw [Scheme.serverQuery_eq, query_toBlock, Scheme.serverQuery_eq]
 
-theorem coalitionQuery_toBlock (κ : Type) (P : Scheme ι S R Q A) (T : Finset S) (i : ι) :
+theorem coalitionQuery_toBlock (κ : Type) (P : Scheme ι S R Q A β) (T : Finset S) (i : ι) :
     (P.toBlock κ).coalitionQuery T i = P.coalitionQuery T i := by
-  rw [BlockScheme.coalitionQuery_eq, query_toBlock, P.coalitionQuery_eq]
+  rw [Scheme.coalitionQuery_eq, query_toBlock, P.coalitionQuery_eq]
 
-theorem IsCorrect.toBlock (κ : Type) {P : Scheme ι S R Q A} (h : P.IsCorrect) :
+theorem IsCorrect.toBlock (κ : Type) {P : Scheme ι S R Q A β} (h : P.IsCorrect) :
     (P.toBlock κ).IsCorrect := by
-  rw [BlockScheme.isCorrect_iff]
+  rw [Scheme.isCorrect_iff]
   intro x i r q hrq
   funext b
   exact h.reconstruct_eq (fun i' => x i' b) i hrq
 
-theorem IsPrivate.toBlock (κ : Type) {P : Scheme ι S R Q A} (h : P.IsPrivate) :
+theorem IsPrivate.toBlock (κ : Type) {P : Scheme ι S R Q A β} (h : P.IsPrivate) :
     (P.toBlock κ).IsPrivate := by
-  rw [BlockScheme.isPrivate_iff]
+  rw [Scheme.isPrivate_iff]
   intro s i i'
-  rw [eval_serverQuery_toBlock, eval_serverQuery_toBlock]
+  rw [serverQuery_toBlock, serverQuery_toBlock]
   exact h.eval_serverQuery_eq s i i'
 
-theorem IsTPrivate.toBlock (κ : Type) {P : Scheme ι S R Q A} {t : ℕ} (h : P.IsTPrivate t) :
+theorem IsTPrivate.toBlock (κ : Type) {P : Scheme ι S R Q A β} {t : ℕ} (h : P.IsTPrivate t) :
     (P.toBlock κ).IsTPrivate t := by
-  rw [BlockScheme.isTPrivate_iff]
+  rw [Scheme.isTPrivate_iff]
   intro T hT i i'
   rw [coalitionQuery_toBlock, coalitionQuery_toBlock]
   exact h.eval_coalitionQuery_eq T hT i i'
@@ -646,7 +403,7 @@ theorem communication_toBlock_le (S Q A κ : Type) [Fintype S] [Fintype Q] [Fint
       Fintype.card S *
         (Nat.clog 2 (Fintype.card Q) + Fintype.card κ * Nat.clog 2 (Fintype.card A)) := by
   rw [communication_eq, Fintype.card_fun]
-  have hA := clog_pow_le_mul (Fintype.card κ) (Fintype.card A)
+  have hA := Nat.clog_pow_le_mul 2 (Fintype.card A) (Fintype.card κ)
   nlinarith
 
 /-- Proposition 4 multiplies `b`-bit server answers (`|A| = 2 ^ b`) by `|κ|`. -/
@@ -663,7 +420,7 @@ theorem communication_sumChunks_le (S Q : Type) [Fintype S] [Fintype Q] (m : ℕ
       Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + 1) := by
   rw [communication_eq, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool,
     Nat.clog_eq_one le_rfl le_rfl]
-  have hQ := clog_pow_le_mul m (Fintype.card Q)
+  have hQ := Nat.clog_pow_le_mul 2 (Fintype.card Q) m
   nlinarith
 
 /-- **`t`-private Corollary 6** [CGKS, Section 4.1, p. 13][ChorGoldreichKushilevitzSudan1998]:
@@ -673,15 +430,15 @@ theorem hasTPrivateBlockScheme_of_xorReconstruct {S R Q : Type} [Fintype S] [Fin
     {n m N ℓ t : ℕ} {P : Scheme (Option (Fin n)) S R Q Bool}
     (hcorrect : P.IsCorrect) (hprivate : P.IsTPrivate t) (hxor : P.HasXorReconstruct)
     (hN : N ≤ m * n) :
-    HasTPrivateBlockScheme (Fin N) (Fin ℓ → Bool) t (Fintype.card S)
-      (Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + ℓ)) := by
+    HasTPrivateScheme (Fin N) t (Fintype.card S)
+      (Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + ℓ)) (Fin ℓ → Bool) := by
   let e : Fin N ↪ Fin m × Fin n := (Fin.castLEEmb hN).trans finProdFinEquiv.symm.toEmbedding
   have hB := (((hcorrect.sumChunks m hxor).toBlock (Fin ℓ)).comap e
-    (fun _ => false)).hasTPrivateBlockScheme
+    (fun _ => false)).hasTPrivateScheme
     (((hprivate.sumChunks m).toBlock (Fin ℓ)).comap e (fun _ => false))
   refine hB.mono ?_
   rw [communication_rows, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin]
-  have hQ := clog_pow_le_mul m (Fintype.card Q)
+  have hQ := Nat.clog_pow_le_mul 2 (Fintype.card Q) m
   nlinarith
 
 /-- **Corollary 6** [CGKS, Section 4.1, p. 13][ChorGoldreichKushilevitzSudan1998]: combining
@@ -692,9 +449,9 @@ theorem hasBlockScheme_of_xorReconstruct {S R Q : Type} [Fintype S] [Fintype Q]
     {n m N ℓ : ℕ} {P : Scheme (Option (Fin n)) S R Q Bool}
     (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) (hxor : P.HasXorReconstruct)
     (hN : N ≤ m * n) :
-    HasBlockScheme (Fin N) (Fin ℓ → Bool) (Fintype.card S)
-      (Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + ℓ)) :=
-  hasTPrivateBlockScheme_one_iff.mp
+    HasScheme (Fin N) (Fintype.card S)
+      (Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + ℓ)) (Fin ℓ → Bool) :=
+  hasTPrivateScheme_one_iff.mp
     (hasTPrivateBlockScheme_of_xorReconstruct hcorrect (Scheme.isTPrivate_one_iff.mpr hprivate)
       hxor hN)
 
@@ -702,8 +459,8 @@ theorem hasBlockScheme_of_xorReconstruct {S R Q : Type} [Fintype S] [Fintype Q]
 two servers retrieve an `ℓ`-bit block from `n` blocks with at most `4 * ℓ` bits of communication
 (a constant factor of `4` over the block length). -/
 theorem hasBlockScheme_two_of_le {n ℓ : ℕ} (h : n ≤ ℓ) :
-    HasBlockScheme (Fin n) (Fin ℓ → Bool) 2 (4 * ℓ) := by
-  have hB := ((isCorrect_twoServer (ι := Fin n)).toBlock (Fin ℓ)).hasBlockScheme
+    HasScheme (Fin n) 2 (4 * ℓ) (Fin ℓ → Bool) := by
+  have hB := ((isCorrect_twoServer (ι := Fin n)).toBlock (Fin ℓ)).hasScheme
     ((isPrivate_twoServer (ι := Fin n)).toBlock (Fin ℓ))
   rw [Fintype.card_bool, communication_twoServer_rows, Fintype.card_fin, Fintype.card_fin] at hB
   exact hB.mono (by omega)
@@ -712,12 +469,12 @@ theorem hasBlockScheme_two_of_le {n ℓ : ℕ} (h : n ≤ ℓ) :
 and `2 * m ≤ ℓ`, four servers (`d = 2` subcube PIR lifted via Proposition 4) retrieve an `ℓ`-bit
 block from `n` blocks with at most `8 * ℓ` bits of communication. -/
 theorem hasBlockScheme_four_of_le_sq {n m ℓ : ℕ} (hn : n ≤ m * m) (hm : 2 * m ≤ ℓ) :
-    HasBlockScheme (Fin n) (Fin ℓ → Bool) 4 (8 * ℓ) := by
+    HasScheme (Fin n) 4 (8 * ℓ) (Fin ℓ → Bool) := by
   let e : Fin n ↪ (Fin 2 → Fin m) :=
     (Fin.castLEEmb (by simpa [pow_two] using hn)).trans finFunctionFinEquiv.symm.toEmbedding
-  have hcube := ((isCorrect_cube (D := Fin 2) (ι := Fin m)).comap e).toBlock (Fin ℓ)
-  have hpriv := ((isPrivate_cube (D := Fin 2) (ι := Fin m)).comap e).toBlock (Fin ℓ)
-  have hB := hcube.hasBlockScheme hpriv
+  have hcube := ((isCorrect_cube (D := Fin 2) (ι := Fin m)).comap e false).toBlock (Fin ℓ)
+  have hpriv := ((isPrivate_cube (D := Fin 2) (ι := Fin m)).comap e false).toBlock (Fin ℓ)
+  have hB := hcube.hasScheme hpriv
   have hcardS : Fintype.card (Fin 2 → Bool) = 4 := by decide
   rw [hcardS, communication_rows] at hB
   simp only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, ← pow_mul,
@@ -727,7 +484,7 @@ theorem hasBlockScheme_four_of_le_sq {n m ℓ : ℕ} (hn : n ≤ m * m) (hm : 2 
 /-- Closed-form specialization of Corollary 8 for `n ≤ (ℓ / 2) ^ 2` (replacing the paper's
 unrounded `n ≤ ℓ ^ 2 / 4`, and matching it whenever `ℓ` is even). -/
 theorem hasBlockScheme_four_of_le_half_sq {n ℓ : ℕ} (h : n ≤ (ℓ / 2) ^ 2) :
-    HasBlockScheme (Fin n) (Fin ℓ → Bool) 4 (8 * ℓ) :=
+    HasScheme (Fin n) 4 (8 * ℓ) (Fin ℓ → Bool) :=
   hasBlockScheme_four_of_le_sq (m := ℓ / 2) (by simpa [pow_two] using h) (Nat.mul_div_le ℓ 2)
 
 end Cslib.Crypto.Protocols.PIR

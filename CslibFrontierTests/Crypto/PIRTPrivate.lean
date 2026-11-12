@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger, Mayank Rathee
 
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.Cube
+import CslibFrontier.Crypto.Protocols.PIR.Shamir
 import CslibFrontier.Probability.PMF.Map
 import Mathlib.Tactic.NormNum
 
