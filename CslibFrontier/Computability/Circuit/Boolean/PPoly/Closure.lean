@@ -9,8 +9,10 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.Advice
 public import CslibFrontier.Computability.Complexity.Reduction
+import CslibFrontier.Computability.Complexity.Reduction.Word
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Foundations.Data.List.TakeQuantifiers
 import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
@@ -142,22 +144,14 @@ theorem mem_PPoly_of_exists_frame_append
   have hle : p.eval x.length ≤ p.eval (frame (α_adv x.length) ++ x).length :=
     p.eval_mono (by simp)
   have hV_frame (w : List Bool) (hw : w.length = p.eval x.length) :
-      evalAdvice (S.eval x.length) (W.eval x.length) (α_adv x.length) (frame x ++ w) = true ↔
-        frame x ++ w ∈ M :=
-    h_eval x.length (frame x ++ w) (by simp [hN, hw])
-  constructor
-  · rintro ⟨w, hw, hwM⟩
-    refine ⟨w ++ List.replicate (p.eval (frame (α_adv x.length) ++ x).length - w.length) false,
-      by rw [List.length_append, List.length_replicate, hw, Nat.add_sub_cancel' hle], ?_⟩
-    dsimp only [V]
-    rw [unframe_frame_append, dropFrame_frame_append, ← hw, List.take_left]
-    exact (hV_frame w hw).2 hwM
-  · rintro ⟨w, hw, hwV⟩
-    dsimp only [V] at hwV
-    rw [unframe_frame_append, dropFrame_frame_append] at hwV
-    have htake : (w.take (p.eval x.length)).length = p.eval x.length := by
-      rw [List.length_take, hw, Nat.min_eq_left hle]
-    exact ⟨w.take (p.eval x.length), htake, (hV_frame _ htake).1 hwV⟩
+      frame x ++ w ∈ M ↔
+        evalAdvice (S.eval x.length) (W.eval x.length) (α_adv x.length) (frame x ++ w) = true :=
+    (h_eval x.length (frame x ++ w) (by simp [hN, hw])).symm
+  simp only [V, unframe_frame_append, dropFrame_frame_append]
+  exact (exists_congr fun w => and_congr_right (hV_frame w)).trans
+    (List.exists_length_eq_take_iff (P := fun u =>
+      evalAdvice (S.eval x.length) (W.eval x.length) (α_adv x.length) (frame x ++ u) = true)
+      hle).symm
 
 /-- **Nonuniform existential quantifier elimination in `PPolyOn`.** Under `NP ⊆ P/poly`, if a
 relation `P : α → List Bool → Prop` is in `PPolyOn (encPair enc encBits)` and the witness length
@@ -168,29 +162,14 @@ theorem PPolyOn.exists_of_computableInPolyTime_length
     (hN : ComputableInPolyTime N enc encUnary) {P : α → List Bool → Prop}
     (hP : {p : α × List Bool | P p.1 p.2} ∈ PPolyOn (encPair enc encBits)) :
     {a : α | ∃ u : List Bool, u.length = N a ∧ P a u} ∈ PPolyOn enc := by
-  let B : Set (α × List Bool) := {p | P p.1 (p.2.take (N p.1))}
-  have hred : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-      B {p : α × List Bool | P p.1 p.2} := by
-    refine ⟨fun p => (p.1, p.2.take (N p.1)), ?_, fun _ => Iff.rfl⟩
-    exact (fst enc encBits).prod (bitsTakeWithInput (snd enc encBits) (hN.comp (fst enc encBits)))
-  obtain ⟨M, hM, hBM⟩ := hred.mem_PPolyOn hP
+  obtain ⟨M, hM, hBM⟩ := (polyTimeReducible_take hN {p : α × List Bool | P p.1 p.2}).mem_PPolyOn hP
   obtain ⟨p, hp⟩ := hN.polyBounded.exists_polynomial
   refine ⟨{x : List Bool | ∃ w : List Bool, w.length = p.eval x.length ∧ frame x ++ w ∈ M},
     mem_PPoly_of_exists_frame_append hNP hM p, fun a => ?_⟩
-  have hle : N a ≤ p.eval (enc a).length := hp a
-  constructor
-  · rintro ⟨u, hu, hPu⟩
-    refine ⟨u ++ List.replicate (p.eval (enc a).length - N a) false,
-      by rw [List.length_append, List.length_replicate, hu, Nat.add_sub_cancel' hle], ?_⟩
-    have htake : (u ++ List.replicate (p.eval (enc a).length - N a) false).take (N a) = u := by
-      rw [← hu, List.take_left]
-    have hmem : (a, u ++ List.replicate (p.eval (enc a).length - N a) false) ∈ B := by grind
-    simpa [encPair_apply, encBits_apply] using (hBM _).1 hmem
-  · rintro ⟨w, hw, hwM⟩
-    have hmem : (a, w) ∈ B :=
-      (hBM (a, w)).2 (by simpa [encPair_apply, encBits_apply] using hwM)
-    refine ⟨w.take (N a), ?_, hmem⟩
-    rw [List.length_take, hw, Nat.min_eq_left hle]
+  have hBM' (w : List Bool) : P a (w.take (N a)) ↔ frame (enc a) ++ w ∈ M := by
+    simpa [encPair_apply, encBits_apply] using hBM (a, w)
+  exact (List.exists_length_eq_take_iff (P := P a) (hp a)).symm.trans
+    (exists_congr fun w => and_congr_right fun _ => hBM' w)
 
 /-- **Nonuniform universal quantifier elimination in `PPolyOn`.** Under `NP ⊆ P/poly`, if a
 relation `P : α → List Bool → Prop` is in `PPolyOn (encPair enc encBits)` and the bound `N : α → ℕ`
