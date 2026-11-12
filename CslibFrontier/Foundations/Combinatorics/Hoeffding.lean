@@ -10,8 +10,9 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Analysis.Complex.Trigonometric
 public import Mathlib.Data.Fintype.Pi
+import CslibFrontier.Probability.BoundedDifferences
+import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Series
 
 /-!
 # Hoeffding's inequality for random bit strings
@@ -24,10 +25,12 @@ weighted sum of independent unbiased bits, in counting form. With the weights `�
 the strings, the number of true coordinates of `x` in `R` is within `t` of `|R| / 2`
 (`card_filter_le_abs_card_filter_sub_half_le`).
 
-The proof is the exponential-moment argument with the probabilities multiplied out. The sum over
-all strings of `exp (s ∑ i, a i (x i - 1 / 2))` factors over the coordinates, and equals
-`2 ^ |ι| ∏ i, cosh (s a i / 2)` (`sum_exp_mul_sum_mul_sub_half`). As `cosh u ≤ exp (u² / 2)`,
-Markov's inequality with `s = 4 t / ∑ i, a i ^ 2` bounds each tail.
+The tail bounds are McDiarmid's inequality (`Cslib.Probability.HasBoundedDifferences`) for the
+sum of the coordinate scores `a i * (x i - 1 / 2)`, each varying by at most `|a i|` and of mean
+`0` under independent uniform bits; the probability of an event under uniform bits is its
+fraction of all strings. The exact exponential moment is recorded separately: the sum over all
+strings of `exp (s ∑ i, a i (x i - 1 / 2))` factors over the coordinates, and equals
+`2 ^ |ι| ∏ i, cosh (s a i / 2)` (`sum_exp_mul_sum_mul_sub_half`).
 
 ## Main results
 
@@ -46,6 +49,7 @@ Markov's inequality with `s = 4 t / ∑ i, a i ^ 2` bounds each tail.
 * [N. Alon, J. H. Spencer, *The Probabilistic Method*, Theorem A.1.1][AlonSpencer2016]
 * [W. Hoeffding, *Probability inequalities for sums of bounded random
   variables*][Hoeffding1963]
+* [C. McDiarmid, *On the method of bounded differences*][McDiarmid1989], Lemma 1.2
 -/
 
 public section
@@ -72,77 +76,77 @@ theorem sum_exp_mul_sum_mul_sub_half (a : ι → ℝ) (s : ℝ) :
   rw [← Fintype.prod_sum (fun i (c : Bool) => exp (s * (a i * ((c.toNat : ℝ) - 1 / 2)))),
     prod_congr rfl fun i _ => hcoord i, prod_mul_distrib, prod_const, card_univ]
 
+/-- The fraction of bit strings in an event is its probability under independent uniform bits. -/
+private theorem card_filter_eq_two_pow_mul_toOuterMeasure (P : (ι → Bool) → Prop)
+    [DecidablePred P] :
+    (#{x : ι → Bool | P x} : ℝ) = 2 ^ Fintype.card ι *
+      ((Probability.PMF.pi fun _ : ι => Probability.PMF.uniformOfFintype Bool).toOuterMeasure
+        {x | P x}).toReal := by
+  rw [Probability.PMF.pi_uniformOfFintype,
+    Probability.PMF.toOuterMeasure_uniformOfFintype_toReal, Fintype.card_fun, Fintype.card_bool]
+  have h : (0 : ℝ) < 2 ^ Fintype.card ι := by positivity
+  push_cast
+  field_simp
+  rfl
+
+/-- The centred weighted bit sum has bounded differences `|a i|`. -/
+private theorem hasBoundedDifferences_sum_mul_sub_half (a : ι → ℝ) :
+    Probability.HasBoundedDifferences
+      (fun x : ι → Bool => ∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)) fun i => |a i| :=
+  Probability.hasBoundedDifferences_sum (α := fun _ => Bool)
+    (score := fun i c => a i * ((c.toNat : ℝ) - 1 / 2)) (c := fun i => |a i|) fun i c d => by
+    rw [← mul_sub, abs_mul]
+    refine mul_le_of_le_one_right (abs_nonneg _) ?_
+    cases c <;> cases d <;> norm_num
+
+/-- The centred weighted bit sum has mean `0` under independent uniform bits. -/
+private theorem sum_pi_uniform_mul_sum_mul_sub_half (a : ι → ℝ) :
+    ∑ y : ι → Bool,
+      ((Probability.PMF.pi fun _ : ι => Probability.PMF.uniformOfFintype Bool) y).toReal *
+        ∑ i, a i * (((y i).toNat : ℝ) - 1 / 2) = 0 := by
+  rw [Probability.PMF.pi_uniformOfFintype]
+  simp only [Probability.PMF.uniformOfFintype_apply, ← mul_sum]
+  rw [sum_comm, mul_eq_zero]
+  refine .inr (sum_eq_zero fun i _ => ?_)
+  -- Flipping bit `i` negates the summand, so the sum vanishes.
+  have hinv : Function.Involutive fun y : ι → Bool => Function.update y i (!y i) := fun y => by
+    funext j
+    by_cases h : j = i <;> simp [h]
+  let flip : Equiv.Perm (ι → Bool) := ⟨_, _, hinv.leftInverse, hinv.rightInverse⟩
+  have hsum : ∑ y : ι → Bool, a i * (((y i).toNat : ℝ) - 1 / 2) =
+      -∑ y : ι → Bool, a i * (((y i).toNat : ℝ) - 1 / 2) := by
+    conv_lhs => rw [← Equiv.sum_comp flip]
+    rw [← sum_neg_distrib]
+    refine sum_congr rfl fun y _ => ?_
+    simp only [flip, Equiv.coe_fn_mk, Function.update_self]
+    cases y i <;> norm_num
+  linarith
+
 /-- **The weighted one-sided tail bound.** At most an `exp (-2 t² / ∑ i, a i ^ 2)` fraction of the
-bit strings `x` have centred weighted sum `∑ i, a i * (x i - 1 / 2)` at least `t`. -/
+bit strings `x` have centred weighted sum `∑ i, a i * (x i - 1 / 2)` at least `t`. This is
+McDiarmid's inequality `HasBoundedDifferences.pi_ge_mean_add` for independent uniform bits. -/
 theorem card_filter_le_sum_mul_sub_half_le (a : ι → ℝ) {t : ℝ} (ht : 0 ≤ t) :
     (#{x : ι → Bool | t ≤ ∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)} : ℝ) ≤
       2 ^ Fintype.card ι * exp (-(2 * t ^ 2 / ∑ i, a i ^ 2)) := by
-  set D : (ι → Bool) → ℝ := fun x => ∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)
-  set σ : ℝ := ∑ i, a i ^ 2
-  have hall : (#{x : ι → Bool | t ≤ D x} : ℝ) ≤ 2 ^ Fintype.card ι := by
-    have := card_filter_le (univ : Finset (ι → Bool)) fun x => t ≤ D x
-    rw [card_univ, Fintype.card_fun, Fintype.card_bool] at this
-    exact_mod_cast this
-  rcases (sum_nonneg fun i _ => sq_nonneg (a i) : 0 ≤ σ).eq_or_lt with hσ | hσ
-  · rw [show σ = 0 from hσ.symm, div_zero, neg_zero, exp_zero, mul_one]
-    exact hall
-  -- Markov's inequality for `exp (s D)` with `s = 4 t / σ`.
-  set s : ℝ := 4 * t / σ
-  have hmarkov : (#{x : ι → Bool | t ≤ D x} : ℝ) * exp (s * t) ≤
-      2 ^ Fintype.card ι * ∏ i, cosh (s * a i / 2) := by
-    rw [← sum_exp_mul_sum_mul_sub_half a s, ← nsmul_eq_mul, ← sum_const]
-    refine (sum_le_sum fun x hx => ?_).trans
-      (sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun x _ _ => (exp_pos _).le)
-    exact exp_le_exp.mpr (mul_le_mul_of_nonneg_left (mem_filter.mp hx).2 (by positivity))
-  have hcosh : ∏ i, cosh (s * a i / 2) ≤ exp (2 * t ^ 2 / σ) := by
-    calc ∏ i, cosh (s * a i / 2) ≤ ∏ i, exp ((s * a i / 2) ^ 2 / 2) := by
-          gcongr with i
-          exact cosh_le_exp_half_sq _
-      _ = exp (2 * t ^ 2 / σ) := by
-          rw [← exp_sum]
-          congr 1
-          calc ∑ i, (s * a i / 2) ^ 2 / 2 = ∑ i, s ^ 2 / 8 * a i ^ 2 :=
-                sum_congr rfl fun i _ => by ring
-            _ = s ^ 2 / 8 * σ := (mul_sum _ _ _).symm
-            _ = 2 * t ^ 2 / σ := by
-                simp only [s]
-                field_simp
-                ring
-  have hexp : exp (s * t) = exp (2 * t ^ 2 / σ) * exp (2 * t ^ 2 / σ) := by
-    rw [← exp_add]
-    congr 1
-    simp only [s]
-    field_simp
-    ring
-  have h2 : (0 : ℝ) < 2 ^ Fintype.card ι := by positivity
-  rw [exp_neg, ← div_eq_mul_inv, le_div_iff₀ (exp_pos _)]
-  have := hmarkov.trans (mul_le_mul_of_nonneg_left hcosh h2.le)
-  rw [hexp] at this
-  nlinarith [exp_pos (2 * t ^ 2 / σ)]
+  have h := (hasBoundedDifferences_sum_mul_sub_half a).pi_ge_mean_add
+    (fun _ => Probability.PMF.uniformOfFintype Bool) ht
+  rw [sum_pi_uniform_mul_sum_mul_sub_half, zero_add] at h
+  simp only [sq_abs, neg_mul, neg_div] at h
+  rw [card_filter_eq_two_pow_mul_toOuterMeasure]
+  exact mul_le_mul_of_nonneg_left h (by positivity)
 
 /-- **Hoeffding's inequality for weighted bit sums.** At most a `2 exp (-2 t² / ∑ i, a i ^ 2)`
 fraction of the bit strings `x` have a centred weighted sum `∑ i, a i * (x i - 1 / 2)` of
-absolute value at least `t`. -/
+absolute value at least `t`. This is `HasBoundedDifferences.pi_abs_sub_mean_ge`. -/
 theorem card_filter_le_abs_sum_mul_sub_half_le (a : ι → ℝ) {t : ℝ} (ht : 0 ≤ t) :
     (#{x : ι → Bool | t ≤ |∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)|} : ℝ) ≤
       2 * 2 ^ Fintype.card ι * exp (-(2 * t ^ 2 / ∑ i, a i ^ 2)) := by
-  -- The upper tail of `-a` is the lower tail of `a`.
-  have hneg := card_filter_le_sum_mul_sub_half_le (fun i => -a i) ht
-  simp only [neg_mul, sum_neg_distrib, neg_sq] at hneg
-  have hsub : ({x : ι → Bool | t ≤ |∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)|} : Finset _) ⊆
-      ({x : ι → Bool | t ≤ ∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)} : Finset _) ∪
-        ({x : ι → Bool | t ≤ -∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)} : Finset _) := by
-    intro x hx
-    simp only [mem_filter, mem_univ, true_and, mem_union] at hx ⊢
-    exact le_abs'.mp hx |>.symm.imp id fun h => by linarith
-  calc (#{x : ι → Bool | t ≤ |∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)|} : ℝ)
-      ≤ (#{x : ι → Bool | t ≤ ∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)} : ℝ) +
-          #{x : ι → Bool | t ≤ -∑ i, a i * (((x i).toNat : ℝ) - 1 / 2)} := by
-        exact_mod_cast (card_le_card hsub).trans (card_union_le _ _)
-    _ ≤ 2 ^ Fintype.card ι * exp (-(2 * t ^ 2 / ∑ i, a i ^ 2)) +
-          2 ^ Fintype.card ι * exp (-(2 * t ^ 2 / ∑ i, a i ^ 2)) :=
-        add_le_add (card_filter_le_sum_mul_sub_half_le a ht) hneg
-    _ = 2 * 2 ^ Fintype.card ι * exp (-(2 * t ^ 2 / ∑ i, a i ^ 2)) := by ring
+  have h := (hasBoundedDifferences_sum_mul_sub_half a).pi_abs_sub_mean_ge
+    (fun _ => Probability.PMF.uniformOfFintype Bool) ht
+  rw [sum_pi_uniform_mul_sum_mul_sub_half] at h
+  simp only [sub_zero, sq_abs, neg_mul, neg_div] at h
+  rw [card_filter_eq_two_pow_mul_toOuterMeasure]
+  nlinarith [exp_pos (-(2 * t ^ 2 / ∑ i, a i ^ 2)), (by positivity : (0 : ℝ) < 2 ^ Fintype.card ι)]
 
 /-- The signed indicator weights of `R`: `1` (if `c = true`) or `-1` (if `c = false`) on `R`, and
 `0` elsewhere. -/
