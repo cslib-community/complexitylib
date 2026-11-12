@@ -259,7 +259,7 @@ def signature_end(statement: str) -> tuple[int, int]:
                 columns[-1] = column
                 continue
             if not statement[line:start].strip():
-                while columns and column < columns[-1]:
+                while columns and isinstance(columns[-1], int) and column < columns[-1]:
                     columns.pop()
             if not (pending or columns) and _starts_equations(statement, start):
                 return start, start
@@ -364,6 +364,10 @@ theorem bar_discriminant (a b : Bool) : (a || b) = match a || b with
     | true => true
     | false => false := by
   cases a <;> cases b <;> rfl
+theorem match_discriminant (n : Nat) : 0 = match match n with | 0 => 0 | _ => 1 with
+    | 0 => 0
+    | _ => 0 := by
+  cases n <;> rfl
 theorem structure_body : Nonempty Nat where
   out := ⟨0⟩
 theorem statement_have (i : Fin 3) :
@@ -381,8 +385,8 @@ end Sample
         ("short", 1), ("term", 1), ("quoted", 1), ("separate_attribute", 1), ("equations", 2),
         ("type_let", 1), ("after_annotated", 1), ("after_multi_line", 1), ("do_let", 1),
         ("absolute", 1), ("absolute_argument", 1), ("or_patterns", 2), ("match_statement", 2),
-        ("match_lines", 1), ("nested_match", 1), ("bar_discriminant", 1), ("structure_body", 1),
-        ("statement_have", 1), ("prefixed", 1)
+        ("match_lines", 1), ("nested_match", 1), ("bar_discriminant", 1),
+        ("match_discriminant", 1), ("structure_body", 1), ("statement_have", 1), ("prefixed", 1)
     ]
     for row in rows[-2:]:
         assert row["name"] in sample.splitlines()[row["line"] - 1]
