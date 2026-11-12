@@ -30,43 +30,43 @@ def seriesAnd3 : Σ n, Circuit Unbounded.signature n 1 :=
 example : seriesAnd3.2.weft = 2 ∧ seriesAnd3.2.depth = 2 := by decide
 
 -- Satisfied by the unique weight-3 input, and unsatisfied at weight 2 and weight 4.
-example : (seriesAnd3, 3) ∈ WeightedCircuitSAT :=
+example : (⟨seriesAnd3, 3⟩ : WeightedCircuitSATInstance) ∈ WeightedCircuitSAT :=
   ⟨fun _ => true, by decide, by decide⟩
 
-example : (seriesAnd3, 2) ∉ WeightedCircuitSAT := by
+example : (⟨seriesAnd3, 2⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuitSAT := by
   rintro ⟨x, hk, hx⟩
   revert hk hx
   revert x
   unfold BitString.weight
   decide
 
-example : (seriesAnd3, 4) ∉ WeightedCircuitSAT := by
+example : (⟨seriesAnd3, 4⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuitSAT := by
   rintro ⟨x, hk, -⟩
   have hle : 4 ≤ seriesAnd3.1 := hk ▸ BitString.weight_le_length x
   exact absurd hle (by decide)
 
 -- Zero-input edge cases: weight `0` succeeds on `trueCircuit`, fails on `falseCircuit`, and weight
 -- `1 > 0` fails even on `trueCircuit`.
-example : (WCS.trueCircuit, 0) ∈ WeightedCircuitSAT :=
+example : (⟨WCS.trueCircuit, 0⟩ : WeightedCircuitSATInstance) ∈ WeightedCircuitSAT :=
   ⟨fun _ => false, by simp [BitString.weight], rfl⟩
 
-example : (WCS.trueCircuit, 1) ∉ WeightedCircuitSAT := by
+example : (⟨WCS.trueCircuit, 1⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuitSAT := by
   rintro ⟨x, hk, -⟩
   have hle := BitString.weight_le_length x
   have h0 : WCS.trueCircuit.1 = 0 := rfl
   omega
 
-example : (WCS.falseCircuit, 0) ∉ WeightedCircuitSAT := by
+example : (⟨WCS.falseCircuit, 0⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuitSAT := by
   rintro ⟨_, -, hx⟩
   exact Bool.false_ne_true hx
 
 /-! ### `W[P]` and completeness of `WeightedCircuitSAT` -/
 
-example : WeightedCircuitSAT ∈ WP encWeightedCircuitSAT Prod.snd ∧
-    WPHard encWeightedCircuitSAT Prod.snd WeightedCircuitSAT :=
+example : WeightedCircuitSAT ∈ WP encWeightedCircuitSAT WeightedCircuitSATInstance.weight ∧
+    WPHard encWeightedCircuitSAT WeightedCircuitSATInstance.weight WeightedCircuitSAT :=
   ⟨WeightedCircuitSAT_mem_WP, WeightedCircuitSAT_wPHard⟩
 
-example (t d : ℕ) : WCS t d ∈ WP (encWCS t d) Prod.snd :=
+example (t d : ℕ) : WCS t d ∈ WP (encWCS t d) WCSInstance.weight :=
   W_subset_WP t (WCS_mem_W t d)
 
 example : Clique ∈ WP (encPair encGraph encNat) Prod.snd :=
@@ -79,7 +79,8 @@ example : VertexCover ∈ WP (encPair encGraph encNat) Prod.snd :=
   FPT_subset_WP VertexCover_mem_FPT
 
 -- Collapse consequence: `WeightedCircuitSAT ∈ FPT` collapses `WP` and every `W[t]` to `FPT`.
-example (h : WeightedCircuitSAT ∈ FPT encWeightedCircuitSAT Prod.snd) (t : ℕ)
+example (h : WeightedCircuitSAT ∈ FPT encWeightedCircuitSAT WeightedCircuitSATInstance.weight)
+    (t : ℕ)
     {α : Type} (enc : α ↪ List Bool) (κ : α → ℕ) :
     W t enc κ = FPT enc κ := by
   have hWP : WP enc κ = FPT enc κ := WP_eq_FPT_iff.2 h enc κ
@@ -87,14 +88,14 @@ example (h : WeightedCircuitSAT ∈ FPT encWeightedCircuitSAT Prod.snd) (t : ℕ
 
 /-! ### `XP` memberships and inclusions -/
 
-example : WeightedCircuitSAT ∈ XP encWeightedCircuitSAT Prod.snd :=
+example : WeightedCircuitSAT ∈ XP encWeightedCircuitSAT WeightedCircuitSATInstance.weight :=
   WeightedCircuitSAT_mem_XP
 
 example {α : Type} (enc : α ↪ List Bool) (κ : α → ℕ) :
     FPT enc κ ⊆ W 1 enc κ ∧ W 1 enc κ ⊆ W 2 enc κ ∧ W 2 enc κ ⊆ WP enc κ ∧ WP enc κ ⊆ XP enc κ :=
   ⟨FPT_subset_W 1, W_mono (by decide), W_subset_WP 2, WP_subset_XP⟩
 
-example (t d : ℕ) : WCS t d ∈ XP (encWCS t d) Prod.snd :=
+example (t d : ℕ) : WCS t d ∈ XP (encWCS t d) WCSInstance.weight :=
   WCS_mem_XP t d
 
 example : Clique ∈ XP (encPair encGraph encNat) Prod.snd ∧

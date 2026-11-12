@@ -4306,9 +4306,8 @@ register_result "w-hierarchy-subset-xp" where
   title := "WeightedCircuitSAT, W[P] and every level W[t] of the W-hierarchy lie in XP"
   topic := "parameterized complexity"
   sources := [
-    { paper := CyganEtAl2015, theorem := unverified, locator := "Chapter 13" },
-    { paper := DowneyFellows1999, theorem := unverified, locator := unverified },
-    { paper := FlumGrohe2006, theorem := unverified, locator := unverified }
+    { paper := CyganEtAl2015, theorem := "weighted-circuit enumeration; Definition 13.16 (W[t])",
+      locator := "Section 13.3, pp. 436–437 (authors' May 30, 2016 PDF)" }
   ]
   theorems := [
     Cslib.Complexity.WeightedCircuitSAT_mem_XP,
@@ -4321,7 +4320,10 @@ register_result "w-hierarchy-subset-xp" where
     Cslib.Complexity.Clique_mem_XP
   ]
   scope := "Instances of WeightedCircuitSAT encode a one-output unbounded fan-in Boolean circuit \
-    together with the target weight k in binary. Exhaustive search over min(n, k)-tuples of input \
-    wires places WeightedCircuitSAT in slicewise polynomial time XP for multi-tape Turing \
-    machines, and fpt-reduction closure gives FPT ⊆ W[t] ⊆ W[P] ⊆ XP for every weft bound t, \
-    along with XP membership for WCS t d, Clique and IndependentSet."
+    with unary input count, framed before the binary target weight k. Exhaustive search \
+    over min(n, k)-tuples of input wires gives independent native multi-tape time and workspace \
+    bounds C * 2^(D*k) * (L+1)^(D*k+D), hence XP membership. Library fpt-reduction closure gives \
+    FPT ⊆ W[t] ⊆ WP ⊆ XP for every t and XP membership for WCS t d, Clique and IndependentSet. \
+    WP denotes this library's reduction closure with arbitrary, potentially ineffective time \
+    and parameter bounds; equivalence with the effective literature W[P] is not claimed. Circuits \
+    are straight-line programs, with the basis conventions documented in WHierarchy.lean."

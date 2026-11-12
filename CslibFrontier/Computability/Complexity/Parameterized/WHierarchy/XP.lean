@@ -26,15 +26,22 @@ import Mathlib.Data.Nat.Bitwise
 /-!
 # `W[P]` and slicewise polynomial time for the W-hierarchy
 
-`Cslib.Complexity.WP` is the class `W[P]` [DowneyFellows1999] [FlumGrohe2006]: the parameterized
-problems that fpt-reduce (`FPTReducible`) to weighted satisfiability of circuits over the unbounded
-fan-in basis of arbitrary weft and depth (`WeightedCircuitSAT`). Dropping the weft and depth bounds
-of `WCS t d` is the identity on encoded instances (`fptReducible_WCS_WeightedCircuitSAT`), so
-`FPT ⊆ W[t] ⊆ W[P]` for every `t` (`W_subset_WP`, `FPT_subset_WP`).
+`Cslib.Complexity.WP`, denoted `W[P]` here, is the library's closure under `FPTReducible` of
+weighted satisfiability of circuits over the unbounded fan-in basis of arbitrary weft and depth
+(`WeightedCircuitSAT`). It inherits the arbitrary, potentially ineffective time and parameter
+bounds of `FPTReducible`. Equivalence with the effective literature class is not established here:
+[Flum and Grohe, Definition 3.1, p. 45][FlumGrohe2006] instead use restricted nondeterministic
+multitape machines and computable bound functions. Dropping the weft and depth bounds of `WCS t d`
+preserves encoded instances (`fptReducible_WCS_WeightedCircuitSAT`), so
+`FPT ⊆ W[t] ⊆ W[P]` for every `t` (`W_subset_WP`, `FPT_subset_WP`), under the library's convention.
 
 Exhaustive search over `k`-tuples of input positions places `WeightedCircuitSAT` in `XP`
-(`WeightedCircuitSAT_mem_XP`) [Cygan et al., Chapter 13][CyganEtAl2015] [DowneyFellows1999]
-[FlumGrohe2006]. For a circuit on `n` inputs with encoded length `L`, we have `n ≤ L` and
+(`WeightedCircuitSAT_mem_XP`) adapts [Cygan et al., Section 13.3, p. 436][CyganEtAl2015].
+Their Definition 13.16 on p. 437 defines `W[t]`, not `W[P]`. The canonical
+`WeightedCircuitSATInstance` encoding frames the circuit before the binary weight; the circuit
+input count is unary. Circuits are straight-line programs with the basis conventions documented
+in `CslibFrontier/Computability/Complexity/Parameterized/WHierarchy.lean`.
+For a circuit on `n` inputs with encoded length `L`, we have `n ≤ L` and
 `2 ^ n.size ≤ 2 (L + 1)`. Capping the weight at `k' = min n k`, a candidate tuple of `k'` input
 indices is packed into `k' * n.size` bits, unpacked into `k'` coordinates via `BitString.listRows`
 and `BitString.boundedBinaryValue`, turned into an `n`-bit assignment, checked for exact weight
@@ -46,8 +53,7 @@ runs within time `C 2 ^ (D k) (L + 1) ^ (D k + D)`. Closing `XP` under fpt-reduc
 
 ## Main definitions
 
-* `Cslib.Complexity.encWeightedCircuitSAT`: encoding of `WeightedCircuitSAT` instances.
-* `Cslib.Complexity.WP`: the class `W[P]`.
+* `Cslib.Complexity.WP`: the library's reduction-closure convention for `W[P]`.
 * `Cslib.Complexity.WPHard`: `W[P]`-hardness under fpt-reductions.
 
 ## Main results
@@ -65,9 +71,10 @@ runs within time `C 2 ^ (D k) (L + 1) ^ (D k + D)`. Closing `XP` under fpt-reduc
 
 ## References
 
-* [M. Cygan et al., *Parameterized Algorithms*, Chapter 13][CyganEtAl2015]
-* [R. G. Downey, M. R. Fellows, *Parameterized Complexity*][DowneyFellows1999]
-* [J. Flum, M. Grohe, *Parameterized Complexity Theory*][FlumGrohe2006]
+* [M. Cygan et al., *Parameterized Algorithms*, Section 13.3, pp. 436–437][CyganEtAl2015]
+  (authors' May 30, 2016 PDF).
+* [J. Flum, M. Grohe, *Parameterized Complexity Theory*, Definition 3.1, p. 45][FlumGrohe2006]
+  (the effective machine definition, used only to contrast conventions).
 -/
 
 public section
@@ -78,16 +85,12 @@ open Circuits Circuits.Boolean Circuits.Boolean.Unbounded Turing.MultiTapeTM
 
 /-! ### The class `W[P]` -/
 
-/-- The binary encoding of `WeightedCircuitSAT` instances: the circuit over the unbounded fan-in
-basis, followed by the target weight in binary. -/
-abbrev encWeightedCircuitSAT : ((Σ n, Circuit Unbounded.signature n 1) × ℕ) ↪ List Bool :=
-  encPair (Unbounded.encCircuit 1) encNat
-
-/-- **The class `W[P]`** [DowneyFellows1999] [FlumGrohe2006]: the parameterized problems that
-fpt-reduce to weighted satisfiability of unbounded fan-in circuits of arbitrary weft and depth
-(`WeightedCircuitSAT`). -/
+/-- The library's **`W[P]`**: the `FPTReducible` closure of `WeightedCircuitSAT`, with its binary
+weight as parameter. Bounds may be arbitrary and potentially ineffective, as in `FPTReducible`;
+equivalence with the effective literature class is not claimed. -/
 @[expose] def WP {α : Type} (enc : α ↪ List Bool) (κ : α → ℕ) : Set (Set α) :=
-  {A | FPTReducible enc encWeightedCircuitSAT κ Prod.snd A WeightedCircuitSAT}
+  {A | FPTReducible enc encWeightedCircuitSAT κ WeightedCircuitSATInstance.weight
+    A WeightedCircuitSAT}
 
 /-- **`W[P]`-hardness**: every problem of `W[P]` fpt-reduces to `B`. -/
 @[expose] def WPHard {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
@@ -101,7 +104,8 @@ variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {κA
 
 /-- Membership in `W[P]`. -/
 theorem mem_WP :
-    A ∈ WP encA κA ↔ FPTReducible encA encWeightedCircuitSAT κA Prod.snd A WeightedCircuitSAT :=
+    A ∈ WP encA κA ↔ FPTReducible encA encWeightedCircuitSAT κA WeightedCircuitSATInstance.weight
+      A WeightedCircuitSAT :=
   Iff.rfl
 
 /-- **`W[P]` is closed under fpt-reductions.** -/
@@ -110,16 +114,21 @@ theorem FPTReducible.mem_WP (hAB : FPTReducible encA encB κA κB A B) (hB : B �
   hAB.trans hB
 
 /-- `WeightedCircuitSAT` belongs to `W[P]`. -/
-theorem WeightedCircuitSAT_mem_WP : WeightedCircuitSAT ∈ WP encWeightedCircuitSAT Prod.snd :=
+theorem WeightedCircuitSAT_mem_WP :
+    WeightedCircuitSAT ∈ WP encWeightedCircuitSAT WeightedCircuitSATInstance.weight :=
   FPTReducible.refl _ _ _
 
 /-- Forgetting the weft and depth bounds is an fpt-reduction from `WCS t d` to
 `WeightedCircuitSAT`. -/
 theorem fptReducible_WCS_WeightedCircuitSAT (t d : ℕ) :
-    FPTReducible (encWCS t d) encWeightedCircuitSAT Prod.snd Prod.snd
-      (WCS t d) WeightedCircuitSAT :=
-  FPTReducible.of_computableInPolyTime (f := Prod.map Subtype.val id)
-    (ComputableInPolyTime.id'.of_enc_eq fun _ => rfl) (h := id) (fun _ => le_rfl) fun _ => Iff.rfl
+    FPTReducible (encWCS t d) encWeightedCircuitSAT WCSInstance.weight
+      WeightedCircuitSATInstance.weight (WCS t d) WeightedCircuitSAT :=
+  FPTReducible.of_computableInPolyTime
+    (f := fun x : WCSInstance t d => ⟨x.circuit.toCircuit, x.weight⟩)
+    (encWeightedCircuitSAT_mk_polyTime
+      ((encWCS_circuit_polyTime .id').of_enc_eq fun _ => rfl)
+      (encWCS_weight_polyTime .id'))
+    (h := id) (fun _ => le_rfl) fun _ => Iff.rfl
 
 /-- **`W[t] ⊆ W[P]`** for every `t`. -/
 theorem W_subset_WP (t : ℕ) : W t encA κA ⊆ WP encA κA :=
@@ -132,11 +141,13 @@ theorem FPT_subset_WP : FPT encA κA ⊆ WP encA κA :=
 /-- **`W[P]`-hardness is hardness for `WeightedCircuitSAT`.** -/
 theorem wPHard_iff :
     WPHard encB κB B ↔
-      FPTReducible encWeightedCircuitSAT encB Prod.snd κB WeightedCircuitSAT B :=
+      FPTReducible encWeightedCircuitSAT encB WeightedCircuitSATInstance.weight κB
+        WeightedCircuitSAT B :=
   ⟨fun h => h _ _ _ WeightedCircuitSAT_mem_WP, fun h _ _ _ _ hA => hA.trans h⟩
 
 /-- `WeightedCircuitSAT` is `W[P]`-hard, hence `W[P]`-complete. -/
-theorem WeightedCircuitSAT_wPHard : WPHard encWeightedCircuitSAT Prod.snd WeightedCircuitSAT :=
+theorem WeightedCircuitSAT_wPHard :
+    WPHard encWeightedCircuitSAT WeightedCircuitSATInstance.weight WeightedCircuitSAT :=
   wPHard_iff.2 (FPTReducible.refl _ _ _)
 
 /-- `W[P]`-hardness transfers along fpt-reductions. -/
@@ -156,10 +167,10 @@ theorem WPHard.subset_FPT (hB : WPHard encB κB B) (hFPT : B ∈ FPT encB κB) :
 /-- **`W[P] = FPT` iff `WeightedCircuitSAT ∈ FPT`.** -/
 theorem WP_eq_FPT_iff :
     (∀ ⦃γ : Type⦄ (enc : γ ↪ List Bool) (κ : γ → ℕ), WP enc κ = FPT enc κ) ↔
-      WeightedCircuitSAT ∈ FPT encWeightedCircuitSAT Prod.snd := by
+      WeightedCircuitSAT ∈ FPT encWeightedCircuitSAT WeightedCircuitSATInstance.weight := by
   constructor
   · intro h
-    rw [← h encWeightedCircuitSAT Prod.snd]
+    rw [← h encWeightedCircuitSAT WeightedCircuitSATInstance.weight]
     exact WeightedCircuitSAT_mem_WP
   · intro h γ enc κ
     exact Set.Subset.antisymm (WeightedCircuitSAT_wPHard.subset_FPT h) FPT_subset_WP
@@ -424,59 +435,60 @@ end WeightedCircuitSAT
 /-! ### Membership in `XP` and inclusions -/
 
 /-- **`WeightedCircuitSAT` is slicewise polynomial (`XP`)**
-[Cygan et al., Chapter 13][CyganEtAl2015] [DowneyFellows1999] [FlumGrohe2006]: brute force over
+[Cygan et al., Section 13.3, p. 436][CyganEtAl2015]: brute force over
 `k`-tuples of input wires runs in time `O(2 ^ (D k) * (L + 1) ^ (D k + D))` for encoded input
 length `L` and target weight `k`. -/
-theorem WeightedCircuitSAT_mem_XP : WeightedCircuitSAT ∈ XP encWeightedCircuitSAT Prod.snd := by
+theorem WeightedCircuitSAT_mem_XP :
+    WeightedCircuitSAT ∈ XP encWeightedCircuitSAT WeightedCircuitSATInstance.weight := by
   have hpre : ComputableInPolyTime
-      (fun x : (Σ n, Circuit Unbounded.signature n 1) × ℕ =>
-        (((x.1.1, x.1.2.code), x.2) : WeightedCircuitSAT.RawIn))
+      (fun x : WeightedCircuitSATInstance =>
+        (((x.circuit.1, x.circuit.2.code), x.weight) : WeightedCircuitSAT.RawIn))
       encWeightedCircuitSAT WeightedCircuitSAT.encRaw :=
-    ComputableInPolyTime.id'.of_enc_eq fun _ => rfl
+    encWeightedCircuitSAT_fields_deg.computableInPolyTime.of_enc_eq fun _ => rfl
   have hf : ComputableInPolyTime
-      (fun p : ((Σ n, Circuit Unbounded.signature n 1) × ℕ) × ℕ =>
-        WeightedCircuitSAT.searchPadded p.1.1.1 p.1.1.2.code.1
-          (p.1.1.2.code.2.getD 0 0) p.1.2 p.2)
+      (fun p : WeightedCircuitSATInstance × ℕ =>
+        WeightedCircuitSAT.searchPadded p.1.circuit.1 p.1.circuit.2.code.1
+          (p.1.circuit.2.code.2.getD 0 0) p.1.weight p.2)
       (encPair encWeightedCircuitSAT encUnary) encBool :=
     WeightedCircuitSAT.computableInPolyTime_searchPadded_raw.comp
       ((hpre.comp (ComputableInPolyTime.fst _ _)).prod (ComputableInPolyTime.snd _ _))
   have hν : ComputableInPolyTime
-      (fun x : (Σ n, Circuit Unbounded.signature n 1) × ℕ =>
-        WeightedCircuitSAT.searchBits x.1.1 x.2)
+      (fun x : WeightedCircuitSATInstance =>
+        WeightedCircuitSAT.searchBits x.circuit.1 x.weight)
       encWeightedCircuitSAT encUnary :=
     WeightedCircuitSAT.computableInPolyTime_searchBits_raw.comp hpre
   obtain ⟨C, D, hO⟩ := hf.exists_computableInO_pad hν
-  have hbound (a : (Σ n, Circuit Unbounded.signature n 1) × ℕ) :
-      C * 2 ^ (D * WeightedCircuitSAT.searchBits a.1.1 a.2) *
+  have hbound (a : WeightedCircuitSATInstance) :
+      C * 2 ^ (D * WeightedCircuitSAT.searchBits a.circuit.1 a.weight) *
           ((encWeightedCircuitSAT a).length + 1) ^ D ≤
-        C * 2 ^ (D * a.2) * ((encWeightedCircuitSAT a).length + 1) ^ (D * a.2 + D) := by
+        C * 2 ^ (D * a.weight) * ((encWeightedCircuitSAT a).length + 1) ^ (D * a.weight + D) := by
     set L := (encWeightedCircuitSAT a).length
-    have hnL : a.1.1 ≤ L := by
-      have h1 := Circuit.le_length_encCircuit (σ := Unbounded.signature) Unbounded.encOp a.1
-      have h2 : (Unbounded.encCircuit 1 a.1).length ≤ L := by
-        simp only [L, length_encPair]
-        omega
+    have hnL : a.circuit.1 ≤ L := by
+      have h1 := Circuit.le_length_encCircuit (σ := Unbounded.signature) Unbounded.encOp a.circuit
+      have h2 : (Unbounded.encCircuit 1 a.circuit).length ≤ L := by
+        simpa only [L, encWeightedCircuitSAT_apply] using
+          length_le_encPair_left (Unbounded.encCircuit 1) encNat (a.circuit, a.weight)
       exact h1.trans h2
-    have h2s : 2 ^ a.1.1.size ≤ 2 * (L + 1) :=
-      (Nat.two_pow_size_le a.1.1).trans (by omega)
-    have hexp : 2 ^ (D * WeightedCircuitSAT.searchBits a.1.1 a.2) ≤
-        2 ^ (D * a.2) * (L + 1) ^ (D * a.2) := by
-      calc 2 ^ (D * (min a.1.1 a.2 * a.1.1.size))
-          = 2 ^ (a.1.1.size * (D * min a.1.1 a.2)) := by
-            rw [← Nat.mul_assoc, Nat.mul_comm (D * min a.1.1 a.2) a.1.1.size]
-        _ = (2 ^ a.1.1.size) ^ (D * min a.1.1 a.2) :=
-            Nat.pow_mul 2 a.1.1.size (D * min a.1.1 a.2)
-        _ ≤ (2 * (L + 1)) ^ (D * min a.1.1 a.2) :=
+    have h2s : 2 ^ a.circuit.1.size ≤ 2 * (L + 1) :=
+      (Nat.two_pow_size_le a.circuit.1).trans (by omega)
+    have hexp : 2 ^ (D * WeightedCircuitSAT.searchBits a.circuit.1 a.weight) ≤
+        2 ^ (D * a.weight) * (L + 1) ^ (D * a.weight) := by
+      calc 2 ^ (D * (min a.circuit.1 a.weight * a.circuit.1.size))
+          = 2 ^ (a.circuit.1.size * (D * min a.circuit.1 a.weight)) := by
+            rw [← Nat.mul_assoc, Nat.mul_comm (D * min a.circuit.1 a.weight) a.circuit.1.size]
+        _ = (2 ^ a.circuit.1.size) ^ (D * min a.circuit.1 a.weight) :=
+            Nat.pow_mul 2 a.circuit.1.size (D * min a.circuit.1 a.weight)
+        _ ≤ (2 * (L + 1)) ^ (D * min a.circuit.1 a.weight) :=
             Nat.pow_le_pow_left h2s _
-        _ ≤ (2 * (L + 1)) ^ (D * a.2) :=
+        _ ≤ (2 * (L + 1)) ^ (D * a.weight) :=
             Nat.pow_le_pow_right (by omega) (Nat.mul_le_mul_left D (Nat.min_le_right _ _))
-        _ = 2 ^ (D * a.2) * (L + 1) ^ (D * a.2) :=
-            Nat.mul_pow 2 (L + 1) (D * a.2)
-    calc C * 2 ^ (D * WeightedCircuitSAT.searchBits a.1.1 a.2) * (L + 1) ^ D
-        ≤ C * (2 ^ (D * a.2) * (L + 1) ^ (D * a.2)) * (L + 1) ^ D :=
+        _ = 2 ^ (D * a.weight) * (L + 1) ^ (D * a.weight) :=
+            Nat.mul_pow 2 (L + 1) (D * a.weight)
+    calc C * 2 ^ (D * WeightedCircuitSAT.searchBits a.circuit.1 a.weight) * (L + 1) ^ D
+        ≤ C * (2 ^ (D * a.weight) * (L + 1) ^ (D * a.weight)) * (L + 1) ^ D :=
           Nat.mul_le_mul_right _ (Nat.mul_le_mul_left C hexp)
-      _ = C * 2 ^ (D * a.2) * ((L + 1) ^ (D * a.2) * (L + 1) ^ D) := by ring
-      _ = C * 2 ^ (D * a.2) * (L + 1) ^ (D * a.2 + D) := by rw [← Nat.pow_add]
+      _ = C * 2 ^ (D * a.weight) * ((L + 1) ^ (D * a.weight) * (L + 1) ^ D) := by ring
+      _ = C * 2 ^ (D * a.weight) * (L + 1) ^ (D * a.weight + D) := by rw [← Nat.pow_add]
   refine mem_XP_iff_exists_computableInO.mpr
     ⟨_, fun k => C * 2 ^ (D * k), fun k => D * k + D, hO.mono_le hbound hbound, fun ⟨⟨n, c⟩, k⟩ =>
       (WeightedCircuitSAT.searchPadded_eq_true_iff c k).symm⟩
@@ -489,13 +501,13 @@ variable {α : Type} {encA : α ↪ List Bool} {κA : α → ℕ}
 theorem WP_subset_XP : WP encA κA ⊆ XP encA κA :=
   fun _ hA => hA.mem_XP WeightedCircuitSAT_mem_XP
 
-/-- **`W[t] ⊆ XP`** for every `t` [Cygan et al., Chapter 13][CyganEtAl2015] [DowneyFellows1999]
-[FlumGrohe2006]. -/
+/-- **`W[t] ⊆ XP`** for every `t`, adapting [Cygan et al., Section 13.3,
+pp. 436–437][CyganEtAl2015] to the library's reduction convention. -/
 theorem W_subset_XP (t : ℕ) : W t encA κA ⊆ XP encA κA :=
   (W_subset_WP t).trans WP_subset_XP
 
 /-- **`WCS t d ∈ XP`** for every weft bound `t` and depth bound `d`. -/
-theorem WCS_mem_XP (t d : ℕ) : WCS t d ∈ XP (encWCS t d) Prod.snd :=
+theorem WCS_mem_XP (t d : ℕ) : WCS t d ∈ XP (encWCS t d) WCSInstance.weight :=
   W_subset_XP t (WCS_mem_W t d)
 
 /-- **`IndependentSet ∈ XP`** for the target size parameter `k`. -/
