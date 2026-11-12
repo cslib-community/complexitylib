@@ -67,6 +67,8 @@ over a mask of rate `p` (`BitString.bernoulliAverage_chi`).
 * `Cslib.BitString.sq_expect_le_noiseStability`, `Cslib.BitString.noiseStability_le_expect_sq`,
   `Cslib.BitString.noiseStability_mono`: the noise stability lies between the squared mean and the
   second moment, increasingly in `ρ`.
+* `Cslib.BitString.sq_fourierCoeff_noiseOp_le`, `Cslib.BitString.expect_sub_expect_sq_noiseOp_le`:
+  for `|ρ| ≤ 1`, `(T_ρ f)^(S) ^ 2 ≤ f̂(S) ^ 2` and `Var[T_ρ f] ≤ Var[f]`.
 * `Cslib.BitString.noiseSensitivity_eq_noiseStability`, `Cslib.BitString.noiseSensitivity_eq_sum`:
   the noise sensitivity through the noise stability and its Fourier formula
   [O'Donnell, Definition 2.43 and Theorem 2.49][ODonnell2014].
@@ -276,6 +278,21 @@ theorem noiseStability_le_expect_sq {ρ : ℝ} (hρ : |ρ| ≤ 1) (f : (ι → B
   have h : ρ ^ #S ≤ 1 :=
     (le_abs_self _).trans (abs_pow ρ #S ▸ pow_le_one₀ (abs_nonneg ρ) hρ)
   simpa only [one_mul] using mul_le_mul_of_nonneg_right h (sq_nonneg (fourierCoeff f S))
+
+/-- On `|ρ| ≤ 1`, the noise operator does not increase the squared Fourier coefficients:
+`(T_ρ f)^(S) ^ 2 ≤ f̂(S) ^ 2`. -/
+theorem sq_fourierCoeff_noiseOp_le {ρ : ℝ} (hρ : |ρ| ≤ 1) (f : (ι → Bool) → ℝ) (S : Finset ι) :
+    fourierCoeff (noiseOp ρ f) S ^ 2 ≤ fourierCoeff f S ^ 2 := by
+  rw [fourierCoeff_noiseOp, mul_pow]
+  refine mul_le_of_le_one_left (sq_nonneg _) ((sq_le_one_iff_abs_le_one _).2 ?_)
+  rw [abs_pow]
+  exact pow_le_one₀ (abs_nonneg ρ) hρ
+
+/-- On `|ρ| ≤ 1`, the noise operator does not increase the variance: `Var[T_ρ f] ≤ Var[f]`. -/
+theorem expect_sub_expect_sq_noiseOp_le {ρ : ℝ} (hρ : |ρ| ≤ 1) (f : (ι → Bool) → ℝ) :
+    𝔼 x, (noiseOp ρ f x - 𝔼 y, noiseOp ρ f y) ^ 2 ≤ 𝔼 x, (f x - 𝔼 y, f y) ^ 2 := by
+  rw [expect_sub_expect_sq_eq_sum_fourierCoeff_sq, expect_sub_expect_sq_eq_sum_fourierCoeff_sq]
+  exact sum_le_sum fun S _ => sq_fourierCoeff_noiseOp_le hρ f S
 
 /-! ### Noise sensitivity -/
 

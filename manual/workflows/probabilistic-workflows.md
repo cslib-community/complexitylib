@@ -2419,8 +2419,9 @@ The proof is the replacement method. `MeasureTheory.abs_integral_pi_sub_le_sum` 
 [`PiUpdate`](../../CslibFrontier/Foundations/MeasureTheory/Integral/PiUpdate.lean) telescopes over the
 hybrids `Measure.pi (s.piecewise ν μ)` and applies to any integrand. The Bonami Lemma for these
 variables, `integral_multilinearEval_pow_four_le`, is in
-[`Multilinear/Bonami`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean). It covers
-only the case `B ≤ 9` with variance `1` of Corollary 9.6. Cauchy–Schwarz for real integrals,
+[`Multilinear/Bonami`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean). It is
+the case `B = 9`, variance `1`, of `isReasonable_multilinearEval` in the same file (Corollary 9.6),
+and is derived from it. Cauchy–Schwarz for real integrals,
 `MeasureTheory.sq_integral_mul_le`, needs no sign condition. It is in
 [`Integral/CauchySchwarz`](../../CslibFrontier/Foundations/MeasureTheory/Integral/CauchySchwarz.lean)
 with `MeasureTheory.integrable_pow_of_memLp` and `MeasureTheory.integrable_abs_pow_of_memLp`, which
@@ -2432,11 +2433,122 @@ Gaussians for any function of two bits with `ψ = cos` (`C⁴`) and `ψ = sin` (
 that a degree-`0` polynomial has exactly equal expectations. Run
 `scripts/build.sh CslibFrontierTests.MultilinearInvariance` from the repository root to check them.
 
-The test function must be smooth. The following are not formalized: the Lipschitz form
-(Corollary 11.68) and the Lévy-distance form (Corollary 11.70); the forms for functions with small
-high-degree tails, including noise-stable functions (Corollary 11.69), and cdf-closeness through
-the Carbery–Wright theorem (Theorem 11.71); the general Invariance Principle with
-hypercontractive ensembles; and Majority Is Stablest.
+### Lipschitz tests and noise-smoothed functions
+
+For a test function that is only Lipschitz (Corollary 11.68), import
+[`CslibFrontier.Foundations.Probability.Multilinear.InvarianceLipschitz`](../../CslibFrontier/Foundations/Probability/Multilinear/InvarianceLipschitz.lean).
+`abs_integral_comp_multilinearEval_sub_le_of_lipschitzWith μ ν hμ hν hc hvar hε0 hε hψ` takes the
+hypotheses of `abs_integral_comp_multilinearEval_sub_le_of_influence_le` with
+`hψ : LipschitzWith K ψ` (`K : ℝ≥0`) in place of the `C⁴` bound, and bounds the difference by
+`9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ)`. Integrability of `ψ (multilinearEval c ·)` is proved inside.
+The general transfer behind it, `abs_integral_comp_sub_le_of_lipschitzWith hτ h hψ` with
+`hτ : 0 ≤ τ`, applies to any two real random variables `X` and `Y`, on different probability
+spaces if needed. Here `h` must prove, for every `C⁴` `φ` with `|φ''''| ≤ C`, that `φ ∘ X` and
+`φ ∘ Y` are integrable and that their expectations differ by at most `C * τ ^ 4`; measurability of
+`X` and `Y` follows from `h`. The result bounds the difference for `ψ` by `16 * K * τ`.
+`LipschitzWith.abs_integral_comp_sub_le_sqrt hψ hX hY`, next to Cauchy–Schwarz in
+[`Integral/CauchySchwarz`](../../CslibFrontier/Foundations/MeasureTheory/Integral/CauchySchwarz.lean),
+gives `|∫ ψ (X ω) - ∫ ψ (Y ω)| ≤ K * √(∫ (X ω - Y ω) ^ 2)` for `MemLp X 2 P` and `MemLp Y 2 P` on a
+probability space, and `abs_integral_comp_multilinearEval_sub_le_sqrt μ hμ hψ c d` bounds the
+difference for two polynomials `c` and `d` by `K * √(∑ S, (c S - d S) ^ 2)`.
+
+The smoothing is in
+[`LipschitzSmoothing.lean`](../../CslibFrontier/Foundations/Analysis/Calculus/LipschitzSmoothing.lean)
+(namespace `Real`). `Real.movingAverage h φ s = h⁻¹ * ∫ t in 0..h, φ (s + t)`
+(`Real.movingAverage_def`). For continuous `φ`, `Real.hasDerivAt_movingAverage` and
+`Real.contDiff_iterate_movingAverage` show that `(Real.movingAverage h)^[m] φ` is `ContDiff ℝ m`.
+For `hψ : LipschitzWith K ψ` and `0 < h`, `hψ.abs_iterate_movingAverage_sub_le` gives
+`|(movingAverage h)^[m] ψ s - ψ s| ≤ m * K * h`, and
+`hψ.abs_iteratedDeriv_iterate_movingAverage_le` gives `|iteratedDeriv (k + 1) _ s| ≤
+2 ^ k * K / h ^ k` for `k < m`. `hψ.exists_contDiff_smoothing m hη` is a finite-order form of
+Proposition 11.58: a `Cᵐ` function within `K * η` of `ψ` whose `(k + 1)`-th derivative is at most
+`(2 * m) ^ k * K / η ^ k`. O'Donnell smooths with a Gaussian, which gives one `C^∞` function for
+every order. Here the function and the constant `(2 * m) ^ k` depend on the chosen order `m`, but
+the constants are explicit.
+
+On the cube, import
+[`CslibFrontier.Foundations.BooleanAnalysis.InvarianceNoise`](../../CslibFrontier/Foundations/BooleanAnalysis/InvarianceNoise.lean)
+(namespace `Cslib.BitString`). Its theorems compare `𝔼 x, ψ (f x)` at uniform bits with
+`∫ y, ψ (multilinearEval (fourierCoeff f) y) ∂Measure.pi μ` for laws with
+`hμ : ∀ i, HasInvarianceMoments (μ i)`, as the cube theorems above do, and take `μ` explicitly.
+
+- `abs_expect_comp_sub_integral_comp_multilinearEval_le_of_lipschitzWith μ hμ hf hvar hε0 hε hψ`
+  is inequality (11.31), Corollary 11.68 on the cube, with the bound
+  `9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ)`.
+- No degree hypothesis is needed in Corollary 11.69. For any `f`, `k : ℕ`, `hvar`, `hε0 : 0 ≤ ε` and
+  `hε : ∀ t, ∑ S with t ∈ S ∧ #S ≤ k, fourierCoeff f S ^ 2 ≤ ε` (the influences of `f^{≤k}`),
+  `abs_expect_comp_sub_integral_comp_multilinearEval_le_add_sqrt μ hμ k hvar hε0 hε hψ` is
+  inequality (11.32): the difference is at most
+  `9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ) + 2 * K * √(∑ S with k < #S, fourierCoeff f S ^ 2)`.
+- A function `h` has no `(ε, δ)`-notable coordinates when
+  `hε : ∀ i, stableInfluence (1 - δ) i h ≤ ε` (O'Donnell's Definition 6.9; `stableInfluence_eq_sum`
+  gives `∑ S with i ∈ S, (1 - δ) ^ (#S - 1) * fourierCoeff h S ^ 2`). With `hvar` for `h` and
+  `0 ≤ δ ≤ 1`,
+  `abs_expect_comp_noiseOp_sub_integral_comp_multilinearEval_le_add_pow μ hμ k hvar hε0 hδ0 hδ1 hε hψ`
+  is inequality (11.33) in its sharper form: for `f = noiseOp (1 - δ) h` the difference is at most
+  `9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ) + 2 * K * (1 - δ) ^ k` for every `k`. The book then bounds
+  `(1 - δ) ^ k ≤ exp (-k δ)`.
+- `abs_expect_comp_noiseOp_sub_integral_comp_multilinearEval_le_of_lipschitzWith μ hμ hvar hε0 hε1
+  hδ0 hδ hε hψ`, for `0 ≤ ε ≤ 1` and `0 ≤ δ ≤ 1 / 20`, is the second statement of Corollary 11.69
+  with the explicit constant `15`: the difference is at most `15 * K * ε ^ (δ / 3)`. The proof
+  takes `k = ⌊-log ε / 3⌋₊` and treats `ε = 0` by letting `k → ∞`.
+- `abs_expect_comp_sub_le_sqrt hψ f g` bounds `|𝔼 x, ψ (f x) - 𝔼 x, ψ (g x)|` by
+  `K * √(∑ S, (fourierCoeff f S - fourierCoeff g S) ^ 2)`.
+
+The noise lemmas these use are `sq_fourierCoeff_noiseOp_le` (`(T_ρ f)^(S) ^ 2 ≤ f̂(S) ^ 2` for
+`|ρ| ≤ 1`) and `expect_sub_expect_sq_noiseOp_le` (`Var[T_ρ f] ≤ Var[f]`) in `Noise.lean`, and `influence_noiseOp_le_stableInfluence`
+(`Inf_i[T_ρ f] ≤ Inf_i^{(ρ)}[f]` for `0 ≤ ρ ≤ 1`), `stableInfluence_noiseOp_le`
+(`Inf_i^{(ρ)}[T_σ f] ≤ Inf_i^{(ρ)}[f]` for `0 ≤ ρ` and `|σ| ≤ 1`) and `stableInfluence_mono`
+(increasing in `ρ ≥ 0`) in `StableInfluence.lean`.
+
+The checked [`InvarianceLipschitz.lean` clients](../../CslibFrontierTests/InvarianceLipschitz.lean)
+smooth `|·|` with explicit bounds, check that its moving average stays `1`-Lipschitz, and apply
+Proposition 11.58 to it. For Corollary 11.68 they use the normalized sum and the clamp `u ↦ min 1 (max 0 u)`: the bound
+is `18 * m⁻¹ ^ (1/4)`, which for `m = 100⁴` is `18 / 100`, below the trivial bound `1`. They also
+instantiate the general and cube (11.31) Lipschitz forms. For Corollary 11.69 they apply (11.32)
+with `k = 1` to `∑ aᵢ xᵢ + θ χ_{[n+2]}` with `∑ aᵢ² + θ² ≤ 1` and `aᵢ² ≤ ε`, giving the bound
+`9 * 2 * ε ^ (1 / 4) + 2 |θ|` with both terms nonzero. They show that a linear form has
+`(1 - δ)`-stable influences `aᵢ²`, compare them across rates and under noise, and conclude that it
+has no `(ε, δ)`-notable coordinates when every `aᵢ² ≤ ε`; for the normalized sum of `m = 100⁶⁰` signs and `δ = 1 / 20` the clamp gives the bound
+`15 * (1 / m) ^ (1 / 60) = 0.15`, below the trivial bound `1`. Run
+`scripts/build.sh CslibFrontierTests.InvarianceLipschitz` from the repository root to check them.
+
+### Reasonable random variables
+
+`IsReasonable B X P`, in
+[`Reasonable.lean`](../../CslibFrontier/Foundations/Probability/Reasonable.lean) (namespace
+`ProbabilityTheory`), bundles `MemLp X 4 P` with `∫ X ^ 4 ≤ B * (∫ X ^ 2) ^ 2` (O'Donnell,
+Definition 9.1). On a finite type, the tail and anticoncentration bounds of
+[`PaleyZygmund.lean`](../../CslibFrontier/Foundations/Data/Finset/PaleyZygmund.lean) take the
+inequality `𝔼 X ^ 4 ≤ B * (𝔼 X ^ 2) ^ 2` directly, and `isReasonable_uniformOn_univ_iff` converts
+between the two. `hasInvarianceMoments_iff`, in
+[`Multilinear/Bonami.lean`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean),
+states that `HasInvarianceMoments μ` is `IsReasonable 9 id μ` together with the moments `0`, `1`
+and `0`. **The Bonami Lemma** (O'Donnell, Corollary 9.6), `isReasonable_multilinearEval` in
+[`Multilinear/Bonami`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean), takes
+laws `μ i` with `IsReasonable B id (μ i)`, `∫ z, z ∂μ i = 0` and `∫ z, z ^ 3 ∂μ i = 0`, and a
+polynomial `c` with `c S = 0` whenever `k < #S`, and concludes
+`IsReasonable (max B 9 ^ k) (multilinearEval c) (Measure.pi μ)`. The laws may differ and their
+second moments are not normalized. `IsReasonable.mono`,
+`IsReasonable.const_mul` and `HasLaw.isReasonable_iff` change `B`, rescale and transfer along a
+law. A `±1`-valued variable is
+`1`-reasonable by `isReasonable_one_of_sq_eq_one`, with its moments from
+`integral_sq_eq_one_of_sq_eq_one` and `integral_pow_three_eq_integral_of_sq_eq_one`. For
+`hg : HasLaw g (gaussianReal 0 1) P`, `hg.isReasonable_three_of_gaussianReal` gives
+`3`-reasonableness, and `hg.integral_eq_zero_of_gaussianReal`,
+`hg.integral_sq_eq_one_of_gaussianReal` and `hg.integral_pow_three_eq_zero_of_gaussianReal`
+(in [`Gaussian/Moments.lean`](../../CslibFrontier/Foundations/Probability/Gaussian/Moments.lean))
+give its moments. The checked [`Reasonable.lean` clients](../../CslibFrontierTests/Reasonable.lean)
+cover standard and rescaled Gaussians, uniformly random signs, Hypothesis 11.65 from
+reasonableness, a uniform `0`/`1` bit, which is `2`-reasonable but not `1`-reasonable, and the
+Bonami Lemma for a sparse sign (`±1` with probability `1 / 20` each), which is `10`-reasonable
+but not `9`-reasonable: polynomials in two of them are `100`-reasonable, sharply so for their
+product, and sums of `n` of them are `10`-reasonable. Run
+`scripts/build.sh CslibFrontierTests.Reasonable` from the repository root to check them.
+
+The following are not formalized: the Lévy-distance form
+(Corollary 11.70), cdf-closeness through the Carbery–Wright theorem (Theorem 11.71), the general
+Invariance Principle with hypercontractive ensembles, and Majority Is Stablest.
 
 ## Evaluate a multi-component conditional walk via validated words
 
