@@ -223,44 +223,43 @@ noncomputable def dhIdealKey (_n : ℕ) (transcript : F.Desc × List Bool × Lis
   let z ← PMF.uniformOfFintype (ZMod (F.order d))
   return F.encode d (z • F.generator d)
 
-/-- Re-associate an eavesdropper on Diffie–Hellman transcripts as a DDH distinguisher: the DDH
-tuple `(d, u, v, w)` is passed on as the transcript `(d, u, v)` with key `w`. -/
+/-- Run an eavesdropper on Diffie–Hellman transcripts as a DDH distinguisher: the elements
+`(u, v, w)` of group `d` are encoded and passed on as the transcript `(d, u, v)` with key `w`. -/
 @[expose]
-def dhEavToDDH (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool)
-    (n : ℕ) (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
-  let ⟨d, u, v, w⟩ := input
-  adversary n ((d, u, v), w)
+def dhEavToDDH (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool) :
+    F.DDHDistinguisher :=
+  fun n d u v w => adversary n ((d, F.encode d u, F.encode d v), F.encode d w)
 
 /-- The real eavesdropping experiment on Diffie–Hellman is the real DDH experiment. -/
 theorem realGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool) (n : ℕ) :
     (F.dhKeyExchange setup).realGame adversary n =
       F.ddhRealGame setup (F.dhEavToDDH adversary) n := by
-  simp only [KeyExchange.realGame, dhKeyExchange, ddhRealGame, eval_ddhRealExperiment, dhEavToDDH,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    smul_val_encode, smul_smul]
+  simp only [KeyExchange.realGame, dhKeyExchange, ddhRealGame, ddhRealExperiment, dhEavToDDH,
+    ProbComp.eval_bind, ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.bind_bind, PMF.pure_bind, smul_val_encode, smul_smul]
 
 /-- With the uniform group element as ideal key, the ideal eavesdropping experiment on
-Diffie–Hellman is the ideal DDH experiment. -/
+Diffie–Hellman is the random DDH experiment. -/
 theorem idealGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool) (n : ℕ) :
     (F.dhKeyExchange setup).idealGame F.dhIdealKey adversary n =
-      F.ddhIdealGame setup (F.dhEavToDDH adversary) n := by
-  simp only [KeyExchange.idealGame, dhKeyExchange, dhIdealKey, ddhIdealGame,
-    eval_ddhIdealExperiment, dhEavToDDH,
+      F.ddhRandomGame setup (F.dhEavToDDH adversary) n := by
+  simp only [KeyExchange.idealGame, dhKeyExchange, dhIdealKey, ddhRandomGame,
+    ddhRandomExperiment, dhEavToDDH, ProbComp.eval_bind, ProbComp.eval_uniform,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
 
-/-- The re-association `dhEavToDDH` is uniform strict PPT when the eavesdropper is. -/
+/-- The distinguisher `dhEavToDDH` is uniform strict PPT when the eavesdropper is. -/
 theorem isPPTOn_dhEavToDDH
     {adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool}
     (hA : IsPPTOn (KeyExchange.encEavInput F.encDHTranscript encBits) encBool
       (fun input => adversary input.1 input.2)) :
-    IsPPTOn F.encDDHInput encBool (fun input => F.dhEavToDDH adversary input.1 input.2) := by
-  unfold dhEavToDDH
-  exact hA.preprocess
-    (prepare := fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
-      (input.1, ((input.2.groupParameters, input.2.leftPublic, input.2.rightPublic),
-        input.2.candidateShared))) (by fun_prop)
+    IsPPTOn F.encDDHInput encBool fun x => F.dhEavToDDH adversary x.secParam x.groupParameters
+      x.leftPublic x.rightPublic x.candidateShared :=
+  hA.preprocess (prepare := fun x : F.DDHInput =>
+    (x.secParam, ((x.groupParameters, F.encode x.groupParameters x.leftPublic,
+      F.encode x.groupParameters x.rightPublic), F.encode x.groupParameters x.candidateShared)))
+    (by fun_prop)
 
 /-- **Diffie–Hellman key exchange is secure against eavesdroppers under DDH**
 ([KatzLindell2020], Theorem 11.3, p. 394): if the Decisional Diffie–Hellman assumption holds for
