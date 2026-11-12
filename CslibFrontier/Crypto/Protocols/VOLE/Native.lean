@@ -28,6 +28,8 @@ sends a richer first message needs its own reconstruction law before expanding t
 
 ## Main definitions
 
+* `Native.Gate`, `Native.Input`, `Native.Share`, `Native.View`: native circuit, share, and
+  receiver view records.
 * `Native.Receiver`: the four stateful probabilistic callbacks.
 * `Native.Receiver.strategy`: their role-local interactive realization.
 * `Native.Receiver.mapFirst`: preprocessing the first-message callback without changing state flow.
@@ -51,15 +53,50 @@ namespace Cslib.Crypto.Protocols.VOLE.Native
 open Probability Interactive Interactive.Spec
 open scoped BigOperators
 
-/-- Runtime wire count and ordered gate triples. -/
-abbrev Input := ℕ × List (ℕ × ℕ × ℕ)
+/-- One multiplication gate of a native circuit, with left, right, and output wire indices. -/
+@[ext]
+structure Gate where
+  /-- Left input wire index. -/
+  left : ℕ
+  /-- Right input wire index. -/
+  right : ℕ
+  /-- Output product wire index. -/
+  output : ℕ
+  deriving DecidableEq, Repr, Inhabited
+
+/-- Runtime wire count and ordered multiplication gates. -/
+@[ext]
+structure Input where
+  /-- Number of witness wires before the fresh mask wire. -/
+  wires : ℕ
+  /-- Ordered multiplication gates. -/
+  gates : List Gate
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Receiver key and tags, including the final fresh-mask tag. -/
-abbrev Share (F : Type) := F × List F
+@[ext]
+structure Share (F : Type) where
+  /-- Global VOLE key held by the receiver. -/
+  key : F
+  /-- Receiver tags for each witness wire and the trailing fresh mask. -/
+  tags : List F
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Receiver share, raw corrections, normalized weights, affine reply and terminal private
 result. -/
-abbrev View (F Result : Type) := Share F × List F × List F × (F × F) × Result
+@[ext]
+structure View (F Result : Type) where
+  /-- Receiver's sampled VOLE key and tags. -/
+  share : Share F
+  /-- Raw commitment corrections for each witness wire. -/
+  corrections : List F
+  /-- Normalized challenge weight per gate. -/
+  weights : List F
+  /-- Blinded affine reply `(a, b)`. -/
+  reply : F × F
+  /-- Terminal private output of the receiver callback. -/
+  result : Result
+  deriving DecidableEq, Repr, Inhabited
 
 variable {F I First State Result : Type}
 
@@ -100,10 +137,10 @@ def weights (count : ℕ) (r : List F) : List F :=
 /-- Total list evaluation. Gate indices are looked up in the existing lists; their numeric values
 never determine an allocation or loop bound. The wire count selects the fresh mask's tag. -/
 def checkValue (input : Input) (share : Share F) (d r : List F) : F :=
-  let adjusted := fun i => share.2.getD i 0 + d.getD i 0 * share.1
-  ((input.2.zip (weights input.2.length r)).map fun (gate, weight) =>
-    weight * (adjusted gate.1 * adjusted gate.2.1 - adjusted gate.2.2 * share.1)).sum +
-      share.2.getD input.1 0
+  let adjusted := fun i => share.tags.getD i 0 + d.getD i 0 * share.key
+  ((input.gates.zip (weights input.gates.length r)).map fun (gate, weight) =>
+    weight * (adjusted gate.left * adjusted gate.right - adjusted gate.output * share.key)).sum +
+      share.tags.getD input.wires 0
 
 /-- The supplied sampler is called independently for the key, each tag/correction, and the final
 affine coefficient. Exactness and efficient realization are separate sampler hypotheses. The first
@@ -113,17 +150,17 @@ def simulate (sample : ProbComp F) (receiver : Receiver F I First State Result)
     ProbComp (View F Result) := do
   let shape := layout input
   let delta ← sample
-  let q ← OracleComp.replicate (shape.1 + 1) sample
-  let share := (delta, q)
+  let q ← OracleComp.replicate (shape.wires + 1) sample
+  let share : Share F := ⟨delta, q⟩
   let s ← receiver.init input share
-  let d ← OracleComp.replicate shape.1 sample
+  let d ← OracleComp.replicate shape.wires sample
   let (r, s) ← receiver.challenge input share s (first input share d)
-  let r := weights shape.2.length r
+  let r := weights shape.gates.length r
   let a ← sample
   let reply := (a, checkValue shape share d r - a * delta)
   let s ← receiver.receive input share s reply
   let result ← receiver.terminal input share s
-  return (share, d, r, reply, result)
+  return ⟨share, d, r, reply, result⟩
 
 /-- The adapter reads the actual cached share at every phase, rather than passing setup state
 through the prover interface. The returned strategies retain the sampled callback state. The
@@ -135,32 +172,32 @@ def Receiver.strategy {Message Index : Type} (receiver : Receiver F I First Stat
       (VerifierStrategy (ProbOracleComp (voleReceiverSpec F (n + 1)))
         (Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec Message (Index → F) (F × F)) Result) := do
   let share ← ProbOracleComp.query ()
-  let state ← ProbOracleComp.sample (receiver.init input (share.1, List.ofFn share.2))
+  let state ← ProbOracleComp.sample (receiver.init input ⟨share.1, List.ofFn share.2⟩)
   return fun message => do
     let share ← ProbOracleComp.query ()
     let (r, state) ← ProbOracleComp.sample
-      (receiver.challenge input (share.1, List.ofFn share.2) state (encodeFirst message))
+      (receiver.challenge input ⟨share.1, List.ofFn share.2⟩ state (encodeFirst message))
     return (show ProbOracleComp (voleReceiverSpec F (n + 1))
       ((Index → F) × ((F × F) → ProbOracleComp (voleReceiverSpec F (n + 1))
         (ProbOracleComp (voleReceiverSpec F (n + 1)) Result))) from
       pure ((fun i => r.getD (index i) 0), fun reply => do
       let share ← ProbOracleComp.query ()
       let state ← ProbOracleComp.sample
-        (receiver.receive input (share.1, List.ofFn share.2) state reply)
+        (receiver.receive input ⟨share.1, List.ofFn share.2⟩ state reply)
       return (do
         let share ← ProbOracleComp.query ()
-        ProbOracleComp.sample (receiver.terminal input (share.1, List.ofFn share.2) state))))
+        ProbOracleComp.sample (receiver.terminal input ⟨share.1, List.ofFn share.2⟩ state))))
 
 /-- Public input representing finite wire maps; binary indices retain repeated wires. -/
 def inputOfMaps {n m : ℕ} (left right output : Fin m → Fin n) : Input :=
-  (n, List.ofFn (fun i => ((left i).val, (right i).val, (output i).val)))
+  ⟨n, List.ofFn (fun i => ⟨(left i).val, (right i).val, (output i).val⟩)⟩
 
 /-- List representation of the full typed receiver view, including its private share. -/
 def viewToLists {n m : ℕ} :
     ((F × (Fin (n + 1) → F)) × Transcript (maskedMulCheckSpec F (Fin m) n) × Result) →
       View F Result :=
   fun (share, (d, r, reply, ()), result) =>
-    ((share.1, List.ofFn share.2), List.ofFn d, List.ofFn r, reply, result)
+    ⟨⟨share.1, List.ofFn share.2⟩, List.ofFn d, List.ofFn r, reply, result⟩
 
 /-- The transmitted list is precisely the adapter's finite weight vector. -/
 theorem weights_eq_ofFn (count : ℕ) (r : List F) :
@@ -178,13 +215,13 @@ theorem weights_ofFn {m : ℕ} (r : Fin m → F) : weights m (List.ofFn r) = Lis
 /-- The total list algorithm agrees with the existing algebraic check on valid wire maps. -/
 theorem checkValue_ofFn {n m : ℕ} (left right output : Fin m → Fin n)
     (delta : F) (q : Fin (n + 1) → F) (d : Fin n → F) (r : Fin m → F) :
-    checkValue (inputOfMaps left right output) (delta, List.ofFn q)
+    checkValue (inputOfMaps left right output) ⟨delta, List.ofFn q⟩
       (List.ofFn d) (List.ofFn r) = maskedMulCheckValue left right output delta q d r := by
   simp only [checkValue, inputOfMaps, List.length_ofFn, weights_ofFn]
   have hzip :
-      (List.ofFn (fun i => ((left i).val, (right i).val, (output i).val))).zip
+      (List.ofFn (fun i => (⟨(left i).val, (right i).val, (output i).val⟩ : Gate))).zip
         (List.ofFn r) = List.ofFn (fun i =>
-          (((left i).val, (right i).val, (output i).val), r i)) := by
+          ((⟨(left i).val, (right i).val, (output i).val⟩ : Gate), r i)) := by
     apply List.ext_getElem (by simp)
     intro i hi hi'
     simp

@@ -67,18 +67,11 @@ theorem exec_stage_next {w p k A B a b out scratch frames frame : ℕ}
   have hf := hl.frames_before
   obtain ⟨s, he, sh, sc, outputValues, productValues, outputFrame⟩ :=
     exec_returnedUpdates current x u v hx hc hl hu hv hout hprod hmag haddr
+  obtain ⟨hleft', hright'⟩ := hl.inputs_of_outside outputFrame
   obtain ⟨y, hy, ready, leftValues, rightValues, parentPhase, memory⟩ := exec_prepareChild next
     s u v sh sc hl hu hv
-    (by
-      intro i hi
-      rw [outputFrame _ ?_]
-      · exact hleft i hi
-      · rcases hl.left_disjoint with h | h <;> omega)
-    (by
-      intro i hi
-      rw [outputFrame _ ?_]
-      · exact hright i hi
-      · rcases hl.right_disjoint with h | h <;> omega)
+    (fun i hi => (hleft' i hi).trans (hleft i hi))
+    (fun i hi => (hright' i hi).trans (hright i hi))
     hmag haddr
   have hafter : afterReturn current = prepareChild next := by
     fin_cases phase <;> rfl

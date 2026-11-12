@@ -58,8 +58,7 @@ open Cslib.BitString
 
 /-- Chunking preserves every bit, including zero-valued chunks. -/
 @[simp] theorem unpack_pack {r m : ℕ} (v : Fin (r * m) → Bool) : unpack (pack v) = v := by
-  simp only [unpack, pack, Equiv.symm_apply_apply]
-  exact blocksEquiv.symm_apply_apply v
+  simp only [unpack, pack, Equiv.symm_apply_apply, blocksEquiv_symm_block]
 
 /-- All tuples of chunks are valid aligned encodings. -/
 @[simp] theorem pack_unpack {r m : ℕ} (v : Fin r → Fin (2 ^ m)) : pack (unpack v) = v := by

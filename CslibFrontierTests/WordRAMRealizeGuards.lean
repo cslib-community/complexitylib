@@ -15,8 +15,8 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 
 The source guards stay in their ordinary natural-number notation. Nonstrict comparisons must
 not require an increment of either operand, and reversing a comparison must retain the safety
-conditions of the selected arithmetic path. Arbitrary predicates and conjunctions remain outside
-the supported branch grammar.
+conditions of the selected arithmetic path. Arbitrary opaque predicates remain outside the
+supported branch grammar.
 -/
 
 public section
@@ -222,12 +222,9 @@ example (P : ℕ → Prop) [DecidablePred P] : True := by
       realize
   trivial
 
-example : True := by
-  fail_if_success
-    have _ : Realizes .exact
-        (fun d : ℕ × ℕ => if d.1 ≤ d.2 ∧ d.2 ≠ 0 then pure d.1 else pure d.2)
-        pairWords word (fun _ _ _ => True) (fun _ _ => 0) := by
-      realize
-  trivial
+example : Realizes .exact
+    (fun d : ℕ × ℕ => if d.1 ≤ d.2 ∧ d.2 ≠ 0 then pure d.1 else pure d.2)
+    pairWords word (fun _ _ _ => True) (fun _ _ => 0) := by
+  realize
 
 end CslibFrontierTests.WordRAMRealizeGuards

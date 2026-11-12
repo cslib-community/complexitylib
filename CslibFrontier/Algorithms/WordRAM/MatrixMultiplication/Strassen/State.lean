@@ -60,6 +60,44 @@ theorem NodeLayout.child {p k a b out scratch frames frame : ℕ}
   · omega
   · omega
 
+/-- Every index of either input array lies outside the output block and strictly below `scratch`. -/
+theorem NodeLayout.input_outside {p k a b out scratch frames frame i : ℕ}
+    (hl : NodeLayout p k a b out scratch frames frame) (hi : i < 4 ^ k * p) :
+    ((a + i < out ∨ out + 4 ^ k * p ≤ a + i) ∧ a + i < scratch) ∧
+      ((b + i < out ∨ out + 4 ^ k * p ≤ b + i) ∧ b + i < scratch) := by
+  have ha := hl.left_before
+  have hb := hl.right_before
+  refine ⟨⟨?_, by omega⟩, ⟨?_, by omega⟩⟩
+  · rcases hl.left_disjoint with h | h <;> omega
+  · rcases hl.right_disjoint with h | h <;> omega
+
+/-- Both input arrays lie outside the current output block, so any state whose memory agrees
+outside `[out, out + 4 ^ k * p)` retains both input arrays. -/
+theorem NodeLayout.inputs_of_outside {p k a b out scratch frames frame : ℕ}
+    (hl : NodeLayout p k a b out scratch frames frame) {μ ν : ℕ → ℕ}
+    (hν : ∀ d, d < out ∨ out + 4 ^ k * p ≤ d → ν d = μ d) :
+    (∀ i < 4 ^ k * p, ν (a + i) = μ (a + i)) ∧
+      (∀ i < 4 ^ k * p, ν (b + i) = μ (b + i)) :=
+  ⟨fun _ hi => hν _ (hl.input_outside hi).1.1,
+    fun _ hi => hν _ (hl.input_outside hi).2.1⟩
+
+/-- Both parent input arrays precede `scratch` and `frame` and are disjoint from `out`, so
+stage executions that modify only output, child scratch and current/child frame preserve them. -/
+theorem NodeLayout.inputs_of_stage {p k a b out scratch frames frame : ℕ}
+    (hl : NodeLayout p (k + 1) a b out scratch frames frame) {μ ν : ℕ → ℕ}
+    (hν : ∀ d, (d < out ∨ out + 4 ^ (k + 1) * p ≤ d) →
+      (d < scratch ∨ scratch + 2 * (4 ^ k * p) ≤ d) →
+      (d < frame + 6 ∨ frame + 14 ≤ d) → ν d = μ d) :
+    (∀ i < 4 ^ (k + 1) * p, ν (a + i) = μ (a + i)) ∧
+      (∀ i < 4 ^ (k + 1) * p, ν (b + i) = μ (b + i)) := by
+  have hs := hl.scratch_before
+  have hf := hl.frames_before
+  refine ⟨fun i hi => ?_, fun i hi => ?_⟩
+  · have h := (hl.input_outside hi).1
+    exact hν _ h.1 (Or.inl h.2) (Or.inl (by omega))
+  · have h := (hl.input_outside hi).2
+    exact hν _ h.1 (Or.inl h.2) (Or.inl (by omega))
+
 /-- Current matrix parameters and fixed controller constants, before phase-specific work. -/
 structure NodeHeader (p k a b out scratch frames frame : ℕ) (x : Data 64) : Prop where
   /-- First input pointer. -/
