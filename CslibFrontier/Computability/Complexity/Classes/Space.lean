@@ -94,15 +94,9 @@ def PSPACE (enc : α ↪ List Bool) : Set (Set α) :=
 /-- Membership in `PSPACE` is upstream decidability within some time and polynomial space. -/
 theorem mem_PSPACE_iff : A ∈ PSPACE enc ↔
     ∃ t s, PolyBounded (fun a => (enc a).length) s ∧ DecidableInTimeAndSpace A enc t s := by
-  have hind : ∀ f : α → Bool, (∀ a, a ∈ A ↔ f a = true) → f = indicator A := fun f hf => by
-    funext a
-    rcases h : f a <;> simp [indicator, hf a, h]
-  constructor
-  · rintro ⟨f, ⟨t, s, hs, hf⟩, hA⟩
-    obtain rfl := hind f hA
-    exact ⟨t, s, hs, hf⟩
-  · rintro ⟨t, s, hs, hA⟩
-    exact ⟨indicator A, ⟨t, s, hs, hA⟩, fun a => by by_cases ha : a ∈ A <;> simp [indicator, ha]⟩
+  simp only [decidableInTimeAndSpace_iff]
+  exact ⟨fun ⟨f, ⟨t, s, hs, hf⟩, hA⟩ => ⟨t, s, hs, f, hf, hA⟩,
+    fun ⟨t, s, hs, f, hf, hA⟩ => ⟨f, ⟨t, s, hs, hf⟩, hA⟩⟩
 
 /-- A space class of a polynomially bounded bound is within `PSPACE`. -/
 theorem DSPACE_subset_PSPACE {α : Type} {enc : α ↪ List Bool} {s : ℕ → ℕ}

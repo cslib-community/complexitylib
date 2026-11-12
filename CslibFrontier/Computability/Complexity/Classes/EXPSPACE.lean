@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.EXP
 public import CslibFrontier.Computability.Complexity.Classes.Space
 import CslibFrontier.Computability.Complexity.Classes.Space.Time
+import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Basic
 
 /-!
 # Exponential space
@@ -36,6 +37,7 @@ inclusion is strict for problems on bit words by the space hierarchy theorem
   `h` is exponential space.
 * `Cslib.Complexity.PSPACE_subset_EXPSPACE`: polynomial space is within exponential space.
 * `Cslib.Complexity.EXP_subset_EXPSPACE`: exponential time is within exponential space.
+* `Cslib.Complexity.compl_mem_EXPSPACE`: closure under complement.
 
 ## References
 
@@ -75,5 +77,11 @@ theorem PSPACE_subset_EXPSPACE {α : Type} {enc : α ↪ List Bool} :
 theorem EXP_subset_EXPSPACE : EXP enc ⊆ EXPSPACE enc := fun _ hA =>
   let ⟨k, hk⟩ := mem_EXP_iff.mp hA
   mem_EXPSPACE_iff.mpr ⟨k, DTIME_subset_DSPACE hk⟩
+
+/-- `EXPSPACE` is closed under complement (`Cslib.Complexity.compl_mem_DSPACE`). -/
+theorem compl_mem_EXPSPACE {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ EXPSPACE enc) :
+    Aᶜ ∈ EXPSPACE enc :=
+  let ⟨k, hk⟩ := mem_EXPSPACE_iff.mp h
+  mem_EXPSPACE_iff.mpr ⟨k, compl_mem_DSPACE hk⟩
 
 end Cslib.Complexity

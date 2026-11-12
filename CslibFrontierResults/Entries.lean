@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ROABP
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
@@ -1119,6 +1120,30 @@ register_result "hitting-set-set-multilinear-depth-three" where
     from a source; the perfect hash family is the library's, so the size bound differs from \
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
+
+register_result "hitting-set-roabp-unknown-order" where
+  title := "Quasipolynomial hitting sets for ROABPs in an unknown order"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := AgrawalGurjarKorwarSaxena2015,
+      theorem := "Theorem 1, for univariate layers, in characteristic zero; Lemmas 6 and 8",
+      locator := "§1 and §3 of arXiv:1406.7535" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_roabpHittingSet,
+    Cslib.Circuits.Arithmetic.card_roabpHittingSet_le,
+    Cslib.Circuits.Arithmetic.roabpPrime_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of points of Fⁿ that contains \
+    a non-root of every nonzero n-variate polynomial computed by a width-w read-once \
+    oblivious branching program in some order of the variables with layer entries of degree \
+    at most δ; the set does not depend on the order. Its size is at most \
+    (⌈lg n⌉ + 1) p^⌈lg n⌉ (nδ(nδp + 1 + p)^⌈lg n⌉ + 1) for a prime p ≤ 2(2n²w⁸ + δ + 1), \
+    which is (nδw)^O(log n). Univariate layers only, not the source's sparse-factor layers. \
+    The weights are aⁱ⁺¹ mod p for one prime p instead of the source's (δ + 1)ⁱ mod q over \
+    many primes, and the levels are combined one at a time, so the bound is not the \
+    source's. Characteristic zero only. Existence and size of an explicit set: no bit \
+    complexity and no black-box algorithm model."
 
 register_result "hitting-set-sparse" where
   title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"

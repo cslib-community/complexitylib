@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.ImmermanVardi
-import CslibFrontier.Computability.Complexity.Fagin.Verifier
+import CslibFrontier.Logics.FirstOrder.Encoding.PolyTime
 
 /-! # Native polynomial-time queries produce uniform checked FO(LFP) sentences -/
 

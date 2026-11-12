@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Complexity.Gradel.Tableau
 public import CslibFrontier.Logics.SecondOrder.Horn.GuardElimination
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Horn
 public import Mathlib.ModelTheory.Graph
-import CslibFrontier.Computability.Complexity.Fagin.Verifier
+import CslibFrontier.Logics.FirstOrder.Encoding.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Tactic.FirstOrder
 
