@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
@@ -23,10 +24,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.List.OfFn
-import CslibFrontier.Foundations.Data.Nat.Power
 
 /-!
 # `#k-SAT` exponents, `#ETH`, and `#SETH`
@@ -637,45 +636,32 @@ theorem ComputableInExpTime.SharpKSAT_length_of_numVars {k : ℕ} {δ : ℝ} (h�
     · simp only [SharpKSAT, hφ, ↓reduceIte]
     · simp only [SharpKSAT, hφ, Bool.false_eq_true, ↓reduceIte]
   refine ComputableInExpTime.of_computableInO hite (2 * c + 3) (dw + dc + e) fun φ => ?_
-  set L : ℝ := ((encCNF φ).length : ℝ)
-  have hL1 : (1 : ℝ) ≤ L + 1 := by
-    dsimp only [L]
-    linarith [(Nat.cast_nonneg (encCNF φ).length : (0 : ℝ) ≤ _)]
-  have hX1 : (1 : ℝ) ≤ 2 ^ (k * δ * φ.length) := Real.one_le_rpow (by norm_num) (by positivity)
-  have hdw : (L + 1) ^ dw ≤ 2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have hdc : (L + 1) ^ dc ≤ 2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have he : (L + 1) ^ e ≤ (L + 1) ^ (dw + dc + e) := pow_le_pow_right₀ hL1 (by omega)
-  have hc_nn : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  have hpos : (0 : ℝ) ≤ 2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e) := by positivity
+  have hx : 0 ≤ k * δ * φ.length := by positivity
+  have hX := one_le_two_rpow_mul_pow (L := (encCNF φ).length) (e := dw + dc + e) hx
+  have hcX := mul_nonneg (Nat.cast_nonneg c : (0 : ℝ) ≤ c) (zero_le_one.trans hX)
+  have hdw := pow_le_two_rpow_mul_pow (L := (encCNF φ).length) (d := dw) (e := dw + dc + e) hx
+    (by omega)
+  have hdc := pow_le_two_rpow_mul_pow (L := (encCNF φ).length) (d := dc) (e := dw + dc + e) hx
+    (by omega)
   change ((((encCNF φ).length + 1) ^ dw +
     if φ.all (fun cl => decide (cl.length ≤ k)) then t φ
     else ((encCNF φ).length + 1) ^ dc : ℕ) : ℝ) ≤ _
   split_ifs with hφ
   · simp only [List.all_eq_true, decide_eq_true_eq] at hφ
     have hn : (φ.numVars : ℝ) ≤ k * φ.length := by exact_mod_cast CNF.numVars_le_mul_length hφ
-    have hexp : (2 : ℝ) ^ (δ * φ.numVars) ≤ 2 ^ (k * δ * φ.length) :=
-      Real.rpow_le_rpow_of_exponent_le (by norm_num) (by nlinarith)
-    have hmul := mul_le_mul hexp he (by positivity) (by positivity)
-    have hmulc := mul_le_mul_of_nonneg_left hmul hc_nn
-    have hc1 : (c : ℝ) ≤ c * (2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e)) :=
-      le_mul_of_one_le_right hc_nn (one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hL1))
+    have ht' := le_two_mul_mul_of_le_mul_add (ht φ)
+      (two_rpow_mul_pow_le_two_rpow_mul_pow (by nlinarith) (by omega)) hX
     push_cast
-    dsimp only [L] at *
-    nlinarith [ht φ]
+    linarith
   · push_cast
-    dsimp only [L] at *
-    nlinarith
+    linarith
 
 /-- Subexponential `#k-SAT` counting in `numVars` gives subexponential counting in `length`. -/
 theorem ComputableInSubexpTime.SharpKSAT_length_of_numVars {k : ℕ}
     (h : ComputableInSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars) :
-    ComputableInSubexpTime (SharpKSAT k) encCNF encNat List.length := by
-  intro δ hδ
-  refine ((h (δ / (k + 1)) (by positivity)).SharpKSAT_length_of_numVars (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    ComputableInSubexpTime (SharpKSAT k) encCNF encNat List.length := fun δ hδ =>
+  ((h (δ / (k + 1)) (by positivity)).SharpKSAT_length_of_numVars (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le k)
 
 /-- **From clauses to variables via disjoint counting sparsification.** For every width `k` and
 every `ε > 0`, there is a constant `c` such that any `#k-SAT` counter within time
@@ -715,13 +701,9 @@ theorem exists_computableInExpTime_SharpKSAT_numVars_of_length (k : ℕ) {ε : �
       (1 / B + occBound K M * δ) := by
     refine ComputableInExpTime.of_computableInO hsearchO (2 * C₀ + 1) E fun φ => ?_
     have hTφ := hT φ
-    have h1 : (1 : ℝ) ≤ (2 : ℝ) ^ ((1 / (B : ℝ) + occBound K M * δ) * φ.numVars) *
-        (((encCNF φ).length : ℝ) + 1) ^ E :=
-      one_le_mul_of_one_le_of_one_le (Real.one_le_rpow (by norm_num) (by positivity))
-        (one_le_pow₀ (le_add_of_nonneg_left (Nat.cast_nonneg _)))
-    have hC₀ : (C₀ : ℝ) ≤ C₀ * ((2 : ℝ) ^ ((1 / (B : ℝ) + occBound K M * δ) * φ.numVars) *
-        (((encCNF φ).length : ℝ) + 1) ^ E) :=
-      le_mul_of_one_le_right (Nat.cast_nonneg C₀) h1
+    have h1 := one_le_two_rpow_mul_pow (L := (encCNF φ).length) (e := E)
+      (by positivity : 0 ≤ (1 / (B : ℝ) + occBound K M * δ) * φ.numVars)
+    have hC₀ := le_mul_of_one_le_right (Nat.cast_nonneg C₀ : (0 : ℝ) ≤ C₀) h1
     push_cast
     linarith
   exact hrate.mono (by linarith)
@@ -735,11 +717,7 @@ theorem ComputableInSubexpTime.SharpKSAT_numVars_of_length {k : ℕ}
   obtain ⟨c, hc⟩ := exists_computableInExpTime_SharpKSAT_numVars_of_length k (half_pos hδ)
   have hδ' : 0 < δ / 2 / (c + 1) := by positivity
   refine (hc _ hδ'.le (h _ hδ')).mono ?_
-  have hc0 : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  have : (c : ℝ) * (δ / 2 / (c + 1)) ≤ δ / 2 := by
-    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-    nlinarith
-  linarith
+  linarith [natCast_mul_div_add_one_le (half_pos hδ).le c]
 
 /-- **`#ETH` in terms of clauses:** `SharpETH` holds iff `#3-SAT` is not computable in
 subexponential time in the number of clauses. -/
