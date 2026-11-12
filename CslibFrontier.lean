@@ -1403,6 +1403,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andr
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharpScore
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSignCoherent
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevTruncatedCircuit
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevTwoBlocks
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevTwoBlocksLowerBound
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
@@ -5111,6 +5113,7 @@ public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial
 public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
+public import CslibFrontier.Foundations.Combinatorics.CornerCutting
 public import CslibFrontier.Foundations.Combinatorics.CubeSplitting
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
