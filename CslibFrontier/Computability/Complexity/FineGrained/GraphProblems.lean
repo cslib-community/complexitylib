@@ -109,8 +109,8 @@ for some `δ > 0`, `IndependentSet` is not decidable within time `2 ^ (δ (|V| +
 polynomial in the length of the encoded instance, for graphs with `|V|` declared vertices and `|E|`
 edges. -/
 theorem ETH.not_decidableInSubexpTime_IndependentSet (h : ETH) :
-    ¬DecidableInSubexpTime IndependentSet (encPair encGraph encNat)
-      fun x => x.1.vertices.length + x.1.edges.length :=
+    ¬DecidableInSubexpTime IndependentSet encIndependentSetInstance
+      fun x => x.graph.vertices.length + x.graph.edges.length :=
   h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseIndependentSet
     (fun φ _ => SAT.toSparseIndependentSet_mem_iff φ) (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ
@@ -120,7 +120,8 @@ theorem ETH.not_decidableInSubexpTime_IndependentSet (h : ETH) :
 some `δ > 0`, `IndependentSet` is not decidable within time `2 ^ (δ |V|)` times any polynomial in
 the length of the encoded instance, for graphs with `|V|` declared vertices. -/
 theorem ETH.not_decidableInSubexpTime_IndependentSet_vertices (h : ETH) :
-    ¬DecidableInSubexpTime IndependentSet (encPair encGraph encNat) fun x => x.1.vertices.length :=
+    ¬DecidableInSubexpTime IndependentSet encIndependentSetInstance
+      fun x => x.graph.vertices.length :=
   h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseIndependentSet
     (fun φ _ => SAT.toSparseIndependentSet_mem_iff φ) (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ
@@ -131,8 +132,8 @@ for some `δ > 0`, `VertexCover` is not decidable within time `2 ^ (δ (|V| + |E
 polynomial in the length of the encoded instance, for graphs with `|V|` declared vertices and `|E|`
 edges. -/
 theorem ETH.not_decidableInSubexpTime_VertexCover (h : ETH) :
-    ¬DecidableInSubexpTime VertexCover (encPair encGraph encNat)
-      fun x => x.1.vertices.length + x.1.edges.length :=
+    ¬DecidableInSubexpTime VertexCover encVertexCoverInstance
+      fun x => x.graph.vertices.length + x.graph.edges.length :=
   h.not_decidableInSubexpTime_of_reduction
     (IndependentSet.computableInPolyTime_toVertexCover.comp
       SAT.computableInPolyTime_toSparseIndependentSet)
@@ -146,16 +147,14 @@ theorem ETH.not_decidableInSubexpTime_VertexCover (h : ETH) :
 `δ > 0`, `Clique` is not decidable within time `2 ^ (δ |V|)` times any polynomial in the length of
 the encoded instance, for graphs with `|V|` declared vertices. -/
 theorem ETH.not_decidableInSubexpTime_Clique (h : ETH) :
-    ¬DecidableInSubexpTime Clique (encPair encGraph encNat) fun x => x.1.vertices.length :=
-  h.not_decidableInSubexpTime_of_reduction (f := fun φ =>
-      ((SAT.toSparseIndependentSet φ).1.compl, (SAT.toSparseIndependentSet φ).2))
-    ((show ComputableInPolyTime (fun x : Graph × ℕ => (x.1.compl, x.2))
-      (encPair encGraph encNat) (encPair encGraph encNat) by fun_prop).comp
-        SAT.computableInPolyTime_toSparseIndependentSet)
-    (fun φ _ => (Graph.compl_mem_Clique_iff _ _).trans (SAT.toSparseIndependentSet_mem_iff φ))
+    ¬DecidableInSubexpTime Clique encCliqueInstance fun x => x.graph.vertices.length :=
+  h.not_decidableInSubexpTime_of_reduction
+    (computableInPolyTime_independentSetToClique.comp
+      SAT.computableInPolyTime_toSparseIndependentSet)
+    (fun φ _ => (independentSetToClique_mem_iff _).trans (SAT.toSparseIndependentSet_mem_iff φ))
     (k := 24) fun φ hφ => by
       have := SAT.length_toSparseIndependentSet_le hφ
-      simp only [Graph.compl] at this ⊢
+      simp only [Function.comp_apply, independentSetToClique, Graph.compl] at this ⊢
       omega
 
 /-- **No `2 ^ o(|V| + |E|)` algorithm for Hamiltonian cycles under ETH** [CyganEtAl2015,

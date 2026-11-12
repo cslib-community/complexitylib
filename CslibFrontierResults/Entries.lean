@@ -4328,7 +4328,7 @@ register_result "clique-eth-lower-bound" where
     Cslib.Complexity.ETH.clique_not_mem_FPT,
     Cslib.Complexity.DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
   ]
-  scope := "Clause-grouping reduction SAT.groupClique on Clique (encPair encGraph encNat) and \
+  scope := "Clause-grouping reduction SAT.groupClique on Clique encCliqueInstance and \
     ThreeSAT (encCNF). Under ETH (relative to the library's native DecidableInTimeO model), no \
     decider for Clique runs in time f(k) · (|V| + 1)^o(k) · poly(|enc|) or f(k) · (|enc| + 1)^o(k) \
     with arbitrary f and real exponent g(k) satisfying g(k) ≤ ε k for large k; in particular \

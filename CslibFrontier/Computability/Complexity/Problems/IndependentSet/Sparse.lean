@@ -107,8 +107,8 @@ open SparseIndependentSet in
 /-- The reduction from `SAT` to `IndependentSet` with variable edges [Garey and Johnson,
 Theorem 3.3][GareyJohnson1979]: the graph of `φ` with the target `n + m`, for `n` distinct
 variables and `m` clauses. -/
-def toSparseIndependentSet (φ : CNF ℕ) : Graph × ℕ :=
-  (⟨vertices φ, edges φ⟩, φ.distinctVars.length + φ.length)
+def toSparseIndependentSet (φ : CNF ℕ) : IndependentSetInstance :=
+  ⟨⟨vertices φ, edges φ⟩, φ.distinctVars.length + φ.length⟩
 
 namespace SparseIndependentSet
 
@@ -256,7 +256,7 @@ private theorem satisfiable_of_mem (h : toSparseIndependentSet φ ∈ Independen
     · obtain ⟨v, hv, rfl⟩ := Finset.mem_image.1 hb
       exact hblock v hv
     · rw [Finset.card_image_of_injOn hinj, hS.card_eq, Finset.card_disjSum, Finset.card_range,
-        Finset.card_range]
+        Finset.card_range, toSparseIndependentSet]
   have hhit : ∀ b ∈ B, ∃ v ∈ S, block v = b := fun b hb => by
     rw [← himage] at hb
     exact Finset.mem_image.1 hb
@@ -413,7 +413,8 @@ open SparseIndependentSet in
 of `toSparseIndependentSet` has at most `(k ^ 2 + 5 k) m` vertices and edges in total, counted as
 listed. -/
 theorem length_toSparseIndependentSet_le {k : ℕ} {φ : CNF ℕ} (hφ : ∀ c ∈ φ, c.length ≤ k) :
-    (toSparseIndependentSet φ).1.vertices.length + (toSparseIndependentSet φ).1.edges.length ≤
+    (toSparseIndependentSet φ).graph.vertices.length +
+        (toSparseIndependentSet φ).graph.edges.length ≤
       (k * k + 5 * k) * φ.length := by
   have hzip : ∀ c ∈ φ.zipIdx, c.1.length ≤ k := fun c hc => by
     obtain ⟨cl, i⟩ := c
@@ -450,7 +451,7 @@ open SparseIndependentSet in
 computed in unary from clause, position and variable indices, then converted to binary. -/
 @[fun_prop]
 theorem computableInPolyTime_toSparseIndependentSet :
-    ComputableInPolyTime toSparseIndependentSet encCNF (encPair encGraph encNat) := by
+    ComputableInPolyTime toSparseIndependentSet encCNF encIndependentSetInstance := by
   have hdv : ComputableInPolyTime CNF.distinctVars
       (encList (encList (encPair encNat encBool))) (encList encNat) :=
     CNF.computableInPolyTime_distinctVars encNat
@@ -489,7 +490,7 @@ theorem computableInPolyTime_toSparseIndependentSet :
   have hG : ComputableInPolyTime (fun φ => (⟨vertices φ, edges φ⟩ : Graph))
       (encList (encList (encPair encNat encBool))) encGraph := by
     fun_prop
-  exact hG.prod hk
+  exact encIndependentSetInstance_mk_polyTime hG hk
 
 end SAT
 

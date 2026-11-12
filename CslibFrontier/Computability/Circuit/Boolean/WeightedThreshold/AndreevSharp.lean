@@ -39,7 +39,11 @@ realized by six families of bottom gates (`AndreevSharpIndex`):
 
 Every bottom gate has integer weights and thresholds and gives each address bit weight `0` or
 `1`, constant on each block, so it is sign-coherent (`isSignCoherent_andreevSharpBottomOp`). The
-top weights and threshold are integers.
+top weights and threshold are integers. With `n = 2 ^ b + b m`, the bottom weights and thresholds
+have absolute value at most `2 n`, the top weights on bottom gates at most `2 (n + 1) (n + 4)`,
+and the top weights on inputs at most `(2 n ^ 3 + 54 n (n + 1)) / 27`; only the weights
+`2 N (α ^ 2 - 1)` on the weight-one table addresses are of cubic order, and they are at most
+`O(n ^ 3 / b ^ 2)`.
 
 ## Correspondence with the unpublished draft (not publicly verifiable)
 
@@ -51,8 +55,17 @@ top weights and threshold are integers.
   `16 · size ≤ 5 (n + b)² + 52 (n + b) + 24` with `b ≤ log₂ n` (`le_log_two_andreev_length`).
 * Theorem 5, integer weights and sign coherence (Section 5): `andreevSharpCircuit_int_weights`,
   `weight_andreevSharpBottomOp_blockVar`, `isSignCoherent_andreevSharpBottomOp`, and for the
-  circuit's program gates `isSignCoherent_inputWeight_andreevSharpCircuit`. The preprint's
-  bound "polynomial in `n`" on the weight magnitudes is not formalized.
+  circuit's program gates `isSignCoherent_inputWeight_andreevSharpCircuit`.
+* Theorem 5, weights polynomial in `n`, and the end of the proof in Appendix A (bottom
+  coefficients and thresholds `O(n)`, top coefficients `O(n ^ 3)`), with `n = 2 ^ b + b m`:
+  `abs_weight_andreevSharpBottomOp_le` and `abs_threshold_andreevSharpBottomOp_le` (`≤ 2 n`, also
+  as `abs_inputWeight_andreevSharpCircuit_le`); `abs_andreevSharpTopWeight_le`
+  (`≤ 2 (n + 1) (n + 4)` on bottom gates); `abs_andreevSharpTopInput_le`
+  (`27 |v| ≤ 2 n ^ 3 + 54 n (n + 1)` on inputs) and its sharper form
+  `sq_mul_abs_andreevSharpTopInput_le` (`27 b ^ 2 |v| ≤ 2 n ^ 3 + 54 b ^ 2 n (n + 1)`); and for
+  every weight and threshold of every gate of the circuit `abs_weight_andreevSharpCircuit_le` and
+  `abs_threshold_andreevSharpCircuit_le` (`27 |w| ≤ 2 n ^ 3 + 54 (n + 1) (n + 4)`). The constants
+  are derived here; the preprint gives only the orders.
 
 ## References
 
@@ -854,6 +867,386 @@ theorem andreevSharpCircuit_int_weights :
 
 end Weights
 
+/-! ### Weight magnitudes -/
+
+section Magnitudes
+
+variable {b m : ℕ}
+
+/-- `2 α ≤ m` for the amplification `α = ⌊(m - 1) / 2⌋`. -/
+theorem two_mul_andreevSharpAmp_le (m : ℕ) : 2 * andreevSharpAmp m ≤ m := by
+  rw [andreevSharpAmp]; omega
+
+/-- The load range is at most `2 n - 2`: `R + 2 ≤ 2 n` with `n = 2 ^ b + b m`. -/
+theorem andreevSharpRange_add_two_le (b m : ℕ) :
+    andreevSharpRange b m + 2 ≤ 2 * (2 ^ b + b * m) := by
+  have h1 : 1 ≤ 2 ^ b := Nat.one_le_two_pow
+  have h2 : 2 * andreevSharpAmp m * b ≤ b * m := by
+    nlinarith [two_mul_andreevSharpAmp_le m]
+  rw [andreevSharpRange]; omega
+
+/-- A nonzero address exists only for `b ≥ 1`. -/
+private theorem one_le_of_ne_zero {c : BitString b} (h : c ≠ 0) : 1 ≤ b := by
+  rcases Nat.eq_zero_or_pos b with rfl | hb
+  · exact absurd (Subsingleton.elim c 0) h
+  · exact hb
+
+/-- Twice a table multiplier is at most `n`: `2 μ_c ≤ 2 ^ b + b m`. -/
+theorem two_mul_andreevSharpMult_le (c : BitString b) :
+    2 * andreevSharpMult b m c ≤ 2 ^ b + b * m := by
+  unfold andreevSharpMult
+  split_ifs with h0 hs
+  · simp
+  · have hb := one_le_of_ne_zero h0
+    have h2 := Nat.one_lt_two_pow (n := b) (by omega)
+    have := two_mul_andreevSharpAmp_le m
+    nlinarith
+  · have : 1 ≤ 2 ^ b := Nat.one_le_two_pow
+    have h2 := Nat.one_lt_two_pow (n := b) (by have := one_le_of_ne_zero h0; omega)
+    omega
+
+/-- Every table coefficient of a bottom gate has absolute value at most `2 n`, with
+`n = 2 ^ b + b m`. -/
+theorem abs_andreevSharpTable_le (idx : AndreevSharpIndex b m) (c : BitString b) :
+    |andreevSharpTable b m idx c| ≤ 2 * (2 ^ b + b * m : ℤ) := by
+  have hn : (0 : ℤ) ≤ 2 ^ b + b * m := by positivity
+  have hμ : 2 * (andreevSharpMult b m c : ℤ) ≤ 2 ^ b + b * m := by
+    exact_mod_cast two_mul_andreevSharpMult_le c
+  -- `B = n + 2 ≤ 2 n` once `b ≥ 1`
+  have hB (hb : 1 ≤ b) : |andreevSharpBig b m| ≤ 2 * (2 ^ b + b * m : ℤ) := by
+    have h2 : (2 : ℤ) ≤ 2 ^ b := by exact_mod_cast Nat.one_lt_two_pow (n := b) (by omega)
+    have : (0 : ℤ) ≤ b * m := by positivity
+    rw [andreevSharpBig, abs_of_nonneg (by positivity)]
+    linarith
+  rcases idx with ⟨S, j⟩ | θ | ⟨i, ℓ⟩ | ⟨i, ℓ⟩ | j | ⟨S, j⟩
+  · simp only [andreevSharpTable]
+    rw [abs_of_nonneg (by positivity)]
+    have : ((parityOn S c).toNat : ℤ) ≤ 1 := by exact_mod_cast Bool.toNat_le _
+    nlinarith
+  · simp only [andreevSharpTable]
+    rw [abs_of_nonneg (by positivity)]
+    linarith
+  · simp only [andreevSharpTable, Pi.zero_apply, abs_zero]; positivity
+  · simp only [andreevSharpTable]
+    split_ifs
+    · exact hB (Nat.one_le_iff_ne_zero.mpr (Fin.pos i).ne')
+    · rw [abs_zero]; positivity
+  · simp only [andreevSharpTable]
+    split_ifs
+    · refine hB (Nat.one_le_iff_ne_zero.mpr fun hb => ?_)
+      have := j.isLt
+      simp [hb] at this
+    · rw [abs_zero]; positivity
+  · simp only [andreevSharpTable]
+    split_ifs
+    · refine hB (Nat.one_le_iff_ne_zero.mpr fun hb => ?_)
+      subst hb
+      have := j.isLt
+      simp [Finset.eq_empty_of_isEmpty S] at this
+    · rw [abs_zero]; positivity
+
+/-- Every bottom threshold has absolute value at most `2 n`, with `n = 2 ^ b + b m`. -/
+theorem abs_andreevSharpThreshold_le (idx : AndreevSharpIndex b m) :
+    |andreevSharpThreshold b m idx| ≤ 2 * (2 ^ b + b * m : ℤ) := by
+  have hN : 1 ≤ 2 ^ b := Nat.one_le_two_pow
+  have hα := two_mul_andreevSharpAmp_le m
+  have hR := andreevSharpRange_add_two_le b m
+  -- once `b ≥ 1`: `m ≤ b m` and `2 ≤ N`, so `B + m ≤ 2 n`
+  have hpos (hb : 1 ≤ b) : m ≤ b * m ∧ 2 ≤ 2 ^ b :=
+    ⟨Nat.le_mul_of_pos_left m hb, Nat.one_lt_two_pow (n := b) (by omega)⟩
+  suffices h : 0 ≤ andreevSharpThreshold b m idx ∧
+      andreevSharpThreshold b m idx ≤ ((2 * (2 ^ b + b * m) : ℕ) : ℤ) by
+    rw [abs_of_nonneg h.1]; exact_mod_cast h.2
+  rcases idx with ⟨S, j⟩ | θ | ⟨i, ℓ⟩ | ⟨i, ℓ⟩ | j | ⟨S, j⟩ <;>
+    simp only [andreevSharpThreshold, andreevSharpBig] <;> refine ⟨by positivity, ?_⟩ <;> norm_cast
+  · have hj : j.1 < andreevSharpRidgeLen b m S := j.isLt
+    have hS : #S ≤ b := (card_le_univ S).trans_eq (Fintype.card_fin b)
+    have hle : (2 * andreevSharpAmp m + m) * #S ≤ 2 * (b * m) := by nlinarith
+    unfold andreevSharpRidgeLen at hj
+    split_ifs at hj <;> omega
+  · have := θ.isLt
+    omega
+  · have := hpos (Nat.one_le_iff_ne_zero.mpr (Fin.pos i).ne')
+    have := ℓ.isLt
+    omega
+  · have := hpos (Nat.one_le_iff_ne_zero.mpr (Fin.pos i).ne')
+    have := ℓ.isLt
+    omega
+  · have := j.isLt
+    have := hpos (Nat.one_le_iff_ne_zero.mpr fun hb => by simp [hb] at this)
+    omega
+  · have := j.isLt
+    have hSm : #S * m ≤ b * m :=
+      Nat.mul_le_mul_right m ((card_le_univ S).trans_eq (Fintype.card_fin b))
+    have := hpos (Nat.one_le_iff_ne_zero.mpr fun hb => by
+      subst hb; simp [Finset.eq_empty_of_isEmpty S] at this)
+    omega
+
+/-- A bound on the table and block coefficients bounds every weight of `andreevFormWeight`. -/
+theorem abs_andreevFormWeight_le {a : BitString b → ℤ} {β : Fin b → ℤ} {W : ℤ}
+    (ha : ∀ c, |a c| ≤ W) (hβ : ∀ j, |β j| ≤ W) (i : Fin (2 ^ b + b * m)) :
+    |andreevFormWeight b m a β i| ≤ W := by
+  refine Fin.addCases (fun k => ?_) (fun k => ?_) i <;>
+    simp only [andreevFormWeight, Fin.addCases_left, Fin.addCases_right]
+  exacts [ha _, hβ _]
+
+/-- **Bottom weights are `O(n)`** (preprint, end of Appendix A): every input weight of every bottom
+gate of `andreevSharpCircuit b m` has absolute value at most `2 n`, with `n = 2 ^ b + b m`. -/
+theorem abs_weight_andreevSharpBottomOp_le (idx : AndreevSharpIndex b m)
+    (i : Fin (2 ^ b + b * m)) :
+    |(andreevSharpBottomOp b m idx).weight i| ≤ 2 * (2 ^ b + b * m : ℝ) := by
+  have h : |andreevFormWeight b m (andreevSharpTable b m idx) (andreevSharpBlock b m idx) i| ≤
+      2 * (2 ^ b + b * m : ℤ) := by
+    refine abs_andreevFormWeight_le (abs_andreevSharpTable_le idx) (fun j => ?_) i
+    have : (1 : ℤ) ≤ 2 * (2 ^ b + b * m) := by
+      have : (1 : ℤ) ≤ 2 ^ b := one_le_pow₀ (by norm_num)
+      have : (0 : ℤ) ≤ b * m := by positivity
+      linarith
+    rcases andreevSharpBlock_eq_zero_or_one idx j with h | h <;> rw [h] <;> simp <;> linarith
+  unfold andreevSharpBottomOp; dsimp only
+  exact_mod_cast h
+
+/-- **Bottom thresholds are `O(n)`** (preprint, end of Appendix A): every bottom threshold of
+`andreevSharpCircuit b m` has absolute value at most `2 n`, with `n = 2 ^ b + b m`. -/
+theorem abs_threshold_andreevSharpBottomOp_le (idx : AndreevSharpIndex b m) :
+    |(andreevSharpBottomOp b m idx).threshold| ≤ 2 * (2 ^ b + b * m : ℝ) := by
+  unfold andreevSharpBottomOp; dsimp only
+  exact_mod_cast abs_andreevSharpThreshold_le idx
+
+/-- **Top weights on the bottom gates are `O(n ^ 2)`**: each has absolute value at most
+`2 (n + 1) (n + 4)`, with `n = 2 ^ b + b m`. The largest, such as `(R + 4) N` on the zero-address
+gates, are `Θ(N n)`; the ridge weights are at most `16 n`. -/
+theorem abs_andreevSharpTopWeight_le (idx : AndreevSharpIndex b m) :
+    |andreevSharpTopWeight b m idx| ≤
+      2 * ((2 ^ b + b * m : ℤ) + 1) * ((2 ^ b + b * m : ℤ) + 4) := by
+  set n : ℤ := 2 ^ b + b * m with hn
+  have hN1 : (1 : ℤ) ≤ 2 ^ b := one_le_pow₀ (by norm_num)
+  have hbm : (0 : ℤ) ≤ b * m := by positivity
+  have hbN : (b : ℤ) ≤ 2 ^ b := by exact_mod_cast Nat.lt_two_pow_self.le
+  have hα : 2 * (andreevSharpAmp m : ℤ) ≤ m := by exact_mod_cast two_mul_andreevSharpAmp_le m
+  have hα0 : (0 : ℤ) ≤ andreevSharpAmp m := by positivity
+  have hR : (andreevSharpRange b m : ℤ) + 2 ≤ 2 * n := by
+    rw [hn]; exact_mod_cast andreevSharpRange_add_two_le b m
+  have hR0 : (0 : ℤ) ≤ andreevSharpRange b m := by positivity
+  have hQ : 16 * n ≤ 2 * (n + 1) * (n + 4) := by nlinarith [sq_nonneg (2 * n - 3)]
+  -- for `b ≥ 1`, `2 ^ (b - 1)` is half of `2 ^ b`
+  have hhalf (hb : 1 ≤ b) : (2 : ℤ) * 2 ^ (b - 1) = 2 ^ b ∧ (0 : ℤ) ≤ 2 ^ (b - 1) :=
+    ⟨by rw [← pow_succ']; congr 1; omega, by positivity⟩
+  have hmb (hb : 1 ≤ b) : (m : ℤ) ≤ b * m := by
+    have : (1 : ℤ) ≤ b := by exact_mod_cast hb
+    nlinarith
+  rcases idx with ⟨S, j⟩ | θ | ⟨i, ℓ⟩ | ⟨i, ℓ⟩ | j | ⟨S, j⟩ <;>
+    simp only [andreevSharpTopWeight, andreevSharpKappa]
+  · have hj : j.1 < andreevSharpRidgeLen b m S := j.isLt
+    have hS : #S ≤ b := (card_le_univ S).trans_eq (Fintype.card_fin b)
+    unfold andreevSharpRidgeLen at hj
+    split_ifs at hj
+    · omega
+    have hJ : 2 * j.1 + 1 ≤ 2 ^ b + (2 * andreevSharpAmp m + m) * #S := by omega
+    have hJ' : 2 * (j : ℤ) + 1 ≤ 2 ^ b + (2 * andreevSharpAmp m + m) * #S := by exact_mod_cast hJ
+    have hS' : (#S : ℤ) ≤ b := by exact_mod_cast hS
+    have hS0 : (0 : ℤ) ≤ #S := by positivity
+    have h1 : (m : ℤ) * #S ≤ b * m := by nlinarith
+    have h2 : (andreevSharpAmp m : ℤ) * #S ≤ andreevSharpAmp m * b := by nlinarith
+    have h3 : 2 * (andreevSharpAmp m : ℤ) * b ≤ b * m := by nlinarith
+    have hj0 : (0 : ℤ) ≤ j := by positivity
+    refine abs_le.mpr ⟨?_, ?_⟩ <;> nlinarith
+  · have hθ := θ.isLt
+    have hb : 1 ≤ b := by
+      by_contra h
+      obtain rfl : b = 0 := by omega
+      simp [andreevSharpRange] at hθ
+    have hθ' : (θ : ℤ) + 1 ≤ andreevSharpRange b m := by exact_mod_cast hθ
+    have := hhalf hb
+    rw [abs_neg, abs_of_nonneg (by positivity)]
+    nlinarith
+  · have hb : 1 ≤ b := Nat.one_le_iff_ne_zero.mpr (Fin.pos i).ne'
+    have hℓ : (ℓ : ℤ) + 1 ≤ m := by exact_mod_cast ℓ.isLt
+    have hmb := hmb hb
+    have := hhalf hb
+    rw [abs_neg, abs_of_nonneg (by positivity)]
+    nlinarith
+  · have hb : 1 ≤ b := Nat.one_le_iff_ne_zero.mpr (Fin.pos i).ne'
+    have hmb := hmb hb
+    have h2 : (2 : ℤ) ≤ 2 ^ b := by exact_mod_cast Nat.one_lt_two_pow (n := b) (by omega)
+    rw [abs_neg, abs_of_nonneg (by positivity)]
+    nlinarith
+  · rw [abs_neg, abs_of_nonneg (by positivity)]
+    nlinarith
+  · have hle : |(4 : ℤ) - if S = univ then 2 ^ b else 0| ≤ n + 4 := by
+      split_ifs
+      · rw [abs_le]; constructor <;> linarith
+      · simp; linarith
+    have hfac : (4 * ((andreevSharpRange b m : ℤ) + 4) -
+        if S = univ then ((andreevSharpRange b m : ℤ) + 4) * 2 ^ b else 0) =
+        ((andreevSharpRange b m : ℤ) + 4) * (4 - if S = univ then 2 ^ b else 0) := by
+      split_ifs <;> ring
+    push_cast
+    rw [hfac, abs_mul, abs_of_nonneg (by positivity : (0 : ℤ) ≤ andreevSharpRange b m + 4)]
+    have := abs_nonneg ((4 : ℤ) - if S = univ then 2 ^ b else 0)
+    nlinarith
+
+/-- `27 N x ^ 2 ≤ 4 (N + x) ^ 3`, from `4 (N + x) ^ 3 - 27 N x ^ 2 = (x - 2 N) ^ 2 (N + 4 x)`. -/
+private theorem twentyseven_mul_sq_le {N x : ℤ} (hN : 0 ≤ N) (hx : 0 ≤ x) :
+    27 * N * x ^ 2 ≤ 4 * (N + x) ^ 3 := by
+  nlinarith [mul_nonneg (sq_nonneg (x - 2 * N)) (by positivity : 0 ≤ N + 4 * x)]
+
+/-- A top input weight is either at most `2 n (n + 1)`, or it sits on a weight-one address
+(so `b ≥ 1`) and is at most `2 N α ^ 2 + 2 N`. -/
+private theorem abs_andreevSharpTopInput_cases (i : Fin (2 ^ b + b * m)) :
+    |andreevSharpTopInput b m i| ≤ 2 * (2 ^ b + b * m : ℤ) * ((2 ^ b + b * m : ℤ) + 1) ∨
+      1 ≤ b ∧ |andreevSharpTopInput b m i| ≤
+        2 * 2 ^ b * (andreevSharpAmp m : ℤ) ^ 2 + 2 * 2 ^ b := by
+  set n : ℤ := 2 ^ b + b * m with hn
+  have hN1 : (1 : ℤ) ≤ 2 ^ b := one_le_pow₀ (by norm_num)
+  have hbm : (0 : ℤ) ≤ b * m := by positivity
+  have hR : (andreevSharpRange b m : ℤ) + 2 ≤ 2 * n := by
+    rw [hn]; exact_mod_cast andreevSharpRange_add_two_le b m
+  have hR0 : (0 : ℤ) ≤ andreevSharpRange b m := by positivity
+  refine Fin.addCases (fun k => ?_) (fun k => ?_) i <;>
+    simp only [andreevSharpTopInput, andreevFormWeight, Fin.addCases_left, Fin.addCases_right]
+  · set c := (BitString.equivFin b).symm k
+    simp only [andreevSharpTopTable]
+    by_cases h0 : c = 0
+    · left
+      have hu : ¬IsSingle (0 : BitString b) := not_isSingle_zero
+      simp only [h0, ↓reduceIte, hu, add_zero]
+      rw [abs_of_nonneg (by positivity)]
+      nlinarith
+    by_cases hu : IsSingle c
+    · right
+      refine ⟨one_le_of_ne_zero h0, ?_⟩
+      simp only [h0, hu, ↓reduceIte]
+      rw [abs_le]
+      constructor <;> nlinarith [sq_nonneg (andreevSharpAmp m : ℤ)]
+    · left
+      simp only [h0, hu, ↓reduceIte, add_zero, abs_neg]
+      rw [abs_of_nonneg (by positivity)]
+      nlinarith
+  · left
+    have hb : 1 ≤ b := by
+      by_contra h
+      obtain rfl : b = 0 := by omega
+      rw [Nat.zero_mul] at k
+      exact k.elim0
+    have hα : 2 * (andreevSharpAmp m : ℤ) ≤ m := by exact_mod_cast two_mul_andreevSharpAmp_le m
+    have hmb : (m : ℤ) ≤ b * m := by
+      have : (1 : ℤ) ≤ b := by exact_mod_cast hb
+      nlinarith
+    simp only [andreevSharpTopBlock]
+    rw [abs_of_nonneg (by positivity)]
+    nlinarith
+
+/-- The weight-one top input weights: `27 b ^ 2 (2 N α ^ 2) ≤ 2 n ^ 3`, since `4 α ^ 2 ≤ m ^ 2`
+and `27 N (b m) ^ 2 ≤ 4 (N + b m) ^ 3`. -/
+private theorem sq_mul_amp_sq_le (b m : ℕ) :
+    27 * b ^ 2 * (2 * 2 ^ b * (andreevSharpAmp m : ℤ) ^ 2) ≤ 2 * (2 ^ b + b * m : ℤ) ^ 3 := by
+  have hα : 2 * (andreevSharpAmp m : ℤ) ≤ m := by exact_mod_cast two_mul_andreevSharpAmp_le m
+  have hα0 : (0 : ℤ) ≤ andreevSharpAmp m := by positivity
+  have hcube := twentyseven_mul_sq_le (N := 2 ^ b) (x := b * m) (by positivity) (by positivity)
+  have hsq : 4 * (andreevSharpAmp m : ℤ) ^ 2 ≤ m ^ 2 := by nlinarith
+  have : (0 : ℤ) ≤ 27 * b ^ 2 * 2 ^ b := by positivity
+  nlinarith [mul_le_mul_of_nonneg_left hsq this]
+
+/-- `N ≤ n (n + 1)`. -/
+private theorem two_pow_le_mul_succ (b m : ℕ) :
+    (2 : ℤ) ^ b ≤ (2 ^ b + b * m) * ((2 ^ b + b * m) + 1) := by
+  have : (0 : ℤ) ≤ b * m := by positivity
+  have : (1 : ℤ) ≤ 2 ^ b := one_le_pow₀ (by norm_num)
+  nlinarith
+
+/-- **Top input weights, sharp form**: `27 b ^ 2 |v_i| ≤ 2 n ^ 3 + 54 b ^ 2 n (n + 1)`, with
+`n = 2 ^ b + b m`. Only the weights `2 N (α ^ 2 - 1)` on the weight-one table addresses exceed
+`2 n (n + 1)`, and they are `O(N m ^ 2) = O(n ^ 3 / b ^ 2)`. -/
+theorem sq_mul_abs_andreevSharpTopInput_le (i : Fin (2 ^ b + b * m)) :
+    27 * b ^ 2 * |andreevSharpTopInput b m i| ≤
+      2 * (2 ^ b + b * m : ℤ) ^ 3 +
+        54 * b ^ 2 * ((2 ^ b + b * m : ℤ) * ((2 ^ b + b * m : ℤ) + 1)) := by
+  have hb2 : (0 : ℤ) ≤ 27 * b ^ 2 := by positivity
+  have hcube : (0 : ℤ) ≤ (2 ^ b + b * m) ^ 3 := by positivity
+  rcases abs_andreevSharpTopInput_cases i with h | ⟨-, h⟩
+  · nlinarith [mul_le_mul_of_nonneg_left h hb2]
+  · have hN := two_pow_le_mul_succ b m
+    nlinarith [mul_le_mul_of_nonneg_left h hb2, sq_mul_amp_sq_le b m,
+      mul_le_mul_of_nonneg_left hN hb2]
+
+/-- **Top input weights are `O(n ^ 3)`** (preprint, end of Appendix A):
+`27 |v_i| ≤ 2 n ^ 3 + 54 n (n + 1)`, with `n = 2 ^ b + b m`. -/
+theorem abs_andreevSharpTopInput_le (i : Fin (2 ^ b + b * m)) :
+    27 * |andreevSharpTopInput b m i| ≤
+      2 * (2 ^ b + b * m : ℤ) ^ 3 + 54 * ((2 ^ b + b * m : ℤ) * ((2 ^ b + b * m : ℤ) + 1)) := by
+  have hcube : (0 : ℤ) ≤ (2 ^ b + b * m) ^ 3 := by positivity
+  rcases abs_andreevSharpTopInput_cases i with h | ⟨hb, h⟩
+  · linarith
+  · have hb' : (1 : ℤ) ≤ b ^ 2 := by exact_mod_cast Nat.one_le_pow _ _ hb
+    have hkey := sq_mul_amp_sq_le b m
+    have h0 : (0 : ℤ) ≤ 2 * 2 ^ b * (andreevSharpAmp m : ℤ) ^ 2 := by positivity
+    have hN := two_pow_le_mul_succ b m
+    nlinarith
+
+/-- The circuit-wide polynomial: `(2 n ^ 3 + 54 (n + 1) (n + 4)) / 27`. -/
+private theorem andreevSharp_bounds_le (b m : ℕ) :
+    2 * (2 ^ b + b * m : ℝ) ≤ (2 * (2 ^ b + b * m : ℝ) ^ 3 +
+      54 * (((2 ^ b + b * m : ℝ) + 1) * ((2 ^ b + b * m : ℝ) + 4))) / 27 ∧
+    2 * ((2 ^ b + b * m : ℝ) + 1) * ((2 ^ b + b * m : ℝ) + 4) ≤ (2 * (2 ^ b + b * m : ℝ) ^ 3 +
+      54 * (((2 ^ b + b * m : ℝ) + 1) * ((2 ^ b + b * m : ℝ) + 4))) / 27 ∧
+    (2 * (2 ^ b + b * m : ℝ) ^ 3 + 54 * ((2 ^ b + b * m : ℝ) * ((2 ^ b + b * m : ℝ) + 1))) / 27 ≤
+      (2 * (2 ^ b + b * m : ℝ) ^ 3 +
+        54 * (((2 ^ b + b * m : ℝ) + 1) * ((2 ^ b + b * m : ℝ) + 4))) / 27 := by
+  have h0 : (0 : ℝ) ≤ 2 ^ b + b * m := by positivity
+  refine ⟨?_, ?_, ?_⟩
+  · rw [le_div_iff₀ (by norm_num)]; nlinarith [pow_nonneg h0 3]
+  · rw [le_div_iff₀ (by norm_num)]; nlinarith [pow_nonneg h0 3]
+  · rw [div_le_div_iff_of_pos_right (by norm_num)]; nlinarith
+
+/-- **All weights of the circuit are polynomial in `n`** (preprint, Theorem 5): every weight of
+every gate of `andreevSharpCircuit b m` satisfies `27 |w| ≤ 2 n ^ 3 + 54 (n + 1) (n + 4)`, with
+`n = 2 ^ b + b m`. -/
+theorem abs_weight_andreevSharpCircuit_le (k : Fin (andreevSharpCircuit b m).size)
+    (a : Fin ((andreevSharpCircuit b m).program.lines k).op.arity) :
+    27 * |((andreevSharpCircuit b m).program.lines k).op.weight a| ≤
+      2 * (2 ^ b + b * m : ℝ) ^ 3 +
+        54 * (((2 ^ b + b * m : ℝ) + 1) * ((2 ^ b + b * m : ℝ) + 4)) := by
+  obtain ⟨h1, h2, h3⟩ := andreevSharp_bounds_le b m
+  rw [mul_comm, ← le_div_iff₀ (by norm_num)]
+  refine abs_weight_lines_depthTwoInputs_le _ _ _ _ _ (fun j i => ?_) (fun j => ?_)
+    (fun i => ?_) k a
+  · exact (abs_weight_andreevSharpBottomOp_le _ i).trans h1
+  · refine le_trans ?_ h2
+    exact_mod_cast abs_andreevSharpTopWeight_le _
+  · refine le_trans ?_ h3
+    rw [le_div_iff₀ (by norm_num), mul_comm]
+    exact_mod_cast abs_andreevSharpTopInput_le i
+
+/-- **All thresholds of the circuit are polynomial in `n`**: every threshold of
+`andreevSharpCircuit b m` satisfies `27 |θ| ≤ 2 n ^ 3 + 54 (n + 1) (n + 4)`, with
+`n = 2 ^ b + b m`. -/
+theorem abs_threshold_andreevSharpCircuit_le (k : Fin (andreevSharpCircuit b m).size) :
+    27 * |((andreevSharpCircuit b m).program.lines k).op.threshold| ≤
+      2 * (2 ^ b + b * m : ℝ) ^ 3 +
+        54 * (((2 ^ b + b * m : ℝ) + 1) * ((2 ^ b + b * m : ℝ) + 4)) := by
+  obtain ⟨h1, -, -⟩ := andreevSharp_bounds_le b m
+  rw [mul_comm, ← le_div_iff₀ (by norm_num)]
+  refine abs_threshold_lines_depthTwoInputs_le _ _ _ _ _ (fun j => ?_) ?_ k
+  · exact (abs_threshold_andreevSharpBottomOp_le _).trans h1
+  · refine le_trans ?_ h1
+    have : (0 : ℝ) ≤ b * m := by positivity
+    rw [abs_of_nonneg (by positivity)]
+    linarith
+
+/-- **Bottom gates of the circuit have `O(n)` input weights**, in the program's `inputWeight`
+form: every gate other than the output gate has input weights of absolute value at most `2 n`. -/
+theorem abs_inputWeight_andreevSharpCircuit_le {k : Fin (andreevSharpCircuit b m).size}
+    (hk : (andreevSharpCircuit b m).outputs 0 ≠ .gate k) (i : Fin (2 ^ b + b * m)) :
+    |inputWeight (andreevSharpCircuit b m).program k i| ≤ 2 * (2 ^ b + b * m : ℝ) := by
+  obtain ⟨j, hj⟩ := inputWeight_depthTwoInputs_of_ne _ _ _ _ _ hk
+  have h := congrFun hj i
+  rw [argWeight_id] at h
+  rw [show inputWeight (andreevSharpCircuit b m).program k i = _ from h]
+  exact abs_weight_andreevSharpBottomOp_le _ i
+
+end Magnitudes
+
 /-! ### Size corollaries -/
 
 section Corollaries
@@ -922,7 +1315,7 @@ theorem size_andreevSharpCircuit_le_of_le {b m : ℕ} (hle : b * m ≤ 2 ^ b)
     16 * (andreevSharpCircuit b m).size ≤
       5 * (2 ^ b + b * m + b) ^ 2 + 52 * (2 ^ b + b * m + b) + 24 := by
   have h2 := two_mul_size_andreevSharpCircuit b m
-  have hα : 2 * andreevSharpAmp m ≤ m := by rw [andreevSharpAmp]; omega
+  have hα := two_mul_andreevSharpAmp_le m
   set N := 2 ^ b with hN
   have hN1 : 1 ≤ N := Nat.one_le_two_pow
   have hn : 2 * N ≤ N + b * m + b := by nlinarith
