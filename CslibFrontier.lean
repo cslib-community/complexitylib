@@ -2326,9 +2326,11 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Certificate
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.ComponentCounts
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Components
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CycleSpace
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Differences
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Dual
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import CslibFrontier.Computability.Complexity.Problems.Graph.SpanningTrees
 public import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors

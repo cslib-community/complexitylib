@@ -411,6 +411,34 @@ supplied-certificate CSP reduction, followed by the complete native edge solver 
 Geometric realization, bare rotation recognition and final planar assembly remain open
 under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
+## Face boundaries and closed-passage intersection parity
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity`.
+For an indexed Boolean edge labeling, `G.VertexEven x` sums actual dart incidences at each
+vertex; both ends of a loop contribute and cancel. With declared endpoints `hG` and
+`r.NumericalGenusZero`, `r.vertexEven_iff_exists_faceColors hG hgenus x` proves
+`G.VertexEven x ↔ ∃ q : r.Face → Bool, r.faceBoundary q = x`. The boundary labels an edge by
+the XOR of its two incident face colors. The proof applies the existing lifting theorem to
+the actual indexed dual, retaining sparse names, duplicate declarations, disconnected
+components and isolated points.
+
+`Graph.ClosedPassages G x` pairs all darts of the supported edge set exactly once, with
+distinct ports at the same vertex. Separate visits and arbitrary local pairings are allowed.
+`r.Alternates` uses the literal forward cyclic interval between ports; `r.intersectionParity`
+adds the crossing bits of every passage pair. For two systems with disjoint edge supports,
+`r.intersectionParity_eq_false hG hgenus P Q hdisj` proves even total intersection parity.
+Face colors make the local interval sums telescope, then the closed-system endpoint
+contributions cancel. No intersection-parity or Jordan theorem is supplied as a premise.
+
+The [complete regression clients](../../CslibFrontierTests/RotationIntersection.lean) include
+bridges, singleton loop faces, parallel digons, degree-eight multiple passages, disconnected
+sparse names and empty supports. The interlaced two-loop torus has odd intersection parity
+and fails the genus hypothesis. The [scoped audit](../../CslibFrontierTests/RotationIntersectionAudit.lean)
+checks stored declarations and environment linters. These are original finite-map proofs;
+they do not establish drawing operations, geometric realization, Hanani–Tutte, recognition
+or the full planar dichotomy. The checked guide's “Face Boundaries and Intersection Parity”
+section gives complete generic applications.
+
 ## Ordered incidence-to-polygon rotations
 
 Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
