@@ -4358,7 +4358,6 @@ public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Crypto.Game.CloseTo
 public import CslibFrontier.Crypto.Game.CloseTo.RandomOracle
-public import CslibFrontier.Crypto.Game.CloseTo.Statistical
 public import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 public import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 public import CslibFrontier.Crypto.Game.Concrete
@@ -6565,6 +6564,7 @@ public import CslibFrontier.Probability.StatisticalDistance.Event
 public import CslibFrontier.Probability.StatisticalDistance.OptimalCoupling
 public import CslibFrontier.Probability.StatisticalDistance.Polarization
 public import CslibFrontier.Probability.StatisticalDistance.Product
+public import CslibFrontier.Probability.StatisticalDistance.TotalVariation
 public import CslibFrontier.Probability.StatisticalDistance.UniformMod
 public import CslibFrontier.Probability.StatisticalDistance.XOR
 public import CslibFrontier.Probability.StatisticalDistance.XORSampling
