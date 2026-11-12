@@ -104,7 +104,7 @@ structure DominatingSetInstance where
   graph : Graph
   /-- The number of vertices in the dominating set. -/
   bound : ℕ
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `DominatingSetInstance` as a pair `(graph, bound)`. -/
 enc_structure encDominatingSet : DominatingSetInstance where
@@ -327,15 +327,15 @@ private theorem decodeVertex_edgeVertex (e : ℕ × ℕ) : decodeVertex (edgeVer
 target `k + 1`, or the unsatisfiable target `0` when `k` exceeds the number of distinct declared
 vertices. -/
 @[expose]
-def toDominatingSet : Graph × ℕ → DominatingSetInstance := fun (G, k) =>
-  ⟨dominationGraph G, if k ≤ G.1.toFinset.card then k + 1 else 0⟩
+def toDominatingSet : VertexCoverInstance → DominatingSetInstance := fun x =>
+  ⟨dominationGraph x.graph, if x.k ≤ x.graph.vertices.toFinset.card then x.k + 1 else 0⟩
 
 /-- A vertex cover of `k` vertices, with the hub, dominates `dominationGraph G`. -/
 private theorem mem_DominatingSet_of_mem_VertexCover {G : Graph} {k : ℕ}
-    (h : (G, k) ∈ VertexCover) :
+    (h : (⟨G, k⟩ : VertexCoverInstance) ∈ VertexCover) :
     (⟨dominationGraph G, k + 1⟩ : DominatingSetInstance) ∈ DominatingSet := by
   classical
-  obtain ⟨C, hCV, hC, rfl⟩ := mem_VertexCover_iff.1 h
+  obtain ⟨C, hCV, hC, rfl⟩ := mem_VertexCover_iff_mk.1 h
   refine mem_DominatingSet_iff.2 ⟨insert 1 (C.image (2 * ·)), fun w hw => ?_, fun w hw => ?_, ?_⟩
   · rw [mem_dominationGraph_fst]
     rcases Finset.mem_insert.1 hw with rfl | hw
@@ -412,15 +412,15 @@ private theorem exists_cover_of_mem_DominatingSet {G : Graph} {k : ℕ}
     omega
 
 /-- **Vertex covers of `G` are dominating sets of `dominationGraph G` with the hub.** -/
-theorem toDominatingSet_mem_iff (x : Graph × ℕ) :
+theorem toDominatingSet_mem_iff (x : VertexCoverInstance) :
     toDominatingSet x ∈ DominatingSet ↔ x ∈ VertexCover := by
   obtain ⟨G, k⟩ := x
   simp only [toDominatingSet]
   split_ifs with hk
   · refine ⟨fun h => ?_, mem_DominatingSet_of_mem_VertexCover⟩
     obtain ⟨S, hSV, hS, hcard⟩ := exists_cover_of_mem_DominatingSet h
-    exact mem_VertexCover_iff_exists_card_le.2 ⟨hk, S, hSV, hS, hcard⟩
-  · refine ⟨fun h => ?_, fun h => absurd (mem_VertexCover_iff_exists_card_le.1 h).1 hk⟩
+    exact mem_VertexCover_iff_exists_card_le_mk.2 ⟨hk, S, hSV, hS, hcard⟩
+  · refine ⟨fun h => ?_, fun h => absurd (mem_VertexCover_iff_exists_card_le_mk.1 h).1 hk⟩
     -- No dominating set of `0` vertices dominates the hub.
     obtain ⟨D, -, hD, hcard⟩ := mem_DominatingSet_iff.1 h
     rw [Finset.card_eq_zero] at hcard
@@ -479,20 +479,21 @@ theorem computableInPolyTime_dominationGraph :
 number of distinct declared vertices, computed in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_toDominatingSet :
-    ComputableInPolyTime toDominatingSet (encPair encGraph encNat) encDominatingSet := by
+    ComputableInPolyTime toDominatingSet encVertexCoverInstance encDominatingSet := by
   have hle : ComputableInPolyTime
-      (fun x : Graph × ℕ => decide (x.2 ≤ x.1.vertices.toFinset.card))
-      (encPair encGraph encNat) encBool := by
+      (fun x : VertexCoverInstance => decide (x.k ≤ x.graph.vertices.toFinset.card))
+      encVertexCoverInstance encBool := by
     simp_rw [← Graph.length_distinctVertices]
     fun_prop
-  have heq : toDominatingSet = fun x : Graph × ℕ =>
-      (⟨dominationGraph x.1,
-        if decide (x.2 ≤ x.1.vertices.toFinset.card) then x.2 + 1 else 0⟩ :
+  have heq : toDominatingSet = fun x : VertexCoverInstance =>
+      (⟨dominationGraph x.graph,
+        if decide (x.k ≤ x.graph.vertices.toFinset.card) then x.k + 1 else 0⟩ :
         DominatingSetInstance) := by
     funext ⟨G, k⟩
     simp only [toDominatingSet, decide_eq_true_eq]
   rw [heq]
-  exact encDominatingSet_mk_polyTime (computableInPolyTime_dominationGraph.comp (fst _ _))
+  exact encDominatingSet_mk_polyTime
+    (computableInPolyTime_dominationGraph.comp (by fun_prop))
     (ite' hle (by fun_prop) (const 0))
 
 end VertexCover
@@ -500,7 +501,7 @@ end VertexCover
 /-- `VertexCover` reduces to `DominatingSet` in polynomial time via
 `VertexCover.toDominatingSet`. -/
 theorem polyTimeReducible_VertexCover_DominatingSet :
-    PolyTimeReducible (encPair encGraph encNat) encDominatingSet VertexCover
+    PolyTimeReducible encVertexCoverInstance encDominatingSet VertexCover
       DominatingSet :=
   ⟨VertexCover.toDominatingSet, VertexCover.computableInPolyTime_toDominatingSet,
     fun x => (VertexCover.toDominatingSet_mem_iff x).symm⟩

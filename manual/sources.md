@@ -632,6 +632,11 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 
 Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section. It is also cited at book level for search-tree branching vectors and disjoint clause-prefix branching on fixed-width SAT; no internal chapter, theorem, or page locators are claimed.
 
+<a id="forbesshpilka2013"></a>
+## forbesshpilka2013
+
+Michael A. Forbes and Amir Shpilka. "Quasipolynomial-time Identity Testing of Non-commutative and Read-once Oblivious Algebraic Branching Programs." FOCS 2013, 243–252; arXiv:1209.2408v2, https://arxiv.org/abs/1209.2408v2 . Read in the arXiv version: §1.1 (pp. 2–3) for the set-multilinear and univariate encodings, and §4 for the reduction from non-commutative programs: Construction 4.1 and Lemma 4.2 (p. 22), Lemma 4.3 (p. 23), Lemma 4.5 and Theorem 4.6 (p. 24). The library formalizes this reduction for homogeneous layered programs only and feeds it the hitting set of its own adaptation of Agrawal–Gurjar–Korwar–Saxena; Corollary 4.7 (p. 25), with the paper's generator and bound, is not formalized.
+
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
 

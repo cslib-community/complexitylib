@@ -303,7 +303,7 @@ private theorem step_polyTime : ComputableTidilyInPolyTime step encSystem encSys
 
 /-- The actual Gaussian-elimination decider is computable in polynomial time on native
 multi-tape Turing machines, with unary width and raw binary coefficient words. -/
-theorem decide_polyTime : ComputableInPolyTime decide encInput encBool := by
+theorem computableInPolyTime_decide : ComputableInPolyTime decide encInput encBool := by
   have hloop : ComputableTidilyInPolyTime
       (fun q : Input => step^[q.width] q.rows) encInput encSystem :=
     .iterate_of_bounded_growth input_width_tidy input_rows_tidy
@@ -322,6 +322,6 @@ theorem decide_polyTime : ComputableInPolyTime decide encInput encBool := by
 /-- Dense XOR-SAT is in the native Turing-machine class `P`. -/
 theorem satisfiable_mem_P :
     {q : Input | Width q.width q.rows ∧ Satisfiable q.width q.rows} ∈ P encInput :=
-  ⟨decide, decide_polyTime, fun q => (decide_eq_true_iff q).symm⟩
+  ⟨decide, computableInPolyTime_decide, fun q => (decide_eq_true_iff q).symm⟩
 
 end Cslib.Complexity.XORSAT.Dense
