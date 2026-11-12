@@ -18,8 +18,8 @@ import Mathlib.Algebra.BigOperators.Intervals
 
 Selected entries of the ranked subset convolution by the trimmed fast zeta transform, following
 the proof of [ChanItakuraMaYu2026], Theorem 2.2 (Section 2.1), after
-[BjorklundHusfeldtKaskiKoivisto2007] and the trimmed transform of Björklund, Husfeldt, Kaski and
-Koivisto (2010) cited there.
+[BjorklundHusfeldtKaskiKoivisto2007] and the trimmed transform of
+[BjorklundHusfeldtKaskiKoivisto2010] cited there.
 
 Fix a duplicate-free list `l` of coordinates and a threshold `s`. Stage `k` of Yates's algorithm on
 `F` is `yatesTransform c (l.take k) F`; its value at `X` reads stage `k - 1` only at `X` and at `X`
@@ -42,7 +42,7 @@ preprocessing (`ret_solveM`).
 * **Charged (`1` `TimeM` tick):** computing one table cell (`tabulateM`): either reading the
   input `f` or `g` at one set, multiplying two transform values, or one Yates pass at one set
   (`yatesPass`: one membership test, one or two table reads, one scalar multiplication and one
-  addition). Table reads are dictionary look-ups keyed by sets, one per cell, and include the
+  addition). Each table read is one dictionary look-up keyed by a set, and includes the
   comparison `s ≤ #Y` deciding whether to read the current stage or the preprocessed one.
 * **Uncharged:** enumerating the cells of a domain (`layers`), building the dictionary of a
   table, loop control, and selecting stages from the lists of tables.
@@ -79,6 +79,8 @@ appear. The counts are exact: preprocessing takes `3 * (l.length + 1)` ticks per
 
 * [A. Björklund, T. Husfeldt, P. Kaski, M. Koivisto, *Fourier meets Möbius: fast subset
   convolution*][BjorklundHusfeldtKaskiKoivisto2007]
+* [A. Björklund, T. Husfeldt, P. Kaski, M. Koivisto, *Trimmed Moebius inversion and graphs of
+  bounded degree*][BjorklundHusfeldtKaskiKoivisto2010]
 * [T. M. Chan, R. Itakura, Z. Ma, Y. Yu, *3SUM Made Simpler (Without Matrix Multiplication),
   k-SUM Hypothesis Refuted for Odd k, and Real 3SUM/APSP Derandomized*][ChanItakuraMaYu2026]
 -/

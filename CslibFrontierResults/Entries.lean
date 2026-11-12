@@ -12,6 +12,7 @@ import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.Lean.TwoSAT
+import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
@@ -3681,6 +3682,22 @@ register_result "kosaraju-scc" where
     order at exact cost 3 * (|vs| + ∑ v, |adj v|) for duplicate-free vertex lists covering V, \
     plus O(|V|) component-index lookup. Visited-set membership, insertion, and function-update \
     array steps are counted as unit-cost operations."
+
+register_result "selected-entries-subset-convolution-timem" where
+  title := "Selected entries of ranked subset convolution by the trimmed fast zeta transform"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 2.2",
+      locator := "Section 2.1, p. 5" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.TrimmedYates.ret_solveM,
+    Cslib.Algorithms.Lean.TrimmedYates.time_solveM
+  ]
+  scope := "TimeM unit-cost model (one tick per table cell; enumeration and dictionary \
+    construction uncharged), not Word-RAM time. Inputs are look-up functions, so the paper's n \
+    term for storing the input sets is absent; the bound 3 (d + 1) (sum_{j <= s} (d choose j) + \
+    |queries| sum_{s <= j <= 2t} (2t choose j)) is exact. Weights in a commutative ring."
 
 register_result "twosat-linear-timem" where
   title := "Aspvall–Plass–Tarjan linear-time 2-SAT solver and witness construction in TimeM"
