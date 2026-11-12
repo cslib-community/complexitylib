@@ -5499,6 +5499,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.SplitRank
 public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
+public import CslibFrontier.Foundations.Data.MvPolynomial.WeightSubstitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.WeightedHomogeneous
 public import CslibFrontier.Foundations.Data.Nat.AlignedPacking
 public import CslibFrontier.Foundations.Data.Nat.ArithmeticProgression
