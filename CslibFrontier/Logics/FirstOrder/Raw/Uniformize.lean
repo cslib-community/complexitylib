@@ -107,7 +107,7 @@ section Primrec
 
 open Primrec
 
-private theorem primrec₂_replicate {α : Type*} [Primcodable α] :
+theorem primrec₂_replicate {α : Type*} [Primcodable α] :
     Primrec₂ fun (n : ℕ) (a : α) => List.replicate n a :=
   (list_map (list_range.comp fst) (snd.comp fst).to₂).of_eq fun p => by
     simp [List.map_const']

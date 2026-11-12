@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordWitness.AfterRecordProduct
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Program
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct.Exec
+import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Readback
 
 /-!
 # The real box product followed by candidate verification
@@ -127,27 +128,8 @@ theorem exec_at_record {w U m n g p i : ℕ} (values : ℕ → ℤ)
   have hbank : RecordProduct.producerBank Instances.output = (39 : Fin 320) := by decide
   rw [hbank] at hdr
   have hlen : qs.length = Q := RecordProduct.decodedQueries_length hn x.mem q Q
-  have hl := RecordProduct.raw_left_words x.mem (RecordProduct.leftMatrix m n g p values idx)
-    (RecordProduct.rightMatrix m n g p values idx) qs (by
-      intro a k
-      have hflat : a.val * D m + k.val < n * D m := by
-        have ht := Nat.mul_le_mul_right (D m) a.isLt
-        rw [Nat.succ_mul] at ht
-        have := k.isLt
-        omega
-      simpa only [RecordProduct.leftMatrix, Int.toNat_natCast, Block.Realizes, Block.read]
-        using hleft ⟨_, hflat⟩)
-  have hr := RecordProduct.raw_right_words hn x.mem
-    (RecordProduct.leftMatrix m n g p values idx)
-    (RecordProduct.rightMatrix m n g p values idx) qs (by
-      intro k a
-      have hflat : k.val * n + a.val < n * D m := by
-        have ht := Nat.mul_le_mul_right n k.isLt
-        rw [Nat.succ_mul, Nat.mul_comm (D m) n] at ht
-        have := a.isLt
-        omega
-      simpa only [RecordProduct.rightMatrix, Int.toNat_natCast, Block.Realizes, Block.read]
-        using hright ⟨_, hflat⟩)
+  have hl := RecordProduct.raw_left_block values idx x.mem qs hleft
+  have hr := RecordProduct.raw_right_block hn values idx x.mem qs hright
   obtain ⟨r, he, rr, rv, rm, rg⟩ := RecordBoxProduct.exec
     (b := x.regs (productBank 42)) (i := i) (out := x.regs (productBank 39))
     (rho := idx.1.val) (piece := idx.2.2)

@@ -219,8 +219,7 @@ theorem runFrom_cfg (c : Cfg k Symbol State input) (V : Fin k → Finset ℤ) (n
   | succ n ih =>
     obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.1 (h n (by omega))
     rw [runFrom_succ, ih fun m hm => h m (by omega), step_cfg hq, runFrom_succ]
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [visited_succ, Finset.union_insert]
 
 /-- After its first step, `shadow m₀ m₁ tm` mirrors the run of `tm` until `tm` halts. -/

@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.ContractionCoun
 import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunProp
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
+import CslibFrontier.Foundations.Data.Nat.Power
 
 /-!
 # Model counting by tensor contraction for unbounded clause width
@@ -92,14 +93,8 @@ theorem exists_modelCounter_unboundedWidth :
   all_goals
     obtain ⟨Y, hY⟩ : ∃ Y, Y = (encCNF φ).length + 1 := ⟨_, rfl⟩
     have hY1 : 1 ≤ Y := by omega
-    have hψ : (encCNF (toSharpThreeSAT φ)).length + 1 ≤ (p + 1) * Y ^ q := by
-      have h1 : (encCNF (toSharpThreeSAT φ)).length ≤ p * Y ^ q := by rw [hY]; exact hlen φ
-      have h2 : 1 ≤ Y ^ q := Nat.one_le_pow _ _ hY1
-      nlinarith
-    have hψpow (c : ℕ) : ((encCNF (toSharpThreeSAT φ)).length + 1) ^ c ≤
-        (p + 1) ^ c * Y ^ (q * c) := by
-      calc _ ≤ ((p + 1) * Y ^ q) ^ c := Nat.pow_le_pow_left hψ c
-        _ = _ := by rw [mul_pow, pow_mul]
+    have hψpow := Nat.add_one_pow_le_of_le_mul_pow hY1
+      (show (encCNF (toSharpThreeSAT φ)).length ≤ p * Y ^ q by rw [hY]; exact hlen φ)
     simp only [← hY]
   · -- time
     obtain ⟨E, hE⟩ : ∃ E, E = 7 * A * (φ.vars.length + 1) / Nat.sqrt (Nat.log 2

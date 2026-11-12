@@ -90,8 +90,7 @@ example : (⟨1, ![true, false], 0⟩ : MCSP.Instance) ∉ MCSP := by
   have hEq : PartialMCSP.Instance.ofTotal ⟨1, ![true, false], 0⟩ =
       ⟨1, ![some true, some false], 0⟩ := by
     dsimp [PartialMCSP.Instance.ofTotal]
-    congr 1
-    funext i
+    congr 1 with i : 1
     fin_cases i <;> rfl
   rw [hEq]
   intro hx

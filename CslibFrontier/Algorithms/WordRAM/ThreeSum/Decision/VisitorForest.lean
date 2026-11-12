@@ -96,7 +96,8 @@ theorem execute_next_root {r κ n w U : ℕ} {a : Arena} {l : Frontend.Layout}
   have hinput : RootInput b w κ n e s.nodes p := by
     refine {
       bounded := hp.bounded h.bounded
-      controls := ?_
+      controls := h.controls.of_regs_71_96 fun i hi hi' => hpr i (Or.inr hi) (by
+        simp only [ne_eq, Fin.ext_iff, ChanHe.Preprocessing.address]; omega)
       loaded := hloaded
       stored := ?_
       valid := ?_
@@ -112,12 +113,6 @@ theorem execute_next_root {r κ n w U : ℕ} {a : Arena} {l : Frontend.Layout}
       boolean := (pm _).symm ▸ h.boolean
       verdict := ?_
       protectedMemory := ?_ }
-    · exact h.controls.congr (fun i hi => hpr i (Or.inr (by
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-        omega)) (by
-          intro he
-          subst i
-          norm_num [ChanHe.Preprocessing.address] at hi))
     · rw [show p.mem = x.mem from hmem]
       exact ChanHe.Preprocessing.entry_stored hkeys h.frontend hi
     · dsimp only [b, rootArena]
@@ -220,10 +215,8 @@ theorem forest_body_exec {r κ n w U : ℕ} {a : Arena} {l : Frontend.Layout}
       exact (hload.seq (hroot.seq hz)).within.mono (by dsimp only [e, T] at *; omega)
   · refine {
       bounded := hz.bounded hy.bounded
-      controls := hy.controls.congr (fun i hi => zreg i (by
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-        simp only [ne_eq, Fin.ext_iff, ChanHe.Preprocessing.current]
-        omega))
+      controls := hy.controls.of_regs_71_96 (fun i _ hi => zreg i (by
+        simp only [ne_eq, Fin.ext_iff, ChanHe.Preprocessing.current]; omega))
       frontend := h.frontend.frame hcard (fun p hp => hprefix p (hp.trans_le hfront))
       descriptors := (zouter _ (by decide) (by decide) (by decide)).trans h.descriptors
       roots := (zouter _ (by decide) (by decide) (by decide)).trans h.roots

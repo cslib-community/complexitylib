@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Crypto.Computational.OneWay
 public import CslibFrontier.Crypto.Computational.Prediction
 public import CslibFrontier.Crypto.Computational.PseudorandomGenerator
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Tactic.PPT
 
@@ -127,9 +128,8 @@ private theorem real_probability (f : List Bool → List Bool) (predicate : List
     Pr[prgRealGame (fun seed => f seed ++ [predicate seed]) adversary n] =
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         Pr[adversary n (f (List.ofFn bits) ++ [predicate (List.ofFn bits)])] := by
-  simp only [eval_prgRealGame, distinguishingGame, PMF.monad_bind_eq_bind,
-    generatorEnsemble,
-    BitString.uniformList, PMF.bind_map, Function.comp_def, PMF.map_comp, PMF.bind_apply_toReal]
+  simp only [pmf_norm, eval_prgRealGame, distinguishingGame, generatorEnsemble,
+    BitString.uniformList, PMF.bind_apply_toReal]
 
 private theorem ideal_probability (f : List Bool → List Bool) (adversary : Distinguisher)
     (n : ℕ) :
@@ -137,9 +137,8 @@ private theorem ideal_probability (f : List Bool → List Bool) (adversary : Dis
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         ((Pr[adversary n (f (List.ofFn bits) ++ [false])] +
           Pr[adversary n (f (List.ofFn bits) ++ [true])]) / 2) := by
-  simp only [Game.coe_succProbability, distinguishingGame, hardCoreIdeal, PMF.monad_bind_eq_bind,
-    BitString.uniformList,
-    PMF.bind_map, PMF.bind_bind, Function.comp_def, PMF.bind_apply_toReal]
+  simp only [pmf_norm, Game.coe_succProbability, distinguishingGame, hardCoreIdeal,
+    BitString.uniformList, PMF.bind_apply_toReal]
   apply Finset.sum_congr rfl
   intro bits _
   norm_num [PMF.uniformOfFintype_apply, Fintype.sum_bool]
@@ -151,8 +150,7 @@ private theorem prediction_probability (f : List Bool → List Bool) (predicate 
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         Pr[(fun guess => guess == predicate (List.ofFn bits)) <$> adversary n (f (List.ofFn bits))]
       := by
-  simp only [predictionGame, ProbComp.eval_bind, BitString.eval_sampleList,
-    BitString.uniformList, PMF.bind_map, Function.comp_def, ProbComp.eval_map, ProbComp.eval_pure]
+  simp only [pmf_norm, predictionGame, BitString.eval_sampleList, BitString.uniformList]
   rw [PMF.bind_apply_toReal]
   rfl
 

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.Parameters
 public import CslibFrontier.Probability.UniversalHash
+import CslibFrontier.Languages.Probabilistic.Norm
 
 import CslibFrontier.Probability.Guessing
 import CslibFrontier.Probability.PMF.Expect
@@ -117,8 +118,7 @@ theorem correlation_le_guessInverter [Fintype Seed]
     intro s
     exact (Finset.sum_le_sum fun x _ => hpoint s x).trans_eq (sum_affine source _ _ _)
   have hguess := score_le_uniform_guess (seededHash seed source hash) seed success hsuccess
-  simp only [seededHash, sum_bind_mul, sum_map_mul, PMF.map_bind, PMF.map_comp,
-    Function.comp_def] at hguess
+  simp only [pmf_norm, seededHash, sum_bind_mul, sum_map_mul] at hguess
   have hprob : (((guessInverter f predictor seed precision image).map
       (fun x => f x == image)) true).toReal =
       ∑ s, (seed s).toReal * ∑ digest,

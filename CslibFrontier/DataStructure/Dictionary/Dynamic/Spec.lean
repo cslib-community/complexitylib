@@ -95,6 +95,9 @@ abbrev Op.Result {U : ℕ} : Op U → Type
   | .insert _ _ => Unit
   | .delete _ => Unit
 
+instance Op.instInhabitedResult {U : ℕ} (o : Op U) : Inhabited o.Result := by
+  cases o <;> dsimp [Op.Result] <;> infer_instance
+
 /-- Pure transition function for dynamic dictionary operations. -/
 abbrev step {U : ℕ} (s : State U) : (o : Op U) → State U × o.Result
   | .query u => (s, s u)
@@ -186,13 +189,7 @@ theorem card_dom_step_le_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
   cases o with
   | query u => exact hs
   | insert u v =>
-    rcases hval.1 with hlt | hisSome
-    · have hle := Dictionary.card_dom_insert_le s u v
-      dsimp only [spec, StateTransitionSpec.stepFn, step] at hlt ⊢
-      omega
-    · dsimp only [spec, StateTransitionSpec.stepFn, step]
-      rw [Dictionary.card_dom_insert_eq_of_isSome hisSome]
-      exact hs
+    exact Dictionary.card_dom_step_le_of_valid (V := V) (o := .insert u v) hs hval
   | delete u =>
     dsimp only [spec, StateTransitionSpec.stepFn, step]
     exact (card_dom_delete_le s u).trans hs
@@ -230,16 +227,7 @@ theorem valuesBounded_step_of_valid {U V n_max : ℕ} {s : State U} {o : Op U}
   cases o with
   | query u => exact hs
   | insert u v =>
-    intro x w hxw
-    dsimp only [spec, StateTransitionSpec.stepFn, step] at hxw
-    by_cases hxu : x = u
-    · subst hxu
-      rw [Function.update_self] at hxw
-      injection hxw with hvw
-      subst hvw
-      exact hval.2
-    · rw [Function.update_of_ne hxu] at hxw
-      exact hs x w hxw
+    exact Dictionary.valuesBounded_step_of_valid (n_max := n_max) (o := .insert u v) hs hval
   | delete u =>
     dsimp only [spec, StateTransitionSpec.stepFn, step]
     exact valuesBounded_delete hs u

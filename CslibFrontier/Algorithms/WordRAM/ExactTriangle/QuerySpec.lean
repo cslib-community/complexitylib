@@ -11,6 +11,7 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.Classes
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ChunkCatalogue
 public import CslibFrontier.Algorithms.ExactTriangle.Splitting
 public import Mathlib.Data.Nat.Nth
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Native query ranks and the finite ExactTriangle chunks
@@ -29,19 +30,11 @@ row-major indexing; they introduce no alternative notion of a residue class or c
 * `QuerySpec.before_eq_totalChunks`: the native catalogue count is the existing finite count.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ExactTriangle.QuerySpec
 
 open Cslib.Matrix Cslib.Algorithms.ExactTriangle
-
-private theorem pairIndex_eq (n : ℕ) (q : Fin n × Fin n) :
-    pairIndex q = (finProdFinEquiv q).val := by
-  simp [pairIndex, finProdFinEquiv, Nat.add_comm, Nat.mul_comm]
-
-private theorem pairIndex_lt {n : ℕ} (q : Fin n × Fin n) : pairIndex q < n * n := by
-  rw [pairIndex_eq]
-  exact (finProdFinEquiv q).isLt
 
 private theorem card_of_mem_pairIndex {n N : ℕ} (hN : N ≤ n * n)
     (S : Finset (Fin n × Fin n)) (P : ℕ → Prop) [DecidablePred P]
@@ -58,7 +51,7 @@ private theorem card_of_mem_pairIndex {n N : ℕ} (hN : N ≤ n * n)
     have hklt : k < n * n := (Finset.mem_range.mp hkN).trans_le hN
     let q := finProdFinEquiv.symm (⟨k, hklt⟩ : Fin (n * n))
     have hq : pairIndex q = k := by
-      rw [pairIndex_eq]
+      rw [pairIndex_eq_val_finProdFinEquiv]
       exact congrArg Fin.val (finProdFinEquiv.apply_symm_apply ⟨k, hklt⟩)
     have hqS : q ∈ S := (hS q).mpr (by
       rw [hq]
@@ -134,7 +127,7 @@ theorem query_readback (rho : Fin p) (mem : ℕ → ℕ) (base : ℕ)
   have hcount : Nat.count P t = k := Nat.count_nth hfinite
   let q := finProdFinEquiv.symm (⟨t, ht⟩ : Fin (n * n))
   have hqindex : pairIndex q = t := by
-    rw [pairIndex_eq]
+    rw [pairIndex_eq_val_finProdFinEquiv]
     exact congrArg Fin.val (finProdFinEquiv.apply_symm_apply ⟨t, ht⟩)
   have hq : q ∈ residueClass wAB p rho := (mem_class wAB hp R hR rho q).mpr (by
     rw [hqindex]
@@ -181,9 +174,7 @@ theorem chunk_readback (D : ℕ) (rho : Fin p) (mem : ℕ → ℕ) (base : ℕ)
   have hrRem := hr.trans_le (min_le_right _ _)
   have hglobal : k * queryCap n D + r < (residueClass wAB p rho).card := by omega
   obtain ⟨q, hq, huniq⟩ := query_readback wAB hp R hR rho mem base hread _ hglobal
-  have hdiv : (k * queryCap n D + r) / queryCap n D = k := by
-    rw [Nat.mul_comm k (queryCap n D), Nat.mul_add_div hcap,
-      Nat.div_eq_of_lt hrCap, Nat.add_zero]
+  have hdiv : (k * queryCap n D + r) / queryCap n D = k := Nat.mul_add_div_of_lt k hrCap
   have hchunk : q ∈ chunkOf wAB D p rho k := by
     rw [mem_chunkOf wAB hp R hR]
     refine ⟨(mem_class wAB hp R hR rho q).mp hq.1, ?_⟩

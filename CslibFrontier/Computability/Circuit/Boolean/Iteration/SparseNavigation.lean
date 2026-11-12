@@ -294,12 +294,7 @@ theorem sparse_coordinate_visit_schedule (f g e : Equiv.Perm (BitVec n))
         (f : BitVec n → BitVec n)^[t] (word (inputLeft z)) = word (inputRight z)} =
           visitScheduleCount (out.eval Boolean.interpretation z) T) ∧
       out.size ≤ 2 * encode.size + 1200 * (n + 3) * ((disagreement f g).card + 1) := by
-  have hcounter : e ∘ g ∘ e.symm = fun x => x + 1 := by
-    funext x
-    simp only [Function.comp_apply, hcycle, Equiv.apply_symm_apply]
-  have hr := disagreement_conjugate_card (f : BitVec n → BitVec n)
-    (g : BitVec n → BitVec n) e
-  rw [hcounter] at hr
+  have hr := disagreement_semiconj_card (f : BitVec n → BitVec n) g e (· + 1) hcycle
   let conjugate := e.permCongrHom f
   obtain ⟨middle, hm, _, hs⟩ := sparse_counter_visit_schedule conjugate
   change middle.size ≤ 1200 * (n + 3) *

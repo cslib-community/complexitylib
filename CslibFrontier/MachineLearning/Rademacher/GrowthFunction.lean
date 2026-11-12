@@ -99,7 +99,7 @@ theorem empiricalRademacherComplexity_signClass_le (C : ConceptClass α Bool) {m
     positivity
   have hfin : ((fun f : α → ℝ => fun i => f (S i)) '' signClass C).Finite :=
     ((Set.toFinite _).image _).subset (image_signClass_subset C S)
-  refine (empiricalRademacherComplexity_le_of_finite zero_le_one
+  refine (empiricalRademacherComplexity_le_of_finite
     (fun f hf => abs_le_one_of_mem_signClass hf) S hfin).trans_eq (one_mul _) |>.trans ?_
   have hpos : 0 < ((fun f : α → ℝ => fun i => f (S i)) '' signClass C).ncard :=
     (Set.ncard_pos hfin).2 (hC.image _)

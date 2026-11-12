@@ -335,10 +335,10 @@ example :
         negateCircuit.size.choose j) :=
   ⟨piecesAtMost_scalarTranscript negatePrior (fun _ => 1) negatePrior_along,
    changesAtMost_scalarReadout negatePrior (fun _ => 1) negatePrior_along (fun z => z 1),
-   circuit_two_pow_lt_mul_sum_choose_of_direction negateCircuit ⟨(1 : Fin 2), rfl⟩
-     (fun _ => 1) negatePrior_along negateCircuit_eval (oneBit_rectangleFree _),
-   circuit_two_pow_lt_mul_sum_choose_gateActivity_of_direction negateCircuit ⟨(1 : Fin 2), rfl⟩
-     (fun _ => 1) negatePrior_along negateCircuit_eval (oneBit_rectangleFree _)⟩
+   circuit_two_pow_lt_mul_sum_choose_of_direction negateCircuit (fun _ => 1) negatePrior_along
+     negateCircuit_eval (oneBit_rectangleFree _),
+   circuit_two_pow_lt_mul_sum_choose_gateActivity_of_direction negateCircuit (fun _ => 1)
+     negatePrior_along negateCircuit_eval (oneBit_rectangleFree _)⟩
 
 example (z : Fin 3 → Bool) (t : ℕ) (ht : t < BitString.ballSize 3 2) :
     BitString.coverDecode 3 3 (BitString.coverRank 3 z) = z ∧

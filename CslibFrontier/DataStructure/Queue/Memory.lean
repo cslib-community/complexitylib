@@ -31,9 +31,10 @@ proved once:
 at most nine memory units, amortized, with six credits per rear element. `run` allocates the two
 stacks and then runs a queue client. From any memory with room for both stacks, `run_correct`
 gives its answer and the admissibility of its memory operations, `run_cost` bounds its memory
-cost by `6 + 9 m` for `m` queue operations, and `run_cost_isBigO` exports that bound as `O(m)`.
-All three are instances of the generic theorems of `Memory.Allocator`, so this file has no setup
-proof of its own.
+cost by `6 + 9 m` for `m` queue operations, and `run_cost_isBigO` exports that bound as `O(m)`
+over clients returning `Unit`, with the bounding function chosen for each word size, capacity
+and start memory. All three are instances of the generic theorems of `Memory.Allocator`, so this
+file has no setup proof of its own.
 
 The machine-level counterpart is `Queue.WordRAM`, whose dispatcher is hand-stepped instruction by
 instruction. Here the proofs mention neither registers nor instructions. Executing the memory
@@ -259,8 +260,10 @@ theorem run_cost_glue {β : Type} (p : (Queue.WordRAM.spec w C).Client β) {s : 
   ((Memory.spec w).totalCost_glue_le one_le_charge hglue s _).trans
     (Nat.mul_le_mul_left _ (run_cost p hfit hv))
 
-/-- **The exported form.** Over admissible clients, the memory cost of a run is `O(m)` in the
-number `m` of queue operations. -/
+/-- **The exported form.** For each word size `w`, capacity `C` and memory `s` with room for both
+stacks, the memory cost of a run from `s` is `O(m)` in the number `m` of queue operations, over
+admissible clients returning `Unit`. The bounding function is chosen after `w`, `C` and `s`;
+`run_cost` gives the explicit bound `6 + 9 m`, which is independent of them. -/
 theorem run_cost_isBigO (s : Memory.State) (hfit : Fits w (s.frontier + 2 * (C + 1))) :
     CostIsBigO Filter.atTop (fun m : ℕ => (m : ℝ))
       (fun p : {p : (Queue.WordRAM.spec w C).Client Unit //

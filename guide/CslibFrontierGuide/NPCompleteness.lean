@@ -52,6 +52,19 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Vert
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.DisjointGenus
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
+import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query
+import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.CSPBounds
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryBudget
+import CslibFrontier.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Equivalence
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Star
+import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
+import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
+import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
+import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary
 import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Projection
@@ -102,30 +115,6 @@ development imports the problems it uses. The first examples need only these:
 ```
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.Clique
-import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
-import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
-import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
-import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
-import CslibFrontier.Computability.PolyTime.CSP.Table
-import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
-import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
-import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
-import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
-import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
-import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
-import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
-import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
-import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom
-import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality
-import CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Spec
-import CslibFrontier.Foundations.Data.BitString.CyclicDifference
-import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
 
 open Cslib.Complexity Turing.MultiTapeTM
@@ -302,9 +291,7 @@ CookLevin.SAT_npComplete : NPComplete encCNF SAT
 
 Its hardness half ({name}`CookLevin.SAT_npHard`) encodes the computation of any polynomial-time
 verifier as a formula. Unsatisfiability, its complement, is coNP-complete
-({name}`CookLevin.UNSAT_coNPComplete`). The
-[Cook–Levin abstract](https://github.com/cslib-community/cslib-frontier/blob/main/abstracts/CslibFrontierAbstracts/CookLevinAbstract.lean)
-restates the theorem together with every definition it depends on.
+({name}`CookLevin.UNSAT_coNPComplete`).
 
 # The Catalogue
 %%%
@@ -843,9 +830,202 @@ example : ComputableInPolyTime
 Original variable labels remain binary. Iteration uses actual list lengths,
 never a maximum label or supplied successor index. Nullary port order is
 vacuous; semantic rejection and exact relation arity remain separate guards.
-These supplied-certificate theorems leave bare-instance construction, geometric
-correspondence and the dichotomy open. The complete edge solver appears below. The finite duality and
-Boolean difference interface is proved below.
+These supplied-certificate theorems leave complete bare-instance recognition,
+geometric correspondence and the dichotomy open. The guarded constructor below
+adds success soundness. The complete edge solver and finite duality follow.
+
+
+# Frozen XOR Queries and Checked Recovery
+
+Start a standalone client with these ordinary runtime imports:
+
+```
+import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query
+import
+  CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery
+```
+
+The namespace is `Cslib.Complexity.Graph.RotationRecognition`.
+{name}`Cslib.Complexity.Graph.RotationRecognition.FixedRotationInput` stores an
+existing listed graph and one optional complete clockwise dart word per vertex.
+Validity requires declarations `List.range n`, endpoints below `n`, an order
+table of length `n`, and duplicate-free full fibers at prescribed vertices.
+`none` leaves a vertex free; `some []` prescribes an isolated vertex. The full
+cyclic successor is fixed without reflection. A directed `Consecutive` block
+constrains only internal adjacencies, without closing its last entry to its first.
+
+The actual query validates and calls the native XOR solver. These small examples
+check an isolate and reject a missing table entry:
+
+```lean
+open Cslib.Complexity.Graph.RotationRecognition in
+example : query ⟨([0], []), [some []]⟩ = true := by decide +kernel
+```
+
+```lean
+open Cslib.Complexity.Graph.RotationRecognition in
+example : recover ⟨([0], []), []⟩ = none := by decide +kernel
+```
+
+Each listed edge is replaced by three indexed segments. Prescribed endpoints
+freeze their first/last segments; middle segments stay movable. Independent
+unordered segment pairs give affine rows of width at most four. Query acceptance
+means exactly valid input and solvability of these concrete equations:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example (I : FixedRotationInput) :
+    query I = true ↔ Valid I ∧ XORSAT.Satisfiable (compile I) :=
+  query_eq_true_iff I
+```
+
+The finite semantics and budget examples also use the chapter's ordinary imports
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.CSPBounds`
+and `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryBudget`.
+`CSPBounds` publicly imports `Recognition.Moves`. A finite witness has one bit per
+segment/vertex pair, with actual zeros at frozen coordinates:
+
+```lean
+open Cslib.Complexity.Graph.RotationRecognition in
+example (I : FixedRotationInput) :
+    query I = true ↔ Valid I ∧ ∃ moves : Moves (frame I),
+      FrozenMoves (frame I) moves ∧ MoveEquations (frame I) moves :=
+  query_eq_true_iff_exists_frozen_moves I
+```
+
+These equations reconstruct Schaefer, *Toward a Theory of Planarity*, §§5.3–5.4,
+pp. 399–401. Their identification with drawings is open. The proposed use of
+Fulek–Kynčl–Pálvölgyi, arXiv:1612.00688v3, Theorem 1, p. 2, is also unformalized;
+see the [source mapping](../../manual/circuits-logic-and-other-models/proof-systems.md#frozen-xor-queries-and-checked-candidate-recovery).
+Contiguous candidate recovery is original.
+
+`recover` tests append candidates on ephemeral splits. A split redirects the
+selected ends to a fresh hub, appends a nonloop connector, and prescribes the
+hub's full order `block ++ [2m]`, leaving the source free. The connector need
+not be a bridge. The outer state keeps the original graph and current order
+table; query systems do not accumulate. Returned tables pass the existing
+numerical genus-zero checker and the original full-order guard:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example {I : FixedRotationInput} {c : Graph.RotationCertificate}
+    (h : recover I = some c) :
+    Graph.RotationCertificate.verifyGenusZero I.graph c = true ∧
+      verifyFixed I c = true :=
+  recover_sound h
+```
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example {I : FixedRotationInput} {c : Graph.RotationCertificate}
+    (h : recover I = some c) : Feasible I ∧
+      c.successor.length = 2 * I.graph.2.length :=
+  ⟨recover_feasible h, length_recover_successor h⟩
+```
+
+`ofCSP` uses the actual dense incidence graph. Variables are free; indexed
+constraints prescribe their actual cyclic scope orders, retaining repeated
+variables, duplicate constraints and nullaries. Relation semantics and arity
+metadata are ignored. `recoverCSP` additionally checks the original CSP order:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity
+  Cslib.Complexity.Graph.RotationRecognition in
+example {F : CSP Unit ℕ} {c : Graph.RotationCertificate}
+    (h : recoverCSP F = some c) :
+    Cslib.Complexity.CSP.verifyRotationCertificate F c = true :=
+  recoverCSP_sound h
+```
+
+Even a false nullary relation can return a certificate; satisfiability is a
+separate semantic question:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity.Graph.RotationRecognition in
+example : recoverCSP ([(false, [])] : CSP Bool ℕ) = some ⟨[]⟩ :=
+  by decide +kernel
+```
+
+`none` may mean invalid input, a false XOR query, exhausted candidates or a
+failed final guard. It implies neither nonplanarity nor CSP unsatisfiability.
+The actual runtime certificates cover every raw input, including malformed
+orders and arbitrarily large binary names; no solver or resource provider is
+supplied:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition
+  Turing.MultiTapeTM in
+example : ComputableInPolyTime query encFixedRotationInput encBool :=
+  query_polyTime
+```
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph
+  Cslib.Complexity.Graph.RotationRecognition Turing.MultiTapeTM in
+example : ComputableInPolyTime recover encFixedRotationInput
+    (encOption encRotationCertificate) :=
+  recover_polyTime
+```
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.Graph
+  Cslib.Complexity.Graph.RotationRecognition Turing.MultiTapeTM in
+example : ComputableInPolyTime (recoverCSP (Rel := Unit) (V := ℕ))
+    (encCSP encUnit encNat) (encOption encRotationCertificate) :=
+  recoverCSP_polyTime encUnit encNat
+```
+
+With `m` original edges, the initial query and charged candidate scans total at
+most `1 + 2m²`; fixed constraint vertices improve this to `1 + m²` for CSPs,
+where `m` is the actual scope-occurrence count. These charges are not runtime
+exponents:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example (I : FixedRotationInput) :
+    1 + recoveryWork (List.range I.graph.1.length) (some I) ≤
+      1 + 2 * I.graph.2.length ^ 2 :=
+  recoveryWork_le I
+```
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity
+  Cslib.Complexity.Graph.RotationRecognition in
+example (F : CSP Unit ℕ) :
+    1 + recoveryWork (List.range (CSP.incidenceGraph F).1.length)
+      (some (ofCSP F)) ≤ 1 + (CSP.incidenceGraph F).2.length ^ 2 :=
+  recoveryWork_ofCSP_le F
+```
+
+All sizes include framing and binary labels. Put `K = B + 1` for the original
+CSP encoded length `B`. Initial XOR storage is at most
+`9K² * (32 * (log₂(9K²) + 1) + 21)` bits. A split has the same bound under its
+validity guard; arbitrary malformed split blocks do not satisfy this premise:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity
+  Cslib.Complexity.Graph.RotationRecognition Turing.MultiTapeTM in
+example (F : CSP Unit ℕ) (v : ℕ) (block : List ℕ)
+    (h : Valid (split (ofCSP F) v block)) :
+    let K := (encCSP encUnit encNat F).length + 1
+    (XORSAT.encoding (compile (split (ofCSP F) v block))).length ≤
+      9 * K ^ 2 * (32 * (Nat.log2 (9 * K ^ 2) + 1) + 21) :=
+  length_encoding_compile_split_ofCSP_le encUnit encNat F v block h
+```
+
+Successful output has `2m` successors and full encoded length at most
+`2m * (4m + 1)`. The outer fold preserves the original graph and table width.
+Dense labels never erase distinct occurrences. Dvořák–Kupec's constraint-set
+model and indexed duplicate-preserving CSPs need a separate model bridge.
+
+The full objective in issue #3091 stays open. Required proofs are
+`Valid I → (XORSAT.Satisfiable (compile I) ↔ Feasible I)`, split feasibility
+equivalent to original numerical genus zero plus `Realizes` and internal
+`Consecutive block`, and geometric/source correspondence including frozen
+switches and Hanani–Tutte. The split equivalence must preserve clockwise order,
+use nonloop contraction and clean up duplicate declarations. No complete
+planarity recognizer or final native planarity P theorem follows from the
+runtime and success-soundness results above.
 
 
 # Indexed Duality and Boolean Difference Lifting
@@ -1038,6 +1218,290 @@ For permutation-only proofs, import `CslibFrontier.Foundations.GroupTheory.Perm.
 `CycleSurgery` or `SelectedOrbits`. The APIs live in `Equiv.Perm.Insertion`,
 `Equiv.Perm.CycleSurgery` and `Equiv.Perm.SelectedOrbits`, with no graph dependency.
 `CslibFrontierTests/PermutationSurgery.lean` is a complete standalone client.
+
+# Polygonal Geometry Prerequisites
+
+Componentwise numerical genus zero is equivalent to an actual polygonal
+embedding realizing the supplied literal clockwise rotation, when all incident
+endpoints are declared. Both general directions are proved below.
+Topological taming, indexed FZ versus DK set conventions and
+source comparison, frozen-switch completeness, Hanani–Tutte recognition and the
+full #3091 endpoint remain open.
+
+The ordinary imports at the start of this chapter include
+`CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs`,
+`CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood`,
+`CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points`,
+`CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star` and
+`CslibFrontier.Computability.Complexity.Problems.Graph.ClosedPassages.Loop`.
+They expose the following clients without `import all`.
+
+`Cslib.Polygonal.Route` lists `bends + 2` complex points and has `bends + 1`
+actual real affine segments. `eval i t` tests every real `t` in `[0,1]`;
+`support` is their union. `IsSimple` permits equal global parameters at adjacent
+junctions and first/last endpoint closure, excluding all other contacts.
+A one-segment loop therefore fails simplicity:
+
+```lean
+open Cslib.Polygonal in
+example (z : ℂ) : ¬(Route.line z z).IsSimple := by
+  rw [Route.isSimple_line_iff]
+  exact not_not.mpr rfl
+```
+
+`Graph.PolygonalDrawing G` uses the existing natural-number vertex names and
+listed edge occurrences. Its data are vertex coordinates, one route per edge
+position and endpoint equations; it stores no numerical genus or geometry
+provider. `IsEmbedding` requires distinct declared names to have distinct points,
+simple routes, declared-vertex contacts only at their corresponding ends, and
+contacts of different routes only at common named ends. Undeclared names are
+unconstrained. Repeated declarations name the same point; identical edge pairs
+keep separate routes; a loop retains two end parameters and outgoing germs.
+
+```lean
+open Cslib.Complexity Graph in
+example : (PolygonalDrawing.star 20).IsEmbedding :=
+  PolygonalDrawing.star_isEmbedding 20
+
+open Cslib.Complexity Graph in
+example (r : RotationSystem ([7, 7, 100], [])) :
+    (PolygonalDrawing.points [7, 7, 100]).IsEmbedding ∧
+      (PolygonalDrawing.points [7, 7, 100]).Realizes r :=
+  ⟨PolygonalDrawing.points_isEmbedding _,
+    PolygonalDrawing.points_realizes _ r⟩
+```
+
+`star_isEmbedding n` works at every degree, including zero. It asserts no
+arbitrary-degree star realization theorem. `points_realizes` covers every
+rotation of the edgeless graph, including sparse and repeated declarations.
+For any embedding, equal directions at one vertex force equal darts, even
+when the darts are the two ends of one loop:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} (hD : D.IsEmbedding)
+    (a b : Dart G) (hv : a.vertex = b.vertex)
+    (hdir : D.direction a = D.direction b) : a = b :=
+  hD.directions_injective a b hv hdir
+```
+
+`IsEmbedding.exists_vertex_ball hD v hv` constructs a positive-radius ball
+about a declared vertex. Every route segment meeting that ball is a first
+segment starting at `v` or a last segment ending at `v`. The proof separates
+finitely many compact real segments internally; it supplies neither a
+topological disk theorem nor a vertex-splitting patch.
+
+`PolygonalDrawing.Realizes r` is separate from `IsEmbedding`. It requires
+nonzero germs, injective incident directions and, for distinct incident
+`a,b,c`, the literal equivalence
+`sbtw (D.direction c) (D.direction b) (D.direction a) ↔
+b ∈ r.rotationInterval a c`. Reversing Mathlib's counterclockwise angle
+betweenness makes forward `rotate` clockwise in the fixed complex plane;
+reflection is not allowed. The existing `faceNext = rotate⁻¹ ∘ reversal`
+(`σ⁻¹ α`) retains its right-side face convention.
+
+The extracted `ClosedPassages.loop e he` pairs the two actual ends of a listed
+loop, with support `fun i => decide (i = e)`. The numerical noninterlacing
+corollary retains the explicit declared-endpoint guard `hG`:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hr : r.NumericalGenusZero) (e f : Fin G.2.length) (hef : e ≠ f)
+    (he : (Dart.vertex (G := G) (e, false)) = Dart.vertex (e, true))
+    (hf : (Dart.vertex (G := G) (f, false)) = Dart.vertex (f, true)) :
+    ¬r.Alternates (e, false) (e, true) (f, false) (f, true) :=
+  r.not_alternates_loops hG hr e f hef he hf
+```
+
+This needs no connectedness or degree bound and constructs no drawing.
+`CslibFrontierTests/PolygonalDrawing.lean` checks actual bridge, closed-loop and
+parallel-digon realizations, star embeddings at degrees 0, 5 and 20, sparse
+isolates, clockwise sign and reverse-order rejection.
+`CslibFrontierTests/PolygonalDrawingAudit.lean` audits stored declarations and
+environment linters; `CslibFrontierTests/RotationIntersection.lean` uses the
+extracted loop constructor in finite parity clients. These are original
+geometric constructions, with no DK, FKP or Hanani–Tutte formalization,
+coordinate bit bound or native runtime claim.
+
+## Loop-only Forward Realization
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet`.
+Every listed edge must be a loop. Declared endpoints and numerical genus zero
+then suffice for an actual embedding realizing the exact given clockwise
+rotation, with no noncrossing or geometric provider premise:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hr : r.NumericalGenusZero)
+    (hloop : ∀ e : Fin G.2.length,
+      (Dart.vertex (G := G) (e, false)) = Dart.vertex (e, true)) :
+    ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r :=
+  r.exists_polygonalDrawing_of_loops hG hr hloop
+```
+
+This includes sparse or repeated declarations and disconnected isolates.
+Here the actual two-loop certificate supplies the numerical premise:
+
+```lean
+open Cslib.Complexity Graph in
+example : ∃ D : PolygonalDrawing
+    ([7, 7, 1000], [(7, 7), (7, 7)]), D.IsEmbedding := by
+  let G : Graph := ([7, 7, 1000], [(7, 7), (7, 7)])
+  let c : RotationCertificate := ⟨[2, 0, 3, 1]⟩
+  have hc : RotationCertificate.verifyRotation G c = true := by decide
+  let r := RotationCertificate.decode G c hc
+  have hr : r.NumericalGenusZero :=
+    (RotationCertificate.verifyEuler_eq_true_iff hc).mp (by decide)
+  obtain ⟨D, hD, _⟩ :=
+    r.exists_polygonalDrawing_of_loops (by decide) hr (by decide)
+  exact ⟨D, hD⟩
+```
+
+`PolygonalDrawing.bouquet r hloop` is the explicit drawing. Each loop has
+five affine segments, with radial ports ranked in literal clockwise order.
+Numerical nonalternation supplies disjoint or nested port intervals; the
+construction proves actual real-parameter nonintersection internally.
+`CslibFrontierTests/PolygonalBouquet.lean` also checks a nonvacuous unbounded-degree
+family, nested/disjoint loops, interlacing obstruction and reversed-order
+rejection. This loop-only theorem supplies the base of the general forward
+construction. No coordinate-bit or native-runtime claim is made.
+
+## General Forward Realization and Restoration
+
+Ordinary import
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Forward`
+gives the provider-free theorem for every supplied rotation:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hr : r.NumericalGenusZero) :
+    ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r :=
+  r.exists_polygonalDrawing hG hr
+```
+
+There is no degree, connectedness, loop, bridge, cofaciality, rational-coordinate
+or geometric-provider premise. In particular, every nonloop star degree is
+included, using the numerical star API imported at the start of this chapter:
+
+```lean
+open Cslib.Complexity Graph Graph.RotationSystem in
+example (n : ℕ) : ∃ D : PolygonalDrawing (starGraph n),
+    D.IsEmbedding ∧ D.Realizes (starRotation n) :=
+  (starRotation n).exists_polygonalDrawing (starGraph_endpoints_declared n)
+    (numericalGenusZero_starRotation n)
+```
+
+The proof reindexes a nonloop occurrence, contracts it, recurses on edge count,
+restores it and transports back to the exact original edge/declaration lists.
+Ordinary `Realization.Restoration` imports also expose complete restoration of
+any supplied actual contracted drawing:
+
+```lean
+open Cslib.Complexity Graph Graph.RotationSystem in
+example {G : Graph} {u v : ℕ}
+    (r : RotationSystem (lastEdgeGraph G u v)) (huv : u ≠ v)
+    (hG : ∀ w ∈ (lastEdgeGraph G u v).incidenceVertices, w ∈ G.1)
+    {D : PolygonalDrawing (contractLastEdgeGraph G u v)}
+    (hD : D.IsEmbedding) (hR : D.Realizes (r.contractLastEdge huv)) :
+    ∃ ρ > 0, ∃ a b : ℂ, (D.restoration huv ρ a b).IsEmbedding ∧
+      (D.restoration huv ρ a b).Realizes r :=
+  hR.exists_restoration r huv hG hD
+```
+
+The radius, centers, separated fans and exact connector insertion gaps are
+chosen internally. Exterior pieces remain, and both ends of a target loop
+reattach independently. Empty retained blocks keep their prescribed slots;
+all real contacts, simplicity, declared points and clockwise triples are proved.
+The generic rank API lives in `RotationSystem.IntervalOrder`; ordinary
+`Realization.BouquetOrder` imports continue to expose it without aliases.
+
+`CslibFrontierTests/PolygonalForward.lean` applies the theorem to bridges,
+parallel occurrences, endpoint loops, untouched components, sparse repeated
+declarations, isolates and emptiness. `PolygonalContractionSplit.lean` applies
+automatic restoration to an actual drawing with two independent loop ends.
+`PolygonalJoin`, `PolygonalRestriction` and `PolygonalSplitFans` check local APIs.
+
+## Polygonal-to-Numerical Converse
+
+Ordinary import
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse`
+supplies the arbitrary finite PL direction, on the existing genuine drawing
+and numerical models:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} {r : RotationSystem G}
+    (hD : D.IsEmbedding) (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hR : D.Realizes r) : r.NumericalGenusZero :=
+  hD.numericalGenusZero hG hR
+```
+
+There is no genus, face-color, disk, Jordan or HT provider. The proof retains
+all real segment parameters, both loop ends, indexed parallel occurrences,
+arbitrary degree, sparse/duplicate declarations, disconnected components and
+points. Endpoint declarations remain explicit.
+
+The actual intermediate colors are also available to clients:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} {r : RotationSystem G}
+    (hD : D.IsEmbedding) (hR : D.Realizes r)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (x : Fin G.2.length → Bool) (hx : G.VertexEven x) :
+    ∃ q : r.Face → Bool, r.faceBoundary q = x :=
+  hD.exists_faceColors hR hG x hx
+```
+
+Right-side ray values transport through actual segments and bends, then through
+the empty literal clockwise vertex sectors. They descend to the existing face
+quotient. The indexed-dual/lifting exactness criterion supplies Euler equality;
+its face-color premise is discharged internally in the final theorem.
+
+Ordinary `Realization.Equivalence` imports combine the general endpoints:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
+    r.NumericalGenusZero ↔
+      ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r :=
+  r.numericalGenusZero_iff_exists_polygonalDrawing hG
+```
+
+Use `.mp hr` for the forward construction and `.mpr ⟨D, hD, hR⟩` for the
+converse. `CslibFrontierTests/PolygonalEquivalence.lean` checks both directions
+through this ordinary import on nonloop stars at arbitrary degree.
+
+A failure of numerical genus excludes that specific realized rotation:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hbad : ¬r.NumericalGenusZero) :
+    ¬∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r := by
+  rintro ⟨D, hD, hR⟩
+  exact hbad (hD.numericalGenusZero hG hR)
+```
+
+This does not assert nonplanarity of the underlying graph. The complete
+`CslibFrontierTests/PolygonalConverse.lean` applies the endpoint to actual loop,
+bridge, parallel-digon and degree-five clockwise star drawings; it also checks
+nonzero loop face colors, sparse/duplicate points, emptiness and a torus
+rotation obstruction. `PolygonalConverseAudit.lean` records scoped stored
+declaration/axiom/environment checks.
+
+These are original finite PL proofs. Arbitrary topological-arc taming,
+indexed FZ versus DK set source comparison, frozen-switch completeness,
+Hanani–Tutte, bare recognition and full #3091 remain open. No coordinate-bit,
+runtime/P bound or CSP dichotomy is claimed.
 
 # Ordered Incidence-to-Polygon Rotations
 

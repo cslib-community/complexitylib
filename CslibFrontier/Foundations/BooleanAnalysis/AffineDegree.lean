@@ -16,9 +16,9 @@ import Mathlib.Algebra.BigOperators.Field
 # Multiplying by an affine function raises the degree
 
 Let `L x = m - ∑ᵢ cᵢ xᵢ` be an affine function on the cube `ι → Bool` with values in a field `F`,
-with every coefficient `cᵢ` nonzero, where `n = card ι` and the integers `1, …, n` are nonzero in
-`F`. Lemma 5.2 of [ImpagliazzoPudlakSgall1999] states that multiplying a nonzero function `r` of
-degree `k` with `2k < n` by `L` raises the degree by exactly one
+with every coefficient `cᵢ` nonzero, where `n = card ι`. Lemma 5.2 of [ImpagliazzoPudlakSgall1999]
+states that multiplying a nonzero function `r` of degree `k` with `2k < n` by `L` raises the
+degree by exactly one, here over any field in which the integers `1, …, k + 1` are nonzero
 (`Cslib.BitString.totalDegree_affine_mul`). The degree here is the multilinear degree on the cube
 (`Cslib.BitString.totalDegree`), which is the degree of the multilinear reduction of a polynomial.
 
@@ -31,7 +31,8 @@ inclusion matrix of `k`-sets against `(k+1)`-sets, which is zero by Gottlieb's t
 (`Finset.eq_zero_of_sum_powersetCard_eq_zero`) since `k + (k + 1) ≤ n`.
 
 [ImpagliazzoPudlakSgall1999] state the lemma over `ℝ`. Here it holds over every field in which
-`n!` is nonzero, using the characteristic-free form of Gottlieb's theorem proved in
+`(k + 1)!` is nonzero, so in characteristic zero and in every characteristic larger than `k + 1`,
+using the characteristic-free form of Gottlieb's theorem proved in
 `CslibFrontier.Foundations.Combinatorics.InclusionMatrix`. This is a mild generalization of the
 stated lemma, read off from the same proof, not a new result.
 
@@ -73,7 +74,7 @@ private theorem affine_mem_lowDegree (c : ι → F) (m : F) :
 /-- The top subset Möbius coefficients of `r` vanish when `L * r` does not raise the degree. -/
 private theorem subsetMobius_eq_zero_of_mem_lowDegree_mul {c : ι → F} (hc : ∀ i, c i ≠ 0)
     (m : F) {k : ℕ} (hk : 2 * k < Fintype.card ι)
-    (hF : ∀ j : ℕ, 0 < j → j ≤ Fintype.card ι → (j : F) ≠ 0) {r : (ι → Bool) → F}
+    (hF : ∀ j : ℕ, 0 < j → j ≤ k + 1 → (j : F) ≠ 0) {r : (ι → Bool) → F}
     (hr : r ∈ lowDegree F ι k)
     (hLr : (fun x => m - ∑ i, c i * bitVal F (x i)) * r ∈ lowDegree F ι k)
     {A : Finset ι} (hA : k ≤ #A) :
@@ -116,18 +117,18 @@ private theorem subsetMobius_eq_zero_of_mem_lowDegree_mul {c : ι → F} (hc : �
       rw [ha, ← mul_prod_erase B c hi, mul_div_mul_left _ _ (hc i)]
     rw [hsplit, sum_congr rfl hterm, ← sum_div, key B hB2, zero_div]
   have hzero := eq_zero_of_sum_powersetCard_eq_zero (U := (univ : Finset ι)) (t := k)
-    (s := k + 1) (by omega) (by rw [card_univ]; omega) (by rw [card_univ]; exact hF) hsum A
+    (s := k + 1) (by omega) (by rw [card_univ]; omega) hF hsum A
     (mem_powersetCard.2 ⟨subset_univ A, hA.symm⟩)
   rw [ha] at hzero
   exact (div_eq_zero_iff.1 hzero).resolve_right (hprod A)
 
 omit [DecidableEq ι] in
-/-- **Lemma 5.2 of [ImpagliazzoPudlakSgall1999].** Let `L x = m - ∑ᵢ cᵢ xᵢ` with every `cᵢ` nonzero,
-over a field in which `1, …, card ι` are nonzero. Multiplying a nonzero function `r` on the cube
-with `2 * totalDegree r < card ι` by `L` raises its degree by exactly one. The source states the
-lemma over `ℝ`, for `deg r < ⌈n/2⌉`, which is `2 * deg r < n`. -/
+/-- **Lemma 5.2 of [ImpagliazzoPudlakSgall1999].** Let `L x = m - ∑ᵢ cᵢ xᵢ` with every `cᵢ` nonzero.
+Multiplying a nonzero function `r` on the cube with `2 * totalDegree r < card ι` by `L` raises
+its degree by exactly one, over a field in which `1, …, totalDegree r + 1` are nonzero. The source
+states the lemma over `ℝ`, for `deg r < ⌈n/2⌉`, which is `2 * deg r < n`. -/
 theorem totalDegree_affine_mul {c : ι → F} (hc : ∀ i, c i ≠ 0) (m : F)
-    (hF : ∀ j : ℕ, 0 < j → j ≤ Fintype.card ι → (j : F) ≠ 0) {r : (ι → Bool) → F} (hr : r ≠ 0)
+    {r : (ι → Bool) → F} (hF : ∀ j : ℕ, 0 < j → j ≤ totalDegree r + 1 → (j : F) ≠ 0) (hr : r ≠ 0)
     (hk : 2 * totalDegree r < Fintype.card ι) :
     totalDegree ((fun x => m - ∑ i, c i * bitVal F (x i)) * r) = totalDegree r + 1 := by
   classical

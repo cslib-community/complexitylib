@@ -136,13 +136,11 @@ private lemma transfer {n N e : ℕ} (x : Fin 3 → ℕ) (f : Formula n)
     change regular e (↑z⁻¹ : Matrix _ _ _) * regular e (specializedLift n N e x 0) = 1
     simp only [← map_mul, ← hz, Units.inv_mul, map_one]
   refine ⟨regular e v, ?_, hu.map (regular e)⟩
-  have hh := hf.map (regular e)
-  rw [RingHom.ext_rat ((regular e).comp (algebraMap ℚ _)) (algebraMap ℚ _)] at hh
   change f.Eval (algebraMap ℚ _) (tupleAt n N e x) (regular e v)
   change f.Eval (algebraMap ℚ _)
     (fun i => (regular e (specializedLift n N e x 0))⁻¹ * regular e
       (specializedLift n N e x i.succ)) (regular e v)
-  simpa only [map_mul, hzinv, rationalLift] using hh
+  simpa only [map_mul, hzinv, rationalLift] using hf.map_algebraMap (regular e)
 
 private lemma emitted {n N e H : ℕ} (x : Fin 3 → Fin H)
     (hz : IsUnit (specializedLift n N e (fun i => (x i).val + 1) 0)) :
@@ -203,13 +201,9 @@ private lemma condition_nonzero {n s N e : ℕ} (hs : 1 ≤ s) (f : Formula n) (
   let C : WitnessField →+* LaurentReduction.F WitnessField := HahnSeries.C
   let Y : Fin n → Matrix (Fin d) (Fin d) (LaurentReduction.F WitnessField) := fun i =>
     C.mapMatrix (X i)
-  have hv' : Formula.Eval
-      (algebraMap ℚ (Matrix (Fin d) (Fin d) (LaurentReduction.F WitnessField))) Y f
-      (C.mapMatrix v) := by
-    convert hv.map C.mapMatrix using 1
-    exact RingHom.ext_rat _ _
   have hcert : ∀ h ∈ f.certificates, IsUnit (Formula.realized (algebraMap ℚ _) Y h) :=
-    (Formula.certificates_iff (algebraMap ℚ _) Y f).mpr ⟨_, hv', hvu.map C.mapMatrix⟩
+    (Formula.certificates_iff (algebraMap ℚ _) Y f).mpr
+      ⟨_, hv.map_algebraMap C.mapMatrix, hvu.map C.mapMatrix⟩
   intro p hp
   rcases List.mem_cons.mp hp with rfl | hp
   · apply PencilCertificates.determinant_ne_zero (CyclotomicRing.character e)
@@ -444,8 +438,7 @@ theorem list_hits (n s : ℕ) (hs : 1 ≤ s) : Hits s (list n s) := by
 /-- The matrix dimension of `list n s` is at most `256 * (n + s + 1) ^ 10`. -/
 theorem list_dimension_bound (n s : ℕ) : (list n s).dimension ≤ 256 * (n + s + 1) ^ 10 := by
   have hd : CyclotomicRing.degree (Parameters.exponent n s) ≤ Parameters.ambientDimension n s := by
-    unfold CyclotomicRing.degree Parameters.ambientDimension
-    exact Nat.pow_le_pow_right (by omega) (by omega)
+    grind [CyclotomicRing.degree, Parameters.ambientDimension]
   change Parameters.ambientDimension n s * CyclotomicRing.degree (Parameters.exponent n s) ≤ _
   calc _ ≤ (16 * (n + s + 1) ^ 5) * (16 * (n + s + 1) ^ 5) :=
              Nat.mul_le_mul (Parameters.polynomial_M n s) (hd.trans (Parameters.polynomial_M n s))

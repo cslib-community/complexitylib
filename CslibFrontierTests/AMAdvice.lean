@@ -29,11 +29,11 @@ example : {w : List Bool | w.headD false = true} ∈ NPPoly encBits :=
   AM_subset_NPPoly head_mem_AM
 
 /-- Graph isomorphism is in `coNP/poly`, through graph non-isomorphism in `AM`. -/
-example : GraphIsomorphism ∈ coNPPoly (encPair encGraph encGraph) :=
+example : GraphIsomorphism ∈ coNPPoly encGraphIsomorphism :=
   GraphNonIsomorphism.GraphIsomorphism_mem_coNPPoly
 
 /-- Graph non-isomorphism itself is in `NP/poly`. -/
-example : GraphNonIsomorphism ∈ NPPoly (encPair encGraph encGraph) :=
+example : GraphNonIsomorphism ∈ NPPoly encGraphIsomorphism :=
   AM_subset_NPPoly GraphNonIsomorphism.mem_AM
 
 /-- A problem in `IP[2]`, through the Goldwasser–Sipser emulation and round collapse, is in

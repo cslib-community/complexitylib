@@ -26,7 +26,7 @@ This module is an internal implementation API used to prove the initialized and 
 client interfaces in `Pruned.Flat`, `Pruned.Width` and `Pruned.Kernel`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 
@@ -147,7 +147,7 @@ theorem exec_evaluate {w L f a0 b0 q0 o0 Q E A B : ℕ}
     (hloop.regs_eq (by decide : controller.Preserves queryCount)).trans
       ((hroot.regs_eq (by decide : rootList.Preserves queryCount)).trans hQ)
   have hquery (i : ℕ) (hi : i < Q) : v.mem (v.regs queries + i) = codes i := by
-    rw [hqv, hv.frame _ (notMem_nodeWrites_before (Nat.zero_le _) (by omega)),
+    rw [hqv, hv.frame _ (notMem_nodeWrites_before (by omega)),
       hrootBefore _ (by omega)]
     simpa only [codes, dite_eq_left hi] using hinput ⟨i, hi⟩
   obtain ⟨y, hreport, _, hvalues, hreportFrame, _⟩ := exec_report (N := Q)

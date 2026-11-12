@@ -102,8 +102,7 @@ theorem exists_noOverflow_root_bound (hθ : 0 < θ) :
   calc
     _ ≤ |kind.stateRootError θ s K actual reference y| +
         |kind.stateRootError θ s K reference ⟨0, truth⟩ y| := abs_sub_le _ _ _
-    _ ≤ Cfinal * εfinal + Cpre * ∑ i ∈ range m, dyadicFloor η m i * ε i :=
-      add_le_add hactual hreference
+    _ ≤ Cfinal * εfinal + Cpre * ∑ i ∈ range m, dyadicFloor η m i * ε i := by gcongr
     _ = _ := add_comm _ _
 
 end Cslib.PolynomialAtomRow

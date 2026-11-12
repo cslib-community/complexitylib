@@ -129,9 +129,7 @@ theorem SETH_iff_tendsto : SETH ↔ Tendsto satExponent atTop (𝓝 1) := by
     set η := min ε 1 / 2
     have hη : 0 < η := half_pos (lt_min hε one_pos)
     have hηε : η < ε := (half_lt_self (lt_min hε one_pos)).trans_le (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      have : η ≤ 1 / 2 := div_le_div_of_nonneg_right (min_le_right ε 1) zero_le_two
-      linarith
+    have hη₁ : 0 ≤ 1 - η := by grind
     obtain ⟨k, hk⟩ := h η hη
     refine ⟨k, fun k' hk' => ?_⟩
     have h₁ : 1 - η ≤ satExponent k' :=
@@ -143,9 +141,7 @@ theorem SETH_iff_tendsto : SETH ↔ Tendsto satExponent atTop (𝓝 1) := by
     set η := min ε 1 / 2
     have hη : 0 < η := half_pos (lt_min hε one_pos)
     have hηε : η ≤ ε := (half_lt_self (lt_min hε one_pos)).le.trans (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      have : η ≤ 1 / 2 := div_le_div_of_nonneg_right (min_le_right ε 1) zero_le_two
-      linarith
+    have hη₁ : 0 ≤ 1 - η := by grind
     obtain ⟨k, hk⟩ := (h.eventually (lt_mem_nhds (by linarith : 1 - η < 1))).exists
     exact ⟨k, fun h' => not_decidableInExpTime_of_lt_satExponent hη₁ hk
       (h'.mono (by linarith))⟩

@@ -203,22 +203,20 @@ theorem exists_isPPTOn_moduleLWEKeyGenJoint :
         (sampleCenteredBinomial ηe)))).map (fun e =>
           (ModuleSIS.encodeVec z,
             run (((k, n), q), (word, ModuleSIS.encodeVec z, ModuleSIS.encodeVec e))))))
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨?_, (fun hjoint => ⟨hjoint, ?marginal⟩) ?joint⟩
   · rw [hraw, hmatrix]
     simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
       Function.comp_def, hrun k n q hq]
     rfl
-  · rw [hraw]
+  case joint =>
+    rw [hraw]
     simp only [moduleLWEPublicKeyLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
       PMF.pure_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def, he]
     simp only [PMF.bind_map, Function.comp_def, hrun k n q hq] at hj
     simpa only [PMF.map, Function.comp_def] using hj
-  · have hm := hj.map Prod.snd
-    rw [hraw]
-    simp only [moduleLWEPublicKeyLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.map_bind, PMF.pure_map, PMF.bind_map, Function.comp_def, he]
-    simp only [PMF.map_bind, PMF.bind_map, PMF.map_comp, Function.comp_def,
-      hrun k n q hq] at hm
-    simpa only [PMF.map, Function.comp_def] using hm
+  case marginal =>
+    simpa only [moduleLWEPublicKeyLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+      PMF.map_bind, PMF.pure_map, PMF.pure_bind, PMF.bind_bind, PMF.bind_map,
+      Function.comp_def] using hjoint.map Prod.snd
 
 end Cslib.Crypto

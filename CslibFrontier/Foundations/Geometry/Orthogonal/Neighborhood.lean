@@ -95,30 +95,12 @@ theorem StraightThrough.infix {r s : Route} {p d : Point} (h : StraightThrough r
 private theorem infix_triple_neighbors {r : Route} (hn : r.Nodup) {a p b : Point}
     (ht : [a, p, b] <:+: r) {k : ℕ} (hk : k < r.length) (heq : r[k] = p) :
     0 < k ∧ k + 1 < r.length ∧ r.getD (k - 1) p = a ∧ r.getD (k + 1) p = b := by
-  obtain ⟨start, hlen, hitems⟩ := List.infix_iff_getElem?.1 ht
-  have hm : r[start + 1]? = some p := by
-    have h := hitems 1 (by simp)
-    change r[1 + start]? = some p at h
-    simpa only [Nat.add_comm] using h
-  have hlt : start + 1 < r.length := by
-    simp only [List.length_cons, List.length_nil] at hlen
-    omega
-  have hmid : r[start + 1]'hlt = p := by
-    rwa [List.getElem?_eq_getElem hlt, Option.some.injEq] at hm
-  have hindex : k = start + 1 := hn.getElem_inj_iff.1 (heq.trans hmid.symm)
-  subst k
-  simp only [List.length_cons, List.length_nil] at hlen
-  refine ⟨by omega, by omega, ?_, ?_⟩
-  · have ha : r[start]? = some a := by
-      have h := hitems 0 (by simp)
-      change r[0 + start]? = some a at h
-      simpa only [Nat.zero_add] using h
-    simp only [Nat.add_sub_cancel, List.getD_eq_getElem?_getD, ha, Option.getD_some]
-  · have hb : r[start + 1 + 1]? = some b := by
-      have h := hitems 2 (by simp)
-      change r[2 + start]? = some b at h
-      simpa only [show start + 1 + 1 = 2 + start by omega] using h
-    simp only [List.getD_eq_getElem?_getD, hb, Option.getD_some]
+  obtain ⟨s, t, rfl⟩ := ht
+  have hmid : (s ++ [a, p, b] ++ t)[s.length + 1]'(by simp) = p := by simp
+  obtain rfl : k = s.length + 1 := hn.getElem_inj_iff.1 (heq.trans hmid.symm)
+  refine ⟨by omega, by simp; omega, ?_, ?_⟩
+  · simp [List.getD_eq_getElem?_getD]
+  · simp [List.getD_eq_getElem?_getD, Nat.add_assoc]
 
 /-- The consecutive neighborhood gives the exact predecessor/successor lookups used by finite
 wire compilers, at every valid occurrence index of the middle point. -/

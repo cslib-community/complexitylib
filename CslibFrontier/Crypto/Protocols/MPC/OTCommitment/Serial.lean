@@ -161,14 +161,13 @@ theorem senderOnly_output {Output : Type} (k : ℕ)
     (ProbOracleComp.runWith (fun q => (world k).impl (.inl q)) program s).map Prod.fst =
       OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (fun _ => pure ()))
         program := by
-  have h := ProbOracleComp.run_interpret_map_state
+  have h := ProbOracleComp.runWith_map_state
     (fun q state => (world k).impl (.inl q) state)
     (fun _ (_ : Unit) => PMF.pure ((), ())) (fun _ => ())
     (fun q state => by simp [world, handler, OracleComp.sumHandler]) program s
   have hh := congrArg (PMF.map Prod.fst) h
   have hr := ProbOracleComp.runWith_lift (fun _ : SenderOperation × List Bool =>
     PMF.pure ()) program ()
-  change (OracleComp.interpret (m := StateT Unit PMF) _ program).run () = _ at hr
   have hu : (fun (_ : SenderOperation × List Bool) (_ : Unit) => PMF.pure ((), ())) =
       (fun _ => StateT.lift (σ := Unit) (PMF.pure ())) := by
     funext q st

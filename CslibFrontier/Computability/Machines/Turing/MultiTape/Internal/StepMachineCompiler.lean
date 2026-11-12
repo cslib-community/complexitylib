@@ -181,12 +181,8 @@ lemma step_time_le (cI D TI w R Tm L P₁ P₂ S : ℕ) (hcI : cI ≤ D) (hD : 1
     cI * (TI + w + 1) + P₁ + 2 + (D * (Tm + 2 * L + 5) + 7) + (S + 1 + (3 * (P₂ + 1) + (w + 2)))
       ≤ 1000 * D * D * (TI + (R + 1) * (Tm + L + 1) + w) := by
   set Y := TI + (R + 1) * (Tm + L + 1) + w
-  have hX : Tm + L + 1 ≤ Y := by
-    have : Tm + L + 1 ≤ (R + 1) * (Tm + L + 1) := Nat.le_mul_of_pos_left _ (by omega)
-    omega
-  have hRX : R * (Tm + L + 1) ≤ Y := by
-    have : R * (Tm + L + 1) ≤ (R + 1) * (Tm + L + 1) := Nat.mul_le_mul_right _ (by omega)
-    omega
+  have hX : Tm + L + 1 ≤ Y := by grind
+  have hRX : R * (Tm + L + 1) ≤ Y := by grind
   have h₁ : cI * (TI + w + 1) ≤ D * (2 * Y) := Nat.mul_le_mul hcI (by omega)
   have h₂ : D * (Tm + 2 * L + 5) ≤ D * (5 * Y) := Nat.mul_le_mul_left _ (by omega)
   have h₃ : S ≤ 100 * (D * Y) := hS.trans (by

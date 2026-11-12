@@ -139,18 +139,22 @@ variable {u v : V} {p : G.Walk u v}
 
 theorem not_nil (hp : M.IsAugmentingPath p) : ¬p.Nil := fun h => hp.ne h.eq
 
-/-- An inner vertex of an augmenting path is covered by `M`. -/
-theorem mem_verts_of_mem_support (hp : M.IsAugmentingPath p) {x : V} (hx : x ∈ p.support)
-    (hxu : x ≠ u) (hxv : x ≠ v) : x ∈ M.verts := by
+/-- Every vertex of an augmenting path has a neighbour along the path. -/
+private theorem exists_adj_toSubgraph (hp : M.IsAugmentingPath p) {x : V} (hx : x ∈ p.support) :
+    ∃ a, p.toSubgraph.Adj x a := by
   obtain ⟨e, he, hxe⟩ :=
     (p.mem_support_iff_exists_mem_edges_of_not_nil hp.not_nil).mp hx
   induction e using Sym2.ind with
   | _ a b =>
   have hab : p.toSubgraph.Adj a b := p.adj_toSubgraph_iff_mem_edges.mpr he
-  obtain ⟨a', ha'⟩ : ∃ a', p.toSubgraph.Adj x a' := by
-    rcases Sym2.mem_iff.mp hxe with rfl | rfl
-    · exact ⟨b, hab⟩
-    · exact ⟨a, hab.symm⟩
+  rcases Sym2.mem_iff.mp hxe with rfl | rfl
+  · exact ⟨b, hab⟩
+  · exact ⟨a, hab.symm⟩
+
+/-- An inner vertex of an augmenting path is covered by `M`. -/
+theorem mem_verts_of_mem_support (hp : M.IsAugmentingPath p) {x : V} (hx : x ∈ p.support)
+    (hxu : x ≠ u) (hxv : x ≠ v) : x ∈ M.verts := by
+  obtain ⟨a', ha'⟩ := hp.exists_adj_toSubgraph hx
   obtain ⟨b', hb'a', hb'⟩ := hp.isPath.exists_ne_adj_toSubgraph hxu hxv ha'
   by_cases hM : M.Adj x a'
   · exact M.edge_vert hM
@@ -163,15 +167,7 @@ theorem isMatching_augment (hM : M.IsMatching) (hp : M.IsAugmentingPath p) :
   intro x hx
   by_cases hxp : x ∈ p.support
   · -- `x` has an edge `xa` on `p`
-    obtain ⟨e, he, hxe⟩ :=
-      (p.mem_support_iff_exists_mem_edges_of_not_nil hp.not_nil).mp hxp
-    induction e using Sym2.ind with
-    | _ c d =>
-    have hcd : p.toSubgraph.Adj c d := p.adj_toSubgraph_iff_mem_edges.mpr he
-    obtain ⟨a, ha⟩ : ∃ a, p.toSubgraph.Adj x a := by
-      rcases Sym2.mem_iff.mp hxe with rfl | rfl
-      · exact ⟨d, hcd⟩
-      · exact ⟨c, hcd.symm⟩
+    obtain ⟨a, ha⟩ := hp.exists_adj_toSubgraph hxp
     -- the `p`-edge at `x` outside `M`
     obtain ⟨b, hb, hbM⟩ : ∃ b, p.toSubgraph.Adj x b ∧ ¬M.Adj x b := by
       by_cases hxa : M.Adj x a

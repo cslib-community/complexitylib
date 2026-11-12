@@ -32,9 +32,9 @@ theorem labels_eq_unpackBits {k r m b : ℕ} (hb : b ≤ r * m) (hm : 0 < m)
     let words := fun child : Fin (k * 3 + 1) =>
       List.ofFn (unpackBits hb (blocksEquiv (fun q : Fin ((k * 3 + 1) * r) =>
         (⟨gridDigit (2 ^ m) counter q, Nat.mod_lt _ (by positivity)⟩ : Fin (2 ^ m))) child))
-    labels k ((2 ^ m) ^ ((k * 3 + 1) * r), counter, r * m, b) =
-      (words 0, fun h δ => words (Fin.succ (finProdFinEquiv (h, δ)))) := by
-  apply Prod.ext
+    labels k ⟨(2 ^ m) ^ ((k * 3 + 1) * r), counter, r * m, b⟩ =
+      ⟨words 0, fun h δ => words (Fin.succ (finProdFinEquiv (h, δ)))⟩ := by
+  apply Words.ext
   · exact AssignmentLabels.label_eq_ofFn_unpackBits hb hm counter (0 : Fin (k * 3 + 1))
   · funext h δ
     have hindex : 1 + 3 * h.val + δ.val =

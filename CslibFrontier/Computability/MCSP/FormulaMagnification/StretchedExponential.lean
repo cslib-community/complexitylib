@@ -98,8 +98,7 @@ theorem eventually_exists_formula_separating_approxMCSP_of_isBigO
       (card_computableFunctions_le_two_pow n (s₂ n)) (B := B) (by
         intro m hm
         have hlen : n ≤ SuccinctMCSP.ofFunctionEncLength n m (s₂ n) := by
-          simp only [SuccinctMCSP.ofFunctionEncLength]
-          omega
+          grind [SuccinctMCSP.ofFunctionEncLength]
         have hle : SuccinctMCSP.ofFunctionEncLength n m (s₂ n) ≤ q :=
           ofFunctionEncLength_le_approxMCSPQueryEncLength hm
         have hexp : (2 : ℝ) ^ ((SuccinctMCSP.ofFunctionEncLength n m (s₂ n) : ℝ) ^ δ)

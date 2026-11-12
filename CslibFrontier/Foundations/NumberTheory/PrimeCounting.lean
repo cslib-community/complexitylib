@@ -44,7 +44,7 @@ in [S. Schlesinger,
 
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

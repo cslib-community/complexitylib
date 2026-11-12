@@ -11,6 +11,7 @@ public import Cslib.Computability.Circuit.Boolean.Complexity
 import CslibFrontier.Computability.Circuit.Boolean.Synthesis
 import CslibFrontier.Computability.Circuit.Complexity
 import CslibFrontier.Foundations.Combinatorics.FiniteCover
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import CslibFrontier.Probability.BitString.LinearHash.Collisions
 import CslibFrontier.Foundations.Data.BitString.Basic
 import CslibFrontier.Foundations.Data.BitString.Parity
@@ -357,15 +358,8 @@ end Cover
 assignments to all positions as extensions. -/
 private theorem two_pow_le_mul_card_extensions {N J : ℕ} {C : Finset (Fin N)} (hC : #C ≤ J)
     (v : Fin N → Bool) : 2 ^ N ≤ 2 ^ J * #{e : Fin N → Bool | ∀ i ∈ C, e i = v i} := by
-  have heq : ({e : Fin N → Bool | ∀ i ∈ C, e i = v i} : Finset (Fin N → Bool)) =
-      Fintype.piFinset fun i => if i ∈ C then {v i} else univ := by
-    ext e
-    simp only [mem_filter, mem_univ, true_and, Fintype.mem_piFinset]
-    exact forall_congr' fun i => by split_ifs with h <;> simp [h]
-  have hcard : #{e : Fin N → Bool | ∀ i ∈ C, e i = v i} = 2 ^ #Cᶜ := by
-    rw [heq, Fintype.card_piFinset]
-    simp [apply_ite card, prod_ite, filter_not, compl_eq_univ_sdiff]
-  rw [hcard, card_compl, Fintype.card_fin, ← pow_add]
+  rw [Fintype.card_filter_forall_mem_eq, Fintype.card_bool, card_compl, Fintype.card_fin,
+    ← pow_add]
   have := (card_le_univ C).trans_eq (Fintype.card_fin N)
   exact Nat.pow_le_pow_right two_pos (by omega)
 

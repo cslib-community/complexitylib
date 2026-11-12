@@ -104,6 +104,35 @@ example (a : List Bool) (u : Bool) :
    exists_isGameVerifier_of_mem_AP hempty,
    MultiTapeATM.runsInTime_iff_haltsWithin.mp (runsInTime_emitMove u a)⟩
 
+/-! ### Parametric alternating time and space -/
+
+/-- The explicit machines put `Set.univ` in `ATIME 1` and `∅` in `ATIME (n ^ 0)`. The union
+characterization of `AP` and `ATIME ⊆ ASPACE` then give `∅ ∈ AP` and `∅ ∈ ASPACE 1`. -/
+example :
+    (Set.univ : Set (List Bool)) ∈ ATIME encBits (fun _ => 1) ∧
+    (∅ : Set (List Bool)) ∈ AP encBits ∧
+    (∅ : Set (List Bool)) ∈ ASPACE encBits (fun _ => 1) :=
+  have huniv : (Set.univ : Set (List Bool)) ∈ ATIME encBits (fun _ => 1) :=
+    ⟨1, 0, 0, Unit, inferInstance, emitMove false, decidesInTime_univ.mono fun _ => by simp⟩
+  have hempty : (∅ : Set (List Bool)) ∈ ATIME encBits (· ^ 0) :=
+    ⟨1, 0, 0, Unit, inferInstance, emitMove true, decidesInTime_empty.mono fun _ => by simp⟩
+  ⟨huniv, mem_AP_iff_exists_mem_ATIME.mpr ⟨0, hempty⟩,
+    ATIME_subset_ASPACE (ATIME_mono (fun _ => by simp) hempty)⟩
+
+/-- Conversely, `AP` membership through a time bound of `1` yields an exponent `k` with
+`Set.univ ∈ ATIME (n ^ k)`. -/
+example : ∃ k, (Set.univ : Set (List Bool)) ∈ ATIME encBits (· ^ k) :=
+  mem_AP_iff_exists_mem_ATIME.mp
+    ⟨_, PolyBounded.const 1, 0, Unit, inferInstance, emitMove false, decidesInTime_univ⟩
+
+/-- The classes absorb constant factors and additive constants in both directions. -/
+example : ATIME encBits (fun n => 3 * n + 5) = ATIME encBits id ∧
+    ASPACE encBits (fun n => 2 * Nat.log2 n + 7) = ASPACE encBits Nat.log2 :=
+  ⟨subset_antisymm (ATIME_subset_of_le_mul_add 3 5 fun _ => le_rfl)
+      (ATIME_subset_of_le_mul_add 1 0 fun _ => by simp only [id]; omega),
+    subset_antisymm (ASPACE_subset_of_le_mul_add 2 7 fun _ => le_rfl)
+      (ASPACE_subset_of_le_mul_add 1 0 fun _ => by omega)⟩
+
 /-- The existential machine wins its game of moves on every input. -/
 example (input : List Bool) : Alternation true (List.replicate (2 * 1) 1)
     fun w => (emitMove false).strict.runClosedCoins w input = [true] :=

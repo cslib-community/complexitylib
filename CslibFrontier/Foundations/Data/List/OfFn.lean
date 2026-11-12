@@ -27,6 +27,8 @@ other keys may repeat. The key order need only be a partial order.
 * `List.Perm.card_filter_ofFn_eq`: preservation of predicate counts.
 * `List.countP_range_eq_card_filter`: counting the numbers below `n` that pass a test is counting
   the elements of `Fin n` that pass it.
+* `List.countP_eq_card_filter_getElem`: elements of a list `xs` passing `p` are counted by the
+  indices in `Fin xs.length` where `p` holds.
 * `List.sum_map_range`, `List.sum_map_drop_range`, `List.sum_map_drop_range_fin`: sums over
   `List.range n` and its tails as `Fin` or interval sums.
 * `Fin.card_lt_of_monotone_of_unique`: a unique value in a monotone array has its index many
@@ -41,7 +43,7 @@ other keys may repeat. The key order need only be a partial order.
 * [OpenAI2026RationalHitting]
 -/
 
-@[expose] public section
+public section
 
 open Finset
 
@@ -65,6 +67,14 @@ theorem List.countP_ofFn {α : Type*} {n : ℕ} (f : Fin n → α) (p : α → B
 theorem List.countP_range_eq_card_filter (n : ℕ) (p : ℕ → Bool) :
     (List.range n).countP p = #{j : Fin n | p j = true} := by
   rw [← List.map_coe_finRange_eq_range, ← List.ofFn_eq_map, List.countP_ofFn, card_filter]
+
+/-- Elements of `xs` satisfying `p` are counted by the indices in `Fin xs.length` where `p`
+holds. -/
+theorem List.countP_eq_card_filter_getElem {α : Type*} (xs : List α) (p : α → Bool) :
+    xs.countP p = #{i : Fin xs.length | p xs[i] = true} := by
+  conv_lhs => rw [← List.ofFn_getElem (xs := xs)]
+  rw [List.countP_ofFn, card_filter]
+  rfl
 
 /-- A sum over `List.range n` is a sum over `Fin n`. -/
 theorem List.sum_map_range {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → M) :

@@ -109,7 +109,6 @@ theorem exec_at {r w N U src workspace : ℕ} (c : Callee r) (μ : ℕ → ℤ)
     (hidx : ∀ s < 2 * sideLength N,
       GenericRAM.Signed.Fits w ((2 * (sideLength N * sideLength N) + s + 1 : ℕ) : ℤ))
     (hF : GenericRAM.Signed.Fits w (2 * (U : ℤ) + 1))
-    (hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)))
     (hμ : ∀ i < N, GenericRAM.Signed.Fits w (μ i))
     (hsize : Fits (w + 2) (workspace + 3 * (sideLength N * sideLength N)))
     (hfill : Fits (w + 2) (4 * U + 2)) (hsqrt : Fits (w + 2) (4 * N + 4))
@@ -125,7 +124,7 @@ theorem exec_at {r w N U src workspace : ℕ} (c : Callee r) (μ : ℕ → ℤ)
       (exec_prepare_at (x.comap hostRegisters) hN hU hb hab hbelow hsize hfill hsqrt)
   obtain ⟨y, hy, _, _, hyf, hyans, hym⟩ := exec_loop_at μ c.code a hap hai haf
     (fun i hi => (congrFun hpm (src + i)).trans (hmem i hi))
-    hidx hF hnF hμ hsize hbelow
+    hidx hF hμ hsize hbelow
     (fun s _ => c.exec_instance μ hvalues hcw)
   refine ⟨y, (ha.seq hy).mono ?_, hyf, ?_, ?_⟩
   · dsimp only [callerTime]

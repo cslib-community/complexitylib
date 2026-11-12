@@ -140,14 +140,6 @@ private theorem localCfg_track :
       (encFinite OutputTrack) :=
   localCfg_parts.snd'.snd'.snd'.snd'
 
-/-- Adding a binary integer, by two subtractions. -/
-private theorem intBin_add' {left right : α → ℤ}
-    (hleft : ComputableInPolyTime left input encIntBin)
-    (hright : ComputableInPolyTime right input encIntBin) :
-    ComputableInPolyTime (fun a => left a + right a) input encIntBin := by
-  have h := intBin_sub.comp (hleft.prod (intBin_sub.comp ((const 0).prod hright)))
-  simpa only [Function.comp_def, zero_sub, sub_neg_eq_add] using h
-
 /-- The input symbol at a stored input position. -/
 private theorem inputAt_eq_getD (x : List Bool) (j : ℕ) :
     inputAt x j = (none :: x.map some).getD j none := by
@@ -443,13 +435,6 @@ private theorem biTape_ofCells {cells : α → List (Option Bool)} {pos : α →
     (stackTape_ofList hright)
   simpa only [BiTape.ofCells, drop_eq_map_range] using h
 
-/-- The sign of a binary integer is its first bit. -/
-private theorem intBin_isNeg' {z : α → ℤ} (hz : ComputableInPolyTime z input encIntBin) :
-    ComputableInPolyTime (fun a => decide (z a < 0)) input encBool := by
-  have hbits : ComputableInPolyTime (fun z : ℤ => encIntBin z) encIntBin encBits :=
-    of_eq fun _ => rfl
-  exact ((headD false).comp hbits).comp hz
-
 private theorem getD_none_eq_join (l : List (Option Bool)) (n : ℕ) :
     l.getD n none = l[n]?.join := by
   rw [List.getD_eq_getElem?_getD]
@@ -477,11 +462,9 @@ private theorem biTape_read {tape : α → BiTape Bool} {z : α → ℤ}
     ComputableInPolyTime (fun a => (tape a).read (z a)) input (encOption encBool) := by
   simp only [read_eq]
   refine ite_decide (decide_eq' hz (const 0)) ((biTape_head _).comp htape)
-    (ite_decide (intBin_isNeg' hz) ?_ ?_)
-  · have hneg : ComputableInPolyTime (fun a => -z a) input encIntBin := by
-      simpa only [Function.comp_def, zero_sub] using intBin_sub.comp ((const 0).prod hz)
-    exact listGetD_binary none ((stackTape_toList _).comp ((biTape_left _).comp htape))
-      (binary_sub' (intBin_toNat.comp hneg) (const 1))
+    (ite_decide (intBin_isNeg.comp hz) ?_ ?_)
+  · exact listGetD_binary none ((stackTape_toList _).comp ((biTape_left _).comp htape))
+      (binary_sub' (intBin_toNat.comp (intBin_neg.comp hz)) (const 1))
   · exact listGetD_binary none ((stackTape_toList _).comp ((biTape_right _).comp htape))
       (binary_sub' (intBin_toNat.comp hz) (const 1))
 
@@ -547,8 +530,8 @@ private theorem inputPosOfCoord' {word : α → List Bool} {p : α → ℤ}
     length_bits.comp hword
   have hlenZ : ComputableInPolyTime (fun a => ((word a).length : ℤ) + 2) input encIntBin :=
     intBin_add' (intBin_natCast.comp (unary_to_binary.comp hlen)) (const 2)
-  refine ite (bool_and' (bool_not.comp (intBin_isNeg' hp1))
-    (intBin_isNeg' (intBin_sub.comp (hp1.prod hlenZ)))) ?_ (const 0)
+  refine ite (bool_and' (bool_not.comp (intBin_isNeg.comp hp1))
+    (intBin_isNeg.comp (intBin_sub.comp (hp1.prod hlenZ)))) ?_ (const 0)
   exact binary_min_unary.comp ((unary_add' hlen (const 1)).prod (intBin_toNat.comp hp1))
 
 end Window

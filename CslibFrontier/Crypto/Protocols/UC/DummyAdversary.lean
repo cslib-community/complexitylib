@@ -52,8 +52,10 @@ running time.
 
 * `Cslib.Crypto.Protocols.UC.liftAdversary_id`, `Cslib.Crypto.Protocols.UC.liftAdversary_comp`: the
   adversary's place in front of the network respects forwarding and composition.
-* `Cslib.Crypto.Protocols.UC.exec_eq_exec_dummy`, `Cslib.Crypto.Protocols.UC.exec_compSim`,
-  `Cslib.Crypto.Protocols.UC.advantage_compSim`: absorbing the adversary into the environment.
+* `Cslib.Crypto.Protocols.UC.exec_dummyAdversary`,
+  `Cslib.Crypto.Protocols.UC.exec_eq_exec_dummy`, `Cslib.Crypto.Protocols.UC.exec_compSim`,
+  `Cslib.Crypto.Protocols.UC.advantage_compSim`: running the dummy adversary and absorbing an
+  adversary into the environment.
 * `Cslib.Crypto.Protocols.UC.compSim_polyBounded`,
   `Cslib.Crypto.Protocols.UC.absorbAdversary_polyBounded`,
   `Cslib.Crypto.Protocols.UC.eval_absorbPoly`, `Cslib.Crypto.Protocols.UC.eval_absorbPoly_mono`:
@@ -169,8 +171,7 @@ end LiftNet
     liftAdversary (n := n) (In := In) (Out := Out) (Machine.id (netSpec NetQ NetR)) =
       Machine.id (protocolSpec n In Out NetQ NetR) := by
   simp only [liftAdversary, Machine.id]
-  congr 1
-  funext q s
+  congr 1 with q s : 2
   cases q with
   | inl p => rfl
   | inr q =>
@@ -184,8 +185,7 @@ theorem liftAdversary_comp (A : Machine (netSpec NetQ₁ NetR₁) (netSpec AdvQ 
     liftAdversary (n := n) (In := In) (Out := Out) (A.comp S) =
       (liftAdversary A).comp (liftAdversary S) := by
   simp only [liftAdversary, Machine.comp]
-  congr 1
-  funext q s
+  congr 1 with q s : 2
   cases q with
   | inl p =>
     change (StateT.lift (ProbOracleComp.query (spec := protocolSpec n In Out NetQ₂ NetR₂)
@@ -233,6 +233,15 @@ talks to the network through the dummy adversary. -/
 @[expose] def absorbAdversary (C : Finset (Fin n)) (A : Adversary n AdvQ AdvR NetQ NetR)
     (Z : Environment n In Out AdvQ AdvR) : Environment n In Out NetQ NetR :=
   fun κ z => (liftAdversary (A κ C)).link (Z κ z)
+
+/-- Running the UC execution with `dummyAdversary` is running the environment directly against
+`corruptRouter C (π κ C)`. -/
+@[simp] theorem exec_dummyAdversary (π : Protocol n In Out NetQ NetR) (C : Finset (Fin n))
+    (Z : Environment n In Out ((Fin n × In) ⊕ NetQ) (Option Out ⊕ NetR))
+    (κ : ℕ) (z : List Bool) :
+    exec π (dummyAdversary n _ _) C Z κ z = (corruptRouter C (π κ C)).run (Z κ z) := by
+  simp only [exec, execMachine, dummyAdversary, Machine.run_comp, liftAdversary_id,
+    Machine.link_id]
 
 /-- Running an adversary is running the dummy adversary with the adversary absorbed into the
 environment. -/

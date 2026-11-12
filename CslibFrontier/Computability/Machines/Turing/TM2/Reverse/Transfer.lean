@@ -144,9 +144,9 @@ theorem computableInPolyTime_iff_tm2 :
   let := hfinite
   exact h.computableInPolyTime
 
-/-- Polynomial-space computability is equivalent to termination with polynomially bounded
-reachable Mathlib stacks. This equivalence also applies to functions with non-Boolean outputs:
-the stack bound already includes the entire output. -/
+/-- Polynomial-space computability is equivalent to termination of a Mathlib stack machine with
+finite stack alphabets and polynomially bounded reachable stacks. This equivalence also applies
+to functions with non-Boolean outputs: the stack bound already includes the entire output. -/
 theorem computableInPolySpace_iff_tm2 :
     ComputableInPolySpace f encIn encOut ↔
       ∃ h : TM2Computable encIn encOut f, (∀ stack, Finite (h.tm.Γ stack)) ∧

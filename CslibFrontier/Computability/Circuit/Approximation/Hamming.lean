@@ -61,7 +61,7 @@ technique, and the known limitations of the method of approximations apply to it
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Approximation.Scheme
 

@@ -26,7 +26,7 @@ connectedness, degree, target-genus or external gadget-provider hypothesis is ne
 
 This is static numerical data. It does not identify this model with geometric embeddings,
 provide a native compiler or prove the full planar CSP dichotomy. The higher-arity CROSS
-and one-hot macro expansion, normalization and geometric converse remain separate tasks.
+and one-hot macro expansion, normalization and geometric source comparison remain separate tasks.
 
 ## Main definitions
 

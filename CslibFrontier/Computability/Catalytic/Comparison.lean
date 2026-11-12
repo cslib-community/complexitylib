@@ -20,10 +20,15 @@ import Mathlib.Tactic.Ring
 # Catalytic equality tests
 
 Two equality tests that borrow memory with arbitrary contents, use it, and give it back exactly.
-Each test visits its two operands alternately, four times in all: it sees only one operand at a
-time, so the operands never have to be stored together. Between visits it keeps only its phase and
-the value it is accumulating. Arbitrary initial contents of the borrowed memory cancel, because
-everything added to it is subtracted again and its contributions to the result cancel in pairs.
+`addSqDist` and `keyTest` each visit their two operands alternately, four times in all: they see
+only one operand at a time, so the operands never have to be stored together. Between visits they
+keep only their phase and the value they are accumulating. Arbitrary initial contents of the
+borrowed memory cancel, because everything added to it is subtracted again and its contributions
+to the result cancel in pairs. The equality test `eqTest` runs `addSqDist` twice, so it makes eight
+visits.
+
+This file proves what the tests compute and that they restore the borrowed memory. It has no
+machine model, and no theorem bounds the number of visits or the storage.
 
 The registers are those of the Cook–Mertz procedure (`Cslib.TreeEval.proc`): a register file
 `S : ι → Fin ℓ → R`, whose registers hold `ℓ` ring elements and are updated with `Function.update`.
@@ -60,8 +65,9 @@ for vectors of naturals below `b` when `ℓ · (b - 1)² < m` (`natCast_sqDist_e
 **Cost.** `eqTest` compares the accumulator with its initial value, so a realization keeps that
 value or starts the accumulator at zero. With `k = size ℓ + 2 · size b` bits, that is over
 `ZMod (2 ^ k)`, the test is exact for `ℓ` digits below `b` (`mul_sq_lt_two_pow_size`,
-`eqTest_eq_two_pow`): the clean storage is this `k`-bit accumulator, a phase among four and the
-flag, and the borrowed register of `ℓ` elements of `ZMod (2 ^ k)` is restored.
+`eqTest_eq_two_pow`): the clean storage is this `k`-bit accumulator, a copy of its initial value
+(unnecessary if it starts at zero), a phase among eight and the flag, and the borrowed register of
+`ℓ` elements of `ZMod (2 ^ k)` is restored.
 
 **The key test.** `keyTest c a b` compares two indices `a b : κ` with a borrowed table
 `V : κ → M`: it adds `c` to `V a`, adds `V b` to a result, subtracts `c` from `V a` and subtracts

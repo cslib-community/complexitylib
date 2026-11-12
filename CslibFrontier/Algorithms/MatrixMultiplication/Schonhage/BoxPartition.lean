@@ -321,14 +321,17 @@ theorem boxOfLeaf_mem_boxesAt (m t : ℕ) {η : OutStr L} {τ : Leaf L} (hτ : L
     subset_union_left
 
 /-- Leaf incidence in a family is equivalent to the two P0-set inclusions. -/
-theorem exists_mem_boxesAt_leaf_iff {η : OutStr L} {V : Finset (Fin L)} (hV : V ⊆ innerSetO η)
-    {τ : Leaf L} (hτ : Leaf.Contributes τ η) :
+theorem exists_mem_boxesAt_leaf_iff {η : OutStr L} {V : Finset (Fin L)} {τ : Leaf L}
+    (hτ : Leaf.Contributes τ η) :
     (∃ π ∈ boxesAt η V, τ ∈ Cube.leaves π) ↔
       V \ initialLevels (innerSetO η) V ⊆ P0LevelsWithin (innerSetO η) τ ∧ P0LevelsWithin
         (innerSetO η) τ ⊆ V := by
   constructor
   · rintro ⟨π, hπ, hτπ⟩
-    refine ⟨fun ℓ hℓ => mem_filter.2 ⟨hV (mem_sdiff.1 hℓ).1, ?_⟩, fun ℓ hℓ => ?_⟩
+    refine ⟨fun ℓ hℓ => mem_filter.2 ⟨?_, ?_⟩, fun ℓ hℓ => ?_⟩
+    · by_contra hℓQ
+      exact privateLeaf_ne_P0 hℓQ
+        (CubeSymbol.term.inj ((boxesAt_outside hπ hℓQ).symm.trans (boxesAt_P0 hπ hℓ)))
     · exact Cube.eq_of_mem_leaves hτπ (boxesAt_P0 hπ hℓ)
     · by_contra hℓV
       obtain ⟨hℓQ, hterm⟩ := mem_filter.1 hℓ
@@ -388,7 +391,7 @@ private lemma eq_paddedLevels_of_mem_leaves {m t : ℕ} (ht : t ≤ m) {η : Out
     (hπ : π ∈ boxesAt η V) (hτπ : τ ∈ Cube.leaves π) :
     V = paddedLevels m t (innerSetO η) (P0LevelsWithin (innerSetO η) τ) := by
   obtain ⟨hVQ, hVc⟩ := mem_powersetCard.1 hV
-  obtain ⟨hVZ, hZV⟩ := (exists_mem_boxesAt_leaf_iff hVQ hτ).1 ⟨π, hπ, hτπ⟩
+  obtain ⟨hVZ, hZV⟩ := (exists_mem_boxesAt_leaf_iff hτ).1 ⟨π, hπ, hτπ⟩
   exact (paddedLevels_unique m t ht _ _ hη (P0LevelsWithin_subset _ τ) (card_P0LevelsWithin_le hτ
     hord) V).1 ⟨hVQ, hVc, hVZ, hZV⟩
 

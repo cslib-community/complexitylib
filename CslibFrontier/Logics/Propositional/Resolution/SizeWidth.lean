@@ -55,7 +55,7 @@ By induction, if `f (2N - d) ^ b < (2N) ^ b` then the formula is refutable in wi
   simple*][BenSassonWigderson2001]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 
@@ -256,8 +256,7 @@ private theorem refutableInWidth_of_countP_wide (N d k : ℕ) :
       (fun c => (v, β) ∈ c) ls
     have hcnt : F.countP (fun c => (v, β) ∈ c) = ls.countP (fun c => d < c.width ∧ (v, β) ∈ c) := by
       rw [List.countP_filter]
-      congr 1
-      funext c
+      congr 1 with c : 1
       simp [Bool.and_comm]
     rw [hcnt] at hmany
     have hpow : (2 * N - d) * (2 * N) ^ b ≤ (2 * N) ^ (b + 1) := by

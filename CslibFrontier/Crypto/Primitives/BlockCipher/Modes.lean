@@ -11,7 +11,7 @@ public import CslibFrontier.Probability.BitString.Collision
 public import CslibFrontier.Probability.IID
 public import Mathlib.Data.Fintype.Perm
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -353,6 +353,76 @@ theorem uniformBlocks_succ (k : ℕ) :
       (PMF.uniformOfFintype (BitString n)).bind fun u => (uniformBlocks k).map (u :: ·) := by
   simp only [uniformBlocks, PMF.iid, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp,
     Function.comp_def, List.ofFn_succ, Fin.cons_zero, Fin.cons_succ]
+
+/-- Reading `k` independent uniform `n`-bit blocks as a function on `Fin k` and converting via
+  `List.ofFn` equals `uniformBlocks k`. -/
+theorem uniformBlocks_eq (k : ℕ) :
+    uniformBlocks (n := n) k = (PMF.uniformOfFintype (Fin k → BitString n)).map List.ofFn := by
+  rw [uniformBlocks, PMF.iid_uniformOfFintype]
+
+/-- Every list in the support of `uniformBlocks k` has length `k`. -/
+theorem length_of_mem_support_uniformBlocks {k : ℕ} {us : List (BitString n)}
+    (h : us ∈ (uniformBlocks (n := n) k).support) : us.length = k := by
+  rw [uniformBlocks, PMF.support_map] at h
+  obtain ⟨f, -, rfl⟩ := h
+  simp
+
+/-- Every `(iv, us)` pair in the support of a uniform IV paired with `uniformBlocks k` has
+  `us.length = k`. -/
+theorem length_snd_of_mem_support_uniformDraws {k : ℕ}
+    {p : BitString n × List (BitString n)}
+    (h : p ∈ ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
+      (uniformBlocks (n := n) k).map (iv, ·)).support) : p.2.length = k := by
+  rw [PMF.mem_support_bind_iff] at h
+  obtain ⟨iv, -, hp⟩ := h
+  rw [PMF.support_map] at hp
+  obtain ⟨us, hus, rfl⟩ := hp
+  exact length_of_mem_support_uniformBlocks hus
+
+/-- XORing a fixed block sequence `ms` into `uniformBlocks ms.length` preserves the uniform
+  distribution `uniformBlocks ms.length`. -/
+theorem map_zipWith_uniformBlocks :
+    ∀ ms : List (BitString n),
+      (uniformBlocks ms.length).map (fun us => List.zipWith (· + ·) us ms) =
+        uniformBlocks ms.length
+  | [] => by simp
+  | m :: ms => by
+    have hshift : (PMF.uniformOfFintype (BitString n)).map (· + m) =
+        PMF.uniformOfFintype (BitString n) :=
+      PMF.uniformOfFintype_map_equiv (Equiv.addRight m)
+    calc (uniformBlocks (m :: ms).length).map (fun us => List.zipWith (· + ·) us (m :: ms))
+        = (PMF.uniformOfFintype (BitString n)).bind fun u =>
+            ((uniformBlocks ms.length).map fun us => List.zipWith (· + ·) us ms).map
+              ((u + m) :: ·) := by
+          rw [List.length_cons, uniformBlocks_succ, PMF.map_bind]
+          congr 1
+          funext u
+          rw [PMF.map_comp, PMF.map_comp]
+          rfl
+      _ = (PMF.uniformOfFintype (BitString n)).bind fun u =>
+            (uniformBlocks ms.length).map ((u + m) :: ·) := by
+          rw [map_zipWith_uniformBlocks ms]
+      _ = ((PMF.uniformOfFintype (BitString n)).map (· + m)).bind fun u =>
+            (uniformBlocks ms.length).map (u :: ·) :=
+          (PMF.bind_map (PMF.uniformOfFintype (BitString n)) (· + m) fun u =>
+            (uniformBlocks ms.length).map (u :: ·)).symm
+      _ = uniformBlocks (m :: ms).length := by
+          rw [hshift, List.length_cons, uniformBlocks_succ]
+
+/-- XORing a fixed block sequence `ms` into the uniform block draws paired with an independent
+  uniform IV leaves the joint `(iv, blocks)` distribution invariant. -/
+theorem map_iv_uniformBlocks_zipWith (ms : List (BitString n)) :
+    ((PMF.uniformOfFintype (BitString n)).bind fun iv =>
+        (uniformBlocks (n := n) ms.length).map (iv, ·)).map
+      (fun p => (p.1, List.zipWith (· + ·) p.2 ms)) =
+      (PMF.uniformOfFintype (BitString n)).bind fun iv =>
+        (uniformBlocks (n := n) ms.length).map (iv, ·) := by
+  rw [PMF.map_bind]
+  refine congrArg _ (funext fun iv => ?_)
+  rw [PMF.map_comp]
+  conv_rhs => rw [← map_zipWith_uniformBlocks ms, PMF.map_comp]
+  rfl
+
 /-- **Lazy-sampled multi-block chain collision lemma**: when the initial chaining block `iv` and
   the `bs.length` step outputs are drawn independently and uniformly from `BitString n`, the outer
   measure of the bad event `¬goodChain ks iv bs draws` (some step input `cᵢ₋₁ + bᵢ` collides with
@@ -368,57 +438,39 @@ theorem toOuterMeasure_badChain_le :
   | [], ks => by simp [goodChain]
   | b :: bs, ks => by
     classical
-    rw [List.length_cons, PMF.toOuterMeasure_bind_apply]
+    rw [List.length_cons]
     set C : ℝ≥0∞ :=
       ((bs.length * (ks.length + 1 + bs.length) : ℕ) : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹
     set S0 : Set (BitString n) := {iv | iv + b ∈ ks}
-    have hpt (iv : BitString n) :
-        (PMF.uniformOfFintype (BitString n)) iv *
-          ((uniformBlocks (n := n) (bs.length + 1)).map (iv, ·)).toOuterMeasure
+    refine le_trans (Probability.PMF.toOuterMeasure_bind_failure_le _ _ S0ᶜ _ C
+      fun iv _ hiv => ?_) ?_
+    · rw [uniformBlocks_succ, PMF.map_bind]
+      have hnotMem : iv + b ∉ ks := hiv
+      have hih := toOuterMeasure_badChain_le bs ((iv + b) :: ks)
+      have hle :
+          ((PMF.uniformOfFintype (BitString n)).bind fun u =>
+            ((uniformBlocks (n := n) bs.length).map (u :: ·)).map (iv, ·)).toOuterMeasure
             {p : BitString n × List (BitString n) | ¬goodChain ks p.1 (b :: bs) p.2} ≤
-        (PMF.uniformOfFintype (BitString n)) iv * (S0.indicator 1 iv + C) := by
-      refine mul_le_mul_of_nonneg_left ?_ zero_le
-      rw [uniformBlocks_succ, PMF.map_bind]
-      by_cases hiv : iv ∈ S0
-      · rw [Set.indicator_of_mem hiv, Pi.one_apply]
-        exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-      · rw [Set.indicator_of_notMem hiv, zero_add]
-        have hnotMem : iv + b ∉ ks := hiv
-        have hih := toOuterMeasure_badChain_le bs ((iv + b) :: ks)
-        have hle :
-            ((PMF.uniformOfFintype (BitString n)).bind fun u =>
-              ((uniformBlocks (n := n) bs.length).map (u :: ·)).map (iv, ·)).toOuterMeasure
-              {p : BitString n × List (BitString n) | ¬goodChain ks p.1 (b :: bs) p.2} ≤
-            ((PMF.uniformOfFintype (BitString n)).bind fun u =>
-              (uniformBlocks (n := n) bs.length).map (u, ·)).toOuterMeasure
-              {p : BitString n × List (BitString n) | ¬goodChain ((iv + b) :: ks) p.1 bs p.2} := by
-          rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
-          refine tsum_le_tsum fun u => mul_le_mul_of_nonneg_left ?_ zero_le
-          rw [PMF.map_comp, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply]
-          refine MeasureTheory.measure_mono fun us hus => ?_
-          simp only [Set.mem_preimage, Function.comp_apply, Set.mem_ofPred_eq,
-            goodChain, hnotMem, not_false_eq_true, true_and] at hus ⊢
-          exact hus
-        exact hle.trans (by simpa [C, add_assoc, add_comm 1] using hih)
-    calc ∑' iv, (PMF.uniformOfFintype (BitString n)) iv *
-          ((uniformBlocks (n := n) (bs.length + 1)).map (iv, ·)).toOuterMeasure
-            {p : BitString n × List (BitString n) | ¬goodChain ks p.1 (b :: bs) p.2}
-        ≤ ∑' iv, (PMF.uniformOfFintype (BitString n)) iv * (S0.indicator 1 iv + C) :=
-          tsum_le_tsum hpt
-      _ = (PMF.uniformOfFintype (BitString n)).toOuterMeasure S0 + C := by
-          simp only [mul_add]
-          rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun iv => ?_
-          by_cases h : iv ∈ S0 <;> simp [h]
-      _ ≤ (ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ + C :=
-          add_le_add (BitString.toOuterMeasure_addRight_mem_list_le ks b) le_rfl
-      _ ≤ ((bs.length + 1) * (ks.length + (bs.length + 1)) : ℕ) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-          simp only [C, ← add_mul]
-          gcongr
-          norm_cast
-          nlinarith
+          ((PMF.uniformOfFintype (BitString n)).bind fun u =>
+            (uniformBlocks (n := n) bs.length).map (u, ·)).toOuterMeasure
+            {p : BitString n × List (BitString n) | ¬goodChain ((iv + b) :: ks) p.1 bs p.2} := by
+        rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
+        refine tsum_le_tsum fun u => mul_le_mul_of_nonneg_left ?_ zero_le
+        rw [PMF.map_comp, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply]
+        refine MeasureTheory.measure_mono fun us hus => ?_
+        simp only [Set.mem_preimage, Function.comp_apply, Set.mem_ofPred_eq,
+          goodChain, hnotMem, not_false_eq_true, true_and] at hus ⊢
+        exact hus
+      exact hle.trans (by simpa [C, add_assoc, add_comm 1] using hih)
+    · rw [compl_compl]
+      calc (PMF.uniformOfFintype (BitString n)).toOuterMeasure S0 + C
+          ≤ (ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ + C :=
+            add_le_add (BitString.toOuterMeasure_addRight_mem_list_le ks b) le_rfl
+        _ ≤ ((bs.length + 1) * (ks.length + (bs.length + 1)) : ℕ) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
+            simp only [C, ← add_mul]
+            gcongr
+            norm_cast
+            nlinarith
 /-! ### IV-reuse, predictable-IV, and elementary encryption-mode counterexamples -/
 private theorem zipWith_add_zipWith_add_same :
     ∀ (ks ms₀ ms₁ : List (BitString n)),

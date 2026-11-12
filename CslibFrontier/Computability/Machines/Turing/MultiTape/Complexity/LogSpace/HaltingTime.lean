@@ -39,7 +39,7 @@ walks of every length, which lift back to computation paths of the same length
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.4][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 open Cslib.Turing
 

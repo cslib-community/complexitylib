@@ -66,12 +66,14 @@ theorem val_doubleStarEdgeEquiv {n : ℕ} (i : Fin n) (b : Bool) :
 /-- Leaf rotations exchange their two incidences. The first center turns forwards in leaf
 coordinates and the second backwards, hence forwards in its reversed scope positions. -/
 @[expose] def doubleStarRotor (n : ℕ) : Perm ((Fin n × Bool) × Bool) where
-  toFun d := if d.2 then
-      ((if d.1.2 then (finRotate n).symm d.1.1 else finRotate n d.1.1, d.1.2), true)
-    else ((d.1.1, !d.1.2), false)
-  invFun d := if d.2 then
-      ((if d.1.2 then finRotate n d.1.1 else (finRotate n).symm d.1.1, d.1.2), true)
-    else ((d.1.1, !d.1.2), false)
+  toFun := fun ((leaf, secondCenter), atCenter) =>
+    if atCenter then
+      ((if secondCenter then (finRotate n).symm leaf else finRotate n leaf, secondCenter), true)
+    else ((leaf, !secondCenter), false)
+  invFun := fun ((leaf, secondCenter), atCenter) =>
+    if atCenter then
+      ((if secondCenter then finRotate n leaf else (finRotate n).symm leaf, secondCenter), true)
+    else ((leaf, !secondCenter), false)
   left_inv := by
     rintro ⟨⟨i, b⟩, s⟩
     cases b <;> cases s <;>

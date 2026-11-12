@@ -44,7 +44,7 @@ Adapted from Computability/Probabilistic/CoinTape.lean on the cslib `crypto` bra
 plain polynomial-time certificates.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

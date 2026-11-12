@@ -23,8 +23,8 @@ open Turing.MultiTapeTM Cslib.GenericRAM
 namespace CslibFrontierTests.NativeExpTimePolySpaceIteration
 
 private def countCertificate : NativeCertificate List.length encBits encNat where
-  time w := (w.length + 1) ^ 2
-  space w := w.length + 1
+  time w := w.length
+  space w := w.length
   computes := ComputableInO.lengthNat
 
 private def copyCertificate : NativeCertificate (fun w : List Bool => w) encBits encBits :=
@@ -47,7 +47,7 @@ private theorem length_iterate_reverse (j : ℕ) (w : List Bool) :
 
 private theorem count_polynomial : countCertificate.IsPolynomial := by
   constructor
-  · exact PolyBounded.of_forall_le 1 2 fun _ => by simp [countCertificate, encBits]
+  · exact PolyBounded.of_forall_le 1 1 fun _ => by simp [countCertificate, encBits]
   · exact PolyBounded.of_forall_le 1 1 fun _ => by simp [countCertificate, encBits]
 
 private theorem copy_polynomial : copyCertificate.IsPolynomial := by

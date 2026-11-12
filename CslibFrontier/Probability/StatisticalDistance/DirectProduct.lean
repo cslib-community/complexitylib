@@ -13,6 +13,7 @@ public import Mathlib.Analysis.SpecialFunctions.Exp
 import CslibFrontier.Probability.Concentration
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Probability.StatisticalDistance.Event
 import Mathlib.Tactic.FieldSimp
@@ -105,7 +106,7 @@ theorem one_sub_two_mul_exp_le_dist_iid (μ ν : PMF α) (k : ℕ) :
       linarith
     have hmono : ((iid μ k).toOuterMeasure Eᶜ).toReal ≤
         ((iid μ k).toOuterMeasure {x : Fin k → α | ∑ i, score i (x i) ≤ k * p - ε}).toReal :=
-      ENNReal.toReal_mono (toOuterMeasure_ne_top _ _) ((iid μ k).toOuterMeasure.mono hsub)
+      toOuterMeasure_toReal_mono (iid μ k) hsub
     have hc := toOuterMeasure_toReal_add_compl (iid μ k) E
     linarith
   have hdist := abs_toOuterMeasure_toReal_sub_le_dist (iid μ k) (iid ν k) E

@@ -84,26 +84,26 @@ example (op : Cslib.WordRAM.StandardOp) (opAdd : Cslib.WordRAM.Basis.additive.Op
       (fun k => (model.checkedConstant 7 k).getD 0) encNat encNat ∧
     ComputableInPolyTime
       (Cslib.WordRAM.Basis.standard.genericModel.checkedOp (.bin .add))
-      (encPair encUnary (encPi encNat)) (encOption encNat) ∧
+      Cslib.WordRAM.encWidthOperands (encOption encNat) ∧
     ComputableInPolyTime
       (Cslib.WordRAM.Basis.standard.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat) ∧
+      Cslib.WordRAM.encWidthOperands (encOption encNat) ∧
     ComputableInPolyTime
       (Cslib.WordRAM.Basis.exact.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat) ∧
+      Cslib.WordRAM.encWidthOperands (encOption encNat) ∧
     ComputableInPolyTime
       (Cslib.WordRAM.Basis.additive.genericModel.checkedOp opAdd)
-      (encPair encUnary (encPi encNat)) (encOption encNat) ∧
+      Cslib.WordRAM.encWidthOperands (encOption encNat) ∧
     ComputableInPolyTime
       (Cslib.WordRAM.Basis.arithmetic.genericModel.checkedOp opArith)
-      (encPair encUnary (encPi encNat)) (encOption encNat) :=
+      Cslib.WordRAM.encWidthOperands (encOption encNat) :=
   ⟨by polytime, by polytime, by polytime, by polytime, by polytime, by polytime, by polytime⟩
 
 example (B : Cslib.WordRAM.Basis) (c : ℕ) (t : Option Bool) (op : Cslib.WordRAM.StandardOp) :
     ComputableInPolyTime (B.genericModel.checkedConstant c) encUnary (encOption encNat) ∧
     ComputableInPolyTime (B.genericModel.checkedConstant c) encUnary (encOption encNat) ∧
     ComputableInPolyTime (fun p => B.genericModel.evalTest p.1 t p.2)
-      (encPair encUnary (encPi encNat)) (encOption encBool) ∧
+      Cslib.WordRAM.encWidthOperands (encOption encBool) ∧
     ComputableInPolyTime (fun p => B.genericModel.address p.1 p.2)
       (encPair encUnary encNat) (encOption encNat) ∧
     ComputableInPolyTime (fun p => B.genericModel.validMove p.1 p.2)
@@ -112,12 +112,17 @@ example (B : Cslib.WordRAM.Basis) (c : ℕ) (t : Option Bool) (op : Cslib.WordRA
       (encPair encUnary encNat) encBool ∧
     ComputableInPolyTime
       (Cslib.WordRAM.Basis.standard.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat) ∧
+      Cslib.WordRAM.encWidthOperands (encOption encNat) ∧
     ComputableInPolyTime
       (Cslib.WordRAM.Basis.exact.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat) :=
+      Cslib.WordRAM.encWidthOperands (encOption encNat) :=
   ⟨by polytime, by fun_prop, by polytime, by polytime, by polytime, by polytime,
    by fun_prop, by fun_prop⟩
+
+example (B : Cslib.WordRAM.Basis) (t : Option Bool) :
+    ComputableInPolyTime (fun p => (B.genericModel.evalTest p.1 t p.2).isSome)
+      Cslib.WordRAM.encWidthOperands encBool := by
+  polytime
 
 -- Binary bitwise, right-shift, bit-length, and unary-capped minimum plain certificates.
 example :

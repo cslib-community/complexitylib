@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.US
 public import CslibFrontier.Computability.Complexity.Problems.SharpSAT
 public import CslibFrontier.Computability.Complexity.Problems.USAT
 public import CslibFrontier.Computability.Complexity.Reduction
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
 import CslibFrontier.Computability.Complexity.CookLevin.Counting
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
@@ -64,6 +65,7 @@ binary.
 ## Main definitions
 
 * `Cslib.Complexity.ParitySAT`, `Cslib.Complexity.ModSAT`, `Cslib.Complexity.MAJSAT`,
+  `Cslib.Complexity.SharpSATTarget`, `Cslib.Complexity.encSharpSATTarget`,
   `Cslib.Complexity.SharpSATAtLeast`, `Cslib.Complexity.SharpSATExact`.
 * `Cslib.Complexity.shiftOdd`, `Cslib.Complexity.dummyClauses`,
   `Cslib.Complexity.padMajority`: padding a formula to a majority instance.
@@ -100,7 +102,7 @@ binary.
 * [C. H. Papadimitriou, *Computational Complexity*][Papadimitriou94]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -109,23 +111,36 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 /-! ### The problems -/
 
 /-- **⊕SAT**: the formulas with an odd number of satisfying assignments. -/
-def ParitySAT : Set (CNF ℕ) := {φ | Odd (SharpSAT φ)}
+@[expose] def ParitySAT : Set (CNF ℕ) := {φ | Odd (SharpSAT φ)}
 
 /-- **Mod_k SAT**: the formulas whose number of satisfying assignments is not divisible by `k`. -/
-def ModSAT (k : ℕ) : Set (CNF ℕ) := {φ | SharpSAT φ % k ≠ 0}
+@[expose] def ModSAT (k : ℕ) : Set (CNF ℕ) := {φ | SharpSAT φ % k ≠ 0}
 
 /-- **MAJSAT**: the formulas satisfied by strictly more than half of the truth assignments to their
 occurring variables (`2 ^ φ.vars.toFinset.card < 2 * SharpSAT φ`) [Gill][Gill1977],
 [Simon][Simon1975]. -/
-def MAJSAT : Set (CNF ℕ) := {φ | 2 ^ φ.vars.toFinset.card < 2 * SharpSAT φ}
+@[expose] def MAJSAT : Set (CNF ℕ) := {φ | 2 ^ φ.vars.toFinset.card < 2 * SharpSAT φ}
 
-/-- The pairs `(φ, m)` such that `φ` has at least `m` satisfying assignments. Instances are
-encoded with `m` in binary (`encPair encCNF encNat`). -/
-def SharpSATAtLeast : Set (CNF ℕ × ℕ) := {x | x.2 ≤ SharpSAT x.1}
+/-- An instance of a counting threshold or exact-count problem: a Boolean formula in conjunctive
+normal form paired with a target count of satisfying assignments. -/
+structure SharpSATTarget where
+  /-- The formula in conjunctive normal form. -/
+  formula : CNF ℕ
+  /-- The target number of satisfying assignments. -/
+  target : ℕ
+  deriving DecidableEq, Repr
 
-/-- The pairs `(φ, m)` such that `φ` has exactly `m` satisfying assignments. Instances are
-encoded with `m` in binary (`encPair encCNF encNat`). -/
-def SharpSATExact : Set (CNF ℕ × ℕ) := {x | SharpSAT x.1 = x.2}
+/-- Pairs of a formula and a target count, encoded as `encCNF` paired with binary `encNat`. -/
+enc_structure encSharpSATTarget : SharpSATTarget where
+  formula : encCNF, target : encNat
+
+/-- Instances `x : SharpSATTarget` such that `x.formula` has at least `x.target` satisfying
+assignments (`encSharpSATTarget`). -/
+@[expose] def SharpSATAtLeast : Set SharpSATTarget := {x | x.target ≤ SharpSAT x.formula}
+
+/-- Instances `x : SharpSATTarget` such that `x.formula` has exactly `x.target` satisfying
+assignments (`encSharpSATTarget`). -/
+@[expose] def SharpSATExact : Set SharpSATTarget := {x | SharpSAT x.formula = x.target}
 
 /-- Modulo two, a nonzero residue is oddness. -/
 theorem ModSAT_two : ModSAT 2 = ParitySAT := by
@@ -181,44 +196,45 @@ private theorem computableInPolyTime_two_pow_add {α : Type} (enc : α ↪ List 
     ((ComputableInPolyTime.unary_eval q).comp
       (ComputableInPolyTime.encoding_length enc))).prod (.const j))
 
-/-- The number given with a formula, as a function in `#P`. -/
-private theorem snd_mem_SharpP : (Prod.snd : CNF ℕ × ℕ → ℕ) ∈ SharpP (encPair encCNF encNat) :=
-  mem_SharpP_of_polyTime (.snd encCNF encNat)
+/-- The target count of an instance, as a function in `#P`. -/
+private theorem target_mem_SharpP :
+    (fun x : SharpSATTarget => x.target) ∈ SharpP encSharpSATTarget :=
+  mem_SharpP_of_polyTime (by fun_prop)
 
-/-- The number of satisfying assignments of the formula of a pair, as a function in `#P`. -/
-private theorem sharpSAT_fst_mem_SharpP :
-    (fun x : CNF ℕ × ℕ => SharpSAT x.1) ∈ SharpP (encPair encCNF encNat) :=
-  SharpP.comp_mem SharpSAT.mem_SharpP (.fst encCNF encNat)
+/-- The number of satisfying assignments of the formula of an instance, as a function in `#P`. -/
+private theorem sharpSAT_formula_mem_SharpP :
+    (fun x : SharpSATTarget => SharpSAT x.formula) ∈ SharpP encSharpSATTarget :=
+  SharpP.comp_mem SharpSAT.mem_SharpP (by fun_prop)
 
-/-- **Counting threshold is `PP`-complete**: whether a formula has at least `m` satisfying
-assignments, for `m` given in binary. -/
+/-- **Counting threshold is `PP`-complete**: whether a formula has at least `target` satisfying
+assignments, for `target` given in binary. -/
 theorem SharpSATAtLeast_ppComplete :
-    PolyTimeComplete PP (encPair encCNF encNat) SharpSATAtLeast := by
+    PolyTimeComplete PP encSharpSATTarget SharpSATAtLeast := by
   refine ⟨mem_PP_iff_exists_GapP.2 ⟨_, GapP.natCast_sub_natCast_mem
-    (SharpP.add_one_mem sharpSAT_fst_mem_SharpP) snd_mem_SharpP, fun x => ?_⟩,
+    (SharpP.add_one_mem sharpSAT_formula_mem_SharpP) target_mem_SharpP, fun x => ?_⟩,
     fun _ enc A hA => ?_⟩
   · simp only [SharpSATAtLeast, Set.mem_ofPred_eq, Pi.add_apply, Pi.one_apply]
     omega
   · obtain ⟨f, hf, q, hA⟩ := mem_PP_iff_exists_SharpP.1 hA
     obtain ⟨r, hr, hfr⟩ := CookLevin.SharpSAT_sharpPHard enc _ (SharpP.add_mem hf hf)
-    refine ⟨fun a => (r a, 2 ^ q.eval (enc a).length + 1),
-      hr.prod (computableInPolyTime_two_pow_add enc q 1), fun a => ?_⟩
+    refine ⟨fun a => ⟨r a, 2 ^ q.eval (enc a).length + 1⟩,
+      encSharpSATTarget_mk_polyTime hr (computableInPolyTime_two_pow_add enc q 1), fun a => ?_⟩
     have := hfr a
     simp only [Pi.add_apply] at this
     simp only [SharpSATAtLeast, Set.mem_ofPred_eq, hA a, ← this]
     omega
 
-/-- **Exact counting is `C=P`-complete**: whether a formula has exactly `m` satisfying
-assignments, for `m` given in binary. -/
+/-- **Exact counting is `C=P`-complete**: whether a formula has exactly `target` satisfying
+assignments, for `target` given in binary. -/
 theorem SharpSATExact_ceqPComplete :
-    PolyTimeComplete CeqP (encPair encCNF encNat) SharpSATExact := by
-  refine ⟨mem_CeqP_iff_exists_SharpP.2 ⟨_, sharpSAT_fst_mem_SharpP, _, snd_mem_SharpP,
+    PolyTimeComplete CeqP encSharpSATTarget SharpSATExact := by
+  refine ⟨mem_CeqP_iff_exists_SharpP.2 ⟨_, sharpSAT_formula_mem_SharpP, _, target_mem_SharpP,
     fun _ => Iff.rfl⟩, fun _ enc A hA => ?_⟩
   obtain ⟨f₁, hf₁, f₂, hf₂, hA⟩ := mem_CeqP_iff_exists_SharpP.1 hA
   obtain ⟨p, hle, hsub⟩ := SharpP.exists_two_pow_sub_mem hf₂
   obtain ⟨r, hr, hfr⟩ := CookLevin.SharpSAT_sharpPHard enc _ (SharpP.add_mem hf₁ hsub)
-  refine ⟨fun a => (r a, 2 ^ p.eval (enc a).length),
-    by simpa using hr.prod (computableInPolyTime_two_pow_add enc p 0),
+  refine ⟨fun a => ⟨r a, 2 ^ p.eval (enc a).length⟩,
+    by simpa using encSharpSATTarget_mk_polyTime hr (computableInPolyTime_two_pow_add enc p 0),
     fun a => ?_⟩
   have h₁ := hfr a
   have h₂ := hle a
@@ -228,7 +244,7 @@ theorem SharpSATExact_ceqPComplete :
 
 /-- **The complement of exact counting is `coC=P`-complete.** -/
 theorem compl_SharpSATExact_coCeqPComplete :
-    PolyTimeComplete coCeqP (encPair encCNF encNat) SharpSATExactᶜ :=
+    PolyTimeComplete coCeqP encSharpSATTarget SharpSATExactᶜ :=
   SharpSATExact_ceqPComplete.compl fun _ _ => Iff.rfl
 
 /-! ### Majority satisfiability -/
@@ -248,18 +264,18 @@ theorem MAJSAT_mem_PP : MAJSAT ∈ PP encCNF := by
   omega
 
 /-- Relabel the variables of `φ` to the odd numbers `2 v + 1`. -/
-def shiftOdd (φ : CNF ℕ) : CNF ℕ :=
+@[expose] def shiftOdd (φ : CNF ℕ) : CNF ℕ :=
   φ.relabel (fun v => v + v + 1)
 
 /-- Clauses forcing the `Q` positive even dummy variables `2, 4, …, 2 Q` to `false` when the
 selector variable `0` is `false`. -/
-def dummyClauses (Q : ℕ) : CNF ℕ :=
+@[expose] def dummyClauses (Q : ℕ) : CNF ℕ :=
   (List.range Q).map (fun j => [(0, true), (j + j + 2, false)])
 
 /-- Pad `φ` with `Q` even dummy variables `2, 4, …, 2 Q` and a selector variable `0` so that the
 resulting formula has `1 + Q + φ.vars.toFinset.card` occurring variables and
 `SharpSAT φ + (2 ^ (Q + φ.vars.toFinset.card) - 2 ^ Q)` satisfying assignments. -/
-def padMajority (φ : CNF ℕ) (Q : ℕ) : CNF ℕ :=
+@[expose] def padMajority (φ : CNF ℕ) (Q : ℕ) : CNF ℕ :=
   (shiftOdd φ).map ((0, true) :: ·) ++
     dummyClauses Q ++
     [(0, false) :: (shiftOdd φ).vars.map (·, true)]
@@ -408,109 +424,111 @@ private theorem eval_padMajority_eq_true_iff (σ : ℕ → Bool) (φ : CNF ℕ) 
     Bool.and_eq_true, h1, h2, h3]
   cases σ 0 <;> simp
 
+/-- The coordinates of an assignment that matter for `padMajority φ Q`: the selector variable `0`,
+the dummy variables `2, 4, …, 2 Q`, and the variables of `shiftOdd φ`. -/
+private def padSplit (φ : CNF ℕ) (Q : ℕ) (σ : ℕ → Bool) :
+    Bool × (Fin Q → Bool) × ((shiftOdd φ).vars.toFinset → Bool) :=
+  (σ 0, fun j => σ (j.1 + j.1 + 2), fun v => σ v.1)
+
+/-- Two assignments have the same coordinates exactly when they agree on the variables of
+`padMajority φ Q`. -/
+private theorem padSplit_eq_iff {φ : CNF ℕ} {Q : ℕ} {σ τ : ℕ → Bool} :
+    padSplit φ Q σ = padSplit φ Q τ ↔ ∀ v ∈ (padMajority φ Q).vars, σ v = τ v := by
+  simp only [padSplit, Prod.mk.injEq, funext_iff, Fin.forall_iff, Subtype.forall,
+    List.mem_toFinset]
+  constructor
+  · rintro ⟨h0, heven, hodd⟩ v hv
+    rcases mem_vars_padMajority.1 hv with rfl | ⟨j, hj, rfl⟩ | hv'
+    · exact h0
+    · exact heven j hj
+    · exact hodd v hv'
+  · intro h
+    exact ⟨h 0 (mem_vars_padMajority.2 (Or.inl rfl)),
+      fun j hj => h _ (mem_vars_padMajority.2 (Or.inr (Or.inl ⟨j, hj, rfl⟩))),
+      fun v hv => h v (mem_vars_padMajority.2 (Or.inr (Or.inr hv)))⟩
+
+/-- Every choice of coordinates comes from an assignment: the selector at `0`, the dummy values
+at the even variables and an extension of the values on the odd variables of `shiftOdd φ`. -/
+private theorem padSplit_surjective (φ : CNF ℕ) (Q : ℕ) : Function.Surjective (padSplit φ Q) := by
+  rintro ⟨b, δ, τ⟩
+  refine ⟨fun v => if v = 0 then b
+    else if v % 2 = 0 then (if h : v / 2 - 1 < Q then δ ⟨v / 2 - 1, h⟩ else false)
+    else (shiftOdd φ).extendAssignment τ v, ?_⟩
+  refine Prod.ext rfl (Prod.ext (funext fun j => ?_) (funext fun ⟨v, hv⟩ => ?_))
+  · -- The dummy variable `2 j + 2` is even and nonzero.
+    have h1 : j.1 + j.1 + 2 ≠ 0 := by omega
+    have h2 : (j.1 + j.1 + 2) % 2 = 0 := by omega
+    have h3 : (j.1 + j.1 + 2) / 2 - 1 = j.1 := by omega
+    simp only [padSplit, h1, h2, h3, j.2, ↓reduceIte, ↓reduceDIte, Fin.eta]
+  · -- The variables of `shiftOdd φ` are odd.
+    have hv' := List.mem_toFinset.1 hv
+    have hmod := odd_of_mem_vars_shiftOdd hv'
+    have h1 : v ≠ 0 := by omega
+    have h2 : ¬v % 2 = 0 := by omega
+    simp only [padSplit, h1, h2, ↓reduceIte, CNF.extendAssignment_of_mem _ hv']
+
+/-- The coordinates of the satisfying assignments of `padMajority φ Q`: with selector `false`, a
+model of `shiftOdd φ` and all dummy variables `false`; with selector `true`, any dummy values and
+values on the variables of `shiftOdd φ` that are not all `false`. -/
+private def padModels (φ : CNF ℕ) (Q : ℕ) :
+    Bool × (Fin Q → Bool) × ((shiftOdd φ).vars.toFinset → Bool) → Prop
+  | (false, δ, τ) =>
+    δ = (fun _ => false) ∧ (shiftOdd φ).eval ((shiftOdd φ).extendAssignment τ) = true
+  | (true, _, τ) => τ ≠ fun _ => false
+
+/-- `padModels` is decidable, case by case on the selector. -/
+private instance (φ : CNF ℕ) (Q : ℕ) : DecidablePred (padModels φ Q)
+  | (false, _, _) => inferInstanceAs (Decidable (_ ∧ _))
+  | (true, _, _) => inferInstanceAs (Decidable (¬_))
+
+/-- An assignment satisfies `padMajority φ Q` exactly when its coordinates are those of a
+satisfying assignment. -/
+private theorem padModels_padSplit_iff (σ : ℕ → Bool) (φ : CNF ℕ) (Q : ℕ) :
+    padModels φ Q (padSplit φ Q σ) ↔ (padMajority φ Q).eval σ = true := by
+  rw [eval_padMajority_eq_true_iff, padSplit]
+  cases σ 0 <;>
+    simp [padModels, CNF.eval_extendAssignment_restrict, funext_iff, Fin.forall_iff, and_comm]
+
+/-- **Counting the coordinates of satisfying assignments.** Selector `false` contributes the models
+of `φ`, and selector `true` all `2 ^ Q * (2 ^ |vars φ| - 1)` other choices. -/
+private theorem card_filter_padModels (φ : CNF ℕ) (Q : ℕ) :
+    (Finset.univ.filter (padModels φ Q)).card =
+      SharpSAT φ + (2 ^ (Q + φ.vars.toFinset.card) - 2 ^ Q) := by
+  let S_false : Finset (Bool × (Fin Q → Bool) × ((shiftOdd φ).vars.toFinset → Bool)) :=
+    {false} ×ˢ (({fun _ : Fin Q => false} : Finset (Fin Q → Bool)) ×ˢ
+      (Finset.univ.filter fun τ : (shiftOdd φ).vars.toFinset → Bool =>
+        (shiftOdd φ).eval ((shiftOdd φ).extendAssignment τ) = true))
+  let S_true : Finset (Bool × (Fin Q → Bool) × ((shiftOdd φ).vars.toFinset → Bool)) :=
+    {true} ×ˢ ((Finset.univ : Finset (Fin Q → Bool)) ×ˢ
+      (Finset.univ.erase (fun _ : (shiftOdd φ).vars.toFinset => false)))
+  have hfilter : Finset.univ.filter (padModels φ Q) = S_false ∪ S_true := by
+    ext ⟨b, δ, τ⟩
+    cases b <;> simp only [padModels, S_false, S_true, Finset.mem_filter, Finset.mem_univ,
+      true_and, Finset.mem_union, Finset.mem_product, Finset.mem_singleton, Finset.mem_erase,
+      Bool.false_eq_true, Bool.true_eq_false, false_and, or_false, false_or, ne_eq, and_true]
+  have hdisj : Disjoint S_false S_true :=
+    Finset.disjoint_product.2 (Or.inl (Finset.disjoint_singleton.2 Bool.false_ne_true))
+  have hS_false : S_false.card = SharpSAT φ := by
+    simp only [S_false, Finset.card_product, Finset.card_singleton, one_mul]
+    rw [← CNF.modelCount, shiftOdd, CNF.modelCount_relabel injective_shiftOdd_fn, ← SharpSAT]
+  have hS_true : S_true.card = 2 ^ (Q + φ.vars.toFinset.card) - 2 ^ Q := by
+    simp only [S_true, Finset.card_product, Finset.card_singleton, one_mul, Finset.card_univ,
+      Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
+      Finset.card_erase_of_mem (Finset.mem_univ _), Fintype.card_coe,
+      card_vars_shiftOdd, Nat.mul_sub_left_distrib, Nat.mul_one, ← Nat.pow_add]
+  rw [hfilter, Finset.card_union_of_disjoint hdisj, hS_false, hS_true]
+
 /-- **Model count of `padMajority`**: the padded formula has
 `SharpSAT φ + (2 ^ (Q + φ.vars.toFinset.card) - 2 ^ Q)` satisfying assignments. -/
 theorem sharpSAT_padMajority (φ : CNF ℕ) (Q : ℕ) :
     SharpSAT (padMajority φ Q) = SharpSAT φ + (2 ^ (Q + φ.vars.toFinset.card) - 2 ^ Q) := by
-  let P : Bool × (Fin Q → Bool) × ((shiftOdd φ).vars.toFinset → Bool) → Prop := fun x =>
-    if x.1 = false then
-      (shiftOdd φ).eval ((shiftOdd φ).extendAssignment x.2.2) = true ∧ x.2.1 = fun _ => false
-    else
-      x.2.2 ≠ fun _ => false
-  have hcount := CNF.modelCount_eq_card_filter (φ := padMajority φ Q)
-    (fun σ => (σ 0, fun j : Fin Q => σ (j.1 + j.1 + 2),
-      fun v : (shiftOdd φ).vars.toFinset => σ v.1)) P
-    (fun σ τ _ _ => ?_) (fun ⟨b, δ, τ⟩ => ?_)
-  · rw [SharpSAT, hcount]
-    let S_false : Finset (Bool × (Fin Q → Bool) × ((shiftOdd φ).vars.toFinset → Bool)) :=
-      {false} ×ˢ (({fun _ : Fin Q => false} : Finset (Fin Q → Bool)) ×ˢ
-        (Finset.univ.filter fun τ : (shiftOdd φ).vars.toFinset → Bool =>
-          (shiftOdd φ).eval ((shiftOdd φ).extendAssignment τ) = true))
-    let S_true : Finset (Bool × (Fin Q → Bool) × ((shiftOdd φ).vars.toFinset → Bool)) :=
-      {true} ×ˢ ((Finset.univ : Finset (Fin Q → Bool)) ×ˢ
-        (Finset.univ.erase (fun _ : (shiftOdd φ).vars.toFinset => false)))
-    have hfilter : Finset.univ.filter P = S_false ∪ S_true := by
-      ext ⟨b, δ, τ⟩
-      cases b <;> simp only [P, S_false, S_true, Finset.mem_filter, Finset.mem_univ, true_and,
-        and_true, Finset.mem_union, Finset.mem_product, Finset.mem_singleton, Finset.mem_erase,
-        Bool.false_eq_true, Bool.true_eq_false, ↓reduceIte, false_and, or_false, false_or, ne_eq]
-      exact ⟨fun ⟨h1, h2⟩ => ⟨h2, h1⟩, fun ⟨h2, h1⟩ => ⟨h1, h2⟩⟩
-    have hdisj : Disjoint S_false S_true := by
-      rw [Finset.disjoint_left]
-      rintro ⟨b, δ, τ⟩ h₁ h₂
-      have hb₁ : b = false := Finset.mem_singleton.1 (Finset.mem_product.1 h₁).1
-      have hb₂ : b = true := Finset.mem_singleton.1 (Finset.mem_product.1 h₂).1
-      exact Bool.false_ne_true (hb₁.symm.trans hb₂)
-    have hS_false : S_false.card = SharpSAT φ := by
-      simp only [S_false, Finset.card_product, Finset.card_singleton, one_mul]
-      rw [← CNF.modelCount, shiftOdd, CNF.modelCount_relabel injective_shiftOdd_fn, ← SharpSAT]
-    have hS_true : S_true.card = 2 ^ (Q + φ.vars.toFinset.card) - 2 ^ Q := by
-      simp only [S_true, Finset.card_product, Finset.card_singleton, one_mul, Finset.card_univ,
-        Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
-        Finset.card_erase_of_mem (Finset.mem_univ _), Fintype.card_coe,
-        card_vars_shiftOdd, Nat.mul_sub_left_distrib, Nat.mul_one, ← Nat.pow_add]
-    rw [hfilter, Finset.card_union_of_disjoint hdisj, hS_false, hS_true]
-  · simp only [Prod.mk.injEq, funext_iff, Fin.forall_iff, Subtype.forall, List.mem_toFinset]
-    constructor
-    · rintro ⟨h0, heven, hodd⟩ v hv
-      rcases mem_vars_padMajority.1 hv with rfl | ⟨j, hj, rfl⟩ | hv'
-      · exact h0
-      · exact heven j hj
-      · exact hodd v hv'
-    · intro h
-      refine ⟨h 0 (mem_vars_padMajority.2 (Or.inl rfl)),
-        fun j hj => h _ (mem_vars_padMajority.2 (Or.inr (Or.inl ⟨j, hj, rfl⟩))),
-        fun v hv => h v (mem_vars_padMajority.2 (Or.inr (Or.inr hv)))⟩
-  · simp only [P, Prod.mk.injEq, funext_iff, Fin.forall_iff, Subtype.forall, List.mem_toFinset]
-    constructor
-    · intro hP
-      let σ : ℕ → Bool := fun n =>
-        if n = 0 then b
-        else if n % 2 = 0 then (if h : n / 2 - 1 < Q then δ ⟨n / 2 - 1, h⟩ else false)
-        else (shiftOdd φ).extendAssignment τ n
-      have hσ0 : σ 0 = b := rfl
-      have hσeven (j : ℕ) (hj : j < Q) : σ (j + j + 2) = δ ⟨j, hj⟩ := by
-        change (if j + j + 2 = 0 then b
-          else if (j + j + 2) % 2 = 0 then
-            if h : (j + j + 2) / 2 - 1 < Q then δ ⟨(j + j + 2) / 2 - 1, h⟩ else false
-          else (shiftOdd φ).extendAssignment τ (j + j + 2)) = δ ⟨j, hj⟩
-        have h1 : (j + j + 2 = 0) = False := eq_false (by omega)
-        have h2 : ((j + j + 2) % 2 = 0) = True := eq_true (by omega)
-        have h3 : (j + j + 2) / 2 - 1 = j := by omega
-        simp only [h1, h2, h3, hj, ↓reduceIte, ↓reduceDIte]
-      have hσodd (v : ℕ) (hv : v ∈ (shiftOdd φ).vars) :
-          σ v = τ ⟨v, List.mem_toFinset.2 hv⟩ := by
-        have hmod := odd_of_mem_vars_shiftOdd hv
-        change (if v = 0 then b
-          else if v % 2 = 0 then
-            if h : v / 2 - 1 < Q then δ ⟨v / 2 - 1, h⟩ else false
-          else (shiftOdd φ).extendAssignment τ v) = τ ⟨v, List.mem_toFinset.2 hv⟩
-        have h1 : (v = 0) = False := eq_false (by omega)
-        have h2 : (v % 2 = 0) = False := eq_false (by omega)
-        simp only [h1, h2, ↓reduceIte, CNF.extendAssignment_of_mem _ hv]
-      refine ⟨σ, ?_, hσ0, hσeven, hσodd⟩
-      rw [eval_padMajority_eq_true_iff, hσ0]
-      cases b
-      · simp only [↓reduceIte] at hP ⊢
-        refine ⟨?_, fun j hj => by rw [hσeven j hj, hP.2 j hj]⟩
-        rw [← hP.1]
-        exact CNF.eval_congr fun v hv => by rw [hσodd v hv, CNF.extendAssignment_of_mem _ hv]
-      · simp only [Bool.true_eq_false, ↓reduceIte, ne_eq, funext_iff, not_forall,
-          Bool.not_eq_false] at hP ⊢
-        obtain ⟨⟨v, hv⟩, hτv⟩ := hP
-        have hv' := List.mem_toFinset.1 hv
-        exact ⟨v, hv', by rw [hσodd v hv', hτv]⟩
-    · rintro ⟨σ, hσ, rfl, heven, hodd⟩
-      rw [eval_padMajority_eq_true_iff] at hσ
-      cases h0 : σ 0
-      · simp only [h0, ↓reduceIte] at hσ ⊢
-        refine ⟨?_, fun j hj => (heven j hj).symm.trans (hσ.2 j hj)⟩
-        rw [← hσ.1]
-        exact CNF.eval_congr fun v hv => by rw [CNF.extendAssignment_of_mem _ hv, ← hodd v hv]
-      · simp only [h0, Bool.true_eq_false, ↓reduceIte, ne_eq, funext_iff, not_forall,
-          Bool.not_eq_false] at hσ ⊢
-        obtain ⟨v, hv, hσv⟩ := hσ
-        exact ⟨⟨v, List.mem_toFinset.2 hv⟩, (hodd v hv).symm.trans hσv⟩
+  rw [SharpSAT, CNF.modelCount_eq_card_filter (padSplit φ Q) (padModels φ Q)
+    (fun σ τ _ _ => padSplit_eq_iff) fun x => ?_, card_filter_padModels]
+  obtain ⟨σ, rfl⟩ := padSplit_surjective φ Q x
+  constructor
+  · exact fun h => ⟨σ, (padModels_padSplit_iff σ φ Q).1 h, rfl⟩
+  · rintro ⟨τ, hτ, h⟩
+    exact h ▸ (padModels_padSplit_iff τ φ Q).2 hτ
 
 /-- **Threshold equivalence of `padMajority`**: the padded formula belongs to `MAJSAT` if and only
 if `φ` has strictly more than `2 ^ Q` satisfying assignments. -/

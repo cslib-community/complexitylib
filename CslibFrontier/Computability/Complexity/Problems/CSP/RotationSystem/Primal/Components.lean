@@ -214,7 +214,9 @@ theorem sameComponent_polygon_iff {u v : ℕ} (hu : u < F.numVars) (hv : v < F.n
 noncomputable def polygonComponentMap (F : CSP Rel V) :
     (polygonGraph F).induced.ConnectedComponent → (incidenceGraph F).induced.ConnectedComponent :=
   Quot.map (fun v => ⟨v.val, polygon_vertex_incidence_declared v.property⟩)
-    (fun u v h => (incidence_sameComponent_of_polygon ⟨u.property, v.property, h⟩).2.2)
+    (fun u v h => by
+      obtain ⟨_, _, reachable⟩ := incidence_sameComponent_of_polygon ⟨u.property, v.property, h⟩
+      exact reachable)
 
 /-- Distinct polygon components remain distinct incidence components. -/
 theorem polygonComponentMap_injective (F : CSP Rel V) :

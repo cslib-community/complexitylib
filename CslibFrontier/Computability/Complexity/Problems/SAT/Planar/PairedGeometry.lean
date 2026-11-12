@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDr
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.Paths.Occupancy
 public import CslibFrontier.Foundations.Geometry.Orthogonal.PairedBoundary
 import CslibFrontier.Computability.Complexity.Problems.SAT.Incidence.Compact
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Range
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Nodup
@@ -82,21 +83,17 @@ theorem access_cost (sites : List Point) (p q : Point) (l : Fin 2) :
   rw [access_eq_translate, wireLength_translate]
   exact ⟨(PairedPorts.access_route_sizes _ _).2, rfl⟩
 
-/-- The translated paired boundary belongs to its own closed cell. -/
-theorem boundary_mem_closedCell (c : Point) (s : Fin 4) (l : Fin 2) :
-    realPoint (boundary c s l) ∈ closedCell 120 c := by
-  rw [boundary, realPoint_add, add_comm, mem_closedCell_add_origin_iff]
-  fin_cases s <;> fin_cases l <;> norm_num [PairedPorts.boundaryPort, PairedPorts.offset, realPoint]
-
-/-- A paired boundary point is outside every open grid cell. -/
-theorem boundary_not_mem_openCell (c d : Point) (s : Fin 4) (l : Fin 2) :
-    realPoint (boundary c s l) ∉ openCell 120 d := by
-  intro hp
-  have hdc := cell_eq_of_mem_open_closed (by decide) hp (boundary_mem_closedCell c s l)
-  subst d
-  rw [boundary, realPoint_add, add_comm, mem_openCell_add_origin_iff] at hp
-  fin_cases s <;> fin_cases l <;>
-    norm_num [PairedPorts.boundaryPort, PairedPorts.offset, realPoint] at hp
+/-- A point of a translated cell's closed square outside its open square lies on one of the four
+edges, in local coordinates. -/
+private theorem on_edge_of_not_mem_openCell {c : Point} {x : ℝ × ℝ}
+    (hnot : x + realPoint (cellOrigin 120 c) ∉ openCell 120 c) (h₀ : 0 ≤ x.1) (h₁ : x.1 ≤ 240)
+    (h₂ : 0 ≤ x.2) (h₃ : x.2 ≤ 240) : x.1 = 0 ∨ x.1 = 240 ∨ x.2 = 0 ∨ x.2 = 240 := by
+  by_contra h
+  apply hnot
+  rw [mem_openCell_add_origin_iff]
+  push Not at h
+  exact ⟨lt_of_le_of_ne h₀ (Ne.symm h.1), lt_of_le_of_ne h₁ h.2.1,
+    lt_of_le_of_ne h₂ (Ne.symm h.2.2.1), lt_of_le_of_ne h₃ h.2.2.2⟩
 
 /-- Every actual access stays in its closed cell and touches its boundary only at its port. -/
 theorem access_support_cell (sites : List Point) (c q : Point) (l : Fin 2) {p : ℝ × ℝ}
@@ -113,18 +110,8 @@ theorem access_support_cell (sites : List Point) (c q : Point) (l : Fin 2) {p : 
   · rw [← hx, mem_closedCell_add_origin_iff]
     exact ⟨h₀, h₁, h₂, h₃⟩
   · intro hnot
-    have hn : ¬ (0 < x.1 ∧ x.1 < 240 ∧ 0 < x.2 ∧ x.2 < 240) := by
-      intro h
-      apply hnot
-      rw [← hx, mem_openCell_add_origin_iff]
-      exact h
-    have hboundary : x.1 = 0 ∨ x.1 = 240 ∨ x.2 = 0 ∨ x.2 = 240 := by
-      by_contra h
-      apply hn
-      push Not at h
-      exact ⟨lt_of_le_of_ne h₀ (Ne.symm h.1), lt_of_le_of_ne h₁ h.2.1,
-        lt_of_le_of_ne h₂ (Ne.symm h.2.2.1), lt_of_le_of_ne h₃ h.2.2.2⟩
-    rw [← hx, hb hboundary, boundary, realPoint_add, add_comm]
+    rw [← hx] at hnot
+    rw [← hx, hb (on_edge_of_not_mem_openCell hnot h₀ h₁ h₂ h₃), boundary, realPoint_add, add_comm]
 
 /-- Contacts between accesses in different cells occur at both designated boundary ports. -/
 theorem access_contact_of_distinct_cells (sites otherSites : List Point)
@@ -228,20 +215,8 @@ private theorem finalLocalRoute_simple_check : ∀ s, ∀ a ∈ (finalLocalRoute
     ∀ b ∈ (finalLocalRoute s).consecutivePairs, a ≠ b →
       segmentContactCheck (consecutiveContact a b) a.1 a.2 b.1 b.2 = true := by decide +kernel
 
-private theorem finalLocalRoute_simple (s : Fin 4) : IsSimple (finalLocalRoute s) := by
-  refine ⟨finalLocalRoute_nodup s, ?_⟩
-  intro a ha b hb hne p hp hq
-  obtain ⟨q, hq, hpq⟩ := segmentContactCheck_sound
-    (finalLocalRoute_simple_check s a ha b hb hne) hp hq
-  unfold consecutiveContact at hq
-  split_ifs at hq with h h'
-  · have hqa : q = a.2 := List.mem_singleton.mp hq
-    subst q
-    exact ⟨Or.inr hpq, Or.inl (hpq.trans (congrArg realPoint h))⟩
-  · have hqa : q = a.1 := List.mem_singleton.mp hq
-    subst q
-    exact ⟨Or.inl hpq, Or.inr (hpq.trans (congrArg realPoint h'.symm))⟩
-  · exact False.elim (List.not_mem_nil hq)
+private theorem finalLocalRoute_simple (s : Fin 4) : IsSimple (finalLocalRoute s) :=
+  isSimple_of_segmentContactCheck (finalLocalRoute_nodup s) (finalLocalRoute_simple_check s)
 
 /-- Every actual final literal route is proper, orthogonal and continuously simple. -/
 theorem lastLiteral_route_regular (sites : List Point) (r : Route) (b : Bool)
@@ -1065,10 +1040,7 @@ theorem ordinaryClause_mem_openCell {c : Point} {pc : PlacedClause}
   have hi : ci.2 < OrdinaryRing.clausePositions.length := by
     rw [OrdinaryRing.drawing_sizes.1]
     simpa only [Nat.zero_add, OrdinaryRing.formula_sizes.1] using (List.mem_zipIdx hci).2.1
-  apply translated_point_mem_openCell
-  apply OrdinaryRing.clause_bounds
-  rw [List.getD_eq_getElem _ _ hi]
-  exact List.getElem_mem hi
+  exact translated_point_mem_openCell _ _ (OrdinaryRing.clause_bounds _ (List.getD_mem (0, 0) hi))
 
 /-- Crossover clause positions are strictly inside their cell. -/
 theorem crossingClause_mem_openCell {c : Point} {pc : PlacedClause}
@@ -1077,10 +1049,8 @@ theorem crossingClause_mem_openCell {c : Point} {pc : PlacedClause}
   have hi : ci.2 < PairedCrossover.clausePositions.length := by
     rw [PairedCrossover.drawing_sizes.1]
     simpa only [Nat.zero_add, PairedCrossover.length_formula] using (List.mem_zipIdx hci).2.1
-  apply translated_point_mem_openCell
-  apply PairedCrossover.clause_bounds
-  rw [List.getD_eq_getElem _ _ hi]
-  exact List.getElem_mem hi
+  exact translated_point_mem_openCell _ _
+    (PairedCrossover.clause_bounds _ (List.getD_mem (0, 0) hi))
 
 /-- An ordinary tile retains the fixed ring's clause-position order. -/
 theorem ordinaryClause_positions (c : Point) :
@@ -1167,7 +1137,7 @@ private theorem link_position_not_open {sites : List Point} {r : Route}
     realPoint pc.2.1 ∉ openCell 120 c := by
   obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-  rcases hpc with rfl | rfl <;> exact boundary_not_mem_openCell _ c _ _
+  rcases hpc with rfl | rfl <;> exact PairedPorts.boundary_not_mem_openCell _ c _ _
 
 private theorem original_interior_positions_disjoint (φ : CNF ℕ) (cells : List Point)
     (pcs : Point → List PlacedClause)
@@ -1378,9 +1348,7 @@ private theorem lastStep_mem {φ : CNF ℕ} {o : Occurrence ℕ}
     lastStep (occurrencePath φ o) ∈ (occurrencePath φ o).consecutivePairs := by
   let r := occurrencePath φ o
   have hlen : 2 ≤ r.length := PlanarCompile.occurrencePath_length_ge_two ho
-  have hk : r.length - 2 < r.consecutivePairs.length := by
-    simp only [List.consecutivePairs, List.length_zip, List.length_tail]
-    omega
+  have hk : r.length - 2 < r.consecutivePairs.length := by grind
   have heq : r.consecutivePairs[r.length - 2] = lastStep r := by
     rw [List.getElem_zip, List.getElem_tail]
     apply Prod.ext
@@ -1542,18 +1510,8 @@ theorem spoke_support_boundary (c : Point) (s : Fin 4) {p : ℝ × ℝ}
   have hlocal : x ∈ support (PairedPorts.spokeRoute s) :=
     (mem_support_translate_iff _ _ _).1 (hx ▸ hp)
   obtain ⟨h₀, h₁, h₂, h₃, hb⟩ := spoke_boundary_isolation hlocal
-  have hn : ¬ (0 < x.1 ∧ x.1 < 240 ∧ 0 < x.2 ∧ x.2 < 240) := by
-    intro h
-    apply hnot
-    rw [← hx, mem_openCell_add_origin_iff]
-    exact h
-  have hboundary : x.1 = 0 ∨ x.1 = 240 ∨ x.2 = 0 ∨ x.2 = 240 := by
-    by_contra h
-    apply hn
-    push Not at h
-    exact ⟨lt_of_le_of_ne h₀ (Ne.symm h.1), lt_of_le_of_ne h₁ h.2.1,
-      lt_of_le_of_ne h₂ (Ne.symm h.2.2.1), lt_of_le_of_ne h₃ h.2.2.2⟩
-  rw [← hx, hb hboundary, boundary, realPoint_add, add_comm]
+  rw [← hx] at hnot
+  rw [← hx, hb (on_edge_of_not_mem_openCell hnot h₀ h₁ h₂ h₃), boundary, realPoint_add, add_comm]
 
 private inductive SpokePiece (φ : CNF ℕ) : Route → Point → Fin 4 → Prop where
   | final {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
@@ -2059,8 +2017,8 @@ private theorem drawingPosition_mem {φ : CNF ℕ} {v : ℕ}
     (hv : v ∈ (SAT.incidenceGraph (formula φ)).1) :
     Graph.drawingPosition (SAT.incidenceGraph (formula φ)) (positions φ, routes φ) v ∈
       positions φ := by
-  rw [drawingPosition_eq_getD hv, List.getD_eq_getElem _ _ (declared_position_index_lt hv)]
-  exact List.getElem_mem _
+  rw [drawingPosition_eq_getD hv]
+  exact List.getD_mem (0, 0) (declared_position_index_lt hv)
 
 private theorem drawingPosition_injective {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3)
@@ -2077,10 +2035,8 @@ private theorem drawingPosition_injective {φ : CNF ℕ}
 
 private theorem indexed_route_mem {φ : CNF ℕ} {i : ℕ}
     (hi : i < (SAT.incidenceGraph (formula φ)).2.length) :
-    (routes φ).getD i [] ∈ routes φ := by
-  have hir : i < (routes φ).length := by rwa [routes_length]
-  rw [List.getD_eq_getElem _ _ hir]
-  exact List.getElem_mem hir
+    (routes φ).getD i [] ∈ routes φ :=
+  List.getD_mem [] (by rwa [routes_length])
 
 /-- Actual indexed routes avoid all nonincident declared graph vertices. -/
 theorem routes_avoid_vertices {φ : CNF ℕ}

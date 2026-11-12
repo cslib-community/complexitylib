@@ -62,8 +62,7 @@ theorem isPolymorphism_majority_iff (R : Set (V → Bool)) :
     convert h (a 0) (ha 0) (a 1) (ha 1) (a 2) (ha 2) using 1
     funext i
     rw [median_apply_eq_majority]
-    congr 1
-    funext j
+    congr 1 with j : 1
     fin_cases j <;> rfl
 
 /-- A nonempty majority-closed relation on finitely many coordinates contains a tuple whenever
