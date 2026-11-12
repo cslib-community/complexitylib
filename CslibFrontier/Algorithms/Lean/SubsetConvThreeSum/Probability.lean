@@ -63,7 +63,7 @@ open Finset Cslib.Algorithms.Lean.Yates
 
 variable {p : ℕ} [Fact p.Prime]
 
-instance : NeZero p := ⟨(Fact.out : p.Prime).ne_zero⟩
+local instance : NeZero p := ⟨(Fact.out : p.Prime).ne_zero⟩
 
 /-- The seeds of one trial, uniformly distributed: `ξ ≠ 0`, `α` and `β` arbitrary. -/
 @[expose] def seeds (p : ℕ) [NeZero p] : Finset (Seed p) := univ.filter fun s => s.ξ ≠ 0
@@ -325,7 +325,7 @@ theorem card_forall_not_accepts (d t μ : ℕ) (Ag Bg : List ℕ) (c : ℕ) :
 
 /-! ### The random prime -/
 
-/-- The primes of `[2 ^ d, 2 ^ (d + 1))`. For `d ≥ 1` these are the primes of `(p₀, 2 p₀]` with
+/-- The primes of `[2 ^ d, 2 ^ (d + 1))`. For `d ≥ 2` these are the primes of `(p₀, 2 p₀]` with
 `p₀ = 2 ^ d`, from which [ChanItakuraMaYu2026], Theorem 2.3, draws `p`. -/
 @[expose] def primeWindow (d : ℕ) : Finset ℕ := (Ico (2 ^ d) (2 ^ (d + 1))).filter Nat.Prime
 

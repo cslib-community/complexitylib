@@ -17,7 +17,7 @@ Concrete runs of `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum` with `A = {1
 * one trial, run by kernel reduction: the seed `(ξ, α, β) = (1, 0, 1)` reports `4 = 1 + 3` and the
   seed `(1, 0, 3)` reports `6 = 1 + 5`; `9` is never a sum and is never reported
   (`exists_add_eq_of_mem_ret_threeSumM`);
-* the exact tick count of the first run against `time_threeSumM`;
+* the exact tick count of the first run, computed by kernel reduction;
 * the hypotheses of the per-trial bound and of `miss_le` hold for `c = 6`: there are no false pairs
   modulo `17`, so at least `#P (p - 1) = 12 · 16 = 192` of the `16 · 17 ^ 2 = 4624` seeds accept
   (`card_accepts_add_ge`; a direct count, not run here, gives exactly `192`).
