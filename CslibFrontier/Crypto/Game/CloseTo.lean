@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Interactive.Security
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Probability.StatisticalDistance.CloseTo
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Bridging Boolean game advantage and all-events statistical closeness
@@ -52,7 +53,7 @@ ensembles `PMF (List Bool)` and protocol transcripts.
   under `CloseTo`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Game
 
@@ -82,10 +83,8 @@ theorem closeTo_iff_coe_advantage_le {game1 game2 : Game} {ε : ℝ≥0∞} :
     rw [hadv, max_le_iff] at hadv_le
     have ht1 : game1 true ≤ game2 true + ε := tsub_le_iff_left.mp hadv_le.1
     have ht2 : game2 true ≤ game1 true + ε := tsub_le_iff_left.mp hadv_le.2
-    have hsum1 : game1 true + game1 false = 1 := by
-      simpa only [tsum_bool, add_comm] using game1.tsum_coe
-    have hsum2 : game2 true + game2 false = 1 := by
-      simpa only [tsum_bool, add_comm] using game2.tsum_coe
+    have hsum1 : game1 true + game1 false = 1 := Probability.PMF.apply_true_add_apply_false game1
+    have hsum2 : game2 true + game2 false = 1 := Probability.PMF.apply_true_add_apply_false game2
     have hf1 : game1 false ≤ game2 false + ε := by
       refine WithTop.le_of_add_le_add_left (game2.apply_ne_top true) ?_
       calc

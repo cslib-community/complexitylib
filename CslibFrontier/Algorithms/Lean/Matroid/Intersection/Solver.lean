@@ -229,8 +229,7 @@ theorem _root_.Cslib.IsMonadHom.map_maxCommonIndepLoopM {f : {γ : Type} → m �
   | zero => exact hf.map_pure _
   | succ fuel ih =>
     simp only [maxCommonIndepLoopM, hf.map_bind, hf.map_exchTablesM]
-    congr 1
-    funext T
+    congr 1 with T : 1
     split
     · exact ih _
     · exact hf.map_pure _

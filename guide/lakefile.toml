@@ -1,4 +1,4 @@
-# The Complexitylib guide: narrative documentation written with Verso, whose Lean examples are
+# The cslib-frontier guide: narrative documentation written with Verso, whose Lean examples are
 # checked against the library. A separate project, like ../docbuild, so the library itself takes
 # no Verso dependency. Inherits ../lean-toolchain. Build with: scripts/guide.sh
 name = "guide"

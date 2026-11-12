@@ -79,49 +79,24 @@ theorem realizes_popFront : Realizes .exact popFront (.refl Input)
   · exact hmem.fits_of_lt_frontier (by have := h.1; have := h.2; omega)
   · exact (show Fits w (d 0) from hwords 0).of_le (by omega)
 
-/-- Dequeue reuses the shared remaining-count transfer and preserves the exact old room. -/
+/-- Dequeue reuses the shared remaining-count transfer and preserves the exact old room. Both
+called methods enter through their own certificates, `realizes_transfer` and `realizes_popFront`. -/
 theorem realizes_dequeue : Realizes .exact dequeue (.refl Input)
     (appendWords counts optionWords) transferDomain (fun _ _ => 0) := by
   change Realizes .exact dequeue (.refl (Fin 5 → ℕ)) _ _ _
+  have htransfer := realizes_transfer
+  have hpop := realizes_popFront
   realize
-  all_goals try omega
-  case hsafe.isTrue.left =>
-    intro hv
-    refine whileSafe_of_measure _ _ _ w d
-      (fun m t => Memory.WellFormed w t ∧ m.1 + m.2 ≤ d 3 ∧ d 2 + 2 * d 3 ≤ t.frontier)
-      (fun m _ => m.2) (fun m _ _ hz hg => by omega) ?_ ⟨hmem, h.1, h.2⟩ le_rfl hv
-    rintro m t ⟨hwt, hcap, hfrontier⟩ hg hb
-    refine ⟨?_, ?_, ?_⟩
-    · change (1 ≤ m.2 ∧ Fits w (d 2 + d 3 + (m.2 - 1))) ∧
-        Fits w (d 2 + m.1) ∧ 1 ≤ m.2 ∧ Fits w (m.1 + 1)
-      exact ⟨⟨by omega, hwt.fits_of_lt_frontier (by omega)⟩,
-        hwt.fits_of_lt_frontier (by omega), by omega,
-        (show Fits w (d 3) from hwords 3).of_le (by omega)⟩
-    · have hw' : Memory.WellFormed w
-          ((Memory.spec 0).clientState t (move ![m.1, m.2, d 2, d 3, d 4])) := by
-        rw [← clientState_width w, ← (Memory.spec w).run_runClient]
-        exact hwt.run hb
-      refine ⟨hw', ?_, ?_⟩
-      · change (m.1 + 1) + (m.2 - 1) ≤ d 3
-        omega
-      · exact hfrontier
-    · change m.2 - 1 < m.2
-      omega
-  case hsafe.isTrue.right.isFalse.left.right =>
-    have hr := (transfer_invariant hmem h).2.2.1
-    rw [hr] at hc ⊢
-    change d 0 + d 1 ≠ 0 at hc
-    change Fits w (d 2 + (d 0 + d 1 - 1))
-    exact hmem.fits_of_lt_frontier (by have := h.1; have := h.2; omega)
-  case hsafe.isTrue.right.isFalse.right.right =>
-    have hr := (transfer_invariant hmem h).2.2.1
-    rw [hr] at hc
-    change d 0 + d 1 ≠ 0 at hc
-    exact (show Fits w (d 3) from hwords 3).of_le (by have := h.1; omega)
-  case hsafe.isFalse.isFalse.left.right =>
-    exact hmem.fits_of_lt_frontier (by have := h.1; have := h.2; omega)
-  case hsafe.isFalse.isFalse.right.right =>
-    exact (show Fits w (d 0) from hwords 0).of_le (by omega)
+  case hsafe.isTrue.right =>
+    -- After the transfer every element sits in the front stack, and the room is unchanged.
+    obtain ⟨-, -, hr, hf, -⟩ := transfer_invariant hmem h
+    rw [hr]
+    change d 0 + d 1 + 0 ≤ d 3 ∧
+      d 2 + 2 * d 3 ≤ ((Memory.spec 0).clientState s (transfer d)).frontier
+    rw [hf]
+    exact ⟨by have := h.1; omega, h.2⟩
+  -- The other calls receive the dequeue input unchanged, so their domain is `h` itself.
+  all_goals exact h
 
 /-- The original standard word-RAM basis has the same checked method behavior. -/
 theorem realizes_enqueue_standard : Realizes .standard enqueue (.refl Input) counts

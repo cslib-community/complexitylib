@@ -37,7 +37,7 @@ events or prove the complete Appendix A.2 recurrence, depth, leaf count or nativ
 * [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.1, Lemma A.1][OpenAI2026ETH]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.ClauseSet.Sparsification
 
@@ -149,12 +149,7 @@ theorem countingIntro_filter_eq_node_sdiff {θ : ℕ → ℕ} (hθ : ∀ r, 1 �
     {m : ℕ} (hm : m < N) {j : ℕ} (hj : 2 ≤ j) :
     (countingIntro (ψ m) (c m) (H m) (b m)).filter (·.card = j) =
       (ψ (m + 1) \ (ψ m ∪ ψ 0)).filter (·.card = j) := by
-  have hredm : Reduced (ψ m) := by
-    cases m with
-    | zero => exact hred
-    | succ m =>
-      rw [hstep m (by omega), countingChild_eq_reduce_union]
-      exact reduced_reduce _
+  have hredm := reduced_counting_node N ψ c H b hstep hred hm.le
   have hntm := nontautological_counting_node hθ N ψ c H b hstep hheavy hnt hm.le
   ext a
   simp only [mem_filter, mem_sdiff, mem_union]

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Residue
 public import CslibFrontier.Computability.TreeEval.Reader.Encode
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold
+import CslibFrontier.Tactic.Space
 
 /-!
 # Register operations within linear work space
@@ -185,15 +186,7 @@ private theorem length_subElem_le (p c v a : ℕ) :
 private theorem subElem_inSpace :
     ComputableInSpace (fun q : (ℕ × ℕ) × ℕ × Option ℕ => some (subElem q.1 q.2.1 q.2.2)) encSubArg
       (encOption encNat) fun q => (encSubArg q).length := by
-  have hpar := fst (encPair encNat encNat) (encPair encNat (encOption encNat))
-  have harg := snd (encPair encNat encNat) (encPair encNat (encOption encNat))
-  have hp := fst' hpar
-  have ha := budget_comp_linear (of_inO (ComputableInDegree.optionGetD encNat 0).inO_one)
-    (snd' harg)
-  have hm := budget_comp_linear mulMod_inSpace (budget_prod hp (budget_prod (snd' hpar) ha))
-  have hn := budget_comp_linear negMod_inSpace (budget_prod hp hm)
-  have he := budget_comp_linear addMod_inSpace (budget_prod hp (budget_prod (fst' harg) hn))
-  exact budget_comp_linear (of_inO (ComputableInDegree.optionSome (enc₁ := encNat)).inO_one) he
+  space [subElem, addMod, negMod, mulMod]
 
 private theorem length_encList_mapIdx_le (l : List ℕ) (f : ℕ → ℕ → ℕ) (P : ℕ)
     (hf : ∀ i v, (encNat (f i v)).length ≤ P + (encNat v).length) :

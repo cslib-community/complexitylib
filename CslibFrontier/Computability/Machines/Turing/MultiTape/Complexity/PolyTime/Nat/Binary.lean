@@ -69,6 +69,8 @@ multiplication.
   composition rules for `fun_prop`.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.binary_mul'`, `.binary_sub'`, `.binary_pow'`:
   composition rules for `fun_prop`.
+* `Turing.MultiTapeTM.ComputableInPolyTime.binary_add'`, `.binary_sub'`, `.binary_pow'`: named
+  composition rules for plain certificates.
 * `Turing.MultiTapeTM.ComputableInPolyTime.binary_bitwise`, `.binary_and`, `.binary_or`,
   `.binary_xor`, `.binary_and'`, `.binary_or'`, `.binary_xor'`: bitwise operations on binary
   naturals, and their composition rules.
@@ -79,7 +81,7 @@ multiplication.
   unary position.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 
@@ -495,6 +497,13 @@ theorem binary_two_pow :
 end Turing.MultiTapeTM.ComputableInPolyTime
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
+
+/-- Add computed binary values using the shared plain certificate. -/
+theorem binary_add' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}
+    (hleft : ComputableInPolyTime left input encNat)
+    (hright : ComputableInPolyTime right input encNat) :
+    ComputableInPolyTime (fun a => left a + right a) input encNat :=
+  binary_add.comp (hleft.prod hright)
 
 /-- Subtract computed binary values using the shared plain certificate. -/
 theorem binary_sub' {α : Type} {input : α ↪ List Bool} {left right : α → ℕ}

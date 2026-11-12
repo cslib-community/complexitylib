@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordReduction
 public import CslibFrontier.Crypto.Computational.HardCore
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Tactic.PPT
@@ -145,7 +146,7 @@ theorem eval_paddedPrediction (f : List Bool → List Bool) (adversary : Disting
   simp only [predictionGame, parityPredictionGame, paddedPredictor, ProbComp.eval_bind,
     BitString.eval_sampleList, ProbComp.eval_pure, two_mul]
   rw [uniformList_add (n + n) spare, uniformList_add n n]
-  simp only [uniformList, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, uniformList]
   congr 1 with x : 1
   congr 1 with r : 1
   congr 1 with extra : 1

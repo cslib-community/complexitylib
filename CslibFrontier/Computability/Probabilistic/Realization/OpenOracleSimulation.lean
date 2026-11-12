@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Tactic.SuppCases
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -83,15 +84,14 @@ theorem step_eq_run_interpret (machine : MultiTapePTM k Bool Control Operation)
     simp only [step, MultiTapeMachine.finiteStep, hstate, bind_pure_comp,
       OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_lift_sample,
       bind_map_left]
-    congr 1
-    funext coin
+    congr 1 with coin : 1
     cases machine.tr control pair.1.tapes.inputSymbol pair.1.tapes.workTapeSymbols
         pair.1.answerSymbols coin <;>
       simp only [OracleComp.interpret_map, OracleComp.interpret_pure,
         ProbOracleComp.interpret_query, StateT.run_map, StateT.run_pure]
     rfl
 
-variable [Finite Control] [DecidableEq External] [Finite External]
+variable [Finite Control] [DecidableEq External]
 
 /-- A handler certified as strict oracle PPT makes one complete interpreter step strict oracle
 PPT. Only the selected transition runs, so a non-query step makes no external call. -/
@@ -106,6 +106,7 @@ theorem isOraclePPTOn_step [Fintype Operation] {input : α ↪ List Bool}
     IsOraclePPTOn (encPair input (encPair encFiniteConfig stateEncoding))
       (encPair encFiniteConfig stateEncoding)
       (fun pair => step machine handler pair.1 pair.2) := by
+  have := hhandler.finite_operations
   unfold step
   apply IsOraclePPTOn.finite_cases (tagEncoding := encFinite (Option Control))
     (branch := fun control (pair : α × (FiniteConfig k Bool Control Operation × State)) =>
@@ -204,24 +205,19 @@ theorem isOraclePPTOn_run [Finite Operation] {input : α ↪ List Bool}
       rintro a i ⟨cfg, state⟩ hi ⟨hcfg, hs, hsize⟩ next hnext
       cases hcontrol : cfg.tapes.state with
       | none =>
-        simp only [step, hcontrol] at hnext
-        obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
+        supp_cases hnext [step, hcontrol] with rfl
         exact ⟨hcfg.mono le_rfl (Nat.le_succ i) le_rfl, hs, by
           dsimp only at hsize ⊢
           nlinarith⟩
       | some control =>
-        simp only [step, hcontrol] at hnext
-        obtain ⟨coin, _, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
+        supp_cases hnext [step, hcontrol] with ⟨coin, -, hnext⟩
         cases haction : machine.tr control cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols
             cfg.answerSymbols coin with
         | step action symbol move =>
-          simp only [haction] at hnext
-          obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
+          supp_cases hnext [haction] with rfl
           exact ⟨hcfg.step action symbol move, hs, by dsimp only at hsize ⊢; nlinarith⟩
         | query channel control =>
-          simp only [haction] at hnext
-          obtain ⟨⟨answer, state'⟩, hanswer, hnext⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-          obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
+          supp_cases hnext [haction] with ⟨⟨answer, state'⟩, hanswer, rfl⟩
           obtain ⟨hs', hreply, hgrowth⟩ := hpreserve a _ state hs (answer, state') hanswer
           have hb := hbudget a (cfg.channels channel).1 ((hcfg.query channel).trans hi.le)
           exact ⟨hcfg.receive channel control answer (hreply.trans hb), hs', by

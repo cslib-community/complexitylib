@@ -15,12 +15,13 @@ import Mathlib.Tactic.Ring
 /-!
 # Total degree and Fourier degree on the Boolean cube
 
-Every function `f` on the cube `ι → Bool` with values in a commutative ring `R` is a unique
-`R`-linear combination of the monomials `∏_{i ∈ S} xᵢ`, its multilinear representation. Its
-*total degree* `BitString.totalDegree f` is the least `D` such that `f` is a combination of
-monomials of at most `D` coordinates, that is, the least `D` with `f ∈ BitString.lowDegree R ι D`
-(`BitString.totalDegree_le_iff_mem_lowDegree`); by `BitString.lowDegree_eq_map_restrictTotalDegree`
-it is also the least total degree of a polynomial that agrees with `f` on the cube.
+Every function `f` on the cube `ι → Bool` of finitely many coordinates, with values in a
+commutative ring `R`, is a unique `R`-linear combination of the monomials `∏_{i ∈ S} xᵢ`, its
+multilinear representation. Its *total degree* `BitString.totalDegree f` is the least `D` such that
+`f` is a combination of monomials of at most `D` coordinates, that is, the least `D` with
+`f ∈ BitString.lowDegree R ι D` (`BitString.totalDegree_le_iff_mem_lowDegree`); by
+`BitString.lowDegree_eq_map_restrictTotalDegree` it is also the least total degree of a polynomial
+that agrees with `f` on the cube.
 
 Over a field `F` in which `2` is invertible, the characters `chi F S` and the monomials of at most
 `D` coordinates span the same functions (`BitString.chi_mem_lowDegree`,
@@ -40,8 +41,8 @@ set with a nonzero Fourier coefficient (`BitString.totalDegree_le_iff_fourierCoe
 * `Cslib.BitString.chi_mem_lowDegree`, `Cslib.BitString.lowDegree_le_signSpan`: characters of at
   most `H` coordinates and monomials of at most `H` coordinates span the same space when `2` is
   invertible.
-* `Cslib.BitString.totalDegree_le_iff_mem_lowDegree`: the total degree is the least `D` with
-  `f ∈ lowDegree R ι D`.
+* `Cslib.BitString.totalDegree_le_iff_mem_lowDegree`: over finitely many coordinates, the total
+  degree is the least `D` with `f ∈ lowDegree R ι D`.
 * `Cslib.BitString.mem_lowDegree_iff_fourierCoeff_eq_zero`: over `ℝ`, low degree is the vanishing
   of the Fourier coefficients on larger sets.
 * `Cslib.BitString.totalDegree_le_iff_fourierCoeff_eq_zero`,

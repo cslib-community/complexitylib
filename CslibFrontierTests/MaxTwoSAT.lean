@@ -22,12 +22,21 @@ open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 
 /-! ### Headline results -/
 
-example : MaxTwoSAT ∈ NP (encPair encCNF encNat) ∧
-    NPHard (encPair encCNF encNat) MaxTwoSAT ∧
-    PolyTimeReducible encCNF (encPair encCNF encNat) ThreeSAT MaxTwoSAT ∧
-    PolyTimeReducible encCNF (encPair encCNF encNat) ExactThreeSAT MaxTwoSAT :=
+example : MaxTwoSAT ∈ NP encMaxTwoSAT ∧
+    NPHard encMaxTwoSAT MaxTwoSAT ∧
+    PolyTimeReducible encCNF encMaxTwoSAT ThreeSAT MaxTwoSAT ∧
+    PolyTimeReducible encCNF encMaxTwoSAT ExactThreeSAT MaxTwoSAT :=
   ⟨MaxTwoSAT_npComplete.1, MaxTwoSAT_npComplete.2, polyTimeReducible_ThreeSAT_MaxTwoSAT,
     polyTimeReducible_ExactThreeSAT_MaxTwoSAT⟩
+
+example : ComputableInPolyTime (fun x : MaxTwoSATInstance => x.formula)
+    encMaxTwoSAT encCNF := by fun_prop
+
+example : ComputableInPolyTime (fun x : MaxTwoSATInstance => x.target)
+    encMaxTwoSAT encNat := by fun_prop
+
+example : ComputableInPolyTime (fun x : CNF ℕ × ℕ => MaxTwoSATInstance.mk x.1 x.2)
+    (encPair encCNF encNat) encMaxTwoSAT := by fun_prop
 
 /-! ### The gadget table -/
 
@@ -61,21 +70,22 @@ example : (MaxTwoSAT.gadget (0, true) (1, false) (2, true) 3).countP
 private def contra : CNF ℕ := [[(0, true)], [(0, false)]]
 
 -- One of its two clauses can be satisfied, but not both.
-example : (contra, 1) ∈ MaxTwoSAT :=
+example : (⟨contra, 1⟩ : MaxTwoSATInstance) ∈ MaxTwoSAT :=
   mem_MaxTwoSAT_iff.2 ⟨by decide, fun _ => true, by decide⟩
 
-example : (contra, 2) ∉ MaxTwoSAT := by
+example : (⟨contra, 2⟩ : MaxTwoSATInstance) ∉ MaxTwoSAT := by
   rintro ⟨-, σ, hσ⟩
   cases h : σ 0 <;> simp [contra, h] at hσ
 
 -- A clause of three literals is not allowed, even with target `0`.
-example : ([[(0, true), (1, true), (2, true)]], 0) ∉ MaxTwoSAT := fun h => by
-  have := h.1 _ List.mem_cons_self
-  simp at this
+example : (⟨[[(0, true), (1, true), (2, true)]], 0⟩ : MaxTwoSATInstance) ∉ MaxTwoSAT :=
+  fun h => by
+    have := h.1 _ List.mem_cons_self
+    simp at this
 
 -- The verifier on the first-occurrence certificate `[true]`.
-example : MaxTwoSAT.verifier ((contra, 1), [true]) = true := by decide
-example : MaxTwoSAT.verifier ((contra, 2), [true]) = false := by decide
+example : MaxTwoSAT.verifier (⟨contra, 1⟩, [true]) = true := by decide
+example : MaxTwoSAT.verifier (⟨contra, 2⟩, [true]) = false := by decide
 
 /-! ### The reduction -/
 
@@ -89,11 +99,12 @@ private def unsat3 : CNF ℕ :=
   [[(0, true), (0, true), (0, true)], [(0, false), (0, false), (0, false)]]
 
 -- Two gadgets, twenty clauses, target fourteen.
-example : (toMaxTwoSAT sat3).1.length = 20 := by decide
-example : (toMaxTwoSAT sat3).2 = 14 := by decide
+example : (toMaxTwoSAT sat3).formula.length = 20 := by decide
+example : (toMaxTwoSAT sat3).target = 14 := by decide
 
 -- The source variables are doubled and the fresh variables are `1` and `3`.
-example : (toMaxTwoSAT sat3).1.take 4 = [[(0, true)], [(2, true)], [(4, true)], [(1, true)]] := by
+example : (toMaxTwoSAT sat3).formula.take 4 =
+    [[(0, true)], [(2, true)], [(4, true)], [(1, true)]] := by
   decide
 
 example : toMaxTwoSAT sat3 ∈ MaxTwoSAT :=
@@ -105,14 +116,14 @@ example : toMaxTwoSAT unsat3 ∉ MaxTwoSAT := by
   cases h : σ 0 <;> simp [unsat3, CNF.eval, h] at hσ
 
 -- The empty formula maps to the empty formula with target `0`.
-example : toMaxTwoSAT [] = ([], 0) := by decide
+example : toMaxTwoSAT [] = ⟨[], 0⟩ := by decide
 
 -- A clause of two literals, an empty clause or a clause of four literals gives the fixed
 -- no-instance; `ThreeSAT` pads short clauses first, through `toExactThreeSAT`.
-example : toMaxTwoSAT [[(0, true), (1, true)]] = ([[]], 1) := by decide
-example : toMaxTwoSAT [[]] = ([[]], 1) := by decide
-example : toMaxTwoSAT [[(0, true), (1, true), (2, true), (3, true)]] = ([[]], 1) := by decide
-example : ([[]], 1) ∉ MaxTwoSAT := by
+example : toMaxTwoSAT [[(0, true), (1, true)]] = ⟨[[]], 1⟩ := by decide
+example : toMaxTwoSAT [[]] = ⟨[[]], 1⟩ := by decide
+example : toMaxTwoSAT [[(0, true), (1, true), (2, true), (3, true)]] = ⟨[[]], 1⟩ := by decide
+example : (⟨[[]], 1⟩ : MaxTwoSATInstance) ∉ MaxTwoSAT := by
   rintro ⟨-, σ, hσ⟩
   simp at hσ
 

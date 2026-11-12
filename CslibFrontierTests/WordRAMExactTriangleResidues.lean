@@ -21,15 +21,12 @@ private def observe (w n p : ℕ) (xs : List ℤ) : Option (List ℕ × List ℕ
       (List.range p).map fun j => yn.1.mem (3 + 6 * (n * n) + j),
       yn.1.mem 3, yn.1.mem (3 + 6 * (n * n) + p + 2 * (n * n) * p))
 
--- Unfolding twelve signed remainder iterations and the composed class loop exceeds the
--- default interpreter-expression recursion depth.
-set_option maxRecDepth 4096 in
 example : observe 8 2 3 values =
-    some ([2, 0, 1, 0, 2, 2, 0, 2, 1, 1, 0, 2], [2, 1, 1], 3, 0) := by decide
+    some ([2, 0, 1, 0, 2, 2, 0, 2, 1, 1, 0, 2], [2, 1, 1], 3, 0) := by decide +kernel
 
-example : observe 8 0 3 [] = some ([], [0, 0, 0], 0, 0) := by decide
+example : observe 8 0 3 [] = some ([], [0, 0, 0], 0, 0) := by decide +kernel
 
-example : observe 4 2 3 values = none := by decide
+example : observe 4 2 3 values = none := by decide +kernel
 
 /-- The complete signed residue/class execution theorem has every premise discharged, and its
 memory witnesses are connected to the actual initialized compiled run. -/
@@ -81,13 +78,11 @@ private def callerInput : List ℕ := [2, 1, 2, 3] ++ values.map Signed.encode
 private def caller : Data 32 :=
   ((Data.init callerInput).set 7 23).write 0 199 |>.write 60 77
 
--- The same twelve signed iterations exceed the default interpreter-expression recursion depth.
-set_option maxRecDepth 4096 in
 example : ((programAt 3).eval 8 16 caller).map (fun (y, _) =>
     ((List.range 12).map fun q => y.mem (17 + q),
       (List.range 3).map fun j => y.mem (29 + j),
       [y.mem 0, y.mem 1, y.mem 2, y.mem 60])) =
-    some ([2, 0, 1, 0, 2, 2, 0, 2, 1, 1, 0, 2], [2, 1, 1], [199, 2, 1, 77]) := by decide
+    some ([2, 0, 1, 0, 2, 2, 0, 2, 1, 1, 0, 2], [2, 1, 1], [199, 2, 1, 77]) := by decide +kernel
 
 /-- Caller header and signed payload are actual memory, with unrelated prefix words preserved. -/
 example : ∃ y, ExecWithin 8 (programAt 3) caller y 516 ∧

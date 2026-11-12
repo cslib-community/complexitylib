@@ -51,6 +51,7 @@ public section
 namespace Cslib.Circuits.Boolean.ModelChecking.Ordered
 
 open FirstOrder FirstOrder.Language Finset
+open Cslib.Logic.FO (Atom atomsOf)
 open Cslib.Logic.FO.Ordered (language)
 
 variable {L : Language} [L.IsRelational] [Finite (Σ l, L.Relations l)] {n : ℕ}

@@ -84,8 +84,7 @@ theorem jointLaw_append (laws₁ laws₂ : List (PMF α)) :
   | nil => simp only [List.nil_append, jointLaw_nil, PMF.pure_bind]; exact (PMF.map_id _).symm
   | cons μ laws ih =>
     simp only [List.cons_append, jointLaw_cons, ih, PMF.bind_bind, PMF.map_bind, PMF.bind_map]
-    congr 1
-    funext x
+    congr 1 with x : 1
     simp only [Function.comp_def, PMF.map_comp]
     rfl
 

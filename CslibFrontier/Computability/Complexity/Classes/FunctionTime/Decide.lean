@@ -50,8 +50,8 @@ theorem setOf_mem_DTIME_of_mem_FTIME {enc₁ : β₁ ↪ List Bool} {enc₂ : β
     ∃ e, {a | rule (f a, g a) = true} ∈ DTIME enc fun n => (t n + 1) ^ e := by
   obtain ⟨c₁, s₁, h₁, hl₁⟩ := FTIME.exists_computableInO hf
   obtain ⟨c₂, s₂, h₂, hl₂⟩ := FTIME.exists_computableInO hg
-  obtain ⟨e, e', hr⟩ := hrule.tidy.exists_degree
-  have h := (ComputableInO.of_tidy hr.inO).comp (h₁.prod h₂)
+  obtain ⟨e, e', hr⟩ := hrule.exists_degree
+  have h := hr.inO.comp (h₁.prod h₂)
   set c := c₁ + c₂ + 1 with hc
   have hmem := setOf_mem_DTIME_of_computableInO h
     (t := fun n => (2 + (3 * c) ^ e) * (t n + 1) ^ (e + 1)) fun a => by

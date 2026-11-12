@@ -220,11 +220,11 @@ theorem square_le_exponential (k : ℕ) (hk : 64 ≤ k) :
 counters. -/
 def lowerBudget (k : ℕ) : ℕ := 2 ^ k / (1024 * (k + 1))
 
-/-- The number of descriptions below `lowerBudget k` has binary logarithm strictly below
-`2 ^ k - 1 - k`. -/
-theorem lowerBudget_description_exponent (k : ℕ) (hk : 64 ≤ k) :
+/-- The description budget at `lowerBudget k` leaves an additive margin of `2 ^ (k - 1)` in the
+binary exponent. -/
+theorem lowerBudget_description_margin (k : ℕ) (hk : 64 ≤ k) :
     let q := lowerBudget k
-    3 * q + (k + 2) * (2 * q + (k + k) + 1) + k < 2 ^ k - 1 := by
+    3 * q + (k + 2) * (2 * q + (k + k) + 1) + k + 2 ^ (k - 1) ≤ 2 ^ k - 1 := by
   dsimp only
   have hq : lowerBudget k * (1024 * (k + 1)) ≤ 2 ^ k := Nat.div_mul_le_self _ _
   have hs := square_le_exponential k hk
@@ -234,7 +234,19 @@ theorem lowerBudget_description_exponent (k : ℕ) (hk : 64 ≤ k) :
   have htotal : 128 * (3 * lowerBudget k +
       (k + 2) * (2 * lowerBudget k + (k + k) + 1) + k + 2) ≤ 5 * 2 ^ k := by
     nlinarith
+  have hhalf : 2 ^ (k - 1) * 2 = 2 ^ k := by
+    rw [← pow_succ, Nat.sub_add_cancel (by omega : 1 ≤ k)]
   have hN : 1 ≤ 2 ^ k := Nat.one_le_two_pow
+  omega
+
+/-- The number of descriptions below `lowerBudget k` has binary logarithm strictly below
+`2 ^ k - 1 - k`. -/
+theorem lowerBudget_description_exponent (k : ℕ) (hk : 64 ≤ k) :
+    let q := lowerBudget k
+    3 * q + (k + 2) * (2 * q + (k + k) + 1) + k < 2 ^ k - 1 := by
+  have h := lowerBudget_description_margin k hk
+  have hpos : 0 < 2 ^ (k - 1) := Nat.two_pow_pos _
+  dsimp only at h ⊢
   omega
 
 /-- The wire count for `2 k` inputs and `lowerBudget k` gates fits in `2 ^ (k + 2)`. -/

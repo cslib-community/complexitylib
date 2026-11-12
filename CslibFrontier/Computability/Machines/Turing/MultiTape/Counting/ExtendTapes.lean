@@ -26,7 +26,7 @@ contents and head positions throughout the entire List execution, with the same 
 The shared compiler and its original source credit are in `MultiTape.Machine.ExtendTapes`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeCTM
 

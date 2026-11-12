@@ -167,23 +167,19 @@ theorem depth_le_depth (ht : t ∈ μ.weights.support) : t.depth ≤ μ.depth :=
     depth (StdSimplex.single t : RandomizedDecisionTree ι β) = t.depth := by
   simp [depth]
 
-private theorem ite_nonneg' {p : Prop} {_ : Decidable p} : (0 : ℝ) ≤ if p then 0 else 1 := by
-  split_ifs <;> norm_num
-
-private theorem ite_le_one' {p : Prop} {_ : Decidable p} : (if p then 0 else 1 : ℝ) ≤ 1 := by
-  split_ifs <;> norm_num
-
+open Classical in
 theorem errorProb_nonneg : 0 ≤ μ.errorProb f x :=
-  Finset.sum_nonneg fun t _ => mul_nonneg (μ.weights_nonneg t) ite_nonneg'
+  Finset.sum_nonneg fun t _ => mul_nonneg (μ.weights_nonneg t) (ite_nonneg le_rfl zero_le_one)
 
+open Classical in
 theorem errorProb_le_one : μ.errorProb f x ≤ 1 :=
-  StdSimplex.sum_mul_le_of_forall_le fun _ _ => ite_le_one'
+  StdSimplex.sum_mul_le_of_forall_le fun _ _ => ite_le_one zero_le_one le_rfl
 
 theorem errorProb_eq_zero_iff :
     μ.errorProb f x = 0 ↔ ∀ t ∈ μ.weights.support, t.eval x = f x := by
   classical
   rw [errorProb, Finsupp.sum, Finset.sum_eq_zero_iff_of_nonneg fun t _ =>
-    mul_nonneg (μ.weights_nonneg t) ite_nonneg']
+    mul_nonneg (μ.weights_nonneg t) (ite_nonneg le_rfl zero_le_one)]
   refine forall₂_congr fun t ht => ?_
   rw [mul_eq_zero, or_iff_right (Finsupp.mem_support_iff.mp ht)]
   split_ifs with h <;> simp [h]

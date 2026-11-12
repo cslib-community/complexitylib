@@ -452,36 +452,15 @@ private theorem sum_ite_mem_fst [Fintype V] [DecidableEq V] {q : List (V × V)} 
     · intro hb
       exact absurd (Finset.mem_univ b) hb
 
+/-- The in-arc count of `u` in `q`, obtained from `sum_ite_mem_fst` on the reversed arcs. -/
 private theorem sum_ite_mem_snd [Fintype V] [DecidableEq V] {q : List (V × V)} (hq : q.Nodup)
     (u : V) :
     (∑ v : V, if (v, u) ∈ q then (1 : ℤ) else 0) =
       (q.map fun e => if e.2 = u then (1 : ℤ) else 0).sum := by
-  induction q with
-  | nil => simp
-  | cons e q' ih =>
-    rcases e with ⟨a, b⟩
-    obtain ⟨hab, hq'⟩ := List.nodup_cons.mp hq
-    have hsplit : ∀ v : V,
-        (if (v, u) ∈ (a, b) :: q' then (1 : ℤ) else 0) =
-          (if v = a ∧ u = b then 1 else 0) + (if (v, u) ∈ q' then 1 else 0) := by
-      intro v
-      simp only [List.mem_cons, Prod.mk.injEq]
-      by_cases hvu : v = a ∧ u = b
-      · rcases hvu with ⟨rfl, rfl⟩
-        simp [hab]
-      · simp [hvu]
-    simp only [hsplit, Finset.sum_add_distrib, List.map_cons, List.sum_cons, ih hq']
-    congr 1
-    rw [Finset.sum_eq_single a]
-    · by_cases hub : u = b
-      · subst hub
-        simp
-      · have hne : b ≠ u := fun h => hub h.symm
-        simp [hub, hne]
-    · intro v _ hva
-      simp [hva]
-    · intro ha
-      exact absurd (Finset.mem_univ a) ha
+  have hmem : ∀ v, (v, u) ∈ q ↔ (u, v) ∈ q.map Prod.swap := fun v =>
+    (List.mem_map_of_injective (a := (v, u)) Prod.swap_injective).symm
+  simp only [hmem, sum_ite_mem_fst (hq.map Prod.swap_injective) u, List.map_map]
+  rfl
 
 private theorem map_pathArcs_sub_sum [DecidableEq V] {p : List V} {s t : V}
     (hs : p.head? = some s) (ht : p.getLast? = some t) (u : V) :
@@ -663,10 +642,13 @@ theorem value_le_cutCapacity [DecidableEq V] (f : N.Flow) {S : Finset V} (hS : N
     simp only [cutCapacity, Nat.cast_sum]
   omega
 
-/-- Singleton source cut bound when `N.s ≠ N.t`. -/
-theorem value_le_source_outCap [DecidableEq V] (f : N.Flow) (hst : N.s ≠ N.t) :
-    f.value ≤ (N.cutCapacity {N.s} : ℤ) :=
-  f.value_le_cutCapacity ⟨Finset.mem_singleton_self N.s, by simp [hst.symm]⟩
+/-- Every feasible flow has value bounded above by the outgoing capacity of `{N.s}`. -/
+theorem value_le_source_outCap [DecidableEq V] (f : N.Flow) :
+    f.value ≤ (N.cutCapacity {N.s} : ℤ) := by
+  by_cases hst : N.s = N.t
+  · rw [f.value_eq_zero_of_s_eq_t hst]
+    exact Int.natCast_nonneg _
+  · exact f.value_le_cutCapacity ⟨Finset.mem_singleton_self N.s, by simp [Ne.symm hst]⟩
 
 /-- Residual capacity of directed pair `(u, v)` with respect to `f`: unused forward capacity
 `N.cap u v - f u v` plus cancellable reverse flow `f v u`. -/
@@ -1011,7 +993,7 @@ theorem exists_maxFlow_eq_minCut [DecidableEq V] (hst : N.s ≠ N.t) :
       by_cases haug : ∃ p, f.IsAugmentingPath p
       · obtain ⟨p, hp⟩ := haug
         have hlt := f.lt_value_augmentByBottleneck hst hp
-        have hcap := (f.augmentByBottleneck p hp).value_le_source_outCap hst
+        have hcap := (f.augmentByBottleneck p hp).value_le_source_outCap
         omega
       · exact ⟨f, haug⟩
     | succ k ih =>
@@ -1020,7 +1002,7 @@ theorem exists_maxFlow_eq_minCut [DecidableEq V] (hst : N.s ≠ N.t) :
       · obtain ⟨p, hp⟩ := haug
         let f' := f.augmentByBottleneck p hp
         have hlt : f.value < f'.value := f.lt_value_augmentByBottleneck hst hp
-        have hcap : f'.value ≤ (N.cutCapacity {N.s} : ℤ) := f'.value_le_source_outCap hst
+        have hcap : f'.value ≤ (N.cutCapacity {N.s} : ℤ) := f'.value_le_source_outCap
         exact ih f' (by omega)
       · exact ⟨f, haug⟩
   obtain ⟨f, hno⟩ := hstep (N.cutCapacity {N.s}) (Flow.zero N) (by simp)

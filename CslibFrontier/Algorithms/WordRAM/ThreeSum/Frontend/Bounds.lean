@@ -163,20 +163,13 @@ theorem signed_output_fits {κ n w : ℕ} (hw : width κ n ≤ w) {z : ℤ}
   all_goals rw [show w - 2 - 1 = w - 3 by omega]
   all_goals omega
 
-/-- A word at the canonical physical width has polynomial magnitude. -/
+/-- A word at the canonical physical width has polynomial magnitude: the fourth power of
+`ChanHe.Parameters.two_pow_width_le`. -/
 theorem two_pow_width_le (κ n : ℕ) : 2 ^ width κ n ≤ (n + 2) ^ (160 * κ + 968) := by
-  let L := Nat.clog 2 (n + 2)
-  have hL : 0 < L := Nat.clog_pos (by decide) (by omega)
-  have hp : 2 ^ (L - 1) < n + 2 :=
-    Nat.pow_pred_clog_lt_self (b := 2) (x := n + 2) (by decide) (by omega)
-  have heq : 2 ^ L = 2 * 2 ^ (L - 1) := by
-    conv_lhs => rw [show L = (L - 1) + 1 by omega]
-    rw [pow_succ, Nat.mul_comm]
-  have hceil : 2 ^ L ≤ (n + 2) ^ 2 := by rw [heq]; nlinarith
-  rw [width_eq]
   calc
-    _ = (2 ^ L) ^ (80 * κ + 484) := by rw [← pow_mul]; congr 1; ring
-    _ ≤ ((n + 2) ^ 2) ^ (80 * κ + 484) := Nat.pow_le_pow_left hceil _
+    _ = (2 ^ ChanHe.Parameters.width κ n) ^ 4 := by rw [width, ← pow_mul, Nat.mul_comm]
+    _ ≤ ((n + 2) ^ (40 * κ + 242)) ^ 4 :=
+      Nat.pow_le_pow_left (ChanHe.Parameters.two_pow_width_le κ n) 4
     _ = _ := by
       rw [← pow_mul]
       exact congrArg (fun e : ℕ => (n + 2) ^ e) (by omega)

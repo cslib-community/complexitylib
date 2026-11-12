@@ -54,6 +54,8 @@ of the original clause set, they preserve the width and reducedness, and the pot
 * `Cslib.Logic.PL.ClauseSet.Sparsification.sat_child_of_sat`,
   `Cslib.Logic.PL.ClauseSet.Sparsification.sat_of_sat_child`: the branches cover the solutions
   and only lose solutions of the parent.
+* `Cslib.Logic.PL.ClauseSet.Sparsification.potential_lt_of_flower_exchange`: replacing the flower
+  by clauses of smaller potential decreases the potential.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.potential_child_lt`: termination.
 
 ## References
@@ -318,48 +320,67 @@ private theorem disjoint_flower_child {θ : ℕ → ℕ} {ψ : ClauseSet V} {c :
     rw [← card_pos]
     exact h.1
 
+/-! ### The potential -/
+
+omit [DecidableEq V] in
+/-- The potential is monotone under inclusion. -/
+private theorem potential_mono {α β : ClauseSet V} (h : α ⊆ β) : potential α ≤ potential β :=
+  sum_le_sum_of_subset h
+
+/-- The potential is subadditive under union. -/
+theorem potential_union_le (α β : ClauseSet V) :
+    potential (α ∪ β) ≤ potential α + potential β := by
+  unfold potential
+  have := sum_union_inter (s₁ := α) (s₂ := β) (f := fun C : Finset (Literal V) => 2 ^ C.card)
+  omega
+
+/-- The heart clause weighs less than any nonempty flower of larger clauses. -/
+theorem potential_heart_lt {ψ : ClauseSet V} {c : ℕ} {H : Finset (Literal V)}
+    (hlt : H.card < c) (hF : 0 < (flower ψ c H).card) :
+    potential ({H} : ClauseSet V) < (flower ψ c H).card * 2 ^ c := by
+  unfold potential
+  rw [sum_singleton]
+  calc 2 ^ H.card < 2 ^ c := Nat.pow_lt_pow_right (by norm_num) hlt
+    _ ≤ (flower ψ c H).card * 2 ^ c := Nat.le_mul_of_pos_left _ hF
+
+/-- Each of the `|flower ψ c H|` petals has width `c - |H|`. -/
+theorem potential_petals (ψ : ClauseSet V) (c : ℕ) (H : Finset (Literal V)) :
+    potential (petals ψ c H) = (flower ψ c H).card * 2 ^ (c - H.card) := by
+  unfold potential
+  rw [sum_congr rfl fun C hC => by rw [card_of_mem_petals hC], sum_const, card_petals, smul_eq_mul]
+
+/-- **Flower exchange.** A step that removes the flower `flower ψ c H` (of potential
+`|flower ψ c H| · 2 ^ c`) and adds only clauses `X` of smaller total potential strictly decreases
+the potential. Both the decision step `child` and the counting refinement are instances. -/
+theorem potential_lt_of_flower_exchange {ψ ψ' X : ClauseSet V} {c : ℕ} {H : Finset (Literal V)}
+    (hsub : ψ' ⊆ ψ ∪ X) (hdisj : Disjoint (flower ψ c H) ψ')
+    (hX : potential X < (flower ψ c H).card * 2 ^ c) :
+    potential ψ' < potential ψ := by
+  set F := flower ψ c H
+  have hF : potential F = F.card * 2 ^ c := by
+    unfold potential
+    rw [sum_congr rfl fun C hC => by rw [(mem_flower.mp hC).2.1], sum_const, smul_eq_mul]
+  have hsub' : ψ' ⊆ (ψ \ F) ∪ X := by
+    intro C hC
+    rcases mem_union.mp (hsub hC) with hCψ | hCX
+    · exact mem_union_left _ (mem_sdiff.mpr ⟨hCψ, fun hCF => disjoint_left.mp hdisj hCF hC⟩)
+    · exact mem_union_right _ hCX
+  calc potential ψ' ≤ potential ((ψ \ F) ∪ X) := potential_mono hsub'
+    _ ≤ potential (ψ \ F) + potential X := potential_union_le _ _
+    _ < potential (ψ \ F) + potential F := by rw [hF]; exact Nat.add_lt_add_left hX _
+    _ = potential ψ := by unfold potential; rw [sum_sdiff (flower_subset ψ c H)]
+
 /-- **Termination.** Each branching step strictly decreases the potential. -/
 theorem potential_child_lt {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {ψ : ClauseSet V} {c : ℕ}
     {H : Finset (Literal V)} (h : Heavy θ ψ c H) (b : Bool) :
     potential (child ψ c H b) < potential ψ := by
-  set F := flower ψ c H
-  have hsub : child ψ c H b ⊆ (ψ \ F) ∪ intro ψ c H b := by
-    intro C hC
-    rcases mem_union.mp (child_subset ψ c H b hC) with hCψ | hCX
-    · exact mem_union_left _ (mem_sdiff.mpr ⟨hCψ, fun hF =>
-        disjoint_left.mp (disjoint_flower_child h b) hF hC⟩)
-    · exact mem_union_right _ hCX
-  have hFsplit : potential ψ = potential (ψ \ F) + potential F := by
-    unfold potential
-    rw [← sum_sdiff (flower_subset ψ c H)]
-  have hF : potential F = F.card * 2 ^ c := by
-    unfold potential
-    rw [sum_congr rfl fun C hC => by rw [(mem_flower.mp hC).2.1], sum_const, smul_eq_mul]
-  have hFpos : 0 < F.card := card_pos.mpr (h.flower_nonempty hθ)
-  have hX : potential (intro ψ c H b) < F.card * 2 ^ c := by
-    cases b with
-    | false =>
-      unfold potential
-      rw [intro, sum_singleton]
-      calc 2 ^ H.card < 2 ^ c := Nat.pow_lt_pow_right (by norm_num) h.2.1
-        _ ≤ F.card * 2 ^ c := Nat.le_mul_of_pos_left _ hFpos
-    | true =>
-      unfold potential
-      calc ∑ C ∈ intro ψ c H true, 2 ^ C.card
-          = ∑ _C ∈ petals ψ c H, 2 ^ (c - H.card) :=
-            sum_congr rfl fun C hC => by rw [card_of_mem_petals hC]
-        _ = F.card * 2 ^ (c - H.card) := by rw [sum_const, card_petals, smul_eq_mul]
-        _ < F.card * 2 ^ c :=
-            Nat.mul_lt_mul_of_pos_left (Nat.pow_lt_pow_right (by norm_num)
-              (by have := h.1; have := h.2.1; omega)) hFpos
-  calc potential (child ψ c H b) ≤ potential ((ψ \ F) ∪ intro ψ c H b) :=
-        sum_le_sum_of_subset hsub
-    _ ≤ potential (ψ \ F) + potential (intro ψ c H b) := by
-        unfold potential
-        have := sum_union_inter (s₁ := ψ \ F) (s₂ := intro ψ c H b)
-          (f := fun C : Finset (Literal V) => 2 ^ C.card)
-        omega
-    _ < potential (ψ \ F) + potential F := by rw [hF]; exact Nat.add_lt_add_left hX _
-    _ = potential ψ := hFsplit.symm
+  have hFpos : 0 < (flower ψ c H).card := card_pos.mpr (h.flower_nonempty hθ)
+  refine potential_lt_of_flower_exchange (child_subset ψ c H b) (disjoint_flower_child h b) ?_
+  cases b with
+  | false => exact potential_heart_lt h.2.1 hFpos
+  | true =>
+    rw [intro, potential_petals]
+    exact Nat.mul_lt_mul_of_pos_left (Nat.pow_lt_pow_right (by norm_num)
+      (by have := h.1; have := h.2.1; omega)) hFpos
 
 end Cslib.Logic.PL.ClauseSet.Sparsification

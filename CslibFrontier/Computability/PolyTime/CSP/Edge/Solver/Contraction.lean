@@ -37,6 +37,7 @@ public section
 namespace Cslib.Complexity.CSP.EdgeSolver.Contraction
 
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Turing.MultiTapeTM
+open Cslib.BitString
 
 /-- Actual local rows, in original constraint and argument order, read from the existing buffer. -/
 @[expose] def rows (input : EdgeForest.Input) : List (List Bool) :=
@@ -73,7 +74,7 @@ row. The central row is paid for by the actual connector list. -/
     let ps := Blossom.positions vs c.2
     if ps.isEmpty then row else
       Table.project row (Table.outsidePositions c.2.length ps) ++ [false]) ++
-    [Table.oneHot (connectors input.body vs).length 0]
+    [listSingle (connectors input.body vs).length 0]
 
 /-- The fresh-name scan agrees with the original constructor's maximum scan. -/
 theorem freshBase_eq (F : CSP Table ℕ) : freshBase F = Blossom.freshBase F := by
@@ -143,7 +144,7 @@ theorem flatten_referenceRows {F : CSP Table ℕ} (f : OccurrenceLabeling F Bool
   have hlen : rs.length = G.length := by
     simp [rs, G, Blossom.referenceRows, Blossom.transportRows]
   have hw (i : Fin G.length) : (rs.getD i.val []).length = G[i.val].2.length :=
-    Blossom.transportRows_length f f vs (fun _ => false) (by simp [Table.oneHot]) i
+    Blossom.transportRows_length f f vs (fun _ => false) (by simp [listSingle]) i
   exact (Solver.materialize_labels G rs hlen hw).symm
 
 attribute [local fun_prop] EdgeAugmenting.poly_zipIdx EdgeAugmenting.poly_readWith
@@ -409,7 +410,7 @@ theorem computableInPolyTime_referenceRows : ComputableInPolyTime
   have hr := poly_referenceRow
   have hb := EdgeForest.encInput_body_deg.computableInPolyTime
   have hhot : ComputableInPolyTime
-      (fun p : EdgeForest.Input × List ℕ => Table.oneHot (connectors p.1.body p.2).length 0)
+      (fun p : EdgeForest.Input × List ℕ => listSingle (connectors p.1.body p.2).length 0)
       (encPair EdgeForest.encInput (encList encNat)) (encList encBool) := by
     simpa only [Function.comp_def] using computableInPolyTime_tableOneHot.comp
       (show ComputableInPolyTime

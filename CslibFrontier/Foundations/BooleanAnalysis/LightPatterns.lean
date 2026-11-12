@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Foundations.BooleanAnalysis.Bernoulli
 public import CslibFrontier.Foundations.BooleanAnalysis.HarmonicTransform
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import Mathlib.Algebra.Order.Floor.Ring
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
@@ -124,10 +125,8 @@ private theorem sixtyThree_div_sixtyFour_le_rpow {k r : ℝ} (hk : 1 ≤ k) (hr 
     ring
   have he := Real.add_one_le_exp (Real.log a * (5 * r))
   rw [← Real.rpow_def_of_pos ha, hlog] at he
-  have hlog2 : Real.log 2 ≤ 1 := by
-    linarith [Real.log_le_sub_one_of_pos (show (0 : ℝ) < 2 by norm_num)]
   have hloss : (k / 2 + 1) * (5 * r) * Real.log 2 ≤ (k / 2 + 1) * (5 * r) :=
-    mul_le_of_le_one_right (by positivity) hlog2
+    mul_le_of_le_one_right (by positivity) Real.log_two_lt_one.le
   nlinarith
 
 /-- **The harmonic mean transform at a sparse random set**, as in the proof of

@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import CslibFrontier.Computability.WordRAM.RegisterFrame
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Program
 public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Strassen.Exec
 
@@ -100,13 +101,7 @@ theorem exec_product {w p k : ℕ} (x : Data 128) (u v : ℕ → ℤ)
   · exact result.values
   · exact result.outside
   · intro i hi
-    have hn : ¬∃ j, f j = i := by
-      rintro ⟨j, hj⟩
-      have hv := congrArg Fin.val hj
-      change j.val = i.val at hv
-      omega
-    have hyi : y.regs i = z.regs i := Function.extend_apply' _ _ _ hn
-    apply hyi.trans
+    refine (Data.extend_castLE_regs_of_le s z i hi).trans ?_
     simp only [z, Data.set,
       Function.update_of_ne (show i ≠ Reg.low32 by intro he; subst i; contradiction),
       Function.update_of_ne (show i ≠ Reg.low33 by intro he; subst i; contradiction),

@@ -53,7 +53,7 @@ The classes are the library's native ones, as for directed connectivity
   certain quantified boolean formulas*][AspvallPlassTarjan1979]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

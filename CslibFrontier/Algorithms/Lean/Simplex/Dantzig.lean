@@ -29,7 +29,8 @@ In a dictionary `D` (`dantzigStep`):
   smallest basic variable among those with `coeff i s < 0` minimizing `rhs i / -coeff i s`; if
   there is none, the objective is unbounded along the edge of `s`.
 
-`dantzigRun D fuel` iterates at most `fuel` pivots.
+`dantzigRun D fuel` iterates at most `fuel` pivots: it is `runWith` with Dantzig's rule, so its
+soundness is that of `runWith`, applied to the step lemmas of this module.
 
 ## Main definitions
 
@@ -127,34 +128,18 @@ theorem dantzigStep_eq_optimal_iff : D.dantzigStep = .optimal ↔ D.dantzigEnter
 omit [IsStrictOrderedRing K] in
 theorem dantzigStep_eq_unbounded_iff {s : ι} :
     D.dantzigStep = .unbounded s ↔ D.dantzigEntering = some s ∧ D.blandLeaving s = none := by
-  rcases h1 : D.dantzigEntering with _ | s'
-  · simp only [dantzigStep, h1, reduceCtorEq, false_and]
-  · rcases h2 : D.blandLeaving s' with _ | r'
-    · simp only [dantzigStep, h1, h2, Step.unbounded.injEq, Option.some.injEq]
-      constructor
-      · rintro rfl; exact ⟨rfl, h2⟩
-      · rintro ⟨rfl, -⟩; rfl
-    · simp only [dantzigStep, h1, h2, reduceCtorEq, Option.some.injEq, false_iff, not_and]
-      rintro rfl
-      rw [h2]
-      exact Option.some_ne_none r'
+  unfold dantzigStep
+  rcases D.dantzigEntering with _ | s'
+  · simp
+  · rcases h2 : D.blandLeaving s' with _ | r' <;> grind
 
 omit [IsStrictOrderedRing K] in
 theorem dantzigStep_eq_pivot_iff {r s : ι} :
     D.dantzigStep = .pivot r s ↔ D.dantzigEntering = some s ∧ D.blandLeaving s = some r := by
-  rcases h1 : D.dantzigEntering with _ | s'
-  · simp only [dantzigStep, h1, reduceCtorEq, false_and]
-  · rcases h2 : D.blandLeaving s' with _ | r'
-    · simp only [dantzigStep, h1, h2, reduceCtorEq, Option.some.injEq, false_iff, not_and]
-      rintro rfl
-      rw [h2]
-      exact (Option.some_ne_none r).symm
-    · simp only [dantzigStep, h1, h2, Step.pivot.injEq, Option.some.injEq]
-      constructor
-      · rintro ⟨rfl, rfl⟩; exact ⟨rfl, h2⟩
-      · rintro ⟨rfl, h⟩
-        rw [h2, Option.some.injEq] at h
-        exact ⟨h, rfl⟩
+  unfold dantzigStep
+  rcases D.dantzigEntering with _ | s'
+  · simp
+  · rcases h2 : D.blandLeaving s' with _ | r' <;> grind
 
 /-- A pivot of Dantzig's rule preserves feasibility, equivalence and does not decrease the
 objective. -/
@@ -170,17 +155,7 @@ theorem dantzigStep_eq_pivot_spec {r s : ι} (hD : D.Feasible) (h : D.dantzigSte
 /-! ### The simplex method with Dantzig's rule -/
 
 /-- The simplex method with Dantzig's rule and at most `fuel` pivots. -/
-@[expose] def dantzigRun : Dictionary ι K → ℕ → Outcome ι K
-  | D, 0 =>
-    match D.dantzigStep with
-    | .optimal => .optimal D
-    | .unbounded s => .unbounded D s
-    | .pivot _ _ => .outOfFuel D
-  | D, fuel + 1 =>
-    match D.dantzigStep with
-    | .optimal => .optimal D
-    | .unbounded s => .unbounded D s
-    | .pivot r s => dantzigRun (D.pivot r s) fuel
+@[expose] def dantzigRun : Dictionary ι K → ℕ → Outcome ι K := runWith dantzigStep
 
 /-- **Soundness of Dantzig's rule, optimal case**: a run that stops at an optimal dictionary
 `D'` returns an equivalent feasible dictionary with no positive reduced cost, so its basic
@@ -188,23 +163,10 @@ solution attains the maximum `D'.objConst` (`Dictionary.isGreatest_value`). -/
 theorem dantzigRun_eq_optimal {fuel : ℕ} {D' : Dictionary ι K} (hD : D.Feasible)
     (h : D.dantzigRun fuel = .optimal D') :
     D.Equivalent D' ∧ D'.Feasible ∧ D.objConst ≤ D'.objConst ∧
-      ∀ j ∉ D'.basis, D'.objCoeff j ≤ 0 := by
-  induction fuel generalizing D with
-  | zero =>
-    rcases hstep : D.dantzigStep with _ | s | ⟨r, s⟩ <;>
-      simp only [dantzigRun, hstep, reduceCtorEq, Outcome.optimal.injEq] at h
-    rw [← h]
-    exact ⟨.refl _, hD, le_rfl,
-      D.dantzigEntering_eq_none_iff.1 (D.dantzigStep_eq_optimal_iff.1 hstep)⟩
-  | succ fuel ih =>
-    rcases hstep : D.dantzigStep with _ | s | ⟨r, s⟩ <;>
-      simp only [dantzigRun, hstep, reduceCtorEq, Outcome.optimal.injEq] at h
-    · rw [← h]
-      exact ⟨.refl _, hD, le_rfl,
-        D.dantzigEntering_eq_none_iff.1 (D.dantzigStep_eq_optimal_iff.1 hstep)⟩
-    · obtain ⟨he, hf, ho⟩ := D.dantzigStep_eq_pivot_spec hD hstep
-      obtain ⟨h1, h2, h3, h4⟩ := ih _ hf h
-      exact ⟨he.trans h1, h2, ho.trans h3, h4⟩
+      ∀ j ∉ D'.basis, D'.objCoeff j ≤ 0 :=
+  D.runWith_eq_optimal
+    (fun D h => D.dantzigEntering_eq_none_iff.1 (D.dantzigStep_eq_optimal_iff.1 h))
+    dantzigStep_eq_pivot_spec hD h
 
 /-- **Soundness of Dantzig's rule, unbounded case**: a run that stops with an unbounded entering
 variable `s` returns an equivalent feasible dictionary in which `s` is nonbasic with a positive
@@ -213,25 +175,13 @@ reduced cost and no row bounds its increase, so the objective is unbounded
 theorem dantzigRun_eq_unbounded {fuel : ℕ} {D' : Dictionary ι K} {s : ι} (hD : D.Feasible)
     (h : D.dantzigRun fuel = .unbounded D' s) :
     D.Equivalent D' ∧ D'.Feasible ∧ s ∉ D'.basis ∧ 0 < D'.objCoeff s ∧
-      ∀ i ∈ D'.basis, 0 ≤ D'.coeff i s := by
-  induction fuel generalizing D with
-  | zero =>
-    rcases hstep : D.dantzigStep with _ | s' | ⟨r, s'⟩ <;>
-      simp only [dantzigRun, hstep, reduceCtorEq, Outcome.unbounded.injEq] at h
-    obtain ⟨rfl, rfl⟩ := h
-    obtain ⟨h1, h2⟩ := D.dantzigStep_eq_unbounded_iff.1 hstep
-    obtain ⟨hs, hc, -⟩ := D.dantzigEntering_eq_some_iff.1 h1
-    exact ⟨.refl _, hD, hs, hc, D.blandLeaving_eq_none_iff.1 h2⟩
-  | succ fuel ih =>
-    rcases hstep : D.dantzigStep with _ | s' | ⟨r, s'⟩ <;>
-      simp only [dantzigRun, hstep, reduceCtorEq, Outcome.unbounded.injEq] at h
-    · obtain ⟨rfl, rfl⟩ := h
-      obtain ⟨h1, h2⟩ := D.dantzigStep_eq_unbounded_iff.1 hstep
+      ∀ i ∈ D'.basis, 0 ≤ D'.coeff i s :=
+  D.runWith_eq_unbounded
+    (fun D _ h => by
+      obtain ⟨h1, h2⟩ := D.dantzigStep_eq_unbounded_iff.1 h
       obtain ⟨hs, hc, -⟩ := D.dantzigEntering_eq_some_iff.1 h1
-      exact ⟨.refl _, hD, hs, hc, D.blandLeaving_eq_none_iff.1 h2⟩
-    · obtain ⟨he, hf, -⟩ := D.dantzigStep_eq_pivot_spec hD hstep
-      obtain ⟨h1, h2⟩ := ih _ hf h
-      exact ⟨he.trans h1, h2⟩
+      exact ⟨hs, hc, D.blandLeaving_eq_none_iff.1 h2⟩)
+    (fun D _ _ hD h => (D.dantzigStep_eq_pivot_spec hD h).imp_right And.left) hD h
 
 end Dictionary
 

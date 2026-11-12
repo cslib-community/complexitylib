@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Saved samples in adaptive oracle interactions
@@ -89,16 +90,15 @@ theorem IsQueryBounded.run_interpret_presample {program : ProbOracleComp spec α
       simp only [Sum.elim_inl, Nat.add_zero, run_interpret_bind, run_interpret_query, sumHandler,
         StateT.lift, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
         PMF.pure_bind, PMF.map_bind]
-      rw [PMF.bind_comm]
-      exact congrArg ((ProbComp.unifOracle k).bind ·) (funext fun a => ih a s)
+      pmf_swap with a
+      exact ih a s
     | inr q =>
       simp only [Sum.elim_inr, run_interpret_bind, run_interpret_query, sumHandler, PMF.iid,
         withSampleList, PMF.monad_bind_eq_bind, PMF.monad_map_eq_map, PMF.map_bind, PMF.bind_bind,
         PMF.bind_map, PMF.map_comp, Function.comp_def, List.ofFn_succ, Fin.cons_zero,
         Fin.cons_succ, List.headD_cons, List.tail_cons]
       refine congrArg (source.bind ·) (funext fun value => ?_)
-      rw [PMF.bind_comm]
-      refine congrArg ((oracle value q s).bind ·) (funext fun result => ?_)
+      pmf_swap with result
       rw [← ih result.1 result.2, PMF.bind_map]
       rfl
 

@@ -29,6 +29,7 @@ import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Contracting an explicit tensor network by direct summation
@@ -53,9 +54,10 @@ of ports and its table, both lists of binary numbers. The unary fields keep the 
 modulo `2 ^ P` and the streamed assignments polynomial in the input length.
 
 **Precision in binary** (`directContractionBinaryCertificate`). The same triple with `P` in binary
-(`encPair encNat (encPair encNat encExplicitNetwork)`) is handled by capping first: the
-contraction is below `2 ^ |d|` for `|d|` the encoded length of `d`, so `P` can be replaced by the
-unary `min |d| P` (`capPrecision`) without changing the residue. The bounds carry over.
+(`encBinaryInput`: `encPair encNat (encPair encNat encExplicitNetwork)`) is handled by capping
+first: the contraction is below `2 ^ |d|` for `|d|` the encoded length of `d`, so `P` can be
+replaced by the unary `min |d| P` (`capPrecision`) without changing the residue. The bounds carry
+over.
 
 ## Main definitions
 
@@ -65,7 +67,10 @@ unary `min |d| P` (`capPrecision`) without changing the residue. The bounds carr
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.directContraction`: direct summation on
   `(P, r, d)`.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.encExplicitNetwork`,
-  `Cslib.Circuits.Frontier.ExplicitTensorNetwork.encContractionInput`: the input encodings.
+  `Cslib.Circuits.Frontier.ExplicitTensorNetwork.encContractionInput`,
+  `Cslib.Circuits.Frontier.ExplicitTensorNetwork.encWeightInput`,
+  `Cslib.Circuits.Frontier.ExplicitTensorNetwork.encSumState`,
+  `Cslib.Circuits.Frontier.ExplicitTensorNetwork.encBinaryInput`: the input and state encodings.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.directContractionCertificate`: one native
   machine for direct summation, streaming with `BooleanFold`.
 * `Cslib.Circuits.Frontier.ExplicitTensorNetwork.capPrecision`,
@@ -202,10 +207,16 @@ theorem directContraction_eq (P r : ℕ) (d : ExplicitTensorNetwork ℕ) :
 
 /-! ### One step in polynomial time -/
 
-local notation "encVertices" => encList (encPair (encList encNat) (encList encNat))
+/-- The vertices of an explicit network over `ℕ`: a list of framed vertices, each the framed list
+of its ports followed by its table, the entries of both framed binary numbers (`encNat`). -/
+private abbrev encVertices : List (List ℕ × List ℕ) ↪ List Bool :=
+  encList (encPair (encList encNat) (encList encNat))
 
-/-- The encoding of the precision, the network and the current word. -/
-local notation "encWeightInput" => encPair (encPair encUnary encExplicitNetwork) encBits
+/-- The encoding of `((P, d), word)` for `weightMod`: the precision `P` in unary (framed) paired
+with the network `d` (`encExplicitNetwork`), that pair framed, followed by the current assignment
+bit word `word` unframed (`encBits`). -/
+abbrev encWeightInput : (ℕ × ExplicitTensorNetwork ℕ) × List Bool ↪ List Bool :=
+  encPair (encPair encUnary encExplicitNetwork) encBits
 
 /-- The vertices of a network, read from its encoding. -/
 private theorem vertices_polyTime :
@@ -280,8 +291,11 @@ theorem weightMod_polyTime :
         (Nat.le_add_left _ _)⟩
   exact hfold
 
-/-- The live state of direct summation: the precision, the network and the accumulator. -/
-local notation "encSumState" => encPair (encPair encUnary encExplicitNetwork) encNat
+/-- The encoding of the live state `((P, d), acc)` of direct summation: the precision `P` in unary
+(framed) paired with the network `d` (`encExplicitNetwork`), that pair framed, followed by the
+accumulator `acc` in binary (`encNat`, unframed). -/
+abbrev encSumState : (ℕ × ExplicitTensorNetwork ℕ) × ℕ ↪ List Bool :=
+  encPair (encPair encUnary encExplicitNetwork) encNat
 
 /-- **One step of direct summation is computable in polynomial time**, in the encoding of the
 `BooleanFold` callback input: the width and the current word, and the live state. -/
@@ -428,8 +442,11 @@ contraction is below `2 ^ |d|`, for `|d|` the encoded length of the network, so 
 `2 ^ min |d| P` gives the same residue. The capped precision is unary and at most `|d|`, so direct
 summation keeps its bounds. -/
 
-/-- The encoding of a contraction input with the precision in binary. -/
-local notation "encBinaryInput" => encPair encNat (encPair encNat encExplicitNetwork)
+/-- The encoding of a contraction input `(P, r, d)` with binary precision: the precision `P` in
+binary (`encNat`), framed, then the number `r` of row vertices in binary (`encNat`), framed, and
+the network `d` (`encExplicitNetwork`), unframed. -/
+abbrev encBinaryInput : ℕ × ℕ × ExplicitTensorNetwork ℕ ↪ List Bool :=
+  encPair encNat (encPair encNat encExplicitNetwork)
 
 private theorem sum_lt_two_pow_length (t : List ℕ) : t.sum < 2 ^ (encList encNat t).length := by
   induction t with
@@ -543,10 +560,7 @@ theorem directContractionBinaryCertificate_bounds :
   obtain ⟨hspace, T, hT, htime⟩ := directContractionCertificate_bounds
   have hcap := NativeCertificate.ofPolyTime_isPolynomial capPrecision_polyTime
   have hlen : PolyBounded (fun x => (encBinaryInput x).length)
-      fun x => (encContractionInput (capPrecision x)).length :=
-    PolyBounded.of_forall_le 3 1 fun x => by
-      have := min_le_left (encExplicitNetwork x.2.2).length x.1
-      enc_len [capPrecision, encContractionInput, pow_one]
+      fun x => (encContractionInput (capPrecision x)).length := by growth_poly
   refine ⟨hcap.2.add (hspace.comp hlen), fun x =>
     (NativeCertificate.ofPolyTime capPrecision_polyTime).time x + T (capPrecision x),
     hcap.1.add (hT.comp hlen), fun x => ?_⟩

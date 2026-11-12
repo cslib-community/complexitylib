@@ -22,7 +22,7 @@ class UpstreamExportTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="test-upstream-")
         self.addCleanup(self.temp.cleanup)
         self.base = Path(self.temp.name)
-        self.repo = self.base / "complexitylib"
+        self.repo = self.base / "cslib-frontier"
         self.cslib = self.base / "cslib"
         (self.repo / "CslibFrontier").mkdir(parents=True)
         (self.cslib / "Cslib").mkdir(parents=True)

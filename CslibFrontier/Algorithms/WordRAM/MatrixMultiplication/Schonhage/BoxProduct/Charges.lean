@@ -43,13 +43,6 @@ The final halt is charged separately. Every query occurrence contributes to its 
     ((∑ j ∈ Finset.range (numBands L m N ^ 2), tileCharge L m t qs j) + 2) +
     (9 * qs.length + 3) + (7 * QueriedProduct.inputEnd m N qs.length + 12)
 
-private theorem sum_bucket_counts (key : ℕ → ℕ) (Q T : ℕ) :
-    (∑ j ∈ Finset.range T, Nat.count (fun i => key i = j) Q) =
-      Nat.count (fun i => key i < T) Q := by
-  induction T with
-  | zero => simp
-  | succ T ih => rw [Finset.sum_range_succ, ih, CountingSort.count_lt_succ]
-
 /-- Every original occurrence is charged exactly once, even when coordinates repeat. -/
 theorem sum_tileCharge {L m N : ℕ} (hm : m ≤ L) (t : ℕ)
     (qs : List (Fin N × Fin N)) :
@@ -59,8 +52,8 @@ theorem sum_tileCharge {L m N : ℕ} (hm : m ≤ L) (t : ℕ)
   have hkey (i : ℕ) (hi : i < qs.length) :
       (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) i < numBands L m N ^ 2 :=
     Wanted.tileKey_lt hm _ (Wanted.inputPairs_lt qs i hi).1 (Wanted.inputPairs_lt qs i hi).2
-  have hcount := sum_bucket_counts (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) qs.length
-    (numBands L m N ^ 2)
+  have hcount := CountingSort.sum_count_eq_count_lt
+    (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) qs.length (numBands L m N ^ 2)
   rw [Nat.count_of_forall hkey] at hcount
   simp only [tileCharge, Finset.sum_add_distrib, Finset.sum_const,
     Finset.card_range, smul_eq_mul, ← Finset.sum_mul, hcount]

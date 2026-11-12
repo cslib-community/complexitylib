@@ -376,8 +376,7 @@ theorem andThen_run {S' O' : Type*} (F : LocalRule I O r) (B : Algorithm O S' O'
     (x : ZMod n → I) (t : ℕ) (v : ZMod n) :
     (F.andThen B).run x (r + t) v = B.run (F.apply x) t v := by
   rw [andThen, Algorithm.seq_run]
-  congr 1
-  funext u
+  congr 1 with u : 1
   exact F.toAlgorithm_run x u
 
 /-- The composite of a rule `F` of radius `r` and a rule `G` of radius `r'` on the outputs of `F`:
@@ -393,10 +392,8 @@ theorem apply_comp {P : Type*} {r' : ℕ} (G : LocalRule O P r') (F : LocalRule 
     (x : ZMod n → I) : (G.comp F).apply x = G.apply (F.apply x) := by
   funext v
   simp only [apply, comp, window]
-  congr 1
-  funext i
-  congr 1
-  funext j
+  congr 1 with i : 1
+  congr 1 with j : 1
   congr 1
   push_cast
   ring

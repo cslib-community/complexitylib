@@ -151,8 +151,7 @@ private theorem scatterListBody_eq (prep : Bool) (d : Fin 4 → ℕ) : scatterLi
       (scatterListStep (d 0 + 1) prep (d 2, d 3)) := by
   rw [scatterListStep_eq]
   simp only [scatterListBody, DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1
-  funext nxt
+  congr 1 with nxt : 1
   cases prep <;> simp only [Bool.false_eq_true, ite_true, ite_false, prepareScatter,
     scatterReturn, DataStructure.link, PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure,
     Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.cons_val_three,
@@ -285,8 +284,7 @@ private theorem iterate_scatterList (n base : ℕ) (prep : Bool) (k : ℕ) (a : 
   | zero => rfl
   | succ k ih =>
     simp only [iterate]
-    congr 1
-    funext a'
+    congr 1 with a' : 1
     exact ih a'
 
 /-- Every executed root-list step has its domain at the reached memory. The count, cursor and

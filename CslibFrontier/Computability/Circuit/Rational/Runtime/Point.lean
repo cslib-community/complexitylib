@@ -214,15 +214,7 @@ open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-@[local fun_prop]
-private theorem bitsFlatMapWithInput {β : Type} {encB : β ↪ List Bool}
-    {list : α → List β} {f : α → β → List Bool}
-    (hlist : ComputableInPolyTime list encIn (encList encB))
-    (hf : ComputableInPolyTime (fun p : α × β => f p.1 p.2)
-      (encPair encIn encB) encBits) :
-    ComputableInPolyTime (fun x => (list x).flatMap (f x)) encIn encBits := by
-  simpa only [List.flatten_eq_flatMap, List.flatMap_map, id_eq] using
-    bitsFlatten (mapWithInput hlist hf)
+attribute [local fun_prop] flatMapToBitsWithInput
 
 @[local fun_prop]
 private theorem intBin_isZero' {z : α → ℤ}

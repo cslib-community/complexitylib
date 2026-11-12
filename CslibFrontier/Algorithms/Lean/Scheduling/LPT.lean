@@ -95,8 +95,7 @@ theorem optMakespan_comp_perm (p : Fin n → α) (e : Equiv.Perm (Fin n)) :
     calc optMakespan m p ≤ makespan p (σ ∘ e.symm) := optMakespan_le _ _
       _ = makespan (p ∘ e) σ := by
           rw [← makespan_comp_perm p (σ ∘ e.symm) e]
-          congr 1
-          funext j
+          congr 1 with j : 1
           simp
 
 end Reindex
@@ -321,8 +320,7 @@ theorem makespan_lptSchedule (p : Fin n → α) :
     makespan p (lptSchedule (m := m) p) =
       makespan (p ∘ lptOrder p) (listSchedule (m := m) (p ∘ lptOrder p)) := by
   rw [← makespan_comp_perm p (lptSchedule p) (lptOrder p)]
-  congr 1
-  funext j
+  congr 1 with j : 1
   simp [lptSchedule]
 
 end Algorithm

@@ -22,7 +22,7 @@ This stage contract is an internal implementation API; the query code is calcula
 original pair, rather than supplied as a source memory word or an output certificate.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 
@@ -77,11 +77,7 @@ theorem exec_scatterStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ
     ram_eval [loadQuery, loaded, hx.queries, hx.tables.two, hx.tables.one, hi, hI, hJ,
       hn2, ha, ha1, pointer, index, queries, queryRow, queryCol,
       BandPreparation.one, BandPreparation.two, Fin.mk.injEq]
-  have lp : Parameters L m N Q loaded := hx.reframe (by
-    intro i hi
-    apply hload.regs_eq
-    have hp : ∀ i ∈ parameterRegisters, loadQuery.Preserves i := by decide +kernel
-    exact hp i hi)
+  have lp : Parameters L m N Q loaded := hx.of_exec hload (by decide +kernel)
   have hrfit : Fits w (routeBudget L m N (tableAddress L Q)) := hfit.of_le (by
     unfold wordBudget
     omega)

@@ -59,8 +59,7 @@ private theorem charFun_gaussianWeight (s : ℝ) (hs : 0 < s) (t : E) :
       𝓕 (fun x : E ↦ (gaussianWeight s x : ℂ)) (-(2 * Real.pi)⁻¹ • t) /
         (s : ℂ) ^ finrank ℝ E := by
     rw [Real.fourier_eq, ← integral_div]
-    congr 1
-    funext x
+    congr 1 with x : 1
     simp only [Circle.smul_def]
     ring
   rw [h, fourier_gaussianWeight s hs]

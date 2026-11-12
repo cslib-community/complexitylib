@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger, Renfei Zhou
 module
 -- upstream: local-only (test driver)
 
-public import CslibFrontier.Tactic.Stateful
+public import CslibFrontier.DataStructure.StateTransition.CostHoare
 
 /-!
 # Adaptive resource contracts through two interface implementations
@@ -85,8 +85,8 @@ def ensurePositive : counter.Client Nat := do
   if n = 0 then counter.call true else .pure n
 
 theorem read_contract : counter.CostHoare counterCharge (fun _ => True)
-    (.liftBind false fun n => .pure n) (fun n s => n = s) (fun s => counterCharge s false) := by
-  stateful
+    (.liftBind false fun n => .pure n) (fun n s => n = s) (fun s => counterCharge s false) :=
+  StateTransitionSpec.CostHoare.call_ofFn _ fun _ _ => ⟨trivial, rfl⟩
 
 theorem continue_contract (n : Nat) : counter.CostHoare counterCharge
     (fun s => n = s)
@@ -167,13 +167,6 @@ example : ¬ counter.CostHoare counterCharge (fun _ => True)
   have hb := ((counter.costHoare_iff_ofFn ..).mp h).2 0 trivial
   change 7 ≤ 6 at hb
   omega
-
--- Named client contracts can be reused by proof search without expanding the implementation.
-attribute [local aesop safe apply (rule_sets := [Stateful])] ensurePositive_contract
-
-example : counter.CostHoare counterCharge (fun _ => True)
-    ensurePositive (fun n s => n = s ∧ 0 < n) (fun _ => 7) := by
-  stateful
 
 -- State-dependent charges must use the changed state for the second call.
 example (n : Nat) : counter.CostHoare (fun s _ => s + 1) (fun s => s = n)

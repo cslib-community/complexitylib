@@ -165,7 +165,8 @@ theorem outputArm_flip {ts : List ℕ} {pivot : ℕ} (hw : w.IsWalk)
 /-- Two actual arm candidates per step at the outside port's original constraint. -/
 @[expose] def armCandidates (w : Walk F) (x : Occurrence F) : List (Walk F) :=
   (List.finRange w.steps.length).flatMap fun j =>
-    if w.steps[j.val].1.1 = x.1 then [inputArm w j x, outputArm w j x] else []
+    let (input, _) := w.steps[j.val]
+    if input.1 = x.1 then [inputArm w j x, outputArm w j x] else []
 
 /-- The scan retains exactly the two arms at matching original constraints. -/
 theorem mem_armCandidates (x : Occurrence F) (p : Walk F) :

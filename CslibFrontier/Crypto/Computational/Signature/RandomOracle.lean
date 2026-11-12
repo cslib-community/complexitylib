@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Signature
 public import CslibFrontier.Crypto.Computational.WordSignature
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
@@ -160,8 +161,8 @@ theorem runWith_forgerWorldImpl_runLoggedForger_liftWordForger
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (S.signingOracle sk)) (adversary n pk)).run []) := by
-  rw [ProbOracleComp.eval_run_interpret]
-  unfold ProbOracleComp.runWith OracleComp.runWith ROMSignature.runLoggedForger liftWordForger
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith]
+  unfold ROMSignature.runLoggedForger liftWordForger
   have hcomp :
       OracleComp.interpret
         (OracleComp.sumHandler
@@ -197,14 +198,12 @@ theorem runWith_forgerWorldImpl_runLoggedForger_liftWordForger
         OracleComp.interpret_query]
     | inr req =>
       simp [OracleComp.sumHandler, ProbOracleComp.query, OracleComp.interpret_query]
-  rw [hcomp, ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  have hsim := ProbOracleComp.run_interpret_map_state
+  rw [hcomp, ProbOracleComp.runWith_run_interpret, PMF.map_comp]
+  have hsim := ProbOracleComp.runWith_map_state
     (oracle := fun (q : Unit × List Bool)
         (state : List (List Bool × List Bool) × List (Empty × Unit)) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk))
-        ((ROMSignature.logSigning (.inl q.2)).run state.1)).run state.2).map
+      (ProbOracleComp.runWith (ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk)
+        ((ROMSignature.logSigning (.inl q.2)).run state.1) state.2).map
           (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)))
     (oracle' := fun q s => ProbComp.eval (S.signingOracle sk q s))
     (represent := fun (state : List (List Bool × List Bool) × List (Empty × Unit)) =>
@@ -218,11 +217,10 @@ theorem runWith_forgerWorldImpl_runLoggedForger_liftWordForger
           (fun ⟨⟨a, b⟩, c⟩ => (a, b, c))).map
             (fun ⟨a, s'⟩ => (a, s'.1.map Prod.fst)) =
         ProbComp.eval (S.signingOracle sk ((), msg) (pairs.map Prod.fst))
-      simp only [ROMSignature.logSigning, ROMSignature.forgerWorldImpl, toROMSignatureScheme,
-        signingOracle, OracleComp.sumHandler, ProbOracleComp.query, OracleComp.interpret_bind,
-        OracleComp.interpret_pure, OracleComp.interpret_query, StateT.run_bind, StateT.run_pure,
-        ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.map_bind, PMF.pure_map, List.map_cons]
+      simp only [pmf_norm, ROMSignature.logSigning, ROMSignature.forgerWorldImpl,
+        toROMSignatureScheme, signingOracle, OracleComp.sumHandler, ProbOracleComp.query,
+        OracleComp.interpret_bind, OracleComp.interpret_pure, OracleComp.interpret_query,
+        StateT.run_bind, StateT.run_pure, List.map_cons]
       rw [StateT.run, PMF.bind_bind]
       refine PMF.bind_congr_on_support _ _ _ fun sig _ => ?_
       simp)

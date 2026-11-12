@@ -17,7 +17,7 @@ On the encoding of an instance of value length `ℓ` and height `H`, the space b
 that `Cslib.TreeEval.Reader.machine` reaches is `O((ℓ + H + 1) · log (ℓ + 2))`: residues
 below the prime `p ≤ 4ℓ + 2` have `O(log (ℓ + 2))` bits. The registers and the sums hold `ℓ`
 of them, the stack holds at most `H` frames with a residue each, and the counters have
-`O(ℓ + log (H + 2))` bits.
+`O(ℓ + H + 1)` bits.
 
 ## Main definitions
 
@@ -139,7 +139,7 @@ theorem bounds_of_inv {ℓ H : ℕ} {s : State} (hs : Inv ℓ H s) : Bounds ℓ 
     have h₂ := length_lt_primeFor (hdq.trans hqp)
     exact ⟨le_rfl, le_rfl, by simp, hempty, by simp, by simp,
       by simp only [Ctl.toTuple]; omega, by simpa [Ctl.toTuple] using h₂, by simp [Ctl.toTuple]⟩
-  | run =>
+  | run | done =>
     dsimp only [Inv, RunInv] at hs
     obtain ⟨rfl, rfl, hp2, hpp, hR, hst, hrd, -⟩ := hs
     exact ⟨le_rfl, le_rfl, length_lt_primeFor hpp, bounds_regs_wf hR hpp, hst,
@@ -162,12 +162,6 @@ theorem bounds_of_inv {ℓ H : ℕ} {s : State} (hs : Inv ℓ H s) : Bounds ℓ 
     exact ⟨le_rfl, le_rfl, length_lt_primeFor hpp, bounds_regs_wf hR hpp, hst,
       fun fr hfr => length_lt_primeFor ((hrd fr hfr).le.trans hpp),
       by simp only [Ctl.toTuple]; omega, by simp [Ctl.toTuple], ⟨by simp [Ctl.toTuple, hacc], h₂⟩⟩
-  | done =>
-    dsimp only [Inv, RunInv] at hs
-    obtain ⟨rfl, rfl, hp2, hpp, hR, hst, hrd, -⟩ := hs
-    exact ⟨le_rfl, le_rfl, length_lt_primeFor hpp, bounds_regs_wf hR hpp, hst,
-      fun fr hfr => length_lt_primeFor ((hrd fr hfr).le.trans hpp),
-      by simp [Ctl.toTuple], by simp [Ctl.toTuple], by simp [Ctl.toTuple]⟩
 
 /-- **The budget of a state** within the space bound. -/
 theorem stateBudget_le {ℓ H : ℕ} {s : State} (hb : Bounds ℓ H s) :

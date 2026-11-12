@@ -21,7 +21,7 @@ Addition and comparison are the linear zip-transducer certificates of `BinaryAdd
 Multiplication weakens the cubic-time schoolbook certificate `ComputableInO.natMul`.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM
 open Cslib
 

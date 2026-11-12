@@ -103,10 +103,12 @@ end Partition
 namespace SubsetSum
 
 /-- The reduction from `SubsetSum` to `Partition`: append `a.sum + 1` and `2 * t + 1`. -/
-def toPartition (x : List ℕ × ℕ) : List ℕ := x.1 ++ [x.1.sum + 1, 2 * x.2 + 1]
+def toPartition (x : SubsetSumInstance) : List ℕ :=
+  x.numbers ++ [x.numbers.sum + 1, 2 * x.target + 1]
 
 /-- **Correctness of the reduction to `Partition`.** -/
-theorem toPartition_mem_iff (x : List ℕ × ℕ) : toPartition x ∈ Partition ↔ x ∈ SubsetSum := by
+theorem toPartition_mem_iff (x : SubsetSumInstance) :
+    toPartition x ∈ Partition ↔ x ∈ SubsetSum := by
   obtain ⟨l, t⟩ := x
   rw [mem_Partition_iff_sublist, mem_SubsetSum_iff_sublist]
   constructor
@@ -136,7 +138,7 @@ theorem toPartition_mem_iff (x : List ℕ × ℕ) : toPartition x ∈ Partition 
 /-- The reduction to `Partition` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toPartition :
-    ComputableInPolyTime toPartition (encPair (encList encNat) encNat) (encList encNat) := by
+    ComputableInPolyTime toPartition encSubsetSum (encList encNat) := by
   unfold toPartition
   fun_prop
 
@@ -144,7 +146,7 @@ end SubsetSum
 
 /-- `SubsetSum` reduces to `Partition` in polynomial time. -/
 theorem polyTimeReducible_SubsetSum_Partition :
-    PolyTimeReducible (encPair (encList encNat) encNat) (encList encNat) SubsetSum Partition :=
+    PolyTimeReducible encSubsetSum (encList encNat) SubsetSum Partition :=
   ⟨SubsetSum.toPartition, SubsetSum.computableInPolyTime_toPartition,
     fun x => (SubsetSum.toPartition_mem_iff x).symm⟩
 

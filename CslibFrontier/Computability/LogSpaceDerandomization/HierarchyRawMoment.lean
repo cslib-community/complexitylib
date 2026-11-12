@@ -47,7 +47,7 @@ its literal zero correction base and dense base bins. -/
   | _ => normalizedRequest D ident r binCutoff HP.ρ HP.K (raw r) (prep r) σ
 
 /-- The actual correction child has a uniform range even for arbitrary earlier estimates. -/
-theorem selectedRequest_mem_Icc {k : ℕ}
+theorem selectedRequest_mem_Icc {V : Type*} [Fintype V] {k : ℕ}
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P) (ident : V → ZMod P)
     (r : HierarchyTask.Request k (Fin J) (ZMod P)) (Kc : ℕ)
     (raw prep : Environment P J → Matrix V V ℝ) (maximum : Environment P J → V → ℝ)
