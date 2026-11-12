@@ -1729,6 +1729,7 @@ public import CslibFrontier.Computability.Communication.Nondeterministic.Basic
 public import CslibFrontier.Computability.Communication.Nondeterministic.CoverNumber
 public import CslibFrontier.Computability.Communication.Nondeterministic.ExtensionComplexity
 public import CslibFrontier.Computability.Communication.Nondeterministic.Functions
+public import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
 public import CslibFrontier.Computability.Communication.Operations
 public import CslibFrontier.Computability.Communication.PartitionJoin
 public import CslibFrontier.Computability.Communication.PaturiSimon
@@ -3722,9 +3723,11 @@ public import CslibFrontier.Computability.QueryComplexity.Quantum.Progress
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Search
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Simon
 public import CslibFrontier.Computability.QueryComplexity.Quantum.SimonSearch
+public import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 public import CslibFrontier.Computability.QueryComplexity.Quantum.UnknownSearch
 public import CslibFrontier.Computability.QueryComplexity.Quantum.ValueAdversary
 public import CslibFrontier.Computability.QueryComplexity.Quantum.ValueQuery
+public import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 public import CslibFrontier.Computability.QueryComplexity.Randomized
 public import CslibFrontier.Computability.QueryComplexity.Randomized.Counting
 public import CslibFrontier.Computability.QueryComplexity.Randomized.DeutschJozsa
@@ -4512,6 +4515,9 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.Cluster
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import CslibFrontier.DataStructure.BTree.Basic
+public import CslibFrontier.DataStructure.BTree.Comparisons.Insert
+public import CslibFrontier.DataStructure.BTree.Comparisons.Query
+public import CslibFrontier.DataStructure.BTree.Comparisons.Range
 public import CslibFrontier.DataStructure.BTree.Cost.Erase
 public import CslibFrontier.DataStructure.BTree.Cost.Insert
 public import CslibFrontier.DataStructure.BTree.Cost.OfSortedList
@@ -4798,6 +4804,13 @@ public import CslibFrontier.Foundations.Analysis.Brouwer.Simplex
 public import CslibFrontier.Foundations.Analysis.Calculus.Taylor
 public import CslibFrontier.Foundations.Analysis.Convex.Ellipsoid
 public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation
+public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.CorrDigraph
+public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
+public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Cut
+public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Reduction
+public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.StableSet
+public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.TSP
+public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.TourSplit
 public import CslibFrontier.Foundations.Analysis.Convex.FirstOrder
 public import CslibFrontier.Foundations.Analysis.Convex.Strong
 public import CslibFrontier.Foundations.Analysis.ENNRealFraction
@@ -5293,6 +5306,7 @@ public import CslibFrontier.Foundations.Data.List.Basic
 public import CslibFrontier.Foundations.Data.List.Blocks
 public import CslibFrontier.Foundations.Data.List.Boole
 public import CslibFrontier.Foundations.Data.List.CommonPrefix
+public import CslibFrontier.Foundations.Data.List.ConsecutivePairs
 public import CslibFrontier.Foundations.Data.List.Counting
 public import CslibFrontier.Foundations.Data.List.CourseOfValues
 public import CslibFrontier.Foundations.Data.List.DotProduct
@@ -5521,6 +5535,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CutRank
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Derivation
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.EndpointIncidence
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.EuclideanOpNorm
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Farkas
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GaussJordan
