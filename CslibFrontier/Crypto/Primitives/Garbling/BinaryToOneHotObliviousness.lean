@@ -283,9 +283,10 @@ private theorem eval_interpret_reduction (H : L → T → L)
 theorem realGame_reduction [Module (ZMod 2) L] [Fintype Key] [Nonempty Key] (H : L → T → L)
     (tw : (t : ℕ) → (Fin (t + 1) → Bool) → T) (δ : Key → L) (n : ℕ) (x : Fin (n + 1) → Bool)
     (D : OneHotView L n → ProbComp Bool) :
-    PRF.realGame (ccrOracle H δ) (reduction H tw n x D) = realGame H tw δ n x D := by
-  simp only [PRF.realGame, realGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction]
+    ProbComp.eval (PRF.realExperiment (ccrOracle H δ) (reduction H tw n x D)) =
+      realGame H tw δ n x D := by
+  simp only [PRF.realExperiment, ProbOracleComp.run, realGame, ProbComp.eval_bind,
+    ProbComp.eval_uniform, eval_interpret_reduction]
   congr 1 with k : 1
   -- The input labels are the zero-labels shifted by the offsets of the bits of `x`.
   let e : (Fin (n + 1) → L) ≃ (Fin (n + 1) → L) :=
@@ -366,9 +367,10 @@ experiment, when different doubling steps use different tweaks. -/
 theorem idealGame_reduction (H : L → T → L) (tw : (t : ℕ) → (Fin (t + 1) → Bool) → T) (n : ℕ)
     (htw : ∀ t t' j j', t < n → t' < n → tw t j = tw t' j' → t = t')
     (x : Fin (n + 1) → Bool) (D : OneHotView L n → ProbComp Bool) :
-    PRF.idealGame (reduction H tw n x D) = simGame n D := by
-  simp only [PRF.idealGame, simGame, simulate, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+    ProbComp.eval (PRF.idealExperiment (reduction H tw n x D)) = simGame n D := by
+  simp only [PRF.idealExperiment, ProbOracleComp.run, simGame, simulate, ProbComp.eval_bind,
+    ProbComp.eval_uniform, eval_interpret_reduction, ProbComp.eval_pure, PMF.bind_bind,
+    PMF.pure_bind]
   rw [PMF.bind_comm]
   refine congrArg _ (funext fun A => ?_)
   exact uniformOfFintype_bind_runSteps H tw n htw x A fun ct => ProbComp.eval (D (A, ct))

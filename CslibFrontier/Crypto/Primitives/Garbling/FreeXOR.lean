@@ -750,10 +750,10 @@ private theorem eval_interpret_reduction (f : K × T × Bool → K × Bool) :
 private theorem realGame_reduction
     (hfree : ∀ g, free g = true → ∀ v, I (C.program.lines g).op v = ∑ k, v k)
     (hK : ∀ k : K, k + k = 0) :
-    PRF.realGame (CorrelationRobust.circular H) (reduction C I H tw x D) =
+    ProbComp.eval (PRF.realExperiment (CorrelationRobust.circular H) (reduction C I H tw x D)) =
       realGame C I H tw x D := by
-  simp only [PRF.realGame, realGame, garble, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction, bind_assoc, pure_bind]
+  simp only [PRF.realExperiment, ProbOracleComp.run, realGame, garble, ProbComp.eval_bind,
+    ProbComp.eval_uniform, eval_interpret_reduction, bind_assoc, pure_bind]
   congr 1 with δ : 1
   simp only [← view_shift C I H tw x hfree hK δ]
   conv_rhs => rw [← Cslib.Probability.PMF.uniformOfFintype_map_equiv
@@ -765,9 +765,9 @@ private theorem realGame_reduction
 slots have distinct tweaks. -/
 private theorem idealGame_reduction [DecidableEq K] [Fintype T] [DecidableEq T]
     (htw : Function.Injective tw) :
-    PRF.idealGame (reduction C I H tw x D) = simGame C I H tw x D := by
-  simp only [PRF.idealGame, simGame, simulate, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction, bind_assoc, pure_bind]
+    ProbComp.eval (PRF.idealExperiment (reduction C I H tw x D)) = simGame C I H tw x D := by
+  simp only [PRF.idealExperiment, ProbOracleComp.run, simGame, simulate, ProbComp.eval_bind,
+    ProbComp.eval_uniform, eval_interpret_reduction, bind_assoc, pure_bind]
   simp only [PMF.bind_comm (PMF.uniformOfFintype (K × T × Bool → K × Bool))
     (PMF.uniformOfFintype (Wire n C.size → K × Bool))]
   congr 1 with base : 1
