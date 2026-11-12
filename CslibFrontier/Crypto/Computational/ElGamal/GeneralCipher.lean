@@ -504,15 +504,13 @@ also the random DDH game for `hashedElGamalCipherToDDHDistinguisher`. -/
 /-- `hashedElGamalCipherToKDFDistinguisher` is uniform strict PPT whenever `encryptSym` and
 `adversary` are. The DDH reduction `hashedElGamalCipherToDDHDistinguisher` is then uniform strict
 PPT by `isPPTOn_kdfToDDHDistinguisher`. -/
-theorem isPPTOn_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
+theorem isPPT_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
     (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
-    IsPPTOn F.encKDFInput encBool fun x =>
-      F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit x.1.secParam
-        x.1.groupParameters x.1.leftPublic x.1.rightPublic x.2 := by
+    (F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit).IsPPT := by
   let E1 := encPair F.encKDFInput (Encryption.encChoiceOut encMsg)
   let E2 := encPair E1 encBits
   have hn : ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.1.secParam) F.encKDFInput
@@ -558,7 +556,7 @@ theorem isPPTOn_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg
       (fun q : ((F.CDHInput × List Bool) × Encryption.ChoiceOut Msg) × List Bool => q.2) E2
       encBits := by
     fun_prop
-  simp only [hashedElGamalCipherToKDFDistinguisher]
+  simp only [KDFDistinguisher.IsPPT, hashedElGamalCipherToKDFDistinguisher]
   exact (hA.choose.on.preprocess (hn.prod hpk)).bind_with
     ((hencryptSym.preprocess (hn₁.prod (hkey.prod hm))).bind_with
       (hA.guess.preprocess (hn₂.prod (hst.prod (hv.prod hc).encoding_comp))))
@@ -589,23 +587,22 @@ noncomputable abbrev hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
 /-- `hashedElGamalCipherToKDFHiddenBitDistinguisher` is uniform strict PPT whenever `encryptSym` and
 `adversary` are. The DDH reduction `hashedElGamalCipherToDDHHiddenBitDistinguisher` is then
 uniform strict PPT by `isPPTOn_kdfToDDHDistinguisher`. -/
-theorem isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
+theorem isPPT_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
     {encMsg : Msg ↪ List Bool} {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
     (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :
-    IsPPTOn F.encKDFInput encBool fun x =>
-      F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym adversary x.1.secParam
-        x.1.groupParameters x.1.leftPublic x.1.rightPublic x.2 := by
+    (F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym adversary).IsPPT := by
+  unfold KDFDistinguisher.IsPPT
   let E0 := F.encKDFInput
   let E1 := encPair E0 encBool
   let hp1 := ComputableInPolyTime.fst E0 encBool
   let hp2 := ComputableInPolyTime.snd E0 encBool
   let hq1 := ComputableInPolyTime.fst E1 encBool
   let hq2 := ComputableInPolyTime.snd E1 encBool
-  have hFalse := F.isPPTOn_hashedElGamalCipherToKDFDistinguisher hencryptSym hA false
-  have hTrue := F.isPPTOn_hashedElGamalCipherToKDFDistinguisher hencryptSym hA true
+  have hFalse := F.isPPT_hashedElGamalCipherToKDFDistinguisher hencryptSym hA false
+  have hTrue := F.isPPT_hashedElGamalCipherToKDFDistinguisher hencryptSym hA true
   have hStep : IsPPTOn E1 encBool
       (fun p : (F.CDHInput × List Bool) × Bool =>
         F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary p.2 p.1.1.secParam
@@ -788,7 +785,7 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn {F : PrimeOrderGroupFamily}
         (F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary false n)
         (F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary true n) := by
   have hA' := hA.restrict hvalid
-  have hkdfPPT := F.isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher hencryptSym hA'
+  have hkdfPPT := F.isPPT_hashedElGamalCipherToKDFHiddenBitDistinguisher hencryptSym hA'
   have hddh := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH hkdfPPT)
   have hkdf := hKDF _ hkdfPPT
   negligible using
