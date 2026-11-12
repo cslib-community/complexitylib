@@ -86,7 +86,7 @@ variable [Fintype X] [Fintype Y] (μ : PMF X) (ν : PMF Y)
 theorem toOuterMeasure_injective_le_hybrid :
     ((iid μ k).toOuterMeasure {x | Function.Injective x}).toReal ≤ hybrid μ ν p k := by
   classical
-  rw [toReal_toOuterMeasure_eq_sum, hybrid]
+  rw [toOuterMeasure_toReal_eq_sum_ite, hybrid]
   refine sum_le_sum fun x _ => mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
   by_cases hx : Function.Injective x
   · have hforce (y : Fin k → Y) : p.labelLeaves.CanForce true (hybridGoal p k x y) :=
@@ -104,7 +104,7 @@ theorem hybrid_zero_le :
   have hcompl := toOuterMeasure_toReal_add_compl (iid ν k) {y | Function.Injective y}
   rw [show 1 - ((iid ν k).toOuterMeasure {y | Function.Injective y}).toReal =
     ((iid ν k).toOuterMeasure {y | Function.Injective y}ᶜ).toReal by linarith,
-    toReal_toOuterMeasure_eq_sum, hybrid]
+    toOuterMeasure_toReal_eq_sum_ite, hybrid]
   refine sum_mul_le _ _ _ fun x => sum_le_sum fun y _ =>
     mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
   by_cases hy : Function.Injective y
@@ -203,7 +203,7 @@ theorem hybrid_succ_sub_hybrid (i : Fin k) :
   refine congrArg _ ?_
   have hcompl := toOuterMeasure_toReal_add_compl ν (bobSide p i (stepBackground p i x y))
   simp only [hybridGoal_succ_update, hybridGoal_update, canForce_before_iff]
-  rw [toReal_toOuterMeasure_eq_sum, toReal_toOuterMeasure_eq_sum ν (bobSide _ _ _)ᶜ] at *
+  rw [toOuterMeasure_toReal_eq_sum_ite, toOuterMeasure_toReal_eq_sum_ite ν (bobSide _ _ _)ᶜ] at *
   have hA : ∑ a, (μ a).toReal * ∑ b, (ν b).toReal *
       (if p.labelLeaves.CanForce true (aliceGoal p i (stepBackground p i x y) a) then 1 else 0) =
       ∑ a, (μ a).toReal * if a ∈ aliceSide p i (stepBackground p i x y) then 1 else 0 := by
@@ -215,7 +215,7 @@ theorem hybrid_succ_sub_hybrid (i : Fin k) :
       ∑ b, (ν b).toReal * if b ∈ (bobSide p i (stepBackground p i x y))ᶜ then 1 else 0 := by
     rw [← sum_mul, sum_toReal, one_mul]
     rfl
-  rw [hA, hB, toReal_toOuterMeasure_eq_sum ν]
+  rw [hA, hB, toOuterMeasure_toReal_eq_sum_ite ν]
   linarith
 
 omit [Fintype X] [Fintype Y] in
