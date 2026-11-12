@@ -18,7 +18,8 @@ import CslibFrontier.Foundations.Data.List.Blocks
 A branching algorithm that splits an instance of measure `n` into subproblems of measures at most
 `n - a₁, …, n - a_b` (with positive integer decreases `aᵢ > 0`) generates a search tree whose size
 is governed by the characteristic sum `∑ᵢ r ^ (-aᵢ)` (`Cslib.BranchingVector.charSum`). Whenever
-`r > 0` satisfies `charSum steps r ≤ 1`, any recurrence bounded by `C ≥ 0` at `0` satisfies
+`1 ≤ r` satisfies `charSum steps r ≤ 1`, a recurrence satisfying
+`T n ≤ max C (∑_{d ∈ steps, d ≤ n} T (n - d))` at every `n`, with `C ≥ 0`, satisfies
 `T n ≤ C * r ^ n` (`Cslib.BranchingVector.BranchingRecurrence.le_mul_pow`).
 
 For explicit multi-way search trees (`Cslib.BranchingVector.BranchingTree`) where every non-leaf
@@ -154,7 +155,7 @@ structure BranchingRecurrence (T : ℕ → ℝ) (steps : List ℕ) (C : ℝ) : P
 namespace BranchingRecurrence
 
 /-- Build a `BranchingRecurrence` directly from the self-referential inequality
-`T n ≤ ∑_{d ∈ steps, d ≤ n} T (n - d)`. -/
+`T n ≤ max C (∑_{d ∈ steps, d ≤ n} T (n - d))` at every `n`. -/
 theorem of_step {T : ℕ → ℝ} {steps : List ℕ} {C : ℝ}
     (hC : 0 ≤ C) (hpos : ∀ d ∈ steps, 0 < d)
     (hstep : ∀ n, T n ≤ max C ((steps.filter (· ≤ n)).map fun d : ℕ => T (n - d)).sum) :

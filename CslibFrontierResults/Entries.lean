@@ -3711,7 +3711,8 @@ register_result "branching-vector-recurrence" where
     Cslib.BranchingVector.charSum_prefixSteps_le_one
   ]
   scope := "Positive integer decrease vectors steps = [a₁, …, a_b] with characteristic sum \
-    charSum steps r = ∑ r ^ (-aᵢ) <= 1 (r > 0): T n <= C * r ^ n for abstract recurrences, \
+    charSum steps r = ∑ r ^ (-aᵢ) <= 1 (1 <= r): T n <= C * r ^ n for recurrences with \
+    T n <= max C (sum of T (n - d) over d in steps with d <= n) at every n and C >= 0; \
     leaf count <= r ^ measure s, node count <= (measure s + 1) * r ^ measure s, and separated \
     per-node overhead workCost <= W * (measure s + 1) * r ^ measure s on multi-way search trees \
     (1 <= r), plus closed-form Fibonacci ((1 + sqrt 5) / 2) and prefix [1, …, k] (2 - (1 / 2) ^ k) \

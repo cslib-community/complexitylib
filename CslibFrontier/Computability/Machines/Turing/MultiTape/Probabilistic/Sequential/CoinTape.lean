@@ -18,6 +18,13 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Nondetermin
 
 * `Turing.MultiTapePTM.step_withCoin_seq_left`: a running first phase follows its own step.
 * `Turing.MultiTapePTM.step_withCoin_seq_right`: the second phase follows its own step.
+* `Turing.MultiTapePTM.replay_append`, `Turing.MultiTapePTM.replay_seq_cases`: concatenate coin
+  replays and identify the active phase of a sequential machine.
+* `Turing.MultiTapePTM.output_length_le_replay`, `Turing.MultiTapePTM.replay_halted`: output length
+  is monotone along a replay, and halted configurations remain fixed.
+* `Turing.MultiTapePTM.completed_replay_mem_support`,
+  `Turing.MultiTapePTM.replay_output_length_le`: connect completed replays to run support and
+  transfer support-wise output bounds to arbitrary replay prefixes.
 -/
 
 public section

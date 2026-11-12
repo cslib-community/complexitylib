@@ -14,7 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Space
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop.Space
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile.Space
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition.Space
