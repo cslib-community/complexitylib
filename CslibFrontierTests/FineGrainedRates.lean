@@ -25,7 +25,7 @@ Kernel-checked strict-`module` tests (using plain `import` and zero `native_deci
    width guarding; `0 ≤ satExponent k ≤ sharpSatExponent k ≤ 1`; `SharpETH` / `SharpSETH`
    characterizations; clause-vs-variable counting sparsification transfers; and unconditional
    `sharpSatExponent_eq_zero`, `not_SharpETH`, `not_SharpSETH`.
-2. **Single-machine `2 ^ o(μ)` vs. `∀ δ > 0` families (`SingleSubexp`):** `DeclaredFormula` and
+2. **Single-machine `2 ^ o(μ)` vs. `∀ δ > 0` families (`SingleSubexp`):** `DeclaredCNF` and
    `SharpDeclaredKSAT` with unused declared variables and out-of-range variable guards; single
    machine quantifier characterizations; `ETH → SingleETH → SingleSharpETH` and
    `SharpETH → SingleSharpETH`; and unconditional `computableInSingleSubexpTime_SharpDeclaredKSAT`,
@@ -85,11 +85,11 @@ example : SharpKSAT 3 phiFour = 0 ∧ SharpKSAT 4 phiFour = 15 := by
 
 example : SharpKSAT 3 = SharpThreeSAT := SharpKSAT_three
 
-/-! ### 2. `DeclaredFormula` and `SharpDeclaredKSAT` concrete tests -/
+/-! ### 2. `DeclaredCNF` and `SharpDeclaredKSAT` concrete tests -/
 
 -- Declaring `4` variables for `phiTwo` (`2` occurring variables `{0, 1} ⊆ range 4`)
 -- scales `modelCount = 2` by `2 ^ (4 - 2) = 4`, giving `8` satisfying assignments.
-example : SharpDeclaredKSAT 3 { numDeclared := 4, formula := phiTwo } = 8 := by
+example : SharpDeclaredKSAT 3 { numVars := 4, formula := phiTwo } = 8 := by
   rw [SharpDeclaredKSAT_of_valid (by decide) (by decide)]
   have hmc : phiTwo.modelCount = 2 := by
     rw [← BruteForceCount.count_eq_modelCount]
@@ -99,7 +99,7 @@ example : SharpDeclaredKSAT 3 { numDeclared := 4, formula := phiTwo } = 8 := by
   rfl
 
 -- Variable `1` lies outside `range 1`, so the guarded declared-variable counter returns `0`.
-example : SharpDeclaredKSAT 3 { numDeclared := 1, formula := phiTwo } = 0 :=
+example : SharpDeclaredKSAT 3 { numVars := 1, formula := phiTwo } = 0 :=
   SharpDeclaredKSAT_of_not_valid (by decide)
 
 /-! ### 3. `ErrorModel` order, symmetry, and concrete majority-vote tail bound -/
@@ -296,8 +296,8 @@ example :
 
 -- Unconditional native single-machine bounds, zero exponents, and refuted hypotheses.
 example (k : ℕ) {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s < 1) :
-    ComputableInSingleSubexpTime (SharpDeclaredKSAT k) encDeclaredFormula encNat
-      DeclaredFormula.numDeclared ∧
+    ComputableInSingleSubexpTime (SharpDeclaredKSAT k) encDeclaredCNF encNat
+      DeclaredCNF.numVars ∧
     ComputableInSingleSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars ∧
     DecidableInSingleSubexpTime (KSAT k) encCNF CNF.numVars ∧
     sharpSatExponent k = 0 ∧

@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.GapETH
 public import CslibFrontier.Computability.Complexity.FineGrained.SingleSubexp
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+public import CslibFrontier.Computability.Complexity.Problems.SAT.Declared
 public import CslibFrontier.Computability.PolyTime.CNF.DeclaredInput
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount.Declared
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
@@ -40,8 +40,8 @@ and `CountingNativeEndpoint.exists_modelCounter` to those interfaces:
 
 ## Main definitions
 
-* `Cslib.Complexity.DeclaredFormula`, `Cslib.Complexity.encDeclaredFormula`,
-  `Cslib.Complexity.SharpDeclaredKSAT`: structured declared-variable counting instances.
+* `Cslib.Complexity.SharpDeclaredKSAT`: guarded fixed-width counting on the canonical
+  `DeclaredCNF` instances encoded by `encDeclaredCNF`.
 
 ## Main results
 
@@ -72,58 +72,46 @@ open Cslib.Logic.PL Turing.MultiTapeTM Filter Asymptotics
 
 /-! ### 1. Structured declared-variable counting and single-machine `2 ^ o(n)` bounds -/
 
-/-- Input to declared-variable model counting: a unary declared variable bound `numDeclared` and a
-CNF formula `formula`. -/
-structure DeclaredFormula where
-  /-- Declared variable bound `N`, representing the domain `Finset.range N`. -/
-  numDeclared : ℕ
-  /-- Input CNF formula over natural variable indices. -/
-  formula : CNF ℕ
-  deriving Inhabited
-
-/-- Framed encoding of `DeclaredFormula` (`numDeclared` in unary, `formula` via `encCNF`). -/
-enc_structure encDeclaredFormula : DeclaredFormula where
-  numDeclared : encUnary, formula : encCNF
-
-/-- Guarded model count of `x.formula` on `Finset.range x.numDeclared` when `x.formula` has clause
-width `≤ k` and all variables `< x.numDeclared`, and `0` otherwise. -/
-@[expose] def SharpDeclaredKSAT (k : ℕ) (x : DeclaredFormula) : ℕ :=
-  if CNF.validDeclaredInput k x.numDeclared x.formula then
-    x.formula.modelCountOn (Finset.range x.numDeclared)
+/-- Guarded model count of `x.formula` on `Finset.range x.numVars` when `x.formula` has clause
+width `≤ k` and all variables `< x.numVars`, and `0` otherwise. -/
+@[expose] def SharpDeclaredKSAT (k : ℕ) (x : DeclaredCNF) : ℕ :=
+  if CNF.validDeclaredInput k x.numVars x.formula then
+    x.modelCount
   else 0
 
 /-- On valid declared inputs, `SharpDeclaredKSAT k x` scales `x.formula.modelCount` by the
-`2 ^ (x.numDeclared - x.formula.numVars)` assignments to unused declared variables. -/
-theorem SharpDeclaredKSAT_of_valid {k : ℕ} {x : DeclaredFormula}
-    (hw : ∀ c ∈ x.formula, c.length ≤ k) (hv : ∀ v ∈ x.formula.vars, v < x.numDeclared) :
-    SharpDeclaredKSAT k x = x.formula.modelCount * 2 ^ (x.numDeclared - x.formula.numVars) := by
-  have hsub : x.formula.vars.toFinset ⊆ Finset.range x.numDeclared := fun v hmem =>
+`2 ^ (x.numVars - x.formula.numVars)` assignments to unused declared variables. -/
+theorem SharpDeclaredKSAT_of_valid {k : ℕ} {x : DeclaredCNF}
+    (hw : ∀ c ∈ x.formula, c.length ≤ k) (hv : ∀ v ∈ x.formula.vars, v < x.numVars) :
+    SharpDeclaredKSAT k x = x.formula.modelCount * 2 ^ (x.numVars - x.formula.numVars) := by
+  have hsub : x.formula.vars.toFinset ⊆ Finset.range x.numVars := fun v hmem =>
     Finset.mem_range.mpr (hv v (List.mem_toFinset.mp hmem))
-  have hval : CNF.validDeclaredInput k x.numDeclared x.formula = true :=
+  have hval : CNF.validDeclaredInput k x.numVars x.formula = true :=
     CNF.validDeclaredInput_eq_true_iff.mpr ⟨hw, hsub⟩
-  simp only [SharpDeclaredKSAT, hval, ↓reduceIte,
+  simp only [SharpDeclaredKSAT, hval, ↓reduceIte, DeclaredCNF.modelCount,
     CNF.modelCountOn_eq_mul_modelCount x.formula _ hsub, Finset.card_range, Nat.mul_comm]
 
 /-- On invalid declared inputs (`CNF.validDeclaredInput = false`), `SharpDeclaredKSAT k x = 0`. -/
-theorem SharpDeclaredKSAT_of_not_valid {k : ℕ} {x : DeclaredFormula}
-    (h : CNF.validDeclaredInput k x.numDeclared x.formula = false) :
+theorem SharpDeclaredKSAT_of_not_valid {k : ℕ} {x : DeclaredCNF}
+    (h : CNF.validDeclaredInput k x.numVars x.formula = false) :
     SharpDeclaredKSAT k x = 0 := by
   simp only [SharpDeclaredKSAT, h, Bool.false_eq_true, ↓reduceIte]
 
 /-- **Unconditional single-machine declared model counting.** For each fixed width `k`, one native
-multi-tape machine computes `SharpDeclaredKSAT k` in time `2 ^ o(numDeclared) · poly(L)`. -/
+multi-tape machine computes `SharpDeclaredKSAT k` in time `2 ^ o(numVars) · poly(L)`. -/
 theorem computableInSingleSubexpTime_SharpDeclaredKSAT (k : ℕ) :
-    ComputableInSingleSubexpTime (SharpDeclaredKSAT k) encDeclaredFormula encNat
-      DeclaredFormula.numDeclared := by
+    ComputableInSingleSubexpTime (SharpDeclaredKSAT k) encDeclaredCNF encNat
+      DeclaredCNF.numVars := by
   open SubexponentialSAT in
   obtain ⟨count, T, S, A, c, e, _, _, hcountO, hspec, hT, -⟩ :=
     CountingNativeEndpoint.exists_declaredCounter k
-  have htoPair : ComputableInPolyTime (fun x : DeclaredFormula => (x.numDeclared, x.formula))
-      encDeclaredFormula (encPair encUnary encCNF) := by fun_prop
+  have htoPair : ComputableInPolyTime (fun x : DeclaredCNF => (x.numVars, x.formula))
+      encDeclaredCNF (encPair encUnary encCNF) :=
+    encDeclaredCNF_fields_deg.computableInPolyTime
   obtain ⟨dg, _, hdg⟩ := htoPair.exists_degree
   obtain ⟨p, q, hp⟩ := htoPair.polyBounded_length.exists_le
   have hcompO := (hcountO.comp hdg.inO).of_enc_eq (g := SharpDeclaredKSAT k) fun x =>
-    congrArg encNat (hspec (x.numDeclared, x.formula)).symm
+    congrArg encNat (hspec (x.numVars, x.formula)).symm
   let s (N : ℕ) : ℝ := (A : ℝ) * interpolationScale N
   have hs_nn : ∀ N, 0 ≤ s N := fun N =>
     mul_nonneg (Nat.cast_nonneg A) (interpolationScale_nonneg N)
@@ -132,42 +120,42 @@ theorem computableInSingleSubexpTime_SharpDeclaredKSAT (k : ℕ) :
   refine ⟨s, dg + q * e, hs_nn, hs_o,
     (ComputableInTimeO.of_computableInO hcompO fun _ => le_rfl).mono
       (1 + c * (p + 1) ^ e + c) (fun x => ?_) fun _ => by positivity⟩
-  set L : ℕ := (encDeclaredFormula x).length
+  set L : ℕ := (encDeclaredCNF x).length
   have hL1 : 1 ≤ L + 1 := Nat.le_add_left 1 L
   have hLR1 : (1 : ℝ) ≤ (L : ℝ) + 1 := by exact_mod_cast hL1
-  have hX1 : (1 : ℝ) ≤ 2 ^ s x.numDeclared := Real.one_le_rpow (by norm_num) (hs_nn _)
-  have hpow : ((encPair encUnary encCNF (x.numDeclared, x.formula)).length + 1) ^ e ≤
+  have hX1 : (1 : ℝ) ≤ 2 ^ s x.numVars := Real.one_le_rpow (by norm_num) (hs_nn _)
+  have hpow : ((encPair encUnary encCNF (x.numVars, x.formula)).length + 1) ^ e ≤
       (p + 1) ^ e * (L + 1) ^ (q * e) :=
     Nat.add_one_pow_le_of_le_mul_pow hL1 (hp x) e
   have hqe : ((L : ℝ) + 1) ^ (q * e) ≤ ((L : ℝ) + 1) ^ (dg + q * e) :=
     pow_le_pow_right₀ hLR1 (Nat.le_add_left _ _)
-  have hdg_le : ((L : ℝ) + 1) ^ dg ≤ 2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e) :=
+  have hdg_le : ((L : ℝ) + 1) ^ dg ≤ 2 ^ s x.numVars * ((L : ℝ) + 1) ^ (dg + q * e) :=
     (pow_le_pow_right₀ hLR1 (Nat.le_add_right _ _)).trans
       (le_mul_of_one_le_left (by positivity) hX1)
-  have hpowR : (((encPair encUnary encCNF (x.numDeclared, x.formula)).length : ℝ) + 1) ^ e ≤
+  have hpowR : (((encPair encUnary encCNF (x.numVars, x.formula)).length : ℝ) + 1) ^ e ≤
       ((p + 1) ^ e : ℕ) * ((L : ℝ) + 1) ^ (dg + q * e) := by
-    have h1 : (((encPair encUnary encCNF (x.numDeclared, x.formula)).length : ℝ) + 1) ^ e ≤
+    have h1 : (((encPair encUnary encCNF (x.numVars, x.formula)).length : ℝ) + 1) ^ e ≤
         ((p + 1) ^ e : ℕ) * ((L : ℝ) + 1) ^ (q * e) := by exact_mod_cast hpow
     exact h1.trans (mul_le_mul_of_nonneg_left hqe (Nat.cast_nonneg _))
-  have hTR : (T (x.numDeclared, x.formula) : ℝ) ≤
-      ((c * (p + 1) ^ e : ℕ) : ℝ) * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) + c := by
-    have h0 := hT (x.numDeclared, x.formula)
-    have hmul : (2 : ℝ) ^ s x.numDeclared *
-        (((encPair encUnary encCNF (x.numDeclared, x.formula)).length : ℝ) + 1) ^ e ≤
-        ((p + 1) ^ e : ℕ) * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) := by
-      have hm := mul_le_mul_of_nonneg_left hpowR (by positivity : (0 : ℝ) ≤ 2 ^ s x.numDeclared)
-      linarith [show (2 : ℝ) ^ s x.numDeclared * (((p + 1) ^ e : ℕ) * ((L : ℝ) + 1) ^ (dg + q * e))
-        = ((p + 1) ^ e : ℕ) * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) by ring]
+  have hTR : (T (x.numVars, x.formula) : ℝ) ≤
+      ((c * (p + 1) ^ e : ℕ) : ℝ) * (2 ^ s x.numVars * ((L : ℝ) + 1) ^ (dg + q * e)) + c := by
+    have h0 := hT (x.numVars, x.formula)
+    have hmul : (2 : ℝ) ^ s x.numVars *
+        (((encPair encUnary encCNF (x.numVars, x.formula)).length : ℝ) + 1) ^ e ≤
+        ((p + 1) ^ e : ℕ) * (2 ^ s x.numVars * ((L : ℝ) + 1) ^ (dg + q * e)) := by
+      have hm := mul_le_mul_of_nonneg_left hpowR (by positivity : (0 : ℝ) ≤ 2 ^ s x.numVars)
+      linarith [show (2 : ℝ) ^ s x.numVars * (((p + 1) ^ e : ℕ) * ((L : ℝ) + 1) ^ (dg + q * e))
+        = ((p + 1) ^ e : ℕ) * (2 ^ s x.numVars * ((L : ℝ) + 1) ^ (dg + q * e)) by ring]
     have hmulc := mul_le_mul_of_nonneg_left hmul (Nat.cast_nonneg c)
     push_cast at hmulc ⊢
     dsimp only [s] at *
     linarith
-  have hc1 : (c : ℝ) ≤ c * (2 ^ s x.numDeclared * ((L : ℝ) + 1) ^ (dg + q * e)) :=
+  have hc1 : (c : ℝ) ≤ c * (2 ^ s x.numVars * ((L : ℝ) + 1) ^ (dg + q * e)) :=
     le_mul_of_one_le_right (Nat.cast_nonneg c)
       (one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hLR1))
   have hconst_nn : (0 : ℝ) ≤ (1 + c * (p + 1) ^ e + c : ℕ) := Nat.cast_nonneg _
-  change ((((encDeclaredFormula x).length + 1) ^ dg +
-    T (x.numDeclared, x.formula) : ℕ) : ℝ) ≤ _
+  change ((((encDeclaredCNF x).length + 1) ^ dg +
+    T (x.numVars, x.formula) : ℕ) : ℝ) ≤ _
   push_cast at hTR hconst_nn ⊢
   dsimp only [L] at *
   linarith
