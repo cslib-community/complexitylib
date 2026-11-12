@@ -20,7 +20,8 @@ in the comparison-query model of `Cslib.DataStructure.BTree.Comparisons.Query`.
 Insertion queries the order of keys to find the correct subtree during the downward search.
 The splits on the way back up and the new root grown on overflow make zero comparisons,
 because they only rebuild nodes using keys already compared and sorted.
-The scan of a node's triples makes at most one comparison per triple.
+At each node, scanning its `rest` contributes at most `rest.length + 1` comparisons:
+one per passed triple, with a possible second comparison at the stopping separator.
 
 ## Main definitions
 
@@ -70,6 +71,7 @@ private def insertRestQ (t : ℕ) (k : α) (v : β) (rest : List (Triple α β))
     FreeM (LEQuery α) (Option (List (Triple α β))) :=
   insertRestM t LEQuery.ask (pure ()) k v rest
 
+/-- Under the order's oracle, `insertQ` evaluates to the pure insertion `insert`. -/
 @[simp] theorem eval_insertQ [LinearOrder α] :
     (insertQ t k v tr).eval orderOracle = insert t k v tr := by
   simpa [insert_def, insertQ] using
