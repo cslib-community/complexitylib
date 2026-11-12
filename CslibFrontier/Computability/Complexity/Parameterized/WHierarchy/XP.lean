@@ -54,7 +54,8 @@ runs within time `C 2 ^ (D k) (L + 1) ^ (D k + D)`. Closing `XP` under fpt-reduc
 ## Main definitions
 
 * `Cslib.Complexity.WP`: the library's reduction-closure convention for `W[P]`.
-* `Cslib.Complexity.WPHard`: `W[P]`-hardness under fpt-reductions.
+* `Cslib.Complexity.WPHard`: `W[P]`-hardness under fpt-reductions, the instance `FPTHard WP` of
+  `Cslib.Complexity.FPTHard`.
 
 ## Main results
 
@@ -92,10 +93,10 @@ equivalence with the effective literature class is not claimed. -/
   {A | FPTReducible enc encWeightedCircuitSAT κ WeightedCircuitSATInstance.weight
     A WeightedCircuitSAT}
 
-/-- **`W[P]`-hardness**: every problem of `W[P]` fpt-reduces to `B`. -/
-@[expose] def WPHard {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
-  ∀ ⦃α : Type⦄ (encA : α ↪ List Bool) (κA : α → ℕ) (A : Set α), A ∈ WP encA κA →
-    FPTReducible encA enc κA κ A B
+/-- **`W[P]`-hardness**: every problem of `W[P]` fpt-reduces to `B`. The general lemmas, such as
+`FPTHard.fptReducible` and `FPTHard.subset_FPT`, apply through dot notation. -/
+abbrev WPHard {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
+  FPTHard @WP enc κ B
 
 section WPBasic
 
@@ -150,19 +151,9 @@ theorem WeightedCircuitSAT_wPHard :
     WPHard encWeightedCircuitSAT WeightedCircuitSATInstance.weight WeightedCircuitSAT :=
   wPHard_iff.2 (FPTReducible.refl _ _ _)
 
-/-- `W[P]`-hardness transfers along fpt-reductions. -/
-theorem WPHard.fptReducible (hB : WPHard encB κB B) (h : FPTReducible encB encA κB κA B A) :
-    WPHard encA κA A :=
-  fun _ _ _ _ hC => (hB _ _ _ hC).trans h
-
 /-- Every `W[P]`-hard problem is `W[t]`-hard for every `t`. -/
 theorem WPHard.wHard (hB : WPHard encB κB B) (t : ℕ) : WHard t encB κB B :=
-  fun _ _ _ _ hC => hB _ _ _ (W_subset_WP t hC)
-
-/-- **A `W[P]`-hard problem in `FPT` puts `W[P]` in `FPT`.** -/
-theorem WPHard.subset_FPT (hB : WPHard encB κB B) (hFPT : B ∈ FPT encB κB) :
-    WP encA κA ⊆ FPT encA κA :=
-  fun _ hA => (hB _ _ _ hA).mem_FPT hFPT
+  hB.mono fun _ _ => W_subset_WP t
 
 /-- **`W[P] = FPT` iff `WeightedCircuitSAT ∈ FPT`.** -/
 theorem WP_eq_FPT_iff :

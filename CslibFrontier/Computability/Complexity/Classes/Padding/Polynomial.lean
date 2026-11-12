@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Time
 import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 
 /-!
 # Degree-preserving deterministic padding
@@ -56,10 +57,7 @@ theorem DTIME_pow_mul_subset_of_subset {a b k : ℕ} (ha : 1 ≤ a) (hab : a ≤
     fun n => ?_))
   · rw [Function.comp_apply, Nat.mul_comm b k, pow_mul]
     exact Nat.pow_le_pow_left (Nat.le_succ _) b
-  · have hp : 1 ≤ (n + 1) ^ k := Nat.one_le_pow _ _ (Nat.succ_pos n)
-    rw [Function.comp_apply, Nat.mul_comm a k, pow_mul]
-    calc ((n + 1) ^ k + 1) ^ a ≤ (2 * (n + 1) ^ k) ^ a := Nat.pow_le_pow_left (by omega) a
-      _ = 2 ^ a * ((n + 1) ^ k) ^ a := mul_pow _ _ _
-      _ ≤ _ := Nat.le_add_right _ _
+  · rw [Function.comp_apply, Nat.mul_comm a k, pow_mul]
+    exact Nat.add_one_pow_le_two_pow_mul_add a _
 
 end Cslib.Complexity

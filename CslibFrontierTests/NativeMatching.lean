@@ -15,17 +15,17 @@ open Cslib.Complexity Cslib.Complexity.Graph Turing.MultiTapeTM
 
 namespace NativeMatchingTests
 
-def empty : Graph := ([], [])
-def isolates : Graph := ([0, 1], [])
-def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+def empty : Graph := ⟨[], []⟩
+def isolates : Graph := ⟨[0, 1], []⟩
+def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 -- Taking the first edge greedily prevents a perfect matching.
-def greedyFailure : Graph := ([0, 1, 2, 3], [(1, 2), (0, 1), (2, 3)])
+def greedyFailure : Graph := ⟨[0, 1, 2, 3], [(1, 2), (0, 1), (2, 3)]⟩
 -- An odd cycle with a stem has a perfect matching using the stem and opposite triangle edge.
-def blossom : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 0), (0, 3)])
-def disconnected : Graph := ([0, 1, 2, 3, 4, 5], [(0, 1), (1, 2), (2, 0), (3, 4)])
-def degreeFive : Graph := ([0, 1, 2, 3, 4, 5], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)])
-def raw : Graph := ([0, 0, 1, 2], [(0, 0), (0, 1), (1, 0), (0, 1), (2, 999), (888, 1)])
-def sparse : Graph := ([0, 2 ^ 250], [(2 ^ 250, 0)])
+def blossom : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 0), (0, 3)]⟩
+def disconnected : Graph := ⟨[0, 1, 2, 3, 4, 5], [(0, 1), (1, 2), (2, 0), (3, 4)]⟩
+def degreeFive : Graph := ⟨[0, 1, 2, 3, 4, 5], [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5)]⟩
+def raw : Graph := ⟨[0, 0, 1, 2], [(0, 0), (0, 1), (1, 0), (0, 1), (2, 999), (888, 1)]⟩
+def sparse : Graph := ⟨[0, 2 ^ 250], [(2 ^ 250, 0)]⟩
 
 #guard empty.maximumMatching == []
 #guard empty.perfectMatching == some []

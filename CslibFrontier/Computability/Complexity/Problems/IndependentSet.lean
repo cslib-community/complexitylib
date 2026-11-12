@@ -110,10 +110,10 @@ instance : DecidableRel Occurrence.Conflict := fun _ _ => by
 
 /-- Karp's reduction from `SAT` to `IndependentSet`. -/
 def toIndependentSet (φ : CNF ℕ) : Graph × ℕ :=
-  (((occurrences φ).map Occurrence.vertex,
+  (⟨(occurrences φ).map Occurrence.vertex,
     (occurrences φ).flatMap fun o =>
       ((occurrences φ).filter fun o' => decide (o.Conflict o')).map
-        fun o' => (o.vertex, o'.vertex)),
+        fun o' => (o.vertex, o'.vertex)⟩,
     φ.length)
 
 theorem _root_.Cslib.Logic.PL.Occurrence.Conflict.symm {o o' : Occurrence ℕ}

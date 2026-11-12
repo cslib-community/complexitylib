@@ -22,7 +22,7 @@ namespace CslibFrontierTests.PolygonalContractionSplit
 open Cslib Cslib.Polygonal Cslib.Complexity Cslib.Complexity.Graph
 open RotationSystem
 
-private abbrev retained : Graph := ([7, 11, 7, 100, 100], [(7, 7), (11, 11), (7, 11)])
+private abbrev retained : Graph := ⟨[7, 11, 7, 100, 100], [(7, 7), (11, 11), (7, 11)]⟩
 
 private abbrev source : Graph := lastEdgeGraph retained 7 11
 

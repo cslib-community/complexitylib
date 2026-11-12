@@ -68,7 +68,14 @@ example :
     SharpP.mul_mem (SharpP.two_pow_mem _) (SharpP.two_pow_mem _)⟩,
    ⟨SharpP.pow_mem (SharpP.two_pow_mem _) 3,
     SharpP.sum_mem _ fun i _ => SharpP.natCast_mem i⟩,
-   GapP.neg_mem (natCast_mem (GapP.subring encBits) 3)⟩
+   GapP.neg_mem (GapP.natCast_mem 3)⟩
+
+/-- Finite sums, finite products and powers of concrete `GapP` functions. -/
+example :
+    ∑ i ∈ Finset.range 4, ((i : ℕ) : List Bool → ℤ) ∈ GapP encBits ∧
+      ∏ i ∈ Finset.range 3, (-((i : ℕ) : List Bool → ℤ)) ^ 2 ∈ GapP encBits :=
+  ⟨GapP.sum_mem _ fun i _ => GapP.natCast_mem i,
+   GapP.prod_mem _ fun i _ => GapP.pow_mem (GapP.neg_mem (GapP.natCast_mem i)) 2⟩
 
 /-- The complementary count of the constant function `1`. -/
 example : ∃ p : Polynomial ℕ,

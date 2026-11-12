@@ -23,33 +23,33 @@ private abbrev morePoints : List ℕ := [1000, 99, 8, 7, 7, 2 ^ 250]
 
 -- Two nontrivial components (one a loop) persist while declared points and duplicates vary.
 private theorem raw_point_transport (c : RotationCertificate) :
-    verifyGenusZero (morePoints, edges) c = verifyGenusZero (vertices, edges) c :=
+    verifyGenusZero ⟨morePoints, edges⟩ c = verifyGenusZero ⟨vertices, edges⟩ c :=
   verifyGenusZero_redeclare vertices morePoints edges (by decide +kernel) (by decide +kernel) c
 
-example : verifyGenusZero (vertices, edges) ⟨[0, 1, 3, 2]⟩ = true ∧
-    verifyGenusZero (morePoints, edges) ⟨[0, 1, 3, 2]⟩ = true := by decide +kernel
+example : verifyGenusZero ⟨vertices, edges⟩ ⟨[0, 1, 3, 2]⟩ = true ∧
+    verifyGenusZero ⟨morePoints, edges⟩ ⟨[0, 1, 3, 2]⟩ = true := by decide +kernel
 
-example : verifyGenusZero (morePoints, edges) ⟨[0, 1, 3, 2]⟩ = true := by
+example : verifyGenusZero ⟨morePoints, edges⟩ ⟨[0, 1, 3, 2]⟩ = true := by
   rw [raw_point_transport]
   decide +kernel
 
-example : verifyGenusZero (morePoints, edges) ⟨[2 ^ 250]⟩ =
-    verifyGenusZero (vertices, edges) ⟨[2 ^ 250]⟩ := raw_point_transport _
+example : verifyGenusZero ⟨morePoints, edges⟩ ⟨[2 ^ 250]⟩ =
+    verifyGenusZero ⟨vertices, edges⟩ ⟨[2 ^ 250]⟩ := raw_point_transport _
 
 -- The endpoint guards matter: omitting an incident endpoint changes raw acceptance.
-example : verifyGenusZero ([7], [(7, 8)]) ⟨[0, 1]⟩ = false ∧
-    verifyGenusZero ([7, 8], [(7, 8)]) ⟨[0, 1]⟩ = true := by decide +kernel
+example : verifyGenusZero ⟨[7], [(7, 8)]⟩ ⟨[0, 1]⟩ = false ∧
+    verifyGenusZero ⟨[7, 8], [(7, 8)]⟩ ⟨[0, 1]⟩ = true := by decide +kernel
 
 -- Adding points cannot repair positive genus: actual rotation validation still passes.
-example : verifyRotation ([0, 8, 8], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ = true ∧
-    verifyGenusZero ([0, 8, 8], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ = false := by decide +kernel
+example : verifyRotation ⟨[0, 8, 8], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ = true ∧
+    verifyGenusZero ⟨[0, 8, 8], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ = false := by decide +kernel
 
-example : verifyGenusZero ([0, 8, 8], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ =
-    verifyGenusZero ([0], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ :=
+example : verifyGenusZero ⟨[0, 8, 8], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ =
+    verifyGenusZero ⟨[0], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ :=
   verifyGenusZero_redeclare [0] [0, 8, 8] [(0, 0), (0, 0)] (by decide) (by decide) _
 
-example : verifyGenusZero ([5, 5, 2 ^ 250], []) ⟨[]⟩ = true ∧
-    verifyGenusZero ([], []) ⟨[]⟩ = true := by decide +kernel
+example : verifyGenusZero ⟨[5, 5, 2 ^ 250], []⟩ ⟨[]⟩ = true ∧
+    verifyGenusZero ⟨[], []⟩ ⟨[]⟩ = true := by decide +kernel
 
 private abbrev body : CSP Bool ℕ := [(true, [7, 7]), (false, [])]
 

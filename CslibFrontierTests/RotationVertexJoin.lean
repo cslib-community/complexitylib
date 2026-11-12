@@ -15,7 +15,7 @@ namespace CslibFrontierTests.RotationVertexJoin
 open Cslib.Complexity Graph.RotationSystem
 
 private abbrev G : Graph :=
-  ([0, 1, 2, 3, 4, 5, 6, 6], [(0, 1), (0, 1), (2, 3), (2, 3), (4, 4)])
+  ⟨[0, 1, 2, 3, 4, 5, 6, 6], [(0, 1), (0, 1), (2, 3), (2, 3), (4, 4)]⟩
 
 private abbrev c : Graph.RotationCertificate := ⟨[2, 3, 0, 1, 6, 7, 4, 5, 9, 8]⟩
 
@@ -63,7 +63,7 @@ example : ¬ Graph.RotationCertificate.SameComponent (mergeGraph h k)
 example : 5 ∉ (mergeGraph h k).incidenceVertices := by decide
 
 -- Different components are essential: opposite corners of this planar dipole share no face.
-private abbrev dipole : Graph := ([0, 1], [(0, 1), (0, 1), (0, 1)])
+private abbrev dipole : Graph := ⟨[0, 1], [(0, 1), (0, 1), (0, 1)]⟩
 private abbrev dipoleTable : Graph.RotationCertificate := ⟨[2, 5, 4, 1, 0, 3]⟩
 private noncomputable def dipoleRotation : Graph.RotationSystem dipole :=
   Graph.RotationCertificate.decode dipole dipoleTable (by decide)

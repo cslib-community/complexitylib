@@ -53,6 +53,9 @@ verifiers read disjoint parts of the certificate (`Cslib.Complexity.acceptCount_
 * `Cslib.Complexity.GapP.add_mem`, `Cslib.Complexity.GapP.sub_mem'`,
   `Cslib.Complexity.GapP.mul_mem`: `GapP` is closed under addition, subtraction and
   multiplication.
+* `Cslib.Complexity.GapP.natCast_mem`, `Cslib.Complexity.GapP.pow_mem`,
+  `Cslib.Complexity.GapP.sum_mem`, `Cslib.Complexity.GapP.prod_mem`: constants, powers, finite
+  sums and finite products.
 
 ## References
 
@@ -230,6 +233,24 @@ theorem mem_subring {g : α → ℤ} : g ∈ subring enc ↔ g ∈ GapP enc :=
 theorem sub_mem' {g₁ g₂ : α → ℤ} (h₁ : g₁ ∈ GapP enc) (h₂ : g₂ ∈ GapP enc) :
     g₁ - g₂ ∈ GapP enc :=
   (subring enc).sub_mem h₁ h₂
+
+/-- The constant functions with natural values are in `GapP`. -/
+theorem natCast_mem (n : ℕ) : (n : α → ℤ) ∈ GapP enc :=
+  _root_.natCast_mem (subring enc) n
+
+/-- `GapP` is closed under powers. -/
+theorem pow_mem {g : α → ℤ} (h : g ∈ GapP enc) (n : ℕ) : g ^ n ∈ GapP enc :=
+  (subring enc).pow_mem h n
+
+/-- `GapP` is closed under finite sums. -/
+theorem sum_mem {ι : Type*} (s : Finset ι) {g : ι → α → ℤ} (h : ∀ i ∈ s, g i ∈ GapP enc) :
+    ∑ i ∈ s, g i ∈ GapP enc :=
+  (subring enc).sum_mem h
+
+/-- `GapP` is closed under finite products. -/
+theorem prod_mem {ι : Type*} (s : Finset ι) {g : ι → α → ℤ} (h : ∀ i ∈ s, g i ∈ GapP enc) :
+    ∏ i ∈ s, g i ∈ GapP enc :=
+  (subring enc).prod_mem h
 
 end GapP
 

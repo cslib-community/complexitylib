@@ -67,13 +67,13 @@ open Turing.MultiTapeTM
 
 /-- The graphs with a clique of `m` of their vertices. -/
 def Clique : Set (Graph × ℕ) :=
-  {x | ∃ S : Finset {v // v ∈ x.1.1}, x.1.induced.IsNClique x.2 S}
+  {x | ∃ S : Finset {v // v ∈ x.1.vertices}, x.1.induced.IsNClique x.2 S}
 
 /-- Membership in `Clique` as a finite set of `m` declared vertices that is a clique in
 `G.toSimpleGraph`. -/
 theorem mem_Clique_iff {G : Graph} {m : ℕ} :
     (G, m) ∈ Clique ↔
-      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧ G.toSimpleGraph.IsNClique m S := by
+      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.vertices) ∧ G.toSimpleGraph.IsNClique m S := by
   simp only [Clique, Set.mem_ofPred_eq, SimpleGraph.isNClique_iff, SimpleGraph.IsClique]
   exact Graph.exists_subtype_pairwise_iff (P := G.toSimpleGraph.Adj)
 
@@ -82,14 +82,15 @@ namespace Graph
 /-- The complement of a graph on its vertices: an edge between any two distinct vertices that are
 not adjacent. -/
 def compl (G : Graph) : Graph :=
-  (G.1, G.1.flatMap fun u =>
-    (G.1.filter fun v => decide (u ≠ v ∧ (u, v) ∉ G.2 ∧ (v, u) ∉ G.2)).map fun v => (u, v))
+  ⟨G.vertices, G.vertices.flatMap fun u =>
+    (G.vertices.filter fun v =>
+      decide (u ≠ v ∧ (u, v) ∉ G.edges ∧ (v, u) ∉ G.edges)).map fun v => (u, v)⟩
 
 /-- On the vertices of a graph, adjacency in the complement is non-adjacency in the graph. -/
-theorem compl_adj_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) :
+theorem compl_adj_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.vertices) (hv : v ∈ G.vertices) :
     G.compl.toSimpleGraph.Adj u v ↔ u ≠ v ∧ ¬G.toSimpleGraph.Adj u v := by
-  have hedge : ∀ {a b}, (a, b) ∈ G.compl.2 ↔ a ∈ G.1 ∧ b ∈ G.1 ∧
-      (a ≠ b ∧ (a, b) ∉ G.2 ∧ (b, a) ∉ G.2) := by
+  have hedge : ∀ {a b}, (a, b) ∈ G.compl.edges ↔ a ∈ G.vertices ∧ b ∈ G.vertices ∧
+      (a ≠ b ∧ (a, b) ∉ G.edges ∧ (b, a) ∉ G.edges) := by
     intro a b
     simp only [compl, List.mem_flatMap, List.mem_map, List.mem_filter, decide_eq_true_eq,
       Prod.mk.injEq]
@@ -109,7 +110,7 @@ theorem compl_adj_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) 
 /-- The induced graph of the complement is the complement of the induced graph. -/
 @[simp]
 theorem induced_compl (G : Graph) :
-    (G.compl.induced : SimpleGraph {v // v ∈ G.1}) = G.inducedᶜ := by
+    (G.compl.induced : SimpleGraph {v // v ∈ G.vertices}) = G.inducedᶜ := by
   ext u v
   exact (compl_adj_iff (G := G) u.2 v.2).trans
     ((and_congr_left' Subtype.ext_iff.not.symm).trans (G.induced.compl_adj u v).symm)
@@ -130,36 +131,42 @@ theorem compl_mem_IndependentSet_iff (G : Graph) (m : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_compl :
     ComputableInPolyTime compl encGraph encGraph := by
-  unfold compl encGraph
   have hne : ComputableInPolyTime
       (fun x : (Graph × ℕ) × ℕ => decide (x.1.2 ≠ x.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by
     simpa only [ne_eq, decide_not, Function.comp_def] using
       ComputableInPolyTime.bool_not.comp
         (ComputableInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
   have h1 : ComputableInPolyTime
-      (fun x : (Graph × ℕ) × ℕ => decide ((x.1.2, x.2) ∉ x.1.1.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      (fun x : (Graph × ℕ) × ℕ => decide ((x.1.2, x.2) ∉ x.1.1.edges))
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by fun_prop
   have h2 : ComputableInPolyTime
-      (fun x : (Graph × ℕ) × ℕ => decide ((x.2, x.1.2) ∉ x.1.1.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      (fun x : (Graph × ℕ) × ℕ => decide ((x.2, x.1.2) ∉ x.1.1.edges))
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by fun_prop
   have hpred : ComputableInPolyTime
       (fun x : (Graph × ℕ) × ℕ =>
-        decide (x.1.2 ≠ x.2 ∧ (x.1.2, x.2) ∉ x.1.1.2 ∧ (x.2, x.1.2) ∉ x.1.1.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+        decide (x.1.2 ≠ x.2 ∧ (x.1.2, x.2) ∉ x.1.1.edges ∧ (x.2, x.1.2) ∉ x.1.1.edges))
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by
     simpa only [Bool.decide_and, Function.comp_def] using
       ComputableInPolyTime.bool_and.comp
         (hne.prod (ComputableInPolyTime.bool_and.comp (h1.prod h2)))
-  exact (ComputableInPolyTime.fst _ _).prod
-    (ComputableInPolyTime.flatMapWithInput (ComputableInPolyTime.fst _ _)
+  have hV : ComputableInPolyTime (fun G : Graph => G.vertices) encGraph (encList encNat) := by
+    fun_prop
+  have hE : ComputableInPolyTime
+      (fun G : Graph => G.vertices.flatMap fun u =>
+        (G.vertices.filter fun v =>
+          decide (u ≠ v ∧ (u, v) ∉ G.edges ∧ (v, u) ∉ G.edges)).map fun v => (u, v))
+      encGraph (encList (encPair encNat encNat)) := by
+    exact ComputableInPolyTime.flatMapWithInput (by fun_prop)
       (ComputableInPolyTime.mapWithInput
-        (ComputableInPolyTime.filterWithInput
-          ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _)) hpred)
-        (by fun_prop)))
+        (ComputableInPolyTime.filterWithInput (by fun_prop) hpred)
+        (by fun_prop))
+  unfold compl
+  fun_prop
 
 end Graph
 
@@ -236,7 +243,7 @@ theorem le_cliqueNum_iff : k ≤ G.cliqueNum ↔ (G, k) ∈ Clique :=
     fun ⟨_, hS, (hcard : _ = k)⟩ => hcard ▸ hS.card_le_cliqueNum⟩
 
 /-- A clique has at most as many vertices as the distinct declared vertices. -/
-theorem le_card_of_mem_Clique (h : (G, k) ∈ Clique) : k ≤ G.1.toFinset.card :=
+theorem le_card_of_mem_Clique (h : (G, k) ∈ Clique) : k ≤ G.vertices.toFinset.card :=
   (le_cliqueNum_iff.2 h).trans (G.natCard_vertexSubtype ▸ G.induced.cliqueNum_le_natCard)
 
 /-- **Cliques of the complement are independent sets**: the clique number of the complement on
