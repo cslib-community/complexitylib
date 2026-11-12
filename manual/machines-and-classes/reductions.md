@@ -61,11 +61,11 @@ Both families instantiate the resource-free kernels in
 many-one notions instantiate `ManyOneReducibleBy`. `TruthTableReducibleBy Good` asks for a count,
 query generator and evaluator satisfying `Good`, while `DTTReducibleBy` and `CTTReducibleBy` drop
 the evaluator. Each named predicate groups its resource conditions and any query bound or
-monotonicity condition into one conjunct. Its `_iff_truthTableReducibleBy`, `_iff_dttReducibleBy`
-or `_iff_cttReducibleBy` bridge is `Iff.rfl`. Monotonicity in `Good`, complementation, one-query
-many-one embeddings, the `List.any id` and `List.all id` evaluators and disjunctive/conjunctive
-duality are proved once at kernel level. A new resource bound needs only the closure facts of its
-own `Good`. Transitivity stays per family, sharing the combiner in
+monotonicity condition into one conjunct, so its bridge to a kernel (for example
+`polyTimeTruthTableReducible_iff_truthTableReducibleBy`) is `Iff.rfl`. Monotonicity in `Good`,
+complementation, one-query many-one embeddings, the `List.any id` and `List.all id` evaluators
+and disjunctive/conjunctive duality are proved once at kernel level, so a new resource bound needs
+only the closure facts of its own `Good`. Transitivity stays per family, sharing the combiner in
 [TruthTable/Composition](../../CslibFrontier/Computability/Complexity/Reduction/TruthTable/Composition.lean).
 
 ## Adaptive word-oracle access

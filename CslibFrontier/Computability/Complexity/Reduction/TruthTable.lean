@@ -29,7 +29,6 @@ The answer word `truthTableAnswers` and the resource-free kernel `TruthTableRedu
 ## Main results
 
 * `polyTimeTruthTableReducible_iff_truthTableReducibleBy`: the bridge to the kernel.
-
 * `truthTable_mem_P`, `PolyTimeTruthTableReducible.mem_P`: `P` is closed under polynomial-time
   truth-table reductions.
 * `PolyTimeReducible.polyTimeTruthTableReducible`: every polynomial-time many-one reduction is a
