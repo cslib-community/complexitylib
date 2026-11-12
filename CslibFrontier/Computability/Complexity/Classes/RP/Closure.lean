@@ -126,12 +126,10 @@ theorem inter_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A 
   obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_RP_iff_forall_decidesWithOneSidedErrorExponent.1 hB 2
   refine ⟨p₁ + p₂, andVerifier (fun a => p₁.eval (enc a).length) V₁ V₂, by fun_prop,
     fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
-  · have e₁ := (h₁ a).1 ha.1
-    have e₂ := (h₂ a).1 ha.2
-    have hs₁ := acceptCount_add_card_filter_eq_false (V := V₁) (a := a)
-      (n := p₁.eval (enc a).length)
-    have hs₂ := acceptCount_add_card_filter_eq_false (V := V₂) (a := a)
-      (n := p₂.eval (enc a).length)
+  · have e₁ := errorExponentAt_true_iff.1 ((h₁ a).1 ha.1)
+    have e₂ := errorExponentAt_true_iff.1 ((h₂ a).1 ha.2)
+    have hs₁ := acceptCount_le_two_pow (V := V₁) (a := a) (n := p₁.eval (enc a).length)
+    have hs₂ := acceptCount_le_two_pow (V := V₂) (a := a) (n := p₂.eval (enc a).length)
     simp only [Polynomial.eval_ofNat] at e₁ e₂
     -- each decider accepts at least three quarters of its random strings
     have f₁ : 3 * 2 ^ p₁.eval (enc a).length ≤ 4 * acceptCount V₁ a (p₁.eval (enc a).length) := by
