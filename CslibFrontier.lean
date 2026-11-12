@@ -5232,6 +5232,7 @@ public import CslibFrontier.Foundations.Combinatorics.ReplacementCounting
 public import CslibFrontier.Foundations.Combinatorics.ReplacementDesignBridge
 public import CslibFrontier.Foundations.Combinatorics.SeededPacketLabels
 public import CslibFrontier.Foundations.Combinatorics.SeededPacking
+public import CslibFrontier.Foundations.Combinatorics.SeededPackingRank
 public import CslibFrontier.Foundations.Combinatorics.SetFamily.Oddtown
 public import CslibFrontier.Foundations.Combinatorics.SetFamily.RayChaudhuriWilson
 public import CslibFrontier.Foundations.Combinatorics.SetPartition.Basic
