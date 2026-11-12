@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
+import CslibFrontier.Foundations.Data.Finset.Half
 import CslibFrontier.Foundations.Data.Finset.Quantile
 
 /-!
@@ -159,19 +160,6 @@ theorem exists_median {α : Type*} (P : Finset α) (f : α → ℝ) :
   · exact ⟨0, by simp⟩
   · obtain ⟨p, _, hlo, hhi⟩ := P.exists_median hP f
     exact ⟨f p, hlo, hhi⟩
-
-private theorem exists_half {α : Type*} (P : Finset α) (f : α → Bool) :
-    ∃ b : Bool, P.card ≤ 2 * (P.filter fun p => f p = b).card := by
-  have h := card_filter_add_card_filter_not (s := P) (fun p => f p = true)
-  have hf : (P.filter fun p => ¬ f p = true) = P.filter fun p => f p = false := by
-    ext p
-    simp
-  rw [hf] at h
-  by_contra hno
-  push Not at hno
-  have h1 := hno true
-  have h2 := hno false
-  omega
 
 private theorem half_step {a b c : ℕ} (hab : a ≤ b * 2 ^ c) {b' : ℕ} (hb : b ≤ 2 * b') :
     a ≤ b' * 2 ^ (c + 1) := by
@@ -377,7 +365,7 @@ private theorem cutInv_succ (prog : Program signature n g) (U A B : Finset (Fin 
       exact hμ (by linarith)
   · rw [ite_eq_left hU] at htU
     rw [ite_eq_right hV, add_zero] at htV
-    obtain ⟨b, hb⟩ := exists_half P fun p => decide (0 ≤ α p + c)
+    obtain ⟨b, hb⟩ := Finset.exists_card_le_two_mul_card_filter P fun p => decide (0 ≤ α p + c)
     refine ⟨P.filter fun p => decide (0 ≤ α p + c) = b, Q, Function.update v j₀ b,
       fun p hp => hPzero p (mem_filter.mp hp).1, hQzero,
       hext b _ Q (filter_subset _ _) subset_rfl fun p hp q hq => ?_,
@@ -387,7 +375,7 @@ private theorem cutInv_succ (prog : Program signature n g) (U A B : Finset (Fin 
     exact hpb
   · rw [ite_eq_right hU, add_zero] at htU
     rw [ite_eq_left hV] at htV
-    obtain ⟨b, hb⟩ := exists_half Q fun q => decide (0 ≤ β q + c)
+    obtain ⟨b, hb⟩ := Finset.exists_card_le_two_mul_card_filter Q fun q => decide (0 ≤ β q + c)
     refine ⟨P, Q.filter fun q => decide (0 ≤ β q + c) = b, Function.update v j₀ b,
       hPzero, fun q hq => hQzero q (mem_filter.mp hq).1,
       hext b P _ subset_rfl (filter_subset _ _) fun p hp q hq => ?_,

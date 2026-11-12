@@ -5350,6 +5350,7 @@ public import CslibFrontier.Foundations.Data.Finset.Expect
 public import CslibFrontier.Foundations.Data.Finset.ExpectPi
 public import CslibFrontier.Foundations.Data.Finset.ExpectResample
 public import CslibFrontier.Foundations.Data.Finset.Finpartition
+public import CslibFrontier.Foundations.Data.Finset.Half
 public import CslibFrontier.Foundations.Data.Finset.Holder
 public import CslibFrontier.Foundations.Data.Finset.KthLargest
 public import CslibFrontier.Foundations.Data.Finset.KthLargest.Moment

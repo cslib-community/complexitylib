@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Communication.Protocol
 public import Mathlib.Data.Fintype.Pi
+import CslibFrontier.Foundations.Data.Finset.Half
 import Mathlib.Tactic
 
 /-!
@@ -70,12 +71,7 @@ theorem exists_diagonal_subprotocol :
       have := Nat.one_le_two_pow (n := t + 1)
       nlinarith, .output z, fun _ _ _ _ => rfl, .inl rfl⟩
   | t + 1, .alice send p₀ p₁, S => by
-    obtain ⟨b, hb⟩ : ∃ b : Bool, S.card ≤ 2 * (S.filter (send · = b)).card := by
-      have := Finset.card_filter_add_card_filter_not (s := S) (p := fun x => send x = true)
-      simp only [Bool.not_eq_true] at this
-      by_cases h : (S.filter (send · = false)).card ≤ (S.filter (send · = true)).card
-      · exact ⟨true, by omega⟩
-      · exact ⟨false, by omega⟩
+    obtain ⟨b, hb⟩ := S.exists_card_le_two_mul_card_filter send
     obtain ⟨X, hXS, hX, q, hq, hd⟩ :=
       exists_diagonal_subprotocol t (cond b p₁ p₀) (S.filter (send · = b))
     refine ⟨X, hXS.trans (Finset.filter_subset _ _), ?_, q, fun x hx y hy => ?_, ?_⟩
@@ -90,12 +86,7 @@ theorem exists_diagonal_subprotocol :
         have h₁ := le_max_right p₀.depth p₁.depth
         cases b <;> simp only [Bool.cond_true, Bool.cond_false, depth_alice] at hd ⊢ <;> omega
   | t + 1, .bob send p₀ p₁, S => by
-    obtain ⟨b, hb⟩ : ∃ b : Bool, S.card ≤ 2 * (S.filter (send · = b)).card := by
-      have := Finset.card_filter_add_card_filter_not (s := S) (p := fun x => send x = true)
-      simp only [Bool.not_eq_true] at this
-      by_cases h : (S.filter (send · = false)).card ≤ (S.filter (send · = true)).card
-      · exact ⟨true, by omega⟩
-      · exact ⟨false, by omega⟩
+    obtain ⟨b, hb⟩ := S.exists_card_le_two_mul_card_filter send
     obtain ⟨X, hXS, hX, q, hq, hd⟩ :=
       exists_diagonal_subprotocol t (cond b p₁ p₀) (S.filter (send · = b))
     refine ⟨X, hXS.trans (Finset.filter_subset _ _), ?_, q, fun x hx y hy => ?_, ?_⟩
