@@ -122,8 +122,7 @@ embed the blocks of `x`, it is `1` if `f x` and `0` otherwise. -/
 theorem truthTableExtension_block (h : BitString b ↪ F) (f : BooleanFunction (m * b))
     (x : BitString (m * b)) :
     truthTableExtension h f (fun i => h (BitString.block x i)) = if f x then 1 else 0 := by
-  rw [truthTableExtension, lowDegreeExtension_apply_embed]
-  exact congrArg (fun z => if f z then (1 : F) else 0) (BitString.blocksEquiv.symm_apply_apply x)
+  rw [truthTableExtension, lowDegreeExtension_apply_embed, BitString.blocksEquiv_symm_block]
 
 /-- **The worst-case-to-average-case encoding** [SudanTrevisanVadhan2001]. On an input of
 `m * w + w` bits, read the first `m * w` bits as a point `x` of `F ^ m` and the last `w` bits as
@@ -196,11 +195,10 @@ theorem exists_glPredictor_agree (enc : F ≃ BitString w) (h : BitString b ↪ 
   set good := (univ : Finset (BitString (m * w))).filter fun x =>
     1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x)
   have hgood : ε / 2 * 2 ^ (m * w) ≤ #good := by
-    have hdens := Crypto.GoldreichLevin.dens_filter_agreement_ge pred target hε.le (by
+    have hcount := Crypto.GoldreichLevin.card_filter_agreement_ge pred target hε.le (by
       rw [← hpairs, hcard, ← mul_assoc, mul_assoc (1 / 2 + ε), ← pow_add]
       exact hagree)
-    rw [nnratCast_dens, hcard, le_div_iff₀ (by positivity)] at hdens
-    exact hdens
+    rwa [hcard] at hcount
   -- Goldreich–Levin with fixed masks and guess
   obtain ⟨masks, guess, hgl⟩ := Crypto.GoldreichLevin.exists_card_candidate_eq pred target
     (ε / 2) (by positivity) hK hsize good fun x hx => (mem_filter.1 hx).2

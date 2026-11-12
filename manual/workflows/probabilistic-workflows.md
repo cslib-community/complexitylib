@@ -47,6 +47,24 @@ supplies their component bounds. Run `scripts/build.sh CslibFrontierTests.TotalV
 The [Regev joint experiment](https://github.com/cslib-community/cslib-frontier/issues/2767) still
 has to discharge those bounds for its actual Gaussian laws and residue marginal.
 
+## Bound an event count by its first moment
+
+Import [EventCount.lean](../../CslibFrontier/Probability/EventCount.lean) when an algorithm counts
+events indexed by a list. After `open Cslib.Probability`, apply
+`PMF.tsum_mul_countP_le μ E B l hE`: if each event `{ω | E ω x}` for `x ∈ l` has probability at
+most `B`, the expected count is at most `l.length * B`. The list may repeat entries and the
+events may be dependent. The theorem imposes no finiteness or measurable-space requirement on
+the sample type.
+
+For a measure `μ`, use `measurable_and_lintegral_countP_le μ E B l hmeas hE`. Its two conclusions
+give measurability of the count and the same bound on its Lebesgue integral. Supply measurability
+and a measure bound for each event; probability normalization is unnecessary. This is the shared
+first-moment argument used by both discrete and continuous LSH analyses.
+
+The [checked clients](../../CslibFrontierTests/EventCount.lean) cover an empty list on an infinite
+sample space, two identical fair-coin events whose expected count is exactly one, and a measure
+of total mass two. Run `scripts/build.sh CslibFrontierTests.EventCount`.
+
 ## Condition and compare finite PMFs
 
 Import [PMF/Filter.lean](../../CslibFrontier/Probability/PMF/Filter.lean) to rewrite a conditioned
@@ -86,7 +104,15 @@ box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
-[Entropy/Fano.lean](../../CslibFrontier/Probability/Entropy/Fano.lean) is its entropy `h₂(p)`.
+[Entropy/Fano.lean](../../CslibFrontier/Probability/Entropy/Fano.lean) is its entropy `h₂(p)`. For
+uniform `k`-element subsets `uniformOfFinset (A.powersetCard k) _`, import
+[PMF/UniformPowerset.lean](../../CslibFrontier/Probability/PMF/UniformPowerset.lean) for uniform
+one-element deletion when `1 ≤ k ≤ A.card` (`uniformOfFinset_powersetCard_erase`), hit-or-erase
+invariance when querying an element `p ∈ A` with `1 ≤ k ≤ A.card`—returning `U.erase p` when
+`p ∈ U` and a uniform deletion otherwise, which distributes uniformly over `(k - 1)`-subsets of
+`A.erase p` (`uniformOfFinset_powersetCard_hitOrErase`; an outside query `p ∉ A` instead uses the
+plain erasure law)—and exact miss probability `(A.card - k) / A.card` for `p ∈ A` and
+`k ≤ A.card` (`toOuterMeasure_uniformOfFinset_powersetCard_notMem`, including `k = 0`).
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
 rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex
@@ -1452,7 +1478,7 @@ provides it for every seed, while the simple split map needs real keys of length
 The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
 postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
 
-When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); multi-hop game transitions from `eagerIndCcaGame` to `simHitProb` via fallback-seed decoupling and `δ`-correctness bad-event bounds remain separate.
+When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the IND-CCA bound `Scheme.indCcaRomAdvantage_le` from IND-CPA security, `δ`-correctness and `γ`-spreadness is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`Scheme.roIndCcaBotGame`, `Scheme.indCcaBotAdvantage_le`) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)) prove the corresponding ROM IND-CCA bound for explicit-rejection `FO^⊥ = U^⊥ ∘ T` and the necessity of its `qD · 2^{-γ}` spreadness term, and [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
 
 ## Certify a list accumulator
 
@@ -1804,7 +1830,16 @@ two-endpoint counterexample to dropping width.
 
 [ReserveOutput](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/ReserveOutput.lean)
 assembles the actual finite output from explicit lower-child conditional-error-cost fourth
-moments. `actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
+moments. Its finite geometric, routing and cutoff hypotheses are the documented fields of
+`ReserveOutputContext`; `ReserveOutputChildren` contains the independently supplied raw,
+preparation and maximum families. Their shared
+[OutputContext](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/OutputContext.lean)
+module gives named constructions `amplification`, `tolerance`, `rawSteps`, `prepSteps`,
+`rawWalk`, `prepWalk`, `cost` and `increment`. The records are supplied after the output
+constant is selected: `Cbound` depends on HP, ζ, scale and the positive floor, before P,
+J, the prime instance, horizon, prefix length or child families. These names preserve the
+finite terms and their explicit losses; they do not bundle the output guarantee.
+`actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
 matrices by finite maxima of the actual first/B1 envelopes divided by `2^dyadicSlack`.
 The first payment uses absolute mean error over `rate kt + G`; the second retains
 `A = P * (|ζ| * (Lh + Lρ) / rate kt)^4`. At horizon m its uniform child-cost reserve is
@@ -1816,8 +1851,9 @@ RAW steps are the maximum of the actual first-noise requirement and the fully am
 by `genuineNormalizedRecipe_eq_request`; capacities are actually `(K+1)*2^(64*slack)`.
 The theorem derives nonnegativity, row mass and zero extension, with finite cover,
 narrower-source horizon, gate/cutoff/cap and routing agreements still explicit.
-The [new regressions](../../CslibFrontierTests/ReserveOutput.lean) evaluate a positive,
-nonconstant full-matrix input with a free spectator, show the once-negative arithmetic,
+The [regressions](../../CslibFrontierTests/ReserveOutput.lean) construct an inhabited shared
+context with two bins and distinct full/usage exponents, evaluate a positive nonconstant
+full-matrix input with a free spectator, show the once-negative arithmetic,
 compute nonzero common B and check the actual completed prefix at index zero.
 The bounded fixture does not assert the canonical routed-bin mean or recursive reserves.
 A separate actual lower-child conditional-cost client proves that the finite reserve is
@@ -1867,8 +1903,10 @@ alone does not provide an absolute residual error.
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
-lower-child budget induction, native realization and RL=L remain in
-[issue #1721](https://github.com/cslib-community/cslib-frontier/issues/1721).
+lower-child budget induction, native realization and RL=L remain unproved by this API.
+The scope and status of this route are recorded in
+[issue #1721](https://github.com/cslib-community/cslib-frontier/issues/1721); the shared-context
+extraction maintains its existing finite results and does not resume the dropped route.
 
 ## Extract an emitted pseudorandom prefix
 
@@ -2346,3 +2384,73 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 `scripts/build.sh CslibFrontierTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
+
+## Bound adapted Bernoulli counts and hitting times by stochastic domination
+
+Import [`CslibFrontier.Probability.StochasticDomination`](../../CslibFrontier/Probability/StochasticDomination.lean)
+(or its constituent submodules) and open `Cslib.Probability` when proving tail bounds or expected
+stopping-time bounds for sequences of adapted events whose step-wise conditional success
+probabilities satisfy lower or upper bounds.
+
+- **First-order stochastic order**:
+  [`StochasticDomination/Basic.lean`](../../CslibFrontier/Probability/StochasticDomination/Basic.lean)
+  defines `StochasticallyDominates μ ν` on `Measure α` (`ν U ≤ μ U` for measurable upper sets)
+  and `PMF.StochasticallyDominates p q` on `PMF α`. Equate them with measurable monotone
+  `ℝ≥0∞`-valued Lebesgue expectations on `SFinite` measures (`stochasticallyDominates_iff_lintegral`),
+  with measurable monotone Bochner expectations on probability measures (`IsProbabilityMeasure μ`,
+  `IsProbabilityMeasure ν`) for functions integrable under both `μ` and `ν`
+  (`stochasticallyDominates_iff_integral`, which fails for unequal-mass measures), with upper tails
+  on `ℕ` (`stochasticallyDominates_nat_iff_Ici`) and probability-measure lower tails /
+  `ProbabilityTheory.cdf` (`stochasticallyDominates_nat_iff_Iio`,
+  `stochasticallyDominates_real_iff_cdf`), `Bool` coin laws (`PMF.stochasticallyDominates_bool_iff`),
+  couplings (`StochasticallyDominates.of_coupling`), and closure under `map`, `bind` (on `SFinite`
+  measures), and `add_prod`.
+- **Poisson-binomial and binomial benchmarks**:
+  [`PoissonBinomial.lean`](../../CslibFrontier/Probability/PoissonBinomial.lean) defines
+  `PMF.poissonBinomial : List unitInterval → PMF ℕ` with convolution (`poissonBinomial_append`),
+  permutation invariance (`poissonBinomial_perm`), independent-coin product equivalence
+  (`poissonBinomial_eq_map_pi`), and `ProbabilityTheory.binomial` specialization
+  (`toMeasure_poissonBinomial_replicate`).
+  [`StochasticDomination/PoissonBinomial.lean`](../../CslibFrontier/Probability/StochasticDomination/PoissonBinomial.lean)
+  proves parameter monotonicity (`poissonBinomial_stochasticallyDominates_of_forall₂`,
+  `binomial_stochasticallyDominates_of_le`, `binomial_stochasticallyDominates_of_nat_le`) and, for
+  strictly positive success probability `0 < (p : ℝ)`, the exact negative-binomial waiting-time
+  series `tsum_binomial_real_Iio : ∑' t, (ProbabilityTheory.binomial t p).real (Set.Iio r) = r / p`.
+- **Finite-horizon adapted processes**:
+  [`StochasticDomination/Adapted.lean`](../../CslibFrontier/Probability/StochasticDomination/Adapted.lean)
+  defines `adaptedCount A n` on general `Filtration ℕ m` (under `IsProbabilityMeasure P` and
+  `MeasurableSet[ℱ (t + 1)] (A t)`) with both lower- and upper-envelope domination
+  (`adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_adaptedCount`), active-before-target binomial tails
+  requiring the lower bound `p` only while `adaptedCount A t < r`
+  (`adaptedCount_real_Iio_le_binomial`), specializations to Markov Ionescu–Tulcea trajectories
+  (`traj_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_traj_adaptedCount`,
+  `trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
+  sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
+  `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Infinite-horizon stopping-time means**:
+  [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
+  proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and
+  `integral_untopD_eq_tsum_real_lt` under `IsFiniteMeasure P`, measurable `τ`, and summability of
+  `fun n => P.real {n < τ}`, certifying `τ ≠ ⊤` a.e. and integrability of
+  `((τ ·).untopD 0 : ℝ)`). Under `IsProbabilityMeasure P` (or `IsMarkovKernel (κ n)` with an initial `[IsProbabilityMeasure μ₀]` for mixtures, or just `IsMarkovKernel (κ n)` for fixed prefixes), adapted events
+  `MeasurableSet[ℱ (t + 1)] (A t)`, and strictly positive success probability `0 < (p : ℝ)`,
+  `stoppingTime_mean_le_of_adaptedCount_le` assumes `P[A t | ℱ t] ≥ p` a.e. before `τ` (`{t < τ}`)
+  and `r ≤ adaptedCount A n ω → τ ω ≤ n` to deduce `τ ≠ ⊤` a.e., integrability of
+  `((τ ·).untopD 0 : ℝ)`, and `𝔼[(τ ·).untopD 0] ≤ r / p`; the hitting-time specializations
+  (`countHittingTime_mean_le`, `traj_countHittingTime_mean_le`,
+  `trajMeasure_countHittingTime_mean_le`) assume the conditional lower bound `p` while
+  `adaptedCount A t < r`.
+
+The checked [`StochasticDomination.lean` clients](../../CslibFrontierTests/StochasticDomination.lean)
+verify concrete `ℕ`/`ℝ`/`Bool` order inequalities (`lintegral_le`, `integral_le`, `bind`), exact
+heterogeneous `poissonBinomial` masses and means, `ProbabilityTheory.binomial` comparison, a
+state-dependent sequential `PMF` process, lower/upper `Kernel.trajMeasure` envelopes, a
+target-stopped `Kernel.trajMeasure` process whose success probability drops to `0` once `r = 2`
+successes are reached while satisfying `𝔼[τ_2] ≤ 4`, and a truncated stopping time strictly
+distinct from `countHittingTime`. Run `scripts/build.sh CslibFrontierTests.StochasticDomination` from
+the repository root to check them.
+Instantiating these theorems on oracle-program executions remains open until the stochastic-oracle
+semantics ([#2530](https://github.com/cslib-community/cslib-frontier/pull/2530)) lands on `main`.

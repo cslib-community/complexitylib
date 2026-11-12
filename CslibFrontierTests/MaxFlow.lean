@@ -253,6 +253,11 @@ example : afterZigZag ≠ Network.Flow.zero unitDiamondNet := by
 
 example : ¬ afterZigZag.IsAugmentingPath [0, 1, 2, 3] := by decide
 
+-- Degenerate `s = t` network exercising `Flow.value_le_source_outCap` without `N.s ≠ N.t`
+example (f : ({ clrsNet with t := clrsNet.s }).Flow) :
+    f.value ≤ (({ clrsNet with t := clrsNet.s }).cutCapacity {clrsNet.s} : ℤ) :=
+  f.value_le_source_outCap
+
 -- Positive and negative `IsMatching` witnesses
 example : IsMatching asymGraph ({(0, 1), (1, 0)} : Finset (Fin 3 × Fin 4)) := by decide
 example : ¬ IsMatching asymGraph ({(0, 0), (1, 0)} : Finset (Fin 3 × Fin 4)) := by decide

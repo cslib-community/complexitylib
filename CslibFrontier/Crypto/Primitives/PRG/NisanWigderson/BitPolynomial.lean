@@ -273,24 +273,6 @@ theorem Design.binaryPolynomial_eq (n ℓ : ℕ) :
   unfold Design.binaryPolynomial
   rfl
 
-/-- **Reading a seed in block `i` of the binary instance.** Row `j` contributes the cell whose
-column `v` has the bits of `A_i(r_j)`. Bit `c` of `A_i(r_j)` is the parity of `i` on the exponents
-`t` with bit `c` of `r_j ^ t` set (`bits_bitPoly_eq_parityOn`). So the bit is the seed bit of the
-unique column `v` that has, for every `c`, bit `c` equal to that parity. -/
-theorem Design.restrict_binaryPolynomial {α : Type*} (i : BitString ℓ)
-    (z : Fin (n * 2 ^ binaryFieldDegree n) → α) (j : Fin n) (v : Fin (2 ^ binaryFieldDegree n))
-    (hv : ∀ c, (BitString.equivFin _).symm v c =
-      parityOn {t : Fin ℓ | BinaryField.equivBits (binaryFieldDegree_ne_zero n)
-        (binaryFieldPoints n j ^ (t : ℕ)) c = true} i) :
-    (Design.binaryPolynomial n ℓ).restrict (BitString.equivFin ℓ i) z j =
-      z (finProdFinEquiv (j, v)) := by
-  rw [Design.binaryPolynomial, Design.restrict_bitPolynomial, Equiv.symm_apply_apply]
-  congr 3
-  rw [← (BitString.equivFin _).apply_symm_apply v, binaryFieldNum, Equiv.trans_apply]
-  congr 1
-  funext c
-  rw [hv, AddEquiv.toEquiv_eq_coe, AddEquiv.coe_toEquiv, bits_bitPoly_eq_parityOn]
-
 /-- **Membership in a block of the binary instance.** Cell `(j, v)` lies in block `i` exactly
 when, for every `c`, bit `c` of `v` is the parity of `i` on the exponents `t` with bit `c` of
 `r_j ^ t` set. This is the test of [CarmosinoImpagliazzoKabanetsKolokolova2016, Theorem 3.6]. -/
@@ -305,6 +287,23 @@ theorem Design.mem_block_binaryPolynomial_iff (i : BitString ℓ) (j : Fin n)
     ← Equiv.symm_apply_eq, funext_iff]
   refine forall_congr' fun c => ?_
   rw [AddEquiv.toEquiv_eq_coe, AddEquiv.coe_toEquiv, bits_bitPoly_eq_parityOn]
+
+/-- **Reading a seed in block `i` of the binary instance.** Row `j` contributes the cell whose
+column `v` has the bits of `A_i(r_j)`. Bit `c` of `A_i(r_j)` is the parity of `i` on the exponents
+`t` with bit `c` of `r_j ^ t` set (`bits_bitPoly_eq_parityOn`). So the bit is the seed bit of the
+unique column `v` that has, for every `c`, bit `c` equal to that parity: the cell of block `i`
+in row `j` (`Design.mem_block_binaryPolynomial_iff`). -/
+theorem Design.restrict_binaryPolynomial {α : Type*} (i : BitString ℓ)
+    (z : Fin (n * 2 ^ binaryFieldDegree n) → α) (j : Fin n) (v : Fin (2 ^ binaryFieldDegree n))
+    (hv : ∀ c, (BitString.equivFin _).symm v c =
+      parityOn {t : Fin ℓ | BinaryField.equivBits (binaryFieldDegree_ne_zero n)
+        (binaryFieldPoints n j ^ (t : ℕ)) c = true} i) :
+    (Design.binaryPolynomial n ℓ).restrict (BitString.equivFin ℓ i) z j =
+      z (finProdFinEquiv (j, v)) := by
+  have h := (Design.mem_block_binaryPolynomial_iff i j v).2 hv
+  rw [Design.binaryPolynomial, Design.block_bitPolynomial, mem_bitPolyBlock] at h
+  simp only [Equiv.symm_apply_apply] at h
+  rw [Design.binaryPolynomial, Design.restrict_bitPolynomial, Equiv.symm_apply_apply, ← h]
 
 /-- **The seed of the binary instance has at most `2 n²` bits.** -/
 theorem Design.seedLength_binaryPolynomial_le (n : ℕ) :

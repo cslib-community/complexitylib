@@ -123,7 +123,8 @@ example : IsPPTOn encUnary (encPair encNat encIntBin)
   isPPTOn_sampleBinaryNat.bind_with
     ((isPPTOn_sampleCenteredBinomial.preprocess (by fun_prop)).map_with (by fun_prop))
 
-example : LWE.serializeKeyInputs keyInputs = ([5], ([[3]], [1])) := by decide +kernel
+example : LWE.serializeKeyInputs keyInputs =
+    { secret := [5], publicPart := [[3]], error := [1] } := by decide +kernel
 
 example : LWE.decodeKeyInputs 1 1 6 (LWE.serializeKeyInputs keyInputs) = keyInputs :=
   LWE.decode_serializeKeyInputs keyInputs
@@ -131,9 +132,12 @@ example : LWE.decodeKeyInputs 1 1 6 (LWE.serializeKeyInputs keyInputs) = keyInpu
 example : decodeCoins 1 1 6 (serializeCoins coins) = coins := decode_serializeCoins coins
 
 -- The total decoder reduces representatives, crops excess entries and pads missing entries.
-example : ((LWE.decodeKeyInputs 1 1 6 ([69, 7], ([[67, 8], [9]], [1, 2]))).secret 0).val = 5 ∧
-    ((LWE.decodeKeyInputs 1 1 6 ([69, 7], ([[67, 8], [9]], [1, 2]))).publicPart 0 0).val = 3 ∧
-    (LWE.decodeKeyInputs 1 1 6 ([], ([], []))).error 0 = 0 := by
+example : ((LWE.decodeKeyInputs 1 1 6
+      { secret := [69, 7], publicPart := [[67, 8], [9]], error := [1, 2] }).secret 0).val = 5 ∧
+    ((LWE.decodeKeyInputs 1 1 6
+      { secret := [69, 7], publicPart := [[67, 8], [9]], error := [1, 2] }).publicPart
+        0 0).val = 3 ∧
+    (LWE.decodeKeyInputs 1 1 6 { secret := [], publicPart := [], error := [] }).error 0 = 0 := by
   decide +kernel
 
 example : decodeCoins 1 1 6 [[[true]]] (0, 0) 0 = true ∧
@@ -156,4 +160,32 @@ example : IsPPTOn encUnary LWE.encSerializedKeyInputs
 example : IsPPTOn encUnary encSerializedCoins (fun size => sampleCoinsSerialized size size size) :=
   isPPTOn_sampleCoinsSerialized (by fun_prop) (by fun_prop) (by fun_prop)
 
+example (a b : LWE.SerializedKeyInputs) (hs : a.secret = b.secret)
+    (hp : a.publicPart = b.publicPart) (he : a.error = b.error) : a = b :=
+  LWE.SerializedKeyInputs.ext hs hp he
+
+section Unopened
+
+open Cslib.Crypto.LWE (SerializedKeyInputs encSerializedKeyInputs)
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun inputs : SerializedKeyInputs =>
+      ({ secret := inputs.secret, publicPart := inputs.publicPart,
+         error := inputs.error } : SerializedKeyInputs))
+    encSerializedKeyInputs encSerializedKeyInputs := by
+  fun_prop
+
+end Unopened
+
 end CslibFrontierTests.GSWSampling
+
+namespace CslibFrontierTests.GSWSamplingUnopened
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun inputs : Cslib.Crypto.LWE.SerializedKeyInputs =>
+      ({ secret := inputs.secret, publicPart := inputs.publicPart,
+         error := inputs.error } : Cslib.Crypto.LWE.SerializedKeyInputs))
+    Cslib.Crypto.LWE.encSerializedKeyInputs Cslib.Crypto.LWE.encSerializedKeyInputs := by
+  fun_prop
+
+end CslibFrontierTests.GSWSamplingUnopened

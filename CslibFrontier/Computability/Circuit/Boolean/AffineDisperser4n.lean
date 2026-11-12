@@ -24,8 +24,9 @@ source lets circuits read constants for free, so the bound holds here a fortiori
 is weaker than the source's by at most the two constant gates; `AffineDisperser.lean` uses the
 same convention). This module proves only the size bound and the non-constructive existence of a
 constant affine subspace / disagreeing input (`exists_affine_subspace_const_of_size_lt`,
-`exists_disagreeing_input_of_size_lt`); the deterministic `poly(n, 2^d)`-time refuter clause
-reported on `#4322` remains open (Milestone 4).
+`exists_disagreeing_input_of_size_lt`). The deterministic refuter of `#4322` is in
+`CslibFrontier/Computability/Circuit/Boolean/AffineDisperser4n/Refuter.lean` (`refute_correct` in
+`CslibFrontier/Computability/Circuit/Boolean/AffineDisperser4n/RefuterProofs.lean`; runtime open).
 
 The potential of a state (`State.W`) is `s + 4 q + 6 · #{used unpaired parameters}`. Starting from
 the initial state `initialState C` with `a = n`, `s = C.size`, `q = 0`, and

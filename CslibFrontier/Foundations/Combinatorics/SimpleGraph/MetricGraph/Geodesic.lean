@@ -616,6 +616,45 @@ theorem dist_edgePoint_eq_min_same [Finite V] (d : W.graph.Dart) (s t : unitInte
   simp only [min_add, add_assoc]
   ac_rfl
 
+/-- Two points of one dart whose parameters differ by at most `1 / 2` are at distance
+`|s - t|` times the dart's weight: no detour through the endpoints is shorter. -/
+theorem dist_edgePoint_edgePoint_of_abs_sub_le_half [Finite V] (d : W.graph.Dart)
+    {s t : unitInterval} (hst : |(s : ℝ) - t| ≤ 1 / 2) :
+    dist (edgePoint d s : MetricGraph W) (edgePoint d t) = |(s : ℝ) - t| * W.weight d.edge := by
+  rw [dist_edgePoint_edgePoint_same, vertexDist_self W.weight_nonneg,
+    vertexDist_self W.weight_nonneg]
+  have hw := W.dart_weight_nonneg d
+  have h₁ := vertexDist_nonneg W.weight_nonneg (G := W.graph) d.fst d.snd
+  have h₂ := vertexDist_nonneg W.weight_nonneg (G := W.graph) d.snd d.fst
+  have hs0 := s.2.1; have hs1 := s.2.2; have ht0 := t.2.1; have ht1 := t.2.2
+  obtain ⟨hlo, hhi⟩ := abs_le.mp hst
+  have key : ∀ k : ℝ, |(s : ℝ) - t| ≤ k →
+      |(s : ℝ) - t| * W.weight d.edge ≤ k * W.weight d.edge :=
+    fun k hk => mul_le_mul_of_nonneg_right hk hw
+  have e₁ := key ((s : ℝ) + t) (abs_le.mpr ⟨by linarith, by linarith⟩)
+  have e₂ := key ((s : ℝ) + (1 - t)) (abs_le.mpr ⟨by linarith, by linarith⟩)
+  have e₃ := key ((1 - s : ℝ) + t) (abs_le.mpr ⟨by linarith, by linarith⟩)
+  have e₄ := key ((1 - s : ℝ) + (1 - t)) (abs_le.mpr ⟨by linarith, by linarith⟩)
+  refine min_eq_left (le_min (le_min ?_ ?_) (le_min ?_ ?_)) <;> linarith
+
+/-- Points on two darts that leave a common vertex along distinct edges, each in the first half of
+its dart, are at distance the sum of their offsets from that vertex. -/
+theorem dist_edgePoint_edgePoint_of_fst_eq [Finite V] {d₁ d₂ : W.graph.Dart}
+    (hne : d₁.edge ≠ d₂.edge) (hfst : d₁.fst = d₂.fst) {t₁ t₂ : unitInterval}
+    (ht₁ : (t₁ : ℝ) ≤ 1 / 2) (ht₂ : (t₂ : ℝ) ≤ 1 / 2) :
+    dist (edgePoint d₁ t₁ : MetricGraph W) (edgePoint d₂ t₂) =
+      t₁ * W.weight d₁.edge + t₂ * W.weight d₂.edge := by
+  rw [dist_edgePoint_edgePoint_of_edge_ne hne, hfst, vertexDist_self W.weight_nonneg, add_zero]
+  have hw₁ := W.dart_weight_nonneg d₁
+  have hw₂ := W.dart_weight_nonneg d₂
+  have h₁ := vertexDist_nonneg W.weight_nonneg (G := W.graph) d₂.fst d₂.snd
+  have h₂ := vertexDist_nonneg W.weight_nonneg (G := W.graph) d₁.snd d₂.fst
+  have h₃ := vertexDist_nonneg W.weight_nonneg (G := W.graph) d₁.snd d₂.snd
+  have e₁ := mul_le_mul_of_nonneg_right (show (t₁ : ℝ) ≤ 1 - t₁ by linarith) hw₁
+  have e₂ := mul_le_mul_of_nonneg_right (show (t₂ : ℝ) ≤ 1 - t₂ by linarith) hw₂
+  exact le_antisymm ((min_le_left _ _).trans (min_le_left _ _))
+    (le_min (le_min le_rfl (by linarith)) (le_min (by linarith) (by linarith)))
+
 theorem edgePoint_mem_interval_of_fst [Finite V] {x : MetricGraph W} {d : W.graph.Dart}
     {s t : unitInterval} (hst : (s : ℝ) ≤ t)
     (hx : dist x (edgePoint d t) = dist x (vertex d.fst) + (t : ℝ) * W.weight d.edge) :

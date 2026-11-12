@@ -17,6 +17,8 @@ quick = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = quick
 SPEC.loader.exec_module(quick)
 REPO = Path(__file__).resolve().parent.parent
+# The audit of affected files restored from the artifact cache, run after the build (#4523).
+RESTORES = [sys.executable, "-B", "scripts/check_cache_restores.py"]
 
 
 class QuickCheckTests(unittest.TestCase):
@@ -64,8 +66,32 @@ class QuickCheckTests(unittest.TestCase):
 
     def test_transitive_clients_and_clients_importing_aggregate(self):
         self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertEqual(self.plan().targets,
+        plan = self.plan()
+        self.assertEqual(plan.targets,
                          ["Demo.Base", "Demo.Middle", "DemoTests.AllClient", "DemoTests.Client"])
+        self.assertEqual(plan.restore_files,
+                         ["Demo/Base.lean", "Demo/Middle.lean", "DemoTests/AllClient.lean",
+                          "DemoTests/Client.lean"])
+        self.assertEqual(plan.restore_built, ["Demo.lean"])
+
+    def test_unused_aggregate_is_not_audited_or_built(self):
+        (self.root / "DemoTests/AllClient.lean").unlink()
+        self.write("DemoTests.lean", "import DemoTests.Client\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        self.write(".lake/build/lib/lean/Demo.trace", '{"synthetic": true}')
+        self.assertEqual(self.plan().restore_built, [])
+
+    def record_command(self, command, plan):
+        """Read the audit's temporary manifest while it exists, then normalize its random path."""
+        if command[:3] == RESTORES:
+            self.assertEqual(command[3], "--files-from")
+            self.assertEqual(json.loads(Path(command[4]).read_text()), plan.restore_files)
+            self.assertEqual(command[5:], [part for path in plan.restore_built
+                                          for part in ("--built-under", path)])
+            return RESTORES
+        return command
 
     def use_glob_test_library(self, globs='["DemoTests.+"]'):
         """Switch the fixture's test library to the repository's glob layout: no aggregator."""
@@ -211,13 +237,14 @@ class QuickCheckTests(unittest.TestCase):
         plan = quick.Plan("base", ["Demo.Base"], [("lint", ["lint", "--base", "base"])])
         for lint_status, expected in ((0, [["lint", "--base", "base"],
                                            ["lake", "build", "--wfail", "--iofail", "Demo.Base"],
+                                           RESTORES,
                                            ["lake", "exe", "mk_all", "--check"]]),
                                       (3, [["lint", "--base", "base"]])):
             with self.subTest(lint_status=lint_status):
                 calls = []
 
                 def run(root, command, label):
-                    calls.append(command)
+                    calls.append(self.record_command(command, plan))
                     return lint_status if command[0] == "lint" else 0
 
                 with patch.object(quick, "make_plan", return_value=plan), \
@@ -278,7 +305,7 @@ class QuickCheckTests(unittest.TestCase):
                 calls, listings = [], []
 
                 def run(root, command, label):
-                    calls.append(command)
+                    calls.append(self.record_command(command, plan))
                     if command[:2] == ["lake", "lint"]:
                         listing = Path(command[4].removeprefix("--only-modules="))
                         listings.append(listing)
@@ -290,7 +317,7 @@ class QuickCheckTests(unittest.TestCase):
                 with patch.object(quick, "make_plan", return_value=plan), \
                      patch.object(quick, "run_check", side_effect=run):
                     self.assertEqual(quick.main([], self.root), lint_status)
-                expected = [["lake", "build", "--wfail", "--iofail", *plan.targets],
+                expected = [["lake", "build", "--wfail", "--iofail", *plan.targets], RESTORES,
                             *(["lake", "lint", "--", "--no-build", f"--only-modules={listing}",
                                target] for listing, target in zip(listings, lint))]
                 if not lint_status:
@@ -298,6 +325,26 @@ class QuickCheckTests(unittest.TestCase):
                 self.assertEqual(calls, expected)
                 self.assertEqual(len(listings), 2)
                 self.assertFalse(any(listing.exists() for listing in listings))
+
+    def test_cache_restore_audit_follows_the_build_and_stops_on_failure(self):
+        for targets, audit_status, expected in (
+                (["Demo.Base"], 4, [["lake", "build", "--wfail", "--iofail", "Demo.Base"],
+                                    RESTORES]),
+                # Without Lean changes nothing was built, so there is nothing to audit.
+                ([], 4, [["lake", "exe", "mk_all", "--check"]])):
+            with self.subTest(targets=targets):
+                calls = []
+                plan = quick.Plan("base", targets, [], restore_files=["Demo/Base.lean"])
+
+                def run(root, command, label):
+                    command = self.record_command(command, plan)
+                    calls.append(command)
+                    return audit_status if command == RESTORES else 0
+
+                with patch.object(quick, "make_plan", return_value=plan), \
+                     patch.object(quick, "run_check", side_effect=run):
+                    self.assertEqual(quick.main([], self.root), audit_status if targets else 0)
+                self.assertEqual(calls, expected)
 
     def test_deleted_or_renamed_module_falls_back(self):
         (self.root / "Demo/Base.lean").rename(self.root / "Demo/Renamed.lean")
@@ -333,7 +380,10 @@ class QuickCheckTests(unittest.TestCase):
         self.write("tools/Helper.lean", "import Demo.Base\ndef result : Nat := value\n")
         self.add_executable("import Helper")
         self.write("Demo/Base.lean", "def value : Bool := true\n")
-        self.assertIn("@/demoTool", self.plan().targets)
+        plan = self.plan()
+        self.assertIn("@/demoTool", plan.targets)
+        self.assertIn("tools/Tool.lean", plan.restore_files)
+        self.assertEqual(plan.restore_built, ["Demo.lean", "DemoTests.lean", "tools"])
 
     def test_hyphenated_executable_name_is_built_explicitly(self):
         self.add_executable("import Demo.Base", "demo-tool")

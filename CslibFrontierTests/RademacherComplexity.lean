@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import CslibFrontier.MachineLearning.Rademacher.Classification
 import CslibFrontier.MachineLearning.Rademacher.Generalization
 import CslibFrontier.MachineLearning.Rademacher.GrowthFunction
@@ -98,8 +99,7 @@ guarantee is nontrivial. -/
 example (D : PMF Bool) :
     ((Cslib.Probability.PMF.pi fun _ : Fin 100 => D).toOuterMeasure
       {S | ∃ f ∈ two, 𝔼 i, f (S i) + 61 / 100 < ∑ z, (D z).toReal * f z}).toReal ≤ 1 / 20 := by
-  have hlog2 : Real.log 2 ≤ 1 := by
-    linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)]
+  have hlog2 : Real.log 2 ≤ 1 := Real.log_two_lt_one.le
   have hlog20 : Real.log (1 / (1 / 20)) ≤ 19 := by
     rw [one_div_one_div]
     linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 20)]
@@ -125,8 +125,7 @@ through Massart's lemma. -/
 example (D : PMF Bool) :
     ((Cslib.Probability.PMF.pi fun _ : Fin 10000 => D).toOuterMeasure
       {S | ∃ f ∈ two, 𝔼 i, f (S i) + 1 / 5 < ∑ z, (D z).toReal * f z}).toReal ≤ 1 / 20 := by
-  have hlog2 : Real.log 2 ≤ 1 := by
-    linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)]
+  have hlog2 : Real.log 2 ≤ 1 := Real.log_two_lt_one.le
   have hlog40 : Real.log (2 / (1 / 20)) ≤ 39 := by
     norm_num only
     linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 40)]
@@ -231,8 +230,7 @@ example (D : PMF (Bool × Bool)) (c : Bool → Bool) {m : ℕ} (hm : 0 < m) {δ 
 /-- `√(2 (2 log (e m / 2)) / m) ≤ 1 / 32` for `m = 65536`. -/
 theorem vc_term_le :
     √(2 * ((2 : ℕ) * Real.log (Real.exp 1 * (65536 : ℕ) / (2 : ℕ))) / (65536 : ℕ)) ≤ 1 / 32 := by
-  have hlog2 : Real.log 2 ≤ 1 := by
-    linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)]
+  have hlog2 : Real.log 2 ≤ 1 := Real.log_two_lt_one.le
   have hlog : Real.log (Real.exp 1 * (65536 : ℕ) / (2 : ℕ)) ≤ 16 := by
     rw [show Real.exp 1 * (65536 : ℕ) / (2 : ℕ) = Real.exp 1 * 2 ^ 15 by push_cast; ring,
       Real.log_mul (Real.exp_pos 1).ne' (by norm_num), Real.log_exp, Real.log_pow]
