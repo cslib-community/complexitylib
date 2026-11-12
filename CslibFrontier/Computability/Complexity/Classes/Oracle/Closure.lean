@@ -14,8 +14,8 @@ import CslibFrontier.Computability.Complexity.Classes.Oracle.QueryBit
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.OutputLength
 import CslibFrontier.Foundations.Data.List.TakeQuantifiers
-import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
 # Closure properties of the oracle classes
@@ -161,12 +161,7 @@ theorem PolyTimeReducible.mem_NPWithOracle {encA : α ↪ List Bool} {encB : β 
     (hL' : L' ∈ NPWithOracle A encB) : L ∈ NPWithOracle A encA := by
   obtain ⟨g, hg, hL⟩ := h
   obtain ⟨p, V, hV, hL'⟩ := hL'
-  obtain ⟨r, hlen⟩ := hg.polyBounded_length.exists_polynomial
-  -- the certificate length of the reduced instance, as a polynomial of the instance length
-  set q : Polynomial ℕ := p.comp r with hq
-  have hpq (a : α) : p.eval (encB (g a)).length ≤ q.eval (encA a).length := by
-    rw [hq, Polynomial.eval_comp]
-    exact p.eval_mono (hlen a)
+  obtain ⟨q, hpq⟩ := hg.exists_polynomial_eval_length_le p
   refine ⟨q, fun aw => V (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length)),
     hV.preprocess (f := V) (g := fun aw : α × List Bool =>
       (g aw.1, aw.2.take (p.eval (encB (g aw.1)).length))) (by fun_prop), fun a => ?_⟩

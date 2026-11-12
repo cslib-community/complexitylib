@@ -129,6 +129,14 @@ bounds the encoded output family. The families themselves need not be computable
 [amplification](../../CslibFrontier/Crypto/Computational/ZeroKnowledge/Amplification.lean)
 proofs use this rule to transport witness families through the same deterministic reduction.
 
+A reduction closure proof that runs a certificate or counting bound `q(|f a|)` of the target on
+the reduced instance needs one polynomial in the source length. For
+`hf : ComputableInPolyTime f encIn encOut`, `hf.exists_polynomial_eval_length_le q` in
+[`PolyTime.OutputLength`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/OutputLength.lean)
+gives `P` with `q(|f a|) ≤ P(|a|)` for every `a`; `PolyTimeReducible.mem_FewP` and
+`PolyTimeReducible.mem_NPWithOracle` use it. For `q = X`, apply `PolyBounded.exists_polynomial`
+to `hf.polyBounded_length`.
+
 Import
 [`ResourceBounds.Polynomial.Automation`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Automation.lean)
 and use `growth_poly` for `Turing.MultiTapeTM.PolyBounded size cost`. Constants, the original
