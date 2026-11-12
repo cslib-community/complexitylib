@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import CslibFrontier.GameTheory.Strategic.SwapRegretDynamics
 import CslibFrontierTests.GameTheory.Strategic
 
@@ -35,8 +36,7 @@ theorem blumMansour_pennies {T : ℕ} (hT : 2 ≤ T) :
   have hn : ∀ _i : Fin 2, 2 ≤ Fintype.card Bool := fun _ => by decide
   have hT_bound : ∀ _i : Fin 2, (Fintype.card Bool : ℝ) * log (Fintype.card Bool) ≤ T := by
     intro _
-    have hlog : Real.log 2 ≤ 1 :=
-      (Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)).trans_eq (by norm_num)
+    have hlog : Real.log 2 ≤ 1 := Real.log_two_lt_one.le
     have hT' : (2 : ℝ) ≤ T := by exact_mod_cast hT
     norm_num
     nlinarith

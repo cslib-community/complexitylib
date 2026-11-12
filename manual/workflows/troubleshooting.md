@@ -44,11 +44,33 @@ This retries restoration; it does not assert network or cache availability. On a
 
 If a small change causes a large rebuild, inspect its imports and exported interface. Public declarations and exposed definition bodies can invalidate dependents. The [build fan-out case study](../history/case-studies.md) explains why widely imported hubs can be costly. A slow rebuild alone does not demonstrate a cache defect.
 
+The output-based audits (`audit_queries.py`, `check_changed_files.py`, `check_tidy_surface.py`
+and `check_tidy_usage.py`) need a complete build of the library and tests. Their shared
+[`lean_outputs.py`](../../scripts/lean_outputs.py) preflight checks the physical output inventory
+before invoking Lake: current source modules, including the root aggregate and glob-built tests,
+must have their recorded module artifacts. The test-inclusive inventory also includes its
+root-package `CslibFrontierResults` dependency, its aggregate and current result source modules.
+Ordinary single-part modules and split module-system
+outputs are distinguished by their traces. A cache entry or local `.ltar` archive does not count
+as an unpacked artifact. A cold or partial tree is refused as missing or stale without asking
+Lake to restore its missing outputs. `parallel_defs.py` uses the same guard with its existing
+library-only scope; it does not require test or results outputs. Run `scripts/check.sh` explicitly when the checkout and
+resources are ready for full validation, then retry the audit. `--no-build-check` disables
+freshness verification; it does not repair missing artifacts or certify a partial audit.
+
+This inventory guard is a bounded mitigation, not a read-only Lake mode. For a complete output
+tree, the retained `lake build --no-build` freshness check can still restore or replace outputs,
+or publish artifacts to the local cache, even when the outputs are current. `--no-cache` does
+not disable a package's explicitly enabled local artifact cache. Exact freshness without these
+mutations remains tracked in [#4700](https://github.com/cslib-community/cslib-frontier/issues/4700).
+
 ## Diagnose warnings that only CI reports
 
-Sometimes `lake build --wfail --iofail`, `lake test --wfail --iofail` or `scripts/check.sh` passes locally while CI fails the same revision on a warning, such as a `longLine` lint in a new test file. This happens when another checkout on the same machine already built the module with the warning. Lake saves the outputs to the shared [local artifact cache](../../scripts/cache/README.md) even when the build logged warnings, but it does not save the messages. When your checkout builds the same source, Lake restores the outputs and writes a trace with `"synthetic": true` and an empty `"log"`, so there is nothing for `--wfail` to reject. CI fills its remote cache only from `main`, so it elaborates the new source and reports the warning.
+Sometimes `lake build --wfail --iofail` or `lake test --wfail --iofail` passes locally while CI fails the same revision on a warning, such as a `longLine` lint in a new test file. This happens when another checkout on the same machine already built the module with the warning. Lake saves the outputs to the shared [local artifact cache](../../scripts/cache/README.md) even when the build logged warnings, but it does not save the messages. When your checkout builds the same source, Lake restores the outputs and writes a trace with `"synthetic": true` and an empty `"log"`, so there is nothing for `--wfail` to reject. CI fills its remote cache only from `main`, so it elaborates the new source and reports the warning.
 
-After the Lean gates, full and quick `scripts/check.sh` both run `scripts/check_cache_restores.py`. It re-elaborates every changed library or test file whose trace is synthetic and fails on any message. A reported message can also come from one of the file's imports, because `lake lean` replays their logs. Files are elaborated one at a time, so each restored file adds its elaboration time to the check. To check one file yourself, run `lake -q lean <file>` and treat any output as a failure, because `lake lean` exits 0 after warnings. The check does not cover an unchanged module that a local restore brought back with warnings, for example a client of a changed module that warns about a deprecation, when another checkout has already built it. CI still catches that case. Closing the gap requires Lake to store each entry's messages and replay them on restore ([#4523](https://github.com/cslib-community/cslib-frontier/issues/4523)).
+After the Lean gates, full and quick `scripts/check.sh` both run `scripts/check_cache_restores.py`. Full mode checks all built sources in the root package, including unchanged clients, tests and executables. This conservative scope also covers deletions and configuration changes that cannot use quick mode's import graph. Quick mode passes its affected source files, including unchanged importing clients. It also checks built aggregates on those clients' import paths: an aggregate can warn about a deprecated import even when its importing client elaborates silently. Unused library aggregates are omitted. Selected executables add their built helpers and affected built aggregates conservatively because their helper imports are outside the library graph. These optional paths are audited only when outputs exist. A synthetic, missing or unreadable trace triggers re-elaboration; an ordinary trace has already replayed its messages during the build.
+
+The audit fails on any message or elaboration failure. A reported message can also come from one of the file's imports, because `lake lean` replays their logs. Files are elaborated one at a time, so each restored file adds its elaboration time to the check; a full check after a large restore can take appreciably longer. To check one file yourself, run `lake -q lean <file>` and treat any output as a failure, because `lake lean` exits 0 after warnings. This closes the local audit's affected-client gap, but does not change Lake's cache format or cover dependency packages outside the root package. Bare Lake commands still need upstream Lake to store each entry's messages and replay them on restore ([#4523](https://github.com/cslib-community/cslib-frontier/issues/4523)).
 
 ## Diagnose "Too many open files in system"
 

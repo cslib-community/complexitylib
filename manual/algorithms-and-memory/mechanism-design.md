@@ -387,6 +387,10 @@ arXiv:0907.2049v1 p. 4) to a facility distribution `ProbabilityMeasure G`.
   `PMF` rules into `Mechanism`, using `PMF.toMeasure_eq_sum` and `PMF.lintegral_toMeasure` from
   [PMF.ToMeasure](../../CslibFrontier/Probability/PMF/ToMeasure.lean) for `expectedECost_ofPMF`.
   `HasApproxRatio.one_le` shows `1 ≤ α` whenever `G` is nontrivial and `2 ≤ Fintype.card ι`.
+  For deterministic rules on a metric space, `unanimous_of_surjective_isStrategyProof` shows that
+  surjective strategyproof rules are unanimous. `profile_update_induction`, which switches agents
+  from one profile to another one at a time, is the shared induction behind that lemma, the
+  interval and tree Pareto arguments and the cycle coalition argument.
 * [FacilityLocation.Dictatorship](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Dictatorship.lean):
   proves on any pseudometric space (`[OpensMeasurableSpace G]`) that `dictatorship i₀` is strongly
   group strategyproof (`dictatorship_isGroupStrategyProof`) with the elementary worst-case
@@ -433,8 +437,7 @@ modules characterize deterministic strategyproof onto mechanisms following
 [Moulin][moulin80] (primary paper not read directly) and [Schummer and Vohra][schummervohra02] (author preprint, Theorems 1 and 2):
 
 * [FacilityLocation.Interval](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Interval.lean):
-  shows that surjective deterministic strategyproof rules satisfy unanimity
-  (`unanimous_of_surjective_isStrategyProof`) and formalizes Moulin's generalized median rules via
+  formalizes Moulin's generalized median rules via
   `MoulinScheme ι a b` (`MoulinScheme.eval`, `MoulinScheme.eval_surjective`,
   `MoulinScheme.eval_isGroupStrategyProof`). `isStrategyProof_and_surjective_iff_exists_moulinScheme`
   equates deterministic strategyproofness plus surjectivity on `Set.Icc a b` (`a < b`) with

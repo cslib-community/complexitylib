@@ -412,12 +412,8 @@ theorem realizes_promoteStepGen :
       (WordEncoding.encode (α := (DictParams × (ℕ × ℕ)) × ℕ)) (WordEncoding.encode (α := ℕ))
       PromoteStepGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hrq := realizes_readQuotGen
-  have hwq := realizes_writeQuotGen
-  have hrv := realizes_readValGen
-  have hwv := realizes_writeValGen
-  have hrem := realizes_removeLastTailItemGen
+  -- Stage the shared tail indices once; automatic preparation at each call exceeds the
+  -- default elaboration budget for this large encoded environment.
   refine Realizes.congr (p := fun d : (DictParams × (ℕ × ℕ)) × ℕ => do
       let u ← pure (dpSlabSizeSubOne d.1.1 - d.2)
       let r_top ← pure (dpSlabSize d.1.1 + u)
@@ -442,6 +438,8 @@ theorem realizes_promoteStepGen :
       pure (d.2 + 1)) ?_
     (fun d => by simp only [promoteStepGenProg, pure_bind])
   realize
+    [realizes_readGMGen, realizes_readQuotGen, realizes_writeQuotGen, realizes_readValGen,
+      realizes_writeValGen, realizes_removeLastTailItemGen]
   all_goals (
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     let d := (d1, d2)
@@ -831,14 +829,8 @@ def promoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × �
 @[simp] theorem iterate_promoteStepGenProg_mk (U V w n_max h_space : ℕ)
     (d : ℕ × ℕ) (m k : ℕ) :
     iterate promoteStepGenProg (mkDictParams U V w n_max h_space, d) m k =
-      iterate (promoteStepProg U V w n_max h_space) d m k := by
-  induction m generalizing k with
-  | zero => rfl
-  | succ m ih =>
-    unfold iterate
-    rw [promoteStepGenProg_mk]
-    congr 1 with s' : 1
-    exact ih s'
+      iterate (promoteStepProg U V w n_max h_space) d m k :=
+  iterate_congr (fun a => promoteStepGenProg_mk U V w n_max h_space d a) m k
 
 @[simp] theorem promoteLoopGenProg_mk (U V w n_max h_space : ℕ)
     (d1 : ℕ × ℕ) (d2 d3 : ℕ) :
@@ -852,13 +844,9 @@ def promoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × �
         (mkDictParams U V w₀ n_max h_space, d) m k s ↔
       iterationSafe (promoteStepProg U V w₀ n_max h_space)
         (fun w x s => PromoteStepPre U V w₀ n_max h_space w x.1.1 x.1.2 x.2 s)
-        w d m k s := by
-  induction m generalizing k s with
-  | zero => exact Iff.rfl
-  | succ m ih =>
-    unfold iterationSafe
-    rw [promoteStepGenPre_mk, promoteStepGenProg_mk]
-    exact and_congr_right fun _ => ih _ _
+        w d m k s :=
+  iterationSafe_congr (fun a => promoteStepGenProg_mk U V w₀ n_max h_space d a)
+    (fun a t => promoteStepGenPre_mk U V w₀ n_max h_space w d a t) m k s
 
 theorem realizes_promoteLoopGen :
     Realizes .exact promoteLoopGenProg

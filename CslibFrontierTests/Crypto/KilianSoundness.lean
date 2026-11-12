@@ -44,8 +44,8 @@ abbrev key : List Bool := [false, true]
 abbrev root : List Bool := key
 
 /-- Two runs on the same random string, opening its position to different bits. -/
-abbrev response₁ : KilianResponse := [[(true, [key])]]
-abbrev response₂ : KilianResponse := [[(false, [key])]]
+abbrev response₁ : KilianResponse := [[⟨true, [key]⟩]]
+abbrev response₂ : KilianResponse := [[⟨false, [key]⟩]]
 
 -- Both runs are accepted.
 example : kilianVerify constHash trivialVerifier key x root [[true]] response₁ = true := by decide
@@ -54,7 +54,7 @@ example : kilianVerify constHash trivialVerifier key x root [[true]] response₂
 -- The adversary finds the conflict, and its output breaks position binding.
 example : kilianConflict trivialVerifier x (kilianOpenings trivialVerifier x [[true]] response₁)
     (kilianOpenings trivialVerifier x [[true]] response₂) =
-      some ((5, true, [key]), (5, false, [key])) := by decide
+      some ((5, ⟨true, [key]⟩), (5, ⟨false, [key]⟩)) := by decide
 example : merkleBreaksBinding constHash key (kilianBindingOutput trivialVerifier x root
     (kilianOpenings trivialVerifier x [[true]] response₁)
     (kilianOpenings trivialVerifier x [[true]] response₂)) = true := by decide

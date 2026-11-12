@@ -18,8 +18,11 @@ public import CslibFrontier.Computability.Probabilistic.UniformNat
 public import CslibFrontier.Computability.Probabilistic.Repeat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import Mathlib.Data.List.GetD
 
 /-!
 # Strict-PPT integer-box samplers and efficiency certificates for Lyubashevsky identification
@@ -334,15 +337,12 @@ def vecOfList (m : ℕ) (l : List ℤ) : Fin m → ℤ :=
   fun i => l.getD i.val 0
 
 @[simp] theorem vecOfList_ofFn {m : ℕ} (v : Fin m → ℤ) :
-    vecOfList m (List.ofFn v) = v := by
-  funext i
-  simp [vecOfList, List.getD_eq_getElem?_getD]
+    vecOfList m (List.ofFn v) = v :=
+  funext fun i => List.getD_ofFn v i 0
 
 theorem ofFn_vecOfList {m : ℕ} {l : List ℤ} (hl : l.length = m) :
-    List.ofFn (vecOfList m l) = l := by
-  subst m
-  refine List.ext_getElem (by simp) fun i hi hi' => ?_
-  simp [vecOfList, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi']
+    List.ofFn (vecOfList m l) = l :=
+  List.ofFn_getD_eq_of_length 0 hl
 
 /-- Deterministic coin-to-list sampler for `[-B, B]^m`, slicing `m * width` bits into `m` rows of
 `width` bits and mapping each row by `sampleIntBoxCoins B`. -/
@@ -377,7 +377,7 @@ theorem sampleIntBoxVecCoins_mem_intBox (B m width : ℕ) (coins : List Bool) :
     simp [sampleIntBoxListCoins]
   have hget : (sampleIntBoxListCoins B m width coins).getD i.val 0 =
       sampleIntBoxCoins B (BitString.listRows m width coins)[i.val] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some]
+    rw [List.getD_eq_getElem _ _ hi]
     simp [sampleIntBoxListCoins]
   change |(sampleIntBoxListCoins B m width coins).getD i.val 0| ≤ B
   rw [hget]
@@ -650,8 +650,7 @@ def encZModVec (n q : ℕ) : (Fin n → ZMod q) ↪ List Bool :=
     have hlist := (encList encIntBin).injective huv
     funext i
     have hi := congrArg (fun l : List ℤ => l.getD i.val 0) hlist
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, ↓reduceDIte,
-      Option.getD_some] at hi
+    simp only [List.getD_ofFn] at hi
     exact Function.LeftInverse.injective ZMod.intCast_zmod_cast hi⟩
 
 /-- Encode a matrix in `Matrix (Fin n) (Fin m) (ZMod q)` as a framed list of row lists. -/
@@ -662,8 +661,7 @@ def encZModMatrix (n m q : ℕ) : Matrix (Fin n) (Fin m) (ZMod q) ↪ List Bool 
     have hrows := (encList (encList encIntBin)).injective hMN
     ext i j
     have hij := congrArg (fun rows : List (List ℤ) => (rows.getD i.val []).getD j.val 0) hrows
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, j.isLt, ↓reduceDIte,
-      Option.getD_some] at hij
+    simp only [List.getD_ofFn] at hij
     exact Function.LeftInverse.injective ZMod.intCast_zmod_cast hij⟩
 
 /-- Encode a fixed-width bit-string challenge `BitString k` as a raw bit list. -/
@@ -912,7 +910,7 @@ theorem challengeIntList_ofFn {k : ℕ} (c : BitString k) :
   rw [challengeIntList, ← List.map_coe_finRange_eq_range, List.map_map]
   conv_rhs => rw [List.ofFn_eq_map]
   refine List.map_congr_left fun j _ => ?_
-  simp [List.getD_eq_getElem?_getD, lyubashevskyChallenge]
+  simp [lyubashevskyChallenge]
 
 theorem inBoxList_ofFn {m B : ℕ} (z : Fin m → ℤ) :
     inBoxList m B (List.ofFn z) = decide (z ∈ intBox (Fin m) B) := by
@@ -920,15 +918,13 @@ theorem inBoxList_ofFn {m B : ℕ} (z : Fin m → ℤ) :
   constructor
   · intro h i
     have hi := h i.val (List.mem_range.mpr i.isLt)
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, ↓reduceDIte,
-      Option.getD_some, decide_eq_true_eq] at hi
+    simp only [List.getD_ofFn, decide_eq_true_eq] at hi
     zify at hi
     exact hi
   · intro h j hj
     have hj_lt : j < m := List.mem_range.mp hj
     have hi := h ⟨j, hj_lt⟩
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, hj_lt, ↓reduceDIte,
-      Option.getD_some, decide_eq_true_eq]
+    simp only [List.getD_ofFn_of_lt z hj_lt, decide_eq_true_eq]
     zify
     exact hi
 
@@ -951,8 +947,7 @@ theorem lyubashevskyVerifyEqList_ofFn (n m k q : ℕ)
     rw [ListMatrix.intCast_dotProduct_matrix_ofFn A z i] at hcast
     rw [Int.cast_add,
       ListMatrix.intCast_dotProduct_matrix_ofFn T (lyubashevskyChallenge c) i] at hcast
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, ↓reduceDIte,
-      Option.getD_some, ZMod.intCast_zmod_cast] at hcast
+    simp only [List.getD_ofFn, ZMod.intCast_zmod_cast] at hcast
     exact hcast
   · intro h j hj
     have hj_lt : j < n := List.mem_range.mp hj
@@ -961,8 +956,7 @@ theorem lyubashevskyVerifyEqList_ofFn (n m k q : ℕ)
     congr 1
     rw [ListMatrix.intCast_dotProduct_matrix_ofFn A z i, Int.cast_add,
       ListMatrix.intCast_dotProduct_matrix_ofFn T (lyubashevskyChallenge c) i]
-    simp only [i, List.getD_eq_getElem?_getD, List.getElem?_ofFn, hj_lt, ↓reduceDIte,
-      Option.getD_some, ZMod.intCast_zmod_cast]
+    rw [List.getD_ofFn_of_lt _ hj_lt, ZMod.intCast_zmod_cast]
     exact h i
 
 private theorem unframe_encPair {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool)
