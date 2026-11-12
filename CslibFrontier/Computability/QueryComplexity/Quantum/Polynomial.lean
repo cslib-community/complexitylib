@@ -80,6 +80,8 @@ algorithm; there is no separate definition of quantum query complexity.
 
 public section
 
+open scoped NNReal
+
 namespace Cslib
 
 namespace BitString
@@ -203,7 +205,7 @@ private theorem measureProb_run_mem_Icc (U : ℕ → State N W →ₗᵢ[ℂ] St
 /-- **Approximate degree bounds quantum queries** [Beals, Buhrman, Cleve, Mosca, de
 Wolf][BealsBuhrmanCleveMoscaDeWolf2001]: if a `T`-query algorithm accepts every input `x`, by an
 outcome in `S`, with probability within `ε` of `f(x)`, then `adeg_ε(f) ≤ 2T`. -/
-theorem approxDegree_le_two_mul {f : BooleanFunction N} {ε : ℝ}
+theorem approxDegree_le_two_mul {f : BooleanFunction N} {ε : ℝ≥0}
     (U : ℕ → State N W →ₗᵢ[ℂ] State N W) (ψ₀ : State N W) (T : ℕ)
     (S : Finset (Fin N × Bool × W))
     (h : ∀ x, |measureProb (run U ψ₀ x T) S - bitVal ℝ (f x)| ≤ ε) :

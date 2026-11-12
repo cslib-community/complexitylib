@@ -2377,6 +2377,17 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.BouquetOrder
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Sectors
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Bounds
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.CSPBounds
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Declarations
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Frame
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Input
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Moves
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Parity
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Recovery
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryBudget
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryInvariants
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.Split
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Relabel
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Star
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Transport
@@ -3643,6 +3654,8 @@ public import CslibFrontier.Computability.PolyTime.GaloisRingInterpolation
 public import CslibFrontier.Computability.PolyTime.GaloisRingSeries
 public import CslibFrontier.Computability.PolyTime.GaloisRingUnits
 public import CslibFrontier.Computability.PolyTime.Graph.RotationSystem
+public import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query
+public import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery
 public import CslibFrontier.Computability.PolyTime.GreedyLabelSchedule
 public import CslibFrontier.Computability.PolyTime.GreedySlotScore
 public import CslibFrontier.Computability.PolyTime.Int.DotProduct
@@ -4464,10 +4477,13 @@ public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.DealClient
 public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Information
 public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Protocol
 public import CslibFrontier.Crypto.Protocols.PIR.Basic
+public import CslibFrontier.Crypto.Protocols.PIR.Block
+public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Crypto.Protocols.PIR.CoveringCode
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
 public import CslibFrontier.Crypto.Protocols.PIR.Interactive
 public import CslibFrontier.Crypto.Protocols.PIR.LinearSummation
+public import CslibFrontier.Crypto.Protocols.PIR.Shamir
 public import CslibFrontier.Crypto.Protocols.PIR.SingleServer
 public import CslibFrontier.Crypto.Protocols.PIR.SmoothCode
 public import CslibFrontier.Crypto.Protocols.PolynomialCommitment.Basic
@@ -4480,6 +4496,7 @@ public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Desig
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Privacy
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Shamir
 public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
+public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Product
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.RandomOracle
@@ -5426,6 +5443,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import CslibFrontier.Foundations.Data.Nat.Choose.Real
 public import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 public import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
+public import CslibFrontier.Foundations.Data.Nat.Clog
 public import CslibFrontier.Foundations.Data.Nat.ClogPow
 public import CslibFrontier.Foundations.Data.Nat.ConstantDivision
 public import CslibFrontier.Foundations.Data.Nat.Div

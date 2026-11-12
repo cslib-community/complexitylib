@@ -122,8 +122,7 @@ embed the blocks of `x`, it is `1` if `f x` and `0` otherwise. -/
 theorem truthTableExtension_block (h : BitString b ↪ F) (f : BooleanFunction (m * b))
     (x : BitString (m * b)) :
     truthTableExtension h f (fun i => h (BitString.block x i)) = if f x then 1 else 0 := by
-  rw [truthTableExtension, lowDegreeExtension_apply_embed]
-  exact congrArg (fun z => if f z then (1 : F) else 0) (BitString.blocksEquiv.symm_apply_apply x)
+  rw [truthTableExtension, lowDegreeExtension_apply_embed, BitString.blocksEquiv_symm_block]
 
 /-- **The worst-case-to-average-case encoding** [SudanTrevisanVadhan2001]. On an input of
 `m * w + w` bits, read the first `m * w` bits as a point `x` of `F ^ m` and the last `w` bits as
