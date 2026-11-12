@@ -1253,6 +1253,17 @@ theorem memoryCost_writeLMProg (U V w n_max h_space c : ℕ) (d : (ℕ × ℕ) �
 theorem memoryCost_writeGMProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (writeGMProg U V w n_max h_space d) s = 4 := rfl
 
+/-- A packed write updates the bounded logical array and preserves its zero padding. -/
+private theorem readPacked_writePacked_bounded {base N k w idx val : ℕ}
+    (hw : 0 < w) (hidx : idx < N) (hval : val < 2 ^ k) (mem : ℕ → ℕ) :
+    (fun j => if j < N then readPacked base k w (writePacked base k w mem idx val) j else 0) =
+      Function.update (fun j => if j < N then readPacked base k w mem j else 0) idx val := by
+  refine Function.eq_update_iff.mpr ⟨?_, fun j hj => ?_⟩
+  · simpa only [hidx, ↓reduceIte] using readPacked_writePacked_self base k w mem idx hval
+  · split_ifs
+    · exact readPacked_writePacked_of_ne hw mem hj val
+    · rfl
+
 /-- Pure state effect of `writeQuotProg`. -/
 theorem writeQuotProg_effect {U V w n_max h_space base idx val : ℕ}
     (hw : 0 < w) (hidx_lt : idx < n_max) (hval_lt : val < 2 ^ quotientBits U n_max)
@@ -1275,13 +1286,9 @@ theorem writeQuotProg_effect {U V w n_max h_space base idx val : ℕ}
     rw [hmem]
     exact writePacked_outside hw s.mem hidx_lt _ (by dsimp only [offVal] at ha; omega)
   refine ⟨rfl, hout_mem, ?_, ?_, ?_, ?_⟩
-  · funext j; unfold quotAt
-    by_cases hj : j = idx
-    · subst hj; rw [Function.update_self]; simp only [hidx_lt, ↓reduceIte, hmem]
-      exact readPacked_writePacked_self _ _ _ _ _ hval_lt
-    · rw [Function.update_of_ne hj]; split_ifs with hj_lt
-      · rw [hmem]; exact readPacked_writePacked_of_ne hw s.mem hj _
-      · rfl
+  · unfold quotAt
+    rw [hmem]
+    exact readPacked_writePacked_bounded hw hidx_lt hval_lt s.mem
   · funext j; unfold valAt; split_ifs with hj_lt
     · exact readPacked_congr hw (fun a ⟨ha1, _⟩ => hout_mem a (by omega)) hj_lt
     · rfl
@@ -1320,13 +1327,9 @@ theorem writeValProg_effect {U V w n_max h_space base idx val : ℕ}
     · exact readPacked_congr hw (fun a ⟨_, ha2⟩ =>
         hout_mem a (by dsimp only [offVal, offQuot] at ha2 ⊢; omega)) hj_lt
     · rfl
-  · funext j; unfold valAt
-    by_cases hj : j = idx
-    · subst hj; rw [Function.update_self]; simp only [hidx_lt, ↓reduceIte, hmem]
-      exact readPacked_writePacked_self _ _ _ _ _ hval_lt
-    · rw [Function.update_of_ne hj]; split_ifs with hj_lt
-      · rw [hmem]; exact readPacked_writePacked_of_ne hw s.mem hj _
-      · rfl
+  · unfold valAt
+    rw [hmem]
+    exact readPacked_writePacked_bounded hw hidx_lt hval_lt s.mem
   · funext ⟨c, j⟩; unfold lmAt; split_ifs with hp
     · exact readPacked_congr hw (fun a ⟨ha1, _⟩ =>
         hout_mem a (by dsimp only [offLMSub] at ha1; omega)) hp.2
@@ -1488,13 +1491,9 @@ theorem gmAt_writeGMProg {U V w n_max h_space base idx val : ℕ}
   have hmem : ((Memory.spec 0).clientState s
       (writeGMProg U V w n_max h_space ((base, idx), val))).mem =
       writePacked (base + offGM U V w n_max h_space) (globalPtrBits n_max) w s.mem idx val := rfl
-  funext j; unfold gmAt
-  by_cases hj : j = idx
-  · subst hj; rw [Function.update_self]; simp only [hidx, ↓reduceIte, hmem]
-    exact readPacked_writePacked_self _ _ _ _ _ hval
-  · rw [Function.update_of_ne hj]; split_ifs with hj_lt
-    · rw [hmem]; exact readPacked_writePacked_of_ne hw s.mem hj _
-    · rfl
+  unfold gmAt
+  rw [hmem]
+  exact readPacked_writePacked_bounded hw hidx hval s.mem
 
 /-- Pure state effect of `writeGMProg`. -/
 theorem writeGMProg_effect {U V w n_max h_space base idx val : ℕ}
