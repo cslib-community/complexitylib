@@ -95,7 +95,7 @@ structure GraphIsomorphismInstance where
   first : Graph
   /-- The second graph in the pair. -/
   second : Graph
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `GraphIsomorphismInstance` as a pair `(first, second)`. -/
 enc_structure encGraphIsomorphism : GraphIsomorphismInstance where

@@ -48,6 +48,7 @@ example : ComputableInPolyTime (fun p : Graph × ℕ => (⟨p.1, p.2⟩ : Feedba
     (encPair encGraph encNat) encFeedbackVertexSet := by
   fun_prop
 
+example : (default : FeedbackVertexSetInstance) = ⟨default, default⟩ := rfl
 
 /-! ### Directed cycles -/
 

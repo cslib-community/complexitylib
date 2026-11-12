@@ -30,7 +30,7 @@ substitution follow the chain rule (`MvPolynomial.pderiv_aeval`).
 * `MvPolynomial.totalDegree_aeval_le`: substituting polynomials of degree at most `1` does not raise
   the degree.
 * `MvPolynomial.natDegree_aeval_le_mul`: substituting univariate polynomials of degree at most
-  `k` gives a polynomial of degree at most `k` times the total degree.
+  `k`, over an algebra, gives a polynomial of degree at most `k` times the total degree.
 * `MvPolynomial.eval_polynomial_aeval`: evaluating a substitution of univariate polynomials.
 * `MvPolynomial.pderiv_aeval`: the chain rule for formal partial derivatives.
 -/
@@ -65,17 +65,18 @@ theorem totalDegree_aeval_le {g : τ → MvPolynomial σ R} (hg : ∀ i, (g i).t
     (P : MvPolynomial τ R) : (aeval g P).totalDegree ≤ P.totalDegree :=
   (totalDegree_aeval_le_mul hg P).trans_eq (Nat.mul_one _)
 
-/-- Substituting univariate polynomials of degree at most `k` for the variables gives a
-polynomial of degree at most `k` times the total degree. -/
-theorem natDegree_aeval_le_mul {g : τ → Polynomial R} {k : ℕ} (hg : ∀ i, (g i).natDegree ≤ k)
+/-- Substituting univariate polynomials of degree at most `k`, with coefficients in an
+`R`-algebra, for the variables gives a polynomial of degree at most `k` times the total
+degree. -/
+theorem natDegree_aeval_le_mul {A : Type*} [CommSemiring A] [Algebra R A]
+    {g : τ → Polynomial A} {k : ℕ} (hg : ∀ i, (g i).natDegree ≤ k)
     (P : MvPolynomial τ R) : (aeval g P).natDegree ≤ P.totalDegree * k := by
   conv_lhs => rw [P.as_sum]
   rw [map_sum]
   refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun s hs => ?_
   rw [aeval_monomial, Finsupp.prod]
   refine Polynomial.natDegree_mul_le.trans ?_
-  rw [Polynomial.algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply,
-    Polynomial.natDegree_C, zero_add]
+  rw [Polynomial.algebraMap_apply, Polynomial.natDegree_C, zero_add]
   refine (Polynomial.natDegree_prod_le _ _).trans ?_
   calc ∑ i ∈ s.support, (g i ^ s i).natDegree
       ≤ ∑ i ∈ s.support, s i * k :=
