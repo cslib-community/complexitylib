@@ -685,7 +685,7 @@ theorem ExecSteps.toOfFn {C : StateTransitionImpl P D w base params s₀}
     let proj : CoupledRState C.Seed D.State r_ds → C.Seed × RData r_ds := fun t => (t.seed, t.data)
     let lift : C.Seed × RData r_ds → CoupledRState C.Seed D.State r_ds := fun p => ⟨p.1, s, p.2⟩
     have hlift_proj : ∀ t ∈ ν_rel.support, lift (proj t) = t := by
-      intro ⟨θ, s_t, x⟩ ht; subst (hs ⟨θ, s_t, x⟩ ht); rfl
+      intro ⟨θ, s_t, x⟩ ht; have heq := hs ⟨θ, s_t, x⟩ ht; subst heq; rfl
     have hs₁ : ∀ q ∈ (ν_rel.bind μ_step).support, q.state = (D.stepFn s o).1 := by
       intro q hq; rw [PMF.mem_support_bind_iff] at hq; obtain ⟨t, ht, hq_s⟩ := hq
       obtain ⟨a, hstep_a, _, _, _⟩ := (hstep t ht).2 q hq_s; rw [hs t ht] at hstep_a
