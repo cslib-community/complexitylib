@@ -294,6 +294,26 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShif
 
 **Not certified here.** The proof of Forbes, Saptharishi and Shpilka by rank condensers, and their size bound: for every individual degree the statement is proved by the argument of `boundedDegreeShifts` above, and `concentratingShifts F P` is `boundedDegreeShifts F 1 P`. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
 
+## Roots of polynomial equations and hardness versus randomness
+
+This section collects the pieces of the hardness-versus-randomness route for constant-depth formulas (issue #4734); each is usable alone.
+
+**Lagrange inversion.** Import [LagrangeInversion.lean](../../CslibFrontier/Foundations/Algebra/Polynomial/LagrangeInversion.lean). For a commutative ring `R` that is an algebra over a field `F` of characteristic zero, an ideal `J` of `R`, a polynomial `G : R[X]` with `G.coeff 0 ∈ J` and `G.coeff 1 ∈ J`, and `f ∈ J` with `G.eval f = f`, `Polynomial.sub_sum_coeff_pow_mem_of_eval_eq` gives `f - ∑ m ∈ range N, ((m : F) + 1)⁻¹ • (G ^ (m + 1)).coeff m ∈ J ^ e` whenever `2 * e ≤ N`. `Polynomial.sum_coeff_mul_pow_sub_eval_mem` is the Lagrange–Good form for `H.eval f`. The proof is finite (no power series), with the weight filtration `Polynomial.HasWeight`.
+
+**Roots.** Import [LowDegreeRoot.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/LowDegreeRoot.lean); `J` is Mathlib's `MvPolynomial.idealOfVars`. For `P : Polynomial (MvPolynomial σ F)` in characteristic zero:
+
+- a *simple root at the origin* — `constantCoeff f = 0`, `P.eval f = 0`, `constantCoeff (P.coeff 1) ≠ 0` — has, for every `D`, `truncateTotalDegree D f` equal to the truncation of `∑ m ∈ range (2 * (D + 1)), ((m : F) + 1)⁻¹ • ((X - C (C a⁻¹) * P) ^ (m + 1)).coeff m` with `a = constantCoeff (P.coeff 1)` (`MvPolynomial.truncateTotalDegree_root_eq`);
+- *any root* of `P ≠ 0` reduces to that case after the `j`-th `y`-derivative and a shift of the variables by a point `x₀` (`MvPolynomial.exists_shift_eq_truncate_sum_of_root`, through `exists_iterate_derivative_eval_ne_zero`): `shift x₀ f = C (eval x₀ f) + truncateTotalDegree D (…)` for every `D ≥ f.totalDegree`.
+
+Complete clients: [LagrangeInversion.lean](../../CslibFrontierTests/Foundations/Algebra/Polynomial/LagrangeInversion.lean) (the fixed point `t` of `G = t` over `ℚ[t]`) and [LowDegreeRoot.lean](../../CslibFrontierTests/Foundations/Data/MvPolynomial/LowDegreeRoot.lean) (the root `x₀ x₁` of `y - x₀ x₁`, simple, and of `(y - x₀ x₁) ^ 2`, double). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Foundations.Algebra.Polynomial.LagrangeInversion \
+  CslibFrontierTests.Foundations.Data.MvPolynomial.LowDegreeRoot
+```
+
+**Not certified here.** Positive characteristic (the formula divides by `m`). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots.
+
 ## Rational formulas and hitting lists
 
 [RatOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Rational/Defs.lean#L69) uses rational constants, addition, multiplication and inverse. Evaluation is a relation: an inverse node is defined only when both products with the proposed inverse are one. This supports noncommutative matrix substitution without silently assigning a value at poles. A formula is admissible if some positive-dimensional rational matrix substitution makes it defined, and nonzero if some defined value is nonzero.
