@@ -225,8 +225,14 @@ explained in the [probabilistic workflow](probabilistic-workflows.md).
 The two reserve-output theorems choose their output constant after the fixed hierarchy,
 ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
 and raw/preparation/maximum families. Select this constant before allocating recursive
-child accuracies. Uniformity of that coefficient does not remove any displayed finite
-allocation or walk-length losses and supplies no recursive accuracy theorem.
+child accuracies, then supply a `ReserveOutputContext HP P J` and independently supplied
+`ReserveOutputChildren HP P J`. The shared
+[OutputContext](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/OutputContext.lean)
+module records the finite geometric, routing and cutoff hypotheses and names the existing
+allocation, walks, conditional cost and two-signal increment. Both public theorems retain
+an explicit error premise and row-moment conclusion. Uniformity of the coefficient does
+not remove any displayed finite allocation or walk-length losses and supplies no recursive
+accuracy theorem.
 
 For changes to the completed pilot maximum with raw and preparation children fixed,
 [HierarchyCorrectionStability](../../CslibFrontier/Computability/LogSpaceDerandomization/HierarchyCorrectionStability.lean)
