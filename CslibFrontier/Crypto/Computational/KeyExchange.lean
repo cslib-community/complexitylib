@@ -37,8 +37,9 @@ We formalize:
 * the Diffie–Hellman protocol ([KatzLindell2020], Construction 11.2, pp. 392–393) over a
   `PrimeOrderGroupFamily`, its correctness, and Theorem 11.3 (p. 394): under the Decisional
   Diffie–Hellman assumption the protocol is secure against eavesdroppers when the ideal key is a
-  uniform group element. The real and ideal experiments are exactly the real and ideal DDH
-  experiments run on a re-associated adversary, so the reduction is tight;
+  uniform group element. The real and ideal experiments are exactly the real and random DDH
+  experiments run on the typed distinguisher `dhEavToDDH`, which encodes the three group elements
+  for the eavesdropper, so the reduction is tight;
 * the man-in-the-middle attack of Exercise 11.3 (p. 399): an active adversary that replaces both
   public shares shares Alice's key with Alice and Bob's key with Bob, while each party's view has
   exactly the law of an honest execution;

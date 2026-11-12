@@ -425,8 +425,9 @@ private noncomputable def naorReingoldDescToDDHDistinguisher (F : PrimeOrderGrou
 
 /-- Single-challenge uniform strict PPT DDH distinguisher constructed from an adaptive PRF
 distinguisher `adversary`: sample a hybrid level `k ← sampleDyadicIndex (inLen n)`, draw suffix
-exponents `αs`, and run `adversary` against `naorReingoldFrontierOracle` from an empty cache
-([BonehShoup2023], Exercises 10.4(b) & 10.11; [NaorReingold2004], Theorem 4.1). -/
+exponents `αs`, and run `adversary` against `naorReingoldFrontierOracle`, given the encodings of
+the three DDH elements, from an empty cache ([BonehShoup2023], Exercises 10.4(b) & 10.11;
+[NaorReingold2004], Theorem 4.1). -/
 noncomputable def naorReingoldToDDHDistinguisher (inLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) : F.DDHDistinguisher :=
   fun n d u v w => do
