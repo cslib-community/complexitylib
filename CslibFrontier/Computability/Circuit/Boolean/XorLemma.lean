@@ -167,7 +167,7 @@ theorem IsHardCoreMeasure.card_eq_xorPower_div_le {f : BooleanFunction n} {s : �
     refine hM.sum_agree_le _ ?_
     have hrestrict : complexity interpretation (single fun y => G (update t i y)) ≤ s + 2 := by
       refine (complexity_single_block_le G t i).trans (Nat.add_le_add_right ?_ 2)
-      simpa only [G, ← BitString.blocksEquiv_apply, Equiv.symm_apply_apply] using hg
+      simpa only [G, BitString.blocksEquiv_symm_block] using hg
     cases b
     · simpa only [Bool.xor_false] using hrestrict.trans (Nat.le_succ _)
     · simpa only [Bool.xor_true] using

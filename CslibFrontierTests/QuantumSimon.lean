@@ -69,7 +69,7 @@ example {N n : ℕ} (E : Fin N ≃ (Fin n → Bool) × Fin n) :
     ∃ μ : RandomizedDecisionTree (Fin N) Bool,
       ∀ X s, SimonPromise (simonFun E X) s → μ.errorProb (hidesNonzero E) X ≤ 1 / 3 := by
   obtain ⟨μ, hμ, -⟩ :=
-    exists_computes_depth_eq_randomizedComplexity (ε := 1 / 3) (by norm_num) (hidesNonzero E)
+    exists_computes_depth_eq_randomizedComplexity (ε := 1 / 3) (hidesNonzero E)
   exact ⟨μ, fun X _ _ => hμ X⟩
 
 -- So every such tree has depth at least `2^{n/2}`, and `R_{1/3}` of this total function too.

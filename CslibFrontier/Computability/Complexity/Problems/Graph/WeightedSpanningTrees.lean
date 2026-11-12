@@ -305,14 +305,7 @@ theorem computableInPolyTime_weightedSpanningTreeCount :
       encWeightedGraph (encList encNat) :=
     Graph.computableInPolyTime_distinctVertices.comp computableInPolyTime_toGraph
   have hhead : ComputableInPolyTime (fun WG : WeightedGraph => WG.toGraph.distinctVertices.headD 0)
-      encWeightedGraph encNat := by
-    have hget : ComputableInPolyTime
-        (fun WG : WeightedGraph => WG.toGraph.distinctVertices.getD 0 0)
-        encWeightedGraph encNat :=
-      (ComputableInPolyTime.listGetD (encA := encNat) 0).comp
-        (hverts.prod (ComputableInPolyTime.const 0))
-    refine hget.of_enc_eq fun WG => ?_
-    cases WG.toGraph.distinctVertices <;> rfl
+      encWeightedGraph encNat := (ComputableInPolyTime.headD 0).comp hverts
   have hrest : ComputableInPolyTime
       (fun WG : WeightedGraph =>
         WG.toGraph.distinctVertices.filter fun v =>
