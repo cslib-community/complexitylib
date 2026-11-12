@@ -168,7 +168,8 @@ theorem row_holds_iff (F : Frame) (assignment : ℕ → Bool) (e f : Segment × 
 theorem holds_compileFrame_iff (F : Frame) (assignment : ℕ → Bool) :
     (compileFrame F).Holds assignment ↔
       ∀ e ∈ F.segments.zipIdx, ∀ f ∈ F.segments.zipIdx,
-        f.2 < e.2 → independent e.1.endpoints f.1.endpoints = true → (row F e f).Holds assignment := by
+        f.2 < e.2 → independent e.1.endpoints f.1.endpoints = true →
+          (row F e f).Holds assignment := by
   simp only [AffineSystem.Holds, compileFrame, List.mem_flatMap, List.mem_map,
     List.mem_filter, Bool.and_eq_true, decide_eq_true_eq]
   constructor
