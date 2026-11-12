@@ -4250,6 +4250,7 @@ public import CslibFrontier.Crypto.Primitives.BlockCipher.CBCMAC
 public import CslibFrontier.Crypto.Primitives.BlockCipher.LengthPrependedCBCMAC
 public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Crypto.Primitives.CorrelationRobust
+public import CslibFrontier.Crypto.Primitives.CorrelationRobust.Asymptotic
 public import CslibFrontier.Crypto.Primitives.Garbling.Adaptive
 public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.AffineLabel
 public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.BitComposition
@@ -4316,7 +4317,10 @@ public import CslibFrontier.Crypto.Protocols.MPC.Broadcast
 public import CslibFrontier.Crypto.Protocols.MPC.CircuitEval
 public import CslibFrontier.Crypto.Protocols.MPC.Composition
 public import CslibFrontier.Crypto.Protocols.MPC.DDHOT
+public import CslibFrontier.Crypto.Protocols.MPC.DDHOT.Family
 public import CslibFrontier.Crypto.Protocols.MPC.IKNP
+public import CslibFrontier.Crypto.Protocols.MPC.IKNP.PolyTime
+public import CslibFrontier.Crypto.Protocols.MPC.IKNP.SelectiveFailure
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.CompleteSender
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.CompleteSender.PolyTime
