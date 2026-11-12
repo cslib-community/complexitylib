@@ -1004,7 +1004,7 @@ Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edi
 <a id="kdw04"></a>
 ## kdw04
 
-Iordanis Kerenidis and Ronald de Wolf. "Exponential Lower Bound for 2-Query Locally Decodable Codes via a Quantum Argument." *Journal of Computer and System Sciences* 69(3), 395–420, 2004. https://doi.org/10.1016/j.jcss.2004.04.007 ; arXiv text https://arxiv.org/abs/quant-ph/0208062v2 . Checked on 2026-11-12 against `arXiv:quant-ph/0208062v2` (Section 2.2 Definition 3, Section 4 Theorem 9, and Appendix B Lemma 3 on p. 16); journal metadata from DOI record.
+Iordanis Kerenidis and Ronald de Wolf. "Exponential Lower Bound for 2-Query Locally Decodable Codes via a Quantum Argument." *Journal of Computer and System Sciences* 69(3), 395–420, 2004. https://doi.org/10.1016/j.jcss.2004.04.007 ; arXiv text https://arxiv.org/abs/quant-ph/0208062v2 . Checked on 2026-11-12 against `arXiv:quant-ph/0208062v2` (Appendix B Definition 3 and Theorem 9 on printed p. 14, and Appendix B Lemma 3 on printed p. 16); journal metadata from DOI record.
 
 <a id="khot10"></a>
 ## khot10

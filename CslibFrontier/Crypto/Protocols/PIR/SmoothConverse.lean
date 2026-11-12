@@ -16,6 +16,7 @@ import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -347,38 +348,26 @@ private theorem toReal_eval_smoothSlotCoins_some (P : Scheme ι S R Q A) [Fintyp
           smoothCopies P i₀ (s, q)
       else 0 := by
   let _ : Nonempty (Fin (smoothCopies P i₀ (s, q))) := ⟨⟨0, smoothCopies_pos P i₀ (s, q)⟩⟩
+  let embed : Fin (smoothCopies P i₀ (s, q)) → Option (SmoothPos P i₀) :=
+    fun u => some ⟨(s, q), u⟩
   rw [smoothSlotCoins, ProbComp.eval_bind, PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
   simp only [↓reduceIte, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
     PMF.pure_apply, reduceCtorEq, mul_zero, add_zero]
+  change (_ * (((PMF.uniformOfFintype (Fin (smoothCopies P i₀ (s, q)))).map embed)
+    (some j))).toReal = _
   rw [ENNReal.toReal_mul]
   rcases j with ⟨sq', idx'⟩
   by_cases hsq : sq' = (s, q)
   · subst hsq
-    rw [PMF.bind_apply, tsum_fintype]
-    simp only [PMF.pure_apply, Option.some.injEq]
-    have hsum :
-        (∑ u : Fin (smoothCopies P i₀ (s, q)),
-          PMF.uniformOfFintype (Fin (smoothCopies P i₀ (s, q))) u *
-            (if (⟨(s, q), idx'⟩ : SmoothPos P i₀) = ⟨(s, q), u⟩ then 1 else 0)) =
-          (smoothCopies P i₀ (s, q) : ℝ≥0∞)⁻¹ := by
-      rw [Finset.sum_eq_single idx']
-      · simp [PMF.uniformOfFintype_apply]
-      · intro u _ hu
-        have hne : (⟨(s, q), idx'⟩ : SmoothPos P i₀) ≠ ⟨(s, q), u⟩ :=
-          fun h => hu (eq_of_heq (Sigma.mk.inj_iff.mp h).2).symm
-        simp [hne]
-      · intro hmem
-        exact (hmem (Finset.mem_univ idx')).elim
-    simp only [hsum, ↓reduceIte, ENNReal.toReal_inv, ENNReal.toReal_natCast, div_eq_mul_inv]
-  · rw [ite_eq_right hsq, PMF.bind_apply, tsum_fintype]
-    simp only [PMF.pure_apply, Option.some.injEq]
-    have hz : (∑ u : Fin (smoothCopies P i₀ (s, q)),
-        PMF.uniformOfFintype (Fin (smoothCopies P i₀ (s, q))) u *
-          if (⟨sq', idx'⟩ : SmoothPos P i₀) = ⟨(s, q), u⟩ then (1 : ℝ≥0∞) else 0) = 0 := by
-      refine Finset.sum_eq_zero fun u _ => ?_
-      have hne : (⟨sq', idx'⟩ : SmoothPos P i₀) ≠ ⟨(s, q), u⟩ :=
-        fun h => hsq (congrArg Sigma.fst h)
-      simp [hne]
+    have hinj : Function.Injective embed := (Option.some_injective _).comp sigma_mk_injective
+    rw [Probability.PMF.map_apply_of_injective _ hinj idx']
+    simp [PMF.uniformOfFintype_apply, div_eq_mul_inv]
+  · rw [ite_eq_right hsq]
+    have hz : ((PMF.uniformOfFintype (Fin (smoothCopies P i₀ (s, q)))).map embed)
+        (some ⟨sq', idx'⟩) = 0 := by
+      rw [PMF.apply_eq_zero_iff, PMF.support_map]
+      rintro ⟨u, _, hu⟩
+      exact hsq (congrArg Sigma.fst (Option.some.inj hu)).symm
     rw [hz, ENNReal.toReal_zero, mul_zero]
 
 private theorem eval_smoothSlotCoins_none (P : Scheme ι S R Q A) [Fintype S]
@@ -389,11 +378,12 @@ private theorem eval_smoothSlotCoins_none (P : Scheme ι S R Q A) [Fintype S]
   rw [smoothSlotCoins, ProbComp.eval_bind, PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
   simp only [↓reduceIte, Bool.false_eq_true, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure, PMF.pure_apply, mul_one]
-  rw [PMF.bind_apply, tsum_fintype]
-  have hz : (∑ idx : Fin (smoothCopies P i₀ (s, q)),
-      PMF.uniformOfFintype (Fin (smoothCopies P i₀ (s, q))) idx *
-        (PMF.pure (some ⟨(s, q), idx⟩ : Option (SmoothPos P i₀))) none) = 0 :=
-    Finset.sum_eq_zero fun _ _ => by simp [PMF.pure_apply]
+  change _ * (((PMF.uniformOfFintype (Fin (smoothCopies P i₀ (s, q)))).map
+    fun idx => (some ⟨(s, q), idx⟩ : Option (SmoothPos P i₀))) none) + _ = _
+  have hz : ((PMF.uniformOfFintype (Fin (smoothCopies P i₀ (s, q)))).map
+      fun idx => (some ⟨(s, q), idx⟩ : Option (SmoothPos P i₀))) none = 0 := by
+    rw [PMF.apply_eq_zero_iff, PMF.support_map]
+    simp
   rw [hz, mul_zero, zero_add]
 
 private theorem mul_keepProb_eq_min (P : Scheme ι S R Q A) [DecidableEq Q]
