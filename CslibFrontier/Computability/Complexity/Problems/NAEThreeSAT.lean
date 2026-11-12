@@ -73,13 +73,8 @@ def verifier (x : CNF ℕ × List Bool) : Bool := x.1.evalNAE (SAT.assignment x.
 /-- First-occurrence certificates also encode all NAE assignments. -/
 theorem isVerifier : IsVerifier encCNF Polynomial.X verifier NAESAT := by
   refine IsVerifier.of_padding (fun φ w _ h => ⟨_, h⟩) fun φ ⟨τ, hτ⟩ => ?_
-  refine ⟨φ.vars.map τ, by simpa using SAT.length_vars_le φ, fun k => ?_⟩
-  refine (CNF.evalNAE_congr fun v hv => ?_).trans hτ
-  have hlt : φ.vars.idxOf v < φ.vars.length := List.idxOf_lt_length_iff.mpr hv
-  have hlt' : φ.vars.idxOf v < (φ.vars.map τ).length := by simpa using hlt
-  rw [SAT.assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt',
-    List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-  rfl
+  exact ⟨φ.vars.map τ, by simpa using SAT.length_vars_le φ, fun k =>
+    (CNF.evalNAE_congr fun _ hv => SAT.assignment_vars_map_append φ τ _ hv).trans hτ⟩
 
 /-- Evaluating the complemented certificate assignment is polynomial-time. -/
 @[fun_prop]

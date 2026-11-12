@@ -60,13 +60,8 @@ def verifier (x : CNF ℕ × List Bool) : Bool := x.1.evalOne (SAT.assignment x.
 /-- The standard SAT certificates also represent every exact-one satisfying assignment. -/
 theorem isVerifier : IsVerifier encCNF Polynomial.X verifier OneSAT := by
   refine IsVerifier.of_padding (fun φ w _ h => ⟨_, h⟩) fun φ ⟨τ, hτ⟩ => ?_
-  refine ⟨φ.vars.map τ, by simpa using SAT.length_vars_le φ, fun k => ?_⟩
-  refine (CNF.evalOne_congr fun v hv => ?_).trans hτ
-  have hlt : φ.vars.idxOf v < φ.vars.length := List.idxOf_lt_length_iff.mpr hv
-  have hlt' : φ.vars.idxOf v < (φ.vars.map τ).length := by simpa using hlt
-  rw [SAT.assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt',
-    List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-  rfl
+  exact ⟨φ.vars.map τ, by simpa using SAT.length_vars_le φ, fun k =>
+    (CNF.evalOne_congr fun _ hv => SAT.assignment_vars_map_append φ τ _ hv).trans hτ⟩
 
 /-- Count the true literal occurrences of a clause in native polynomial time. -/
 @[fun_prop]
