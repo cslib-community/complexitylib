@@ -4480,6 +4480,7 @@ public import CslibFrontier.Crypto.Protocols.PIR.LinearSummation
 public import CslibFrontier.Crypto.Protocols.PIR.Shamir
 public import CslibFrontier.Crypto.Protocols.PIR.SingleServer
 public import CslibFrontier.Crypto.Protocols.PIR.SmoothCode
+public import CslibFrontier.Crypto.Protocols.PIR.SmoothConverse
 public import CslibFrontier.Crypto.Protocols.PolynomialCommitment.Basic
 public import CslibFrontier.Crypto.Protocols.Quantum.OneTimePad
 public import CslibFrontier.Crypto.Protocols.SSP.Basic
@@ -5834,6 +5835,7 @@ public import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 public import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation.ExtPermsCard
+public import CslibFrontier.Languages.Probabilistic.Rational
 public import CslibFrontier.Languages.Probabilistic.RejectionSampling
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Retry

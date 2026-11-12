@@ -119,6 +119,7 @@ import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.Crypto.Protocols.PIR.Block
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.Shamir
+import CslibFrontier.Crypto.Protocols.PIR.SmoothConverse
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Cut
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.StableSet
@@ -1240,6 +1241,41 @@ register_result "gmw-zero-knowledge" where
     protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
     knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
     forms; the relation version preserves R's native witnesses via a Levin reduction."
+
+register_result "gkst-pir-to-smooth-code" where
+  title := "Smooth codes from private information retrieval schemes"
+  topic := "cryptography"
+  sources := [
+    { paper := GoldreichKarloffSchulmanTrevisan2006, theorem := "Lemma 7.1",
+      locator := "Section 7.1, pp. 19–20 of ECCC TR01-080" },
+    { paper := KerenidisDeWolf2004, theorem := "Lemma 3",
+      locator := "Appendix B, p. 16 of arXiv:quant-ph/0208062v2" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.card_smoothPos_le,
+    Cslib.Crypto.Protocols.PIR.card_smoothPos_le_six_mul,
+    Cslib.Crypto.Protocols.PIR.smoothCode_zero,
+    Cslib.Crypto.Protocols.PIR.smoothCode_add,
+    Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder,
+    Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder_two,
+    Cslib.Crypto.Protocols.PIR.decodeLaw_smoothDecoder_of_isPrivate,
+    Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder_of_isPrivate,
+    Cslib.Crypto.Protocols.PIR.smoothDecoder_eq_of_predetermined,
+    Cslib.Crypto.Protocols.PIR.card_mul_sq_le_card_answer_sub_one_of_statPrivate,
+    Cslib.Crypto.Protocols.PIR.card_mul_sq_le_card_answer_sub_one_of_isPrivate
+  ]
+  scope := "One-round k-server PIR schemes P over finite server and query sets S, Q (with \
+    arbitrary retained-state type R and answer type A). Replicating each (s, q) entry \
+    max 1 ⌈p₀(s, q) · |S| · |Q|⌉₊ times produces smoothCode P i₀ of length at most \
+    (|S| + 1) · |S| · |Q| (≤ 6 |Q| for |S| = 2) together with a non-adaptive decoder \
+    smoothDecoder P i₀ that is (|S|, |S| + 1, ε - |S| · δ / 2)-smooth under pairwise δ-statistical \
+    privacy (CloseTo) and recovery probability ≥ 1/2 + ε, specializing to (2, 3, ε - δ) for two \
+    servers and preserving the exact output law under perfect privacy (δ = 0). Includes additive \
+    linearity preservation (smoothCodeAddHom), predetermined answer-coordinate invariance \
+    (smoothDecoder_eq_of_predetermined), and the noisy / statistically-private single-server \
+    answer-size bound |ι| · (ε - δ / 2)² ≤ |A| - 1 via OneQuery.lean. Expected reads coincide with \
+    query probability because distinct slots query distinct servers; neither machine runtime nor \
+    fair-coin simulation of rational unifFin draws is certified."
 
 register_result "nash-existence" where
   title := "Nash's theorem: every finite game has a mixed Nash equilibrium"
