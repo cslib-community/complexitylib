@@ -71,24 +71,8 @@ private theorem nblockDecider_layout {C : ℕ → ℕ → ℕ → List Instr} {c
     (nblockDecider v C c s).CodeAt (5 + 6 * v.count)
       (C (5 + 6 * v.count) (5 + 6 * v.count + c) (6 + 6 * v.count + c)) ∧
     (nblockDecider v C c s).instr (5 + 6 * v.count + c) = .accept ∧
-    (nblockDecider v C c s).instr (6 + 6 * v.count + c) = .reject := by
-  have hcode : (nblockDecider v C c s).CodeAt 0 (nblockDecider v C c s).code :=
-    codeAt_of_code_eq (pre := []) (post := []) (by simp)
-  change (nblockDecider v C c s).CodeAt 0
-    ((shapeCode v 0 (4 + 6 * v.count) (6 + 6 * v.count + c)).map Instr.shift ++
-      [(Instr.lt (reg 0) (const 2) (6 + 6 * v.count + c) (5 + 6 * v.count)).shift] ++
-      C (5 + 6 * v.count) (5 + 6 * v.count + c) (6 + 6 * v.count + c) ++ [.accept, .reject])
-    at hcode
-  rw [codeAt_append, codeAt_append, codeAt_append] at hcode
-  obtain ⟨⟨⟨hshape, hguard⟩, hcomp⟩, hhalt⟩ := hcode
-  simp only [List.length_append, List.length_map, length_shapeCode, hC, List.length_singleton,
-    Nat.zero_add] at hguard hcomp hhalt
-  obtain ⟨hacc, hrest⟩ := codeAt_cons.mp hhalt
-  refine ⟨hshape, (codeAt_cons.mp hguard).1, ?_, ?_, ?_⟩
-  · rwa [show 4 + 6 * v.count + 1 = 5 + 6 * v.count by omega] at hcomp
-  · rwa [show 4 + 6 * v.count + 1 + c = 5 + 6 * v.count + c by omega] at hacc
-  · have := (codeAt_cons.mp hrest).1
-    rwa [show 4 + 6 * v.count + 1 + c + 1 = 6 + 6 * v.count + c by omega] at this
+    (nblockDecider v C c s).instr (6 + 6 * v.count + c) = .reject :=
+  decider_layout rfl (by rw [List.length_map, length_shapeCode]) (hC ..)
 
 private theorem init_nblockDecider (C : ℕ → ℕ → ℕ → List Instr) (c s : ℕ) :
     (nblockDecider v C c s).init = (0, (false : Bool).toNat :: List.replicate (3 + s) 0) := by

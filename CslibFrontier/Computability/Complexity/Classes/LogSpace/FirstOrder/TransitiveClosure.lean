@@ -60,7 +60,7 @@ namespace Cslib.Logic.FO.Ordered.TCModelChecker
 
 open Turing Turing.CounterProgram Turing.CounterProgram.Block Expr Vocabulary.ModelChecker
 open Operator (Formula RelEnv)
-open ClosureKernel (termE getD_pair)
+open ClosureKernel (termE getD_pair eval_pow_reg0)
 
 variable {L : Language.{u, v}} [L.IsRelational] {v : Vocabulary L}
 
@@ -264,8 +264,7 @@ theorem correct_op (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type} (k : �
   have hP' : P.CodeAt b (tcCode b base k (fun i => termE fv (TC.left args i))
       (fun i => termE fv (TC.right args i)) (pow (reg 0) k) code T R) := hP
   have hM : ∀ regs' : List ℕ, (∀ j < base, regs'.getD j 0 = regs.getD j 0) →
-      (pow (reg 0) k).eval regs' = a.1 ^ k := fun regs' h => by
-    simp only [eval_pow, eval_reg, (h 0 hbase).trans h0]
+      (pow (reg 0) k).eval regs' = a.1 ^ k := fun _ h => eval_pow_reg0 ((h 0 hbase).trans h0)
   have hcl : code.length = len (body ⟨0, Nat.one_pos⟩) true := length_compile ..
   have hbody : ∀ us ws t regs₃, LoopMid a.1 B base k regs us ws t regs₃ →
       Sound P (encStructure a) B Post (b + 2 * k + 7) regs₃ (b + 2 * k + 7 + code.length)
