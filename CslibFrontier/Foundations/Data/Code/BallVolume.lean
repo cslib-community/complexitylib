@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Data.ZMod.Defs
 import CslibFrontier.Foundations.Data.Code.HammingBound
 import CslibFrontier.Foundations.Data.Nat.Choose.Entropy
 
@@ -22,12 +23,15 @@ with `α ≤ 1 - 1 / q` has at most `exp (n H_q(α))` words, where `H_q = Real.q
 [Guruswami, Rudra and Sudan, Proposition 3.3.3][GuruswamiRudraSudan2019]. This is the size of the
 ball (`Cslib.Code.card_filter_hammingDist_le_eq_sum`,
 `Cslib.Code.card_filter_hammingDist_eq_choose_mul_pow`) combined with the entropy bound on partial
-binomial sums `Cslib.sum_choose_mul_pow_le_exp_mul_qaryEntropy`.
+binomial sums `Cslib.sum_choose_mul_pow_le_exp_mul_qaryEntropy`. Over `𝔽₂`, the punctured ball of
+nonzero words of weight less than `d` has `∑_{1 ≤ i < d} C(n, i)` words
+(`Cslib.Code.card_filter_ne_zero_hammingNorm_lt`).
 
 ## Main results
 
 * `Cslib.Code.card_filter_hammingDist_le_le_exp_mul_qaryEntropy`: the entropy bound on the volume
   of a Hamming ball.
+* `Cslib.Code.card_filter_ne_zero_hammingNorm_lt`: the size of a punctured binary Hamming ball.
 
 ## References
 
@@ -77,5 +81,24 @@ theorem card_filter_hammingDist_le_le_exp_mul_qaryEntropy {q : ℕ}
   rw [card_filter_hammingDist_le_eq_sum,
     sum_congr rfl fun j _ => card_filter_hammingDist_eq_choose_mul_pow hq x j]
   exact sum_choose_mul_pow_le_exp_mul_qaryEntropy hq₂ hα₀ hα hr
+
+/-- **The size of a punctured binary Hamming ball**: there are `∑_{1 ≤ i < d} C(n, i)` nonzero words
+of weight less than `d` in `𝔽₂ⁿ`. -/
+theorem card_filter_ne_zero_hammingNorm_lt (n d : ℕ) :
+    #{x : Fin n → ZMod 2 | x ≠ 0 ∧ hammingNorm x < d} = ∑ i ∈ Ico 1 d, n.choose i := by
+  rw [card_eq_sum_card_fiberwise (f := hammingNorm) (t := Ico 1 d) fun x hx => by
+    have hx := (mem_filter.1 hx).2
+    exact mem_Ico.2 ⟨hammingNorm_pos_iff.2 hx.1, hx.2⟩]
+  refine sum_congr rfl fun i hi => ?_
+  have hi := mem_Ico.1 hi
+  have h := card_filter_hammingDist_eq_choose_mul_pow (β := fun _ : Fin n => ZMod 2) (q := 2)
+    (fun _ => ZMod.card 2) 0 i
+  simp only [hammingDist_zero_left, Fintype.card_fin, Nat.add_one_sub_one, one_pow,
+    mul_one] at h
+  rw [← h, filter_filter]
+  congr 1
+  refine filter_congr fun x _ => ⟨fun h => h.2, fun h => ⟨⟨?_, ?_⟩, h⟩⟩
+  · rw [← hammingNorm_pos_iff, h]; exact hi.1
+  · rw [h]; exact hi.2
 
 end Cslib.Code
