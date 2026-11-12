@@ -641,7 +641,6 @@ theorem depthWith_bind_le {cost : σ.Op → ℕ} {s : Fin n → Formula σ m} {c
         (Finset.le_sup (f := fun j => (args j).depthWith cost) (Finset.mem_univ j)) c)
     omega
 
-
 /-- Substituting formulas of depth at most `c` for the inputs raises the depth by at most `c`. -/
 theorem depth_bind_le {s : Fin n → Formula σ m} {c : ℕ} (hs : ∀ i, (s i).depth ≤ c)
     (F : Formula σ n) : (F.bind s).depth ≤ F.depth + c := by

@@ -41,6 +41,15 @@ Each term has depth `max {d, ⌈log₂ n⌉} + 1`. The balanced tree over the te
 `partialFormulaSize` is the source's `L(f)` for partial functions; on total functions it is
 `formulaSize` (`partialFormulaSize_some`).
 
+Two points differ from the source; neither changes the statement.
+* The source proves the sharper intermediate bound `L(f) ≤ min {n, ℓ} (ℓ + n)`; the construction
+  here records only its consequence `2 n ℓ`, which is the bound Theorem 1.5 states.
+* The source bounds the distinct rows by `2 ^ a` for `a` the number of distinct variables of the
+  first block that `H` reads. Here `a` is the number of leaves of `H` in that block, counted with
+  multiplicity. This is weaker, but still gives `t ≤ a + 1 ≤ ℓ` when `H` reads both blocks.
+  The source's degenerate case, where `H` depends on only one string, becomes "`H` has no leaf
+  in one block".
+
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.partialFormulaSize`: the least leaf size of a formula computing a
@@ -363,18 +372,18 @@ theorem exists_computesPartial_of_agreement_two
     simpa using Finset.card_le_univ (F0 ∪ F1)
   have hF0 : F0.card = Fintype.card {x // f x = some false} := card_filter_eq false
   have hF1 : F1.card = Fintype.card {x // f x = some true} := card_filter_eq true
+  -- At most `2 ^ a` representatives of the rows in block `i`, and fewer than `2 ^ n`.
+  have hreps (i : Fin 2) (S S' : Finset (BitString n)) (hS : S.card + S'.card ≤ 2 ^ n)
+      (hS' : 2 ≤ S'.card) : (reps S (key H i)).card ≤ 2 ^ H.leafSizeIn (blockBits n i) ∧
+        (reps S (key H i)).card + 1 ≤ 2 ^ n :=
+    ⟨(card_reps_le _ _).trans (card_image_key_le H i S), by
+      have := Finset.card_le_card (reps_subset S (key H i))
+      omega⟩
   set R := reps F0 (key H 0)
   set C := reps F1 (key H 1)
-  have hR : R.card ≤ 2 ^ a ∧ R.card + 1 ≤ 2 ^ n := by
-    have h1 : R.card ≤ (F0.image (key H 0)).card := card_reps_le _ _
-    have h2 : (F0.image (key H 0)).card ≤ 2 ^ a := card_image_key_le H 0 F0
-    have h3 : R.card ≤ F0.card := Finset.card_le_card (reps_subset _ _)
-    exact ⟨h1.trans h2, by have := hcard true; omega⟩
-  have hC : C.card ≤ 2 ^ a' ∧ C.card + 1 ≤ 2 ^ n := by
-    have h1 : C.card ≤ (F1.image (key H 1)).card := card_reps_le _ _
-    have h2 : (F1.image (key H 1)).card ≤ 2 ^ a' := card_image_key_le H 1 F1
-    have h3 : C.card ≤ F1.card := Finset.card_le_card (reps_subset _ _)
-    exact ⟨h1.trans h2, by have := hcard false; omega⟩
+  have hR : R.card ≤ 2 ^ a ∧ R.card + 1 ≤ 2 ^ n := hreps 0 F0 F1 hunion (hF1 ▸ hcard true)
+  have hC : C.card ≤ 2 ^ a' ∧ C.card + 1 ≤ 2 ^ n :=
+    hreps 1 F1 F0 (by omega) (hF0 ▸ hcard false)
   -- `⌈log₂ (r + 1)⌉ ≤ min {n, ℓ}` when there are at most `2 ^ e` rows and `e < ℓ`.
   have hclog {r e : ℕ} (hr : r ≤ 2 ^ e ∧ r + 1 ≤ 2 ^ n) (he : e + 1 ≤ ℓ) :
       Nat.clog 2 (r + 1) ≤ n ∧ Nat.clog 2 (r + 1) ≤ ℓ := by

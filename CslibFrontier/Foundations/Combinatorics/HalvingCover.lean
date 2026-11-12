@@ -41,7 +41,7 @@ variable {α β : Type*}
 
 /-- One halving step costs one level of `⌈log₂ (· + 1)⌉`: if `2 r' ≤ r` and `r ≥ 1`, then
 `⌈log₂ (r' + 1)⌉ + 1 ≤ ⌈log₂ (r + 1)⌉`. -/
-theorem clog_succ_add_one_le {r r' : ℕ} (h : 2 * r' ≤ r) (hr : 0 < r) :
+private theorem clog_succ_add_one_le {r r' : ℕ} (h : 2 * r' ≤ r) (hr : 0 < r) :
     Nat.clog 2 (r' + 1) + 1 ≤ Nat.clog 2 (r + 1) := by
   set K := Nat.clog 2 (r + 1)
   have hK : 0 < K := Nat.clog_pos one_lt_two (by omega)
