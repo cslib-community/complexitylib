@@ -1705,6 +1705,7 @@ public import CslibFrontier.Computability.Communication.Announce
 public import CslibFrontier.Computability.Communication.BinarySearch
 public import CslibFrontier.Computability.Communication.Corruption
 public import CslibFrontier.Computability.Communication.DagProtocol
+public import CslibFrontier.Computability.Communication.DenseRestriction
 public import CslibFrontier.Computability.Communication.Discrepancy
 public import CslibFrontier.Computability.Communication.Disjointness
 public import CslibFrontier.Computability.Communication.Distributional
