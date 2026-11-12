@@ -66,6 +66,26 @@ theorem readBit_of_le (x : Fin m → Bool) {c : ℕ} (h : m ≤ c) : readBit x c
 theorem funext_readBit {x y : Fin m → Bool} (h : ∀ c, readBit x c = readBit y c) : x = y :=
   funext fun i => by simpa using h i
 
+/-- The bits of the input state past the end of the input are zero. -/
+theorem readBit_inputState_of_le {x : List Bool} {c : ℕ} (hc : x.length ≤ c) :
+    readBit (inputState m x) c = false := by
+  by_cases h : c < m
+  · rw [readBit_of_lt _ h]
+    change x.getD c false = false
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none hc]
+    rfl
+  · exact readBit_of_le _ (not_lt.mp h)
+
+/-- The bits of the input state are those of the input, when the input fits in the register. -/
+theorem readBit_inputState {x : List Bool} (hx : x.length ≤ m) (c : ℕ) :
+    readBit (inputState m x) c = x.getD c false := by
+  by_cases hc : c < m
+  · rw [readBit_of_lt _ hc]
+    rfl
+  · rw [readBit_inputState_of_le (by omega), List.getD_eq_getElem?_getD,
+      List.getElem?_eq_none (by omega)]
+    rfl
+
 namespace GateCode
 
 /-- The action on basis strings of the classical gate code `(false, t, cs)`: bit `t` flips when
