@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Tactic.PolyTime
 import Mathlib.Data.List.GetD
@@ -394,6 +395,25 @@ private theorem pow_clog_two_le (L : ℕ) : 2 ^ Nat.clog 2 L ≤ 2 * L + 1 := by
   · simp
   · exact (Nat.pow_clog_le_mul (by norm_num) hL).trans (Nat.le_succ _)
 
+private def LevelInv (key : List Bool) (L : ℕ) (level : List (List Bool)) : Prop :=
+  (∀ y ∈ level, y.length = key.length) ∧ level.length ≤ 2 ^ Nat.clog 2 L
+
+private theorem levelInv_merkleLeafLevel (hlen : ∀ k x, (H k x).length = k.length)
+    (key : List Bool) (leaves : List (List Bool)) :
+    LevelInv key leaves.length (merkleLeafLevel H key leaves) :=
+  ⟨fun _ hy => length_of_mem_merkleLeafLevel hlen hy, (length_merkleLeafLevel leaves).le⟩
+
+private theorem LevelInv.merkleParents {key : List Bool} {L : ℕ} {level : List (List Bool)}
+    (h : LevelInv key L level) (hlen : ∀ k x, (H k x).length = k.length) :
+    LevelInv key L (Cslib.Crypto.merkleParents H key level) :=
+  ⟨fun _ hy => length_of_mem_merkleParents hlen hy,
+    (length_merkleParents level).le.trans ((Nat.div_le_self _ _).trans h.2)⟩
+
+private theorem length_encList_level_le {L : ℕ} {key : List Bool} {level : List (List Bool)}
+    (hy : ∀ y ∈ level, y.length ≤ key.length) (hL : level.length ≤ 2 ^ Nat.clog 2 L) :
+    (encList encBits level).length ≤ (2 * L + 1) * (2 * key.length + 1) :=
+  (length_encList_le encBits _ hy).trans (Nat.mul_le_mul_right _ (hL.trans (pow_clog_two_le L)))
+
 private theorem computableInPolyTime_hash
     (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
@@ -469,11 +489,9 @@ private theorem computableInPolyTime_iterate_merkleParents
     (computableInPolyTime_merkleLeafLevel hH hk hleaves)
     (computableInPolyTime_merkleParents hH (ComputableInPolyTime.fst _ _)
       (ComputableInPolyTime.snd _ _))
-    (fun p _ level => (∀ y ∈ level, y.length = p.1.length) ∧
-      level.length ≤ 2 ^ Nat.clog 2 p.2.length)
-    (fun p => ⟨fun y hy => length_of_mem_merkleLeafLevel hlen hy, by simp⟩)
-    (fun p _ level _ hinv => ⟨fun y hy => length_of_mem_merkleParents hlen hy,
-      by simpa using (Nat.div_le_self _ _).trans hinv.2⟩)
+    (fun p _ level => LevelInv p.1 p.2.length level)
+    (fun p => levelInv_merkleLeafLevel hlen p.1 p.2)
+    (fun _ _ _ _ hinv => hinv.merkleParents hlen)
     (size := fun p => (2 * p.2.length + 1) * (2 * p.1.length + 1))
     ?_ ?_).1
   · refine PolyBounded.of_forall_le 9 2 fun p => ?_
@@ -486,9 +504,7 @@ private theorem computableInPolyTime_iterate_merkleParents
     calc (2 * p.2.length + 1) * (2 * p.1.length + 1) ≤ (2 * s + 1) * (2 * s + 1) := by
           gcongr
       _ ≤ 9 * (s + 1) ^ 2 := by nlinarith
-  · intro p _ level _ hinv
-    refine (length_encList_le encBits _ fun y hy => (hinv.1 y hy).le).trans ?_
-    exact Nat.mul_le_mul_right _ (hinv.2.trans (pow_clog_two_le _))
+  · exact fun _ _ _ _ hinv => length_encList_level_le (fun y hy => (hinv.1 y hy).le) hinv.2
 
 /-- Computing the root of a Merkle tree is polynomial-time for a polynomial-time keyed hash whose
 digests have the length of the key. -/
@@ -559,24 +575,20 @@ theorem computableInPolyTime_merklePath
     hk ((ComputableInPolyTime.unary_clog_const 2).comp
       ((ComputableInPolyTime.length_list encBits).comp hleaves))
     hinit (computableInPolyTime_merklePathStep hH)
-    (fun p j state => (∀ y ∈ state.1, y.length = p.1.length) ∧
-      state.1.length ≤ 2 ^ Nat.clog 2 p.2.1.length ∧ state.2.1 ≤ p.2.2 ∧
+    (fun p j state => LevelInv p.1 p.2.1.length state.1 ∧ state.2.1 ≤ p.2.2 ∧
       (∀ y ∈ state.2.2, y.length ≤ p.1.length) ∧ state.2.2.length ≤ j)
-    (fun p => ⟨fun y hy => length_of_mem_merkleLeafLevel hlen hy, by simp, le_rfl,
-      by simp, by simp⟩)
-    (fun p j state _ hinv => ⟨fun y hy => length_of_mem_merkleParents hlen hy,
-      by simpa [merklePathStep] using (Nat.div_le_self _ _).trans hinv.2.1,
-      (Nat.div_le_self _ _).trans hinv.2.2.1,
+    (fun p => ⟨levelInv_merkleLeafLevel hlen p.1 p.2.1, le_rfl, by simp, by simp⟩)
+    (fun p j state _ hinv => ⟨hinv.1.merkleParents hlen,
+      (Nat.div_le_self _ _).trans hinv.2.1,
       by
         intro y hy
         simp only [merklePathStep, List.mem_append, List.mem_singleton] at hy
         rcases hy with hy | rfl
-        · exact hinv.2.2.2.1 y hy
-        · rw [List.getD_eq_getElem?_getD]
-          cases hget : state.1[merkleSibling state.2.1]? with
-          | none => simp
-          | some y => exact (hinv.1 y (List.mem_of_getElem? hget)).le,
-      by simpa [merklePathStep] using hinv.2.2.2.2⟩)
+        · exact hinv.2.2.1 y hy
+        · rcases List.getD_mem_or state.1 (merkleSibling state.2.1) [] with hmem | hnil
+          · exact (hinv.1.1 _ hmem).le
+          · simp only [hnil, List.length_nil, zero_le],
+      by simpa [merklePathStep] using hinv.2.2.2⟩)
     (size := fun p => 3 * ((2 * p.2.1.length + 1) * (2 * p.1.length + 1)) + 2 * p.2.2 + 2)
     ?_ ?_).1
   · exact (ComputableInPolyTime.snd _ _).comp
@@ -594,15 +606,12 @@ theorem computableInPolyTime_merklePath
         3 * ((2 * s + 1) * (2 * s + 1)) + 2 * s + 2 := by gcongr
       _ ≤ 40 * (s + 1) ^ 2 := by nlinarith
   · intro p j state hj hinv
-    have hL := pow_clog_two_le p.2.1.length
-    have hlevel := (length_encList_le encBits _ fun y hy => (hinv.1 y hy).le).trans
-      (Nat.mul_le_mul_right (2 * p.1.length + 1) (hinv.2.1.trans hL))
-    have hjL : j ≤ 2 * p.2.1.length + 1 := hj.trans ((Nat.lt_pow_self (by norm_num)).le.trans hL)
-    have hpath := (length_encList_le encBits _ hinv.2.2.2.1).trans
-      (Nat.mul_le_mul_right (2 * p.1.length + 1) (hinv.2.2.2.2.trans hjL))
+    have hlevel := length_encList_level_le (fun y hy => (hinv.1.1 y hy).le) hinv.1.2
+    have hpath := length_encList_level_le hinv.2.2.1
+      (hinv.2.2.2.trans (hj.trans (Nat.lt_pow_self (by norm_num)).le))
     simp only [encPair_apply, encUnary_apply, List.length_append, length_frame,
       List.length_replicate]
-    have := hinv.2.2.1
+    have := hinv.2.1
     omega
 
 private theorem computableInPolyTime_merkleInputs

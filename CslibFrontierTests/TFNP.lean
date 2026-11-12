@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.Complexity.Classes.TFNP.SearchToDecision
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PPADS
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 

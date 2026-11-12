@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Logics.FirstOrder.Raw.Primrec
 public import Mathlib.Computability.RE
 import CslibFrontier.Foundations.Computability.ComputablePred
+import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.List.Sublists
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.SetTheory.Cardinal.NatCard
@@ -120,10 +121,9 @@ private theorem val_assign {n : ℕ} {a : List ℕ} (ha : ∀ i ∈ a, i < n + 1
     (assign n a x : ℕ) = a.getD x 0 := by
   simp only [assign, Fin.val_ofNat]
   apply Nat.mod_eq_of_lt
-  rw [List.getD_eq_getElem?_getD]
-  cases h : a[x]? with
-  | none => simp
-  | some i => exact ha i (List.mem_of_getElem? h)
+  rcases List.getD_mem_or a x 0 with h | h
+  · exact ha _ h
+  · omega
 
 private theorem mem_satList {n : ℕ} {T : List (ℕ × List ℕ)} {V : ℕ} :
     ∀ (φ : RawFormula), φ.varBound ≤ V → ∀ {a : List ℕ}, a.length = V → (∀ i ∈ a, i < n + 1) →
@@ -149,11 +149,8 @@ private theorem mem_satList {n : ℕ} {T : List (ℕ × List ℕ)} {V : ℕ} :
     simp only [varBound, max_le_iff] at hV
     simp only [satList, List.mem_filter, hmem, true_and, decide_eq_true_eq, Realize]
     have hx : x < a.length := by omega
-    have hset : ∀ i < n + 1, ∀ j ∈ a.set x i, j < n + 1 := by
-      intro i hi j hj
-      rcases List.mem_or_eq_of_mem_set hj with hj | rfl
-      · exact ha j hj
-      · exact hi
+    have hset : ∀ i < n + 1, ∀ j ∈ a.set x i, j < n + 1 :=
+      fun _ hi => List.forall_mem_set_of_forall_mem ha hi
     have hupd : ∀ i (hi : i < n + 1),
         assign n (a.set x i) = Function.update (assign n a) x ⟨i, hi⟩ := by
       intro i hi
@@ -161,9 +158,8 @@ private theorem mem_satList {n : ℕ} {T : List (ℕ × List ℕ)} {V : ℕ} :
       apply Fin.ext
       rw [val_assign (hset i hi)]
       by_cases hyx : y = x
-      · subst hyx; simp [List.getD_eq_getElem?_getD, List.getElem?_set_self hx]
-      · rw [Function.update_of_ne hyx, val_assign ha, List.getD_eq_getElem?_getD,
-          List.getElem?_set_ne (Ne.symm hyx), ← List.getD_eq_getElem?_getD]
+      · subst hyx; rw [Function.update_self, List.getD_set_self hx]
+      · rw [Function.update_of_ne hyx, val_assign ha, List.getD_set_ne (Ne.symm hyx)]
     constructor
     · intro h m
       have hm := (mem_satList φ hV.2 (by simp [hl]) (hset m m.2)).1 (h m m.2)
@@ -216,8 +212,7 @@ private theorem satOnFin_iff_ne_nil {n : ℕ} {φ : RawFormula} :
       have hv : ∀ x < φ.varBound, assign n a x = v x := by
         intro x hx
         apply Fin.ext
-        rw [val_assign ha]
-        simp [a, List.getD_eq_getElem?_getD, hx]
+        rw [val_assign ha, List.getD_map_range _ 0 hx]
       rw [realize_congr_var φ hv]
       refine (realize_congr_rel φ v fun r as hr => ?_).2 h
       have hofNat : (as.map Fin.val).map (Fin.ofNat (n + 1)) = as := by

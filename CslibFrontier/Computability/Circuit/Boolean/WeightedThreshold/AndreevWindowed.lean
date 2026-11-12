@@ -476,22 +476,23 @@ theorem cast_andreevTableScore_flipTable (b m : ℕ) (S : Finset (Fin b))
     cases p <;> cases v <;> norm_num
   have hscore : (andreevTableScore b m S (andreevFlipTable b m S w) : ℝ) =
       ∑ c : BitString b,
-        (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℝ)) := by
+        (1 - 2 * ((andreevTable b m w c).toNat : ℝ)) := by
     simp only [andreevTableScore, Int.cast_sum, Int.cast_mul, Int.cast_sub, Int.cast_one,
       Int.cast_ofNat, Int.cast_natCast]
     refine sum_congr rfl fun c _ => ?_
     have hchi : ((chi ℤ S c : ℤ) : ℝ) = (-1 : ℝ) ^ (parityOn S c).toNat := by
       rw [chi_eq_neg_one_pow_parityOn]; push_cast; rfl
     rw [hchi]
-    simpa [andreevFlipTable, andreevTableIndex] using
-      hxor (parityOn S c) (w (andreevTableIndex b m (BitString.equivFin b c)))
+    simpa [andreevFlipTable, andreevTable, andreevTableIndex] using
+      hxor (parityOn S c) (andreevTable b m w c)
   have hcard : (#{i ∈ andreevTableSupport b m | w i = true} : ℝ) =
-      ∑ c : BitString b, ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℝ) := by
+      ∑ c : BitString b, ((andreevTable b m w c).toNat : ℝ) := by
     rw [andreevTableSupport, card_filter, sum_map]
     simp only [Function.Embedding.coeFn_mk, Nat.cast_sum]
     rw [← (BitString.equivFin b).sum_comp
       (fun idx => ((if w (andreevTableIndex b m idx) = true then 1 else 0 : ℕ) : ℝ))]
     refine sum_congr rfl fun c _ => ?_
+    simp only [andreevTable]
     cases w (andreevTableIndex b m (BitString.equivFin b c)) <;> simp
   rw [hscore, hcard, sum_sub_distrib, ← mul_sum]
   simp only [sum_const, card_univ, BitString.card, nsmul_eq_mul, Nat.cast_pow, Nat.cast_ofNat]

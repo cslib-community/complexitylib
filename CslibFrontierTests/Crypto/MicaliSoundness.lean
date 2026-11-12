@@ -60,8 +60,8 @@ abbrev honestProof : MicaliProof :=
 def openingTrace (hTree : List Bool → List Bool) (proof : MicaliProof) :
     List (List Bool × List Bool) :=
   ((kilianOpenings toyVerifier x (fixedFS (x, proof.root)) proof.response).flatMap fun o =>
-    (merkleInputs (fun _ => hTree) [] [o.2.1]
-      (kilianPosition toyVerifier x o.1) o.2.2).map fun q => (q, hTree q)).eraseDups
+    (merkleInputs (fun _ => hTree) [] [o.2.bit]
+      (kilianPosition toyVerifier x o.1) o.2.path).map fun q => (q, hTree q)).eraseDups
 
 abbrev trHonest : List (List Bool × List Bool) := openingTrace idHash honestProof
 
@@ -112,8 +112,8 @@ authentication paths as `[true, true]`, so a cheating prover can open positions 
 `true`. -/
 abbrev forgedProof : MicaliProof :=
   ⟨kilianCommit (fun _ => collideLeafHash) toyVerifier [] x [false, false],
-   [[(true, merklePath (fun _ => collideLeafHash) [] [[false], [false]] 0)],
-    [(true, merklePath (fun _ => collideLeafHash) [] [[false], [false]] 1)]]⟩
+   [[⟨true, merklePath (fun _ => collideLeafHash) [] [[false], [false]] 0⟩],
+    [⟨true, merklePath (fun _ => collideLeafHash) [] [[false], [false]] 1⟩]]⟩
 
 /-- Trace recording the honest `[false, false]` tree queries followed by the colliding `[true]`
 openings. -/
@@ -204,7 +204,7 @@ def adaptiveCheatingProver : OracleComp (MicaliSpec (List Bool)) (List Bool × M
   let rt ← query (spec := MicaliSpec (List Bool)) (.inl [false])
   let _ ← query (spec := MicaliSpec (List Bool)) (.inr (x, rt))
   let sib ← query (spec := MicaliSpec (List Bool)) (.inl [true])
-  return (x, { root := rt, response := [[(false, [sib])]] })
+  return (x, { root := rt, response := [[⟨false, [sib]⟩]] })
 
 theorem isCostBounded_FS_adaptiveCheatingProver :
     IsCostBounded micaliFSCost adaptiveCheatingProver 1 :=
@@ -212,7 +212,7 @@ theorem isCostBounded_FS_adaptiveCheatingProver :
     IsCostBounded.liftBind (cost := micaliFSCost) (Sum.inr (x, rt)) _ 0 fun _ =>
       IsCostBounded.liftBind (cost := micaliFSCost) (Sum.inl [true]) _ 0 fun sib =>
         IsCostBounded.pure (cost := micaliFSCost)
-          (x, MicaliProof.mk rt [[(false, [sib])]]) 0
+          (x, MicaliProof.mk rt [[⟨false, [sib]⟩]]) 0
 
 theorem isCostBounded_MT_adaptiveCheatingProver :
     IsCostBounded micaliMTCost adaptiveCheatingProver 2 :=
@@ -220,12 +220,12 @@ theorem isCostBounded_MT_adaptiveCheatingProver :
     IsCostBounded.liftBind (cost := micaliMTCost) (Sum.inr (x, rt)) _ 1 fun _ =>
       IsCostBounded.liftBind (cost := micaliMTCost) (Sum.inl [true]) _ 0 fun sib =>
         IsCostBounded.pure (cost := micaliMTCost)
-          (x, MicaliProof.mk rt [[(false, [sib])]]) 0
+          (x, MicaliProof.mk rt [[⟨false, [sib]⟩]]) 0
 
 /-- The supplied single opening is hashed at most twice, regardless of the FS answer. -/
 theorem isCostBounded_MT_halfVerifier (rt sib : List Bool) :
     IsCostBounded micaliMTCost
-      (micaliVerify halfVerifier x { root := rt, response := [[(false, [sib])]] }) 2 := by
+      (micaliVerify halfVerifier x { root := rt, response := [[⟨false, [sib]⟩]] }) 2 := by
   unfold micaliVerify
   refine IsCostBounded.liftBind (cost := micaliMTCost) (Sum.inr (x, rt)) _ 2 ?_
   intro challenges

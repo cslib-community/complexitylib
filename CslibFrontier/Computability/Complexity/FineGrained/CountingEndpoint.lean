@@ -258,23 +258,18 @@ theorem DecidableInSubexpTime.KSAT_of_dense_modelCount_interpolationScale {k : �
 
 /-! ### Exponent and ETH/SETH consequences -/
 
+/-- `satExponent k = 0` if and only if `KSAT k` is decidable in subexponential time in the number
+of variables. -/
+theorem satExponent_eq_zero_iff_decidableInSubexpTime {k : ℕ} :
+    satExponent k = 0 ↔ DecidableInSubexpTime (KSAT k) encCNF CNF.numVars :=
+  rateExponent_eq_zero_iff (fun _ _ hle h => h.mono hle) (KSAT_decidableInExpTime_one k)
+
 /-- If `KSAT k` is decidable in subexponential time in the number of variables, then
 `satExponent k = 0`. -/
 theorem satExponent_eq_zero_of_decidableInSubexpTime {k : ℕ}
     (h : DecidableInSubexpTime (KSAT k) encCNF CNF.numVars) :
-    satExponent k = 0 := by
-  refine le_antisymm (le_of_not_gt fun hpos => ?_) (satExponent_nonneg k)
-  exact not_decidableInExpTime_of_lt_satExponent (half_pos hpos).le (half_lt_self hpos)
-    (h (satExponent k / 2) (half_pos hpos))
-
-/-- `satExponent k = 0` if and only if `KSAT k` is decidable in subexponential time in the number
-of variables. -/
-theorem satExponent_eq_zero_iff_decidableInSubexpTime {k : ℕ} :
-    satExponent k = 0 ↔ DecidableInSubexpTime (KSAT k) encCNF CNF.numVars := by
-  refine ⟨fun h δ hδ => ?_, satExponent_eq_zero_of_decidableInSubexpTime⟩
-  by_contra hndec
-  have hle := le_satExponent_of_not_decidableInExpTime hndec
-  linarith
+    satExponent k = 0 :=
+  satExponent_eq_zero_iff_decidableInSubexpTime.2 h
 
 /-- Subexponential-time decidability of 3-SAT refutes the Exponential Time Hypothesis (`¬ETH`). -/
 theorem not_ETH_of_decidableInSubexpTime

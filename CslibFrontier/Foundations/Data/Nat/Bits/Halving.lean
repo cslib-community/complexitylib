@@ -5,8 +5,9 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, `Mathlib/Data/Nat/Bits.lean`, for `bits_of_pos` and
--- `iterate_div_two`; `halfBit` and `flatten_map_range_halfBit` serve the halving machines, cslib)
+-- upstream: candidate (Mathlib, `Mathlib/Data/Nat/Bits.lean` for `bits_of_pos` and
+-- `Mathlib/Data/Nat/Defs.lean` for `iterate_div`; `halfBit` and `flatten_map_range_halfBit`
+-- serve the halving machines, cslib)
 
 public import CslibFrontier.Init
 public import Mathlib.Data.Nat.Bits
@@ -24,7 +25,7 @@ zero, so any number of rounds at least `n` suffices.
 
 * `Nat.bits_of_pos`: the binary digits of a positive number are its parity followed by the binary
   digits of its half.
-* `Nat.iterate_div_two`: halving `i` times divides by `2 ^ i`.
+* `Nat.iterate_div`: dividing by `b` `i` times divides by `b ^ i`.
 * `Nat.flatten_map_range_halfBit`: for `n ≤ m`, emitting the parity of every nonzero value among the
   first `m` halvings of `n` produces `n.bits`.
 -/
@@ -45,8 +46,8 @@ theorem bits_of_pos {q : ℕ} (hq : 0 < q) : q.bits = decide (q % 2 = 1) :: (q /
     rw [Nat.bit1_bits, h]
     rfl
 
-/-- Halving `i` times divides by `2 ^ i`. -/
-theorem iterate_div_two (n i : ℕ) : (· / 2)^[i] n = n / 2 ^ i := by
+/-- Dividing by `b` `i` times divides by `b ^ i`. -/
+theorem iterate_div (b n i : ℕ) : (· / b)^[i] n = n / b ^ i := by
   induction i with
   | zero => simp
   | succ i ih =>
@@ -63,7 +64,7 @@ theorem flatten_map_range_halfBit {n m : ℕ} (h : n ≤ m) :
   | zero => simp [show n = 0 by omega]
   | succ m ih =>
     rcases Nat.eq_zero_or_pos n with rfl | hn
-    · simp [halfBit, iterate_div_two]
+    · simp [halfBit, iterate_div]
     · rw [List.range_succ_eq_map, List.map_cons, List.map_map, List.flatten_cons,
         Function.iterate_zero_apply, bits_of_pos hn]
       have hrest : (List.map ((fun i => halfBit ((· / 2)^[i] n)) ∘ Nat.succ)

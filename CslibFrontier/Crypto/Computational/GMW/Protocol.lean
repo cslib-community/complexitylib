@@ -12,7 +12,9 @@ public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 public import CslibFrontier.Crypto.Computational.Commitment
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.Norm
+import Mathlib.Data.List.GetD
 
 /-!
 # Three-copy masked-3SAT commitment protocol for GMW zero-knowledge
@@ -170,33 +172,27 @@ private theorem naorMaskBits_eq_self_of_imp {openFlags bits : List Bool}
     naorMaskBits openFlags bits = openFlags := by
   apply List.ext_getElem (by simp [hlen])
   intro i hi hi'
-  have hlt : i < bits.length := by simpa [hlen] using hi
-  have h := getD_naorMaskBits openFlags bits i
-  have hopen : openFlags.getD i false = openFlags[i] := by
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi']
-  have hmask : (naorMaskBits openFlags bits).getD i false = (naorMaskBits openFlags bits)[i] := by
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
-  rw [← hmask, h, hopen]
+  have hopen : openFlags.getD i false = openFlags[i] := List.getD_eq_getElem _ _ hi'
+  rw [← List.getD_eq_getElem _ false hi, getD_naorMaskBits, hopen]
   cases hflag : openFlags[i]
   · simp
-  · simpa [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt] using
-      himp i (hopen.trans hflag)
+  · simpa using himp i (hopen.trans hflag)
 
 theorem getD_clauseTableRow (φ : CNF ℕ) (m : List Bool) (c : Clause ℕ) {t : ℕ} (ht : t < 8) :
     (clauseTableRow φ m c).getD t false =
       clauseEvalBits c
         (gmwBit0Of8 t ^^ varBit φ m (c.getD 0 (0, false)).1)
         (gmwBit1Of8 t ^^ varBit φ m (c.getD 1 (0, false)).1)
-        (gmwBit2Of8 t ^^ varBit φ m (c.getD 2 (0, false)).1) := by
-  simp [clauseTableRow, List.getD_eq_getElem?_getD, ht]
+        (gmwBit2Of8 t ^^ varBit φ m (c.getD 2 (0, false)).1) :=
+  List.getD_map_range _ false ht
 
 theorem getD_clauseActiveRow (φ : CNF ℕ) (v : List Bool) (c : Clause ℕ) {t : ℕ} (ht : t < 8) :
     (clauseActiveRow φ v c).getD t false =
       decide (t = gmwActiveIdx
         (varBit φ v (c.getD 0 (0, false)).1)
         (varBit φ v (c.getD 1 (0, false)).1)
-        (varBit φ v (c.getD 2 (0, false)).1)) := by
-  simp [clauseActiveRow, List.getD_eq_getElem?_getD, ht]
+        (varBit φ v (c.getD 2 (0, false)).1)) :=
+  List.getD_map_range _ false ht
 
 private theorem naorMaskBits_clauseActiveRow {φ : CNF ℕ} {w m : List Bool} {c : Clause ℕ}
     (hc_len : c.length ≤ 3) (hc_eval : c.eval (varBit φ w) = true) :
@@ -213,7 +209,8 @@ private theorem naorMaskBits_clauseActiveRow {φ : CNF ℕ} {w m : List Bool} {c
     rw [clauseEvalBits_eq_eval hc_len (varBit φ w), hc_eval]
   · have hge : (clauseActiveRow φ (BitString.listXor φ.vars.length [w, m]) c).length ≤ t := by
       simp only [length_clauseActiveRow]; omega
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none hge] at ht
+    rw [List.getD_eq_default _ _ hge] at ht
+    cases ht
 
 /-- The `8 * φ.length`-bit concatenation of all clause truth tables of `φ` under mask `m`. -/
 def tableBits (φ : CNF ℕ) (m : List Bool) : List Bool := (φ.map (clauseTableRow φ m)).flatten

@@ -57,6 +57,47 @@ namespace Cslib.Circuits.Frontier.IncidenceNetwork
 
 open Turing.MultiTapeTM Cslib.GenericRAM GaloisRingArith Cslib.BitString
 
+/-- Composing `d` after a polynomial-time preprocessing step keeps polynomial space and carries a
+conditional `2 ^ N * T` time bound. -/
+private theorem comp_ofPolyTime_bounds_of_two_pow {α β γ : Type}
+    {enc : α ↪ List Bool} {eβ : β ↪ List Bool} {eγ : γ ↪ List Bool}
+    {pre : α → β} {g : β → γ} (hpre : ComputableInPolyTime pre enc eβ)
+    {d : NativeCertificate g eβ eγ} (hdS : PolyBounded (fun b => (eβ b).length) d.space)
+    {N : α → ℕ} {Td : β → ℕ} (hdT : PolyBounded (fun b => (eβ b).length) Td)
+    {P : α → Prop} (hdt : ∀ a, P a → d.time (pre a) ≤ 2 ^ N a * Td (pre a)) :
+    PolyBounded (fun a => (enc a).length) (d.comp (NativeCertificate.ofPolyTime hpre)).space ∧
+      ∃ Ty : α → ℕ, PolyBounded (fun a => (enc a).length) Ty ∧
+        ∀ a, P a → (d.comp (NativeCertificate.ofPolyTime hpre)).time a ≤ 2 ^ N a * Ty a := by
+  have hc := NativeCertificate.ofPolyTime_isPolynomial hpre
+  have hlen := hpre.polyBounded_length
+  refine ⟨hc.2.add (hdS.comp hlen),
+    fun a => (NativeCertificate.ofPolyTime hpre).time a + Td (pre a),
+    hc.1.add (hdT.comp hlen), fun a ha => ?_⟩
+  have h1 : 1 ≤ 2 ^ N a := Nat.one_le_two_pow
+  have hd := hdt a ha
+  simp only [NativeCertificate.comp_time]
+  nlinarith
+
+/-- A branch on a polynomial-time test whose `yes` arm runs `d` after polynomial-time
+preprocessing and whose `no` arm is polynomial runs in polynomial space and time `2 ^ N * T`. -/
+private theorem branch_comp_ofPolyTime_bounds_of_two_pow {α β γ : Type}
+    {enc : α ↪ List Bool} {eβ : β ↪ List Bool} {eγ : γ ↪ List Bool}
+    {cond : α → Bool} {pre : α → β} {g : β → γ} {f₂ : α → γ}
+    (hcond : ComputableInPolyTime cond enc encBool)
+    (hpre : ComputableInPolyTime pre enc eβ)
+    {no : NativeCertificate f₂ enc eγ} (hno : no.IsPolynomial)
+    {d : NativeCertificate g eβ eγ} (hdS : PolyBounded (fun b => (eβ b).length) d.space)
+    {N : α → ℕ} {Td : β → ℕ} (hdT : PolyBounded (fun b => (eβ b).length) Td)
+    (hdt : ∀ a, cond a = true → d.time (pre a) ≤ 2 ^ N a * Td (pre a)) :
+    let cert := NativeCertificate.branch (NativeCertificate.ofPolyTime hcond)
+      (d.comp (NativeCertificate.ofPolyTime hpre)) no
+    PolyBounded (fun a => (enc a).length) cert.space ∧
+      ∃ T : α → ℕ, PolyBounded (fun a => (enc a).length) T ∧
+        ∀ a, cert.time a ≤ 2 ^ N a * T a := by
+  obtain ⟨hyS, Ty, hTy, hyt⟩ := comp_ofPolyTime_bounds_of_two_pow hpre hdS hdT hdt
+  exact NativeCertificate.branch_bounds_of_two_pow
+    (NativeCertificate.ofPolyTime_isPolynomial hcond) hno hyS hTy hyt
+
 /-! ### The sum of a row -/
 
 /-- The number of selected incidences of a context, in unary. -/
@@ -216,20 +257,15 @@ theorem rowCertificate_bounds :
         PolyBounded (fun q => (encPair encRowDesc encBits q).length) T ∧
         ∀ q, rowCertificate.time q ≤ 2 ^ rowInc q.1 * T q := by
   obtain ⟨hS, Tl, hTl, hle⟩ := rowSumCertificate_bounds
-  have hc := NativeCertificate.ofPolyTime_isPolynomial rowContext_polyTime
-  have hlen := rowContext_polyTime.polyBounded_length
-  refine NativeCertificate.branch_bounds_of_two_pow
-    (NativeCertificate.ofPolyTime_isPolynomial rowValid_polyTime)
-    (NativeCertificate.const_isPolynomial []) (hc.2.add (hS.comp hlen))
-    (hc.1.add ((PolyBounded.const 2).mul (hTl.comp hlen))) fun q _ => ?_
-  obtain ⟨⟨P, ℓ, tests, blocks⟩, bs⟩ := q
-  simp only [NativeCertificate.comp_time]
-  dsimp only [rowContext]
+  refine branch_comp_ofPolyTime_bounds_of_two_pow rowValid_polyTime rowContext_polyTime
+    (NativeCertificate.const_isPolynomial []) hS ((PolyBounded.const 2).mul hTl)
+    fun ⟨⟨P, ℓ, tests, blocks⟩, bs⟩ _ => ?_
   have h2 : 2 ^ (selected blocks (blockIndices blocks bs)).length ≤
       2 ^ rowInc (P, ℓ, tests, blocks) :=
     Nat.pow_le_pow_right (by norm_num) (length_selected_le _ _)
   have h1 : 1 ≤ 2 ^ rowInc (P, ℓ, tests, blocks) := Nat.one_le_two_pow
   have hl := hle P ℓ tests (selected blocks (blockIndices blocks bs))
+  dsimp only [rowContext]
   nlinarith
 
 /-! ### All descriptors -/
@@ -294,19 +330,11 @@ theorem incCertificate_bounds :
         PolyBounded (fun q => (encPair encDesc encBits q).length) T ∧
         ∀ q, incCertificate.time q ≤ 2 ^ descInc q.1 * T q := by
   obtain ⟨hS, T, hT, hle⟩ := rowCertificate_bounds
-  have hl := NativeCertificate.ofPolyTime_isPolynomial leftInput_polyTime
-  have hlen := leftInput_polyTime.polyBounded_length
-  refine NativeCertificate.branch_bounds_of_two_pow
-    (NativeCertificate.ofPolyTime_isPolynomial isRow_polyTime)
-    (NativeCertificate.ofPolyTime_isPolynomial restEntry_polyTime) (hl.2.add (hS.comp hlen))
-    (hl.1.add (hT.comp hlen)) fun q hq => ?_
-  rcases q with ⟨row | rest, bs⟩
-  · have hd : descInc (Sum.inl row) = rowInc row := rfl
-    have h1 : 1 ≤ 2 ^ rowInc row := Nat.one_le_two_pow
-    have hrow := hle (row, bs)
-    simp only [NativeCertificate.comp_time, Sum.getLeft?_inl, Option.getD_some, hd] at hrow ⊢
-    nlinarith
-  · simp at hq
+  refine branch_comp_ofPolyTime_bounds_of_two_pow isRow_polyTime leftInput_polyTime
+    (NativeCertificate.ofPolyTime_isPolynomial restEntry_polyTime) hS hT fun q hq => ?_
+  rcases q with ⟨row | _, bs⟩
+  · exact hle (row, bs)
+  · nomatch hq
 
 /-- **Time and space of the entry procedure.** On a descriptor and bits of encoded length `m`, the
 certificate takes time at most `c (m + 1) ^ c 2 ^ N`, for `N` the incidences of the descriptor,

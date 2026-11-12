@@ -164,7 +164,7 @@ example : TSP.verifier (⟨[[0, 2 ^ 100], [2 ^ 100, 0]], 2 ^ 101 - 1⟩, tour 2 
 /-! ### The reduction from `HamCycle` -/
 
 -- The cycle on four vertices: distance `1` along the cycle, `2` across and on the diagonal.
-private def c4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0)])
+private def c4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0)]⟩
 
 example : HamCycle.toTSP c4 =
     ⟨[[2, 1, 2, 1], [1, 2, 1, 2], [2, 1, 2, 1], [1, 2, 1, 2]], 4⟩ := by decide
@@ -173,13 +173,14 @@ example : HamCycle.toTSP c4 ∈ TSP := ⟨[0, 1, 2, 3], by decide, by decide⟩
 example : c4 ∈ HamCycle := (HamCycle.toTSP_mem_iff c4).1 ⟨[0, 1, 2, 3], by decide, by decide⟩
 
 -- The path on four vertices has no Hamiltonian cycle: every tour pays `2` for a missing edge.
-private def p4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)])
+private def p4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)]⟩
 
 example : p4 ∉ HamCycle := fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff p4).2 h)
 
 -- Cities are the distinct declared vertices in the order of their first occurrences; labels
 -- need not be contiguous, and self-loops are ignored.
-private def triangle : Graph := ([10, 20, 10, 30], [(10, 20), (20, 30), (30, 10), (10, 10)])
+private def triangle : Graph :=
+  ⟨[10, 20, 10, 30], [(10, 20), (20, 30), (30, 10), (10, 10)]⟩
 
 example : triangle.distinctVertices = [10, 20, 30] := by decide
 example : HamCycle.toTSP triangle = ⟨[[2, 1, 1], [1, 2, 1], [1, 1, 2]], 3⟩ := by decide
@@ -187,18 +188,18 @@ example : triangle ∈ HamCycle :=
   (HamCycle.toTSP_mem_iff triangle).1 ⟨[0, 1, 2], by decide, by decide⟩
 
 -- Edges with an undeclared endpoint are never used: `0 - 7 - 2` does not close the path.
-private def detour : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 7), (7, 0)])
+private def detour : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 7), (7, 0)]⟩
 
 example : HamCycle.toTSP detour = ⟨[[2, 1, 2], [1, 2, 1], [2, 1, 2]], 3⟩ := by decide
 example : detour ∉ HamCycle :=
   fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff detour).2 h)
 
 -- Graphs with fewer than three distinct vertices map to a fixed no-instance.
-example : HamCycle.toTSP ([0, 1, 0], [(0, 1)]) = ⟨[[1]], 0⟩ := by decide
-example : HamCycle.toTSP ([], []) = ⟨[[1]], 0⟩ := by decide
-example : (([0, 1, 0], [(0, 1)]) : Graph) ∉ HamCycle :=
+example : HamCycle.toTSP ⟨[0, 1, 0], [(0, 1)]⟩ = ⟨[[1]], 0⟩ := by decide
+example : HamCycle.toTSP ⟨[], []⟩ = ⟨[[1]], 0⟩ := by decide
+example : (⟨[0, 1, 0], [(0, 1)]⟩ : Graph) ∉ HamCycle :=
   fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff _).2 h)
-example : (([], []) : Graph) ∉ HamCycle :=
+example : (⟨[], []⟩ : Graph) ∉ HamCycle :=
   fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff _).2 h)
 
 end CslibFrontierTests.NPCompleteGraphs.TSP

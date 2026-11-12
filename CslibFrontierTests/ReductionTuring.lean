@@ -40,7 +40,7 @@ example :
 disjunctive truth-table reduction, hence a Turing reduction. -/
 theorem dtt_or_prefix :
     PolyTimeDTTReducible encBits encBits {w | false :: w ∈ B ∨ true :: w ∈ B} B := by
-  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, by fun_prop, by fun_prop, fun w => ?_⟩
+  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, ⟨by fun_prop, by fun_prop⟩, fun w => ?_⟩
   constructor
   · rintro (h | h)
     · exact ⟨0, by simp, by simpa using h⟩
@@ -55,7 +55,7 @@ theorem dtt_or_prefix :
 reduction, hence a Turing reduction. -/
 theorem ctt_and_prefix :
     PolyTimeCTTReducible encBits encBits {w | false :: w ∈ B ∧ true :: w ∈ B} B := by
-  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, by fun_prop, by fun_prop, fun w => ?_⟩
+  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, ⟨by fun_prop, by fun_prop⟩, fun w => ?_⟩
   constructor
   · rintro ⟨h₀, h₁⟩ i hi
     obtain _ | _ | i := i
@@ -72,8 +72,8 @@ theorem ktt_xor_prefix :
       {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} B := by
   classical
   refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1,
-    fun x => x.2.headD false ^^ (x.2.drop 1).headD false, by fun_prop, by fun_prop, by fun_prop,
-    fun _ => le_rfl, fun w => ?_⟩
+    fun x => x.2.headD false ^^ (x.2.drop 1).headD false,
+    ⟨by fun_prop, by fun_prop, by fun_prop, fun _ => le_rfl⟩, fun w => ?_⟩
   simp only [truthTableAnswers, Set.mem_preimage]
   by_cases h₀ : false :: w ∈ B <;> by_cases h₁ : true :: w ∈ B <;> simp [List.ofFn_succ, h₀, h₁]
 

@@ -56,6 +56,23 @@ For a fixed bound with an OR or AND evaluator, import
 query generator and require that count to be at most `k` on every input. Their
 `logSpaceKTruthTableReducible` lemmas preserve that bound when introducing an explicit evaluator.
 
+Both families instantiate the resource-free kernels in
+[Reduction/TruthTable](../../CslibFrontier/Computability/Reduction/TruthTable.lean), as the
+many-one notions instantiate `ManyOneReducibleBy`. `TruthTableReducibleBy Good` asks for a count,
+query generator and evaluator satisfying `Good`, while `DTTReducibleBy` and `CTTReducibleBy` drop
+the evaluator. The unrestricted, `k`-truth-table, disjunctive, conjunctive and positive predicates,
+and the fixed-bound `LogSpaceKDTTReducible` and `LogSpaceKCTTReducible`, spell out their bodies
+with the resource conditions and any query bound or monotonicity condition grouped into one
+conjunct, so each is by definition a kernel instance and the kernel lemmas apply to it directly.
+`PolyTimeBTTReducible` and `LogSpaceBTTReducible` are `∃ k, …KTruthTableReducible k …`; their
+lemmas unpack that single uniform bound before applying the kernel. Monotonicity in `Good`,
+complementation, one-query many-one embeddings, the `List.any id` and `List.all id` evaluators
+and disjunctive/conjunctive duality are proved once at kernel level; the named lemmas such as
+`PolyTimeTruthTableReducible.compl_left` apply them, so clients never supply a `Good`. A new
+resource bound needs only the closure facts of its own `Good`. Transitivity stays per family,
+sharing the combiner in
+[TruthTable/Composition](../../CslibFrontier/Computability/Complexity/Reduction/TruthTable/Composition.lean).
+
 ## Adaptive word-oracle access
 
 [`PolyTimeTuringReducible`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Turing.lean#L120) defines `A ≤T B` by membership in `PWithOracle (encB '' B) encA`. The underlying algorithm is a deterministic adaptive `WordQueryComp` with a native `IsOraclePPTOn` realization. Its polynomial clock charges query-symbol writes and bounds both query lengths and query count; the oracle evaluation itself is one step. The machine realization is efficient for arbitrary admissible handlers, while correctness of the reduction is stated for the designated language oracle.
@@ -66,7 +83,7 @@ The oracle recognizes the **encoded image** of `B`: a word outside the image of 
 
 ## Autoreductions and splitting
 
-An autoreduction is a reduction to the same language that avoids asking its original instance. [Polynomial-time](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L83) and [logspace](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L101) many-one versions require a fixed-point-free map. The polynomial-time truth-table variants—`k`-bounded, bounded, disjunctive, conjunctive, and unrestricted—require `q(a,i) ≠ a` only for indices actually used, `i < r(a)`. The same resource and answer semantics described above apply.
+An autoreduction is a reduction to the same language that avoids asking its original instance. [Polynomial-time](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L83) and [logspace](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L101) many-one versions require a fixed-point-free map. The polynomial-time truth-table variants—`k`-bounded, bounded, disjunctive, conjunctive, and unrestricted—require `q(a,i) ≠ a` only for indices actually used, `i < r(a)`. The same resource and answer semantics described above apply. These variants add that avoidance condition to the kernel's `Good`, so their forgetful maps, closure under complement and disjunctive/conjunctive duality are kernel corollaries.
 
 To turn a bounded disjunctive or conjunctive reduction from `Aᶜ` to `A` into an autoreduction,
 import [`LogSpaceBoundedAutoreducibility`](../../CslibFrontier/Computability/Complexity/Reduction/LogSpaceBoundedAutoreducibility.lean)
@@ -280,6 +297,15 @@ proves Selman's theorem: `NPHard.P_eq_NP_of_mem_PSel` turns an `NP`-hard P-selec
 sets. The proof reduces `SAT` to the given set. It then decides `SAT` with the generalized
 self-reduction lemma `SAT.verifier_search_of_step`, which needs only that each answer keeps the
 formula satisfiable, not that the answers are correct; the verifier checks the result.
+Searches that fix variables by unit clauses use
+[`Problems/SAT/Units`](../../CslibFrontier/Computability/Complexity/Problems/SAT/Units.lean)
+(`SAT.eval_units_append`, `SAT.length_encCNF_units_le`).
+
+A verifier that reads `SAT.assignment` gets its certificate from
+`SAT.assignment_vars_map_append` in
+[`Problems/SAT`](../../CslibFrontier/Computability/Complexity/Problems/SAT.lean): the values of
+an assignment listed along `φ.vars`, followed by any padding, describe it on the variables of `φ`.
+
 [`Selective.Ko`](../../CslibFrontier/Computability/Complexity/Classes/Selective/Ko.lean) proves
 `PSel_subset_PPolyOn`. The advice at length `n` is a list of at most `n + 1` members of length `n`,
 using at most `(n + 1)(2n + 1)` bits (`exists_advice_polyTime_of_mem_PSel`), in the
@@ -335,6 +361,8 @@ characterization remain open (see `ROADMAP.md`).
 
 Polynomial-rate transfer from orthogonal vectors is a direct composition rather than a reduction datatype. `CslibFrontier.Computability.Complexity.FineGrained.Diameter` formalizes the orthogonal vectors form of Roditty and Vassilevska Williams's diameter two-versus-three construction (Section 4, Theorem 9, stated there from CNF-SAT for graphs with `m` edges). Partial assignments become vectors and clauses become coordinates; the clique on clause vertices and hubs is replaced by hub–coordinate edges, and two padding vertices are added. The graph `OV.toDiameter` has diameter three on instances with an orthogonal pair and two otherwise (`OV.ediam_toDiameter`). Its vertex and edge lists are written by two one-pass streams with binary counters, paired under `ComputableInO` within time `L (log L) ^ D` in the encoded instance length (`OV.exists_computableInO_toDiameter`). `DecidableInTimeO.decidableInTimeO_OV_of_diameter` then turns any procedure separating the two diameters within time `L ^ (2 - ε)` on encoded graphs into an `OV` decider within time `N ^ (2 - min ε 1 / 2) (d + 1) ^ 2`. This transfer is unconditional. The lower bounds are implications from `OVH`. `not_decidableInTimeO_diameter_of_OVH` states them in the encoded length `L`. `not_decidableInTimeO_diameter_size_of_OVH` uses `(n + m) ^ (2 - ε) + L`; the `L` term is needed, because a bound in the number of listed vertices and edges alone cannot read unbounded labels and would hold vacuously. The reduced graphs have `Θ(N d)` edges with unrestricted dimension, so the sparse-graph statement needs the low-dimension form of `OVH` and is not covered. The library neither proves nor refutes `OVH`; it refutes `SETH`, so hardness from `SETH` through `OVH_of_SETH` is vacuous.
 
+Parameterized `Clique` hardness under `ETH` follows a uniform clause-grouping construction in [`CliqueGrouping`](../../CslibFrontier/Computability/Complexity/FineGrained/CliqueGrouping.lean) ([cygan2015][cygan2015]). For each `r ≥ 1` and CNF `φ` whose clauses all have width at most three, `SAT.groupClique r φ` partitions `φ` into `r` blocks of at most `⌈φ.length / r⌉ = (φ.length + r - 1) / r` clauses, creates one vertex per satisfying partial assignment per block (at most `r · 2 ^ (3 ⌈φ.length / r⌉)` vertices by `length_groupClique_vertices_le`), and connects compatible assignments across distinct blocks (`groupClique_mem_Clique_iff`). For `r ≥ 1`, a formula with a clause wider than three is sent to the empty graph with target `r`; when `r = 0`, every formula is sent to the empty graph with target one. Using `ComputableInPolyTime.exists_computableInO_pad` on `(r, φ)` gives a single polynomial exponent `D` independent of `r` (`exists_computableInO_groupClique`). The result uses `CliqueInstance` and `encCliqueInstance_mk_polyTime`, encoded by `encCliqueInstance`; its graph component uses the `Graph` record and `encGraph_mk_polyTime`. Vertex names and the clique target stay binary; the grouping count and explicit candidate bound supplied to the polynomial-time builder are unary. Choosing `r` large enough for each target rate `δ > 0` makes `DecidableInSubexpTime.threeSAT_of_clique_subexpVertex` and `threeSAT_of_clique_subexpEnc` transfer any `Clique` decider in time `f(k) · (|V| + 1) ^ o(k) · poly(|enc|)` or `f(k) · (|enc| + 1) ^ o(k)` (arbitrary real `f`) unconditionally to subexponential-time `ThreeSAT` in clause count. `ETH.not_clique_subexpVertex`, `ETH.not_clique_subexpEnc`, and `ETH.clique_not_mem_FPT` deduce the `ETH`-conditional exclusions (`Clique ∉ FPT`). As elsewhere, ETH consequences are implications from `ETH`; inspect the independent [native counting endpoints](native-counting.md) when interpreting that premise. The [CliqueGrouping tests](../../CslibFrontierTests/CliqueGrouping.lean) evaluate satisfiable, unsatisfiable, empty, and non-3-CNF inputs by `decide` and instantiate the reduction and `ETH` lower bounds.
+
 ## Source examples and evidence
 
 The inspected [ReductionVariants tests](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/ReductionVariants.lean#L1) give concrete prefix queries with OR, AND, XOR, and majority evaluators, including composition from two to four queries. These exhibit evaluator forms, not a separation theorem between the resulting reducibility relations. [LogSpaceReductions](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/LogSpaceReductions.lean#L1) supplies native logspace prefix and pair-query instances. [ReductionIsomorphism](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/ReductionIsomorphism.lean#L1) uses word reversal as an isomorphism and bit-prefixing with `tail` as a length-increasing map with a total left inverse.
@@ -343,3 +371,4 @@ The inspected [ReductionVariants tests](https://github.com/cslib-community/cslib
 
 [complexitylib]: ../sources.md#complexitylib
 [bermanhartmanis75]: ../sources.md#bermanhartmanis75
+[cygan2015]: ../sources.md#cygan2015

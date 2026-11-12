@@ -28,6 +28,14 @@ open QueryReplay
 open Turing.MultiTapeNTM.ChoiceTable
 open NativeBlockCodec
 
+-- Named records retain the former binary field order and all framing exactly.
+example (a : Assignments.Args) : Assignments.encArgs a =
+    encPair encNat (encPair encNat (encPair encNat encNat))
+      (a.limit, a.counter, a.stride, a.width) := rfl
+
+example {k : ℕ} (w : Assignments.Words k) : Assignments.encWords w =
+    encPair encBits Providers.Labels.encProviderWords (w.previous, w.providers) := rfl
+
 example : AssignmentLabels.label (65536, 165, 4, 3, 0) = [true, false, true] := by decide
 example : AssignmentLabels.label (65536, 165, 4, 3, 1) = [false, true, false] := by decide
 example : AssignmentLabels.label (65536, 0, 4, 3, 3) = [false, false, false] := by decide
@@ -35,18 +43,20 @@ example : AssignmentLabels.label (1, 0, 1000000000, 1000000000, 0) = [false] := 
 example : AssignmentLabels.label (1, 0, 1000000000, 1000000000, 1) = [] := by decide
 example : AssignmentLabels.label (65536, 165, 4, 0, 0) = [] := rfl
 
-example : (Assignments.labels 1 (65536, 165, 4, 3)).1 = [true, false, true] := by decide
-example : (Assignments.labels 1 (65536, 165, 4, 3)).2 0 0 = [false, true, false] := by decide
-example : (Assignments.labels 1 (65536, 165, 4, 3)).2 0 2 = [false, false, false] := by decide
+example : (Assignments.labels 1 ⟨65536, 165, 4, 3⟩).previous = [true, false, true] := by decide
+example : (Assignments.labels 1 ⟨65536, 165, 4, 3⟩).providers 0 0 = [false, true, false] := by
+  decide
+example : (Assignments.labels 1 ⟨65536, 165, 4, 3⟩).providers 0 2 = [false, false, false] := by
+  decide
 
 -- Four canonical labels, each with one padding bit, in the actual row-major assignment.
 def counter : ℕ := ofBits ((List.replicate 4 (good ++ [false])).flatten)
-def words := Assignments.labels 1 (2 ^ 56, counter, 14, 13)
+def words := Assignments.labels 1 ⟨2 ^ 56, counter, 14, 13⟩
 
-example : words.1 = good := by decide
-example : words.2 0 2 = good := by decide
-example : Encoding.NativeChecked.parse code (1, words.1) = some raw := by decide
+example : words.previous = good := by decide
+example : words.providers 0 2 = good := by decide
+example : Encoding.NativeChecked.parse code (1, words.previous) = some raw := by decide
 example : (Providers.Labels.combine code
-    (1, (fun _ _ => none), words.1, words.2)).isSome = true := by decide
+    (1, (fun _ _ => none), words.previous, words.providers)).isSome = true := by decide
 
 end CslibFrontierTests.AssignmentLabels
