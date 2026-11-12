@@ -9,11 +9,11 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Game.CloseTo
-public import CslibFrontier.Crypto.Game.CloseTo.RandomOracle
 public import CslibFrontier.Crypto.Negligible.Basic
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 public import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
+import CslibFrontier.Crypto.Game.CloseTo.RandomOracle
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Tactic.Negligible
 
@@ -22,7 +22,7 @@ import CslibFrontier.Tactic.Negligible
 
 Hash-based non-interactive commitment `(c, r) := (H(m, r), r)` in the lazy random oracle model
 with oracle queries `M × R → Digest` ([BonehShoup2023], Section 8.12; [KatzLindell2020],
-Section 6.5):
+Sections 6.5 and 6.6.5):
 
 - **Completeness (`verify_commitOracle`, `eval_verify_commitOracle`)**: committing to `m` with
   opening randomness `r` against the shared memoizing random oracle and immediately verifying
@@ -30,7 +30,8 @@ Section 6.5):
 - **Concrete ROM hiding (`closeTo_hidingGame_hidingIdeal`, `advantage_hidingGame_le`)**: against
   any two-stage `ProbOracleComp` adversary making at most `q₁` queries before the challenge and
   at most `q₂` queries after receiving the challenge commitment `c = H(m_b, r)` for uniform
-  `r ← R`, the distinguishing advantage in `hidingGame` is at most `2 * (q₁ + q₂) / |R|`.
+  `r ← R`, the distinguishing advantage in `hidingGame` is at most `2 * (q₁ + q₂) / |R|`,
+  via `Cslib.RandomOracle.closeTo_runWith_memoize_cons`.
 - **Concrete ROM binding (`succProbability_bindingGame_le`)**: any `ProbOracleComp` adversary
   making at most `q` queries wins `bindingGame` (producing a single digest opening to two distinct
   messages `m₀ ≠ m₁` that both verify) with probability at most `(q + 2).choose 2 / |Digest|`,
@@ -60,8 +61,6 @@ Section 6.5):
 
 * `Cslib.Crypto.Protocols.ROMCommitment.verify_commitOracle`,
   `Cslib.Crypto.Protocols.ROMCommitment.eval_verify_commitOracle`: probability-one completeness.
-* `Cslib.Crypto.Protocols.ROMCommitment.closeTo_runWith_memoize_cons`: generic `ProbOracleComp`
-  single-entry cache-extension closeness for lazy random oracles.
 * `Cslib.Crypto.Protocols.ROMCommitment.closeTo_hidingGame_hidingIdeal`,
   `Cslib.Crypto.Protocols.ROMCommitment.advantage_hidingGame_le`,
   `Cslib.Crypto.Protocols.ROMCommitment.negligible_advantage_hidingGame`: concrete and asymptotic
@@ -77,7 +76,7 @@ Section 6.5):
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Section 8.12.
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, 3rd ed.][KatzLindell2020],
-  Section 6.5.
+  Sections 6.5 and 6.6.5.
 -/
 
 public section
@@ -89,39 +88,8 @@ open scoped ENNReal NNReal
 
 section Helpers
 
-variable {Query Value : Type} [BEq Query] [LawfulBEq Query]
+variable {Query Value : Type} [BEq Query]
 
-omit [LawfulBEq Query] in
-private theorem lookup_isSome_of_mem_support_memoize {dist : Query → PMF Value}
-    {k : Query} {cache : List (Query × Value)} {v : Value} {cache' : List (Query × Value)}
-    (hstep : (v, cache') ∈ (memoize dist k cache).support) :
-    ∀ x, (cache.lookup x).isSome = true → (cache'.lookup x).isSome = true := by
-  intro x hx
-  rcases (mem_support_memoize_iff dist k cache (v, cache')).mp hstep with
-    ⟨-, hc⟩ | ⟨-, -, hc⟩
-  · dsimp only at hc
-    rw [hc]
-    exact hx
-  · dsimp only at hc
-    rw [hc]
-    simp only [List.lookup]
-    cases (x == k) with
-    | true => rfl
-    | false => exact hx
-
-omit [LawfulBEq Query] in
-private theorem lookup_isSome_of_mem_support_runWith_memoize {α : Type}
-    (dist : Query → PMF Value) (prog : ProbOracleComp (fun _ : Query => Value) α)
-    {cache cache' : List (Query × Value)} {res : α}
-    (hmem : (res, cache') ∈ (ProbOracleComp.runWith (memoize dist) prog cache).support) :
-    ∀ x, (cache.lookup x).isSome = true → (cache'.lookup x).isSome = true := by
-  refine ProbOracleComp.runWith_invariant (memoize dist)
-    (fun c => ∀ x, (cache.lookup x).isSome = true → (c.lookup x).isSome = true)
-    (fun k c hinv ans c' hstep x hx =>
-      lookup_isSome_of_mem_support_memoize hstep x (hinv x hx))
-    prog cache (fun _ h => h) res cache' hmem
-
-omit [LawfulBEq Query] in
 private theorem runWith_memoize_suffix {α : Type} (dist : Query → PMF Value)
     (prog : ProbOracleComp (fun _ : Query => Value) α)
     {cache cache' : List (Query × Value)} {res : α}
@@ -137,7 +105,6 @@ private theorem runWith_memoize_suffix {α : Type} (dist : Query → PMF Value)
   · dsimp only at hc
     exact ⟨(k, ans) :: added, hc⟩
 
-omit [LawfulBEq Query] in
 private theorem cache_length_of_mem_support_runWith_memoize {α : Type}
     (dist : Query → PMF Value) {prog : ProbOracleComp (fun _ : Query => Value) α} {q : ℕ}
     (hq : prog.IsQueryBounded q) {cache cache' : List (Query × Value)} {res : α}
@@ -153,94 +120,6 @@ private theorem cache_length_of_mem_support_runWith_memoize {α : Type}
   | inr k =>
     rcases (mem_support_memoize_iff dist k c (ans, c')).mp hstep with
       ⟨-, hc⟩ | ⟨-, -, hc⟩ <;> (dsimp only at hc; rw [hc]; simp)
-
-private theorem closeTo_runWith_memoize_equiv {α : Type} (dist : Query → PMF Value)
-    (target : Query) (value : Value) (prog : ProbOracleComp (fun _ : Query => Value) α)
-    {c₁ c₂ : List (Query × Value)}
-    (h1 : c₁.lookup target = some value)
-    (h2 : c₂.lookup target = none)
-    (hdiff : ∀ k ≠ target, c₁.lookup k = c₂.lookup k) :
-    CloseTo
-      ((ProbOracleComp.runWith (memoize dist) prog c₁).map Prod.fst)
-      ((ProbOracleComp.runWith (memoize dist) prog c₂).map Prod.fst)
-      ((ProbOracleComp.runWith (memoize dist) prog c₂).toOuterMeasure
-        {x | (x.2.lookup target).isSome = true}) := by
-  induction prog using ProbOracleComp.induction generalizing c₁ c₂ with
-  | pure a =>
-    simp only [ProbOracleComp.runWith_pure, PMF.pure_map]
-    intro E
-    exact le_add_of_nonneg_right zero_le
-  | sample_bind n cont ih =>
-    simp only [ProbOracleComp.runWith_sample_bind, PMF.map_bind, PMF.toOuterMeasure_bind_apply]
-    exact CloseTo.bind_right_tsum _ fun a _ => ih a h1 h2 hdiff
-  | query_bind key cont ih =>
-    by_cases hkey : key = target
-    · subst hkey
-      have hprob1 : (ProbOracleComp.runWith (memoize dist)
-          (ProbOracleComp.query key >>= cont) c₂).toOuterMeasure
-          {x | (x.2.lookup key).isSome = true} = 1 := by
-        rw [PMF.toOuterMeasure_apply_eq_one_iff]
-        rintro ⟨res, cache'⟩ hmem
-        simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-          PMF.mem_support_bind_iff] at hmem
-        obtain ⟨⟨d, c₂'⟩, hstep, hcont⟩ := hmem
-        dsimp only at hcont
-        rcases (mem_support_memoize_iff dist key c₂ (d, c₂')).mp hstep with
-          ⟨hsome, _⟩ | ⟨-, -, hc⟩
-        · dsimp only at hsome
-          rw [h2] at hsome
-          exact False.elim (Option.some_ne_none _ hsome.symm)
-        · dsimp only at hc
-          have hlook : (c₂'.lookup key).isSome = true := by rw [hc]; simp
-          exact lookup_isSome_of_mem_support_runWith_memoize dist (cont d) hcont key hlook
-      rw [hprob1]
-      intro E
-      exact (Cslib.Probability.PMF.toOuterMeasure_le_one _ E).trans le_add_self
-    · have hlookup_eq : c₁.lookup key = c₂.lookup key := hdiff key hkey
-      cases hcase : c₂.lookup key with
-      | some ans =>
-        have hcase1 : c₁.lookup key = some ans := hlookup_eq.trans hcase
-        simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-          memoize_of_some dist key c₁ ans hcase1, memoize_of_some dist key c₂ ans hcase,
-          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
-        exact ih ans h1 h2 hdiff
-      | none =>
-        have hcase1 : c₁.lookup key = none := hlookup_eq.trans hcase
-        simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-          memoize_of_none dist key c₁ hcase1, memoize_of_none dist key c₂ hcase,
-          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          PMF.bind_bind, PMF.pure_bind, PMF.map_bind, PMF.toOuterMeasure_bind_apply]
-        refine CloseTo.bind_right_tsum (dist key) fun ans _ => ?_
-        have hkey' : target ≠ key := Ne.symm hkey
-        have hb : (target == key) = false := beq_false_of_ne hkey'
-        refine ih ans ?_ ?_ ?_
-        · simp [List.lookup, hb, h1]
-        · simp [List.lookup, hb, h2]
-        · intro k hk
-          simp only [List.lookup]
-          cases hbeq : (k == key) with
-          | true => rfl
-          | false => exact hdiff k hk
-
-/-- **Prepending a fresh random-oracle cache entry (`ProbOracleComp.runWith`)**: inserting a single
-entry `(target, value)` into a cache with `cache.lookup target = none` changes the output marginal
-by at most the probability that the unmodified execution queries `target` (equivalently leaves
-`target` present in its final cache). -/
-theorem closeTo_runWith_memoize_cons {α : Type} (dist : Query → PMF Value)
-    {cache : List (Query × Value)} {target : Query} (value : Value)
-    (hnone : cache.lookup target = none)
-    (prog : ProbOracleComp (fun _ : Query => Value) α) :
-    CloseTo
-      ((ProbOracleComp.runWith (memoize dist) prog ((target, value) :: cache)).map Prod.fst)
-      ((ProbOracleComp.runWith (memoize dist) prog cache).map Prod.fst)
-      ((ProbOracleComp.runWith (memoize dist) prog cache).toOuterMeasure
-        {x | (x.2.lookup target).isSome = true}) :=
-  closeTo_runWith_memoize_equiv dist target value prog
-    (by simp) hnone (fun k hk => by
-      simp only [List.lookup]
-      cases hbeq : (k == target) with
-      | true => exact absurd (beq_iff_eq.mp hbeq) hk
-      | false => rfl)
 
 end Helpers
 

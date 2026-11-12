@@ -520,7 +520,7 @@ section Simulation
 variable (F : PrimeOrderGroupFamily) {Party : Type} [Fintype Party] [DecidableEq Party]
 
 /-- Interpolation nodes `none ↦ 0` and `some i ↦ params.point i.1` on `Option J`. -/
-@[expose] def simNodes {q : ℕ} (params : Shamir.Params (ZMod q) Party) (J : Finset Party)
+def simNodes {q : ℕ} (params : Shamir.Params (ZMod q) Party) (J : Finset Party)
     (k : Option J) : ZMod q :=
   Option.elim k 0 (fun i => params.point i.1)
 
@@ -671,7 +671,7 @@ section Secrecy
 variable (F : PrimeOrderGroupFamily) {Party : Type} [Fintype Party] [DecidableEq Party]
 
 /-- Coefficient step multiplying a polynomial modulo `q` by `(X - a)` on `Fin (t + 1) → ℕ`. -/
-@[expose] def mulXSubConstMod {t : ℕ} (q a : ℕ) (c : Fin (t + 1) → ℕ) : Fin (t + 1) → ℕ :=
+private def mulXSubConstMod {t : ℕ} (q a : ℕ) (c : Fin (t + 1) → ℕ) : Fin (t + 1) → ℕ :=
   Fin.cons ((q - a % q) * c 0 % q)
     (fun j : Fin t => (c j.castSucc + (q - a % q) * c j.succ) % q)
 
@@ -697,7 +697,7 @@ private theorem mulXSubConstMod_spec {t q : ℕ} [Fact q.Prime] (a : ℕ)
     ring
 
 /-- Fixed-list numerator coefficients `(∏ m ∈ ms, (X - x m)) mod q` over `Fin (t + 1) → ℕ`. -/
-@[expose] def lagrangeNumMod {ι : Type} (t q : ℕ) (x : ι → ℕ) (ms : List ι) :
+private def lagrangeNumMod {ι : Type} (t q : ℕ) (x : ι → ℕ) (ms : List ι) :
     Fin (t + 1) → ℕ :=
   ms.foldr (fun m c => mulXSubConstMod q (x m) c) (Fin.cons 1 (fun _ => 0))
 
@@ -717,7 +717,7 @@ private theorem lagrangeNumMod_spec {ι : Type} {t q : ℕ} [Fact q.Prime]
     exact mulXSubConstMod_spec (x hd) (lagrangeNumMod t q x tl) _ ih j
 
 /-- Fixed-list denominator product `(∏ m ∈ ms, (xk - x m)) mod q`. -/
-@[expose] def lagrangeDenomMod {ι : Type} (q : ℕ) (x : ι → ℕ) (xk : ℕ) (ms : List ι) : ℕ :=
+private def lagrangeDenomMod {ι : Type} (q : ℕ) (x : ι → ℕ) (xk : ℕ) (ms : List ι) : ℕ :=
   ms.foldr (fun m acc => ((xk + (q - x m % q)) * acc) % q) 1
 
 private theorem lagrangeDenomMod_spec {ι : Type} {q : ℕ} [Fact q.Prime]
@@ -736,7 +736,7 @@ private theorem lagrangeDenomMod_spec {ι : Type} {q : ℕ} [Fact q.Prime]
     rw [ih]
 
 /-- Coefficient `j` of `simLagrangePoly` modulo `q` via Fermat inversion `denom ^ (q - 2) % q`. -/
-@[expose] def lagrangeCoeffMod {ι : Type} (t q : ℕ) (x : ι → ℕ)
+private def lagrangeCoeffMod {ι : Type} (t q : ℕ) (x : ι → ℕ)
     (ms : List ι) (k : ι) (j : Fin (t + 1)) : ℕ :=
   ((lagrangeDenomMod q x (x k) ms ^ (q - 2) % q) * lagrangeNumMod t q x ms j) % q
 
@@ -796,7 +796,7 @@ private theorem lagrangeCoeffMod_spec {J : Finset Party} {t : ℕ} (d : F.Desc)
     _root_.Polynomial.coeff_C_mul]
 
 /-- Simulated Feldman commitment words from `(d, hWord, σVec)` for fixed `t`, `J`, `eJ`. -/
-@[expose] noncomputable def feldmanSimCommitWords (t : ℕ)
+private noncomputable def feldmanSimCommitWords (t : ℕ)
     (params : ∀ d : F.Desc, Shamir.Params (ZMod (F.order d)) Party)
     (J : Finset Party) (eJ : Fin t ≃ J)
     (d : F.Desc) (hWord : List Bool) (σVec : Fin t → ℕ) : Fin (t + 1) → List Bool :=
@@ -987,7 +987,7 @@ private theorem computableInPolyTime_feldmanSimCommitWords (t : ℕ)
   exact hres.tidy
 
 /-- Sample `k` candidate exponents sequentially using `F.sampleExp n d`. -/
-noncomputable def sampleExpVec (n : ℕ) (d : F.Desc) : (k : ℕ) → ProbComp (Fin k → ℕ)
+private noncomputable def sampleExpVec (n : ℕ) (d : F.Desc) : (k : ℕ) → ProbComp (Fin k → ℕ)
   | 0 => pure Fin.elim0
   | k + 1 => do
     let head ← F.sampleExp n d
