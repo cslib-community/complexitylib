@@ -1312,6 +1312,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Nechiporuk
 public import CslibFrontier.Computability.Circuit.Boolean.NegationNormalForm
 public import CslibFrontier.Computability.Circuit.Boolean.NonconstantCost
 public import CslibFrontier.Computability.Circuit.Boolean.Nondeterminism
+public import CslibFrontier.Computability.Circuit.Boolean.NonuniformSeparation
 public import CslibFrontier.Computability.Circuit.Boolean.OpValue
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle.FixedQueries
