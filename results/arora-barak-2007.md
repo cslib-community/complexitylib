@@ -3,7 +3,8 @@
 Audit and checked client: Christian Reitwiessner, with Codex assistance.
 
 This is a growing statement-level audit under [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711),
-not a completeness claim for the book or library. Its source is the
+not a completeness claim for the book or library. The scope includes exercises that establish
+new theory; routine practice is excluded. Its source is the
 [public web draft dated 2007-01-08](https://theory.cs.princeton.edu/complexity/book.pdf)
 (489 PDF pages; SHA-256 `da0881782a35bde6a0779a2eb1a8d480f39fbddf70bbb92824d1dc5550a033b2`).
 Numbers and printed pages below belong to that draft, not the published edition.
@@ -344,6 +345,34 @@ general: the complex plane, viewed as the real plane, is already semialgebraic o
 two. A correct argument needs the precise equality-test/algebraic-machine restrictions and a
 suitable topological obstruction. This observation does not refute the intended undecidability
 result; it prevents using the draft sketch as a complete proof.
+
+## Exercises establishing new theory
+
+The scope includes exercises whose endpoints develop theory, as clarified by Christian
+Reitwiessner; routine practice is not a formalization target. An exercise already implied by
+an existing theorem should be mapped to that theorem rather than reproved. Exercise numbers
+must be pinned to the source chapter, including subparts; placeholders do not supply a precise
+mathematical specification.
+
+The six exercise prompts at the end of Chapter 14 all appear on printed p. 265/PDF p. 281.
+Their current dispositions are:
+
+| Exercise | Endpoint and disposition |
+|---|---|
+| 14 §1 | Finite-field arithmetic versus Boolean circuits up to constant factors. **GF(2) milestone:** [Boolean/Arithmetic.lean](../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean) proves same-carrier simulations with size factors three and four, preserving every output. The arbitrary fixed finite-field endpoint remains open; it needs explicit bit representations. |
+| 14 §2 | Circuit depth versus exponential-size straight-line programs. **Source specification needed:** the short prompt does not fix the two directions, costs or parameter relation sufficiently for a formal endpoint. |
+| 14 §3 | The draft only asks “Bauer-Strassen lemma?” **Source specification needed:** select and cite a precise differentiation theorem before implementation; do not silently repair the name and infer a statement. |
+| 14 §4 | Algebraic-machine time to computation-tree depth. **Source issue:** the prompt uses running-time parameter `T` and concludes depth `O(d)` without defining `d`. A corrected endpoint also needs the absent machine/tree model. |
+| 14 §5 | Real BSS computation with arbitrary-precision sign tests decides `P/poly`. **Endpoint not located:** specify the real constants, branch operations and binary-language interface before claiming the circuit-family decoding argument. |
+| 14 §6 | The draft only asks “Shamir's trick?” **Source specification needed:** no exact algorithm, machine model or bound is given in the exercise. |
+
+This is a first exercise inventory, not a complete classification of every chapter's exercises.
+The GF(2) simulations concern values in `Bool`'s Boolean ring, not equality of formal
+polynomials. They use existing gate replacement and four-gate XOR synthesis; no new carrier,
+compiler-runtime claim or general finite-field completion is implied. Their
+[clients](../CslibFrontierTests/BooleanArithmetic.lean) include multiple outputs and zero-cost
+wiring. The remaining theoretical exercises stay under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
 ## Remaining audit work
 

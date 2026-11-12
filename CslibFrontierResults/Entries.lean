@@ -29,6 +29,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
@@ -633,6 +634,23 @@ register_result "braverman" where
     coordinates) once k ≥ (64q)^((2d + 3)(d + 7) + 1). Our own constants and exponent, weaker \
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
+
+register_result "boolean-two-element-arithmetic-simulation" where
+  title := "Boolean and two-element arithmetic circuits have linearly related sizes"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (two-element case)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_arithmetic_simulation,
+    Cslib.Circuits.Boolean.exists_boolean_simulation
+  ]
+  scope := "Bool's Boolean ring, with XOR addition and AND multiplication. All outputs and \
+    all inputs are preserved; arithmetic simulates De Morgan circuits with size factor 3, \
+    and De Morgan circuits simulate arithmetic with factor 4. Constants count as gates; \
+    input/output wires are free. Nonuniform existence, not compiler runtime or formal \
+    polynomial equality. This does not complete the arbitrary fixed finite-field exercise."
 
 register_result "formal-complexity-measure-leaf-bound" where
   title := "Formal complexity measures lower-bound constant-free formula leaf size"
