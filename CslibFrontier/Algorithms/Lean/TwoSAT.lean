@@ -598,41 +598,23 @@ def toFinCNFM (φ : CNF ℕ) : TimeM ℕ (CNF (Fin (φ.vars.length + 1))) :=
     ✓
     relabelClauseM f c
 
-private theorem relabelClauseM_spec {W : Type*} (f : ℕ → W) :
-    ∀ (c : Clause ℕ),
-      (relabelClauseM f c).ret = Clause.relabel f c ∧
-      (relabelClauseM f c).time = c.length
-  | [] => by simp [relabelClauseM, Clause.relabel]
-  | ℓ :: c => by
-    obtain ⟨hr, ht⟩ := relabelClauseM_spec f c
-    simp only [relabelClauseM, List.mapM_cons, Clause.relabel, List.map_cons, TimeM.ret_bind,
-      TimeM.time_bind, TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons]
-    change ((f ℓ.1, ℓ.2) :: (relabelClauseM f c).ret = (f ℓ.1, ℓ.2) :: Clause.relabel f c) ∧
-      1 + ((relabelClauseM f c).time + 0) = c.length + 1
-    rw [hr, ht]
-    exact ⟨rfl, by omega⟩
+private theorem ret_relabelClauseM {W : Type*} (f : ℕ → W) (c : Clause ℕ) :
+    (relabelClauseM f c).ret = Clause.relabel f c := by
+  simp only [relabelClauseM, TimeM.ret_listMapM, TimeM.ret_bind, TimeM.ret_pure, Clause.relabel]
+  rfl
 
-private theorem mapM_cnf_toFin {W : Type*} (f : ℕ → W) :
-    ∀ (cs : CNF ℕ),
-      (cs.mapM fun c => do ✓ relabelClauseM f c).ret = cs.relabel f ∧
-      (cs.mapM fun c => do ✓ relabelClauseM f c).time = cs.length + cs.vars.length
-  | [] => by simp [CNF.relabel, CNF.vars]
-  | c :: cs => by
-    obtain ⟨hr₁, ht₁⟩ := relabelClauseM_spec f c
-    obtain ⟨hr₂, ht₂⟩ := mapM_cnf_toFin f cs
-    simp only [List.mapM_cons, CNF.relabel, List.map_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, hr₁, ht₁, List.length_cons,
-      CNF.vars, List.flatten_cons, List.map_append, List.length_append, List.length_map]
-    rw [hr₂, ht₂]
-    dsimp only [CNF.vars]
-    simp only [List.length_map]
-    exact ⟨rfl, by omega⟩
+private theorem time_relabelClauseM {W : Type*} (f : ℕ → W) (c : Clause ℕ) :
+    (relabelClauseM f c).time = c.length := by
+  simp [relabelClauseM]
 
-theorem ret_toFinCNFM (φ : CNF ℕ) : (toFinCNFM φ).ret = toFinCNF φ :=
-  (mapM_cnf_toFin (toFinVar φ) φ).1
+theorem ret_toFinCNFM (φ : CNF ℕ) : (toFinCNFM φ).ret = toFinCNF φ := by
+  simp only [toFinCNFM, TimeM.ret_listMapM, TimeM.ret_bind, ret_relabelClauseM]
+  rfl
 
-theorem time_toFinCNFM (φ : CNF ℕ) : (toFinCNFM φ).time = φ.length + φ.vars.length :=
-  (mapM_cnf_toFin (toFinVar φ) φ).2
+theorem time_toFinCNFM (φ : CNF ℕ) : (toFinCNFM φ).time = φ.length + φ.vars.length := by
+  simp only [toFinCNFM, TimeM.time_listMapM, TimeM.time_bind, TimeM.time_tick,
+    time_relabelClauseM, CNF.length_vars, List.sum_map_add, List.map_const', List.sum_replicate,
+    smul_eq_mul, mul_one]
 
 /-- Solve a `CNF ℕ` instance of `Cslib.Complexity.TwoSAT`, returning `some σ` when `φ ∈ TwoSAT` and
 `none` otherwise. -/
