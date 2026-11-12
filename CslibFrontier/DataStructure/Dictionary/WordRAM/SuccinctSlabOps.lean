@@ -420,21 +420,7 @@ theorem realizes_lastSlotOfGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := ℕ))
       LastSlotOfGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
-      let z ← pure 0
-      if dpBucketBits d.1 = z then
-        let c ← readGMGenProg (d.1, (d.2.1, z))
-        pure (c - 1)
-      else
-        let r_idx ← pure (4 + 3 * d.2.2 + 1)
-        let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
-        let ptr_idx ← pure (dpGmTailPtrBase d.1 + (d.2.2 * dpTailCap d.1 + (r_b - 1)))
-        let t_last ← readGMGenProg (d.1, (d.2.1, ptr_idx))
-        pure (dpNMaxSubOne d.1 - t_last)) ?_
-    (fun d => by
-      simp only [lastSlotOfGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
-  realizeDictWith [lastSlotOfGenPre_mk]
+  realizeDictWith [lastSlotOfGenPre_mk] using [realizes_readGMGen]
   · exact h.1
   · unfold globalMetaLen; omega
   · have hd2 : d.2 = 0 := by
@@ -763,19 +749,9 @@ theorem realizes_pushBackTailWriteGen :
       (WordEncoding.encode (α := ℕ))
       PushBackTailWriteGenPre
       (fun _ _ => 0) := by
-  have happ := realizes_appendTailItemGen
-  have hwq := realizes_writeQuotGen
-  have hwv := realizes_writeValGen
-  have hrg := realizes_readGMGen
-  refine Realizes.congr (p := fun d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ => do
-      let t_new ← appendTailItemGenProg d.1.1
-      let g_new ← pure (dpNMaxSubOne d.1.1.1 - t_new)
-      writeQuotGenProg (d.1.1.1, ((d.1.1.2.1, g_new), d.1.2))
-      writeValGenProg (d.1.1.1, ((d.1.1.2.1, g_new), d.2))
-      let r_idx ← pure (4 + 3 * d.1.1.2.2 + 1)
-      readGMGenProg (d.1.1.1, (d.1.1.2.1, r_idx))) ?_
-    (fun d => by simp only [pushBackTailWriteGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
   realize
+    [realizes_appendTailItemGen, realizes_writeQuotGen, realizes_writeValGen,
+      realizes_readGMGen]
   all_goals (
     rcases d with ⟨⟨⟨dp, base, b⟩, q_val⟩, v_val⟩
     let d : ((ℕ × ℕ) × ℕ) × ℕ := (((base, b), q_val), v_val)
@@ -1110,29 +1086,9 @@ theorem realizes_pushBackSlotGen :
       (WordEncoding.encode (α := Unit))
       PushBackSlotGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwq := realizes_writeQuotGen
-  have hwv := realizes_writeValGen
-  have hwg := realizes_writeGMGen
-  have htw := realizes_pushBackTailWriteGen
-  have hprom := realizes_promoteSlabGen
-  refine Realizes.congr (p := fun d : ((DictParams × (ℕ × ℕ)) × ℕ) × ℕ => do
-      let i0 ← pure 0
-      if dpBucketBits d.1.1.1 = i0 then
-        let c ← readGMGenProg (d.1.1.1, (d.1.1.2.1, i0))
-        writeQuotGenProg (d.1.1.1, ((d.1.1.2.1, c), d.1.2))
-        writeValGenProg (d.1.1.1, ((d.1.1.2.1, c), d.2))
-        let c1 ← pure (c + 1)
-        writeGMGenProg (d.1.1.1, ((d.1.1.2.1, i0), c1))
-      else
-        let r_b_new ← pushBackTailWriteGenProg d
-        if r_b_new = dpTwoSlabSize d.1.1.1 then
-          promoteSlabGenProg d.1.1
-        else
-          pure ()) ?_
-    (fun d => by
-      simp only [pushBackSlotGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
   realize
+    [realizes_readGMGen, realizes_writeQuotGen, realizes_writeValGen, realizes_writeGMGen,
+      realizes_pushBackTailWriteGen, realizes_promoteSlabGen]
   all_goals (
     rcases d with ⟨⟨⟨dp, base, b⟩, q_val⟩, v_val⟩
     let d : ((ℕ × ℕ) × ℕ) × ℕ := (((base, b), q_val), v_val)
@@ -1545,33 +1501,10 @@ theorem realizes_popBackSlotGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
       PopBackSlotGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hwg := realizes_writeGMGen
-  have hrem := realizes_removeLastTailItemGen
-  have hdem := realizes_demoteSlabGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
-      let z ← pure 0
-      if dpBucketBits d.1 = z then
-        let c ← readGMGenProg (d.1, (d.2.1, z))
-        let c_sub ← pure (c - 1)
-        writeGMGenProg (d.1, ((d.2.1, z), c_sub))
-      else
-        removeLastTailItemGenProg d
-        let r_idx ← pure (4 + 3 * d.2.2 + 1)
-        let r_b_new ← readGMGenProg (d.1, (d.2.1, r_idx))
-        let q_idx ← pure (4 + 3 * d.2.2)
-        let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
-        if r_b_new = z then
-          if z < q_b then
-            demoteSlabGenProg d
-          else
-            pure ()
-        else
-          pure ()) ?_
-    (fun d => by
-      simp only [popBackSlotGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
   realizeDictWith [popBackSlotGenPre_mk, removeLastTailItemGenPre_mk, removeLastTailItemGenProg_mk,
-    demoteSlabGenPre_mk, demoteSlabGenProg_mk]
+    demoteSlabGenPre_mk, demoteSlabGenProg_mk] using
+    [realizes_readGMGen, realizes_writeGMGen, realizes_removeLastTailItemGen,
+      realizes_demoteSlabGen]
   · exact h.1
   · unfold globalMetaLen; omega
   · have hd2 : d.2 = 0 := by

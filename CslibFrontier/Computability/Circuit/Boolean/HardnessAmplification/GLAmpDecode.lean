@@ -45,7 +45,11 @@ Two deviations from the source are labelled here:
 Each output bit of the candidate, as a function of the flat input `x` read in blocks
 (`BitString.block x`), has a De Morgan circuit with at most
 `(2 ^ K - 1) * (s + 1) + (4 + 2 * (2 ^ K - 1) * (2 ^ K + 1))` gates when `h` has one with `s`
-(`Cslib.Circuits.Boolean.complexity_glAmpCandidate_apply_le`). Running time is not certified.
+(`Cslib.Circuits.Boolean.complexity_glAmpCandidate_apply_le`). The same bound holds when `h` is
+computed from `q` answer bits and its input by a circuit with `s` gates, and the candidate reads
+those answer bits as inputs too
+(`Cslib.Circuits.Boolean.complexity_glAmpCandidate_answers_apply_le`). Running time is not
+certified.
 
 ## Main definitions
 
@@ -60,6 +64,8 @@ Each output bit of the candidate, as a function of the flat input `x` read in bl
 * `Cslib.Circuits.Boolean.dens_filter_glAmpCandidate_agree`: Claim 4.4 in library form.
 * `Cslib.Circuits.Boolean.complexity_glAmpCandidate_apply_le`: the circuit complexity of each
   output bit.
+* `Cslib.Circuits.Boolean.complexity_glAmpCandidate_answers_apply_le`: the same bound with the
+  predictor's answer bits as inputs.
 
 ## References
 
@@ -186,6 +192,48 @@ theorem complexity_glAmpCandidate_apply_le {h : BooleanFunction (k * n + k)} {s 
       (2 ^ K - 1) * (s + 1) + (4 + 2 * (2 ^ K - 1) * (2 ^ K + 1)) := by
   simp only [glAmpCandidate_block]
   refine (complexity_candidate_apply_le hh masks guess j).trans_eq ?_
+  have hK : 1 ≤ 2 ^ K := Nat.one_le_two_pow
+  rw [glBitCost, show 2 ^ K - 1 + 2 = 2 ^ K + 1 by omega]
+  ring
+
+/-- **The candidate with the predictor's answers as inputs.** Let the predictor be computed by a
+De Morgan circuit `F` from `q` answer bits `w` and its input, so that it is
+`y ↦ F (w ++ y)`. Then each output bit of the candidate, as a function of `w` and the flat
+tuple read in blocks, has the bound of `complexity_glAmpCandidate_apply_le` with `s` gates for
+`F`. Reordering the inputs of `F` costs no gates. -/
+theorem complexity_glAmpCandidate_answers_apply_le {q : ℕ} {F : BooleanFunction (q + (k * n + k))}
+    {s : ℕ} (hF : complexity interpretation (single F) ≤ s) (masks : Fin K → BitString k)
+    (guess : BitString K) (j : Fin k) :
+    complexity interpretation (single fun wx : BitString (q + k * n) =>
+      glAmpCandidate (fun y => F (Fin.append (fun i => wx (Fin.castAdd (k * n) i)) y)) masks guess
+        (BitString.block fun i => wx (Fin.natAdd q i)) j) ≤
+      (2 ^ K - 1) * (s + 1) + (4 + 2 * (2 ^ K - 1) * (2 ^ K + 1)) := by
+  -- reassociate the inputs of `F` by wiring, which costs no gates
+  let sel : Fin (q + (k * n + k)) → Fin (q + k * n + k) :=
+    Fin.append (fun i => Fin.castAdd k (Fin.castAdd (k * n) i))
+      (Fin.append (fun i => Fin.castAdd k (Fin.natAdd q i)) (Fin.natAdd (q + k * n)))
+  let C : BooleanFunction (q + k * n + k) := fun u => F (u ∘ sel)
+  have hC : complexity interpretation (single C) ≤ s := by
+    have e : single C = single F ∘ fun u => u ∘ sel := rfl
+    rw [e]
+    refine (complexity_comp_le _ _).trans ?_
+    rw [complexity_wiring, zero_add]
+    exact hF
+  have e : (fun wx : BitString (q + k * n) =>
+      glAmpCandidate (fun y => F (Fin.append (fun i => wx (Fin.castAdd (k * n) i)) y)) masks guess
+        (BitString.block fun i => wx (Fin.natAdd q i)) j) =
+      fun wx => Crypto.GoldreichLevin.candidate (fun r => C (Fin.append wx r)) masks guess j := by
+    funext wx
+    simp only [glAmpCandidate_block]
+    refine congrArg (fun p => Crypto.GoldreichLevin.candidate p masks guess j) (funext fun r => ?_)
+    simp only [C]
+    congr 1
+    funext p
+    refine Fin.addCases (fun i => ?_) (fun i => ?_) p
+    · simp [sel]
+    · refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;> simp [sel]
+  rw [e]
+  refine (complexity_candidate_apply_le hC masks guess j).trans_eq ?_
   have hK : 1 ≤ 2 ^ K := Nat.one_le_two_pow
   rw [glBitCost, show 2 ^ K - 1 + 2 = 2 ^ K + 1 by omega]
   ring
