@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Parameterized
+public import CslibFrontier.Computability.Complexity.Parameterized.Hardness
 public import CslibFrontier.Computability.Circuit.Boolean.Unbounded.Encoding
 public import CslibFrontier.Computability.Circuit.Weft
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
@@ -47,7 +47,8 @@ only lowers the weft, and constants propagate without raising weft or depth.
 * `Cslib.Complexity.WCSInstance`, `Cslib.Complexity.WCS`, `Cslib.Complexity.encWCS`: weighted
   satisfiability for those circuits.
 * `Cslib.Complexity.W`: the class `W[t]`.
-* `Cslib.Complexity.WHard`: `W[t]`-hardness.
+* `Cslib.Complexity.WHard`: `W[t]`-hardness, the instance `FPTHard (W t)` of
+  `Cslib.Complexity.FPTHard`.
 
 ## Main results
 
@@ -56,7 +57,6 @@ only lowers the weft, and constants propagate without raising weft or depth.
 * `Cslib.Complexity.W_mono`: `W[t] ⊆ W[t']` for `t ≤ t'`.
 * `Cslib.Complexity.FPT_subset_W`: `FPT ⊆ W[t]`.
 * `Cslib.Complexity.wHard_iff`: `W[t]`-hardness is hardness for every `WCS t d`.
-* `Cslib.Complexity.WHard.subset_FPT`: a `W[t]`-hard problem in `FPT` puts `W[t]` in `FPT`.
 
 ## References
 
@@ -238,10 +238,10 @@ for some `d`. -/
 def W (t : ℕ) {α : Type} (enc : α ↪ List Bool) (κ : α → ℕ) : Set (Set α) :=
   {A | ∃ d, FPTReducible enc (encWCS t d) κ WCSInstance.weight A (WCS t d)}
 
-/-- **`W[t]`-hardness**: every problem of `W[t]` fpt-reduces to `B`. -/
-def WHard (t : ℕ) {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
-  ∀ ⦃α : Type⦄ (encA : α ↪ List Bool) (κA : α → ℕ) (A : Set α), A ∈ W t encA κA →
-    FPTReducible encA enc κA κ A B
+/-- **`W[t]`-hardness**: every problem of `W[t]` fpt-reduces to `B`. The general lemmas, such as
+`FPTHard.fptReducible` and `FPTHard.subset_FPT`, apply through dot notation. -/
+abbrev WHard (t : ℕ) {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
+  FPTHard (@W t) enc κ B
 
 variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {κA : α → ℕ} {κB : β → ℕ}
   {A : Set α} {B : Set β} {t : ℕ}
@@ -330,15 +330,5 @@ exactly when `WCS t d` fpt-reduces to it for every depth `d`. -/
 theorem wHard_iff : WHard t encB κB B ↔
     ∀ d, FPTReducible (encWCS t d) encB WCSInstance.weight κB (WCS t d) B :=
   ⟨fun h d => h _ _ _ (WCS_mem_W t d), fun h _ _ _ _ ⟨d, hA⟩ => hA.trans (h d)⟩
-
-/-- Hardness transfers along fpt-reductions. -/
-theorem WHard.fptReducible (hB : WHard t encB κB B) (h : FPTReducible encB encA κB κA B A) :
-    WHard t encA κA A :=
-  fun _ _ _ _ hC => (hB _ _ _ hC).trans h
-
-/-- **A `W[t]`-hard problem in `FPT` puts `W[t]` in `FPT`.** -/
-theorem WHard.subset_FPT (hB : WHard t encB κB B) (hFPT : B ∈ FPT encB κB) :
-    W t encA κA ⊆ FPT encA κA :=
-  fun _ hA => (hB _ _ _ hA).mem_FPT hFPT
 
 end Cslib.Complexity

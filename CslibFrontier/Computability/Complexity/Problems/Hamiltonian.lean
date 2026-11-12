@@ -22,7 +22,7 @@ import Mathlib.Data.List.GetD
 # Hamiltonian paths and cycles
 
 A graph, given by a list of vertices and a list of edges, is read as a directed graph through its
-arcs `(u, v) ∈ G.2`, or as an undirected graph through `Cslib.Complexity.Graph.toSimpleGraph`
+arcs `(u, v) ∈ G.edges`, or as an undirected graph through `Cslib.Complexity.Graph.toSimpleGraph`
 restricted to the declared vertices (`SimpleGraph.induce`). In both readings the vertices are the
 declared ones: repeated vertex entries count once, and edges with an undeclared endpoint are never
 used.
@@ -92,13 +92,13 @@ namespace Graph
 /-- `p` is a Hamiltonian path of the directed graph `G` from `s` to `t`: it lists every declared
 vertex exactly once, starts at `s`, ends at `t`, and consecutive vertices are joined by arcs. -/
 def IsDirHamPath (G : Graph) (s t : ℕ) (p : List ℕ) : Prop :=
-  p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.1) ∧ p.head? = some s ∧ p.getLast? = some t ∧
-    p.IsChain fun u v => (u, v) ∈ G.2
+  p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.vertices) ∧ p.head? = some s ∧ p.getLast? = some t ∧
+    p.IsChain fun u v => (u, v) ∈ G.edges
 
 /-- `p` is a Hamiltonian cycle of the directed graph `G`: a nonempty list of every declared vertex
 exactly once whose consecutive vertices, read cyclically, are joined by arcs. -/
 def IsDirHamCycle (G : Graph) (p : List ℕ) : Prop :=
-  p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.1) ∧ p ≠ [] ∧ (p : Cycle ℕ).Chain fun u v => (u, v) ∈ G.2
+  p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.vertices) ∧ p ≠ [] ∧ (p : Cycle ℕ).Chain fun u v => (u, v) ∈ G.edges
 
 end Graph
 
@@ -139,14 +139,14 @@ def DirHamCycle : Set Graph := {G | ∃ p, G.IsDirHamCycle p}
 /-- The graphs with a Hamiltonian path from `s` to `t` through their declared vertices
 [Sipser, Theorem 7.55][Sipser2013]. -/
 def HamPath : Set PathInstance :=
-  {x | ∃ (hs : x.source ∈ x.graph.1) (ht : x.target ∈ x.graph.1)
-    (p : (x.graph.toSimpleGraph.induce {v | v ∈ x.graph.1}).Walk
+  {x | ∃ (hs : x.source ∈ x.graph.vertices) (ht : x.target ∈ x.graph.vertices)
+    (p : (x.graph.toSimpleGraph.induce {v | v ∈ x.graph.vertices}).Walk
       ⟨x.source, hs⟩ ⟨x.target, ht⟩),
     p.IsHamiltonian}
 
 /-- The graphs with a Hamiltonian cycle through their declared vertices [Karp1972]. -/
 def HamCycle : Set Graph :=
-  {G | ∃ (a : {v | v ∈ G.1}) (p : (G.toSimpleGraph.induce {v | v ∈ G.1}).Walk a a),
+  {G | ∃ (a : {v | v ∈ G.vertices}) (p : (G.toSimpleGraph.induce {v | v ∈ G.vertices}).Walk a a),
     p.IsHamiltonianCycle}
 
 /-! ### Lists of vertices -/
@@ -159,33 +159,33 @@ theorem _root_.Cycle.chain_coe_iff_isChain_append_take_one {α : Type*} {R : α 
   | cons a l => rw [Cycle.chain_coe_cons]; simp
 
 /-- Lift a list of declared vertices to the vertex type of the induced graph. -/
-private def liftVertices (G : Graph) (p : List ℕ) (h : ∀ v ∈ p, v ∈ G.1) :
-    List {v | v ∈ G.1} :=
+private def liftVertices (G : Graph) (p : List ℕ) (h : ∀ v ∈ p, v ∈ G.vertices) :
+    List {v | v ∈ G.vertices} :=
   p.pmap Subtype.mk h
 
-private theorem map_val_liftVertices (G : Graph) (p : List ℕ) (h : ∀ v ∈ p, v ∈ G.1) :
+private theorem map_val_liftVertices (G : Graph) (p : List ℕ) (h : ∀ v ∈ p, v ∈ G.vertices) :
     (liftVertices G p h).map Subtype.val = p := by
   simp [liftVertices, List.map_pmap]
 
-private theorem isChain_liftVertices {G : Graph} {p : List ℕ} (h : ∀ v ∈ p, v ∈ G.1)
+private theorem isChain_liftVertices {G : Graph} {p : List ℕ} (h : ∀ v ∈ p, v ∈ G.vertices)
     (hp : p.IsChain G.toSimpleGraph.Adj) :
-    (liftVertices G p h).IsChain (G.toSimpleGraph.induce {v | v ∈ G.1}).Adj :=
-  List.isChain_pmap_of_isChain (S := (G.toSimpleGraph.induce {v | v ∈ G.1}).Adj)
-    (f := fun a ha => (⟨a, ha⟩ : {v | v ∈ G.1})) (fun _ _ _ _ hab => hab) hp h
+    (liftVertices G p h).IsChain (G.toSimpleGraph.induce {v | v ∈ G.vertices}).Adj :=
+  List.isChain_pmap_of_isChain (S := (G.toSimpleGraph.induce {v | v ∈ G.vertices}).Adj)
+    (f := fun a ha => (⟨a, ha⟩ : {v | v ∈ G.vertices})) (fun _ _ _ _ hab => hab) hp h
 
-private theorem nodup_liftVertices {G : Graph} {p : List ℕ} (h : ∀ v ∈ p, v ∈ G.1)
+private theorem nodup_liftVertices {G : Graph} {p : List ℕ} (h : ∀ v ∈ p, v ∈ G.vertices)
     (hp : p.Nodup) : (liftVertices G p h).Nodup :=
   hp.pmap fun _ _ _ _ hab => congrArg Subtype.val hab
 
-private theorem mem_liftVertices {G : Graph} {p : List ℕ} (h : ∀ v ∈ p, v ∈ G.1)
-    (v : {v | v ∈ G.1}) : v ∈ liftVertices G p h ↔ v.1 ∈ p := by
+private theorem mem_liftVertices {G : Graph} {p : List ℕ} (h : ∀ v ∈ p, v ∈ G.vertices)
+    (v : {v | v ∈ G.vertices}) : v ∈ liftVertices G p h ↔ v.1 ∈ p := by
   refine ⟨fun hv => ?_, fun hv => List.mem_pmap.2 ⟨v.1, hv, rfl⟩⟩
   have := List.mem_map_of_mem (f := Subtype.val) hv
   rwa [map_val_liftVertices] at this
 
 /-- Undirected Hamiltonian paths as lists of vertices. -/
 theorem mem_HamPath_iff {G : Graph} {s t : ℕ} :
-    (⟨G, s, t⟩ : PathInstance) ∈ HamPath ↔ ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.1) ∧
+    (⟨G, s, t⟩ : PathInstance) ∈ HamPath ↔ ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.vertices) ∧
       p.head? = some s ∧ p.getLast? = some t ∧ p.IsChain G.toSimpleGraph.Adj := by
   constructor
   · rintro ⟨hs, ht, w, hw⟩
@@ -202,7 +202,7 @@ theorem mem_HamPath_iff {G : Graph} {s t : ℕ} :
     · exact List.isChain_map_of_isChain (S := G.toSimpleGraph.Adj) Subtype.val
         (fun _ _ hab => hab) w.isChain_adj_support
   · rintro ⟨p, hnd, hcov, hs, ht, hch⟩
-    have hV : ∀ v ∈ p, v ∈ G.1 := fun v hv => (hcov v).1 hv
+    have hV : ∀ v ∈ p, v ∈ G.vertices := fun v hv => (hcov v).1 hv
     have hne : p ≠ [] := by rintro rfl; simp at hs
     have hne' : liftVertices G p hV ≠ [] := by simpa [liftVertices] using hne
     have hhead : (liftVertices G p hV).head hne' = ⟨s, (hcov s).1 (List.mem_of_head? hs)⟩ := by
@@ -223,7 +223,7 @@ theorem mem_HamPath_iff {G : Graph} {s t : ℕ} :
 
 /-- Undirected Hamiltonian cycles as lists of vertices. -/
 theorem mem_HamCycle_iff {G : Graph} :
-    G ∈ HamCycle ↔ ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.1) ∧ 3 ≤ p.length ∧
+    G ∈ HamCycle ↔ ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.vertices) ∧ 3 ≤ p.length ∧
       (p : Cycle ℕ).Chain G.toSimpleGraph.Adj := by
   simp_rw [Cycle.chain_coe_iff_isChain_append_take_one]
   constructor
@@ -257,7 +257,7 @@ theorem mem_HamCycle_iff {G : Graph} :
         exact List.isChain_map_of_isChain (S := G.toSimpleGraph.Adj) Subtype.val
           (fun _ _ hab => hab) (SimpleGraph.Walk.cons h q).isChain_adj_support
   · rintro ⟨p, hnd, hcov, hlen, hch⟩
-    have hV : ∀ v ∈ p, v ∈ G.1 := fun v hv => (hcov v).1 hv
+    have hV : ∀ v ∈ p, v ∈ G.vertices := fun v hv => (hcov v).1 hv
     have hne : p ≠ [] := by rintro rfl; simp at hlen
     set L := liftVertices G p hV with hL
     have hLne : L ≠ [] := by simpa [L, liftVertices] using hne
@@ -270,7 +270,7 @@ theorem mem_HamCycle_iff {G : Graph} :
       rw [List.map_append, map_val_liftVertices, List.map_singleton, hav,
         List.take_one, List.head?_eq_some_head hne]
       rfl
-    have hchain : (L ++ [a]).IsChain (G.toSimpleGraph.induce {v | v ∈ G.1}).Adj := by
+    have hchain : (L ++ [a]).IsChain (G.toSimpleGraph.induce {v | v ∈ G.vertices}).Adj := by
       have := (List.isChain_map (R := G.toSimpleGraph.Adj) Subtype.val).1 (hmap ▸ hch)
       exact this
     have hne' : L ++ [a] ≠ [] := by simp
@@ -320,9 +320,9 @@ private theorem exists_rotated_cons {q : List ℕ} {s : ℕ} (hs : s ∈ q) :
 /-- Closing a Hamiltonian path with an arc back to its start. If no arc of `G` enters the declared
 vertex `s`, then adding the arc `(t, s)` creates a Hamiltonian cycle exactly when `G` has a
 Hamiltonian path from `s` to `t`. -/
-theorem mem_DirHamCycle_cons_iff {G : Graph} {s t : ℕ} (hs : s ∈ G.1)
-    (hin : ∀ u, (u, s) ∉ G.2) :
-    (G.1, (t, s) :: G.2) ∈ DirHamCycle ↔ (⟨G, s, t⟩ : PathInstance) ∈ DirHamPath := by
+theorem mem_DirHamCycle_cons_iff {G : Graph} {s t : ℕ} (hs : s ∈ G.vertices)
+    (hin : ∀ u, (u, s) ∉ G.edges) :
+    ⟨G.vertices, (t, s) :: G.edges⟩ ∈ DirHamCycle ↔ (⟨G, s, t⟩ : PathInstance) ∈ DirHamPath := by
   constructor
   · rintro ⟨q, hnd, hcov, -, hch⟩
     obtain ⟨rest, hq, hnd', hmem'⟩ := exists_rotated_cons ((hcov s).2 hs)
@@ -369,11 +369,11 @@ open Turing.MultiTapeTM ComputableInPolyTime
 namespace Graph
 
 /-- Executable arc test of a directed graph: `(u, v)` is an edge of `G`. -/
-def arcBool (G : Graph) (u v : ℕ) : Bool := G.2.any fun e => decide (e = (u, v))
+def arcBool (G : Graph) (u v : ℕ) : Bool := G.edges.any fun e => decide (e = (u, v))
 
 /-- `arcBool` decides whether `(u, v)` is an edge of the list. -/
 @[simp]
-theorem arcBool_eq_true_iff (G : Graph) (u v : ℕ) : G.arcBool u v = true ↔ (u, v) ∈ G.2 := by
+theorem arcBool_eq_true_iff (G : Graph) (u v : ℕ) : G.arcBool u v = true ↔ (u, v) ∈ G.edges := by
   simp [arcBool]
 
 /-- Testing for an arc in an encoded graph is polynomial-time. -/
@@ -484,7 +484,7 @@ end Graph
 /-! ### Membership in `NP` -/
 
 private theorem length_vertices_le_encPath (x : PathInstance) :
-    x.graph.1.length ≤ (encPathInstance x).length := by
+    x.graph.vertices.length ≤ (encPathInstance x).length := by
   refine x.graph.length_vertices_le_encGraph.trans ?_
   simp only [encPathInstance_apply, length_encPair]
   omega
@@ -543,7 +543,7 @@ namespace DirHamPath
 (`Graph.decodeVertexList`) and check that it lists every declared vertex exactly once, starts at
 `s`, ends at `t`, and that consecutive vertices are joined by arcs. -/
 def verifier : PathInstance × List Bool → Bool :=
-  Graph.verifyOrdering (fun x => x.graph.1) fun x p =>
+  Graph.verifyOrdering (fun x => x.graph.vertices) fun x p =>
     decide (p.head? = some x.source) && decide (p.getLast? = some x.target) &&
       Graph.chainBool x.graph.arcBool p
 
@@ -553,7 +553,7 @@ theorem isVerifier :
     IsVerifier encPathInstance (Polynomial.X ^ 2) verifier DirHamPath :=
   Graph.isVerifier_verifyOrdering
     (P := fun (x : PathInstance) p => p.head? = some x.source ∧ p.getLast? = some x.target ∧
-      p.IsChain fun u v => (u, v) ∈ x.graph.2)
+      p.IsChain fun u v => (u, v) ∈ x.graph.edges)
     length_vertices_le_encPath fun x p => by
       simp only [Bool.and_eq_true, decide_eq_true_eq,
         Graph.chainBool_eq_true_iff (Graph.arcBool_eq_true_iff x.graph), and_assoc]
@@ -563,8 +563,7 @@ theorem isVerifier :
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encPathInstance encBits) encBool :=
   Graph.computableInPolyTime_verifyOrdering
-    ((by unfold encGraph; exact fst _ _ : ComputableInPolyTime Prod.fst encGraph _).comp
-      (by fun_prop))
+    (by fun_prop)
     (computableInPolyTime_pathCheck Graph.computableInPolyTime_arcBool)
 
 /-- `DirHamPath` belongs to `NP`. -/
@@ -579,14 +578,14 @@ namespace DirHamCycle
 (`Graph.decodeVertexList`) and check that it is nonempty, lists every declared vertex exactly
 once, and that cyclically consecutive vertices are joined by arcs. -/
 def verifier : Graph × List Bool → Bool :=
-  Graph.verifyOrdering (fun G => G.1) fun G p =>
+  Graph.verifyOrdering (fun G => G.vertices) fun G p =>
     decide (p ≠ []) && Graph.cycleChainBool G.arcBool p
 
 /-- `DirHamCycle.verifier` verifies `DirHamCycle` with certificates of length `n ^ 2` for graphs
 of encoded length `n`. -/
 theorem isVerifier : IsVerifier encGraph (Polynomial.X ^ 2) verifier DirHamCycle :=
   Graph.isVerifier_verifyOrdering
-    (P := fun (G : Graph) p => p ≠ [] ∧ (p : Cycle ℕ).Chain fun u v => (u, v) ∈ G.2)
+    (P := fun (G : Graph) p => p ≠ [] ∧ (p : Cycle ℕ).Chain fun u v => (u, v) ∈ G.edges)
     Graph.length_vertices_le_encGraph fun G p => by
       simp only [Bool.and_eq_true, decide_eq_true_eq,
         Graph.cycleChainBool_eq_true_iff (Graph.arcBool_eq_true_iff G)]
@@ -612,7 +611,7 @@ namespace HamPath
 (`Graph.decodeVertexList`) and check that it lists every declared vertex exactly once, starts at
 `s`, ends at `t`, and that consecutive vertices are adjacent. -/
 def verifier : PathInstance × List Bool → Bool :=
-  Graph.verifyOrdering (fun x => x.graph.1) fun x p =>
+  Graph.verifyOrdering (fun x => x.graph.vertices) fun x p =>
     decide (p.head? = some x.source) && decide (p.getLast? = some x.target) &&
       Graph.chainBool x.graph.adjBool p
 
@@ -634,8 +633,7 @@ theorem isVerifier :
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encPathInstance encBits) encBool :=
   Graph.computableInPolyTime_verifyOrdering
-    ((by unfold encGraph; exact fst _ _ : ComputableInPolyTime Prod.fst encGraph _).comp
-      (by fun_prop))
+    (by fun_prop)
     (computableInPolyTime_pathCheck Graph.computableInPolyTime_adjBool)
 
 /-- `HamPath` belongs to `NP`. -/
@@ -650,7 +648,7 @@ namespace HamCycle
 (`Graph.decodeVertexList`) and check that it has at least three vertices, lists every declared
 vertex exactly once, and that cyclically consecutive vertices are adjacent. -/
 def verifier : Graph × List Bool → Bool :=
-  Graph.verifyOrdering (fun G => G.1) fun G p =>
+  Graph.verifyOrdering (fun G => G.vertices) fun G p =>
     decide (3 ≤ p.length) && Graph.cycleChainBool G.adjBool p
 
 /-- `HamCycle.verifier` verifies `HamCycle` with certificates of length `n ^ 2` for graphs of

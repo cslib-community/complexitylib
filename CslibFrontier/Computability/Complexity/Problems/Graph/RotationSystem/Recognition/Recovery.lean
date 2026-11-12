@@ -45,12 +45,12 @@ open Turing.MultiTapeTM Cslib.Logic.PL
 position/end tag, then append connector `(n,v)`. The hub's complete word is `block ++ [2m]`.
 For the intended split contract `v` is free and the nonempty duplicate-free block lies at `v`. -/
 @[expose] def split (I : FixedRotationInput) (v : ℕ) (block : List ℕ) : FixedRotationInput :=
-  ⟨(List.range (I.graph.1.length + 1),
-      I.graph.2.zipIdx.map (fun ((source, target), index) =>
-        (redirectEnd I.graph.1.length block (2 * index) source,
-         redirectEnd I.graph.1.length block (2 * index + 1) target)) ++
-        [(I.graph.1.length, v)]),
-    I.orders ++ [some (block ++ [2 * I.graph.2.length])]⟩
+  ⟨⟨List.range (I.graph.vertices.length + 1),
+      I.graph.edges.zipIdx.map (fun ((source, target), index) =>
+        (redirectEnd I.graph.vertices.length block (2 * index) source,
+         redirectEnd I.graph.vertices.length block (2 * index + 1) target)) ++
+        [(I.graph.vertices.length, v)]⟩,
+    I.orders ++ [some (block ++ [2 * I.graph.edges.length])]⟩
 
 /-- Darts still available as the next clockwise member of the current directed block. -/
 @[expose] def remaining (I : FixedRotationInput) (v : ℕ) (block : List ℕ) : List ℕ :=
@@ -86,11 +86,11 @@ For the intended split contract `v` is free and the nonempty duplicate-free bloc
 
 /-- Recover original-graph full words, storing no query systems or earlier split graphs. -/
 @[expose] def recoverOrders (I : FixedRotationInput) : Option FixedRotationInput :=
-  (List.range I.graph.1.length).foldl completeVertex (some I)
+  (List.range I.graph.vertices.length).foldl completeVertex (some I)
 
 /-- The binary successor table assembled from complete words on the original graph. -/
 @[expose] def certificate (I : FixedRotationInput) : RotationCertificate :=
-  ⟨(List.range (2 * I.graph.2.length)).map fun d =>
+  ⟨(List.range (2 * I.graph.edges.length)).map fun d =>
     let word := (I.orders.getD (I.graph.incidenceVertices.getD d 0) none).getD []
     nextInWord word (word.idxOf d)⟩
 
@@ -111,7 +111,7 @@ original-graph table with the existing numerical checker and the original comple
 /-- Keep a prefix of dense vertices free and prescribe full fiber orders at the remaining vertices.
 The raw binary cutoff is only compared, never used as a scan length. -/
 @[expose] def freePrefix (G : Graph) (k : ℕ) : FixedRotationInput :=
-  ⟨G, G.1.map fun v => if v < k then none else some (fiber G v)⟩
+  ⟨G, G.vertices.map fun v => if v < k then none else some (fiber G v)⟩
 
 /-- Dense incidence input: variable vertices are free; each constraint position fixes its entire
 actual occurrence word. Relation semantics and declared relation arities are never inspected. -/
@@ -126,15 +126,15 @@ actual occurrence word. Relation semantics and declared relation arities are nev
 
 /-- Split queries add exactly one vertex, regardless of binary names in malformed raw input. -/
 @[simp] theorem length_split_vertices (I : FixedRotationInput) (v : ℕ) (block : List ℕ) :
-    (split I v block).graph.1.length = I.graph.1.length + 1 := by simp [split]
+    (split I v block).graph.vertices.length = I.graph.vertices.length + 1 := by simp [split]
 
 /-- Split queries retain every listed edge and append exactly one connector. -/
 @[simp] theorem length_split_edges (I : FixedRotationInput) (v : ℕ) (block : List ℕ) :
-    (split I v block).graph.2.length = I.graph.2.length + 1 := by simp [split]
+    (split I v block).graph.edges.length = I.graph.edges.length + 1 := by simp [split]
 
 /-- A constructed table has exactly one successor per original binary dart index. -/
 @[simp] theorem length_certificate (I : FixedRotationInput) :
-    (certificate I).successor.length = 2 * I.graph.2.length := by simp [certificate]
+    (certificate I).successor.length = 2 * I.graph.edges.length := by simp [certificate]
 
 /-- Every returned graph candidate passes the existing numerical checker unconditionally. -/
 theorem recover_sound {I : FixedRotationInput} {c : RotationCertificate}

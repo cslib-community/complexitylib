@@ -102,7 +102,7 @@ theorem count_vars_matchingInstance_even (G : Graph) (i : ℕ) :
 
 /-- Each declared vertex's private port occurs exactly twice. -/
 theorem count_vars_matchingInstance_odd (G : Graph) (w : ℕ) :
-    G.matchingInstance.vars.count (2 * w + 1) = if w ∈ G.1 then 2 else 0 := by
+    G.matchingInstance.vars.count (2 * w + 1) = if w ∈ G.vertices then 2 else 0 := by
   have hc (v : ℕ) : (G.matchingScope v).count (2 * w + 1) = if v = w then 1 else 0 := by
     have he : (((List.range G.edgeList.length).filter fun i =>
         incident (G.edgeList.getD i (0, 0)) v).map fun i => 2 * i).count (2 * w + 1) = 0 := by
@@ -124,7 +124,7 @@ theorem count_vars_matchingInstance_odd (G : Graph) (w : ℕ) :
 /-- Every generated variable is an original edge position or a declared private port. -/
 theorem mem_vars_matchingInstance (G : Graph) {x : ℕ} :
     x ∈ G.matchingInstance.vars ↔
-      (∃ i < G.edgeList.length, x = 2 * i) ∨ ∃ v ∈ G.1, x = 2 * v + 1 := by
+      (∃ i < G.edgeList.length, x = 2 * i) ∨ ∃ v ∈ G.vertices, x = 2 * v + 1 := by
   simp only [matchingInstance, CSP.vars, List.flatMap_append, List.flatMap_map,
     List.mem_append, List.mem_flatMap, mem_distinctVertices, matchingScope, List.mem_cons,
     List.mem_map, List.mem_filter, List.mem_range, List.not_mem_nil, or_false]

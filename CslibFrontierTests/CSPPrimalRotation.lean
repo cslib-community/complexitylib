@@ -34,7 +34,7 @@ private theorem unary_order : RespectsArgumentOrder unaryRotation :=
   (verifyArgumentOrder_eq_true_iff (by decide)).mp (by decide)
 
 -- Sparse binary names never create unused graph vertices or ranges up to their magnitude.
-example : polygonGraph unary = ([0], [(0, 0)]) := by decide
+example : polygonGraph unary = ⟨[0], [(0, 0)]⟩ := by decide
 example : (polygonRotation unaryRotation).faceNext (polygonDart unaryOccurrence false) =
     polygonDart unaryOccurrence false := by
   rw [faceNext_polygonDart_false]
@@ -61,8 +61,8 @@ private theorem repeated_order : RespectsArgumentOrder repeatedRotation :=
   (verifyArgumentOrder_eq_true_iff (by decide)).mp (by decide)
 
 -- Three parallel incidence positions become three different listed loops.
-example : (incidenceGraph repeated).2 = [(0, 1), (0, 1), (0, 1)] := by decide
-example : polygonGraph repeated = ([0], [(0, 0), (0, 0), (0, 0)]) := by decide
+example : (incidenceGraph repeated).edges = [(0, 1), (0, 1), (0, 1)] := by decide
+example : polygonGraph repeated = ⟨[0], [(0, 0), (0, 0), (0, 0)]⟩ := by decide
 example : polygonDart (F := repeated) ⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩ false ≠
     polygonDart (F := repeated) ⟨⟨0, by decide⟩, ⟨1, by decide⟩⟩ false := by decide
 example : (polygonRotation repeatedRotation).NumericalGenusZero :=
@@ -91,7 +91,7 @@ private noncomputable def disconnectedRotation :
 private theorem disconnected_order : RespectsArgumentOrder disconnectedRotation :=
   (verifyArgumentOrder_eq_true_iff (by decide)).mp (by decide)
 
-example : polygonGraph disconnected = ([0, 1], [(0, 0), (1, 1)]) := by decide
+example : polygonGraph disconnected = ⟨[0, 1], [(0, 0), (1, 1)]⟩ := by decide
 example : (polygonRotation disconnectedRotation).NumericalGenusZero :=
   (numericalGenusZero_polygon_iff disconnectedRotation disconnected_order (by decide)).mpr
     ((verifyEuler_eq_true_iff (by decide)).mp (by decide))
@@ -105,7 +105,7 @@ private noncomputable def emptyRotation : Graph.RotationSystem (incidenceGraph e
 private theorem empty_order : RespectsArgumentOrder emptyRotation :=
   (verifyArgumentOrder_eq_true_iff (by decide)).mp (by decide)
 
-example : polygonGraph emptyBody = ([], []) := by decide
+example : polygonGraph emptyBody = ⟨[], []⟩ := by decide
 example : (polygonRotation emptyRotation).NumericalGenusZero :=
   (numericalGenusZero_polygon_iff emptyRotation empty_order (by decide)).mpr
     ((verifyEuler_eq_true_iff (by decide)).mp (by decide))

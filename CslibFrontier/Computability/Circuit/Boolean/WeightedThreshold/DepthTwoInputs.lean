@@ -53,9 +53,16 @@ and it proves no result about Andreev's function.
   depth.
 * `Cslib.Circuits.Boolean.WeightedThreshold.eval_depthTwo_eq_eval_depthTwoInputs`: `depthTwo` as
   the case of zero top input weights.
+* `Cslib.Circuits.Boolean.WeightedThreshold.wireCount_depthTwoInputs_le`: at most
+  `(G + 1) A + G + 1 + n` active wires for bottom arities at most `A`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.lines_depthTwoInputs_bottom_or_output`,
   `Cslib.Circuits.Boolean.WeightedThreshold.inputWeight_depthTwoInputs_of_ne`: every gate other
   than the output gate is a bottom gate with input weights `argWeight (bottom j) (args j)`.
+* `Cslib.Circuits.Boolean.WeightedThreshold.op_lines_depthTwoInputs`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.abs_weight_lines_depthTwoInputs_le`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.abs_threshold_lines_depthTwoInputs_le`: every gate
+  applies a bottom operation or the top operation, so bounds on the bottom and top weights and
+  thresholds bound every weight and threshold of the circuit.
 * `Cslib.Circuits.Boolean.WeightedThreshold.isSignCoherent_inputWeight_depthTwoInputs`: if every
   `bottom j` read through `args j` is sign-coherent, so are the input weights `inputWeight` of
   every gate read by the output gate.
@@ -273,6 +280,43 @@ theorem lines_depthTwoInputs_bottom_or_output (bottom : Fin G → Op)
     obtain rfl : k = Fin.last 0 := Fin.fin_one_eq_zero k
     rfl
 
+/-- The active wire count of `depthTwoInputs` with `G` bottom gates of arity at most `A` is at most
+`(G + 1) A + G + 1 + n`: each gate has at most `A` active wires, and the output gate at most
+`G + 1 + n` more. -/
+theorem wireCount_depthTwoInputs_le (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ) (v : Fin n → ℝ) (θ : ℝ) {A : ℕ}
+    (hA : ∀ j, (bottom j).arity ≤ A) :
+    (depthTwoInputs bottom args u v θ).wireCount ≤ (G + 1) * A + (G + 1 + n) := by
+  classical
+  set c := depthTwoInputs bottom args u v θ
+  have hsize : c.size = G + 1 := size_depthTwoInputs bottom args u v θ
+  have hk (k : Fin c.size) : #(lineSupport (c.program.lines k)) ≤
+      A + if c.outputs 0 = .gate k then G + 1 + n else 0 := by
+    rcases lines_depthTwoInputs_bottom_or_output bottom args u v θ k with ⟨j, hj⟩ | hout
+    · refine (card_lineSupport_le_arity _).trans ?_
+      rw [hj]
+      exact (hA j).trans (Nat.le_add_right _ _)
+    · have hout' : c.outputs 0 = .gate k := hout
+      simp only [hout', ↓reduceIte]
+      refine (card_le_univ _).trans ?_
+      rw [Fintype.card_congr (Wire.equiv n c.size), Fintype.card_sum, Fintype.card_fin,
+        Fintype.card_fin, hsize]
+      omega
+  have hone : #({k : Fin c.size | c.outputs 0 = .gate k} : Finset _) ≤ 1 := by
+    refine card_le_one.mpr fun k hk k' hk' => ?_
+    simp only [mem_filter, mem_univ, true_and] at hk hk'
+    exact Wire.gate.inj (hk.symm.trans hk')
+  calc c.wireCount = ∑ k : Fin c.size, #(lineSupport (c.program.lines k)) := rfl
+    _ ≤ ∑ k : Fin c.size, (A + if c.outputs 0 = .gate k then G + 1 + n else 0) :=
+        sum_le_sum fun k _ => hk k
+    _ = c.size * A + #({k : Fin c.size | c.outputs 0 = .gate k} : Finset _) * (G + 1 + n) := by
+        rw [sum_add_distrib, sum_const, card_univ, Fintype.card_fin, smul_eq_mul, ← sum_filter,
+          sum_const, smul_eq_mul]
+    _ ≤ (G + 1) * A + (G + 1 + n) := by
+        have h1 : c.size * A = (G + 1) * A := by rw [hsize]
+        have h2 := Nat.mul_le_mul_right (G + 1 + n) hone
+        omega
+
 /-- The input weights of a gate of `depthTwoInputs` other than the output gate are the
 aggregated weights `argWeight (bottom j) (args j)` of some bottom gate `j`. -/
 theorem inputWeight_depthTwoInputs_of_ne (bottom : Fin G → Op)
@@ -288,6 +332,49 @@ theorem inputWeight_depthTwoInputs_of_ne (bottom : Fin G → Op)
     simp only [argWeight, lineWeight, inputLine, Wire.input.injEq]
     congr 1
   · exact (hk h).elim
+
+/-- Every gate of `depthTwoInputs bottom args u v θ` applies a bottom operation `bottom j` or the
+top operation `depthTwoInputsTop u v θ`. -/
+theorem op_lines_depthTwoInputs (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ) (v : Fin n → ℝ) (θ : ℝ)
+    (k : Fin (depthTwoInputs bottom args u v θ).size) :
+    (∃ j, ((depthTwoInputs bottom args u v θ).program.lines k).op = bottom j) ∨
+      ((depthTwoInputs bottom args u v θ).program.lines k).op = depthTwoInputsTop u v θ := by
+  rcases lines_depthTwoInputs_bottom_or_output bottom args u v θ k with ⟨j, hj⟩ | h
+  · exact .inl ⟨j, by rw [hj]⟩
+  · refine .inr ?_
+    obtain rfl : k = Fin.natAdd _ (0 : Fin 1) := Wire.gate.inj (h.symm.trans rfl)
+    refine (congrArg Line.op (Program.lines_append_natAdd _ _ _ (0 : Fin 1))).trans ?_
+    rw [Line.mapWires_op]
+    rfl
+
+/-- **Weight magnitudes of `depthTwoInputs`.** If every bottom weight and every top weight on
+gates and inputs has absolute value at most `W`, then so has every weight of every gate of
+the circuit. -/
+theorem abs_weight_lines_depthTwoInputs_le (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ) (v : Fin n → ℝ) (θ : ℝ) {W : ℝ}
+    (hbottom : ∀ j a, |(bottom j).weight a| ≤ W) (hu : ∀ j, |u j| ≤ W) (hv : ∀ i, |v i| ≤ W)
+    (k : Fin (depthTwoInputs bottom args u v θ).size)
+    (a : Fin ((depthTwoInputs bottom args u v θ).program.lines k).op.arity) :
+    |((depthTwoInputs bottom args u v θ).program.lines k).op.weight a| ≤ W := by
+  revert a
+  rcases op_lines_depthTwoInputs bottom args u v θ k with ⟨j, h⟩ | h <;> rw [h]
+  · exact hbottom j
+  · intro a
+    refine Fin.addCases (fun j => ?_) (fun i => ?_) a
+    · simpa only [Fin.append_left] using hu j
+    · simpa only [Fin.append_right] using hv i
+
+/-- **Threshold magnitudes of `depthTwoInputs`.** If every bottom threshold and the top threshold
+have absolute value at most `W`, then so has the threshold of every gate of the circuit. -/
+theorem abs_threshold_lines_depthTwoInputs_le (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ) (v : Fin n → ℝ) (θ : ℝ) {W : ℝ}
+    (hbottom : ∀ j, |(bottom j).threshold| ≤ W) (hθ : |θ| ≤ W)
+    (k : Fin (depthTwoInputs bottom args u v θ).size) :
+    |((depthTwoInputs bottom args u v θ).program.lines k).op.threshold| ≤ W := by
+  rcases op_lines_depthTwoInputs bottom args u v θ k with ⟨j, h⟩ | h <;> rw [h]
+  · exact hbottom j
+  · exact hθ
 
 /-- **Sign coherence of the bottom gates.** If every bottom gate `bottom j`, read through
 `args j`, is sign-coherent, then every gate read by an output gate of

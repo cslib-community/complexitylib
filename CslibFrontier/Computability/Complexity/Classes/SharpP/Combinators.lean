@@ -25,14 +25,18 @@ This file provides verifiers built from other verifiers, each with its polynomia
 
 * `Cslib.Complexity.andVerifier k V₁ V₂` runs `V₁` on the first `k a` bits and `V₂` on the rest,
   and accepts when both accept. The number of strings it accepts is the product of the numbers
-  that `V₁` and `V₂` accept (`Cslib.Complexity.acceptCount_andVerifier`). With `V₂` the verifier
-  accepting only the string of `false`s (`Cslib.Complexity.allFalseVerifier`), it pads the strings
-  of `V₁` without changing their number; with `V₂` accepting everything, it multiplies the count by
-  a power of two.
+  that `V₁` and `V₂` accept (`Cslib.Complexity.acceptCount_andVerifier`). With `V₂` accepting
+  everything, it multiplies the count by a power of two.
+* `Cslib.Complexity.padVerifier k V` runs `V` on the first `k a` bits and requires the rest to be
+  `false` (`Cslib.Complexity.allFalseVerifier`), so it accepts as many strings of any length
+  `n ≥ k a` as `V` accepts of length `k a` (`Cslib.Complexity.acceptCount_padVerifier_of_le`).
 * `Cslib.Complexity.orVerifier k V₁ V₂` accepts when either accepts; the rejected strings multiply
   (`Cslib.Complexity.acceptCount_orVerifier`).
 * `Cslib.Complexity.selectVerifier V₀ V₁` lets the first bit choose between `V₀` and `V₁` on the
   remaining bits; the counts add (`Cslib.Complexity.acceptCount_selectVerifier`).
+* `Cslib.Complexity.sumVerifier k₁ k₂ V₁ V₂` selects between `V₁` and `V₂` padded to a common
+  length, so it adds counts taken at different lengths `k₁ a` and `k₂ a`
+  (`Cslib.Complexity.acceptCount_sumVerifier`). This is how `#P` is closed under addition.
 
 Running two verifiers on disjoint parts of the random string is the usual way to combine
 independent random choices [Arora and Barak, Chapters 7 and 17][AroraBarak09].
@@ -40,15 +44,19 @@ independent random choices [Arora and Barak, Chapters 7 and 17][AroraBarak09].
 ## Main definitions
 
 * `Cslib.Complexity.allFalseVerifier`, `Cslib.Complexity.andVerifier`,
-  `Cslib.Complexity.orVerifier`, `Cslib.Complexity.selectVerifier`.
+  `Cslib.Complexity.padVerifier`, `Cslib.Complexity.orVerifier`,
+  `Cslib.Complexity.selectVerifier`, `Cslib.Complexity.sumVerifier`.
 
 ## Main results
 
-* `Cslib.Complexity.acceptCount_andVerifier`, `Cslib.Complexity.acceptCount_orVerifier`,
-  `Cslib.Complexity.acceptCount_selectVerifier`: counts of the combined verifiers.
+* `Cslib.Complexity.acceptCount_andVerifier`, `Cslib.Complexity.acceptCount_padVerifier_of_le`,
+  `Cslib.Complexity.acceptCount_orVerifier`, `Cslib.Complexity.acceptCount_selectVerifier`,
+  `Cslib.Complexity.acceptCount_sumVerifier`: counts of the combined verifiers.
 * `Cslib.Complexity.computableInPolyTime_andVerifier`,
+  `Cslib.Complexity.computableInPolyTime_padVerifier`,
   `Cslib.Complexity.computableInPolyTime_orVerifier`,
-  `Cslib.Complexity.computableInPolyTime_selectVerifier`: the combined verifiers are
+  `Cslib.Complexity.computableInPolyTime_selectVerifier`,
+  `Cslib.Complexity.computableInPolyTime_sumVerifier`: the combined verifiers are
   polynomial-time.
 
 ## References
@@ -100,13 +108,6 @@ theorem acceptCount_andVerifier (k : α → ℕ) (V₁ V₂ : α × List Bool �
   refine Finset.sum_congr rfl fun u _ => ?_
   by_cases hu : V₁ (a, List.ofFn u) = true <;> simp [hu]
 
-/-- **Padding**: forcing the bits after the first `k a` to be `false` does not change the number
-of accepted strings. -/
-theorem acceptCount_andVerifier_allFalseVerifier (k : α → ℕ) (V : α × List Bool → Bool) (a : α)
-    (n : ℕ) :
-    acceptCount (andVerifier k V allFalseVerifier) a (k a + n) = acceptCount V a (k a) := by
-  rw [acceptCount_andVerifier, acceptCount_allFalseVerifier, mul_one]
-
 /-- Ignoring the bits after the first `k a` multiplies the number of accepted strings by a power
 of two. -/
 theorem acceptCount_andVerifier_true (k : α → ℕ) (V : α × List Bool → Bool) (a : α) (n : ℕ) :
@@ -121,6 +122,28 @@ theorem computableInPolyTime_andVerifier {enc : α ↪ List Bool} {k : α → �
     (hV₂ : ComputableInPolyTime V₂ (encPair enc encBits) encBool) :
     ComputableInPolyTime (andVerifier k V₁ V₂) (encPair enc encBits) encBool := by
   unfold andVerifier
+  fun_prop
+
+/-! ### Padding -/
+
+/-- Run `V` on the first `k a` bits and require the remaining bits to be `false`. -/
+def padVerifier (k : α → ℕ) (V : α × List Bool → Bool) : α × List Bool → Bool :=
+  andVerifier k V allFalseVerifier
+
+/-- **Padding**: on strings of any length `n ≥ k a`, `padVerifier k V` accepts as many strings as
+`V` accepts of length `k a`. -/
+theorem acceptCount_padVerifier_of_le (k : α → ℕ) (V : α × List Bool → Bool) {a : α} {n : ℕ}
+    (h : k a ≤ n) : acceptCount (padVerifier k V) a n = acceptCount V a (k a) := by
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le h
+  rw [padVerifier, acceptCount_andVerifier, acceptCount_allFalseVerifier, mul_one]
+
+/-- Padding a plain polynomial-time verifier is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_padVerifier {enc : α ↪ List Bool} {k : α → ℕ}
+    {V : α × List Bool → Bool} (hk : ComputableInPolyTime k enc encUnary)
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
+    ComputableInPolyTime (padVerifier k V) (encPair enc encBits) encBool := by
+  unfold padVerifier
   fun_prop
 
 /-! ### Disjunction on disjoint parts of the string -/
@@ -175,6 +198,33 @@ theorem computableInPolyTime_selectVerifier {enc : α ↪ List Bool}
     (hV₁ : ComputableInPolyTime V₁ (encPair enc encBits) encBool) :
     ComputableInPolyTime (selectVerifier V₀ V₁) (encPair enc encBits) encBool := by
   unfold selectVerifier
+  fun_prop
+
+/-! ### Sums of two counts -/
+
+/-- Let the first bit choose between `V₁` on `k₁ a` bits and `V₂` on `k₂ a` bits, padding the
+chosen verifier's strings to `k₁ a + k₂ a` bits with `false`s. -/
+def sumVerifier (k₁ k₂ : α → ℕ) (V₁ V₂ : α × List Bool → Bool) : α × List Bool → Bool :=
+  selectVerifier (padVerifier k₁ V₁) (padVerifier k₂ V₂)
+
+/-- **Counts add**: on strings of length `k₁ a + k₂ a + 1`, `sumVerifier k₁ k₂ V₁ V₂` accepts the
+sum of the numbers of strings that `V₁` accepts of length `k₁ a` and `V₂` of length `k₂ a`. -/
+theorem acceptCount_sumVerifier (k₁ k₂ : α → ℕ) (V₁ V₂ : α × List Bool → Bool) (a : α) :
+    acceptCount (sumVerifier k₁ k₂ V₁ V₂) a (k₁ a + k₂ a + 1) =
+      acceptCount V₁ a (k₁ a) + acceptCount V₂ a (k₂ a) := by
+  rw [sumVerifier, acceptCount_selectVerifier,
+    acceptCount_padVerifier_of_le k₁ V₁ (Nat.le_add_right _ _),
+    acceptCount_padVerifier_of_le k₂ V₂ (Nat.le_add_left _ _)]
+
+/-- The sum of two plain polynomial-time verifiers is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_sumVerifier {enc : α ↪ List Bool} {k₁ k₂ : α → ℕ}
+    {V₁ V₂ : α × List Bool → Bool} (hk₁ : ComputableInPolyTime k₁ enc encUnary)
+    (hk₂ : ComputableInPolyTime k₂ enc encUnary)
+    (hV₁ : ComputableInPolyTime V₁ (encPair enc encBits) encBool)
+    (hV₂ : ComputableInPolyTime V₂ (encPair enc encBits) encBool) :
+    ComputableInPolyTime (sumVerifier k₁ k₂ V₁ V₂) (encPair enc encBits) encBool := by
+  unfold sumVerifier
   fun_prop
 
 end Cslib.Complexity

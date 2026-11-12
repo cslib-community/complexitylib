@@ -12,6 +12,7 @@ import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.Lean.TwoSAT
+import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
@@ -22,8 +23,10 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ROABP
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -35,6 +38,7 @@ import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
+import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
@@ -1117,6 +1121,30 @@ register_result "hitting-set-set-multilinear-depth-three" where
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
 
+register_result "hitting-set-roabp-unknown-order" where
+  title := "Quasipolynomial hitting sets for ROABPs in an unknown order"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := AgrawalGurjarKorwarSaxena2015,
+      theorem := "Theorem 1, for univariate layers, in characteristic zero; Lemmas 6 and 8",
+      locator := "§1 and §3 of arXiv:1406.7535" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_roabpHittingSet,
+    Cslib.Circuits.Arithmetic.card_roabpHittingSet_le,
+    Cslib.Circuits.Arithmetic.roabpPrime_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of points of Fⁿ that contains \
+    a non-root of every nonzero n-variate polynomial computed by a width-w read-once \
+    oblivious branching program in some order of the variables with layer entries of degree \
+    at most δ; the set does not depend on the order. Its size is at most \
+    (⌈lg n⌉ + 1) p^⌈lg n⌉ (nδ(nδp + 1 + p)^⌈lg n⌉ + 1) for a prime p ≤ 2(2n²w⁸ + δ + 1), \
+    which is (nδw)^O(log n). Univariate layers only, not the source's sparse-factor layers. \
+    The weights are aⁱ⁺¹ mod p for one prime p instead of the source's (δ + 1)ⁱ mod q over \
+    many primes, and the levels are combined one at a time, so the bound is not the \
+    source's. Characteristic zero only. Existence and size of an explicit set: no bit \
+    complexity and no black-box algorithm model."
+
 register_result "hitting-set-sparse" where
   title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"
   topic := "algebraic complexity"
@@ -1132,6 +1160,31 @@ register_result "hitting-set-sparse" where
     whatever its degree; more generally for any point whose monomials are pairwise distinct. \
     Zero test only: no interpolation algorithm, no bit complexity, nothing in positive \
     characteristic."
+
+register_result "hitting-set-sparse-affine-orbit" where
+  title := "Polynomial-size hitting sets for affine orbits of sparse polynomials"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BhargavaSengupta2026,
+      theorem := "Theorem 1.2 items 1 and 2, in characteristic zero; Lemmas 1.6, 3.1 and 3.2",
+      locator := "§1.1 p. 3, §3 pp. 8–9, §4 pp. 9–10" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_sparseOrbitHittingSet,
+    Cslib.Circuits.Arithmetic.card_sparseOrbitHittingSet_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of at most \
+    (n² + 1)(2d(ns² + s) + 1) points of Fⁿ that contains a non-root of every nonzero \
+    polynomial p(Ax + b) of degree at most d, with A an invertible matrix and p a polynomial \
+    with at most s monomials. The key lemma: if all coordinates of u are nonzero, the partial \
+    derivatives of the lowest nonzero homogeneous component of p(x + u) span a space of \
+    dimension at most the number of monomials of p. Ordinary partial derivatives instead of \
+    the source's Hasse derivatives, so characteristic zero throughout, although the source's \
+    lemma holds in every characteristic. The curve is the library's ln(1 + (i + 1)t) \
+    truncated below degree ns² + s, not the source's -ln(1 - it) truncated at that degree. \
+    Not the degree-free hitting set over the reals, the lower bound, the applications to \
+    other orbit classes, or the operation count. Existence and size of an explicit set only: \
+    no bit complexity and no black-box algorithm model."
 
 register_result "hitting-set-lower-bound" where
   title := "Heintz–Schnorr: hitting sets give lower bounds"
@@ -3708,6 +3761,22 @@ register_result "kosaraju-scc" where
     plus O(|V|) component-index lookup. Visited-set membership, insertion, and function-update \
     array steps are counted as unit-cost operations."
 
+register_result "selected-entries-subset-convolution-timem" where
+  title := "Selected entries of ranked subset convolution by the trimmed fast zeta transform"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 2.2",
+      locator := "Section 2.1, p. 5" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.TrimmedYates.ret_solveM,
+    Cslib.Algorithms.Lean.TrimmedYates.time_solveM
+  ]
+  scope := "TimeM unit-cost model (one tick per table cell; enumeration and dictionary \
+    construction uncharged), not Word-RAM time. Inputs are look-up functions, so the paper's n \
+    term for storing the input sets is absent; the bound 3 (d + 1) (sum_{j <= s} (d choose j) + \
+    |queries| sum_{s <= j <= 2t} (2t choose j)) is exact. Weights in a commutative ring."
+
 register_result "twosat-linear-timem" where
   title := "Aspvall–Plass–Tarjan linear-time 2-SAT solver and witness construction in TimeM"
   topic := "algorithms"
@@ -4259,7 +4328,7 @@ register_result "clique-eth-lower-bound" where
     Cslib.Complexity.ETH.clique_not_mem_FPT,
     Cslib.Complexity.DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
   ]
-  scope := "Clause-grouping reduction SAT.groupClique on Clique (encPair encGraph encNat) and \
+  scope := "Clause-grouping reduction SAT.groupClique on Clique encCliqueInstance and \
     ThreeSAT (encCNF). Under ETH (relative to the library's native DecidableInTimeO model), no \
     decider for Clique runs in time f(k) · (|V| + 1)^o(k) · poly(|enc|) or f(k) · (|enc| + 1)^o(k) \
     with arbitrary f and real exponent g(k) satisfying g(k) ≤ ε k for large k; in particular \
@@ -4353,3 +4422,39 @@ register_result "w-hierarchy-subset-xp" where
     WP denotes this library's reduction closure with arbitrary, potentially ineffective time \
     and parameter bounds; equivalence with the effective literature W[P] is not claimed. Circuits \
     are straight-line programs, with the basis conventions documented in WHierarchy.lean."
+
+register_result "dnnf-size-multipartition-cover" where
+  title := "DNNF size bounds the multi-partition rectangle cover number"
+  topic := "circuit complexity"
+  sources := [
+    { paper := BovaCapelliMengelSlivovsky2016, theorem := unverified, locator := unverified },
+    { paper := ArenasBroadrickLiewVanDenBroeck2026, theorem := "Theorem 3.1",
+      locator := "§3.2, p. 9" }
+  ]
+  theorems := [
+    Cslib.Circuits.NNF.exists_isCover,
+    Cslib.Circuits.NNF.coverNumberFun_le_size,
+    Cslib.Circuits.NNF.coverNumberFun_false_le_size
+  ]
+  scope := "NNF DAGs with literal and constant leaves and fan-in-two gates on finitely many \
+    nodes, size = number of nodes; for at least two variables, a DNNF with s nodes computing f \
+    gives a cover of f⁻¹(1) by s rectangles, each for its own partition with both sides of at \
+    least n/3 variables."
+
+register_result "ddnnf-negation-separation" where
+  title := "d-DNNF is not polynomially closed under negation, given cubic edge expanders"
+  topic := "circuit complexity"
+  sources := [
+    { paper := ArenasBroadrickLiewVanDenBroeck2026, theorem := "Theorem 1.1",
+      locator := "§1, p. 3; proof in §5 (Proposition 5.1, Theorem 5.3)" }
+  ]
+  theorems := [
+    Cslib.CubicEdgeColoring.ddnnf_negation_separation,
+    Cslib.Circuits.NNF.exponential_separation_of_expanders
+  ]
+  scope := "For every cubic graph with a proper 3-edge-colouring on n ≥ 2 vertices that is a \
+    balanced-cut γ-edge expander, f_G has a d-DNNF with at most 150n + 50 nodes and every DNNF \
+    for ¬f_G has at least (48/47)^(γn/126) nodes. Theorem 1.1 itself (a 2^(cn) lower bound \
+    with c > 0) is derived from a family of such expanders with γ > 0 on unboundedly many \
+    vertex counts, which is Proposition 5.2 of the paper \
+    and is a hypothesis, not proved (#4668)."

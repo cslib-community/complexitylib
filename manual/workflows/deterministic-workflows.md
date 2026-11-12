@@ -328,13 +328,15 @@ For NP, additionally supply a verifier and a polynomial certificate-length condi
 ```lean
 /-- For NP, the verifier also needs a proved certificate bound: here exactly the encoded
 instance length, represented by the polynomial `X`. -/
-theorem clique_mem_NP : Clique ∈ NP (encPair encGraph encNat) :=
+theorem clique_mem_NP : Clique ∈ NP encCliqueInstance :=
   ⟨Polynomial.X, Clique.verifier, by fun_prop, Clique.isVerifier⟩
 ```
 
 **Result:** the first example supplies P membership and then NP membership by inclusion; the second supplies Clique's NP membership using the existing verifier and its exact witness-length theorem. These are applications of the library's class interfaces.
 
 **When it fails:** separate a failed computation certificate from a failed membership or witness-length equivalence. Check the verifier's encoding and exact length convention before trying a different tactic.
+
+**Shortcuts:** when witnesses are values with a decoder, [mem_NP_of_check](../../CslibFrontier/Computability/Complexity/Classes/NP/Witness.lean) takes a polynomial-time check that accepts witnesses only for members and accepts a short witness for every member, and handles the exact-length convention. When the problem is an `NP` problem restricted by a polynomial-time syntax test, [mem_NP_of_guard](../../CslibFrontier/Computability/Complexity/Classes/NP/Closure.lean) takes the test and `a ∈ L ↔ c a = true ∧ a ∈ A`.
 
 <!-- /worked-example -->
 
@@ -351,18 +353,20 @@ Continue in [NPCompleteness](../../CslibFrontierTests/NPCompleteness.lean), keep
 /-- A reduction has a map, its polynomial-time certificate, and a membership equivalence.
 The equivalence must point from the source problem to the image in the target problem. -/
 theorem independentSet_to_clique :
-    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) IndependentSet Clique :=
+    PolyTimeReducible encIndependentSetInstance encCliqueInstance IndependentSet Clique :=
   ⟨complementInstance, by fun_prop,
     fun ⟨G, k⟩ => (Graph.compl_mem_Clique_iff G k).symm⟩
 
 /-- Combine NP membership with hardness transferred from the known hard source problem. -/
-theorem clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
+theorem clique_npComplete : NPComplete encCliqueInstance Clique :=
   ⟨clique_mem_NP, IndependentSet_npHard.trans independentSet_to_clique⟩
 ```
 
 **Result:** `.symm` aligns the correctness lemma with the source-to-target membership equivalence, and `NPHard.trans` transports hardness forward. The final proof combines that hardness with `clique_mem_NP`. This client reuses known results; it is not a new completeness theorem.
 
 **When it fails:** check the reduction's direction and both encodings, then isolate its computation and equivalence obligations. A new problem still needs the verifier, certificate length, reduction cost and equivalence. Check empty instances and boundary targets as the client does.
+
+**Guarded maps:** when the map is faithful only on instances that pass a polynomial-time syntax test, use [PolyTimeReducible.of_guard](../../CslibFrontier/Computability/Complexity/Reduction/Guard.lean). It sends failing instances to a fixed instance outside the target, so you prove only `a ∈ A ↔ g a = true ∧ f a ∈ B` and the two cost certificates.
 
 <!-- /worked-example -->
 

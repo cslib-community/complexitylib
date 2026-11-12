@@ -24,6 +24,7 @@ The containments and closure below are elementary count identities.
 
 ## Main results
 
+* `mem_US`: unfolding the definition.
 * `UP_subset_US`, `coNP_subset_US`, `US_subset_CeqP`: basic containments.
 * `inter_mem_US`, `PolyTimeReducible.mem_US`: intersection and reduction closure.
 
@@ -42,6 +43,9 @@ variable {α : Type} {enc : α ↪ List Bool} {A B : Set α}
 [Blass and Gurevich][BlassGurevich1982]. -/
 def US (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ f ∈ SharpP enc, ∀ a, a ∈ A ↔ f a = 1}
+
+theorem mem_US : A ∈ US enc ↔ ∃ f ∈ SharpP enc, ∀ a, a ∈ A ↔ f a = 1 :=
+  Iff.rfl
 
 /-- Globally unambiguous verifiers are special cases of unique-solution verifiers. -/
 theorem UP_subset_US : UP enc ⊆ US enc := by

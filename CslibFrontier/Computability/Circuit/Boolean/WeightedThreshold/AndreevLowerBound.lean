@@ -117,9 +117,7 @@ def andreevTableCoords (b m : ℕ) : Finset (Fin (2 ^ b + b * m)) :=
 /-- Involution translating the truth-table coordinates by `andreevResidualParities b m σ w`. -/
 def andreevShiftResidual (b m : ℕ) (σ : Fin b → Fin m)
     (w : BitString (2 ^ b + b * m)) : BitString (2 ^ b + b * m) :=
-  Fin.addCases (fun idx => w (andreevTableIndex b m
-    (BitString.equivFin b ((BitString.equivFin b).symm idx + andreevResidualParities b m σ w))))
-    (fun v => w (Fin.natAdd (2 ^ b) v))
+  andreevTranslateTableFun b m (andreevResidualParities b m σ w) false w
 
 @[simp] theorem andreevResidualParities_andreevShiftResidual (b m : ℕ) (σ : Fin b → Fin m)
     (w : BitString (2 ^ b + b * m)) :
@@ -132,7 +130,10 @@ theorem andreevShiftResidual_involutive (b m : ℕ) (σ : Fin b → Fin m) :
     Function.Involutive (andreevShiftResidual b m σ) := fun w => by
   funext i; refine Fin.addCases (fun idx => ?_) (fun v => by simp [andreevShiftResidual]) i
   exact show andreevShiftResidual b m σ (andreevShiftResidual b m σ w) (andreevTableIndex b m idx) =
-    w (andreevTableIndex b m idx) by simp [andreevShiftResidual, andreevTableIndex]
+    w (andreevTableIndex b m idx) by
+      have h := andreevResidualParities_andreevShiftResidual b m σ w
+      rw [andreevShiftResidual] at h
+      simp [andreevShiftResidual, andreevTableIndex, h, add_assoc]
 
 /-- Involution XNORing each table coordinate `idx` with `h ((BitString.equivFin b).symm idx)`. -/
 def andreevAlignTable (b m : ℕ) (h : BitString b → Bool)
@@ -163,8 +164,9 @@ theorem card_subcube_agree_andreev_eq_card_tableCoords_true (b m : ℕ) (σ : Fi
     ← Fintype.card_subtype, ← Fintype.card_subtype]
   refine Fintype.card_congr ((BitString.equivFin b).subtypeEquiv fun u => ?_)
   simp only [andreevSubcubePerm, Equiv.trans_apply, Function.Involutive.coe_toPerm,
-    andreevAlignTable, andreevShiftResidual, andreevTableIndex, Fin.addCases_left,
-    Equiv.symm_apply_apply, andreev_embedUpdate_andreevLiveVar, andreevTable]
+    andreevAlignTable, andreevShiftResidual, andreevTranslateTableFun_castAdd, Bool.xor_false,
+    andreevTableIndex, Fin.addCases_left, Equiv.symm_apply_apply,
+    andreev_embedUpdate_andreevLiveVar, andreevTable]
   cases h u <;>
     cases w (Fin.castAdd (b * m) (BitString.equivFin b (u + andreevResidualParities b m σ w))) <;>
       decide

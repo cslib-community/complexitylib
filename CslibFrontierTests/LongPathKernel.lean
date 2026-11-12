@@ -24,10 +24,10 @@ namespace CslibFrontierTests.LongPathKernel
 open Cslib Cslib.Complexity Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The edge `1 — 2`. -/
-def edge : Graph := ([1, 2], [(1, 2)])
+def edge : Graph := ⟨[1, 2], [(1, 2)]⟩
 
 /-- The vertices `1` and `2` without edges. -/
-def noEdge : Graph := ([1, 2], [])
+def noEdge : Graph := ⟨[1, 2], []⟩
 
 /-- The edge `1 — 2` has a Hamiltonian path from `1` to `2`. -/
 theorem edge_mem_HamPath : (⟨edge, 1, 2⟩ : PathInstance) ∈ HamPath := by

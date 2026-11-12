@@ -235,6 +235,46 @@ below. Time counts standard unit instructions on signed integer matrices; this i
 or an arbitrary-real theorem. The large-family client is a checked symbolic run, not an
 enormous interpreter benchmark.
 
+## Selected entries of ranked subset convolution
+
+Chan, Itakura, Ma and Yu (STOC submission 1421, `[ChanItakuraMaYu2026]`) reach integer 3SUM
+through selected entries of the ranked subset convolution instead of selected-entries matrix
+multiplication. Their Theorem 2.2 is formalized in the unit-cost time monad `TimeM`, not on the
+Word-RAM: import `CslibFrontier.Algorithms.Lean.TrimmedYates`, namespace
+`Cslib.Algorithms.Lean.TrimmedYates`. The hashing reduction from 3SUM (Theorem 2.3) and the
+other endpoints of the submission are open in
+[#4667](https://github.com/cslib-community/cslib-frontier/issues/4667).
+
+The inputs are look-up functions `f g : Finset ι → R` into a commutative ring, the coordinates
+a duplicate-free list `l` of length `d`, and a threshold `s`. `solveM l s f g Cs` runs
+`preprocessM` once, which keeps every stage of Yates's passes on the subsets of `l` with at most
+`s` elements, and then `queryM` for each query set, which runs the passes only on the subsets
+of the query with at least `s` elements and reads smaller sets from the preprocessed stages.
+`ret_queryM_preprocessM` proves that a query returns `coveringProduct f g C` whenever
+`C ⊆ l.toFinset` and `s ≤ #C`; the identity behind it is
+`coveringProduct_eq_subsetMobius` in `CslibFrontier.Foundations.BooleanAnalysis.CoveringProduct`.
+For ranked inputs, supported on sets of sizes `t₁` and `t₂`, with `#C = t₁ + t₂`,
+`ret_solveM` gives the subset convolutions `subsetConvolution f g C`. `time_solveM` is the exact
+tick count `3 (d + 1) (∑_{j ≤ s} (d choose j) + |Cs| ∑_{s ≤ j ≤ 2t} (2t choose j))` for
+queries of size `2t`, derived from the program by `time_tabulateM` and `time_stagesM`.
+
+One tick computes one table cell: one input look-up, one product, or one Yates pass at one set
+with its dictionary reads. Enumerating cells, building dictionaries and loop control are
+uncharged; the module docstring lists the charges. Since the inputs are look-up functions, the
+paper's `n` term for storing the input sets does not appear. The
+[tests](../../CslibFrontierTests/Algorithms/Lean/TrimmedYates.lean) run `solveM` on `Fin 4` by
+kernel reduction, compare the answers and the tick count `210` with `ret_solveM` and
+`time_solveM`, and show that covering product and subset convolution differ on unranked inputs.
+Check a client with
+
+```bash
+lake build --wfail CslibFrontier.Algorithms.Lean.TrimmedYates
+lake env lean CslibFrontierTests/Algorithms/Lean/TrimmedYates.lean
+```
+
+If `ret_solveM` does not apply, check the support hypotheses `∀ A, f A ≠ 0 → #A = t₁`, that
+every query is a subset of `l.toFinset` with `t₁ + t₂` elements, and `s ≤ t₁ + t₂`.
+
 ## Conservative ordinary integer 3SUM
 
 Import `CslibFrontier.Algorithms.WordRAM.ThreeSum.Decision.Subquadratic`. In namespace
