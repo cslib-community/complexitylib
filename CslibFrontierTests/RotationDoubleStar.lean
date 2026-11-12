@@ -24,7 +24,7 @@ example (n : ℕ) (d : (Fin n × Bool) × Bool) : (doubleStarRotor n).symm d =
       ((if d.1.2 then finRotate n d.1.1 else (finRotate n).symm d.1.1, d.1.2), true)
     else ((d.1.1, !d.1.2), false)) := rfl
 
-example : doubleStarGraph 0 = ([0, 1], []) := by decide
+example : doubleStarGraph 0 = ⟨[0, 1], []⟩ := by decide
 
 example : RotationCertificate.ofRotation (doubleStarRotation 0) = ⟨[]⟩ := by decide +kernel
 

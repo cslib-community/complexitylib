@@ -14,7 +14,7 @@ namespace CslibFrontierTests.VertexIdentification
 
 open Cslib.Complexity Graph.RotationSystem
 
-private abbrev edge : Graph := ([0, 1, 8], [(0, 1)])
+private abbrev edge : Graph := ⟨[0, 1, 8], [(0, 1)]⟩
 
 private def edgeRotation : Graph.RotationSystem edge where
   rotate := Equiv.refl _
@@ -50,7 +50,7 @@ example : (edgeRotation.mergeVertices (0, false) (0, true) (by decide)).Numerica
   exact edgeRotation.numericalGenusZero_mergeVertices hG hr (0, false) (0, true)
     (by decide) (by decide +kernel)
 
-private abbrev bigon : Graph := ([0, 1], [(0, 1), (0, 1)])
+private abbrev bigon : Graph := ⟨[0, 1], [(0, 1), (0, 1)]⟩
 
 private def bigonRotation : Graph.RotationSystem bigon where
   rotate := Equiv.swap (0, false) (1, false) * Equiv.swap (0, true) (1, true)

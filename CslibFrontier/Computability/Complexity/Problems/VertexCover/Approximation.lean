@@ -66,13 +66,14 @@ theorem nodup_approxCover (G : Graph) : (approxCover G).Nodup :=
 
 /-- The returned vertices are declared. -/
 theorem mem_vertices_of_mem_approxCover {G : Graph} {v : ℕ} (hv : v ∈ approxCover G) :
-    v ∈ G.1 := by
+    v ∈ G.vertices := by
   obtain ⟨e, he, rfl | rfl⟩ := mem_matchingCover hv
   · exact (mem_declaredEdges.1 he).2.1
   · exact (mem_declaredEdges.1 he).2.2
 
 /-- Between declared vertices, the graph of the declared edges is the graph of `G`. -/
-theorem fromRel_declaredEdges_adj {G : Graph} {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) :
+theorem fromRel_declaredEdges_adj {G : Graph} {u v : ℕ} (hu : u ∈ G.vertices)
+    (hv : v ∈ G.vertices) :
     (SimpleGraph.fromRel fun a b => (a, b) ∈ declaredEdges G).Adj u v ↔
       G.toSimpleGraph.Adj u v := by
   simp only [SimpleGraph.fromRel_adj, Graph.toSimpleGraph, mem_declaredEdges]
@@ -80,7 +81,8 @@ theorem fromRel_declaredEdges_adj {G : Graph} {u v : ℕ} (hu : u ∈ G.1) (hv :
 
 /-- **Feasibility.** The returned vertices meet every edge between declared vertices. -/
 theorem isCover_approxCover (G : Graph) :
-    ∀ u ∈ G.1, ∀ v ∈ G.1, G.toSimpleGraph.Adj u v → u ∈ approxCover G ∨ v ∈ approxCover G :=
+    ∀ u ∈ G.vertices, ∀ v ∈ G.vertices, G.toSimpleGraph.Adj u v →
+      u ∈ approxCover G ∨ v ∈ approxCover G :=
   fun _ hu _ hv huv => isVertexCover_matchingCover _ ((fromRel_declaredEdges_adj hu hv).2 huv)
 
 /-- The returned list is a vertex cover of its length. -/
@@ -98,7 +100,7 @@ theorem length_approxCover_le_two_mul_vertexCoverNum (G : Graph) :
   obtain ⟨S, hSV, hS, hcard⟩ := mem_VertexCover_iff.1 (G.vertexCoverNum_mem_VertexCover)
   rw [← hcard]
   refine length_matchingCover_le_two_mul_card _ fun u v huv => ?_
-  have hdecl : u ∈ G.1 ∧ v ∈ G.1 := by
+  have hdecl : u ∈ G.vertices ∧ v ∈ G.vertices := by
     rw [SimpleGraph.fromRel_adj] at huv
     rcases huv.2 with he | he
     · exact ⟨(mem_declaredEdges.1 he).2.1, (mem_declaredEdges.1 he).2.2⟩
@@ -121,7 +123,10 @@ private theorem length_encList_coverStep_le {G : Graph} (C : List ℕ) {e : ℕ 
     (encList encNat (coverStep C e)).length ≤
       (encList encNat C).length + (4 * (encGraph G).length + 2) := by
   obtain ⟨-, h1, h2⟩ := mem_declaredEdges.1 he
-  have hV : (encList encNat G.1).length ≤ (encGraph G).length := by grind [encGraph, length_encPair]
+  have hV : (encList encNat G.vertices).length ≤ (encGraph G).length := by
+    rw [encGraph_apply, length_encPair]
+    dsimp
+    omega
   have h1 := (length_le_encList_of_mem encNat h1).trans hV
   have h2 := (length_le_encList_of_mem encNat h2).trans hV
   unfold coverStep

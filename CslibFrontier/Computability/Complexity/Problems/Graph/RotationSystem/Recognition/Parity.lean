@@ -62,31 +62,31 @@ abbrev encSegment := encPair (encPair encNat encNat) encBool
 
 /-- The total subdivided vertex count; only actual list lengths fund this unary count. -/
 @[expose] def subdivisionSize (I : FixedRotationInput) : ℕ :=
-  I.graph.1.length + 2 * I.graph.2.length
+  I.graph.vertices.length + 2 * I.graph.edges.length
 
 /-- Replace edge `e=(u,v)` by `u--a_e--b_e--v`, retaining all occurrence indices. A fixed endpoint
 freezes its entire first/last segment. Even loops and parallel edges get distinct fresh points. -/
 @[expose] def subdivide (I : FixedRotationInput) : List Segment :=
-  I.graph.2.zipIdx.flatMap fun ((source, target), index) =>
-    let a := I.graph.1.length + 2 * index
+  I.graph.edges.zipIdx.flatMap fun ((source, target), index) =>
+    let a := I.graph.vertices.length + 2 * index
     let b := a + 1
     [((source, a), (I.orders.getD source none).isSome),
       ((a, b), false), ((b, target), (I.orders.getD target none).isSome)]
 
 /-- Existing listed graph underlying the twice subdivision. -/
 @[expose] def subdivisionGraph (I : FixedRotationInput) : Graph :=
-  (List.range (subdivisionSize I), (subdivide I).map fun e => e.1)
+  ⟨List.range (subdivisionSize I), (subdivide I).map fun e => e.1⟩
 
 /-- Center blocks with leaves in reverse prescribed clockwise order. A binary dart index `d`
 names precisely subdivision point `n+d`, including the two separate ends of an original loop. -/
 @[expose] def centerBlocks (I : FixedRotationInput) : List ℕ :=
-  (List.range I.graph.1.length).flatMap fun v =>
-    v :: (((I.orders.getD v none).getD []).reverse.map fun d => I.graph.1.length + d)
+  (List.range I.graph.vertices.length).flatMap fun v =>
+    v :: (((I.orders.getD v none).getD []).reverse.map fun d => I.graph.vertices.length + d)
 
 /-- Append subdivision points not already selected into a center block. -/
 @[expose] def referenceOrder (I : FixedRotationInput) : List ℕ :=
-  centerBlocks I ++ ((List.range (2 * I.graph.2.length)).map
-    (fun d => I.graph.1.length + d)).filter fun v =>
+  centerBlocks I ++ ((List.range (2 * I.graph.edges.length)).map
+    (fun d => I.graph.vertices.length + d)).filter fun v =>
       !(centerBlocks I).any fun w => decide (w = v)
 
 /-- Finite algebraic frame. The count is unary; endpoint labels and reference ranks are binary. -/
@@ -187,12 +187,12 @@ theorem query_eq_true_iff (I : FixedRotationInput) :
 
 /-- There are exactly three listed segments per original edge occurrence. -/
 @[simp] theorem length_subdivide (I : FixedRotationInput) :
-    (subdivide I).length = 3 * I.graph.2.length := by
+    (subdivide I).length = 3 * I.graph.edges.length := by
   simp [subdivide, List.length_flatMap, Nat.mul_comm]
 
 /-- Twice subdivision has the advertised dense vertex count, including isolates. -/
 @[simp] theorem length_subdivisionGraph_vertices (I : FixedRotationInput) :
-    (subdivisionGraph I).1.length = I.graph.1.length + 2 * I.graph.2.length := by
+    (subdivisionGraph I).vertices.length = I.graph.vertices.length + 2 * I.graph.edges.length := by
   simp [subdivisionGraph, subdivisionSize]
 
 /-- Each independent-edge row contains at most four binary move labels. -/

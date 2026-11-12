@@ -48,7 +48,7 @@ theorem PSPACE_ssubset_EXPSPACE : PSPACE encBits ⊂ EXPSPACE encBits := by
   refine (Set.ssubset_iff_of_subset PSPACE_subset_EXPSPACE).mpr
     ⟨{x | spaceDiagonal G x = true}, ?_, fun h => ?_⟩
   · refine mem_EXPSPACE_iff.mpr ⟨1, ?_⟩
-    refine DSPACE_subset_of_le_mul_add (s₁ := G) 4 0 (fun n => by simp [hG]) ?_
+    refine DSPACE_mono_of_le_mul_add (s₁ := G) (C := 4) (fun n => by simp [hG]) ?_
     exact setOf_spaceDiagonal_mem_DSPACE (spaceConstructible_two_pow.const_mul 4)
       fun n => (hlog n).trans (Nat.le_mul_of_pos_left _ (by norm_num))
   · obtain ⟨k, hk⟩ := mem_PSPACE_iff_exists_mem_DSPACE.mp h

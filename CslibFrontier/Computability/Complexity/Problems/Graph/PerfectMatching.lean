@@ -73,7 +73,7 @@ theorem mem_vars_perfectMatchingInstance {x : ℕ} :
 declared vertex is an end of exactly one edge at a position in `S`. -/
 private theorem forall_mem_perfectMatchingInstance_iff {S : Finset ℕ} :
     (∀ c ∈ G.perfectMatchingInstance, (c.2.filter fun v => v ∈ S).length = 1) ↔
-      ∀ v ∈ G.1, ∃! i, i < G.edgeList.length ∧ incident (G.edgeList.getD i (0, 0)) v = true ∧
+      ∀ v ∈ G.vertices, ∃! i, i < G.edgeList.length ∧ incident (G.edgeList.getD i (0, 0)) v = true ∧
         i ∈ S := by
   simp only [perfectMatchingInstance, List.forall_mem_map, mem_distinctVertices,
     List.filter_filter, List.length_filter_range_eq_one_iff, Bool.and_eq_true, decide_eq_true_eq]
@@ -137,7 +137,7 @@ theorem partitionFunction_perfectMatchingInstance (G : Graph) :
 
 /-- The constraints of the perfect-matching instance: one for each distinct declared vertex. -/
 theorem length_perfectMatchingInstance (G : Graph) :
-    G.perfectMatchingInstance.length = G.1.toFinset.card := by
+    G.perfectMatchingInstance.length = G.vertices.toFinset.card := by
   rw [perfectMatchingInstance, List.length_map, length_distinctVertices]
 
 /-- **Every variable occurs at most twice**: in the constraints of the two ends of its edge. -/
@@ -192,7 +192,7 @@ theorem length_le_of_mem_perfectMatchingInstance {d : ℕ}
     rw [Finset.mem_range] at hi
     obtain ⟨hG, hne, h1, h2⟩ := of_mem_edgeList (getD_edgeList_mem hi)
     simp only [incident, Bool.or_eq_true, decide_eq_true_eq] at hinc
-    have hother : ∃ h : other i ∈ G.1, G.induced.Adj ⟨v, hv⟩ ⟨other i, h⟩ := by
+    have hother : ∃ h : other i ∈ G.vertices, G.induced.Adj ⟨v, hv⟩ ⟨other i, h⟩ := by
       simp only [other]
       split_ifs with h
       · refine ⟨h2, ?_⟩
@@ -222,7 +222,7 @@ theorem length_le_of_mem_perfectMatchingInstance {d : ℕ}
 
 /-- **A vertex has at most as many neighbours as edge-list entries at it**, so a degree bound can
 be checked on the edge list. -/
-theorem card_neighborSet_le (v : {v // v ∈ G.1}) :
+theorem card_neighborSet_le (v : {v // v ∈ G.vertices}) :
     Nat.card (G.induced.neighborSet v) ≤ (G.edgeList.filter fun e => incident e v).length := by
   classical
   have hnd : (G.edgeList.filter fun e => incident e v).Nodup :=

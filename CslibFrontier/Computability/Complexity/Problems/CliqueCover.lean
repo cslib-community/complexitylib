@@ -76,8 +76,8 @@ attribute [fun_prop] encCliqueCover_graph_polyTime encCliqueCover_cliques_polyTi
 them. -/
 @[expose]
 def Graph.CoveredByCliques (G : Graph) (l : ℕ) : Prop :=
-  ∃ S : Finset (Finset {v // v ∈ G.1}), S.card ≤ l ∧
-    (∀ s ∈ S, G.induced.IsClique (s : Set {v // v ∈ G.1})) ∧ ∀ v, ∃ s ∈ S, v ∈ s
+  ∃ S : Finset (Finset {v // v ∈ G.vertices}), S.card ≤ l ∧
+    (∀ s ∈ S, G.induced.IsClique (s : Set {v // v ∈ G.vertices})) ∧ ∀ v, ∃ s ∈ S, v ∈ s
 
 /-- **Clique cover** [Karp1972]: the graphs whose declared vertices are the union of at most the
 given number of cliques. -/

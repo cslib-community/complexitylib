@@ -92,29 +92,35 @@ example : ThreeSAT.verifier (toThreeSAT [[(2 ^ 80, true), (2 ^ 80 + 1, false)]],
 /-! ### `IndependentSet` and `Clique` concrete and boundary tests -/
 
 -- Empty graph: m = 0 is accepted, m > 0 is rejected.
-example : IndependentSet.verifier ((([], []), 0), []) = true := rfl
-example : IndependentSet.verifier ((([], []), 1), [true]) = false := rfl
-example : Clique.verifier ((([], []), 0), []) = true := rfl
-example : Clique.verifier ((([], []), 1), [true]) = false := rfl
+example : IndependentSet.verifier (((⟨[], []⟩, 0) : Graph × ℕ), []) = true := rfl
+example : IndependentSet.verifier (((⟨[], []⟩, 1) : Graph × ℕ), [true]) = false := rfl
+example : Clique.verifier (((⟨[], []⟩, 0) : Graph × ℕ), []) = true := rfl
+example : Clique.verifier (((⟨[], []⟩, 1) : Graph × ℕ), [true]) = false := rfl
 
 -- Oversized binary target `m = 2 ^ 100` is rejected in binary without unary expansion.
-example : IndependentSet.verifier ((([0, 1], []), 2 ^ 100), [true, true]) = false := by decide
-example : Clique.verifier ((([0, 1], [(0, 1)]), 2 ^ 100), [true, true]) = false := by decide
+example : IndependentSet.verifier
+    (((⟨[0, 1], []⟩, 2 ^ 100) : Graph × ℕ), [true, true]) = false := by decide
+example : Clique.verifier
+    (((⟨[0, 1], [(0, 1)]⟩, 2 ^ 100) : Graph × ℕ), [true, true]) = false := by decide
 
--- Duplicate vertices in `G.1` are deduplicated at their first occurrence by `selectDistinct`,
--- so selecting two copies of vertex `0` cannot forge an independent set or clique of size 2.
+-- Duplicate vertices in `G.vertices` are deduplicated at their first occurrence by
+-- `selectDistinct`, so selecting two copies of vertex `0` cannot forge an independent set or
+-- clique of size 2.
 example : selectDistinct [0, 0, 1] [true, true, false] = [0] := rfl
 example : selectDistinct [0, 0, 1] [true, false, true] = [0, 1] := rfl
-example : IndependentSet.verifier ((([0, 0, 1], []), 2), [true, true, false]) = false := rfl
-example : IndependentSet.verifier ((([0, 0, 1], []), 2), [true, false, true]) = true := rfl
-
--- Edges with endpoints outside `G.1` and self-loops in `G.2` do not create adjacency on `G.1`.
 example : IndependentSet.verifier
-    ((([10, 20], [(10, 99), (99, 20), (10, 10)]), 2), [true, true]) = true := rfl
+    (((⟨[0, 0, 1], []⟩, 2) : Graph × ℕ), [true, true, false]) = false := rfl
+example : IndependentSet.verifier
+    (((⟨[0, 0, 1], []⟩, 2) : Graph × ℕ), [true, false, true]) = true := rfl
+
+-- Edges with endpoints outside `G.vertices` and self-loops in `G.edges` do not create
+-- adjacency on `G.vertices`.
+example : IndependentSet.verifier
+    (((⟨[10, 20], [(10, 99), (99, 20), (10, 10)]⟩, 2) : Graph × ℕ), [true, true]) = true := rfl
 
 -- Sparse binary vertex labels in `IndependentSet`, `Graph.compl`, and `Clique`.
 private def sparseGraph : Graph :=
-  ([2 ^ 80, 2 ^ 80 + 1, 2 ^ 80 + 2], [(2 ^ 80, 2 ^ 80 + 1)])
+  ⟨[2 ^ 80, 2 ^ 80 + 1, 2 ^ 80 + 2], [(2 ^ 80, 2 ^ 80 + 1)]⟩
 
 example : IndependentSet.verifier ((sparseGraph, 2), [true, false, true]) = true := by decide
 example : IndependentSet.verifier ((sparseGraph, 2), [true, true, false]) = false := by decide
@@ -126,8 +132,8 @@ private def satFormula : CNF ℕ := [[(0, true), (1, false)], [(0, false), (1, t
 private def unsatFormula : CNF ℕ := [[(0, true)], [(0, false)]]
 
 example : SAT.toIndependentSet satFormula =
-    (([0, 1, 2, 3],
-      [(0, 1), (0, 2), (1, 0), (1, 3), (2, 0), (2, 3), (3, 1), (3, 2)]), 2) := rfl
+    (⟨[0, 1, 2, 3],
+      [(0, 1), (0, 2), (1, 0), (1, 3), (2, 0), (2, 3), (3, 1), (3, 2)]⟩, 2) := rfl
 
 -- Choosing the first literal `(0, true)` in clause 0 and the second literal `(1, true)` in clause 1
 -- yields a valid independent set of size 2 (and a 2-clique in the complement).
@@ -138,7 +144,7 @@ example : Clique.verifier
       [true, false, false, true]) = true := rfl
 
 -- Conflicting occurrences `[[(0, true)], [(0, false)]]` produce an edge between the two vertices.
-example : SAT.toIndependentSet unsatFormula = (([0, 2], [(0, 2), (2, 0)]), 2) := rfl
+example : SAT.toIndependentSet unsatFormula = (⟨[0, 2], [(0, 2), (2, 0)]⟩, 2) := rfl
 example : IndependentSet.verifier (SAT.toIndependentSet unsatFormula, [true, true]) = false := rfl
 
 end CslibFrontierTests.KarpReductions

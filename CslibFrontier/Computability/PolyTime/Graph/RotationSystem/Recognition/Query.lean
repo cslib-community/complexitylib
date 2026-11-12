@@ -55,22 +55,22 @@ private theorem orders_polyTime :
 attribute [local fun_prop] graph_polyTime orders_polyTime
 
 private theorem vertices_polyTime : ComputableTidilyInPolyTime
-    (fun I : FixedRotationInput => I.graph.1) encFixedRotationInput (encList encNat) :=
-  (ComputableTidilyInPolyTime.fst _ _).comp graph_polyTime
+    (fun I : FixedRotationInput => I.graph.vertices) encFixedRotationInput (encList encNat) :=
+  encGraph_vertices_deg.computableInPolyTime.tidy.comp graph_polyTime
 
 private theorem edges_polyTime : ComputableTidilyInPolyTime
-    (fun I : FixedRotationInput => I.graph.2) encFixedRotationInput
+    (fun I : FixedRotationInput => I.graph.edges) encFixedRotationInput
       (encList (encPair encNat encNat)) :=
-  (ComputableTidilyInPolyTime.snd _ _).comp graph_polyTime
+  encGraph_edges_deg.computableInPolyTime.tidy.comp graph_polyTime
 
 attribute [local fun_prop] vertices_polyTime edges_polyTime
 
 private theorem vertexCount_polyTime : ComputableTidilyInPolyTime
-    (fun I : FixedRotationInput => I.graph.1.length) encFixedRotationInput encUnary :=
+    (fun I : FixedRotationInput => I.graph.vertices.length) encFixedRotationInput encUnary :=
   (ComputableTidilyInPolyTime.length_list encNat).comp vertices_polyTime
 
 private theorem binaryVertexCount_polyTime : ComputableTidilyInPolyTime
-    (fun I : FixedRotationInput => I.graph.1.length) encFixedRotationInput encNat :=
+    (fun I : FixedRotationInput => I.graph.vertices.length) encFixedRotationInput encNat :=
   ComputableTidilyInPolyTime.unary_to_binary.comp vertexCount_polyTime
 
 attribute [local fun_prop] vertexCount_polyTime binaryVertexCount_polyTime
@@ -105,9 +105,12 @@ theorem fiber_polyTime :
       (encPair encGraph encNat) (encList encNat) := by
   apply ComputableInPolyTime.of_tidy
   have hinc := RotationCertificate.incidenceVertices_polyTime.tidy
-  have hr : ComputableTidilyInPolyTime (fun p : Graph × ℕ => List.range (2 * p.1.2.length))
+  have hr : ComputableTidilyInPolyTime (fun p : Graph × ℕ => List.range (2 * p.1.edges.length))
       (encPair encGraph encNat) (encList encNat) :=
-    RotationCertificate.range_binary.tidy.comp (by unfold encGraph; fun_prop)
+    RotationCertificate.range_binary.tidy.comp
+      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+        ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
+          (encGraph_edges_polyTime (ComputableInPolyTime.fst encGraph encNat)))).tidy
   unfold fiber
   fun_prop
 
@@ -117,9 +120,9 @@ attribute [local fun_prop] fiber_polyTime
 theorem validate_polyTime : ComputableInPolyTime validate encFixedRotationInput encBool := by
   apply ComputableInPolyTime.of_tidy
   have hr : ComputableTidilyInPolyTime
-      (fun I : FixedRotationInput => List.range I.graph.1.length)
+      (fun I : FixedRotationInput => List.range I.graph.vertices.length)
       encFixedRotationInput (encList encNat) :=
-    RotationCertificate.range_binary.tidy.comp (by fun_prop)
+    RotationCertificate.range_binary.tidy.comp vertexCount_polyTime
   unfold validate
   apply ComputableTidilyInPolyTime.bool_and'
   · apply ComputableTidilyInPolyTime.bool_and'
@@ -155,11 +158,16 @@ theorem subdivide_polyTime :
     (encA := encPair (encPair encNat encNat) encUnary)
     ((ComputableTidilyInPolyTime.zipIdx (encPair encNat encNat)).comp edges_polyTime)
   have ha : ComputableTidilyInPolyTime
-      (fun p : FixedRotationInput × ((ℕ × ℕ) × ℕ) => p.1.graph.1.length + 2 * p.2.2)
+      (fun p : FixedRotationInput × ((ℕ × ℕ) × ℕ) => p.1.graph.vertices.length + 2 * p.2.2)
       (encPair encFixedRotationInput (encPair (encPair encNat encNat) encUnary)) encNat :=
-    ComputableTidilyInPolyTime.unary_to_binary.comp (by fun_prop)
+    (ComputableInPolyTime.unary_to_binary.comp
+      (ComputableInPolyTime.unary_add'
+        ((ComputableInPolyTime.of_tidy vertexCount_polyTime).comp
+          (ComputableInPolyTime.fst _ _))
+        (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+          ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _))))).tidy
   have hb : ComputableTidilyInPolyTime
-      (fun p : FixedRotationInput × ((ℕ × ℕ) × ℕ) => p.1.graph.1.length + 2 * p.2.2 + 1)
+      (fun p : FixedRotationInput × ((ℕ × ℕ) × ℕ) => p.1.graph.vertices.length + 2 * p.2.2 + 1)
       (encPair encFixedRotationInput (encPair (encPair encNat encNat) encUnary)) encNat :=
     ComputableTidilyInPolyTime.binary_add' ha (ComputableTidilyInPolyTime.const 1)
   have he : ComputableTidilyInPolyTime
@@ -186,9 +194,9 @@ theorem referenceOrder_polyTime :
   have hblocks : ComputableTidilyInPolyTime centerBlocks encFixedRotationInput
       (encList encNat) := by
     have hr : ComputableTidilyInPolyTime
-        (fun I : FixedRotationInput => List.range I.graph.1.length)
+        (fun I : FixedRotationInput => List.range I.graph.vertices.length)
         encFixedRotationInput (encList encNat) :=
-      RotationCertificate.range_binary.tidy.comp (by fun_prop)
+      RotationCertificate.range_binary.tidy.comp vertexCount_polyTime
     unfold centerBlocks
     apply ComputableTidilyInPolyTime.flatMapWithInput hr
     apply ComputableTidilyInPolyTime.cons'
@@ -196,13 +204,32 @@ theorem referenceOrder_polyTime :
     apply ComputableTidilyInPolyTime.mapWithInput
       ((ComputableTidilyInPolyTime.listReverse encNat).comp word_polyTime)
     exact ComputableTidilyInPolyTime.binary_add'
-      (binaryVertexCount_polyTime.comp (by fun_prop)) (ComputableTidilyInPolyTime.snd _ _)
+      (binaryVertexCount_polyTime.comp
+        ((ComputableTidilyInPolyTime.fst encFixedRotationInput encNat).comp
+          (ComputableTidilyInPolyTime.fst (encPair encFixedRotationInput encNat) encNat)))
+      (ComputableTidilyInPolyTime.snd (encPair encFixedRotationInput encNat) encNat)
   have hr : ComputableTidilyInPolyTime
-      (fun I : FixedRotationInput => List.range (2 * I.graph.2.length))
+      (fun I : FixedRotationInput => List.range (2 * I.graph.edges.length))
       encFixedRotationInput (encList encNat) :=
-    RotationCertificate.range_binary.tidy.comp (by fun_prop)
+    RotationCertificate.range_binary.tidy.comp
+      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+        ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
+          (ComputableInPolyTime.of_tidy edges_polyTime))).tidy
   unfold referenceOrder
-  fun_prop
+  apply ComputableTidilyInPolyTime.listAppend' hblocks
+  apply ComputableTidilyInPolyTime.filterWithInput
+    (ComputableTidilyInPolyTime.mapWithInput hr
+      (ComputableTidilyInPolyTime.binary_add'
+        (binaryVertexCount_polyTime.comp
+          (ComputableTidilyInPolyTime.fst encFixedRotationInput encNat))
+        (ComputableTidilyInPolyTime.snd encFixedRotationInput encNat)))
+  apply ComputableTidilyInPolyTime.bool_not.comp
+  apply ComputableTidilyInPolyTime.anyWithInput
+    (hblocks.comp (ComputableTidilyInPolyTime.fst encFixedRotationInput encNat))
+  exact ComputableTidilyInPolyTime.decide_eq'
+    (ComputableTidilyInPolyTime.snd (encPair encFixedRotationInput encNat) encNat)
+    ((ComputableTidilyInPolyTime.snd encFixedRotationInput encNat).comp
+      (ComputableTidilyInPolyTime.fst (encPair encFixedRotationInput encNat) encNat))
 
 /-- Frame construction is native, with its unary stride funded by actual list lengths. -/
 theorem frame_polyTime : ComputableInPolyTime frame encFixedRotationInput encFrame := by
@@ -210,7 +237,10 @@ theorem frame_polyTime : ComputableInPolyTime frame encFixedRotationInput encFra
   have ho := referenceOrder_polyTime.tidy
   have hn : ComputableTidilyInPolyTime subdivisionSize encFixedRotationInput encUnary := by
     unfold subdivisionSize
-    fun_prop
+    exact (ComputableInPolyTime.unary_add' (ComputableInPolyTime.of_tidy vertexCount_polyTime)
+      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+        ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
+          (ComputableInPolyTime.of_tidy edges_polyTime)))).tidy
   exact .of_tidy (encFrame_mk_deg.computableInPolyTime.tidy.comp (hn.prod (hs.prod ho)))
 
 private theorem independent_polyTime : ComputableTidilyInPolyTime
