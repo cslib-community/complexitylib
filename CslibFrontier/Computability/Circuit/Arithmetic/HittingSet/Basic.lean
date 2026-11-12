@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AlgebraicIndependent
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Defs
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
+public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import Mathlib.RingTheory.PowerSeries.Trunc
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.LinearAlgebra.Dimension.Constructions
@@ -43,6 +44,8 @@ have a hitting set of size polynomial in `n`, `d` and `s` (`isHittingSet_sum_pow
 ## Main results
 
 * `aeval_logCurve_ne_zero`: Theorem 1.1 of the source.
+* `not_X_pow_dvd_aeval_logCurve`: the order of vanishing on the truncated curve is less than
+  `n r ^ 2 + r`.
 * `isHittingSet_logHittingSet`, `card_logHittingSet_le`: the hitting set and its size.
 * `isHittingSet_sum_pow`: sums of powers of linear forms.
 
@@ -105,48 +108,35 @@ private theorem X_pow_dvd_aeval_logCurve_sub (B : ℕ) (f : MvPolynomial (Fin n)
 
 variable {V : Submodule F (MvPolynomial (Fin n) F)}
 
+/-- A nonzero polynomial in a derivative-closed space of dimension at most `r` does not vanish to
+order `n * r ^ 2 + r` on the logarithmic curve truncated below that degree. -/
+theorem not_X_pow_dvd_aeval_logCurve (hV : ∀ i, ∀ p ∈ V, MvPolynomial.pderiv i p ∈ V)
+    [Module.Finite F V] {r : ℕ} (hr : Module.finrank F V ≤ r) {f : MvPolynomial (Fin n) F}
+    (hf : f ∈ V) (hf0 : f ≠ 0) :
+    ¬ (Polynomial.X : F[X]) ^ (n * r ^ 2 + r) ∣
+      MvPolynomial.aeval (logCurve F n (n * r ^ 2 + r)) f := by
+  rintro ⟨q, hq⟩
+  have h := X_pow_dvd_aeval_logCurve_sub (n * r ^ 2 + r) f
+  rw [hq, Polynomial.coe_mul, Polynomial.coe_pow, Polynomial.coe_X,
+    dvd_sub_right (dvd_mul_right _ _)] at h
+  refine not_X_pow_dvd_aeval_logSeries (algebraicIndependent_logSeries F n) hV hf hf0
+    ((pow_dvd_pow _ ?_).trans h)
+  gcongr
+
 /-- **Theorem 1.1 of the source.** A nonzero polynomial in a derivative-closed space of dimension
 at most `r` does not vanish on the logarithmic curve truncated below degree `n * r ^ 2 + r`. -/
 theorem aeval_logCurve_ne_zero (hV : ∀ i, ∀ p ∈ V, MvPolynomial.pderiv i p ∈ V)
     [Module.Finite F V] {r : ℕ} (hr : Module.finrank F V ≤ r) {f : MvPolynomial (Fin n) F}
     (hf : f ∈ V) (hf0 : f ≠ 0) :
-    MvPolynomial.aeval (logCurve F n (n * r ^ 2 + r)) f ≠ 0 := by
-  intro h0
-  have h := X_pow_dvd_aeval_logCurve_sub (n * r ^ 2 + r) f
-  rw [h0, Polynomial.coe_zero, zero_sub, dvd_neg] at h
-  refine not_X_pow_dvd_aeval_logSeries (algebraicIndependent_logSeries F n) hV hf hf0
-    ((pow_dvd_pow _ ?_).trans h)
-  gcongr
+    MvPolynomial.aeval (logCurve F n (n * r ^ 2 + r)) f ≠ 0 :=
+  fun h0 => not_X_pow_dvd_aeval_logCurve hV hr hf hf0 (h0 ▸ dvd_zero _)
 
-private theorem natDegree_aeval_logCurve_le (B : ℕ) (f : MvPolynomial (Fin n) F) :
-    (MvPolynomial.aeval (logCurve F n B) f).natDegree ≤ f.totalDegree * B := by
-  rw [MvPolynomial.aeval_def, MvPolynomial.eval₂_eq']
-  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun m hm => ?_
-  refine Polynomial.natDegree_mul_le.trans ?_
-  rw [Polynomial.algebraMap_apply, Algebra.algebraMap_self, RingHom.id_apply,
-    Polynomial.natDegree_C, zero_add]
-  refine (Polynomial.natDegree_prod_le _ _).trans ?_
-  have hB (i : Fin n) : (logCurve F n B i).natDegree ≤ B := by
-    rw [logCurve]
-    cases B with
-    | zero => simp
-    | succ B => exact (PowerSeries.natDegree_trunc_lt _ B).le
-  calc ∑ i, (logCurve F n B i ^ m i).natDegree
-      ≤ ∑ i, m i * B := sum_le_sum fun i _ =>
-        Polynomial.natDegree_pow_le.trans (Nat.mul_le_mul_left _ (hB i))
-    _ = (∑ i, m i) * B := (sum_mul _ _ _).symm
-    _ ≤ f.totalDegree * B := by
-        refine Nat.mul_le_mul_right _ ?_
-        have h := MvPolynomial.le_totalDegree hm
-        rwa [Finsupp.sum_fintype _ _ fun _ => rfl] at h
-
-private theorem eval_aeval_logCurve (B : ℕ) (f : MvPolynomial (Fin n) F) (x : F) :
-    (MvPolynomial.aeval (logCurve F n B) f).eval x =
-      MvPolynomial.eval (fun i => (logCurve F n B i).eval x) f := by
-  induction f using MvPolynomial.induction_on with
-  | C a => simp
-  | add p q hp hq => simp [hp, hq]
-  | mul_X p i hp => simp [hp]
+/-- The logarithmic curve truncated below degree `B` has coordinates of degree at most `B`. -/
+theorem natDegree_logCurve_le (B : ℕ) (i : Fin n) : (logCurve F n B i).natDegree ≤ B := by
+  rw [logCurve]
+  cases B with
+  | zero => simp
+  | succ B => exact (PowerSeries.natDegree_trunc_lt _ B).le
 
 /-- The points of the logarithmic curve form a hitting set for the polynomials of degree at most
 `d` that lie in a derivative-closed space of dimension at most `r`. -/
@@ -160,13 +150,14 @@ theorem isHittingSet_logHittingSet (r d : ℕ) :
   set B := n * r ^ 2 + r with hB
   have hne := aeval_logCurve_ne_zero hV hr hf hf0
   have hdeg : (MvPolynomial.aeval (logCurve F n B) f).natDegree < d * B + 1 :=
-    Nat.lt_succ_of_le ((natDegree_aeval_logCurve_le B f).trans (Nat.mul_le_mul_right _ hd))
+    Nat.lt_succ_of_le ((MvPolynomial.natDegree_aeval_le_mul (natDegree_logCurve_le B) f).trans
+      (Nat.mul_le_mul_right _ hd))
   by_contra hall
   refine hne (Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' _
     ((range (d * B + 1)).image fun k : ℕ => (k : F)) ?_ ?_)
   · intro x hx
     obtain ⟨k, hk, rfl⟩ := mem_image.1 hx
-    rw [eval_aeval_logCurve]
+    rw [MvPolynomial.eval_polynomial_aeval]
     exact not_not.1 fun h => hall ⟨_, mem_image.2 ⟨k, hk, rfl⟩, h⟩
   · rwa [card_image_of_injective _ Nat.cast_injective, card_range]
 
