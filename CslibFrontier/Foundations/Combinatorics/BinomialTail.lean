@@ -43,6 +43,8 @@ For the unbiased case `p = 1 / 2` in counting form on `ι → Bool`, see
 
 * `Cslib.one_sub_mul_exp_add_mul_exp_le`: Hoeffding's lemma for a biased Bernoulli trial.
 * `Cslib.sum_choose_mul_pow_eq_one`: binomial probability weights sum to `1`.
+* `Cslib.choose_mul_pow_le_mode`: the binomial weight is largest at the mode `n p` when that is an
+  integer.
 * `Cslib.sum_choose_mul_pow_mul_exp`: centered moment generating function of `Bin(Q, p)`.
 * `Cslib.sum_filter_le_sub_choose_mul_pow_le`: upper-tail Hoeffding bound for `Bin(Q, p)`.
 * `Cslib.sum_filter_le_mul_sub_choose_mul_pow_le`: lower-tail Hoeffding bound for `Bin(Q, p)`.
@@ -320,5 +322,61 @@ theorem sum_filter_notMem_choose_mul_pow_le (Q : ℕ) (I : Finset ℕ) {p t : �
   rcases le_or_gt (|(k : ℝ) - Q * p|) t with hle | hgt
   · exact False.elim (hk.2 (hI k hk.1 hle))
   · exact hgt.le
+
+/-- **The mode of the binomial distribution**: when `n p = w` is an integer, the weight
+`C(n, k) p ^ k (1 - p) ^ (n - k)` of `Bin(n, p)` is largest at `k = w`. Consecutive weights satisfy
+`t (k + 1) (k + 1) (1 - p) = t k (n - k) p`, so they increase up to `w` and decrease after it. -/
+theorem choose_mul_pow_le_mode {n w : ℕ} {p : ℝ} (hw : w ≤ n) (hnp : (n : ℝ) * p = w)
+    (hp0 : 0 ≤ p) (hp1 : p ≤ 1) {k : ℕ} (hk : k ≤ n) :
+    (n.choose k : ℝ) * p ^ k * (1 - p) ^ (n - k) ≤ n.choose w * p ^ w * (1 - p) ^ (n - w) := by
+  set t : ℕ → ℝ := fun k => (n.choose k : ℝ) * p ^ k * (1 - p) ^ (n - k) with ht
+  have ht0 : ∀ k, 0 ≤ t k := fun k => by simp only [t]; have := sub_nonneg.mpr hp1; positivity
+  -- `t (k + 1) (k + 1) (1 - p) = t k (n - k) p`
+  have hstep : ∀ k < n, t (k + 1) * ((k + 1) * (1 - p)) = t k * ((n - k : ℝ) * p) := by
+    intro k hk
+    have hc : (n.choose (k + 1) : ℝ) * (k + 1) = n.choose k * (n - k : ℝ) := by
+      rw [← Nat.cast_sub hk.le]; exact_mod_cast Nat.choose_succ_right_eq n k
+    have he : (1 - p) ^ (n - k) = (1 - p) ^ (n - (k + 1)) * (1 - p) := by
+      rw [← pow_succ]; congr 1; omega
+    simp only [t]
+    rw [he, pow_succ]
+    linear_combination (p ^ k * p * (1 - p) ^ (n - (k + 1)) * (1 - p)) * hc
+  have hup : ∀ k, k < w → t k ≤ t (k + 1) := by
+    intro k hkw
+    have hkn : (k : ℝ) + 1 ≤ w := by exact_mod_cast hkw
+    have hwn : (w : ℝ) ≤ n := by exact_mod_cast hw
+    have hp : 0 < p := by
+      rcases hp0.eq_or_lt with h | h
+      · rw [← h, mul_zero] at hnp; linarith
+      · exact h
+    have hpos : (0 : ℝ) < (n - k) * p := mul_pos (by linarith) hp
+    have hcmp : ((k : ℝ) + 1) * (1 - p) ≤ (n - k) * p := by nlinarith
+    have := hstep k (by exact_mod_cast (show (k : ℝ) < n by linarith))
+    have h2 := mul_le_mul_of_nonneg_left hcmp (ht0 (k + 1))
+    exact le_of_mul_le_mul_right (by linarith) hpos
+  have hdown : ∀ k, w ≤ k → k < n → t (k + 1) ≤ t k := by
+    intro k hwk hkn
+    have hwk' : (w : ℝ) ≤ k := by exact_mod_cast hwk
+    have hkn' : (k : ℝ) < n := by exact_mod_cast hkn
+    have hp1' : 0 < 1 - p := by nlinarith
+    have hpos : (0 : ℝ) < (k + 1) * (1 - p) := mul_pos (by positivity) hp1'
+    have hcmp : ((n : ℝ) - k) * p ≤ (k + 1) * (1 - p) := by nlinarith
+    have := hstep k hkn
+    have h2 := mul_le_mul_of_nonneg_left hcmp (ht0 k)
+    exact le_of_mul_le_mul_right (by linarith) hpos
+  change t k ≤ t w
+  rcases le_total k w with hkw | hwk
+  · have key : ∀ j, k + j ≤ w → t k ≤ t (k + j) := by
+      intro j
+      induction j with
+      | zero => intro _; exact le_rfl
+      | succ j ih => intro h; exact (ih (by omega)).trans (hup _ (by omega))
+    simpa [Nat.add_sub_cancel' hkw] using key (w - k) (by omega)
+  · have key : ∀ j, w + j ≤ n → t (w + j) ≤ t w := by
+      intro j
+      induction j with
+      | zero => intro _; exact le_rfl
+      | succ j ih => intro h; exact (hdown (w + j) (by omega) (by omega)).trans (ih (by omega))
+    simpa [Nat.add_sub_cancel' hwk] using key (k - w) (by omega)
 
 end Cslib
