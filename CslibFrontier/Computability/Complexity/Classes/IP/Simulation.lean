@@ -165,32 +165,89 @@ private theorem aliveStep_eq_replayStep (t : ℕ)
             List.tail_cons, beq_iff_eq]
           split_ifs with hm <;> simp
 
-/-- The live replay follows the replay while it succeeds, and dies when it fails. -/
+/-- The live replay follows the replay while it succeeds, and dies when it fails (recording the
+channel message when it pauses on an empty history). -/
 private theorem foldl_aliveStep (t : ℕ) (l : List Bool)
     (acc : Except (Option (List Bool))
       (MultiTapeMachine.FiniteConfig k Bool Control Unit × History))
     (s : AliveState k Control Unit (List Bool × List Bool))
     (hs : (∀ p, acc = .ok p → s = (p.1, p.2, true)) ∧
-      (∀ e, acc = .error e → s.2.2 = false)) :
+      (∀ e, acc = .error e → s.2.2 = false) ∧
+      (∀ m, acc = .error (some m) → (s.1.channels ()).1 = m)) :
     (∀ p, l.foldl (fun acc b => acc.bind fun p => replayStep MUnit t p b) acc = .ok p →
         l.foldl (aliveStep (fun _ _ => true) id MUnit t) s = (p.1, p.2, true)) ∧
       (∀ e, l.foldl (fun acc b => acc.bind fun p => replayStep MUnit t p b) acc = .error e →
-        (l.foldl (aliveStep (fun _ _ => true) id MUnit t) s).2.2 = false) := by
+        (l.foldl (aliveStep (fun _ _ => true) id MUnit t) s).2.2 = false) ∧
+      (∀ m, l.foldl (fun acc b => acc.bind fun p => replayStep MUnit t p b) acc = .error (some m) →
+        ((l.foldl (aliveStep (fun _ _ => true) id MUnit t) s).1.channels ()).1 = m) := by
   induction l generalizing acc s with
   | nil => exact hs
   | cons b l ih =>
-    refine ih _ _ ⟨fun p hp => ?_, fun e he => ?_⟩
+    refine ih _ _ ⟨fun p hp => ?_, fun e he => ?_, fun m hm => ?_⟩
     · rcases acc with e | q
       · cases hp
       · rw [hs.1 q rfl]
         change replayStep MUnit t q b = .ok p at hp
         simp only [aliveStep_eq_replayStep, ite_true, hp]
     · rcases acc with e' | q
-      · have := hs.2 e' rfl
+      · have := hs.2.1 e' rfl
         simp [aliveStep_eq_replayStep, this]
       · rw [hs.1 q rfl]
         change replayStep MUnit t q b = .error e at he
         simp only [aliveStep_eq_replayStep, ite_true, he]
+    · rcases acc with (_ | m') | ⟨cfg, rest⟩
+      · cases hm
+      · change Except.error (some m') = Except.error (some m) at hm
+        simp only [Except.error.injEq, Option.some.injEq] at hm
+        subst hm
+        have hfalse := hs.2.1 (some m') rfl
+        rw [aliveStep_eq_replayStep, ite_eq_right (fun h => by simp [hfalse] at h)]
+        exact hs.2.2 m' rfl
+      · rw [hs.1 (cfg, rest) rfl]
+        change replayStep MUnit t (cfg, rest) b = .error (some m) at hm
+        simp only [aliveStep_eq_replayStep, ite_true, hm]
+        unfold replayStep at hm
+        cases hst : cfg.tapes.state with
+        | none => simp only [hst] at hm; cases hm
+        | some c =>
+          simp only [hst] at hm
+          cases htr : MUnit.tr c cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols
+              cfg.answerSymbols b with
+          | step => simp only [htr] at hm; cases hm
+          | query op next =>
+            simp only [htr] at hm
+            cases hrest : rest with
+            | nil =>
+              simp only [hrest, Except.error.injEq, Option.some.injEq] at hm
+              exact hm
+            | cons e rest' =>
+              simp only [hrest] at hm
+              split_ifs at hm
+              cases hm
+
+/-- When the replay succeeds on `x`, `r`, `h`, the live replay stops at the same state and stays
+live. -/
+theorem aliveRun_of_simulate_ok {x r : List Bool} {h : History}
+    {p : MultiTapeMachine.FiniteConfig k Bool Control Unit × History}
+    (hsim : simulate MUnit r.length x r h = .ok p) :
+    aliveRun (fun _ _ => true) id MUnit x r h = (p.1, p.2, true) :=
+  (foldl_aliveStep MUnit r.length r (.ok (MultiTapeMachine.FiniteConfig.init MUnit.initial x, h))
+    (MultiTapeMachine.FiniteConfig.init MUnit.initial x, h, true)
+    ⟨fun q hq => by simp only [Except.ok.injEq] at hq; subst hq; rfl,
+      ⟨fun e he => (by cases he), fun m hm => (by cases hm)⟩⟩).1 p hsim
+
+/-- When the replay pauses waiting for a reply to `m`, the live replay stops inactive with `m` on
+channel `()`. -/
+theorem aliveRun_of_simulate_error_some {x r : List Bool} {h : History} {m : List Bool}
+    (hsim : simulate MUnit r.length x r h = .error (some m)) :
+    ∃ cfg rem, aliveRun (fun _ _ => true) id MUnit x r h = (cfg, rem, false) ∧
+      (cfg.channels ()).1 = m :=
+  have hrun := foldl_aliveStep MUnit r.length r
+    (.ok (MultiTapeMachine.FiniteConfig.init MUnit.initial x, h))
+    (MultiTapeMachine.FiniteConfig.init MUnit.initial x, h, true)
+    ⟨fun q hq => by simp only [Except.ok.injEq] at hq; subst hq; rfl,
+      ⟨fun e he => (by cases he), fun m' hm => (by cases hm)⟩⟩
+  ⟨_, _, Prod.ext rfl (Prod.ext rfl (hrun.2.1 (some m) hsim)), hrun.2.2 m hsim⟩
 
 /-- **The live replay decides acceptance**: `accepts` holds exactly when the program of the coins
 accepts after the history. -/
@@ -200,11 +257,12 @@ theorem accepts_eq_true_iff (x r : List Bool) (h : History) :
   have hrun := foldl_aliveStep MUnit r.length r
     (.ok (MultiTapeMachine.FiniteConfig.init MUnit.initial x, h))
     (MultiTapeMachine.FiniteConfig.init MUnit.initial x, h, true)
-    ⟨fun p hp => by simp only [Except.ok.injEq] at hp; subst hp; rfl, fun e he => by cases he⟩
+    ⟨fun p hp => by simp only [Except.ok.injEq] at hp; subst hp; rfl,
+      ⟨fun e he => (by cases he), fun m hm => (by cases hm)⟩⟩
   rw [outcome_coinProgram]
   unfold accepts aliveRun
   rcases hsim : simulate MUnit r.length x r h with e | ⟨cfg, rest⟩
-  · have hdead := hrun.2 e hsim
+  · have hdead := hrun.2.1 e hsim
     simp only [hdead, Bool.false_and, Bool.false_eq_true, false_iff]
     rcases e with _ | m <;> simp [Except.map, replayOutcome]
   · rw [hrun.1 _ hsim]
@@ -231,13 +289,13 @@ variable [Finite Control] [Fintype Operation] {encEntry : Entry ↪ List Bool}
   (hpair : ComputableInPolyTime entryPair encEntry (encPair encBits encBits))
 
 /-- Live replay states, encoded by their fields. -/
-private noncomputable abbrev encAliveState (encEntry : Entry ↪ List Bool) :
+noncomputable abbrev encAliveState (encEntry : Entry ↪ List Bool) :
     AliveState k Control Operation Entry ↪ List Bool :=
   encPair encFiniteConfig (encPair (encList encEntry) encBool)
 
 omit [DecidableEq Operation] in
 /-- The instruction is polynomial-time: it reads finitely many observations. -/
-private theorem computableInPolyTime_instruction :
+theorem computableInPolyTime_instruction :
     ComputableInPolyTime
       (fun p : MultiTapeMachine.FiniteConfig k Bool Control Operation × Bool =>
         instruction M p.1 p.2) (encPair encFiniteConfig encBool)
@@ -326,7 +384,7 @@ private theorem aliveStep_spaceBound {n i t : ℕ} {h : List Entry}
 
 include hmatch hpair in
 /-- **The live replay is polynomial-time** in the input, the coins and the history. -/
-private theorem computableInPolyTime_aliveRun :
+theorem computableInPolyTime_aliveRun :
     ComputableInPolyTime (fun p : List Bool × List Bool × List Entry =>
       aliveRun matchOp entryPair M p.1 p.2.1 p.2.2)
       (encPair encBits (encPair encBits (encList encEntry)))
