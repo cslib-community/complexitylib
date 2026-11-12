@@ -116,13 +116,6 @@ private theorem sum_fin_three_mul {β : Type*} [Fintype β] (f g h : β → ℝ)
   have := (Fintype.prod_sum (fun j : Fin 3 => ![f, g, h] j)).symm
   simpa [Fin.prod_univ_three] using this
 
-omit [DecidableEq α] in
-/-- The total product weight of the tuples of `n` outcomes. -/
-theorem sum_prod_weight (w : Ω → ℝ) (n : ℕ) :
-    ∑ V : Fin n → Ω, ∏ i, w (V i) = (∑ ω, w ω) ^ n := by
-  rw [← Fintype.prod_sum]
-  simp
-
 /-- A majority tree of depth `0` is its single leaf. -/
 theorem sum_majTree_zero_ne (w : Ω → ℝ) (val : Ω → α) (y : α) :
     ∑ V : Fin (3 ^ 0) → Ω with majTree 0 (val ∘ V) ≠ y, ∏ i, w (V i) =
@@ -187,7 +180,7 @@ theorem sum_majTree_succ_ne_le (hw : ∀ ω, 0 ≤ w ω) (val : Ω → α) (y : 
         rw [Fin.prod_univ_three]
         ring
     _ = 3 * B ^ 2 * (∑ ω, w ω) ^ 3 ^ L - 2 * B ^ 3 := by
-        have hT : ∑ U, P U = (∑ ω, w ω) ^ 3 ^ L := sum_prod_weight w _
+        have hT : ∑ U, P U = (∑ ω, w ω) ^ 3 ^ L := (Fintype.sum_pow w _).symm
         have h₁ := sum_fin_three_mul (fun u => β u * P u) (fun u => β u * P u) P
         have h₂ := sum_fin_three_mul (fun u => β u * P u) P (fun u => β u * P u)
         have h₃ := sum_fin_three_mul P (fun u => β u * P u) (fun u => β u * P u)
@@ -261,7 +254,7 @@ theorem exists_forall_majTree_eq_of_sum {X : Type*} (hw : ∀ ω, 0 ≤ w ω) (h
   have hP0 (V) : 0 ≤ P V := prod_nonneg fun i _ => hw _
   -- every tuple is wrong somewhere, so the wrong weights cover the total weight
   have hcover : T ≤ ∑ x ∈ S, ∑ V : Fin (3 ^ L) → Ω with majTree L (val x ∘ V) ≠ target x, P V := by
-    rw [show T = ∑ V : Fin (3 ^ L) → Ω, P V from (sum_prod_weight w _).symm]
+    rw [show T = ∑ V : Fin (3 ^ L) → Ω, P V from Fintype.sum_pow w _]
     simp only [sum_filter]
     rw [sum_comm]
     refine sum_le_sum fun V _ => ?_
@@ -353,7 +346,7 @@ theorem exists_forall_majTree_majTree_eq {X : Type*} (hw : ∀ ω, 0 ≤ w ω) (
       ∀ x ∈ S, majTree m₂ (fun i => majTree (m₁ + 1) (val x ∘ V i)) = target x := by
   have hw' (U : Fin (3 ^ (m₁ + 1)) → Ω) : 0 ≤ ∏ i, w (U i) := prod_nonneg fun i _ => hw _
   have hw1' : ∑ U : Fin (3 ^ (m₁ + 1)) → Ω, ∏ i, w (U i) = 1 := by
-    rw [sum_prod_weight, hw1, one_pow]
+    rw [← Fintype.sum_pow, hw1, one_pow]
   refine exists_forall_majTree_eq_of_sum hw' (by rw [hw1']; norm_num) S
     (fun x U => majTree (m₁ + 1) (val x ∘ U)) target (ρ := 5 / 32) (fun x hx => ?_) (by norm_num)
     hS

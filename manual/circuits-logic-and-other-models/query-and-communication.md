@@ -152,14 +152,16 @@ A `SolvableRectangle R d` packages sides `alice` and `bob` with a protocol of de
 to the two conditional distributions, then `PMF.exists_forall_toOuterMeasure_le`.
 The source's Lemma 3.7, Valiant's amplification, is `exists_forall_majTree_majTree_eq` in
 [Combinatorics/MajorityTree](../../CslibFrontier/Foundations/Combinatorics/MajorityTree.lean).
-That module's majority trees `majTree` take weighted leaves, so one implementation serves both the
-counting amplification of `card_majTree_ne_le` and the covering distribution here. One level maps
+Its error bounds for majority trees `majTree` are stated for weighted leaves, so one
+implementation serves both the counting amplification of `card_majTree_ne_le` and the
+covering distribution here. One level maps
 the missed weight `B` to at most `3 B² T - 2 B³` (`sum_majTree_succ_ne_le`). Inner trees of depth
 `3 ⌈log₂ k²⌉ + 1` raise the advantage `1/(4k²)` to an error below `1/6`. An outer tree of depth
 `⌈log₂ ⌈log₂ |X ⊕ Y|⌉⌉` is then correct at every input (`exists_forall_majTree_eq_of_sum`).
 `walk` runs the Karchmer–Wigderson walk on a majority tree whose leaves carry protocols, with
-three bits per level, and `exists_solves_depth_le` nests two walks. The walk is direct rather
-than through `Formula.monotoneKWProtocol`, because the leaves carry protocols. `exists_solves_depth_le` assembles the protocol for a given one-out protocol `p`.
+three bits per level. `exists_solves_depth_le` nests two walks to assemble the protocol for
+a given one-out protocol `p`. The walk is direct rather than through
+`Formula.monotoneKWProtocol`, because the leaves carry protocols.
 The [lower-bound client](../../CslibFrontierTests/CommunicationOneOutLowerBound.lean) applies
 both theorems to equality of bits with `k = 2`. Run
 `scripts/build.sh CslibFrontierTests.CommunicationOneOutLowerBound` to check it.
