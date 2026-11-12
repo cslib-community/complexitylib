@@ -36,6 +36,8 @@ count `f` with an FP threshold `k` and an amplified gap is turned into the path 
 
 * `Cslib.Complexity.SBP_subset_BPPpath`: SBP is contained in BPPpath.
 * `Cslib.Complexity.BPP_subset_BPPpath`, `Cslib.Complexity.BPPpath_subset_PP`.
+* `Cslib.Complexity.PolyTimeReducible.mem_BPPpath`: closure under polynomial-time many-one
+  reductions.
 
 ## References
 
@@ -100,5 +102,13 @@ theorem BPPpath_subset_PP : BPPpath enc ⊆ PP enc := by
   · have := hnot ha
     simp only [ha, false_iff]
     omega
+
+/-- Exact-count precomposition preserves both path counts. -/
+theorem PolyTimeReducible.mem_BPPpath {β : Type} {encB : β ↪ List Bool} {B : Set β}
+    (h : PolyTimeReducible enc encB A B) (hB : B ∈ BPPpath encB) : A ∈ BPPpath enc := by
+  obtain ⟨r, hr, hAB⟩ := h
+  obtain ⟨acc, hacc, rej, hrej, hB⟩ := hB
+  exact ⟨acc ∘ r, SharpP.comp_mem hacc hr, rej ∘ r, SharpP.comp_mem hrej hr, fun a => by
+    simpa only [Function.comp_apply, ← hAB a] using hB (r a)⟩
 
 end Cslib.Complexity
