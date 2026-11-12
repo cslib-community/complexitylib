@@ -4,20 +4,32 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
+module
+-- upstream: candidate
+
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Isolation
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RatPoly
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
+import Mathlib.Algebra.Polynomial.AlgebraMap
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Data.List.GetD
+import Mathlib.Tactic.ComputeDegree
 
 /-!
 # Real-root isolation and Mignotte separation tests
 
 Kernel-checked evaluations (`decide +kernel`, without `native_decide`) and nonvacuous
-theorem instantiations for the computable Sturm real-root isolator (`isolateRoots`,
-`isolateRootsM`, `isolatePolyRoots`), Hadamard's inequality (`Matrix.hadamard_det_sq_le`), and
-Mignotte-type root-separation bounds (`Polynomial.mignotte_sep_sqNorm_real`,
-`Polynomial.mignotte_sep_sqNorm_rat`).
+theorem instantiations for the computable Sturm real-root isolators (`isolateRoots`,
+`isolateRootsM`, `isolatePolyRoots`, and the end-to-end `TimeM ℕ`-charged `isolateRootsTotal`,
+`isolateRootsTotalM`, `isolatePolyRootsTotal`, `isolatePolyRootsTotalM` producing strictly disjoint
+closed intervals), coefficient bit-length bounds (`HasCoeffBitBound`, `coeffBitBound`), Hadamard's
+inequality (`Matrix.hadamard_det_sq_le`), and Mignotte-type root-separation bounds
+(`Polynomial.mignotte_sep_sqNorm_real`, `Polynomial.mignotte_sep_sqNorm_rat`).
 -/
+
+public section
 
 namespace CslibFrontierTests.RealRootIsolation
 
@@ -304,20 +316,20 @@ private theorem wilkCubicQ_natDegree : wilkCubicQ.natDegree = 3 := by
 
 private theorem wilkCubicQ_coeffsBelow :
     wilkCubicQ.coeffsBelow (wilkCubicQ.natDegree + 1) = [7, -7, 0, 1] := by
+  refine coeffsBelow_eq_of_ofCoeffList ?_ (by rw [wilkCubicQ_natDegree]; rfl)
   have hmap : wilkCubicQ = X ^ 3 - 7 * X + 7 := by
     simp only [wilkCubicQ, wilkCubicZ, Polynomial.map_add, Polynomial.map_sub,
       Polynomial.map_pow, Polynomial.map_X, Polynomial.map_mul, Polynomial.map_ofNat]
-  rw [wilkCubicQ_natDegree, hmap]
-  simp only [coeffsBelow, List.range_succ, List.range_zero, List.map_nil, List.map_cons,
-    List.nil_append, List.cons_append]
-  simp only [coeff_add, coeff_sub, coeff_X_pow, coeff_ofNat_mul, coeff_X, coeff_ofNat_zero]
-  norm_num
+  rw [hmap]
+  simp only [ofCoeffList_cons, ofCoeffList_nil, C_0, C_1, C_neg, mul_zero, add_zero, mul_one]
+  rw [← map_ofNat C 7]
+  ring
 
 example :
     let hsq : Squarefree wilkCubicQ :=
       PerfectField.separable_iff_squarefree.mp separable_wilkCubicQ
     have hlen : (isolatePolyRoots wilkCubicQ).length = 3 := by
-      rw [isolatePolyRoots, wilkCubicQ_coeffsBelow]
+      rw [isolatePolyRoots_eq, wilkCubicQ_coeffsBelow]
       decide +kernel
     let r₀ := (polyIsolatedRoot hsq ⟨0, by omega⟩).1
     let r₁ := (polyIsolatedRoot hsq ⟨1, by omega⟩).1
@@ -336,7 +348,7 @@ example :
       [{ lower := -9, upper := 0 },
        { lower := 9 / 8, upper := 27 / 16 },
        { lower := 27 / 16, upper := 9 / 4 }] := by
-    rw [isolatePolyRoots, wilkCubicQ_coeffsBelow]
+    rw [isolatePolyRoots_eq, wilkCubicQ_coeffsBelow]
     decide +kernel
   simp only [Fin.getElem_fin, hlist, List.getElem_cons_zero, List.getElem_cons_succ]
     at hmem0 hmem1 hmem2
@@ -356,5 +368,130 @@ example :
   exact ⟨by simpa only [Rat.cast_neg, Rat.cast_ofNat] using hmem0.1,
     by simpa only [Rat.cast_zero] using hmem0.2,
     hmem1.1, hmem1.2, hmem2.1, hmem2.2, h01, h12, hbij, htime.trans (by decide)⟩
+
+/-! ### End-to-end `TimeM ℕ`-charged disjoint isolation (`isolateRootsTotalM` / `isolateRootsTotal`)
+-/
+
+example :
+    isolateRootsTotal [] = [] ∧ (isolateRootsTotalM []).time = 2 ∧
+      isolateRootsTotal [5] = [] ∧ (isolateRootsTotalM [5]).time = 62 ∧
+      isolateRootsTotal [-3, 2] = [{ lower := -3, upper := 3 }] ∧
+      (isolateRootsTotalM [-3, 2]).time = 215 := by
+  decide +kernel
+
+-- `x^2 - 2`: `isolateRoots` returned `[-4, 0]` and `[0, 4]` touching at `0`, whereas
+-- `isolateRootsTotal` separates them into strictly disjoint closed intervals `[-4, -1]` and
+-- `[0, 4]` (`-1 < 0`), charging all preprocessing, bisection, refinement, and separation (`627`).
+example :
+    isolateRootsTotal [-2, 0, 1] =
+        [{ lower := -4, upper := -1 }, { lower := 0, upper := 4 }] ∧
+      (isolateRootsTotalM [-2, 0, 1]).time = 627 ∧
+      coeffBitBound [-2, 0, 1] = 2 ∧
+      isolateRootsTotal [0, -1, 1] =
+        [{ lower := 0, upper := 0 }, { lower := 3 / 4, upper := 3 / 2 }] ∧
+      (isolateRootsTotalM [0, -1, 1]).time = 610 := by
+  decide +kernel
+
+-- `x^3 - 7x + 7` and `(x - 1)(x - 2)(x - 3)`: adjacent intervals touching at non-root dyadic
+-- midpoints are separated (`45/32 < 27/16`, `39/32 < 13/8`, `65/32 < 39/16`).
+example :
+    isolateRootsTotal [7, -7, 0, 1] =
+        [{ lower := -9, upper := 0 },
+         { lower := 9 / 8, upper := 45 / 32 },
+         { lower := 27 / 16, upper := 9 / 4 }] ∧
+      (isolateRootsTotalM [7, -7, 0, 1]).time = 1102 ∧
+      coeffBitBound [7, -7, 0, 1] = 3 ∧
+      isolateRootsTotal [-6, 11, -6, 1] =
+        [{ lower := 0, upper := 39 / 32 },
+         { lower := 13 / 8, upper := 65 / 32 },
+         { lower := 39 / 16, upper := 13 / 4 }] ∧
+      (isolateRootsTotalM [-6, 11, -6, 1]).time = 1373 ∧
+      isolateRootsTotal [2, -2, -1, 1] =
+        [{ lower := -4, upper := 0 },
+         { lower := 1, upper := 1 },
+         { lower := 5 / 4, upper := 3 / 2 }] ∧
+      (isolateRootsTotalM [2, -2, -1, 1]).time = 1026 := by
+  decide +kernel
+
+/-- Full end-to-end specification `isolateRootsTotal_spec_of_eq`, `totalIsolatedRoot`,
+disjointness, dyadic endpoint bit bounds, and bit-parameterized `TimeM ℕ` cost bound on
+`x^2 - 2`. -/
+theorem isolateRootsTotal_sqSubTwo_spec :
+    (isolateRootsTotal [(-2 : ℚ), 0, 1]).Pairwise (fun J₁ J₂ => J₁.upper < J₂.lower) ∧
+      (isolateRootsTotal [(-2 : ℚ), 0, 1]).Pairwise
+        (Function.onFun Disjoint fun J => Set.Icc (J.lower : ℝ) (J.upper : ℝ)) ∧
+      (∃ f : Fin (isolateRootsTotal [(-2 : ℚ), 0, 1]).length →
+          {x : ℝ // Polynomial.aeval x (X ^ 2 - (2 : ℚ[X])) = 0},
+        Function.Bijective f ∧ StrictMono (fun i => (f i).1)) ∧
+      mignotteBisectionDepth [(-2 : ℚ), 0, 1] ≤ 5 ^ 2 * 4 ∧
+      (isolateRootsTotalM [(-2 : ℚ), 0, 1]).time ≤ 84 * 5 ^ 5 * 4 := by
+  have hB : HasCoeffBitBound 2 [(-2 : ℚ), 0, 1] := by
+    have hcb : coeffBitBound [(-2 : ℚ), 0, 1] = 2 := by decide +kernel
+    exact hcb ▸ hasCoeffBitBound_coeffBitBound [(-2 : ℚ), 0, 1]
+  have hsq_poly : Squarefree (X ^ 2 - (2 : ℚ[X])) := ofCoeffList_sqSubTwo ▸ squarefree_sqSubTwo
+  have hspec := isolateRootsTotal_spec_of_eq ofCoeffList_sqSubTwo hsq_poly hB
+  obtain ⟨_, hpw_lt, hpw_disj, ⟨f, hf_bij, hf_mono, _⟩, _, htime⟩ := hspec
+  have hmig := mignotteBisectionDepth_le_of_bitBound hB
+  exact ⟨hpw_lt, hpw_disj, ⟨f, hf_bij, hf_mono⟩, hmig, htime⟩
+
+-- `Polynomial ℚ` wrapper `isolatePolyRootsTotal`, `polyTotalIsolatedRoot`, disjointness, and
+-- bit-parameterized `TimeM ℕ` / endpoint bounds on `wilkCubicQ = x^3 - 7x + 7`.
+example :
+    let hsq : Squarefree wilkCubicQ :=
+      PerfectField.separable_iff_squarefree.mp separable_wilkCubicQ
+    have hlen : (isolatePolyRootsTotal wilkCubicQ).length = 3 := by
+      rw [isolatePolyRootsTotal_eq, wilkCubicQ_coeffsBelow]
+      decide +kernel
+    let r₀ := (polyTotalIsolatedRoot hsq ⟨0, by omega⟩).1
+    let r₁ := (polyTotalIsolatedRoot hsq ⟨1, by omega⟩).1
+    let r₂ := (polyTotalIsolatedRoot hsq ⟨2, by omega⟩).1
+    r₀ ∈ Set.Icc (-9 : ℝ) (0 : ℝ) ∧
+      r₁ ∈ Set.Icc ((9 / 8 : ℚ) : ℝ) ((45 / 32 : ℚ) : ℝ) ∧
+      r₂ ∈ Set.Icc ((27 / 16 : ℚ) : ℝ) ((9 / 4 : ℚ) : ℝ) ∧
+      r₀ < r₁ ∧ r₁ < r₂ ∧
+      (isolatePolyRootsTotal wilkCubicQ).Pairwise
+        (Function.onFun Disjoint fun J => Set.Icc (J.lower : ℝ) (J.upper : ℝ)) ∧
+      Function.Bijective (polyTotalIsolatedRoot hsq) ∧
+      (isolatePolyRootsTotalM wilkCubicQ).time ≤ 84 * 6 ^ 5 * 5 := by
+  intro hsq hlen r₀ r₁ r₂
+  have hmem0 := polyTotalIsolatedRoot_mem hsq ⟨0, by omega⟩
+  have hmem1 := polyTotalIsolatedRoot_mem hsq ⟨1, by omega⟩
+  have hmem2 := polyTotalIsolatedRoot_mem hsq ⟨2, by omega⟩
+  have hlist : isolatePolyRootsTotal wilkCubicQ =
+      [{ lower := -9, upper := 0 },
+       { lower := 9 / 8, upper := 45 / 32 },
+       { lower := 27 / 16, upper := 9 / 4 }] := by
+    rw [isolatePolyRootsTotal_eq, wilkCubicQ_coeffsBelow]
+    decide +kernel
+  simp only [Fin.getElem_fin, hlist, List.getElem_cons_zero, List.getElem_cons_succ]
+    at hmem0 hmem1 hmem2
+  have h01 : r₀ < r₁ :=
+    polyTotalIsolatedRoot_strictMono hsq (by decide : (⟨0, by omega⟩ : Fin _) < ⟨1, by omega⟩)
+  have h12 : r₁ < r₂ :=
+    polyTotalIsolatedRoot_strictMono hsq (by decide : (⟨1, by omega⟩ : Fin _) < ⟨2, by omega⟩)
+  have hB : ∀ i ≤ wilkCubicQ.natDegree,
+      Int.natAbs (wilkCubicQ.coeff i).num ≤ 2 ^ 3 ∧ (wilkCubicQ.coeff i).den ≤ 2 ^ 3 := by
+    have hcb_list : HasCoeffBitBound 3 [7, -7, 0, 1] := by
+      have hc : coeffBitBound [(7 : ℚ), -7, 0, 1] = 3 := by decide +kernel
+      exact hc ▸ hasCoeffBitBound_coeffBitBound [(7 : ℚ), -7, 0, 1]
+    have hpoly_eq : ofCoeffList [(7 : ℚ), -7, 0, 1] = wilkCubicQ := by
+      have h1 := Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self wilkCubicQ.natDegree)
+      rwa [wilkCubicQ_coeffsBelow] at h1
+    intro i hi
+    rw [wilkCubicQ_natDegree] at hi
+    rw [← hpoly_eq, Polynomial.coeff_ofCoeffList]
+    have hmem : ([(7 : ℚ), -7, 0, 1].getD i 0) ∈ [(7 : ℚ), -7, 0, 1] := by
+      have hi4 : i < [(7 : ℚ), -7, 0, 1].length := by
+        simp only [List.length_cons, List.length_nil]
+        omega
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi4, Option.getD_some]
+      exact List.getElem_mem hi4
+    exact hcb_list _ hmem
+  have htime := isolatePolyRootsTotalM_time_le_of_bitBound hsq hB
+  rw [wilkCubicQ_natDegree] at htime
+  have hmem0' : r₀ ∈ Set.Icc (-9 : ℝ) (0 : ℝ) := by
+    simpa only [Rat.cast_neg, Rat.cast_ofNat, Rat.cast_zero] using hmem0
+  exact ⟨hmem0', hmem1, hmem2, h01, h12, isolatePolyRootsTotal_pairwise_disjoint hsq,
+    isolatePolyRootsTotal_bijective hsq, htime⟩
 
 end CslibFrontierTests.RealRootIsolation

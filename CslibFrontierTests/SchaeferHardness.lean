@@ -34,7 +34,7 @@ example (encUnit : Unit ↪ List Bool) :
     NPComplete (encCSP encUnit encNat) (CSPSAT naeArity naeSem) :=
   CSPSAT.npComplete_of_not_hasSchaeferPolymorphism encUnit naeArity naeSem nae_missing
 
-example : SelfDualThreeSAT.sem (true, false, true) [true, false, false, false] = true := by
+example : SelfDualThreeSAT.sem ⟨true, false, true⟩ [true, false, false, false] = true := by
   decide
 
 example : (SelfDualThreeSAT.ofExactThreeSAT [[(2 ^ 80, true), (2 ^ 80, true),
@@ -53,5 +53,15 @@ example : SelfDualThreeSAT.ofExactThreeSAT
 example : SelfDualThreeSAT.ofExactThreeSAT [] ∈ SelfDualThreeSAT := by
   rw [SelfDualThreeSAT.ofExactThreeSAT_mem_iff]
   exact ⟨by simp, fun _ => false, rfl⟩
+
+example {s₁ s₂ : SelfDualThreeSAT.SignPattern} (h₁ : s₁.first = s₂.first)
+    (h₂ : s₁.second = s₂.second) (h₃ : s₁.third = s₂.third) : s₁ = s₂ :=
+  SelfDualThreeSAT.SignPattern.ext h₁ h₂ h₃
+
+example : ComputableInPolyTime
+    (fun s : SelfDualThreeSAT.SignPattern =>
+      SelfDualThreeSAT.SignPattern.mk s.first s.second s.third)
+    SelfDualThreeSAT.encSign SelfDualThreeSAT.encSign := by
+  fun_prop
 
 end CslibFrontierTests.SchaeferHardness

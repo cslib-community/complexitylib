@@ -71,6 +71,10 @@ The [model-count API](../../CslibFrontier/Logics/Propositional/DNF/ModelCount.le
 
 [`SelfReducible.isPPTOn_sampler`](../../CslibFrontier/Computability/Complexity/Classes/FPAUS/OfFPRAS.lean) (`import CslibFrontier.Computability.Complexity.Classes.FPAUS.OfFPRAS`) certifies the sampler as strict PPT on `(x, q)` when the counter is strict PPT on `(y, p, t)`. With the output law this gives `isFPAUS_of_isFPRAS`, the class inclusion `mem_FPAUS_of_mem_FPRAS`, and with the forward direction `mem_FPAUS_iff_mem_FPRAS`: sampling and counting are equivalent for one-bit self-reducible families. The recursive walk is run as a bounded loop of `len x` steps (`IsPPTOn.iterateWith_spec'`). Its state is the current node, its estimate in binary, the reversed path, and a running flag; a rejected walk stops and keeps its state. The invariant says the node is no longer than `x`, at most `i` bits are recorded after `i` steps, and the estimate is the root estimate or one returned at a node no longer than `x`. The counter's output-length bound (`IsPPTOn.length_le`) then bounds every state. The branching coin samples `coinWidth` fair bits with `isPPTOn_sampleBinaryNat` and compares them with thresholds computed in binary. The trials use the generic rule [`IsPPTOn.retry`](../../CslibFrontier/Computability/Probabilistic/Retry.lean) (bounded retries of a strict PPT program with a polynomial-time test and unary fuel; registered with `@[program_certificate]`). The [checked examples](../../CslibFrontierTests/SamplingCounting.lean) instantiate the output law with the exact counter and with the FPRAS obtained from the exact sampler, and cover the dead instance, the acceptance bound, good and bad estimates, the branching coin, and a counter that misses the accuracy hypothesis. They also certify the exact counter as strict PPT, instantiate `isFPAUS_of_isFPRAS`, the round trip through both reductions and the equivalence, and show that a strict PPT counter can still fail `IsFPRAS`.
 
+When an exact witness counter `count z = |W z|` (on instances with `|enc z| ≤ |enc x|`) is available, [`FPAUS/ExactSampler.lean`](../../CslibFrontier/Computability/Complexity/Classes/FPAUS/ExactSampler.lean) (`import CslibFrontier.Computability.Complexity.Classes.FPAUS.ExactSampler`) avoids damped retries altogether. `SelfReducible.exactSample` queries `count x` once at the root (returning `none` when `count x = 0`) and queries only `count (R.child y true)` at each positive-length node, deducing `|W (R.child y false)| = c - c₁` from `SelfReducible.card_eq_add` and branching on an exact uniform draw in `Fin c`. By `SelfReducible.exactSample_eq_uniformWitness`, its output `PMF` equals `uniformWitness (W x)` identically (`CloseTo ... 0`), using at most `1 + R.len x` counter evaluations all on instances no longer than `x` (`length_exactSampleQueries_le`, `mem_exactSampleQueries_length_le`). Because `SelfReducible.card_le_two_pow_len` gives `|W y| ≤ 2 ^ R.len y`, drawing each index with the discrete-distribution-generating tree `Probability.uniformFinTree n` (exactly uniform by `uniformFinTree_generates`, at most `2 * ⌈log₂ n⌉` expected flips by `expectedFlips_uniformFinTree_le`) consumes at most `R.len x * (R.len x + 1)` expected fair flips in total (`0` when `W x = ∅`, `exactSampleExpectedBits_le`).
+
+For strict native PPT and oracle-PPT execution (where coin budgets are worst-case polynomial rather than unbounded Las Vegas), `sampleFinBounded c fuel` caps binary rejection sampling at `fuel` trials of `sampleBinaryNat c.size` (consuming at most `2 * c.size` expected fair coins via `expectedCost_sampleFinBounded_le`). Running `R.len x` steps with `fuel = q + R.len x` (`SelfReducible.boundedConditionalSample`) keeps the counter budget at `1 + R.len x` (independent of `q`), achieves total-variation distance at most `(1 / 2) ^ q` (`closeTo_boundedConditionalSample`), certifies `IsPPTOn` and `IsFPAUS` when `count` is polynomial-time (`isPPTOn_boundedConditionalSample`, `isFPAUS_boundedConditionalSample`), and lifts to `IsOraclePPTOn` when `count` is `ComputableInPolyTimeWithOracle` (`isOraclePPTOn_boundedConditionalOracleSample`, `exists_oraclePPTSampler_of_oracle_count`). [Checked examples](../../CslibFrontierTests/ThresholdSearchAndExactSampler.lean) cover a non-dyadic (`|W| = 3`) witness family, dead branches, zero-length witnesses, `IsFPAUS`, and the oracle lift.
+
 Counting arguments for matchings and permanents can use the deterministic upper bound [Bregman.lean](../../CslibFrontier/Foundations/Combinatorics/Bregman.lean) (`import CslibFrontier.Foundations.Combinatorics.Bregman`), which proves Brégman's theorem (Minc's conjecture) [bregman73][bregman73]. For a 0/1 matrix `A : Matrix n n ℕ` (every entry at most `1`) with row sums `r i`, `Matrix.permanent_le_prod_factorial_rpow` gives `per A ≤ ∏ i, (r i)! ^ (1 / r i)` in `ℝ`. `Matrix.permanent_le_factorial_rpow_card_div` is the `d`-regular form `per A ≤ d! ^ (n / d)`. A zero row contributes `0! ^ (1 / 0) = 1` under Mathlib's `Real.rpow` convention, and the permanent is then `0`, so there are no positivity hypotheses. The underlying statement `Equiv.card_filter_forall_rel_le_prod_factorial_rpow` counts the bijections `e : α ≃ β` with `R a (e a)` for all `a`. These are the perfect matchings of the bipartite graph `R` (the witnesses of `Cslib.Circuits.BipartiteMatching.HasPerfectMatching` when `α = β`), and `d a = #{b | R a b}` is the left degree. Equality holds for disjoint unions of complete bipartite graphs `K_{d,d}` (`Equiv.card_filter_forall_eq_eq_prod_factorial_rpow`, `Matrix.permanent_eq_prod_factorial_rpow_of_eq_ite`). The proof follows Schrijver's induction on `n` [schrijver78][schrijver78]. It uses the convexity inequality `Real.sum_mul_log_div_card_le` from [LogSum.lean](../../CslibFrontier/Foundations/Analysis/SpecialFunctions/LogSum.lean), not the entropy proof of [radhakrishnan97][radhakrishnan97]. `Matrix.permanent_eq_card_filter_of_le_one`, in [Permanent/ZeroOne.lean](../../CslibFrontier/Foundations/Data/Matrix/Permanent/ZeroOne.lean), identifies the permanent of a 0/1 matrix with this count. Only 0/1 matrices are covered. Extensions of the bound to nonnegative real matrices, the van der Waerden lower bound and the Kahn–Lovász bound for general graphs are not formalized. The [checked examples](../../CslibFrontierTests/Bregman.lean) evaluate `per J₃ = 6` (equality), a `2 × 2` matrix with `1 < √2`, a zero row, the block matrix `K_{2,2} ⊕ K_{1,1}` (equality) and a `2`-regular `4 × 4` instance.
 
 ## Efficient oracle programs
@@ -119,6 +123,40 @@ Kadin's `PH = P^{NP[O(log n)]}` for a sparse Turing-complete `S ∈ NP`. Kadin's
 [checked client](../../CslibFrontierTests/PHOracleNP.lean) certifies the empty transcript, rejects an
 uncertified `true` reply for the empty oracle, and places an `NP` problem and its complement in
 `Σ₂ ∩ Π₂`.
+
+For integer threshold optimization and witness recovery via adaptive oracle queries, import
+[`Classes.Oracle.ThresholdSearch`](../../CslibFrontier/Computability/Complexity/Classes/Oracle/ThresholdSearch.lean).
+`MaxThresholdSpec` and `MinThresholdSpec` bisect over `[0, bound x]` via
+`Cslib.Algorithms.Lean.lowerBoundM` in `TimeM` (`maxOptWitnessM_spec`, `minOptWitnessM_spec`),
+returning `none` when no valid witness exists and otherwise an optimal value and witness in at most
+`Nat.log 2 (bound x + 1) + 1` threshold probes plus one witness-finder call. In the native oracle
+model, `bisectProgram` iterates `bisectStepProgram` for `(hi x - lo x).size` rounds (`IsOraclePPTOn`
+via `ComputableInPolyTime.binary_size`, so exponentially large binary bounds `hi x` are supported),
+agrees with `lowerBoundM` (`iterate_bisectStep_eq_lowerBoundM`), makes at most
+`(hi x - lo x).size ≤ Nat.log 2 (hi x - lo x) + 1` requests all in `[lo x, hi x)`
+(`computableInPolyTimeWithOracleQueries_bisect`), and sequences with a witness-recovery stage via
+`ComputableInPolyTimeWithOracleQueries.bind_with`.
+
+As a worked `NP`-oracle client,
+`MaxSATThreshold` (`MaxSATQuery` with `encMaxSATQuery`) lies in `NP` (`MaxSAT.mem_NP_threshold`),
+and `MaxSAT.solveMaxSAT` recovers both `MaxSAT.maxClauseScore φ` and an optimal assignment
+(`MaxSAT.solveMaxSAT_spec`) in at most `φ.length.size + φ.numVars` queries of encoded length at
+most `(encMaxSATQuery ⟨φ, φ.length⟩).length` by partially evaluating `φ` over `φ.distinctVars`
+(`applyPartial`), collapsing to plain `ComputableInPolyTime` when `MaxSATThreshold ∈ P`
+(`computableInPolyTime_solveMaxSAT_of_mem_P`).
+This is a `P^NP` formulation on bare `CNF ℕ` with binary targets and the `NP` language itself as
+oracle. [`FineGrained/MaxSAT/Reduction.lean`](../../CslibFrontier/Computability/Complexity/FineGrained/MaxSAT/Reduction.lean)
+instead fixes a declared variable count (`MaxSAT.StructInstance`), takes unary cutoffs
+(`MaxSAT.ThresholdQuery`), and compiles each query through `MaxSAT.thresholdCircuit` to a 3-CNF for
+a supplied fixed-width `k`-SAT solver. The optima agree: `MaxSAT.maxClauseScore_eq_optimum` gives
+`maxClauseScore φ = MaxSAT.optimum (n, φ)` whenever every variable of `φ` is below `n`.
+Unweighted `MaxSAT` clauses have unit weight; general integer-weighted objectives instantiate
+`MaxThresholdSpec` / `MinThresholdSpec` and `computableInPolyTimeWithOracleQueries_bisect` directly.
+The [checked examples](../../CslibFrontierTests/ThresholdSearchAndExactSampler.lean) exercise
+feasible, zero-cost, and infeasible `TimeM` specs, exponential-range `[0, 2 ^ n)` oracle bisection,
+and `solveMaxSAT` on an unsatisfiable 4-clause 2-CNF, the empty formula, and gapped variable labels.
+[Bridge examples](../../CslibFrontierTests/MaxSATThresholdBridge.lean) check
+`maxClauseScore_eq_optimum` and show the declared-range hypothesis cannot be dropped.
 
 ## MA and AM
 

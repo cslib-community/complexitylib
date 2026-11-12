@@ -334,7 +334,22 @@ class RatchetTests(unittest.TestCase):
             self.assertNotIn(name, out)
         self.assertIn("0 repeated compound encoding(s) in 0 of 1 checked module(s), and 2 local "
                       "notation(s)", out)
-        self.assertEqual(self.run_main({}, "--all")[0], 0)  # notations never fail the check
+        code, _, err = self.run_main({}, "--all")
+        self.assertEqual(code, 1)
+        self.assertIn('AGENTS.md, "Encodings in statements", rule 3', err)
+        self.assertIn(f'CslibFrontier/Area/A.lean:9: local notation "encX" => {TERM}', err)
+        self.assertIn('CslibFrontier/Area/A.lean:17: local notation "encV" e => '
+                      "encPair e (encOption encBool)", err)
+        for name in ("encY", "encZ", "encW"):
+            self.assertNotIn(name, err)
+        # `--update-baseline` (even with `--allow-increase`) refuses compound-encoding local
+        # notations and never records them in the baseline.
+        for extra in ((), ("--allow-increase",)):
+            with self.subTest(extra=extra):
+                code, _, err = self.run_main({}, "--update-baseline", *extra)
+                self.assertEqual(code, 1)
+                self.assertIn('AGENTS.md, "Encodings in statements", rule 3', err)
+                self.assertEqual(json.loads(self.baseline.read_text()), {})
 
     def test_list_combines_with_no_other_mode(self) -> None:
         for flags in (("--all",), ("--report",), ("--base", "origin/main"), ("--update-baseline",),
@@ -428,6 +443,42 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(json.loads(self.baseline.read_text()),
                          {"CslibFrontier/Other/B.lean": {TERM: 3}})
         self.assertEqual(self.run_main()[0], 0)
+
+    def test_compound_local_notations_enforced_in_scope_and_reported_in_report_mode(self) -> None:
+        # A compound-encoding `local notation` in a changed module fails `--base`, while `--report`
+        # prints it and still exits 0.
+        module = self.root / "CslibFrontier/Area/A.lean"
+        module.write_text(module.read_text() + f'\nlocal notation "encX" => {self.OTHER}\n')
+        code, _, err = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn('AGENTS.md, "Encodings in statements", rule 3', err)
+        self.assertIn(f'CslibFrontier/Area/A.lean:21: local notation "encX" => {self.OTHER}', err)
+        code, out, err = self.run_main("--report")
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn(f'CslibFrontier/Area/A.lean:21: local notation "encX" => {self.OTHER}', out)
+        self.assertIn("1 local notation(s) that abbreviate a compound encoding; report only", out)
+
+    def test_unchanged_module_local_notation_is_only_reported_under_base(self) -> None:
+        other = self.root / "CslibFrontier/Other/B.lean"
+        other.write_text(HEADER + f'local notation "encX" => {self.OTHER}\n')
+        del self.entries["CslibFrontier/Other/B.lean"]
+        self.baseline.write_text(json.dumps(self.entries))
+        subprocess.run(["git", "add", "."], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-qm", "base-with-notation"], cwd=self.root, check=True,
+                       capture_output=True)
+        subprocess.run(["git", "update-ref", "refs/remotes/origin/main", "HEAD"], cwd=self.root,
+                       check=True, capture_output=True)
+        self.write("CslibFrontier/Area/C.lean", "a")
+        code, out, err = self.run_main()
+        self.assertEqual((code, err), (0, ""))
+        self.assertIn("Not enforced: 1 compound-encoding local notation(s)", out)
+        self.assertEqual(self.run_main("--all")[0], 1)
+        # `--update-baseline` on the changed module succeeds and does not record the notation.
+        code, _, _ = self.run_main("--update-baseline")
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(self.baseline.read_text()),
+                         {"CslibFrontier/Area/A.lean": {TERM: 3}})
+
 
 if __name__ == "__main__":
     unittest.main()

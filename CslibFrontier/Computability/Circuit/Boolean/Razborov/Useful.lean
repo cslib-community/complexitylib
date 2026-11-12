@@ -39,9 +39,11 @@ threshold `C(n, a) / 2`, the level above), described in
 De Morgan circuits of size `173 · 8 ^ n`), not the `NC²` of the sources; depth is not certified.
 Only `p = 2` is covered. The constants are this library's.
 
-The learning consequences, Theorem 5.1 in class form and Corollary 5.4 of
-[Carmosino et al.][CarmosinoImpagliazzoKabanetsKolokolova2016], are milestone M6.8b of
-[#4451](https://github.com/cslib-community/cslib-frontier/issues/4451) and remain open.
+The learning consequence for `p = 2`, Corollary 5.4 of
+[Carmosino et al.][CarmosinoImpagliazzoKabanetsKolokolova2016] with queries and hypothesis size
+counted, is `CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod`. Their Theorem 5.1 in its
+abstract form, from any natural property useful against a class, stays open under
+[#798](https://github.com/cslib-community/cslib-frontier/issues/798).
 
 ## Main definitions
 
