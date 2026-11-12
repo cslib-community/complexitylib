@@ -661,6 +661,11 @@ E. N. Gilbert and H. O. Pollak. *Steiner Minimal Trees*. SIAM Journal on Applied
 
 Shafi Goldwasser, Yael Tauman Kalai and Guy N. Rothblum. *Delegating Computation: Interactive Proofs for Muggles*. JACM 62(4), article 27, 2015. https://doi.org/10.1145/2699436 .
 
+<a id="gkst06"></a>
+## gkst06
+
+Oded Goldreich, Howard Karloff, Leonard J. Schulman and Luca Trevisan. "Lower Bounds for Linear Locally Decodable Codes and Private Information Retrieval." *Computational Complexity* 15(3), 263–296, 2006. https://doi.org/10.1007/s00037-006-0216-3 ; full preliminary version: Electronic Colloquium on Computational Complexity (ECCC), Report TR01-080, 2001, https://eccc.weizmann.ac.il/report/2001/080/ . Checked on 2026-11-12 against the ECCC TR01-080 report PDF (Section 1.2 Definition 1.7 on p. 4, Section 2.1 Definition 2.1 on p. 6, Section 5.1 Lemma 5.1 on pp. 14–15, and Section 7.1 Lemma 7.1 on pp. 19–20); journal volume, issue, pages and DOI verified against bibliographic metadata.
+
 <a id="gkwy20"></a>
 ## gkwy20
 
@@ -971,6 +976,11 @@ Tadao Kasami. *An Efficient Recognition and Syntax-Analysis Algorithm for Contex
 ## katzlindell20
 
 Jonathan Katz and Yehuda Lindell. *Introduction to Modern Cryptography*, 3rd edition. CRC Press, 2020. Bibliographic metadata and section titles checked against the authors' 3rd-edition table of contents and preface: https://www.cs.umd.edu/~jkatz/imc/toc-preface-3rd.pdf (Sections 9.2.3–9.2.4 on the factoring and RSA assumptions; Section 15.1.1 on trapdoor permutations; Section 15.2 on Paillier encryption; Sections 15.4.1–15.4.3 on quadratic residues and the quadratic residuosity assumption; and Sections 15.5.1–15.5.2 on modular square roots and the Rabin trapdoor permutation). Detailed numbered locators (Definitions, Claims, Propositions, Lemmas, Constructions, Examples, Exercises, and Theorems) remain attributed to the Lean source docstrings, as the textbook body was not independently audited; the Lean modules adapt the parameter generators, RSA challenge domain, Rabin sampling distribution, and the Paillier encryption-randomness sampler (dyadic sampling with `unitOrOne` in place of uniform `ℤ_N^*`) as documented in their module docstrings and implementation notes.
+
+<a id="kdw04"></a>
+## kdw04
+
+Iordanis Kerenidis and Ronald de Wolf. "Exponential Lower Bound for 2-Query Locally Decodable Codes via a Quantum Argument." *Journal of Computer and System Sciences* 69(3), 395–420, 2004. https://doi.org/10.1016/j.jcss.2004.04.007 ; arXiv text https://arxiv.org/abs/quant-ph/0208062v2 . Checked on 2026-11-12 against `arXiv:quant-ph/0208062v2` (Section 2.2 Definition 3, Section 4 Theorem 9, and Appendix B Lemma 3 on p. 16); journal metadata from DOI record.
 
 <a id="khot10"></a>
 ## khot10
