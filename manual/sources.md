@@ -486,6 +486,10 @@ Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, M
 
 Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
 
+<a id="desimone90"></a>
+## desimone90
+
+Caterina De Simone. "The cut polytope and the boolean quadric polytope." *Discrete Mathematics* 79(1), 71–75, 1990. https://doi.org/10.1016/0012-365X(90)90056-N . Bibliographic metadata checked via search summaries on 2026-11-11 UTC; the primary paper was not inspected and no locator in it is cited. Cited alongside [fmptw15](#fmptw15), Theorem 5, for the linear isomorphism between `CUT(n + 1)` and `CORR(n)`.
 <a id="datar04"></a>
 ## datar04
 
@@ -604,7 +608,7 @@ Zhiyuan Fan, Jiatu Li, and Tianqi Yang. *The Exact Complexity of Pseudorandom Fu
 <a id="fmptw15"></a>
 ## fmptw15
 
-Samuel Fiorini, Serge Massar, Sebastian Pokutta, Hans Raj Tiwary and Ronald de Wolf. *Exponential Lower Bounds for Polytopes in Combinatorial Optimization*. Journal of the ACM 62(2), 1–23, 2015. https://doi.org/10.1145/2716307 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. Locators checked against arXiv:1111.0837v4 (23 Dec 2013), https://arxiv.org/abs/1111.0837 , on 2026-11-08 UTC: definition (1) of an extended formulation (EF) and its size (Section 1), the slack matrix and extension complexity (Section 3), Lemma 2, Theorem 3 (the factorization theorem, `dim P ≥ 1`) and Theorem 4 (the rectangle covering bound, attributed to [yannakakis91](#yannakakis91)) in Section 3.1. The journal version's numbering was not checked.
+Samuel Fiorini, Serge Massar, Sebastian Pokutta, Hans Raj Tiwary and Ronald de Wolf. *Exponential Lower Bounds for Polytopes in Combinatorial Optimization*. Journal of the ACM 62(2), 1–23, 2015. https://doi.org/10.1145/2716307 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. Locators checked against arXiv:1111.0837v4 (23 Dec 2013), https://arxiv.org/abs/1111.0837 , on 2026-11-08 UTC: definition (1) of an extended formulation (EF) and its size (Section 1), the slack matrix and extension complexity (Section 3), Lemma 2, Theorem 3 (the factorization theorem, `dim P ≥ 1`) and Theorem 4 (the rectangle covering bound, attributed to [yannakakis91](#yannakakis91)) in Section 3.1. Checked against the same arXiv v4 text on 2026-11-11 UTC: Section 3.2 (Theorems 5 and 7, Lemma 6 on `COR(n)` and `CUT(n + 1)`), Section 3.3 (Lemmas 8 and 9, Theorem 10 on `STAB(G_n)`), and Section 3.4 (Lemma 11, Theorem 12 on `TSP(n)`). The journal version's numbering was not checked.
 
 <a id="fnw78"></a>
 ## fnw78
@@ -951,6 +955,11 @@ Jake Januzelli, Mike Rosulek, Lawrence Roy. "Lower Bounds for Garbled Circuits f
 ## kabanetscai2000
 
 Valentine Kabanets and Jin-Yi Cai. *Circuit Minimization Problem*. STOC 2000, 73–79. https://doi.org/10.1145/335305.335314 . Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The theorem number of the one-way-function consequence is unverified.
+
+<a id="kaibelweltge15"></a>
+## kaibelweltge15
+
+Volker Kaibel and Stefan Weltge. "A Short Proof that the Extension Complexity of the Correlation Polytope Grows Exponentially." *Discrete & Computational Geometry* 53(2), 397–401, 2015. https://doi.org/10.1007/s00454-014-9655-9 ; arXiv:1307.3543, https://arxiv.org/abs/1307.3543 . Checked against arXiv:1307.3543v6 (25 Feb 2016) on 2026-11-11 UTC: Section 2 (valid subsets of `D(n)`, Lemma 1 for the valid face `F_a`, Lemma 2 for the covering of `D(n)` of size `f`, Theorem 1 proving `xc(CORR(n)) ≥ 1.5^n` via `̺(n) ≤ 2^n`) and Section 3 (the rectangle covering number of `UDISJ(n)` and nondeterministic communication lower bound `log₂(1.5^n)`). Journal pagination was taken from bibliographic search records.
 
 <a id="kargerstein96"></a>
 ## kargerstein96
