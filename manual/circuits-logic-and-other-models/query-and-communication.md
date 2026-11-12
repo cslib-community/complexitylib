@@ -205,10 +205,28 @@ The [agreement client](../../CslibFrontierTests/CircuitAgreement.lean) evaluates
 `agreement 2` on the first-bit function of two bits and applies both corollaries to it. Run
 `scripts/build.sh CslibFrontierTests.CircuitAgreement` to check it.
 
-This covers submission 865 through Corollary 1.4: the upper bound, Lemma 5.2, Theorems 1.1
-and 1.2, and Corollaries 1.3 and 1.4. Theorem 1.5 and the composition/core results
-(Theorems 1.6–1.8) remain open in
-[#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
+[AgreementTwo](../../CslibFrontier/Computability/Circuit/Boolean/AgreementTwo.lean) proves
+Theorem 1.5, which has explicit constants and needs no communication: if
+`|f⁻¹(0)|, |f⁻¹(1)| ≥ 2`, then `D(f) ≤ D(Agr₂(f)) + ⌈log₂ n⌉ + 1`
+(`partialFormulaDepth_le_agreement_two`) and `L(f) ≤ 2 n L(Agr₂(f))`
+(`partialFormulaSize_le_agreement_two`). `partialFormulaSize` is the least `leafSize` of a formula
+computing a partial function; on total functions it equals `formulaSize`.
+Both bounds come from `exists_computesPartial_of_agreement_two`. It turns any formula `H` for
+`agreement 2 f`, of depth `d` with `ℓ` leaves, into a formula for `f` of depth at most
+`d + ⌈log₂ n⌉ + 1` with at most `2 n ℓ` leaves. The proof runs the greedy halving cover
+`Finset.exists_cover_zero_or_one` from
+[Combinatorics/HalvingCover](../../CslibFrontier/Foundations/Combinatorics/HalvingCover.lean)
+on one representative per distinct row and column of `H`. It bounds the number of distinct rows
+with `Formula.card_image_eval_piecewise_le` from
+[Formula/RestrictionCount](../../CslibFrontier/Computability/Circuit/Formula/RestrictionCount.lean),
+and substitutes a fixed block with `Formula.depthWith_bind_le`. The
+[two-instance client](../../CslibFrontierTests/CircuitAgreementTwo.lean) applies both bounds to
+the first-bit function of two bits and runs the halving cover on an identity matrix. Run
+`scripts/build.sh CslibFrontierTests.CircuitAgreementTwo` to check it.
+
+This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
+and 1.5, and Corollaries 1.3 and 1.4. The composition/core results (Theorems 1.6–1.8) remain
+open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
 
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).
 

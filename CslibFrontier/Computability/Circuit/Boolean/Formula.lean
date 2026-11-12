@@ -311,6 +311,18 @@ def literal (z : BitString n) (i : Fin n) : Formula signature n :=
   unfold literal
   split <;> simp
 
+/-- A balanced conjunction has at most the leaves of its conjuncts. -/
+theorem leafSize_andList_le (l : List (Formula signature n)) :
+    (andList l).leafSize ≤ (l.map leafSize).sum := by
+  rcases eq_or_ne l [] with rfl | hl
+  · simp
+  · exact (leafSize_balanced _ hl).le
+
+/-- A literal has one leaf. -/
+@[simp] theorem leafSize_literal (z : BitString n) (i : Fin n) : (literal z i).leafSize = 1 := by
+  unfold literal
+  split <;> simp
+
 /-- Every Boolean function has a De Morgan formula: its disjunctive normal form. -/
 theorem exists_computes (f : BooleanFunction n) :
     ∃ F : Formula signature n, F.Computes interpretation f := by
