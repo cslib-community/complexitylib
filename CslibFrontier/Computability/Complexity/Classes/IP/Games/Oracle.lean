@@ -147,22 +147,12 @@ theorem IPk_zero_eq_BPP (enc : α ↪ List Bool) : IPk enc 0 = BPP enc := by
           (encPair enc encBits) encBits := .snd _ _
       exact hdec.comp (ha.prod (hc.prod (ComputableInPolyTime.const [])))
     · have hbest : IPGame.countAt enc [] ρ msg dec a =
-          #(univ.filter fun c : BitString (ρ.eval (enc a).length) =>
-            dec (a, List.ofFn c, []) = true) := by
+          acceptCount (fun x => dec (x.1, x.2, [])) a (ρ.eval (enc a).length) := by
         simp [IPGame.countAt, IPGame.evalShape, IPGame.bestCount, IPGame.count,
-          IPGame.acceptedCoins, IPGame.agrees]
+          IPGame.acceptedCoins, IPGame.agrees, acceptCount]
       have ha := hA a
       rw [hbest] at ha
-      have hsum := Finset.card_filter_add_card_filter_not (s := Finset.univ)
-        (fun r : BitString (ρ.eval (enc a).length) => dec (a, List.ofFn r, []) = true)
-      simp only [Bool.not_eq_true, Finset.card_univ, Fintype.card_fun, Fintype.card_bool,
-        Fintype.card_fin] at hsum
-      refine ⟨fun h => ha.1 h, fun h => ?_⟩
-      have h2 := ha.2 h
-      change 2 * 2 ^ ρ.eval (enc a).length ≤
-        3 * #(univ.filter fun r : BitString (ρ.eval (enc a).length) =>
-          dec (a, List.ofFn r, []) = false)
-      omega
+      exact ⟨ha.1, fun h => boundedErrorAt_false_iff.2 (ha.2 h)⟩
   · rintro ⟨p, V, hV, hA⟩
     refine ⟨[], p, fun _ => [], fun x => V (x.1, x.2.1), rfl,
       ComputableInPolyTime.const [], ?_, fun a => ?_⟩
@@ -172,21 +162,11 @@ theorem IPk_zero_eq_BPP (enc : α ↪ List Bool) : IPk enc 0 = BPP enc := by
           (IPGame.encDecInput enc) encBits := (ComputableInPolyTime.fst _ _).comp (.snd _ _)
       exact hV.comp (ha.prod hc)
     · have hbest : IPGame.countAt enc [] p (fun _ => []) (fun x => V (x.1, x.2.1)) a =
-          #(univ.filter fun c : BitString (p.eval (enc a).length) =>
-            V (a, List.ofFn c) = true) := by
+          acceptCount V a (p.eval (enc a).length) := by
         simp [IPGame.countAt, IPGame.evalShape, IPGame.bestCount, IPGame.count,
-          IPGame.acceptedCoins, IPGame.agrees]
+          IPGame.acceptedCoins, IPGame.agrees, acceptCount]
       rw [hbest]
-      have hsum := Finset.card_filter_add_card_filter_not (s := Finset.univ)
-        (fun r : BitString (p.eval (enc a).length) => V (a, List.ofFn r) = true)
-      simp only [Bool.not_eq_true, Finset.card_univ, Fintype.card_fun, Fintype.card_bool,
-        Fintype.card_fin] at hsum
-      refine ⟨fun h => (hA a).1 h, fun h => ?_⟩
-      have h2 : BoundedErrorAt enc p V a false := (hA a).2 h
-      change 2 * 2 ^ p.eval (enc a).length ≤
-        3 * #(univ.filter fun r : BitString (p.eval (enc a).length) =>
-          V (a, List.ofFn r) = false) at h2
-      omega
+      exact ⟨(hA a).1, fun h => boundedErrorAt_false_iff.1 ((hA a).2 h)⟩
 
 /-! ### Bounded history extraction and polynomial-time helpers -/
 

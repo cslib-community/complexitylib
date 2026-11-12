@@ -88,6 +88,8 @@ second conjunct of `LogSpaceComplete` is stated as `LogSpaceHard`.
   reductions.
 * `Cslib.Complexity.LogSpaceHard.trans`: hardness transfers along logspace reductions.
 * `Cslib.Complexity.LogSpaceHard.subset_L`: a hard problem in `L` places its source class in `L`.
+* `Cslib.Complexity.LogSpaceComplete.mem_L_iff`: a problem complete for a class containing `L`
+  is in `L` exactly when the class equals `L`, for every encoding.
 * `Cslib.Complexity.LogSpaceHard.polyTimeHard`: logspace hardness implies polynomial-time hardness.
 * `Cslib.Complexity.LogSpaceComplete.polyTimeComplete`: completeness under logspace reductions
   implies completeness under polynomial-time reductions.
@@ -248,6 +250,15 @@ theorem LogSpaceHard.subset_L {D : ∀ {α : Type}, (α ↪ List Bool) → Set (
     (hB : LogSpaceHard D encB B) (hL : B ∈ L encB) (enc : α ↪ List Bool) :
     D enc ⊆ L enc :=
   fun _ hA => (hB enc _ hA).mem_L hL
+
+/-- **A problem complete for a class containing `L` is in `L` exactly when the class equals
+`L`**, for every encoding of instances. For `P` and `NL` this is the `L`-analogue of
+`Cslib.Complexity.NPComplete.mem_P_iff`. -/
+theorem LogSpaceComplete.mem_L_iff {D : ∀ {α : Type}, (α ↪ List Bool) → Set (Set α)}
+    (hB : LogSpaceComplete D encB B) (hLD : ∀ {α : Type} (enc : α ↪ List Bool), L enc ⊆ D enc) :
+    B ∈ L encB ↔ ∀ {α : Type} (enc : α ↪ List Bool), D enc = L enc :=
+  ⟨fun h _ enc => Set.Subset.antisymm (hB.2.subset_L h enc) (hLD enc),
+    fun h => h encB ▸ hB.1⟩
 
 /-- Hardness under logspace reductions implies hardness under polynomial-time reductions. -/
 theorem LogSpaceHard.polyTimeHard {D : ∀ {α : Type}, (α ↪ List Bool) → Set (Set α)}

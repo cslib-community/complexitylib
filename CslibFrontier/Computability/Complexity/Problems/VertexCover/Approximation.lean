@@ -86,7 +86,8 @@ theorem isCover_approxCover (G : Graph) :
   fun _ hu _ hv huv => isVertexCover_matchingCover _ ((fromRel_declaredEdges_adj hu hv).2 huv)
 
 /-- The returned list is a vertex cover of its length. -/
-theorem approxCover_mem_VertexCover (G : Graph) : (G, (approxCover G).length) ∈ VertexCover :=
+theorem approxCover_mem_VertexCover (G : Graph) :
+    (⟨G, (approxCover G).length⟩ : VertexCoverInstance) ∈ VertexCover :=
   mem_VertexCover_iff.2 ⟨(approxCover G).toFinset,
     fun _ hv => mem_vertices_of_mem_approxCover (List.mem_toFinset.1 hv),
     fun u hu v hv huv => (isCover_approxCover G u hu v hv huv).imp List.mem_toFinset.2
@@ -97,7 +98,7 @@ theorem approxCover_mem_VertexCover (G : Graph) : (G, (approxCover G).length) �
 minimum number of vertices of a cover. -/
 theorem length_approxCover_le_two_mul_vertexCoverNum (G : Graph) :
     (approxCover G).length ≤ 2 * G.vertexCoverNum := by
-  obtain ⟨S, hSV, hS, hcard⟩ := mem_VertexCover_iff.1 (G.vertexCoverNum_mem_VertexCover)
+  obtain ⟨S, hSV, hS, hcard⟩ := mem_VertexCover_iff_mk.1 (G.vertexCoverNum_mem_VertexCover)
   rw [← hcard]
   refine length_matchingCover_le_two_mul_card _ fun u v huv => ?_
   have hdecl : u ∈ G.vertices ∧ v ∈ G.vertices := by

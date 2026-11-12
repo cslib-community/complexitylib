@@ -174,16 +174,16 @@ private theorem computableInPolyTime_trimUniformBlocks (ps : List (Polynomial �
         (fun x : List Bool × List Bool =>
           trimUniformBlocks ps x.1.length (Ladner.clock d x.1.length) (W x))
         (encPair encBits encBits) encBits := by
-  induction ps with
-  | nil => intro _ _; exact .const []
-  | cons p ps ih =>
-    intro W hW
-    have hn : ComputableInPolyTime (fun x : List Bool × List Bool => x.1.length)
-        (encPair encBits encBits) encUnary := by fun_prop
-    have hm : ComputableInPolyTime (fun x : List Bool × List Bool => Ladner.clock d x.1.length)
-        (encPair encBits encBits) encUnary := (unary_pow d).comp (by fun_prop)
-    exact bitsAppend (bitsTakeWithInput hW ((unary_eval p).comp hn))
-      (ih (bitsDropWithInput hW hm))
+  intro W hW
+  have hm : ComputableInPolyTime (fun x : List Bool × List Bool => Ladner.clock d x.1.length)
+      (encPair encBits encBits) encUnary := (unary_pow d).comp (by fun_prop)
+  simpa only [trimUniformBlocks, List.map_map, Function.comp_def] using
+    computableInPolyTime_takeBlocks
+      (ps.map fun p => (fun x : List Bool × List Bool => p.eval x.1.length,
+        fun x => Ladner.clock d x.1.length))
+      (fun l hl => by
+        obtain ⟨p, -, rfl⟩ := List.mem_map.mp hl
+        exact ⟨(unary_eval p).comp (by fun_prop), hm⟩) hW
 
 private noncomputable def clockPoly (d : ℕ) : Polynomial ℕ := (2 * Polynomial.X + 2) ^ d
 

@@ -278,14 +278,14 @@ theorem dirAdj_bidirect {G : Graph} {u v : ℕ} :
 arcs, or produce a self-loop with target `0` when the target exceeds the number of distinct
 declared vertices. -/
 @[expose]
-def toFeedbackVertexSet (x : Graph × ℕ) : FeedbackVertexSetInstance :=
-  if x.2 ≤ x.1.vertices.toFinset.card then ⟨bidirect x.1, x.2⟩ else ⟨⟨[0], [(0, 0)]⟩, 0⟩
+def toFeedbackVertexSet (x : VertexCoverInstance) : FeedbackVertexSetInstance :=
+  if x.k ≤ x.graph.vertices.toFinset.card then ⟨bidirect x.graph, x.k⟩ else ⟨⟨[0], [(0, 0)]⟩, 0⟩
 
 /-- **Vertex covers are feedback vertex sets of the bidirected graph.** -/
-theorem toFeedbackVertexSet_mem_iff (x : Graph × ℕ) :
+theorem toFeedbackVertexSet_mem_iff (x : VertexCoverInstance) :
     toFeedbackVertexSet x ∈ FeedbackVertexSet ↔ x ∈ VertexCover := by
   obtain ⟨G, k⟩ := x
-  rw [mem_VertexCover_iff_exists_card_le, toFeedbackVertexSet]
+  rw [mem_VertexCover_iff_exists_card_le_mk, toFeedbackVertexSet]
   split_ifs with hk
   · rw [mem_FeedbackVertexSet_iff]
     constructor
@@ -320,28 +320,28 @@ theorem toFeedbackVertexSet_mem_iff (x : Graph × ℕ) :
 unary and compared with the binary target. -/
 @[fun_prop]
 theorem computableInPolyTime_toFeedbackVertexSet :
-    ComputableInPolyTime toFeedbackVertexSet (encPair encGraph encNat) encFeedbackVertexSet := by
-  have hn : ComputableInPolyTime (fun x : Graph × ℕ => x.1.vertices.toFinset.card)
-      (encPair encGraph encNat) encUnary := by
+    ComputableInPolyTime toFeedbackVertexSet encVertexCoverInstance encFeedbackVertexSet := by
+  have hn : ComputableInPolyTime (fun x : VertexCoverInstance => x.graph.vertices.toFinset.card)
+      encVertexCoverInstance encUnary := by
     simp_rw [← Graph.length_distinctVertices]
-    exact (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (fst _ _))
-  have hb : ComputableInPolyTime (fun x : Graph × ℕ => bidirect x.1)
-      (encPair encGraph encNat) encGraph := by
+    exact (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))
+  have hb : ComputableInPolyTime (fun x : VertexCoverInstance => bidirect x.graph)
+      encVertexCoverInstance encGraph := by
     unfold bidirect
     fun_prop
-  have heq : toFeedbackVertexSet = fun x : Graph × ℕ =>
-      if decide (x.2 ≤ x.1.vertices.toFinset.card) then ⟨bidirect x.1, x.2⟩
+  have heq : toFeedbackVertexSet = fun x : VertexCoverInstance =>
+      if decide (x.k ≤ x.graph.vertices.toFinset.card) then ⟨bidirect x.graph, x.k⟩
       else ⟨⟨[0], [(0, 0)]⟩, 0⟩ := by
     funext x
     simp only [toFeedbackVertexSet, decide_eq_true_eq]
   rw [heq]
-  exact ite' (binary_le' (snd _ _) (unary_to_binary.comp hn)) (by fun_prop) (const _)
+  exact ite' (binary_le' (by fun_prop) (unary_to_binary.comp hn)) (by fun_prop) (const _)
 
 end VertexCover
 
 /-- `VertexCover` reduces to `FeedbackVertexSet` in polynomial time [Karp1972]. -/
 theorem polyTimeReducible_VertexCover_FeedbackVertexSet :
-    PolyTimeReducible (encPair encGraph encNat) encFeedbackVertexSet VertexCover
+    PolyTimeReducible encVertexCoverInstance encFeedbackVertexSet VertexCover
       FeedbackVertexSet :=
   ⟨VertexCover.toFeedbackVertexSet, VertexCover.computableInPolyTime_toFeedbackVertexSet,
     fun x => (VertexCover.toFeedbackVertexSet_mem_iff x).symm⟩

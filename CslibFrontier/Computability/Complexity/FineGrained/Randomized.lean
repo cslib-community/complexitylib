@@ -279,11 +279,9 @@ theorem SolvesPromiseInExpTime.mono_measure {Q : PromiseProblem α} {μ μ' : α
 /-- Subexponential deterministic promise solving transfers along linear parameter bounds. -/
 theorem SolvesPromiseInSubexpTime.mono_measure {Q : PromiseProblem α} {μ μ' : α → ℕ} {c : ℕ}
     (hμ : ∀ a, μ a ≤ c * μ' a + c) (h : SolvesPromiseInSubexpTime Q enc μ) :
-    SolvesPromiseInSubexpTime Q enc μ' := by
-  intro δ hδ
-  refine ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesPromiseInSubexpTime Q enc μ' := fun δ hδ =>
+  ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le c)
 
 /-- Transfer of `SolvesPromiseInExpTime` along a linear-parameter polynomial-time promise
 reduction. -/
@@ -306,12 +304,9 @@ theorem SolvesPromiseInSubexpTime.of_promiseReduction {X : PromiseProblem α} {Y
     (hyes : ∀ a ∈ X.yes, r a ∈ Y.yes) (hno : ∀ a ∈ X.no, r a ∈ Y.no)
     {c : ℕ} (hμ : ∀ a, μB (r a) ≤ c * μA a + c)
     (hY : SolvesPromiseInSubexpTime Y encB μB) :
-    SolvesPromiseInSubexpTime X enc μA := by
-  intro δ hδ
-  refine ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
-    (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesPromiseInSubexpTime X enc μA := fun δ hδ =>
+  ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
+    (by positivity)).mono (natCast_mul_div_add_one_le hδ.le c)
 
 /-- On `PromiseProblem.ofSet A`, `SolvesPromiseInTimeO` agrees with `DecidableInTimeO`. -/
 theorem solvesPromiseInTimeO_ofSet_iff {A : Set α} {T : α → ℝ} :
@@ -417,14 +412,9 @@ theorem SolvesWithErrorInExpTime.mono {Q : PromiseProblem α} {E : ErrorModel} {
     {δ δ' : ℝ} (h : SolvesWithErrorInExpTime Q enc E μ δ) (hδ : δ ≤ δ') :
     SolvesWithErrorInExpTime Q enc E μ δ' := by
   obtain ⟨e, h⟩ := h
-  refine ⟨e, h.mono 1 (fun a => ?_) fun _ => by positivity⟩
-  have h₁ : (2 : ℝ) ^ (δ * μ a) ≤ 2 ^ (δ' * μ a) :=
-    Real.rpow_le_rpow_of_exponent_le (by norm_num)
-      (mul_le_mul_of_nonneg_right hδ (Nat.cast_nonneg _))
-  have h₂ := mul_le_mul_of_nonneg_right h₁
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
-  push_cast
-  linarith
+  exact ⟨e, h.mono 1 (fun a => (two_rpow_mul_pow_le_two_rpow_mul_pow
+    (mul_le_mul_of_nonneg_right hδ (Nat.cast_nonneg _)) le_rfl).trans (by simp))
+    fun _ => by positivity⟩
 
 /-- Relaxing the error bounds preserves `SolvesWithErrorInExpTime`. -/
 theorem SolvesWithErrorInExpTime.mono_error {Q : PromiseProblem α} {E₁ E₂ : ErrorModel}
@@ -436,24 +426,17 @@ theorem SolvesWithErrorInExpTime.mono_error {Q : PromiseProblem α} {E₁ E₂ :
 theorem SolvesWithErrorInExpTime.mono_measure {Q : PromiseProblem α} {E : ErrorModel}
     {μ μ' : α → ℕ} {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c) {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesWithErrorInExpTime Q enc E μ δ) :
-    SolvesWithErrorInExpTime Q enc E μ' (c * δ) := by
-  obtain ⟨e, h⟩ := h
-  refine ⟨e, h.mono ⌈(2 : ℝ) ^ (δ * c)⌉₊ (fun a => ?_) fun _ => by positivity⟩
-  have h₂ := two_rpow_le_natCeil_mul_of_le_mul_add hδ (hμ a)
-  have h₃ := mul_le_mul_of_nonneg_right h₂
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
-  have h₄ : (0 : ℝ) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.cast_nonneg _
-  nlinarith
+    SolvesWithErrorInExpTime Q enc E μ' (c * δ) :=
+  let ⟨e, h⟩ := h
+  ⟨e, h.mono _ (fun a => two_rpow_mul_pow_le_natCeil_mul_add hδ (hμ a)) fun _ => by positivity⟩
 
 /-- Subexponential randomized promise solving transfers along linear parameter bounds. -/
 theorem SolvesWithErrorInSubexpTime.mono_measure {Q : PromiseProblem α} {E : ErrorModel}
     {μ μ' : α → ℕ} {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c)
     (h : SolvesWithErrorInSubexpTime Q enc E μ) :
-    SolvesWithErrorInSubexpTime Q enc E μ' := by
-  intro δ hδ
-  refine ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesWithErrorInSubexpTime Q enc E μ' := fun δ hδ =>
+  ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le c)
 
 private theorem computableInO_bool_not_linear :
     ComputableInO Bool.not encBool encBool (fun b => (encBool b).length)
@@ -557,44 +540,22 @@ theorem solvesWithErrorInExpTime_deterministic_iff {Q : PromiseProblem α} {μ :
     (hδ : 0 ≤ δ) :
     SolvesWithErrorInExpTime Q enc ErrorModel.deterministic μ δ ↔
       SolvesPromiseInExpTime Q enc μ δ := by
-  have hL_deg (e : ℕ) (he : 1 ≤ e) (a : α) :
-      ((enc a).length : ℝ) ≤ 2 ^ (δ * μ a) * ((enc a).length + 1) ^ e := by
-    have hL1 : (1 : ℝ) ≤ ((enc a).length : ℝ) + 1 :=
-      le_add_of_nonneg_left (Nat.cast_nonneg _)
-    have hX1 : (1 : ℝ) ≤ 2 ^ (δ * μ a) := Real.one_le_rpow (by norm_num) (by positivity)
-    have hpow : ((enc a).length : ℝ) + 1 ≤ (((enc a).length : ℝ) + 1) ^ e :=
-      le_self_pow₀ hL1 (by omega)
-    have hmul : (((enc a).length : ℝ) + 1) ^ e ≤
-        2 ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e :=
-      le_mul_of_one_le_left (by positivity) hX1
-    linarith [hpow.trans hmul]
+  have hL (e : ℕ) (a : α) :
+      ((enc a).length : ℝ) ≤ 2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1) := by
+    have := pow_le_two_rpow_mul_pow (L := (enc a).length) (d := 1) (e := max e 1)
+      (mul_nonneg hδ (Nat.cast_nonneg (μ a))) (le_max_right e 1)
+    rw [pow_one] at this
+    linarith
+  have hmax (e : ℕ) (a : α) : (2 : ℝ) ^ (δ * μ a) * ((enc a).length + 1) ^ e ≤
+      ((1 : ℕ) : ℝ) * (2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1)) + ((1 : ℕ) : ℝ) :=
+    (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (le_max_left e 1)).trans (by simp)
   constructor
   · rintro ⟨e, h⟩
-    have h' : SolvesWithErrorInTimeO Q enc ErrorModel.deterministic
-        fun a => 2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1) := by
-      refine h.mono 1 (fun a => ?_) fun _ => by positivity
-      have hL1 : (1 : ℝ) ≤ ((enc a).length : ℝ) + 1 :=
-        le_add_of_nonneg_left (Nat.cast_nonneg _)
-      have hpow : (((enc a).length : ℝ) + 1) ^ e ≤
-          (((enc a).length : ℝ) + 1) ^ (max e 1) := pow_le_pow_right₀ hL1 (le_max_left e 1)
-      have hmul := mul_le_mul_of_nonneg_left hpow (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a))
-      push_cast
-      linarith
-    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff
-      (hL_deg (max e 1) (le_max_right e 1))).mp h'⟩
+    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff (hL e)).mp
+      (h.mono 1 (hmax e) fun _ => by positivity)⟩
   · rintro ⟨e, g, hQ, hg⟩
-    have hg' : SolvesPromiseInTimeO Q enc
-        fun a => 2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1) := by
-      refine ⟨g, hQ, hg.mono 1 (fun a => ?_) fun _ => by positivity⟩
-      have hL1 : (1 : ℝ) ≤ ((enc a).length : ℝ) + 1 :=
-        le_add_of_nonneg_left (Nat.cast_nonneg _)
-      have hpow : (((enc a).length : ℝ) + 1) ^ e ≤
-          (((enc a).length : ℝ) + 1) ^ (max e 1) := pow_le_pow_right₀ hL1 (le_max_left e 1)
-      have hmul := mul_le_mul_of_nonneg_left hpow (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a))
-      push_cast
-      linarith
-    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff
-      (hL_deg (max e 1) (le_max_right e 1))).mpr hg'⟩
+    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff (hL e)).mpr
+      ⟨g, hQ, hg.mono 1 (hmax e) fun _ => by positivity⟩⟩
 
 /-- Every deterministic `2 ^ (δ * μ a) · poly(L)` promise solver (`δ ≥ 0`) solves `Q` under any
 error profile `E`. -/
@@ -637,11 +598,8 @@ theorem SolvesWithErrorInExpTime.of_promiseReduction {X : PromiseProblem α} {Y 
     have hn0 : ((encB (r a)).length : ℝ) ≤ l * ((((enc a).length : ℝ) + 1) ^ d + 1) := by
       exact_mod_cast hl a
     nlinarith [(Nat.cast_nonneg l : (0 : ℝ) ≤ l)]
-  have hexp : (2 : ℝ) ^ (δ * μB (r a)) ≤ 2 ^ (δ * c) * X := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have : (μB (r a) : ℝ) ≤ c * μA a + c := by exact_mod_cast hμ a
-    nlinarith
+  have hexp : (2 : ℝ) ^ (δ * μB (r a)) ≤ 2 ^ (δ * c) * X :=
+    two_rpow_le_two_rpow_mul_of_le_mul_add hδ (hμ a)
   have hpow : (((encB (r a)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
     rw [← mul_pow]
     exact pow_le_pow_left₀ (by positivity) (by nlinarith) e
@@ -716,12 +674,9 @@ theorem SolvesWithErrorInSubexpTime.of_promiseReduction {X : PromiseProblem α}
     (hyes : ∀ a ∈ X.yes, r a ∈ Y.yes) (hno : ∀ a ∈ X.no, r a ∈ Y.no)
     {c : ℕ} (hμ : ∀ a, μB (r a) ≤ c * μA a + c)
     (hY : SolvesWithErrorInSubexpTime Y encB E μB) :
-    SolvesWithErrorInSubexpTime X enc E μA := by
-  intro δ hδ
-  refine ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
-    (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesWithErrorInSubexpTime X enc E μA := fun δ hδ =>
+  ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
+    (by positivity)).mono (natCast_mul_div_add_one_le hδ.le c)
 
 /-! ### Bridges to `MultiTapePTM`, `PromiseBPP`, `PromiseRP`, and `PromiseCoRP` -/
 
@@ -1127,16 +1082,11 @@ theorem mem_PromiseRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} 
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP]
       linarith
     · have hn := (hQ a).2 ha
-      have h0 : acceptCount V a (p.eval (enc a).length) = 0 := by
-        rw [acceptCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-        intro r _
-        rw [hn r]
-        exact Bool.false_ne_true
+      have h0 : acceptCount V a (p.eval (enc a).length) = 0 := acceptCount_eq_zero_iff.2 hn
       simp only [h0, Nat.cast_zero, ErrorModel.rp, ErrorModel.oneSidedRP, zero_mul, le_rfl]
   · rintro ⟨hyes, hno⟩ a
     refine ⟨fun ha => ?_, fun ha r => ?_⟩
-    · change 2 ^ p.eval (enc a).length ≤ 2 * acceptCount V a (p.eval (enc a).length)
-      have hy := hyes a ha
+    · have hy := hyes a ha
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP] at hy
       have hsum : (acceptCount V a (p.eval (enc a).length) : ℝ) +
           acceptCount (fun q => !V q) a (p.eval (enc a).length) =
@@ -1149,11 +1099,7 @@ theorem mem_PromiseRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} 
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP, zero_mul] at hn
       have h0 : acceptCount V a (p.eval (enc a).length) = 0 :=
         Nat.eq_zero_of_le_zero (by exact_mod_cast hn)
-      by_contra hne
-      have htrue : V (a, List.ofFn r) = true := Bool.eq_true_of_not_eq_false hne
-      have hpos : 0 < acceptCount V a (p.eval (enc a).length) :=
-        acceptCount_pos_iff.mpr ⟨List.ofFn r, List.length_ofFn, htrue⟩
-      omega
+      exact acceptCount_eq_zero_iff.1 h0 r
 
 /-- **`PromiseCoRP` in terms of `SolvesWithErrorInTimeO`.** -/
 theorem mem_PromiseCoRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} :
