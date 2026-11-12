@@ -241,6 +241,7 @@ public import CslibFrontier.Algorithms.Lean.TreeDecomposition.BagMask
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
+public import CslibFrontier.Algorithms.Lean.TrimmedYates
 public import CslibFrontier.Algorithms.Lean.TwoSAT
 public import CslibFrontier.Algorithms.Lean.VertexCover.Matching
 public import CslibFrontier.Algorithms.Lean.Yates
@@ -5023,6 +5024,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.Concentration
 public import CslibFrontier.Foundations.BooleanAnalysis.Convolution
 public import CslibFrontier.Foundations.BooleanAnalysis.CoordinateOperators
 public import CslibFrontier.Foundations.BooleanAnalysis.CoordinateSampling
+public import CslibFrontier.Foundations.BooleanAnalysis.CoveringProduct
 public import CslibFrontier.Foundations.BooleanAnalysis.Decomposition
 public import CslibFrontier.Foundations.BooleanAnalysis.Degree
 public import CslibFrontier.Foundations.BooleanAnalysis.FiberWeight
