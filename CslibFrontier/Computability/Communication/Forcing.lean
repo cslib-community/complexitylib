@@ -29,6 +29,7 @@ The large-rectangle probability bound and the main communication lower bounds ar
 ## Main results
 
 * `canForce_not_iff`: exactly one player can force a goal or its complement.
+* `canForce_leafAlice`, `canForce_leafBob`: each player can force consistency with their input.
 * `run_steer`: the constructed protocol meets both winning goals simultaneously.
 * `depth_steer`: steering preserves the entire tree depth.
 -/
@@ -73,6 +74,47 @@ one winning child suffices; at the opponent's node both children must be winning
       else CanForce player goal p ∧ CanForce player goal q
   | bob _ p q => if player then CanForce player goal p ∧ CanForce player goal q
       else CanForce player goal p ∨ CanForce player goal q
+
+/-- A player who can force a goal can force any weaker goal. -/
+theorem canForce_mono (p : Protocol X Y Z) (player : Bool) {goal target : Z → Prop}
+    (h : ∀ z, goal z → target z) : p.CanForce player goal → p.CanForce player target := by
+  induction p generalizing player with
+  | output z => exact h z
+  | alice send p q ihp ihq =>
+    cases player
+    · exact And.imp (ihp false) (ihq false)
+    · exact Or.imp (ihp true) (ihq true)
+  | bob send p q ihp ihq =>
+    cases player
+    · exact Or.imp (ihp false) (ihq false)
+    · exact And.imp (ihp true) (ihq true)
+
+/-- Relabeling outputs pulls back the target of the forcing game. -/
+@[simp] theorem canForce_map_iff {W : Type*} (p : Protocol X Y Z) (f : Z → W)
+    (player : Bool) (goal : W → Prop) :
+    (p.map f).CanForce player goal ↔ p.CanForce player (fun z => goal (f z)) := by
+  induction p with
+  | output z => rfl
+  | alice send p q ihp ihq | bob send p q ihp ihq => simp [map, CanForce, ihp, ihq]
+
+/-- Following her original messages lets Alice force a leaf consistent with her input,
+regardless of Bob's branch choices. -/
+theorem canForce_leafAlice (p : Protocol X Y Z) (x : X) :
+    p.labelLeaves.CanForce true (fun w => x ∈ p.leafAlice w) := by
+  induction p with
+  | output z => simp [labelLeaves, CanForce, leafAlice]
+  | alice send p q ihp ihq =>
+    cases hs : send x <;> simp [labelLeaves, CanForce, leafAlice, hs, ihp, ihq]
+  | bob send p q ihp ihq => simp [labelLeaves, CanForce, leafAlice, ihp, ihq]
+
+/-- Following his original messages lets Bob force a leaf consistent with his input. -/
+theorem canForce_leafBob (p : Protocol X Y Z) (y : Y) :
+    p.labelLeaves.CanForce false (fun w => y ∈ p.leafBob w) := by
+  induction p with
+  | output z => simp [labelLeaves, CanForce, leafBob]
+  | alice send p q ihp ihq => simp [labelLeaves, CanForce, leafBob, ihp, ihq]
+  | bob send p q ihp ihq =>
+    cases hs : send y <;> simp [labelLeaves, CanForce, leafBob, hs, ihp, ihq]
 
 /-- Finite perfect-information determinacy, including exclusion of simultaneous wins. -/
 theorem canForce_not_iff (p : Protocol X Y Z) (player : Bool) (goal : Z → Prop) :

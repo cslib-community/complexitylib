@@ -1732,6 +1732,7 @@ public import CslibFrontier.Computability.Communication.Nondeterministic.Extensi
 public import CslibFrontier.Computability.Communication.Nondeterministic.Functions
 public import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
 public import CslibFrontier.Computability.Communication.OneOut
+public import CslibFrontier.Computability.Communication.OneOutRectangle
 public import CslibFrontier.Computability.Communication.Operations
 public import CslibFrontier.Computability.Communication.PartitionJoin
 public import CslibFrontier.Computability.Communication.PaturiSimon
@@ -6482,6 +6483,7 @@ public import CslibFrontier.Probability.HypothesisSelection.Tournament
 public import CslibFrontier.Probability.IID
 public import CslibFrontier.Probability.IID.CollisionCount
 public import CslibFrontier.Probability.IID.CrossCollisionCount
+public import CslibFrontier.Probability.IID.Distinct
 public import CslibFrontier.Probability.IID.Event
 public import CslibFrontier.Probability.IID.FirstAccepted
 public import CslibFrontier.Probability.IID.Occurrence
