@@ -1368,6 +1368,51 @@ bound below one. They also certify the actual growing program with `η = 8(l+1)`
 The native certificate charges unary width and signed binary output; this scalar result
 supplies neither encryption correctness nor a security reduction.
 
+## Substitute an oracle while preserving private samples
+
+Import [Oracle/Substitution.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution.lean).
+Write a replacement handler as a `ProbOracleComp` program, then use
+`ProbOracleComp.simulate handler adversary`. Only external queries reach `handler`; private
+samples remain sampling requests in the resulting program. The handler can make its own private
+samples and external queries.
+
+Open the [checked client](../../CslibFrontierTests/ProbOracleSubstitution.lean), whose import is
+`CslibFrontier.Languages.Probabilistic.Oracle.Substitution`. This excerpt uses its `open Cslib`:
+
+<!-- excerpt: private-sampling-substitution -->
+```lean
+private noncomputable def adversary : ProbOracleComp (fun _ : Bool => ℕ) (Bool × ℕ) := do
+  let bit ← ProbOracleComp.sample (ProbComp.uniform Bool)
+  let reply ← ProbOracleComp.query bit
+  return (bit, reply)
+
+private noncomputable def maskedQuery (bit : Bool) : ProbOracleComp (fun _ : Bool => ℕ) ℕ := do
+  let mask ← ProbOracleComp.sample (ProbComp.uniform Bool)
+  ProbOracleComp.query (bit ^^ mask)
+
+private noncomputable def reduction : ProbOracleComp (fun _ : Bool => ℕ) (Bool × ℕ) :=
+  ProbOracleComp.simulate maskedQuery adversary
+```
+
+The client proves that `reduction` makes two private draws, in order, followed by one external
+query, and retains the adversary's original bit in its result. Supply the random sampler and
+any oracle state once, in the surrounding `OracleComp.interpret`. The theorem
+`ProbOracleComp.interpret_simulate` composes that interpreter with the replacement handler;
+the reduction proof need not split the private-sampling branch of `sumHandler`.
+
+Run `scripts/build.sh CslibFrontierTests.ProbOracleSubstitution` from the repository root.
+The additional stateful example checks that four adaptive target queries share one counter,
+including across a private draw, and the dependent-reply example checks that query-specific
+response types are preserved. For the cryptographic clients, inspect
+[hybridDEMContinuation](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean)
+and [hybridKEMCCAContinuation](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean):
+each phase names only the oracle simulation it needs.
+
+If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.simulate` to
+reuse its laws and native efficiency certificates. Substitution preserves the free program;
+it does not by itself certify its runtime. This separation follows VCVio's treatment of
+[untouched oracle effects](https://github.com/Verified-zkEVM/VCVio/blob/87bc1892fff1982e97cfd8c7303c9d1f2bfdc2f9/VCVio/OracleComp/SimSemantics/Append/Core.lean).
+
 ## Certify an adaptive oracle client
 
 For native oracle efficiency, start with `WordOracleComp Operation α`: finite operation names and word payloads/replies.

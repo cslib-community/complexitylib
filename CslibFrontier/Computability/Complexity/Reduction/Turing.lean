@@ -267,7 +267,7 @@ theorem computableInPolyTimeWithOracle_truthTableAnswers {r : α → ℕ} {q : �
 theorem PolyTimeTruthTableReducible.polyTimeTuringReducible
     (h : PolyTimeTruthTableReducible encA encB A B) :
     PolyTimeTuringReducible encA encB A B := by
-  obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd⟩, hA⟩ := h
   exact ⟨fun a => d (a, truthTableAnswers (q ⁻¹' B) r a),
     (computableInPolyTimeWithOracle_truthTableAnswers (B := B) hr hq).map_with
       (g := fun a ans => d (a, ans)) hd, hA⟩

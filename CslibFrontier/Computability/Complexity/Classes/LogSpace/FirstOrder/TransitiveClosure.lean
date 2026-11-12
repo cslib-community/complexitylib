@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Counting
 public import CslibFrontier.Logics.FirstOrder.Ordered.TransitiveClosure
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.NondeterministicDecider
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
@@ -21,10 +22,10 @@ numeric symbols, the encoded query language belongs to the native class `NL`. Th
 `encStructure`, as for ordered first-order model checking in `L`; malformed table shapes and
 cardinalities below two are rejected.
 
-The decider is one nondeterministic counter program: it validates the input tables, rejects
-cardinalities below two, and runs the compiled code of the sentence at polarity `true`. Every
-branch halts with every register at most `(N + 1) ^ (d + w)` for input length `N`, maximal input
-arity `d` and closure width `w`, so the program runs in logarithmic space.
+The decider is one nondeterministic counter program, `nblockDecider` around the compiled sentence
+at polarity `true`: it validates the input tables, rejects cardinalities below two, and runs the
+compiled code. Every branch halts with every register at most `(N + 1) ^ (d + w)` for input length
+`N`, maximal input arity `d` and closure width `w`, so the program runs in logarithmic space.
 
 [Immerman1987], Theorem 3.1, places FO(positive TC) in NL; closures under negation add nothing
 because NL is closed under complementation ([Immerman1988], Corollary 3; [Szelepcsenyi1987]).
@@ -33,10 +34,6 @@ bounded guessed path. A closure at polarity `false` (under an odd number of nega
 afresh inside each closure body) is evaluated by an inductive-counting block whose tests run the
 compiled body at both polarities. The converse inclusion NL ⊆ FO(positive TC), and with it
 FO(TC) = NL, is in `Classes.LogSpace.FirstOrder.TransitiveClosure.Converse`.
-
-## Main definitions
-
-* `Cslib.Logic.FO.Ordered.TCModelChecker.decider`: the nondeterministic decider.
 
 ## Main results
 
@@ -63,7 +60,7 @@ namespace Cslib.Logic.FO.Ordered.TCModelChecker
 
 open Turing Turing.CounterProgram Turing.CounterProgram.Block Expr Vocabulary.ModelChecker
 open Operator (Formula RelEnv)
-open ClosureKernel (termE getD_pair)
+open ClosureKernel (termE getD_pair eval_pow_reg0)
 
 variable {L : Language.{u, v}} [L.IsRelational] {v : Vocabulary L}
 
@@ -267,8 +264,7 @@ theorem correct_op (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type} (k : �
   have hP' : P.CodeAt b (tcCode b base k (fun i => termE fv (TC.left args i))
       (fun i => termE fv (TC.right args i)) (pow (reg 0) k) code T R) := hP
   have hM : ∀ regs' : List ℕ, (∀ j < base, regs'.getD j 0 = regs.getD j 0) →
-      (pow (reg 0) k).eval regs' = a.1 ^ k := fun regs' h => by
-    simp only [eval_pow, eval_reg, (h 0 hbase).trans h0]
+      (pow (reg 0) k).eval regs' = a.1 ^ k := fun _ h => eval_pow_reg0 ((h 0 hbase).trans h0)
   have hcl : code.length = len (body ⟨0, Nat.one_pos⟩) true := length_compile ..
   have hbody : ∀ us ws t regs₃, LoopMid a.1 B base k regs us ws t regs₃ →
       Sound P (encStructure a) B Post (b + 2 * k + 7) regs₃ (b + 2 * k + 7 + code.length)
@@ -310,155 +306,31 @@ theorem correct (hE : Env v a P B Post R) :
 
 end Correct
 
-variable (v)
-
-/-- The decider's code: the shape check, the size guard, the compiled sentence, accept, reject. -/
-def deciderCode (φ : Formula (language L) TC.shape [] Empty) : List Instr :=
-  (shapeCode v 0 (4 + 6 * v.count) (6 + 6 * v.count + len φ true)).map Instr.shift ++
-    [(Instr.lt (reg 0) (const 2) (6 + 6 * v.count + len φ true) (5 + 6 * v.count)).shift] ++
-    compile v (fun e : Empty => e.elim) 3 φ true (5 + 6 * v.count) (5 + 6 * v.count + len φ true)
-      (6 + 6 * v.count + len φ true) ++ [.accept, .reject]
-
-/-- The nondeterministic decider of an FO(TC) sentence. -/
-def decider (φ : Formula (language L) TC.shape [] Empty) : CounterProgram where
-  code := deciderCode v φ
-  registers := 4 + scratch φ
-
-variable {v}
-
-private theorem decider_layout (φ : Formula (language L) TC.shape [] Empty) :
-    (decider v φ).CodeAt 0
-      ((shapeCode v 0 (4 + 6 * v.count) (6 + 6 * v.count + len φ true)).map Instr.shift) ∧
-    (decider v φ).instr (4 + 6 * v.count) =
-      (Instr.lt (reg 0) (const 2) (6 + 6 * v.count + len φ true) (5 + 6 * v.count)).shift ∧
-    (decider v φ).CodeAt (5 + 6 * v.count) (compile v (fun e : Empty => e.elim) 3 φ true
-      (5 + 6 * v.count) (5 + 6 * v.count + len φ true) (6 + 6 * v.count + len φ true)) ∧
-    (decider v φ).instr (5 + 6 * v.count + len φ true) = .accept ∧
-    (decider v φ).instr (6 + 6 * v.count + len φ true) = .reject := by
-  have hcode : (decider v φ).CodeAt 0 (decider v φ).code :=
-    codeAt_of_code_eq (pre := []) (post := []) (by simp)
-  change (decider v φ).CodeAt 0 (deciderCode v φ) at hcode
-  rw [deciderCode, codeAt_append, codeAt_append, codeAt_append] at hcode
-  obtain ⟨⟨⟨hshape, hguard⟩, hcomp⟩, hhalt⟩ := hcode
-  simp only [List.length_append, List.length_map, length_shapeCode, length_compile,
-    List.length_singleton, Nat.zero_add] at hguard hcomp hhalt
-  obtain ⟨hacc, hrest⟩ := codeAt_cons.mp hhalt
-  refine ⟨hshape, (codeAt_cons.mp hguard).1, ?_, ?_, ?_⟩
-  · rwa [show 4 + 6 * v.count + 1 = 5 + 6 * v.count by omega] at hcomp
-  · rwa [show 4 + 6 * v.count + 1 + len φ true = 5 + 6 * v.count + len φ true by omega] at hacc
-  · have := (codeAt_cons.mp hrest).1
-    rwa [show 4 + 6 * v.count + 1 + len φ true + 1 = 6 + 6 * v.count + len φ true by omega]
-      at this
-
-private theorem init_decider (φ : Formula (language L) TC.shape [] Empty) :
-    (decider v φ).init = (0, (false : Bool).toNat :: List.replicate (3 + scratch φ) 0) := by
-  simp only [init, decider, Bool.toNat_false]
-  rw [show 4 + scratch φ = (3 + scratch φ) + 1 by omega, List.replicate_succ]
-
-variable (v) in
-/-- **Soundness**: every branch of the decider halts within the space bound, and accepts only
-encodings of structures in the query. -/
-theorem allBranches_decider {φ : Formula (language L) TC.shape [] Empty}
-    {K : Query L}
-    (hφ : ∀ M : Ordered.Structure L,
-      M ∈ K ↔ φ.Realize (M := M) TC.interpretation RelEnv.empty Empty.elim)
-    (a : EncodedStructure) :
-    (decider v φ).AllBranches (encStructure a)
-      (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ))
-      (fun s => (decider v φ).instr s.1 = .accept → a ∈ K.encodedLanguage v) (fun _ => False)
-      (decider v φ).init := by
-  obtain ⟨hshape, hguard, hcomp, hacc, hrej⟩ := decider_layout (v := v) φ
-  obtain ⟨hB1, hnB, hwidth, hwB, hLB⟩ := decider_bounds v a (TC.width φ)
-  rw [init_decider]
-  suffices h : Sound (decider v φ) (encStructure a)
-      (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ))
-      (fun s => (decider v φ).instr s.1 = .accept → a ∈ K.encodedLanguage v) 0
-      (List.replicate (3 + scratch φ) 0) 0 (fun _ => False) from
-    (h false).mono fun _ ⟨_, _, _, h⟩ => h
-  obtain ⟨regs₁, hreach₁, hlen₁, h0₁, hB₁⟩ :=
-    reaches_shapeCode (P := padded 0 (shapeCode v 0 (4 + 6 * v.count)
-      (6 + 6 * v.count + len φ true))) (codeAt_padded 0 _) hLB hwB
-      (List.replicate (3 + scratch φ) 0) (by simp) (by simp) (by simp)
-  refine Sound.of_reaches hB1 hshape hreach₁ ?_
-  have hreject : ∀ regs : List ℕ, (∀ r ∈ regs, r ≤
-      ((encStructure a).length + 1) ^ (v.maxArity + TC.width φ)) →
-      Sound (decider v φ) (encStructure a)
-        (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ))
-        (fun s => (decider v φ).instr s.1 = .accept → a ∈ K.encodedLanguage v)
-        (6 + 6 * v.count + len φ true) regs 0 (fun _ => False) := fun regs hregs =>
-    Sound.halt hB1 (by rw [hrej]; rfl) (fun _ h => by simp [hrej] at h) hregs
-  by_cases hwf : v.WellFormed a
-  · rw [ite_eq_left hwf]
-    by_cases hn : 2 ≤ a.1
-    · let _ : Fact (2 ≤ a.1) := ⟨hn⟩
-      let _ := v.decode a
-      have hE : Env v a (decider v φ) (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ))
-          (fun s => (decider v φ).instr s.1 = .accept → a ∈ K.encodedLanguage v)
-          (6 + 6 * v.count + len φ true) :=
-        ⟨fun fv base val => ModelChecker.atomicCompiler_correct hwf fv base val, hB1, hnB,
-          by rw [hrej]; rfl, fun s hs h => by simp [hs, hrej] at h⟩
-      refine Sound.of_oblivious hB1 (l' := 5 + 6 * v.count) (regs' := regs₁) ?_ ?_
-      · cp_step [h0₁ hwf]
-      have hC := correct hE φ rfl true hwidth (fun e : Empty => e.elim) 3 Empty.elim
-        RelEnv.empty (5 + 6 * v.count) (5 + 6 * v.count + len φ true) regs₁ hcomp (by decide)
-        (fun e => e.elim) (by rw [hlen₁]; simp) (h0₁ hwf) (fun e => e.elim) hB₁
-      refine hC.1.bind fun regs' ⟨hk, hsat⟩ => Sound.halt hB1 (by rw [hacc]; rfl)
-        (fun _ _ => ?_) hk.bounded
-      exact (show v.WellFormed a ∧ ∃ hn : 2 ≤ a.1, decoded v a hn ∈ K from
-        ⟨hwf, hn, (hφ (decoded v a hn)).mpr hsat⟩)
-    · refine Sound.of_oblivious hB1 (l' := 6 + 6 * v.count + len φ true) (regs' := regs₁) ?_
-        (hreject regs₁ hB₁)
-      cp_step [h0₁ hwf]
-  · rw [ite_eq_right hwf]
-    exact hreject regs₁ hB₁
-
-variable (v) in
-/-- **Completeness**: on every encoding of a structure in the query, some branch of the decider
-accepts. -/
-theorem accepts_decider {φ : Formula (language L) TC.shape [] Empty}
-    {K : Query L}
-    (hφ : ∀ M : Ordered.Structure L,
-      M ∈ K ↔ φ.Realize (M := M) TC.interpretation RelEnv.empty Empty.elim)
-    (a : EncodedStructure) (ha : a ∈ K.encodedLanguage v) :
-    ∃ s, Branches (P := decider v φ) (w := encStructure a) (decider v φ).init s ∧
-      (decider v φ).instr s.1 = .accept := by
-  obtain ⟨hwf, hn, hK⟩ := ha
-  let _ : Fact (2 ≤ a.1) := ⟨hn⟩
-  let _ := v.decode a
-  obtain ⟨hshape, hguard, hcomp, hacc, hrej⟩ := decider_layout (v := v) φ
-  obtain ⟨hB1, hnB, hwidth, hwB, hLB⟩ := decider_bounds v a (TC.width φ)
-  obtain ⟨regs₁, hreach₁, hlen₁, h0₁, hB₁⟩ :=
-    reaches_shapeCode (P := padded 0 (shapeCode v 0 (4 + 6 * v.count)
-      (6 + 6 * v.count + len φ true))) (codeAt_padded 0 _) hLB hwB
-      (List.replicate (3 + scratch φ) 0) (by simp) (by simp) (by simp)
-  rw [ite_eq_left hwf] at hreach₁
-  have hE : Env v a (decider v φ) (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ))
-      (fun _ => True) (6 + 6 * v.count + len φ true) :=
-    ⟨fun fv base val => ModelChecker.atomicCompiler_correct hwf fv base val, hB1, hnB,
-      by rw [hrej]; rfl, fun _ _ => trivial⟩
-  have hC := correct hE φ rfl true hwidth (fun e : Empty => e.elim) 3 Empty.elim
-    RelEnv.empty (5 + 6 * v.count) (5 + 6 * v.count + len φ true) regs₁ hcomp (by decide)
-    (fun e => e.elim) (by rw [hlen₁]; simp) (h0₁ hwf) (fun e => e.elim) hB₁
-  have hguardStep : (decider v φ).Reaches (encStructure a)
-      ((decider v φ).Oblivious (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ)))
-      (4 + 6 * v.count, 0 :: regs₁) (5 + 6 * v.count, 0 :: regs₁) := by
-    cp_step [h0₁ hwf]
-  obtain ⟨regs', -, hbr⟩ := Complete.of_reaches hshape hreach₁
-    (Complete.of_oblivious hguardStep (hC.2 ((hφ (decoded v a hn)).mp hK)))
-  obtain ⟨c', hc'⟩ := hbr false
-  rw [init_decider]
-  exact ⟨_, hc', hacc⟩
-
 variable (v) in
 /-- **A query defined by an FO(TC) sentence is in native `NL`**: its source-only encoded language
-is decided by one nondeterministic machine in logarithmic space. -/
+is decided by one nondeterministic machine, `nblockDecider` around the compiled sentence at
+polarity `true`, in logarithmic space. -/
 theorem encodedLanguage_mem_NL {φ : Formula (language L) TC.shape [] Empty}
     {K : Query L}
     (hφ : ∀ M : Ordered.Structure L,
       M ∈ K ↔ φ.Realize (M := M) TC.interpretation RelEnv.empty Empty.elim) :
     K.encodedLanguage v ∈ Complexity.NL encStructure :=
-  exists_decidesInLogSpace_of_allBranches (decider v φ) (v.maxArity + TC.width φ)
-    (allBranches_decider v hφ) (accepts_decider v hφ)
+  mem_NL_of_soundCompleteBlock v (k := TC.width φ) (s := scratch φ)
+    (C := fun b T F => compile v (fun e : Empty => e.elim) 3 φ true b T F)
+    (fun b T F => length_compile v (fun e : Empty => e.elim) 3 φ true b T F)
+    (fun _ h => ⟨h.1, h.2.1⟩)
+    fun a hwf hn _ _ b T F regs hP hF hPost hlen h0 hB => by
+      let _ : Fact (2 ≤ a.1) := ⟨hn⟩
+      let _ := v.decode a
+      obtain ⟨hB1, hnB, hwidth, -, -⟩ := decider_bounds v a (TC.width φ)
+      have hE : Env v a _ (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ)) _ F :=
+        ⟨fun fv base val => ModelChecker.atomicCompiler_correct hwf fv base val, hB1, hnB, hF,
+          hPost⟩
+      have hC := correct hE φ rfl true hwidth (fun e : Empty => e.elim) 3 Empty.elim
+        RelEnv.empty b T regs hP (by decide) (fun e => e.elim) (by omega) h0 (fun e => e.elim) hB
+      refine ⟨hC.1.mono fun regs' ⟨hk, hsat⟩ =>
+        ⟨hk.bounded, hwf, hn, (hφ (decoded v a hn)).mpr hsat⟩, fun ⟨_, _, hK⟩ => ?_⟩
+      exact (hC.2 ((hφ (decoded v a hn)).mp hK)).mono fun _ _ => trivial
 
 end Cslib.Logic.FO.Ordered.TCModelChecker
 

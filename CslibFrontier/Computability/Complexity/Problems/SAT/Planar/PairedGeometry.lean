@@ -310,35 +310,50 @@ theorem variablePosition_mem_openCell (v : Variable) :
     norm_num [realPoint]
     exact_mod_cast h
 
-/-- Every raw variable has the tag prescribed by its cell's kind. -/
-theorem raw_variable_cell_kind (φ : CNF ℕ) {v : Variable}
-    (hv : v ∈ (rawFormula φ).vars) : v.2.isLeft = true ↔ v.1 ∉ crossingSites φ := by
-  have hsignal (p q : Point) (l : Fin 2) :
-      (signal (crossingSites φ) p q l).2.isLeft = true ↔ p ∉ crossingSites φ := by
-    by_cases hp : p ∈ crossingSites φ <;> simp [signal, port, hp, Sum.isLeft]
+private theorem penultimate_mem_dropLast {r : Route} (h : 2 ≤ r.length) :
+    r.getD (r.length - 2) (0, 0) ∈ r.dropLast := by
+  have hk : r.length - 2 < r.dropLast.length := by simp only [List.length_dropLast]; omega
+  rw [List.getD_eq_getElem _ _ (by simp only [List.length_dropLast] at hk; omega)]
+  rw [← List.getElem_dropLast hk]
+  exact List.getElem_mem hk
+
+/-- Every raw variable is an ordinary cell's own variable, a selected crossing's own variable, or
+a signal presented by a non-final cell of an occurrence path. -/
+private theorem raw_variable_cases (φ : CNF ℕ) {v : Variable} (hv : v ∈ (rawFormula φ).vars) :
+    (∃ p ∈ ordinaryCells φ, ∃ x, v = (p, .inl x)) ∨ (∃ p ∈ crossingSites φ, ∃ x, v = (p, .inr x)) ∨
+      ∃ o ∈ Cslib.Logic.PL.occurrences φ, ∃ p ∈ (occurrencePath φ o).dropLast, ∃ q lane,
+        v = signal (crossingSites φ) p q lane := by
   obtain ⟨c, hc, b, hv⟩ := CNF.mem_vars.mp hv
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
-  rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, _, e, _, hpc⟩
-  · obtain ⟨i, j, x, _, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hv
+  rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, e, he, hpc⟩
+  · obtain ⟨i, j, x, ho, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hv
     have heq' := congrArg Prod.fst heq
     dsimp only [lastLiteral] at heq'
-    subst v
-    exact hsignal _ _ _
+    exact Or.inr (Or.inr ⟨_, ho, _,
+      penultimate_mem_dropLast (PlanarCompile.occurrencePath_length_ge_two ho), _, _, heq'.symm⟩)
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨l, _, heq⟩ := List.mem_map.mp hv
     have heq' := congrArg Prod.fst heq
     change (p, Sum.inl l.1) = v at heq'
-    subst v
-    simpa using ((mem_ordinaryCells φ p).1 hp).2
+    exact Or.inl ⟨p, hp, _, heq'.symm⟩
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨l, _, heq⟩ := List.mem_map.mp hv
     have heq' := congrArg Prod.fst heq
     change (p, Sum.inr l.1) = v at heq'
-    subst v
-    simp [hp]
-  · rcases hpc with rfl | rfl <;>
-      rcases link_literal_cases _ _ _ _ hv with heq | heq <;> dsimp only at heq <;> subst v <;>
-      exact hsignal _ _ _
+    exact Or.inr (Or.inl ⟨p, hp, _, heq'.symm⟩)
+  · have hpair := List.of_mem_zip he
+    rcases hpc with rfl | rfl <;> rcases link_literal_cases _ _ _ _ hv with heq | heq <;>
+      first
+      | exact Or.inr (Or.inr ⟨o, ho, _, hpair.1, _, _, heq⟩)
+      | exact Or.inr (Or.inr ⟨o, ho, _, List.mem_of_mem_tail hpair.2, _, _, heq⟩)
+
+/-- Every raw variable has the tag prescribed by its cell's kind. -/
+theorem raw_variable_cell_kind (φ : CNF ℕ) {v : Variable}
+    (hv : v ∈ (rawFormula φ).vars) : v.2.isLeft = true ↔ v.1 ∉ crossingSites φ := by
+  rcases raw_variable_cases φ hv with ⟨p, hp, x, rfl⟩ | ⟨p, hp, x, rfl⟩ | ⟨-, -, p, -, q, l, rfl⟩
+  · simpa using ((mem_ordinaryCells φ p).1 hp).2
+  · simp [hp]
+  · by_cases hp : p ∈ crossingSites φ <;> simp [signal, port, hp, Sum.isLeft]
 
 /-- Actual variable positions identify their structured names. -/
 theorem variablePosition_injOn_rawVars (φ : CNF ℕ) :
@@ -466,8 +481,7 @@ private theorem originalClause_endpoints {φ : CNF ℕ} {sites : List Point}
   dsimp only at hlr ⊢
   rw [← List.zip_of_prod rfl rfl] at hlr
   obtain ⟨⟨sourceLiteral, j⟩, hlj, heq⟩ := List.mem_map.mp hlr
-  have ho : (i, j, sourceLiteral) ∈ Cslib.Logic.PL.occurrences φ :=
-    List.mem_flatMap.mpr ⟨(c, i), hci, List.mem_map.mpr ⟨(sourceLiteral, j), hlj, rfl⟩⟩
+  have ho := mk_mem_occurrences_of_mem_zipIdx hci hlj
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq
   have hlast : (occurrencePath φ (i, j, sourceLiteral)).getLastD (0, 0) =
       Layout.center (φ.distinctVars.length + i) := by
@@ -769,45 +783,14 @@ theorem routes_endpoints (φ : CNF ℕ) {i : ℕ}
   have h := (raw_routes_endpoints φ).get hi hir
   simpa only [List.get_eq_getElem, List.getD_eq_getElem _ _ hir] using h
 
-private theorem penultimate_mem_dropLast {r : Route} (h : 2 ≤ r.length) :
-    r.getD (r.length - 2) (0, 0) ∈ r.dropLast := by
-  have hk : r.length - 2 < r.dropLast.length := by simp only [List.length_dropLast]; omega
-  rw [List.getD_eq_getElem _ _ (by simp only [List.length_dropLast] at hk; omega)]
-  rw [← List.getElem_dropLast hk]
-  exact List.getElem_mem hk
-
 /-- Every emitted variable lies in a selected crossing or a retained occupied path cell. -/
 theorem raw_variable_cell_membership (φ : CNF ℕ) {v : Variable}
     (hv : v ∈ (rawFormula φ).vars) :
     v.1 ∈ crossingSites φ ∨ ∃ r ∈ paths φ, v.1 ∈ r.dropLast := by
-  obtain ⟨c, hc, b, hv⟩ := CNF.mem_vars.mp hv
-  obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
-  rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, e, he, hpc⟩
-  · obtain ⟨i, j, x, ho, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hv
-    have heq' := congrArg Prod.fst heq
-    dsimp only [lastLiteral] at heq'
-    subst v
-    exact Or.inr ⟨_, PlanarCompile.occurrencePath_mem_paths ho,
-      penultimate_mem_dropLast (PlanarCompile.occurrencePath_length_ge_two ho)⟩
-  · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨l, _, heq⟩ := List.mem_map.mp hv
-    have heq' := congrArg Prod.fst heq
-    change (p, Sum.inl l.1) = v at heq'
-    subst v
-    exact Or.inr ((mem_ordinaryCells φ p).1 hp).1
-  · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨l, _, heq⟩ := List.mem_map.mp hv
-    have heq' := congrArg Prod.fst heq
-    change (p, Sum.inr l.1) = v at heq'
-    subst v
-    exact Or.inl hp
-  · have hpair := List.of_mem_zip he
-    rcases hpc with rfl | rfl <;>
-      rcases link_literal_cases _ _ _ _ hv with heq | heq <;> dsimp only at heq <;> subst v
-    all_goals
-      apply Or.inr
-      refine ⟨_, PlanarCompile.occurrencePath_mem_paths ho, ?_⟩
-      first | exact hpair.1 | exact List.mem_of_mem_tail hpair.2
+  rcases raw_variable_cases φ hv with ⟨p, hp, x, rfl⟩ | ⟨p, hp, x, rfl⟩ | ⟨o, ho, p, hp, q, l, rfl⟩
+  · exact Or.inr ((mem_ordinaryCells φ p).1 hp).1
+  · exact Or.inl hp
+  · exact Or.inr ⟨_, PlanarCompile.occurrencePath_mem_paths ho, hp⟩
 
 /-- No actual variable is placed in an original clause cell. -/
 theorem raw_variable_not_clause_cell {φ : CNF ℕ} {v : Variable}
@@ -1787,10 +1770,8 @@ private theorem originalClause_routes_nodup_at {φ : CNF ℕ}
     exact List.nodup_range' _
   apply hn.map_on
   intro lj hlj mk hmk heq
-  have ho : (i, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-    List.mem_flatMap.mpr ⟨(c, i), hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
-  have ht : (i, mk.2, mk.1) ∈ Cslib.Logic.PL.occurrences φ :=
-    List.mem_flatMap.mpr ⟨(c, i), hci, List.mem_map.mpr ⟨mk, hmk, rfl⟩⟩
+  have ho := mk_mem_occurrences_of_mem_zipIdx hci hlj
+  have ht := mk_mem_occurrences_of_mem_zipIdx hci hmk
   have hot := lastLiteral_route_injective hw hv ho ht (b := lj.1.2) (b' := mk.1.2) heq
   have hjl := Prod.mk.inj (Prod.mk.inj hot).2
   exact Prod.ext hjl.2 hjl.1
