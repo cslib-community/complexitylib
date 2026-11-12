@@ -1830,7 +1830,16 @@ two-endpoint counterexample to dropping width.
 
 [ReserveOutput](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/ReserveOutput.lean)
 assembles the actual finite output from explicit lower-child conditional-error-cost fourth
-moments. `actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
+moments. Its finite geometric, routing and cutoff hypotheses are the documented fields of
+`ReserveOutputContext`; `ReserveOutputChildren` contains the independently supplied raw,
+preparation and maximum families. Their shared
+[OutputContext](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/OutputContext.lean)
+module gives named constructions `amplification`, `tolerance`, `rawSteps`, `prepSteps`,
+`rawWalk`, `prepWalk`, `cost` and `increment`. The records are supplied after the output
+constant is selected: `Cbound` depends on HP, ζ, scale and the positive floor, before P,
+J, the prime instance, horizon, prefix length or child families. These names preserve the
+finite terms and their explicit losses; they do not bundle the output guarantee.
+`actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
 matrices by finite maxima of the actual first/B1 envelopes divided by `2^dyadicSlack`.
 The first payment uses absolute mean error over `rate kt + G`; the second retains
 `A = P * (|ζ| * (Lh + Lρ) / rate kt)^4`. At horizon m its uniform child-cost reserve is
@@ -1842,8 +1851,9 @@ RAW steps are the maximum of the actual first-noise requirement and the fully am
 by `genuineNormalizedRecipe_eq_request`; capacities are actually `(K+1)*2^(64*slack)`.
 The theorem derives nonnegativity, row mass and zero extension, with finite cover,
 narrower-source horizon, gate/cutoff/cap and routing agreements still explicit.
-The [new regressions](../../CslibFrontierTests/ReserveOutput.lean) evaluate a positive,
-nonconstant full-matrix input with a free spectator, show the once-negative arithmetic,
+The [regressions](../../CslibFrontierTests/ReserveOutput.lean) construct an inhabited shared
+context with two bins and distinct full/usage exponents, evaluate a positive nonconstant
+full-matrix input with a free spectator, show the once-negative arithmetic,
 compute nonzero common B and check the actual completed prefix at index zero.
 The bounded fixture does not assert the canonical routed-bin mean or recursive reserves.
 A separate actual lower-child conditional-cost client proves that the finite reserve is
@@ -1893,8 +1903,10 @@ alone does not provide an absolute residual error.
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
-lower-child budget induction, native realization and RL=L remain in
-[issue #1721](https://github.com/cslib-community/cslib-frontier/issues/1721).
+lower-child budget induction, native realization and RL=L remain unproved by this API.
+The scope and status of this route are recorded in
+[issue #1721](https://github.com/cslib-community/cslib-frontier/issues/1721); the shared-context
+extraction maintains its existing finite results and does not resume the dropped route.
 
 ## Extract an emitted pseudorandom prefix
 
