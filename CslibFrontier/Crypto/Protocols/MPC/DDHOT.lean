@@ -11,7 +11,7 @@ public import CslibFrontier.Crypto.Computational.DiffieHellman.Finite
 public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.UniformPoint
 
 /-!
 # Three-Message DDH 1-out-of-2 Oblivious Transfer
@@ -749,19 +749,6 @@ branch. -/
     let reply := if σ then ((u', w'), (e_σ, c_σ)) else ((e_σ, c_σ), (u', w'))
     return singletonView (ddhOTReceiverView σ b u reply)
 
-omit [DecidableEq G] in
-/-- If `g` generates `G` and `G` has `q` elements, mapping `ZMod q` by `c ↦ c • g` pushes the
-uniform distribution on `ZMod q` to the uniform distribution on `G`. -/
-private theorem uniformOfFintype_zmod_bind_smul {α : Type} {g : G} {q : ℕ} [NeZero q]
-    [Module (ZMod q) G] (hcard : Fintype.card G = q) (hgen : ∀ y : G, ∃ k : ZMod q, k • g = y)
-    (f : G → PMF α) :
-    (PMF.uniformOfFintype (ZMod q)).bind (fun c => f (c • g)) =
-      (PMF.uniformOfFintype G).bind f := by
-  have hbij : Function.Bijective (fun c : ZMod q => c • g) :=
-    (Fintype.bijective_iff_surjective_and_card _).mpr ⟨hgen, by rw [ZMod.card, hcard]⟩
-  rw [← PMF.uniformOfFintype_map_equiv (Equiv.ofBijective _ hbij), PMF.bind_map]
-  rfl
-
 /-- Moving two outer binds over `p` inside three inner binds over `p`. -/
 private theorem bind_two_three_comm {α β : Type} (p : PMF α) (f : α → α → α → α → α → PMF β) :
     p.bind (fun x₁ => p.bind (fun x₂ => p.bind (fun y₁ => p.bind (fun y₂ => p.bind (fun y₃ =>
@@ -787,6 +774,8 @@ theorem ideal_receiver_eq_ddhRandomExperiment (g : G) (q : ℕ) [NeZero q] [Modu
       ((i : Fin 2) → OTOut G i) → ProbComp Bool) :
     ProbComp.eval (idealJoint (otFunctionality G) {1} (ddhOTReceiverSim g q) x >>= D) =
       ProbComp.eval (ddhRandomExperiment q g (ddhOTReduction g q x D)) := by
+  have hg : Function.Bijective fun c : ZMod q => c • g :=
+    (Fintype.bijective_iff_surjective_and_card _).mpr ⟨hgen, by rw [ZMod.card, hcard]⟩
   simp only [idealJoint, otFunctionality, Functionality.ofDeterministic, ddhOTReceiverSim,
     ddhRandomExperiment, ddhOTReduction, ProbComp.eval_bind, ProbComp.eval_pure,
     ProbComp.eval_uniform, PMF.pure_bind, PMF.bind_bind]
@@ -795,7 +784,7 @@ theorem ideal_receiver_eq_ddhRandomExperiment (g : G) (q : ℕ) [NeZero q] [Modu
   refine congrArg (PMF.bind _) (funext fun b =>
     congrArg (PMF.bind _) (funext fun r =>
       congrArg (PMF.bind _) (funext fun s => ?_)))
-  rw [← uniformOfFintype_zmod_bind_smul hcard hgen]
+  rw [← uniformOfFintype_bind_smul hg]
   refine congrArg (PMF.bind _) (funext fun b_ddh => ?_)
   let σ : Bool := x 1
   let m_other : G := if σ then (x 0).1 else (x 0).2
@@ -805,8 +794,7 @@ theorem ideal_receiver_eq_ddhRandomExperiment (g : G) (q : ℕ) [NeZero q] [Modu
       invFun := fun w => w - m_other + b • u'
       left_inv := fun w => by dsimp; rw [add_sub_cancel_right, sub_add_cancel]
       right_inv := fun w => by dsimp; rw [add_sub_cancel_right, sub_add_cancel] }
-  rw [← PMF.uniformOfFintype_map_equiv e_shift, PMF.bind_map,
-    ← uniformOfFintype_zmod_bind_smul hcard hgen]
+  rw [← PMF.uniformOfFintype_map_equiv e_shift, PMF.bind_map, ← uniformOfFintype_bind_smul hg]
   rfl
 
 /-- **Computational privacy against a corrupted receiver**: every distinguisher's advantage
@@ -870,20 +858,6 @@ theorem succProbability_ddhOTUncheckedIdealGame_le
     (S : ProbComp (Bool × (G → ProbComp (G × G)))) :
     (Game.succProbability (ProbComp.eval (ddhOTUncheckedIdealGame S)) : ℝ) ≤
       (Fintype.card G : ℝ)⁻¹ := by
-  have hunit : ∀ x : G,
-      ((PMF.uniformOfFintype G).bind (fun y => PMF.pure (decide (x = y)))) true =
-        (Fintype.card G : ENNReal)⁻¹ := fun x => by
-    simp only [PMF.bind_apply, PMF.uniformOfFintype_apply, PMF.pure_apply]
-    rw [tsum_eq_single x]
-    · simp
-    · intro y hy
-      have hdec : decide (x = y) = false := decide_eq_false hy.symm
-      simp [hdec]
-  have hguess : ∀ (x : G) (E : G → Bool), (∀ y, E y = true → x = y) →
-      ((PMF.uniformOfFintype G).bind fun y => PMF.pure (E y)) true ≤
-        (Fintype.card G : ENNReal)⁻¹ := fun x E hE => by
-    rw [← hunit x]
-    exact PMF.map_true_mono _ fun y _ h => decide_eq_true (hE y h)
   have h_ennreal :
       ProbComp.eval (ddhOTUncheckedIdealGame S) true ≤ (Fintype.card G : ENNReal)⁻¹ := by
     simp only [ddhOTUncheckedIdealGame, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -895,15 +869,17 @@ theorem succProbability_ddhOTUncheckedIdealGame_le
       refine PMF.bind_apply_le_on_support _ fun m₀ _ => ?_
       rw [PMF.bind_comm]
       refine PMF.bind_apply_le_on_support _ fun pair _ => ?_
-      refine hguess pair.2 _ fun y h => ?_
-      exact congrArg Prod.snd (of_decide_eq_true h)
+      exact PMF.uniformOfFintype_bind_pure_apply_true_le fun y hy y' hy' =>
+        (congrArg Prod.snd (of_decide_eq_true hy)).symm.trans
+          (congrArg Prod.snd (of_decide_eq_true hy'))
     · simp only [↓reduceIte]
       rw [PMF.bind_comm]
       refine PMF.bind_apply_le_on_support _ fun m₁ _ => ?_
       rw [PMF.bind_comm]
       refine PMF.bind_apply_le_on_support _ fun pair _ => ?_
-      refine hguess pair.1 _ fun y h => ?_
-      exact congrArg Prod.fst (of_decide_eq_true h)
+      exact PMF.uniformOfFintype_bind_pure_apply_true_le fun y hy y' hy' =>
+        (congrArg Prod.fst (of_decide_eq_true hy)).symm.trans
+          (congrArg Prod.fst (of_decide_eq_true hy'))
   rw [Game.coe_succProbability, ← ENNReal.toReal_natCast, ← ENNReal.toReal_inv]
   exact ENNReal.toReal_mono (by simp) h_ennreal
 

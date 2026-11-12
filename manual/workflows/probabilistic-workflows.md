@@ -152,6 +152,15 @@ and `PMF.map_not_true` for complements. To compose an event bound through `PMF.b
 [checked examples](../../CslibFrontierTests/PMFBool.lean) recover the mass of `false` from the mass of
 `true`; run `scripts/build.sh CslibFrontierTests.PMFBool`.
 
+For a guessing bound, import
+[PMF/UniformPoint.lean](../../CslibFrontier/Probability/PMF/UniformPoint.lean) instead of summing
+over the uniform law by hand. `PMF.uniformOfFintype_bind_decide_eq_apply_true a` says a uniform
+draw equals `a` with probability `(Fintype.card α)⁻¹`, and
+`PMF.uniformOfFintype_bind_pure_apply_true_le` gives the upper bound `(Fintype.card α)⁻¹` for any
+test accepting at most one value, such as comparing a fixed point with an injective image of the
+draw. The [fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
+compute discrete-logarithm advantages `1 / q` with it.
+
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
 [PMF/Finiteness.lean](../../CslibFrontier/Probability/PMF/Finiteness.lean) and discharge each side

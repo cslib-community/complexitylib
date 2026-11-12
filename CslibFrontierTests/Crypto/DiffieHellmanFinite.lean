@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Crypto.Computational.DiffieHellman.Finite
+import CslibFrontier.Probability.PMF.UniformPoint
 
 /-!
 # Fixed-group discrete-logarithm and Diffie–Hellman experiments: checked instances
@@ -31,19 +32,13 @@ section General
 
 variable {G : Type} [AddCommGroup G] (q : ℕ) [NeZero q] [Module (ZMod q) G] (g : G)
 
-/-- A uniform exponent is a given one with probability `1 / q`. -/
-theorem uniform_eq_apply (c : ZMod q) :
-    (PMF.uniformOfFintype (ZMod q)).bind (fun a => PMF.pure (decide (a = c))) true =
-      (q : ℝ≥0∞)⁻¹ := by
-  rw [PMF.bind_apply, tsum_fintype]
-  simp [PMF.uniformOfFintype_apply, PMF.pure_apply]
-
 /-- Guessing the exponent `0` wins the discrete-logarithm experiment with probability `1 / q`,
 whatever the group. -/
 theorem dlAdvantage_const_zero : dlAdvantage q g (fun _ => pure 0) = (q : ℝ≥0)⁻¹ := by
   simp only [dlAdvantage, dlExperiment, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbComp.eval_uniform, PMF.pure_bind, eq_comm (a := (0 : ZMod q))]
-  rw [Game.succProbability, uniform_eq_apply, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast]
+    ProbComp.eval_uniform, PMF.pure_bind]
+  rw [Game.succProbability, PMF.uniformOfFintype_bind_decide_eq_apply_true, ZMod.card,
+    ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast]
 
 /-- A distinguisher that ignores its input has DDH advantage `0`. -/
 theorem ddhAdvantage_const (p : ProbComp Bool) :
@@ -71,11 +66,12 @@ theorem succProbability_ddhRealExperiment_identityTest
     (hg : Function.Injective fun c : ZMod q => c • g) :
     Game.succProbability (ProbComp.eval (ddhRealExperiment q g identityTest)) =
       (q : ℝ≥0)⁻¹ := by
-  have h (a b : ZMod q) : (a = 0 ∧ a * b = 0) ↔ a = 0 :=
-    ⟨And.left, fun ha => ⟨ha, by rw [ha, zero_mul]⟩⟩
+  have h (a b : ZMod q) : (a = 0 ∧ a * b = 0) ↔ 0 = a :=
+    ⟨fun h => h.1.symm, fun ha => ⟨ha.symm, by rw [← ha, zero_mul]⟩⟩
   simp only [ddhRealExperiment, identityTest, ProbComp.eval_bind, ProbComp.eval_pure,
     ProbComp.eval_uniform, smul_eq_zero_iff hg, h, PMF.bind_const]
-  rw [Game.succProbability, uniform_eq_apply, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast]
+  rw [Game.succProbability, PMF.uniformOfFintype_bind_decide_eq_apply_true, ZMod.card,
+    ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast]
 
 /-- In the random DDH world the identity test accepts exactly when `a = c = 0`, with probability
 `1 / q²`. -/

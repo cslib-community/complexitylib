@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Probabilistic.PPT
 public import CslibFrontier.Crypto.Game
 public import Mathlib.Algebra.Field.ZMod
 public import Mathlib.Algebra.Module.Defs
+import CslibFrontier.Crypto.Computational.DiffieHellman.Finite
 import CslibFrontier.Probability.PMF
 import Mathlib.SetTheory.Cardinal.Finite
 
@@ -151,13 +152,8 @@ uniform `γ : ZMod (F.order d)` has the same distribution as `γ • g` itself. 
 theorem uniform_smul_generator_add {α : Type*} (d : F.Desc) (m : F.Carrier d)
     (f : F.Carrier d → PMF α) :
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ => f (γ • F.generator d + m)) =
-      (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ => f (γ • F.generator d) := by
-  obtain ⟨μ, rfl⟩ := F.smul_generator_surjective d m
-  simp only [← add_smul]
-  change (PMF.uniformOfFintype (ZMod (F.order d))).bind
-      ((fun γ => f (γ • F.generator d)) ∘ Equiv.addRight μ) =
-    (PMF.uniformOfFintype (ZMod (F.order d))).bind (fun γ => f (γ • F.generator d))
-  rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
+      (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ => f (γ • F.generator d) :=
+  uniformOfFintype_bind_smul_add (F.smul_generator_surjective d) m f
 
 /-- The discrete-logarithm experiment ([BonehShoup2023], Attack Game 10.4): draw public group
 parameters and a uniform `α`, give the adversary those parameters and the encoding of `α • g`,

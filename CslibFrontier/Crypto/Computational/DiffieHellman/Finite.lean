@@ -11,6 +11,8 @@ public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Algebra.Module.ZMod
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 
 /-!
 # Discrete-logarithm and Diffie–Hellman experiments in a fixed group
@@ -41,6 +43,10 @@ groups are in `CslibFrontier/Crypto/Computational/DiscreteLog.lean` and
 
 ## Main results
 
+* `Cslib.Crypto.uniformOfFintype_bind_smul_add`: when every element of `G` is a multiple of `g`,
+  masking by a uniform `c • g` hides any fixed element (the one-time group mask).
+* `Cslib.Crypto.uniformOfFintype_bind_smul`: when `c ↦ c • g` is a bijection `ZMod q → G`, the
+  element `c • g` for uniform `c` is uniform on `G`.
 * `Cslib.Crypto.dlAdvantage_le_cdhAdvantage_dlToCDH`: DL advantage is at most the CDH advantage
   of `dlToCDH`, with no hypothesis on the group.
 * `Cslib.Crypto.cdhAdvantage_le_ddhAdvantage_cdhToDDH_add`: when `c ↦ c • g` is injective on
@@ -147,6 +153,35 @@ of `u` and `v`, and answer whether it is `w`. -/
   let z ← A u v
   return z = w
 
+/-! ### Uniform masks -/
+
+section Masks
+
+open Probability
+
+variable {G : Type} [AddCommGroup G] {q : ℕ} [NeZero q] [Module (ZMod q) G] {g : G} {α : Type*}
+
+/-- **One-time group mask**: when every element of `G` is a multiple of `g`, adding a fixed `m` to
+`c • g` for uniform `c : ZMod q` leaves the distribution of `c • g` unchanged. -/
+theorem uniformOfFintype_bind_smul_add (hg : Function.Surjective fun c : ZMod q => c • g) (m : G)
+    (f : G → PMF α) :
+    ((PMF.uniformOfFintype (ZMod q)).bind fun c => f (c • g + m)) =
+      (PMF.uniformOfFintype (ZMod q)).bind fun c => f (c • g) := by
+  obtain ⟨μ, rfl⟩ := hg m
+  simp only [← add_smul]
+  exact PMF.uniformOfFintype_bind_equiv (Equiv.addRight μ) fun c => f (c • g)
+
+/-- When `c ↦ c • g` is a bijection `ZMod q → G` (that is, `g` generates `G` and `G` has `q`
+elements), the element `c • g` for uniform `c : ZMod q` is uniform on `G`. -/
+theorem uniformOfFintype_bind_smul [Fintype G] (hg : Function.Bijective fun c : ZMod q => c • g)
+    (f : G → PMF α) :
+    ((PMF.uniformOfFintype (ZMod q)).bind fun c => f (c • g)) =
+      (PMF.uniformOfFintype G).bind f := by
+  rw [← PMF.uniformOfFintype_map_equiv (Equiv.ofBijective _ hg), PMF.bind_map]
+  rfl
+
+end Masks
+
 /-! ### Concrete bounds -/
 
 section Bounds
@@ -189,16 +224,9 @@ theorem ddhRandomExperiment_cdhToDDH_apply_true_le
   refine PMF.bind_apply_le_on_support _ fun b _ => ?_
   rw [PMF.bind_comm]
   refine PMF.bind_apply_le_on_support _ fun z _ => ?_
-  rw [PMF.bind_apply, tsum_fintype]
-  simp only [PMF.uniformOfFintype_apply, ZMod.card, PMF.pure_apply, eq_comm (a := true),
-    decide_eq_true_eq]
-  rw [← Finset.mul_sum, Finset.sum_boole]
-  have hcard : (Finset.univ.filter fun c : ZMod q => z = c • g).card ≤ 1 :=
-    Finset.card_le_one_iff.mpr fun h₁ h₂ => hg ((Finset.mem_filter.mp h₁).2.symm.trans
-      (Finset.mem_filter.mp h₂).2)
-  calc (q : ℝ≥0∞)⁻¹ * ((Finset.univ.filter fun c : ZMod q => z = c • g).card : ℝ≥0∞)
-      ≤ (q : ℝ≥0∞)⁻¹ * 1 := by gcongr; exact_mod_cast hcard
-    _ = (q : ℝ≥0∞)⁻¹ := mul_one _
+  refine (PMF.uniformOfFintype_bind_pure_apply_true_le fun c hc c' hc' =>
+    hg ((of_decide_eq_true hc).symm.trans (of_decide_eq_true hc'))).trans_eq ?_
+  rw [ZMod.card]
 
 /-- **CDH is at least as hard as DDH, up to `1 / q`** ([BonehShoup2023], Section 10.5): when `g`
 has order `q`, the CDH advantage of `A` is at most the DDH advantage of `cdhToDDH A` plus
