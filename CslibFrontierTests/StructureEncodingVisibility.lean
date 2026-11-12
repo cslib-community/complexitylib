@@ -46,7 +46,8 @@ example {n : ℕ} :
       encPrivateTable encPrivateTable := by
   fun_prop
 
-example {n : ℕ} : ComputableInPolyTime (fun t : TaggedTable n => !t.tag) encPrivateTable encBool := by
+example {n : ℕ} :
+    ComputableInPolyTime (fun t : TaggedTable n => !t.tag) encPrivateTable encBool := by
   have hflip :
       ComputableInPolyTime (fun t : TaggedTable n => TaggedTable.mk (!t.tag) t.entries)
         encPrivateTable encPrivateTable := by

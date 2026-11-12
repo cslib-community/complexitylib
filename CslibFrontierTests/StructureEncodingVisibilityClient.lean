@@ -31,7 +31,8 @@ example {n : ℕ} :
       encPublicTable encPublicTable := by
   fun_prop
 
-example {n : ℕ} : ComputableInPolyTime (fun t : TaggedTable n => !t.tag) encPublicTable encBool := by
+example {n : ℕ} :
+    ComputableInPolyTime (fun t : TaggedTable n => !t.tag) encPublicTable encBool := by
   have hflip :
       ComputableInPolyTime (fun t : TaggedTable n => TaggedTable.mk (!t.tag) t.entries)
         encPublicTable encPublicTable := by
@@ -52,8 +53,10 @@ run_cmd do
     "_mk_budget", "_mk_polyTime", "_tag_deg", "_tag_inO", "_tag_budget", "_tag_polyTime",
     "_entries_deg", "_entries_inO", "_entries_budget", "_entries_polyTime"]
   for suffix in suffixes do
-    let visible := (`CslibFrontierTests.StructureEncodingVisibility.encPublicTable).appendAfter suffix
-    let hidden := (`CslibFrontierTests.StructureEncodingVisibility.encPrivateTable).appendAfter suffix
+    let visible :=
+      (`CslibFrontierTests.StructureEncodingVisibility.encPublicTable).appendAfter suffix
+    let hidden :=
+      (`CslibFrontierTests.StructureEncodingVisibility.encPrivateTable).appendAfter suffix
     unless env.contains visible do
       throwError "default-public enc_structure did not export {visible}"
     if env.contains hidden then
