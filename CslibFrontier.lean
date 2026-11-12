@@ -4575,6 +4575,10 @@ public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
 public import CslibFrontier.DataStructure.Dictionary.DynamicMatching
 public import CslibFrontier.DataStructure.Dictionary.FeistelPerm
 public import CslibFrontier.DataStructure.Dictionary.FeistelQuotient
+public import CslibFrontier.DataStructure.Dictionary.KickTree.DoublyStochastic
+public import CslibFrontier.DataStructure.Dictionary.KickTree.QuotientPerm
+public import CslibFrontier.DataStructure.Dictionary.KickTree.RoundSeed
+public import CslibFrontier.DataStructure.Dictionary.KickTree.SmallUniversePerm
 public import CslibFrontier.DataStructure.Dictionary.Memory
 public import CslibFrontier.DataStructure.Dictionary.Minimap
 public import CslibFrontier.DataStructure.Dictionary.PerfectHashing.Construction
