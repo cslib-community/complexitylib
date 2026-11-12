@@ -8,6 +8,7 @@ module
 -- upstream: local-only (explicit realization-certificate regression tests)
 
 public import CslibFrontier.Computability.WordRAM.Realization.BoundedTactic
+public import CslibFrontierTests.WordRAMRealizeGraded
 
 /-!
 # Supplying method certificates to `realize`
@@ -116,6 +117,38 @@ example (m : ℕ → Memory.Prog ℕ)
         (fun _ _ _ => True) (fun _ _ => 0) := by
       realize [_hm trivial]
   trivial
+
+-- A concrete query-free method pays for every iteration and requires exact subtraction.
+private def paidMethod (n : ℕ) : Memory.Prog ℕ :=
+  iterate Cslib.WordRAM.Realization.Tests.identityBody () n (n - 1)
+
+private theorem paidMethod_realizes : Realizes .exact paidMethod word word
+    (fun _ n _ => 0 < n) (fun n _ => n) := by
+  unfold paidMethod
+  realize [CslibFrontierTests.WordRAMRealizeGraded.counted_bound_realizes]
+  exact h
+
+-- Generalization makes the method opaque; its supplied certificate is proved, not assumed.
+-- The caller retains the staged argument's fit, genuine callee domain and paid work comparison.
+example : Realizes .exact (fun d : ℕ × ℕ => paidMethod (d.1 + d.1)) pairWords word
+    (fun w d _ => Fits w (d.1 + d.1) ∧ 0 < d.1 + d.1 ∧ d.1 + d.1 ≤ d.2)
+    (fun d _ => d.2) := by
+  generalize heq : paidMethod = m
+  have hPaid : True → Realizes .exact m word word
+      (fun _ n _ => 0 < n) (fun n _ => n) := by
+    intro _
+    rw [← heq]
+    exact paidMethod_realizes
+  fail_if_success realize
+  realize [hPaid trivial]
+  · exact h.1
+  · exact h.2.1
+  · exact h.2.2
+
+-- At width two the caller domain is inhabited, and its positive-work method returns one.
+example : Fits 2 (1 + 1) ∧ 0 < 1 + 1 ∧ 1 + 1 ≤ 2 ∧ paidMethod (1 + 1) = pure 1 := by
+  exact ⟨by decide, by decide, by decide,
+    Cslib.WordRAM.Realization.Tests.identity_iterate 2 1⟩
 
 -- Listing a certificate with unpaid local work cannot establish a zero-work contract.
 example (m : ℕ → Memory.Prog ℕ)
