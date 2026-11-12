@@ -124,8 +124,8 @@ example {n mbar w η B_e : ℕ}
   exact invertLWE_trapdoorLWE_of_norm_bound w Abar out.2 hH s e hR he
     (by simpa [Fintype.card_fin] using hbound)
 
--- Tag-independence of the ideal LWE hybrid `genTrapIdeal`: the public matrix distribution under
--- `toyH` is identical to the untagged (`H = 1`) and punctured (`H = 0`) distributions and equals
+-- Tag-independence of the idealized hybrid `genTrapIdeal`: the public matrix distribution under
+-- `toyH` is identical to the one under the zero tag `H = 0` and equals
 -- the uniform distribution.
 example :
     ProbComp.eval (genTrapIdeal 2 2 4 toyH) = ProbComp.eval (genTrapIdeal 2 2 4 0) ∧

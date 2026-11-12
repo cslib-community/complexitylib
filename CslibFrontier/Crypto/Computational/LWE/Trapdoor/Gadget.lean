@@ -32,7 +32,7 @@ half-modulus bit decoder `LWE.decode` from `Cslib.Crypto.LWE`:
    `f_G(x) = G x mod 2 ^ w` (`gadgetMatrix_mulVec_gadgetDecomp`,
    `gadgetMatrix_mul_gadgetDecompMatrix`), establishing that `G` is primitive
    (`gadgetMatrix_surjective`).
-3. **Kernel lattice `Λ^⊥(gᵀ)` and `Λ^⊥(G)` and the explicit short basis `S_w` (`scalarBasis`,
+3. **Kernel lattice `Λ^⊥(gᵀ)` and `Λ^⊥(G)` and the explicit short matrix `S_w` (`scalarBasis`,
    `gadgetBasis`):**
    For `q = 2 ^ w`, the lower-bidiagonal integer matrix `S_w ∈ ℤ^{w × w}` with `2` on the diagonal
    and `-1` on the subdiagonal (Section 4.1, Proposition 4.2) has columns in `Λ^⊥(gᵀ)`
@@ -40,11 +40,14 @@ half-modulus bit decoder `LWE.decode` from `Cslib.Crypto.LWE`:
    at most `2` (`natAbs_scalarBasis_le_two`), and squared Euclidean column norm at most `5`
    (`sum_sq_scalarBasis_col_le_five`). Its block-diagonal sum `S = I_ι ⊗ S_w` (`gadgetBasis`)
    satisfies `G S ≡ 0 (mod 2 ^ w)` (`gadgetMatrix_mul_gadgetBasis`) with the same column norm
-   bounds.
+   bounds. The paper deduces that `S_w` is a basis of `Λ^⊥(gᵀ)` from these two facts and the
+   index `|ℤ^w / Λ^⊥(gᵀ)| = q`; that lattice-index argument, and the Gram–Schmidt identity
+   `S̃_w = 2 I`, are not formalized, so the generating-set property is not proved here.
 4. **Deterministic `g_G`-inversion (`invertScalar`, `invertGadget`):**
    The iterative nearest-plane algorithm of Section 4.1 recovers `s` from
    `g_G(s, e) = sᵀ G + eᵀ mod 2 ^ w` whenever every integer error coordinate satisfies
-   `4 * (e p).natAbs < 2 ^ w` (`invertScalar_correct`, `invertGadget_gadgetLWE`).
+   `4 * (e p).natAbs < 2 ^ w` (`invertScalar_correct`, `invertGadget_gadgetLWE`). The paper
+   allows every `e_i ∈ [-q/4, q/4)`; the hypothesis here excludes only the endpoint `-q/4`.
 
 General (non-power-of-two) moduli from Section 4.2 and randomized discrete-Gaussian preimage
 sampling over cosets of `Λ^⊥(G)` are not formalized here.
@@ -78,7 +81,8 @@ sampling over cosets of `Λ^⊥(G)` are not formalized here.
   `Cslib.Crypto.LWE.Trapdoor.sum_sq_scalarBasis_col_le_five`,
   `Cslib.Crypto.LWE.Trapdoor.gadgetMatrix_mul_gadgetBasis`,
   `Cslib.Crypto.LWE.Trapdoor.sum_sq_gadgetBasis_col_le_five`: kernel membership, determinant
-  `2 ^ w`, and Euclidean column length `≤ √5` for `S_w` and `S` (Theorem 4.1 / Proposition 4.2).
+  `2 ^ w`, and Euclidean column length `≤ √5` for `S_w` and `S` (Theorem 4.1 / Proposition 4.2;
+  the basis property itself is not proved).
 * `Cslib.Crypto.LWE.Trapdoor.invertScalar_correct`,
   `Cslib.Crypto.LWE.Trapdoor.invertGadget_gadgetLWE`: exact inversion of `g_G(s, e)` under
   `4 * (e p).natAbs < 2 ^ w` (Theorem 4.1 / Section 4.1).
@@ -243,13 +247,15 @@ def InScalarKernel (w : ℕ) (z : Fin w → ℤ) : Prop :=
   gadgetVector w ⬝ᵥ (Int.cast ∘ z) = 0
 
 /-- Membership in the `q`-ary kernel lattice `Λ^⊥(A) = { z ∈ ℤ ^ κ : A z ≡ 0 (mod q) }`
-([MicciancioPeikert2012], Section 2.3). -/
+([MicciancioPeikert2012], Section 2.2). The last conjunct of `Cslib.Crypto.SIS.IsSolution` is
+this condition. -/
 def InKernelLattice {q : ℕ} [Fintype κ] (A : Matrix ρ κ (ZMod q)) (z : κ → ℤ) : Prop :=
   A *ᵥ (Int.cast ∘ z) = 0
 
-/-- The explicit short basis `S_w ∈ ℤ ^ {w × w}` of `Λ^⊥(gᵀ)` for `q = 2 ^ w`
-([MicciancioPeikert2012], Section 4.1, Proposition 4.2): `2` on the diagonal, `-1` on the first
-subdiagonal, and `0` elsewhere. -/
+/-- The matrix `S_w ∈ ℤ ^ {w × w}` that [MicciancioPeikert2012], Section 4.1 and
+Proposition 4.2, shows is a short basis of `Λ^⊥(gᵀ)` for `q = 2 ^ w`: `2` on the diagonal, `-1`
+on the first subdiagonal, and `0` elsewhere. This module proves kernel membership and the
+determinant and norm bounds, not the basis property. -/
 def scalarBasis (w : ℕ) : Matrix (Fin w) (Fin w) ℤ :=
   fun i j => if i.val = j.val then 2 else if i.val = j.val + 1 then -1 else 0
 
@@ -347,8 +353,9 @@ theorem sum_sq_scalarBasis_col_le_five (w : ℕ) (j : Fin w) :
       (fun h => (h (Finset.mem_univ j)).elim)]
     simp
 
-/-- The block-diagonal short basis `S = I_ι ⊗ S_w` of `Λ^⊥(G)` for `q = 2 ^ w`
-([MicciancioPeikert2012], Section 4, Theorem 4.1). -/
+/-- The block-diagonal matrix `S = I_ι ⊗ S_w`, the short basis of `Λ^⊥(G)` for `q = 2 ^ w` in
+[MicciancioPeikert2012], Section 4 and Theorem 4.1 (only kernel membership and norm bounds are
+proved here). -/
 def gadgetBasis (w : ℕ) [DecidableEq ι] : Matrix (ι × Fin w) (ι × Fin w) ℤ :=
   fun p q => if p.1 = q.1 then scalarBasis w p.2 q.2 else 0
 
@@ -528,7 +535,8 @@ private theorem invertScalarAux_eq_mod (w : ℕ) (s : ZMod (2 ^ w)) (e : Fin w �
     rw [hdec, mod_two_pow_succ]
 
 /-- Iterative scalar gadget inversion recovers `s` whenever `4 * (e j).natAbs < 2 ^ w` for every
-coordinate `j` ([MicciancioPeikert2012], Section 4.1). -/
+coordinate `j` ([MicciancioPeikert2012], Section 4.1, "Inversion"; the paper's condition
+`e_j ∈ [-q/4, q/4)` also admits `e_j = -q/4`). -/
 @[simp] theorem invertScalar_correct (w : ℕ) (s : ZMod (2 ^ w)) (e : Fin w → ℤ)
     (he : ∀ j : Fin w, 4 * (e j).natAbs < 2 ^ w) :
     invertScalar w (fun j => 2 ^ j.val * s + (e j : ZMod (2 ^ w))) = s := by

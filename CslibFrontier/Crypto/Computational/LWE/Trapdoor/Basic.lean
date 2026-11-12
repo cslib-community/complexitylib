@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.LWE.Trapdoor.Gadget
+public import CslibFrontier.Crypto.Computational.SIS.Basic
 public import Mathlib.Data.Matrix.ColumnRowPartitioned
 public import Mathlib.Data.ZMod.ValMinAbs
 import CslibFrontier.Probability.PMF.Map
@@ -22,36 +23,46 @@ This module formalizes the gadget-based trapdoor construction of
 primitive gadget matrix `G = gadgetMatrix w` and short basis `S = gadgetBasis w` from
 `CslibFrontier.Crypto.Computational.LWE.Trapdoor.Gadget`:
 
-1. **Tagged parity-check matrices and `H`-tag trapdoors (Section 5.1, Definition 5.2):**
+1. **Tagged parity-check matrices and `H`-tag trapdoors (Definition 5.2, Algorithm 1):**
    Given `Abar : Matrix ι μ (ZMod (2 ^ w))`, a short integer matrix
    `R : Matrix μ (ι × Fin w) ℤ`, and an invertible tag `H : Matrix ι ι (ZMod (2 ^ w))`,
    `taggedMatrix w Abar R H = [Abar | H * G - Abar * R]` (`Matrix.fromCols`) and
    `trapdoorTransform R = [R; I]` (`Matrix.fromRows`) satisfy the fundamental tag equation
    `A * [R; I] = H * G` (`taggedMatrix_mul_trapdoorTransform`, `isHTagTrapdoor_taggedMatrix`).
-2. **Syndrome lifting (`f_A⁻¹`) and extended kernel basis (`Λ^⊥(A)`) (Section 5.1, Lemma 5.3):**
+2. **Syndrome lifting (`f_A⁻¹`) and lifted kernel vectors in `Λ^⊥(A)` (Section 5.1):**
    Applying `[R; I]` lifts any gadget preimage `z` of `H⁻¹ u` to a short preimage `x = [R z; z]`
-   satisfying `A x = u` (`taggedMatrix_mulVec_invertSyndrome`, `taggedMatrix_surjective`), and
-   maps the gadget basis `S` to an explicit short basis `[R; I] * S = [R S; S]` of `Λ^⊥(A)`
-   (`taggedMatrix_mul_extendedGadgetBasis`, `extendedGadgetBasis_col_inKernelLattice`) with
-   explicit infinity-norm bounds (`natAbs_extendedGadgetBasis_inl_le`,
-   `natAbs_extendedGadgetBasis_inr_le`).
-3. **Deterministic trapdoor LWE inversion (`g_A⁻¹`, Algorithm 2 / Theorem 5.4):**
+   satisfying `A x = u` (`taggedMatrix_mulVec_invertSyndrome`), so `A` is primitive
+   (`taggedMatrix_surjective`; the remark after Definition 5.2). The `w` columns of
+   `[R; I] * S = [R S; S]` lie in `Λ^⊥(A)` (`taggedMatrix_mul_extendedGadgetBasis`,
+   `extendedGadgetBasis_col_inKernelLattice`), with entrywise bounds
+   (`natAbs_extendedGadgetBasis_inl_le`, `natAbs_extendedGadgetBasis_inr_le`). These are the
+   right-hand `w` columns of the basis `S_A` of Lemma 5.3; the left-hand block (built from a
+   solution `W` of `G W = -H⁻¹ A [I | 0]ᵀ`), the claim that `S_A` generates `Λ^⊥(A)`, and the
+   Gram–Schmidt bound of Lemma 5.3 are not formalized.
+3. **Deterministic trapdoor LWE inversion (`g_A⁻¹`, Section 5.3, Algorithm 2 / Theorem 5.4):**
    Given `bᵀ = sᵀ A + eᵀ mod 2 ^ w`, right-multiplying by `[R; I]` yields
    `bᵀ [R; I] = (sᵀ H) G + (e_1ᵀ R + e_2ᵀ)` (`trapdoorLWE_vecMul_trapdoorTransform`). Applying
    `invertGadget w` followed by `H⁻¹` and centered lifting (`ZMod.valMinAbs`) recovers `(s, e)`
    exactly whenever the projected error `e_1ᵀ R + e_2ᵀ` has coordinates bounded by `< 2 ^ w / 4`
    (`invertLWESecret_trapdoorLWE`, `invertLWE_trapdoorLWE`,
-   `invertLWE_trapdoorLWE_of_norm_bound`).
-4. **Probabilistic trapdoor generation `GenTrap` and tag-independent ideal distribution
-   (Algorithm 1, Section 5.1):**
+   `invertLWE_trapdoorLWE_of_norm_bound`). This is the deterministic part of Theorem 5.4 with
+   the oracle `O` instantiated by `invertGadget` and with coordinatewise (infinity-norm)
+   hypotheses in place of the paper's Euclidean bound `‖e‖ < q / (2 ‖B‖ s)`; the second claim of
+   Theorem 5.4 (success with overwhelming probability for Gaussian errors) is not formalized.
+4. **Probabilistic trapdoor generation `GenTrap` and an idealized hybrid
+   (Section 5.2, Algorithm 1):**
    `genTrap` samples `Abar` uniformly via `LWE.sampleMatrix` and `R` with centered-binomial
-   entries in `[-η, η]` (`sampleTrapdoorMatrix`), returning `(taggedMatrix w Abar R H, R)`
-   (`mem_support_genTrap`). In the ideal LWE hybrid `genTrapIdeal` where `Abar * R` is replaced
-   by an independent uniform right block, the resulting public matrix distribution is identically
-   uniform for every tag `H` (`eval_genTrapIdeal_eq_uniform`, `eval_genTrapIdeal_eq_of_tags`).
+   entries in `[-η, η]` (`sampleTrapdoorMatrix`; the paper allows any distribution `D`),
+   returning `(taggedMatrix w Abar R H, R)` (`mem_support_genTrap`). In the idealized hybrid
+   `genTrapIdeal`, where `Abar * R` is replaced by an independent uniform block, the public matrix
+   is exactly uniform for every tag `H` (`eval_genTrapIdeal_eq_uniform`,
+   `eval_genTrapIdeal_eq_of_tags`).
 
-Randomized discrete-Gaussian preimage sampling (`DelTrap` / `SampleD`) and the leftover-hash-lemma
-statistical instantiation of `GenTrap` are not formalized here.
+Not formalized here: the step from `genTrap` to `genTrapIdeal`, that is, the statistical
+instantiation (regularity of `[Abar | Abar R]`) and the computational instantiation (decision-LWE)
+of Section 5.2, so neither the statistical closeness of `A` to uniform claimed in Theorem 5.1 nor
+its pseudorandomness is proved; the trapdoor quality `s_1(R)`; discrete-Gaussian preimage sampling
+(`SampleD`, Section 5.4); and trapdoor delegation (Section 5.5).
 
 ## Main definitions
 
@@ -61,13 +72,13 @@ statistical instantiation of `GenTrap` are not formalized here.
   transformation `[R; I]`, and `H`-tag trapdoor predicate.
 * `Cslib.Crypto.LWE.Trapdoor.liftPreimage`, `Cslib.Crypto.LWE.Trapdoor.invertSyndrome`,
   `Cslib.Crypto.LWE.Trapdoor.extendedGadgetBasis`: preimage lifting, deterministic syndrome
-  inversion `f_A⁻¹`, and extended short kernel basis `[R; I] * S`.
+  inversion `f_A⁻¹`, and the lifted kernel vectors `[R; I] * S`.
 * `Cslib.Crypto.LWE.Trapdoor.trapdoorLWE`, `Cslib.Crypto.LWE.Trapdoor.projectedError`,
   `Cslib.Crypto.LWE.Trapdoor.invertLWESecret`, `Cslib.Crypto.LWE.Trapdoor.invertLWE`:
   trapdoor LWE evaluation and Algorithm 2 (`Invert`).
 * `Cslib.Crypto.LWE.Trapdoor.sampleTrapdoorRow`, `Cslib.Crypto.LWE.Trapdoor.sampleTrapdoorMatrix`,
   `Cslib.Crypto.LWE.Trapdoor.genTrap`, `Cslib.Crypto.LWE.Trapdoor.genTrapIdeal`: probabilistic
-  trapdoor generation (`GenTrap`, Algorithm 1) and its ideal LWE hybrid.
+  trapdoor generation (`GenTrap`, Algorithm 1) and its idealized uniform hybrid.
 
 ## Main results
 
@@ -77,7 +88,7 @@ statistical instantiation of `GenTrap` are not formalized here.
 * `Cslib.Crypto.LWE.Trapdoor.taggedMatrix_mul_extendedGadgetBasis`,
   `Cslib.Crypto.LWE.Trapdoor.natAbs_extendedGadgetBasis_inl_le`,
   `Cslib.Crypto.LWE.Trapdoor.natAbs_extendedGadgetBasis_inr_le`: kernel membership and entry
-  bounds for the extended basis `[R; I] * S` (Lemma 5.3).
+  bounds for the lifted vectors `[R; I] * S` (the right-hand block of `S_A` in Lemma 5.3).
 * `Cslib.Crypto.LWE.Trapdoor.taggedMatrix_mulVec_invertSyndrome`,
   `Cslib.Crypto.LWE.Trapdoor.taggedMatrix_surjective`,
   `Cslib.Crypto.LWE.Trapdoor.natAbs_invertSyndrome_inl_le`: deterministic syndrome inversion
@@ -86,11 +97,11 @@ statistical instantiation of `GenTrap` are not formalized here.
   `Cslib.Crypto.LWE.Trapdoor.invertLWESecret_trapdoorLWE`,
   `Cslib.Crypto.LWE.Trapdoor.invertLWE_trapdoorLWE`,
   `Cslib.Crypto.LWE.Trapdoor.invertLWE_trapdoorLWE_of_norm_bound`: exact LWE inversion via a
-  gadget trapdoor (Algorithm 2, Theorem 5.4).
+  gadget trapdoor (Algorithm 2, deterministic part of Theorem 5.4).
 * `Cslib.Crypto.LWE.Trapdoor.mem_support_genTrap`,
   `Cslib.Crypto.LWE.Trapdoor.eval_genTrapIdeal_eq_uniform`,
   `Cslib.Crypto.LWE.Trapdoor.eval_genTrapIdeal_eq_of_tags`: support guarantees for `genTrap` and
-  exact uniformity / tag-independence of `genTrapIdeal`.
+  exact uniformity / tag-independence of the idealized hybrid `genTrapIdeal`.
 
 ## References
 
@@ -107,10 +118,10 @@ open scoped BigOperators _root_.Matrix
 
 variable {ι μ κ : Type*} {w : ℕ}
 
-/-! ### Tagged parity-check matrices and `H`-tag trapdoors (`Section 5.1`, `Definition 5.2`) -/
+/-! ### Tagged parity-check matrices and `H`-tag trapdoors (Definition 5.2, Algorithm 1) -/
 
 /-- The right block `A_1 = H * G - Abar * R` of a Micciancio–Peikert tagged parity-check matrix
-([MicciancioPeikert2012], Section 5.1, Equation 5.1). -/
+([MicciancioPeikert2012], Section 5.2, Algorithm 1, step 2). -/
 def taggedRightBlock (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
@@ -118,28 +129,30 @@ def taggedRightBlock (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
   H * gadgetMatrix w - Abar * R.map Int.cast
 
 /-- The Micciancio–Peikert tagged parity-check matrix `A = [Abar | H * G - Abar * R]`
-([MicciancioPeikert2012], Section 5.1, Algorithm 1). -/
+([MicciancioPeikert2012], Section 5.2, Algorithm 1, step 2). -/
 def taggedMatrix (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
     (H : _root_.Matrix ι ι (ZMod (2 ^ w))) : _root_.Matrix ι (μ ⊕ (ι × Fin w)) (ZMod (2 ^ w)) :=
   _root_.Matrix.fromCols Abar (taggedRightBlock w Abar R H)
 
-/-- The untagged parity-check matrix `A = [Abar | G - Abar * R]` corresponding to `H = I`
-([MicciancioPeikert2012], Section 5.1). -/
+/-- The untagged parity-check matrix `A = [Abar | G - Abar * R]` corresponding to `H = I`, the
+default tag of [MicciancioPeikert2012], Algorithm 1. -/
 def untaggedMatrix (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
     (R : _root_.Matrix μ (ι × Fin w) ℤ) : _root_.Matrix ι (μ ⊕ (ι × Fin w)) (ZMod (2 ^ w)) :=
   taggedMatrix w Abar R 1
 
 /-- The integer trapdoor transformation matrix `[R; I]` mapping gadget coordinates `ι × Fin w`
-into full column coordinates `μ ⊕ (ι × Fin w)` ([MicciancioPeikert2012], Section 5.1). -/
+into full column coordinates `μ ⊕ (ι × Fin w)` ([MicciancioPeikert2012], Definition 5.2). -/
 def trapdoorTransform [DecidableEq ι]
     (R : _root_.Matrix μ (ι × Fin w) ℤ) : _root_.Matrix (μ ⊕ (ι × Fin w)) (ι × Fin w) ℤ :=
   _root_.Matrix.fromRows R 1
 
-/-- An integer matrix `T` is an `H`-tag gadget trapdoor for `A` if `A * T ≡ H * G (mod 2 ^ w)`
-([MicciancioPeikert2012], Definition 5.2). -/
+/-- `A * T ≡ H * G (mod 2 ^ w)`: the defining equation of a `G`-trapdoor with tag `H`
+([MicciancioPeikert2012], Definition 5.2, with `T = [R; I]`). The predicate does not require `T`
+to have the block form `[R; I]` or `H` to be invertible; the results below supply both
+explicitly. -/
 def IsHTagTrapdoor (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype κ]
     (A : _root_.Matrix ι κ (ZMod (2 ^ w)))
     (T : _root_.Matrix κ (ι × Fin w) ℤ)
@@ -157,8 +170,9 @@ theorem trapdoorTransform_map_intCast (w : ℕ) [DecidableEq ι]
   · subst hpq; simp
   · simp [_root_.Matrix.one_apply_ne hpq]
 
-/-- Fundamental tag equation: `[Abar | H * G - Abar * R] * [R; I] = H * G` modulo `2 ^ w`
-([MicciancioPeikert2012], Section 5.1, Equation 5.1). -/
+/-- Fundamental tag equation: `[Abar | H * G - Abar * R] * [R; I] = H * G` modulo `2 ^ w`, the
+correctness of [MicciancioPeikert2012], Algorithm 1 (Section 5.2), in the sense of
+Definition 5.2. -/
 @[simp] theorem taggedMatrix_mul_trapdoorTransform (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -184,9 +198,8 @@ theorem isHTagTrapdoor_untaggedMatrix (w : ℕ) [Fintype ι] [DecidableEq ι] [F
     IsHTagTrapdoor w (untaggedMatrix w Abar R) (trapdoorTransform R) 1 :=
   taggedMatrix_mul_trapdoorTransform w Abar R 1
 
-/-- Puncturing / tag-shift identity: subtracting `(H - H') * G` from the right block of a
-`H`-tagged matrix yields the `H'`-tagged matrix for the same `(Abar, R)`
-([MicciancioPeikert2012], Section 5.1). -/
+/-- Tag-shift identity: subtracting `(H - H') * G` from the right block of an `H`-tagged matrix
+yields the `H'`-tagged matrix for the same `(Abar, R)`. -/
 theorem taggedRightBlock_sub_tag (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
@@ -196,8 +209,8 @@ theorem taggedRightBlock_sub_tag (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintyp
   simp only [taggedRightBlock, _root_.Matrix.sub_mul]
   abel
 
-/-- When the tag vanishes (`H = 0`), the trapdoor transformation maps into the kernel of `A`:
-`taggedMatrix w Abar R 0 * [R; I] = 0` ([MicciancioPeikert2012], Section 5.1). -/
+/-- When the tag vanishes (`H = 0`, which is not an invertible tag), the trapdoor
+transformation maps into the kernel of `A`: `taggedMatrix w Abar R 0 * [R; I] = 0`. -/
 theorem taggedMatrix_zero_mul_trapdoorTransform (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -205,10 +218,18 @@ theorem taggedMatrix_zero_mul_trapdoorTransform (w : ℕ)
     taggedMatrix w Abar R 0 * (trapdoorTransform R).map (Int.cast : ℤ → ZMod (2 ^ w)) = 0 := by
   rw [taggedMatrix_mul_trapdoorTransform, _root_.Matrix.zero_mul]
 
-/-! ### Syndrome lifting (`f_A⁻¹`) and extended kernel basis (`Λ^⊥(A)`) (`Lemma 5.3`) -/
+/-! ### Syndrome lifting (`f_A⁻¹`) and lifted kernel vectors in `Λ^⊥(A)` (Section 5.1) -/
+
+/-- Every short integer solution in the sense of `Cslib.Crypto.SIS.IsSolution` lies in the
+`q`-ary kernel lattice `Λ^⊥(A)`. -/
+theorem inKernelLattice_of_isSolution {q : ℕ} {ρ : Type*} [Fintype κ]
+    {A : _root_.Matrix ρ κ (ZMod q)} {β : ℕ} {z : κ → ℤ} (hz : SIS.IsSolution A β z) :
+    InKernelLattice A z := by
+  obtain ⟨-, -, hker⟩ := hz
+  exact hker
 
 /-- Lift an integer vector `z : ι × Fin w → ℤ` in gadget space to `x = [R z; z]` in full column
-space `μ ⊕ (ι × Fin w)` ([MicciancioPeikert2012], Section 5.1). -/
+space `μ ⊕ (ι × Fin w)`. -/
 def liftPreimage [Fintype ι] (R : _root_.Matrix μ (ι × Fin w) ℤ) (z : ι × Fin w → ℤ) :
     μ ⊕ (ι × Fin w) → ℤ :=
   Sum.elim (R *ᵥ z) z
@@ -235,7 +256,7 @@ theorem cast_comp_liftPreimage (w : ℕ) [Fintype ι] [DecidableEq ι]
   exact RingHom.map_mulVec (Int.castRingHom (ZMod (2 ^ w))) (trapdoorTransform R) z k
 
 /-- Action of `taggedMatrix w Abar R H` on a lifted vector `[R z; z]`:
-`A *ᵥ [R z; z] = H *ᵥ (G *ᵥ z)` modulo `2 ^ w` ([MicciancioPeikert2012], Section 5.1). -/
+`A *ᵥ [R z; z] = H *ᵥ (G *ᵥ z)` modulo `2 ^ w`. -/
 @[simp] theorem taggedMatrix_mulVec_liftPreimage (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -247,8 +268,7 @@ theorem cast_comp_liftPreimage (w : ℕ) [Fintype ι] [DecidableEq ι]
   rw [cast_comp_liftPreimage, _root_.Matrix.mulVec_mulVec, taggedMatrix_mul_trapdoorTransform,
     ← _root_.Matrix.mulVec_mulVec]
 
-/-- Lifting any kernel vector `z ∈ Λ^⊥(G)` yields a kernel vector `[R z; z] ∈ Λ^⊥(A)`
-([MicciancioPeikert2012], Lemma 5.3). -/
+/-- Lifting any kernel vector `z ∈ Λ^⊥(G)` yields a kernel vector `[R z; z] ∈ Λ^⊥(A)`. -/
 theorem liftPreimage_inKernelLattice (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -259,8 +279,10 @@ theorem liftPreimage_inKernelLattice (w : ℕ)
   unfold InKernelLattice at hz ⊢
   rw [taggedMatrix_mulVec_liftPreimage, hz, _root_.Matrix.mulVec_zero]
 
-/-- The extended short basis `[R; I] * S = [R S; S]` of `Λ^⊥(A)` obtained by lifting the
-primitive gadget basis `S = gadgetBasis w` ([MicciancioPeikert2012], Section 3.1 and Lemma 5.3). -/
+/-- The `w` lifted kernel vectors `[R; I] * S = [R S; S]` obtained from the gadget basis
+`S = gadgetBasis w`. These are the right-hand `w` columns of the basis `S_A` of
+[MicciancioPeikert2012], Lemma 5.3; they alone do not span `Λ^⊥(A)`, and the left-hand block of
+`S_A` is not formalized. -/
 def extendedGadgetBasis (w : ℕ) [Fintype ι] [DecidableEq ι]
     (R : _root_.Matrix μ (ι × Fin w) ℤ) : _root_.Matrix (μ ⊕ (ι × Fin w)) (ι × Fin w) ℤ :=
   trapdoorTransform R * gadgetBasis w
@@ -271,7 +293,7 @@ theorem extendedGadgetBasis_eq_fromRows (w : ℕ) [Fintype ι] [DecidableEq ι]
   rw [extendedGadgetBasis, trapdoorTransform, _root_.Matrix.fromRows_mul, _root_.Matrix.one_mul]
 
 /-- Every column of `extendedGadgetBasis w R` lies in `Λ^⊥(A)`:
-`taggedMatrix w Abar R H * ([R; I] * S) ≡ 0 (mod 2 ^ w)` ([MicciancioPeikert2012], Lemma 5.3). -/
+`taggedMatrix w Abar R H * ([R; I] * S) ≡ 0 (mod 2 ^ w)`. -/
 @[simp] theorem taggedMatrix_mul_extendedGadgetBasis (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -307,8 +329,7 @@ private theorem natAbs_sum_le {α : Type*} [Fintype α] (f : α → ℤ) (B : �
     _ = Fintype.card α * B := by simp
 
 /-- Top-block entry bound for `extendedGadgetBasis w R`: if every entry of row `j` of `R` has
-magnitude at most `B`, then `|(R * S) j q| ≤ 2 * (|ι| * w) * B`
-([MicciancioPeikert2012], Lemma 5.3). -/
+magnitude at most `B`, then `|(R * S) j q| ≤ 2 * (|ι| * w) * B`. -/
 theorem natAbs_extendedGadgetBasis_inl_le (w : ℕ) [Fintype ι] [DecidableEq ι]
     (R : _root_.Matrix μ (ι × Fin w) ℤ) (j : μ) (q : ι × Fin w) (B : ℕ)
     (hR : ∀ p : ι × Fin w, (R j p).natAbs ≤ B) :
@@ -333,7 +354,8 @@ theorem natAbs_extendedGadgetBasis_inr_le (w : ℕ) [Fintype ι] [DecidableEq ι
 
 /-- Deterministic syndrome inversion `f_A⁻¹` using the trapdoor `R` and inverse tag `Hinv`:
 given `u : ι → ZMod (2 ^ w)`, decompose `Hinv *ᵥ u` into `{0, 1}` digits via `gadgetDecomp w` and
-lift via `[R; I]` ([MicciancioPeikert2012], Section 5.1). -/
+lift via `[R; I]`. This is a deterministic analogue of the preimage sampler of
+[MicciancioPeikert2012], Section 5.4: it returns a short preimage, not a Gaussian sample. -/
 def invertSyndrome (w : ℕ) [Fintype ι]
     (Hinv : _root_.Matrix ι ι (ZMod (2 ^ w)))
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
@@ -341,7 +363,7 @@ def invertSyndrome (w : ℕ) [Fintype ι]
   liftPreimage R (gadgetDecomp w (Hinv *ᵥ u))
 
 /-- Correctness of deterministic syndrome inversion: if `H * Hinv = 1`, then
-`A *ᵥ invertSyndrome w Hinv R u = u` modulo `2 ^ w` ([MicciancioPeikert2012], Section 5.1). -/
+`A *ᵥ invertSyndrome w Hinv R u = u` modulo `2 ^ w`. -/
 @[simp] theorem taggedMatrix_mulVec_invertSyndrome (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -353,7 +375,8 @@ def invertSyndrome (w : ℕ) [Fintype ι]
     _root_.Matrix.mulVec_mulVec, hH, _root_.Matrix.one_mulVec]
 
 /-- Any tagged matrix with an invertible tag `H` (`H * Hinv = 1`) is primitive: its integer
-column combinations span `(ZMod (2 ^ w)) ^ ι` ([MicciancioPeikert2012], Section 5.1). -/
+column combinations span `(ZMod (2 ^ w)) ^ ι` (the remark after [MicciancioPeikert2012],
+Definition 5.2). -/
 theorem taggedMatrix_surjective (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
@@ -387,7 +410,7 @@ theorem natAbs_invertSyndrome_inr_le (w : ℕ) [Fintype ι]
     (invertSyndrome w Hinv R u (Sum.inr p)).natAbs ≤ 1 :=
   natAbs_gadgetDecomp_le_one w (Hinv *ᵥ u) p
 
-/-! ### Deterministic trapdoor LWE inversion (`Algorithm 2`, `Theorem 5.4`) -/
+/-! ### Deterministic trapdoor LWE inversion (Section 5.3, Algorithm 2, Theorem 5.4) -/
 
 /-- Centered integer lift (`ZMod.valMinAbs`) recovers any integer `z` with `2 * |z| < q`. -/
 @[simp] theorem valMinAbs_intCast_of_lt {q : ℕ} [NeZero q] (z : ℤ) (hz : 2 * z.natAbs < q) :
@@ -395,7 +418,7 @@ theorem natAbs_invertSyndrome_inr_le (w : ℕ) [Fintype ι]
   refine (ZMod.valMinAbs_spec (z : ZMod q) z).mpr ⟨rfl, ?_, ?_⟩ <;> omega
 
 /-- The LWE evaluation `g_A(s, e) = sᵀ A + eᵀ mod 2 ^ w` associated with a parity-check matrix `A`
-([MicciancioPeikert2012], Section 2.4 and Section 5.2). -/
+([MicciancioPeikert2012], Section 5.3; LWE itself is recalled in Section 2.2). -/
 def trapdoorLWE (w : ℕ) [Fintype ι]
     (A : _root_.Matrix ι κ (ZMod (2 ^ w)))
     (s : ι → ZMod (2 ^ w))
@@ -403,7 +426,7 @@ def trapdoorLWE (w : ℕ) [Fintype ι]
   s ᵥ* A + (Int.cast ∘ e)
 
 /-- The projected error `eᵀ [R; I] = e_1ᵀ R + e_2ᵀ` in gadget space `ι × Fin w`
-([MicciancioPeikert2012], Section 5.2, Algorithm 2). -/
+([MicciancioPeikert2012], Section 5.3, Algorithm 2 and the proof of Theorem 5.4). -/
 def projectedError [Fintype μ]
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
     (e : μ ⊕ (ι × Fin w) → ℤ) : ι × Fin w → ℤ :=
@@ -426,7 +449,7 @@ theorem cast_comp_projectedError (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintyp
 
 /-- Fundamental reduction of `g_A` to `g_G` via `[R; I]`: right-multiplying
 `bᵀ = sᵀ A + eᵀ mod 2 ^ w` by `[R; I]` produces `g_G(Hᵀ s, eᵀ [R; I])`
-([MicciancioPeikert2012], Section 5.2, Algorithm 2, Step 1). -/
+([MicciancioPeikert2012], Section 5.3, Algorithm 2, step 1). -/
 @[simp] theorem trapdoorLWE_vecMul_trapdoorTransform (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -442,7 +465,8 @@ theorem cast_comp_projectedError (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintyp
 
 /-- Infinity-norm bound on the projected error `eᵀ [R; I]`:
 if `|R j p| ≤ B_R` for all `j` and `|e k| ≤ B_e` for all `k`, then
-`|projectedError R e p| ≤ (1 + |μ| * B_R) * B_e` ([MicciancioPeikert2012], Theorem 5.4). -/
+`|projectedError R e p| ≤ (1 + |μ| * B_R) * B_e`. This is an infinity-norm substitute for the
+Cauchy–Schwarz step in the proof of [MicciancioPeikert2012], Theorem 5.4. -/
 theorem natAbs_projectedError_le [Fintype μ]
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
     (e : μ ⊕ (ι × Fin w) → ℤ)
@@ -463,8 +487,9 @@ theorem natAbs_projectedError_le [Fintype μ]
     _ = (1 + Fintype.card μ * B_R) * B_e := by ring
 
 /-- Recover the LWE secret `s` from `bᵀ = sᵀ A + eᵀ mod 2 ^ w` using the trapdoor `R` and inverse
-tag `Hinv` ([MicciancioPeikert2012], Section 5.2, Algorithm 2):
-compute `bhat = b ᵥ* [R; I]`, invert `g_G` via `invertGadget w`, and multiply by `Hinv`. -/
+tag `Hinv` ([MicciancioPeikert2012], Section 5.3, Algorithm 2, steps 1–3, with the oracle `O`
+instantiated by `invertGadget w`): compute `bhat = b ᵥ* [R; I]`, invert `g_G`, and multiply by
+`Hinv`. -/
 def invertLWESecret (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Hinv : _root_.Matrix ι ι (ZMod (2 ^ w)))
     (R : _root_.Matrix μ (ι × Fin w) ℤ)
@@ -484,9 +509,12 @@ def invertLWE (w : ℕ) [Fintype ι] [DecidableEq ι] [Fintype μ]
   let A := taggedMatrix w Abar R H
   (s, fun k => (b k - (s ᵥ* A) k).valMinAbs)
 
-/-- Secret recovery theorem for Algorithm 2 ([MicciancioPeikert2012], Theorem 5.4):
-if `H * Hinv = 1` and `4 * |projectedError R e p| < 2 ^ w` for all `p : ι × Fin w`, then
-`invertLWESecret` recovers `s` from `trapdoorLWE w (taggedMatrix w Abar R H) s e`. -/
+/-- Secret recovery for Algorithm 2 (deterministic part of [MicciancioPeikert2012],
+Theorem 5.4): if `H * Hinv = 1` and `4 * |projectedError R e p| < 2 ^ w` for all
+`p : ι × Fin w`, then `invertLWESecret` recovers `s` from
+`trapdoorLWE w (taggedMatrix w Abar R H) s e`. The hypothesis is the coordinatewise condition
+`R̄ e ∈ P_{1/2}(q · B⁻ᵗ)` from the proof of Theorem 5.4 with `B = 2 I` (slightly strict at the
+endpoint `-q / 4`), not the paper's Euclidean bound on `e`. -/
 @[simp] theorem invertLWESecret_trapdoorLWE (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -499,9 +527,9 @@ if `H * Hinv = 1` and `4 * |projectedError R e p| < 2 ^ w` for all `p : ι × Fi
   rw [invertLWESecret, trapdoorLWE_vecMul_trapdoorTransform, invertGadget_gadgetLWE w _ _ he,
     _root_.Matrix.vecMul_vecMul, hH, _root_.Matrix.vecMul_one]
 
-/-- Full LWE inversion correctness (`Invert`, [MicciancioPeikert2012], Algorithm 2 / Theorem 5.4):
-under `H * Hinv = 1`, `4 * |projectedError R e p| < 2 ^ w`, and `2 * |e k| < 2 ^ w`,
-`invertLWE` recovers the exact pair `(s, e)`. -/
+/-- Full LWE inversion correctness (`Invert`, [MicciancioPeikert2012], Algorithm 2,
+deterministic part of Theorem 5.4): under `H * Hinv = 1`, `4 * |projectedError R e p| < 2 ^ w`,
+and `2 * |e k| < 2 ^ w`, `invertLWE` recovers the exact pair `(s, e)`. -/
 @[simp] theorem invertLWE_trapdoorLWE (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -522,9 +550,10 @@ under `H * Hinv = 1`, `4 * |projectedError R e p| < 2 ^ w`, and `2 * |e k| < 2 ^
   rw [hsub]
   exact valMinAbs_intCast_of_lt (e k) (he k)
 
-/-- Norm-bounded form of Theorem 5.4 ([MicciancioPeikert2012], Theorem 5.4):
+/-- Infinity-norm analogue of the first claim of [MicciancioPeikert2012], Theorem 5.4:
 if `|R j p| ≤ B_R`, `|e k| ≤ B_e`, and `4 * (1 + |μ| * B_R) * B_e < 2 ^ w`, then `invertLWE`
-recovers `(s, e)` from `g_A(s, e)`. -/
+recovers `(s, e)` from `g_A(s, e)`. The paper's version bounds `‖e‖` in terms of `s_1(R)`; the
+probabilistic claim for Gaussian errors is not formalized. -/
 theorem invertLWE_trapdoorLWE_of_norm_bound (w : ℕ)
     [Fintype ι] [DecidableEq ι] [Fintype μ]
     (Abar : _root_.Matrix ι μ (ZMod (2 ^ w)))
@@ -550,10 +579,12 @@ theorem invertLWE_trapdoorLWE_of_norm_bound (w : ℕ)
           Nat.mul_le_mul_right B_e (by omega : 2 ≤ 4 * (1 + Fintype.card μ * B_R))
     exact Nat.lt_of_le_of_lt hle hbound
 
-/-! ### Probabilistic `GenTrap` algorithm and ideal LWE distribution (`Algorithm 1`) -/
+/-! ### Probabilistic `GenTrap` algorithm and idealized hybrid (Section 5.2, Algorithm 1) -/
 
 /-- Sample a row of a short integer trapdoor matrix `R` with independent centered-binomial
-entries in `[-η, η]`. -/
+entries in `[-η, η]` (one admissible choice of the distribution `D` in
+[MicciancioPeikert2012], Algorithm 1; the paper's instantiations use subgaussian or discrete
+Gaussian `D`). -/
 noncomputable def sampleTrapdoorRow (n w η : ℕ) : ProbComp (Fin n × Fin w → ℤ) :=
   (fun (blocks : Fin n → Fin w → ℤ) p => blocks p.1 p.2) <$>
     OracleComp.replicateFin n (OracleComp.replicateFin w (sampleCenteredBinomial η))
@@ -586,8 +617,8 @@ theorem mem_support_sampleTrapdoorMatrix_iff (mbar n w η : ℕ)
   (ProbComp.mem_support_replicateFin_iff mbar (sampleTrapdoorRow n w η) R).trans
     (forall_congr' fun j => mem_support_sampleTrapdoorRow_iff n w η (R j))
 
-/-- Probabilistic trapdoor key generation `GenTrap(1^n, 1^mbar, H)`
-([MicciancioPeikert2012], Section 5.1, Algorithm 1):
+/-- Probabilistic trapdoor key generation `GenTrap_D(Abar, H)` with uniform `Abar`
+([MicciancioPeikert2012], Section 5.2, Algorithm 1):
 sample a uniform matrix `Abar ← sampleMatrix n mbar w` and a short trapdoor matrix
 `R ← sampleTrapdoorMatrix mbar n w η`, and output `(taggedMatrix w Abar R H, R)`. -/
 noncomputable def genTrap (n mbar w η : ℕ)
@@ -601,7 +632,7 @@ noncomputable def genTrap (n mbar w η : ℕ)
 
 /-- Every pair `(A, R)` in the support of `genTrap n mbar w η H` satisfies the `H`-tag trapdoor
 relation `A * [R; I] = H * G` and the entrywise bound `|R j p| ≤ η`
-([MicciancioPeikert2012], Algorithm 1 and Section 5.1). -/
+([MicciancioPeikert2012], Algorithm 1, "whose correctness is immediate"). -/
 theorem mem_support_genTrap (n mbar w η : ℕ)
     (H : _root_.Matrix (Fin n) (Fin n) (ZMod (2 ^ w)))
     {out : _root_.Matrix (Fin n) (Fin mbar ⊕ (Fin n × Fin w)) (ZMod (2 ^ w)) ×
@@ -648,9 +679,11 @@ noncomputable def sampleGadgetBlock (n w : ℕ) :
     PMF.pi_uniformOfFintype]
   congr 1
 
-/-- Ideal LWE hybrid of `GenTrap` ([MicciancioPeikert2012], Section 5.1, "Computational
-instantiation"): replacing the LWE product `Abar * R` by an independent uniform matrix `U`
-yields `[Abar | H * G - U]`. -/
+/-- Idealized hybrid of `GenTrap`: replacing `Abar * R` by an independent uniform matrix `U`
+yields `[Abar | H * G - U]`. [MicciancioPeikert2012], Section 5.2, argues that `A` is close to
+uniform "as long as the distribution of `[Abar | -Abar R]` is"; both the statistical and the
+computational instantiation justify exactly this replacement. Neither justification is
+formalized here, so no statement relates `genTrap` to `genTrapIdeal`. -/
 noncomputable def genTrapIdeal (n mbar w : ℕ)
     (H : _root_.Matrix (Fin n) (Fin n) (ZMod (2 ^ w))) :
     ProbComp (_root_.Matrix (Fin n) (Fin mbar ⊕ (Fin n × Fin w)) (ZMod (2 ^ w))) := do
@@ -659,9 +692,8 @@ noncomputable def genTrapIdeal (n mbar w : ℕ)
   return _root_.Matrix.fromCols Abar (H * gadgetMatrix w - U)
 
 /-- In the ideal LWE hybrid of `GenTrap`, the public matrix `[Abar | H * G - U]` is identically
-uniform over `Matrix (Fin n) (Fin mbar ⊕ (Fin n × Fin w)) (ZMod (2 ^ w))` for every tag `H`
-([MicciancioPeikert2012], Section 5.1). In particular, its distribution is completely
-independent of `H`. -/
+uniform over `Matrix (Fin n) (Fin mbar ⊕ (Fin n × Fin w)) (ZMod (2 ^ w))` for every tag `H`.
+In particular, its distribution is independent of `H`. -/
 @[simp] theorem eval_genTrapIdeal_eq_uniform (n mbar w : ℕ)
     (H : _root_.Matrix (Fin n) (Fin n) (ZMod (2 ^ w))) :
     ProbComp.eval (genTrapIdeal n mbar w H) =
@@ -689,7 +721,7 @@ independent of `H`. -/
   exact PMF.uniformOfFintype_map_equiv e
 
 /-- Tag-independence of `genTrapIdeal`: any two tags `H` and `H'` induce the exact same public
-matrix distribution ([MicciancioPeikert2012], Section 5.1). -/
+matrix distribution. -/
 theorem eval_genTrapIdeal_eq_of_tags (n mbar w : ℕ)
     (H H' : _root_.Matrix (Fin n) (Fin n) (ZMod (2 ^ w))) :
     ProbComp.eval (genTrapIdeal n mbar w H) = ProbComp.eval (genTrapIdeal n mbar w H') := by
