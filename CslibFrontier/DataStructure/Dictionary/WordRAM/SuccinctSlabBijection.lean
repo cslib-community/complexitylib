@@ -237,62 +237,8 @@ theorem tailBijection_gmPushSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (htail : TailBijection n_max gm (fun b' => gm (gmRIdx b')) (gm 1)) :
     TailBijection n_max (gmPushSlab n_max gm b)
       (fun b' => gmPushSlab n_max gm b (gmRIdx b')) (gmPushSlab n_max gm b 1) := by
-  have hf := gmPushSlab_fields gm hb
-  have hptr_eq : ∀ d < maxTailItems n_max,
-      gmPushSlab n_max gm b (gmTailPtrFlatIdx n_max d) = gm (gmTailPtrFlatIdx n_max d) := by
-    intro d hd
-    exact hf.2.2.2.1 _ (by unfold gmTailPtrFlatIdx; omega)
-      (by unfold gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase; omega)
-  have hown_eq : ∀ t < maxTailItems n_max,
-      gmPushSlab n_max gm b (gmTailOwnerIdx n_max t) = gm (gmTailOwnerIdx n_max t) := by
-    intro t ht
-    exact hf.2.2.2.1 _ (by unfold gmTailOwnerIdx gmTailOwnerBase; omega)
-      (by unfold gmTailOwnerIdx gmSlabMetaBase; omega)
-  refine ⟨rfl, by rw [hf.2.1]; exact htail.ntails_le, ?_, ?_, ?_, ?_⟩
-  · intro b' hb'; rw [hf.2.2.1 b' hb']; exact htail.r_le b' hb'
-  · intro b' hb' r hr
-    rw [hf.2.2.1 b' hb'] at hr
-    have hr_cap : r < tailCapPerBucket n_max := lt_of_lt_of_le hr (htail.r_le b' hb')
-    have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max := by
-      unfold maxTailItems
-      have h1 : (b' + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-        Nat.mul_le_mul_right _ hb'
-      nlinarith
-    rw [gmTailPtrIdx, hptr_eq _ hd_lt, hf.2.1]
-    exact htail.ptr_lt b' hb' r hr
-  · intro b' hb' r hr
-    rw [hf.2.2.1 b' hb'] at hr
-    have hr_cap : r < tailCapPerBucket n_max := lt_of_lt_of_le hr (htail.r_le b' hb')
-    have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max := by
-      unfold maxTailItems
-      have h1 : (b' + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-        Nat.mul_le_mul_right _ hb'
-      nlinarith
-    have ht_lt : gm (gmTailPtrIdx n_max b' r) < maxTailItems n_max :=
-      lt_of_lt_of_le (htail.ptr_lt b' hb' r hr) htail.ntails_le
-    rw [gmTailPtrIdx, hptr_eq _ hd_lt, ← gmTailPtrIdx, hown_eq _ ht_lt]
-    exact htail.owner_ptr b' hb' r hr
-  · intro t ht
-    dsimp only
-    rw [hf.2.1] at ht
-    have ht_cap : t < maxTailItems n_max := lt_of_lt_of_le ht htail.ntails_le
-    rw [hown_eq t ht_cap]
-    have hv := htail.owner_valid t ht
-    dsimp only at hv
-    rcases hv with ⟨hb_d, hr_d, hptr_d⟩
-    have hr_cap : gm (gmTailOwnerIdx n_max t) % tailCapPerBucket n_max < tailCapPerBucket n_max :=
-      lt_of_lt_of_le hr_d (htail.r_le _ hb_d)
-    have hd_lt : gm (gmTailOwnerIdx n_max t) < maxTailItems n_max := by
-      have hdm := Nat.div_add_mod (gm (gmTailOwnerIdx n_max t)) (tailCapPerBucket n_max)
-      rw [Nat.mul_comm] at hdm
-      unfold maxTailItems
-      have h1 : (gm (gmTailOwnerIdx n_max t) / tailCapPerBucket n_max + 1) *
-          tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-        Nat.mul_le_mul_right _ hb_d
-      nlinarith
-    refine ⟨hb_d, ?_, ?_⟩
-    · rw [hf.2.2.1 _ hb_d]; exact hr_d
-    · rw [hptr_eq _ hd_lt, hptr_d]
+  obtain ⟨-, h1, hr, hmeta, -⟩ := gmPushSlab_fields gm hb
+  exact htail.congr h1 hr hmeta
 
 /-- `gmPushSlab` assigns physical slab `gm 0` to `(b, gm (gmQIdx b))` and preserves
 `SlabBijection`. -/
@@ -773,62 +719,8 @@ theorem tailBijection_gmPopSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
     (htail : TailBijection n_max gm (fun b' => gm (gmRIdx b')) (gm 1)) :
     TailBijection n_max (gmPopSlab n_max gm b)
       (fun b' => gmPopSlab n_max gm b (gmRIdx b')) (gmPopSlab n_max gm b 1) := by
-  have hp := gmPopSlab_preserves_tail hb hslab
-  have hptr_eq : ∀ d < maxTailItems n_max,
-      gmPopSlab n_max gm b (gmTailPtrFlatIdx n_max d) = gm (gmTailPtrFlatIdx n_max d) := by
-    intro d hd
-    exact hp.2.2.2.2 _ (by unfold gmTailPtrFlatIdx; omega)
-      (by unfold gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase; omega)
-  have hown_eq : ∀ t < maxTailItems n_max,
-      gmPopSlab n_max gm b (gmTailOwnerIdx n_max t) = gm (gmTailOwnerIdx n_max t) := by
-    intro t ht
-    exact hp.2.2.2.2 _ (by unfold gmTailOwnerIdx gmTailOwnerBase; omega)
-      (by unfold gmTailOwnerIdx gmSlabMetaBase; omega)
-  refine ⟨rfl, by rw [hp.2.1]; exact htail.ntails_le, ?_, ?_, ?_, ?_⟩
-  · intro b' hb'; rw [hp.2.2.1 b' hb']; exact htail.r_le b' hb'
-  · intro b' hb' r hr
-    rw [hp.2.2.1 b' hb'] at hr
-    have hr_cap : r < tailCapPerBucket n_max := lt_of_lt_of_le hr (htail.r_le b' hb')
-    have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max := by
-      unfold maxTailItems
-      have h1 : (b' + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-        Nat.mul_le_mul_right _ hb'
-      nlinarith
-    rw [gmTailPtrIdx, hptr_eq _ hd_lt, hp.2.1]
-    exact htail.ptr_lt b' hb' r hr
-  · intro b' hb' r hr
-    rw [hp.2.2.1 b' hb'] at hr
-    have hr_cap : r < tailCapPerBucket n_max := lt_of_lt_of_le hr (htail.r_le b' hb')
-    have hd_lt : b' * tailCapPerBucket n_max + r < maxTailItems n_max := by
-      unfold maxTailItems
-      have h1 : (b' + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-        Nat.mul_le_mul_right _ hb'
-      nlinarith
-    have ht_lt : gm (gmTailPtrIdx n_max b' r) < maxTailItems n_max :=
-      lt_of_lt_of_le (htail.ptr_lt b' hb' r hr) htail.ntails_le
-    rw [gmTailPtrIdx, hptr_eq _ hd_lt, ← gmTailPtrIdx, hown_eq _ ht_lt]
-    exact htail.owner_ptr b' hb' r hr
-  · intro t ht
-    dsimp only
-    rw [hp.2.1] at ht
-    have ht_cap : t < maxTailItems n_max := lt_of_lt_of_le ht htail.ntails_le
-    rw [hown_eq t ht_cap]
-    have hv := htail.owner_valid t ht
-    dsimp only at hv
-    rcases hv with ⟨hb_d, hr_d, hptr_d⟩
-    have hr_cap : gm (gmTailOwnerIdx n_max t) % tailCapPerBucket n_max < tailCapPerBucket n_max :=
-      lt_of_lt_of_le hr_d (htail.r_le _ hb_d)
-    have hd_lt : gm (gmTailOwnerIdx n_max t) < maxTailItems n_max := by
-      have hdm := Nat.div_add_mod (gm (gmTailOwnerIdx n_max t)) (tailCapPerBucket n_max)
-      rw [Nat.mul_comm] at hdm
-      unfold maxTailItems
-      have h1 : (gm (gmTailOwnerIdx n_max t) / tailCapPerBucket n_max + 1) *
-          tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-        Nat.mul_le_mul_right _ hb_d
-      nlinarith
-    refine ⟨hb_d, ?_, ?_⟩
-    · rw [hp.2.2.1 _ hb_d]; exact hr_d
-    · rw [hptr_eq _ hd_lt, hptr_d]
+  obtain ⟨-, h1, hr, -, hmeta⟩ := gmPopSlab_preserves_tail hb hslab
+  exact htail.congr h1 hr hmeta
 
 /-- `gmPopSlab` relocates the last physical slab `gm 0 - 1` into `gm (gmSlabTopIdx b)` and
 preserves `SlabBijection`. -/
@@ -846,8 +738,7 @@ theorem slabBijection_gmPopSlab {n_max : ℕ} {gm : ℕ → ℕ} {b : ℕ}
   rcases hu with ⟨hu0, _, _, huQ, huTop, huGe, huPtr⟩
   have htop_b : gm (gmSlabTopIdx b) = slabPtrOf n_max gm b (gm (gmQIdx b) - 1) :=
     hslab.top_eq b hb (gm (gmQIdx b) - 1) (by omega) (by omega)
-  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := by
-    rw [htop_b]; exact hslab.ptr_lt b hb (gm (gmQIdx b) - 1) (by omega)
+  have hp_del_lt : gm (gmSlabTopIdx b) < gm 0 := hslab.top_lt hb (by omega)
   have hs_old_of_new : ∀ b' < numBuckets n_max,
       ∀ s < gmUnlinkTopSlab n_max gm b (gmQIdx b'),
       s < gm (gmQIdx b') ∧ slabPtrOf n_max gm b' s ≠ gm (gmSlabTopIdx b) := by

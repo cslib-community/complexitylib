@@ -63,24 +63,10 @@ theorem polyTimeReducible_XORSAT_of_templates [Finite Rel] (encRel : Rel ↪ Lis
     (ht : CSP.AffineTemplates arity sem template) :
     PolyTimeReducible (encCSP encRel encNat) XORSAT.encoding (CSPSAT arity sem)
       {F | XORSAT.Satisfiable F} := by
-  have hp : ComputableInPolyTime (toXORSAT arity template)
-      (encCSP encRel encNat) XORSAT.encoding :=
-    (Cslib.Complexity.CSP.computableInPolyTime_validArity encRel arity).ite
-      (CSP.computableInPolyTime_instantiateAffine encRel template)
-      (ComputableInPolyTime.const [([], true)])
-  refine ⟨toXORSAT arity template, hp, fun F => ?_⟩
-  by_cases hF : F.WellFormed arity
-  · have heq : toXORSAT arity template F = F.instantiateAffine 0 template := by
-      simp [toXORSAT, (CSP.validArity_eq_true_iff arity F).mpr hF]
-    rw [mem_iff, Set.mem_ofPred_eq, heq, XORSAT.Satisfiable,
-      CSP.satisfiable_instantiateAffine ht 0 hF]
-    exact and_iff_right hF
-  · have hguard : F.validArity arity = false := by
-      cases hg : F.validArity arity
-      · rfl
-      · exact (hF ((CSP.validArity_eq_true_iff arity F).mp hg)).elim
-    simp [toXORSAT, hguard, mem_iff, hF, XORSAT.Satisfiable,
-      AffineSystem.Holds, AffineEquation.Holds, Bool.zero_eq_false]
+  refine polyTimeReducible_of_guard encRel arity sem [([], true)]
+    (CSP.computableInPolyTime_instantiateAffine encRel template) (fun F hF => ?_)
+    (by simp [XORSAT.Satisfiable, AffineSystem.Holds, AffineEquation.Holds, Bool.zero_eq_false])
+  exact (CSP.satisfiable_instantiateAffine ht 0 hF).symm
 
 /-- **Native P membership for every fixed finite parity-preserved Boolean language.** The
 input has exact declared arities and binary natural-number variable labels. Empty and nullary

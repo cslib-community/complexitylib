@@ -35,12 +35,12 @@ This module formalizes the oracle lowness hierarchy for the gap-definable counti
   eliminating an oracle from the `GapPWithOracle A` gap does not eliminate oracle queries from an
   `FP^A` target function. Target-relativized `LWPP^A` and `WPP^A` with `FP^A` targets are not
   defined or claimed here.
-* **Exact integer-weighted oracle replay (`acceptWeight_exact`, `generalWeightedReplay`,
-  `GapP.generalWeightedReplay_mem`, `generalWeightedReplay_eq_exact`):** when the true-branch
-  weight at each step equals a per-instance denominator `D a` on true oracle answers and `0` on
-  false answers, the untaken branch at every step has weight `0`. Consequently, the replay tree
-  collapses to the single deterministic path following the oracle, contributing `(D a) ^ (T a)` on
-  accepting runs and `0` on rejecting runs.
+* **Exact integer-weighted oracle replay (`acceptWeight_exact`, `weightedReplay_eq_exact`):**
+  when the true-branch weight of `weightedReplay` (from `SharpP.WeightedReplay`) at each step
+  equals the per-instance denominator `D a` on true oracle answers and `0` on false answers, the
+  untaken branch at every step has weight `0`. Consequently, the replay tree collapses to the single
+  deterministic path following the oracle, contributing `(D a) ^ (T a)` on accepting runs and `0`
+  on rejecting runs.
 * **`SPP` is low for `GapP` (`GapPWithOracle_eq_GapP_of_mem_SPP`,
   [Fenner–Fortnow–Kurtz, Section 5][FennerFortnowKurtz1994]):** an `SPP` oracle has a `0`/`1`
   characteristic `GapP` function (`D a = 1`), so `GapPWithOracle A enc = GapP enc`. Hence `SPP` is
@@ -70,7 +70,6 @@ is claimed.
 * `Cslib.Complexity.WPPWithFixedTarget`: wide gaps in `GapPWithOracle` with an unrelativized
   polynomial-time instance-dependent target.
 * `Cslib.Complexity.CeqPWithOracle`: zero sets of `GapPWithOracle` functions.
-* `Cslib.Complexity.generalWeightedReplay`: finite oracle replay with a general integer denominator.
 
 ## Main results
 
@@ -84,9 +83,7 @@ is claimed.
   `Cslib.Complexity.CeqPWithOracle_eq_CeqP`: base inclusions and `P`-oracle eliminations.
 * `Cslib.Complexity.acceptWeight_exact`, `Cslib.Complexity.acceptWeight_exact_of_forall`:
   exact algebraic collapse of `acceptWeight` when untaken branches have weight zero.
-* `Cslib.Complexity.GapP.generalWeightedReplay_mem`,
-  `Cslib.Complexity.generalWeightedReplay_eq_exact`: `GapP` membership and exact evaluation of
-  `generalWeightedReplay`.
+* `Cslib.Complexity.weightedReplay_eq_exact`: exact evaluation of `weightedReplay`.
 * `Cslib.Complexity.GapPWithOracle_eq_GapP_of_mem_SPP`,
   `Cslib.Complexity.SPPWithOracle_eq_SPP_of_mem_SPP`,
   `Cslib.Complexity.LWPPWithFixedTarget_eq_LWPP_of_mem_SPP`,
@@ -234,90 +231,16 @@ theorem acceptWeight_exact_of_forall {σ : Type*} {D : ℤ} {p : σ → ℤ} (st
       D ^ n * (if accept ((fun s => step s (answer s))^[n] s) then 1 else 0) :=
   acceptWeight_exact step accept answer n s fun _ _ => hp _
 
-/-- Total accepting weight of the instruction-indexed replay tree with an arbitrary per-instance
-integer denominator `D a`. Query instructions use the request numerator `H (a, w)`, while local
-instructions assign zero weight to `true` and weight `D a` to the canonical padding bit `false`. -/
-def generalWeightedReplay {k : ℕ} {Control Operation : Type} [DecidableEq Operation]
-    (machine : MultiTapePTM k Bool Control Operation)
-    (input : α → List Bool) (T : α → ℕ) (D : α → ℤ) (H : α × List Bool → ℤ) (a : α) : ℤ :=
-  acceptWeight (D a)
-    (fun cfg => if (machine.pendingQuery cfg).isSome then H (a, machine.pendingRequest cfg) else 0)
-    machine.replyStep (fun cfg => cfg.tapes.output.headD false) (T a)
-    (FiniteConfig.init machine.initial (input a))
-
-/-- A finite oracle computation with a `GapP` per-step denominator `D` and `GapP` request
-numerators `H` has an ordinary `GapP` accepting weight. -/
-theorem GapP.generalWeightedReplay_mem {k : ℕ} {Control Operation : Type}
-    [DecidableEq Operation] [Finite Control] [Finite Operation]
-    (machine : MultiTapePTM k Bool Control Operation)
-    {input : α → List Bool} {T : α → ℕ} {D : α → ℤ} {H : α × List Bool → ℤ}
-    (hinput : ComputableInPolyTime input enc encBits)
-    (hT : ComputableInPolyTime T enc encUnary)
-    (hD : D ∈ GapP enc)
-    (hH : H ∈ GapP (encPair enc encBits)) :
-    generalWeightedReplay machine input T D H ∈ GapP enc := by
-  let _ := Fintype.ofFinite Operation
-  let cfg : (α × List Bool) × ℕ → FiniteConfig k Bool Control Operation :=
-    fun x => machine.replayPrefix (input x.1.1) x.1.2 x.2
-  have hcfg : ComputableInPolyTime cfg
-      (encPair (encPair enc encBits) encUnary) encFiniteConfig :=
-    machine.computableInPolyTime_replayPrefix.comp (g := fun x : (α × List Bool) × ℕ =>
-      ((input x.1.1, x.1.2), x.2)) (by fun_prop)
-  have hquery : ComputableInPolyTime
-      (fun x => (machine.pendingQuery (cfg x)).isSome)
-      (encPair (encPair enc encBits) encUnary) encBool :=
-    (ComputableInPolyTime.of_finite Option.isSome).comp
-      (machine.pendingQuery_pt.comp hcfg)
-  have hrequest : ComputableInPolyTime
-      (fun x : (α × List Bool) × ℕ => (x.1.1, machine.pendingRequest (cfg x)))
-      (encPair (encPair enc encBits) encUnary) (encPair enc encBits) := by
-    have hinstance : ComputableInPolyTime
-        (fun x : (α × List Bool) × ℕ => x.1.1)
-        (encPair (encPair enc encBits) encUnary) enc := by fun_prop
-    exact hinstance.prod (machine.pendingRequest_pt.comp hcfg)
-  let p : (α × List Bool) × ℕ → ℤ := fun x =>
-    if (machine.pendingQuery (cfg x)).isSome then H (x.1.1, machine.pendingRequest (cfg x)) else 0
-  have hp : p ∈ GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.ite_mem hquery (GapP.comp_mem hH hrequest) GapP.zero_mem
-  have hdenom : (fun x : (α × List Bool) × ℕ => D x.1.1) ∈
-      GapP (encPair (encPair enc encBits) encUnary) :=
-    GapP.comp_mem hD (by fun_prop)
-  have hbit : ComputableInPolyTime
-      (fun x : (α × List Bool) × ℕ => x.1.2.getD x.2 false)
-      (encPair (encPair enc encBits) encUnary) encBool := by fun_prop
-  have hfactor := GapP.ite_mem hbit hp (GapP.sub_mem' hdenom hp)
-  have hprod := GapP.prod_range_mem hfactor
-    (r := fun x : α × List Bool => x.2.length) (by fun_prop)
-  have hout : ComputableInPolyTime
-      (fun x : α × List Bool => (machine.replayOutput (input x.1) x.2).headD false)
-      (encPair enc encBits) encBool := by
-    have hreindex : ComputableInPolyTime
-        (fun x : α × List Bool => (input x.1, x.2))
-        (encPair enc encBits) (encPair encBits encBits) := by fun_prop
-    exact (ComputableInPolyTime.headD false).comp
-      (machine.computableInPolyTime_replayOutput.comp hreindex)
-  have hmask : (fun x : α × List Bool =>
-      if (machine.replayOutput (input x.1) x.2).headD false then (1 : ℤ) else 0) ∈
-      GapP (encPair enc encBits) := GapP.ite_mem hout GapP.one_mem GapP.zero_mem
-  have hsum := GapP.sum_bits_mem (GapP.mul_mem hprod hmask) hT
-  convert hsum using 1
-  funext a
-  rw [generalWeightedReplay, acceptWeight_eq_sum]
-  apply sum_congr rfl
-  intro w _
-  rw [pathWeight_eq_prod]
-  rfl
-
 open Classical in
 /-- If `H (a, w)` equals `D a` on oracle members and `0` on nonmembers for every query `w` of
-length at most the clock `T a`, then `generalWeightedReplay` evaluates to `(D a) ^ (T a)` times the
+length at most the clock `T a`, then `weightedReplay` evaluates to `(D a) ^ (T a)` times the
 accepting indicator of the deterministic oracle computation. -/
-theorem generalWeightedReplay_eq_exact {k : ℕ} {Control : Type}
+theorem weightedReplay_eq_exact {k : ℕ} {Control : Type}
     (machine : MultiTapePTM k Bool Control Unit)
     (input : α → List Bool) (T : α → ℕ) (D : α → ℤ) (H : α × List Bool → ℤ)
     (a : α)
     (hw : ∀ w, w.length ≤ T a → H (a, w) = if w ∈ A then D a else 0) :
-    generalWeightedReplay machine input T D H a =
+    weightedReplay machine input T D H a =
       (D a) ^ (T a) * (if (OracleComp.interpret (m := Id) (languageOracle A)
         (machine.run (pure false) (fun op word => OracleComp.query (op, word))
           (T a) (input a))).headD false then 1 else 0) := by
@@ -362,7 +285,7 @@ theorem generalWeightedReplay_eq_exact {k : ℕ} {Control : Type}
   change OracleComp.interpret (m := Id) (languageOracle A) _ =
     ((machine.answerStep (fun q => [g q.2]))^[T a]
       (FiniteConfig.init machine.initial (input a))).tapes.output at hout
-  simpa only [generalWeightedReplay, p, hout] using h
+  simpa only [weightedReplay, p, hout] using h
 
 /-! ### `SPP` oracle lowness (Fenner–Fortnow–Kurtz 1994, Section 5) -/
 
@@ -386,13 +309,13 @@ private theorem sharpPWithOracle_mem_GapP_of_mem_SPP (hA : A ∈ SPP encBits)
   let T' : α × List Bool → ℕ := fun x => T x.1
   let D' : α × List Bool → ℤ := fun _ => 1
   let H' : (α × List Bool) × List Bool → ℤ := fun x => g x.2
-  let F := generalWeightedReplay machine input T' D' H'
+  let F := weightedReplay machine input T' D' H'
   have hinput_pt : ComputableInPolyTime input (encPair enc encBits) encBits := by
     dsimp [input]; fun_prop
   have hT'_pt : ComputableInPolyTime T' (encPair enc encBits) encUnary := by
     dsimp [T']; fun_prop
   have hF : F ∈ GapP (encPair enc encBits) :=
-    GapP.generalWeightedReplay_mem machine hinput_pt
+    GapP.weightedReplay_mem machine hinput_pt
       hT'_pt GapP.one_mem (GapP.comp_mem hg (by fun_prop))
   have hsum : (fun a => ∑ w : Fin (r a) → Bool, F (a, List.ofFn w)) ∈ GapP enc :=
     GapP.sum_bits_mem hF hr
@@ -400,7 +323,7 @@ private theorem sharpPWithOracle_mem_GapP_of_mem_SPP (hA : A ∈ SPP encBits)
   funext a
   have hF_eval (w : Fin (r a) → Bool) :
       F (a, List.ofFn w) = if V (a, List.ofFn w) then 1 else 0 := by
-    have hexact := generalWeightedReplay_eq_exact (A := A) machine input T' D' H' (a, List.ofFn w)
+    have hexact := weightedReplay_eq_exact (A := A) machine input T' D' H' (a, List.ofFn w)
       (fun q _ => hg_eq q)
     have hclock : c₀ * ((encPair enc encBits (a, List.ofFn w)).length + 1) ^ d₀ = T a := by
       simp only [T, r, length_encPair, encBits_apply, List.length_ofFn]
@@ -512,7 +435,7 @@ private theorem exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP (hA : A ∈ 
   let T' : α × List Bool → ℕ := fun x => T x.1
   let D' : α × List Bool → ℤ := fun x => D (enc x.1).length
   let H' : (α × List Bool) × List Bool → ℤ := fun x => H (x.1.1, x.2)
-  let F := generalWeightedReplay machine input T' D' H'
+  let F := weightedReplay machine input T' D' H'
   have hinput_pt : ComputableInPolyTime input (encPair enc encBits) encBits := by
     dsimp [input]; fun_prop
   have hT'_pt : ComputableInPolyTime T' (encPair enc encBits) encUnary := by
@@ -520,7 +443,7 @@ private theorem exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP (hA : A ∈ 
   have hD'_pt : ComputableInPolyTime D' (encPair enc encBits) encIntBin :=
     (hD.comp (.encoding_length enc)).comp (.fst enc encBits)
   have hF : F ∈ GapP (encPair enc encBits) :=
-    GapP.generalWeightedReplay_mem machine hinput_pt
+    GapP.weightedReplay_mem machine hinput_pt
       hT'_pt (mem_GapP_of_polyTime hD'_pt)
         (GapP.comp_mem hH (by fun_prop))
   have hsum : (fun a => ∑ w : Fin (r a) → Bool, F (a, List.ofFn w)) ∈ GapP enc :=
@@ -545,7 +468,7 @@ private theorem exists_mul_mem_GapP_of_sharpPWithOracle_of_mem_LWPP (hA : A ∈ 
     · exact zero_mul _
   have hF_eval (w : Fin (r a) → Bool) :
       F (a, List.ofFn w) = S (enc a).length * (if V (a, List.ofFn w) then 1 else 0) := by
-    have hexact := generalWeightedReplay_eq_exact (A := A) machine input T' D' H' (a, List.ofFn w)
+    have hexact := weightedReplay_eq_exact (A := A) machine input T' D' H' (a, List.ofFn w)
       (fun q hq => hH_exact q hq)
     have hclock : c₀ * ((encPair enc encBits (a, List.ofFn w)).length + 1) ^ d₀ = T a := by
       simp only [T, τ, r, length_encPair, encBits_apply, List.length_ofFn]

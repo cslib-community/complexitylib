@@ -126,7 +126,8 @@ theorem thresholdCount_pos_iff_le_optimum (F : Instance) (q : ℕ) :
     obtain ⟨x, hx⟩ := exists_score_eq_optimum F
     exact ⟨x, hx ▸ hq⟩
 
-private theorem countP_range_le (m q : ℕ) :
+/-- Number of naturals below `m` that are at most `q`. -/
+theorem countP_range_le (m q : ℕ) :
     (List.range m).countP (fun j => decide (j ≤ q)) = min m (q + 1) := by
   induction m with
   | zero => simp

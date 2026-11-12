@@ -32,7 +32,7 @@ the machine is given more work tapes.
   more work tapes.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

@@ -472,18 +472,13 @@ theorem exists_sum_andMiss_le {X : Type*} [Fintype X] (hK : K < 2 ^ ℓ) (ν : X
   let μ (r : Fin ℓ) (x : X) : ℝ := if 0 < z x ∧ Nat.log 2 (z x) = r then ν x else 0
   let f (x : X) (S : Fin K → Bool) : ℝ :=
     if #{j | S j = true ∧ u x j = false} = 1 then 0 else 1
-  have hμ (r : Fin ℓ) (x : X) : 0 ≤ μ r x := by
-    simp only [μ]
-    split_ifs
-    exacts [hν x, le_rfl]
+  have hμ (r : Fin ℓ) (x : X) : 0 ≤ μ r x := by grind
   have hf (x : X) (S : Fin K → Bool) : 0 ≤ f x S := by
     simp only [f]
     split_ifs <;> norm_num
   have hfq (r : Fin ℓ) (x : X) (hx : 0 < μ r x) :
       bernoulliAverage (1 / 2 ^ ((r : ℕ) + 1)) (f x) ≤ 41 / 50 := by
-    have hc : 0 < z x ∧ Nat.log 2 (z x) = r := by
-      by_contra hc
-      simp [μ, hc] at hx
+    have hc : 0 < z x ∧ Nat.log 2 (z x) = r := by grind
     refine bernoulliAverage_fail_le (r := r) ?_ ?_
     · rw [← hc.2]
       exact Nat.pow_log_le_self 2 hc.1.ne'

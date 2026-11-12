@@ -298,6 +298,20 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
         (fun ⟨⟨n, x, z'⟩, view⟩ => adversary n x z' view) :=
       hadversary.isPPTOn.preprocess hprep
     have hneg := hS₀_zk a w z_V z_A ha hw hz_V hz_A hw_sat adversary hadv_on
+    have hm (n : ℕ) (v : List Bool) (hv : v.length ≤ L_view n (a n)) :
+        c_A * ((encPair (encPair encUnary enc) encBits ((n, a n), v)).length + 1) ^ d_A ≤
+          T_A n (a n) := by
+      have hpair : (encPair encUnary enc (n, a n)).length = 2 * n + 1 + (enc (a n)).length := by
+        simp
+      have hlen_pair :
+          (encPair (encPair encUnary enc) encBits ((n, a n), v)).length =
+            2 * (2 * n + 1 + (enc (a n)).length) + 1 + v.length := by
+        simp
+      have hle_base :
+          (encPair (encPair encUnary enc) encBits ((n, a n), v)).length + 1 ≤
+            (2 * (encPair encUnary enc (n, a n)).length + 1 + L_view n (a n)) + 1 := by
+        omega
+      exact Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A)
     have hgame_real (n : ℕ) :
         distinguishingGame
           (((prover n (a n) (w n)).run (Vstar n (a n) (z_V n))
@@ -320,20 +334,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
             (prover n (a n) (w n)).init p.2 p.1 hp
         simp only [encBits_apply] at h1
         exact le_trans h1 (Nat.le_add_right _ _)
-      have hm : c_A * ((encPair (encPair encUnary enc) encBits ((n, a n), p.1)).length + 1) ^ d_A ≤
-          T_A n (a n) := by
-        have hpair : (encPair encUnary enc (n, a n)).length = 2 * n + 1 + (enc (a n)).length := by
-          simp
-        have hlen_pair :
-            (encPair (encPair encUnary enc) encBits ((n, a n), p.1)).length =
-              2 * (2 * n + 1 + (enc (a n)).length) + 1 + p.1.length := by
-          simp
-        have hle_base :
-            (encPair (encPair encUnary enc) encBits ((n, a n), p.1)).length + 1 ≤
-              (2 * (encPair encUnary enc (n, a n)).length + 1 + L_view n (a n)) + 1 := by
-          omega
-        exact Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A)
-      exact hadv_take ((n, a n), p.1) (z n) hm
+      exact hadv_take ((n, a n), p.1) (z n) (hm n p.1 hview_le)
     have hgame_sim (n : ℕ) :
         distinguishingGame
           (ProbComp.eval (S₀ n (a n) (z_V n)))
@@ -349,21 +350,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
           hlen_sim (n, a n) (z n) view hview
         simp only [encBits_apply] at h1
         exact le_trans h1 (Nat.le_add_left _ _)
-      have hm :
-          c_A * ((encPair (encPair encUnary enc) encBits ((n, a n), view)).length + 1) ^ d_A ≤
-            T_A n (a n) := by
-        have hpair : (encPair encUnary enc (n, a n)).length = 2 * n + 1 + (enc (a n)).length := by
-          simp
-        have hlen_pair :
-            (encPair (encPair encUnary enc) encBits ((n, a n), view)).length =
-              2 * (2 * n + 1 + (enc (a n)).length) + 1 + view.length := by
-          simp
-        have hle_base :
-            (encPair (encPair encUnary enc) encBits ((n, a n), view)).length + 1 ≤
-              (2 * (encPair encUnary enc (n, a n)).length + 1 + L_view n (a n)) + 1 := by
-          omega
-        exact Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A)
-      exact hadv_take ((n, a n), view) (z n) hm
+      exact hadv_take ((n, a n), view) (z n) (hm n view hview_le)
     simpa only [hgame_real, hgame_sim] using hneg
 
 /-- **Goldreich-style instance-indexed (`x`-indexed) auxiliary-input computational zero knowledge

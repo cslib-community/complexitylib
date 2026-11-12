@@ -142,8 +142,7 @@ theorem eval_compile [Semiring R] (zero one : C) (constant : C → R)
     (compile zero one c).eval (arithInterpretationWith C constant) (Fin.append x y) =
       c.eval (SumOfTerms.interpretation (fun t => t.eval constant x)) y := by
   rw [compile, Circuit.eval_simulateWithContext]
-  congr 1
-  funext op args
+  congr 1 with op args : 2
   cases op with
   | add => simp [operationCircuit, Circuit.eval_oneGate, arithInterpretationWith]
   | term t =>
@@ -177,8 +176,7 @@ theorem cost_program_compile (zero one : C)
     (compile zero one c).program.cost weight =
       c.program.cost (compilationCost zero one weight) := by
   rw [compile, Circuit.cost_program_simulateWithContext]
-  congr 1
-  funext op
+  congr 1 with op : 1
   cases op with
   | add => exact Circuit.cost_program_oneGate _ _ _
   | term t => exact t.cost_program_toCircuit zero one weight

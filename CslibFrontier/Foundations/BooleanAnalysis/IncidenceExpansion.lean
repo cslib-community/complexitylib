@@ -106,17 +106,6 @@ theorem map_incidenceSum [DecidableEq κ] {R' : Type*} [CommRing R'] (φ : R →
     φ (incidenceSum I c K) = incidenceSum I (fun i S => φ (c i S)) K := by
   simp only [incidenceSum, map_sum, map_mul, map_prod, map_incidenceWeight]
 
-omit [Fintype ι] [DecidableEq ι] in
-/-- A product of indicators is the indicator of the conjunction. -/
-private theorem prod_ite_one_zero {α : Type*} [Fintype α] (p : α → Prop) [DecidablePred p]
-    [Decidable (∀ a, p a)] : (∏ a, if p a then (1 : R) else 0) = if ∀ a, p a then 1 else 0 := by
-  by_cases h : ∀ a, p a
-  · rw [ite_eq_left h]
-    exact prod_eq_one fun a _ => ite_eq_left (h a)
-  · rw [ite_eq_right h]
-    obtain ⟨a, ha⟩ := not_forall.mp h
-    exact prod_eq_zero (mem_univ a) (ite_eq_right ha)
-
 /-- **The weight is a cube sum**: summing over the cube the indicator that every chosen set lies
 in the support gives the weight of the choice. -/
 theorem sum_ite_forall_eq_incidenceWeight (S : κ → Finset ι) :
@@ -125,7 +114,7 @@ theorem sum_ite_forall_eq_incidenceWeight (S : κ → Finset ι) :
   have hprod : ∀ x : ι → Bool, (if ∀ i, ∀ v ∈ S i, x v = true then (1 : R) else 0) =
       ∏ v, if (∃ i, v ∈ S i) → x v = true then 1 else 0 := by
     intro x
-    rw [prod_ite_one_zero]
+    rw [Fintype.prod_boole]
     refine if_congr ⟨fun h v hv => ?_, fun h i v hv => h v ⟨i, hv⟩⟩ rfl rfl
     obtain ⟨i, hi⟩ := hv
     exact h i v hi
@@ -176,7 +165,7 @@ theorem sum_prod_eq_incidenceSum (I : κ → Finset ι) (g : κ → (ι → Bool
         refine sum_congr rfl fun x _ => ?_
         rw [prod_univ_sum]
         refine sum_congr rfl fun S _ => ?_
-        rw [prod_mul_distrib, prod_ite_one_zero]
+        rw [prod_mul_distrib, Fintype.prod_boole]
     _ = ∑ S ∈ Fintype.piFinset fun i => (I i).powerset, (∏ i, c i (S i)) * incidenceWeight S := by
         rw [sum_comm]
         refine sum_congr rfl fun S _ => ?_

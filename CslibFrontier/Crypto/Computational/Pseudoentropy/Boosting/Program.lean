@@ -13,6 +13,7 @@ import CslibFrontier.Computability.Probabilistic.Adaptive
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # A clocked hard-core boosting program
@@ -405,21 +406,11 @@ theorem round_bounded (evaluate : List Bool → List Bool → Bool)
     ∀ next ∈ (ProbComp.eval (round evaluate source learn params state)).support,
       State.Bounded (rounds + 1) params.codeBound next := by
   intro next hnext
-  unfold round at hnext
-  split at hnext
-  · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hnext
-    subst next
-    exact hstate.mono (by lia)
-  · simp only [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hnext
-    obtain ⟨stop, _, hnext⟩ := hnext
-    split at hnext
-    · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hnext
-      subst next
-      exact hstate.mono (by lia)
-    · simp only [ProbComp.eval_bind, PMF.mem_support_bind_iff,
-        ProbComp.eval_pure, PMF.mem_support_pure_iff] at hnext
-      obtain ⟨shift, _, code, _, rfl⟩ := hnext
-      exact hstate.shift_add shift code
+  supp_cases hnext [round, apply_ite ProbComp.eval]
+    with ⟨-, rfl⟩ | ⟨-, stop, -, ⟨-, rfl⟩ | ⟨-, shift, -, code, -, rfl⟩⟩
+  · exact hstate.mono (by lia)
+  · exact hstate.mono (by lia)
+  · exact hstate.shift_add shift code
 
 /-- The clocked loop stores at most one bounded predictor per round. -/
 theorem run_bounded (evaluate : List Bool → List Bool → Bool) (source : ProbComp (List Bool × Bool))

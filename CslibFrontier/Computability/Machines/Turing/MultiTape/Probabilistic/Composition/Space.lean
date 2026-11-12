@@ -110,9 +110,7 @@ private theorem completed_replay_mem_support (machine : MultiTapePTM k Symbol St
     rwa [eval_runClosedConfigFrom_eq_of_halted machine _ hle hhalt] at h
   · have h := machine.runClosedConfigFromCoins_mem_support
       (coins ++ List.replicate (time - coins.length) false) initial
-    have hlen : (coins ++ List.replicate (time - coins.length) false).length = time := by
-      simp only [List.length_append, List.length_replicate]
-      omega
+    have hlen : (coins ++ List.replicate (time - coins.length) false).length = time := by grind
     rw [hlen] at h
     simp only [runClosedConfigFromCoins, List.foldl_append] at h
     change machine.runClosedConfigFromCoins (List.replicate (time - coins.length) false)
@@ -129,9 +127,7 @@ private theorem replay_output_length_le (machine : MultiTapePTM k Symbol State)
     (machine.runClosedConfigFromCoins coins (machine.initialConfig input)).tapes.output.length ≤
       bound := by
   let extra := List.replicate (time - coins.length) false
-  have hle : time ≤ (coins ++ extra).length := by
-    simp only [List.length_append, extra, List.length_replicate]
-    omega
+  have hle : time ≤ (coins ++ extra).length := by grind
   have hfull := machine.runClosedConfigFromCoins_mem_support (coins ++ extra)
     (machine.initialConfig input)
   rw [eval_runClosedConfigFrom_eq_of_halted machine _ hle hhalt] at hfull

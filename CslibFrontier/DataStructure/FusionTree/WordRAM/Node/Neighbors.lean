@@ -96,7 +96,7 @@ theorem exec_neighbors {w n q a : ℕ} {keys : Fin n → ℕ} (p : NodeParameter
   refine ⟨z.extend neighborBank v,
     (exec_moves w _ x).within.seq (huv.within.seq (he.rename (bank_injective _))),
     hfu.trans (hfv.trans (frame_extend _ (by decide) v z hm)), j, ?_, ?_, hnear, hbest⟩
-  · exact ((bank_injective _).extend_apply _ _ _).trans hj
-  · exact ((bank_injective _).extend_apply _ _ _).trans hd
+  · exact (regs_extend_bank _ z v _).trans hj
+  · exact (regs_extend_bank _ z v _).trans hd
 
 end Cslib.DataStructure.FusionTree.WordRAM.NodeProgram

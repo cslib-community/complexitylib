@@ -57,13 +57,20 @@ each vertex.
 * `Cslib.Multidigraph.natCard_isEulerianCircuit`: **the BEST theorem**.
 * `Cslib.Multidigraph.natCard_isEulerianCircuit_eq_det_mul`: the BEST theorem with the number of
   arborescences given by the directed matrix-tree theorem.
+* `Cslib.Multidigraph.IsEulerianCircuit.equivRotate`,
+  `Cslib.Multidigraph.IsEulerianCircuit.coe_equivRotate`,
+  `Cslib.Multidigraph.IsEulerianCircuit.coe_equivRotate_symm`,
+  `Cslib.Multidigraph.natCard_isEulerianCircuit_eq`,
+  `Cslib.Multidigraph.natCard_isInArborescence_eq_of_isEulerianCircuit`: independence of the
+  Eulerian-circuit count from the starting arc and root independence of the arborescence count
+  ([Stanley2013], Corollary 10.3).
 * `Cslib.Multidigraph.IsEulerianCircuit.card_filter_src_eq`: a multidigraph with an Eulerian
   circuit is balanced.
 
 ## References
 
-* [R. P. Stanley, *Topics in Algebraic Combinatorics*][Stanley2013], Chapter 10: Theorem 10.2
-  and Corollary 10.5, with the last-exit proof followed here.
+* [R. P. Stanley, *Topics in Algebraic Combinatorics*][Stanley2013], Chapter 10: Theorem 10.2,
+  Corollary 10.3, Theorem 10.4, and Corollary 10.5, with the last-exit proof followed here.
 * [T. van Aardenne-Ehrenfest, N. G. de Bruijn, *Circuits and trees in oriented linear
   graphs*][vanAardenneEhrenfestDeBruijn1951] (Theorem 5a, according to [Stanley2013]; the primary
   source was not inspected)
@@ -667,5 +674,154 @@ theorem natCard_isEulerianCircuit_eq_det_mul (R : Type*) [CommRing R]
         ∏ v, (((univ.filter fun e => src e = v).card - 1).factorial : R) := by
   rw [natCard_isEulerianCircuit src tgt hbal hpos, Nat.cast_mul, Nat.cast_prod,
     det_laplacian_arcMatrix_submatrix_eq_natCard_isInArborescence]
+
+/-! ### Rotation of Eulerian circuits and root independence -/
+
+section Rotate
+
+variable {src tgt}
+omit [DecidableEq V] [Fintype V] [Fintype E]
+
+private def rotateTo [DecidableEq E] (e : E) (l : List E) : List E :=
+  l.drop (l.idxOf e) ++ l.take (l.idxOf e)
+
+private theorem isEulerianCircuit_rotateTo [DecidableEq E] {e₀ e₁ : E} {l : List E}
+    (hl : IsEulerianCircuit src tgt e₀ l) :
+    IsEulerianCircuit src tgt e₁ (rotateTo e₁ l) := by
+  let k := l.idxOf e₁
+  have hrot_def : rotateTo e₁ l = l.drop k ++ l.take k := rfl
+  have he₁ : e₁ ∈ l := hl.mem e₁
+  have hk : k < l.length := List.idxOf_lt_length_iff.2 he₁
+  have hsplit : l.take k ++ l.drop k = l := List.take_append_drop k l
+  have hdrop : l.drop k = e₁ :: l.drop (k + 1) := by
+    rw [List.drop_eq_getElem_cons hk, List.getElem_idxOf hk]
+  have hperm : (rotateTo e₁ l).Perm l := by
+    simpa only [hrot_def, hsplit] using List.perm_append_comm (l₁ := l.drop k) (l₂ := l.take k)
+  have hhead : (rotateTo e₁ l).head? = some e₁ := by
+    rw [hrot_def, hdrop, List.cons_append, List.head?_cons]
+  by_cases hk0 : k = 0
+  · have hrot : rotateTo e₁ l = l := by
+      simp only [hrot_def, hk0, List.drop_zero, List.take_zero, List.append_nil]
+    have heq : e₁ = e₀ := by
+      have hh := hl.head
+      rw [← hrot, hhead] at hh
+      exact Option.some.inj hh
+    subst heq
+    rwa [hrot]
+  · have hpk : 0 < k := Nat.pos_of_ne_zero hk0
+    have hp_ne : l.take k ≠ [] := by
+      rw [← List.length_pos_iff_ne_nil, List.length_take]
+      omega
+    obtain ⟨m, t, htake⟩ := List.exists_cons_of_ne_nil hp_ne
+    have hm : m = e₀ := by
+      have hh := hl.head
+      rw [← hsplit, htake, List.cons_append, List.head?_cons] at hh
+      exact Option.some.inj hh
+    subst hm
+    have hq_ne : l.drop k ≠ [] := by rw [hdrop]; simp
+    have hch := hl.isChain
+    rw [← hsplit, List.isChain_append] at hch
+    refine ⟨hperm.nodup_iff.2 hl.nodup, fun e => hperm.mem_iff.2 (hl.mem e), hhead, ?_, ?_⟩
+    · rw [hrot_def, List.isChain_append]
+      refine ⟨hch.2.1, hch.1, fun a ha b hb => ?_⟩
+      have ha' : a ∈ l.getLast? := by
+        rw [← hsplit, List.getLast?_append_of_ne_nil (l.take k) hq_ne]
+        exact ha
+      rw [htake, List.head?_cons, Option.mem_def, Option.some.injEq] at hb
+      subst hb
+      exact hl.getLast a ha'
+    · intro a ha
+      rw [hrot_def, List.getLast?_append_of_ne_nil (l.drop k) hp_ne] at ha
+      exact hch.2.2 a ha e₁ (by simp [hdrop])
+
+private theorem rotateTo_rotateTo [DecidableEq E] {e₀ e₁ : E} {l : List E}
+    (hl : IsEulerianCircuit src tgt e₀ l) :
+    rotateTo e₀ (rotateTo e₁ l) = l := by
+  let k := l.idxOf e₁
+  have hrot_def : rotateTo e₁ l = l.drop k ++ l.take k := rfl
+  have hk : k < l.length := List.idxOf_lt_length_iff.2 (hl.mem e₁)
+  have hsplit : l.take k ++ l.drop k = l := List.take_append_drop k l
+  by_cases hk0 : k = 0
+  · have hrot : rotateTo e₁ l = l := by
+      simp only [hrot_def, hk0, List.drop_zero, List.take_zero, List.append_nil]
+    have hcons : l = e₀ :: l.tail := List.eq_cons_of_mem_head? hl.head
+    have hl0 : l.idxOf e₀ = 0 := by rw [hcons, List.idxOf_cons_self]
+    rw [hrot, rotateTo, hl0, List.drop_zero, List.take_zero, List.append_nil]
+  · have hp_ne : l.take k ≠ [] := by
+      rw [← List.length_pos_iff_ne_nil, List.length_take]
+      omega
+    obtain ⟨m, t, htake⟩ := List.exists_cons_of_ne_nil hp_ne
+    have hm : m = e₀ := by
+      have hh := hl.head
+      rw [← hsplit, htake, List.cons_append, List.head?_cons] at hh
+      exact Option.some.inj hh
+    rw [hm] at htake
+    have he₀_mem : e₀ ∈ l.take k := by simp [htake]
+    have hnd := hl.nodup
+    rw [← hsplit] at hnd
+    have he₀_not : e₀ ∉ l.drop k := fun h => List.disjoint_of_nodup_append hnd he₀_mem h
+    have hidx : (rotateTo e₁ l).idxOf e₀ = (l.drop k).length := by
+      rw [hrot_def, List.idxOf_append_of_notMem he₀_not, htake, List.idxOf_cons_self, add_zero]
+    rw [rotateTo, hidx, hrot_def, List.drop_left, List.take_left, hsplit]
+
+/-- Cyclic rotation gives a bijection between Eulerian circuits starting with `e₀` and Eulerian
+circuits starting with `e₁` ([Stanley2013], proof of Corollary 10.3, p. 193). -/
+def IsEulerianCircuit.equivRotate [DecidableEq E] (e₀ e₁ : E) :
+    {l : List E // IsEulerianCircuit src tgt e₀ l} ≃
+      {l : List E // IsEulerianCircuit src tgt e₁ l} where
+  toFun l := ⟨rotateTo e₁ l.1, isEulerianCircuit_rotateTo l.2⟩
+  invFun l := ⟨rotateTo e₀ l.1, isEulerianCircuit_rotateTo l.2⟩
+  left_inv l := Subtype.ext (rotateTo_rotateTo l.2)
+  right_inv l := Subtype.ext (rotateTo_rotateTo l.2)
+
+@[simp]
+theorem IsEulerianCircuit.coe_equivRotate [DecidableEq E] (e₀ e₁ : E)
+    (l : {l : List E // IsEulerianCircuit src tgt e₀ l}) :
+    (IsEulerianCircuit.equivRotate e₀ e₁ l : List E) =
+      l.1.drop (l.1.idxOf e₁) ++ l.1.take (l.1.idxOf e₁) := by
+  rfl
+
+@[simp]
+theorem IsEulerianCircuit.coe_equivRotate_symm [DecidableEq E] (e₀ e₁ : E)
+    (l : {l : List E // IsEulerianCircuit src tgt e₁ l}) :
+    ((IsEulerianCircuit.equivRotate e₀ e₁).symm l : List E) =
+      l.1.drop (l.1.idxOf e₀) ++ l.1.take (l.1.idxOf e₀) := by
+  rfl
+
+end Rotate
+
+omit [DecidableEq V] [Fintype V] [Fintype E] in
+/-- The number of Eulerian circuits starting with a fixed arc `e₀` is independent of `e₀`
+([Stanley2013], proof of Corollary 10.3, p. 193). -/
+theorem natCard_isEulerianCircuit_eq (e₀ e₁ : E) :
+    Nat.card {l : List E // IsEulerianCircuit src tgt e₀ l} =
+      Nat.card {l : List E // IsEulerianCircuit src tgt e₁ l} := by
+  classical
+  exact Nat.card_congr (IsEulerianCircuit.equivRotate e₀ e₁)
+
+omit [Fintype V] in
+/-- **Root independence of the arborescence count** ([Stanley2013], Corollary 10.3, p. 193). On a
+finite balanced multidigraph in which every vertex has an outgoing arc, any two arcs `e₀` and `e₁`
+yield equal spanning in-arborescence counts at their sources `src e₀` and `src e₁`; more generally,
+`Multidigraph.natCard_isInArborescence_eq` establishes root independence across all vertices of any
+finite balanced multidigraph. -/
+theorem natCard_isInArborescence_eq_of_isEulerianCircuit
+    (hbal : ∀ v, (univ.filter fun e => src e = v).card = (univ.filter fun e => tgt e = v).card)
+    (hpos : ∀ v, ∃ e, src e = v) (e₀ e₁ : E) :
+    Nat.card {f : {v // v ≠ src e₀} → E // IsInArborescence src tgt (src e₀) f} =
+      Nat.card {f : {v // v ≠ src e₁} → E // IsInArborescence src tgt (src e₁) f} := by
+  have : Finite V := Finite.of_surjective src hpos
+  have := Fintype.ofFinite V
+  have hmul :
+      Nat.card {f : {v // v ≠ src e₀} → E // IsInArborescence src tgt (src e₀) f} *
+          ∏ v, ((univ.filter fun e => src e = v).card - 1).factorial =
+        Nat.card {f : {v // v ≠ src e₁} → E // IsInArborescence src tgt (src e₁) f} *
+          ∏ v, ((univ.filter fun e => src e = v).card - 1).factorial := by
+    rw [← natCard_isEulerianCircuit src tgt hbal hpos e₀,
+      ← natCard_isEulerianCircuit src tgt hbal hpos e₁]
+    exact natCard_isEulerianCircuit_eq src tgt e₀ e₁
+  have hprod : 0 < ∏ v, ((univ.filter fun e => src e = v).card - 1).factorial :=
+    Nat.pos_of_ne_zero (Finset.prod_ne_zero_iff.2 fun _ _ => Nat.factorial_ne_zero _)
+  exact Nat.mul_right_cancel hprod hmul
 
 end Cslib.Multidigraph

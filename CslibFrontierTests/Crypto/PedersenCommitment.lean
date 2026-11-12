@@ -169,7 +169,7 @@ example : singletonScheme.StatisticalHiding (fun _ => PMF.pure ()) := by
     intro n
     simp only [CommitmentScheme.hidingGame, CommitmentScheme.hidingForKey, singletonScheme,
       PMF.monad_bind_eq_bind, PMF.pure_bind]
-    congr 1; funext choice
+    congr 1 with choice : 1
     by_cases hvalid : choice.1.1 = [] ∧ choice.1.2 = []
     · rcases hvalid with ⟨h1, h2⟩
       simp [h1, h2]

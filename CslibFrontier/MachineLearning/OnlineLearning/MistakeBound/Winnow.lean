@@ -190,6 +190,24 @@ theorem winnowStep_eliminate {α θ : ℝ} {tie : Bool} {w : Fin n → ℝ} {x :
   rw [winnowStep, ite_eq_right (by simp [h])]
   rfl
 
+/-- The three cases of a WINNOW1 round on `(x, y)`: a correct prediction keeps the weights, a false
+negative promotes and a false positive eliminates. -/
+theorem winnowStep_cases (α θ : ℝ) (tie : Bool) (w : Fin n → ℝ) (x : Fin n → Bool) (y : Bool) :
+    winnowPredict θ tie w x = y ∧ winnowStep α θ tie w (x, y) = w ∨
+      y = true ∧ winnowPredict θ tie w x = false ∧
+        winnowStep α θ tie w (x, y) = winnowPromote α w x ∨
+      y = false ∧ winnowPredict θ tie w x = true ∧
+        winnowStep α θ tie w (x, y) = winnowEliminate w x := by
+  by_cases hc : winnowPredict θ tie w x = y
+  · exact Or.inl ⟨hc, winnowStep_of_eq hc⟩
+  · cases y with
+    | true =>
+      have hpred : winnowPredict θ tie w x = false := by simpa using hc
+      exact Or.inr (Or.inl ⟨rfl, hpred, winnowStep_promote hpred⟩)
+    | false =>
+      have hpred : winnowPredict θ tie w x = true := by simpa using hc
+      exact Or.inr (Or.inr ⟨rfl, hpred, winnowStep_eliminate hpred⟩)
+
 theorem winnow_apply (α θ : ℝ) (tie : Bool) (h : List ((Fin n → Bool) × Bool))
     (x : Fin n → Bool) : winnow α θ tie h x = winnowPredict θ tie (winnowWeight α θ tie h) x := by
   rw [winnow]
@@ -259,12 +277,11 @@ theorem winnowWeight_append_singleton (α θ : ℝ) (tie : Bool) (h : List ((Fin
 theorem winnowStep_nonneg {α θ : ℝ} (hα : 0 ≤ α) {tie : Bool} {w : Fin n → ℝ}
     (hw : ∀ i, 0 ≤ w i) (p : (Fin n → Bool) × Bool) (i : Fin n) :
     0 ≤ winnowStep α θ tie w p i := by
-  unfold winnowStep
-  split
+  obtain ⟨x, y⟩ := p
+  rcases winnowStep_cases α θ tie w x y with ⟨-, hs⟩ | ⟨-, -, hs⟩ | ⟨-, -, hs⟩ <;> rw [hs]
   · exact hw i
-  · split
-    · exact winnowPromote_nonneg hα hw _ i
-    · exact winnowEliminate_nonneg hw _ i
+  · exact winnowPromote_nonneg hα hw _ i
+  · exact winnowEliminate_nonneg hw _ i
 
 /-- WINNOW1's weights stay nonnegative. -/
 theorem winnowWeight_nonneg {α θ : ℝ} (hα : 0 ≤ α) (tie : Bool)
@@ -284,27 +301,24 @@ theorem winnowWeight_le {α θ : ℝ} (hα : 1 ≤ α) (hθ : 1 ≤ α * θ) (ti
   induction h using List.reverseRecOn with
   | nil => simpa using hθ
   | append_singleton h p ih =>
+    obtain ⟨x, y⟩ := p
     rw [winnowWeight_append_singleton]
     have hw := winnowWeight_nonneg (θ := θ) (zero_le_one.trans hα) tie h
-    unfold winnowStep
-    split
+    rcases winnowStep_cases α θ tie (winnowWeight α θ tie h) x y with
+      ⟨-, hs⟩ | ⟨-, hpred, hs⟩ | ⟨-, -, hs⟩ <;> rw [hs]
     · exact ih
-    · rename_i hwrong
+    · -- a promoted weight is active, so it is at most the score, which is at most `θ`
+      have hscore := winnowScore_le_of_winnowPredict_eq_false hpred
+      unfold winnowPromote
       split
-      · rename_i hy
-        have hpred : winnowPredict θ tie (winnowWeight α θ tie h) p.1 = false := by
-          revert hwrong; cases winnowPredict θ tie (winnowWeight α θ tie h) p.1 <;> simp [hy]
-        have hs := winnowScore_le_of_winnowPredict_eq_false hpred
-        unfold winnowPromote
-        split
-        · rename_i hx
-          exact mul_le_mul_of_nonneg_left ((le_winnowScore hw hx).trans hs)
-            (zero_le_one.trans hα)
-        · exact ih
-      · unfold winnowEliminate
-        split
-        · exact zero_le_one.trans hθ
-        · exact ih
+      · rename_i hx
+        exact mul_le_mul_of_nonneg_left ((le_winnowScore hw hx).trans hscore)
+          (zero_le_one.trans hα)
+      · exact ih
+    · unfold winnowEliminate
+      split
+      · exact zero_le_one.trans hθ
+      · exact ih
 
 /-! ### The mistake bound -/
 
@@ -351,40 +365,32 @@ theorem winnow_invariant {α θ : ℝ} (hα : 1 ≤ α) (tie : Bool) (R : Finset
     have happ : h ++ (x, y) :: S = (h ++ [(x, y)]) ++ S := by simp
     rw [happ, mistakesFrom_cons]
     rw [winnowWeight_append_singleton] at hsum hprod
+    rw [winnow_apply]
     set w := winnowWeight α θ tie h with hw_def
     have hw : ∀ i, 0 ≤ w i := winnowWeight_nonneg (zero_le_one.trans hα) tie h
-    have hpw : winnow α θ tie h x = winnowPredict θ tie w x := winnow_apply α θ tie h x
-    by_cases hc : winnow α θ tie h x = y
-    · have hstep : winnowStep α θ tie w (x, y) = w := winnowStep_of_eq (hpw ▸ hc)
-      rw [hstep] at hsum hprod
-      refine ⟨u, v, by simp [hc, hm], hsum, hprod⟩
-    · have hne : winnowPredict θ tie w x ≠ y := hpw ▸ hc
-      cases y with
-      | true =>
-        have hpred : winnowPredict θ tie w x = false := by simpa using hne
-        have hstep : winnowStep α θ tie w (x, true) = winnowPromote α w x :=
-          winnowStep_promote hpred
-        rw [hstep, sum_winnowPromote] at hsum
-        rw [hstep] at hprod
-        have hs := winnowScore_le_of_winnowPredict_eq_false hpred
-        have hR := mul_prod_le_prod_winnowPromote hα hw (monotoneDisjunction_eq_true.mp hy)
-        refine ⟨u + 1, v, by simp [hc, hm]; ring, ?_, ?_⟩
-        · push_cast
-          have : (α - 1) * winnowScore w x ≤ (α - 1) * θ := by gcongr
-          linarith
-        · rw [pow_succ, mul_assoc]
-          have hu : 0 ≤ α ^ u := pow_nonneg (zero_le_one.trans hα) u
-          exact (mul_le_mul_of_nonneg_left hR hu).trans hprod
-      | false =>
-        have hpred : winnowPredict θ tie w x = true := by simpa using hne
-        have hstep : winnowStep α θ tie w (x, false) = winnowEliminate w x :=
-          winnowStep_eliminate hpred
-        rw [hstep, sum_winnowEliminate] at hsum
-        rw [hstep, prod_winnowEliminate (monotoneDisjunction_eq_false.mp hy)] at hprod
-        have hs := le_winnowScore_of_winnowPredict_eq_true hpred
-        refine ⟨u, v + 1, by simp [hc, hm]; ring, ?_, hprod⟩
-        push_cast
+    rcases winnowStep_cases α θ tie w x y with
+      ⟨hc, hstep⟩ | ⟨rfl, hpred, hstep⟩ | ⟨rfl, hpred, hstep⟩
+    · rw [hstep] at hsum hprod
+      exact ⟨u, v, by simp [hc, hm], hsum, hprod⟩
+    · -- a promotion step: the total weight grows by at most `(α - 1) θ`
+      rw [hstep, sum_winnowPromote] at hsum
+      rw [hstep] at hprod
+      have hs := winnowScore_le_of_winnowPredict_eq_false hpred
+      have hR := mul_prod_le_prod_winnowPromote hα hw (monotoneDisjunction_eq_true.mp hy)
+      refine ⟨u + 1, v, by simp [hpred, hm]; ring, ?_, ?_⟩
+      · push_cast
+        have : (α - 1) * winnowScore w x ≤ (α - 1) * θ := by gcongr
         linarith
+      · rw [pow_succ, mul_assoc]
+        have hu : 0 ≤ α ^ u := pow_nonneg (zero_le_one.trans hα) u
+        exact (mul_le_mul_of_nonneg_left hR hu).trans hprod
+    · -- an elimination step: the total weight drops by at least `θ`
+      rw [hstep, sum_winnowEliminate] at hsum
+      rw [hstep, prod_winnowEliminate (monotoneDisjunction_eq_false.mp hy)] at hprod
+      have hs := le_winnowScore_of_winnowPredict_eq_true hpred
+      refine ⟨u, v + 1, by simp [hpred, hm]; ring, ?_, hprod⟩
+      push_cast
+      linarith
 
 /-- **Littlestone's Theorem 7** [Littlestone1988, §5]: if every example of `S` is labelled by the
 monotone disjunction of the `k` variables in `R`, `α > 1` and `θ ≥ 1 / α`, then WINNOW1 makes at

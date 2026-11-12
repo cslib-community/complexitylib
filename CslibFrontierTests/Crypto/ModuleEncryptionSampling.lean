@@ -21,7 +21,7 @@ example : realEncryptionView 1 2 32 (PMF.pure 0) ![true, false] =
 
 /-- A genuine small-secret law, with nonzero values in its support. -/
 private noncomputable def smallLaw : PMF (Fin 1 → Fin 2 → ZMod 32) :=
-  PMF.pi (fun _ => PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1)
+  PMF.pi (fun _ => PMF.pi fun _ => LWE.noiseLaw 5 1)
 
 example : (![![1, -1]] : Fin 1 → Fin 2 → ZMod 32) ∈ smallLaw.support := by
   rw [smallLaw, PMF.mem_support_pi_iff]
@@ -43,10 +43,10 @@ example {s : Fin 1 → Fin 2 → ZMod 32} (hs : s ∈ smallLaw.support) :
 example : (do
     let s ← smallLaw
     let view ← encryptionViewOfKeyLaw
-      (moduleLWEPublicKeyLaw 1 2 32 (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1) (PMF.pure s))
-      (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1) ![true, false] smallLaw
+      (moduleLWEPublicKeyLaw 1 2 32 (PMF.pi fun _ => LWE.noiseLaw 5 1) (PMF.pure s))
+      (PMF.pi fun _ => LWE.noiseLaw 5 1) ![true, false] smallLaw
     pure (s, view)).map Prod.snd =
-      realEncryptionView 1 2 32 (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1)
+      realEncryptionView 1 2 32 (PMF.pi fun _ => LWE.noiseLaw 5 1)
         ![true, false] smallLaw smallLaw :=
   realEncryptionView_retained_secret_marginal _ _ _ _
 
@@ -62,7 +62,7 @@ example : ProbComp.eval (OracleComp.replicate 2
 
 example {s : Fin 1 → Fin 1 → ZMod (2 ^ 0)}
     (hs : s ∈ (PMF.pi (fun _ : Fin 1 => PMF.pi
-      (fun _ : Fin 1 => Homomorphic.GSW.noiseLaw 0 0))).support) :
+      (fun _ : Fin 1 => LWE.noiseLaw 0 0))).support) :
     ModuleSIS.inInfNormBound 0 s :=
   moduleLWECenteredBinomial_inInfNormBound (by decide) hs
 
@@ -80,8 +80,7 @@ example : (PMF.uniformOfFintype (ZMod 16)).map (fun z => (![![z]] : Fin 1 → Fi
   let e := (Equiv.funUnique (Fin 1) (Fin 1 → ZMod 16)).trans
     (Equiv.funUnique (Fin 1) (ZMod 16))
   convert PMF.uniformOfFintype_map_equiv e.symm using 1
-  congr 1
-  funext z
+  congr 1 with z : 1
   ext j i
   fin_cases j; fin_cases i
   rfl
@@ -116,8 +115,7 @@ private theorem uniform_outcome (a s : ZMod 16) :
     _ = ((PMF.uniformOfFintype (ZMod 16)).map (Equiv.addRight (9 - s))).map
         (fun x => decide (4 < x.valMinAbs.natAbs)) := by
       rw [PMF.map_comp]
-      congr 1
-      funext r
+      congr 1 with r : 1
       rw [outcome_eq]
       congr 4
       change 9 + r - s = r + (9 - s)

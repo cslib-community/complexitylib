@@ -76,8 +76,7 @@ private noncomputable def handler (q : Bool × List Bool) : StateT ℕ PMF (List
   fun s => PMF.pure ([q.1], s + 1)
 
 private noncomputable def observe (program : WordOracleComp Bool (List Bool)) (s : ℕ) :=
-  (OracleComp.interpret
-    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler) program).run s
+  ProbOracleComp.runWith handler program s
 
 -- One polynomial tape law works for both key lengths; the query counter is retained jointly.
 example : ∃ (budget : ℕ → ℕ)
@@ -124,8 +123,7 @@ example (scheme : Scheme Unit Unit Bool Unit Bool Bool) :
         (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg))) := by
   apply eval_worldRealize_eq_bind
   intro Store oracle s
-  simp only [randomizedForger, OracleComp.interpret_bind, StateT.run_bind,
-    ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform, PMF.monad_bind_eq_bind,
-    PMF.bind_map, Function.comp_def]
+  simp only [randomizedForger, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
+    ProbComp.eval_uniform, PMF.bind_map, Function.comp_def]
 
 end CslibFrontierTests.SavedCoinReplacement

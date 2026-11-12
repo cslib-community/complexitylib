@@ -32,7 +32,7 @@ in `ℤ[V]`. This is the coefficient `[z_{i,S}] B̄_i` of the multilinear factor
   most `k (1 + 2 j)` on the cube (`Cslib.BitString.coeff_parityFactor_mem_lowDegree`). Over the
   `a` equations this gives the bound (D.1): below `V ^ ℓ`, every term of the product has at most
   `K = k (a + 2 (ℓ - 1))` incidences (`Cslib.BitString.coeff_incidenceSum_eq_of_le`).
-* **(D.2)**: for `a` equations, scopes `I i` containing the variables of `P i`, `ℓ ≥ 1` and
+* **(D.2)**: for `a` equations, scopes `I i` containing the variables of `P i` and
   `K ≥ k (a + 2 (ℓ - 1))`, the number of common zeros is congruent modulo `2 ^ ℓ` to the sum of the
   coefficients below `V ^ ℓ` of the incidence sum of these coefficients
   (`Cslib.BitString.commonZeroCount_modEq_sumCoeffsBelow_incidenceSum`). The incidence sum is
@@ -119,15 +119,15 @@ theorem monomialSum_congr_of_eqOn {P : Finset (Finset ι)} {I : Finset ι}
 variable [Fintype ι] [Fintype κ] [DecidableEq κ]
 
 /-- **The congruence (D.2)**: for scopes `I i` containing the variables of the equations `P i`
-with monomials of at most `k` variables, `ℓ ≥ 1` and `K ≥ k (#κ + 2 (ℓ - 1))`, the number of
+with monomials of at most `k` variables and `K ≥ k (#κ + 2 (ℓ - 1))`, the number of
 common zeros is congruent modulo `2 ^ ℓ` to the sum of the coefficients below `V ^ ℓ` of the
 incidence sum of the incidence coefficients. -/
 theorem commonZeroCount_modEq_sumCoeffsBelow_incidenceSum (P : κ → Finset (Finset ι))
     {I : κ → Finset ι} (hI : ∀ i, equationScope (P i) ⊆ I i) {k ℓ K : ℕ}
-    (hk : ∀ i, ∀ M ∈ P i, #M ≤ k) (hℓ : 1 ≤ ℓ) (hK : k * (Fintype.card κ + 2 * (ℓ - 1)) ≤ K) :
+    (hk : ∀ i, ∀ M ∈ P i, #M ≤ k) (hK : k * (Fintype.card κ + 2 * (ℓ - 1)) ≤ K) :
     (commonZeroCount univ P : ℤ) ≡
       sumCoeffsBelow ℓ (incidenceSum I (fun i => parityCoeff ℓ (P i)) K) [ZMOD 2 ^ ℓ] := by
-  have h52 := sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount univ P hℓ
+  have h52 := sum_sumCoeffsBelow_prod_parityFactor_modEq_commonZeroCount univ P ℓ
   rw [← sumCoeffsBelow_sum] at h52
   have hexp := sum_prod_eq_incidenceSum I (fun i x => parityFactor ℓ (monomialSum ℤ (P i) x))
     (fun i x y h => by rw [monomialSum_congr_of_eqOn (hI i) h]) (le_max_right K (∑ i, #(I i)))
@@ -152,7 +152,7 @@ theorem emod_sum_eq_commonZeroCount_of_modEq (P : κ → Finset (Finset ι)) {I 
     (∑ j ∈ range ℓ, q j) % 2 ^ ℓ = commonZeroCount univ P := by
   have hsum : (∑ j ∈ range ℓ, q j) ≡ (commonZeroCount univ P : ℤ) [ZMOD 2 ^ ℓ] :=
     (Int.ModEq.sum fun j hj => hq j (mem_range.mp hj)).trans
-      (commonZeroCount_modEq_sumCoeffsBelow_incidenceSum P hI hk (by omega) hK).symm
+      (commonZeroCount_modEq_sumCoeffsBelow_incidenceSum P hI hk hK).symm
   rw [hsum, Int.emod_eq_of_lt (Nat.cast_nonneg _)]
   have hle : (commonZeroCount univ P : ℤ) ≤ 2 ^ Fintype.card ι := by
     exact_mod_cast commonZeroCount_le_two_pow univ P

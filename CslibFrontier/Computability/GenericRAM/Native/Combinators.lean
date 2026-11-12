@@ -14,6 +14,8 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCo
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Option
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Compositional combinators for native resource certificates
@@ -147,44 +149,8 @@ def option {value : α → Option β} {fallback : α → γ} {body : α × β �
       (value a).elim (no.time a) (fun b => yes.time (a, b)),
     fun a => 2 * c.space a + (ei a).length +
       (value a).elim (no.space a) (fun b => yes.space (a, b)),
-    by
-      rcases isEmpty_or_nonempty β with h | h
-      · have hv : ∀ a, value a = none := by
-          intro a
-          cases value a with
-          | none => rfl
-          | some b => exact isEmptyElim b
-        simpa only [hv, Option.elim_none] using no.computes.mono_le
-          (T' := fun a => 2 * c.time a + (ei a).length + no.time a)
-          (S' := fun a => 2 * c.space a + (ei a).length + no.space a)
-          (fun _ => by omega) (fun _ => by omega)
-      · obtain ⟨b⟩ := h
-        have hget := (ComputableInDegree.getD (enc₁ := em) (enc := encOption em) b).inO_one
-          |>.comp_linear c.computes
-        have htag := (ComputableInDegree.isSome em).inO_one.comp_linear c.computes
-        have hid : ComputableInO (fun a : α => a) ei ei
-            (fun a => (ei a).length) (fun a => (ei a).length) := .of_eq fun _ => rfl
-        have h := htag.ite (yes.computes.comp (hid.prod hget)) no.computes
-        have h' := h.mono_le
-          (T' := fun a => 2 * c.time a + (ei a).length +
-            (value a).elim (no.time a) (fun b => yes.time (a, b)))
-          (S' := fun a => 2 * c.space a + (ei a).length +
-            (value a).elim (no.space a) (fun b => yes.space (a, b)))
-          (fun a => by
-            cases hv : value a <;>
-              simp only [Function.comp_def, hv, Option.isSome_none, Option.isSome_some,
-                Option.getD_some, Option.elim_none, Option.elim_some, Bool.false_eq_true,
-                ite_false, ite_true] <;> omega)
-          (fun a => by
-            cases hv : value a <;>
-              simp only [Function.comp_def, hv, Option.isSome_none, Option.isSome_some,
-                Option.getD_some, Option.elim_none, Option.elim_some, Bool.false_eq_true,
-                ite_false, ite_true] <;> omega)
-        convert h' using 1
-        funext a
-        change (value a).elim (fallback a) (fun b => body (a, b)) =
-          if (value a).isSome then body (a, (value a).getD b) else fallback a
-        cases value a <;> rfl⟩
+    ComputableInO.optionElimWithInput (body := fun a b => body (a, b)) c.computes no.computes
+      yes.computes⟩
 
 @[simp] theorem option_time {value : α → Option β} {fallback : α → γ} {body : α × β → γ}
     (c : NativeCertificate value ei (encOption em))
@@ -386,9 +352,7 @@ def iterate {n : α → ℕ} {init : α → β} {step : β → β}
 /-! ### Polynomiality preservation across certificate combinators -/
 
 theorem polyBounded_pow_of_polyBounded {size u : α → ℕ} (hu : PolyBounded size u) (c d : ℕ) :
-    PolyBounded size (fun a => c * (u a + 1) ^ d) :=
-  (PolyBounded.of_forall_le (size := id) (u := fun x => c * (x + 1) ^ d)
-    c d fun _ => le_rfl).comp hu
+    PolyBounded size (fun a => c * (u a + 1) ^ d) := by growth_poly
 
 theorem linear_isPolynomial {f : α → β}
     (h : ComputableInO f ei eb (fun a => (ei a).length) (fun a => (ei a).length)) :
@@ -461,14 +425,16 @@ theorem option_isPolynomial {value : α → Option β} {fallback : α → γ} {b
   obtain ⟨ct, dt, hyt⟩ := hyes.1.exists_le
   obtain ⟨cs, ds, hys⟩ := hyes.2.exists_le
   have hlen : PolyBounded (fun a => (ei a).length)
-      (fun a => 2 * (ei a).length + (encOption eb (value a)).length) :=
-    ((PolyBounded.const 2).mul .self).add (c.polyTime hc).polyBounded_length
+      (fun a => 2 * (ei a).length + (encOption eb (value a)).length) := by growth_poly
   have hbodyT : PolyBounded (fun a => (ei a).length)
       (fun a => ct * (2 * (ei a).length + (encOption eb (value a)).length + 1) ^ dt) :=
     polyBounded_pow_of_polyBounded hlen ct dt
   have hbodyS : PolyBounded (fun a => (ei a).length)
       (fun a => cs * (2 * (ei a).length + (encOption eb (value a)).length + 1) ^ ds) :=
     polyBounded_pow_of_polyBounded hlen cs ds
+  have hpair (a : α) (b : β) : (encPair ei eb (a, b)).length =
+      2 * (ei a).length + (encOption eb (Option.some b)).length := by
+    simp; omega
   refine ⟨((((PolyBounded.const 2).mul hc.1).add .self).add (hno.1.add hbodyT)).mono fun a => ?_,
     ((((PolyBounded.const 2).mul hc.2).add .self).add (hno.2.add hbodyS)).mono fun a => ?_⟩
   · simp only [option_time]
@@ -476,9 +442,6 @@ theorem option_isPolynomial {value : α → Option β} {fallback : α → γ} {b
     | none => simp
     | some b =>
       have hb := hyt (a, b)
-      have hpair : (encPair ei eb (a, b)).length =
-          2 * (ei a).length + (encOption eb (Option.some b)).length := by
-        simp; omega
       rw [hpair] at hb
       simp only [Option.elim_some]
       omega
@@ -487,9 +450,6 @@ theorem option_isPolynomial {value : α → Option β} {fallback : α → γ} {b
     | none => simp
     | some b =>
       have hb := hys (a, b)
-      have hpair : (encPair ei eb (a, b)).length =
-          2 * (ei a).length + (encOption eb (Option.some b)).length := by
-        simp; omega
       rw [hpair] at hb
       simp only [Option.elim_some]
       omega

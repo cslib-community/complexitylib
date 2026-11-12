@@ -51,7 +51,7 @@ generating-function bound, motivated by the geometric thresholds in Appendix A.3
 * [OpenAI, *The Exponential Time Hypothesis is False*, Appendix A.3, pp. 46–47][OpenAI2026ETH]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
@@ -87,8 +87,7 @@ theorem sum_choose_le_exp_mul_pow (q e : ℕ) (T : ℝ) (hT : 1 ≤ T) :
             inv_mul_cancel₀ hT0.ne', one_pow, one_mul]
           exact one_le_pow₀ hT
         calc (q.choose j : ℝ) = (q.choose j : ℝ) * 1 := (mul_one _).symm
-          _ ≤ (q.choose j : ℝ) * (t ^ j * T ^ e) :=
-              mul_le_mul_of_nonneg_left this (by positivity)
+          _ ≤ (q.choose j : ℝ) * (t ^ j * T ^ e) := by gcongr
           _ = (q.choose j : ℝ) * t ^ j * T ^ e := by ring
     _ = (∑ j ∈ range (e + 1), (q.choose j : ℝ) * t ^ j) * T ^ e := by rw [sum_mul]
     _ ≤ (1 + t) ^ q * T ^ e := by gcongr

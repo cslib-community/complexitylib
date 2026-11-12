@@ -159,12 +159,7 @@ theorem sparse_coordinate_variable_time (f g e : Equiv.Perm (BitVec n))
           (word fun j => z (Fin.castAdd m j))).getLsbD i.val) ∧
       out.size ≤ encode.size + decode.size +
         1000 * (n + 3) * ((disagreement f g).card + m + 1) := by
-  have hcounter : e ∘ g ∘ e.symm = fun x => x + 1 := by
-    funext x
-    simp only [Function.comp_apply, hcycle, Equiv.apply_symm_apply]
-  have hr := disagreement_conjugate_card (f : BitVec n → BitVec n)
-    (g : BitVec n → BitVec n) e
-  rw [hcounter] at hr
+  have hr := disagreement_semiconj_card (f : BitVec n → BitVec n) g e (· + 1) hcycle
   let conjugate := e.permCongrHom f
   obtain ⟨middle, hm, hs⟩ := sparse_counter_variable_time conjugate m
   change middle.size ≤ 1000 * (n + 3) *

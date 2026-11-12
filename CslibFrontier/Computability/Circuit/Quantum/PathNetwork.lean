@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Quantum.PathSum
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
 import CslibFrontier.Foundations.Data.List.Boole
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.SumIndicator
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
@@ -467,8 +468,7 @@ private theorem reg_add (qs : List ℕ) (X y : ℕ → Bool) (l : List ℕ) (b :
       simpa [Nat.add_assoc, Nat.add_comm 1 k] using hl (k + 1) (by simp; omega)
     rw [List.length_cons, ← Nat.add_assoc, Nat.add_right_comm, ih', reg_succ, h0,
       List.range_succ_eq_map, List.map_cons, List.map_map, Nat.add_zero, setQubits_cons]
-    congr 2
-    funext k
+    congr 2 with k : 1
     simp only [Function.comp_apply, Nat.succ_eq_add_one]
     congr 1
     omega
@@ -722,6 +722,16 @@ private theorem map_pairFun_right {N : ℕ} (a b : Fin N → Bool) :
   simp only [List.length_map, List.length_range] at h₁
   simp [show N + u < 2 * N by omega]
 
+/-- A well-formed gate code has at most three qubits. -/
+theorem length_qubits_le_three {m : ℕ} {g : GateCode} (h : g.WellFormed m) :
+    (qubits g).length ≤ 3 := by
+  obtain ⟨_ | _, t, cs⟩ := g
+  · simp only [qubits, List.length_cons]
+    have := h.1
+    omega
+  · simp only [qubits, h.2, List.length_cons, List.length_nil]
+    omega
+
 /-- **The contraction of the network is the projected gap.** With `-1` as the Hadamard sign, over
 any commutative ring, the contraction of the network of well-formed gate codes with the measured
 qubits `S` on the input register `X` is `onesGap S gs X`; for `S = [0]` it is the acceptance gap
@@ -733,15 +743,8 @@ theorem contraction_network {R : Type*} [CommRing R] (S : List ℕ) (X : List Bo
   set N := qs.length with hN
   set Xf : ℕ → Bool := fun j => X.getD j false
   -- every gate has at most three qubits
-  have hq3 (i : ℕ) (hi : i < gs.length) : (qubits (gs.getD i default)).length ≤ 3 := by
-    have hwf := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
-    generalize gs.getD i default = g at hwf ⊢
-    obtain ⟨_ | _, t, cs⟩ := g
-    · simp only [qubits, List.length_cons]
-      have := hwf.1
-      omega
-    · simp only [qubits, hwf.2, List.length_cons, List.length_nil]
-      omega
+  have hq3 (i : ℕ) (hi : i < gs.length) : (qubits (gs.getD i default)).length ≤ 3 :=
+    length_qubits_le_three (hgs _ (List.getD_mem default hi))
   -- the products of the gate vertices of a copy
   let P : (ℕ → Bool) → R := fun y => ((List.range gs.length).map fun i =>
     gateEntry (-1 : R) (gs.getD i default)
@@ -823,8 +826,7 @@ theorem contraction_network {R : Type*} [CommRing R] (S : List ℕ) (X : List Bo
             (fun j => (gs.foldl pathStep (X, List.ofFn π', false)).1.getD j false)
             then 1 else 0 := by
     rw [← trajWeight_sum]
-    congr 1
-    funext r0
+    congr 1 with r0 : 1
     exact hC _
   simp only [hstep, hinner]
   rw [hC, onesGap, Int.cast_sum]
@@ -857,8 +859,7 @@ theorem network_mapTables {R R' : Type*} [CommSemiring R] [CommSemiring R'] (ψ 
   have hgate (c i : ℕ) : (fun v : List ℕ × List R => (v.1, v.2.map ψ)) (gateVertex neg X gs c i) =
       gateVertex (ψ neg) X gs c i := by
     simp only [gateVertex, boundedTable, List.map_map]
-    congr 2
-    funext idx
+    congr 2 with idx : 1
     simp only [Function.comp_apply, gateEntry]
     split_ifs <;> simp
   have hglue (w : ℕ) : (fun v : List ℕ × List R => (v.1, v.2.map ψ)) (glueVertex S gs w) =
@@ -894,16 +895,6 @@ theorem contraction_network_mod (S : List ℕ) (X : List Bool) (gs : List GateCo
   rw [hcast, Nat.mod_eq_of_lt hlt]
 
 /-! ### Sizes -/
-
-/-- A well-formed gate code has at most three qubits. -/
-theorem length_qubits_le_three {m : ℕ} {g : GateCode} (h : g.WellFormed m) :
-    (qubits g).length ≤ 3 := by
-  obtain ⟨_ | _, t, cs⟩ := g
-  · simp only [qubits, List.length_cons]
-    have := h.1
-    omega
-  · simp only [qubits, h.2, List.length_cons, List.length_nil]
-    omega
 
 /-- Every gate has at least one and at most three occurrences. -/
 theorem length_le_length_occurrences (gs : List GateCode) :
@@ -957,9 +948,9 @@ theorem maxDegree_network_le (neg : R) (S : List ℕ) (X : List Bool) {gs : List
   simp only [vertices_network, List.mem_append, List.mem_map, List.mem_range,
     List.mem_singleton] at hv
   rcases hv with (((⟨i, hi, rfl⟩ | ⟨i, hi, rfl⟩) | ⟨w, -, rfl⟩) | rfl) | ⟨w, -, rfl⟩
-  · have := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+  · have := hgs _ (List.getD_mem default hi)
     exact (length_gatePorts_le gs 0 i).trans (by omega)
-  · have := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+  · have := hgs _ (List.getD_mem default hi)
     exact (length_gatePorts_le gs 1 i).trans (by omega)
   · unfold glueVertex
     split_ifs <;> simp
@@ -975,7 +966,7 @@ theorem length_table_network (neg : R) (S : List ℕ) (X : List Bool) {gs : List
     List.mem_singleton] at hv
   have hgate (c i : ℕ) (hi : i < gs.length) :
       (gateVertex neg X gs c i).2.length = 2 ^ (gateVertex neg X gs c i).1.length := by
-    have := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+    have := hgs _ (List.getD_mem default hi)
     simp only [gateVertex]
     rw [boundedTable_eq _ ((length_gatePorts_le gs c i).trans (by omega)), List.length_map,
       List.length_range]
@@ -1066,7 +1057,7 @@ theorem sum_readers {gs : List GateCode} (hnd : ∀ g ∈ gs, (qubits g).Nodup) 
   set q := qs.getD u 0
   have hgate (i : ℕ) (hi : i < gs.length) :
       (qubits (gs.getD i default)).Nodup :=
-    hnd _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+    hnd _ (List.getD_mem default hi)
   by_cases hlast : lastOcc qs q qs.length = some u
   · -- the last occurrence: no gate reads it
     rw [ite_eq_left hlast]
@@ -1248,8 +1239,7 @@ theorem isRowsFirstBipartite_network (neg : R) (S : List ℕ) (X : List Bool) {g
     (hnd : ∀ g ∈ gs, (qubits g).Nodup) :
     (network neg S X gs).2.IsRowsFirstBipartite (network neg S X gs).1 := by
   have hnd' (i : ℕ) (hi : i ∈ List.range gs.length) : (qubits (gs.getD i default)).Nodup :=
-    hnd _ (List.getD_eq_getElem _ default (List.mem_range.mp hi) ▸
-      List.getElem_mem (List.mem_range.mp hi))
+    hnd _ (List.getD_mem default (List.mem_range.mp hi))
   refine ⟨?_, fun e he => ⟨?_, ?_⟩⟩
   · -- every port names an edge
     intro v hv p hp

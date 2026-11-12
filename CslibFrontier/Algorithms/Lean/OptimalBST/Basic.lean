@@ -110,36 +110,15 @@ theorem isBST_iff {i j : ℕ} {t : BinaryTree ℕ} :
       have hmem : ∀ x, x ∈ elements (.node a l r) ↔ i < x ∧ x ≤ j := fun x => by
         rw [he, mem_Ioc]
       have ha := (hmem a).1 (mem_elements_node.2 (Or.inl rfl))
+      -- each child holds exactly the keys of `(i, j]` on its side of the root
       have hel : elements l = Ioc i (a - 1) := by
         ext x
-        rw [mem_Ioc]
-        constructor
-        · intro hx
-          have h1 := hla x hx
-          have h2 := (hmem x).1 (mem_elements_node.2 (Or.inr (Or.inl hx)))
-          omega
-        · intro hx
-          have h2 := (hmem x).2 (by omega)
-          rw [mem_elements_node] at h2
-          rcases h2 with h2 | h2 | h2
-          · omega
-          · exact h2
-          · have := hra x h2; omega
+        have := hmem x
+        grind [mem_elements_node]
       have her : elements r = Ioc a j := by
         ext x
-        rw [mem_Ioc]
-        constructor
-        · intro hx
-          have h1 := hra x hx
-          have h2 := (hmem x).1 (mem_elements_node.2 (Or.inr (Or.inr hx)))
-          omega
-        · intro hx
-          have h2 := (hmem x).2 (by omega)
-          rw [mem_elements_node] at h2
-          rcases h2 with h2 | h2 | h2
-          · omega
-          · have := hla x h2; omega
-          · exact h2
+        have := hmem x
+        grind [mem_elements_node]
       exact .node ha.1 ha.2 (ihl ⟨by omega, hol, hel⟩) (ihr ⟨ha.2, hor, her⟩)
 
 variable {β : Type*}
@@ -158,6 +137,14 @@ def treeCost (w : ℕ → ℕ → β) : ℕ → ℕ → BinaryTree ℕ → β
 weights `q g` of the gaps `i ≤ g ≤ j`. -/
 def knuthWeight (p q : ℕ → β) (i j : ℕ) : β :=
   ∑ k ∈ Ioc i j, p k + ∑ g ∈ Icc i j, q g
+
+/-- Charging one visit at the root: if every visit count on `S` is one more than a child's, the
+weighted sum splits into the plain sum and the child's weighted sum. -/
+private theorem sum_nsmul_of_eq_one_add (S : Finset ℕ) (f : ℕ → β) {v v' : ℕ → ℕ}
+    (h : ∀ x ∈ S, v x = 1 + v' x) :
+    ∑ x ∈ S, v x • f x = ∑ x ∈ S, f x + ∑ x ∈ S, v' x • f x := by
+  rw [← sum_add_distrib]
+  exact sum_congr rfl fun x hx => by rw [h x hx, add_nsmul, one_nsmul]
 
 open Cslib.DataStructure.SearchTree in
 /-- **Knuth's weight gives the weighted search cost**: each key `k` is charged its access weight
@@ -188,31 +175,27 @@ theorem treeCost_knuthWeight (p q : ℕ → β) {i j : ℕ} {t : BinaryTree ℕ}
         sum_Ico_consecutive f (by omega : i ≤ s + 1) (by omega : s + 1 ≤ j + 1)]
     rw [hIoc, hIcc]
     have e1 : ∑ x ∈ Ioc i s, searchVisits x (.node (s + 1) l r) • p x =
-        ∑ x ∈ Ioc i s, p x + ∑ x ∈ Ioc i s, searchVisits x l • p x := by
-      rw [← sum_add_distrib]
-      refine sum_congr rfl fun x hx => ?_
-      rw [mem_Ioc] at hx
-      rw [searchVisits, ite_eq_left (by omega), add_nsmul, one_nsmul]
+        ∑ x ∈ Ioc i s, p x + ∑ x ∈ Ioc i s, searchVisits x l • p x :=
+      sum_nsmul_of_eq_one_add _ _ fun x hx => by
+        rw [mem_Ioc] at hx
+        rw [searchVisits, ite_eq_left (by omega)]
     have e2 : searchVisits (s + 1) (.node (s + 1) l r) • p (s + 1) = p (s + 1) := by
       rw [searchVisits, ite_eq_right (lt_irrefl _), ite_eq_right (lt_irrefl _), add_zero, one_nsmul]
     have e3 : ∑ x ∈ Ioc (s + 1) j, searchVisits x (.node (s + 1) l r) • p x =
-        ∑ x ∈ Ioc (s + 1) j, p x + ∑ x ∈ Ioc (s + 1) j, searchVisits x r • p x := by
-      rw [← sum_add_distrib]
-      refine sum_congr rfl fun x hx => ?_
-      rw [mem_Ioc] at hx
-      rw [searchVisits, ite_eq_right (by omega), ite_eq_left (by omega), add_nsmul, one_nsmul]
+        ∑ x ∈ Ioc (s + 1) j, p x + ∑ x ∈ Ioc (s + 1) j, searchVisits x r • p x :=
+      sum_nsmul_of_eq_one_add _ _ fun x hx => by
+        rw [mem_Ioc] at hx
+        rw [searchVisits, ite_eq_right (by omega), ite_eq_left (by omega)]
     have e4 : ∑ x ∈ Icc i s, successorVisits x (.node (s + 1) l r) • q x =
-        ∑ x ∈ Icc i s, q x + ∑ x ∈ Icc i s, successorVisits x l • q x := by
-      rw [← sum_add_distrib]
-      refine sum_congr rfl fun x hx => ?_
-      rw [mem_Icc] at hx
-      rw [successorVisits, ite_eq_left (by omega), add_nsmul, one_nsmul]
+        ∑ x ∈ Icc i s, q x + ∑ x ∈ Icc i s, successorVisits x l • q x :=
+      sum_nsmul_of_eq_one_add _ _ fun x hx => by
+        rw [mem_Icc] at hx
+        rw [successorVisits, ite_eq_left (by omega)]
     have e5 : ∑ x ∈ Icc (s + 1) j, successorVisits x (.node (s + 1) l r) • q x =
-        ∑ x ∈ Icc (s + 1) j, q x + ∑ x ∈ Icc (s + 1) j, successorVisits x r • q x := by
-      rw [← sum_add_distrib]
-      refine sum_congr rfl fun x hx => ?_
-      rw [mem_Icc] at hx
-      rw [successorVisits, ite_eq_right (by omega), add_nsmul, one_nsmul]
+        ∑ x ∈ Icc (s + 1) j, q x + ∑ x ∈ Icc (s + 1) j, successorVisits x r • q x :=
+      sum_nsmul_of_eq_one_add _ _ fun x hx => by
+        rw [mem_Icc] at hx
+        rw [successorVisits, ite_eq_right (by omega)]
     rw [e1, e2, e3, e4, e5, treeCost, Nat.add_sub_cancel, ihl, ihr, knuthWeight, hIoc, hIcc]
     abel
 

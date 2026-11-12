@@ -28,7 +28,7 @@ the displayed half-of-two hypothesis.
   §3.3, Claim 13
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

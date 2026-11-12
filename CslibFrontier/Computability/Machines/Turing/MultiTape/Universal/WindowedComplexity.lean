@@ -304,7 +304,6 @@ lemma baseCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B) (hn :
   have hY : E + 1 ≤ 83 * ((eDesc d).length + B + 2) ^ 2 := by
     nlinarith
   have hY3 := Nat.pow_le_pow_left hY 3
-  have hY1 : E + 1 ≤ (E + 1) ^ 3 := Nat.le_self_pow (by omega) _
   omega
 
 /-- The cost of a node of `n` steps, within `costA * (n + 1)`. -/
@@ -343,8 +342,6 @@ lemma nodeCost_le {d : Desc} {B n : ℕ} {w : Win} (hDB : descLen d ≤ B)
     length_encList_sim_out_le d (firstHalf n) (extract (firstHalf n) w)
   have o₂ : (encList encUnary b₂.2).length ≤ n / 2 * (2 * descLen d + 1) :=
     length_encList_sim_out_le d (n / 2) (extract (n / 2) w₁)
-  have o₁' := Nat.mul_le_mul_right (2 * descLen d + 1) (show firstHalf n ≤ n by omega)
-  have o₂' := Nat.mul_le_mul_right (2 * descLen d + 1) (show n / 2 ≤ n by omega)
   have o₁₂ : firstHalf n * (2 * descLen d + 1) + n / 2 * (2 * descLen d + 1) =
       n * (2 * descLen d + 1) := by rw [← Nat.add_mul, hfh]
   generalize winBound (descLen d) B 1 (4 * n + 1) = Z at *
@@ -430,7 +427,6 @@ lemma eval_le (d : Desc) {B : ℕ} (hDB : descLen d ≤ B) (k : ℕ) :
     by_cases hn1 : n ≤ 1
     · obtain ⟨c, hc, hle⟩ := eval_base hDB hn1 hw
       exact ⟨c, hc, hle.trans hA⟩
-    have hpow : 2 ^ (k + 1) = 2 * 2 ^ k := by ring
     have iL := (hw.extract (firstHalf n)).mono (h' := 0) (L' := 2 * firstHalf n + 1) le_rfl
       (min_le_right _ _)
     obtain ⟨c₁, h₁, hc₁⟩ := ih (firstHalf n) _ (by unfold firstHalf; omega) iL

@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Almost uniform samplers give FPRAS for self-reducible families
@@ -179,9 +180,7 @@ theorem isPPTOn_estimate
     fun_prop
   have hsize : PolyBounded (fun a => (encInput enc a).length)
       (fun a => 3 * (encInput enc a).length + 4 * (encNat (N a ^ R.len a.1)).length + 2) := by
-    have h1 := hpowc.polyBounded_length
-    exact (((PolyBounded.const 3).mul PolyBounded.self).add
-      ((PolyBounded.const 4).mul h1)).add (PolyBounded.const 2)
+    growth_poly
   have hloop := IsPPTOn.iterateWith_spec' (input := encInput enc) (stateEncoding := encState enc)
     (step := fun a => R.step S (R.len a.1) a.2.1 a.2.2) hcount hinitial (R.isPPTOn_step hS)
     (fun a i s => R.len s.1 + i = R.len a.1 ∧ (enc s.1).length ≤ (enc a.1).length ∧

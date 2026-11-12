@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Data.Finset.Density
+import CslibFrontier.Foundations.Data.Finset.Density
 import CslibFrontier.Foundations.Data.Finset.Expect
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
@@ -66,7 +67,7 @@ is `1 / 8`.
   `Cslib.Probability.IsPairwiseIndependentHash.dens_filter_notMem_image_le`: the probability that
   `S` hits a target is at most `μ`, and that it misses it at most `1 / μ`.
 * `Cslib.Probability.IsPairwiseIndependentHash.three_quarters_mul_le_dens_filter_mem_image`: the
-  set lower bound protocol.
+  hashing bound in the analysis of the set lower bound protocol.
 * `Cslib.Probability.IsPairwiseIndependentHash.card_filter_mem_image_mul_le`,
   `Cslib.Probability.IsPairwiseIndependentHash.card_filter_notMem_image_mul_le`: the same two
   bounds in counts.
@@ -158,23 +159,15 @@ theorem comp (hh : IsPairwiseIndependentHash h) {X' : Type*} {e : X' → X}
   dens_filter_apply_eq_and_apply_eq hx y₁ y₂ :=
     hh.dens_filter_apply_eq_and_apply_eq (he.ne hx) y₁ y₂
 
-omit [Fintype Y] [DecidableEq Y] in
-/-- Relabelling the seeds by an equivalence does not change densities. -/
-theorem dens_filter_comp_equiv {ι' : Type*} [Fintype ι'] (e : ι' ≃ ι) (P : ι → Prop)
-    [DecidablePred P] : dens {i' | P (e i')} = dens {i | P i} := by
-  rw [dens_eq_card_div_card, dens_eq_card_div_card, Fintype.card_congr e]
-  congr 2
-  exact card_equiv e fun i' => by simp
-
 /-- **Relabelling seeds**: precomposing the seeds of a pairwise independent family with an
 equivalence keeps it pairwise independent. -/
 theorem comp_seedEquiv {ι' : Type*} [Fintype ι'] (hh : IsPairwiseIndependentHash h)
     (e : ι' ≃ ι) : IsPairwiseIndependentHash fun i => h (e i) where
   dens_filter_apply_eq x y := by
-    rw [dens_filter_comp_equiv e fun i => h i x = y]
+    rw [Fintype.dens_filter_comp_equiv e fun i => h i x = y]
     exact hh.dens_filter_apply_eq x y
   dens_filter_apply_eq_and_apply_eq hx y₁ y₂ := by
-    rw [dens_filter_comp_equiv e fun i => h i _ = y₁ ∧ h i _ = y₂]
+    rw [Fintype.dens_filter_comp_equiv e fun i => h i _ = y₁ ∧ h i _ = y₂]
     exact hh.dens_filter_apply_eq_and_apply_eq hx y₁ y₂
 
 /-- **The mean cell size**: `#{x ∈ S | h i x = y}` has expectation `#S / |Y|`. -/
@@ -371,9 +364,9 @@ theorem sub_le_dens_filter_mem_image [Field 𝕜] [LinearOrder 𝕜] [IsStrictOr
         exact natCast_sub_mul_sub_one_div_two_le _
     _ = _ := Fintype.expect_boole _
 
-/-- **The set lower bound protocol** of Goldwasser and Sipser: if `2 #S ≤ |Y|`, then `S` hits `y`
-with probability at least three quarters of the mean cell size `#S / |Y|`
-[Arora and Barak, Section 8.2][AroraBarak09]. -/
+/-- **The hashing bound in the analysis of the set lower bound protocol** of Goldwasser and Sipser:
+if `2 #S ≤ |Y|`, then `S` hits `y` with probability at least three quarters of the mean cell size
+`#S / |Y|` [Arora and Barak, Section 8.2][AroraBarak09]. -/
 theorem three_quarters_mul_le_dens_filter_mem_image (hh : IsPairwiseIndependentHash h)
     {S : Finset X} (y : Y) (hS : 2 * #S ≤ Fintype.card Y) :
     3 / 4 * (#S / Fintype.card Y : ℚ≥0) ≤ dens {i | y ∈ S.image (h i)} := by

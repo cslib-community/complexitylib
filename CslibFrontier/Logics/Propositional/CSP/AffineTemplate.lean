@@ -98,8 +98,7 @@ theorem Constraint.holds_instantiateAffine {arity : Rel → ℕ} {sem : Rel → 
   have heq : List.ofFn (fun i : Fin (arity R) => σ (vs.getD i fallback)) = vs.map σ := by
     rw [← hc]
     convert List.ofFn_getElem_eq_map vs σ using 1
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [List.getD_eq_getElem vs fallback i.isLt]
   rw [heq]
 

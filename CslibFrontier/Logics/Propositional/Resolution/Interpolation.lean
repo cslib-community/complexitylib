@@ -598,16 +598,14 @@ variable {n : ℕ} [DecidableEq Y] [DecidableEq Z]
   {A : CNF (Fin n ⊕ Y)} {B : CNF (Fin n ⊕ Z)}
 
 /-- **Assembling the interpolant.** Fix how each side sees the lines (`ρA`, `ρB`), so that clauses
-of `A` and of `B` satisfy the invariant with the constants `false` and `true`. If constants,
-disjunctions and conjunctions cost at most `cost` gates, and a resolution on a shared variable has
-a gate satisfying the invariant within `cost` gates, then a refutation with `s` lines gives an
-interpolant computed with at most `cost * s` gates. -/
+of `A` and of `B` satisfy the invariant with the constants `false` and `true` (`hA`, `hB`). If
+constants, disjunctions and conjunctions cost at most `cost` gates, and a resolution on a shared
+variable has a gate satisfying the invariant within `cost` gates, then a refutation with `s` lines
+gives an interpolant computed with at most `cost * s` gates. -/
 private theorem exists_circuit_of_good {σ : Signature} {I : Interpretation σ Bool} {cost : ℕ}
     (hρA : ∀ a y k, ρA a y (.inr (.inr k)) = none) (hρB : ∀ a z j, ρB a z (.inr (.inl j)) = none)
-    (hA : ∀ d ∈ A, ∀ a y, ∀ l ∈ d, Sum.elim a y l.1 = l.2 →
-      ρA a y (Sum.map id Sum.inl l.1) = some l.2)
-    (hB : ∀ d ∈ B, ∀ a z, ∀ l ∈ d, Sum.elim a z l.1 = l.2 →
-      ρB a z (Sum.map id Sum.inr l.1) = some l.2)
+    (hA : ∀ d ∈ A, Good ρA ρB A B (d.relabel (Sum.map id Sum.inl)) fun _ => false)
+    (hB : ∀ d ∈ B, Good ρA ρB A B (d.relabel (Sum.map id Sum.inr)) fun _ => true)
     (hconst : ∀ b, Synthesis I (inputs n) {fun _ => b} cost)
     (hor : ∀ f₁ f₂ : (Fin n → Bool) → Bool,
       Synthesis I (inputs n ∪ {f₁, f₂}) {fun a => f₁ a || f₂ a} cost)
@@ -623,7 +621,7 @@ private theorem exists_circuit_of_good {σ : Signature} {I : Interpretation σ B
   have hmem (c : Clause (Fin n ⊕ (Y ⊕ Z))) (hc : c ∈ A.appendShared B) :
       ∃ f, Good ρA ρB A B c f ∧ Synthesis I (inputs n) {f} cost := by
     rcases List.mem_append.1 hc with hc | hc <;> obtain ⟨d, hd, rfl⟩ := List.mem_map.1 hc
-    exacts [⟨_, good_false hd (hA d hd), hconst false⟩, ⟨_, good_true hd (hB d hd), hconst true⟩]
+    exacts [⟨_, hA d hd, hconst false⟩, ⟨_, hB d hd, hconst true⟩]
   have hres (c₁ c₂ : Clause (Fin n ⊕ (Y ⊕ Z))) (v : Fin n ⊕ (Y ⊕ Z))
       (f₁ f₂ : (Fin n → Bool) → Bool) (_ : (v, true) ∈ c₁) (_ : (v, false) ∈ c₂)
       (h₁ : Good ρA ρB A B c₁ f₁) (h₂ : Good ρA ρB A B c₂ f₂) :
@@ -663,8 +661,9 @@ theorem CNF.IsProof.exists_interpolant {ls : List (Clause (Fin n ⊕ (Y ⊕ Z)))
     (h : (A.appendShared B).IsProof ls) (hnil : [] ∈ ls) :
     ∃ C : Circuit Boolean.signature n 1, C.size ≤ 4 * ls.length ∧
       A.IsInterpolant B fun a => C.eval Boolean.interpretation a 0 := by
-  refine exists_circuit_of_good (ρA := leftPart) (ρB := rightPart) (fun _ _ _ => rfl)
-    (fun _ _ _ => rfl) (fun _ _ _ _ l _ he => ?_) (fun _ _ _ _ l _ he => ?_)
+  exact exists_circuit_of_good (ρA := leftPart) (ρB := rightPart) (fun _ _ _ => rfl)
+    (fun _ _ _ => rfl) (fun _ hd => isInterpolantAt_relabel_inl hd)
+    (fun _ hd => isInterpolantAt_relabel_inr hd)
     (fun b => (Synthesis.const b).mono Set.Subset.rfl Set.Subset.rfl (by omega))
     (fun f₁ f₂ => ((synthesis_fst f₁ f₂).or (synthesis_snd f₁ f₂)).mono Set.Subset.rfl
       Set.Subset.rfl (by omega))
@@ -674,8 +673,6 @@ theorem CNF.IsProof.exists_interpolant {ls : List (Clause (Fin n ⊕ (Y ⊕ Z)))
       (((synthesis_input f₁ f₂ i).not.and (synthesis_fst f₁ f₂)).or
         ((synthesis_input f₁ f₂ i).and (synthesis_snd f₁ f₂))).mono Set.Subset.rfl
         Set.Subset.rfl (by omega)⟩) h hnil
-  · rcases l with ⟨_ | _, b⟩ <;> simpa [leftPart] using he
-  · rcases l with ⟨_ | _, b⟩ <;> simpa [rightPart] using he
 
 /-- **Feasible interpolation for resolution**, by refutation size: if `A(x, y) ∧ B(x, z)` has a
 resolution refutation with at most `s` lines, then `A` and `B` have an interpolant computed by a
@@ -712,18 +709,14 @@ theorem CNF.IsProof.exists_monotone_interpolant_of_positive
     ∃ C : Circuit Monotone.signature n 1, C.size ≤ 2 * ls.length ∧
       A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0 := by
   obtain ⟨hconst, hor, hand⟩ := monotone_gates (n := n)
-  refine exists_circuit_of_good (ρA := leftPos) (ρB := rightPart) (fun _ _ _ => rfl)
-    (fun _ _ _ => rfl) (fun d hd a _ l hl he => ?_) (fun _ _ _ _ l _ he => ?_) hconst hor hand
+  exact exists_circuit_of_good (ρA := leftPos) (ρB := rightPart) (fun _ _ _ => rfl)
+    (fun _ _ _ => rfl) (fun _ hd => isMonotoneInterpolantAt_relabel_inl (pos := true)
+      (fun _ => hpos) hd)
+    (fun _ hd => isMonotoneInterpolantAt_relabel_inr (pos := true) nofun hd) hconst hor hand
     (fun i _ _ f₁ f₂ h₁ h₂ => ⟨_, good_posSel i h₁ h₂,
       (Synthesis.monotone_and (Synthesis.monotone_or (synthesis_input f₁ f₂ i)
         (synthesis_fst f₁ f₂)) (synthesis_snd f₁ f₂)).mono Set.Subset.rfl Set.Subset.rfl
         (by omega)⟩) h hnil
-  · rcases l with ⟨i | _, b⟩
-    · obtain rfl := hpos d hd i b hl
-      simp only [Sum.elim_inl] at he
-      simp [leftPos, he]
-    · simpa [leftPos] using he
-  · rcases l with ⟨_ | _, b⟩ <;> simpa [rightPart] using he
 
 /-- **Monotone feasible interpolation for resolution**, when the shared variables occur only
 negatively in `B` [Pudlák, Theorem 2][Pudlak1997], [Krajíček, Theorem 6.1][Krajicek1997]. A
@@ -735,18 +728,14 @@ theorem CNF.IsProof.exists_monotone_interpolant_of_negative
     ∃ C : Circuit Monotone.signature n 1, C.size ≤ 2 * ls.length ∧
       A.IsInterpolant B fun a => C.eval Monotone.interpretation a 0 := by
   obtain ⟨hconst, hor, hand⟩ := monotone_gates (n := n)
-  refine exists_circuit_of_good (ρA := leftPart) (ρB := rightNeg) (fun _ _ _ => rfl)
-    (fun _ _ _ => rfl) (fun _ _ _ _ l _ he => ?_) (fun d hd a _ l hl he => ?_) hconst hor hand
+  exact exists_circuit_of_good (ρA := leftPart) (ρB := rightNeg) (fun _ _ _ => rfl)
+    (fun _ _ _ => rfl) (fun _ hd => isMonotoneInterpolantAt_relabel_inl (pos := false) nofun hd)
+    (fun _ hd => isMonotoneInterpolantAt_relabel_inr (pos := false) (fun _ => hneg) hd)
+    hconst hor hand
     (fun i _ _ f₁ f₂ h₁ h₂ => ⟨_, good_negSel i h₁ h₂,
       (Synthesis.monotone_or (Synthesis.monotone_and (synthesis_input f₁ f₂ i)
         (synthesis_snd f₁ f₂)) (synthesis_fst f₁ f₂)).mono Set.Subset.rfl Set.Subset.rfl
         (by omega)⟩) h hnil
-  · rcases l with ⟨_ | _, b⟩ <;> simpa [leftPart] using he
-  · rcases l with ⟨i | _, b⟩
-    · obtain rfl := hneg d hd i b hl
-      simp only [Sum.elim_inl] at he
-      simp [rightNeg, he]
-    · simpa [rightNeg] using he
 
 /-- **Monotone feasible interpolation for resolution**, by refutation size, when the shared
 variables occur only positively in `A`. -/

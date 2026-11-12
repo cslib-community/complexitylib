@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.KeyChain
 public import CslibFrontier.Crypto.Computational.Homomorphic.BitEncryption
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Foundations.Data.List.Append
 import CslibFrontier.Probability.PMF
@@ -169,8 +170,7 @@ theorem eval_publicKeyChainHybrid_depth (n depth : ℕ) :
     ProbComp.eval (E.publicKeyChainHybrid n depth depth) =
       (ProbComp.eval (E.generateKeyChain n depth)).map
         (fun chain => (chain.1.map Prod.fst, chain.2)) := by
-  simp only [publicKeyChainHybrid, generateKeyChain, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.map_bind, PMF.pure_map]
+  simp only [pmf_norm, publicKeyChainHybrid, generateKeyChain]
   apply Probability.PMF.bind_congr_on_support
   intro keys hkeys
   have hlength := ((E.mem_support_generateKeys_iff n depth keys).mp hkeys).1
@@ -292,7 +292,7 @@ theorem eval_publicKeyLinkHybrid_zero (n beforeCount afterCount : ℕ) :
         (beforeCount + 1)) := by
   simp only [publicKeyLinkHybrid, publicKeyChainHybrid, ProbComp.eval_bind]
   rw [← E.eval_generateKeys_splice n beforeCount afterCount]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm]
   congr 1 with next : 1
   apply Probability.PMF.bind_congr_on_support
   intro before hbefore
@@ -310,7 +310,7 @@ theorem eval_publicKeyLinkHybrid_length (n beforeCount afterCount width : ℕ)
       ProbComp.eval (E.publicKeyChainHybrid n (beforeCount + afterCount + 1) beforeCount) := by
   simp only [publicKeyLinkHybrid, publicKeyChainHybrid, ProbComp.eval_bind]
   rw [← E.eval_generateKeys_splice n beforeCount afterCount]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm]
   congr 1 with next : 1
   apply Probability.PMF.bind_congr_on_support
   intro before hbefore

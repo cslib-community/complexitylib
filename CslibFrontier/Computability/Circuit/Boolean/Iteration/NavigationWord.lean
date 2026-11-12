@@ -127,9 +127,7 @@ private theorem toNat_navigationDistance (x y : BitString n) :
   have hμ := transientDepth_lt_two_pow f x
   have hpx := (phase_lt f x).trans_le (cycleLength_le_two_pow f x)
   have hl := cycleLength_le_two_pow f x
-  have hsum : phase f x + transientDepth f x < 2 ^ (n + 3) := by
-    simp only [Nat.pow_succ]
-    omega
+  have hsum : phase f x + transientDepth f x < 2 ^ (n + 3) := by grind
   rw [navigationDistance, toNat_subMod _ _ _ (by simpa using cycleLength_pos f x)
     (by simp only [toNat_lengthWord, Nat.pow_succ]; omega), BitVec.toNat_add,
     toNat_phaseWord, toNat_phaseWord, toNat_depthWord, toNat_lengthWord, Nat.mod_eq_of_lt hsum]

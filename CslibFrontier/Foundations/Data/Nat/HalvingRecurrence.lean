@@ -33,6 +33,8 @@ that are not monotone, are covered directly. `Nat.pow_clog_two_le_mul_rpow_logb`
 
 * `Nat.add_mul_two_pow_le_mul_pow_of_halving`: the halving recurrence at a power of two.
 * `Nat.add_mul_two_pow_clog_le_of_halving`: the same at `k = ⌈log₂ n⌉`.
+* `Nat.clog_two_lt_clog_two_of_le_half`: halving lowers `⌈log₂⌉`, for `2 ≤ m` and
+  `k ≤ ⌈m / 2⌉`.
 
 ## References
 
@@ -91,5 +93,12 @@ theorem add_mul_two_pow_clog_le_of_halving {T : ℕ → ℕ} {a c α β : ℕ}
     (step : ∀ n, 2 ≤ n → ∀ S, (∀ m ≤ (n + 1) / 2, T m ≤ S) → T n ≤ a * S + c * n) (n : ℕ) :
     T n + β * 2 ^ Nat.clog 2 n ≤ α * a ^ Nat.clog 2 n :=
   add_mul_two_pow_le_mul_pow_of_halving ha hc base step _ n (Nat.le_pow_clog one_lt_two n)
+
+/-- **Halving lowers `⌈log₂⌉`.** If `2 ≤ m` and `k ≤ ⌈m / 2⌉`, then `⌈log₂ k⌉ < ⌈log₂ m⌉`. This is
+the step of a recursion on `⌈n / 2⌉`, such as binary search, that bounds its depth by `⌈log₂ n⌉`. -/
+theorem clog_two_lt_clog_two_of_le_half {m k : ℕ} (hm : 2 ≤ m) (hk : k ≤ (m + 1) / 2) :
+    Nat.clog 2 k < Nat.clog 2 m := by
+  rw [Nat.clog_of_two_le one_lt_two hm]
+  exact Nat.lt_succ_of_le (Nat.clog_mono_right 2 (by omega))
 
 end Nat

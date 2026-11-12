@@ -19,7 +19,7 @@ public import Mathlib.Data.Nat.Log
 * `Int.abs_lt_two_pow_log_succ`: a natural magnitude bound supplies enough binary digits.
 -/
 
-@[expose] public section
+public section
 
 namespace Int
 

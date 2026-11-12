@@ -32,7 +32,7 @@ actual global vertex list.
 These finite support and geometric indexing arguments are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne
 

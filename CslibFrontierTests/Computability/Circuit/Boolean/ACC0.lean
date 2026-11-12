@@ -16,7 +16,7 @@ Concrete evaluations of `modGate` and non-vacuity witnesses for `ACC0` and `SIZE
 `CslibFrontier.Computability.Circuit.Boolean.ACC0`.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.Computability.Circuit.Boolean.ACC0
 
@@ -87,7 +87,7 @@ example : ∃ L : Language Bool, (L : Set (List Bool)) ∈ SigmaP 2 encBits ∧
 example : ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧
     L ∉ AC0Mod 3 ∧ L ∉ AC0 := by
   have : Fact (Nat.Prime 3) := ⟨by decide⟩
-  obtain ⟨L, hP, hnot3⟩ := exists_mem_P_notMem_AC0Mod (p := 3) (by decide)
+  obtain ⟨L, hP, hnot3⟩ := exists_mem_P_notMem_AC0Mod (p := 3)
   exact ⟨L, hP, hnot3, fun hAC0 => hnot3 (AC0_subset_AC0Mod 3 hAC0)⟩
 
 end CslibFrontierTests.Computability.Circuit.Boolean.ACC0

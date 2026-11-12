@@ -51,8 +51,7 @@ private theorem gatherBody_eq (d : Fin 3 → ℕ) : gatherBody d =
     DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
       (gatherStep (d 2)) := by
   simp only [gatherBody, gatherStep, DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1
-  funext c
+  congr 1 with c : 1
   by_cases hc : c = 0
   · simp only [hc, ite_true, ne_eq, not_true_eq_false, ite_false, PFunctor.FreeM.liftM_pure]
   · simp only [hc, ite_false, ne_eq, not_false_eq_true, ite_true,

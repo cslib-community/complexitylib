@@ -377,7 +377,6 @@ theorem exec_loop_at {w r N U src workspace T : ℕ} (μ : ℕ → ℤ)
     (hidx : ∀ s < 2 * sideLength N,
       GenericRAM.Signed.Fits w ((2 * (sideLength N * sideLength N) + s + 1 : ℕ) : ℤ))
     (hF : GenericRAM.Signed.Fits w (2 * (U : ℤ) + 1))
-    (hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)))
     (hμ : ∀ i < N, GenericRAM.Signed.Fits w (μ i))
     (hsize : Fits (w + 2) (workspace + 3 * (sideLength N * sideLength N)))
     (hbelow : src + N ≤ workspace)
@@ -398,6 +397,9 @@ theorem exec_loop_at {w r N U src workspace T : ℕ} (μ : ℕ → ℤ)
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ ∃ s < 2 * sideLength N, hit N U s μ) ∧
       (∀ a < workspace, y.mem a = x.mem a) := by
+  have hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)) := by
+    obtain ⟨hw, -, hlt⟩ := hF
+    exact ⟨hw, by omega, by omega⟩
   let P (j : ℕ) (y : Data (64 + (r + 7))) : Prop :=
     ParametersAt N U src workspace (y.comap hostRegisters) ∧
       y.regs (hostRegisters found) ≤ 1 ∧
@@ -490,7 +492,6 @@ theorem exec_loop {w r N U T : ℕ} (μ : ℕ → ℤ)
     (hidx : ∀ s < 2 * sideLength N,
       GenericRAM.Signed.Fits w ((2 * (sideLength N * sideLength N) + s + 1 : ℕ) : ℤ))
     (hF : GenericRAM.Signed.Fits w (2 * (U : ℤ) + 1))
-    (hnF : GenericRAM.Signed.Fits w (-(2 * (U : ℤ) + 1)))
     (hμ : ∀ i < N, GenericRAM.Signed.Fits w (μ i))
     (hsize : Fits (w + 2) (N + 1 + 3 * (sideLength N * sideLength N)))
     (hsolver : ∀ s < 2 * sideLength N, ∀ (a : Data (r + 7)) (mem : ℕ → ℕ),
@@ -510,6 +511,6 @@ theorem exec_loop {w r N U T : ℕ} (μ : ℕ → ℤ)
       y.regs (hostRegisters found) ≤ 1 ∧
       (y.regs (hostRegisters found) = 1 ↔ ∃ s < 2 * sideLength N, hit N U s μ) ∧
       (∀ a < N + 1, y.mem a = x.mem a) :=
-  exec_loop_at μ solver x hp hi hf hmem hidx hF hnF hμ hsize (by omega) hsolver
+  exec_loop_at μ solver x hp hi hf hmem hidx hF hμ hsize (by omega) hsolver
 
 end Cslib.Algorithms.WordRAM.ThreeSum.Host

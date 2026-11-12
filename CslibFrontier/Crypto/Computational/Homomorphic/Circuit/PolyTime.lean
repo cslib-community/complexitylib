@@ -41,12 +41,6 @@ namespace Cslib.Crypto.Homomorphic
 open Cslib.Circuits Cslib.Circuits.Boolean
 open Turing.MultiTapeTM ComputableInPolyTime
 
-private theorem code_wiring_left (n : ℕ) :
-    (Circuit.wiring signature (Fin.castAdd n : Fin n → Fin (n + n))).code =
-      ([], List.range n) := by
-  simpa using Circuit.code_wiring_eq_map (σ := signature)
-    (f := (Fin.castAdd n : Fin n → Fin (n + n))) (g := id) fun _ => rfl
-
 private theorem code_wiring_right (n : ℕ) :
     (Circuit.wiring signature (Fin.natAdd n : Fin n → Fin (n + n))).code =
       ([], (List.range n).map (fun i => n + i)) :=
@@ -62,7 +56,7 @@ private theorem code_augmentNand {n : ℕ} (D : Circuit signature n 1) :
     (augmentNand D).code = augmentCode n D.code := by
   unfold augmentNand Circuit.parallel
   rw [← compCode_code, ← appendCode_code, ← compCode_code, ← compCode_code,
-    code_wiring_left, code_wiring_right]
+    Circuit.code_wiring_castAdd, code_wiring_right]
   rfl
 
 private theorem computableInPolyTime_augmentCode {α : Type} {enc : α ↪ List Bool}

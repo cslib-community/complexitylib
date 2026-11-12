@@ -65,13 +65,13 @@ Lemma 4.7 / Lemma 4.8 schedule replacement design bridge of
      `q = (k * (#I + 2 * (branchPrecision (Fintype.card ι) - 1)) * rowBound β n') / numNodes n'` by
      `2 * numNodes n' * numGroups n' * exp (((k * (2 * c + 4) + 4) : ℝ) * n' * rowCost β n')`.
    - `sum_branch_domainExaminationBound_le`: when
-     `S = heavyVars univ F (fun i => equationScope (P i)) b₀` with `1 ≤ b₀`, `2 ≤ s_div`, and
+     `S = heavyVars univ F (fun i => equationScope (P i)) b₀` with `2 ≤ s_div` and
      `totalIncidence F (fun i => equationScope (P i)) * s_div ≤ b₀ * Fintype.card ι` (which holds
      in particular for `paperHeavyThreshold` and `heavyThreshold`), `Fintype.card ι ≤ 2 * n'` holds
-     automatically and the sum of the real domain-examination bounds across all
-     `b ∈ branchAssignments S` is at most
-     `2 ^ (Fintype.card ι / s_div) * (2 * numNodes n' * numGroups n' *`
-     `exp (((k * (2 * c + 4) + 4) : ℝ) * n' * rowCost β n'))`.
+     automatically, and for any `examSum : (ι → Bool) → ℝ` that is at most
+     `2 * numNodes n' * numGroups n' * exp (((k * (2 * c + 4) + 4) : ℝ) * n' * rowCost β n')`
+     on every `b ∈ branchAssignments S`, the sum of `examSum b` over `b ∈ branchAssignments S`
+     is at most `2 ^ (Fintype.card ι / s_div)` times that bound.
 
 ## Main definitions
 
@@ -350,19 +350,18 @@ theorem branchDegreeBudget_le {k m c n : ℕ} (hm : m ≤ c * n) (hn : n ≤ 2 *
     _ = (k * (2 * c + 4)) * n' := (Nat.mul_assoc k (2 * c + 4) n').symm
 
 /-- **Section 5.5 ($n \le 2n'$ from heavy-variable branching with $s \ge 2$):**
-whenever `1 ≤ b₀`, `2 ≤ s_div`, `totalIncidence F scope * s_div ≤ b₀ * Fintype.card ι`, and
+whenever `2 ≤ s_div`, `totalIncidence F scope * s_div ≤ b₀ * Fintype.card ι`, and
 `e : ↥(univ \ heavyVars univ F scope b₀) ≃ Fin n'`, the original variable count satisfies
 `Fintype.card ι ≤ 2 * n'` and `Fintype.card ι / 2 ≤ n'`. -/
 theorem card_le_two_mul_freeVar_of_heavyVars [Fintype ι] [DecidableEq ι]
-    (F : Finset κ) (scope : κ → Finset ι) {b₀ s_div : ℕ}
-    (hb₀ : 1 ≤ b₀) (hs : 2 ≤ s_div)
+    (F : Finset κ) (scope : κ → Finset ι) {b₀ s_div : ℕ} (hs : 2 ≤ s_div)
     (hM : totalIncidence F scope * s_div ≤ b₀ * Fintype.card ι)
     (e : ↥(univ \ heavyVars univ F scope b₀) ≃ Fin n') :
     Fintype.card ι ≤ 2 * n' ∧ Fintype.card ι / 2 ≤ n' := by
   have hcard : #(univ \ heavyVars univ F scope b₀) = n' := by
     rw [← Fintype.card_coe, Fintype.card_congr e, Fintype.card_fin]
-  have hhalf := card_sdiff_heavyVars_ge_half univ F scope hb₀ hs
-    (fun _ _ => subset_univ _) (by simpa only [card_univ] using hM)
+  have hhalf := card_sdiff_heavyVars_ge_half univ F scope hs
+    (by simpa only [card_univ] using hM)
   rw [card_univ, hcard] at hhalf
   exact hhalf
 
@@ -420,18 +419,20 @@ theorem Feasible.branch_domainExaminationBound_le [Fintype ι]
   exact hbound
 
 /-- **Section 5.5 Theorem 2.2 multi-branch domain-examination bound across `branchAssignments S`**:
-When `S = heavyVars univ F (fun i => equationScope (P i)) b₀` with `1 ≤ b₀`, `2 ≤ s_div`,
+When `S = heavyVars univ F (fun i => equationScope (P i)) b₀` with `2 ≤ s_div`,
 `totalIncidence F (fun i => equationScope (P i)) * s_div ≤ b₀ * Fintype.card ι`, and
-`e : ↥(univ \ S) ≃ Fin n'`, the free-variable dimension satisfies `Fintype.card ι ≤ 2 * n'`, there
-are at most `2 ^ (Fintype.card ι / s_div)` branches in `branchAssignments S`, and if each branch
-`b ∈ branchAssignments S` has its real examination sum bounded via
-`Feasible.branch_domainExaminationBound_le`, then the sum of those examination bounds across all
-`b ∈ branchAssignments S` is at most
+`e : ↥(univ \ S) ≃ Fin n'`, the free-variable dimension satisfies `Fintype.card ι ≤ 2 * n'`, and
+for any function `examSum : (ι → Bool) → ℝ` whose value at every `b ∈ branchAssignments S` is at
+most the single-branch bound of `Feasible.branch_domainExaminationBound_le`,
+`2 * numNodes n' * numGroups n' * exp (((k * (2 * c + 4) + 4 : ℕ) : ℝ) * n' * rowCost β n')`,
+the sum of `examSum b` over all `b ∈ branchAssignments S` is at most
 `(2 : ℝ) ^ (Fintype.card ι / s_div) * (2 * numNodes n' * numGroups n' *
-  exp (((k * (2 * c + 4) + 4 : ℕ) : ℝ) * n' * rowCost β n'))`. -/
+  exp (((k * (2 * c + 4) + 4 : ℕ) : ℝ) * n' * rowCost β n'))`.
+The factor `2 ^ (Fintype.card ι / s_div)` bounds the number of branches by
+`card_branchAssignments_heavyVars_le_two_pow_div`. -/
 theorem sum_branch_domainExaminationBound_le [Fintype ι] [DecidableEq ι]
     (F : Finset κ) (P : κ → Finset (Finset ι)) {β b₀ s_div k c : ℕ}
-    (hb₀ : 1 ≤ b₀) (hs_div : 2 ≤ s_div)
+    (hs_div : 2 ≤ s_div)
     (hM : totalIncidence F (fun i => equationScope (P i)) * s_div ≤ b₀ * Fintype.card ι)
     (e : ↥(univ \ heavyVars univ F (fun i => equationScope (P i)) b₀) ≃ Fin n')
     (examSum : (ι → Bool) → ℝ)
@@ -445,7 +446,7 @@ theorem sum_branch_domainExaminationBound_le [Fintype ι] [DecidableEq ι]
         (2 * (numNodes n' : ℝ) * (numGroups n' : ℝ) *
           Real.exp (((k * (2 * c + 4) + 4 : ℕ) : ℝ) * (n' : ℝ) * rowCost β n')) := by
   have hn :=
-    (card_le_two_mul_freeVar_of_heavyVars F (fun i => equationScope (P i)) hb₀ hs_div hM e).1
+    (card_le_two_mul_freeVar_of_heavyVars F (fun i => equationScope (P i)) hs_div hM e).1
   refine ⟨hn, ?_⟩
   let S := heavyVars univ F (fun i => equationScope (P i)) b₀
   let B := 2 * (numNodes n' : ℝ) * (numGroups n' : ℝ) *
@@ -453,7 +454,7 @@ theorem sum_branch_domainExaminationBound_le [Fintype ι] [DecidableEq ι]
   have hB_nn : 0 ≤ B := by positivity
   have hcard : (#(branchAssignments S) : ℝ) ≤ (2 : ℝ) ^ (Fintype.card ι / s_div) := by
     exact_mod_cast card_branchAssignments_heavyVars_le_two_pow_div F
-      (fun i => equationScope (P i)) hb₀ (by omega) hM
+      (fun i => equationScope (P i)) (by omega) hM
   calc ∑ b ∈ branchAssignments S, examSum b
       ≤ ∑ _b ∈ branchAssignments S, B := sum_le_sum hexam
     _ = (#(branchAssignments S) : ℝ) * B := by rw [sum_const, nsmul_eq_mul]

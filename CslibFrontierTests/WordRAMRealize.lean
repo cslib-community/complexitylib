@@ -180,9 +180,9 @@ theorem roundTrip_program : ∃ n C : ℕ,
     (by intro d i; fin_cases i <;> rfl)
   refine ⟨n, C, emit, fun frontier src tmp hsrc htmp hd hf hs i w c v hc1 hc hv => ?_⟩
   have h3 : Fits w 3 := hc.of_le (by omega)
-  have hvalid : (Memory.spec w).ValidHistory (inputState [c, v])
-      ((Memory.spec w).clientHistory (inputState [c, v]) (roundTrip (c, v))) := by
-    change (Memory.spec w).ValidHistory (inputState [c, v])
+  have hvalid : (Memory.spec w).ValidHistory (Memory.State.init [c, v])
+      ((Memory.spec w).clientHistory (Memory.State.init [c, v]) (roundTrip (c, v))) := by
+    change (Memory.spec w).ValidHistory (Memory.State.init [c, v])
       [.alloc 1, .allocDirty c, .read 3, .write 4 v, .write 3 1, .read 3, .read 4, .write 3 0]
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, trivial⟩
     · change Fits w (3 + 1)
@@ -203,7 +203,7 @@ theorem roundTrip_program : ∃ n C : ℕ,
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
       rcases hx with rfl | rfl
       exacts [hc.of_le (by omega), hv]⟩
-    (hc.of_le (by simp [inputState]; omega)) hvalid
+    (hc.of_le (by simp [Memory.State.init]; omega)) hvalid
   exact ⟨t, ht, hle.trans (by rfl)⟩
 
 /-! ## Performance guards
@@ -300,17 +300,14 @@ example : Realizes .exact square (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
     (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
-/-- A non-strict comparison is not a native test. -/
+/-- A non-strict comparison uses a native strict test with swapped alternatives. -/
 def atMost (n : ℕ) : Memory.Prog ℕ := if n ≤ 3 then pure 0 else pure 1
 
-/--
-error: realize: a branch condition must be `a = b`, `a < b` or `a > b` on words, got
-  d ≤ 3
--/
-#guard_msgs in
 example : Realizes .exact atMost (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
+    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun w _ _ => Fits w 3)
+    (fun _ _ => 0) := by
   realize
+  all_goals first | exact h | exact h.of_le (by omega)
 
 /-- Recursion on a runtime value is a loop. -/
 def readMany : ℕ → Memory.Prog Unit
@@ -333,15 +330,20 @@ example : Realizes .exact readMany (Equiv.funUnique (Fin 1) ℕ).symm.toEmbeddin
 def countUp (d : ℕ × ℕ) : Memory.Prog ℕ :=
   iterate (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1)) d d.2 0
 
-/--
-error: realize: a loop body must begin with a memory query, which pays for the iteration;
-the body begins with
-  PFunctor.FreeM.pure (x.2 + 1)
--/
-#guard_msgs in
+/-- The input's fitting count bounds every increment; the loop retains its control work. -/
 example : Realizes .exact countUp pairWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (fun _ _ _ => True) (fun _ _ => 0) := by
+    (fun _ _ _ => True) (fun d _ => d.2) := by
   realize
+  · have hi (n a : ℕ) (t : Memory.State) (ha : a + n ≤ d.2) :
+        iterationSafe (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1))
+          (fun w x _ => True ∧ Fits w (x.2 + 1)) w d n a t := by
+      induction n generalizing a t with
+      | zero => trivial
+      | succ n ih =>
+        refine ⟨⟨trivial, (show Fits w d.2 from hwords 1).of_le (by omega)⟩, ?_⟩
+        exact ih (a + 1) t (by omega)
+    simpa only [true_and] using hi d.2 0 s (by omega)
+  · exact (iterationWork_zero (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1)) d d.2 0 s).le
 
 /-- Allocation is certified in the exact basis. -/
 def fresh (n : ℕ) : Memory.Prog ℕ := Memory.alloc n

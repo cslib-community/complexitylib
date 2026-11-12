@@ -177,14 +177,11 @@ private theorem dens_filter_card_filter_le_le {Ω : Type*} [Fintype Ω] [Decidab
   rw [mul_comm]
   exact_mod_cast hmaj
 
-/-- If `a + b = 1` and `b ≤ 1 / 8`, then `a ≥ 2 / 3`. -/
-private theorem two_thirds_le_of_add_eq_one {a b : ℚ≥0} (hab : a + b = 1) (hb : b ≤ 1 / 8) :
-    2 / 3 ≤ a := by
-  rw [← NNRat.cast_le (K := ℚ)]
-  have hab' := congrArg (NNRat.cast : ℚ≥0 → ℚ) hab
-  have hb' := NNRat.cast_le (K := ℚ).2 hb
-  push_cast at hab' hb' ⊢
-  linarith
+/-- A lower bound on a density from an upper bound on its complement: if `a + b = 1`, `b ≤ q` and
+`p + q ≤ 1`, then `p ≤ a`. -/
+private theorem le_of_add_eq_one {a b p q : ℚ≥0} (hab : a + b = 1) (hb : b ≤ q)
+    (hpq : p + q ≤ 1) : p ≤ a :=
+  le_of_add_le_add_right ((add_le_add_right hb p).trans (hab ▸ hpq))
 
 /-! ### Answers from hashing -/
 
@@ -235,8 +232,8 @@ private theorem dens_wrongSeeds_le (hh : ∀ j, IsPairwiseIndependentHash (h j))
   · -- the mean cell size is at least `8`, and `S` misses `y j` with probability at most `1 / 8`
     have hS : S.Nonempty := card_pos.1 (by have := Nat.one_le_two_pow (n := (j : ℕ)); omega)
     have hG : 2 / 3 ≤ G.dens := by
-      refine two_thirds_le_of_add_eq_one (dens_filter_add_dens_filter_not_eq_dens
-        (s := (univ : Finset (ι j))) _ |>.trans dens_univ) ?_
+      refine le_of_add_eq_one (q := 1 / 8) (dens_filter_add_dens_filter_not_eq_dens
+        (s := (univ : Finset (ι j))) _ |>.trans dens_univ) ?_ (by norm_num [← NNRat.coe_le_coe])
       refine ((hh j).dens_filter_notMem_image_le hS (y j)).trans ?_
       rw [hYj, div_le_div_iff₀ (by exact_mod_cast hS.card_pos) (by norm_num)]
       exact_mod_cast (by omega : 2 ^ (j : ℕ) * 8 ≤ 1 * #S)
@@ -249,9 +246,9 @@ private theorem dens_wrongSeeds_le (hh : ∀ j, IsPairwiseIndependentHash (h j))
   by_cases hlow : 8 * #S ≤ 2 ^ (j : ℕ)
   · -- the mean cell size is at most `1 / 8`, and `S` hits `y j` with probability at most `1 / 8`
     have hGc : 2 / 3 ≤ Gc.dens := by
-      refine two_thirds_le_of_add_eq_one ((add_comm _ _).trans
+      refine le_of_add_eq_one (q := 1 / 8) ((add_comm _ _).trans
         (dens_filter_add_dens_filter_not_eq_dens (s := (univ : Finset (ι j))) _ |>.trans
-          dens_univ)) ?_
+          dens_univ)) ?_ (by norm_num [← NNRat.coe_le_coe])
       refine ((hh j).dens_filter_mem_image_le S (y j)).trans ?_
       rw [hYj, div_le_div_iff₀ (by positivity) (by norm_num)]
       exact_mod_cast (by omega : #S * 8 ≤ 1 * 2 ^ (j : ℕ))
@@ -344,12 +341,8 @@ theorem three_quarters_le_dens_filter_hashEstimate (hh : ∀ j, IsPairwiseIndepe
     push_cast at h'
     rw [div_pow, mul_div_assoc', div_le_div_iff₀ (by positivity) (by norm_num), one_mul]
     exact le_of_eq_of_le (by ring) h'
-  have hle := (dens_le_dens hsub).trans (hbad.trans harith)
-  rw [← NNRat.cast_le (K := ℚ)]
-  have hsplit' := congrArg (NNRat.cast : ℚ≥0 → ℚ) hsplit
-  have hle' := NNRat.cast_le (K := ℚ).2 hle
-  push_cast at hsplit' hle' ⊢
-  linarith
+  exact le_of_add_eq_one hsplit ((dens_le_dens hsub).trans (hbad.trans harith))
+    (by norm_num [← NNRat.coe_le_coe])
 
 end Hashing
 

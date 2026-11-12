@@ -114,31 +114,11 @@ theorem exec {w b n q : ℕ} (s : ℕ → ℕ) (x : Data 10) (hn : 0 < n)
     Exec w code x (result x b n s q) 8 ∧
       (result x b n s q).regs out = ((Finset.range n).filter (fun i => s i < q)).card ∧
       (result x b n s q).mem = x.mem := by
-  have hpacked : (b + 1) * n ≤ w := by omega
   have hbitwidth : b + 1 ≤ w := by
-    have hm := Nat.mul_le_mul_left (b + 1) (show 1 ≤ n by omega)
-    simp only [mul_one] at hm
+    have := Nat.le_mul_of_pos_right (b + 1) hn
     omega
   have hnfit : Fits w n := hb.trans_le (Nat.pow_le_pow_right (by decide) hbitwidth)
-  have hrep : Fits w (q * queryMultiplier b n) :=
-    (query_mul_multiplier_lt hq).trans_le (Nat.pow_le_pow_right (by decide) hpacked)
-  have hdiff : Fits w (packedDifference b n s q) :=
-    (packedDifference_lt s hs).trans_le (Nat.pow_le_pow_right (by decide) hpacked)
-  have hmask : Fits w (packedDifference b n s q &&& guardMask b n) :=
-    hdiff.of_le Nat.and_le_left
-  have hflag_le : guardFlags b n s q ≤ packedDifference b n s q := by
-    rw [guardFlags, Nat.shiftRight_eq_div_pow]
-    exact (Nat.div_le_self _ _).trans Nat.and_le_left
-  have hflag : Fits w (guardFlags b n s q) := hdiff.of_le hflag_le
-  have hcount : Fits w (guardFlags b n s q * queryMultiplier b n) := by
-    have h₁ := hflag_le.trans_lt (packedDifference_lt s hs)
-    have h₂ := queryMultiplier_lt b n
-    have h₃ := Nat.mul_lt_mul_of_lt_of_lt h₁ h₂
-    rw [← pow_add] at h₃
-    exact h₃.trans_le (Nat.pow_le_pow_right (by decide) (by omega))
-  have hdiv : Fits w ((guardFlags b n s q * queryMultiplier b n) /
-      2 ^ ((b + 1) * (n - 1))) := hcount.of_le (Nat.div_le_self _ _)
-  have hmod : Fits w (countGuards b n s q) := hdiv.of_le (Nat.mod_le _ _)
+  obtain ⟨hrep, hdiff, hmask, hflag, hcount, hdiv, hmod⟩ := countGuards_fits s hs hq hw
   have hsub : Fits w (n - countGuards b n s q) := hnfit.of_le (Nat.sub_le _ _)
   simp only [countGuards, guardFlags, packedDifference] at hdiff hmask hflag hcount hdiv hmod hsub
   refine ⟨?_, ?_, rfl⟩

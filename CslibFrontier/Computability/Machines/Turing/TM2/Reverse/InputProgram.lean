@@ -58,8 +58,7 @@ theorem stepAux_moveInput (d : Data k State) (direction : SignType)
     Option.isSome_none, Option.isSome_some, Bool.cond_true, Bool.cond_false,
     Option.getD_some, Bool.false_eq_true, ↓reduceIte]
   all_goals
-    congr 1
-    funext s
+    congr 1 with s : 1
     cases s with
     | work i side => cases side <;> simp [Function.update, store]
     | output => simp only [Function.update, store]; rfl
@@ -81,8 +80,7 @@ theorem stepAux_finish (d : Data k State) (state : Option State) (output : Optio
     congr 1
   | some b =>
     simp only [Option.elim, TM2.stepAux, encode, Option.toList_some]
-    congr 1
-    funext s
+    congr 1 with s : 1
     cases s with
     | work i side => cases side <;> simp [Function.update, store]
     | output => simp only [Function.update, store]; rfl

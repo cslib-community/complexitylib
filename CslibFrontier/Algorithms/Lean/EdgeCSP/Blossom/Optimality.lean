@@ -25,6 +25,7 @@ public section
 namespace Cslib.Logic.PL.CSP.Blossom
 
 open Table Finset
+open Cslib.BitString
 open scoped symmDiff
 
 variable {F : CSP Table ℕ} {w p : Walk F}
@@ -78,7 +79,7 @@ theorem projectAugmentation_spec (hF : EdgeInstance F) {f : OccurrenceLabeling F
     · unfold projectAugmentation
       exact ite_eq_left hall
     · change (defects (transport f vs (p.flip f) (fun _ => false)
-        (oneHot (connectors F vs).length 0))).card + 2 = _
+        (listSingle (connectors F vs).length 0))).card + 2 = _
       omega
   · have hex : ∃ o ∈ p.edges, o.var ∈ vs := by
       by_contra hn

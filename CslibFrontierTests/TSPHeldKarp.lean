@@ -75,8 +75,8 @@ example : (heldKarp (n := 0) fun _ _ => (7 : ℕ)).ret = 7 := by decide
 example : (heldKarp (n := 0) fun _ _ => (7 : ℕ)).time = 0 := by decide
 
 /-- The empty instance has the empty tour of length `0`. -/
-example : (TSP.heldKarpDecide ([], 0)).ret = true := by decide
-example : (([], 0) : List (List ℕ) × ℕ) ∈ TSP :=
+example : (TSP.heldKarpDecide ⟨[], 0⟩).ret = true := by decide
+example : (⟨[], 0⟩ : TSPInstance) ∈ TSP :=
   (TSP.heldKarpDecide_eq_true_iff _).1 (by decide)
 
 /-! ### 5. Deciding `TSP` and `HamCycle` -/
@@ -84,8 +84,8 @@ example : (([], 0) : List (List ℕ) × ℕ) ∈ TSP :=
 /-- The three-city instance of §1 as a distance matrix: budget `3` suffices, budget `2` does not. -/
 def D3 : List (List ℕ) := [[0, 1, 5], [5, 0, 1], [1, 5, 0]]
 
-example : (D3, 3) ∈ TSP := (TSP.heldKarpDecide_eq_true_iff _).1 (by decide)
-example : (D3, 2) ∉ TSP := fun h => by
+example : (⟨D3, 3⟩ : TSPInstance) ∈ TSP := (TSP.heldKarpDecide_eq_true_iff _).1 (by decide)
+example : (⟨D3, 2⟩ : TSPInstance) ∉ TSP := fun h => by
   have := (TSP.heldKarpDecide_eq_true_iff _).2 h
   revert this
   decide

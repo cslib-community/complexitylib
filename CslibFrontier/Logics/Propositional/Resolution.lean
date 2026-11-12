@@ -78,6 +78,45 @@ theorem Clause.length_resolvent_le (c₁ c₂ : Clause V) (v : V) :
   rw [resolvent, List.length_append]
   exact Nat.add_le_add (List.length_filter_le _ _) (List.length_filter_le _ _)
 
+/-- A literal of `c₁` missing from `c₁.resolvent c₂ v` is the resolved literal `(v, true)`. -/
+theorem Clause.eq_of_mem_of_notMem_resolvent_left {c₁ c₂ : Clause V} {v : V} {l : Literal V}
+    (hl : l ∈ c₁) (h : l ∉ c₁.resolvent c₂ v) : l = (v, true) := by
+  by_contra hne
+  exact h (mem_resolvent.2 (Or.inl ⟨hl, hne⟩))
+
+/-- A literal of `c₂` missing from `c₁.resolvent c₂ v` is the resolved literal `(v, false)`. -/
+theorem Clause.eq_of_mem_of_notMem_resolvent_right {c₁ c₂ : Clause V} {v : V} {l : Literal V}
+    (hl : l ∈ c₂) (h : l ∉ c₁.resolvent c₂ v) : l = (v, false) := by
+  by_contra hne
+  exact h (mem_resolvent.2 (Or.inr ⟨hl, hne⟩))
+
+/-- A subclause of `c₁` without the resolved literal `(v, true)` is a subclause of the
+resolvent. -/
+theorem Clause.subset_resolvent_left {c c₁ c₂ : Clause V} {v : V} (h : ∀ l ∈ c, l ∈ c₁)
+    (hv : (v, true) ∉ c) : ∀ l ∈ c, l ∈ c₁.resolvent c₂ v := fun l hl =>
+  mem_resolvent.2 (Or.inl ⟨h l hl, fun hlv => hv (hlv ▸ hl)⟩)
+
+/-- A subclause of `c₂` without the resolved literal `(v, false)` is a subclause of the
+resolvent. -/
+theorem Clause.subset_resolvent_right {c c₁ c₂ : Clause V} {v : V} (h : ∀ l ∈ c, l ∈ c₂)
+    (hv : (v, false) ∉ c) : ∀ l ∈ c, l ∈ c₁.resolvent c₂ v := fun l hl =>
+  mem_resolvent.2 (Or.inr ⟨h l hl, fun hlv => hv (hlv ▸ hl)⟩)
+
+/-- Resolving subclauses gives a subclause of the resolvent. -/
+theorem Clause.resolvent_subset_resolvent {c₁ c₂ d₁ d₂ : Clause V} {v : V}
+    (h₁ : ∀ l ∈ d₁, l ∈ c₁) (h₂ : ∀ l ∈ d₂, l ∈ c₂) :
+    ∀ l ∈ d₁.resolvent d₂ v, l ∈ c₁.resolvent c₂ v := fun l hl =>
+  mem_resolvent.2 ((mem_resolvent.1 hl).imp (And.imp_left (h₁ l)) (And.imp_left (h₂ l)))
+
+/-- Resolving clauses that have, besides literals of `c₁` and `c₂`, at most the literal `x` gives a
+clause that has, besides literals of the resolvent of `c₁` and `c₂`, at most `x`. -/
+theorem Clause.resolvent_subset_resolvent_or_eq {c₁ c₂ d₁ d₂ : Clause V} {v : V}
+    {x : Literal V} (h₁ : ∀ l ∈ d₁, l ∈ c₁ ∨ l = x) (h₂ : ∀ l ∈ d₂, l ∈ c₂ ∨ l = x) :
+    ∀ l ∈ d₁.resolvent d₂ v, l ∈ c₁.resolvent c₂ v ∨ l = x := fun l hl => by
+  rcases mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
+  · exact (h₁ l hl).imp_left fun hl' => mem_resolvent.2 (Or.inl ⟨hl', hne⟩)
+  · exact (h₂ l hl).imp_left fun hl' => mem_resolvent.2 (Or.inr ⟨hl', hne⟩)
+
 /-- **Soundness of one resolution step**: an assignment satisfying both parents satisfies the
 resolvent. -/
 theorem Clause.eval_resolvent {σ : V → Bool} {c₁ c₂ : Clause V} (v : V)
@@ -146,6 +185,16 @@ variable {φ : CNF V} {v : V} {b : Bool}
     c ∈ φ.restrict v b ↔ ∃ d ∈ φ, (v, b) ∉ d ∧ d.filter (· ≠ (v, !b)) = c := by
   simp [restrict, and_assoc]
 
+/-- Every clause of `φ.restrict v b` is a subclause of a clause of `φ` that has, besides its
+literals, at most the literal `(v, !b)` falsified by `b`. -/
+theorem exists_of_mem_restrict {c : Clause V} (hc : c ∈ φ.restrict v b) :
+    ∃ d ∈ φ, (∀ l ∈ c, l ∈ d) ∧ ∀ l ∈ d, l ∈ c ∨ l = (v, !b) := by
+  obtain ⟨d, hd, -, rfl⟩ := mem_restrict.1 hc
+  refine ⟨d, hd, fun l hl => (List.mem_filter.1 hl).1, fun l hl => ?_⟩
+  by_cases hlv : l = (v, !b)
+  · exact Or.inr hlv
+  · exact Or.inl (List.mem_filter.2 ⟨hl, by simpa using hlv⟩)
+
 /-- A restricted formula no longer mentions the fixed variable. -/
 theorem fst_ne_of_mem_restrict {c : Clause V} (hc : c ∈ φ.restrict v b) {l : Literal V}
     (hl : l ∈ c) : l.1 ≠ v := by
@@ -190,22 +239,13 @@ theorem Derives.exists_of_restrict {c : Clause V} (h : (φ.restrict v b).Derives
     ∃ d, φ.Derives d ∧ (∀ l ∈ d, l ∈ c ∨ l = (v, !b)) ∧ ∀ l ∈ c, l ∈ d := by
   induction h with
   | mem hc =>
-    obtain ⟨d, hd, -, rfl⟩ := mem_restrict.1 hc
-    refine ⟨d, .mem hd, fun l hl => ?_, fun l hl => (List.mem_filter.1 hl).1⟩
-    by_cases hlv : l = (v, !b)
-    · exact Or.inr hlv
-    · exact Or.inl (List.mem_filter.2 ⟨hl, by simpa using hlv⟩)
+    obtain ⟨d, hd, hsub, hsup⟩ := exists_of_mem_restrict hc
+    exact ⟨d, .mem hd, hsup, hsub⟩
   | @resolvent c₁ c₂ u _ _ hu₁ hu₂ ih₁ ih₂ =>
     obtain ⟨d₁, hd₁, h₁, h₁'⟩ := ih₁
     obtain ⟨d₂, hd₂, h₂, h₂'⟩ := ih₂
-    refine ⟨d₁.resolvent d₂ u, .resolvent u hd₁ hd₂ (h₁' _ hu₁) (h₂' _ hu₂), fun l hl => ?_,
-      fun l hl => ?_⟩
-    · rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-      · exact (h₁ l hl).imp_left fun hl' => Clause.mem_resolvent.2 (Or.inl ⟨hl', hne⟩)
-      · exact (h₂ l hl).imp_left fun hl' => Clause.mem_resolvent.2 (Or.inr ⟨hl', hne⟩)
-    · rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-      · exact Clause.mem_resolvent.2 (Or.inl ⟨h₁' l hl, hne⟩)
-      · exact Clause.mem_resolvent.2 (Or.inr ⟨h₂' l hl, hne⟩)
+    exact ⟨d₁.resolvent d₂ u, .resolvent u hd₁ hd₂ (h₁' _ hu₁) (h₂' _ hu₂),
+      Clause.resolvent_subset_resolvent_or_eq h₁ h₂, Clause.resolvent_subset_resolvent h₁' h₂'⟩
 
 omit [DecidableEq V] in
 /-- A formula without variables is unsatisfiable only if it has the empty clause. -/

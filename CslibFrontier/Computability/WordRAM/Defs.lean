@@ -192,6 +192,10 @@ theorem Fits.mono {w w' v : ℕ} (h : Fits w v) (hw : w ≤ w') : Fits w' v :=
 /-- Any value at most a `w`-bit word also fits in `w` bits. -/
 theorem Fits.of_le {w u v : ℕ} (h : Fits w v) (huv : u ≤ v) : Fits w u := huv.trans_lt h
 
+/-- If a `w`-bit word is at least `2 ^ k`, then `k < w`. -/
+theorem Fits.lt_of_pow_le {w k v : ℕ} (h : Fits w v) (hk : 2 ^ k ≤ v) : k < w :=
+  Nat.lt_of_not_le fun hle => Nat.not_lt.mpr ((Nat.pow_le_pow_right Nat.two_pos hle).trans hk) h
+
 /-- Zero fits in every word width `w`. -/
 @[simp]
 theorem fits_zero (w : ℕ) : Fits w 0 := Nat.two_pow_pos w
@@ -290,6 +294,10 @@ theorem set_regs (x : Data r) (i : Fin r) (v : ℕ) :
 /-- Setting register `i` leaves memory unchanged. -/
 @[simp]
 theorem set_mem (x : Data r) (i : Fin r) (v : ℕ) : (x.set i v).mem = x.mem := rfl
+
+/-- Setting a register twice keeps the second value. -/
+theorem set_set (x : Data r) (i : Fin r) (u v : ℕ) : (x.set i u).set i v = x.set i v := by
+  simp only [set, Function.update_idem]
 
 /-- Writing to memory leaves the register file unchanged. -/
 @[simp]

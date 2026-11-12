@@ -11,6 +11,7 @@ public import CslibFrontier.Probability.MarkovChain.Mixing
 public import CslibFrontier.Probability.StatisticalDistance.Coupling
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Markovian couplings and the coupling bound on mixing

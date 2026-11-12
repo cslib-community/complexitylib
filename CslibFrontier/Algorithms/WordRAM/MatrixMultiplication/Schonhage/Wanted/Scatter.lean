@@ -23,7 +23,7 @@ This internal implementation API composes the actual router and stores. The fini
 permutation is proved from occurrence counts; it is neither supplied nor checked by an oracle.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 
@@ -69,12 +69,7 @@ theorem exec_scatter {w L m N Q : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ × �
   let start := x.set index 0
   have hs : ExecWithin w (ram[index ← #0] : Code .standard 96) x start 1 := by
     ram_eval [start]
-  have hp : Parameters L m N Q start := hx.reframe (by
-    intro i hi
-    apply hs.regs_eq
-    have h : ∀ i ∈ parameterRegisters, (ram[index ← #0] : Code .standard 96).Preserves i := by
-      decide +kernel
-    exact h i hi)
+  have hp : Parameters L m N Q start := hx.of_exec hs (by decide +kernel)
   have hi : P (start.regs index) start := by
     refine ⟨hp, hinput, htable, ?_, by simp [start], by simp [start]⟩
     intro t ht

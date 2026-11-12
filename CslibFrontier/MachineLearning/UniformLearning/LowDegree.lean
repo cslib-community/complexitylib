@@ -108,16 +108,16 @@ truncated expansion. It is a deterministic learner. -/
 noncomputable def lowDegreeLearner (t m : ℕ) : Learner (ι → Bool) Bool m :=
   lowDegreeHypothesis t
 
-/-- **Estimating a Fourier coefficient** [O'Donnell, Proposition 3.30][ODonnell2014]: from `m > 0`
+/-- **Estimating a Fourier coefficient** [O'Donnell, Proposition 3.30][ODonnell2014]: from `m`
 uniform random examples of `f`, the empirical coefficient on `S` is off from `f̂(S)` by at least
 `γ` with probability at most `2 exp (-m γ² / 2)`, by Hoeffding's inequality. -/
 theorem uniform_abs_empiricalCoeff_sub_ge_le (f : (ι → Bool) → Bool) (S : Finset ι)
-    (hm : 0 < m) {γ : ℝ} (hγ : 0 ≤ γ) :
+    {γ : ℝ} (hγ : 0 ≤ γ) :
     (PMF.uniformOfFintype (Fin m → ι → Bool)).toOuterMeasure
       {x | γ ≤ |empiricalCoeff (examples f x) S - fourierCoeff (fun x => signVal (f x)) S|} ≤
         ENNReal.ofReal (2 * Real.exp (-(m * γ ^ 2) / 2)) :=
   PMF.uniform_abs_sum_div_sub_expect_ge_le (fun x => signVal (f x) * chi ℝ S x)
-    (fun x => by rw [abs_mul, abs_signVal, abs_chi, one_mul]) hm hγ
+    (fun x => by rw [abs_mul, abs_signVal, abs_chi, one_mul]) hγ
 
 /-! ### The low-degree algorithm -/
 
@@ -138,13 +138,6 @@ theorem uniform_lt_uniformError_lowDegreeHypothesis_le (f : (ι → Bool) → Bo
   have hN1 : (1 : ℝ) ≤ N := Nat.one_le_cast.2 (card_filter_card_le_pos t)
   have hN : 0 < N := one_pos.trans_le hN1
   set μ := (PMF.uniformOfFintype (Fin m → ι → Bool)).toOuterMeasure
-  rcases Nat.eq_zero_or_pos m with rfl | hm
-  · -- without examples, the bound is at least one
-    refine (PMF.toOuterMeasure_le_one _ _).trans ?_
-    rw [← ENNReal.ofReal_one]
-    refine ENNReal.ofReal_le_ofReal ?_
-    simp only [Nat.cast_zero, zero_mul, neg_zero, zero_div, Real.exp_zero, mul_one]
-    linarith
   set γ := Real.sqrt (ε / (2 * N))
   have hγ : 0 ≤ γ := Real.sqrt_nonneg _
   have hγsq : γ ^ 2 = ε / (2 * N) := Real.sq_sqrt (by positivity)
@@ -179,7 +172,7 @@ theorem uniform_lt_uniformError_lowDegreeHypothesis_le (f : (ι → Bool) → Bo
   -- the union bound over the `N` estimates
   have hone (S : Finset ι) :
       μ (bad S) ≤ ENNReal.ofReal (2 * Real.exp (-(m * ε) / (4 * N))) := by
-    refine (uniform_abs_empiricalCoeff_sub_ge_le f S hm hγ).trans_eq ?_
+    refine (uniform_abs_empiricalCoeff_sub_ge_le f S hγ).trans_eq ?_
     rw [hγsq]
     congr 3
     field_simp

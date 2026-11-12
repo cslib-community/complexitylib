@@ -57,7 +57,7 @@ stronger than the multiplicative forms, so no separate counting form is given he
 * [N. Alon, J. H. Spencer, *The Probabilistic Method*, Appendix A][AlonSpencer2016]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

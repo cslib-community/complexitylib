@@ -52,9 +52,7 @@ private theorem length_selector {width index : ℕ} (h : index ≤ width) :
   omega
 
 private theorem count_selector (width index : ℕ) : (selector width index).count true = index := by
-  have hz : (List.replicate (width - index) false).count true = 0 := by
-    apply List.count_eq_zero.mpr
-    simp
+  have hz : (List.replicate (width - index) false).count true = 0 := by grind
   simp [selector, hz]
 
 private def bitPrefix {α : Type} (enc : α ↪ List Bool) (m : α → ℕ) (a : α) (j : ℕ) :

@@ -26,7 +26,7 @@ These are original native composition proofs. The global traversal and initializ
 and asymptotic bounds remain separate from this local calling-convention theorem.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

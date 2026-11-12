@@ -43,7 +43,10 @@ open Cslib.WordRAM Cslib.WordRAM.Realization
 open RegisterMetadata
 open Cslib.DataStructure.Queue
 
-/-- One fixed family contains both method bodies. Runtime arguments select no new code. -/
+/-- One fixed family contains both method bodies. Runtime arguments select no new code.
+`Certificate.ofRealizes` takes each body, its scratch size and its exchange factor by classical
+choice from an existential `Realizes` proof, so `registers` and `Backend.factor family` are fixed
+natural numbers whose values this construction does not determine. -/
 noncomputable abbrev family : Bool → Certificate .standard
   | false => Certificate.ofRealizes realizes_enqueue_standard
   | true => Certificate.ofRealizes realizes_dequeue_standard

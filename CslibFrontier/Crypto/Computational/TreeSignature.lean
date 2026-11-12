@@ -60,8 +60,9 @@ instantiates the coins with a pseudorandom function and is a separate developmen
 
 * `Cslib.Crypto.TreeSignature.nodeKey`, `Cslib.Crypto.TreeSignature.signAt`: node keys and
   signatures from derived coins.
-* `Cslib.Crypto.TreeSignature.certify`, `Cslib.Crypto.TreeSignature.signWithLeaf`: the
-  certification chain and the signature at a leaf.
+* `Cslib.Crypto.TreeSignature.CertState`, `Cslib.Crypto.TreeSignature.encCertState`,
+  `Cslib.Crypto.TreeSignature.certify`, `Cslib.Crypto.TreeSignature.signWithLeaf`: the
+  certification chain, its state encoding and the signature at a leaf.
 * `Cslib.Crypto.TreeSignature.keyGen`, `Cslib.Crypto.TreeSignature.sign`,
   `Cslib.Crypto.TreeSignature.verify`, `Cslib.Crypto.TreeSignature.scheme`: the algorithms and
   the signature scheme.
@@ -281,8 +282,11 @@ theorem verify_sign (hcap : ∀ n, 2 ≤ S.capacity n) (hdepth : ∀ n, 1 ≤ de
 
 section Efficiency
 
-/-- The encoding of a chain state. -/
-local notation "encCertState" =>
+/-- The encoding of a certification-chain state `(node, (pk, sk), certs)` (`CertState`): the
+current tree path `node` framed, then the node's key pair `(pk, sk)` framed (`pk` framed followed
+by `sk` unframed), followed by the list `certs` of framed `(childPk, sig)` pairs (`childPk` framed
+followed by `sig` unframed), with every component a bit word (`encBits`). -/
+abbrev encCertState : CertState ↪ List Bool :=
   encPair encBits (encPair (encPair encBits encBits) (encList (encPair encBits encBits)))
 
 variable (hcoins : ComputableInPolyTime
@@ -367,11 +371,6 @@ theorem computableInPolyTime_certify :
   let Bk (x : ChainInput) : ℕ := ck * ((encChainInput x).length + 1) ^ dk
   let Bs (x : ChainInput) : ℕ :=
     cs * (8 * (encChainInput x).length + 3 * Bk x + 11) ^ ds
-  have hBk : PolyBounded (fun x => (encChainInput x).length) Bk :=
-    PolyBounded.of_forall_le ck dk fun _ => le_rfl
-  have hBs : PolyBounded (fun x => (encChainInput x).length) Bs := by
-    dsimp only [Bs]
-    growth_poly
   have hkeyLe (x : ChainInput) {path : List Bool}
       (hpath : path.length ≤ x.bits.length) :
       (nodeKey S T coins x.parameter x.secret path).1.length ≤ Bk x ∧
