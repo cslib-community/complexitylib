@@ -17,6 +17,7 @@ import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
 import CslibFrontier.Algorithms.Lean.VectorConvolution
+import CslibFrontier.Algorithms.Lean.VectorConvolution.CostBounds
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
@@ -3792,6 +3793,25 @@ register_result "selected-entries-vector-convolution-timem" where
     (prod_i C_i!) times the vector convolution (division left to the caller); inputs are look-up \
     functions, so the paper's n term is absent. The bound 3 (r d + 1) (H_r(d, <= s) + \
     sum_C #{y <= C : |y| >= s}) is exact. Weights in a commutative ring."
+
+register_result "vector-convolution-explicit-cost-timem" where
+  title := "Explicit table bounds for ranked convolution in [r]^d"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.4 (bounds on H_r)",
+      locator := "Section 3.2, p. 14" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.VectorConvolution.time_solveM_le,
+    Cslib.Algorithms.Lean.VectorConvolution.time_solveM_le_of_le_mul
+  ]
+  scope := "Explicit inequalities for every r, d, s and query of size t, from the counts in \
+    CslibFrontier.Foundations.Combinatorics.CubeCounts: at most r^d exp(-2 eps^2 / (d (r-1)^2)) \
+    cube vectors of size <= s when s <= d (r-1)/2 - eps (McDiarmid), r^d exp(-delta^2 d / 2) \
+    when s <= (1-delta) d (r-1)/2, at most \
+    sum_{j <= t-s} (t choose j) vectors of size >= s below each query, and the resulting bound \
+    on the TimeM cost of the [r]^d convolution. The asymptotic forms of the paper and the choice \
+    of r, delta and d for Corollary 3.5 are not formalized."
 
 register_result "integer-3sum-base-r-trial-timem" where
   title := "One base-r hashing trial of the reduction from integer 3SUM to convolution in [r]^d"

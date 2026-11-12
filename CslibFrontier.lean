@@ -254,6 +254,7 @@ public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
 public import CslibFrontier.Algorithms.Lean.TrimmedYates
 public import CslibFrontier.Algorithms.Lean.TwoSAT
 public import CslibFrontier.Algorithms.Lean.VectorConvolution
+public import CslibFrontier.Algorithms.Lean.VectorConvolution.CostBounds
 public import CslibFrontier.Algorithms.Lean.VertexCover.Matching
 public import CslibFrontier.Algorithms.Lean.Yates
 public import CslibFrontier.Algorithms.Lean.ZFunction.Basic
@@ -5123,6 +5124,7 @@ public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial
 public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
+public import CslibFrontier.Foundations.Combinatorics.CubeCounts
 public import CslibFrontier.Foundations.Combinatorics.CubeSplitting
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence

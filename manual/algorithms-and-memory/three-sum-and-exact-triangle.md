@@ -389,8 +389,8 @@ from one `VectorConvolution.solveM` run per split of `balancedSize r d`.
   `a`, `b` and `r ^ d ≤ p`, `#balancedPairs (p - 1) ≤ #accepting seeds + #balancedPairs #L (r !) ^ (d / r)`.
 
 The full reduction of Theorem 3.4 (handling `A_bad`, repetition, a random prime, the choice of `d`
-and `μ`, the expected cost and `#balancedPairs`), the Chernoff bound on `H_r(d, ≤ s)` and the
-bound on `H_r(d, t, ≥ s)`, Corollary 3.5 and odd k-SUM (Corollary 3.6) are not formalized. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
+and `μ`, the expected cost and `#balancedPairs`), the choice of `r`, `δ` and `d` for
+Corollary 3.5, Corollary 3.5 itself and odd k-SUM (Corollary 3.6) are not formalized. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
 `solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with
 
 ```bash
@@ -400,6 +400,24 @@ lake env lean CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean
 
 If `ret_solveM` does not apply, check the size hypotheses `∀ a, f a ≠ 0 → ∑ i, a i = t₁`, that
 every query has all coordinates below `r` and size `t₁ + t₂`, and `s ≤ t₁ + t₂`.
+
+For explicit table sizes, import `CslibFrontier.Algorithms.Lean.VectorConvolution.CostBounds`.
+`time_solveM_le` bounds the cost for queries of size `t` and `s ≤ d (r - 1) / 2 - ε` by
+`3 (r d + 1) (r ^ d exp (-2 ε ^ 2 / (d (r - 1) ^ 2)) + |Cs| ∑_{j ≤ t - s} (t choose j))`, and
+`time_solveM_le_of_le_mul` gives `r ^ d exp (-δ ^ 2 d / 2)` for `s ≤ (1 - δ) d (r - 1) / 2`. The
+counts behind them are in `CslibFrontier.Foundations.Combinatorics.CubeCounts`:
+`card_cube_sum_le_le` (McDiarmid's inequality for the size of a uniform cube vector, the paper's
+Chernoff bound on `H_r(d, ≤ s)`), `card_Iic_filter_le_sum_le` (at most `∑_{j ≤ t - s} (t choose j)`
+large vectors below each query, the paper's `H_r(d, t, ≥ s) ≤ binom(t, ≥ s)`) and its entropy form
+`card_Iic_filter_le_mul_pow_mul_pow_le`. These are inequalities for every `r`, `d`, `s`; the
+paper's asymptotic forms are not stated. The
+[tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolutionCostBounds.lean) compute both
+counts on small cases and instantiate `time_solveM_le`. Check with
+
+```bash
+lake build --wfail CslibFrontier.Algorithms.Lean.VectorConvolution.CostBounds
+lake env lean CslibFrontierTests/Algorithms/Lean/VectorConvolutionCostBounds.lean
+```
 
 ## Conservative ordinary integer 3SUM
 
