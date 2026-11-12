@@ -21,7 +21,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 Every certificate covers all raw inputs. Unary ranges are funded only by actual vertex/edge
 list lengths. All supplied endpoint/dart labels use binary comparisons and saturating binary
 lookup, including malformed huge indices. The concrete query composes the sparse compiler with
-`XORSAT.solve_polyTime`; there is no solver, recognizer, growth or encoding provider hypothesis.
+`XORSAT.computableInPolyTime_solve`; there is no solver, recognizer, growth or encoding provider
+hypothesis.
 
 ## Main results
 
@@ -320,6 +321,6 @@ theorem compile_polyTime : ComputableInPolyTime compile encFixedRotationInput XO
 /-- Concrete all-raw native query. Invalid models reject, and every valid query actually calls
 existing certified sparse Gaussian elimination. No topological criterion is used. -/
 theorem query_polyTime : ComputableInPolyTime query encFixedRotationInput encBool :=
-  validate_polyTime.bool_and' (XORSAT.solve_polyTime.comp compile_polyTime)
+  validate_polyTime.bool_and' (XORSAT.computableInPolyTime_solve.comp compile_polyTime)
 
 end Cslib.Complexity.Graph.RotationRecognition

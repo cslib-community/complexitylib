@@ -43,29 +43,29 @@ open Turing.MultiTapeTM
 /-- **`IndependentSet` fpt-reduces to `Clique`** [CyganEtAl2015, Section 13.1] by complementing the
 graph, keeping the parameter `k`. -/
 theorem fptReducible_IndependentSet_Clique :
-    FPTReducible (encPair encGraph encNat) (encPair encGraph encNat) Prod.snd Prod.snd
+    FPTReducible encIndependentSetInstance encCliqueInstance (·.m) (·.m)
       IndependentSet Clique :=
-  FPTReducible.of_computableInPolyTime (f := fun x : Graph × ℕ => (x.1.compl, x.2)) (h := id)
+  FPTReducible.of_computableInPolyTime (f := independentSetToClique) (h := id)
     (by fun_prop) (fun _ => le_rfl) fun ⟨G, m⟩ => (Graph.compl_mem_Clique_iff G m).symm
 
 /-- **`Clique` fpt-reduces to `IndependentSet`** [CyganEtAl2015, Section 13.1] by complementing the
 graph, keeping the parameter `k`. -/
 theorem fptReducible_Clique_IndependentSet :
-    FPTReducible (encPair encGraph encNat) (encPair encGraph encNat) Prod.snd Prod.snd
+    FPTReducible encCliqueInstance encIndependentSetInstance (·.m) (·.m)
       Clique IndependentSet :=
-  FPTReducible.of_computableInPolyTime (f := fun x : Graph × ℕ => (x.1.compl, x.2)) (h := id)
+  FPTReducible.of_computableInPolyTime (f := cliqueToIndependentSet) (h := id)
     (by fun_prop) (fun _ => le_rfl) fun ⟨G, m⟩ => (Graph.compl_mem_IndependentSet_iff G m).symm
 
 /-- `Clique` is fixed-parameter tractable in `k` exactly when `IndependentSet` is. -/
 theorem Clique_mem_FPT_iff :
-    Clique ∈ FPT (encPair encGraph encNat) Prod.snd ↔
-      IndependentSet ∈ FPT (encPair encGraph encNat) Prod.snd :=
+    Clique ∈ FPT encCliqueInstance (·.m) ↔
+      IndependentSet ∈ FPT encIndependentSetInstance (·.m) :=
   ⟨fptReducible_IndependentSet_Clique.mem_FPT, fptReducible_Clique_IndependentSet.mem_FPT⟩
 
 /-- `Clique` is in `XP` for the parameter `k` exactly when `IndependentSet` is. -/
 theorem Clique_mem_XP_iff :
-    Clique ∈ XP (encPair encGraph encNat) Prod.snd ↔
-      IndependentSet ∈ XP (encPair encGraph encNat) Prod.snd :=
+    Clique ∈ XP encCliqueInstance (·.m) ↔
+      IndependentSet ∈ XP encIndependentSetInstance (·.m) :=
   ⟨fptReducible_IndependentSet_Clique.mem_XP, fptReducible_Clique_IndependentSet.mem_XP⟩
 
 end Cslib.Complexity

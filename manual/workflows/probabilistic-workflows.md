@@ -2293,6 +2293,48 @@ from the repository root to check them; the monomial clients are in
 
 Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
 
+## Integrate Hermite polynomials against a Gaussian
+
+Gaussian integration by parts is in
+[`CslibFrontier.Foundations.Probability.Gaussian.Stein`](../../CslibFrontier/Foundations/Probability/Gaussian/Stein.lean),
+the Hermite facts in
+[`CslibFrontier.Foundations.Probability.Gaussian.Hermite`](../../CslibFrontier/Foundations/Probability/Gaussian/Hermite.lean),
+and two polynomial identities for Mathlib's probabilists' `Polynomial.hermite` in
+[`CslibFrontier.Foundations.RingTheory.Polynomial.Hermite`](../../CslibFrontier/Foundations/RingTheory/Polynomial/Hermite.lean).
+Open `ProbabilityTheory` and `Polynomial`; `hermite n : ℤ[X]` is evaluated at a real point with
+`aeval x (hermite n)`.
+
+- `integral_sub_mul_gaussianReal hf hfi hxf hf'` is Stein's lemma
+  `∫ (x - μ) * f x ∂gaussianReal μ v = v * ∫ f' x ∂gaussianReal μ v`, for `f` with derivative `f'`
+  everywhere and the three integrability hypotheses. For a polynomial `p`,
+  `integral_sub_mul_eval_gaussianReal p` needs no hypotheses.
+- `derivative_hermite_succ` (`H_{n+1}' = (n + 1) H_n`) and `hermite_succ_succ` (the three-term
+  recurrence) are the polynomial inputs.
+- `integral_eval_mul_aeval_hermite p k` moves derivatives onto `p`:
+  `E[p · H_k] = E[p^{(k)}]` under `gaussianReal 0 1`. `integral_aeval_hermite_mul_aeval_hermite`
+  is O'Donnell's (11.9), `E[H_j H_k] = if j = k then j! else 0`.
+- `normalizedHermite j x = H_j(x) / √(j!)` (Definition 11.29) with `normalizedHermite_def`,
+  `_zero`, `_one`, `_two`; `integral_normalizedHermite_mul_normalizedHermite` is orthonormality.
+  `integral_normalizedHermite_gaussianNoise hρ` gives the eigenvalue identity
+  `E_g[h_n(ρ x + √(1 - ρ²) g)] = ρ ^ n h_n(x)`, and
+  `integral_correlatedGaussian_normalizedHermite hρ j k` is Proposition 11.31.
+- `multiHermite α z = ∏ i, h_{α i}(z i)` (Definition 11.32) with `multiHermite_def`.
+  `gaussianNoiseOp_multiHermite hρ α z` is the pointwise eigenvalue identity
+  `U_ρ h_α = ρ ^ |α| h_α`; `integral_multiHermite_mul_multiHermite` is orthonormality under
+  `Measure.pi fun _ => gaussianReal 0 1`; and `integral_correlatedGaussianPi_multiHermite hρ α β` is
+  Proposition 11.33. `multiHermite_indicator S z` identifies `h_S` with the monomial `∏ i ∈ S, z i`.
+  All `ρ` hypotheses are `|ρ| ≤ 1`.
+
+The checked [`GaussianHermite.lean` clients](../../CslibFrontierTests/GaussianHermite.lean)
+compute `H_2'` and `H_3` from the recurrence, apply Stein's lemma to the identity, check the
+eigenvalue and norm of `h_2`, `E[h_1 h_3] = 0`, `E[H_3²] = 6` and `E[x³ H_3] = 6`, instantiate
+Propositions 11.31 and 11.33 in one and two dimensions, and recover Fact 11.13 from
+`multiHermite_indicator`. Run `scripts/build.sh CslibFrontierTests.GaussianHermite` from the
+repository root to check them.
+
+Completeness of the Hermite basis (Theorem 11.22), Hermite expansions and Plancherel
+(Definition 11.34, Propositions 11.36 and 11.37) are not formalized here.
+
 ## Compare bits with Gaussians by the invariance principle
 
 Import

@@ -62,7 +62,7 @@ structure CliqueCoverInstance where
   graph : Graph
   /-- The maximum number of cliques allowed in the cover. -/
   cliques : ℕ
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `CliqueCoverInstance` as a pair `(graph, cliques)`. -/
 enc_structure encCliqueCover : CliqueCoverInstance where

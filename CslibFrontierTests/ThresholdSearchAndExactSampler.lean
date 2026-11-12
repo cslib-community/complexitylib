@@ -35,8 +35,8 @@ Covers:
    (`|W ⟨2, true, true⟩| = 3`), dead instances (`W x = ∅`), and zero-length witnesses
    (`W x = {[]}`), verifying exact `1 / 3` witness probabilities, `≤ 1 + len x` counter queries,
    expected fair-flip bounds (`exactSampleExpectedBits_le` with `uniformFinTree` draws and
-   `expectedCost_sampleFinBounded_le`), `IsFPAUS`, `FPAUS` membership, and `IsOraclePPTOn`
-   lifting.
+   `ProbComp.expectedCost_sampleUniformIntervalRetry_le`), `IsFPAUS`, `FPAUS` membership, and
+   `IsOraclePPTOn` lifting.
 -/
 
 public section
@@ -602,13 +602,14 @@ expected fair coins. -/
 theorem hammingOne_expected_flips :
     hammingOneSelfReducible.exactSampleExpectedBits hammingOneCount nonDyadicInst ≤ 2 * (2 + 1) ∧
     hammingOneSelfReducible.exactSampleExpectedBits hammingOneCount ⟨2, true, false⟩ = 0 ∧
-    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (sampleFinBounded 3 5) ≤
+    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
+      (ProbComp.sampleUniformIntervalRetry 3 5) ≤
       2 * (Nat.size 3 : ℝ≥0∞) := by
   have h := hammingOneSelfReducible.exactSampleExpectedBits_le (count := hammingOneCount)
     (x := nonDyadicInst) (fun z _ => hammingOneCount_eq_card z)
   have h' := hammingOneSelfReducible.exactSampleExpectedBits_le (count := hammingOneCount)
     (x := ⟨2, true, false⟩) (fun z _ => hammingOneCount_eq_card z)
-  refine ⟨?_, h'.1 rfl, expectedCost_sampleFinBounded_le 3 5⟩
+  refine ⟨?_, h'.1 rfl, ProbComp.expectedCost_sampleUniformIntervalRetry_le 3 5⟩
   have hlen : hammingOneSelfReducible.len nonDyadicInst = 2 := rfl
   rw [hlen] at h
   exact_mod_cast h.2

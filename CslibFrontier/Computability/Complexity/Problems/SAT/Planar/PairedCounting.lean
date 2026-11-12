@@ -77,8 +77,7 @@ theorem sourceVariable_mem_rawFormula {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.va
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
   apply CNF.mem_vars.mpr
   refine ⟨pc.1, List.mem_map.mpr ⟨pc, ?_, rfl⟩, b, hvar⟩
-  simp only [placedClauses, List.mem_append, List.mem_flatMap]
-  exact Or.inl (Or.inl (Or.inr ⟨_, hp, hpc⟩))
+  exact mem_placedClauses.mpr (Or.inr (Or.inl ⟨_, hp, hpc⟩))
 
 private theorem pairedLinks_variable_value {V : Type*} (σ : V → Bool)
     (cells : List (PairedWire.Cell V)) (value : Bool)
@@ -109,15 +108,10 @@ theorem raw_assignments_agree {φ : CNF ℕ}
   intro v hvar
   obtain ⟨c, hc, b, hl⟩ := CNF.mem_vars.mp hvar
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨p, hp, hpc⟩) | ⟨p, hp, hpc⟩) | ⟨o, ho, hpc⟩
-  · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hl
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
-    have heq' : (lastLiteral (crossingSites φ)
-        (occurrencePath φ (ci.2, lj.2, lj.1)) lj.1.2).1.1 = v := congrArg Prod.fst heq
+  rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, hpc⟩
+  · obtain ⟨i, j, x, ho, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hl
+    have heq' : (lastLiteral (crossingSites φ) (occurrencePath φ (i, j, x)) x.2).1.1 = v :=
+      congrArg Prod.fst heq
     rw [← heq']
     exact (lastLiteral_value hw hv hσ ho).trans
       ((he _ (variable_mem_of_mem_occurrences ho)).trans (lastLiteral_value hw hv hτ ho).symm)
@@ -132,7 +126,7 @@ theorem raw_assignments_agree {φ : CNF ℕ}
     rw [← heq']
     exact crossing_assignments_agree hw hv hσ hτ he hp lit.1
   · have hm : v ∈ CNF.vars ((links (crossingSites φ) (occurrencePath φ o)).map Prod.fst) :=
-      CNF.mem_vars.mpr ⟨pc.1, List.mem_map.mpr ⟨pc, hpc, rfl⟩, b, hl⟩
+      CNF.mem_vars.mpr ⟨pc.1, List.mem_map.mpr ⟨pc, mem_links.mpr hpc, rfl⟩, b, hl⟩
     rw [map_fst_links] at hm
     exact (pairedLinks_variable_value σ _ _ (wire_values_source hw hv hσ ho) hm).trans
       ((he _ (variable_mem_of_mem_occurrences ho)).trans

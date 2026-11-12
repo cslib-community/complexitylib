@@ -11,9 +11,8 @@ public import CslibFrontier.Computability.Complexity.Classes.FPAUS
 public import CslibFrontier.Computability.Complexity.Classes.FPAUS.SelfReducible
 public import CslibFrontier.Computability.Complexity.Classes.Oracle
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+public import CslibFrontier.Languages.Probabilistic.BoundedUniform
 public import CslibFrontier.Languages.Probabilistic.Iteration
-public import CslibFrontier.Languages.Probabilistic.Retry
-public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import CslibFrontier.Probability.DDGTree.Rejection
 import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -25,15 +24,13 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Mathlib.Order.Interval.Finset.Fin
 import CslibFrontier.Computability.Probabilistic.Adaptive
+import CslibFrontier.Computability.Probabilistic.BoundedUniform
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
-import CslibFrontier.Computability.Probabilistic.Retry
-import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.Option
 import CslibFrontier.Probability.PMF.Bind
@@ -64,11 +61,11 @@ counter `count y = (W y).card` yields **exact** prefix bit-by-bit conditional sa
    `2 * Nat.clog 2 c` expected fair flips (`Probability.expectedFlips_uniformFinTree_le`), and
    using `(W y).card ≤ 2 ^ R.len y` (`SelfReducible.card_le_two_pow_len`), the whole walk uses at
    most `(R.len x : ℝ) * (R.len x + 1)` expected fair flips (`0` when `W x = ∅`).
-3. **Strict PPT and oracle-PPT capped conditional walk (`sampleFinBounded`,
-   `SelfReducible.boundedConditionalSample`, `SelfReducible.boundedConditionalOracleSample`)**:
-   replacing each unbounded `Fin c` draw by `fuel = q + R.len x` capped trials of
-   `ProbComp.sampleBinaryNat c.size` (`OracleComp.retry`) keeps expected fair-coin cost at most
-   `2 * c.size` per step (`OracleComp.expectedCost_retry_le_two_mul`), makes at most
+3. **Strict PPT and oracle-PPT capped conditional walk (`SelfReducible.boundedConditionalSample`,
+   `SelfReducible.boundedConditionalOracleSample`)**: replacing each unbounded `Fin c` draw by
+   `ProbComp.sampleUniformIntervalRetry c fuel`, at most `fuel = q + R.len x` attempts of
+   `c.size` fair bits, keeps expected fair-coin cost at most `2 * c.size` per step
+   (`ProbComp.expectedCost_sampleUniformIntervalRetry_le`), makes at most
    `1 + R.len x` counter calls (independent of the accuracy `q`), achieves total-variation
    distance at most `(1 / 2) ^ q` from `uniformWitness (W x)` (`IsFPAUS` when `count` is
    polynomial-time), and lifts to `IsOraclePPTOn` when `count` is computed relative to an oracle.
@@ -77,7 +74,6 @@ counter `count y = (W y).card` yields **exact** prefix bit-by-bit conditional sa
 
 * `Cslib.Complexity.SelfReducible.exactWalk`, `Cslib.Complexity.SelfReducible.exactSample`:
   exact prefix conditional sampling in `PMF`.
-* `Cslib.Complexity.sampleFinBounded`: capped binary rejection sampler for `[0, c)` in `ProbComp`.
 * `Cslib.Complexity.ConditionalWalkState`: loop state structure for bounded conditional walks.
 * `Cslib.Complexity.SelfReducible.boundedConditionalSample`,
   `Cslib.Complexity.SelfReducible.boundedConditionalOracleSample`: strict PPT and oracle-PPT
@@ -91,8 +87,6 @@ counter `count y = (W y).card` yields **exact** prefix bit-by-bit conditional sa
 * `Cslib.Complexity.SelfReducible.length_exactSampleQueries_le`,
   `Cslib.Complexity.SelfReducible.mem_exactSampleQueries_length_le`: at most `1 + R.len x`
   counter evaluations, all of encoded length at most `(enc x).length`.
-* `Cslib.Complexity.expectedCost_sampleFinBounded_le`: expected fair-coin flips at most
-  `2 * c.size` per step.
 * `Cslib.Complexity.SelfReducible.closeTo_boundedConditionalSample`,
   `Cslib.Complexity.SelfReducible.isFPAUS_boundedConditionalSample`,
   `Cslib.Complexity.SelfReducible.isOraclePPTOn_boundedConditionalOracleSample`,
@@ -112,266 +106,6 @@ open scoped ENNReal
 namespace Cslib.Complexity
 
 open Cslib.ProbComp Cslib.Probability Turing.MultiTapeTM
-
-/-! ### Capped binary rejection sampler for `[0, c)` -/
-
-/-- One trial of binary rejection sampling for `[0, c)`: draw `c.size` fair bits and keep the
-result when strictly below `c`. -/
-noncomputable def sampleFinTrial (c : ℕ) : ProbComp (Option ℕ) :=
-  (fun r => if r < c then some r else none) <$> sampleBinaryNat c.size
-
-/-- Up to `fuel` independent trials of `sampleFinTrial c`, returning the first draw strictly
-below `c` (or `none` if all `fuel` trials reject). -/
-noncomputable def sampleFinBounded (c fuel : ℕ) : ProbComp (Option ℕ) :=
-  Option.join <$> OracleComp.retry (fun o => o.isSome = true) (sampleFinTrial c) fuel
-
-private theorem expectedCost_sampleList (w : ℕ) :
-    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (BitString.sampleList w) = w := by
-  have hu : OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
-      (ProbComp.uniform Bool) = 1 := by
-    simp [ProbComp.uniform, ProbComp.unifFin]
-  induction w with
-  | zero => simp [BitString.sampleList]
-  | succ k ih =>
-    rw [BitString.sampleList, OracleComp.expectedCost_bind, hu]
-    have htail : ∀ b : Bool,
-        OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
-          (BitString.sampleList k >>= fun xs => pure (b :: xs)) = k := by
-      intro b
-      rw [OracleComp.expectedCost_bind, ih]
-      simp
-    simp_rw [htail]
-    rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul, Nat.cast_succ, add_comm]
-
-/-- One trial `sampleFinTrial c` consumes exactly `c.size` fair-coin calls. -/
-theorem expectedCost_sampleFinTrial (c : ℕ) :
-    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (sampleFinTrial c) = c.size := by
-  simp [sampleFinTrial, sampleBinaryNat, expectedCost_sampleList]
-
-/-- Pointwise evaluation of `sampleFinTrial c` on `some r`. -/
-theorem eval_sampleFinTrial_some (c r : ℕ) :
-    ProbComp.eval (sampleFinTrial c) (some r) =
-      if r < c then ((2 ^ c.size : ℕ) : ℝ≥0∞)⁻¹ else 0 := by
-  have hlt_pow : ∀ x, x < c → x < 2 ^ c.size := fun x hx => hx.trans (Nat.lt_size_self c)
-  rw [sampleFinTrial, ProbComp.eval_map, eval_sampleBinaryNat, PMF.map_comp, PMF.map_apply]
-  by_cases hr : r < c
-  · rw [ite_eq_left hr, tsum_eq_single ⟨r, hlt_pow r hr⟩]
-    · simp [hr]
-    · intro i hi
-      by_cases hic : (i : ℕ) < c
-      · have hne : (i : ℕ) ≠ r := fun h => hi (Fin.ext h)
-        simp [hic, hne.symm]
-      · simp [hic]
-  · rw [ite_eq_right hr]
-    refine tsum_eq_zero_iff.mpr fun i => ?_
-    by_cases hic : (i : ℕ) < c
-    · have hne : r ≠ (i : ℕ) := fun h => hr (h ▸ hic)
-      simp [hic, hne]
-    · simp [hic]
-
-private theorem tsum_option_pmf {β : Type} (p : PMF (Option β)) :
-    p none + ∑' b : β, p (some b) = 1 := by
-  rw [← tsum_option_eq, PMF.tsum_coe]
-
-/-- Failure probability of `sampleFinTrial c`: `1 - c / 2 ^ c.size` (and `1` at `c = 0`). -/
-theorem eval_sampleFinTrial_none (c : ℕ) :
-    ProbComp.eval (sampleFinTrial c) none =
-      ((2 ^ c.size - c : ℕ) : ℝ≥0∞) / (2 ^ c.size : ℕ) := by
-  have hle : c ≤ 2 ^ c.size := (Nat.lt_size_self c).le
-  have hsum_some : ∑' r : ℕ, ProbComp.eval (sampleFinTrial c) (some r) =
-      (c : ℝ≥0∞) / (2 ^ c.size : ℕ) := by
-    simp_rw [eval_sampleFinTrial_some]
-    rw [tsum_eq_sum (s := Finset.range c) fun r hr => by
-      rw [Finset.mem_range] at hr; simp [hr]]
-    have hite : ∀ r ∈ Finset.range c,
-        (if r < c then ((2 ^ c.size : ℕ) : ℝ≥0∞)⁻¹ else 0) = ((2 ^ c.size : ℕ) : ℝ≥0∞)⁻¹ :=
-      fun r hr => ite_eq_left (Finset.mem_range.mp hr)
-    rw [Finset.sum_congr rfl hite, Finset.sum_const, Finset.card_range, nsmul_eq_mul,
-      div_eq_mul_inv]
-  have htot := tsum_option_pmf (ProbComp.eval (sampleFinTrial c))
-  rw [hsum_some] at htot
-  have hadd : (c : ℝ≥0∞) / (2 ^ c.size : ℕ) +
-      ((2 ^ c.size - c : ℕ) : ℝ≥0∞) / (2 ^ c.size : ℕ) = 1 := by
-    rw [← ENNReal.add_div, ← Nat.cast_add, Nat.add_sub_of_le hle]
-    exact ENNReal.div_self (Nat.cast_ne_zero.mpr (by positivity)) (ENNReal.natCast_ne_top _)
-  have hne_top : ((c : ℝ≥0∞) / (2 ^ c.size : ℕ)) ≠ ⊤ :=
-    ENNReal.div_ne_top (ENNReal.natCast_ne_top _) (Nat.cast_ne_zero.mpr (by positivity))
-  have heq : ProbComp.eval (sampleFinTrial c) none + (c : ℝ≥0∞) / (2 ^ c.size : ℕ) =
-      ((2 ^ c.size - c : ℕ) : ℝ≥0∞) / (2 ^ c.size : ℕ) + (c : ℝ≥0∞) / (2 ^ c.size : ℕ) := by
-    rw [htot, add_comm _ ((c : ℝ≥0∞) / _), hadd]
-  exact (ENNReal.add_left_inj hne_top).mp heq
-
-private theorem fail_measure_sampleFinTrial (c : ℕ) :
-    (ProbComp.eval (sampleFinTrial c)).toOuterMeasure {o : Option ℕ | ¬ o.isSome = true} =
-      ProbComp.eval (sampleFinTrial c) none := by
-  have hset : {o : Option ℕ | ¬ o.isSome = true} = {none} := by
-    ext o; cases o <;> simp
-  rw [hset, PMF.toOuterMeasure_apply_singleton]
-
-private theorem fail_sampleFinTrial_le_half {c : ℕ} (hc : 0 < c) :
-    (ProbComp.eval (sampleFinTrial c)).toOuterMeasure {o : Option ℕ | ¬ o.isSome = true} ≤ 2⁻¹ := by
-  rw [fail_measure_sampleFinTrial, eval_sampleFinTrial_none]
-  have h2c := two_pow_size_le_two_mul hc
-  have hpow_pos : 0 < 2 ^ c.size := by positivity
-  have hsub : 2 * (2 ^ c.size - c) ≤ 2 ^ c.size := by omega
-  rw [ENNReal.div_le_iff_le_mul (Or.inl (Nat.cast_ne_zero.mpr (by positivity)))
-    (Or.inl (ENNReal.natCast_ne_top _))]
-  calc ((2 ^ c.size - c : ℕ) : ℝ≥0∞)
-      = 2⁻¹ * (2 * ((2 ^ c.size - c : ℕ) : ℝ≥0∞)) := by
-        rw [← mul_assoc, ENNReal.inv_mul_cancel (by norm_num) (by norm_num), one_mul]
-    _ ≤ 2⁻¹ * ((2 ^ c.size : ℕ) : ℝ≥0∞) := by
-        gcongr
-        exact_mod_cast hsub
-
-/-- **Expected fair-coin bound for `sampleFinBounded`.** For every `c` and `fuel`,
-`sampleFinBounded c fuel` consumes at most `2 * c.size` fair coins in expectation. -/
-theorem expectedCost_sampleFinBounded_le (c fuel : ℕ) :
-    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (sampleFinBounded c fuel) ≤
-      2 * (c.size : ℝ≥0∞) := by
-  rw [sampleFinBounded, OracleComp.expectedCost_map]
-  rcases Nat.eq_zero_or_pos c with rfl | hc
-  · have h0 : OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (sampleFinTrial 0) = 0 := by
-      simp [expectedCost_sampleFinTrial]
-    rw [OracleComp.expectedCost_retry, h0, zero_mul]
-    simp
-  · calc OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1)
-          (OracleComp.retry (fun o => o.isSome = true) (sampleFinTrial c) fuel)
-        ≤ 2 * OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (sampleFinTrial c) :=
-          OracleComp.expectedCost_retry_le_two_mul (fun o : Option ℕ => o.isSome = true)
-            (sampleFinTrial c) ProbComp.unifOracle (fun _ => 1)
-            (fail_sampleFinTrial_le_half hc) fuel
-      _ = 2 * (c.size : ℝ≥0∞) := by rw [expectedCost_sampleFinTrial]
-
-/-- **Pointwise lower bound and conditional uniformity of `sampleFinBounded`.** For `0 < c`, every
-`r < c` is output with equal probability `(1 - q_c ^ fuel) / c ≥ (1 - (1 / 2) ^ fuel) / c`, and no
-`r ≥ c` is ever output. -/
-theorem eval_sampleFinBounded_some_ge {c : ℕ} (hc : 0 < c) (fuel : ℕ) {r : ℕ} (hr : r < c) :
-    ENNReal.ofReal ((1 - (1 / 2 : ℝ) ^ fuel) / c) ≤
-      ProbComp.eval (sampleFinBounded c fuel) (some r) := by
-  have hmap : ProbComp.eval (sampleFinBounded c fuel) (some r) =
-      ProbComp.eval (OracleComp.retry (fun o => o.isSome = true) (sampleFinTrial c) fuel)
-        (some (some r)) := by
-    rw [sampleFinBounded, ProbComp.eval_map, PMF.map_apply, tsum_eq_single (some (some r))]
-    · simp
-    · intro oo hoo
-      cases oo with
-      | none => simp
-      | some o =>
-        cases o with
-        | none => simp
-        | some r' =>
-          have hne : r' ≠ r := fun h => hoo (by subst h; rfl)
-          simp [hne.symm]
-  rw [hmap]
-  change _ ≤ OracleComp.evalWith ProbComp.unifOracle
-    (OracleComp.retry (fun o => o.isSome = true) (sampleFinTrial c) fuel) (some (some r))
-  rw [OracleComp.evalWith_retry_some]
-  simp only [Option.isSome_some, ↓reduceIte]
-  change _ ≤ ProbComp.eval (sampleFinTrial c) (some r) *
-    ∑ i ∈ Finset.range fuel,
-      (ProbComp.eval (sampleFinTrial c)).toOuterMeasure {o | ¬ o.isSome = true} ^ i
-  rw [eval_sampleFinTrial_some, ite_eq_left hr, fail_measure_sampleFinTrial,
-    eval_sampleFinTrial_none]
-  set P : ℕ := 2 ^ c.size
-  have hP_pos : 0 < P := by positivity
-  have hc_le : c ≤ P := (Nat.lt_size_self c).le
-  have h2c : P ≤ 2 * c := two_pow_size_le_two_mul hc
-  set qr : ℝ := ((P - c : ℕ) : ℝ) / (P : ℝ)
-  have hqr_nn : 0 ≤ qr := by positivity
-  have hqr_half : qr ≤ 1 / 2 := by
-    rw [div_le_iff₀ (by positivity : (0 : ℝ) < P)]
-    have : 2 * (P - c) ≤ P := by omega
-    have hreal : (2 : ℝ) * ((P - c : ℕ) : ℝ) ≤ (P : ℝ) := by exact_mod_cast this
-    linarith
-  have h1_sub : 1 - qr = (c : ℝ) / (P : ℝ) := by
-    simp only [qr]
-    have hcast : ((P - c : ℕ) : ℝ) = (P : ℝ) - (c : ℝ) := Nat.cast_sub hc_le
-    rw [hcast]
-    field_simp
-    ring
-  have hgeom : (1 - qr) * (∑ i ∈ Finset.range fuel, qr ^ i) = 1 - qr ^ fuel :=
-    mul_neg_geom_sum qr fuel
-  have hpow_le : qr ^ fuel ≤ (1 / 2 : ℝ) ^ fuel := pow_le_pow_left₀ hqr_nn hqr_half fuel
-  have hreal_ineq : (1 - (1 / 2 : ℝ) ^ fuel) / (c : ℝ) ≤
-      ((P : ℝ)⁻¹) * (∑ i ∈ Finset.range fuel, qr ^ i) := by
-    rw [div_le_iff₀ (by positivity : (0 : ℝ) < c)]
-    calc 1 - (1 / 2 : ℝ) ^ fuel
-        ≤ 1 - qr ^ fuel := by linarith
-      _ = (1 - qr) * (∑ i ∈ Finset.range fuel, qr ^ i) := hgeom.symm
-      _ = ((c : ℝ) / (P : ℝ)) * (∑ i ∈ Finset.range fuel, qr ^ i) := by rw [h1_sub]
-      _ = ((P : ℝ)⁻¹ * (∑ i ∈ Finset.range fuel, qr ^ i)) * (c : ℝ) := by ring
-  calc ENNReal.ofReal ((1 - (1 / 2 : ℝ) ^ fuel) / (c : ℝ))
-      ≤ ENNReal.ofReal (((P : ℝ)⁻¹) * (∑ i ∈ Finset.range fuel, qr ^ i)) :=
-        ENNReal.ofReal_le_ofReal hreal_ineq
-    _ = ENNReal.ofReal ((P : ℝ)⁻¹) *
-          ∑ i ∈ Finset.range fuel, ENNReal.ofReal qr ^ i := by
-        rw [ENNReal.ofReal_mul (by positivity),
-          ENNReal.ofReal_sum_of_nonneg (fun i _ => pow_nonneg hqr_nn i)]
-        congr 1
-        refine Finset.sum_congr rfl fun i _ => ?_
-        rw [ENNReal.ofReal_pow hqr_nn]
-    _ = ((P : ℝ≥0∞)⁻¹) *
-          ∑ i ∈ Finset.range fuel, (((P - c : ℕ) : ℝ≥0∞) / (P : ℝ≥0∞)) ^ i := by
-        have hinv : ENNReal.ofReal ((P : ℝ)⁻¹) = (P : ℝ≥0∞)⁻¹ := by
-          rw [← one_div, ENNReal.ofReal_div_of_pos (by positivity), ENNReal.ofReal_one,
-            ENNReal.ofReal_natCast, one_div]
-        have hq_eq : ENNReal.ofReal qr = ((P - c : ℕ) : ℝ≥0∞) / (P : ℝ≥0∞) := by
-          simp only [qr]
-          rw [ENNReal.ofReal_div_of_pos (by positivity), ENNReal.ofReal_natCast,
-            ENNReal.ofReal_natCast]
-        rw [hinv, hq_eq]
-
-theorem eval_sampleFinBounded_some_of_ge {c fuel r : ℕ} (hr : c ≤ r) :
-    ProbComp.eval (sampleFinBounded c fuel) (some r) = 0 := by
-  rw [sampleFinBounded, ProbComp.eval_map, PMF.map_apply]
-  refine tsum_eq_zero_iff.mpr fun oo => ?_
-  cases oo with
-  | none => simp
-  | some o =>
-    cases o with
-    | none => simp
-    | some r' =>
-      by_cases hrr' : r = r'
-      · subst hrr'
-        dsimp only [Option.join, Option.bind, id_eq]
-        rw [ite_eq_left rfl]
-        change OracleComp.evalWith ProbComp.unifOracle
-          (OracleComp.retry (fun o => o.isSome = true) (sampleFinTrial c) fuel)
-            (some (some r)) = 0
-        rw [OracleComp.evalWith_retry_some]
-        simp only [Option.isSome_some, ↓reduceIte]
-        change ProbComp.eval (sampleFinTrial c) (some r) * _ = 0
-        rw [eval_sampleFinTrial_some, ite_eq_right (by omega), zero_mul]
-      · simp [Option.join, hrr']
-
-open ComputableInPolyTime in
-/-- `sampleFinBounded` is strict PPT for a binary range `c` and unary trial budget `fuel`. -/
-theorem isPPTOn_sampleFinBounded {γ : Type} {encIn : γ ↪ List Bool}
-    {c fuel : γ → ℕ}
-    (hc : ComputableInPolyTime c encIn encNat)
-    (hfuel : ComputableInPolyTime fuel encIn encUnary) :
-    IsPPTOn encIn (encOption encNat) (fun a => sampleFinBounded (c a) (fuel a)) := by
-  have htrial : IsPPTOn encIn (encOption encNat) (fun a => sampleFinTrial (c a)) := by
-    have hdraw := ComputableInPolyTime.sampleBinaryNat (binary_size.comp hc)
-    have hchk : ComputableInPolyTime
-        (fun p : γ × ℕ => if p.2 < c p.1 then some p.2 else none)
-        (encPair encIn encNat) (encOption encNat) := by
-      have hcond := binary_lt' (snd encIn encNat) (hc.comp (fst encIn encNat))
-      have hyes : ComputableInPolyTime (fun p : γ × ℕ => (some p.2 : Option ℕ))
-          (encPair encIn encNat) (encOption encNat) := by fun_prop
-      have hno : ComputableInPolyTime (fun _ : γ × ℕ => (none : Option ℕ))
-          (encPair encIn encNat) (encOption encNat) := const none
-      exact (ComputableInPolyTime.ite' hcond hyes hno).of_enc_eq fun p => by
-        by_cases h : p.2 < c p.1 <;> simp [h]
-    exact hdraw.map_with hchk
-  have hgood : ComputableInPolyTime (fun o : Option ℕ => o.isSome) (encOption encNat) encBool := by
-    fun_prop
-  have hjoin : ComputableInPolyTime (Option.join (α := ℕ))
-      (encOption (encOption encNat)) (encOption encNat) :=
-    ((ComputableInPolyTime.of_tidy
-      (ComputableTidilyInPolyTime.optionGetD (encOption encNat))).comp
-        (id'.prod (const none))).of_enc_eq fun oo => by cases oo <;> rfl
-  exact (IsPPTOn.retry htrial hgood hfuel).map hjoin
 
 /-! ### Loop state structure for conditional prefix walks -/
 
@@ -681,8 +415,9 @@ theorem exactSample_eq_uniformWitness (R : SelfReducible enc W) {count : α → 
         · subst hvw; simp [PMF.uniformOfFinset_apply, hw]
         · simp [hvw]
     have hnone_zero : R.exactSample count unif x none = 0 := by
-      have htot := tsum_option_pmf (R.exactSample count unif x)
-      have htot_u := tsum_option_pmf (uniformWitness (W x))
+      have htot := (R.exactSample count unif x).tsum_coe
+      have htot_u := (uniformWitness (W x)).tsum_coe
+      rw [tsum_option_eq] at htot htot_u
       have hu_none : uniformWitness (W x) none = 0 := by
         rw [uniformWitness_of_nonempty hne, PMF.map_apply]
         exact tsum_eq_zero_iff.mpr fun v => by simp
@@ -906,14 +641,14 @@ theorem exactSampleExpectedBits_le (R : SelfReducible enc W)
 /-! ### Bounded-trial `ProbComp` and `IsOraclePPTOn` conditional samplers -/
 
 /-- Recursive bounded-trial conditional walk in `ProbComp`: each level draws from
-`sampleFinBounded c fuel` and aborts (`none`) only if all `fuel` trials reject. -/
+`sampleUniformIntervalRetry c fuel` and aborts (`none`) only if all `fuel` trials reject. -/
 noncomputable def boundedConditionalWalk (R : SelfReducible enc W) (count : α → ℕ) (fuel : ℕ) :
     ℕ → α → ℕ → ProbComp (Option (List Bool))
   | 0, y, c => pure (if 0 < c && decide ([] ∈ W y) then some [] else none)
   | n + 1, y, c =>
     if 0 < c then do
       let c₁ := count (R.child y true)
-      match ← sampleFinBounded c fuel with
+      match ← sampleUniformIntervalRetry c fuel with
       | none => pure none
       | some r =>
         if r < c₁ then
@@ -938,7 +673,7 @@ noncomputable def conditionalWalkStep (R : SelfReducible enc W) (count : α → 
     (s : ConditionalWalkState α) : ProbComp (ConditionalWalkState α) :=
   if s.active && decide (0 < s.countVal) then
     let c₁ := count (R.child s.node true)
-    R.advanceConditionalState s c₁ <$> sampleFinBounded s.countVal fuel
+    R.advanceConditionalState s c₁ <$> sampleUniformIntervalRetry s.countVal fuel
   else pure s
 
 /-- Read out the final witness from a finished `ConditionalWalkState`. -/
@@ -983,7 +718,7 @@ theorem map_finish_iterate_conditionalWalkStep (R : SelfReducible enc W) (count 
     · rw [OracleComp.iterate_succ_bind]
       simp only [boundedConditionalWalk, conditionalWalkStep, hc, decide_true, Bool.and_self,
         ↓reduceIte, bind_map_left, map_bind]
-      refine congrArg (sampleFinBounded c fuel >>= ·) (funext fun ro => ?_)
+      refine congrArg (sampleUniformIntervalRetry c fuel >>= ·) (funext fun ro => ?_)
       cases ro with
       | none =>
         simp [advanceConditionalState, iterate_conditionalWalkStep_inactive, finishConditionalWalk]
@@ -1054,6 +789,10 @@ theorem le_eval_boundedConditionalWalk_some (R : SelfReducible enc W) {count : �
           Nat.cast_ne_zero.mpr (Nat.ne_of_gt hcb_pos)
         rw [pow_succ']
         field_simp
+      have hdraw : ∀ r < (W y).card, ENNReal.ofReal ((1 - (1 / 2 : ℝ) ^ fuel) / (W y).card) ≤
+          ProbComp.eval (sampleUniformIntervalRetry (W y).card fuel) (some r) := fun r hr => by
+        rw [eval_sampleUniformIntervalRetry]
+        exact le_eval_sampleUniformInterval_some hpos fuel hr
       cases b
       · set c₁ := (W (R.child y true)).card
         set c₀ := (W (R.child y false)).card
@@ -1061,7 +800,7 @@ theorem le_eval_boundedConditionalWalk_some (R : SelfReducible enc W) {count : �
           (sum_le_tsum ((Finset.Ico c₁ (W y).card).map ⟨some, Option.some_injective ℕ⟩))
         rw [Finset.sum_map]
         have hcongr : ∑ r ∈ Finset.Ico c₁ (W y).card,
-            ProbComp.eval (sampleFinBounded (W y).card fuel)
+            ProbComp.eval (sampleUniformIntervalRetry (W y).card fuel)
               ((⟨some, Option.some_injective ℕ⟩ : ℕ ↪ Option ℕ) r) *
               ProbComp.eval
                 (match (⟨some, Option.some_injective ℕ⟩ : ℕ ↪ Option ℕ) r with
@@ -1075,7 +814,7 @@ theorem le_eval_boundedConditionalWalk_some (R : SelfReducible enc W) {count : �
                       R.boundedConditionalWalk count fuel k (R.child y false) c₀)
                 (some (false :: u)) =
             ∑ r ∈ Finset.Ico c₁ (W y).card,
-              ProbComp.eval (sampleFinBounded (W y).card fuel) (some r) *
+              ProbComp.eval (sampleUniformIntervalRetry (W y).card fuel) (some r) *
                 ProbComp.eval (R.boundedConditionalWalk count fuel k (R.child y false) c₀)
                   (some u) := by
           refine Finset.sum_congr rfl fun r hr => ?_
@@ -1088,15 +827,14 @@ theorem le_eval_boundedConditionalWalk_some (R : SelfReducible enc W) {count : �
           rw [Nat.card_Ico]
           omega
         rw [← hcard_Ico, ← nsmul_eq_mul, ← Finset.sum_const]
-        exact Finset.sum_le_sum fun r hr =>
-          eval_sampleFinBounded_some_ge hpos fuel (Finset.mem_Ico.mp hr).2
+        exact Finset.sum_le_sum fun r hr => hdraw r (Finset.mem_Ico.mp hr).2
       · set c₁ := (W (R.child y true)).card
         have hc1_le : c₁ ≤ (W y).card := by omega
         refine le_trans ?_
           (sum_le_tsum ((Finset.range c₁).map ⟨some, Option.some_injective ℕ⟩))
         rw [Finset.sum_map]
         have hcongr : ∑ r ∈ Finset.range c₁,
-            ProbComp.eval (sampleFinBounded (W y).card fuel)
+            ProbComp.eval (sampleUniformIntervalRetry (W y).card fuel)
               ((⟨some, Option.some_injective ℕ⟩ : ℕ ↪ Option ℕ) r) *
               ProbComp.eval
                 (match (⟨some, Option.some_injective ℕ⟩ : ℕ ↪ Option ℕ) r with
@@ -1111,7 +849,7 @@ theorem le_eval_boundedConditionalWalk_some (R : SelfReducible enc W) {count : �
                         ((W (R.child y false)).card))
                 (some (true :: u)) =
             ∑ r ∈ Finset.range c₁,
-              ProbComp.eval (sampleFinBounded (W y).card fuel) (some r) *
+              ProbComp.eval (sampleUniformIntervalRetry (W y).card fuel) (some r) *
                 ProbComp.eval (R.boundedConditionalWalk count fuel k (R.child y true) c₁)
                   (some u) := by
           refine Finset.sum_congr rfl fun r hr => ?_
@@ -1121,8 +859,7 @@ theorem le_eval_boundedConditionalWalk_some (R : SelfReducible enc W) {count : �
         rw [hcongr, ← Finset.sum_mul, hsplit_pow]
         refine mul_le_mul' ?_ hsub
         conv_lhs => rw [← Finset.card_range c₁, ← nsmul_eq_mul, ← Finset.sum_const]
-        exact Finset.sum_le_sum fun r hr =>
-          eval_sampleFinBounded_some_ge hpos fuel ((Finset.mem_range.mp hr).trans_le hc1_le)
+        exact Finset.sum_le_sum fun r hr => hdraw r ((Finset.mem_range.mp hr).trans_le hc1_le)
 
 /-- **Output-law accuracy of `boundedConditionalSample`.** Whenever `count` agrees with `(W ·).card`
 on instances no longer than `x`, `boundedConditionalSample count x q` lies within total-variation
@@ -1283,7 +1020,7 @@ theorem isPPTOn_boundedConditionalSample (R : SelfReducible enc W) {count : α �
       (fun pair => R.conditionalWalkStep count (pair.1.2 + R.len pair.1.1) pair.2) := by
     have hcv := encConditionalWalkState_countVal_polyTime hst
     have hc1 := hcount.comp hy1
-    have hdraw := isPPTOn_sampleFinBounded hcv
+    have hdraw := isPPTOn_sampleUniformIntervalRetry hcv
       (hfuel.comp (fst (encPair enc encUnary) (encConditionalWalkState enc)))
     have hadv : ComputableInPolyTime
         (fun x : ((α × ℕ) × ConditionalWalkState α) × Option ℕ =>
@@ -1398,13 +1135,13 @@ theorem mem_FPAUS_of_exact_polyTime_count (R : SelfReducible enc W) {count : α 
 
 /-- One step of the oracle-backed bounded conditional walk: evaluate
 `countProg (R.child s.node true)` via the external oracle and draw from
-`sampleFinBounded s.countVal fuel` via private coins. -/
+`sampleUniformIntervalRetry s.countVal fuel` via private coins. -/
 noncomputable def conditionalWalkOracleStep (R : SelfReducible enc W)
     (countProg : α → WordQueryComp Unit ℕ) (fuel : ℕ)
     (s : ConditionalWalkState α) : WordOracleComp Unit (ConditionalWalkState α) :=
   if s.active && decide (0 < s.countVal) then do
     let c₁ ← OracleComp.interpret ProbOracleComp.query (countProg (R.child s.node true))
-    let ro ← ProbOracleComp.sample (sampleFinBounded s.countVal fuel)
+    let ro ← ProbOracleComp.sample (sampleUniformIntervalRetry s.countVal fuel)
     return R.advanceConditionalState s c₁ ro
   else pure s
 
@@ -1526,14 +1263,14 @@ theorem isOraclePPTOn_boundedConditionalOracleSample (R : SelfReducible enc W)
           (countProg (R.child pair.2.node true))) :=
       hcount.preprocess' hy1
     have hp1 := fst (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encNat
-    have hdraw_ppt := isPPTOn_sampleFinBounded (hcv_o.comp hp1)
+    have hdraw_ppt := isPPTOn_sampleUniformIntervalRetry (hcv_o.comp hp1)
       ((hfuel.comp (fst (encPair enc encUnary) (encConditionalWalkState enc))).comp hp1)
     have hdraw_oracle : IsOraclePPTOn (Operation := Unit)
         (encPair (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encNat)
         (encConditionalWalkState enc)
         (fun pc : ((α × ℕ) × ConditionalWalkState α) × ℕ => do
           let ro ← ProbOracleComp.sample
-            (sampleFinBounded pc.1.2.countVal (pc.1.1.2 + R.len pc.1.1.1))
+            (sampleUniformIntervalRetry pc.1.2.countVal (pc.1.1.2 + R.len pc.1.1.1))
           pure (R.advanceConditionalState pc.1.2 pc.2 ro)) := by
       have hp2 := fst
         (encPair (encPair (encPair enc encUnary) (encConditionalWalkState enc)) encNat)
@@ -1551,7 +1288,7 @@ theorem isOraclePPTOn_boundedConditionalOracleSample (R : SelfReducible enc W)
     have hyes := hc1.bind_with
       (second := fun (pair : (α × ℕ) × ConditionalWalkState α) (c₁ : ℕ) => do
         let ro ← ProbOracleComp.sample
-          (sampleFinBounded pair.2.countVal (pair.1.2 + R.len pair.1.1))
+          (sampleUniformIntervalRetry pair.2.countVal (pair.1.2 + R.len pair.1.1))
         pure (R.advanceConditionalState pair.2 c₁ ro))
       hdraw_oracle
     exact (IsOraclePPTOn.cond' hcond hyes hst_o.isOraclePPTOn).congr fun pair State oracle s => by

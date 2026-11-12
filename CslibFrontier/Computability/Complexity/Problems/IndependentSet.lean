@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.Graph
 public import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 public import CslibFrontier.Computability.Complexity.Reduction
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
 public import Mathlib.Combinatorics.SimpleGraph.Clique
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -46,7 +47,7 @@ first-order interpretations.
 
 ## Main definitions
 
-* `Cslib.Complexity.IndependentSet`.
+* `Cslib.Complexity.IndependentSetInstance`, `Cslib.Complexity.IndependentSet`.
 * `Cslib.Complexity.IndependentSet.verifier`.
 * `Cslib.Complexity.SAT.toIndependentSet`.
 * `Cslib.Complexity.Graph.indepNum`: the independence number (`G.induced.indepNum`).
@@ -63,7 +64,7 @@ first-order interpretations.
 * `Cslib.Complexity.SAT.computableInPolyTime_toIndependentSet`: Karp's reduction is
   polynomial-time.
 * `Cslib.Complexity.IndependentSet.isVerifier`, `Cslib.Complexity.IndependentSet.mem_NP`:
-  `IndependentSet ∈ NP (encPair encGraph encNat)`.
+  `IndependentSet ∈ NP encIndependentSetInstance`.
 * `Cslib.Complexity.polyTimeReducible_SAT_IndependentSet`,
   `Cslib.Complexity.IndependentSet_npHard`, `Cslib.Complexity.IndependentSet_npComplete`:
   `IndependentSet` is `NP`-complete.
@@ -80,19 +81,43 @@ namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
+/-- An instance `(graph, m)` of **Independent Set**. -/
+@[ext]
+structure IndependentSetInstance where
+  /-- The graph in which to find an independent set. -/
+  graph : Graph
+  /-- The target number of declared vertices. -/
+  m : ℕ
+  deriving DecidableEq, Repr, Inhabited
+
+/-- Framed `encGraph` followed by binary target `encNat`, encoding `IndependentSetInstance`. -/
+enc_structure encIndependentSetInstance : IndependentSetInstance where
+  graph : encGraph,
+  m : encNat
+
+attribute [fun_prop] encIndependentSetInstance_graph_polyTime
+  encIndependentSetInstance_m_polyTime encIndependentSetInstance_mk_polyTime
+
 /-- The graphs with an independent set of `m` of their vertices
 [Arora and Barak, Section 2.4][AroraBarak09]. -/
-def IndependentSet : Set (Graph × ℕ) :=
-  {x | ∃ S : Finset {v // v ∈ x.1.1}, x.1.induced.IsNIndepSet x.2 S}
+def IndependentSet : Set IndependentSetInstance :=
+  {x | ∃ S : Finset {v // v ∈ x.graph.vertices}, x.graph.induced.IsNIndepSet x.m S}
 
 /-- Membership in `IndependentSet` as a finite set of `m` declared vertices that is independent in
-`G.toSimpleGraph`. -/
-theorem mem_IndependentSet_iff {G : Graph} {m : ℕ} :
-    (G, m) ∈ IndependentSet ↔
-      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧ G.toSimpleGraph.IsNIndepSet m S := by
+`x.graph.toSimpleGraph`. -/
+theorem mem_IndependentSet_iff {x : IndependentSetInstance} :
+    x ∈ IndependentSet ↔
+      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ x.graph.vertices) ∧
+        x.graph.toSimpleGraph.IsNIndepSet x.m S := by
   simpa only [IndependentSet, Set.mem_ofPred_eq, SimpleGraph.isNIndepSet_iff,
     SimpleGraph.IsIndepSet, Graph.induced_adj] using
-    Graph.exists_subtype_pairwise_iff (P := fun u v => ¬G.toSimpleGraph.Adj u v)
+    Graph.exists_subtype_pairwise_iff (P := fun u v => ¬x.graph.toSimpleGraph.Adj u v)
+
+@[simp]
+theorem mem_IndependentSet_iff_mk {G : Graph} {m : ℕ} :
+    (⟨G, m⟩ : IndependentSetInstance) ∈ IndependentSet ↔
+      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.vertices) ∧ G.toSimpleGraph.IsNIndepSet m S :=
+  mem_IndependentSet_iff
 
 namespace SAT
 
@@ -109,12 +134,12 @@ instance : DecidableRel Occurrence.Conflict := fun _ _ => by
   unfold Occurrence.Conflict; infer_instance
 
 /-- Karp's reduction from `SAT` to `IndependentSet`. -/
-def toIndependentSet (φ : CNF ℕ) : Graph × ℕ :=
-  (⟨(occurrences φ).map Occurrence.vertex,
+def toIndependentSet (φ : CNF ℕ) : IndependentSetInstance :=
+  ⟨⟨(occurrences φ).map Occurrence.vertex,
     (occurrences φ).flatMap fun o =>
       ((occurrences φ).filter fun o' => decide (o.Conflict o')).map
         fun o' => (o.vertex, o'.vertex)⟩,
-    φ.length)
+    φ.length⟩
 
 theorem _root_.Cslib.Logic.PL.Occurrence.Conflict.symm {o o' : Occurrence ℕ}
     (h : o.Conflict o') : o'.Conflict o := by
@@ -142,9 +167,9 @@ private theorem vertex_injOn {φ : CNF ℕ} {o o' : Occurrence ℕ} (ho : o ∈ 
 /-- In the graph of Karp's reduction, two occurrences are adjacent exactly when they conflict. -/
 theorem adj_toIndependentSet_iff {φ : CNF ℕ} {o o' : Occurrence ℕ} (ho : o ∈ occurrences φ)
     (ho' : o' ∈ occurrences φ) :
-    (toIndependentSet φ).1.toSimpleGraph.Adj o.vertex o'.vertex ↔ o.Conflict o' := by
+    (toIndependentSet φ).graph.toSimpleGraph.Adj o.vertex o'.vertex ↔ o.Conflict o' := by
   have hedge : ∀ {p p'}, p ∈ occurrences φ → p' ∈ occurrences φ →
-      ((p.vertex, p'.vertex) ∈ (toIndependentSet φ).1.2 ↔ p.Conflict p') := by
+      ((p.vertex, p'.vertex) ∈ (toIndependentSet φ).graph.edges ↔ p.Conflict p') := by
     intro p p' hp hp'
     simp only [toIndependentSet, List.mem_flatMap, List.mem_map, List.mem_filter,
       decide_eq_true_eq, Prod.mk.injEq]
@@ -165,8 +190,8 @@ theorem adj_toIndependentSet_iff {φ : CNF ℕ} {o o' : Occurrence ℕ} (ho : o 
 assignment making the chosen positive literals true satisfies the clause of every chosen
 occurrence, and distinct chosen occurrences lie in distinct clauses. -/
 theorem exists_card_add_countUnsat_le {φ : CNF ℕ} {S : Finset ℕ}
-    (hSV : ∀ v ∈ S, v ∈ (toIndependentSet φ).1.1)
-    (hS : (toIndependentSet φ).1.toSimpleGraph.IsIndepSet (S : Set ℕ)) :
+    (hSV : ∀ v ∈ S, v ∈ (toIndependentSet φ).graph.vertices)
+    (hS : (toIndependentSet φ).graph.toSimpleGraph.IsIndepSet (S : Set ℕ)) :
     ∃ σ : ℕ → Bool, S.card + φ.countUnsat σ ≤ φ.length := by
   classical
   have hocc : ∀ v ∈ S, ∃ o ∈ occurrences φ, o.vertex = v := fun v hv => by
@@ -293,10 +318,10 @@ theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_conflict :
 /-- Karp's reduction `toIndependentSet` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toIndependentSet :
-    ComputableInPolyTime toIndependentSet encCNF (encPair encGraph encNat) := by
+    ComputableInPolyTime toIndependentSet encCNF encIndependentSetInstance := by
   have hlen : ComputableInPolyTime (fun φ : CNF ℕ => φ.length) encCNF encNat :=
     length_list_binary _
-  unfold toIndependentSet encGraph
+  unfold toIndependentSet
   fun_prop
 
 end SAT
@@ -305,44 +330,52 @@ namespace IndependentSet
 
 /-- The verifier for `IndependentSet`: select distinct declared vertices from the certificate mask,
 check that their count equals `m`, and check that no two distinct selected vertices are adjacent. -/
-def verifier : (Graph × ℕ) × List Bool → Bool :=
-  Graph.verifySubset fun G u v => !G.adjBool u v
+def verifier : IndependentSetInstance × List Bool → Bool :=
+  fun (x, w) => Graph.verifySubset (fun G u v => !G.adjBool u v) ((x.graph, x.m), w)
 
 /-- `IndependentSet.verifier` verifies `IndependentSet` with certificates as long as the encoded
 instance. -/
 theorem isVerifier :
-    IsVerifier (encPair encGraph encNat) Polynomial.X verifier IndependentSet := by
+    IsVerifier encIndependentSetInstance Polynomial.X verifier IndependentSet := by
   have h := Graph.isVerifier_verifySubset (P := fun G u v => ¬G.toSimpleGraph.Adj u v)
     (fun G u v _ => by rw [Bool.not_eq_true', Graph.adjBool_eq_false_iff])
   intro x
-  simpa only [IndependentSet, Set.mem_ofPred_eq, SimpleGraph.isNIndepSet_iff,
-    SimpleGraph.IsIndepSet, Graph.induced_adj, verifier] using h x
+  have hx := h (x.graph, x.m)
+  simp only [IndependentSet, Set.mem_ofPred_eq, SimpleGraph.isNIndepSet_iff,
+    SimpleGraph.IsIndepSet, Graph.induced_adj, verifier]
+  rw [encIndependentSetInstance_apply]
+  exact hx
 
 /-- The `IndependentSet` verifier is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier
-      (encPair (encPair encGraph encNat) encBits) encBool :=
-  Graph.computableInPolyTime_verifySubset (by fun_prop)
+      (encPair encIndependentSetInstance encBits) encBool := by
+  have h1 : ComputableInPolyTime
+      (fun p : IndependentSetInstance × List Bool => ((p.1.graph, p.1.m), p.2))
+      (encPair encIndependentSetInstance encBits)
+      (encPair (encPair encGraph encNat) encBits) := by
+    fun_prop
+  exact (Graph.computableInPolyTime_verifySubset (by fun_prop)).comp h1
 
 /-- `IndependentSet` belongs to `NP`. -/
-theorem mem_NP : IndependentSet ∈ NP (encPair encGraph encNat) :=
+theorem mem_NP : IndependentSet ∈ NP encIndependentSetInstance :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end IndependentSet
 
 /-- `SAT` reduces to `IndependentSet` in polynomial time via `SAT.toIndependentSet`. -/
 theorem polyTimeReducible_SAT_IndependentSet :
-    PolyTimeReducible encCNF (encPair encGraph encNat) SAT IndependentSet :=
+    PolyTimeReducible encCNF encIndependentSetInstance SAT IndependentSet :=
   ⟨SAT.toIndependentSet, SAT.computableInPolyTime_toIndependentSet,
     fun φ => (SAT.toIndependentSet_mem_iff φ).symm⟩
 
 /-- `IndependentSet` is `NP`-hard. -/
-theorem IndependentSet_npHard : NPHard (encPair encGraph encNat) IndependentSet :=
+theorem IndependentSet_npHard : NPHard encIndependentSetInstance IndependentSet :=
   CookLevin.SAT_npHard.trans polyTimeReducible_SAT_IndependentSet
 
 /-- **`IndependentSet` is NP-complete** [Arora and Barak, Section 2.4][AroraBarak09]. -/
-theorem IndependentSet_npComplete : NPComplete (encPair encGraph encNat) IndependentSet :=
+theorem IndependentSet_npComplete : NPComplete encIndependentSetInstance IndependentSet :=
   ⟨IndependentSet.mem_NP, IndependentSet_npHard⟩
 
 /-! ### The independence number -/
@@ -356,29 +389,30 @@ noncomputable def indepNum (G : Graph) : ℕ := G.induced.indepNum
 variable {G : Graph} {k k' : ℕ}
 
 /-- Fewer vertices of an independent set are independent. -/
-theorem mem_IndependentSet_of_le (h : (G, k) ∈ IndependentSet) (hk : k' ≤ k) :
-    (G, k') ∈ IndependentSet := by
+theorem mem_IndependentSet_of_le (h : (⟨G, k⟩ : IndependentSetInstance) ∈ IndependentSet)
+    (hk : k' ≤ k) : (⟨G, k'⟩ : IndependentSetInstance) ∈ IndependentSet := by
   obtain ⟨S, hS, hcard : S.card = k⟩ := h
   obtain ⟨T, hTS, hT⟩ := Finset.exists_subset_card_eq (hcard ▸ hk)
   exact ⟨T, hS.mono (Finset.coe_subset.2 hTS), hT⟩
 
 /-- The independence number is the size of an independent set. -/
-theorem indepNum_mem_IndependentSet (G : Graph) : (G, G.indepNum) ∈ IndependentSet :=
+theorem indepNum_mem_IndependentSet (G : Graph) :
+    (⟨G, G.indepNum⟩ : IndependentSetInstance) ∈ IndependentSet :=
   G.induced.exists_isNIndepSet_indepNum
 
 /-- **The independence number is the largest target of `IndependentSet`.** -/
-theorem le_indepNum_iff : k ≤ G.indepNum ↔ (G, k) ∈ IndependentSet :=
+theorem le_indepNum_iff : k ≤ G.indepNum ↔ (⟨G, k⟩ : IndependentSetInstance) ∈ IndependentSet :=
   ⟨mem_IndependentSet_of_le G.indepNum_mem_IndependentSet,
     fun ⟨_, hS, (hcard : _ = k)⟩ => hcard ▸ hS.card_le_indepNum⟩
 
 /-- The independence number is at most the number of distinct declared vertices. -/
-theorem indepNum_le_card (G : Graph) : G.indepNum ≤ G.1.toFinset.card := by
+theorem indepNum_le_card (G : Graph) : G.indepNum ≤ G.vertices.toFinset.card := by
   rw [indepNum, ← G.induced.cliqueNum_compl, ← G.natCard_vertexSubtype]
   exact G.inducedᶜ.cliqueNum_le_natCard
 
 /-- An independent set has at most as many vertices as the distinct declared vertices. -/
-theorem le_card_of_mem_IndependentSet (h : (G, k) ∈ IndependentSet) :
-    k ≤ G.1.toFinset.card :=
+theorem le_card_of_mem_IndependentSet (h : (⟨G, k⟩ : IndependentSetInstance) ∈ IndependentSet) :
+    k ≤ G.vertices.toFinset.card :=
   (le_indepNum_iff.2 h).trans G.indepNum_le_card
 
 end Graph
