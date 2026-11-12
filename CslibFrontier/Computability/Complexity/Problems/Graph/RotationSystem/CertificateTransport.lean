@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Transport
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CertificateLookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -39,23 +40,11 @@ theorem ofRotation_transport {G H : Graph} (r : RotationSystem G) (e : Dart G �
     RotationCertificate.ofRotation (r.transport e hv) = RotationCertificate.ofRotation r := by
   have hn := Fintype.card_congr e
   rw [Dart.card, Dart.card] at hn
-  apply congrArg RotationCertificate.mk
-  refine List.ext_getElem (by
-    change (RotationCertificate.ofRotation (r.transport e hv)).successor.length =
-      (RotationCertificate.ofRotation r).successor.length
-    rw [RotationCertificate.length_ofRotation, RotationCertificate.length_ofRotation]
-    omega) ?_
-  intro i hH hG
-  change i < (RotationCertificate.ofRotation (r.transport e hv)).successor.length at hH
-  change i < (RotationCertificate.ofRotation r).successor.length at hG
-  change (RotationCertificate.ofRotation (r.transport e hv)).successor[i] =
-    (RotationCertificate.ofRotation r).successor[i]
-  rw [← List.getD_eq_getElem (RotationCertificate.ofRotation (r.transport e hv)).successor 0 hH,
-    ← List.getD_eq_getElem (RotationCertificate.ofRotation r).successor 0 hG]
-  have hb : i < 2 * G.2.length := by rwa [RotationCertificate.length_ofRotation] at hG
-  let d := (Dart.indexEquiv G).symm ⟨i, hb⟩
-  have hd : d.index = i := congrArg Fin.val ((Dart.indexEquiv G).apply_symm_apply ⟨i, hb⟩)
-  rw [← hd, getD_ofRotation_transport r e hv hi, RotationCertificate.getD_ofRotation]
+  symm
+  refine (RotationCertificate.ofRotation_eq_iff r _).mpr ⟨?_, ?_⟩
+  · rw [RotationCertificate.length_ofRotation]
+    omega
+  · exact getD_ofRotation_transport r e hv hi
 
 end Cslib.Complexity.Graph.RotationSystem
 
@@ -65,18 +54,7 @@ namespace Cslib.Complexity.Graph.RotationCertificate
 table, including empty tables. Acceptance supplies the exact list length internally. -/
 theorem ofRotation_decode {G : Graph} {c : RotationCertificate}
     (h : verifyRotation G c = true) : ofRotation (decode G c h) = c := by
-  apply congrArg RotationCertificate.mk
-  refine List.ext_getElem (by
-    change (ofRotation (decode G c h)).successor.length = c.successor.length
-    rw [length_ofRotation, length_of_verifyRotation h]) ?_
-  intro i hi hj
-  change i < (ofRotation (decode G c h)).successor.length at hi
-  change (ofRotation (decode G c h)).successor[i] = c.successor[i]
-  rw [← List.getD_eq_getElem (ofRotation (decode G c h)).successor 0 hi,
-    ← List.getD_eq_getElem c.successor 0 hj]
-  have hb : i < 2 * G.2.length := by rwa [length_ofRotation] at hi
-  let d := (Dart.indexEquiv G).symm ⟨i, hb⟩
-  have hd : d.index = i := congrArg Fin.val ((Dart.indexEquiv G).apply_symm_apply ⟨i, hb⟩)
-  rw [← hd, getD_ofRotation, index_decode_rotate]
+  exact (ofRotation_eq_iff (decode G c h) c).mpr
+    ⟨length_of_verifyRotation h, fun d => (index_decode_rotate h d).symm⟩
 
 end Cslib.Complexity.Graph.RotationCertificate

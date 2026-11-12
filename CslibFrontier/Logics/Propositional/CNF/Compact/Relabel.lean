@@ -35,7 +35,7 @@ variables keeps its order under this renaming, even though compact names may hav
 These are elementary list identities for the existing CNF compaction operation.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF
 
