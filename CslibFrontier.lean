@@ -1047,6 +1047,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBou
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetPartitioned
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 public import CslibFrontier.Computability.Circuit.Arithmetic.Noncommutative.ABP
@@ -1396,6 +1397,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andr
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevApproxMajority
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevOddErrors
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharp
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharpScore
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSignCoherent
@@ -5278,6 +5280,7 @@ public import CslibFrontier.Foundations.Combinatorics.Sunflower.Closure
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.Implication
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.LowerBound
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.Pluck
+public import CslibFrontier.Foundations.Combinatorics.TailSum
 public import CslibFrontier.Foundations.Combinatorics.TupleCover
 public import CslibFrontier.Foundations.Combinatorics.UniformSchedules
 public import CslibFrontier.Foundations.Combinatorics.WeightBudget
@@ -5389,6 +5392,8 @@ public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.Constant
 public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import CslibFrontier.Foundations.Data.Code.Multilinearity
 public import CslibFrontier.Foundations.Data.Code.MultilinearitySoundness
+public import CslibFrontier.Foundations.Data.Code.OddCircuit
+public import CslibFrontier.Foundations.Data.Code.OddCircuitFourier
 public import CslibFrontier.Foundations.Data.Code.ParityCheck
 public import CslibFrontier.Foundations.Data.Code.Plotkin
 public import CslibFrontier.Foundations.Data.Code.Plotkin.Asymptotic
@@ -5510,7 +5515,10 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.Hessian
 public import CslibFrontier.Foundations.Data.MvPolynomial.HessianChainRule
 public import CslibFrontier.Foundations.Data.MvPolynomial.HessianRank
 public import CslibFrontier.Foundations.Data.MvPolynomial.InitialMonomial
+public import CslibFrontier.Foundations.Data.MvPolynomial.IteratedPDerivSpan
+public import CslibFrontier.Foundations.Data.MvPolynomial.LinearSubstitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.LowDegreeRoot
+public import CslibFrontier.Foundations.Data.MvPolynomial.LowestComponent
 public import CslibFrontier.Foundations.Data.MvPolynomial.MixedOperator
 public import CslibFrontier.Foundations.Data.MvPolynomial.PDerivConst
 public import CslibFrontier.Foundations.Data.MvPolynomial.PartialDerivatives
@@ -5522,6 +5530,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjecti
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetPartitioned
 public import CslibFrontier.Foundations.Data.MvPolynomial.Shift
 public import CslibFrontier.Foundations.Data.MvPolynomial.SliceMatrix
+public import CslibFrontier.Foundations.Data.MvPolynomial.SparseShift
 public import CslibFrontier.Foundations.Data.MvPolynomial.SplitRank
 public import CslibFrontier.Foundations.Data.MvPolynomial.SubstituteOne
 public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution

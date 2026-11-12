@@ -1523,6 +1523,11 @@ Tim Roughgarden and Éva Tardos. *How Bad Is Selfish Routing?* Journal of the AC
 
 Tim Roughgarden and Éva Tardos. "Introduction to the Inefficiency of Equilibria." Chapter 17 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 443–459. A university-hosted PDF of the book was consulted on 2026-11-08 for §17.1.3 (the definitions of the price of anarchy and the price of stability) and Example 17.3 with Figure 17.3 (the `H_k` lower bound for Shapley network design games).
 
+<a id="saglam27"></a>
+## saglam27
+
+Mert Saglam. *Linear Codes Exceeding the Gilbert–Varshamov Bound*. STOC 2027 submission 1516. https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1516.pdf (PDF SHA-256 `ac6f2bba913aa15cfec8dda07a8e9e37b7186e145fef4719cb623dd04d15baa3`). The submission PDF was read on 2026-11-12: the abstract (main theorem), Section 1, Section 2 (odd circuits, the extension row and the bound on the expected number of odd circuits), Section 3.1, Lemma 3.1 (statement only), Section 3.3 (the three-range estimate on `sinh z - z` and the moment/tail split) and Appendix A. [Code/OddCircuit](../CslibFrontier/Foundations/Data/Code/OddCircuit.lean) and [Code/OddCircuitFourier](../CslibFrontier/Foundations/Data/Code/OddCircuitFourier.lean) formalize Section 2 and the reduction of Section 3.3 to the moment and tail estimates; Lemma 3.1 itself (derived in Appendix A from Kirshner–Samorodnitsky, Corollary 1.4 and Theorem 1.5) and the asymptotic main theorem are not formalized. These are submissions, not confirmed acceptances.
+
 <a id="sakszhou99"></a>
 ## sakszhou99
 

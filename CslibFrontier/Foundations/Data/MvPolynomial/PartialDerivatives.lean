@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, iterated partial derivatives and their span)
 
 public import CslibFrontier.Init
+public import CslibFrontier.Foundations.Data.MvPolynomial.Shift
 public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.LinearAlgebra.Dimension.LinearMap
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
@@ -43,6 +44,8 @@ product by `2 ^ d`, and it is a claim in the chapter "Lower bounds for depth-3 c
 
 * `MvPolynomial.iteratedPDeriv_rename`: injective variable renaming commutes with iterated
   partial differentiation.
+* `MvPolynomial.iteratedPDeriv_shift`: shifting the variables commutes with iterated partial
+  differentiation.
 * `MvPolynomial.coeff_iteratedPDeriv_ne_zero_iff`: in characteristic zero, the coefficient of `m`
   in an iterated partial derivative vanishes exactly when the coefficient of `m` times the
   variables of the tuple vanishes in the polynomial.
@@ -89,6 +92,15 @@ theorem iteratedPDeriv_rename {τ : Type*} {f : σ → τ} (hf : Function.Inject
   | succ k ih =>
     rw [iteratedPDeriv_succ_apply, iteratedPDeriv_succ_apply]
     exact (congrArg (pderiv (f (α 0))) (ih (Fin.tail α))).trans (pderiv_rename hf _ _)
+
+/-- Shifting the variables commutes with iterated partial differentiation. -/
+theorem iteratedPDeriv_shift {A : Type*} [CommSemiring A] [Algebra R A] (a : σ → A) {k : ℕ}
+    (α : Fin k → σ) (p : MvPolynomial σ R) :
+    iteratedPDeriv α (shift a p) = shift a (iteratedPDeriv α p) := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [iteratedPDeriv_succ_apply, iteratedPDeriv_succ_apply, ih, pderiv_shift]
 
 /-- Every exponent vector is the sum of the unit vectors of a tuple of variables: its variables,
 repeated according to their exponents. -/
