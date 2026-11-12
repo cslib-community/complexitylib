@@ -525,6 +525,11 @@ E. A. Dinic. “Algorithm for Solution of a Problem of Maximum Flow in Networks 
 
 Irit Dinur. “The PCP Theorem by Gap Amplification.” *Journal of the ACM* 54(3), Article 12 (2007). DOI: https://doi.org/10.1145/1236457.1236459. Author copy dated 2007-02-13 inspected: https://www.wisdom.weizmann.ac.il/~dinuri/mypapers/combpcp.pdf (opening definition and Theorem 1.1).
 
+<a id="dinur2016"></a>
+## dinur2016
+
+Irit Dinur. “Mildly Exponential Reduction from Gap 3SAT to Polynomial-Gap Label-Cover.” *Electronic Colloquium on Computational Complexity*, Report TR16-128, 2016. https://eccc.weizmann.ac.il/report/2016/128/ . Bibliographic metadata checked against the ECCC report record; the report's full text was inspected for Hypothesis 2.5 (p. 5), which has at most $D n$ clauses and fixed soundness $< 0.9$. Used alongside [manurangsiraghavendra2017](#manurangsiraghavendra2017) to document the Gap Exponential Time Hypothesis adaptation (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
+
 <a id="dosasgall2013"></a>
 ## dosasgall2013
 
@@ -618,7 +623,7 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section. It is also cited at book level for search-tree branching vectors and disjoint clause-prefix branching on fixed-width SAT; no internal chapter, theorem, or page locators are claimed.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
@@ -1206,6 +1211,11 @@ Udi Manber and Gene Myers. "Suffix Arrays: A New Method for On-Line String Searc
 
 Ju. I. Manin. "On cubic congruences to a prime modulus." *Izvestiya Akademii Nauk SSSR. Seriya Matematicheskaya* 20(5), 673–678, 1956 (in Russian). https://www.mathnet.ru/eng/im3844 . Bibliographic metadata was checked against secondary sources; the Math-Net.ru page itself could not be opened and the paper was not inspected. The locators §2 (pp. 675–676: the recurrence for the heights of a sequence of points and its closed form) and Lemma 2 (p. 676: the cancellation count) were supplied by an independent reviewer who read the paper, and were not rechecked for this entry. The Lean modules under `CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/` adapt Manin's proof of Hasse's bound rather than transcribe it; the implementation notes of [`ManinHeight.lean`](../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/ManinHeight.lean) list the differences (projective rather than affine point count, reversed sequence index, a cubic that keeps its quadratic term so that characteristic three is included, and a recurrence derived from Mathlib's add-sub map).
 
+<a id="manurangsiraghavendra2017"></a>
+## manurangsiraghavendra2017
+
+Pasin Manurangsi and Prasad Raghavendra. “A Birthday Repetition Theorem and Complexity of Approximating Dense CSPs.” *44th International Colloquium on Automata, Languages, and Programming (ICALP 2017)*, LIPIcs 80, 78:1–78:15, 2017. https://doi.org/10.4230/LIPIcs.ICALP.2017.78 . Bibliographic metadata checked against the LIPIcs DOI record; the paper's full text was inspected for the approximation ETHA formulation (§1.1, p. 78:5). Used alongside [dinur2016](#dinur2016) to document the Gap Exponential Time Hypothesis adaptation (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
+
 <a id="mathlib"></a>
 ## mathlib
 
@@ -1520,6 +1530,11 @@ Mark A. Satterthwaite. "Strategy-Proofness and Arrow's Conditions: Existence and
 ## schoenebeck08
 
 Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th Annual IEEE Symposium on Foundations of Computer Science (FOCS 2008), 593–602. https://doi.org/10.1109/FOCS.2008.74 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. On the same date worker w96-sos consulted the author-hosted copy https://schoeneb.people.si.umich.edu/papers/LasserreNew.pdf (19 pages, TeX output dated 6 December 2008) for Definition 5 (rounds of Lasserre), Definition 10 (width-`w` resolution on XOR formulas), Lemma 13 (the main lemma, p. 8) and Claim 14. In that copy Lemma 13 grants a feasible solution at the `w/2`-th round of Lasserre. An independent review reported `w/4` from a different version, so the constant is version-dependent. The library proves the sum-of-squares form of the lemma and does not construct Lasserre vectors. The typeset FOCS version was not consulted.
+
+<a id="schoening99"></a>
+## schoening99
+
+Uwe Schöning. *A Probabilistic Algorithm for k-SAT and Constraint Satisfaction Problems*. 40th Annual Symposium on Foundations of Computer Science (FOCS 1999), 410–414. https://doi.org/10.1109/SFFCS.1999.814612 . Bibliographic metadata taken from `references.bib` (`Schoening1999`); the paywalled conference proceedings were not directly inspected, and no internal theorem or page locators are claimed. Cited at paper level for the `3n`-step randomized local-search trial on width-`k` CNFs and its `(2 (k - 1) / k) ^ n` amplified decision algorithm (`(4 / 3) ^ n` for `3`-SAT).
 
 <a id="schrijver03"></a>
 ## schrijver03

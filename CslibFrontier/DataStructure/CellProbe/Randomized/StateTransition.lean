@@ -20,9 +20,10 @@ import CslibFrontier.Probability.PMF.SupportTsum
 # Randomized Cell-Probe State-Transition Implementations
 
 This file extends `Cslib.DataStructure.CellProbe.StateTransitionImpl` to randomized cell-probe
-schemes (`Cslib.CellProbe.Randomized.Scheme`, [Miltersen1999]) implementing relational
-state-transition specifications (`Cslib.DataStructure.StateTransitionSpec`, [CLRS2009], Chapter 17;
-[MitzenmacherUpfal2017], Sections 2.1, 2.3, and 2.4).
+schemes (`Cslib.CellProbe.Randomized.Scheme`; deterministic cell-probe model from [Miltersen1999],
+§1.2, internal-coin randomized trees) implementing relational state-transition
+specifications (`Cslib.DataStructure.StateTransitionSpec`, [CLRS2009], Section 17.3;
+[MitzenmacherUpfal2017], Sections 2.1 and 2.3).
 
 A `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl D P s₀` couples cell-probe
 execution with a latent seed type `Seed : Type`, a reference distribution `seedLaw : PMF Seed` up to
@@ -56,6 +57,11 @@ amortized-in-expectation probe inequality:
 
 ## Main results
 
+* `Cslib.CellProbe.Randomized.Scheme.runFrom_cons_fst`,
+  `Cslib.CellProbe.Randomized.Scheme.runFrom_append_fst`,
+  `Cslib.CellProbe.Randomized.Scheme.expectedProbesFrom_cons`,
+  `Cslib.CellProbe.Randomized.Scheme.expectedProbesFrom_append`:
+  structural decomposition of `Randomized.Scheme.runFrom` and `expectedProbesFrom`.
 * `Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.seq_expected_amortized`:
   multi-operation coupled transcript and expected-amortized probe telescope over any demonically
   admissible sequence `D.ValidOpSeq s₀ ops`.
@@ -72,11 +78,11 @@ amortized-in-expectation probe inequality:
 
 ## References
 
-* [P. B. Miltersen, *Cell Probe Complexity — a Survey*][Miltersen1999]
+* [P. B. Miltersen, *Cell Probe Complexity — a Survey*, §1.2][Miltersen1999]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
-  Chapter 17][CLRS2009]
+  Section 17.3][CLRS2009]
 * [M. Mitzenmacher and E. Upfal, *Probability and Computing: Randomization and Probabilistic
-  Techniques in Algorithms and Data Analysis*][MitzenmacherUpfal2017]
+  Techniques in Algorithms and Data Analysis*, Sections 2.1 and 2.3][MitzenmacherUpfal2017]
 -/
 
 public section
@@ -800,7 +806,10 @@ theorem padCells_singleState (h : cells ≤ cells') (C : StateTransitionImpl D P
 
 /-! ### Sequence-level expected-amortized probe bounds and transcript contracts -/
 
-private theorem runFrom_cons_fst {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- First-component `(transcript, postMem)` decomposition of `Randomized.Scheme.runFrom` on
+`o :: ops`. -/
+theorem _root_.Cslib.CellProbe.Randomized.Scheme.runFrom_cons_fst
+    {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (o : Op) (ops : List Op) :
     (Q.runFrom m (o :: ops)).map Prod.fst =
@@ -810,7 +819,10 @@ private theorem runFrom_cons_fst {Op : Type v} {Result : Op → Type} {cells w :
   refine congrArg (PMF.bind ((Q.step o).run m)) (funext fun ((a, m'), _) => ?_)
   simp only [Function.comp_def, PMF.map_comp]
 
-private theorem runFrom_append_fst {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- First-component `(transcript, postMem)` decomposition of `Randomized.Scheme.runFrom` across
+`ops₁ ++ ops₂`. -/
+theorem _root_.Cslib.CellProbe.Randomized.Scheme.runFrom_append_fst
+    {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (ops₁ ops₂ : List Op) :
     (Q.runFrom m (ops₁ ++ ops₂)).map Prod.fst =
@@ -822,13 +834,15 @@ private theorem runFrom_append_fst {Op : Type v} {Result : Op → Type} {cells w
       PMF.pure_bind]
     exact (PMF.map_id _).symm
   | cons o rest ih =>
-    simp only [List.cons_append, runFrom_cons_fst Q, ih, PMF.bind_bind, PMF.map_bind]
+    simp only [List.cons_append, Q.runFrom_cons_fst, ih, PMF.bind_bind, PMF.map_bind]
     refine congrArg (PMF.bind (((Q.step o).run m).map Prod.fst)) (funext fun (a, m') => ?_)
     rw [PMF.bind_map ((Q.runFrom m' rest).map Prod.fst)]
     refine congrArg (PMF.bind ((Q.runFrom m' rest).map Prod.fst)) (funext fun (tr₁, m₁) => ?_)
     simp only [Function.comp_def, PMF.map_comp, List.cons_append]
 
-private theorem expectedProbesFrom_cons {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- Stepwise expected-probe recurrence for `Randomized.Scheme.expectedProbesFrom` on `o :: ops`. -/
+theorem _root_.Cslib.CellProbe.Randomized.Scheme.expectedProbesFrom_cons
+    {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (o : Op) (ops : List Op) :
     Q.expectedProbesFrom m (o :: ops) =
@@ -853,7 +867,9 @@ private theorem expectedProbesFrom_cons {Op : Type v} {Result : Op → Type} {ce
   simp only [hterm, tsum_add]
   rfl
 
-private theorem expectedProbesFrom_append {Op : Type v} {Result : Op → Type} {cells w : ℕ}
+/-- Append decomposition for `Randomized.Scheme.expectedProbesFrom` across `ops₁ ++ ops₂`. -/
+theorem _root_.Cslib.CellProbe.Randomized.Scheme.expectedProbesFrom_append
+    {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
     (m : Mem cells w) (ops₁ ops₂ : List Op) :
     Q.expectedProbesFrom m (ops₁ ++ ops₂) =
@@ -872,10 +888,10 @@ private theorem expectedProbesFrom_append {Op : Type v} {Result : Op → Type} {
           (((Q.step o).run m).map Prod.fst) am * Q.expectedProbesFrom am.2 rest) +
         ∑' tm : List (Sigma Result) × Mem cells w,
           ((Q.runFrom m (o :: rest)).map Prod.fst) tm * Q.expectedProbesFrom tm.2 ops₂ := by
-      rw [runFrom_cons_fst Q, PMF.tsum_bind_mul]
+      rw [Q.runFrom_cons_fst, PMF.tsum_bind_mul]
       simp only [ih, mul_add, tsum_add, PMF.tsum_map_mul]
-    rw [List.cons_append, expectedProbesFrom_cons Q m o (rest ++ ops₂),
-      expectedProbesFrom_cons Q m o rest, hpull, ← add_assoc]
+    rw [List.cons_append, Q.expectedProbesFrom_cons m o (rest ++ ops₂),
+      Q.expectedProbesFrom_cons m o rest, hpull, ← add_assoc]
 
 private theorem expectedSeqProbes_snoc {Op : Type v} {Result : Op → Type} {cells w : ℕ}
     (Q : Cslib.CellProbe.Randomized.Scheme Op Result cells w)
@@ -887,7 +903,7 @@ private theorem expectedSeqProbes_snoc {Op : Type v} {Result : Op → Type} {cel
             (Q.step o).expectedProbes tm.2 := by
   have hone : ∀ m₁ : Mem cells w, Q.expectedProbesFrom m₁ [o] = (Q.step o).expectedProbes m₁ := by
     intro m₁
-    rw [expectedProbesFrom_cons]
+    rw [Q.expectedProbesFrom_cons]
     have hnil : ∀ m₂ : Mem cells w, Q.expectedProbesFrom m₂ [] = 0 := by
       intro m₂
       simp [Cslib.CellProbe.Randomized.Scheme.expectedProbesFrom,
@@ -895,7 +911,7 @@ private theorem expectedSeqProbes_snoc {Op : Type v} {Result : Op → Type} {cel
     simp [hnil]
   rw [Q.expectedSeqProbes_eq_init_tsum (ops ++ [o]), Q.expectedSeqProbes_eq_init_tsum ops,
     PMF.tsum_bind_mul]
-  simp only [expectedProbesFrom_append Q, hone, mul_add, tsum_add]
+  simp only [Q.expectedProbesFrom_append, hone, mul_add, tsum_add]
 
 private def traceToCoupled {Seed : Type} (u : TraceState Seed D cells w) :
     CoupledState Seed D.State cells w :=
@@ -971,11 +987,11 @@ private theorem steps_trace_amortized (C : StateTransitionImpl D P s₀)
           (P.init.bind fun m₀ => (P.runFrom m₀ (prefOps ++ [o])).map Prod.fst) =
           (P.init.bind fun m₀ => (P.runFrom m₀ prefOps).map Prod.fst).bind fun (out₁, m₁) =>
             (((P.step o).run m₁).map Prod.fst).map fun (a, m₂) => (out₁ ++ [⟨o, a⟩], m₂) := by
-        simp only [runFrom_append_fst P, PMF.bind_bind]
+        simp only [P.runFrom_append_fst, PMF.bind_bind]
         refine congrArg (PMF.bind P.init) (funext fun m₀ => ?_)
         refine congrArg (PMF.bind ((P.runFrom m₀ prefOps).map Prod.fst))
           (funext fun (out₁, m₁) => ?_)
-        rw [runFrom_cons_fst P]
+        rw [P.runFrom_cons_fst]
         simp only [Cslib.CellProbe.Randomized.Scheme.runFrom_nil, PMF.pure_map, PMF.map_bind]
         exact PMF.bind_pure_comp _ _
       rw [hrhs, ← hmarg, PMF.bind_map]

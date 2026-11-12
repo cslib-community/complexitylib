@@ -77,6 +77,9 @@ reported with its subterm. A called method whose arguments are not all live word
 its whole encoded argument with a charged `pure` step. This also supports custom input encodings
 without requiring a `WordEncoding` instance for the method's argument type.
 
+`realize [certificate₁, …]` first adds the supplied proof terms as local facts in list order,
+then runs the same tactic. Existing local certificates retain priority.
+
 Each certificate is stated for the client form as written, with its domain in the client's terms
 (`certify`), so certificates compose syntactically. A bind's continuation domain is stated at the
 first client's reply and next memory in closed form (`Realizes.bind₀_of_run`), not at the
@@ -1656,5 +1659,12 @@ scoped elab "realize" : tactic => withMainContext do
     | some g' => g.assign (mkMVar g')
     | none => kept := kept.push g
   setGoals (kept.toList ++ workGoals)
+
+/-- Supply method certificates as local facts before running `realize`. -/
+scoped macro "realize" "[" certificates:term,* "]" : tactic => do
+  let mut script ← `(tactic| realize)
+  for certificate in certificates.getElems.reverse do
+    script ← `(tactic| (have hcert := $certificate; $script))
+  return script
 
 end Cslib.WordRAM

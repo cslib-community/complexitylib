@@ -83,6 +83,12 @@ Import [StatisticalDistance/Event.lean](../../CslibFrontier/Probability/Statisti
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
 over a finite type, active after `open scoped Cslib.Probability.PMF`. It uses the half-L1
 convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` above.
+[StatisticalDistance/TotalVariation.lean](../../CslibFrontier/Probability/StatisticalDistance/TotalVariation.lean)
+connects the three notions: `dist_eq_tvDist_toMeasure_div_two` converts `dist` to `tvDist`,
+`closeTo_coe_iff_dist_le` states that the all-event `CloseTo μ ν ε` is exactly `dist μ ν ≤ ε`, and
+`closeTo_iff_etvDist_le` states that it is exactly a total variation bound `2 * ε`, also on
+infinite types with measurable singletons. The real-valued form `closeTo_ofReal_iff_tvDist_le`
+needs `0 ≤ ε`: a negative error becomes `0` under `ENNReal.ofReal`.
 `abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`;
 `abs_bind_apply_toReal_sub_le_dist p q T b` does the same for the probability that a randomized
 distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchanged under an
@@ -367,27 +373,27 @@ tensorization and comparison inequalities ([Tsybakov, Section 2.4](../sources.md
 
 - **Bhattacharyya coefficient and Hellinger distance.** Import
   [Hellinger.lean](../../CslibFrontier/Probability/Hellinger.lean). The definitions
-  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L134)
+  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L135)
   (`∑' a, √((p a).toReal * (q a).toReal) ∈ [0, 1]`),
-  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L138) (`1 - bhattacharyya p q`),
-  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L142)
+  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L139) (`1 - bhattacharyya p q`),
+  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L143)
   (`√(hellingerSq p q) ∈ [0, 1]`)—along with their symmetry, `[0, 1]` bounds, and definiteness
   (`= 0 ↔ p = q`)—apply to any `PMF α`, while the theorem API below assumes finite types
   `[Finite α]` / `[Fintype α]`. No competing `MetricSpace (PMF α)` instance is registered because
   `Cslib.Probability.PMF` already uses that slot for half-`L¹` `dist`;
-  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L305) supplies the
+  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L306) supplies the
   metric triangle inequality directly.
 - **Total-variation comparison and `n`-fold i.i.d. tensorization (finite types).**
-  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L346) and
-  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L399) give
+  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L347) and
+  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L400) give
   `h²(p, q) ≤ dist p q ≤ √2 * h(p, q)` (with `tvDist` corollaries on `toMeasure`).
-  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L427) and
-  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L445) prove multiplicative
+  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L428) and
+  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L446) prove multiplicative
   tensorization, yielding the sample-complexity acceptance bound
-  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L498):
+  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L499):
   `dist (iid p n) (iid q n) ≤ √(2 * n) * hellingerDist p q`. Markov kernel and map data
-  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L577) and
-  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L596).
+  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L578) and
+  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L597).
 - **Pearson `χ²` divergence and Ingster / Le Cam mixture bounds (finite types).** Import
   [ChiSquare.lean](../../CslibFrontier/Probability/ChiSquare.lean).
   [`echiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L142) (`ℝ≥0∞`-valued

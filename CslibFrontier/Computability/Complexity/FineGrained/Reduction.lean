@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
@@ -40,6 +41,10 @@ stronger: a lower bound for a measure gives one for every measure at most linear
 
 `Cslib.Complexity.CountingNativeEndpoint.not_ETH` proves that `ETH` is false, so lower bounds
 obtained this way hold vacuously. The transfer theorems are unconditional.
+
+The scalar estimates for measure rescaling and reduction-time composition are shared with
+function-time and randomized transfers through
+`CslibFrontier.Computability.Complexity.FineGrained.Bounds`.
 
 ## Main results
 
@@ -79,14 +84,7 @@ theorem DecidableInExpTime.mono_measure {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ'
     (hδ : 0 ≤ δ) (h : DecidableInExpTime A enc μ δ) : DecidableInExpTime A enc μ' (c * δ) := by
   obtain ⟨e, h⟩ := h
   refine ⟨e, h.mono ⌈(2 : ℝ) ^ (δ * c)⌉₊ (fun a => ?_) fun a => by positivity⟩
-  have hK : (2 : ℝ) ^ (δ * c) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.le_ceil _
-  have h₁ : (2 : ℝ) ^ (δ * μ a) ≤ 2 ^ (δ * c) * 2 ^ (c * δ * μ' a) := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have : (μ a : ℝ) ≤ c * μ' a + c := by exact_mod_cast hμ a
-    nlinarith
-  have h₂ : (2 : ℝ) ^ (δ * μ a) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ * 2 ^ (c * δ * μ' a) :=
-    h₁.trans (mul_le_mul_of_nonneg_right hK (by positivity))
+  have h₂ := two_rpow_le_natCeil_mul_of_le_mul_add hδ (hμ a)
   have h₃ := mul_le_mul_of_nonneg_right h₂ (by positivity :
     (0 : ℝ) ≤ ((enc a).length + 1) ^ e)
   have h₄ : (0 : ℝ) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.cast_nonneg _
@@ -110,33 +108,6 @@ section Reduction
 variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {A : Set α} {B : Set β}
   {μA : α → ℕ} {μB : β → ℕ}
 
-/-- **Running a decider on the reduced instance.** If the reduction runs within time `P ≥ 1` and
-its output has length `n ≤ l * (P + 1)`, the output's parameter `μ` satisfies
-`2 ^ (δ * μ) ≤ 2 ^ (δ * c) * X` with `X ≥ 1`, and the decider takes time
-`T ≤ k * (2 ^ (δ * μ) * (n + 1) ^ e) + k`, then the reduction followed by the decider takes time
-within a constant times `X * P ^ (e + 1)`. -/
-private theorem reduce_add_decide_le {P X δ μ T : ℝ} {n l k e c : ℕ} (hP : 1 ≤ P) (hX : 1 ≤ X)
-    (hn : (n : ℝ) ≤ l * (P + 1)) (hμ : (2 : ℝ) ^ (δ * μ) ≤ 2 ^ (δ * c) * X)
-    (hT : T ≤ k * (2 ^ (δ * μ) * (n + 1) ^ e) + k) :
-    P + T ≤ (1 + k * 2 ^ (δ * c) * (2 * l + 1) ^ e + k) * (X * P ^ (e + 1)) := by
-  -- the output has length at most `2 l P`, so the decider runs within
-  -- `k * (2 ^ (δ c) X (2 l P) ^ e) + k`
-  have hpow : ((n : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
-    rw [← mul_pow]
-    exact pow_le_pow_left₀ (by positivity) (by nlinarith) e
-  have hT' := mul_le_mul_of_nonneg_left (mul_le_mul hμ hpow (by positivity) (by positivity))
-    (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
-  -- every term is at most `X * P ^ (e + 1)`
-  have h₁ : P ≤ X * P ^ (e + 1) :=
-    (le_self_pow₀ hP (Nat.succ_ne_zero e)).trans (le_mul_of_one_le_left (by positivity) hX)
-  have h₂ : X * P ^ e ≤ X * P ^ (e + 1) :=
-    mul_le_mul_of_nonneg_left (pow_le_pow_right₀ hP (Nat.le_add_right e 1)) (by positivity)
-  have h₂' := mul_le_mul_of_nonneg_left h₂
-    (by positivity : (0 : ℝ) ≤ k * 2 ^ (δ * c) * (2 * l + 1) ^ e)
-  have h₃ : (k : ℝ) * 1 ≤ k * (X * P ^ (e + 1)) := mul_le_mul_of_nonneg_left
-    (one_le_mul_of_one_le_of_one_le hX (one_le_pow₀ hP)) (Nat.cast_nonneg k)
-  linarith
-
 /-- **Transfer along reductions of linear size.** If `f` reduces `A` to `B` in polynomial time
 with `μB (f a) ≤ c * μA a + c`, then a decider for `B` within time `2 ^ (δ * μB b)` times a
 polynomial in the length of the encoded instance gives a decider for `A` within time
@@ -157,9 +128,11 @@ theorem DecidableInExpTime.of_reduction {f : α → β}
     refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
     have : (μB (f a) : ℝ) ≤ c * μA a + c := by exact_mod_cast hμ a
     nlinarith
-  have key := reduce_add_decide_le (P := ((encA a).length + 1 : ℝ) ^ d)
+  have key := reduction_add_time_le (P := ((encA a).length + 1 : ℝ) ^ d)
+    (C := (2 : ℝ) ^ (δ * c))
     (one_le_pow₀ (le_add_of_nonneg_left (Nat.cast_nonneg _)))
-    (Real.one_le_rpow (by norm_num) (by positivity)) (by exact_mod_cast hl a) hexp (ht (f a))
+    (Real.one_le_rpow (by norm_num) (by positivity)) (by positivity)
+    (by exact_mod_cast hl a) hexp (ht (f a))
   push_cast
   rw [pow_mul]
   exact key.trans (mul_le_mul_of_nonneg_right (Nat.le_ceil _) (by positivity))
@@ -291,7 +264,8 @@ theorem DecidableInSubexpTime.of_expReduction {f : α → β} {m : α → ℕ}
     have hmul := mul_le_mul_of_nonneg_right hcδ (Nat.cast_nonneg (m a * Nat.log 2 (m a)))
     nlinarith
   have hstep1 : P + (t (f a) : ℝ) ≤ K₁ * (X₁ * P ^ (e + 1)) :=
-    reduce_add_decide_le hP hX₁ (by rw [← hP_nat]; exact_mod_cast hl a) hexp (ht (f a))
+    reduction_add_time_le (C := (2 : ℝ) ^ (δ * c)) hP hX₁ (by positivity)
+      (by rw [← hP_nat]; exact_mod_cast hl a) hexp (ht (f a))
   have hP_exp_pow : P_exp ^ (e + 1) ≤ K₀ * X₁ := by
     have hrpow : P_exp ^ (e + 1) = 2 ^ ((C' : ℝ) * m a) := by
       simp only [P_exp, C', ← Real.rpow_natCast]
