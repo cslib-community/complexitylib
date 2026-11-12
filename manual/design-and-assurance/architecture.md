@@ -14,6 +14,12 @@ The public direction is plain computability with independent time and space boun
 
 Input length is the length of the chosen encoding. Binary naturals, unary controls, framed lists, finite structures and machine descriptions have different size laws; changing an encoding can change the resource claim. The library therefore uses explicit input/output embeddings in computability statements and proves encoding-size bounds. For low-space functions the additional question is whether returned data counts toward the workspace contract. `ComputableInO` charges output size while `ComputableInBigO` does not; logarithmic-space transductions have a separate convention. See the [resource table](../machines-and-classes/native-and-resources.md).
 
+For framed list size bounds, reuse `length_encList_sublist` from
+[Encodings/List/Size.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/List/Size.lean).
+A suffix hypothesis `h` supplies `h.sublist`, so `length_encList_sublist enc h.sublist`
+bounds its encoded length by that of the original list. IP/MIP replay histories and TQBF
+frame/state bounds use this shared API without changing their encodings.
+
 The same discipline applies outside native machines:
 
 | Interface | What it charges | Further obligation |
@@ -42,7 +48,7 @@ Before the first supported release the project deliberately avoids accumulating 
 
 ## Reading design historically
 
-Several decisions evolved during rapid development: strengthening nondeterministic space termination, moving from tidy public contracts to plain ones, separating quantifier-free interpretations from first-order projections, revising word-RAM fault/basis conventions, and replacing a prose theorem list with checked abstracts (themselves retired on 2026-11-08 in favor of the results inventory). The pinned source links identify the surveyed snapshot. A history of why these choices changed must use dated issues or transcripts; current documentation alone cannot establish the original motivation. The [case studies](../development-history/case-studies.md) provide that evidence where available.
+Several decisions evolved during rapid development: strengthening nondeterministic space termination, moving from tidy public contracts to plain ones, separating quantifier-free interpretations from first-order projections, revising word-RAM fault/basis conventions, and replacing a prose theorem list with checked abstracts (themselves retired on 2026-11-08 in favor of the results inventory). The pinned source links identify the surveyed snapshot. A history of why these choices changed must use dated issues or transcripts; current documentation alone cannot establish the original motivation. The [case studies](../history/case-studies.md) provide that evidence where available.
 
 This architectural account is a synthesis of the inspected interfaces and policies. It is not a claim that every module already follows the preferred design without exceptions. [cslib-frontier][complexitylib]
 

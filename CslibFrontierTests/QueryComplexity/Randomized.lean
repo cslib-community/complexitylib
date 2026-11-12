@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import Mathlib.Algebra.BigOperators.Fin
 import CslibFrontier.Computability.QueryComplexity.ApproximateDegree.Or
 import CslibFrontier.Computability.QueryComplexity.Randomized.Nisan
+import CslibFrontier.Computability.QueryComplexity.Randomized.ZeroError
 import CslibFrontier.Computability.QueryComplexity.Yao
 
 /-! Randomized decision trees, Nisan's bounds and Yao's minimax principle on concrete instances:
@@ -14,9 +15,38 @@ majority of three bits has bounded-error randomized complexity `1` but determini
 `3`, a hard distribution for it, the disjunction of `n` bits, and matching pennies for the minimax
 theorem. Non-vacuity witnesses for the hypotheses. -/
 
+open scoped NNReal
+
 namespace CslibFrontierTests.QueryComplexity.Randomized
 
 open Cslib Cslib.BitString Cslib.QueryComplexity Convexity Finset
+
+/-! Numerical measures reject invalid domains instead of assigning the empty infimum zero. -/
+
+example : True := by
+  fail_if_success
+    have _ := DecisionTree.complexity (fun x : ℕ → Bool => x 0)
+  fail_if_success
+    have _ := zeroErrorComplexity (fun x : ℕ → Bool => x 0)
+  fail_if_success
+    have _ := randomizedComplexity (-1 : ℝ) (fun x : Fin 1 → Bool => x 0)
+  fail_if_success
+    have _ := distributionalComplexity (-1 : ℝ)
+      (StdSimplex.single (fun _ : Fin 1 => false)) (fun x => x 0)
+  fail_if_success
+    have _ := approxDegree (-1 : ℝ) (fun x : Fin 1 → Bool => x 0)
+  trivial
+
+private noncomputable def allTrue (x : ℕ → Bool) : Bool := by
+  classical
+  exact decide (∀ i, x i = true)
+
+-- The numerical finite-domain boundary leaves concrete infinite-domain algorithm witnesses usable.
+example : ∃ μ : RandomizedDecisionTree ℕ Bool, μ.Computes (1 / 2) allTrue ∧ μ.depth = 0 :=
+  exists_computes_depth_zero_of_le le_rfl _
+
+example : allTrue (fun _ => true) = true ∧ allTrue (fun _ => false) = false := by
+  simp [allTrue]
 
 /-! ### Majority of three bits -/
 
@@ -82,7 +112,7 @@ private noncomputable def allEqual : StdSimplex ℝ (BitString 3) :=
 /-- **Randomness helps** (`R_{1/3}(MAJ₃) = 1 < D(MAJ₃) = 3`), hard distribution lower bound via
 Yao's principle, Nisan's general polynomial relations, `R(OR_n) ≥ n / 3` vs. `adeg(OR_n) = O(√n)`,
 and matching pennies minimax. -/
-example {n : ℕ} (ε : ℝ) (f : BooleanFunction n) (x : BitString n) :
+example {n : ℕ} (ε : ℝ≥0) (f : BooleanFunction n) (x : BitString n) :
     (randomizedComplexity (1 / 3) (majority 3) = 1 ∧
       DecisionTree.complexity (majority 3) = 3) ∧
     (1 ≤ distributionalComplexity (1 / 3) allEqual (majority 3) ∧
@@ -103,7 +133,7 @@ example {n : ℕ} (ε : ℝ) (f : BooleanFunction n) (x : BitString n) :
   refine ⟨?_, ?_,
     ⟨blockSensitivity_le_three_mul_randomizedComplexity f,
       approxDegree_le_randomizedComplexity _ f,
-      DecisionTree.randomizedComplexity_le_complexity (by norm_num) f,
+      DecisionTree.randomizedComplexity_le_complexity f,
       DecisionTree.complexity_le_mul_randomizedComplexity_pow_three f⟩,
     ⟨randomizedComplexity_zero f, randomizedComplexity_eq_zero_of_le le_rfl f⟩,
     ⟨by simpa [blockSensitivity_threshold_one_right] using
@@ -126,7 +156,7 @@ example {n : ℕ} (ε : ℝ) (f : BooleanFunction n) (x : BitString n) :
       exact h.trans (DecisionTree.degree_le_complexity _)
   · have h : 1 ≤ distributionalComplexity (1 / 3) allEqual (majority 3) := by
       obtain ⟨t, ht, hd⟩ := exists_distributionalError_le_depth_eq_distributionalComplexity
-        (by norm_num : (0 : ℝ) ≤ 1 / 3) allEqual (majority 3)
+        (ε := 1 / 3) allEqual (majority 3)
       rw [← hd]
       by_contra! h0
       cases t with

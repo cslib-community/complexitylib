@@ -16,6 +16,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime.Init
 
@@ -470,13 +472,13 @@ theorem advantage_elGamalMsgCPAGameOn_le {Msg : Type}
           (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n) := by
   rw [← F.ddhRealGame_elGamalMsgToDDHDistinguisher valid encodeMsg setup adversary false n,
     ← F.ddhRealGame_elGamalMsgToDDHDistinguisher valid encodeMsg setup adversary true n]
-  refine (Game.advantage_triangle _
-    (F.ddhIdealGame setup
-      (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n) _).trans ?_
-  rw [F.ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true valid encodeMsg setup adversary n
-      hsound,
-    Game.advantage_comm
-      (F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n)]
+  game_trans
+    [F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n,
+     F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n]
+    using [le_rfl,
+      F.ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true valid encodeMsg setup adversary n
+        hsound,
+      le_rfl]
 
 /-- `elGamalMsgToDDHDistinguisher` is uniform strict PPT whenever `valid` and `encodeMsg` are
 computable in polynomial time and `adversary` is uniform strict PPT. -/
@@ -559,11 +561,11 @@ theorem DDH.negligible_elGamalMsgCPAGameOn {F : PrimeOrderGroupFamily} {setup : 
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :
     Negligible fun n =>
       Game.advantage (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary false n)
-        (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary true n) :=
-  negligible_of_le
-    ((hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA false)).add
-      (hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA true)))
-    fun n => F.advantage_elGamalMsgCPAGameOn_le valid encodeMsg setup adversary n hsound
+        (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary true n) := by
+  have h₀ := hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA false)
+  have h₁ := hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA true)
+  negligible using fun n =>
+    F.advantage_elGamalMsgCPAGameOn_le valid encodeMsg setup adversary n hsound
 
 /-! ### Bit encryption and IND-CPA security under DDH -/
 
@@ -694,10 +696,9 @@ theorem isPPTOn_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
 theorem DDH.elGamalINDCPA {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
     (hDDH : F.DDH setup) : F.elGamalINDCPA setup := by
   intro adversary hA
-  exact negligible_of_le
-    ((hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA false)).add
-      (hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA true)))
-    (F.advantage_elGamalCPAGame_le setup adversary)
+  have h₀ := hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA false)
+  have h₁ := hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA true)
+  negligible using F.advantage_elGamalCPAGame_le setup adversary
 
 /-! ### Group-element ElGamal IND-CPA security under DDH -/
 
@@ -1150,43 +1151,18 @@ theorem advantage_hashedElGamalCPAGame_le (setup : ℕ → PMF F.Desc)
       Game.advantage
         (F.ddhRealGame setup (F.hashedElGamalToDDHDistinguisher H adversary true) n)
         (F.ddhIdealGame setup (F.hashedElGamalToDDHDistinguisher H adversary true) n) := by
-  have h1 := Game.advantage_triangle
-    (F.hashedElGamalCPAGame setup H adversary false n)
-    (F.hashedElGamalIdealDDHGame setup H adversary false n)
-    (F.hashedElGamalCPAGame setup H adversary true n)
-  have h2 := Game.advantage_triangle
-    (F.hashedElGamalIdealDDHGame setup H adversary false n)
-    (F.hashedElGamalUniformPadGame setup msgLen adversary false n)
-    (F.hashedElGamalCPAGame setup H adversary true n)
-  have h3 := Game.advantage_triangle
-    (F.hashedElGamalUniformPadGame setup msgLen adversary true n)
-    (F.hashedElGamalIdealDDHGame setup H adversary true n)
-    (F.hashedElGamalCPAGame setup H adversary true n)
-  rw [F.hashedElGamalUniformPadGame_false_eq_true setup msgLen adversary n] at h2
-  calc Game.advantage (F.hashedElGamalCPAGame setup H adversary false n)
-        (F.hashedElGamalCPAGame setup H adversary true n)
-      ≤ Game.advantage (F.hashedElGamalCPAGame setup H adversary false n)
-          (F.hashedElGamalIdealDDHGame setup H adversary false n) +
-        (Game.advantage (F.hashedElGamalIdealDDHGame setup H adversary false n)
-          (F.hashedElGamalUniformPadGame setup msgLen adversary true n) +
-        (Game.advantage
-          (F.hashedElGamalUniformPadGame setup msgLen adversary true n)
-          (F.hashedElGamalIdealDDHGame setup H adversary true n) +
-        Game.advantage
-          (F.hashedElGamalIdealDDHGame setup H adversary true n)
-          (F.hashedElGamalCPAGame setup H adversary true n))) :=
-        h1.trans (add_le_add le_rfl (h2.trans (add_le_add le_rfl h3)))
-    _ = _ := by
-        simp only [ddhRealGame_hashedElGamalToDDHDistinguisher,
-          ddhIdealGame_hashedElGamalToDDHDistinguisher,
-          kdfRealGame_hashedElGamalToKDFDistinguisher,
-          kdfIdealGame_hashedElGamalToKDFDistinguisher,
-          F.hashedElGamalUniformPadGame_false_eq_true setup msgLen adversary n,
-          Game.advantage_comm (F.hashedElGamalIdealDDHGame setup H adversary true n)
-            (F.hashedElGamalUniformPadGame setup msgLen adversary true n),
-          Game.advantage_comm (F.hashedElGamalCPAGame setup H adversary true n)
-            (F.hashedElGamalIdealDDHGame setup H adversary true n),
-          add_assoc]
+  simp only [ddhRealGame_hashedElGamalToDDHDistinguisher,
+    ddhIdealGame_hashedElGamalToDDHDistinguisher,
+    kdfRealGame_hashedElGamalToKDFDistinguisher,
+    kdfIdealGame_hashedElGamalToKDFDistinguisher]
+  game_trans
+    [F.hashedElGamalIdealDDHGame setup H adversary false n,
+     F.hashedElGamalUniformPadGame setup msgLen adversary false n,
+     F.hashedElGamalUniformPadGame setup msgLen adversary true n,
+     F.hashedElGamalIdealDDHGame setup H adversary true n]
+    using [le_rfl, le_rfl,
+      F.hashedElGamalUniformPadGame_false_eq_true setup msgLen adversary n,
+      le_rfl, le_rfl]
 
 /-- **Hashed ElGamal encryption is IND-CPA secure under DDH and `SecureKDF`**
 ([BonehShoup2023], Section 11.5.2, Theorem 11.5, pp. 449–451): when `H` is computable in
@@ -1200,12 +1176,11 @@ theorem DDH.negligible_hashedElGamalCPAGame {F : PrimeOrderGroupFamily} {setup :
     {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) :
     Negligible fun n =>
       Game.advantage (F.hashedElGamalCPAGame setup H adversary false n)
-        (F.hashedElGamalCPAGame setup H adversary true n) :=
-  negligible_of_le
-    ((((hDDH _ (F.isPPTOn_hashedElGamalToDDHDistinguisher hH hA false)).add
-      (hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA false))).add
-      (hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA true))).add
-      (hDDH _ (F.isPPTOn_hashedElGamalToDDHDistinguisher hH hA true)))
-    (F.advantage_hashedElGamalCPAGame_le setup H msgLen adversary)
+        (F.hashedElGamalCPAGame setup H adversary true n) := by
+  have hddh₀ := hDDH _ (F.isPPTOn_hashedElGamalToDDHDistinguisher hH hA false)
+  have hkdf₀ := hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA false)
+  have hkdf₁ := hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA true)
+  have hddh₁ := hDDH _ (F.isPPTOn_hashedElGamalToDDHDistinguisher hH hA true)
+  negligible using F.advantage_hashedElGamalCPAGame_le setup H msgLen adversary
 
 end Cslib.Crypto.PrimeOrderGroupFamily

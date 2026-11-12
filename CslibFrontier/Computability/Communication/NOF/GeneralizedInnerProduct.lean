@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Communication.NOF.Cube
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Matrix.Mul
+import CslibFrontier.Foundations.Data.BitString.Sign.BigOperators
 import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Foundations.Data.Finset.ExpectPi
 import Mathlib.Analysis.Complex.Exponential
@@ -86,30 +87,6 @@ theorem gip_fin_two {n : ℕ} (x : Fin 2 → BitString n) : gip x = x 0 ⬝ᵥ x
   simp only [gip, Fin.prod_univ_two, dotProduct]
 
 end Cslib.Communication.NOF
-
-namespace Cslib.BitString
-
-open Finset
-
-/-- The sign of a sum in the two-element Boolean ring is the product of the signs. -/
-theorem signVal_sum {α : Type*} (s : Finset α) (f : α → Bool) :
-    signVal (∑ a ∈ s, f a) = ∏ a ∈ s, signVal (f a) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => rw [sum_empty, prod_empty]; rfl
-  | insert a s ha ih => rw [sum_insert ha, prod_insert ha, Bool.add_eq_xor, signVal_xor, ih]
-
-/-- Reading a product of bits as a real number gives the product of the readings. -/
-theorem bitVal_prod {α : Type*} (s : Finset α) (f : α → Bool) :
-    bitVal ℝ (∏ a ∈ s, f a) = ∏ a ∈ s, bitVal ℝ (f a) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => rw [prod_empty, prod_empty]; rfl
-  | insert a s ha ih =>
-    rw [prod_insert ha, prod_insert ha, ← ih, Bool.mul_eq_and]
-    cases f a <;> simp
-
-end Cslib.BitString
 
 namespace Cslib.Communication.NOF
 

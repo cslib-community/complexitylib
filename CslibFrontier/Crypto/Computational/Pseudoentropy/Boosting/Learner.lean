@@ -14,6 +14,8 @@ import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Probability.PMF.EventBind
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Learning a predictor from sampled descriptions

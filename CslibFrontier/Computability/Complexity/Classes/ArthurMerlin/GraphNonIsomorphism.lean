@@ -326,12 +326,12 @@ theorem check_eq_true_iff {n E : ℕ} {adj : Bool → ℕ → ℕ → Bool} {u v
 /-- The test of the protocol for graph non-isomorphism, with elements of `N(L)` bits, `L` the
 length of the encoded pair of graphs: graphs with different numbers of distinct vertices pass, and
 otherwise the element and the certificate must pass `check`. -/
-def test (N : Polynomial ℕ) (x : (Graph × Graph) × List Bool) : Bool :=
-  decide (x.1.2.distinctVertices.length ≠ x.1.1.distinctVertices.length) ||
-    check x.1.1.distinctVertices.length (N.eval (encPair encGraph encGraph x.1).length)
-      (fun b i j => if b then x.1.2.adjIndex i j else x.1.1.adjIndex i j)
-      (x.2.take (N.eval (encPair encGraph encGraph x.1).length))
-      (x.2.drop (N.eval (encPair encGraph encGraph x.1).length))
+def test (N : Polynomial ℕ) (x : GraphIsomorphismInstance × List Bool) : Bool :=
+  decide (x.1.second.distinctVertices.length ≠ x.1.first.distinctVertices.length) ||
+    check x.1.first.distinctVertices.length (N.eval (encGraphIsomorphism x.1).length)
+      (fun b i j => if b then x.1.second.adjIndex i j else x.1.first.adjIndex i j)
+      (x.2.take (N.eval (encGraphIsomorphism x.1).length))
+      (x.2.drop (N.eval (encGraphIsomorphism x.1).length))
 
 private theorem computableInPolyTime_check {γ : Type} {input : γ ↪ List Bool}
     {n E : γ → ℕ} {adj : γ → Bool → ℕ → ℕ → Bool} {u v : γ → List Bool}
@@ -392,31 +392,35 @@ private theorem computableInPolyTime_check {γ : Type} {input : γ ↪ List Bool
 /-- The test is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_test (N : Polynomial ℕ) :
-    ComputableInPolyTime (test N) (encPair (encPair encGraph encGraph) encBits) encBool := by
-  let encX := encPair (encPair encGraph encGraph) encBits
-  have hg₁ : ComputableInPolyTime (fun x : (Graph × Graph) × List Bool => x.1.1) encX encGraph :=
-    (ComputableInPolyTime.fst encGraph encGraph).comp (.fst _ encBits)
-  have hg₂ : ComputableInPolyTime (fun x : (Graph × Graph) × List Bool => x.1.2) encX encGraph :=
-    (ComputableInPolyTime.snd encGraph encGraph).comp (.fst _ encBits)
+    ComputableInPolyTime (test N) (encPair encGraphIsomorphism encBits) encBool := by
+  let encX := encPair encGraphIsomorphism encBits
+  have hg₁ : ComputableInPolyTime (fun x : GraphIsomorphismInstance × List Bool => x.1.first)
+      encX encGraph := by
+    fun_prop
+  have hg₂ : ComputableInPolyTime (fun x : GraphIsomorphismInstance × List Bool => x.1.second)
+      encX encGraph := by
+    fun_prop
   have hn₁ : ComputableInPolyTime
-      (fun x : (Graph × Graph) × List Bool => x.1.1.distinctVertices.length) encX encUnary :=
+      (fun x : GraphIsomorphismInstance × List Bool => x.1.first.distinctVertices.length)
+      encX encUnary :=
     (ComputableInPolyTime.length_list encNat).comp
       (Graph.computableInPolyTime_distinctVertices.comp hg₁)
   have hn₂ : ComputableInPolyTime
-      (fun x : (Graph × Graph) × List Bool => x.1.2.distinctVertices.length) encX encUnary :=
+      (fun x : GraphIsomorphismInstance × List Bool => x.1.second.distinctVertices.length)
+      encX encUnary :=
     (ComputableInPolyTime.length_list encNat).comp
       (Graph.computableInPolyTime_distinctVertices.comp hg₂)
   have hE : ComputableInPolyTime
-      (fun x : (Graph × Graph) × List Bool => N.eval (encPair encGraph encGraph x.1).length)
+      (fun x : GraphIsomorphismInstance × List Bool => N.eval (encGraphIsomorphism x.1).length)
       encX encUnary :=
     (ComputableInPolyTime.unary_eval N).comp
-      ((ComputableInPolyTime.encoding_length (encPair encGraph encGraph)).comp (.fst _ encBits))
+      ((ComputableInPolyTime.encoding_length encGraphIsomorphism).comp (.fst _ encBits))
   unfold test
   exact (hn₂.decide_ne hn₁).bool_or'
     (computableInPolyTime_check hn₁ hE
       (fun hg hb hi hj => hb.ite
-        (Graph.computableInPolyTime_adjIndex hg.fst'.snd' hi hj)
-        (Graph.computableInPolyTime_adjIndex hg.fst'.fst' hi hj))
+        (Graph.computableInPolyTime_adjIndex (by fun_prop) hi hj)
+        (Graph.computableInPolyTime_adjIndex (by fun_prop) hi hj))
       (ComputableInPolyTime.bitsTakeWithInput (.snd _ encBits) hE)
       (ComputableInPolyTime.bitsDropWithInput (.snd _ encBits) hE))
 
@@ -566,7 +570,7 @@ open PublicCoin
 the second, on positions, is a relabelling of that of the first. -/
 theorem mem_GraphIsomorphism_iff_mem_orbit {G₀ G₁ : Graph}
     (h : G₁.distinctVertices.length = G₀.distinctVertices.length) :
-    (G₀, G₁) ∈ GraphIsomorphism ↔
+    (⟨G₀, G₁⟩ : GraphIsomorphismInstance) ∈ GraphIsomorphism ↔
       (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₁.adjIndex i j) ∈
         orbit (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₀.adjIndex i j) := by
   rw [mem_GraphIsomorphism_iff_exists_perm h, mem_orbit]
@@ -578,10 +582,11 @@ theorem mem_GraphIsomorphism_iff_mem_orbit {G₀ G₁ : Graph}
 pair's length. -/
 private theorem length_distinctVertices_mul_le (G₀ G₁ : Graph) :
     G₀.distinctVertices.length * G₀.distinctVertices.length ≤
-      (encPair encGraph encGraph (G₀, G₁)).length ^ 2 := by
+      (encGraphIsomorphism ⟨G₀, G₁⟩).length ^ 2 := by
   -- the lengths
   have := G₀.length_distinctVertices_le
-  have : G₀.distinctVertices.length ≤ (encPair encGraph encGraph (G₀, G₁)).length := by
+  have : G₀.distinctVertices.length ≤ (encGraphIsomorphism ⟨G₀, G₁⟩).length := by
+    rw [encGraphIsomorphism_apply]
     grind [length_encPair]
   nlinarith
 
@@ -589,17 +594,17 @@ private theorem length_distinctVertices_mul_le (G₀ G₁ : Graph) :
 union of the two `pairs` sets. -/
 private theorem card_certifiedSet_eq_card_pairs_union {G₀ G₁ : Graph}
     (h : G₁.distinctVertices.length = G₀.distinctVertices.length) :
-    #(certifiedSet (encPair encGraph encGraph) (2 * Polynomial.X ^ 2 + 1)
-        (Polynomial.X ^ 2 + 1) (test (2 * Polynomial.X ^ 2 + 1)) (G₀, G₁)) =
+    #(certifiedSet encGraphIsomorphism (2 * Polynomial.X ^ 2 + 1)
+        (Polynomial.X ^ 2 + 1) (test (2 * Polynomial.X ^ 2 + 1)) ⟨G₀, G₁⟩) =
       #(pairs (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₀.adjIndex i j) ∪
         pairs (Matrix.of fun i j : Fin G₀.distinctVertices.length => G₁.adjIndex i j)) := by
   -- with equally many vertices, the certified set has `n!` or `2 n!` elements
   set N : Polynomial ℕ := 2 * Polynomial.X ^ 2 + 1
   set c : Polynomial ℕ := Polynomial.X ^ 2 + 1
-  have hset : certifiedSet (encPair encGraph encGraph) N c (test N) (G₀, G₁) =
-      univ.filter fun x : BitString (N.eval (encPair encGraph encGraph (G₀, G₁)).length) =>
-        ∃ z : BitString (c.eval (encPair encGraph encGraph (G₀, G₁)).length),
-          check G₀.distinctVertices.length (N.eval (encPair encGraph encGraph (G₀, G₁)).length)
+  have hset : certifiedSet encGraphIsomorphism N c (test N) ⟨G₀, G₁⟩ =
+      univ.filter fun x : BitString (N.eval (encGraphIsomorphism ⟨G₀, G₁⟩).length) =>
+        ∃ z : BitString (c.eval (encGraphIsomorphism ⟨G₀, G₁⟩).length),
+          check G₀.distinctVertices.length (N.eval (encGraphIsomorphism ⟨G₀, G₁⟩).length)
             (fun b i j => if b then G₁.adjIndex i j else G₀.adjIndex i j)
             (List.ofFn x) (List.ofFn z) = true := by
     refine filter_congr fun x _ => exists_congr fun z => ?_
@@ -617,17 +622,16 @@ private theorem card_certifiedSet_eq_card_pairs_union {G₀ G₁ : Graph}
 [Arora and Barak, Section 8.2][AroraBarak09]: the set lower bound protocol applied to the pairs
 of a relabelling of one of the graphs and an automorphism of it, which are `2 n!` many for
 non-isomorphic graphs with `n` distinct vertices each and `n!` many for isomorphic graphs. -/
-theorem mem_AM : GraphNonIsomorphism ∈ AM (encPair encGraph encGraph) := by
+theorem mem_AM : GraphNonIsomorphism ∈ AM encGraphIsomorphism := by
   set N : Polynomial ℕ := 2 * Polynomial.X ^ 2 + 1 with hN
   set c : Polynomial ℕ := Polynomial.X ^ 2 + 1 with hc
   have hK : ComputableInPolyTime
-      (fun a : Graph × Graph => 2 * a.1.distinctVertices.length.factorial)
-      (encPair encGraph encGraph) encNat :=
+      (fun a : GraphIsomorphismInstance => 2 * a.first.distinctVertices.length.factorial)
+      encGraphIsomorphism encNat :=
     (ComputableInPolyTime.const 2).binary_mul'
       (ComputableInPolyTime.binary_factorial.comp
         ((ComputableInPolyTime.length_list encNat).comp
-          (Graph.computableInPolyTime_distinctVertices.comp
-            (ComputableInPolyTime.fst encGraph encGraph))))
+          (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))))
   refine mem_AM_of_card_certifiedSet (N := N) (c := c) (R := test N)
     (computableInPolyTime_test N) hK (fun a => by positivity) (fun a ha => ?_)
     fun a ha => ?_
@@ -637,22 +641,22 @@ theorem mem_AM : GraphNonIsomorphism ∈ AM (encPair encGraph encGraph) := by
     · rw [card_certifiedSet_eq_card_pairs_union h, card_pairs_union,
         ite_eq_right fun hmem => ha ((mem_GraphIsomorphism_iff_mem_orbit h).2 hmem)]
     · -- with different numbers of vertices, every string is certified
-      have hset : certifiedSet (encPair encGraph encGraph) N c (test N) (G₀, G₁) = univ := by
+      have hset : certifiedSet encGraphIsomorphism N c (test N) ⟨G₀, G₁⟩ = univ := by
         refine filter_true_of_mem fun x _ => ⟨fun _ => false, ?_⟩
         simp only [test, h, ne_eq, not_false_eq_true, decide_true, Bool.true_or]
       have hlen' := length_distinctVertices_mul_le G₀ G₁
-      rw [hset, card_univ, BitString.card, show N.eval (encPair encGraph encGraph (G₀, G₁)).length =
-        2 * (encPair encGraph encGraph (G₀, G₁)).length ^ 2 + 1 by
+      rw [hset, card_univ, BitString.card, show N.eval (encGraphIsomorphism ⟨G₀, G₁⟩).length =
+        2 * (encGraphIsomorphism ⟨G₀, G₁⟩).length ^ 2 + 1 by
           simp only [hN, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
             Polynomial.eval_X, Polynomial.eval_one, Polynomial.eval_ofNat], pow_succ]
       have hfac : G₀.distinctVertices.length.factorial ≤
-          2 ^ (2 * (encPair encGraph encGraph (G₀, G₁)).length ^ 2) :=
+          2 ^ (2 * (encGraphIsomorphism ⟨G₀, G₁⟩).length ^ 2) :=
         (Nat.factorial_le_pow _).trans
           (((Nat.pow_le_pow_left (Nat.lt_two_pow_self).le _).trans_eq (by rw [← pow_mul])).trans
             (Nat.pow_le_pow_right (by norm_num) (by omega)))
       omega
   · obtain ⟨G₀, G₁⟩ := a
-    have hiso : (G₀, G₁) ∈ GraphIsomorphism := not_not.1 ha
+    have hiso : (⟨G₀, G₁⟩ : GraphIsomorphismInstance) ∈ GraphIsomorphism := not_not.1 ha
     have h := length_distinctVertices_eq_of_mem_GraphIsomorphism hiso
     rw [card_certifiedSet_eq_card_pairs_union h, card_pairs_union,
       ite_eq_left ((mem_GraphIsomorphism_iff_mem_orbit h).1 hiso)]
@@ -660,7 +664,7 @@ theorem mem_AM : GraphNonIsomorphism ∈ AM (encPair encGraph encGraph) := by
 /-- **Graph isomorphism is in `coNP/poly`**: graph non-isomorphism is in `AM`, which is contained
 in `NP/poly` (`Cslib.Complexity.AM_subset_NPPoly`). -/
 theorem GraphIsomorphism_mem_coNPPoly :
-    GraphIsomorphism ∈ coNPPoly (encPair encGraph encGraph) :=
+    GraphIsomorphism ∈ coNPPoly encGraphIsomorphism :=
   AM_subset_NPPoly mem_AM
 
 end GraphNonIsomorphism

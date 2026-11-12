@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.UniversalHash
 public import CslibFrontier.Probability.EntropyConcentration
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Extracting from concentrated conditional entropy

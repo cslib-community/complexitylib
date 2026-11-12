@@ -133,26 +133,9 @@ theorem etimeBoundedComplexity_le_of_dens (I : ReconstructionDecoder M D C (fun 
     (hm : 0 < m) {δ : ℝ} (hC : C.ListDecodes (1 / 2 - δ / m)) {x : α}
     (hδ : δ ≤ dens {y | test y = true})
     (havoid : ∀ z, test (generator D (C.encode x) z) = false) :
-    M.etimeBoundedComplexity t x ≤ (m * 2 ^ a + Nat.clog 2 m + Nat.clog 2 L + c : ℕ) := by
-  refine I.etimeBoundedComplexity_le hm hC ?_
-  rw [Generator.toReal_realExperiment_pure, Generator.toReal_idealExperiment_pure]
-  have hreal : ({z | (!test (generator D (C.encode x) z)) = true} : Finset (Fin ℓ → Bool)) =
-      univ := by
-    ext z
-    simp [havoid z]
-  have hsplit := dens_filter_add_dens_filter_not_eq_dens (s := (univ : Finset (Fin m → Bool)))
-    fun y => test y = true
-  simp only [Bool.not_eq_true, dens_univ] at hsplit
-  have hneg : ({y | (!test y) = true} : Finset (Fin m → Bool)) =
-      ({y | test y = false} : Finset (Fin m → Bool)) := by
-    ext y
-    simp
-  rw [hreal, dens_univ, hneg]
-  have hcast : (dens {y : Fin m → Bool | test y = true} : ℝ) +
-      dens {y : Fin m → Bool | test y = false} = 1 := by
-    exact_mod_cast hsplit
-  rw [NNRat.cast_one]
-  linarith
+    M.etimeBoundedComplexity t x ≤ (m * 2 ^ a + Nat.clog 2 m + Nat.clog 2 L + c : ℕ) :=
+  I.etimeBoundedComplexity_le hm hC <| hδ.trans_eq
+    (Generator.toReal_realExperiment_sub_toReal_idealExperiment_not _ havoid).symm
 
 /-- **Short descriptions from tests for random strings** [Hirahara2018]. Let `N` be a description
 method for `m`-bit strings, and let the deterministic test `test` accept at least a `δ` fraction

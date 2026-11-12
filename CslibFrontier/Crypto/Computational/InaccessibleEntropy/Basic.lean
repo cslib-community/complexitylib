@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Negligible
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Probability.Entropy
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Uniform
 
@@ -199,9 +200,7 @@ private theorem sub_div_le_logb_sub {a b : ℝ} (ha : 1 ≤ a) (hab : a ≤ b) :
   have hlog : Real.log (1 - α) ≤ -α := by
     simpa only [Real.log_exp] using Real.log_le_log h1_pos hexp
   have hlog2_pos : 0 < Real.log 2 := Real.log_pos (by norm_num)
-  have hlog2_le_one : Real.log 2 ≤ 1 := by
-    have h2 : (2 : ℝ) ≤ Real.exp 1 := by linarith [Real.add_one_le_exp (1 : ℝ)]
-    simpa only [Real.log_exp] using Real.log_le_log (by norm_num) h2
+  have hlog2_le_one : Real.log 2 ≤ 1 := Real.log_two_lt_one.le
   have hdiv : α ≤ -Real.log (1 - α) / Real.log 2 := by
     rw [le_div_iff₀ hlog2_pos]
     nlinarith

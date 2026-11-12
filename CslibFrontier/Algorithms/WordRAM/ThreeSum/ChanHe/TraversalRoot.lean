@@ -102,67 +102,27 @@ theorem root_exec {a : Arena} {w : ℕ} (e : Entry) (ns : List (ℕ × Node)) (x
     initializeRoot_exec x e h.bounded h.controls h.loaded h2 hcap (by
       have := ha.2.2.2
       omega)
-  have breg (i : Fin 128) (hi : i.val < 96) : b.regs i = x.regs i := hbr i (Or.inl hi)
-  have bframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : b.mem q = x.mem q := by
-    apply hframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    omega
+  obtain ⟨bheap, bcount, -, bframe, -, bstored, bends, bbitmap, bfloor⟩ :=
+    Arena.preserved_of_stack_frame (es := [e]) x b ha h.controls h.bitmap
+      (List.forall_mem_singleton.mpr h.stored) (List.forall_mem_singleton.mpr h.around)
+      (List.forall_mem_singleton.mpr h.ends) h.floor hframe (fun _ _ hi => hbr _ (Or.inl hi))
   let s : Cursor := ⟨[e], ns⟩
   have work : s.work = Math.work e.fuel := by
     simp only [s, Cursor.work, List.map_cons, List.map_nil, Math.potential, List.sum_cons,
       List.sum_nil, Nat.add_zero, Entry.task]
-  have gap : a.capacity ≤ a.floor - a.stack := by
-    have ht := ha.2.1
-    have hg := ha.2.2.1
-    omega
   have hi : s.Invariant a w
       (ns.map Prod.snd ++ e.task.output (Nat.primesLE a.m) a.Λ) b := by
-    refine ⟨hinit.bounded h.bounded, bcontrols, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-      ?_, ?_, ?_, ?_, ?_⟩
-    · intro q hq
-      rw [bframe _ (Or.inl (by have := ha.1; omega))]
-      exact h.bitmap q hq
+    refine ⟨hinit.bounded h.bounded, bcontrols, bbitmap, ?_,
+      h.fuel ▸ Math.bounded_singleton e.task, List.forall_mem_singleton.mpr h.valid, bstored,
+      List.forall_mem_singleton.mpr h.around, bends, bfloor, ?_, bcount.trans h.count,
+      work.symm ▸ h.tableBudget, h.output.of_arena_frame ha (fun i => (h.outputBounds i).1) hframe,
+      fun i => bheap ▸ h.outputBounds i, ?_,
+      fun q hq => (bframe q (Or.inl hq)).trans (h.protectedMemory q hq)⟩
     · simpa only [s, List.flatMap_cons, List.flatMap_nil, List.append_nil] using hstack
-    · rw [← h.fuel]
-      exact Math.bounded_singleton e.task
-    · intro d hd
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      exact he ▸ h.valid
-    · intro d hd
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      subst d
-      exact h.stored.of_stack_frame (h.around.mono_capacity gap) hframe
-    · intro d hd
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      exact he ▸ h.around
-    · intro d hd j
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      subst d
-      rw [breg heap (by decide)]
-      exact h.ends j
-    · rw [breg heap (by decide)]
-      exact h.floor
-    · rw [breg heap (by decide), work]
+    · rw [bheap, work]
       exact h.heapBudget
-    · exact (breg outputCount (by decide)).trans h.count
-    · rw [work]
-      exact h.tableBudget
-    · apply h.output.congr
-      · intro q hq _
-        exact bframe q (Or.inr (by have := ha.2.1; omega))
-      · intro i u _
-        exact bframe _ (Or.inr (by
-          have hp' := (h.outputBounds i).1
-          have ht := ha.2.1
-          have hg := ha.2.2.1
-          omega))
-    · intro i
-      rw [breg heap (by decide)]
-      exact h.outputBounds i
     · simp only [s, List.map_cons, List.map_nil, Math.output, List.flatMap_cons,
         List.flatMap_nil, List.append_nil]
-    · intro q hq
-      exact (bframe q (Or.inl hq)).trans (h.protectedMemory q hq)
   obtain ⟨out, y, he, hfinal, hout⟩ := loop_exec ha hw h2 hcap s b hi
   have hexec : ExecWithin (w + 2) oneRoot x y (rootTime e.fuel a.n a.m a.N) := by
     have hc := ExecWithin.seq_assoc.mp (hinit.within.seq he)

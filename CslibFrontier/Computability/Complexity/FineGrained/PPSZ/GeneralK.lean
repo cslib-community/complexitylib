@@ -624,10 +624,8 @@ theorem round_success_unique_limit (hk : 2 ≤ k) :
         ((round φ w) fun x => some (σ x)).toReal := by
   intro ε hε
   obtain ⟨h, hh⟩ := exists_le_qbar hk hε
-  refine ⟨∑ i ∈ Finset.range h, (k - 1) ^ i, fun n φ σ hσ huniq hlen => ?_⟩
-  refine le_trans ?_ (round_success_of_unique hσ huniq hlen le_rfl)
-  exact Real.rpow_le_rpow_of_exponent_le one_le_two
-    (neg_le_neg (mul_le_mul_of_nonneg_right (by linarith) (Nat.cast_nonneg n)))
+  exact ⟨∑ i ∈ Finset.range h, (k - 1) ^ i, fun n φ σ hσ huniq hlen =>
+    (two_rpow_neg_mul_le n (by linarith)).trans (round_success_of_unique hσ huniq hlen le_rfl)⟩
 
 /-! ### The case `k = 3` -/
 

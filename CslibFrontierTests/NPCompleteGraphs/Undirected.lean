@@ -20,8 +20,7 @@ open Cslib.Complexity Turing.MultiTapeTM
 
 /-! ### Polynomial-time reductions -/
 
-example : PolyTimeReducible (encPair encGraph (encPair encNat encNat))
-    (encPair encGraph (encPair encNat encNat)) DirHamPathᶜ HamPathᶜ :=
+example : PolyTimeReducible encPathInstance encPathInstance DirHamPathᶜ HamPathᶜ :=
   polyTimeReducible_DirHamPath_HamPath.compl
 
 example : PolyTimeReducible encGraph encGraph DirHamCycleᶜ HamCycleᶜ :=
@@ -29,8 +28,7 @@ example : PolyTimeReducible encGraph encGraph DirHamCycleᶜ HamCycleᶜ :=
 
 example : ComputableInPolyTime Graph.split encGraph encGraph := by fun_prop
 
-example : ComputableInPolyTime DirHamPath.toHamPath
-    (encPair encGraph (encPair encNat encNat)) (encPair encGraph (encPair encNat encNat)) := by
+example : ComputableInPolyTime DirHamPath.toHamPath encPathInstance encPathInstance := by
   fun_prop
 
 -- Certificates compose: splitting twice is polynomial-time.
@@ -61,17 +59,18 @@ example : Graph.splitVertex ([0, 1], []) 9 0 ∉ (Graph.split ([0, 1], [])).1 :=
 
 private def path3 : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
 
-private theorem path3_mem_DirHamPath : (path3, 0, 2) ∈ DirHamPath :=
+private theorem path3_mem_DirHamPath : (⟨path3, 0, 2⟩ : PathInstance) ∈ DirHamPath :=
   ⟨[0, 1, 2], by decide, fun _ => Iff.rfl, rfl, rfl, by decide⟩
 
-example : (path3.split, path3.splitVertex 0 0, path3.splitVertex 2 2) ∈ HamPath :=
+example : (⟨path3.split, path3.splitVertex 0 0, path3.splitVertex 2 2⟩ : PathInstance) ∈ HamPath :=
   (Graph.split_mem_HamPath_iff _ _ _).2 path3_mem_DirHamPath
 
-example : DirHamPath.toHamPath (path3, 0, 2) ∈ HamPath :=
+example : DirHamPath.toHamPath ⟨path3, 0, 2⟩ ∈ HamPath :=
   (DirHamPath.toHamPath_mem_iff _).2 path3_mem_DirHamPath
 
 -- The path cannot be traversed backwards: `2` has no outgoing arc.
-example : (path3.split, path3.splitVertex 2 0, path3.splitVertex 0 2) ∉ HamPath := by
+example : (⟨path3.split, path3.splitVertex 2 0, path3.splitVertex 0 2⟩ : PathInstance) ∉
+    HamPath := by
   rw [Graph.split_mem_HamPath_iff]
   rintro ⟨p, -, hcov, hs, -, hch⟩
   obtain ⟨l, rfl⟩ := List.head?_eq_some_iff.1 hs
@@ -81,14 +80,15 @@ example : (path3.split, path3.splitVertex 2 0, path3.splitVertex 0 2) ∉ HamPat
     simp [path3] at this
 
 -- An undeclared start vertex makes both instances negative.
-example : (path3.split, path3.splitVertex 7 0, path3.splitVertex 2 2) ∉ HamPath := by
+example : (⟨path3.split, path3.splitVertex 7 0, path3.splitVertex 2 2⟩ : PathInstance) ∉
+    HamPath := by
   rw [Graph.split_mem_HamPath_iff]
   rintro ⟨p, -, hcov, hs, -⟩
   simpa [path3] using (hcov 7).1 (List.mem_of_head? hs)
 
 -- `s = t` in a one-vertex graph: the path `in(0) - mid(0) - out(0)`.
-example : (Graph.split ([0], []), Graph.splitVertex ([0], []) 0 0,
-    Graph.splitVertex ([0], []) 0 2) ∈ HamPath :=
+example : (⟨Graph.split ([0], []), Graph.splitVertex ([0], []) 0 0,
+    Graph.splitVertex ([0], []) 0 2⟩ : PathInstance) ∈ HamPath :=
   (Graph.split_mem_HamPath_iff _ _ _).2 ⟨[0], by decide, fun _ => Iff.rfl, rfl, rfl, by decide⟩
 
 /-! ### Hamiltonian cycles -/

@@ -12,6 +12,7 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
+import CslibFrontier.Foundations.Data.List.Sort
 import CslibFrontier.Tactic.Realize
 
 /-!
@@ -983,17 +984,17 @@ theorem clientState_scanStepReads (t : Memory.State) (x : ClusterInput × (ℕ �
 /-- Update `(s₀, s)` during one step of `scanLoopProg`. -/
 @[expose] def scanStepTargetProg
     (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × (ℕ × ℕ)))) : Memory.Prog (ℕ × ℕ) :=
-  if x.1.1 < x.2.1.1 + 1 then
+  if x.1.1 ≤ x.2.1.1 then
     pure (x.2.2.2.1 + 1, x.2.2.2.2 + 1)
-  else if x.1.1 < x.2.1.2 + 1 then
+  else if x.1.1 ≤ x.2.1.2 then
     if x.1.2 < x.2.2.1 then pure (x.2.2.2.1, x.2.2.2.2 + 1) else pure (x.2.2.2.1, x.2.2.2.2)
   else
     pure (x.2.2.2.1, x.2.2.2.2)
 
 theorem realizes_scanStepTarget :
     Realizes .exact scanStepTargetProg WordEncoding.encode WordEncoding.encode
-      (fun w x _ => x.2.1.1 + 1 < 2 ^ w ∧ x.2.1.2 + 1 < 2 ^ w ∧
-        x.2.2.2.1 + 1 < 2 ^ w ∧ x.2.2.2.2 + 1 < 2 ^ w) (fun _ _ => 0) := by
+      (fun w x _ => x.2.2.2.1 + 1 < 2 ^ w ∧ x.2.2.2.2 + 1 < 2 ^ w)
+      (fun _ _ => 0) := by
   realize <;> {
     dsimp only [Fits] at h ⊢
     omega
@@ -1044,18 +1045,16 @@ theorem clientState_scanStepStop (t : Memory.State)
 /-- Update `qFound` (`queryAnyPrefix`) during one step of `scanLoopProg`. -/
 @[expose] def scanStepQueryProg (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) : Memory.Prog ℕ :=
   if x.2.1.1 < x.1.1 then
-    if x.1.1 < x.2.1.2 + 1 then
+    if x.1.1 ≤ x.2.1.2 then
       if x.1.2 = x.2.2.1 then pure 1 else pure x.2.2.2
     else pure x.2.2.2
   else pure x.2.2.2
 
 theorem realizes_scanStepQuery :
     Realizes .exact scanStepQueryProg WordEncoding.encode WordEncoding.encode
-      (fun w x _ => 1 < 2 ^ w ∧ x.2.1.2 + 1 < 2 ^ w) (fun _ _ => 0) := by
-  realize <;> {
-    dsimp only [Fits] at h ⊢
-    omega
-  }
+      (fun w _ _ => 1 < 2 ^ w) (fun _ _ => 0) := by
+  realize
+  exact h
 
 theorem clientResult_scanStepQuery (t : Memory.State)
     (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
@@ -3365,7 +3364,7 @@ theorem FilterInv.calcTargetSlot_lt_calcDeleteStop_of_mem {U b f n : ℕ}
   have hr_mem : rem u ∈ bucketRun S quot rem (probeSlot b o a) :=
     (mem_bucketRun_iff S quot rem _ (rem u)).mpr ⟨u, hu, hq_probe, rfl⟩
   have hpw := pairwise_le_bucketRun S quot rem (probeSlot b o a)
-  have her := erase_eq_take_append_drop_of_pairwise hpw hr_mem
+  have her := hpw.erase_eq_take_append_drop hr_mem
   have hcnt_lt :
       (bucketRun S quot rem (probeSlot b o a)).countP (· < rem u) <
         (bucketRun S quot rem (probeSlot b o a)).length := by

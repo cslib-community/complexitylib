@@ -11,8 +11,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from build_operator_manual import main as build_main
 from check_operator_manual import (MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR, book_input_errors,
-                                   check, comment_depths, source_anchor_error)
+                                   check, comment_depths, fix_anchors, main as check_main,
+                                   source_anchor_error)
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -83,6 +85,34 @@ class ManualChecks(unittest.TestCase):
 
     def test_current_checkout_needs_no_git_or_historical_revision(self):
         self.assertEqual(self.errors(), [])
+
+    def test_merge_conflicts_report_document_and_opening_line(self):
+        original = self.doc.read_text()
+        for body in (
+                "<<<<<<< HEAD\nOld scope.\n=======\nNew scope.\n>>>>>>> feature\n",
+                "<<<<<<< HEAD\n[paper]: https://example.org/old\n=======\n"
+                "[paper]: https://example.org/new\n>>>>>>> feature\n",
+                "<<<<<<< ours\nOurs.\n||||||| base\nOriginal.\n=======\nTheirs.\n>>>>>>> theirs\n",
+                "  <<<<<<<<<\nOurs.\n=========\nTheirs.\n  >>>>>>>>>\n",
+                "<<<<<<< HEAD\nUnfinished resolution.\n"):
+            with self.subTest(body=body):
+                self.doc.write_text(original + "\n" + body)
+                line = len(original.splitlines()) + 2
+                self.assertIn(f"workflows/first.md: Line {line}: unresolved Git merge conflict",
+                              self.errors())
+
+    def test_pdf_entry_point_rejects_conflicts_before_rendering(self):
+        self.doc.write_text(self.doc.read_text() +
+                            "\n<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n")
+        for option in ("--tex-only", "--agent-manual"):
+            with self.subTest(option=option), mock.patch("build_operator_manual.ROOT", self.repo), \
+                    mock.patch.object(sys, "argv", ["build_operator_manual.py", option]), \
+                    mock.patch("build_operator_manual.subprocess.run") as render, \
+                    contextlib.redirect_stderr(io.StringIO()) as diagnostics:
+                self.assertEqual(build_main(), 1)
+                self.assertIn("workflows/first.md: Line", diagnostics.getvalue())
+                self.assertIn("unresolved Git merge conflict", diagnostics.getvalue())
+                render.assert_not_called()
 
     def test_source_relocation_is_allowed(self):
         self.client.write_text("-- inserted before the original source\n\n" + self.client.read_text())
@@ -275,6 +305,85 @@ class ManualChecks(unittest.TestCase):
             self.assertEqual(result["allowed_stale_source_anchors"], [f"{entry[0]}#L{line}"])
             self.assertEqual(result["unused_stale_source_anchor_entries"], [])
 
+    def test_fix_anchors_repoints_drifted_named_links_and_preserves_syntax(self):
+        (self.repo / "CslibFrontierTests/Anchored.lean").write_text(ANCHORED_SOURCE)
+        lines = ANCHORED_SOURCE.splitlines()
+        at = {text: lines.index(text) + 1 for text in (
+            "/-- A documented definition. -/", "@[simp] theorem one_eq : one = 1 := rfl",
+            "private noncomputable def two : Nat :=", "  2",
+            "/-- Prose that happens to start a line with a keyword:",
+            "theorem in a docstring is not a declaration. -/", "def three : Nat := 3")}
+        url = "../../CslibFrontierTests/Anchored.lean#L{}"
+        doc_lines = [
+            f"[Anchored.one]({url.format(at['def three : Nat := 3'])})",
+            f"[Pair]({url.format(at['theorem in a docstring is not a declaration. -/'])})",
+            f"[`one_eq`]({url.format(9999)})",
+            f"[one](<{url.format(at['  2'])}>) and [two]({url.format(at['  2'])} \"sec\")",
+        ]
+        self.doc.write_text(self.doc.read_text() + "\n" + "\n".join(doc_lines) + "\n")
+        self.assertEqual(len(self.errors()), 5)
+        fixes = fix_anchors(self.repo)
+        self.assertEqual([f["new"] for f in fixes], [
+            f"L{at['/-- A documented definition. -/']}",
+            f"L{at['/-- Prose that happens to start a line with a keyword:']}",
+            f"L{at['@[simp] theorem one_eq : one = 1 := rfl']}",
+            f"L{at['/-- A documented definition. -/']}",
+            f"L{at['private noncomputable def two : Nat :=']}",
+        ])
+        self.assertEqual(self.errors(), [])
+        text = self.doc.read_text()
+        self.assertIn(f"[one](<{url.format(at['/-- A documented definition. -/'])}>)", text)
+        self.assertIn(f"[two]({url.format(at['private noncomputable def two : Nat :='])} \"sec\")",
+                      text)
+        self.assertEqual(fix_anchors(self.repo), [])
+        # Exercise the CLI `--fix-anchors` flag end-to-end on another drifted anchor.
+        self.doc.write_text(text + f"\n[three]({url.format(at['  2'])})\n")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = check_main(["--repo", str(self.repo), "--fix-anchors"])
+        self.assertEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload["errors"], [])
+        self.assertEqual(len(payload["fixed_anchors"]), 1)
+        self.assertEqual(payload["fixed_anchors"][0]["new"], f"L{at['def three : Nat := 3']}")
+
+    def test_fix_anchors_skips_valid_special_ambiguous_and_allowlisted_links(self):
+        source = (
+            "module\n\n"
+            "/-- Doc. -/\ndef one : Nat := 1\n\n"
+            "namespace A\ndef dup : Nat := 0\nend A\n\n"
+            "namespace B\ndef dup : Nat := 1\nend B\n"
+        )
+        (self.repo / "CslibFrontierTests/Dup.lean").write_text(source)
+        url = "../../CslibFrontierTests/Dup.lean#L{}"
+        body = (
+            "\n"
+            f"[one]({url.format(4)}) "        # valid keyword line inside (3, 4) header
+            f"[one]({url.format(1)}) "        # whole-file anchor #L1
+            f"[one]({url.format(4)}-L{12}) "  # range anchor
+            f"`[one]({url.format(999)})`\n"   # inline code span
+            "```markdown\n"
+            f"[one]({url.format(999)})\n"     # fenced block
+            "```\n"
+            "[one](https://example.org/Dup.lean#L999)\n"
+            f"[prose label]({url.format(5)})\n"  # unnamed drifted link (blank line 5)
+            f"[dup]({url.format(4)})\n"          # ambiguous multiple declarations (points to one)
+            f"[one]({url.format(2)})\n"          # allowlisted stale anchor below
+        )
+        before = self.doc.read_text() + body
+        self.doc.write_text(before)
+        entry = ("CslibFrontierTests/Dup.lean", 2)
+        with mock.patch("check_operator_manual.STALE_SOURCE_ANCHORS", {entry}):
+            self.assertEqual(fix_anchors(self.repo), [])
+            self.assertEqual(self.doc.read_text(), before)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = check_main(["--repo", str(self.repo), "--fix-anchors"])
+            self.assertEqual(code, 1)
+            payload = json.loads(out.getvalue())
+            self.assertEqual(payload["fixed_anchors"], [])
+            self.assertEqual(len(payload["errors"]), 2)
+
 
 class SourceLineAnchors(unittest.TestCase):
     """A relative `.lean#L` link must start a declaration, attribute, docstring or section."""
@@ -389,7 +498,8 @@ class BookInputs(unittest.TestCase):
             (self.root / name).write_text("# fixture rendering input\n")
         (self.root / "README.md").write_text("# A complete first chapter\n")
         (self.root / "AGENT_OPERATORS.md").write_text("# A short manual for the human driver\n")
-        (self.root / "paper-plan.md").write_text("# Archived editorial plan\n")
+        (self.root / "history").mkdir()
+        (self.root / "history/paper-plan.md").write_text("# Archived editorial plan\n")
         self.sources = self.root / "sources.md"
         self.sources.write_text('# Sources\n\n<a id="example"></a>\n## example\n\nCanonical citation.\n')
         self.output = self.root / "_build"
@@ -614,6 +724,42 @@ class VisualSources(unittest.TestCase):
         self.assertEqual(book.visuals.diagram_sources(text), [])
         self.assertEqual(book.visuals.check_markup(text)['diagrams'], 0)
 
+    def test_fenced_merge_conflicts_are_literal_examples(self):
+        conflict = "<<<<<<< HEAD\nOld.\n||||||| base\nBase.\n=======\nNew.\n>>>>>>> feature\n"
+        for fence in ("```", "~~~~", "`````"):
+            with self.subTest(fence=fence):
+                text = fence + "text\n" + conflict + fence + "\n"
+                self.assertEqual(book.visuals.check_markup(text),
+                                 {"diagrams": 0, "worked_examples": 0})
+        nested = "````markdown\n```text\n" + conflict + "```\n````\n"
+        self.assertEqual(book.visuals.check_markup(nested)['worked_examples'], 0)
+
+    def test_valid_markdown_is_not_a_merge_conflict(self):
+        text = "# Heading\n\nSetext heading\n=======\n\n---\n\n***\n\n___\n\n>>>>>>> A quotation\n"
+        self.assertEqual(book.visuals.check_markup(text), {"diagrams": 0, "worked_examples": 0})
+
+    def test_list_fenced_conflicts_are_literal_until_the_fence_closes(self):
+        conflict = "<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n"
+        for marker in ("- ", "+ ", "* ", "1. ", "12) ", "- - "):
+            with self.subTest(marker=marker):
+                indent = " " * len(marker)
+                example = marker + "```text\n" + "".join(
+                    indent + line + "\n" for line in conflict.splitlines()) + indent + "```\n"
+                self.assertEqual(book.visuals.check_markup(example),
+                                 {"diagrams": 0, "worked_examples": 0})
+                for after in ("<<<<<<< HEAD\n", indent + "<<<<<<< HEAD\n"):
+                    with self.assertRaisesRegex(ValueError, "Line 8: unresolved Git merge conflict"):
+                        book.visuals.check_markup(example + after)
+                literal_diagram = marker + "````markdown\n" + indent + "```mermaid\n" + \
+                    indent + "This is a literal example, not a model diagram.\n" + \
+                    indent + "```\n" + indent + "````\n"
+                self.assertEqual(book.visuals.check_markup(literal_diagram)['diagrams'], 0)
+
+    def test_leaving_a_list_also_ends_its_literal_fence(self):
+        text = "- ```text\n  Literal example.\n<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n"
+        with self.assertRaisesRegex(ValueError, "Line 3: unresolved Git merge conflict"):
+            book.visuals.check_markup(text)
+
     def test_similar_source_paths_keep_distinct_diagram_assets(self):
         paths = ['topic-one.md', 'topic/one.md', 'topic_one.md']
         names = [book.visuals.diagram_name(path, 1) for path in paths]
@@ -621,7 +767,7 @@ class VisualSources(unittest.TestCase):
         self.assertEqual(names[1], 'figures/topic/one-1.pdf')
 
     def test_nested_mermaid_fences_fail_before_publishing(self):
-        for prefix in ('> ', '>> ', '  ', '    ', '- ', '1. ', '> - '):
+        for prefix in ('> ', '>> ', '  ', '    ', '- ', '1. ', '> - ', '- - ', '1. - '):
             with self.subTest(prefix=prefix), self.assertRaisesRegex(ValueError, 'top-level'):
                 book.visuals.check_markup(prefix + '```mermaid\n' + self.diagram + '```\n')
 

@@ -92,7 +92,7 @@ private theorem sum_map_le_length_encList (hpl : ∀ a, p a ≤ (encI a).length)
   | nil => simp
   | cons a l ih =>
     have := hpl a
-    enc_len [List.map_cons, List.sum_cons, encList_cons]
+    enc_len [List.map_cons, List.sum_cons]
 
 private theorem length_encList_table_le (hpl : ∀ a, p a ≤ (encI a).length) {l : List ι}
     {T : List (Option (List ι))} (hT : TableSpec w p l T) :

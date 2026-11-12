@@ -100,6 +100,26 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
+For changed APIs and reuse refactors, authors and reviewers
+[check the API through its callers](AGENTS.md#check-the-api-through-its-callers): inspect named
+access, semantic matcher/range facts, shared operational definitions, representation bridges and
+the intended public surface. Identify a representative caller that benefits, with evidence
+proportional to the change; a successful build alone does not establish these design properties.
+
+**Structures for domain objects and records**
+([#4385](https://github.com/cslib-community/cslib-frontier/issues/4385)). Model domain objects,
+problem instances, certificates, configurations, and multi-field algorithm contexts, states or
+records as documented `structure`s with named, documented fields, and declare their field-tuple
+encodings with `enc_structure` ([AGENTS.md](AGENTS.md#structures-for-domain-objects-and-records)).
+Do not introduce tuple type synonyms such as
+`abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ` or bare-product problem sets such as
+`Set (List (ℕ × ℕ) × ℕ × ℕ)` or `Set (Graph × ℕ)`. Named fields document the mathematical
+components in `doc-gen4`, enable dot-notation, and eliminate positional projections before they
+start, while `enc_structure` supplies the embedding and its `fun_prop` projection and constructor
+certificates across degree, `ComputableInO`, `ComputableInSpace` and `ComputableInPolyTime`. Keep
+ordinary `Prod` (`×`) for generic binary combinators, Cartesian products and uncurried
+multi-argument inputs such as an NP verifier `Instance × List Bool → Bool`.
+
 **Named components instead of positional projections**
 ([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Public statements and
 the bodies of public definitions do not reach into nested tuples with projection chains such as
@@ -149,7 +169,7 @@ state paired with the bit read, with the state framed. Because the name is reduc
 statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
 see through it; syntactic tools such as `omega` do not. New and changed statements follow the
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
-checks the repetition rule.
+checks the repetition rule and rejects compound-encoding `local notation`s.
 
 To sweep an area, `python3 scripts/check_encoding_readability.py --list CslibFrontier/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
@@ -280,8 +300,10 @@ listed in a module docstring's "Main …" sections must exist, a new test file m
 than restate signatures with `example … := name`, and an `@[expose] … section` header must have a
 definition to expose. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
-public statements ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
-enforces its baseline only in the modules a pull request changes, and merge groups only report,
+public statements and check against compound-encoding `local notation`s
+([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
+enforces its baseline and the `local notation` rule only in the modules a pull request changes,
+and merge groups only report,
 so `main` can drift above the baseline; the next change to a drifted module names the encoding
 or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
 options. On pull requests CI also runs
@@ -289,9 +311,15 @@ options. On pull requests CI also runs
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
 library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has, up to binder names,
-universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
+universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`.
+It also handles reversed equalities and built-in list lookup by a `Fin` index versus its natural
+value, ignoring that lookup's bounds proof while retaining the list and index. It does not unfold
+arbitrary definitions or custom indexing instances, or match specializations of a general theorem.
 CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
 --theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
+The reports link project declarations at the checked revision and disclose skipped or incomplete
+comparisons. Reviewers inspect the notices and resolve relevant candidates before approval under
+[the review cycle](AGENTS.md#review-cycle); a successful advisory exit alone is not a clean audit.
 On pull requests CI also runs a third advisory notice, `python3 scripts/proof_copies.py`, which
 reads only the sources. It lists tactic blocks of four or more lines, on lines a change adds or
 modifies, that repeat a block of another proof, or of the same proof, in the same file or
@@ -354,9 +382,9 @@ should meet it, with checked Lean examples whose names link to the API documenta
 When a chapter needs proof plumbing or a missing lemma, improve the library rather than
 documenting around it.
 
-The [README](README.md#build-and-use) explains how to generate API documentation using
-[doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide with
-[Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
+The [build instructions](manual/BUILD.md#build-the-api-reference) explain how to generate API
+documentation using [doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide
+with [Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
 the library's toolchain and dependency checkouts, and `docbuild` its bibliography. After changing
 library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update cslib-frontier`
 and the same with `-d guide`. When changing the Lean toolchain, also update the doc-gen4 tag in
@@ -494,11 +522,11 @@ not a decision.
   [#39864](https://github.com/leanprover-community/mathlib4/pull/39864), not as a competing
   candidate; the module docstring records the differences. Renaming to match the unmerged PRs is
   not required.
-* **Oracle codes.** Upstream `Foundations/Computability/RecursiveInCode` by reconciling with
+* **Oracle codes.** Upstream `Foundations/Computability/{RecursiveInCode,RecursiveInEvalnPrimrec,KleenePost,KleenePostJump}` by reconciling with
   [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) (oracle codes, a
   relativized `evaln` and the jump), not by competing with it; the module docstring records the
-  design differences. The prefix-based `evaln`, the use principle and `KleenePost` are what that PR
-  lacks.
+  design differences. The prefix-based `evaln`, the use principle and `KleenePost` / `KleenePostJump`
+  are what that PR lacks.
 * **Withdrawn submissions.** The redos of
   [#1099](https://github.com/leanprover/cslib/pull/1099)–[#1101](https://github.com/leanprover/cslib/pull/1101)
   (`Circuit/Boolean/{PPoly,MachineSimulation,PolynomialTime}`) should answer the review requests
