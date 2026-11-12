@@ -56,12 +56,12 @@ attribute [local fun_prop] graph_polyTime orders_polyTime
 
 private theorem vertices_polyTime : ComputableTidilyInPolyTime
     (fun I : FixedRotationInput => I.graph.vertices) encFixedRotationInput (encList encNat) :=
-  (encGraph_vertices_polyTime (ComputableInPolyTime.of_tidy graph_polyTime)).tidy
+  encGraph_vertices_deg.computableInPolyTime.tidy.comp graph_polyTime
 
 private theorem edges_polyTime : ComputableTidilyInPolyTime
     (fun I : FixedRotationInput => I.graph.edges) encFixedRotationInput
       (encList (encPair encNat encNat)) :=
-  (encGraph_edges_polyTime (ComputableInPolyTime.of_tidy graph_polyTime)).tidy
+  encGraph_edges_deg.computableInPolyTime.tidy.comp graph_polyTime
 
 attribute [local fun_prop] vertices_polyTime edges_polyTime
 

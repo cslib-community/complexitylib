@@ -57,9 +57,9 @@ private theorem splitEdges_polyTime : ComputableTidilyInPolyTime
   let hg := encFixedRotationInput_graph_deg.computableInPolyTime.tidy.comp hp
   let hn := ComputableTidilyInPolyTime.unary_to_binary.comp
     ((ComputableTidilyInPolyTime.length_list encNat).comp
-      (encGraph_vertices_polyTime (ComputableInPolyTime.of_tidy hg)).tidy)
+      (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg))
   let hedges := (ComputableTidilyInPolyTime.zipIdx (encPair encNat encNat)).comp
-    (encGraph_edges_polyTime (ComputableInPolyTime.of_tidy hg)).tidy
+    (encGraph_edges_deg.computableInPolyTime.tidy.comp hg)
   unfold split
   apply ComputableTidilyInPolyTime.listAppend'
   · apply ComputableTidilyInPolyTime.mapWithInput hedges
@@ -88,7 +88,7 @@ private theorem splitOrders_polyTime : ComputableTidilyInPolyTime
   let hm := ComputableTidilyInPolyTime.unary_to_binary.comp
     (ComputableTidilyInPolyTime.unary_mul.comp ((ComputableTidilyInPolyTime.const 2).prod
       ((ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp
-        (encGraph_edges_polyTime (ComputableInPolyTime.of_tidy hg)).tidy)))
+        (encGraph_edges_deg.computableInPolyTime.tidy.comp hg))))
   unfold split
   apply ComputableTidilyInPolyTime.listAppend'
   · exact ho
@@ -112,7 +112,7 @@ theorem split_polyTime : ComputableInPolyTime
         (fun p : (FixedRotationInput × ℕ) × List ℕ => p.1.1.graph.vertices.length + 1)
         encBlockInput encUnary := ComputableTidilyInPolyTime.unary_add.comp
       (((ComputableTidilyInPolyTime.length_list encNat).comp
-        (encGraph_vertices_polyTime (ComputableInPolyTime.of_tidy hg)).tidy).prod
+        (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg)).prod
         (ComputableTidilyInPolyTime.const 1))
     simpa [Function.comp_def] using ((ComputableTidilyInPolyTime.map
       ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range).comp hc
@@ -181,7 +181,7 @@ theorem recoverWord_polyTime : ComputableInPolyTime
   have hm : ComputableTidilyInPolyTime
       (fun p : FixedRotationInput × ℕ => p.1.graph.edges.length) encWordInput encUnary :=
     (ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp
-      ((encGraph_edges_polyTime (ComputableInPolyTime.of_tidy hg)).tidy.comp
+      ((encGraph_edges_deg.computableInPolyTime.tidy.comp hg).comp
         (ComputableTidilyInPolyTime.fst _ _))
   apply ComputableInPolyTime.of_tidy
   unfold recoverWord
@@ -260,9 +260,9 @@ theorem recoverOrders_polyTime : ComputableInPolyTime recoverOrders
   have hg := encFixedRotationInput_graph_deg.computableInPolyTime.tidy
   have ho := encFixedRotationInput_orders_deg.computableInPolyTime.tidy
   have hn := (ComputableTidilyInPolyTime.length_list encNat).comp
-    (encGraph_vertices_polyTime (ComputableInPolyTime.of_tidy hg)).tidy
+    (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg)
   have hm := (ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp
-    (encGraph_edges_polyTime (ComputableInPolyTime.of_tidy hg)).tidy
+    (encGraph_edges_deg.computableInPolyTime.tidy.comp hg)
   have hw := (ComputableTidilyInPolyTime.length_list (encOption (encList encNat))).comp ho
   have hr : ComputableTidilyInPolyTime
       (fun I : FixedRotationInput => List.range I.graph.vertices.length)
@@ -410,7 +410,7 @@ theorem freePrefix_polyTime : ComputableInPolyTime
       (encPair encGraph encNat) (encList (encOption (encList encNat))) := by
     unfold freePrefix
     apply ComputableTidilyInPolyTime.mapWithInput
-      (encGraph_vertices_polyTime (ComputableInPolyTime.of_tidy hg)).tidy
+      (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg)
     let hp := ComputableTidilyInPolyTime.fst (encPair encGraph encNat) encNat
     let hv := ComputableTidilyInPolyTime.snd (encPair encGraph encNat) encNat
     exact ComputableTidilyInPolyTime.ite_decide
