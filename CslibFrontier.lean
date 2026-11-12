@@ -1626,6 +1626,10 @@ public import CslibFrontier.Computability.Circuit.Monotone.Formula
 public import CslibFrontier.Computability.Circuit.Monotone.KarchmerWigderson
 public import CslibFrontier.Computability.Circuit.Monotone.Set
 public import CslibFrontier.Computability.Circuit.Monotone.Synthesis
+public import CslibFrontier.Computability.Circuit.NNF.Basic
+public import CslibFrontier.Computability.Circuit.NNF.Disjunction
+public import CslibFrontier.Computability.Circuit.NNF.ReadOnce
+public import CslibFrontier.Computability.Circuit.NNF.Rectangle
 public import CslibFrontier.Computability.Circuit.Normalization
 public import CslibFrontier.Computability.Circuit.OutputDistribution
 public import CslibFrontier.Computability.Circuit.Parallel
@@ -1726,6 +1730,7 @@ public import CslibFrontier.Computability.Communication.Lifting.Density
 public import CslibFrontier.Computability.Communication.Lifting.Gadget
 public import CslibFrontier.Computability.Communication.Lifting.Partition
 public import CslibFrontier.Computability.Communication.Lifting.Simulation
+public import CslibFrontier.Computability.Communication.MultiPartition
 public import CslibFrontier.Computability.Communication.NOF.Cube
 public import CslibFrontier.Computability.Communication.NOF.Discrepancy
 public import CslibFrontier.Computability.Communication.NOF.ExactlyN
