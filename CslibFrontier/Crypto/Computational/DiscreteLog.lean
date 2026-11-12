@@ -128,6 +128,10 @@ instance (d : F.Desc) : Fact (F.order d).Prime := ⟨F.prime_order d⟩
 
 instance (d : F.Desc) : NeZero (F.order d) := ⟨(F.prime_order d).ne_zero⟩
 
+/-- Equality of group elements, decided on their injective encodings. -/
+instance (d : F.Desc) : DecidableEq (F.Carrier d) := fun x y =>
+  decidable_of_iff (F.encode d x = F.encode d y) (F.encode_injective d).eq_iff
+
 /-- A discrete logarithm modulo `q` is unique: `α ↦ α • g` is injective. -/
 theorem smul_generator_injective (d : F.Desc) :
     Function.Injective fun α : ZMod (F.order d) => α • F.generator d :=
