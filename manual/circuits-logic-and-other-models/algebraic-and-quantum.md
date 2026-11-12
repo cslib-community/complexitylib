@@ -28,8 +28,22 @@ on valid encoded inputs, with no source semantics promised for unused code words
 count as gates and wiring is free, with no additive input-size cost. The linked
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) check addition over `ZMod 3` on all
 field inputs and a zero-cost wiring circuit with repeated outputs. This supplies the forward
-circuit simulation with an explicit encoding; constructing encodings and the reverse general-field
-simulation remain separate obligations of the finite-field exercise.
+circuit simulation with an explicit encoding. For finite carriers the encoding is supplied
+below; reverse general-field simulation is separate.
+
+For a finite nonempty carrier, import
+[Boolean.FiniteSimulation](../../CslibFrontier/Computability/Circuit/Boolean/FiniteSimulation.lean)
+and use `c.exists_finite_boolean I hArity`. No encoding argument is needed: the theorem uses
+`BitString.fintypeEncoding F`, which enumerates `F` by `Fintype.equivFin` and applies the
+existing least-significant-bit-first `indexBits` embedding. Each value occupies
+`w = Nat.clog 2 (Fintype.card F)` bits. Pack inputs as
+`BitString.blocksEquiv.symm (BitString.fintypeEncoding F ∘ x)`; every output has the same
+layout. The size bound is `c.size * bitBlastCost w`, a constant factor for a fixed carrier.
+The encoding is fixed independently of the circuit. This proves the arithmetic-to-Boolean
+direction for any fixed finite field, under these explicit value and gate-count conventions.
+The enumeration and total decoder are noncomputable: there is no uniform encoding or compiler
+runtime certificate. The [clients](../../CslibFrontierTests/BitBlastEncoding.lean) include
+`ZMod 3` with no supplied encoding and a singleton carrier requiring zero bits and zero gates.
 
 The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 [Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
@@ -38,8 +52,9 @@ The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
 code word, modulo-three addition and zero-width synthesis over a singleton. This advances one
-synthesis direction of Arora–Barak Chapter 14 Exercise 1; encoding construction, free-input
-circuit compilation and the reverse general-field direction remain open under
+synthesis direction of Arora–Barak Chapter 14 Exercise 1. The compiler APIs above supply
+free-input circuit simulation and finite-carrier encoding. Reverse general-field simulation
+remains separate under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.

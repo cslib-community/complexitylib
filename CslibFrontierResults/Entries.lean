@@ -31,6 +31,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
+import CslibFrontier.Computability.Circuit.Boolean.FiniteSimulation
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
@@ -688,6 +689,21 @@ register_result "encoded-circuit-boolean-simulation" where
     at most size * bitBlastCost w gates. Correctness holds on valid encoded inputs, packed \
     wire-major by blocksEquiv.symm. Constants count as gates and wiring is free. No encoding \
     construction, reverse general-field simulation or compiler-runtime claim."
+
+register_result "finite-carrier-boolean-simulation" where
+  title := "Constant-factor Boolean simulation over every finite nonempty carrier"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (arithmetic-to-Boolean direction)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Circuit.exists_finite_boolean]
+  scope := "Any arity-at-most-two interpreted circuit over finite nonempty F is simulated \
+    on valid encoded inputs by a Boolean circuit with all outputs and at most \
+    size * bitBlastCost (Nat.clog 2 (Fintype.card F)) gates. The fixed encoding \
+    fintypeEncoding uses a finite enumeration and least-significant-bit-first indexBits. \
+    Constants count; wiring is free. No supplied encoding hypothesis, reverse simulation, \
+    formal polynomial identity or uniform runtime claim; the enumeration is noncomputable."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
