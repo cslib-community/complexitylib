@@ -282,7 +282,7 @@ variable {φ : CNF ℕ}
 /-- A node is satisfiable exactly when some satisfying assignment agrees with its values. -/
 private theorem units_append_mem_SAT_iff {a : List (Literal ℕ)} :
     units a ++ φ ∈ SAT ↔ ∃ σ, φ.eval σ = true ∧ a.map Prod.snd = a.map fun l => σ l.1 := by
-  simp only [mem_SAT, CNF.Satisfiable, CNF.eval_append, Bool.and_eq_true, eval_units]
+  simp only [mem_SAT, CNF.Satisfiable, eval_units_append]
   refine exists_congr fun σ => ⟨fun ⟨h, hσ⟩ => ⟨hσ, ?_⟩, fun ⟨hσ, h⟩ => ⟨fun l hl => ?_, hσ⟩⟩
   · exact List.map_congr_left fun l hl => (h l hl).symm
   · exact (List.map_inj_left.1 h l hl).symm

@@ -36,6 +36,8 @@ reduction and `NP`-completeness are proved in `CookLevin/`.
 
 ## Main results
 
+* `Cslib.Complexity.SAT.assignment_vars_map_append`: the values of an assignment listed along the
+  occurrences of a formula, followed by any padding, form a certificate describing it.
 * `Cslib.Complexity.SAT.isVerifier`: the verifier is correct, with certificates as long as the
   encoded formula.
 
@@ -78,6 +80,21 @@ cannot simply list the values of variables `0, 1, 2, …`; it lists them in orde
 instead, which needs at most as many bits as `φ` has literals. -/
 def assignment (φ : CNF ℕ) (w : List Bool) (v : ℕ) : Bool := w.getD (φ.vars.idxOf v) false
 
+/-- The values of `σ` listed along the occurrences of `φ`, followed by any bits, form a
+certificate describing `σ` on the variables of `φ`. -/
+theorem assignment_vars_map_append (φ : CNF ℕ) (σ : ℕ → Bool) (w : List Bool) {v : ℕ}
+    (hv : v ∈ φ.vars) : assignment φ (φ.vars.map σ ++ w) v = σ v := by
+  have hlt : φ.vars.idxOf v < φ.vars.length := List.idxOf_lt_length_iff.2 hv
+  rw [assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left (by simpa using hlt),
+    List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
+  rfl
+
+/-- The values of `σ` listed along the occurrences of `φ` form a certificate describing `σ` on
+the variables of `φ`. -/
+theorem assignment_vars_map (φ : CNF ℕ) (σ : ℕ → Bool) {v : ℕ} (hv : v ∈ φ.vars) :
+    assignment φ (φ.vars.map σ) v = σ v :=
+  List.append_nil (φ.vars.map σ) ▸ assignment_vars_map_append φ σ [] hv
+
 /-- The verifier for `SAT`: evaluate the formula under the assignment the certificate describes. -/
 def verifier (x : CNF ℕ × List Bool) : Bool := x.1.eval (assignment x.1 x.2)
 
@@ -94,13 +111,8 @@ assignment, listed in order of first occurrence, is a prefix the verifier accept
 follows it. -/
 theorem isVerifier : IsVerifier encCNF Polynomial.X verifier SAT := by
   refine IsVerifier.of_padding (fun φ w _ h => ⟨_, h⟩) fun φ ⟨τ, hτ⟩ => ?_
-  refine ⟨φ.vars.map τ, by simpa using length_vars_le φ, fun k => ?_⟩
-  refine (CNF.eval_congr fun v hv => ?_).trans hτ
-  have hlt : φ.vars.idxOf v < φ.vars.length := List.idxOf_lt_length_iff.2 hv
-  have hlt' : φ.vars.idxOf v < (φ.vars.map τ).length := by simpa using hlt
-  rw [assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt', List.getElem?_map,
-    List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-  rfl
+  exact ⟨φ.vars.map τ, by simpa using length_vars_le φ, fun k =>
+    (CNF.eval_congr fun _ hv => assignment_vars_map_append φ τ _ hv).trans hτ⟩
 
 end SAT
 

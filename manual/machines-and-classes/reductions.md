@@ -294,6 +294,15 @@ proves Selman's theorem: `NPHard.P_eq_NP_of_mem_PSel` turns an `NP`-hard P-selec
 sets. The proof reduces `SAT` to the given set. It then decides `SAT` with the generalized
 self-reduction lemma `SAT.verifier_search_of_step`, which needs only that each answer keeps the
 formula satisfiable, not that the answers are correct; the verifier checks the result.
+Searches that fix variables by unit clauses use
+[`Problems/SAT/Units`](../../CslibFrontier/Computability/Complexity/Problems/SAT/Units.lean)
+(`SAT.eval_units_append`, `SAT.length_encCNF_units_le`).
+
+A verifier that reads `SAT.assignment` gets its certificate from
+`SAT.assignment_vars_map_append` in
+[`Problems/SAT`](../../CslibFrontier/Computability/Complexity/Problems/SAT.lean): the values of
+an assignment listed along `φ.vars`, followed by any padding, describe it on the variables of `φ`.
+
 [`Selective.Ko`](../../CslibFrontier/Computability/Complexity/Classes/Selective/Ko.lean) proves
 `PSel_subset_PPolyOn`. The advice at length `n` is a list of at most `n + 1` members of length `n`,
 using at most `(n + 1)(2n + 1)` bits (`exists_advice_polyTime_of_mem_PSel`), in the
