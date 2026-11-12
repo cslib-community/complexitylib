@@ -4,12 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
-import CslibFrontier.Tactic.PolyTime
+module
+-- upstream: local-only (structure-encoding regression tests)
+
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+public import CslibFrontier.Tactic.PolyTime
 
 /-! Tests of `enc_structure`. -/
+
+public section
 
 namespace CslibFrontierTests.StructureEncoding
 
@@ -126,6 +131,7 @@ enc_structure encHittingSet : HittingSetInstance where
   ground : (encList encNat), sets : (encList (encList encNat)), k : encNat
 
 /-- Transform a problem instance using named fields without unfolding `encHittingSet`. -/
+@[expose]
 def prependZeroToSets (I : HittingSetInstance) : HittingSetInstance where
   ground := 0 :: I.ground
   sets := I.sets.map fun S => 0 :: S
@@ -155,6 +161,7 @@ structure Triple extends Inner.Pair where
   w : ℕ
 
 /-- Not the projection `Inner.Pair.fst`: under `open Inner`, `Pair.fst` could name either. -/
+@[expose]
 def Pair.fst (p : Inner.Pair) : ℕ := p.fst + 1
 
 open Inner in

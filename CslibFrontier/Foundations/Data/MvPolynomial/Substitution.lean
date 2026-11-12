@@ -5,21 +5,23 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, degree bound for substitution)
+-- upstream: candidate (Mathlib, degree bound and chain rule for substitution)
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.MvPolynomial.Degrees
+public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.Algebra.Polynomial.AlgebraMap
 public import Mathlib.Algebra.Polynomial.BigOperators
 
 /-!
-# Total degree under substitution
+# Substitution: total degree and the chain rule
 
 Substituting polynomials of total degree at most `k` for the variables of a polynomial `P`
 multiplies the total degree by at most `k` (`MvPolynomial.totalDegree_aeval_le_mul`). In
 particular, an affine change of variables does not raise the total degree
 (`MvPolynomial.totalDegree_aeval_le`). The same bound holds for the degree of a substitution of
-univariate polynomials (`MvPolynomial.natDegree_aeval_le_mul`).
+univariate polynomials (`MvPolynomial.natDegree_aeval_le_mul`). Partial derivatives of a
+substitution follow the chain rule (`MvPolynomial.pderiv_aeval`).
 
 ## Main results
 
@@ -30,6 +32,7 @@ univariate polynomials (`MvPolynomial.natDegree_aeval_le_mul`).
 * `MvPolynomial.natDegree_aeval_le_mul`: substituting univariate polynomials of degree at most
   `k` gives a polynomial of degree at most `k` times the total degree.
 * `MvPolynomial.eval_polynomial_aeval`: evaluating a substitution of univariate polynomials.
+* `MvPolynomial.pderiv_aeval`: the chain rule for formal partial derivatives.
 -/
 
 public section
@@ -85,9 +88,26 @@ theorem natDegree_aeval_le_mul {g : τ → Polynomial R} {k : ℕ} (hg : ∀ i, 
 values of the substituted polynomials at `x`. -/
 theorem eval_polynomial_aeval (g : τ → Polynomial R) (P : MvPolynomial τ R) (x : R) :
     Polynomial.eval x (aeval g P) = eval (fun i => Polynomial.eval x (g i)) P := by
-  induction P using MvPolynomial.induction_on with
+  rw [← Polynomial.coe_aeval_eq_eval, comp_aeval_apply]
+  simp only [Polynomial.coe_aeval_eq_eval, aeval_eq_eval]
+
+/-- **Chain rule** for formal partial derivatives under polynomial substitution. -/
+theorem pderiv_aeval [Fintype τ] (L : τ → MvPolynomial σ R) (p : MvPolynomial τ R) (i : σ) :
+    pderiv i (aeval L p) = ∑ k, aeval L (pderiv k p) * pderiv i (L k) := by
+  classical
+  induction p using MvPolynomial.induction_on with
   | C a => simp
-  | add p q hp hq => simp [hp, hq]
-  | mul_X p i hp => simp [hp]
+  | add p q hp hq =>
+    simp only [map_add, hp, hq, add_mul, Finset.sum_add_distrib]
+  | mul_X p k hp =>
+    have hk : ∑ l, aeval L (pderiv l (X k : MvPolynomial τ R)) * pderiv i (L l) =
+        pderiv i (L k) := by
+      simp [pderiv_X, Pi.single_apply]
+    rw [map_mul, aeval_X, pderiv_mul, hp]
+    simp only [pderiv_mul, map_add, map_mul, aeval_X, add_mul, Finset.sum_add_distrib,
+      Finset.sum_mul]
+    rw [← hk, Finset.mul_sum]
+    refine congrArg₂ (· + ·) (Finset.sum_congr rfl fun l _ => by ring)
+      (Finset.sum_congr rfl fun l _ => by ring)
 
 end MvPolynomial
