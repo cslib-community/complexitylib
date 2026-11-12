@@ -624,18 +624,7 @@ theorem realizes_readTotalSlotsGen :
         SlotStoreInv (dpNMax d.1)
           (gmAt d.2 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem))
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  refine Realizes.congr (p := fun d : DictParams × ℕ => do
-      let i0 ← pure 0
-      if dpBucketBits d.1 = i0 then
-        readGMGenProg (d.1, (d.2, i0))
-      else
-        let i1 ← pure 1
-        let n_slabs ← readGMGenProg (d.1, (d.2, i0))
-        let n_tails ← readGMGenProg (d.1, (d.2, i1))
-        pure (n_slabs * dpSlabSize d.1 + n_tails)) ?_
-    (fun d => by simp only [readTotalSlotsGenProg, ← PFunctor.FreeM.bind_eq_bind, pure_bind])
-  realizeDict
+  realizeDict using [realizes_readGMGen]
   · exact h.1
   · unfold globalMetaLen; omega
   · exact fits_const_of_dictEnv h.1 (by decide)
@@ -720,13 +709,10 @@ theorem realizes_copyLastPayloadGen :
       (WordEncoding.encode (α := Unit))
       CopyLastPayloadGenPre
       (fun _ _ => 0) := by
-  have hl := realizes_lastSlotOfGen
-  have hrq := realizes_readQuotGen
-  have hrv := realizes_readValGen
-  have hwq := realizes_writeQuotGen
-  have hwv := realizes_writeValGen
   realizeDictWith [copyLastPayloadGenPre_mk, CopyLastPayloadPre,
-    lastSlotOfGenPre_mk, lastSlotOfGenProg_mk]
+    lastSlotOfGenPre_mk, lastSlotOfGenProg_mk] using
+    [realizes_lastSlotOfGen, realizes_readQuotGen, realizes_readValGen, realizes_writeQuotGen,
+      realizes_writeValGen]
   · exact ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1⟩
   · exact h.1
   · rw [clientResult_lastSlotOfProg d.1 s h.2.1 h.2.2.1 h.2.2.2.1]
