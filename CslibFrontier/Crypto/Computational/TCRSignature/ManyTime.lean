@@ -350,7 +350,7 @@ structure TraceStep where
   coin : Bool
   /-- Fresh hash key chosen when this step queries the signing oracle. -/
   hashKey : List Bool
-  /-- One-time signature returned for the oracle query (or `[]` when no query occurs). -/
+  /-- Signature from the underlying signature scheme (or `[]` when no query occurs). -/
   ots : List Bool
   deriving DecidableEq, Repr, Inhabited
 
@@ -746,7 +746,7 @@ theorem computableInPolyTime_fuelUpper (H : KeyedHashFamily) (ckg dkg c d : ℕ)
 structure TcrSavedState where
   /-- Whether `choose` sampled a step slot strictly before the machine fuel limit. -/
   active : Bool
-  /-- Fresh one-time verification and signing key pair `(pk, sk)` sampled for this execution. -/
+  /-- Verification and signing key pair `(pk, sk)` sampled once for this execution. -/
   keys : List Bool × List Bool
   /-- Fair coin bit pre-committed for the target query step. -/
   coinAtSlot : Bool
