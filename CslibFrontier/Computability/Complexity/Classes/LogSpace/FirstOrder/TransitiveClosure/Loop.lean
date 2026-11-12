@@ -89,7 +89,7 @@ structure LoopInv (us : Fin k → Fin n) (t : ℕ) (regs : List ℕ) : Prop wher
   /-- The registers below `base` and the length are kept, and every register is bounded. -/
   kept : Kept B base regs₀ regs
   /-- The loop's registers exist. -/
-  length_le : base + 2 * k + 2 ≤ regs.length
+  le_length : base + 2 * k + 2 ≤ regs.length
   /-- The current tuple is in registers `base + i`. -/
   cur : ∀ i : Fin k, regs.getD (base + i) 0 = us i
   /-- The step counter is in register `base + 2 * k + 1`. -/
@@ -205,7 +205,7 @@ private theorem loop_decode (hP : P.CodeAt b (tcCode b base k src dst M body T R
       (b + 2 * k + 7, 0 :: regs₃) ∧
       LoopMid n B base k regs₀ us (finFunctionFinEquiv.symm g) t regs₃ := by
   obtain ⟨-, -, -, -, -, hc, -⟩ := tcCode_parts hP
-  have hlen := hinv.length_le
+  have hlen := hinv.le_length
   obtain ⟨regs₃, hr, hlen₃, hout, hin, hB₃⟩ := reaches_digits (w := w) hc (by omega)
     (by omega) (regs := regs.set (base + 2 * k) g) (by rw [List.length_set]; omega)
     (by rw [List.getD_set_ne (by omega)]; exact (hinv.kept.getD_eq 0 hbase).trans h0) hnB
@@ -258,7 +258,7 @@ theorem loop_sound (hP : P.CodeAt b (tcCode b base k src dst M body T R)) (hbase
     refine Sound.of_oblivious hB1
       ((loop_test_ne hP hinv hdst heq).trans (loop_bound_lt hP hM hinv (by omega))) ?_
     have hNe := eval_pow_reg0 (k := k) ((hinv.kept.getD_eq 0 hbase).trans h0)
-    refine (Sound.guess hB1 hguess hR hPost (by have := hinv.length_le; omega)
+    refine (Sound.guess hB1 hguess hR hPost (by have := hinv.le_length; omega)
       (fun y => by simp only [eval_pow, eval_reg]; rw [List.getD_set_ne (by omega)])
       (hNe ▸ hNB) hinv.kept.bounded).bind ?_
     rintro _ ⟨m, hm, rfl⟩
@@ -296,7 +296,7 @@ theorem loop_complete (hP : P.CodeAt b (tcCode b base k src dst M body T R)) (hb
     refine Complete.of_oblivious
       ((loop_test_ne hP hinv hdst heq).trans (loop_bound_lt hP hM hinv (by omega))) ?_
     have hNe := eval_pow_reg0 (k := k) ((hinv.kept.getD_eq 0 hbase).trans h0)
-    refine (Complete.guess hguess (by have := hinv.length_le; omega)
+    refine (Complete.guess hguess (by have := hinv.le_length; omega)
       (fun y => by simp only [eval_pow, eval_reg]; rw [List.getD_set_ne (by omega)])
       (hNe ▸ hNB) hinv.kept.bounded (m := finFunctionFinEquiv u₁)
       (by rw [hNe]; exact (finFunctionFinEquiv u₁).isLt)).bind ?_

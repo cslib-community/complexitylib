@@ -331,7 +331,7 @@ structure TestPre (i y : ℕ) (regs : List ℕ) : Prop where
   /-- The registers below `base` and the length are kept, and every register is bounded. -/
   kept : Kept B base regs₀ regs
   /-- The test's registers exist. -/
-  length_le : base + 9 + 4 * k ≤ regs.length
+  le_length : base + 9 + 4 * k ≤ regs.length
   /-- The universe size is in register `0`. -/
   size : regs.getD 0 0 = n
   /-- The round is in register `base`. -/
@@ -356,7 +356,7 @@ private structure ScanInv (i y x m : ℕ) (Sel : Finset ℕ) (regsT regs : List 
   /-- The scanned code is in register `base + 4`. -/
   cur : regs.getD (base + 4) 0 = x
   /-- The codes selected are members of round `i`. -/
-  sub : Sel ⊆ countRound E s₀ i
+  subset : Sel ⊆ countRound E s₀ i
   /-- The codes selected are below `m`. -/
   lt_bound : ∀ c ∈ Sel, c < m
   /-- The number of codes selected is in register `base + 5`. -/
@@ -370,7 +370,7 @@ private theorem TestPre.of_kept {i y : ℕ} {regsT regs : List ℕ}
     (hpre : TestPre B base E s₀ regs₀ i y regsT) (hk : Kept B (base + 4) regsT regs) :
     TestPre B base E s₀ regs₀ i y regs where
   kept := hpre.kept.trans (hk.mono (by omega))
-  length_le := by rw [hk.length_eq]; exact hpre.length_le
+  le_length := by rw [hk.length_eq]; exact hpre.le_length
   size := by rw [hk.getD_eq 0 (by omega), hpre.size]
   round := by rw [hk.getD_eq _ (by omega), hpre.round]
   round_lt := hpre.round_lt
@@ -440,7 +440,7 @@ private theorem scan_check_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
   have hC := (hpre.of_kept hinv.kept).card
   have hB := hinv.kept.bounded
   by_cases hS : Sel.card = (countRound E s₀ i).card
-  · have hsel : Sel = countRound E s₀ i := Finset.eq_of_subset_of_card_le hinv.sub hS.ge
+  · have hsel : Sel = countRound E s₀ i := Finset.eq_of_subset_of_card_le hinv.subset hS.ge
     subst hsel
     exact Sound.of_oblivious hB1 (reaches_dist_eq h22 hB (by rw [hinv.count, hC]))
       (Sound.exit (scan_post hpre.cand_lt hinv))
@@ -906,7 +906,7 @@ theorem test_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
       Kept B (base + 4) regs regs' ∧
         regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨regs₁, hr₁, hinv₁⟩ := scan_start (w := w) (E := E) (s₀ := s₀) (i := i) (y := y) hw hP
-    (by have := hpre.length_le; omega) hpre.kept.bounded
+    (by have := hpre.le_length; omega) hpre.kept.bounded
   exact Sound.of_oblivious hB1 hr₁ (scan_sound hw hP hB1 hnB hNB hR hPost hsrc hwb het hef hpre
     _ 0 ∅ regs₁ rfl hinv₁)
 
@@ -935,7 +935,7 @@ theorem test_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
       Kept B (base + 4) regs regs' ∧
         regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨regs₁, hr₁, hinv₁⟩ := scan_start (w := w) (E := E) (s₀ := s₀) (i := i) (y := y) hw hP
-    (by have := hpre.length_le; omega) hpre.kept.bounded
+    (by have := hpre.le_length; omega) hpre.kept.bounded
   have hempty : (countRound E s₀ i).filter (· < 0) = ∅ :=
     Finset.filter_false_of_mem fun c _ => Nat.not_lt_zero c
   rw [← hempty] at hinv₁
@@ -957,7 +957,7 @@ private structure RoundInv (i : ℕ) (regs : List ℕ) : Prop where
   /-- The registers below `base` and the length are kept, and every register is bounded. -/
   kept : Kept B base regs₀ regs
   /-- The block's registers exist. -/
-  length_le : base + 9 + 4 * k ≤ regs.length
+  le_length : base + 9 + 4 * k ≤ regs.length
   /-- The universe size is in register `0`. -/
   size : regs.getD 0 0 = n
   /-- The round is in register `base`. -/
