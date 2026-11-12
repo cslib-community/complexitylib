@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import CslibFrontier.Probability.BitString
 import CslibFrontier.Computability.Complexity.Classes.Promise.Probabilistic
+import CslibFrontier.Computability.Complexity.Classes.Time.SampleVerify
 import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
@@ -24,11 +25,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.BitString.Block
 import CslibFrontier.Foundations.Data.BitString.List
@@ -36,7 +32,6 @@ import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Probability.MajorityVote
-import CslibFrontier.Probability.PMF.Bind
 
 /-!
 # Parameterized randomized runtime rates, error models, `rETH`, and `rSETH`
@@ -697,9 +692,6 @@ theorem exists_ptm_of_solvesWithErrorInTimeO {Q : PromiseProblem α} {E : ErrorM
       ∀ a ∈ Q.no,
         ((ProbComp.eval (machine.runClosed (clock a) (enc a))) [true]).toReal ≤ E.noErr := by
   obtain ⟨ℓ, V, Tℓ, Sℓ, Tv, Sv, c₀, hℓ, hV, ht, hyes, hno⟩ := h
-  obtain ⟨c₁, ⟨k₁, Q₁, _, tm₁, h₁⟩, -⟩ :=
-    (ComputableInO.of_eq (f := fun a : α => a) (encIn := enc) (encMid := enc) fun _ => rfl).prod hℓ
-  obtain ⟨c₃, ⟨k₃, Q₃, _, tm₃, h₃⟩, -⟩ := hV
   let boundNat (a : α) : ℕ := c₀ * ⌈T a⌉₊ + c₀
   have hboundNat (a : α) (w : List Bool) (hw : w.length = ℓ a) :
       (enc a).length + Tℓ a + Tv (a, w) ≤ boundNat a := by
@@ -709,108 +701,24 @@ theorem exists_ptm_of_solvesWithErrorInTimeO {Q : PromiseProblem α} {E : ErrorM
       push_cast
       linarith [mul_le_mul_of_nonneg_left (Nat.le_ceil (T a)) (Nat.cast_nonneg c₀)]
     exact_mod_cast hta.trans hceil
-  let u (a : α) : List Bool := frame (enc a) ++ List.replicate (ℓ a) true
-  let t₁ (a : α) : ℕ := c₁ * ((enc a).length + Tℓ a + 1)
-  let t₂ (a : α) : ℕ := (u a).length + 1
-  let t₃ (a : α) : ℕ := c₃ * (boundNat a + 1)
-  have hrun₁ (a : α) := (h₁ a).runFrom_of_le (le_refl (t₁ a))
-  have hlen₁ (a : α) : (u a).length ≤ t₁ a := (h₁ a).length_output_le
-  let M₁ : MultiTapePTM k₁ Bool Q₁ := MultiTapePTM.ofDeterministic tm₁
-  have hfirst₁ (a : α) : ∀ final ∈ (ProbComp.eval
-      (M₁.runClosedConfigFrom (t₁ a) (M₁.initialConfig (enc a)))).support,
-      final.tapes.state = none := by
-    intro final hfinal
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₁ a).1
-  have hout₁ (a : α) : ProbComp.eval (M₁.runClosed (t₁ a) (enc a)) = PMF.pure (u a) := by
-    rw [MultiTapePTM.eval_runClosed_ofDeterministic, (hrun₁ a).2]
-    rfl
-  have hsecond₁ (a : α) : ∀ word ∈ (ProbComp.eval (M₁.runClosed (t₁ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (MultiTapePTM.pairSampler.runClosedConfigFrom (t₂ a)
-        (MultiTapePTM.pairSampler.initialConfig word))).support, final.tapes.state = none := by
-    intro word hword
-    rw [hout₁ a, PMF.mem_support_pure_iff] at hword
-    subst hword
-    exact MultiTapePTM.pairSampler_halted (enc a) (List.replicate (ℓ a) true)
-  let P₁₂ := MultiTapePTM.pairSampler.comp M₁ false
-  let t₁₂ (a : α) : ℕ := t₁ a + (t₁ a + 4 + t₂ a)
-  have heval₁₂ (a : α) : ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a)) =
-      (BitString.uniformList (ℓ a)).map (frame (enc a) ++ ·) := by
-    rw [MultiTapePTM.eval_comp M₁ MultiTapePTM.pairSampler false (enc a) (t₁ a) (t₂ a)
-      (hfirst₁ a) (hsecond₁ a), hout₁ a, Probability.PMF.monad_bind_eq_bind, PMF.pure_bind]
-    simpa only [List.length_replicate, u] using
-      MultiTapePTM.eval_pairSampler (enc a) (List.replicate (ℓ a) true)
-  have hhalt₁₂ (a : α) := MultiTapePTM.comp_halted M₁ MultiTapePTM.pairSampler false (enc a)
-    (t₁ a) (t₂ a) (hfirst₁ a) (hsecond₁ a)
-  let M₃ : MultiTapePTM k₃ Bool Q₃ := MultiTapePTM.ofDeterministic tm₃
-  have hrun₃ (a : α) (w : List Bool) (hw : w.length = ℓ a) :=
-    (h₃ (a, w)).runFrom_of_le (J := t₃ a) (Nat.mul_le_mul_left c₃ (by
-      have := hboundNat a w hw
-      omega))
-  have hword (a : α) {word : List Bool}
-      (hword : word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support) :
-      ∃ w : List Bool, w.length = ℓ a ∧ word = encPair enc encBits (a, w) := by
-    rw [heval₁₂ a] at hword
-    obtain ⟨w, hw, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hword
-    exact ⟨w, BitString.mem_support_uniformList_iff.mp hw, rfl⟩
-  have hsecond₂ (a : α) : ∀ word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (M₃.runClosedConfigFrom (t₃ a) (M₃.initialConfig word))).support,
-      final.tapes.state = none := by
-    intro word hw final hfinal
-    obtain ⟨w, hwlen, rfl⟩ := hword a hw
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₃ a w hwlen).1
-  let P := M₃.comp P₁₂ false
-  let clock (a : α) : ℕ := t₁₂ a + (t₁₂ a + 4 + t₃ a)
-  have hhalt (a : α) := MultiTapePTM.comp_halted P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a)
-    (hhalt₁₂ a) (hsecond₂ a)
-  have heval (a : α) : ProbComp.eval (P.runClosed (clock a) (enc a)) =
-      (BitString.uniformList (ℓ a)).map fun w => [V (a, w)] := by
-    rw [MultiTapePTM.eval_comp P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a) (hhalt₁₂ a) (hsecond₂ a),
-      Probability.PMF.monad_bind_eq_bind, heval₁₂ a, PMF.bind_map, ← PMF.bind_pure_comp]
-    refine Probability.PMF.bind_congr_on_support _ _ _ fun w hw => ?_
-    have hwlen : w.length = ℓ a := BitString.mem_support_uniformList_iff.mp hw
-    simp only [Function.comp_apply]
-    rw [MultiTapePTM.eval_runClosed_ofDeterministic]
-    exact congrArg PMF.pure (hrun₃ a w hwlen).2
+  obtain ⟨c, k, State, _, P, hP⟩ := exists_machine_sampleVerify_of_bound hℓ hV hboundNat
+  let clock (a : α) : ℕ := c * boundNat a + c
   have hprob (a : α) (b : Bool) :
       ((ProbComp.eval (P.runClosed (clock a) (enc a))) [b]).toReal =
         (acceptCount (fun p => V p == b) a (ℓ a) : ℝ) / (2 : ℝ) ^ ℓ a := by
-    rw [heval a, BitString.uniformList_map_apply]
+    rw [(hP a).2, BitString.uniformList_map_apply]
     have heq : (Finset.univ.filter fun w : Fin (ℓ a) → Bool => [V (a, List.ofFn w)] = [b]).card =
         acceptCount (fun p => V p == b) a (ℓ a) := by
       simp only [acceptCount, List.cons.injEq, and_true, beq_iff_eq]
     rw [heq, ENNReal.toReal_div, ENNReal.toReal_natCast, ENNReal.toReal_pow, ENNReal.toReal_ofNat]
-  let C_out : ℕ := (6 * c₁ + c₃) * (2 * c₀ + 2) + 14
-  refine ⟨C_out, clock, _, _, inferInstance, P, fun a => ?_, fun a => hhalt a,
+  refine ⟨c * (2 * c₀ + 1), clock, k, State, inferInstance, P, fun a => ?_, fun a => (hP a).1,
     fun a ha => ?_, fun a ha => ?_⟩
-  · have ht₁_le : t₁ a ≤ c₁ * (boundNat a + 1) := Nat.mul_le_mul_left c₁ (by
-      have := hboundNat a (List.replicate (ℓ a) false) (List.length_replicate ..)
-      omega)
-    have hclock_nat : clock a ≤ (6 * c₁ + c₃) * (boundNat a + 1) + 14 := by
-      have := hlen₁ a
-      have h1 := Nat.mul_le_mul_left 6 ht₁_le
-      simp only [clock, t₁₂, t₂, t₃, Nat.add_mul, Nat.mul_assoc]
-      omega
-    have hclockR : (clock a : ℝ) ≤ (6 * c₁ + c₃ : ℕ) * ((boundNat a : ℝ) + 1) + 14 := by
-      exact_mod_cast hclock_nat
-    have hceil : (⌈T a⌉₊ : ℝ) ≤ T a + 1 := (Nat.ceil_lt_add_one (hT a)).le
-    have hbn : (boundNat a : ℝ) + 1 ≤ (2 * c₀ + 2 : ℕ) * T a + (2 * c₀ + 2 : ℕ) := by
-      dsimp only [boundNat]
-      push_cast
-      have hc0 : (0 : ℝ) ≤ c₀ := Nat.cast_nonneg c₀
-      have hTa : 0 ≤ T a := hT a
-      nlinarith
-    have hmul := mul_le_mul_of_nonneg_left hbn (Nat.cast_nonneg (6 * c₁ + c₃))
-    have hexpand : ((6 * c₁ + c₃ : ℕ) : ℝ) *
-        ((2 * c₀ + 2 : ℕ) * T a + (2 * c₀ + 2 : ℕ)) + 14 ≤ C_out * T a + C_out := by
-      dsimp only [C_out]
-      have hTa : 0 ≤ T a := hT a
-      push_cast
-      linarith
-    linarith
+  · have hceil : (⌈T a⌉₊ : ℝ) ≤ T a + 1 := (Nat.ceil_lt_add_one (hT a)).le
+    have hcc₀ : (0 : ℝ) ≤ c * c₀ := by positivity
+    dsimp only [clock, boundNat]
+    push_cast
+    nlinarith [mul_le_mul_of_nonneg_left hceil hcc₀, mul_nonneg hcc₀ (hT a),
+      mul_nonneg (Nat.cast_nonneg c) (hT a)]
   · have hfalse : ((ProbComp.eval (P.runClosed (clock a) (enc a))) [false]).toReal ≤ E.yesErr := by
       rw [hprob a false, div_le_iff₀ (by positivity)]
       simpa only [beq_false] using hyes a ha

@@ -94,7 +94,7 @@ equivalence with the effective literature class is not claimed. -/
     A WeightedCircuitSAT}
 
 /-- **`W[P]`-hardness**: every problem of `W[P]` fpt-reduces to `B`. The general lemmas, such as
-`FPTHard.fptReducible` and `FPTHard.subset_FPT`, apply through dot notation. -/
+`FPTHard.trans` and `FPTHard.subset_FPT`, apply through dot notation. -/
 abbrev WPHard {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
   FPTHard @WP enc κ B
 

@@ -1024,6 +1024,8 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.Encoding
 public import CslibFrontier.Computability.Circuit.Arithmetic.Encoding.Check
 public import CslibFrontier.Computability.Circuit.Arithmetic.EvaluationTime
 public import CslibFrontier.Computability.Circuit.Arithmetic.Formula
+public import CslibFrontier.Computability.Circuit.Arithmetic.FormulaInterpolation
+public import CslibFrontier.Computability.Circuit.Arithmetic.FormulaOps
 public import CslibFrontier.Computability.Circuit.Arithmetic.GeneralLowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.Gradient
 public import CslibFrontier.Computability.Circuit.Arithmetic.Hessian
@@ -1069,6 +1071,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.ROABP
 public import CslibFrontier.Computability.Circuit.Arithmetic.RelativeRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.RelativeRankUpper
 public import CslibFrontier.Computability.Circuit.Arithmetic.Rigidity
+public import CslibFrontier.Computability.Circuit.Arithmetic.RootFormula
 public import CslibFrontier.Computability.Circuit.Arithmetic.SPCircuit
 public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinear
 public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinearGadget
@@ -1974,6 +1977,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Formula
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Decider
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.NondeterministicDecider
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Projection
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reachability
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reduction
@@ -3209,6 +3213,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine.Native
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine.Routines
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine.Termination
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.PolyClock
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.Call
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
@@ -3269,6 +3274,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.SqrtLog.Budget
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Unpair
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.OutputLength
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Polynomial
@@ -3952,6 +3958,7 @@ public import CslibFrontier.Computability.RAM.Defs
 public import CslibFrontier.Computability.RAM.Input
 public import CslibFrontier.Computability.RAM.Squaring
 public import CslibFrontier.Computability.Reduction.ManyOne
+public import CslibFrontier.Computability.Reduction.TruthTable
 public import CslibFrontier.Computability.StreamArithmetic.EstimatorRecipes
 public import CslibFrontier.Computability.StreamArithmetic.Interface
 public import CslibFrontier.Computability.StreamArithmetic.Primitives
@@ -5661,6 +5668,7 @@ public import CslibFrontier.Foundations.Data.Polynomial.CoeffNorm1
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffProd
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffSumBounds
 public import CslibFrontier.Foundations.Data.Polynomial.HermiteInterpolation
+public import CslibFrontier.Foundations.Data.Polynomial.InterpolationCoeff
 public import CslibFrontier.Foundations.Data.Polynomial.ModulusAmplifier
 public import CslibFrontier.Foundations.Data.Polynomial.ParityAmplifier
 public import CslibFrontier.Foundations.Data.Polynomial.ParityAmplifierDegree
@@ -6021,6 +6029,7 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 public import CslibFrontier.Languages.Probabilistic.Oracle.Norm.Init
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
 public import CslibFrontier.Languages.Probabilistic.Oracle.Support
 public import CslibFrontier.Languages.Probabilistic.Oracle.Tabulate
 public import CslibFrontier.Languages.Probabilistic.Oracle.Transcript

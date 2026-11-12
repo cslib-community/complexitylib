@@ -65,6 +65,8 @@ example :
       (encPair encGraph encGraph) encGraphIsomorphism := by
   fun_prop
 
+example : (default : GraphIsomorphismInstance) = ⟨default, default⟩ := rfl
+
 -- The certificate decoding `[7, 5, 9]` (positions `0, 1, 2` of
 -- `path'.vertices = [7, 5, 9, 5]` in unary
 -- blocks of width `4`) maps positions `0, 1, 2` of `path` to `7, 5, 9` and is accepted.
@@ -192,8 +194,7 @@ example : ComputableInPolySpace (fun w => BitString.increment (BitString.increme
 
 -- A Boolean function computable within polynomial space decides a problem in `PSPACE`.
 example : {w : List Bool | w.headD false = true} ∈ PSPACE encBits :=
-  mem_PSPACE_of_computableInPolySpace (f := fun w => w.headD false)
-    (.of_polyTime (ComputableInPolyTime.headD false)) fun _ => Iff.rfl
+  ⟨fun w => w.headD false, .of_polyTime (ComputableInPolyTime.headD false), fun _ => Iff.rfl⟩
 
 -- The seven codes of length `3` decode to the seven words of length at most `2`, each once.
 example : (List.range (Interaction.codeCount 2)).map (fun i =>
