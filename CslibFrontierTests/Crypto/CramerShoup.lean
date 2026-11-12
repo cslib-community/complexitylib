@@ -328,15 +328,11 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
     (hd : ComputableInPolyTime d encUnary schnorrGroups.encDesc)
     (hADA : adAdversary.IsPPT encBits)
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn schnorrGroups.encDDHInput encBool
-      (fun x => schnorrGroups.cramerShoupADToDDHDistinguisher encBits H isElem adAdversary bit
-        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared) ∧
+    (schnorrGroups.cramerShoupADToDDHDistinguisher encBits H isElem adAdversary bit).IsPPT ∧
     IsPPTOn (encPair encUnary schnorrGroups.encDesc) (encPair encBits encBits)
       (fun p =>
         schnorrGroups.cramerShoupADToCollisionFinder encBits H isElem adAdversary bit p.1 p.2) ∧
-    IsPPTOn schnorrGroups.encDDHInput encBool
-      (fun x => schnorrGroups.cramerShoupToDDHDistinguisher H isElem adversary bit
-        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared) ∧
+    (schnorrGroups.cramerShoupToDDHDistinguisher H isElem adversary bit).IsPPT ∧
     IsPPTOn (encPair encUnary schnorrGroups.encDesc) (encPair encBits encBits)
       (fun p => schnorrGroups.cramerShoupToCollisionFinder H isElem adversary bit p.1 p.2) ∧
     IsPPTOn encUnary (encPair encBits encBits) (schnorrGroups.cramerShoupKeyGenProb d) ∧
@@ -346,9 +342,9 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
       (fun p : ℕ × List Bool × List Bool =>
         schnorrGroups.cramerShoupDecryptOpt H isElem d p.1 p.2.1 p.2.2)
       (encPair encUnary (encPair encBits encBits)) (encOption encBits) :=
-  ⟨schnorrGroups.isPPTOn_cramerShoupADToDDHDistinguisher hH hisElem hADA bit,
+  ⟨schnorrGroups.isPPT_cramerShoupADToDDHDistinguisher hH hisElem hADA bit,
    schnorrGroups.isPPTOn_cramerShoupADToCollisionFinder hH hisElem hADA bit,
-   schnorrGroups.isPPTOn_cramerShoupToDDHDistinguisher hH hisElem hA bit,
+   schnorrGroups.isPPT_cramerShoupToDDHDistinguisher hH hisElem hA bit,
    schnorrGroups.isPPTOn_cramerShoupToCollisionFinder hH hisElem hA bit,
    schnorrGroups.isPPTOn_cramerShoupKeyGenProb hd,
    schnorrGroups.isPPTOn_cramerShoupEncryptProb hH hd,

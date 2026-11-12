@@ -251,12 +251,11 @@ theorem idealGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     PMF.bind_bind, PMF.pure_bind]
 
 /-- The distinguisher `dhEavToDDH` is uniform strict PPT when the eavesdropper is. -/
-theorem isPPTOn_dhEavToDDH
+theorem isPPT_dhEavToDDH
     {adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool}
     (hA : IsPPTOn (KeyExchange.encEavInput F.encDHTranscript encBits) encBool
       (fun input => adversary input.1 input.2)) :
-    IsPPTOn F.encDDHInput encBool fun x => F.dhEavToDDH adversary x.secParam x.groupParameters
-      x.leftPublic x.rightPublic x.candidateShared :=
+    (F.dhEavToDDH adversary).IsPPT :=
   hA.preprocess (prepare := fun x : F.DDHInput =>
     (x.secParam, ((x.groupParameters, F.encode x.groupParameters x.leftPublic,
       F.encode x.groupParameters x.rightPublic), F.encode x.groupParameters x.candidateShared)))
@@ -271,7 +270,7 @@ theorem DDH.dhKeyExchange_eavSecure {F : PrimeOrderGroupFamily} {setup : ℕ →
     (F.dhKeyExchange setup).EavSecure F.encDHTranscript encBits F.dhIdealKey := by
   intro adversary hA
   simpa only [realGame_dhKeyExchange, idealGame_dhKeyExchange] using
-    hDDH _ (F.isPPTOn_dhEavToDDH hA)
+    hDDH _ (F.isPPT_dhEavToDDH hA)
 
 /-! ### The man-in-the-middle attack -/
 

@@ -37,9 +37,9 @@ Section 12.5.3, Theorem 12.9, printed pp. 488–493][BonehShoup2023]:
    `cramerShoupPhase2Reply`, `cramerShoupPhase2Oracle`, and `cramerShoupCollisionPhase2Oracle`.
 3. **Certified strict-PPT DDH distinguishers (`Game 1 → Game 2`, eq. (12.22), printed p. 492)**:
    `cramerShoupMsgToDDHDistinguisher`, `cramerShoupADToDDHDistinguisher`, and
-   `cramerShoupToDDHDistinguisher`, with `IsPPTOn` certificates
-   `isPPTOn_cramerShoupMsgToDDHDistinguisher`, `isPPTOn_cramerShoupADToDDHDistinguisher`, and
-   `isPPTOn_cramerShoupToDDHDistinguisher`.
+   `cramerShoupToDDHDistinguisher`, with `DDHDistinguisher.IsPPT` certificates
+   `isPPT_cramerShoupMsgToDDHDistinguisher`, `isPPT_cramerShoupADToDDHDistinguisher`, and
+   `isPPT_cramerShoupToDDHDistinguisher`.
 4. **Certified strict-PPT CRHF collision finders (`Game 3 → Game 4`, eqs. (12.24)–(12.25), printed
    p. 492)**: `cramerShoupMsgToCollisionFinder`, `cramerShoupADToCollisionFinder`, and
    `cramerShoupToCollisionFinder`, with `IsPPTOn` certificates
@@ -573,7 +573,7 @@ noncomputable abbrev cramerShoupToDDHDistinguisher
 /-- `cramerShoupMsgToDDHDistinguisher` is uniform strict PPT whenever `encodeMsg`, `encodeAD`, `H`,
 and `isElem` are computable in polynomial time and `adversary` is a strict oracle PPT 1CCA
 adversary with associated data. -/
-theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
+theorem isPPT_cramerShoupMsgToDDHDistinguisher
     (hasAD : Bool) {Msg AD : Type} {encMsg : Msg ↪ List Bool} {encAD : AD ↪ List Bool}
     {encodeMsg : F.Desc × Msg → List Bool} {encodeAD : F.Desc × AD → List Bool}
     {H : F.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
@@ -583,9 +583,8 @@ theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encMsg encAD) (bit : Bool) :
-    IsPPTOn F.encDDHInput encBool fun x =>
-      F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit
-        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared := by
+    (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit).IsPPT := by
+  unfold DDHDistinguisher.IsPPT
   let E0 := F.encDDHInput
   let E1 := encPair E0 encCramerShoupSK
   let EChoice := encPair (encPair (encPair (encPair encMsg encMsg) encAD) encBits) (encFinEnum Unit)
@@ -630,32 +629,28 @@ theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
 /-- `cramerShoupADToDDHDistinguisher` is uniform strict PPT whenever `H` and `isElem` are
 computable in polynomial time and `adversary` is a strict oracle PPT 1CCA adversary with associated
 data. -/
-theorem isPPTOn_cramerShoupADToDDHDistinguisher
+theorem isPPT_cramerShoupADToDDHDistinguisher
     {AD : Type} {encAD : AD ↪ List Bool}
     {H : F.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
     {adversary : ADCCA2AdversaryOf (List Bool) AD}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encBits encAD) (bit : Bool) :
-    IsPPTOn F.encDDHInput encBool fun x =>
-      F.cramerShoupADToDDHDistinguisher encAD H isElem adversary bit
-        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared :=
-  F.isPPTOn_cramerShoupMsgToDDHDistinguisher true
+    (F.cramerShoupADToDDHDistinguisher encAD H isElem adversary bit).IsPPT :=
+  F.isPPT_cramerShoupMsgToDDHDistinguisher true
     (ComputableInPolyTime.snd F.encDesc encBits)
     (ComputableInPolyTime.snd F.encDesc encAD).encoding_comp hH hisElem hA bit
 
 /-- `cramerShoupToDDHDistinguisher` is uniform strict PPT whenever `H` and `isElem` are computable
 in polynomial time and `adversary` is a strict oracle PPT 1CCA adversary. -/
-theorem isPPTOn_cramerShoupToDDHDistinguisher
+theorem isPPT_cramerShoupToDDHDistinguisher
     {H : F.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
     {adversary : CCA2AdversaryOf (List Bool)}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encBits) (bit : Bool) :
-    IsPPTOn F.encDDHInput encBool fun x =>
-      F.cramerShoupToDDHDistinguisher H isElem adversary bit
-        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared :=
-  F.isPPTOn_cramerShoupMsgToDDHDistinguisher false
+    (F.cramerShoupToDDHDistinguisher H isElem adversary bit).IsPPT :=
+  F.isPPT_cramerShoupMsgToDDHDistinguisher false
     (ComputableInPolyTime.snd F.encDesc encBits) (.const [])
     hH hisElem hA.toADUnit bit
 

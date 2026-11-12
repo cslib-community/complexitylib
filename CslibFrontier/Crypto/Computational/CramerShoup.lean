@@ -959,7 +959,7 @@ theorem DDH.cramerShoupMsgINDCCA2
   let Q₁ (n : ℕ) : ℕ := c₁ * (n + Lpk n + 2) ^ d₁
   let Q₂ (n : ℕ) : ℕ := c₂ * (n + Lst n + Lct n + 2) ^ d₂
   have hddh (bit : Bool) :=
-    hDDH _ (F.isPPTOn_cramerShoupMsgToDDHDistinguisher hasAD hencMsg hencAD hH hisElem hA bit)
+    hDDH _ (F.isPPT_cramerShoupMsgToDDHDistinguisher hasAD hencMsg hencAD hH hisElem hA bit)
   have hcr (bit : Bool) :=
     hCR.negligible _
       (F.isPPTOn_cramerShoupMsgToCollisionFinder hasAD hencMsg hencAD hH hisElem hA bit)

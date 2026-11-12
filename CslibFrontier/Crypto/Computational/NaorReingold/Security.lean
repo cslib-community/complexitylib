@@ -86,8 +86,8 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
 ## Main results
 
-* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_naorReingoldDescToDDHDistinguisher`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_naorReingoldToDDHDistinguisher`: uniform strict PPT
+* `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_naorReingoldDescToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_naorReingoldToDDHDistinguisher`: uniform strict PPT
   certificates for both distinguishers from any oracle PPT distinguisher.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingoldWordGame_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingoldProbRealGame_wordRealGame_le`:
@@ -545,13 +545,12 @@ private def ddhCallerEncoding (F : PrimeOrderGroupFamily) : DDHCaller F ↪ List
 /-- **`naorReingoldDescToDDHDistinguisher` is uniform strict PPT** whenever `inLen` is computable
 in polynomial time in unary and `adv` is oracle PPT on the security parameter and group
 parameters. -/
-theorem isPPTOn_naorReingoldDescToDDHDistinguisher
+theorem isPPT_naorReingoldDescToDDHDistinguisher
     {inLen : ℕ → ℕ} (hinLen : ComputableInPolyTime inLen encUnary encUnary)
     {adv : ℕ → F.Desc → WordOracleComp Unit Bool}
     (hadv : IsOraclePPTOn (encPair encUnary F.encDesc) encBool (fun p => adv p.1 p.2)) :
-    IsPPTOn F.encDDHInput encBool
-      (fun x => naorReingoldDescToDDHDistinguisher F inLen adv x.secParam x.groupParameters
-        x.leftPublic x.rightPublic x.candidateShared) := by
+    (naorReingoldDescToDDHDistinguisher F inLen adv).IsPPT := by
+  unfold DDHDistinguisher.IsPPT
   obtain ⟨cO, eO, hO⟩ := F.computableInPolyTime_order.tidy.polyBounded_length.exists_le
   obtain ⟨cR, eR, hR⟩ :=
     F.computableInPolyTime_ddhFixedUWordRerandomize.tidy.polyBounded_length.exists_le
@@ -786,12 +785,10 @@ theorem isPPTOn_naorReingoldDescToDDHDistinguisher
 /-- **`naorReingoldToDDHDistinguisher` is uniform strict PPT** whenever `inLen` is computable in
 polynomial time in unary and `adversary` satisfies `IsOraclePPT encBool` ([BonehShoup2023],
 Exercise 10.4(b); [NaorReingold2004], Theorem 4.1). -/
-theorem isPPTOn_naorReingoldToDDHDistinguisher {inLen : ℕ → ℕ}
+theorem isPPT_naorReingoldToDDHDistinguisher {inLen : ℕ → ℕ}
     (hinLen : ComputableInPolyTime inLen encUnary encUnary)
     {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
-    IsPPTOn F.encDDHInput encBool
-      (fun x => F.naorReingoldToDDHDistinguisher inLen adversary x.secParam x.groupParameters
-        x.leftPublic x.rightPublic x.candidateShared) := by
+    (F.naorReingoldToDDHDistinguisher inLen adversary).IsPPT := by
   have henc : ComputableTidilyInPolyTime
       (fun p : ℕ × F.Desc => (p.1, F.encDesc p.2))
       (encPair encUnary F.encDesc) (encPair encUnary encBits) :=
@@ -800,7 +797,7 @@ theorem isPPTOn_naorReingoldToDDHDistinguisher {inLen : ℕ → ℕ}
   have hadv : IsOraclePPTOn (encPair encUnary F.encDesc) encBool
       (fun p => adversary p.1 (F.encDesc p.2)) :=
     hadversary.on.preprocess henc
-  exact isPPTOn_naorReingoldDescToDDHDistinguisher F
+  exact isPPT_naorReingoldDescToDDHDistinguisher F
     (adv := fun n d => adversary n (F.encDesc d)) hinLen hadv
 
 /-! ### Quantitative and asymptotic DDH security of the Naor–Reingold group-PRF -/
@@ -1695,7 +1692,7 @@ private theorem DDH.negligible_naorReingoldDescGame {F : PrimeOrderGroupFamily}
       Game.advantage
         (F.ddhRealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n)
         (F.ddhRandomGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n) :=
-    hDDH _ (isPPTOn_naorReingoldDescToDDHDistinguisher F hinLen hadv)
+    hDDH _ (isPPT_naorReingoldDescToDDHDistinguisher F hinLen hadv)
   have hinv_neg := hDDH.negligible_expected_inv_order
   have hsum_neg : Negligible fun n =>
       Game.advantage
