@@ -1387,52 +1387,6 @@ private theorem corrDigraphAdj_chainLast_out {p : ℕ} (hp : 1 ≤ p) (v : CorrV
       rintro ⟨ℓ, lit, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;>
         · have hℓ := ℓ.2; omega
 
-private theorem corrDigraphAdj_mul3_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    {j : ℕ} (hj0 : 0 < j) (hjS : j < chainSlots p v) (x : CorrDigraphV p) :
-    corrDigraphAdj p hp x (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) ↔
-      x = .chain v ⟨3 * j - 1, by simp only [chainLen]; omega⟩ ∨
-      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩ := by
-  cases x with
-  | gate v' =>
-      simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨rfl, h | h⟩ <;> (try simp only [chainLen] at h) <;> omega
-  | chain v' k =>
-      dsimp only [corrDigraphAdj]
-      constructor
-      · rintro ⟨rfl, h | h⟩
-        · left; exact congrArg (CorrDigraphV.chain v') (Fin.ext (by dsimp only; omega))
-        · right; exact congrArg (CorrDigraphV.chain v') (Fin.ext (by dsimp only; omega))
-      · rintro (h | h) <;> obtain ⟨rfl, hk⟩ := CorrDigraphV.chain.inj h <;>
-          have hv := congrArg Fin.val (eq_of_heq hk) <;> dsimp only at hv
-        · exact ⟨rfl, Or.inl (by omega)⟩
-        · exact ⟨rfl, Or.inr (by omega)⟩
-  | clause _ _ =>
-      simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨_, _, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;> omega
-
-private theorem corrDigraphAdj_mul3_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    {j : ℕ} (hj0 : 0 < j) (hjS : j < chainSlots p v) (x : CorrDigraphV p) :
-    corrDigraphAdj p hp (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) x ↔
-      x = .chain v ⟨3 * j - 1, by simp only [chainLen]; omega⟩ ∨
-      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩ := by
-  cases x with
-  | gate v' =>
-      simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨rfl, h | h⟩ <;> (try simp only [chainLen] at h) <;> omega
-  | chain v' k =>
-      dsimp only [corrDigraphAdj]
-      constructor
-      · rintro ⟨rfl, h | h⟩
-        · right; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-        · left; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-      · rintro (h | h) <;> obtain ⟨rfl, hk⟩ := CorrDigraphV.chain.inj h <;>
-          have hv := congrArg Fin.val (eq_of_heq hk) <;> dsimp only at hv
-        · exact ⟨rfl, Or.inr (by omega)⟩
-        · exact ⟨rfl, Or.inl (by omega)⟩
-  | clause _ _ =>
-      simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨_, _, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;> omega
-
 private theorem corrDigraphAdj_chain_iff {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
     (k k_prev k_next : Fin (chainLen p v))
     (hk_prev : k_prev.1 + 1 = k.1) (hk_next : k.1 + 1 = k_next.1)
@@ -1478,6 +1432,34 @@ private theorem corrDigraphAdj_chain_iff {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p
             · contradiction
             · contradiction
             · injection heq with h1 h2; subst h1 h2; exact h
+
+private theorem corrDigraphAdj_mul3_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
+    {j : ℕ} (hj0 : 0 < j) (hjS : j < chainSlots p v) (x : CorrDigraphV p) :
+    corrDigraphAdj p hp x (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) ↔
+      x = .chain v ⟨3 * j - 1, by simp only [chainLen]; omega⟩ ∨
+      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩ := by
+  rw [(corrDigraphAdj_chain_iff hp v
+    ⟨3 * j, by simp only [chainLen]; omega⟩
+    ⟨3 * j - 1, by simp only [chainLen]; omega⟩
+    ⟨3 * j + 1, by simp only [chainLen]; omega⟩
+    (by dsimp only; omega) rfl (by dsimp only; omega)
+    (by dsimp only [chainLen]; omega) x).2]
+  exact or_congr_right (or_iff_left fun ⟨_, _, _, _, _, _, h⟩ => by
+    rcases h with ⟨_, h⟩ | ⟨_, h⟩ <;> dsimp only at h <;> omega)
+
+private theorem corrDigraphAdj_mul3_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
+    {j : ℕ} (hj0 : 0 < j) (hjS : j < chainSlots p v) (x : CorrDigraphV p) :
+    corrDigraphAdj p hp (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) x ↔
+      x = .chain v ⟨3 * j - 1, by simp only [chainLen]; omega⟩ ∨
+      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩ := by
+  rw [(corrDigraphAdj_chain_iff hp v
+    ⟨3 * j, by simp only [chainLen]; omega⟩
+    ⟨3 * j - 1, by simp only [chainLen]; omega⟩
+    ⟨3 * j + 1, by simp only [chainLen]; omega⟩
+    (by dsimp only; omega) rfl (by dsimp only; omega)
+    (by dsimp only [chainLen]; omega) x).1]
+  exact or_congr_right (or_iff_left fun ⟨_, _, _, _, _, _, h⟩ => by
+    rcases h with ⟨_, h⟩ | ⟨_, h⟩ <;> dsimp only at h <;> omega)
 
 private theorem corrDigraphAdj_slot1_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
     (ℓ : Fin (chainSlots p v)) (x : CorrDigraphV p) :
