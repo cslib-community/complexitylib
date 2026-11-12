@@ -32,10 +32,12 @@ program of width `W` that reads `Y₀, …, Y_{d-1}` in this order and whose `k`
 `∑ₓ Aₖₓ Yₖ ^ x`, with `Aₖₓ` the matrix of the coefficients of `x` on the edges of layer `k`; its
 layers have degree at most `n - 1`. So a hitting set for these programs gives the tuples.
 
-The hitting set for read-once oblivious programs used here is the one of Agrawal, Gurjar, Korwar
-and Saxena [AgrawalGurjarKorwarSaxena2015], `roabpHittingSet`, not the one constructed by Forbes
-and Shpilka. The size bound (`card_noncommABPHittingSet_le` with `card_roabpHittingSet_le`) is
-therefore not the bound of [ForbesShpilka2013].
+The hitting set for read-once oblivious programs used here is `roabpHittingSet`, the library's
+adaptation of Agrawal, Gurjar, Korwar and Saxena [AgrawalGurjarKorwarSaxena2015], not the
+generator of Forbes and Shpilka. That adaptation changes the weight family and the way the
+levels are combined, so its size expression is not the paper's, and the size bound here
+(`card_noncommABPHittingSet_le` with `card_roabpHittingSet_le`) is neither that of
+[AgrawalGurjarKorwarSaxena2015] nor that of [ForbesShpilka2013, Corollary 4.7].
 
 ## Main definitions
 
@@ -51,10 +53,14 @@ therefore not the bound of [ForbesShpilka2013].
 ## References
 
 * [M. A. Forbes, A. Shpilka, *Quasipolynomial-time identity testing of non-commutative and
-  read-once oblivious algebraic branching programs*][ForbesShpilka2013], the reduction from
-  non-commutative to read-once oblivious programs
+  read-once oblivious algebraic branching programs*][ForbesShpilka2013] (arXiv:1209.2408v2):
+  §1.1, pp. 2–3 (set-multilinear and univariate encodings); §4, Construction 4.1 and Lemma 4.2
+  (p. 22), Lemma 4.3 (p. 23), Lemma 4.5 and Theorem 4.6 (p. 24), specialized to homogeneous
+  layered programs. Their Corollary 4.7 (p. 25) uses a different generator and is not
+  formalized
 * [M. Agrawal, R. Gurjar, A. Korwar, N. Saxena, *Hitting-sets for ROABP and sum of
-  set-multilinear circuits*][AgrawalGurjarKorwarSaxena2015], Theorem 1, the hitting set used
+  set-multilinear circuits*][AgrawalGurjarKorwarSaxena2015], Theorem 1, in the adapted form of
+  `isHittingSet_roabpHittingSet`
 -/
 
 public section
@@ -281,8 +287,9 @@ theorem exists_mem_noncommABPHittingSet_lift_ne_zero [CharZero F] {W : ℕ}
 read-once oblivious programs it is built from, which `card_roabpHittingSet_le` bounds by
 `(⌈lg d⌉ + 1) p ^ ⌈lg d⌉ (d (n - 1) (B + p) ^ ⌈lg d⌉ + 1)`, with `p = roabpPrime d W (n - 1)`,
 which is at most `2 (2 d² W⁸ + (n - 1) + 1)`, and `B = d (n - 1) p + 1`: quasipolynomial in
-`n`, `d` and `W`. This is the bound of [AgrawalGurjarKorwarSaxena2015], not that of
-[ForbesShpilka2013]. -/
+`n`, `d` and `W`. This is the bound of the library's adaptation of
+[AgrawalGurjarKorwarSaxena2015] (`roabpHittingSet`), whose size expression is not the paper's;
+it is not the bound of [ForbesShpilka2013, Corollary 4.7] either. -/
 theorem card_noncommABPHittingSet_le (n d W : ℕ) :
     (noncommABPHittingSet F n d W).card ≤ (roabpHittingSet F d W (n - 1)).card := by
   classical
