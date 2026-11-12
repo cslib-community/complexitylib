@@ -599,7 +599,7 @@ theorem computableInPolyTime_graph :
       encVertexCoverInstance (encList encNat) := by
     simpa only [Function.comp_def, List.map_id'] using
       (map unary_to_binary).comp (range.comp computableInPolyTime_numVertices)
-  exact (encGraph_mk_polyTime hV computableInPolyTime_edges).of_enc_eq fun _ => rfl
+  exact encGraph_mk_polyTime hV computableInPolyTime_edges
 
 end VertexCover.Buss
 

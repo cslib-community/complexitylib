@@ -588,6 +588,12 @@ under this cycle. Approve without queueing, and say why in the approval, when:
 - the approval names a hold, such as an unlanded lower PR, a migration or an upstream dependency;
   queue once the hold clears.
 
+Pending source, advisory-notice or rendered-manual review is also a hold. `--wait` queues
+automatically when the check passes; do not start it while completing CI will produce material
+that still needs review. Inspect that material first, then record the hold's resolution and link
+the existing proof/API/caller assessment before queueing. A successful check does not release a
+review hold, and the helper does not judge whether that review is complete.
+
 The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
 conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with
 write access may run the same command for the approved head; coordinators sweep for approved heads

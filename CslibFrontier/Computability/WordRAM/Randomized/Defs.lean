@@ -126,7 +126,8 @@ section StepRand
 
 variable {w : ℕ} {p : Program B r} {s : State r}
 
-private theorem stepRand_eq_ofOutcome_of_ne_rand
+/-- When `p[s.pc]?` is not a `rand` instruction, `stepRand` reduces deterministically to `step`. -/
+theorem stepRand_eq_ofOutcome_of_ne_rand
     (h : ∀ dst src, p[s.pc]? ≠ some (.rand dst src)) :
     stepRand w p (.running s) = pure (.ofOutcome s.data (step w p s)) := by
   rcases hpc : p[s.pc]? with _ | (_ | _ | _ | _ | ⟨dst, src⟩)

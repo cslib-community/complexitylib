@@ -373,7 +373,8 @@ theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encVertexCoverInstance encBits) encBool := by
   refine computableInPolyTime_subsetVerifier (encγ := encNat)
     (by fun_prop)
-    (bool_and' ?_ (by fun_prop))
+    (bool_and' ?_ (computableInPolyTime_isCover.comp
+      ((encVertexCoverInstance_graph_polyTime (fst _ _)).prod (snd _ _))))
   exact ((length_list_binary encNat).comp (snd _ _)).decide_eq' (by fun_prop)
 
 /-- `VertexCover` belongs to `NP`. -/

@@ -32,7 +32,7 @@ example : DecisionTree.complexity (linearDecode e4) = 2 := by
   rw [complexity_linearDecode, Fintype.card_fin]
 
 example : randomizedComplexity (1 / 3) (linearDecode e4) = 2 := by
-  rw [randomizedComplexity_linearDecode e4 (by norm_num) (by norm_num), Fintype.card_fin]
+  rw [randomizedComplexity_linearDecode e4 (by norm_num), Fintype.card_fin]
 
 -- A single query does not suffice: no tree of depth `1` recovers `s`.
 example (t : DecisionTree (Fin 4) (Fin 2 → Bool)) (ht : ∀ s, t.eval (linearTable e4 s) = s) :

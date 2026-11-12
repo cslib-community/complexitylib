@@ -96,13 +96,9 @@ theorem packAffineSeed_unpackAffineSeed {k n : ℕ} {seed : List Bool}
     packAffineSeed (unpackAffineSeed k n seed) = seed := by
   have htake : (seed.take (k * n)).length = k * n := by simp [hseed]
   have hdrop : (seed.drop (k * n)).length = k := by simp [hseed]
-  have hblock : blocksEquiv.symm (block (ofList (k * n) (seed.take (k * n)))) =
-      ofList (k * n) (seed.take (k * n)) := by
-    rw [← blocksEquiv_apply]
-    exact blocksEquiv.symm_apply_apply _
   unfold packAffineSeed unpackAffineSeed
   dsimp only
-  rw [hblock, ofFn_ofList htake, ofFn_ofList hdrop, List.take_append_drop]
+  rw [blocksEquiv_symm_block, ofFn_ofList htake, ofFn_ofList hdrop, List.take_append_drop]
 
 /-- Packing an affine seed `(A, b)` concatenates the `k` row words of `A` followed by `b`. -/
 theorem packAffineSeed_eq_flatten_append {k n : ℕ} (s : (Fin k → BitString n) × BitString k) :

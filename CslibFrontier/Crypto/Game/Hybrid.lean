@@ -25,6 +25,7 @@ advantage bounds that follow from them are stated in the nonnegative reals.
 
 * `Game.advantage_hybrid_average`: exact loss for a uniformly sampled, padded hybrid hop.
 * `Game.advantage_hybrid_le_sum`: the endpoint advantage is bounded by adjacent advantages.
+* `Game.advantage_four_le`: four-game triangle inequality across a middle game pair.
 * `Game.Indistinguishable.hybrid`: polynomially many hops preserve indistinguishability.
 
 ## References
@@ -149,5 +150,23 @@ theorem Indistinguishable.hybrid {Adversary : Type*} {games : Adversary → ℕ 
   intro adversary ha
   obtain ⟨ε, hε, hstep⟩ := hstep adversary ha
   exact negligible_hybrid hpoly hε hstep
+
+/-- Four-game triangle inequality bounding `advantage (g₀ false) (g₀ true)` via a middle game pair
+`(g₁ false, g₁ true)`. -/
+theorem advantage_four_le (g₀ g₁ : Bool → Game) {ε₀ εsim ε₁ : ℝ}
+    (h₀ : (advantage (g₀ false) (g₁ false) : ℝ) ≤ ε₀)
+    (hsim : (advantage (g₁ false) (g₁ true) : ℝ) ≤ εsim)
+    (h₁ : (advantage (g₀ true) (g₁ true) : ℝ) ≤ ε₁) :
+    (advantage (g₀ false) (g₀ true) : ℝ) ≤ ε₀ + εsim + ε₁ := by
+  have htri : (advantage (g₀ false) (g₀ true) : ℝ) ≤
+      advantage (g₀ false) (g₁ false) +
+        advantage (g₁ false) (g₁ true) +
+        advantage (g₀ true) (g₁ true) := by
+    rw [advantage_comm (g₀ true)]
+    have h := (advantage_triangle (g₀ false) (g₁ false) (g₀ true)).trans
+      (add_le_add le_rfl (advantage_triangle (g₁ false) (g₁ true) (g₀ true)))
+    rw [← add_assoc] at h
+    exact_mod_cast h
+  exact htri.trans (add_le_add (add_le_add h₀ hsim) h₁)
 
 end Cslib.Crypto.Game
