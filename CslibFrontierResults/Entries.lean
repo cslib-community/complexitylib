@@ -18,14 +18,18 @@ import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
+import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
@@ -75,9 +79,11 @@ import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCou
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
+import CslibFrontier.Computability.Complexity.FineGrained.SchoeningMachine
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
+import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
@@ -135,6 +141,7 @@ import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.Foundations.Computability.KleenePost
 import CslibFrontier.Foundations.Computability.KleenePostJump
+import CslibFrontier.Foundations.Data.BranchingVector
 import CslibFrontier.GameTheory.Bimatrix.Existence
 import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Cycle
@@ -174,6 +181,7 @@ import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Infinitary
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
+import CslibFrontier.Logics.Propositional.CNF.Branching
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
 import CslibFrontier.Logics.SecondOrder.Ordered.Grounding
 import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
@@ -621,6 +629,31 @@ register_result "braverman" where
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
 
+register_result "formal-complexity-measure-leaf-bound" where
+  title := "Formal complexity measures lower-bound constant-free formula leaf size"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 22.1",
+      locator := "Web draft 2007-01-08, §22.1, printed p. 438; PDF p. 454" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.FormalComplexityMeasure.le_leafSize]
+  scope := "Natural-valued measures subadditive under AND/OR and at most one on each literal. \
+    Constant-free De Morgan formulas, with arbitrary negations; input-leaf size. \
+    No complement invariance. Constants are excluded because their library leaf cost is zero."
+
+register_result "formal-complexity-measure-quarter-density" where
+  title := "A large formal complexity measure is large on a quarter of truth tables"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 22.2",
+      locator := "Web draft 2007-01-08, §22.1, printed p. 438; PDF p. 454" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.FormalComplexityMeasure.card_le_four_mul_card]
+  scope := "For any fixed arity including zero, if one function has measure at least c, \
+    at least one quarter of all truth tables have measure at least c/4. \
+    Natural-number cardinalities with denominators cleared; no computational claim. \
+    Theorem 22.3's stronger near-total-density endpoint is not included."
+
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
   topic := "circuit complexity"
@@ -1009,6 +1042,80 @@ register_result "hitting-set-derivative-closed" where
     points. Existence and size of an explicit set only: no bit complexity, no black-box \
     algorithm model, nothing in positive characteristic, and not the source's extension to \
     noncommutative ABPs."
+
+register_result "support-concentrating-shifts" where
+  title := "Support-concentrating shifts for multilinear polynomials of small split rank"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := ForbesSaptharishiShpilka2014,
+      theorem := "Theorem 4.1 with Lemma 4.4, for individual degree one",
+      locator := "§4, pp. 21–23 (arXiv v1)" },
+    { paper := Shpilka2026, theorem := "Theorem 2.3 and Corollary 2.4, for δ = 1",
+      locator := "§2, p. 5" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.exists_mem_concentratingShifts_perfectHashFamily,
+    Cslib.Circuits.Arithmetic.card_concentratingShifts_perfectHashFamily_le,
+    Cslib.Circuits.Arithmetic.exists_mem_concentratingShifts
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of at most \
+    (n²·2^(25(⌊lg w⌋+1)) + 1)(n·2^(⌊lg w⌋+1) + 1) points such that every nonzero multilinear \
+    polynomial in n variables that is a sum of w products across every split of ⌊lg w⌋ + 1 \
+    variables from the rest has, after shifting by one of the points, a monomial with at most \
+    ⌊lg w⌋ variables. Individual degree one only, by a direct argument and not the sources' \
+    rank condensers; the support bound ⌊lg w⌋ is smaller than the sources' ⌊lg w²⌋. The set is \
+    built from a perfect hash family of the library and not from the Klivans–Spielman \
+    generator. Split rank is a decomposition into products, not a coefficient-matrix rank or \
+    a branching program. No hitting set for read-once branching programs is claimed here."
+
+register_result "hitting-set-multilinear-any-order-roabp" where
+  title := "Polynomial-size hitting sets for multilinear any-order ROABPs"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := Shpilka2026, theorem := "Theorem 1.1, in characteristic zero; Lemmas 3.1–3.4",
+      locator := "§1.1 p. 3, §3 pp. 6–9" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_anyOrderHittingSet_roabp,
+    Cslib.Circuits.Arithmetic.isHittingSet_anyOrderHittingSet,
+    Cslib.Circuits.Arithmetic.card_anyOrderHittingSet_le,
+    Cslib.Circuits.Arithmetic.IsAnyOrderROABP.splitRankLE
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of points in Fⁿ, of size \
+    bounded by an explicit polynomial in n and w, that contains a non-root of every nonzero \
+    multilinear n-variate polynomial computed by width-w read-once oblivious branching \
+    programs in every variable order; more generally of every multilinear polynomial that is \
+    a sum of w products across every split of the variables. Characteristic zero only: the \
+    source's positive-characteristic case rests on an unpublished hitting set. The perfect \
+    hash family and the shifts are the library's own constructions, so the size bound \
+    differs from the source's. Existence and size of an explicit set only: no bit \
+    complexity and no black-box algorithm model. The converse of Nisan's characterisation \
+    is not proved."
+
+register_result "hitting-set-set-multilinear-depth-three" where
+  title := "Hitting sets for set-multilinear depth-3 circuits with small variable sets"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := Shpilka2026, theorem := "Theorem 1.2, in characteristic zero; Lemma 3.4",
+      locator := "§1.1 p. 3, §3 pp. 8–9" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_setMultilinearHittingSet_sum_prod,
+    Cslib.Circuits.Arithmetic.isHittingSet_setMultilinearHittingSet,
+    Cslib.Circuits.Arithmetic.card_setMultilinearHittingSet_le
+  ]
+  scope := "Over a field of characteristic zero, for variables in n blocks of d, an explicit \
+    set of points of size at most an explicit polynomial in n, d and s times \
+    (d + 1)^(⌊lg s⌋ + 1), that contains a non-root of every nonzero sum of s products of n \
+    linear forms, the j-th in the variables of block j; more generally of every polynomial \
+    whose monomials have at most one variable of each block, to the first power, and that is \
+    a sum of s products across every union of blocks. Characteristic zero only: the source's \
+    positive-characteristic case rests on an unpublished hitting set. Blocks are Fin n × Fin d, \
+    not a general partition. The support-concentrating shifts for individual degree d have \
+    the statement the source cites from Forbes–Saptharishi–Shpilka, with a proof that is not \
+    from a source; the perfect hash family is the library's, so the size bound differs from \
+    the source's. Existence and size of an explicit set only: no bit complexity and no \
+    black-box algorithm model."
 
 register_result "hitting-set-sparse" where
   title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"
@@ -3668,6 +3775,66 @@ register_result "sperner-2d-ppad-completeness" where
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
 
+register_result "branching-vector-recurrence" where
+  title := "Search-tree branching-vector recurrences and separated node-work bounds"
+  topic := "exact exponential algorithms"
+  sources := [
+    { paper := FominKratsch2010, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.BranchingVector.BranchingRecurrence.le_mul_pow,
+    Cslib.BranchingVector.BranchingTree.leafCount_le_pow,
+    Cslib.BranchingVector.BranchingTree.workCost_le_mul_pow,
+    Cslib.BranchingVector.charSum_fibonacci,
+    Cslib.BranchingVector.charSum_prefixSteps_le_one
+  ]
+  scope := "Positive integer decrease vectors steps = [a₁, …, a_b] with characteristic sum \
+    charSum steps r = ∑ r ^ (-aᵢ) <= 1 (1 <= r): T n <= C * r ^ n for recurrences with \
+    T n <= max C (sum of T (n - d) over d in steps with d <= n) at every n and C >= 0; \
+    leaf count <= r ^ measure s, node count <= (measure s + 1) * r ^ measure s, and separated \
+    per-node overhead workCost <= W * (measure s + 1) * r ^ measure s on multi-way search trees \
+    (1 <= r), plus closed-form Fibonacci ((1 + sqrt 5) / 2) and prefix [1, …, k] (2 - (1 / 2) ^ k) \
+    factors."
+
+register_result "cnf-prefix-branching" where
+  title := "Disjoint clause-prefix SAT branching and model-count conservation"
+  topic := "SAT algorithms"
+  sources := [
+    { paper := FominKratsch2010, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.PL.CNF.not_partitionsModels_clauseCoverBranches_two,
+    Cslib.Logic.PL.CNF.modelCountOn_eq_sum_clausePrefixTree_leaves,
+    Cslib.Logic.PL.CNF.satisfiable_iff_exists_clausePrefixTree_leaf,
+    Cslib.Logic.PL.CNF.leafCount_clausePrefixTree_le,
+    Cslib.Logic.PL.CNF.leafCount_clausePrefixTree_two_le
+  ]
+  scope := "Separates covering (CoversModels) and model-partitioning (PartitionsModels) CNF \
+    branching rules, refutes model partitioning for naive two-literal clause covers, and proves \
+    that disjoint clause-prefix branching on width-<= k CNFs conserves exact modelCountOn across \
+    leaves with at most (2 - (1 / 2) ^ k) ^ n leaves (k >= 1) and ((1 + sqrt 5) / 2) ^ n leaves \
+    at k = 2. Combinatorial search-tree specification; no native machine runtime asserted here."
+
+register_result "schoening-multitape" where
+  title := "Schöning: randomized k-SAT in time (2(k - 1)/k)^n on fair-coin multitape machines"
+  topic := "SAT algorithms"
+  sources := [
+    { paper := Schoening1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.Schoening.half_mul_succeedProb_trial_le_fairTrial,
+    Cslib.Complexity.Schoening.exists_multiTapePTM_KSAT,
+    Cslib.Complexity.Schoening.exists_decidesWithBoundedErrorInTime_KSAT,
+    Cslib.Complexity.Schoening.exists_decidesWithBoundedErrorInTime_ThreeSAT
+  ]
+  scope := "For every fixed clause width k >= 3 and amplification parameter c : Nat, one \
+    finite-control fair-coin MultiTapePTM on encCNF (CNF Nat) using w = 2n + k + 3 bits per \
+    sampleModNat step and a binary encNat countdown over 2 * schoeningTrials k φ.numVars c trials \
+    halts on every branch within C * (((2(k - 1))/k) ^ φ.numVars * (|encCNF φ| + 1) ^ E) steps \
+    and C * (|encCNF φ| + 1) ^ E work-tape cells (toNTM.RunsInSpace), outputs PMF.pure [false] \
+    outside KSAT k, and accepts every φ in KSAT k with probability >= 1 - exp(-c) (>= 2/3 at \
+    c = 2, giving (4/3)^n on ThreeSAT)."
+
 section
 open Cslib.Communication
 
@@ -4160,3 +4327,29 @@ register_result "kleene-post-below-jump" where
     many-one reduction of the one-step extension question Halts to halting. Constructs total \
     Δ⁰₂ sets below ∅′; no c.e. property is proved. Friedberg–Muchnik, Sacks splitting/density \
     and Spector's minimal degree remain open (#3379)."
+
+register_result "w-hierarchy-subset-xp" where
+  title := "WeightedCircuitSAT, W[P] and every level W[t] of the W-hierarchy lie in XP"
+  topic := "parameterized complexity"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "weighted-circuit enumeration; Definition 13.16 (W[t])",
+      locator := "Section 13.3, pp. 436–437 (authors' May 30, 2016 PDF)" }
+  ]
+  theorems := [
+    Cslib.Complexity.WeightedCircuitSAT_mem_XP,
+    Cslib.Complexity.WP_subset_XP,
+    Cslib.Complexity.W_subset_XP,
+    Cslib.Complexity.WCS_mem_XP,
+    Cslib.Complexity.W_subset_WP,
+    Cslib.Complexity.WP_eq_FPT_iff,
+    Cslib.Complexity.IndependentSet_mem_XP,
+    Cslib.Complexity.Clique_mem_XP
+  ]
+  scope := "Instances of WeightedCircuitSAT encode a one-output unbounded fan-in Boolean circuit \
+    with unary input count, framed before the binary target weight k. Exhaustive search \
+    over min(n, k)-tuples of input wires gives independent native multi-tape time and workspace \
+    bounds C * 2^(D*k) * (L+1)^(D*k+D), hence XP membership. Library fpt-reduction closure gives \
+    FPT ⊆ W[t] ⊆ WP ⊆ XP for every t and XP membership for WCS t d, Clique and IndependentSet. \
+    WP denotes this library's reduction closure with arbitrary, potentially ineffective time \
+    and parameter bounds; equivalence with the effective literature W[P] is not claimed. Circuits \
+    are straight-line programs, with the basis conventions documented in WHierarchy.lean."

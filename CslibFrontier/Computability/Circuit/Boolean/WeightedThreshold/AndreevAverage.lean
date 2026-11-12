@@ -114,18 +114,18 @@ theorem andreevSubcubeScore_eq_two_pow_mul_sum (b m r : ℕ) (w : BitString (2 ^
     andreevSubcubeScore b m r w =
       (2 : ℤ) ^ #(andreevPrefixCoords b r) *
         ∑ c ∈ andreevSubcube b r (andreevParities b m w),
-          (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ)) := by
+          (1 - 2 * ((andreevTable b m w c).toNat : ℤ)) := by
   unfold andreevSubcubeScore andreevTableScore; simp_rw [sum_mul]; rw [sum_comm]
   calc ∑ c : BitString b, ∑ S ∈ andreevPrefixSubsets b r,
-        chi ℤ S c * (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ)) *
+        chi ℤ S c * (1 - 2 * ((andreevTable b m w c).toNat : ℤ)) *
           chi ℤ S (andreevParities b m w)
       = ∑ c : BitString b,
           (∑ S ∈ andreevPrefixSubsets b r, chi ℤ S c * chi ℤ S (andreevParities b m w)) *
-            (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ)) :=
+            (1 - 2 * ((andreevTable b m w c).toNat : ℤ)) :=
         sum_congr rfl fun c _ => by rw [sum_mul]; exact sum_congr rfl fun S _ => by ring
     _ = (2 : ℤ) ^ #(andreevPrefixCoords b r) *
           ∑ c ∈ andreevSubcube b r (andreevParities b m w),
-            (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ)) := by
+            (1 - 2 * ((andreevTable b m w c).toNat : ℤ)) := by
         simp_rw [sum_chi_mul_chi_prefixSubsets, ite_mul, zero_mul, ← sum_filter,
           filter_mem_eq_inter, univ_inter, mul_sum]
 
@@ -134,7 +134,7 @@ theorem andreevSubcubeScore_eq_two_pow_mul_sum (b m r : ℕ) (w : BitString (2 ^
 theorem andreevSubcubeEval_eq_decide (b m r : ℕ) (w : BitString (2 ^ b + b * m)) :
     andreevSubcubeEval b m r w =
       decide ((∑ c ∈ andreevSubcube b r (andreevParities b m w),
-        (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ))) ≤ 0) := by
+        (1 - 2 * ((andreevTable b m w c).toNat : ℤ))) ≤ 0) := by
   rw [andreevSubcubeEval, andreevSubcubeScore_eq_two_pow_mul_sum]
   have hpos : (0 : ℤ) < (2 : ℤ) ^ #(andreevPrefixCoords b r) := by positivity
   exact decide_eq_decide.mpr
@@ -253,6 +253,14 @@ theorem andreevShiftTableFun_tableIndex (b m : ℕ) (w : BitString (2 ^ b + b * 
       (BitString.equivFin b ((BitString.equivFin b).symm idx + andreevParities b m w))) := by
   simp [andreevShiftTableFun, andreevTableIndex]
 
+/-- At addresses, `andreevShiftTableFun b m w` reads the table of `w` shifted by its block
+parities. -/
+theorem andreevTable_shiftTableFun (b m : ℕ) (w : BitString (2 ^ b + b * m)) (c : BitString b) :
+    andreevTable b m (andreevShiftTableFun b m w) c =
+      andreevTable b m w (c + andreevParities b m w) := by
+  rw [andreevTable, andreevShiftTableFun_tableIndex, Equiv.symm_apply_apply]
+  rfl
+
 @[simp]
 theorem andreevParities_shiftTableFun (b m : ℕ) (w : BitString (2 ^ b + b * m)) :
     andreevParities b m (andreevShiftTableFun b m w) = andreevParities b m w := by
@@ -302,9 +310,10 @@ theorem card_andreevZeroPuncturedSupport {b r : ℕ} (hr : r ≤ b) (m : ℕ) :
 theorem andreev_shiftTable (b m : ℕ) (w : BitString (2 ^ b + b * m)) :
     andreev b m (andreevShiftTable b m w) = w (andreevZeroTableCoord b m) := by
   rw [andreev_eq_table_parities, andreevShiftTable_apply, andreevParities_shiftTableFun,
-    andreevShiftTableFun_tableIndex, Equiv.symm_apply_apply, andreevZeroTableCoord,
+    andreevTable_shiftTableFun,
     show andreevParities b m w + andreevParities b m w = (0 : BitString b) by
       funext j; simp [Bool.add_eq_xor, Bool.zero_eq_false]]
+  rfl
 
 /-- Under `andreevShiftTable b m`, `andreevSubcubeEval b m r` for `r < b` reduces to the majority
 vote over `insert (andreevZeroTableCoord b m) (andreevZeroPuncturedSupport b m r)`. -/
@@ -323,26 +332,25 @@ theorem andreevSubcubeEval_shiftTable {b r : ℕ} (hr : r < b) (m : ℕ)
     · rintro ⟨d, hd, rfl⟩ j hj; have := hd j hj; simp [Bool.add_eq_xor, Bool.zero_eq_false, this]
   have hsum :
       (∑ c ∈ andreevSubcube b r p,
-        (1 - 2 * ((andreevShiftTableFun b m w
-          (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ))) =
+        (1 - 2 * ((andreevTable b m (andreevShiftTableFun b m w) c).toNat : ℤ))) =
       ∑ c ∈ andreevSubcube b r 0,
-        (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ)) := by
+        (1 - 2 * ((andreevTable b m w c).toNat : ℤ)) := by
     rw [hmap, sum_map]; refine sum_congr rfl fun c _ => ?_
-    simp only [Function.Embedding.coeFn_mk, andreevShiftTableFun_tableIndex, Equiv.symm_apply_apply]
+    simp only [Function.Embedding.coeFn_mk, andreevTable_shiftTableFun]
     rw [show c + p + p = c by funext j; simp [Bool.add_eq_xor]]
   rw [hsum, ← add_sum_erase _ _ (self_mem_andreevSubcube b r 0)]
   have hpunc :
       (∑ c ∈ (andreevSubcube b r 0).erase 0,
-        (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ))) =
+        (1 - 2 * ((andreevTable b m w c).toNat : ℤ))) =
       ((2 ^ (b - r) - 1 : ℕ) : ℤ) -
         2 * (#{i ∈ andreevZeroPuncturedSupport b m r | w i = true} : ℤ) := by
     have hones :
         (#{i ∈ andreevZeroPuncturedSupport b m r | w i = true} : ℤ) =
           ∑ c ∈ (andreevSubcube b r 0).erase 0,
-            ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℤ) := by
+            ((andreevTable b m w c).toNat : ℤ) := by
       rw [andreevZeroPuncturedSupport, card_filter, sum_map, Nat.cast_sum]
       refine sum_congr rfl fun c _ => ?_
-      simp only [Function.Embedding.coeFn_mk]
+      simp only [Function.Embedding.coeFn_mk, andreevTable]
       cases w (andreevTableIndex b m (BitString.equivFin b c)) <;> simp
     rw [hones, sum_sub_distrib, ← mul_sum, sum_const,
       card_erase_of_mem (self_mem_andreevSubcube b r 0), card_andreevSubcube hr.le]; simp
