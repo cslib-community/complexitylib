@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingScale
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount.DenseRelabel
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -105,13 +106,8 @@ theorem DecidableInSubexpTime.of_interpolationScale {α : Type} {enc : α ↪ Li
     DecidableInSubexpTime A enc μ := by
   intro δ hδ
   obtain ⟨K, _, hK⟩ := exists_two_pow_mul_interpolationScale_le A₀ hδ
-  refine ⟨d, h.mono ⌈K⌉₊ (fun a => ?_) fun a => by positivity⟩
-  have hceil : K ≤ ⌈K⌉₊ := Nat.le_ceil K
-  have h1 : (2 : ℝ) ^ (A₀ * interpolationScale (μ a)) ≤ ⌈K⌉₊ * (2 : ℝ) ^ (δ * μ a) :=
-    (hK (μ a)).trans (mul_le_mul_of_nonneg_right hceil (by positivity))
-  have h2 := mul_le_mul_of_nonneg_right h1
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ d)
-  linarith
+  exact ⟨d, h.mono _ (fun a => two_rpow_mul_pow_le_natCeil_mul_add_of_le (hK (μ a)))
+    fun _ => by positivity⟩
 
 /-- If `f : α → Bool` decides `A` in `ComputableInO` time bounded by
 `c * (2 ^ (A₀ * interpolationScale (μ a)) * (|enc a| + 1) ^ e) + c`, then `A` is decidable in
@@ -122,27 +118,9 @@ theorem DecidableInSubexpTime.of_computableInO_interpolationScale {α : Type} {e
     {A₀ : ℝ} {c e : ℕ}
     (ht : ∀ a, (t a : ℝ) ≤
       c * ((2 : ℝ) ^ (A₀ * interpolationScale (μ a)) * (((enc a).length : ℝ) + 1) ^ e) + c) :
-    DecidableInSubexpTime A enc μ := by
-  intro δ hδ
-  obtain ⟨K, _, hK⟩ := exists_two_pow_mul_interpolationScale_le A₀ hδ
-  refine DecidableInExpTime.of_computableInO hf hfA (c * ⌈K⌉₊ + c) e fun a => ?_
-  refine (ht a).trans ?_
-  have hceil : K ≤ ⌈K⌉₊ := Nat.le_ceil K
-  have hX1 : (1 : ℝ) ≤ (2 : ℝ) ^ (δ * μ a) := Real.one_le_rpow (by norm_num) (by positivity)
-  have hP1 : (1 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e :=
-    one_le_pow₀ (by linarith [(Nat.cast_nonneg (enc a).length : (0 : ℝ) ≤ _)])
-  have hXP1 : (1 : ℝ) ≤ (2 : ℝ) ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e :=
-    one_le_mul_of_one_le_of_one_le hX1 hP1
-  have hcXP : (c : ℝ) ≤ (c : ℝ) * ((2 : ℝ) ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e) :=
-    le_mul_of_one_le_right (Nat.cast_nonneg c) hXP1
-  have h1 : (2 : ℝ) ^ (A₀ * interpolationScale (μ a)) ≤ ⌈K⌉₊ * (2 : ℝ) ^ (δ * μ a) :=
-    (hK (μ a)).trans (mul_le_mul_of_nonneg_right hceil (by positivity))
-  have h2 := mul_le_mul_of_nonneg_right h1
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
-  rw [mul_assoc] at h2
-  have h3 := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg c)
-  push_cast
-  linarith
+    DecidableInSubexpTime A enc μ :=
+  DecidableInSubexpTime.of_interpolationScale
+    ((DecidableInTimeO.of_computableInO hf hfA fun _ => le_rfl).mono c ht fun _ => by positivity)
 
 /-! ### From dense-variable model counting to `DecidableInSubexpTime (KSAT k)` -/
 
