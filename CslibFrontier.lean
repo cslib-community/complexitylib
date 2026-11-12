@@ -5943,6 +5943,7 @@ public import CslibFrontier.Foundations.Probability.Gaussian.Moments
 public import CslibFrontier.Foundations.Probability.Gaussian.Multivariate
 public import CslibFrontier.Foundations.Probability.Gaussian.NoiseOperator
 public import CslibFrontier.Foundations.Probability.Gaussian.NoiseSemigroup
+public import CslibFrontier.Foundations.Probability.Gaussian.OrnsteinUhlenbeck
 public import CslibFrontier.Foundations.Probability.Gaussian.Periodization
 public import CslibFrontier.Foundations.Probability.Gaussian.Poisson
 public import CslibFrontier.Foundations.Probability.Gaussian.PolynomialDense
