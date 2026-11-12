@@ -43,6 +43,8 @@ have a hitting set of size polynomial in `n`, `d` and `s` (`isHittingSet_sum_pow
 ## Main results
 
 * `aeval_logCurve_ne_zero`: Theorem 1.1 of the source.
+* `not_X_pow_dvd_aeval_logCurve`: the order of vanishing on the truncated curve is less than
+  `n r ^ 2 + r`.
 * `isHittingSet_logHittingSet`, `card_logHittingSet_le`: the hitting set and its size.
 * `isHittingSet_sum_pow`: sums of powers of linear forms.
 
@@ -105,18 +107,28 @@ private theorem X_pow_dvd_aeval_logCurve_sub (B : ℕ) (f : MvPolynomial (Fin n)
 
 variable {V : Submodule F (MvPolynomial (Fin n) F)}
 
+/-- A nonzero polynomial in a derivative-closed space of dimension at most `r` does not vanish to
+order `n * r ^ 2 + r` on the logarithmic curve truncated below that degree. -/
+theorem not_X_pow_dvd_aeval_logCurve (hV : ∀ i, ∀ p ∈ V, MvPolynomial.pderiv i p ∈ V)
+    [Module.Finite F V] {r : ℕ} (hr : Module.finrank F V ≤ r) {f : MvPolynomial (Fin n) F}
+    (hf : f ∈ V) (hf0 : f ≠ 0) :
+    ¬ (Polynomial.X : F[X]) ^ (n * r ^ 2 + r) ∣
+      MvPolynomial.aeval (logCurve F n (n * r ^ 2 + r)) f := by
+  rintro ⟨q, hq⟩
+  have h := X_pow_dvd_aeval_logCurve_sub (n * r ^ 2 + r) f
+  rw [hq, Polynomial.coe_mul, Polynomial.coe_pow, Polynomial.coe_X,
+    dvd_sub_right (dvd_mul_right _ _)] at h
+  refine not_X_pow_dvd_aeval_logSeries (algebraicIndependent_logSeries F n) hV hf hf0
+    ((pow_dvd_pow _ ?_).trans h)
+  gcongr
+
 /-- **Theorem 1.1 of the source.** A nonzero polynomial in a derivative-closed space of dimension
 at most `r` does not vanish on the logarithmic curve truncated below degree `n * r ^ 2 + r`. -/
 theorem aeval_logCurve_ne_zero (hV : ∀ i, ∀ p ∈ V, MvPolynomial.pderiv i p ∈ V)
     [Module.Finite F V] {r : ℕ} (hr : Module.finrank F V ≤ r) {f : MvPolynomial (Fin n) F}
     (hf : f ∈ V) (hf0 : f ≠ 0) :
-    MvPolynomial.aeval (logCurve F n (n * r ^ 2 + r)) f ≠ 0 := by
-  intro h0
-  have h := X_pow_dvd_aeval_logCurve_sub (n * r ^ 2 + r) f
-  rw [h0, Polynomial.coe_zero, zero_sub, dvd_neg] at h
-  refine not_X_pow_dvd_aeval_logSeries (algebraicIndependent_logSeries F n) hV hf hf0
-    ((pow_dvd_pow _ ?_).trans h)
-  gcongr
+    MvPolynomial.aeval (logCurve F n (n * r ^ 2 + r)) f ≠ 0 :=
+  fun h0 => not_X_pow_dvd_aeval_logCurve hV hr hf hf0 (h0 ▸ dvd_zero _)
 
 private theorem natDegree_aeval_logCurve_le (B : ℕ) (f : MvPolynomial (Fin n) F) :
     (MvPolynomial.aeval (logCurve F n B) f).natDegree ≤ f.totalDegree * B := by

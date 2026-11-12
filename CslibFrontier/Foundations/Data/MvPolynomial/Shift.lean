@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Algebra.MvPolynomial.CommRing
 public import Mathlib.Algebra.MvPolynomial.Degrees
+public import Mathlib.Algebra.MvPolynomial.PDeriv
 
 /-!
 # Shifting the variables of a multivariate polynomial
@@ -25,6 +26,7 @@ be shifted by a point with polynomial coordinates; the result is a polynomial ov
 ## Main results
 
 * `MvPolynomial.eval_shift`: evaluating a shift evaluates at the translated point.
+* `MvPolynomial.pderiv_shift`: shifting commutes with partial derivatives.
 * `MvPolynomial.degreeOf_shift_le`: shifting does not increase the degree in a variable.
 * `MvPolynomial.degreeOf_coeff_shift_le`: a degree bound for the coefficients of a shift by a
   point with polynomial coordinates.
@@ -62,6 +64,18 @@ theorem eval_shift (a b : σ → R) (f : MvPolynomial σ R) :
   have h := DFunLike.congr_fun (comp_aeval (R := R)
     (f := fun i => (X i + C (a i) : MvPolynomial σ R)) (aeval b : MvPolynomial σ R →ₐ[R] R)) f
   simpa [shift, aeval_eq_eval] using h
+
+/-- Shifting commutes with partial derivatives. -/
+theorem pderiv_shift (a : σ → A) (i : σ) (f : MvPolynomial σ R) :
+    pderiv i (shift a f) = shift a (pderiv i f) := by
+  classical
+  induction f using MvPolynomial.induction_on with
+  | C r => simp [shift]
+  | add p q hp hq => simp only [map_add, hp, hq]
+  | mul_X p j hp =>
+    simp only [map_mul, map_add, shift_X, Derivation.leibniz, hp, pderiv_X, pderiv_C, smul_eq_mul,
+      Pi.single_apply]
+    split_ifs <;> simp
 
 /-- A polynomial of degree at most one in each of its finitely many variables has total degree
 at most the number of variables. -/
