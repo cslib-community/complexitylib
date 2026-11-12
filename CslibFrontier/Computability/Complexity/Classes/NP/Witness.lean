@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
+public import CslibFrontier.Foundations.Data.List.MaskSelect
 public import CslibFrontier.Foundations.Data.List.SelectDistinct
 public import Mathlib.Data.Finset.Card
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -250,6 +251,16 @@ theorem mem_NP_of_subsetWitness {encγ : γ ↪ List Bool} {vs : α → List γ}
   exact (length_le_length_encList encγ (vs a)).trans (hle a)
 
 end Subset
+
+/-! ### Mask witnesses -/
+
+/-- Selecting the entries of a list by a mask (`maskSelect`) is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_maskSelect (encγ : γ ↪ List Bool) :
+    ComputableInPolyTime (fun x : List γ × List Bool => maskSelect x.1 x.2)
+      (encPair (encList encγ) encBits) (encList encγ) := by
+  unfold maskSelect
+  fun_prop
 
 /-! ### Closure under reductions -/
 

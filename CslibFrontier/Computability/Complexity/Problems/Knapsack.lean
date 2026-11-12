@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 
@@ -127,10 +128,9 @@ theorem isVerifier : IsVerifier encKnapsack Polynomial.X verifier Knapsack := by
   intro x
   simp only [Knapsack, Set.mem_ofPred_eq, Polynomial.eval_X, verifier, Bool.and_eq_true,
     decide_eq_true_eq]
-  have hlen : x.items.length ≤ (encKnapsack x).length := by
-    rw [encKnapsack_apply]
-    exact length_le_length_encPair encItem (encPair encNat encNat)
-      (x.items, x.capacity, x.goal)
+  have hlen : x.items.length ≤ (encKnapsack x).length :=
+    (length_le_length_encList _ _).trans
+      (length_le_encPair_left _ _ (x.items, x.capacity, x.goal))
   simpa only [Multiset.map_coe, Multiset.sum_coe] using exists_le_iff_exists_maskSelect hlen
     (fun s => (s.map Item.weight).sum ≤ x.capacity ∧ x.goal ≤ (s.map Item.value).sum)
 
