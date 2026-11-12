@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Complexity.Classes.EXP.Decidable
 import CslibFrontier.Computability.Complexity.Classes.Immune
 import CslibFrontier.Computability.Complexity.Classes.Inclusions
 import CslibFrontier.Computability.Complexity.Classes.NP.Closure
-import CslibFrontier.Computability.Complexity.Reduction.Isomorphism.Conjecture
+import CslibFrontier.Computability.Complexity.Reduction.Nontrivial
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BoundedSearch
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
