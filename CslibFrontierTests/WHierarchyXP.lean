@@ -71,13 +71,13 @@ example : WeightedCircuitSAT ∈ WP encWeightedCircuitSAT WeightedCircuitSATInst
 example (t d : ℕ) : WCS t d ∈ WP (encWCS t d) WCSInstance.weight :=
   W_subset_WP t (WCS_mem_W t d)
 
-example : Clique ∈ WP (encPair encGraph encNat) Prod.snd :=
+example : Clique ∈ WP encCliqueInstance CliqueInstance.m :=
   W_subset_WP 1 Clique_mem_W
 
-example : IndependentSet ∈ WP (encPair encGraph encNat) Prod.snd :=
+example : IndependentSet ∈ WP encIndependentSetInstance IndependentSetInstance.m :=
   W_subset_WP 1 IndependentSet_mem_W
 
-example : VertexCover ∈ WP (encPair encGraph encNat) Prod.snd :=
+example : VertexCover ∈ WP encVertexCoverInstance VertexCoverInstance.k :=
   FPT_subset_WP VertexCover_mem_FPT
 
 -- Collapse consequence: `WeightedCircuitSAT ∈ FPT` collapses `WP` and every `W[t]` to `FPT`.
@@ -100,8 +100,8 @@ example {α : Type} (enc : α ↪ List Bool) (κ : α → ℕ) :
 example (t d : ℕ) : WCS t d ∈ XP (encWCS t d) WCSInstance.weight :=
   WCS_mem_XP t d
 
-example : Clique ∈ XP (encPair encGraph encNat) Prod.snd ∧
-    IndependentSet ∈ XP (encPair encGraph encNat) Prod.snd :=
+example : Clique ∈ XP encCliqueInstance CliqueInstance.m ∧
+    IndependentSet ∈ XP encIndependentSetInstance IndependentSetInstance.m :=
   ⟨Clique_mem_XP, IndependentSet_mem_XP⟩
 
 end CslibFrontierTests.WHierarchyXP

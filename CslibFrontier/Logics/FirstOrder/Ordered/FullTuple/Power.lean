@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Fagin.Power
+public import CslibFrontier.Logics.FirstOrder.Encoding.Power
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.StrictOrder
 import CslibFrontier.Foundations.ModelTheory.Basic

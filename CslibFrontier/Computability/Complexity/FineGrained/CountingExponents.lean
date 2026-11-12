@@ -27,7 +27,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFa
 import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
-import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # `#k-SAT` exponents, `#ETH`, and `#SETH`
@@ -71,10 +70,9 @@ unconditionally via `toThreeSAT` clause-splitting and `3`-SAT sparsification, an
 * `Cslib.Complexity.sharpSatExponent_nonneg`, `Cslib.Complexity.sharpSatExponent_le_one`,
   `Cslib.Complexity.sharpSatExponent_mono`, `Cslib.Complexity.satExponent_le_sharpSatExponent`:
   `0 ≤ s_k ≤ s^#_k ≤ 1` and monotonicity in `k`.
-* `Cslib.Complexity.satExponent_eq_sInf_pos`, `Cslib.Complexity.sharpSatExponent_eq_sInf_pos`,
-  `Cslib.Complexity.SETH_iff_iSup_ge_three_eq_one`,
-  `Cslib.Complexity.SharpSETH_iff_iSup_ge_three_eq_one`, `Cslib.Complexity.SETH.eth`: positive-`δ`
-  infima, finite-prefix suprema, and `SETH → ETH`.
+* `Cslib.Complexity.SETH_iff_iSup_ge_three_eq_one`,
+  `Cslib.Complexity.SharpSETH_iff_iSup_ge_three_eq_one`, `Cslib.Complexity.SETH.eth`: finite-prefix
+  suprema and `SETH → ETH`.
 * `Cslib.Complexity.SharpETH_iff_sharpSatExponent_pos`,
   `Cslib.Complexity.SharpSETH_iff_tendsto`,
   `Cslib.Complexity.SharpETH_iff_not_computableInSubexpTime_length`: exponent and clause-rate
@@ -414,11 +412,11 @@ theorem ComputableInExpTime.SharpKSAT_of_le {k k' : ℕ} (hk : k ≤ k') {δ : �
 
 /-! ### The `#k-SAT` exponent `sharpSatExponent`, `SharpETH`, and `SharpSETH` -/
 
-/-- The counting exponent `s^#_k` of `#k-SAT`: the infimum of the `δ ≥ 0` for which `SharpKSAT k`
-is computable within time `2 ^ (δ * n)` times a polynomial in the encoded formula length, where
-`n = φ.numVars`. -/
+/-- The counting exponent `s^#_k` of `#k-SAT`: the infimum (`Cslib.rateExponent`) of the `δ ≥ 0` for
+which `SharpKSAT k` is computable within time `2 ^ (δ * n)` times a polynomial in the encoded
+formula length, where `n = φ.numVars`. -/
 @[expose] noncomputable def sharpSatExponent (k : ℕ) : ℝ :=
-  sInf {δ | 0 ≤ δ ∧ ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ}
+  rateExponent (ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars)
 
 /-- **`#ETH` (the counting exponential time hypothesis):** for some `δ > 0`, `#3-SAT`
 (`SharpThreeSAT`) is not computable within time `2 ^ (δ * n)` times any polynomial in the encoded
@@ -433,51 +431,41 @@ times any polynomial in the encoded formula length. -/
   ∀ ε : ℝ, 0 < ε → ∃ k : ℕ,
     ¬ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars (1 - ε)
 
-private abbrev sharpExponents (k : ℕ) : Set ℝ :=
-  {δ | 0 ≤ δ ∧ ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ}
-
-private theorem one_mem_sharpExponents (k : ℕ) : (1 : ℝ) ∈ sharpExponents k :=
-  ⟨zero_le_one, SharpKSAT_computableInExpTime_one k⟩
-
-private theorem bddBelow_sharpExponents (k : ℕ) : BddBelow (sharpExponents k) :=
-  ⟨0, fun _ h => h.1⟩
-
 /-- The counting exponent of `#k-SAT` is nonnegative. -/
 theorem sharpSatExponent_nonneg (k : ℕ) : 0 ≤ sharpSatExponent k :=
-  le_csInf ⟨1, one_mem_sharpExponents k⟩ fun _ h => h.1
+  rateExponent_nonneg _
 
 /-- **Exhaustive counting bound:** `sharpSatExponent k ≤ 1` for every `k`. -/
 theorem sharpSatExponent_le_one (k : ℕ) : sharpSatExponent k ≤ 1 :=
-  csInf_le (bddBelow_sharpExponents k) (one_mem_sharpExponents k)
+  rateExponent_le_one (SharpKSAT_computableInExpTime_one k)
 
 /-- `sharpSatExponent k` is at most every attainable counting rate `δ ≥ 0`. -/
 theorem sharpSatExponent_le {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ) :
     sharpSatExponent k ≤ δ :=
-  csInf_le (bddBelow_sharpExponents k) ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 /-- Below `sharpSatExponent k` there is no `#k-SAT` counter. -/
 theorem not_computableInExpTime_of_lt_sharpSatExponent {k : ℕ} {δ : ℝ} (hδ₀ : 0 ≤ δ)
     (hδ : δ < sharpSatExponent k) :
-    ¬ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ := fun h =>
-  absurd (sharpSatExponent_le hδ₀ h) (not_le.mpr hδ)
+    ¬ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ :=
+  not_of_lt_rateExponent hδ₀ hδ
 
 /-- An unattainable rate `δ` bounds `sharpSatExponent k` from below. -/
 theorem le_sharpSatExponent_of_not_computableInExpTime {k : ℕ} {δ : ℝ}
     (h : ¬ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ) :
     δ ≤ sharpSatExponent k :=
-  le_csInf ⟨1, one_mem_sharpExponents k⟩ fun _ hδ' =>
-    le_of_not_gt fun hlt => h (hδ'.2.mono hlt.le)
+  le_rateExponent (fun _ _ hle h => h.mono hle) (SharpKSAT_computableInExpTime_one k) h
 
 /-- `sharpSatExponent` is monotone in the clause width `k`. -/
-theorem sharpSatExponent_mono : Monotone sharpSatExponent := fun k k' hk =>
-  csInf_le_csInf (bddBelow_sharpExponents k) ⟨1, one_mem_sharpExponents k'⟩ fun _ hδ =>
-    ⟨hδ.1, hδ.2.SharpKSAT_of_le hk hδ.1⟩
+theorem sharpSatExponent_mono : Monotone sharpSatExponent := fun _ k' hk =>
+  rateExponent_le_rateExponent (SharpKSAT_computableInExpTime_one k') fun _ hδ h =>
+    h.SharpKSAT_of_le hk hδ
 
 /-- **Decision vs. counting exponent:** `satExponent k ≤ sharpSatExponent k` for every `k`. -/
 theorem satExponent_le_sharpSatExponent (k : ℕ) : satExponent k ≤ sharpSatExponent k :=
-  le_csInf ⟨1, one_mem_sharpExponents k⟩ fun _ hδ =>
-    satExponent_le hδ.1 (DecidableInExpTime.KSAT_of_SharpKSAT hδ.1 hδ.2)
+  rateExponent_le_rateExponent (SharpKSAT_computableInExpTime_one k) fun _ hδ h =>
+    DecidableInExpTime.KSAT_of_SharpKSAT hδ h
 
 /-- `#ETH` holds iff `#3-SAT` is not computable in subexponential time in `numVars`. -/
 theorem SharpETH_iff_not_computableInSubexpTime :
@@ -485,56 +473,19 @@ theorem SharpETH_iff_not_computableInSubexpTime :
   simp only [SharpETH, ComputableInSubexpTime, not_forall, exists_prop]
 
 /-- **`#ETH` in terms of the counting exponent:** `SharpETH ↔ 0 < sharpSatExponent 3`. -/
-theorem SharpETH_iff_sharpSatExponent_pos : SharpETH ↔ 0 < sharpSatExponent 3 := by
-  constructor
-  · rintro ⟨δ, hδ, h⟩
-    exact hδ.trans_le (le_sharpSatExponent_of_not_computableInExpTime h)
-  · intro h
-    exact ⟨sharpSatExponent 3 / 2, half_pos h,
-      not_computableInExpTime_of_lt_sharpSatExponent (half_pos h).le (half_lt_self h)⟩
+theorem SharpETH_iff_sharpSatExponent_pos : SharpETH ↔ 0 < sharpSatExponent 3 :=
+  (rateExponent_pos_iff (fun _ _ hle h => h.mono hle) (SharpKSAT_computableInExpTime_one 3)).symm
 
 /-- `sharpSatExponent k = 0` iff `SharpKSAT k` is computable in subexponential time. -/
 theorem sharpSatExponent_eq_zero_iff_computableInSubexpTime {k : ℕ} :
-    sharpSatExponent k = 0 ↔ ComputableInSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars := by
-  constructor
-  · intro h δ hδ
-    by_contra hnc
-    have hle := le_sharpSatExponent_of_not_computableInExpTime hnc
-    linarith
-  · intro h
-    refine le_antisymm (le_of_not_gt fun hpos => ?_) (sharpSatExponent_nonneg k)
-    exact not_computableInExpTime_of_lt_sharpSatExponent (half_pos hpos).le (half_lt_self hpos)
-      (h (sharpSatExponent k / 2) (half_pos hpos))
+    sharpSatExponent k = 0 ↔ ComputableInSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars :=
+  rateExponent_eq_zero_iff (fun _ _ hle h => h.mono hle) (SharpKSAT_computableInExpTime_one k)
 
 /-- **`#SETH` in terms of the counting exponents:** `SharpSETH ↔ sharpSatExponent k → 1`. -/
-theorem SharpSETH_iff_tendsto : SharpSETH ↔ Tendsto sharpSatExponent atTop (𝓝 1) := by
-  constructor
-  · intro h
-    rw [Metric.tendsto_atTop]
-    intro ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η < ε := (half_lt_self (lt_min hε one_pos)).trans_le (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      dsimp only [η]
-      linarith [min_le_right ε 1]
-    obtain ⟨k, hk⟩ := h η hη
-    refine ⟨k, fun k' hk' => ?_⟩
-    have h₁ : 1 - η ≤ sharpSatExponent k' :=
-      le_sharpSatExponent_of_not_computableInExpTime fun h' => hk (h'.SharpKSAT_of_le hk' hη₁)
-    have h₂ := sharpSatExponent_le_one k'
-    rw [Real.dist_eq, abs_sub_lt_iff]
-    constructor <;> linarith
-  · intro h ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η ≤ ε := (half_lt_self (lt_min hε one_pos)).le.trans (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      dsimp only [η]
-      linarith [min_le_right ε 1]
-    obtain ⟨k, hk⟩ := (h.eventually (lt_mem_nhds (by linarith : 1 - η < 1))).exists
-    exact ⟨k, fun h' => not_computableInExpTime_of_lt_sharpSatExponent hη₁ hk
-      (h'.mono (by linarith))⟩
+theorem SharpSETH_iff_tendsto : SharpSETH ↔ Tendsto sharpSatExponent atTop (𝓝 1) :=
+  (tendsto_rateExponent_iff
+    (P := fun k => ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars)
+    (fun _ _ _ hle h => h.mono hle) SharpKSAT_computableInExpTime_one sharpSatExponent_mono).symm
 
 /-- Decision hardness implies counting hardness (`ETH → SharpETH`); note both hypotheses are
 refuted in this library, while the contrapositive transfer `DecidableInSubexpTime.KSAT_of_SharpKSAT`
@@ -546,29 +497,11 @@ theorem ETH.sharpETH (h : ETH) : SharpETH := by
 
 /-- Strong decision hardness implies strong counting hardness (`SETH → SharpSETH`); the underlying
 fixed-width transfer `DecidableInExpTime.KSAT_of_SharpKSAT` is unconditional. -/
-theorem SETH.sharpSETH (h : SETH) : SharpSETH := by
-  intro ε hε
-  by_cases h1 : 1 ≤ ε
-  · obtain ⟨k, hk⟩ := h 1 one_pos
-    refine ⟨k, fun hcount => hk ?_⟩
-    have h0 : 1 - ε ≤ 0 := by linarith
-    have hc0 : ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars 0 := hcount.mono h0
-    simpa only [sub_self] using DecidableInExpTime.KSAT_of_SharpKSAT le_rfl hc0
-  · obtain ⟨k, hk⟩ := h ε hε
-    exact ⟨k, fun hcount => hk (DecidableInExpTime.KSAT_of_SharpKSAT (by linarith) hcount)⟩
+theorem SETH.sharpSETH (h : SETH) : SharpSETH :=
+  SharpSETH_iff_tendsto.2 <| tendsto_of_tendsto_of_tendsto_of_le_of_le (SETH_iff_tendsto.1 h)
+    tendsto_const_nhds satExponent_le_sharpSatExponent sharpSatExponent_le_one
 
-/-! ### Positive-rate infima, finite-prefix suprema, `SETH → ETH`, and unrestricted `SAT` -/
-
-/-- `satExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem satExponent_eq_sInf_pos (k : ℕ) :
-    satExponent k = sInf {δ : ℝ | 0 < δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle) (KSAT_decidableInExpTime_one k)
-
-/-- `sharpSatExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem sharpSatExponent_eq_sInf_pos (k : ℕ) :
-    sharpSatExponent k =
-      sInf {δ : ℝ | 0 < δ ∧ ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle) (SharpKSAT_computableInExpTime_one k)
+/-! ### Finite-prefix suprema, `SETH → ETH`, and unrestricted `SAT` -/
 
 /-- Dropping any finite prefix `k < K` leaves `⨆ k, satExponent k` unchanged. -/
 theorem iSup_ge_satExponent_eq_iSup (K : ℕ) :
@@ -662,21 +595,20 @@ width) is decidable within time `2 ^ (δ * n) * poly(L)`. Unlike `SETH`, which t
 fixed clause widths, `unrestrictedSatExponent` requires a single machine per `δ` handling arbitrary
 clause widths simultaneously. -/
 @[expose] noncomputable def unrestrictedSatExponent : ℝ :=
-  sInf {δ : ℝ | 0 ≤ δ ∧ DecidableInExpTime SAT encCNF CNF.numVars δ}
+  rateExponent (DecidableInExpTime SAT encCNF CNF.numVars)
 
 theorem unrestrictedSatExponent_nonneg : 0 ≤ unrestrictedSatExponent :=
-  le_csInf ⟨1, zero_le_one, SAT_decidableInExpTime_one⟩ fun _ h => h.1
+  rateExponent_nonneg _
 
 theorem unrestrictedSatExponent_le_one : unrestrictedSatExponent ≤ 1 :=
-  csInf_le ⟨0, fun _ h => h.1⟩ ⟨zero_le_one, SAT_decidableInExpTime_one⟩
+  rateExponent_le_one SAT_decidableInExpTime_one
 
 /-- Every fixed-width exponent `satExponent k` is bounded above by `unrestrictedSatExponent`. -/
 theorem satExponent_le_unrestrictedSatExponent (k : ℕ) :
-    satExponent k ≤ unrestrictedSatExponent := by
-  refine le_csInf ⟨1, zero_le_one, SAT_decidableInExpTime_one⟩ fun δ ⟨hδ, h⟩ =>
-    satExponent_le hδ ?_
-  rw [KSAT_eq_inter k (KSAT_subset_SAT k) le_rfl]
-  exact h.inter (computableInPolyTime_all_length_le k) hδ
+    satExponent k ≤ unrestrictedSatExponent :=
+  rateExponent_le_rateExponent SAT_decidableInExpTime_one fun _ hδ h => by
+    rw [KSAT_eq_inter k (KSAT_subset_SAT k) le_rfl]
+    exact h.inter (computableInPolyTime_all_length_le k) hδ
 
 /-- `⨆ k, satExponent k ≤ unrestrictedSatExponent`. -/
 theorem iSup_satExponent_le_unrestrictedSatExponent :

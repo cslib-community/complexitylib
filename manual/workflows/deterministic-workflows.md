@@ -328,7 +328,7 @@ For NP, additionally supply a verifier and a polynomial certificate-length condi
 ```lean
 /-- For NP, the verifier also needs a proved certificate bound: here exactly the encoded
 instance length, represented by the polynomial `X`. -/
-theorem clique_mem_NP : Clique ∈ NP (encPair encGraph encNat) :=
+theorem clique_mem_NP : Clique ∈ NP encCliqueInstance :=
   ⟨Polynomial.X, Clique.verifier, by fun_prop, Clique.isVerifier⟩
 ```
 
@@ -353,12 +353,12 @@ Continue in [NPCompleteness](../../CslibFrontierTests/NPCompleteness.lean), keep
 /-- A reduction has a map, its polynomial-time certificate, and a membership equivalence.
 The equivalence must point from the source problem to the image in the target problem. -/
 theorem independentSet_to_clique :
-    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) IndependentSet Clique :=
+    PolyTimeReducible encIndependentSetInstance encCliqueInstance IndependentSet Clique :=
   ⟨complementInstance, by fun_prop,
     fun ⟨G, k⟩ => (Graph.compl_mem_Clique_iff G k).symm⟩
 
 /-- Combine NP membership with hardness transferred from the known hard source problem. -/
-theorem clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
+theorem clique_npComplete : NPComplete encCliqueInstance Clique :=
   ⟨clique_mem_NP, IndependentSet_npHard.trans independentSet_to_clique⟩
 ```
 

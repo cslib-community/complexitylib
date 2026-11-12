@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
 public import Mathlib.Topology.Order.Real
-import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # The exponents of `k`-SAT
@@ -53,7 +52,7 @@ sparsified formulas searched within time `2 ^ (ε * n)` times a polynomial; it i
   complexity?*][ImpagliazzoPaturiZane2001]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -69,82 +68,45 @@ theorem DecidableInExpTime.KSAT_of_le {k k' : ℕ} (hk : k ≤ k') {δ : ℝ} (h
     (KSAT_subset_SAT k')]
   exact h.inter (computableInPolyTime_all_length_le k) hδ
 
-/-- The exponents of `k`-SAT. -/
-private abbrev exponents (k : ℕ) : Set ℝ :=
-  {δ | 0 ≤ δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ}
-
-private theorem one_mem_exponents (k : ℕ) : (1 : ℝ) ∈ exponents k :=
-  ⟨zero_le_one, KSAT_decidableInExpTime_one k⟩
-
-private theorem bddBelow_exponents (k : ℕ) : BddBelow (exponents k) :=
-  ⟨0, fun _ h => h.1⟩
-
 /-- The exponent of `k`-SAT is nonnegative. -/
 theorem satExponent_nonneg (k : ℕ) : 0 ≤ satExponent k :=
-  le_csInf ⟨1, one_mem_exponents k⟩ fun _ h => h.1
+  rateExponent_nonneg _
 
 /-- **Exhaustive search**: the exponent of `k`-SAT is at most one. -/
 theorem satExponent_le_one (k : ℕ) : satExponent k ≤ 1 :=
-  csInf_le (bddBelow_exponents k) (one_mem_exponents k)
+  rateExponent_le_one (KSAT_decidableInExpTime_one k)
 
 /-- The exponent of `k`-SAT is at most every exponent of a decider. -/
 theorem satExponent_le {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : DecidableInExpTime (KSAT k) encCNF CNF.numVars δ) : satExponent k ≤ δ :=
-  csInf_le (bddBelow_exponents k) ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 /-- Below the exponent of `k`-SAT there is no decider. -/
 theorem not_decidableInExpTime_of_lt_satExponent {k : ℕ} {δ : ℝ} (hδ₀ : 0 ≤ δ)
-    (hδ : δ < satExponent k) : ¬DecidableInExpTime (KSAT k) encCNF CNF.numVars δ := fun h =>
-  absurd (satExponent_le hδ₀ h) (not_le.mpr hδ)
+    (hδ : δ < satExponent k) : ¬DecidableInExpTime (KSAT k) encCNF CNF.numVars δ :=
+  not_of_lt_rateExponent hδ₀ hδ
 
 /-- Without a decider for an exponent `δ`, the exponent of `k`-SAT is at least `δ`. -/
 theorem le_satExponent_of_not_decidableInExpTime {k : ℕ} {δ : ℝ}
     (h : ¬DecidableInExpTime (KSAT k) encCNF CNF.numVars δ) : δ ≤ satExponent k :=
-  le_csInf ⟨1, one_mem_exponents k⟩ fun _ hδ' => le_of_not_gt fun hlt => h (hδ'.2.mono hlt.le)
+  le_rateExponent (fun _ _ hle h => h.mono hle) (KSAT_decidableInExpTime_one k) h
 
 /-- The exponent of `k`-SAT is monotone in `k`. -/
-theorem satExponent_mono : Monotone satExponent := fun k k' hk =>
-  csInf_le_csInf (bddBelow_exponents k) ⟨1, one_mem_exponents k'⟩ fun _ hδ =>
-    ⟨hδ.1, hδ.2.KSAT_of_le hk hδ.1⟩
+theorem satExponent_mono : Monotone satExponent := fun _ k' hk =>
+  rateExponent_le_rateExponent (KSAT_decidableInExpTime_one k') fun _ hδ h => h.KSAT_of_le hk hδ
 
 /-! ### The hypotheses in terms of the exponents -/
 
 /-- **The exponential time hypothesis in terms of the exponent**: `ETH ↔ 0 < s_3`
 [ImpagliazzoPaturi2001]. -/
-theorem ETH_iff_satExponent_pos : ETH ↔ 0 < satExponent 3 := by
-  constructor
-  · rintro ⟨δ, hδ, h⟩
-    exact hδ.trans_le (le_satExponent_of_not_decidableInExpTime h)
-  · intro h
-    exact ⟨satExponent 3 / 2, half_pos h,
-      not_decidableInExpTime_of_lt_satExponent (half_pos h).le (half_lt_self h)⟩
+theorem ETH_iff_satExponent_pos : ETH ↔ 0 < satExponent 3 :=
+  (rateExponent_pos_iff (fun _ _ hle h => h.mono hle) (KSAT_decidableInExpTime_one 3)).symm
 
 /-- **The strong exponential time hypothesis in terms of the exponents**: `SETH ↔ s_k → 1`
 [ImpagliazzoPaturi2001]. -/
-theorem SETH_iff_tendsto : SETH ↔ Tendsto satExponent atTop (𝓝 1) := by
-  constructor
-  · intro h
-    rw [Metric.tendsto_atTop]
-    intro ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η < ε := (half_lt_self (lt_min hε one_pos)).trans_le (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by grind
-    obtain ⟨k, hk⟩ := h η hη
-    refine ⟨k, fun k' hk' => ?_⟩
-    have h₁ : 1 - η ≤ satExponent k' :=
-      le_satExponent_of_not_decidableInExpTime fun h' => hk (h'.KSAT_of_le hk' hη₁)
-    have h₂ := satExponent_le_one k'
-    rw [Real.dist_eq, abs_sub_lt_iff]
-    constructor <;> linarith
-  · intro h ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η ≤ ε := (half_lt_self (lt_min hε one_pos)).le.trans (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by grind
-    obtain ⟨k, hk⟩ := (h.eventually (lt_mem_nhds (by linarith : 1 - η < 1))).exists
-    exact ⟨k, fun h' => not_decidableInExpTime_of_lt_satExponent hη₁ hk
-      (h'.mono (by linarith))⟩
+theorem SETH_iff_tendsto : SETH ↔ Tendsto satExponent atTop (𝓝 1) :=
+  (tendsto_rateExponent_iff (P := fun k => DecidableInExpTime (KSAT k) encCNF CNF.numVars)
+    (fun _ _ _ hle h => h.mono hle) KSAT_decidableInExpTime_one satExponent_mono).symm
 
 /-! ### Measuring by clauses -/
 
