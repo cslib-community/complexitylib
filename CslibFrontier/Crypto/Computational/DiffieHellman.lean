@@ -271,6 +271,17 @@ theorem computableInPolyTime_words :
       encBits :=
   (computableInPolyTime_words.comp h).snd'.snd'.snd'.snd'
 
+/-- Building a DDH input from computed parts. -/
+theorem computableInPolyTime_mk {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {d : α → F.Desc}
+    {u v w : (a : α) → F.Carrier (d a)} (hn : ComputableInPolyTime n enc encUnary)
+    (hd : ComputableInPolyTime d enc F.encDesc)
+    (hu : ComputableInPolyTime (fun a => F.encode (d a) (u a)) enc encBits)
+    (hv : ComputableInPolyTime (fun a => F.encode (d a) (v a)) enc encBits)
+    (hw : ComputableInPolyTime (fun a => F.encode (d a) (w a)) enc encBits) :
+    ComputableInPolyTime (fun a => (⟨⟨n a, d a, u a, v a⟩, w a⟩ : F.DDHInput)) enc
+      F.encDDHInput :=
+  .of_enc_eq (hn.prod (hd.prod (hu.prod (hv.prod hw)))) fun _ => rfl
+
 end DDHInput
 
 variable {F} in
@@ -288,6 +299,27 @@ variable {F} in
   .of_enc_eq (F.computableInPolyTime_smul.comp
       (hd.prod ((ComputableInPolyTime.const 0).prod (computableInPolyTime_encode_generator hd))))
     fun a => by simp [F.smul_encode]
+
+variable {F} in
+/-- The encoded sum of computed elements. -/
+@[fun_prop] theorem computableInPolyTime_encode_add {α : Type} {enc : α ↪ List Bool}
+    {d : α → F.Desc} {x y : (a : α) → F.Carrier (d a)} (hd : ComputableInPolyTime d enc F.encDesc)
+    (hx : ComputableInPolyTime (fun a => F.encode (d a) (x a)) enc encBits)
+    (hy : ComputableInPolyTime (fun a => F.encode (d a) (y a)) enc encBits) :
+    ComputableInPolyTime (fun a => F.encode (d a) (x a + y a)) enc encBits :=
+  .of_enc_eq (F.computableInPolyTime_add.comp (hd.prod (hx.prod hy))) fun a => by
+    simp [F.add_encode]
+
+variable {F} in
+/-- The encoded multiple of a computed element by a computed natural number. -/
+@[fun_prop] theorem computableInPolyTime_encode_natCast_smul {α : Type} {enc : α ↪ List Bool}
+    {d : α → F.Desc} {k : α → ℕ} {x : (a : α) → F.Carrier (d a)}
+    (hd : ComputableInPolyTime d enc F.encDesc) (hk : ComputableInPolyTime k enc encNat)
+    (hx : ComputableInPolyTime (fun a => F.encode (d a) (x a)) enc encBits) :
+    ComputableInPolyTime (fun a => F.encode (d a) ((k a : ZMod (F.order (d a))) • x a)) enc
+      encBits :=
+  .of_enc_eq (F.computableInPolyTime_smul.comp (hd.prod (hk.prod hx))) fun a => by
+    simp [F.smul_encode]
 
 /-! ### Computational Diffie–Hellman (CDH) -/
 
@@ -403,6 +435,19 @@ def DDH (setup : ℕ → PMF F.Desc) : Prop :=
   Game.Indistinguishable (F.ddhRealGame setup) (F.ddhRandomGame setup) fun distinguisher =>
     IsPPTOn F.encDDHInput encBool fun x =>
       distinguisher x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared
+
+/-- A certified DDH distinguisher run on computed inputs is uniform strict PPT. -/
+theorem isPPTOn_ddhDistinguisher_comp {distinguisher : F.DDHDistinguisher}
+    (hD : IsPPTOn F.encDDHInput encBool fun x =>
+      distinguisher x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared)
+    {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {d : α → F.Desc}
+    {u v w : (a : α) → F.Carrier (d a)} (hn : ComputableInPolyTime n enc encUnary)
+    (hd : ComputableInPolyTime d enc F.encDesc)
+    (hu : ComputableInPolyTime (fun a => F.encode (d a) (u a)) enc encBits)
+    (hv : ComputableInPolyTime (fun a => F.encode (d a) (v a)) enc encBits)
+    (hw : ComputableInPolyTime (fun a => F.encode (d a) (w a)) enc encBits) :
+    IsPPTOn enc encBool fun a => distinguisher (n a) (d a) (u a) (v a) (w a) :=
+  hD.preprocess (DDHInput.computableInPolyTime_mk hn hd hu hv hw)
 
 /-- Turn a CDH adversary into a DDH distinguisher by running `Cslib.Crypto.cdhToDDH` in each
 group. -/
