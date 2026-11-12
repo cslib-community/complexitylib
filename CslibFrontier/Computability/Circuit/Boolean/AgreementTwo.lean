@@ -131,24 +131,6 @@ private theorem leafSize_restrict_le (H : Formula signature (2 * n)) (i : Fin 2)
     (w : BitString n) : (restrict H i w).leafSize ≤ H.leafSize :=
   leafSize_bind_le (fun p => by split_ifs <;> simp) H
 
-/-- The formula testing equality with `w`: a balanced conjunction of `n` literals. -/
-private def eqFormula (w : BitString n) : Formula signature n :=
-  andList ((List.finRange n).map (literal w))
-
-private theorem eval_eqFormula (w x : BitString n) :
-    (eqFormula w).eval interpretation x = decide (x = w) := by
-  rw [Bool.eq_iff_iff]
-  simp [eqFormula, Function.comp_def, List.all_eq_true, funext_iff]
-
-private theorem depthWith_eqFormula_le (w : BitString n) :
-    (eqFormula w).depthWith binaryCost ≤ Nat.clog 2 n := by
-  simpa [eqFormula] using depthWith_binaryCost_andList_le (d := 0)
-    (l := (List.finRange n).map (literal w)) (by simp)
-
-private theorem leafSize_eqFormula_le (w : BitString n) : (eqFormula w).leafSize ≤ n := by
-  refine (leafSize_andList_le _).trans ?_
-  simp [List.map_map, Function.comp_def]
-
 /-- `F`, negated when `c` is `true`. -/
 private def negIf (c : Bool) (F : Formula signature n) : Formula signature n :=
   if c then F.not else F
