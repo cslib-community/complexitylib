@@ -65,10 +65,6 @@ def subtrees : Bracketing σ → List (Bracketing σ)
   | leaf i => [leaf i]
   | node l r => node l r :: (l.subtrees ++ r.subtrees)
 
-theorem leaves_ne_nil : ∀ t : Bracketing σ, t.leaves ≠ []
-  | leaf _ => List.cons_ne_nil _ _
-  | node l _ => fun h => l.leaves_ne_nil (List.append_eq_nil_iff.1 h).1
-
 theorem self_mem_subtrees : ∀ t : Bracketing σ, t ∈ t.subtrees
   | leaf _ => List.mem_singleton_self _
   | node _ _ => List.mem_cons_self

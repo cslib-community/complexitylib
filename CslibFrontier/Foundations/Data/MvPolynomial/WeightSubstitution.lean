@@ -33,8 +33,6 @@ a nonzero coefficient. Linear independence of the isolated vectors is not used.
 * `MvPolynomial.coeff_aeval_X_pow`: the coefficients of `f (t ^ c i)`.
 * `MvPolynomial.aeval_X_pow_ne_zero_of_isolates`: a weight isolating a set of exponent vectors
   keeps a nonzero polynomial nonzero ([AgrawalGurjarKorwarSaxena2015], Lemma 6).
-* `MvPolynomial.natDegree_aeval_X_pow_le`: if `c i ≤ N` for all `i`, the degree of `f (t ^ c i)`
-  is at most `f.totalDegree * N`.
 
 ## References
 
@@ -67,20 +65,6 @@ theorem coeff_aeval_X_pow (c : σ → ℕ) (f : MvPolynomial σ R) (e : ℕ) :
     exact Finset.prod_congr rfl fun i _ => by rw [← pow_mul, smul_eq_mul, mul_comm]
   rw [h, ← Polynomial.C_eq_algebraMap, Polynomial.coeff_C_mul_X_pow]
   simp only [eq_comm]
-
-/-- If `c i ≤ N` for all `i`, substituting `t ^ c i` for the variables gives a univariate
-polynomial of degree at most `f.totalDegree * N`. -/
-theorem natDegree_aeval_X_pow_le {c : σ → ℕ} {N : ℕ} (hc : ∀ i, c i ≤ N)
-    (f : MvPolynomial σ R) :
-    (aeval (fun i => (Polynomial.X : R[X]) ^ c i) f).natDegree ≤ f.totalDegree * N := by
-  refine Polynomial.natDegree_le_iff_coeff_eq_zero.2 fun e he => ?_
-  rw [coeff_aeval_X_pow]
-  refine Finset.sum_eq_zero fun m hm => absurd ?_ he.not_ge
-  rw [Finset.mem_filter] at hm
-  calc e = ∑ i ∈ m.support, m i * c i := by rw [← hm.2, Finsupp.weight_apply]; rfl
-    _ ≤ ∑ i ∈ m.support, m i * N := Finset.sum_le_sum fun i _ => Nat.mul_le_mul_left _ (hc i)
-    _ = (m.sum fun _ e => e) * N := by rw [Finsupp.sum, Finset.sum_mul]
-    _ ≤ f.totalDegree * N := Nat.mul_le_mul_right _ (le_totalDegree hm.1)
 
 end CommSemiring
 

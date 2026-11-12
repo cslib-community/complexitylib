@@ -154,13 +154,12 @@ private theorem exists_isolates_subtrees [Fact p.Prime] (hp : 2 * n * (w ^ 2) ^ 
     | leaf i =>
       have hwt : ∀ m ∈ monomialsLE [i] δ,
           Finsupp.weight (levelWeight p (n * δ * p + 1) []) m = m i := fun m hm => by
-        rw [Finsupp.weight_apply, Finsupp.sum_fintype _ _ fun j => zero_smul ℕ _,
-          sum_eq_single i (fun j _ hj => by
+        rw [Finsupp.weight_apply, Finsupp.sum, sum_eq_single i (fun j _ hj => by
             rw [(mem_monomialsLE.1 hm).2 j (by simpa using hj), zero_smul])
-          (fun hi => absurd (mem_univ i) hi)]
+          (fun hi => by rw [Finsupp.notMem_support_iff.1 hi, zero_smul])]
         simp [levelWeight]
       have hinj : Set.InjOn (Finsupp.weight (levelWeight p (n * δ * p + 1) []))
-          (monomialsLE [i] δ : Finset (Fin n →₀ ℕ)) := fun m hm m' hm' hmm => by
+          (↑(monomialsLE [i] δ) : Set (Fin n →₀ ℕ)) := fun m hm m' hm' hmm => by
         rw [mem_coe] at hm hm'
         rw [hwt m hm, hwt m' hm'] at hmm
         ext j
@@ -255,7 +254,8 @@ private theorem exists_isolates_subtrees [Fact p.Prime] (hp : 2 * n * (w ^ 2) ^ 
         | node l r =>
           obtain ⟨hl, hr⟩ := hheight hsh
           have hd := disjoint_leaves ht hs
-          have hinj : Set.InjOn (Finsupp.weight c') ((S l + S r : Finset _) : Set _) := by
+          have hinj : Set.InjOn (Finsupp.weight c')
+              (↑(S l + S r) : Set (Fin n →₀ ℕ)) := by
             intro x hx y hy hxy
             by_contra hne
             rw [hw', hw'] at hxy
@@ -268,7 +268,6 @@ private theorem exists_isolates_subtrees [Fact p.Prime] (hp : 2 * n * (w ^ 2) ^ 
           obtain ⟨S', -, hcard, hiso⟩ := exists_isolates_add
             (htransfer l (Bracketing.mem_subtrees_of_node hs).1 hl)
             (htransfer r (Bracketing.mem_subtrees_of_node hs).2 hr)
-            (injOn_add_monomialsLE hd δ)
             (D := segmentCoeff M (l.leaves ++ r.leaves))
             (fun m₁ hm₁ m₂ hm₂ => segmentCoeff_append_add M hd hm₁ hm₂) hinj
           rw [← monomialsLE_append hd] at hiso

@@ -102,7 +102,7 @@ theorem card_levelLists_le (p L : ℕ) (hp : 0 < p) : (levelLists p L).card ≤ 
     exact Nat.pow_le_pow_right hp (Nat.lt_succ_iff.1 (mem_range.1 hk))
   · rw [card_range, smul_eq_mul]
 
-variable (F : Type*) [Field F] [CharZero F] (n w δ : ℕ)
+variable (F : Type*) [Field F] (n w δ : ℕ)
 
 open scoped Classical in
 /-- The hitting set for read-once oblivious branching programs of width `w` in `n` variables
@@ -149,12 +149,12 @@ private theorem totalDegree_le_of_support_subset_monomialsLE {f : MvPolynomial (
 `roabpHittingSet F n w δ` hits every polynomial in `n` variables computed by a read-once
 oblivious branching program of width `w` in some order of the variables, with layers of degree
 at most `δ`. -/
-theorem isHittingSet_roabpHittingSet :
+theorem isHittingSet_roabpHittingSet [CharZero F] :
     IsHittingSet (roabpHittingSet F n w δ) {f | IsROABP w δ f} := by
   classical
   rintro f ⟨l, M, s, t, hl, hM, rfl⟩ hf0
   set p := roabpPrime n w δ with hp
-  haveI : Fact p.Prime := ⟨roabpPrime_prime n w δ⟩
+  have : Fact p.Prime := ⟨roabpPrime_prime n w δ⟩
   have hpp : 0 < p := (roabpPrime_prime n w δ).pos
   set B := n * δ * p + 1 with hB
   obtain ⟨a, hlen, hap, S, hiso⟩ := exists_isolating_weight (F := F) (p := p) (δ := δ)

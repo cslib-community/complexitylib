@@ -18,8 +18,8 @@ public import Mathlib.Data.Fintype.Pi
 For a list `L` of variables, `monomialsLE L δ` is the set of exponent vectors of the monomials
 in the variables of `L` of individual degree at most `δ`, and `segmentCoeff M L m` is the product
 of the coefficient matrices of the layers of `L` at the exponents of `m`. For two disjoint lists
-the monomials of `L₁ ++ L₂` are the sums of a monomial of `L₁` and a monomial of `L₂`, in one way
-(`monomialsLE_append`, `injOn_add_monomialsLE`), and the coefficient is the product of the two
+the monomials of `L₁ ++ L₂` are the sums of a monomial of `L₁` and a monomial of `L₂`
+(`monomialsLE_append`), and the coefficient is the product of the two
 coefficients (`segmentCoeff_append_add`). This is the product structure that Agrawal, Gurjar,
 Korwar and Saxena [AgrawalGurjarKorwarSaxena2015] use for the coefficients of a product of
 polynomials over the matrix algebra in disjoint sets of variables.
@@ -31,7 +31,7 @@ polynomials over the matrix algebra in disjoint sets of variables.
 
 ## Main results
 
-* `monomialsLE_append`, `injOn_add_monomialsLE`, `segmentCoeff_append_add`.
+* `monomialsLE_append`, `segmentCoeff_append_add`.
 * `weight_le_of_mem_monomialsLE`: a bound on the weight of such a monomial.
 
 ## References
@@ -107,26 +107,9 @@ theorem monomialsLE_append {L₁ L₂ : List (Fin n)} (hd : L₁.Disjoint L₂) 
     · rw [Finsupp.add_apply, h1' i fun h => hi (List.mem_append_left _ h),
         h2' i fun h => hi (List.mem_append_right _ h)]
 
-/-- A monomial of two disjoint lists is the sum of a monomial of each in one way. -/
-theorem injOn_add_monomialsLE {L₁ L₂ : List (Fin n)} (hd : L₁.Disjoint L₂) (δ : ℕ) :
-    Set.InjOn (fun x : (Fin n →₀ ℕ) × (Fin n →₀ ℕ) => x.1 + x.2)
-      (monomialsLE L₁ δ ×ˢ monomialsLE L₂ δ : Finset _) := by
-  rintro ⟨a₁, a₂⟩ ha ⟨b₁, b₂⟩ hb h
-  rw [mem_coe, mem_product] at ha hb
-  have h1 : a₁ = b₁ := by
-    ext i
-    have hi := DFunLike.congr_fun h i
-    simp only [Finsupp.add_apply] at hi
-    by_cases hL : i ∈ L₁
-    · rwa [(mem_monomialsLE.1 ha.2).2 i fun h => hd hL h,
-        (mem_monomialsLE.1 hb.2).2 i fun h => hd hL h, add_zero, add_zero] at hi
-    · rw [(mem_monomialsLE.1 ha.1).2 i hL, (mem_monomialsLE.1 hb.1).2 i hL]
-  subst h1
-  exact Prod.ext rfl (add_left_cancel h)
-
 /-- The product of the coefficient matrices of the layers of the list `L` at the exponents of
 `m`: the coefficient of the monomial `m` in the product of the layers, as a matrix. -/
-def segmentCoeff (M : Fin n → Matrix (Fin w) (Fin w) F[X]) (L : List (Fin n))
+@[expose] def segmentCoeff (M : Fin n → Matrix (Fin w) (Fin w) F[X]) (L : List (Fin n))
     (m : Fin n →₀ ℕ) : Matrix (Fin w) (Fin w) F :=
   (L.map fun i => layerCoeff M i (m i)).prod
 

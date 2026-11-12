@@ -226,6 +226,28 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.AnyOrderHittingSe
 
 **Not certified here.** Positive characteristic. Polynomials of individual degree above one, set-multilinear depth-three circuits, and orbits. The converse of `IsAnyOrderROABP.splitRankLE`. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
 
+## Quasipolynomial hitting sets for ROABPs in an unknown order
+
+Import [HittingSet/ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABP.lean). `IsROABP w δ f` ([ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean)) says that `f : MvPolynomial (Fin n) F` is computed by a read-once oblivious branching program of width `w` in some order: there are a list `l` without repetition, matrices `M : Fin n → Matrix (Fin w) (Fin w) F[X]` with all entries of `natDegree ≤ δ`, and indices `s t` with `f = roabpProd M l s t`. The degree bound is on the layers, not on `f`. `roabpProd` and `IsAnyOrderROABP` of the previous section live in the same module.
+
+The endpoint [isHittingSet_roabpHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABP.lean) is for `[Field F] [CharZero F]`: `roabpHittingSet F n w δ` hits `{f | IsROABP w δ f}`. The set depends on `n`, `w` and `δ` only, not on the order. `card_roabpHittingSet_le F n w δ` bounds it by `(Nat.clog 2 n + 1) * p ^ Nat.clog 2 n * (n * δ * (n * δ * p + 1 + p) ^ Nat.clog 2 n + 1)` with `p = roabpPrime n w δ`, and `roabpPrime_le` gives `p ≤ 2 * (2 * n * (w ^ 2) ^ 4 * n + δ + 1)`: the size is `(n δ w) ^ O(log n)`. For multilinear programs that are narrow in every order the set of the previous section is of polynomial size; this one needs only one order and allows any degree.
+
+The pieces, each usable alone:
+
+- [coeff_roabpProd](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean): the coefficient of a monomial `m` in `roabpProd M l s t` is the `(s, t)` entry of the product over `l` of the coefficient matrices `layerCoeff M i (m i)`, for `l` without repetition and `m` supported in `l`; `coeff_roabpProd_eq_zero` for the other monomials.
+- [Cslib.Isolates F wt D T S](../../CslibFrontier/Foundations/LinearAlgebra/IsolatedBasis.lean), for `D : M → A` with values in a vector space, a weight `wt : M → ℕ` and finite sets `S ⊆ T`: `wt` is injective on `S` and every `D m`, `m ∈ T \ S`, is in the span of the `D m'` with `m' ∈ S` and `wt m' < wt m`. `exists_isolates_of_injOn` gives such an `S` of at most `finrank F A` elements when `wt` is injective on `T`; `Isolates.of_span_lt` weakens `m' ∈ S` to `m' ∈ T`; `exists_isolates_add` treats `D (m₁ + m₂) = D₁ m₁ * D₂ m₂`. `S` is not required to give a basis.
+- [MvPolynomial.aeval_X_pow_ne_zero_of_isolates](../../CslibFrontier/Foundations/Data/MvPolynomial/WeightSubstitution.lean): if `f.coeff m = ℓ (D m)` on `T ⊇ f.support` for a linear `ℓ` and `Finsupp.weight c` isolates, then `f ≠ 0` stays nonzero under `X i ↦ X ^ c i`.
+- [Cslib.exists_modWeight_separating](../../CslibFrontier/Foundations/NumberTheory/ModularWeights.lean): for a prime `p > δ` and fewer than `p / n` pairs of distinct exponent vectors with entries at most `δ`, some `a < p` gives the two members of every pair different weights for `modWeight p a i = a ^ (i + 1) % p`.
+- [exists_isolating_weight](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ROABPWeights.lean): the weight `levelWeight p (n * δ * p + 1) a` of some list `a` of at most `Nat.clog 2 n` parameters below `p` isolates a set of monomials among the matrices `segmentCoeff M l`. It goes by induction on the height of the subtrees of a [Cslib.Bracketing](../../CslibFrontier/Foundations/Data/Bracketing.lean) of `l` (`Bracketing.exists_leaves_eq`: height at most `Nat.clog 2 l.length`).
+
+Complete client: [ROABPHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ROABPHittingSet.lean) shows that `X 1 ^ 2 * X 0` is computed by a width-one program in the order `1, 0` and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ROABPHittingSet
+```
+
+**Not certified here.** Positive characteristic and small fields. Layers that are sparse polynomials in several variables, sums of set-multilinear circuits, and the other theorems of the source. The source's bound: the weights are `a ^ (i + 1) % p` for one prime and the levels are combined one at a time, so the constants differ. The bit length of the points and the cost of computing them; `roabpPrime` is defined by `Nat.find`.
+
 ## Support-concentrating shifts and perfect hash families
 
 Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of the previous section takes from earlier work.

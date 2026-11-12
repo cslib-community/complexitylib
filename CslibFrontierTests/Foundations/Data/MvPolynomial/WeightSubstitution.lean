@@ -14,7 +14,7 @@ public import Mathlib.Algebra.Order.Field.Rat
 # Substituting powers of one variable: concrete checks
 
 For `f = X 0 + X 1` over the rational numbers and the weight `(1, 2)`, the substitution gives
-`t + t ^ 2`, of degree at most `1 * 2`. The weight `(1, 2)` is injective on the two exponent
+`t + t ^ 2`. The weight `(1, 2)` is injective on the two exponent
 vectors of `f`, so it isolates a set of them for the coefficient family of `f`, and the
 substitution is nonzero. The weight `(1, 1)` sends `X 0 - X 1` to zero.
 -/
@@ -30,15 +30,6 @@ theorem aeval_X_add_X :
     aeval (fun i => (Polynomial.X : Polynomial ℚ) ^ (![1, 2] : Fin 2 → ℕ) i)
       (X 0 + X 1 : MvPolynomial (Fin 2) ℚ) = Polynomial.X + Polynomial.X ^ 2 := by
   simp
-
-/-- The degree bound for `X 0 + X 1` and the weight `(1, 2)`. -/
-theorem natDegree_aeval_X_add_X :
-    (aeval (fun i => (Polynomial.X : Polynomial ℚ) ^ (![1, 2] : Fin 2 → ℕ) i)
-      (X 0 + X 1 : MvPolynomial (Fin 2) ℚ)).natDegree ≤ 1 * 2 := by
-  refine (natDegree_aeval_X_pow_le (N := 2) (fun i => ?_) _).trans
-    (Nat.mul_le_mul_right _ ?_)
-  · fin_cases i <;> simp
-  · exact (totalDegree_add _ _).trans (by simp)
 
 /-- The weight `(1, 2)` isolates a set of exponent vectors of `X 0 + X 1`, so the substitution
 is nonzero. -/
