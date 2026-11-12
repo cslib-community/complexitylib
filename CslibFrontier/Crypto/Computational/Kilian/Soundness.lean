@@ -162,9 +162,11 @@ def kilianConflict (x : α) (openings₁ openings₂ : List (ℕ × KilianOpenin
 pair found by `kilianConflict`, as two openings of its position with one-bit leaves. -/
 def kilianBindingOutput (x : α) (root : List Bool)
     (openings₁ openings₂ : List (ℕ × KilianOpening)) : MerkleBindingOutput :=
-  (kilianConflict V x openings₁ openings₂).elim ((root, 0), ([], []), ([], []))
+  (kilianConflict V x openings₁ openings₂).elim
+    { root, position := 0, first := ⟨[], []⟩, second := ⟨[], []⟩ }
     fun ((a, o₁), (_, o₂)) =>
-      ((root, kilianPosition V x a), ([o₁.bit], o₁.path), ([o₂.bit], o₂.path))
+      { root, position := kilianPosition V x a, first := ⟨[o₁.bit], o₁.path⟩,
+        second := ⟨[o₂.bit], o₂.path⟩ }
 
 /-- The position-binding adversary built from a cheating prover: run its first stage once and its
 second stage on two independent challenges, and output a conflicting pair of openings. -/
@@ -227,8 +229,8 @@ theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root :
   have hlen : o₁'.path.length = kilianDepth V x := by
     simp only [merkleVerify, Bool.and_eq_true, beq_iff_eq] at v₁
     exact v₁.1.1
-  simp only [Option.elim, merkleBreaksBinding, hlen, Bool.and_eq_true, bne_iff_ne, ne_eq,
-    List.cons.injEq, and_true]
+  simp only [Option.elim, merkleBreaksBinding, MerkleOpening.verify, id, hlen, Bool.and_eq_true,
+    bne_iff_ne, ne_eq, List.cons.injEq, and_true]
   exact ⟨⟨v₁, hp.1 ▸ v₂⟩, hp.2⟩
 
 /-! ### Acceptance with a consistent table -/
@@ -549,19 +551,21 @@ private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
       (q : (ℕ × KilianOpening) × (ℕ × KilianOpening)) =>
         kilianPosition V g.1.1 q.1.1 == kilianPosition V g.1.1 q.2.1 && q.1.2.bit != q.2.2.bit)
     hpairs htest
-  have hbody := ((hroot.comp hg).prod hpos₁).prod
-    ((ComputableInPolyTime.bitsCons hb₁ (ComputableInPolyTime.const [])).prod hpath₁ |>.prod
-      ((ComputableInPolyTime.bitsCons hb₂ (ComputableInPolyTime.const [])).prod
-        hpath₂))
+  have hopening₁ := encMerkleOpening_mk_polyTime
+    (ComputableInPolyTime.bitsCons hb₁ (ComputableInPolyTime.const [])) hpath₁
+  have hopening₂ := encMerkleOpening_mk_polyTime
+    (ComputableInPolyTime.bitsCons hb₂ (ComputableInPolyTime.const [])) hpath₂
+  have hbody := encMerkleBindingOutput_mk_polyTime (hroot.comp hg) hpos₁ hopening₁ hopening₂
+  have hempty : ComputableInPolyTime (fun _ => (⟨[], []⟩ : MerkleOpening (List Bool))) E
+      encMerkleOpening := ComputableInPolyTime.const _
   unfold kilianBindingOutput kilianConflict
   exact ComputableInPolyTime.optionElimWithInput
     (body := fun (g : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening))
       (q : (ℕ × KilianOpening) × (ℕ × KilianOpening)) =>
-        ((g.1.2, kilianPosition V g.1.1 q.1.1), ([q.1.2.bit], q.1.2.path),
-          ([q.2.2.bit], q.2.2.path)))
-    hconflict ((hroot.prod (ComputableInPolyTime.const 0)).prod
-      (ComputableInPolyTime.const ((([] : List Bool), ([] : List (List Bool))),
-        (([] : List Bool), ([] : List (List Bool)))))) hbody
+        { root := g.1.2, position := kilianPosition V g.1.1 q.1.1,
+          first := ⟨[q.1.2.bit], q.1.2.path⟩, second := ⟨[q.2.2.bit], q.2.2.path⟩ })
+    hconflict (encMerkleBindingOutput_mk_polyTime hroot (ComputableInPolyTime.const 0) hempty
+      hempty) hbody
 
 /-- **The reduction is efficient**: the binding adversary of a strict PPT cheating prover is strict
 PPT, for a polynomial-time PCP verifier with `O(log n)` random bits. -/
