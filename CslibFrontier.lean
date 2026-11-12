@@ -2012,6 +2012,7 @@ public import CslibFrontier.Computability.Complexity.Classes.NP.Image
 public import CslibFrontier.Computability.Complexity.Classes.NP.Nondeterministic
 public import CslibFrontier.Computability.Complexity.Classes.NP.Relation
 public import CslibFrontier.Computability.Complexity.Classes.NP.SelfReduction
+public import CslibFrontier.Computability.Complexity.Classes.NP.StrictVerifier
 public import CslibFrontier.Computability.Complexity.Classes.NP.TruthTable
 public import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 public import CslibFrontier.Computability.Complexity.Classes.Operators
@@ -2189,7 +2190,6 @@ public import CslibFrontier.Computability.Complexity.Classes.ValiantVazirani
 public import CslibFrontier.Computability.Complexity.Classes.ValiantVazirani.Collapse
 public import CslibFrontier.Computability.Complexity.Classes.ValiantVazirani.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.WPP
-public import CslibFrontier.Computability.Complexity.Classes.WPP.Bounded
 public import CslibFrontier.Computability.Complexity.Classes.WPP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.WPP.Robustness
 public import CslibFrontier.Computability.Complexity.Classes.WPP.TruthTable
@@ -2219,7 +2219,6 @@ public import CslibFrontier.Computability.Complexity.Fagin.Ordered.Verifier
 public import CslibFrontier.Computability.Complexity.Fagin.Power
 public import CslibFrontier.Computability.Complexity.Fagin.SAT
 public import CslibFrontier.Computability.Complexity.Fagin.Small
-public import CslibFrontier.Computability.Complexity.Fagin.StrictVerifier
 public import CslibFrontier.Computability.Complexity.Fagin.Tableau
 public import CslibFrontier.Computability.Complexity.Fagin.Tableau.Defs
 public import CslibFrontier.Computability.Complexity.Fagin.Tableau.Semantics
@@ -2314,6 +2313,7 @@ public import CslibFrontier.Computability.Complexity.Parameterized.ColorCoding
 public import CslibFrontier.Computability.Complexity.Parameterized.Compression
 public import CslibFrontier.Computability.Complexity.Parameterized.CrossComposition
 public import CslibFrontier.Computability.Complexity.Parameterized.Distillation
+public import CslibFrontier.Computability.Complexity.Parameterized.Hardness
 public import CslibFrontier.Computability.Complexity.Parameterized.Kernelization
 public import CslibFrontier.Computability.Complexity.Parameterized.LongPathKernel
 public import CslibFrontier.Computability.Complexity.Parameterized.VertexCover
@@ -2637,6 +2637,7 @@ public import CslibFrontier.Computability.Complexity.ProofSystem
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Reduction.Autoreducibility
 public import CslibFrontier.Computability.Complexity.Reduction.Equiv
+public import CslibFrontier.Computability.Complexity.Reduction.Guard
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism.Conjecture
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism.Paddable
@@ -2655,6 +2656,7 @@ public import CslibFrontier.Computability.Complexity.Reduction.ManyOne
 public import CslibFrontier.Computability.Complexity.Reduction.Nontrivial
 public import CslibFrontier.Computability.Complexity.Reduction.OneOne
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTable
+public import CslibFrontier.Computability.Complexity.Reduction.TruthTable.Composition
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTableVariants
 public import CslibFrontier.Computability.Complexity.Reduction.Turing
 public import CslibFrontier.Computability.Complexity.Reduction.TuringAutoreducible
@@ -5556,6 +5558,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
 public import CslibFrontier.Foundations.Data.MvPolynomial.WeightedHomogeneous
+public import CslibFrontier.Foundations.Data.Nat.AffineBound
 public import CslibFrontier.Foundations.Data.Nat.AlignedPacking
 public import CslibFrontier.Foundations.Data.Nat.ArithmeticProgression
 public import CslibFrontier.Foundations.Data.Nat.Asymptotics

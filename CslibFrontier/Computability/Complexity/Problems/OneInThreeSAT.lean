@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CNF.ExactOne.ModelCount
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Syntax
+import CslibFrontier.Computability.Complexity.Classes.NP.Closure
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -98,13 +99,6 @@ theorem computableInPolyTime_verifier :
 /-- Exact-one satisfiability belongs to NP. -/
 theorem mem_NP : OneSAT ∈ NP encCNF :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
-
-/-- A language cut out of exact-one satisfiability by a polynomial-time guard belongs to NP. -/
-private theorem mem_NP_of_guard {L : Set (CNF ℕ)} {check : CNF ℕ → Bool}
-    (hc : ComputableInPolyTime check encCNF encBool)
-    (h : ∀ φ, φ ∈ L ↔ check φ = true ∧ φ ∈ OneSAT) : L ∈ NP encCNF := by
-  obtain rfl : L = {φ | check φ = true ∧ φ ∈ OneSAT} := Set.ext h
-  exact ⟨Polynomial.X, fun x => check x.1 && verifier x, by fun_prop, isVerifier.guard⟩
 
 /-- Check that all literal polarities are positive. -/
 def positiveCheck (φ : CNF ℕ) : Bool := φ.all fun c => c.all Prod.snd
@@ -200,7 +194,7 @@ theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
 
 /-- Positive width-three exact-one satisfiability belongs to NP. -/
 theorem mem_NP : PositiveOneInThreeSAT ∈ NP encCNF :=
-  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
+  mem_NP_of_guard computableInPolyTime_syntaxCheck OneSAT.mem_NP mem_iff_syntaxCheck
 
 end PositiveOneInThreeSAT
 
@@ -229,7 +223,7 @@ theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
 
 /-- Positive exact-three exact-one satisfiability belongs to NP. -/
 theorem mem_NP : PositiveOneInExactThreeSAT ∈ NP encCNF :=
-  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
+  mem_NP_of_guard computableInPolyTime_syntaxCheck OneSAT.mem_NP mem_iff_syntaxCheck
 
 end PositiveOneInExactThreeSAT
 
@@ -260,7 +254,7 @@ theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
 
 /-- Positive width-three exact-one satisfiability with occurrence bound three belongs to NP. -/
 theorem mem_NP : PositiveOneInThreeSATThree ∈ NP encCNF :=
-  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
+  mem_NP_of_guard computableInPolyTime_syntaxCheck OneSAT.mem_NP mem_iff_syntaxCheck
 
 end PositiveOneInThreeSATThree
 
@@ -298,7 +292,7 @@ theorem mem_iff_syntaxCheck (φ : CNF ℕ) :
 
 /-- Positive exact-three exact-one satisfiability with occurrence bound three belongs to NP. -/
 theorem mem_NP : PositiveOneInExactThreeSATThree ∈ NP encCNF :=
-  OneSAT.mem_NP_of_guard computableInPolyTime_syntaxCheck mem_iff_syntaxCheck
+  mem_NP_of_guard computableInPolyTime_syntaxCheck OneSAT.mem_NP mem_iff_syntaxCheck
 
 end PositiveOneInExactThreeSATThree
 

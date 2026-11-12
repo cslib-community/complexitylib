@@ -34,6 +34,7 @@ composite moduli.
 
 ## Main results
 
+* `Cslib.Complexity.mem_ModP`, `Cslib.Complexity.mem_coModP`: unfolding the definitions.
 * `Cslib.Complexity.ModP_two`, `Cslib.Complexity.P_subset_ModP`.
 * `Cslib.Complexity.PolyTimeReducible.mem_ModP`.
 * `Cslib.Complexity.inter_mem_ModP`, `Cslib.Complexity.compl_mem_ModP`,
@@ -59,17 +60,20 @@ variable {α : Type} {enc : α ↪ List Bool} {A B : Set α} {k : ℕ}
 def ModP (k : ℕ) (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ f ∈ SharpP enc, ∀ a, a ∈ A ↔ f a % k ≠ 0}
 
+theorem mem_ModP : A ∈ ModP k enc ↔ ∃ f ∈ SharpP enc, ∀ a, a ∈ A ↔ f a % k ≠ 0 :=
+  Iff.rfl
+
 /-- Modulo two, nonzero residue is oddness [Fortnow, after Classification 4.7][Fortnow1997]. -/
 theorem ModP_two : ModP 2 enc = ParityP enc := by
   ext A
-  simp only [ModP, Set.mem_ofPred_eq, mem_ParityP_iff_exists_SharpP]
+  rw [mem_ModP, mem_ParityP_iff_exists_SharpP]
   congr! 3
   simp [← Nat.not_odd_iff]
 
 /-- Modulus zero specializes to the positive-count characterization of NP. -/
 theorem ModP_zero : ModP 0 enc = NP enc := by
   ext A
-  simp [ModP, mem_NP_iff_exists_SharpP, Nat.pos_iff_ne_zero]
+  simp [mem_ModP, mem_NP_iff_exists_SharpP, Nat.pos_iff_ne_zero]
 
 /-- Modulus one recognizes only the empty language. -/
 theorem mem_ModP_one : A ∈ ModP 1 enc ↔ A = ∅ := by
@@ -161,6 +165,11 @@ theorem symmDiff_mem_ModP (hk : k.Prime) (hA : A ∈ ModP k enc) (hB : B ∈ Mod
 
 /-- The complementary modular class: a #P count is divisible by the fixed modulus. -/
 def coModP (k : ℕ) (enc : α ↪ List Bool) : Set (Set α) := {A | Aᶜ ∈ ModP k enc}
+
+theorem mem_coModP : A ∈ coModP k enc ↔ Aᶜ ∈ ModP k enc := Iff.rfl
+
+@[simp]
+theorem compl_mem_coModP : Aᶜ ∈ coModP k enc ↔ A ∈ ModP k enc := by simp [coModP]
 
 /-- Zero residues characterize the complementary modular class. -/
 theorem mem_coModP_iff_exists_SharpP :
