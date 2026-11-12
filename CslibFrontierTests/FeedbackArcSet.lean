@@ -49,6 +49,7 @@ example : ComputableInPolyTime (fun p : Graph × ℕ => (⟨p.1, p.2⟩ : Feedba
     (encPair encGraph encNat) encFeedbackArcSet := by
   fun_prop
 
+example : (default : FeedbackArcSetInstance) = ⟨default, default⟩ := rfl
 
 /-! ### Feedback arc sets -/
 

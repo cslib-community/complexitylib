@@ -52,6 +52,8 @@ example {x y : LongPathInstance} (hG : x.graph = y.graph) (hk : x.target = y.tar
     x = y :=
   LongPathInstance.ext hG hk
 
+example : (default : LongPathInstance) = ⟨default, default⟩ := rfl
+
 /-- `encLongPath` exposes polynomial-time projections and constructor to `fun_prop`. -/
 example : ComputableInPolyTime LongPathInstance.graph encLongPath encGraph := by fun_prop
 
