@@ -1141,6 +1141,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.CriticalPath
 public import CslibFrontier.Computability.Circuit.Boolean.DeMorgan
 public import CslibFrontier.Computability.Circuit.Boolean.DenseRestrictionPredictor
 public import CslibFrontier.Computability.Circuit.Boolean.DepthClasses
+public import CslibFrontier.Computability.Circuit.Boolean.DepthFunctions
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.DuplicateFlags
@@ -1250,6 +1251,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Layered.Size
 public import CslibFrontier.Computability.Circuit.Boolean.Lookup
 public import CslibFrontier.Computability.Circuit.Boolean.MachineSimulation
 public import CslibFrontier.Computability.Circuit.Boolean.Majority
+public import CslibFrontier.Computability.Circuit.Boolean.MajorityFormula
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Basic
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.ConstantCopies
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Fine
@@ -1271,6 +1273,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Synthes
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Uhlig
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Uhlig.Code
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Uhlig.Layer
+public import CslibFrontier.Computability.Circuit.Boolean.Memorize
 public import CslibFrontier.Computability.Circuit.Boolean.Metric
 public import CslibFrontier.Computability.Circuit.Boolean.Minterms
 public import CslibFrontier.Computability.Circuit.Boolean.ModGates

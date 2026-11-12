@@ -31,6 +31,7 @@ formulas are at least as strong as for formulas whose negations sit at the leave
 * `Cslib.Circuits.Formula.orList`, `Cslib.Circuits.Formula.andList`: the disjunction and the
   conjunction of a list of formulas as balanced trees of binary gates (`Formula.balanced`).
 * `Cslib.Circuits.Formula.literal`: the literal of bit `i` that is true at `z`.
+* `Cslib.Circuits.Formula.eqFormula`: the test of equality with a fixed input.
 * `Cslib.Circuits.Boolean.formulaDepth`: the least depth of a De Morgan formula for a function,
   with negations and constants free.
 
@@ -323,20 +324,41 @@ theorem leafSize_andList_le (l : List (Formula signature n)) :
   unfold literal
   split <;> simp
 
-/-- Every Boolean function has a De Morgan formula: its disjunctive normal form. -/
+/-- The formula testing equality with `z`: the balanced conjunction of the `n` literals that are
+true at `z`. -/
+def eqFormula (z : BitString n) : Formula signature n :=
+  andList ((List.finRange n).map (literal z))
+
+/-- `eqFormula z` tests whether its input is `z`. -/
+@[simp] theorem eval_eqFormula (z : BitString n) :
+    (eqFormula z).eval interpretation x = decide (x = z) := by
+  rw [Bool.eq_iff_iff]
+  simp [eqFormula, Function.comp_def, List.all_eq_true, funext_iff]
+
+/-- The equality test has binary-gate depth at most `⌈log₂ n⌉`. -/
+theorem depthWith_eqFormula_le (z : BitString n) :
+    (eqFormula z).depthWith binaryCost ≤ Nat.clog 2 n := by
+  simpa [eqFormula] using depthWith_binaryCost_andList_le (d := 0)
+    (l := (List.finRange n).map (literal z)) (by simp)
+
+/-- The equality test has at most `n` leaves. -/
+theorem leafSize_eqFormula_le (z : BitString n) : (eqFormula z).leafSize ≤ n := by
+  refine (leafSize_andList_le _).trans ?_
+  simp [List.map_map, Function.comp_def]
+
+/-- Every Boolean function has a De Morgan formula: its disjunctive normal form, the disjunction
+of the equality tests of the inputs where it is true. -/
 theorem exists_computes (f : BooleanFunction n) :
     ∃ F : Formula signature n, F.Computes interpretation f := by
   classical
-  refine ⟨orList ((Finset.univ.filter fun z => f z = true).toList.map fun z =>
-    andList ((List.finRange n).map (literal z))), fun x => ?_⟩
+  refine ⟨orList ((Finset.univ.filter fun z => f z = true).toList.map eqFormula), fun x => ?_⟩
   rw [eval_orList, Bool.eq_iff_iff, List.any_eq_true]
   simp only [List.mem_map, Finset.mem_toList, Finset.mem_filter, Finset.mem_univ, true_and]
   constructor
   · rintro ⟨_, ⟨z, hz, rfl⟩, h⟩
-    have : x = z := funext (by simpa [List.all_eq_true] using h)
-    rwa [this]
+    rwa [show x = z by simpa using h]
   · intro hx
-    exact ⟨_, ⟨x, hx, rfl⟩, by simp [List.all_eq_true]⟩
+    exact ⟨_, ⟨x, hx, rfl⟩, by simp⟩
 
 end Formula
 
