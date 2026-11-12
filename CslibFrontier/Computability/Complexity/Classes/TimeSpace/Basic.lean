@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 
 /-!
 # Simultaneous time and space classes
@@ -37,7 +38,8 @@ Since a machine visits at most one new cell per step, time bounds space, and `TI
 * `Cslib.Complexity.TISP_mono`, `Cslib.Complexity.TISP_mono_of_le_mul_add`: monotonicity.
 * `Cslib.Complexity.TISP_subset_DTIME`, `Cslib.Complexity.TISP_subset_DSPACE`,
   `Cslib.Complexity.TISP_self_eq_DTIME`: the relation to time and space classes.
-* `Cslib.Complexity.compl_mem_TISP`: closure under complement.
+* `Cslib.Complexity.compl_mem_TISP`, `Cslib.Complexity.compl_mem_DTIME`,
+  `Cslib.Complexity.compl_mem_DSPACE`: closure under complement.
 
 ## References
 
@@ -92,13 +94,9 @@ theorem TISP_mono_of_le_mul_add {t₁ t₂ s₁ s₂ : ℕ → ℕ} {C : ℕ}
     (ht : ∀ n, t₁ n ≤ C * t₂ n + C) (hs : ∀ n, s₁ n ≤ C * s₂ n + C) :
     TISP enc t₁ s₁ ⊆ TISP enc t₂ s₂ := by
   rintro A ⟨c₁, c₂, hA⟩
-  refine ⟨c₁ * C, c₁ * C + c₂, ComputableInTimeAndSpace.mono hA (fun a => ?_) fun a => ?_⟩
-  · have := Nat.mul_le_mul_left c₁ (ht (enc a).length)
-    rw [Nat.mul_add, ← Nat.mul_assoc] at this
-    omega
-  · have := Nat.mul_le_mul_left c₁ (hs (enc a).length)
-    rw [Nat.mul_add, ← Nat.mul_assoc] at this
-    omega
+  exact ⟨c₁ * C, c₁ * C + c₂, ComputableInTimeAndSpace.mono hA
+    (fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (ht _) c₁ c₂)
+    fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (hs _) c₁ c₂⟩
 
 /-- `TISP` is monotone in both bounds. -/
 theorem TISP_mono {t₁ t₂ s₁ s₂ : ℕ → ℕ} (ht : ∀ n, t₁ n ≤ t₂ n) (hs : ∀ n, s₁ n ≤ s₂ n) :
@@ -137,5 +135,17 @@ theorem compl_mem_TISP {t s : ℕ → ℕ} (h : A ∈ TISP enc t s) : Aᶜ ∈ T
     indicator_eq_iff.mpr fun a => by by_cases ha : a ∈ A <;> simp [indicator, ha]
   rw [hc]
   exact ComputableInO.not' h
+
+/-- `DTIME` is closed under complement: negate the output. -/
+theorem compl_mem_DTIME {t : ℕ → ℕ} (h : A ∈ DTIME enc t) : Aᶜ ∈ DTIME enc t := by
+  rw [← TISP_self_eq_DTIME] at h ⊢
+  exact compl_mem_TISP h
+
+/-- `DSPACE` is closed under complement: negate the output. -/
+theorem compl_mem_DSPACE {s : ℕ → ℕ} (h : A ∈ DSPACE enc s) : Aᶜ ∈ DSPACE enc s := by
+  obtain ⟨c₁, c₂, t, hA⟩ := h
+  have hA : A ∈ TISP enc t s := ⟨c₁ + c₂ + 1, c₁ + c₂ + 1,
+    ComputableInTimeAndSpace.mono hA (fun _ => by nlinarith) fun _ => by nlinarith⟩
+  exact TISP_subset_DSPACE (compl_mem_TISP hA)
 
 end Cslib.Complexity

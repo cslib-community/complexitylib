@@ -14,6 +14,12 @@ Read the defining module's imports and namespace before importing it. A file und
 
 Before applying a result, identify its input/output types and encoding, quantified witnesses, size parameter, charged resource, uniformity and side conditions. In particular, check whether a machine is chosen once before all inputs, whether the bound is eventually or pointwise, and whether the theorem requires a valid representation. If these disagree with the [contract you chose](choosing-models.md), find a transport theorem or prove the missing conversion. Changing notation does not establish a model bridge.
 
+For textbook-oriented searches, the [Goldreich draft audit](../../results/goldreich-2007.md)
+maps chapters 5–7 to declarations and remaining endpoints. Check its snapshot and model notes:
+visited-cell versus binary-space accounting and uniform versus nonuniform hardness can prevent
+a nearby theorem from establishing the source statement. Goldreich 6.10 uses bounded-time
+partial answers, matching the library’s ZPP; expected-time ZPP is a separate alternative interface.
+
 For source-specific comparisons, consult the [Goldreich draft audit, chapters 8–9](../../results/goldreich-2007.md#chapter-8-pseudorandom-generators). It distinguishes distribution security from certified generator runtime, and the class-level PCP theorem from stronger verification-time and witness-conversion claims. Its negative searches refer to a recorded snapshot.
 
 ## Build a shared Boolean circuit

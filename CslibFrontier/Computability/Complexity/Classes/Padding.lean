@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
 import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Run
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -226,6 +227,14 @@ private theorem padTime_add_one_le {n m d M : ℕ} (hn : n ≤ M) (hm : m ≤ M)
   rw [pow_add]
   omega
 
+/-- A padded instance of length below `2 ^ (X + 3)` raised to the power `d` stays within
+`2 ^ (e * (X + 3))` for every `e ≥ d`. -/
+private theorem pow_le_two_pow_mul_of_add_one_le {L X d e : ℕ} (hL : L + 1 ≤ 2 ^ (X + 3))
+    (hd : d ≤ e) : L ^ d ≤ 2 ^ (e * (X + 3)) :=
+  calc L ^ d ≤ (2 ^ (X + 3)) ^ d := Nat.pow_le_pow_left (by omega) d
+    _ = 2 ^ (d * (X + 3)) := (pow_mul' 2 d (X + 3)).symm
+    _ ≤ 2 ^ (e * (X + 3)) := Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ hd)
+
 /-- **The translation lemma on padded instances.** Suppose every problem in `NP` agrees with some
 problem in `P` on the words `frame u ++ 1^{t |u|}`, and `t n` is computable in unary from any word
 of length `n` within time `O(T n)`. Then every problem decidable by a nondeterministic machine
@@ -402,14 +411,8 @@ theorem preimage_mem_NTIME_of_mem_NP {B : Set (List Bool)} {g : α → List Bool
   obtain ⟨c₀, ⟨k₀, State₀, hfinite₀, tm, htm⟩, -⟩ := hg
   set t₁ : α → ℕ := fun a => c₀ * (T₀ (enc a).length + 1)
   have htm_run (a : α) :
-      tm.runFrom (tm.initCfg (enc a)) (t₁ a) = wordsCfg (enc a) none (fun _ => []) (g a) := by
-    obtain ⟨p, hh, hl, ht, -⟩ := computesTidily_iff.mp (htm a)
-    have hhead : p.head = tm.initCfg (enc a) := hh.trans (Cfg.init_eq_wordsCfg tm.q₀ (enc a)).symm
-    have hrun : tm.runFrom (tm.initCfg (enc a)) p.time =
-        wordsCfg (enc a) none (fun _ => []) (g a) :=
-      hhead ▸ (MultiTapeTM.runPath_apply_eq_runFrom p (.last _)).symm.trans hl
-    have hhalt : (tm.runFrom (tm.initCfg (enc a)) p.time).state = none := by rw [hrun]; rfl
-    exact (tm.runFrom_eq_of_halt (tm.initCfg (enc a)) ht hhalt).trans hrun
+      tm.runFrom (tm.initCfg (enc a)) (t₁ a) = wordsCfg (enc a) none (fun _ => []) (g a) :=
+    (htm a).runFrom_initCfg_eq
   have hg_len (a : α) : (g a).length ≤ t₁ a := (htm a).length_output_le
   let M_pad : MultiTapePTM k₀ Bool State₀ := MultiTapePTM.ofDeterministic tm
   have hfirst (a : α) :
@@ -560,9 +563,7 @@ theorem preimage_pad_prod_id_mem_EXP {B : Set (List Bool × List Bool)}
     omega
   have hpow : (encPair encBits encBits
       (frame (enc p.1) ++ List.replicate (2 ^ f n) true, p.2)).length ^ d ≤ 2 ^ E :=
-    calc _ ≤ (2 ^ (X + 3)) ^ d := Nat.pow_le_pow_left (by omega) d
-      _ = 2 ^ (d * (X + 3)) := (pow_mul' 2 d (X + 3)).symm
-      _ ≤ 2 ^ E := Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ (by omega))
+    pow_le_two_pow_mul_of_add_one_le hlen (by omega)
   omega
 
 /-- Pulling back `B ∈ P (encPair encBits encUnary)` along
@@ -604,9 +605,7 @@ theorem preimage_pad_prod_two_pow_mem_EXP {B : Set (List Bool × ℕ)}
     omega
   have hpow : (encPair encBits encUnary
       (frame (enc a) ++ List.replicate (2 ^ f n) true, 2 ^ g n)).length ^ d ≤ 2 ^ E :=
-    calc _ ≤ (2 ^ (X + 3)) ^ d := Nat.pow_le_pow_left (by omega) d
-      _ = 2 ^ (d * (X + 3)) := (pow_mul' 2 d (X + 3)).symm
-      _ ≤ 2 ^ E := Nat.pow_le_pow_right (by norm_num) (Nat.mul_le_mul_right _ (by omega))
+    pow_le_two_pow_mul_of_add_one_le hlen (by omega)
   omega
 
 end Translation

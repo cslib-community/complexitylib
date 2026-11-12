@@ -96,19 +96,19 @@ directed graphs with a number `k` such that removing some set of at most `k` dec
 leaves no directed cycle. -/
 @[expose]
 def FeedbackVertexSet : Set FeedbackVertexSetInstance :=
-  {x | ∃ R : Finset ℕ, (∀ v ∈ R, v ∈ x.graph.1) ∧ R.card ≤ x.bound ∧
+  {x | ∃ R : Finset ℕ, (∀ v ∈ R, v ∈ x.graph.vertices) ∧ R.card ≤ x.bound ∧
     (x.graph.deleteVerts R).IsDirAcyclic}
 
 theorem mem_FeedbackVertexSet_iff {G : Graph} {k : ℕ} :
     (⟨G, k⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet ↔
-      ∃ R : Finset ℕ, (∀ v ∈ R, v ∈ G.1) ∧ R.card ≤ k ∧ (G.deleteVerts R).IsDirAcyclic :=
+      ∃ R : Finset ℕ, (∀ v ∈ R, v ∈ G.vertices) ∧ R.card ≤ k ∧ (G.deleteVerts R).IsDirAcyclic :=
   Iff.rfl
 
 /-- Membership in `FeedbackVertexSet` through cycles: at most `k` declared vertices meet every
 directed cycle. -/
 theorem mem_FeedbackVertexSet_iff_forall_isDirCycle {G : Graph} {k : ℕ} :
     (⟨G, k⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet ↔
-      ∃ R : Finset ℕ, (∀ v ∈ R, v ∈ G.1) ∧ R.card ≤ k ∧
+      ∃ R : Finset ℕ, (∀ v ∈ R, v ∈ G.vertices) ∧ R.card ≤ k ∧
         ∀ c, G.IsDirCycle c → ∃ v ∈ c, v ∈ R := by
   simp only [mem_FeedbackVertexSet_iff, isDirAcyclic_deleteVerts_iff]
 
@@ -123,21 +123,21 @@ private def zeroCount (x : FeedbackVertexSetInstance × List ℕ) : ℕ :=
 /-- The check of one arc under a listed numbering: unless both ends are declared vertices with
 nonzero numbers, the arc increases the number. -/
 private def arcOK (x : FeedbackVertexSetInstance × List ℕ) (e : ℕ × ℕ) : Bool :=
-  !(decide (e.1 ∈ x.1.graph.1) && decide (e.2 ∈ x.1.graph.1) &&
+  !(decide (e.1 ∈ x.1.graph.vertices) && decide (e.2 ∈ x.1.graph.vertices) &&
       decide (colorOf x.1.graph x.2 e.1 ≠ 0) && decide (colorOf x.1.graph x.2 e.2 ≠ 0)) ||
     decide (colorOf x.1.graph x.2 e.1 < colorOf x.1.graph x.2 e.2)
 
 /-- The check of a listed numbering: at most `k` distinct declared vertices are numbered `0`, and
 every arc between declared vertices with nonzero numbers increases the number. -/
 private def check (x : FeedbackVertexSetInstance × List ℕ) : Bool :=
-  decide (zeroCount x ≤ x.1.bound) && x.1.graph.2.all (arcOK x)
+  decide (zeroCount x ≤ x.1.bound) && x.1.graph.edges.all (arcOK x)
 
 private theorem computableInPolyTime_arcOK :
     ComputableInPolyTime (fun p : (FeedbackVertexSetInstance × List ℕ) × (ℕ × ℕ) => arcOK p.1 p.2)
       (encPair (encPair encFeedbackVertexSet (encList encNat)) (encPair encNat encNat))
       encBool := by
   unfold arcOK
-  fun_prop [Graph.computableInPolyTime_fst]
+  fun_prop [encGraph_vertices_polyTime]
 
 private theorem computableInPolyTime_check :
     ComputableInPolyTime check (encPair encFeedbackVertexSet (encList encNat)) encBool := by
@@ -146,12 +146,13 @@ private theorem computableInPolyTime_check :
     unfold zeroCount
     exact countPWithInput (by fun_prop) (by fun_prop)
   exact bool_and.comp ((binary_le' (unary_to_binary.comp hz) (by fun_prop)).prod
-    (allWithInput (Graph.computableInPolyTime_snd (by fun_prop)) computableInPolyTime_arcOK))
+    (allWithInput (encGraph_edges_polyTime (by fun_prop)) computableInPolyTime_arcOK))
 
 /-- The distinct declared vertices numbered `0` are counted by `zeroCount`. -/
 private theorem zeroCount_eq (x : FeedbackVertexSetInstance × List ℕ) :
-    zeroCount x = (x.1.graph.1.toFinset.filter fun v => colorOf x.1.graph x.2 v = 0).card := by
-  have hset : x.1.graph.distinctVertices.toFinset = x.1.graph.1.toFinset := by
+    zeroCount x =
+      (x.1.graph.vertices.toFinset.filter fun v => colorOf x.1.graph x.2 v = 0).card := by
+  have hset : x.1.graph.distinctVertices.toFinset = x.1.graph.vertices.toFinset := by
     ext v
     simp only [List.mem_toFinset, mem_distinctVertices]
   rw [zeroCount, List.countP_eq_length_filter,
@@ -160,14 +161,14 @@ private theorem zeroCount_eq (x : FeedbackVertexSetInstance × List ℕ) :
 
 private theorem check_iff (x : FeedbackVertexSetInstance × List ℕ) :
     check x = true ↔
-      (x.1.graph.1.toFinset.filter fun v => colorOf x.1.graph x.2 v = 0).card ≤ x.1.bound ∧
-        ∀ e ∈ x.1.graph.2, e.1 ∈ x.1.graph.1 → e.2 ∈ x.1.graph.1 →
+      (x.1.graph.vertices.toFinset.filter fun v => colorOf x.1.graph x.2 v = 0).card ≤ x.1.bound ∧
+        ∀ e ∈ x.1.graph.edges, e.1 ∈ x.1.graph.vertices → e.2 ∈ x.1.graph.vertices →
           colorOf x.1.graph x.2 e.1 ≠ 0 → colorOf x.1.graph x.2 e.2 ≠ 0 →
             colorOf x.1.graph x.2 e.1 < colorOf x.1.graph x.2 e.2 := by
   simp only [check, arcOK, zeroCount_eq, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.or_eq_true, Bool.not_eq_true', Bool.and_eq_false_iff, decide_eq_false_iff_not, not_not]
   refine and_congr_right fun _ => forall₂_congr fun e _ => ?_
-  by_cases h1 : e.1 ∈ x.1.graph.1 <;> by_cases h2 : e.2 ∈ x.1.graph.1 <;>
+  by_cases h1 : e.1 ∈ x.1.graph.vertices <;> by_cases h2 : e.2 ∈ x.1.graph.vertices <;>
     by_cases h3 : colorOf x.1.graph x.2 e.1 = 0 <;>
     by_cases h4 : colorOf x.1.graph x.2 e.2 = 0 <;>
     simp only [h1, h2, h3, h4, not_true, not_false_eq_true, true_or, or_true, false_or, or_false,
@@ -176,15 +177,16 @@ private theorem check_iff (x : FeedbackVertexSetInstance × List ℕ) :
 /-- The witness relation: the number of distinct declared vertices numbered `0` is at most `k`,
 and every arc between declared vertices with nonzero numbers increases the number. -/
 private def Certifies (x : FeedbackVertexSetInstance) (ρ : List ℕ) : Prop :=
-  (x.graph.1.toFinset.filter fun v => colorOf x.graph ρ v = 0).card ≤ x.bound ∧
-    ∀ e ∈ x.graph.2, e.1 ∈ x.graph.1 → e.2 ∈ x.graph.1 → colorOf x.graph ρ e.1 ≠ 0 →
+  (x.graph.vertices.toFinset.filter fun v => colorOf x.graph ρ v = 0).card ≤ x.bound ∧
+    ∀ e ∈ x.graph.edges, e.1 ∈ x.graph.vertices → e.2 ∈ x.graph.vertices →
+      colorOf x.graph ρ e.1 ≠ 0 →
       colorOf x.graph ρ e.2 ≠ 0 → colorOf x.graph ρ e.1 < colorOf x.graph ρ e.2
 
 /-- A numbering removing the vertices numbered `0` shows membership. -/
 private theorem mem_of_certifies {G : Graph} {k : ℕ} {ρ : List ℕ} (h : Certifies ⟨G, k⟩ ρ) :
     (⟨G, k⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet := by
   obtain ⟨hcard, hρ⟩ := h
-  refine ⟨G.1.toFinset.filter fun v => colorOf G ρ v = 0, fun v hv => ?_, hcard,
+  refine ⟨G.vertices.toFinset.filter fun v => colorOf G ρ v = 0, fun v hv => ?_, hcard,
     isDirAcyclic_of_rank (f := colorOf G ρ) fun u v huv => ?_⟩
   · exact List.mem_toFinset.1 (Finset.mem_filter.1 hv).1
   · rw [dirAdj_deleteVerts] at huv
@@ -196,19 +198,20 @@ private theorem mem_of_certifies {G : Graph} {k : ℕ} {ρ : List ℕ} (h : Cert
 vertex list. -/
 private theorem exists_certifies {G : Graph} {k : ℕ}
     (h : (⟨G, k⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet) :
-    ∃ g : ℕ → ℕ, (∀ v ∈ G.1, g v ≤ G.1.toFinset.card) ∧ Certifies ⟨G, k⟩ (G.1.map g) := by
+    ∃ g : ℕ → ℕ, (∀ v ∈ G.vertices, g v ≤ G.vertices.toFinset.card) ∧
+      Certifies ⟨G, k⟩ (G.vertices.map g) := by
   classical
   obtain ⟨R, hRV, hcard, hacyc⟩ := h
   obtain ⟨f, hflt, hf⟩ := exists_rank_of_isDirAcyclic hacyc
-  have hsub : (G.deleteVerts R).1.toFinset.card ≤ G.1.toFinset.card :=
+  have hsub : (G.deleteVerts R).vertices.toFinset.card ≤ G.vertices.toFinset.card :=
     Finset.card_le_card fun v hv => List.mem_toFinset.2
-      (mem_deleteVerts_fst.1 (List.mem_toFinset.1 hv)).1
+      (mem_deleteVerts_vertices.1 (List.mem_toFinset.1 hv)).1
   refine ⟨fun v => if v ∈ R then 0 else f v + 1, fun v hv => ?_, ?_, fun e he h1 h2 h3 h4 => ?_⟩
   · dsimp only
     split
     · exact Nat.zero_le _
-    · exact (hflt v (mem_deleteVerts_fst.2 ⟨hv, ‹_›⟩)).trans_le hsub
-  · have hfilter : (G.1.toFinset.filter fun v => colorOf G (G.1.map fun v =>
+    · exact (hflt v (mem_deleteVerts_vertices.2 ⟨hv, ‹_›⟩)).trans_le hsub
+  · have hfilter : (G.vertices.toFinset.filter fun v => colorOf G (G.vertices.map fun v =>
         if v ∈ R then 0 else f v + 1) v = 0) = R := by
       ext v
       simp only [Finset.mem_filter, List.mem_toFinset]
@@ -242,7 +245,8 @@ theorem mem_NP : FeedbackVertexSet ∈ NP encFeedbackVertexSet := by
       exact G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k)))
     (fun ⟨G, k⟩ ρ h => mem_of_certifies ((check_iff (⟨G, k⟩, ρ)).1 h)) fun ⟨G, k⟩ h => ?_
   obtain ⟨g, hgle, hg⟩ := exists_certifies h
-  exact ⟨g, fun v hv => (hgle v hv).trans G.1.toFinset_card_le, (check_iff (⟨G, k⟩, _)).2 hg⟩
+  exact ⟨g, fun v hv => (hgle v hv).trans G.vertices.toFinset_card_le,
+    (check_iff (⟨G, k⟩, _)).2 hg⟩
 
 end FeedbackVertexSet
 
@@ -254,12 +258,12 @@ namespace VertexCover
 two are the edges. -/
 @[expose]
 def bidirect (G : Graph) : Graph :=
-  (G.1, G.2.filter (fun e => decide (e.1 ≠ e.2)) ++
-    (G.2.filter fun e => decide (e.1 ≠ e.2)).map fun e => (e.2, e.1))
+  ⟨G.vertices, G.edges.filter (fun e => decide (e.1 ≠ e.2)) ++
+    (G.edges.filter fun e => decide (e.1 ≠ e.2)).map fun e => (e.2, e.1)⟩
 
 /-- The arcs of `bidirect G` join the adjacent declared vertices of `G`. -/
 theorem dirAdj_bidirect {G : Graph} {u v : ℕ} :
-    (bidirect G).DirAdj u v ↔ u ∈ G.1 ∧ v ∈ G.1 ∧ G.toSimpleGraph.Adj u v := by
+    (bidirect G).DirAdj u v ↔ u ∈ G.vertices ∧ v ∈ G.vertices ∧ G.toSimpleGraph.Adj u v := by
   simp only [DirAdj, bidirect, List.mem_append, List.mem_filter, List.mem_map, decide_eq_true_eq,
     Prod.exists, Prod.mk.injEq, toSimpleGraph_adj]
   constructor
@@ -275,7 +279,7 @@ arcs, or produce a self-loop with target `0` when the target exceeds the number 
 declared vertices. -/
 @[expose]
 def toFeedbackVertexSet (x : Graph × ℕ) : FeedbackVertexSetInstance :=
-  if x.2 ≤ x.1.1.toFinset.card then ⟨bidirect x.1, x.2⟩ else ⟨([0], [(0, 0)]), 0⟩
+  if x.2 ≤ x.1.vertices.toFinset.card then ⟨bidirect x.1, x.2⟩ else ⟨⟨[0], [(0, 0)]⟩, 0⟩
 
 /-- **Vertex covers are feedback vertex sets of the bidirected graph.** -/
 theorem toFeedbackVertexSet_mem_iff (x : Graph × ℕ) :
@@ -317,17 +321,17 @@ unary and compared with the binary target. -/
 @[fun_prop]
 theorem computableInPolyTime_toFeedbackVertexSet :
     ComputableInPolyTime toFeedbackVertexSet (encPair encGraph encNat) encFeedbackVertexSet := by
-  have hn : ComputableInPolyTime (fun x : Graph × ℕ => x.1.1.toFinset.card)
+  have hn : ComputableInPolyTime (fun x : Graph × ℕ => x.1.vertices.toFinset.card)
       (encPair encGraph encNat) encUnary := by
     simp_rw [← Graph.length_distinctVertices]
     exact (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (fst _ _))
   have hb : ComputableInPolyTime (fun x : Graph × ℕ => bidirect x.1)
       (encPair encGraph encNat) encGraph := by
-    unfold bidirect encGraph
+    unfold bidirect
     fun_prop
   have heq : toFeedbackVertexSet = fun x : Graph × ℕ =>
-      if decide (x.2 ≤ x.1.1.toFinset.card) then ⟨bidirect x.1, x.2⟩
-      else ⟨([0], [(0, 0)]), 0⟩ := by
+      if decide (x.2 ≤ x.1.vertices.toFinset.card) then ⟨bidirect x.1, x.2⟩
+      else ⟨⟨[0], [(0, 0)]⟩, 0⟩ := by
     funext x
     simp only [toFeedbackVertexSet, decide_eq_true_eq]
   rw [heq]

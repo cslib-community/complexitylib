@@ -32,8 +32,8 @@ variable {Rel V : Type} [DecidableEq V]
 /-- A trailing nullary adds exactly one isolated constraint declaration. -/
 theorem incidenceGraph_append_nullary (F : CSP Rel V) (r : Rel) :
     incidenceGraph (F ++ [(r, [])]) =
-      ((incidenceGraph F).1 ++ [F.numVars + F.length], (incidenceGraph F).2) := by
-  apply Prod.ext
+      ⟨(incidenceGraph F).vertices ++ [F.numVars + F.length], (incidenceGraph F).edges⟩ := by
+  apply Graph.ext
   · simp only [incidenceGraph_vertices, CSP.numVars_append_nullary, List.length_append,
       List.length_singleton, ← Nat.add_assoc, List.range_succ]
   · simp only [incidenceGraph_edges, CSP.occurrences_append_nullary,
@@ -66,9 +66,9 @@ ordered numerical certificate. Its truth value under relation semantics is not a
 theorem verifyRotationCertificate_append_nullary (F : CSP Rel V) (r : Rel)
     (c : RotationCertificate) :
     verifyRotationCertificate (F ++ [(r, [])]) c = verifyRotationCertificate F c := by
-  have he : (incidenceGraph (F ++ [(r, [])])).2 = (incidenceGraph F).2 :=
+  have he : (incidenceGraph (F ++ [(r, [])])).edges = (incidenceGraph F).edges :=
     by simpa only using
-      congrArg (fun G : Graph => G.2) (incidenceGraph_append_nullary F r)
+      congrArg (fun G : Graph => G.edges) (incidenceGraph_append_nullary F r)
   have hg := RotationCertificate.verifyGenusZero_eq_of_edges_eq he
     (incidenceVertices_declared (F ++ [(r, [])])) (incidenceVertices_declared F) c
   simp only [verifyRotationCertificate, verifyArgumentOrder_append_nullary, hg]

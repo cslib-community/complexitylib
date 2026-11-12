@@ -27,14 +27,14 @@ namespace Cslib.Complexity.Graph
 /-- Disjoint parity-tagged copies, with all left declarations and edges before all right
 declarations and edges. Duplicate declarations, loops, parallel edges and points survive. -/
 @[expose] def disjointUnion (G H : Graph) : Graph :=
-  ((G.1.map (fun v => 2 * v)) ++ H.1.map (fun v => 2 * v + 1),
-    (G.2.map (fun e => (2 * e.1, 2 * e.2))) ++
-      H.2.map (fun e => (2 * e.1 + 1, 2 * e.2 + 1)))
+  ⟨(G.vertices.map (fun v => 2 * v)) ++ H.vertices.map (fun v => 2 * v + 1),
+    (G.edges.map (fun e => (2 * e.1, 2 * e.2))) ++
+      H.edges.map (fun e => (2 * e.1 + 1, 2 * e.2 + 1))⟩
 
 /-- The complete indexed dart sum, retaining all old edge ends in concatenation order. -/
 @[expose] def disjointDartEquiv (G H : Graph) :
     Dart G ⊕ Dart H ≃ Dart (G.disjointUnion H) :=
-  (Equiv.sumProdDistrib (Fin G.2.length) (Fin H.2.length) Bool).symm.trans
+  (Equiv.sumProdDistrib (Fin G.edges.length) (Fin H.edges.length) Bool).symm.trans
     ((finSumFinEquiv.prodCongr (Equiv.refl Bool)).trans
       ((finCongr (by simp only [disjointUnion, List.length_append, List.length_map])).prodCongr
         (Equiv.refl Bool)))
@@ -43,29 +43,29 @@ declarations and edges. Duplicate declarations, loops, parallel edges and points
 theorem disjointDartEquiv_inl (G H : Graph) (d : Dart G) :
     disjointDartEquiv G H (Sum.inl d) =
       (⟨d.1.val, by simpa only [disjointUnion, List.length_append, List.length_map] using
-        (Nat.lt_add_right H.2.length d.1.isLt)⟩, d.2) := rfl
+        (Nat.lt_add_right H.edges.length d.1.isLt)⟩, d.2) := rfl
 
 /-- Right indexed ends follow exactly the old left edge count. -/
 theorem disjointDartEquiv_inr (G H : Graph) (d : Dart H) :
     disjointDartEquiv G H (Sum.inr d) =
-      (⟨G.2.length + d.1.val, by
+      (⟨G.edges.length + d.1.val, by
         simpa only [disjointUnion, List.length_append, List.length_map] using
-          Nat.add_lt_add_left d.1.isLt G.2.length⟩, d.2) := rfl
+          Nat.add_lt_add_left d.1.isLt G.edges.length⟩, d.2) := rfl
 
 /-- Actual left endpoints carry the even tag, including both ends of a loop. -/
 theorem vertex_disjointDartEquiv_inl (G H : Graph) (d : Dart G) :
     (disjointDartEquiv G H (Sum.inl d)).vertex = 2 * d.vertex := by
   rw [disjointDartEquiv_inl]
-  change (if d.2 then ((G.disjointUnion H).2.getD d.1.val (0, 0)).2 else
-    ((G.disjointUnion H).2.getD d.1.val (0, 0)).1) = 2 * d.vertex
+  change (if d.2 then ((G.disjointUnion H).edges.getD d.1.val (0, 0)).2 else
+    ((G.disjointUnion H).edges.getD d.1.val (0, 0)).1) = 2 * d.vertex
   simp only [disjointUnion]
   rw [List.getD_eq_getElem _ _ (by
     simpa only [disjointUnion, List.length_append, List.length_map] using
-      Nat.lt_add_right H.2.length d.1.isLt)]
+      Nat.lt_add_right H.edges.length d.1.isLt)]
   rw [List.getElem_append_left (by simpa only [List.length_map] using d.1.isLt),
     List.getElem_map]
-  change (if d.2 then 2 * G.2[d.1.val].2 else 2 * G.2[d.1.val].1) =
-    2 * (if d.2 then (G.2.getD d.1.val (0, 0)).2 else (G.2.getD d.1.val (0, 0)).1)
+  change (if d.2 then 2 * G.edges[d.1.val].2 else 2 * G.edges[d.1.val].1) =
+    2 * (if d.2 then (G.edges.getD d.1.val (0, 0)).2 else (G.edges.getD d.1.val (0, 0)).1)
   rw [List.getD_eq_getElem _ _ d.1.isLt]
   cases d.2 <;> rfl
 
@@ -73,16 +73,16 @@ theorem vertex_disjointDartEquiv_inl (G H : Graph) (d : Dart G) :
 theorem vertex_disjointDartEquiv_inr (G H : Graph) (d : Dart H) :
     (disjointDartEquiv G H (Sum.inr d)).vertex = 2 * d.vertex + 1 := by
   rw [disjointDartEquiv_inr]
-  change (if d.2 then ((G.disjointUnion H).2.getD (G.2.length + d.1.val) (0, 0)).2 else
-    ((G.disjointUnion H).2.getD (G.2.length + d.1.val) (0, 0)).1) = 2 * d.vertex + 1
+  change (if d.2 then ((G.disjointUnion H).edges.getD (G.edges.length + d.1.val) (0, 0)).2 else
+    ((G.disjointUnion H).edges.getD (G.edges.length + d.1.val) (0, 0)).1) = 2 * d.vertex + 1
   simp only [disjointUnion]
   rw [List.getD_eq_getElem _ _ (by
     simpa only [disjointUnion, List.length_append, List.length_map] using
-      Nat.add_lt_add_left d.1.isLt G.2.length)]
+      Nat.add_lt_add_left d.1.isLt G.edges.length)]
   rw [List.getElem_append_right (by simp only [List.length_map]; omega), List.getElem_map]
   simp only [List.length_map, Nat.add_sub_cancel_left]
-  change (if d.2 then 2 * H.2[d.1.val].2 + 1 else 2 * H.2[d.1.val].1 + 1) =
-    2 * (if d.2 then (H.2.getD d.1.val (0, 0)).2 else (H.2.getD d.1.val (0, 0)).1) + 1
+  change (if d.2 then 2 * H.edges[d.1.val].2 + 1 else 2 * H.edges[d.1.val].1 + 1) =
+    2 * (if d.2 then (H.edges.getD d.1.val (0, 0)).2 else (H.edges.getD d.1.val (0, 0)).1) + 1
   rw [List.getD_eq_getElem _ _ d.1.isLt]
   cases d.2 <;> rfl
 
@@ -94,9 +94,9 @@ theorem reverse_disjointDartEquiv (G H : Graph) (d : Dart G ⊕ Dart H) :
 
 /-- Endpoint declaration is inherited from the corresponding source graph. -/
 theorem endpoints_declared_disjointUnion (G H : Graph)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
-    (hH : ∀ v ∈ H.incidenceVertices, v ∈ H.1) :
-    ∀ v ∈ (G.disjointUnion H).incidenceVertices, v ∈ (G.disjointUnion H).1 := by
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices)
+    (hH : ∀ v ∈ H.incidenceVertices, v ∈ H.vertices) :
+    ∀ v ∈ (G.disjointUnion H).incidenceVertices, v ∈ (G.disjointUnion H).vertices := by
   intro v hv
   obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
   rcases List.mem_append.mp he with he | he
