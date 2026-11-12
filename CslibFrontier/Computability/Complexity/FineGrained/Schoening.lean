@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.Data.BitString.Flip
 public import CslibFrontier.Logics.Propositional.CNF
 public import Mathlib.InformationTheory.Hamming
 public import CslibFrontier.Probability.PMF
+import CslibFrontier.Foundations.Combinatorics.BinomialTail
 import CslibFrontier.Foundations.Data.BitString.Hamming
 import CslibFrontier.Probability.PMF.EventBind
 import Mathlib.Algebra.BigOperators.Fin
@@ -248,85 +249,31 @@ theorem choose_mul_le_hit (hk : 1 ≤ k) (a b d : ℕ) (h : d + a ≤ b) :
 
 /-! ### The middle binomial weight -/
 
-/-- The weights `C(ki, a) (k - 1)^{ki - a}` of `((k - 1) + 1)^{ki}` increase up to `a = i`. -/
-private theorem weight_le_succ {k i a : ℕ} (hk : 1 ≤ k) (ha : a < i) :
-    (k * i).choose a * (k - 1) ^ (k * i - a) ≤
-      (k * i).choose (a + 1) * (k - 1) ^ (k * i - (a + 1)) := by
-  have hrec := Nat.choose_succ_right_eq (k * i) a
-  have hai : a + 1 ≤ k * i := le_trans ha (Nat.le_mul_of_pos_left i hk)
-  have hpow : (k - 1) ^ (k * i - a) = (k - 1) * (k - 1) ^ (k * i - (a + 1)) := by
-    rw [← pow_succ']
-    congr 1
-    omega
-  have hcoef : (k - 1) * (a + 1) ≤ k * i - a := by
-    obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
-    simp only [Nat.add_sub_cancel]
-    have : (k' + 1) * (a + 1) ≤ (k' + 1) * i := Nat.mul_le_mul_left _ ha
-    have : k' * (a + 1) + (a + 1) = (k' + 1) * (a + 1) := by ring
-    omega
-  rw [hpow]
-  have key : (k * i).choose a * ((k - 1) * (k - 1) ^ (k * i - (a + 1))) * (a + 1) ≤
-      (k * i).choose (a + 1) * (k - 1) ^ (k * i - (a + 1)) * (a + 1) := by
-    calc
-      (k * i).choose a * ((k - 1) * (k - 1) ^ (k * i - (a + 1))) * (a + 1) =
-          (k * i).choose a * ((k - 1) * (a + 1)) * (k - 1) ^ (k * i - (a + 1)) := by ring
-      _ ≤ (k * i).choose a * (k * i - a) * (k - 1) ^ (k * i - (a + 1)) := by gcongr
-      _ = (k * i).choose (a + 1) * (k - 1) ^ (k * i - (a + 1)) * (a + 1) := by
-        rw [← hrec]
-        ring
-  exact Nat.le_of_mul_le_mul_right key (Nat.succ_pos a)
-
-/-- The weights `C(ki, a) (k - 1)^{ki - a}` of `((k - 1) + 1)^{ki}` decrease from `a = i`. -/
-private theorem weight_succ_le {k i a : ℕ} (hk : 1 ≤ k) (ha : i ≤ a) :
-    (k * i).choose (a + 1) * (k - 1) ^ (k * i - (a + 1)) ≤
-      (k * i).choose a * (k - 1) ^ (k * i - a) := by
-  rcases lt_or_ge a (k * i) with hlt | hge
-  · have hrec := Nat.choose_succ_right_eq (k * i) a
-    have hpow : (k - 1) ^ (k * i - a) = (k - 1) * (k - 1) ^ (k * i - (a + 1)) := by
-      rw [← pow_succ']
-      congr 1
-      omega
-    have hcoef : k * i - a ≤ (k - 1) * (a + 1) := by
-      obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
-      simp only [Nat.add_sub_cancel]
-      have : (k' + 1) * i ≤ (k' + 1) * a := Nat.mul_le_mul_left _ ha
-      have : k' * (a + 1) + (a + 1) = (k' + 1) * a + (k' + 1) := by ring
-      omega
-    rw [hpow]
-    have key : (k * i).choose (a + 1) * (k - 1) ^ (k * i - (a + 1)) * (a + 1) ≤
-        (k * i).choose a * ((k - 1) * (k - 1) ^ (k * i - (a + 1))) * (a + 1) := by
-      calc
-        (k * i).choose (a + 1) * (k - 1) ^ (k * i - (a + 1)) * (a + 1) =
-            (k * i).choose a * (k * i - a) * (k - 1) ^ (k * i - (a + 1)) := by
-          rw [← hrec]
-          ring
-        _ ≤ (k * i).choose a * ((k - 1) * (a + 1)) * (k - 1) ^ (k * i - (a + 1)) := by gcongr
-        _ = (k * i).choose a * ((k - 1) * (k - 1) ^ (k * i - (a + 1))) * (a + 1) := by ring
-    exact Nat.le_of_mul_le_mul_right key (Nat.succ_pos a)
-  · rw [Nat.choose_eq_zero_of_lt (by omega), zero_mul]
-    exact Nat.zero_le _
-
-/-- The middle weight `C(ki, i) (k - 1)^{ki - i}` is the largest weight of `((k - 1) + 1)^{ki}`. -/
+/-- The middle weight `C(ki, i) (k - 1)^{ki - i}` is the largest weight of `((k - 1) + 1)^{ki}`:
+these weights are `k^{ki}` times those of `Bin(ki, 1/k)`, whose mode is `i`
+(`Cslib.choose_mul_pow_le_mode`). -/
 private theorem weight_le_middle {k : ℕ} (hk : 1 ≤ k) (i a : ℕ) :
     (k * i).choose a * (k - 1) ^ (k * i - a) ≤ (k * i).choose i * (k - 1) ^ (k * i - i) := by
-  rcases le_total a i with hai | hai
-  · have key : ∀ m a, a + m = i →
-        (k * i).choose a * (k - 1) ^ (k * i - a) ≤ (k * i).choose i * (k - 1) ^ (k * i - i) := by
-      intro m
-      induction m with
-      | zero => intro a ha; subst ha; rfl
-      | succ m ih =>
-        intro a ha
-        exact (weight_le_succ hk (by omega)).trans (ih (a + 1) (by omega))
-    exact key (i - a) a (by omega)
-  · have key : ∀ m, (k * i).choose (i + m) * (k - 1) ^ (k * i - (i + m)) ≤
-        (k * i).choose i * (k - 1) ^ (k * i - i) := by
-      intro m
-      induction m with
-      | zero => rfl
-      | succ m ih => exact (weight_succ_le (a := i + m) hk (by omega)).trans ih
-    obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hai
-    exact key m
+  rcases lt_or_ge (k * i) a with hlt | ha
+  · rw [Nat.choose_eq_zero_of_lt hlt, zero_mul]; exact Nat.zero_le _
+  have hk0 : (0 : ℝ) < k := by exact_mod_cast hk
+  have hi : i ≤ k * i := Nat.le_mul_of_pos_left i hk
+  -- the weight at `b ≤ ki` is `k^{ki}` times the binomial weight of `Bin(ki, 1/k)`
+  have hscale : ∀ b ≤ k * i, ((k * i).choose b * (k - 1) ^ (k * i - b) : ℕ) =
+      (k : ℝ) ^ (k * i) * (((k * i).choose b : ℝ) * (1 / k) ^ b * (1 - 1 / k) ^ (k * i - b)) := by
+    intro b hb
+    have hsub : (1 : ℝ) - 1 / k = ((k - 1 : ℕ) : ℝ) / k := by
+      rw [Nat.cast_sub hk, Nat.cast_one]; field_simp
+    rw [hsub, div_pow, div_pow, one_pow,
+      show (k : ℝ) ^ (k * i) = k ^ b * k ^ (k * i - b) by rw [← pow_add]; congr 1; omega]
+    push_cast
+    field_simp
+  have hmode := choose_mul_pow_le_mode (n := k * i) (w := i) (p := 1 / k) hi
+    (by push_cast; field_simp) (by positivity) (div_le_one_of_le₀ (by exact_mod_cast hk) hk0.le) ha
+  have : (((k * i).choose a * (k - 1) ^ (k * i - a) : ℕ) : ℝ) ≤
+      (((k * i).choose i * (k - 1) ^ (k * i - i) : ℕ) : ℝ) := by
+    rw [hscale a ha, hscale i hi]; gcongr
+  exact_mod_cast this
 
 /-- **The middle binomial weight**: `k^{ki} ≤ C(ki, i) (k - 1)^{ki - i} (ki + 1)`, since the middle
 weight is the largest of the `ki + 1` weights of `((k - 1) + 1)^{ki}`. -/

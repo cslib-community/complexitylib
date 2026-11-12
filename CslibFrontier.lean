@@ -1402,9 +1402,11 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Andr
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevApproxMajority
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevOddErrors
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharp
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSharpScore
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevSignCoherent
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevTruncatedCircuit
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevWindowed
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Capacity
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.CapacityCircuit
@@ -5283,6 +5285,7 @@ public import CslibFrontier.Foundations.Combinatorics.Sunflower.Closure
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.Implication
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.LowerBound
 public import CslibFrontier.Foundations.Combinatorics.Sunflower.Pluck
+public import CslibFrontier.Foundations.Combinatorics.TailSum
 public import CslibFrontier.Foundations.Combinatorics.TupleCover
 public import CslibFrontier.Foundations.Combinatorics.UniformSchedules
 public import CslibFrontier.Foundations.Combinatorics.WeightBudget
@@ -5395,9 +5398,13 @@ public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.Constant
 public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import CslibFrontier.Foundations.Data.Code.Multilinearity
 public import CslibFrontier.Foundations.Data.Code.MultilinearitySoundness
+public import CslibFrontier.Foundations.Data.Code.OddCircuit
+public import CslibFrontier.Foundations.Data.Code.OddCircuitAsymptotic
+public import CslibFrontier.Foundations.Data.Code.OddCircuitFourier
 public import CslibFrontier.Foundations.Data.Code.ParityCheck
 public import CslibFrontier.Foundations.Data.Code.Plotkin
 public import CslibFrontier.Foundations.Data.Code.Plotkin.Asymptotic
+public import CslibFrontier.Foundations.Data.Code.PuncturedBallFourier
 public import CslibFrontier.Foundations.Data.Code.ReedMuller
 public import CslibFrontier.Foundations.Data.Code.ReedSolomon
 public import CslibFrontier.Foundations.Data.Code.SelfCorrection
