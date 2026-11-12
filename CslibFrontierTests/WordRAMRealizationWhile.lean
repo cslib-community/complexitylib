@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.WordRAM.Realization.While
 import CslibFrontier.Computability.WordRAM.Realization.Glue
+import CslibFrontier.Tactic.Realize
 import Mathlib.Data.Nat.BinaryRec
 
 /-!
@@ -70,21 +71,22 @@ private theorem halving_realizes :
     Realizes .exact (fun (d, a) => boundedWhile guard half d (rank a + 8) a) words word
       (fun w (_, a) _ => Fits w a ∧ rank a ≤ rank a + 8)
       (fun (d, a) s => whileWork guard half (fun _ _ => 3) d (rank a + 8) a s) := by
-  have h := Realizes.whileMeasure zeroInput word (.lt 0 1) (fun (_, a) => rank a + 8)
-    (half_realizes zeroInput) (fun w _ a _ => Fits w a) (fun _ a _ => rank a)
-    (fun _ _ a _ _ hr => by
+  have hHalf := half_realizes zeroInput
+  realize
+  intro hv
+  refine whileSafe_of_measure _ _ _ w _ (fun a _ => Fits w a) (fun a _ => rank a)
+    (fun a _ _ hr => by
       have ha := rank_eq_zero hr
       subst a
       change ¬(0 < 0)
       omega)
-    (fun w d a s hi hg _ => by
+    (fun a t hi hg _ => by
       change 0 < a at hg
       refine ⟨⟨hg, hi⟩, ?_, ?_⟩
       · exact hi.of_le (Nat.shiftRight_le a 1)
       · change rank (a >>> 1) < rank a
         have := rank_half hg
-        omega)
-  exact h
+        omega) h.1 h.2 hv
 
 private theorem loop_zero (d : Unit) (n a : ℕ) (hr : rank a ≤ n) :
     boundedWhile guard half d n a = pure 0 := by
