@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 public import CslibFrontier.Foundations.Data.BitString.ZModTwo
 import CslibFrontier.Foundations.LinearAlgebra.Matrix.EndpointIncidence
 import Mathlib.Algebra.CharP.Two
+import Mathlib.LinearAlgebra.Matrix.Rank
 
 /-!
 # Lifting face-even edge labels to vertex spins
@@ -30,8 +31,12 @@ oracles, and a finite natural-number universe are not assumed.
 
 ## Main results
 
+* `Cslib.Complexity.Graph.RotationSystem.component_euler_le`: the matrix Euler bound for an
+  incident component, without a numerical genus hypothesis.
 * `Cslib.Complexity.Graph.RotationSystem.exists_vertexSpins_of_faceEven`: disconnected lifting.
 * `Cslib.Complexity.Graph.RotationSystem.faceEven_iff_exists_vertexSpins`: the exact parity test.
+* `Cslib.Complexity.Graph.RotationSystem.numericalGenusZero_of_faceEven_lifts`: its algebraic
+  converse, with component restriction and zero extension discharged internally.
 -/
 
 public section
@@ -223,6 +228,23 @@ private theorem matrix_product_zero {G : Graph} (r : RotationSystem G)
   rw [r.faceEven_edgeGradient]
   rfl
 
+/-- The actual vertices and face cycles of an incident component satisfy the Euler bound.
+This elementary consequence of the primal and dual incidence ranks needs neither numerical
+genus zero nor global connectedness. The supplied dart selects an incident component; this
+statement does not apply to isolated points or assert a geometric realization. -/
+theorem component_euler_le {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (G.componentVertexSet d.vertex).card + (r.componentFaceIndices d.vertex).card ≤
+      (G.componentEdgeSet d.vertex).card + 2 := by
+  classical
+  have h := Matrix.rank_add_rank_le_card_of_mul_eq_zero (matrix_product_zero r hG d)
+  rw [Matrix.rank_transpose] at h
+  have hp := rank_primalMatrix G hG d
+  have hd := rank_dualMatrix r hG d
+  rw [r.card_component_faces_eq_dual_vertices hG]
+  simp only [Vertex, Edge, Fintype.card_coe] at h hp hd
+  omega
+
 /-- Every face-even assignment lifts on each edge component, with all rank and dimension
 ingredients discharged internally from existing reachability and componentwise Euler. -/
 theorem exists_vertexSpins_on_component {G : Graph} (r : RotationSystem G)
@@ -252,6 +274,84 @@ theorem exists_vertexSpins_on_component {G : Graph} (r : RotationSystem G)
   intro i hi
   apply BitString.bitEquiv.symm.injective
   exact (primalMatrix_gradient G hG d s ⟨i, hi⟩).symm.trans (congrFun hs ⟨i, hi⟩)
+
+private theorem range_transpose_eq_ker_of_faceEven_lifts {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hlift : ∀ x : Fin G.2.length → Bool, r.FaceEven x →
+      ∃ spin : ℕ → Bool, G.edgeGradient spin = x) (d : Dart G) :
+    LinearMap.range (primalMatrix G hG d).transpose.mulVecLin =
+      LinearMap.ker (dualMatrix r hG d).mulVecLin := by
+  classical
+  apply le_antisymm
+  · rw [LinearMap.range_le_ker_iff, ← Matrix.mulVecLin_mul, matrix_product_zero,
+      Matrix.mulVecLin_zero]
+  · intro y hy
+    let x (i : Fin G.2.length) : Bool :=
+      if h : i ∈ G.componentEdgeSet d.vertex then BitString.bitEquiv (y ⟨i, h⟩) else false
+    have hrestrict (i : Edge G d.vertex) : BitString.bitEquiv.symm (x i.val) = y i := by
+      simp only [x, dite_eq_left i.property, RingEquiv.symm_apply_apply]
+    have hx : r.FaceEven x := by
+      apply (r.faceEven_iff_dart x).mpr
+      intro a
+      by_cases ha : RotationCertificate.SameComponent G d.vertex a.vertex
+      · have hs := (r.sameComponent_dual_iff hG d a).mpr ha
+        let v : Vertex r.dualGraph (r.dualDartEquiv d).vertex :=
+          ⟨(r.dualDartEquiv a).vertex,
+            (mem_componentVertexSet_dart _ r.dualGraph_endpoints_declared _).mpr hs⟩
+        have hcalc := dualMatrix_mulVec_bit r hG d x v a (r.vertex_dualDartEquiv a).symm
+        have hz := congrFun (LinearMap.mem_ker.mp hy) v
+        change (dualMatrix r hG d).mulVec y v = 0 at hz
+        apply BitString.bitEquiv.symm.injective
+        change BitString.bitEquiv.symm (r.faceParity x (Quotient.mk _ a)) = 0
+        rw [← hcalc, funext hrestrict]
+        exact hz
+      · rw [r.faceParity_mk, parityOn_eq_sum]
+        apply Finset.sum_eq_zero
+        intro e he
+        have hface := r.sameComponent_of_sameFace hG (Finset.mem_filter.mp he).2
+        have hn : e.1 ∉ G.componentEdgeSet d.vertex := by
+          intro hm
+          have hv := (mem_componentEdgeSet_iff d.vertex hG e.1 e.2).mp hm
+          exact ha (((mem_componentVertexSet_dart _ hG e).mp hv).trans hface.symm)
+        simp only [x, dite_eq_right hn, Bool.zero_eq_false]
+    obtain ⟨spin, hspin⟩ := hlift x hx
+    refine ⟨fun v => BitString.bitEquiv.symm (spin v.val), ?_⟩
+    ext i
+    change (primalMatrix G hG d).transpose.mulVec
+      (fun v => BitString.bitEquiv.symm (spin v.val)) i = y i
+    rw [primalMatrix, Matrix.endpointIncidence_transpose_mulVec]
+    apply BitString.bitEquiv.injective
+    simp only [map_add, RingEquiv.apply_symm_apply]
+    change (spin (Dart.vertex (G := G) (i.val, false)) +
+      spin (Dart.vertex (G := G) (i.val, true))) = BitString.bitEquiv (y i)
+    rw [Bool.add_eq_xor]
+    change G.edgeGradient spin i.val = BitString.bitEquiv (y i)
+    rw [hspin]
+    simp only [x, dite_eq_left i.property]
+
+/-- Algebraic converse to face-even lifting: if every face-even edge labeling is a vertex
+gradient, the existing componentwise numerical Euler predicate holds. The component proof
+extends edge vectors by zero before applying the hypothesis and reuses the actual incidence
+ranks. Declared points use the separate conventional face and require no invented dart.
+This characterizes numerical genus zero and asserts no geometric realization. -/
+theorem numericalGenusZero_of_faceEven_lifts {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hlift : ∀ x : Fin G.2.length → Bool, r.FaceEven x →
+      ∃ spin : ℕ → Bool, G.edgeGradient spin = x) : r.NumericalGenusZero := by
+  classical
+  apply (r.numericalGenusZero_iff_component_cards hG).mpr
+  intro d
+  have hker := range_transpose_eq_ker_of_faceEven_lifts r hG hlift d
+  have hnull := (dualMatrix r hG d).mulVecLin.finrank_range_add_finrank_ker
+  rw [← hker] at hnull
+  change (dualMatrix r hG d).rank + (primalMatrix G hG d).transpose.rank = _ at hnull
+  rw [Matrix.rank_transpose] at hnull
+  simp only [Module.finrank_pi] at hnull
+  have hp := rank_primalMatrix G hG d
+  have hd := rank_dualMatrix r hG d
+  rw [r.card_component_faces_eq_dual_vertices hG]
+  simp only [Vertex, Edge, Fintype.card_coe] at hnull hp hd
+  omega
 
 private noncomputable def chosenVertex (G : Graph) (c : G.induced.ConnectedComponent) :
     {v // v ∈ G.1} :=
