@@ -27,6 +27,7 @@ defined through `rateExponent` inherits them.
 
 ## Main results
 
+* `Cslib.rateExponent_def`: the defining infimum, for clients that do not see the body.
 * `Cslib.rateExponent_le`, `Cslib.le_rateExponent`: upper bounds from attained rates and lower
   bounds from unattained ones.
 * `Cslib.rateExponent_le_rateExponent`: a weaker requirement has a smaller exponent.
@@ -51,6 +52,10 @@ open Filter Topology
 applications `P δ` says that a task can be done within a resource bound at rate `δ`. -/
 noncomputable def rateExponent (P : ℝ → Prop) : ℝ :=
   sInf {δ | 0 ≤ δ ∧ P δ}
+
+/-- The defining infimum of `rateExponent`, for clients that do not see its body. -/
+theorem rateExponent_def (P : ℝ → Prop) : rateExponent P = sInf {δ | 0 ≤ δ ∧ P δ} := by
+  rw [rateExponent]
 
 variable {P Q : ℝ → Prop} {δ : ℝ}
 

@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
 public import Mathlib.Topology.Order.Real
-import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # The exponents of `k`-SAT

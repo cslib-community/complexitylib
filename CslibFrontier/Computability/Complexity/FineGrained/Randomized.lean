@@ -36,7 +36,6 @@ import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Probability.MajorityVote
 import CslibFrontier.Probability.PMF.Bind
-import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # Parameterized randomized runtime rates, error models, `rETH`, and `rSETH`

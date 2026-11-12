@@ -28,7 +28,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFa
 import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
-import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # Counting runtime rates, `#k-SAT` exponents, `#ETH`, and `#SETH`
