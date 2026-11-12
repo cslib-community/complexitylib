@@ -21,8 +21,9 @@ block on well-formed inputs of cardinality at least two, with every register bou
 `(N + 1) ^ (d + k)` for input length `N` and maximal input arity `d`. The extra exponent `k` lets
 the block hold `k`-tuples of universe elements in single registers.
 
-Ordered first-order model checking and FO(DTC) model checking are the two clients. The FO(TC)
-decider is nondeterministic, so it shares only `decider_bounds`.
+Ordered first-order model checking and FO(DTC) model checking are the two clients. The
+nondeterministic analogue, used by FO(TC) model checking, is `nblockDecider` in
+`Classes.LogSpace.FirstOrder.Ordered.NondeterministicDecider`.
 
 ## Main definitions
 
