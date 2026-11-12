@@ -40,13 +40,25 @@ private theorem rowList_get {n q : ℕ} (A : Fin n → Fin n → ℤ) (hq : q < 
 
 private theorem rowList_pair {n : ℕ} (A : Fin n → Fin n → ℤ) (i j : Fin n) :
     (rowList A).getD (pairIndex (i, j)) 0 = A i j := by
-  have idx : (finProdFinEquiv (i, j)).val = pairIndex (i, j) := by
-    simp [finProdFinEquiv, pairIndex, Nat.add_comm, Nat.mul_comm]
-  have hi : pairIndex (i, j) < n * n := idx ▸ (finProdFinEquiv (i, j)).isLt
-  rw [rowList_get A hi]
-  have eqidx : (⟨pairIndex (i, j), hi⟩ : Fin (n * n)) = finProdFinEquiv (i, j) :=
-    Fin.ext idx.symm
+  rw [rowList_get A (pairIndex_lt (i, j))]
+  have eqidx : (⟨pairIndex (i, j), pairIndex_lt (i, j)⟩ : Fin (n * n)) = finProdFinEquiv (i, j) :=
+    Fin.ext (pairIndex_eq_val_finProdFinEquiv (i, j))
   simp only [eqidx, Equiv.symm_apply_apply]
+
+private theorem rowList_append_getD_left {n q : ℕ} (A : Fin n → Fin n → ℤ) (tl : List ℤ)
+    (hq : q < n * n) : (rowList A ++ tl).getD q 0 = (rowList A).getD q 0 :=
+  List.getD_append _ _ _ _ (by simpa only [rowList_length] using hq)
+
+private theorem rowList_append_getD_right {n q : ℕ} (A : Fin n → Fin n → ℤ) (tl : List ℤ) :
+    (rowList A ++ tl).getD (n * n + q) 0 = tl.getD q 0 := by
+  rw [List.getD_append_right _ _ _ _ (by simp only [rowList_length]; omega)]
+  simp only [rowList_length, Nat.add_sub_cancel_left]
+
+private theorem getD_block_pair {n : ℕ} {values : List ℤ} {M : Fin n → Fin n → ℤ}
+    (idx : ℕ → ℕ) (hget : ∀ q < n * n, values.getD (idx q) 0 = (rowList M).getD q 0) :
+    (fun i j : Fin n => values.getD (idx (pairIndex (i, j))) 0) = M := by
+  funext i j
+  rw [hget _ (pairIndex_lt (i, j)), rowList_pair]
 
 /-- Complete native matrix-function caller, using exactly the original host ABI. The
 derived list and reference memory index an actual charge, never algorithm arguments. -/
@@ -93,27 +105,18 @@ theorem exec_matrices {W n F ap bp cp b : ℕ} (x : Data 640)
     · rcases List.mem_append.mp h with h | h
       · exact bounded B hB z h
       · exact bounded C hC z h
-  have getA (q : ℕ) (hq : q < n * n) : values.getD q 0 = (rowList A).getD q 0 := by
-    exact List.getD_append _ _ _ _ (by simpa only [rowList_length] using hq)
+  have getA (q : ℕ) (hq : q < n * n) : values.getD q 0 = (rowList A).getD q 0 :=
+    rowList_append_getD_left A _ hq
   have getB (q : ℕ) (hq : q < n * n) :
-      values.getD (n * n + q) 0 = (rowList B).getD q 0 := by
-    dsimp only [values]
-    rw [List.getD_append_right _ _ _ _ (by simp only [rowList_length]; omega)]
-    simp only [rowList_length, Nat.add_sub_cancel_left]
-    exact List.getD_append _ _ _ _ (by simpa only [rowList_length] using hq)
-  have getC (q : ℕ) (hq : q < n * n) :
+      values.getD (n * n + q) 0 = (rowList B).getD q 0 :=
+    (rowList_append_getD_right A _).trans (rowList_append_getD_left B _ hq)
+  have getC (q : ℕ) (_ : q < n * n) :
       values.getD (2 * (n * n) + q) 0 = (rowList C).getD q 0 := by
     dsimp only [values]
-    rw [List.getD_append_right _ _ _ _ (by simp only [rowList_length]; omega)]
-    rw [List.getD_append_right _ _ _ _ (by simp only [rowList_length]; omega)]
-    congr 1
-    simp only [rowList_length]
-    omega
+    rw [two_mul, Nat.add_assoc, rowList_append_getD_right, rowList_append_getD_right]
   have pair (q : ℕ) (hq : q < n * n) :
       pairIndex (finProdFinEquiv.symm (⟨q, hq⟩ : Fin (n * n))) = q := by
-    have h := congrArg (fun k : Fin (n * n) => k.val)
-      (finProdFinEquiv.apply_symm_apply (⟨q, hq⟩ : Fin (n * n)))
-    simpa [finProdFinEquiv, pairIndex, Nat.add_comm, Nat.mul_comm] using h
+    rw [pairIndex_eq_val_finProdFinEquiv, finProdFinEquiv.apply_symm_apply]
   have word (M : Fin n → Fin n → ℤ) (a : ℕ)
       (read : ∀ i j, x.mem (a + i.val * n + j.val) = Signed.encode (M i j))
       (q : ℕ) (hq : q < n * n) : x.mem (a + q) = Signed.encode ((rowList M).getD q 0) := by
@@ -131,23 +134,11 @@ theorem exec_matrices {W n F ap bp cp b : ℕ} (x : Data 640)
       (fun q hq => by rw [getB q hq]; exact word B bp vbc q hq)
       (fun q hq => by rw [getC q hq]; exact word C cp vac q hq)
       ((executionWidth_le_host_log values hlen hv (by omega) (by omega) (by omega)).trans hW)
-  have matrixA : (fun i j : Fin n => values.getD (pairIndex (i, j)) 0) = A := by
-    funext i j
-    rw [getA _ (by simpa only [pairIndex, Fin.coe_mkDivMod, Nat.mul_comm] using
-      (Fin.mkDivMod i j).isLt), rowList_pair]
-  have matrixB : (fun i j : Fin n => values.getD (n * n + pairIndex (i, j)) 0) = B := by
-    funext i j
-    rw [getB _ (by simpa only [pairIndex, Fin.coe_mkDivMod, Nat.mul_comm] using
-      (Fin.mkDivMod i j).isLt), rowList_pair]
-  have matrixC : (fun i j : Fin n => values.getD (2 * (n * n) + pairIndex (i, j)) 0) = C := by
-    funext i j
-    rw [getC _ (by simpa only [pairIndex, Fin.coe_mkDivMod, Nat.mul_comm] using
-      (Fin.mkDivMod i j).isLt), rowList_pair]
-  refine ⟨values, p, mem, y, hlen, hv, ?_, ?_, ?_, he, hf, ?_, ?_, hz, frame,
-    yn, yf, ya, yb, yc, yfree⟩
-  · exact fun i j => congrFun (congrFun matrixA i) j
-  · exact fun i j => congrFun (congrFun matrixB i) j
-  · exact fun i j => congrFun (congrFun matrixC i) j
+  have matrixA := getD_block_pair (fun q => q) getA
+  have matrixB := getD_block_pair (n * n + ·) getB
+  have matrixC := getD_block_pair (2 * (n * n) + ·) getC
+  refine ⟨values, p, mem, y, hlen, hv, congrFun₂ matrixA, congrFun₂ matrixB, congrFun₂ matrixC,
+    he, hf, ?_, ?_, hz, frame, yn, yf, ya, yb, yc, yfree⟩
   · simpa only [matrixA, matrixB, matrixC] using hiff
   · simpa only [matrixA, matrixB, matrixC] using hp
 

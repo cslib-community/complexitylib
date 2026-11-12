@@ -15,6 +15,7 @@ import Mathlib.Algebra.Order.Ring.Nat
 import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Data.Nat.Log
 import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
+import CslibFrontier.Foundations.Data.Nat.Choose
 import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
@@ -593,7 +594,7 @@ theorem one_sub_two_div_pow_pairs_le_half {n : ℕ} (hn : 2 ≤ n) :
   rw [← ENNReal.mul_div_right_comm, one_mul]
   rw [ENNReal.le_div_iff_mul_le (Or.inl h2_ne0) (Or.inl h2_top)]
   rw [mul_comm]
-  exact_mod_cast Nat.two_mul_pred_pow_le_pow hm_pos
+  exact_mod_cast Nat.two_mul_pred_pow_le hm_pos
 
 /-- Elementary high-probability trial count `(n * (n - 1) / 2) * (Nat.log 2 n + 2)` for Basic
 Karger amplification. -/

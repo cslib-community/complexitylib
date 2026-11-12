@@ -5,28 +5,36 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Projection
+import CslibFrontier.Logics.FirstOrder.Ordered.QFNumeric.Tuple
 import CslibFrontierTests.OrderedProjection
 
 /-!
 # Tests for ordered projection composition and reducibility
 
-Concrete checks for `CslibFrontier/Logics/FirstOrder/Ordered/Projection/Composition.lean`,
+Concrete checks for `CslibFrontier/Logics/FirstOrder/Ordered/QFNumeric/Tuple.lean`,
+`CslibFrontier/Logics/FirstOrder/Ordered/Projection/Composition.lean`,
 `CslibFrontier/Logics/FirstOrder/Ordered/Projection/Reduction.lean`, and
 `CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder/Ordered/Projection.lean`:
 
 * identity projection maps and `@[refl]` instances of `ProjectionReduces` and
   `QFProjectionReduces`, evaluated on concrete graphs;
+* `QFNumeric.onFullTuple` on 2-tuples over `Fin 3`: carry successor `(0, 2) → (1, 0)`, no
+  successor of `(2, 2)`, lexicographic `≤`, and the constant `0` and `max` tuples;
 * M1's off-diagonal graph complement composed with itself via `IsProjection.comp` in dimension
   `1 * 1 = 1`, agreeing with the input graph off the diagonal and remaining false on a self-loop
   on `Fin 3`;
 * M1's two-dimensional edge-copy composed with the off-diagonal complement on `Fin 3`, checked at
   exact lexicographic rank `5` (`![1, 2]`) and at diagonal rank `0` (`![0, 0]`);
+* a `succ`-guarded quantifier-free projection composed with a two-dimensional quantifier-free
+  edge-copy via `IsQFProjection.comp` and `IsQFProjectionMap.comp`, checked at the carry-successor
+  boundary `(0, 2) → (1, 0)` and the maximum boundary `(2, 2)` on `Fin 3`;
 * concrete query reductions across distinct vocabularies (`Language.graph` and `unary`), composed
-  by `ProjectionReduces.trans`, refined by `.reduces` to pull back first-order definability, and
-  lifted to `encStructure` logspace reductions via `ProjectionReduces.logSpaceReducible` and
-  `QFProjectionReduces.logSpaceReducible`;
-* negative controls showing that non-empty queries do not projection-reduce to the empty query and
-  that composing a non-projection with the identity does not produce a projection map.
+  by `QFProjectionReduces.trans` and `ProjectionReduces.trans`, refined by `.reduces` to pull back
+  first-order definability, and lifted to `encStructure` logspace reductions via
+  `ProjectionReduces.logSpaceReducible` and `QFProjectionReduces.logSpaceReducible`;
+* negative controls showing that dimension `k = 0` remains excluded, that non-empty queries do not
+  projection-reduce to the empty query, and that composing a non-projection with the identity does
+  not produce a projection map.
 -/
 
 namespace CslibFrontierTests.OrderedProjectionReduction
@@ -46,6 +54,217 @@ example : (FullTupleInterpretation.id Language.graph).toDomainInterpretation.map
 example : IsQFProjectionMap (_root_.id : Ordered.Structure Language.graph → _) ∧
     IsProjectionMap (_root_.id : Ordered.Structure unary → _) :=
   ⟨IsQFProjectionMap.id, IsProjectionMap.id⟩
+
+/-! ### Quantifier-free `BIT`-free tuple block translation (`QFNumeric.onFullTuple`) -/
+
+private theorem lexRank_pair3 (a b : Fin 3) :
+    lexRank (![a, b] : Fin 2 → Fin 3) = 3 * a.val + b.val := by
+  rw [lexRank_apply, Fin.sum_univ_two]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Fin.rev, Fin.val_zero, Fin.val_one]
+  lia
+
+/-- `QFNumeric.onFullTuple 2` preserves quantifier-freeness and translates `succ` on 2-tuples over
+`Fin 3`: `(0, 2) → (1, 0)` holds via a carry (`2 + 1 = 3`), `(0, 1) → (1, 0)` fails (`1 + 1 ≠ 3`),
+and `(2, 2)` has no successor in `Fin 3 × Fin 3` (in particular no wraparound to `(0, 0)`). -/
+example :
+    let σ : qfNumericLanguage.Formula (Fin 2) := QFNumeric.succ (.var 0) (.var 1)
+    (QFNumeric.onFullTuple 2 σ).IsQF ∧
+      (QFNumeric.onFullTuple 2 σ).Realize
+        (fun p => (![![0, 2], ![1, 0] ] : Fin 2 → Fin 2 → Fin 3) p.1 p.2) ∧
+      ¬ (QFNumeric.onFullTuple 2 σ).Realize
+        (fun p => (![![0, 1], ![1, 0] ] : Fin 2 → Fin 2 → Fin 3) p.1 p.2) ∧
+      ∀ y : Fin 2 → Fin 3, ¬ (QFNumeric.onFullTuple 2 σ).Realize
+        (fun p => (![![2, 2], y] : Fin 2 → Fin 2 → Fin 3) p.1 p.2) := by
+  have hqf : (QFNumeric.succ (.var 0) (.var 1) : qfNumericLanguage.Formula (Fin 2)).IsQF :=
+    (QFNumeric.isAtomic_succ _ _).isQF
+  let : Fact (2 ≤ 3 ^ 2) := ⟨by decide⟩
+  refine ⟨QFNumeric.isQF_onFullTuple hqf, ?_, ?_, fun y => ?_⟩
+  · rw [QFNumeric.realize_onFullTuple hqf _ two_pos, QFNumeric.realize_succ]
+    simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one]
+    change lexRank (![0, 2] : Fin 2 → Fin 3) + 1 = lexRank (![1, 0] : Fin 2 → Fin 3)
+    rw [lexRank_pair3, lexRank_pair3]
+    decide
+  · rw [QFNumeric.realize_onFullTuple hqf _ two_pos, QFNumeric.realize_succ]
+    simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one]
+    change ¬ (lexRank (![0, 1] : Fin 2 → Fin 3) + 1 = lexRank (![1, 0] : Fin 2 → Fin 3))
+    rw [lexRank_pair3, lexRank_pair3]
+    decide
+  · rw [QFNumeric.realize_onFullTuple hqf _ two_pos, QFNumeric.realize_succ]
+    simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one]
+    change ¬ (lexRank (![2, 2] : Fin 2 → Fin 3) + 1 = lexRank y)
+    rw [lexRank_pair3]
+    have hy := lexRank_lt y
+    dsimp only [Fin.val_two]
+    lia
+
+/-- `QFNumeric.onFullTuple 2` translates `≤`, `0`, and `max` on 2-tuples over `Fin 3`. -/
+example :
+    let φle : qfNumericLanguage.Formula (Fin 2) := QFNumeric.le (.var 0) (.var 1)
+    let φzero : qfNumericLanguage.Formula (Fin 1) := Term.equal (.var 0) QFNumeric.zero
+    let φmax : qfNumericLanguage.Formula (Fin 1) := Term.equal (.var 0) QFNumeric.max
+    (QFNumeric.onFullTuple 2 φle).Realize
+        (fun p => (![![0, 2], ![1, 0] ] : Fin 2 → Fin 2 → Fin 3) p.1 p.2) ∧
+      ¬ (QFNumeric.onFullTuple 2 φle).Realize
+        (fun p => (![![1, 0], ![0, 2] ] : Fin 2 → Fin 2 → Fin 3) p.1 p.2) ∧
+      (QFNumeric.onFullTuple 2 φzero).Realize (fun p => (![0, 0] : Fin 2 → Fin 3) p.2) ∧
+      ¬ (QFNumeric.onFullTuple 2 φzero).Realize (fun p => (![0, 1] : Fin 2 → Fin 3) p.2) ∧
+      (QFNumeric.onFullTuple 2 φmax).Realize (fun p => (![2, 2] : Fin 2 → Fin 3) p.2) ∧
+      ¬ (QFNumeric.onFullTuple 2 φmax).Realize (fun p => (![2, 1] : Fin 2 → Fin 3) p.2) := by
+  have hle : (QFNumeric.le (.var 0) (.var 1) : qfNumericLanguage.Formula (Fin 2)).IsQF :=
+    (QFNumeric.isAtomic_le _ _).isQF
+  have hzero : (Term.equal (.var 0) QFNumeric.zero : qfNumericLanguage.Formula (Fin 1)).IsQF :=
+    (BoundedFormula.IsAtomic.equal _ _).isQF
+  have hmax : (Term.equal (.var 0) QFNumeric.max : qfNumericLanguage.Formula (Fin 1)).IsQF :=
+    (BoundedFormula.IsAtomic.equal _ _).isQF
+  let : Fact (2 ≤ 3 ^ 2) := ⟨by decide⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [QFNumeric.realize_onFullTuple hle _ two_pos, QFNumeric.realize_le]
+    simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one, Fin.le_def]
+    change lexRank (![0, 2] : Fin 2 → Fin 3) ≤ lexRank (![1, 0] : Fin 2 → Fin 3)
+    rw [lexRank_pair3, lexRank_pair3]
+    decide
+  · rw [QFNumeric.realize_onFullTuple hle _ two_pos, QFNumeric.realize_le]
+    simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one, Fin.le_def]
+    change ¬ (lexRank (![1, 0] : Fin 2 → Fin 3) ≤ lexRank (![0, 2] : Fin 2 → Fin 3))
+    rw [lexRank_pair3, lexRank_pair3]
+    decide
+  · rw [QFNumeric.realize_onFullTuple hzero (fun _ => (![0, 0] : Fin 2 → Fin 3)) two_pos,
+      Formula.realize_equal, Fin.ext_iff, QFNumeric.realize_zero_val]
+    change lexRank (![0, 0] : Fin 2 → Fin 3) = 0
+    rw [lexRank_pair3]
+    decide
+  · rw [QFNumeric.realize_onFullTuple hzero (fun _ => (![0, 1] : Fin 2 → Fin 3)) two_pos,
+      Formula.realize_equal, Fin.ext_iff, QFNumeric.realize_zero_val]
+    change ¬ (lexRank (![0, 1] : Fin 2 → Fin 3) = 0)
+    rw [lexRank_pair3]
+    decide
+  · rw [QFNumeric.realize_onFullTuple hmax (fun _ => (![2, 2] : Fin 2 → Fin 3)) two_pos,
+      Formula.realize_equal, Fin.ext_iff, QFNumeric.realize_max_val]
+    change lexRank (![2, 2] : Fin 2 → Fin 3) = 3 ^ 2 - 1
+    rw [lexRank_pair3]
+    decide
+  · rw [QFNumeric.realize_onFullTuple hmax (fun _ => (![2, 1] : Fin 2 → Fin 3)) two_pos,
+      Formula.realize_equal, Fin.ext_iff, QFNumeric.realize_max_val]
+    change ¬ (lexRank (![2, 1] : Fin 2 → Fin 3) = 3 ^ 2 - 1)
+    rw [lexRank_pair3]
+    decide
+
+/-! ### `succ`-guarded quantifier-free projection composition -/
+
+/-- Two-dimensional quantifier-free edge-copy (`U(⟨a, b⟩) := E(a, b)`). -/
+noncomputable def copyQF : FullTupleInterpretation Language.graph unary 2 :=
+  FullTupleInterpretation.ofQFProjection (L' := unary) fun
+    | URel.u => .leaf (.rel Language.adj (fun i => (0, i)) false)
+
+theorem isQFProjection_copyQF : copyQF.IsQFProjection := by
+  refine FullTupleInterpretation.isQFProjection_ofQFProjection _ fun R => ?_
+  cases R
+  exact ProjectionFormula.isQF_leaf _
+
+noncomputable abbrev copyQFMap : Ordered.Structure Language.graph → Ordered.Structure unary :=
+  copyQF.toDomainInterpretation.map (copyQF.admissible_toDomainInterpretation two_pos)
+
+theorem isQFProjectionMap_copyQFMap : IsQFProjectionMap copyQFMap :=
+  isQFProjection_copyQF.isQFProjectionMap two_pos
+
+/-- One-dimensional `succ`-guarded quantifier-free projection `E(x, y) := (x + 1 = y) ∧ U(y)`. -/
+def succFilterTree : ProjectionFormula qfNumericLanguage unary (Fin 2 × Fin 1) :=
+  .branch (QFNumeric.succ (.var (0, 0)) (.var (1, 0)))
+    (.leaf (.rel uRel (fun _ => (1, 0)) false))
+    (.leaf (.const false))
+
+noncomputable def succFilter : FullTupleInterpretation unary Language.graph 1 :=
+  FullTupleInterpretation.ofQFProjection (L' := Language.graph) fun
+    | graphRel.adj => succFilterTree
+
+theorem isQFProjection_succFilter : succFilter.IsQFProjection := by
+  refine FullTupleInterpretation.isQFProjection_ofQFProjection _ fun R => ?_
+  cases R
+  exact .branch (QFNumeric.isAtomic_succ _ _).isQF (ProjectionFormula.isQF_leaf _)
+    (ProjectionFormula.isQF_leaf _)
+
+theorem realize_succFilter {n : ℕ} [Fact (2 ≤ n)] [unary.Structure (Fin n)]
+    (x : Fin 2 × Fin 1 → Fin n) :
+    (succFilter.rel Language.adj).Realize x ↔
+      (x (0, 0)).val + 1 = (x (1, 0)).val ∧ RelMap uRel (fun _ => x (1, 0)) := by
+  rw [succFilter, FullTupleInterpretation.realize_rel_ofQFProjection]
+  simp only [succFilterTree, ProjectionFormula.select]
+  split_ifs with h
+  · simp only [QFNumeric.realize_succ, Term.realize_var] at h
+    exact (InputLiteral.realize_rel_false _ _ _).trans ⟨fun h' => ⟨h, h'⟩, And.right⟩
+  · simp only [QFNumeric.realize_succ, Term.realize_var] at h
+    simp only [InputLiteral.realize_const, Bool.false_eq_true, false_iff, not_and]
+    exact fun h' => False.elim (h h')
+
+noncomputable abbrev succFilterMap : Ordered.Structure unary → Ordered.Structure Language.graph :=
+  succFilter.toDomainInterpretation.map (succFilter.admissible_toDomainInterpretation one_pos)
+
+theorem isQFProjectionMap_succFilterMap : IsQFProjectionMap succFilterMap :=
+  isQFProjection_succFilter.isQFProjectionMap one_pos
+
+/-- Composing the `succ`-guarded `succFilter` with the two-dimensional `copyQF` stays a
+quantifier-free projection map (`IsQFProjectionMap.comp`). -/
+theorem isQFProjectionMap_succFilter_comp_copyQF :
+    IsQFProjectionMap (succFilterMap ∘ copyQFMap) :=
+  isQFProjectionMap_copyQFMap.comp isQFProjectionMap_succFilterMap
+
+/-- Composing `succFilter` with `copyQF` via `IsQFProjection.comp` yields a quantifier-free
+projection witness of dimension `1 * 2 = 2` whose `succ` guard compiles to carry successor on
+pairs: on `Fin 3` with edges `1 → 0` and `0 → 0`, `(0, 2) → (1, 0)` holds, non-successor
+`(0, 1) → (1, 0)` fails, and maximum `(2, 2) → (0, 0)` fails. -/
+theorem exists_succFilter_comp_copyQF :
+    ∃ K : FullTupleInterpretation Language.graph Language.graph (1 * 2), K.IsQFProjection ∧
+      (∀ {n : ℕ} [Fact (2 ≤ n)] (E : Fin n → Fin n → Prop) (x y : Fin 2 → Fin n),
+        letI : Language.graph.Structure (Fin n) := graphStructure n E
+        (K.rel Language.adj).Realize
+            (fun ⟨a, m⟩ => (![x, y] : Fin 2 → Fin 2 → Fin n) a (finProdFinEquiv.symm m).2) ↔
+          lexRank x + 1 = lexRank y ∧ E (y 0) (y 1)) := by
+  obtain ⟨K, hK, hKrel⟩ := FullTupleInterpretation.IsQFProjection.comp
+    isQFProjection_succFilter two_pos isQFProjection_copyQF
+  refine ⟨K, hK, fun {n} _ E x y => ?_⟩
+  let := graphStructure n E
+  let v : Fin 2 → Fin 1 → Fin 2 → Fin n := fun a _ i => (![x, y] : Fin 2 → Fin 2 → Fin n) a i
+  have hv :
+      (fun (⟨a, m⟩ : Fin 2 × Fin (1 * 2)) =>
+        (![x, y] : Fin 2 → Fin 2 → Fin n) a (finProdFinEquiv.symm m).2) =
+        fun p => flattenTuple (v p.1) p.2 := by
+    funext ⟨a, m⟩
+    simp only [flattenTuple, v]
+  rw [hKrel, hv, succFilter.realize_comp_rel copyQF two_pos Language.adj v]
+  let := copyQF.inputStructure (n := n)
+  let : Fact (2 ≤ n ^ 2) := ⟨FullTupleInterpretation.two_le_pow (n := n) two_pos⟩
+  rw [realize_succFilter]
+  have hrel : RelMap uRel (fun _ : Fin 1 => lexEquiv (v 1 0)) ↔ E (y 0) (y 1) := by
+    change (copyQF.rel uRel).Realize
+      (fun p : Fin 1 × Fin 2 => lexEquiv.symm (lexEquiv (v 1 0)) p.2) ↔ _
+    simp only [Equiv.symm_apply_apply]
+    rw [copyQF, FullTupleInterpretation.realize_rel_ofQFProjection]
+    exact Iff.rfl
+  rw [hrel]
+  exact Iff.rfl
+
+example :
+    ∃ K : FullTupleInterpretation Language.graph Language.graph (1 * 2), K.IsQFProjection ∧
+      (letI := graphStructure 3 (fun a b => (a = 1 ∧ b = 0) ∨ (a = 0 ∧ b = 0))
+       (K.rel Language.adj).Realize
+         (fun ⟨a, m⟩ => (![![0, 2], ![1, 0] ] : Fin 2 → Fin 2 → Fin 3) a
+           (finProdFinEquiv.symm m).2) ∧
+       ¬ (K.rel Language.adj).Realize
+         (fun ⟨a, m⟩ => (![![0, 1], ![1, 0] ] : Fin 2 → Fin 2 → Fin 3) a
+           (finProdFinEquiv.symm m).2) ∧
+       ¬ (K.rel Language.adj).Realize
+         (fun ⟨a, m⟩ => (![![2, 2], ![0, 0] ] : Fin 2 → Fin 2 → Fin 3) a
+           (finProdFinEquiv.symm m).2)) := by
+  obtain ⟨K, hK, hspec⟩ := exists_succFilter_comp_copyQF
+  refine ⟨K, hK, ?_⟩
+  let E : Fin 3 → Fin 3 → Prop := fun a b => (a = 1 ∧ b = 0) ∨ (a = 0 ∧ b = 0)
+  have hcarry := hspec E ![0, 2] ![1, 0]
+  have hgap := hspec E ![0, 1] ![1, 0]
+  have hmax := hspec E ![2, 2] ![0, 0]
+  let := graphStructure 3 E
+  rw [hcarry, hgap, hmax, lexRank_pair3, lexRank_pair3, lexRank_pair3, lexRank_pair3,
+    lexRank_pair3]
+  decide
 
 /-! ### Off-diagonal complement composed with itself on `Fin 3` -/
 
@@ -277,6 +496,80 @@ theorem qfProjectionReduces_missingEdge01_hasEdge01 :
     lia
   exact ⟨fun h => ⟨hne, h⟩, And.right⟩
 
+/-- `hasEdge01 ≤_qfp hasPair01` across distinct vocabularies via the 2-dimensional quantifier-free
+`copyQF`. -/
+theorem qfProjectionReduces_hasEdge01_hasPair01 :
+    QFProjectionReduces hasEdge01 hasPair01 := by
+  refine QFProjectionReduces.of_qfProjection isQFProjection_copyQF two_pos fun M => ?_
+  change RelMap Language.adj ![zeroElt M, oneElt M] ↔
+    RelMap (M := copyQFMap M) uRel ![oneElt (copyQFMap M)]
+  let hc : (copyQFMap M).size = M.size ^ 2 :=
+    FullTupleInterpretation.card_toDomainInterpretation M
+  refine Iff.symm ((copyQF.relMap_map_toDomainInterpretation two_pos uRel _).trans ?_)
+  change (copyQF.rel uRel).Realize
+    (fun p => lexEquiv.symm (Fin.cast hc (![oneElt (copyQFMap M)] p.1)) p.2) ↔ _
+  rw [copyQF, FullTupleInterpretation.realize_rel_ofQFProjection]
+  change RelMap Language.adj
+    (fun i => lexEquiv.symm (Fin.cast hc (![oneElt (copyQFMap M)] 0)) i) ↔ _
+  have hpair : lexEquiv ![zeroElt M, oneElt M] = Fin.cast hc (oneElt (copyQFMap M)) := by
+    apply Fin.ext
+    change lexRank ![zeroElt M, oneElt M] = 1
+    rw [lexRank_apply, Fin.sum_univ_two]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, zeroElt, oneElt, zero_mul, zero_add,
+      Fin.rev, Fin.val_one, tsub_self, pow_zero, mul_one]
+  simp only [Matrix.cons_val_zero, ← hpair, Equiv.symm_apply_apply]
+
+/-- `hasPair01 ≤_qfp hasEdge01` via the `succ`-guarded quantifier-free projection `succFilter`. -/
+theorem qfProjectionReduces_hasPair01_hasEdge01 :
+    QFProjectionReduces hasPair01 hasEdge01 := by
+  refine QFProjectionReduces.of_qfProjection isQFProjection_succFilter one_pos fun M => ?_
+  change RelMap uRel ![oneElt M] ↔
+    RelMap (M := succFilterMap M) Language.adj
+      ![zeroElt (succFilterMap M), oneElt (succFilterMap M)]
+  let hc : (succFilterMap M).size = M.size ^ 1 :=
+    FullTupleInterpretation.card_toDomainInterpretation M
+  refine Iff.symm ((succFilter.relMap_map_toDomainInterpretation one_pos Language.adj _).trans ?_)
+  change (succFilter.rel Language.adj).Realize
+    (fun p => lexEquiv.symm (Fin.cast hc
+      (![zeroElt (succFilterMap M), oneElt (succFilterMap M)] p.1)) p.2) ↔ _
+  rw [realize_succFilter]
+  have hz : lexEquiv.symm (Fin.cast hc (zeroElt (succFilterMap M))) 0 = zeroElt M := by
+    apply Fin.ext
+    rw [lexEquiv_symm_apply_val]
+    simp only [Fin.rev, Fin.val_zero, zero_add, tsub_self, pow_zero, Nat.div_one, Fin.val_cast,
+      zeroElt]
+    exact Nat.zero_mod _
+  have ho : lexEquiv.symm (Fin.cast hc (oneElt (succFilterMap M))) 0 = oneElt M := by
+    apply Fin.ext
+    rw [lexEquiv_symm_apply_val]
+    simp only [Fin.rev, Fin.val_zero, zero_add, tsub_self, pow_zero, Nat.div_one, Fin.val_cast,
+      oneElt]
+    exact Nat.mod_eq_of_lt M.size_ge_two
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, hz, ho]
+  have hsucc : (zeroElt M).val + 1 = (oneElt M).val := rfl
+  refine ⟨fun ⟨_, hu⟩ => ?_, fun hu => ⟨hsucc, ?_⟩⟩
+  · refine (iff_of_eq (congrArg (RelMap uRel) (funext fun i => ?_))).mp hu
+    fin_cases i
+    rfl
+  · refine (iff_of_eq (congrArg (RelMap uRel) (funext fun i => ?_))).mpr hu
+    fin_cases i
+    rfl
+
+/-- Composing `missingEdge01 ≤_qfp hasEdge01` and `hasEdge01 ≤_qfp hasPair01` via
+`QFProjectionReduces.trans`. -/
+theorem qfProjectionReduces_missingEdge01_hasPair01 :
+    QFProjectionReduces missingEdge01 hasPair01 :=
+  qfProjectionReduces_missingEdge01_hasEdge01.trans qfProjectionReduces_hasEdge01_hasPair01
+
+/-- Multi-step `Trans.trans` chain of `QFProjectionReduces` across `Language.graph` and `unary`,
+ending at a `succ`-guarded outer quantifier-free projection, together with the `IsPreorder`
+instances on both reduction relations. -/
+example : QFProjectionReduces missingEdge01 hasEdge01 ∧
+    IsPreorder (Query Language.graph) QFProjectionReduces ∧
+    IsPreorder (Query Language.graph) ProjectionReduces :=
+  ⟨Trans.trans qfProjectionReduces_missingEdge01_hasPair01 qfProjectionReduces_hasPair01_hasEdge01,
+   inferInstance, inferInstance⟩
+
 /-- `hasEdge01 ≤_fop hasPair01` across distinct vocabularies via the 2-dimensional `copy`. -/
 theorem projectionReduces_hasEdge01_hasPair01 :
     ProjectionReduces hasEdge01 hasPair01 := by
@@ -361,9 +654,27 @@ theorem not_qfProjectionReduces_univ_empty :
   exact (let ⟨f, _, hf⟩ := h.projectionReduces; (hf noEdges).mp trivial)
 
 /-- Pre-composing a non-projection (`conjMap`) with the identity still fails to be a projection
-map. -/
+map or quantifier-free projection map. -/
 theorem not_isProjectionMap_conjMap_comp_id :
     ¬ IsProjectionMap (conjMap ∘ (_root_.id : Ordered.Structure pq → _)) :=
   not_isProjectionMap_conjMap
+
+theorem not_isQFProjectionMap_conjMap_comp_id :
+    ¬ IsQFProjectionMap (conjMap ∘ (_root_.id : Ordered.Structure pq → _)) :=
+  fun h => not_isProjectionMap_conjMap_comp_id h.isProjectionMap
+
+/-- Dimension `k = 0` remains excluded: `nullaryCopy 0` is `IsQFProjection` yet not admissible, and
+every witness of `IsQFProjectionMap` has strictly positive dimension `k ≠ 0`. -/
+example :
+    (nullaryCopy 0).IsQFProjection ∧
+      ¬ (nullaryCopy 0).toDomainInterpretation.Admissible ∧
+      ∀ {L L' : Language} [L'.IsRelational] {f : Ordered.Structure L → Ordered.Structure L'},
+        IsQFProjectionMap f →
+          ∃ (k : ℕ) (I : FullTupleInterpretation L L' k) (hk : 0 < k),
+            k ≠ 0 ∧ I.IsQFProjection ∧
+              f = I.toDomainInterpretation.map (I.admissible_toDomainInterpretation hk) :=
+  ⟨isQFProjection_nullaryCopy 0,
+    FullTupleInterpretation.not_admissible_toDomainInterpretation_zero _,
+    fun ⟨k, I, hk, hI, hf⟩ => ⟨k, I, hk, ne_of_gt hk, hI, hf⟩⟩
 
 end CslibFrontierTests.OrderedProjectionReduction

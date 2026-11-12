@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.CountingScale
 public import CslibFrontier.Foundations.Combinatorics.BinomialTail
 public import Mathlib.Data.Nat.Log
 public import Mathlib.Order.Interval.Finset.Nat
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Foundations.Data.Nat.LogTwoRpow
 import Mathlib.Algebra.Order.Floor.Ring
@@ -380,16 +381,6 @@ private theorem one_le_iter_clog_of_numNodes_pos {n : ℕ} (hQ : 0 < numNodes n)
   simp only [not_le, Nat.lt_one_iff] at h
   simp only [numNodes, h, mul_zero, Nat.div_zero, lt_self_iff_false] at hQ
 
-private theorem log_le_of_le_two_pow {x : ℝ} {k : ℕ} (hx : 0 < x) (hxk : x ≤ (2 : ℝ) ^ k) :
-    Real.log x ≤ k := by
-  have hlog2 : Real.log 2 ≤ 1 := by
-    linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)]
-  calc Real.log x
-      ≤ Real.log ((2 : ℝ) ^ k) := Real.log_le_log hx hxk
-    _ = (k : ℝ) * Real.log 2 := Real.log_pow 2 k
-    _ ≤ (k : ℝ) * 1 := mul_le_mul_of_nonneg_left hlog2 (Nat.cast_nonneg k)
-    _ = k := mul_one _
-
 /-- **Deterministic Binomial tail bound of Lemma 4.8**: once `1 ≤ β`, `2 ≤ r`, `32 ≤ R`, and
 `6 R ≤ Q`, for every `1 ≤ b ≤ λ ^ β` the Binomial tail outside `interval β n` is strictly less than
 `tailBudget b n = 1 / (b r² λ)`. -/
@@ -508,7 +499,7 @@ theorem rowCost_le {β n : ℕ} (hr : 2 ≤ numGroups n) (hR : 32 ≤ rowBound �
         _ = 2 ^ (lam / 128 + 2) := by rw [← pow_add, add_comm]
         _ ≤ 2 ^ lam := Nat.pow_le_pow_right two_pos (by omega)
     have hlog_D : Real.log (2 * (D : ℝ) + 1) ≤ lam :=
-      log_le_of_le_two_pow (by positivity) (by exact_mod_cast h2D_nat)
+      Real.log_le_of_le_two_pow (by positivity) (by exact_mod_cast h2D_nat)
     have hr_pos : (0 : ℝ) < r := by positivity
     have hlam_pos : (0 : ℝ) < lam := by positivity
     calc tau n * Real.log (2 * (D : ℝ) + 1)
@@ -546,7 +537,8 @@ theorem rowCost_le {β n : ℕ} (hr : 2 ≤ numGroups n) (hR : 32 ≤ rowBound �
         calc 2 * (Q : ℝ) / R ≤ 2 * (Q : ℝ) / 1 := by gcongr
           _ = ((2 * Q : ℕ) : ℝ) := by push_cast; ring
           _ ≤ (2 : ℝ) ^ (2 * nu) := by exact_mod_cast h2Q_nat
-      simpa only [Nat.cast_mul, Nat.cast_ofNat] using log_le_of_le_two_pow (by positivity) hQR_le
+      simpa only [Nat.cast_mul, Nat.cast_ofNat] using
+        Real.log_le_of_le_two_pow (by positivity) hQR_le
     have hlog_nonneg : 0 ≤ Real.log (2 * (Q : ℝ) / R) := by
       refine Real.log_nonneg ((one_le_div (by positivity)).mpr ?_)
       exact_mod_cast (by omega : R ≤ 2 * Q)
@@ -823,7 +815,8 @@ theorem isBigO_mul_rowCost_interpolationScale {β : ℕ} :
             _ ≤ (2 ^ lam) ^ 2 := Nat.pow_le_pow_left (Nat.le_pow_clog one_lt_two n) 2
             _ = 2 ^ (2 * lam) := by rw [← pow_mul, mul_comm]
         exact_mod_cast hnat
-      simpa only [Nat.cast_mul, Nat.cast_ofNat] using log_le_of_le_two_pow (by positivity) hn_pow
+      simpa only [Nat.cast_mul, Nat.cast_ofNat] using
+        Real.log_le_of_le_two_pow (by positivity) hn_pow
     have hnu_le : (nu : ℝ) ≤ K * LL := by
       have hlam_le_L : (lam : ℝ) ≤ 2 / Real.log 2 * L :=
         (clog_two_le_mul_log (by omega)).trans <|

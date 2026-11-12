@@ -155,16 +155,15 @@ theorem localFormulaClass_approxMCSP {s₁ s₂ k : ℕ → ℕ} (hk : ∀ n, 1 
       (fun _ => 1)
       (fun m => m * approxMCSPQueryEncLength (Nat.log 2 m) (s₂ (Nat.log 2 m)) (k (Nat.log 2 m)))
       (GapMCSP.yesSet s₁) (ApproxMCSP.noSet s₂ k) := by
-  refine ⟨succinctMCSPOracle, fun m => ?_⟩
-  by_cases hm : ∃ n, m = 2 ^ n
-  · obtain ⟨n, rfl⟩ := hm
-    obtain ⟨E, hS, hq, hℓ, ha, hyes, hno⟩ :=
+  refine OracleModel.LocalClass.of_two_pow succinctMCSPOracle
+    (fun _ => exists_length_eq_two_pow_of_mem_truthTableLanguage)
+    (fun _ => exists_length_eq_two_pow_of_mem_truthTableLanguage)
+    (fun _ _ => ⟨OracleFormula.tt, ?_⟩) fun n => ?_
+  · simp [formulaModel]
+  · obtain ⟨E, hS, hq, hℓ, ha, hyes, hno⟩ :=
       exists_oracleFormula_separating_approxMCSP (s₁ := s₁) (hk n) (hs n)
     simp only [Nat.log_pow Nat.one_lt_two]
-    exact ⟨E, hS, hq, hℓ, ha, fun x hx => hyes x hx, fun x hx => hno x hx⟩
-  · refine ⟨OracleFormula.tt, by simp, by simp, by simp, by simp, fun x hx => ?_, fun x hx => ?_⟩
-    · exact absurd (by simpa using exists_length_eq_two_pow_of_mem_truthTableLanguage hx) hm
-    · exact absurd (by simpa using exists_length_eq_two_pow_of_mem_truthTableLanguage hx) hm
+    exact ⟨E, hS, hq, hℓ, ha, hyes, hno⟩
 
 /-- An explicit polynomial bound on the fan-in of the oracle gates, `poly(s * k)`, when
 `n ≤ s`. -/

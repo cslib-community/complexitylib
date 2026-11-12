@@ -15,17 +15,17 @@ import CslibFrontier.Probability.PMF.Map
 /-!
 # Private information retrieval
 
-A database is a bit string `x : ι → Bool`, replicated on the servers `S`. A user who wants the bit
-`x i` sends each server one query and reconstructs `x i` from the answers. The scheme is
-*private* when no single server learns anything about `i` from its query
-[Chor, Goldreich, Kushilevitz and Sudan, Definition 1][ChorGoldreichKushilevitzSudan1998].
+A database `x : ι → β` of entries in `β` (by default single bits `β = Bool`) is replicated on the
+servers `S`. A user who wants the entry `x i` sends each server one query and reconstructs `x i`
+from the answers. The scheme is *private* when no single server learns anything about `i` from its
+query [Chor, Goldreich, Kushilevitz and Sudan, Definition 1][ChorGoldreichKushilevitzSudan1998].
 
-A one-round scheme `P : PIR.Scheme ι S R Q A` consists of
+A one-round scheme `P : PIR.Scheme ι S R Q A β` (`β` defaults to `Bool`) consists of
 
 * a query generator `P.query i : ProbComp (R × (S → Q))`: a probabilistic program that, for the
   index `i`, outputs the user's retained state `r : R` and the query `q s : Q` for every server `s`;
 * deterministic answer functions `P.answer s x : Q → A`, one per server;
-* a reconstruction function `P.reconstruct i r : (S → A) → Bool`.
+* a reconstruction function `P.reconstruct i r : (S → A) → β`.
 
 `P.run x i` is the user's output. `P.IsCorrect` says that this output is `x i` with probability one,
 for every database and index; `P.IsPrivate` says that for every server `s`, the distribution of the
@@ -33,8 +33,10 @@ query `P.serverQuery s i` is the same for all indices `i`. Both are exact equali
 distributions, as in the information-theoretic setting of the source. The randomness is a
 `ProbComp` program, so its coins are uniform choices from finite ranges; the source's uniformly
 random string `r ∈ {0,1}^ℓ` is the special case of `ProbComp.uniform (Fin ℓ → Bool)`, and its
-retained state is the random string itself. Privacy is against each single server; coalitions of
-servers are not covered.
+retained state is the random string itself. Privacy here (`IsPrivate`) is against each single
+server; coalitions of servers (`IsTPrivate`) are covered in `PIR.Collusion`, and block-retrieval
+transformations (`β = κ → Bool`) in `PIR.Block`. Machine running time of the user and servers
+([CGKS, Section 2.4, p. 6][ChorGoldreichKushilevitzSudan1998]) is not modelled here.
 
 The communication cost `PIR.communication S Q A` counts the bits of a fixed-length binary encoding
 of every query and answer: `|S| · (⌈log₂ |Q|⌉ + ⌈log₂ |A|⌉)`. For `Q = Fin ℓq → Bool` and
@@ -45,15 +47,16 @@ Two transformations build schemes from schemes. `Scheme.rows` is the generic tra
 database indexed by `ρ × ι` is a matrix with rows indexed by `ρ`, the user sends the query for the
 column `i`, and each server answers it once for every row. Its communication is computed for
 one-bit answers (`PIR.communication_rows`), the case that Section 3.4 uses. `Scheme.comap`
-restricts a scheme along an embedding of indices, padding the database with `false`; it turns a
-scheme for a grid or a cube into one for `Fin n`.
+restricts a scheme along an embedding of indices, padding the database outside the image with a
+supplied default entry `pad : β`; it turns a scheme for a grid or a cube into one for `Fin n`.
 
-`PIR.HasScheme ι k c` says that some `k`-server scheme for databases indexed by `ι` is correct and
-private and communicates at most `c` bits.
+`PIR.HasScheme ι k c β` (`β` defaults to `Bool`) says that some `k`-server scheme for databases
+`ι → β` is correct and private and communicates at most `c` bits.
 
 ## Main definitions
 
-* `Cslib.Crypto.Protocols.PIR.Scheme`: one-round multi-server schemes.
+* `Cslib.Crypto.Protocols.PIR.Scheme`: one-round multi-server schemes (with optional payload type
+  `β := Bool`).
 * `Cslib.Crypto.Protocols.PIR.Scheme.run`, `Cslib.Crypto.Protocols.PIR.Scheme.serverQuery`: the
   user's output and the query seen by one server.
 * `Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect`, `Cslib.Crypto.Protocols.PIR.Scheme.IsPrivate`:
@@ -88,16 +91,16 @@ namespace Cslib.Crypto.Protocols.PIR
 
 open Probability
 
-/-- A one-round private information retrieval scheme for databases `x : ι → Bool` held by the
-servers `S`, with user state `R`, queries `Q` and answers `A`
-[Chor, Goldreich, Kushilevitz and Sudan, Definition 1][ChorGoldreichKushilevitzSudan1998]. -/
-structure Scheme (ι S R Q A : Type) where
+/-- A one-round private information retrieval scheme for databases `x : ι → β` (by default single
+bits `β = Bool`, or blocks in Section 4) held by the servers `S`, with user state `R`, queries `Q`
+and answers `A` [CGKS, Definition 1 and Section 4][ChorGoldreichKushilevitzSudan1998]. -/
+structure Scheme (ι S R Q A : Type) (β : Type := Bool) where
   /-- The user's query generator: for the index `i`, a retained state and one query per server. -/
   query : ι → ProbComp (R × (S → Q))
   /-- The answer of the server `s`, holding the database `x`, to a query. -/
-  answer : S → (ι → Bool) → Q → A
-  /-- The user's reconstruction of the bit `i` from the retained state and the answers. -/
-  reconstruct : ι → R → (S → A) → Bool
+  answer : S → (ι → β) → Q → A
+  /-- The user's reconstruction of the entry `x i` from the retained state and the answers. -/
+  reconstruct : ι → R → (S → A) → β
 
 /-- The communication cost of a one-round scheme with servers `S`, queries `Q` and answers `A`:
 the number of bits sent and received when each query and each answer is written in a fixed-length
@@ -118,23 +121,23 @@ theorem communication_of_card_answer (S Q A : Type) [Fintype S] [Fintype Q] [Fin
 
 namespace Scheme
 
-variable {ι S R Q A : Type}
+variable {ι S R Q A β : Type}
 
 section Defs
 
-variable (P : Scheme ι S R Q A)
+variable (P : Scheme ι S R Q A β)
 
 /-- The user's output on the database `x` and the index `i`: draw the state and the queries, ask
 each server, and reconstruct from the answers. -/
-def run (x : ι → Bool) (i : ι) : ProbComp Bool := do
+def run (x : ι → β) (i : ι) : ProbComp β := do
   let (r, q) ← P.query i
   pure (P.reconstruct i r fun s => P.answer s x (q s))
 
-/-- The query that the server `s` receives when the user wants the bit `i`. -/
+/-- The query that the server `s` receives when the user wants the entry `i`. -/
 def serverQuery (s : S) (i : ι) : ProbComp Q :=
   (fun (_, q) => q s) <$> P.query i
 
-/-- Perfect correctness: on every database, the user outputs the bit it asks for with
+/-- Perfect correctness: on every database, the user outputs the entry it asks for with
 probability one. -/
 def IsCorrect : Prop :=
   ∀ x i, ProbComp.eval (P.run x i) = PMF.pure (x i)
@@ -144,7 +147,11 @@ that the user asks for. -/
 def IsPrivate : Prop :=
   ∀ s i i', ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i')
 
-theorem eval_run (x : ι → Bool) (i : ι) :
+theorem serverQuery_eq (s : S) (i : ι) :
+    P.serverQuery s i = (fun (_, q) => q s) <$> P.query i := by
+  rw [serverQuery]
+
+theorem eval_run (x : ι → β) (i : ι) :
     ProbComp.eval (P.run x i) = (ProbComp.eval (P.query i)).map
       (fun rq => P.reconstruct i rq.1 fun s => P.answer s x (rq.2 s)) := by
   rw [run, ProbComp.eval_bind]
@@ -158,7 +165,7 @@ theorem isCorrect_iff_eval_run : P.IsCorrect ↔ ∀ x i, ProbComp.eval (P.run x
   by rw [IsCorrect]
 
 /-- Perfect correctness holds exactly when every state and every queries that the user can draw
-reconstruct the right bit. -/
+reconstruct the right entry. -/
 theorem isCorrect_iff : P.IsCorrect ↔ ∀ x i r q, (r, q) ∈ (ProbComp.eval (P.query i)).support →
     P.reconstruct i r (fun s => P.answer s x (q s)) = x i := by
   refine forall_congr' fun x => forall_congr' fun i => ?_
@@ -180,10 +187,10 @@ theorem isPrivate_iff : P.IsPrivate ↔
 
 end Defs
 
-variable {P : Scheme ι S R Q A}
+variable {P : Scheme ι S R Q A β}
 
-/-- A correct scheme reconstructs the right bit from every state and queries the user can draw. -/
-theorem IsCorrect.reconstruct_eq (h : P.IsCorrect) (x : ι → Bool) (i : ι) {r : R} {q : S → Q}
+/-- A correct scheme reconstructs the right entry from every state and queries the user can draw. -/
+theorem IsCorrect.reconstruct_eq (h : P.IsCorrect) (x : ι → β) (i : ι) {r : R} {q : S → Q}
     (hrq : (r, q) ∈ (ProbComp.eval (P.query i)).support) :
     P.reconstruct i r (fun s => P.answer s x (q s)) = x i :=
   P.isCorrect_iff.mp h x i r q hrq
@@ -199,16 +206,20 @@ theorem IsPrivate.eval_serverQuery_eq (h : P.IsPrivate) (s : S) (i i' : ι) :
 indexed by `ρ × ι` is a matrix whose rows `j ↦ x (j, ·)` are databases indexed by `ι`. To read
 `x (j, i)`, the user sends the queries of `P` for the column `i`, each server answers them for
 every row, and the user reconstructs from the answers for the row `j`. -/
-def rows (ρ : Type) (P : Scheme ι S R Q A) : Scheme (ρ × ι) S R Q (ρ → A) where
+def rows (ρ : Type) (P : Scheme ι S R Q A β) : Scheme (ρ × ι) S R Q (ρ → A) β where
   query ji := P.query ji.2
   answer s x q j := P.answer s (fun i => x (j, i)) q
   reconstruct ji r a := P.reconstruct ji.2 r fun s => a s ji.1
 
-theorem run_rows (ρ : Type) (P : Scheme ι S R Q A) (x : ρ × ι → Bool) (j : ρ) (i : ι) :
+theorem query_rows (ρ : Type) (P : Scheme ι S R Q A β) (ji : ρ × ι) :
+    (P.rows ρ).query ji = P.query ji.2 := by
+  rfl
+
+theorem run_rows (ρ : Type) (P : Scheme ι S R Q A β) (x : ρ × ι → β) (j : ρ) (i : ι) :
     (P.rows ρ).run x (j, i) = P.run (fun i' => x (j, i')) i := by
   rfl
 
-theorem serverQuery_rows (ρ : Type) (P : Scheme ι S R Q A) (s : S) (j : ρ) (i : ι) :
+theorem serverQuery_rows (ρ : Type) (P : Scheme ι S R Q A β) (s : S) (j : ρ) (i : ι) :
     (P.rows ρ).serverQuery s (j, i) = P.serverQuery s i := by
   rfl
 
@@ -221,24 +232,29 @@ theorem IsPrivate.rows (ρ : Type) (h : P.IsPrivate) : (P.rows ρ).IsPrivate := 
 /-! ### Restriction along an embedding -/
 
 /-- The scheme `P` for databases indexed by `ι'`, used on databases indexed by `ι` through an
-embedding `e : ι ↪ ι'`: the user asks for `e i`, and the servers pad the database with `false`
+embedding `e : ι ↪ ι'`: the user asks for `e i`, and the servers pad the database with `pad`
 outside the image of `e`. -/
-noncomputable def comap {ι' : Type} (P : Scheme ι' S R Q A) (e : ι ↪ ι') : Scheme ι S R Q A where
+noncomputable def comap {ι' : Type} (P : Scheme ι' S R Q A β) (e : ι ↪ ι') (pad : β) :
+    Scheme ι S R Q A β where
   query i := P.query (e i)
-  answer s x q := P.answer s (Function.extend e x fun _ => false) q
+  answer s x q := P.answer s (Function.extend e x fun _ => pad) q
   reconstruct i r a := P.reconstruct (e i) r a
 
-theorem serverQuery_comap {ι' : Type} (P : Scheme ι' S R Q A) (e : ι ↪ ι') (s : S) (i : ι) :
-    (P.comap e).serverQuery s i = P.serverQuery s (e i) := by
+theorem query_comap {ι' : Type} (P : Scheme ι' S R Q A β) (e : ι ↪ ι') (pad : β) (i : ι) :
+    (P.comap e pad).query i = P.query (e i) := by
   rfl
 
-theorem IsCorrect.comap {ι' : Type} {P : Scheme ι' S R Q A} (h : P.IsCorrect) (e : ι ↪ ι') :
-    (P.comap e).IsCorrect := fun x i => by
-  have := h (Function.extend e x fun _ => false) (e i)
+theorem serverQuery_comap {ι' : Type} (P : Scheme ι' S R Q A β) (e : ι ↪ ι') (pad : β) (s : S)
+    (i : ι) : (P.comap e pad).serverQuery s i = P.serverQuery s (e i) := by
+  rfl
+
+theorem IsCorrect.comap {ι' : Type} {P : Scheme ι' S R Q A β} (h : P.IsCorrect) (e : ι ↪ ι')
+    (pad : β) : (P.comap e pad).IsCorrect := fun x i => by
+  have := h (Function.extend e x fun _ => pad) (e i)
   rwa [e.injective.extend_apply] at this
 
-theorem IsPrivate.comap {ι' : Type} {P : Scheme ι' S R Q A} (h : P.IsPrivate) (e : ι ↪ ι') :
-    (P.comap e).IsPrivate := fun s i i' =>
+theorem IsPrivate.comap {ι' : Type} {P : Scheme ι' S R Q A β} (h : P.IsPrivate) (e : ι ↪ ι')
+    (pad : β) : (P.comap e pad).IsPrivate := fun s i i' =>
   h s (e i) (e i')
 
 end Scheme
@@ -253,25 +269,25 @@ theorem communication_rows (S Q ρ : Type) [Fintype S] [Fintype Q] [Fintype ρ] 
 
 /-! ### Existence of schemes -/
 
-/-- Some `k`-server scheme for databases indexed by `ι` is perfectly correct and perfectly private
-and communicates at most `c` bits. -/
-def HasScheme (ι : Type) (k c : ℕ) : Prop :=
-  ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A),
+/-- Some `k`-server scheme for databases `ι → β` (by default `β = Bool`) is perfectly correct and
+perfectly private and communicates at most `c` bits. -/
+def HasScheme (ι : Type) (k c : ℕ) (β : Type := Bool) : Prop :=
+  ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A β),
     P.IsCorrect ∧ P.IsPrivate ∧ Fintype.card S = k ∧ communication S Q A ≤ c
 
-theorem hasScheme_iff {ι : Type} {k c : ℕ} : HasScheme ι k c ↔
-    ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A),
+theorem hasScheme_iff {ι β : Type} {k c : ℕ} : HasScheme ι k c β ↔
+    ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A β),
       P.IsCorrect ∧ P.IsPrivate ∧ Fintype.card S = k ∧ communication S Q A ≤ c := by
   rw [HasScheme]
 
 /-- A correct, private scheme witnesses `HasScheme`. -/
-theorem Scheme.IsCorrect.hasScheme {ι S R Q A : Type} [Fintype S] [Fintype Q] [Fintype A]
-    {P : Scheme ι S R Q A} (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
-    HasScheme ι (Fintype.card S) (communication S Q A) :=
+theorem Scheme.IsCorrect.hasScheme {ι S R Q A β : Type} [Fintype S] [Fintype Q] [Fintype A]
+    {P : Scheme ι S R Q A β} (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
+    HasScheme ι (Fintype.card S) (communication S Q A) β :=
   hasScheme_iff.mpr ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, rfl, le_rfl⟩
 
-theorem HasScheme.mono {ι : Type} {k c c' : ℕ} (h : HasScheme ι k c) (hc : c ≤ c') :
-    HasScheme ι k c' := by
+theorem HasScheme.mono {ι β : Type} {k c c' : ℕ} (h : HasScheme ι k c β) (hc : c ≤ c') :
+    HasScheme ι k c' β := by
   obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := hasScheme_iff.mp h
   exact hasScheme_iff.mpr ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm.trans hc⟩
 

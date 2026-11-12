@@ -15,7 +15,7 @@ These tests do not assert sampling, efficiency, security or bootstrappability.
 
 namespace CslibFrontierTests.GSW
 
-open Cslib.Crypto.Homomorphic.GSW
+open Cslib.Crypto Cslib.Crypto.Homomorphic.GSW
 open scoped Matrix
 
 private def secret : Fin 1 → ZMod (2 ^ 6) := fun _ => 5
@@ -27,21 +27,21 @@ private def error : Fin 1 → ℤ := fun _ => 1
 private def coins : Matrix (Fin 2 × Fin 6) (Fin 1) Bool := fun _ _ => true
 
 private def ciphertext (μ : Bool) : Ciphertext 1 6 :=
-  encryptWithCoins (publicMatrix publicPart secret error) μ coins
+  encryptWithCoins (LWE.publicMatrixInt publicPart secret error) μ coins
 
 private def inputs : List (Bool × Bool) :=
   [(false, false), (false, true), (true, false), (true, true)]
 
 -- The public row is [16, 3], and the secret vector is [1, -5].
-example : (publicMatrix publicPart secret error 0 0).val = 16 ∧
-    (publicMatrix publicPart secret error 0 1).val = 3 ∧
-    (secretVector secret 0).val = 1 ∧ (secretVector secret 1).val = 59 := by
+example : (LWE.publicMatrixInt publicPart secret error 0 0).val = 16 ∧
+    (LWE.publicMatrixInt publicPart secret error 0 1).val = 3 ∧
+    (LWE.secretVector secret 0).val = 1 ∧ (LWE.secretVector secret 1).val = 59 := by
   decide +kernel
 
 -- Actual fresh products at the selected coordinate are the encoded bits plus one.
 example : [false, true].map (fun μ =>
     ((bitMatrix (ZMod (2 ^ 6)) (ciphertext μ) *ᵥ
-      powersOfTwo 6 (secretVector secret)) (0, 5)).val) = [1, 33] := by
+      powersOfTwo 6 (LWE.secretVector secret)) (0, 5)).val) = [1, 33] := by
   decide +kernel
 
 example : [false, true].map (fun μ => decrypt secret (ciphertext μ)) = [false, true] := by
@@ -57,7 +57,7 @@ example (μ : Bool) : decrypt secret (ciphertext μ) = μ :=
 -- This table is computed from the actual matrix NAND and flattening algorithms.
 example : inputs.map (fun (μ₁, μ₂) =>
     ((bitMatrix (ZMod (2 ^ 6)) (nand (ciphertext μ₁) (ciphertext μ₂)) *ᵥ
-      powersOfTwo 6 (secretVector secret)) (0, 5)).val) = [29, 28, 28, 59] := by
+      powersOfTwo 6 (LWE.secretVector secret)) (0, 5)).val) = [29, 28, 28, 59] := by
   decide +kernel
 
 example : inputs.map (fun (μ₁, μ₂) =>
@@ -92,32 +92,32 @@ example (μ₁ μ₂ : Bool) :
 -- Negative fresh noise wraps zero to 63 and moves the encoded one to 31.
 example : [false, true].map (fun μ =>
     ((bitMatrix (ZMod (2 ^ 6))
-      (encryptWithCoins (publicMatrix publicPart secret (fun _ => -1)) μ coins) *ᵥ
-        powersOfTwo 6 (secretVector secret)) (0, 5)).val) = [63, 31] := by
+      (encryptWithCoins (LWE.publicMatrixInt publicPart secret (fun _ => -1)) μ coins) *ᵥ
+        powersOfTwo 6 (LWE.secretVector secret)) (0, 5)).val) = [63, 31] := by
   decide +kernel
 
 example : [false, true].map (fun μ => decrypt secret
-    (encryptWithCoins (publicMatrix publicPart secret (fun _ => -1)) μ coins)) =
+    (encryptWithCoins (LWE.publicMatrixInt publicPart secret (fun _ => -1)) μ coins)) =
       [false, true] := by
   decide +kernel
 
 -- Both quarter boundaries are explicit: the lower tie is included, the upper tie excluded.
-example : ([1, 2, 5, 6] : List (ZMod (2 ^ 3))).map (decode 3) =
+example : ([1, 2, 5, 6] : List (ZMod (2 ^ 3))).map (LWE.decode 3) =
     [false, true, true, false] := by
   decide +kernel
 
-example (μ : Bool) : decode 1
+example (μ : Bool) : LWE.decode 1
     (((μ.toNat : ℤ) * 2 ^ (1 - 1) + 0 : ℤ) : ZMod (2 ^ 1)) = μ :=
-  decode_eq_of_error (w := 1) (by decide) μ 0 (by decide)
+  LWE.decode_eq_of_error (w := 1) (by decide) μ 0 (by decide)
 
-example : ([0, 1] : List (ZMod (2 ^ 1))).map (decode 1) = [false, true] := by
+example : ([0, 1] : List (ZMod (2 ^ 1))).map (LWE.decode 1) = [false, true] := by
   decide +kernel
 
 -- Width zero is a valid algebraic case, but its decoder deliberately always returns false.
 example :
     bitCompose 0 (fun j => ((bitDecomp 0 (fun _ : Fin 1 => (0 : ZMod (2 ^ 0))) j).toNat :
       ZMod (2 ^ 0))) = (fun _ => 0) ∧
-    decode 0 (0 : ZMod (2 ^ 0)) = false :=
+    LWE.decode 0 (0 : ZMod (2 ^ 0)) = false :=
   ⟨bitCompose_bitDecomp 0 (fun _ => 0), by decide +kernel⟩
 
 example (μ : Bool) : decrypt (n := 0) (w := 0) (fun _ => 0)

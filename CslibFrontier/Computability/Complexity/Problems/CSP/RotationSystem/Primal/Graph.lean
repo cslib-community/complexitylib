@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Darts
 public import CslibFrontier.Foundations.GroupTheory.Perm.Fin
 import Mathlib.Data.List.GetD
 
@@ -144,23 +144,9 @@ theorem length_edges_polygonGraph_eq_card (F : CSP Rel V) :
     (polygonGraph F).2.length = Fintype.card F.Occurrence := by
   simpa only [Fintype.card_fin] using (Fintype.card_congr (polygonEdgeEquiv F)).symm
 
-/-- Occurrence/end coordinates on the existing incidence graph. -/
-@[expose] noncomputable def incidenceDartEquiv (F : CSP Rel V) :
-    F.Occurrence × Bool ≃ Graph.Dart (incidenceGraph F) :=
-  Equiv.ofBijective (fun x => incidenceDart x.1 x.2) ⟨by
-    rintro ⟨o, b⟩ ⟨p, c⟩ h
-    exact Prod.ext (incidenceEdgeIndex_injective (congrArg (fun d => d.1.val) h))
-      (congrArg (fun d : Graph.Dart (incidenceGraph F) => d.2) h), fun d => by
-    obtain ⟨o, ho⟩ := exists_incidenceDart d
-    exact ⟨(o, d.2), ho⟩⟩
-
 /-- The forward polygon coordinate map is the explicit occurrence/end map. -/
 @[simp] theorem polygonDartEquiv_apply (x : F.Occurrence × Bool) :
     polygonDartEquiv F x = polygonDart x.1 x.2 := rfl
-
-/-- The forward incidence coordinate map is the existing occurrence/end map. -/
-@[simp] theorem incidenceDartEquiv_apply (x : F.Occurrence × Bool) :
-    incidenceDartEquiv F x = incidenceDart x.1 x.2 := rfl
 
 omit [DecidableEq V] in
 /-- The scope permutation has exactly one orbit per nonempty constraint position. -/

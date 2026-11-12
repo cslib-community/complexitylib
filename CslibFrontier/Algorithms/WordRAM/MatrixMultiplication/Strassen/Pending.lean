@@ -128,23 +128,16 @@ theorem exec_first_pending {w p k A B a b out scratch frames frame : ℕ}
     ∃ y, ExecWithin (w + 2) step x y (68 * (4 ^ k * p) + 77) ∧
       PendingChild p k a b out scratch frames frame 0 u v x y ∧
       (∀ d, ¬NodeWrites p (k + 1) out scratch frames frame d → y.mem d = x.mem d) := by
-  have ha := hl.left_before
-  have hb := hl.right_before
   have ho := hl.output_before
   have hs := hl.scratch_before
   have hf := hl.frames_before
   have hsize : 4 ^ (k + 1) * p = 4 * (4 ^ k * p) := by rw [pow_succ]; ring
   obtain ⟨y, he, ready, leftValues, rightValues, zeros, parentPhase, memory⟩ :=
     exec_step_entry x u v hx hl hu hv hleft hright hmag haddr
-  refine ⟨y, he, ⟨ready, leftValues, rightValues, ?_, ?_, ?_, ?_⟩, ?_⟩
-  · intro j hj
-    rw [memory _ ?_ (Or.inl (by omega)) (Or.inl (by omega))]
-    · exact hleft j hj
-    · rcases hl.left_disjoint with h | h <;> omega
-  · intro j hj
-    rw [memory _ ?_ (Or.inl (by omega)) (Or.inl (by omega))]
-    · exact hright j hj
-    · rcases hl.right_disjoint with h | h <;> omega
+  obtain ⟨hleft', hright'⟩ := hl.inputs_of_stage memory
+  refine ⟨y, he, ⟨ready, leftValues, rightValues,
+    fun j hj => (hleft' j hj).trans (hleft j hj),
+    fun j hj => (hright' j hj).trans (hright j hj), ?_, ?_⟩, ?_⟩
   · intro t j hj
     have ht := Nat.mul_le_mul_right (4 ^ k * p) (Nat.succ_le_of_lt t.isLt)
     rw [Nat.succ_mul] at ht

@@ -390,10 +390,7 @@ theorem realizes_insertBodyGen :
       (WordEncoding.encode (α := Unit))
       InsertBodyGenPre
       (fun _ _ => 0) := by
-  have hsb := realizes_searchBucketGen
-  have hwv := realizes_writeValGen
-  have hin := realizes_insertNewGen
-  realize
+  realize [realizes_searchBucketGen, realizes_writeValGen, realizes_insertNewGen]
   all_goals (
     rcases d with ⟨dp, d⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1.1

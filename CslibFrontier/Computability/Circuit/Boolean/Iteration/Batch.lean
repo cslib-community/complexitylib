@@ -89,7 +89,7 @@ theorem batchBudget_one (n s M L : ℕ) : batchBudget n s M 1 L = powerBudget n 
 /-- A synthesis of every member's output block gives a circuit for the block map. -/
 private theorem exists_circuit_blockMap {k : ℕ} {g : BitString n → BitString k} {C : ℕ}
     (h : Synthesis interpretation (inputs (r * n))
-      (⋃ member, wires fun x => g (directProductInput x member)) C) :
+      (⋃ member, wires fun x => g (BitString.block x member)) C) :
     ∃ out : Circuit signature (r * n) (r * k),
       out.Computes interpretation (blockMap g r) ∧ out.size ≤ C := by
   refine (h.mono Set.Subset.rfl ?_ le_rfl).exists_circuit_outputs
@@ -294,7 +294,7 @@ theorem batched_fixed_power_on_prefixes (c : Circuit signature n n)
     ∃ out : Circuit signature (r * n) (r * n),
       out.ComputesOn interpretation
         {x | ∀ member : Fin r, ∀ i : Fin L,
-          (c.eval interpretation)^[i.val] (directProductInput x member) ∈ S}
+          (c.eval interpretation)^[i.val] (BitString.block x member) ∈ S}
         (blockMap (c.eval interpretation)^[T] r) ∧
       out.size ≤ 100000 * batchBudget n c.size S.card r L := by
   classical
@@ -346,7 +346,7 @@ theorem batched_fixed_power_on_prefixes (c : Circuit signature n n)
   have hconst : Synthesis interpretation (inputs (r * n)) constants 2 :=
     (Synthesis.const false).union (Synthesis.const true)
   obtain ⟨result, hresult, hs⟩ := synthesis_batched_power_on c (inputs (r * n) ∪ constants)
-    (fun x member => directProductInput x member) (fun _ _ => Or.inl ⟨_, rfl⟩)
+    (fun x member => BitString.block x member) (fun _ _ => Or.inl ⟨_, rfl⟩)
     (fun b => Or.inr (by cases b <;> simp [constants])) T L hL hLN (by omega) cp hcp
     {x | ∀ i : Fin L, f^[i.val] x ∈ S} hcov
   let output : BitString (r * n) → BitString (r * n) := fun x i =>
@@ -373,7 +373,7 @@ theorem batched_fixed_power_on (c : Circuit signature n n) (S : Finset (BitStrin
     (hrN : r ≤ 2 ^ n) (hL : 0 < L) :
     ∃ out : Circuit signature (r * n) (r * n),
       out.ComputesOn interpretation
-        {x | ∀ member : Fin r, directProductInput x member ∈ S}
+        {x | ∀ member : Fin r, BitString.block x member ∈ S}
         (blockMap (c.eval interpretation)^[T] r) ∧
       out.size ≤ 100000 * batchBudget n c.size S.card r L := by
   obtain ⟨out, hout, hs⟩ := batched_fixed_power_on_prefixes c S r T L hrN hL
@@ -381,7 +381,7 @@ theorem batched_fixed_power_on (c : Circuit signature n n) (S : Finset (BitStrin
   intro x hx
   apply hout
   intro member i
-  have hiter : ∀ t, (c.eval interpretation)^[t] (directProductInput x member) ∈ S := by
+  have hiter : ∀ t, (c.eval interpretation)^[t] (BitString.block x member) ∈ S := by
     intro t
     induction t with
     | zero => exact hx member
@@ -432,7 +432,7 @@ theorem batched_fixed_power_on_optimized (c : Circuit signature n n)
     (hr : 0 < r) (hrN : r ≤ 2 ^ n) :
     ∃ out : Circuit signature (r * n) (r * n),
       out.ComputesOn interpretation
-        {x | ∀ member : Fin r, directProductInput x member ∈ S}
+        {x | ∀ member : Fin r, BitString.block x member ∈ S}
         (blockMap (c.eval interpretation)^[T] r) ∧
       (out.size : ℝ) ≤ 300000 * optimizedBatchBudget n c.size S.card r := by
   have hcard : S.card ≤ 2 ^ n := by simpa using Finset.card_le_univ S
@@ -470,8 +470,8 @@ theorem batched_variable_time (c : Circuit signature n n) (r m L : ℕ) (hrN : r
       out.size ≤ m * (100000 * batchBudget n c.size (2 ^ n) r L + 4 * (r * n)) :=
   exists_circuit_blockMap (synthesis_batched_binary_powering (c.eval interpretation) _
     (fun j _ => batched_fixed_power c r (2 ^ j) L hrN hL) (inputs (r * (n + m)))
-    (fun x member i => directProductInput x member (Fin.castAdd m i))
-    (fun x member j => directProductInput x member (Fin.natAdd n j))
+    (fun x member i => BitString.block x member (Fin.castAdd m i))
+    (fun x member j => BitString.block x member (Fin.natAdd n j))
     (fun _ _ => ⟨_, rfl⟩) fun _ _ => ⟨_, rfl⟩)
 
 /-- **Square-root batched input times.** -/

@@ -88,7 +88,7 @@ private theorem realizes_decreasePrefix : Realizes .exact decreasePrefix (.refl 
   conv =>
     arg 2
     ext d
-    simp only [decreasePrefix, priority_if]
+    simp only [decreasePrefix]
   realize
   all_goals try first
     | exact h.1.of_le (by have := h.2.1; omega)

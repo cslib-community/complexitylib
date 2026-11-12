@@ -24,8 +24,9 @@ source lets circuits read constants for free, so the bound holds here a fortiori
 is weaker than the source's by at most the two constant gates; `AffineDisperser.lean` uses the
 same convention). This module proves only the size bound and the non-constructive existence of a
 constant affine subspace / disagreeing input (`exists_affine_subspace_const_of_size_lt`,
-`exists_disagreeing_input_of_size_lt`); the deterministic `poly(n, 2^d)`-time refuter clause
-reported on `#4322` remains open (Milestone 4).
+`exists_disagreeing_input_of_size_lt`). The deterministic refuter of `#4322` is in
+`CslibFrontier/Computability/Circuit/Boolean/AffineDisperser4n/Refuter.lean` (`refute_correct` in
+`CslibFrontier/Computability/Circuit/Boolean/AffineDisperser4n/RefuterProofs.lean`; runtime open).
 
 The potential of a state (`State.W`) is `s + 4 q + 6 · #{used unpaired parameters}`. Starting from
 the initial state `initialState C` with `a = n`, `s = C.size`, `q = 0`, and
@@ -61,10 +62,10 @@ public section
 
 namespace Cslib.Circuits.Boolean.AffineDisperser4n
 
-open Finset Cslib.Circuits Cslib.BitString SemiCircuit
+open Finset Cslib.Circuits Cslib.BitString SemiCircuit AffineDisperserCore
 
 namespace State
-
+open AffineDisperserCore.State
 private theorem Valid.ten_mul_a_le_aux {n : ℕ} {f : BooleanFunction n} {d : ℕ}
     (hf : IsAffineDisperser f d) :
     ∀ k (S : State n), S.Valid f → S.m + S.s ≤ k → 10 * S.a ≤ S.W + 10 * d := by
@@ -73,16 +74,16 @@ private theorem Valid.ten_mul_a_le_aux {n : ℕ} {f : BooleanFunction n} {d : �
   | ind k ih =>
     intro S hS hk
     by_cases ha : d < S.a
-    · obtain ⟨S', hstep⟩ := hS.exists_step hf ha
+    · obtain ⟨S', hstep⟩ := Valid.exists_step hS hf ha
       have hih := ih (S'.m + S'.s) (Nat.lt_of_lt_of_le hstep.lt hk) S' hstep.valid le_rfl
       have hp := hstep.potential
-      omega
+      rw [config_ca] at hp; omega
     · omega
 
 /-- Every valid state of a `d`-affine disperser satisfies `10 * S.a ≤ S.W + 10 * d`. -/
 theorem Valid.ten_mul_a_le {n : ℕ} {f : BooleanFunction n} {d : ℕ} {S : State n}
     (hS : S.Valid f) (hf : IsAffineDisperser f d) : 10 * S.a ≤ S.W + 10 * d :=
-  ten_mul_a_le_aux hf (S.m + S.s) S hS le_rfl
+  Valid.ten_mul_a_le_aux hf (S.m + S.s) S hS le_rfl
 
 end State
 
@@ -140,8 +141,8 @@ theorem initialState_W_le {n : ℕ} (C : Circuit (fullSignature 2 Bool) n 1) :
       _ = 6 * n := by
           change (ofCircuit C).params.card * 6 = 6 * n
           rw [ofCircuit_params, Finset.card_range, mul_comm]
-  change (initialState C).s + 4 * (initialState C).q +
-      ∑ x ∈ (initialState C).unpaired, weight ((initialState C).deg x) ≤ C.size + 6 * n
+  unfold AffineDisperserCore.State.W
+  rw [config_cs, config_cq, config_weight]
   omega
 
 /-- Size lower bound `4 * n ≤ C.size + 10 * d` for any `fullSignature 2 Bool` circuit computing a
@@ -152,7 +153,7 @@ theorem four_mul_le_size_add {n : ℕ} {f : BooleanFunction n} {d : ℕ}
     (hf : IsAffineDisperser f d) (C : Circuit (fullSignature 2 Bool) n 1)
     (hC : C.Computes fullInterpretation (single f)) :
     4 * n ≤ C.size + 10 * d := by
-  have hW := (initialState_valid hC).ten_mul_a_le hf
+  have hW := State.Valid.ten_mul_a_le (initialState_valid hC) hf
   have ha := initialState_a C
   have hWle := initialState_W_le C
   omega

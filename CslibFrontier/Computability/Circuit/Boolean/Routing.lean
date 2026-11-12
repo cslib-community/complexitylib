@@ -88,8 +88,8 @@ theorem headers_perm {h k depth width : ℕ} (key : Fin k → Fin h) (tag : Fin 
     (List.ofFn (header ((broadcast key tag depth width).eval interpretation x))).Perm
       (List.ofFn (header x)) := by
   rw [broadcast, Circuit.eval_comp, funext (eval_broadcastCircuit_header key tag _)]
-  change (List.ofFn (fun record => directProductInput _ record ∘ Fin.castAdd width)).Perm
-    (List.ofFn (fun record => directProductInput x record ∘ Fin.castAdd width))
+  change (List.ofFn (fun record => BitString.block _ record ∘ Fin.castAdd width)).Perm
+    (List.ofFn (fun record => BitString.block x record ∘ Fin.castAdd width))
   simpa only [List.map_ofFn, Function.comp_def, header] using
     (keyedSortCircuit_perm (matchKey key tag width) depth true x).map
       (fun row : BitString (h + width) => row ∘ Fin.castAdd width)
@@ -132,8 +132,8 @@ theorem routeCircuit_headers_perm {h k o depth width : ℕ}
       (List.ofFn (header x)) := by
   apply List.Perm.trans _ (routeCircuit.headers_perm key tag x)
   rw [routeCircuit, Circuit.eval_comp]
-  change (List.ofFn (fun record => directProductInput _ record ∘ Fin.castAdd width)).Perm
-    (List.ofFn (fun record => directProductInput _ record ∘ Fin.castAdd width))
+  change (List.ofFn (fun record => BitString.block _ record ∘ Fin.castAdd width)).Perm
+    (List.ofFn (fun record => BitString.block _ record ∘ Fin.castAdd width))
   simpa only [List.map_ofFn, Function.comp_def] using
     (keyedSortCircuit_perm (order.comp (Circuit.wiring signature (Fin.castAdd width))) depth true
       ((routeCircuit.broadcast key tag depth width).eval interpretation x)).map

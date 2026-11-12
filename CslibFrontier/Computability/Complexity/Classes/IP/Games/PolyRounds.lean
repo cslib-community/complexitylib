@@ -36,18 +36,21 @@ The main theorem is Goldwasser–Sipser [GoldwasserSipser1986] for polynomially 
 (`Cslib.Complexity.IPPolyRounds_subset_AMPolyRounds`): `IP[k(n)] ⊆ AM[k(n) + 2]`, without relying
 on round collapse (`AMk_eq_AM`, which is unavailable when `k(n)` grows with `n`).
 
-**Source mapping to [GoldwasserSipser1986]:**
-* Protocol definitions appear in §3 (p. 63).
-* The theorem and proof map to §4.2 (printed pp. 64–67).
-* In GS1986, a "round" (or "message") is one exchange; we map this to `q(n)` query/reply exchanges
-  in the oracle model, which expands to `k(n) = 2 * q(n)` alternating individual moves.
-* We specify a concrete two-sided gap bounded away from 1/2, supported by uniform unary-computable
-  shape and coin bounds.
-* The specific parallel repetition count `R(n) = 72 * c(n) * W(n)` arithmetic is this
-  implementation's
-  explicit construction to beat the `μ ^ c(n)` soundness factor of
-  `Emulation.three_mul_value_le_one`
-  uniformly for all `n` (`Cslib.Complexity.Emulation.six_mul_pow_mul_two_pow_le_three_pow`).
+**Source mapping to [GoldwasserSipser1986] (paraphrase):**
+* In §3, printed p. 63, a round is a pair of messages, one from each participant. The full proof
+  in §4.2, printed p. 65, uses `g(n) = Q(n) / 2` such pairs. We follow that proof's total-message
+  convention: its `Q(n)` is Lean's `k(n)` individual moves, and `q(n)` oracle query/reply exchanges
+  give `Q(n) = k(n) = 2 * q(n)`. The last paragraph of §3 instead bounds messages sent by the
+  verifier; that convention is not used to identify `Q` here. The theorem/proof is in §4.2,
+  printed pp. 64–67.
+* On members, some prover achieves acceptance at least `2/3`; on nonmembers, every prover's
+  acceptance is at most `1/3`. Uniformity means polynomial-time shape and coin-count maps from
+  unary input length
+  (`encUnary` to `encIPShape` and `encUnary`, respectively), together with polynomial-time
+  message and decision maps in their displayed encodings.
+* The parallel repetition count `R(n) = 72 * c(n) * W(n)` and its arithmetic are original to this
+  implementation. They beat the `μ ^ c(n)` soundness factor of `Emulation.three_mul_value_le_one`
+  uniformly in `n` (`Cslib.Complexity.Emulation.six_mul_pow_mul_two_pow_le_three_pow`).
 
 Proof sketch:
 1. When `k(n)` is odd, the prover never sees the trailing verifier move, so folding that move into
@@ -86,7 +89,7 @@ public section
 
 namespace Cslib.Complexity
 
-open Finset Turing.MultiTapeTM SetLowerBound
+open Finset Turing.MultiTapeTM
 
 variable {α : Type}
 
@@ -374,9 +377,9 @@ theorem bestCount_append_verifier {ρ : ℕ} (msg : BitString ρ → ℕ → Lis
 private structure AgreesState where
   /-- Current message index. -/
   j : ℕ
-  /-- Protocol parameters. -/
+  /-- Accumulated transcript prefix. -/
   p : List Bool
-  /-- Accumulated transcript. -/
+  /-- Remaining transcript suffix. -/
   t : List Bool
   /-- Whether all messages agree so far. -/
   ok : Bool
@@ -710,11 +713,11 @@ theorem computableInPolyTime_shape_dyn {γ : Type} {encIn : γ ↪ List Bool}
 
 /-- State for folding `check` across the transcript. -/
 private structure CheckState where
-  /-- Current check index. -/
+  /-- Current logarithmic size claim. -/
   κ : ℕ
-  /-- Protocol parameters. -/
+  /-- Decoded private-game transcript prefix. -/
   p : List Bool
-  /-- Workspace bits. -/
+  /-- Remaining emulation transcript. -/
   w : List Bool
   /-- Whether all checks pass so far. -/
   ok : Bool
@@ -1231,7 +1234,7 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
       have hLen : st.history.length ≤ 2 * (c * ((encIn x).length + 1) ^ d) :=
         hst.2.trans (Nat.mul_le_mul_left 2 ((hsubL.trans hgL).trans (hglen x)))
       have hAccLen : (encAMShape st.history).length ≤
-          8 * st.history.length + 2 * AMGame.transcriptLength st.2 := by
+          8 * st.history.length + 2 * AMGame.transcriptLength st.history := by
         clear hst hpre hsubL hsubT hgL hgT hSum hLen
         induction st.history with
         | nil => simp [AMGame.transcriptLength]
@@ -1253,10 +1256,10 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
   have hoptOut : ComputableInPolyTime
       (fun x => ((g x).foldl mergeStep (MergeState.mk none [])).pending)
         encIn (encOption encUnary) :=
-    (ComputableInPolyTime.fst _ _).comp hst
+    encMergeState_pending_polyTime hst
   have haccOut : ComputableInPolyTime
       (fun x => ((g x).foldl mergeStep (MergeState.mk none [])).history) encIn encAMShape :=
-    (ComputableInPolyTime.snd _ _).comp hst
+    encMergeState_history_polyTime hst
   have hpreRev : ComputableInPolyTime
       (fun x => match ((g x).foldl mergeStep (MergeState.mk none [])).pending with
         | none => ((g x).foldl mergeStep (MergeState.mk none [])).history

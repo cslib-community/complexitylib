@@ -416,7 +416,7 @@ private theorem computableInPolyTime_extractHistory {γ : Type} {encIn : γ ↪ 
         simp only [encExtractState_apply, encExtractStateFields, length_encPair,
           encBits_apply, encBool_apply, List.length_singleton, Nat.add_assoc]
       omega)
-  exact ((ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd _ _).comp hspec.1))
+  exact encExtractState_hist_polyTime hspec.1
 
 private theorem foldl_extractStep_false (t k : ℕ) (rem : List Bool) (hist : Interaction.History) :
     ((List.replicate k false).foldl (fun st _ => extractStep t st) ⟨rem, hist, false⟩).hist =
@@ -1536,7 +1536,7 @@ private theorem isOraclePPTOn_oracleVerifier {enc : α ↪ List Bool}
       have hp' := ComputableInPolyTime.bitsAppend
         (ComputableInPolyTime.bitsAppend (hp.comp ha1) (hm.comp ha1))
         (ComputableInPolyTime.bitsRowWithInput (hnp.comp ha1) (ComputableInPolyTime.const 0) hy2)
-      exact hj'.prod hp'
+      exact encSimState_mk_polyTime hj' hp'
     simpa only [oracleStep] using hqry.map_with' hy
   obtain ⟨c₁, d₁, hqlen⟩ := hq.polyBounded_length.exists_le
   obtain ⟨c₂, d₂, hglen⟩ := hg.polyBounded_length.exists_le

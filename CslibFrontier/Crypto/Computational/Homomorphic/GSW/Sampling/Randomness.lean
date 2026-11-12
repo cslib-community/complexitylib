@@ -23,7 +23,6 @@ is proved separately; matrix computation and cryptographic security remain separ
 
 ## Main results
 
-* `exists_uniform_seed_sampleKeyInputs`: one tape supplies all independent key inputs.
 * `exists_uniform_seed_sampleCoins`: one tape supplies all encryption coins.
 * `exists_uniform_seed_keyGen_encrypt`: exact joint key/ciphertext law from a tape of the stated
   length, including zero dimensions or zero noise width.
@@ -39,29 +38,6 @@ public section
 namespace Cslib.Crypto.Homomorphic.GSW
 
 open ProbComp Probability
-
-/-- A residue uses a uniform word of exactly its binary width. -/
-theorem exists_uniform_seed_sampleResidue (w : ℕ) :
-    ∃ evaluate : List Bool → ZMod (2 ^ w),
-      ProbComp.eval (sampleResidue w) = (BitString.uniformList w).map evaluate := by
-  refine ⟨fun bits => (BitString.binaryValue bits : ZMod (2 ^ w)), ?_⟩
-  simp only [pmf_norm, sampleResidue, sampleBinaryNat, BitString.eval_sampleList]
-
-/-- Independent residues use disjoint width-sized blocks. -/
-theorem exists_uniform_seed_sampleVector (count w : ℕ) :
-    ∃ evaluate : List Bool → Fin count → ZMod (2 ^ w),
-      ProbComp.eval (sampleVector count w) =
-        (BitString.uniformList (count * w)).map evaluate := by
-  obtain ⟨evaluate, hlaw⟩ := exists_uniform_seed_sampleResidue w
-  exact ⟨_, ProbComp.eval_replicateFin_of_uniformList count w _ evaluate hlaw⟩
-
-/-- Independent rows use disjoint row-sized blocks. -/
-theorem exists_uniform_seed_sampleMatrix (rows cols w : ℕ) :
-    ∃ evaluate : List Bool → Matrix (Fin rows) (Fin cols) (ZMod (2 ^ w)),
-      ProbComp.eval (sampleMatrix rows cols w) =
-        (BitString.uniformList (rows * (cols * w))).map evaluate := by
-  obtain ⟨evaluate, hlaw⟩ := exists_uniform_seed_sampleVector cols w
-  exact ⟨_, ProbComp.eval_replicateFin_of_uniformList rows (cols * w) _ evaluate hlaw⟩
 
 /-- The complete binary coin matrix uses one bit for each entry. -/
 theorem exists_uniform_seed_sampleCoins (n m w : ℕ) :
@@ -81,24 +57,6 @@ theorem exists_uniform_seed_sampleCoins (n m w : ℕ) :
     simpa only [pmf_norm, sampleCoins, PMF.map] using
       congrArg (PMF.map Function.uncurry) hrows⟩
 
-/-- All key-generation inputs are independent functions of disjoint parts of one finite tape. -/
-theorem exists_uniform_seed_sampleKeyInputs (n m w η : ℕ) :
-    ∃ evaluate : List Bool → KeyInputs n m w,
-      ProbComp.eval (sampleKeyInputs n m w η) =
-        (BitString.uniformList (n * w + m * (n * w) + m * (2 * η))).map evaluate := by
-  obtain ⟨secret, hsecret⟩ := exists_uniform_seed_sampleVector n w
-  obtain ⟨publicPart, hpublicPart⟩ := exists_uniform_seed_sampleMatrix m n w
-  have herror := ProbComp.eval_replicateFin_of_uniformList m (2 * η)
-    (sampleCenteredBinomial η) _ (eval_sampleCenteredBinomial_eq_map η)
-  have hrest (t : Fin n → ZMod (2 ^ w)) :=
-    ProbComp.eval_bind_of_uniformList (m * (n * w)) (m * (2 * η))
-      (sampleMatrix m n w)
-      (fun B => KeyInputs.mk t B <$> OracleComp.replicateFin m (sampleCenteredBinomial η))
-      publicPart _ hpublicPart (fun B => by rw [ProbComp.eval_map, herror, PMF.map_comp])
-  have hfull := ProbComp.eval_bind_of_uniformList (n * w) (m * (n * w) + m * (2 * η))
-    (sampleVector n w) _ secret _ hsecret hrest
-  exact ⟨_, by simpa only [sampleKeyInputs, bind_pure_comp, Nat.add_assoc] using hfull⟩
-
 /-- A single flat tape realizes the joint key and ciphertext distribution of the actual programs.
 The equality keeps the secret key as well as the public key and ciphertext. -/
 theorem exists_uniform_seed_keyGen_encrypt (n m w η : ℕ) (μ : Bool) :
@@ -106,25 +64,25 @@ theorem exists_uniform_seed_keyGen_encrypt (n m w η : ℕ) (μ : Bool) :
         ((Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) × (Fin n → ZMod (2 ^ w))) ×
           Ciphertext n w),
       ProbComp.eval (do
-        let keys ← keyGen n m w η
+        let keys ← LWE.keyGen n m w η
         let ciphertext ← encrypt keys.1 μ
         return (keys, ciphertext)) =
       (BitString.uniformList
         (n * w + m * n * w + 2 * m * η + (n + 1) * w * m)).map evaluate := by
-  obtain ⟨inputs, hinputs⟩ := exists_uniform_seed_sampleKeyInputs n m w η
+  obtain ⟨inputs, hinputs⟩ := LWE.exists_uniform_seed_sampleKeyInputs n m w η
   obtain ⟨coins, hcoins⟩ := exists_uniform_seed_sampleCoins n m w
-  let finish (x : KeyInputs n m w) (R : Matrix (Fin (n + 1) × Fin w) (Fin m) Bool) :=
-    let keys := (publicMatrix x.publicPart x.secret x.error, x.secret)
+  let finish (x : LWE.KeyInputs n m w) (R : Matrix (Fin (n + 1) × Fin w) (Fin m) Bool) :=
+    let keys := (LWE.publicMatrixInt x.publicPart x.secret x.error, x.secret)
     (keys, encryptWithCoins keys.1 μ R)
-  have hfinish (x : KeyInputs n m w) :
+  have hfinish (x : LWE.KeyInputs n m w) :
       ProbComp.eval (finish x <$> sampleCoins n m w) =
         (BitString.uniformList ((n + 1) * (w * m))).map (finish x ∘ coins) := by
     rw [ProbComp.eval_map, hcoins, PMF.map_comp]
   have hfull := ProbComp.eval_bind_of_uniformList
     (n * w + m * (n * w) + m * (2 * η)) ((n + 1) * (w * m))
-    (sampleKeyInputs n m w η) _ inputs _ hinputs hfinish
+    (LWE.sampleKeyInputs n m w η) _ inputs _ hinputs hfinish
   exact ⟨_, by
-    simpa only [keyGen, encrypt, bind_assoc, pure_bind, bind_pure_comp, bind_map_left, map_bind,
-      Functor.map_map, finish, Nat.mul_assoc, Nat.mul_left_comm m 2] using hfull⟩
+    simpa only [LWE.keyGen, encrypt, bind_assoc, pure_bind, bind_pure_comp, bind_map_left,
+      map_bind, Functor.map_map, finish, Nat.mul_assoc, Nat.mul_left_comm m 2] using hfull⟩
 
 end Cslib.Crypto.Homomorphic.GSW
