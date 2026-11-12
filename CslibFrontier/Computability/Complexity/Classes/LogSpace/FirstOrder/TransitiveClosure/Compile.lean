@@ -515,11 +515,8 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
           Complete P (encStructure a) (b + 2) regs₁ (b + 2 + len φ false)
             (Kept B (base + 1) regs₁)) := fun x regs₁ hk hx => by
       obtain ⟨hd₁, h0₁, hv₁⟩ := hk.facts hbase hfv (d := 1 + scratch φ) (by omega) h0 hv
-      refine ih hΓ false hW _ (base + 1) _ ρ (b + 2) _ regs₁ hPφ (by omega) hfv'
-        (by omega) h0₁ (fun y => ?_) hk.bounded
-      cases y with
-      | none => simpa using hx
-      | some y => simpa using hv₁ y
+      exact ih hΓ false hW _ (base + 1) _ ρ (b + 2) _ regs₁ hPφ (by omega) hfv'
+        (by omega) h0₁ (getD_elim_eq hv₁ (c := x) hx) hk.bounded
     have hstep : ∀ regs₁ : List ℕ, Kept B base regs regs₁ → ∀ m, regs₁.getD base 0 = m →
         P.Reaches (encStructure a) (P.Oblivious B) (b + 1, 0 :: regs₁)
           (if m < a.1 then b + 2 else T, 0 :: regs₁) := fun regs₁ hk m hm => by
