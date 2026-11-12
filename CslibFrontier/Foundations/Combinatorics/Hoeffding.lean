@@ -104,23 +104,10 @@ private theorem sum_pi_uniform_mul_sum_mul_sub_half (a : ι → ℝ) :
     ∑ y : ι → Bool,
       ((Probability.PMF.pi fun _ : ι => Probability.PMF.uniformOfFintype Bool) y).toReal *
         ∑ i, a i * (((y i).toNat : ℝ) - 1 / 2) = 0 := by
-  rw [Probability.PMF.pi_uniformOfFintype]
-  simp only [Probability.PMF.uniformOfFintype_apply, ← mul_sum]
-  rw [sum_comm, mul_eq_zero]
-  refine .inr (sum_eq_zero fun i _ => ?_)
-  -- Flipping bit `i` negates the summand, so the sum vanishes.
-  have hinv : Function.Involutive fun y : ι → Bool => Function.update y i (!y i) := fun y => by
-    funext j
-    by_cases h : j = i <;> simp [h]
-  let flip : Equiv.Perm (ι → Bool) := ⟨_, _, hinv.leftInverse, hinv.rightInverse⟩
-  have hsum : ∑ y : ι → Bool, a i * (((y i).toNat : ℝ) - 1 / 2) =
-      -∑ y : ι → Bool, a i * (((y i).toNat : ℝ) - 1 / 2) := by
-    conv_lhs => rw [← Equiv.sum_comp flip]
-    rw [← sum_neg_distrib]
-    refine sum_congr rfl fun y _ => ?_
-    simp only [flip, Equiv.coe_fn_mk, Function.update_self]
-    cases y i <;> norm_num
-  linarith
+  rw [Probability.PMF.sum_pi_mul_sum (score := fun i (c : Bool) => a i * ((c.toNat : ℝ) - 1 / 2))]
+  refine sum_eq_zero fun i _ => ?_
+  simp only [Fintype.sum_bool, Probability.PMF.uniformOfFintype_apply, Fintype.card_bool]
+  norm_num
 
 /-- **The weighted one-sided tail bound.** At most an `exp (-2 t² / ∑ i, a i ^ 2)` fraction of the
 bit strings `x` have centred weighted sum `∑ i, a i * (x i - 1 / 2)` at least `t`. This is
