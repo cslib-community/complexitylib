@@ -59,6 +59,24 @@ Run `scripts/build.sh CslibFrontierTests.PrefixParser` to check the
 missing operands, trailing tokens, empty input, and a chain of 128 negations. The parser uses one
 flat token stream; it does not introduce recursive binary framing or change any size bound.
 
+## Formal complexity measures
+
+Import [FormalComplexityMeasure](../../CslibFrontier/Computability/Circuit/Boolean/FormalComplexityMeasure.lean)
+for the measure axioms in Arora–Barak's 2007-01-08 web draft, §22.1.
+`FormalComplexityMeasure.le_leafSize` applies to a `Formula.IsConstantFree` formula and a
+`Formula.Computes` proof. It permits negations anywhere and does not assume that a measure
+is invariant under complement. Constants must be excluded: they cost zero input leaves in
+this library, while the source axioms do not force their measure to be zero.
+
+`FormalComplexityMeasure.card_le_four_mul_card f hc` gives Lemma 22.2: if `c ≤ μ.measure f`,
+then `Fintype.card (BooleanFunction n) ≤ 4 * card {g | c ≤ 4 * μ.measure g}`. This is the
+uniform fraction of all truth tables, with denominators cleared over natural numbers; it
+also applies when `n = 0`. Theorem 22.3's stronger density bound remains open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+Run `scripts/build.sh CslibFrontierTests.FormalComplexityMeasure` for
+[clients](../../CslibFrontierTests/FormalComplexityMeasure.lean) using an asymmetric measure,
+internal negations, zero inputs, and the constant-formula counterexample.
+
 ## Boolean bases and related models
 
 | Model | Meaning | Main use or boundary |

@@ -1151,6 +1151,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder
 public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder.Ordered
 public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder.Ordered.Parity
 public import CslibFrontier.Computability.Circuit.Boolean.FirstOrder.Parity
+public import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure
 public import CslibFrontier.Computability.Circuit.Boolean.Formula
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
