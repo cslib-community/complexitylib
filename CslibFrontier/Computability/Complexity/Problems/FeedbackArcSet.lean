@@ -102,12 +102,12 @@ directed graphs with a number `k` such that removing some set of at most `k` arc
 directed cycle. -/
 @[expose]
 def FeedbackArcSet : Set FeedbackArcSetInstance :=
-  {x | ∃ S : Finset (ℕ × ℕ), (∀ e ∈ S, e ∈ x.graph.2) ∧ S.card ≤ x.bound ∧
+  {x | ∃ S : Finset (ℕ × ℕ), (∀ e ∈ S, e ∈ x.graph.edges) ∧ S.card ≤ x.bound ∧
     (x.graph.deleteArcs S).IsDirAcyclic}
 
 theorem mem_FeedbackArcSet_iff {G : Graph} {k : ℕ} :
     (⟨G, k⟩ : FeedbackArcSetInstance) ∈ FeedbackArcSet ↔
-      ∃ S : Finset (ℕ × ℕ), (∀ e ∈ S, e ∈ G.2) ∧ S.card ≤ k ∧ (G.deleteArcs S).IsDirAcyclic :=
+      ∃ S : Finset (ℕ × ℕ), (∀ e ∈ S, e ∈ G.edges) ∧ S.card ≤ k ∧ (G.deleteArcs S).IsDirAcyclic :=
   Iff.rfl
 
 namespace FeedbackArcSet
@@ -117,11 +117,13 @@ namespace FeedbackArcSet
 /-- The arcs between declared vertices that the listed numbering `ρ` does not increase. -/
 @[expose]
 def backArcs (G : Graph) (ρ : List ℕ) : List (ℕ × ℕ) :=
-  G.2.filter fun e =>
-    decide (e.1 ∈ G.1) && decide (e.2 ∈ G.1) && decide (colorOf G ρ e.2 ≤ colorOf G ρ e.1)
+  G.edges.filter fun e =>
+    decide (e.1 ∈ G.vertices) && decide (e.2 ∈ G.vertices) &&
+      decide (colorOf G ρ e.2 ≤ colorOf G ρ e.1)
 
 theorem mem_backArcs {G : Graph} {ρ : List ℕ} {e : ℕ × ℕ} :
-    e ∈ backArcs G ρ ↔ e ∈ G.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 ∧ colorOf G ρ e.2 ≤ colorOf G ρ e.1 := by
+    e ∈ backArcs G ρ ↔ e ∈ G.edges ∧ e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices ∧
+      colorOf G ρ e.2 ≤ colorOf G ρ e.1 := by
   simp only [backArcs, List.mem_filter, Bool.and_eq_true, decide_eq_true_eq, and_assoc]
 
 /-- The check of a listed numbering: at most `k` distinct arcs are back arcs. -/
@@ -133,8 +135,8 @@ private theorem computableInPolyTime_backArcs :
     ComputableInPolyTime (fun x : FeedbackArcSetInstance × List ℕ => backArcs x.1.graph x.2)
       (encPair encFeedbackArcSet (encList encNat)) (encList (encPair encNat encNat)) := by
   unfold backArcs
-  exact filterWithInput (Graph.computableInPolyTime_snd (by fun_prop))
-    (by fun_prop [Graph.computableInPolyTime_fst])
+  exact filterWithInput (encGraph_edges_polyTime (by fun_prop))
+    (by fun_prop [encGraph_vertices_polyTime])
 
 private theorem computableInPolyTime_check :
     ComputableInPolyTime check (encPair encFeedbackArcSet (encList encNat)) encBool := by
@@ -174,7 +176,8 @@ private theorem mem_of_certifies {G : Graph} {k : ℕ} {ρ : List ℕ} (h : Cert
 vertex list, whose back arcs lie in a feedback arc set. -/
 private theorem exists_certifies {G : Graph} {k : ℕ}
     (h : (⟨G, k⟩ : FeedbackArcSetInstance) ∈ FeedbackArcSet) :
-    ∃ g : ℕ → ℕ, (∀ v ∈ G.1, g v ≤ G.1.toFinset.card) ∧ Certifies ⟨G, k⟩ (G.1.map g) := by
+    ∃ g : ℕ → ℕ, (∀ v ∈ G.vertices, g v ≤ G.vertices.toFinset.card) ∧
+      Certifies ⟨G, k⟩ (G.vertices.map g) := by
   classical
   obtain ⟨S, -, hcard, hacyc⟩ := h
   obtain ⟨f, hflt, hf⟩ := exists_rank_of_isDirAcyclic hacyc
@@ -194,7 +197,8 @@ theorem mem_NP : FeedbackArcSet ∈ NP encFeedbackArcSet := by
       exact G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k)))
     (fun ⟨G, k⟩ ρ h => mem_of_certifies ((check_iff (⟨G, k⟩, ρ)).1 h)) fun ⟨G, k⟩ h => ?_
   obtain ⟨g, hgle, hg⟩ := exists_certifies h
-  exact ⟨g, fun v hv => (hgle v hv).trans G.1.toFinset_card_le, (check_iff (⟨G, k⟩, _)).2 hg⟩
+  exact ⟨g, fun v hv => (hgle v hv).trans G.vertices.toFinset_card_le,
+    (check_iff (⟨G, k⟩, _)).2 hg⟩
 
 end FeedbackArcSet
 
@@ -206,14 +210,14 @@ namespace FeedbackVertexSet
 becomes the arc `2u + 1 → 2v`. -/
 @[expose]
 def splitVertices (G : Graph) : Graph :=
-  (G.1.map (2 * ·) ++ G.1.map (2 * · + 1),
-    G.1.map (fun v => (2 * v, 2 * v + 1)) ++ G.2.map fun e => (2 * e.1 + 1, 2 * e.2))
+  ⟨G.vertices.map (2 * ·) ++ G.vertices.map (2 * · + 1),
+    G.vertices.map (fun v => (2 * v, 2 * v + 1)) ++ G.edges.map fun e => (2 * e.1 + 1, 2 * e.2)⟩
 
 /-- The arcs of the split graph: the arc `2v → 2v + 1` of a declared vertex `v`, and the arc
 `2u + 1 → 2v` of an arc `u → v` between declared vertices. -/
 theorem dirAdj_splitVertices {G : Graph} {a b : ℕ} :
     (splitVertices G).DirAdj a b ↔
-      (∃ v ∈ G.1, a = 2 * v ∧ b = 2 * v + 1) ∨
+      (∃ v ∈ G.vertices, a = 2 * v ∧ b = 2 * v + 1) ∨
         ∃ u v, G.DirAdj u v ∧ a = 2 * u + 1 ∧ b = 2 * v := by
   simp only [DirAdj, splitVertices, List.mem_append, List.mem_map, Prod.mk.injEq, Prod.exists]
   constructor
@@ -267,7 +271,8 @@ theorem toFeedbackArcSet_mem_iff (x : FeedbackVertexSetInstance) :
   · rintro ⟨S, -, hcard, hacyc⟩
     obtain ⟨g, -, hg⟩ := exists_rank_of_isDirAcyclic hacyc
     -- Remove the vertices whose arcs `2v → 2v + 1` or `2v + 1 → 2w` were removed.
-    refine ⟨(S.image fun e => e.1 / 2).filter (· ∈ G.1), fun v hv => (Finset.mem_filter.1 hv).2,
+    refine ⟨(S.image fun e => e.1 / 2).filter (· ∈ G.vertices),
+      fun v hv => (Finset.mem_filter.1 hv).2,
       (Finset.card_filter_le _ _).trans (Finset.card_image_le.trans hcard),
       isDirAcyclic_of_rank (f := fun v => g (2 * v + 1)) fun u v huv => ?_⟩
     rw [dirAdj_deleteVerts] at huv
@@ -284,7 +289,7 @@ theorem toFeedbackArcSet_mem_iff (x : FeedbackVertexSetInstance) :
     -- Remove the arcs `2v → 2v + 1` of the removed vertices.
     refine ⟨R.image fun v => (2 * v, 2 * v + 1), fun e he => ?_,
       Finset.card_image_le.trans hcard, isDirAcyclic_of_rank
-        (f := splitRank R f (G.deleteVerts R).1.toFinset.card) fun a b hab => ?_⟩
+        (f := splitRank R f (G.deleteVerts R).vertices.toFinset.card) fun a b hab => ?_⟩
     · obtain ⟨v, hv, rfl⟩ := Finset.mem_image.1 he
       exact List.mem_append_left _ (List.mem_map.2 ⟨v, hRV v hv, rfl⟩)
     · rw [dirAdj_deleteArcs, dirAdj_splitVertices] at hab
@@ -296,7 +301,7 @@ theorem toFeedbackArcSet_mem_iff (x : FeedbackVertexSetInstance) :
         by_cases huR : u ∈ R
         · simp only [huR, ↓reduceIte]
           split <;> omega
-        · have hu := hflt u (mem_deleteVerts_fst.2 ⟨huv.1, huR⟩)
+        · have hu := hflt u (mem_deleteVerts_vertices.2 ⟨huv.1, huR⟩)
           by_cases hvR : v ∈ R
           · simp only [huR, hvR, ↓reduceIte]
             omega
@@ -310,7 +315,7 @@ theorem computableInPolyTime_toFeedbackArcSet :
     ComputableInPolyTime toFeedbackArcSet encFeedbackVertexSet encFeedbackArcSet := by
   have hs : ComputableInPolyTime (fun x : FeedbackVertexSetInstance => splitVertices x.graph)
       encFeedbackVertexSet encGraph := by
-    unfold splitVertices encGraph
+    unfold splitVertices
     fun_prop
   unfold toFeedbackArcSet
   fun_prop

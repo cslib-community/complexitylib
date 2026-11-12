@@ -209,7 +209,8 @@ variable names remain binary throughout. The shared arity-check certificate is
 `Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`;
 `CSPSAT.polyTimeReducible_of_guard` in `Problems.CSP.Basic` turns any polynomial-time compiler
 that is faithful on well-formed instances, together with a fixed reject instance outside the
-target, into the guarded reduction used by each endpoint.
+target, into the guarded reduction used by each endpoint. It specializes the general
+`PolyTimeReducible.of_guard` in `Reduction.Guard` to the exact-arity test.
 
 [The full checked client](../../CslibFrontierTests/Schaefer.lean) exercises every tractable arm,
 a concrete NAE hard language, arbitrary fixed arities, sparse labels and an empty alphabet.
@@ -231,7 +232,7 @@ variables and include empty/nullary relations. See the [majority examples](../..
 
 The ordinary solvers are also reusable: `TwoSAT.mem_P`
 ([TwoSAT/PolyTime.lean](../../CslibFrontier/Computability/Complexity/Problems/TwoSAT/PolyTime.lean)),
-`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.satisfiable_mem_P`. For `TwoSAT`,
+`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.mem_P`. For `TwoSAT`,
 `TwoSAT.assignment` constructs a satisfying assignment in polynomial time on binary CNF encodings
 (`TwoSAT.computableInPolyTime_assignment`, `TwoSAT.eval_assignment_of_mem`) by filtering
 occurrence-bounded implication-graph reachability lists (`TwoSAT.reach`). Horn syntax counts

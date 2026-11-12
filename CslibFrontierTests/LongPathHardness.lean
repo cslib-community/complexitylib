@@ -24,10 +24,10 @@ section Opened
 open Cslib Cslib.Complexity Turing.MultiTapeTM
 
 /-- The edge `1 — 2`. -/
-def edge : Graph := ([1, 2], [(1, 2)])
+def edge : Graph := ⟨[1, 2], [(1, 2)]⟩
 
 /-- The vertices `1` and `2` without edges. -/
-def noEdge : Graph := ([1, 2], [])
+def noEdge : Graph := ⟨[1, 2], []⟩
 
 /-- The certificate naming the ordering `[1, 2]` of the vertices of `edge` and `noEdge`. -/
 def cert : List Bool := [false, false, true, false]

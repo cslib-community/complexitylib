@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.Immune
 import CslibFrontier.Computability.Complexity.Classes.P.Countable
+import CslibFrontier.Computability.Complexity.Classes.P.Finite
 
 /-!
 # Complexity cores

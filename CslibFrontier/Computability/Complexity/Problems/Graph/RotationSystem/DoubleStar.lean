@@ -30,11 +30,11 @@ open Equiv
 
 /-- Two centers attached to the same indexed leaves, with the second scope reversed. -/
 @[expose] def doubleStarGraph (n : ℕ) : Graph :=
-  (List.range (n + 2), (List.finRange n).map (fun i => (i.val, n)) ++
-    (List.finRange n).map (fun i => (i.rev.val, n + 1)))
+  ⟨List.range (n + 2), (List.finRange n).map (fun i => (i.val, n)) ++
+    (List.finRange n).map (fun i => (i.rev.val, n + 1))⟩
 
 /-- A leaf and a center-block bit identify an actual edge position. -/
-@[expose] def doubleStarEdgeEquiv (n : ℕ) : Fin n × Bool ≃ Fin (doubleStarGraph n).2.length :=
+@[expose] def doubleStarEdgeEquiv (n : ℕ) : Fin n × Bool ≃ Fin (doubleStarGraph n).edges.length :=
   ((Equiv.prodComm _ _).trans (Equiv.boolProdEquivSum (Fin n))).trans
     ((Equiv.sumCongr (Equiv.refl _) (Fin.revPerm : Perm (Fin n))).trans
       (finSumFinEquiv.trans (finCongr (by simp [doubleStarGraph]))))
@@ -51,14 +51,14 @@ theorem val_doubleStarEdgeEquiv {n : ℕ} (i : Fin n) (b : Bool) :
 /-- Center names are `n` and `n+1`; both variable ends use the original leaf name. -/
 @[simp] theorem vertex_doubleStarDartEquiv {n : ℕ} (i : Fin n) (b s : Bool) :
     (doubleStarDartEquiv n ((i, b), s)).vertex = if s then (if b then n + 1 else n) else i.val := by
-  have hlen : (doubleStarGraph n).2.length = n + n := by simp [doubleStarGraph]
+  have hlen : (doubleStarGraph n).edges.length = n + n := by simp [doubleStarGraph]
   cases b
-  · change (if s then ((doubleStarGraph n).2.getD i.val (0, 0)).2
-      else ((doubleStarGraph n).2.getD i.val (0, 0)).1) = _
+  · change (if s then ((doubleStarGraph n).edges.getD i.val (0, 0)).2
+      else ((doubleStarGraph n).edges.getD i.val (0, 0)).1) = _
     rw [List.getD_eq_getElem _ _ (by rw [hlen]; omega)]
     simp [doubleStarGraph, i.isLt]
-  · change (if s then ((doubleStarGraph n).2.getD (n + i.rev.val) (0, 0)).2
-      else ((doubleStarGraph n).2.getD (n + i.rev.val) (0, 0)).1) = _
+  · change (if s then ((doubleStarGraph n).edges.getD (n + i.rev.val) (0, 0)).2
+      else ((doubleStarGraph n).edges.getD (n + i.rev.val) (0, 0)).1) = _
     rw [List.getD_eq_getElem _ _ (by rw [hlen]; omega)]
     have hi := i.isLt
     cases s <;> simp [doubleStarGraph, List.getElem_append_right]; omega
@@ -185,7 +185,7 @@ theorem card_faces_doubleStarRotation (n : ℕ) : Nat.card (doubleStarRotation n
 
 /-- Both centers and every leaf are declared, also at zero arity. -/
 theorem doubleStarGraph_endpoints_declared (n : ℕ) :
-    ∀ v ∈ (doubleStarGraph n).incidenceVertices, v ∈ (doubleStarGraph n).1 := by
+    ∀ v ∈ (doubleStarGraph n).incidenceVertices, v ∈ (doubleStarGraph n).vertices := by
   intro v hv
   obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
   rcases List.mem_append.mp he with he | he
@@ -202,7 +202,7 @@ theorem doubleStarGraph_endpoints_declared (n : ℕ) :
 /-- At positive arity the two centers are joined through a real leaf. The nullary centers
 remain separate points and are deliberately excluded from this connectedness statement. -/
 theorem doubleStarGraph_connected {n : ℕ} (hn : 0 < n) :
-    ∀ u ∈ (doubleStarGraph n).1, ∀ v ∈ (doubleStarGraph n).1,
+    ∀ u ∈ (doubleStarGraph n).vertices, ∀ v ∈ (doubleStarGraph n).vertices,
       Graph.RotationCertificate.SameComponent (doubleStarGraph n) u v := by
   let i : Fin n := ⟨0, hn⟩
   have hG := doubleStarGraph_endpoints_declared n
@@ -211,7 +211,7 @@ theorem doubleStarGraph_connected {n : ℕ} (hn : 0 < n) :
   simp only [reverse_doubleStarDartEquiv, vertex_doubleStarDartEquiv, Bool.not_false,
     Bool.false_eq_true, ↓reduceIte] at ha hb
   have hc := ha.symm.trans hb
-  have connect (u : ℕ) (hu : u ∈ (doubleStarGraph n).1) :
+  have connect (u : ℕ) (hu : u ∈ (doubleStarGraph n).vertices) :
       Graph.RotationCertificate.SameComponent (doubleStarGraph n) u n := by
     by_cases h : u < n
     · have hh := sameComponent_reverse hG

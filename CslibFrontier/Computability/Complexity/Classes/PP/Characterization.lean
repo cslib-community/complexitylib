@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Reduction
 import CslibFrontier.Computability.Complexity.Classes.PP.Closure
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Combinators
+import CslibFrontier.Computability.Complexity.Classes.TruncatedVerifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -119,22 +120,13 @@ of the encoded instance, and the ignored bits multiply both sides of the majorit
 the same power of two. -/
 theorem PolyTimeReducible.mem_PP {β : Type} {encB : β ↪ List Bool} {A : Set α} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ PP encB) : A ∈ PP enc := by
-  rw [Complexity.mem_PP] at hB ⊢
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, W, hW, hWB⟩ := hB
-  have hlen : ComputableInPolyTime (fun a => q.eval (encB (f a)).length) enc encUnary :=
-    (ComputableInPolyTime.unary_eval q).comp
-      ((ComputableInPolyTime.encoding_length encB).comp hf)
-  obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
-  refine ⟨p,
-    andVerifier (fun a => q.eval (encB (f a)).length) (fun x => W (f x.1, x.2)) fun _ => true,
-    (computableInPolyTime_andVerifier hlen
-      (hW.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits))) (.const true)),
-    fun a => ?_⟩
-  obtain ⟨j, hj⟩ := Nat.exists_eq_add_of_le (hle a)
-  rw [hAB a, hWB (f a), hj, acceptCount_andVerifier_true, pow_add, ← mul_assoc]
-  exact (Nat.mul_lt_mul_right (by positivity)).symm
-
+  obtain ⟨P, V, hV, hle, hVW⟩ := exists_truncated_verifier hf q hW
+  refine ⟨P, V, hV, fun a => ?_⟩
+  rw [hAB a, hWB (f a), acceptCount_eq_two_pow_mul_of_take (hle a) (hVW a),
+    ← pow_sub_mul_pow 2 (hle a), mul_left_comm 2]
+  exact (Nat.mul_lt_mul_left (by positivity)).symm
 
 /-! ### `PP` through `#P` and `GapP` -/
 

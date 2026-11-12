@@ -128,10 +128,10 @@ example : ∃ k, (Set.univ : Set (List Bool)) ∈ ATIME encBits (· ^ k) :=
 /-- The classes absorb constant factors and additive constants in both directions. -/
 example : ATIME encBits (fun n => 3 * n + 5) = ATIME encBits id ∧
     ASPACE encBits (fun n => 2 * Nat.log2 n + 7) = ASPACE encBits Nat.log2 :=
-  ⟨subset_antisymm (ATIME_subset_of_le_mul_add 3 5 fun _ => le_rfl)
-      (ATIME_subset_of_le_mul_add 1 0 fun _ => by simp only [id]; omega),
-    subset_antisymm (ASPACE_subset_of_le_mul_add 2 7 fun _ => le_rfl)
-      (ASPACE_subset_of_le_mul_add 1 0 fun _ => by omega)⟩
+  ⟨subset_antisymm (ATIME_mono_of_le_mul_add (C := 5) fun _ => by simp only [id]; omega)
+      (ATIME_mono fun _ => by simp only [id]; omega),
+    subset_antisymm (ASPACE_mono_of_le_mul_add (C := 7) fun _ => by omega)
+      (ASPACE_mono fun _ => by omega)⟩
 
 /-- The existential machine wins its game of moves on every input. -/
 example (input : List Bool) : Alternation true (List.replicate (2 * 1) 1)

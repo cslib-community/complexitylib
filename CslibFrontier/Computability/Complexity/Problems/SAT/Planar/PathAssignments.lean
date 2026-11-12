@@ -93,14 +93,14 @@ theorem occurrencePath_crossing_straight {φ : CNF ℕ}
       StraightThrough (occurrencePath φ o) p (0, 1) := by
   have hsite := (mem_crossingSites φ p).1 hp
   let G := SAT.incidenceGraph φ
-  have hG : ∀ e ∈ G.2, e.1 ∈ G.1 ∧ e.2 ∈ G.1 :=
+  have hG : ∀ e ∈ G.edges, e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices :=
     fun _ he => SAT.incidenceGraph_endpoints he
-  have hloop : ∀ e ∈ G.2, e.1 ≠ e.2 := fun _ he => SAT.incidenceGraph_loopless he
+  have hloop : ∀ e ∈ G.edges, e.1 ≠ e.2 := fun _ he => SAT.incidenceGraph_loopless he
   have hdeg : ∀ v, G.incidenceVertices.count v ≤ 3 := SAT.incidenceGraph_degree_le hw hv
   have hi := occurrence_index_lt ho
   obtain ⟨j, hj, hji, hpj⟩ := List.exists_other_index_of_two_le_filter_contains (paths φ) p
     ((Cslib.Logic.PL.occurrences φ).idxOf o) hsite.2.2
-  have hj' : j < G.2.length := by
+  have hj' : j < G.edges.length := by
     simpa only [paths_eq_unitPaths, Graph.unitPaths_length] using hj
   have hpi' : p ∈ G.unitPath ((Cslib.Logic.PL.occurrences φ).idxOf o) := by
     simpa only [occurrencePath_eq_unitPath] using hpi
@@ -208,11 +208,11 @@ theorem dropLast_center_eq_source {φ : CNF ℕ} {o : Occurrence ℕ}
     p = Layout.center (φ.distinctVars.idxOf o.2.2.1) := by
   obtain ⟨w, hw, rfl⟩ := List.mem_map.mp hc
   have hw' := List.mem_range.mp hw
-  have hwmem : w ∈ (SAT.incidenceGraph φ).1 := by
+  have hwmem : w ∈ (SAT.incidenceGraph φ).vertices := by
     apply List.mem_range.mpr
     simpa only [SAT.incidenceGraph, List.length_range] using hw'
   have hi := List.idxOf_lt_length_of_mem hwmem
-  have hidx : (SAT.incidenceGraph φ).1.idxOf w = w := by
+  have hidx : (SAT.incidenceGraph φ).vertices.idxOf w = w := by
     simpa only [SAT.incidenceGraph, List.getElem_range] using List.getElem_idxOf hi
   have h := (Graph.unitPath_declared_center_iff (SAT.incidenceGraph φ)
     (fun _ he => SAT.incidenceGraph_endpoints he)

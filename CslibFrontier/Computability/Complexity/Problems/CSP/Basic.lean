@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.PolyTime.CSP.Boolean
 public import CslibFrontier.Computability.Complexity.Reduction
 import CslibFrontier.Computability.Complexity.Classes.NP.Witness
+import CslibFrontier.Computability.Complexity.Reduction.Guard
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -69,16 +70,10 @@ theorem polyTimeReducible_of_guard [Finite Rel] {β : Type} {encB : β ↪ List 
     (hcompile : ComputableInPolyTime compile (encCSP encRel encNat) encB)
     (hcorrect : ∀ F, F.WellFormed arity → (F.Satisfiable sem ↔ compile F ∈ B))
     (hreject : reject ∉ B) :
-    PolyTimeReducible (encCSP encRel encNat) encB (CSPSAT arity sem) B := by
-  refine ⟨fun F => if F.validArity arity then compile F else reject,
-    (CSP.computableInPolyTime_validArity encRel arity).ite hcompile
-      (ComputableInPolyTime.const reject), fun F => ?_⟩
-  dsimp only
-  by_cases hF : F.WellFormed arity
-  · rw [ite_eq_left ((CSP.validArity_eq_true_iff arity F).mpr hF), mem_iff, and_iff_right hF]
-    exact hcorrect F hF
-  · rw [ite_eq_right (mt (CSP.validArity_eq_true_iff arity F).mp hF), mem_iff]
-    exact iff_of_false (fun h => hF h.1) hreject
+    PolyTimeReducible (encCSP encRel encNat) encB (CSPSAT arity sem) B :=
+  .of_guard reject (CSP.computableInPolyTime_validArity encRel arity) hcompile hreject fun F => by
+    rw [mem_iff, CSP.validArity_eq_true_iff]
+    exact and_congr_right (hcorrect F)
 
 /-- Every fixed finite Boolean constraint language has a native NP satisfiability problem,
 under framed list/pair encodings with binary variable indices. -/

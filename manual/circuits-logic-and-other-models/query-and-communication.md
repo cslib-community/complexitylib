@@ -117,11 +117,34 @@ The [projected-rectangle client](../../CslibFrontierTests/CommunicationOneOutRec
 checks actual equality computation at depth two, singleton/empty sampling edges and a
 nonempty light-atom instance. Run
 `scripts/build.sh CslibFrontierTests.CommunicationOneOutRectangle` from the repository root.
-These facts do not yet select a coordinate and background with a large enough forcing rectangle.
 
-This is infrastructure and the upper-bound portion of submission 865. The large solvable
-rectangle bound, minimax/majority construction, headline lower bounds and later formula/core
-results remain open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
+[OneOutLargeRectangle](../../CslibFrontier/Computability/Communication/OneOutLargeRectangle.lean)
+proves the paper's Lemma 5.2. `exists_large_solvable_rectangle` takes a protocol `p`
+for `OneOut.Relation R`, with `R` total on finite types, and distributions `μ` and `ν`.
+It returns sets `A'`, `B'` and a protocol of depth at most
+`max p.depth (Nat.clog 2 (Fintype.card Z))` that solves `R` on `A' × B'`, with
+`μ A' + ν B' ≥ 1 + 1/k²` in real probability units. The theorem holds for every such `p`,
+not only an optimal one. If an atom has mass at least `1/k²`, the other player announces a
+valid answer with `Protocol.exists_run_eq_left` or `exists_run_eq_right` from
+[Announce](../../CslibFrontier/Computability/Communication/Announce.lean).
+Otherwise `hybridGoal p j x y` is the source's leaf set `L_j`, with coordinates numbered
+from `0`, and `hybrid μ ν p j` is the probability that Alice can force it.
+`exists_hybrid_step` finds a step gaining `1/k²`. `hybrid_succ_sub_hybrid` writes that step
+as an average of forcing-rectangle advantages over the background `stepBackground`.
+`exists_large_forcing_rectangle` then fixes a background at least as good as the average.
+The averaging steps are general probability facts.
+[Product.Resample](../../CslibFrontier/Probability/Product/Resample.lean) redraws one
+coordinate of a product (`sum_pi_mul_update`), and
+[Minimax](../../CslibFrontier/Probability/Minimax.lean) finds a possible outcome at least
+the mean (`exists_mem_support_sum_mul_le`). The
+[large-rectangle client](../../CslibFrontierTests/CommunicationOneOutLargeRectangle.lean)
+applies the lemma to equality on two distinct bits, a heavy-atom case. It also applies the
+light-atom case to uniform inputs on `Fin 4` with `k = 2`, at the boundary mass `1/4`. Run
+`scripts/build.sh CslibFrontierTests.CommunicationOneOutLargeRectangle` to check it.
+
+This is infrastructure, the upper-bound portion and Lemma 5.2 of submission 865. The
+minimax/majority construction, headline lower bounds and later formula/core results remain
+open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
 
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).
 

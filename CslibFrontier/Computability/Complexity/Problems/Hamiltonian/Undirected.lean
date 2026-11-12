@@ -73,28 +73,28 @@ namespace Graph
 /-- Vertex `r` of the gadget of `v` in `Graph.split G`: `r = 0` is `in(v)`, `r = 1` is `mid(v)`
 and `r = 2` is `out(v)`. Vertices are numbered by their first occurrence in `G.1`, so an
 undeclared vertex gets the number `G.1.length`, which no declared vertex has. -/
-def splitVertex (G : Graph) (v r : ℕ) : ℕ := Nat.pair (G.1.idxOf v) r
+def splitVertex (G : Graph) (v r : ℕ) : ℕ := Nat.pair (G.vertices.idxOf v) r
 
 /-- The vertex-splitting graph of a directed graph `G`: every declared vertex `v` becomes a path
 `in(v) - mid(v) - out(v)`, and every arc `(u, v)` becomes an edge `out(u) - in(v)`. -/
 def split (G : Graph) : Graph :=
-  (G.1.flatMap fun v => [G.splitVertex v 0, G.splitVertex v 1, G.splitVertex v 2],
-    G.1.flatMap (fun v => [(G.splitVertex v 0, G.splitVertex v 1),
+  ⟨G.vertices.flatMap fun v => [G.splitVertex v 0, G.splitVertex v 1, G.splitVertex v 2],
+    G.vertices.flatMap (fun v => [(G.splitVertex v 0, G.splitVertex v 1),
       (G.splitVertex v 1, G.splitVertex v 2)]) ++
-    G.2.map fun e => (G.splitVertex e.1 2, G.splitVertex e.2 0))
+    G.edges.map fun e => (G.splitVertex e.1 2, G.splitVertex e.2 0)⟩
 
 /-- Gadget vertices are equal exactly when their vertices have the same first occurrence and their
 positions in the gadget agree. -/
 theorem splitVertex_eq_splitVertex_iff {G : Graph} {u v r r' : ℕ} :
-    G.splitVertex u r = G.splitVertex v r' ↔ G.1.idxOf u = G.1.idxOf v ∧ r = r' :=
+    G.splitVertex u r = G.splitVertex v r' ↔ G.vertices.idxOf u = G.vertices.idxOf v ∧ r = r' :=
   Nat.pair_eq_pair
 
-private theorem eq_of_idxOf_eq {G : Graph} {u v : ℕ} (hv : v ∈ G.1)
-    (h : G.1.idxOf u = G.1.idxOf v) : u = v :=
+private theorem eq_of_idxOf_eq {G : Graph} {u v : ℕ} (hv : v ∈ G.vertices)
+    (h : G.vertices.idxOf u = G.vertices.idxOf v) : u = v :=
   ((List.idxOf_inj hv).1 h.symm).symm
 
 /-- Gadget vertices of a declared vertex determine the vertex and the position in the gadget. -/
-theorem splitVertex_eq_splitVertex_iff_of_mem {G : Graph} {u v r r' : ℕ} (hv : v ∈ G.1) :
+theorem splitVertex_eq_splitVertex_iff_of_mem {G : Graph} {u v r r' : ℕ} (hv : v ∈ G.vertices) :
     G.splitVertex u r = G.splitVertex v r' ↔ u = v ∧ r = r' := by
   rw [splitVertex_eq_splitVertex_iff]
   exact ⟨fun h => ⟨eq_of_idxOf_eq hv h.1, h.2⟩, fun h => ⟨h.1 ▸ rfl, h.2⟩⟩
@@ -111,22 +111,23 @@ private theorem mem_triple {G : Graph} {v x : ℕ} :
     exacts [Or.inl rfl, Or.inr (Or.inl rfl), Or.inr (Or.inr rfl)]
 
 /-- The split graph lists three vertices for each declared vertex. -/
-theorem length_split_fst (G : Graph) : G.split.1.length = 3 * G.1.length := by
+theorem length_split_fst (G : Graph) : G.split.vertices.length = 3 * G.vertices.length := by
   simp [split, List.length_flatMap, mul_comm]
 
 /-- The split graph lists two edges for each declared vertex and one for each arc. -/
-theorem length_split_snd (G : Graph) : G.split.2.length = 2 * G.1.length + G.2.length := by
+theorem length_split_snd (G : Graph) :
+    G.split.edges.length = 2 * G.vertices.length + G.edges.length := by
   simp [split, List.length_flatMap, mul_comm]
 
 /-- The declared vertices of the split graph are the gadget vertices of declared vertices. -/
 theorem mem_split_fst_iff {G : Graph} {x : ℕ} :
-    x ∈ G.split.1 ↔ ∃ v ∈ G.1, ∃ r < 3, x = G.splitVertex v r := by
+    x ∈ G.split.vertices ↔ ∃ v ∈ G.vertices, ∃ r < 3, x = G.splitVertex v r := by
   simp only [split, List.mem_flatMap, mem_triple]
 
 /-- A gadget vertex is a declared vertex of the split graph exactly when its vertex is declared
 and its position is `0`, `1` or `2`. -/
 theorem splitVertex_mem_split_fst_iff {G : Graph} {v r : ℕ} :
-    G.splitVertex v r ∈ G.split.1 ↔ v ∈ G.1 ∧ r < 3 := by
+    G.splitVertex v r ∈ G.split.vertices ↔ v ∈ G.vertices ∧ r < 3 := by
   rw [mem_split_fst_iff]
   constructor
   · rintro ⟨w, hw, r', hr', h⟩
@@ -138,33 +139,33 @@ theorem splitVertex_mem_split_fst_iff {G : Graph} {v r : ℕ} :
 /-! ### Adjacency in the split graph -/
 
 private theorem mem_split_snd_iff {G : Graph} {a b : ℕ} :
-    (a, b) ∈ G.split.2 ↔ (∃ v ∈ G.1, (a = G.splitVertex v 0 ∧ b = G.splitVertex v 1) ∨
+    (a, b) ∈ G.split.edges ↔ (∃ v ∈ G.vertices, (a = G.splitVertex v 0 ∧ b = G.splitVertex v 1) ∨
       (a = G.splitVertex v 1 ∧ b = G.splitVertex v 2)) ∨
-      ∃ e ∈ G.2, a = G.splitVertex e.1 2 ∧ b = G.splitVertex e.2 0 := by
+      ∃ e ∈ G.edges, a = G.splitVertex e.1 2 ∧ b = G.splitVertex e.2 0 := by
   simp only [split, List.mem_append, List.mem_flatMap, List.mem_cons, List.not_mem_nil, or_false,
     List.mem_map, Prod.mk.injEq]
   refine or_congr Iff.rfl (exists_congr fun e => and_congr_right fun _ => ?_)
   exact ⟨fun ⟨h₁, h₂⟩ => ⟨h₁.symm, h₂.symm⟩, fun ⟨h₁, h₂⟩ => ⟨h₁.symm, h₂.symm⟩⟩
 
 private theorem adj_split_iff {G : Graph} {a b : ℕ} :
-    G.split.toSimpleGraph.Adj a b ↔ a ≠ b ∧ ((a, b) ∈ G.split.2 ∨ (b, a) ∈ G.split.2) :=
+    G.split.toSimpleGraph.Adj a b ↔ a ≠ b ∧ ((a, b) ∈ G.split.edges ∨ (b, a) ∈ G.split.edges) :=
   toSimpleGraph_adj
 
-private theorem adj_in_mid {G : Graph} {v : ℕ} (hv : v ∈ G.1) :
+private theorem adj_in_mid {G : Graph} {v : ℕ} (hv : v ∈ G.vertices) :
     G.split.toSimpleGraph.Adj (G.splitVertex v 0) (G.splitVertex v 1) := by
   refine adj_split_iff.2 ⟨fun h => ?_, Or.inl (mem_split_snd_iff.2 (Or.inl ⟨v, hv, ?_⟩))⟩
   · simp [splitVertex_eq_splitVertex_iff] at h
   · exact Or.inl ⟨rfl, rfl⟩
 
-private theorem adj_mid_out {G : Graph} {v : ℕ} (hv : v ∈ G.1) :
+private theorem adj_mid_out {G : Graph} {v : ℕ} (hv : v ∈ G.vertices) :
     G.split.toSimpleGraph.Adj (G.splitVertex v 1) (G.splitVertex v 2) := by
   refine adj_split_iff.2 ⟨fun h => ?_, Or.inl (mem_split_snd_iff.2 (Or.inl ⟨v, hv, ?_⟩))⟩
   · simp [splitVertex_eq_splitVertex_iff] at h
   · exact Or.inr ⟨rfl, rfl⟩
 
 /-- Between declared vertices, an exit is adjacent to an entry exactly along an arc. -/
-private theorem adj_out_in_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) :
-    G.split.toSimpleGraph.Adj (G.splitVertex u 2) (G.splitVertex v 0) ↔ (u, v) ∈ G.2 := by
+private theorem adj_out_in_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.vertices) (hv : v ∈ G.vertices) :
+    G.split.toSimpleGraph.Adj (G.splitVertex u 2) (G.splitVertex v 0) ↔ (u, v) ∈ G.edges := by
   rw [adj_split_iff, mem_split_snd_iff, mem_split_snd_iff]
   simp only [splitVertex_eq_splitVertex_iff]
   constructor
@@ -199,9 +200,9 @@ private theorem eq_of_adj_mid {G : Graph} {v x : ℕ}
 
 /-- An exit vertex of a declared vertex is adjacent only to its middle vertex and to entries of
 its out-neighbours. -/
-private theorem eq_of_adj_out {G : Graph} {v x : ℕ} (hv : v ∈ G.1)
+private theorem eq_of_adj_out {G : Graph} {v x : ℕ} (hv : v ∈ G.vertices)
     (h : G.split.toSimpleGraph.Adj (G.splitVertex v 2) x) :
-    x = G.splitVertex v 1 ∨ ∃ w, (v, w) ∈ G.2 ∧ x = G.splitVertex w 0 := by
+    x = G.splitVertex v 1 ∨ ∃ w, (v, w) ∈ G.edges ∧ x = G.splitVertex w 0 := by
   rw [adj_split_iff, mem_split_snd_iff, mem_split_snd_iff] at h
   rcases h with ⟨-, (⟨w, -, ⟨h₁, rfl⟩ | ⟨h₁, rfl⟩⟩ | ⟨e, he, h₁, rfl⟩) |
     (⟨w, -, ⟨rfl, h₁⟩ | ⟨rfl, h₁⟩⟩ | ⟨e, -, rfl, h₁⟩)⟩ <;>
@@ -221,7 +222,7 @@ private theorem eq_of_adj_out {G : Graph} {v x : ℕ} (hv : v ∈ G.1)
 private def gadgets (G : Graph) (p : List ℕ) : List ℕ :=
   p.flatMap fun v => [G.splitVertex v 0, G.splitVertex v 1, G.splitVertex v 2]
 
-private theorem split_fst (G : Graph) : G.split.1 = gadgets G G.1 := rfl
+private theorem split_fst (G : Graph) : G.split.vertices = gadgets G G.vertices := rfl
 
 private theorem gadgets_nil (G : Graph) : gadgets G [] = [] := rfl
 
@@ -257,7 +258,7 @@ private theorem getLast?_gadgets (G : Graph) (p : List ℕ) :
     simp
 
 /-- The gadgets of distinct declared vertices are disjoint. -/
-private theorem nodup_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, v ∈ G.1) :
+private theorem nodup_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, v ∈ G.vertices) :
     (gadgets G p).Nodup ↔ p.Nodup := by
   rw [gadgets, List.nodup_flatMap]
   constructor
@@ -274,12 +275,12 @@ private theorem nodup_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, 
         exact ((splitVertex_eq_splitVertex_iff_of_mem (hp b hb)).1 h).1
 
 private theorem mem_gadgets_iff_of_forall_mem_iff {G : Graph} {p : List ℕ}
-    (hp : ∀ v, v ∈ p ↔ v ∈ G.1) (x : ℕ) : x ∈ gadgets G p ↔ x ∈ G.split.1 := by
+    (hp : ∀ v, v ∈ p ↔ v ∈ G.vertices) (x : ℕ) : x ∈ gadgets G p ↔ x ∈ G.split.vertices := by
   simp only [split_fst, mem_gadgets, hp]
 
 private theorem forall_mem_iff_of_mem_gadgets_iff {G : Graph} {p : List ℕ}
-    (hp : ∀ v ∈ p, v ∈ G.1) (hcov : ∀ x, x ∈ gadgets G p ↔ x ∈ G.split.1) (v : ℕ) :
-    v ∈ p ↔ v ∈ G.1 := by
+    (hp : ∀ v ∈ p, v ∈ G.vertices) (hcov : ∀ x, x ∈ gadgets G p ↔ x ∈ G.split.vertices) (v : ℕ) :
+    v ∈ p ↔ v ∈ G.vertices := by
   refine ⟨hp v, fun hv => ?_⟩
   obtain ⟨w, hw, r, -, h⟩ :=
     mem_gadgets.1 ((hcov _).2 (splitVertex_mem_split_fst_iff.2 ⟨hv, (by omega : 1 < 3)⟩))
@@ -287,19 +288,19 @@ private theorem forall_mem_iff_of_mem_gadgets_iff {G : Graph} {p : List ℕ}
   exact hw
 
 /-- Along declared vertices, a chain of gadgets is a directed walk. -/
-private theorem isChain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, v ∈ G.1) :
-    (gadgets G p).IsChain G.split.toSimpleGraph.Adj ↔ p.IsChain fun u v => (u, v) ∈ G.2 := by
+private theorem isChain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, v ∈ G.vertices) :
+    (gadgets G p).IsChain G.split.toSimpleGraph.Adj ↔ p.IsChain fun u v => (u, v) ∈ G.edges := by
   induction p with
   | nil => simp [gadgets_nil]
   | cons a p ih =>
     have ha := hp a (List.mem_cons_self ..)
-    have hp' : ∀ v ∈ p, v ∈ G.1 := fun v hv => hp v (List.mem_cons_of_mem _ hv)
+    have hp' : ∀ v ∈ p, v ∈ G.vertices := fun v hv => hp v (List.mem_cons_of_mem _ hv)
     have h₃ : [G.splitVertex a 0, G.splitVertex a 1, G.splitVertex a 2].IsChain
         G.split.toSimpleGraph.Adj :=
       List.isChain_cons_cons.2 ⟨adj_in_mid ha, List.isChain_pair.2 (adj_mid_out ha)⟩
     have hhead : (∀ x ∈ [G.splitVertex a 0, G.splitVertex a 1, G.splitVertex a 2].getLast?,
         ∀ y ∈ p.head?.map (G.splitVertex · 0), G.split.toSimpleGraph.Adj x y) ↔
-          ∀ y ∈ p.head?, (a, y) ∈ G.2 := by
+          ∀ y ∈ p.head?, (a, y) ∈ G.edges := by
       cases p with
       | nil => simp
       | cons b p => simp [adj_out_in_iff ha (hp' b (List.mem_cons_self ..))]
@@ -310,14 +311,14 @@ private theorem isChain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p
     exact ⟨fun ⟨_, h₁, h₂⟩ => ⟨h₂, h₁⟩, fun ⟨h₁, h₂⟩ => ⟨h₃, h₂, h₁⟩⟩
 
 /-- Along declared vertices, a closed chain of gadgets is a closed directed walk. -/
-private theorem chain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, v ∈ G.1) :
+private theorem chain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, v ∈ G.vertices) :
     (gadgets G p : Cycle ℕ).Chain G.split.toSimpleGraph.Adj ↔
-      (p : Cycle ℕ).Chain fun u v => (u, v) ∈ G.2 := by
+      (p : Cycle ℕ).Chain fun u v => (u, v) ∈ G.edges := by
   cases p with
   | nil => rfl
   | cons a p =>
     have ha := hp a (List.mem_cons_self ..)
-    have hp' : ∀ v ∈ a :: (p ++ [a]), v ∈ G.1 := by grind
+    have hp' : ∀ v ∈ a :: (p ++ [a]), v ∈ G.vertices := by grind
     have e : gadgets G (a :: (p ++ [a])) = (G.splitVertex a 0 :: G.splitVertex a 1 ::
         G.splitVertex a 2 :: (gadgets G p ++ [G.splitVertex a 0])) ++
           [G.splitVertex a 1, G.splitVertex a 2] := by
@@ -333,10 +334,10 @@ private theorem chain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, 
 entry, does not end at a middle vertex, and contains the middle vertex of each entry it contains,
 is a sequence of gadgets. -/
 private theorem exists_eq_gadgets {G : Graph} (n : ℕ) : ∀ (l : List ℕ) (v : ℕ), l.length ≤ n →
-    l.IsChain G.split.toSimpleGraph.Adj → l.Nodup → (∀ x ∈ l, x ∈ G.split.1) →
+    l.IsChain G.split.toSimpleGraph.Adj → l.Nodup → (∀ x ∈ l, x ∈ G.split.vertices) →
     l.head? = some (G.splitVertex v 0) → (∀ u, l.getLast? ≠ some (G.splitVertex u 1)) →
-    (∀ u ∈ G.1, G.splitVertex u 0 ∈ l → G.splitVertex u 1 ∈ l) →
-    ∃ p, (∀ u ∈ p, u ∈ G.1) ∧ l = gadgets G p := by
+    (∀ u ∈ G.vertices, G.splitVertex u 0 ∈ l → G.splitVertex u 1 ∈ l) →
+    ∃ p, (∀ u ∈ p, u ∈ G.vertices) ∧ l = gadgets G p := by
   induction n with
   | zero =>
     intro l v hlen _ _ _ hhead
@@ -345,7 +346,8 @@ private theorem exists_eq_gadgets {G : Graph} (n : ℕ) : ∀ (l : List ℕ) (v 
   | succ n ih =>
     intro l v hlen hch hnd hdecl hhead hlast hmid
     obtain ⟨l₁, rfl⟩ := List.head?_eq_some_iff.1 hhead
-    have hv : v ∈ G.1 := (splitVertex_mem_split_fst_iff.1 (hdecl _ (List.mem_cons_self ..))).1
+    have hv : v ∈ G.vertices :=
+      (splitVertex_mem_split_fst_iff.1 (hdecl _ (List.mem_cons_self ..))).1
     have hnd₀ : G.splitVertex v 0 ∉ l₁ := (List.nodup_cons.1 hnd).1
     have hnd₁ : l₁.Nodup := (List.nodup_cons.1 hnd).2
     have hch₁ : l₁.IsChain G.split.toSimpleGraph.Adj := hch.tail
@@ -381,7 +383,7 @@ private theorem exists_eq_gadgets {G : Graph} (n : ℕ) : ∀ (l : List ℕ) (v 
     -- The vertex after `out(v)` is the entry of an out-neighbour `w` of `v`.
     rcases eq_of_adj_out hv (List.isChain_cons_cons.1 hch₁.tail).1 with rfl | ⟨w, -, rfl⟩
     · simp at hnd₁
-    have hmid' : ∀ u ∈ G.1, G.splitVertex u 0 ∈ G.splitVertex w 0 :: l₃ →
+    have hmid' : ∀ u ∈ G.vertices, G.splitVertex u 0 ∈ G.splitVertex w 0 :: l₃ →
         G.splitVertex u 1 ∈ G.splitVertex w 0 :: l₃ := by
       intro u hu hu0
       rcases List.mem_append.1 (show G.splitVertex u 1 ∈
@@ -438,7 +440,7 @@ theorem split_mem_HamPath_iff (G : Graph) (s t : ℕ) :
       rw [hb, ((splitVertex_eq_splitVertex_iff_of_mem (hp b (List.mem_of_getLast? hb))).1
         h.symm).1]
   · rintro ⟨p, hnd, hcov, hs, ht, hch⟩
-    have hp : ∀ v ∈ p, v ∈ G.1 := fun v hv => (hcov v).1 hv
+    have hp : ∀ v ∈ p, v ∈ G.vertices := fun v hv => (hcov v).1 hv
     exact ⟨gadgets G p, (nodup_gadgets_iff hp).2 hnd, mem_gadgets_iff_of_forall_mem_iff hcov,
       by rw [head?_gadgets, hs]; rfl, by rw [getLast?_gadgets, ht]; rfl,
       (isChain_gadgets_iff hp).2 hch⟩
@@ -456,7 +458,7 @@ theorem split_mem_HamCycle_iff (G : Graph) : G.split ∈ HamCycle ↔ G ∈ DirH
     -- Rotations and reversals preserve the hypotheses.
     have key : ∀ L : List ℕ, L ~r (A ++ G.splitVertex u 0 :: B) ∨
         L ~r (A ++ G.splitVertex u 0 :: B).reverse →
-        L.Nodup ∧ (∀ x, x ∈ L ↔ x ∈ G.split.1) ∧ 3 ≤ L.length ∧
+        L.Nodup ∧ (∀ x, x ∈ L ↔ x ∈ G.split.vertices) ∧ 3 ≤ L.length ∧
           (L : Cycle ℕ).Chain G.split.toSimpleGraph.Adj := by
       rintro L (h | h)
       · exact ⟨h.nodup_iff.2 hnd, fun x => h.mem_iff.trans (hcov x), h.perm.length_eq ▸ hlen,
@@ -516,7 +518,7 @@ theorem split_mem_HamCycle_iff (G : Graph) : G.split ∈ HamCycle ↔ G ∈ DirH
     rintro rfl
     simp [gadgets_nil] at hL
   · rintro ⟨p, hnd, hcov, hne, hch⟩
-    have hp : ∀ v ∈ p, v ∈ G.1 := fun v hv => (hcov v).1 hv
+    have hp : ∀ v ∈ p, v ∈ G.vertices := fun v hv => (hcov v).1 hv
     refine ⟨gadgets G p, (nodup_gadgets_iff hp).2 hnd, mem_gadgets_iff_of_forall_mem_iff hcov, ?_,
       (chain_gadgets_iff hp).2 hch⟩
     rw [length_gadgets]
@@ -530,7 +532,7 @@ paired with the unary position in the gadget, and converted to binary. -/
 private theorem computableInPolyTime_splitVertex :
     ComputableInPolyTime (fun p : Graph × ℕ × ℕ => p.1.splitVertex p.2.1 p.2.2)
       (encPair encGraph (encPair encNat encUnary)) encNat := by
-  unfold splitVertex encGraph
+  unfold splitVertex
   exact unary_to_binary.comp (by fun_prop)
 
 /-- Splitting the vertices of a graph is polynomial-time. -/
@@ -538,8 +540,7 @@ private theorem computableInPolyTime_splitVertex :
 theorem computableInPolyTime_split : ComputableInPolyTime split encGraph encGraph := by
   have hsv := computableInPolyTime_splitVertex
   unfold split
-  unfold encGraph at hsv ⊢
-  fun_prop
+  exact encGraph_mk_polyTime (by fun_prop) (by fun_prop)
 
 end Graph
 
