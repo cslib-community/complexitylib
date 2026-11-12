@@ -26,6 +26,7 @@ import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
+import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
@@ -620,6 +621,31 @@ register_result "braverman" where
     coordinates) once k ≥ (64q)^((2d + 3)(d + 7) + 1). Our own constants and exponent, weaker \
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
+
+register_result "formal-complexity-measure-leaf-bound" where
+  title := "Formal complexity measures lower-bound constant-free formula leaf size"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 22.1",
+      locator := "Web draft 2007-01-08, §22.1, printed p. 438; PDF p. 454" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.FormalComplexityMeasure.le_leafSize]
+  scope := "Natural-valued measures subadditive under AND/OR and at most one on each literal. \
+    Constant-free De Morgan formulas, with arbitrary negations; input-leaf size. \
+    No complement invariance. Constants are excluded because their library leaf cost is zero."
+
+register_result "formal-complexity-measure-quarter-density" where
+  title := "A large formal complexity measure is large on a quarter of truth tables"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 22.2",
+      locator := "Web draft 2007-01-08, §22.1, printed p. 438; PDF p. 454" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.FormalComplexityMeasure.card_le_four_mul_card]
+  scope := "For any fixed arity including zero, if one function has measure at least c, \
+    at least one quarter of all truth tables have measure at least c/4. \
+    Natural-number cardinalities with denominators cleared; no computational claim. \
+    Theorem 22.3's stronger near-total-density endpoint is not included."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
