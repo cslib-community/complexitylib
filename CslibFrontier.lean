@@ -2309,6 +2309,7 @@ public import CslibFrontier.Computability.Complexity.HardnessEncoding.PolyTime
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.Program
 public import CslibFrontier.Computability.Complexity.ImmermanVardi
 public import CslibFrontier.Computability.Complexity.ImmermanVardi.Input
+public import CslibFrontier.Computability.Complexity.ImmermanVardi.Machine
 public import CslibFrontier.Computability.Complexity.ImmermanVardi.Tableau.Acceptance
 public import CslibFrontier.Computability.Complexity.ImmermanVardi.Tableau.Correct
 public import CslibFrontier.Computability.Complexity.ImmermanVardi.Tableau.Definability
@@ -6057,6 +6058,9 @@ public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
 public import CslibFrontier.Logics.FirstOrder.Encoding
 public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
+public import CslibFrontier.Logics.FirstOrder.Encoding.PolyTime
+public import CslibFrontier.Logics.FirstOrder.Encoding.Power
+public import CslibFrontier.Logics.FirstOrder.Encoding.PowerBound
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.BijectiveGame
