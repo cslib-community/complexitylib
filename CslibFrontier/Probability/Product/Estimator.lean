@@ -151,13 +151,6 @@ theorem empiricalFrequency_eq {a : ℕ} (A : Set S) [DecidablePred (· ∈ A)] (
 
 variable [Fintype S]
 
-/-- The probability of `A` as the mean of its indicator. -/
-theorem toOuterMeasure_toReal_eq_sum_ite (μ : PMF S) (A : Set S) [DecidablePred (· ∈ A)] :
-    (μ.toOuterMeasure A).toReal = ∑ s, (μ s).toReal * if s ∈ A then (1 : ℝ) else 0 := by
-  rw [toOuterMeasure_apply_toReal]
-  refine Finset.sum_congr rfl fun s _ => ?_
-  split_ifs <;> simp
-
 /-- The empirical frequency of `A` among `a > 0` i.i.d. samples is an unbiased estimator of the
 probability of `A`. -/
 theorem sum_pi_mul_empiricalFrequency (μ : PMF S) (A : Set S) [DecidablePred (· ∈ A)] {a : ℕ}
