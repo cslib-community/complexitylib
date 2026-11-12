@@ -59,11 +59,14 @@ explainability to rerandomization privacy under explicit algebraic invertibility
 garbling *equals* the rerandomization-privacy advantage of `explainGbReduction`
 (`explainGbAdvantage_eq`). The advantage against explainable rerandomization is at most the sum of
 the rerandomization-privacy advantages of two reductions (`explainRerandAdvantage_le`), through one
-intermediate hybrid. Both reductions use the inverse data of `RandomnessComposition.Invertible`
-(introduced for this development): the garbling explanation is a bijection in the garbling coins
-with an explicit inverse, the rerandomization explanation is a bijection in its first argument, and
-some rerandomization coins undo each rerandomization step. The rerandomization bound also assumes
-that the label action respects composition of permutations.
+intermediate hybrid: the right reduction run on the ideal rerandomization-privacy view, which has
+the same law as the left reduction on that view. Running the right reduction on the real view is
+the ideal explainable-rerandomization experiment, by definition
+(`rerandRealExperiment_explainRerandReductionRight`). Both reductions use the inverse data of
+`RandomnessComposition.Invertible` (introduced for this development): the garbling explanation is
+a bijection in the garbling coins with an explicit inverse, the rerandomization explanation is a
+bijection in its first argument, and some rerandomization coins undo each rerandomization step.
+The rerandomization bound also assumes that the label action respects composition of permutations.
 
 When the explanation maps are bijective in their *second* argument, rerandomization privacy and the
 stronger fixed-coin explainability variants (`explainGbFixedRealView`,
@@ -137,7 +140,8 @@ running time is not tracked, so no asymptotic security or efficiency of the redu
   algebraic lemmas.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandCorrect_of_correct`.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbAdvantage_eq`.
-* `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandAdvantage_le`.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandAdvantage_le`, with
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandRealExperiment_explainRerandReductionRight`.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_rerandRealView`,
   `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_explainGbFixedRealView`,
   `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_explainRerandFixedRealView`: zero error
@@ -653,24 +657,20 @@ theorem explainGbAdvantage_eq (rc : G.RandomnessComposition) (hinv : rc.Invertib
     exact PMF.bind_comm _ _ _
   rw [explainGbAdvantage, rerandAdvantage, hreal, hideal]
 
-variable (G) in
-/-- The intermediate hybrid of the explainable-rerandomization argument: the encoding and the
-first rerandomized circuit come from an independent fresh garbling. -/
-private noncomputable def explainRerandHybridExperiment (f : F) (x : Fin m → Bool)
-    (D : G.ExplainRerandView → ProbComp Bool) : ProbComp Bool := do
-  let r ← ProbComp.uniform G.Coins
-  let t ← ProbComp.uniform G.Coins
-  let s ← ProbComp.uniform G.RerandCoins
-  let g := G.garble f r
-  let h := G.garble f t
-  D {
-    base := g.circuit, input := G.encode h.labels x, rerandomized := h.circuit,
-    candidate := (G.rerand g.circuit s).circuit, coins := s }
+/-- Running the right reduction on the real rerandomization-privacy view is the ideal
+explainable-rerandomization experiment. -/
+@[simp] theorem rerandRealExperiment_explainRerandReductionRight (f : F) (x : Fin m → Bool)
+    (D : G.ExplainRerandView → ProbComp Bool) :
+    G.rerandRealExperiment f x (G.explainRerandReductionRight f D) =
+      G.explainRerandIdealExperiment f x D :=
+  rfl
 
 /-- **Explainable rerandomization from rerandomization privacy.** If the label action respects
 composition of permutations, then for every distinguisher `D` the explainable-rerandomization
 advantage of `D` is at most the sum of the rerandomization-privacy advantages of
-`explainRerandReductionLeft hinv f D` and `explainRerandReductionRight f D`. -/
+`explainRerandReductionLeft hinv f D` and `explainRerandReductionRight f D`. The intermediate
+hybrid is the right reduction on the ideal view, which equals the left reduction on the ideal
+view. -/
 theorem explainRerandAdvantage_le (rc : G.RandomnessComposition) (hinv : rc.Invertible)
     (hcomp : ∀ (p q : G.Perm) (L : G.Label), G.act (G.comp p q) L = G.act q (G.act p L))
     (f : F) (x : Fin m → Bool) (D : G.ExplainRerandView → ProbComp Bool) :
@@ -690,34 +690,24 @@ theorem explainRerandAdvantage_le (rc : G.RandomnessComposition) (hinv : rc.Inve
     dsimp only [rerandTwice]
     rw [hinv.rerand_invRerand, encode_permEncoding, permInput_comp hcomp,
       hinv.permInput_invRerand]
-  have hhyb : ProbComp.eval (explainRerandHybridExperiment G f x D) =
+  have hhyb : ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionRight f D)) =
       ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionLeft hinv f D)) := by
-    simp only [explainRerandHybridExperiment, rerandIdealExperiment, rerandIdealView,
+    simp only [rerandIdealExperiment, rerandIdealView, explainRerandReductionRight,
       explainRerandReductionLeft, bind_assoc, pure_bind, ProbComp.eval_bind,
       ProbComp.eval_uniform]
     refine bind_bind_bind_uniform_reindex_fst (fun s r => rc.explainGb r s)
       hinv.explainGb_bijective fun r t s => ?_
     rw [hinv.unexplainGb_explainGb]
-  have hhyb' : ProbComp.eval (explainRerandHybridExperiment G f x D) =
-      ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionRight f D)) := by
-    simp only [explainRerandHybridExperiment, rerandIdealExperiment, rerandIdealView,
-      explainRerandReductionRight, bind_assoc, pure_bind, ProbComp.eval_bind,
-      ProbComp.eval_uniform]
-  have hideal : ProbComp.eval (G.explainRerandIdealExperiment f x D) =
-      ProbComp.eval (G.rerandRealExperiment f x (G.explainRerandReductionRight f D)) := by
-    simp only [explainRerandIdealExperiment, explainRerandIdealView, explainRerandFixedIdealView,
-      rerandRealExperiment, rerandRealView, explainRerandReductionRight, bind_assoc, pure_bind,
-      ProbComp.eval_bind, ProbComp.eval_uniform]
   calc G.explainRerandAdvantage rc f x D
       ≤ Game.advantage (ProbComp.eval (G.explainRerandRealExperiment rc f x D))
-          (ProbComp.eval (explainRerandHybridExperiment G f x D)) +
-        Game.advantage (ProbComp.eval (explainRerandHybridExperiment G f x D))
+          (ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionRight f D))) +
+        Game.advantage
+          (ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionRight f D)))
           (ProbComp.eval (G.explainRerandIdealExperiment f x D)) :=
         Game.advantage_triangle _ _ _
     _ = _ := by
-        rw [rerandAdvantage, rerandAdvantage, Game.advantage_comm
-          (ProbComp.eval (G.rerandRealExperiment f x (G.explainRerandReductionRight f D)))]
-        exact congrArg₂ (· + ·) (by rw [hreal, hhyb]) (by rw [hhyb', hideal])
+        rw [rerandAdvantage, rerandAdvantage, rerandRealExperiment_explainRerandReductionRight,
+          Game.advantage_comm (ProbComp.eval (G.explainRerandIdealExperiment f x D)), hreal, hhyb]
 
 /-! ### Zero error under bijectivity in the second argument -/
 
