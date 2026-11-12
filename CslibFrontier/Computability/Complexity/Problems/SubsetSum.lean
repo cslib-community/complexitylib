@@ -7,11 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
-public import CslibFrontier.Foundations.Data.List.MaskSelect
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
-import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Complexity.Problems.SubsetSum.Digits
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -137,29 +136,26 @@ theorem map_mem_SubsetSum_iff {ι : Type*} [DecidableEq ι] {xs : List ι} (hxs 
 
 namespace SubsetSum
 
-/-- The verifier for `SubsetSum`: the numbers selected by the certificate mask sum to the
-target. -/
-@[expose] def verifier (x : SubsetSumInstance × List Bool) : Bool :=
-  decide ((maskSelect x.1.numbers x.2).sum = x.1.target)
+/-- The verifier for `SubsetSum`, a mask verifier (`Cslib.Complexity.maskVerifier`): the numbers
+selected by the certificate mask sum to the target. -/
+@[expose] def verifier : SubsetSumInstance × List Bool → Bool :=
+  maskVerifier SubsetSumInstance.numbers fun x => decide (x.2.sum = x.1.target)
 
 /-- `SubsetSum.verifier` verifies `SubsetSum` with certificates as long as the encoded
 instance. -/
 theorem isVerifier :
-    IsVerifier encSubsetSum Polynomial.X verifier SubsetSum := by
-  intro x
-  simp only [mem_SubsetSum, Polynomial.eval_X, verifier, decide_eq_true_eq]
-  have hlen : x.numbers.length ≤ (encSubsetSum x).length :=
-    (length_le_length_encList _ _).trans (length_le_encPair_left _ _ (x.numbers, x.target))
-  simpa only [Multiset.sum_coe] using exists_le_iff_exists_maskSelect
-    hlen (fun s => s.sum = x.target)
+    IsVerifier encSubsetSum Polynomial.X verifier SubsetSum :=
+  isVerifier_maskVerifier (fun x => by
+    rw [Polynomial.eval_X]
+    exact (length_le_length_encList _ _).trans (length_le_encPair_left _ _ (x.numbers, x.target)))
+    fun _ _ _ => by simp
 
 /-- The `SubsetSum` verifier is polynomial-time: it selects the masked numbers, adds them in
 binary and compares the sum with the target. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair encSubsetSum encBits) encBool := by
-  unfold verifier
-  fun_prop
+    ComputableInPolyTime verifier (encPair encSubsetSum encBits) encBool :=
+  computableInPolyTime_maskVerifier (encγ := encNat) (by fun_prop) (by fun_prop)
 
 /-- `SubsetSum` belongs to `NP`. -/
 theorem mem_NP : SubsetSum ∈ NP encSubsetSum :=
