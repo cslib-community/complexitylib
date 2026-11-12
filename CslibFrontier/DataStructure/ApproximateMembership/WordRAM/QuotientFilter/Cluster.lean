@@ -3632,7 +3632,7 @@ theorem map_extractRemSeed_eval_remInitComp (base w w₀ n : ℕ) (x : Data rQF)
       have := Nat.one_le_two_pow (n := w₀ - 1)
       have := γ.isLt
       omega
-    dsimp only [extractRemSeed, remInitData, Data.write, Tabulation.extractWord, e]
+    dsimp only [extractRemSeed, remInitData, Data.write, Cslib.WordRAM.wordOfNat, e]
     simp [hlt]
   rw [hcomp, ProbComp.eval_unifFin, PMF.uniformOfFintype_map_equiv]
 

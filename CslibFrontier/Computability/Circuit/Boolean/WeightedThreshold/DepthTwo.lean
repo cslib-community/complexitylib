@@ -58,6 +58,14 @@ count `p.cost Op.arity`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.negOnePow_mul_altLinear_add_sub_altLinear`,
   `Cslib.Circuits.Boolean.WeightedThreshold.sum_sub_mul_decide_le`: alternating linear shift
   identity and integer interval telescoping into threshold indicators.
+* `Cslib.Circuits.Boolean.WeightedThreshold.altLinear_neg`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.altLinear_sq`: `altLinear` is odd and preserves
+  squares.
+* `Cslib.Circuits.Boolean.WeightedThreshold.altLinearTrunc`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.altLinearTruncErrorPair`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.sq_altLinearTrunc_sub_altLinear`: the truncation
+  `f_R(u) = φ(u) [|u| ≤ R]` of `altLinear`, the odd error of a reflected pair, and the squared
+  truncation error.
 
 ## References
 
@@ -293,6 +301,49 @@ theorem altLinear_add_one_sub (u : ℤ) :
     altLinear (u + 1) - altLinear u = ((u + 1).negOnePow : ℤ) * (2 * u + 1) := by
   simp only [altLinear, Int.negOnePow_succ, Units.val_neg]
   ring
+
+/-- `altLinear` is odd. -/
+theorem altLinear_neg (u : ℤ) : altLinear (-u) = -altLinear u := by
+  simp [altLinear, Int.negOnePow_neg]
+
+/-- `altLinear` preserves squares: `φ(u)² = u²`. -/
+theorem altLinear_sq (u : ℤ) : altLinear u ^ 2 = u ^ 2 := by
+  rw [altLinear, mul_pow, ← Units.val_pow_eq_pow_val, Int.units_sq, Units.val_one, one_mul]
+
+/-! ### Truncating `altLinear` -/
+
+/-- The truncation `f_R(u) = φ(u) [|u| ≤ R]` of the alternating linear function
+`φ(u) = (-1) ^ u u` (`altLinear`) to the window `[-R, R]`. -/
+def altLinearTrunc (R : ℕ) (u : ℤ) : ℤ :=
+  if u.natAbs ≤ R then altLinear u else 0
+
+/-- `altLinearTrunc` is odd. -/
+theorem altLinearTrunc_neg (R : ℕ) (u : ℤ) : altLinearTrunc R (-u) = -altLinearTrunc R u := by
+  simp only [altLinearTrunc, Int.natAbs_neg, altLinear_neg]
+  split_ifs <;> simp
+
+/-- The truncation error of the pair of reflected forms `x + d` and `x - d`:
+`(f_R - φ)(x + d) + (f_R - φ)(x - d)`. It is odd in `x`. -/
+def altLinearTruncErrorPair (R : ℕ) (x d : ℤ) : ℤ :=
+  (altLinearTrunc R (x + d) - altLinear (x + d)) + (altLinearTrunc R (x - d) - altLinear (x - d))
+
+theorem altLinearTruncErrorPair_neg (R : ℕ) (x d : ℤ) :
+    altLinearTruncErrorPair R (-x) d = -altLinearTruncErrorPair R x d := by
+  rw [altLinearTruncErrorPair, altLinearTruncErrorPair, show -x + d = -(x - d) by ring,
+    show -x - d = -(x + d) by ring, altLinearTrunc_neg, altLinearTrunc_neg, altLinear_neg,
+    altLinear_neg]
+  ring
+
+/-- The squared truncation error of one form is `u² [|u| > R]`. -/
+theorem sq_altLinearTrunc_sub_altLinear (R : ℕ) (u : ℤ) :
+    ((altLinearTrunc R u - altLinear u : ℤ) : ℝ) ^ 2 =
+      if R < u.natAbs then (u : ℝ) ^ 2 else 0 := by
+  unfold altLinearTrunc
+  split_ifs with h1 h2 h2
+  · omega
+  · simp
+  · rw [zero_sub, Int.cast_neg, neg_sq, ← Int.cast_pow, altLinear_sq, Int.cast_pow]
+  · omega
 
 /-- **Integer interval telescoping**: any function `f : ℤ → ℤ` on an integer `u ∈ [ℓ, ℓ + L]`
 equals `f ℓ` plus the sum of its step differences weighted by threshold indicators

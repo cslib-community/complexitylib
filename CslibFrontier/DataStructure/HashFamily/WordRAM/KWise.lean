@@ -254,7 +254,7 @@ theorem extractSeeds_eq_of_seedRep {base U M k : ℕ}
   funext j
   ext
   dsimp only [extractSeeds, extractSlice]
-  rw [hseed j, extractWord_val_of_lt (c j).isLt]
+  rw [hseed j, Cslib.WordRAM.wordOfNat_val_of_lt (c j).isLt]
 
 /-- `SeedRep base U M k c` depends only on the memory values in `[base, base + 8 + k)`. -/
 theorem SeedRep.congr_of_footprint {base U M k : ℕ}

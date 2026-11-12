@@ -59,27 +59,28 @@ zero-error (Las Vegas) schemes against oblivious operation sequences:
 
 ## Main results
 
-* `DataStructure.CellProbe.Randomized.exists_det_indexedScheme_le_expectedSeqProbes`,
-  `DataStructure.CellProbe.Randomized.exists_det_indexedScheme_le_expectedSeqProbes_of_fintype`:
-  averaging (easy) direction of Yao's principle [Yao1977] for zero-error schemes on
+* `Cslib.DataStructure.CellProbe.Randomized.exists_det_indexedScheme_le_expectedSeqProbes` and
+`Cslib.DataStructure.CellProbe.Randomized.exists_det_indexedScheme_le_expectedSeqProbes_of_fintype`
+  — averaging (easy) direction of Yao's principle [Yao1977] for zero-error schemes on
   `D.toObliviousSequenceSpec s₀`, producing a step-indexed `IndexedScheme` over an explicit finite
   `opsAlphabet` (or `[Fintype D.Op]`).
-* `DataStructure.CellProbe.Randomized.exists_det_scheme_le_expectedSeqProbes`: random initial
+* `Cslib.DataStructure.CellProbe.Randomized.exists_det_scheme_le_expectedSeqProbes`: random initial
   memory / coin-free steps specialization producing a time-invariant `Cslib.CellProbe.Scheme`.
-* `ObliviousSequenceImpl.exists_det_indexedScheme`,
-  `ObliviousSequenceImpl.le_expected_charge_of_det_indexedScheme`,
+* `Randomized.ObliviousSequenceImpl.exists_det_indexedScheme`,
+  `Randomized.ObliviousSequenceImpl.le_expected_charge_of_det_indexedScheme`,
   `Randomized.StateTransitionImpl.exists_det_indexedScheme`,
-  `Randomized.StateTransitionImpl.exists_det_scheme`,
+  `Randomized.StateTransitionImpl.exists_det_scheme`, and
   `Randomized.StateTransitionImpl.le_expected_totalCost_of_det_indexedScheme`:
-  end-to-end coin-fixing and lower-bound transfer corollaries for `ObliviousSequenceImpl` and
-  `Randomized.StateTransitionImpl`.
+  end-to-end coin-fixing and lower-bound transfer corollaries in
+  `Cslib.DataStructure.CellProbe.Randomized` (bounding the certified budget
+  `initPotential + E[totalCost]`, not raw `E[P.expectedSeqProbes]`).
 
 ## References
 
 * [A. C.-C. Yao, *Probabilistic Computations: Toward a Unified Measure of Complexity*][Yao1977]
 * [P. B. Miltersen, *Cell Probe Complexity — a Survey*][Miltersen1999]
 * [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
-  Chapter 17][CLRS2009]
+  Section 17.3][CLRS2009]
 -/
 
 public section
