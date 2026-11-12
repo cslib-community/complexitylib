@@ -151,21 +151,6 @@ private theorem card_preimage_le (b : Bool) :
     Fintype.card {x // f x = some b} ≤ 2 ^ n :=
   (Fintype.card_subtype_le _).trans (by simp)
 
-/-- If `f` is constant where defined, a constant formula computes it. -/
-private theorem partialFormulaDepth_eq_zero
-    (h : IsEmpty {x // f x = some true} ∨ IsEmpty {y // f y = some false}) :
-    partialFormulaDepth f = 0 := by
-  refine Nat.eq_zero_of_le_zero ?_
-  rcases h with h | h
-  · refine (partialFormulaDepth_le (F := .const false) fun x b hx => ?_).trans (by simp)
-    cases b
-    · simp
-    · exact (h.false ⟨x, hx⟩).elim
-  · refine (partialFormulaDepth_le (F := .const true) fun x b hx => ?_).trans (by simp)
-    cases b
-    · exact (h.false ⟨x, hx⟩).elim
-    · simp
-
 /-- **[ChukhinKulikovMihajlinSmal2026], Corollary 1.3, lower bound.** For `k ≥ 1` and `n ≥ 1`,
 `D(f) ≤ max {D(Agr_k(f)), ⌈log₂ n⌉} + 18 ⌈log₂ k⌉ + 3 ⌈log₂ (n + 1)⌉ + 3`: Theorem 1.2 for the
 Karchmer–Wigderson game of `f`, with output set `[n]`. The source's `|f⁻¹(0)|, |f⁻¹(1)| ≥ k` is
@@ -175,9 +160,9 @@ theorem partialFormulaDepth_le_max_agreement [NeZero n] [NeZero k]
     partialFormulaDepth f ≤ max (partialFormulaDepth (agreement k f)) (Nat.clog 2 n) +
       (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3) := by
   rcases isEmpty_or_nonempty {x // f x = some true} with hA | hA
-  · simp [partialFormulaDepth_eq_zero (.inl hA)]
+  · simp [partialFormulaDepth_eq_zero_of_isEmpty (.inl hA)]
   rcases isEmpty_or_nonempty {y // f y = some false} with hB | hB
-  · simp [partialFormulaDepth_eq_zero (.inr hB)]
+  · simp [partialFormulaDepth_eq_zero_of_isEmpty (.inr hB)]
   have h := OneOut.ecomplexity_le_oneOut (k := k) (R := kwRelation f) kwRelation_total
     (card_preimage_le true) (card_preimage_le false)
   rw [← natCast_partialFormulaDepth_eq_ecomplexity, ← natCast_partialFormulaDepth_agreement,

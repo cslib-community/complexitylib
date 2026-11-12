@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Communication.OneOutLowerBound
 public import CslibFrontier.Computability.Communication.Rectangle
+import CslibFrontier.Foundations.Data.Fintype.EmbeddingExtend
 import Mathlib.Tactic
 
 /-!
@@ -18,7 +19,10 @@ import Mathlib.Tactic
 absolute constants `0 < c ≤ 1` and `C > 0` with `CC(OneOut_k(F)) ≥ c · CC(F) - C log n` for
 every `1 ≤ k ≤ min {|A|, |B|}`. Here the constants are explicit: `ecomplexity_le_mul_oneOut`
 proves `CC(R) ≤ 19 · CC(OneOut_k(R)) + ⌈log₂ |Z|⌉ + 3 ⌈log₂ (n + 1)⌉ + 3` for every total
-relation `R`, so `c = 1/19`.
+relation `R`. For `n ≥ 2` this is the source's form with `c = 1/19`, because the additive
+constant is absorbed into `C log n`. At `n = 1` the source's statement needs a separate easy
+argument, which is not formalized here: there `CC(F) ≤ 2`, and a one-out protocol that sends
+nothing forces `F` to be constant.
 
 The proof follows the source. A protocol `p` of depth `d` for `OneOut_k(R)` answers only at the
 coordinates named at its leaves (`leafIndices`), at most `2 ^ d` of them. Restricting to these
@@ -34,8 +38,6 @@ The formula-depth half of Corollary 1.4 is `Cslib.Circuits.Boolean.partialFormul
 
 ## Main results
 
-* `Function.Embedding.exists_extend_of_card_le`: an embedding into a finite type extends along
-  an embedding of its domain into one at most as large as the target.
 * `Cslib.Communication.OneOut.exists_solves_leafIndices`: the protocol restricted to the
   coordinates named at its leaves.
 * `Cslib.Communication.OneOut.ecomplexity_le_mul_oneOut`: Corollary 1.4 for total relations.
@@ -43,32 +45,6 @@ The formula-depth half of Corollary 1.4 is `Cslib.Circuits.Boolean.partialFormul
 -/
 
 public section
-
-/-- An embedding `x : α ↪ γ` into a finite type extends along an embedding `e : α ↪ β` of
-finite types, when `β` is at most as large as `γ`. -/
-theorem Function.Embedding.exists_extend_of_card_le {α β γ : Type*} [Finite α] [Fintype β]
-    [Fintype γ] (e : α ↪ β) (x : α ↪ γ) (h : Fintype.card β ≤ Fintype.card γ) :
-    ∃ x' : β ↪ γ, ∀ a, x' (e a) = x a := by
-  classical
-  have := Fintype.ofFinite α
-  rcases isEmpty_or_nonempty γ with hγ | hγ
-  · have : IsEmpty β := Fintype.card_eq_zero_iff.mp (by simpa using h)
-    have : IsEmpty α := Function.isEmpty e
-    exact ⟨Function.Embedding.ofIsEmpty, isEmptyElim⟩
-  have c : γ := Classical.choice hγ
-  have hs : (Finset.univ.image x).card ≤ Fintype.card β := by
-    rw [Finset.card_image_of_injective _ x.injective, Finset.card_univ]
-    exact Fintype.card_le_of_embedding e
-  obtain ⟨t, hst, -, ht⟩ := Finset.exists_subsuperset_card_eq (Finset.subset_univ _) hs
-    (by simpa using h)
-  set f : β → γ := Function.extend e x fun _ => c
-  have hf (a : α) : f (e a) = x a := e.injective.extend_apply _ _ a
-  obtain ⟨g, hg⟩ := Set.MapsTo.exists_equiv_extend_of_card_eq (s := Set.range e) (f := f)
-    (t := t) ht.symm
-    (by rintro _ ⟨a, rfl⟩; exact hst (by simp [hf]))
-    (by rintro _ ⟨a, rfl⟩ _ ⟨b, rfl⟩ hab; simp only [hf] at hab; rw [x.injective hab])
-  exact ⟨g.toEmbedding.trans (Function.Embedding.subtype _), fun a => by
-    simp [hg (e a) ⟨a, rfl⟩, hf]⟩
 
 namespace Cslib.Communication.OneOut
 

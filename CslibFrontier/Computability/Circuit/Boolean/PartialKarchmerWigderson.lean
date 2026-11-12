@@ -34,6 +34,8 @@ Karchmer–Wigderson theorem holds for partial functions as well
 ## Main results
 
 * `Cslib.Circuits.Boolean.partialFormulaDepth_some`: on total functions it is `formulaDepth`.
+* `Cslib.Circuits.Boolean.exists_computesPartial_const_of_isEmpty`: a constant formula computes a
+  function that is nowhere `true` or nowhere `false`.
 * `Cslib.Circuits.Boolean.natCast_partialFormulaDepth_eq_ecomplexity`: the Karchmer–Wigderson
   theorem for partial functions.
 
@@ -119,6 +121,27 @@ theorem exists_kwProtocol_of_computesPartial [NeZero n] {F : Formula signature n
     simpa [kwRelation] using F.differsAt_run_kwProtocol true (hF _ _ x.2) (hF _ _ y.2),
     by simpa using F.depth_kwProtocol_le true⟩
 
+/-- If `f` is nowhere `true`, or nowhere `false`, a constant formula computes it. -/
+theorem exists_computesPartial_const_of_isEmpty
+    (h : IsEmpty {x // f x = some true} ∨ IsEmpty {y // f y = some false}) :
+    ∃ F : Formula signature n, F.ComputesPartial f ∧ F.depthWith binaryCost = 0 := by
+  rcases h with h | h
+  · refine ⟨.const false, fun x b hx => ?_, by simp⟩
+    cases b
+    · simp
+    · exact (h.false ⟨x, hx⟩).elim
+  · refine ⟨.const true, fun x b hx => ?_, by simp⟩
+    cases b
+    · exact (h.false ⟨x, hx⟩).elim
+    · simp
+
+/-- If `f` is nowhere `true`, or nowhere `false`, its partial formula depth is zero. -/
+theorem partialFormulaDepth_eq_zero_of_isEmpty
+    (h : IsEmpty {x // f x = some true} ∨ IsEmpty {y // f y = some false}) :
+    partialFormulaDepth f = 0 :=
+  let ⟨_, hF, hd⟩ := exists_computesPartial_const_of_isEmpty h
+  Nat.eq_zero_of_le_zero ((partialFormulaDepth_le hF).trans hd.le)
+
 open scoped Classical in
 /-- A protocol for the Karchmer–Wigderson game of `f` gives a formula computing `f` with at most
 as many AND and OR gates on a path as the protocol sends bits: `Protocol.kwFormula` of the
@@ -127,16 +150,11 @@ theorem exists_computesPartial_of_solves
     {p : Communication.Protocol {x // f x = some true} {y // f y = some false} (Fin n)}
     (hp : p.Solves (kwRelation f) Set.univ Set.univ) :
     ∃ F : Formula signature n, F.ComputesPartial f ∧ F.depthWith binaryCost ≤ p.depth := by
-  rcases isEmpty_or_nonempty {x // f x = some true} with hA | hA
-  · refine ⟨.const false, fun x b h => ?_, by simp⟩
-    cases b
-    · simp
-    · exact (hA.false ⟨x, h⟩).elim
-  rcases isEmpty_or_nonempty {y // f y = some false} with hB | hB
-  · refine ⟨.const true, fun x b h => ?_, by simp⟩
-    cases b
-    · exact (hB.false ⟨x, h⟩).elim
-    · simp
+  by_cases h : IsEmpty {x // f x = some true} ∨ IsEmpty {y // f y = some false}
+  · obtain ⟨F, hF, hd⟩ := exists_computesPartial_const_of_isEmpty h
+    exact ⟨F, hF, hd.trans_le (Nat.zero_le _)⟩
+  simp only [not_or, not_isEmpty_iff] at h
+  obtain ⟨hA, hB⟩ := h
   obtain ⟨x₀⟩ := hA
   obtain ⟨y₀⟩ := hB
   let a : BitString n → {x // f x = some true} := fun x => if h : f x = some true then ⟨x, h⟩

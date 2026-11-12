@@ -172,10 +172,16 @@ proves the communication half of Corollary 1.4, a linear bound at every arity.
 `19 * ecomplexity (Relation (k := k) R) univ univ` plus
 `Nat.clog 2 (Fintype.card Z) + 3 * Nat.clog 2 (n + 1) + 3`. It needs the source's
 `k ≤ min {|X|, |Y|}`, because the proof pads tuples with distinct inputs.
-`ecomplexityFun_le_mul_oneOut` is the Boolean form with `+ 4` in place of the `Z` term.
+`ecomplexityFun_le_mul_oneOut` is the Boolean form: with `|Z| = 2`,
+`⌈log₂ |Z|⌉ + 3` becomes `4`. These bounds give the source's form `c · CC(F) - C log n` with
+`c = 1/19` only for `n ≥ 2`, where `C log n` absorbs the additive constant. At `n = 1` the source's
+statement needs a separate easy argument, which is not formalized here. Then `CC(F) ≤ 2`, and a
+one-out protocol that sends nothing forces `F` to be constant.
 The proof keeps only the coordinates a protocol names at its leaves (`leafIndices`), at most
 `2 ^ depth` of them. `exists_solves_leafIndices` pads the inputs with
-`Function.Embedding.exists_extend_of_card_le` and then applies Theorem 1.2 at that arity.
+`Function.Embedding.exists_extend_of_card_le` (in
+[Fintype/EmbeddingExtend](../../CslibFrontier/Foundations/Data/Fintype/EmbeddingExtend.lean), a
+Mathlib candidate) and then applies Theorem 1.2 at that arity.
 
 The formula-depth corollaries use partial Boolean functions `f : BitString n → Option Bool`,
 with `none` outside the domain.
