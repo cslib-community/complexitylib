@@ -369,18 +369,9 @@ of length at most `L (4 L + 5)`, where `L` is the length of the encoding of `φ`
 theorem length_encNode_le {φ : CNF ℕ} {a : List (Literal ℕ)} (ha : ∀ l ∈ a, l.1 ∈ φ.vars)
     (hlen : a.length ≤ φ.vars.length) :
     (encList (encPair encNat encBool) a).length ≤
-      (encCNF φ).length * (4 * (encCNF φ).length + 5) := by
-  have hlit : ∀ l ∈ a, (encPair encNat encBool l).length ≤ 2 * (encCNF φ).length + 2 := by
-    intro l hl
-    have := length_encNat_le_of_mem_vars (ha l hl)
-    rw [length_encPair, encBool_apply, List.length_singleton]
-    omega
-  have hlen' : a.length ≤ (encCNF φ).length := hlen.trans (length_vars_le φ)
-  calc (encList (encPair encNat encBool) a).length
-      ≤ a.length * (2 * (2 * (encCNF φ).length + 2) + 1) := length_encList_le _ _ hlit
-    _ ≤ (encCNF φ).length * (4 * (encCNF φ).length + 5) := by
-      rw [show 2 * (2 * (encCNF φ).length + 2) + 1 = 4 * (encCNF φ).length + 5 by ring]
-      exact Nat.mul_le_mul_right _ hlen'
+      (encCNF φ).length * (4 * (encCNF φ).length + 5) :=
+  (length_encList_le_of_mem_vars ha).trans
+    (Nat.mul_le_mul_right _ (hlen.trans (length_vars_le φ)))
 
 /-- Checking a leaf with the verifier is polynomial-time. -/
 theorem computableInPolyTime_verifier_units_append :

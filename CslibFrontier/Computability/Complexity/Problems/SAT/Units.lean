@@ -79,6 +79,7 @@ theorem eval_append_units (σ : ℕ → Bool) (φ : CNF ℕ) (answers : List (Li
 
 /-! ### Encoded length -/
 
+/-- The encoding of a concatenation of formulas is as long as the two encodings together. -/
 theorem length_encCNF_append (φ ψ : CNF ℕ) :
     (encCNF (φ ++ ψ)).length = (encCNF φ).length + (encCNF ψ).length := by
   simp [encCNF]
