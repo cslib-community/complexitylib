@@ -534,116 +534,66 @@ private lemma no_jump_at_midpoint [DecidableEq ι]
   let tPt : Set.Icc a b := ⟨t, ht_mem⟩
   let m₁ : Set.Icc a b := ⟨c - η, hm1_mem⟩
   let m₂ : Set.Icc a b := ⟨c + η, hm2_mem⟩
-  let repLow : Finset ι → ι → Set.Icc a b :=
-    fun S k => if k ∈ S ∧ (x k : ℝ) < c - η then m₁ else x k
-  have hphase1 : ∀ S : Finset ι, i₀ ∉ S →
-      c - 9 * η < (f (Function.update (repLow S) i₀ wPt) : ℝ) ∧
-      (f (Function.update (repLow S) i₀ wPt) : ℝ) ≤ c - 7 * η ∧
-      c + 8 * η ≤ (f (Function.update (repLow S) i₀ tPt) : ℝ) := by
-    intro S hiS
-    induction S using Finset.induction with
-    | empty =>
-      have h0 : repLow ∅ = x := by funext k; simp [repLow]
-      simpa [h0] using ⟨hfw_lo, hfw_hi, hft_lo⟩
-    | insert j S hj ih =>
-      have hji₀ : j ≠ i₀ := fun h => hiS (h ▸ Finset.mem_insert_self _ _)
-      have hiS' : i₀ ∉ S := fun h => hiS (Finset.mem_insert_of_mem h)
-      obtain ⟨ih_lo, ih_hi, ih_t⟩ := ih hiS'
-      by_cases hj_low : (x j : ℝ) < c - η
-      · have hupd_w : Function.update (repLow (insert j S)) i₀ wPt =
-            Function.update (Function.update (repLow S) i₀ wPt) j m₁ := by
-          funext k
-          by_cases hki : k = i₀
-          · subst hki; simp [Function.update, hji₀.symm]
-          · by_cases hkj : k = j
-            · subst hkj; simp [repLow, Function.update, hki, hj_low]
-            · simp [repLow, Function.update, hki, hkj]
-        have hupd_t : Function.update (repLow (insert j S)) i₀ tPt =
-            Function.update (Function.update (repLow S) i₀ tPt) j m₁ := by
-          funext k
-          by_cases hki : k = i₀
-          · subst hki; simp [Function.update, hji₀.symm]
-          · by_cases hkj : k = j
-            · subst hkj; simp [repLow, Function.update, hki, hj_low]
-            · simp [repLow, Function.update, hki, hkj]
-        have hbase_w : Function.update (repLow S) i₀ wPt =
-            Function.update (Function.update (repLow S) i₀ wPt) j (x j) := by
-          funext k
-          by_cases hki : k = i₀
-          · subst hki; simp [Function.update, hji₀.symm]
-          · by_cases hkj : k = j
-            · subst hkj; simp [repLow, Function.update, hki, hj]
-            · simp [Function.update, hkj]
-        have hbase_t : Function.update (repLow S) i₀ tPt =
-            Function.update (Function.update (repLow S) i₀ tPt) j (x j) := by
-          funext k
-          by_cases hki : k = i₀
-          · subst hki; simp [Function.update, hji₀.symm]
-          · by_cases hkj : k = j
-            · subst hkj; simp [repLow, Function.update, hki, hj]
-            · simp [Function.update, hkj]
-        have ht_new : c + 8 * η ≤ (f (Function.update (repLow (insert j S)) i₀ tPt) : ℝ) := by
-          refine ih_t.trans ?_
-          rw [hupd_t]
-          conv_lhs => rw [hbase_t]
-          exact coord_mono_of_sp hf_sp _ j
-            (show ((x j : Set.Icc a b) : ℝ) ≤ (m₁ : ℝ) from hj_low.le)
-        have hw_new_lo : c - 9 * η < (f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) := by
-          refine lt_of_lt_of_le ih_lo ?_
-          rw [hupd_w]
-          conv_lhs => rw [hbase_w]
-          exact coord_mono_of_sp hf_sp _ j
-            (show ((x j : Set.Icc a b) : ℝ) ≤ (m₁ : ℝ) from hj_low.le)
-        have hj_sp : |(f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) - (m₁ : ℝ)| ≤
-            |(f (Function.update (repLow S) i₀ wPt) : ℝ) - (m₁ : ℝ)| := by
-          have h1 := hsp (Function.update (repLow (insert j S)) i₀ wPt) j (x j)
-          have hrev : Function.update (Function.update (repLow (insert j S)) i₀ wPt) j (x j) =
-              Function.update (repLow S) i₀ wPt := by
-            funext k
-            by_cases hkj : k = j
-            · subst hkj; simp [repLow, Function.update, hji₀, hj]
-            · by_cases hki : k = i₀
-              · subst hki; simp [Function.update, hji₀.symm]
-              · simp [repLow, Function.update, hki, hkj]
-          rw [hrev] at h1
-          have hj_val : Function.update (repLow (insert j S)) i₀ wPt j = m₁ := by
-            simp [repLow, Function.update, hji₀, hj_low]
-          simpa [hj_val, Subtype.dist_eq, Real.dist_eq] using h1
-        have hw_new_cap : (f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) < c + 7 * η := by
-          have hdist : |(f (Function.update (repLow S) i₀ wPt) : ℝ) - (m₁ : ℝ)| < 8 * η := by
-            dsimp only [m₁]
-            rw [abs_of_nonpos (by linarith)]
-            linarith
-          have hlt' : |(f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) - (m₁ : ℝ)| < 8 * η :=
-            hj_sp.trans_lt hdist
-          dsimp only [m₁] at hlt'
-          linarith [(abs_lt.mp hlt').2]
-        have hi0_sp : |(f (Function.update (repLow (insert j S)) i₀ tPt) : ℝ) - t| ≤
-            |(f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) - t| := by
-          have := hsp (Function.update (repLow (insert j S)) i₀ tPt) i₀ wPt
-          have hupd_wt : Function.update (Function.update (repLow (insert j S)) i₀ tPt) i₀ wPt =
-              Function.update (repLow (insert j S)) i₀ wPt := by simp
-          simpa [tPt, hupd_wt, Subtype.dist_eq, Real.dist_eq] using this
-        have hw_lt_t : (f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) < t := by
-          by_contra hge
-          have h1 : (f (Function.update (repLow (insert j S)) i₀ tPt) : ℝ) - t ≤
-              (f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) - t := by
-            rwa [abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)] at hi0_sp
-          linarith
-        have hw_new_hi : (f (Function.update (repLow (insert j S)) i₀ wPt) : ℝ) ≤ c - 7 * η := by
-          rw [abs_of_nonneg (by linarith), abs_of_neg (by linarith)] at hi0_sp
-          linarith
-        exact ⟨hw_new_lo, hw_new_hi, ht_new⟩
-      · have heq : repLow (insert j S) = repLow S := by
-          funext k
-          by_cases hkj : k = j
-          · subst hkj; simp [repLow, hj_low]
-          · simp [repLow, hkj]
-        rw [heq]
-        exact ⟨ih_lo, ih_hi, ih_t⟩
-  have hf_x1 : (f (Function.update (repLow (Finset.univ.erase i₀)) i₀ wPt) : ℝ) ≤ c - 7 * η :=
-    (hphase1 (Finset.univ.erase i₀) (Finset.notMem_erase _ _)).2.1
-  let x₁ := Function.update (repLow (Finset.univ.erase i₀)) i₀ wPt
+  let y : ι → Set.Icc a b := fun k => if k ≠ i₀ ∧ (x k : ℝ) < c - η then m₁ else x k
+  have hphase1 : c - 9 * η < (f (Function.update y i₀ wPt) : ℝ) ∧
+      (f (Function.update y i₀ wPt) : ℝ) ≤ c - 7 * η ∧
+      c + 8 * η ≤ (f (Function.update y i₀ tPt) : ℝ) := by
+    refine profile_update_induction (y := y) (P := fun z =>
+      c - 9 * η < (f (Function.update z i₀ wPt) : ℝ) ∧
+      (f (Function.update z i₀ wPt) : ℝ) ≤ c - 7 * η ∧
+      c + 8 * η ≤ (f (Function.update z i₀ tPt) : ℝ)) ⟨hfw_lo, hfw_hi, hft_lo⟩ ?_
+    intro z _ ⟨ih_lo, ih_hi, ih_t⟩ j hzj hne
+    have hj : j ≠ i₀ ∧ (x j : ℝ) < c - η := by
+      by_contra h
+      exact hne (by simp only [y, ite_eq_right h, hzj])
+    have hyj : y j = m₁ := ite_eq_left hj
+    simp only [hyj]
+    rw [Function.update_comm hj.1 m₁ wPt z, Function.update_comm hj.1 m₁ tPt z]
+    set zw := Function.update z i₀ wPt with hzw
+    set zt := Function.update z i₀ tPt with hzt
+    have hzw_j : zw j = x j := by simp [hzw, hj.1, hzj]
+    have hzt_j : zt j = x j := by simp [hzt, hj.1, hzj]
+    have hmono : ∀ v : ι → Set.Icc a b, v j = x j → (f v : ℝ) ≤ f (Function.update v j m₁) :=
+      fun v hv => by
+        have h := coord_mono_of_sp hf_sp v j
+          (show ((x j : Set.Icc a b) : ℝ) ≤ (m₁ : ℝ) from hj.2.le)
+        rwa [← hv, Function.update_eq_self] at h
+    have ht_new : c + 8 * η ≤ (f (Function.update zt j m₁) : ℝ) := ih_t.trans (hmono zt hzt_j)
+    have hw_new_lo : c - 9 * η < (f (Function.update zw j m₁) : ℝ) :=
+      lt_of_lt_of_le ih_lo (hmono zw hzw_j)
+    have hj_sp : |(f (Function.update zw j m₁) : ℝ) - (m₁ : ℝ)| ≤ |(f zw : ℝ) - (m₁ : ℝ)| := by
+      have h1 := hsp (Function.update zw j m₁) j (x j)
+      rw [Function.update_idem, ← hzw_j, Function.update_eq_self] at h1
+      simpa [Subtype.dist_eq, Real.dist_eq] using h1
+    have hw_new_cap : (f (Function.update zw j m₁) : ℝ) < c + 7 * η := by
+      have hdist : |(f zw : ℝ) - (m₁ : ℝ)| < 8 * η := by
+        dsimp only [m₁]
+        rw [abs_of_nonpos (by linarith)]
+        linarith
+      have hlt' : |(f (Function.update zw j m₁) : ℝ) - (m₁ : ℝ)| < 8 * η :=
+        hj_sp.trans_lt hdist
+      dsimp only [m₁] at hlt'
+      linarith [(abs_lt.mp hlt').2]
+    have hi0_sp : |(f (Function.update zt j m₁) : ℝ) - t| ≤
+        |(f (Function.update zw j m₁) : ℝ) - t| := by
+      have := hsp (Function.update zt j m₁) i₀ wPt
+      have hupd_wt : Function.update (Function.update zt j m₁) i₀ wPt =
+          Function.update zw j m₁ := by
+        rw [hzt, hzw, Function.update_comm hj.1.symm, Function.update_idem,
+          Function.update_comm hj.1]
+      rw [hupd_wt] at this
+      simpa [tPt, hzt, hj.1.symm, Subtype.dist_eq, Real.dist_eq] using this
+    have hw_lt_t : (f (Function.update zw j m₁) : ℝ) < t := by
+      by_contra hge
+      have h1 : (f (Function.update zt j m₁) : ℝ) - t ≤ (f (Function.update zw j m₁) : ℝ) - t := by
+        rwa [abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)] at hi0_sp
+      linarith
+    have hw_new_hi : (f (Function.update zw j m₁) : ℝ) ≤ c - 7 * η := by
+      rw [abs_of_nonneg (by linarith), abs_of_neg (by linarith)] at hi0_sp
+      linarith
+    exact ⟨hw_new_lo, hw_new_hi, ht_new⟩
+  have hf_x1 : (f (Function.update y i₀ wPt) : ℝ) ≤ c - 7 * η := hphase1.2.1
+  let x₁ := Function.update y i₀ wPt
   let x₂ : ι → Set.Icc a b := fun k => if c + η < (x₁ k : ℝ) then m₂ else x₁ k
   have hx21 : ∀ k, (x₂ k : ℝ) ≤ (x₁ k : ℝ) := fun k => by
     dsimp only [x₂]
@@ -659,8 +609,7 @@ private lemma no_jump_at_midpoint [DecidableEq ι]
     · dsimp only [x₁]
       by_cases hki : k = i₀
       · subst hki; simp only [Function.update_self, wPt]; linarith
-      · simp only [Function.update_of_ne hki, repLow, Finset.mem_erase, Ne.eq_def, hki,
-          not_false_eq_true, Finset.mem_univ, and_self, true_and]
+      · simp only [Function.update_of_ne hki, y, Ne.eq_def, hki, not_false_eq_true, true_and]
         split_ifs with hlt
         · exact le_rfl
         · exact not_lt.mp hlt

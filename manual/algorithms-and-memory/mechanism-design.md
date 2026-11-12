@@ -389,8 +389,8 @@ arXiv:0907.2049v1 p. 4) to a facility distribution `ProbabilityMeasure G`.
   `HasApproxRatio.one_le` shows `1 ≤ α` whenever `G` is nontrivial and `2 ≤ Fintype.card ι`.
   For deterministic rules on a metric space, `unanimous_of_surjective_isStrategyProof` shows that
   surjective strategyproof rules are unanimous. `profile_update_induction`, which switches agents
-  from one profile to another one at a time, is the shared induction behind that lemma and the
-  Pareto steps of the interval, tree and cycle characterizations.
+  from one profile to another one at a time, is the shared induction behind that lemma, the
+  interval and tree Pareto arguments and the cycle coalition argument.
 * [FacilityLocation.Dictatorship](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Dictatorship.lean):
   proves on any pseudometric space (`[OpensMeasurableSpace G]`) that `dictatorship i₀` is strongly
   group strategyproof (`dictatorship_isGroupStrategyProof`) with the elementary worst-case
