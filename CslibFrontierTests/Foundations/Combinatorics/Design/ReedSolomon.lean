@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Combinatorics.Design.ReedSolomon
+public import Mathlib.Data.Fin.VecNotation
 
 /-!
 # Reed–Solomon designs
@@ -24,7 +25,7 @@ open Cslib Finset
 
 /-- The lines over `ZMod 3` on two points form a design with intersections of size at most one. -/
 theorem isDesign_rsDesign_three : IsDesign (rsDesign 3 2 2) 2 1 :=
-  isDesign_rsDesign (by norm_num)
+  isDesign_rsDesign (by omega)
 
 /-- The lines `y = x` and `y = 1` over `ZMod 3` meet in at most one of the first two points. -/
 theorem card_inter_rsDesign_three_le : #(rsDesign 3 2 2 ![0, 1] ∩ rsDesign 3 2 2 ![1, 0]) ≤ 1 :=

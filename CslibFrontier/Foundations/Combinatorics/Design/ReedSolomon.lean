@@ -9,9 +9,8 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.Field.ZMod
-public import Mathlib.Algebra.Polynomial.OfFn
-public import Mathlib.LinearAlgebra.Lagrange
-public import Mathlib.RingTheory.Polynomial.Basic
+import Mathlib.LinearAlgebra.Lagrange
+import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # Reed–Solomon designs
