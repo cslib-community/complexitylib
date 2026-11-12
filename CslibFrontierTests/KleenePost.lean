@@ -5,11 +5,14 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Foundations.Computability.KleenePost
+import CslibFrontier.Foundations.Computability.KleenePostJump
 
 /-! Oracle codes on small examples: a code that applies the oracle and then the successor, the
 stage-bounded evaluator failing on a short prefix and on a low stage and succeeding otherwise, the
-use principle for a concrete computation, computable sets below every oracle, and the Kleene–Post
-sets, which are not computable and lie in distinct Turing degrees. -/
+use principle for a concrete computation, computable sets below every oracle, positive and negative
+halting and witness-search cases for the diagonal halting set and one-step extension predicate, and
+the Kleene–Post sets, which are Turing incomparable, strictly below the halting jump `∅'`, and not
+computable. -/
 
 namespace CslibFrontierTests.KleenePost
 
@@ -110,5 +113,106 @@ example : ∃ d₁ d₂ : TuringDegree, ¬d₁ ≤ d₂ ∧ (Set.Iic d₁).Count
 example : ∃ d₁ d₂ : TuringDegree, d₁ ≠ d₂ := by
   obtain ⟨d₁, d₂, h, -⟩ := TuringDegree.exists_incomparable
   exact ⟨d₁, d₂, fun e => h (e ▸ le_rfl)⟩
+
+/-! ### Diagonal halting set and witness search -/
+
+/-- The constant-zero and successor partial recursive codes halt on their own Gödel numbers. -/
+example : Encodable.encode Nat.Partrec.Code.zero ∈ KleenePost.halting := by
+  simp [KleenePost.halting, Nat.Partrec.Code.eval, pure, PFun.pure]
+
+example : Encodable.encode Nat.Partrec.Code.succ ∈ KleenePost.halting := by
+  simp [KleenePost.halting, Nat.Partrec.Code.eval]
+
+/-- The unbounded search code `rfind' succ` never finds a zero output and therefore lies outside
+the diagonal halting set `halting`. -/
+example :
+    Encodable.encode (Nat.Partrec.Code.rfind' Nat.Partrec.Code.succ) ∉ KleenePost.halting := by
+  intro h
+  have hdom : (Nat.rfind fun _ => Part.some false).Dom := by
+    simpa [KleenePost.halting, Nat.Partrec.Code.eval] using h
+  obtain ⟨_, hn, _⟩ := Nat.rfind_dom.mp hdom
+  simp at hn
+
+/-- `Code.primrec_evaln` certifies primitive recursiveness of stage-bounded evaluation in the
+oracle prefix. -/
+example : Primrec (fun σ : List ℕ => evaln σ 2 succOracle 1) :=
+  Code.primrec_evaln.comp (Primrec.id.pair ((Primrec.const (2, succOracle)).pair (Primrec.const 1)))
+
+/-- Positive witness-search case: extending `[false]` to `[false, true]` at stage `3` makes
+`succOracle` output `2` on input `1`. -/
+theorem haltsPred_succOracle_pos :
+    KleenePost.haltsPred succOracle [false] 1
+      (Encodable.encode (([false, true] : List Bool), 3, 2)) :=
+  ⟨([false, true], 3, 2), Encodable.encodek _, ⟨[true], rfl⟩, by
+    simp [KleenePost.bits, evaln, succOracle]⟩
+
+/-- Negative witness-search case: the prefix `[false]` is too short for `succOracle` on input `1`
+at stage `2`. -/
+theorem not_haltsPred_succOracle_short :
+    ¬KleenePost.haltsPred succOracle [false] 1
+      (Encodable.encode (([false] : List Bool), 2, 1)) := by
+  rintro ⟨p, hp, _, heval⟩
+  rw [Encodable.encodek] at hp
+  injection hp with h_eq
+  subst h_eq
+  simp [KleenePost.bits, evaln, succOracle] at heval
+
+/-- An oracle code `rfind' succ` that never halts under any finite oracle prefix. -/
+theorem evaln_rfind_succ_eq_none (σ : List ℕ) :
+    ∀ k x, evaln σ k (Code.rfind' Code.succ) x = none
+  | 0, _ => by simp [evaln]
+  | k + 1, x => by
+    simp only [evaln, Nat.unpaired, Nat.pair_unpair, Option.bind_eq_bind]
+    by_cases hx : x ≤ k
+    · simp [hx, evaln_rfind_succ_eq_none σ k]
+    · simp [hx]
+
+/-- `rfind' succ` has no halting extension above any prefix `τ` and input `x`. -/
+theorem not_halts_rfind_succ (τ : List Bool) (x : ℕ) :
+    ¬KleenePost.Halts (Code.rfind' Code.succ) τ x := by
+  rintro ⟨p, _, heval⟩
+  rw [evaln_rfind_succ_eq_none] at heval
+  exact Option.not_mem_none _ heval
+
+/-- The primitive-recursive reduction `halts_reducibleTo_halting` maps a halting instance into
+`halting` and a non-halting instance outside `halting`. -/
+example :
+    ∃ K : (Code × List Bool × ℕ) → ℕ,
+      Primrec K ∧
+      K (succOracle, [false], 1) ∈ KleenePost.halting ∧
+      K (Code.rfind' Code.succ, [], 0) ∉ KleenePost.halting := by
+  obtain ⟨K, hK, hred⟩ := KleenePost.halts_reducibleTo_halting
+  refine ⟨K, hK, (hred succOracle [false] 1).mp ?_,
+    fun hmem => not_halts_rfind_succ [] 0 ((hred (Code.rfind' Code.succ) [] 0).mpr hmem)⟩
+  exact (KleenePost.Halts_iff_exists_haltsPred succOracle [false] 1).mpr
+    ⟨_, haltsPred_succOracle_pos⟩
+
+/-! ### Combined Kleene–Post incomparability and below-jump bound -/
+
+/-- The same two sets `A` and `B` constructed by Kleene–Post are simultaneously Turing
+incomparable and Turing reducible to the halting set `halting` (`∅'`). -/
+theorem kleene_post_incomparable_below_jump :
+    ∃ A B : Set ℕ,
+      ¬(A.indicator 1 : ℕ → ℕ) ≤ᵀ (B.indicator 1 : ℕ → ℕ) ∧
+      ¬(B.indicator 1 : ℕ → ℕ) ≤ᵀ (A.indicator 1 : ℕ → ℕ) ∧
+      (A.indicator 1 : ℕ → ℕ) ≤ᵀ (KleenePost.halting.indicator 1 : ℕ → ℕ) ∧
+      (B.indicator 1 : ℕ → ℕ) ≤ᵀ (KleenePost.halting.indicator 1 : ℕ → ℕ) := by
+  refine ⟨{n | KleenePost.limA n = true}, {n | KleenePost.limB n = true}, ?_⟩
+  rw [KleenePost.indicator_eq, KleenePost.indicator_eq]
+  exact ⟨KleenePost.not_limA_le_limB, KleenePost.not_limB_le_limA,
+    kleene_post_below_jump.1, kleene_post_below_jump.2⟩
+
+/-- In `TuringDegree`, the two Kleene–Post degrees are incomparable and strictly below the degree
+of the halting set `∅'`. -/
+theorem exists_incomparable_lt_jump :
+    let dJump : TuringDegree :=
+      toAntisymmetrization _ (KleenePost.halting.indicator 1 : ℕ → ℕ)
+    ∃ d₁ d₂ : TuringDegree, ¬d₁ ≤ d₂ ∧ ¬d₂ ≤ d₁ ∧ d₁ < dJump ∧ d₂ < dJump := by
+  intro dJump
+  obtain ⟨A, B, hAB, hBA, hAJ, hBJ⟩ := kleene_post_incomparable_below_jump
+  refine ⟨toAntisymmetrization _ (A.indicator 1 : ℕ → ℕ),
+    toAntisymmetrization _ (B.indicator 1 : ℕ → ℕ), hAB, hBA,
+    lt_of_le_not_ge hAJ (fun hJA => hBA (TuringReducible.trans hBJ hJA)),
+    lt_of_le_not_ge hBJ (fun hJB => hAB (TuringReducible.trans hAJ hJB))⟩
 
 end CslibFrontierTests.KleenePost

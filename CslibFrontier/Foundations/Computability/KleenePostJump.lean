@@ -8,18 +8,46 @@ module
 
 public import CslibFrontier.Foundations.Computability.KleenePost
 public import CslibFrontier.Foundations.Computability.RecursiveInEvalnPrimrec
+public import CslibFrontier.Foundations.Data.List.Primrec
 public import Mathlib.Computability.PartrecCode
-public import Mathlib.Computability.Primrec.List
 
 /-!
 # Kleene–Post Theorem with Turing Jump
 
 This module proves the upper bound on the Kleene–Post construction, showing that the constructed
-sequences `limA` and `limB` are Turing reducible to the halting problem (`∅'`).
+incomparable sequences `limA` and `limB` from `CslibFrontier.Foundations.Computability.KleenePost`
+are Turing reducible to the halting problem (`∅'`).
+
+## Source correspondence and notation mapping
+
+The Kleene–Post theorem [KleenePost1954] (see also [Soare1987]) constructs two Turing-incomparable
+sets below `∅'` by the finite extension method:
+
+* **Constructed sets and characteristic functions**: the sets are
+  `A = {n | limA n = true}` and `B = {n | limB n = true}`, where
+  `limA n = (stage (2 * n + 2)).1.getD n false` and
+  `limB n = (stage (2 * n + 2)).2.getD n false`. By `Nat.RecursiveIn.KleenePost.indicator_eq`,
+  their `{0, 1}`-valued characteristic functions are `A.indicator 1 = fun n => (limA n).toNat`
+  and `B.indicator 1 = fun n => (limB n).toNat`.
+* **Diagonal halting set (`∅'`)**: `Nat.RecursiveIn.KleenePost.halting` is the diagonal halting set
+  `{c : ℕ | (Nat.Partrec.Code.eval (ofNat Nat.Partrec.Code c) c).Dom}` for Mathlib's acceptable
+  numbering `Nat.Partrec.Code`, with characteristic function `halting.indicator 1 : ℕ → ℕ` and
+  partial-function oracle wrapper `haltingOraclePart`.
+* **Turing reducibility (`≤ᵀ`)**: `f ≤ᵀ g` is Mathlib's `TuringReducible f g`
+  (`RecursiveIn {g} f`).
+* **Model boundary**: at each stage `s`, the finite-extension step queries `halting` via the
+  primitive-recursive many-one reduction `halts_reducibleTo_halting` to decide the `Σ⁰₁` question
+  `Halts c τ σ.length`. Consequently `A` and `B` are `Δ⁰₂` sets Turing reducible to `∅'`, not
+  computably enumerable sets; the Friedberg–Muchnik theorem (incomparable c.e. sets by finite
+  injury without an oracle) is a separate theorem.
 
 ## Main definitions
 
-* `Nat.RecursiveIn.KleenePost.halting`: the halting set for partial recursive functions (`∅'`).
+* `Nat.RecursiveIn.KleenePost.halting`: the diagonal halting set for partial recursive functions
+  (`∅'`).
+* `Nat.RecursiveIn.KleenePost.haltingOraclePart`: the characteristic function of `halting` as a
+  total `ℕ →. ℕ` oracle.
+* `Nat.RecursiveIn.KleenePost.O`: the singleton oracle set `{haltingOraclePart}`.
 * `Nat.RecursiveIn.KleenePost.stageNat`: the encoded stage of the Kleene–Post construction.
 
 ## Main results
@@ -46,39 +74,32 @@ open scoped Computability
 
 namespace Nat.RecursiveIn.KleenePost
 
-/-- The Turing jump of the empty set, the halting set for partial recursive functions. -/
+/-- The Turing jump of the empty set, the diagonal halting set for partial recursive functions. -/
+@[expose]
 def halting : Set ℕ := { c | (Nat.Partrec.Code.eval (ofNat Nat.Partrec.Code c) c).Dom }
 
-/-- The list prefix relation is primitive recursive. -/
-lemma list_isPrefix {α} [Primcodable α] :
-    PrimrecRel (fun (l₁ l₂ : List α) => l₁ <+: l₂) := by
-  have H : PrimrecRel (fun l₁ l₂ : List α => l₂.take l₁.length = l₁) :=
-    _root_.Primrec.eq.comp (Primrec.list_take.comp (list_length.comp fst) snd) fst
-  exact H.of_eq fun p => by simp [List.prefix_iff_eq_take, eq_comm]
-
 /-- Boolean decision procedure for `haltsPred`. -/
-def haltsPredDecide (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ) : Bool :=
+private def haltsPredDecide (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ) : Bool :=
   match Encodable.decode (α := List Bool × ℕ × ℕ) e with
   | Option.none => false
   | Option.some (σ, k, y) =>
     (τ <+: σ) && (Nat.RecursiveIn.Code.evaln (bits σ) k c x == Option.some y)
 
 /-- Partial-search wrapper returning `some e` when `e` witnesses `haltsPredDecide c τ x e`. -/
-def haltsPredOpt (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ) : Option ℕ :=
+private def haltsPredOpt (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ) : Option ℕ :=
   bif haltsPredDecide c τ x e then Option.some e else Option.none
 
 /-- Uncurried form of `haltsPredOpt` for primitive recursion combinators. -/
-def haltsPredOptAll (p : Nat.RecursiveIn.Code × List Bool × ℕ) (e : ℕ) : Option ℕ :=
+private def haltsPredOptAll (p : Nat.RecursiveIn.Code × List Bool × ℕ) (e : ℕ) : Option ℕ :=
   let (c, τ, x) := p
   haltsPredOpt c τ x e
 
-/-- `bits` is primitive recursive. -/
-lemma primrec_bits : _root_.Primrec bits :=
-  (list_map _root_.Primrec.id
-    (_root_.Primrec.cond snd (_root_.Primrec.const 1) (_root_.Primrec.const 0)).to₂).of_eq
-    fun σ => by
-      dsimp [bits, Bool.toNat]
-      rfl
+private lemma primrec_bool_toNat : _root_.Primrec Bool.toNat :=
+  (_root_.Primrec.cond _root_.Primrec.id (_root_.Primrec.const 1) (_root_.Primrec.const 0)).of_eq
+    fun b => by cases b <;> rfl
+
+private lemma primrec_bits : _root_.Primrec bits :=
+  list_map _root_.Primrec.id (primrec_bool_toNat.comp snd).to₂
 
 private lemma primrec_evaln_all :
     _root_.Primrec (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
@@ -92,32 +113,28 @@ private lemma primrec_evaln_all :
 private lemma primrec_evaln_eq_all :
     _root_.Primrec (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
       Nat.RecursiveIn.Code.evaln (bits q.2.1) q.2.2.1 q.1.1 q.1.2.2 == Option.some q.2.2.2) := by
-  have H : PrimrecPred (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
-      Nat.RecursiveIn.Code.evaln (bits q.2.1) q.2.2.1 q.1.1 q.1.2.2 = Option.some q.2.2.2) :=
-    PrimrecRel.comp _root_.Primrec.eq primrec_evaln_all (option_some.comp (snd.comp (snd.comp snd)))
-  obtain ⟨_, H2⟩ := H
-  exact H2.of_eq fun q => by
-    cases h_eval : Nat.RecursiveIn.Code.evaln (bits q.2.1) q.2.2.1 q.1.1 q.1.2.2 <;>
-      simp [h_eval]
+  have H : _root_.Primrec (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
+      decide (Nat.RecursiveIn.Code.evaln (bits q.2.1) q.2.2.1 q.1.1 q.1.2.2 =
+        Option.some q.2.2.2)) :=
+    (PrimrecRel.comp _root_.Primrec.eq primrec_evaln_all
+      (option_some.comp (snd.comp (snd.comp snd)))).decide
+  exact H.of_eq fun q => by
+    cases Nat.RecursiveIn.Code.evaln (bits q.2.1) q.2.2.1 q.1.1 q.1.2.2 <;>
+      simp
     rfl
 
-/-- `haltsPredOptAll` is primitive recursive. -/
-lemma primrec_haltsPredOptAll : Primrec₂ haltsPredOptAll := by
-  have hp1 : PrimrecPred (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
-      q.1.2.1 <+: q.2.1) :=
-    PrimrecRel.comp list_isPrefix (fst.comp (snd.comp fst)) (fst.comp snd)
-  obtain ⟨h_dec, H_hp1⟩ := hp1
+private lemma primrec_haltsPredOptAll : Primrec₂ haltsPredOptAll := by
+  have hp1 : _root_.Primrec (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
+      decide (q.1.2.1 <+: q.2.1)) :=
+    (PrimrecRel.comp list_isPrefix (fst.comp (snd.comp fst)) (fst.comp snd)).decide
   have hs : _root_.Primrec (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
       decide (q.1.2.1 <+: q.2.1) &&
         (Nat.RecursiveIn.Code.evaln (bits q.2.1) q.2.2.1 q.1.1 q.1.2.2 ==
-          Option.some q.2.2.2)) := by
-    have H : _root_.Primrec (fun q => bif @decide (q.1.2.1 <+: q.2.1) (h_dec q) then
-        Nat.RecursiveIn.Code.evaln (bits q.2.1) q.2.2.1 q.1.1 q.1.2.2 == Option.some q.2.2.2
-        else false) :=
-      _root_.Primrec.cond H_hp1 primrec_evaln_eq_all (_root_.Primrec.const false)
-    exact H.of_eq fun q => by cases (@decide (q.1.2.1 <+: q.2.1) (h_dec q)) <;> rfl
-  have hs_to₂ : Primrec₂ (fun (arg : (Nat.RecursiveIn.Code × List Bool × ℕ) × ℕ) p =>
-      @decide (arg.1.2.1 <+: (p : List Bool × ℕ × ℕ).1) (h_dec (arg.1, p)) &&
+          Option.some q.2.2.2)) :=
+    _root_.Primrec.and.comp hp1 primrec_evaln_eq_all
+  have hs_to₂ : Primrec₂ (fun (arg : (Nat.RecursiveIn.Code × List Bool × ℕ) × ℕ)
+      (p : List Bool × ℕ × ℕ) =>
+      decide (arg.1.2.1 <+: p.1) &&
         (Nat.RecursiveIn.Code.evaln (bits p.1) p.2.1 arg.1.1 arg.1.2.2 == Option.some p.2.2)) :=
     hs.comp ((fst.comp fst).pair snd)
   have H_match : _root_.Primrec (fun arg : (Nat.RecursiveIn.Code × List Bool × ℕ) × ℕ =>
@@ -125,26 +142,17 @@ lemma primrec_haltsPredOptAll : Primrec₂ haltsPredOptAll := by
     (_root_.Primrec.option_casesOn (_root_.Primrec.decode.comp snd) (_root_.Primrec.const false)
       hs_to₂).of_eq fun arg => by
       dsimp [haltsPredDecide]
-      match h : Encodable.decode (α := List Bool × ℕ × ℕ) arg.2 with
-      | Option.none => rfl
-      | Option.some p =>
-        dsimp
-        have H1 : @decide (arg.1.2.1 <+: p.1) (h_dec (arg.1, p)) =
-            @decide (arg.1.2.1 <+: p.1)
-              (List.instDecidableIsPrefixOfDecidableEq arg.1.2.1 p.1) := by
-          by_cases h_pre : (arg.1.2.1 <+: p.1) <;> simp [h_pre]
-        rw [H1]
+      cases Encodable.decode (α := List Bool × ℕ × ℕ) arg.2 <;> rfl
   exact (_root_.Primrec.cond H_match (option_some.comp snd)
-    (_root_.Primrec.const Option.none)).of_eq fun arg => rfl
+    (_root_.Primrec.const Option.none)).of_eq fun _ => rfl
 
-/-- `haltsPred` agrees with the boolean decision procedure `haltsPredDecide`. -/
-lemma haltsPred_iff_haltsPredDecide (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ) :
+private lemma haltsPred_iff_haltsPredDecide
+    (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ) :
     haltsPred c τ x e ↔ haltsPredDecide c τ x e = true := by
   dsimp [haltsPred, haltsPredDecide]
   cases Encodable.decode (α := List Bool × ℕ × ℕ) e <;> simp
 
-/-- `Halts c τ x` holds if and only if unbounded search over `haltsPredOpt c τ x` converges. -/
-lemma halts_iff_haltsPredOpt_dom (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) :
+private lemma halts_iff_haltsPredOpt_dom (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) :
     Halts c τ x ↔ (Nat.rfindOpt (haltsPredOpt c τ x)).Dom := by
   rw [Halts_iff_exists_haltsPred]
   rw [Nat.rfindOpt_dom]
@@ -157,8 +165,7 @@ lemma halts_iff_haltsPredOpt_dom (c : Nat.RecursiveIn.Code) (τ : List Bool) (x 
     · simp [h] at he
     · exact ⟨e, (haltsPred_iff_haltsPredDecide c τ x e).mpr h⟩
 
-/-- Unbounded search over `haltsPredOptAll` is partial recursive. -/
-lemma partrec_haltsPredOpt_rfindOpt :
+private lemma partrec_haltsPredOpt_rfindOpt :
     Partrec fun (p : Nat.RecursiveIn.Code × List Bool × ℕ) =>
       Nat.rfindOpt (haltsPredOptAll p) :=
   Partrec.rfindOpt (Primrec₂.to_comp primrec_haltsPredOptAll)
@@ -266,21 +273,6 @@ noncomputable def O : Set (ℕ →. ℕ) := {haltingOraclePart}
 lemma haltingOraclePart_rec : Nat.RecursiveIn O haltingOraclePart :=
   Nat.RecursiveIn.oracle haltingOraclePart (Set.mem_singleton _)
 
-/-- Any partial recursive function on `ℕ` is recursive in `O`. -/
-lemma partrec_rec {f : ℕ →. ℕ} (hf : Partrec f) : Nat.RecursiveIn O f := by
-  have : RecursiveIn O f := Partrec.recursiveIn hf
-  have H : (fun n => (↑(decode (α := ℕ) n) : Part ℕ).bind fun a => Part.map encode (f a)) = f := by
-    funext n
-    change (Part.some n).bind (fun a => Part.map id (f a)) = f n
-    ext x
-    simp
-  exact H ▸ this
-
-/-- Any primitive recursive function on `ℕ` is recursive in `O`. -/
-lemma primrec_rec {f : ℕ → ℕ} (hf : _root_.Primrec f) :
-    Nat.RecursiveIn O (fun n => Part.some (f n)) :=
-  partrec_rec hf.to_comp.partrec
-
 /-- The encoded stage pair `stage s` of the Kleene–Post construction. -/
 noncomputable def stageNat (s : ℕ) : ℕ := encode (stage s)
 
@@ -305,10 +297,7 @@ private lemma primrec_s_mod2_eq_zero :
     fst.comp (_root_.Primrec.unpair.comp (snd.comp _root_.Primrec.unpair))
   have hmod : _root_.Primrec (fun p : ℕ => p.unpair.2.unpair.1 % 2) :=
     nat_mod.comp hs (_root_.Primrec.const 2)
-  have hp : PrimrecPred (fun p : ℕ => p.unpair.2.unpair.1 % 2 = 0) :=
-    PrimrecRel.comp _root_.Primrec.eq hmod (_root_.Primrec.const 0)
-  obtain ⟨_, hp'⟩ := hp
-  exact hp'.of_eq fun p => by by_cases h : p.unpair.2.unpair.1 % 2 = 0 <;> simp [h]
+  exact (PrimrecRel.comp _root_.Primrec.eq hmod (_root_.Primrec.const 0)).decide
 
 private def stepSigma (p : ℕ) : List Bool :=
   if p.unpair.2.unpair.1 % 2 = 0 then (stepStage p).1 else (stepStage p).2
@@ -338,8 +327,7 @@ private lemma primrec_stepArgs : _root_.Primrec stepArgs := by
     (_root_.Primrec.ofNat Code).comp (nat_div.comp hs (_root_.Primrec.const 2))
   exact hc.pair (primrec_stepTau.pair (list_length.comp primrec_stepSigma))
 
-/-- Query index into `halting` for the recursive step at packed state `p`. -/
-noncomputable def stepPrep (p : ℕ) : ℕ :=
+private noncomputable def stepPrep (p : ℕ) : ℕ :=
   let s := p.unpair.2.unpair.1
   let prev := p.unpair.2.unpair.2
   let stage_s : List Bool × List Bool :=
@@ -352,22 +340,15 @@ noncomputable def stepPrep (p : ℕ) : ℕ :=
   let K := Classical.choose halts_reducibleTo_halting
   K (c, τ, σ.length)
 
-/-- `stepPrep` is primitive recursive. -/
-lemma primrec_stepPrep : _root_.Primrec stepPrep := by
+private lemma primrec_stepPrep : _root_.Primrec stepPrep := by
   have hK : _root_.Primrec (Classical.choose halts_reducibleTo_halting) :=
     (Classical.choose_spec halts_reducibleTo_halting).1
   exact (hK.comp primrec_stepArgs).of_eq fun _ => rfl
 
-/-- `stepPrep` is partial recursive as a total function. -/
-lemma partrec_stepPrep : Partrec (fun p => Part.some (stepPrep p)) :=
-  primrec_stepPrep.to_comp.partrec
-
 private lemma primrec_halts_eq_one :
-    _root_.Primrec (fun p : ℕ => decide (p.unpair.1 = 1)) := by
-  have hp : PrimrecPred (fun p : ℕ => p.unpair.1 = 1) :=
-    PrimrecRel.comp _root_.Primrec.eq (fst.comp _root_.Primrec.unpair) (_root_.Primrec.const 1)
-  obtain ⟨_, hp'⟩ := hp
-  exact hp'.of_eq fun p => by by_cases h : p.unpair.1 = 1 <;> simp [h]
+    _root_.Primrec (fun p : ℕ => decide (p.unpair.1 = 1)) :=
+  (PrimrecRel.comp _root_.Primrec.eq (fst.comp _root_.Primrec.unpair)
+    (_root_.Primrec.const 1)).decide
 
 private def stepSearchOpt (p e : ℕ) : Option ℕ :=
   if p.unpair.1 = 1 then
@@ -406,24 +387,19 @@ private def stepFound (p : ℕ) (w : List Bool × ℕ × ℕ) : ℕ :=
     else (w.1, stepSigma p ++ [decide (w.2.2 = 0)]))
 
 private lemma primrec_stepFound : Primrec₂ stepFound := by
-  have h_w0 : PrimrecPred (fun q : ℕ × (List Bool × ℕ × ℕ) => q.2.2.2 = 0) :=
-    PrimrecRel.comp _root_.Primrec.eq (snd.comp (snd.comp snd)) (_root_.Primrec.const 0)
-  obtain ⟨_, h_w0'⟩ := h_w0
-  have h_sing : _root_.Primrec (fun q : ℕ × (List Bool × ℕ × ℕ) =>
-      [@decide (q.2.2.2 = 0) (instDecidableEqNat q.2.2.2 0)]) :=
-    (_root_.Primrec.cond h_w0'
-      (_root_.Primrec.const ([true] : List Bool))
-      (_root_.Primrec.const ([false] : List Bool))).of_eq fun q => by
-      by_cases h : q.2.2.2 = 0 <;> simp [h]
+  have h_w0 : _root_.Primrec (fun q : ℕ × (List Bool × ℕ × ℕ) => decide (q.2.2.2 = 0)) :=
+    (PrimrecRel.comp _root_.Primrec.eq (snd.comp (snd.comp snd)) (_root_.Primrec.const 0)).decide
+  have h_sing : _root_.Primrec (fun q : ℕ × (List Bool × ℕ × ℕ) => [decide (q.2.2.2 = 0)]) :=
+    list_cons.comp h_w0 (_root_.Primrec.const [])
   have h_app : _root_.Primrec (fun q : ℕ × (List Bool × ℕ × ℕ) =>
-      stepSigma q.1 ++ [@decide (q.2.2.2 = 0) (instDecidableEqNat q.2.2.2 0)]) :=
+      stepSigma q.1 ++ [decide (q.2.2.2 = 0)]) :=
     list_append.comp (primrec_stepSigma.comp fst) h_sing
   have h_w1 : _root_.Primrec (fun q : ℕ × (List Bool × ℕ × ℕ) => q.2.1) :=
     fst.comp snd
   have h_pair : _root_.Primrec (fun q : ℕ × (List Bool × ℕ × ℕ) =>
       if q.1.unpair.2.unpair.1 % 2 = 0 then
-        (stepSigma q.1 ++ [@decide (q.2.2.2 = 0) (instDecidableEqNat q.2.2.2 0)], q.2.1)
-      else (q.2.1, stepSigma q.1 ++ [@decide (q.2.2.2 = 0) (instDecidableEqNat q.2.2.2 0)])) :=
+        (stepSigma q.1 ++ [decide (q.2.2.2 = 0)], q.2.1)
+      else (q.2.1, stepSigma q.1 ++ [decide (q.2.2.2 = 0)])) :=
     (_root_.Primrec.cond (primrec_s_mod2_eq_zero.comp fst)
       (h_app.pair h_w1) (h_w1.pair h_app)).of_eq fun q => by
       by_cases h : q.1.unpair.2.unpair.1 % 2 = 0 <;> simp [h]
@@ -451,9 +427,7 @@ private lemma primrec_stepPost : Primrec₂ stepPost := by
     dsimp [stepPost]
     by_cases h : p.unpair.1 = 1 <;> simp [h]
 
-/-- Partial recursive transition computing `stageNat (s + 1)` given the oracle bit and packed
-state `p`. -/
-noncomputable def stepCore (p : ℕ) : Part ℕ :=
+private noncomputable def stepCore (p : ℕ) : Part ℕ :=
   let halts := p.unpair.1
   let s := p.unpair.2.unpair.1
   let prev := p.unpair.2.unpair.2
@@ -476,8 +450,7 @@ noncomputable def stepCore (p : ℕ) : Part ℕ :=
   else
     Part.some <| encode (if s % 2 = 0 then (σ ++ [false], τ) else (τ, σ ++ [false]))
 
-/-- `stepCore` is partial recursive. -/
-lemma partrec_stepCore : Partrec stepCore := by
+private lemma partrec_stepCore : Partrec stepCore := by
   have h_rfind : Partrec (fun p : ℕ => Nat.rfindOpt (stepSearchOpt p)) :=
     Partrec.rfindOpt primrec_stepSearchOpt.to_comp
   have h_map : Partrec (fun p : ℕ => (Nat.rfindOpt (stepSearchOpt p)).map (stepPost p)) :=
@@ -498,12 +471,10 @@ lemma partrec_stepCore : Partrec stepCore := by
   · simp [h]
   · simp [h, rfindOpt_const_some]
 
-/-- Base case `stageNat 0` for primitive recursion. -/
-def stageNatBase (_p : ℕ) : Part ℕ := Part.some (encode (([], []) : List Bool × List Bool))
+private def stageNatBase (_p : ℕ) : Part ℕ := Part.some (encode (([], []) : List Bool × List Bool))
 
-/-- `stageNatBase` is partial recursive. -/
-lemma partrec_stageNatBase : Partrec stageNatBase :=
-  (_root_.Primrec.const (encode emptyStage)).to_comp.partrec
+private lemma primrec_stageNatBase : _root_.Primrec (fun _ : ℕ => encode emptyStage) :=
+  _root_.Primrec.const (encode emptyStage)
 
 open Classical in
 private lemma stage_succ_eq (s : ℕ) :
@@ -600,13 +571,16 @@ private lemma stepFull_spec (a s : ℕ) :
 
 /-- The encoded stage sequence `stageNat` is recursive in `O`. -/
 lemma rec_stageNat : Nat.RecursiveIn O (fun n => Part.some (stageNat n)) := by
-  have h_base : Nat.RecursiveIn O stageNatBase := partrec_rec partrec_stageNatBase
-  have h_step : Nat.RecursiveIn O stepCore := partrec_rec partrec_stepCore
-  have h_prep : Nat.RecursiveIn O (fun p => Part.some (stepPrep p)) := partrec_rec partrec_stepPrep
+  have h_base : Nat.RecursiveIn O stageNatBase :=
+    (Primrec.nat_iff.mp primrec_stageNatBase).recursiveIn
+  have h_step : Nat.RecursiveIn O stepCore :=
+    (Partrec.nat_iff.mp partrec_stepCore).recursiveIn
+  have h_prep : Nat.RecursiveIn O (fun p => Part.some (stepPrep p)) :=
+    (Primrec.nat_iff.mp primrec_stepPrep).recursiveIn
   have h_halts : Nat.RecursiveIn O (fun p => (Part.some (stepPrep p)).bind haltingOraclePart) :=
     comp haltingOraclePart_rec h_prep
   have h_id : Nat.RecursiveIn O (fun p : ℕ => Part.some p.unpair.2) :=
-    primrec_rec (snd.comp _root_.Primrec.unpair)
+    (Primrec.nat_iff.mp (snd.comp _root_.Primrec.unpair)).recursiveIn
   have h_pair : Nat.RecursiveIn O
       (fun p =>
         Nat.pair <$> (Part.some (stepPrep p)).bind haltingOraclePart <*> Part.some p.unpair.2) :=
@@ -614,7 +588,8 @@ lemma rec_stageNat : Nat.RecursiveIn O (fun n => Part.some (stageNat n)) := by
   have h_step2 : Nat.RecursiveIn O stepFull := comp h_step h_pair
   have h_prec := prec h_base h_step2
   have h_zero_pair : Nat.RecursiveIn O (fun n : ℕ => Part.some (Nat.pair 0 n)) :=
-    primrec_rec (Primrec₂.natPair.comp (_root_.Primrec.const 0) _root_.Primrec.id)
+    (Primrec.nat_iff.mp
+      (Primrec₂.natPair.comp (_root_.Primrec.const 0) _root_.Primrec.id)).recursiveIn
   have h_comp := comp h_prec h_zero_pair
   refine h_comp.of_eq fun n => ?_
   simp only [Part.bind_eq_bind, Part.bind_some, Nat.unpair_pair]
@@ -638,60 +613,10 @@ private lemma primrec_decodeStagePair : _root_.Primrec decodeStagePair :=
     dsimp [decodeStagePair]
     cases decode (α := List Bool × List Bool) p.unpair.2 <;> rfl
 
-private def extractListBit (l : List Bool) (n : ℕ) : ℕ :=
-  match l[n]? with
-  | Option.some b => bif b then 1 else 0
-  | Option.none => 0
-
-private lemma extractListBit_eq (l : List Bool) (n : ℕ) :
-    extractListBit l n = (l.getD n false).toNat := by
-  dsimp [extractListBit]
-  rw [List.getD_eq_getElem?_getD]
-  cases l[n]? with
-  | none => rfl
-  | some b => cases b <;> rfl
-
-private lemma primrec_extractListBit : Primrec₂ extractListBit :=
-  (_root_.Primrec.option_casesOn (list_getElem?.comp fst snd)
-    (_root_.Primrec.const 0)
-    (_root_.Primrec.cond snd (_root_.Primrec.const 1) (_root_.Primrec.const 0)).to₂).of_eq
-    fun ⟨l, n⟩ => by
-      dsimp [extractListBit]
-      cases l[n]? <;> rfl
-
 private lemma primrec_two_mul_add_two : _root_.Primrec (fun n : ℕ => 2 * n + 2) :=
   (_root_.Primrec.succ.comp
     (_root_.Primrec.succ.comp (nat_add.comp _root_.Primrec.id _root_.Primrec.id))).of_eq
     fun n => by dsimp; omega
-
-/-- Both Kleene–Post limit sequences `limA` and `limB` are Turing reducible to the halting set. -/
-lemma lim_below_jump :
-    (fun n => (limA n).toNat : ℕ → ℕ) ≤ᵀ (fun n => (halting.indicator 1 n) : ℕ → ℕ) ∧
-    (fun n => (limB n).toNat : ℕ → ℕ) ≤ᵀ (fun n => (halting.indicator 1 n) : ℕ → ℕ) := by
-  have h_idx : Nat.RecursiveIn O (fun n => Part.some (2 * n + 2)) :=
-    primrec_rec primrec_two_mul_add_two
-  have h_stage_idx : Nat.RecursiveIn O (fun n => Part.some (stageNat (2 * n + 2))) :=
-    (comp rec_stageNat h_idx).of_eq fun n => by simp
-  have h_id : Nat.RecursiveIn O (fun n => Part.some n) := primrec_rec _root_.Primrec.id
-  have h_arg : Nat.RecursiveIn O (fun n => Part.some (Nat.pair n (stageNat (2 * n + 2)))) :=
-    (pair h_id h_stage_idx).of_eq fun n => by simp [Seq.seq]
-  have h_extA : _root_.Primrec (fun p : ℕ =>
-      extractListBit (decodeStagePair p).1 p.unpair.1) :=
-    primrec_extractListBit.comp
-      (fst.comp primrec_decodeStagePair) (fst.comp _root_.Primrec.unpair)
-  have h_extB : _root_.Primrec (fun p : ℕ =>
-      extractListBit (decodeStagePair p).2 p.unpair.1) :=
-    primrec_extractListBit.comp
-      (snd.comp primrec_decodeStagePair) (fst.comp _root_.Primrec.unpair)
-  have h_recA : Nat.RecursiveIn O (fun n => Part.some (limA n).toNat) := by
-    refine (comp (primrec_rec h_extA) h_arg).of_eq fun n => ?_
-    simp only [Part.bind_eq_bind, Part.bind_some, extractListBit_eq,
-      decodeStagePair, Nat.unpair_pair, stageNat, Encodable.encodek, limA]
-  have h_recB : Nat.RecursiveIn O (fun n => Part.some (limB n).toNat) := by
-    refine (comp (primrec_rec h_extB) h_arg).of_eq fun n => ?_
-    simp only [Part.bind_eq_bind, Part.bind_some, extractListBit_eq,
-      decodeStagePair, Nat.unpair_pair, stageNat, Encodable.encodek, limB]
-  exact ⟨RecursiveIn.iff_nat.mpr h_recA, RecursiveIn.iff_nat.mpr h_recB⟩
 
 end Nat.RecursiveIn.KleenePost
 
@@ -699,5 +624,30 @@ end Nat.RecursiveIn.KleenePost
 Turing reducible to the halting problem (`∅'`). -/
 theorem kleene_post_below_jump :
     (fun n => (limA n).toNat : ℕ → ℕ) ≤ᵀ (fun n => (halting.indicator 1 n) : ℕ → ℕ) ∧
-    (fun n => (limB n).toNat : ℕ → ℕ) ≤ᵀ (fun n => (halting.indicator 1 n) : ℕ → ℕ) :=
-  Nat.RecursiveIn.KleenePost.lim_below_jump
+    (fun n => (limB n).toNat : ℕ → ℕ) ≤ᵀ (fun n => (halting.indicator 1 n) : ℕ → ℕ) := by
+  have h_idx : Nat.RecursiveIn O (fun n => Part.some (2 * n + 2)) :=
+    (Primrec.nat_iff.mp primrec_two_mul_add_two).recursiveIn
+  have h_stage_idx : Nat.RecursiveIn O (fun n => Part.some (stageNat (2 * n + 2))) :=
+    (comp rec_stageNat h_idx).of_eq fun n => by simp
+  have h_id : Nat.RecursiveIn O (fun n => Part.some n) := Nat.Primrec.id.recursiveIn
+  have h_arg : Nat.RecursiveIn O (fun n => Part.some (Nat.pair n (stageNat (2 * n + 2)))) :=
+    (pair h_id h_stage_idx).of_eq fun n => by simp [Seq.seq]
+  have h_extA : _root_.Primrec (fun p : ℕ =>
+      ((decodeStagePair p).1.getD p.unpair.1 false).toNat) :=
+    primrec_bool_toNat.comp
+      ((_root_.Primrec.list_getD false).comp
+        (fst.comp primrec_decodeStagePair) (fst.comp _root_.Primrec.unpair))
+  have h_extB : _root_.Primrec (fun p : ℕ =>
+      ((decodeStagePair p).2.getD p.unpair.1 false).toNat) :=
+    primrec_bool_toNat.comp
+      ((_root_.Primrec.list_getD false).comp
+        (snd.comp primrec_decodeStagePair) (fst.comp _root_.Primrec.unpair))
+  have h_recA : Nat.RecursiveIn O (fun n => Part.some (limA n).toNat) := by
+    refine (comp (Primrec.nat_iff.mp h_extA).recursiveIn h_arg).of_eq fun n => ?_
+    simp only [Part.bind_eq_bind, Part.bind_some, Part.coe_some,
+      decodeStagePair, Nat.unpair_pair, stageNat, Encodable.encodek, limA]
+  have h_recB : Nat.RecursiveIn O (fun n => Part.some (limB n).toNat) := by
+    refine (comp (Primrec.nat_iff.mp h_extB).recursiveIn h_arg).of_eq fun n => ?_
+    simp only [Part.bind_eq_bind, Part.bind_some, Part.coe_some,
+      decodeStagePair, Nat.unpair_pair, stageNat, Encodable.encodek, limB]
+  exact ⟨RecursiveIn.iff_nat.mpr h_recA, RecursiveIn.iff_nat.mpr h_recB⟩

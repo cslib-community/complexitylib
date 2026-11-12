@@ -113,6 +113,8 @@ import CslibFrontier.DataStructure.NearNeighbor.PStable
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
+import CslibFrontier.Foundations.Computability.KleenePost
+import CslibFrontier.Foundations.Computability.KleenePostJump
 import CslibFrontier.GameTheory.Bimatrix.Existence
 import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
@@ -3552,3 +3554,42 @@ register_result "yap-collapse" where
     coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
     decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
     from Σ_k ⊆ Π_k/poly are not part of this entry."
+
+register_result "kleene-post-incomparable" where
+  title := "Kleene–Post theorem: existence of Turing-incomparable degrees"
+  topic := "computability"
+  sources := [
+    { paper := KleenePost1954, theorem := unverified, locator := unverified },
+    { paper := Soare1987, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Nat.RecursiveIn.kleene_post,
+    TuringDegree.exists_incomparable,
+    Nat.RecursiveIn.KleenePost.not_limA_le_limB,
+    Nat.RecursiveIn.KleenePost.not_limB_le_limA
+  ]
+  scope := "Finite-extension construction of two sets A = {n | limA n = true} and \
+    B = {n | limB n = true} whose characteristic functions A.indicator 1 and B.indicator 1 \
+    are Turing incomparable (¬A ≤ᵀ B and ¬B ≤ᵀ A) under Mathlib's TuringReducible over \
+    Nat.RecursiveIn.Code. The upper bound A, B ≤ᵀ ∅′ is proved in KleenePostJump; \
+    incomparable computably enumerable degrees (Friedberg–Muchnik) remain open (#3379)."
+
+register_result "kleene-post-below-jump" where
+  title := "Kleene–Post theorem: incomparable sets constructed by finite extension lie below ∅′"
+  topic := "computability"
+  sources := [
+    { paper := KleenePost1954, theorem := unverified, locator := unverified },
+    { paper := Soare1987, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    kleene_post_below_jump,
+    Nat.RecursiveIn.KleenePost.halts_reducibleTo_halting,
+    Nat.RecursiveIn.KleenePost.rec_stageNat
+  ]
+  scope := "Proves that the Kleene–Post limit sequences limA and limB from KleenePost are \
+    Turing reducible to the characteristic function halting.indicator 1 of the diagonal \
+    ordinary-code halting set halting = {c | (Nat.Partrec.Code.eval (ofNat Code c) c).Dom}, \
+    via primitive-recursive stage-bounded oracle evaluation (RecursiveInEvalnPrimrec) and \
+    many-one reduction of the one-step extension question Halts to halting. Constructs total \
+    Δ⁰₂ sets below ∅′, not computably enumerable sets; Friedberg–Muchnik, Sacks splitting/density \
+    and Spector's minimal degree remain open (#3379)."

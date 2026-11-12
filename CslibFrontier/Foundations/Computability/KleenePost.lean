@@ -27,7 +27,8 @@ and its soundness and completeness (the use principle) carry the conclusion to t
 This proves the incomparability statement of Kleene–Post. The construction is noncomputable here:
 it decides by classical choice whether some extension forces convergence. The bound
 `A, B ≤ᵀ ∅′` from the source, which holds because this question is `Σ₁` and hence decided by
-`∅′`, is not formalized in this file.
+`∅′`, is proved in `CslibFrontier.Foundations.Computability.KleenePostJump`
+(`kleene_post_below_jump`).
 
 ## Main results
 
@@ -59,6 +60,7 @@ def bits (σ : List Bool) : List ℕ := σ.map Bool.toNat
 
 /-- Some extension of the finite string `τ` makes the code `c` converge on `x` at some stage.
 The witness packs the extension, the stage and the output. -/
+@[expose]
 def Halts (c : Code) (τ : List Bool) (x : ℕ) : Prop :=
   ∃ p : List Bool × ℕ × ℕ,
     let r := p.2
@@ -122,30 +124,24 @@ theorem step_fst (c : Code) (σ τ : List Bool) : ∃ b, (step c σ τ).1 = σ +
     | none => exact ⟨_, rfl⟩
   · exact ⟨_, rfl⟩
 
+open Classical in
+private theorem exists_step_of_halts {c : Code} {σ τ : List Bool} (h : Halts c τ σ.length) :
+    ∃ p : List Bool × ℕ × ℕ,
+      step c σ τ = (σ ++ [decide (p.2.2 = 0)], p.1) ∧
+        τ <+: p.1 ∧ p.2.2 ∈ evaln (bits p.1) p.2.1 c σ.length := by
+  obtain ⟨p, hp, hτ, heval⟩ :=
+    Nat.find_spec (p := haltsPred c τ σ.length) ((Halts_iff_exists_haltsPred c τ σ.length).mp h)
+  refine ⟨p, ?_, hτ, heval⟩
+  unfold step
+  simp [h, hp]
+
 theorem step_snd (c : Code) (σ τ : List Bool) : τ <+: (step c σ τ).2 := by
-  unfold step; dsimp only
-  split_ifs with h
-  · have h_find := Nat.find_spec (p := haltsPred c τ σ.length)
-      ((Halts_iff_exists_haltsPred c τ σ.length).mp h)
-    generalize he : Nat.find (p := haltsPred c τ σ.length)
-      ((Halts_iff_exists_haltsPred c τ σ.length).mp h) = e
-    rw [he] at h_find
-    have h_step : (match Encodable.decode (α := List Bool × ℕ × ℕ) e with
-        | some p => (σ ++ [decide (p.2.2 = 0)], p.1) | none => (σ ++ [false], τ)).2 =
-        (match Encodable.decode (α := List Bool × ℕ × ℕ) e with
-        | some p => (σ ++ [decide (p.2.2 = 0)], p.1) | none => (σ ++ [false], τ)).2 := rfl
-    match hdec : Encodable.decode (α := List Bool × ℕ × ℕ) e with
-    | none =>
-      unfold haltsPred at h_find
-      rcases h_find with ⟨p, hp, _⟩
-      cases hp.symm.trans hdec
-    | some p =>
-      unfold haltsPred at h_find
-      rcases h_find with ⟨p', hp', h2'⟩
-      injection hp'.symm.trans hdec with eq
-      subst p'
-      exact h2'.1
-  · exact List.prefix_refl τ
+  by_cases h : Halts c τ σ.length
+  · obtain ⟨p, hstep, hτ, -⟩ := exists_step_of_halts h
+    rw [hstep]
+    exact hτ
+  · unfold step
+    simp [h]
 
 /-- The finite string `σ` is an initial segment of the `Bool` sequence `a`. -/
 def Agrees (σ : List Bool) (a : ℕ → Bool) : Prop := ∀ i (h : i < σ.length), σ[i] = a i
@@ -159,45 +155,27 @@ theorem step_spec {c : Code} {σ τ : List Bool} {a b : ℕ → Bool}
   have hx : (a σ.length).toNat ∈ eval (fun n => (b n).toNat : ℕ → ℕ) c σ.length := by
     rw [heq, PFun.coe_val]; exact Part.mem_some _
   by_cases h : Halts c τ σ.length
-  · have h_find := Nat.find_spec (p := haltsPred c τ σ.length)
-      ((Halts_iff_exists_haltsPred c τ σ.length).mp h)
-    generalize he : Nat.find (p := haltsPred c τ σ.length)
-      ((Halts_iff_exists_haltsPred c τ σ.length).mp h) = e
-    rw [he] at h_find
-    have h_step : step c σ τ = match Encodable.decode (α := List Bool × ℕ × ℕ) e with
-        | some p => (σ ++ [decide (p.2.2 = 0)], p.1) | none => (σ ++ [false], τ) := by
-      unfold step; dsimp only; simp only [h, ↓reduceDIte]; rw [he]
-    match hdec : Encodable.decode (α := List Bool × ℕ × ℕ) e with
-    | none =>
-      unfold haltsPred at h_find
-      rcases h_find with ⟨p, hp, _⟩
-      cases hp.symm.trans hdec
-    | some p =>
-      unfold haltsPred at h_find
-      rcases h_find with ⟨p', hp', h2'⟩
-      injection hp'.symm.trans hdec with eq
-      subst p'
-      rw [h_step] at hσ hτ
-      simp only [hdec] at hσ hτ
-      have hv : p.2.2 ∈ eval (fun n => (b n).toNat : ℕ → ℕ) c σ.length := by
-        refine evaln_sound (fun i hi => ?_) h2'.2
-        have hi' : i < p.1.length := by simpa [bits] using hi
-        simp only [bits, List.getElem_map, hτ i hi', PFun.coe_val]
-        exact Part.mem_some _
-      have hax : a σ.length = decide (p.2.2 = 0) := by
-        have := hσ σ.length (by simp)
-        simpa using this.symm
-      have hv' : p.2.2 = (a σ.length).toNat := Part.mem_unique hv hx
-      revert hax hv'
-      cases p.2.2
-      · intro hax hv'
-        change a σ.length = true at hax
-        rw [hax] at hv'
-        cases hv'
-      · intro hax hv'
-        change a σ.length = false at hax
-        rw [hax] at hv'
-        cases hv'
+  · obtain ⟨p, hstep, -, heval⟩ := exists_step_of_halts h
+    rw [hstep] at hσ hτ
+    have hv : p.2.2 ∈ eval (fun n => (b n).toNat : ℕ → ℕ) c σ.length := by
+      refine evaln_sound (fun i hi => ?_) heval
+      have hi' : i < p.1.length := by simpa [bits] using hi
+      simp only [bits, List.getElem_map, hτ i hi', PFun.coe_val]
+      exact Part.mem_some _
+    have hax : a σ.length = decide (p.2.2 = 0) := by
+      have := hσ σ.length (by simp)
+      simpa using this.symm
+    have hv' : p.2.2 = (a σ.length).toNat := Part.mem_unique hv hx
+    revert hax hv'
+    cases p.2.2
+    · intro hax hv'
+      change a σ.length = true at hax
+      rw [hax] at hv'
+      cases hv'
+    · intro hax hv'
+      change a σ.length = false at hax
+      rw [hax] at hv'
+      cases hv'
   · have h_step : step c σ τ = (σ ++ [false], τ) := by
       unfold step; dsimp only; simp [h]
     rw [h_step] at hσ hτ

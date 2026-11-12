@@ -1,22 +1,44 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2018 Mario Carneiro, 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Mario Carneiro, Samuel Schlesinger
 -/
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Computability/RecursiveIn.lean`)
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Computability.RecursiveInCode
 public import Mathlib.Computability.Primrec.Basic
 
 /-!
-# Primitive Recursive Evaluator for Oracle Computations
+# Primitive recursive evaluator for oracle computations
 
-This module establishes the primitive recursiveness of `Nat.RecursiveIn.Code.evaln` and related
-functions. It provides the core `Primrec` machinery required to witness computable finite-stage
-search under the halting jump `∅'`. This forms the computational foundation for the Kleene–Post
-theorem constructing intermediate Turing degrees `A, B ≤ᵀ ∅'` in `KleenePostJump.lean`.
+This file proves that structural recursion on `Nat.RecursiveIn.Code` (`Code.primrec_recOn'`,
+`Code.primrec_recOn`) and the stage-bounded oracle evaluator `Nat.RecursiveIn.Code.evaln`
+(`Code.primrec_evaln`) are primitive recursive.
+
+It adapts the strong-recursion table argument of `Mathlib/Computability/PartrecCode.lean`
+(Apache 2.0, by Mario Carneiro) from `Nat.Partrec.Code` to `Nat.RecursiveIn.Code`. Relative to
+that proof, `Code.primrec_recOn'` adds the `oracle` constructor at Gödel number `4` (shifting the
+composite constructors to `n + 5`), and `G` carries the finite oracle prefix `σ : List ℕ` as an
+extra parameter of the strong recursion so that the `oracle` branch looks up `σ[n]?`.
+
+## Main results
+
+* `Nat.RecursiveIn.Code.encodeCode_lt_pair`, `Nat.RecursiveIn.Code.encodeCode_lt_comp`,
+  `Nat.RecursiveIn.Code.encodeCode_lt_prec`, `Nat.RecursiveIn.Code.encodeCode_lt_rfind'`: code
+  encodings of immediate subcodes are strictly smaller than those of the composite code.
+* `Nat.RecursiveIn.Code.primrec_recOn'`, `Nat.RecursiveIn.Code.primrec_recOn`: structural
+  recursion on `Nat.RecursiveIn.Code` is primitive recursive.
+* `Nat.RecursiveIn.Code.primrec_evaln`: stage-bounded oracle evaluation `Code.evaln` is primitive
+  recursive in `(σ, (k, c), n)`.
+
+## References
+
+* Adapted from `Mathlib/Computability/PartrecCode.lean` (Apache 2.0, by Mario Carneiro).
+* [S. C. Kleene and E. L. Post, *The upper semi-lattice of degrees of recursive
+  unsolvability*][KleenePost1954]
+* [R. I. Soare, *Recursively Enumerable Sets and Degrees*][Soare1987]
 -/
 
 open Encodable Denumerable
@@ -27,6 +49,7 @@ public section
 
 namespace Nat.RecursiveIn.Code
 
+/-- The subcodes of `Code.pair cf cg` have strictly smaller Gödel numbers than `pair cf cg`. -/
 theorem encodeCode_lt_pair (cf cg : Code) :
     encodeCode cf < encodeCode (pair cf cg) ∧ encodeCode cg < encodeCode (pair cf cg) := by
   simp only [encodeCode]
@@ -35,21 +58,25 @@ theorem encodeCode_lt_pair (cf cg : Code) :
   have := lt_of_le_of_lt this (lt_add_of_pos_right _ (by decide : 0 < 5))
   exact ⟨lt_of_le_of_lt (Nat.left_le_pair _ _) this, lt_of_le_of_lt (Nat.right_le_pair _ _) this⟩
 
+/-- The subcodes of `Code.comp cf cg` have strictly smaller Gödel numbers than `comp cf cg`. -/
 theorem encodeCode_lt_comp (cf cg : Code) :
     encodeCode cf < encodeCode (comp cf cg) ∧ encodeCode cg < encodeCode (comp cf cg) := by
   have : encodeCode (pair cf cg) < encodeCode (comp cf cg) := by simp [encodeCode]
   exact (encodeCode_lt_pair cf cg).imp (fun h => lt_trans h this) fun h => lt_trans h this
 
+/-- The subcodes of `Code.prec cf cg` have strictly smaller Gödel numbers than `prec cf cg`. -/
 theorem encodeCode_lt_prec (cf cg : Code) :
     encodeCode cf < encodeCode (prec cf cg) ∧ encodeCode cg < encodeCode (prec cf cg) := by
   have : encodeCode (pair cf cg) < encodeCode (prec cf cg) := by simp [encodeCode]
   exact (encodeCode_lt_pair cf cg).imp (fun h => lt_trans h this) fun h => lt_trans h this
 
+/-- The subcode of `Code.rfind' cf` has a strictly smaller Gödel number than `rfind' cf`. -/
 theorem encodeCode_lt_rfind' (cf : Code) : encodeCode cf < encodeCode (rfind' cf) := by
   simp only [encodeCode]
   omega
 
-
+/-- Structural recursion on `Nat.RecursiveIn.Code` with tupled branch functions is primitive
+recursive. Adapted from `Nat.Partrec.Code.primrec_recOn'` with an additional `oracle` branch. -/
 theorem primrec_recOn' {α σ}
     [Primcodable α] [Primcodable σ] {c : α → Code} (hc : Primrec c) {z : α → σ}
     (hz : Primrec z) {s : α → σ} (hs : Primrec s) {l : α → σ} (hl : Primrec l) {r : α → σ}
@@ -136,6 +163,8 @@ theorem primrec_recOn' {α σ}
   cases n.bodd <;> cases n.div2.bodd <;> rfl
 
 
+/-- Structural recursion on `Nat.RecursiveIn.Code` with curried branch functions is primitive
+recursive. Adapted from `Nat.Partrec.Code.primrec_recOn` with an additional `oracle` branch. -/
 theorem primrec_recOn {α σ}
     [Primcodable α] [Primcodable σ] {c : α → Code} (hc : Primrec c) {z : α → σ}
     (hz : Primrec z) {s : α → σ} (hs : Primrec s) {l : α → σ} (hl : Primrec l) {r : α → σ}
@@ -159,8 +188,6 @@ theorem primrec_recOn {α σ}
     (co := fun a b => let b2 := b.2; let b22 := b2.2; co a b.1 b2.1 b22.1 b22.2) (.mk hco)
     (pc := fun a b => let b2 := b.2; let b22 := b2.2; pc a b.1 b2.1 b22.1 b22.2) (.mk hpc)
     (rf := fun a b => rf a b.1 b.2) (.mk hrf)
-
-end Nat.RecursiveIn.Code
 
 private def lup (L : List (List (Option ℕ))) (p : ℕ × Code) (n : ℕ) := do
   let l ← L[encode p]?
@@ -455,4 +482,6 @@ theorem primrec_evaln :
       (Primrec.encode_iff.2 (Primrec.fst.comp Primrec.snd))) (Primrec.snd.comp Primrec.snd))
     Primrec.snd.to₂).of_eq
     fun ⟨σ, ⟨k, c⟩, n⟩ => by simp [evaln_map, Option.bind_map]
+
+end Nat.RecursiveIn.Code
 

@@ -5204,6 +5204,7 @@ public import CslibFrontier.Foundations.Data.List.OfFnPad
 public import CslibFrontier.Foundations.Data.List.OrderStatistic
 public import CslibFrontier.Foundations.Data.List.Palindrome
 public import CslibFrontier.Foundations.Data.List.Perm
+public import CslibFrontier.Foundations.Data.List.Primrec
 public import CslibFrontier.Foundations.Data.List.Range
 public import CslibFrontier.Foundations.Data.List.RowMajor
 public import CslibFrontier.Foundations.Data.List.SelectDistinct
