@@ -364,12 +364,102 @@ indices; only actual list lengths fund iteration. See the [graph certificate tes
 and [ordered CSP certificate tests](../../CslibFrontierTests/CSPRotationCertificate.lean).
 
 These are finite encoding and numerical-verification results; the indexed duality and lifting
-theorems below extend their mathematical interface. Geometric realization, identifying the outer
-face across disconnected components and bare-instance recognition/construction remain open.
+theorems below extend their mathematical interface. The guarded candidate constructor below
+adds success soundness. Geometric realization, identifying the outer face across disconnected
+components and complete bare-instance recognition/construction remain open.
 The complete explicit-table edge solver is documented below. Exact relation-arity and satisfiability guards are
 separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
 rotation does not prove that its graph is nonplanar. The full objective remains
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Frozen XOR queries and checked candidate recovery
+
+From the repository root, import
+`CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query` and
+`CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery`.
+The namespace is `Cslib.Complexity.Graph.RotationRecognition`. The
+[checked guide clients](../../guide/CslibFrontierGuide/NPCompleteness.lean#frozen-xor-queries-and-checked-recovery)
+show the ordinary imports, concrete validation/failure cases and success contracts.
+The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) additionally exercises
+loops, parallel edges, repeated scopes, nullaries and large binary labels; run
+`scripts/build.sh CslibFrontierTests.RotationRecognition` to check it. Successful compilation
+checks actual solver/recovery evaluations and theorem applications, without proving completeness.
+
+`FixedRotationInput` pairs the existing listed graph with optional complete clockwise dart
+words. `Valid` requires declared vertices exactly `List.range n`, endpoints below `n`, exactly
+`n` table entries, and every `some word` to enumerate its entire endpoint fiber without
+duplicates. `none` leaves a vertex free; `some []` is valid at an isolate. `Realizes` fixes the
+full cyclic successor, without reflection; `Consecutive` constrains only successive entries
+inside a directed block. `Feasible` is existence of the existing `RotationSystem` satisfying
+`NumericalGenusZero` and `Realizes`.
+
+`query` computes `validate I && XORSAT.solve (compile I)`. Each edge is twice subdivided;
+fixed vertices freeze their incident first/last segments, and middle segments stay movable.
+The stored segment components have named accessors `Segment.endpoints`, `Segment.source`,
+`Segment.target` and `Segment.frozen`; their tuple representation and encoding are unchanged.
+The reference order reverses prescribed leaves within each center block. Each independent
+unordered segment pair emits one sparse affine row of width at most four, with frozen
+contributions omitted. `query_eq_true_iff` proves exactly `Valid I` and affine satisfiability.
+Import the [finite move topic](../../CslibFrontier/Computability/Complexity/Problems/Graph/RotationSystem/Recognition/Moves.lean)
+for `query_eq_true_iff_exists_frozen_moves`: the same equations have a finite
+segment-by-vertex Boolean witness with literal frozen zeros. Neither statement identifies
+these equations with `Feasible`.
+
+`recover` tries clockwise append candidates using ephemeral `split` queries. A split redirects
+the selected indexed ends to fresh hub `n`, appends nonloop connector `(n,v)`, and fixes the
+hub's complete word to `block ++ [2m]`; the source remains free. The connector need not be a
+bridge. Old edge occurrences and earlier full orders are retained. The outer state stores the
+original graph and its current order table; split graphs and XOR systems do not accumulate.
+The final candidate must pass `RotationCertificate.verifyGenusZero` and `verifyFixed`.
+`recover_sound` gives these exact guards; `recover_feasible` supplies `Feasible` on success.
+`length_recover_successor` gives exactly `2m` output entries, and `length_enc_recover_le`
+bounds the complete framed certificate by `2m * (4m + 1)` bits.
+
+`ofCSP` uses the actual `CSP.incidenceGraph`: variable vertices are free, and each indexed
+constraint's actual scope fixes its full order. It retains repeated variables, identical
+constraints and nullary constraint vertices. Relation semantics and declared arity metadata
+are not consulted. `recoverCSP` also runs the existing original CSP argument-order checker;
+`recoverCSP_sound` proves that this checker accepts every returned certificate. A false nullary
+relation can therefore yield a successful numerical candidate: this program does not decide
+CSP satisfiability. `none` may come from input rejection, a false XOR query, failed candidate
+search or a rejected final table; it implies neither nonplanarity nor CSP unsatisfiability.
+Dvořák–Kupec's constraint-set convention and the indexed duplicate-preserving CSP convention
+are distinct models; applying a source theorem requires an explicit bridge, not deduplication.
+
+`query_polyTime`, `recover_polyTime` and `recoverCSP_polyTime` certify the actual native
+programs on all raw encodings, with no solver, growth or runtime provider. Binary names fund
+no unary scans. `encFixedRotationInput` frames the graph and optional binary dart-word list;
+the temporary frame uses a unary vertex count, binary segment endpoints/frozen bits, and a
+binary reference order. The [query-budget topic](../../CslibFrontier/Computability/Complexity/Problems/Graph/RotationSystem/Recognition/RecoveryBudget.lean)
+charges at most `1 + 2m²` queries generally and `1 + m²` for CSP incidence recovery, where `m`
+counts listed graph edges, hence actual scope occurrences for CSPs. These are query charges,
+not running-time exponents.
+For original CSP encoded length `B`, put `K = B + 1`. The
+[storage bounds](../../CslibFrontier/Computability/Complexity/Problems/Graph/RotationSystem/Recognition/CSPBounds.lean)
+give initial XOR storage at most `9K² * (32 * (log₂(9K²) + 1) + 21)` bits, including all
+framing. The same bound for a split requires `Valid (split (ofCSP F) v block)`;
+the general form requires validity and both frame dimensions at most `3K`.
+It is not a bound on arbitrary malformed compiled systems in terms of `B` alone.
+
+The finite equations reconstruct Schaefer's *Toward a Theory of Planarity*, §§5.3–5.4,
+printed pp. 399–401 ([primary source](https://jgaa.info/index.php/jgaa/article/download/paper298/2658/2465)).
+Here frozen segments have zero moves past every vertex; the paper's PEP restriction fixes
+embedded edges past embedded vertices. Equivalence needs proof. Fulek–Kynčl–Pálvölgyi,
+*Unified Hanani–Tutte theorem*, arXiv:1612.00688v3, Theorem 1, p. 2
+([primary source](https://arxiv.org/pdf/1612.00688v3)), is a prospective bridge from independent
+evenness and evenness at selected vertices to a rotation-preserving embedding; it is not
+formalized here. The contiguous candidate recovery is original, with reconstruction and
+implementation credit retained in the source headers.
+
+The open obligations are `Valid I → (XORSAT.Satisfiable (compile I) ↔ Feasible I)`, the
+split feasibility equivalence with original numerical genus zero, full orders and
+`Consecutive block` (including clockwise order, nonloop contraction and duplicate-declaration
+cleanup), and the geometric/source correspondence with frozen-switch and Hanani–Tutte proofs.
+The shared `Graph.RotationSystem.Declarations` supplies duplicate-declaration numerical
+transport; `Recognition.Declarations` adds only the fresh-range relabeling. These ingredients
+do not discharge the split equivalence. This bounded runtime/soundness milestone leaves
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) open; no final planarity
+P theorem or decision completeness is claimed.
 
 ## Indexed duality and Boolean difference lifting
 
@@ -503,9 +593,9 @@ dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-fro
 
 Loop-only numerical-genus-zero rotations now have actual polygonal embeddings with their
 exact clockwise order, as documented below. The general numerical-genus / polygonal-realization
-equivalence remains unproved. Its two remaining obligations are geometric restoration of nonloop
-contractions by directed contiguous vertex splits and a finite segment-to-face-color converse
-including subdivision and suppression. Topological taming, indexed FZ versus DK set conventions
+equivalence still needs general forward restoration of nonloop contractions by directed
+contiguous vertex splits. The finite polygonal-to-numerical converse is proved below from
+actual embeddings and literal clockwise realization. Topological taming, indexed FZ versus DK set conventions
 and source comparison, frozen-switch completeness, Hanani–Tutte recognition and the full
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) endpoint remain open.
 
@@ -595,8 +685,58 @@ The [bouquet tests](../../CslibFrontierTests/PolygonalBouquet.lean) supply a non
 at every degree, nested/disjoint loops, negative interlacing and reversed-order cases;
 [their audit](../../CslibFrontierTests/PolygonalBouquetAudit.lean) checks stored declarations.
 Run `scripts/build.sh CslibFrontierTests.PolygonalBouquet CslibFrontierTests.PolygonalBouquetAudit --wfail --iofail`.
-This proves the loop-only forward direction. Nonloop restoration and the geometric converse
-remain open, along with the full planar objective.
+This proves the loop-only forward direction. Together with the converse below it gives the
+loop-only equivalence. General nonloop restoration and the full planar objective remain open.
+
+## Polygonal embeddings imply numerical genus zero
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse`.
+For an actual `D : PolygonalDrawing G`, `hD : D.IsEmbedding`, declared incident endpoints
+`hG` and literal clockwise realization `hR : D.Realizes r`, apply
+`hD.numericalGenusZero hG hR`. The conclusion is the existing componentwise
+`r.NumericalGenusZero`. No genus, face-color, lifting, disk, Jordan or Hanani–Tutte premise
+is supplied. Coordinates are arbitrary complex numbers; all real parameters on every affine
+segment are retained. Loops keep two ends, parallel occurrences keep their positions, and
+arbitrary degree, disconnected graphs, sparse/duplicate declarations, points and empty graphs
+are included. The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean) gives
+complete ordinary-import clients and combines it with the loop-only forward theorem.
+
+The constructive intermediate API is `hD.exists_faceColors hR hG x hx`, from
+`PolygonalDrawing.FaceColors`. For every actual `x : Fin G.2.length → Bool` satisfying
+`hx : G.VertexEven x`, it constructs colors `q : r.Face → Bool` with
+`r.faceBoundary q = x`. These are the actual permutation face classes, not a replacement
+geometric-face definition. A generic ray direction is chosen from the finite segment endpoints;
+angular-prefix values transport along all real segment interiors, through bends and through
+the empty inverse-rotation sectors. Vertex-evenness cancels endpoint cuts, including singleton
+rotations and both ends of loops. The values descend through the literal `faceNext`; the exact
+indexed dual/lifting cycle-space criterion then proves numerical genus zero.
+
+Generic ray, determinant, segment and fan-order facts live under
+`CslibFrontier.Foundations.Geometry.Polygonal`; their proofs have no graph dependency.
+`AngleOrder` supplies the one-turn span criterion shared by fixed horizontal ports and
+moving local fans, allowing either choice of argument cut.
+`RayParityEven` supplies local constancy from zero total endpoint jump on the observation
+ray; even incidence derives that premise. `RayParityTransport` reuses this criterion after
+removing the observed segment, whose endpoint heights differ from the observation height.
+The [ray-parity tests](../../CslibFrontierTests/PolygonalRayParity.lean) check a single selected
+segment with odd endpoint incidence where the weaker local criterion applies.
+The graph-specific construction data stay private. The existing lifting-based criterion is a
+proof tool: callers of the final theorem do not supply its face-color premise. `LocalSplitFan`
+and `LocalSplitOrder` supply the needed fan/order facts, with the span-order proof shared through
+`AngleOrder`; the remaining cut/join scaffolding belongs to the still-open forward lane.
+
+Run `scripts/build.sh CslibFrontierTests.PolygonalConverse CslibFrontierTests.PolygonalConverseAudit --wfail --iofail`.
+The [concrete converse client](../../CslibFrontierTests/PolygonalConverse.lean) applies the endpoint
+to actual loop, bridge and parallel-digon embeddings and a clockwise degree-five star, then
+checks sparse/duplicate isolates and emptiness. A nonzero loop label separates its two actual
+faces. The torus test rules out realizing that interlaced rotation; it makes no nonplanarity
+claim about the underlying graph. The [audit](../../CslibFrontierTests/PolygonalConverseAudit.lean)
+covers stored declarations in the new endpoint modules, with its exclusions explicit.
+
+This is an original finite PL proof. General forward restoration, arbitrary topological-arc
+taming and source-model comparison, frozen-switch completeness, HT/recognition, native
+coordinate/runtime bounds and full [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091)
+remain separate obligations.
 
 ## Ordered incidence-to-polygon rotations
 

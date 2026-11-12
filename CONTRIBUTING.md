@@ -522,11 +522,11 @@ not a decision.
   [#39864](https://github.com/leanprover-community/mathlib4/pull/39864), not as a competing
   candidate; the module docstring records the differences. Renaming to match the unmerged PRs is
   not required.
-* **Oracle codes.** Upstream `Foundations/Computability/RecursiveInCode` by reconciling with
+* **Oracle codes.** Upstream `Foundations/Computability/{RecursiveInCode,RecursiveInEvalnPrimrec,KleenePost,KleenePostJump}` by reconciling with
   [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) (oracle codes, a
   relativized `evaln` and the jump), not by competing with it; the module docstring records the
-  design differences. The prefix-based `evaln`, the use principle and `KleenePost` are what that PR
-  lacks.
+  design differences. The prefix-based `evaln`, the use principle and `KleenePost` / `KleenePostJump`
+  are what that PR lacks.
 * **Withdrawn submissions.** The redos of
   [#1099](https://github.com/leanprover/cslib/pull/1099)–[#1101](https://github.com/leanprover/cslib/pull/1101)
   (`Circuit/Boolean/{PPoly,MachineSimulation,PolynomialTime}`) should answer the review requests

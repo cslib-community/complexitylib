@@ -119,6 +119,7 @@ import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.Crypto.Protocols.PIR.Block
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.Shamir
+import CslibFrontier.Crypto.Protocols.PIR.SmoothConverse
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Cut
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.StableSet
@@ -132,6 +133,8 @@ import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
+import CslibFrontier.Foundations.Computability.KleenePost
+import CslibFrontier.Foundations.Computability.KleenePostJump
 import CslibFrontier.GameTheory.Bimatrix.Existence
 import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Cycle
@@ -1240,6 +1243,41 @@ register_result "gmw-zero-knowledge" where
     protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
     knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
     forms; the relation version preserves R's native witnesses via a Levin reduction."
+
+register_result "gkst-pir-to-smooth-code" where
+  title := "Smooth codes from private information retrieval schemes"
+  topic := "cryptography"
+  sources := [
+    { paper := GoldreichKarloffSchulmanTrevisan2006, theorem := "Lemma 7.1",
+      locator := "Section 7.1, pp. 19–20 of ECCC TR01-080" },
+    { paper := KerenidisDeWolf2004, theorem := "Lemma 3",
+      locator := "Appendix B, p. 16 of arXiv:quant-ph/0208062v2" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.card_smoothPos_le,
+    Cslib.Crypto.Protocols.PIR.card_smoothPos_le_six_mul,
+    Cslib.Crypto.Protocols.PIR.smoothCode_zero,
+    Cslib.Crypto.Protocols.PIR.smoothCode_add,
+    Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder,
+    Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder_two,
+    Cslib.Crypto.Protocols.PIR.decodeLaw_smoothDecoder_of_isPrivate,
+    Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder_of_isPrivate,
+    Cslib.Crypto.Protocols.PIR.smoothDecoder_eq_of_predetermined,
+    Cslib.Crypto.Protocols.PIR.card_mul_sq_le_card_answer_sub_one_of_statPrivate,
+    Cslib.Crypto.Protocols.PIR.card_mul_sq_le_card_answer_sub_one_of_isPrivate
+  ]
+  scope := "One-round k-server PIR schemes P over finite server and query sets S, Q (with \
+    arbitrary retained-state type R and answer type A). Replicating each (s, q) entry \
+    max 1 ⌈p₀(s, q) · |S| · |Q|⌉₊ times produces smoothCode P i₀ of length at most \
+    (|S| + 1) · |S| · |Q| (≤ 6 |Q| for |S| = 2) together with a non-adaptive decoder \
+    smoothDecoder P i₀ that is (|S|, |S| + 1, ε - |S| · δ / 2)-smooth under pairwise δ-statistical \
+    privacy (CloseTo) and recovery probability ≥ 1/2 + ε, specializing to (2, 3, ε - δ) for two \
+    servers and preserving the exact output law under perfect privacy (δ = 0). Includes additive \
+    linearity preservation (smoothCodeAddHom), predetermined answer-coordinate invariance \
+    (smoothDecoder_eq_of_predetermined), and the noisy / statistically-private single-server \
+    answer-size bound |ι| · (ε - δ / 2)² ≤ |A| - 1 via OneQuery.lean. Expected reads coincide with \
+    query probability because distinct slots query distinct servers; neither machine runtime nor \
+    fair-coin simulation of rational unifFin draws is certified."
 
 register_result "nash-existence" where
   title := "Nash's theorem: every finite game has a mixed Nash equilibrium"
@@ -4081,3 +4119,44 @@ register_result "csp-bounded-treewidth" where
     · dpNodeCost w F (excluding recursive list-manipulation overhead like bagList, sem \
     evaluations, and unbounded integer arithmetic). The generic CSP-counting DP extension is an \
     adaptation/original implementation. Computing the tree decomposition is external."
+
+register_result "kleene-post-incomparable" where
+  title := "Kleene–Post theorem: existence of Turing-incomparable degrees"
+  topic := "computability"
+  sources := [
+    { paper := KleenePost1954, theorem := unverified, locator := unverified },
+    { paper := Soare1987, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Nat.RecursiveIn.kleene_post,
+    TuringDegree.exists_incomparable,
+    Nat.RecursiveIn.KleenePost.not_limA_le_limB,
+    Nat.RecursiveIn.KleenePost.not_limB_le_limA
+  ]
+  scope := "Finite-extension construction of two sets A = {n | limA n = true} and \
+    B = {n | limB n = true} whose characteristic functions A.indicator 1 and B.indicator 1 \
+    are Turing incomparable (¬A ≤ᵀ B and ¬B ≤ᵀ A) under Mathlib's TuringReducible over \
+    Nat.RecursiveIn.Code. The upper bound A, B ≤ᵀ ∅′ is proved in KleenePostJump; \
+    incomparable computably enumerable degrees (Friedberg–Muchnik) remain open (#3379)."
+
+register_result "kleene-post-below-jump" where
+  title := "Kleene–Post theorem: incomparable sets constructed by finite extension lie below ∅′"
+  topic := "computability"
+  sources := [
+    { paper := KleenePost1954, theorem := unverified, locator := unverified },
+    { paper := Soare1987, theorem := unverified, locator := unverified },
+    { paper := Simpson2005, theorem := "Theorem 2.6.4",
+      locator := "§2.6, pp. 30–31 (November 1, 2005 draft)" }
+  ]
+  theorems := [
+    kleene_post_below_jump,
+    Nat.RecursiveIn.KleenePost.halts_reducibleTo_halting,
+    Nat.RecursiveIn.KleenePost.rec_stageNat
+  ]
+  scope := "Proves that the Kleene–Post limit sequences limA and limB from KleenePost are \
+    Turing reducible to the characteristic function halting.indicator 1 of the diagonal \
+    ordinary-code halting set halting = {c | (Nat.Partrec.Code.eval (ofNat Code c) c).Dom}, \
+    via primitive-recursive stage-bounded oracle evaluation (RecursiveInEvalnPrimrec) and \
+    many-one reduction of the one-step extension question Halts to halting. Constructs total \
+    Δ⁰₂ sets below ∅′; no c.e. property is proved. Friedberg–Muchnik, Sacks splitting/density \
+    and Spector's minimal degree remain open (#3379)."
