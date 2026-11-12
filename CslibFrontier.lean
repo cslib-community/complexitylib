@@ -1042,6 +1042,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Defs
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LogCurve
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.NWGenerator
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
@@ -5505,6 +5506,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.HessianRank
 public import CslibFrontier.Foundations.Data.MvPolynomial.MixedOperator
 public import CslibFrontier.Foundations.Data.MvPolynomial.PDerivConst
 public import CslibFrontier.Foundations.Data.MvPolynomial.PartialDerivatives
+public import CslibFrontier.Foundations.Data.MvPolynomial.PartialEval
 public import CslibFrontier.Foundations.Data.MvPolynomial.PowerSum
 public import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinear
