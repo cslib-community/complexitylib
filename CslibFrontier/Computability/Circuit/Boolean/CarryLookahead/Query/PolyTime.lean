@@ -167,7 +167,7 @@ theorem opData_toData (w rounds : ℕ) (u : BitString (w + w + 1)) (a : Address)
     rw [List.getD_eq_getElem?_getD, List.getElem?_ofFn]
     by_cases hi : i < w + w + 1 <;> simp [readInput, hi]
   | propagate r i =>
-    simp [Address.toData, opData, decoder]
+    simp only [Address.toData, opData, decoder]
     rfl
   | generate r i | generateAnd r i =>
     simp [Address.toData, opData, decoder]
