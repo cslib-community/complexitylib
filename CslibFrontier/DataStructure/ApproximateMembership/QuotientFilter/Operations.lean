@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.ApproximateMembership.QuotientFilter.Basic
+import CslibFrontier.Foundations.Data.List.Sort
 
 /-!
 # Pure Cluster-Level Insert and Delete Operations for the Quotient Filter
@@ -260,57 +261,7 @@ theorem shiftLeft_probeSlot {b f : ℕ} (st : FilterState b f) (o : Fin (2 ^ b))
           probeSlot_ne o (by omega) (by omega) (by omega)
         simp [st', show s + 1 ≤ i by omega, show s ≤ i by omega, hne_succ]
 
-/-! ## Section 2: Sorted-list insertion/deletion splitting and range filter helpers -/
-
-theorem orderedInsert_eq_take_append_drop_of_pairwise {α : Type*} [LinearOrder α]
-    {r : α} {xs : List α} (hpw : xs.Pairwise (· ≤ ·)) :
-    let k := xs.countP (· < r)
-    List.orderedInsert (· ≤ ·) r xs = xs.take k ++ r :: xs.drop k := by
-  induction xs with
-  | nil => simp
-  | cons x xs ih =>
-    obtain ⟨hx_le, hpw_xs⟩ := List.pairwise_cons.mp hpw
-    by_cases hle : r ≤ x
-    · have hlt : decide (x < r) = false := decide_eq_false (not_lt.mpr hle)
-      have hzero : xs.countP (· < r) = 0 := by grind
-      simp [hle, hlt, hzero]
-    · have hlt : decide (x < r) = true := decide_eq_true (lt_of_not_ge hle)
-      simp [hle, hlt, ih hpw_xs]
-
-theorem erase_eq_take_append_drop_of_pairwise {α : Type*} [LinearOrder α] {r : α} {xs : List α}
-    (hpw : xs.Pairwise (· ≤ ·)) (hmem : r ∈ xs) :
-    let k := xs.countP (· < r)
-    xs.erase r = xs.take k ++ xs.drop (k + 1) := by
-  induction xs with
-  | nil => cases hmem
-  | cons x xs ih =>
-    obtain ⟨hx_le, hpw_xs⟩ := List.pairwise_cons.mp hpw
-    by_cases hxr : x = r
-    · subst hxr
-      have hzero : xs.countP (· < x) = 0 :=
-        List.countP_eq_zero.mpr fun y hy => by simp [not_lt.mpr (hx_le y hy)]
-      simp [hzero]
-    · have hr_mem : r ∈ xs := (List.mem_cons.mp hmem).resolve_left (Ne.symm hxr)
-      simp [hxr, lt_of_le_of_ne (hx_le r hr_mem) hxr, ih hpw_xs hr_mem]
-
-theorem getElem_lt_iff_lt_countP_of_pairwise {α : Type*} [LinearOrder α] {r : α} {xs : List α}
-    (hpw : xs.Pairwise (· ≤ ·)) {d : ℕ} (hd : d < xs.length) :
-    xs[d] < r ↔ d < xs.countP (· < r) := by
-  induction xs generalizing d with
-  | nil => simp at hd
-  | cons x xs ih =>
-    obtain ⟨hx_le, hpw_xs⟩ := List.pairwise_cons.mp hpw
-    by_cases hlt : x < r
-    · cases d with
-      | zero => simp [hlt]
-      | succ d => simp [hlt, ih hpw_xs (Nat.lt_of_succ_lt_succ hd)]
-    · have hle : r ≤ x := not_lt.mp hlt
-      have hall : ∀ y ∈ x :: xs, r ≤ y := fun y hy =>
-        (List.mem_cons.mp hy).elim (fun h => h ▸ hle) (fun h => hle.trans (hx_le y h))
-      have hzero : xs.countP (· < r) = 0 :=
-        List.countP_eq_zero.mpr fun y hy => by
-          simp [not_lt.mpr (hall y (List.mem_cons_of_mem x hy))]
-      simp [hlt, hzero, not_lt.mpr (hall _ (List.getElem_mem hd))]
+/-! ## Section 2: Range filter helper -/
 
 theorem length_filter_range_eq_of_iff {ℓ s : ℕ} (hs : s ≤ ℓ) (P : ℕ → Bool)
     (hP : ∀ i < ℓ, P i = true ↔ i < s) :
@@ -427,7 +378,7 @@ theorem IntervalValid.calcTargetSlot_eq {U b f : ℕ} {S : Finset (Fin U)}
       have hrem := hinv.remAt_probeSlot_eq_getElem ha hd_lt
       rw [show S_a + (i - S_a) = i by omega] at hrem
       simp only [hi_lt, hi_lt1, false_or, true_and]
-      rw [hrem, getElem_lt_iff_lt_countP_of_pairwise hpw hd_lt]
+      rw [hrem, hpw.getElem_lt_iff_lt_countP hd_lt]
       change i - S_a < k ↔ i < S_a + k
       omega
     · simp [hi_lt, hi_lt1, show ¬(i < S_a + k) by omega]
@@ -994,7 +945,7 @@ theorem IntervalValid.insertCluster_intervalValid {U b f : ℕ} {S : Finset (Fin
     rw [hst₄_eq, hshift, hdec_eq, hL₁_split, hs_eq, ← hpref_len,
       take_append_drop_middle pref M₁ suff (decide (k = 0), r) (by omega),
       taggedRun_insert_split xs r hk_le,
-      ← orderedInsert_eq_take_append_drop_of_pairwise (r := r) (pairwise_le_bucketRun S quot rem q),
+      ← (pairwise_le_bucketRun S quot rem q).orderedInsert_eq_take_append_drop r,
       ← hins_q, flatMap_taggedRun_three_split_of_eq (Nat.lt_succ_of_le ha) hoff,
       Nat.succ_sub_succ_eq_sub]
 
@@ -1036,7 +987,7 @@ theorem IntervalValid.deleteCluster_intervalValid {U b f : ℕ} {S : Finset (Fin
   have hxs_ne : xs ≠ [] := List.ne_nil_of_mem hr_mem
   have hpw : xs.Pairwise (· ≤ ·) := pairwise_le_bucketRun S quot rem q
   have herase_split : xs.erase r = xs.take k ++ xs.drop (k + 1) :=
-    erase_eq_take_append_drop_of_pairwise hpw hr_mem
+    hpw.erase_eq_take_append_drop hr_mem
   have hk_lt : k < xs.length := by grind [List.length_append, List.length_take, List.length_drop]
   have hs₀_eq : s₀ = runOffset S quot rem o a := hinv.calcRunStart_eq hocc ha.le
   have hs_eq : s = s₀ + k := hs₀_eq ▸ hinv.calcTargetSlot_eq hocc ha r
