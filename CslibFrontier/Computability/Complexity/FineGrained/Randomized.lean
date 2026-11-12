@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.CountingExponen
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import CslibFrontier.Probability.BitString
 import CslibFrontier.Computability.Complexity.Classes.Promise.Probabilistic
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -438,14 +439,7 @@ theorem SolvesWithErrorInExpTime.mono_measure {Q : PromiseProblem α} {E : Error
     SolvesWithErrorInExpTime Q enc E μ' (c * δ) := by
   obtain ⟨e, h⟩ := h
   refine ⟨e, h.mono ⌈(2 : ℝ) ^ (δ * c)⌉₊ (fun a => ?_) fun _ => by positivity⟩
-  have hK : (2 : ℝ) ^ (δ * c) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.le_ceil _
-  have h₁ : (2 : ℝ) ^ (δ * μ a) ≤ 2 ^ (δ * c) * 2 ^ (c * δ * μ' a) := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have : (μ a : ℝ) ≤ c * μ' a + c := by exact_mod_cast hμ a
-    nlinarith
-  have h₂ : (2 : ℝ) ^ (δ * μ a) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ * 2 ^ (c * δ * μ' a) :=
-    h₁.trans (mul_le_mul_of_nonneg_right hK (by positivity))
+  have h₂ := two_rpow_le_natCeil_mul_of_le_mul_add hδ (hμ a)
   have h₃ := mul_le_mul_of_nonneg_right h₂
     (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
   have h₄ : (0 : ℝ) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.cast_nonneg _

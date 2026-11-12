@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.FunctionTime
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
@@ -162,14 +163,7 @@ theorem ComputableInExpTime.mono_measure {μ μ' : α → ℕ} {c : ℕ} (hμ : 
     ComputableInExpTime f encIn encOut μ' (c * δ) := by
   obtain ⟨e, h⟩ := h
   refine ⟨e, h.mono ⌈(2 : ℝ) ^ (δ * c)⌉₊ (fun a => ?_) fun a => by positivity⟩
-  have hK : (2 : ℝ) ^ (δ * c) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.le_ceil _
-  have h₁ : (2 : ℝ) ^ (δ * μ a) ≤ 2 ^ (δ * c) * 2 ^ (c * δ * μ' a) := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have : (μ a : ℝ) ≤ c * μ' a + c := by exact_mod_cast hμ a
-    nlinarith
-  have h₂ : (2 : ℝ) ^ (δ * μ a) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ * 2 ^ (c * δ * μ' a) :=
-    h₁.trans (mul_le_mul_of_nonneg_right hK (by positivity))
+  have h₂ := two_rpow_le_natCeil_mul_of_le_mul_add hδ (hμ a)
   have h₃ := mul_le_mul_of_nonneg_right h₂
     (by positivity : (0 : ℝ) ≤ ((encIn a).length + 1) ^ e)
   have h₄ : (0 : ℝ) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.cast_nonneg _
@@ -390,22 +384,8 @@ theorem ComputableInExpTime.of_reduction {μA : α → ℕ} {μB : β → ℕ} {
     refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
     have : (μB (r a) : ℝ) ≤ c * μA a + c := by exact_mod_cast hμ a
     nlinarith
-  have hpow : (((encMid (r a)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
-    rw [← mul_pow]
-    exact pow_le_pow_left₀ (by positivity) (by nlinarith) e
-  have hT' := mul_le_mul_of_nonneg_left (mul_le_mul hexp hpow (by positivity) (by positivity))
-    (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
-  have h₁ : P ≤ X * P ^ (e + 1) :=
-    (le_self_pow₀ hP (Nat.succ_ne_zero e)).trans (le_mul_of_one_le_left (by positivity) hX)
-  have h₂ : X * P ^ e ≤ X * P ^ (e + 1) :=
-    mul_le_mul_of_nonneg_left (pow_le_pow_right₀ hP (Nat.le_add_right e 1)) (by positivity)
-  have h₂' := mul_le_mul_of_nonneg_left h₂
-    (by positivity : (0 : ℝ) ≤ k * 2 ^ (δ * c) * (2 * l + 1) ^ e)
-  have h₃ : (k : ℝ) * 1 ≤ k * (X * P ^ (e + 1)) := mul_le_mul_of_nonneg_left
-    (one_le_mul_of_one_le_of_one_le hX (one_le_pow₀ hP)) (Nat.cast_nonneg k)
-  have hsum : P + t (r a) ≤
-      (1 + k * 2 ^ (δ * c) * (2 * l + 1) ^ e + k) * (X * P ^ (e + 1)) := by
-    linarith [ht (r a)]
+  have hsum := reduction_add_time_le (C := (2 : ℝ) ^ (δ * c))
+    hP hX (by positivity) hn hexp (ht (r a))
   change ((((encIn a).length + 1) ^ d + t (r a) : ℕ) : ℝ) ≤ _
   push_cast
   rw [pow_mul]

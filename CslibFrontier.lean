@@ -2188,6 +2188,7 @@ public import CslibFrontier.Computability.Complexity.Fagin.Witness
 public import CslibFrontier.Computability.Complexity.FineGrained
 public import CslibFrontier.Computability.Complexity.FineGrained.Assignment
 public import CslibFrontier.Computability.Complexity.FineGrained.BinaryWeightedCounting
+public import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 public import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
 public import CslibFrontier.Computability.Complexity.FineGrained.CircuitCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.CircuitLowerBoundBudget

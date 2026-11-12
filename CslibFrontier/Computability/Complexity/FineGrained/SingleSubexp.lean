@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingExponents
 public import Mathlib.Analysis.Asymptotics.Defs
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -516,21 +517,9 @@ theorem ComputableInSingleSubexpTime.of_reduction {μA : α → ℕ} {μB : β �
   have hexp : (2 : ℝ) ^ s (μB (r a)) ≤ X := by
     refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
     exact (hle _).trans (hmono (hμ a))
-  have hpow : (((encMid (r a)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
-    rw [← mul_pow]
-    exact pow_le_pow_left₀ (by positivity) (by nlinarith) e
-  have hT' := mul_le_mul_of_nonneg_left (mul_le_mul hexp hpow (by positivity) (by positivity))
-    (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
-  have h₁ : P ≤ X * P ^ (e + 1) :=
-    (le_self_pow₀ hP (Nat.succ_ne_zero e)).trans (le_mul_of_one_le_left (by positivity) hX)
-  have h₂ : X * P ^ e ≤ X * P ^ (e + 1) :=
-    mul_le_mul_of_nonneg_left (pow_le_pow_right₀ hP (Nat.le_add_right e 1)) (by positivity)
-  have h₂' := mul_le_mul_of_nonneg_left h₂ (by positivity : (0 : ℝ) ≤ k * (2 * l + 1) ^ e)
-  have h₃ : (k : ℝ) ≤ k * (X * P ^ (e + 1)) :=
-    le_mul_of_one_le_right (Nat.cast_nonneg k)
-      (one_le_mul_of_one_le_of_one_le hX (one_le_pow₀ hP))
-  have hsum : P + t (r a) ≤ (1 + k * (2 * l + 1) ^ e + k) * (X * P ^ (e + 1)) := by
-    linarith [ht (r a)]
+  have hsum := reduction_add_time_le (C := 1) (Y := (2 : ℝ) ^ s (μB (r a)))
+    hP hX (by norm_num) hn (by simpa only [one_mul] using hexp) (ht (r a))
+  simp only [mul_one] at hsum
   change ((((encIn a).length + 1) ^ d + t (r a) : ℕ) : ℝ) ≤ _
   have hc_nn : (0 : ℝ) ≤ (1 + k * (2 * l + 1) ^ e + k : ℕ) := Nat.cast_nonneg _
   push_cast at hc_nn ⊢
