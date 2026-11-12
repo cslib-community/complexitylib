@@ -4,6 +4,11 @@
 
 Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [cslib-frontier][complexitylib]
 
+The [Arora–Barak chapters 8–10 audit](../../results/arora-barak-2007.md#chapter-8-interactive-proofs)
+compares numbered draft results with these APIs. It records the exchange-versus-message
+convention of dynamic Goldwasser–Sipser, the occurrence-dependent Valiant–Vazirani bound,
+and the distinction between Toda’s bit-oracle endpoint and a fixed #SAT oracle.
+
 ## Certificates, random seeds, and quantifier alternation
 
 [NP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/NP.lean#L17) uses a deterministic polynomial-time Boolean verifier on `encPair enc encBits (a,w)`. A witness has exactly `p.eval |enc a|` bits for a fixed natural-coefficient polynomial `p`. Framing separates the input from its witness. The exact polynomial-length convention admits padding and gives the native NTM equivalence; merely handing a verifier a seed whose length is an arbitrary polynomially bounded function could encode uncomputable information in that length.
