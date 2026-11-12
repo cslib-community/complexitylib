@@ -14,8 +14,6 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 /-!
 # Odd errors are orthogonal: truncating the subcube vote for Andreev's function
 
-# Odd errors are orthogonal: truncating the subcube vote for Andreev's function
-
 This module formalizes Lemma 6 and the error analysis in the proof of Theorem 7 of
 C. Reitwiessner, *Depth-Two Threshold Circuits for Andreev's Function* (preprint, November 2026),
 issue [#4640](https://github.com/cslib-community/cslib-frontier/issues/4640), Milestone 2.
@@ -33,11 +31,12 @@ negates `X_S` and fixes `X_T` and the address. The general form
 `P_* = 2 ∑_{S ⊆ [r]} X_S (-1) ^ t_S` (`andreevSubcubeScore` is `P_* / 2`). With the centred
 address count `D_S = t_S - ⌊|S| m / 2⌋` and `η_S = (-1) ^ ⌊|S| m / 2⌋`, every nonempty term is
 `η_S (φ(X_S + D_S) + φ(X_S - D_S))` for `φ(u) = (-1) ^ u u` (`two_mul_andreevSubcubeScore_eq`).
-Replacing `φ` by its truncation `f_R(u) = φ(u) [|u| ≤ R]` gives the truncated score `P_R`
-(`andreevTruncatedScore`) and the truncated vote `andreevTruncatedVote`, which agrees with the
-subcube vote whenever `|P_R - P_*| < 2 q` (`andreevTruncatedVote_eq_subcubeEval`). Each staircase
-of `f_R` has `2 R + 2` steps, so `P_R` is a sum of `4 (q - 1) (R + 1)` threshold indicators of the
-reflected forms plus the affine term `2 X_∅`; the circuit is built in a separate module.
+Replacing `φ` by its truncation `f_R(u) = φ(u) [|u| ≤ R]` (`altLinearTrunc`, in `DepthTwo.lean`)
+gives the truncated score `P_R` (`andreevTruncatedScore`) and the truncated vote
+`andreevTruncatedVote`, which agrees with the subcube vote whenever `|P_R - P_*| < 2 q`
+(`andreevTruncatedVote_eq_subcubeEval`). Each staircase of `f_R` has `2 R + 2` steps, so `P_R`
+is a sum of `4 (q - 1) (R + 1)` threshold indicators of the reflected forms plus the affine term
+`2 X_∅`; the circuit is built in a separate module.
 
 **Error analysis.** For a fixed address, the error `e_S` of each set is odd in `X_S`, so Lemma 6
 makes the errors orthogonal (`sum_andreevTruncationError_mul_eq_zero`,
@@ -56,7 +55,6 @@ The radius `R = ⌈4 √(v log (16 v / (q δ)))⌉` (`andreevTruncationRadius`) 
 * `andreevTranslateTable`: the table translation and flip of Lemma 6.
 * `andreevCentredBlockSum`, `andreevReflectedForm`, `andreevReflectionSign`: `D_S`, `X_S ± D_S`
   and `η_S`.
-* `altLinearTrunc`: the truncation `f_R` of `altLinear`.
 * `andreevTruncatedScore`, `andreevVoteThreshold`, `andreevTruncatedVote`: `P_R` and the
   truncated vote.
 * `andreevTruncationError`: the error `e_S` of a set.
@@ -242,15 +240,6 @@ def andreevReflectedForm (b m : ℕ) (S : Finset (Fin b)) (τ : Bool)
 def andreevReflectionSign {b : ℕ} (m : ℕ) (S : Finset (Fin b)) : ℤ :=
   (andreevWindowCenter m S).negOnePow
 
-/-- The truncation `f_R(u) = φ(u) [|u| ≤ R]` of the alternating linear function
-`φ(u) = (-1) ^ u u` (`altLinear`) to the window `[-R, R]`. -/
-def altLinearTrunc (R : ℕ) (u : ℤ) : ℤ :=
-  if u.natAbs ≤ R then altLinear u else 0
-
-theorem altLinearTrunc_neg (R : ℕ) (u : ℤ) : altLinearTrunc R (-u) = -altLinearTrunc R u := by
-  simp only [altLinearTrunc, Int.natAbs_neg, altLinear_neg]
-  split_ifs <;> simp
-
 private theorem altLinear_reflect {X D η c : ℤ} (hX : (X.negOnePow : ℤ) = 1)
     (hD : (D.negOnePow : ℤ) = η * c) (hη : η * η = 1) :
     η * (altLinear (X + D) + altLinear (X - D)) = 2 * X * c := by
@@ -377,18 +366,6 @@ theorem andreevTruncatedVote_eq_subcubeEval {b m r R : ℕ} (hr : r ≤ b)
       linarith
 
 /-! ### The truncation errors are orthogonal -/
-
-/-- The truncation error of the pair of reflected forms `x + d` and `x - d`:
-`(f_R - φ)(x + d) + (f_R - φ)(x - d)`. It is odd in `x`. -/
-def altLinearTruncErrorPair (R : ℕ) (x d : ℤ) : ℤ :=
-  (altLinearTrunc R (x + d) - altLinear (x + d)) + (altLinearTrunc R (x - d) - altLinear (x - d))
-
-theorem altLinearTruncErrorPair_neg (R : ℕ) (x d : ℤ) :
-    altLinearTruncErrorPair R (-x) d = -altLinearTruncErrorPair R x d := by
-  rw [altLinearTruncErrorPair, altLinearTruncErrorPair, show -x + d = -(x - d) by ring,
-    show -x - d = -(x + d) by ring, altLinearTrunc_neg, altLinearTrunc_neg, altLinear_neg,
-    altLinear_neg]
-  ring
 
 /-- The truncation error `e_S = η_S ((f_R - φ)(X_S + D_S) + (f_R - φ)(X_S - D_S))` of a set `S`:
 its term in `P_R` minus its term in `P_*`. -/
@@ -581,17 +558,6 @@ theorem sum_sq_andreevReflectedForm_le (b m R : ℕ) (S : Finset (Fin b)) (τ : 
   rw [Nat.cast_natAbs, Int.cast_abs, sq_abs]
 
 /-! ### The disagreement bound -/
-
-/-- The squared truncation error of one form is `u² [|u| > R]`. -/
-theorem sq_altLinearTrunc_sub_altLinear (R : ℕ) (u : ℤ) :
-    ((altLinearTrunc R u - altLinear u : ℤ) : ℝ) ^ 2 =
-      if R < u.natAbs then (u : ℝ) ^ 2 else 0 := by
-  unfold altLinearTrunc
-  split_ifs with h1 h2 h2
-  · omega
-  · simp
-  · rw [zero_sub, Int.cast_neg, neg_sq, ← Int.cast_pow, altLinear_sq, Int.cast_pow]
-  · omega
 
 /-- `∑_w e_S² ≤ 8 · 2 ^ n ((R + 1)² + 8 v) exp (-(R + 1)² / (8 v))`. -/
 theorem sum_sq_andreevTruncationError_le (b m R : ℕ) (S : Finset (Fin b)) :
