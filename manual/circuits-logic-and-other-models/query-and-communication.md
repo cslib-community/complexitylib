@@ -244,8 +244,19 @@ built like `Protocol.kwFormula`. `predictor φ Z` is the source's `τ_φ(Z)`: `s
 `φ(Z, ·)` is the projection `p_c`, else `none`. `predictor_auxFormula` says it is correct on `X`.
 The [auxiliary-formula client](../../CslibFrontierTests/CircuitAuxiliaryFormula.lean) applies
 Lemma 6.1 to a rejecting protocol on one matrix and evaluates two predictors; run
-`scripts/build.sh CslibFrontierTests.CircuitAuxiliaryFormula`. The dense-restriction lower bounds
-(Lemmas 6.2–6.5, Theorem 6.6) are not formalized yet.
+`scripts/build.sh CslibFrontierTests.CircuitAuxiliaryFormula`.
+[DenseRestrictionPredictor](../../CslibFrontier/Computability/Circuit/Boolean/DenseRestrictionPredictor.lean)
+proves Lemma 6.2. Take a distribution `ν : PMF (BitString n)`, `m ≥ 1`, and a protocol of depth
+`d` solving `composeKW g` on `X × X`. `exists_accuracy_ge` gives a formula of `binaryCost` depth
+at most `d + 1` whose `accuracy ν g` is at least `1/2 + (2ᵐ ρ - 1) / (2 (2ᵐ - 1))`, where
+`ρ = density ν X` is the mass of `X` under the row product `Probability.PMF.pi`. The quantitative
+core is `density_le_of_forall_accuracy_le`: if every formula of depth `d + 1` has accuracy at most
+`1/2 + α`, then `ρ ≤ 2⁻ᵐ + 2α(1 - 2⁻ᵐ)`. It is the source's recursion `M_{r+1} ≤ M_r / 2 + α`,
+which fixes all rows but one with `Probability.PMF.sum_pi_mul_update`. The
+[predictor client](../../CslibFrontierTests/CircuitDenseRestrictionPredictor.lean) applies
+Lemma 6.2 to a two-bit protocol on one-row matrices, giving formula depth at most three; run
+`scripts/build.sh CslibFrontierTests.CircuitDenseRestrictionPredictor`. The remaining
+dense-restriction results (Lemmas 6.3–6.5, Theorem 6.6) are not formalized yet.
 
 This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
 and 1.5, and Corollaries 1.3 and 1.4. The composition/core results (Theorems 1.6–1.8) remain

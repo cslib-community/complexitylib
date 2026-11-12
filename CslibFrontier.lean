@@ -1139,6 +1139,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Correction
 public import CslibFrontier.Computability.Circuit.Boolean.CountingBound
 public import CslibFrontier.Computability.Circuit.Boolean.CriticalPath
 public import CslibFrontier.Computability.Circuit.Boolean.DeMorgan
+public import CslibFrontier.Computability.Circuit.Boolean.DenseRestrictionPredictor
 public import CslibFrontier.Computability.Circuit.Boolean.DepthClasses
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime.PolyTime
