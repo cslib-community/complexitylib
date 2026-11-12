@@ -1053,6 +1053,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.Permanent.BooleanSu
 public import CslibFrontier.Computability.Circuit.Arithmetic.Permanent.Formula
 public import CslibFrontier.Computability.Circuit.Arithmetic.Permanent.Projection
 public import CslibFrontier.Computability.Circuit.Arithmetic.Power
+public import CslibFrontier.Computability.Circuit.Arithmetic.ROABP
 public import CslibFrontier.Computability.Circuit.Arithmetic.RelativeRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.RelativeRankUpper
 public import CslibFrontier.Computability.Circuit.Arithmetic.Rigidity
