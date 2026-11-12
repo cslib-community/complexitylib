@@ -12,6 +12,13 @@ Algebraic and quantum developments reuse the generic circuit architecture while 
 
 The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean), since retired, states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.
 
+The [Chapter 14 coverage audit](../../results/arora-barak-2007.md#chapter-14-algebraic-computation-models)
+distinguishes the available arithmetic-circuit results from algebraic computation trees and
+complex-number machines whose endpoints were not located. In particular, the 2007 draft's
+Theorem 14.7 should not be used as an unrestricted circuit-to-determinant specification: its
+linear dimension bound fails the existing repeated-squaring degree check. See the audit's
+[checked client](../../CslibFrontierTests/AroraBarakAlgebraic.lean) and exact model conventions.
+
 ## Valiant classes and term models
 
 [PolynomialFamily](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/VP.lean#L188) stores a variable-count function and a polynomial at each family index, with no bounds. `PolynomialFamily.IsPFamily` requires the variable count and actual total degree to be polynomially bounded in the family index. `VP` additionally requires circuits of polynomially bounded size computing the family's formal polynomials. The class is nonuniform and includes degree as an independent restriction. The library's repeated-squaring example has small circuits but exponential degree and is therefore excluded from VP. A p-projection substitutes variables/constants and permits a polynomially bounded family reindexing.
