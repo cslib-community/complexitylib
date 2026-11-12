@@ -18,11 +18,11 @@ import Mathlib.Data.Finsupp.Weight
 # The chain rule for formal Hessians
 
 Substituting polynomials `L k` for the variables of `p` transforms partial derivatives by the
-chain rule `∂ᵢ (p ∘ L) = ∑ₖ (∂ₖ p ∘ L) · ∂ᵢ Lₖ` (`MvPolynomial.pderiv_aeval`). At a point `x`,
-the Hessian of `p ∘ L` is `Jᵀ · Hess p (L x) · J` plus the Hessians of the `L k` weighted by the
-gradient of `p`, where `J` is the Jacobian of `L` at `x`. An affine substitution (each `L k` of total degree at most one)
-has vanishing Hessians, so it can only lower the rank of the Hessian. No assumption on the
-characteristic is needed; the rank statement is over a field.
+chain rule `∂ᵢ (p ∘ L) = ∑ₖ (∂ₖ p ∘ L) · ∂ᵢ Lₖ` (`MvPolynomial.pderiv_aeval`). At a point `x`, the
+Hessian of `p ∘ L` is `Jᵀ · Hess p (L x) · J` plus the Hessians of the `L k` weighted by the
+gradient of `p`, where `J` is the Jacobian of `L` at `x`. An affine substitution (each `L k` of
+total degree at most one) has vanishing Hessians, so it can only lower the rank of the Hessian. No
+assumption on the characteristic is needed; the rank statement is over a field.
 
 ## Main results
 
