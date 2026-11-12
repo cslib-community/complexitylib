@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPart
+public import CslibFrontier.Foundations.Data.MvPolynomial.WeightedHomogeneous
 import Mathlib.Algebra.Polynomial.Eval.SMul
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Data.Nat.Choose.Sum
@@ -26,15 +27,13 @@ element `t` of a set with more than `G.totalDegree` elements
 
 The second statement is an interpolation. Scaling the variables of colour `j` by a new variable
 `yⱼ` turns `G` into a polynomial in `y` whose coefficients are the values at `b` of the weighted
-homogeneous components of `G` (`coeff_aeval_monomial`). The coefficient of `y₁ ⋯ yᵣ` is then
-the coefficient of `z ^ r` in the alternating sum, over the sets `J` of colours, of the
-polynomials obtained by substituting `0` for `yⱼ`, `j ∈ J`, and `z` for the other `yⱼ`, as in
-Ryser's formula for the permanent.
+homogeneous components of `G` (`MvPolynomial.coeff_aeval_monomial`). The coefficient of
+`y₁ ⋯ yᵣ` is then the coefficient of `z ^ r` in the alternating sum, over the sets `J` of
+colours, of the polynomials obtained by substituting `0` for `yⱼ`, `j ∈ J`, and `z` for the
+other `yⱼ`, as in Ryser's formula for the permanent.
 
 ## Main results
 
-* `coeff_aeval_monomial`: the coefficients of `G (b v • y ^ w v)` are the values at `b` of the
-  weighted homogeneous components of `G` for the weight `w`.
 * `colorPart_ne_zero`: [Shpilka2026, Lemma 3.1].
 * `exists_eval_ne_zero_of_eval_colorPart_ne_zero`: [Shpilka2026, Lemma 3.2].
 
@@ -52,29 +51,6 @@ namespace Cslib.Circuits.Arithmetic
 open MvPolynomial
 
 variable {σ τ F : Type*} {r : ℕ}
-
-/-- Substituting the monomial `b v • y ^ w v` for every variable `v` of a polynomial gives a
-polynomial in `y` whose coefficient at `n` is the value at `b` of the weighted homogeneous
-component of weighted degree `n`, for the weight `w`. -/
-theorem coeff_aeval_monomial [CommSemiring F] (w : σ → τ →₀ ℕ) (b : σ → F)
-    (G : MvPolynomial σ F) (n : τ →₀ ℕ) :
-    (aeval (fun v => monomial (w v) (b v)) G).coeff n =
-      eval b (weightedHomogeneousComponent w n G) := by
-  classical
-  induction G using MvPolynomial.induction_on' with
-  | monomial d a =>
-    have h : aeval (fun v => monomial (w v) (b v)) (monomial d a) =
-        monomial (Finsupp.weight w d) (a * d.prod fun v k => b v ^ k) := by
-      rw [aeval_monomial, Finsupp.weight_apply, ← C_mul_monomial, algebraMap_eq]
-      simp only [Finsupp.prod, Finsupp.sum, monomial_pow, monomial_sum_prod]
-    rw [h, coeff_monomial,
-      weightedHomogeneousComponent_of_mem (isWeightedHomogeneous_monomial w d a rfl)]
-    by_cases hn : Finsupp.weight w d = n
-    · simp [hn, eval_monomial]
-    · simp [hn, Ne.symm hn]
-  | add p q hp hq =>
-    rw [map_add, map_add, map_add, ← hp, ← hq]
-    rfl
 
 /-- [Shpilka2026, Lemma 3.1]: the colour part of a polynomial is not zero if the polynomial has
 a multilinear monomial of degree `r` whose variables have distinct colours. -/
