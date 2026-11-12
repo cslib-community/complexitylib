@@ -12,6 +12,7 @@ public import Cslib.Probability.StatisticalDistance
 public import CslibFrontier.Probability.IID
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.StatisticalDistance
+public import CslibFrontier.Probability.StatisticalDistance.TotalVariation
 public import Mathlib.Analysis.SpecialFunctions.Sqrt
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Map

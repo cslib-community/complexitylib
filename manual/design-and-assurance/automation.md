@@ -590,8 +590,8 @@ bound when it holds by `rfl`, symmetric `Game.advantage_comm` summand alignment,
 associativity/commutativity of `+` (with zeros), or `ring`. With no intermediate list,
 `game_trans` unfolds `Encryption.advantage` or reduces a `Game.succProbability` bound to
 `Game.advantage`, and `game_trans using [h]` closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
-`CslibFrontier.Crypto.Game.CloseTo.Statistical` and apply `Cslib.Interactive.closeTo_of_dist_le_ofReal`
-to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
+`CslibFrontier.Probability.StatisticalDistance.TotalVariation` and apply
+`Cslib.Probability.closeTo_of_dist_le_ofReal` to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
 [Lyubashevsky commitment binding proof](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Commitment.lean).
 
 Use `peel_binds` (or `peel_binds x₁ x₂ ...`) on `Game.advantage`, `Encryption.advantage`,
