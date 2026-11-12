@@ -29,10 +29,6 @@ than the number of reachable views repeats a running view, and repeating the cyc
 walks of every length, which lift back to computation paths of the same length
 (`Turing.MultiTapeNTM.ViewRep`), contradicting that every path halts.
 
-## Main definitions
-
-* `Turing.polyClock`: the polynomial clock `2 * (2 * (n + 1)) ^ d` of logarithmic-space machines.
-
 ## Main results
 
 * `Turing.MultiTapeNTM.runsInTime_of_runsInSpace`: halting on every path within some time implies
@@ -49,15 +45,7 @@ public section
 
 open Cslib.Turing
 
-namespace Turing
-
-/-- **The polynomial clock of logarithmic-space machines**: `2 * (2 * (n + 1)) ^ d` steps on an
-input of length `n`. A machine that halts on every branch within space `c * (log₂ n + 1)` halts
-within `polyClock d n` steps for an exponent `d` depending only on the machine and `c`
-(`Turing.MultiTapeNTM.exists_runsInTime_polynomial_of_runsInSpace_log`). -/
-@[expose] def polyClock (d n : ℕ) : ℕ := 2 * (2 * (n + 1)) ^ d
-
-namespace MultiTapeNTM
+namespace Turing.MultiTapeNTM
 
 variable {k : ℕ} {State : Type} {ntm : MultiTapeNTM k Bool State} {input : List Bool}
 
@@ -212,6 +200,4 @@ theorem exists_runsInTime_polynomial_of_runsInSpace_log (ntm : MultiTapeNTM k Bo
   ⟨_, fun hs ht =>
     (runsInTime_of_runsInSpace hs ht).mono (two_pow_coreLengthBound_log_le k State c _)⟩
 
-end MultiTapeNTM
-
-end Turing
+end Turing.MultiTapeNTM

@@ -252,7 +252,7 @@ example :
   have ha_lt : startID splitCoinMachine.toNTM testB < clockedVertexBound (k := 0) 2 0 0 := by
     dsimp only [clockedVertexBound]
     calc startID splitCoinMachine.toNTM testB < 1 * testN := by omega
-      _ ≤ (2 * (2 * (0 + 1)) ^ 0 + 1) * testN := Nat.mul_le_mul_right testN (by decide)
+      _ ≤ (polyClock 0 0 + 1) * testN := Nat.mul_le_mul_right testN (by decide)
   have hdiv : startID splitCoinMachine.toNTM testB / testN = 0 := Nat.div_eq_of_lt hu₀_lt
   have hmod : startID splitCoinMachine.toNTM testB % testN = vertexID testB v₀ := by
     rw [Nat.mod_eq_of_lt hu₀_lt, hu₀_eq]
@@ -295,11 +295,11 @@ example :
         exact absurd hs hne_FT
     simp [coinCountWithSymbol, heF, heT]
   have hc0 : startID splitCoinMachine.toNTM testB < clockedVertexBound (k := 0) 2 0 0 ∧
-      0 < 2 ∧ startID splitCoinMachine.toNTM testB / testN < 2 * (2 * (0 + 1)) ^ 0 :=
-    ⟨ha_lt, by decide, by simp [hdiv]⟩
+      0 < 2 ∧ startID splitCoinMachine.toNTM testB / testN < polyClock 0 0 :=
+    ⟨ha_lt, by decide, by simp [hdiv, polyClock]⟩
   have hc1 : startID splitCoinMachine.toNTM testB < clockedVertexBound (k := 0) 2 0 0 ∧
-      1 < 2 ∧ startID splitCoinMachine.toNTM testB / testN < 2 * (2 * (0 + 1)) ^ 0 :=
-    ⟨ha_lt, by decide, by simp [hdiv]⟩
+      1 < 2 ∧ startID splitCoinMachine.toNTM testB / testN < polyClock 0 0 :=
+    ⟨ha_lt, by decide, by simp [hdiv, polyClock]⟩
   by_cases hlt : vertexID testB vF < vertexID testB vT
   · have ht : coinOutTargetsWithSymbol splitCoinMachine testB 0 (vertexID testB v₀) none =
         [vertexID testB vF, vertexID testB vT] := by simp [htargets, hlt]
@@ -447,23 +447,23 @@ example :
   have hlt₀ : startID mergedCoinMachine.toNTM testB < clockedVertexBound (k := 0) 2 0 0 := by
     dsimp only [clockedVertexBound]
     calc startID mergedCoinMachine.toNTM testB < 1 * testN := by omega
-      _ ≤ (2 * (2 * (0 + 1)) ^ 0 + 1) * testN := Nat.mul_le_mul_right testN (by decide)
+      _ ≤ (polyClock 0 0 + 1) * testN := Nat.mul_le_mul_right testN (by decide)
   have hlt₁ : testN + vertexID testB mergedAcceptView < clockedVertexBound (k := 0) 2 0 0 := by
     dsimp only [clockedVertexBound]
     calc testN + vertexID testB mergedAcceptView < 2 * testN := by omega
-      _ ≤ (2 * (2 * (0 + 1)) ^ 0 + 1) * testN := Nat.mul_le_mul_right testN (by decide)
+      _ ≤ (polyClock 0 0 + 1) * testN := Nat.mul_le_mul_right testN (by decide)
   have hc0_0 : startID mergedCoinMachine.toNTM testB < clockedVertexBound (k := 0) 2 0 0 ∧
-      0 < 2 ∧ startID mergedCoinMachine.toNTM testB / testN < 2 * (2 * (0 + 1)) ^ 0 :=
-    ⟨hlt₀, by decide, by simp [hdiv₀]⟩
+      0 < 2 ∧ startID mergedCoinMachine.toNTM testB / testN < polyClock 0 0 :=
+    ⟨hlt₀, by decide, by simp [hdiv₀, polyClock]⟩
   have hc0_1 : startID mergedCoinMachine.toNTM testB < clockedVertexBound (k := 0) 2 0 0 ∧
-      1 < 2 ∧ startID mergedCoinMachine.toNTM testB / testN < 2 * (2 * (0 + 1)) ^ 0 :=
-    ⟨hlt₀, by decide, by simp [hdiv₀]⟩
+      1 < 2 ∧ startID mergedCoinMachine.toNTM testB / testN < polyClock 0 0 :=
+    ⟨hlt₀, by decide, by simp [hdiv₀, polyClock]⟩
   have hc1_0 : testN + vertexID testB mergedAcceptView < clockedVertexBound (k := 0) 2 0 0 ∧
-      0 < 2 ∧ (testN + vertexID testB mergedAcceptView) / testN < 2 * (2 * (0 + 1)) ^ 0 :=
-    ⟨hlt₁, by decide, by simp [hdiv₁]⟩
+      0 < 2 ∧ (testN + vertexID testB mergedAcceptView) / testN < polyClock 0 0 :=
+    ⟨hlt₁, by decide, by simp [hdiv₁, polyClock]⟩
   have hc1_1 : testN + vertexID testB mergedAcceptView < clockedVertexBound (k := 0) 2 0 0 ∧
-      1 < 2 ∧ (testN + vertexID testB mergedAcceptView) / testN < 2 * (2 * (0 + 1)) ^ 0 :=
-    ⟨hlt₁, by decide, by simp [hdiv₁]⟩
+      1 < 2 ∧ (testN + vertexID testB mergedAcceptView) / testN < polyClock 0 0 :=
+    ⟨hlt₁, by decide, by simp [hdiv₁, polyClock]⟩
   have hp₀_1 : clockedOutPort mergedCoinMachine 2 0 [] (startID mergedCoinMachine.toNTM testB) 1 =
       none := by
     dsimp only [clockedOutPort, List.length_nil]
@@ -474,8 +474,8 @@ example :
     dsimp only [clockedOutPort, List.length_nil]
     have hc : ¬ (2 * testN + vertexID testB mergedAcceptView < clockedVertexBound (k := 0) 2 0 0 ∧
         0 < 2 ∧
-        (2 * testN + vertexID testB mergedAcceptView) / testN < 2 * (2 * (0 + 1)) ^ 0) := by
-      simp [hdiv₂]
+        (2 * testN + vertexID testB mergedAcceptView) / testN < polyClock 0 0) := by
+      simp [hdiv₂, polyClock]
     rw [ite_eq_right hc]
   refine ⟨?_, hp₀_1, ?_,
     clockedOutCount_eq_zero_of_outPort_eq_none mergedCoinMachine hp₀_1,

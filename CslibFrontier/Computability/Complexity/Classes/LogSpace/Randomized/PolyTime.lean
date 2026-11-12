@@ -299,7 +299,7 @@ theorem BPL_subset_P : BPL enc ⊆ P enc := by
     set viewBound : α → ℕ := fun a =>
       MultiTapeNTM.viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1))
     set bound : α → ℕ := fun a =>
-      (2 * (2 * ((enc a).length + 1)) ^ D) * (2 * (2 * viewBound a + 1 + (T a + 1)) + 1)
+      polyClock D (enc a).length * (2 * (2 * viewBound a + 1 + (T a + 1)) + 1)
     have hviewBound : PolyBounded (fun a => (enc a).length) viewBound := by
       refine .of_forall_le (2 * (10 + 2 * Nat.card (Option State) + 200 * k) * (c + 2) + 1) 1
         fun a => ?_
@@ -309,7 +309,9 @@ theorem BPL_subset_P : BPL enc ⊆ P enc := by
       generalize 10 + 2 * Nat.card (Option State) + 200 * k = B at *
       nlinarith [Nat.zero_le (B * c), Nat.zero_le (B * (enc a).length),
         Nat.zero_le (B * c * (enc a).length)]
-    have hbound : PolyBounded (fun a => (enc a).length) bound := by growth_poly
+    have hbound : PolyBounded (fun a => (enc a).length) bound := by
+      simp only [bound, polyClock]
+      growth_poly
     have hstates : ∀ a, ∀ i ≤ T a, (encList (encPair encFiniteCfg encNat)
         ((countRound M)^[i] ((views a).map fun view => (view, M.viewAcceptCount 0 view)))).length
           ≤ bound a := by
@@ -317,7 +319,7 @@ theorem BPL_subset_P : BPL enc ⊆ P enc := by
       rw [countRound_iterate M (hclosed a)]
       have hreach (finite) (hf : finite ∈ views a) :=
         (hmem a finite).mp hf
-      have hlen : (views a).length ≤ 2 * (2 * ((enc a).length + 1)) ^ D :=
+      have hlen : (views a).length ≤ polyClock D (enc a).length :=
         (MultiTapeNTM.length_le_of_nodup_reachable (hM.runsInSpace a)
           (Cslib.Reachability.nodup_search _ _) hreach).trans
           (MultiTapeNTM.two_pow_coreLengthBound_log_le k State c _)
