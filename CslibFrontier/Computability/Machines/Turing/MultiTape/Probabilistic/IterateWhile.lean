@@ -253,7 +253,7 @@ public noncomputable def iterateWhile (tm : MultiTapePTM k Bool State Operation)
 
 /-- A round moves `v` to the current tape and replaces it on the next tape by the result of
 `tm` on `v`, making exactly the oracle calls of `tm`. -/
-public theorem RunsWords.iterateWhileRound {tm : MultiTapePTM k Bool State Operation} (mark : Bool)
+theorem RunsWords.iterateWhileRound {tm : MultiTapePTM k Bool State Operation} (mark : Bool)
     {vp v : List Bool} {t l : ℕ}
     {program : ProbOracleComp (fun _ : Operation × List Bool => List Bool) (List Bool)}
     (h : tm.ComputesTidily v t program)
@@ -289,6 +289,7 @@ private def liftedLast (p : List Bool × List Bool) :
 private def liftedInvariant (invariant : ℕ → List Bool → Prop) (L n : ℕ)
     (p : List Bool × List Bool) : Prop := invariant n p.2 ∧ p.1.length ≤ L
 
+omit [DecidableEq Operation] in
 private theorem lifted_preserve {r L : ℕ}
     {step : List Bool → ProbOracleComp (fun _ : Operation × List Bool => List Bool) (List Bool)}
     (invariant : ℕ → List Bool → Prop)
@@ -310,6 +311,7 @@ private theorem lifted_preserve {r L : ℕ}
   obtain ⟨hinv, hne⟩ := hpreserve n hn p.2 hp.1 _ oracle st st'' w' hw'
   exact ⟨⟨hinv, hlength n hn.le p.2 hp.1⟩, hne⟩
 
+omit [DecidableEq Operation] in
 private theorem lifted_final_support {r L : ℕ} {w₀ : List Bool}
     {step : List Bool → ProbOracleComp (fun _ : Operation × List Bool => List Bool) (List Bool)}
     (invariant : ℕ → List Bool → Prop) (hbase : invariant 0 w₀)
@@ -359,12 +361,13 @@ private theorem runsWords_liftedLast {tm : MultiTapePTM k Bool State Operation} 
     (hp : p.1.length ≤ L) (hv : p.2.length ≤ L) (out : List Bool) :
     (tm.iterateWhileRound mark).RunsWords x (words p.1 p.2) out (t + 10 * L + 22)
       (liftedLast p) (fun q => words q.1 q.2) (fun _ => []) := by
-  have hround := runsWords_liftedRound mark h
+  have hround := runsWords_liftedRound (x := x) mark h
     (fun _ _ _ w' _ hw' => by
       simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hw'
       simp [hw'.1]) hp hv out
   simpa only [map_pure, liftedLast] using hround
 
+omit [DecidableEq Operation] in
 private theorem liftedLast_stops (p : List Bool × List Bool)
     (OracleState : Type) (oracle : Operation × List Bool → StateT OracleState PMF (List Bool))
     (st st' : OracleState) (p' : List Bool × List Bool)
@@ -413,7 +416,8 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
     (ws₂ := fun _ _ => []) (emit₂ := fun p => p.1)
     (fun _ _ h => words_injective (congrArg Prod.fst h))
     (fun p _ oracle s s' hp => by
-      obtain ⟨hnil, hlen⟩ := lifted_final_support invariant hbase hpreserve hlength _ oracle s s' p hp
+      obtain ⟨hnil, hlen⟩ :=
+        lifted_final_support invariant hbase hpreserve hlength _ oracle s s' p hp
       exact (RunsWords.of_transformsTapes (transformsTapes_finish (k := k) mark p.1)
         (congrArg (words p.1) hnil) (ws' := fun _ => []) (emitted := p.1) (fun _ _ hQ => hQ)).mono
         (by omega))
@@ -426,9 +430,9 @@ public theorem ComputesTidily.iterateWhile {tm : MultiTapePTM k Bool State Opera
     (fun _ _ => []) id
   have hprogram : Prod.fst <$> (OracleComp.iterate r (liftedStep step) ([], w₀) >>= liftedLast) =
       OracleComp.iterate r step w₀ := by
-    rw [OracleComp.iterate_map r (liftedStep step) step Prod.snd
-      (fun p => by simp only [liftedStep, Functor.map_map, id_map']) ([], w₀)]
-    simp only [liftedLast, bind_pure_comp, Functor.map_map]
+    simpa only [liftedLast, bind_pure_comp, Functor.map_map] using
+      (OracleComp.iterate_map r (liftedStep step) step Prod.snd
+        (fun p => by simp only [liftedStep, Functor.map_map, id_map']) ([], w₀)).symm
   rw [hprogram] at hall
   have := hlength 0 (Nat.zero_le _) w₀ hbase
   refine hall.mono ?_
@@ -473,7 +477,8 @@ public theorem RunsInSpace.iterateWhile {tm : MultiTapePTM k Bool State Empty} (
     (by simpa only [words_next] using lifted_preserve invariant hpreserve hlength)
     (fun p _ => liftedLast_stops (k := k) p)
     (fun _ oracle s s' p hp => by
-      obtain ⟨hnil, hlen⟩ := lifted_final_support invariant hbase hpreserve hlength _ oracle s s' p hp
+      obtain ⟨hnil, hlen⟩ :=
+        lifted_final_support invariant hbase hpreserve hlength _ oracle s s' p hp
       exact (RunsWords.of_transformsTapes (Operation := Empty)
         (transformsTapes_finish (k := k) mark p.1)
         (hP := congrArg (words p.1) hnil) (hQ := fun _ _ h => h)
