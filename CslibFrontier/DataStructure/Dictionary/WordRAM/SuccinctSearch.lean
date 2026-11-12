@@ -286,8 +286,7 @@ theorem realizes_resolveOvfStepGen :
       (WordEncoding.encode (α := ℕ × ℕ))
       ResolveOvfStepGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  realize
+  realize [realizes_readGMGen]
   all_goals (
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
@@ -530,9 +529,7 @@ theorem realizes_ovfStepGen :
       (WordEncoding.encode (α := (((ℕ × ℕ) × ℕ) × ℕ) × ℕ))
       OvfStepGenPre
       (fun _ _ => 0) := by
-  have hres := realizes_resolveOvfStepGen
-  have hrq := realizes_readQuotGen
-  realize
+  realize [realizes_resolveOvfStepGen, realizes_readQuotGen]
   all_goals (
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
@@ -908,8 +905,7 @@ theorem realizes_initOvfSearchGen :
           (gmAt d.2.1 (dpU d.1) (dpV d.1) (dpW d.1) (dpNMax d.1) (dpHSpace d.1) s.mem) ∧
         0 < bucketBits (dpNMax d.1))
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  realizeDictWith [initOvfSearchGenProg_mk]
+  realizeDictWith [initOvfSearchGenProg_mk] using [realizes_readGMGen]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2 hw hnU hU (le_of_lt (gmQIdx_lt h.2.2.2 h.2.1))
   · exact fits_const_of_dictEnv h.1 (by decide)
   · exact h.1
@@ -1364,9 +1360,8 @@ theorem realizes_queryBodyGen :
       (WordEncoding.encode (α := Option ℕ))
       SearchMicroChainGenPre
       (fun _ _ => 0) := by
-  have hsb := realizes_searchBucketGen
-  have hrv := realizes_readValGen
-  realizeDictWith [searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk]
+  realizeDictWith [searchMicroChainGenPre_mk, SearchMicroChainPre, searchBucketGenProg_mk] using
+    [realizes_searchBucketGen, realizes_readValGen]
   · exact h
   · exact fits_const_of_dictEnv h.1 (by decide)
   · exact h.1
