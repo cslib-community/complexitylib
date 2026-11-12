@@ -166,9 +166,8 @@ theorem L_subset_P : L enc ⊆ P enc := by
   exact ⟨f, hf.computableInPolyTime, hA⟩
 
 /-- **Deterministic logarithmic space is within polynomial space.** -/
-theorem L_subset_PSPACE : L enc ⊆ PSPACE enc := by
-  rintro A ⟨f, ⟨t, c, hf⟩, hA⟩
-  exact ⟨f, ⟨t, _, polyBounded_log (fun a => (enc a).length) c, hf⟩, hA⟩
+theorem L_subset_PSPACE : L enc ⊆ PSPACE enc :=
+  L_subset_P.trans P_subset_PSPACE
 
 /-- **Nondeterministic logarithmic space is within nondeterministic polynomial space.** -/
 theorem NL_subset_NPSPACE : NL enc ⊆ NPSPACE enc := by
