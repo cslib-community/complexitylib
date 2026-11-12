@@ -99,8 +99,8 @@ omit [CharZero F] in
 private theorem support_colorPart_subset {σ : Type*} {r : ℕ} (c : σ → Fin r)
     (G : MvPolynomial σ F) : (colorPart c G).support ⊆ G.support := fun d hd => by
   classical
-  rw [mem_support_iff, colorPart, coeff_weightedHomogeneousComponent] at hd
-  exact mem_support_iff.2 fun h => hd (by rw [h, ite_self])
+  rw [colorPart, support_weightedHomogeneousComponent] at hd
+  exact Finset.mem_of_mem_filter d hd
 
 /-- **Hitting set for multilinear polynomials of small split rank.** Over a field of
 characteristic zero, `anyOrderHittingSet F n w` hits every multilinear polynomial in `n`

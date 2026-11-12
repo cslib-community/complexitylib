@@ -77,10 +77,8 @@ theorem totalDegree_le_card_of_degreeOf_le_one [Fintype σ] {f : MvPolynomial σ
 /-- Substituting the variables of the polynomial ring over an algebra is a base change. -/
 theorem aeval_X_eq_map (p : MvPolynomial σ R) :
     aeval (fun i => (X i : MvPolynomial σ A)) p = map (algebraMap R A) p := by
-  induction p using MvPolynomial.induction_on with
-  | C r => simp [algebraMap_apply]
-  | add p q hp hq => simp [hp, hq]
-  | mul_X p i hp => simp [hp]
+  rw [map_eq_eval₂Hom_C_comp, aeval_eq_eval₂Hom]
+  rfl
 
 /-- Shifting does not increase the degree in a variable. -/
 theorem degreeOf_shift_le (a : σ → A) (f : MvPolynomial σ R) (i : σ) :

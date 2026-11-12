@@ -94,9 +94,8 @@ private theorem whc_mem_supported {M : Type*} [AddCommMonoid M] {U : Set σ}
   refine subset_trans (fun i hi => ?_) hP
   rw [Finset.mem_coe, mem_vars_iff_mem_support] at hi ⊢
   obtain ⟨d, hd, hid⟩ := hi
-  refine ⟨d, ?_, hid⟩
-  rw [mem_support_iff, coeff_weightedHomogeneousComponent] at hd
-  exact mem_support_iff.2 (ite_ne_right_iff.1 hd).2
+  rw [support_weightedHomogeneousComponent] at hd
+  exact ⟨d, Finset.mem_of_mem_filter d hd, hid⟩
 
 /-- The colour part of a product across a set of colours is the product of the components that
 use every colour on their side once. -/
