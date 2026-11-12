@@ -46,6 +46,12 @@ logarithms (`2 ^ (n (H₂(ρ)/2 - γ₂(ρ)))`, `2 ^ (n (H₂(y) - 1))`); multip
 coefficients `a x`, which vanish for `|x| > w`. The hypotheses are only required for `0 < w` and
 `2 w < n`, the range in which they are used.
 
+These forms agree with arXiv:1909.11929v1, which states both bounds for every `n` with no error
+term. An independent review of #4735 checked the specializations there. Saglam's `γ` is
+`H₂(ρ) / 2 - ψ(3, ρ)`, by Kirshner–Samorodnitsky Proposition 2.6 at `p = 3` with `t = 1 - 2 δ`,
+which gives Saglam's `1 - 2 u = √(ρ / (2 - 3 ρ))`. Saglam's integral is their tail exponent `τ`
+on `y ≤ 1 / 2 - √(ρ (1 - ρ))` (their §2.1.1–2.1.2).
+
 Everything else in Saglam's Appendix A is proved: `μ̂` has degree at most `w` and
 `𝔼 μ̂ ^ 2 = 1 / V` (`Cslib.Code.sum_charSum_sq`); `γ(ρ) ≥ c ρ` for `0 < ρ ≤ 1 / 2 - ε`
 (`Cslib.Code.exists_mul_le_ksGamma`); `T(ρ, y) ≤ h(ρ) - 2 ρ y` (`Cslib.Code.ksTailExponent_le`);
@@ -336,8 +342,10 @@ specialization quoted in [Saglam2027, Appendix A], **imported as a hypothesis**:
 `2 w < n`, `ρ = w / n` and every `f` of degree at most `w` as in `KSThirdMomentBound`, every
 integer `k` with `k / n ≤ 1 / 2 - √(ρ (1 - ρ))` satisfies
 `Pr[|f| > √(𝔼 f ^ 2) exp (n (T(ρ, k / n) - h(ρ) / 2))] ≤ exp (n (h(k / n) - log 2))`.
-Saglam states the event with `≥`; the strict event used here is smaller, so this hypothesis is
-weaker. -/
+Saglam and Kirshner–Samorodnitsky state the event with `≥`. The strict event used here is
+smaller, so this hypothesis is weaker. The weakening, like the restriction `0 < w`, is needed:
+as printed, Theorem 1.5 fails at degree `0`. For `f ≡ 1` and `k = 0` the threshold is
+`‖f‖₂ = 1`, so the `≥` event has probability `1 > 2 ^ (-n)`. -/
 def KSTailBound (n w : ℕ) : Prop :=
   0 < w → 2 * w < n → ∀ a : (Fin n → ZMod 2) → ℝ, (∀ x, w < hammingNorm x → a x = 0) →
     ∀ k : ℕ, (k : ℝ) / n ≤ 1 / 2 - √(w / n * (1 - w / n)) →
