@@ -79,7 +79,7 @@ theorem eventually_mul_interpolationScale_le (A : ℝ) {ε : ℝ} (hε : 0 < ε)
     ∀ᶠ n : ℕ in atTop, A * interpolationScale n ≤ ε * n := by
   filter_upwards [(isLittleO_interpolationScale.const_mul_left A).def hε] with n hn
   rw [Real.norm_natCast] at hn
-  exact (le_abs_self _).trans hn
+  exact (Real.le_norm_self _).trans hn
 
 /-- The interpolation scale is nonnegative at every natural input. -/
 theorem interpolationScale_nonneg (n : ℕ) : 0 ≤ interpolationScale n := by

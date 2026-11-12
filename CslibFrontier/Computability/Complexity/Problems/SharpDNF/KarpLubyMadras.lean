@@ -211,7 +211,7 @@ private theorem card_filter_not_any_take_and_drop (a n : ℕ) (f : List Bool →
       (Finset.univ.filter fun x : Fin n → Bool => f (List.ofFn x) = true).card := by
   have hone : (Finset.univ.filter fun u : Fin a → Bool => (!(List.ofFn u).any id) = true).card =
       1 :=
-    Finset.card_eq_one.mpr ⟨fun _ => false, by ext u; simp [funext_iff]⟩
+    BitString.card_filter_not_any a
   have h := BitString.card_filter_take_drop (Nat.le_add_right a n)
     (fun u => (!u.any id) = true) (fun v => f v = true)
   rw [Nat.add_sub_cancel_left, hone, one_mul] at h
