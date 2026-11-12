@@ -260,10 +260,8 @@ theorem PiP_three_subset_SigmaP_three_of_coNP_subset_NPPoly
 `encPair enc encBits`, then `PiP 3 enc = SigmaP 3 enc`. -/
 theorem PiP_three_eq_SigmaP_three_of_coNP_subset_NPPoly
     (h : coNP (encPair enc encBits) ⊆ NPPoly (encPair enc encBits)) :
-    PiP 3 enc = SigmaP 3 enc := by
-  have hsub := PiP_three_subset_SigmaP_three_of_coNP_subset_NPPoly h
-  refine hsub.antisymm fun A hA => ?_
-  simpa using compl_mem_PiP_of_mem_SigmaP (hsub (compl_mem_PiP_of_mem_SigmaP hA))
+    PiP 3 enc = SigmaP 3 enc :=
+  PiP_eq_SigmaP_of_PiP_subset_SigmaP (PiP_three_subset_SigmaP_three_of_coNP_subset_NPPoly h)
 
 /-! ### Equivalence of nonuniform hypotheses -/
 

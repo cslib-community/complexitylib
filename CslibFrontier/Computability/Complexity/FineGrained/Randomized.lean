@@ -10,7 +10,8 @@ module
 public import CslibFrontier.Computability.Complexity.AcceptCount
 public import CslibFrontier.Computability.Complexity.Classes.BPP
 public import CslibFrontier.Computability.Complexity.Classes.RP
-public import CslibFrontier.Computability.Complexity.FineGrained.CountingExponents
+public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
+public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import CslibFrontier.Probability.BitString
 import CslibFrontier.Computability.Complexity.Classes.Promise.Probabilistic
@@ -67,7 +68,7 @@ promise-problem runtime bounds:
   `ε ∈ (0, 1 / 2)` (and any one-sided threshold `ε ∈ (0, 1)`) defines the exact same runtime rates
   and exponents.
 * **Randomized `k`-SAT exponents and hypotheses** (`rSatExponent`, `rpSatExponent`, `rETH`,
-  `rSETH`): `0 ≤ rSatExponent k ≤ rpSatExponent k ≤ satExponent k ≤ sharpSatExponent k ≤ 1`,
+  `rSETH`): `0 ≤ rSatExponent k ≤ rpSatExponent k ≤ satExponent k ≤ 1`,
   `rETH ↔ 0 < rSatExponent 3`, `rSETH ↔ Tendsto rSatExponent atTop (𝓝 1)`, `rETH → ETH`, and
   `rSETH → SETH`.
 
