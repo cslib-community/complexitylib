@@ -24,9 +24,11 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Languages.Probabilistic.Notation
+import CslibFrontier.Tactic.PPT
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Uniform
@@ -140,11 +142,11 @@ noncomputable def mcspRun (p : Polynomial ℕ) (V : MCSP.Instance × List Bool �
 
 variable {p : Polynomial ℕ} {V : MCSP.Instance × List Bool → Bool}
 
+@[fun_prop]
 theorem isPPTOn_mcspRun
     (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
-    IsPPTOn MCSP.encInstance encBool (mcspRun p V) :=
-  IsPPTOn.map_with (ComputableInPolyTime.sampleList
-    (.of_tidy ((unary_eval p).comp (encoding_length MCSP.encInstance)))) hV
+    IsPPTOn MCSP.encInstance encBool (mcspRun p V) := by
+  ppt [mcspRun]
 
 /-- The acceptance probability of `mcspRun` is the fraction of accepting coin strings. -/
 theorem toReal_eval_mcspRun (p : Polynomial ℕ) (V : MCSP.Instance × List Bool → Bool)
@@ -240,6 +242,7 @@ theorem computableInPolyTime_two_pow_tableArity (d : ℕ) :
     ComputableInPolyTime.unary_pow_clog_const ComputableInPolyTime.id' (2 ^ d) 2
 
 /-- The queries are computed in polynomial time from the unary parameter. -/
+@[fun_prop]
 theorem computableInPolyTime_tableQueries (d : ℕ) :
     ComputableInPolyTime (fun input : ℕ × List Bool =>
       tableQueries input.1 (tableArity d input.1)) (encPair encUnary encBits)
@@ -272,6 +275,7 @@ theorem computableInPolyTime_tableQueries (d : ℕ) :
     exact bitsAppend ((bitsReplicate false).comp hsub) (snd _ _)
 
 /-- The instance read from the answers is computed in polynomial time. -/
+@[fun_prop]
 theorem computableInPolyTime_tableInstance (d : ℕ) :
     ComputableInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
       tableInstance (tableArity d pair.1.1) pair.2) (encPair (encPair encUnary encBits) encBits)
@@ -300,12 +304,7 @@ of `2 ^ m` bits. -/
 theorem isOraclePPT_mcspDistinguisher (d : ℕ)
     (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
     IsOraclePPT encBool (mcspDistinguisher p V d) := by
-  have hV := hV.tidy
-  apply IsOraclePPTOn.isOraclePPT
-  exact IsOraclePPTOn.bind_with
-    (isOraclePPTOn_queryTable.preprocess (computableInPolyTime_tableQueries d).tidy)
-    ((isPPTOn_mcspRun (.of_tidy hV)).preprocess
-      (computableInPolyTime_tableInstance d)).isOraclePPTOn
+  ppt [mcspDistinguisher]
 
 /-! ### The advantage of the distinguisher -/
 
@@ -337,9 +336,7 @@ threshold `2 ^ m / (5 m)` is at least `c (3 n + 2) ^ c + 2`. -/
 theorem eventually_tableArity (c : ℕ) :
     ∀ᶠ n in Filter.atTop, 0 < n ∧ 16 ≤ tableArity (c + 2) n ∧ tableArity (c + 2) n ≤ n ∧
       c * (3 * n + 2) ^ c + 2 ≤ 2 ^ tableArity (c + 2) n / (5 * tableArity (c + 2) n) := by
-  have htend : Filter.Tendsto (Nat.clog 2) Filter.atTop Filter.atTop :=
-    Filter.tendsto_atTop_atTop.2 fun b => ⟨2 ^ b, fun n hn => by
-      simpa only [Nat.clog_pow 2 b one_lt_two] using Nat.clog_mono_right 2 hn⟩
+  have htend := Nat.tendsto_clog_atTop one_lt_two
   have hlin : ∀ᶠ t in Filter.atTop, 2 * (c + 2) * t < 2 ^ t :=
     PolynomiallyBounded.eventually_lt_two_pow (by fun_prop)
   filter_upwards [htend.eventually_ge_atTop 16, htend.eventually hlin,

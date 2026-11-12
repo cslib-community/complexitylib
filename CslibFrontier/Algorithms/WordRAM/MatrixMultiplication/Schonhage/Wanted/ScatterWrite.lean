@@ -21,7 +21,7 @@ This is an internal implementation API. The scatter position is the existing cou
 formula, whose range follows from the original input length, rather than an execution oracle.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 
@@ -78,11 +78,7 @@ theorem exec_scatterWrite {w L m N Q n v : ℕ} (key : ℕ → ℕ) (hn : n < Q)
       hi, ht, hv, hc, hcursor, hcode, horig, hnext, hnnext, p,
       cursorAddress, position, pointer, cursors, codes, originals, tile, index,
       packRegisters, code, BandPreparation.one, Fin.reduceFinMk, Fin.mk.injEq]
-  have hy : Parameters L m N Q y := hx.reframe (by
-    intro i hi
-    apply he.regs_eq
-    have h : ∀ i ∈ parameterRegisters, scatterWrite.Preserves i := by decide +kernel
-    exact h i hi)
+  have hy : Parameters L m N Q y := hx.of_exec he (by decide +kernel)
   refine ⟨y, he, hy, by simp [y, index], ?_, ?_, ?_, ?_⟩
   · change Function.update (Function.update
       (Function.update x.mem (codeAddress L m N Q + p) v)

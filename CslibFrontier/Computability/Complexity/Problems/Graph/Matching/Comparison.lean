@@ -23,6 +23,7 @@ public section
 namespace Cslib.Complexity.Graph
 
 open Cslib.Logic.PL CSP
+open Cslib.BitString
 
 variable {G : Graph}
 
@@ -94,12 +95,12 @@ theorem comparisonLabeling_valid (G : Graph) (S : Finset ℕ) :
     have hs : G.matchingInstance[i.val].2 = G.matchingScope G.distinctVertices[i.val] := by
       simp [matchingInstance, hi]
     have hr : localTuple (G.comparisonLabeling S) i =
-        Table.oneHot (G.matchingScope G.distinctVertices[i.val]).length
+        listSingle (G.matchingScope G.distinctVertices[i.val]).length
           (G.comparisonPort S G.distinctVertices[i.val]) := by
       apply List.ext_getElem
-      · simp [localTuple, hs, Table.oneHot]
+      · simp [localTuple, hs, listSingle]
       · intro j hj hk
-        simp [localTuple, comparisonLabeling, hi, Table.oneHot, hs, eq_comm]
+        simp [localTuple, comparisonLabeling, hi, listSingle, hs, eq_comm]
     rw [ht, hr, Table.sem_eq_true]
     exact ⟨Table.wellFormed_exactlyOne _, List.mem_map.mpr
       ⟨_, List.mem_range.mpr (comparisonPort_lt G S _), rfl⟩⟩

@@ -24,7 +24,7 @@ semantic laws; computational efficiency is provided separately in `Computability
   traversal without changing the joint distribution.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.ProbComp
 

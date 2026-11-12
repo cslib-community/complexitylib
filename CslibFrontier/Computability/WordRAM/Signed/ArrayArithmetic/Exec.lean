@@ -87,22 +87,10 @@ theorem exec {w n A B : ℕ} (subtract : Bool) (x : Data 16) (u v : ℕ → ℤ)
         simp only [BodyLocal, Reg.index, Reg.address, Fin.ext_iff]
         omega
       exact (hzregs i hnl).trans (hregs i hip)
-    refine ⟨z, hz, ⟨hpres, ?_, ?_, ?_⟩, hzi⟩
-    · exact (hzregs Reg.one (by decide)).trans h1
-    · intro i hip
-      rw [hm]
-      by_cases he : i = y.regs Reg.index
-      · subst i
-        simp
-      · rw [Function.update_of_ne (by omega)]
-        exact hvalues i (by omega)
-    · intro a ha'
-      have hne : a ≠ x.regs Reg.output + y.regs Reg.index := by omega
-      rw [hm, Function.update_of_ne hne]
-      apply hframe
-      intro h
-      apply ha'
-      omega
+    obtain ⟨hvalues', hframe'⟩ :=
+      prefix_write_step (e := fun i => encode (if subtract then u i - v i else u i + v i))
+        hvalues hframe hm
+    exact ⟨z, hz, ⟨hpres, (hzregs Reg.one (by decide)).trans h1, hvalues', hframe'⟩, hzi⟩
   let x₀ := (x.set Reg.index 0).set Reg.one 1
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
   have hinit : ExecWithin (B := .standard) (w + 2)

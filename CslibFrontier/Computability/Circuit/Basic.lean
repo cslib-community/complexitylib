@@ -19,7 +19,7 @@ public import Cslib.Computability.Circuit.Basic
   value in the program evaluation.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

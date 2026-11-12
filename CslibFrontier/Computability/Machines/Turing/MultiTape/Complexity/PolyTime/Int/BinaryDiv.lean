@@ -36,7 +36,7 @@ The proof uses Lean's `Int.emod_natAbs_of_nonneg` and `Int.emod_natAbs_of_neg` a
 arithmetic certificates in `PolyTime/Int/Binary` and `PolyTime/Nat/BinaryDiv`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
@@ -65,16 +65,11 @@ the integer truncated at zero; no positive-modulus hypothesis is required. -/
 theorem intBin_emodNat :
     ComputableInPolyTime (fun p : ℤ × ℕ => (p.1 % (p.2 : ℤ)).toNat)
       (encPair encIntBin encNat) encNat := by
-  refine .of_tidy ?_
-  have hsign := ComputableTidilyInPolyTime.intBin_isNeg.comp
-    (ComputableTidilyInPolyTime.fst encIntBin encNat)
-  have hmodulus := ComputableTidilyInPolyTime.snd encIntBin encNat
-  have hremainder := ComputableTidilyInPolyTime.binary_mod.comp
-    ((ComputableTidilyInPolyTime.intBin_natAbs.comp
-      (ComputableTidilyInPolyTime.fst encIntBin encNat)).prod hmodulus)
+  have hsign := intBin_isNeg.comp (fst encIntBin encNat)
+  have hmodulus := snd encIntBin encNat
+  have hremainder := binary_mod.comp ((intBin_natAbs.comp (fst encIntBin encNat)).prod hmodulus)
   have h := hsign.ite'
-    (ComputableTidilyInPolyTime.binary_mod.comp
-      ((ComputableTidilyInPolyTime.binary_sub.comp (hmodulus.prod hremainder)).prod hmodulus))
+    (binary_mod.comp ((binary_sub.comp (hmodulus.prod hremainder)).prod hmodulus))
     hremainder
   refine h.of_enc_eq fun p => congrArg encNat ?_
   simpa only [Function.comp_apply, decide_eq_true_eq] using emodNat_eq p.1 p.2

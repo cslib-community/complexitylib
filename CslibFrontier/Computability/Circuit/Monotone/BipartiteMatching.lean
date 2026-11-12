@@ -470,14 +470,22 @@ end BipartiteMatching.RazWigderson
 open BipartiteMatching BipartiteMatching.RazWigderson
 
 /-- **The Raz–Wigderson reduction** [RazWigderson1992]: if the monotone Karchmer–Wigderson game of
-bipartite perfect matching on `K_{n,n}` has a protocol sending `c` bits and `2 m ≤ n` with `0 < m`,
-then public-coin protocols decide disjointness of `m`-bit strings with error `2 ^ (-k)` sending
-at most `k (c + 1)` bits, for every `k > 0`. -/
+bipartite perfect matching on `K_{n,n}` has a protocol sending `c` bits and `2 m ≤ n`, then
+public-coin protocols decide disjointness of `m`-bit strings with error `2 ^ (-k)` sending at most
+`k (c + 1)` bits. When `k = 0` or `m = 0` a protocol sending no bits suffices. -/
 theorem ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching {m n k : ℕ}
-    (hm : 0 < m) (hmn : 2 * m ≤ n) (hk : 0 < k) :
+    (hmn : 2 * m ≤ n) :
     PublicCoin.ecomplexityFun (1 / 2 ^ k) (disjointness : BitString m → BitString m → Bool) ≤
       k * (Protocol.ecomplexity ExceedsAt {x | bipartitePerfectMatching n x = true}
         {y | bipartitePerfectMatching n y = false} + 1) := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · refine (PublicCoin.ecomplexity_le_depth (μ := PMF.pure (.output true)) fun _ _ _ _ =>
+      PublicCoin.errorProb_le_one.trans (by norm_num)).trans ?_
+    simp
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · refine (PublicCoin.ecomplexity_le_depth (PublicCoin.solves_pure (p := .output true)
+      (fun x _ y _ => by simp [disjointness]) (by positivity))).trans ?_
+    simp
   cases hc : Protocol.ecomplexity ExceedsAt {x | bipartitePerfectMatching n x = true}
       {y | bipartitePerfectMatching n y = false} using ENat.recTopCoe with
   | top =>
@@ -486,8 +494,7 @@ theorem ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching 
   | coe c =>
     obtain ⟨p, hp, hpc⟩ := Protocol.ecomplexity_le_iff.mp hc.le
     have hcard : Fintype.card (Vertex m (n - 2 * m)) = n := by
-      simp only [Fintype.card_sum, Fintype.card_fin]
-      omega
+      grind [Fintype.card_sum, Fintype.card_fin]
     refine (PublicCoin.ecomplexity_le_depth (solves_reduction hp
       (h := Fintype.equivFinOfCardEq hcard) (i₀ := ⟨0, hm⟩) hk)).trans
       (depth_reduction_le.trans ?_)
@@ -498,15 +505,11 @@ theorem ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching 
 theorem le_mul_ecomplexity_bipartitePerfectMatching_add (n : ℕ) :
     (n : ℕ∞) ≤ 2 ^ 13 * Protocol.ecomplexity ExceedsAt {x | bipartitePerfectMatching n x = true}
       {y | bipartitePerfectMatching n y = false} + 2 ^ 14 := by
-  rcases Nat.lt_or_ge n 2 with hn | hn
-  · calc (n : ℕ∞) ≤ 2 ^ 14 := by exact_mod_cast (show n ≤ 2 ^ 14 by omega)
-      _ ≤ _ := le_add_self
   set m := n / 2
-  have hm : 0 < m := by omega
   have h1 := PublicCoin.le_mul_ecomplexityFun_disjointness_add_of_le
     (ε := 1 / 2 ^ 6) (by norm_num) m
   have h2 := ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching
-    (n := n) (k := 6) hm (by omega) (by norm_num)
+    (m := m) (n := n) (k := 6) (by omega)
   cases hc : Protocol.ecomplexity ExceedsAt {x | bipartitePerfectMatching n x = true}
       {y | bipartitePerfectMatching n y = false} using ENat.recTopCoe with
   | top => simp

@@ -313,8 +313,7 @@ theorem isPrivate_evenTwoServer : (evenTwoServer h₀).IsPrivate := by
     rw [eval_serverQuery_evenTwoServer]
     conv_lhs => rw [← Cslib.Probability.PMF.uniformOfFintype_map_equiv
       (Equiv.addRight (Pi.single i σ : ι → Bool)), PMF.map_comp]
-    congr 1
-    funext u
+    congr 1 with u : 1
     change makeEven h₀ (u + Pi.single i σ) + Pi.single i σ = makeEven h₀ u + Pi.single h₀ σ
     rw [makeEven_add_single]
     funext j

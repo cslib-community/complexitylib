@@ -37,7 +37,7 @@ one variable for each of their bits, and all its other variables are determined 
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 17.3.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.CookLevin
 

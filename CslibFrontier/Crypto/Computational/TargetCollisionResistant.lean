@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.CollisionResistant
 public import CslibFrontier.Crypto.Computational.MerkleDamgard
+public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Languages.Probabilistic.UniformNat
@@ -30,7 +31,9 @@ import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.Finiteness
+import CslibFrontier.Crypto.Game.Order
 
 /-!
 # Target collision resistance and universal one-way hash families
@@ -198,7 +201,7 @@ theorem isPPTOn_targetCollisionGame
     {valid : ℕ → List Bool → Bool} {adversary : TargetCollisionFinder}
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hH : ComputableInPolyTime (fun ⟨n, k, msg⟩ => H n k msg)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hvalid : ComputableInPolyTime (fun ⟨n, msg⟩ => valid n msg)
       (encPair encUnary encBits) encBool)
     (ha : adversary.IsPPT) :
@@ -232,7 +235,7 @@ theorem isPPT_targetCollisionGame
     {valid : ℕ → List Bool → Bool} {adversary : TargetCollisionFinder}
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hH : ComputableInPolyTime (fun ⟨n, k, msg⟩ => H n k msg)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hvalid : ComputableInPolyTime (fun ⟨n, msg⟩ => valid n msg)
       (encPair encUnary encBits) encBool)
     (ha : adversary.IsPPT) :
@@ -293,8 +296,7 @@ theorem TargetCollisionResistantOn.mono
   intro adversary hadversary
   refine negligible_of_eventually_le (hTCR.negligible adversary hadversary) ?_
   filter_upwards [hsub] with n hn
-  unfold Game.succProbability
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+  apply Game.succProbability_mono
   simp only [targetCollisionGame, ProbComp.eval_bind, ProbComp.eval_pure]
   apply PMF.bind_apply_mono_on_support; intro choice _
   apply PMF.bind_apply_mono_on_support; intro k _
@@ -364,7 +366,7 @@ structure KeyedCompressionFamily where
   /-- Compression is computable in plain polynomial time on `(1^n, k, x)`. -/
   polyTime : ComputableInPolyTime
     (fun ⟨n, k, x⟩ => eval n k x)
-    (encPair encUnary (encPair encBits encBits)) encBits
+    (encKeyedInput encBits) encBits
   /-- Block length is at least `n` at security parameter `n`. -/
   le_blockLen : ∀ n, n ≤ blockLen n
   /-- Compressing a `2 * blockLen n`-bit input under a `keyLen n`-bit key produces a
@@ -391,11 +393,11 @@ theorem validInput_eq_true_iff (C : KeyedCompressionFamily) {n : ℕ} {x : List 
 theorem computableInPolyTime_validInput (C : KeyedCompressionFamily) :
     ComputableInPolyTime (fun ⟨n, x⟩ => C.validInput n x)
       (encPair encUnary encBits) encBool := by
-  have hp := ComputableTidilyInPolyTime.id' (encIn := encPair encUnary encBits)
-  exact of_tidy_congr (ComputableTidilyInPolyTime.unary_beq
-    (ComputableTidilyInPolyTime.length_bits.comp hp.snd')
-    (ComputableTidilyInPolyTime.unary_mul.comp
-      ((ComputableTidilyInPolyTime.const 2).prod (C.blockLen_polyTime.tidy.comp hp.fst'))))
+  have hp := ComputableInPolyTime.id' (encIn := encPair encUnary encBits)
+  exact (ComputableInPolyTime.unary_beq'
+    (ComputableInPolyTime.length_bits.comp hp.snd')
+    (ComputableInPolyTime.unary_mul.comp
+      ((ComputableInPolyTime.const 2).prod (C.blockLen_polyTime.comp hp.fst')))).of_enc_eq
     fun _ => rfl
 
 /-- Target collision resistance (UOWHF compression security) of `C` on `2 * C.blockLen n`-bit
@@ -422,7 +424,7 @@ structure KeyedHashFamily where
   /-- Hashing is computable in plain polynomial time on `(1^n, k, msg)`. -/
   polyTime : ComputableInPolyTime
     (fun ⟨n, k, msg⟩ => eval n k msg)
-    (encPair encUnary (encPair encBits encBits)) encBits
+    (encKeyedInput encBits) encBits
   /-- Digest length is at least `n` at security parameter `n`. -/
   le_digestLen : ∀ n, n ≤ digestLen n
   /-- Hashing any message under a `keyLen n`-bit key produces a `digestLen n`-bit digest. -/
@@ -696,7 +698,7 @@ are computable in plain polynomial time. -/
 theorem computableInPolyTime_uowhfTreeLevels
     {h : ℕ → List Bool → List Bool → List Bool}
     (hh : ComputableInPolyTime (fun ⟨n, k, x⟩ => h n k x)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {γ : Type} {encIn : γ ↪ List Bool}
     {n κ M : γ → ℕ} {keys init : γ → List (List Bool)}
     (hn : ComputableInPolyTime n encIn encUnary)
@@ -783,12 +785,12 @@ theorem length_uowhfTreeHash (h : ℕ → List Bool → List Bool → List Bool)
 theorem computableInPolyTime_uowhfTreeHash
     {h : ℕ → List Bool → List Bool → List Bool} {keyLen blockLen : ℕ → ℕ}
     (hh : ComputableInPolyTime (fun ⟨n, k, x⟩ => h n k x)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hblockLen : ComputableInPolyTime blockLen encUnary encUnary) :
     ComputableInPolyTime
       (fun ⟨n, K, msg⟩ => uowhfTreeHash h keyLen blockLen n K msg)
-      (encPair encUnary (encPair encBits encBits)) encBits := by
+      (encKeyedInput encBits) encBits := by
   have hp := ComputableTidilyInPolyTime.id' (encIn := encPair encUnary (encPair encBits encBits))
   have hn := hp.fst'; have hK := hp.snd'.fst'; have hmsg := hp.snd'.snd'
   have hκ := hkeyLen.tidy.comp hn; have hM := hblockLen.tidy.comp hn
@@ -831,7 +833,7 @@ theorem length_uowhfCandidateInput (h : ℕ → List Bool → List Bool → List
 theorem computableInPolyTime_uowhfCandidateInput
     {h : ℕ → List Bool → List Bool → List Bool}
     (hh : ComputableInPolyTime (fun ⟨n, k, x⟩ => h n k x)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     {γ : Type} {encIn : γ ↪ List Bool}
     {n κ M i j : γ → ℕ} {front msg : γ → List Bool}
     (hn : ComputableInPolyTime n encIn encUnary)
@@ -846,18 +848,17 @@ theorem computableInPolyTime_uowhfCandidateInput
       encIn encBits := by
   have hleaves := computableInPolyTime_uowhfLeaves.comp (hM.prod hmsg)
   have hlev := computableInPolyTime_uowhfTreeLevels hh hn hκ hM
-    (.of_tidy (ComputableTidilyInPolyTime.bitsRowsWithInput hi.tidy hκ.tidy hfront.tidy)) hleaves
-  have htop := (computableInPolyTime_uowhfTreeLevels hh hn hκ hM
-    (.of_tidy (ComputableTidilyInPolyTime.bitsRowsWithInput hn.tidy hκ.tidy hfront.tidy))
-    hleaves).tidy
-  have hroot := computableInPolyTime_padOrTake.tidy.comp (hM.tidy.prod
-    ((ComputableTidilyInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp htop))
-  have hlow := ComputableTidilyInPolyTime.bitsLow hM.tidy
-    (ComputableTidilyInPolyTime.unary_to_binary.comp
-      (ComputableTidilyInPolyTime.length_bits.comp hmsg.tidy))
-  exact of_tidy_congr (ComputableTidilyInPolyTime.ite_decide (hi.tidy.unary_lt' hn.tidy)
-    (computableInPolyTime_uowhfPairInput hM hlev hj).tidy
-    (ComputableTidilyInPolyTime.bitsAppend hroot hlow)) fun _ => rfl
+    (ComputableInPolyTime.bitsRowsWithInput hi hκ hfront) hleaves
+  have htop := computableInPolyTime_uowhfTreeLevels hh hn hκ hM
+    (ComputableInPolyTime.bitsRowsWithInput hn hκ hfront) hleaves
+  have hroot := computableInPolyTime_padOrTake.comp (hM.prod
+    ((ComputableInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp htop))
+  have hlow := ComputableInPolyTime.bitsLow hM
+    (ComputableInPolyTime.unary_to_binary.comp
+      (ComputableInPolyTime.length_bits.comp hmsg))
+  exact (ComputableInPolyTime.ite_decide (hi.unary_lt' hn)
+    (computableInPolyTime_uowhfPairInput hM hlev hj)
+    (ComputableInPolyTime.bitsAppend hroot hlow)).of_enc_eq fun _ => rfl
 
 /-! ### Deterministic tree collision witness -/
 
@@ -1068,7 +1069,7 @@ theorem isPPT_uowhfTreeAdversary
     {h : ℕ → List Bool → List Bool → List Bool}
     {keyLen blockLen maxBlocks : ℕ → ℕ} {adversary : TargetCollisionFinder}
     (hh : ComputableInPolyTime (fun ⟨n, k, x⟩ => h n k x)
-      (encPair encUnary (encPair encBits encBits)) encBits)
+      (encKeyedInput encBits) encBits)
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hblockLen : ComputableInPolyTime blockLen encUnary encUnary)
     (hmaxBlocks : ComputableInPolyTime maxBlocks encUnary encUnary)
@@ -1300,8 +1301,7 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
   have hpos : (0 : ℝ≥0) < dyadicSize bound := by exact_mod_cast dyadicSize_pos bound
   rw [htree_eq, hred_eq, Game.succProbability_uniform, Fintype.card_fin,
     mul_div_cancel₀ _ hpos.ne']
-  have hmono := ENNReal.toNNReal_mono
-    (ne_of_lt (ENNReal.sum_lt_top.mpr fun s _ => (PMF.apply_ne_top _ _).lt_top)) hsum_le
+  have hmono := ENNReal.toNNReal_mono (by finiteness) hsum_le
   rwa [ENNReal.toNNReal_sum fun s _ => PMF.apply_ne_top _ _] at hmono
 
 /-- Extend any `KeyedCompressionFamily` `C` (`2 * C.blockLen n → C.blockLen n` under

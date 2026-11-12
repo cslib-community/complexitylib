@@ -74,8 +74,7 @@ private theorem code_mapWires (line : Line σ m t) (f : Wire m t → Wire n s)
     (ren : ℕ → ℕ) (h : ∀ w, (f w).toNat = ren w.toNat) :
     (line.mapWires f).code = (line.code.1, line.code.2.map ren) := by
   simp only [Line.code, Line.mapWires, List.map_ofFn]
-  congr 2
-  funext i
+  congr 2 with i : 1
   exact h (line.wires i)
 
 /-- The wire-number map when continuing a program with another program. -/
@@ -474,8 +473,7 @@ theorem compCode_code {n m p : ℕ} (d : Circuit signature m p)
       (compCodeWire n c.code))) = _
     rw [hwire]
   · simp only [compCode, Circuit.code, Circuit.comp, List.map_ofFn, Function.comp_apply]
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [Program.appendedWire_toNat]
     exact compCodeWire_code c _
 

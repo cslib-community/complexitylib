@@ -139,6 +139,20 @@ theorem mem_mistakeRounds {A : OnlineLearner α} {S : List (α × Bool)} {t : �
   · rintro ⟨ht, h⟩
     exact ⟨⟨t, ht⟩, h, rfl⟩
 
+/-- Negating `A`'s prediction in round `t` exactly when `t` is one of its mistakes gives the label
+of round `t`. -/
+private theorem ite_mem_mistakeRounds (A : OnlineLearner α) (S : List (α × Bool)) {t : ℕ}
+    (ht : t < S.length) :
+    (if t ∈ mistakeRounds A S then !A (S.take t) S[t].1 else A (S.take t) S[t].1) = S[t].2 := by
+  by_cases hm : t ∈ mistakeRounds A S
+  · rw [ite_eq_left hm]
+    obtain ⟨_, hne⟩ := mem_mistakeRounds.mp hm
+    revert hne
+    cases A (S.take t) S[t].1 <;> cases S[t].2 <;> simp
+  · rw [ite_eq_right hm]
+    by_contra hne
+    exact hm (mem_mistakeRounds.mpr ⟨ht, hne⟩)
+
 /-- Negating `A` at its mistakes on `S` recovers the labels of `S`: the self-labelled history of
 the first `n` instances is the first `n` examples. -/
 theorem flipHistory_mistakeRounds (A : OnlineLearner α) (S : List (α × Bool)) (n : ℕ)
@@ -152,15 +166,7 @@ theorem flipHistory_mistakeRounds (A : OnlineLearner α) (S : List (α × Bool))
       flipHistory_append_singleton, ih hn'.le]
     congr 2
     rw [List.length_take, min_eq_left hn'.le]
-    refine Prod.ext rfl ?_
-    by_cases hm : n ∈ mistakeRounds A S
-    · rw [ite_eq_left hm]
-      obtain ⟨_, hne⟩ := mem_mistakeRounds.mp hm
-      revert hne
-      cases A (S.take n) S[n].1 <;> cases S[n].2 <;> simp
-    · rw [ite_eq_right hm]
-      by_contra hne
-      exact hm (mem_mistakeRounds.mpr ⟨hn', hne⟩)
+    exact Prod.ext rfl (ite_mem_mistakeRounds A S hn')
 
 /-- The expert that negates `A` at its mistakes on `S` predicts the labels of `S`, after any
 history with the instances of `S` [BenDavidPalShalevShwartz2009, §3.2, Lemma 12]. -/
@@ -169,14 +175,7 @@ theorem flipExpert_mistakeRounds (A : OnlineLearner α) (S : List (α × Bool)) 
     flipExpert A (mistakeRounds A S) h S[t].1 = S[t].2 := by
   simp only [flipExpert]
   rw [hh, flipHistory_mistakeRounds A S t ht.le, List.length_take, min_eq_left ht.le]
-  by_cases hm : t ∈ mistakeRounds A S
-  · rw [ite_eq_left hm]
-    obtain ⟨_, hne⟩ := mem_mistakeRounds.mp hm
-    revert hne
-    cases A (S.take t) S[t].1 <;> cases S[t].2 <;> simp
-  · rw [ite_eq_right hm]
-    by_contra hne
-    exact hm (mem_mistakeRounds.mpr ⟨ht, hne⟩)
+  exact ite_mem_mistakeRounds A S ht
 
 /-- The expert that negates `A` at its mistakes on the `c`-labelling of the instances of `S` makes
 exactly the mistakes of `c` on `S` [BenDavidPalShalevShwartz2009, §3.2, Corollary 13]. -/

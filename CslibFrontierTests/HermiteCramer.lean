@@ -173,7 +173,7 @@ theorem recover_testPoly_signed : hermiteRecoverZero [-1, 2] 3 6 testJetsSigned 
 
 theorem recover_testPoly_mod32 : hermiteRecoverModPowTwo [1, 2] 3 5 6 testJetsPos = 15 :=
   hermiteRecoverModPowTwo_eq (H := testPoly) (H_zero := -17) (by decide) (by decide)
-    (testPoly_natDegree_lt [1, 2] rfl) testPoly_eval_zero rfl (by decide) testPoly_jets_pos
+    (testPoly_natDegree_lt [1, 2] rfl) testPoly_eval_zero (by decide) testPoly_jets_pos
     (by decide) (by decide) ⟨-1, by decide⟩
 
 -- Concrete entry bit-length bounds on the `6 × 6` Hermite and Cramer tables, and plain

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.OneWay
 public import CslibFrontier.Probability.Collision
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -34,7 +35,7 @@ Adapted from Crypto/Computational/OneWay/Collision.lean on the cslib `crypto` br
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the shared nonnegative game API.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -45,9 +46,8 @@ theorem output_collision_eq_inversion (f : List Bool → List Bool) (n : ℕ) :
     collisionProbability ((BitString.uniformList n).map f) =
       (Game.succProbability (ProbComp.eval
         (inversionGame f (fun n _ => BitString.sampleList n) n)) : ℝ) := by
-  simp only [collisionProbability_eq_probability, Game.succProbability,
-    ENNReal.coe_toNNReal_eq_toReal, inversionGame, ProbComp.eval_bind, BitString.eval_sampleList,
-    ProbComp.eval_pure, PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def,
+  simp only [pmf_norm, collisionProbability_eq_probability, Game.succProbability,
+    ENNReal.coe_toNNReal_eq_toReal, inversionGame, BitString.eval_sampleList, PMF.map,
     beq_eq_decide, eq_comm]
 
 /-- One-wayness forces negligible output collisions, even for variable-length images.

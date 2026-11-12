@@ -25,6 +25,7 @@ public section
 namespace Cslib.Logic.PL.CSP.Blossom
 
 open Table Finset
+open Cslib.BitString
 
 variable {F : CSP Table ℕ}
 
@@ -232,7 +233,7 @@ theorem flip_reference_connectors (f : OccurrenceLabeling F Bool) (vs : List ℕ
       p.flip (reference f vs) (connectorPort f vs i hi) = false) ∧
     (∀ k : Fin (connectors F vs).length,
       p.flip (reference f vs) (centralPort f vs k) =
-        (oneHot (connectors F vs).length 0).getD k.val false) := by
+        (listSingle (connectors F vs).length 0).getD k.val false) := by
   have hunchanged : ∀ o : Occurrence (contract f vs), o.var ∈ connectors F vs →
       p.flip (reference f vs) o = reference f vs o := by
     intro o ho
@@ -245,8 +246,8 @@ theorem flip_reference_connectors (f : OccurrenceLabeling F Bool) (vs : List ℕ
   · intro k
     rw [hunchanged _ (by rw [centralPort_var]; exact List.getElem_mem k.isLt),
       reference_centralPort, List.getD_eq_getElem _ _ (by
-        simpa only [oneHot, List.length_map, List.length_range] using k.isLt)]
-    simp [oneHot]
+        simpa only [listSingle, List.length_map, List.length_range] using k.isLt)]
+    simp [listSingle]
 
 /-- Every connector-free contracted f-prefix restores to an original f-prefix. Each actual
 intermediate row is reflected through connector zero, so arbitrary outside changes are allowed. -/

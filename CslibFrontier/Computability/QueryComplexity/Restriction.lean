@@ -29,7 +29,7 @@ definitionally, so the generic restriction operations apply without conversions.
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.QueryComplexity
 

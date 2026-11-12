@@ -151,9 +151,6 @@ theorem exec_expandSetup {w q k p : ℕ} (x : Data registers)
 instance (i : Fin registers) : Decidable (IndexedPushLocal i) :=
   inferInstanceAs (Decidable (ChildSetupLocal i ∨ PushLocal i))
 
-private theorem push_preserves_local (i : Fin registers) :
-    ¬PushLocal i → push.Preserves i := by decide +revert
-
 private theorem indexedChildren_preserves (ds : List (Fin 9)) (i : Fin registers)
     (hi : ¬IndexedPushLocal i) : (indexedChildren ds).Preserves i := by
   induction ds with
@@ -163,7 +160,7 @@ private theorem indexedChildren_preserves (ds : List (Fin 9)) (i : Fin registers
     simpa using hne
   | cons d ds ih =>
     exact ⟨⟨indexedSetup_preserves d i (fun h => hi (Or.inl h)),
-      push_preserves_local i (fun h => hi (Or.inr h))⟩, ih⟩
+      push_preserves i (fun h => hi (Or.inr h))⟩, ih⟩
 
 /-- The actual consecutive stores of a fixed indexed-child dispatch. -/
 @[expose] def writeIndexedChildren (F k c u e p cp : ℕ) : ℕ → List (Fin 9) →
@@ -296,7 +293,7 @@ theorem exec_p0Child {w F n k c u e p cp : ℕ} (x : Data registers)
   · intro i hi
     apply hex.regs_eq
     exact ⟨p0Setup_preserves i (fun h => hi (Or.inl h)),
-      push_preserves_local i (fun h => hi (Or.inr h))⟩
+      push_preserves i (fun h => hi (Or.inr h))⟩
 
 /-- The sole private child at an outer coordinate is computed and stored in sixteen steps. -/
 theorem exec_privateChild {w F n k c u e p cp d : ℕ} (x : Data registers) (hd : d ≤ 9)
@@ -323,6 +320,6 @@ theorem exec_privateChild {w F n k c u e p cp d : ℕ} (x : Data registers) (hd 
   · intro i hi
     apply hex.regs_eq
     exact ⟨privateSetup_preserves i (fun h => hi (Or.inl h)),
-      push_preserves_local i (fun h => hi (Or.inr h))⟩
+      push_preserves i (fun h => hi (Or.inr h))⟩
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxQuery

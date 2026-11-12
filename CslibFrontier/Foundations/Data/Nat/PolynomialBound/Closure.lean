@@ -41,7 +41,7 @@ expressions in the component bounds and collapsed by `fun_prop`.
   never exceed one of their arguments.
 -/
 
-@[expose] public section
+public section
 
 /-- An explicit polynomial bound `c * (n + 1) ^ d` is a bound `O(n ^ d)`. -/
 theorem Nat.mul_add_one_pow_le_two_pow (c d n : ℕ) :
@@ -131,8 +131,7 @@ theorem mono_of_le (hg : PolynomiallyBounded g) (h : f ≤ g) : PolynomiallyBoun
       _ = (c' + 1) * (n + 1) ^ d' := by ring
   calc
     f (g n) ≤ c * (g n + 1) ^ d := hf (g n)
-    _ ≤ c * ((c' + 1) * (n + 1) ^ d') ^ d :=
-      Nat.mul_le_mul_left c (Nat.pow_le_pow_left hsize d)
+    _ ≤ c * ((c' + 1) * (n + 1) ^ d') ^ d := by gcongr
     _ = c * (c' + 1) ^ d * (n + 1) ^ (d' * d) := by rw [mul_pow, pow_mul, mul_assoc]
 
 /-- Evaluating a polynomial with natural coefficients is polynomially bounded. This is how the

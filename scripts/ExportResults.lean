@@ -18,5 +18,4 @@ unsafe def main : IO Unit := do
   let records := entries.getState env
   IO.println (Json.mkObj [
     ("schema_version", toJson (1 : Nat)),
-    ("abstract_catalogue", toJson ("abstracts/catalogue.json" : String)),
     ("results", Json.arr (records.map Entry.json))]).compress

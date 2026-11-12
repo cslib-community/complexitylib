@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Circuit.Rational.Runtime.Lift.Defs
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Foundations.Data.Int.Order
 import Mathlib.Data.List.GetD
 
@@ -396,9 +397,7 @@ theorem length_encList_coeffRow_le (c : ℤ) {i k : ℕ} (hik : i ≤ k) :
   have hc_lt : c.natAbs < 2 ^ L := by
     rw [← intBits_le_iff, intBits_eq_length_encIntBin]
     exact Nat.le_succ L
-  have h2w : 2 * (c.natAbs + 1) ≤ 2 ^ (L + 1) := by
-    rw [pow_succ']
-    exact Nat.mul_le_mul_left 2 hc_lt
+  have h2w : 2 * (c.natAbs + 1) ≤ 2 ^ (L + 1) := by grind
   have hentry {z : ℤ} (hz : z ∈ coeffRow c i) :
       (encIntBin z).length ≤ coeffEntryBound L k := by
     obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hz
@@ -416,10 +415,7 @@ theorem length_encList_coeffRow_le (c : ℤ) {i k : ℕ} (hik : i ≤ k) :
 
 private lemma polyBounded_coeffRowBound {α : Type} {size L k : α → ℕ}
     (hL : PolyBounded size L) (hk : PolyBounded size k) :
-    PolyBounded size (fun x => coeffRowBound (L x) (k x)) := by
-  have hentry : PolyBounded size (fun x => coeffEntryBound (L x) (k x)) :=
-    ((hL.add (.const 1)).mul hk).add (.const 2)
-  exact (hk.add (.const 1)).mul (((PolyBounded.const 2).mul hentry).add (.const 1))
+    PolyBounded size (fun x => coeffRowBound (L x) (k x)) := by growth_poly
 
 variable {α : Type} {encIn : α ↪ List Bool}
 

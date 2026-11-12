@@ -20,7 +20,7 @@ public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wa
 This stage lemma is an internal implementation API for the complete grouping execution.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 
@@ -69,11 +69,7 @@ theorem exec_prefixStep {w L m N Q t : ℕ} (key : ℕ → ℕ)
       hi, hs, hc, hcount, hoff, hcursor, hadd, hnext, s, c,
       pointer, count, counts, offsets, cursors, total, index, BandPreparation.one,
       Fin.mk.injEq]
-  have hp : Parameters L m N Q y := hx.reframe (by
-    intro i hi
-    apply he.regs_eq
-    have h : ∀ i ∈ parameterRegisters, prefixStep.Preserves i := by decide +kernel
-    exact h i hi)
+  have hp : Parameters L m N Q y := hx.of_exec he (by decide +kernel)
   have hsep : offsetAddress L m N Q + t ≠ cursorAddressBase L m N Q + t := by
     unfold cursorAddressBase
     omega

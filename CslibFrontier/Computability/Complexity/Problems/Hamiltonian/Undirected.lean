@@ -45,7 +45,7 @@ becomes a triangle.
 
 * `Cslib.Complexity.Graph.split_mem_HamPath_iff`,
   `Cslib.Complexity.DirHamPath.toHamPath_mem_iff`:
-  `(G.split, G.splitVertex s 0, G.splitVertex t 2) ∈ HamPath ↔ (G, s, t) ∈ DirHamPath`.
+  `⟨G.split, G.splitVertex s 0, G.splitVertex t 2⟩ ∈ HamPath ↔ ⟨G, s, t⟩ ∈ DirHamPath`.
 * `Cslib.Complexity.Graph.split_mem_HamCycle_iff`: `G.split ∈ HamCycle ↔ G ∈ DirHamCycle`.
 * `Cslib.Complexity.Graph.computableInPolyTime_split`,
   `Cslib.Complexity.DirHamPath.computableInPolyTime_toHamPath`: both reductions are
@@ -317,13 +317,7 @@ private theorem chain_gadgets_iff {G : Graph} {p : List ℕ} (hp : ∀ v ∈ p, 
   | nil => rfl
   | cons a p =>
     have ha := hp a (List.mem_cons_self ..)
-    have hp' : ∀ v ∈ a :: (p ++ [a]), v ∈ G.1 := by
-      intro v hv
-      simp only [List.mem_cons, List.mem_append, List.not_mem_nil, or_false] at hv
-      rcases hv with rfl | hv | rfl
-      · exact ha
-      · exact hp v (List.mem_cons_of_mem _ hv)
-      · exact ha
+    have hp' : ∀ v ∈ a :: (p ++ [a]), v ∈ G.1 := by grind
     have e : gadgets G (a :: (p ++ [a])) = (G.splitVertex a 0 :: G.splitVertex a 1 ::
         G.splitVertex a 2 :: (gadgets G p ++ [G.splitVertex a 0])) ++
           [G.splitVertex a 1, G.splitVertex a 2] := by
@@ -356,10 +350,7 @@ private theorem exists_eq_gadgets {G : Graph} (n : ℕ) : ∀ (l : List ℕ) (v 
     have hnd₁ : l₁.Nodup := (List.nodup_cons.1 hnd).2
     have hch₁ : l₁.IsChain G.split.toSimpleGraph.Adj := hch.tail
     -- `mid(v)` lies in `l₁`, at some position `j`.
-    have hm : G.splitVertex v 1 ∈ l₁ := by
-      rcases List.mem_cons.1 (hmid v hv (List.mem_cons_self ..)) with h | h
-      · simp [splitVertex_eq_splitVertex_iff] at h
-      · exact h
+    have hm : G.splitVertex v 1 ∈ l₁ := by grind [splitVertex_eq_splitVertex_iff]
     obtain ⟨j, hj, hjm⟩ := List.getElem_of_mem hm
     -- `mid(v)` is not the last vertex, and its successor is `out(v)`.
     have hj₁ : j + 1 < l₁.length := by
@@ -426,7 +417,8 @@ private theorem chain_reverse_coe {α : Type*} {R : α → α → Prop} (hR : �
 `s` to `t` exactly when its split graph has an undirected Hamiltonian path from `in(s)` to
 `out(t)`. -/
 theorem split_mem_HamPath_iff (G : Graph) (s t : ℕ) :
-    (G.split, G.splitVertex s 0, G.splitVertex t 2) ∈ HamPath ↔ (G, s, t) ∈ DirHamPath := by
+    (⟨G.split, G.splitVertex s 0, G.splitVertex t 2⟩ : PathInstance) ∈ HamPath ↔
+      (⟨G, s, t⟩ : PathInstance) ∈ DirHamPath := by
   rw [mem_HamPath_iff]
   constructor
   · rintro ⟨q, hnd, hcov, hs, ht, hch⟩
@@ -555,18 +547,17 @@ namespace DirHamPath
 
 /-- The reduction from `DirHamPath` to `HamPath`: split the vertices of the graph, and ask for a
 path from the entry of `s` to the exit of `t`. -/
-def toHamPath (x : Graph × ℕ × ℕ) : Graph × ℕ × ℕ :=
-  (x.1.split, x.1.splitVertex x.2.1 0, x.1.splitVertex x.2.2 2)
+def toHamPath (x : PathInstance) : PathInstance :=
+  ⟨x.graph.split, x.graph.splitVertex x.source 0, x.graph.splitVertex x.target 2⟩
 
 /-- Correctness of `DirHamPath.toHamPath`. -/
-theorem toHamPath_mem_iff (x : Graph × ℕ × ℕ) : toHamPath x ∈ HamPath ↔ x ∈ DirHamPath :=
-  Graph.split_mem_HamPath_iff x.1 x.2.1 x.2.2
+theorem toHamPath_mem_iff (x : PathInstance) : toHamPath x ∈ HamPath ↔ x ∈ DirHamPath :=
+  Graph.split_mem_HamPath_iff x.graph x.source x.target
 
 /-- The reduction `DirHamPath.toHamPath` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toHamPath :
-    ComputableInPolyTime toHamPath (encPair encGraph (encPair encNat encNat))
-      (encPair encGraph (encPair encNat encNat)) := by
+    ComputableInPolyTime toHamPath encPathInstance encPathInstance := by
   have hsv := Graph.computableInPolyTime_splitVertex
   unfold toHamPath
   fun_prop
@@ -575,8 +566,7 @@ end DirHamPath
 
 /-- `DirHamPath` reduces to `HamPath` in polynomial time via `DirHamPath.toHamPath`. -/
 theorem polyTimeReducible_DirHamPath_HamPath :
-    PolyTimeReducible (encPair encGraph (encPair encNat encNat))
-      (encPair encGraph (encPair encNat encNat)) DirHamPath HamPath :=
+    PolyTimeReducible encPathInstance encPathInstance DirHamPath HamPath :=
   ⟨DirHamPath.toHamPath, DirHamPath.computableInPolyTime_toHamPath,
     fun x => (DirHamPath.toHamPath_mem_iff x).symm⟩
 
@@ -587,11 +577,11 @@ theorem polyTimeReducible_DirHamCycle_HamCycle :
     fun G => (Graph.split_mem_HamCycle_iff G).symm⟩
 
 /-- `HamPath` is `NP`-hard. -/
-theorem HamPath_npHard : NPHard (encPair encGraph (encPair encNat encNat)) HamPath :=
+theorem HamPath_npHard : NPHard encPathInstance HamPath :=
   DirHamPath_npHard.trans polyTimeReducible_DirHamPath_HamPath
 
 /-- **`HamPath` is NP-complete** [Sipser, Theorem 7.55][Sipser2013]. -/
-theorem HamPath_npComplete : NPComplete (encPair encGraph (encPair encNat encNat)) HamPath :=
+theorem HamPath_npComplete : NPComplete encPathInstance HamPath :=
   ⟨HamPath.mem_NP, HamPath_npHard⟩
 
 /-- `HamCycle` is `NP`-hard. -/

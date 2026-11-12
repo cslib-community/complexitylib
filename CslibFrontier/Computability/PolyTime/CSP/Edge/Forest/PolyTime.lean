@@ -32,14 +32,7 @@ namespace Cslib.Complexity.CSP.EdgeForest
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Turing.MultiTapeTM
 open EdgeAugmenting (Record encRecord)
 
-/-- Read the complete explicit-table CSP body from the framed native forest input. -/
-theorem poly_body : ComputableInPolyTime Input.body encInput (encCSP encTable encNat) :=
-  encInput_body_deg.computableInPolyTime
-/-- Read the finite occurrence-label buffer from the framed native forest input. -/
-theorem poly_labels : ComputableInPolyTime Input.labels encInput (encList encBool) :=
-  encInput_labels_deg.computableInPolyTime
-
-attribute [local fun_prop] poly_body poly_labels EdgeAugmenting.poly_records
+attribute [local fun_prop] EdgeAugmenting.poly_records
   EdgeAugmenting.poly_idxOf EdgeAugmenting.poly_flip EdgeAugmenting.poly_validWith
   EdgeAugmenting.poly_inconsistentWith EdgeAugmenting.poly_zipIdx
 
@@ -305,20 +298,10 @@ private theorem poly_loop : ComputableInPolyTime
     (growth := fun input => 32 * (encList encRecord (CSP.occurrences input.body)).length + 32)
   refine ⟨?_, step_size⟩
   exact ((PolyBounded.const 32).mul
-    (EdgeAugmenting.poly_records.comp poly_body).polyBounded_length).add (.const 32)
+    (EdgeAugmenting.poly_records.comp (encInput_body_polyTime .id')).polyBounded_length).add
+    (.const 32)
 
 attribute [local fun_prop] poly_loop
-
-private theorem poly_expansionMk : ComputableInPolyTime
-    (fun p : ℕ × List ℕ => ExpansionCode.mk p.1 p.2)
-    encExpansionCodeFields encExpansionCode := encExpansionCode_mk_deg.computableInPolyTime
-
-private theorem poly_meetingMk : ComputableInPolyTime
-    (fun p : List ℕ × List ExpansionCode × ExpansionCode × ℕ =>
-      MeetingCode.mk p.1 p.2.1 p.2.2.1 p.2.2.2)
-    encMeetingCodeFields encMeetingCode := encMeetingCode_mk_deg.computableInPolyTime
-
-attribute [local fun_prop] poly_expansionMk poly_meetingMk
 
 /-- Compute an occurrence record's binary output position by scanning the actual occurrence
 list; an absent record returns the actual list length, also encoded in binary. -/

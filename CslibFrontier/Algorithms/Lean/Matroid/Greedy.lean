@@ -221,8 +221,7 @@ private theorem map_greedyStepM {α : Type} [DecidableEq α]
     (indep : Finset α → m Bool) (acc : Finset α) (x : α) :
     f (greedyStepM indep acc x) = greedyStepM (fun S => f (indep S)) acc x := by
   simp only [greedyStepM, hf.map_bind]
-  congr 1
-  funext b
+  congr 1 with b : 1
   cases b <;> simp [hf.map_pure]
 
 private theorem map_foldlM_greedyStepM {α : Type} [DecidableEq α]
@@ -235,8 +234,7 @@ private theorem map_foldlM_greedyStepM {α : Type} [DecidableEq α]
   | nil => simp [hf.map_pure]
   | cons x rest ih =>
     simp only [List.foldlM_cons, hf.map_bind, map_greedyStepM hf]
-    congr 1
-    funext acc'
+    congr 1 with acc' : 1
     exact ih acc'
 
 @[grind .]
@@ -616,6 +614,12 @@ private theorem toFinset_filter_mem {xs : List α} {I : Finset α}
   simp only [List.mem_toFinset, List.mem_filter, decide_eq_true_eq]
   exact ⟨fun h => h.2, fun hx => ⟨hsub hx, hx⟩⟩
 
+/-- Listing a subset `I` of a duplicate-free `xs` in the order of `xs` gives `I.card` entries. -/
+private theorem length_filter_mem_eq_card {xs : List α} (hnodup : xs.Nodup) {I : Finset α}
+    (hsub : (I : Set α) ⊆ {x | x ∈ xs}) :
+    (xs.filter (· ∈ I)).length = I.card := by
+  rw [← List.toFinset_card_of_nodup (hnodup.filter _), toFinset_filter_mem hsub]
+
 /-- **Gale's Pointwise Dominance Theorem** ([Gale1968], Theorem, p. 177):
 Let `xs` be a duplicate-free list sorted with respect to a reflexive relation `R`, and let
 `G := greedySelect indep xs` be the greedy output for `M : Matroid α`. For every independent set
@@ -638,12 +642,8 @@ theorem gale_dominance_nodup {M : Matroid α} {indep : Finset α → Bool}
   set G_list := xs.filter (· ∈ G)
   set I_list := xs.filter (· ∈ I)
   have hGsub : (G : Set α) ⊆ {x | x ∈ xs} := fun x hx => mem_of_mem_greedySelect hx
-  have hG_len : G_list.length = G.card := by
-    rw [← List.toFinset_card_of_nodup (hnodup.filter _), toFinset_filter_mem hGsub]
-  have hI_len : I_list.length = I.card := by
-    rw [← List.toFinset_card_of_nodup (hnodup.filter _), toFinset_filter_mem hIsub]
   have hlen : I_list.length ≤ G_list.length := by
-    rw [hI_len, hG_len]
+    rw [length_filter_mem_eq_card hnodup hIsub, length_filter_mem_eq_card hnodup hGsub]
     exact card_le_greedySelect_card hM xs hI hIsub
   refine ⟨hlen, fun j hj => ?_⟩
   have hjG : j < G_list.length := Nat.lt_of_lt_of_le hj hlen
@@ -673,9 +673,8 @@ theorem gale_dominance_nodup {M : Matroid α} {indep : Finset α → Bool}
       exact (mem_foldl_greedyStep_of_disjoint indep hdisj A_P hz).symm
     have hAP_sub : (A_P : Set α) ⊆ {z | z ∈ P_G} := fun z hz => mem_of_mem_greedySelect hz
     have hAP_card : A_P.card = j := by
-      rw [← toFinset_filter_mem hAP_sub,
-        List.toFinset_card_of_nodup ((List.nodup_append.mp hnodup_G).1.filter _),
-        hfilter_eq, hPG_len]
+      rw [← length_filter_mem_eq_card (List.nodup_append.mp hnodup_G).1 hAP_sub, hfilter_eq,
+        hPG_len]
     have hy_mem_I : y ∈ I := by
       have hy_in : y ∈ I_list := List.getElem_mem hj
       exact (List.mem_filter.mp hy_in).2 |> decide_eq_true_eq.mp
@@ -736,6 +735,26 @@ private theorem finset_sum_eq_filter_map_sum [AddCommMonoid β] {xs : List α} (
   conv_lhs => rw [← hto]
   exact List.sum_toFinset w (hnodup.filter _)
 
+/-- Shared core of the weighted optimality theorems: on a candidate list sorted by nonincreasing
+weight, an independent `I` weighs at most the first `I.card` greedy picks, listed in candidate
+order. This is Gale's dominance (`gale_dominance_nodup`) applied after erasing duplicates. -/
+private theorem sum_le_sum_take_greedySelect [AddCommMonoid β] [Preorder β] [IsOrderedAddMonoid β]
+    {M : Matroid α} {indep : Finset α → Bool}
+    (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α))
+    (w : α → β) {xs : List α} (hsorted : xs.Pairwise (fun a b => w b ≤ w a))
+    {I : Finset α} (hI : M.Indep (I : Set α)) (hIsub : (I : Set α) ⊆ {x | x ∈ xs}) :
+    ∑ x ∈ I, w x ≤
+      (((xs.eraseDups.filter (· ∈ greedySelect indep xs.eraseDups)).take I.card).map w).sum := by
+  have hnodup : xs.eraseDups.Nodup := List.nodup_eraseDups xs
+  have hIsub' : (I : Set α) ⊆ {x | x ∈ xs.eraseDups} := fun x hx =>
+    List.mem_eraseDups.mpr (hIsub hx)
+  have : Std.Refl (fun a b : α => w b ≤ w a) := ⟨fun _ => le_rfl⟩
+  obtain ⟨hlen, hdom⟩ := gale_dominance_nodup hM hnodup
+    (hsorted.sublist (List.eraseDups_sublist xs)) hI hIsub'
+  rw [finset_sum_eq_filter_map_sum hnodup hIsub' w, ← length_filter_mem_eq_card hnodup hIsub']
+  refine list_sum_le_sum_of_getElem w (by simp [hlen]) fun j hj => ?_
+  simpa [List.getElem_take] using hdom j hj
+
 /-- **Rado–Edmonds Maximum-Weight Basis Theorem** (pre-sorted candidate list, [Rado1957];
 [Edmonds1971], Section 2): if `xs` is ordered by nonincreasing weight `w b ≤ w a`, then
 `greedySelect indep xs` maximizes total weight `∑ x ∈ I, w x` among all bases `I` of
@@ -747,27 +766,14 @@ theorem sum_le_greedySelect_of_isBasis' [AddCommMonoid β] [Preorder β] [IsOrde
     {I : Finset α} (hI : M.IsBasis' (I : Set α) {x | x ∈ xs}) :
     ∑ x ∈ I, w x ≤ ∑ x ∈ greedySelect indep xs, w x := by
   rw [greedySelect_eq_eraseDups hM xs]
-  set ys := xs.eraseDups
-  have hys_nodup : ys.Nodup := List.nodup_eraseDups xs
-  have hys_sorted : ys.Pairwise (fun a b => w b ≤ w a) :=
-    hsorted.sublist (List.eraseDups_sublist xs)
-  have hset_eq : {x | x ∈ ys} = {x | x ∈ xs} := by
-    ext x; exact List.mem_eraseDups
-  have hI' : M.IsBasis' (I : Set α) {x | x ∈ ys} := hset_eq.symm ▸ hI
-  set G := greedySelect indep ys
-  have hGsub : (G : Set α) ⊆ {x | x ∈ ys} := fun x hx => mem_of_mem_greedySelect hx
-  have : Std.Refl (fun a b : α => w b ≤ w a) := ⟨fun _ => le_rfl⟩
-  obtain ⟨hlen_le, hdom⟩ :=
-    gale_dominance_nodup hM hys_nodup hys_sorted hI'.indep hI'.subset
-  have hcard_eq : I.card = G.card := card_eq_greedySelect_card_of_isBasis' hM ys hI'
-  have hlen_I : (ys.filter (· ∈ I)).length = I.card := by
-    rw [← List.toFinset_card_of_nodup (hys_nodup.filter _), toFinset_filter_mem hI'.subset]
-  have hlen_G : (ys.filter (· ∈ G)).length = G.card := by
-    rw [← List.toFinset_card_of_nodup (hys_nodup.filter _), toFinset_filter_mem hGsub]
-  have hlen_eq : (ys.filter (· ∈ I)).length = (ys.filter (· ∈ G)).length := by omega
-  rw [finset_sum_eq_filter_map_sum hys_nodup hI'.subset w,
-    finset_sum_eq_filter_map_sum hys_nodup hGsub w]
-  exact list_sum_le_sum_of_getElem w hlen_eq fun j hj => hdom j hj
+  have hnodup : xs.eraseDups.Nodup := List.nodup_eraseDups xs
+  have hI' : M.IsBasis' (I : Set α) {x | x ∈ xs.eraseDups} := by simpa using hI
+  have hGsub : ((greedySelect indep xs.eraseDups : Finset α) : Set α) ⊆ {x | x ∈ xs.eraseDups} :=
+    fun x hx => mem_of_mem_greedySelect hx
+  -- for a basis, the first `I.card` greedy picks are all of them
+  have h := sum_le_sum_take_greedySelect (indep := indep) hM w hsorted hI.indep hI.subset
+  rwa [card_eq_greedySelect_card_of_isBasis' hM _ hI', ← length_filter_mem_eq_card hnodup hGsub,
+    List.take_length, ← finset_sum_eq_filter_map_sum hnodup hGsub w] at h
 
 /-- **Rado–Edmonds Minimum-Weight Basis Theorem** (pre-sorted candidate list, Kruskal order):
 if `xs` is ordered by nondecreasing weight `w a ≤ w b`, then `greedySelect indep xs` minimizes
@@ -793,38 +799,16 @@ theorem sum_le_greedySelect_of_indep [AddCommMonoid β] [Preorder β] [IsOrdered
     (hnonneg : ∀ x ∈ xs, 0 ≤ w x)
     {I : Finset α} (hI : M.Indep (I : Set α)) (hIsub : (I : Set α) ⊆ {x | x ∈ xs}) :
     ∑ x ∈ I, w x ≤ ∑ x ∈ greedySelect indep xs, w x := by
-  rw [greedySelect_eq_eraseDups hM xs]
-  set ys := xs.eraseDups
-  have hys_nodup : ys.Nodup := List.nodup_eraseDups xs
-  have hys_sorted : ys.Pairwise (fun a b => w b ≤ w a) :=
-    hsorted.sublist (List.eraseDups_sublist xs)
-  have hset_eq : {x | x ∈ ys} = {x | x ∈ xs} := by
-    ext x; exact List.mem_eraseDups
-  have hIsub' : (I : Set α) ⊆ {x | x ∈ ys} := hset_eq.symm ▸ hIsub
-  set G := greedySelect indep ys
-  have hGsub : (G : Set α) ⊆ {x | x ∈ ys} := fun x hx => mem_of_mem_greedySelect hx
-  have : Std.Refl (fun a b : α => w b ≤ w a) := ⟨fun _ => le_rfl⟩
-  obtain ⟨hlen_le, hdom⟩ := gale_dominance_nodup hM hys_nodup hys_sorted hI hIsub'
-  rw [finset_sum_eq_filter_map_sum hys_nodup hIsub' w,
-    finset_sum_eq_filter_map_sum hys_nodup hGsub w]
-  set G_list := ys.filter (· ∈ G)
-  set I_list := ys.filter (· ∈ I)
-  have hsplit : G_list = G_list.take I_list.length ++ G_list.drop I_list.length :=
-    (List.take_append_drop I_list.length G_list).symm
-  conv_rhs => rw [hsplit, List.map_append, List.sum_append]
-  have htake_len : I_list.length = (G_list.take I_list.length).length := by
-    simp [hlen_le]
-  have hle_prefix : (I_list.map w).sum ≤ ((G_list.take I_list.length).map w).sum := by
-    refine list_sum_le_sum_of_getElem w htake_len fun j hj => ?_
-    simpa [List.getElem_take] using hdom j hj
-  have hdrop_nonneg : 0 ≤ ((G_list.drop I_list.length).map w).sum := by
-    refine List.sum_nonneg ?_
-    intro v hv
-    obtain ⟨x, hx_drop, rfl⟩ := List.mem_map.mp hv
-    have hx_G : x ∈ G_list := List.mem_of_mem_drop hx_drop
-    have hx_ys : x ∈ ys := (List.mem_filter.mp hx_G).1
-    exact hnonneg x (List.mem_eraseDups.mp hx_ys)
-  exact le_add_of_le_of_nonneg hle_prefix hdrop_nonneg
+  have hnodup : xs.eraseDups.Nodup := List.nodup_eraseDups xs
+  have hGsub : ((greedySelect indep xs.eraseDups : Finset α) : Set α) ⊆ {x | x ∈ xs.eraseDups} :=
+    fun x hx => mem_of_mem_greedySelect hx
+  -- the greedy picks beyond the first `I.card` have nonnegative weight
+  rw [greedySelect_eq_eraseDups hM xs, finset_sum_eq_filter_map_sum hnodup hGsub w,
+    ← List.take_append_drop I.card (xs.eraseDups.filter _), List.map_append, List.sum_append]
+  refine le_add_of_le_of_nonneg ?_ (List.sum_nonneg fun v hv => ?_)
+  · exact sum_le_sum_take_greedySelect hM w hsorted hI hIsub
+  · obtain ⟨x, hx, rfl⟩ := List.mem_map.mp hv
+    exact hnonneg x (List.mem_eraseDups.mp (List.mem_of_mem_filter (List.mem_of_mem_drop hx)))
 
 /-! ### Unsorted weighted entrypoints (`greedyMaxBasis`, `greedyMinBasis`, `greedyMaxIndep`) -/
 
@@ -845,19 +829,15 @@ private theorem pairwise_mergeSort_le [LinearOrder β] (w : α → β) (xs : Lis
 theorem greedyMaxBasis_isBasis' [LinearOrder β] {M : Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α)) (w : α → β) (xs : List α) :
     M.IsBasis' ((greedyMaxBasis indep w xs : Finset α) : Set α) {x | x ∈ xs} := by
-  have hset : {x | x ∈ xs.mergeSort (fun a b => decide (w b ≤ w a))} = {x | x ∈ xs} := by
-    ext x; exact (List.mergeSort_perm xs _).mem_iff
-  rw [greedyMaxBasis, ← hset]
-  exact greedySelect_isBasis' hM _
+  rw [greedyMaxBasis]
+  simpa only [List.mem_mergeSort] using greedySelect_isBasis' hM (xs.mergeSort _)
 
 /-- `greedyMinBasis` always returns a basis (`Matroid.IsBasis'`) of `{x | x ∈ xs}`. -/
 theorem greedyMinBasis_isBasis' [LinearOrder β] {M : Matroid α} {indep : Finset α → Bool}
     (hM : ∀ S : Finset α, indep S = true ↔ M.Indep (S : Set α)) (w : α → β) (xs : List α) :
     M.IsBasis' ((greedyMinBasis indep w xs : Finset α) : Set α) {x | x ∈ xs} := by
-  have hset : {x | x ∈ xs.mergeSort (fun a b => decide (w a ≤ w b))} = {x | x ∈ xs} := by
-    ext x; exact (List.mergeSort_perm xs _).mem_iff
-  rw [greedyMinBasis, ← hset]
-  exact greedySelect_isBasis' hM _
+  rw [greedyMinBasis]
+  simpa only [List.mem_mergeSort] using greedySelect_isBasis' hM (xs.mergeSort _)
 
 /-- **Maximum-Weight Basis Optimality** ([Edmonds1971], Section 2): `greedyMaxBasis indep w xs`
 maximizes `∑ x ∈ I, w x` among all bases `I` of `{x | x ∈ xs}`, under arbitrary weights. -/
@@ -867,9 +847,8 @@ theorem sum_le_greedyMaxBasis [AddCommMonoid β] [LinearOrder β] [IsOrderedAddM
     (w : α → β) (xs : List α)
     {I : Finset α} (hI : M.IsBasis' (I : Set α) {x | x ∈ xs}) :
     ∑ x ∈ I, w x ≤ ∑ x ∈ greedyMaxBasis indep w xs, w x := by
-  have hset : {x | x ∈ xs.mergeSort (fun a b => decide (w b ≤ w a))} = {x | x ∈ xs} := by
-    ext x; exact (List.mergeSort_perm xs _).mem_iff
-  exact sum_le_greedySelect_of_isBasis' hM w (pairwise_mergeSort_ge w xs) (hset.symm ▸ hI)
+  exact sum_le_greedySelect_of_isBasis' hM w (pairwise_mergeSort_ge w xs)
+    (by simpa only [List.mem_mergeSort] using hI)
 
 /-- **Minimum-Weight Basis Optimality** (Kruskal order): `greedyMinBasis indep w xs` minimizes
 `∑ x ∈ I, w x` among all bases `I` of `{x | x ∈ xs}` (including over `ℕ`). -/
@@ -879,9 +858,8 @@ theorem greedyMinBasis_le_sum [AddCommMonoid β] [LinearOrder β] [IsOrderedAddM
     (w : α → β) (xs : List α)
     {I : Finset α} (hI : M.IsBasis' (I : Set α) {x | x ∈ xs}) :
     ∑ x ∈ greedyMinBasis indep w xs, w x ≤ ∑ x ∈ I, w x := by
-  have hset : {x | x ∈ xs.mergeSort (fun a b => decide (w a ≤ w b))} = {x | x ∈ xs} := by
-    ext x; exact (List.mergeSort_perm xs _).mem_iff
-  exact greedySelect_le_sum_of_isBasis' hM w (pairwise_mergeSort_le w xs) (hset.symm ▸ hI)
+  exact greedySelect_le_sum_of_isBasis' hM w (pairwise_mergeSort_le w xs)
+    (by simpa only [List.mem_mergeSort] using hI)
 
 /-- **Maximum-Weight Independent-Set Optimality** for nonnegative weights (generalizing [CLRS2009],
 Section 16.4, Theorem 16.11 from strictly positive to nonnegative weights): when `0 ≤ w x` for all
@@ -893,11 +871,9 @@ theorem sum_le_greedyMaxBasis_of_indep [AddCommMonoid β] [LinearOrder β] [IsOr
     (w : α → β) (xs : List α) (hnonneg : ∀ x ∈ xs, 0 ≤ w x)
     {I : Finset α} (hI : M.Indep (I : Set α)) (hIsub : (I : Set α) ⊆ {x | x ∈ xs}) :
     ∑ x ∈ I, w x ≤ ∑ x ∈ greedyMaxBasis indep w xs, w x := by
-  set ys := xs.mergeSort (fun a b => decide (w b ≤ w a))
-  have hperm : ys.Perm xs := List.mergeSort_perm xs _
-  have hset : {x | x ∈ ys} = {x | x ∈ xs} := by ext x; exact hperm.mem_iff
   exact sum_le_greedySelect_of_indep hM w (pairwise_mergeSort_ge w xs)
-    (fun x hx => hnonneg x (hperm.subset hx)) hI (hset.symm ▸ hIsub)
+    (fun x hx => hnonneg x (List.mem_mergeSort.mp hx)) hI
+    (by simpa only [List.mem_mergeSort] using hIsub)
 
 /-- `greedyMaxIndep` returns an independent subset of `{x | x ∈ xs}`. -/
 theorem greedyMaxIndep_indep [Zero β] [LinearOrder β] {M : Matroid α} {indep : Finset α → Bool}

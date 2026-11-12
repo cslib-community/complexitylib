@@ -68,19 +68,16 @@ private theorem toFormula_diffSq :
         SPFormula.add ![1, -1] ![.input 0, .input 1]] := by
   simp only [diffSq, Circuit.toFormula, Program.wireFormula_gate]
   rw [show (2 : Fin 3) = Fin.last 2 from rfl, diffSqProgram, Program.gateFormula_gate_last]
-  congr 1
-  funext a
+  congr 1 with a : 1
   fin_cases a
   · rw [show (0 : Fin 2) = (Fin.last 0).castSucc from rfl]
     simp only [Fin.zero_eta, Matrix.cons_val_zero, Program.wireFormula_gate,
       Program.gateFormula_gate_castSucc, Program.gateFormula_gate_last]
-    congr 1
-    funext b
+    congr 1 with b : 1
     fin_cases b <;> rfl
   · simp only [Fin.mk_one, Matrix.cons_val_one, Matrix.cons_val_fin_one, Program.wireFormula_gate]
     rw [show (1 : Fin 2) = Fin.last 1 from rfl, Program.gateFormula_gate_last]
-    congr 1
-    funext b
+    congr 1 with b : 1
     fin_cases b <;> rfl
 
 /-- Flattening a sum of two distinct inputs with nonzero edge constants keeps its three nodes. -/

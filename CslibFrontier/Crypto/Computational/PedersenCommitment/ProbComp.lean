@@ -13,6 +13,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Foundations.Data.Nat.Bits
 import CslibFrontier.Languages.Probabilistic.UniformNat.Support
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Fair-coin realization of Pedersen commitments
@@ -105,8 +106,8 @@ theorem eval_pedersenCommitProb (n : ℕ) (key : F.PedersenKey) (message : List 
   intro r hr
   have hlt := ProbComp.lt_of_mem_support_sampleModNat (F.prime_order key.1).pos hr
   have hval : (r : ZMod (F.order key.1)).val = r := ZMod.val_natCast_of_lt hlt
-  simp only [pedersenPublicOperations, encodePedersenCommit_encode, ofBits,
-    Nat.foldr_bit_bits, Function.comp_apply, hval]
+  simp only [pedersenPublicOperations, encodePedersenCommit_encode, ofBits_bits,
+    Function.comp_apply, hval]
 
 /-- Every randomized Boolean continuation changes by at most `1 / 2 ^ n` when the sampled
 commitment is replaced with the existing ideal commitment law. -/

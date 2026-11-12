@@ -108,8 +108,7 @@ theorem exists_size_add_one_pow_le_mul_rpow (d : ℕ) {ε : ℝ} (hε : 0 < ε) 
       have : (Nat.size n : ℝ) ≤ (Nat.log 2 n : ℝ) + 1 := by exact_mod_cast this
       push_cast
       linarith
-    have hp : ((Nat.size n + 1 : ℕ) : ℝ) ^ d ≤ ((Nat.log 2 n : ℝ) + 2) ^ d :=
-      pow_le_pow_left₀ (Nat.cast_nonneg _) hsize d
+    have hp : ((Nat.size n + 1 : ℕ) : ℝ) ^ d ≤ ((Nat.log 2 n : ℝ) + 2) ^ d := by gcongr
     have hn' : (n : ℝ) ^ ε ≤ ((n : ℝ) + 1) ^ ε :=
       Real.rpow_le_rpow (Nat.cast_nonneg n) (by linarith) hε.le
     nlinarith

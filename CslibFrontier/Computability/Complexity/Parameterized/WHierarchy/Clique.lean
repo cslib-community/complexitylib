@@ -63,17 +63,17 @@ open Circuits Circuits.Boolean Circuits.Boolean.Unbounded Turing.MultiTapeTM
 
 /-! ### Polynomial time -/
 
-/-- The data of an instance: the number of inputs, the code of the circuit, and the weight. -/
-private abbrev RawIn : Type := (ℕ × (List (Unbounded.Op × List ℕ) × List ℕ)) × ℕ
+/-- Binary encoding of wire-value claim lists, with wires in unary. -/
+abbrev encClaimList : List (ℕ × Bool) ↪ List Bool :=
+  encList (encPair encUnary encBool)
 
-/-- The encoding of the data of an instance, which is that of the instance. -/
-private abbrev encRaw : RawIn ↪ List Bool :=
-  encPair (encPair encUnary (Circuit.encCode Unbounded.encOp)) encNat
+/-- Binary encoding of bracket pair lists, with indices and positions in unary. -/
+abbrev encBracket : List (ℕ × ℕ) ↪ List Bool :=
+  encList (encPair encUnary encUnary)
 
 /-- The encoding of vertices, with wires, indices and positions in unary. -/
-private abbrev encVertex : Vertex ↪ List Bool :=
-  encPair encBool (encPair (encList (encPair encUnary encBool))
-    (encList (encPair encUnary encUnary)))
+enc_structure encVertex : Vertex where
+  isCert : encBool, claims : encClaimList, bracket : encBracket
 
 section
 
@@ -167,9 +167,9 @@ private theorem computableInPolyTime_refutes {n kk : γ → ℕ}
 
 /-- The adjacency, with the list inequality as a decidable equality. -/
 private theorem vadj_eq (n kk : ℕ) (gates : List (Unbounded.Op × List ℕ)) (v w : Vertex) :
-    vadj n kk gates v w = if v.1 then !w.1 && !refutes n kk gates v.2.1 w.2.2
-      else !w.1 && !decide (v.2.2.map Prod.fst = w.2.2.map Prod.fst) &&
-        consistent v.2.2 w.2.2 := by
+    vadj n kk gates v w = if v.isCert then !w.isCert && !refutes n kk gates v.claims w.bracket
+      else !w.isCert && !decide (v.bracket.map Prod.fst = w.bracket.map Prod.fst) &&
+        consistent v.bracket w.bracket := by
   unfold vadj bne
   rw [Bool.beq_eq_decide_eq]
 
@@ -184,15 +184,17 @@ private theorem computableInPolyTime_vadj {n kk : γ → ℕ} {gates : γ → Li
   have hv := hp.snd'.fst'
   have hw := hp.snd'.snd'
   have href := computableInPolyTime_refutes (hn.comp hp.fst') (hkk.comp hp.fst')
-    (hg.comp hp.fst') hv.snd'.fst' hw.snd'.snd'
-  have hcons := computableInPolyTime_consistent hv.snd'.snd' hw.snd'.snd'
+    (hg.comp hp.fst') (encVertex_claims_polyTime hv)
+    (encVertex_bracket_polyTime hw)
+  have hcons := computableInPolyTime_consistent (encVertex_bracket_polyTime hv)
+    (encVertex_bracket_polyTime hw)
   have hfst : ∀ {f : γ × (Vertex × Vertex) → List (ℕ × ℕ)},
-      ComputableInPolyTime f (encPair encIn (encPair encVertex encVertex))
-        (encList (encPair encUnary encUnary)) →
+      ComputableInPolyTime f (encPair encIn (encPair encVertex encVertex)) encBracket →
       ComputableInPolyTime (fun q => (f q).map Prod.fst)
         (encPair encIn (encPair encVertex encVertex)) (encList encUnary) := fun hf => by
     fun_prop
-  have heq := ComputableInPolyTime.decide_eq' (hfst hv.snd'.snd') (hfst hw.snd'.snd')
+  have heq := ComputableInPolyTime.decide_eq' (hfst (encVertex_bracket_polyTime hv))
+    (hfst (encVertex_bracket_polyTime hw))
   fun_prop
 
 /-- Listing the vertices is polynomial-time for a fixed depth. -/
@@ -258,34 +260,47 @@ open Circuits Circuits.Boolean Circuits.Boolean.Unbounded Turing.MultiTapeTM WCS
 /-- **The graph construction is polynomial-time** for every fixed depth `d`. -/
 theorem WCS.computableInPolyTime_toClique (d : ℕ) :
     ComputableInPolyTime (toClique (d := d)) (encWCS 1 d) (encPair encGraph encNat) := by
-  have hn : ComputableInPolyTime (fun x : RawIn => x.1.1) encRaw encUnary := by fun_prop
-  have hg : ComputableInPolyTime (fun x : RawIn => x.1.2.1) encRaw
-      (encList (Circuit.encGate encOp)) := by fun_prop
-  have ho : ComputableInPolyTime (fun x : RawIn => x.1.2.2.getD 0 0) encRaw encNat := by
+  have hwc : ComputableInPolyTime (fun x : WCSInstance 1 d => x.circuit)
+      (encWCS 1 d) (encWeftCircuit 1 d) :=
+    encWCS_circuit_polyTime .id'
+  have hn : ComputableInPolyTime (fun x : WCSInstance 1 d => x.circuit.toCircuit.1)
+      (encWCS 1 d) encUnary :=
+    WeftCircuit.computableInPolyTime_numInputs hwc
+  have hg : ComputableInPolyTime (fun x : WCSInstance 1 d => x.circuit.toCircuit.2.code.1)
+      (encWCS 1 d) (encList (Circuit.encGate encOp)) :=
+    WeftCircuit.computableInPolyTime_gates hwc
+  have houts : ComputableInPolyTime (fun x : WCSInstance 1 d => x.circuit.toCircuit.2.code.2)
+      (encWCS 1 d) (encList encNat) :=
+    WeftCircuit.computableInPolyTime_outputs hwc
+  have ho : ComputableInPolyTime
+      (fun x : WCSInstance 1 d => x.circuit.toCircuit.2.code.2.getD 0 0) (encWCS 1 d) encNat := by
     fun_prop
-  have hk : ComputableInPolyTime (fun x : RawIn => x.2) encRaw encNat := by fun_prop
-  have hraw : ComputableInPolyTime
-      (fun x : RawIn => (graph d x.1.1 x.1.2.1 (x.1.2.2.getD 0 0) x.2, size d x.1.1 x.2))
-      encRaw (encPair encGraph encNat) :=
+  have hk : ComputableInPolyTime (fun x : WCSInstance 1 d => x.weight)
+      (encWCS 1 d) encNat :=
+    encWCS_weight_polyTime .id'
+  have hres : ComputableInPolyTime
+      (fun x : WCSInstance 1 d =>
+        (graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
+          (x.circuit.toCircuit.2.code.2.getD 0 0) x.weight,
+          size d x.circuit.toCircuit.1 x.weight))
+      (encWCS 1 d) (encPair encGraph encNat) :=
     (computableInPolyTime_graph d hn hg ho hk).prod (computableInPolyTime_size d hn hk)
-  have hpre : ComputableInPolyTime
-      (fun x : WeftCircuit 1 d × ℕ => (((x.1.1.1, x.1.1.2.code), x.2) : RawIn))
-      (encWCS 1 d) encRaw :=
-    ComputableInPolyTime.id'.of_enc_eq fun _ => rfl
-  have heq : (toClique (d := d)) = fun x : WeftCircuit 1 d × ℕ =>
-      (graph d x.1.1.1 x.1.1.2.code.1 (x.1.1.2.code.2.getD 0 0) x.2, size d x.1.1.1 x.2) := by
+  have heq : (toClique (d := d)) = fun x : WCSInstance 1 d =>
+      (graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
+        (x.circuit.toCircuit.2.code.2.getD 0 0) x.weight,
+        size d x.circuit.toCircuit.1 x.weight) := by
     funext x
     rw [getD_code_outputs]
     rfl
-  have h := hraw.comp hpre
   rw [heq]
-  exact h
+  exact hres
 
 /-- **Weighted satisfiability of circuits of weft at most `1` and depth at most `d` fpt-reduces to
 `Clique`**, by a polynomial-time reduction that bounds the clique size by
 `(k + 1) ^ 2 ^ (d + 1) + 1`. -/
 theorem WCS.fptReducible_Clique (d : ℕ) :
-    FPTReducible (encWCS 1 d) (encPair encGraph encNat) Prod.snd Prod.snd (WCS 1 d) Clique :=
+    FPTReducible (encWCS 1 d) (encPair encGraph encNat) WCSInstance.weight Prod.snd
+      (WCS 1 d) Clique :=
   FPTReducible.of_computableInPolyTime (computableInPolyTime_toClique d)
     (h := fun k => (k + 1) ^ 2 ^ (d + 1) + 1) (fun _ => size_le d _ _)
     fun x => (toClique_mem_Clique_iff x).symm

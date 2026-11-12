@@ -120,8 +120,7 @@ example : (∑ j ∈ range 2, ((4 : ℕ).choose j : ℝ)) ≤ exp (4 * binEntrop
 example (x : Fin 2 → Fin 3) :
     (#{y : Fin 2 → Fin 3 | hammingDist x y ≤ 1} : ℝ) ≤ exp (2 * qaryEntropy 3 (1 / 2)) := by
   have h := Code.card_filter_hammingDist_le_le_exp_mul_qaryEntropy (β := fun _ : Fin 2 => Fin 3)
-    (q := 3) (r := 1) (α := 1 / 2) (by norm_num) (fun _ => Fintype.card_fin 3) x (by norm_num)
-    (by norm_num) (by norm_num)
+    (q := 3) (r := 1) (α := 1 / 2) (fun _ => Fintype.card_fin 3) x (by norm_num) (by norm_num)
   simpa using h
 
 /-! ### Nonvacuity of the asymptotic theorem -/

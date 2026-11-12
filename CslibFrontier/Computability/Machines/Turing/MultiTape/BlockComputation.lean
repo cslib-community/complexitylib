@@ -200,21 +200,6 @@ private theorem boundary_zero_cell (h : Fin k) (z : ℤ) :
     (boundary machine input b (q := q) 0).workTapes h z = none := by
   simp [boundary]
 
-/-- A block outside the three aligned windows contains no cell of that window. -/
-private theorem outside_window {c : Cfg k Bool State input} {h : Fin k} {j : ℤ}
-    (hj : ¬ |c.blockIndex b (some h) - j| ≤ 1) (r : ZMod b) :
-    b * j + (r.val : ℤ) ∉ c.blockWindow b h := by
-  have hb : (0 : ℤ) < b := by exact_mod_cast Nat.pos_of_neZero b
-  have hr : (r.val : ℤ) < b := by exact_mod_cast ZMod.val_lt r
-  have hr0 : (0 : ℤ) ≤ r.val := by positivity
-  simp only [Cfg.blockIndex, Cfg.headPos_some, abs_le, not_and_or, not_le] at hj
-  simp only [Cfg.blockWindow, Set.mem_Ico, not_and_or, not_le, not_lt]
-  rcases hj with hj | hj
-  · right
-    nlinarith
-  · left
-    nlinarith
-
 /-- Last providers reconstruct the actual entering window whenever all prior labels agree. -/
 private theorem enteringWindow_true (i : Fin q) (hσ : Prefix machine input b σ i)
     (providers : Fin k → Fin 3 → Option (View k State b))
@@ -232,7 +217,7 @@ private theorem enteringWindow_true (i : Fin q) (hσ : Prefix machine input b σ
       (boundary machine input b (q := q) i).workTapes h (b * z + r.val) =
         (boundary machine input b (q := q) j).workTapes h (b * z + r.val) := by
     refine machine.workTapes_intervalStart_eq_of_notMem_blockWindow (Nat.pos_of_neZero b)
-      _ _ hj fun j' hj' hj'i => outside_window (input := input) (b := b) ?_ r
+      _ _ hj fun j' hj' hj'i => notMem_blockWindow (input := input) (b := b) ?_ r
     change ¬ |(boundary machine input b (q := q) j').blockIndex b (some h) - z| ≤ 1
     rw [hindex j' hj'i.le]
     exact hnot ⟨j', by omega⟩ hj' hj'i

@@ -126,7 +126,7 @@ theorem CommitmentScheme.hidingForKey_eq_of_map_fst_commitDist_eq {Key : Type}
     (adversary : Encryption.WordAdversary) (b₁ b₂ : Bool) (n : ℕ) :
     S.hidingForKey k adversary b₁ n = S.hidingForKey k adversary b₂ n := by
   simp only [CommitmentScheme.hidingForKey, PMF.monad_bind_eq_bind]
-  congr 1; funext choice
+  congr 1 with choice : 1
   have hbind (msg : List Bool) :
       (S.commitDist k msg).bind (fun co => ProbComp.eval (adversary.guess n choice.2 co.1)) =
         ((S.commitDist k msg).map Prod.fst).bind

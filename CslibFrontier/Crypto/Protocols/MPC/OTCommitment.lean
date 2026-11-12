@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Languages.Probabilistic.Norm
 import Mathlib.Logic.Equiv.Bool
 
 /-!
@@ -143,19 +144,15 @@ theorem senderRun_eq {State : Type} (A : Sender State) (k : ℕ) (st : State)
   induction k generalizing st with
   | zero =>
       simp only [senderRun, senderTables_zero, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
-      congr 2
-      funext i
+      congr 2 with i : 1
       exact Fin.elim0 i
   | succ k ih =>
-      simp only [senderRun, senderTables_succ, transfer_eq, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, ih,
-        PMF.bind_map, PMF.map_bind, PMF.pure_map, Function.comp_def]
+      simp only [pmf_norm, senderRun, senderTables_succ, transfer_eq, ih]
       congr 1
       funext ⟨t, next⟩
       congr 1
       funext ⟨ts, final⟩
-      congr 2
-      funext i
+      congr 2 with i : 1
       refine Fin.cases ?_ (fun j => ?_) i <;> rfl
 
 /-- Test two candidate openings to opposite bits; `none` is abort. -/
@@ -305,9 +302,7 @@ theorem receiverRun_succ {State : Type} (A : Receiver State) (b : Bool) (k : ℕ
       let next ← A.receive next (ans 1)
       let (rest, final) ← receiverRun A b k next
       pure (Fin.cons (j, ans 1) rest, final)) := by
-  simp only [receiverRun, receiverCommit_succ, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map, PMF.bind_map,
-    Function.comp_def]
+  simp only [pmf_norm, receiverRun, receiverCommit_succ]
 
 private theorem uniform_table (b : Bool) (j : Fin 4) :
     (PMF.uniformOfFintype Bool).map (fun r => table b r j) = PMF.uniformOfFintype Bool := by
@@ -327,8 +322,7 @@ theorem perfectHiding {State : Type} (A : Receiver State) (b b' : Bool) (k : ℕ
   induction k generalizing st with
   | zero => rfl
   | succ k ih =>
-      simp only [receiverRun_succ, transfer_eq, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
+      simp only [pmf_norm, receiverRun_succ, transfer_eq]
       congr 1
       funext ⟨j, next⟩
       simp only [ih]

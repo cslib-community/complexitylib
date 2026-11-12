@@ -54,11 +54,7 @@ lemma grid_row_moment_le (D : ZMod P) (s : Fin J) (ks : ℕ) (ss : List (ZMod P)
     rowNormPow 4 P (rate ks) (retainedMask s (side P ks) D ss) Y F ≤ 16 * P * B ^ 4 := by
   have hP : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
   have hr := rate_pos ks
-  have hd := (affineRetains_rates (P := P) (H := 4) (horizon_admissible H hks)
-    (show ((2 : ℝ) ^ ks)⁻¹ ≤ 1 from inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num)))).2.2.1
-  rw [← side_eq_ceil] at hd
-  norm_num only [show (2 : ℝ) ^ 4 = 16 by norm_num] at hd
-  change gridMass P ks ≤ 16 * rate ks at hd
+  have hd : gridMass P ks ≤ 16 * rate ks := side_div_pow_four_le H hks
   have hv : vertexNormPow 4 P (rate ks) (retainedMask s (side P ks) D ss)
       (fun _ _ => 1) ≤ 16 := by
     rw [vertexNormPow_one_eq_sum_dens, NormalizedMoments.source_density_sum]

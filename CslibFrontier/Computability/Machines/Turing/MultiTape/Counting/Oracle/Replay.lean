@@ -310,8 +310,7 @@ theorem countP_replayResult_terminal
         (fun result => result.1.2.tapes.state.isNone && verdict result.1.2.tapes.output) := by
   rw [← machine.filterMap_replayResult bound hpos hbound fuel cfg oracle s,
     List.countP_filterMap]
-  congr 1
-  funext word
+  congr 1 with word : 1
   cases machine.replayResult cfg word oracle s <;> rfl
 
 private theorem runOccurrenceProgram_empty (machine : MultiTapeCTM k Symbol Control)
@@ -322,8 +321,7 @@ private theorem runOccurrenceProgram_empty (machine : MultiTapeCTM k Symbol Cont
         (machine.runConfigFrom MultiTapeCTM.chooseOccurrence Empty.elim fuel cfg) := by
   rw [interpret_runConfigFrom]
   unfold runOccurrenceProgram
-  congr 1
-  funext op
+  congr 1 with op : 1
   exact op.elim
 
 private theorem interpret_runOccurrenceProgram_empty (machine : MultiTapeCTM k Symbol Control)

@@ -15,7 +15,7 @@ native evaluator is composed with varying dimensions.
 
 namespace CslibFrontierTests.Crypto.GSWCircuitEvaluation
 
-open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto.Homomorphic
+open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Crypto Cslib.Crypto.Homomorphic
 open Cslib.Crypto.Homomorphic.GSW Cslib.Crypto.Homomorphic.GSW.DepthParameters
 open Cslib.Probability Turing.MultiTapeTM
 
@@ -38,9 +38,10 @@ example : ∀ a b : Bool, evaluateCircuit 1 2 ⟨2, nandCircuit⟩
 
 /-- Key inputs with secret `5`, public rows `9` and `22`, and the nonzero error vector `(1, 0)`,
 at `n = 1`, `m = 2`, `w = 6`. -/
-private def keyInputs : SerializedKeyInputs := ([5], [[9], [22]], [1, 0])
-private def publicWord : List Bool := publicMatrixSerialized 1 2 6 keyInputs
-private def secretWord : List Bool := secretSerialized 1 6 keyInputs.1
+private def keyInputs : LWE.SerializedKeyInputs :=
+  { secret := [5], publicPart := [[9], [22]], error := [1, 0] }
+private def publicWord : List Bool := LWE.publicMatrixSerialized 1 2 6 keyInputs
+private def secretWord : List Bool := LWE.secretSerialized 1 6 keyInputs.secret
 private def coinsA : SerializedCoins := List.replicate 2 (List.replicate 6 [true, false])
 private def coinsB : SerializedCoins := List.replicate 2 (List.replicate 6 [true, true])
 private def fresh (μ : Bool) (coins : SerializedCoins) : List Bool :=

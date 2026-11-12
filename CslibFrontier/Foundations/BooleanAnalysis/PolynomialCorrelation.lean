@@ -15,6 +15,7 @@ public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Data.ZMod.Defs
 public import Mathlib.Logic.Equiv.Fin.Basic
 import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import CslibFrontier.Foundations.Combinatorics.CentralBinomial
 import CslibFrontier.Foundations.LinearAlgebra.Interpolation
 import Mathlib.Algebra.CharP.Two
@@ -336,18 +337,14 @@ private theorem bitVal_mul_atom_mem {c : Finset (Fin (2 * m + 1)) × Bool} (hc :
 private theorem gen_update (a : Fin k → Finset (Fin (2 * m + 1)) × Bool) (i : Fin k)
     (c : Finset (Fin (2 * m + 1)) × Bool) (x : BitString (k * (2 * m + 1))) :
     gen (Function.update a i c) x =
-      atom c (block x i) * ∏ j ∈ univ.erase i, atom (a j) (block x j) := by
-  rw [gen, ← mul_prod_erase univ _ (mem_univ i), Function.update_self]
-  congr 1
-  exact prod_congr rfl fun j hj => by rw [Function.update_of_ne (ne_of_mem_erase hj)]
+      atom c (block x i) * ∏ j ∈ univ.erase i, atom (a j) (block x j) :=
+  prod_apply_update_of_mem (mem_univ i) (fun j y => atom y (block x j)) a c
 
 private theorem genWeight_update (a : Fin k → Finset (Fin (2 * m + 1)) × Bool) (i : Fin k)
     (c : Finset (Fin (2 * m + 1)) × Bool) :
     genWeight m (Function.update a i c) =
-      atomWeight m c + ∑ j ∈ univ.erase i, atomWeight m (a j) := by
-  rw [genWeight, ← add_sum_erase univ _ (mem_univ i), Function.update_self]
-  congr 1
-  exact sum_congr rfl fun j hj => by rw [Function.update_of_ne (ne_of_mem_erase hj)]
+      atomWeight m c + ∑ j ∈ univ.erase i, atomWeight m (a j) :=
+  sum_apply_update_of_mem (mem_univ i) (fun _ => atomWeight m) a c
 
 private theorem genWeight_eq (a : Fin k → Finset (Fin (2 * m + 1)) × Bool) (i : Fin k) :
     genWeight m a = atomWeight m (a i) + ∑ j ∈ univ.erase i, atomWeight m (a j) :=

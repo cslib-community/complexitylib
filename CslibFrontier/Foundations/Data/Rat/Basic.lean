@@ -28,9 +28,13 @@ denominator.
 * `Rat.den_divInt_le`: denominator bound `den ≤ |b|`.
 * `Rat.decide_num_divInt_lt_zero_of_ne_zero`: numerator sign bit for `b ≠ 0`.
 * `Rat.decide_num_divInt_lt_zero`: unconditional numerator sign bit.
+* `Rat.natAbs_num_add_le`, `Rat.den_add_le`, `Rat.natAbs_num_sub_le`, `Rat.den_sub_le`,
+  `Rat.natAbs_num_mul_le`, `Rat.den_mul_le`, `Rat.natAbs_num_inv_le`, `Rat.den_inv_le`,
+  `Rat.natAbs_num_div_le`, `Rat.den_div_le`: numerator magnitude and denominator bounds for
+  rational arithmetic operations.
 -/
 
-@[expose] public section
+public section
 
 namespace Rat
 
@@ -93,5 +97,73 @@ theorem decide_num_divInt_lt_zero (a b : ℤ) :
   by_cases hb : b = 0
   · subst hb; simp
   · simp only [hb, ↓reduceIte, decide_num_divInt_lt_zero_of_ne_zero a b hb]
+
+/-- Reduced numerator magnitude of `a + b` is bounded by `|a.num| * b.den + |b.num| * a.den`. -/
+theorem natAbs_num_add_le (a b : ℚ) :
+    (a + b).num.natAbs ≤ a.num.natAbs * b.den + b.num.natAbs * a.den := by
+  rw [Rat.add_def', Rat.mkRat_eq_divInt]
+  have hd : ((a.den * b.den : ℕ) : ℤ) ≠ 0 :=
+    Int.ofNat_ne_zero.mpr (Nat.mul_ne_zero a.den_nz b.den_nz)
+  refine (Rat.natAbs_num_divInt_le _ _ hd).trans ?_
+  calc (a.num * (b.den : ℤ) + b.num * (a.den : ℤ)).natAbs
+      ≤ (a.num * (b.den : ℤ)).natAbs + (b.num * (a.den : ℤ)).natAbs := Int.natAbs_add_le _ _
+    _ = a.num.natAbs * b.den + b.num.natAbs * a.den := by
+        simp [Int.natAbs_mul]
+
+/-- Reduced denominator of `a + b` is bounded by `a.den * b.den`. -/
+theorem den_add_le (a b : ℚ) : (a + b).den ≤ a.den * b.den := by
+  rw [Rat.add_def', Rat.mkRat_eq_divInt]
+  have hd : ((a.den * b.den : ℕ) : ℤ) ≠ 0 :=
+    Int.ofNat_ne_zero.mpr (Nat.mul_ne_zero a.den_nz b.den_nz)
+  simpa only [Int.natAbs_natCast] using Rat.den_divInt_le _ _ hd
+
+/-- Reduced numerator magnitude of `a - b` is bounded by `|a.num| * b.den + |b.num| * a.den`. -/
+theorem natAbs_num_sub_le (a b : ℚ) :
+    (a - b).num.natAbs ≤ a.num.natAbs * b.den + b.num.natAbs * a.den := by
+  rw [sub_eq_add_neg]
+  simpa using natAbs_num_add_le a (-b)
+
+/-- Reduced denominator of `a - b` is bounded by `a.den * b.den`. -/
+theorem den_sub_le (a b : ℚ) : (a - b).den ≤ a.den * b.den := by
+  rw [sub_eq_add_neg]
+  simpa using den_add_le a (-b)
+
+/-- Reduced numerator magnitude of `a * b` is bounded by `|a.num| * |b.num|`. -/
+theorem natAbs_num_mul_le (a b : ℚ) : (a * b).num.natAbs ≤ a.num.natAbs * b.num.natAbs := by
+  rw [Rat.mul_def', Rat.mkRat_eq_divInt]
+  have hd : ((a.den * b.den : ℕ) : ℤ) ≠ 0 :=
+    Int.ofNat_ne_zero.mpr (Nat.mul_ne_zero a.den_nz b.den_nz)
+  simpa only [Int.natAbs_mul] using Rat.natAbs_num_divInt_le (a.num * b.num) _ hd
+
+/-- Reduced denominator of `a * b` is bounded by `a.den * b.den`. -/
+theorem den_mul_le (a b : ℚ) : (a * b).den ≤ a.den * b.den := by
+  rw [Rat.mul_def', Rat.mkRat_eq_divInt]
+  have hd : ((a.den * b.den : ℕ) : ℤ) ≠ 0 :=
+    Int.ofNat_ne_zero.mpr (Nat.mul_ne_zero a.den_nz b.den_nz)
+  simpa only [Int.natAbs_natCast] using Rat.den_divInt_le (a.num * b.num) _ hd
+
+/-- Reduced numerator magnitude of `a⁻¹` is bounded by `a.den`. -/
+theorem natAbs_num_inv_le (a : ℚ) : a⁻¹.num.natAbs ≤ a.den := by
+  rw [Rat.inv_def]
+  by_cases ha : a.num = 0
+  · simp [ha]
+  · simpa only [Int.natAbs_natCast] using Rat.natAbs_num_divInt_le (a.den : ℤ) a.num ha
+
+/-- Reduced denominator of `a⁻¹` is bounded by `max |a.num| 1`. -/
+theorem den_inv_le (a : ℚ) : a⁻¹.den ≤ max a.num.natAbs 1 := by
+  rw [Rat.inv_def]
+  by_cases ha : a.num = 0
+  · simp [ha]
+  · exact (Rat.den_divInt_le _ _ ha).trans (le_max_left _ _)
+
+/-- Reduced numerator magnitude of `a / b` is bounded by `|a.num| * b.den`. -/
+theorem natAbs_num_div_le (a b : ℚ) : (a / b).num.natAbs ≤ a.num.natAbs * b.den := by
+  rw [div_eq_mul_inv]
+  exact (natAbs_num_mul_le a b⁻¹).trans (Nat.mul_le_mul_left _ (natAbs_num_inv_le b))
+
+/-- Reduced denominator of `a / b` is bounded by `a.den * max |b.num| 1`. -/
+theorem den_div_le (a b : ℚ) : (a / b).den ≤ a.den * max b.num.natAbs 1 := by
+  rw [div_eq_mul_inv]
+  exact (den_mul_le a b⁻¹).trans (Nat.mul_le_mul_left _ (den_inv_le b))
 
 end Rat

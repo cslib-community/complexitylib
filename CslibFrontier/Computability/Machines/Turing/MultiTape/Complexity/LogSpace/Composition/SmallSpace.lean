@@ -243,7 +243,7 @@ public theorem iterate_cstep (hhalt : ∀ r, (run df x r).state = none ↔ uf �
       have hnh : (run df x r).state.isNone = false := by
         rw [Bool.eq_false_iff, ne_eq, Option.isNone_iff_eq_none, hhalt]
         omega
-      simp only [G, cstep, hnh, Bool.false_eq_true, ↓reduceIte, ← step_eq_stepWith, run_succ']
+      simp only [G, cstep, hnh, Bool.false_eq_true, ↓reduceIte, ← step_eq_stepWith, run_succ]
       simp [emitCount, List.range_succ]
   induction q generalizing r with
   | zero => exact hinner 0 (by rw [Nat.zero_mul]; rfl) r hr
@@ -253,7 +253,7 @@ public theorem iterate_cstep (hhalt : ∀ r, (run df x r).state = none ↔ uf �
     rw [show (q + 1) * (uf + 1) = q * (uf + 1) + uf + 1 by ring, Function.iterate_succ_apply', h]
     have hh : (run df x uf).state.isNone = true := by
       simpa [Option.isNone_iff_eq_none] using (hhalt uf).mpr le_rfl
-    simp only [G, cstep, hh, ↓reduceIte, gSym_halted dg df x y uf hy, ← step_eq_stepWith, run_succ']
+    simp only [G, cstep, hh, ↓reduceIte, gSym_halted dg df x y uf hy, ← step_eq_stepWith, run_succ]
     rfl
 
 /-- What the composition emits after `q` steps of `g` and `r ≤ uf` steps of `f`: the bit `g`
@@ -418,65 +418,59 @@ public lemma wTime_le' (c : WCtx) : wTime c ≤ 2 * ((eWCtx c).length + 1) ^ 3 :
     _ = ((eWCtx c).length + 1) ^ 3 + ((eWCtx c).length + 1) ^ 2 := by ring
     _ ≤ 2 * ((eWCtx c).length + 1) ^ 3 := by omega
 
+/-- A step of a machine whose description and configuration are read off the state of the fold,
+with the symbol found by a countdown `(k, cur)` that is also read off the state. The bounds hold
+when the description, configuration and current symbol together fit in the state. -/
+private lemma stepCount_inO {dc : CSt → Desc × SCfg} {k cur : CSt → ℕ}
+    (hdc : ComputableTidilyInO dc eCSt (encPair eDesc eCfg) (fun s => (eCSt s).length)
+      fun s => (eCSt s).length)
+    (hk : ComputableTidilyInO k eCSt encNat (fun s => (eCSt s).length) fun s => (eCSt s).length)
+    (hcur : ComputableTidilyInO cur eCSt encUnary (fun s => (eCSt s).length)
+      fun s => (eCSt s).length)
+    (hlen : ∀ s, 2 * (encPair eDesc eCfg (dc s)).length + cur s + 1 ≤ (eCSt s).length) :
+    ComputableTidilyInO
+      (fun s => stepWith (dc s).1 (dc s).2
+        (if (dc s).2.inputPos = 0 ∨ k s ≠ 0 then none else some (cur s)))
+      eCSt (encPair eCfg eSym) (fun s => ((eCSt s).length + 1) ^ 3)
+      fun s => (eCSt s).length + 1 := by
+  have hsym := countSym_inO (inputPos_inO hdc.snd') hk hcur
+  -- bridge for #862: tidy client of the plain `stepWith_inO`
+  refine (stepWith_inO.tidy.comp (hdc.prod hsym)).mono 100 (fun s => ?_) fun s => ?_
+  all_goals
+    set sym := if (dc s).2.inputPos = 0 ∨ k s ≠ 0 then none else some (cur s)
+    have hw := wTime_le' (dc s, sym)
+    have hctx : (eWCtx (dc s, sym)).length ≤ (eCSt s).length + 1 := by
+      have hsym : (eSym sym).length ≤ cur s + 1 := by
+        simp only [sym]
+        split_ifs <;> simp
+      have := hlen s
+      simp only [length_encPair] at hsym this ⊢
+      omega
+    have hcube := Nat.pow_le_pow_left (Nat.add_le_add_right hctx 1) 3
+    have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
+    have h8 : ((eCSt s).length + 1 + 1) ^ 3 ≤ 8 * ((eCSt s).length + 1) ^ 3 := by
+      have := Nat.pow_le_pow_left
+        (show (eCSt s).length + 1 + 1 ≤ 2 * ((eCSt s).length + 1) by omega) 3
+      rw [Nat.mul_pow] at this
+      omega
+    omega
+
 /-- A step of `g`, with the symbol found by the countdown. -/
 public lemma stepG_inO :
     ComputableTidilyInO (fun s : CSt => stepWith s.1.1.1.1 s.1.1.1.2 (gSym s.1))
     eCSt (encPair eCfg eSym) (fun s => ((eCSt s).length + 1) ^ 3) fun s => (eCSt s).length + 1 := by
   have hc := fst eCtl (encPair encNat encUnary)
-  have hg := hc.fst'.fst'
-  have hsym := countSym_inO (inputPos_inO hg.snd') hc.snd'.fst' hc.snd'.snd'
-  -- bridge for #862: tidy client of the plain `stepWith_inO`
-  refine (stepWith_inO.tidy.comp (hg.prod (hsym.of_enc_eq (g := fun s : CSt => gSym s.1)
-    fun _ => rfl))).mono 100 (fun s => ?_) fun s => ?_
-  all_goals
-    have hw := wTime_le' (s.1.1.1, gSym s.1)
-    have hctx : (eWCtx (s.1.1.1, gSym s.1)).length ≤ (eCSt s).length + 1 := by
-      have : (eSym (gSym s.1)).length ≤ s.1.2.2 + 1 := by
-        unfold gSym
-        split_ifs <;> simp
-      simp only [length_encPair, encUnary_apply, List.length_replicate] at this ⊢
-      omega
-    have hcube := Nat.pow_le_pow_left (Nat.add_le_add_right hctx 1) 3
-    have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
-    have h8 : ((eCSt s).length + 1 + 1) ^ 3 ≤ 8 * ((eCSt s).length + 1) ^ 3 := by
-      have := Nat.pow_le_pow_left
-        (show (eCSt s).length + 1 + 1 ≤ 2 * ((eCSt s).length + 1) by omega) 3
-      rw [Nat.mul_pow] at this
-      omega
-    dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
-    omega
+  refine stepCount_inO hc.fst'.fst' hc.snd'.fst' hc.snd'.snd' fun s => ?_
+  simp only [length_encPair, encUnary_apply, List.length_replicate]
+  omega
 
 /-- A step of `f`, with the symbol found by the countdown over the input. -/
 public lemma stepF_inO : ComputableTidilyInO (fun s : CSt => stepWith s.1.1.2.1 s.1.1.2.2 (xSym s))
     eCSt (encPair eCfg eSym) (fun s => ((eCSt s).length + 1) ^ 3) fun s => (eCSt s).length + 1 := by
-  have hc := fst eCtl (encPair encNat encUnary)
   have hn := snd eCtl (encPair encNat encUnary)
-  have hg := hc.fst'.snd'
-  have hsym := countSym_inO (inputPos_inO hg.snd') hn.fst' hn.snd'
-  -- bridge for #862: tidy client of the plain `stepWith_inO`
-  refine (stepWith_inO.tidy.comp (hg.prod (hsym.of_enc_eq (g := xSym)
-    fun _ => rfl))).mono 100 (fun s => ?_) fun s => ?_
-  all_goals
-    have hw := wTime_le' (s.1.1.2, xSym s)
-    have hctx : (eWCtx (s.1.1.2, xSym s)).length ≤ (eCSt s).length + 1 := by
-      have : (eSym (xSym s)).length ≤ s.2.2 + 1 := by
-        unfold xSym
-        split_ifs <;> simp
-      simp only [length_encPair, encUnary_apply, List.length_replicate] at this ⊢
-      omega
-    have hcube := Nat.pow_le_pow_left (Nat.add_le_add_right hctx 1) 3
-    have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
-    have h8 : ((eCSt s).length + 1 + 1) ^ 3 ≤ 8 * ((eCSt s).length + 1) ^ 3 := by
-      have := Nat.pow_le_pow_left
-        (show (eCSt s).length + 1 + 1 ≤ 2 * ((eCSt s).length + 1) by omega) 3
-      rw [Nat.mul_pow] at this
-      omega
-    dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
-    omega
+  refine stepCount_inO (fst eCtl (encPair encNat encUnary)).fst'.snd' hn.fst' hn.snd' fun s => ?_
+  simp only [length_encPair, encUnary_apply, List.length_replicate]
+  omega
 
 /-- The `g` branch of a step of the composition: a step of `g`, restarting `f`. -/
 lemma gBranch_inO : ComputableTidilyInO (fun s : CSt =>
@@ -497,8 +491,6 @@ lemma gBranch_inO : ComputableTidilyInO (fun s : CSt =>
       Nat.pow_le_pow_right (by omega) (by omega)
     have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     omega
 
 lemma emitScan_eq (p : ℕ × ℕ) (o : Option ℕ) : emitScan p o =
@@ -551,11 +543,6 @@ lemma fBranch_inO : ComputableTidilyInO (fun s : CSt =>
     dsimp only [eCSt] at *
     rw [hp] at *
     try simp only [h1] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
-    generalize (L + 1) ^ 2 = B at *
-    generalize ((encNat s.1.2.1).length + 1) ^ 2 = A at *
-    generalize ((encNat s.1.2.1).length + 1) * ((encNat s.1.2.1).length + 1 + 1) = P at *
     split_ifs <;> omega
 
 /-- A step of the composition at the end of a pass. -/
@@ -568,8 +555,6 @@ lemma cstep_inO : ComputableTidilyInO (fun s : CSt => cstep s.1 (xSym s)) eCSt e
   all_goals
     have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     split_ifs <;> omega
 
 /-- **The end of a pass.** -/
@@ -603,8 +588,6 @@ public lemma cEmit_inO : ComputableTidilyInO (fun s : CSt => gEmit s.1) eCSt enc
   all_goals
     have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
     dsimp only [eCSt] at *
-    generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-    generalize (L + 1) ^ 3 = Y at *
     split_ifs <;> omega
 
 /-- Whether another pass follows: `g` has not halted. -/
@@ -616,8 +599,6 @@ public lemma cCont_inO : ComputableTidilyInO (fun s : CSt => s.1.1.1.2.state.isS
     (fun s => by
       have hL : (eCSt s).length + 1 ≤ ((eCSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
       dsimp only [eCSt] at *
-      generalize ((encPair eCtl (encPair encNat encUnary)) s).length = L at *
-      generalize (L + 1) ^ 3 = Y at *
       omega) fun s => by dsimp only [eCSt]; omega
 
 /-- **A round**: one bit of the countdown over the input. -/
@@ -692,8 +673,8 @@ public lemma length_eCSt_le (dg df : Desc) (w : List Bool) (y : List ℕ) (uf ug
         simp only [List.mem_range] at hj ⊢
         omega) ((run dg y (i / (uf + 1))).inputPos) 0 (by omega) (fun _ => rfl)
   obtain ⟨hkx, hcur⟩ := bitScan_le (w.take j) ((run df x (i % (uf + 1))).inputPos) 0 (by omega)
-  have h₁ := ComputableTidilyInO.length_encNat_mono (hk.trans hp)
-  have h₂ := ComputableTidilyInO.length_encNat_mono (hkx.trans hpf)
+  have h₁ := length_encNat_mono (hk.trans hp)
+  have h₂ := length_encNat_mono (hkx.trans hpf)
   simp only [emitCount] at hk hfound h₁ ⊢
   simp only [length_encPair, encUnary_apply, List.length_replicate, composeSpace, descLen,
     List.length_map, x] at *
@@ -801,7 +782,6 @@ public theorem computableTidily_compose {α γ : Type} {encIn : α ↪ List Bool
     have h₃ := Nat.pow_le_pow_left (Nat.add_le_add_right h₁ 1) 3
     have h₄ := Nat.pow_le_pow_left (Nat.add_le_add_right h₂ 1) 3
     refine (Nat.add_le_add (Nat.add_le_add h₃ h₃) h₄).trans ?_
-    generalize (L a + 1) ^ 3 = Y
     omega
   case refine_6 =>
     intro a i hi
@@ -993,10 +973,10 @@ public theorem ComputableInTimeAndSpace.comp_logSpace {α β γ : Type} {encIn :
         (encNat ((encMid (f a)).length + 1)).length + 1 ≤
           M * (encNat ((encIn a).length + 1)).length := by
     have hℓ : 1 ≤ (encNat ((encIn a).length + 1)).length :=
-      ComputableTidilyInO.length_encNat_mono (m := 1) (by omega)
+      length_encNat_mono (m := 1) (by omega)
     have hy : (encNat ((encMid (f a)).length + 1)).length ≤
         (d + 1) * (encNat ((encIn a).length + 1)).length :=
-      (ComputableTidilyInO.length_encNat_mono (hlen a)).trans
+      (length_encNat_mono (hlen a)).trans
         ((length_encNat_pow_le _ d).trans (by nlinarith))
     have := Nat.mul_le_mul_left kg hy
     have e : M * (encNat ((encIn a).length + 1)).length =

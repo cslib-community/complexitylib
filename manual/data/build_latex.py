@@ -29,8 +29,13 @@ ORDER = [
       'average-case-hardness', 'distributional-complexity', 'homomorphic-encryption']),
     ('algorithms-and-memory', ['index', 'ram-variants', 'wordram-and-bridges',
       'memory-specifications', 'online-and-streaming', 'strategic-games',
-      'catalytic-and-tree-evaluation', 'algorithm-endpoints', 'mechanism-design']),
-    ('development-history', ['index', 'methods', 'timings', 'case-studies', 'transcripts', 'study-design']),
+      'catalytic-and-tree-evaluation', 'algorithm-endpoints', 'sorting-and-recurrences',
+      'graph-paths-and-traversal', 'dynamic-programming-and-strings',
+      'dictionaries-hashing-and-randomized', 'flows-cuts-and-matching',
+      'three-sum-and-exact-triangle', 'approximation-algorithms', 'optimization-and-duality',
+      'mechanism-design']),
+    ('history', ['index', 'survey', 'development', 'methods', 'timings', 'case-studies',
+      'transcripts', 'study-design']),
 ]
 FILES = ['index.md'] + [f'{section}/{name}.md' for section, names in ORDER for name in names] + ['model-map.md']
 
@@ -159,8 +164,8 @@ def remove_navigation(blocks):
     return out
 
 
-PREAMBLE = r'''% Generated from the reviewed Complexitylib research dossier.
-% Build: xelatex complexitylib-survey.tex (twice for cross-references).
+PREAMBLE = r'''% Generated from the reviewed cslib-frontier research dossier.
+% Build: xelatex cslib-frontier-survey.tex (twice for cross-references).
 \documentclass[11pt,letterpaper,oneside]{report}
 \usepackage[margin=1in,headheight=15pt]{geometry}
 \usepackage{fontspec}
@@ -190,13 +195,13 @@ PREAMBLE = r'''% Generated from the reviewed Complexitylib research dossier.
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small Complexitylib: models, design, and development}
+\fancyhead[L]{\small cslib-frontier: models, design, and development}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.3pt}
 \usepackage{xurl}
 \usepackage{hyperref}
 \hypersetup{colorlinks=true,linkcolor=inkblue,citecolor=inkblue,urlcolor=inkblue,
-  pdftitle={Complexitylib: Models, Design, and Automated Development},
+  pdftitle={cslib-frontier: Models, Design, and Automated Development},
   pdfsubject={Source-based survey at revision 13e6a319},pdfauthor={Research draft}}
 \urlstyle{same}
 \usepackage{bookmark}
@@ -217,7 +222,7 @@ PREAMBLE = r'''% Generated from the reviewed Complexitylib research dossier.
 \begin{document}
 \begin{titlepage}
 \vspace*{1.25in}
-{\Huge\bfseries Complexitylib\par}
+{\Huge\bfseries cslib-frontier\par}
 \vspace{0.35in}
 {\LARGE Models, Design, and Automated Development\par}
 \vspace{0.5in}
@@ -240,8 +245,9 @@ validation evidence, and independent agent review have distinct scopes.\par}
 \pagenumbering{roman}
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-Complexitylib is a Lean library of computational complexity theory built on CSLib
-and Mathlib. This survey examines its computational models and their connections,
+cslib-frontier, then named complexitylib, is a Lean library built on CSLib and
+Mathlib; at this snapshot its scope was computational complexity theory. This
+survey examines its computational models and their connections,
 with explicit attention to encodings, uniformity, resource measures, and quantifier
 order. It describes native machine interfaces, circuits, logical and information-access
 models, probabilistic programs and cryptography, and RAM-based algorithms and

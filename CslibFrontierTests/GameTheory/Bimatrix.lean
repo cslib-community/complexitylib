@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
+import CslibFrontier.GameTheory.Bimatrix.Existence
 
 /-!
 # Bimatrix games, vertices and the Lemke–Howson parity theorem
@@ -17,7 +18,7 @@ import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
   the three equilibria (both pure pairs and uniform mixing).
 * The zero game is degenerate, and every pair of mixed strategies is an equilibrium: the
   nondegeneracy hypothesis of `IsNondegenerate.odd_ncard_isNash` cannot be dropped (here
-  `ncard = 0`).
+  `ncard = 0`). Nash's theorem `exists_isNash` still applies to it.
 * For the polyhedral API: the interval `0 ≤ t ≤ 1` has the vertex `0` but not the vertex `1/2`;
   repeating a row gives a degenerate system.
 * In the positive coordination game `1 + 1`, the artificial pair `(0, 0)` is a node of degree `1`
@@ -165,6 +166,10 @@ theorem zeroGame_infinite_isNash :
   · exact zeroGame_isNash (isMixedStrategy_fin2 t.2.1 (by linarith [t.2.2]) (by ring))
       (isMixedStrategy_fin2 (by norm_num) le_rfl (by norm_num))
 
+/-- Nash's theorem needs no nondegeneracy: it applies to the degenerate zero game. -/
+example : ¬ zeroGame.IsNondegenerate ∧ ∃ x y, zeroGame.IsNash x y :=
+  ⟨zeroGame_not_isNondegenerate, zeroGame.exists_isNash⟩
+
 theorem zeroGame_not_odd_ncard_isNash :
     ¬ Odd {p : (Fin 2 → ℝ) × (Fin 2 → ℝ) | zeroGame.IsNash p.1 p.2}.ncard := by
   rw [zeroGame_infinite_isNash.ncard]
@@ -237,5 +242,21 @@ theorem ncard_neighborSet_artificialNode :
     coordPos_isNondegenerate.isNondegenerateSystem_matQ
     (fun _ => eq_zero_of_matQ_mulVec_nonpos coordPos_A_pos) Fintype.card_sum artificialNode
     (completelyLabeled_iff_forall.2 ⟨fun _ => .inl rfl, fun _ => .inr rfl⟩)
+
+/-- `setOf_completelyLabeled_eq` applies without nonemptiness assumptions: on empty strategy sets
+there are no Nash equilibria and `(0, 0)` is the sole completely labelled vertex pair. -/
+example (G : BimatrixGame Empty Empty) :
+    {p : (Empty → ℝ) × (Empty → ℝ) | IsVertex G.matP (rhsP Empty Empty) p.1 ∧
+      IsVertex G.matQ (rhsQ Empty Empty) p.2 ∧
+      LemkeHowson.CompletelyLabeled G.matP (rhsP Empty Empty) G.matQ (rhsQ Empty Empty) p.1 p.2} =
+      {0} := by
+  have hnd : G.IsNondegenerate :=
+    isNondegenerate_iff.2 ⟨fun _ hx => Empty.elim hx.exists_pos.choose,
+      fun _ hy => Empty.elim hy.exists_pos.choose⟩
+  rw [G.setOf_completelyLabeled_eq hnd (fun i => i.elim) (fun i => i.elim)]
+  have hEmpty : {p : (Empty → ℝ) × (Empty → ℝ) | G.IsNash p.1 p.2} = ∅ :=
+    Set.eq_empty_of_forall_notMem fun _ hp =>
+      Empty.elim (isNash_iff.1 hp).1.isMixedStrategy.exists_pos.choose
+  simp [hEmpty]
 
 end CslibFrontierTests.GameTheory.Bimatrix

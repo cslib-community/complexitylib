@@ -189,12 +189,6 @@ variable {V : Type}
 def encVariable (enc : V ↪ List Bool) : Variable V ↪ List Bool :=
   encSum enc (encPair (encPair encUnary encUnary) encUnary)
 
-@[local fun_prop]
-private theorem computableInPolyTime_zipIdx {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun list : List α => list.zipIdx)
-      (encList enc) (encList (encPair enc encUnary)) := by
-  fun_prop
-
 private theorem computableInPolyTime_positiveLiteral (enc : V ↪ List Bool) :
     ComputableInPolyTime
       (fun p : (ℕ × Clause V) × (Literal V × ℕ) => positiveLiteral p.1.1 p.2.2 p.2.1)
@@ -221,7 +215,7 @@ private theorem computableInPolyTime_clauseClauses (enc : V ↪ List Bool) :
   have hzip : ComputableInPolyTime (fun p : ℕ × Clause V => p.2.zipIdx)
       (encPair encUnary (encList (encPair enc encBool)))
       (encList (encPair (encPair enc encBool) encUnary)) :=
-    (computableInPolyTime_zipIdx (encPair enc encBool)).comp'
+    (ComputableTidilyInPolyTime.zipIdx (encPair enc encBool)).computableInPolyTime.comp'
       (ComputableInPolyTime.snd encUnary (encList (encPair enc encBool)))
   exact ComputableInPolyTime.listAppend'
     (ComputableInPolyTime.cons'
@@ -234,7 +228,8 @@ private theorem computableInPolyTime_clauseClauses (enc : V ↪ List Bool) :
 theorem computableInPolyTime_formula (enc : V ↪ List Bool) :
     ComputableInPolyTime (formula (V := V))
       (encCNFOver enc) (encCNFOver (encVariable enc)) := by
-  have hzip := computableInPolyTime_zipIdx (encList (encPair enc encBool))
+  have hzip :=
+    (ComputableTidilyInPolyTime.zipIdx (encList (encPair enc encBool))).computableInPolyTime
   have hswap : ComputableInPolyTime
       (fun p : CNF V × (Clause V × ℕ) => (p.2.2, p.2.1))
       (encPair (encList (encList (encPair enc encBool)))

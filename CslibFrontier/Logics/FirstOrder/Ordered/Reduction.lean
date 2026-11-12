@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation.Composition
 public import CslibFrontier.Computability.Complexity.Reduction.ManyOne
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # First-order reductions between ordered queries
@@ -94,12 +95,12 @@ def Certificate.id : (DomainInterpretation.id L).Certificate where
   const c := Term.equal (.var 0)
     (match c with | .zero => Ordered.zero L | .one => Ordered.one L | .max => Ordered.max L)
   realize_le M v := by
-    simp only [Ordered.realize_le, Term.realize_var, unrank_id]
+    fo_simp [unrank_id]
     exact Fin.cast_le_cast _
   realize_bit M v := by
-    simp only [Ordered.realize_bit, Term.realize_var, unrank_id, Fin.val_cast]
+    fo_simp [unrank_id, Fin.val_cast]
   realize_const M c i := by
-    simp only [Formula.realize_equal, Term.realize_var, unrank_id, Fin.ext_iff, Fin.val_cast]
+    fo_simp [unrank_id, Fin.ext_iff, Fin.val_cast]
     cases c
     · exact Iff.rfl
     · exact Iff.rfl

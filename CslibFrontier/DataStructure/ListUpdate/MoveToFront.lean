@@ -73,6 +73,8 @@ def moveToFront (r : α) (l : List α) : List α :=
 theorem idxOf_moveToFront_self (r : α) (l : List α) : (moveToFront r l).idxOf r = 0 :=
   List.idxOf_cons_self
 
+/-- `List.idxOf_cons_ne` for `moveToFront`, the companion of `idxOf_moveToFront_self`: every other
+item moves back one place. -/
 theorem idxOf_moveToFront_of_ne {r x : α} (h : x ≠ r) (l : List α) :
     (moveToFront r l).idxOf x = (l.erase r).idxOf x + 1 :=
   List.idxOf_cons_ne _ (Ne.symm h)
@@ -186,29 +188,23 @@ theorem mtf_costFrom_add_inversions_add_length_le {m₀ s₀ : List α} (hm₀ :
     (mtf α).costFrom m₀ reqs +
         inversions ((mtf α).runMem m₀ reqs) ((problem α).finalState s₀ states) + reqs.length ≤
       2 * accessCost reqs states + exchangeCost s₀ reqs states + inversions m₀ s₀ := by
-  induction reqs generalizing m₀ s₀ states with
-  | nil =>
-    cases states with
-    | nil =>
-      change 0 + inversions m₀ s₀ + 0 ≤ 2 * 0 + 0 + inversions m₀ s₀
-      omega
-    | cons _ _ => exact absurd hv id
-  | cons r rs ih =>
-    cases states with
-    | nil => exact absurd hv id
-    | cons s' ss =>
-      obtain ⟨⟨-, hs'⟩, hrest⟩ := hv
-      have hm' := isArrangement_moveToFront hm₀ r
-      have hih := ih hm' hs' hrest
-      have hstep := inversions_moveToFront_le hm₀ hs' r
-      have htri := inversions_triangle m₀ hs₀ s'
-      have hcost := stepCost_moveToFront hm₀ r
-      change stepCost m₀ r (moveToFront r m₀) + (mtf α).costFrom (moveToFront r m₀) rs +
-          inversions ((mtf α).runMem (moveToFront r m₀) rs) ((problem α).finalState s' ss) +
-          (rs.length + 1) ≤
-        2 * (s'.idxOf r + 1 + accessCost rs ss) + (inversions s₀ s' + exchangeCost s' rs ss) +
-          inversions m₀ s₀
-      omega
+  induction hv using Problem.ValidSchedule.induction (P := problem α) generalizing m₀ with
+  | nil s₀ =>
+    change 0 + inversions m₀ s₀ + 0 ≤ 2 * 0 + 0 + inversions m₀ s₀
+    omega
+  | cons s₀ r rs s' ss hvalid _ ih =>
+    have hs' := hvalid.2
+    have hm' := isArrangement_moveToFront hm₀ r
+    have hih := ih hm' hs'
+    have hstep := inversions_moveToFront_le hm₀ hs' r
+    have htri := inversions_triangle m₀ hs₀ s'
+    have hcost := stepCost_moveToFront hm₀ r
+    change stepCost m₀ r (moveToFront r m₀) + (mtf α).costFrom (moveToFront r m₀) rs +
+        inversions ((mtf α).runMem (moveToFront r m₀) rs) ((problem α).finalState s' ss) +
+        (rs.length + 1) ≤
+      2 * (s'.idxOf r + 1 + accessCost rs ss) + (inversions s₀ s' + exchangeCost s' rs ss) +
+        inversions m₀ s₀
+    omega
 
 /-- [SleatorTarjan1985], Theorem 1 with different initial lists, for `DetStrategy.cost`. -/
 theorem mtf_cost_add_inversions_add_length_le {m₀ s₀ : List α} (hm₀ : IsArrangement m₀)

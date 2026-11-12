@@ -109,8 +109,7 @@ theorem lyubashevskyROMSignature_forger_eq (hβ : β ≤ γ) (hη : k * η ≤ �
       let coins ← A.coins
       (interpret (handler (lyubashevskyROMSignature M n m k q η γ β K) (S', y))
         (A.forge y coins)).run state) := by
-  congr 1
-  funext coins
+  congr 1 with coins : 1
   exact lyubashevskyROMSignature_forger_run_eq hβ hη hS hS' (A.forge y coins) state
 
 /-- A probabilistic forger and final verification in the canonical world have the same law

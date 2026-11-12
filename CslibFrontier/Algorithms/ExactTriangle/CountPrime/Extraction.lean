@@ -28,7 +28,8 @@ open Cslib.Algorithms.MatrixMultiplication.Strassen
   (multiply p k (pCoefficients p wAC) (qCoefficients p wBC)
     (Nat.Morton.index a b * p + ((-wAB a b) % (p : ℤ)).toNat)).natAbs
 
-/-- Nonnegativity makes signed decoding by division by two an exact natural count. -/
+/-- For `p ≠ 0` and `n ≤ 2 ^ k` the selected product coefficient is nonnegative, so casting
+`pairCoefficient` (its `Int.natAbs`) back to `ℤ` returns that coefficient. -/
 theorem pairCoefficient_cast {n p k : ℕ} (hp : p ≠ 0) (hn : n ≤ 2 ^ k)
     (wAB wBC wAC : Fin n → Fin n → ℤ) (a b : Fin n) :
     (pairCoefficient p k wAB wBC wAC a b : ℤ) =

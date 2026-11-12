@@ -39,8 +39,7 @@ theorem abs_sum_pow_four_le {α : Type*} (T : Finset α) (v : α → ℝ) {K : �
     _ ≤ (T.card : ℝ) ^ 3 * ∑ z ∈ T, |v z| ^ 4 := by
       simpa using (pow_sum_le_card_mul_sum_pow (s := T) (f := fun z => |v z|)
         (fun _ _ => abs_nonneg _) 3)
-    _ ≤ _ := mul_le_mul_of_nonneg_right
-      (pow_le_pow_left₀ (by positivity) (by exact_mod_cast hK) _) (by positivity)
+    _ ≤ _ := by gcongr
 
 end Finset
 

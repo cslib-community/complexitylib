@@ -354,10 +354,7 @@ theorem nodes_ne_nil_of_active (h : active x = true) : nodes x ≠ [] := by
     refine ⟨hlt, Nat.succ_ne_self _, ?_⟩
     rw [mult_eq _ _ hlt]
     have h3 : 3 * x.edges ≤ step x * levels x := le_taperStep_mul hu
-    have hh : 0 < step x := by
-      rcases Nat.eq_zero_or_pos (step x) with h0 | h0
-      · rw [h0] at h3; omega
-      · exact h0
+    have hh : 0 < step x := by grind
     have hv : padicValInt 2 (node (slots x) (2 ^ slots x + 1)) = 0 := by
       simp [node]
     simp only [taperMult, hv, Nat.sub_zero]
