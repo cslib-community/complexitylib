@@ -22,7 +22,9 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -1085,11 +1087,36 @@ register_result "hitting-set-multilinear-any-order-roabp" where
     multilinear n-variate polynomial computed by width-w read-once oblivious branching \
     programs in every variable order; more generally of every multilinear polynomial that is \
     a sum of w products across every split of the variables. Characteristic zero only: the \
-    source's positive-characteristic case rests on an unpublished hitting set. Not the \
-    source's Theorem 1.2 for set-multilinear depth-3 circuits. The perfect hash family and \
-    the shifts are the library's own constructions, so the size bound differs from the \
-    source's. Existence and size of an explicit set only: no bit complexity and no \
-    black-box algorithm model. The converse of Nisan's characterisation is not proved."
+    source's positive-characteristic case rests on an unpublished hitting set. The perfect \
+    hash family and the shifts are the library's own constructions, so the size bound \
+    differs from the source's. Existence and size of an explicit set only: no bit \
+    complexity and no black-box algorithm model. The converse of Nisan's characterisation \
+    is not proved."
+
+register_result "hitting-set-set-multilinear-depth-three" where
+  title := "Hitting sets for set-multilinear depth-3 circuits with small variable sets"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := Shpilka2026, theorem := "Theorem 1.2, in characteristic zero; Lemma 3.4",
+      locator := "§1.1 p. 3, §3 pp. 8–9" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_setMultilinearHittingSet_sum_prod,
+    Cslib.Circuits.Arithmetic.isHittingSet_setMultilinearHittingSet,
+    Cslib.Circuits.Arithmetic.card_setMultilinearHittingSet_le
+  ]
+  scope := "Over a field of characteristic zero, for variables in n blocks of d, an explicit \
+    set of points of size at most an explicit polynomial in n, d and s times \
+    (d + 1)^(⌊lg s⌋ + 1), that contains a non-root of every nonzero sum of s products of n \
+    linear forms, the j-th in the variables of block j; more generally of every polynomial \
+    whose monomials have at most one variable of each block, to the first power, and that is \
+    a sum of s products across every union of blocks. Characteristic zero only: the source's \
+    positive-characteristic case rests on an unpublished hitting set. Blocks are Fin n × Fin d, \
+    not a general partition. The support-concentrating shifts for individual degree d have \
+    the statement the source cites from Forbes–Saptharishi–Shpilka, with a proof that is not \
+    from a source; the perfect hash family is the library's, so the size bound differs from \
+    the source's. Existence and size of an explicit set only: no bit complexity and no \
+    black-box algorithm model."
 
 register_result "hitting-set-sparse" where
   title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"
@@ -1106,6 +1133,31 @@ register_result "hitting-set-sparse" where
     whatever its degree; more generally for any point whose monomials are pairwise distinct. \
     Zero test only: no interpolation algorithm, no bit complexity, nothing in positive \
     characteristic."
+
+register_result "hitting-set-sparse-affine-orbit" where
+  title := "Polynomial-size hitting sets for affine orbits of sparse polynomials"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BhargavaSengupta2026,
+      theorem := "Theorem 1.2 items 1 and 2, in characteristic zero; Lemmas 1.6, 3.1 and 3.2",
+      locator := "§1.1 p. 3, §3 pp. 8–9, §4 pp. 9–10" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_sparseOrbitHittingSet,
+    Cslib.Circuits.Arithmetic.card_sparseOrbitHittingSet_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of at most \
+    (n² + 1)(2d(ns² + s) + 1) points of Fⁿ that contains a non-root of every nonzero \
+    polynomial p(Ax + b) of degree at most d, with A an invertible matrix and p a polynomial \
+    with at most s monomials. The key lemma: if all coordinates of u are nonzero, the partial \
+    derivatives of the lowest nonzero homogeneous component of p(x + u) span a space of \
+    dimension at most the number of monomials of p. Ordinary partial derivatives instead of \
+    the source's Hasse derivatives, so characteristic zero throughout, although the source's \
+    lemma holds in every characteristic. The curve is the library's ln(1 + (i + 1)t) \
+    truncated below degree ns² + s, not the source's -ln(1 - it) truncated at that degree. \
+    Not the degree-free hitting set over the reals, the lower bound, the applications to \
+    other orbit classes, or the operation count. Existence and size of an explicit set only: \
+    no bit complexity and no black-box algorithm model."
 
 register_result "hitting-set-lower-bound" where
   title := "Heintz–Schnorr: hitting sets give lower bounds"
