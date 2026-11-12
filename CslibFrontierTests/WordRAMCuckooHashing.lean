@@ -29,6 +29,7 @@ namespace CslibFrontierTests.WordRAMCuckooHashing
 open Cslib Cslib.WordRAM Cslib.WordRAM.Randomized
 open Cslib.DataStructure Cslib.DataStructure.Dictionary Cslib.DataStructure.WordRAM
 open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
+open Cslib.DataStructure.Dictionary.CuckooHashing
 open scoped ENNReal
 
 /-! ## 1. Parameter scale, unconditional hash-family certificate, and eviction chain checks -/

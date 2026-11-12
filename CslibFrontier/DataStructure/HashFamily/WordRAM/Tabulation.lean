@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.WordRAM.ExactLog
 public import CslibFrontier.Computability.WordRAM.Randomized.Structured
+public import CslibFrontier.Computability.WordRAM.Word
 public import CslibFrontier.Probability.PairwiseIndependentHash.Shift
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.Uniform
@@ -129,29 +130,9 @@ advances `regPtr ← regPtr + regOne`. -/
     let z ← randFillComp bits (arrBase + 1) len (randFillStepData arrBase k.val x)
     pure (z.1, 3 + z.2 + 2)
 
-/-- Extract a `< 2 ^ bits` word as an element of `Fin (2 ^ bits)`, defaulting to `0` out of
-range. -/
-@[expose] def extractWord (bits v : ℕ) : Fin (2 ^ bits) :=
-  if h : v < 2 ^ bits then ⟨v, h⟩ else ⟨0, by positivity⟩
-
 /-- Extract a contiguous slice of `len` words at `arrBase` as a tuple `Fin len → Fin (2 ^ bits)`. -/
 @[expose] def extractSlice (arrBase bits len : ℕ) (mem : ℕ → ℕ) : Fin len → Fin (2 ^ bits) :=
-  fun i => extractWord bits (mem (arrBase + i.val))
-
-@[simp]
-theorem extractWord_val_of_lt {bits v : ℕ} (hv : v < 2 ^ bits) :
-    (extractWord bits v).val = v := by
-  simp [extractWord, hv]
-
-@[simp]
-theorem extractWord_unifFin (bits : ℕ) (k : Fin (2 ^ bits - 1 + 1)) :
-    extractWord bits k.val = finCongr (Nat.sub_add_cancel Nat.one_le_two_pow) k := by
-  have hlt : k.val < 2 ^ bits := by
-    have hpos : 1 ≤ 2 ^ bits := Nat.one_le_two_pow
-    have hk := k.isLt
-    omega
-  apply Fin.ext
-  simp [extractWord, hlt]
+  fun i => wordOfNat bits (mem (arrBase + i.val))
 
 /-- One iteration of `randFillBody` executes in `3` instructions and `1` `rand` call. -/
 theorem randFillBody_execRand {w bits arrBase : ℕ} {x : Data 6}

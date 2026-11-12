@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import CslibFrontier.MachineLearning.Rademacher.Margin
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import CslibFrontier.Probability.BitString.Massart
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Algebra.Order.BigOperators.Expect
@@ -174,7 +175,7 @@ example (D : PMF (Bool × Bool)) :
   have h1 : √(2 * Real.log (twoScorers.card : ℝ) / (10000 : ℕ)) ≤ 2 / 100 := by
     rw [card_twoScorers]
     refine sqrt_div_le (by norm_num) (by norm_num) ?_
-    have := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)
+    have := Real.log_two_lt_one
     push_cast
     linarith
   have h2 : √(Real.log (1 / (1 / 20)) / (2 * (10000 : ℕ))) ≤ 4 / 100 := by
@@ -204,7 +205,7 @@ example (D : PMF (Bool × Bool)) :
       (fun h hh => abs_le_one_of_mem_twoScorers hh) (fun i => (S i).1)).trans ?_
     rw [one_mul, card_twoScorers]
     refine sqrt_div_le (by norm_num) (by norm_num) ?_
-    have := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)
+    have := Real.log_two_lt_one
     push_cast
     linarith
   have hε : √(Real.log (2 / (1 / 20)) / (2 * (10000 : ℕ))) ≤ 5 / 100 := by

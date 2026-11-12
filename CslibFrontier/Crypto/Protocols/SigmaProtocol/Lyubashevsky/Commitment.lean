@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky
 public import CslibFrontier.Probability.HashFamily.IntegerBox
-import CslibFrontier.Crypto.Game.CloseTo.Statistical
+import CslibFrontier.Probability.StatisticalDistance.TotalVariation
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.UniformBound
 import CslibFrontier.Probability.PMF.Bind
@@ -36,7 +36,7 @@ public section
 
 namespace Cslib.Crypto.Protocols.SigmaProtocol
 
-open Probability Probability.PMF Interactive
+open Probability Probability.PMF
 open scoped _root_.Matrix ENNReal NNReal Cslib.Probability.PMF
 
 private theorem uniform_shift_lookup_le {M D : Type} [DecidableEq M] {n q : ℕ} [NeZero q]

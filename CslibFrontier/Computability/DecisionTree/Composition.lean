@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.DecisionTree.Cost
+public import Mathlib.Basic.Finite.Sigma
 
 /-!
 # Composition of decision trees
@@ -260,20 +261,31 @@ theorem complexity_substitute_le_mul [Finite ι] [Finite κ] (f : (ι → Bool) 
   exact (complexity_substitute_le ht g).trans
     ((t.weightedDepth_le_depth_mul hg).trans_eq (congrArg (· * d) hd))
 
-/-- A weighted bound for composition on disjoint, possibly differently sized finite blocks. -/
-theorem complexity_blockCompose_le {κ : ι → Type*} [∀ i, Finite (κ i)]
+/-- An outer tree can be implemented over disjoint finite blocks with the optimal inner query
+costs. The block index type may be infinite: the conclusion supplies an actual finite tree. -/
+theorem exists_computes_depth_le_blockCompose {κ : ι → Type*} [∀ i, Finite (κ i)]
     {t : DecisionTree ι β} {f : (ι → Bool) → β} (ht : t.Computes f)
     (g : (i : ι) → (κ i → Bool) → Bool) :
-    complexity (fun x : (Σ i, κ i) → Bool => f (fun i => g i (fun j => x ⟨i, j⟩))) ≤
-      t.weightedDepth (fun i => complexity (g i)) := by
+    ∃ u : DecisionTree (Σ i, κ i) β,
+      u.Computes (fun x => f (fun i => g i (fun j => x ⟨i, j⟩))) ∧
+        u.depth ≤ t.weightedDepth (fun i => complexity (g i)) := by
   classical
   choose s hs hd using fun i => exists_computes_depth_eq_complexity (g i)
   let lifted (i : ι) : DecisionTree (Σ i, κ i) Bool := (s i).mapQueries (Sigma.mk i)
   have hlifted (i : ι) : (lifted i).Computes (fun x => g i (fun j => x ⟨i, j⟩)) := by
     intro x
     exact (eval_mapQueries (Sigma.mk i) (s i) x).trans (hs i _)
-  exact (complexity_le_depth (ht.substitute hlifted)).trans
-    ((t.depth_substitute_le lifted).trans_eq (by simp only [lifted, depth_mapQueries, hd]))
+  exact ⟨t.substitute lifted, ht.substitute hlifted,
+    (t.depth_substitute_le lifted).trans_eq (by simp only [lifted, depth_mapQueries, hd])⟩
+
+/-- A weighted complexity bound for composition with a finite total coordinate domain. -/
+theorem complexity_blockCompose_le {κ : ι → Type*} [Finite (Σ i, κ i)] [∀ i, Finite (κ i)]
+    {t : DecisionTree ι β} {f : (ι → Bool) → β} (ht : t.Computes f)
+    (g : (i : ι) → (κ i → Bool) → Bool) :
+    complexity (fun x : (Σ i, κ i) → Bool => f (fun i => g i (fun j => x ⟨i, j⟩))) ≤
+      t.weightedDepth (fun i => complexity (g i)) := by
+  obtain ⟨u, hu, hd⟩ := exists_computes_depth_le_blockCompose ht g
+  exact (complexity_le_depth hu).trans hd
 
 /-- Uniform-cost composition on disjoint finite blocks; empty blocks and constant functions
 are included. The construction proves an upper bound only. -/
