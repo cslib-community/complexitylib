@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
+import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Challenge
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Correctness
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Fallback
@@ -126,8 +127,8 @@ theorem indCcaRomAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [F
   have hT := S.advantage_eagerIndCcaGame_simGame_le A hq hmsg hδ true
   rw [indCcaRomAdvantage_eq_eager]
   have hcard : (0 : ℝ) < Fintype.card M := by exact_mod_cast Fintype.card_pos
-  calc _ ≤ _ := advantage_four_le (S.eagerIndCcaGame A) (fun b => ProbComp.eval (S.simGame A b))
-          hF hsim hT
+  calc _ ≤ _ := Game.advantage_four_le (S.eagerIndCcaGame A)
+          (fun b => ProbComp.eval (S.simGame A b)) hF hsim hT
     _ = _ := by field_simp; ring
 
 end Scheme

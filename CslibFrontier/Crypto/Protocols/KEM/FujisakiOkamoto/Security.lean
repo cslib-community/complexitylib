@@ -356,17 +356,15 @@ def simHashH (S : Scheme PK SK M R CT K) (pk : PK)
   | (true, m, c) =>
     simHashHRaw S.sampleKey (true, m, c)
 
-/-- Keyless ROM simulator parameterized by a decapsulation acceptance filter
-`d : List (M × R) → CT → Bool` on the cached `G`-queries `gCache`. On `c ≠ cStar`, decapsulation
-returns `some (H_q(c))` when `d st.gCache c = true` and `none` otherwise. Taking
-`d = fun _ _ => true` recovers `simHandler` for `FO-notbot`, while filtering by whether `c` is a
-cached re-encryption gives the simulator for `FO^⊥`. -/
-def simFilterHandler (S : Scheme PK SK M R CT K) (d : List (M × R) → CT → Bool)
-    (pk : PK) (cStar : CT) (q : ROQuery M CT) :
+/-- Common `ROQuery` dispatcher for lazy `SimState` handlers parameterized by an `H` handler `hH`
+and a decapsulation filter `d : List (M × R) → CT → Bool`. -/
+def simFilterDispatch (S : Scheme PK SK M R CT K)
+    (hH : Bool × M × CT → StateT (SimState M R CT K) ProbComp K)
+    (d : List (M × R) → CT → Bool) (cStar : CT) (q : ROQuery M CT) :
     StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
   match q with
   | .G m => simHashG S.pke.sampleCoins m
-  | .H x => S.simHashH pk x
+  | .H x => hH x
   | .decaps c =>
     if c = cStar then
       return none
@@ -376,6 +374,16 @@ def simFilterHandler (S : Scheme PK SK M R CT K) (d : List (M × R) → CT → B
           let k ← simHashHq S.sampleKey c
           return some k) st)
         ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)
+
+/-- Keyless ROM simulator parameterized by a decapsulation acceptance filter
+`d : List (M × R) → CT → Bool` on the cached `G`-queries `gCache`. On `c ≠ cStar`, decapsulation
+returns `some (H_q(c))` when `d st.gCache c = true` and `none` otherwise. Taking
+`d = fun _ _ => true` recovers `simHandler` for `FO-notbot`, while filtering by whether `c` is a
+cached re-encryption gives the simulator for `FO^⊥`. -/
+def simFilterHandler (S : Scheme PK SK M R CT K) (d : List (M × R) → CT → Bool)
+    (pk : PK) (cStar : CT) (q : ROQuery M CT) :
+    StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
+  S.simFilterDispatch (S.simHashH pk) d cStar q
 
 /-- Stateful oracle handler for a keyless ROM simulator of the domain-separated `FO-notbot` IND-CCA
 game, designed to answer decapsulation queries for `c ≠ cStar` directly from `H_q(c)` without using
@@ -415,12 +423,8 @@ IND-CCA adversary rather than an OW-PCVA adversary against `T[PKE, G]`. The firs
 is unused in the body; it is kept as an explicit parameter so that
 `S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁)` names both challenge messages. -/
 def romCpaReduction (S : Scheme PK SK M R CT K)
-    (A : ROAdversary PK M R CT K) (_m0 m1 : M) : PK → CT → ProbComp Bool :=
-  fun pk cStar => do
-    let kStar ← S.sampleKey
-    let (_, st) ←
-      (OracleComp.interpret (S.simHandler pk cStar) (A (pk, cStar, kStar))).run {}
-    return (st.gCache.lookup m1).isSome
+    (A : ROAdversary PK M R CT K) (m0 m1 : M) : PK → CT → ProbComp Bool :=
+  S.romFilterCpaReduction (fun _ _ _ => true) A m0 m1
 
 /-! ### Section 2: Connecting `memoize` to `RandomOracle.answer` and Eager/Lazy Equivalence -/
 
@@ -837,12 +841,12 @@ theorem simFilterHandler_gCache_length_le (S : Scheme PK SK M R CT K)
     st'.gCache.length ≤ st.gCache.length + q.ghCost := by
   cases q with
   | G m =>
-    simpa only [simFilterHandler, ROQuery.ghCost] using
+    simpa only [simFilterHandler, simFilterDispatch, ROQuery.ghCost] using
       simHashG_gCache_length_le S.pke.sampleCoins m st (res, st') hmem
   | H x =>
     rcases x with ⟨isFb, m, c⟩
     cases isFb
-    · dsimp only [simFilterHandler, simHashH, ROQuery.ghCost] at hmem ⊢
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.ghCost] at hmem ⊢
       change (res, st') ∈ (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun z =>
         (if S.pke.encDet pk m z.fst = c then
           simHashHq S.sampleKey c
@@ -858,11 +862,11 @@ theorem simFilterHandler_gCache_length_le (S : Scheme PK SK M R CT K)
       · simp only [henc, ↓reduceIte] at hmem₂
         rw [simHashHRaw_gCache_eq S.sampleKey (false, m, c) z.snd (res, st') hmem₂]
         exact hz_le
-    · dsimp only [simFilterHandler, simHashH, ROQuery.ghCost] at hmem ⊢
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.ghCost] at hmem ⊢
       rw [simHashHRaw_gCache_eq S.sampleKey (true, m, c) st (res, st') hmem]
       exact Nat.le_add_right _ 1
   | decaps c =>
-    dsimp only [simFilterHandler, ROQuery.ghCost] at hmem ⊢
+    dsimp only [simFilterHandler, simFilterDispatch, ROQuery.ghCost] at hmem ⊢
     by_cases hc : c = cStar
     · simp only [hc, ↓reduceIte] at hmem
       change (res, st') ∈ (ProbComp.eval (pure (none, st))).support at hmem

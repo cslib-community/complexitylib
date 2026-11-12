@@ -3749,7 +3749,10 @@ register_result "fujisaki-okamoto-bot-ind-cca" where
     2(qG + qH + 1)δ + 2(qG + qH + qD)2^{-γ} for some distinct fixed challenge messages. \
     Necessity of the qD·2^{-γ} ciphertext-validity spreadness term is proved in \
     FujisakiOkamoto.SpreadNecessity (advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv). \
-    Composes the T and U^⊥ hops directly instead of through standalone OW-PCVA; information-\
+    Composes the T and U^⊥ hops directly instead of through standalone OW-PCVA; \
+    roIndCcaBotGame and eagerIndCcaBotGame draw both real (H) replies and the independent ideal \
+    challenge key from the arbitrary sampler S.sampleKey (uniform sampleKey recovers the \
+    standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4); information-\
     theoretic games with no running-time accounting for the reduction."
 
 register_result "clique-eth-lower-bound" where

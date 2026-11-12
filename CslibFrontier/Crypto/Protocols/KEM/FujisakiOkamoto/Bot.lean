@@ -9,11 +9,14 @@ module
 
 public import CslibFrontier.Crypto.Game.CloseTo
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
+import CslibFrontier.Crypto.Game.CloseTo.UntilBad
+import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Challenge
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Correctness
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Pushforward
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Tactic.PMFSwap
 
@@ -55,6 +58,13 @@ The proof composes four game hops for each challenge bit `b : Bool`:
    `NotBot.Challenge.advantage_simFilterGame_le` reduces distinguishing the real and random
    challenge keys to `romBotCpaReduction`.
 
+Steps 1–3 are applied to both challenge bits, which accounts for the factor `2` on their terms.
+In `roIndCcaBotGame` and `eagerIndCcaBotGame`, both real `H` replies and the independent ideal
+challenge key are drawn from the arbitrary sampler `S.sampleKey : ProbComp K` (distinct from
+`S.pke.keyGen`), and the proof holds for any `S.sampleKey`; taking `S.sampleKey` uniform on `K`
+recovers the standard uniform-ideal-key experiment of [HofheinzHoevelmannsKiltz2017], §2.2,
+Def. 2.4 / Fig. 4.
+
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.roBotHandler`,
@@ -94,6 +104,8 @@ namespace Cslib.Crypto.Protocols.FujisakiOkamoto
 
 open Probability
 open Probability.PMF
+open RandomOracle (eval_zoom_memoize_map eval_zoom_memoize_bind
+  answer_bind_complete answer_bind_complete₁ answer_bind_complete₂)
 open scoped ENNReal NNReal
 
 variable {PK SK M R CT K : Type}
@@ -104,15 +116,10 @@ variable {PK SK M R CT K : Type}
 `μ.toOuterMeasure B` in statistical distance (`CloseTo`). -/
 private theorem closeTo_map_of_eq_off {α β : Type} (μ : PMF α) (f g : α → β) (B : Set α)
     (heq : ∀ x, x ∉ B → f x = g x) :
-    CloseTo (μ.map f) (μ.map g) (μ.toOuterMeasure B) := fun E => by
-  rw [PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply]
-  calc μ.toOuterMeasure (f ⁻¹' E)
-      ≤ μ.toOuterMeasure ((g ⁻¹' E) ∪ B) := by
-        refine μ.toOuterMeasure.mono fun x hx => ?_
-        by_cases hB : x ∈ B
-        · exact Or.inr hB
-        · exact Or.inl (by simpa [heq x hB] using hx)
-    _ ≤ μ.toOuterMeasure (g ⁻¹' E) + μ.toOuterMeasure B := MeasureTheory.measure_union_le _ _
+    CloseTo (μ.map f) (μ.map g) (μ.toOuterMeasure B) := by
+  simpa only [PMF.map, Function.comp_def] using
+    Cslib.Interactive.CloseTo.bind_of_eq_on μ (fun x => PMF.pure (f x)) (fun x => PMF.pure (g x)) B
+      fun x _ hx => congrArg PMF.pure (heq x hx)
 
 /-- Approximate stateful simulation: if each query `q` commutes with `relate` up to statistical
 distance `cost q * ε`, then any program `prog` with `IsCostBounded cost prog d` commutes with
@@ -579,10 +586,10 @@ private theorem cachedCoupledBotHandler_map_tablesOf (S : Scheme PK SK M R CT K)
   | H x => exact S.coupledHashH_map_tablesOf pk sk x st
   | decaps c =>
     by_cases hc : c = cStar
-    · simp only [coupledFilterHandler, answerCachedBotHandler, hc, ↓reduceIte]
+    · simp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler, hc, ↓reduceIte]
       exact PMF.pure_map _ _
-    · dsimp only [coupledFilterHandler, answerCachedBotHandler, cachedCoupledBotCheck, tablesOf,
-        RandomOracle.ofList]
+    · dsimp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler,
+        cachedCoupledBotCheck, tablesOf, RandomOracle.ofList]
       simp only [hc, ↓reduceIte]
       cases hdec : S.pke.dec sk c with
       | none => exact PMF.pure_map _ _
@@ -1097,7 +1104,11 @@ composed directly): for uniform messages, a `δ`-correct and `γ`-spread PKE, an
 at most `qG` queries to `G`, `qH` queries to `H`, and `qD` queries to `decaps`, there are distinct
 messages `m₀ ≠ m₁` with
 `Adv^{IND-CCA}_{FO^⊥}(A) ≤ 2 · Adv^{IND-CPA}_{m₀, m₁}(romBotCpaReduction A m₀ m₁)
-  + 2 (qG + qH) / |M| + 2 (qG + qH + 1) δ + 2 (qG + qH + qD) 2^{-γ}`. -/
+  + 2 (qG + qH) / |M| + 2 (qG + qH + 1) δ + 2 (qG + qH + qD) 2^{-γ}`.
+Both real `H` replies and the independent ideal challenge key in `roIndCcaBotGame` and
+`eagerIndCcaBotGame` are drawn from the arbitrary key sampler `S.sampleKey : ProbComp K`; taking
+`S.sampleKey` uniform on `K` recovers the standard uniform-ideal-key experiment of
+[HofheinzHoevelmannsKiltz2017], §2.2, Def. 2.4 / Fig. 4. -/
 theorem indCcaBotAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) {qG qH qD : ℕ}
     (hq : ROFullQueryBounds A qG qH qD) (hM : 2 ≤ Fintype.card M)
@@ -1116,7 +1127,7 @@ theorem indCcaBotAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [F
   rw [indCcaBotAdvantage_eq_eager]
   have hcard : (0 : ℝ) < Fintype.card M := by exact_mod_cast Fintype.card_pos
   calc _ ≤ _ :=
-        advantage_four_le (S.eagerIndCcaBotGame A) (fun b => ProbComp.eval (S.simBotGame A b))
+        Game.advantage_four_le (S.eagerIndCcaBotGame A) (fun b => ProbComp.eval (S.simBotGame A b))
           hF hsim hT
     _ = _ := by field_simp; ring
 

@@ -47,7 +47,7 @@ theorem romBotCpaReduction_probeZeroKeyAdv_eq (m₀ m₁ : Fin 16) :
       pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁ := by
   funext pk cStar
   simp [Scheme.romBotCpaReduction, Scheme.romFilterCpaReduction, Scheme.romCpaReduction,
-    Scheme.simHandler, Scheme.simFilterHandler, probeZeroKeyAdv, OracleComp.interpret_query]
+    Scheme.simFilterHandler, Scheme.simFilterDispatch, probeZeroKeyAdv, OracleComp.interpret_query]
 
 /-- The two-message IND-CPA advantage of `romBotCpaReduction probeZeroKeyAdv` on `pairCoinPKE` is
 `0` for every pair `(m₀, m₁)`. -/

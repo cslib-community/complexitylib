@@ -115,19 +115,11 @@ private def testHandler (S : Scheme PK SK M R CT K) (d : List (M × R) → CT �
     (cStar : CT) (t : M → CT → R → Prop)
     [∀ m c, DecidablePred (t m c)] (q : ROQuery M CT) :
     StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
-  match q with
-  | .G m => simHashG S.pke.sampleCoins m
-  | .H (false, m, c) => S.testHashH m c (t m c)
-  | .H (true, m, c) => simHashHRaw S.sampleKey (true, m, c)
-  | .decaps c =>
-    if c = cStar then
-      return none
-    else fun st =>
-      cond (d st.gCache c)
-        ((do
-          let k ← simHashHq S.sampleKey c
-          return some k) st)
-        ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)
+  S.simFilterDispatch
+    (fun
+      | (false, m, c) => S.testHashH m c (t m c)
+      | (true, m, c) => simHashHRaw S.sampleKey (true, m, c))
+    d cStar q
 
 private theorem coupledFilterHandler_eq (S : Scheme PK SK M R CT K)
     (d : List (M × R) → CT → Bool) (pk : PK) (sk : SK) (cStar : CT) :
@@ -253,7 +245,7 @@ private theorem testHandler_decaps_gCache_eq (S : Scheme PK SK M R CT K)
     (x : Option K × SimState M R CT K)
     (hx : x ∈ (ProbComp.eval (S.testHandler d cStar t (.decaps c) st)).support) :
     x.2.gCache = st.gCache := by
-  dsimp only [testHandler] at hx
+  dsimp only [testHandler, simFilterDispatch] at hx
   exact gCache_eq_of_mem_support_filterDecaps _ _ _ _ _ _ hx
 
 private theorem testHandler_gCache_subset (S : Scheme PK SK M R CT K)
@@ -310,7 +302,8 @@ private theorem identicalUntilBad_testHandler (S : Scheme PK SK M R CT K) (pk : 
     · rfl
     · exact eval_testHashH_apply_congr S pk sk m c _ _ (ht m c) s (a, s') (of_not_not hs')
     · rfl
-    · by_cases hc : c = cStar <;> simp [testHandler, hc, hd s c (of_not_not hs)]
+    · by_cases hc : c = cStar <;>
+        simp [testHandler, simFilterDispatch, hc, hd s c (of_not_not hs)]
   absorb_first q s hs x hx := fun hg =>
     hs (hg.of_subset (testHandler_gCache_subset S d₁ cStar t₁ q s x hx))
   absorb_second q s hs x hx := fun hg =>

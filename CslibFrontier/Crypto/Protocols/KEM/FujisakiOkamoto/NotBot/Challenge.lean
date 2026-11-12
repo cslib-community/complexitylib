@@ -226,7 +226,7 @@ private theorem simHandler_step (S : Scheme PK SK M R CT K) (d : List (M × R) �
   | H x =>
     rcases x with ⟨isFb, m, c⟩
     cases isFb
-    · dsimp only [simFilterHandler, simHashH] at hmem
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH] at hmem
       change (res, st') ∈ (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun z =>
         (if S.pke.encDet pk m z.fst = c then
           simHashHq S.sampleKey c
@@ -245,11 +245,11 @@ private theorem simHandler_step (S : Scheme PK SK M R CT K) (d : List (M × R) �
       · simp only [henc, ↓reduceIte] at hmem₂
         obtain ⟨hg, hq'⟩ := simHashHRaw_support (z := (res, st')) hmem₂
         exact ⟨hg ▸ hsub, fun h => Or.inl (hhq ▸ hq' ▸ h)⟩
-    · dsimp only [simFilterHandler, simHashH] at hmem
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH] at hmem
       obtain ⟨hg, hq'⟩ := simHashHRaw_support (z := (res, st')) hmem
       exact ⟨hg ▸ List.Subset.refl _, fun h => Or.inl (hq' ▸ h)⟩
   | decaps c =>
-    dsimp only [simFilterHandler] at hmem
+    dsimp only [simFilterHandler, simFilterDispatch] at hmem
     by_cases hc : c = cStar
     · simp only [hc, ↓reduceIte] at hmem
       change (res, st') ∈ (ProbComp.eval (pure (none, st))).support at hmem
@@ -334,7 +334,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) (d : List (M × 
     simp only [ROQuery.gCost, ROQuery.hCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul,
       zero_add]
     cases isFb
-    · dsimp only [simFilterHandler, simHashH]
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH]
       change (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun z =>
         (if S.pke.encDet pk m z.fst = c then
           simHashHq S.sampleKey c
@@ -351,7 +351,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) (d : List (M × 
         exact (simHashHq_support (cStar := cStar) hy).1
       · simp only [henc, ↓reduceIte] at hy
         exact (simHashHRaw_support hy).1
-    · dsimp only [simFilterHandler, simHashH]
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH]
       exact (toOuterMeasure_gCache_eq_zero _ st
         (fun g => ∃ p ∈ g, S.pke.encDet pk p.1 p.2 = cStar) hst fun y hy =>
         (simHashHRaw_support hy).1).trans_le zero_le
@@ -359,7 +359,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) (d : List (M × 
     simp only [ROQuery.gCost, ROQuery.hCost, Nat.cast_zero, zero_mul, add_zero]
     refine (toOuterMeasure_gCache_eq_zero _ st
       (fun g => ∃ p ∈ g, S.pke.encDet pk p.1 p.2 = cStar) hst fun y hy => ?_).le
-    dsimp only [simFilterHandler] at hy
+    dsimp only [simFilterHandler, simFilterDispatch] at hy
     exact gCache_eq_of_mem_support_filterDecaps _ _ _ _ _ _ hy
 
 /-- **Bad-event split**: from the empty state, the simulator records `mStar` in
@@ -1144,25 +1144,6 @@ theorem advantage_simGame_le [Fintype M] [Nonempty M]
           2 * (((qG : ℝ) + qH) / Fintype.card M) +
             2 * (((qG : ℝ) + qH) * (2 : ℝ) ^ (-γ)) :=
   S.advantage_simFilterGame_le (fun _ _ _ => true) (fun _ _ _ _ _ _ _ => rfl) A hq hM hmsg hγ
-
-omit [DecidableEq M] [DecidableEq CT] in
-/-- Four-game triangle inequality bounding `advantage (g₀ false) (g₀ true)` via a middle game pair
-`(g₁ false, g₁ true)`. -/
-theorem advantage_four_le (g₀ g₁ : Bool → Game) {ε₀ εsim ε₁ : ℝ}
-    (h₀ : (Game.advantage (g₀ false) (g₁ false) : ℝ) ≤ ε₀)
-    (hsim : (Game.advantage (g₁ false) (g₁ true) : ℝ) ≤ εsim)
-    (h₁ : (Game.advantage (g₀ true) (g₁ true) : ℝ) ≤ ε₁) :
-    (Game.advantage (g₀ false) (g₀ true) : ℝ) ≤ ε₀ + εsim + ε₁ := by
-  have htri : (Game.advantage (g₀ false) (g₀ true) : ℝ) ≤
-      Game.advantage (g₀ false) (g₁ false) +
-        Game.advantage (g₁ false) (g₁ true) +
-        Game.advantage (g₀ true) (g₁ true) := by
-    rw [Game.advantage_comm (g₀ true)]
-    have h := (Game.advantage_triangle (g₀ false) (g₁ false) (g₀ true)).trans
-      (add_le_add le_rfl (Game.advantage_triangle (g₁ false) (g₁ true) (g₀ true)))
-    rw [← add_assoc] at h
-    exact_mod_cast h
-  exact htri.trans (add_le_add (add_le_add h₀ hsim) h₁)
 
 end Scheme
 

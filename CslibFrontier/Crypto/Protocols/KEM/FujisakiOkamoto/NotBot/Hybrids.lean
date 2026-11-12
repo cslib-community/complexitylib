@@ -198,18 +198,7 @@ it differs from `simFilterHandler` only in using `coupledHashH` for `H`. -/
 def coupledFilterHandler (S : Scheme PK SK M R CT K) (d : List (M × R) → CT → Bool)
     (pk : PK) (sk : SK) (cStar : CT)
     (q : ROQuery M CT) : StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
-  match q with
-  | .G m => simHashG S.pke.sampleCoins m
-  | .H x => S.coupledHashH pk sk x
-  | .decaps c =>
-    if c = cStar then
-      return none
-    else fun st =>
-      cond (d st.gCache c)
-        ((do
-          let k ← simHashHq S.sampleKey c
-          return some k) st)
-        ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)
+  S.simFilterDispatch (S.coupledHashH pk sk) d cStar q
 
 /-- Lazy realization of `eagerCoupledHandler` on `SimState`; it differs from `simHandler` only
 in using `coupledHashH` for `H`. -/

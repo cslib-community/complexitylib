@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Tactic.PMFSwap
 
@@ -46,6 +47,8 @@ namespace Cslib.Crypto.Protocols.FujisakiOkamoto
 
 open Probability
 open Probability.PMF
+open RandomOracle (eval_zoom_memoize_map eval_zoom_memoize_bind
+  answer_bind_complete answer_bind_complete₁ answer_bind_complete₂)
 
 variable {PK SK M R CT K : Type}
 
@@ -92,37 +95,6 @@ private noncomputable def answerHandler (S : Scheme PK SK M R CT K) (pk : PK) (s
       (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c t.2.2).map
         fun z => (some z.1, (t.1, t.2.1, z.2))
 
-omit [DecidableEq M] [DecidableEq CT] in
-/-- One lazy call on a component cache, with its result and represented state, is
-`RandomOracle.answer` on the represented component. -/
-theorem eval_zoom_memoize_map {Key Value St T β : Type} [DecidableEq Key]
-    (get : St → List (Key × Value)) (set : St → List (Key × Value) → St) (d : ProbComp Value)
-    (q : Key) (s : St) (g : Value → β) (rep : St → T)
-    (F : RandomOracle.Cache (fun _ : Key => Value) → T)
-    (hrep : ∀ c, rep (set s c) = F (RandomOracle.ofList c)) :
-    (ProbComp.eval (RandomOracle.zoomStateT get set (memoize (fun _ => d) q) s)).map
-        (fun z => (g z.1, rep z.2)) =
-      (RandomOracle.answer (fun _ => ProbComp.eval d) q (RandomOracle.ofList (get s))).map
-        (fun z => (g z.1, F z.2)) := by
-  rw [RandomOracle.eval_zoomStateT_memoize, ← RandomOracle.memoize_map_ofList]
-  simp only [PMF.map_comp, Function.comp_def, hrep]
-
-omit [DecidableEq M] [DecidableEq CT] in
-/-- One lazy call on a component cache followed by a continuation, on represented states. -/
-theorem eval_zoom_memoize_bind {Key Value St T β : Type} [DecidableEq Key]
-    (get : St → List (Key × Value)) (set : St → List (Key × Value) → St) (d : ProbComp Value)
-    (q : Key) (s : St) (f : Value → St → ProbComp (β × St)) (rep : St → T)
-    (Φ : Value × RandomOracle.Cache (fun _ : Key => Value) → PMF (β × T))
-    (hf : ∀ v c, (ProbComp.eval (f v (set s c))).map (fun z => (z.1, rep z.2)) =
-      Φ (v, RandomOracle.ofList c)) :
-    (ProbComp.eval (RandomOracle.zoomStateT get set (memoize (fun _ => d) q) s >>=
-        fun vs => f vs.1 vs.2)).map (fun z => (z.1, rep z.2)) =
-      (RandomOracle.answer (fun _ => ProbComp.eval d) q (RandomOracle.ofList (get s))).bind Φ := by
-  rw [ProbComp.eval_bind, RandomOracle.eval_zoomStateT_memoize,
-    ← RandomOracle.memoize_map_ofList, PMF.map_bind, PMF.bind_map, PMF.bind_map]
-  congr 1 with ⟨v, c⟩ : 1
-  exact hf v c
-
 /-- Mapping `SimState` to its represented tables turns `coupledHashH` into `answerHashH`. -/
 theorem coupledHashH_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
     (x : Bool × M × CT) (st : SimState M R CT K) :
@@ -165,10 +137,11 @@ private theorem coupledHandler_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK
   | H x => exact S.coupledHashH_map_tablesOf pk sk x st
   | decaps c =>
     by_cases hc : c = cStar
-    · simp only [coupledHandler, coupledFilterHandler, answerHandler, hc, ↓reduceIte]
+    · simp only [coupledHandler, coupledFilterHandler, simFilterDispatch, answerHandler, hc,
+        ↓reduceIte]
       exact PMF.pure_map _ _
-    · simp only [coupledHandler, coupledFilterHandler, answerHandler, hc, ↓reduceIte,
-        Bool.cond_true]
+    · simp only [coupledHandler, coupledFilterHandler, simFilterDispatch, answerHandler, hc,
+        ↓reduceIte, Bool.cond_true]
       change (ProbComp.eval (simHashHq S.sampleKey c st >>= fun vs =>
         pure (some vs.1, vs.2))).map _ = _
       refine Eq.trans ?_ (eval_zoom_memoize_map SimState.hqCache
@@ -178,57 +151,6 @@ private theorem coupledHandler_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK
       rw [ProbComp.eval_bind, PMF.map_bind]
       simp only [ProbComp.eval_pure, PMF.pure_map]
       rfl
-
-section Answer
-
-variable {Q V α α' β : Type} [Fintype Q] [Finite V] [DecidableEq Q]
-
-omit [DecidableEq M] [DecidableEq CT]
-
-/-- Answering one query and completing its table is completing the table and reading it,
-followed by any continuation `F` that ignores the intermediate cache. -/
-theorem answer_bind_complete (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
-    (q : Q) (F : V × RandomOracle.Cache (fun _ : Q => V) → (Q → V) → PMF β)
-    (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
-    (RandomOracle.answer d q c).bind (fun x => (RandomOracle.complete d x.2).bind (F x)) =
-      (RandomOracle.complete d c).bind (fun T => F (T q, c) T) := by
-  have h := congrArg (fun p => p.bind (fun x => F (x.1, c) x.2))
-    (RandomOracle.answer_complete d c q)
-  simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map,
-    Function.comp_def] at h
-  rw [← h]
-  congr 1 with ⟨v, c'⟩ : 1
-  rw [hF v c' c]
-
-/-- `answer_bind_complete` past one independent sample `p`. -/
-theorem answer_bind_complete₁ (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
-    (q : Q) (p : PMF α) (F : V × RandomOracle.Cache (fun _ : Q => V) → α → (Q → V) → PMF β)
-    (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
-    (RandomOracle.answer d q c).bind (fun x => p.bind fun a =>
-        (RandomOracle.complete d x.2).bind (F x a)) =
-      (RandomOracle.complete d c).bind (fun T => p.bind fun a => F (T q, c) a T) := by
-  simp only [PMF.bind_comm p]
-  exact answer_bind_complete d c q (fun x T => p.bind fun a => F x a T)
-    (fun v c₁ c₂ => by rw [hF v c₁ c₂])
-
-/-- `answer_bind_complete` past two independent samples `p` and `p'`. -/
-theorem answer_bind_complete₂ (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
-    (q : Q) (p : PMF α) (p' : PMF α')
-    (F : V × RandomOracle.Cache (fun _ : Q => V) → α → α' → (Q → V) → PMF β)
-    (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
-    (RandomOracle.answer d q c).bind (fun x => p.bind fun a => p'.bind fun b =>
-        (RandomOracle.complete d x.2).bind (F x a b)) =
-      (RandomOracle.complete d c).bind (fun T => p.bind fun a => p'.bind fun b =>
-        F (T q, c) a b T) := by
-  have h : (fun x : V × RandomOracle.Cache (fun _ : Q => V) => p.bind fun a => p'.bind fun b =>
-      (RandomOracle.complete d x.2).bind (F x a b)) = fun x =>
-      (RandomOracle.complete d x.2).bind fun T => p.bind fun a => p'.bind fun b => F x a b T :=
-    funext fun x => by pmf_swap
-  rw [h]
-  exact answer_bind_complete d c q (fun x T => p.bind fun a => p'.bind fun b => F x a b T)
-    (fun v c₁ c₂ => by rw [hF v c₁ c₂])
-
-end Answer
 
 section Complete
 

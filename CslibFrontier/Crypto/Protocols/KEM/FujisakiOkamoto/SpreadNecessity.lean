@@ -275,7 +275,7 @@ theorem eval_simBotGame_probeDecapsAdv (P : ExplicitCoinPKE PK SK M R CT) (m₀ 
       (S.pke.encDet pk mStar rStar) z hz
   rw [← PMF.bind_const (ProbComp.eval S.sampleKey) (PMF.pure false)]
   congr 1 with kRand : 1
-  dsimp only [Scheme.simFilterHandler]
+  dsimp only [Scheme.simFilterHandler, Scheme.simFilterDispatch]
   by_cases hm : mStar = m₀
   · have hc : (none : Option CT) = S.pke.encDet pk mStar rStar := by
       simp [S, unspreadScheme, unspreadPointPKE, hm]
