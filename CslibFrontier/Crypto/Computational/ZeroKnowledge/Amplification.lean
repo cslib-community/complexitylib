@@ -79,17 +79,9 @@ noncomputable def PseudorandomGenerator.zkProofOfReduction
   verifier := GMW.gmwSeqVerifier generator length f k
   prover n a w := GMW.gmwSeqProver generator (n + 7) (length (n + 7)) (f a) w (k n)
   isWitness a w := ThreeSAT.verifier (f a, w)
-  polyTime_isWitness := by
-    have := hf.tidy
-    fun_prop
-  mem_iff_exists_witness a := by
-    rw [hred a]
-    refine ⟨fun ha => ?_, fun ⟨w, hw⟩ => ?_⟩
-    · obtain ⟨w, _, hw⟩ := (ThreeSAT.isVerifier (f a)).mp ha
-      exact ⟨w, hw⟩
-    · simp only [ThreeSAT.verifier, SAT.verifier, Bool.and_eq_true, List.all_eq_true,
-        decide_eq_true_eq] at hw
-      exact ⟨hw.1, SAT.assignment (f a) w, hw.2⟩
+  polyTime_isWitness := (hG.zeroKnowledgeProofOfReduction hstretch hf hred).polyTime_isWitness
+  mem_iff_exists_witness :=
+    (hG.zeroKnowledgeProofOfReduction hstretch hf hred).mem_iff_exists_witness
   isOraclePPT_verifier := GMW.isOraclePPTOn_gmwSeqVerifier hG.polyTime hG.length_eq hf hk
   interact n a w prog := GMW.gmwSeqInteract generator (n + 7) (length (n + 7)) (f a) w (k n) prog
   eval_interact n a w prog :=

@@ -34,13 +34,11 @@ polynomial-time-generable after the forward map (`GenerableZeroKnowledge`), and 
 bounded one remains polynomially bounded (`AuxiliaryInputZeroKnowledge`, under
 `Cslib.Crypto.GMW.AdvicePRG`).
 
-With `Cslib.Complexity.CookLevin.ThreeSAT_levinHard`, every NP relation gets such a proof system,
-complete for the relation's own witnesses
-(`Cslib.Crypto.PseudorandomGenerator.exists_zeroKnowledgeProof_of_npRelation`,
-`Cslib.Crypto.OneWay.exists_zeroKnowledgeProof_of_npRelation`). Soundness stays the constant
-`1 / 3` of `Cslib.Crypto.ZeroKnowledgeProof`, and the auxiliary-input form stays conditional on
-`Cslib.Crypto.GMW.AdvicePRG`; amplification and the nonuniform premise are separate milestones of
-the GMW objective.
+This single-session system has soundness `1 / 3`. Its sequential repetition with negligible
+soundness, and the existence theorems for every NP relation through
+`Cslib.Complexity.CookLevin.ThreeSAT_levinHard`, are in
+`CslibFrontier.Crypto.Computational.ZeroKnowledge.Amplification`. The auxiliary-input form stays
+conditional on `Cslib.Crypto.GMW.AdvicePRG`.
 
 ## Main definitions
 
@@ -49,12 +47,10 @@ the GMW objective.
 
 ## Main results
 
+* `Cslib.Crypto.PseudorandomGenerator.isWitness_levinZeroKnowledgeProof`: the bundled witness
+  check is the relation itself.
 * `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_levinZeroKnowledgeProof`:
   auxiliary-input zero knowledge under the advice-PRG premise.
-* `Cslib.Crypto.PseudorandomGenerator.exists_zeroKnowledgeProof_of_npRelation`,
-  `Cslib.Crypto.PseudorandomGenerator.exists_auxiliaryInputZeroKnowledge_of_npRelation`,
-  `Cslib.Crypto.OneWay.exists_zeroKnowledgeProof_of_npRelation`: every NP relation has a
-  zero-knowledge proof whose honest prover uses the relation's own witnesses.
 
 ## References
 
@@ -86,17 +82,18 @@ theorem _root_.Cslib.Complexity.NPRelation.computableInPolyTime_decide_isWitness
   simp only [heq]
   fun_prop
 
-/-- **GMW zero knowledge with the relation's own witnesses.** The Goldreich–Micali–Wigderson
-proof system for the language of the NP relation `R`, from a pseudorandom generator with stretch
-at least `3 * k + 1` and a Levin reduction `r` of `R` to the NP relation of 3SAT. The honest
-prover maps a witness `w` of `R` for `a` to the 3SAT witness `r.forwardWitness (a, w)` of
-`r.toFun a`; the bundled witness check is `decide (R.IsWitness a w)`. -/
+/-- **GMW zero knowledge with the relation's own witnesses.** The single-session
+Goldreich–Micali–Wigderson proof system, with soundness `1 / 3`, for the language of the NP relation
+`R`, from a pseudorandom generator with stretch at least `3 * k + 1` and a Levin reduction `r` of
+`R` to the NP relation of 3SAT. The honest prover maps a witness `w` of `R` for `a` to the 3SAT
+witness `r.forwardWitness (a, w)` of `r.toFun a`; the bundled witness check is
+`decide (R.IsWitness a w)`. -/
 noncomputable def PseudorandomGenerator.levinZeroKnowledgeProof
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (r : LevinReduction R ThreeSAT.npRelation) :
-    ZeroKnowledgeProof enc R.language where
+    ZKProof enc R.language (fun _ => 1 / 3) where
   verifier := GMW.gmwVerifier generator length r.toFun
   prover n a w :=
     GMW.gmwProver generator (n + 7) (length (n + 7)) (r.toFun a) (r.forwardWitness (a, w))
@@ -153,43 +150,5 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_levinZeroKnowledgeProo
         (by simpa using
           r.computableInPolyTime_forwardWitness.polynomiallyBounded_length_prod ha hw)
         hz hz' fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
-
-/-- **GMW for NP relations (from a pseudorandom generator).** Given a pseudorandom generator with
-stretch at least `3 * k + 1`, every NP relation has a computational zero-knowledge proof system
-for its language, in the polynomial-time-generable sense of `GenerableZeroKnowledge`, whose
-bundled witness check is the relation itself, so that its honest prover is complete for the
-relation's own witnesses. -/
-theorem PseudorandomGenerator.exists_zeroKnowledgeProof_of_npRelation
-    {generator : List Bool → List Bool} {length : ℕ → ℕ}
-    (hG : PseudorandomGenerator generator length) (hstretch : ∀ k, 3 * k + 1 ≤ length k)
-    (R : NPRelation enc) :
-    ∃ zk : ZeroKnowledgeProof enc R.language, ∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w :=
-  let ⟨r⟩ := CookLevin.ThreeSAT_levinHard enc R
-  ⟨hG.levinZeroKnowledgeProof hstretch r,
-    hG.isWitness_levinZeroKnowledgeProof hstretch r⟩
-
-/-- **GMW for NP relations under an explicit advice-PRG premise.** Every NP relation has a
-computational zero-knowledge proof system with the relation's own witnesses that satisfies general
-auxiliary-input zero knowledge. The premise `GMW.AdvicePRG` is a hypothesis, not derived here. -/
-theorem PseudorandomGenerator.exists_auxiliaryInputZeroKnowledge_of_npRelation
-    {generator : List Bool → List Bool} {length : ℕ → ℕ}
-    (hG : PseudorandomGenerator generator length) (hstretch : ∀ k, 3 * k + 1 ≤ length k)
-    (hAdv : GMW.AdvicePRG enc generator length) (R : NPRelation enc) :
-    ∃ zk : ZeroKnowledgeProof enc R.language,
-      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge :=
-  let ⟨r⟩ := CookLevin.ThreeSAT_levinHard enc R
-  ⟨hG.levinZeroKnowledgeProof hstretch r,
-    hG.isWitness_levinZeroKnowledgeProof hstretch r,
-    hG.auxiliaryInputZeroKnowledge_levinZeroKnowledgeProof hstretch r hAdv⟩
-
-/-- **GMW for NP relations (from a one-way function).** If a one-way function exists, every NP
-relation has a computational zero-knowledge proof system for its language, in the
-polynomial-time-generable sense of `GenerableZeroKnowledge`, whose honest prover uses the
-relation's own witnesses. -/
-theorem OneWay.exists_zeroKnowledgeProof_of_npRelation {f : List Bool → List Bool}
-    (hf : OneWay f) (R : NPRelation enc) :
-    ∃ zk : ZeroKnowledgeProof enc R.language, ∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w :=
-  let ⟨_, hG⟩ := hf.exists_pseudorandomGenerator_three_mul
-  hG.exists_zeroKnowledgeProof_of_npRelation (fun _ => le_rfl) R
 
 end Cslib.Crypto
