@@ -354,7 +354,7 @@ theorem DDH.kemINDCPA_hashedElGamalEncapsProb {F : PrimeOrderGroupFamily} {keyLe
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits) :
     KEMINDCPA keyLen (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) := by
   intro distinguisher hD
-  have hddh := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH (F.isPPT_kemToKDFDistinguisher hD))
+  have hddh := hDDH _ (F.isPPT_kdfToDDHDistinguisher hH (F.isPPT_kemToKDFDistinguisher hD))
   have hkdf := hKDF _ (F.isPPT_kemToKDFDistinguisher hD)
   have h4 : Negligible fun n => (4 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 4
   refine negligible_of_le ((hddh.add hkdf).add h4) fun n => ?_

@@ -37,7 +37,7 @@ and `F.add`.
 We prove IND-CPA security under DDH in the following settings:
 1. **Shared typed-message ElGamal reduction** (`elGamalMsgCPAGameOn`,
    `elGamalMsgToDDHDistinguisher`, `advantage_elGamalMsgCPAGameOn_le`,
-   `isPPTOn_elGamalMsgToDDHDistinguisher`, `DDH.negligible_elGamalMsgCPAGameOn`). As in
+   `isPPT_elGamalMsgToDDHDistinguisher`, `DDH.negligible_elGamalMsgCPAGameOn`). As in
    `Encryption.gameOn`, a challenge-pair admissibility predicate
    `valid : ℕ → List Bool → Msg → Msg → Bool` sees the security parameter and the public key, and
    an inadmissible pair makes the game output `false` in both experiments. The reduction needs
@@ -140,11 +140,11 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_decodeElGamal`: polynomial-time
   certificates for honest ElGamal operations.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalMsgCPAGameOn_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_elGamalMsgToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_elGamalMsgToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_elGamalMsgCPAGameOn`: shared typed-message
   ElGamal IND-CPA reduction to DDH.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalCPAGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_elGamalToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_elGamalToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.elGamalINDCPA`: ElGamal IND-CPA security for bit
   messages under DDH ([BonehShoup2023], Exercise 11.5(a), p. 459).
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalGroupCPAGameOn_le`,
@@ -154,7 +154,7 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_encodeHashedElGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_decodeHashedElGamal`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhRandomGame_kdfToDDHDistinguisher`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_kdfToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_kdfToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_hashedElGamalCPAGame_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_hashedElGamalToKDFDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_hashedElGamalCPAGame`: Hashed ElGamal
@@ -467,7 +467,7 @@ theorem advantage_elGamalMsgCPAGameOn_le {Msg : Type}
 
 /-- `elGamalMsgToDDHDistinguisher` is uniform strict PPT whenever `valid` and `encodeMsg` are
 computable in polynomial time and `adversary` is uniform strict PPT. -/
-theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
+theorem isPPT_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
@@ -477,9 +477,7 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
       (encPair F.encDesc encMsg) encBits)
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
-    IsPPTOn F.encDDHInput encBool fun x =>
-      F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit x.secParam x.groupParameters
-        x.leftPublic x.rightPublic x.candidateShared := by
+    (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit).IsPPT := by
   let E := encPair F.encDDHInput (Encryption.encChoiceOut encMsg)
   have hpk : ComputableInPolyTime
       (fun x : F.DDHInput => encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic))
@@ -523,7 +521,7 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
             encodeMsg p.1.groupParameters (if bit then p.2.1.2 else p.2.1.1)))))
     (hn.prod (hst.prod (hv.prod (F.computableInPolyTime_add.comp
       (hd.prod (hw.prod (hencMsg.comp (hd.prod hm)))))).encoding_comp))
-  simp only [elGamalMsgToDDHDistinguisher]
+  simp only [DDHDistinguisher.IsPPT, elGamalMsgToDDHDistinguisher]
   refine (hA.choose.on.preprocess
     (prepare := fun x : F.DDHInput =>
       (x.secParam, encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic)))
@@ -550,8 +548,8 @@ theorem DDH.negligible_elGamalMsgCPAGameOn {F : PrimeOrderGroupFamily} {setup : 
     Negligible fun n =>
       Game.advantage (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary false n)
         (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary true n) := by
-  have h₀ := hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA false)
-  have h₁ := hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA true)
+  have h₀ := hDDH _ (F.isPPT_elGamalMsgToDDHDistinguisher hvalid hencMsg hA false)
+  have h₁ := hDDH _ (F.isPPT_elGamalMsgToDDHDistinguisher hvalid hencMsg hA true)
   negligible using fun n =>
     F.advantage_elGamalMsgCPAGameOn_le valid encodeMsg setup adversary n hsound
 
@@ -671,12 +669,9 @@ theorem advantage_elGamalCPAGame_le (setup : ℕ → PMF F.Desc)
     F.admitsGroupElements_encodeBit
 
 /-- `elGamalToDDHDistinguisher` is uniform strict PPT whenever `adversary` is. -/
-theorem isPPTOn_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
-    (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn F.encDDHInput encBool fun x =>
-      F.elGamalToDDHDistinguisher adversary bit x.secParam x.groupParameters x.leftPublic
-        x.rightPublic x.candidateShared :=
-  F.isPPTOn_elGamalMsgToDDHDistinguisher
+theorem isPPT_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
+    (hA : adversary.IsPPT) (bit : Bool) : (F.elGamalToDDHDistinguisher adversary bit).IsPPT :=
+  F.isPPT_elGamalMsgToDDHDistinguisher
     (ComputableTidilyInPolyTime.const true).computableInPolyTime F.computableInPolyTime_encodeBit hA
     bit
 
@@ -685,8 +680,8 @@ theorem isPPTOn_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
 theorem DDH.elGamalINDCPA {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
     (hDDH : F.DDH setup) : F.elGamalINDCPA setup := by
   intro adversary hA
-  have h₀ := hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA false)
-  have h₁ := hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA true)
+  have h₀ := hDDH _ (F.isPPT_elGamalToDDHDistinguisher hA false)
+  have h₁ := hDDH _ (F.isPPT_elGamalToDDHDistinguisher hA true)
   negligible using F.advantage_elGamalCPAGame_le setup adversary
 
 /-! ### Group-element ElGamal IND-CPA security under DDH -/
@@ -959,12 +954,10 @@ def kdfToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
 
 /-- `kdfToDDHDistinguisher H` is uniform strict PPT whenever `H` is polynomial time and the
 key-derivation distinguisher is uniform strict PPT. -/
-theorem isPPTOn_kdfToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
+theorem isPPT_kdfToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     {distinguisher : F.KDFDistinguisher} (hD : distinguisher.IsPPT) :
-    IsPPTOn F.encDDHInput encBool fun x =>
-      F.kdfToDDHDistinguisher H distinguisher x.secParam x.groupParameters x.leftPublic
-        x.rightPublic x.candidateShared :=
+    (F.kdfToDDHDistinguisher H distinguisher).IsPPT :=
   hD.preprocess
     (prepare := fun x : F.DDHInput =>
       (x.toCDHInput, H (x.groupParameters, F.encode _ x.candidateShared)))
@@ -1131,9 +1124,9 @@ theorem DDH.negligible_hashedElGamalCPAGame {F : PrimeOrderGroupFamily} {setup :
         (F.hashedElGamalCPAGame setup H adversary true n) := by
   have hkdf₀ := hKDF _ (F.isPPT_hashedElGamalToKDFDistinguisher hA false)
   have hkdf₁ := hKDF _ (F.isPPT_hashedElGamalToKDFDistinguisher hA true)
-  have hddh₀ := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH
+  have hddh₀ := hDDH _ (F.isPPT_kdfToDDHDistinguisher hH
     (F.isPPT_hashedElGamalToKDFDistinguisher hA false))
-  have hddh₁ := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH
+  have hddh₁ := hDDH _ (F.isPPT_kdfToDDHDistinguisher hH
     (F.isPPT_hashedElGamalToKDFDistinguisher hA true))
   negligible using F.advantage_hashedElGamalCPAGame_le setup H msgLen adversary
 

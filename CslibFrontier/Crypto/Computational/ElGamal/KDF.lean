@@ -205,15 +205,11 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
 
 /-- `seededDDHDistinguisher` is uniform strict PPT whenever `seedLen` is polynomial-time computable
 in unary and `distinguisher` is uniform strict PPT. -/
-theorem isPPTOn_seededDDHDistinguisher {seedLen : ℕ → F.Desc → ℕ}
+theorem isPPT_seededDDHDistinguisher {seedLen : ℕ → F.Desc → ℕ}
     (hseed : ComputableInPolyTime (fun p : ℕ × F.Desc => seedLen p.1 p.2)
       (encPair encUnary F.encDesc) encUnary)
-    {distinguisher : F.withSeed.DDHDistinguisher}
-    (hD : IsPPTOn F.withSeed.encDDHInput encBool fun x =>
-      distinguisher x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared) :
-    IsPPTOn F.encDDHInput encBool fun x =>
-      F.seededDDHDistinguisher seedLen distinguisher x.secParam x.groupParameters x.leftPublic
-        x.rightPublic x.candidateShared := by
+    {distinguisher : F.withSeed.DDHDistinguisher} (hD : distinguisher.IsPPT) :
+    (F.seededDDHDistinguisher seedLen distinguisher).IsPPT := by
   have hsample : IsPPTOn F.encDDHInput encBits fun x : F.DDHInput =>
       Cslib.BitString.sampleList (seedLen x.secParam x.groupParameters) :=
     ComputableInPolyTime.sampleList (hseed.comp (show ComputableInPolyTime
@@ -228,7 +224,7 @@ theorem isPPTOn_seededDDHDistinguisher {seedLen : ℕ → F.Desc → ℕ}
       (f := fun p : F.DDHInput × List Bool => (p.1.secParam, (p.1.groupParameters, p.2),
         F.encode _ p.1.leftPublic, F.encode _ p.1.rightPublic, F.encode _ p.1.candidateShared))
       (by fun_prop) fun _ => rfl
-  simp only [seededDDHDistinguisher]
+  simp only [DDHDistinguisher.IsPPT, seededDDHDistinguisher]
   exact hsample.bind_with (hD.preprocess hprepare)
 
 /-- **Preservation of `DDH` under public-seed augmentation**: if `F.DDH setup` holds and
@@ -242,7 +238,7 @@ theorem DDH.withSeed {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
   intro distinguisher hD
   simpa only [F.ddhRealGame_seededDDHDistinguisher, F.ddhRandomGame_seededDDHDistinguisher] using
     hDDH (F.seededDDHDistinguisher seedLen distinguisher)
-      (F.isPPTOn_seededDDHDistinguisher hseed hD)
+      (F.isPPT_seededDDHDistinguisher hseed hD)
 
 /-! ### Binary Linear-Hash Key Derivation and Leftover Hash Lemma -/
 

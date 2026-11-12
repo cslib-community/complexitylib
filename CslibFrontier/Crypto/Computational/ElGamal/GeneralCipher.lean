@@ -503,7 +503,7 @@ also the random DDH game for `hashedElGamalCipherToDDHDistinguisher`. -/
 
 /-- `hashedElGamalCipherToKDFDistinguisher` is uniform strict PPT whenever `encryptSym` and
 `adversary` are. The DDH reduction `hashedElGamalCipherToDDHDistinguisher` is then uniform strict
-PPT by `isPPTOn_kdfToDDHDistinguisher`. -/
+PPT by `isPPT_kdfToDDHDistinguisher`. -/
 theorem isPPT_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
@@ -586,7 +586,7 @@ noncomputable abbrev hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
 
 /-- `hashedElGamalCipherToKDFHiddenBitDistinguisher` is uniform strict PPT whenever `encryptSym` and
 `adversary` are. The DDH reduction `hashedElGamalCipherToDDHHiddenBitDistinguisher` is then
-uniform strict PPT by `isPPTOn_kdfToDDHDistinguisher`. -/
+uniform strict PPT by `isPPT_kdfToDDHDistinguisher`. -/
 theorem isPPT_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
     {encMsg : Msg ↪ List Bool} {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
@@ -786,7 +786,7 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn {F : PrimeOrderGroupFamily}
         (F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary true n) := by
   have hA' := hA.restrict hvalid
   have hkdfPPT := F.isPPT_hashedElGamalCipherToKDFHiddenBitDistinguisher hencryptSym hA'
-  have hddh := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH hkdfPPT)
+  have hddh := hDDH _ (F.isPPT_kdfToDDHDistinguisher hH hkdfPPT)
   have hkdf := hKDF _ hkdfPPT
   negligible using
     F.advantage_hashedElGamalCipherCPAGameOn_le_two_mul valid setup H keyLen encryptSym adversary
