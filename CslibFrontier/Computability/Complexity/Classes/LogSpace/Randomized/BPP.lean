@@ -54,17 +54,16 @@ open _root_.Turing _root_.Turing.MultiTapeTM Cslib.Probability
 
 variable {α : Type} {enc : α ↪ List Bool}
 
-/-- The closed run of a fair-coin machine for the clock `2 * (2 * (n + 1)) ^ d`, accepting when its
-output is `[true]`, is a uniform strict probabilistic polynomial-time program. -/
+/-- The closed run of a fair-coin machine for the clock `polyClock d n`, accepting when its output
+is `[true]`, is a uniform strict probabilistic polynomial-time program. -/
 private theorem isPPTOn_runClosed_accepts {k : ℕ} {State : Type} [Finite State]
     (M : MultiTapePTM k Bool State) (d : ℕ) :
     IsPPTOn enc encBool fun a => (· == [true]) <$>
-      M.runClosed (2 * (2 * ((enc a).length + 1)) ^ d) (enc a) := by
-  have hrun : IsPPTOn enc encBits fun a =>
-      M.runClosed (2 * (2 * ((enc a).length + 1)) ^ d) (enc a) :=
+      M.runClosed (polyClock d (enc a).length) (enc a) := by
+  have hrun : IsPPTOn enc encBits fun a => M.runClosed (polyClock d (enc a).length) (enc a) :=
     ⟨k, State, inferInstance, M, 2 * 2 ^ d, d, fun a => by
       simp only [encBits, Function.Embedding.coe_refl, PMF.map_id]
-      rw [mul_pow, ← mul_assoc]⟩
+      rw [polyClock, mul_pow, ← mul_assoc]⟩
   exact hrun.map (ComputableInPolyTime.beq ComputableInPolyTime.id'
     (ComputableInPolyTime.const [true]))
 
@@ -88,36 +87,36 @@ private theorem probability_runClosed_accepts {k : ℕ} {State : Type}
 least `1/2` and never accepts non-members. -/
 theorem RL_subset_RP : RL enc ⊆ RP enc := by
   intro A h
-  obtain ⟨k, State, hfin, M, c, d, hM⟩ := exists_polyClock_of_mem_RL h
+  obtain ⟨k, State, hfin, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_RL h
   rw [← ofSet_mem_PromiseRP, mem_PromiseRP_iff_exists_isPPTOn]
   refine ⟨_, isPPTOn_runClosed_accepts M d, fun a ha => ?_, fun a ha => ?_⟩
-  · have h := Nat.cast_le (α := ℝ).mpr ((hM a).2.2.1 ha)
+  · have h := Nat.cast_le (α := ℝ).mpr ((herr a).1 ha)
     push_cast at h
-    rw [probability_runClosed_accepts M (hM a).2.1, le_div_iff₀ (by positivity)]
+    rw [probability_runClosed_accepts M (hM.runsInTime a), le_div_iff₀ (by positivity)]
     linarith
   · rw [ProbComp.eval_map, PMF.support_map]
     rintro ⟨w, hw, hwt⟩
     have hw' : w = [true] := by simpa using hwt
     subst hw'
-    rw [PMF.mem_support_iff, eval_runClosed_true M (hM a).2.1, (hM a).2.2.2 ha] at hw
+    rw [PMF.mem_support_iff, eval_runClosed_true M (hM.runsInTime a), (herr a).2 ha] at hw
     simp at hw
 
 /-- **Randomized logspace with two-sided error is within `BPP`**: the polynomial-clock run of a
 `BPL` machine is a probabilistic polynomial-time program with error at most `1/3`. -/
 theorem BPL_subset_BPP : BPL enc ⊆ BPP enc := by
   intro A h
-  obtain ⟨k, State, hfin, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
+  obtain ⟨k, State, hfin, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_BPL h
   rw [← ofSet_mem_PromiseBPP, mem_PromiseBPP_iff_exists_isPPTOn]
   refine ⟨_, isPPTOn_runClosed_accepts M d, fun a ha => ?_, fun a ha => ?_⟩
-  · have h := Nat.cast_le (α := ℝ).mpr ((hM a).2.2.1 ha)
+  · have h := Nat.cast_le (α := ℝ).mpr ((herr a).1 ha)
     push_cast at h
-    rw [probability_runClosed_accepts M (hM a).2.1, le_div_iff₀ (by positivity)]
+    rw [probability_runClosed_accepts M (hM.runsInTime a), le_div_iff₀ (by positivity)]
     linarith
-  · have h := Nat.cast_le (α := ℝ).mpr ((hM a).2.2.2 ha)
+  · have h := Nat.cast_le (α := ℝ).mpr ((herr a).2 ha)
     push_cast at h
-    rw [ProbComp.probability_not, probability_runClosed_accepts M (hM a).2.1]
-    have hle : (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) /
-        2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) ≤ 1 / 3 := by
+    rw [ProbComp.probability_not, probability_runClosed_accepts M (hM.runsInTime a)]
+    have hle : (M.acceptCoins (enc a) (polyClock d (enc a).length) : ℝ) /
+        2 ^ polyClock d (enc a).length ≤ 1 / 3 := by
       rw [div_le_iff₀ (by positivity)]
       linarith
     linarith

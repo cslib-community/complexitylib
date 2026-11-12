@@ -18,8 +18,10 @@ A nondeterministic machine whose computation paths all halt, and whose computati
 stay within space `s`, halts within as many steps as it has reachable views: at most
 `2 ^ (2 * coreLengthBound k State n s + 1)` on an input of length `n`
 (`Turing.MultiTapeNTM.runsInTime_of_runsInSpace`). Under a logarithmic space bound this is
-polynomial in `n` (`Turing.MultiTapeNTM.exists_runsInTime_polynomial_of_runsInSpace_log`), so for
-logarithmic-space machines "every branch halts" already gives a polynomial clock.
+polynomial in `n`: halting within `Turing.polyClock d n = 2 * (2 * (n + 1)) ^ d` steps for an
+exponent `d` depending only on the machine and the space constant
+(`Turing.MultiTapeNTM.exists_runsInTime_polynomial_of_runsInSpace_log`). So for logarithmic-space
+machines "every branch halts" already gives a polynomial clock.
 
 The argument is the classical one [Sipser, Section 8.4][Sipser2013]: the views along a
 computation path form a walk of views (`Turing.MultiTapeNTM.ViewRep.step`); a running path longer
@@ -190,11 +192,11 @@ theorem runsInTime_of_runsInSpace {s t : ℕ} (hs : ntm.RunsInSpace input s)
 /-- **Logarithmic space gives a polynomial clock.** For every space constant `c` there is an
 exponent `d` such that on every input of length `n`, if every computation path stays within space
 `c * (log₂ n + 1)` and every computation path halts within some time, then every computation path
-halts within `2 * (2 * (n + 1)) ^ d` steps. -/
+halts within `polyClock d n` steps. -/
 theorem exists_runsInTime_polynomial_of_runsInSpace_log (ntm : MultiTapeNTM k Bool State)
     (c : ℕ) : ∃ d, ∀ {input : List Bool} {t : ℕ},
       ntm.RunsInSpace input (c * (Nat.log2 input.length + 1)) → ntm.RunsInTime input t →
-        ntm.RunsInTime input (2 * (2 * (input.length + 1)) ^ d) :=
+        ntm.RunsInTime input (polyClock d input.length) :=
   ⟨_, fun hs ht =>
     (runsInTime_of_runsInSpace hs ht).mono (two_pow_coreLengthBound_log_le k State c _)⟩
 

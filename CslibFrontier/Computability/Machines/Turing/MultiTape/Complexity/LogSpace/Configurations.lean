@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import CslibFrontier.Foundations.Data.BitString.Enumeration
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.PolyClock
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Data.Nat.Size
@@ -41,7 +42,7 @@ views are reachable (`Turing.MultiTapeNTM.length_le_of_nodup_reachable`), polyno
 * `Turing.MultiTapeNTM.length_coreCode_le`: reachable views have short codes.
 * `Turing.MultiTapeNTM.length_le_of_nodup_reachable`: few distinct views are reachable.
 * `Turing.MultiTapeNTM.two_pow_coreLengthBound_log_le`: under a logarithmic space bound,
-  polynomially many.
+  at most `Turing.polyClock d n`.
 
 ## References
 
@@ -151,11 +152,11 @@ theorem length_le_of_nodup_reachable (hs : ntm.RunsInSpace input s)
 omit [Finite State] in
 /-- **Logarithmic space has polynomially many views**: under the space bound `c * (log₂ n + 1)`,
 the bound `2 ^ (2 * coreLengthBound k State n s + 1)` of
-`Turing.MultiTapeNTM.length_le_of_nodup_reachable` is at most `2 * (2 * (n + 1)) ^ d`, with an
-exponent `d` depending only on `k`, `State` and `c`. -/
+`Turing.MultiTapeNTM.length_le_of_nodup_reachable` is at most the polynomial clock
+`Turing.polyClock d n`, with an exponent `d` depending only on `k`, `State` and `c`. -/
 theorem two_pow_coreLengthBound_log_le (k : ℕ) (State : Type) (c n : ℕ) :
     2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1) ≤
-      2 * (2 * (n + 1)) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) := by
+      polyClock (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) n := by
   set K := 8 + 2 * Nat.card (Option State) + 200 * k
   have hcore :
       coreLengthBound k State n (c * (Nat.log2 n + 1)) = K * (c + 1) * (Nat.log2 n + 1) := by
@@ -165,7 +166,8 @@ theorem two_pow_coreLengthBound_log_le (k : ℕ) (State : Type) (c n : ℕ) :
       = 2 * (2 ^ (Nat.log2 n + 1)) ^ (2 * K * (c + 1)) := by
         rw [hcore, ← pow_mul, pow_succ]
         ring_nf
-    _ ≤ 2 * (2 * (n + 1)) ^ (2 * K * (c + 1)) := by
+    _ ≤ polyClock (2 * K * (c + 1)) n := by
+        unfold polyClock
         gcongr
         exact Nat.two_pow_log2_succ_le n
 
