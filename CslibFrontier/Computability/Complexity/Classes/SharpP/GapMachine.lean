@@ -38,7 +38,7 @@ The concrete verifier construction and native calculus credits are preserved in
 `MultiTape.Counting.Verifier`; the certified forward checker is in `Classes.SharpP.Machine`.
 -/
 
-@[expose] public section
+public section
 
 open Cslib Turing Turing.MultiTapeTM Turing.MultiTapeMachine Polynomial
 

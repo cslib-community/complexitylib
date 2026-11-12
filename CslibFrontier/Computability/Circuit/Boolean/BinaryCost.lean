@@ -153,21 +153,8 @@ theorem Program.card_biUnion_wireSupport_le_cost_binaryCost
 /-- A De Morgan circuit with `m` outputs has at most `m + c.program.cost binaryCost` supporting
 inputs, since only binary AND and OR gates increase the number of reachable inputs. -/
 theorem Circuit.card_inputSupport_le_cost_binaryCost (c : Circuit signature n m) :
-    c.inputSupport.card ≤ m + c.program.cost binaryCost := by
-  have hsub : c.inputSupport ⊆ (Finset.univ.image c.outputs).biUnion c.program.wireSupport := by
-    intro i hi
-    rw [Circuit.mem_inputSupport] at hi
-    obtain ⟨o, ho⟩ := hi
-    exact Finset.mem_biUnion.mpr ⟨c.outputs o, Finset.mem_image_of_mem _ (Finset.mem_univ o), ho⟩
-  have hfront : (Finset.univ.image c.outputs).card ≤ m := by
-    simpa using (Finset.card_image_le :
-      (Finset.univ.image c.outputs).card ≤ (Finset.univ : Finset (Fin m)).card)
-  calc c.inputSupport.card
-      ≤ ((Finset.univ.image c.outputs).biUnion c.program.wireSupport).card :=
-        Finset.card_le_card hsub
-    _ ≤ (Finset.univ.image c.outputs).card + c.program.cost binaryCost :=
-        c.program.card_biUnion_wireSupport_le_cost_binaryCost _
-    _ ≤ m + c.program.cost binaryCost := Nat.add_le_add_right hfront _
+    c.inputSupport.card ≤ m + c.program.cost binaryCost :=
+  c.card_inputSupport_le_cost binaryCost arity_le_one_add_binaryCost
 
 /-- If a De Morgan circuit computes `target` and every coordinate in `selected` is essential to
 `target`, then `selected.card ≤ m + c.program.cost binaryCost`. -/

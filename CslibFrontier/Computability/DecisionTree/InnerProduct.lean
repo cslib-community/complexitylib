@@ -49,7 +49,7 @@ and bounded-energy lower bounds for inner product.
   [ThresholdCircuitRepresentations2026]
 -/
 
-@[expose] public section
+public section
 
 open Cslib.BitString
 

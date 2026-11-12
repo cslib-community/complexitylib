@@ -223,21 +223,16 @@ theorem mem_queryLanguage_encodedMap_iff (hk : 0 < k) (φ : (language L').Senten
     let : Fact (2 ≤ a.1) := ⟨hn⟩
     let : Fact (2 ≤ (I.encodedMap v v' a).1) := ⟨I.two_le_card_encodedMap v v' hk ha hn⟩
     rw [mem_queryLanguage, mem_queryLanguage, I.wellFormed_encodedMap_iff]
+    let _ := v.decode a
+    let _ := I.modelStructure hk (n := a.1)
+    let _ := I.inputStructure (n := a.1)
+    let _ : Fact (2 ≤ a.1 ^ k) := ⟨two_le_pow (n := a.1) hk⟩
+    let _ := v'.decode (I.encodedMap v v' a)
     refine ⟨fun ⟨_, hφ⟩ => ⟨ha, ?_⟩, fun ⟨_, hφ⟩ => ⟨⟨ha, hn⟩, ?_⟩⟩
-    · let _ := v.decode a
-      let _ := I.modelStructure hk (n := a.1)
-      let _ := I.inputStructure (n := a.1)
-      let _ : Fact (2 ≤ a.1 ^ k) := ⟨two_le_pow (n := a.1) hk⟩
-      let _ := v'.decode (I.encodedMap v v' a)
-      rw [I.realize_onSentence hk φ, ← StrongHomClass.realize_sentence (I.modelEquiv hk) φ,
+    · rw [I.realize_onSentence hk φ, ← StrongHomClass.realize_sentence (I.modelEquiv hk) φ,
         StrongHomClass.realize_sentence (I.encodedModelEquiv v v' hk ha) φ]
       exact hφ
-    · let _ := v.decode a
-      let _ := I.modelStructure hk (n := a.1)
-      let _ := I.inputStructure (n := a.1)
-      let _ : Fact (2 ≤ a.1 ^ k) := ⟨two_le_pow (n := a.1) hk⟩
-      let _ := v'.decode (I.encodedMap v v' a)
-      rw [← StrongHomClass.realize_sentence (I.encodedModelEquiv v v' hk ha) φ,
+    · rw [← StrongHomClass.realize_sentence (I.encodedModelEquiv v v' hk ha) φ,
         StrongHomClass.realize_sentence (I.modelEquiv hk) φ, ← I.realize_onSentence hk φ]
       exact hφ
   · refine iff_of_false ?_ ?_

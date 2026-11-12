@@ -9,7 +9,9 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.HeapStatement
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Invariant
+import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.List.GetD
 
 /-!
 # Dijkstra's algorithm: the adjacency-list input words and edge-scan relaxation
@@ -74,18 +76,25 @@ private theorem offset_eq_length (u : ℕ) :
 private theorem length_edges : G.edges.length = G.m := by
   simp [edges, m, List.length_flatMap, ← Fin.sum_univ_def]
 
+private theorem edges_eq_append (u : Fin G.n) :
+    G.edges = ((List.finRange G.n).take u).flatMap G.adj ++
+      (G.adj u ++ ((List.finRange G.n).drop (u + 1)).flatMap G.adj) := by
+  have hu : (u : ℕ) < (List.finRange G.n).length := by simp
+  conv_lhs => rw [edges, ← List.take_append_drop u (List.finRange G.n),
+    List.drop_eq_getElem_cons hu]
+  simp [List.flatMap_append]
+
+private theorem offset_add_lt_length_edges (u : Fin G.n) {i : ℕ} (hi : i < (G.adj u).length) :
+    G.offset u + i < G.edges.length := by
+  rw [G.edges_eq_append u, List.length_append, List.length_append, ← offset_eq_length]
+  omega
+
 /-- Edge `offset u + i` of the edge list is edge `i` out of `u`. -/
 private theorem edges_getElem (u : Fin G.n) {i : ℕ} (hi : i < (G.adj u).length) :
-    G.edges[G.offset u + i]? = some (G.adj u)[i] := by
-  have hu : (u : ℕ) < (List.finRange G.n).length := by simp
-  have hs : List.finRange G.n = (List.finRange G.n).take u ++
-      (u :: (List.finRange G.n).drop (u + 1)) := by
-    conv_lhs => rw [← List.take_append_drop u (List.finRange G.n)]
-    rw [List.drop_eq_getElem_cons hu]
-    simp
-  rw [edges, hs, List.flatMap_append, List.flatMap_cons, offset_eq_length,
-    List.getElem?_append_right (by omega), Nat.add_sub_cancel_left,
-    List.getElem?_append_left hi, List.getElem?_eq_getElem hi]
+    G.edges[G.offset u + i]'(G.offset_add_lt_length_edges u hi) = (G.adj u)[i] := by
+  simp only [G.edges_eq_append u, G.offset_eq_length u,
+    List.getElem_append_right (Nat.le_add_right _ _), Nat.add_sub_cancel_left,
+    List.getElem_append_left hi]
 
 /-- Word `2 j + k` of the edge words, for `k < 2`, is word `k` of edge `j`. -/
 private theorem getD_flatMap_pairs (l : List (Fin G.n × ℕ)) (j : ℕ) (hj : j < l.length) :
@@ -99,7 +108,8 @@ private theorem getD_flatMap_pairs (l : List (Fin G.n × ℕ)) (j : ℕ) (hj : j
     | succ j =>
       have h := ih j (by simpa using hj)
       rw [show 2 * (j + 1) = 2 * j + 2 by ring, show 2 * j + 2 + 1 = 2 * j + 1 + 2 by ring]
-      simpa [List.getD_eq_getElem?_getD] using h
+      simpa only [List.flatMap_cons, List.cons_append, List.nil_append, List.getD_cons_succ,
+        List.getElem_cons_succ] using h
 
 /-- The edge words are the edge list, two words per edge. -/
 private theorem edgeWords_eq : ((List.finRange G.n).flatMap fun u =>
@@ -112,8 +122,8 @@ private theorem encode_getD_edge (k : ℕ) :
     G.encode.getD (k + G.n + 3) 0 =
       (G.edges.flatMap fun e => [(e.1 : ℕ), e.2]).getD k 0 := by
   rw [encode, show k + G.n + 3 = (k + G.n + 1) + 1 + 1 by ring,
-    List.getD_cons_succ, List.getD_cons_succ, edgeWords_eq, List.getD_eq_getElem?_getD,
-    List.getElem?_append_right (by simp), List.getD_eq_getElem?_getD]
+    List.getD_cons_succ, List.getD_cons_succ, edgeWords_eq,
+    List.getD_append_right _ _ _ _ (by simp)]
   simp
 
 /-- The input has `n + 2 m + 3` words. -/
@@ -155,31 +165,28 @@ theorem init_source : (Data.init G.encode : Data r).mem 2 = G.source := rfl
 theorem init_offset {u : ℕ} (hu : u ≤ G.n) :
     (Data.init G.encode : Data r).mem (u + 3) = G.offset u := by
   rw [Data.init_mem_succ, encode, List.getD_cons_succ, List.getD_cons_succ,
-    List.getD_eq_getElem?_getD, List.getElem?_append_left (by simp; omega)]
-  simp [Nat.lt_succ_of_le hu]
+    List.getD_append _ _ _ _ (by simp; omega), List.getD_map_range _ _ (Nat.lt_succ_of_le hu)]
 
 /-- The target of edge `i` out of `u` is initially at address `2 (offset u + i) + n + 4`. -/
 theorem init_target (u : Fin G.n) {i : ℕ} (hi : i < (G.adj u).length) :
     (Data.init G.encode : Data r).mem (2 * (G.offset u + i) + G.n + 4) = ((G.adj u)[i].1 : ℕ) := by
   rw [show 2 * (G.offset u + i) + G.n + 4 = 2 * (G.offset u + i) + G.n + 3 + 1 by ring,
-    Data.init_mem_succ, encode_getD_edge]
-  obtain ⟨hl, he⟩ := List.getElem?_eq_some_iff.mp (G.edges_getElem u hi)
-  rw [(G.getD_flatMap_pairs _ _ hl).1, he]
+    Data.init_mem_succ, encode_getD_edge,
+    (G.getD_flatMap_pairs _ _ (G.offset_add_lt_length_edges u hi)).1, G.edges_getElem u hi]
 
 /-- The weight of edge `i` out of `u` is initially at address `2 (offset u + i) + n + 5`. -/
 theorem init_weight (u : Fin G.n) {i : ℕ} (hi : i < (G.adj u).length) :
     (Data.init G.encode : Data r).mem (2 * (G.offset u + i) + G.n + 5) = (G.adj u)[i].2 := by
   rw [show 2 * (G.offset u + i) + G.n + 5 = (2 * (G.offset u + i) + 1) + G.n + 3 + 1 by ring,
-    Data.init_mem_succ, encode_getD_edge]
-  obtain ⟨hl, he⟩ := List.getElem?_eq_some_iff.mp (G.edges_getElem u hi)
-  rw [(G.getD_flatMap_pairs _ _ hl).2, he]
+    Data.init_mem_succ, encode_getD_edge,
+    (G.getD_flatMap_pairs _ _ (G.offset_add_lt_length_edges u hi)).2, G.edges_getElem u hi]
 
 /-- Memory past the input is initially `0`. -/
 theorem init_past {a : ℕ} (ha : G.dbase ≤ a) : (Data.init G.encode : Data r).mem a = 0 := by
   have hz : a ≠ 0 := by unfold dbase at ha; omega
   have hl : G.encode.length ≤ a - 1 := by rw [encode_length]; unfold dbase at ha; omega
   obtain ⟨a, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hz
-  simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by simpa using hl)]
+  rw [Data.init_mem_succ, List.getD_eq_default _ _ (by simpa using hl)]
 
 /-- Every edge weight is at most the largest weight. -/
 theorem le_maxWeight {u : Fin G.n} {e : Fin G.n × ℕ} (he : e ∈ G.adj u) : e.2 ≤ G.maxWeight := by

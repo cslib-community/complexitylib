@@ -298,8 +298,7 @@ theorem map_val_entry_child_inr [DecidableEq V] {T : Type} {ev : T → List Bool
   rw [child_tensor_inr_cauchyModeSplitting side hsrc htgt horient hslot hia κ _ hp ht hti hti' β
     g q y hrows hrows' hcols hcols', sidePorts_map, sidePorts_map, filter_isLeft_map,
     filter_isLeft_false_map, hζ, he₁, he₂, hdiffer]
-  congr 1
-  funext Z
+  congr 1 with Z : 1
   exact hβ Z
 
 end Cauchy

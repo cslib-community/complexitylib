@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Data.Polynomial.CoeffNorm1
+import CslibFrontier.Foundations.Data.Polynomial.CoeffSumBounds
 import Mathlib.Data.Finset.Sum
 
 /-!
@@ -77,103 +78,39 @@ theorem coeffNorm1_coeff_le_bivariateCoeffNorm1 (P : Polynomial (Polynomial ℤ)
 /-- If `P.support ⊆ S`, then `P.bivariateCoeffNorm1 = ∑ s ∈ S, (P.coeff s).coeffNorm1`. -/
 theorem bivariateCoeffNorm1_eq_sum_of_support_subset {P : Polynomial (Polynomial ℤ)}
     {S : Finset ℕ} (hS : P.support ⊆ S) :
-    P.bivariateCoeffNorm1 = ∑ s ∈ S, (P.coeff s).coeffNorm1 := by
-  rw [bivariateCoeffNorm1]
-  refine sum_subset hS fun s _ hs => ?_
-  rw [notMem_support_iff.mp hs, coeffNorm1_zero]
+    P.bivariateCoeffNorm1 = ∑ s ∈ S, (P.coeff s).coeffNorm1 :=
+  sum_eq_of_subset _ (fun _ => coeffNorm1_zero) hS
 
 /-- Triangle inequality for `bivariateCoeffNorm1`. -/
 theorem bivariateCoeffNorm1_add_le (P Q : Polynomial (Polynomial ℤ)) :
-    (P + Q).bivariateCoeffNorm1 ≤ P.bivariateCoeffNorm1 + Q.bivariateCoeffNorm1 := by
-  classical
-  let S := P.support ∪ Q.support
-  have hPQ : (P + Q).support ⊆ S := support_add
-  have hP : P.support ⊆ S := subset_union_left
-  have hQ : Q.support ⊆ S := subset_union_right
-  rw [bivariateCoeffNorm1_eq_sum_of_support_subset hPQ,
-    bivariateCoeffNorm1_eq_sum_of_support_subset hP,
-    bivariateCoeffNorm1_eq_sum_of_support_subset hQ, ← sum_add_distrib]
-  refine sum_le_sum fun s _ => ?_
-  rw [coeff_add]
-  exact coeffNorm1_add_le _ _
+    (P + Q).bivariateCoeffNorm1 ≤ P.bivariateCoeffNorm1 + Q.bivariateCoeffNorm1 :=
+  sum_add_le_of_subadditive coeffNorm1_zero coeffNorm1_add_le P Q
 
 /-- Finite-sum triangle inequality for `bivariateCoeffNorm1`. -/
 theorem bivariateCoeffNorm1_sum_le {α : Type*} (s : Finset α)
     (f : α → Polynomial (Polynomial ℤ)) :
-    (∑ a ∈ s, f a).bivariateCoeffNorm1 ≤ ∑ a ∈ s, (f a).bivariateCoeffNorm1 := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-    simp only [sum_empty, bivariateCoeffNorm1_zero, le_rfl]
-  | insert a s ha ih =>
-    rw [sum_insert ha, sum_insert ha]
-    exact (bivariateCoeffNorm1_add_le _ _).trans (Nat.add_le_add_left ih _)
+    (∑ a ∈ s, f a).bivariateCoeffNorm1 ≤ ∑ a ∈ s, (f a).bivariateCoeffNorm1 :=
+  le_sum_of_subadditive bivariateCoeffNorm1 bivariateCoeffNorm1_zero.le bivariateCoeffNorm1_add_le
+    s f
+
+/-- `bivariateCoeffNorm1` is submultiplicative on `Polynomial (Polynomial ℤ)`. -/
+theorem bivariateCoeffNorm1_mul_le (P Q : Polynomial (Polynomial ℤ)) :
+    (P * Q).bivariateCoeffNorm1 ≤ P.bivariateCoeffNorm1 * Q.bivariateCoeffNorm1 :=
+  sum_mul_le_of_submultiplicative coeffNorm1_zero coeffNorm1_add_le coeffNorm1_mul_le P Q
 
 /-- Multiplying by `C c` (`c : Polynomial ℤ`) scales `bivariateCoeffNorm1` by at most
 `c.coeffNorm1`. -/
 theorem bivariateCoeffNorm1_C_mul_le (c : Polynomial ℤ) (P : Polynomial (Polynomial ℤ)) :
-    (C c * P).bivariateCoeffNorm1 ≤ c.coeffNorm1 * P.bivariateCoeffNorm1 := by
-  have hsub : (C c * P).support ⊆ P.support := by
-    intro s hs
-    rw [mem_support_iff, coeff_C_mul] at hs
-    exact mem_support_iff.mpr (right_ne_zero_of_mul hs)
-  calc
-    (C c * P).bivariateCoeffNorm1
-      ≤ ∑ s ∈ P.support, ((C c * P).coeff s).coeffNorm1 :=
-        sum_le_sum_of_subset hsub
-    _ ≤ ∑ s ∈ P.support, c.coeffNorm1 * (P.coeff s).coeffNorm1 := by
-        refine sum_le_sum fun s _ => ?_
-        rw [coeff_C_mul]
-        exact coeffNorm1_mul_le _ _
-    _ = c.coeffNorm1 * P.bivariateCoeffNorm1 := by
-        rw [bivariateCoeffNorm1, mul_sum]
+    (C c * P).bivariateCoeffNorm1 ≤ c.coeffNorm1 * P.bivariateCoeffNorm1 :=
+  bivariateCoeffNorm1_C c ▸ bivariateCoeffNorm1_mul_le (C c) P
 
 /-- Multiplying by `X ^ k` does not increase `bivariateCoeffNorm1`. -/
 theorem bivariateCoeffNorm1_mul_X_pow_le (P : Polynomial (Polynomial ℤ)) (k : ℕ) :
     (P * X ^ k).bivariateCoeffNorm1 ≤ P.bivariateCoeffNorm1 := by
-  rw [bivariateCoeffNorm1]
-  have hsub :
-      (P * X ^ k).support ⊆
-        P.support.map ⟨fun i => i + k, add_left_injective k⟩ := by
-    intro i hi
-    rw [mem_support_iff] at hi
-    rw [mem_map]
-    by_cases hik : k ≤ i
-    · refine ⟨i - k, ?_, by simp only [Function.Embedding.coeFn_mk]; omega⟩
-      rw [mem_support_iff]
-      intro h0
-      apply hi
-      have hi_eq : i = i - k + k := (Nat.sub_add_cancel hik).symm
-      rw [hi_eq, coeff_mul_X_pow, h0]
-    · exfalso
-      apply hi
-      rw [mul_comm, coeff_X_pow_mul']
-      simp only [hik, ↓reduceIte]
-  refine (sum_le_sum_of_subset hsub).trans ?_
-  rw [sum_map]
-  refine le_of_eq (sum_congr rfl fun i _ => ?_)
-  simp only [Function.Embedding.coeFn_mk, coeff_mul_X_pow]
-
-/-- `bivariateCoeffNorm1` is submultiplicative on `Polynomial (Polynomial ℤ)`. -/
-theorem bivariateCoeffNorm1_mul_le (P Q : Polynomial (Polynomial ℤ)) :
-    (P * Q).bivariateCoeffNorm1 ≤ P.bivariateCoeffNorm1 * Q.bivariateCoeffNorm1 := by
-  have hdecomp : P * Q = ∑ i ∈ P.support, C (P.coeff i) * (Q * X ^ i) := by
-    conv_lhs => rw [P.as_sum_support_C_mul_X_pow]
-    rw [sum_mul]
-    refine sum_congr rfl fun i _ => ?_
-    ring
-  rw [hdecomp]
-  calc
-    (∑ i ∈ P.support, C (P.coeff i) * (Q * X ^ i)).bivariateCoeffNorm1
-      ≤ ∑ i ∈ P.support,
-          (C (P.coeff i) * (Q * X ^ i)).bivariateCoeffNorm1 :=
-        bivariateCoeffNorm1_sum_le _ _
-    _ ≤ ∑ i ∈ P.support, (P.coeff i).coeffNorm1 * Q.bivariateCoeffNorm1 := by
-        refine sum_le_sum fun i _ => ?_
-        exact (bivariateCoeffNorm1_C_mul_le (P.coeff i) _).trans
-          (Nat.mul_le_mul_left _ (bivariateCoeffNorm1_mul_X_pow_le Q i))
-    _ = P.bivariateCoeffNorm1 * Q.bivariateCoeffNorm1 := by
-        rw [← sum_mul, ← bivariateCoeffNorm1]
+  have hX : (X ^ k : Polynomial (Polynomial ℤ)).bivariateCoeffNorm1 = 1 := by
+    rw [X_pow_eq_monomial, bivariateCoeffNorm1, support_monomial k one_ne_zero, sum_singleton,
+      coeff_monomial_same, coeffNorm1_one]
+  simpa only [hX, mul_one] using bivariateCoeffNorm1_mul_le P (X ^ k)
 
 /-- `bivariateCoeffNorm1` of a power is at most the power of `bivariateCoeffNorm1`. -/
 theorem bivariateCoeffNorm1_pow_le (P : Polynomial (Polynomial ℤ)) (n : ℕ) :
@@ -189,13 +126,8 @@ theorem bivariateCoeffNorm1_pow_le (P : Polynomial (Polynomial ℤ)) (n : ℕ) :
 `bivariateCoeffNorm1`s. -/
 theorem bivariateCoeffNorm1_prod_le {κ : Type*} (I : Finset κ)
     (F : κ → Polynomial (Polynomial ℤ)) :
-    (∏ i ∈ I, F i).bivariateCoeffNorm1 ≤ ∏ i ∈ I, (F i).bivariateCoeffNorm1 := by
-  classical
-  induction I using Finset.induction_on with
-  | empty =>
-    simp only [prod_empty, bivariateCoeffNorm1_one, le_rfl]
-  | insert a I ha ih =>
-    rw [prod_insert ha, prod_insert ha]
-    exact (bivariateCoeffNorm1_mul_le _ _).trans (Nat.mul_le_mul_left _ ih)
+    (∏ i ∈ I, F i).bivariateCoeffNorm1 ≤ ∏ i ∈ I, (F i).bivariateCoeffNorm1 :=
+  le_prod_of_submultiplicative bivariateCoeffNorm1 bivariateCoeffNorm1_one.le
+    bivariateCoeffNorm1_mul_le I F
 
 end Polynomial

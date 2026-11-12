@@ -75,7 +75,11 @@ def forestTrace (f : α → α) (x : α) (k : ℕ) : List α :=
     y ∈ forestTrace f x k ↔ ∃ i < k, f^[i] x = y := by
   simpa only [forestTrace, eq_comm] using List.mem_iterate (f := f) (a := x) (n := k) (b := y)
 
-variable [Finite α] (f : α → α)
+variable (f : α → α)
+
+section
+
+variable [Finite α]
 
 /-- The path from cycle entry to `x`, with the forest edges read backwards. -/
 noncomputable def forestPath (x : α) : List α :=
@@ -139,6 +143,8 @@ theorem forestPath_prefix (x y : α) :
   · rintro ⟨t, ht, rfl⟩
     exact forestPath_iterate_prefix f x ht
 
+end
+
 section Labels
 
 variable [Fintype α] [LinearOrder α]
@@ -197,7 +203,7 @@ theorem forest_interval_spec (x y : α) :
 end Labels
 
 /-- Interval labels exist over every finite universe, without an input order. -/
-theorem exists_forest_intervals : ∃ low high : α → Fin (Nat.card α),
+theorem exists_forest_intervals [Finite α] : ∃ low high : α → Fin (Nat.card α),
     ∀ x y, (low y ≤ low x ∧ low x ≤ high y) ↔
       ∃ t ≤ transientDepth f x, f^[t] x = y := by
   classical

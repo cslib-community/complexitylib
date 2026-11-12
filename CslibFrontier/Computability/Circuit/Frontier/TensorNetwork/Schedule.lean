@@ -614,10 +614,7 @@ theorem exists_activeBounds (C : ℕ) : ∃ s₀, ∀ s, s₀ ≤ s →
     exact this.trans (Nat.zero_le _)
   obtain ⟨n₀, hn₀⟩ := eventually_atTop.1 (eventually_large C hC)
   refine ⟨2 ^ n₀, fun s hs => ?_⟩
-  have hs0 : s ≠ 0 := by
-    rintro rfl
-    have := Nat.one_le_two_pow (n := n₀)
-    omega
+  have hs0 : s ≠ 0 := by grind
   obtain ⟨h200, hA1, hA2, hA3, hA5⟩ := hn₀ (Nat.log 2 s) (Nat.le_log_of_pow_le one_lt_two hs)
   simp only [pow_one] at hA2 hA3
   exact ⟨fun d hd => precisionBound_le_sq_of hd hs0 hA5,
@@ -680,9 +677,7 @@ theorem card_modeBudget_le {C s d M p : ℕ} (hA : Active C s d M p) (hs : 2 ≤
         _ = 34 * M * (m * 2 ^ (a - i)) := by ring
         _ ≤ 34 * M * (6 * M) := Nat.mul_le_mul_left _ hmD
         _ = 204 * M ^ 2 := by ring
-    have h3 : (x * y) ^ 2 ≤ (15 * M) ^ 2 := by
-      rw [mul_pow (15 : ℕ)]
-      omega
+    have h3 : (x * y) ^ 2 ≤ (15 * M) ^ 2 := by grind
     exact (Nat.pow_le_pow_iff_left (by norm_num)).1 h3
   have hσ : σ ≤ 2 ^ (10 + d) * y := sqrt_log_two_le_mul_sqrt_taper hu
   have hσ1 : 1 ≤ σ := Nat.one_le_sqrt_log_two hs

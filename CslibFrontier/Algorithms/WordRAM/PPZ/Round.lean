@@ -99,7 +99,7 @@ namespace Cslib.Algorithms.WordRAM.PPZ
 
 open Cslib.WordRAM Cslib.WordRAM.Block Cslib.Logic.PL Cslib.Complexity.PPZ
 open Cslib.Algorithms.WordRAM.Schoening (encodeClauses encode AssignAt assignmentAt
-  assignmentAt_eq assignAt_assignmentAt length_encode ScanResult firstUnsat_eq_none_iff)
+  assignmentAt_eq assignAt_assignmentAt holdsList_encodeClauses_init length_encode ScanResult)
 
 variable {n : ℕ}
 
@@ -316,22 +316,6 @@ structure LoopState (φ : CNF (Fin n)) (C Tb : ℕ) (M : ℕ → ℕ) (i : ℕ) 
   order : ∀ t : Fin d, x.mem (Tb + n + i + t) = g t
   cover : ∀ v, τ v = none → ∃ t, g t = v
 
-/-- A uniform draw from `[0, m]` observed through its value only depends on `m`. -/
-private theorem uniform_map_val_congr {α : Type*} {m m' : ℕ} (h : m = m') (F : ℕ → α) :
-    (Probability.PMF.uniformOfFintype (Fin (m + 1))).map (fun k => F k.val) =
-      (Probability.PMF.uniformOfFintype (Fin (m' + 1))).map (fun k => F k.val) := by
-  subst h
-  rfl
-
-/-- A uniform draw from `{0, 1}` is a uniform bit. -/
-private theorem uniform_two_map_bit :
-    (Probability.PMF.uniformOfFintype (Fin (1 + 1))).map (fun k => decide (k.val = 1)) =
-      Probability.PMF.uniformOfFintype Bool := by
-  have h := Probability.PMF.uniformOfFintype_map_equiv finTwoEquiv
-  convert h using 2
-  funext k
-  fin_cases k <;> rfl
-
 /-- The swapped order array: after `P[i]` and `P[i + k]` are swapped, position `i + t` holds
 `g (swap 0 k t)`. -/
 private theorem swap_order {m : ℕ} (g : Fin (m + 1) → Fin n) (k : Fin (m + 1)) (mem : ℕ → ℕ)
@@ -531,11 +515,10 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
             rcases (show k₂.val = 0 ∨ k₂.val = 1 by omega) with h | h <;> simp [h]⟩)
         refine ((ExecRandLaw.branch_pos (neg := ram[ res ← res ]) hc hr).congr_law ?_).mono
           (fun _ h => h) (by omega) le_rfl
-        rw [stepWith_of_eq_none hfo, uniform_map_val_congr hfz.one_eq
-          (fun v => F (z.set res v)), ← uniform_two_map_bit, PMF.map_comp]
-        congr 1
-        funext k₂
-        simp +decide [F, hjz]
+        rw [stepWith_of_eq_none hfo, hfz.one_eq,
+          ← Probability.PMF.uniformOfFintype_map_equiv finTwoEquiv, PMF.map_comp]
+        congr 1 with k₂ : 1
+        fin_cases k₂ <;> simp +decide [F, hjz]
       · rw [hfo] at hzr
         have hc : ¬(Cond.eq res two).Holds z := by
           cases b <;> simp [Cond.holds_eq, hzr, hfz.two_eq, optCode]
@@ -558,9 +541,8 @@ theorem roundBodyWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
   have hall := ExecRandLaw.seq_det h₁ (ExecRandLaw.seq_det h₂ (ExecRandLaw.seq hrand hrest))
   refine (hall.congr_law ?_).mono (fun _ h => h) (by omega) le_rfl
   simp only [Data.set_regs, Function.update_self]
-  rw [uniform_map_val_congr hx₂j (fun v => v), PMF.bind_map]
-  congr 1
-  funext p
+  rw [hx₂j, PMF.bind_map]
+  congr 1 with p : 1
   simp only [Function.comp_apply, κ, p.isLt, ↓reduceDIte]
 
 /-- **One step of a round of PPZ** draws the position `p` uniformly from the `m + 1` unprocessed
@@ -625,11 +607,9 @@ theorem roundLoopWith_law {φ : CNF (Fin n)} {C Tb w T : ℕ} {M : ℕ → ℕ}
     have hT' := Nat.add_mul m 1 (T + 18)
     refine (h.congr_law ?_).mono (fun _ h => h) (by omega) (by omega)
     rw [PMF.bind_bind]
-    congr 1
-    funext p
+    congr 1 with p : 1
     rw [PMF.bind_map]
-    congr 1
-    funext b
+    congr 1 with b : 1
     simp only [Function.comp_apply, κ, p.isLt, ↓reduceDIte]
 
 /-- **The steps of a round of PPZ** from step `i`, with the unprocessed variables
@@ -738,22 +718,7 @@ theorem roundCheck_exec {φ : CNF (Fin n)} {C Tb w : ℕ} {M : ℕ → ℕ} (hw 
         hx.tBase_eq]; exact hw)
       (by simp only [Data.comap_regs]; rw [show embed Schoening.Reg.aBase = tBase by decide,
         hx.tBase_eq]; omega))
-  have hfnd : y₁.regs sFound = if φ.eval σ then 0 else 1 := by
-    unfold ScanResult at hr₀
-    simp only [Data.comap_regs, show embed Schoening.Reg.found = sFound from rfl] at hr₀
-    rcases hfu : Cslib.Complexity.Schoening.firstUnsat φ σ with _ | c
-    · simp only [hfu] at hr₀
-      rw [hr₀]
-      simp [(firstUnsat_eq_none_iff _ _).mp hfu]
-    · simp only [hfu] at hr₀
-      have : φ.eval σ = false := by
-        rcases h : φ.eval σ
-        · rfl
-        · rw [← firstUnsat_eq_none_iff] at h
-          rw [h] at hfu
-          cases hfu
-      rw [hr₀.1, this]
-      rfl
+  have hfnd : y₁.regs sFound = if φ.eval σ then 0 else 1 := hr₀.found_eq
   have hm₁ : y₁.mem = x.mem := hm₀
   have hf₁ : RoundFrame φ C Tb M y₁ := hx.of_execWithin (by decide) hrun fun a _ => by rw [hm₁]
   have hfo : Fits w (1 - y₁.regs sFound) := hw.of_le (by omega)
@@ -808,12 +773,9 @@ theorem roundSetup_exec (φ : CNF (Fin n)) {w : ℕ} (hw : Fits w ((encode φ).l
     refine ⟨by simp +decide [roundSetupData], by simp +decide [roundSetupData],
       by simp +decide [roundSetupData], by simp +decide [roundSetupData],
       by simp +decide [roundSetupData], by simp +decide [roundSetupData],
-      by simp +decide [roundSetupData], by simp +decide [roundSetupData], ?_, ?_, fun _ _ => rfl⟩
-    · intro i
-      change (Data.init (encode φ) : Data 32).mem (2 + i.val) = (encodeClauses φ)[i.val]
-      rw [show 2 + i.val = (1 + i.val) + 1 by omega, Data.init_mem_succ]
-      simp [encode, Nat.add_comm 1 i.val]
-    · simp [length_encode]; omega
+      by simp +decide [roundSetupData], by simp +decide [roundSetupData],
+      holdsList_encodeClauses_init (r := 32) φ, ?_, fun _ _ => rfl⟩
+    simp [length_encode]; omega
 
 /-- **One round of PPZ on the randomized word RAM.** On the input `encode φ` of length `L`, at any
 word size `w` with `L + 2 n + 1 < 2 ^ w`, the program

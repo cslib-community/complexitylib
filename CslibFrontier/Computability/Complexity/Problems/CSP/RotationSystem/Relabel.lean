@@ -49,7 +49,9 @@ theorem numVars_relabel_of_injOn (F : CSP Rel V) (f : V → W)
 omit [DecidableEq V] [DecidableEq W] in
 /-- Variable renaming preserves the complete positional occurrence table. -/
 theorem occurrences_relabel (F : CSP Rel V) (f : V → W) :
-    (F.relabel f).occurrences = F.occurrences.map (fun o => (o.1, o.2.1, f o.2.2)) := by
+    (F.relabel f).occurrences = F.occurrences.map
+      (fun (constraintIndex, argumentIndex, variableName) =>
+        (constraintIndex, argumentIndex, f variableName)) := by
   simp only [occurrences, varCNF_relabel, Cslib.Logic.PL.occurrences_relabel,
     List.map_map, Function.comp_def]
 

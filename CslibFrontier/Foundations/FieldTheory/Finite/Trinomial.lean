@@ -100,12 +100,6 @@ theorem natDegree_trinomial (t : ℕ) : (trinomial t).natDegree = 2 * 3 ^ t := b
   rw [trinomial_eq_cyclotomic, natDegree_cyclotomic,
     Nat.totient_prime_pow Nat.prime_three (Nat.succ_pos t), Nat.succ_sub_one, mul_comm]
 
-/-- In `(ZMod 2)[X]`, any polynomial added to itself vanishes. -/
-private theorem zmod2_poly_add_self (p : (ZMod 2)[X]) : p + p = 0 := by
-  ext i
-  rw [coeff_add, coeff_zero]
-  exact (by decide : ∀ c : ZMod 2, c + c = 0) (p.coeff i)
-
 /-- Over `ZMod 2`, multiplying `trinomial t` by `X ^ (3 ^ t) + 1` yields `X ^ (3 ^ (t + 1)) + 1`. -/
 theorem mul_trinomial_eq (t : ℕ) :
     (X ^ (3 ^ t) + 1) * trinomial t = X ^ (3 ^ (t + 1)) + 1 := by
@@ -123,7 +117,7 @@ theorem mul_trinomial_eq (t : ℕ) :
       _ = (X ^ (3 * 3 ^ t) + 1) +
             ((X ^ (2 * 3 ^ t) + X ^ (3 ^ t)) + (X ^ (2 * 3 ^ t) + X ^ (3 ^ t))) := by
         rw [hpow2, hpow3]; ring
-  rw [h1, zmod2_poly_add_self, add_zero, pow_succ', mul_comm 3 (3 ^ t)]
+  rw [h1, CharTwo.add_self_eq_zero, add_zero, pow_succ', mul_comm 3 (3 ^ t)]
 
 /-- In `ZMod 3`, `2 ^ (3 ^ t) = 2` for every `t : ℕ`. -/
 private theorem zmod3_two_pow_three_pow (t : ℕ) : (2 : ZMod 3) ^ (3 ^ t) = 2 := by
@@ -195,13 +189,8 @@ theorem polyOfCode_eq_C_add_X_mul (m : ℕ) :
 /-- Helper characterizing `(m : ZMod 2)` from `m % 2`. -/
 private theorem natCast_zmod_two_eq (m : ℕ) :
     (m : ZMod 2) = if m % 2 = 1 then 1 else 0 := by
-  rcases Nat.mod_two_eq_zero_or_one m with h0 | h1
-  · have hm : (m : ZMod 2) = 0 := (ZMod.natCast_eq_zero_iff m 2).mpr (Nat.dvd_of_mod_eq_zero h0)
-    simp [h0, hm]
-  · have hm : (m : ZMod 2) = 1 := by
-      rw [← Nat.div_add_mod m 2, h1, Nat.cast_add, Nat.cast_mul, ZMod.natCast_self,
-        zero_mul, zero_add, Nat.cast_one]
-    simp [h1, hm]
+  rw [← ZMod.natCast_mod]
+  rcases Nat.mod_two_eq_zero_or_one m with h | h <;> simp [h]
 
 /-- Coefficient `i` of `polyOfCode m` is bit `i` of `m` read in `ZMod 2`. -/
 theorem coeff_polyOfCode (m i : ℕ) :
@@ -514,7 +503,7 @@ theorem mk_polyOfCode_reduceTrinomialCode (t c : ℕ) :
             ((P2 + Xr * P2 + P3 + Xr * P3 + Xr * Xr * P3) +
               (P2 + Xr * P2 + P3 + Xr * P3 + Xr * Xr * P3)) := by
       ring
-    rw [htri, ← hrr, halg, zmod2_poly_add_self, add_zero]
+    rw [htri, ← hrr, halg, CharTwo.add_self_eq_zero, add_zero]
   rw [hdiff, map_add, map_mul, AdjoinRoot.mk_self, mul_zero, add_zero]
 
 /-! ## The explicit trinomial field `TrinomialField t` -/

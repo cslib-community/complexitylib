@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.HardCore
 public import CslibFrontier.Foundations.Data.BitString.Block
 public import CslibFrontier.Foundations.Data.BitString.Parity
 import CslibFrontier.Foundations.Data.BitString.Basic
-import CslibFrontier.Computability.Circuit.Boolean.Substitution
+import CslibFrontier.Computability.Circuit.Boolean.Combinators
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.BigOperators
@@ -36,7 +36,7 @@ by induction on the remaining blocks. This purely combinatorial step holds for a
 whose single-block restrictions are hard on `M`, over any finite set of inputs
 (`card_eq_sum_le`): the agreement is at most `(1 / 2 + ε) N ^ k + (1 / 2 - ε) (N - μ) ^ k` for `N`
 inputs and a measure of mass `μ`. Fixing all blocks but one costs two gates for the constants
-(`Cslib.Circuits.Boolean.complexity_substitute_le`) and complementing costs one, so a hard-core
+(`Cslib.Circuits.Boolean.complexity_single_block_le`) and complementing costs one, so a hard-core
 measure against size `s + 3` controls all circuits of size `s` (`card_eq_xorPower_div_le`).
 
 Everything is nonuniform, over De Morgan circuits with sizes as in `Cslib.Circuits.complexity`.
@@ -165,20 +165,9 @@ theorem IsHardCoreMeasure.card_eq_xorPower_div_le {f : BooleanFunction n} {s : �
   have hG (i : Fin k) (t : Fin k → BitString n) (b : Bool) :
       ∑ y with (G (update t i y) ^^ b) = f y, M y ≤ (1 / 2 + ε) * ∑ y, M y := by
     refine hM.sum_agree_le _ ?_
-    let ρ : Fin (k * n) → Fin n ⊕ Bool := fun p =>
-      if (finProdFinEquiv.symm p).1 = i then .inl (finProdFinEquiv.symm p).2
-      else .inr (t (finProdFinEquiv.symm p).1 (finProdFinEquiv.symm p).2)
-    have hρ (y : BitString n) : BitString.blocksEquiv.symm (update t i y) = substitute ρ y := by
-      funext p
-      simp only [BitString.blocksEquiv_symm_apply, substitute, ρ]
-      split_ifs with h
-      · rw [h, update_self]
-        rfl
-      · rw [update_of_ne h]
-        rfl
     have hrestrict : complexity interpretation (single fun y => G (update t i y)) ≤ s + 2 := by
-      simp only [G, hρ]
-      exact (complexity_substitute_le ρ g).trans (by omega)
+      refine (complexity_single_block_le G t i).trans (Nat.add_le_add_right ?_ 2)
+      simpa only [G, BitString.blocksEquiv_symm_block] using hg
     cases b
     · simpa only [Bool.xor_false] using hrestrict.trans (Nat.le_succ _)
     · simpa only [Bool.xor_true] using

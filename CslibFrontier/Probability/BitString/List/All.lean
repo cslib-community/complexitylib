@@ -22,7 +22,7 @@ row therefore multiplies the individual acceptance probabilities, including zero
   fixed-width Boolean checks.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

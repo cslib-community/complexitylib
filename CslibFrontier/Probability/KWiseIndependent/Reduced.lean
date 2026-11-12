@@ -188,7 +188,8 @@ theorem card_not_injOn_multiplyShiftReduced_le {U w₀ R : ℕ} (hw₀ : 0 < w�
     (S : Finset (Fin U)) :
     #(univ \ reducedGoodTop U w₀ R S) * 2 ^ R ≤ (#S * (#S - 1)) * 2 ^ (w₀ - 1) := by
   classical
-  let pairs := S.offDiag.filter fun p : Fin U × Fin U => p.1.val < p.2.val
+  -- Each non-injective seed collides on some strictly ordered pair of distinct keys of `S`.
+  let pairs := (S ×ˢ S).filter fun p : Fin U × Fin U => p.1 < p.2
   have hsub : univ \ reducedGoodTop U w₀ R S ⊆
       pairs.biUnion (fun p => univ.filter fun α : Fin (2 ^ (w₀ - 1)) =>
         multiplyShiftReduced U w₀ R α p.1 = multiplyShiftReduced U w₀ R α p.2) := by
@@ -199,46 +200,19 @@ theorem card_not_injOn_multiplyShiftReduced_le {U w₀ R : ℕ} (hw₀ : 0 < w�
     push Not at hnot
     obtain ⟨x, hx, y, hy, hcoll, hne⟩ := hnot
     rw [mem_biUnion]
-    rcases lt_trichotomy x.val y.val with hlt | heq | hgt
+    rcases hne.lt_or_gt with hlt | hgt
     · refine ⟨(x, y), ?_, ?_⟩
-      · simp only [pairs, mem_filter, mem_offDiag]
-        exact ⟨⟨hx, hy, hne⟩, hlt⟩
+      · simp only [pairs, mem_filter, mem_product]
+        exact ⟨⟨hx, hy⟩, hlt⟩
       · simp only [mem_filter, mem_univ, true_and, hcoll]
-    · exact False.elim (hne (Fin.ext heq))
     · refine ⟨(y, x), ?_, ?_⟩
-      · simp only [pairs, mem_filter, mem_offDiag]
-        exact ⟨⟨hy, hx, hne.symm⟩, hgt⟩
+      · simp only [pairs, mem_filter, mem_product]
+        exact ⟨⟨hy, hx⟩, hgt⟩
       · simp only [mem_filter, mem_univ, true_and, hcoll.symm]
+  -- There are `#S.choose 2` such pairs, and `2 * n.choose 2 = n * (n - 1)`.
   have hcard_pairs : 2 * #pairs = #S * (#S - 1) := by
-    let pairsGt := S.offDiag.filter fun p : Fin U × Fin U => p.2.val < p.1.val
-    have hdisj : Disjoint pairs pairsGt := by
-      rw [disjoint_filter]
-      intro p _ h1 h2
-      omega
-    have hunion : pairs ∪ pairsGt = S.offDiag := by
-      ext p
-      simp only [pairs, pairsGt, mem_union, mem_filter, mem_offDiag]
-      constructor
-      · rintro (⟨h, _⟩ | ⟨h, _⟩) <;> exact h
-      · rintro ⟨hx, hy, hne⟩
-        rcases lt_trichotomy p.1.val p.2.val with hlt | heq | hgt
-        · exact Or.inl ⟨⟨hx, hy, hne⟩, hlt⟩
-        · exact False.elim (hne (Fin.ext heq))
-        · exact Or.inr ⟨⟨hx, hy, hne⟩, hgt⟩
-    have hbij : #pairsGt = #pairs := by
-      refine card_bij (fun p _ => (p.2, p.1)) ?_ ?_ ?_
-      · intro p hp
-        simp only [pairsGt, pairs, mem_filter, mem_offDiag] at hp ⊢
-        exact ⟨⟨hp.1.2.1, hp.1.1, hp.1.2.2.symm⟩, hp.2⟩
-      · intro p₁ _ p₂ _ h
-        exact Prod.ext (Prod.ext_iff.mp h).2 (Prod.ext_iff.mp h).1
-      · intro p hp
-        refine ⟨(p.2, p.1), ?_, Prod.mk.eta⟩
-        simp only [pairsGt, pairs, mem_filter, mem_offDiag] at hp ⊢
-        exact ⟨⟨hp.1.2.1, hp.1.1, hp.1.2.2.symm⟩, hp.2⟩
-    have hsum : #S.offDiag = 2 * #pairs := by
-      rw [← hunion, card_union_of_disjoint hdisj, hbij, two_mul]
-    rw [← hsum, offDiag_card, Nat.mul_sub_left_distrib, Nat.mul_one]
+    rw [card_product_filter_lt, Nat.choose_two_right,
+      Nat.two_mul_div_two_of_even (Nat.even_mul_pred_self _)]
   have hpow_w₀ : 2 ^ w₀ = 2 * 2 ^ (w₀ - 1) := by
     conv_lhs => rw [← Nat.sub_add_cancel hw₀, pow_succ']
   calc
@@ -254,8 +228,8 @@ theorem card_not_injOn_multiplyShiftReduced_le {U w₀ R : ℕ} (hw₀ : 0 < w�
         sum_mul _ _ _
     _ ≤ ∑ _p ∈ pairs, 2 ^ w₀ := by
         refine sum_le_sum fun p hp => ?_
-        simp only [pairs, mem_filter, mem_offDiag] at hp
-        exact card_multiplyShiftReduced_eq_le hw₀ hU hp.1.2.2
+        simp only [pairs, mem_filter] at hp
+        exact card_multiplyShiftReduced_eq_le hw₀ hU hp.2.ne
     _ = #pairs * 2 ^ w₀ := by rw [sum_const, smul_eq_mul]
     _ = (2 * #pairs) * 2 ^ (w₀ - 1) := by rw [hpow_w₀]; ring
     _ = (#S * (#S - 1)) * 2 ^ (w₀ - 1) := by rw [hcard_pairs]

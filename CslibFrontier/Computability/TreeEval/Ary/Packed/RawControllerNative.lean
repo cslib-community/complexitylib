@@ -136,12 +136,6 @@ theorem validBank_inSpace :
   · have hle : 2 ≤ q.1.1 := by omega
     simp [validBank, h, hle]
 
-private theorem optionIsSome_budget {α β : Type} {encIn : α ↪ List Bool}
-    {encB : β ↪ List Bool} {f : α → Option β} {S : α → ℕ}
-    (hf : ComputableInSpace f encIn (encOption encB) S) :
-    ComputableInSpace (fun a => (f a).isSome) encIn encBool S :=
-  budget_comp_linear (of_inO (ComputableInDegree.isSome encB).inO_one) hf
-
 private theorem needCore_inSpace :
     ComputableInSpace (fun q : Params × State => needCore q.1.2.1 q.1.2.2 q.2)
       encFullState (encOption encNeed) (fun q => (encFullState q).length) := by
@@ -170,7 +164,7 @@ private theorem needCore_inSpace :
   have hnone := budget_const (encIn := encFullState) (encB := encOption encNeed) none (.refl _)
   have hskip := budget_finite (encC := encBool) (fun q : Bool × Bool => q.1 || q.2)
     (budget_prod hundo (budget_natLt (budget_natSucc hchild) hd))
-  refine (budget_ite (optionIsSome_budget hmode) hnode
+  refine (budget_ite (budget_optionIsSome hmode) hnode
     (budget_ite (budget_isEmpty hstack) hnone (budget_ite hskip hnone hgate))).of_enc_eq ?_
   rintro ⟨⟨p, d, r⟩, bank, stack, mode⟩
   cases mode with
@@ -492,7 +486,7 @@ theorem halted_inSpace :
   have hrest := snd' hstate
   have hstack := fst' hrest
   have hmode := snd' hrest
-  have hnone := budget_finite (encC := encBool) Bool.not (optionIsSome_budget hmode)
+  have hnone := budget_finite (encC := encBool) Bool.not (budget_optionIsSome hmode)
   have hret := budget_finite (encC := encBool) (fun q : Bool × Bool => q.1 && q.2)
     (budget_prod hnone (budget_isEmpty hstack))
   have hbad := budget_finite (encC := encBool) Bool.not validBank_inSpace

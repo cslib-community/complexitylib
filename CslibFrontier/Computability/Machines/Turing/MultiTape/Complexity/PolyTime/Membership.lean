@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Karn Seth
 -/
 
 module
@@ -26,6 +26,7 @@ the list for an equal element (`Turing.MultiTapeTM.ComputableTidilyInPolyTime.an
 
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not`: negating a decided proposition.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_mem`: membership in a computed list.
+* `Turing.MultiTapeTM.ComputableInPolyTime.contains`: Boolean list membership via `List.contains`.
 -/
 
 public section
@@ -90,5 +91,18 @@ theorem decide_not {γ : Type}
     ComputableInPolyTime (fun (x : γ) => Decidable.decide ¬p x) encIn
   encBool :=
   .of_tidy (@Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_not γ encIn p _inst3 h.tidy)
+
+/-- Membership of a computed value in a computed list, tested with `List.contains`, is
+polynomial-time computable. -/
+@[fun_prop]
+theorem contains {γ : Type} {α : Type} {encIn : γ ↪ List Bool} {encA : α ↪ List Bool}
+    [BEq α] [LawfulBEq α] {list : γ → List α} {value : γ → α}
+    (hlist : ComputableInPolyTime list encIn (encList encA))
+    (hvalue : ComputableInPolyTime value encIn encA) :
+    ComputableInPolyTime (fun x => (list x).contains (value x)) encIn encBool := by
+  classical
+  convert decide_mem hlist hvalue using 1
+  funext x
+  rw [Bool.eq_iff_iff, List.contains_iff_mem, decide_eq_true_eq]
 
 end Turing.MultiTapeTM.ComputableInPolyTime

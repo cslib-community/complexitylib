@@ -41,7 +41,7 @@ of `Cslib.Circuits.complexity_single_unary_le` and `Cslib.Circuits.complexity_si
   `Cslib.Circuits.Boolean.complexity_or_le`, `Cslib.Circuits.Boolean.complexity_xor_le`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

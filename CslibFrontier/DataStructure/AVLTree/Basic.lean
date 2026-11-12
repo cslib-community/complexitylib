@@ -48,8 +48,9 @@ exact Fibonacci lower bound `Nat.fib (h + 2) ≤ t.numNodes + 1`.
 * `Valid.cachedHeight_le_two_mul_log`: logarithmic height bound
   `t.cachedHeight ≤ 2 * Nat.log 2 ((elements t).card + 1)`.
 * `contains_eq_true`, `minimum_spec`, `successor_spec`: query correctness under `Ordered`.
-* `elements_balance`, `ordered_balance`, `heightConsistent_balance`, `balanced_and_height_balance`:
-  semantic and structural contracts for `balance`, shared with deletion in `AVLTree.Erase`.
+* `elements_balance`, `ordered_balance`, `heightConsistent_balance`, `balanced_and_height_balance`,
+  `valid_and_height_balance`: semantic and structural contracts for `balance`, shared with deletion
+  in `AVLTree.Erase`.
 * `elements_insert`, `valid_insert`, `cachedHeight_insert_le`, `insert_eq_self`: set semantics,
   AVL validity preservation, height-growth bound, and duplicate idempotence for `insert`.
 * `searchVisits_le_cachedHeight`, `minimumVisits_le_cachedHeight`,
@@ -148,6 +149,17 @@ theorem cachedHeight_eq_height {t : AVLTree α} (hc : HeightConsistent t) :
     simp only [cachedHeight_node, toBinaryTree_node, BinaryTree.height, hh, ihl hcl, ihr hcr]
     omega
 
+/-- The Fibonacci step of the node-count bound: sibling heights `n`, `m` differing by at most `1`
+give `Nat.fib (1 + max n m + 2) ≤ Nat.fib (n + 2) + Nat.fib (m + 2)`. -/
+private theorem fib_one_add_max_add_two_le {n m : ℕ} (hnm : n ≤ m + 1) (hmn : m ≤ n + 1) :
+    Nat.fib (1 + max n m + 2) ≤ Nat.fib (n + 2) + Nat.fib (m + 2) := by
+  wlog hle : m ≤ n generalizing n m
+  · simpa only [max_comm, add_comm (Nat.fib (n + 2))] using this hmn hnm (by omega)
+  have hfib : Nat.fib (n + 3) = Nat.fib (n + 1) + Nat.fib (n + 2) := Nat.fib_add_two
+  have : Nat.fib (n + 1) ≤ Nat.fib (m + 2) := Nat.fib_mono (by omega)
+  rw [max_eq_left hle, show 1 + n + 2 = n + 3 by omega]
+  omega
+
 /-- Fibonacci node-count lower bound ([Cormen et al., Problem 13-3(a)][CLRS2009]): any
 height-consistent, AVL-balanced tree `t` satisfies
 `Nat.fib (t.cachedHeight + 2) ≤ t.numNodes + 1`. -/
@@ -157,30 +169,13 @@ theorem fib_height_le_numNodes_add_one {t : AVLTree α}
   induction t with
   | nil => simp
   | node a h l r ihl ihr =>
-    obtain ⟨hh, hcl, hcr⟩ := hc
+    obtain ⟨rfl, hcl, hcr⟩ := hc
     obtain ⟨hlr, hrl, hbl, hbr⟩ := hb
-    have il := ihl hcl hbl
-    have ir := ihr hcr hbr
-    rw [numNodes_node]
-    by_cases hle : r.cachedHeight ≤ l.cachedHeight
-    · have hmax : h = l.cachedHeight + 1 := by omega
-      have hfib : Nat.fib (h + 2) =
-          Nat.fib (l.cachedHeight + 1) + Nat.fib (l.cachedHeight + 2) := by
-        rw [hmax]
-        exact Nat.fib_add_two
-      have hmono : Nat.fib (l.cachedHeight + 1) ≤ Nat.fib (r.cachedHeight + 2) :=
-        Nat.fib_mono (by omega)
-      simp only [cachedHeight_node]
-      omega
-    · have hmax : h = r.cachedHeight + 1 := by omega
-      have hfib : Nat.fib (h + 2) =
-          Nat.fib (r.cachedHeight + 1) + Nat.fib (r.cachedHeight + 2) := by
-        rw [hmax]
-        exact Nat.fib_add_two
-      have hmono : Nat.fib (r.cachedHeight + 1) ≤ Nat.fib (l.cachedHeight + 2) :=
-        Nat.fib_mono (by omega)
-      simp only [cachedHeight_node]
-      omega
+    have := fib_one_add_max_add_two_le hlr hrl
+    have := ihl hcl hbl
+    have := ihr hcr hbr
+    rw [numNodes_node, cachedHeight_node]
+    omega
 
 private theorem two_pow_half_succ_le_fib : ∀ h : ℕ, 2 ^ ((h + 1) / 2) ≤ Nat.fib (h + 2)
   | 0 => by decide
@@ -603,6 +598,24 @@ theorem ordered_balance {a : α} {h : ℕ} {l r : AVLTree α}
           exact ha_r x hx'
     · exact ho
 
+/-- Full contract of `balance` on valid children: if `l` and `r` are valid AVL trees separated by
+`a` whose heights differ by at most `2`, then `balance a l r` is valid, and its height satisfies
+the bounds of `balanced_and_height_balance`. -/
+theorem valid_and_height_balance (a : α) {l r : AVLTree α} (hl : Valid l) (hr : Valid r)
+    (hla : ∀ y ∈ elements l, y < a) (har : ∀ y ∈ elements r, a < y)
+    (hlr : l.cachedHeight ≤ r.cachedHeight + 2)
+    (hrl : r.cachedHeight ≤ l.cachedHeight + 2) :
+    Valid (balance a l r) ∧
+      max l.cachedHeight r.cachedHeight ≤ (balance a l r).cachedHeight ∧
+      (balance a l r).cachedHeight ≤ 1 + max l.cachedHeight r.cachedHeight ∧
+      (l.cachedHeight ≤ r.cachedHeight + 1 → r.cachedHeight ≤ l.cachedHeight + 1 →
+        (balance a l r).cachedHeight = 1 + max l.cachedHeight r.cachedHeight) := by
+  obtain ⟨hbal, hheight⟩ :=
+    balanced_and_height_balance a hl.heightConsistent hr.heightConsistent hl.balanced
+      hr.balanced hlr hrl
+  exact ⟨⟨ordered_balance (h := 0) ⟨hl.ordered, hr.ordered, hla, har⟩,
+    heightConsistent_balance hl.heightConsistent hr.heightConsistent, hbal⟩, hheight⟩
+
 /-- Insert `x` into an AVL tree, rebalancing ancestors along the search path
 ([Cormen et al., Problem 13-3(c)][CLRS2009]). Duplicate insertion leaves the node unchanged. -/
 @[expose] def insert (x : α) : AVLTree α → AVLTree α
@@ -640,47 +653,21 @@ private theorem valid_and_height_insert {t : AVLTree α} (ht : Valid t) (x : α)
     simp [insert, mkNode, Ordered, SearchTree.Ordered, SearchTree.elements]
   | node a h l r ihl ihr =>
     obtain ⟨⟨hol, hor, hl_a, ha_r⟩, ⟨hh, hcl, hcr⟩, ⟨hlr, hrl, hbl, hbr⟩⟩ := ht
-    simp only [insert]
+    simp only [insert, cachedHeight_node]
     split <;> rename_i hxa
-    · obtain ⟨⟨hol', hcl', hbl'⟩, hlo, hhi⟩ := ihl ⟨hol, hcl, hbl⟩
-      have ho' : Ordered (.node a 0 (insert x l) r) := by
-        refine ⟨hol', hor, ?_, ha_r⟩
-        intro y hy
-        have hy' : y ∈ elements (insert x l) := hy
-        rw [elements_insert, Finset.mem_insert] at hy'
-        rcases hy' with rfl | hy'
-        · exact hxa
-        · exact hl_a y hy'
-      obtain ⟨hb_bal, hb_lo, hb_hi, hb_eq⟩ :=
-        balanced_and_height_balance a hcl' hcr hbl' hbr (by omega) (by omega)
-      refine ⟨⟨ordered_balance ho', heightConsistent_balance hcl' hcr, hb_bal⟩, ?_, ?_⟩
-      · simp only [cachedHeight_node]
-        by_cases hbal1 : (insert x l).cachedHeight ≤ r.cachedHeight + 1
-        · have heq := hb_eq hbal1 (by omega)
-          omega
-        · omega
-      · simp only [cachedHeight_node]
-        omega
+    · obtain ⟨hv, hlo, hhi⟩ := ihl ⟨hol, hcl, hbl⟩
+      have hsep : ∀ y ∈ elements (insert x l), y < a := by
+        simpa only [elements_insert, Finset.mem_insert, forall_eq_or_imp] using ⟨hxa, hl_a⟩
+      obtain ⟨hv', hb⟩ := valid_and_height_balance a hv ⟨hor, hcr, hbr⟩ hsep ha_r
+        (by omega) (by omega)
+      exact ⟨hv', by omega, by omega⟩
     · split <;> rename_i hax
-      · obtain ⟨⟨hor', hcr', hbr'⟩, hlo, hhi⟩ := ihr ⟨hor, hcr, hbr⟩
-        have ho' : Ordered (.node a 0 l (insert x r)) := by
-          refine ⟨hol, hor', hl_a, ?_⟩
-          intro y hy
-          have hy' : y ∈ elements (insert x r) := hy
-          rw [elements_insert, Finset.mem_insert] at hy'
-          rcases hy' with rfl | hy'
-          · exact hax
-          · exact ha_r y hy'
-        obtain ⟨hb_bal, hb_lo, hb_hi, hb_eq⟩ :=
-          balanced_and_height_balance a hcl hcr' hbl hbr' (by omega) (by omega)
-        refine ⟨⟨ordered_balance ho', heightConsistent_balance hcl hcr', hb_bal⟩, ?_, ?_⟩
-        · simp only [cachedHeight_node]
-          by_cases hbal1 : (insert x r).cachedHeight ≤ l.cachedHeight + 1
-          · have heq := hb_eq (by omega) hbal1
-            omega
-          · omega
-        · simp only [cachedHeight_node]
-          omega
+      · obtain ⟨hv, hlo, hhi⟩ := ihr ⟨hor, hcr, hbr⟩
+        have hsep : ∀ y ∈ elements (insert x r), a < y := by
+          simpa only [elements_insert, Finset.mem_insert, forall_eq_or_imp] using ⟨hax, ha_r⟩
+        obtain ⟨hv', hb⟩ := valid_and_height_balance a ⟨hol, hcl, hbl⟩ hv hl_a hsep
+          (by omega) (by omega)
+        exact ⟨hv', by omega, by omega⟩
       · exact ⟨⟨⟨hol, hor, hl_a, ha_r⟩, ⟨hh, hcl, hcr⟩, ⟨hlr, hrl, hbl, hbr⟩⟩,
           Nat.le_refl _, Nat.le_succ _⟩
 

@@ -154,9 +154,7 @@ private theorem exp_step {ℓ t d : ℕ} (ht : 2 ≤ t) (hd : 1 ≤ d) :
     rw [← hT, ← pow_succ', Nat.sub_add_cancel hd]
   obtain ⟨t', rfl⟩ : ∃ t', t = t' + 2 := ⟨t - 2, by omega⟩
   rw [hT, hd', Nat.add_sub_cancel]
-  have h1 : (t' + 2) * (T + 1) - 1 = (t' + 2) * T + t' + 1 := by
-    rw [mul_add, mul_one]
-    omega
+  have h1 : (t' + 2) * (T + 1) - 1 = (t' + 2) * T + t' + 1 := by grind
   rw [h1]
   nlinarith
 

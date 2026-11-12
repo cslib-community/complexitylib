@@ -233,17 +233,15 @@ theorem realize_checkPolarity {variance : Variances shape} (I : Interpretation s
     cases sign <;> exact fun ⟨x, hx⟩ => ⟨x, ih hφ hρ _ hx⟩
   | op o body args ih =>
     simp only [checkPolarity, decide_eq_true_eq] at hφ
-    have hbody := hφ
+    -- `ih` is generic in the sign, so positive and negative bodies are handled alike;
+    -- an arbitrary body is checked in both directions.
     cases sign with
     | true =>
       apply hI o
       intro i δ xs
-      have hi := hbody i
+      have hi := hφ i
       cases hv : variance o i with
-      | positive =>
-        simp only [hv] at hi
-        exact ih i hi (hρ.append δ) _
-      | negative =>
+      | positive | negative =>
         simp only [hv] at hi
         exact ih i hi (hρ.append δ) _
       | arbitrary =>
@@ -252,12 +250,9 @@ theorem realize_checkPolarity {variance : Variances shape} (I : Interpretation s
     | false =>
       apply hI o
       intro i δ xs
-      have hi := hbody i
+      have hi := hφ i
       cases hv : variance o i with
-      | positive =>
-        simp only [hv] at hi
-        exact ih i hi (hρ.append δ) _
-      | negative =>
+      | positive | negative =>
         simp only [hv] at hi
         exact ih i hi (hρ.append δ) _
       | arbitrary =>

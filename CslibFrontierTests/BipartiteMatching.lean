@@ -66,8 +66,7 @@ example :
         {y | bipartitePerfectMatching 2 y = false} + 1) ∧
     Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) ≠ ⊤ ∧
     (126 : ℕ∞) ≤ Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) := by
-  refine ⟨ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching (by norm_num)
-    (by norm_num) (by norm_num),
+  refine ⟨ecomplexityFun_disjointness_le_mul_ecomplexity_bipartitePerfectMatching (by norm_num),
     Monotone.eformulaDepth_ne_top_iff.2 monotone_bipartitePerfectMatching, ?_⟩
   have h := Monotone.le_mul_eformulaDepth_bipartitePerfectMatching_add (2 ^ 20)
   cases hd : Monotone.eformulaDepth (bipartitePerfectMatching (2 ^ 20)) using ENat.recTopCoe with

@@ -184,10 +184,7 @@ theorem omResolve_eq_omResolve {F : Finset P} {val : P → List P → Bool}
     · simp only [omResolve]
       have hjτ' : j ∉ τ.toFinset := by simpa using hjτ
       have hcard : τ.toFinsetᶜ.card = (j :: τ).toFinsetᶜ.card + 1 := by
-        have := Finset.card_le_univ (insert j τ.toFinset)
-        rw [Finset.card_compl, Finset.card_compl, List.toFinset_cons,
-          Finset.card_insert_of_notMem hjτ'] at *
-        omega
+        grind [Finset.card_compl, List.toFinset_cons]
       -- The faulty commander leaves at most `m` faulty processes in the subinstances.
       have hF' : (F \ (j :: τ).toFinset).card ≤ m := by
         have hsub : F \ (j :: τ).toFinset ⊆ (F \ τ.toFinset).erase j := fun y hy => by
@@ -317,8 +314,7 @@ theorem om_decision (R : ℕ) (i : P) :
 theorem om_decision_eq_decision_succ {R : ℕ} (hR : t + 1 ≤ R) (i : P) :
     (om P t).decision F adv x R i = (om P t).decision F adv x (t + 1) i := by
   rw [om_decision, om_decision]
-  congr 1
-  funext c
+  congr 1 with c : 1
   rw [omValue, omValue, omResolve_state_eq_tree F adv x hR,
     omResolve_state_eq_tree F adv x le_rfl]
 
@@ -330,8 +326,7 @@ theorem solvesByzantineAgreement_om (hn : 3 * t < Fintype.card P) {R : ℕ} (hR 
     (om P t).SolvesByzantineAgreement t R where
   agreement F hF adv x i hi j hj := by
     rw [om_decision, om_decision]
-    congr 1
-    funext c
+    congr 1 with c : 1
     exact omValue_eq_omValue F adv x hF hn hR hi hj c
   validity F hF adv x v hv i hi := by
     rw [om_decision]

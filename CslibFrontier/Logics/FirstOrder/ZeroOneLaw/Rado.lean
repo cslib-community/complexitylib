@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Rado
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 public import Mathlib.Combinatorics.SimpleGraph.Maps
+import CslibFrontier.Foundations.ModelTheory.Graph
 import Mathlib.Data.Fintype.EquivFin
 
 /-!
@@ -30,6 +31,8 @@ subgraph of it [Rado1964], and it is isomorphic to its complement.
 * `Cslib.Logic.FO.graph.satisfies_extensionAxiom_iff_exists_adj`: the extension axioms in the
   finite-set form `∀ A B` disjoint, `∃ z ∉ A ∪ B` adjacent to all of `A` and none of `B`.
 * `Cslib.Logic.FO.graph.model_radoGraph`: the Rado graph is a model of `randomGraphTheory`.
+* `Cslib.Logic.FO.graph.models_iff_satisfies_radoGraph`: the consequences of `randomGraphTheory`
+  are the sentences true in the Rado graph.
 * `Cslib.Logic.FO.graph.tendsto_randomGraphProb_one_iff_radoGraph`,
   `Cslib.Logic.FO.graph.tendsto_randomGraphProb_zero_iff_radoGraph`: a sentence holds almost
   surely iff it holds in the Rado graph, and almost never iff it fails there.
@@ -130,48 +133,31 @@ theorem model_radoGraph :
     @Theory.Model _ ℕ SimpleGraph.radoGraph.structure randomGraphTheory :=
   model_randomGraphTheory_of_satisfies _ satisfies_extensionAxiom_radoGraph
 
+/-- A sentence of the graph language is a consequence of `randomGraphTheory` exactly when it holds
+in the Rado graph: the theory is complete and the Rado graph is a model of it. -/
+theorem models_iff_satisfies_radoGraph (φ : Language.graph.Sentence) :
+    randomGraphTheory ⊨ᵇ φ ↔ Satisfies SimpleGraph.radoGraph φ := by
+  let := SimpleGraph.radoGraph.structure
+  have := model_radoGraph
+  exact (isComplete_randomGraphTheory.realize_sentence_iff φ ℕ).symm
+
 /-- **The almost-sure theory of `G(n, 1/2)` is the theory of the Rado graph.** A sentence of the
 graph language holds in `G(n, 1/2)` with probability tending to `1` exactly when it holds in the
 Rado graph [Libkin2004, Section 12.3]. -/
 theorem tendsto_randomGraphProb_one_iff_radoGraph (φ : Language.graph.Sentence) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 1) ↔
-      Satisfies SimpleGraph.radoGraph φ := by
-  let := SimpleGraph.radoGraph.structure
-  have := model_radoGraph
-  rw [tendsto_randomGraphProb_one_iff]
-  exact (isComplete_randomGraphTheory.realize_sentence_iff φ ℕ).symm
+      Satisfies SimpleGraph.radoGraph φ :=
+  (tendsto_randomGraphProb_one_iff φ).trans (models_iff_satisfies_radoGraph φ)
 
 /-- A sentence of the graph language holds in `G(n, 1/2)` with probability tending to `0` exactly
 when it fails in the Rado graph. -/
 theorem tendsto_randomGraphProb_zero_iff_radoGraph (φ : Language.graph.Sentence) :
     Filter.Tendsto (fun n => randomGraphProb n fun G => Satisfies G φ) Filter.atTop (nhds 0) ↔
-      ¬Satisfies SimpleGraph.radoGraph φ := by
-  let := SimpleGraph.radoGraph.structure
-  have := model_radoGraph
-  rw [tendsto_randomGraphProb_zero_iff, ← satisfies_not]
-  exact (isComplete_randomGraphTheory.realize_sentence_iff φ.not ℕ).symm
+      ¬Satisfies SimpleGraph.radoGraph φ :=
+  (tendsto_randomGraphProb_zero_iff φ).trans <|
+    (models_iff_satisfies_radoGraph φ.not).trans (satisfies_not _ φ)
 
 /-! ### Uniqueness, universality and self-complementarity -/
-
-/-- An equivalence of graph-language structures `G.structure ≃ H.structure` is a graph
-isomorphism. -/
-private def isoOfEquiv {V W : Type*} {G : SimpleGraph V} {H : SimpleGraph W}
-    (f : @Language.Equiv Language.graph V W G.structure H.structure) : G ≃g H where
-  toEquiv := @Language.Equiv.toEquiv _ _ _ G.structure H.structure f
-  map_rel_iff' {a b} := by
-    let := G.structure
-    let := H.structure
-    exact f.map_rel adj ![a, b]
-
-/-- An embedding of graph-language structures `G.structure ↪ H.structure` is an induced graph
-embedding. -/
-private def embeddingOfEmbedding {V W : Type*} {G : SimpleGraph V} {H : SimpleGraph W}
-    (f : @Language.Embedding Language.graph V W G.structure H.structure) : G ↪g H where
-  toEmbedding := @Language.Embedding.toEmbedding _ _ _ G.structure H.structure f
-  map_rel_iff' {a b} := by
-    let := G.structure
-    let := H.structure
-    exact f.map_rel adj ![a, b]
 
 /-- **Uniqueness of the Rado graph.** Every countable simple graph with every extension property
 is isomorphic to the Rado graph, by the back-and-forth argument [Libkin2004, Section 12.3]. -/
@@ -183,7 +169,7 @@ theorem nonempty_iso_radoGraph {V : Type*} [Countable V] (G : SimpleGraph V)
   have hN := model_randomGraphTheory_iff.1 model_radoGraph
   obtain ⟨f, -⟩ := equiv_between_cg cg_of_countable cg_of_countable default
     (isExtensionPair_of_hasExtension hN.2) (isExtensionPair_of_hasExtension hV.2)
-  exact ⟨isoOfEquiv f⟩
+  exact ⟨.ofLanguageEquiv f⟩
 
 /-- **Universality of the Rado graph.** Every countable simple graph is an induced subgraph of the
 Rado graph [Rado1964]. -/
@@ -194,7 +180,7 @@ theorem nonempty_embedding_radoGraph {V : Type*} [Countable V] (G : SimpleGraph 
   have hN := model_randomGraphTheory_iff.1 model_radoGraph
   obtain ⟨f, -⟩ := embedding_from_cg (show Structure.CG Language.graph V from cg_of_countable)
     default (isExtensionPair_of_hasExtension hN.2)
-  exact ⟨embeddingOfEmbedding f⟩
+  exact ⟨.ofLanguageEmbedding f⟩
 
 /-- The Rado graph is isomorphic to its complement. -/
 theorem nonempty_compl_iso_radoGraph :

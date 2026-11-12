@@ -30,7 +30,7 @@ time-hierarchy construction.
   `200 * (B + 1) ^ 2 * J`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.Universal
 

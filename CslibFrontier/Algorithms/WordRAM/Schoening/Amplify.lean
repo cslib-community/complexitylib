@@ -18,6 +18,7 @@ import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.ToReal
 
 import CslibFrontier.Computability.WordRAM.CountingLoop
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Schöning's algorithm on the randomized word RAM

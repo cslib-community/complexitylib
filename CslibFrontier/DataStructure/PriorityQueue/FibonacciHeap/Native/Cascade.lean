@@ -56,13 +56,11 @@ private theorem cascadeBody_eq (d : Fin 3 → ℕ) : cascadeBody d =
     DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
       (cascadeStep (d 2)) := by
   simp only [cascadeBody, cascadeStep, DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1
-  funext pz
+  congr 1 with pz : 1
   by_cases hp : pz = 0
   · simp only [hp, ite_true, PFunctor.FreeM.liftM_pure]
   · simp only [hp, ite_false]
-    congr 1
-    funext mk
+    congr 1 with mk : 1
     by_cases hm : mk = 0 <;>
       simp only [hm, ite_true, ite_false, PFunctor.FreeM.liftM_bind,
         PFunctor.FreeM.liftM_pure, pure_bind, PFunctor.FreeM.pure_bind]

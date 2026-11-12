@@ -45,7 +45,7 @@ The disjunction `OR_n` of `n` bits has approximate degree `Θ(√n)` [NisanSzege
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Polynomial.Chebyshev
 
@@ -87,13 +87,13 @@ theorem card_le_six_mul_approxDegree_threshold_one_right_sq :
   blockSensitivity_threshold_one_right.symm.trans_le
     (blockSensitivity_le_six_mul_approxDegree_sq _)
 
-/-- **The approximate degree of disjunction is at most `√(2n)`**: `adeg(OR_n) ≤ d` whenever
+/-- **The approximate degree of disjunction is `O(√n)`**: `adeg(OR_n) ≤ d` whenever
 `2n ≤ d² + 1`, by a rescaled Chebyshev polynomial of degree `d` evaluated at the weight. -/
 theorem approxDegree_threshold_one_right_le {d : ℕ} (hd : 2 * n ≤ d ^ 2 + 1) :
     approxDegree (1 / 3) (threshold n 1) ≤ d := by
   rcases lt_or_ge n 2 with hn | hn
   · -- at most one bit: the disjunction itself has degree `n ≤ d`
-    refine (approxDegree_le_degree (by norm_num)).trans ?_
+    refine (approxDegree_le_degree).trans ?_
     rw [degree_threshold_one_right]
     rcases Nat.lt_or_ge d 1 with hd1 | hd1
     · interval_cases d

@@ -198,9 +198,10 @@ class TextRules(unittest.TestCase):
         self.assertEqual(rewrite("scripts/cache/publish.py", scope), scope)
         history = ("path.startswith('Complexity/') "
                    "# https://github.com/cslib-community/complexitylib/pull/1\n")
-        self.assertEqual(rewrite("manual/development-history/data/x.py", history),
-                         "path.startswith('Complexity/') "
-                         "# https://github.com/cslib-community/cslib-frontier/pull/1\n")
+        for path in ("manual/development-history/data/x.py", "manual/history/data/x.py"):
+            self.assertEqual(rewrite(path, history),
+                             "path.startswith('Complexity/') "
+                             "# https://github.com/cslib-community/cslib-frontier/pull/1\n")
         kept = f'x = "Complexity/"  # {r.PRAGMA}\ny = "Complexity/"\n'
         self.assertEqual(rewrite("scripts/x.py", kept),
                          f'x = "Complexity/"  # {r.PRAGMA}\ny = "CslibFrontier/"\n')

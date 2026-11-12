@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.NP.GuessVerify
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.ChoiceTable
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayInput
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.ReplayVerdict
 
 /-!
 # NP is nondeterministic polynomial time
@@ -30,9 +30,10 @@ padded to exactly this polynomial length, which a halted table ignores. The veri
 `Turing.MultiTapeNTM.checkChoices` replays the certificate with the choice table and accepts when
 the table emits `[true]`: then the coins encode a computation path that halts with output
 `[true]`. Every coin list selects permitted actions, except at a stuck configuration, which has
-none; there the table rejects. Replaying a fixed finite fair-coin table from encoded coins and
-input is polynomial-time (`Turing.MultiTapePTM.computableInPolyTime_runClosedCoins`), so
-the verifier needs no machine built by hand.
+none; there the table rejects. Testing the output of a fixed finite fair-coin table replayed from
+encoded coins and input is polynomial-time
+(`Turing.MultiTapePTM.computableInPolyTime_decide_runClosedCoins`), so the verifier needs no
+machine built by hand.
 
 ## Main definitions
 
@@ -73,15 +74,8 @@ noncomputable def checkChoices (ntm : MultiTapeNTM k Bool State) (enc : α ↪ L
 table. -/
 @[fun_prop]
 theorem computableInPolyTime_checkChoices (ntm : MultiTapeNTM k Bool State) :
-    ComputableInPolyTime (ntm.checkChoices enc) (encPair enc encBits) encBool := by
-  have hswap : ComputableInPolyTime (fun x : α × List Bool => (x.2, enc x.1))
-      (encPair enc encBits) (encPair encBits encBits) :=
-    (ComputableInPolyTime.snd enc encBits).prod
-      ((ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl).comp
-        (ComputableInPolyTime.fst enc encBits))
-  exact ComputableInPolyTime.decide_eq'
-    ((MultiTapePTM.computableInPolyTime_runClosedCoins ntm.choiceTable).comp hswap)
-    (ComputableInPolyTime.const [true])
+    ComputableInPolyTime (ntm.checkChoices enc) (encPair enc encBits) encBool :=
+  MultiTapePTM.computableInPolyTime_decide_runClosedCoins ntm.choiceTable
 
 /-- **Accepting computations as certificates of any sufficient length.** If `ntm` decides `A`
 within `t`, then `a ∈ A` exactly when some certificate of length `L` encodes an accepting

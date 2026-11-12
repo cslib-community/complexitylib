@@ -409,14 +409,6 @@ private theorem computableInLogSpace_of_exists_finite_ne {f : α → β}
   ⟨_, 0, h.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
 
 open scoped Classical in
-private theorem computableInLogSpace_decide_eq (x₀ : α) :
-    ComputableInLogSpace (fun a => decide (a = x₀)) encA encBool := by
-  apply computableInLogSpace_of_exists_finite_ne
-  refine ⟨false, (Set.finite_singleton x₀).subset fun a ha => ?_⟩
-  by_contra h
-  simp [Set.mem_singleton_iff.not.mp h] at ha
-
-open scoped Classical in
 private theorem computableInLogSpace_alt (encA : α ↪ List Bool) (x₀ x₁ : α) :
     ComputableInLogSpace (fun a => if a = x₀ then x₁ else x₀) encA encA := by
   apply computableInLogSpace_of_exists_finite_ne
@@ -429,6 +421,35 @@ private theorem computableInPolyTime_alt (encA : α ↪ List Bool) (x₀ x₁ : 
     ComputableInPolyTime (fun a => if a = x₀ then x₁ else x₀) encA encA :=
   (computableInLogSpace_alt encA x₀ x₁).computableInPolyTime
 
+open scoped Classical in
+/-- The two-point autoreduction for a decider `d`: an accepted instance goes to whichever of the
+members `y₀, y₁` differs from it, a rejected instance to whichever of the non-members `n₀, n₁`
+differs from it. -/
+private noncomputable def twoPointAutoreduction (d : α → Bool) (y₀ y₁ n₀ n₁ : α) (a : α) : α :=
+  if d a then (if a = y₀ then y₁ else y₀) else (if a = n₀ then n₁ else n₀)
+
+/-- The two-point autoreduction moves every instance and preserves membership. -/
+private theorem twoPointAutoreduction_spec {d : α → Bool} (hAd : ∀ a, a ∈ A ↔ d a = true)
+    {y₀ y₁ : α} (hy₀ : y₀ ∈ A) (hy₁ : y₁ ∈ A) (hyne : y₀ ≠ y₁)
+    {n₀ n₁ : α} (hn₀ : n₀ ∉ A) (hn₁ : n₁ ∉ A) (hnne : n₀ ≠ n₁) :
+    (∀ a, twoPointAutoreduction d y₀ y₁ n₀ n₁ a ≠ a) ∧
+      ∀ a, a ∈ A ↔ twoPointAutoreduction d y₀ y₁ n₀ n₁ a ∈ A := by
+  refine ⟨fun a => ?_, fun a => ?_⟩
+  · unfold twoPointAutoreduction
+    split_ifs with _ ha ha
+    · exact ha ▸ hyne.symm
+    · exact Ne.symm ha
+    · exact ha ▸ hnne.symm
+    · exact Ne.symm ha
+  · unfold twoPointAutoreduction
+    by_cases hda : d a = true
+    · have haA : a ∈ A := (hAd a).mpr hda
+      simp only [hda, ↓reduceIte]
+      split_ifs <;> simp [haA, hy₀, hy₁]
+    · have haA : a ∉ A := fun h => hda ((hAd a).mp h)
+      simp only [hda, Bool.false_eq_true, ↓reduceIte]
+      split_ifs <;> simp [haA, hn₀, hn₁]
+
 /-- A set in `L` with at least two members and at least two non-members is logspace many-one
 autoreducible. -/
 theorem LogSpaceManyOneAutoreducible.of_two_mem_two_notMem (hA : A ∈ L encA)
@@ -437,62 +458,43 @@ theorem LogSpaceManyOneAutoreducible.of_two_mem_two_notMem (hA : A ∈ L encA)
     LogSpaceManyOneAutoreducible encA A := by
   classical
   obtain ⟨d, hd, hAd⟩ := hA
-  let eqY := computableInLogSpace_decide_eq y₀ (encA := encA)
-  let eqN := computableInLogSpace_decide_eq n₀ (encA := encA)
-  let eqs := eqY.pair eqN
-  let tagged := hd.pair eqs
-  let choose : Bool × (Bool × Bool) → α :=
-    fun p => if p.1 then (if p.2.1 then y₁ else y₀) else (if p.2.2 then n₁ else n₀)
-  have hchoose : ComputableInLogSpace choose
-      (encPair encBool (encPair encBool encBool)) encA :=
-    ComputableInLogSpace.of_finite choose
-  have hf : ComputableInLogSpace (choose ∘ fun a => (d a, (decide (a = y₀), decide (a = n₀))))
-      encA encA := hchoose.comp tagged
-  refine ⟨_, ⟨hf, fun a => ?_⟩, fun a => ?_⟩
-  · dsimp only [choose, Function.comp_apply]
-    cases hda : d a
-    · simp only [Bool.false_eq_true, ↓reduceIte]
-      split_ifs with ha
-      · intro heq; simp only [decide_eq_true_eq] at ha; subst ha; exact hnne heq.symm
-      · intro heq; exact ha (decide_eq_true heq.symm)
-    · simp only [↓reduceIte]
-      split_ifs with ha
-      · intro heq; simp only [decide_eq_true_eq] at ha; subst ha; exact hyne heq.symm
-      · intro heq; exact ha (decide_eq_true heq.symm)
-  · dsimp only [choose, Function.comp_apply]
-    cases hda : d a
-    · have haA : a ∉ A := fun ha => by have := (hAd a).mp ha; rw [hda] at this; contradiction
-      simp only [Bool.false_eq_true, ↓reduceIte]
-      split_ifs <;> simp [haA, hn₀, hn₁]
-    · have haA : a ∈ A := (hAd a).mpr hda
-      simp only [↓reduceIte]
-      split_ifs <;> simp [haA, hy₀, hy₁]
+  have hf : ComputableInLogSpace (twoPointAutoreduction d y₀ y₁ n₀ n₁) encA encA :=
+    ComputableInLogSpace.ite hd (computableInLogSpace_alt encA y₀ y₁)
+      (computableInLogSpace_alt encA n₀ n₁)
+  obtain ⟨hne, hmem⟩ := twoPointAutoreduction_spec hAd hy₀ hy₁ hyne hn₀ hn₁ hnne
+  exact ⟨_, ⟨hf, hne⟩, hmem⟩
 
-private theorem logSpaceManyOneAutoreducible_of_univ {y₀ y₁ : α} (hyne : y₀ ≠ y₁)
-    (hUniv : A = Set.univ) : LogSpaceManyOneAutoreducible encA A := by
+/-- A set whose members are all or none of the instances is logspace many-one autoreducible as soon
+as there are two distinct instances: map `x₀` to `x₁` and everything else to `x₀`. -/
+private theorem logSpaceManyOneAutoreducible_of_forall_iff {x₀ x₁ : α} (hne : x₀ ≠ x₁)
+    (hA : ∀ a, a ∈ A ↔ x₀ ∈ A) : LogSpaceManyOneAutoreducible encA A := by
   classical
-  let choose : Bool → α := fun b => if b then y₁ else y₀
-  have hchoose : ComputableInLogSpace choose encBool encA := ComputableInLogSpace.of_finite choose
-  have hf := hchoose.comp (computableInLogSpace_decide_eq y₀ (encA := encA))
-  refine ⟨_, ⟨hf, fun a => ?_⟩, fun a => ?_⟩
-  · dsimp only [choose, Function.comp_apply]
-    split_ifs with ha
-    · intro heq; simp only [decide_eq_true_eq] at ha; subst ha; exact hyne heq.symm
-    · intro heq; exact ha (decide_eq_true heq.symm)
-  · simp [hUniv]
+  refine ⟨_, ⟨computableInLogSpace_alt encA x₀ x₁, fun a => ?_⟩, fun a => ?_⟩
+  · split_ifs with ha
+    · exact ha ▸ hne.symm
+    · exact Ne.symm ha
+  · exact (hA a).trans (hA _).symm
 
-private theorem logSpaceManyOneAutoreducible_of_empty {n₀ n₁ : α} (hnne : n₀ ≠ n₁)
-    (hEmpty : A = ∅) : LogSpaceManyOneAutoreducible encA A := by
-  classical
-  let choose : Bool → α := fun b => if b then n₁ else n₀
-  have hchoose : ComputableInLogSpace choose encBool encA := ComputableInLogSpace.of_finite choose
-  have hf := hchoose.comp (computableInLogSpace_decide_eq n₀ (encA := encA))
-  refine ⟨_, ⟨hf, fun a => ?_⟩, fun a => ?_⟩
-  · dsimp only [choose, Function.comp_apply]
-    split_ifs with ha
-    · intro heq; simp only [decide_eq_true_eq] at ha; subst ha; exact hnne heq.symm
-    · intro heq; exact ha (decide_eq_true heq.symm)
-  · simp [hEmpty]
+/-- The case analysis behind both characterizations below. Over a nonempty type, a set with no
+unique member or non-member either contains all or none of the instances, and then two distinct
+instances exist, or has two distinct members and two distinct non-members. -/
+private theorem forall_iff_or_two_mem_two_notMem [Nonempty α] (hMem : ∀ a ∈ A, ∃ y ∈ A, y ≠ a)
+    (hNotMem : ∀ a ∉ A, ∃ n ∉ A, n ≠ a) :
+    (∃ x₀ x₁ : α, x₀ ≠ x₁ ∧ ∀ a, a ∈ A ↔ x₀ ∈ A) ∨
+      ∃ y₀ y₁ n₀ n₁ : α, y₀ ∈ A ∧ y₁ ∈ A ∧ y₀ ≠ y₁ ∧ n₀ ∉ A ∧ n₁ ∉ A ∧ n₀ ≠ n₁ := by
+  by_cases hy : ∃ y, y ∈ A
+  · obtain ⟨y₀, hy₀⟩ := hy
+    obtain ⟨y₁, hy₁, hyne⟩ := hMem y₀ hy₀
+    by_cases hn : ∃ n, n ∉ A
+    · obtain ⟨n₀, hn₀⟩ := hn
+      obtain ⟨n₁, hn₁, hnne⟩ := hNotMem n₀ hn₀
+      exact .inr ⟨y₀, y₁, n₀, n₁, hy₀, hy₁, hyne.symm, hn₀, hn₁, hnne.symm⟩
+    · simp only [not_exists, not_not] at hn
+      exact .inl ⟨y₀, y₁, hyne.symm, fun a => iff_of_true (hn a) hy₀⟩
+  · simp only [not_exists] at hy
+    obtain ⟨a₀⟩ := ‹Nonempty α›
+    obtain ⟨n₁, -, hne⟩ := hNotMem a₀ (hy a₀)
+    exact .inl ⟨a₀, n₁, hne.symm, fun a => iff_of_false (hy a) (hy a₀)⟩
 
 /-- **A set in `L` is logspace many-one autoreducible if and only if neither it nor its complement
 is a singleton.** -/
@@ -500,23 +502,12 @@ theorem logSpaceManyOneAutoreducible_iff_of_mem_L (hA : A ∈ L encA) :
     LogSpaceManyOneAutoreducible encA A ↔
       (∀ a ∈ A, ∃ y ∈ A, y ≠ a) ∧ (∀ a ∉ A, ∃ n ∉ A, n ≠ a) := by
   refine ⟨fun h => ⟨h.exists_mem_ne, h.exists_notMem_ne⟩, fun ⟨hMem, hNotMem⟩ => ?_⟩
-  by_cases hEmpty : A = ∅
-  · by_cases hα : IsEmpty α
-    · exact ⟨id, ⟨ComputableInLogSpace.id, fun a => (IsEmpty.false a).elim⟩, fun _ => Iff.rfl⟩
-    · obtain ⟨a₀⟩ := not_isEmpty_iff.mp hα
-      have ha₀ : a₀ ∉ A := by subst hEmpty; exact fun h => h
-      obtain ⟨n₁, hn₁, hne⟩ := hNotMem a₀ ha₀
-      exact logSpaceManyOneAutoreducible_of_empty hne.symm hEmpty
-  · by_cases hUniv : A = Set.univ
-    · obtain ⟨a₀, ha₀⟩ := Set.nonempty_iff_ne_empty.mpr hEmpty
-      obtain ⟨y₁, hy₁, hne⟩ := hMem a₀ ha₀
-      exact logSpaceManyOneAutoreducible_of_univ hne.symm hUniv
-    · obtain ⟨y₀, hy₀⟩ := Set.nonempty_iff_ne_empty.mpr hEmpty
-      obtain ⟨y₁, hy₁, hyne⟩ := hMem y₀ hy₀
-      obtain ⟨n₀, hn₀⟩ := Set.nonempty_compl.mpr hUniv
-      obtain ⟨n₁, hn₁, hnne⟩ := hNotMem n₀ hn₀
-      exact LogSpaceManyOneAutoreducible.of_two_mem_two_notMem hA hy₀ hy₁ hyne.symm hn₀ hn₁
-        hnne.symm
+  rcases isEmpty_or_nonempty α with hα | hα
+  · exact ⟨id, ⟨ComputableInLogSpace.id, fun a => (IsEmpty.false a).elim⟩, fun _ => Iff.rfl⟩
+  rcases forall_iff_or_two_mem_two_notMem hMem hNotMem with
+    ⟨x₀, x₁, hne, hconst⟩ | ⟨y₀, y₁, n₀, n₁, hy₀, hy₁, hyne, hn₀, hn₁, hnne⟩
+  · exact logSpaceManyOneAutoreducible_of_forall_iff hne hconst
+  · exact LogSpaceManyOneAutoreducible.of_two_mem_two_notMem hA hy₀ hy₁ hyne hn₀ hn₁ hnne
 
 /-- A set in `P` with at least two members and at least two non-members is polynomial-time many-one
 autoreducible. -/
@@ -526,26 +517,11 @@ theorem PolyTimeManyOneAutoreducible.of_two_mem_two_notMem (hA : A ∈ P encA)
     PolyTimeManyOneAutoreducible encA A := by
   classical
   obtain ⟨d, hd, hAd⟩ := hA
-  have hy_comp := computableInPolyTime_alt encA y₀ y₁
-  have hn_comp := computableInPolyTime_alt encA n₀ n₁
-  have hf := ComputableInPolyTime.ite hd hy_comp hn_comp
-  refine ⟨_, ⟨hf, fun a => ?_⟩, fun a => ?_⟩
-  · by_cases hda : d a = true
-    · simp only [hda, ↓reduceIte]
-      split_ifs with ha
-      · intro heq; subst ha; exact hyne heq.symm
-      · intro heq; exact ha heq.symm
-    · simp only [hda, Bool.false_eq_true, ↓reduceIte]
-      split_ifs with ha
-      · intro heq; subst ha; exact hnne heq.symm
-      · intro heq; exact ha heq.symm
-  · by_cases hda : d a = true
-    · simp only [hda, ↓reduceIte]
-      have haA : a ∈ A := (hAd a).mpr hda
-      split_ifs <;> simp [haA, hy₀, hy₁]
-    · simp only [hda, Bool.false_eq_true, ↓reduceIte]
-      have haA : a ∉ A := fun h => hda ((hAd a).mp h)
-      split_ifs <;> simp [haA, hn₀, hn₁]
+  have hf : ComputableInPolyTime (twoPointAutoreduction d y₀ y₁ n₀ n₁) encA encA :=
+    ComputableInPolyTime.ite hd (computableInPolyTime_alt encA y₀ y₁)
+      (computableInPolyTime_alt encA n₀ n₁)
+  obtain ⟨hne, hmem⟩ := twoPointAutoreduction_spec hAd hy₀ hy₁ hyne hn₀ hn₁ hnne
+  exact ⟨_, ⟨hf, hne⟩, hmem⟩
 
 /-- **A set in `P` is polynomial-time many-one autoreducible if and only if neither it nor its
 complement is a singleton.** -/
@@ -553,23 +529,12 @@ theorem polyTimeManyOneAutoreducible_iff_of_mem_P (hA : A ∈ P encA) :
     PolyTimeManyOneAutoreducible encA A ↔
       (∀ a ∈ A, ∃ y ∈ A, y ≠ a) ∧ (∀ a ∉ A, ∃ n ∉ A, n ≠ a) := by
   refine ⟨fun h => ⟨h.exists_mem_ne, h.exists_notMem_ne⟩, fun ⟨hMem, hNotMem⟩ => ?_⟩
-  by_cases hEmpty : A = ∅
-  · by_cases hα : IsEmpty α
-    · exact ⟨id, ⟨ComputableInPolyTime.id', fun a => (IsEmpty.false a).elim⟩, fun _ => Iff.rfl⟩
-    · obtain ⟨a₀⟩ := not_isEmpty_iff.mp hα
-      have ha₀ : a₀ ∉ A := by subst hEmpty; exact fun h => h
-      obtain ⟨n₁, hn₁, hne⟩ := hNotMem a₀ ha₀
-      exact (logSpaceManyOneAutoreducible_of_empty hne.symm hEmpty).polyTimeManyOneAutoreducible
-  · by_cases hUniv : A = Set.univ
-    · obtain ⟨a₀, ha₀⟩ := Set.nonempty_iff_ne_empty.mpr hEmpty
-      obtain ⟨y₁, hy₁, hne⟩ := hMem a₀ ha₀
-      exact (logSpaceManyOneAutoreducible_of_univ hne.symm hUniv).polyTimeManyOneAutoreducible
-    · obtain ⟨y₀, hy₀⟩ := Set.nonempty_iff_ne_empty.mpr hEmpty
-      obtain ⟨y₁, hy₁, hyne⟩ := hMem y₀ hy₀
-      obtain ⟨n₀, hn₀⟩ := Set.nonempty_compl.mpr hUniv
-      obtain ⟨n₁, hn₁, hnne⟩ := hNotMem n₀ hn₀
-      exact PolyTimeManyOneAutoreducible.of_two_mem_two_notMem hA hy₀ hy₁ hyne.symm hn₀ hn₁
-        hnne.symm
+  rcases isEmpty_or_nonempty α with hα | hα
+  · exact ⟨id, ⟨ComputableInPolyTime.id', fun a => (IsEmpty.false a).elim⟩, fun _ => Iff.rfl⟩
+  rcases forall_iff_or_two_mem_two_notMem hMem hNotMem with
+    ⟨x₀, x₁, hne, hconst⟩ | ⟨y₀, y₁, n₀, n₁, hy₀, hy₁, hyne, hn₀, hn₁, hnne⟩
+  · exact (logSpaceManyOneAutoreducible_of_forall_iff hne hconst).polyTimeManyOneAutoreducible
+  · exact PolyTimeManyOneAutoreducible.of_two_mem_two_notMem hA hy₀ hy₁ hyne hn₀ hn₁ hnne
 
 /-- A set in `L` with no unique member or non-member is logspace many-one autoreducible. -/
 theorem LogSpaceManyOneAutoreducible.of_mem_L (hA : A ∈ L encA)

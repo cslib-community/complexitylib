@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.LogSpaceDerandomization.SourceRelease
+import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 import CslibFrontier.Foundations.Analysis.RootError
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Algebra.Order.Ring.Basic
@@ -125,22 +126,6 @@ private theorem root_sum_mul_sub_pow_le {α : Type*} (T : Finset α) {s : ℕ} (
       rw [show 2 * (s - 1) = (s - 1) + (s - 1) by omega, pow_add]
       ring
 
-private theorem sum_le_mul_of_card_support_le {α : Type*} (T : Finset α) {v : α → ℝ}
-    {C : ℝ} (hC : 0 ≤ C) (hv : ∀ z, v z ≤ C) {K : ℕ} (hK : #{z ∈ T | v z ≠ 0} ≤ K) :
-    ∑ z ∈ T, v z ≤ K * C := by
-  classical
-  have hsum : ∑ z ∈ T, v z = ∑ z ∈ T with v z ≠ 0, v z := by
-    rw [sum_filter]
-    refine sum_congr rfl fun z _ => ?_
-    split_ifs with hz
-    · rfl
-    · exact not_ne_iff.mp hz
-  rw [hsum]
-  calc
-    _ ≤ ∑ z ∈ T with v z ≠ 0, C := sum_le_sum fun z _ => hv z
-    _ = (#{z ∈ T | v z ≠ 0} : ℝ) * C := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ K * C := mul_le_mul_of_nonneg_right (by exact_mod_cast hK) hC
-
 variable {Ω V : Type*} [Fintype Ω] [Fintype V]
   {s : ℕ} {N u f : ℝ} {X Z Y : Ω → V → Prop}
   [∀ σ x, Decidable (X σ x)] [∀ σ z, Decidable (Z σ z)] [∀ σ y, Decidable (Y σ y)]
@@ -175,10 +160,8 @@ theorem rootDistPow_mul_le (hs : s ≠ 0) (hN : 0 < N) (hu : 0 < u) (hf : 0 < f)
           ∑ z ∈ ({z | Z σ z} : Finset V), ((Kr : ℝ) * CB) * eF σ x z := by
         refine mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => ?_) (by positivity)
         refine sum_le_sum fun x _ => sum_le_sum fun z hz => ?_
-        rw [← sum_mul]
-        exact mul_le_mul_of_nonneg_right
-          (sum_le_mul_of_card_support_le _ hCB (hBbound σ z) (hrow σ z (by simpa using hz)))
-          (heF σ x z)
+        exact sum_mul_le_of_card_support_le _ hCB (heF σ x z) (fun y _ => hBbound σ z y)
+          (fun _ _ => heF σ x z) (fun _ _ => le_rfl) (hrow σ z (by simpa using hz))
       _ = _ := by
         simp only [rootDistPow, rowNormPow, eF, ← mul_sum, ← mul_expect]
         ring

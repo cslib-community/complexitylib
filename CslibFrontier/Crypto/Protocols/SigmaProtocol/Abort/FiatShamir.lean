@@ -179,8 +179,7 @@ theorem fsAbortSignBounded_map_eq_iid {W : Type u}
   | succ K ih =>
     simp only [fsAbortSignBounded, PMF.iid, PMF.monad_bind_eq_bind,
       PMF.monad_pure_eq_pure, PMF.map_bind, PMF.bind_map]
-    congr 1
-    funext attempt
+    congr 1 with attempt : 1
     cases attempt with
     | none => simpa [PMF.map_comp, Function.comp_def, List.ofFn_cons] using ih
     | some sig =>

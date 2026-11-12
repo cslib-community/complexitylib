@@ -101,4 +101,70 @@ example : ComputableInO (fun p : Unit × Wrap => eWrap_elim p.2 fun q => q.1)
       eWrap_elim p.2 fun q => (encPair encUnit (encPair encUnary encBool) (p.1, q)).length :=
   eWrap_elim_inO ((ComputableInDegree.snd encUnit (encPair encUnary encBool)).fst').inO_one
 
+/-! Mistakes in the constructor list are reported before anything is declared. -/
+
+/--
+error: enc_inductive: list every constructor of `Label` once, in declaration order:
+  | resample | count | eval
+-/
+#guard_msgs in
+enc_inductive eLabelOrder : Label where
+  | count : encUnary
+  | resample
+  | eval : encUnary, encBits
+
+/--
+error: enc_inductive: `Label.eval` has 2 explicit field(s), but 1 encoding(s) are listed; give one
+  encoding per field, in order
+-/
+#guard_msgs (whitespace := lax) in
+enc_inductive eLabelFields : Label where
+  | resample
+  | count : encUnary
+  | eval : encUnary
+
+/--
+error: Type mismatch
+  encBits
+has type
+  List Bool ↪ List Bool
+but is expected to have type
+  ℕ ↪ List Bool
+-/
+#guard_msgs in
+enc_inductive eLabelType : Label where
+  | resample
+  | count : encBits
+  | eval : encUnary, encBits
+
+/-- A type abbreviation, which is not an inductive type. -/
+def Flag := Bool
+
+/--
+error: enc_inductive: `Flag` is not an inductive type
+-/
+#guard_msgs in
+enc_inductive eFlag : Flag where
+  | false
+  | true
+
+/-- A constructor with an implicit field. -/
+inductive Tagged where
+  | tag {n : ℕ} (b : Bool)
+
+/--
+error: enc_inductive: `Tagged.tag` has an implicit or instance field, which is not supported
+-/
+#guard_msgs in
+enc_inductive eTagged : Tagged where
+  | tag : encBool
+
+/--
+error: enc_inductive: `Option` has parameters or indices, which are not supported
+-/
+#guard_msgs in
+enc_inductive eOption : Option where
+  | none
+  | some : encUnary
+
 end CslibFrontierTests.InductiveEncoding

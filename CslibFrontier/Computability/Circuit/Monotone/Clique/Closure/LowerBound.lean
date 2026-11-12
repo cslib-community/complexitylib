@@ -124,10 +124,7 @@ theorem choose_le_or_pow_le_mul_size {g : ℕ} (hl : 2 ≤ l) (hg : 2 * l ^ 2 �
   have hlk : l ≤ k := by
     have := Nat.le_self_pow two_ne_zero l
     omega
-  have hn : 0 < n := by
-    by_contra hn
-    have hchoose : n.choose k = 0 := Nat.choose_eq_zero_of_lt (by omega)
-    exact hpos (hchoose ▸ Nat.zero_le _)
+  have hn : 0 < n := by grind
   have hne := nonempty_outputApproximator (r := r) hl hlk (fun _ hs => hC.ofFinset_eq_true hs)
     (not_le.1 hpos)
   have hhalf := Monotone.Negative.half_le_card_acceptedColorings (r := g) hn hg

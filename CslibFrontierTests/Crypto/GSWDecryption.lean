@@ -16,7 +16,7 @@ shallow circuit or bootstrappability.
 
 namespace CslibFrontierTests.GSWDecryption
 
-open Cslib.Crypto.Homomorphic.GSW
+open Cslib.Crypto Cslib.Crypto.Homomorphic.GSW
 
 private def rawCiphertext (w : ℕ) (a b : ZMod (2 ^ w)) : Ciphertext 1 w :=
   fun _ j => (if j.1 = 0 then a else b).val.testBit j.2.val
@@ -47,9 +47,9 @@ example : decrypt (fun _ => 0) (rawCiphertext 0 0 0) = false := by
 
 -- The row identity applies after separate total decoding of arbitrary input words.
 example :
-    decrypt (decodeSecret 1 3 [true, false, true])
+    decrypt (LWE.decodeSecret 1 3 [true, false, true])
       (decodeCiphertext 1 3 [false, true, true]) =
-      decode 3 (decryptionPhase (decodeSecret 1 3 [true, false, true])
+      LWE.decode 3 (decryptionPhase (LWE.decodeSecret 1 3 [true, false, true])
         (decodeCiphertext 1 3 [false, true, true]) (0, ⟨3 - 1, by omega⟩)) :=
   decrypt_eq_decode_decryptionPhase (by decide) _ _
 

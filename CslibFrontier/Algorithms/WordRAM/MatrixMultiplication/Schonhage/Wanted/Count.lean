@@ -21,7 +21,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
   by the actual coordinate-loading and tile-index code in linear charged time.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 
@@ -46,12 +46,7 @@ theorem exec_clearCounts {w L m N Q : ℕ} (x : Data 96) (hx : Parameters L m N 
   let start := x.set index 0
   have hs : ExecWithin w (ram[index ← #0] : Code .standard 96) x start 1 := by
     ram_eval [start]
-  have hp : Parameters L m N Q start := hx.reframe (by
-    intro i hi
-    apply hs.regs_eq
-    have h : ∀ i ∈ parameterRegisters, (ram[index ← #0] : Code .standard 96).Preserves i := by
-      decide +kernel
-    exact h i hi)
+  have hp : Parameters L m N Q start := hx.of_exec hs (by decide +kernel)
   have hstart : P (start.regs index) start := ⟨hp, by simp [start], by simp [start]⟩
   have hb (z : Data 96) (hz : P (z.regs index) z) (hn : z.regs index < T) :
       ∃ u, ExecWithin w body z u 3 ∧ P (z.regs index + 1) u ∧
@@ -69,11 +64,7 @@ theorem exec_clearCounts {w L m N Q : ℕ} (x : Data 96) (hx : Parameters L m N 
     have he : ExecWithin w body z u 3 := by
       ram_eval [body, u, hz.1.counts, hz.1.tables.zero, hz.1.tables.one, hfaddr, hnext,
         pointer, counts, index, BandPreparation.zero, BandPreparation.one, Fin.mk.injEq]
-    have hu : Parameters L m N Q u := hz.1.reframe (by
-      intro i hi
-      apply he.regs_eq
-      have h : ∀ i ∈ parameterRegisters, body.Preserves i := by decide +kernel
-      exact h i hi)
+    have hu : Parameters L m N Q u := hz.1.of_exec he (by decide +kernel)
     have hi : u.regs index = z.regs index + 1 := by simp [u, index]
     refine ⟨u, he, ⟨hu, ?_, ?_⟩, hi⟩
     · intro t ht
@@ -121,12 +112,7 @@ theorem exec_countQueries {w L m N Q : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ 
   let start := x.set index 0
   have hs : ExecWithin w (ram[index ← #0] : Code .standard 96) x start 1 := by
     ram_eval [start]
-  have hsp : Parameters L m N Q start := hx.reframe (by
-    intro i hi
-    apply hs.regs_eq
-    have h : ∀ i ∈ parameterRegisters, (ram[index ← #0] : Code .standard 96).Preserves i := by
-      decide +kernel
-    exact h i hi)
+  have hsp : Parameters L m N Q start := hx.of_exec hs (by decide +kernel)
   have hi : P (start.regs index) start := by
     refine ⟨hsp, hinput, ?_, by simp [start]⟩
     intro t ht

@@ -20,7 +20,7 @@ public import CslibFrontier.Algorithms.MatrixMultiplication.Schonhage.BandBounds
   original four input words, preserving every original query word.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 
@@ -151,12 +151,7 @@ theorem exec_tables {w L m N Q : ℕ} (hm : m ≤ L) (x : Data 96)
     omega
   obtain ⟨y, hy, _, _, hforward, hf⟩ := BandPreparation.exec_tables L m
     (inputLimit Q) (tableAddress L Q) s sp.tables (by rfl) htfit
-  have yp : Parameters L m N Q y := sp.reframe (by
-    intro i hi
-    apply hy.regs_eq
-    have hp : ∀ i ∈ parameterRegisters, BandPreparation.tablesCode.Preserves i := by
-      decide +kernel
-    exact hp i hi)
+  have yp : Parameters L m N Q y := sp.of_exec hy (by decide +kernel)
   refine ⟨y, ?_, yp, hforward, ?_⟩
   · apply (hh.seq (hc.seq (hs.seq hy))).mono
     nlinarith only [Nat.zero_le ((6 * L + 16) * 2 ^ L)]

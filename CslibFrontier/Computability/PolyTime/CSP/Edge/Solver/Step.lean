@@ -51,8 +51,8 @@ private theorem poly_flatten : ComputableInPolyTime (List.flatten (α := Bool))
     (encList (encList encBool)) (encList encBool) :=
   .of_tidy (ComputableTidilyInPolyTime.flatten encBool)
 
-attribute [local fun_prop] EdgeForest.poly_body EdgeForest.poly_labels poly_parent poly_cycle
-  poly_inputMk poly_frameMk
+attribute [local fun_prop] EdgeForest.encInput_body_polyTime EdgeForest.encInput_labels_polyTime
+  poly_parent poly_cycle poly_inputMk poly_frameMk
   poly_prepare poly_blossomCycle poly_flatten NativeWalk.computableInPolyTime_flipWith
   NativeWalk.computableInPolyTime_edgesWith NativeWalk.computableInPolyTime_internalWith
   Contraction.computableInPolyTime_contractWith Contraction.computableInPolyTime_referenceRowsWith

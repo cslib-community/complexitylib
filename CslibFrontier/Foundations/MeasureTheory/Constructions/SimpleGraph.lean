@@ -19,11 +19,13 @@ countable `V` single graphs are then measurable, since a graph is determined by 
 relation. For finite `V` this makes `SimpleGraph V` a discrete measurable space
 (`DiscreteMeasurableSpace` follows from `MeasurableSingletonClass` and `Finite (SimpleGraph V)`),
 so every set of graphs on finitely many vertices is measurable (`MeasurableSet.of_discrete`). The
-graphs avoiding a fixed set of edges form a measurable set for every countable `V`.
+graphs with a prescribed pattern of edges and non-edges on a fixed set of pairs, in particular those
+avoiding a fixed set of edges, form a measurable set for every countable `V`.
 
 ## Main results
 
 * `SimpleGraph.instMeasurableSingletonClass`: single graphs are measurable for countable `V`.
+* `SimpleGraph.measurableSet_edgePattern`: events prescribing edges and non-edges are measurable.
 * `SimpleGraph.measurableSet_disjoint_edgeSet`: events defined by forbidden edges are measurable.
 -/
 
@@ -46,13 +48,25 @@ instance instMeasurableSingletonClass [Countable V] :
     rw [this]
     exact measurable_adj (measurableSet_singleton _)
 
+/-- The graphs with a prescribed pattern of edges and non-edges on a set of pairs form a
+measurable set: `e ∈ t` is an edge exactly when `b e = true`. -/
+theorem measurableSet_edgePattern [Countable V] (t : Set (Sym2 V)) (b : Sym2 V → Bool) :
+    MeasurableSet {G : SimpleGraph V | ∀ e ∈ t, (e ∈ G.edgeSet ↔ b e = true)} := by
+  have : {G : SimpleGraph V | ∀ e ∈ t, (e ∈ G.edgeSet ↔ b e = true)} =
+      ⋂ e ∈ t, {G | e ∈ G.edgeSet ↔ b e = true} := by
+    ext G; simp
+  rw [this]
+  refine MeasurableSet.biInter (Set.to_countable t) fun e _ => ?_
+  have he : MeasurableSet {G : SimpleGraph V | e ∈ G.edgeSet} :=
+    measurableSet_setOfPred.2 ((measurable_set_iff.1 measurable_edgeSet) e)
+  cases b e
+  · simp only [Bool.false_eq_true, iff_false]
+    exact he.compl
+  · simpa only [iff_true] using he
+
 /-- The graphs with no edge in a given set form a measurable set. -/
 theorem measurableSet_disjoint_edgeSet [Countable V] (t : Set (Sym2 V)) :
     MeasurableSet {G : SimpleGraph V | Disjoint t G.edgeSet} := by
-  have : {G : SimpleGraph V | Disjoint t G.edgeSet} = ⋂ e ∈ t, {G | e ∈ G.edgeSet}ᶜ := by
-    ext G; simp [Set.disjoint_left]
-  rw [this]
-  refine MeasurableSet.biInter (Set.to_countable t) fun e _ => ?_
-  exact (measurableSet_setOfPred.2 ((measurable_set_iff.1 measurable_edgeSet) e)).compl
+  simpa [Set.disjoint_left] using measurableSet_edgePattern t fun _ => false
 
 end SimpleGraph

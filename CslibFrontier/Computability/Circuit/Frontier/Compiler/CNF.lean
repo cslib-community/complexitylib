@@ -288,13 +288,7 @@ private theorem mem_reachWiresCode_iff {σ : Signature} {n m : ℕ} (c : Circuit
       have hk_mem : n + k.val ∈ accAt (c.size - 1 - k.val) := ih.2 k rfl
       set t := c.size - 1 - k.val
       have ht_lt : t < L.length := by rw [hL_len]; omega
-      have hLt : L[t]'ht_lt = ((c.program.lines k).code, k.val) := by
-        have hidx : c.code.1.zipIdx.length - 1 - t = k.val := by
-          simp only [List.length_zipIdx, Circuit.length_code_fst]
-          omega
-        simp only [L, List.getElem_reverse]
-        simp only [hidx, List.getElem_zipIdx, Nat.zero_add, Prod.mk.injEq, and_true]
-        simp [hcode1]
+      have hLt : L[t]'ht_lt = ((c.program.lines k).code, k.val) := by grind
       have hstep_mem : ((c.program.lines k).wires a).toNat ∈ accAt (t + 1) := by
         have htake : L.take (t + 1) = L.take t ++ [L[t]'ht_lt] :=
           List.take_succ_eq_append_getElem ht_lt
@@ -666,12 +660,7 @@ theorem acceptCount_eq_two_pow_freeShift_mul_modelCount (c : Circuit σ n m)
       (Finset.univ.filter fun x₀ : R → Bool => extendR x₀ ∈ N.accepted).card := by
     let toR (τ : S → Bool) (i : R) : Bool :=
       τ ⟨i.1.val, (hmemS_input i.1).mpr i.2⟩
-    have hext_eq (τ : S → Bool) (i : Fin n) : extendR (toR τ) i = extendS τ i.val := by
-      by_cases hi : i ∈ R
-      · have hiS : i.val ∈ S := (hmemS_input i).mpr hi
-        simp [extendR, extendS, toR, hi, hiS]
-      · have hiS : i.val ∉ S := fun h => hi ((hmemS_input i).mp h)
-        simp [extendR, extendS, hi, hiS]
+    have hext_eq (τ : S → Bool) (i : Fin n) : extendR (toR τ) i = extendS τ i.val := by grind
     refine Finset.card_bij (fun τ _ => toR τ) (fun τ hτ => ?_) (fun τ₁ h₁ τ₂ h₂ h => ?_)
       (fun x₀ hx₀ => ?_)
     · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hτ ⊢
@@ -695,9 +684,7 @@ theorem acceptCount_eq_two_pow_freeShift_mul_modelCount (c : Circuit σ n m)
       have he₂ := eq_trace hsat₂ (head ⟨w, hw⟩)
       simpa only [signal_head, extendS, hv, ↓reduceDIte] using he₁.trans he₂.symm
     · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx₀
-      have hacc : ∀ o, c.eval I (extendR x₀) o ∈ accSet acc o := by
-        have hx' : extendR x₀ ∈ (network c I (accSet acc)).accepted := hx₀
-        rwa [accepted_network] at hx'
+      have hacc : ∀ o, c.eval I (extendR x₀) o ∈ accSet acc o := by grind [accepted_network]
       let τ : S → Bool := fun v =>
         let hlt : v.1 < n + c.size := by
           obtain ⟨w, hw_eq, _⟩ := (mem_reachWiresCode_iff c v.1).mp (List.mem_toFinset.mp v.2)

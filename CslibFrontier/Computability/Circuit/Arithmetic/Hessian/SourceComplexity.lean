@@ -36,7 +36,7 @@ When raw variables are supplied alongside helpers, only the helper Hessians need
   [S. Schlesinger, *Algebraic circuit formalizations in Complexitylib*][Schlesinger2026Algebraic].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

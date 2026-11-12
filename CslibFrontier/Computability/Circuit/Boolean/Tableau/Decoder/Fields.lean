@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.Tseitin
+import CslibFrontier.Foundations.Data.Nat.Div
 import Mathlib.Data.Nat.Log
 import Mathlib.Data.Nat.Size
 
@@ -358,12 +359,6 @@ private theorem chainWire_lt {k i P : ℕ} (hk : k < 14) (hi : i < P) : k * P + 
   have : k * P + P ≤ 14 * P := by rw [← Nat.succ_mul]; exact Nat.mul_le_mul_right _ hk
   omega
 
-private theorem chainWire_div {k i P : ℕ} (hi : i < P) : (k * P + i) / P = k := by
-  rw [Nat.mul_comm, Nat.mul_add_div (by omega), Nat.div_eq_of_lt hi, Nat.add_zero]
-
-private theorem chainWire_mod {k i P : ℕ} (hi : i < P) : (k * P + i) % P = i := by
-  rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hi]
-
 theorem fieldVal_input (idx : ℕ) {w : ℕ} (hw : w < 4 + (s + cb + tb)) :
     fieldVal s cb tb x n T idx w = idx.testBit w := by
   simp only [fieldVal, hw, ↓reduceIte]
@@ -399,8 +394,8 @@ theorem fieldVal_chain (idx : ℕ) {k i : ℕ} (hk : k < 14) (hi : i < s + cb + 
       treeBase (4 + (s + cb + tb)) (s + cb + tb) := by simp only [treeBase]; omega
   have h₆ : chainBase (4 + (s + cb + tb)) + k * (s + cb + tb) + i -
       chainBase (4 + (s + cb + tb)) = k * (s + cb + tb) + i := by omega
-  simp only [fieldVal, h₁, h₂, h₃, h₄, h₅, h₆, ↓reduceIte, chainWire_div hi,
-    chainWire_mod hi]
+  simp only [fieldVal, h₁, h₂, h₃, h₄, h₅, h₆, ↓reduceIte,
+    Nat.mul_add_div_of_lt k hi, Nat.mul_add_mod_of_lt hi]
 
 theorem fieldVal_tree (idx : ℕ) {ℓ q : ℕ} (hℓ : ℓ ≤ Nat.size x.length) (hq : q < 2 ^ ℓ) :
     fieldVal s cb tb x n T idx (treeBase (4 + (s + cb + tb)) (s + cb + tb) + (2 ^ ℓ - 1) + q) =
@@ -535,19 +530,13 @@ theorem allGates_wellFormedAt_fieldGates (hm : Nat.size x.length ≤ s + cb + tb
     (fun i hi => wellFormedAt_not (by omega)) (fun k hk i hi => ?_) (fun ℓ hℓ q hq => ?_)
     (fun i hi => ?_)
   · have hle := chain_off_add_width_le (s := s) (cb := cb) (tb := tb) (x := x) (n := n) (T := T) k
-    refine wellFormedAt_two (arity_andOr _) ?_ ?_
-    · simp only [chainBase]
-      split_ifs <;> omega
-    · simp only [chainBase]
-      split_ifs <;> omega
+    refine wellFormedAt_two (arity_andOr _) ?_ ?_ <;> simp only [chainBase] <;> split_ifs <;> omega
   · unfold treeGate
-    split_ifs with h₀ h₁
+    split_ifs with h₀
     · exact wellFormedAt_const _
-    · have hq' := Nat.mod_lt q (Nat.two_pow_pos (ℓ - 1))
-      have hpow : 2 ^ ℓ = 2 * 2 ^ (ℓ - 1) := by
-        rw [← Nat.pow_succ']; congr 1; omega
-      refine wellFormedAt_two rfl ?_ ?_ <;> simp only [treeBase, chainBase] <;> omega
-    · have hq' := Nat.mod_lt q (Nat.two_pow_pos (ℓ - 1))
+    -- Both choices of the second argument read earlier wires.
+    all_goals
+      have hq' := Nat.mod_lt q (Nat.two_pow_pos (ℓ - 1))
       have hpow : 2 ^ ℓ = 2 * 2 ^ (ℓ - 1) := by
         rw [← Nat.pow_succ']; congr 1; omega
       refine wellFormedAt_two rfl ?_ ?_ <;> simp only [treeBase, chainBase] <;> omega

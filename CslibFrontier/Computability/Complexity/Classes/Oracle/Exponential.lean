@@ -86,12 +86,8 @@ def IsOracleExpTimeOn {Operation α β : Type} [DecidableEq Operation]
   Finite Operation ∧ ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
     (machine : Turing.MultiTapePTM k Bool Control Operation) (c d : ℕ),
     ∀ a (State : Type) (oracle : Operation × List Bool → StateT State PMF (List Bool)) s,
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (output <$> program a)).run s =
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-          (machine.runOracle (c * 2 ^ (d * (input a).length)) (input a))).run s
+      ProbOracleComp.runWith oracle (output <$> program a) s =
+      ProbOracleComp.runWith oracle (machine.runOracle (c * 2 ^ (d * (input a).length)) (input a)) s
 
 namespace IsOracleExpTimeOn
 

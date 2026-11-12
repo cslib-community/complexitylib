@@ -132,7 +132,7 @@ noncomputable def grover (N : ℕ) : ℕ → State N Unit →ₗᵢ[ℂ] State N
 /-- The Grover angle `θ = arcsin(1 / √N)`. -/
 noncomputable def groverAngle (N : ℕ) : ℝ := Real.arcsin (Real.sqrt N)⁻¹
 
-/-- The sine and cosine of the Grover angle: `sin θ = 1 / √N` and `cos θ / √(N - 1) = 1 / √N`. -/
+/-- The sine of the Grover angle: `sin θ = 1 / √N` for `N ≥ 2`. -/
 private theorem sin_groverAngle (hN : 2 ≤ N) : Real.sin (groverAngle N) = (Real.sqrt N)⁻¹ := by
   have hpos : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by positivity)
   have hle : (Real.sqrt N)⁻¹ ≤ 1 := by
@@ -143,17 +143,11 @@ private theorem sin_groverAngle (hN : 2 ≤ N) : Real.sin (groverAngle N) = (Rea
 /-- The angle `θ ∈ [0, π / 2]` with `sin² θ = t / N`. -/
 noncomputable def searchAngle (N t : ℕ) : ℝ := Real.arcsin (Real.sqrt (t / N))
 
-private theorem div_le_one_of_le' {t : ℕ} (ht : t ≤ N) : (t : ℝ) / N ≤ 1 := by
-  rcases Nat.eq_zero_or_pos N with rfl | hN
-  · simp
-  · rw [div_le_one (by exact_mod_cast hN)]
-    exact_mod_cast ht
-
 theorem sin_searchAngle {t : ℕ} (ht : t ≤ N) :
     Real.sin (searchAngle N t) = Real.sqrt (t / N) := by
   refine Real.sin_arcsin (by linarith [Real.sqrt_nonneg ((t : ℝ) / N)]) ?_
   rw [Real.sqrt_le_one]
-  exact div_le_one_of_le' ht
+  exact div_le_one_of_le₀ (by exact_mod_cast ht) (Nat.cast_nonneg _)
 
 theorem cos_searchAngle (t : ℕ) :
     Real.cos (searchAngle N t) = Real.sqrt (1 - t / N) := by

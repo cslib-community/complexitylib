@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Foundations.Data.List.Fold
 import Mathlib.Data.Fintype.Basic
 
@@ -29,7 +30,7 @@ Adapts Computability/Probabilistic/Finite.lean on the cslib `crypto` branch at
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
@@ -71,22 +72,8 @@ theorem finite_cases
     {tagEncoding : Tag ↪ List Bool} {tag : α → Tag} {branch : Tag → α → β}
     (htag : ComputableTidilyInPolyTime tag input tagEncoding)
     (hbranch : ∀ choice, ComputableTidilyInPolyTime (branch choice) input output) :
-    ComputableTidilyInPolyTime (fun a => branch (tag a) a) input output := by
-  classical
-  let _ := Fintype.ofFinite Tag
-  cases isEmpty_or_nonempty Tag with
-  | inl hempty =>
-    let : IsEmpty α := ⟨fun a => isEmptyElim (tag a)⟩
-    exact of_finite _
-  | inr hnonempty =>
-    let fallback := Classical.choice hnonempty
-    have hselect (tags : List Tag) : ComputableTidilyInPolyTime (fun a =>
-        tags.foldr (fun choice rest => if tag a = choice then branch choice a else rest)
-          (branch fallback a)) input output := by
-      induction tags with
-      | nil => exact hbranch fallback
-      | cons choice tags ih => exact (htag.decide_eq' (const choice)).ite_decide (hbranch choice) ih
-    simpa only [List.foldr_ite_eq_of_mem, Finset.mem_toList, Finset.mem_univ] using
-      hselect (Finset.univ.toList : List Tag)
+    ComputableTidilyInPolyTime (fun a => branch (tag a) a) input output :=
+  (ComputableInPolyTime.finite_cases htag.computableInPolyTime fun choice =>
+    (hbranch choice).computableInPolyTime).tidy
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime

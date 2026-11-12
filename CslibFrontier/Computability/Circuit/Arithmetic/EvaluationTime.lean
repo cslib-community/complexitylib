@@ -31,7 +31,7 @@ The semantic bridges are the existing `Program.evalCode_code` and `Circuit.eval_
 These runtime certificates are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Arithmetic
 
@@ -66,8 +66,7 @@ private theorem polyTime_step :
   have hvalue := (of_finite (encIn := encPair (ArithOp.encoding eF) (encPair eF eF))
     (encOut := eF) value).comp
     ((snd _ _).fst'.prod ((hargs 0).prod (hargs 1)))
-  exact .of_tidy (ComputableTidilyInPolyTime.listAppend' (.fst _ _)
-    (ComputableTidilyInPolyTime.cons' hvalue.tidy (.const [])))
+  exact listAppend' (.fst _ _) (cons' hvalue (.const []))
 
 /-- The input and the entire arithmetic gate list are charged runtime data. The carrier and
 scalar encoding are fixed; missing arguments and invalid binary indices use the total default
@@ -82,8 +81,7 @@ theorem computableInPolyTime_evalCode {x : α → List F}
       eIn (encList eF) := by
   let _ := Fintype.ofFinite F
   let bound := Finset.univ.sup (fun x : F => (eF x).length)
-  apply ComputableInPolyTime.of_tidy
-  apply ComputableTidilyInPolyTime.foldl_of_bounded_growth hgates.tidy hx.tidy polyTime_step.tidy
+  apply ComputableInPolyTime.foldl_of_bounded_growth hgates hx polyTime_step
     (growth := 2 * bound + 1)
   intro state gate
   simp only [encList_append, encList_cons, encList_nil, List.append_nil,

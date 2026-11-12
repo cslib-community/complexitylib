@@ -54,9 +54,10 @@ The open Mathlib PR
 (`Mathlib/Computability/SingleOracle`) proposes overlapping infrastructure: oracle codes
 `Oracle.Single.Code` with `eval` and a relativized `evaln`, a code for `evaln`, and the jump,
 related back to `RecursiveIn`. Its oracles are total functions and its `evaln` reads the whole
-oracle. This file instead builds on merged Mathlib's `Nat.RecursiveIn` with partial oracles, and
-its `evaln` runs against a finite prefix `List ℕ`, which gives `evaln_take` and `exists_use`
-directly. Upstreaming must be reconciled with that PR (see `UPSTREAM.md`).
+oracle. Nothing here is ported from it. This file instead builds on merged Mathlib's
+`Nat.RecursiveIn` with partial oracles, and its `evaln` runs against a finite prefix `List ℕ`,
+which gives `evaln_take` and `exists_use` directly. Upstreaming must be reconciled with that PR,
+which `CONTRIBUTING.md` lists among the upstream coordination threads.
 
 ## References
 
@@ -596,3 +597,20 @@ theorem TuringDegree.countable_Iic (d : TuringDegree) : (Set.Iic d).Countable :=
   intro d hd
   induction d using Antisymmetrization.ind with
   | _ f => exact ⟨f, hd, rfl⟩
+
+
+namespace Nat.RecursiveIn.Code
+open Encodable Denumerable _root_.Primrec
+
+instance : Primcodable Code where
+  toEncodable := inferInstance
+  prim := by
+    have : (fun n => Encodable.encode (Encodable.decode (α := Code) n)) = Nat.succ := by
+      ext n
+      simp only [decode_eq_ofNat, encode_some, encode_ofNat]
+    rw [this]
+    exact Primrec.succ
+
+end Code
+end RecursiveIn
+end Nat

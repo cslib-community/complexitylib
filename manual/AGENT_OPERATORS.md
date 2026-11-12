@@ -1,6 +1,6 @@
-# Complexitylib Agent Operator's Manual
+# cslib-frontier Agent Operator's Manual
 
-This short manual is for people directing agents in Complexitylib. It explains whom to ask,
+This short manual is for people directing agents in cslib-frontier. It explains whom to ask,
 what to ask for, and how to judge the handoff. The substantial [Operator's Manual](README.md)
 explains how to work in the codebase: its tactics, models, proof patterns, examples and procedures.
 Both humans and agents use that reference. You do not need an agent to follow it.
@@ -78,15 +78,31 @@ Assign review to an agent that did not design or implement the change. For examp
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds. Review the impact on both manuals and any affected
-> formal abstract. Report concrete findings and a verdict, stating what you checked and what
-> remains uncertain.
+> encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
+> their files, and report any substantial argument the change repeats that another proof or an
+> existing lemma already makes. Follow a representative caller: check whether named accessors,
+> matcher/range facts and generated certificates remove representation work, and compare any
+> sibling implementation or conversion bridge. Assess whether the proof strategy, invariant and
+> helper statements fit that use. Review the impact on both manuals and any affected
+> results-inventory entry. Report concrete findings and a verdict, stating what you checked and
+> what remains uncertain.
+
+Ask the reviewer to consider whether a different statement, API, invariant or proof strategy
+would make the result clearer to state, prove and use, while preserving its mathematical strength.
+Require inspection of the duplication notices and the declarations or proof blocks they identify;
+an advisory check's successful exit does not establish that its candidates were reviewed. Concrete
+cleanup affecting the contribution belongs in its original PR, under the
+[quality and deferral rules](../AGENTS.md#improving-library-ergonomics).
 
 Lean validation establishes the checked statements under their definitions and dependencies.
 Review must also judge whether those statements express the intended mathematics and whether
 someone can use the interface. Ask for a satisfying instance or meaningful edge case when a
-contract may be vacuous. An approval must cover the final revision; substantive fixes require
-review of the affected reasoning. Unchanged evidence can be reused after checking its identity.
+contract may be vacuous. A diff shows a new copy of an argument but not the proof it repeats,
+so ask for that comparison explicitly. For an API cleanup, ask which actual caller became simpler
+and why; the [caller review procedure](../AGENTS.md#check-the-api-through-its-callers) gives concrete
+checks. An approval must cover the final revision; substantive
+fixes require review of the affected reasoning. Unchanged evidence can be reused after checking
+its identity.
 
 ## Direct a coordinator
 
@@ -103,13 +119,35 @@ review, say so in the PR or its linked issue: agents then approve it without que
 someone you name queues it. Agents without write access can prepare and review work but cannot
 queue it. Coordinators queue approved heads still waiting and monitor the merge queue through
 landing. [Coordinator duties](../AGENTS.md#coordinators) define the details.
+
+An approval with review still pending is conditional. Ask for a final handoff that links the
+earlier proof/API/caller judgment and resolves the named source, notice and manual-review holds.
+The queue helper's `--wait` option queues automatically when CI passes; do not start it while
+newly produced reports or pages still need inspection. A green check alone does not release
+those holds. This needs a coverage decision, not another full review of unchanged code.
+
 When the queue ejects a PR whose only conflict is in `references.bib`, the coordinator or author
 can run `python3 scripts/resolve_bib_conflict.py origin/<branch>` after `git fetch origin` to
 write the merge with `main` instead of sending the PR back. It refuses any other conflict and
 pushes nothing. Pushing its commit to the PR branch is a deliberate step by the author or a
 coordinator acting for them, who records the push. Existing approval carries forward when
 `scripts/check_restack.py` passes and CI passes at the new head, as
-[Restacks](../AGENTS.md#restacks) describes.
+[Restacks](../AGENTS.md#restacks) describes. When the only conflicts are in `references.bib` or the
+`mk_all` aggregates, `python3 scripts/restack_mechanical.py <PR> --approved-head <SHA>` does the
+merge, the regeneration and that check in one step. It pushes only with `--push`, under the same
+rule for who pushes, and prints the queue command without running it.
+
+When several coordinators share one host, give them a single limit on concurrent Lean builds,
+not only a thread count. Their builds can exhaust the kernel's file handles before its
+processors, and then everyone's builds fail
+([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
+Agents on one host also share Lake's artifact cache, which restores a module that another
+checkout built without its warnings. Full `scripts/check.sh` re-elaborates those built root-package
+sources; quick mode checks affected sources, including unchanged clients, built import aggregates
+and executable helpers.
+Bare Lake commands still lack this audit. When a local check and CI disagree about a warning,
+trust CI
+([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.

@@ -11,6 +11,7 @@ public import CslibFrontier.DataStructure.Online.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 public import Mathlib.Data.Fintype.Perm
 public import Mathlib.Data.Finset.Lattice.Fold
+import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
@@ -284,11 +285,8 @@ theorem matchCostAlong_swap_le (s t : Fin k → α) (σ : Equiv.Perm (Fin k)) {a
 theorem matchCostAlong_update_le (s t : Fin k → α) (σ : Equiv.Perm (Fin k)) (i : Fin k) (y : α) :
     matchCostAlong M (Function.update s i y) t σ ≤ matchCostAlong M s t σ + M.dist (s i) y := by
   unfold matchCostAlong
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i),
-    ← Finset.add_sum_erase _ _ (Finset.mem_univ i), Function.update_self]
-  have hrest : ∑ j ∈ Finset.univ.erase i, M.dist (Function.update s i y j) (t (σ j)) =
-      ∑ j ∈ Finset.univ.erase i, M.dist (s j) (t (σ j)) :=
-    Finset.sum_congr rfl fun j hj => by rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
+  rw [Finset.sum_apply_update_of_mem (Finset.mem_univ i) (fun j a => M.dist a (t (σ j))),
+    ← Finset.add_sum_erase _ _ (Finset.mem_univ i)]
   have htri := M.dist_triangle y (s i) (t (σ i))
   have hc := M.dist_comm y (s i)
   omega
@@ -298,11 +296,8 @@ theorem matchCostAlong_update_toward (s t : Fin k → α) (σ : Equiv.Perm (Fin 
     (hy : M.dist (s i) (t (σ i)) = M.dist (s i) y + M.dist y (t (σ i))) :
     matchCostAlong M (Function.update s i y) t σ + M.dist (s i) y = matchCostAlong M s t σ := by
   unfold matchCostAlong
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i),
-    ← Finset.add_sum_erase _ _ (Finset.mem_univ i), Function.update_self]
-  have hrest : ∑ j ∈ Finset.univ.erase i, M.dist (Function.update s i y j) (t (σ j)) =
-      ∑ j ∈ Finset.univ.erase i, M.dist (s j) (t (σ j)) :=
-    Finset.sum_congr rfl fun j hj => by rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
+  rw [Finset.sum_apply_update_of_mem (Finset.mem_univ i) (fun j a => M.dist a (t (σ j))),
+    ← Finset.add_sum_erase _ _ (Finset.mem_univ i)]
   omega
 
 end Cslib.DataStructure.KServer

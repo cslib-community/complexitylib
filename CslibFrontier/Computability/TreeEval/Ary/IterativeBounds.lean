@@ -117,10 +117,7 @@ theorem controlBounds_step (T : Tree d b H) (hd : 0 < d)
               (by omega) hi htail
           · rw [step_ret_undo_last hd e E us T.nodeAt S fr st hu hj hi]
             exact ⟨by change st.length ≤ H; omega, htail⟩
-      · have hu' : fr.undo = false := by
-          cases h : fr.undo with
-          | false => rfl
-          | true => exact (hu h).elim
+      · have hu' : fr.undo = false := by grind
         by_cases hj : fr.child.val + 1 < d
         · rw [step_ret_forward_next hd e E us T.nodeAt S fr st hu' hj]
           exact controlBounds_cons _ _ _ _ hcons hfr htail

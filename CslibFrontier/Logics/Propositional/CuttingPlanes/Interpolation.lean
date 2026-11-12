@@ -153,7 +153,7 @@ private theorem lineOK_of_isProof {Γ : Set (Ineq V)} {ls : List (Ineq V)} (h : 
       | obtain ⟨j₁, hj₁, e₁⟩ := exists_lt_of_mem (J := c • I₁) hI₁
         exact Or.inr (Or.inr ⟨j₁, j₁, I₁, I₁, hj₁, hj₁, e₁, e₁, fun σ h₁ _ => h₁.nsmul c⟩)
       | obtain ⟨j₁, hj₁, e₁⟩ := exists_lt_of_mem (J := I₁.div c) hI₁
-        exact Or.inr (Or.inr ⟨j₁, j₁, I₁, I₁, hj₁, hj₁, e₁, e₁, fun σ h₁ _ => h₁.div hc hdvd⟩)
+        exact Or.inr (Or.inr ⟨j₁, j₁, I₁, I₁, hj₁, hj₁, e₁, e₁, fun σ h₁ _ => h₁.div hdvd⟩)
   | nil => simp at hj
 
 variable {X Y Z : Type*}
@@ -282,8 +282,7 @@ theorem ecomplexity_memRight_holds_le [Fintype Y] [Finite Z] (I : Ineq (Fin n �
     omega
   rw [hcard] at h
   refine le_of_eq_of_le ?_ h
-  congr 1
-  funext a b
+  congr 1 with a b : 2
   simp only [MemRight, Set.mem_ofPred_eq, holds_sum_elim_sum_elim_iff]
 
 /-- **The search at an inequality of `Γ_A`** [Krajíček, proof of Theorem 6.4][Krajicek1997]. Let

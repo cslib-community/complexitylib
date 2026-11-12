@@ -53,7 +53,7 @@ abbrev Args := RawController.Query.RequestArgs Context
 /-- Pass the actual stored point to routed interpolation, retaining the supplied alphabet. -/
 @[expose] def gateArgs : Args → QueryReplay.GateReply.Args :=
   fun ((N, b, σ, q, m, alphabet, limit), (p, d, r), (_, path, point, chunk)) =>
-    ((σ, q, path), (((N, b, σ, 0, m, chunk, r * m),
+    ((σ, q, path), ((⟨N, b, σ, 0, m, chunk, r * m⟩,
       (p, alphabet, d * r), point, limit), r))
 
 /-- Node replies are immediate; gate requests enter the existing concrete gate supplier. -/

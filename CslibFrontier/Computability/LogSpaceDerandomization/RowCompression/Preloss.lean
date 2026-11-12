@@ -119,8 +119,7 @@ theorem abs_update_sub_le_mul_clippedError {s : Finset ι} {n K : ℕ} {ρ z η 
   calc |update s n K ρ z w y ν - w y ν| ≤ 6 * ρ :=
       (abs_update_sub_le_six_mul y ν).trans (mul_le_mul_of_nonneg_left hno (by norm_num))
     _ = (12 * (1 + η) / η) * ρ * (η / (2 * (1 + η))) := hcancel.symm
-    _ ≤ (12 * (1 + η) / η) * ρ * clippedError d v raw :=
-      mul_le_mul_of_nonneg_left he (mul_nonneg hC hρ)
+    _ ≤ (12 * (1 + η) / η) * ρ * clippedError d v raw := by gcongr
 
 /-- The weighted preloss estimate [OpenAI2026LogSpace, Lemma 8.2, (8.9)] for actual iterates.
 The right-hand errors use raw prefixes, not compressed rows. No target upper bound is needed. -/

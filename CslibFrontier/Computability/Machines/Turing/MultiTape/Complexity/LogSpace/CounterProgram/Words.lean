@@ -128,41 +128,13 @@ theorem reachesOut_header (hP : P.CodeAt 0 headerCode)
       (4, [w.length, k, 0, 0]) [] := by
   simp only [headerCode, codeAt_cons] at hP
   obtain ⟨h₀, h₁, h₂, h₃, -⟩ := hP
-  have scanN : ∀ j ≤ w.length, P.ReachesOut (frame w ++ List.replicate k true) (P.Active B)
-      (0, [j, 0, 0, 0]) (2, [w.length, 0, 0, 0]) [] := by
-    intro j hj
-    induction h : w.length - j generalizing j with
-    | zero =>
-      obtain rfl : j = w.length := by omega
-      refine ReachesOut.read h₀ (bounded4 (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero, input_end, readLabel]
-      exact ReachesOut.refl _
-    | succ _ ih =>
-      refine ReachesOut.read h₀ (bounded4 (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-        input_marker w k (show j < w.length by omega), readLabel]
-      refine ReachesOut.assign (by simpa using h₁) (bounded4 (by omega) (by omega) (by omega)
-        (by omega)) ?_
-      simpa using ih (j + 1) (by omega) (by omega)
-  have scanK : ∀ j ≤ k, P.ReachesOut (frame w ++ List.replicate k true) (P.Active B)
-      (2, [w.length, j, 0, 0]) (4, [w.length, k, 0, 0]) [] := by
-    intro j hj
-    induction h : k - j generalizing j with
-    | zero =>
-      obtain rfl : j = k := by omega
-      refine ReachesOut.read (by simpa using h₂) (bounded4 (by omega) (by omega) (by omega)
-        (by omega)) ?_
-      simp only [eval_add, eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-        List.getD_cons_succ, input_after, readLabel]
-      exact ReachesOut.refl _
-    | succ _ ih =>
-      refine ReachesOut.read (by simpa using h₂) (bounded4 (by omega) (by omega) (by omega)
-        (by omega)) ?_
-      simp only [eval_add, eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-        List.getD_cons_succ, input_unary w k (show j < k by omega), readLabel]
-      refine ReachesOut.assign (by simpa using h₃) (bounded4 (by omega) (by omega) (by omega)
-        (by omega)) ?_
-      simpa using ih (j + 1) (by omega) (by omega)
+  have scanN := reachesOut_count (B := B) (n := w.length) (fun j => [j, 0, 0, 0]) h₀
+    (by simpa using h₁) (by simp) (fun _ _ => bounded4 (by omega) (by omega) (by omega) (by omega))
+    (fun j hj => by simpa using input_marker w k hj) (by simp [input_end])
+  have scanK := reachesOut_count (B := B) (n := k) (fun j => [w.length, j, 0, 0])
+    (by simpa using h₂) (by simpa using h₃) (by simp)
+    (fun _ _ => bounded4 (by omega) (by omega) (by omega) (by omega))
+    (fun j hj => by simpa using input_unary w k hj) (by simp)
   exact (scanN 0 (Nat.zero_le _)).trans (scanK 0 (Nat.zero_le _))
 
 /-! ### Emitting bits of the framed word -/
@@ -282,25 +254,10 @@ private theorem reachesOut_rangeProgram (n : ℕ) :
       ((List.range n).flatMap fun i => (List.range i).flatMap (fun _ => [true, true]) ++ [false]) ∧
       ∀ r ∈ regs, r ≤ n + 1 := by
   set B := n + 1
-  have hscan : ∀ j ≤ n, rangeProgram.ReachesOut (List.replicate n true) (rangeProgram.Active B)
-      (0, [j, 0, 0, 0]) (2, [n, 0, 0, 0]) [] := by
-    intro j hj
-    induction h : n - j generalizing j with
-    | zero =>
-      obtain rfl : j = n := by omega
-      refine ReachesOut.read (show rangeProgram.instr 0 = _ from rfl)
-        (bounded4 (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_reg, List.getD_cons_zero, List.getElem?_replicate, lt_irrefl,
-        ↓reduceIte, readLabel]
-      exact ReachesOut.refl _
-    | succ _ ih =>
-      refine ReachesOut.read (show rangeProgram.instr 0 = _ from rfl)
-        (bounded4 (by omega) (by omega) (by omega) (by omega)) ?_
-      simp only [eval_reg, List.getD_cons_zero, List.getElem?_replicate,
-        show j < n by omega, ↓reduceIte, readLabel]
-      refine ReachesOut.assign (show rangeProgram.instr 1 = _ from rfl)
-        (bounded4 (by omega) (by omega) (by omega) (by omega)) ?_
-      simpa using ih (j + 1) (by omega) (by omega)
+  have hscan := reachesOut_count (P := rangeProgram) (w := List.replicate n true) (B := B)
+    (c := 0) (u := 0) (n := n) (fun j => [j, 0, 0, 0]) rfl rfl (by simp)
+    (fun _ _ => bounded4 (by omega) (by omega) (by omega) (by omega))
+    (fun j hj => by simp [hj]) (by simp)
   have hout : rangeProgram.CodeAt 2 (forCode 2 1 (reg 0) 5 11) := codeAt_of_prefix ⟨_, rfl⟩
   have hin : rangeProgram.CodeAt 5 (forCode 5 2 (reg 1) 8 10) := codeAt_of_prefix ⟨_, rfl⟩
   obtain ⟨regs, hloop, hinv⟩ := reachesOut_forCode (w := List.replicate n true) (B := B) hout

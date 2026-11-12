@@ -213,8 +213,7 @@ theorem val_value (x : C) (hm : (S.modes x).Nodup) :
     congr 1
     · simp only [contrib, ↓reduceIte, val_mul, childExps, Ne, not_true_eq_false, false_and]
       rw [val_value x hm rs]
-      congr 2
-      funext j
+      congr 2 with j : 1
       by_cases hj : j < γ.length
       · rw [List.getD_eq_getElem _ _ (by simpa using hj), List.getElem_map, List.getElem_range]
       · rw [List.getD_eq_default _ _ (by simp; omega), List.getD_eq_default _ _ (by omega)]
