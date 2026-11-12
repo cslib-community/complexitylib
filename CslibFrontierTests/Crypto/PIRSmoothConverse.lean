@@ -51,6 +51,14 @@ example : ProbComp.evalRat (ProbComp.bernoulliRat (5 / 4)) true = 1 := by simp; 
 example : ProbComp.evalRat (ProbComp.uniform (Fin 5)) (2 : Fin 5) = 1 / 5 := by simp
 
 example :
+    ProbComp.evalRat (do
+      let b ← ProbComp.bernoulliRat (1 / 3)
+      if b then ProbComp.bernoulliRat (1 / 2) else pure false) true = 1 / 6 := by
+  rw [ProbComp.evalRat_bind, Fintype.sum_bool]
+  simp
+  norm_num
+
+example :
     (ProbComp.eval (ProbComp.bernoulliRat (3 / 7)) true).toReal = 3 / 7 := by
   rw [ProbComp.toReal_eval_bernoulliRat_true_of_mem_Icc (by norm_num) (by norm_num)]
   norm_num
@@ -60,14 +68,26 @@ example :
 theorem smoothCopies_twoServer_fin3 (sq : Bool × (Fin 3 → Bool)) :
     smoothCopies (twoServer (Fin 3)) 0 sq = 2 := by
   have heval : ProbComp.evalRat ((twoServer (Fin 3)).serverQuery sq.1 0) sq.2 = 1 / 8 := by
-    have hR : ((ProbComp.evalRat ((twoServer (Fin 3)).serverQuery sq.1 0) sq.2 : ℚ) : ℝ) =
-        ((1 / 8 : ℚ) : ℝ) := by
-      rw [ProbComp.coe_evalRat_eq_toReal_eval, eval_serverQuery_twoServer,
-        PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
-      norm_num
-    exact_mod_cast hR
-  simp [smoothCopies, heval]
+    rw [ProbComp.evalRat_eq_of_eval_eq (N := ProbComp.uniform (Fin 3 → Bool))
+      (by rw [eval_serverQuery_twoServer, ProbComp.eval_uniform])]
+    simp
+  rw [smoothCopies_eq, heval]
   norm_num
+
+/-- A deterministic query scheme assigns zero probability `p₀ = 0` to unqueried symbols, exercising
+the `max 1 0 = 1` clamping branch of `smoothCopies`. -/
+private noncomputable def deterministicQueryScheme : Scheme (Fin 2) Unit Unit Bool Bool where
+  query _ := pure ((), fun _ => false)
+  answer _ x _ := x 0
+  reconstruct _ _ a := a ()
+
+example : smoothCopies deterministicQueryScheme 0 ((), true) = 1 := by
+  have heval : ProbComp.evalRat (deterministicQueryScheme.serverQuery () 0) true = 0 := by
+    rw [ProbComp.evalRat_eq_of_eval_eq (N := pure false)
+      (by simp [Scheme.eval_serverQuery, deterministicQueryScheme])]
+    simp
+  rw [smoothCopies_eq, heval]
+  simp
 
 example : Fintype.card (SmoothPos (twoServer (Fin 3)) 0) = 32 := by
   rw [Fintype.card_sigma]

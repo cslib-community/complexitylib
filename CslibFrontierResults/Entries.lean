@@ -1251,6 +1251,8 @@ register_result "gkst-pir-to-smooth-code" where
   theorems := [
     Cslib.Crypto.Protocols.PIR.card_smoothPos_le,
     Cslib.Crypto.Protocols.PIR.card_smoothPos_le_six_mul,
+    Cslib.Crypto.Protocols.PIR.smoothCode_zero,
+    Cslib.Crypto.Protocols.PIR.smoothCode_add,
     Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder,
     Cslib.Crypto.Protocols.PIR.isSmoothDecoder_smoothDecoder_two,
     Cslib.Crypto.Protocols.PIR.decodeLaw_smoothDecoder_of_isPrivate,

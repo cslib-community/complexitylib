@@ -13,6 +13,9 @@ public import CslibFrontier.Languages.Probabilistic.Rational
 public import CslibFrontier.Languages.Probabilistic.Vector
 public import CslibFrontier.Probability.StatisticalDistance.CloseTo
 import CslibFrontier.Languages.Probabilistic.Semantics
+import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -135,9 +138,16 @@ GKST smooth-code construction with reference index `i₀`
 [GKST, Section 7.1, Lemma 7.1][GoldreichKarloffSchulmanTrevisan2006]. Clamping below at `1`
 matches the proof's low-probability case (`p_j ≤ 1 / l` gets one copy even when `p_j = 0`) without
 increasing the `(k + 1) k |Q|` length bound. -/
-def smoothCopies (P : Scheme ι S R Q A) [Fintype S] [Fintype Q] [DecidableEq Q]
+@[expose] def smoothCopies (P : Scheme ι S R Q A) [Fintype S] [Fintype Q] [DecidableEq Q]
     (i₀ : ι) (sq : S × Q) : ℕ :=
   max 1 ⌈ProbComp.evalRat (P.serverQuery sq.1 i₀) sq.2 * (Fintype.card S * Fintype.card Q : ℚ)⌉₊
+
+theorem smoothCopies_eq (P : Scheme ι S R Q A) [Fintype S] [Fintype Q] [DecidableEq Q]
+    (i₀ : ι) (sq : S × Q) :
+    smoothCopies P i₀ sq =
+      max 1
+        ⌈ProbComp.evalRat (P.serverQuery sq.1 i₀) sq.2 * (Fintype.card S * Fintype.card Q : ℚ)⌉₊ :=
+  rfl
 
 theorem smoothCopies_pos (P : Scheme ι S R Q A) [Fintype S] [Fintype Q] [DecidableEq Q]
     (i₀ : ι) (sq : S × Q) : 0 < smoothCopies P i₀ sq :=
@@ -185,16 +195,10 @@ theorem card_smoothPos_le (P : Scheme ι S R Q A) [Fintype S] [Fintype Q] [Decid
       have hlt : (⌈r⌉₊ : ℚ) < r + 1 := Nat.ceil_lt_add_one hr0
       have hltR : ((⌈r⌉₊ : ℕ) : ℝ) < (r : ℝ) + 1 := by exact_mod_cast hlt
       linarith
-  have hsum_server (s : S) :
-      ∑ q : Q, (ProbComp.eval (P.serverQuery s i₀) q).toReal = 1 := by
-    have htsum := (ProbComp.eval (P.serverQuery s i₀)).tsum_coe
-    rw [tsum_fintype] at htsum
-    have h1 := congrArg ENNReal.toReal htsum
-    rwa [ENNReal.toReal_sum fun q _ => PMF.apply_ne_top _ _, ENNReal.toReal_one] at h1
   have hsum_all :
       ∑ sq : S × Q, (ProbComp.eval (P.serverQuery sq.1 i₀) sq.2).toReal = Fintype.card S := by
     rw [Fintype.sum_prod_type]
-    simp only [hsum_server, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one]
+    simp only [PMF.sum_toReal, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one]
   have hreal :
       (Fintype.card (SmoothPos P i₀) : ℝ) ≤
         ((Fintype.card S + 1) * Fintype.card S * Fintype.card Q : ℕ) := by
@@ -265,10 +269,18 @@ structure SmoothCoins (R : Type) (k : ℕ) (Pos : Type) where
 /-- Acceptance probability ratio `p₀(s, q) / pᵢ(s, q)` (clamped to `1` when `pᵢ ≤ p₀`) used by
 the GKST statistical-privacy rejection step
 [GKST, Section 7.1, Lemma 7.1, p. 20][GoldreichKarloffSchulmanTrevisan2006]. -/
-def smoothKeepRatio (P : Scheme ι S R Q A) [DecidableEq Q] (i₀ i : ι) (s : S) (q : Q) : ℚ :=
+@[expose] def smoothKeepRatio (P : Scheme ι S R Q A) [DecidableEq Q] (i₀ i : ι)
+    (s : S) (q : Q) : ℚ :=
   let p₀ := ProbComp.evalRat (P.serverQuery s i₀) q
   let pᵢ := ProbComp.evalRat (P.serverQuery s i) q
   if pᵢ ≤ p₀ then 1 else p₀ / pᵢ
+
+theorem smoothKeepRatio_eq (P : Scheme ι S R Q A) [DecidableEq Q] (i₀ i : ι)
+    (s : S) (q : Q) :
+    smoothKeepRatio P i₀ i s q =
+      if ProbComp.evalRat (P.serverQuery s i) q ≤ ProbComp.evalRat (P.serverQuery s i₀) q then 1
+      else ProbComp.evalRat (P.serverQuery s i₀) q / ProbComp.evalRat (P.serverQuery s i) q :=
+  rfl
 
 /-- Per-server coin draw for `smoothDecoder`: keep `(s, q)` with probability
 `smoothKeepRatio P i₀ i s q`, and when kept pick a uniform replica of `(s, q)`. -/
@@ -499,9 +511,8 @@ theorem expectedReads_smoothDecoder_le (P : Scheme ι S R Q A) [Fintype S] [Deci
           min (ProbComp.eval (P.serverQuery s₀ i₀) q₀).toReal
             (ProbComp.eval (P.serverQuery s₀ i) q₀).toReal / smoothCopies P i₀ (s₀, q₀)
         else 0 := by
-    rw [hslot_law k, PMF.bind_apply, tsum_fintype, ENNReal.toReal_sum fun q _ =>
-      ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)]
-    simp only [ENNReal.toReal_mul, toReal_eval_smoothSlotCoins_some]
+    rw [hslot_law k, PMF.bind_apply_toReal]
+    simp only [toReal_eval_smoothSlotCoins_some]
     by_cases hk : k = eS s₀
     · subst hk
       simp only [Equiv.symm_apply_apply, ↓reduceIte]
@@ -557,18 +568,18 @@ private theorem decodeLaw_smoothDecoder_branch (P : Scheme ι S R Q A) [Fintype 
           pure (P.reconstruct i r fun s => ans (Fintype.equivFin S s))
         else pure g) (smoothCode P i₀ x) =
       if h : ∀ idx, (slots idx).isSome then
-        PMF.pure (P.reconstruct i r
-          fun s => smoothCode P i₀ x ((slots (Fintype.equivFin S s)).get (h (Fintype.equivFin S s))))
+        PMF.pure (P.reconstruct i r fun s =>
+          smoothCode P i₀ x ((slots (Fintype.equivFin S s)).get (h (Fintype.equivFin S s))))
       else
         PMF.pure g := by
   split_ifs with h
   · simp [decodeLaw_readAll, Function.comp_def]
   · simp
 
-/-- **Recovery bound of the GKST decoder**: when each server's query distributions are pairwise
-`δ`-close in total variation (`CloseTo`) and `P` recovers `x i` with probability at least
-`1 / 2 + ε`, `smoothDecoder P i₀` recovers `x i` from `smoothCode P i₀ x` with probability at
-least `1 / 2 + ε - |S| · δ / 2`. -/
+/-- **Recovery bound of the GKST decoder**: when each server's query distributions are `δ`-close
+in total variation (`CloseTo`) to those at the reference index `i₀` (in particular under pairwise
+`δ`-closeness) and `P` recovers `x i` with probability at least `1 / 2 + ε`, `smoothDecoder P i₀`
+recovers `x i` from `smoothCode P i₀ x` with probability at least `1 / 2 + ε - |S| · δ / 2`. -/
 theorem toReal_decodeLaw_smoothDecoder_ge (P : Scheme ι S R Q A) [Fintype S]
     [Fintype Q] [DecidableEq Q] (i₀ : ι) {δ ε : ℝ} (hδ : 0 ≤ δ)
     (hpriv : ∀ s i,
@@ -788,9 +799,8 @@ theorem toReal_decodeLaw_smoothDecoder_ge (P : Scheme ι S R Q A) [Fintype S]
       (((ProbComp.eval (P.serverQuery (eS.symm k) i)).bind
         fun q => ProbComp.eval (smoothSlotCoins P i₀ i (eS.symm k) q)) none).toReal ≤ δ := by
     set s := eS.symm k
-    rw [PMF.bind_apply, tsum_fintype, ENNReal.toReal_sum fun q _ =>
-      ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)]
-    simp only [ENNReal.toReal_mul, eval_smoothSlotCoins_none]
+    rw [PMF.bind_apply_toReal]
+    simp only [eval_smoothSlotCoins_none]
     have hterm_eq (q : Q) :
         (ProbComp.eval (P.serverQuery s i) q).toReal *
             (ProbComp.eval (ProbComp.bernoulliRat (smoothKeepRatio P i₀ i s q)) false).toReal =
@@ -799,12 +809,7 @@ theorem toReal_decodeLaw_smoothDecoder_ge (P : Scheme ι S R Q A) [Fintype S]
             (ProbComp.eval (P.serverQuery s i) q).toReal -
               (ProbComp.eval (P.serverQuery s i₀) q).toReal
           else 0 := by
-      have hfalse :
-          (ProbComp.eval (ProbComp.bernoulliRat (smoothKeepRatio P i₀ i s q)) false).toReal =
-            1 -
-              (ProbComp.eval (ProbComp.bernoulliRat (smoothKeepRatio P i₀ i s q)) true).toReal := by
-        rw [ProbComp.toReal_eval_bernoulliRat_false, ProbComp.toReal_eval_bernoulliRat_true]
-      rw [hfalse, mul_sub, mul_one, mul_keepProb_eq_min]
+      rw [PMF.toReal_false_eq_one_sub, mul_sub, mul_one, mul_keepProb_eq_min]
       by_cases hlt :
           (ProbComp.eval (P.serverQuery s i₀) q).toReal <
             (ProbComp.eval (P.serverQuery s i) q).toReal
@@ -814,24 +819,6 @@ theorem toReal_decodeLaw_smoothDecoder_ge (P : Scheme ι S R Q A) [Fintype S]
     let E : Set Q := {q |
       (ProbComp.eval (P.serverQuery s i₀) q).toReal <
         (ProbComp.eval (P.serverQuery s i) q).toReal}
-    have hout (μ : PMF Q) :
-        (μ.toOuterMeasure E).toReal =
-          ∑ q : Q, if (ProbComp.eval (P.serverQuery s i₀) q).toReal <
-              (ProbComp.eval (P.serverQuery s i) q).toReal then
-            (μ q).toReal else 0 := by
-      rw [PMF.toOuterMeasure_apply, tsum_fintype,
-        ENNReal.toReal_sum fun q _ => by
-          by_cases hq : q ∈ E
-          · simpa [Set.indicator_of_mem hq] using PMF.apply_ne_top μ q
-          · simp [Set.indicator_of_notMem hq]]
-      refine Finset.sum_congr rfl fun q _ => ?_
-      by_cases hq : q ∈ E
-      · have hlt : (ProbComp.eval (P.serverQuery s i₀) q).toReal <
-            (ProbComp.eval (P.serverQuery s i) q).toReal := hq
-        simp [Set.indicator_of_mem hq, hlt]
-      · have hnot : ¬ (ProbComp.eval (P.serverQuery s i₀) q).toReal <
-            (ProbComp.eval (P.serverQuery s i) q).toReal := hq
-        simp [Set.indicator_of_notMem hq, hnot]
     have hdiff :
         (∑ q : Q,
           if (ProbComp.eval (P.serverQuery s i₀) q).toReal <
@@ -841,8 +828,11 @@ theorem toReal_decodeLaw_smoothDecoder_ge (P : Scheme ι S R Q A) [Fintype S]
           else 0) =
           ((ProbComp.eval (P.serverQuery s i)).toOuterMeasure E).toReal -
             ((ProbComp.eval (P.serverQuery s i₀)).toOuterMeasure E).toReal := by
-      rw [hout, hout, ← Finset.sum_sub_distrib]
+      rw [PMF.toOuterMeasure_apply_toReal, PMF.toOuterMeasure_apply_toReal,
+        ← Finset.sum_sub_distrib]
       refine Finset.sum_congr rfl fun q _ => ?_
+      change (if q ∈ E then _ else 0) =
+        (if q ∈ E then _ else 0) - (if q ∈ E then _ else 0)
       split_ifs <;> ring
     rw [hdiff]
     have habs := (hpriv s i).abs_toReal_sub_le hδ E
@@ -874,9 +864,10 @@ theorem toReal_decodeLaw_smoothDecoder_ge (P : Scheme ι S R Q A) [Fintype S]
   linarith
 
 /-- **GKST Lemma 7.1 (general `k = |S|` servers)**: a one-round PIR scheme `P` whose server query
-distributions are pairwise `δ`-close (`CloseTo`) and which recovers each bit with probability at
-least `1 / 2 + ε` yields a `(|S|, |S| + 1, ε - |S| · δ / 2)`-smooth decoder for `smoothCode P i₀`
-(with codeword length `≤ (|S| + 1) · |S| · |Q|`)
+distributions are `δ`-close (`CloseTo`) to those at the reference index `i₀` (in particular when
+pairwise `δ`-close) and which recovers each bit with probability at least `1 / 2 + ε` yields a
+`(|S|, |S| + 1, ε - |S| · δ / 2)`-smooth decoder for `smoothCode P i₀` (with codeword length
+`≤ (|S| + 1) · |S| · |Q|`)
 [GKST, Section 7.1, Lemma 7.1][GoldreichKarloffSchulmanTrevisan2006]. -/
 theorem isSmoothDecoder_smoothDecoder (P : Scheme ι S R Q A) [Fintype S] [DecidableEq S]
     [Fintype Q] [DecidableEq Q] (i₀ : ι) {δ ε : ℝ} (hδ : 0 ≤ δ)
@@ -915,16 +906,7 @@ theorem decodeLaw_smoothDecoder_of_isPrivate (P : Scheme ι S R Q A) [Fintype S]
     decodeLaw (smoothDecoder P i₀ i) (smoothCode P i₀ x) = ProbComp.eval (P.run x i) := by
   let eS := Fintype.equivFin S
   have hkeep (s : S) (q : Q) : smoothKeepRatio P i₀ i s q = 1 := by
-    have heqR : (ProbComp.eval (P.serverQuery s i) q).toReal =
-        (ProbComp.eval (P.serverQuery s i₀) q).toReal := by
-      rw [hpriv.eval_serverQuery_eq s i i₀]
-    have heq : ProbComp.evalRat (P.serverQuery s i) q =
-        ProbComp.evalRat (P.serverQuery s i₀) q := by
-      have : ((ProbComp.evalRat (P.serverQuery s i) q : ℚ) : ℝ) =
-          ((ProbComp.evalRat (P.serverQuery s i₀) q : ℚ) : ℝ) := by
-        rwa [ProbComp.coe_evalRat_eq_toReal_eval, ProbComp.coe_evalRat_eq_toReal_eval]
-      exact_mod_cast this
-    simp [smoothKeepRatio, heq]
+    simp [smoothKeepRatio_eq, ProbComp.evalRat_eq_of_eval_eq (hpriv.eval_serverQuery_eq s i i₀)]
   have hslot (s : S) (q : Q) :
       ProbComp.eval (smoothSlotCoins P i₀ i s q) =
         (let _ : Nonempty (Fin (smoothCopies P i₀ (s, q))) :=
