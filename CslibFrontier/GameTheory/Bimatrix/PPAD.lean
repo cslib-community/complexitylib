@@ -169,6 +169,14 @@ theorem wellFormed_iff_wellFormedB (c : BimatrixCode) : c.WellFormed ↔ c.wellF
 @[expose] noncomputable def toGame (c : BimatrixCode) : BimatrixGame (Fin c.rows) (Fin c.cols) :=
   BimatrixGame.mk ((toMatA c).map Rat.cast) ((toMatB c).map Rat.cast)
 
+/-- The real strategy vector `Fin n → ℝ` of a rational strategy list, padded with zeros. -/
+@[expose] def strategyVec {n : ℕ} (x : List ℚ) : Fin n → ℝ := fun i => (x.getD i.1 0 : ℝ)
+
+@[simp]
+theorem strategyVec_apply {n : ℕ} (x : List ℚ) (i : Fin n) :
+    strategyVec x i = (x.getD i.1 0 : ℝ) :=
+  rfl
+
 /-- Pure rational Nash condition on strategy lists `x` (length `c.rows`) and `y`
 (length `c.cols`). -/
 @[expose] def IsRationalNash (c : BimatrixCode) (x y : List ℚ) : Prop :=
@@ -195,9 +203,7 @@ private lemma fin_sum_getD_eq_list_sum {α : Type*} [AddCommMonoid α] (l : List
     exact congrArg (a + ·) ih
 
 theorem IsRationalNash.toGame_isNash {c : BimatrixCode} {x y : List ℚ}
-    (hn : c.IsRationalNash x y) :
-    c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
-      (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) := by
+    (hn : c.IsRationalNash x y) : c.toGame.IsNash (strategyVec x) (strategyVec y) := by
   obtain ⟨hxlen, hylen, hxnn, hxsum, hynn, hysum, hbr1, hbr2⟩ := hn
   let xR : Fin c.rows → ℝ := fun i => (x.getD i.1 0 : ℝ)
   let yR : Fin c.cols → ℝ := fun j => (y.getD j.1 0 : ℝ)
@@ -281,16 +287,14 @@ rational strategy pair `s` forming an exact Nash equilibrium of `c.toGame` (or `
 `c`). -/
 @[expose] def BimatrixNash (c : BimatrixCode) (w : List Bool) : Prop :=
   if c.wellFormedB then
-    w.length ≤ 120 * (encBimatrix c).length ^ 3 + 400 * (encBimatrix c).length + 100 ∧
+    w.length ≤ witnessPoly.eval (encBimatrix c).length ∧
       ∃ s : StrategyPair, w = encWitness s ∧ c.IsRationalNash s.x s.y
   else w = []
 
 /-- Every solution witness of a well-formed game decodes to a Nash equilibrium of `c.toGame`. -/
 theorem BimatrixNash.isNash {c : BimatrixCode} {w : List Bool}
     (hc : c.WellFormed) (hw : BimatrixNash c w) :
-    ∃ s : StrategyPair, w = encWitness s ∧
-      c.toGame.IsNash (fun i : Fin c.rows => (s.x.getD i.1 0 : ℝ))
-        (fun j : Fin c.cols => (s.y.getD j.1 0 : ℝ)) := by
+    ∃ s : StrategyPair, w = encWitness s ∧ c.toGame.IsNash (strategyVec s.x) (strategyVec s.y) := by
   have hwb : c.wellFormedB = true := (wellFormed_iff_wellFormedB c).1 hc
   simp only [BimatrixNash, hwb, ite_true] at hw
   obtain ⟨-, s, rfl, hrat⟩ := hw
@@ -1184,7 +1188,7 @@ private lemma verifiesBimatrixNash_eq_true_iff (c : BimatrixCode) (w : List Bool
 theorem BimatrixNash_mem_FNP : BimatrixNash ∈ FNP encBimatrix := by
   rw [mem_FNP_iff_exists_bounded]
   refine ⟨witnessPoly, verifiesBimatrixNash, verifiesBimatrixNash_polytime, fun c w => ?_⟩
-  rw [verifiesBimatrixNash_eq_true_iff, witnessPoly_eval]
+  rw [verifiesBimatrixNash_eq_true_iff]
   by_cases hwb : c.wellFormedB = true
   · simp only [BimatrixNash, hwb, ite_true]
   · have hwf : c.wellFormedB = false := Bool.eq_false_iff.2 hwb
@@ -4348,8 +4352,7 @@ private lemma isRationalNash_of_toGame_isNash {c : BimatrixCode} {x y : List ℚ
     (hx_len : x.length = c.rows) (hy_len : y.length = c.cols)
     (hx_nn : ∀ q ∈ x, 0 ≤ q) (hx_sum : x.sum = 1)
     (hy_nn : ∀ q ∈ y, 0 ≤ q) (hy_sum : y.sum = 1)
-    (hGameNash : c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
-      (fun j : Fin c.cols => (y.getD j.1 0 : ℝ))) :
+    (hGameNash : c.toGame.IsNash (strategyVec x) (strategyVec y)) :
     c.IsRationalNash x y := by
   rw [BimatrixGame.isNash_iff, BimatrixGame.isBestResponse₁_iff,
     BimatrixGame.isBestResponse₂_iff] at hGameNash
@@ -4638,24 +4641,23 @@ theorem extractNash_sound {c : BimatrixCode} {u : List Bool}
       have hcan := (List.all_eq_true.1 hyp_spec.2.1) pq hpq
       simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq] at hcan
       exact div_nonneg (by exact_mod_cast hcan.1.1) (by exact_mod_cast Nat.zero_le pq.2)
-    have hx_getR : (fun i : Fin c.rows => (x.getD i.1 0 : ℝ)) =
+    have hx_getR : (strategyVec x : Fin c.rows → ℝ) =
         fun i => ((basisSignNum (intMatP (posMatB c)) (intRhsP c.rows c.cols) T₁s hcard₁ i : ℤ) :
           ℝ) / ((∑ i : Fin c.rows,
             basisSignNum (intMatP (posMatB c)) (intRhsP c.rows c.cols) T₁s hcard₁ i : ℤ) : ℝ) := by
       ext i
-      rw [hxp_spec.2.2 i, hnumP_get i, hS₁_eq]
+      rw [strategyVec_apply, hxp_spec.2.2 i, hnumP_get i, hS₁_eq]
       simp only [Rat.cast_div, Rat.cast_intCast]
       rfl
-    have hy_getR : (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) =
+    have hy_getR : (strategyVec y : Fin c.cols → ℝ) =
         fun j => ((basisSignNum (intMatQ (posMatA c)) (intRhsQ c.rows c.cols) T₂s hcard₂ j : ℤ) :
           ℝ) / ((∑ j : Fin c.cols,
             basisSignNum (intMatQ (posMatA c)) (intRhsQ c.rows c.cols) T₂s hcard₂ j : ℤ) : ℝ) := by
       ext j
-      rw [hyp_spec.2.2 j, hnumQ_get j, hS₂_eq]
+      rw [strategyVec_apply, hyp_spec.2.2 j, hnumQ_get j, hS₂_eq]
       simp only [Rat.cast_div, Rat.cast_intCast]
       rfl
-    have hGameNash : c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
-        (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) := by
+    have hGameNash : c.toGame.IsNash (strategyVec x) (strategyVec y) := by
       rw [hx_getR, hy_getR]
       exact (isNash_posMat hc _ _).1 hNashPos
     have hx_sum : x.sum = 1 :=
@@ -4695,7 +4697,7 @@ theorem extractNash_sound {c : BimatrixCode} {u : List Bool}
         120 * L ^ 3 + 400 * L + 100
       rw [length_encPair]
       exact witness_length_arith hc.1 hc.2.1 hrc hlen_xp hlen_yp
-    simp only [BimatrixNash, hwb, ite_true]
+    simp only [BimatrixNash, hwb, ite_true, witnessPoly_eval]
     exact ⟨hlen_w, ⟨x, y⟩, hw_eq, hRatNash⟩
   · have hwf : c.wellFormedB = false := Bool.eq_false_iff.2 hwb
     simp only [BimatrixNash, extractNash, hwf, Bool.false_eq_true, ite_false]
