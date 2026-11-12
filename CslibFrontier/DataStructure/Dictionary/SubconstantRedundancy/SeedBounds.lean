@@ -122,15 +122,13 @@ private theorem choose_add_le_choose_mul_pow_two {U E n Re : ℕ}
 
 /-- Sentinel and top-level alignment padding from `U` to `(canonicalSchedule h).paddedUniv`
 increases `infoBits` by at most `2 * effRedundancy n R + 1` bits across `ValidRegime`. -/
-theorem infoBits_paddedUniv_le {U V n R p_min q_min p_max q_max : ℕ}
+private theorem paddedUniv_le_add_mul_log_pow {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
-    infoBits (canonicalSchedule h).paddedUniv V n ≤
-      infoBits U V n + 2 * effRedundancy n R + 1 := by
+    (canonicalSchedule h).paddedUniv ≤ U + n + 4096 * n * (Nat.log 2 U) ^ 27 := by
   set P := canonicalSchedule h
   set r := redundancyRatio n R
   set k := treeDepth U r
-  set Re := effRedundancy n R
-  obtain ⟨hr256, _, hr10⟩ := h.redundancyRatio_bounds
+  have hr256 : minRedundancyRatio ≤ r := h.redundancyRatio_bounds.1
   have h4r : 4 * r ≤ Nat.log 2 U := h.four_mul_redundancyRatio_le_log_univ
   have hn18 : 2 ^ 18 * (Nat.log 2 U) ^ 9 ≤ n := h.two_pow_eighteen_mul_log_univ_pow_le
   have h1_lt : 1 ≤ k := by have := two_le_treeDepth U r; omega
@@ -143,17 +141,16 @@ theorem infoBits_paddedUniv_le {U V n R p_min q_min p_max q_max : ℕ}
     rw [ite_eq_left (by have := two_le_treeDepth U r; omega)]
     simpa only [Nat.iterLog_succ, Nat.iterLog_zero] using
       (Nat.le_mul_of_pos_left _ (by positivity : 0 < 2 ^ 18)).trans hn18
-  obtain ⟨hNT1, hhi1⟩ := numNodes_mul_targetSize_bounds hT1_pos hT1_le
-  obtain ⟨_, hnF1_lt⟩ := targetSize_le_nFloor_and_lt hT1_pos hT1_le
+  obtain ⟨hNT1, _⟩ := numNodes_mul_targetSize_bounds hT1_pos hT1_le
+  obtain ⟨hlo1, _⟩ := targetSize_le_nFloor_and_lt hT1_pos hT1_le
   set s1 := Nat.log 2 U
   have hT1_eq : targetSize n U r k 1 = s1 ^ 9 := by
     rw [targetSize_eq_levelScale_pow le_rfl]
     dsimp only [levelScale]
     rw [ite_eq_left (by have := two_le_treeDepth U r; omega)]
     rfl
-  have hs1_ge : 256 ≤ s1 := by dsimp [minRedundancyRatio] at hr256; omega
   have hid1_pow : 2 ^ idBits n U r k 1 ≤ 4096 * s1 ^ 36 := by
-    have hy1 : 1 ≤ nFloor n U r k 1 := hT1_pos.trans (targetSize_le_nFloor_and_lt hT1_pos hT1_le).1
+    have hy1 : 1 ≤ nFloor n U r k 1 := hT1_pos.trans hlo1
     have hcl : 2 ^ Nat.clog 2 (2 * max (nFloor n U r k 1) 1) ≤ 8 * s1 ^ 9 := by
       rw [max_eq_left hy1]
       calc 2 ^ Nat.clog 2 (2 * nFloor n U r k 1)
@@ -184,6 +181,20 @@ theorem infoBits_paddedUniv_le {U V n R p_min q_min p_max q_max : ℕ}
     change step * ((U + n + step - 1) / step) ≤ U + n + step
     have := h.two_le_n
     omega
+  omega
+
+theorem infoBits_paddedUniv_le {U V n R p_min q_min p_max q_max : ℕ}
+    (h : ValidRegime U V n R p_min q_min p_max q_max) :
+    infoBits (canonicalSchedule h).paddedUniv V n ≤
+      infoBits U V n + 2 * effRedundancy n R + 1 := by
+  set P := canonicalSchedule h
+  set r := redundancyRatio n R
+  set Re := effRedundancy n R
+  obtain ⟨hr256, _, hr10⟩ := h.redundancyRatio_bounds
+  have h4r : 4 * r ≤ Nat.log 2 U := h.four_mul_redundancyRatio_le_log_univ
+  set s1 := Nat.log 2 U
+  have hs1_ge : 256 ≤ s1 := by dsimp [minRedundancyRatio] at hr256; omega
+  have hUpad_le : P.paddedUniv ≤ U + n + 4096 * n * s1 ^ 27 := paddedUniv_le_add_mul_log_pow h
   have hUpad_ge : U ≤ P.paddedUniv := by
     have hp := P.univ_le_padded
     change U + n ≤ P.paddedUniv at hp
@@ -193,7 +204,6 @@ theorem infoBits_paddedUniv_le {U V n R p_min q_min p_max q_max : ℕ}
   have hE_le : E ≤ 4097 * n * s1 ^ 27 := by
     have hs1_pos : 1 ≤ s1 ^ 27 := Nat.one_le_pow 27 s1 (by omega)
     have hn_le : n ≤ n * s1 ^ 27 := Nat.le_mul_of_pos_right n hs1_pos
-    have : E ≤ n + step := by omega
     nlinarith
   set L := Nat.log 2 n
   have hr_le_L : r ≤ L :=
@@ -356,58 +366,10 @@ private theorem paddedUniv_le_two_mul_pow {U V n R p_min q_min p_max q_max : ℕ
     (canonicalSchedule h).paddedUniv ≤ 2 * n ^ (p_max + 2) := by
   set P := canonicalSchedule h
   set r := redundancyRatio n R
-  set k := treeDepth U r
   have hr256 : minRedundancyRatio ≤ r := h.redundancyRatio_bounds.1
   have h4r : 4 * r ≤ Nat.log 2 U := h.four_mul_redundancyRatio_le_log_univ
-  have hn18 : 2 ^ 18 * (Nat.log 2 U) ^ 9 ≤ n := h.two_pow_eighteen_mul_log_univ_pow_le
-  have h1_lt : 1 ≤ k := by have := two_le_treeDepth U r; omega
-  have hT1_pos : 1 ≤ targetSize n U r k 1 :=
-    targetSize_pos (by have := h.two_le_n; omega) (by dsimp [minRedundancyRatio] at hr256; omega)
-      h4r h1_lt rfl
-  have hT1_le : targetSize n U r k 1 ≤ n := by
-    rw [targetSize_eq_levelScale_pow le_rfl]
-    dsimp only [levelScale]
-    rw [ite_eq_left (by have := two_le_treeDepth U r; omega)]
-    simpa only [Nat.iterLog_succ, Nat.iterLog_zero] using
-      (Nat.le_mul_of_pos_left _ (by positivity : 0 < 2 ^ 18)).trans hn18
-  obtain ⟨hNT1, _⟩ := numNodes_mul_targetSize_bounds hT1_pos hT1_le
-  obtain ⟨hlo1, hnF1_lt⟩ := targetSize_le_nFloor_and_lt hT1_pos hT1_le
   set s1 := Nat.log 2 U
-  have hT1_eq : targetSize n U r k 1 = s1 ^ 9 := by
-    rw [targetSize_eq_levelScale_pow le_rfl]
-    dsimp only [levelScale]
-    rw [ite_eq_left (by have := two_le_treeDepth U r; omega)]
-    rfl
-  have hid1_pow : 2 ^ idBits n U r k 1 ≤ 4096 * s1 ^ 36 := by
-    have hy1 : 1 ≤ nFloor n U r k 1 := hT1_pos.trans hlo1
-    have hcl : 2 ^ Nat.clog 2 (2 * max (nFloor n U r k 1) 1) ≤ 8 * s1 ^ 9 := by
-      rw [max_eq_left hy1]
-      calc 2 ^ Nat.clog 2 (2 * nFloor n U r k 1)
-          ≤ 2 * (2 * nFloor n U r k 1) := Nat.pow_clog_le_mul Nat.one_lt_two (by omega)
-        _ ≤ 4 * (2 * targetSize n U r k 1) := by omega
-        _ = 8 * s1 ^ 9 := by rw [hT1_eq]; ring
-    dsimp only [idBits]
-    calc 2 ^ (4 * Nat.clog 2 (2 * max (nFloor n U r k 1) 1))
-        = (2 ^ Nat.clog 2 (2 * max (nFloor n U r k 1) 1)) ^ 4 := by
-          rw [Nat.mul_comm 4, Nat.pow_mul]
-      _ ≤ (8 * s1 ^ 9) ^ 4 := Nat.pow_le_pow_left hcl 4
-      _ = 4096 * s1 ^ 36 := by ring
-  set step := branchFactor n U r k 0 * 2 ^ idBits n U r k 1
-  have hstep_le : step ≤ 4096 * n * s1 ^ 27 := by
-    have hB0 : branchFactor n U r k 0 = numNodes n U r k 1 := by
-      simp [branchFactor, branchBits, numNodes, cumBranchBits]
-    calc step = numNodes n U r k 1 * 2 ^ idBits n U r k 1 := by dsimp only [step]; rw [hB0]
-      _ ≤ numNodes n U r k 1 * (4096 * s1 ^ 36) := Nat.mul_le_mul_left _ hid1_pow
-      _ = (numNodes n U r k 1 * s1 ^ 9) * (4096 * s1 ^ 27) := by ring
-      _ ≤ n * (4096 * s1 ^ 27) := Nat.mul_le_mul_right _ (hT1_eq ▸ hNT1)
-      _ = 4096 * n * s1 ^ 27 := by ring
-  have hUpad_le : P.paddedUniv ≤ U + n + step := by
-    change branchFactor n U r k 0 * 2 ^ idBits n U r k 1 * quotUnivOne n U r k ≤ _
-    dsimp only [quotUnivOne]
-    have hmul := Nat.div_mul_le_self (U + n + step - 1) step
-    rw [Nat.mul_comm] at hmul
-    change step * ((U + n + step - 1) / step) ≤ U + n + step
-    have := h.two_le_n; omega
+  have hUpad_le : P.paddedUniv ≤ U + n + 4096 * n * s1 ^ 27 := paddedUniv_le_add_mul_log_pow h
   set L := Nat.log 2 n
   have hpoly : 2560000 * (max q_min 1 + p_max + 4) ^ 4 ≤ L :=
     (poly_le_thresholdLogN q_min p_max).trans h.thresholdLogN_le_log
@@ -429,9 +391,9 @@ private theorem paddedUniv_le_two_mul_pow {U V n R p_min q_min p_max q_max : ℕ
       (Nat.pow_log_le_self 2 (by have := h.two_le_n; omega))
   have hs1_pos : 1 ≤ s1 ^ 27 :=
     Nat.one_le_pow 27 s1 (by dsimp [minRedundancyRatio] at hr256; omega)
-  have hstep_n2 : n + step ≤ n ^ (p_max + 2) := by
-    calc n + step ≤ n * s1 ^ 27 + 4096 * n * s1 ^ 27 :=
-          Nat.add_le_add (Nat.le_mul_of_pos_right n hs1_pos) hstep_le
+  have hstep_n2 : n + 4096 * n * s1 ^ 27 ≤ n ^ (p_max + 2) := by
+    calc n + 4096 * n * s1 ^ 27 ≤ n * s1 ^ 27 + 4096 * n * s1 ^ 27 :=
+          Nat.add_le_add_right (Nat.le_mul_of_pos_right n hs1_pos) _
       _ = n * (4097 * s1 ^ 27) := by ring
       _ ≤ n * L ^ 55 := Nat.mul_le_mul_left n h4097
       _ ≤ n * n := Nat.mul_le_mul_left n hL55
@@ -439,7 +401,7 @@ private theorem paddedUniv_le_two_mul_pow {U V n R p_min q_min p_max q_max : ℕ
       _ ≤ n ^ (p_max + 2) := Nat.pow_le_pow_right (by have := h.two_le_n; omega) (by omega)
   have hU_pow : U ≤ n ^ (p_max + 2) :=
     h.univ_le_pow.trans (Nat.pow_le_pow_right (by have := h.two_le_n; omega) (by omega))
-  calc P.paddedUniv ≤ U + (n + step) := by omega
+  calc P.paddedUniv ≤ U + (n + 4096 * n * s1 ^ 27) := by omega
     _ ≤ n ^ (p_max + 2) + n ^ (p_max + 2) := Nat.add_le_add hU_pow hstep_n2
     _ = 2 * n ^ (p_max + 2) := (two_mul _).symm
 

@@ -663,67 +663,8 @@ theorem ValidRegime.treeDepth_add_one_le_three_mul_logStar
     {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :
     treeDepth U (redundancyRatio n R) + 1 ≤ 3 * Nat.logStar n := by
-  have hU_le : U ≤ n ^ (p_max + 1) := h.univ_le_pow
-  set L := Nat.log 2 n
-  have hL_ge4 : 4 ≤ L := (four_le_thresholdLogN q_min p_max).trans h.thresholdLogN_le_log
-  have hpoly : 2560000 * (max q_min 1 + p_max + 4) ^ 4 ≤ L :=
-    (poly_le_thresholdLogN q_min p_max).trans h.thresholdLogN_le_log
-  have hbase_p : max q_min 1 + p_max + 4 ≤ (max q_min 1 + p_max + 4) ^ 4 :=
-    Nat.le_self_pow (by decide) _
-  have hU_tower : U ≤ 2 ^ (2 ^ L) := by
-    have hn_lt : n < 2 ^ (L + 1) := Nat.lt_pow_succ_log_self Nat.one_lt_two n
-    have hexp_le : (L + 1) * (p_max + 1) ≤ 2 ^ L := by
-      have hpL : 2 * (p_max + 1) ≤ L := by omega
-      have hsq : L ^ 2 ≤ 2 ^ L := by
-        obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le hL_ge4
-        have h4d : ∀ m : ℕ, (4 + m) ^ 2 ≤ 2 ^ (4 + m) := fun m => by
-          induction m with
-          | zero => decide
-          | succ m ih =>
-            calc (4 + (m + 1)) ^ 2
-                ≤ 2 * (4 + m) ^ 2 := by
-                  have hexp : 2 * (4 + m) ^ 2 = (4 + (m + 1)) ^ 2 + (m ^ 2 + 6 * m + 7) := by ring
-                  omega
-              _ ≤ 2 * 2 ^ (4 + m) := Nat.mul_le_mul_left 2 ih
-              _ = 2 ^ (4 + (m + 1)) := by rw [← Nat.add_assoc, Nat.pow_succ, Nat.mul_comm]
-        exact hd ▸ h4d d
-      have hmulL : (L + 1) * (p_max + 1) ≤ L ^ 2 := by
-        calc (L + 1) * (p_max + 1) ≤ (2 * L) * (p_max + 1) :=
-              Nat.mul_le_mul_right _ (by omega)
-          _ = L * (2 * (p_max + 1)) := by ring
-          _ ≤ L * L := Nat.mul_le_mul_left L hpL
-          _ = L ^ 2 := (sq L).symm
-      exact hmulL.trans hsq
-    calc U ≤ n ^ (p_max + 1) := hU_le
-      _ ≤ (2 ^ (L + 1)) ^ (p_max + 1) := Nat.pow_le_pow_left hn_lt.le _
-      _ = 2 ^ ((L + 1) * (p_max + 1)) := (Nat.pow_mul 2 _ _).symm
-      _ ≤ 2 ^ (2 ^ L) := Nat.pow_le_pow_right Nat.two_pos hexp_le
-  have hlsU : Nat.floorLogStar U ≤ Nat.logStar n + 2 := by
-    have hU_ls : Nat.logStar U ≤ Nat.logStar n + 2 := by
-      rw [Nat.logStar_le_iff]
-      have hn_tw : n ≤ Nat.twoTower (Nat.logStar n) := Nat.le_twoTower_logStar n
-      have hL_tw : L ≤ Nat.twoTower (Nat.logStar n) := (Nat.log_le_self 2 n).trans hn_tw
-      calc U ≤ 2 ^ (2 ^ L) := hU_tower
-        _ ≤ 2 ^ (2 ^ Nat.twoTower (Nat.logStar n)) :=
-            Nat.pow_le_pow_right Nat.two_pos (Nat.pow_le_pow_right Nat.two_pos hL_tw)
-        _ = Nat.twoTower (Nat.logStar n + 2) := rfl
-    exact (Nat.floorLogStar_le_logStar U).trans hU_ls
-  have hk_le : treeDepth U (redundancyRatio n R) ≤ Nat.floorLogStar U + 2 := treeDepth_le U _
-  have h3 : 3 ≤ Nat.logStar n := by
-    by_contra hlt
-    have hle2 : Nat.logStar n ≤ 2 := by omega
-    have hn4 : n ≤ 4 := by
-      have := Nat.le_twoTower_logStar n
-      have htw : Nat.twoTower (Nat.logStar n) ≤ Nat.twoTower 2 := Nat.twoTower_monotone hle2
-      have h4 : Nat.twoTower 2 = 4 := by decide
-      omega
-    have h8 : 8 ≤ n := by
-      have h3_le : 3 ≤ thresholdLogN q_min p_max := by
-        have : 3 ≤ 2560000 * (max q_min 1 + p_max + 4) ^ 4 := by omega
-        exact this.trans (poly_le_thresholdLogN q_min p_max)
-      exact (show 8 = 2 ^ 3 by decide) ▸
-        (Nat.pow_le_pow_right Nat.two_pos h3_le).trans h.n_ge_threshold
-    omega
+  have hk := h.treeDepth_le_logStar_add_four
+  have h3 := h.three_le_logStar
   omega
 
 /-- **End-to-end `Lemma 5.3` expected rehashing work bound across `ValidRegime`**:

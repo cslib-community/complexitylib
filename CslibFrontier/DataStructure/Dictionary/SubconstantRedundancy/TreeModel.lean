@@ -55,8 +55,8 @@ In addition, this file provides:
   `nFloor ℓ ≥ FeistelPerm.childRouterThreshold 100 2` use `FeistelPerm.ChildRouterSeed`
   (`DoubleTabulation`), while deeper nodes below `childRouterThreshold 100 2` switch to exact
   `(2 * m)`-wise `FeistelPerm.trinomialPolyHash` (`m = childRouterHalfInd (nFloor ℓ) = O(1)`,
-  adapting `[LiLiangYuZhou2024, Sections 5.1 & 5.4, Claim B.2]`, PDF pp. 27, 32–33, 46 /
-  printed pp. 26, 31–32, 45).
+  adapting `[LiLiangYuZhou2024, Sections 5.1 & 5.4, Claim B.2]`, PDF pp. 27, 32–33, 41 /
+  printed pp. 26, 31–32, 40).
 * **Out of scope**: Word-RAM `Memory.Prog` compilation and lookup-table realization, Section 4
   small-parameter variable-length adapter trees (`R < n / log₂ ^ 0.1 n`), strong history
   independence, dynamic capacity resizing in `|S|`, and super-polynomial key universes

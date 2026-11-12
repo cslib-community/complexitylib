@@ -302,9 +302,8 @@ theorem redundancyRatio_bounds (h : ValidRegime U V n R p_min q_min p_max q_max)
       _ ≤ 2 ^ t := Nat.pow_le_pow_right Nat.two_pos (by omega)
       _ ≤ L := ht_pow
 
-theorem treeDepth_le_redundancyRatio (h : ValidRegime U V n R p_min q_min p_max q_max) :
-    treeDepth U (redundancyRatio n R) ≤ redundancyRatio n R := by
-  obtain ⟨hr256, hr_ls, _⟩ := h.redundancyRatio_bounds
+theorem treeDepth_le_logStar_add_four (h : ValidRegime U V n R p_min q_min p_max q_max) :
+    treeDepth U (redundancyRatio n R) ≤ Nat.logStar n + 4 := by
   have hU_le : U ≤ n ^ (p_max + 1) := h.univ_le_pow
   set L := Nat.log 2 n
   have hL_ge4 : 4 ≤ L := (four_le_thresholdLogN q_min p_max).trans h.thresholdLogN_le_log
@@ -340,24 +339,34 @@ theorem treeDepth_le_redundancyRatio (h : ValidRegime U V n R p_min q_min p_max 
     exact (Nat.floorLogStar_le_logStar U).trans hU_ls
   have hk_le : treeDepth U (redundancyRatio n R) ≤ Nat.floorLogStar U + 2 :=
     treeDepth_le U _
+  omega
+
+theorem three_le_logStar (h : ValidRegime U V n R p_min q_min p_max q_max) :
+    3 ≤ Nat.logStar n := by
+  have hbase_p : max q_min 1 + p_max + 4 ≤ (max q_min 1 + p_max + 4) ^ 4 :=
+    Nat.le_self_pow (by decide) _
+  by_contra hlt
+  have hle2 : Nat.logStar n ≤ 2 := by omega
+  have hn4 : n ≤ 4 := by
+    have := Nat.le_twoTower_logStar n
+    have htw : Nat.twoTower (Nat.logStar n) ≤ Nat.twoTower 2 :=
+      Nat.twoTower_monotone hle2
+    have h4 : Nat.twoTower 2 = 4 := by decide
+    omega
+  have h8 : 8 ≤ n := by
+    have h3_le : 3 ≤ thresholdLogN q_min p_max := by
+      have : 3 ≤ 2560000 * (max q_min 1 + p_max + 4) ^ 4 := by omega
+      exact this.trans (poly_le_thresholdLogN q_min p_max)
+    exact (show 8 = 2 ^ 3 by decide) ▸
+      (Nat.pow_le_pow_right Nat.two_pos h3_le).trans h.n_ge_threshold
+  omega
+
+theorem treeDepth_le_redundancyRatio (h : ValidRegime U V n R p_min q_min p_max q_max) :
+    treeDepth U (redundancyRatio n R) ≤ redundancyRatio n R := by
+  obtain ⟨_, hr_ls, _⟩ := h.redundancyRatio_bounds
+  have hk_le := h.treeDepth_le_logStar_add_four
+  have h3 := h.three_le_logStar
   have hls_lt : Nat.logStar n + 4 ≤ 2 ^ Nat.logStar n := by
-    have h3 : 3 ≤ Nat.logStar n := by
-      by_contra hlt
-      have hle2 : Nat.logStar n ≤ 2 := by omega
-      have hn4 : n ≤ 4 := by
-        have := Nat.le_twoTower_logStar n
-        have htw : Nat.twoTower (Nat.logStar n) ≤ Nat.twoTower 2 :=
-          Nat.twoTower_monotone hle2
-        have h4 : Nat.twoTower 2 = 4 := by decide
-        omega
-      have h8 : 8 ≤ n := by
-        have h3_le : 3 ≤ thresholdLogN q_min p_max := by
-          have : 3 ≤ 2560000 * (max q_min 1 + p_max + 4) ^ 4 := by
-            have := hbase_p; omega
-          exact this.trans (poly_le_thresholdLogN q_min p_max)
-        exact (show 8 = 2 ^ 3 by decide) ▸
-          (Nat.pow_le_pow_right Nat.two_pos h3_le).trans h.n_ge_threshold
-      omega
     rcases eq_or_lt_of_le h3 with h_eq3 | h_gt3
     · rw [← h_eq3]; decide
     · have hs4 : 4 ≤ Nat.logStar n := Nat.succ_le_of_lt h_gt3
