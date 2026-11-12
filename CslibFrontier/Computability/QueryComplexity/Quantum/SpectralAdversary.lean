@@ -1231,8 +1231,8 @@ private theorem wsMatrix_hadamard_bilin_eq (S : WeightScheme N) (i : Fin N)
       (∑ x, ∑ y, ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p = (x, y), f p) =
       ∑ p ∈ S.R with p.1 i ≠ p.2 i, f p := by
     rw [← Fintype.sum_prod_type (f := fun xy => ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p = xy, f p)]
-    have h_fiber := (sum_fiberwise_of_maps_to (s := S.R.filter fun p => p.1 i ≠ p.2 i)
-      (g := id) (t := univ) (fun _ _ => mem_univ _) f).symm
+    have h_fiber := sum_fiberwise_of_maps_to (s := S.R.filter fun p => p.1 i ≠ p.2 i)
+      (g := id) (t := univ) (fun _ _ => mem_univ _) f
     refine Eq.trans ?_ h_fiber
     refine sum_congr rfl fun _ _ => sum_congr (by ext; simp [id_eq, and_assoc]) fun _ _ => rfl
   have hf1 : ∑ x, ∑ y, ∑ p ∈ S.R with p.1 i ≠ p.2 i ∧ p = (x, y),
