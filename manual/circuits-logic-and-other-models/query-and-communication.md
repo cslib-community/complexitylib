@@ -130,11 +130,11 @@ from `0`, and `hybrid μ ν p j` is the probability that Alice can force it.
 `exists_hybrid_step` finds a step gaining `1/k²`. `hybrid_succ_sub_hybrid` writes that step
 as an average of forcing-rectangle advantages over the background `stepBackground`.
 `exists_large_forcing_rectangle` then fixes a background at least as good as the average.
-Two small probability modules supply the averaging steps.
+The averaging steps are general probability facts.
 [Product.Resample](../../CslibFrontier/Probability/Product/Resample.lean) redraws one
 coordinate of a product (`sum_pi_mul_update`), and
-[PMF.AboveMean](../../CslibFrontier/Probability/PMF/AboveMean.lean) finds a possible outcome
-at least the mean (`exists_mem_support_sum_mul_le`). The
+[Minimax](../../CslibFrontier/Probability/Minimax.lean) finds a possible outcome at least
+the mean (`exists_mem_support_sum_mul_le`). The
 [large-rectangle client](../../CslibFrontierTests/CommunicationOneOutLargeRectangle.lean)
 applies the lemma to equality on two distinct bits, a heavy-atom case. It also applies the
 light-atom case to uniform inputs on `Fin 4` with `k = 2`, at the boundary mass `1/4`. Run

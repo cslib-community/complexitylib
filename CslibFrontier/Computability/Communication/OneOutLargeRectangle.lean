@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Communication.OneOutRectangle
 public import CslibFrontier.Probability.IID
 import CslibFrontier.Computability.Communication.Announce
 import CslibFrontier.Probability.IID.Distinct
-import CslibFrontier.Probability.PMF.AboveMean
+import CslibFrontier.Probability.Minimax
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.Product.Resample
 import Mathlib.Tactic
@@ -82,13 +82,6 @@ noncomputable def hybrid [Fintype X] [Fintype Y] (μ : PMF X) (ν : PMF Y)
 variable [Fintype X] [Fintype Y] (μ : PMF X) (ν : PMF Y)
   (p : Protocol (Fin k ↪ X) (Fin k ↪ Y) (Answer k Z))
 
-/-- The probability of an event, as the mean of its indicator. -/
-private theorem toReal_toOuterMeasure_eq_sum {α : Type*} [Fintype α] (π : PMF α) (s : Set α)
-    [DecidablePred (· ∈ s)] :
-    (π.toOuterMeasure s).toReal = ∑ a, (π a).toReal * if a ∈ s then 1 else 0 := by
-  rw [toOuterMeasure_apply_toReal]
-  exact sum_congr rfl fun a _ => by by_cases ha : a ∈ s <;> simp [ha]
-
 /-- Last hybrid: on a distinct tuple, Alice forces `L_k` by following her messages in `p`. -/
 theorem toOuterMeasure_injective_le_hybrid :
     ((iid μ k).toOuterMeasure {x | Function.Injective x}).toReal ≤ hybrid μ ν p k := by
@@ -123,7 +116,7 @@ theorem hybrid_zero_le :
         (fun w => ¬ y (p.leafOutput w).index ∈ bobProjection p w) := fun h =>
       (p.labelLeaves.canForce_not_iff false _).mp h (canForce_bobProjection p ⟨y, hy⟩)
     simp [hgoal, hnot, hy]
-  · simp [hy]
+  · simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, hy, not_false_eq_true, ite_true]
     split_ifs <;> norm_num
 
 /-- **Telescoping.** If all atoms are light, distinct tuples are likely enough that some hybrid
