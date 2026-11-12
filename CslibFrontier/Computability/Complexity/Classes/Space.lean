@@ -11,18 +11,23 @@ public import CslibFrontier.Computability.Complexity.Classes.P
 public import CslibFrontier.Computability.Complexity.Classes.Space.Basic
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Nondeterministic
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!
 # Polynomial space
 
-`Cslib.Complexity.PSPACE enc` consists of the problems decided by one deterministic machine with a
-binary alphabet and finitely many states that halts on every encoded instance `enc a` with output
-`[true]` or `[false]`, visiting at most `s a` work-tape cells for an `s` polynomially bounded in
-the length of `enc a` (upstream `Turing.MultiTapeTM.ComputableInTimeAndSpace`, with no tidiness
+`Cslib.Complexity.PSPACE enc` consists of the problems decided by a Boolean function computable
+within polynomial space (`Turing.MultiTapeTM.ComputableInPolySpace`), as `Cslib.Complexity.P` and
+`Cslib.Complexity.L` use polynomial time and logarithmic space: one deterministic machine with a
+binary alphabet and finitely many states halts on every encoded instance `enc a` with output
+`[true]` or `[false]`, visiting at most `s (enc a).length` work-tape cells for a polynomially
+bounded `s` (upstream `Turing.MultiTapeTM.ComputableInTimeAndSpace`, with no tidiness
 requirement). No bound on the time is imposed beyond halting. Equivalently
-(`Cslib.Complexity.mem_PSPACE_iff`), the problem is decidable within some time bound and such a
-space bound in the sense of upstream `Turing.MultiTapeTM.DecidableInTimeAndSpace`. The proposed
+(`Cslib.Complexity.mem_PSPACE_iff`), the problem is decidable within some time bound and a space
+bound polynomially bounded in the length of `enc a`, in the sense of upstream
+`Turing.MultiTapeTM.DecidableInTimeAndSpace`. The proposed
 upstream complexity classes (cslib pull request #767, open) build `DSPACE` on the same notion of
 decidability and define `PSPACE` as the union of the classes of space `O(n ^ k)`; their bounds
 are functions of the input length. For the local encoded-instance classes,
@@ -61,6 +66,9 @@ tape write-only [Sipser, Section 8.4 and Definition 8.21][Sipser2013].
 
 ## Main results
 
+* `Cslib.Complexity.mem_PSPACE`: a Boolean decider computable within polynomial space.
+* `Cslib.Complexity.mem_PSPACE_of_computableInTimeAndSpace`: a decider within a polynomially
+  bounded space bound.
 * `Cslib.Complexity.mem_PSPACE_iff`: `PSPACE` in terms of upstream `DecidableInTimeAndSpace`.
 * `Cslib.Complexity.mem_PSPACE_iff_exists_mem_DSPACE`: the union of `DSPACE (n ^ k)`.
 * `Cslib.Complexity.DSPACE_subset_PSPACE`: polynomially bounded space is within `PSPACE`.
@@ -84,19 +92,30 @@ open Turing Turing.MultiTapeTM
 variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
 
 /-- The problems decided by one deterministic machine within polynomial space, with respect to
-the encoding `enc`: a Boolean function deciding membership is computable (upstream
-`Turing.MultiTapeTM.ComputableInTimeAndSpace`) within some time and within space polynomially
-bounded in the length of the encoded instance [Sipser, Section 8.2][Sipser2013]. -/
+the encoding `enc`: a Boolean function deciding membership is computable within some time and
+within space polynomial in the length of the encoded instance
+(`Turing.MultiTapeTM.ComputableInPolySpace`) [Sipser, Section 8.2][Sipser2013]. -/
 def PSPACE (enc : α ↪ List Bool) : Set (Set α) :=
-  {A | ∃ f : α → Bool, (∃ t s, PolyBounded (fun a => (enc a).length) s ∧
-    ComputableInTimeAndSpace f enc encBool t s) ∧ ∀ a, a ∈ A ↔ f a = true}
+  {A | ∃ f : α → Bool, ComputableInPolySpace f enc encBool ∧ ∀ a, a ∈ A ↔ f a = true}
+
+theorem mem_PSPACE : A ∈ PSPACE enc ↔
+    ∃ f : α → Bool, ComputableInPolySpace f enc encBool ∧ ∀ a, a ∈ A ↔ f a = true :=
+  Iff.rfl
+
+/-- A Boolean decider computable within some time and within a space bound polynomially bounded
+in the length of the encoded instance decides a problem in `PSPACE`. -/
+theorem mem_PSPACE_of_computableInTimeAndSpace {f : α → Bool} {t s : α → ℕ}
+    (hs : PolyBounded (fun a => (enc a).length) s)
+    (hf : ComputableInTimeAndSpace f enc encBool t s) (hA : ∀ a, a ∈ A ↔ f a = true) :
+    A ∈ PSPACE enc :=
+  ⟨f, .of_inSpace hs ⟨t, 1, hf.mono (fun _ => le_rfl) fun _ => by omega, fun _ => by simp⟩, hA⟩
 
 /-- Membership in `PSPACE` is upstream decidability within some time and polynomial space. -/
 theorem mem_PSPACE_iff : A ∈ PSPACE enc ↔
     ∃ t s, PolyBounded (fun a => (enc a).length) s ∧ DecidableInTimeAndSpace A enc t s := by
   simp only [decidableInTimeAndSpace_iff]
-  exact ⟨fun ⟨f, ⟨t, s, hs, hf⟩, hA⟩ => ⟨t, s, hs, f, hf, hA⟩,
-    fun ⟨t, s, hs, f, hf, hA⟩ => ⟨f, ⟨t, s, hs, hf⟩, hA⟩⟩
+  exact ⟨fun ⟨f, ⟨t, _, hs, hf, _⟩, hA⟩ => ⟨t, _, .of_polynomiallyBounded _ hs, f, hf, hA⟩,
+    fun ⟨_, _, hs, _, hf, hA⟩ => mem_PSPACE_of_computableInTimeAndSpace hs hf hA⟩
 
 /-- A space class of a polynomially bounded bound is within `PSPACE`. -/
 theorem DSPACE_subset_PSPACE {α : Type} {enc : α ↪ List Bool} {s : ℕ → ℕ}
@@ -125,17 +144,15 @@ def NPSPACE (enc : α ↪ List Bool) : Set (Set α) :=
     (s : α → ℕ), PolyBounded (fun a => (enc a).length) s ∧ ntm.DecidesInSpace enc A s}
 
 /-- **Polynomial time is within polynomial space.** -/
-theorem P_subset_PSPACE : P enc ⊆ PSPACE enc := fun A hA => by
-  obtain ⟨f, hf, hA⟩ := mem_P.mp hA
-  obtain ⟨t, s, -, hs, hf⟩ := hf
-  exact ⟨f, ⟨_, _, .of_polynomiallyBounded _ hs, hf⟩, hA⟩
+theorem P_subset_PSPACE : P enc ⊆ PSPACE enc := fun _ ⟨f, hf, hA⟩ =>
+  ⟨f, .of_polyTime hf, hA⟩
 
 /-- **A deterministic polynomial-space machine is a nondeterministic one**, with one computation
 path (`Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_decidesInSpace`). -/
 theorem PSPACE_subset_NPSPACE : PSPACE enc ⊆ NPSPACE enc := by
-  rintro A ⟨f, ⟨t, s, hs, hf⟩, hA⟩
+  rintro A ⟨f, ⟨t, s, hs, hf, -⟩, hA⟩
   obtain ⟨k, State, hfinite, ntm, h⟩ := hf.exists_decidesInSpace hA
-  exact ⟨k, State, hfinite, ntm, s, hs, h⟩
+  exact ⟨k, State, hfinite, ntm, _, .of_polynomiallyBounded _ hs, h⟩
 
 /-! ### Hardness and completeness -/
 
