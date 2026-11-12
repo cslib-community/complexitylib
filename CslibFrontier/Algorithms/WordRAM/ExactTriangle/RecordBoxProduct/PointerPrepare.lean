@@ -51,23 +51,8 @@ theorem exec_prepare {W b m n i out rho piece s t q : ℕ}
       (∀ a, a < b ∨ b + QueriedProduct.inputEnd m n qs.length + 1 ≤ a →
         y.mem a = x.mem a) ∧
       ∀ j : Fin 320, j.val < 65 → y.regs j = x.regs j := by
-  obtain ⟨r, hr, rm, rD, rn, rA, rAA, rb, rrec, rrho, rpiece, rq, rQ, rs, rt,
-    rarg, r1, r2, r19, r4⟩ := exec_readRecord x ![rho, piece, q, qs.length, s, t]
-      hD hn hi hout hb hrec hrecord (hfit.of_le (by omega))
-  have rq' : r.regs Reg.queries = q := by simpa +decide using rq
-  have rQ' : r.regs Reg.count = qs.length := by simpa +decide using rQ
-  have rs' : r.regs Reg.left = s := by simpa +decide using rs
-  have rt' : r.regs Reg.right = t := by simpa +decide using rt
-  obtain ⟨l, hl, lmDepth, lm, lr⟩ := exec_logarithm r rarg (hfit.of_le (by
-    change D m + 2 * m + 3 ≤ _
-    omega))
-  have lb : l.regs Reg.base = b := (lr _ (by decide)).trans rb
-  obtain ⟨h, hh, hhead, hframe, hregs⟩ := exec_writeHeader l lb lmDepth
-    ((lr _ (by decide)).trans rAA) ((lr _ (by decide)).trans rQ')
-    ((lr _ (by decide)).trans rn) ((lr _ (by decide)).trans r1)
-    ((lr _ (by decide)).trans r2) ((lr _ (by decide)).trans r19)
-    ((lr _ (by decide)).trans r4) (hfit.of_le (by omega))
-  have hb' : h.regs Reg.base = b := (hregs _ (by decide)).trans lb
+  obtain ⟨h, hrun, hhead, hb', _, _, hs, ht, hq, hframe, hregs⟩ :=
+    exec_readLogHeader x hD hn hi hout hb hrec hrecord hfit
   have hI : 5 ≤ QueriedProduct.inputEnd m n qs.length := by
     unfold QueriedProduct.inputEnd; omega
   have hlen : h.mem b = QueriedProduct.inputEnd m n qs.length - 1 := by
@@ -80,21 +65,10 @@ theorem exec_prepare {W b m n i out rho piece s t q : ℕ}
   have hmD : m ≤ D m := (Nat.lt_pow_self (by decide : 1 < (4 : ℕ))).le
   obtain ⟨y, hy, ym, yb, yr⟩ := exec_patchInput h hb' hm hlen hI
     (hfit.of_le (by unfold QueriedProduct.inputEnd; omega))
-  have head (a : ℕ) (ha : a < 5) : h.mem (b + a) =
-      (State.init (QueriedProduct.input true (19 * m) X Y qs) : State 160).data.mem a := by
-    have hh := hhead ⟨a, ha⟩
-    have hs := original_header X Y qs ⟨a, ha⟩
-    change h.mem (b + a) = _ at hh
-    change (State.init (QueriedProduct.input true (19 * m) X Y qs) : State 160).data.mem
-      (0 + a) = _ at hs
-    exact hh.trans (by simpa only [Nat.zero_add] using hs.symm)
-  refine ⟨y, (hr.seq (hl.seq (hh.seq hy))).mono (by omega), yb, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · exact (hy.regs_eq (by decide)).trans
-      ((hregs _ (by decide)).trans ((lr _ (by decide)).trans rs'))
-  · exact (hy.regs_eq (by decide)).trans
-      ((hregs _ (by decide)).trans ((lr _ (by decide)).trans rt'))
-  · exact (hy.regs_eq (by decide)).trans
-      ((hregs _ (by decide)).trans ((lr _ (by decide)).trans rq'))
+  refine ⟨y, (hrun hy).mono (by omega), yb,
+    (hy.regs_eq (by decide)).trans hs, (hy.regs_eq (by decide)).trans ht,
+    (hy.regs_eq (by decide)).trans hq, ?_, ?_, ?_,
+    fun j hj => (yr j hj).trans (hregs j hj)⟩
   · intro a ha
     by_cases h0 : a = 0
     · subst a
@@ -108,15 +82,12 @@ theorem exec_prepare {W b m n i out rho piece s t q : ℕ}
           Function.update_self]
         rfl
       · rw [ym, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-          Function.update_of_ne (by omega), head a ha]
+          Function.update_of_ne (by omega), header_readback X Y qs h.mem hhead ha]
         exact (QueriedProduct.input_change_level true (19 * m) (21 * m) X Y qs a h1).trans
           (BoxProduct.input_prefix true X Y qs a (by omega) (by omega)).symm
   · rw [ym, Function.update_self]
   · intro a ha
     rw [ym, Function.update_of_ne (by omega), Function.update_of_ne (by omega),
-      Function.update_of_ne (by omega), hframe a (by omega), lm, rm]
-  · intro j hj
-    rw [yr j hj, hregs _ (by omega), lr _ (Or.inl (by omega))]
-    exact hr.regs_eq (RecordProduct.read_preserves j hj)
+      Function.update_of_ne (by omega), hframe a (by omega)]
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordBoxProduct
