@@ -252,6 +252,24 @@ private theorem cutVertex_funLeft {V₁ V₂ : Type*} [DecidableEq V₁] [Decida
       simp only [hiff]
 
 omit [IsStrictOrderedRing K] in
+private theorem image_cutPolytope_funLeft {V W : Type*}
+    [DecidableEq V] [DecidableEq W] (e : V ≃ W) :
+    (LinearMap.funLeft K K (SimpleGraph.Iso.completeGraph e).mapEdgeSet) ''
+        (cutPolytope K (V := W)) =
+      cutPolytope K (V := V) := by
+  rw [cutPolytope, LinearMap.image_convexHull, cutPolytope]
+  congr 1
+  ext z
+  simp only [Set.mem_image, Set.mem_range]
+  constructor
+  · rintro ⟨_, ⟨Y, rfl⟩, rfl⟩
+    exact ⟨Y.image e.symm, (cutVertex_funLeft e Y).symm⟩
+  · rintro ⟨X, rfl⟩
+    refine ⟨cutVertex K (X.image e), ⟨X.image e, rfl⟩, ?_⟩
+    rw [cutVertex_funLeft e, Finset.image_image]
+    simp only [Equiv.symm_comp_self, Finset.image_id]
+
+omit [IsStrictOrderedRing K] in
 private theorem extensionComplexity_cutPolytope_congr {V W : Type*} [Fintype V] [Fintype W]
     [DecidableEq V] [DecidableEq W] (e : V ≃ W) :
     extensionComplexity (cutPolytope K V) = extensionComplexity (cutPolytope K W) := by
@@ -259,33 +277,9 @@ private theorem extensionComplexity_cutPolytope_congr {V W : Type*} [Fintype V] 
     LinearMap.funLeft K K (SimpleGraph.Iso.completeGraph e.symm).mapEdgeSet
   let g : (↥(⊤ : SimpleGraph W).edgeSet → K) →ₗ[K] (↥(⊤ : SimpleGraph V).edgeSet → K) :=
     LinearMap.funLeft K K (SimpleGraph.Iso.completeGraph e).mapEdgeSet
-  have hfg : ∀ X : Finset V, f (cutVertex K X) = cutVertex K (X.image e) := fun X => by
-    simpa only [f, Equiv.symm_symm] using cutVertex_funLeft e.symm X
-  have hgf : ∀ Y : Finset W, g (cutVertex K Y) = cutVertex K (Y.image e.symm) :=
-    cutVertex_funLeft e
   refine extensionComplexity_eq_of_linearMaps g f ?_ ?_
-  · rw [cutPolytope, LinearMap.image_convexHull, cutPolytope]
-    congr 1
-    ext z
-    simp only [Set.mem_image, Set.mem_range]
-    constructor
-    · rintro ⟨_, ⟨Y, rfl⟩, rfl⟩
-      exact ⟨Y.image e.symm, (hgf Y).symm⟩
-    · rintro ⟨X, rfl⟩
-      refine ⟨cutVertex K (X.image e), ⟨X.image e, rfl⟩, ?_⟩
-      rw [hgf, Finset.image_image]
-      simp only [Equiv.symm_comp_self, Finset.image_id]
-  · rw [cutPolytope, LinearMap.image_convexHull, cutPolytope]
-    congr 1
-    ext z
-    simp only [Set.mem_image, Set.mem_range]
-    constructor
-    · rintro ⟨_, ⟨X, rfl⟩, rfl⟩
-      exact ⟨X.image e, (hfg X).symm⟩
-    · rintro ⟨Y, rfl⟩
-      refine ⟨cutVertex K (Y.image e.symm), ⟨Y.image e.symm, rfl⟩, ?_⟩
-      rw [hfg, Finset.image_image]
-      simp only [Equiv.self_comp_symm, Finset.image_id]
+  · exact image_cutPolytope_funLeft e
+  · simpa only [Equiv.symm_symm] using image_cutPolytope_funLeft e.symm
 
 end Iso
 

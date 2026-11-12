@@ -181,7 +181,7 @@ private theorem map_fst_consecutivePairs {β : Type*} :
   | [] => rfl
   | [_] => rfl
   | a :: b :: l => by
-    rw [consecutivePairs_cons_cons, List.map_cons, map_fst_consecutivePairs (b :: l)]
+    rw [List.consecutivePairs_cons_cons, List.map_cons, map_fst_consecutivePairs (b :: l)]
     rfl
 
 /-- Kruskal's tree on the complete graph weighs at most any Hamiltonian path. -/
@@ -225,7 +225,7 @@ private theorem zipWith_rotate_one_eq (δ : α → α → ℕ) (a : α) (L : Lis
     | cons y M ih =>
       obtain ⟨b, hb⟩ := ih y
       refine ⟨b, ?_⟩
-      rw [List.cons_append, List.zipWith_cons_cons, hb, consecutivePairs_cons_cons, List.map_cons,
+      rw [List.cons_append, List.zipWith_cons_cons, hb, List.consecutivePairs_cons_cons, List.map_cons,
         List.cons_append]
   obtain ⟨b, hb⟩ := key a L
   refine ⟨b, ?_⟩

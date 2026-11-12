@@ -836,14 +836,13 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [Nonempty W] [
     rw [hfin_succ n]
     exact hadj (finOf n)
   have hstep_ne2 : ∀ n : ℕ, stepNat (n + 2) ≠ stepNat n := fun n h => by
-    have h2 : finOf (n + 2) = finOf n + (1 + 1) := by
-      rw [show n + 2 = (n + 1) + 1 by rfl, hfin_succ, hfin_succ, add_assoc]
-    have hfeq : finOf n + (1 + 1) = finOf n + 0 := by
-      rw [← h2, add_zero]; exact σ.injective h
-    have h0 : (1 + 1 : Fin M) = 0 := add_left_cancel hfeq
-    have hv := congrArg Fin.val h0
-    rw [Fin.val_add, h1_M, Fin.val_zero, Nat.mod_eq_of_lt (by omega)] at hv
-    omega
+    have h2 : finOf (n + 2) = finOf (n + 1) + 1 := hfin_succ (n + 1)
+    have hn : finOf n = finOf (n + 1) - 1 := by
+      have hs : finOf (n + 1) = finOf n + 1 := hfin_succ n
+      rw [hs, add_sub_cancel_right]
+    have hfeq : finOf (n + 1) + 1 = finOf (n + 1) - 1 := by
+      rw [← h2, ← hn]; exact σ.injective h
+    exact fin_sub_one_ne_add_one hM3 (finOf (n + 1)) hfeq.symm
   have hblock_walk : ∀ (t : ℕ) (w : W),
       stepNat t = .vIn w → stepNat (t + 1) = .vMid w ⟨0, splitMidLen_pos v₀ pad w⟩ →
         (∀ k (hk : k < splitMidLen v₀ pad w), stepNat (t + 1 + k) = .vMid w ⟨k, hk⟩) ∧
