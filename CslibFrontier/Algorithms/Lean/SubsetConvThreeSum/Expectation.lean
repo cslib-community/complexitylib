@@ -28,15 +28,12 @@ The expectations of the random cost terms of `threeSumM` in the running-time ana
   `p ∑ time ≤ #seeds ^ μ (p (3 |A| + 3 |B| + |C| + |A_bad| |B| + |A| |B_bad| + μ G₀) +
   μ G₁ |C| (d choose 2 t))` with `G₀ = 2 |A| + 2 |B| + |C| + 3 (d + 1) Pre` and
   `G₁ = 2 + 3 (d + 1) Q`, where `Pre` and `Q` are the binomial sums of `time_trialM`.
-* **Markov** (`card_time_gt_mul_le`): the tuples whose cost exceeds `T` number at most
-  `∑ time / T`.
 
 ## Main results
 
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.sum_length_rankedTargets`
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.mul_sum_length_bad_le`
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.mul_sum_time_threeSumM_le`
-* `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_time_gt_mul_le`
 
 ## References
 
@@ -107,7 +104,7 @@ theorem exists_ne_of_not_isolated {q : ℕ} {A : List ℕ} (hA : A.Nodup) {a : �
   exact (List.countP_congr fun x _ => by simp [beq_iff_eq]).trans (List.count_eq_one_of_mem hA ha)
 
 /-- A prime divides the difference of two numbers exactly when they are congruent. -/
-theorem natCast_eq_iff_dvd_natAbs {q a a' : ℕ} :
+private theorem natCast_eq_iff_dvd_natAbs {q a a' : ℕ} :
     (a' : ZMod q) = a ↔ q ∣ ((a : ℤ) - a').natAbs := by
   rw [← Int.natCast_dvd_natCast, Int.natCast_natAbs, dvd_abs,
     ← ZMod.intCast_eq_intCast_iff_dvd_sub]
@@ -247,13 +244,5 @@ theorem mul_sum_time_threeSumM_le {d t s μ : ℕ} (hp : 2 ^ d ≤ p) (hs : s �
             rw [hcard]; ring
           rw [this, hpow]
           nlinarith [Nat.zero_le (#(seeds p) ^ μ)]
-
-/-- **Markov's inequality** for the cost: at most `∑ cost / T` tuples cost more than `T`. -/
-theorem card_time_gt_mul_le {α : Type*} (S : Finset α) (f : α → ℕ) (T : ℕ) :
-    #(S.filter fun x => T < f x) * T ≤ ∑ x ∈ S, f x := by
-  calc #(S.filter fun x => T < f x) * T = ∑ _x ∈ S.filter fun x => T < f x, T := by
-        rw [sum_const, smul_eq_mul]
-    _ ≤ ∑ x ∈ S.filter fun x => T < f x, f x := sum_le_sum fun x hx => (mem_filter.mp hx).2.le
-    _ ≤ ∑ x ∈ S, f x := sum_le_sum_of_subset (filter_subset _ _)
 
 end Cslib.Algorithms.Lean.SubsetConvThreeSum

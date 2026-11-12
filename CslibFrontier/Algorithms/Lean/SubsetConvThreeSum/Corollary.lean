@@ -13,18 +13,19 @@ public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Repetition
 public import Mathlib.Algebra.Order.Floor.Semiring
 public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 import Mathlib.Algebra.BigOperators.Field
+import CslibFrontier.Foundations.Data.Finset.Markov
 import Mathlib.Analysis.SpecialFunctions.Exponential
 import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
-# Truly subquadratic integer 3SUM (Corollary 2.4)
+# Truly subquadratic integer 3SUM (Corollary 2.4, balanced case)
 
-[ChanItakuraMaYu2026], Corollary 2.4, in the `TimeM` unit-cost model, with exponent `2 - 1/100`
-(`corollary_2_4`). Fix the magnitude exponent `κ`. There are `K` and `m₀` such that for every unit
-`m ≥ m₀`, every `R`, and all duplicate-free `A`, `B` and any `C` with at most `n = 2 ^ (100 m)`
-elements below `n ^ κ`, the algorithm `corollaryM` with `R` clocked copies and budget
-`T = ⌈20 K n ^ (2 - 1/100)⌉` (`budget`):
+The balanced case of [ChanItakuraMaYu2026], Corollary 2.4, in the `TimeM` unit-cost model, with
+exponent `2 - 1/100` (`corollary_2_4`). Fix the magnitude exponent `κ`. There are `K` and `m₀`
+such that for every unit `m ≥ m₀`, every `R`, and all duplicate-free `A`, `B` and any `C` with at
+most `n = 2 ^ (100 m)` elements below `n ^ κ`, the algorithm `corollaryM` with `R` clocked copies
+and budget `T = ⌈20 K n ^ (2 - 1/100)⌉` (`budget`):
 
 * costs at most `R (T + |C|) + |C|` ticks for every choice of the random numbers,
 * reports only values `c = a + b` with `a ∈ A`, `b ∈ B`, and
@@ -33,9 +34,17 @@ elements below `n ^ κ`, the algorithm `corollaryM` with `R` clocked copies and 
 Per copy, the miss probability splits into a bad prime (`card_badPrimes_le`, at most `1/20` for
 large `m`), all `μ` trials rejecting (`average_miss_le`, at most `e ^ (-3) < 1/20`), and the run
 exceeding its budget (Markov's inequality with `exists_avgTime_le`, at most `1/20`); the copies are
-independent (`allFailProb_eq_pow`). With `R = ⌈log₅ (N |C|)⌉` this is the paper's error
-`1 / (N |C|)` per query in worst-case time `O(n ^ (2 - 1/100) log n)`. The paper's exponent
-`1.965` comes from real parameters `γ = 0.2`, `δ = 0.033`; the integer parameter family used here
+independent (`allFailProb_eq_pow`). With `R = ⌈log₅ n⌉`, each query is missed with probability at
+most `1 / n` in worst-case time `O(n ^ (2 - 1/100) log n)`.
+
+**Scope.** This is narrower than the paper's Corollary 2.4. The paper allows unbalanced sets, with
+`N = |A| + |B|` and `n̂ = √(|A| |B|)`, error `O(1/N)` and time
+`O(n̂ ^ 1.965 + N n̂ ^ 0.899 + |C| n̂ ^ 0.965)`, whose separate per-query term also gives the
+3SUM-indexing data structure. Here all of `|A|`, `|B|`, `|C|` are at most `n`, and one budget
+covers preprocessing and queries together. The theorem accepts every size up to `n = 2 ^ (100 m)`;
+a statement for arbitrary sizes (taking the least such `m`, which costs a factor up to `2 ^ 199`
+in the constant, and covering `m < m₀`) is not formalized. The paper's exponent `1.965` comes from
+real parameters `γ = 0.2`, `δ = 0.033`; the integer parameter family used here
 (`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Params`) gives `2 - 1/100`.
 
 ## References
@@ -80,7 +89,6 @@ theorem copyMissFrac_le {m T : ℕ} (hT : 0 < T) {A B C : List ℕ} {c q : ℕ} 
       · exact hmiss
       · exact absurd hle h
     · exact mem_union_right _ (mem_filter.mpr ⟨hS, by omega⟩)
-  have hmarkov := card_time_gt_mul_le S time T
   have hpos : (0 : ℝ) < (#(seeds q) : ℝ) ^ μ m := by
     have : 0 < #(seeds q) := by
       rw [card_seeds]; exact Nat.mul_pos (by have := hq.one_lt; omega) (pow_pos hq.pos 2)
@@ -91,7 +99,9 @@ theorem copyMissFrac_le {m T : ℕ} (hT : 0 < T) {A B C : List ℕ} {c q : ℕ} 
       #(S.filter fun ss => c ∉ (threeSumM (d m) (t m) (s m) q (List.ofFn ss) A B C).ret) +
         (∑ ss ∈ S, (time ss : ℝ)) / T := by
     have h2 : (#(S.filter fun ss => T < time ss) : ℝ) ≤ (∑ ss ∈ S, (time ss : ℝ)) / T := by
-      rw [le_div_iff₀ hTpos]; exact_mod_cast hmarkov
+      rw [le_div_iff₀ hTpos]
+      exact S.card_filter_mul_le_sum (fun ss => T < time ss) (fun ss => (time ss : ℝ))
+        (fun _ _ => Nat.cast_nonneg _) fun _ _ h => by exact_mod_cast h.le
     have h3 : (#(S.filter fun ss => c ∉ (copyM m T A B C q ss).ret) : ℝ) ≤
         #(S.filter fun ss => c ∉ (threeSumM (d m) (t m) (s m) q (List.ofFn ss) A B C).ret) +
           #(S.filter fun ss => T < time ss) := by exact_mod_cast hcard
@@ -260,8 +270,10 @@ theorem copyFailProb_nonneg (m T : ℕ) (A B C : List ℕ) (c : ℕ) : 0 ≤ cop
   unfold copyFailProb copyMissFrac
   positivity
 
-/-- **Corollary 2.4 of [ChanItakuraMaYu2026]: truly subquadratic integer 3SUM**, with exponent
-`2 - 1/100` in the `TimeM` unit-cost model. For the magnitude exponent `κ` there are `K > 0` and
+/-- **Corollary 2.4 of [ChanItakuraMaYu2026], balanced case: truly subquadratic integer 3SUM**,
+with exponent `2 - 1/100` in the `TimeM` unit-cost model. All of `|A|`, `|B|`, `|C|` are at most
+`n` and one budget covers preprocessing and queries; the paper's unbalanced form with its per-query
+term is not covered (see the module docstring). For the magnitude exponent `κ` there are `K > 0` and
 `m₀` such that for every unit `m ≥ m₀` (inputs of at most `n = 2 ^ (100 m)` elements below
 `n ^ κ`), every number `R` of copies and budget `T = budget K m = ⌈20 K n ^ (2 - 1/100)⌉`:
 `corollaryM` costs at most `R (T + n) + n` ticks for every choice of the random numbers, reports

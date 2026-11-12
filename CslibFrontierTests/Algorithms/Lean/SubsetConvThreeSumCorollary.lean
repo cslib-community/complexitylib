@@ -16,7 +16,8 @@ import Mathlib.Tactic.NormNum.Prime
 * The counts behind `E |C*|` at `p = 5`, `d = 2`: each target value is hit by `(p - 1) p = 20`
   seeds, and summed over all `100` seeds, a query list of length `3` has `3 · 1 · 20 = 60` ranked
   targets with `k = 2`, by `sum_length_rankedTargets` and by kernel reduction.
-* `corollary_2_4` is instantiated: its constants exist for `κ = 1`.
+* the constant `K > 0` of `corollary_2_4` is extracted for `κ = 1` (a smoke test of the
+  statement, not a run of the algorithm).
 -/
 
 namespace CslibFrontierTests.Algorithms.Lean.SubsetConvThreeSumCorollary
@@ -46,7 +47,7 @@ example : ∑ s ∈ seeds 5, ([1, 2, 3].filter fun c => decide (Ranked 2 2 (s.ta
     60 := by
   rw [sum_length_rankedTargets (by norm_num)]; rfl
 
-/-- The constants of Corollary 2.4 exist for `κ = 1`. -/
+/-- Extracting the constant `K > 0` of `corollary_2_4` for `κ = 1`. -/
 example : ∃ K : ℝ, 0 < K := by
   obtain ⟨K, hK, -⟩ := corollary_2_4 1
   exact ⟨K, hK⟩

@@ -312,6 +312,11 @@ and the goodness hypothesis, which is stated for the isolated sublists
 
 ### Truly subquadratic integer 3SUM (Corollary 2.4)
 
+This is the balanced case of the corollary. The paper allows unbalanced `A`, `B`, `C` (error
+`O(1/N)`, time `O(n̂ ^ 1.965 + N n̂ ^ 0.899 + |C| n̂ ^ 0.965)` with a separate per-query term, and the
+3SUM-indexing form); those remain open in ROADMAP. A statement for arbitrary input sizes, choosing
+the least `m` with `n ≥` the sizes, is also not formalized.
+
 Import `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary`. `corollary_2_4 κ` gives
 `K > 0` and `m₀` such that, for every unit `m ≥ m₀`, every `R` and all duplicate-free `A`, `B` and
 any `C` with at most `n = 2 ^ (100 m)` elements below `n ^ κ`, the algorithm

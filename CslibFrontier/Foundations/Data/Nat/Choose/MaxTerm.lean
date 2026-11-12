@@ -25,6 +25,13 @@ term with `j ≤ s` is at least `C(n, j) s ^ s (n - s) ^ (n - s)`, so the partia
 These are `C(n, a) ≈ exp (n H(a / n))` up to the factor `n + 1`, with integer bases, so that
 comparisons at fixed rational ratios reduce to comparisons of integers.
 
+`Nat.sum_choose_mul_pow_mul_pow_le_pow` is the integer form of
+`Cslib.sum_choose_le_exp_mul_binEntropy`
+(`CslibFrontier/Foundations/Data/Nat/Choose/Entropy.lean`) at `α = s / n`, since
+`exp (n h(s / n)) = n ^ n / (s ^ s (n - s) ^ (n - s))`; both compare term by term with the binomial
+expansion. The integer form is kept because `norm_num` decides comparisons of its integer bases,
+whereas deriving it from the real form needs `log`/`exp` casts that are no shorter.
+
 ## Main results
 
 * `Nat.choose_mul_pow_mul_pow_le`: the middle term of the expansion is the largest.

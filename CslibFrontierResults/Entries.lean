@@ -3694,10 +3694,12 @@ register_result "integer-3sum-subquadratic-subset-convolution-timem" where
   theorems := [
     Cslib.Algorithms.Lean.SubsetConvThreeSum.corollary_2_4
   ]
-  scope := "TimeM unit-cost model; worst-case cost R (T + n) + n with T = O(n^(2 - 1/100)) for \
-    every choice of the random numbers, one-sided error, miss probability (1/5)^R per query, for \
-    duplicate-free inputs of at most n = 2^(100 m) elements below n^kappa. The exponent is \
-    2 - 1/100, not the paper's 1.965; sampling and the step counter are uncharged."
+  scope := "Balanced case only (|A|, |B|, |C| <= n = 2^(100 m), duplicate-free A and B, entries \
+    below n^kappa, one budget for preprocessing and queries), TimeM unit-cost model: worst-case \
+    cost R (T + n) + n with T = O(n^(2 - 1/100)) for every choice of the random numbers, \
+    one-sided error, miss probability (1/5)^R per query. Not covered: the paper's unbalanced \
+    form with error O(1/N) and per-query term |C| n^0.965, the 3SUM-indexing form, and the \
+    exponent 1.965. Sampling and the step counter are uncharged."
 
 register_result "integer-3sum-via-subset-convolution-timem" where
   title := "Hashing reduction from integer 3SUM to selected entries of ranked subset convolution"
