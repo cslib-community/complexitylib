@@ -154,8 +154,10 @@ and `PMF.map_not_true` for complements. To compose an event bound through `PMF.b
 
 For a guessing bound, import
 [PMF/UniformPoint.lean](../../CslibFrontier/Probability/PMF/UniformPoint.lean) instead of summing
-over the uniform law by hand. `PMF.uniformOfFintype_bind_decide_eq_apply_true a` says a uniform
-draw equals `a` with probability `(Fintype.card α)⁻¹`, and
+over the uniform law by hand. For any law `μ`, `PMF.bind_pure_decide_eq_apply_true μ a` (and its
+`'` and `map_` forms for the other comparison order and for `μ.map`) says an equality test against
+`a` accepts with probability `μ a`. `PMF.uniformOfFintype_bind_decide_eq_apply_true a` specializes
+it: a uniform draw equals `a` with probability `(Fintype.card α)⁻¹`, and
 `PMF.uniformOfFintype_bind_pure_apply_true_le` gives the upper bound `(Fintype.card α)⁻¹` for any
 test accepting at most one value, such as comparing a fixed point with an injective image of the
 draw. The [fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
