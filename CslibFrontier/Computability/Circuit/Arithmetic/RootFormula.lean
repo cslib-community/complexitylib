@@ -117,12 +117,7 @@ private theorem natDegree_toPolyLast_le (p : MvPolynomial (Fin (n + 1)) K) :
     refine Fin.lastCases ?_ (fun k => ?_) i
     · simp
     · simp
-  conv_lhs => rw [p.as_sum, map_sum]
-  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun s hs => ?_
-  rw [toPolyLast, aeval_monomial, Polynomial.algebraMap_apply, Finsupp.prod]
-  refine (Polynomial.natDegree_C_mul_le _ _).trans <| (Polynomial.natDegree_prod_le _ _).trans <|
-    (sum_le_sum fun i _ => Polynomial.natDegree_pow_le).trans <| le_trans ?_ (le_totalDegree hs)
-  exact sum_le_sum fun i _ => (Nat.mul_le_mul_left _ (hg i)).trans_eq (mul_one _)
+  exact (natDegree_aeval_le_mul hg p).trans_eq (mul_one _)
 
 /-- `coeffLast i F.nodeCount F` computes the coefficient of `y ^ i` of the polynomial of `F`. -/
 private theorem polynomial_coeffLast_nodeCount [CharZero K] (i : ℕ) (F : SPFormula K (n + 1)) :
