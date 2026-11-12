@@ -146,7 +146,7 @@ theorem mem_ModP_iff_primeFactors (hk : k ≠ 0) :
       ModP_prime_pow (Nat.prime_of_mem_primeFactors hp) hp_pos
     rw [h_eq]
     exact hB p hp
-    
+
 theorem ModP_eq_ModP_prod_primeFactors (hk : k ≠ 0) :
     ModP k enc = ModP (∏ p ∈ k.primeFactors, p) enc := by
   ext A
@@ -185,7 +185,7 @@ private lemma binter_mem_ModP (hk : 2 ≤ k)
     rw [this]
     exact hInter _ _ (hf a (Finset.mem_insert_self a s))
       (ih fun p hp => hf p (Finset.mem_insert_of_mem hp))
-      
+
 theorem hertrampf_equivalence {k : ℕ} (hk : 2 ≤ k) :
     (∀ A B, A ∈ ModP k enc → B ∈ ModP k enc → A ∩ B ∈ ModP k enc) ↔
       (∀ A, A ∈ ModP k enc → Aᶜ ∈ ModP k enc) := by
