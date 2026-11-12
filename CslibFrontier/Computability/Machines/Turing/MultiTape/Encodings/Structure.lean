@@ -27,8 +27,11 @@ tuple of its fields, with everything a certificate needs to work with it:
 * the constructor rules `eS_mk_deg` on tuples, `eS_mk_inO` adding up the bounds of its arguments,
   `eS_mk_budget` constructing a record whose fields share a workspace budget, and `eS_mk_polyTime`.
 
-The rules are `scoped` `fun_prop` rules, so that a program using the structure is assembled by
-`fun_prop` inside the namespace of the declaration.
+Public rules are registered as `scoped` `fun_prop` rules, activated by the declaration's
+namespace. Private rules are registered with `local fun_prop` in the defining scope and are not
+exported to importers. The optional `public` or `private` prefix
+sets the visibility of the encoding, tuple abbreviation and every generated rule. Without a
+prefix all are public, even outside a `public section`; `private enc_structure` keeps them private.
 
 An applied structure type is also accepted: with `variable {n : ℕ}`, write
 `enc_structure eS : S n where ...`. The parameter remains implicit in the generated declarations.
@@ -43,13 +46,17 @@ public meta section
 
 namespace Turing.MultiTapeTM
 
-open Lean Elab Command
+open Lean Elab Command Lean.Parser.Command
 
 /-- `enc_structure eS : S where f₁ : e₁, f₂ : e₂` declares the encoding `eS` of the structure `S`
 as the tuple of its fields encoded by `e₁`, `e₂`, with its rules. List every field of `S` once, in
 declaration order; the command reports an unknown, repeated or misplaced field, or all missing
-ones. -/
-syntax (name := encStructure) (docComment)? "enc_structure " ident " : " ident term:max* " where "
+ones. An optional `public` or `private` prefix applies to every generated declaration; the
+default is public, independently of the surrounding section. Public `fun_prop` rules are scoped;
+private ones are registered locally and do not export. Applied structure parameters are accepted,
+as in `enc_structure eS : S n where …`. -/
+syntax (name := encStructure) (docComment)? (visibility)?
+  "enc_structure " ident " : " ident term:max* " where "
   (ident " : " term:max),+ : command
 
 private def app (base : Name) (suffix : String) : Ident :=
@@ -117,9 +124,20 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
 
 /-- Elaborate `enc_structure`: the encoding, its unfolding lemma and its rules. -/
 @[command_elab encStructure] def elabEncStructure : CommandElab := fun stx => do
-  let `($[$doc:docComment]? enc_structure $eS:ident : $S:ident $[$params:term]*
+  let `($[$doc:docComment]? $[$vis:visibility]? enc_structure $eS:ident : $S:ident $[$params:term]*
       where $[$fs:ident : $es:term],*) :=
     stx | throwUnsupportedSyntax
+  let vis : TSyntax ``Lean.Parser.Command.visibility ← match vis with
+    | some v => pure v
+    | none => `(visibility| public)
+  let privateRules := match vis with
+    | `(visibility| private) => true
+    | _ => false
+  let registerRule (decl : Ident) : CommandElabM Unit := do
+    if privateRules then
+      elabCommand (← `(attribute [local fun_prop] $decl:ident))
+    else
+      elabCommand (← `(attribute [scoped fun_prop] $decl:ident))
   let s ← checkFields S fs
   let sType : Term := Syntax.mkApp S params
   -- The annotation fixes implicit parameters even for a field that does not mention them.
@@ -140,14 +158,17 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
     return (fieldsName, enc, tup, (a, n))
   let (a, n) := cmds
   let linE : Term ← `(fun a => List.length ($encRef a))
-  elabCommand (← `(public abbrev $fields:ident := $encoding))
-  addDocStringCore ((← getCurrNamespace) ++ fields.getId) s!"The tuple of the fields of `{name}`."
-  elabCommand (← `($[$doc:docComment]? @[expose] public def $eS:ident : $sType ↪ List Bool :=
-    (⟨fun $a => $fieldsOf, fun x y h => by cases x; cases y; simp_all⟩ : $sType ↪ _).trans $fields))
-  elabCommand (← `(@[simp] public theorem $(app name "_apply") ($a : $sType) :
+  elabCommand (← `($vis:visibility abbrev $fields:ident := $encoding))
+  let fieldsDecl ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo fields
+  addDocStringCore fieldsDecl s!"The tuple of the fields of `{name}`."
+  elabCommand (← `($[$doc:docComment]? @[expose]
+    $vis:visibility def $eS:ident : $sType ↪ List Bool :=
+      (⟨fun $a => $fieldsOf, fun x y h => by cases x; cases y; simp_all⟩ :
+        $sType ↪ _).trans $fields))
+  elabCommand (← `(@[simp] $vis:visibility theorem $(app name "_apply") ($a : $sType) :
     $encRef $a = $fields $fieldsOf := rfl))
   let fieldsDeg := app name "_fields_deg"
-  elabCommand (← `(public theorem $fieldsDeg:ident :
+  elabCommand (← `($vis:visibility theorem $fieldsDeg:ident :
     ComputableInDegree (fun $a : $sType => $fieldsOf) $encRef $fields 1 1 :=
       ComputableInDegree.of_eq fun _ => rfl))
   let fieldsPoly : Term ← `((ComputableInPolyTime.of_eq fun _ => rfl :
@@ -156,22 +177,29 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
     let proj := mkCIdent (s ++ f.getId)
     let deg := app name s!"_{f.getId}_deg"
     let body ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDeg i n
-    elabCommand (← `(@[scoped fun_prop] public theorem $deg:ident :
+    elabCommand (← `($vis:visibility theorem $deg:ident :
       ComputableInDegree $proj $encRef $e 1 1 := $body))
-    elabCommand (← `(@[scoped fun_prop] public theorem $(app name s!"_{f.getId}_inO"):ident :
+    registerRule deg
+    elabCommand (← `($vis:visibility theorem
+      $(app name s!"_{f.getId}_inO"):ident :
       ComputableInO $proj $encRef $e $linE $linE := ComputableInDegree.inO_one $deg))
-    elabCommand (← `(@[scoped fun_prop] public theorem $(app name s!"_{f.getId}_budget"):ident
+    registerRule (app name s!"_{f.getId}_inO")
+    elabCommand (← `($vis:visibility theorem
+      $(app name s!"_{f.getId}_budget"):ident
       {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {g : γ → $sType}
       (h : ComputableInSpace g encIn $encRef S) :
       ComputableInSpace (fun a => $proj (g a)) encIn $e S :=
         ComputableInSpace.budget_comp_linear
           (ComputableInSpace.of_inO (ComputableInDegree.inO_one $deg)) h))
+    registerRule (app name s!"_{f.getId}_budget")
     let poly ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInPolyTime fieldsPoly i n
-    elabCommand (← `(@[scoped fun_prop] public theorem $(app name s!"_{f.getId}_polyTime"):ident
+    elabCommand (← `($vis:visibility theorem
+      $(app name s!"_{f.getId}_polyTime"):ident
       {γ : Type} {encIn : γ ↪ List Bool} {g : γ → $sType}
       (h : ComputableInPolyTime g encIn $encRef) :
       ComputableInPolyTime (fun a => $proj (g a)) encIn $e :=
         ComputableInPolyTime.comp $poly h))
+    registerRule (app name s!"_{f.getId}_polyTime")
   let p := mkIdent `p
   let comps ← (List.range n).toArray.mapM fun i => do
     let mut t : Term ← `($p)
@@ -180,9 +208,11 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
     if i + 1 < n then t ← `(($t).1)
     return t
   let mkApp : Term := Syntax.mkApp ctor comps
-  elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_deg"):ident :
+  elabCommand (← `($vis:visibility theorem
+    $(app name "_mk_deg"):ident :
     ComputableInDegree (fun $p => $mkApp) $fields $encRef 1 1 :=
       ComputableInDegree.of_eq fun _ => rfl))
+  registerRule (app name "_mk_deg")
   -- the constructor, adding up the bounds of its arguments
   let xN (i : Nat) := mkIdent (Name.mkSimple s!"x{i}")
   let hN (i : Nat) := mkIdent (Name.mkSimple s!"h{i}")
@@ -212,20 +242,24 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
     binders := binders.push (← `(bracketedBinder|
       ($(hN i) : ComputableInO $(xN i) $encIn $e $(TN i) $(SN i))))
     i := i + 1
-  elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_inO"):ident {$γ : Type}
+  elabCommand (← `($vis:visibility theorem
+    $(app name "_mk_inO"):ident {$γ : Type}
     {$encIn : $γ ↪ List Bool} $binders* :
     ComputableInO (fun $x => $appl) $encIn $encRef (fun $x => $sumT) fun $x => $sumS :=
       ComputableInO.of_enc_eq $prod fun _ => rfl))
+  registerRule (app name "_mk_inO")
   let mut polyBinders : TSyntaxArray ``Lean.Parser.Term.bracketedBinder := #[]
   for j in [0:n] do
     polyBinders := polyBinders.push (← `(bracketedBinder| {$(xN j) : $γ → _}))
   for e in es, j in Array.range n do
     polyBinders := polyBinders.push (← `(bracketedBinder|
       ($(hN j) : ComputableInPolyTime $(xN j) $encIn $e)))
-  elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_polyTime"):ident {$γ : Type}
+  elabCommand (← `($vis:visibility theorem
+    $(app name "_mk_polyTime"):ident {$γ : Type}
     {$encIn : $γ ↪ List Bool} $polyBinders* :
     ComputableInPolyTime (fun $x => $appl) $encIn $encRef :=
       ComputableInPolyTime.of_enc_eq $prodPoly fun _ => rfl))
+  registerRule (app name "_mk_polyTime")
   let budget := mkIdent `budget
   let mut budgetBinders : TSyntaxArray ``Lean.Parser.Term.bracketedBinder := #[]
   for j in [0:n] do
@@ -236,9 +270,11 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
   let mut budgetProd : Term := hN last
   for j in (List.range last).reverse do
     budgetProd ← `(ComputableInSpace.budget_prod $(hN j) $budgetProd)
-  elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_budget"):ident {$γ : Type}
+  elabCommand (← `($vis:visibility theorem
+    $(app name "_mk_budget"):ident {$γ : Type}
     {$encIn : $γ ↪ List Bool} {$budget : $γ → ℕ} $budgetBinders* :
     ComputableInSpace (fun $x => $appl) $encIn $encRef $budget :=
       ComputableInSpace.of_enc_eq $budgetProd fun _ => rfl))
+  registerRule (app name "_mk_budget")
 
 end Turing.MultiTapeTM
