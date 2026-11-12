@@ -2602,6 +2602,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.Paths.O
 public import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Relation
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Space
+public import CslibFrontier.Computability.Complexity.Problems.SAT.Units
 public import CslibFrontier.Computability.Complexity.Problems.SATUNSAT
 public import CslibFrontier.Computability.Complexity.Problems.STCON
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Completeness
@@ -6303,6 +6304,7 @@ public import CslibFrontier.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import CslibFrontier.Logics.Propositional.CNF.TwoCNF
 public import CslibFrontier.Logics.Propositional.CNF.UnitPropagation
 public import CslibFrontier.Logics.Propositional.CNF.UnsatVal
+public import CslibFrontier.Logics.Propositional.CNF.Vars
 public import CslibFrontier.Logics.Propositional.CSP
 public import CslibFrontier.Logics.Propositional.CSP.Affine
 public import CslibFrontier.Logics.Propositional.CSP.AffineTemplate

@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.Lean.BinarySearch
-public import CslibFrontier.Computability.Complexity.Classes.NP.SelfReduction
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.BoundedQuery
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.PolyTime
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Histogram
@@ -21,6 +20,7 @@ import CslibFrontier.Computability.Complexity.Classes.NP.Image
 import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
 import CslibFrontier.Computability.Complexity.Classes.Oracle.Monotone
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+import CslibFrontier.Computability.Complexity.Problems.SAT.Units
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -987,11 +987,7 @@ theorem isVerifier_threshold :
     refine ⟨q.formula.vars.map σ, by simpa using hvars, fun k => ?_⟩
     simp only [thresholdVerifier, decide_eq_true_eq]
     refine hσ.trans (CNF.countP_eval_congr fun v hv => ?_).le
-    have hlt : q.formula.vars.idxOf v < q.formula.vars.length := List.idxOf_lt_length_iff.2 hv
-    have hlt' : q.formula.vars.idxOf v < (q.formula.vars.map σ).length := by simpa using hlt
-    rw [SAT.assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt',
-      List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-    rfl
+    exact (SAT.assignment_vars_map_append _ σ _ hv).symm
 
 @[fun_prop]
 theorem computableInPolyTime_thresholdVerifier :
@@ -1412,11 +1408,8 @@ theorem target_le_countP_recoverBits {D : MaxSATQuery → Bool} {q : MaxSATQuery
   have hcongr : q.formula.countP (Clause.eval (SAT.assignment q.formula (recoverBits D q))) =
       q.formula.countP (Clause.eval σ) := by
     refine CNF.countP_eval_congr fun v hv => ?_
-    have hlt : q.formula.vars.idxOf v < q.formula.vars.length := List.idxOf_lt_length_iff.2 hv
-    have hbits : SAT.assignment q.formula (recoverBits D q) v = lookupVar ans v := by
-      rw [SAT.assignment, List.getD_eq_getElem?_getD, recoverBits, List.getElem?_map,
-        List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-      rfl
+    have hbits : SAT.assignment q.formula (recoverBits D q) v = lookupVar ans v :=
+      SAT.assignment_vars_map _ _ hv
     rw [hbits]
     have hdv : v ∈ ans.map Prod.fst := by
       rw [hfst, CNF.mem_distinctVars]
