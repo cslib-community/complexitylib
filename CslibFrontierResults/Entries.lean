@@ -78,6 +78,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCou
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
+import CslibFrontier.Computability.Complexity.FineGrained.SchoeningMachine
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
@@ -138,6 +139,7 @@ import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.Foundations.Computability.KleenePost
 import CslibFrontier.Foundations.Computability.KleenePostJump
+import CslibFrontier.Foundations.Data.BranchingVector
 import CslibFrontier.GameTheory.Bimatrix.Existence
 import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Cycle
@@ -177,6 +179,7 @@ import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Infinitary
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
+import CslibFrontier.Logics.Propositional.CNF.Branching
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
 import CslibFrontier.Logics.SecondOrder.Ordered.Grounding
 import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
@@ -3744,6 +3747,66 @@ register_result "sperner-2d-ppad-completeness" where
     Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
+
+register_result "branching-vector-recurrence" where
+  title := "Search-tree branching-vector recurrences and separated node-work bounds"
+  topic := "exact exponential algorithms"
+  sources := [
+    { paper := FominKratsch2010, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.BranchingVector.BranchingRecurrence.le_mul_pow,
+    Cslib.BranchingVector.BranchingTree.leafCount_le_pow,
+    Cslib.BranchingVector.BranchingTree.workCost_le_mul_pow,
+    Cslib.BranchingVector.charSum_fibonacci,
+    Cslib.BranchingVector.charSum_prefixSteps_le_one
+  ]
+  scope := "Positive integer decrease vectors steps = [a₁, …, a_b] with characteristic sum \
+    charSum steps r = ∑ r ^ (-aᵢ) <= 1 (1 <= r): T n <= C * r ^ n for recurrences with \
+    T n <= max C (sum of T (n - d) over d in steps with d <= n) at every n and C >= 0; \
+    leaf count <= r ^ measure s, node count <= (measure s + 1) * r ^ measure s, and separated \
+    per-node overhead workCost <= W * (measure s + 1) * r ^ measure s on multi-way search trees \
+    (1 <= r), plus closed-form Fibonacci ((1 + sqrt 5) / 2) and prefix [1, …, k] (2 - (1 / 2) ^ k) \
+    factors."
+
+register_result "cnf-prefix-branching" where
+  title := "Disjoint clause-prefix SAT branching and model-count conservation"
+  topic := "SAT algorithms"
+  sources := [
+    { paper := FominKratsch2010, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.PL.CNF.not_partitionsModels_clauseCoverBranches_two,
+    Cslib.Logic.PL.CNF.modelCountOn_eq_sum_clausePrefixTree_leaves,
+    Cslib.Logic.PL.CNF.satisfiable_iff_exists_clausePrefixTree_leaf,
+    Cslib.Logic.PL.CNF.leafCount_clausePrefixTree_le,
+    Cslib.Logic.PL.CNF.leafCount_clausePrefixTree_two_le
+  ]
+  scope := "Separates covering (CoversModels) and model-partitioning (PartitionsModels) CNF \
+    branching rules, refutes model partitioning for naive two-literal clause covers, and proves \
+    that disjoint clause-prefix branching on width-<= k CNFs conserves exact modelCountOn across \
+    leaves with at most (2 - (1 / 2) ^ k) ^ n leaves (k >= 1) and ((1 + sqrt 5) / 2) ^ n leaves \
+    at k = 2. Combinatorial search-tree specification; no native machine runtime asserted here."
+
+register_result "schoening-multitape" where
+  title := "Schöning: randomized k-SAT in time (2(k - 1)/k)^n on fair-coin multitape machines"
+  topic := "SAT algorithms"
+  sources := [
+    { paper := Schoening1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.Schoening.half_mul_succeedProb_trial_le_fairTrial,
+    Cslib.Complexity.Schoening.exists_multiTapePTM_KSAT,
+    Cslib.Complexity.Schoening.exists_decidesWithBoundedErrorInTime_KSAT,
+    Cslib.Complexity.Schoening.exists_decidesWithBoundedErrorInTime_ThreeSAT
+  ]
+  scope := "For every fixed clause width k >= 3 and amplification parameter c : Nat, one \
+    finite-control fair-coin MultiTapePTM on encCNF (CNF Nat) using w = 2n + k + 3 bits per \
+    sampleModNat step and a binary encNat countdown over 2 * schoeningTrials k φ.numVars c trials \
+    halts on every branch within C * (((2(k - 1))/k) ^ φ.numVars * (|encCNF φ| + 1) ^ E) steps \
+    and C * (|encCNF φ| + 1) ^ E work-tape cells (toNTM.RunsInSpace), outputs PMF.pure [false] \
+    outside KSAT k, and accepts every φ in KSAT k with probability >= 1 - exp(-c) (>= 2/3 at \
+    c = 2, giving (4/3)^n on ThreeSAT)."
 
 section
 open Cslib.Communication
