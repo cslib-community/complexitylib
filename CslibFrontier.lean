@@ -1734,6 +1734,7 @@ public import CslibFrontier.Computability.Communication.Nondeterministic.Functio
 public import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
 public import CslibFrontier.Computability.Communication.OneOut
 public import CslibFrontier.Computability.Communication.OneOutLargeRectangle
+public import CslibFrontier.Computability.Communication.OneOutLowerBound
 public import CslibFrontier.Computability.Communication.OneOutRectangle
 public import CslibFrontier.Computability.Communication.Operations
 public import CslibFrontier.Computability.Communication.PartitionJoin
@@ -6439,6 +6440,7 @@ public import CslibFrontier.Probability.LocalitySensitiveHash.MinHash
 public import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 public import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
 public import CslibFrontier.Probability.LoomisWhitney
+public import CslibFrontier.Probability.MajorityTree
 public import CslibFrontier.Probability.MarkovChain.Basic
 public import CslibFrontier.Probability.MarkovChain.Coloring
 public import CslibFrontier.Probability.MarkovChain.Coloring.Count
