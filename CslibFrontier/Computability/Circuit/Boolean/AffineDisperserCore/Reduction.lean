@@ -25,6 +25,8 @@ remain deletable.
 * `Cslib.Circuits.Boolean.AffineDisperserCore.State.Deletable`: constraints deletable by `(D1)`
   or `(D3)`.
 * `Cslib.Circuits.Boolean.AffineDisperserCore.State.Reduction`: composable reductions.
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.deleteConstraint`: the deletion of a deletable
+  gate or equation.
 
 ## Main results
 
@@ -32,8 +34,9 @@ remain deletable.
   parameterized by `cfg.cs`, `cfg.cq`, and `cfg.weight`.
 * `Cslib.Circuits.Boolean.AffineDisperserCore.State.Reduction.step`: reductions as steps of gate
   elimination parameterized by `cfg.ca`.
-* `Cslib.Circuits.Boolean.AffineDisperserCore.State.Valid.exists_reduction_deleteAll`: deleting
-  lists of deletable constraints.
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.Valid.reduction_deleteConstraint`,
+  `Cslib.Circuits.Boolean.AffineDisperserCore.State.Valid.exists_reduction_deleteAll`: deleting
+  deletable constraints.
 -/
 
 public section
@@ -421,63 +424,104 @@ theorem Valid.terms_eq_empty_of_subset {S : State cfg n} (hS : S.Valid f) {e : �
     Function.update_self, ← h1] at h2
   cases val x <;> simp at h2
 
-/-- A deletable constraint of a valid state is deleted by a reduction. -/
-theorem Valid.exists_reduction_delete {S : State cfg n} (hS : S.Valid f) {N : ℕ ⊕ ℕ}
-    (hN : S.Deletable N) : ∃ S', Reduction f S S' ∅ [N] [N] := by
+/-- The deletion of a constraint used by `Valid.reduction_deleteConstraint`. A gate is rerouted to
+its literal `Gate.lit`. An equation containing an auxiliary variable is deleted as `v = U + rhs`,
+where `v` is its least auxiliary variable and `U` its least other term, or as `v = rhs` if it has
+no other term. An equation without auxiliary variables is dropped. -/
+@[expose] def deleteConstraint (S : State cfg n) : ℕ ⊕ ℕ → State cfg n
+  | .inl J => S.deleteGate J (S.gate J).lit
+  | .inr e =>
+    if hA : ((S.eqn e).terms.filter (· ∈ S.aux)).Nonempty then
+      let v := ((S.eqn e).terms.filter (· ∈ S.aux)).min' hA
+      if hR : ((S.eqn e).terms.erase v).Nonempty then
+        S.deleteEqn e v ⟨.node (((S.eqn e).terms.erase v).min' hR), (S.eqn e).rhs⟩
+      else S.deleteEqn e v (Lit.const (S.eqn e).rhs)
+    else S.dropTrivialEqn e
+
+/-- Deleting a constraint removes no parameter. -/
+@[simp] theorem deleteConstraint_params (S : State cfg n) (N : ℕ ⊕ ℕ) :
+    (S.deleteConstraint N).params = S.params := by
+  rcases N with J | e
+  · rfl
+  · dsimp only [deleteConstraint]
+    split_ifs <;> rfl
+
+/-- Deleting a constraint keeps the pairs. -/
+@[simp] theorem deleteConstraint_pairs (S : State cfg n) (N : ℕ ⊕ ℕ) :
+    (S.deleteConstraint N).pairs = S.pairs := by
+  rcases N with J | e
+  · rfl
+  · dsimp only [deleteConstraint]
+    split_ifs <;> rfl
+
+/-- Deleting a constraint adds no gate. -/
+theorem deleteConstraint_gates_subset (S : State cfg n) (N : ℕ ⊕ ℕ) :
+    (S.deleteConstraint N).gates ⊆ S.gates := by
+  rcases N with J | e
+  · exact Finset.erase_subset _ _
+  · dsimp only [deleteConstraint]
+    split_ifs <;> exact subset_rfl
+
+/-- A deletable constraint of a valid state is deleted by the reduction `S.deleteConstraint N`. -/
+theorem Valid.reduction_deleteConstraint {S : State cfg n} (hS : S.Valid f) {N : ℕ ⊕ ℕ}
+    (hN : S.Deletable N) : Reduction f S (S.deleteConstraint N) ∅ [N] [N] := by
   rcases N with J | e
   · obtain ⟨hJ, hdeg⟩ := hN
-    exact ⟨_, hS.reduction_deleteGate (ℓ := (S.gate J).lit)
+    exact hS.reduction_deleteGate (ℓ := (S.gate J).lit)
       ⟨hJ, fun t ht => Gate.reads_of_lit_reads ht, Or.inl fun val _ _ => Gate.eval_lit hdeg val⟩
-      fun _ _ => List.mem_singleton_self _⟩
+      fun _ _ => List.mem_singleton_self _
   · obtain ⟨he, hcard⟩ := hN
-    by_cases haux : ∃ v ∈ (S.eqn e).terms, v ∈ S.aux
-    · obtain ⟨v, hv, hva⟩ := haux
+    dsimp only [deleteConstraint]
+    split_ifs with hA hR
+    · have hvA := Finset.mem_filter.1 (Finset.min'_mem _ hA)
+      set v := ((S.eqn e).terms.filter (· ∈ S.aux)).min' hA
+      have hUmem := Finset.min'_mem _ hR
+      set U := ((S.eqn e).terms.erase v).min' hR
+      have hUv : U ≠ v := Finset.ne_of_mem_erase hUmem
       have hrest : ((S.eqn e).terms.erase v).card ≤ 1 := by
-        rw [Finset.card_erase_of_mem hv]; omega
-      rcases Finset.card_le_one_iff_subset_singleton.1 hrest with ⟨U, hU⟩
-      by_cases hUmem : U ∈ (S.eqn e).terms.erase v
-      · have hterms : (S.eqn e).terms = {v, U} := by
-          ext i
-          simp only [Finset.mem_insert, Finset.mem_singleton]
-          constructor
-          · intro hi
-            by_cases hiv : i = v
-            · exact Or.inl hiv
-            · exact Or.inr (Finset.mem_singleton.1 (hU (Finset.mem_erase.2 ⟨hiv, hi⟩)))
-          · rintro (rfl | rfl)
-            · exact hv
-            · exact Finset.mem_of_mem_erase hUmem
-        have hUv : U ≠ v := Finset.ne_of_mem_erase hUmem
-        refine ⟨_, hS.reduction_deleteEqn (v := v) (ℓ := ⟨.node U, (S.eqn e).rhs⟩)
-          ⟨he, hva, fun val => ?_, fun t ht => ?_⟩ fun _ _ => List.mem_singleton_self _⟩
-        · unfold Equation.Holds
-          rw [hterms, Finset.sum_pair hUv.symm]
-          simp only [Lit.eval, Arg.eval_node]
-          generalize val v = a; generalize val U = b; generalize (S.eqn e).rhs = r
-          revert a b r; decide
-        · cases ht
-          exact ⟨Finset.mem_of_mem_erase hUmem, hUv⟩
-      · have hterms : (S.eqn e).terms = {v} := by
-          ext i
-          simp only [Finset.mem_singleton]
-          constructor
-          · intro hi
-            by_contra hiv
-            have := hU (Finset.mem_erase.2 ⟨hiv, hi⟩)
-            rw [Finset.mem_singleton] at this
-            exact hUmem (this ▸ Finset.mem_erase.2 ⟨hiv, hi⟩)
-          · rintro rfl; exact hv
-        refine ⟨_, hS.reduction_deleteEqn (v := v) (ℓ := Lit.const (S.eqn e).rhs)
-          ⟨he, hva, fun val => ?_, fun t ht => by cases ht⟩ fun _ ht => by cases ht⟩
-        unfold Equation.Holds
-        rw [hterms, Finset.sum_singleton, Lit.eval_const]
-    · push Not at haux
-      have hsub : (S.eqn e).terms ⊆ S.params := fun i hi => by
+        rw [Finset.card_erase_of_mem hvA.1]; omega
+      have hterms : (S.eqn e).terms = {v, U} := by
+        ext i
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        constructor
+        · intro hi
+          by_cases hiv : i = v
+          · exact Or.inl hiv
+          · exact Or.inr (Finset.card_le_one.1 hrest i (Finset.mem_erase.2 ⟨hiv, hi⟩) U hUmem)
+        · rintro (rfl | rfl)
+          · exact hvA.1
+          · exact Finset.mem_of_mem_erase hUmem
+      refine hS.reduction_deleteEqn ⟨he, hvA.2, fun val => ?_, fun t ht => ?_⟩
+        fun _ _ => List.mem_singleton_self _
+      · unfold Equation.Holds
+        rw [hterms, Finset.sum_pair hUv.symm]
+        simp only [Lit.eval, Arg.eval_node]
+        generalize val v = a; generalize val U = b; generalize (S.eqn e).rhs = r
+        revert a b r; decide
+      · cases ht
+        exact ⟨Finset.mem_of_mem_erase hUmem, hUv⟩
+    · have hvA := Finset.mem_filter.1 (Finset.min'_mem _ hA)
+      set v := ((S.eqn e).terms.filter (· ∈ S.aux)).min' hA
+      have hterms : (S.eqn e).terms = {v} := by
+        rw [Finset.not_nonempty_iff_eq_empty, Finset.erase_eq_empty_iff] at hR
+        rcases hR with h | h
+        · rw [h] at hvA; exact absurd hvA.1 (Finset.notMem_empty _)
+        · exact h
+      refine hS.reduction_deleteEqn ⟨he, hvA.2, fun val => ?_, fun t ht => by cases ht⟩
+        fun _ ht => by cases ht
+      unfold Equation.Holds
+      rw [hterms, Finset.sum_singleton, Lit.eval_const]
+    · have hsub : (S.eqn e).terms ⊆ S.params := fun i hi => by
         rcases Finset.mem_union.1 (hS.wf.terms_subset e he hi) with hp | ha
         · exact hp
-        · exact absurd ha (haux i hi)
-      exact ⟨_, (hS.reduction_dropTrivialEqn he (hS.terms_eq_empty_of_subset he hsub)).mono
-        fun _ hN => absurd hN List.not_mem_nil⟩
+        · exact absurd ⟨i, Finset.mem_filter.2 ⟨hi, ha⟩⟩ hA
+      exact (hS.reduction_dropTrivialEqn he (hS.terms_eq_empty_of_subset he hsub)).mono
+        fun _ hN => absurd hN List.not_mem_nil
+
+/-- A deletable constraint of a valid state is deleted by a reduction. -/
+theorem Valid.exists_reduction_delete {S : State cfg n} (hS : S.Valid f) {N : ℕ ⊕ ℕ}
+    (hN : S.Deletable N) : ∃ S', Reduction f S S' ∅ [N] [N] :=
+  ⟨_, hS.reduction_deleteConstraint hN⟩
 
 /-- Distinct deletable constraints of a valid state are deleted by a reduction. -/
 theorem Valid.exists_reduction_deleteAll {S : State cfg n} (hS : S.Valid f) (l : List (ℕ ⊕ ℕ))

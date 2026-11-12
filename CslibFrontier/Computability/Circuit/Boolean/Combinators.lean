@@ -15,9 +15,9 @@ import CslibFrontier.Computability.Circuit.Boolean.Word
 # Complexity of circuit combinators
 
 Size bounds for building a De Morgan circuit from circuits for its parts, stated with `complexity`
-in the style of `complexity_and_le`: a multiplexer, a finite conjunction, and reading one block of
-a tuple of `BitString` blocks with the other blocks fixed to constants. The bounds are on size
-only.
+in the style of `complexity_and_le`: a multiplexer, a finite conjunction or disjunction, and
+reading one block of a tuple of `BitString` blocks with the other blocks fixed to constants. The
+bounds are on size only.
 
 ## Main definitions
 
@@ -26,8 +26,8 @@ only.
 ## Main results
 
 * `complexity_ite_le`: a multiplexer costs four gates beyond its arguments.
-* `complexity_decide_forall_mem_le`: a conjunction of `#s` tests of cost `c` costs
-  `#s (c + 1) + 1`.
+* `complexity_decide_forall_mem_le`, `complexity_decide_exists_mem_le`: a conjunction or a
+  disjunction of `#s` tests of cost `c` costs `#s (c + 1) + 1`.
 * `complexity_single_block_le`: reading one block, with the others fixed, costs at most two gates
   more than reading the whole flat tuple.
 -/
@@ -84,6 +84,30 @@ theorem complexity_decide_forall_mem_le {ι : Type*} (s : Finset ι)
       simp
     rw [heq, card_insert_of_notMem hi]
     refine (complexity_and_le _ _).trans ?_
+    refine (Nat.add_le_add_right (Nat.add_le_add (hF i (mem_insert_self i s))
+      (ih fun j hj => hF j (mem_insert_of_mem hj))) 1).trans (le_of_eq ?_)
+    ring
+
+/-- **Finite disjunction**: the disjunction of the tests `F i` over `i ∈ s`, each costing at most
+`c` gates, costs at most `#s (c + 1) + 1` gates. As in `complexity_decide_forall_mem_le`, the
+lemma takes the `Decidable` instance of the caller's statement. -/
+theorem complexity_decide_exists_mem_le {ι : Type*} (s : Finset ι)
+    (F : ι → BooleanFunction n) [dec : ∀ x, Decidable (∃ i ∈ s, F i x = true)] {c : ℕ}
+    (hF : ∀ i ∈ s, complexity interpretation (single (F i)) ≤ c) :
+    complexity interpretation (single fun x => decide (∃ i ∈ s, F i x = true)) ≤
+      #s * (c + 1) + 1 := by
+  classical
+  obtain rfl : dec = fun x => Finset.decidableExistsAndFinset := Subsingleton.elim _ _
+  induction s using Finset.induction_on with
+  | empty =>
+    simpa using (Synthesis.const (s := inputs n) false).complexity_le
+  | insert i s hi ih =>
+    have heq : (fun x => decide (∃ j ∈ insert i s, F j x = true)) =
+        fun x => F i x || decide (∃ j ∈ s, F j x = true) := by
+      funext x
+      simp
+    rw [heq, card_insert_of_notMem hi]
+    refine (complexity_or_le _ _).trans ?_
     refine (Nat.add_le_add_right (Nat.add_le_add (hF i (mem_insert_self i s))
       (ih fun j hj => hF j (mem_insert_of_mem hj))) 1).trans (le_of_eq ?_)
     ring

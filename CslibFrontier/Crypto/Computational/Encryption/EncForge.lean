@@ -9,9 +9,9 @@ module
 
 public import CslibFrontier.Crypto.Computational.Encryption.EncryptThenMAC
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
-import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
@@ -126,13 +126,13 @@ theorem isPPTOn_run_encForgeOracle (E : SymmetricCipher) {adversary : CIAdversar
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
-  have hcond : ComputableTidilyInPolyTime
+  have hcond : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         p.2.1.2.length == p.1.1)
       EIn encBool :=
-    ComputableTidilyInPolyTime.unary_beq
+    ComputableInPolyTime.unary_beq'
       (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
-  have hencArg : ComputableTidilyInPolyTime
+  have hencArg : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         (p.1.1, p.1.2, p.2.1.2))
       EIn (encPair encUnary (encPair encBits encBits)) := by
@@ -141,21 +141,21 @@ theorem isPPTOn_run_encForgeOracle (E : SymmetricCipher) {adversary : CIAdversar
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) => do
         let ct ← E.encrypt p.1.1 p.1.2 p.2.1.2
         return (ct, p.2.1.2 :: p.2.2)) :=
-    (E.encrypt_ppt.preprocess hencArg.computableInPolyTime).bind_with
-      ((by dsimp only [EIn]; fun_prop : ComputableTidilyInPolyTime
+    (E.encrypt_ppt.preprocess hencArg).bind_with
+      ((by dsimp only [EIn]; fun_prop : ComputableInPolyTime
         (fun q : ((ℕ × List Bool) × ((Unit × List Bool) × List (List Bool))) × List Bool =>
           (q.2, q.1.2.1.2 :: q.1.2.2))
         (encPair EIn encBits) (encPair encBits (encList encBits))).isPPTOn)
   have hno : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         pure ([], p.2.2)) :=
-    (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const [])
+    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
       (by dsimp only [EIn]; fun_prop)).isPPTOn
   have hhandler : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         E.encForgeOracle pair.1.1 pair.1.2 pair.2.1 pair.2.2) := by
     unfold encForgeOracle
-    exact IsPPTOn.cond hcond hyes hno
+    exact IsPPTOn.cond' hcond hyes hno
   apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
     (initial := fun _ => ([] : List (List Bool)))
@@ -180,34 +180,32 @@ theorem isPPTOn_run_encForgeOracle (E : SymmetricCipher) {adversary : CIAdversar
     subst result
     exact ⟨trivial, by simp, by lia⟩
 
-private theorem computableTidilyInPolyTime_encForgePost (E : SymmetricCipher) :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_encForgePost (E : SymmetricCipher) :
+    ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) =>
         (E.decrypt pair.1.1 pair.1.2 pair.2.1).isSome &&
           !pair.2.2.contains ((E.decrypt pair.1.1 pair.1.2 pair.2.1).getD []))
       (encPair (encPair encUnary encBits) (encPair encBits (encList encBits))) encBool := by
   let EOut := encPair (encPair encUnary encBits) (encPair encBits (encList encBits))
-  have hdecArg : ComputableTidilyInPolyTime
+  have hdecArg : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) =>
         (pair.1.1, pair.1.2, pair.2.1))
       EOut (encPair encUnary (encPair encBits encBits)) := by
     dsimp only [EOut]; fun_prop
-  have hdec : ComputableTidilyInPolyTime
+  have hdec : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) =>
         E.decrypt pair.1.1 pair.1.2 pair.2.1)
       EOut (encOption encBits) :=
-    E.decrypt_polyTime.tidy.comp hdecArg
+    E.decrypt_polyTime.comp hdecArg
   have hisSome := hdec.optionIsSome
-  have hgetD := ComputableTidilyInPolyTime.optionGetDWithInput hdec
-    (ComputableTidilyInPolyTime.const [])
-  have hlist : ComputableTidilyInPolyTime
+  have hgetD := ComputableInPolyTime.optionGetDWithInput hdec (ComputableInPolyTime.const [])
+  have hlist : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) => pair.2.2)
       EOut (encList encBits) := by
     dsimp only [EOut]; fun_prop
-  have hcontains :=
-    (ComputableInPolyTime.contains hlist.computableInPolyTime hgetD.computableInPolyTime).tidy
-  exact ComputableTidilyInPolyTime.bool_and.comp
-    (hisSome.prod (ComputableTidilyInPolyTime.bool_not.comp hcontains))
+  have hcontains := ComputableInPolyTime.contains hlist hgetD
+  exact ComputableInPolyTime.bool_and.comp
+    (hisSome.prod (ComputableInPolyTime.bool_not.comp hcontains))
 
 /-- The fresh-message encryption unforgeability experiment is uniformly strict PPT in the unary
 security parameter. -/
@@ -217,7 +215,7 @@ theorem isPPTOn_encForgeGame (E : SymmetricCipher) {adversary : CIAdversary}
     IsPPTOn encUnary encBool (E.encForgeGame adversary) := by
   have hrun := E.isPPTOn_run_encForgeOracle hadversary
   unfold encForgeGame
-  exact E.keyGen_ppt.bind_with (hrun.bind_with E.computableTidilyInPolyTime_encForgePost.isPPTOn)
+  exact E.keyGen_ppt.bind_with (hrun.bind_with E.computableInPolyTime_encForgePost.isPPTOn)
 
 /-- The fresh-message encryption unforgeability experiment is uniformly strict PPT, independently of
 unused auxiliary input. -/

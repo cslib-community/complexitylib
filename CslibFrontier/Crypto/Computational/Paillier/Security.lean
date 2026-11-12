@@ -9,11 +9,10 @@ module
 
 public import CslibFrontier.Crypto.Computational.Paillier
 import CslibFrontier.Crypto.Game.FourHop
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -123,17 +122,15 @@ theorem isPPTOn_dcrDistinguisher {adversary : AdversaryOf ℕ} (hA : adversary.I
     · exact hm1
   have hN2 := computableInPolyTime_sq hN
   have hpow := computableInPolyTime_powMod hN2
-    (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.binary_add'
-      (ComputableTidilyInPolyTime.const 1) hN.tidy)) hm
-  have hct := ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.binary_mod'
-    (ComputableTidilyInPolyTime.binary_mul' hpow.tidy hy.tidy) hN2.tidy)
-  have hvalidStep : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.binary_add' (ComputableInPolyTime.const 1) hN) hm
+  have hct := ComputableInPolyTime.binary_mod' (ComputableInPolyTime.binary_mul' hpow hy) hN2
+  have hvalidStep : ComputableInPolyTime
       (fun p : (ℕ × ℕ × ℕ) × (ℕ × ℕ) × List Bool =>
         validMessages p.1.1 (encNat p.1.2.1) p.2.1.1 p.2.1.2) (encPair EIn EChoice) encBool := by
     simpa only [validMessages, ofBits_encNat, Function.comp_def] using
-      ComputableTidilyInPolyTime.decide_and
-        (ComputableTidilyInPolyTime.binary_lt' hm0.tidy hN.tidy)
-        (ComputableTidilyInPolyTime.binary_lt' hm1.tidy hN.tidy)
+      ComputableInPolyTime.decide_and
+        (ComputableInPolyTime.binary_lt' hm0 hN)
+        (ComputableInPolyTime.binary_lt' hm1 hN)
   have hguessStep := hA.guess.preprocess
     (prepare := fun p : (ℕ × ℕ × ℕ) × (ℕ × ℕ) × List Bool =>
       (p.1.1, p.2.2, encNat (powMod (p.1.2.1 ^ 2) (1 + p.1.2.1)
@@ -144,7 +141,7 @@ theorem isPPTOn_dcrDistinguisher {adversary : AdversaryOf ℕ} (hA : adversary.I
     (prepare := fun input : ℕ × ℕ × ℕ => (input.1, encNat input.2.1))
     ((ComputableInPolyTime.fst encUnary (encPair encNat encNat)).prod
       hN_in.encoding_comp)).bind_with ?_
-  exact IsPPTOn.cond hvalidStep hguessStep (ComputableTidilyInPolyTime.const false).isPPTOn
+  exact IsPPTOn.cond' hvalidStep hguessStep (ComputableInPolyTime.const false).isPPTOn
 
 /-! ### Algebra of the reduction -/
 

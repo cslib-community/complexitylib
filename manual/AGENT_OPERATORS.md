@@ -80,15 +80,26 @@ Assign review to an agent that did not design or implement the change. For examp
 > statements. Check the mathematical claim, API and representative client, including the model,
 > encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
 > their files, and report any substantial argument the change repeats that another proof or an
-> existing lemma already makes. Review the impact on both manuals and any affected
+> existing lemma already makes. Follow a representative caller: check whether named accessors,
+> matcher/range facts and generated certificates remove representation work, and compare any
+> sibling implementation or conversion bridge. Review the impact on both manuals and any affected
 > results-inventory entry. Report concrete findings and a verdict, stating what you checked and
 > what remains uncertain.
+
+Ask the reviewer to consider whether a different statement, API, invariant or proof strategy
+would make the result clearer to state, prove and use, while preserving its mathematical strength.
+Require inspection of the duplication notices and the declarations or proof blocks they identify;
+an advisory check's successful exit does not establish that its candidates were reviewed. Concrete
+cleanup affecting the contribution belongs in its original PR, under the
+[quality and deferral rules](../AGENTS.md#improving-library-ergonomics).
 
 Lean validation establishes the checked statements under their definitions and dependencies.
 Review must also judge whether those statements express the intended mathematics and whether
 someone can use the interface. Ask for a satisfying instance or meaningful edge case when a
 contract may be vacuous. A diff shows a new copy of an argument but not the proof it repeats,
-so ask for that comparison explicitly. An approval must cover the final revision; substantive
+so ask for that comparison explicitly. For an API cleanup, ask which actual caller became simpler
+and why; the [caller review procedure](../AGENTS.md#check-the-api-through-its-callers) gives concrete
+checks. An approval must cover the final revision; substantive
 fixes require review of the affected reasoning. Unchanged evidence can be reused after checking
 its identity.
 
@@ -123,9 +134,11 @@ not only a thread count. Their builds can exhaust the kernel's file handles befo
 processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 Agents on one host also share Lake's artifact cache, which restores a module that another
-checkout built without its warnings. `scripts/check.sh` re-elaborates the changed files among
-such modules, but not their unchanged clients. When a local check and CI disagree about a
-warning, trust CI
+checkout built without its warnings. Full `scripts/check.sh` re-elaborates those built root-package
+sources; quick mode checks affected sources, including unchanged clients, built import aggregates
+and executable helpers.
+Bare Lake commands still lack this audit. When a local check and CI disagree about a warning,
+trust CI
 ([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;

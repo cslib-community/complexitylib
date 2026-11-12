@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Exec
+import CslibFrontier.Foundations.Data.List.GetD
 import Mathlib.Data.List.GetD
 
 /-!
@@ -36,6 +37,13 @@ theorem input_word (n p : ℕ) (values : List ℤ) (q : ℕ) :
   rw [inputWords, List.getD_append_right _ _ _ _ (by simp)]
   simp only [List.length_cons, List.length_nil, Nat.reduceAdd, Nat.add_sub_cancel_left]
   exact List.getD_map values 0 encode
+
+/-- Read a payload word from an offset slice `(3 + k) + q` at any caller register count. -/
+theorem input_word_add {r : ℕ} (n p : ℕ) (values : List ℤ) (k q : ℕ) :
+    (Data.init (inputWords n p values) : Data r).mem (3 + k + q) =
+      encode (values.getD (k + q) 0) := by
+  rw [Nat.add_assoc]
+  exact input_word n p values (k + q)
 
 /-- The actual header reads only the two original scalar words and computes all array bases. -/
 theorem exec_header {W n p : ℕ} (x : Data 128) (hn : x.mem 1 = n) (hp : x.mem 2 = p)
@@ -82,12 +90,8 @@ theorem exec_input_at {w n p A : ℕ} (values : List ℤ)
   have h2 : 0 < 2 ^ k := by positivity
   have harea : 0 < 4 ^ k * p := Nat.mul_pos h4 hp
   have hA : A ≤ magnitudeBudget p k A := by unfold magnitudeBudget; omega
-  have original (q : ℕ) (hq : q < 3 * (n * n)) : (values.getD q 0).natAbs ≤ A := by
-    have hq' : q < values.length := by omega
-    have hm : values.getD q 0 ∈ values := by
-      rw [List.getD_eq_getElem _ _ hq']
-      exact List.getElem_mem hq'
-    exact hv _ hm
+  have original (q : ℕ) (hq : q < 3 * (n * n)) : (values.getD q 0).natAbs ≤ A :=
+    hv (values.getD q 0) (List.getD_mem 0 (by omega))
   have hi : InputFits (w + 2) (inputWords n p values) := by
     refine ⟨?_, ?_⟩
     · simpa only [inputWords, List.length_append, List.length_cons, List.length_nil,
@@ -111,15 +115,9 @@ theorem exec_input_at {w n p A : ℕ} (values : List ℤ)
     hp hn hpReg hAB hBC hAC hs (by omega) (by omega) (by omega)
     (fun i hi => original i (by omega)) (fun i hi => original (n * n + i) (by omega))
     (fun i hi => original (2 * (n * n) + i) (by omega))
-    (by intro i hi; rw [memory]; exact input_word n p values i)
-    (by
-      intro i hi
-      rw [memory]
-      simpa only [Nat.add_assoc] using input_word n p values (n * n + i))
-    (by
-      intro i hi
-      rw [memory]
-      simpa only [Nat.add_assoc] using input_word n p values (2 * (n * n) + i)) hmag hw
+    (fun i _ => (congrFun memory _).trans (input_word n p values i))
+    (fun i _ => (congrFun memory _).trans (input_word_add n p values (n * n) i))
+    (fun i _ => (congrFun memory _).trans (input_word_add n p values (2 * (n * n)) i)) hmag hw
   have full : ExecWithin (w + 2) entryProgram (.init (inputWords n p values)) y
       (cost n p + 9) := (headerRun.seq counterRun).mono (by omega)
   refine ⟨hi, y, full, ?_, full.bounded (.init hi), ?_⟩
