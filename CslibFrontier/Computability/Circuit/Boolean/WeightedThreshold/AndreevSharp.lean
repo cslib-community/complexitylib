@@ -1117,7 +1117,7 @@ private theorem abs_andreevSharpTopInput_cases (i : Fin (2 ^ b + b * m)) :
     have hb : 1 ≤ b := by
       by_contra h
       obtain rfl : b = 0 := by omega
-      simp at k
+      rw [Nat.zero_mul] at k
       exact k.elim0
     have hα : 2 * (andreevSharpAmp m : ℤ) ≤ m := by exact_mod_cast two_mul_andreevSharpAmp_le m
     have hmb : (m : ℤ) ≤ b * m := by
