@@ -150,13 +150,17 @@ def coupledHashH (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
     simHashHRaw S.sampleKey (true, m, c)
 
 omit [DecidableEq M] in
-/-- The decapsulation branch shared by `simHandler` and `coupledHandler` leaves `gCache`
-unchanged. -/
-theorem gCache_eq_of_mem_support_decaps (sampleKey : ProbComp K) (cStar c : CT)
+/-- The filtered decapsulation branch shared by `simFilterHandler` and `coupledFilterHandler`
+leaves `gCache` unchanged. -/
+theorem gCache_eq_of_mem_support_filterDecaps (sampleKey : ProbComp K)
+    (d : List (M × R) → CT → Bool) (cStar c : CT)
     (st : SimState M R CT K) (x : Option K × SimState M R CT K)
-    (hx : x ∈ (ProbComp.eval ((if c = cStar then return none else do
-      let k ← simHashHq sampleKey c
-      return some k : StateT (SimState M R CT K) ProbComp (Option K)) st)).support) :
+    (hx : x ∈ (ProbComp.eval ((if c = cStar then return none else fun st =>
+      cond (d st.gCache c)
+        ((do let k ← simHashHq sampleKey c; return some k :
+          StateT (SimState M R CT K) ProbComp (Option K)) st)
+        ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st) :
+          StateT (SimState M R CT K) ProbComp (Option K)) st)).support) :
     x.2.gCache = st.gCache := by
   by_cases hc : c = cStar
   · simp only [hc, ↓reduceIte] at hx
@@ -164,32 +168,48 @@ theorem gCache_eq_of_mem_support_decaps (sampleKey : ProbComp K) (cStar c : CT)
     rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
     rw [hx]
   · simp only [hc, ↓reduceIte] at hx
-    change x ∈ (ProbComp.eval (simHashHq sampleKey c st >>= fun a =>
-      pure (some a.fst, a.snd))).support at hx
-    rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hx
-    obtain ⟨z, hz, hx⟩ := hx
-    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
-    rw [hx]
-    exact simHashHq_gCache_eq _ _ _ _ hz
+    cases hd : d st.gCache c
+    · simp only [hd, Bool.cond_false] at hx
+      change x ∈ (ProbComp.eval (pure (none, st))).support at hx
+      rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
+      rw [hx]
+    · simp only [hd, Bool.cond_true] at hx
+      change x ∈ (ProbComp.eval (simHashHq sampleKey c st >>= fun a =>
+        pure (some a.fst, a.snd))).support at hx
+      rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hx
+      obtain ⟨z, hz, hx⟩ := hx
+      rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
+      rw [hx]
+      exact simHashHq_gCache_eq _ _ _ _ hz
+
+omit [DecidableEq M] in
+/-- The decapsulation branch shared by `simHandler` and `coupledHandler` leaves `gCache`
+unchanged. -/
+theorem gCache_eq_of_mem_support_decaps (sampleKey : ProbComp K) (cStar c : CT)
+    (st : SimState M R CT K) (x : Option K × SimState M R CT K)
+    (hx : x ∈ (ProbComp.eval ((if c = cStar then return none else do
+      let k ← simHashHq sampleKey c
+      return some k : StateT (SimState M R CT K) ProbComp (Option K)) st)).support) :
+    x.2.gCache = st.gCache :=
+  gCache_eq_of_mem_support_filterDecaps sampleKey (fun _ _ => true) cStar c st x hx
+
+/-- Lazy coupled handler parameterized by a decapsulation filter `d : List (M × R) → CT → Bool`;
+it differs from `simFilterHandler` only in using `coupledHashH` for `H`. -/
+def coupledFilterHandler (S : Scheme PK SK M R CT K) (d : List (M × R) → CT → Bool)
+    (pk : PK) (sk : SK) (cStar : CT)
+    (q : ROQuery M CT) : StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
+  S.simFilterDispatch (S.coupledHashH pk sk) d cStar q
 
 /-- Lazy realization of `eagerCoupledHandler` on `SimState`; it differs from `simHandler` only
 in using `coupledHashH` for `H`. -/
 def coupledHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (cStar : CT)
     (q : ROQuery M CT) : StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
-  match q with
-  | .G m => simHashG S.pke.sampleCoins m
-  | .H x => S.coupledHashH pk sk x
-  | .decaps c =>
-    if c = cStar then
-      return none
-    else do
-      let k ← simHashHq S.sampleKey c
-      return some k
+  S.coupledFilterHandler (fun _ _ => true) pk sk cStar q
 
-/-- The lazy coupled game: `G(m*)` is programmed to fresh challenge coins `r*` and the real key
-is the answer of `coupledHashH` to `(false, m*, c*)`. -/
-def coupledGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
-    ProbComp Bool := do
+/-- Lazy coupled game parameterized by a decapsulation filter
+`d : PK → SK → List (M × R) → CT → Bool`. -/
+def coupledFilterGame (S : Scheme PK SK M R CT K) (d : PK → SK → List (M × R) → CT → Bool)
+    (A : ROAdversary PK M R CT K) (b : Bool) : ProbComp Bool := do
   let (pk, sk) ← S.pke.keyGen
   let mStar ← S.sampleMsg
   let rStar ← S.pke.sampleCoins
@@ -197,14 +217,20 @@ def coupledGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : B
   let (kReal, st₀) ← (S.coupledHashH pk sk (false, mStar, cStar)).run
     { gCache := [(mStar, rStar)] }
   let kRand ← S.sampleKey
-  let (guess, _) ← (OracleComp.interpret (S.coupledHandler pk sk cStar)
+  let (guess, _) ← (OracleComp.interpret (S.coupledFilterHandler (d pk sk) pk sk cStar)
     (A (pk, cStar, if b then kRand else kReal))).run st₀
   return guess
 
-/-- The lazy keyless simulator game: as `coupledGame` with `simHashH` and `simHandler`, which do
-not use the secret key. -/
-def simGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
-    ProbComp Bool := do
+/-- The lazy coupled game: `G(m*)` is programmed to fresh challenge coins `r*` and the real key
+is the answer of `coupledHashH` to `(false, m*, c*)`. -/
+def coupledGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
+    ProbComp Bool :=
+  S.coupledFilterGame (fun _ _ _ _ => true) A b
+
+/-- Lazy keyless simulator game parameterized by a decapsulation filter
+`d : PK → List (M × R) → CT → Bool`. -/
+def simFilterGame (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
+    (A : ROAdversary PK M R CT K) (b : Bool) : ProbComp Bool := do
   let (pk, _) ← S.pke.keyGen
   let mStar ← S.sampleMsg
   let rStar ← S.pke.sampleCoins
@@ -212,9 +238,15 @@ def simGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool)
   let (kReal, st₀) ← (S.simHashH pk (false, mStar, cStar)).run
     { gCache := [(mStar, rStar)] }
   let kRand ← S.sampleKey
-  let (guess, _) ← (OracleComp.interpret (S.simHandler pk cStar)
+  let (guess, _) ← (OracleComp.interpret (S.simFilterHandler (d pk) pk cStar)
     (A (pk, cStar, if b then kRand else kReal))).run st₀
   return guess
+
+/-- The lazy keyless simulator game: as `coupledGame` with `simHashH` and `simHandler`, which do
+not use the secret key. -/
+def simGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
+    ProbComp Bool :=
+  S.simFilterGame (fun _ _ _ => true) A b
 
 end Scheme
 

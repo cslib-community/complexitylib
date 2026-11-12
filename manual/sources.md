@@ -139,6 +139,11 @@ Clark Barrett, Swarat Chaudhuri, Fabrizio Montesi, Jim Grundy, Pushmeet Kohli, L
 
 Saugata Basu, Richard Pollack and Marie-Françoise Roy. *Algorithms in Real Algebraic Geometry*, 2nd edition. Algorithms and Computation in Mathematics 10, Springer, 2006. https://doi.org/10.1007/3-540-33099-2 . Bibliographic metadata from `references.bib`; the primary textbook was not directly inspected (the retired author-hosted URL `perso.univ-rennes1.fr` returned HTTP 404), so internal chapter, section, and theorem numbers reported in secondary summaries (such as Chapter 2, Theorem 2.50 for Sturm's theorem over real closed fields and Chapter 10, §§10.1–10.2 for root bounds, root-separation bounds, and Sturm bisection) remain unverified against the printed text and are not claimed as verified locators. Local adaptations in `CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/`: [`Sturm.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/Sturm.lean) proves Sturm's theorem on `(a, b]` over `ℝ` via local constancy of `sturmVariations p x + #{r ≤ x}`; [`RootBound.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/RootBound.lean) packages the cleared-denominator rational `ℓ²` root-separation form (`Polynomial.mignotte_sep_sqNorm_rat`); and [`TotalRatPoly.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalRatPoly.lean) with [`TotalIsolation.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalIsolation.lean) implements an end-to-end `TimeM ℕ`-charged `List ℚ` Sturm-bisection isolator (`isolateRootsTotalM`, `isolateRootsTotal`) with left-endpoint root refinement and boundary separation into strictly disjoint closed rational intervals (`J₁.upper < J₂.lower`).
 
+<a id="bax93"></a>
+## bax93
+
+Eric T. Bax. “Inclusion and Exclusion Algorithm for the Hamiltonian Path Problem.” *Information Processing Letters* 47(4), 203–207, 1993. https://doi.org/10.1016/0020-0190(93)90033-6 . Bibliographic metadata checked via DOI/DBLP on 2026-11-11; the article body (paywalled) was not inspected, so the manual cites it for the inclusion–exclusion walk-counting algorithm without a theorem or page locator.
+
 <a id="bcgl92"></a>
 ## bcgl92
 
@@ -599,7 +604,7 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locator (Section 1.2, the dynamic program for TSP in the introductory chapter) was taken from secondary descriptions and review; the book body was not inspected in this pass.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
@@ -946,6 +951,11 @@ Anna R. Karlin, Mark S. Manasse, Larry Rudolph, Daniel D. Sleator. "Competitive 
 ## karlin94
 
 Anna R. Karlin, Mark S. Manasse, Lyle A. McGeoch, Susan Owicki. "Competitive Randomized Algorithms for Nonuniform Problems." *Algorithmica* 11(6), 542–571, 1994 (preliminary version in SODA 1990). https://doi.org/10.1007/BF01189993 . Bibliographic data from secondary indexes and the DOI record; the full text was not inspected, so no theorem number is cited. The manual credits this paper with the equalizing randomized rent-or-buy strategy and its ratio `1/(1 - (1 - 1/B)^B) → e/(e-1)` against an oblivious adversary, which secondary sources attribute to it.
+
+<a id="karp82"></a>
+## karp82
+
+Richard M. Karp. “Dynamic Programming Meets the Principle of Inclusion and Exclusion.” *Operations Research Letters* 1(2), 49–51, 1982. https://doi.org/10.1016/0167-6377(82)90044-X . Bibliographic metadata checked via DOI on 2026-11-11; the article body (paywalled) was not inspected, so the manual cites it for the inclusion–exclusion formulation of sequencing/Hamiltonian-path counting without a theorem or page locator.
 
 <a id="kasai01"></a>
 ## kasai01
