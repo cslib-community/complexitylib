@@ -4590,6 +4590,8 @@ public import CslibFrontier.DataStructure.CountMin.Program
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.HardDist
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.MetaTree
 public import CslibFrontier.DataStructure.Dictionary.CuckooHashing
+public import CslibFrontier.DataStructure.Dictionary.CuckooHashing.Basic
+public import CslibFrontier.DataStructure.Dictionary.CuckooHashing.HashFamily
 public import CslibFrontier.DataStructure.Dictionary.DoubleHashing
 public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
 public import CslibFrontier.DataStructure.Dictionary.DynamicMatching
@@ -4606,6 +4608,7 @@ public import CslibFrontier.DataStructure.Dictionary.UniformProbing
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.BitPackedArray
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.ChainedHash
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing.Analysis
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing.HashFamily
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.LinearProbing
 public import CslibFrontier.DataStructure.Dictionary.WordRAM.LinearProbing.FiveWise
