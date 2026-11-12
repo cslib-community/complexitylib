@@ -600,8 +600,7 @@ theorem cast_andreevSharpTopAffine (x : BitString b → Bool) (s : Fin b → ℕ
           ((if IsSingle c then (1 : ℝ) else 0) * tableVal x c) := by
     by_cases h0 : c = 0
     · subst h0
-      have hu : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ =>
-      Pi.single_ne_zero_iff.mpr (by decide) h.symm
+      have hu : ¬IsSingle (0 : BitString b) := not_isSingle_zero
       simp [hu, tableVal]
     · by_cases hu : IsSingle c <;> simp [h0, hu, tableVal]
       ring

@@ -28,7 +28,7 @@ These are used for the sharper score of Andreev's function
 
 * `Cslib.BitString.oddForm`: odd-parity forms.
 * `Cslib.BitString.IsSingle`, `Cslib.BitString.onSingles`: unit vectors and functions supported
-  on them.
+  on them; `Cslib.BitString.not_isSingle_zero`.
 
 ## Main results
 
@@ -191,10 +191,15 @@ theorem onSingles_of_not_isSingle (a : ι → ℝ) {c : ι → Bool} (hc : ¬IsS
     onSingles a c = 0 :=
   sum_eq_zero fun i _ => ite_eq_right_iff.mpr fun h => (hc ⟨i, h⟩).elim
 
+omit [Fintype ι] in
+/-- The zero vector is not a unit vector. -/
+theorem not_isSingle_zero : ¬IsSingle (0 : ι → Bool) :=
+  fun ⟨_, h⟩ => Pi.single_ne_zero_iff.mpr (by decide) h.symm
+
 /-- `onSingles a` vanishes at the zero vector. -/
 @[simp]
 theorem onSingles_zero (a : ι → ℝ) : onSingles a 0 = 0 :=
-  onSingles_of_not_isSingle a fun ⟨i, h⟩ => Pi.single_ne_zero_iff.mpr (by decide) h.symm
+  onSingles_of_not_isSingle a not_isSingle_zero
 
 /-- Summing against `onSingles a` evaluates at the unit vectors. -/
 theorem sum_onSingles_mul (a : ι → ℝ) (F : (ι → Bool) → ℝ) :

@@ -159,24 +159,24 @@ theorem cast_andreevSharpMult (c : BitString b) :
   rw [← ite_isSingle_eq_onSingles, andreevSharpMult]
   by_cases h0 : c = 0
   · subst h0
-    have : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ =>
-      Pi.single_ne_zero_iff.mpr (by decide) h.symm
-    simp [this]
+    simp [not_isSingle_zero]
   · by_cases hu : IsSingle c <;> simp [h0, hu]
 
-/-- The squared multiplier: `μ_c ^ 2 = [c ≠ 0] + (2 α + α ^ 2) [c has weight one]`. -/
+/-- The squared multiplier: `μ_c ^ 2 = [c ≠ 0] + (2 α + α ^ 2) [c has weight one]`, from
+`cast_andreevSharpMult` since both indicators are idempotent and the second implies the first. -/
 theorem cast_andreevSharpMult_sq (c : BitString b) :
     (andreevSharpMult b m c : ℝ) ^ 2 =
       (if c = 0 then 0 else 1) +
         (2 * andreevSharpAmp m + andreevSharpAmp m ^ 2) * onSingles 1 c := by
-  rw [← ite_isSingle_eq_onSingles, andreevSharpMult]
-  by_cases h0 : c = 0
-  · subst h0
-    have : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ =>
-      Pi.single_ne_zero_iff.mpr (by decide) h.symm
-    simp [this]
-  · by_cases hu : IsSingle c <;> simp [h0, hu]
-    ring
+  have h1 : onSingles 1 c * onSingles 1 c = onSingles 1 c := by
+    rw [← ite_isSingle_eq_onSingles]
+    split_ifs <;> norm_num
+  have h2 : (if c = 0 then (0 : ℝ) else 1) * onSingles 1 c = onSingles 1 c := by
+    split_ifs with h <;> simp [h]
+  have h3 : (if c = 0 then (0 : ℝ) else 1) ^ 2 = if c = 0 then 0 else 1 := by
+    split_ifs <;> norm_num
+  rw [cast_andreevSharpMult]
+  linear_combination h3 + 2 * (andreevSharpAmp m : ℝ) * h2 + (andreevSharpAmp m : ℝ) ^ 2 * h1
 
 @[simp]
 private theorem andreevSharpMult_single (i : Fin b) :
