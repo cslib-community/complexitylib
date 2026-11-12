@@ -25,14 +25,18 @@ bounds stated for general circuits of depth at most `2` (for example those of
 
 A bottom weight vector is *sign-coherent* with respect to a block layout
 `blockVar : Fin b → Fin m → Fin n` if, inside every block, its weights are all `≥ 0` or all
-`≤ 0`. This is the gate class of the sign-coherent lower bound in [cslib-frontier#4640]
-(milestone M3), and the bottom gates of the `5/16` circuit for Andreev's function (milestone M1)
-belong to it.
+`≤ 0`.
+
+This model and predicate are the API specified in [cslib-frontier#4640] for its milestones M1
+(an explicit circuit) and M3 (a lower bound for sign-coherent bottom gates). That issue attributes
+them to an unpublished preprint; this module does not verify the correspondence with the preprint,
+and it proves no result about Andreev's function.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.WeightedThreshold.argWeight`: aggregated input weights of a gate applied
-  to an input selection.
+* `Cslib.Circuits.Boolean.WeightedThreshold.inputLine`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.argWeight`: the input-only line of a gate applied to an
+  input selection, and its aggregated input weights (`lineWeight`).
 * `Cslib.Circuits.Boolean.WeightedThreshold.depthTwoInputs`: the depth-two circuit whose top gate
   reads bottom gates and inputs.
 * `Cslib.Circuits.Boolean.WeightedThreshold.IsSignCoherent`: sign coherence of a weight vector
@@ -41,7 +45,8 @@ belong to it.
 ## Main results
 
 * `Cslib.Circuits.Boolean.WeightedThreshold.interpretation_comp_eq_ltfEval_argWeight`: a gate on
-  selected inputs is the linear threshold function of its aggregated weights.
+  selected inputs is the linear threshold function of its aggregated weights (a specialization of
+  `line_eval_eq`).
 * `Cslib.Circuits.Boolean.WeightedThreshold.eval_depthTwoInputs`,
   `Cslib.Circuits.Boolean.WeightedThreshold.size_depthTwoInputs`,
   `Cslib.Circuits.Boolean.WeightedThreshold.depth_depthTwoInputs_le`: evaluation, gate count and
@@ -53,8 +58,10 @@ belong to it.
 
 ## References
 
-* [cslib-frontier#4640](https://github.com/cslib-community/cslib-frontier/issues/4640):
-  C. Reitwiessner, *Depth-Two Threshold Circuits for Andreev's Function* (preprint, 2026).
+* [cslib-frontier#4640](https://github.com/cslib-community/cslib-frontier/issues/4640), which
+  specifies this API and cites an unpublished preprint by C. Reitwiessner, *Depth-Two Threshold
+  Circuits for Andreev's Function* (2026); the correspondence with the preprint is not verified
+  here.
 -/
 
 @[expose] public section
@@ -67,10 +74,15 @@ variable {n G : ℕ}
 
 /-! ### Aggregated input weights of a gate on selected inputs -/
 
+/-- The line of a gate `op` reading only the inputs selected by `args`. -/
+def inputLine (op : Op) (args : Fin op.arity → Fin n) : Line signature n 0 :=
+  ⟨op, fun a => .input (args a)⟩
+
 /-- The aggregated weight of input `i` in the gate `op` applied to the input selection `args`:
-the sum of the weights of all argument slots reading `i`. -/
+the sum of the weights of all argument slots reading `i`. It is the `lineWeight` of the
+input-only line `inputLine op args`. -/
 def argWeight (op : Op) (args : Fin op.arity → Fin n) (i : Fin n) : ℝ :=
-  ∑ a with args a = i, op.weight a
+  lineWeight (inputLine op args) (.input i)
 
 /-- A gate with arity `n` reading the inputs in order has its own weights as aggregated
 weights. -/
@@ -78,19 +90,20 @@ weights. -/
 theorem argWeight_id (w : Fin n → ℝ) (θ : ℝ) :
     argWeight ⟨n, w, θ⟩ id = w := by
   funext i
-  simp [argWeight, Finset.filter_eq']
+  simp only [argWeight, lineWeight, inputLine, Wire.input.injEq]
+  rw [Finset.sum_filter]
+  simp only [id_eq, sum_ite_eq', ite_eq_left_iff]
+  exact fun h => (h (mem_univ i)).elim
 
 /-- A threshold gate applied to selected inputs `x ∘ args` is the linear threshold function of
-its aggregated weights `argWeight op args`. -/
+its aggregated weights `argWeight op args`; this specializes `line_eval_eq` to the input-only
+line `inputLine op args`. -/
 theorem interpretation_comp_eq_ltfEval_argWeight (op : Op) (args : Fin op.arity → Fin n)
     (x : Fin n → Bool) :
     interpretation op (fun a => x (args a)) = ltfEval (argWeight op args) op.threshold x := by
-  unfold interpretation ltfEval argWeight
-  congr 2
-  rw [← sum_fiberwise univ args fun a => op.weight a * (x (args a)).toNat]
-  refine sum_congr rfl fun i _ => ?_
-  rw [sum_mul]
-  exact sum_congr rfl fun a ha => by rw [(mem_filter.mp ha).2]
+  have h := line_eval_eq (inputLine op args) x Fin.elim0
+  simp only [univ_eq_empty, sum_empty, add_zero] at h
+  exact h
 
 /-! ### The constructor -/
 
