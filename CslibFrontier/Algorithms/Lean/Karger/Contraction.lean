@@ -106,8 +106,10 @@ oracle is a separate, deterministic hop, and `Refinement.toRandomized` with
 * `two_div_le_cutLaw`: each minimum cut is output with probability at least `2 / (n (n - 1))`.
 * `two_div_le_toOuterMeasure_karger`: Karger's success probability.
 * `exists_of_mem_support_tracked_contractTimes`, `isContractionOf_of_mem_support_contractTimes`,
-  `exists_cut_of_mem_support_answerLaw`, `minCut_le_of_mem_support_karger`: every outcome is a
-  contraction, so the answer is the weight of a non-trivial cut, never below the minimum.
+  `minCut_eq_zero_of_mem_support_contractTimes`, `exists_cut_of_mem_support_answerLaw`,
+  `eq_zero_of_mem_support_answerLaw`, `minCut_le_of_mem_support_karger`: every outcome is a
+  contraction (preserving `minCut = 0`), so the answer is the weight of a non-trivial cut, never
+  below the minimum (and always `0` when `minCut = 0`).
 * `answerLaw_eq`: the answer is half the total weight of the graph left by `n - 2` contractions.
 * `minRuns_ne_minCut_le`: amplified Karger, `R` independent runs miss with probability at most
   `(1 - 2 / (n (n - 1))) ^ R`.
@@ -539,6 +541,57 @@ theorem isContractionOf_of_mem_support_contractTimes {n t : ℕ} (ht : 1 ≤ t)
   obtain ⟨W', part', hy', hC'⟩ := exists_of_mem_support_tracked_contractTimes ht s hC hy
   exact ⟨W', part', by rw [hy']; rfl, hC'⟩
 
+/-- Every outcome of `s` contractions of a disconnected (`minCut W = 0`) multigraph down to
+`t ≥ 2` supervertices is a multigraph with `minCut = 0`. -/
+theorem minCut_eq_zero_of_mem_support_contractTimes {t : ℕ} (ht : 2 ≤ t) (s : ℕ)
+    {W : Fin (t + s) → Fin (t + s) → ℕ} (hW : IsMultigraph W) (hmin : minCut W = 0)
+    {x : Unit × Graph}
+    (hx : x ∈ (spec.toRandomized.withCoins.run (contractTimes s) ⟨t + s, W⟩).support) :
+    ∃ W' : Fin t → Fin t → ℕ, x.2 = ⟨t, W'⟩ ∧ IsMultigraph W' ∧ minCut W' = 0 := by
+  induction s with
+  | zero =>
+    obtain rfl := (PMF.mem_support_pure_iff _ _).mp hx
+    exact ⟨W, rfl, hW, hmin⟩
+  | succ s ih =>
+    change x ∈ (spec.toRandomized.withCoins.run
+      (contractStep >>= fun _ => contractTimes s) ⟨t + s + 1, W⟩).support at hx
+    by_cases hS : totalDoubledWeight W = 0
+    · rw [run_contractStep_bind_of_eq_zero (m := t + s) _ W hS] at hx
+      have h0 : (0 : Fin (t + s + 1)) ≠ Fin.last (t + s) := by
+        rw [Ne, Fin.ext_iff, Fin.val_zero, Fin.val_last]
+        omega
+      have hW' := isMultigraph_contractMatrix hW 0 (Fin.last (t + s))
+      have htot' : totalDoubledWeight (contractMatrix W 0 (Fin.last (t + s))) = 0 := by
+        have := totalDoubledWeight_contractMatrix hW h0
+        omega
+      let z : Fin (t + s) := ⟨0, by omega⟩
+      have hnt0 : IsNonTrivialCut ({z} : Finset (Fin (t + s))) :=
+        isNonTrivialCut_singleton (by rw [Fintype.card_fin]; omega) z
+      have hle0 := minCut_le_cutWeight (contractMatrix W 0 (Fin.last (t + s))) hnt0
+      have h2 := two_mul_cutWeight_le_totalDoubledWeight hW' ({z} : Finset (Fin (t + s)))
+      exact ih hW' (by omega) hx
+    · rw [run_contractStep_bind (m := t + s) _ W hS, PMF.mem_support_bind_iff] at hx
+      obtain ⟨r, -, hx⟩ := hx
+      obtain ⟨B, hB, hB0⟩ := exists_minCut_achiever
+        (by rw [Fintype.card_fin]; omega) W
+      rw [hmin] at hB0
+      let r' : Fin (totalDoubledWeight W) := ⟨r, by have := r.isLt; omega⟩
+      have hsurv : SampleSurvives W B r' := by
+        have hcard := crossing_card_eq hW B
+        rw [hB0, mul_zero, Finset.card_eq_zero, Finset.filter_eq_empty_iff] at hcard
+        exact Classical.not_not.mp (hcard (Finset.mem_univ r'))
+      obtain ⟨u, v, hsamp, hsame⟩ := hsurv
+      have huv : u ≠ v := isSampledPair_ne hW hsamp
+      rw [sampledPair_eq hsamp, contractGraph_fin] at hx
+      have hpb := pullbackCut_contractCut id huv hsame
+      rw [pullbackCut_id] at hpb
+      have hnt : IsNonTrivialCut (contractCut v B) :=
+        isNonTrivialCut_of_pullbackCut _ (hpb ▸ hB)
+      have hcw : cutWeight (contractMatrix W u v) (contractCut v B) = 0 := by
+        rw [cutWeight_contractCut hW huv hsame, hB0]
+      have hle := minCut_le_cutWeight (contractMatrix W u v) hnt
+      exact ih (isMultigraph_contractMatrix hW u v) (by omega) hx
+
 /-! ## The output cut -/
 
 /-- The cut that a tracked contraction to two supervertices outputs: the block of supervertex
@@ -693,6 +746,23 @@ theorem exists_cut_of_mem_support_answerLaw {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin
   rw [answerLaw_eq_map_cutLaw hn hW₀, PMF.mem_support_map_iff] at hv
   obtain ⟨C, hC, rfl⟩ := hv
   exact ⟨C, isNonTrivialCut_of_mem_support_cutLaw hn hW₀ hC, rfl⟩
+
+/-- On a disconnected (`minCut W₀ = 0`) multigraph with `n ≥ 2` vertices, every answer of `karger`
+is `0`. -/
+theorem eq_zero_of_mem_support_answerLaw {n : ℕ} (hn : 2 ≤ n) {W₀ : Fin n → Fin n → ℕ}
+    (hW₀ : IsMultigraph W₀) (hmin : minCut W₀ = 0) {v : ℕ}
+    (hv : v ∈ (answerLaw ⟨n, W₀⟩).support) : v = 0 := by
+  obtain ⟨s, rfl⟩ : ∃ s, n = 2 + s := ⟨n - 2, by omega⟩
+  rw [answerLaw_eq, Nat.add_sub_cancel_left, PMF.mem_support_map_iff] at hv
+  obtain ⟨G, hG, rfl⟩ := hv
+  obtain ⟨x, hx, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hG
+  obtain ⟨W', hW'eq, hW', hmin'⟩ :=
+    minCut_eq_zero_of_mem_support_contractTimes le_rfl s hW₀ hmin hx
+  rw [hW'eq]
+  change totalDoubledWeight W' / 2 = 0
+  obtain ⟨B, hB, hB0⟩ := exists_minCut_achiever (by decide) W'
+  rw [hmin', cutWeight_fin_two hW' hB] at hB0
+  rw [totalDoubledWeight_fin_two hW', hB0]
 
 /-- **One-sided error.** Every answer of `karger` on a multigraph with `n ≥ 2` vertices is the
 weight of a non-trivial cut, so it is never below the minimum cut weight. -/

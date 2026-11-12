@@ -56,6 +56,8 @@ class Plan:
     targets: list[str]
     checks: list[tuple[str, list[str]]] = field(default_factory=list)  # (label, command)
     lint: dict[str, list[str]] = field(default_factory=dict)  # lint target -> modules it checks
+    restore_files: list[str] = field(default_factory=list)  # affected source paths, not target names
+    restore_built: list[str] = field(default_factory=list)  # built aggregates and executable helpers
 
 
 @dataclass
@@ -302,8 +304,28 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
+    selected_executables = [exe for exe in executables if exe.target in executable_targets]
+    # An aggregate may warn on an import even when its importing client elaborates silently.
+    # Audit aggregates on built clients' import paths, not every root aggregate touched by the
+    # change. Executable helpers are outside this graph; include their built aggregates
+    # conservatively.
+    needed = affected - aggregates
+    queue = deque(sorted(needed))
+    while queue:
+        for dependency in imports[modules[queue.popleft()]]:
+            if dependency in modules and dependency not in needed:
+                needed.add(dependency)
+                queue.append(dependency)
+    aggregate_checks = affected & aggregates & needed
+    if selected_executables:
+        aggregate_checks |= affected & aggregates
     return Plan(base, sorted((affected - aggregates) | executable_targets), checks,
-                lint_scope(root, aggregates, affected, reverse))
+                lint_scope(root, aggregates, affected, reverse),
+                sorted({modules[module] for module in affected - aggregates}
+                       | {exe.path for exe in selected_executables}),
+                sorted({modules[module] for module in aggregate_checks}
+                       | {exe.source.relative_to(root.resolve()).as_posix()
+                          for exe in selected_executables}))
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
@@ -356,8 +378,14 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
             return status
     if plan.targets:
         # Restored outputs carry no warnings for `--wfail` to see (#4523).
-        status = run_check(root, [sys.executable, "-B", "scripts/check_cache_restores.py", "--base", plan.base],
-                           "changed files restored from the artifact cache")
+        # JSON preserves whitespace in paths and avoids command-line limits for large closures.
+        with tempfile.TemporaryDirectory(prefix="cslib-frontier-restores-") as directory:
+            files = Path(directory) / "files.json"
+            files.write_text(json.dumps(plan.restore_files))
+            command = [sys.executable, "-B", "scripts/check_cache_restores.py", "--files-from", str(files)]
+            for source in plan.restore_built:
+                command.extend(["--built-under", source])
+            status = run_check(root, command, "affected files restored from the artifact cache")
         if status:
             return status
     status = run_lint(root, plan)

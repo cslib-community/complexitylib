@@ -29,9 +29,6 @@ witnesses read them in this form (`Cslib.Complexity.mem_NP_of_colorOf`).
 
 ## Main results
 
-* `Cslib.Complexity.Graph.computableInPolyTime_vertices`,
-  `Cslib.Complexity.Graph.computableInPolyTime_edges`: projecting the declared vertex list or edge
-  list from `encGraph` is polynomial-time.
 * `Cslib.Complexity.colorOf_map`: listing the colors of the declared vertices gives every
   declared vertex its color.
 * `Cslib.Complexity.computableInPolyTime_colorOf`,
@@ -47,18 +44,6 @@ public section
 namespace Cslib.Complexity
 
 open Turing.MultiTapeTM
-
-/-- Projecting the declared vertex list of a computed graph is polynomial-time. -/
-theorem Graph.computableInPolyTime_vertices {γ : Type} {enc : γ ↪ List Bool} {G : γ → Graph}
-    (hG : ComputableInPolyTime G enc encGraph) :
-    ComputableInPolyTime (fun x => (G x).vertices) enc (encList encNat) := by
-  fun_prop
-
-/-- Projecting the edge list of a computed graph is polynomial-time. -/
-theorem Graph.computableInPolyTime_edges {γ : Type} {enc : γ ↪ List Bool} {G : γ → Graph}
-    (hG : ComputableInPolyTime G enc encGraph) :
-    ComputableInPolyTime (fun x => (G x).edges) enc (encList (encPair encNat encNat)) := by
-  fun_prop
 
 /-- The color of the vertex `v` under a list of colors `cs` parallel to the vertex list of `G`:
 the entry of `cs` at the first occurrence of `v`, and `0` when there is none. -/

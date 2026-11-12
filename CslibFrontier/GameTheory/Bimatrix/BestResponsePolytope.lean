@@ -462,15 +462,13 @@ private theorem payoff_inv_sum_smul (hx : G.matP *ᵥ x ≤ rhsP M N)
 /-- **Completely labelled vertex pairs** ([vonStengel2007], Section 3.4). For a nondegenerate game
 with positive payoffs, the completely labelled vertex pairs of `P × Q` are the artificial
 equilibrium `(0, 0)` and the rescaled Nash equilibria. -/
-theorem setOf_completelyLabeled_eq [Nonempty M] [Nonempty N] (hG : G.IsNondegenerate)
+theorem setOf_completelyLabeled_eq (hG : G.IsNondegenerate)
     (hA : ∀ i j, 0 < G.A i j) (hB : ∀ i j, 0 < G.B i j) :
     {p : (M → ℝ) × (N → ℝ) | IsVertex G.matP (rhsP M N) p.1 ∧ IsVertex G.matQ (rhsQ M N) p.2 ∧
       LemkeHowson.CompletelyLabeled G.matP (rhsP M N) G.matQ (rhsQ M N) p.1 p.2} =
       insert 0 (G.toPolytopes '' {p | G.IsNash p.1 p.2}) := by
   have hnd₁ := hG.isNondegenerateSystem_matP
   have hnd₂ := hG.isNondegenerateSystem_matQ
-  have hrec₁ : ∀ v, G.matP *ᵥ v ≤ 0 → v = 0 := fun _ => eq_zero_of_matP_mulVec_nonpos hB
-  have hrec₂ : ∀ v, G.matQ *ᵥ v ≤ 0 → v = 0 := fun _ => eq_zero_of_matQ_mulVec_nonpos hA
   have hcard : Fintype.card (M ⊕ N) = Fintype.card M + Fintype.card N := Fintype.card_sum
   ext ⟨x, y⟩
   rw [Set.mem_ofPred_eq, Set.mem_insert_iff, Set.mem_image]
@@ -502,6 +500,12 @@ theorem setOf_completelyLabeled_eq [Nonempty M] [Nonempty N] (hG : G.IsNondegene
       exact ⟨isVertex_matP_zero, isVertex_matQ_zero,
         completelyLabeled_iff_forall.2 ⟨fun _ => .inl rfl, fun _ => .inr rfl⟩⟩
     · rw [Set.mem_ofPred_eq] at h
+      obtain ⟨i₀, -⟩ := (isNash_iff.1 h).1.isMixedStrategy.exists_pos
+      obtain ⟨j₀, -⟩ := (isNash_iff.1 h).2.isMixedStrategy.exists_pos
+      have : Nonempty M := ⟨i₀⟩
+      have : Nonempty N := ⟨j₀⟩
+      have hrec₁ : ∀ v, G.matP *ᵥ v ≤ 0 → v = 0 := fun _ => eq_zero_of_matP_mulVec_nonpos hB
+      have hrec₂ : ∀ v, G.matQ *ᵥ v ≤ 0 → v = 0 := fun _ => eq_zero_of_matQ_mulVec_nonpos hA
       obtain ⟨hx, hy, hcl⟩ := h.completelyLabeled hA hB
       rw [toPolytopes_apply, Prod.mk.injEq] at he
       obtain ⟨rfl, rfl⟩ := he
