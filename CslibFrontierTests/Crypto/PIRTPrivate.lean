@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger, Mayank Rathee
 
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.Cube
+import CslibFrontier.Probability.PMF.Map
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -24,12 +25,15 @@ import Mathlib.Tactic.NormNum
     Shamir threshold is tight strictly below full collusion;
   - matrix-balanced `(t + 1)`-server `O(√n)` PIR (`hasTPrivateScheme_of_le_mul_self`) solves
     `16`-bit databases with `3` servers, `2`-privacy, and `72` bits.
-* Degree-`d` polynomial PIR (`PIR.shamirCube` and `hasTPrivateScheme_prime_of_le_pow`):
+* Degree-`d` polynomial PIR (`PIR.shamirCube`, `hasTPrivateScheme_prime_of_le_pow`, and
+  `rows`-balanced `hasTPrivateScheme_prime_rows_of_le_pow`):
   - `d = 2, t = 1, k = 3` over `ZMod 5` is correct and `1`-private, and not `2`-private
     (`not_isTPrivate_succ_shamirCube`);
-  - `d = 2, t = 2, k = 5` over `ZMod 7` solves `Fin 16` with `135` bits;
-  - `d = 3, t = 2, k = 7` over `ZMod 11` solves `Fin 1000` (`10 ^ 3`) with `868 < 1000` bits,
-    strictly beating whole-database download while resisting `2` colluding servers.
+  - unbalanced `d = 2, t = 2, k = 5` over `ZMod 7` solves `Fin 16` with `135` bits;
+  - balanced `c = 3` (`d = 2`), `t = 2`, **exact `k = c * t = 6` servers** over `ZMod 7` solves
+    `Fin 1000` (`10 ^ 3`) with `540 < 1000` bits (CGKS §§1.1 & 3.4), and induces
+    `HasScheme (Fin 1000) 6 540` via `HasTPrivateScheme.hasScheme`, whereas full-coalition
+    `6`-privacy cannot achieve `540` bits.
 -/
 
 namespace CslibFrontierTests.Crypto.PIRTPrivate
@@ -80,7 +84,6 @@ example : ¬ HasTPrivateScheme (Fin 4) 3 3 3 := fun h => by
 
 private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 private instance : Fact (Nat.Prime 7) := ⟨by decide⟩
-private instance : Fact (Nat.Prime 11) := ⟨by decide⟩
 
 private def params2_3 : Shamir.Params (ZMod 5) (Fin 3) :=
   zmodShamirParams (t := 2) (k := 3) (p := 5) (by decide) (by decide)
@@ -105,13 +108,13 @@ example : (shamir (Fin 2) params1_3).IsTPrivate 1 ∧ ¬ (shamir (Fin 2) params1
   ⟨isTPrivate_shamir params1_3, not_isTPrivate_succ_shamir params1_3⟩
 
 /-- Matrix-balanced `2`-private `3`-server PIR on `16` bits over `ZMod 5`:
-`3 * (2 * 4 * ⌈log₂ 5⌉) = 3 * 24 = 72` bits. -/
+`3 * (2 * 4 * ⌈log₂ 5⌉) = 3 * 24 = 72` bits (using `threshold_zmodShamirParams`). -/
 example : HasTPrivateScheme (Fin 16) 2 3 72 := by
   have h := hasTPrivateScheme_of_le_mul_self params2_3 (n := 16) (m := 4) (by decide)
   have hclog : Nat.clog 2 5 = 3 := by decide
-  simpa [params2_3, zmodShamirParams, ZMod.card, hclog] using h
+  simpa [params2_3, ZMod.card, hclog] using h
 
-/-! ### Degree-`d` polynomial hypercube PIR (`shamirCube`) -/
+/-! ### Unbalanced and `rows`-balanced degree-`d` polynomial PIR (`shamirCube`) -/
 
 example :
     (shamirCube (Fin 2) (Fin 3) params1_3).IsCorrect ∧
@@ -121,7 +124,8 @@ example :
     isTPrivate_shamirCube params1_3,
     not_isTPrivate_succ_shamirCube params1_3⟩
 
-/-- `d = 2, t = 2, k = 5` over `ZMod 7`: `5 * ((2 * 4 + 1) * ⌈log₂ 7⌉) = 5 * 27 = 135` bits. -/
+/-- Unbalanced `d = 2, t = 2, k = 5` over `ZMod 7`:
+`5 * ((2 * 4 + 1) * ⌈log₂ 7⌉) = 5 * 27 = 135` bits. -/
 example : HasTPrivateScheme (Fin 16) 2 5 135 := by
   have h := hasTPrivateScheme_prime_of_le_pow
     (n := 16) (d := 2) (ℓ := 4) (t := 2) (k := 5) (p := 7)
@@ -129,18 +133,23 @@ example : HasTPrivateScheme (Fin 16) 2 5 135 := by
   have hclog : Nat.clog 2 7 = 3 := by decide
   simpa [hclog] using h
 
-/-- `d = 3, t = 2, k = 7` over `ZMod 11` on a `1000`-bit database (`10 ^ 3`):
-`7 * ((3 * 10 + 1) * ⌈log₂ 11⌉) = 7 * (31 * 4) = 868 < 1000` bits, strictly beating `1000`-bit
-full download while tolerating any `2` colluding servers. -/
-example : HasTPrivateScheme (Fin 1000) 2 7 868 ∧ ¬ HasTPrivateScheme (Fin 1000) 7 7 868 := by
-  refine ⟨?_, fun hfull => ?_⟩
-  · have h := hasTPrivateScheme_prime_of_le_pow
-      (n := 1000) (d := 3) (ℓ := 10) (t := 2) (k := 7) (p := 11)
+/-- Balanced `c = 3` (`d = 2`), `t = 2`, **exact `k = c * t = 6` servers** over `ZMod 7` on a
+`1000`-bit database (`10 ^ 3`): `6 * (3 * 10 * ⌈log₂ 7⌉) = 6 * 90 = 540 < 1000` bits, instantiating
+CGKS §§1.1 & 3.4's exact `c · t`-server bound, downgrading via `HasTPrivateScheme.hasScheme`,
+and contrasting with the `1000`-bit full-coalition lower bound at `t = 6`. -/
+example :
+    HasTPrivateScheme (Fin 1000) 2 6 540 ∧
+      HasScheme (Fin 1000) 6 540 ∧
+      ¬ HasTPrivateScheme (Fin 1000) 6 6 540 := by
+  have h6 : HasTPrivateScheme (Fin 1000) 2 6 540 := by
+    have h := hasTPrivateScheme_prime_rows_of_le_pow
+      (n := 1000) (d := 2) (ℓ := 10) (t := 2) (k := 6) (p := 7)
       (by decide) (by decide) (by decide) (by decide)
-    have hclog : Nat.clog 2 11 = 4 := by decide
+    have hclog : Nat.clog 2 7 = 3 := by decide
     simpa [hclog] using h
-  · have hle := hfull.card_le_of_le le_rfl
-    rw [Fintype.card_fin] at hle
-    omega
+  refine ⟨h6, h6.hasScheme (by decide), fun hfull => ?_⟩
+  have hle := hfull.card_le_of_le le_rfl
+  rw [Fintype.card_fin] at hle
+  omega
 
 end CslibFrontierTests.Crypto.PIRTPrivate

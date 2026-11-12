@@ -33,8 +33,8 @@ query `P.serverQuery s i` is the same for all indices `i`. Both are exact equali
 distributions, as in the information-theoretic setting of the source. The randomness is a
 `ProbComp` program, so its coins are uniform choices from finite ranges; the source's uniformly
 random string `r ∈ {0,1}^ℓ` is the special case of `ProbComp.uniform (Fin ℓ → Bool)`, and its
-retained state is the random string itself. Privacy is against each single server; coalitions of
-servers are not covered.
+retained state is the random string itself. Privacy here (`IsPrivate`) is against each single
+server; coalitions of servers (`IsTPrivate`) are covered in `PIR.Collusion`.
 
 The communication cost `PIR.communication S Q A` counts the bits of a fixed-length binary encoding
 of every query and answer: `|S| · (⌈log₂ |Q|⌉ + ⌈log₂ |A|⌉)`. For `Q = Fin ℓq → Bool` and
@@ -74,6 +74,7 @@ private and communicates at most `c` bits.
   correctness and privacy.
 * `Cslib.Crypto.Protocols.PIR.communication_rows`: the rows transformation multiplies the answer
   length by the number of rows.
+* `Cslib.Crypto.Protocols.PIR.clog_pow_le_mul`: `⌈log₂ (b ^ m)⌉ ≤ m · ⌈log₂ b⌉`.
 
 ## References
 
@@ -115,6 +116,13 @@ theorem communication_of_card_answer (S Q A : Type) [Fintype S] [Fintype Q] [Fin
     (hA : Fintype.card A = 2 ^ ℓ) :
     communication S Q A = Fintype.card S * (Nat.clog 2 (Fintype.card Q) + ℓ) := by
   rw [communication_eq, hA, Nat.clog_pow 2 _ (by norm_num)]
+
+/-- Encoding an `m`-tuple over an alphabet of size `b` uses at most `m · ⌈log₂ b⌉` bits. -/
+theorem clog_pow_le_mul (m b : ℕ) : Nat.clog 2 (b ^ m) ≤ m * Nat.clog 2 b := by
+  refine Nat.clog_le_of_le_pow ?_
+  calc b ^ m ≤ (2 ^ Nat.clog 2 b) ^ m :=
+        Nat.pow_le_pow_left (Nat.le_pow_clog (by norm_num : 1 < 2) b) m
+    _ = 2 ^ (m * Nat.clog 2 b) := by rw [← pow_mul, Nat.mul_comm]
 
 namespace Scheme
 

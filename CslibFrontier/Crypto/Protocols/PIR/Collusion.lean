@@ -7,11 +7,13 @@ Authors: Samuel Schlesinger, Mayank Rathee
 module
 -- upstream: candidate
 
+public import Cslib.Crypto.Protocols.SecretSharing.Shamir
 public import CslibFrontier.Crypto.Protocols.PIR.Basic
-public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 public import Mathlib.Algebra.Field.ZMod
+import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.Product
 
 /-!
 # Coalition-private information retrieval and polynomial schemes
@@ -27,13 +29,15 @@ queries sent to those servers does not depend on the target index `i`.
   equivalent to single-server `Scheme.IsPrivate` (`Scheme.isTPrivate_one_iff`), and for every `t`
   it is equivalent to the paper's `t`-tuple formulation (`Scheme.isTPrivate_iff_tuple`).
   Both `Scheme.rows` and `Scheme.comap` preserve `IsTPrivate`.
-* **Necessity of `t < k` (`Scheme.card_le_communication_of_card_le`).** When all servers can
-  collude (`|S| ≤ t`), the entire query tuple has an index-independent law, so some joint query
-  vector makes the combined answer map injective on the database (`2 ^ |ι| ≤ |A| ^ |S|`) and forces
-  at least `|ι|` bits of communication (with no correct zero-server scheme on nonempty databases).
+* **Necessity of `t < k` (`Scheme.card_le_communication_of_card_le`).** Generalizing the
+  single-server injectivity argument of [CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998],
+  when all servers can collude (`|S| ≤ t`), the entire query tuple has an index-independent law, so
+  some joint query vector makes the combined answer map injective on the database
+  (`2 ^ |ι| ≤ |A| ^ |S|`) and forces at least `|ι|` bits of communication (with no correct
+  zero-server scheme on nonempty databases).
 * **Shamir linear and degree-`d` hypercube schemes (`PIR.shamir`, `PIR.shamirCube`).** Sharing the
   point indicator `eᵢ` across servers `S` with degree-`t` Shamir secret sharing [Shamir1979] over a
-  finite field `F` (`params : Shamir.Params F S`) gives a `t`-private scheme
+  finite field `F` (`params : Shamir.Params F S`, so `|F| > |S|`) gives a `t`-private scheme
   (`PIR.isTPrivate_shamir`) whose `(t + 1)`-server coalitions can reconstruct `i`
   (`PIR.not_isTPrivate_succ_shamir`). Combining `PIR.shamir` with the matrix `rows` transformation
   gives `(t + 1)`-server `t`-private PIR with `2 (t + 1) m ⌈log₂ |F|⌉` bits for `n ≤ m ^ 2`
@@ -41,10 +45,14 @@ queries sent to those servers does not depend on the target index `i`.
   coordinate indicators and multiplying degree-`t` shares at each server gives a degree-`≤ d t`
   polynomial whose constant term is `x i`: whenever `d t < |S|`, Lagrange interpolation at zero
   recovers `x i` from one field element per server (`PIR.isCorrect_shamirCube`), achieving
-  `|S| ((d ℓ + 1) ⌈log₂ |F|⌉)` bits for `n ≤ ℓ ^ d` (`PIR.hasTPrivateScheme_of_le_pow`,
-  instantiating the `c · t`-server `O(t · n ^ (1 / c))` polynomial family noted in
-  [CGKS, Section 1.1][ChorGoldreichKushilevitzSudan1998], whose details were omitted from the
-  journal version).
+  `|S| ((d ℓ + 1) ⌈log₂ |F|⌉)` bits for `n ≤ ℓ ^ d` (`PIR.hasTPrivateScheme_of_le_pow`, with
+  `d t + 1` servers). Applying the balancing `rows (Fin ℓ)` transformation of
+  [CGKS, Section 3.4, p. 11][ChorGoldreichKushilevitzSudan1998] to `PIR.shamirCube` yields
+  `|S| ((d + 1) ℓ ⌈log₂ |F|⌉)` bits for `n ≤ ℓ ^ (d + 1)` whenever `d t < |S|`
+  (`PIR.hasTPrivateScheme_rows_of_le_pow`, `PIR.hasTPrivateScheme_prime_rows_of_le_pow`): setting
+  `d = c - 1` for `c ≥ 2` and `t ≥ 1` satisfies `(c - 1) t < c t` and instantiates the exact
+  `c · t`-server `O(c · t · n ^ (1 / c) · log |F|)` polynomial family noted in
+  [CGKS, Section 1.1][ChorGoldreichKushilevitzSudan1998].
 
 ## Main definitions
 
@@ -76,13 +84,16 @@ queries sent to those servers does not depend on the target index `i`.
   `t`-privacy, and sharpness at threshold `t + 1` of degree-`d` polynomial PIR.
 * `Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_of_le_mul_self`,
   `Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_of_le_pow`,
-  `Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_of_le_pow`: `O(√n)` `(t + 1)`-server and
-  `O(n ^ (1 / d))` `(d t + 1)`-server `t`-private schemes for `n`-bit databases.
+  `Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_rows_of_le_pow`,
+  `Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_of_le_pow`,
+  `Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_rows_of_le_pow`: `(t + 1)`-server `O(√n)`,
+  unbalanced `(d t + 1)`-server `O(n ^ (1 / d))`, and balanced `c t`-server `O(n ^ (1 / c))`
+  `t`-private schemes for `n`-bit databases.
 
 ## References
 
 * [B. Chor, O. Goldreich, E. Kushilevitz, M. Sudan, *Private information
-  retrieval*][ChorGoldreichKushilevitzSudan1998], Sections 1.1, 2.2 and 5.1; numbering of the
+  retrieval*][ChorGoldreichKushilevitzSudan1998], Sections 1.1, 2.2, 3.4 and 5.1; numbering of the
   authors' journal version of April 21, 1998
 * [A. Shamir, *How to Share a Secret*][Shamir1979]
 -/
@@ -296,9 +307,10 @@ theorem two_pow_card_le_card_answer_pow_of_card_le [Fintype S] [Nonempty ι] [Fi
   have h := Fintype.card_le_of_injective _ hq
   rwa [Fintype.card_fun, Fintype.card_bool, Fintype.card_fun] at h
 
-/-- **Necessity of `t < |S|`** [CGKS, Sections 2.2 and 5.1][ChorGoldreichKushilevitzSudan1998]: if
-all servers may collude (`|S| ≤ t`), any perfectly correct `t`-private scheme for `n`-bit databases
-communicates at least `n` bits. -/
+/-- **Necessity of `t < |S|`** (generalizing [CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]
+from `k = 1` to full coalitions `|S| ≤ t` under [Section 2.2][ChorGoldreichKushilevitzSudan1998]):
+if all servers may collude (`|S| ≤ t`), any perfectly correct `t`-private scheme for `n`-bit
+databases communicates at least `n` bits. -/
 theorem card_le_communication_of_card_le [Fintype S] [Fintype ι] [Fintype Q] [Fintype A] {t : ℕ}
     (hcorrect : P.IsCorrect) (hprivate : P.IsTPrivate t) (hcard : Fintype.card S ≤ t) :
     Fintype.card ι ≤ communication S Q A := by
@@ -355,6 +367,15 @@ theorem HasTPrivateScheme.mono {ι : Type} {t k c c' : ℕ} (h : HasTPrivateSche
   obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := h
   exact ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm.trans hc⟩
 
+theorem HasTPrivateScheme.mono_threshold {ι : Type} {t₁ t₂ k c : ℕ} (ht : t₁ ≤ t₂)
+    (h : HasTPrivateScheme ι t₂ k c) : HasTPrivateScheme ι t₁ k c := by
+  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := h
+  exact ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate.mono ht, hk, hcomm⟩
+
+theorem HasTPrivateScheme.hasScheme {ι : Type} {t k c : ℕ} (ht : 1 ≤ t)
+    (h : HasTPrivateScheme ι t k c) : HasScheme ι k c :=
+  hasTPrivateScheme_one_iff.mp (h.mono_threshold ht)
+
 theorem HasTPrivateScheme.card_le_of_le {ι : Type} [Fintype ι] {t k c : ℕ}
     (h : HasTPrivateScheme ι t k c) (hkt : k ≤ t) : Fintype.card ι ≤ c := by
   obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := h
@@ -395,35 +416,35 @@ noncomputable def shamirCube (D ι : Type) [Fintype D] [DecidableEq D] [Fintype 
     open scoped Classical in decide (Shamir.Polynomial.reconstruct params.point ans = 1)
 
 /-- Sharing any vector `v : κ → F` entrywise with independent uniform Shamir randomness gives a
-uniform joint view on `T → κ → F` for every unauthorized coalition `T.card ≤ params.threshold`. -/
+uniform joint view on `T → κ → F` for every unauthorized coalition `T.card ≤ params.threshold`,
+reusing `Shamir.uniformOfFintype_map_restrict_share` coordinatewise via `PMF.pi`. -/
 private theorem uniform_map_restrict_share_vec {κ : Type} [Fintype κ] [DecidableEq κ]
     [DecidableEq S] (params : Shamir.Params F S) (T : Finset S) (hT : T.card ≤ params.threshold)
     (v : κ → F) :
     (PMF.uniformOfFintype (κ → Shamir.Randomness params)).map
         (fun r (s : T) k => Shamir.share params (r k) (v k) s) =
       PMF.uniformOfFintype (T → κ → F) := by
-  let zeroHom : (κ → Shamir.Randomness params) →+ (T → κ → F) :=
-    { toFun := fun r s k => Shamir.share params (r k) 0 s
-      map_zero' := by
-        ext s k
-        exact Shamir.share_zero params s
-      map_add' := fun r₁ r₂ => by
-        ext s k
-        simpa using Shamir.share_add params (r₁ k) (r₂ k) 0 0 s }
-  have hsurj : Function.Surjective zeroHom := fun σ =>
-    ⟨fun k => Shamir.interpCoeffs params T hT 0 (fun s => σ s k), by
-      ext s k
-      exact Shamir.share_interpCoeffs params T hT 0 (fun s' => σ s' k) s⟩
-  have hshift :
-      (fun r (s : T) k => Shamir.share params (r k) (v k) s) =
-        (Equiv.addLeft (fun (_ : T) k => v k)) ∘ zeroHom := by
-    ext r s k
-    have hadd := Shamir.share_add params 0 (r k) (v k) 0 s
-    rw [zero_add, add_zero, Shamir.share_zero_randomness] at hadd
-    exact hadd
-  rw [hshift, ← PMF.map_comp,
-    Cslib.Probability.PMF.uniformOfFintype_map_addHom zeroHom hsurj,
-    PMF.uniformOfFintype_map_equiv]
+  let flip : (κ → T → F) ≃ (T → κ → F) :=
+    { toFun := fun g s k => g k s
+      invFun := fun h k s => h s k
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+  have hpi :
+      (PMF.uniformOfFintype (κ → Shamir.Randomness params)).map
+          (fun r k (s : T) => Shamir.share params (r k) (v k) s) =
+        PMF.uniformOfFintype (κ → T → F) := by
+    rw [← Cslib.Probability.PMF.pi_uniformOfFintype,
+      ← Cslib.Probability.PMF.pi_map
+        (fun _ : κ => PMF.uniformOfFintype (Shamir.Randomness params))
+        (fun k coeffs (s : T) => Shamir.share params coeffs (v k) s)]
+    simp only [Shamir.uniformOfFintype_map_restrict_share params T hT,
+      Cslib.Probability.PMF.pi_uniformOfFintype]
+  have hcomp :
+      (fun (r : κ → Shamir.Randomness params) (s : T) k => Shamir.share params (r k) (v k) s) =
+        flip ∘ fun (r : κ → Shamir.Randomness params) k (s : T) =>
+          Shamir.share params (r k) (v k) s := rfl
+  rw [hcomp, ← PMF.map_comp, hpi]
+  exact PMF.uniformOfFintype_map_equiv flip
 
 /-- Any coalition `T` of at most `params.threshold` servers in `PIR.shamir` sees a uniform family
 of query vectors, independent of the queried index. -/
@@ -642,12 +663,6 @@ end ShamirPIR
 
 section ShamirCommunication
 
-private theorem clog_pow_le_mul (m b : ℕ) : Nat.clog 2 (b ^ m) ≤ m * Nat.clog 2 b := by
-  refine Nat.clog_le_of_le_pow ?_
-  calc b ^ m ≤ (2 ^ Nat.clog 2 b) ^ m :=
-        Nat.pow_le_pow_left (Nat.le_pow_clog (by norm_num : 1 < 2) b) m
-    _ = 2 ^ (m * Nat.clog 2 b) := by rw [← pow_mul, Nat.mul_comm]
-
 /-- Communication upper bound for `shamirCube`: each server receives `|D| * |ι|` field elements and
 sends `1` field element. -/
 theorem communication_shamirCube_le {F S D ι : Type} [Fintype F] [Fintype S]
@@ -658,6 +673,21 @@ theorem communication_shamirCube_le {F S D ι : Type} [Fintype F] [Fintype S]
   simp only [Fintype.card_fun]
   rw [← pow_mul, Nat.mul_comm (Fintype.card ι)]
   have hclog := clog_pow_le_mul (Fintype.card D * Fintype.card ι) (Fintype.card F)
+  nlinarith
+
+/-- Communication upper bound for `rows`-balanced `shamirCube`
+([CGKS, Section 3.4, p. 11][ChorGoldreichKushilevitzSudan1998]): each server receives `|D| * |ι|`
+field elements and sends `|ρ|` field elements. -/
+theorem communication_shamirCube_rows_le {F S ρ D ι : Type} [Fintype F] [Fintype S]
+    [Fintype ρ] [DecidableEq ρ] [Fintype D] [DecidableEq D] [Fintype ι] [DecidableEq ι] :
+    communication S (D → ι → F) (ρ → F) ≤
+      Fintype.card S *
+        ((Fintype.card D * Fintype.card ι + Fintype.card ρ) * Nat.clog 2 (Fintype.card F)) := by
+  rw [communication_eq]
+  simp only [Fintype.card_fun]
+  rw [← pow_mul, Nat.mul_comm (Fintype.card ι)]
+  have hQ := clog_pow_le_mul (Fintype.card D * Fintype.card ι) (Fintype.card F)
+  have hA := clog_pow_le_mul (Fintype.card ρ) (Fintype.card F)
   nlinarith
 
 /-- Communication upper bound for matrix-balanced linear Shamir PIR (`(shamir ι params).rows ρ`). -/
@@ -692,10 +722,9 @@ theorem hasTPrivateScheme_of_le_mul_self (params : Shamir.Params F S) {n m : ℕ
   simp only [Fintype.card_fin] at hcomm
   linarith
 
-/-- **`(d t + 1)`-server `O(n ^ (1 / d))` `t`-private PIR**
-([CGKS, Section 1.1][ChorGoldreichKushilevitzSudan1998]): whenever `d * params.threshold < |S|` and
-`n ≤ ℓ ^ d`, `PIR.shamirCube` gives a perfectly correct `t`-private scheme communicating at most
-`|S| * ((d * ℓ + 1) * ⌈log₂ |F|⌉)` bits. -/
+/-- **Unbalanced `(d t + 1)`-server `O(n ^ (1 / d))` `t`-private PIR**: whenever
+`d * params.threshold < |S|` and `n ≤ ℓ ^ d`, `PIR.shamirCube` gives a perfectly correct `t`-private
+scheme communicating at most `|S| * ((d * ℓ + 1) * ⌈log₂ |F|⌉)` bits. -/
 theorem hasTPrivateScheme_of_le_pow (params : Shamir.Params F S) {n d ℓ : ℕ}
     (hdeg : d * params.threshold < Fintype.card S) (h : n ≤ ℓ ^ d) :
     HasTPrivateScheme (Fin n) params.threshold (Fintype.card S)
@@ -710,6 +739,32 @@ theorem hasTPrivateScheme_of_le_pow (params : Shamir.Params F S) {n d ℓ : ℕ}
   refine hP.mono ?_
   have hcomm := communication_shamirCube_le (F := F) (S := S) (D := Fin d) (ι := Fin ℓ)
   simpa only [Fintype.card_fin] using hcomm
+
+/-- **Balanced `c t`-server `O(n ^ (1 / c))` `t`-private PIR**
+([CGKS, Sections 1.1 and 3.4, p. 11][ChorGoldreichKushilevitzSudan1998]): applying `Scheme.rows`
+(`Fin ℓ`) to `PIR.shamirCube (Fin d) (Fin ℓ)` solves any `n ≤ ℓ ^ (d + 1)` whenever
+`d * params.threshold < |S|`, using `|S| * ((d + 1) * ℓ * ⌈log₂ |F|⌉)` bits. For `c = d + 1 ≥ 2` and
+`t = params.threshold ≥ 1`, `(c - 1) * t < c * t` holds with **exact `|S| = c * t` servers**. -/
+theorem hasTPrivateScheme_rows_of_le_pow (params : Shamir.Params F S) {n d ℓ : ℕ}
+    (hdeg : d * params.threshold < Fintype.card S) (h : n ≤ ℓ ^ (d + 1)) :
+    HasTPrivateScheme (Fin n) params.threshold (Fintype.card S)
+      (Fintype.card S * ((d + 1) * ℓ * Nat.clog 2 (Fintype.card F))) := by
+  classical
+  have hsplit : n ≤ ℓ * ℓ ^ d := by simpa [pow_succ'] using h
+  let eProd : Fin n ↪ Fin ℓ × Fin (ℓ ^ d) :=
+    (Fin.castLEEmb hsplit).trans finProdFinEquiv.symm.toEmbedding
+  let e : Fin n ↪ Fin ℓ × (Fin d → Fin ℓ) :=
+    eProd.trans (Equiv.prodCongr (Equiv.refl (Fin ℓ)) finFunctionFinEquiv.symm).toEmbedding
+  have hdeg' : Fintype.card (Fin d) * params.threshold < Fintype.card S := by
+    simpa using hdeg
+  have hP := ((isCorrect_shamirCube (D := Fin d) (ι := Fin ℓ) params hdeg').rows (Fin ℓ)).comap e
+    |>.hasTPrivateScheme
+      (((isTPrivate_shamirCube (D := Fin d) (ι := Fin ℓ) params).rows (Fin ℓ)).comap e)
+  refine hP.mono ?_
+  have hcomm :=
+    communication_shamirCube_rows_le (F := F) (S := S) (ρ := Fin ℓ) (D := Fin d) (ι := Fin ℓ)
+  simp only [Fintype.card_fin] at hcomm
+  nlinarith
 
 end ShamirBounds
 
@@ -731,14 +786,30 @@ def zmodShamirParams {t k p : ℕ} [Fact p.Prime] (htk : t < k) (hkp : k < p) :
     rw [ZMod.val_natCast_of_lt (by omega), ZMod.val_zero] at hv
     omega
 
+@[simp] theorem threshold_zmodShamirParams {t k p : ℕ} [Fact p.Prime] (htk : t < k) (hkp : k < p) :
+    (zmodShamirParams htk hkp).threshold = t := by
+  rw [zmodShamirParams]
+
+@[simp] theorem point_zmodShamirParams {t k p : ℕ} [Fact p.Prime] (htk : t < k) (hkp : k < p)
+    (s : Fin k) : (zmodShamirParams htk hkp).point s = ((s.val + 1 : ℕ) : ZMod p) := by
+  rw [zmodShamirParams]
+
 /-- Concrete prime-field `t`-private `k`-server polynomial PIR for `d * t < k < p` and
 `n ≤ ℓ ^ d`. -/
 theorem hasTPrivateScheme_prime_of_le_pow {n d ℓ t k p : ℕ} [Fact p.Prime]
     (hdeg : d * t < k) (hd : 0 < d) (hkp : k < p) (hn : n ≤ ℓ ^ d) :
     HasTPrivateScheme (Fin n) t k (k * ((d * ℓ + 1) * Nat.clog 2 p)) := by
   have htk : t < k := (Nat.le_mul_of_pos_left t hd).trans_lt hdeg
-  have h := hasTPrivateScheme_of_le_pow (zmodShamirParams htk hkp)
-    (by simpa [zmodShamirParams] using hdeg) hn
-  simpa [zmodShamirParams, ZMod.card] using h
+  have h := hasTPrivateScheme_of_le_pow (zmodShamirParams htk hkp) (by simpa using hdeg) hn
+  simpa [ZMod.card] using h
+
+/-- Concrete prime-field `rows`-balanced `t`-private `k`-server polynomial PIR for `d * t < k < p`
+and `n ≤ ℓ ^ (d + 1)` ([CGKS, Sections 1.1 and 3.4][ChorGoldreichKushilevitzSudan1998], achieving
+exact `k = c * t` servers at `d = c - 1` when `1 < c` and `0 < t`). -/
+theorem hasTPrivateScheme_prime_rows_of_le_pow {n d ℓ t k p : ℕ} [Fact p.Prime]
+    (htk : t < k) (hdeg : d * t < k) (hkp : k < p) (hn : n ≤ ℓ ^ (d + 1)) :
+    HasTPrivateScheme (Fin n) t k (k * ((d + 1) * ℓ * Nat.clog 2 p)) := by
+  have h := hasTPrivateScheme_rows_of_le_pow (zmodShamirParams htk hkp) (by simpa using hdeg) hn
+  simpa [ZMod.card] using h
 
 end Cslib.Crypto.Protocols.PIR

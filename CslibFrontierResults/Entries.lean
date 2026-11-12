@@ -3737,8 +3737,8 @@ register_result "cgks-pir-coalition-shamir" where
   topic := "cryptography"
   sources := [
     { paper := ChorGoldreichKushilevitzSudan1998, theorem := unverified,
-      locator := "Sections 1.1, 2.2 and 5.1 (pp. 3–5 and 13–14 of the April 21, 1998 journal \
-        version)" },
+      locator := "Sections 1.1, 2.2, 3.4 and 5.1 (pp. 1–2, 4–5, 11 and 14 of the April 21, 1998 \
+        journal version)" },
     { paper := Shamir1979, theorem := unverified, locator := "whole paper" }
   ]
   theorems := [
@@ -3753,17 +3753,22 @@ register_result "cgks-pir-coalition-shamir" where
     Cslib.Crypto.Protocols.PIR.not_isTPrivate_succ_shamirCube,
     Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_of_le_mul_self,
     Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_of_le_pow,
-    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_of_le_pow
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_rows_of_le_pow,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_of_le_pow,
+    Cslib.Crypto.Protocols.PIR.hasTPrivateScheme_prime_rows_of_le_pow
   ]
   scope := "One-round information-theoretic PIR with perfect correctness and perfect t-privacy \
     against coalitions of at most t servers (equivalent at t = 1 to single-server IsPrivate and \
-    for every t to t-tuple query independence). When |S| ≤ t, any perfectly correct t-private \
-    scheme communicates at least |ι| bits. Over any finite field F with |S| distinct nonzero \
-    evaluation points (Shamir.Params F S, instantiated over ZMod p for primes p > k), linear \
-    Shamir PIR with matrix balancing gives |S| * 2 m * ⌈log₂ |F|⌉ bits for n ≤ m², degree-d \
-    hypercube polynomial PIR gives |S| * ((d * ℓ + 1) * ⌈log₂ |F|⌉) bits whenever d * t < |S| \
-    and n ≤ ℓ^d (instantiating the c * t-server O(t * n^(1/c)) family noted without details in \
-    CGKS §1.1), and (t + 1) colluding servers break privacy whenever |ι| ≥ 2."
+    for every t to t-tuple query independence). Generalizing CGKS §5.1 from k = 1 to full \
+    coalitions |S| ≤ t, any perfectly correct t-private scheme communicates at least |ι| bits. \
+    Over any finite field F with |S| distinct nonzero evaluation points (Shamir.Params F S, so \
+    |F| > |S|, instantiated over ZMod p for primes p > k), linear Shamir PIR with matrix \
+    balancing gives |S| * 2 m * ⌈log₂ |F|⌉ bits for n ≤ m², unbalanced degree-d hypercube PIR \
+    gives |S| * ((d * ℓ + 1) * ⌈log₂ |F|⌉) bits for d * t < |S| and n ≤ ℓ^d, and applying the \
+    §3.4 rows balancing step gives |S| * ((d + 1) * ℓ * ⌈log₂ |F|⌉) bits for n ≤ ℓ^(d + 1) \
+    (instantiating CGKS §1.1's exact c * t-server O(t * n^(1/c)) family at d = c - 1 for c ≥ 2, \
+    t ≥ 1, with field bit-width factor ⌈log₂ |F|⌉). Any t + 1 colluding servers break privacy \
+    whenever |ι| ≥ 2."
 
 register_result "cgks-pir-block-retrieval" where
   title := "Chor–Goldreich–Kushilevitz–Sudan: private block retrieval transformations and \
@@ -3780,6 +3785,7 @@ register_result "cgks-pir-block-retrieval" where
     Cslib.Crypto.Protocols.PIR.hasBlockScheme_one_iff,
     Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.toBlock,
     Cslib.Crypto.Protocols.PIR.Scheme.IsTPrivate.toBlock,
+    Cslib.Crypto.Protocols.PIR.communication_toBlock_le,
     Cslib.Crypto.Protocols.PIR.communication_toBlock_of_card_answer,
     Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.mapAnswerHom,
     Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.sumChunks,
@@ -3799,4 +3805,5 @@ register_result "cgks-pir-block-retrieval" where
     preserving t-privacy without finiteness assumptions on R or Q. Composing them gives \
     Corollary 6; specializing Proposition 4 to twoServer and cube (Fin 2) gives 4 * ℓ bits with \
     2 servers for n ≤ ℓ (Corollary 7) and 8 * ℓ bits with 4 servers when n ≤ m² and 2 * m ≤ ℓ, \
-    in particular n ≤ (ℓ / 2)^2 (Corollary 8, refining the paper's real √n ≤ ℓ / 2 condition)."
+    in particular n ≤ (ℓ / 2)^2 (Corollary 8, replacing the paper's unrounded n ≤ ℓ² / 4 with \
+    the integer subcube condition 2 * m ≤ ℓ, matching n ≤ ℓ² / 4 when ℓ is even)."
