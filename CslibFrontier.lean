@@ -5525,6 +5525,7 @@ public import CslibFrontier.Foundations.Data.List.Sort
 public import CslibFrontier.Foundations.Data.List.SortedAssoc
 public import CslibFrontier.Foundations.Data.List.SortedCount
 public import CslibFrontier.Foundations.Data.List.SumIndicator
+public import CslibFrontier.Foundations.Data.List.TakeQuantifiers
 public import CslibFrontier.Foundations.Data.List.TwoBitTable
 public import CslibFrontier.Foundations.Data.List.UnaryCode
 public import CslibFrontier.Foundations.Data.Matrix.Binary
