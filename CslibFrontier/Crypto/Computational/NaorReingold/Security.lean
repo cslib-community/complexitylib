@@ -583,8 +583,7 @@ theorem isPPT_naorReingoldDescToDDHDistinguisher
         (encNat (F.order d)).length ≤ cO * ((ddhCallerEncoding F caller).length + 1) ^ eO := by
       refine (hO d).trans ?_
       have hd_le : (F.encDesc d).length ≤ (ddhCallerEncoding F caller).length := by
-        simp only [d, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput, DDHInput.words,
-          Function.Embedding.trans_apply, Function.Embedding.coeFn_mk, length_encPair]
+        simp only [d, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply, length_encPair]
         lia
       exact Nat.mul_le_mul_left cO (Nat.pow_le_pow_left (by lia) eO)
     have hinput_le :
@@ -596,8 +595,7 @@ theorem isPPT_naorReingoldDescToDDHDistinguisher
       have hcaller :
           2 * (F.encDesc d).length + 2 * u.length + 2 * v.length + 2 * w.length ≤
           (ddhCallerEncoding F caller).length := by
-        simp only [d, u, v, w, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput,
-          DDHInput.words, Function.Embedding.trans_apply, Function.Embedding.coeFn_mk,
+        simp only [d, u, v, w, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply,
           length_encPair, encBits_apply]
         lia
       simp only [length_encPair, encBits_apply]
@@ -724,8 +722,7 @@ theorem isPPT_naorReingoldDescToDDHDistinguisher
             2 * (F.encDesc caller.1.1.groupParameters).length +
               8 * (encList encNat caller.2).length ≤
             8 * (ddhCallerEncoding F caller).length := by
-          simp only [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput, DDHInput.words,
-            Function.Embedding.trans_apply, Function.Embedding.coeFn_mk, length_encPair]
+          simp only [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply, length_encPair]
           lia
         simp only [encBits_apply, length_encPair, List.length_drop]
         lia

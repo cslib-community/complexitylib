@@ -150,148 +150,30 @@ structure DDHInput extends F.CDHInput where
   /-- The candidate shared element. -/
   candidateShared : F.Carrier groupParameters
 
-namespace CDHInput
-
-variable {F}
-
-/-- The words a machine reads for a CDH input: the security parameter, the group parameters and
-the encodings of the two public elements. -/
-def words (x : F.CDHInput) : ℕ × F.Desc × List Bool × List Bool :=
-  (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
-    F.encode x.groupParameters x.rightPublic)
-
-/-- A CDH input is determined by its words, since element encodings are injective. -/
-theorem words_injective : Function.Injective (words (F := F)) := by
-  rintro ⟨n, d, u, v⟩ ⟨n', d', u', v'⟩ h
-  simp only [words, Prod.mk.injEq] at h
-  obtain ⟨rfl, rfl, hu, hv⟩ := h
-  rw [F.encode_injective d hu, F.encode_injective d hv]
-
-end CDHInput
-
-namespace DDHInput
-
-variable {F}
-
-/-- The words a machine reads for a DDH input: the security parameter, the group parameters and
-the encodings of the three elements. -/
-def words (x : F.DDHInput) : ℕ × F.Desc × List Bool × List Bool × List Bool :=
-  (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
-    F.encode x.groupParameters x.rightPublic, F.encode x.groupParameters x.candidateShared)
-
-/-- A DDH input is determined by its words, since element encodings are injective. -/
-theorem words_injective : Function.Injective (words (F := F)) := by
-  rintro ⟨⟨n, d, u, v⟩, w⟩ ⟨⟨n', d', u', v'⟩, w'⟩ h
-  simp only [words, Prod.mk.injEq] at h
-  obtain ⟨rfl, rfl, hu, hv, hw⟩ := h
-  rw [F.encode_injective d hu, F.encode_injective d hv, F.encode_injective d hw]
-
-end DDHInput
-
-/-- The encoding of a CDH input: its `CDHInput.words` in order, each framed except the last
+/-- The encoding of a CDH input: the unary security parameter, the group parameters and the words
+`F.encode d u`, `F.encode d v` of the public elements, each framed except the last
 (`encCDHInput_apply`). -/
-def encCDHInput : F.CDHInput ↪ List Bool :=
-  (⟨CDHInput.words, CDHInput.words_injective⟩ : F.CDHInput ↪ _).trans
-    (encPair encUnary (encPair F.encDesc (encPair encBits encBits)))
+enc_structure encCDHInput (F : PrimeOrderGroupFamily) : CDHInput F where
+  secParam : encUnary, groupParameters : F.encDesc,
+  leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
+  rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters)
 
-/-- The encoding of a DDH input: its `DDHInput.words` in order, each framed except the last
-(`encDDHInput_apply`). -/
-def encDDHInput : F.DDHInput ↪ List Bool :=
-  (⟨DDHInput.words, DDHInput.words_injective⟩ : F.DDHInput ↪ _).trans
-    (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+/-- The encoding of a DDH input: the fields of its CDH input followed by the word of the candidate
+shared element, each framed except the last (`encDDHInput_apply`). -/
+enc_structure encDDHInput (F : PrimeOrderGroupFamily) : DDHInput F where
+  secParam : encUnary, groupParameters : F.encDesc,
+  leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
+  rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
+  candidateShared : (F.encode groupParameters) using (F.encode_injective groupParameters)
 
-/-- The CDH input layout: unary security parameter, group parameters and first element framed,
-then the second element. -/
-theorem encCDHInput_apply (x : F.CDHInput) :
-    F.encCDHInput x = frame (encUnary x.secParam) ++ frame (F.encDesc x.groupParameters) ++
-      frame (F.encode x.groupParameters x.leftPublic) ++
-        F.encode x.groupParameters x.rightPublic := by
-  simp [encCDHInput, CDHInput.words, encPair, encBits]
-
-/-- The DDH input layout: unary security parameter, group parameters and the first two elements
-framed, then the candidate shared element. -/
-theorem encDDHInput_apply (x : F.DDHInput) :
-    F.encDDHInput x = frame (encUnary x.secParam) ++ frame (F.encDesc x.groupParameters) ++
-      frame (F.encode x.groupParameters x.leftPublic) ++
-        frame (F.encode x.groupParameters x.rightPublic) ++
-          F.encode x.groupParameters x.candidateShared := by
-  simp [encDDHInput, DDHInput.words, encPair, encBits]
-
-namespace CDHInput
-
-variable {F}
-
-/-- Reading the words of a CDH input copies its encoding. -/
-theorem computableInPolyTime_words :
-    ComputableInPolyTime (words (F := F)) F.encCDHInput
-      (encPair encUnary (encPair F.encDesc (encPair encBits encBits))) :=
-  .of_eq fun _ => rfl
-
-/-- Reading the security parameter of a computed CDH input. -/
-@[fun_prop] theorem computableInPolyTime_secParam {α : Type} {enc : α ↪ List Bool}
-    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
-    ComputableInPolyTime (fun a => (g a).secParam) enc encUnary :=
-  (computableInPolyTime_words.comp h).fst'
-
-/-- Reading the group parameters of a computed CDH input. -/
-@[fun_prop] theorem computableInPolyTime_groupParameters {α : Type} {enc : α ↪ List Bool}
-    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
-    ComputableInPolyTime (fun a => (g a).groupParameters) enc F.encDesc :=
-  (computableInPolyTime_words.comp h).snd'.fst'
-
-/-- Reading the encoded first element of a computed CDH input. -/
-@[fun_prop] theorem computableInPolyTime_encode_leftPublic {α : Type} {enc : α ↪ List Bool}
-    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
-    ComputableInPolyTime (fun a => F.encode (g a).groupParameters (g a).leftPublic) enc encBits :=
-  (computableInPolyTime_words.comp h).snd'.snd'.fst'
-
-/-- Reading the encoded second element of a computed CDH input. -/
-@[fun_prop] theorem computableInPolyTime_encode_rightPublic {α : Type} {enc : α ↪ List Bool}
-    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
-    ComputableInPolyTime (fun a => F.encode (g a).groupParameters (g a).rightPublic) enc encBits :=
-  (computableInPolyTime_words.comp h).snd'.snd'.snd'
-
-end CDHInput
-
-namespace DDHInput
-
-variable {F}
-
-/-- Reading the words of a DDH input copies its encoding. -/
-theorem computableInPolyTime_words :
-    ComputableInPolyTime (words (F := F)) F.encDDHInput
-      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))) :=
-  .of_eq fun _ => rfl
-
+variable {F} in
 /-- Dropping the candidate shared element of a computed DDH input. -/
-@[fun_prop] theorem computableInPolyTime_toCDHInput {α : Type} {enc : α ↪ List Bool}
+@[fun_prop] theorem DDHInput.computableInPolyTime_toCDHInput {α : Type} {enc : α ↪ List Bool}
     {g : α → F.DDHInput} (h : ComputableInPolyTime g enc F.encDDHInput) :
     ComputableInPolyTime (fun a => (g a).toCDHInput) enc F.encCDHInput :=
-  have hwords : ComputableInPolyTime (toCDHInput (F := F)) F.encDDHInput F.encCDHInput :=
-    ComputableInPolyTime.of_enc_eq
-      (f := fun x : F.DDHInput => (x.words.1, x.words.2.1, x.words.2.2.1, x.words.2.2.2.1))
-      (by have := computableInPolyTime_words (F := F); fun_prop) fun _ => rfl
-  hwords.comp h
-
-/-- Reading the encoded candidate shared element of a computed DDH input. -/
-@[fun_prop] theorem computableInPolyTime_encode_candidateShared {α : Type} {enc : α ↪ List Bool}
-    {g : α → F.DDHInput} (h : ComputableInPolyTime g enc F.encDDHInput) :
-    ComputableInPolyTime (fun a => F.encode (g a).groupParameters (g a).candidateShared) enc
-      encBits :=
-  (computableInPolyTime_words.comp h).snd'.snd'.snd'.snd'
-
-/-- Building a DDH input from computed parts. -/
-theorem computableInPolyTime_mk {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {d : α → F.Desc}
-    {u v w : (a : α) → F.Carrier (d a)} (hn : ComputableInPolyTime n enc encUnary)
-    (hd : ComputableInPolyTime d enc F.encDesc)
-    (hu : ComputableInPolyTime (fun a => F.encode (d a) (u a)) enc encBits)
-    (hv : ComputableInPolyTime (fun a => F.encode (d a) (v a)) enc encBits)
-    (hw : ComputableInPolyTime (fun a => F.encode (d a) (w a)) enc encBits) :
-    ComputableInPolyTime (fun a => (⟨⟨n a, d a, u a, v a⟩, w a⟩ : F.DDHInput)) enc
-      F.encDDHInput :=
-  .of_enc_eq (hn.prod (hd.prod (hu.prod (hv.prod hw)))) fun _ => rfl
-
-end DDHInput
+  F.encCDHInput_mk_polyTime (F.encDDHInput_secParam_polyTime h)
+    (F.encDDHInput_groupParameters_polyTime h) (F.encDDHInput_leftPublic_polyTime h)
+    (F.encDDHInput_rightPublic_polyTime h)
 
 variable {F} in
 /-- The encoded generator of computed group parameters. -/
@@ -464,7 +346,7 @@ theorem DDHDistinguisher.IsPPT.comp {distinguisher : F.DDHDistinguisher}
     (hv : ComputableInPolyTime (fun a => F.encode (d a) (v a)) enc encBits)
     (hw : ComputableInPolyTime (fun a => F.encode (d a) (w a)) enc encBits) :
     IsPPTOn enc encBool fun a => distinguisher (n a) (d a) (u a) (v a) (w a) :=
-  IsPPTOn.preprocess hD (DDHInput.computableInPolyTime_mk hn hd hu hv hw)
+  IsPPTOn.preprocess hD (F.encDDHInput_mk_polyTime hn hd hu hv hw)
 
 /-- Turn a CDH adversary into a DDH distinguisher by running `Cslib.Crypto.cdhToDDH` in each
 group. -/
@@ -776,19 +658,17 @@ theorem isPPT_ddhSelfReduceDistinguisher {distinguisher : F.DDHDistinguisher}
   let E := encPair (encPair (encPair F.encDDHInput encNat) encNat) encNat
   have hx : ComputableInPolyTime (fun p : ((F.DDHInput × ℕ) × ℕ) × ℕ => p.1.1.1) E
       F.encDDHInput := by fun_prop
-  have hc := DDHInput.computableInPolyTime_toCDHInput hx
-  have hd := CDHInput.computableInPolyTime_groupParameters hc
+  have hd := F.encDDHInput_groupParameters_polyTime hx
   have h := computableInPolyTime_encode_ddhRerandomize hd
-    (CDHInput.computableInPolyTime_encode_leftPublic hc)
-    (CDHInput.computableInPolyTime_encode_rightPublic hc)
-    (DDHInput.computableInPolyTime_encode_candidateShared hx)
+    (F.encDDHInput_leftPublic_polyTime hx) (F.encDDHInput_rightPublic_polyTime hx)
+    (F.encDDHInput_candidateShared_polyTime hx)
     (show ComputableInPolyTime (fun p : ((F.DDHInput × ℕ) × ℕ) × ℕ => p.1.1.2) E encNat by
       fun_prop)
     (show ComputableInPolyTime (fun p : ((F.DDHInput × ℕ) × ℕ) × ℕ => p.1.2) E encNat by
       fun_prop)
     (show ComputableInPolyTime (fun p : ((F.DDHInput × ℕ) × ℕ) × ℕ => p.2) E encNat by
       fun_prop)
-  exact (hD.comp (CDHInput.computableInPolyTime_secParam hc) hd h.1 h.2.1 h.2.2).congr
+  exact (hD.comp (F.encDDHInput_secParam_polyTime hx) hd h.1 h.2.1 h.2.2).congr
     fun _ => rfl
 
 /-- **Sampling loss of the DDH self-reduction**: on any fixed triple, replacing the three exact

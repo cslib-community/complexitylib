@@ -22,7 +22,7 @@ Adapt the client's contract to your types. A failed bridge usually means a missi
 
 Record the input and output types; their encodings; the measured input size; the time, workspace, gate or query bound; and what is fixed before the input varies. Model domain objects, problem instances, certificates, configurations, and multi-field algorithm states or contexts as documented `structure`s with named fields rather than tuple `abbrev`s or bare product sets (`Set (A × B × C)`), keeping plain `Prod` (`×`) for generic binary combinators and uncurried multi-argument inputs such as `Instance × List Bool → Bool`. For native computation, an encoding has type `α ↪ List Bool`: injectivity is part of the data. Reuse `encBits`, `encBool`, binary `encNat`, unary `encUnary`, `encPair` and `encList` before defining another representation. A new embedding needs an injectivity proof and size lemmas suitable for the intended bound. [Encoding length lemmas](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/Length.lean) and [pair lengths](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/Pair.lean) show where framing overhead enters.
 
-To encode a structure as the tuple of its fields, import `CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure` and, inside a namespace, write `enc_structure eS : S where f₁ : e₁, …, fₙ : eₙ`. List every field of `S` once, in declaration order, and parenthesize compound encodings such as `(encList encUnary)`. A parent structure counts as the single field `toParent`, as in `S`'s constructor. `S` must be a structure, not a class. The command checks the list before declaring anything: an unknown, repeated or misplaced field, or any missing ones, is an error that names them and lists the fields of `S` in declaration order. That order fixes the encoded words: the simp lemma `eS_apply` unfolds `eS a` to `eSFields (a.f₁, …, a.fₙ)`, where `eSFields` is the right-nested `encPair e₁ (encPair e₂ … eₙ)`, so every field but the last is framed.
+To encode a structure as the tuple of its fields, import `CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure` and, inside a namespace, write `enc_structure eS : S where f₁ : e₁, …, fₙ : eₙ`. List every field of `S` once, in declaration order, and parenthesize compound encodings such as `(encList encUnary)`. List a parent structure either as the single field `toParent`, as in `S`'s constructor, encoded as one word, or as its own fields in place of `toParent`, which flattens them into the tuple; listing both is an error. `S` must be a structure, not a class. The command checks the list before declaring anything: an unknown, repeated or misplaced field, or any missing ones, is an error that names them and lists the fields of `S` in declaration order. That order fixes the encoded words: the simp lemma `eS_apply` unfolds `eS a` to `eSFields (a.f₁, …, a.fₙ)`, where `eSFields` is the right-nested `encPair e₁ (encPair e₂ … eₙ)`, so every field but the last is framed.
 
 For parameterized records, give explicit parameters before the colon and apply the record
 in the type: `enc_structure eS (Desc : Type) (encDesc : Desc ↪ List Bool) : S (Desc := Desc)
@@ -33,6 +33,18 @@ same explicit parameters, including `eS_apply Desc encDesc` and
 bytes, construction and projection, and workspace-budget preservation. The
 [DH challenge encodings](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean) use a
 family parameter to choose the description encoding.
+
+A field whose type depends on an earlier field, such as `elt : F.Carrier desc`, is encoded as a word
+by an injective function of the earlier fields: write `elt : (F.encode desc) using
+(F.encode_injective desc)`, where the term after `using` proves `Function.Injective (F.encode desc)`.
+The field occupies an `encBits` slot holding `F.encode x.desc x.elt`; its generated rules read that
+word, and the constructor rules take the argument as a dependent function with a certificate for its
+word. Such a structure has no `eS_mk_deg`. A parent projection such as `x.toElement` has no generated
+rule; derive it from the parent's `_mk_polyTime` and the flattened field rules, as the
+`ElementPair` examples in [StructureEncoding](../../CslibFrontierTests/StructureEncoding.lean) do.
+`F.encCDHInput` and `F.encDDHInput` are declared this way, the DDH input flattening its CDH parent
+so that both remain one framed tuple of the security parameter, the group parameters and the
+element words.
 
 Alternatively, declare the parameters implicitly, as in `variable {k : ℕ}`, and supply its applied type: `enc_structure encWords : Words k where ...`. Give a field encoding its index explicitly when its type cannot be inferred in isolation, such as `(encPi (Index := Fin k) encNat)`. The generated encoding and rules infer `k` from their typed input or output, including when a field's own type does not mention `k`.
 

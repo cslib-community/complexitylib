@@ -243,6 +243,100 @@ example :
     ComputableInPolyTime (fun r : Renamed => Renamed.mkRenamed r.n r.b) eRenamed eRenamed := by
   fun_prop
 
+/-! Listing the fields of a parent instead of the parent field flattens them into the tuple. -/
+
+/-- Triples, as the flat tuple of their three fields. -/
+enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary
+
+example (t : Triple) : eFlat t = encPair encNat (encPair encBool encUnary) (t.fst, t.snd, t.w) :=
+  rfl
+
+-- The constructor rule on tuples nests the constructor of the parent.
+example : ComputableInDegree (fun p : ℕ × Bool × ℕ => Triple.mk ⟨p.1, p.2.1⟩ p.2.2)
+    eFlatFields eFlat 1 1 :=
+  eFlat_mk_deg
+
+-- The flattened field rules read through the parent projection.
+example {α : Type} {enc : α ↪ List Bool} {f : α → Triple} (hf : ComputableInPolyTime f enc eFlat) :
+    ComputableInPolyTime (fun a => Triple.mk ⟨(f a).fst, (f a).snd⟩ (f a).w) enc eFlat := by
+  fun_prop
+
+/-! A field whose type depends on an earlier field is encoded by an injective word function of the
+earlier fields. -/
+
+/-- A family of types indexed by descriptions, with injective encodings of their elements. -/
+structure Family where
+  /-- The descriptions. -/
+  Desc : Type
+  /-- The encoding of descriptions. -/
+  encDesc : Desc ↪ List Bool
+  /-- The type described by each description. -/
+  Carrier : Desc → Type
+  /-- The encoding of the elements of each type. -/
+  encode : ∀ d, Carrier d → List Bool
+  /-- Element encodings are injective. -/
+  encode_injective : ∀ d, Function.Injective (encode d)
+
+/-- A description and an element of the type it describes. -/
+structure Element (F : Family) where
+  /-- A unary size. -/
+  size : ℕ
+  /-- The description. -/
+  desc : F.Desc
+  /-- The element. -/
+  elt : F.Carrier desc
+
+/-- Elements, as their size, description and the word of the element. -/
+enc_structure eElement (F : Family) : Element F where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc)
+
+example (F : Family) (x : Element F) :
+    eElement F x =
+      encPair encUnary (encPair F.encDesc encBits) (x.size, x.desc, F.encode x.desc x.elt) :=
+  rfl
+
+example (F : Family) {x y : Element F} (h : eElement F x = eElement F y) : x = y :=
+  (eElement F).injective h
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → Element F}
+    (hf : ComputableInPolyTime f enc (eElement F)) :
+    ComputableInPolyTime (fun a => F.encode (f a).desc (f a).elt) enc encBits := by
+  fun_prop
+
+/-- An element with a second element of the same type, through a flattened parent. -/
+structure ElementPair (F : Family) extends Element F where
+  /-- The second element. -/
+  other : F.Carrier desc
+
+/-- Element pairs, flattening the parent: byte-compatible with a hand-written five-word tuple. -/
+enc_structure eElementPair (F : Family) : ElementPair F where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc),
+  other : (F.encode desc) using (F.encode_injective desc)
+
+example (F : Family) (x : ElementPair F) :
+    eElementPair F x = encPair encUnary (encPair F.encDesc (encPair encBits encBits))
+      (x.size, x.desc, F.encode x.desc x.elt, F.encode x.desc x.other) :=
+  rfl
+
+-- Swapping the two elements uses the dependent field rules and the dependent constructor rule.
+example (F : Family) :
+    ComputableInPolyTime
+      (fun x : ElementPair F => (⟨⟨x.size, x.desc, x.other⟩, x.elt⟩ : ElementPair F))
+      (eElementPair F) (eElementPair F) := by
+  fun_prop
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → ElementPair F}
+    (hf : ComputableInSpace f enc (eElementPair F) S) :
+    ComputableInSpace (fun a => F.encode (f a).desc (f a).other) enc encBits S :=
+  eElementPair_other_budget F hf
+
+-- The parent projection follows from the parent's constructor rule and the flattened field rules.
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPair F}
+    (hf : ComputableInPolyTime f enc (eElementPair F)) :
+    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) :=
+  eElement_mk_polyTime F (eElementPair_size_polyTime F hf) (eElementPair_desc_polyTime F hf)
+    (eElementPair_elt_polyTime F hf)
+
 /-! The command checks the field list before declaring anything. Each error names the field. -/
 
 /--
@@ -275,12 +369,18 @@ error: enc_structure: missing fields `x`, `z` of `Point`; the fields of `Point` 
 #guard_msgs in
 enc_structure eMissingTwo : Point where y : encBits
 
--- A field inherited from a parent is listed through its parent field.
+-- A parent is listed either as its field or as its fields, not both.
 /--
-error: enc_structure: `fst` is inherited through the parent field `toPair`, so list `toPair` instead; the fields of `Triple` in declaration order are `toPair`, `w`
+error: enc_structure: the parent field `toPair` and its field `fst` are both listed; list either the parent field or its fields; the fields of `Triple` in declaration order are `fst`, `snd`, `w`
 -/
 #guard_msgs in
-enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary
+enc_structure eBoth : Triple where toPair : ePair, fst : encNat, w : encUnary
+
+/--
+error: enc_structure: missing field `snd` of `Triple`; the fields of `Triple` in declaration order are `fst`, `snd`, `w`
+-/
+#guard_msgs in
+enc_structure eFlatMissing : Triple where fst : encNat, w : encUnary
 
 /-- error: enc_structure: `Nat` is not a structure -/
 #guard_msgs in
