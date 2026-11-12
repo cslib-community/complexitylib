@@ -268,6 +268,7 @@ theorem length_encFrame_le {I : FixedRotationInput} (hI : Valid I) {K : ℕ} (hK
       exact (Nat.size_le_self _).trans (hx.le.trans hsize)
     have ha' := hbit _ ha
     have hb' := hbit _ hb
+    dsimp only [Segment.source, Segment.target, Segment.endpoints] at ha' hb'
     simp only [encSegment, length_encPair, encBool_apply, List.length_singleton]
     omega
   have hsegments := length_encList_le encSegment (frame I).segments hsegment

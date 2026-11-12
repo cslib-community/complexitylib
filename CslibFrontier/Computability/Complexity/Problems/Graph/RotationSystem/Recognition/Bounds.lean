@@ -46,7 +46,8 @@ theorem boundedEndpoints_frame {I : FixedRotationInput} (hI : Valid I) :
     ((I.graph.1.length + 2 * entry.2 + 1, entry.1.2), _)] at hs
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hs
   rcases hs with rfl | rfl | rfl <;> change _ < subdivisionSize I ∧ _ < subdivisionSize I <;>
-    unfold subdivisionSize <;> constructor <;> omega
+    unfold subdivisionSize <;> constructor <;>
+    dsimp only [Segment.source, Segment.target, Segment.endpoints] <;> omega
 
 /-- Every variable in a literal row lies in the finite rectangular move frame. -/
 theorem label_lt_row {F : Frame} (hF : BoundedEndpoints F)
