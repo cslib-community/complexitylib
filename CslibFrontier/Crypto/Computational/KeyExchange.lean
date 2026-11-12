@@ -235,9 +235,9 @@ theorem realGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool) (n : ℕ) :
     (F.dhKeyExchange setup).realGame adversary n =
       F.ddhRealGame setup (F.dhEavToDDH adversary) n := by
-  simp only [KeyExchange.realGame, dhKeyExchange, ddhRealGame, ddhRealExperiment, dhEavToDDH,
-    ProbComp.eval_bind, ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, smul_val_encode, smul_smul]
+  simp only [KeyExchange.realGame, dhKeyExchange, ddhRealGame, eval_ddhRealExperiment, dhEavToDDH,
+    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, smul_val_encode,
+    smul_smul]
 
 /-- With the uniform group element as ideal key, the ideal eavesdropping experiment on
 Diffie–Hellman is the random DDH experiment. -/
@@ -246,8 +246,8 @@ theorem idealGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (F.dhKeyExchange setup).idealGame F.dhIdealKey adversary n =
       F.ddhRandomGame setup (F.dhEavToDDH adversary) n := by
   simp only [KeyExchange.idealGame, dhKeyExchange, dhIdealKey, ddhRandomGame,
-    ddhRandomExperiment, dhEavToDDH, ProbComp.eval_bind, ProbComp.eval_uniform,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+    eval_ddhRandomExperiment, dhEavToDDH, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.bind_bind, PMF.pure_bind]
 
 /-- The distinguisher `dhEavToDDH` is uniform strict PPT when the eavesdropper is. -/
 theorem isPPTOn_dhEavToDDH

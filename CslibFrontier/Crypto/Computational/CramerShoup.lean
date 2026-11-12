@@ -451,14 +451,12 @@ theorem advantage_cramerShoupGame1_game2_le
       12 / 2 ^ n := by
   refine advantage_four_le _ _ _ _ ?_ ?_
   · unfold ddhRealGame cramerShoupGame1
-    simp only [ddhRealExperiment, ProbComp.eval_bind, ProbComp.eval_uniform,
-      PMF.monad_bind_eq_bind]
+    simp only [eval_ddhRealExperiment, PMF.monad_bind_eq_bind]
     peel_binds d α β
     exact F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
       hmem adversary bit n d α β (α * β)
   · unfold ddhRandomGame cramerShoupGame2
-    simp only [ddhRandomExperiment, ProbComp.eval_bind, ProbComp.eval_uniform,
-      PMF.monad_bind_eq_bind]
+    simp only [eval_ddhRandomExperiment, PMF.monad_bind_eq_bind]
     peel_binds d α β γ
     exact F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
       hmem adversary bit n d α β γ
