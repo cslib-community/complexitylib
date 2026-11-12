@@ -37,7 +37,9 @@ example : xorCircuit.depth ≤ 2 := depth_depthTwoInputs_le ..
 example (w : Fin 3 → ℝ) : argWeight ⟨3, w, 0⟩ id = w := argWeight_id w 0
 
 example : argWeight (n := 1) ⟨2, ![1, 2], 0⟩ (fun _ => 0) 0 = 3 := by
-  simp [argWeight]
+  simp only [argWeight, lineWeight, inputLine]
+  change ∑ a : Fin 2, ![(1 : ℝ), 2] a = 3
+  simp [Fin.sum_univ_two]
   norm_num
 
 -- A gate that reads every address block through its sum with coefficient one is sign-coherent
