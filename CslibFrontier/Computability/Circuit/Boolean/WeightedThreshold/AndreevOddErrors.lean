@@ -106,28 +106,6 @@ private theorem add_add_cancel_right_bitString {b : ℕ} (c u : BitString b) : c
   funext j
   simp [Bool.add_eq_xor]
 
-/-- Underlying map of `andreevTranslateTable b m u β`: the table bit at index `c` becomes the bit
-at `c + u`, flipped when `β = true`; the address bits are unchanged. -/
-def andreevTranslateTableFun (b m : ℕ) (u : BitString b) (β : Bool)
-    (w : BitString (2 ^ b + b * m)) : BitString (2 ^ b + b * m) :=
-  Fin.addCases (fun idx => xor (w (andreevTableIndex b m
-    (BitString.equivFin b ((BitString.equivFin b).symm idx + u)))) β)
-    (fun i => w (Fin.natAdd (2 ^ b) i))
-
-@[simp]
-theorem andreevTranslateTableFun_tableIndex (b m : ℕ) (u : BitString b) (β : Bool)
-    (w : BitString (2 ^ b + b * m)) (idx : Fin (2 ^ b)) :
-    andreevTranslateTableFun b m u β w (andreevTableIndex b m idx) =
-      xor (w (andreevTableIndex b m
-        (BitString.equivFin b ((BitString.equivFin b).symm idx + u)))) β := by
-  simp [andreevTranslateTableFun, andreevTableIndex]
-
-@[simp]
-theorem andreevTranslateTableFun_blockVar (b m : ℕ) (u : BitString b) (β : Bool)
-    (w : BitString (2 ^ b + b * m)) (j : Fin b) (t : Fin m) :
-    andreevTranslateTableFun b m u β w (andreevBlockVar b m j t) = w (andreevBlockVar b m j t) := by
-  simp [andreevTranslateTableFun, andreevBlockVar]
-
 theorem andreevTranslateTableFun_involutive (b m : ℕ) (u : BitString b) (β : Bool) :
     Function.Involutive (andreevTranslateTableFun b m u β) := fun w => by
   funext i
