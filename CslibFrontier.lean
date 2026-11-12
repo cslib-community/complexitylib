@@ -5851,6 +5851,7 @@ public import CslibFrontier.Foundations.Logic.Function.Iterate
 public import CslibFrontier.Foundations.Logic.Function.UpdateKernel
 public import CslibFrontier.Foundations.MeasureTheory.Constructions.BorelSpace.Order
 public import CslibFrontier.Foundations.MeasureTheory.Constructions.SimpleGraph
+public import CslibFrontier.Foundations.MeasureTheory.Function.L2Space
 public import CslibFrontier.Foundations.MeasureTheory.Group.ConvolutionDensity
 public import CslibFrontier.Foundations.MeasureTheory.Group.FundamentalDomain
 public import CslibFrontier.Foundations.MeasureTheory.Group.QuotientDensity
@@ -5911,6 +5912,7 @@ public import CslibFrontier.Foundations.Probability.Gaussian.DiscreteTail
 public import CslibFrontier.Foundations.Probability.Gaussian.ExpSq
 public import CslibFrontier.Foundations.Probability.Gaussian.Fourier
 public import CslibFrontier.Foundations.Probability.Gaussian.Hermite
+public import CslibFrontier.Foundations.Probability.Gaussian.HermiteExpansion
 public import CslibFrontier.Foundations.Probability.Gaussian.MassBounds
 public import CslibFrontier.Foundations.Probability.Gaussian.Measure
 public import CslibFrontier.Foundations.Probability.Gaussian.Moments
@@ -5919,6 +5921,7 @@ public import CslibFrontier.Foundations.Probability.Gaussian.NoiseOperator
 public import CslibFrontier.Foundations.Probability.Gaussian.NoiseSemigroup
 public import CslibFrontier.Foundations.Probability.Gaussian.Periodization
 public import CslibFrontier.Foundations.Probability.Gaussian.Poisson
+public import CslibFrontier.Foundations.Probability.Gaussian.PolynomialDense
 public import CslibFrontier.Foundations.Probability.Gaussian.Projection
 public import CslibFrontier.Foundations.Probability.Gaussian.Quotient
 public import CslibFrontier.Foundations.Probability.Gaussian.Real
