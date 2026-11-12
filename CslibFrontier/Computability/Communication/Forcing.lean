@@ -19,9 +19,9 @@ Ignore the original message functions and let each player choose a child at thei
 input-dependent winning goals for both players into an actual communication protocol of the
 same depth: each player's new messages depend only on that player's input.
 
-This is the forcing step in [ChukhinKulikovMihajlinSmal2026], Lemma 5.1 and the protocol
-construction in Lemma 5.2 (PDF p. 10). Goals here are predicates on output labels;
-the paper uses predicates on
+This formalizes [ChukhinKulikovMihajlinSmal2026], Lemma 5.1 (printed p. 10; PDF p. 11),
+and the deterministic protocol construction in the proof of Lemma 5.2 (printed p. 11; PDF p. 12).
+Goals here are predicates on output labels; the paper uses predicates on
 leaf occurrences. `labelLeaves` supplies exactly these occurrence labels, reusing `leaf` and
 `leafOutput`.
 The large-rectangle probability bound and the main communication lower bounds are not proved here.

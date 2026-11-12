@@ -12,8 +12,8 @@ public import CslibFrontier.Computability.Communication.Operations
 /-!
 # Choosing one of distinct communication instances
 
-[ChukhinKulikovMihajlinSmal2026], Section 3.2 and Theorem 1.1 (PDF pp. 7 and 9),
-gives each player an
+[ChukhinKulikovMihajlinSmal2026], Definition 3.4 (printed p. 7; PDF p. 8) and the upper-bound
+proof of Theorem 1.1 (printed p. 9; PDF p. 10), give each player an
 injective tuple and asks for a coordinate and a valid answer there. `Relation` uses
 embeddings to enforce distinctness separately on the two sides. `atCoordinate` implements
 the source's upper bound by running a given protocol on one fixed coordinate.
