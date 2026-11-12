@@ -85,17 +85,12 @@ theorem PromiseProblem.SolvesWithBoundedError.solvedBy_majority {p : Polynomial 
       (2 ^ p.eval (enc a).length < 2 * acceptCount V a (p.eval (enc a).length))) := by
   constructor
   · intro a ha
-    have hyes := (h a).1 ha
+    have hyes := boundedErrorAt_true_iff.1 ((h a).1 ha)
     have hpos := Nat.one_le_two_pow (n := p.eval (enc a).length)
-    unfold BoundedErrorAt at hyes
-    rw [← acceptCount] at hyes
     simp only [decide_eq_true_eq]
     omega
   · intro a ha
-    have hno := (h a).2 ha
-    have hsum := acceptCount_add_card_filter_eq_false
-      (V := V) (a := a) (n := p.eval (enc a).length)
-    unfold BoundedErrorAt at hno
+    have hno := boundedErrorAt_false_iff.1 ((h a).2 ha)
     simp only [decide_eq_false_iff_not]
     omega
 

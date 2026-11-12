@@ -81,23 +81,16 @@ variable {α : Type*} {enc : α ↪ List Bool} {A : Set α} {μ μ' : α → ℕ
 /-- A decider within time `2 ^ (δ * μ a)` times a polynomial, for a measure `μ ≤ c * μ' + c`,
 decides within time `2 ^ (c * δ * μ' a)` times a polynomial. -/
 theorem DecidableInExpTime.mono_measure {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c) {δ : ℝ}
-    (hδ : 0 ≤ δ) (h : DecidableInExpTime A enc μ δ) : DecidableInExpTime A enc μ' (c * δ) := by
-  obtain ⟨e, h⟩ := h
-  refine ⟨e, h.mono ⌈(2 : ℝ) ^ (δ * c)⌉₊ (fun a => ?_) fun a => by positivity⟩
-  have h₂ := two_rpow_le_natCeil_mul_of_le_mul_add hδ (hμ a)
-  have h₃ := mul_le_mul_of_nonneg_right h₂ (by positivity :
-    (0 : ℝ) ≤ ((enc a).length + 1) ^ e)
-  have h₄ : (0 : ℝ) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.cast_nonneg _
-  nlinarith
+    (hδ : 0 ≤ δ) (h : DecidableInExpTime A enc μ δ) : DecidableInExpTime A enc μ' (c * δ) :=
+  let ⟨e, h⟩ := h
+  ⟨e, h.mono _ (fun a => two_rpow_mul_pow_le_natCeil_mul_add hδ (hμ a)) fun a => by positivity⟩
 
 /-- Subexponential time in a measure `μ ≤ c * μ' + c` gives subexponential time in `μ'`. So a lower
 bound for `μ'` gives the lower bound for `μ`. -/
 theorem DecidableInSubexpTime.mono_measure {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c)
-    (h : DecidableInSubexpTime A enc μ) : DecidableInSubexpTime A enc μ' := by
-  intro δ hδ
-  refine ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    (h : DecidableInSubexpTime A enc μ) : DecidableInSubexpTime A enc μ' := fun δ hδ =>
+  ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le c)
 
 end Measure
 
@@ -123,11 +116,8 @@ theorem DecidableInExpTime.of_reduction {f : α → β}
   -- run the reduction, then the decider on its output
   refine DecidableInExpTime.of_computableInO (hg.comp hf.inO) (fun a => (hfA a).trans (hgB (f a)))
     ⌈(1 + k * 2 ^ (δ * c) * (2 * l + 1) ^ e + k : ℝ)⌉₊ (d * (e + 1)) fun a => ?_
-  have hexp : (2 : ℝ) ^ (δ * μB (f a)) ≤ 2 ^ (δ * c) * 2 ^ (c * δ * μA a) := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have : (μB (f a) : ℝ) ≤ c * μA a + c := by exact_mod_cast hμ a
-    nlinarith
+  have hexp : (2 : ℝ) ^ (δ * μB (f a)) ≤ 2 ^ (δ * c) * 2 ^ (c * δ * μA a) :=
+    two_rpow_le_two_rpow_mul_of_le_mul_add hδ (hμ a)
   have key := reduction_add_time_le (P := ((encA a).length + 1 : ℝ) ^ d)
     (C := (2 : ℝ) ^ (δ * c))
     (one_le_pow₀ (le_add_of_nonneg_left (Nat.cast_nonneg _)))
@@ -143,11 +133,9 @@ decidable in subexponential time in `μA`. -/
 theorem DecidableInSubexpTime.of_reduction {f : α → β}
     (hf : ComputableInPolyTime f encA encB) (hfA : ∀ a, a ∈ A ↔ f a ∈ B) {c : ℕ}
     (hμ : ∀ a, μB (f a) ≤ c * μA a + c) (h : DecidableInSubexpTime B encB μB) :
-    DecidableInSubexpTime A encA μA := by
-  intro δ hδ
-  refine ((h (δ / (c + 1)) (by positivity)).of_reduction hf hfA hμ (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    DecidableInSubexpTime A encA μA := fun δ hδ =>
+  ((h (δ / (c + 1)) (by positivity)).of_reduction hf hfA hμ (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le c)
 
 /-- **Lower bounds from the exponential time hypothesis** [ImpagliazzoPaturiZane2001]
 [CyganEtAl2015, Chapter 14]. Under `ETH`, if `f` is computable in polynomial time and, on formulas
@@ -254,9 +242,7 @@ theorem DecidableInSubexpTime.of_expReduction {f : α → β} {m : α → ℕ}
     rfl
   have hexp : (2 : ℝ) ^ (δ * μB (f a)) ≤ 2 ^ (δ * c) * X₁ := by
     have hcδ : (c : ℝ) * δ ≤ ε / 2 := by
-      simp only [δ]
-      rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-      nlinarith
+      simpa only [δ, div_div] using natCast_mul_div_add_one_le (half_pos hε).le c
     rw [← Real.rpow_add (by norm_num)]
     refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
     have hμ' : (μB (f a) : ℝ) ≤ c * (m a * Nat.log 2 (m a) : ℕ) + c := by
