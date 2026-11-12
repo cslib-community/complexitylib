@@ -279,27 +279,26 @@ theorem WellPlaced.lookupEntry_eq_some_iff {U m : ℕ} {h₁ h₂ : Fin U → Fi
     lookupEntry h₁ h₂ tbl u = some e ↔ EntryIn tbl e ∧ e.key = u := by
   rw [hwp.entryIn_iff_home]
   unfold lookupEntry
+  have hsecond :
+      (match tbl.t2 (h₂ u) with
+        | some e₂ => if e₂.key = u then some e₂ else none
+        | none => none) = some e →
+        (tbl.t1 (h₁ e.key) = some e ∨ tbl.t2 (h₂ e.key) = some e) ∧ e.key = u := by
+    cases ht2 : tbl.t2 (h₂ u) with
+    | none => intro h; cases h
+    | some e₂ =>
+      dsimp only
+      split_ifs with hk₂
+      · intro h; injection h with h; subst h; exact ⟨Or.inr (by rw [hk₂]; exact ht2), hk₂⟩
+      · intro h; cases h
   constructor
   · cases ht1 : tbl.t1 (h₁ u) with
-    | none =>
-      cases ht2 : tbl.t2 (h₂ u) with
-      | none => intro h; cases h
-      | some e₂ =>
-        dsimp only
-        split_ifs with hk₂
-        · intro h; injection h with h; subst h; exact ⟨Or.inr (by rw [hk₂]; exact ht2), hk₂⟩
-        · intro h; cases h
+    | none => exact hsecond
     | some e₁ =>
       dsimp only
       split_ifs with hk₁
       · intro h; injection h with h; subst h; exact ⟨Or.inl (by rw [hk₁]; exact ht1), hk₁⟩
-      · cases ht2 : tbl.t2 (h₂ u) with
-        | none => intro h; cases h
-        | some e₂ =>
-          dsimp only
-          split_ifs with hk₂
-          · intro h; injection h with h; subst h; exact ⟨Or.inr (by rw [hk₂]; exact ht2), hk₂⟩
-          · intro h; cases h
+      · exact hsecond
   · rintro ⟨ht | ht, rfl⟩
     · rw [ht]; simp
     · rw [ht]
@@ -372,29 +371,19 @@ theorem putT1_entryIn_none {U m : ℕ} {h₁ : Fin U → Fin m} {tbl : PureTable
     {e : SlotEntry U} (hold : (putT1 h₁ tbl e).2 = none) (d : SlotEntry U) :
     EntryIn (putT1 h₁ tbl e).1 d ↔ EntryIn tbl d ∨ d = e := by
   have ht1_none : tbl.t1 (h₁ e.key) = none := hold
+  dsimp only [EntryIn, putT1]
+  rw [Function.exists_update_iff, Option.some.injEq]
   constructor
-  · rintro (⟨i, hi⟩ | ⟨i, hi⟩)
-    · dsimp only [putT1] at hi
-      by_cases hie : i = h₁ e.key
-      · subst hie; rw [Function.update_self] at hi
-        injection hi with hi; exact Or.inr hi.symm
-      · rw [Function.update_of_ne hie] at hi
-        exact Or.inl (Or.inl ⟨i, hi⟩)
-    · exact Or.inl (Or.inr ⟨i, hi⟩)
-  · rintro ((⟨i, hi⟩ | ⟨i, hi⟩) | hd)
-    · left
-      have hie : i ≠ h₁ e.key := by
+  · rintro ((hd | ⟨i, _, hi⟩) | hi)
+    · exact Or.inr hd.symm
+    · exact Or.inl (Or.inl ⟨i, hi⟩)
+    · exact Or.inl (Or.inr hi)
+  · rintro ((⟨i, hi⟩ | hi) | hd)
+    · have hie : i ≠ h₁ e.key := by
         intro h; subst h; rw [ht1_none] at hi; cases hi
-      refine ⟨i, ?_⟩
-      dsimp only [putT1]
-      rw [Function.update_of_ne hie]
-      exact hi
-    · exact Or.inr ⟨i, hi⟩
-    · subst hd
-      left
-      refine ⟨h₁ d.key, ?_⟩
-      dsimp only [putT1]
-      rw [Function.update_self]
+      exact Or.inl (Or.inr ⟨i, hie, hi⟩)
+    · exact Or.inr hi
+    · exact Or.inl (Or.inl hd.symm)
 
 theorem putT1_some_spec {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {tbl : PureTable U m}
     {e e₁ : SlotEntry U} (hwp : WellPlaced h₁ h₂ tbl) (hno : ¬ HasKey tbl e.key)
@@ -418,29 +407,21 @@ theorem putT1_some_spec {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {tbl : PureTab
         rw [hdk, hhome₁] at hi_eq
         exact hie hi_eq.symm
     · exact hwp.disjoint_keys (h₁ e.key) i e₁ d ht1_some hi hdk.symm
-  · constructor
-    · rintro ((⟨i, hi⟩ | ⟨i, hi⟩) | hd)
-      · dsimp only [putT1] at hi
-        by_cases hie : i = h₁ e.key
-        · subst hie; rw [Function.update_self] at hi
-          injection hi with hi; exact Or.inr hi.symm
-        · rw [Function.update_of_ne hie] at hi
-          exact Or.inl (Or.inl ⟨i, hi⟩)
-      · exact Or.inl (Or.inr ⟨i, hi⟩)
+  · dsimp only [EntryIn, putT1]
+    rw [Function.exists_update_iff, Option.some.injEq]
+    constructor
+    · rintro (((hd | ⟨i, _, hi⟩) | hi) | hd)
+      · exact Or.inr hd.symm
+      · exact Or.inl (Or.inl ⟨i, hi⟩)
+      · exact Or.inl (Or.inr hi)
       · subst hd
         exact Or.inl (Or.inl ⟨h₁ e.key, ht1_some⟩)
-    · rintro ((⟨i, hi⟩ | ⟨i, hi⟩) | hd)
+    · rintro ((⟨i, hi⟩ | hi) | hd)
       · by_cases hie : i = h₁ e.key
-        · subst hie; rw [ht1_some] at hi; injection hi with hi; exact Or.inr hi.symm
-        · refine Or.inl (Or.inl ⟨i, ?_⟩)
-          dsimp only [putT1]
-          rw [Function.update_of_ne hie]
-          exact hi
-      · exact Or.inl (Or.inr ⟨i, hi⟩)
-      · subst hd
-        refine Or.inl (Or.inl ⟨h₁ d.key, ?_⟩)
-        dsimp only [putT1]
-        rw [Function.update_self]
+        · subst hie; rw [ht1_some] at hi; exact Or.inr (Option.some.inj hi).symm
+        · exact Or.inl (Or.inl (Or.inr ⟨i, hie, hi⟩))
+      · exact Or.inl (Or.inr hi)
+      · exact Or.inl (Or.inl (Or.inl hd.symm))
 
 theorem putT2_wellPlaced {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {tbl : PureTable U m} {e : SlotEntry U}
     (hwp : WellPlaced h₁ h₂ tbl) (hno : ¬ HasKey tbl e.key) :
@@ -469,29 +450,19 @@ theorem putT2_entryIn_none {U m : ℕ} {h₂ : Fin U → Fin m} {tbl : PureTable
     {e : SlotEntry U} (hold : (putT2 h₂ tbl e).2 = none) (d : SlotEntry U) :
     EntryIn (putT2 h₂ tbl e).1 d ↔ EntryIn tbl d ∨ d = e := by
   have ht2_none : tbl.t2 (h₂ e.key) = none := hold
+  dsimp only [EntryIn, putT2]
+  rw [Function.exists_update_iff, Option.some.injEq]
   constructor
-  · rintro (⟨i, hi⟩ | ⟨i, hi⟩)
-    · exact Or.inl (Or.inl ⟨i, hi⟩)
-    · dsimp only [putT2] at hi
-      by_cases hie : i = h₂ e.key
-      · subst hie; rw [Function.update_self] at hi
-        injection hi with hi; exact Or.inr hi.symm
-      · rw [Function.update_of_ne hie] at hi
-        exact Or.inl (Or.inr ⟨i, hi⟩)
-  · rintro ((⟨i, hi⟩ | ⟨i, hi⟩) | hd)
-    · exact Or.inl ⟨i, hi⟩
-    · right
-      have hie : i ≠ h₂ e.key := by
+  · rintro (hi | (hd | ⟨i, _, hi⟩))
+    · exact Or.inl (Or.inl hi)
+    · exact Or.inr hd.symm
+    · exact Or.inl (Or.inr ⟨i, hi⟩)
+  · rintro ((hi | ⟨i, hi⟩) | hd)
+    · exact Or.inl hi
+    · have hie : i ≠ h₂ e.key := by
         intro h; subst h; rw [ht2_none] at hi; cases hi
-      refine ⟨i, ?_⟩
-      dsimp only [putT2]
-      rw [Function.update_of_ne hie]
-      exact hi
-    · subst hd
-      right
-      refine ⟨h₂ d.key, ?_⟩
-      dsimp only [putT2]
-      rw [Function.update_self]
+      exact Or.inr (Or.inr ⟨i, hie, hi⟩)
+    · exact Or.inr (Or.inl hd.symm)
 
 theorem putT2_some_spec {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {tbl : PureTable U m}
     {e e₂ : SlotEntry U} (hwp : WellPlaced h₁ h₂ tbl) (hno : ¬ HasKey tbl e.key)
@@ -515,29 +486,21 @@ theorem putT2_some_spec {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {tbl : PureTab
         have hi_eq := hwp.t2_home i d hi
         rw [hdk, hhome₂] at hi_eq
         exact hie hi_eq.symm
-  · constructor
-    · rintro ((⟨i, hi⟩ | ⟨i, hi⟩) | hd)
-      · exact Or.inl (Or.inl ⟨i, hi⟩)
-      · dsimp only [putT2] at hi
-        by_cases hie : i = h₂ e.key
-        · subst hie; rw [Function.update_self] at hi
-          injection hi with hi; exact Or.inr hi.symm
-        · rw [Function.update_of_ne hie] at hi
-          exact Or.inl (Or.inr ⟨i, hi⟩)
+  · dsimp only [EntryIn, putT2]
+    rw [Function.exists_update_iff, Option.some.injEq]
+    constructor
+    · rintro ((hi | (hd | ⟨i, _, hi⟩)) | hd)
+      · exact Or.inl (Or.inl hi)
+      · exact Or.inr hd.symm
+      · exact Or.inl (Or.inr ⟨i, hi⟩)
       · subst hd
         exact Or.inl (Or.inr ⟨h₂ e.key, ht2_some⟩)
-    · rintro ((⟨i, hi⟩ | ⟨i, hi⟩) | hd)
-      · exact Or.inl (Or.inl ⟨i, hi⟩)
+    · rintro ((hi | ⟨i, hi⟩) | hd)
+      · exact Or.inl (Or.inl hi)
       · by_cases hie : i = h₂ e.key
-        · subst hie; rw [ht2_some] at hi; injection hi with hi; exact Or.inr hi.symm
-        · refine Or.inl (Or.inr ⟨i, ?_⟩)
-          dsimp only [putT2]
-          rw [Function.update_of_ne hie]
-          exact hi
-      · subst hd
-        refine Or.inl (Or.inr ⟨h₂ d.key, ?_⟩)
-        dsimp only [putT2]
-        rw [Function.update_self]
+        · subst hie; rw [ht2_some] at hi; exact Or.inr (Option.some.inj hi).symm
+        · exact Or.inl (Or.inr (Or.inr ⟨i, hie, hi⟩))
+      · exact Or.inl (Or.inr (Or.inl hd.symm))
 
 /-- Run up to `fuel` two-table cuckoo displacement rounds starting with displaced entry `e`. -/
 @[expose]
