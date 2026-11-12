@@ -2238,6 +2238,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.DensityBranchCo
 public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
 public import CslibFrontier.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
+public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
 public import CslibFrontier.Computability.Complexity.FineGrained.GapETH
 public import CslibFrontier.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.GraphProblems
