@@ -32,20 +32,31 @@ whose move patterns, move lengths, and coin counts vary polynomially with the in
 `IPGameClass enc π` embeds into `IPPolyGameClass enc (fun _ => π)` and `IP[k]` embeds into
 `IPPolyRounds enc (fun _ => k)`.
 
-The main theorem is Goldwasser–Sipser [GoldwasserSipser1986, §3] for polynomially many rounds
+The main theorem is Goldwasser–Sipser [GoldwasserSipser1986] for polynomially many rounds
 (`Cslib.Complexity.IPPolyRounds_subset_AMPolyRounds`): `IP[k(n)] ⊆ AM[k(n) + 2]`, without relying
-on round collapse (`AMk_eq_AM`, which is unavailable when `k(n)` grows with `n`):
+on round collapse (`AMk_eq_AM`, which is unavailable when `k(n)` grows with `n`).
 
+**Source mapping to [GoldwasserSipser1986]:**
+* Protocol definitions appear in §3 (p. 63).
+* The theorem and proof map to §4.2 (printed pp. 64–67).
+* In GS1986, a "round" (or "message") is one exchange; we map this to `q(n)` query/reply exchanges
+  in the oracle model, which expands to `k(n) = 2 * q(n)` alternating individual moves.
+* We specify a concrete two-sided gap bounded away from 1/2, supported by uniform unary-computable
+  shape and coin bounds.
+* The specific parallel repetition count `R(n) = 72 * c(n) * W(n)` arithmetic is this
+  implementation's
+  explicit construction to beat the `μ ^ c(n)` soundness factor of
+  `Emulation.three_mul_value_le_one`
+  uniformly for all `n` (`Cslib.Complexity.Emulation.six_mul_pow_mul_two_pow_le_three_pow`).
+
+Proof sketch:
 1. When `k(n)` is odd, the prover never sees the trailing verifier move, so folding that move into
    the verifier's final decision preserves `IPGame.bestCount`
    (`Cslib.Complexity.IPGame.bestCount_append_verifier`) and reduces the pattern to even length.
 2. Emulating the even-length game appended with a final coin-revealing verifier move and merging
    adjacent Merlin moves (`Cslib.Complexity.AMGame.mergeMerlin`), plus a dummy zero-bit Arthur
    move in the odd case, gives `alternatingMoves .arthur (k(n) + 2)` directly.
-3. With `c(n) ≤ W(n)` and `R(n) = 72 * c(n) * W(n)`, parallel repetition of `R(n)` copies beats
-   the `μ ^ c(n)` soundness factor of `Emulation.three_mul_value_le_one` uniformly for all `n`
-   (`Cslib.Complexity.Emulation.six_mul_pow_mul_two_pow_le_three_pow`).
-4. Dynamic `agrees`, `repeatMsg`, `repeatDec`, `Emulation.check`, and `revealPayoff` run in
+3. Dynamic `agrees`, `repeatMsg`, `repeatDec`, `Emulation.check`, and `revealPayoff` run in
    polynomial time via `foldlWith_spec`.
 
 ## Main definitions
@@ -360,7 +371,7 @@ theorem bestCount_append_verifier {ρ : ℕ} (msg : BitString ρ → ℕ → Lis
 /-! ### Dynamic polynomial-time `agrees`, `repeatMsg`, and `repeatDec` -/
 
 /-- State for folding `agrees` across the transcript. -/
-structure AgreesState where
+private structure AgreesState where
   /-- Current message index. -/
   j : ℕ
   /-- Protocol parameters. -/
@@ -372,7 +383,7 @@ structure AgreesState where
   deriving Repr, DecidableEq
 
 /-- Encoding for `AgreesState`. -/
-enc_structure encAgreesState : AgreesState where
+private enc_structure encAgreesState : AgreesState where
   j : encUnary, p : encBits, t : encBits, ok : encBool
 
 private def agreesStep (msg : α × List Bool × ℕ × List Bool → List Bool)
@@ -698,7 +709,7 @@ theorem computableInPolyTime_shape_dyn {γ : Type} {encIn : γ ↪ List Bool}
     obtain ⟨_ | _, n⟩ := y <;> simp [shape, stepFn, ih]
 
 /-- State for folding `check` across the transcript. -/
-structure CheckState where
+private structure CheckState where
   /-- Current check index. -/
   κ : ℕ
   /-- Protocol parameters. -/
@@ -710,7 +721,8 @@ structure CheckState where
   deriving Repr, DecidableEq
 
 /-- Encoding for `CheckState`. -/
-enc_structure encCheckState : CheckState where κ : encUnary, p : encBits, w : encBits, ok : encBool
+private enc_structure encCheckState : CheckState where
+  κ : encUnary, p : encBits, w : encBits, ok : encBool
 
 private def checkStep (B Z K : ℕ) (st : CheckState) (move : IPMove × ℕ) : CheckState :=
   let {κ, p, w, ok} := st
@@ -960,21 +972,30 @@ theorem computableInPolyTime_revealPayoff_dyn {γ : Type} {enc : α ↪ List Boo
   have hd := hdec.comp (ha.prod (hc.prod ht))
   exact (ComputableInPolyTime.bool_and' hag hd).of_enc_eq fun _ => rfl
 
-/-- Collapsing adjacent Merlin moves in `EncAMShape` is polynomial-time. -/
-private abbrev MergeState := Option ℕ × List (AMMove × ℕ)
+/-- State for folding adjacent Merlin moves in AM games. -/
+private structure MergeState where
+  /-- Pending accumulated Merlin length. -/
+  pending : Option ℕ
+  /-- Reversed compacted shape so far. -/
+  history : List (AMMove × ℕ)
+  deriving Repr, DecidableEq
+
+/-- Encoding for `MergeState`. -/
+private enc_structure encMergeState : MergeState where
+  pending : (encOption encUnary), history : encAMShape
 
 private def mergeStep (st : MergeState) (x : AMMove × ℕ) : MergeState :=
   match x.1 with
-  | .merlin => (some (st.1.getD 0 + x.2), st.2)
+  | .merlin => MergeState.mk (some (st.pending.getD 0 + x.2)) st.history
   | .arthur =>
-    match st.1 with
-    | none => (none, (.arthur, x.2) :: st.2)
-    | some m => (none, (.arthur, x.2) :: (.merlin, m) :: st.2)
+    match st.pending with
+    | none => (MergeState.mk none ((.arthur, x.2) :: st.history))
+    | some m => (MergeState.mk none ((.arthur, x.2) :: (.merlin, m) :: st.history))
 
 private def mergeFlush (st : MergeState) : List (AMMove × ℕ) :=
-  (match st.1 with
-    | none => st.2
-    | some m => (.merlin, m) :: st.2).reverse
+  (match st.pending with
+    | none => st.history
+    | some m => (.merlin, m) :: st.history).reverse
 
 private theorem mergeMerlin_append_arthur_cons (pref : List (AMMove × ℕ)) (n : ℕ)
     (g : List (AMMove × ℕ)) :
@@ -1022,7 +1043,7 @@ private theorem mergeMerlin_eq_mergeFlush_aux (g acc : List (AMMove × ℕ))
     ∀ p : Option ℕ,
       AMGame.mergeMerlin (acc.reverse ++
         match p with | none => g | some m => (.merlin, m) :: g) =
-      mergeFlush (g.foldl mergeStep (p, acc)) := by
+      mergeFlush (g.foldl mergeStep (MergeState.mk p acc)) := by
   induction g generalizing acc with
   | nil =>
     intro p
@@ -1083,24 +1104,26 @@ private theorem mergeMerlin_eq_mergeFlush_aux (g acc : List (AMMove × ℕ))
         exact hmer.trans (by simpa [List.foldl_cons, mergeStep] using ih')
 
 private theorem mergeMerlin_eq_mergeFlush (g : List (AMMove × ℕ)) :
-    AMGame.mergeMerlin g = mergeFlush (g.foldl mergeStep (none, [])) :=
+    AMGame.mergeMerlin g = mergeFlush (g.foldl mergeStep (MergeState.mk none [])) :=
   mergeMerlin_eq_mergeFlush_aux g [] rfl (by simp) none
 
 /-- `AMGame.mergeMerlin` on a polynomial-time shape is polynomial-time. -/
 theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
     {g : γ → List (AMMove × ℕ)} (hg : ComputableInPolyTime g encIn encAMShape) :
     ComputableInPolyTime (fun x => AMGame.mergeMerlin (g x)) encIn encAMShape := by
-  let encSt : MergeState ↪ List Bool := encPair (encOption encUnary) encAMShape
+  let encSt : MergeState ↪ List Bool := encMergeState
   let encMe : ((Bool × MergeState) × (AMMove × ℕ)) ↪ List Bool :=
     encFoldStep encBool encSt (encPair encAMMove encUnary)
   have hstep : ComputableInPolyTime
       (fun q : (Bool × MergeState) × (AMMove × ℕ) => mergeStep q.1.2 q.2)
       encMe encSt := by
     have hopt : ComputableInPolyTime
-        (fun q : (Bool × MergeState) × (AMMove × ℕ) => q.1.2.1) encMe (encOption encUnary) := by
+        (fun q : (Bool × MergeState) × (AMMove × ℕ) => q.1.2.pending)
+          encMe (encOption encUnary) :=
+      by
       fun_prop
     have hacc : ComputableInPolyTime
-        (fun q : (Bool × MergeState) × (AMMove × ℕ) => q.1.2.2) encMe encAMShape := by
+        (fun q : (Bool × MergeState) × (AMMove × ℕ) => q.1.2.history) encMe encAMShape := by
       fun_prop
     have hm : ComputableInPolyTime
         (fun q : (Bool × MergeState) × (AMMove × ℕ) => q.2.1) encMe encAMMove := by
@@ -1112,16 +1135,18 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
         (fun q : (Bool × MergeState) × (AMMove × ℕ) =>
           mergeStep q.1.2 (.arthur, q.2.2)) encMe encSt := by
       have hnone : ComputableInPolyTime
-          (fun q : (Bool × MergeState) × (AMMove × ℕ) => (none, (.arthur, q.2.2) :: q.1.2.2))
+          (fun q : (Bool × MergeState) × (AMMove × ℕ) => ⟨none, (.arthur, q.2.2) :: q.1.2.history⟩)
           encMe encSt := by
         have he : ComputableInPolyTime (fun q : (Bool × MergeState) × (AMMove × ℕ) =>
             (AMMove.arthur, q.2.2)) encMe (encPair encAMMove encUnary) :=
           (ComputableInPolyTime.const (encOut := encAMMove) AMMove.arthur).prod hn
-        exact ((ComputableInPolyTime.const (none : Option ℕ)).prod (he.cons' hacc)).of_enc_eq
+        exact (
+        encMergeState_mk_polyTime (ComputableInPolyTime.const (none : Option ℕ))
+            (he.cons' hacc)).of_enc_eq
           fun _ => rfl
       have hsome : ComputableInPolyTime
           (fun p : ((Bool × MergeState) × (AMMove × ℕ)) × ℕ =>
-            (none, (.arthur, p.1.2.2) :: (.merlin, p.2) :: p.1.1.2.2))
+            ⟨none, (.arthur, p.1.2.2) :: (.merlin, p.2) :: p.1.1.2.history⟩)
           (encPair encMe encUnary) encSt := by
         have hq : ComputableInPolyTime
             (fun p : ((Bool × MergeState) × (AMMove × ℕ)) × ℕ => p.1.2.2)
@@ -1132,7 +1157,7 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
             (encPair encMe encUnary) encUnary := by
           fun_prop
         have hacc2 : ComputableInPolyTime
-            (fun p : ((Bool × MergeState) × (AMMove × ℕ)) × ℕ => p.1.1.2.2)
+            (fun p : ((Bool × MergeState) × (AMMove × ℕ)) × ℕ => p.1.1.2.history)
             (encPair encMe encUnary) encAMShape := by
           fun_prop
         have eA : ComputableInPolyTime
@@ -1143,17 +1168,18 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
             (fun p : ((Bool × MergeState) × (AMMove × ℕ)) × ℕ => (AMMove.merlin, p.2))
             (encPair encMe encUnary) (encPair encAMMove encUnary) :=
           (ComputableInPolyTime.const (encOut := encAMMove) AMMove.merlin).prod hm2
-        exact ((ComputableInPolyTime.const (none : Option ℕ)).prod
+        exact (encMergeState_mk_polyTime (ComputableInPolyTime.const (none : Option ℕ))
           (eA.cons' (eM.cons' hacc2))).of_enc_eq fun _ => rfl
       exact (ComputableInPolyTime.optionElimWithInput hopt hnone hsome).of_enc_eq fun q => by
         dsimp only [mergeStep]
-        cases q.1.2.1 <;> rfl
+        cases q.1.2.pending <;> rfl
     have hmBranch : ComputableInPolyTime
         (fun q : (Bool × MergeState) × (AMMove × ℕ) =>
           mergeStep q.1.2 (.merlin, q.2.2)) encMe encSt := by
       have hcur := ComputableInPolyTime.optionGetDWithInput hopt (ComputableInPolyTime.const 0)
       have hsum := ComputableInPolyTime.unary_add' hcur hn
-      exact ((ComputableInPolyTime.optionSome encUnary).comp hsum |>.prod hacc).of_enc_eq
+      exact (encMergeState_mk_polyTime ((
+        ComputableInPolyTime.optionSome encUnary).comp hsum) hacc).of_enc_eq
         fun _ => rfl
     exact (computableInPolyTime_amMoveCases
       (f := fun q m => mergeStep q.1.2 (m, q.2.2)) hm haBranch hmBranch).of_enc_eq fun q => by
@@ -1161,11 +1187,12 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
   obtain ⟨c, d, hglen⟩ := hg.polyBounded_length.exists_le
   have hspec := ComputableInPolyTime.foldlWith_spec
     (encP := encBool) (encB := encSt) (encA := encPair encAMMove encUnary) (encL := encAMShape)
-    (par := fun _ => false) (list := g) (init := fun _ => (none, []))
+    (par := fun _ => false) (list := g) (init := fun _ => MergeState.mk none [])
     (step := fun _ => mergeStep) (ComputableInPolyTime.const false) hg
-    (ComputableInPolyTime.const (none, [])) hstep
-    (fun _ pre st => st.1.getD 0 + AMGame.transcriptLength st.2 ≤ AMGame.transcriptLength pre ∧
-      (st.2.length ≤ 2 * pre.length))
+    (ComputableInPolyTime.const (MergeState.mk none [])) hstep
+    (fun _ pre st => st.pending.getD 0 + AMGame.transcriptLength st.history ≤
+        AMGame.transcriptLength pre ∧
+      (st.history.length ≤ 2 * pre.length))
     (fun _ => ⟨le_rfl, le_rfl⟩)
     (fun _ pre st val _ hst => by
       rcases st with ⟨opt, acc⟩
@@ -1198,14 +1225,15 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
         SizedListEncoding.length_le (encA := encPair encAMMove encUnary) (encL := encAMShape) _
       have hgT : AMGame.transcriptLength (g x) ≤ (encAMShape (g x)).length :=
         AMGame.transcriptLength_le_length_encAMShape (g x)
-      have hSum : st.1.getD 0 + AMGame.transcriptLength st.2 ≤ c * ((encIn x).length + 1) ^ d :=
+      have hSum : st.pending.getD 0 + AMGame.transcriptLength st.history ≤
+        c * ((encIn x).length + 1) ^ d :=
         hst.1.trans (hsubT.trans (hgT.trans (hglen x)))
-      have hLen : st.2.length ≤ 2 * (c * ((encIn x).length + 1) ^ d) :=
+      have hLen : st.history.length ≤ 2 * (c * ((encIn x).length + 1) ^ d) :=
         hst.2.trans (Nat.mul_le_mul_left 2 ((hsubL.trans hgL).trans (hglen x)))
-      have hAccLen : (encAMShape st.2).length ≤
-          8 * st.2.length + 2 * AMGame.transcriptLength st.2 := by
+      have hAccLen : (encAMShape st.history).length ≤
+          8 * st.history.length + 2 * AMGame.transcriptLength st.2 := by
         clear hst hpre hsubL hsubT hgL hgT hSum hLen
-        induction st.2 with
+        induction st.history with
         | nil => simp [AMGame.transcriptLength]
         | cons y ys ih =>
           obtain ⟨m, n⟩ := y
@@ -1214,34 +1242,35 @@ theorem computableInPolyTime_mergeMerlin {γ : Type} {encIn : γ ↪ List Bool}
             hm1, encUnary_apply, List.length_replicate, List.length_cons, AMGame.transcriptLength,
             List.map_cons, List.sum_cons] at ih ⊢
           omega
-      have hOptLen : (encOption encUnary st.1).length ≤ 1 + st.1.getD 0 := by
-        cases st.1 with
+      have hOptLen : (encOption encUnary st.pending).length ≤ 1 + st.pending.getD 0 := by
+        cases st.pending with
         | none => simp
         | some m => simp
       have hpow : 1 ≤ ((encIn x).length + 1) ^ d := Nat.one_le_pow _ _ (Nat.succ_pos _)
-      simp only [encSt, length_encPair]
+      simp only [encSt, encMergeState_apply, length_encPair]
       nlinarith)
   have hst := hspec.1
   have hoptOut : ComputableInPolyTime
-      (fun x => ((g x).foldl mergeStep (none, [])).1) encIn (encOption encUnary) :=
+      (fun x => ((g x).foldl mergeStep (MergeState.mk none [])).pending)
+        encIn (encOption encUnary) :=
     (ComputableInPolyTime.fst _ _).comp hst
   have haccOut : ComputableInPolyTime
-      (fun x => ((g x).foldl mergeStep (none, [])).2) encIn encAMShape :=
+      (fun x => ((g x).foldl mergeStep (MergeState.mk none [])).history) encIn encAMShape :=
     (ComputableInPolyTime.snd _ _).comp hst
   have hpreRev : ComputableInPolyTime
-      (fun x => match ((g x).foldl mergeStep (none, [])).1 with
-        | none => ((g x).foldl mergeStep (none, [])).2
-        | some m => (.merlin, m) :: ((g x).foldl mergeStep (none, [])).2)
+      (fun x => match ((g x).foldl mergeStep (MergeState.mk none [])).pending with
+        | none => ((g x).foldl mergeStep (MergeState.mk none [])).history
+        | some m => (.merlin, m) :: ((g x).foldl mergeStep (MergeState.mk none [])).history)
       encIn encAMShape := by
     have eM : ComputableInPolyTime (fun p : γ × ℕ => (AMMove.merlin, p.2))
         (encPair encIn encUnary) (encPair encAMMove encUnary) :=
       (ComputableInPolyTime.const AMMove.merlin).prod (.snd _ _)
     have hcons : ComputableInPolyTime
-        (fun p : γ × ℕ => (AMMove.merlin, p.2) :: ((g p.1).foldl mergeStep (none, [])).2)
+        (fun p : γ × ℕ => (AMMove.merlin, p.2) :: ((g p.1).foldl mergeStep ⟨none, []⟩).history)
         (encPair encIn encUnary) encAMShape :=
       (eM.cons' (haccOut.comp (.fst _ _))).of_enc_eq fun _ => rfl
     exact (ComputableInPolyTime.optionElimWithInput hoptOut haccOut hcons).of_enc_eq fun x => by
-      cases ((g x).foldl mergeStep (none, [])).1 <;> rfl
+      cases ((g x).foldl mergeStep (MergeState.mk none [])).pending <;> rfl
   refine (computableInPolyTime_listReverseWithInput hpreRev).of_enc_eq fun x =>
     congrArg encAMShape ?_
   simp only [mergeFlush, mergeMerlin_eq_mergeFlush (g x)]
