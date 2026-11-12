@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Gadget
+public import CslibFrontier.Crypto.Computational.LWE.Decoding
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 /-!
@@ -50,18 +51,15 @@ def encryptionError {ι κ : Type*} [Fintype κ] (R : Matrix ι κ Bool)
 /-- Each fresh error is bounded by the sum of the original integer error magnitudes. -/
 theorem encryptionError_natAbs_le_sum {ι κ : Type*} [Fintype κ]
     (R : Matrix ι κ Bool) (error : κ → ℤ) (i : ι) :
-    (encryptionError R error i).natAbs ≤ ∑ j, (error j).natAbs := by
-  change (∑ j, ((R i j).toNat : ℤ) * error j).natAbs ≤ _
-  refine (Int.natAbs_sum_le _ _).trans (sum_le_sum fun j _ => ?_)
-  cases R i j <;> simp
+    (encryptionError R error i).natAbs ≤ ∑ j, (error j).natAbs :=
+  LWE.natAbs_binarySum_le_sum (R i) error
 
 /-- A uniform bound on the input errors gives the usual fresh-encryption noise bound. -/
 theorem encryptionError_natAbs_le {ι κ : Type*} [Fintype κ]
     (R : Matrix ι κ Bool) (error : κ → ℤ) {bound : ℕ}
     (herror : ∀ j, (error j).natAbs ≤ bound) (i : ι) :
-    (encryptionError R error i).natAbs ≤ Fintype.card κ * bound := by
-  refine (encryptionError_natAbs_le_sum R error i).trans ?_
-  simpa using sum_le_sum (s := univ) (fun j _ => herror j)
+    (encryptionError R error i).natAbs ≤ Fintype.card κ * bound :=
+  LWE.natAbs_binarySum_le (R i) error herror
 
 /-- Casting the integer subset sums agrees with the modular matrix computation. -/
 theorem bitMatrix_mulVec_intCast {ι κ : Type*} [Fintype κ] (w : ℕ)

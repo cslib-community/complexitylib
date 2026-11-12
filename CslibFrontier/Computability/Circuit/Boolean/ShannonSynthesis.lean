@@ -104,8 +104,7 @@ theorem bound_le (hn : 16 ≤ n) :
   have hquarter : 4 * Nat.log 2 n ≤ n :=
     (four_mul_le_two_pow hlog).trans (Nat.pow_log_le_self 2 (by lia))
   have hexponent : 2 ^ addressWidth n + addressWidth n + (Nat.log 2 n + 1) ≤ n := by
-    dsimp only [addressWidth] at haddr ⊢
-    lia
+    grind [addressWidth]
   have hlibrary : (2 ^ (2 ^ addressWidth n) * 2 ^ addressWidth n) * n ≤ 2 ^ n := calc
     _ ≤ (2 ^ (2 ^ addressWidth n) * 2 ^ addressWidth n) * 2 ^ (Nat.log 2 n + 1) :=
       Nat.mul_le_mul_left _ (Nat.lt_pow_succ_log_self (by decide) n).le

@@ -109,9 +109,8 @@ example (T : ℕ) : ∃ out : Circuit signature 1 1,
       out.eval interpretation (fun _ => x.down) = fun _ => (id^[T] x).down) ∧
     out.size ≤ 40000 * powerBudget 1 0 2 1 := by
   simpa using fixed_power_encoded (n := 1) id Finset.univ
-    (fun (x : ULift.{1} Bool) (_ : Fin 1) => x.down)
-    (fun _ _ _ _ h => ULift.ext (congrFun h 0)) (Circuit.id signature 1)
-    (fun _ _ => Finset.mem_univ _) (fun _ _ => rfl) T 1 one_pos (by decide)
+    (fun (x : ULift.{1} Bool) (_ : Fin 1) => x.down) (Circuit.id signature 1)
+    (fun _ _ => Finset.mem_univ _) (fun _ _ => rfl) T 1 one_pos
 
 /-- Negation as a permutation of one-bit states. -/
 private def flipPerm : Equiv.Perm (BitString 1) where

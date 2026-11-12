@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import CslibFrontier.Computability.Communication.Rectangle
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Map
 
 /-!
@@ -294,8 +295,7 @@ theorem isCorrect_download (n : ℕ) : (download n).IsCorrect :=
 
 theorem isPrivate_download (n : ℕ) : (download n).IsPrivate :=
   (download n).isPrivate_iff.mpr fun x i i' => by
-    simp only [transcript, coins, download, ProbComp.eval_map, ProbComp.eval_bind,
-      ProbComp.eval_pure, PMF.pure_bind, PMF.pure_map]
+    simp only [pmf_norm, transcript, coins, download]
     exact congrArg PMF.pure
       (leaf_aliceSend_output n _ (fun (x : BitString n) (ic : Fin n × Unit) => x ic.1) _ _ _)
 

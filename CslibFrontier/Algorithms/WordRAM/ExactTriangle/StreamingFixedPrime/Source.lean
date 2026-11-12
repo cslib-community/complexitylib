@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Loop
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Cost
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.First
+import CslibFrontier.Foundations.Data.List.GetD
 
 /-!
 # Complete box-backed fixed-prime execution with dirty source memory
@@ -91,12 +92,9 @@ theorem exec_source {w m n g p A : ℕ} (values : List ℤ)
   have hmod := hmag.of_natAbs_le (show (p : ℤ).natAbs ≤ A + p + 1 by
     simp only [Int.natAbs_natCast]; omega)
   have hvalues (q : ℕ) (hq : q < 3 * (n * n)) : GenericRAM.Signed.Fits
-      (Nat.clog 2 (PreparationInput.envelope n (D m) g p A) + 1) (V q) := by
-    have hq' : q < values.length := by omega
-    have hm : values.getD q 0 ∈ values := by
-      rw [List.getD_eq_getElem _ _ hq']
-      exact List.getElem_mem hq'
-    exact hmag.of_natAbs_le ((hv _ hm).trans (by omega : A ≤ A + p + 1))
+      (Nat.clog 2 (PreparationInput.envelope n (D m) g p A) + 1) (V q) :=
+    hmag.of_natAbs_le ((hv (values.getD q 0) (List.getD_mem 0 (by omega))).trans
+      (by omega : A ≤ A + p + 1))
   obtain ⟨a, _, hout, b, hb, bn, bD, bp, bB, bH, bK, bd, bo, bz, bt, bh, bs, b1, b3,
       bL, bR, bmem, bframe⟩ := Instances.exec_at_with_prefix n (D m) g p V a₀
     (by simpa [a₀, canonical, PreparationInput.input, Data.init] using header 1 (by omega))

@@ -122,6 +122,20 @@ example (x y : M) (h : (complementSize.unitStructure M).RelMap sizedGraph.adj ![
   fo_simp at h
   exact h
 
+/-- A discharger passes through to `simp`: the side condition `1 < n` needs `omega`. -/
+example (x : Fin 2 → M) (n : ℕ) (hn : 2 < n)
+    (h : ∀ k, 1 < k → (RelMap sizedGraph.size ![x 1] ↔ k ≠ 0)) :
+    (rel₁ sizedGraph.size 1 : sizedGraph.Formula (Fin 2)).Realize x ↔ n ≠ 0 := by
+  fail_if_success (fo_simp [h n]; done)
+  fo_simp (disch := omega) [h n]
+
+/-- A configuration passes through to `simp`. -/
+example (x : Fin 2 → M) :
+    ((rel₁ sizedGraph.size 0).imp (rel₁ sizedGraph.size 0) :
+      sizedGraph.Formula (Fin 2)).Realize x := by
+  fail_if_success (fo_simp; done)
+  fo_simp +contextual
+
 /-- The relations of a composite are those of the iterated interpretation. -/
 example (x y : (complementEdges.comp complementSize).Model M) :
     RelMap sizedGraph.adj ![x, y] ↔

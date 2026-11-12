@@ -20,6 +20,8 @@ transported along ring homomorphisms, and they lift back along homomorphisms ref
 
 * `Cslib.Circuits.Rational.Formula.Eval.unique`: a formula has at most one value.
 * `Cslib.Circuits.Rational.Formula.Eval.map`: values are mapped by ring homomorphisms.
+* `Cslib.Circuits.Rational.Formula.Eval.map_algebraMap`: values map into a `ℚ`-algebra
+  under `algebraMap ℚ _`.
 * `Cslib.Circuits.Rational.Formula.Eval.lift`: values lift along homomorphisms reflecting units.
 * `Cslib.Circuits.Rational.Formula.Eval.unit_of_division_lift`: a nonzero value mapped out of a
   division ring is a unit.
@@ -32,7 +34,7 @@ transported along ring homomorphisms, and they lift back along homomorphisms ref
   [Schlesinger2026RationalHitting] at revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 
@@ -80,6 +82,14 @@ theorem Eval.map {c : ℚ →+* R} {X : Fin n → R} {h : Formula n} {a : R}
   | inv g ih =>
     obtain ⟨b, hb, hba, hab⟩ := eval_inv_iff.mp ha
     exact .inv (ih hb) (by rw [← map_mul, hba, map_one]) (by rw [← map_mul, hab, map_one])
+
+/-- Mapping a rational formula evaluation along a ring homomorphism into a `ℚ`-algebra gives
+evaluation relative to `algebraMap ℚ _`. -/
+theorem Eval.map_algebraMap [Algebra ℚ S] {c : ℚ →+* R} {X : Fin n → R} {h : Formula n}
+    {a : R} (ha : h.Eval c X a) (f : R →+* S) :
+    h.Eval (algebraMap ℚ S) (fun i => f (X i)) (f a) := by
+  have hh := ha.map f
+  rwa [RingHom.ext_rat (f.comp c) (algebraMap ℚ S)] at hh
 
 /-- Defined evaluations lift through a homomorphism reflecting units. In particular this handles
 every inverse occurrence before considering the root. -/

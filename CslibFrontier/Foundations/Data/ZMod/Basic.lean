@@ -26,7 +26,7 @@ and equivalence of list range sums with residue sums.
 * `ZMod.sum_range_eq_sum_zmod`: a sum over `List.range m` is a sum over `ZMod m`.
 -/
 
-@[expose] public section
+public section
 
 namespace ZMod
 

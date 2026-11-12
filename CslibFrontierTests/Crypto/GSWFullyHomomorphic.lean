@@ -40,7 +40,7 @@ example {budget : ℕ → ℕ} (hbudget : ComputableInPolyTime budget encUnary e
 
 /-- Under decision LWE alone, one leveled scheme evaluates the compiled NAND circuit, whose
 depth is two, on all supported fresh encryptions. -/
-example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k))) :
+example (hLWE : DecisionLWE dimension samples width (fun k => LWE.noiseLaw (width k) (noise k))) :
     ∃ budget : ℕ → ℕ, ∀ k keys,
       keys ∈ (ProbComp.eval ((Leveled.scheme decryptionCircuits budget).keyGen k)).support →
       ∀ a b inputs, (Leveled.scheme decryptionCircuits budget).FreshInputs k keys.1 [a, b] inputs →
@@ -59,7 +59,7 @@ example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k)
 /-- The schemes for two different depth families share one decryption algorithm, computed by one
 uniformly generated polynomial-size circuit family chosen before either depth, as in Gentry's
 Definition 3. -/
-example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k))) :
+example (hLWE : DecisionLWE dimension samples width (fun k => LWE.noiseLaw (width k) (noise k))) :
     ∃ circuits : ∀ k, Circuit Boolean.signature
         ((3 * secretWidth k + 1) + (ciphertextWidth k + 1)) 1,
       ComputableInPolyTime
@@ -84,7 +84,7 @@ example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k)
 
 /-- With the additional circular-security premise, the fixed-key scheme permits the NAND circuit
 at every security parameter and evaluates it correctly, with no depth budget in key generation. -/
-example (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k)))
+example (hLWE : DecisionLWE dimension samples width (fun k => LWE.noiseLaw (width k) (noise k)))
     (hcircular : Encryption.CircularSecure scheme.keyGen scheme.encrypt) (k : ℕ)
     (keys : List Bool × List Bool)
     (hkeys : keys ∈ (ProbComp.eval ((FixedKey.scheme decryptionCircuits).keyGen k)).support)

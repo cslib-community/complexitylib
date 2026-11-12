@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Bits
 public import CslibFrontier.Foundations.Data.BitString.Counter
 
+import CslibFrontier.Computability.WordRAM.SymbolicExec
 /-!
 # Word RAMs simulate multi-tape Turing machines
 
@@ -452,10 +453,6 @@ structure Sim (e : Q ≃ Fin m) {inp : List Bool} (x : Data (regs k))
 /-- Discharge a disequality of registers. -/
 local macro "reg_ne" : tactic => `(tactic| (simp only [ne_eq, Fin.ext_iff] at *; omega))
 
-/-- Simplify reads of updated registers and memory. -/
-local macro "reg_simp" : tactic => `(tactic|
-  simp (disch := reg_ne) only [Data.set_regs, Data.set_mem, Data.write_regs, Data.write_mem,
-    Function.update_self, Function.update_of_ne])
 
 section Pieces
 
@@ -489,11 +486,11 @@ private theorem Sim.set_scratch {inp : List Bool} {x : Data (regs k)} {c : Cfg k
     (h : Sim e x c) {d : Fin (regs k)} (hd : d = rTmp ∨ d = rCur) (v : ℕ) :
     Sim e (x.set d v) c := by
   rcases hd with rfl | rfl <;>
-  exact { consts := h.consts.of_eq fun d _ _ _ h₁ h₂ _ _ => by reg_simp
-          state := by reg_simp; exact h.state
-          head := by reg_simp; exact h.head
-          val := by reg_simp; exact h.val
-          pow := by reg_simp; exact h.pow
+  exact { consts := h.consts.of_eq fun d _ _ _ h₁ h₂ _ _ => by wram_simp
+          state := by wram_simp; exact h.state
+          head := by wram_simp; exact h.head
+          val := by wram_simp; exact h.val
+          pow := by wram_simp; exact h.pow
           tapes := h.tapes.set (by simp) v
           input := h.input }
 
@@ -510,13 +507,13 @@ private theorem dispatch_spec {reg : Fin (regs k)} (hreg : reg ≠ rTmp)
     by_cases h : v = N
     · subst h
       refine ((execWithin_const hfit).seq (ExecWithin.branch_pos ?_ hbody)).mono (by omega)
-      simp only [Cond.holds_eq]; reg_simp; exact hv
+      simp only [Cond.holds_eq]; wram_simp; exact hv
     · have hset : (x.set rTmp N).set rTmp v = x.set rTmp v := by
         ext <;> simp [Data.set, Function.update_idem]
       have hrest := dispatch_spec hreg (N := N) (x := x.set rTmp N)
-        (by reg_simp; exact hv) (by omega) (by omega) (by rwa [hset])
+        (by wram_simp; exact hv) (by omega) (by omega) (by rwa [hset])
       refine ((execWithin_const hfit).seq (ExecWithin.branch_neg ?_ hrest)).mono (by omega)
-      simp only [Cond.holds_eq]; reg_simp; exact fun he => h (hv ▸ he)
+      simp only [Cond.holds_eq]; wram_simp; exact fun he => h (hv ▸ he)
 
 private theorem symCode_le (s : Option Bool) : symCode s ≤ 2 := by
   rcases s with _ | _ | _ <;> simp [symCode]
@@ -539,13 +536,13 @@ private theorem writeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option
         (h2.of_le (symCode_le s))).seq (ExecWithin.store (x := x.set rTmp (symCode s))
           (a := rAdr i) (s := rTmp))
       have ha : (x.set rTmp (symCode s)).regs (rAdr i) = tapeAddr k n i (P i) := by
-        reg_simp; exact hT.adr i
-      have hv : (x.set rTmp (symCode s)).regs rTmp = symCode s := by reg_simp
+        wram_simp; exact hT.adr i
+      have hv : (x.set rTmp (symCode s)).regs rTmp = symCode s := by wram_simp
       rw [ha, hv] at h
       exact h
     · refine ⟨fun j => ?_, fun j => ?_, fun j z => ?_⟩
-      · reg_simp; exact hT.sgn j
-      · reg_simp; exact hT.adr j
+      · wram_simp; exact hT.sgn j
+      · wram_simp; exact hT.adr j
       · simp only [Data.write_mem, Data.set_mem, Function.update_apply]
         by_cases hjz : (j, z) = (i, P i)
         · obtain ⟨rfl, rfl⟩ := Prod.mk.inj hjz
@@ -557,7 +554,7 @@ private theorem writeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option
             have hz : z ≠ P j := fun hz => hjz (by rw [hz])
             simp [newTape, hz]
           · simp [hji]
-    · intro d hd; reg_simp
+    · intro d hd; wram_simp
     · intro a ha
       simp only [Data.write_mem, Data.set_mem]
       rw [Function.update_of_ne (by have := lt_tapeAddr k n i (P i); omega)]
@@ -596,75 +593,40 @@ private theorem moveCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option 
     simpa using hT
   | pos =>
     simp only [SignType.pos_eq_one, SignType.coe_one] at hfit ⊢
-    by_cases hs : 0 ≤ P i
-    · have hv : x.regs (rAdr i) + x.regs rStride = tapeAddr k n i (P i + 1) := by
-        rw [hai, hst, tapeAddr_succ_of_nonneg hs]
-      refine ⟨_, (ExecWithin.branch_pos ?_ (execWithin_add (hv ▸ hfit))).mono (by omega),
-        hT.update i _ ?_ ?_ ?_ rfl, ?_, rfl⟩
-      · simp only [Cond.holds_eq, hsi, hz, sgnOf_eq_zero_iff]; exact hs
-      · reg_simp; rw [hsi]; unfold sgnOf; split_ifs <;> omega
-      · reg_simp; exact hv
-      all_goals intro d hd₁ hd₂; reg_simp
-    · have hneg : ¬(Cond.eq (rSgn i) rZero).Holds x := by
-        simp only [Cond.holds_eq, hsi, hz, sgnOf_eq_zero_iff]; exact hs
-      by_cases hm : P i = -1
-      · have hlt : (Cond.lt (rAdr i) rLim).Holds x := by
-          simp only [Cond.holds_lt, hai, hl, tapeAddr_lt_iff, magOf_eq_zero_iff]; omega
-        have hv : (x.set (rSgn i) 0).regs (rAdr i) - (x.set (rSgn i) 0).regs rOne =
-            tapeAddr k n i (P i + 1) := by
-          reg_simp; rw [hai, ho, hm, tapeAddr_neg_one]; simp
-        refine ⟨_, (ExecWithin.branch_neg hneg (ExecWithin.branch_pos hlt
-          ((execWithin_const (fits_zero w)).seq (execWithin_sub (hv ▸ hfit))))).mono (by omega),
-          hT.update i _ ?_ ?_ ?_ rfl, ?_, rfl⟩
-        · reg_simp; rw [hm]; simp [sgnOf]
-        · rw [← hv]; reg_simp
-        all_goals intro d hd₁ hd₂; reg_simp
-      · have hge : ¬(Cond.lt (rAdr i) rLim).Holds x := by
-          simp only [Cond.holds_lt, hai, hl, tapeAddr_lt_iff, magOf_eq_zero_iff]; omega
-        have hv : x.regs (rAdr i) - x.regs rStride = tapeAddr k n i (P i + 1) := by
-          rw [hai, hst, ← tapeAddr_succ_of_lt_neg_one (by omega : P i < -1)]; simp
-        refine ⟨_, (ExecWithin.branch_neg hneg (ExecWithin.branch_neg hge
-          (execWithin_sub (hv ▸ hfit)))).mono (by omega),
-          hT.update i _ ?_ ?_ ?_ rfl, ?_, rfl⟩
-        · reg_simp; rw [hsi]; unfold sgnOf; split_ifs <;> omega
-        · reg_simp; exact hv
-        all_goals intro d hd₁ hd₂; reg_simp
+    unfold moveCode moveRight
+    rcases (show 0 ≤ P i ∨ P i = -1 ∨ P i < -1 by omega) with hs | hs | hs
+    · have hv := (tapeAddr_succ_of_nonneg (k := k) (n := n) (i := i) hs).symm
+      wram_exec [hsi, hai, hz, hst, hl, hv, sgnOf_eq_zero_iff, tapeAddr_lt_iff, magOf_eq_zero_iff]
+      exact ⟨hT.update i _ (by wram_simp [hsi]; unfold sgnOf; split_ifs <;> omega) (by wram_simp)
+        (fun d _ _ => by wram_simp) rfl, fun d _ _ => by wram_simp, rfl⟩
+    · have hv : tapeAddr k n i (P i) - 1 = tapeAddr k n i (P i + 1) := by
+        rw [hs, tapeAddr_neg_one]; simp
+      wram_exec [hsi, hai, hz, ho, hl, hv, sgnOf_eq_zero_iff, tapeAddr_lt_iff, magOf_eq_zero_iff]
+      exact ⟨hT.update i _ (by wram_simp; rw [hs]; simp [sgnOf]) (by wram_simp)
+        (fun d _ _ => by wram_simp) rfl, fun d _ _ => by wram_simp, rfl⟩
+    · have hv : tapeAddr k n i (P i) - 2 * k = tapeAddr k n i (P i + 1) := by
+        rw [← tapeAddr_succ_of_lt_neg_one hs]; simp
+      wram_exec [hsi, hai, hz, hst, hl, hv, sgnOf_eq_zero_iff, tapeAddr_lt_iff, magOf_eq_zero_iff]
+      exact ⟨hT.update i _ (by wram_simp [hsi]; unfold sgnOf; split_ifs <;> omega) (by wram_simp)
+        (fun d _ _ => by wram_simp) rfl, fun d _ _ => by wram_simp, rfl⟩
   | neg =>
     simp only [SignType.neg_eq_neg_one, SignType.coe_neg_one, ← sub_eq_add_neg] at hfit ⊢
-    by_cases hs : 0 ≤ P i
-    · have hpos : (Cond.eq (rSgn i) rZero).Holds x := by
-        simp only [Cond.holds_eq, hsi, hz, sgnOf_eq_zero_iff]; exact hs
-      by_cases hm : P i = 0
-      · have hlt : (Cond.lt (rAdr i) rLim).Holds x := by
-          simp only [Cond.holds_lt, hai, hl, tapeAddr_lt_iff, magOf_eq_zero_iff]; omega
-        have hv : (x.set (rSgn i) 1).regs (rAdr i) + (x.set (rSgn i) 1).regs rOne =
-            tapeAddr k n i (P i - 1) := by
-          reg_simp; rw [hai, ho, hm, zero_sub, tapeAddr_neg_one]
-        refine ⟨_, (ExecWithin.branch_pos hpos (ExecWithin.branch_pos hlt
-          ((execWithin_const h1).seq (execWithin_add (hv ▸ hfit))))).mono (by omega),
-          hT.update i _ ?_ ?_ ?_ rfl, ?_, rfl⟩
-        · reg_simp; rw [hm]; simp [sgnOf]
-        · rw [← hv]; reg_simp
-        all_goals intro d hd₁ hd₂; reg_simp
-      · have hge : ¬(Cond.lt (rAdr i) rLim).Holds x := by
-          simp only [Cond.holds_lt, hai, hl, tapeAddr_lt_iff, magOf_eq_zero_iff]; omega
-        have hv : x.regs (rAdr i) - x.regs rStride = tapeAddr k n i (P i - 1) := by
-          rw [hai, hst, ← tapeAddr_pred_of_pos (by omega : 0 < P i)]; simp
-        refine ⟨_, (ExecWithin.branch_pos hpos (ExecWithin.branch_neg hge
-          (execWithin_sub (hv ▸ hfit)))).mono (by omega),
-          hT.update i _ ?_ ?_ ?_ rfl, ?_, rfl⟩
-        · reg_simp; rw [hsi]; unfold sgnOf; split_ifs <;> omega
-        · reg_simp; exact hv
-        all_goals intro d hd₁ hd₂; reg_simp
-    · have hneg : ¬(Cond.eq (rSgn i) rZero).Holds x := by
-        simp only [Cond.holds_eq, hsi, hz, sgnOf_eq_zero_iff]; exact hs
-      have hv : x.regs (rAdr i) + x.regs rStride = tapeAddr k n i (P i - 1) := by
-        rw [hai, hst, tapeAddr_pred_of_neg (by omega : P i < 0)]
-      refine ⟨_, (ExecWithin.branch_neg hneg (execWithin_add (hv ▸ hfit))).mono (by omega),
-        hT.update i _ ?_ ?_ ?_ rfl, ?_, rfl⟩
-      · reg_simp; rw [hsi]; unfold sgnOf; split_ifs <;> omega
-      · reg_simp; exact hv
-      all_goals intro d hd₁ hd₂; reg_simp
+    unfold moveCode moveLeft
+    rcases (show P i = 0 ∨ 0 < P i ∨ P i < 0 by omega) with hs | hs | hs
+    · have hv : tapeAddr k n i (P i) + 1 = tapeAddr k n i (P i - 1) := by
+        rw [hs, zero_sub, tapeAddr_neg_one]
+      wram_exec [hsi, hai, hz, ho, hl, hv, sgnOf_eq_zero_iff, tapeAddr_lt_iff, magOf_eq_zero_iff]
+      exact ⟨hT.update i _ (by wram_simp; rw [hs]; simp [sgnOf]) (by wram_simp)
+        (fun d _ _ => by wram_simp) rfl, fun d _ _ => by wram_simp, rfl⟩
+    · have hv : tapeAddr k n i (P i) - 2 * k = tapeAddr k n i (P i - 1) := by
+        rw [← tapeAddr_pred_of_pos hs]; simp
+      wram_exec [hsi, hai, hz, hst, hl, hv, sgnOf_eq_zero_iff, tapeAddr_lt_iff, magOf_eq_zero_iff]
+      exact ⟨hT.update i _ (by wram_simp [hsi]; unfold sgnOf; split_ifs <;> omega) (by wram_simp)
+        (fun d _ _ => by wram_simp) rfl, fun d _ _ => by wram_simp, rfl⟩
+    · have hv := (tapeAddr_pred_of_neg (k := k) (n := n) (i := i) hs).symm
+      wram_exec [hsi, hai, hz, hst, hv, sgnOf_eq_zero_iff]
+      exact ⟨hT.update i _ (by wram_simp [hsi]; unfold sgnOf; split_ifs <;> omega) (by wram_simp)
+        (fun d _ _ => by wram_simp) rfl, fun d _ _ => by wram_simp, rfl⟩
 
 /-- The action on tape `i`: write, then move. -/
 private theorem tapeCode_spec {x : Data (regs k)} {T : Fin k → ℤ → Option Bool} {P : Fin k → ℤ}
@@ -743,8 +705,8 @@ private theorem headCode_spec {x : Data (regs k)} (hc : Consts n m x) {p : Fin (
     have hv : x.regs rHead - x.regs rOne = moveInputPos p .neg := by
       simp only [SignType.cast] at hmv; rw [hp, hc.one]; omega
     refine ⟨_, (execWithin_sub (hv ▸ hfit.of_le (by omega))).mono (by omega), ?_, ?_, rfl⟩
-    · reg_simp; exact hv
-    · intro r hr; reg_simp
+    · wram_simp; exact hv
+    · intro r hr; wram_simp
   | pos =>
     simp only [SignType.cast] at hmv
     by_cases he : (p : ℕ) = n + 1
@@ -757,8 +719,8 @@ private theorem headCode_spec {x : Data (regs k)} (hc : Consts n m x) {p : Fin (
       refine ⟨_, ExecWithin.branch_neg ?_ (execWithin_add (hv ▸ hfit.of_le (by omega))), ?_, ?_,
         rfl⟩
       · simp only [Cond.holds_eq, hp, hc.fin]; exact he
-      · reg_simp; exact hv
-      · intro r hr; reg_simp
+      · wram_simp; exact hv
+      · intro r hr; wram_simp
 
 /-- Appending a symbol to the output tape. -/
 private theorem outCode_spec {x : Data (regs k)} {l : List Bool}
@@ -777,19 +739,19 @@ private theorem outCode_spec {x : Data (regs k)} {l : List Bool}
     cases b with
     | false =>
       refine ⟨_, (execWithin_add (hpp ▸ hpow : Fits w _)).mono (by omega), ?_, ?_, ?_, rfl⟩
-      · reg_simp; rw [hv, BitString.lsbValue_append]; simp
-      · reg_simp; exact hpp
-      · intro r h₁ h₂; reg_simp
+      · wram_simp; rw [hv, BitString.lsbValue_append]; simp
+      · wram_simp; exact hpp
+      · intro r h₁ h₂; wram_simp
     | true =>
       have hvp : x.regs rVal + x.regs rPow = BitString.lsbValue (l ++ [true]) := by
         rw [hv, hp, BitString.lsbValue_append]; simp
       have hvf : Fits w (x.regs rVal + x.regs rPow) := by
         unfold Fits; rw [hv, hp]; rw [pow_succ] at hpow; omega
       refine ⟨_, (execWithin_add hvf).seq (execWithin_add ?_), ?_, ?_, ?_, rfl⟩
-      · unfold Fits; reg_simp; rw [hpp]; exact hpow
-      · reg_simp; exact hvp
-      · reg_simp; exact hpp
-      · intro r h₁ h₂; reg_simp
+      · unfold Fits; wram_simp; rw [hpp]; exact hpow
+      · wram_simp; exact hvp
+      · wram_simp; exact hpp
+      · intro r h₁ h₂; wram_simp
 
 private theorem stateCode_le (e : Q ≃ Fin m) (q : Option Q) : stateCode e q ≤ m := by
   cases q <;> simp [stateCode, Nat.le_of_lt]
@@ -825,11 +787,11 @@ private theorem actionCode_spec (act : Action k Bool Q) {inp : List Bool} {c : C
   refine ⟨y₃.set rState (stateCode e act.state),
     (h₁.seq (h₂.seq (h₃.seq (execWithin_const hst)))).mono
       (by simp only [List.length_finRange]; omega),
-    { consts := hc₃.of_eq fun d _ hs _ _ _ _ _ => by reg_simp
-      state := by reg_simp; rfl
-      head := by reg_simp; rw [hr₃ _ (by reg_ne) (by reg_ne)]; exact hh₂
-      val := by reg_simp; exact hv₃
-      pow := by reg_simp; exact hp₃
+    { consts := hc₃.of_eq fun d _ hs _ _ _ _ _ => by wram_simp
+      state := by wram_simp; rfl
+      head := by wram_simp; rw [hr₃ _ (by reg_ne) (by reg_ne)]; exact hh₂
+      val := by wram_simp; exact hv₃
+      pow := by wram_simp; exact hp₃
       tapes := ?_
       input := fun j hj => ?_ }⟩
   · rw [apply_workTapes_eq]
@@ -857,7 +819,7 @@ private theorem tapesTree_spec {inp : List Bool} {c : Cfg k Bool Q inp}
     have hx₁ : Sim e (x.set rCur (x.mem (x.regs (rAdr ⟨rem, h⟩)))) c :=
       hx.set_scratch (Or.inr rfl) _
     have hc1 : (x.set rCur (x.mem (x.regs (rAdr ⟨rem, h⟩)))).regs rCur =
-        symCode (c.workTapeSymbols ⟨rem, h⟩) := by reg_simp; exact hcur
+        symCode (c.workTapeSymbols ⟨rem, h⟩) := by wram_simp; exact hcur
     have hz := hx₁.consts.zero
     have ho := hx₁.consts.one
     have hacc' (s : Option Bool) (hs : c.workTapeSymbols ⟨rem, h⟩ = s) :
@@ -918,7 +880,7 @@ private theorem inputTree_spec {inp : List Bool} {c : Cfg k Bool Q inp}
         rw [hh, ← hx.input _ hj]; congr 1; omega
       have hx₁ : Sim e (x.set rCur (x.mem (x.regs rHead))) c := hx.set_scratch (Or.inr rfl) _
       have hc1 : (x.set rCur (x.mem (x.regs rHead))).regs rCur =
-          inp[(c.inputPos : ℕ) - 1].toNat := by reg_simp; exact hmem
+          inp[(c.inputPos : ℕ) - 1].toNat := by wram_simp; exact hmem
       have hz₁ := hx₁.consts.zero
       obtain ⟨y, hy, hQ⟩ := hnext _ hx₁
       rw [hsym] at hy
@@ -976,11 +938,11 @@ private theorem setupTapes_spec : ∀ (L : List (Fin k)), L.Nodup → ∀ {x : D
     have hi := i.isLt
     have h₁ : Fits w (2 * i) := by unfold Fits; omega
     have h₂ : Fits w ((x.set rTmp (2 * i)).regs rEnd + (x.set rTmp (2 * i)).regs rTmp) := by
-      unfold Fits; reg_simp; omega
+      unfold Fits; wram_simp; omega
     obtain ⟨y, hy, ha, hr, hm⟩ := setupTapes_spec L hL
       (x := (x.set rTmp (2 * i)).set (rAdr i)
         ((x.set rTmp (2 * i)).regs rEnd + (x.set rTmp (2 * i)).regs rTmp))
-      (by reg_simp; exact hx) hb
+      (by wram_simp; exact hx) hb
     refine ⟨y, ((execWithin_const h₁).seq ((execWithin_add h₂).seq hy)).mono
       (by simp only [List.length_cons]; omega), fun j => ?_, fun d hd ht => ?_, ?_⟩
     · rw [ha j]
@@ -988,8 +950,8 @@ private theorem setupTapes_spec : ∀ (L : List (Fin k)), L.Nodup → ∀ {x : D
       · simp [hj]
       · by_cases hji : j = i
         · subst hji; simpa [hj] using hx
-        · simp only [hj, ↓reduceIte, List.mem_cons, hji, or_self]; reg_simp
-    · rw [hr d hd ht, Data.set_regs, Function.update_of_ne (hd i)]; reg_simp
+        · simp only [hj, ↓reduceIte, List.mem_cons, hji, or_self]; wram_simp
+    · rw [hr d hd ht, Data.set_regs, Function.update_of_ne (hd i)]; wram_simp
     · rw [hm]; rfl
 
 /-- **Setup.** The simulator's setup reaches a representation of the initial configuration. -/
@@ -1001,77 +963,43 @@ theorem setupCode_spec (q₀ : Q) (inp : List Bool) (hbound : inp.length + 2 * k
   have hr₀ : ∀ d, x₀.regs d = 0 := fun _ => rfl
   have hm₀ : x₀.mem 0 = n := by simp [x₀, n]
   have hq := (e q₀).isLt
-  have f1 : Fits w 1 := by unfold Fits; omega
-  set x₁ := x₀.set rEnd (x₀.mem (x₀.regs rZero))
-  set x₂ := x₁.set rOne 1
-  set x₃ := x₂.set rEnd (x₂.regs rEnd + x₂.regs rOne)
-  set x₄ := x₃.set rHead 1
-  set x₅ := x₄.set rStride (2 * k)
-  set x₆ := x₅.set rLim (x₅.regs rEnd + x₅.regs rStride)
-  set x₇ := x₆.set rStates m
-  set x₈ := x₇.set rState (e q₀)
-  set x₉ := x₈.set rPow 1
-  have e₃ : x₃.regs rEnd = n + 1 := by simp only [x₃, x₂, x₁]; reg_simp; rw [hr₀, hm₀]
-  have h₉ : x₉.regs rEnd = n + 1 := by simp only [x₉, x₈, x₇, x₆, x₅, x₄]; reg_simp; exact e₃
-  obtain ⟨y, hy, ha, hr, hm⟩ := setupTapes_spec (n := n) (w := w) (List.finRange k)
+  refine WP.exists_execWithin ?_
+  unfold setupCode
+  wram_exec [hr₀, hm₀, Fits]
+  refine WP.name fun x₉ hx₉ => ?_
+  have h₉ : x₉.regs rEnd = n + 1 := by rw [hx₉]; wram_simp
+  obtain ⟨y, hy', ha, hr, hm⟩ := setupTapes_spec (n := n) (w := w) (List.finRange k)
     (List.nodup_finRange k) h₉ (by omega)
-  have hexec : ExecWithin w (setupCode q₀ e) x₀ y (2 * k + 10) := by
-    refine (ExecWithin.load.seq ((execWithin_const f1).seq ((execWithin_add ?_).seq
-      ((execWithin_const f1).seq ((execWithin_const ?_).seq ((execWithin_add ?_).seq
-      ((execWithin_const ?_).seq ((execWithin_const ?_).seq ((execWithin_const f1).seq
-      hy))))))))).mono (by simp only [List.length_finRange]; omega)
-    · unfold Fits; reg_simp; rw [hr₀, hm₀]; omega
-    · unfold Fits; omega
-    · unfold Fits; reg_simp; rw [hr₀, hm₀]; omega
-    · unfold Fits; omega
-    · unfold Fits; omega
+  refine WP.of_execWithin hy' ⟨by simp only [List.length_finRange]; omega, ?_⟩
   have hy : ∀ d : Fin (regs k), (∀ i, d ≠ rAdr i) → d ≠ rTmp → y.regs d = x₉.regs d := hr
-  refine ⟨y, hexec, ?_⟩
   exact
     { consts :=
-        { zero := by
-            rw [hy _ (fun _ => by reg_ne) (by reg_ne)]
-            simp only [x₉, x₈, x₇, x₆, x₅, x₄, x₃, x₂, x₁]; reg_simp; rfl
-          one := by
-            rw [hy _ (fun _ => by reg_ne) (by reg_ne)]
-            simp only [x₉, x₈, x₇, x₆, x₅, x₄, x₃, x₂]; reg_simp
+        { zero := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp [hr₀]
+          one := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp
           fin := by rw [hy _ (fun _ => by reg_ne) (by reg_ne)]; exact h₉
-          states := by
-            rw [hy _ (fun _ => by reg_ne) (by reg_ne)]; simp only [x₉, x₈, x₇]; reg_simp
-          stride := by
-            rw [hy _ (fun _ => by reg_ne) (by reg_ne)]
-            simp only [x₉, x₈, x₇, x₆, x₅]; reg_simp
-          lim := by
-            rw [hy _ (fun _ => by reg_ne) (by reg_ne)]
-            simp only [x₉, x₈, x₇, x₆, x₅, x₄]; reg_simp
-            rw [e₃] }
-      state := by rw [hy _ (fun _ => by reg_ne) (by reg_ne)]; simp only [x₉, x₈]; reg_simp; rfl
-      head := by
-        rw [hy _ (fun _ => by reg_ne) (by reg_ne)]
-        simp only [x₉, x₈, x₇, x₆, x₅, x₄]; reg_simp
-        simp [Cfg.init]
-      val := by
-        rw [hy _ (fun _ => by reg_ne) (by reg_ne)]
-        simp only [x₉, x₈, x₇, x₆, x₅, x₄, x₃, x₂, x₁]; reg_simp
-        rfl
-      pow := by rw [hy _ (fun _ => by reg_ne) (by reg_ne)]; simp only [x₉]; reg_simp; rfl
+          states := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp
+          stride := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp
+          lim := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp; rfl }
+      state := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp; rfl
+      head := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp; simp [Cfg.init]
+      val := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp [hr₀]; rfl
+      pow := by rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp; rfl
       tapes :=
         { sgn := fun i => by
-            rw [hy _ (fun _ => by reg_ne) (by reg_ne)]
-            simp only [x₉, x₈, x₇, x₆, x₅, x₄, x₃, x₂, x₁]; reg_simp; simp [x₀, sgnOf]
+            rw [hy _ (fun _ => by reg_ne) (by reg_ne), hx₉]; wram_simp [hr₀]; simp [sgnOf]
           adr := fun i => by
             rw [ha i]; simp [tapeAddr, magOf, sgnOf, n]
           tape := fun i z => by
-            rw [hm]
-            simp only [x₉, x₈, x₇, x₆, x₅, x₄, x₃, x₂, x₁, Data.set_mem, x₀]
+            rw [hm, hx₉]
+            simp only [Data.set_mem, x₀]
             have hlt := lt_tapeAddr k n i z
             rw [show tapeAddr k n i z = (tapeAddr k n i z - 1) + 1 by omega, Data.init_mem_succ,
               List.getD_eq_getElem?_getD,
               List.getElem?_eq_none (by simp only [List.length_map, n] at hlt ⊢; omega)]
             rfl }
       input := fun j hj => by
-        rw [hm]
-        simp only [x₉, x₈, x₇, x₆, x₅, x₄, x₃, x₂, x₁, Data.set_mem, x₀, Data.init_mem_succ]
+        rw [hm, hx₉]
+        simp only [Data.set_mem, x₀, Data.init_mem_succ]
         simp [hj] }
 
 end Pieces

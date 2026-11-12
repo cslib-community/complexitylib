@@ -55,10 +55,9 @@ count `p.cost Op.arity`.
   and wire count of `depthTwo`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.lines_depthTwo_bottom_or_top`: every gate of `depthTwo`
   is a bottom gate reading only original inputs or the top gate reading only gates.
-* `Cslib.Circuits.Boolean.WeightedThreshold.altLinear_add_add_altLinear_sub`,
-  `Cslib.Circuits.Boolean.WeightedThreshold.negOnePow_mul_altLinear_add_sub_altLinear`,
-  `Cslib.Circuits.Boolean.WeightedThreshold.sum_sub_mul_decide_le`: alternating linear polarization
-  and shift identities, and integer interval telescoping into threshold indicators.
+* `Cslib.Circuits.Boolean.WeightedThreshold.negOnePow_mul_altLinear_add_sub_altLinear`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.sum_sub_mul_decide_le`: alternating linear shift
+  identity and integer interval telescoping into threshold indicators.
 
 ## References
 
@@ -276,13 +275,6 @@ theorem negOnePow_sum {α : Type*} (s : Finset α) (f : α → ℤ) :
   | insert a s ha ih =>
     rw [sum_insert ha, Int.negOnePow_add, Units.val_mul, ih, prod_insert ha]
 
-/-- **Alternating linear polarization identity**: for all integers `X` and `t`,
-`φ(X + t) + φ(X - t) = 2 * (-1) ^ X * X * (-1) ^ t`. -/
-theorem altLinear_add_add_altLinear_sub (X t : ℤ) :
-    altLinear (X + t) + altLinear (X - t) = 2 * (X.negOnePow : ℤ) * X * (t.negOnePow : ℤ) := by
-  simp only [altLinear, Int.negOnePow_add, Int.negOnePow_sub, Units.val_mul]
-  ring
-
 /-- **Alternating linear shift identity**: for all integers `X` and `t`,
 `(-1) ^ X * φ(X + t) - φ(t) = X * (-1) ^ t`. For even `X` this is
 `φ(X + t) - φ(t) = X * (-1) ^ t`. -/
@@ -315,9 +307,7 @@ theorem sum_sub_mul_decide_le (f : ℤ → ℤ) {ℓ u : ℤ} {L : ℕ}
   | succ L ih =>
     rw [Fin.sum_univ_castSucc]
     by_cases hle : u ≤ ℓ + L
-    · have hlast : ¬ (ℓ + (Fin.last L : ℕ) + 1 ≤ u) := by
-        simp only [Fin.val_last]
-        omega
+    · have hlast : ¬ (ℓ + (Fin.last L : ℕ) + 1 ≤ u) := by grind
       simp only [Fin.val_castSucc, hlast, decide_false, Bool.toNat_false, Nat.cast_zero, mul_zero,
         add_zero]
       exact ih hlo hle

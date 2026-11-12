@@ -125,10 +125,10 @@ def formulaGraph (xs : List ℕ) (ψ : CNF ℕ) : Graph :=
 
 /-- **The reduction from `TQBFCNF`**: the graph of the formula, from the top of the first diamond,
 when the formula is closed, and a graph without arcs otherwise. -/
-def reduce (x : List (ℕ × ℕ) × CNF ℕ) : Graph × ℕ :=
+def reduce (x : List (ℕ × ℕ) × CNF ℕ) : GeneralizedGeographyInstance :=
   if x.2.all (fun c => c.all fun l => decide (l.1 ∈ QBF.roundVars x.1)) then
-    (formulaGraph (QBF.roundVars x.1) x.2, topNode 0)
-  else (([0], []), 0)
+    ⟨formulaGraph (QBF.roundVars x.1) x.2, topNode 0⟩
+  else ⟨([0], []), 0⟩
 
 /-! ### The arcs -/
 
@@ -445,9 +445,7 @@ private theorem geographyWins_topNode (heven : Even xs.length)
           fun z' => ψ.eval (fun x => (z ++ z').getD (lastIdx xs x) false) = true))
   | 0, z, hz => by
     have hz' : z.length = xs.length := by omega
-    have hpar : (z.length % 2 == 0) = true := by
-      rw [hz', beq_iff_eq, ← Nat.even_iff]
-      exact heven
+    have hpar : (z.length % 2 == 0) = true := by grind
     rw [hpar, iff_true_left rfl, List.replicate_zero, alternation_nil, List.append_nil, hz']
     exact geographyWins_topNode_length hz' hvars
   | k + 1, z, hz => by
@@ -507,9 +505,7 @@ theorem updates_eq_getD_lastIdx (σ : ℕ → Bool) :
           omega, List.getD_cons_succ]
     · obtain rfl : x = v := by simpa [hxs] using hx
       rw [QBF.updates_of_notMem hxs, Function.update_self]
-      have hidx : (x :: vs).reverse.idxOf x = vs.length := by
-        rw [List.reverse_cons, List.idxOf_append_of_notMem (by simpa using hxs),
-          List.length_reverse, List.idxOf_cons_self, Nat.add_zero]
+      have hidx : (x :: vs).reverse.idxOf x = vs.length := by grind
       rw [lastIdx, hidx, List.length_cons, show vs.length + 1 - 1 - vs.length = 0 by omega]
       rfl
 
@@ -611,7 +607,7 @@ theorem computableInPolyTime_formulaGraph {xs : γ → List ℕ} {ψ : γ → CN
 
 /-- **The reduction is polynomial-time.** -/
 theorem computableInPolyTime_reduce :
-    ComputableInPolyTime reduce encPrenexCNF (encPair encGraph encNat) := by
+    ComputableInPolyTime reduce encPrenexCNF encGeneralizedGeography := by
   unfold reduce QBF.roundVars encPrenexCNF
   simp only [List.decide_mem_eq_any]
   unfold encCNF
@@ -626,13 +622,13 @@ open GeneralizedGeography Turing.MultiTapeTM
 /-- **`TQBFCNF` reduces to Generalized Geography** [Sipser, Theorem 8.14][Sipser2013]
 [LichtensteinSipser1980]. -/
 theorem polyTimeReducible_TQBFCNF_GeneralizedGeography :
-    PolyTimeReducible encPrenexCNF (encPair encGraph encNat) TQBFCNF GeneralizedGeography :=
+    PolyTimeReducible encPrenexCNF encGeneralizedGeography TQBFCNF GeneralizedGeography :=
   ⟨reduce, computableInPolyTime_reduce, fun x => (reduce_mem_iff x).symm⟩
 
 /-- **Generalized Geography is `PSPACE`-hard** [Sipser, Theorem 8.14][Sipser2013]
 [LichtensteinSipser1980]. -/
 theorem GeneralizedGeography_pspaceHard :
-    PSPACEHard (encPair encGraph encNat) GeneralizedGeography :=
+    PSPACEHard encGeneralizedGeography GeneralizedGeography :=
   TQBFCNF_pspaceHard.trans polyTimeReducible_TQBFCNF_GeneralizedGeography
 
 end Cslib.Complexity

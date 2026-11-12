@@ -99,7 +99,7 @@ example : ComputableInPolyTime
 example : ComputableInPolyTime
     (fun p : ℤ × ℤ => encodeRat (Rat.divInt (p.1 + p.2) (p.1 * p.2 - 1)))
     (encPair encIntBin encIntBin) encBits := by
-  apply encodeDivInt_polytime' <;> exact .of_tidy (by fun_prop)
+  apply encodeDivInt_polytime' <;> fun_prop
 
 example : ComputableInPolyTime
     (fun p : ℤ × ℤ =>

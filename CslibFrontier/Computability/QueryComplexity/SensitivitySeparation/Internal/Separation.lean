@@ -37,7 +37,7 @@ for any constant `C`, and there is even a fixed exponent `α > 2` with
   [Schlesinger2026Sensitivity] at revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.QueryComplexity.SensitivitySeparation
 

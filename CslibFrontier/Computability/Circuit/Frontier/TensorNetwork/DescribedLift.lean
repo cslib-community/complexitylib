@@ -205,9 +205,7 @@ theorem exists_unique_of_sum_count_eq_one {Ls : List (List ℕ)} {j : ℕ}
   | cons l Ls ih =>
     rw [List.map_cons, List.sum_cons] at h
     by_cases hj : j ∈ l
-    · have hl : l.count j = 1 := by
-        have := List.count_pos_iff.mpr hj
-        omega
+    · have hl : l.count j = 1 := by grind
       have h0 : (Ls.map fun l => l.count j).sum = 0 := by omega
       refine ⟨0, by simp, by simpa using hl, fun i' hi' hm => ?_⟩
       rcases i' with _ | i'

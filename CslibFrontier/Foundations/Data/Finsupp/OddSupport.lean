@@ -23,7 +23,8 @@ by symmetric difference (`Finsupp.oddSupport_add`), so they turn products of mon
 symmetric differences of sets. The odd support of `∑ i ∈ S, single i 1`, the exponent vector of
 `∏ i ∈ S, xᵢ`, is `S` (`Finsupp.oddSupport_sum_single`). These facts are how the multilinear
 reduction modulo `xᵢ ^ 2 = 1` enters the sum-of-squares degree lower bound for parity systems
-(`Cslib.Logic.PL.ParitySystem.pseudoExpectation`).
+(`Cslib.Logic.PL.ParitySystem.pseudoExpectation`) and the polynomial calculus degree lower bound
+for Tseitin formulas (`Cslib.Logic.PL.Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`).
 
 ## Main definitions
 
@@ -70,6 +71,13 @@ theorem oddSupport_add [DecidableEq σ] (m n : σ →₀ ℕ) :
   ext i
   rw [mem_symmDiff, mem_oddSupport, mem_oddSupport, mem_oddSupport, add_apply]
   omega
+
+/-- The exponent vector of `xᵢ` has odd support `{i}`. -/
+@[simp] theorem oddSupport_single_one (i : σ) : oddSupport (single i 1) = {i} := by
+  classical
+  ext j
+  rw [mem_oddSupport, single_apply, mem_singleton]
+  split_ifs with h <;> simp [h, eq_comm]
 
 /-- The exponent vector of `xᵢ ^ 2` has empty odd support. -/
 @[simp] theorem oddSupport_single_two (i : σ) : oddSupport (single i 2) = ∅ := by

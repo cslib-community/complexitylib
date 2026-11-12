@@ -43,7 +43,7 @@ by Samuel Schlesinger, using the current shared-constant substitution circuit.
 * [L. Adleman, *Two theorems on random polynomial time*][Adleman1978]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

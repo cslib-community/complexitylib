@@ -234,6 +234,16 @@ private theorem fits_exp {w s v : ℕ} (hw : 8 * (s + 1) ≤ w) (hv : v < 2 ^ (2
     Fits w v :=
   fits_iff.mpr (hv.trans_le (Nat.pow_le_pow_right (by norm_num) (by omega)))
 
+/-- For `N < 2^s` with `s ≥ 2`, `N² + 2 N + 2` fits the width `8 (s + 1)`. -/
+private theorem fits_sq {w s N : ℕ} (hs : 2 ≤ s) (hw : 8 * (s + 1) ≤ w) (hN : N < 2 ^ s) :
+    Fits w (N * N + 2 * N + 2) := by
+  refine fits_exp hw ?_
+  have : (N + 1) * (N + 1) ≤ 2 ^ s * 2 ^ s := Nat.mul_le_mul hN hN
+  have h2 : 2 ^ (2 * s + 1) = 2 ^ s * 2 ^ s * 2 := by ring
+  have h4 : 2 ≤ 2 ^ s := Nat.le_self_pow (by omega) 2
+  rw [h2]
+  nlinarith
+
 /-- A subroutine on the low registers preserves the registers of the top level. -/
 private theorem preserves_low {k : ℕ} (hk : k ≤ 29) (c : Code .standard k) (j : Fin 36)
     (hj : 29 ≤ j.val) : (c.rename (low hk)).Preserves j :=
@@ -314,11 +324,7 @@ private theorem congruenceSteps_exec {w s : ℕ} (x : Data 36) {N R L : ℕ} (hn
     (by omega) (by omega) (by omega) (by omega) (by omega)
     (fits_poly hs hw (by omega)) (fits_poly hs hw (by omega)) (fits_poly hs hw (by omega))
     (fits_poly hs hw (by omega))
-    (fits_exp hw (by
-      have : (N + 1) * (N + 1) ≤ 2 ^ s * 2 ^ s := Nat.mul_le_mul hNs hNs
-      have h2 : 2 ^ (2 * s + 1) = 2 ^ s * 2 ^ s * 2 := by ring
-      rw [h2]
-      nlinarith))
+    ((fits_sq hs hw hNs).of_le (by omega))
     (fits_poly hs hw (by omega))
   have hrun₄' := hrun₄.rename (low_injective (by norm_num : 29 ≤ 29))
   have hy₄ok : (y₄.extend (low (by norm_num : 29 ≤ 29)) x₃).regs clOk = y₄.regs CongruenceLoop.ok :=
@@ -524,14 +530,7 @@ theorem answers {w : ℕ} (N : ℕ) (hw : 8 * (Nat.size N + 1) ≤ w) :
     (by
       change Fits w (x₂.regs ppN * x₂.regs ppN + 2 * x₂.regs ppN + 2)
       rw [hx₂]
-      refine fits_exp hw ?_
-      have : (N + 1) * (N + 1) ≤ 2 ^ s * 2 ^ s := Nat.mul_le_mul hNs hNs
-      have h2 : 2 ^ (2 * s + 1) = 2 ^ s * 2 ^ s * 2 := by ring
-      have h4 : 2 ≤ 2 ^ s := by
-        calc 2 = 2 ^ 1 := by norm_num
-          _ ≤ 2 ^ s := Nat.pow_le_pow_right (by norm_num) (by omega)
-      rw [h2]
-      nlinarith)
+      exact fits_sq hs hw hNs)
   have hrun₃' : ExecWithin w perfectPower x₂ y₃ (PerfectPower.time N) := by
     rw [← hx₂]; exact hrun₃
   have hflag' : y₃.regs ppFlag = if IsPerfectPower N then 1 else 0 := by

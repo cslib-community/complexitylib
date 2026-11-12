@@ -15,7 +15,7 @@ Concrete nonvacuity, rounded-logarithm, monotonicity, and uniform-PPT shift brid
 `MildlyHardOnAverage`, `MildlyHardOnAverageToApprox`, and `MildlyHardOnAverageToOneSidedApprox`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.AverageCaseTests
 

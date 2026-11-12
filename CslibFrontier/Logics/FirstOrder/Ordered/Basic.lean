@@ -137,15 +137,15 @@ def bit (s i : (language L).Term α) : (language L).Formula α :=
 variable {L} {n : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
 
 /-- The numeric constant `zero L` evaluates to `0 : Fin n`. -/
-@[simp] theorem realize_zero_val (v : α → Fin n) :
+@[simp, fo_realize] theorem realize_zero_val (v : α → Fin n) :
     ((zero L).realize v).val = 0 := rfl
 
 /-- The numeric constant `one L` evaluates to `1 : Fin n`. -/
-@[simp] theorem realize_one_val (v : α → Fin n) :
+@[simp, fo_realize] theorem realize_one_val (v : α → Fin n) :
     ((one L).realize v).val = 1 := rfl
 
 /-- The numeric constant `max L` evaluates to `n - 1 : Fin n`. -/
-@[simp] theorem realize_max_val (v : α → Fin n) :
+@[simp, fo_realize] theorem realize_max_val (v : α → Fin n) :
     ((max L).realize v).val = n - 1 := rfl
 
 /-- The numeric constants are distinct in every canonical expanded structure. -/

@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.Decoding
+public import Mathlib.Data.Finset.Density
+import CslibFrontier.Foundations.Data.Finset.Sampling
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Foundations.Data.BitString.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
@@ -23,27 +25,43 @@ family of predictors `pred x` with targets `target x`, if a set `good` of indice
 least `1 / 2 + ε`, then one fixed choice of masks and of the guess makes the corrected-majority
 candidate equal to the target for at least `#good / 2 ^ (k + 1)` of the indices
 (`Cslib.Crypto.GoldreichLevin.exists_card_candidate_eq`). The proof averages the success
-probability over the masks and over a uniformly random guess.
+probability over the masks and over a uniformly random guess
+(`Cslib.Crypto.GoldreichLevin.card_mul_le_two_mul_sum_card_candidate_eq`).
+
+The same sum gives a density form: a `#good / (2 ^ (k + 2) * #X)` fraction of the choices of
+masks and guess each recover a `1 / 2 ^ (k + 2)` fraction of the good targets
+(`Cslib.Crypto.GoldreichLevin.dens_filter_candidate_eq_ge`). Reverse averaging also finds the good
+indices: if the predictors agree with the parities on a `1 / 2 + ε` fraction of all pairs, then an
+`ε / 2` fraction of the indices have agreement `1 / 2 + ε / 2`
+(`Cslib.Crypto.GoldreichLevin.dens_filter_agreement_ge`). Both use
+`Fintype.expect_sub_le_dens_filter`.
 
 ## Main results
 
 * `Cslib.Crypto.GoldreichLevin.agreement_eq_card_div`: agreement as a count.
 * `Cslib.Crypto.GoldreichLevin.card_le_two_mul_card_filter_mem_candidates`: the counting form of
   the decoding guarantee.
+* `Cslib.Crypto.GoldreichLevin.card_mul_le_two_mul_sum_card_candidate_eq`: the decoding count
+  summed over masks and guesses.
 * `Cslib.Crypto.GoldreichLevin.exists_card_candidate_eq`: fixed masks and guess recover a
   `1 / 2 ^ (k + 1)` fraction of the good targets.
+* `Cslib.Crypto.GoldreichLevin.dens_filter_candidate_eq_ge`: the density form, for a fraction of
+  the masks and guesses.
+* `Cslib.Crypto.GoldreichLevin.dens_filter_agreement_ge`,
+  `Cslib.Crypto.GoldreichLevin.card_filter_agreement_ge`: averaging from agreement over pairs to
+  agreement per index.
 
 ## References
 
 * [O. Goldreich, L. Levin, *A Hard-Core Predicate for All One-Way Functions*][GoldreichLevin1989]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.GoldreichLevin
 
 open Finset Cslib.Probability MeasureTheory
-open scoped ENNReal
+open scoped ENNReal BigOperators
 
 variable {n k : ℕ}
 
@@ -89,6 +107,46 @@ theorem card_le_two_mul_card_filter_mem_candidates (predictor : BitString n → 
   rw [card_univ] at hsplit
   omega
 
+/-- **The Goldreich–Levin count, summed over masks and guesses.** Let `pred x` be predictors for
+the parities of `target x`, and let every index of `good` have agreement at least `1 / 2 + ε`, with
+`n ≤ 2 * ε ^ 2 * (2 ^ k - 1)` and `k ≥ 1`. Summed over all masks and guesses, the number of indices
+whose corrected-majority candidate equals the target is at least half of `#good` times the number
+of masks. -/
+theorem card_mul_le_two_mul_sum_card_candidate_eq {X : Type*} [Fintype X]
+    (pred : X → BitString n → Bool) (target : X → BitString n) (ε : ℝ) (hε : 0 < ε) (hk : 0 < k)
+    (hsize : (n : ℝ) ≤ 2 * ε ^ 2 * (2 ^ k - 1 : ℕ)) (good : Finset X)
+    (hgood : ∀ x ∈ good, 1 / 2 + ε ≤ agreement (pred x) (target x)) :
+    #good * Fintype.card (Fin k → BitString n) ≤ 2 * ∑ mg : (Fin k → BitString n) × BitString k,
+      #{x | candidate (pred x) mg.1 mg.2 = target x} := by
+  classical
+  have hswap : ∑ mg : (Fin k → BitString n) × BitString k,
+      #{x | candidate (pred x) mg.1 mg.2 = target x} =
+        ∑ x, #{mg : (Fin k → BitString n) × BitString k |
+          candidate (pred x) mg.1 mg.2 = target x} := by
+    simp only [card_filter]
+    exact sum_comm
+  rw [hswap]
+  calc #good * Fintype.card (Fin k → BitString n)
+      = ∑ _x ∈ good, Fintype.card (Fin k → BitString n) := by rw [sum_const, smul_eq_mul]
+    _ ≤ ∑ x ∈ good, 2 * #{masks : Fin k → BitString n | target x ∈ candidates (pred x) masks} :=
+        sum_le_sum fun x hx => card_le_two_mul_card_filter_mem_candidates (pred x) (target x)
+          ε hε hk (hgood x hx) hsize
+    _ ≤ ∑ x ∈ good, 2 * #{mg : (Fin k → BitString n) × BitString k |
+          candidate (pred x) mg.1 mg.2 = target x} := by
+        refine sum_le_sum fun x _ => Nat.mul_le_mul_left 2 ?_
+        refine card_le_card_of_injOn (fun masks =>
+          (masks, if h : target x ∈ candidates (pred x) masks then
+            (mem_image.1 h).choose else 0)) (fun masks hm => ?_) (fun _ _ _ _ h =>
+              (Prod.ext_iff.1 h).1)
+        rw [mem_coe, mem_filter] at hm ⊢
+        refine ⟨mem_univ _, ?_⟩
+        simp only [dite_eq_left hm.2]
+        exact (mem_image.1 hm.2).choose_spec.2
+    _ ≤ 2 * ∑ x, #{mg : (Fin k → BitString n) × BitString k |
+          candidate (pred x) mg.1 mg.2 = target x} := by
+        rw [← mul_sum]
+        exact Nat.mul_le_mul_left 2 (sum_le_sum_of_subset (subset_univ _))
+
 /-- **Nonuniform Goldreich–Levin decoding.** Let `pred x` be predictors for the parities of
 `target x`, indexed by a finite type, and let every index of `good` have agreement at least
 `1 / 2 + ε`, with `n ≤ 2 * ε ^ 2 * (2 ^ k - 1)` and `k ≥ 1`. Then for some fixed masks and guess the
@@ -102,36 +160,8 @@ theorem exists_card_candidate_eq {X : Type*} [Fintype X] (pred : X → BitString
   classical
   by_contra hcon
   push Not at hcon
-  -- the number of successes summed over all masks and guesses
   set M := Fintype.card (Fin k → BitString n)
-  have hsum : #good * M ≤ 2 * ∑ mg : (Fin k → BitString n) × BitString k,
-      #{x | candidate (pred x) mg.1 mg.2 = target x} := by
-    have hswap : ∑ mg : (Fin k → BitString n) × BitString k,
-        #{x | candidate (pred x) mg.1 mg.2 = target x} =
-          ∑ x, #{mg : (Fin k → BitString n) × BitString k |
-            candidate (pred x) mg.1 mg.2 = target x} := by
-      simp only [card_filter]
-      exact sum_comm
-    rw [hswap]
-    calc #good * M = ∑ _x ∈ good, M := by rw [sum_const, smul_eq_mul]
-      _ ≤ ∑ x ∈ good, 2 * #{masks : Fin k → BitString n | target x ∈ candidates (pred x) masks} :=
-          sum_le_sum fun x hx => card_le_two_mul_card_filter_mem_candidates (pred x) (target x)
-            ε hε hk (hgood x hx) hsize
-      _ ≤ ∑ x ∈ good, 2 * #{mg : (Fin k → BitString n) × BitString k |
-            candidate (pred x) mg.1 mg.2 = target x} := by
-          refine sum_le_sum fun x _ => Nat.mul_le_mul_left 2 ?_
-          refine card_le_card_of_injOn (fun masks =>
-            (masks, if h : target x ∈ candidates (pred x) masks then
-              (mem_image.1 h).choose else 0)) (fun masks hm => ?_) (fun _ _ _ _ h =>
-                (Prod.ext_iff.1 h).1)
-          rw [mem_coe, mem_filter] at hm ⊢
-          refine ⟨mem_univ _, ?_⟩
-          simp only [dite_eq_left hm.2]
-          exact (mem_image.1 hm.2).choose_spec.2
-      _ ≤ 2 * ∑ x, #{mg : (Fin k → BitString n) × BitString k |
-            candidate (pred x) mg.1 mg.2 = target x} := by
-          rw [← mul_sum]
-          exact Nat.mul_le_mul_left 2 (sum_le_sum_of_subset (subset_univ _))
+  have hsum := card_mul_le_two_mul_sum_card_candidate_eq pred target ε hε hk hsize good hgood
   have hlt : 2 ^ (k + 1) * ∑ mg : (Fin k → BitString n) × BitString k,
       #{x | candidate (pred x) mg.1 mg.2 = target x} <
         ∑ _mg : (Fin k → BitString n) × BitString k, #good := by
@@ -146,5 +176,103 @@ theorem exists_card_candidate_eq {X : Type*} [Fintype X] (pred : X → BitString
     rw [pow_succ, mul_comm (2 ^ k) 2, mul_assoc]
     nlinarith [hsum]
   nlinarith
+
+/-- **Nonuniform Goldreich–Levin decoding, density form.** Under the hypotheses of
+`exists_card_candidate_eq`, the corrected-majority candidate equals the target for at least
+`#good / 2 ^ (k + 2)` indices for at least a `#good / (2 ^ (k + 2) * #X)` fraction of the masks and
+guesses. This is reverse averaging (`Fintype.expect_sub_le_dens_filter`) applied to the sum
+`card_mul_le_two_mul_sum_card_candidate_eq`. -/
+theorem dens_filter_candidate_eq_ge {X : Type*} [Fintype X] [Nonempty X]
+    (pred : X → BitString n → Bool) (target : X → BitString n) (ε : ℝ) (hε : 0 < ε) (hk : 0 < k)
+    (hsize : (n : ℝ) ≤ 2 * ε ^ 2 * (2 ^ k - 1 : ℕ)) (good : Finset X)
+    (hgood : ∀ x ∈ good, 1 / 2 + ε ≤ agreement (pred x) (target x)) :
+    (#good : ℝ) / (2 ^ (k + 2) * Fintype.card X) ≤
+      (dens {mg : (Fin k → BitString n) × BitString k |
+        #good ≤ 2 ^ (k + 2) * #{x | candidate (pred x) mg.1 mg.2 = target x}} : ℝ) := by
+  classical
+  have hX : (0 : ℝ) < Fintype.card X := Nat.cast_pos.2 Fintype.card_pos
+  let c : (Fin k → BitString n) × BitString k → ℕ :=
+    fun mg => #{x | candidate (pred x) mg.1 mg.2 = target x}
+  let F : (Fin k → BitString n) × BitString k → ℝ := fun mg => c mg / Fintype.card X
+  have hF : ∀ mg, F mg ≤ 1 := fun mg => by
+    refine div_le_one_of_le₀ ?_ hX.le
+    exact_mod_cast card_le_univ _
+  -- the average of `F` is at least `#good / (2 ^ (k + 1) * #X)`
+  have hsum := card_mul_le_two_mul_sum_card_candidate_eq pred target ε hε hk hsize good hgood
+  have hM : (Fintype.card ((Fin k → BitString n) × BitString k) : ℝ) =
+      Fintype.card (Fin k → BitString n) * 2 ^ k := by
+    rw [Fintype.card_prod, BitString.card]
+    push_cast
+    ring
+  have hMpos : (0 : ℝ) < Fintype.card (Fin k → BitString n) := Nat.cast_pos.2 Fintype.card_pos
+  have hexp : (#good : ℝ) / (2 ^ (k + 1) * Fintype.card X) ≤ 𝔼 mg, F mg := by
+    rw [Finset.expect_eq_sum_div_card, Finset.card_univ, hM]
+    simp only [F, ← Finset.sum_div]
+    rw [div_div, le_div_iff₀ (by positivity)]
+    have hsum' : (#good : ℝ) * Fintype.card (Fin k → BitString n) ≤
+        2 * ∑ mg : (Fin k → BitString n) × BitString k, (c mg : ℝ) := by
+      exact_mod_cast hsum
+    rw [div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
+    calc (#good : ℝ) * (Fintype.card X * (Fintype.card (Fin k → BitString n) * 2 ^ k))
+        = 2 ^ k * Fintype.card X * (#good * Fintype.card (Fin k → BitString n)) := by ring
+      _ ≤ 2 ^ k * Fintype.card X * (2 * ∑ mg, (c mg : ℝ)) := by gcongr
+      _ = (∑ mg, (c mg : ℝ)) * (2 ^ (k + 1) * Fintype.card X) := by ring
+  -- reverse averaging at half the mean
+  set θ : ℝ := #good / (2 ^ (k + 2) * Fintype.card X)
+  have hθ : 0 ≤ θ := by positivity
+  have hrev := Fintype.expect_sub_le_dens_filter hF hθ
+  have hcongr : (univ.filter fun mg => θ ≤ F mg) = univ.filter fun mg =>
+      #good ≤ 2 ^ (k + 2) * c mg := by
+    refine filter_congr fun mg _ => ?_
+    simp only [θ, F]
+    rw [div_le_div_iff₀ (by positivity) hX,
+      show (c mg : ℝ) * (2 ^ (k + 2) * Fintype.card X) = 2 ^ (k + 2) * c mg * Fintype.card X by
+        ring, mul_le_mul_iff_of_pos_right hX]
+    exact_mod_cast Iff.rfl
+  have hhalf : θ = #good / (2 ^ (k + 1) * Fintype.card X) - θ := by
+    simp only [θ, pow_succ]
+    field_simp
+    ring
+  calc (#good : ℝ) / (2 ^ (k + 2) * Fintype.card X) = θ := rfl
+    _ ≤ 𝔼 mg, F mg - θ := by linarith
+    _ ≤ (dens (univ.filter fun mg => θ ≤ F mg) : ℝ) := hrev
+    _ = _ := by rw [hcongr]
+
+/-- **Averaging for Goldreich–Levin.** If predictors `pred x` agree with the parities of
+`target x` on a `1 / 2 + ε` fraction of all pairs `(x, r)`, with `0 ≤ ε`, then at least an
+`ε / 2` fraction of the indices `x` have agreement at least `1 / 2 + ε / 2`. This is reverse
+averaging (`Fintype.expect_sub_le_dens_filter`) for the agreement, which is at most `1`. -/
+theorem dens_filter_agreement_ge {X : Type*} [Fintype X] [Nonempty X]
+    (pred : X → BitString n → Bool) (target : X → BitString n) {ε : ℝ} (hε : 0 ≤ ε)
+    (hagree : (1 / 2 + ε) * (Fintype.card X * 2 ^ n) ≤
+      #{xr : X × BitString n | pred xr.1 xr.2 = target xr.1 ⬝ᵥ xr.2}) :
+    ε / 2 ≤ (dens {x | 1 / 2 + ε / 2 ≤ agreement (pred x) (target x)} : ℝ) := by
+  classical
+  have hX : (0 : ℝ) < Fintype.card X := Nat.cast_pos.2 Fintype.card_pos
+  have hsplit : (#{xr : X × BitString n | pred xr.1 xr.2 = target xr.1 ⬝ᵥ xr.2} : ℝ) =
+      ∑ x, (#{r | pred x r = target x ⬝ᵥ r} : ℝ) := by
+    rw [← Nat.cast_sum]
+    congr 1
+    rw [card_filter, Fintype.sum_prod_type]
+    exact sum_congr rfl fun x _ => (card_filter _ _).symm
+  have hexp : 1 / 2 + ε ≤ 𝔼 x, agreement (pred x) (target x) := by
+    rw [Finset.expect_eq_sum_div_card, Finset.card_univ, le_div_iff₀ hX]
+    simp only [agreement_eq_card_div, ← Finset.sum_div]
+    rw [le_div_iff₀ (by positivity), ← hsplit]
+    linarith
+  have hrev := Fintype.expect_sub_le_dens_filter (fun x => agreement_le_one (pred x) (target x))
+    (θ := 1 / 2 + ε / 2) (by positivity)
+  linarith
+
+/-- **Averaging for Goldreich–Levin, counting form.** If predictors `pred x` agree with the
+parities of `target x` on a `1 / 2 + ε` fraction of all pairs `(x, r)`, with `0 ≤ ε`, then at least
+`ε / 2 * #X` indices have agreement at least `1 / 2 + ε / 2`. -/
+theorem card_filter_agreement_ge {X : Type*} [Fintype X] [Nonempty X]
+    (pred : X → BitString n → Bool) (target : X → BitString n) {ε : ℝ} (hε : 0 ≤ ε)
+    (hagree : (1 / 2 + ε) * (Fintype.card X * 2 ^ n) ≤
+      #{xr : X × BitString n | pred xr.1 xr.2 = target xr.1 ⬝ᵥ xr.2}) :
+    ε / 2 * Fintype.card X ≤ (#{x | 1 / 2 + ε / 2 ≤ agreement (pred x) (target x)} : ℝ) := by
+  have h := dens_filter_agreement_ge pred target hε hagree
+  rwa [nnratCast_dens, le_div_iff₀ (Nat.cast_pos.2 Fintype.card_pos)] at h
 
 end Cslib.Crypto.GoldreichLevin

@@ -276,8 +276,7 @@ private lemma runs_clearC (c f r p st : List Bool) (oc os : ℤ) (out : List Boo
       refine ⟨?_, rfl⟩
       rw [update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
 
 private lemma runs_clearF (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
@@ -289,8 +288,7 @@ private lemma runs_clearF (c f r p st : List Bool) (oc os : ℤ) (out : List Boo
       refine ⟨?_, rfl⟩
       rw [update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
 
 private lemma runs_clearR (c f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
@@ -302,8 +300,7 @@ private lemma runs_clearR (c f r p st : List Bool) (oc os : ℤ) (out : List Boo
       refine ⟨?_, rfl⟩
       rw [update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
 
 /-- Copying the round word to the blank current-value tape. -/
@@ -319,8 +316,7 @@ private lemma runs_copy (f r p st : List Bool) (oc os : ℤ) (out : List Bool) :
       refine ⟨?_, rfl⟩
       rw [show copyEmb (kk := kk) 0 = nm 1 from rfl, update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
 
 /-- Emitting the current value. -/
@@ -370,8 +366,7 @@ private lemma runs_halt {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Boo
       refine ⟨?_, rfl⟩
       rw [owEmb_out, update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
   simpa [wordsM, show kk + 6 - (kk + 1 + 2) = 3 by omega] using this
 
@@ -392,8 +387,7 @@ private lemma runs_push {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Boo
       refine ⟨?_, rfl⟩
       rw [owEmb_out, update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
   simpa [wordsM, show kk + 6 - (kk + 1 + 2) = 3 by omega] using this
 
@@ -414,8 +408,7 @@ private lemma runs_next {S : Type*} {tm : MultiTapeTM kk Bool S} {c y : List Boo
       refine ⟨?_, rfl⟩
       rw [owEmb_out, update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
   simpa [wordsM, show kk + 6 - (kk + 1 + 2) = 3 by omega] using this
 
@@ -442,8 +435,7 @@ private lemma runs_init {S : Type*} {tm : MultiTapeTM kk Bool S} {y : List Bool}
       refine ⟨?_, rfl⟩
       rw [initEmb_last, update_tapeWords]
       unfold tapeWords
-      congr 1
-      funext i
+      congr 1 with i : 1
       fin_cases i <;> rfl) (List.append_nil out).symm
   simpa [initM, show kk + 6 - (kk + 1) = 5 by omega] using this
 

@@ -224,12 +224,7 @@ theorem sparse_coordinate_power (f g e : Equiv.Perm (BitVec n))
     ∃ out : Circuit Boolean.signature n n,
       out.Computes Boolean.interpretation (fun x i => ((f ^ T) (word x)).getLsbD i.val) ∧
       out.size ≤ encode.size + decode.size + 100 * (n + 1) * ((disagreement f g).card + 1) := by
-  have hcounter : e ∘ g ∘ e.symm = fun x => x + 1 := by
-    funext x
-    simp only [Function.comp_apply, hcycle, Equiv.apply_symm_apply]
-  have hr := disagreement_conjugate_card (f : BitVec n → BitVec n)
-    (g : BitVec n → BitVec n) e
-  rw [hcounter] at hr
+  have hr := disagreement_semiconj_card (f : BitVec n → BitVec n) g e (· + 1) hcycle
   obtain ⟨middle, hm, hs⟩ := sparse_counter_power (e.permCongrHom f) T
   have hp : (e.permCongrHom f) ^ T = e.permCongrHom (f ^ T) := (map_zpow _ _ _).symm
   refine ⟨decode.comp (middle.comp encode), ?_, ?_⟩

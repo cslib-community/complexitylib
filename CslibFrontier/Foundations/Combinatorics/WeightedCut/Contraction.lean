@@ -99,18 +99,19 @@ theorem mergePair_isolated_right {k : ℕ} (W : Fin k → Fin k → ℕ) (u v i 
     mergePair W u v i v = 0 := by
   simp [mergePair]
 
+/-- A row sum split off at two distinct columns `u` and `v`. -/
+private theorem sum_eq_add_add_sum_erase_erase {k : ℕ} {u v : Fin k} (huv : u ≠ v)
+    (f : Fin k → ℕ) :
+    ∑ y : Fin k, f y = f u + f v + ∑ y ∈ (Finset.univ.erase u).erase v, f y := by
+  rw [← Finset.add_sum_erase _ f (Finset.mem_univ u),
+    ← Finset.add_sum_erase _ f (Finset.mem_erase.mpr ⟨huv.symm, Finset.mem_univ v⟩), add_assoc]
+
 theorem rowDeg_mergePair_other {k : ℕ} {W : Fin k → Fin k → ℕ} (hW : IsMultigraph W)
     {u v x : Fin k} (huv : u ≠ v) (hxu : x ≠ u) (hxv : x ≠ v) :
     rowDeg (mergePair W u v) x = rowDeg W x := by
   unfold rowDeg
-  have hsplit : ∀ f : Fin k → ℕ,
-      ∑ y : Fin k, f y = f u + f v + ∑ y ∈ (Finset.univ.erase u).erase v, f y := by
-    intro f
-    have hu_mem : u ∈ (Finset.univ : Finset (Fin k)) := Finset.mem_univ u
-    have hv_mem : v ∈ (Finset.univ : Finset (Fin k)).erase u :=
-      Finset.mem_erase.mpr ⟨huv.symm, Finset.mem_univ v⟩
-    rw [← Finset.add_sum_erase _ f hu_mem, ← Finset.add_sum_erase _ f hv_mem, add_assoc]
-  rw [hsplit (mergePair W u v x), hsplit (W x)]
+  rw [sum_eq_add_add_sum_erase_erase huv (mergePair W u v x),
+    sum_eq_add_add_sum_erase_erase huv (W x)]
   have h1 : mergePair W u v x u = W x u + W x v := by
     unfold mergePair
     simp [hxu, hxv, huv]
@@ -130,14 +131,8 @@ theorem rowDeg_mergePair_u {k : ℕ} {W : Fin k → Fin k → ℕ} (hW : IsMulti
     {u v : Fin k} (huv : u ≠ v) :
     rowDeg (mergePair W u v) u = (rowDeg W u - W u v) + (rowDeg W v - W v u) := by
   unfold rowDeg
-  have hsplit : ∀ f : Fin k → ℕ,
-      ∑ y : Fin k, f y = f u + f v + ∑ y ∈ (Finset.univ.erase u).erase v, f y := by
-    intro f
-    have hu_mem : u ∈ (Finset.univ : Finset (Fin k)) := Finset.mem_univ u
-    have hv_mem : v ∈ (Finset.univ : Finset (Fin k)).erase u :=
-      Finset.mem_erase.mpr ⟨huv.symm, Finset.mem_univ v⟩
-    rw [← Finset.add_sum_erase _ f hu_mem, ← Finset.add_sum_erase _ f hv_mem, add_assoc]
-  rw [hsplit (mergePair W u v u), hsplit (W u), hsplit (W v)]
+  rw [sum_eq_add_add_sum_erase_erase huv (mergePair W u v u),
+    sum_eq_add_add_sum_erase_erase huv (W u), sum_eq_add_add_sum_erase_erase huv (W v)]
   have h_uu : mergePair W u v u u = 0 := by simp [mergePair]
   have h_uv : mergePair W u v u v = 0 := mergePair_isolated_right W u v u
   have h_rest : ∑ y ∈ (Finset.univ.erase u).erase v, mergePair W u v u y =

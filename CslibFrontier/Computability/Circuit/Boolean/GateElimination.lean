@@ -199,16 +199,14 @@ private theorem exists_eqUpToNeg_of_isConst (h : ℓ.op.IsBinary) {s : Fin (sign
 private theorem isConst_of_forall_isConst (h : ∀ s, IsConst (G (ℓ.wires s))) :
     IsConst (lineFunction ℓ G) := fun x y => by
   simp only [lineFunction]
-  congr 1
-  funext s
+  congr 1 with s : 1
   exact h s x y
 
 /-- A gate whose arguments depend only on `S` depends only on `S`. -/
 private theorem dependsOn_of_forall_dependsOn {S : Set (Fin n)}
     (h : ∀ s, DependsOn (G (ℓ.wires s)) S) : DependsOn (lineFunction ℓ G) S := fun x y hxy => by
   simp only [lineFunction]
-  congr 1
-  funext s
+  congr 1 with s : 1
   exact h s hxy
 
 /-- A binary gate on two constants or literals that is neither constant, nor a literal, nor one

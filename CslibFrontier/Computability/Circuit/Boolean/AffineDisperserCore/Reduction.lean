@@ -1,0 +1,543 @@
+/-
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Christian Reitwiessner, Samuel Schlesinger
+-/
+
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Operations
+
+/-!
+# Reductions and potential accounting for gate elimination
+
+Shared reduction abstraction and potential-change accounting for the `3.5n` (`AffineDisperser`)
+and `4n` (`AffineDisperser4n`) gate-elimination developments.
+
+A reduction `State.Reduction f S S' F D T` from `S` to `S'` restricts the parameters in `F`, drops
+all pairs meeting `F`, and deletes the gates and equations in `D`, ensuring that only deletions of
+constraints in `T` can reroute to a remaining parameter and that non-deleted deletable constraints
+remain deletable.
+
+## Main definitions
+
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.Deletable`: constraints deletable by `(D1)`
+  or `(D3)`.
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.Reduction`: composable reductions.
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.deleteConstraint`: the deletion of a deletable
+  gate or equation.
+
+## Main results
+
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.Reduction.W_le`: the potential inequality
+  parameterized by `cfg.cs`, `cfg.cq`, and `cfg.weight`.
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.Reduction.step`: reductions as steps of gate
+  elimination parameterized by `cfg.ca`.
+* `Cslib.Circuits.Boolean.AffineDisperserCore.State.Valid.reduction_deleteConstraint`,
+  `Cslib.Circuits.Boolean.AffineDisperserCore.State.Valid.exists_reduction_deleteAll`: deleting
+  deletable constraints.
+-/
+
+public section
+
+namespace Cslib.Circuits.Boolean.AffineDisperserCore
+
+open Finset SemiCircuit
+
+namespace State
+
+variable {cfg : Config} {n : ℕ} {f : BooleanFunction n}
+
+/-! ### Deletable constraints -/
+
+/-- A deletable constraint: a gate with a constant argument or two equal arguments, or an equation
+with at most two terms. -/
+@[expose] def Deletable (S : State cfg n) : ℕ ⊕ ℕ → Prop
+  | .inl J => J ∈ S.gates ∧ (S.gate J).Degenerate
+  | .inr e => e ∈ S.eqns ∧ (S.eqn e).terms.card ≤ 2
+
+private theorem degenerate_subst_const {g : Gate} {p : ℕ} {b : Bool} (hr : g.Reads p) :
+    (g.subst p (Lit.const b)).Degenerate := by
+  unfold Gate.Degenerate
+  change (∃ c, g.left.substArg p (Arg.const b) = .const c) ∨
+    (∃ c, g.right.substArg p (Arg.const b) = .const c) ∨ _
+  rcases hr with hr | hr
+  · exact Or.inl ⟨b, by rw [hr]; simp [Arg.substArg]⟩
+  · exact Or.inr (Or.inl ⟨b, by rw [hr]; simp [Arg.substArg]⟩)
+
+/-- The children of a parameter fixed to a constant are deletable. -/
+theorem deletable_fixConst_child {S : State cfg n} (hS : S.Valid f) {p : ℕ}
+    (P : Finset cfg.Pair) (b : Bool) {N : ℕ ⊕ ℕ} (hN : N ∈ S.children p) :
+    (S.restrict p (Lit.const b) P).Deletable N := by
+  rcases N with J | e
+  · obtain ⟨hJ, hr⟩ := (SemiCircuit.inl_mem_children _).1 hN
+    exact ⟨hJ, degenerate_subst_const hr⟩
+  · obtain ⟨he, hpe⟩ := (SemiCircuit.inr_mem_children _).1 hN
+    refine ⟨he, ?_⟩
+    change ((S.eqn e).subst p (Lit.const b)).terms.card ≤ 2
+    have h3 := hS.wf.card_terms_le e he
+    have : ((S.eqn e).subst p (Lit.const b)).terms = (S.eqn e).terms.erase p := by
+      simp [Equation.subst, hpe, Lit.const]
+    rw [this, Finset.card_erase_of_mem hpe]
+    omega
+
+/-- After deleting the gate `J` rerouted to a constant, the gates reading `J` are deletable. -/
+theorem deletable_deleteGate_child {S : State cfg n} {J K : ℕ} (c : Bool) (hK : K ∈ S.gates)
+    (hKJ : K ≠ J) (hr : (S.gate K).Reads J) :
+    (S.deleteGate J (Lit.const c)).Deletable (.inl K) :=
+  ⟨Finset.mem_erase.2 ⟨hKJ, hK⟩, degenerate_subst_const hr⟩
+
+/-! ### Reductions -/
+
+/-- A reduction from `S` to `S'`: the parameters of `F` are restricted, the pairs meeting `F` are
+dropped, and the constraints of `D` are deleted. The children of a remaining parameter lose the
+deleted constraints and gain none, unless a deletion of a constraint of `T` that was one of its
+children reroutes to it; and the other constraints stay deletable. -/
+structure Reduction (f : BooleanFunction n) (S S' : State cfg n) (F : Finset ℕ)
+    (D T : List (ℕ ⊕ ℕ)) : Prop where
+  /-- The new state is valid. -/
+  valid : S'.Valid f
+  /-- The restricted names are parameters. -/
+  subset : F ⊆ S.params
+  /-- The restricted parameters are removed. -/
+  params : S'.params = S.params \ F
+  /-- The pairs meeting the restricted parameters are dropped. -/
+  pairs : S'.pairs = S.pairs.filter fun pr => ¬ (cfg.fst pr ∈ F ∨ cfg.snd pr ∈ F)
+  /-- The deleted constraints are removed. -/
+  size : S'.size + D.length = S.size
+  /-- A remaining parameter gains no child, unless a deletion of `T` reroutes to it. -/
+  children : ∀ u ∈ S'.params,
+    S'.children u ⊆ S.children u \ D.toFinset ∨ ∃ N ∈ T, N ∈ S.children u
+  /-- The other constraints stay deletable. -/
+  deletable : ∀ N, N ∉ D → S.Deletable N → S'.Deletable N
+
+namespace Reduction
+
+variable {S S' : State cfg n} {F : Finset ℕ} {D T : List (ℕ ⊕ ℕ)}
+
+/-- The empty reduction from a valid state `S` to itself. -/
+theorem refl (hS : S.Valid f) : Reduction f S S ∅ [] [] where
+  valid := hS
+  subset := Finset.empty_subset _
+  params := Finset.sdiff_empty.symm
+  pairs := (Finset.filter_true_of_mem fun _ _ => by simp).symm
+  size := rfl
+  children _ _ := Or.inl (by simp)
+  deletable _ _ h := h
+
+/-- Reductions compose. -/
+theorem trans {S₁ S₂ : State cfg n} {F₁ F₂ : Finset ℕ} {D₁ D₂ T₁ T₂ : List (ℕ ⊕ ℕ)}
+    (h₁ : Reduction f S S₁ F₁ D₁ T₁) (h₂ : Reduction f S₁ S₂ F₂ D₂ T₂) :
+    Reduction f S S₂ (F₁ ∪ F₂) (D₁ ++ D₂) (T₁ ++ T₂) where
+  valid := h₂.valid
+  subset := Finset.union_subset h₁.subset ((h₂.subset.trans h₁.params.le).trans sdiff_subset)
+  params := by
+    rw [h₂.params, h₁.params]
+    ext u
+    simp only [Finset.mem_sdiff, Finset.mem_union]
+    tauto
+  pairs := by
+    rw [h₂.pairs, h₁.pairs, Finset.filter_filter]
+    exact Finset.filter_congr fun pr _ => by simp only [Finset.mem_union]; tauto
+  size := by rw [List.length_append, ← h₁.size, ← h₂.size]; omega
+  children u hu := by
+    have hu₁ : u ∈ S₁.params := (h₂.params.le hu |> Finset.mem_sdiff.1).1
+    rcases h₂.children u hu with h₂' | ⟨N, hN, hNu⟩ <;> rcases h₁.children u hu₁ with h₁' | h₁'
+    · refine Or.inl fun N hN => ?_
+      have h₂N := Finset.mem_sdiff.1 (h₂' hN)
+      have h₁N := Finset.mem_sdiff.1 (h₁' h₂N.1)
+      simp only [Finset.mem_sdiff, List.toFinset_append, Finset.mem_union, not_or]
+      exact ⟨h₁N.1, h₁N.2, h₂N.2⟩
+    · obtain ⟨N, hN, hNu⟩ := h₁'
+      exact Or.inr ⟨N, List.mem_append_left _ hN, hNu⟩
+    · exact Or.inr ⟨N, List.mem_append_right _ hN, (Finset.mem_sdiff.1 (h₁' hNu)).1⟩
+    · obtain ⟨N, hN, hNu⟩ := h₁'
+      exact Or.inr ⟨N, List.mem_append_left _ hN, hNu⟩
+  deletable N hN h := by
+    rw [List.mem_append, not_or] at hN
+    exact h₂.deletable N hN.2 (h₁.deletable N hN.1 h)
+
+/-- A reduction followed by a reduction restricting nothing. -/
+theorem trans_delete {S₁ S₂ : State cfg n} {D₂ T₂ : List (ℕ ⊕ ℕ)} (h₁ : Reduction f S S₁ F D T)
+    (h₂ : Reduction f S₁ S₂ ∅ D₂ T₂) : Reduction f S S₂ F (D ++ D₂) (T ++ T₂) := by
+  have h := h₁.trans h₂
+  rwa [Finset.union_empty] at h
+
+/-- A reduction may record more deletions as possibly rerouting to parameters. -/
+theorem mono (h : Reduction f S S' F D T) {T' : List (ℕ ⊕ ℕ)} (hT : ∀ N ∈ T, N ∈ T') :
+    Reduction f S S' F D T' :=
+  { h with
+    children := fun u hu => (h.children u hu).imp_right fun ⟨N, hN, hNu⟩ => ⟨N, hT N hN, hNu⟩ }
+
+/-! ### Accounting -/
+
+/-- A reduction restricting `F` decreases the number of parameters `m` by `|F|`. -/
+theorem m_add (h : Reduction f S S' F D T) : S'.m + F.card = S.m := by
+  unfold m
+  rw [h.params, Finset.card_sdiff_of_subset h.subset]
+  have := Finset.card_le_card h.subset
+  omega
+
+/-- A reduction deleting `D` decreases the size `s` by `|D|`. -/
+theorem s_add (h : Reduction f S S' F D T) : S'.s + D.length = S.s :=
+  h.size
+
+/-- A reduction restricting `F` decreases the number of pairs `q` by the number of pairs meeting
+`F`. -/
+theorem q_add (h : Reduction f S S' F D T) : S'.q + (S.pairsMeeting F).card = S.q := by
+  unfold q pairsMeeting
+  rw [h.pairs, add_comm]
+  exact Finset.card_filter_add_card_filter_not _
+
+/-- Under a reduction restricting `F`, `S'.a + |F| = S.a + (S.pairsMeeting F).card`. -/
+theorem a_add (h : Reduction f S S' F D T) (hS : S.Valid f) :
+    S'.a + F.card = S.a + (S.pairsMeeting F).card := by
+  have hm := h.m_add
+  have hq := h.q_add
+  have hk := hS.card_pairsMeeting_le F
+  have hqm := h.valid.q_le_m
+  unfold a
+  omega
+
+/-- The unpaired parameters after a reduction: the unpaired parameters outside `F` and the
+partners of members of `F`. -/
+theorem mem_unpaired_iff (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ} :
+    u ∈ S'.unpaired ↔ u ∈ S.params ∧ u ∉ F ∧ (¬ S.Paired u ∨ ∃ x ∈ F, S.IsPartner x u) := by
+  rw [mem_unpaired, h.params, Finset.mem_sdiff]
+  constructor
+  · rintro ⟨⟨hu, huF⟩, hun⟩
+    refine ⟨hu, huF, ?_⟩
+    by_contra hc
+    push Not at hc
+    exact hun (by
+      unfold Paired; rw [h.pairs]
+      exact (hS.paired_filter_iff huF).2 ⟨hc.1, fun x hx hux => hc.2 x hx hux.symm⟩)
+  · rintro ⟨hu, huF, hc⟩
+    refine ⟨⟨hu, huF⟩, fun hp => ?_⟩
+    unfold Paired at hp
+    rw [h.pairs] at hp
+    obtain ⟨hpu, hpart⟩ := (hS.paired_filter_iff huF).1 hp
+    rcases hc with hc | ⟨x, hx, hux⟩
+    · exact hc hpu
+    · exact hpart x hx hux.symm
+
+/-- A paired parameter that is not the partner of a member of `F` stays paired. -/
+theorem wt_eq_zero (h : Reduction f S S' F D T) (hS : S.Valid f) {u : ℕ} (hu : u ∉ S.unpaired)
+    (hpart : ∀ x ∈ F, ¬ S.IsPartner x u) : S'.wt u = 0 := by
+  refine wt_of_notMem fun hu' => ?_
+  obtain ⟨hup, -, hc⟩ := (h.mem_unpaired_iff hS).1 hu'
+  rcases hc with hc | ⟨x, hx, hxu⟩
+  · exact hu (mem_unpaired.2 ⟨hup, hc⟩)
+  · exact hpart x hx hxu
+
+/-- A parameter that no deletion of `T` reroutes to keeps at most its children outside `D`. -/
+theorem wt_le_weight (h : Reduction f S S' F D T) {u : ℕ} (hT : ∀ N ∈ T, N ∉ S.children u) :
+    S'.wt u ≤ cfg.weight (S.children u \ D.toFinset).card := by
+  by_cases hu : u ∈ S'.unpaired
+  · rw [wt_of_mem hu]
+    refine cfg.weight_mono (Finset.card_le_card ?_)
+    rcases h.children u (mem_unpaired.1 hu).1 with h' | ⟨N, hN, hNu⟩
+    · exact h'
+    · exact absurd hNu (hT N hN)
+  · rw [wt_of_notMem hu]; exact Nat.zero_le _
+
+/-- A parameter that no deletion of `T` reroutes to keeps at most its children outside `D`. -/
+theorem children_subset (h : Reduction f S S' F D T) {u : ℕ} (hu : u ∈ S'.params)
+    (hT : ∀ N ∈ T, N ∉ S.children u) : S'.children u ⊆ S.children u \ D.toFinset :=
+  (h.children u hu).resolve_right fun ⟨N, hN, hNu⟩ => hT N hN hNu
+
+/-- A parameter all of whose children are deleted, and that no deletion reroutes to, becomes
+unused. -/
+theorem wt_eq_zero_of_subset (h : Reduction f S S' F D T) {u : ℕ}
+    (hsub : S.children u ⊆ D.toFinset) (hT : ∀ N ∈ T, N ∉ S.children u) : S'.wt u = 0 := by
+  have := h.wt_le_weight hT
+  rwa [Finset.sdiff_eq_empty_iff_subset.2 hsub, Finset.card_empty, cfg.weight_zero,
+    Nat.le_zero] at this
+
+/-- **The potential of a reduction.** If every parameter outside `F` gains at most `gain` and
+loses at least `loss` in weight, then
+`W' + cfg.cs * |D| + cfg.cq * k + ∑_{x ∈ F} wt(x) + ∑ loss ≤ W + ∑ gain`, where `k` is the
+number of pairs meeting `F`. -/
+theorem W_le (h : Reduction f S S' F D T) (loss gain : ℕ → ℕ)
+    (hpt : ∀ u ∈ S.params \ F, S'.wt u + loss u ≤ S.wt u + gain u) :
+    S'.W + cfg.cs * D.length + cfg.cq * (S.pairsMeeting F).card + ∑ u ∈ F, S.wt u +
+        ∑ u ∈ S.params \ F, loss u ≤ S.W + ∑ u ∈ S.params \ F, gain u := by
+  have hW := W_add_le (S := S) (S' := S') (N := S.params) le_rfl
+    (by rw [h.params]; exact Finset.sdiff_subset)
+    (fun u => if u ∈ F then S.wt u else loss u) (fun u => if u ∈ F then 0 else gain u)
+    fun u hu => by
+      by_cases huF : u ∈ F
+      · simp only [ite_eq_left huF, wt_of_notMem_params (show u ∉ S'.params by
+          rw [h.params]; exact fun h' => (Finset.mem_sdiff.1 h').2 huF)]
+        omega
+      · simp only [ite_eq_right huF]
+        exact hpt u (Finset.mem_sdiff.2 ⟨hu, huF⟩)
+  have hsplit : ∀ g : ℕ → ℕ, ∑ u ∈ S.params, g u =
+      ∑ u ∈ S.params \ F, g u + ∑ u ∈ F, g u := fun g => (Finset.sum_sdiff h.subset).symm
+  rw [hsplit, hsplit (fun u => if u ∈ F then 0 else gain u),
+    Finset.sum_congr rfl (g := fun u => loss u) fun u hu => ite_eq_right (Finset.mem_sdiff.1 hu).2,
+    Finset.sum_congr rfl (g := fun u => S.wt u) fun u hu => ite_eq_left hu,
+    Finset.sum_congr rfl (g := fun u => gain u) fun u hu => ite_eq_right (Finset.mem_sdiff.1 hu).2,
+    Finset.sum_congr rfl (g := fun _ => 0) fun u hu => ite_eq_left hu, Finset.sum_const_zero] at hW
+  have hs := congrArg (cfg.cs * ·) h.s_add
+  have hq := congrArg (cfg.cq * ·) h.q_add
+  rw [Nat.mul_add] at hs hq
+  omega
+
+/-- A reduction restricting at most `k + 2` parameters (so `Δa ≥ -2`), and at least one parameter
+or constraint, with `W' + cfg.ca * |F| ≤ W + cfg.ca * k`, is a step of gate elimination. -/
+theorem step (h : Reduction f S S' F D T) (hS : S.Valid f)
+    (hF : F.card ≤ (S.pairsMeeting F).card + 2)
+    (hne : 0 < F.card + D.length)
+    (hW : S'.W + cfg.ca * F.card ≤ S.W + cfg.ca * (S.pairsMeeting F).card) : Step f S S' := by
+  have ha := h.a_add hS
+  have hca := congrArg (cfg.ca * ·) ha
+  rw [Nat.mul_add, Nat.mul_add] at hca
+  have hm := h.m_add
+  have hs := h.s_add
+  have hk := hS.card_pairsMeeting_le F
+  exact ⟨h.valid, by omega, by omega, by omega, by omega⟩
+
+end Reduction
+
+/-! ### Generic restriction reduction -/
+
+/-- Generic reduction for restricting a parameter `x` to a constant or to a literal of a remaining
+parameter `y` having at least `x`'s children, given `cfg.phiOK` and locus preservation. -/
+theorem Valid.reduction_restrict_of {S : State cfg n} (hS : S.Valid f) {x : ℕ} (hx : x ∈ S.params)
+    {ℓ : Lit} (hℓ : ∀ y, ℓ.Reads y → y ∈ S.params ∧ y ≠ x ∧ S.children x ⊆ S.children y)
+    (hphi : cfg.phiOK (S.pairsAvoid x) (S.restrict x ℓ (S.pairsAvoid x)).phi)
+    (hlocus : ∀ val, (S.restrict x ℓ (S.pairsAvoid x)).Locus val →
+      S.Locus (Function.update val x (ℓ.eval val))) :
+    Reduction f S (S.restrict x ℓ (S.pairsAvoid x)) {x} [] [] where
+  valid := hS.restrict_of hx (fun y hy => ⟨(hℓ y hy).1, (hℓ y hy).2.1⟩)
+    (Finset.filter_subset _ _) (fun _ hpr => (Finset.mem_filter.1 hpr).2) hphi hlocus
+  subset := Finset.singleton_subset_iff.2 hx
+  params := by
+    ext u
+    simp only [restrict_params, Finset.mem_erase, Finset.mem_sdiff, Finset.mem_singleton]
+    tauto
+  pairs := Finset.filter_congr fun pr _ => by
+    simp only [Config.Contains, Finset.mem_singleton, not_or]
+  size := by rw [List.length_nil, add_zero]; rfl
+  children u hu := by
+    refine Or.inl ?_
+    rw [List.toFinset_nil, Finset.sdiff_empty, restrict_children]
+    have hux : u ≠ x := Finset.ne_of_mem_erase hu
+    by_cases hℓu : ℓ.Reads u
+    · exact (SemiCircuit.children_subst_subset x ℓ u).trans
+        (Finset.union_subset le_rfl (hℓ u hℓu).2.2)
+    · rw [SemiCircuit.children_subst hux hℓu]
+  deletable N _ hN := by
+    rcases N with J | e
+    · exact ⟨hN.1, Gate.degenerate_subst hN.2 _ _⟩
+    · exact ⟨hN.1, Equation.card_subst_le.trans hN.2⟩
+
+/-! ### Deletions -/
+
+/-- Deleting a gate is a reduction; it may reroute only to the parameter read by the literal. -/
+theorem Valid.reduction_deleteGate {S : State cfg n} (hS : S.Valid f) {J : ℕ} {ℓ : Lit}
+    (h : S.DeleteGateLocusOK J ℓ) {T : List (ℕ ⊕ ℕ)} (hT : ∀ t, ℓ.Reads t → .inl J ∈ T) :
+    Reduction f S (S.deleteGate J ℓ) ∅ [.inl J] T where
+  valid := hS.deleteGate h
+  subset := Finset.empty_subset _
+  params := Finset.sdiff_empty.symm
+  pairs := (Finset.filter_true_of_mem fun _ _ => by simp).symm
+  size := deleteGate_size h.mem
+  children u hu := by
+    by_cases hℓu : ℓ.Reads u
+    · exact Or.inr ⟨_, hT u hℓu, (SemiCircuit.inl_mem_children _).2 ⟨h.mem, h.reads u hℓu⟩⟩
+    · refine Or.inl ?_
+      rw [List.toFinset_cons, List.toFinset_nil, insert_empty_eq,
+        Finset.sdiff_singleton_eq_erase]
+      exact deleteGate_children_of_ne hS h.mem hu hℓu
+  deletable N hN hdel := by
+    rcases N with K | e
+    · have hKJ : K ≠ J := fun he => hN (by rw [he]; exact List.mem_singleton_self _)
+      exact ⟨Finset.mem_erase.2 ⟨hKJ, hdel.1⟩, Gate.degenerate_subst hdel.2 _ _⟩
+    · exact ⟨hdel.1, Equation.card_subst_le.trans hdel.2⟩
+
+/-- Deleting a gate that is constant on admissible equation solutions is a reduction rerouting
+nothing. -/
+theorem Valid.reduction_deleteConst {S : State cfg n} (hS : S.Valid f) {J : ℕ} {c : Bool}
+    (hJ : J ∈ S.gates) (hc : ∀ val, S.EqnsHold val → S.Locus val → (S.gate J).eval val = c) :
+    Reduction f S (S.deleteGate J (Lit.const c)) ∅ [.inl J] [] :=
+  hS.reduction_deleteGate ⟨hJ, fun t ht => by simp [Lit.Reads, Lit.const] at ht,
+    Or.inl fun val hval hlocus => by rw [hc val hval hlocus, Lit.eval_const]⟩
+    fun t ht => by simp [Lit.Reads, Lit.const] at ht
+
+/-- Deleting an equation `v = ℓ` is a reduction; it may reroute only to the parameter read by the
+literal. -/
+theorem Valid.reduction_deleteEqn {S : State cfg n} (hS : S.Valid f) {e v : ℕ} {ℓ : Lit}
+    (h : S.DeleteEqnOK e v ℓ) {T : List (ℕ ⊕ ℕ)} (hT : ∀ t, ℓ.Reads t → .inr e ∈ T) :
+    Reduction f S (S.deleteEqn e v ℓ) ∅ [.inr e] T where
+  valid := hS.deleteEqn h
+  subset := Finset.empty_subset _
+  params := Finset.sdiff_empty.symm
+  pairs := (Finset.filter_true_of_mem fun _ _ => by simp).symm
+  size := deleteEqn_size h
+  children u hu := by
+    by_cases hℓu : ℓ.Reads u
+    · exact Or.inr ⟨_, hT u hℓu, (SemiCircuit.inr_mem_children _).2 ⟨h.mem, (h.reads u hℓu).1⟩⟩
+    · refine Or.inl ?_
+      rw [List.toFinset_cons, List.toFinset_nil, insert_empty_eq,
+        Finset.sdiff_singleton_eq_erase]
+      exact deleteEqn_children_of_ne hS h hu hℓu
+  deletable N hN hdel := by
+    rcases N with K | e'
+    · exact ⟨hdel.1, Gate.degenerate_subst hdel.2 _ _⟩
+    · have hee : e' ≠ e := fun he => hN (by rw [he]; exact List.mem_singleton_self _)
+      exact ⟨Finset.mem_erase.2 ⟨hee, hdel.1⟩, Equation.card_subst_le.trans hdel.2⟩
+
+private theorem Valid.reduction_dropTrivialEqn {S : State cfg n} (hS : S.Valid f) {e : ℕ}
+    (he : e ∈ S.eqns) (hterms : (S.eqn e).terms = ∅) :
+    Reduction f S (S.dropTrivialEqn e) ∅ [.inr e] [] where
+  valid := hS.dropTrivialEqn he hterms
+  subset := Finset.empty_subset _
+  params := Finset.sdiff_empty.symm
+  pairs := (Finset.filter_true_of_mem fun _ _ => by simp).symm
+  size := dropTrivialEqn_size he
+  children _ _ := Or.inl (by
+    rw [dropTrivialEqn_children, List.toFinset_cons, List.toFinset_nil, insert_empty_eq,
+      Finset.sdiff_singleton_eq_erase])
+  deletable N hN hdel := by
+    rcases N with K | e'
+    · exact hdel
+    · have hee : e' ≠ e := fun h => hN (by rw [h]; exact List.mem_singleton_self _)
+      exact ⟨Finset.mem_erase.2 ⟨hee, hdel.1⟩, hdel.2⟩
+
+/-- In a valid state, an equation whose terms are all parameters has no terms. -/
+theorem Valid.terms_eq_empty_of_subset {S : State cfg n} (hS : S.Valid f) {e : ℕ} (he : e ∈ S.eqns)
+    (hsub : (S.eqn e).terms ⊆ S.params) : (S.eqn e).terms = ∅ := by
+  by_contra hne
+  obtain ⟨x, hx⟩ := Finset.nonempty_iff_ne_empty.2 hne
+  obtain ⟨val, hval, heq⟩ := hS.wf.solvable 0
+  obtain ⟨val', hval', heq'⟩ := hS.wf.solvable (Function.update val x (!val x))
+  have h1 := heq e he
+  have h2 := heq' e he
+  unfold Equation.Holds at h1 h2
+  rw [← Finset.add_sum_erase _ _ hx] at h1 h2
+  rw [Finset.sum_congr rfl fun i hi => by
+    rw [hval' i (hsub (Finset.mem_of_mem_erase hi)),
+      Function.update_of_ne (Finset.ne_of_mem_erase hi)], hval' x (hsub hx),
+    Function.update_self, ← h1] at h2
+  cases val x <;> simp at h2
+
+/-- The deletion of a constraint used by `Valid.reduction_deleteConstraint`. A gate is rerouted to
+its literal `Gate.lit`. An equation containing an auxiliary variable is deleted as `v = U + rhs`,
+where `v` is its least auxiliary variable and `U` its least other term, or as `v = rhs` if it has
+no other term. An equation without auxiliary variables is dropped. -/
+@[expose] def deleteConstraint (S : State cfg n) : ℕ ⊕ ℕ → State cfg n
+  | .inl J => S.deleteGate J (S.gate J).lit
+  | .inr e =>
+    if hA : ((S.eqn e).terms.filter (· ∈ S.aux)).Nonempty then
+      let v := ((S.eqn e).terms.filter (· ∈ S.aux)).min' hA
+      if hR : ((S.eqn e).terms.erase v).Nonempty then
+        S.deleteEqn e v ⟨.node (((S.eqn e).terms.erase v).min' hR), (S.eqn e).rhs⟩
+      else S.deleteEqn e v (Lit.const (S.eqn e).rhs)
+    else S.dropTrivialEqn e
+
+/-- Deleting a constraint removes no parameter. -/
+@[simp] theorem deleteConstraint_params (S : State cfg n) (N : ℕ ⊕ ℕ) :
+    (S.deleteConstraint N).params = S.params := by
+  rcases N with J | e
+  · rfl
+  · dsimp only [deleteConstraint]
+    split_ifs <;> rfl
+
+/-- Deleting a constraint keeps the pairs. -/
+@[simp] theorem deleteConstraint_pairs (S : State cfg n) (N : ℕ ⊕ ℕ) :
+    (S.deleteConstraint N).pairs = S.pairs := by
+  rcases N with J | e
+  · rfl
+  · dsimp only [deleteConstraint]
+    split_ifs <;> rfl
+
+/-- Deleting a constraint adds no gate. -/
+theorem deleteConstraint_gates_subset (S : State cfg n) (N : ℕ ⊕ ℕ) :
+    (S.deleteConstraint N).gates ⊆ S.gates := by
+  rcases N with J | e
+  · exact Finset.erase_subset _ _
+  · dsimp only [deleteConstraint]
+    split_ifs <;> exact subset_rfl
+
+/-- A deletable constraint of a valid state is deleted by the reduction `S.deleteConstraint N`. -/
+theorem Valid.reduction_deleteConstraint {S : State cfg n} (hS : S.Valid f) {N : ℕ ⊕ ℕ}
+    (hN : S.Deletable N) : Reduction f S (S.deleteConstraint N) ∅ [N] [N] := by
+  rcases N with J | e
+  · obtain ⟨hJ, hdeg⟩ := hN
+    exact hS.reduction_deleteGate (ℓ := (S.gate J).lit)
+      ⟨hJ, fun t ht => Gate.reads_of_lit_reads ht, Or.inl fun val _ _ => Gate.eval_lit hdeg val⟩
+      fun _ _ => List.mem_singleton_self _
+  · obtain ⟨he, hcard⟩ := hN
+    dsimp only [deleteConstraint]
+    split_ifs with hA hR
+    · have hvA := Finset.mem_filter.1 (Finset.min'_mem _ hA)
+      set v := ((S.eqn e).terms.filter (· ∈ S.aux)).min' hA
+      have hUmem := Finset.min'_mem _ hR
+      set U := ((S.eqn e).terms.erase v).min' hR
+      have hUv : U ≠ v := Finset.ne_of_mem_erase hUmem
+      have hrest : ((S.eqn e).terms.erase v).card ≤ 1 := by
+        rw [Finset.card_erase_of_mem hvA.1]; omega
+      have hterms : (S.eqn e).terms = {v, U} := by
+        ext i
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        constructor
+        · intro hi
+          by_cases hiv : i = v
+          · exact Or.inl hiv
+          · exact Or.inr (Finset.card_le_one.1 hrest i (Finset.mem_erase.2 ⟨hiv, hi⟩) U hUmem)
+        · rintro (rfl | rfl)
+          · exact hvA.1
+          · exact Finset.mem_of_mem_erase hUmem
+      refine hS.reduction_deleteEqn ⟨he, hvA.2, fun val => ?_, fun t ht => ?_⟩
+        fun _ _ => List.mem_singleton_self _
+      · unfold Equation.Holds
+        rw [hterms, Finset.sum_pair hUv.symm]
+        simp only [Lit.eval, Arg.eval_node]
+        generalize val v = a; generalize val U = b; generalize (S.eqn e).rhs = r
+        revert a b r; decide
+      · cases ht
+        exact ⟨Finset.mem_of_mem_erase hUmem, hUv⟩
+    · have hvA := Finset.mem_filter.1 (Finset.min'_mem _ hA)
+      set v := ((S.eqn e).terms.filter (· ∈ S.aux)).min' hA
+      have hterms : (S.eqn e).terms = {v} := by
+        rw [Finset.not_nonempty_iff_eq_empty, Finset.erase_eq_empty_iff] at hR
+        rcases hR with h | h
+        · rw [h] at hvA; exact absurd hvA.1 (Finset.notMem_empty _)
+        · exact h
+      refine hS.reduction_deleteEqn ⟨he, hvA.2, fun val => ?_, fun t ht => by cases ht⟩
+        fun _ ht => by cases ht
+      unfold Equation.Holds
+      rw [hterms, Finset.sum_singleton, Lit.eval_const]
+    · have hsub : (S.eqn e).terms ⊆ S.params := fun i hi => by
+        rcases Finset.mem_union.1 (hS.wf.terms_subset e he hi) with hp | ha
+        · exact hp
+        · exact absurd ⟨i, Finset.mem_filter.2 ⟨hi, ha⟩⟩ hA
+      exact (hS.reduction_dropTrivialEqn he (hS.terms_eq_empty_of_subset he hsub)).mono
+        fun _ hN => absurd hN List.not_mem_nil
+
+/-- A deletable constraint of a valid state is deleted by a reduction. -/
+theorem Valid.exists_reduction_delete {S : State cfg n} (hS : S.Valid f) {N : ℕ ⊕ ℕ}
+    (hN : S.Deletable N) : ∃ S', Reduction f S S' ∅ [N] [N] :=
+  ⟨_, hS.reduction_deleteConstraint hN⟩
+
+/-- Distinct deletable constraints of a valid state are deleted by a reduction. -/
+theorem Valid.exists_reduction_deleteAll {S : State cfg n} (hS : S.Valid f) (l : List (ℕ ⊕ ℕ))
+    (hl : l.Nodup) (hdel : ∀ N ∈ l, S.Deletable N) : ∃ S', Reduction f S S' ∅ l l := by
+  induction l generalizing S with
+  | nil => exact ⟨S, Reduction.refl hS⟩
+  | cons N l ih =>
+    obtain ⟨S₁, h₁⟩ := hS.exists_reduction_delete (hdel N List.mem_cons_self)
+    have hl' := List.nodup_cons.1 hl
+    obtain ⟨S', h₂⟩ := ih h₁.valid hl'.2 fun N' hN' => h₁.deletable N'
+      (by rw [List.mem_singleton]; rintro rfl; exact hl'.1 hN')
+      (hdel N' (List.mem_cons_of_mem _ hN'))
+    have h := h₁.trans h₂
+    rw [Finset.empty_union] at h
+    exact ⟨S', h⟩
+
+end State
+
+end Cslib.Circuits.Boolean.AffineDisperserCore

@@ -20,9 +20,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.EqualityPr
 
 The free variables of a formula are computed by one scan of its tokens from right to left, with a
 stack holding the free variables of the subformulas read so far
-(`Cslib.Logic.PL.QBF.freeVarStep`): a variable pushes itself, a constant pushes nothing, a binary
-connective joins the two lists on top of the stack, and a quantifier removes its variable from the
-list on top. On the tokens of a formula the scan ends with the list of its free variables
+(`Cslib.Logic.PL.QBF.freeVarStep`): a variable pushes itself, a constant pushes the empty list, a
+binary connective joins the two lists on top of the stack, and a quantifier removes its variable
+from the list on top. On the tokens of a formula the scan ends with the list of its free variables
 (`Cslib.Logic.PL.QBF.foldl_freeVarStep_tokens`), so a formula is closed exactly when that list is
 empty (`Cslib.Logic.PL.QBF.isClosed_tokens`), and closedness is decided in polynomial time
 (`Cslib.Complexity.TQBF.computableInPolyTime_decide_closed`).

@@ -92,8 +92,9 @@ def sparseSlots (φ : CNF ℕ) (i : ℕ) : ℕ :=
 /-- The detours: the occurrence at position `p` of `φ.vars`, a literal `(x, b)` of clause `j`,
 goes through the node of clause `j` across its slot in the row of `x`, in the direction `b`. -/
 def sparseDetours (φ : CNF ℕ) : List Detour :=
-  (occurrences φ).zipIdx.map fun o => (o.1.1, φ.distinctVars.idxOf o.1.2.2.1,
-    (occurrencePositions φ o.1.2.2.1).idxOf o.2, o.1.2.2.2)
+  (occurrences φ).zipIdx.map fun o =>
+    ⟨o.1.1, φ.distinctVars.idxOf o.1.2.2.1,
+      (occurrencePositions φ o.1.2.2.1).idxOf o.2, o.1.2.2.2⟩
 
 /-- The diamond graph with one diamond for each distinct variable of `φ` and a slot for each
 occurrence. -/
@@ -102,8 +103,8 @@ def sparseDiamondGraph (φ : CNF ℕ) : Graph :=
 
 /-- The reduction from `SAT` to `DirHamPath` of linear size: the sparse diamond graph of `φ`,
 from the top of the first diamond to the bottom of the last. -/
-def toSparseDirHamPath (φ : CNF ℕ) : Graph × ℕ × ℕ :=
-  (sparseDiamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.distinctVars.length)
+def toSparseDirHamPath (φ : CNF ℕ) : PathInstance :=
+  ⟨sparseDiamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.distinctVars.length⟩
 
 /-- The reduction from `SAT` to `DirHamCycle` of linear size: the sparse diamond graph of `φ` with
 an arc from the bottom of the last diamond back to the top of the first. -/
@@ -132,8 +133,8 @@ private theorem mem_occurrencePositions {x q : ℕ} :
 /-- The detours come from occurrences, numbered by their positions. -/
 private theorem mem_sparseDetours {d : Detour} :
     d ∈ sparseDetours φ ↔ ∃ o p, (occurrences φ)[p]? = some o ∧
-      d = (o.1, φ.distinctVars.idxOf o.2.2.1, (occurrencePositions φ o.2.2.1).idxOf p,
-        o.2.2.2) := by
+      d = ⟨o.1, φ.distinctVars.idxOf o.2.2.1, (occurrencePositions φ o.2.2.1).idxOf p,
+        o.2.2.2⟩ := by
   simp only [sparseDetours, List.mem_map]
   constructor
   · rintro ⟨⟨o, p⟩, h, rfl⟩
@@ -343,8 +344,7 @@ theorem computableInPolyTime_sparseDiamondGraph :
 /-- The reduction `toSparseDirHamPath` is computable in polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toSparseDirHamPath :
-    ComputableInPolyTime toSparseDirHamPath encCNF
-      (encPair encGraph (encPair encNat encNat)) := by
+    ComputableInPolyTime toSparseDirHamPath encCNF encPathInstance := by
   have hn := computableInPolyTime_numDiamonds
   unfold toSparseDirHamPath
   fun_prop

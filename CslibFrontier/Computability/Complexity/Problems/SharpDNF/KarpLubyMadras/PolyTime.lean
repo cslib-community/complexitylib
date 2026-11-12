@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras
 public import CslibFrontier.Computability.Probabilistic.PPT
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+public import CslibFrontier.Logics.Propositional.DNF.Encoding
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Probabilistic.Sampling
@@ -53,10 +54,10 @@ namespace Cslib.Complexity
 open Cslib.Logic.PL Turing.MultiTapeTM
 
 /-- Terms over natural-number variables: lists of literals, a variable in binary and a sign. -/
-abbrev encTerm : Term ℕ ↪ List Bool := encList (encPair encNat encBool)
+abbrev encTerm : Term ℕ ↪ List Bool := encTermOver encNat
 
 /-- Formulas in disjunctive normal form over natural-number variables: lists of terms. -/
-abbrev encDNF : DNF ℕ ↪ List Bool := encList encTerm
+abbrev encDNF : DNF ℕ ↪ List Bool := encDNFOver encNat
 
 namespace KarpLubyMadras
 
@@ -86,7 +87,7 @@ private def dnfValue (c : Ctx) (φ : DNF ℕ) : Bool := DNF.eval (ctxValue c) φ
 private theorem computableInPolyTime_litValue : ComputableInPolyTime
     (fun p : Ctx × Literal ℕ => litValue p.1 p.2) (encPair encCtx (encPair encNat encBool))
     encBool := by
-  unfold litValue Literal.eval
+  unfold litValue
   fun_prop
 
 attribute [local fun_prop] computableInPolyTime_litValue

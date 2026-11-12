@@ -220,9 +220,7 @@ theorem exists_isHardCoreMeasure {f : BooleanFunction n} {s T : ℕ} {δ ε : �
   have hex : ∃ j, j < T ∧ ¬dense j := by
     by_contra! hall
     have hT1 : 0 < T := Nat.pos_of_ne_zero fun h => by norm_num [h] at hT
-    have hT' : 1 ≤ 3 * rate ^ 2 * T := by
-      rw [hrate_def, mul_pow]
-      linarith
+    have hT' : 1 ≤ 3 * rate ^ 2 * T := by grind
     -- Each dense round gains more than `2 ε δ 2 ^ n` in correlation.
     have hround (j : ℕ) (hj : j ∈ range T) : 2 * rate * 2 ^ n <
         ∑ x, weight rate (margin f next j x) * vote f (next (margin f next j)) x := by

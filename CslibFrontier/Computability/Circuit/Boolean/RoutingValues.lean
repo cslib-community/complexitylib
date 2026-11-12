@@ -69,9 +69,9 @@ def answerWiring (n h width : ℕ) :
     finProdFinEquiv (jb.1, Fin.natAdd h jb.2)
 
 private theorem eval_answerWiring (n h width : ℕ) (x : BitString (n * (h + width))) :
-    directProductInput ((answerWiring n h width).eval interpretation x) = value x := by
+    BitString.block ((answerWiring n h width).eval interpretation x) = value x := by
   funext j bit
-  simp only [answerWiring, Circuit.eval_wiring, directProductInput, Function.comp_apply,
+  simp only [answerWiring, Circuit.eval_wiring, BitString.block, Function.comp_apply,
     Equiv.symm_apply_apply, value]
 
 /-- Select matching keys followed by their source/destination tag. -/
@@ -95,9 +95,9 @@ def routeValuesCircuit {h k : ℕ} (key : Fin k → Fin h) (tag : Fin h) (d widt
 private theorem eval_routeValuesCircuit {h k : ℕ} (key : Fin k → Fin h) (tag : Fin h) (d width : ℕ)
     (x : BitString (BitonicSort.arity d * (h + width))) :
     let order := fun row : BitString (h + width) => toLex (row ∘ matchingSelector key tag width)
-    let sorted := BitonicSort.sort order d true (directProductInput x)
-    directProductInput ((routeValuesCircuit key tag d width).eval interpretation x) =
-      BitonicSort.unrouteSort d (BitonicSort.sortTrace order d true (directProductInput x))
+    let sorted := BitonicSort.sort order d true (BitString.block x)
+    BitString.block ((routeValuesCircuit key tag d width).eval interpretation x) =
+      BitonicSort.unrouteSort d (BitonicSort.sortTrace order d true (BitString.block x))
         (value ((broadcastCircuit key tag (BitonicSort.arity d) width).eval interpretation
           (flatten sorted))) := by
   dsimp only
@@ -122,12 +122,12 @@ theorem eval_routeValuesCircuit_value_eq_true_iff {h k d width : ℕ}
     (x : BitString (BitonicSort.arity d * (h + width)))
     (destination : Fin (BitonicSort.arity d)) (hdestination : header x destination tag = true)
     (bit : Fin width) :
-    directProductInput ((routeValuesCircuit key tag d width).eval interpretation x)
+    BitString.block ((routeValuesCircuit key tag d width).eval interpretation x)
       destination bit = true ↔ ∃ source, header x source ∘ key = header x destination ∘ key ∧
         header x source tag = false ∧ value x source bit = true := by
   classical
   let order := fun row : BitString (h + width) => toLex (row ∘ matchingSelector key tag width)
-  let rows := directProductInput x
+  let rows := BitString.block x
   let sorted := BitonicSort.sort order d true rows
   let y := flatten sorted
   let answers := value
@@ -141,7 +141,7 @@ theorem eval_routeValuesCircuit_value_eq_true_iff {h k d width : ℕ}
     have he (i : Fin (BitonicSort.arity d)) :
         toLex (Fin.snoc (α := fun _ => Bool) (header y i ∘ key) (header y i tag)) =
           order (sorted i) := by
-      simp only [header, y, directProductInput_flatten, order, matchingSelector,
+      simp only [header, y, BitString.block_blocksEquiv_symm, order, matchingSelector,
         Fin.comp_snoc, Function.comp_assoc, Function.comp_apply]
     intro a b hab
     calc
@@ -151,13 +151,13 @@ theorem eval_routeValuesCircuit_value_eq_true_iff {h k d width : ℕ}
   have hr : ∀ i, R (sorted i) (answers i) := by
     intro i hi
     have ht : header y i tag = true := by
-      simpa only [header, y, directProductInput_flatten, Function.comp_apply] using hi
+      simpa only [header, y, BitString.block_blocksEquiv_symm, Function.comp_apply] using hi
     change answers i bit = true ↔ _
     rw [show answers i bit =
       value ((broadcastCircuit key tag (BitonicSort.arity d) width).eval interpretation y) i bit
         from rfl,
       eval_broadcastCircuit_value_eq_true_iff key tag y hs i ht bit]
-    simpa only [header, value, y, directProductInput_flatten, Function.comp_apply] using
+    simpa only [header, value, y, BitString.block_blocksEquiv_symm, Function.comp_apply] using
       List.Perm.exists_ofFn_iff (BitonicSort.sort_perm order d true rows)
         (fun row : BitString (h + width) =>
           (row ∘ Fin.castAdd width) ∘ key = (sorted i ∘ Fin.castAdd width) ∘ key ∧
@@ -183,7 +183,7 @@ theorem eval_routeValuesCircuit_of_unique_source {h k d width : ℕ}
     (hkey : header x source ∘ key = header x destination ∘ key)
     (hsource : header x source tag = false) (hdestination : header x destination tag = true)
     (unique : ∀ i, header x i ∘ key = header x source ∘ key → header x i tag = false → i = source) :
-    directProductInput ((routeValuesCircuit key tag d width).eval interpretation x) destination =
+    BitString.block ((routeValuesCircuit key tag d width).eval interpretation x) destination =
       value x source := by
   funext bit
   apply Bool.eq_iff_iff.mpr

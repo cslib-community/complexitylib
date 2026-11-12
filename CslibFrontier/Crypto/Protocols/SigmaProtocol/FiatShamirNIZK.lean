@@ -14,14 +14,18 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.SchnorrSignature
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
 public import CslibFrontier.Languages.Probabilistic.Forking
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Presample
 import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.Union
 
 /-!
 # Fiat–Shamir non-interactive zero-knowledge proofs of knowledge in the random-oracle model
@@ -427,18 +431,12 @@ queries, raising the same `bad` flag on cache collisions. -/
 private noncomputable def programFlaggedHandler [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) :
     (q : (X × Y) ⊕ (Y × T)) →
-      StateT (ExtGameState Y T C × Bool) PMF (NIZKDistinguisherSpec X Y T C Z q)
-  | .inl (x, y) => fun st =>
-    if valid x y then
-      (P.commit x y).bind fun ts =>
-        (PMF.uniformOfFintype C).map fun c =>
-          (some (ts.1, P.respond x y ts.2 c),
-            ((((y, ts.1), c) :: st.1.1, (y, ts.1) :: st.1.2),
-              st.2 || (st.1.1.lookup (y, ts.1)).isSome))
-    else
-      PMF.pure (none, st)
-  | .inr yt => fun st =>
-    (oracle C yt st.1.1).map fun r => (r.1, ((r.2, st.1.2), st.2))
+      StateT (ExtGameState Y T C × Bool) PMF (NIZKDistinguisherSpec X Y T C Z q) :=
+  RandomOracle.flaggedOverwriteProgramHandler (Reply := fun _ : X × Y => Option (T × Z))
+    (PMF.uniformOfFintype C) (fun xy => valid xy.1 xy.2)
+    (fun _ _ proved => PMF.pure (none, proved)) (fun xy => P.commit xy.1 xy.2)
+    (fun xy ts => (xy.2, ts.1))
+    (fun xy ts c proved => (some (ts.1, P.respond xy.1 xy.2 ts.2 c), (xy.2, ts.1) :: proved))
 
 /-- Projecting away the proved-pair log from `nizkRealExtHandler` recovers `nizkRealHandler`. -/
 private theorem nizkRealExtHandler_map_cache [DecidableEq Y] [DecidableEq T] [Fintype C]
@@ -485,117 +483,87 @@ private theorem nizkSimExtHandler_map_cache [DecidableEq Y] [DecidableEq T] [Fin
     simp only [nizkSimExtHandler, nizkSimHandler, PMF.map_comp]
     exact PMF.map_id _
 
-/-- Forgetting the collision flag on `realFlaggedHandler` yields `nizkRealExtHandler`. -/
-private theorem realFlaggedHandler_map [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
-    (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool)
-    (q : (X × Y) ⊕ (Y × T)) (st : ExtGameState Y T C × Bool) :
-    (realFlaggedHandler P valid q st).map (fun x => (x.1, x.2.1)) =
-      nizkRealExtHandler P valid q st.1 := by
-  obtain ⟨⟨cache, proved⟩, flag⟩ := st
+private theorem realFlaggedHandler_eq_flaggedLazyProgramHandler [DecidableEq Y] [DecidableEq T]
+    [Fintype C] [Nonempty C] (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) :
+    realFlaggedHandler P valid =
+      RandomOracle.flaggedLazyProgramHandler (Reply := fun _ : X × Y => Option (T × Z))
+        (PMF.uniformOfFintype C) (fun xy => valid xy.1 xy.2)
+        (fun _ _ proved => PMF.pure (none, proved)) (fun xy => P.commit xy.1 xy.2)
+        (fun xy ts => (xy.2, ts.1))
+        (fun xy ts c proved =>
+          (some (ts.1, P.respond xy.1 xy.2 ts.2 c), (xy.2, ts.1) :: proved)) := by
+  funext q ⟨⟨cache, proved⟩, b⟩
   cases q with
   | inl xy =>
     obtain ⟨x, y⟩ := xy
+    rw [RandomOracle.flaggedLazyProgramHandler_apply_inl]
     by_cases hv : valid x y = true
-    · simp only [realFlaggedHandler, nizkRealExtHandler, fiatShamirNIZKProve, hv, ↓reduceIte,
-        interpret_map, interpret_query, StateT.run_map, PMF.monad_bind_eq_bind,
-        PMF.monad_pure_eq_pure, PMF.monad_map_eq_map, PMF.map_bind, PMF.map_comp, PMF.bind_map,
-        Function.comp_def]
-      exact congrArg (PMF.bind _) (funext fun ts => (PMF.bind_pure_comp _ _).symm)
-    · simp only [Bool.not_eq_true] at hv
-      simp only [realFlaggedHandler, nizkRealExtHandler, hv, Bool.false_eq_true, ↓reduceIte,
-        PMF.pure_map]
+    · simp only [realFlaggedHandler, hv, ↓reduceIte, ↓reduceDIte, oracle]
+    · simp only [realFlaggedHandler, hv, Bool.false_eq_true, ↓reduceIte, ↓reduceDIte, PMF.pure_map]
   | inr yt =>
-    simp only [realFlaggedHandler, nizkRealExtHandler, PMF.map_comp, Function.comp_def]
+    rw [RandomOracle.flaggedLazyProgramHandler_apply_inr]
+    rfl
 
-/-- Under `SpecialHVZK` and `hvalid`, forgetting the collision flag on `programFlaggedHandler`
-yields `nizkSimExtHandler`. -/
-private theorem programFlaggedHandler_map [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
-    {P : SigmaProtocol X Y T C Z} {R : X → Y → Prop} {simulate : Y → C → PMF (T × Z)}
-    {valid : X → Y → Bool} (hvalid : ∀ x y, valid x y = true → R x y)
-    (hHVZK : P.SpecialHVZK R simulate)
-    (q : (X × Y) ⊕ (Y × T)) (st : ExtGameState Y T C × Bool) :
-    (programFlaggedHandler P valid q st).map (fun x => (x.1, x.2.1)) =
-      nizkSimExtHandler simulate valid q st.1 := by
-  obtain ⟨⟨cache, proved⟩, flag⟩ := st
+private theorem nizkRealExtHandler_eq_lazyProgramHandler [DecidableEq Y] [DecidableEq T] [Fintype C]
+    [Nonempty C] (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) :
+    nizkRealExtHandler P valid =
+      RandomOracle.lazyProgramHandler (Reply := fun _ : X × Y => Option (T × Z))
+        (PMF.uniformOfFintype C) (fun xy => valid xy.1 xy.2)
+        (fun _ _ proved => PMF.pure (none, proved)) (fun xy => P.commit xy.1 xy.2)
+        (fun xy ts => (xy.2, ts.1))
+        (fun xy ts c proved =>
+          (some (ts.1, P.respond xy.1 xy.2 ts.2 c), (xy.2, ts.1) :: proved)) := by
+  funext q ⟨cache, proved⟩
   cases q with
   | inl xy =>
     obtain ⟨x, y⟩ := xy
     by_cases hv : valid x y = true
-    · simp only [programFlaggedHandler, nizkSimExtHandler, nizkSimProve, hv, ↓reduceIte,
-        PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.map_comp, PMF.bind_bind,
-        PMF.pure_bind, Function.comp_def]
+    · simp only [pmf_norm, nizkRealExtHandler, fiatShamirNIZKProve,
+        RandomOracle.lazyProgramHandler, hv, ↓reduceIte, ↓reduceDIte, interpret_map,
+        interpret_query, StateT.run_map, oracle]
+      rfl
+    · simp only [nizkRealExtHandler, RandomOracle.lazyProgramHandler, hv, Bool.false_eq_true,
+        ↓reduceIte, ↓reduceDIte, PMF.pure_map]
+  | inr yt =>
+    rfl
+
+private theorem nizkSimExtHandler_eq_overwriteProgramHandler [DecidableEq Y] [DecidableEq T]
+    [Fintype C] [Nonempty C] {P : SigmaProtocol X Y T C Z} {R : X → Y → Prop}
+    {simulate : Y → C → PMF (T × Z)} {valid : X → Y → Bool}
+    (hvalid : ∀ x y, valid x y = true → R x y) (hHVZK : P.SpecialHVZK R simulate) :
+    nizkSimExtHandler simulate valid =
+      RandomOracle.overwriteProgramHandler (Reply := fun _ : X × Y => Option (T × Z))
+        (PMF.uniformOfFintype C) (fun xy => valid xy.1 xy.2)
+        (fun _ _ proved => PMF.pure (none, proved)) (fun xy => P.commit xy.1 xy.2)
+        (fun xy ts => (xy.2, ts.1))
+        (fun xy ts c proved =>
+          (some (ts.1, P.respond xy.1 xy.2 ts.2 c), (xy.2, ts.1) :: proved)) := by
+  funext q ⟨cache, proved⟩
+  cases q with
+  | inl xy =>
+    obtain ⟨x, y⟩ := xy
+    by_cases hv : valid x y = true
+    · simp only [pmf_norm, nizkSimExtHandler, nizkSimProve, RandomOracle.overwriteProgramHandler,
+        hv, ↓reduceIte, ↓reduceDIte]
       have htr := hHVZK.transcript_eq x y (hvalid x y hv)
-      conv_rhs =>
+      conv_lhs =>
         enter [2, c]
         rw [htr c, SigmaProtocol.transcript, PMF.bind_map]
       rw [PMF.bind_comm]
-      exact congrArg (PMF.bind _) (funext fun ts => (PMF.bind_pure_comp _ _).symm)
-    · simp only [Bool.not_eq_true] at hv
-      simp only [programFlaggedHandler, nizkSimExtHandler, hv, Bool.false_eq_true, ↓reduceIte,
-        PMF.pure_map]
+      rfl
+    · simp only [nizkSimExtHandler, RandomOracle.overwriteProgramHandler, hv, Bool.false_eq_true,
+        ↓reduceIte, ↓reduceDIte, PMF.pure_map]
   | inr yt =>
-    simp only [programFlaggedHandler, nizkSimExtHandler, PMF.map_comp, Function.comp_def]
+    rfl
 
 /-- `realFlaggedHandler` and `programFlaggedHandler` are identical until the collision flag is
 raised. -/
 private theorem identicalUntilBad_flaggedHandlers [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) :
     IdenticalUntilBad (realFlaggedHandler P valid) (programFlaggedHandler P valid)
-      fun st => st.2 = true where
-  agree q st _ a st' hst' := by
-    cases q with
-    | inr yt => rfl
-    | inl xy =>
-      obtain ⟨x, y⟩ := xy
-      by_cases hv : valid x y = true
-      · simp only [realFlaggedHandler, programFlaggedHandler, hv, ↓reduceIte, PMF.bind_apply]
-        refine tsum_congr fun ts => congrArg (_ * ·) ?_
-        cases hlookup : st.1.1.lookup (y, ts.1) with
-        | some c =>
-          refine ((PMF.apply_eq_zero_iff _ _).mpr fun hx => ?_).trans
-            ((PMF.apply_eq_zero_iff _ _).mpr fun hx => ?_).symm <;>
-          · obtain ⟨r, -, hr⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
-            exact hst' (by rw [← (Prod.mk.inj hr).2]; simp)
-        | none =>
-          rw [oracle, memoize_of_none _ _ _ hlookup]
-          simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
-          exact DFunLike.congr_fun (PMF.bind_pure_comp _ _) _
-      · simp only [Bool.not_eq_true] at hv
-        simp only [realFlaggedHandler, programFlaggedHandler, hv, Bool.false_eq_true, ↓reduceIte]
-  absorb_first q st hst out hout := by
-    cases q with
-    | inl xy =>
-      obtain ⟨x, y⟩ := xy
-      by_cases hv : valid x y = true
-      · simp only [realFlaggedHandler, hv, ↓reduceIte] at hout
-        obtain ⟨ts, -, hout⟩ := (PMF.mem_support_bind_iff _ _ _).mp hout
-        obtain ⟨r, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
-        simp [hst]
-      · simp only [Bool.not_eq_true] at hv
-        simp only [realFlaggedHandler, hv, Bool.false_eq_true, ↓reduceIte,
-          PMF.mem_support_pure_iff] at hout
-        subst hout
-        exact hst
-    | inr yt =>
-      obtain ⟨r, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
-      exact hst
-  absorb_second q st hst out hout := by
-    cases q with
-    | inl xy =>
-      obtain ⟨x, y⟩ := xy
-      by_cases hv : valid x y = true
-      · simp only [programFlaggedHandler, hv, ↓reduceIte] at hout
-        obtain ⟨ts, -, hout⟩ := (PMF.mem_support_bind_iff _ _ _).mp hout
-        obtain ⟨c, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
-        simp [hst]
-      · simp only [Bool.not_eq_true] at hv
-        simp only [programFlaggedHandler, hv, Bool.false_eq_true, ↓reduceIte,
-          PMF.mem_support_pure_iff] at hout
-        subst hout
-        exact hst
-    | inr yt =>
-      obtain ⟨r, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
-      exact hst
+      fun st => st.2 = true := by
+  rw [realFlaggedHandler_eq_flaggedLazyProgramHandler, programFlaggedHandler]
+  exact RandomOracle.identicalUntilBad_flaggedProgramHandlers _ _ _ _ _ _
 
 /-- Union bound for a commitment hitting an existing cache entry at `(y, ·)`. -/
 private theorem toOuterMeasure_lookup_commit_le [DecidableEq Y] [DecidableEq T]
@@ -603,32 +571,14 @@ private theorem toOuterMeasure_lookup_commit_le [DecidableEq Y] [DecidableEq T]
     (hcommit : ∀ t, (P.commit x y).map Prod.fst t ≤ δ) (cache : List ((Y × T) × C)) :
     (P.commit x y).toOuterMeasure {ts | (cache.lookup (y, ts.1)).isSome} ≤
       cache.length * δ := by
-  induction cache with
-  | nil => simp
-  | cons e rest ih =>
-    obtain ⟨⟨y', t'⟩, c⟩ := e
-    calc (P.commit x y).toOuterMeasure
-          {ts | ((((y', t'), c) :: rest).lookup (y, ts.1)).isSome}
-        ≤ (P.commit x y).toOuterMeasure
-          ({ts | ts.1 = t'} ∪ {ts | (rest.lookup (y, ts.1)).isSome}) := by
-          refine (P.commit x y).toOuterMeasure.mono fun ts hts => ?_
-          have hts : ((((y', t'), c) :: rest).lookup (y, ts.1)).isSome = true := hts
-          rw [List.lookup_cons] at hts
-          by_cases h : (y, ts.1) = (y', t')
-          · exact Or.inl (Prod.ext_iff.mp h).2
-          · rw [beq_false_of_ne h] at hts
-            exact Or.inr hts
-      _ ≤ (P.commit x y).toOuterMeasure {ts | ts.1 = t'} +
-          (P.commit x y).toOuterMeasure {ts | (rest.lookup (y, ts.1)).isSome} :=
-          MeasureTheory.measure_union_le _ _
-      _ ≤ δ + rest.length * δ := by
-          refine add_le_add ?_ ih
-          rw [show {ts : T × P.State | ts.1 = t'} = Prod.fst ⁻¹' {t'} from rfl,
-            ← PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_singleton]
-          exact hcommit t'
-      _ = (((y', t'), c) :: rest).length * δ := by
-          rw [List.length_cons, Nat.cast_add, Nat.cast_one]
-          ring
+  refine Probability.PMF.toOuterMeasure_lookup_isSome_le _ _ (fun k => ?_) cache
+  calc (P.commit x y).toOuterMeasure {ts | (y, ts.1) = k}
+      ≤ (P.commit x y).toOuterMeasure (Prod.fst ⁻¹' {k.2}) :=
+        (P.commit x y).toOuterMeasure.mono fun ts (hts : (y, ts.1) = k) =>
+          (congrArg Prod.snd hts : ts.1 = k.2)
+    _ ≤ δ := by
+        rw [← PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_singleton]
+        exact hcommit k.2
 
 /-- Under `UnpredictableCommitments R δ` and `hvalid`, a program with budgets `(Qp, Qro)` raises
 the collision flag of `realFlaggedHandler` with probability at most `Qp * (Qp + Qro) * δ`. -/
@@ -653,43 +603,15 @@ private theorem toOuterMeasure_flag_le_nizk [DecidableEq Y] [DecidableEq T] [Fin
       obtain ⟨x, y⟩ := xy
       rw [Sum.elim_inl, Nat.cast_one, one_mul]
       by_cases hv : valid x y = true
-      · simp only [realFlaggedHandler, hv, ↓reduceIte, PMF.toOuterMeasure_bind_apply]
-        calc ∑' ts, (P.commit x y) ts *
-              ((oracle C (y, ts.1) st.1.1).map fun r =>
-                (some (ts.1, P.respond x y ts.2 r.1),
-                  ((r.2, (y, ts.1) :: st.1.2),
-                    st.2 || (st.1.1.lookup (y, ts.1)).isSome))).toOuterMeasure
-                {out | out.2.2 = true}
-            ≤ ∑' ts, (P.commit x y) ts *
-                {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome}.indicator 1 ts := by
-              refine tsum_le_tsum fun ts => mul_le_mul_of_nonneg_left ?_ zero_le
-              by_cases hts : (st.1.1.lookup (y, ts.1)).isSome
-              · rw [Set.indicator_of_mem
-                  (show ts ∈ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Pi.one_apply]
-                exact Probability.PMF.toOuterMeasure_le_one _ _
-              · rw [Set.indicator_of_notMem
-                  (show ts ∉ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts)]
-                refine le_of_eq ((PMF.toOuterMeasure_apply_eq_zero_iff _ _).mpr ?_)
-                refine Set.disjoint_left.mpr fun out hout hbad => ?_
-                obtain ⟨r, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
-                simp_all
-          _ = (P.commit x y).toOuterMeasure {ts | (st.1.1.lookup (y, ts.1)).isSome} := by
-              rw [PMF.toOuterMeasure_apply]
-              refine tsum_congr fun ts => ?_
-              by_cases hts : (st.1.1.lookup (y, ts.1)).isSome
-              · rw [Set.indicator_of_mem
-                  (show ts ∈ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Set.indicator_of_mem
-                  (show ts ∈ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Pi.one_apply, mul_one]
-              · rw [Set.indicator_of_notMem
-                  (show ts ∉ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Set.indicator_of_notMem
-                  (show ts ∉ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  mul_zero]
-          _ ≤ st.1.1.length * (δ : ℝ≥0∞) :=
-              toOuterMeasure_lookup_commit_le P (hUnpred x y (hvalid x y hv)) st.1.1
+      · simp only [realFlaggedHandler, hv, ↓reduceIte]
+        refine (Probability.PMF.toOuterMeasure_bind_le_add _ _
+          {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} _ 0
+          fun ts _ hts => le_of_eq ((PMF.toOuterMeasure_apply_eq_zero_iff _ _).mpr
+            (Set.disjoint_left.mpr fun out hout hbad => ?_))).trans ?_
+        · obtain ⟨r, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
+          simp_all
+        · rw [add_zero]
+          exact toOuterMeasure_lookup_commit_le P (hUnpred x y (hvalid x y hv)) st.1.1
       · simp only [Bool.not_eq_true] at hv
         simp only [realFlaggedHandler, hv, Bool.false_eq_true, ↓reduceIte,
           PMF.toOuterMeasure_pure_apply]
@@ -738,15 +660,19 @@ private theorem abs_sub_extHandlers_bind_le [DecidableEq Y] [DecidableEq T] [Fin
         (((interpret (nizkSimExtHandler simulate valid) program).run ([], [])).bind
           next b).toReal| ≤
       Qp * (Qp + Qro) * δ := by
-  have hreal := run_interpret_map_state (realFlaggedHandler P valid)
-    (nizkRealExtHandler P valid) Prod.fst (realFlaggedHandler_map P valid) program
-    (([], []), false)
-  have hsim := run_interpret_map_state (programFlaggedHandler P valid)
-    (nizkSimExtHandler simulate valid) Prod.fst (programFlaggedHandler_map hvalid hHVZK) program
-    (([], []), false)
+  have hreal : ((interpret (realFlaggedHandler P valid) program).run (([], []), false)).map
+      (Prod.map id Prod.fst) =
+      (interpret (nizkRealExtHandler P valid) program).run ([], []) := by
+    rw [realFlaggedHandler_eq_flaggedLazyProgramHandler, nizkRealExtHandler_eq_lazyProgramHandler]
+    exact RandomOracle.run_flaggedLazyProgramHandler_map_fst _ _ _ _ _ _ _ _ false
+  have hsim : ((interpret (programFlaggedHandler P valid) program).run (([], []), false)).map
+      (Prod.map id Prod.fst) =
+      (interpret (nizkSimExtHandler simulate valid) program).run ([], []) := by
+    rw [programFlaggedHandler, nizkSimExtHandler_eq_overwriteProgramHandler hvalid hHVZK]
+    exact RandomOracle.run_flaggedOverwriteProgramHandler_map_fst _ _ _ _ _ _ _ _ false
   rw [← hreal, ← hsim, PMF.bind_map, PMF.bind_map]
   have hdiff := (identicalUntilBad_flaggedHandlers P valid).abs_sub_le program (([], []), false)
-    (next ∘ fun (a, s) => (a, s.1)) b
+    (next ∘ Prod.map id Prod.fst) b
   have hflag := toOuterMeasure_flag_le_nizk hvalid hUnpred hcall
   have htop : ((Qp * (Qp + Qro) : ℕ) : ℝ≥0∞) * (δ : ℝ≥0∞) ≠ ⊤ :=
     ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.coe_ne_top
@@ -768,15 +694,19 @@ private theorem extHandlers_bind_apply_le [DecidableEq Y] [DecidableEq T] [Finty
     ((interpret (nizkRealExtHandler P valid) program).run ([], [])).bind next b ≤
       ((interpret (nizkSimExtHandler simulate valid) program).run ([], [])).bind next b +
         (Qp * (Qp + Qro) : ℕ) * (δ : ℝ≥0∞) := by
-  have hreal := run_interpret_map_state (realFlaggedHandler P valid)
-    (nizkRealExtHandler P valid) Prod.fst (realFlaggedHandler_map P valid) program
-    (([], []), false)
-  have hsim := run_interpret_map_state (programFlaggedHandler P valid)
-    (nizkSimExtHandler simulate valid) Prod.fst (programFlaggedHandler_map hvalid hHVZK) program
-    (([], []), false)
+  have hreal : ((interpret (realFlaggedHandler P valid) program).run (([], []), false)).map
+      (Prod.map id Prod.fst) =
+      (interpret (nizkRealExtHandler P valid) program).run ([], []) := by
+    rw [realFlaggedHandler_eq_flaggedLazyProgramHandler, nizkRealExtHandler_eq_lazyProgramHandler]
+    exact RandomOracle.run_flaggedLazyProgramHandler_map_fst _ _ _ _ _ _ _ _ false
+  have hsim : ((interpret (programFlaggedHandler P valid) program).run (([], []), false)).map
+      (Prod.map id Prod.fst) =
+      (interpret (nizkSimExtHandler simulate valid) program).run ([], []) := by
+    rw [programFlaggedHandler, nizkSimExtHandler_eq_overwriteProgramHandler hvalid hHVZK]
+    exact RandomOracle.run_flaggedOverwriteProgramHandler_map_fst _ _ _ _ _ _ _ _ false
   rw [← hreal, ← hsim, PMF.bind_map, PMF.bind_map]
   exact ((identicalUntilBad_flaggedHandlers P valid).bind_apply_le program (([], []), false)
-    (next ∘ fun (a, s) => (a, s.1)) b).trans
+    (next ∘ Prod.map id Prod.fst) b).trans
       (add_le_add le_rfl (toOuterMeasure_flag_le_nizk hvalid hUnpred hcall))
 
 /-- **Adaptive multi-theorem zero knowledge** of Fiat–Shamir NIZK proofs in the programmable
@@ -803,13 +733,11 @@ theorem abs_sub_fiatShamirNIZKRealGame_simGame_le [DecidableEq Y] [DecidableEq T
   have hrealEq : fiatShamirNIZKRealGame P valid D =
       ((interpret (nizkRealExtHandler P valid) D).run ([], [])).bind
         (fun (b, _) => PMF.pure b) := by
-    simp only [fiatShamirNIZKRealGame, ← hreal, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, fiatShamirNIZKRealGame, ← hreal]
   have hsimEq : fiatShamirNIZKSimGame simulate valid D =
       ((interpret (nizkSimExtHandler simulate valid) D).run ([], [])).bind
         (fun (b, _) => PMF.pure b) := by
-    simp only [fiatShamirNIZKSimGame, ← hsim, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, fiatShamirNIZKSimGame, ← hsim]
   rw [hrealEq, hsimEq]
   exact abs_sub_extHandlers_bind_le hvalid hHVZK hUnpred hD (fun (b, _) => PMF.pure b) true
 
@@ -1078,8 +1006,7 @@ private theorem map_run_forkingProg [DecidableEq Y] [DecidableEq T] [Fintype C] 
   rw [show represent (⟨[], [], 0, samples⟩ : ReductionState Y T C S) = (([], []), samples)
     from rfl] at hsim
   rw [forkingProg, interpret_bind, StateT.run_bind, run_interpret_run_interpret, ← hsim]
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_map_eq_map, PMF.map_bind, PMF.bind_map,
-    Function.comp_def]
+  simp only [pmf_norm]
   exact congrArg (PMF.bind _) (funext fun r => map_run_finish P admissible r.1 r.2.1 r.2.2)
 
 /-- Table-consistency invariant of `reductionHandler` on a fixed answer list. -/
@@ -1255,7 +1182,7 @@ private theorem map_run_le_validIndex [DecidableEq Y] [DecidableEq T] [Fintype C
   have hbound := isQueryBounded_forkingProg P valid fallback simEval admissible hQro samples
   let defC := Classical.arbitrary C
   rw [run_interpret_countingUniform_eq defC _ hbound]
-  simp only [← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  simp only [pmf_norm, ← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun h _ => ?_
   obtain ⟨hwin, hnamed⟩ :=
     runWithAnswers_forkingProg defC P valid fallback simEval admissible prog samples (List.ofFn h)
@@ -1369,8 +1296,7 @@ private theorem pokGame_eq_plainForkingProg [DecidableEq Y] [DecidableEq T] [Fin
             (fun (e : Empty) _ => e.elim) (fun _ e => e.elim))
           (.inr yt) ((cache, []), []) := by
     intro yt cache
-    simp only [withSampleList, FiatShamirNIZK.presampledHandler, List.tail_nil,
-      PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
+    simp only [pmf_norm, withSampleList, FiatShamirNIZK.presampledHandler, List.tail_nil]
   have hsim := run_interpret_map_state (oracle C)
     (fun yt st =>
       withSampleList ()
@@ -1382,8 +1308,8 @@ private theorem pokGame_eq_plainForkingProg [DecidableEq Y] [DecidableEq T] [Fin
   rw [liftPlainProve, run_interpret_map, interpret_interpret]
   simp only [PMF.monad_map_eq_map, PMF.bind_map, interpret_query]
   rw [← hsim]
-  simp only [PMF.bind_map, Function.comp_def, FiatShamirNIZK.finishExtGame,
-    fiatShamirNIZKVerify, interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map]
+  simp only [pmf_norm, FiatShamirNIZK.finishExtGame, fiatShamirNIZKVerify, interpret_map,
+    interpret_query, StateT.run_map]
   refine congrArg (PMF.bind _) (funext fun (prf, cache) => ?_)
   simp only [Prod.map_apply, id_eq, decide_true, Bool.true_and, List.contains_nil, Bool.not_false,
     Bool.and_true]
@@ -1400,8 +1326,7 @@ private theorem fork_plain_le_extractGame [DecidableEq Y] [DecidableEq T] [Finty
         (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (plainForkingProg P A y))).map
           Option.isSome true ≤
       fiatShamirNIZKExtractGame R (fiatShamirNIZKExtract P extract A Qro y) y true := by
-  simp only [fiatShamirNIZKExtractGame, fiatShamirNIZKExtract, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_map]
+  simp only [pmf_norm, fiatShamirNIZKExtractGame, fiatShamirNIZKExtract]
   rw [← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun result hresult => ?_
   rcases result with _ | ⟨j, out, out'⟩
@@ -1455,26 +1380,13 @@ theorem succProbability_fiatShamirNIZKPokGame_le [DecidableEq Y] [DecidableEq T]
     exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
       FiatShamirNIZK.map_run_le_validIndex _ _ () _ _
         (isCostBounded_liftPlainProve (hQro s)) []
-  have hC := le_add_sqrt_fork A.coins (plainForkingProg P A y) (Classical.arbitrary C)
+  have h := toReal_le_add_sqrt_fork_of_le A.coins (plainForkingProg P A y) (Classical.arbitrary C)
     (fun s => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
-      (isCostBounded_liftPlainProve (hQro s)) [])
-  have hD := fork_plain_le_extractGame (hsound y) A Qro
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hC
+      (isCostBounded_liftPlainProve (hQro s)) []) ENNReal.zero_ne_top (hB.trans le_self_add)
+    (fork_plain_le_extractGame (hsound y) A Qro) (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-  calc (fiatShamirNIZKPokGame P A y true).toReal
-      ≤ (A.coins.bind (fun s =>
-          ((interpret countingUniform (plainForkingProg P A y s)).run 0).bind
-            fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true).toReal :=
-        ENNReal.toReal_mono (PMF.apply_ne_top _ _) hB
-    _ ≤ (Qro + 1 : ℕ) / Fintype.card C +
-          √((Qro + 1 : ℕ) * ((Forking.fork A.coins
-            (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (plainForkingProg P A y))).map
-              Option.isSome true).toReal) := hC
-    _ ≤ _ := by
-        push_cast
-        have hsqrt := Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left
-          (ENNReal.toReal_mono (PMF.apply_ne_top _ _) hD) (by positivity : (0 : ℝ) ≤ Qro + 1))
-        linarith
+  push_cast at h ⊢
+  linarith [ENNReal.toReal_zero]
 
 /-- **Plain ROM proof of knowledge against a key generator** (`oneWayGame` form): averaging over
 `(x, y) ← keyGen`, a cheating prover making at most `Qro` hash calls yields a `oneWayGame`
@@ -1500,15 +1412,11 @@ theorem succProbability_fiatShamirNIZKPokKeyGen_le [DecidableEq Y] [DecidableEq 
   have hB : (keyGen.bind fun (_, y) => fiatShamirNIZKPokGame P A y) true ≤
       first.bind (fun ks => ((interpret countingUniform (prog ks)).run 0).bind
         fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true := by
-    simp only [first, prog, pokGame_eq_plainForkingProg, PMF.bind_bind, PMF.bind_map,
-      Function.comp_def]
+    simp only [pmf_norm, first, prog, pokGame_eq_plainForkingProg]
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun key _ => ?_
     exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
       FiatShamirNIZK.map_run_le_validIndex _ _ () _ _
         (isCostBounded_liftPlainProve (hQro key.2 s)) []
-  have hC := le_add_sqrt_fork first prog (Classical.arbitrary C)
-    (fun (key, s) => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
-      (isCostBounded_liftPlainProve (hQro key.2 s)) [])
   have hD : (Forking.fork first
       (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) prog)).map Option.isSome true ≤
       oneWayGame keyGen R (fun y =>
@@ -1518,32 +1426,22 @@ theorem succProbability_fiatShamirNIZKPokKeyGen_le [DecidableEq Y] [DecidableEq 
         keyGen.bind fun key =>
           Forking.fork A.coins
             (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (plainForkingProg P A key.2)) := by
-      simp only [first, prog, Forking.fork, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.bind_bind, PMF.bind_map, Function.comp_def]
+      simp only [pmf_norm, first, prog, Forking.fork]
       rfl
     rw [hfork, PMF.map_bind]
-    simp only [oneWayGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
-      Function.comp_def]
+    simp only [pmf_norm, oneWayGame]
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun key hkey => ?_
     refine (fork_plain_le_extractGame (hsound key hkey) A Qro).trans ?_
     simp only [fiatShamirNIZKExtractGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun res _ => ?_
     cases res <;> simp
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hC
+  have h := toReal_le_add_sqrt_fork_of_le first prog (Classical.arbitrary C)
+    (fun (key, s) => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
+      (isCostBounded_liftPlainProve (hQro key.2 s)) []) ENNReal.zero_ne_top
+    (hB.trans le_self_add) hD (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-  calc ((keyGen.bind fun (_, y) => fiatShamirNIZKPokGame P A y) true).toReal
-      ≤ (first.bind (fun ks => ((interpret countingUniform (prog ks)).run 0).bind
-          fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true).toReal :=
-        ENNReal.toReal_mono (PMF.apply_ne_top _ _) hB
-    _ ≤ (Qro + 1 : ℕ) / Fintype.card C +
-          √((Qro + 1 : ℕ) * ((Forking.fork first
-            (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) prog)).map
-              Option.isSome true).toReal) := hC
-    _ ≤ _ := by
-        push_cast
-        have hsqrt := Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left
-          (ENNReal.toReal_mono (PMF.apply_ne_top _ _) hD) (by positivity : (0 : ℝ) ≤ Qro + 1))
-        linarith
+  push_cast at h ⊢
+  linarith [ENNReal.toReal_zero]
 
 /-- **ROM soundness on false statements**: if `y` has no witness in `R`, any cheating prover making
 at most `Qro` hash calls convinces `fiatShamirNIZKVerify` with probability at most
@@ -1723,15 +1621,13 @@ private theorem presampledHandler_bind_eq_nizkSimExtHandler [DecidableEq Y] [Dec
   | inl xy =>
     obtain ⟨x, y⟩ := xy
     by_cases hv : valid x y = true
-    · simp only [FiatShamirNIZK.presampledHandler, nizkSimExtHandler, nizkSimProve, hv,
-        ↓reduceDIte, ↓reduceIte, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-        PMF.pure_bind]
+    · simp only [pmf_norm, FiatShamirNIZK.presampledHandler, nizkSimExtHandler, nizkSimProve, hv,
+      ↓reduceDIte, ↓reduceIte]
       have hmap := congrArg
         (fun μ : PMF (T × C × Z) =>
           μ.bind fun (t, c, z) => PMF.pure (some (t, z), (((y, t), c) :: cache, (y, t) :: proved)))
         (src.map_eval y)
-      simpa only [simulateConversation, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.bind_map, PMF.bind_bind, PMF.pure_bind, Function.comp_def] using hmap
+      simpa only [pmf_norm, simulateConversation] using hmap
     · simp only [Bool.not_eq_true] at hv
       simp only [FiatShamirNIZK.presampledHandler, hv, Bool.false_eq_true, ↓reduceDIte,
         nizkSimExtHandler, ↓reduceIte, PMF.bind_const]
@@ -1789,8 +1685,7 @@ private theorem fork_sim_le_simExtractGame [DecidableEq Y] [DecidableEq T] [Fint
           (simForkingProg P src valid admissible A))).map Option.isSome true ≤
       fiatShamirNIZKSimExtractGame R admissible
         (fiatShamirNIZKSimExtractWith P src extract valid admissible A Qp Qro) true := by
-  simp only [fiatShamirNIZKSimExtractGame, fiatShamirNIZKSimExtractWith, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_map]
+  simp only [pmf_norm, fiatShamirNIZKSimExtractGame, fiatShamirNIZKSimExtractWith]
   rw [← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun result hresult => ?_
   rcases result with _ | ⟨j, out, out'⟩
@@ -1844,27 +1739,15 @@ theorem succProbability_fiatShamirNIZKSimExtGameOn_le [DecidableEq Y] [Decidable
     exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
       FiatShamirNIZK.map_run_le_validIndex P valid src.coins.support_nonempty.some
         (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2
-  have hC := le_add_sqrt_fork first (simForkingProg P src valid admissible A)
+  have h := toReal_le_add_sqrt_fork_of_le first (simForkingProg P src valid admissible A)
     (Classical.arbitrary C)
     (fun s => FiatShamirNIZK.isQueryBounded_forkingProg P valid src.coins.support_nonempty.some
-      (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2)
-  have hD := fork_sim_le_simExtractGame hsound src valid admissible A Qp Qro
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hC
+      (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2) ENNReal.zero_ne_top
+    (hB.trans le_self_add) (fork_sim_le_simExtractGame hsound src valid admissible A Qp Qro)
+    (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-  calc (fiatShamirNIZKSimExtGameOn admissible P simulate valid A true).toReal
-      ≤ (first.bind (fun s =>
-          ((interpret countingUniform (simForkingProg P src valid admissible A s)).run 0).bind
-            fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true).toReal :=
-        ENNReal.toReal_mono (PMF.apply_ne_top _ _) hB
-    _ ≤ (Qro + 1 : ℕ) / Fintype.card C +
-          √((Qro + 1 : ℕ) * ((Forking.fork first
-            (forkingAlgorithm (Classical.arbitrary C) (Qro + 1)
-              (simForkingProg P src valid admissible A))).map Option.isSome true).toReal) := hC
-    _ ≤ _ := by
-        push_cast
-        have hsqrt := Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left
-          (ENNReal.toReal_mono (PMF.apply_ne_top _ _) hD) (by positivity : (0 : ℝ) ≤ Qro + 1))
-        linarith
+  push_cast at h ⊢
+  linarith [ENNReal.toReal_zero]
 
 /-- **Simulation-extractability against simulated proofs** over finite statement and transcript
 types. -/
@@ -1913,14 +1796,8 @@ theorem succProbability_fiatShamirNIZKRealExtGameOn_le [DecidableEq Y] [Decidabl
         (Qp * (Qp + Qro) : ℕ) * (δ : ℝ≥0∞) := by
     simp only [fiatShamirNIZKRealExtGameOn, fiatShamirNIZKSimExtGameOn, PMF.monad_bind_eq_bind,
       PMF.monad_pure_eq_pure]
-    rw [PMF.bind_apply, PMF.bind_apply]
-    calc ∑' s, A.coins s * _ ≤
-          ∑' s, A.coins s * (_ + (Qp * (Qp + Qro) : ℕ) * (δ : ℝ≥0∞)) :=
-          tsum_le_tsum fun s => mul_le_mul_of_nonneg_left
-            (extHandlers_bind_apply_le hvalid hHVZK hUnpred (hA s) post true) zero_le
-      _ = _ := by
-          rw [tsum_congr fun s => mul_add _ _ _, tsum_add, ENNReal.tsum_mul_right,
-            PMF.tsum_coe, one_mul]
+    exact Probability.PMF.bind_apply_le_add_const_on_support _ _ fun s _ =>
+      extHandlers_bind_apply_le hvalid hHVZK hUnpred (hA s) post true
   have hsim := succProbability_fiatShamirNIZKSimExtGameOn_le hsound src valid admissible hA
   have htop : ((Qp * (Qp + Qro) : ℕ) : ℝ≥0∞) * (δ : ℝ≥0∞) ≠ ⊤ :=
     ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.coe_ne_top
@@ -2096,8 +1973,7 @@ theorem linear_unpredictableCommitments_of_injective (ψ : Y → M →ₗ[ZMod q
   eval cz y := (ψ y cz.2 - ι cz.1 • u y, cz.1, cz.2)
   map_eval y := by
     rw [← Probability.PMF.uniformOfFintype_prod]
-    simp only [simulateConversation, linearSimulate, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.map_bind, PMF.map_comp, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, simulateConversation, linearSimulate]
     rfl
 
 /-- Adaptive multi-theorem NIZK zero-knowledge bound for `SigmaProtocol.linear`. -/

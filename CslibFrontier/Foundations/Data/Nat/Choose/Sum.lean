@@ -67,8 +67,7 @@ theorem sum_range_choose_mul_pow_le (a ℓ r : ℕ) (ha : 1 ≤ a := by omega) :
     have hjr := Nat.lt_succ_iff.1 (mem_range.1 hj)
     calc ℓ.choose j * a ^ ℓ = ℓ.choose j * (a ^ j * a ^ (ℓ - j)) := by
           rw [← pow_add, Nat.add_sub_cancel' hjℓ]
-      _ ≤ ℓ.choose j * (a ^ r * a ^ (ℓ - j)) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (Nat.pow_le_pow_right ha hjr))
+      _ ≤ ℓ.choose j * (a ^ r * a ^ (ℓ - j)) := by gcongr
       _ = a ^ r * (1 ^ j * a ^ (ℓ - j) * ℓ.choose j) := by ring
   have htail : ∑ j ∈ range (r + 1), 1 ^ j * a ^ (ℓ - j) * ℓ.choose j ≤ (a + 1) ^ ℓ := by
     calc ∑ j ∈ range (r + 1), 1 ^ j * a ^ (ℓ - j) * ℓ.choose j

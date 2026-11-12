@@ -120,8 +120,7 @@ theorem isBigO_pow_mul_log (h : DivideConquerBound T a b n₀ T₀ fun n => c * 
       rw [Real.logb]; field_simp
     rw [e]
     have hT0 : (T₀ : ℝ) ≤ T₀ * Real.logb b n := le_mul_of_one_le_right (by positivity) hL
-    have hc : (c : ℝ) * n₀ ^ d * (clog b n : ℝ) ≤ c * n₀ ^ d * (2 * Real.logb b n) :=
-      mul_le_mul_of_nonneg_left hK (by positivity)
+    have hc : (c : ℝ) * n₀ ^ d * (clog b n : ℝ) ≤ c * n₀ ^ d * (2 * Real.logb b n) := by gcongr
     linarith
   calc (T n : ℝ) ≤ _ := hmain
     _ ≤ ((b : ℝ) * n) ^ d * ((T₀ / Real.log b + c * n₀ ^ d * 2 / Real.log b) * Real.log n) :=

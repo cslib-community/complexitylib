@@ -171,6 +171,26 @@ theorem lpNorm_two_le_exp_mul_lpNorm_one {k : ℕ} {f : (ι → Bool) → ℝ}
   have h := lpNorm_two_le_exp_mul_lpNorm one_pos one_le_two hf
   rwa [div_one, show (2 : ℝ) - 1 = 1 by norm_num, mul_one] at h
 
+/-- If a function `f ≢ 0` of degree at most `k` has `(𝔼 |f|) ^ 2 ≤ C 𝔼 f ^ 2`, then
+`e ^ (-2 k) ≤ C`: the squared `L^1`–`L^2` comparison `𝔼 f ^ 2 ≤ e ^ (2 k) (𝔼 |f|) ^ 2`
+(`lpNorm_two_le_exp_mul_lpNorm_one`) and the hypothesis give `𝔼 f ^ 2 ≤ e ^ (2 k) C 𝔼 f ^ 2`.
+This is the last step of both Theorem 9.24 (`exp_neg_two_mul_div_four_le_dens_lt`) and the
+Gotsman–Linial Theorem [O'Donnell, Theorem 5.9][ODonnell2014]. -/
+theorem exp_neg_two_mul_le_of_sq_expect_abs_le {k : ℕ} {f : (ι → Bool) → ℝ} {C : ℝ}
+    (hf : f ∈ lowDegree ℝ ι k) (hm : 0 < 𝔼 x, f x ^ 2)
+    (hC : (𝔼 x, |f x|) ^ 2 ≤ C * 𝔼 x, f x ^ 2) : Real.exp (-(2 * k)) ≤ C := by
+  have h22 := lpNorm_two_le_exp_mul_lpNorm_one hf
+  rw [lpNorm_two, lpNorm_one] at h22
+  have hsq := pow_le_pow_left₀ (Real.sqrt_nonneg _) h22 2
+  rw [Real.sq_sqrt hm.le, mul_pow, ← Real.exp_nat_mul, Nat.cast_ofNat] at hsq
+  -- `𝔼 f ^ 2 ≤ e ^ (2 k) (𝔼 |f|) ^ 2 ≤ e ^ (2 k) C 𝔼 f ^ 2`, so `1 ≤ e ^ (2 k) C`
+  have h1 : 1 * 𝔼 x, f x ^ 2 ≤ (Real.exp (2 * k) * C) * 𝔼 x, f x ^ 2 := by
+    calc 1 * 𝔼 x, f x ^ 2 ≤ Real.exp (2 * k) * (𝔼 x, |f x|) ^ 2 := by rwa [one_mul]
+      _ ≤ Real.exp (2 * k) * (C * 𝔼 x, f x ^ 2) := by gcongr
+      _ = (Real.exp (2 * k) * C) * 𝔼 x, f x ^ 2 := (mul_assoc _ _ _).symm
+  rw [Real.exp_neg, inv_le_iff_one_le_mul₀' (Real.exp_pos _)]
+  exact le_of_mul_le_mul_right h1 hm
+
 /-- **The tail bound for low-degree functions**: if `f ≢ 0` has degree at most `k` and
 `t ≥ √(2 e) ^ k`, then `Pr[|f| ≥ t ‖f‖_2] ≤ exp (-(k / (2 e)) t ^ (2 / k))`
 [O'Donnell, Theorem 9.23][ODonnell2014]. The hypothesis `‖f‖_2 > 0` replaces the book's
@@ -276,37 +296,14 @@ theorem exp_neg_two_mul_div_four_le_dens_lt {k : ℕ} {f : (ι → Bool) → ℝ
     rw [expect_congr rfl fun x _ => hpt x, expect_sub_distrib, ← mul_expect, hg0, sub_zero]
   have hcs := expect_mul_sq_le_sq_mul_sq univ E g
   have hE2 : 𝔼 x, E x ^ 2 = (dens {x | 0 < g x} : ℝ) := Fintype.expect_boole_sq _
-  rw [hE2] at hcs
-  set m := 𝔼 x, g x ^ 2 with hm
-  have hmpos : 0 < m := hV
   have hset : ({x | 0 < g x} : Finset (ι → Bool)) = ({x | μ < f x} : Finset (ι → Bool)) := by
     ext x; simp only [mem_filter, mem_univ, true_and, hg, sub_pos]
-  rw [hset] at hcs
-  set D := (dens {x | μ < f x} : ℝ) with hD
-  have h22 := lpNorm_two_le_exp_mul_lpNorm_one hgdeg
-  rw [lpNorm_two, ← hm, lpNorm_one, habs] at h22
-  have hsq := pow_le_pow_left₀ (Real.sqrt_nonneg _) h22 2
-  rw [Real.sq_sqrt hmpos.le] at hsq
-  -- `m ≤ 4 e^{2k} (𝔼 E g)^2 ≤ 4 e^{2k} D m`
-  have hX : Real.exp (2 * k) = Real.exp k ^ 2 := by
-    rw [sq, ← Real.exp_add]; ring_nf
-  have h1 : m ≤ 4 * Real.exp (2 * k) * (D * m) := by
-    calc m ≤ (Real.exp k * (2 * 𝔼 x, E x * g x)) ^ 2 := hsq
-      _ = 4 * Real.exp (2 * k) * (𝔼 x, E x * g x) ^ 2 := by rw [hX]; ring
-      _ ≤ 4 * Real.exp (2 * k) * (D * m) :=
-        mul_le_mul_of_nonneg_left hcs (by positivity)
-  have h2 : 1 ≤ 4 * Real.exp (2 * k) * D := by
-    by_contra hlt
-    push Not at hlt
-    have := mul_lt_mul_of_pos_right hlt hmpos
+  rw [hE2, hset] at hcs
+  -- `(𝔼 |g|) ^ 2 = 4 (𝔼 E g) ^ 2 ≤ 4 Pr[f > μ] 𝔼 g ^ 2`
+  have hC : (𝔼 x, |g x|) ^ 2 ≤ 4 * (dens {x | μ < f x} : ℝ) * 𝔼 x, g x ^ 2 := by
+    rw [habs]
     linarith
-  have hee : Real.exp (-(2 * k)) * Real.exp (2 * k) = 1 := by
-    rw [← Real.exp_add, neg_add_cancel, Real.exp_zero]
-  have h3 := mul_le_mul_of_nonneg_left h2 (Real.exp_pos (-(2 * k))).le
-  have h4 : Real.exp (-(2 * k)) * (4 * Real.exp (2 * k) * D) = 4 * D := by
-    calc _ = 4 * (Real.exp (-(2 * k)) * Real.exp (2 * k)) * D := by ring
-      _ = 4 * D := by rw [hee, mul_one]
-  linarith
+  linarith [exp_neg_two_mul_le_of_sq_expect_abs_le hgdeg hV hC]
 
 /-! ### Khintchine's inequality -/
 

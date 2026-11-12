@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.Lean.Assignment.Basic
 public import Mathlib.Algebra.Order.Group.Int
 public import Mathlib.Data.List.MinMax
+import CslibFrontier.Foundations.Data.List.ArgMin
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.Group.Unbundled.Abs
@@ -263,9 +264,8 @@ theorem bidStep_cons {s : AuctionState n} {i : Fin n} {rest : List (Fin n)}
           price := Function.update s.price j (bidPrice c ε s.price i j)
           free := (s.owner j).toList ++ rest
           bids := s.bids + 1 } := by
-  have hne : List.finRange n ≠ [] := List.ne_nil_of_mem (List.mem_finRange i)
   obtain ⟨j, hj⟩ : ∃ j, bestObject c s.price i = some j :=
-    Option.ne_none_iff_exists'.1 (by rw [Ne, bestObject, List.argmin_eq_none]; exact hne)
+    List.exists_argmin_eq_some (List.ne_nil_of_mem (List.mem_finRange i))
   refine ⟨j, fun k => List.le_of_mem_argmin (List.mem_finRange k) hj, ?_⟩
   unfold bidStep
   rw [hs]

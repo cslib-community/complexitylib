@@ -25,6 +25,7 @@ needed.
 * `Cslib.BitString.SubsetSum.uniform_vecMul_sub`: distinct rows give a uniform difference.
 * `Cslib.BitString.SubsetSum.vecMul_collision_probability`: exact modular collision probability.
 * `Cslib.BitString.SubsetSum.dist_mul_le`: the joint bound with the entire public matrix retained.
+* `Cslib.BitString.SubsetSum.dist_bind_mul_le`: continuation-form shared-matrix bound.
 
 ## References
 
@@ -33,7 +34,7 @@ needed.
   [GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString.SubsetSum
 
@@ -115,5 +116,47 @@ theorem dist_mul_le {q m d : ℕ} [NeZero q] {Rows : Type*} [Fintype Rows] [Deci
   have of_matrix (M : Matrix Rows (Fin d) (ZMod q)) : Matrix.of M = M := rfl
   simpa [real, ideal, convert, seededHash, hashRows_eq_mul, of_matrix, PMF.map_bind,
     PMF.bind_map, PMF.map_comp, Function.comp_def] using h
+
+open Classical in
+/-- Leftover-hash lemma in continuation (`bind`) form: any downstream randomized computation
+observing the shared uniform matrix `A` and its binary-row hash matrix `r * A` has total
+variation distance at most `|Rows| * √(q^d / 2^m) / 2` from observing `A` and an independent
+uniform modular matrix `U`. -/
+theorem dist_bind_mul_le {q m d : ℕ} [NeZero q] {Rows γ : Type*}
+    [Fintype Rows] [DecidableEq Rows] [Fintype γ]
+    (cont : Matrix (Fin m) (Fin d) (ZMod q) → Matrix Rows (Fin d) (ZMod q) → PMF γ) :
+    dist
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (ZMod q))).bind (fun A =>
+        (PMF.uniformOfFintype (Matrix Rows (Fin m) Bool)).bind (fun r =>
+          cont A (r.map (fun bit => (bit.toNat : ZMod q)) * A))))
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (ZMod q))).bind (fun A =>
+        (PMF.uniformOfFintype (Matrix Rows (Fin d) (ZMod q))).bind (fun U =>
+          cont A U))) ≤
+      Fintype.card Rows * Real.sqrt ((q : ℝ) ^ d / (2 : ℝ) ^ m) / 2 := by
+  have h1 :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (ZMod q))).bind (fun A =>
+        (PMF.uniformOfFintype (Matrix Rows (Fin m) Bool)).bind (fun r =>
+          cont A (r.map (fun bit => (bit.toNat : ZMod q)) * A)))) =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (ZMod q))).bind (fun A =>
+        (PMF.uniformOfFintype (Matrix Rows (Fin m) Bool)).map
+          (fun r => (A, r.map (fun bit => (bit.toNat : ZMod q)) * A)))).bind
+        (fun p => cont p.1 p.2) := by
+    rw [PMF.bind_bind]
+    congr 1 with A
+    rw [PMF.bind_map]
+    rfl
+  have h2 :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (ZMod q))).bind (fun A =>
+        (PMF.uniformOfFintype (Matrix Rows (Fin d) (ZMod q))).bind (fun U =>
+          cont A U))) =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (ZMod q))).bind (fun A =>
+        (PMF.uniformOfFintype (Matrix Rows (Fin d) (ZMod q))).map (A, ·))).bind
+        (fun p => cont p.1 p.2) := by
+    rw [PMF.bind_bind]
+    congr 1 with A
+    rw [PMF.bind_map]
+    rfl
+  rw [h1, h2]
+  exact (dist_bind_le _ _ _).trans dist_mul_le
 
 end Cslib.BitString.SubsetSum

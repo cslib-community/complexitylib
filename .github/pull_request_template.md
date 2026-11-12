@@ -5,8 +5,13 @@
 <!-- What changes, why, and which issue does it address?
 For mathematical changes, state the claim and important assumptions. Where relevant, explain
 the source-to-Lean mapping or why existing definitions could not be reused.
-New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception.
-If selected abstracts are affected, describe their updates and link the relevant review. -->
+For API/reuse refactors, identify a representative caller and what it no longer repeats;
+follow AGENTS.md#check-the-api-through-its-callers.
+New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception. -->
+
+Authors of new files: <!-- the issue's originator(s) (its "Originated by" field, else its
+author) and the person whose agents did the work, as in AGENTS.md#file-rules. Delete if no file is
+added. -->
 
 ## Manual impact
 
@@ -18,7 +23,8 @@ the final revision. See CONTRIBUTING.md#maintaining-the-manuals. -->
 ## Validation
 
 <!-- Give checks and outcomes, or link existing CI/review evidence. State material limitations.
-If abstracts or rendering changed, include the affected PDF/page and declaration-link checks.
+For library changes, link the duplication notices for the reviewed revision and record resolutions
+of relevant candidates (or link the existing explanation), including skipped/incomplete coverage.
 For manual changes, include relevant excerpt/link checks, Lean example checks and rendered-page
 inspection. Record the manual review with the code review rather than duplicating it here.
 Omit items that do not apply; do not claim review that has not happened. -->

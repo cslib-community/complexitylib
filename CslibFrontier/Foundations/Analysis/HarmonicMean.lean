@@ -249,21 +249,11 @@ theorem harmonicMean_pair {f : Bool → α → ℝ} (hf : ∀ b x, 0 ≤ f b x) 
     harmonicMean (fun x : Bool × α => f x.1 x.2) =
       2 * harmonicMean (f false) * harmonicMean (f true) /
         (harmonicMean (f false) + harmonicMean (f true)) := by
-  by_cases h0 : ∃ x, f false x = 0
-  · obtain ⟨x, hx⟩ := h0
-    rw [harmonicMean_eq_zero_of_exists ⟨x, hx⟩,
-      harmonicMean_eq_zero_of_exists (f := fun x : Bool × α => f x.1 x.2) ⟨(false, x), hx⟩]
-    simp
-  by_cases h1 : ∃ x, f true x = 0
-  · obtain ⟨x, hx⟩ := h1
-    rw [harmonicMean_eq_zero_of_exists ⟨x, hx⟩,
-      harmonicMean_eq_zero_of_exists (f := fun x : Bool × α => f x.1 x.2) ⟨(true, x), hx⟩]
-    simp
-  have hpos (b : Bool) (x : α) : 0 < f b x := by
-    refine (hf b x).lt_of_ne' fun h => ?_
-    cases b
-    · exact h0 ⟨x, h⟩
-    · exact h1 ⟨x, h⟩
+  by_cases h0 : ∃ b x, f b x = 0
+  · obtain ⟨b, x, hx⟩ := h0
+    rw [harmonicMean_eq_zero_of_exists (f := fun x : Bool × α => f x.1 x.2) ⟨(b, x), hx⟩]
+    cases b <;> simp [harmonicMean_eq_zero_of_exists ⟨x, hx⟩]
+  have hpos (b : Bool) (x : α) : 0 < f b x := (hf b x).lt_of_ne' fun h => h0 ⟨b, x, h⟩
   have hp (b : Bool) : 0 < 𝔼 x, (f b x)⁻¹ :=
     expect_pos (fun x _ => inv_pos.mpr (hpos b x)) univ_nonempty
   rw [harmonicMean_of_pos (f := fun x : Bool × α => f x.1 x.2) fun x => hpos x.1 x.2,

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.PCP.Encoded.Amplification.Enumeration
+import CslibFrontier.Computability.PCP.Encoded.Amplification
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import CslibFrontier.Tactic.PolyTime
 
@@ -59,22 +59,22 @@ private theorem polytime_unitEval : ComputableTidilyInPolyTime
 
 -- The full complete round has a uniform certificate, including for arbitrary runtime graphs.
 example : ComputableInPolyTime
-    (fun g : Graph Bool => g.amplifyEnumerated unitEval false rotateLoops 1 2)
+    (fun g : Graph Bool => g.amplify unitEval false rotateLoops 1 2)
     (Graph.encoding encBool) (Graph.encoding (encPi (encPi encBool))) := by
   have hr := polytime_rotateLoops
   have he := polytime_unitEval
   polytime
 
-example : ((⟨0, [⟨4, 7, false⟩]⟩ : Graph Bool).amplifyEnumerated
+example : ((⟨0, [⟨4, 7, false⟩]⟩ : Graph Bool).amplify
     unitEval false rotateLoops 1 2).WellFormed :=
-  Graph.wellFormed_amplifyEnumerated _ unitEval false
+  Graph.wellFormed_amplify _ unitEval false
     (fun n => RotationMap.loops (Fin n) Unit) rotateLoops rotateLoops_eq 1 2
 
 -- Already at a one-element alphabet, the complete tester is too large to materialize here.
 example (g : Graph Bool) :
-    (g.amplifyEnumerated unitEval false rotateLoops 1 2).edges.length =
+    (g.amplify unitEval false rotateLoops 1 2).edges.length =
       131941395333120 * g.edges.length := by
-  rw [Graph.length_edges_amplifyEnumerated]
+  rw [Graph.length_edges_amplify]
   simp only [Graph.PowerLabel, Fintype.card_prod, Fintype.card_fun, Fintype.card_fin,
     ConstraintGraph.PreprocessLabel, Fintype.card_sum, Fintype.card_unique, Fintype.card_bool,
     Graph.PowerAlphabet]
@@ -94,7 +94,7 @@ variable {C α D Input : Type} [FinEnum α] [FinEnum D]
     (encPair enc (encPair alphabet alphabet)) encBool)
 
 example : ComputableInPolyTime
-    (fun x => (graph x).amplifyEnumerated eval fallback rotate T q)
+    (fun x => (graph x).amplify eval fallback rotate T q)
     input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hg; fun_prop)
   fail_if_success (clear hr; fun_prop)
@@ -102,7 +102,7 @@ example : ComputableInPolyTime
   fun_prop
 
 example : ComputableInPolyTime
-    (fun x => let g := graph x; g.amplifyEnumerated eval fallback rotate T q)
+    (fun x => let g := graph x; g.amplify eval fallback rotate T q)
     input (Graph.encoding (encPi (encPi encBool))) := by
   polytime
 

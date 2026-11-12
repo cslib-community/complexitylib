@@ -158,7 +158,7 @@ example :
       22 + 1 / 2097152 := by
   have h := stationaryContinuation_output_eq_dyadic (s := univ) (n := fun _ => 2) (K := 2)
     (Δ := increments) (a := initial) (truth := truth) (η := 1) (H := gatedOutput)
-    (g := 3) (e := 10) (by norm_num) (by norm_num) 2 1 1 (by norm_num) no_overflow
+    (g := 3) (e := 10) (by norm_num) 2 1 1 (by norm_num) no_overflow
     (fun y _ => by fin_cases y <;> norm_num [truth])
     (fun y _ => by fin_cases y <;> norm_num [truth]) (by intros; norm_num)
     (by norm_num) (by norm_num) (fun _ _ _ hx => by simp [gatedOutput, hx])

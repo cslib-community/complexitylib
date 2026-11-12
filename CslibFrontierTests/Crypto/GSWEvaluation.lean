@@ -15,7 +15,7 @@ decryption through their native certificates. No security or bootstrappability i
 
 namespace CslibFrontierTests.GSWEvaluation
 
-open Cslib Cslib.Probability Cslib.Crypto.Homomorphic.GSW
+open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Homomorphic.GSW
 open Turing.MultiTapeTM
 
 example (n : ℕ) (secret ciphertext left right : List Bool) :
@@ -68,7 +68,7 @@ example : nandSerialized 0 2 [true] [true] = [false, false, false, true] ∧
 example :
     (nandSerialized 1 2 leftWord rightWord).length = 16 ∧
       decryptSerialized 1 2 [true] negativePhase =
-        decrypt (decodeSecret 1 2 [true]) (decodeCiphertext 1 2 negativePhase) ∧
+        decrypt (LWE.decodeSecret 1 2 [true]) (decodeCiphertext 1 2 negativePhase) ∧
       nandSerialized 1 2 leftWord rightWord =
         serializeCiphertext (nand (decodeCiphertext 1 2 leftWord)
           (decodeCiphertext 1 2 rightWord)) :=
@@ -76,14 +76,14 @@ example :
     decryptSerialized_eq 1 2 [true] negativePhase,
     nandSerialized_eq 1 2 leftWord rightWord⟩
 
-private def keyInputs : KeyInputs 1 1 6 :=
+private def keyInputs : LWE.KeyInputs 1 1 6 :=
   ⟨fun _ => 5, fun _ _ => 3, fun _ => 1⟩
 
 private def typedKeys :=
-  (publicMatrix keyInputs.publicPart keyInputs.secret keyInputs.error, keyInputs.secret)
+  (LWE.publicMatrixInt keyInputs.publicPart keyInputs.secret keyInputs.error, keyInputs.secret)
 
 private def wordKeys : List Bool × List Bool :=
-  (serializePublicMatrix typedKeys.1, serializeSecret typedKeys.2)
+  (LWE.serializePublicMatrix typedKeys.1, LWE.serializeSecret typedKeys.2)
 
 private def coins : _root_.Matrix (Fin 2 × Fin 6) (Fin 1) Bool := fun _ _ => true
 
@@ -91,18 +91,18 @@ private def wordCipher (message : Bool) : List Bool :=
   encryptWithCoinsSerialized 1 1 6 wordKeys.1 message (serializeCoins coins)
 
 private theorem keys_supported :
-    wordKeys ∈ (ProbComp.eval (keyGenSerialized 1 1 6 1)).support := by
-  rw [eval_keyGenSerialized, PMF.mem_support_map_iff]
+    wordKeys ∈ (ProbComp.eval (LWE.keyGenSerialized 1 1 6 1)).support := by
+  rw [LWE.eval_keyGenSerialized, PMF.mem_support_map_iff]
   refine ⟨typedKeys, ?_, rfl⟩
-  simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
+  simp only [LWE.keyGen, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
     PMF.mem_support_pure_iff]
   refine ⟨keyInputs, ?_, rfl⟩
-  rw [mem_support_sampleKeyInputs_iff]
+  rw [LWE.mem_support_sampleKeyInputs_iff]
   decide +kernel
 
 private theorem cipher_supported (message : Bool) :
     wordCipher message ∈ (ProbComp.eval (encryptSerialized 1 1 6 wordKeys.1 message)).support := by
-  rw [show wordKeys.1 = serializePublicMatrix typedKeys.1 from rfl,
+  rw [show wordKeys.1 = LWE.serializePublicMatrix typedKeys.1 from rfl,
     eval_encryptSerialized_serializePublicMatrix, PMF.mem_support_map_iff]
   refine ⟨encryptWithCoins typedKeys.1 message coins, ?_, ?_⟩
   · exact (mem_support_encrypt_iff _ _ _).mpr ⟨coins, rfl⟩
@@ -129,7 +129,7 @@ example : ComputableInPolyTime
     (encPair encUnary (encPair encUnary (encPair encBits encBits))) encBits := by fun_prop
 
 private noncomputable def completeClient (p : ℕ × ℕ × ℕ × ℕ × Bool × Bool) : ProbComp Bool := do
-  let keys ← keyGenSerialized p.1 p.2.1 p.2.2.1 p.2.2.2.1
+  let keys ← LWE.keyGenSerialized p.1 p.2.1 p.2.2.1 p.2.2.2.1
   let left ← encryptSerialized p.1 p.2.1 p.2.2.1 keys.1 p.2.2.2.2.1
   let right ← encryptSerialized p.1 p.2.1 p.2.2.1 keys.1 p.2.2.2.2.2
   return decryptSerialized p.1 p.2.2.1 keys.2 (nandSerialized p.1 p.2.2.1 left right)

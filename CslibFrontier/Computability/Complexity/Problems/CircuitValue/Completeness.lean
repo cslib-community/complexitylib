@@ -52,6 +52,8 @@ copies the input.
   computable in logarithmic space.
 * `Cslib.Complexity.CircuitValue.computableInPolyTime_tableauCode`: the whole code is
   constructed in polynomial time from the unary input length.
+* `Cslib.Complexity.CircuitValue.eval_tableau_of_computesFun`: the tableau circuit of a machine
+  computing `f` within the time bound evaluates to `f a` on the encoding of `a`.
 * `Cslib.Complexity.CircuitValue.exists_uniformCircuits`: polynomial-time Boolean functions
   admit polynomial-time circuit constructors, correct on the encoding's image.
 * `Cslib.Complexity.CircuitValue.logSpaceHard`: the circuit value problem is `P`-hard under
@@ -190,6 +192,21 @@ theorem numGates_inSpace {T : α → ℕ} (hT : ComputableInSpace T encIn encNat
   budget_natAdd (budget_const 2 hin) (budget_natMul (budget_natAdd hT (budget_const 1 hin))
     (blockSize_inSpace (k := k) (State := State) hT hin))
 
+/-- The end of a gate list, a framed wire number and a fixed suffix preserve a space budget: the
+shape of the trailer emitted by the tableau writers after their gates. -/
+theorem trailerWire_inSpace (suffix : List Bool) {w : α → ℕ}
+    (hw : ComputableInSpace w encIn encNat Bs) :
+    ComputableInSpace (fun x => [true, false] ++
+      doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++ suffix) encIn encBits Bs := by
+  have hmid := budget_comp_linear doubled_inSpace
+    (budget_comp_linear (ComputableInSpace.frame encNat) hw)
+  have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
+    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))))
+    (encD := encBits) fun _ => rfl
+  exact ((h₁.weaken (.add (.refl _) (.refl _))).append (budget_const (encB := encBits) suffix hin)
+    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (w x))) ++ suffix)
+    (encD := encBits) fun _ => rfl).weaken (.add (.refl _) (.refl _))
+
 private theorem gateChunk_inSpace {n i : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs)
     (hi : ComputableInSpace i encIn encNat Bs) :
     ComputableInSpace (fun x => gateChunk tm C d (n x) (i x)) encIn encBits Bs :=
@@ -199,24 +216,18 @@ private theorem gateChunk_inSpace {n i : α → ℕ} (hn : ComputableInSpace n e
 
 omit [DecidableEq State] in
 private theorem trailer_inSpace {n : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs) :
-    ComputableInSpace (fun x => trailer k State C d (n x)) encIn encBits Bs := by
-  have hT := timeBound_inSpace C d hin hn
-  have ho : ComputableInSpace (fun x => outWire k State (n x) (timeBound C d (n x)))
-      encIn encNat Bs :=
-    budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
-      (budget_natMul hT (blockSize_inSpace (k := k) (State := State) hT hin)))
-      (budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin))
-  have hmid := budget_comp_linear doubled_inSpace
-    (budget_comp_linear (ComputableInSpace.frame encNat) ho)
-  have h₁ := (budget_const (encB := encBits) [true, false] hin).append hmid
-    (g := fun x => [true, false] ++ doubled (Turing.MultiTapeTM.frame (encNat (outWire k State (n x)
-      (timeBound C d (n x)))))) (encD := encBits) fun _ => rfl
-  have h₂ := (h₁.weaken (.add (.refl _) (.refl _))).append
-    (budget_const (encB := encBits) [false] hin) (encD := encBits)
-    (g := fun x => trailer k State C d (n x)) fun _ => rfl
-  exact h₂.weaken (.add (.refl _) (.refl _))
+    ComputableInSpace (fun x => trailer k State C d (n x)) encIn encBits Bs :=
+  trailerWire_inSpace hin [false]
+    (outWire_inSpace (k := k) (State := State) (timeBound_inSpace C d hin hn) hin hn)
 
 end Components
+
+omit [DecidableEq State] in
+/-- The number of gates of the tableau for `timeBound C d n` steps is polynomial in `n`. -/
+theorem polynomiallyBounded_numGates_timeBound :
+    PolynomiallyBounded fun n => numGates k State (timeBound C d n) := by
+  simp only [numGates, blockSize, colStart, gfStart, globStart, numCols, timeBound]
+  fun_prop
 
 /-- **The instances are computable in logarithmic space**, from the framed input. -/
 theorem computableInLogSpace_tableauInstance :
@@ -228,13 +239,11 @@ theorem computableInLogSpace_tableauInstance :
   have hs := (ComputableInSpace.fst encNat3 encBool).weaken hin
   have hn := fst' (snd' hs)
   have hi := snd' (snd' hs)
-  refine (tableauSpec tm C d).computableInLogSpace (tableauSpec_output tm C d)
+  exact (tableauSpec tm C d).computableInLogSpace (tableauSpec_output tm C d)
     (numGates_inSpace (k := k) (State := State) hin (timeBound_inSpace C d hin hn))
     (gateChunk_inSpace tm C d hin hn hi)
-    (trailer_inSpace (k := k) (State := State) C d hin hn) ?_
-  change PolynomiallyBounded fun n => numGates k State (timeBound C d n)
-  simp only [numGates, blockSize, colStart, gfStart, globStart, numCols, timeBound]
-  fun_prop
+    (trailer_inSpace (k := k) (State := State) C d hin hn)
+    (polynomiallyBounded_numGates_timeBound C d)
 
 end Space
 
@@ -267,6 +276,25 @@ theorem computableInPolyTime_tableauCode :
   simp [tableauCode, tableauInstance, encCircuitValue_apply, encPair_apply,
     unframe_frame_append, dropFrame_frame_append, Tableau.code_circuit, List.length_replicate]
 
+/-- **Correctness of the tableau.** If `tm` decides `f` within time `t ≤ C (n + 1) ^ d` on inputs
+of length `n`, the tableau circuit for `timeBound C d |enc a|` steps evaluates to `f a` on the
+encoding of `a`. -/
+theorem eval_tableau_of_computesFun {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
+    {t s : ℕ → ℕ} (htm : tm.ComputesFunInTimeAndSpace enc encBool f (fun a => t (enc a).length)
+      (fun a => s (enc a).length)) (ht : ∀ n, t n ≤ C * (n + 1) ^ d) (a : α) :
+    (Tableau.circuit tm (enc a).length (timeBound C d (enc a).length)).eval interpretation
+      (fun i => (enc a)[i]) 0 = f a := by
+  rw [Tableau.eval_circuit tm (by simp only [timeBound]; omega)]
+  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
+  rw [hw]
+  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
+    have h := ht (enc a).length
+    dsimp only [timeBound]
+    omega
+  obtain ⟨-, hout⟩ := (htm a).runFrom_of_le hle
+  rw [hout, encBool_apply]
+  cases f a <;> simp [OutView.ofList]
+
 /-- Every polynomial-time Boolean function has circuits whose codes are constructed in
 polynomial time from the unary encoded input length. Correctness is required on the encoding's
 image; no decoder or efficient membership test for that image is assumed. -/
@@ -279,18 +307,9 @@ theorem exists_uniformCircuits {α : Type} {enc : α ↪ List Bool} {f : α → 
   have := Fintype.ofFinite Control
   classical
   obtain ⟨C, d, hbound⟩ := polynomiallyBounded_iff_le.mp ht
-  refine ⟨fun n => Tableau.circuit machine n (timeBound C d n),
-    computableInPolyTime_tableauCode machine C d, fun a => ?_⟩
-  rw [Tableau.eval_circuit machine (by simp only [timeBound]; omega)]
-  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
-  rw [hw]
-  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
-    have h := hbound (enc a).length
-    dsimp only [timeBound]
-    omega
-  obtain ⟨-, hout⟩ := (hmachine a).runFrom_of_le hle
-  rw [hout, encBool_apply]
-  cases f a <;> simp [OutView.ofList]
+  exact ⟨fun n => Tableau.circuit machine n (timeBound C d n),
+    computableInPolyTime_tableauCode machine C d,
+    eval_tableau_of_computesFun machine C d hmachine hbound⟩
 
 end Construction
 
@@ -311,15 +330,7 @@ theorem logSpaceReducible_of_mem_P {α : Type} {enc : α ↪ List Bool} {A : Set
     fun a => ?_⟩
   rw [hAf a, mem_CircuitValue]
   simp only [tableauInstance]
-  have hw : List.ofFn (fun i : Fin (enc a).length => (enc a)[i]) = enc a := List.ofFn_getElem
-  rw [Tableau.eval_circuit tm (by simp only [timeBound]; omega), hw]
-  have hle : t (enc a).length ≤ timeBound C d (enc a).length := by
-    have := htle (enc a).length
-    simp only [timeBound]
-    omega
-  obtain ⟨-, hout⟩ := (htm a).runFrom_of_le hle
-  rw [hout, encBool_apply]
-  cases f a <;> simp [OutView.ofList]
+  rw [eval_tableau_of_computesFun tm C d htm htle]
 
 /-- **The circuit value problem is `P`-hard under logarithmic-space reductions** [Ladner1975]. -/
 theorem logSpaceHard : LogSpaceHard @P encCircuitValue CircuitValue :=

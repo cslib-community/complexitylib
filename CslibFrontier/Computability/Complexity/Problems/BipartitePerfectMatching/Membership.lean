@@ -316,9 +316,7 @@ private theorem augmentStep_path_size (w : List Bool) (n : ℕ) (M : List (ℕ �
   generalize hP : augmentingPaths w n M (labelling w n M) = P
   rcases P with _ | ⟨p, P⟩
   · simp
-  · have hp : p ∈ augmentingPaths w n M (labelling w n M) := by
-      rw [hP]
-      exact List.mem_cons_self
+  · have hp : p ∈ augmentingPaths w n M (labelling w n M) := by grind
     simp only [augmentingPaths, List.mem_flatMap, List.mem_range, List.mem_map,
       List.mem_filter] at hp
     obtain ⟨u, hu, v, ⟨hv, _⟩, rfl⟩ := hp
@@ -527,9 +525,7 @@ private theorem labelInv_labelStep {w : List Bool} {n : ℕ} {M : List (ℕ × �
           ⟨v, v.isLt, mem_edgeSet.mp huv, u', u'.isLt, (h u').1.mpr hu', hG, rfl⟩
       rw [hE] at hmem
       simp at hmem
-    · have hq₀ : q₀ ∈ labelCandidates w n M lab u := by
-        rw [hE]
-        exact List.mem_cons_self
+    · have hq₀ : q₀ ∈ labelCandidates w n M lab u := by grind
       obtain ⟨v, hv, huv, u', hu', hsu', ha, hq⟩ := mem_labelCandidates.mp hq₀
       have hu'alt : (⟨u', hu'⟩ : Fin n) ∈ altLeft (graph w n) (edgeSet n M) t :=
         (h ⟨u', hu'⟩).1.mp hsu'
@@ -626,9 +622,7 @@ private theorem augmentStep_spec {w : List Bool} {n : ℕ} {M : List (ℕ × ℕ
     have hk := card_mul_le_of_noShortAug hmatch hM' hno
     have hle : (edgeSet n M).card ≤ n := hmatch.card_le_card_left.trans_eq (Fintype.card_fin n)
     nlinarith
-  · have hp : p ∈ augmentingPaths w n M (labelling w n M) := by
-      rw [hP]
-      exact List.mem_cons_self
+  · have hp : p ∈ augmentingPaths w n M (labelling w n M) := by grind
     obtain ⟨u, hu, v, hv, hs, ha, hf, hpq⟩ := mem_augmentingPaths.mp hp
     obtain ⟨q, hq⟩ := Option.isSome_iff_exists.mp hs
     obtain ⟨r, j, Q, hQ, hQq⟩ := (hlab ⟨u, hu⟩).2 q hq

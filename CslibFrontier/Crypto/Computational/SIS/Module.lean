@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.In
 public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Crypto.Computational.SIS.Basic
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
 import Mathlib.Tactic.Abel
@@ -34,6 +35,11 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
    decoded from framed binary sign-magnitude words (`GeneralSIS.decodeVec`). Ajtai's linear hash
    function `GeneralSIS.ajtaiHashEval` and collision extraction `GeneralSIS.extractSISVector`
    require no primality assumption on `q`.
+   The experiments `GeneralSIS.sisGame` and `ModuleSIS.moduleSISGame` test the decoded integer
+   answer itself, not its centered residues as `SIS.game` does, and assume no relation between
+   `β` and `q`. When `q ≤ β` and the answer has at least one coordinate, the integer vector with
+   one coordinate `q` and all others `0` is a short solution for every matrix, so for such
+   parameters a winning answer does not depend on the matrix.
 2. **Negacyclic polynomial rings (`rotMatrix`, `negacyclicMul`)**:
    Elements of `R[X] / (X^n + 1)` are represented by their coefficient vectors `Fin n → R`.
    Multiplication by `a : Fin n → R` is the linear action of its `n × n` negacyclic
@@ -45,9 +51,12 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
    unstructured `(d * n) × (k * n)` matrix `expandModuleMatrix A` over `ZMod q` that preserves
    the linear relation (`expandModuleMatrix_mulVec`), non-zeroness and the `ℓ_∞` norm bound under
    coefficient flattening `flattenPolyVec`. Consequently, `ModuleSIS.IsSolution` is equivalent to
-   `SIS.IsSolution` on `expandModuleMatrix A` (`isSolution_expandModuleMatrix_iff`), and any
-   solver for the induced structured `GeneralSIS` game solves `ModuleSIS` with identical success
-   probability (`succProbability_structuredSISGame`).
+   `SIS.IsSolution` on `expandModuleMatrix A` (`isSolution_expandModuleMatrix_iff`), and
+   `ModuleSIS.structuredSISGame`, which draws a uniform module matrix `A` and runs the
+   unstructured solution check on `expandModuleMatrix A`, equals `ModuleSIS.moduleSISGame` for
+   every adversary (`structuredSISGame_eq_moduleSISGame`, `succProbability_structuredSISGame`).
+   This module proves no relation between `ModuleSIS.Hard` and `GeneralSIS.Hard`, whose
+   experiment draws a uniform unstructured matrix.
 4. **Module-LWE (`ModuleLWE`, `DecisionModuleLWE`)**:
    Samples `(A, A · s + e)` over `R_q` expand via `expandModuleMatrix` and `flattenPolyVec` into
    standard LWE relations `(expandModuleMatrix A) *ᵥ flattenPolyVec s + flattenPolyVec e`
@@ -116,8 +125,9 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
   `Cslib.Crypto.ModuleSIS.isModuleSISChallenge_iff_isSISChallenge`: `ModuleSIS` solutions are
   characterized by `SIS` solutions of `expandModuleMatrix A`.
 * `Cslib.Crypto.ModuleSIS.succProbability_structuredSISGame`,
-  `Cslib.Crypto.ModuleSIS.hard_of_structuredGeneralSIS`: structured-to-unstructured reduction from
-  `ModuleSIS` to `GeneralSIS`.
+  `Cslib.Crypto.ModuleSIS.hard_of_structuredGeneralSIS`: `structuredSISGame`, the unstructured
+  solution check on the expanded module matrix, has the success probability of `moduleSISGame`,
+  so negligible success in it for every uniform strict PPT adversary gives `ModuleSIS.Hard`.
 * `Cslib.Crypto.ModuleLWE.flattenPolyVec_sample`: Module-LWE samples flatten to standard LWE
   matrix-vector relations under `expandModuleMatrix`.
 
@@ -411,8 +421,7 @@ theorem succProbability_ajtaiCollisionGame_le (P : GeneralSISParams)
       Game.succProbability
         (sisGame P (fun s w => extractSISWord (P.m s) <$> finder s w) security) := by
   unfold ajtaiCollisionGame sisGame
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, ProbComp.eval_map, PMF.bind_map,
-    Function.comp_def, extractSISWord, decodeVec_encodeVec]
+  simp only [pmf_norm, extractSISWord, decodeVec_encodeVec]
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
     (bind_true_le _ _ _ fun A => bind_true_le _ _ _ fun word => ?_)
   by_cases h : isAjtaiCollision A (P.β security)
@@ -852,8 +861,10 @@ def Hard (M : ModuleSISParams) : Prop :=
   ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
     Negligible fun security => Game.succProbability (moduleSISGame M adversary security)
 
-/-- **Structured-to-unstructured reduction**: `ModuleSIS.Hard M` holds if and only if every
-uniform strict PPT adversary has negligible success probability in `structuredSISGame M`. -/
+/-- If every uniform strict PPT adversary has negligible success probability in
+`structuredSISGame M`, then `ModuleSIS.Hard M` holds. Since `structuredSISGame M` equals
+`moduleSISGame M` (`structuredSISGame_eq_moduleSISGame`), the hypothesis is `ModuleSIS.Hard M`
+with the game rewritten, and makes no assumption about `GeneralSIS.sisGame`. -/
 theorem hard_of_structuredGeneralSIS (M : ModuleSISParams)
     (h : ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
       Negligible fun security => Game.succProbability (structuredSISGame M adversary security)) :

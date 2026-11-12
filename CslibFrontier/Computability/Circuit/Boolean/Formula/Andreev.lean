@@ -226,8 +226,7 @@ theorem formulaSize_le_of_andreevBlock_nonempty {h : BooleanFunction b}
   have hbind_computes : (F.bind σ).Computes interpretation h := by
     intro z
     rw [eval_bind, hF, comp_apply, andreev_fill_of_extends hext]
-    congr 1
-    funext j
+    congr 1 with j : 1
     have hblock_eq :
         (fun t => ρ.fill (fun i => (σ i).eval interpretation z) (andreevBlockVar b m j t)) =
           update (y₀ j) (t_fn j) (z j ^^ r j) := by
@@ -318,9 +317,7 @@ theorem formulaSize_sub_sq_mul_pow_three_le_andreev_log (h : BooleanFunction b) 
     (formulaSize h - 2 * b * (Nat.log 2 b + 2)) ^ 2 * m ^ 3 ≤
       4 * formulaSize (andreev b m) ^ 2 * (Nat.log 2 b + 2) ^ 3 := by
   have hlt : b < 2 ^ (Nat.log 2 b + 1) := Nat.lt_pow_succ_log_self one_lt_two b
-  have hbr : 2 * b ≤ 2 ^ (Nat.log 2 b + 2) := by
-    rw [pow_succ']
-    omega
+  have hbr : 2 * b ≤ 2 ^ (Nat.log 2 b + 2) := by grind
   exact formulaSize_sub_sq_mul_pow_three_le_andreev h hb (by omega) hm hbr
 
 /-- **Shannon's counting bound for formula leaf size**: for all sufficiently large `b`, some

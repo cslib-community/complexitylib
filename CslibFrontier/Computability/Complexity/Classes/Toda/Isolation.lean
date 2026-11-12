@@ -147,25 +147,10 @@ theorem three_mul_two_pow_le_card_filter_card_eq_one {M B : ℕ} {S : Finset (Bi
   classical
   set k := Nat.log 2 #S + 2 with hk
   -- the Valiant–Vazirani lemma for the seeds
-  have hY : Fintype.card (BitString k) = 2 ^ k := by simp
-  have hlog := Nat.pow_log_le_self 2 hS.card_pos.ne'
-  have hlog' := Nat.lt_pow_succ_log_self (b := 2) (by decide) #S
-  have hdens :=
-    (isPairwiseIndependentHash_affineHash k M).three_sixteenths_le_dens_filter_card_filter_eq_one
-    (S := S) 0 (by rw [hY, hk, pow_add]; omega) (by rw [hY, hk, pow_add, pow_succ] at *; omega)
   have hU : 3 * 2 ^ (k * M + k) ≤
       16 * (univ.filter fun p : (Fin k → BitString M) × BitString k =>
-        #{x ∈ S | affineHash p x = 0} = 1).card := by
-    rw [dens, Fintype.card_prod, Fintype.card_fun, Fintype.card_fun, Fintype.card_fun,
-      Fintype.card_bool, Fintype.card_fin, Fintype.card_fin, le_div_iff₀ (by positivity)] at hdens
-    have h : (3 * 2 ^ (k * M + k) : ℚ≥0) ≤ 16 * (univ.filter fun p :
-        (Fin k → BitString M) × BitString k => #{x ∈ S | affineHash p x = 0} = 1).card := by
-      rw [pow_add, pow_mul', ← mul_assoc]
-      have := mul_le_mul_of_nonneg_left hdens (by norm_num : (0 : ℚ≥0) ≤ 16)
-      convert this using 1
-      push_cast
-      ring
-    exact_mod_cast h
+        #{x ∈ S | affineHash p x = 0} = 1).card :=
+    three_mul_two_pow_le_card_filter_card_filter_eq_one hS
   -- transfer to the words read by the test
   have hsplit := BitString.card_filter_take_drop (m := B) hB
     (fun w => #{x ∈ S | affineHash (matrix k M w, offset k M w) x = 0} = 1) (fun _ => True)

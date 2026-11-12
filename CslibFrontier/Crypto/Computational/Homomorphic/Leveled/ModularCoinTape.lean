@@ -13,7 +13,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Saved tapes for the actual modular leveled adversary
@@ -61,31 +63,23 @@ theorem modLeveledAdversary_choose_support (E : Scheme) (adversary : Encryption.
         ((zeroLinkAdversary E depth adversary).choose n challengePk)).support ∧
         choice = tagLeveledChoice true false chosen := by
   by_cases hpos : 0 < depth n ∧ 0 < capacity n
-  · simp only [modLeveledAdversary, hpos, and_self, ↓reduceIte, ProbComp.eval_bind,
-      PMF.mem_support_bind_iff] at hchoice
-    obtain ⟨hop, _, hchoice⟩ := hchoice
+  · supp_cases hchoice [modLeveledAdversary, hpos] with ⟨hop, _, hchoice⟩
     split at hchoice
-    · obtain ⟨chosen, hchosen, rfl⟩ :=
-        (PMF.mem_support_map_iff _ _ _).mp (by simpa only [ProbComp.eval_map] using hchoice)
+    · supp_cases hchoice with ⟨chosen, hchosen, rfl⟩
       exact Or.inr (Or.inl ⟨chosen, hchosen, rfl⟩)
     · split at hchoice
-      · obtain ⟨chosen, hchosen, rfl⟩ :=
-          (PMF.mem_support_map_iff _ _ _).mp (by simpa only [ProbComp.eval_map] using hchoice)
+      · supp_cases hchoice with ⟨chosen, hchosen, rfl⟩
         exact Or.inr (Or.inr (Or.inl ⟨chosen, hchosen, rfl⟩))
-      · simp only [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hchoice
-        obtain ⟨reverseIndex, _, bitIndex, _, hchoice⟩ := hchoice
+      · supp_cases hchoice with ⟨reverseIndex, _, bitIndex, _, hchoice⟩
         split at hchoice
         · split at hchoice
-          · obtain ⟨chosen, hchosen, rfl⟩ :=
-              (PMF.mem_support_map_iff _ _ _).mp
-                (by simpa only [ProbComp.eval_map] using hchoice)
+          · supp_cases hchoice with ⟨chosen, hchosen, rfl⟩
             exact Or.inr (Or.inr (Or.inr ⟨chosen, hchosen, rfl⟩))
-          · exact Or.inl (by simpa only [ProbComp.eval_pure, PMF.mem_support_pure_iff]
-              using hchoice)
-        · exact Or.inl (by simpa only [ProbComp.eval_pure, PMF.mem_support_pure_iff] using hchoice)
-  · simp only [modLeveledAdversary, hpos, ↓reduceIte, ProbComp.eval_map,
-      PMF.mem_support_map_iff] at hchoice
-    obtain ⟨chosen, hchosen, rfl⟩ := hchoice
+          · supp_cases hchoice
+            exact Or.inl rfl
+        · supp_cases hchoice
+          exact Or.inl rfl
+  · supp_cases hchoice [modLeveledAdversary, hpos] with ⟨chosen, hchosen, rfl⟩
     exact Or.inr (Or.inr (Or.inr ⟨chosen, hchosen, rfl⟩))
 
 /-- Replay the original tagged dispatch. The zero-link branch uses a prefix of the allocated
@@ -299,9 +293,8 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
     dsimp only [Function.comp_def]
     rw [BitString.uniformList_bind_split (coins n) (2 * coins n + zeroCoins)
       (fun first rest => PMF.pure (afterHop first rest))]
-    simp only [modLeveledAdversary, hpos, and_self, ↓reduceIte, ProbComp.eval_bind,
-      Scheme.sampleModIndex, ProbComp.sampleModNat, ProbComp.sampleBinaryNat,
-      ProbComp.eval_map, BitString.eval_sampleList, PMF.bind_map, Function.comp_def]
+    simp only [pmf_norm, modLeveledAdversary, hpos, and_self, ↓reduceIte, Scheme.sampleModIndex,
+      ProbComp.sampleModNat, ProbComp.sampleBinaryNat, BitString.eval_sampleList]
     congr 1 with first : 1
     by_cases hfirst : index 3 first = 0
     · change min 3 (BitString.binaryValue first % 3) = 0 at hfirst
@@ -309,8 +302,7 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
         (publicKeyGame E adversary false) n keyCoins challengePk hkey
       have hbudget : 2 * coins n + depth n * keyCoins ≤ 2 * coins n + zeroCoins := by omega
       rw [← BitString.uniformList_take hbudget, PMF.map_comp] at hlaw
-      simpa only [afterHop, index, hfirst, ↓reduceIte, ProbComp.eval_map, PMF.map_comp, PMF.map,
-        Function.comp_def, PMF.bind_bind, PMF.pure_bind] using
+      simpa only [pmf_norm, afterHop, index, hfirst, ↓reduceIte, PMF.map] using
           congrArg (PMF.map (tagLeveledChoice false false)) hlaw
     · change ¬min 3 (BitString.binaryValue first % 3) = 0 at hfirst
       by_cases hsecond : min 3 (BitString.binaryValue first % 3) = 1
@@ -318,11 +310,11 @@ theorem eval_modLeveledAdversary_choose_eq_map_coins (E : Scheme)
           (publicKeyGame E adversary true) n keyCoins challengePk hkey
         have hbudget : 2 * coins n + depth n * keyCoins ≤ 2 * coins n + zeroCoins := by omega
         rw [← BitString.uniformList_take hbudget, PMF.map_comp] at hlaw
-        simpa only [afterHop, index, hfirst, hsecond, ↓reduceIte, ProbComp.eval_map, PMF.map_comp,
-          PMF.map, Function.comp_def, PMF.bind_bind, PMF.pure_bind, Nat.one_ne_zero] using
+        simpa only [pmf_norm, afterHop, index, hfirst, hsecond, ↓reduceIte, PMF.map,
+          Nat.one_ne_zero] using
             congrArg (PMF.map (tagLeveledChoice false true ∘ swapLeveledChoice)) hlaw
-      · simp only [afterHop, index, hfirst, hsecond, ↓reduceIte, ProbComp.eval_bind,
-          ProbComp.eval_map, BitString.eval_sampleList, PMF.bind_map, Function.comp_def]
+      · simp only [pmf_norm, afterHop, index, hfirst, hsecond, ↓reduceIte,
+          BitString.eval_sampleList]
         have hsize : 2 * coins n + zeroCoins = coins n + (coins n + zeroCoins) := by omega
         rw [hsize, BitString.uniformList_bind_split (coins n) (coins n + zeroCoins)
           (fun second rest => PMF.pure

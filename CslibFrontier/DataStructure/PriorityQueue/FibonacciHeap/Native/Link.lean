@@ -114,10 +114,8 @@ private theorem linkBody_eq (d : Fin 4 → ℕ) : linkBody d =
     DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
       (FibonacciHeap.link (d 2) (d 3)) := by
   simp only [linkBody, FibonacciHeap.link, DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1
-  funext ka
-  congr 1
-  funext kb
+  congr 1 with ka : 1
+  congr 1 with kb : 1
   by_cases hlt : IndexedMinPQ.RawPrioLT (d 3, kb) (d 2, ka) <;>
     simp only [hlt, ite_true, ite_false, PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure]
 
@@ -147,7 +145,7 @@ private theorem realizes_linkBody : Realizes .exact linkBody (.refl _)
   conv =>
     arg 2
     ext d
-    simp only [linkBody, priority_if]
+    simp only [linkBody]
   realize
   all_goals first
     | exact h.1.1.of_le (by have := h.1.2.1; have := h.1.2.2.1; omega)
