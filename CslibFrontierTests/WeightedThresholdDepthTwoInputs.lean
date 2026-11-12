@@ -55,6 +55,15 @@ example (b m : ℕ) (w : Fin (2 ^ b + b * m) → ℝ)
     IsSignCoherent (Boolean.andreevBlockVar b m) (-(c • w)) :=
   (hw.smul c).neg
 
+-- The bottom gate of `xorCircuit` has weights `1, 1`, so every gate read by its output gate has
+-- sign-coherent input weights for the single block `{0, 1}`.
+example {top : Fin xorCircuit.size} (htop : xorCircuit.outputs 0 = .gate top)
+    {k : Fin xorCircuit.size} (hk : k ∈ gateSupport xorCircuit.program top) :
+    IsSignCoherent (n := 2) (b := 1) (m := 2) (fun _ t => t) (inputWeight xorCircuit.program k) :=
+  isSignCoherent_inputWeight_depthTwoInputs _ _ _ _ _
+    (fun _ => by rw [argWeight_id]; exact IsSignCoherent.of_nonneg fun _ _ => zero_le_one)
+    htop hk
+
 -- Mixed signs inside one block are not sign-coherent.
 example : ¬ IsSignCoherent (n := 2) (b := 1) (m := 2) (fun _ t => t) ![1, -1] := by
   intro h
