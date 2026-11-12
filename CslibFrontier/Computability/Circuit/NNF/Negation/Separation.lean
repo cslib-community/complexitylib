@@ -44,7 +44,7 @@ Nothing about the function `f_G`, its d-DNNF or the lower bound is assumed.
   negation*][ArenasBroadrickLiewVanDenBroeck2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
