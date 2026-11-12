@@ -452,13 +452,6 @@ theorem ddhOTRealWordWithDesc_correctness (n : ℕ) (desc : F.Desc) (m₀ m₁ :
   rcases hres with ⟨a, _, r₀, _, s₀, _, r₁, _, s₁, _, b, _, rfl⟩
   cases σ <;> rfl
 
-private theorem isPPTOn_sampleExp_fn {P : Type} (eP : P ↪ List Bool)
-    (n_fn : P → ℕ) (d_fn : P → F.Desc)
-    (hn : ComputableInPolyTime n_fn eP encUnary)
-    (hd : ComputableInPolyTime d_fn eP F.encDesc) :
-    IsPPTOn eP encNat (fun p => F.sampleExp (n_fn p) (d_fn p)) :=
-  F.isPPTOn_sampleExp hn hd
-
 private theorem isPPTOn_bind3_sampleExp {P B : Type} (eP : P ↪ List Bool) (eB : B ↪ List Bool)
     (n_fn : P → ℕ) (d_fn : P → F.Desc)
     (hn : ComputableInPolyTime n_fn eP encUnary)
