@@ -86,8 +86,9 @@ convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` 
 [StatisticalDistance/TotalVariation.lean](../../CslibFrontier/Probability/StatisticalDistance/TotalVariation.lean)
 connects the three notions: `dist_eq_tvDist_toMeasure_div_two` converts `dist` to `tvDist`,
 `closeTo_coe_iff_dist_le` states that the all-event `CloseTo μ ν ε` is exactly `dist μ ν ≤ ε`, and
-`closeTo_iff_etvDist_le` (or `closeTo_ofReal_iff_tvDist_le`) states that it is exactly a total
-variation bound `2 * ε`, also on infinite types with measurable singletons.
+`closeTo_iff_etvDist_le` states that it is exactly a total variation bound `2 * ε`, also on
+infinite types with measurable singletons. The real-valued form `closeTo_ofReal_iff_tvDist_le`
+needs `0 ≤ ε`: a negative error becomes `0` under `ENNReal.ofReal`.
 `abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`;
 `abs_bind_apply_toReal_sub_le_dist p q T b` does the same for the probability that a randomized
 distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchanged under an
