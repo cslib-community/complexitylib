@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-public import Mathlib.Data.Multiset.AddSub
 import Mathlib.Data.List.GetD
 
 /-!
