@@ -1671,6 +1671,129 @@ def impl {n_max U V w base : ℕ}
   setup_exec := initSetup_exec
   step_exec := dispatchCode_exec
 
+/-- Canonical native formats of key/value queue observations. -/
+def nativeResultType (n : ℕ) : PriorityQueue.MinPQ.Op n → ResultType
+  | .isEmpty => .bool
+  | .get _ => .option (.prod .nat .nat)
+  | .insert _ _ => .option (.fin n)
+  | .decreaseKey _ _ => .unit
+  | .extractMin => .option (.prod .nat (.prod .nat (.fin n)))
+
+/-- The native format is an equality presentation of each existing result type. -/
+theorem nativeResultType_eq (n U V : ℕ) (o : PriorityQueue.MinPQ.Op n) :
+    (minPQSpec n U V).Result o = (nativeResultType n o).Value := by
+  cases o <;> rfl
+
+/-- One fixed result bank: presence flag, key, satellite value, and handle. -/
+def nativeResultBank (i : ℕ) : Fin rMinPQ :=
+  if i = 0 then outFlag else if i = 1 then outK else if i = 2 then outValReg else outV
+
+/-- Native conversion reads the actual original operation tags from the machine. -/
+def nativeResultReady {n : ℕ} : PriorityQueue.MinPQ.Op n → Data rMinPQ → Prop
+  | .isEmpty, x => x.regs tag2 = 0 ∧ x.regs tag1 = 0 ∧ x.regs tag0 = 0
+  | .get _, x => x.regs tag2 = 0 ∧ x.regs tag1 = 0 ∧ x.regs tag0 ≠ 0
+  | .insert _ _, x => x.regs tag2 = 0 ∧ x.regs tag1 ≠ 0 ∧ x.regs tag0 = 0
+  | .decreaseKey _ _, x => x.regs tag2 = 0 ∧ x.regs tag1 ≠ 0 ∧ x.regs tag0 ≠ 0
+  | .extractMin, x => x.regs tag2 ≠ 0
+
+/-- Insertion places its returned handle in the first payload slot and writes its presence tag;
+all other observations retain their payloads. Every flag is normalized to zero or one. -/
+def nativeResultCode : Code .standard rMinPQ :=
+  .seq
+    (.branch (.eq tag2 zeroP)
+      (.branch (.eq tag1 zeroP)
+        (.op (.copy outK outK))
+        (.branch (.eq tag0 zeroP)
+          (.seq (.op (.copy outK outV)) (.op (.const outFlag 1)))
+          (.op (.copy outK outK))))
+      (.op (.copy outK outK)))
+    (.branch (.eq outFlag zeroP) (.op (.const outFlag 0)) (.op (.const outFlag 1)))
+
+/-- Conversion pays at most nine native instructions and changes only its two output slots. -/
+theorem nativeResultCode_spec {n U V w : ℕ} {x : Data rMinPQ}
+    (h1 : Fits w 1) (hzero : x.regs zeroP = 0)
+    (o : PriorityQueue.MinPQ.Op n) (a : (minPQSpec n U V).Result o)
+    (hready : nativeResultReady o x) (hd : decode o x.regs = some a) :
+    ∃ y, ExecWithin w nativeResultCode x y 9 ∧
+      (nativeResultType n o).decode (y.regs ∘ nativeResultBank) 0 =
+        some (cast (nativeResultType_eq n U V o) a) ∧
+      y.mem = x.mem ∧
+      ∀ i, i ≠ outFlag → i ≠ outK → y.regs i = x.regs i := by
+  cases o <;> simp only [nativeResultReady] at hready
+  all_goals
+    unfold nativeResultCode
+    wram_exec [hzero, hready] <;>
+    simp_all only [minPQSpec, PriorityQueue.MinPQ.Op.Result, StateTransitionSpec.ofFn_result,
+      decode, ne_eq, ne_comm, not_true_eq_false, not_false_eq_true, decide_false, decide_true,
+      nativeResultType, ResultType.Value, Data.set, Function.update_eq_self, Function.update_idem,
+      ResultType.decode, Function.comp_apply, nativeResultBank, ↓reduceIte, ↓dreduceIte,
+      Function.update_self, one_ne_zero, zero_add, Fin.mk.injEq, Nat.reduceEqDiff,
+      Function.update_of_ne, ResultType.words, Nat.reduceAdd, OfNat.ofNat_ne_zero,
+      OfNat.ofNat_ne_one, Nat.succ_ne_self, Option.pure_def, Option.bind_eq_bind,
+      Option.bind_some, Option.map_bind, Option.map_some, Option.map_dite,
+      implies_true, and_self, and_true] <;> try rfl
+  case extractMin.neg =>
+    split at hd
+    · have ha := Option.some.inj hd
+      rw [← ha]
+      simp only [‹x.regs outV < n›, ↓reduceDIte, Option.bind_some]
+      rfl
+    · cases hd
+
+/-- The fixed native suffix preserves the heap representation and its amortized potential. -/
+def resultRecoding {n_max U V w base : ℕ}
+    (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
+    NativeResultRecoding (minPQSpec n_max U V).Result .standard rMinPQ w
+      (impl hS hU hV).toStandard.decode (impl hS hU hV).toStandard.rep
+      (impl hS hU hV).toStandard.potential where
+  code := nativeResultCode
+  resultBank := nativeResultBank
+  resultType := nativeResultType n_max
+  resultType_eq := nativeResultType_eq n_max U V
+  time := 9
+  ready := nativeResultReady
+  execute {s} {x} o a hr hb hready hd := by
+    have h1 : Fits w 1 := hS.of_le (by unfold space; lia)
+    have hzero : x.regs zeroP = 0 := by
+      obtain ⟨s₀, _, hs⟩ := hr
+      exact hs.2.1.2.1.regs_zeroP
+    obtain ⟨y, he, ha, hm, hregs⟩ := nativeResultCode_spec h1 hzero o a hready hd
+    have hp : ∀ i, subroutineCode.toStandard.input i = false → y.regs i = x.regs i := by
+      intro i hi
+      apply hregs i
+      · intro h
+        subst i
+        contradiction
+      · intro h
+        subst i
+        contradiction
+    have hmem : ∀ a ∈ (Block.mk base (space n_max)).footprint, y.mem a = x.mem a :=
+      fun _ _ => congrFun hm _
+    exact ⟨y, he, ha, (impl hS hU hV).toStandard.rep_supported hp hmem (he.bounded hb) hr,
+      (impl hS hU hV).toStandard.potential_supported hp hmem hr, hm⟩
+
+/-- Original operation execution preserves the opcode words consumed by native conversion. -/
+theorem resultRecoding_ready {n_max U V w base : ℕ}
+    (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V)
+    {s x o y m} (_hr : (impl hS hU hV).toStandard.rep s x)
+    (_hv : (minPQSpec n_max U V).valid s o)
+    (harg : (impl hS hU hV).toStandard.argMatch o x.regs)
+    (he : Exec w subroutineCode.toStandard.code x y m) :
+    (resultRecoding hS hU hV).ready o y := by
+  change argMatch U o x.regs at harg
+  have h2 : y.regs tag2 = x.regs tag2 := he.regs_eq (by decide)
+  have h1 : y.regs tag1 = x.regs tag1 := he.regs_eq (by decide)
+  have h0 : y.regs tag0 = x.regs tag0 := he.regs_eq (by decide)
+  change nativeResultReady o y
+  cases o with
+  | isEmpty => simpa only [nativeResultReady, argMatch, rawArgMatch, h2, h1, h0] using harg
+  | get _ => exact ⟨h2.trans harg.1, h1.trans harg.2.1, by simpa only [h0] using harg.2.2.1⟩
+  | insert _ _ => exact ⟨h2.trans harg.1, by simpa only [h1] using harg.2.1, h0.trans harg.2.2.1⟩
+  | decreaseKey _ _ =>
+    exact ⟨h2.trans harg.1, by simpa only [h1] using harg.2.1,
+      by simpa only [h0] using harg.2.2.1⟩
+  | extractMin => simpa only [nativeResultReady, argMatch, rawArgMatch, h2] using harg
+
 /-! ## Standalone `Basis.standard` `DynamicProgram` and `Amortized` implementations -/
 
 /-- Standalone `DynamicProgram` implementation of the key–value Fibonacci heap over
@@ -1679,22 +1802,26 @@ def dynamicProgram {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
     DynamicProgram (minPQSpec n_max U V) rMinPQ :=
   (impl (n_max := n_max) (U := U) (V := V) hS hU hV).toStandard.toDynamicProgram
+    (resultRecoding hS hU hV)
 
 /-- Standalone `DynamicCertificate` for the key–value Fibonacci heap over `Basis.standard`. -/
 def certificate {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
     DynamicCertificate (dynamicProgram hS hU hV) w :=
   (impl hS hU hV).toStandard.toCertificate
+    (resultRecoding hS hU hV) (resultRecoding_ready hS hU hV)
 
 /-- Standalone `Amortized` certificate for the key–value Fibonacci heap over
-`Basis.standard`, charging `+ 1` per operation for the trailing `halt` instruction. -/
+`Basis.standard`, charging nine native conversion instructions and one trailing `halt`
+per operation. -/
 theorem amortized {n_max U V w base : ℕ}
     (hS : Fits w (base + space n_max)) (hU : Fits w U) (hV : Fits w V) :
     Amortized (certificate hS hU hV).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => potential x)
-      (fun s o => charge n_max s o + 1) :=
+      (fun s o => charge n_max s o + 10) :=
   (impl hS hU hV).toStandard.toAmortized
+    (resultRecoding hS hU hV) (resultRecoding_ready hS hU hV)
 
 /-- Adaptive-client amortized execution bound for any demonically admissible `MinPQ` client `p`
 over `Basis.standard`. -/
@@ -1711,8 +1838,9 @@ theorem run_client_amortized {n_max U V w base : ℕ}
       traces.length = tr.length ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
         (minPQSpec n_max U V).totalCostTranscript
-          (fun st o => charge n_max st o + 1) s tr + potential x :=
-  (impl hS hU hV).toStandard.run_client_demonic_amortized p hr hv
+          (fun st o => charge n_max st o + 10) s tr + potential x :=
+  (impl hS hU hV).toStandard.run_client_demonic_amortized
+    (resultRecoding hS hU hV) (resultRecoding_ready hS hU hV) p hr hv
 
 /-! ## Standalone end-to-end `Basis.exact` flat-program adaptive-client theorems -/
 

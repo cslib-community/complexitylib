@@ -919,7 +919,7 @@ theorem prepare_rep {U base w w₀ n k : ℕ}
     (hw₀_pos : 0 < w₀) (hw : 2 * w₀ ≤ w) (hU : U ≤ 2 ^ w₀)
     {p : FilterSeed w₀ n} {S : Finset (Fin U)} (o : Op U) {x : Data rQF}
     (hrep : Rep U w base w₀ n k p S x) :
-    let x_prep := ((subroutineCode w w₀ n k).toDynamicProgram encode decode).prepare o x
+    let x_prep := (subroutineCode w w₀ n k).prepare encode o x
     Rep U w base w₀ n k p S x_prep ∧
     x_prep.regs (qfReg 1) = (opKey o).val ∧
     x_prep.regs (qfReg 247) = opTag o ∧
@@ -941,7 +941,7 @@ theorem prepare_rep {U base w w₀ n k : ℕ}
       change opTag o < 2 ^ w
       omega
   have hbdd_prep : x_prep.Bounded w :=
-    ((subroutineCode w w₀ n k).toDynamicProgram encode decode).prepare_bounded hrep.1 hfit_args
+    (subroutineCode w w₀ n k).prepare_bounded encode hrep.1 hfit_args
   have h0_prep : x_prep.regs (qfReg 0) = base := by
     change (if inputReg (qfReg 0) then encode o (qfReg 0) else x.regs (qfReg 0)) = base
     simp +decide [hrep.2.1]
@@ -1023,7 +1023,7 @@ private theorem steps_exec_aux {U base w w₀ n k : ℕ}
     set S := activeSet prefOps
     obtain ⟨ho_valid, hos_valid⟩ := hv
     let xPrep (t : SeqOutcome (FilterSeed w₀ n) (@Result U) rQF) : Data rQF :=
-      ((subroutineCode w w₀ n k).toDynamicProgram encode decode).prepare o t.data
+      (subroutineCode w w₀ n k).prepare encode o t.data
     have hstep_ex : ∀ (t : SeqOutcome (FilterSeed w₀ n) (@Result U) rQF),
         t ∈ ν.support →
         ∃ y : Data rQF,

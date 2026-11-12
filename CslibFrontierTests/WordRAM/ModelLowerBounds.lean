@@ -31,7 +31,7 @@ example : Cslib.Algorithms.ThreeSum.HasSolution
 example : InputFits 0 [] := by decide
 
 example : ExecutesList 0 ([.halt 0] : Program .standard 1) (.init []) [] 1 := by
-  refine ⟨.init [], 0, 0, .refl _, rfl, ?_, rfl⟩
+  refine ⟨.init [], 0, 0, .refl _, rfl, ?_, by decide, rfl⟩
   exact outputList_init []
 
 -- This actual initialized program changes a zero data cell and returns the one-entry matrix.
@@ -54,7 +54,7 @@ theorem oneOutput_executes : ExecutesList 1 oneOutput (.init [0]) [1] 4 := by
   have h₃ : Next 1 oneOutput ⟨2, x₂⟩ ⟨3, x₃⟩ := by
     simp [Next, step, oneOutput, Op.eval, Data.put, Fits, x₃]
   refine ⟨⟨3, x₃⟩, 3, 0,
-    ((Relation.RelatesInSteps.single h₁).tail _ _ _ _ h₂).tail _ _ _ _ h₃, ?_, ?_, rfl⟩
+    ((Relation.RelatesInSteps.single h₁).tail _ _ _ _ h₂).tail _ _ _ _ h₃, ?_, ?_, by decide, rfl⟩
   · simp [step, oneOutput, x₃, Data.set]
   · simp [outputList, x₃, x₂, x₁, x, Data.set, Data.write, Data.init]
 

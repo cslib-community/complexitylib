@@ -157,9 +157,33 @@ aliasing, empty/exact-endpoint blocks, composed frames and rejected corrupting w
 
 [WordSizeDependentProgram](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Time.lean#L149) chooses code from the width with a fixed register count and a global instruction-list-length bound. Literals may depend on width, and the selector itself is uncharged. `UniformDecidableInTime` instead uses one fixed program, which may read the width. These are distinct contracts.
 
-Time bounds, input encodings and permitted input/width pairs can depend on width. Every contract is conditional on `InputFits`. Empty allowed conditions or inputs that never fit can make a proposition vacuous; a logarithmic threshold in the number of input words does not bound those words' values. Input-dependent width schedules can convey advice. These points are explicit in the source and must accompany comparisons with uniform Turing classes.
+Time bounds, input encodings and permitted input/width pairs can depend on width. The
+program-level execution specifications are conditional on `InputFits`. The existential
+computation and decision predicates additionally require `InputAdmissible`: every input has
+at least one permitted width at which its encoded words fit. Restricting the permitted widths
+therefore needs a fresh admission proof. For a width-independent finite word encoding,
+`inputAdmissible_of_widthIndependent` supplies an admitted fitting width above any prescribed
+lower threshold. A logarithmic threshold in the number of input words alone does not bound
+their values. Promise problems must restrict the input type accordingly: the high-level native
+3SUM certificate uses `MagnitudeBoundedInput κ`, carrying its polynomial magnitude hypothesis.
+Its low-level run theorem remains conditional on that hypothesis for arbitrary integer lists.
 
-[CslibFrontier/Computability/WordRAM/Function.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Function.lean) treats scalar word-valued functions. [ExecutesList](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/ListOutput.lean#L92) treats list output as the length-prefixed array addressed by the returned word in the pre-halt memory. Returning zero without writing can therefore return the original input. This is an output convention on the same machine; it does not charge the mathematical observer for copying that array out.
+Input placement and width-indexed code selection remain representation conventions, with no
+execution cost. An arbitrary encoding can already contain an answer, and an input-dependent
+width schedule can convey advice. For a claim about the original bit input, use the native
+Turing bridge below: it checks effective encoding and width selection and charges their
+computation. A width-indexed family is still distinct from a uniform program.
+
+[CslibFrontier/Computability/WordRAM/Function.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Function.lean) treats scalar word-valued functions: the value must actually be in the register returned by `halt`.
+[`ExecutesList`](../../CslibFrontier/Computability/WordRAM/ListOutput.lean) treats list output as
+the length-prefixed array addressed by the returned word in the pre-halt memory. Its final
+occupied address must fit: `Fits w (v + l.length)`. For an empty list this checks the header
+at `v`; for a nonempty list it checks the last element too. A zero supplied by the total
+memory function beyond the word-address space cannot become an output cell. Returning zero
+without writing can still return the original fitting input. This convention does not charge
+the observer for copying the array out. The
+[checked output examples](../../CslibFrontierTests/WordRAMListOutput.lean) include rejection
+of an out-of-range block, an empty list at width zero, and a list ending at the last valid cell.
 
 ## Checking resource-model consequences
 
@@ -393,6 +417,6 @@ For randomized resizable algorithms, [`Resizable.Randomized`](../../CslibFrontie
 
 ## Known Limitations
 
-The inspected bridges establish their explicit deterministic models and encodings. They do not give a blanket equivalence for arbitrary width advice, arbitrary mathematical input encodings, all unbounded-integer operations at unit cost, or the randomized uniform-word instruction under strict fair-coin time. List-output extraction and dynamic caller argument preparation have their stated conventions; full end-to-end costs require a native caller when those steps matter.
+The inspected bridges establish their explicit deterministic models and encodings. They do not give a blanket equivalence for arbitrary width advice, arbitrary mathematical input encodings, all unbounded-integer operations at unit cost, or the randomized uniform-word instruction under strict fair-coin time. List outputs require a fitting header and payload block. Native dynamic results use fixed structural parsers, with any conversion executed and charged; generic inline observations remain representation-relative. Dynamic argument encoding and external delivery retain their stated conventions; end-to-end caller costs require native preparation.
 
 [complexitylib]: ../sources.md#complexitylib

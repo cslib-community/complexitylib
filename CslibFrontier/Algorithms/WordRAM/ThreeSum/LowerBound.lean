@@ -171,7 +171,7 @@ theorem not_uniformDecidableInO_sublinear (B : Basis) (κ : ℕ) {a : ℝ} (ha :
       {input : List ℤ | HasSolution (fun i : Fin input.length => input[i])}
       (fun _ input => input.map Signed.encode) List.length
       (fun n _ => ⌈(n : ℝ) ^ a⌉₊) (Decision.Admissible κ) := by
-  rintro ⟨time, ⟨r, p, hp⟩, c, N, _, hbound⟩
+  rintro ⟨time, ⟨r, p, hp, _⟩, c, N, _, hbound⟩
   obtain ⟨m, hm, hlt⟩ := exists_sublinear_bound ha c (N + 2)
   have hm2 : 2 ≤ m := by omega
   have he : m - 2 + 2 = m := by omega
