@@ -16,14 +16,21 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 import Mathlib.RingTheory.MvPolynomial.Tower
 
 /-!
-# A derivative-closed space for the colour part
+# A derivative-closed space for colour-homogeneous polynomials
 
-Let `c : σ → Fin r` colour the variables and let `G` be a polynomial of split rank at most `w`
-(`MvPolynomial.SplitRankLE`) across the set of variables of every set of colours. Then the colour
-part `colorPart c G`, the sum of the monomials of `G` with exactly one variable of each colour,
-lies in a space of polynomials that is closed under all partial derivatives and has dimension at
-most `2 ^ r * w` (`exists_pderiv_closed_colorPart`). This is [Shpilka2026, Lemma 3.3], and the
-bound `2 ^ r * w` is the source's.
+Let `c : σ → Fin r` colour the variables and let `g` be a polynomial that is homogeneous of a
+colour degree `ε` with `ε i ≤ 1` for every colour `i`: every monomial of `g` contains exactly one
+variable of colour `i`, to the first power, if `ε i = 1`, and no variable of colour `i` if
+`ε i = 0`. If `g` has split rank at most `w` (`MvPolynomial.SplitRankLE`) across the set of
+variables of every set of colours, then `g` lies in a space of polynomials that is closed under
+all partial derivatives and has dimension at most `2 ^ r * w`
+(`exists_pderiv_closed_of_colorHomogeneous`).
+
+The component `colorComponent c ε G` of any colour degree inherits the split rank of `G`
+(`splitRankLE_colorComponent`). So if `G` has split rank at most `w` across every set of colours,
+then its colour part `colorPart c G`, the sum of the monomials of `G` with exactly one variable of
+each colour, lies in such a space (`exists_pderiv_closed_colorPart`). This is
+[Shpilka2026, Lemma 3.3], and the bound `2 ^ r * w` is the source's.
 
 The source argues with the coefficient matrices of the colour part: a derivative by a monomial
 with set of colours `I` is a row of the matrix that splits the variables by `I`, and this matrix is
@@ -33,23 +40,28 @@ multilinear.
 
 ## Proof
 
-The colour part of a product `P * Q`, with `P` in the variables with colours in `I` and `Q` in the
-other variables, is the product of the component of `P` that uses every colour of `I` once and
-the component of `Q` that uses every other colour once. So the colour part `g` inherits the split
-rank of `G` (`splitRankLE_colorPart`).
+The component of colour degree `ε` of a product `P * Q`, with `P` in the variables with colours
+in `I` and `Q` in the other variables, is the product of the component of `P` of the degree that
+agrees with `ε` on `I` and is zero elsewhere and the component of `Q` of the degree that agrees
+with `ε` outside `I` and is zero on `I`. So the component of `G` inherits the split rank of `G`.
 
 The space is spanned by the polynomials `ρ I β g`, where `ρ I β` substitutes the constant `β v`
-for every variable `v` with a colour in `I`. It contains `g = ρ ∅ β g`. Every monomial of `g`
-contains exactly one variable of the colour of `v`, to the first power, so the derivative of
-`ρ I β g` by `v` is `0` if the colour of `v` is in `I`, and is otherwise `ρ I' β' g` where `I'`
-adds the colour of `v` to `I` and `β'` is `1` at `v` and `0` at the other variables of that
-colour. Finally a decomposition `g = ∑ i, p i * q i` across the colours `I` turns under `ρ I β`
+for every variable `v` with a colour in `I`. It contains `g = ρ ∅ β g`. Let `j` be the colour of
+a variable `v`. The derivative of `ρ I β g` by `v` is `0` if `j` is in `I`, or if `ε j = 0`, since
+then no variable of colour `j` occurs. Otherwise every monomial of `g` contains exactly one
+variable of colour `j`, to the first power, so the derivative is `ρ I' β' g` where `I'` adds `j`
+to `I` and `β'` is `1` at `v` and `0` at the other variables of colour `j`. Finally a
+decomposition `g = ∑ i, p i * q i` across the colours `I` turns under `ρ I β`
 into a combination of the `w` polynomials `q i`, so the `2 ^ r * w` polynomials `q i`, over all
 `I`, span a space that contains every generator.
 
 ## Main results
 
+* `splitRankLE_colorComponent`: the component of a colour degree inherits the split rank across
+  a set of colours.
 * `splitRankLE_colorPart`: the colour part inherits the split rank across a set of colours.
+* `exists_pderiv_closed_of_colorHomogeneous`: a polynomial that is homogeneous of a colour degree
+  at most one in every colour lies in a derivative-closed space of dimension at most `2 ^ r * w`.
 * `exists_pderiv_closed_colorPart`: the colour part lies in a derivative-closed space of dimension
   at most `2 ^ r * w`.
 
@@ -82,10 +94,6 @@ private theorem weight_colorWeight_eq_zero {c : σ → Fin r} {d : σ →₀ ℕ
   rw [weight_colorWeight_apply]
   exact Finset.sum_eq_zero fun v hv => ite_eq_right (h v hv)
 
-/-- The colour degree that is one on the colours of `I` and zero elsewhere. -/
-private noncomputable def colorInd (I : Finset (Fin r)) : Fin r →₀ ℕ :=
-  Finsupp.equivFunOnFinite.symm fun j => if j ∈ I then 1 else 0
-
 private theorem whc_mem_supported {M : Type*} [AddCommMonoid M] {U : Set σ}
     {P : MvPolynomial σ R} (hP : P ∈ supported R U) (w : σ → M) (n : M) :
     weightedHomogeneousComponent w n P ∈ supported R U := by
@@ -97,16 +105,17 @@ private theorem whc_mem_supported {M : Type*} [AddCommMonoid M] {U : Set σ}
   rw [support_weightedHomogeneousComponent] at hd
   exact ⟨d, Finset.mem_of_mem_filter d hd, hid⟩
 
-/-- The colour part of a product across a set of colours is the product of the components that
-use every colour on their side once. -/
-private theorem colorPart_mul (c : σ → Fin r) (I : Finset (Fin r)) {P Q : MvPolynomial σ R}
-    (hP : P ∈ supported R (c ⁻¹' (I : Set (Fin r))))
+/-- The component of a colour degree of a product across a set of colours is the product of the
+components of the restrictions of the degree to the two sides. -/
+private theorem colorComponent_mul (c : σ → Fin r) (ε : Fin r →₀ ℕ) (I : Finset (Fin r))
+    {P Q : MvPolynomial σ R} (hP : P ∈ supported R (c ⁻¹' (I : Set (Fin r))))
     (hQ : Q ∈ supported R (c ⁻¹' (I : Set (Fin r)))ᶜ) :
-    colorPart c (P * Q) = weightedHomogeneousComponent (colorWeight c) (colorInd I) P *
-      weightedHomogeneousComponent (colorWeight c) (colorInd Iᶜ) Q := by
+    colorComponent c ε (P * Q) =
+      weightedHomogeneousComponent (colorWeight c) (ε.filter (· ∈ I)) P *
+        weightedHomogeneousComponent (colorWeight c) (ε.filter (· ∉ I)) Q := by
   classical
   ext d
-  rw [colorPart, coeff_weightedHomogeneousComponent, coeff_mul, coeff_mul,
+  rw [colorComponent, coeff_weightedHomogeneousComponent, coeff_mul, coeff_mul,
     ← Finset.sum_const_zero, ← Finset.sum_ite_irrel]
   refine Finset.sum_congr rfl fun x hx => ?_
   rw [coeff_weightedHomogeneousComponent, coeff_weightedHomogeneousComponent,
@@ -125,8 +134,7 @@ private theorem colorPart_mul (c : σ → Fin r) (I : Finset (Fin r)) {P Q : MvP
     weight_colorWeight_eq_zero fun v hv e => hx2 v hv (e ▸ hj)
   refine if_congr ?_ rfl rfl
   rw [← Finset.mem_antidiagonal.1 hx, map_add]
-  simp only [Finsupp.ext_iff, Finsupp.add_apply, colorInd, colorOnes,
-    Finsupp.equivFunOnFinite_symm_apply_apply, Finset.mem_compl]
+  simp only [Finsupp.ext_iff, Finsupp.add_apply, Finsupp.filter_apply]
   refine ⟨fun h => ⟨fun j => ?_, fun j => ?_⟩, fun h j => ?_⟩
   · have hj := h j
     by_cases hjI : j ∈ I
@@ -139,43 +147,61 @@ private theorem colorPart_mul (c : σ → Fin r) (I : Finset (Fin r)) {P Q : MvP
   · rw [h.1 j, h.2 j]
     by_cases hjI : j ∈ I <;> simp [hjI]
 
+/-- The component of a colour degree of a polynomial inherits its split rank across the
+variables of a set of colours. -/
+theorem splitRankLE_colorComponent (c : σ → Fin r) (ε : Fin r →₀ ℕ) (I : Finset (Fin r)) {w : ℕ}
+    {G : MvPolynomial σ R} (hG : SplitRankLE (c ⁻¹' (I : Set (Fin r))) w G) :
+    SplitRankLE (c ⁻¹' (I : Set (Fin r))) w (colorComponent c ε G) := by
+  obtain ⟨p, q, hp, hq, rfl⟩ := hG
+  refine ⟨fun i => weightedHomogeneousComponent (colorWeight c) (ε.filter (· ∈ I)) (p i),
+    fun i => weightedHomogeneousComponent (colorWeight c) (ε.filter (· ∉ I)) (q i),
+    fun i => whc_mem_supported (hp i) _ _, fun i => whc_mem_supported (hq i) _ _, ?_⟩
+  rw [map_sum]
+  exact Finset.sum_congr rfl fun i _ => colorComponent_mul c ε I (hp i) (hq i)
+
 /-- The colour part of a polynomial inherits its split rank across the variables of a set of
 colours. -/
 theorem splitRankLE_colorPart (c : σ → Fin r) (I : Finset (Fin r)) {w : ℕ}
     {G : MvPolynomial σ R} (hG : SplitRankLE (c ⁻¹' (I : Set (Fin r))) w G) :
-    SplitRankLE (c ⁻¹' (I : Set (Fin r))) w (colorPart c G) := by
-  obtain ⟨p, q, hp, hq, rfl⟩ := hG
-  refine ⟨fun i => weightedHomogeneousComponent (colorWeight c) (colorInd I) (p i),
-    fun i => weightedHomogeneousComponent (colorWeight c) (colorInd Iᶜ) (q i),
-    fun i => whc_mem_supported (hp i) _ _, fun i => whc_mem_supported (hq i) _ _, ?_⟩
-  rw [map_sum]
-  exact Finset.sum_congr rfl fun i _ => colorPart_mul c I (hp i) (hq i)
+    SplitRankLE (c ⁻¹' (I : Set (Fin r))) w (colorPart c G) :=
+  splitRankLE_colorComponent c (colorOnes r) I hG
 
 end Split
 
 variable {σ F : Type*} [Field F] {r : ℕ}
 
-/-- Every monomial of the colour part is a variable of a given colour times a monomial in the
-variables of the other colours. -/
-private theorem exists_eq_X_mul_of_mem_support (c : σ → Fin r) {G : MvPolynomial σ F}
-    {d : σ →₀ ℕ} (hd : d ∈ (colorPart c G).support) (j : Fin r) :
-    ∃ u M, c u = j ∧ M ∈ supported F {x | c x ≠ j} ∧
-      monomial d ((colorPart c G).coeff d) = X u * M := by
+/-- A polynomial that is homogeneous of a colour degree that is zero at a colour has no variable
+of that colour. -/
+private theorem mem_supported_of_colorDegree_eq_zero (c : σ → Fin r) {ε : Fin r →₀ ℕ}
+    {g : MvPolynomial σ F} (hg : IsWeightedHomogeneous (colorWeight c) g ε) {j : Fin r}
+    (hj : ε j = 0) : g ∈ supported F {x | c x ≠ j} := by
+  classical
+  rw [mem_supported]
+  intro v hv e
+  obtain ⟨d, hd, hvd⟩ := (mem_vars_iff_mem_support v).1 (Finset.mem_coe.1 hv)
+  have hsum : ∑ u ∈ d.support, (if c u = j then d u else 0) = 0 := by
+    rw [← weight_colorWeight_apply, hg (mem_support_iff.1 hd), hj]
+  have h := Finset.sum_eq_zero_iff.1 hsum v hvd
+  rw [ite_eq_left e] at h
+  exact Finsupp.mem_support_iff.1 hvd h
+
+/-- Every monomial of a polynomial that is homogeneous of a colour degree that is one at a colour
+is a variable of that colour times a monomial in the variables of the other colours. -/
+private theorem exists_eq_X_mul_of_mem_support (c : σ → Fin r) {ε : Fin r →₀ ℕ}
+    {g : MvPolynomial σ F} (hg : IsWeightedHomogeneous (colorWeight c) g ε) {d : σ →₀ ℕ}
+    (hd : d ∈ g.support) {j : Fin r} (hj : ε j = 1) :
+    ∃ u M, c u = j ∧ M ∈ supported F {x | c x ≠ j} ∧ monomial d (g.coeff d) = X u * M := by
   classical
   have ha := mem_support_iff.1 hd
-  have hwt : Finsupp.weight (colorWeight c) d = colorOnes r := by
-    rw [colorPart, coeff_weightedHomogeneousComponent] at ha
-    exact (ite_ne_right_iff.1 ha).1
   have hsum : ∑ v ∈ d.support, (if c v = j then d v else 0) = 1 := by
-    rw [← weight_colorWeight_apply, hwt]
-    rfl
+    rw [← weight_colorWeight_apply, hg ha, hj]
   obtain ⟨u, hu, hne⟩ := Finset.exists_ne_zero_of_sum_ne_zero (hsum ▸ one_ne_zero)
   have hcu : c u = j := (ite_ne_right_iff.1 hne).1
   rw [← Finset.add_sum_erase _ _ hu, ite_eq_left hcu] at hsum
   have hdu : d u ≠ 0 := Finsupp.mem_support_iff.1 hu
   have hdu1 : d u = 1 := by omega
   have hrest : ∑ v ∈ d.support.erase u, (if c v = j then d v else 0) = 0 := by omega
-  refine ⟨u, monomial (d.erase u) ((colorPart c G).coeff d), hcu, ?_, ?_⟩
+  refine ⟨u, monomial (d.erase u) (g.coeff d), hcu, ?_, ?_⟩
   · rw [mem_supported, vars_monomial ha, Finsupp.support_erase]
     intro v hv e
     have h := Finset.sum_eq_zero_iff.1 hrest v hv
@@ -222,40 +248,41 @@ private theorem pderiv_partialEval_X_mul [DecidableEq σ] (c : σ → Fin r) {I 
     pderiv_eq_zero_of_mem_supported (partialEval_mem_supported c I β hM) fun h => h.1 rfl,
     smul_zero, zero_add, pderiv_X, smul_eq_mul, mul_comm, Pi.single_apply, apply_ite C, C_1, C_0]
 
-/-- The derivative of a partial evaluation of the colour part by a variable of a new colour is
-again a partial evaluation of the colour part. -/
-private theorem exists_pderiv_partialEval_colorPart (c : σ → Fin r) {I : Finset (Fin r)}
-    (β : σ → F) {v : σ} (hv : c v ∉ I) (G : MvPolynomial σ F) :
-    ∃ β', pderiv v (partialEval c I β (colorPart c G)) =
-      partialEval c (insert (c v) I) β' (colorPart c G) := by
+/-- The derivative of a partial evaluation of a colour-homogeneous polynomial by a variable of a
+new colour, in which the colour degree is one, is again a partial evaluation of the polynomial. -/
+private theorem exists_pderiv_partialEval (c : σ → Fin r) {I : Finset (Fin r)} (β : σ → F)
+    {v : σ} (hv : c v ∉ I) {ε : Fin r →₀ ℕ} {g : MvPolynomial σ F}
+    (hg : IsWeightedHomogeneous (colorWeight c) g ε) (hε : ε (c v) = 1) :
+    ∃ β', pderiv v (partialEval c I β g) = partialEval c (insert (c v) I) β' g := by
   classical
   refine ⟨fun x => if c x = c v then (if x = v then 1 else 0) else β x, ?_⟩
-  rw [← support_sum_monomial_coeff (colorPart c G)]
+  rw [← support_sum_monomial_coeff g]
   simp only [map_sum]
   refine Finset.sum_congr rfl fun d hd => ?_
-  obtain ⟨u, M, hu, hM, h⟩ := exists_eq_X_mul_of_mem_support c hd (c v)
+  obtain ⟨u, M, hu, hM, h⟩ := exists_eq_X_mul_of_mem_support c hg hd hε
   rw [h]
   exact pderiv_partialEval_X_mul c β hv hu hM
 
-/-- **A derivative-closed space for the colour part** [Shpilka2026, Lemma 3.3]. If `G` has split
-rank at most `w` across the variables of every set of colours, then its colour part lies in a
-space of polynomials that is closed under partial derivatives and has dimension at most
-`2 ^ r * w`. -/
-theorem exists_pderiv_closed_colorPart (c : σ → Fin r) {w : ℕ} {G : MvPolynomial σ F}
-    (hG : ∀ I : Finset (Fin r), MvPolynomial.SplitRankLE (c ⁻¹' (I : Set (Fin r))) w G) :
+/-- **A derivative-closed space for a colour-homogeneous polynomial**. If `g` is homogeneous of
+a colour degree that is at most one in every colour, and has split rank at most `w` across the
+variables of every set of colours, then it lies in a space of polynomials that is closed under
+partial derivatives and has dimension at most `2 ^ r * w`. -/
+theorem exists_pderiv_closed_of_colorHomogeneous (c : σ → Fin r) {ε : Fin r →₀ ℕ}
+    (hε : ∀ i, ε i ≤ 1) {w : ℕ} {g : MvPolynomial σ F}
+    (hg : MvPolynomial.IsWeightedHomogeneous (colorWeight c) g ε)
+    (hsplit : ∀ I : Finset (Fin r), MvPolynomial.SplitRankLE (c ⁻¹' (I : Set (Fin r))) w g) :
     ∃ V : Submodule F (MvPolynomial σ F), (∀ i, ∀ p ∈ V, MvPolynomial.pderiv i p ∈ V) ∧
-      Module.Finite F V ∧ Module.finrank F V ≤ 2 ^ r * w ∧ colorPart c G ∈ V := by
-  set g := colorPart c G with hg
+      Module.Finite F V ∧ Module.finrank F V ≤ 2 ^ r * w ∧ g ∈ V := by
   let V : Submodule F (MvPolynomial σ F) := Submodule.span F
     (Set.range fun x : Finset (Fin r) × (σ → F) => partialEval c x.1 x.2 g)
-  choose p q hp hq hpq using fun I => splitRankLE_colorPart c I (hG I)
+  choose p q hp hq hpq using hsplit
   let W : Submodule F (MvPolynomial σ F) := Submodule.span F
     (Set.range fun x : Finset (Fin r) × Fin w => q x.1 x.2)
   have hVW : V ≤ W := by
     refine Submodule.span_le.2 ?_
     rintro _ ⟨⟨I, β⟩, rfl⟩
     change partialEval c I β g ∈ W
-    rw [hg, hpq I, map_sum]
+    rw [hpq I, map_sum]
     refine W.sum_mem fun i _ => ?_
     have hpi : partialEval c I β (p I i) = C (aeval β (p I i)) := by
       rw [← algebraMap_eq, ← aeval_algebraMap_apply]
@@ -281,13 +308,29 @@ theorem exists_pderiv_closed_colorPart (c : σ → Fin r) {w : ℕ} {G : MvPolyn
           (partialEval_mem_supported c I β (s := Set.univ) (by rw [supported_univ]; trivial))
           fun h => h.2 hI]
         exact V.zero_mem
-      · obtain ⟨β', h⟩ := exists_pderiv_partialEval_colorPart c β hI G
-        rw [hg, h]
-        exact Submodule.subset_span ⟨(insert (c v) I, β'), rfl⟩
+      · rcases Nat.le_one_iff_eq_zero_or_eq_one.1 (hε (c v)) with h0 | h1
+        · rw [pderiv_eq_zero_of_mem_supported (partialEval_mem_supported c I β
+            (mem_supported_of_colorDegree_eq_zero c hg h0)) fun h => h.1 rfl]
+          exact V.zero_mem
+        · obtain ⟨β', h⟩ := exists_pderiv_partialEval c β hI hg h1
+          rw [h]
+          exact Submodule.subset_span ⟨(insert (c v) I, β'), rfl⟩
     | zero => rw [map_zero]; exact V.zero_mem
     | add f₁ f₂ _ _ h₁ h₂ => rw [map_add]; exact V.add_mem h₁ h₂
     | smul a f _ h => rw [Derivation.map_smul]; exact V.smul_mem a h
   · change partialEval c ∅ 0 g = g
     simp only [partialEval, Finset.notMem_empty, ↓reduceIte, aeval_X_left_apply]
+
+/-- **A derivative-closed space for the colour part** [Shpilka2026, Lemma 3.3]. If `G` has split
+rank at most `w` across the variables of every set of colours, then its colour part lies in a
+space of polynomials that is closed under partial derivatives and has dimension at most
+`2 ^ r * w`. -/
+theorem exists_pderiv_closed_colorPart (c : σ → Fin r) {w : ℕ} {G : MvPolynomial σ F}
+    (hG : ∀ I : Finset (Fin r), MvPolynomial.SplitRankLE (c ⁻¹' (I : Set (Fin r))) w G) :
+    ∃ V : Submodule F (MvPolynomial σ F), (∀ i, ∀ p ∈ V, MvPolynomial.pderiv i p ∈ V) ∧
+      Module.Finite F V ∧ Module.finrank F V ≤ 2 ^ r * w ∧ colorPart c G ∈ V :=
+  exists_pderiv_closed_of_colorHomogeneous c (ε := colorOnes r) (fun _ => le_rfl)
+    (weightedHomogeneousComponent_isWeightedHomogeneous _ _)
+    fun I => splitRankLE_colorPart c I (hG I)
 
 end Cslib.Circuits.Arithmetic

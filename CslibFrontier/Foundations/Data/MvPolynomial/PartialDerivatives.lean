@@ -8,9 +8,11 @@ module
 -- upstream: candidate (Mathlib, iterated partial derivatives and their span)
 
 public import CslibFrontier.Init
+public import CslibFrontier.Foundations.Data.MvPolynomial.Shift
 public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.LinearAlgebra.Dimension.LinearMap
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
+public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 import Mathlib.Data.Finset.Powerset
 import Mathlib.LinearAlgebra.Dimension.Constructions
 
@@ -43,6 +45,13 @@ product by `2 ^ d`, and it is a claim in the chapter "Lower bounds for depth-3 c
 
 * `MvPolynomial.iteratedPDeriv_rename`: injective variable renaming commutes with iterated
   partial differentiation.
+* `MvPolynomial.coeff_iteratedPDeriv_ne_zero_iff`: in characteristic zero, the coefficient of `m`
+  in an iterated partial derivative vanishes exactly when the coefficient of `m` times the
+  variables of the tuple vanishes in the polynomial.
+* `MvPolynomial.iteratedPDeriv_shift`: shifting the variables commutes with iterated partial
+  differentiation.
+* `MvPolynomial.IsWeightedHomogeneous.iteratedPDeriv`: an iterated partial derivative of a
+  weighted homogeneous polynomial is weighted homogeneous.
 * `MvPolynomial.range_partialDerivatives`: the range is the span of the partial derivatives.
 * `MvPolynomial.rank_partialDerivatives_le_rename`: renaming variables injectively does not
   decrease the measure.
@@ -86,6 +95,63 @@ theorem iteratedPDeriv_rename {τ : Type*} {f : σ → τ} (hf : Function.Inject
   | succ k ih =>
     rw [iteratedPDeriv_succ_apply, iteratedPDeriv_succ_apply]
     exact (congrArg (pderiv (f (α 0))) (ih (Fin.tail α))).trans (pderiv_rename hf _ _)
+
+/-- Shifting the variables commutes with iterated partial differentiation. -/
+theorem iteratedPDeriv_shift {A : Type*} [CommSemiring A] [Algebra R A] (a : σ → A) {k : ℕ}
+    (α : Fin k → σ) (p : MvPolynomial σ R) :
+    iteratedPDeriv α (shift a p) = shift a (iteratedPDeriv α p) := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [iteratedPDeriv_succ_apply, iteratedPDeriv_succ_apply, ih, pderiv_shift]
+
+/-- Every exponent vector is the sum of the unit vectors of a tuple of variables: its variables,
+repeated according to their exponents. -/
+theorem _root_.Finsupp.exists_fin_sum_single_one_eq (μ : σ →₀ ℕ) :
+    ∃ (k : ℕ) (α : Fin k → σ), ∑ i, Finsupp.single (α i) 1 = μ := by
+  classical
+  suffices h : ∀ s : Multiset σ, ∃ (k : ℕ) (α : Fin k → σ),
+      ∑ i, Finsupp.single (α i) 1 = Multiset.toFinsupp s by
+    simpa using h (Finsupp.toMultiset μ)
+  intro s
+  induction s using Multiset.induction with
+  | empty => exact ⟨0, Fin.elim0, by simp⟩
+  | cons a s ih =>
+    obtain ⟨k, α, h⟩ := ih
+    refine ⟨k + 1, Fin.cons a α, ?_⟩
+    rw [Fin.sum_univ_succ, ← Multiset.singleton_add, map_add, Multiset.toFinsupp_singleton]
+    simp [h]
+
+/-- In characteristic zero, the coefficient of a monomial `m` in the iterated partial derivative
+along `α` is not zero exactly when the coefficient of `m * ∏ i, X (α i)` in the polynomial is
+not zero. -/
+theorem coeff_iteratedPDeriv_ne_zero_iff [CharZero R] [NoZeroDivisors R] {k : ℕ} (α : Fin k → σ)
+    (p : MvPolynomial σ R) (m : σ →₀ ℕ) :
+    (iteratedPDeriv α p).coeff m ≠ 0 ↔ p.coeff (m + ∑ i, Finsupp.single (α i) 1) ≠ 0 := by
+  induction k generalizing m with
+  | zero => simp
+  | succ k ih =>
+    rw [iteratedPDeriv_succ_apply, coeff_pderiv, Fin.sum_univ_succ, ← add_assoc]
+    exact (mul_ne_zero_iff.trans (and_iff_left (Nat.cast_add_one_ne_zero _))).trans
+      (ih (Fin.tail α) _)
+
+/-- An iterated partial derivative of a weighted homogeneous polynomial is weighted homogeneous:
+the weighted degree drops by the weights of the variables of the tuple. The case of one variable
+is `MvPolynomial.IsWeightedHomogeneous.pderiv`, which asks for an `AddCancelCommMonoid` of
+weights; finitely supported functions are not registered as one. -/
+theorem IsWeightedHomogeneous.iteratedPDeriv {M : Type*} [AddCommMonoid M] [IsRightCancelAdd M]
+    {w : σ → M} {p : MvPolynomial σ R} {n : M} {k : ℕ} {α : Fin k → σ}
+    (hp : IsWeightedHomogeneous w p (n + ∑ i, w (α i))) :
+    IsWeightedHomogeneous w (iteratedPDeriv α p) n := by
+  induction k generalizing n with
+  | zero => simpa using hp
+  | succ k ih =>
+    rw [Fin.sum_univ_succ, ← add_assoc] at hp
+    intro d hd
+    rw [iteratedPDeriv_succ_apply, coeff_pderiv] at hd
+    have h := ih (α := Fin.tail α) hp (left_ne_zero_of_mul hd)
+    rw [map_add, Finsupp.weight_single, one_smul] at h
+    exact add_right_cancel h
 
 section
 

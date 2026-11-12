@@ -226,6 +226,25 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.AnyOrderHittingSe
 
 **Not certified here.** Positive characteristic. Polynomials of individual degree above one, set-multilinear depth-three circuits, and orbits. The converse of `IsAnyOrderROABP.splitRankLE`. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
 
+## Any-order ROABPs of bounded individual degree
+
+Import [HittingSet/AnyOrderBoundedDegree.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrderBoundedDegree.lean). The statement and its proof are not taken from a source and have not been refereed; for `δ = 1` it is the statement of the previous section. [isHittingSet_boundedDegreeHittingSet_roabp](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrderBoundedDegree.lean) is for `[Field F] [CharZero F]`: `boundedDegreeHittingSet F n w δ` hits `{f | (∀ i, f.degreeOf i ≤ δ) ∧ IsAnyOrderROABP w f}`, with no further hypothesis. `isHittingSet_boundedDegreeHittingSet` is the same for the larger class with `SplitRankLE ↑U w f` for every `U : Finset (Fin n)`. `card_boundedDegreeHittingSet_le F n w δ` bounds the set by an explicit expression that is polynomial in `n` and `w` for each fixed `δ` and exponential in `δ`.
+
+The pieces, each usable alone:
+
+- [boundedDegreeShifts](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/BoundedDegreeShifts.lean) with `exists_mem_boundedDegreeShifts`: for `IsPerfectHashFamily P k` and `w < 2 ^ k`, some shift gives a nonzero polynomial of individual degree at most `δ` and split rank at most `w` a monomial with fewer than `k` variables. It rests on `IsConcentrating` ([Concentrating.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Concentrating.lean)), `exists_mem_support_shift_card_lt_of_isConcentrating` and `eq_zero_of_scale_X_pow_vanishing`.
+- [colorHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ColorDegree.lean) with `exists_mem_colorHittingSet_eval_ne_zero`: a nonzero polynomial whose degree in the variables of each colour is at most `δ`, of split rank at most `w` across the variables of every set of colours, is nonzero at a point of the set.
+- `colorComponent`, `splitRankLE_colorComponent`, `exists_pderiv_closed_of_colorHomogeneous`, `exists_eval_ne_zero_of_eval_colorComponent_ne_zero`.
+- In the foundations: `MvPolynomial.two_pow_card_le_card_support` (a nonzero polynomial that vanishes when any of `k` variables is set to one has at least `2 ^ k` monomials), `MvPolynomial.linearIndependent_of_initial_monomial`, `SplitRankLE.pderiv`, `pderiv_shift`, `coeff_iteratedPDeriv_ne_zero_iff`, `Nat.eq_of_sum_mul_pow_eq`.
+
+Complete client: [AnyOrderBoundedDegree.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/AnyOrderBoundedDegree.lean) obtains a point of the hitting set where `X 0 ^ 2 * X 1` is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.AnyOrderBoundedDegree
+```
+
+**Not certified here.** A hitting set of size polynomial in `n`, `w` and `δ` together. Positive characteristic. The bit length of the points and the cost of computing them.
+
 ## Support-concentrating shifts and perfect hash families
 
 Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of the previous section takes from earlier work.

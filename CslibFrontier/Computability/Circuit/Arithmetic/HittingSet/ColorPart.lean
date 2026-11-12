@@ -24,6 +24,7 @@ every variable of colour `i` by a new variable `yᵢ`.
 ## Main definitions
 
 * `colorWeight`: the weight whose weighted degree is the colour degree.
+* `colorComponent`: the component of a given colour degree.
 * `colorPart`: the component of colour degree `(1, …, 1)`.
 
 ## References
@@ -48,9 +49,19 @@ variable (r) in
 /-- The colour degree `(1, …, 1)`. -/
 noncomputable def colorOnes : Fin r →₀ ℕ := Finsupp.equivFunOnFinite.symm fun _ => 1
 
+/-- The component of colour degree `ε`: the sum of the monomials of a polynomial whose degree in
+the variables of colour `i` is `ε i`, for every `i`. -/
+noncomputable def colorComponent (c : σ → Fin r) (ε : Fin r →₀ ℕ) :
+    MvPolynomial σ F →ₗ[F] MvPolynomial σ F :=
+  weightedHomogeneousComponent (colorWeight c) ε
+
 /-- The sum of the monomials of a polynomial that contain exactly one variable of each colour,
 to the first power. -/
 noncomputable def colorPart (c : σ → Fin r) : MvPolynomial σ F →ₗ[F] MvPolynomial σ F :=
   weightedHomogeneousComponent (colorWeight c) (colorOnes r)
+
+theorem colorPart_eq_colorComponent (c : σ → Fin r) :
+    (colorPart c : MvPolynomial σ F →ₗ[F] MvPolynomial σ F) = colorComponent c (colorOnes r) :=
+  rfl
 
 end Cslib.Circuits.Arithmetic
