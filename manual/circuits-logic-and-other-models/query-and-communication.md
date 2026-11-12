@@ -254,7 +254,7 @@ core is `density_le_of_forall_accuracy_le`: if every formula of depth `d + 1` ha
 `1/2 + α`, then `ρ ≤ 2⁻ᵐ + 2α(1 - 2⁻ᵐ)`. It is the source's recursion `M_{r+1} ≤ M_r / 2 + α`,
 which fixes all rows but one with `Probability.PMF.sum_pi_mul_update`. The
 [predictor client](../../CslibFrontierTests/CircuitDenseRestrictionPredictor.lean) applies
-Lemma 6.2 to a three-bit protocol on one-row matrices; run
+Lemma 6.2 to a two-bit protocol on one-row matrices, giving formula depth at most three; run
 `scripts/build.sh CslibFrontierTests.CircuitDenseRestrictionPredictor`. The remaining
 dense-restriction results (Lemmas 6.3–6.5, Theorem 6.6) are not formalized yet.
 
