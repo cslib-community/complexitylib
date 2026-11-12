@@ -38,9 +38,10 @@ F7), `MCSPAt` against `GapMCSP.yesSet` (#1048) and the third MCSP certificate ve
 A candidate is not a finding. If a pair states the same notion, reuse or generalize the existing
 definition; otherwise the PR description says why it differs. The tool is advisory: it always
 exits 0, and it skips itself, with a note, when the build outputs are missing or stale. With
-`--github` it also writes the candidates to the job summary (`$GITHUB_STEP_SUMMARY`) and as notice
-annotations on the examined declarations. It needs `lake build` (the `CslibFrontier` library); CI
-runs it after the build with `--no-build-check`.
+`--github` it also writes the candidates to the job summary (`$GITHUB_STEP_SUMMARY`), linking
+project declarations at the checked revision, and as notice annotations on examined declarations.
+Skipped checks and missing-module coverage are included in the summary. It needs `lake build`
+(the `CslibFrontier` library); CI runs it after the build with `--no-build-check`.
 
 Duplicate statements (`--theorems`)
 -----------------------------------
@@ -50,11 +51,14 @@ the theorems that a change adds or modifies, private ones included, and groups e
 theorems of the library, and the public theorems of its dependencies (Lean core, Batteries,
 Mathlib, cslib and the others it imports), that have the same statement up to binder names and
 kinds, universe levels, the order of hypotheses and of instance arguments, the notations `≥`, `>`
-and `≠`, the order of the sides of `=` and `↔`, and default arguments. `scripts/ParallelDefs.lean`
-defines this statement key exactly. It is equality, not unification: a local lemma that only
-specializes a more general one is not found. The tool reports the groups that span two modules of
-the library or contain a dependency's theorem (`--same-module` adds the others); `--no-external`
-skips the dependencies. With `--all` it examines the whole library, as an audit (under a minute).
+and `≠`, the order of the sides of `=` and `↔`, and default arguments. Built-in list lookups
+`xs[i]` for `i : Fin xs.length` and `xs[i.1]` share a key, ignoring only their bounds proofs;
+the list, index and value expressions remain distinct. Custom indexing instances are not unfolded.
+`scripts/ParallelDefs.lean` defines this statement key exactly. It is equality, not unification:
+a local lemma that only specializes a more general one is not found. The tool reports the groups
+that span two modules of the library or contain a dependency's theorem (`--same-module` adds the
+others); `--no-external` skips the dependencies. With `--all` it examines the whole library, as an
+audit (under a minute).
 
 A group is a candidate too. If its theorems state the same fact, keep one copy in the most general
 home (the dependency, then `Foundations`, then the topic module), use it in the clients and delete
@@ -72,6 +76,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -108,9 +113,9 @@ class Finding:
     private: bool = False
     constants: tuple[str, ...] = ()
 
-    def text(self) -> str:
+    def text(self, source_url: str | None = None) -> str:
         other = f"`{self.other}`" + (" (private)" if self.private else "")
-        where = f"{self.other_path}:{self.other_line}"
+        where = location(self.other_path, self.other_line, source_url)
         if not self.size:
             return (f"`{self.name}` is {other} ({where}) applied to its arguments: a second name "
                     "for an existing notion.")
@@ -131,8 +136,8 @@ class Theorem:
     examined: bool = False
     proof: str | None = None
 
-    def text(self) -> str:
-        notes = [f"{self.path}:{self.line}"] + (["private"] if self.private else []) + \
+    def text(self, source_url: str | None = None) -> str:
+        notes = [location(self.path, self.line, source_url)] + (["private"] if self.private else []) + \
             ([f"proved as `{self.proof}`"] if self.proof else [])
         return f"`{self.name}` ({', '.join(notes)})"
 
@@ -147,14 +152,14 @@ class Group:
     theorems: list[Theorem]
     external: list[tuple[str, str]]
 
-    def text(self) -> str:
+    def text(self, source_url: str | None = None) -> str:
         first, *others = self.theorems
-        same = [t.text() for t in others] + \
+        same = [t.text(source_url) for t in others] + \
             [f"`{name}` (in `{module}`)" for name, module in self.external]
         listed = same[0] if len(same) == 1 else ", ".join(same[:-1]) + " and " + same[-1]
         up_to = "" if self.exact else (" (up to the order of hypotheses and instance arguments, "
                                        "the sides of `=` and `↔`, and `≥`, `>` and `≠`)")
-        return f"{first.text()} has the same statement as {listed}{up_to}."
+        return f"{first.text(source_url)} has the same statement as {listed}{up_to}."
 
 
 # --- What to examine ----------------------------------------------------------------------------
@@ -287,38 +292,67 @@ def select_groups(rows: list[dict], same_module: bool) -> list[Group]:
 
 # --- Reports ------------------------------------------------------------------------------------
 
-ADVICE = ("These are candidates, not findings. If a pair states the same notion, reuse or "
-          "generalize the existing definition instead of adding a parallel one; otherwise, say in "
-          "the PR description why it differs (AGENTS.md, \"New statements and definitions\").")
+ADVICE = ("Review both declarations. If they state the same notion, reuse or generalize the "
+          "existing definition; otherwise explain the mathematical or API difference that "
+          "justifies keeping both. Record the disposition in the PR and link it from the review. "
+          "These are candidates requiring judgment, not automatic findings.")
 
 
 STATEMENT_ADVICE = ("These are candidates, not findings. If the theorems state the same fact, "
                     "keep one copy in the most general home (the dependency, then `Foundations`, "
                     "then the topic module), use it in the clients and delete the others, without "
-                    "an alias; otherwise, say in the PR description why the copies are needed.")
+                    "an alias; otherwise, say in the PR description why the copies are needed. "
+                    "Reviewers inspect the statements and link each candidate's disposition.")
 
 DEFS_TITLE = "Parallel-definition notice"
 THEOREMS_TITLE = "Duplicate-statement notice"
 
 
+def location(path: str, line: int, source_url: str | None = None) -> str:
+    """A source location, linked to the checked revision in GitHub reports."""
+    label = f"{path}:{line}"
+    return f"[{label}]({source_url}/{quote(path, safe='/')}#L{line})" if source_url else label
+
+
+def github_source_url() -> str | None:
+    """Use CI's checked-out revision, including its merge commit on pull requests."""
+    repo, revision = os.environ.get("GITHUB_REPOSITORY"), os.environ.get("GITHUB_SHA")
+    if not repo or not revision:
+        return None
+    return f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{repo}/blob/{revision}"
+
+
 def markdown(found: list[Finding] | list[Group], examined: int, limit: int,
-             theorems: bool = False) -> str:
+             theorems: bool = False, *, source_url: str | None = None,
+             missing: list[str] | None = None) -> str:
     head = f"### {THEOREMS_TITLE if theorems else DEFS_TITLE} (advisory)\n\n"
     if not found:
-        return head + (f"No theorem among the {examined} examined has the statement of another "
-                       "library or dependency theorem.\n" if theorems else
-                       f"No candidate parallel definitions among the {examined} examined "
-                       "declarations.\n")
+        lines = [head + (f"No theorem among the {examined} examined has the statement of another "
+                         "library or dependency theorem.\n" if theorems else
+                         f"No candidate parallel definitions among the {examined} examined "
+                         "declarations.\n")]
     shown = found[:limit]
-    more = f" The first {limit} are listed." if len(found) > limit else ""
-    if theorems:
+    more = f" The first {limit} are listed; use `--limit {len(found)}` to see all." \
+        if len(found) > limit else ""
+    if found and theorems:
         lines = [head + f"{len(found)} group(s) of theorems with the same statement among the "
                  f"{examined} examined theorems.{more} {STATEMENT_ADVICE}\n"]
-        lines += [f"- {g.text()}" for g in shown]
-    else:
+        lines += [f"- {g.text(source_url)}" for g in shown]
+    elif found:
         lines = [head + f"{len(found)} candidate(s) among the {examined} examined declarations."
                  f"{more} {ADVICE}\n"]
-        lines += [f"- {f.path}:{f.line}: {f.text()}" for f in shown]
+        lines += [f"- {location(f.path, f.line, source_url)}: {f.text(source_url)}" for f in shown]
+    if missing:
+        examples = ", ".join(f"`{module}`" for module in missing[:3])
+        lines += [f"\n**Incomplete comparison:** {len(missing)} library module(s) have no build "
+                  f"outputs and were not compared, including {examples}. Record this limitation "
+                  "or rebuild and rerun before claiming complete coverage.\n"]
+    scope = ("Statement-key equality cannot find specializations of more general theorems or "
+             "facts re-derived inline inside proofs." if theorems else
+             "The default scan examines changed public definitions and types, excluding "
+             "same-module pairs. Inspect the separate Duplicate-statement notice for theorems.")
+    lines += [f"\nScope: {scope} Inspect the Repeated-proof-block notice for repeated tactic blocks. "
+              "An empty report does not replace source search and semantic review.\n"]
     return "\n".join(lines) + "\n"
 
 
@@ -345,12 +379,17 @@ def outputs_current() -> bool:
                           capture_output=True).returncode == 0
 
 
-def skip(reason: str, github: bool, title: str = DEFS_TITLE) -> int:
-    message = f"{title} skipped: {reason}."
-    print(message)
+def publish(report: str, github: bool) -> None:
+    """Keep the log and review summary consistent, including skips and partial coverage."""
+    print(report, end="")
     if github and os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-            summary.write(f"### {title} (advisory)\n\n{message}\n")
+            summary.write(report)
+
+
+def skip(reason: str, github: bool, title: str = DEFS_TITLE) -> int:
+    publish(f"### {title} (advisory)\n\n{title} skipped: {reason}. "
+            "This is not a completed duplication check.\n", github)
     return 0
 
 
@@ -363,7 +402,8 @@ def run(args: argparse.Namespace, root: Path, build_dir: Path) -> int:
         changed = {} if args.decl else changed_ranges(root, args.base)
     if not changed and not args.decl:
         what = "theorems" if args.theorems else "definitions"
-        print(f"{title}: no `CslibFrontier/` {what} added or modified.")
+        publish(f"### {title} (advisory)\n\n"
+                f"{title}: no `CslibFrontier/` {what} added or modified.\n", args.github)
         return 0
     if not build_dir.is_dir():
         return skip(f"no build outputs in {build_dir}; run `lake build` first", args.github,
@@ -378,23 +418,20 @@ def run(args: argparse.Namespace, root: Path, build_dir: Path) -> int:
     tiers = parse_tiers(args.tiers)
     stdin = requests(modules, changed, args.decl, args.theorems, not args.no_external)
     rows = run_reader(build_dir, stdin, min(size for size, _ in tiers), args.max_shared)
-    stats = next((r for r in rows if "examined" in r), {"examined": 0, "missing": []})
+    stats = next((r for r in rows if "examined" in r), None)
+    if stats is None:
+        raise RuntimeError("the reader returned no coverage statistics")
     if args.theorems:
         found: list[Finding] | list[Group] = select_groups(rows, args.same_module)
-        report = markdown(found, stats["examined"], args.limit, theorems=True)
     else:
         found = select(rows, tiers, args.same_module)
-        report = markdown(found, stats["examined"], args.limit)
-    print(report, end="")
-    if stats["missing"]:
-        print(f"note: {len(stats['missing'])} library module(s) have no build outputs and were "
-              f"not compared, e.g. {stats['missing'][0]}.")
+    report = markdown(found, stats["examined"], args.limit, theorems=args.theorems,
+                      source_url=github_source_url() if args.github else None,
+                      missing=stats["missing"])
+    publish(report, args.github)
     if args.github:
         for line in annotations(found, args.limit):
             print(line)
-        if os.environ.get("GITHUB_STEP_SUMMARY"):
-            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-                summary.write(report)
     return 0
 
 

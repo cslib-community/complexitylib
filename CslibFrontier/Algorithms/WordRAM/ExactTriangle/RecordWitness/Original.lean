@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordWitness.Program
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.PreparationInput
+import CslibFrontier.Foundations.Data.List.GetD
 
 /-!
 # Original signed arrays after real preparation
@@ -38,9 +39,7 @@ theorem original_word {n D g p q : ℕ} (values : List ℤ) (a : Data 64) (z : D
 intermediate machine state. The implicit index equation is the producer's existing layout. -/
 theorem original_magnitude {n A q : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hv : ∀ z ∈ values, z.natAbs ≤ A)
-    (hq : q < 3 * (n * n)) : (values.getD q 0).natAbs ≤ A := by
-  have hi : q < values.length := by omega
-  rw [List.getD_eq_getElem _ _ hi]
-  exact hv _ (List.getElem_mem hi)
+    (hq : q < 3 * (n * n)) : (values.getD q 0).natAbs ≤ A :=
+  hv (values.getD q 0) (List.getD_mem 0 (by omega))
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.RecordWitness

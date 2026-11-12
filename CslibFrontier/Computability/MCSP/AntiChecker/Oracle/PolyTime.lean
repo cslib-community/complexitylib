@@ -10,8 +10,8 @@ module
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Complexity.Classes.NP
 public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle
+import CslibFrontier.Computability.Circuit.Boolean.PPoly.Closure
 import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
-import CslibFrontier.Computability.Complexity.Classes.PH.KarpLipton
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -243,7 +243,7 @@ theorem smallSet_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) :
     fun_prop
   have h3 : {r : ((Query × List Bool) × List Bool) × List Bool | coverTest r = true} ∈
       PPolyOn (encPair e2 encBits) :=
-    P_subset_PPolyOn ⟨coverTest, computableInPolyTime_coverTest, fun _ => Iff.rfl⟩
+    PPolyOn.of_computableInPolyTime computableInPolyTime_coverTest
   have h2 := PPolyOn.exists_of_computableInPolyTime_length hNP hN
     (P := fun r x => coverTest (r, x) = true) h3
   have h1 := PPolyOn.forall_of_computableInPolyTime_length hNP hu

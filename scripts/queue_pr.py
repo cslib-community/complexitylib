@@ -5,10 +5,11 @@ Usage: python3 scripts/queue_pr.py PR SHA [--wait MINUTES] [--repo OWNER/NAME]
 
 This is the queueing half of approve-and-queue (AGENTS.md, "Approve and queue"). It refuses
 unless the pull request is open, not a draft, based on `main`, has head SHA, and merges cleanly
-into its base, and the required check (`REQUIRED_CHECKS`) has succeeded at SHA. While that check
-is still running it waits up to `--wait` minutes (default 0: report and stop); it always waits
-briefly for GitHub to compute mergeability. It then enqueues with `expectedHeadOid` = SHA, so a
-push after the approval can never be queued in its place.
+into its base, and the required check (`REQUIRED_CHECKS`) has succeeded at SHA. All pages of check
+contexts are read from the same commit before selecting each required check's latest attempt.
+While that check is still running it waits up to `--wait` minutes (default 0: report and stop);
+it always waits briefly for GitHub to compute mergeability. It then enqueues with
+`expectedHeadOid` = SHA, so a push after the approval can never be queued in its place.
 
 It does not judge the approval itself, a hold named in it, or a request for human review in the
 PR or its issue; the reviewer checks those before running it. Its retarget check (a base change
@@ -49,10 +50,27 @@ query($owner: String!, $name: String!, $number: Int!) {
           ... on AutomaticBaseChangeSucceededEvent { createdAt }
         }
       }
-      commits(last: 1) { nodes { commit { oid committedDate
-        statusCheckRollup { contexts(first: 100) { nodes {
+      commits(last: 1) { nodes { commit { id oid committedDate
+        statusCheckRollup { contexts(first: 100) {
+          nodes {
+            ... on CheckRun { name status conclusion startedAt checkSuite { app { databaseId } } }
+          }
+          pageInfo { endCursor hasNextPage }
+        } } } } }
+    }
+  }
+}"""
+
+CONTEXTS_QUERY = """
+query($id: ID!, $after: String!) {
+  node(id: $id) {
+    ... on Commit { oid
+      statusCheckRollup { contexts(first: 100, after: $after) {
+        nodes {
           ... on CheckRun { name status conclusion startedAt checkSuite { app { databaseId } } }
-        } } } } } }
+        }
+        pageInfo { endCursor hasNextPage }
+      } }
     }
   }
 }"""
@@ -76,10 +94,60 @@ def gh_graphql(query: str, **variables: str | int) -> dict:
     result = subprocess.run(command, capture_output=True, text=True)
     if result.returncode != 0:
         raise GhError(result.stderr.strip() or result.stdout.strip())
-    data = json.loads(result.stdout)
+    try:
+        data = json.loads(result.stdout)
+    except ValueError as error:
+        raise GhError("GitHub returned invalid JSON") from error
+    if not isinstance(data, dict):
+        raise GhError("GitHub returned no GraphQL response object")
     if data.get("errors"):
         raise GhError("; ".join(error.get("message", str(error)) for error in data["errors"]))
+    if not isinstance(data.get("data"), dict):
+        raise GhError("GitHub returned no GraphQL data")
     return data["data"]
+
+
+def fetch_pr(owner: str, name: str, number: int) -> dict:
+    """Read the PR and every check page, pinned to its initial commit's node ID and OID.
+
+    Querying `commits(last: 1)` again during pagination could mix two heads after a push. The
+    immutable commit node keeps these pages together; enqueue's `expectedHeadOid` still rejects
+    a push after this read. Null or incomplete later pages must never make an old success usable.
+    """
+    repository = gh_graphql(QUERY, owner=owner, name=name, number=number).get("repository")
+    pr = (repository or {}).get("pullRequest")
+    if not isinstance(pr, dict):
+        raise GhError(f"no pull request #{number} in {owner}/{name}")
+    commits = (pr.get("commits") or {}).get("nodes")
+    if not isinstance(commits, list):
+        raise GhError("GitHub returned no commit list for the pull request")
+    if not commits:
+        return pr  # `assess` refuses a PR without a latest commit.
+    commit = (commits[0] or {}).get("commit")
+    if not isinstance(commit, dict) or not commit.get("id") or not commit.get("oid"):
+        raise GhError("GitHub returned no latest commit identity")
+    if commit.get("statusCheckRollup") is None:
+        return pr  # No checks have been reported yet.
+    page, contexts, seen = commit, [], set()
+    while True:
+        connection = (page.get("statusCheckRollup") or {}).get("contexts")
+        nodes = (connection or {}).get("nodes")
+        info = (connection or {}).get("pageInfo")
+        if (not isinstance(nodes, list) or any(not isinstance(node, dict) for node in nodes)
+                or not isinstance(info, dict) or not isinstance(info.get("hasNextPage"), bool)):
+            raise GhError("GitHub returned an incomplete check-context page")
+        contexts.extend(nodes)
+        if not info["hasNextPage"]:
+            break
+        cursor = info.get("endCursor")
+        if not isinstance(cursor, str) or not cursor or cursor in seen:
+            raise GhError("GitHub returned a missing or repeated check-context cursor")
+        seen.add(cursor)
+        page = gh_graphql(CONTEXTS_QUERY, id=commit["id"], after=cursor).get("node")
+        if not isinstance(page, dict) or page.get("oid") != commit["oid"]:
+            raise GhError("GitHub returned no matching commit for the next check-context page")
+    commit["statusCheckRollup"]["contexts"] = {"nodes": contexts, "pageInfo": info}
+    return pr
 
 
 def check_state(pr: dict) -> tuple[str, list[str]]:
@@ -165,10 +233,7 @@ def main(argv: list[str] | None = None) -> int:
     retries = MERGEABLE_RETRIES
     try:
         while True:
-            pr = (gh_graphql(QUERY, owner=owner, name=name, number=args.pr)["repository"]
-                  or {}).get("pullRequest")
-            if pr is None:
-                raise GhError(f"no pull request #{args.pr} in {args.repo}")
+            pr = fetch_pr(owner, name, args.pr)
             status, reasons = assess(pr, args.sha)
             if status != "pending":
                 break
@@ -188,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
             verb = "not queued yet" if status == "pending" else "not queued"
             print(f"#{args.pr} {verb}: " + "; ".join(reasons) + ".")
             return 1
-        entry = (gh_graphql(ENQUEUE, id=pr["id"], sha=args.sha)["enqueuePullRequest"]
+        entry = (gh_graphql(ENQUEUE, id=pr["id"], sha=args.sha).get("enqueuePullRequest")
                  or {}).get("mergeQueueEntry")
     except GhError as error:
         print(f"queue_pr: {error}", file=sys.stderr)

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.ExactThreeSAT
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+import CslibFrontier.Logics.Propositional.CNF.Eval
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -109,16 +110,6 @@ theorem mem_MaxTwoSAT_iff {φ : CNF ℕ} {K : ℕ} :
 
 namespace MaxTwoSAT
 
-/-- Assignments that agree on the variables of `φ` satisfy the same number of its clauses. -/
-private theorem countP_eval_congr {σ τ : ℕ → Bool} {φ : CNF ℕ} (h : ∀ v ∈ φ.vars, σ v = τ v) :
-    φ.countP (Clause.eval σ) = φ.countP (Clause.eval τ) := by
-  refine List.countP_congr fun c hc => ?_
-  have hc' : CNF.eval σ [c] = CNF.eval τ [c] := CNF.eval_congr fun v hv => by
-    obtain ⟨d, hd, b, hb⟩ := CNF.mem_vars.1 hv
-    rw [List.mem_singleton.1 hd] at hb
-    exact h v (CNF.mem_vars.2 ⟨c, hc, b, hb⟩)
-  simp only [CNF.eval_cons, CNF.eval_nil, Bool.and_true] at hc'
-  rw [hc']
 
 /-! ### Membership in NP -/
 
@@ -142,7 +133,7 @@ theorem isVerifier : IsVerifier encMaxTwoSAT Polynomial.X verifier MaxTwoSAT := 
             exact length_le_encPair_left encCNF encNat (x.formula, x.target))
     refine ⟨x.formula.vars.map σ, by simpa using hvars, fun k => ?_⟩
     simp only [verifier, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
-    refine ⟨hlen, hσ.trans (countP_eval_congr fun v hv => ?_).le⟩
+    refine ⟨hlen, hσ.trans (CNF.countP_eval_congr fun v hv => ?_).le⟩
     have hlt : x.formula.vars.idxOf v < x.formula.vars.length := List.idxOf_lt_length_iff.2 hv
     have hlt' : x.formula.vars.idxOf v < (x.formula.vars.map σ).length := by simpa using hlt
     rw [SAT.assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt',
