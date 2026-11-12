@@ -33,7 +33,7 @@ abbrev fixedWord (I : FixedRotationInput) (v : ℕ) := (I.orders.getD v none).ge
 
 /-- Original selected dart indices, in dense-center and prescribed-word order. -/
 @[expose] def selectedDarts (I : FixedRotationInput) : List ℕ :=
-  (List.range I.graph.1.length).flatMap (fixedWord I)
+  (List.range I.graph.vertices.length).flatMap (fixedWord I)
 
 /-- Valid selections retain exact fiber membership and have no repeated dart. -/
 theorem fixedWord_spec {I : FixedRotationInput} (hI : Valid I) (v : ℕ) :
@@ -58,8 +58,8 @@ theorem selectedDarts_nodup {I : FixedRotationInput} (hI : Valid I) : (selectedD
 
 /-- At most one selected leaf per actual original dart. -/
 theorem length_selectedDarts_le {I : FixedRotationInput} (hI : Valid I) :
-    (selectedDarts I).length ≤ 2 * I.graph.2.length := by
-  have hsub : selectedDarts I ⊆ List.range (2 * I.graph.2.length) := by
+    (selectedDarts I).length ≤ 2 * I.graph.edges.length := by
+  have hsub : selectedDarts I ⊆ List.range (2 * I.graph.edges.length) := by
     intro d hd
     obtain ⟨v, _, hv⟩ := List.mem_flatMap.mp hd
     exact List.mem_range.mpr (mem_fiber.mp ((fixedWord_spec hI v).2 d hv)).1
@@ -67,17 +67,17 @@ theorem length_selectedDarts_le {I : FixedRotationInput} (hI : Valid I) :
 
 /-- Centers cost one entry each; selected words cost precisely one fresh leaf per dart. -/
 theorem length_centerBlocks (I : FixedRotationInput) :
-    (centerBlocks I).length = I.graph.1.length + (selectedDarts I).length := by
+    (centerBlocks I).length = I.graph.vertices.length + (selectedDarts I).length := by
   simp [centerBlocks, selectedDarts, fixedWord, List.length_flatMap, List.sum_map_add,
     Nat.add_comm]
 
 /-- A raw reference order has at most the centers and two copies of the actual dart set. -/
 theorem length_referenceOrder_le {I : FixedRotationInput} (hI : Valid I) :
-    (referenceOrder I).length ≤ I.graph.1.length + 4 * I.graph.2.length := by
+    (referenceOrder I).length ≤ I.graph.vertices.length + 4 * I.graph.edges.length := by
   have hs := length_selectedDarts_le hI
   have hf := List.length_filter_le
     (fun v => !(centerBlocks I).any fun w => decide (w = v))
-    ((List.range (2 * I.graph.2.length)).map fun d => I.graph.1.length + d)
+    ((List.range (2 * I.graph.edges.length)).map fun d => I.graph.vertices.length + d)
   simp only [List.length_map, List.length_range] at hf
   simp only [referenceOrder, List.length_append, length_centerBlocks]
   omega
@@ -103,8 +103,9 @@ theorem mem_referenceOrder_lt {I : FixedRotationInput} (hI : Valid I) {x : ℕ}
 
 /-- Center blocks have distinct original centers and distinct fresh selected leaves. -/
 theorem centerBlocks_nodup {I : FixedRotationInput} (hI : Valid I) : (centerBlocks I).Nodup := by
-  let block (v : ℕ) := v :: ((fixedWord I v).reverse.map fun d => I.graph.1.length + d)
-  have hword (v : ℕ) : ((fixedWord I v).reverse.map fun d => I.graph.1.length + d).Nodup := by
+  let block (v : ℕ) := v :: ((fixedWord I v).reverse.map fun d => I.graph.vertices.length + d)
+  have hword (v : ℕ) :
+      ((fixedWord I v).reverse.map fun d => I.graph.vertices.length + d).Nodup := by
     have hr : (fixedWord I v).reverse.Nodup := by simpa using (fixedWord_spec hI v).1
     exact hr.map (fun _ _ h => Nat.add_left_cancel h)
   apply List.nodup_flatMap.mpr
@@ -164,13 +165,13 @@ theorem referenceOrder_enumerates {I : FixedRotationInput} (hI : Valid I) :
       · apply List.mem_append_right
         apply List.mem_filter.mpr
         refine ⟨?_, ?_⟩
-        · have hn : I.graph.1.length ≤ x := by
+        · have hn : I.graph.vertices.length ≤ x := by
             by_contra h
             have hm : x ∈ centerBlocks I := List.mem_flatMap.mpr
               ⟨x, List.mem_range.mpr (by omega), List.mem_cons_self ..⟩
             exact hb hm
           apply List.mem_map.mpr
-          refine ⟨x - I.graph.1.length, List.mem_range.mpr ?_, ?_⟩
+          refine ⟨x - I.graph.vertices.length, List.mem_range.mpr ?_, ?_⟩
           · unfold subdivisionSize at hx'
             omega
           · omega
@@ -189,54 +190,53 @@ theorem length_referenceOrder {I : FixedRotationInput} (hI : Valid I) :
 
 /-- Spanning frozen subgraph on every subdivision vertex, retaining precisely flagged segments. -/
 @[expose] def frozenGraph (I : FixedRotationInput) : Graph :=
-  (List.range (subdivisionSize I), ((subdivide I).filter fun e => e.2).map fun e => e.1)
+  ⟨List.range (subdivisionSize I), ((subdivide I).filter fun e => e.2).map fun e => e.1⟩
 
 /-- Every frozen segment joins an original center to its own occurrence-indexed fresh leaf.
 The original endpoint reader fixes the center uniquely from that leaf. Middle edges are absent. -/
 theorem frozen_edge_shape {I : FixedRotationInput} (hI : Valid I) {e : ℕ × ℕ}
-    (he : e ∈ (frozenGraph I).2) :
-    ∃ center leaf, center < I.graph.1.length ∧ I.graph.1.length ≤ leaf ∧
+    (he : e ∈ (frozenGraph I).edges) :
+    ∃ center leaf, center < I.graph.vertices.length ∧ I.graph.vertices.length ≤ leaf ∧
       leaf < subdivisionSize I ∧ (e = (center, leaf) ∨ e = (leaf, center)) ∧
       (I.orders.getD center none).isSome = true ∧
-      I.graph.incidenceVertices.getD (leaf - I.graph.1.length) 0 = center := by
+      I.graph.incidenceVertices.getD (leaf - I.graph.vertices.length) 0 = center := by
   obtain ⟨s, hs, rfl⟩ := List.mem_map.mp he
   obtain ⟨hs, hf⟩ := List.mem_filter.mp hs
   obtain ⟨entry, he, hs⟩ := List.mem_flatMap.mp hs
   obtain ⟨hi, hv⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp he)
-  have hem : entry.1 ∈ I.graph.2 := hv ▸ List.getElem_mem hi
-  have hu : entry.1.1 < I.graph.1.length :=
-    hI.2.1 _ (List.mem_flatMap.mpr ⟨entry.1, hem, by simp⟩)
-  have hw : entry.1.2 < I.graph.1.length :=
-    hI.2.1 _ (List.mem_flatMap.mpr ⟨entry.1, hem, by simp⟩)
-  change s ∈ [((entry.1.1, I.graph.1.length + 2 * entry.2), _),
-    ((I.graph.1.length + 2 * entry.2, I.graph.1.length + 2 * entry.2 + 1), false),
-    ((I.graph.1.length + 2 * entry.2 + 1, entry.1.2), _)] at hs
+  have hem : entry.1 ∈ I.graph.edges := hv ▸ List.getElem_mem hi
+  obtain ⟨hu, hw⟩ := hI.edge_endpoints_lt hem
+  change s ∈ [((entry.1.1, I.graph.vertices.length + 2 * entry.2), _),
+    ((I.graph.vertices.length + 2 * entry.2, I.graph.vertices.length + 2 * entry.2 + 1), false),
+    ((I.graph.vertices.length + 2 * entry.2 + 1, entry.1.2), _)] at hs
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hs
   rcases hs with rfl | rfl | rfl
-  · refine ⟨entry.1.1, I.graph.1.length + 2 * entry.2, hu, by omega, ?_, Or.inl rfl, hf, ?_⟩
+  · refine ⟨entry.1.1, I.graph.vertices.length + 2 * entry.2, hu, by omega, ?_, Or.inl rfl, hf, ?_⟩
     · unfold subdivisionSize
       omega
     · have hr := getD_incidenceVertices_even I.graph entry.2
       rw [List.getD_eq_getElem _ _ hi, hv] at hr
       simpa using hr
   · contradiction
-  · refine ⟨entry.1.2, I.graph.1.length + 2 * entry.2 + 1, hw, by omega, ?_, Or.inr rfl, hf, ?_⟩
+  · refine ⟨entry.1.2, I.graph.vertices.length + 2 * entry.2 + 1, hw, by omega, ?_,
+      Or.inr rfl, hf, ?_⟩
     · unfold subdivisionSize
       omega
     · have hr := getD_incidenceVertices_odd I.graph entry.2
       rw [List.getD_eq_getElem _ _ hi, hv] at hr
-      have hindex : I.graph.1.length + 2 * entry.2 + 1 - I.graph.1.length = 2 * entry.2 + 1 := by
+      have hindex : I.graph.vertices.length + 2 * entry.2 + 1 - I.graph.vertices.length =
+          2 * entry.2 + 1 := by
         omega
       simpa only [hindex] using hr
 
 /-- Every selected subdivision leaf belongs to exactly one center. Together with
 `frozen_edge_shape`, this describes disjoint spanning stars and isolated points. -/
 theorem frozen_leaf_unique {I : FixedRotationInput} (hI : Valid I) {leaf u v : ℕ}
-    (hl : I.graph.1.length ≤ leaf)
-    (hu : (u, leaf) ∈ (frozenGraph I).2 ∨ (leaf, u) ∈ (frozenGraph I).2)
-    (hv : (v, leaf) ∈ (frozenGraph I).2 ∨ (leaf, v) ∈ (frozenGraph I).2) : u = v := by
-  have center (x : ℕ) (hx : (x, leaf) ∈ (frozenGraph I).2 ∨ (leaf, x) ∈ (frozenGraph I).2) :
-      I.graph.incidenceVertices.getD (leaf - I.graph.1.length) 0 = x := by
+    (hl : I.graph.vertices.length ≤ leaf)
+    (hu : (u, leaf) ∈ (frozenGraph I).edges ∨ (leaf, u) ∈ (frozenGraph I).edges)
+    (hv : (v, leaf) ∈ (frozenGraph I).edges ∨ (leaf, v) ∈ (frozenGraph I).edges) : u = v := by
+  have center (x : ℕ) (hx : (x, leaf) ∈ (frozenGraph I).edges ∨ (leaf, x) ∈ (frozenGraph I).edges) :
+      I.graph.incidenceVertices.getD (leaf - I.graph.vertices.length) 0 = x := by
     rcases hx with hx | hx
     · obtain ⟨c, l, hc, _, _, he, _, hread⟩ := frozen_edge_shape hI hx
       rcases he with he | he
@@ -255,7 +255,7 @@ theorem frozen_leaf_unique {I : FixedRotationInput} (hI : Valid I) {leaf u v : �
 /-- Full framed algebraic-frame storage is quadratically bounded in uniform original graph
 sizes. Unary stride, binary endpoint pairs, frozen flags, and binary reference entries count. -/
 theorem length_encFrame_le {I : FixedRotationInput} (hI : Valid I) {K : ℕ} (hK : 1 ≤ K)
-    (hn : I.graph.1.length ≤ K) (hm : I.graph.2.length ≤ K) :
+    (hn : I.graph.vertices.length ≤ K) (hm : I.graph.edges.length ≤ K) :
     (encFrame (frame I)).length ≤ 400 * K ^ 2 := by
   have hsize : subdivisionSize I ≤ 3 * K := by unfold subdivisionSize; omega
   have hcount : (frame I).vertexCount ≤ 3 * K := hsize

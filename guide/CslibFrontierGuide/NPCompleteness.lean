@@ -623,7 +623,7 @@ least one bit per vertex. The verifier is executable, so you can test it on a tr
 
 ```lean (name := triangle)
 #eval Clique.verifier
-  ((([0, 1, 2], [(0, 1), (1, 2), (0, 2)]), 3), [true, true, true])
+  ((⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩, 3), [true, true, true])
 ```
 ```leanOutput triangle
 true
@@ -657,9 +657,10 @@ on the same vertices ({name}`Graph.compl`), so complementing reduces {name}`Inde
 every pair of distinct declared vertices that no edge joins:
 
 ```lean
-example (G : Graph) : G.compl = (G.1, G.1.flatMap fun u =>
-    (G.1.filter fun v => decide (u ≠ v ∧ (u, v) ∉ G.2 ∧ (v, u) ∉ G.2)).map
-      fun v => (u, v)) :=
+example (G : Graph) : G.compl = ⟨G.vertices, G.vertices.flatMap fun u =>
+    (G.vertices.filter fun v =>
+      decide (u ≠ v ∧ (u, v) ∉ G.edges ∧ (v, u) ∉ G.edges)).map
+      fun v => (u, v)⟩ :=
   rfl
 ```
 
@@ -859,12 +860,12 @@ check an isolate and reject a missing table entry:
 
 ```lean
 open Cslib.Complexity.Graph.RotationRecognition in
-example : query ⟨([0], []), [some []]⟩ = true := by decide +kernel
+example : query ⟨⟨[0], []⟩, [some []]⟩ = true := by decide +kernel
 ```
 
 ```lean
 open Cslib.Complexity.Graph.RotationRecognition in
-example : recover ⟨([0], []), []⟩ = none := by decide +kernel
+example : recover ⟨⟨[0], []⟩, []⟩ = none := by decide +kernel
 ```
 
 Each listed edge is replaced by three indexed segments. Prescribed endpoints
@@ -1039,7 +1040,7 @@ successor. Complete face/incident-vertex and component bijections establish:
 ```lean
 open Cslib.Complexity in
 example {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) :
     r.dualRotation.NumericalGenusZero ↔ r.NumericalGenusZero :=
   r.numericalGenusZero_dual_iff hG
 ```
@@ -1054,8 +1055,8 @@ it is the endpoint XOR of vertex spins:
 ```lean
 open Cslib.Complexity in
 example {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
-    (hgenus : r.NumericalGenusZero) (x : Fin G.2.length → Bool) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices)
+    (hgenus : r.NumericalGenusZero) (x : Fin G.edges.length → Bool) :
     r.FaceEven x ↔ ∃ spin : ℕ → Bool, G.edgeGradient spin = x :=
   r.faceEven_iff_exists_vertexSpins hG hgenus x
 ```
@@ -1200,7 +1201,7 @@ retaining every edge, dart and rotation successor:
 open Cslib.Complexity Graph.RotationSystem in
 example {vertices : List ℕ} {edges : List (ℕ × ℕ)} {v : ℕ}
     (hv : v ∈ vertices)
-    (r : Graph.RotationSystem (vertices ++ [v], edges)) :
+    (r : Graph.RotationSystem ⟨vertices ++ [v], edges⟩) :
     (redeclare r vertices).NumericalGenusZero ↔ r.NumericalGenusZero :=
   numericalGenusZero_append_duplicate_iff hv r
 ```
@@ -1264,7 +1265,7 @@ example : (PolygonalDrawing.star 20).IsEmbedding :=
   PolygonalDrawing.star_isEmbedding 20
 
 open Cslib.Complexity Graph in
-example (r : RotationSystem ([7, 7, 100], [])) :
+example (r : RotationSystem ⟨[7, 7, 100], []⟩) :
     (PolygonalDrawing.points [7, 7, 100]).IsEmbedding ∧
       (PolygonalDrawing.points [7, 7, 100]).Realizes r :=
   ⟨PolygonalDrawing.points_isEmbedding _,
@@ -1349,8 +1350,8 @@ Here the actual two-loop certificate supplies the numerical premise:
 ```lean
 open Cslib.Complexity Graph in
 example : ∃ D : PolygonalDrawing
-    ([7, 7, 1000], [(7, 7), (7, 7)]), D.IsEmbedding := by
-  let G : Graph := ([7, 7, 1000], [(7, 7), (7, 7)])
+    ⟨[7, 7, 1000], [(7, 7), (7, 7)]⟩, D.IsEmbedding := by
+  let G : Graph := ⟨[7, 7, 1000], [(7, 7), (7, 7)]⟩
   let c : RotationCertificate := ⟨[2, 0, 3, 1]⟩
   have hc : RotationCertificate.verifyRotation G c = true := by decide
   let r := RotationCertificate.decode G c hc

@@ -15,7 +15,7 @@ namespace CslibFrontierTests.RotationCertificateLength
 
 open Cslib.Complexity Graph Graph.RotationCertificate CSP.OrderedBoundary
 
-private abbrev star : Graph := ([0, 1, 2], [(0, 2), (1, 2)])
+private abbrev star : Graph := ⟨[0, 1, 2], [(0, 2), (1, 2)]⟩
 
 -- The supplied table is arbitrary and accepted; it is not assumed to be generated.
 -- Decoding and generating again retain the exact presentation length.
@@ -41,7 +41,7 @@ example : (restrictPrefix 2 ⟨[0, 3, 2, 1]⟩).successor = [0, 1] := by decide 
 
 -- Numerical genus is not part of the length lemma. This accepted torus rotation has one
 -- face, while a full numerical checker correctly rejects its genus.
-private abbrev torus : Graph := ([0], [(0, 0), (0, 0)])
+private abbrev torus : Graph := ⟨[0], [(0, 0), (0, 0)]⟩
 
 example : verifyRotation torus ⟨[2, 3, 1, 0]⟩ = true ∧
     verifyGenusZero torus ⟨[2, 3, 1, 0]⟩ = false := by decide +kernel
@@ -50,7 +50,7 @@ example : (⟨[2, 3, 1, 0]⟩ : RotationCertificate).successor.length = 2 * toru
   length_of_verifyRotation (G := torus) (by decide +kernel)
 
 example : (⟨[]⟩ : RotationCertificate).successor.length =
-    2 * (([5, 5, 99], []) : Graph).2.length :=
-  length_of_verifyRotation (G := ([5, 5, 99], [])) (by decide +kernel)
+    2 * (⟨[5, 5, 99], []⟩ : Graph).2.length :=
+  length_of_verifyRotation (G := ⟨[5, 5, 99], []⟩) (by decide +kernel)
 
 end CslibFrontierTests.RotationCertificateLength

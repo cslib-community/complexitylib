@@ -19,19 +19,19 @@ open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 /-! ### Concrete graphs -/
 
 /-- A path on three vertices. -/
-private def path : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+private def path : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
 /-- A triangle. -/
-private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 /-- The path with other labels, a repeated vertex entry, and an edge to an undeclared vertex. -/
-private def path' : Graph := ([7, 5, 9, 5], [(9, 5), (5, 7), (7, 100)])
+private def path' : Graph := ⟨[7, 5, 9, 5], [(9, 5), (5, 7), (7, 100)]⟩
 
 -- Repeated entries are dropped; the order of first occurrences is kept.
 example : path'.distinctVertices = [7, 5, 9] := by decide
 
 -- Duplicate vertex entries do not change the graph: one vertex is one vertex.
-example : (⟨([1, 1], []), ([1], [])⟩ : GraphIsomorphismInstance) ∈ GraphIsomorphism := by
+example : (⟨⟨[1, 1], []⟩, ⟨[1], []⟩⟩ : GraphIsomorphismInstance) ∈ GraphIsomorphism := by
   rw [mem_GraphIsomorphism_iff]
   decide
 
@@ -46,7 +46,7 @@ theorem path_triangle : (⟨path, triangle⟩ : GraphIsomorphismInstance) ∈ Gr
   decide
 
 -- The empty graph and a single vertex are not isomorphic.
-example : (⟨([], []), ([3], [])⟩ : GraphIsomorphismInstance) ∈ GraphNonIsomorphism := by
+example : (⟨⟨[], []⟩, ⟨[3], []⟩⟩ : GraphIsomorphismInstance) ∈ GraphNonIsomorphism := by
   rw [GraphNonIsomorphism, Set.mem_compl_iff, mem_GraphIsomorphism_iff]
   decide
 
@@ -65,7 +65,8 @@ example :
       (encPair encGraph encGraph) encGraphIsomorphism := by
   fun_prop
 
--- The certificate decoding `[7, 5, 9]` (positions `0, 1, 2` of `path'.1 = [7, 5, 9, 5]` in unary
+-- The certificate decoding `[7, 5, 9]` (positions `0, 1, 2` of
+-- `path'.vertices = [7, 5, 9, 5]` in unary
 -- blocks of width `4`) maps positions `0, 1, 2` of `path` to `7, 5, 9` and is accepted.
 example : GraphIsomorphism.verifier (⟨path, path'⟩,
     [false, false, false, false, true, false, false, false, true, true, false, false]) = true := by
@@ -84,7 +85,7 @@ example : GraphIsomorphism.verifier (⟨path, path'⟩,
 
 -- Graphs with different numbers of distinct vertices are rejected.
 example :
-    GraphIsomorphism.verifier (⟨([1, 2], []), ([1], [])⟩, []) = false := by
+    GraphIsomorphism.verifier (⟨⟨[1, 2], []⟩, ⟨[1], []⟩⟩, []) = false := by
   decide
 
 example : GraphIsomorphism ∈ IP encGraphIsomorphism :=

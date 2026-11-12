@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 
 /-!
 # Simultaneous time and space classes
@@ -92,13 +93,9 @@ theorem TISP_mono_of_le_mul_add {t₁ t₂ s₁ s₂ : ℕ → ℕ} {C : ℕ}
     (ht : ∀ n, t₁ n ≤ C * t₂ n + C) (hs : ∀ n, s₁ n ≤ C * s₂ n + C) :
     TISP enc t₁ s₁ ⊆ TISP enc t₂ s₂ := by
   rintro A ⟨c₁, c₂, hA⟩
-  refine ⟨c₁ * C, c₁ * C + c₂, ComputableInTimeAndSpace.mono hA (fun a => ?_) fun a => ?_⟩
-  · have := Nat.mul_le_mul_left c₁ (ht (enc a).length)
-    rw [Nat.mul_add, ← Nat.mul_assoc] at this
-    omega
-  · have := Nat.mul_le_mul_left c₁ (hs (enc a).length)
-    rw [Nat.mul_add, ← Nat.mul_assoc] at this
-    omega
+  exact ⟨c₁ * C, c₁ * C + c₂, ComputableInTimeAndSpace.mono hA
+    (fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (ht _) c₁ c₂)
+    fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (hs _) c₁ c₂⟩
 
 /-- `TISP` is monotone in both bounds. -/
 theorem TISP_mono {t₁ t₂ s₁ s₂ : ℕ → ℕ} (ht : ∀ n, t₁ n ≤ t₂ n) (hs : ∀ n, s₁ n ≤ s₂ n) :

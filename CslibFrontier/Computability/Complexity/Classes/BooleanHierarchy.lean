@@ -192,12 +192,6 @@ theorem differenceHierarchy_eq_of_succ_subset {C : Set (Set α)} (h0 : ∅ ∈ C
 
 variable {α β : Type} {enc : α ↪ List Bool} {A : Set α}
 
-private theorem empty_mem_NP : (∅ : Set α) ∈ NP enc :=
-  P_subset_NP empty_mem_P
-
-private theorem univ_mem_NP : (Set.univ : Set α) ∈ NP enc :=
-  P_subset_NP univ_mem_P
-
 /-- The `n`th level of the Boolean hierarchy over NP, with level zero containing only `∅`
 [Cai et al.][CaiEtAl1988]. -/
 def BH (enc : α ↪ List Bool) (n : ℕ) : Set (Set α) := differenceHierarchy (NP enc) n
@@ -229,7 +223,7 @@ theorem BooleanHierarchy_subset_iff {D : Set (Set α)}
   ⟨NP_subset_BooleanHierarchy.trans, fun h => BooleanHierarchy_subset h hD⟩
 
 @[simp]
-theorem mem_coBH_iff {n : ℕ} : A ∈ coBH enc n ↔ Aᶜ ∈ BH enc n := Iff.rfl
+theorem mem_coBH {n : ℕ} : A ∈ coBH enc n ↔ Aᶜ ∈ BH enc n := Iff.rfl
 
 theorem compl_mem_coBH_iff {n : ℕ} : Aᶜ ∈ coBH enc n ↔ A ∈ BH enc n := by
   simp [coBH]
@@ -263,7 +257,7 @@ theorem BH_two : BH enc 2 = DP enc := by
 /-- The second dual level is precisely coDP. -/
 theorem coBH_two : coBH enc 2 = coDP enc := by
   ext A
-  simp [coBH, coDP, BH_two]
+  rw [mem_coBH, mem_coDP, BH_two]
 
 /-- The levels of the Boolean hierarchy are increasing. -/
 theorem BH_mono : Monotone (BH enc) := by
@@ -377,7 +371,7 @@ theorem coBH_eq_BH_of_coBH_subset {k m : ℕ} (h : coBH enc k ⊆ BH enc k) (hm 
     coBH enc m = BH enc k := by
   have hm_eq : coBH enc m = coBH enc k := by
     ext A
-    simp only [mem_coBH_iff, BH_eq_of_coBH_subset h hm]
+    simp only [mem_coBH, BH_eq_of_coBH_subset h hm]
   rw [hm_eq, ← BH_eq_coBH_iff_BH_succ_eq.mpr (BH_succ_eq_iff_coBH_subset.mpr h)]
 
 /-- **Full Boolean-hierarchy collapse** [Cai et al., Section 2][CaiEtAl1988]; [Kadin][Kadin1988]:

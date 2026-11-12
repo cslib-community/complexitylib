@@ -13,7 +13,6 @@ public import CslibFrontier.Computability.Complexity.Classes.NP.SelfReduction
 public import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
 import CslibFrontier.Computability.Circuit.Boolean.Advice
-import CslibFrontier.Computability.Complexity.Classes.PH.Projection
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -181,10 +180,8 @@ theorem PiP_two_subset_SigmaP_two_of_SAT (hSAT : SAT ∈ PPolyOn encCNF)
 /-- **Karp–Lipton, `Π₂ = Σ₂`.** If some language in `P/poly` contains exactly the encodings of the
 satisfiable formulas, then `Π₂ = Σ₂`, for every encoding of instances. -/
 theorem PiP_two_eq_SigmaP_two_of_SAT (hSAT : SAT ∈ PPolyOn encCNF)
-    (enc : α ↪ List Bool) : PiP 2 enc = SigmaP 2 enc := by
-  refine (PiP_two_subset_SigmaP_two_of_SAT hSAT enc).antisymm fun A hA => ?_
-  simpa using compl_mem_PiP_of_mem_SigmaP
-    (PiP_two_subset_SigmaP_two_of_SAT hSAT enc (compl_mem_PiP_of_mem_SigmaP hA))
+    (enc : α ↪ List Bool) : PiP 2 enc = SigmaP 2 enc :=
+  PiP_eq_SigmaP_of_PiP_subset_SigmaP (PiP_two_subset_SigmaP_two_of_SAT hSAT enc)
 
 /-! ### The collapse -/
 
@@ -218,13 +215,10 @@ theorem SigmaP_subset_PPolyOn_of_NP_subset_PPoly
     exact P_subset_PPolyOn hA
   | succ k ih =>
     intro A hA
-    obtain ⟨p, B, hB, hAB⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
+    obtain ⟨p, B, hB, rfl⟩ := mem_SigmaP_succ_iff.mp hA
     have hB_PPoly : B ∈ PPolyOn (encPair enc encBits) := by
       simpa using PPolyOn.compl (ih (compl_mem_SigmaP_of_mem_PiP hB))
     have hN : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by fun_prop
-    have hA_eq : A = {a : α | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} :=
-      Set.ext hAB
-    rw [hA_eq]
     exact PPolyOn.exists_of_computableInPolyTime_length hNP hN hB_PPoly
 
 /-- **Karp–Lipton, `NP ⊆ P/poly ⇒ Πₖ ⊆ P/poly`.** If `NP ⊆ P/poly` over bitstrings, then every

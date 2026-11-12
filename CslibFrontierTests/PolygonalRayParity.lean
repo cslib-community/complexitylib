@@ -91,7 +91,7 @@ example :
     · norm_num [Bool.zero_eq_false, Bool.mul_eq_and, Bool.add_eq_xor]
       rfl
 
-private abbrev loopGraph : Graph := ([7, 7], [(7, 7)])
+private abbrev loopGraph : Graph := ⟨[7, 7], [(7, 7)]⟩
 
 private def loopDrawing : PolygonalDrawing loopGraph where
   vertex := fun _ => 0

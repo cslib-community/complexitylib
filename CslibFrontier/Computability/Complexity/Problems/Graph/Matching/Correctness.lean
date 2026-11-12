@@ -72,7 +72,7 @@ theorem nodup_maximumMatchingPositions (G : Graph) : G.maximumMatchingPositions.
 
 /-- Every returned edge is an original edge between distinct declared vertices. -/
 theorem of_mem_maximumMatching {e : ℕ × ℕ} (he : e ∈ G.maximumMatching) :
-    e ∈ G.2 ∧ e.1 ≠ e.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 := by
+    e ∈ G.edges ∧ e.1 ≠ e.2 ∧ e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices := by
   obtain ⟨i, hi, rfl⟩ := List.mem_map.mp he
   exact of_mem_edgeList (getD_edgeList_mem (maximumMatchingPositions_lt hi))
 
@@ -97,8 +97,8 @@ theorem maximumMatching_cardinality (G : Graph) (M : G.induced.Subgraph) (hM : M
 
 /-- Covered vertices of valid position sets are exactly the endpoints of selected original edges. -/
 theorem mem_verts_matchingOfPositions_iff {S : Finset ℕ}
-    (hS : ∀ i ∈ S, i < G.edgeList.length) (v : ℕ) (hv : v ∈ G.1) :
-    (⟨v, hv⟩ : {v // v ∈ G.1}) ∈ (G.matchingOfPositions S).verts ↔
+    (hS : ∀ i ∈ S, i < G.edgeList.length) (v : ℕ) (hv : v ∈ G.vertices) :
+    (⟨v, hv⟩ : {v // v ∈ G.vertices}) ∈ (G.matchingOfPositions S).verts ↔
       ∃ i ∈ S, incident (G.edgeList.getD i (0, 0)) v = true := by
   constructor
   · rintro ⟨w, _, i, hi, he⟩
@@ -171,7 +171,7 @@ end Cslib.Complexity.Graph
 namespace Cslib.Complexity.Graph
 
 /-- The returned original endpoint pairs are exactly the edges of the certified subgraph. -/
-theorem maximumMatchingSubgraph_adj_iff (G : Graph) (u v : {v // v ∈ G.1}) :
+theorem maximumMatchingSubgraph_adj_iff (G : Graph) (u v : {v // v ∈ G.vertices}) :
     G.maximumMatchingSubgraph.Adj u v ↔
       (u.val, v.val) ∈ G.maximumMatching ∨ (v.val, u.val) ∈ G.maximumMatching := by
   constructor

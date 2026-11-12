@@ -66,7 +66,7 @@ variable {Rel V W : Type} [DecidableEq V] [DecidableEq W]
 /-- Injectivity on used names preserves the literal listed incidence multigraph. -/
 theorem incidenceGraph_relabel_of_injOn (F : CSP Rel V) (f : V → W)
     (hf : Set.InjOn f {v | v ∈ F.vars}) : incidenceGraph (F.relabel f) = incidenceGraph F := by
-  apply Prod.ext
+  apply Graph.ext
   · rw [incidenceGraph_vertices, incidenceGraph_vertices, numVars_relabel_of_injOn F f hf]
     simp only [CSP.relabel, List.length_map]
   · rw [incidenceGraph_edges, incidenceGraph_edges, CSP.occurrences_relabel,
