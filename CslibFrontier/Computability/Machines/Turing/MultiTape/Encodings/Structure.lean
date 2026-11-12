@@ -161,8 +161,10 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
   elabCommand (← `($vis:visibility abbrev $fields:ident := $encoding))
   let fieldsDecl ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo fields
   addDocStringCore fieldsDecl s!"The tuple of the fields of `{name}`."
-  elabCommand (← `($[$doc:docComment]? @[expose] $vis:visibility def $eS:ident : $sType ↪ List Bool :=
-    (⟨fun $a => $fieldsOf, fun x y h => by cases x; cases y; simp_all⟩ : $sType ↪ _).trans $fields))
+  elabCommand (← `($[$doc:docComment]? @[expose]
+    $vis:visibility def $eS:ident : $sType ↪ List Bool :=
+      (⟨fun $a => $fieldsOf, fun x y h => by cases x; cases y; simp_all⟩ :
+        $sType ↪ _).trans $fields))
   elabCommand (← `(@[simp] $vis:visibility theorem $(app name "_apply") ($a : $sType) :
     $encRef $a = $fields $fieldsOf := rfl))
   let fieldsDeg := app name "_fields_deg"

@@ -89,7 +89,7 @@ public section
 
 namespace Cslib.Complexity
 
-open Finset Turing.MultiTapeTM
+open Finset Turing.MultiTapeTM BitString.LinearHash
 
 variable {α : Type}
 
