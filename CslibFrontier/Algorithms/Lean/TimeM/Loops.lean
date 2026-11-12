@@ -14,16 +14,17 @@ public import Mathlib.Algebra.BigOperators.Fin
 /-!
 # Loops in the time monad
 
-Return values and costs of two loop combinators run in `Cslib.Algorithms.Lean.TimeM`:
-`Vector.ofFnM`, which fills a vector cell by cell, and `List.foldlM`. The return value of either
-loop is the corresponding pure loop over the return values. The cost of `Vector.ofFnM` is the sum
-of the cell costs, and a `List.foldlM` whose step always costs `c` costs `c` per element; more
-generally, if the cost of a step depends only on the element, the fold costs the sum of the element
-costs.
+Return values and costs of three loop combinators run in `Cslib.Algorithms.Lean.TimeM`:
+`Vector.ofFnM`, which fills a vector cell by cell, `List.mapM` and `List.foldlM`. The return value
+of each loop is the corresponding pure loop over the return values. The cost of `Vector.ofFnM` and
+of `List.mapM` is the sum of the costs of the cells, and a `List.foldlM` whose step always costs `c`
+costs `c` per element; more generally, if the cost of a step depends only on the element, the fold
+costs the sum of the element costs.
 
 ## Main results
 
 * `Cslib.Algorithms.Lean.TimeM.ret_vectorOfFnM`, `time_vectorOfFnM`.
+* `Cslib.Algorithms.Lean.TimeM.ret_listMapM`, `time_listMapM`.
 * `Cslib.Algorithms.Lean.TimeM.ret_foldlM`, `time_foldlM_of_time_eq`, `time_foldlM_eq_sum`.
 -/
 
@@ -61,6 +62,21 @@ namespace Cslib.Algorithms.Lean.TimeM
     rw [Vector.ofFnM_succ]
     simp only [time_bind, time_pure, add_zero]
     rw [time_vectorOfFnM, Fin.sum_univ_castSucc]
+
+/-- A map over a list in the time monad returns the list of the return values. -/
+@[simp] theorem ret_listMapM {α β : Type*} (f : α → TimeM ℕ β) (l : List α) :
+    (l.mapM f).ret = l.map fun a => (f a).ret := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp only [List.mapM_cons, ret_bind, ret_pure, ih, List.map_cons]
+
+/-- A map over a list in the time monad costs the sum of the costs of its elements. -/
+@[simp] theorem time_listMapM {α β : Type*} (f : α → TimeM ℕ β) (l : List α) :
+    (l.mapM f).time = (l.map fun a => (f a).time).sum := by
+  induction l with
+  | nil => rfl
+  | cons a l ih =>
+    simp only [List.mapM_cons, time_bind, time_pure, ih, List.map_cons, List.sum_cons, add_zero]
 
 /-- A fold in the time monad returns the pure fold of the return values. -/
 @[simp] theorem ret_foldlM {α β : Type*} (f : β → α → TimeM ℕ β) (l : List α) (b : β) :
