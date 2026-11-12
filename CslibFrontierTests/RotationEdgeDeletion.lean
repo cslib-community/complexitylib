@@ -16,8 +16,8 @@ namespace CslibFrontierTests.RotationEdgeDeletion
 
 open Cslib.Complexity Graph Graph.RotationSystem
 
-private abbrev bridge : Graph := ([0, 1], [(0, 1)])
-private abbrev points : Graph := ([0, 1, 8, 8], [])
+private abbrev bridge : Graph := ⟨[0, 1], [(0, 1)]⟩
+private abbrev points : Graph := ⟨[0, 1, 8, 8], []⟩
 
 private def bridgeRotation : RotationSystem bridge where
   rotate := Equiv.refl _
@@ -38,7 +38,7 @@ example : (bridge.componentVertexSet 0).card + (bridgeRotation.componentFaceIndi
     (bridge.componentEdgeSet 0).card + 2 :=
   (bridgeRotation.numericalGenusZero_iff_component_cards (by decide)).mp bridgeGenus (0, false)
 
-private abbrev torus : Graph := ([0, 9], [(0, 0), (0, 0)])
+private abbrev torus : Graph := ⟨[0, 9], [(0, 0), (0, 0)]⟩
 
 private def torusRotation : RotationSystem torus where
   rotate := ((Dart.indexEquiv torus).trans
@@ -119,7 +119,7 @@ example : RotationCertificate.verifyGenusZero points
 example : pointsWithBridge.deleteLastEdge.NumericalGenusZero :=
   pointsWithBridge.numericalGenusZero_deleteLastEdge_of_no_edges rfl
 
-private abbrev oneLoop : Graph := ([0], [(0, 0)])
+private abbrev oneLoop : Graph := ⟨[0], [(0, 0)]⟩
 
 private def sphereBigon : RotationSystem (lastEdgeGraph bridge 0 1) where
   rotate := (Equiv.prodCongr

@@ -14,9 +14,9 @@ namespace CslibFrontierTests.RotationTransport
 
 open Cslib.Complexity Graph.RotationSystem
 
-private abbrev G : Graph := ([0, 1, 2, 3, 4, 5], [(0, 1), (2, 3), (5, 5)])
+private abbrev G : Graph := ⟨[0, 1, 2, 3, 4, 5], [(0, 1), (2, 3), (5, 5)]⟩
 private abbrev H : Graph :=
-  ([100, 200, 300, 400, 500, 600, 999, 999], [(600, 600), (300, 400), (100, 200)])
+  ⟨[100, 200, 300, 400, 500, 600, 999, 999], [(600, 600), (300, 400), (100, 200)]⟩
 
 private def r : Graph.RotationSystem G where
   rotate := Equiv.swap (2, false) (2, true)

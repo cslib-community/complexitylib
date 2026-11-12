@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamon
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+import CslibFrontier.Computability.Complexity.Reduction.Guard
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -237,18 +238,11 @@ theorem polyTimeReducible_SAT_DirHamPath :
 three literals is mapped to the diamond graph of the empty clause, which has no Hamiltonian
 path. -/
 theorem polyTimeReducible_ThreeSAT_DirHamPath :
-    PolyTimeReducible encCNF encPathInstance ThreeSAT DirHamPath := by
-  refine ⟨fun φ => if φ.all (fun c => decide (c.length ≤ 3)) then SAT.toDirHamPath φ
-    else SAT.toDirHamPath [[]], by fun_prop, fun φ => ?_⟩
-  simp only [ThreeSAT, Set.mem_ofPred_eq]
-  split_ifs with h
-  · rw [SAT.toDirHamPath_mem_iff, mem_SAT]
-    simp only [List.all_eq_true, decide_eq_true_eq] at h
-    exact ⟨fun h' => h'.2, fun h' => ⟨h, h'⟩⟩
-  · rw [SAT.toDirHamPath_mem_iff, mem_SAT]
-    simp only [List.all_eq_true, decide_eq_true_eq] at h
-    refine ⟨fun h' => (h h'.1).elim, fun ⟨σ, hσ⟩ => ?_⟩
-    simp at hσ
+    PolyTimeReducible encCNF encPathInstance ThreeSAT DirHamPath :=
+  .of_guard (g := fun φ => φ.all fun c => decide (c.length ≤ 3)) (SAT.toDirHamPath [[]])
+    (by fun_prop) SAT.computableInPolyTime_toDirHamPath
+    (by simp [SAT.toDirHamPath_mem_iff, mem_SAT, CNF.Satisfiable, CNF.eval, Clause.eval])
+    fun φ => by simp [ThreeSAT, SAT.toDirHamPath_mem_iff, mem_SAT]
 
 /-- `DirHamPath` is `NP`-hard. -/
 theorem DirHamPath_npHard : NPHard encPathInstance DirHamPath :=

@@ -21,8 +21,6 @@ import Mathlib.Topology.Order.MonotoneConvergence
 General real-order and asymptotic closure lemmas used across fine-grained exponential-rate
 characterizations:
 
-* `Cslib.csInf_nonneg_eq_csInf_pos`: for upward-closed predicates holding at `1`, `sInf` over
-  `0 ≤ δ` agrees with `sInf` over `0 < δ`.
 * `Cslib.iSup_ge_eq_iSup_of_monotone` and `Cslib.tendsto_atTop_nhds_one_iff_iSup_eq_one`:
   finite-prefix invariance and monotone-limit characterization of `⨆ k, s k = 1`.
 * `Cslib.exists_two_pow_le_of_isLittleO` and `Cslib.exists_monotone_isLittleO_ge`: exponential
@@ -30,7 +28,6 @@ characterizations:
 
 ## Main results
 
-* `Cslib.csInf_nonneg_eq_csInf_pos`: agreement of nonnegative and positive rate infima.
 * `Cslib.iSup_ge_eq_iSup_of_monotone`, `Cslib.tendsto_atTop_nhds_one_iff_iSup_eq_one`: finite-prefix
   suprema and monotone convergence to `1`.
 * `Cslib.exists_two_pow_le_of_isLittleO`, `Cslib.exists_monotone_isLittleO_ge`: `2 ^ s n` linear
@@ -42,28 +39,6 @@ public section
 namespace Cslib
 
 open Filter Asymptotics Topology
-
-/-- For any upward-closed predicate `P : ℝ → Prop` holding at `1`, the infimum over `δ ≥ 0` agrees
-with the infimum over strictly positive rates `δ > 0`. -/
-theorem csInf_nonneg_eq_csInf_pos {P : ℝ → Prop}
-    (hmono : ∀ ⦃δ δ' : ℝ⦄, δ ≤ δ' → P δ → P δ') (h1 : P 1) :
-    sInf {δ : ℝ | 0 ≤ δ ∧ P δ} = sInf {δ : ℝ | 0 < δ ∧ P δ} := by
-  have hne_pos : {δ : ℝ | 0 < δ ∧ P δ}.Nonempty := ⟨1, one_pos, h1⟩
-  have hne_nn : {δ : ℝ | 0 ≤ δ ∧ P δ}.Nonempty := ⟨1, zero_le_one, h1⟩
-  have hbdd_pos : BddBelow {δ : ℝ | 0 < δ ∧ P δ} := ⟨0, fun _ h => h.1.le⟩
-  have hbdd_nn : BddBelow {δ : ℝ | 0 ≤ δ ∧ P δ} := ⟨0, fun _ h => h.1⟩
-  refine le_antisymm
-    (csInf_le_csInf hbdd_nn hne_pos fun _ h => ⟨h.1.le, h.2⟩)
-    (le_csInf hne_nn fun δ ⟨hδ, hP⟩ => ?_)
-  by_contra hlt
-  rw [not_le] at hlt
-  set ε : ℝ := (sInf {r : ℝ | 0 < r ∧ P r} - δ) / 2
-  have hε : 0 < ε := by dsimp only [ε]; linarith
-  have hmem : δ + ε ∈ {r : ℝ | 0 < r ∧ P r} :=
-    ⟨by linarith, hmono (by linarith) hP⟩
-  have hle := csInf_le hbdd_pos hmem
-  dsimp only [ε] at hle
-  linarith
 
 /-- Dropping any finite prefix `k < K` of a monotone bounded sequence `s : ℕ → ℝ` preserves its
 supremum. -/

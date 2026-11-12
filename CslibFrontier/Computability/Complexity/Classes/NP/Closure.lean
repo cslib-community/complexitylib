@@ -18,8 +18,12 @@ import CslibFrontier.Computability.Complexity.Reduction.ManyOne
 
 ## Main results
 
+* `Cslib.Complexity.empty_mem_NP`, `Cslib.Complexity.univ_mem_NP`: the trivial problems are in
+  `NP`.
 * `Cslib.Complexity.inter_mem_NP`, `Cslib.Complexity.union_mem_NP`, `Cslib.Complexity.ite_mem_NP`:
   `NP` is closed under intersection, union and `P`-guarded `Set.ite`.
+* `Cslib.Complexity.mem_NP_of_guard`: the members of a problem in `NP` passing a polynomial-time
+  test form a problem in `NP`.
 * `Cslib.Complexity.inter_mem_coNP`, `Cslib.Complexity.union_mem_coNP`,
   `Cslib.Complexity.ite_mem_coNP`: `coNP` is closed under intersection, union and `P`-guarded
   `Set.ite`.
@@ -33,7 +37,17 @@ public section
 
 namespace Cslib.Complexity
 
+open Turing.MultiTapeTM
+
 variable {α : Type} {enc : α ↪ List Bool} {A B : Set α}
+
+/-- The empty problem is in `NP`. -/
+theorem empty_mem_NP : (∅ : Set α) ∈ NP enc :=
+  P_subset_NP empty_mem_P
+
+/-- The universal problem is in `NP`. -/
+theorem univ_mem_NP : (Set.univ : Set α) ∈ NP enc :=
+  P_subset_NP univ_mem_P
 
 /-- `NP` is closed under intersection. -/
 theorem inter_mem_NP (hA : A ∈ NP enc) (hB : B ∈ NP enc) : A ∩ B ∈ NP enc := by
@@ -48,6 +62,12 @@ theorem union_mem_NP (hA : A ∈ NP enc) (hB : B ∈ NP enc) : A ∪ B ∈ NP en
   obtain ⟨g, hg, hB⟩ := mem_NP_iff_exists_SharpP.mp hB
   exact mem_NP_iff_exists_SharpP.mpr
     ⟨f + g, SharpP.add_mem hf hg, fun a => by simp [hA a, hB a]⟩
+
+/-- **Guarded NP membership.** The members of a problem in `NP` that pass a polynomial-time test
+form a problem in `NP`. -/
+theorem mem_NP_of_guard {L : Set α} {c : α → Bool} (hc : ComputableInPolyTime c enc encBool)
+    (hA : A ∈ NP enc) (h : ∀ a, a ∈ L ↔ c a = true ∧ a ∈ A) : L ∈ NP enc :=
+  (Set.ext h : L = {a | c a = true} ∩ A) ▸ inter_mem_NP (P_subset_NP ⟨c, hc, fun _ => Iff.rfl⟩) hA
 
 /-- `coNP` is closed under intersection. -/
 theorem inter_mem_coNP (hA : A ∈ coNP enc) (hB : B ∈ coNP enc) : A ∩ B ∈ coNP enc :=

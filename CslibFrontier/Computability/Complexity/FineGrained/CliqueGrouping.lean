@@ -126,11 +126,11 @@ namespace GroupClique
 /-- Reduction graph paired with clique target `r` using an explicit code bound `bound`. -/
 @[expose] def graphOfBound (r : ℕ) (φ : CNF ℕ) (bound : ℕ) : Graph × ℕ :=
   if r == 0 then
-    (([], []), 1)
+    (⟨[], []⟩, 1)
   else if !φ.all (fun c => decide (c.length ≤ 3)) then
-    (([], []), r)
+    (⟨[], []⟩, r)
   else
-    ((verticesOfBound r φ bound, edgesOfBound r φ bound), r)
+    (⟨verticesOfBound r φ bound, edgesOfBound r φ bound⟩, r)
 
 end GroupClique
 
@@ -300,7 +300,7 @@ theorem groupClique_snd {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
 /-- Vertex list length bound: `|V(SAT.groupClique r φ)| ≤ r * 2 ^ (3 * ⌈|φ| / r⌉)`. -/
 theorem length_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
     let graph := (groupClique r φ).1
-    let verts := graph.1
+    let verts := graph.vertices
     verts.length ≤ r * 2 ^ (3 * ((φ.length + r - 1) / r)) := by
   dsimp only
   rw [groupClique, GroupClique.graphOfBound]
@@ -326,7 +326,7 @@ theorem length_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
 /-- Vertex finset cardinality bound for `SAT.groupClique r φ`. -/
 theorem card_groupClique_vertices_le (r : ℕ) (φ : CNF ℕ) :
     let graph := (groupClique r φ).1
-    let verts := graph.1
+    let verts := graph.vertices
     verts.toFinset.card ≤ r * 2 ^ (3 * ((φ.length + r - 1) / r)) :=
   le_trans (List.toFinset_card_le _) (length_groupClique_vertices_le r φ)
 
@@ -340,8 +340,8 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
       simpa only [List.all_eq_true, decide_eq_true_eq] using h3bool
     have hnot : (!φ.all fun c => decide (c.length ≤ 3)) = false := by simp [h3bool]
     have hgrp : groupClique r φ =
-        ((GroupClique.verticesOfBound r φ (2 ^ (3 * GroupClique.blockSize φ r)),
-          GroupClique.edgesOfBound r φ (2 ^ (3 * GroupClique.blockSize φ r))), r) := by
+        (⟨GroupClique.verticesOfBound r φ (2 ^ (3 * GroupClique.blockSize φ r)),
+          GroupClique.edgesOfBound r φ (2 ^ (3 * GroupClique.blockSize φ r))⟩, r) := by
       simp [groupClique, GroupClique.graphOfBound, hr0, hnot]
     rw [hgrp, mem_Clique_iff]
     set bound := 2 ^ (3 * GroupClique.blockSize φ r)
@@ -521,7 +521,7 @@ theorem groupClique_mem_Clique_iff {r : ℕ} (hr : 1 ≤ r) (φ : CNF ℕ) :
       cases h : φ.all fun c => decide (c.length ≤ 3)
       · rfl
       · exfalso; exact h3bool h
-    have hgrp : groupClique r φ = (([], []), r) := by
+    have hgrp : groupClique r φ = (⟨[], []⟩, r) := by
       simp [groupClique, GroupClique.graphOfBound, hr0, hnot]
     rw [hgrp, mem_Clique_iff]
     constructor
@@ -825,23 +825,19 @@ private theorem computableInPolyTime_graphOfBound :
   have hmain :
       ComputableInPolyTime
         (fun p : (ℕ × CNF ℕ) × ℕ =>
-          ((GroupClique.verticesOfBound p.1.1 p.1.2 p.2,
-            GroupClique.edgesOfBound p.1.1 p.1.2 p.2), p.1.1))
+          (⟨GroupClique.verticesOfBound p.1.1 p.1.2 p.2,
+            GroupClique.edgesOfBound p.1.1 p.1.2 p.2⟩, p.1.1))
         encIn (encPair encGraph encNat) :=
     ComputableInPolyTime.prod
-      (ComputableInPolyTime.of_enc_eq
-        (ComputableInPolyTime.prod
-          computableInPolyTime_verticesOfBound
-          computableInPolyTime_edgesOfBound)
-        fun _ => rfl)
+      (encGraph_mk_polyTime computableInPolyTime_verticesOfBound computableInPolyTime_edgesOfBound)
       (ComputableInPolyTime.unary_to_binary.comp hr)
   have hbad3 :
-      ComputableInPolyTime (fun p : (ℕ × CNF ℕ) × ℕ => (([], []), p.1.1))
+      ComputableInPolyTime (fun p : (ℕ × CNF ℕ) × ℕ => (⟨[], []⟩, p.1.1))
         encIn (encPair encGraph encNat) :=
-    ComputableInPolyTime.prod (ComputableInPolyTime.const ([], []))
+    ComputableInPolyTime.prod (ComputableInPolyTime.const (⟨[], []⟩ : Graph))
       (ComputableInPolyTime.unary_to_binary.comp hr)
   refine ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hr0)
-    (ComputableInPolyTime.const (([], []), 1)) ?_
+    (ComputableInPolyTime.const ((⟨[], []⟩, 1) : Graph × ℕ)) ?_
   exact ComputableInPolyTime.ite_decide (by simpa only [Bool.decide_eq_true] using hnot3)
     hbad3 hmain
 

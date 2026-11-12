@@ -61,7 +61,7 @@ private theorem occurrences_finBody (r : Rel) (n : ℕ) :
 
 private theorem incidenceGraph_finBody (r : Rel) (n : ℕ) :
     incidenceGraph (finBody r n) = starGraph n := by
-  apply Prod.ext
+  apply Graph.ext
   · rw [incidenceGraph_vertices, numVars_finBody]
     rfl
   · rw [incidenceGraph_edges, occurrences_finBody, distinctVars_finBody, numVars_finBody,

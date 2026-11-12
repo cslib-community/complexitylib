@@ -78,7 +78,7 @@ namespace WeightedGraph
 
 /-- Forget the integer weights of a `WeightedGraph` to obtain its underlying `Graph`. -/
 abbrev toGraph (WG : WeightedGraph) : Graph :=
-  (WG.vertices, WG.edges.map fun e => (e.u, e.v))
+  ⟨WG.vertices, WG.edges.map fun e => (e.u, e.v)⟩
 
 /-- Total integer weight assigned by `WG` to the unordered pair of distinct vertices `u ≠ v`
 (`0` when `u = v`). -/
@@ -133,7 +133,7 @@ private theorem pairWeight_eq_zero_of_not_adj {WG : WeightedGraph}
   by_cases huv : u.1 = v.1
   · simp [pairWeight, huv]
   · simp only [pairWeight, huv, ↓reduceIte]
-    have hnot : (u.1, v.1) ∉ WG.toGraph.2 ∧ (v.1, u.1) ∉ WG.toGraph.2 := by
+    have hnot : (u.1, v.1) ∉ WG.toGraph.edges ∧ (v.1, u.1) ∉ WG.toGraph.edges := by
       have : ¬ WG.toGraph.toSimpleGraph.Adj u.1 v.1 := hnadj
       rw [Graph.toSimpleGraph_adj] at this
       tauto
@@ -216,8 +216,7 @@ theorem computableInPolyTime_toGraph :
       encWeightedGraph (encList (encPair encNat encNat)) := by
     refine ComputableInPolyTime.mapWithInput (by fun_prop) ?_
     fun_prop
-  unfold toGraph encGraph
-  exact ComputableInPolyTime.pair h1 h2
+  exact encGraph_mk_polyTime h1 h2
 
 @[fun_prop]
 theorem computableInPolyTime_pairWeight :

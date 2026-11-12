@@ -18,7 +18,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 
 /-!
@@ -555,17 +554,16 @@ theorem SolvesWithErrorInExpTime.GapKSAT_perfect_of_KSAT {k : ℕ} {s : ℝ} (hs
 
 /-! ### 4. `gapSatExponent`, `rGapSatExponent`, `GapETH`, and `rGapETH` -/
 
-/-- **Deterministic gap `k`-SAT exponent (`gapSatExponent P`)**: infimum of `δ ≥ 0` such that
-`GapKSAT P` is deterministically solvable within time `2 ^ (δ * n) * poly(L)`. -/
+/-- **Deterministic gap `k`-SAT exponent (`gapSatExponent P`)**: infimum (`Cslib.rateExponent`) of
+`δ ≥ 0` such that `GapKSAT P` is deterministically solvable within time `2 ^ (δ * n) * poly(L)`. -/
 @[expose] noncomputable def gapSatExponent (P : GapKSATSpec) : ℝ :=
-  sInf {δ : ℝ | 0 ≤ δ ∧ SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ}
+  rateExponent (SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars)
 
-/-- **Randomized gap `k`-SAT exponent (`rGapSatExponent P`)**: infimum of `δ ≥ 0` such that
-`GapKSAT P` is solvable with two-sided bounded error (`1 / 3`) within time
+/-- **Randomized gap `k`-SAT exponent (`rGapSatExponent P`)**: infimum (`Cslib.rateExponent`) of
+`δ ≥ 0` such that `GapKSAT P` is solvable with two-sided bounded error (`1 / 3`) within time
 `2 ^ (δ * n) * poly(L)`. -/
 @[expose] noncomputable def rGapSatExponent (P : GapKSATSpec) : ℝ :=
-  sInf {δ : ℝ | 0 ≤ δ ∧
-    SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ}
+  rateExponent (SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars)
 
 /-- **Gap Exponential Time Hypothesis (`GapETH`) variant**: this adaptation posits that
 for some soundness threshold `0 ≤ s < 1` and rate `δ > 0`, `GapThreeSAT s` cannot be solved
@@ -590,69 +588,34 @@ states the approximation ETHA formulation. -/
 
 /-- **Threshold invariance of `rGapSatExponent`.** Any `ε ∈ (0, 1 / 2)` yields the exact same
 infimum exponent `rGapSatExponent P`. -/
-theorem rGapSatExponent_eq_sInf_twoSided (P : GapKSATSpec) {ε : ℝ} (h0 : 0 < ε)
+theorem rGapSatExponent_eq_rateExponent_twoSided (P : GapKSATSpec) {ε : ℝ} (h0 : 0 < ε)
     (h1 : ε < 1 / 2) :
-    rGapSatExponent P = sInf {δ : ℝ | 0 ≤ δ ∧
-      SolvesWithErrorInExpTime (GapKSAT P) encCNF
-        (ErrorModel.twoSided ε h0.le h1) CNF.numVars δ} := by
-  rw [rGapSatExponent]
-  congr 1
-  ext δ
-  exact and_congr_right fun _ => solvesWithErrorInExpTime_twoSided_iff
-    (by norm_num) (by norm_num) h0 h1
-
-private theorem bddBelow_gapSatExponents (P : GapKSATSpec) :
-    BddBelow {δ : ℝ | 0 ≤ δ ∧ SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ} :=
-  ⟨0, fun _ h => h.1⟩
-
-private theorem nonempty_gapSatExponents (P : GapKSATSpec) :
-    {δ : ℝ | 0 ≤ δ ∧ SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ}.Nonempty :=
-  ⟨1, zero_le_one, GapKSAT_solvesPromiseInExpTime_one P⟩
-
-private theorem bddBelow_rGapSatExponents (P : GapKSATSpec) :
-    BddBelow {δ : ℝ | 0 ≤ δ ∧
-      SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ} :=
-  ⟨0, fun _ h => h.1⟩
-
-private theorem nonempty_rGapSatExponents (P : GapKSATSpec) :
-    {δ : ℝ | 0 ≤ δ ∧
-      SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ}.Nonempty :=
-  ⟨1, zero_le_one, GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded⟩
+    rGapSatExponent P = rateExponent (SolvesWithErrorInExpTime (GapKSAT P) encCNF
+      (ErrorModel.twoSided ε h0.le h1) CNF.numVars) :=
+  congrArg rateExponent <| funext fun _ =>
+    propext (solvesWithErrorInExpTime_twoSided_iff (by norm_num) (by norm_num) h0 h1)
 
 theorem gapSatExponent_nonneg (P : GapKSATSpec) : 0 ≤ gapSatExponent P :=
-  le_csInf (nonempty_gapSatExponents P) fun _ h => h.1
+  rateExponent_nonneg _
 
 theorem rGapSatExponent_nonneg (P : GapKSATSpec) : 0 ≤ rGapSatExponent P :=
-  le_csInf (nonempty_rGapSatExponents P) fun _ h => h.1
+  rateExponent_nonneg _
 
 theorem gapSatExponent_le {P : GapKSATSpec} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ) :
     gapSatExponent P ≤ δ :=
-  csInf_le (bddBelow_gapSatExponents P) ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 theorem rGapSatExponent_le {P : GapKSATSpec} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ) :
     rGapSatExponent P ≤ δ :=
-  csInf_le (bddBelow_rGapSatExponents P) ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 theorem gapSatExponent_le_one (P : GapKSATSpec) : gapSatExponent P ≤ 1 :=
-  gapSatExponent_le zero_le_one (GapKSAT_solvesPromiseInExpTime_one P)
+  rateExponent_le_one (GapKSAT_solvesPromiseInExpTime_one P)
 
 theorem rGapSatExponent_le_one (P : GapKSATSpec) : rGapSatExponent P ≤ 1 :=
-  rGapSatExponent_le zero_le_one (GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded)
-
-/-- `gapSatExponent P` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem gapSatExponent_eq_sInf_pos (P : GapKSATSpec) :
-    gapSatExponent P =
-      sInf {δ : ℝ | 0 < δ ∧ SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle) (GapKSAT_solvesPromiseInExpTime_one P)
-
-/-- `rGapSatExponent P` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem rGapSatExponent_eq_sInf_pos (P : GapKSATSpec) :
-    rGapSatExponent P = sInf {δ : ℝ | 0 < δ ∧
-      SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle)
-    (GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded)
+  rateExponent_le_one (GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded)
 
 theorem gapSatExponent_zero_eq_zero {P : GapKSATSpec} (h0 : P.width = 0) :
     gapSatExponent P = 0 :=
@@ -663,30 +626,42 @@ theorem gapSatExponent_zero_eq_zero {P : GapKSATSpec} (h0 : P.width = 0) :
 theorem not_solvesPromiseInExpTime_of_lt_gapSatExponent {P : GapKSATSpec} {δ : ℝ}
     (hδ₀ : 0 ≤ δ) (hδ : δ < gapSatExponent P) :
     ¬SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ :=
-  fun h => (gapSatExponent_le hδ₀ h).not_gt hδ
+  not_of_lt_rateExponent hδ₀ hδ
 
 theorem le_gapSatExponent_of_not_solvesPromiseInExpTime {P : GapKSATSpec} {δ : ℝ}
     (h : ¬SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ) :
     δ ≤ gapSatExponent P :=
-  le_csInf (nonempty_gapSatExponents P) fun _ h' =>
-    le_of_not_gt fun hlt => h (h'.2.mono hlt.le)
+  le_rateExponent (fun _ _ hle h => h.mono hle) (GapKSAT_solvesPromiseInExpTime_one P) h
 
 theorem not_solvesWithErrorInExpTime_of_lt_rGapSatExponent {P : GapKSATSpec} {δ : ℝ}
     (hδ₀ : 0 ≤ δ) (hδ : δ < rGapSatExponent P) :
     ¬SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ :=
-  fun h => (rGapSatExponent_le hδ₀ h).not_gt hδ
+  not_of_lt_rateExponent hδ₀ hδ
 
 theorem le_rGapSatExponent_of_not_solvesWithErrorInExpTime {P : GapKSATSpec} {δ : ℝ}
     (h : ¬SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ) :
     δ ≤ rGapSatExponent P :=
-  le_csInf (nonempty_rGapSatExponents P) fun _ h' =>
-    le_of_not_gt fun hlt => h (h'.2.mono hlt.le)
+  le_rateExponent (fun _ _ hle h => h.mono hle)
+    (GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded) h
+
+/-- `gapSatExponent P` is positive iff `GapKSAT P` is not solvable at some positive rate. -/
+theorem gapSatExponent_pos_iff (P : GapKSATSpec) :
+    0 < gapSatExponent P ↔ ∃ δ, 0 < δ ∧ ¬SolvesPromiseInExpTime (GapKSAT P) encCNF CNF.numVars δ :=
+  rateExponent_pos_iff (fun _ _ hle h => h.mono hle) (GapKSAT_solvesPromiseInExpTime_one P)
+
+/-- `rGapSatExponent P` is positive iff `GapKSAT P` is not solvable with bounded error at some
+positive rate. -/
+theorem rGapSatExponent_pos_iff (P : GapKSATSpec) :
+    0 < rGapSatExponent P ↔ ∃ δ, 0 < δ ∧
+      ¬SolvesWithErrorInExpTime (GapKSAT P) encCNF ErrorModel.bounded CNF.numVars δ :=
+  rateExponent_pos_iff (fun _ _ hle h => h.mono hle)
+    (GapKSAT_solvesWithErrorInExpTime_one P ErrorModel.bounded)
 
 /-- **Randomized vs. deterministic gap exponents (`rGapSatExponent P ≤ gapSatExponent P`).** -/
 theorem rGapSatExponent_le_gapSatExponent (P : GapKSATSpec) :
     rGapSatExponent P ≤ gapSatExponent P :=
-  le_csInf (nonempty_gapSatExponents P) fun _ ⟨hδ, h⟩ =>
-    rGapSatExponent_le hδ (h.solvesWithErrorInExpTime hδ ErrorModel.bounded)
+  rateExponent_le_rateExponent (GapKSAT_solvesPromiseInExpTime_one P) fun _ hδ h =>
+    h.solvesWithErrorInExpTime hδ ErrorModel.bounded
 
 /-- **Parameter monotonicity of `gapSatExponent`**: increasing clause width (`width₁ ≤ width₂`) or
 narrowing the gap (`completeness₂ ≤ completeness₁`, `soundness₁ ≤ soundness₂`) cannot decrease
@@ -695,7 +670,7 @@ theorem gapSatExponent_mono {P₁ P₂ : GapKSATSpec} (hw : P₁.width ≤ P₂.
     (hc : P₂.completeness ≤ P₁.completeness) (hs : P₁.soundness ≤ P₂.soundness) :
     gapSatExponent P₁ ≤ gapSatExponent P₂ := by
   obtain ⟨hyes, hno⟩ := GapKSAT_subset_of_le hw hc hs
-  refine le_csInf (nonempty_gapSatExponents P₂) fun δ ⟨hδ, h⟩ => gapSatExponent_le hδ ?_
+  refine rateExponent_le_rateExponent (GapKSAT_solvesPromiseInExpTime_one P₂) fun δ hδ h => ?_
   simpa only [Nat.cast_one, one_mul] using
     h.of_promiseReduction ComputableInPolyTime.id' (fun _ hφ => hyes hφ) (fun _ hφ => hno hφ)
       (c := 1) (fun _ => by omega) hδ
@@ -705,7 +680,8 @@ theorem rGapSatExponent_mono {P₁ P₂ : GapKSATSpec} (hw : P₁.width ≤ P₂
     (hc : P₂.completeness ≤ P₁.completeness) (hs : P₁.soundness ≤ P₂.soundness) :
     rGapSatExponent P₁ ≤ rGapSatExponent P₂ := by
   obtain ⟨hyes, hno⟩ := GapKSAT_subset_of_le hw hc hs
-  refine le_csInf (nonempty_rGapSatExponents P₂) fun δ ⟨hδ, h⟩ => rGapSatExponent_le hδ ?_
+  refine rateExponent_le_rateExponent (GapKSAT_solvesWithErrorInExpTime_one P₂ ErrorModel.bounded)
+    fun δ hδ h => ?_
   simpa only [Nat.cast_one, one_mul] using
     h.of_promiseReduction ComputableInPolyTime.id' (fun _ hφ => hyes hφ) (fun _ hφ => hno hφ)
       (c := 1) (fun _ => by omega) hδ
@@ -713,17 +689,14 @@ theorem rGapSatExponent_mono {P₁ P₂ : GapKSATSpec} (hw : P₁.width ≤ P₂
 /-- At perfect completeness `1`, `gapSatExponent` is bounded above by `satExponent k`. -/
 theorem gapSatExponent_perfect_le_satExponent (k : ℕ) {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s < 1) :
     gapSatExponent (GapKSATSpec.perfect k s hs0 hs1) ≤ satExponent k :=
-  le_csInf ⟨1, zero_le_one, KSAT_decidableInExpTime_one k⟩ fun _ ⟨hδ, h⟩ =>
-    gapSatExponent_le hδ (.GapKSAT_perfect_of_KSAT hs0 hs1 hδ h)
+  rateExponent_le_rateExponent (KSAT_decidableInExpTime_one k) fun _ hδ h =>
+    .GapKSAT_perfect_of_KSAT hs0 hs1 hδ h
 
 /-- At perfect completeness `1`, `rGapSatExponent` is bounded above by `rSatExponent k`. -/
 theorem rGapSatExponent_perfect_le_rSatExponent (k : ℕ) {s : ℝ} (hs0 : 0 ≤ s) (hs1 : s < 1) :
     rGapSatExponent (GapKSATSpec.perfect k s hs0 hs1) ≤ rSatExponent k :=
-  le_csInf
-    ⟨1, zero_le_one,
-      (solvesPromiseInExpTime_ofSet_iff.mpr
-        (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.bounded⟩
-    fun _ ⟨hδ, h⟩ => rGapSatExponent_le hδ (.GapKSAT_perfect_of_KSAT hs0 hs1 hδ h)
+  rateExponent_le_rateExponent (KSAT_solvesWithErrorInExpTime_one k ErrorModel.bounded)
+    fun _ hδ h => .GapKSAT_perfect_of_KSAT hs0 hs1 hδ h
 
 /-! ### 5. Characterizations and conditional hierarchy for `GapETH` and `rGapETH` -/
 
@@ -743,32 +716,18 @@ theorem rGapETH_iff_not_forall_solvesWithErrorInSubexpTime :
 theorem GapETH_iff_exists_gapSatExponent_pos :
     GapETH ↔
       ∃ (s : ℝ) (hs0 : 0 ≤ s) (hs1 : s < 1),
-        0 < gapSatExponent (GapKSATSpec.perfectThree s hs0 hs1) := by
-  constructor
-  · rintro ⟨s, hs0, hs1, δ, hδ, hnot⟩
-    refine ⟨s, hs0, hs1, hδ.trans_le ?_⟩
-    exact le_gapSatExponent_of_not_solvesPromiseInExpTime hnot
-  · rintro ⟨s, hs0, hs1, hpos⟩
-    refine ⟨s, hs0, hs1, gapSatExponent (GapKSATSpec.perfectThree s hs0 hs1) / 2,
-      half_pos hpos, ?_⟩
-    exact not_solvesPromiseInExpTime_of_lt_gapSatExponent
-      (half_pos hpos).le (half_lt_self hpos)
+        0 < gapSatExponent (GapKSATSpec.perfectThree s hs0 hs1) :=
+  exists_congr fun _ => ⟨fun ⟨hs0, hs1, h⟩ => ⟨hs0, hs1, (gapSatExponent_pos_iff _).2 h⟩,
+    fun ⟨hs0, hs1, h⟩ => ⟨hs0, hs1, (gapSatExponent_pos_iff _).1 h⟩⟩
 
 /-- `rGapETH` holds iff `rGapSatExponent (GapKSATSpec.perfectThree s hs0 hs1) > 0` for some
 `0 ≤ s < 1`. -/
 theorem rGapETH_iff_exists_rGapSatExponent_pos :
     rGapETH ↔
       ∃ (s : ℝ) (hs0 : 0 ≤ s) (hs1 : s < 1),
-        0 < rGapSatExponent (GapKSATSpec.perfectThree s hs0 hs1) := by
-  constructor
-  · rintro ⟨s, hs0, hs1, δ, hδ, hnot⟩
-    refine ⟨s, hs0, hs1, hδ.trans_le ?_⟩
-    exact le_rGapSatExponent_of_not_solvesWithErrorInExpTime hnot
-  · rintro ⟨s, hs0, hs1, hpos⟩
-    refine ⟨s, hs0, hs1, rGapSatExponent (GapKSATSpec.perfectThree s hs0 hs1) / 2,
-      half_pos hpos, ?_⟩
-    exact not_solvesWithErrorInExpTime_of_lt_rGapSatExponent
-      (half_pos hpos).le (half_lt_self hpos)
+        0 < rGapSatExponent (GapKSATSpec.perfectThree s hs0 hs1) :=
+  exists_congr fun _ => ⟨fun ⟨hs0, hs1, h⟩ => ⟨hs0, hs1, (rGapSatExponent_pos_iff _).2 h⟩,
+    fun ⟨hs0, hs1, h⟩ => ⟨hs0, hs1, (rGapSatExponent_pos_iff _).1 h⟩⟩
 
 /-- **Threshold invariance of `rGapETH`.** Replacing `ErrorModel.bounded` (`1 / 3`) by any two-sided
 error `ε ∈ (0, 1 / 2)` gives an equivalent hypothesis. -/

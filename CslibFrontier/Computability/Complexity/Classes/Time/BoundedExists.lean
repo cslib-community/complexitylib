@@ -7,7 +7,9 @@ Authors: Samuel Schlesinger, Erik Demaine
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+public import CslibFrontier.Foundations.Data.BitString.Enumeration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BoundedSearch
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -34,14 +36,8 @@ time is the point: this brute force is the last step of lazy diagonalization for
 nondeterministic time, which must decide deterministically whether some certificate is
 accepted.
 
-## Main definitions
-
-* `Cslib.Complexity.boundedExistsEdge`: the edges of the two-step reachability problem.
-
 ## Main results
 
-* `Cslib.Complexity.savitch_boundedExistsEdge`: Savitch's algorithm at depth `1` on these edges
-  decides the bounded existential.
 * `Cslib.Complexity.exists_computableInO_any_enumList`: the bounded existential within time and
   space `2 ^ O(|x| + ℓ x)`.
 -/
@@ -51,40 +47,6 @@ public section
 namespace Cslib.Complexity
 
 open _root_.Turing _root_.Turing.MultiTapeTM
-
-/-- The edges of the graph on words of width `n + 1` whose reachability within two steps from the
-all-zero word to the all-one word is a bounded existential over `f`: an edge from the all-zero word
-to `true :: w` when `f (x, w)`, and from every word starting with `true` to the all-one word. -/
-@[expose] def boundedExistsEdge {β : Type} (f : β × List Bool → Bool) (x : β) (u v : List Bool) :
-    Bool :=
-  if !(u.any fun b => b) && v.headD false then f (x, v.tail)
-  else u.headD false && !(v.any fun b => !b)
-
-/-- Savitch's algorithm at depth `1` on the edges of `Cslib.Complexity.boundedExistsEdge` decides
-the bounded existential. -/
-theorem savitch_boundedExistsEdge {β : Type} (f : β × List Bool → Bool) (x : β) (n : ℕ) :
-    Cslib.Reachability.savitch (boundedExistsEdge f x) (n + 1) 1 (List.replicate (n + 1) false)
-      (List.replicate (n + 1) true) = true ↔ ∃ w : List Bool, w.length = n ∧ f (x, w) = true := by
-  rw [Cslib.Reachability.savitch_eq]
-  simp only [Cslib.Reachability.reach, List.any_eq_true, Cslib.BitString.mem_enumList,
-    Bool.and_eq_true, Bool.or_eq_true, decide_eq_true_eq]
-  constructor
-  · rintro ⟨m, hm, h₁ | h₁, h₂ | h₂⟩
-    · subst h₁
-      exact absurd h₂ (by simp [List.replicate_succ])
-    · subst h₁
-      refine ⟨List.replicate n true, List.length_replicate .., ?_⟩
-      simpa [boundedExistsEdge, List.replicate_succ] using h₂
-    · subst h₂
-      refine ⟨List.replicate n true, List.length_replicate .., ?_⟩
-      simpa [boundedExistsEdge, List.replicate_succ] using h₁
-    · obtain ⟨b, w, rfl⟩ := List.exists_cons_of_length_eq_add_one hm
-      refine ⟨w, by simpa using hm, ?_⟩
-      cases b <;> simp_all [boundedExistsEdge, List.replicate_succ]
-  · rintro ⟨w, hw, hf⟩
-    refine ⟨true :: w, by simp [hw], Or.inr ?_, Or.inr ?_⟩
-    · simp [boundedExistsEdge, List.replicate_succ, hf]
-    · simp [boundedExistsEdge, List.replicate_succ]
 
 attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd'
     ComputableInPolyTime.bool_and' in

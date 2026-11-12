@@ -32,7 +32,7 @@ open CSP
 variable {G : Graph}
 
 /-- A vertex's choice constraint is at its position in the distinct vertex list. -/
-theorem getElem_matchingInstance_vertex {v : ℕ} (hv : v ∈ G.1) :
+theorem getElem_matchingInstance_vertex {v : ℕ} (hv : v ∈ G.vertices) :
     G.matchingInstance[G.distinctVertices.idxOf v]'(by
       have := List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)
       simp only [matchingInstance, List.length_append, List.length_map]
@@ -40,7 +40,7 @@ theorem getElem_matchingInstance_vertex {v : ℕ} (hv : v ∈ G.1) :
   simp [matchingInstance, List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)]
 
 /-- The unary false pin follows all choice constraints in distinct vertex order. -/
-theorem getElem_matchingInstance_pin {v : ℕ} (hv : v ∈ G.1) :
+theorem getElem_matchingInstance_pin {v : ℕ} (hv : v ∈ G.vertices) :
     G.matchingInstance[G.distinctVertices.length + G.distinctVertices.idxOf v]'(by
       have := List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)
       simp only [matchingInstance, List.length_append, List.length_map]
@@ -48,7 +48,7 @@ theorem getElem_matchingInstance_pin {v : ℕ} (hv : v ∈ G.1) :
   simp [matchingInstance]
 
 /-- The actual choice incidence of the variable `x` at vertex `v`. -/
-@[expose] def choiceOccurrence (G : Graph) (v : ℕ) (hv : v ∈ G.1) (x : ℕ)
+@[expose] def choiceOccurrence (G : Graph) (v : ℕ) (hv : v ∈ G.vertices) (x : ℕ)
     (hx : x ∈ G.matchingScope v) : Occurrence G.matchingInstance :=
   ⟨⟨G.distinctVertices.idxOf v, by
       have := List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)
@@ -58,25 +58,26 @@ theorem getElem_matchingInstance_pin {v : ℕ} (hv : v ∈ G.1) :
       simpa only [getElem_matchingInstance_vertex hv] using List.idxOf_lt_length_iff.mpr hx⟩⟩
 
 /-- Choice incidence reads its supplied original variable. -/
-@[simp] theorem var_choiceOccurrence (v : ℕ) (hv : v ∈ G.1) (x : ℕ)
+@[simp] theorem var_choiceOccurrence (v : ℕ) (hv : v ∈ G.vertices) (x : ℕ)
     (hx : x ∈ G.matchingScope v) : (G.choiceOccurrence v hv x hx).var = x := by
   simp [choiceOccurrence, Occurrence.var, getElem_matchingInstance_vertex hv]
 
 /-- The actual false-pin incidence for the private port of `v`. -/
-@[expose] def pinOccurrence (G : Graph) (v : ℕ) (hv : v ∈ G.1) : Occurrence G.matchingInstance :=
+@[expose] def pinOccurrence (G : Graph) (v : ℕ) (hv : v ∈ G.vertices) :
+    Occurrence G.matchingInstance :=
   ⟨⟨G.distinctVertices.length + G.distinctVertices.idxOf v, by
       have := List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)
       simp only [matchingInstance, List.length_append, List.length_map]
       omega⟩,
     ⟨0, by simp only [getElem_matchingInstance_pin hv, List.length_singleton]; omega⟩⟩
 
-@[simp] theorem var_pinOccurrence (v : ℕ) (hv : v ∈ G.1) :
+@[simp] theorem var_pinOccurrence (v : ℕ) (hv : v ∈ G.vertices) :
     (G.pinOccurrence v hv).var = 2 * v + 1 := by
   simp [pinOccurrence, Occurrence.var, getElem_matchingInstance_pin hv]
 
 /-- Every valid generated labeling labels each private port's pin false. -/
 theorem pinOccurrence_false {f : OccurrenceLabeling G.matchingInstance Bool}
-    (hf : ValidLabeling Table.sem f) (v : ℕ) (hv : v ∈ G.1) :
+    (hf : ValidLabeling Table.sem f) (v : ℕ) (hv : v ∈ G.vertices) :
     f (G.pinOccurrence v hv) = false := by
   have hh := hf (G.pinOccurrence v hv).1
   have he : localTuple f (G.pinOccurrence v hv).1 = [f (G.pinOccurrence v hv)] := by
@@ -96,7 +97,7 @@ theorem pinOccurrence_false {f : OccurrenceLabeling G.matchingInstance Bool}
 
 /-- Unary pins prevent every private unmatched port from being mutually selected. -/
 theorem not_selected_private {f : OccurrenceLabeling G.matchingInstance Bool}
-    (hf : ValidLabeling Table.sem f) (v : ℕ) (hv : v ∈ G.1) :
+    (hf : ValidLabeling Table.sem f) (v : ℕ) (hv : v ∈ G.vertices) :
     2 * v + 1 ∉ selectedVariables f := by
   intro hs
   have hh := (mem_selectedVariables.mp hs).2 (G.pinOccurrence v hv) (var_pinOccurrence v hv)
@@ -105,7 +106,7 @@ theorem not_selected_private {f : OccurrenceLabeling G.matchingInstance Bool}
 
 /-- Two true ports in one choice constraint name the same variable. -/
 theorem choice_unique {f : OccurrenceLabeling G.matchingInstance Bool}
-    (hf : ValidLabeling Table.sem f) (v : ℕ) (hv : v ∈ G.1) (x y : ℕ)
+    (hf : ValidLabeling Table.sem f) (v : ℕ) (hv : v ∈ G.vertices) (x y : ℕ)
     (hx : x ∈ G.matchingScope v) (hy : y ∈ G.matchingScope v)
     (hfx : f (G.choiceOccurrence v hv x hx) = true)
     (hfy : f (G.choiceOccurrence v hv y hy) = true) : x = y := by

@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Reduction
 import CslibFrontier.Computability.Complexity.Classes.PH.Projection
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Foundations.Data.List.TakeQuantifiers
 
 /-!
 # Reduction and bounded-quantifier closure of the polynomial hierarchy
@@ -37,6 +38,9 @@ under universal quantification (`Cslib.Complexity.mem_PiP_of_forall_length`).
   quantification of computed unary polynomial-time length.
 * `Cslib.Complexity.mem_PiP_of_forall_length`: `Πₖ` (`k ≥ 1`) is closed under universal
   quantification of computed unary polynomial-time length.
+* `Cslib.Complexity.mem_SigmaP_of_exists_append`, `Cslib.Complexity.mem_PiP_of_forall_append`: the
+  same quantifiers on pairs `(a, s)`, extending the word `s` in place, so that nested quantifier
+  blocks stay on one pair type.
 
 ## References
 
@@ -99,15 +103,7 @@ theorem mem_SigmaP_of_exists_length (hk : 1 ≤ k) {N : α → ℕ}
       fun _ => Iff.rfl⟩
   convert mem_SigmaP_of_exists hk (hred.mem_SigmaP hC) p using 1
   ext a
-  have hle : N a ≤ p.eval (enc a).length := hp a
-  simp only [Set.mem_ofPred_eq, C']
-  constructor
-  · rintro ⟨u, hu, huC⟩
-    refine ⟨u ++ List.replicate (p.eval (enc a).length - N a) false,
-      by rw [List.length_append, List.length_replicate, hu, Nat.add_sub_cancel' hle], ?_⟩
-    rwa [← hu, List.take_left]
-  · rintro ⟨w, hw, hwC⟩
-    exact ⟨w.take (N a), by rw [List.length_take, hw, Nat.min_eq_left hle], hwC⟩
+  exact (List.exists_length_eq_take_iff (P := fun u => (a, u) ∈ C) (hp a)).symm
 
 /-- **`Πₖ` is closed under universal quantification of computed unary polynomial-time length**,
 for `k ≥ 1`, by quantifier duality from `Cslib.Complexity.mem_SigmaP_of_exists_length`. -/
@@ -119,5 +115,32 @@ theorem mem_PiP_of_forall_length (hk : 1 ≤ k) {N : α → ℕ}
   convert compl_mem_PiP_of_mem_SigmaP hex using 1
   ext a
   simp
+
+/-- Appending a word `u` to the word component of `(a, s)` is polynomial-time. -/
+private theorem polyTimeReducible_append (C : Set (α × List Bool)) :
+    PolyTimeReducible (encPair (encPair enc encBits) encBits) (encPair enc encBits)
+      {x : (α × List Bool) × List Bool | (x.1.1, x.1.2 ++ x.2) ∈ C} C :=
+  ⟨fun x => (x.1.1, x.1.2 ++ x.2), (fst _ _).fst'.prod (bitsAppend (fst _ _).snd' (snd _ _)),
+    fun _ => Iff.rfl⟩
+
+/-- **`Σₖ` on pairs is closed under existentially extending the word**, for `k ≥ 1`: if `C` is in
+`Σₖ`, so is the set of `(a, s)` with some `u` of computed length `N (a, s)` and
+`(a, s ++ u) ∈ C`. -/
+theorem mem_SigmaP_of_exists_append (hk : 1 ≤ k) {N : α × List Bool → ℕ}
+    (hN : ComputableInPolyTime N (encPair enc encBits) encUnary) {C : Set (α × List Bool)}
+    (hC : C ∈ SigmaP k (encPair enc encBits)) :
+    {x : α × List Bool | ∃ u : List Bool, u.length = N x ∧ (x.1, x.2 ++ u) ∈ C} ∈
+      SigmaP k (encPair enc encBits) :=
+  mem_SigmaP_of_exists_length hk hN ((polyTimeReducible_append C).mem_SigmaP hC)
+
+/-- **`Πₖ` on pairs is closed under universally extending the word**, for `k ≥ 1`: if `C` is in
+`Πₖ`, so is the set of `(a, s)` with `(a, s ++ u) ∈ C` for every `u` of computed length
+`N (a, s)`. -/
+theorem mem_PiP_of_forall_append (hk : 1 ≤ k) {N : α × List Bool → ℕ}
+    (hN : ComputableInPolyTime N (encPair enc encBits) encUnary) {C : Set (α × List Bool)}
+    (hC : C ∈ PiP k (encPair enc encBits)) :
+    {x : α × List Bool | ∀ u : List Bool, u.length = N x → (x.1, x.2 ++ u) ∈ C} ∈
+      PiP k (encPair enc encBits) :=
+  mem_PiP_of_forall_length hk hN ((polyTimeReducible_append C).mem_PiP hC)
 
 end Cslib.Complexity

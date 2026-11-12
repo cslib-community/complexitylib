@@ -16,7 +16,7 @@ namespace CslibFrontierTests.RotationIntervalOrder
 
 open Cslib.Complexity Cslib.Complexity.Graph
 
-private abbrev G : Graph := ([9], [(9, 9), (9, 9)])
+private abbrev G : Graph := ⟨[9], [(9, 9), (9, 9)]⟩
 
 private def r : RotationSystem G where
   rotate := ((Dart.indexEquiv G).trans (finRotate 4)).trans (Dart.indexEquiv G).symm
