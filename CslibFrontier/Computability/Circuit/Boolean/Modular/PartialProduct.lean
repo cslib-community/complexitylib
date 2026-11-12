@@ -49,7 +49,8 @@ private def partialProductBit (w : ℕ) (i j : Fin w) : Formula signature (w + w
 def partialProduct (w : ℕ) (i : Fin w) : Circuit signature (w + w) w :=
   Circuit.pi fun j => (partialProductBit w i j).toCircuit
 
-private theorem eval_partialProduct (i j : Fin w) (a b : BitString w) :
+/-- A partial-product bit is one shifted input conjunction, with false boundary padding. -/
+theorem eval_partialProduct (i j : Fin w) (a b : BitString w) :
     (partialProduct w i).eval interpretation (Fin.append a b) j =
       if h : i.val ≤ j.val then a ⟨j.val - i.val, by omega⟩ && b i else false := by
   by_cases h : i.val ≤ j.val

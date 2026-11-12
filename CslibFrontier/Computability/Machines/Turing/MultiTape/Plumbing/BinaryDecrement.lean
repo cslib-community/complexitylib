@@ -121,7 +121,7 @@ theorem runFrom_binaryDecrement {input : List Bool} (ip : Fin (input.length + 2)
 
 /-- The emitted flag detects underflow from the same scan that updates the digits. -/
 theorem BinaryDecrement.underflow_eq (w : List Bool) :
-    !w.contains true = decide (lsbValue w = 0) := by
+    (!w.contains true) = decide (lsbValue w = 0) := by
   by_cases h : true ∈ w
   · have hp := lsbValue_pos_of_true_mem h
     simp [h, Nat.ne_of_gt hp]

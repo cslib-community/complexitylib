@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Local
+public import CslibFrontier.Foundations.Data.BitString.List.Binary
 
 /-!
 # Streamed queries through a complete carry-save tree
@@ -57,6 +58,20 @@ theorem pairVal_tree_mod {w : ℕ} (leaves : List Bool → BitString (w + w))
   | succ n ih =>
     simp only [tree, leafSum, pairVal_eval_csa4to2_mod]
     rw [Nat.add_mod, ih, ih, ← Nat.add_mod]
+
+/-- Binary path indexing enumerates exactly the consecutive leaf interval of a subtree. -/
+theorem leafSum_binaryValue {w : ℕ} (leaves : ℕ → BitString (w + w))
+    (n : ℕ) (path : List Bool) :
+    leafSum (fun p => leaves (binaryValue p)) n path =
+      ∑ j ∈ Finset.range (2 ^ n), pairVal (leaves (binaryValue path * 2 ^ n + j)) := by
+  induction n generalizing path with
+  | zero => simp [leafSum]
+  | succ n ih =>
+    rw [leafSum, ih, ih]
+    simp only [binaryValue_snoc, Bool.toNat_false, Bool.toNat_true, Nat.add_zero]
+    rw [show 2 ^ (n + 1) = 2 ^ n + 2 ^ n by omega, Finset.sum_range_add]
+    congr 1 <;> apply Finset.sum_congr rfl <;> intro j hj <;> congr 2 <;>
+      simp [Nat.mul_add, Nat.add_mul, Nat.mul_comm, Nat.add_assoc, Nat.add_comm, two_mul]
 
 /-- Select one of the two words of a carry-save pair. -/
 def component {w : ℕ} (p : BitString (w + w)) (carry : Bool) : BitString w :=

@@ -1129,6 +1129,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.Query.P
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.IteratedQuery
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Local
+public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.MultiplicationQuery
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce.PolyTime
@@ -3415,7 +3416,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Spac
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Map
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.OutView
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.AppendAtCursor
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrement
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrementFlag
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Branch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ClearShadowed
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.CopyBlock
