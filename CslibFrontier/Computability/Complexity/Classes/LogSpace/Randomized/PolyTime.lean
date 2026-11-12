@@ -29,9 +29,9 @@ deterministic algorithm evaluates it exactly: breadth-first search lists the rea
 (`Turing.MultiTapeNTM.exists_computableInPolyTime_search`), and `t` rounds update a table of
 binary counts, one per view, by adding the counts of the two coin successors. Under a logarithmic
 space bound there are polynomially many views, and every count of round `t` has at most `t + 1`
-bits, so the evaluation runs in polynomial time for any polynomial horizon
-(`Turing.MultiTapePTM.computableInPolyTime_acceptCoins`). Comparing the count at the polynomial
-clock with `2 / 3` of the `2 ^ t` coin strings decides a `BPL` language, so `BPL ⊆ P`
+bits, so the evaluation runs in polynomial time for any horizon computed in unary in polynomial
+time (`Turing.MultiTapePTM.computableInPolyTime_acceptCoins`). Comparing the count at the
+polynomial clock with `2 / 3` of the `2 ^ t` coin strings decides a `BPL` language, so `BPL ⊆ P`
 (`Cslib.Complexity.BPL_subset_P`), and with `Cslib.Complexity.RL_subset_BPL` also `RL ⊆ P`. This
 is a sequential exact evaluation of the configuration matrix, whose powers Borodin, Cook and
 Pippenger evaluate in parallel [Borodin, Cook and Pippenger][BorodinCookPippenger1983].
@@ -51,7 +51,8 @@ The certificates use only the plain polynomial-time calculus.
 * `Turing.MultiTapePTM.acceptCoins_eq_viewAcceptCount`: the count from the initial view is the
   number of accepting coin strings.
 * `Turing.MultiTapePTM.computableInPolyTime_acceptCoins`: under a logarithmic space bound, the
-  number of accepting coin strings is polynomial-time at any polynomial-time horizon.
+  number of accepting coin strings is polynomial-time at any horizon computed in unary in
+  polynomial time.
 * `Cslib.Complexity.BPL_subset_P`, `Cslib.Complexity.RL_subset_P`: randomized logarithmic space is
   within polynomial time.
 
