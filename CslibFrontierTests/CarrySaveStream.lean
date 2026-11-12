@@ -90,6 +90,12 @@ example (path : List Bool) (carry claim : Bool) :
     (leaf_bound false _) 3 [true, true] [false, true]
     path [true, true, true] 0 false carry claim frontier_three (by simp; omega)
 
+private theorem value_true_one (path : List Bool) (carry : Bool) :
+    value (w := 4) (fun _ _ => true) ⟨path, 1, carry, 1⟩ = true := by
+  rw [value_layer (fun _ _ => true) path 0 carry ⟨1, by decide⟩]
+  cases carry <;> simp [CarrySaveLocal.eval_formula, descend, CarrySaveLocal.source,
+    value, component, tree, fstBits, sndBits, Fin.appendEquiv, maj3]
+
 /-- A positive-depth all-ones tree has a true sum bit and a true carry bit at index one.
 Both claims are checked, so this also tests rejection when a true internal value is denied. -/
 example (path : List Bool) (carry claim : Bool) :
@@ -103,10 +109,68 @@ example (path : List Bool) (carry claim : Bool) :
   have h := acceptsWithin_budget (w := 4) (fun _ _ => true) (leaf true) 1
     (path.length + 3) (leaf_bound true _) (leaf_correct true _)
     1 [true] [true] path [true] 0 false carry claim hf (by simp; omega) (by decide) (by decide)
-  have hv : value (w := 4) (fun _ _ => true) ⟨path, 1, carry, 1⟩ = true := by
-    rw [value_layer (fun _ _ => true) path 0 carry ⟨1, by decide⟩]
-    cases carry <;> simp [CarrySaveLocal.eval_formula, descend, CarrySaveLocal.source,
-      value, component, tree, fstBits, sndBits, Fin.appendEquiv, maj3]
+  have hv := value_true_one path carry
   simpa [budget, lsbValue, hv, eq_comm] using h
+
+private noncomputable def sentinelLeaf (_carry claim : Bool) : MultiTapeATM 7 Bool Unit :=
+  ofTMs (fun _ => MultiTapeTM.ofTr () (fun _ _ work =>
+    ⟨0, fun _ => (none, 0), some ((work 6 == some true) == claim), none⟩)) (fun _ => false)
+
+private theorem next_sentinel {T : Type} {input : List Bool} (cfg : Cfg 7 Bool T input)
+    (carry claim move : Bool) (h : cfg.workTapes 6 (cfg.workTapePos 6) = some true) :
+    (sentinelLeaf carry claim).next move (cfg.withState (some ())) =
+      { cfg.withState none with output := cfg.output ++ [claim] } := by
+  rw [sentinelLeaf, next_ofTMs, MultiTapeTM.step_of_state rfl, MultiTapeTM.tr_ofTr]
+  cases claim <;> simp [Action.apply, Cfg.withState, Cfg.workTapeSymbols, h]
+
+private theorem sentinel_bound (scratch : Scratch 1)
+    (h : scratch.tapes 6 (scratch.positions 6) = some true) (sizeBudget : ℕ) :
+    LeafBound sentinelLeaf 1 sizeBudget [] scratch := by
+  intro height bits path unary frontier status carry claim _ _
+  apply haltsWithin_succ.mpr
+  intro move
+  rw [show (sentinelLeaf carry claim).toPTM.toNTM.q₀ = () from rfl,
+    next_sentinel _ carry claim move (by simpa using h)]
+  apply haltsWithin_of_halted
+  rfl
+
+private theorem sentinel_correct (scratch : Scratch 1)
+    (h : scratch.tapes 6 (scratch.positions 6) = some true) (sizeBudget : ℕ) :
+    LeafCorrect (w := 4) (fun _ _ => true) sentinelLeaf 1 sizeBudget [] scratch := by
+  intro height bits path unary frontier status carry claim _ _ hbits
+  rw [acceptsWithin_succ_of_existential _ rfl rfl]
+  simp only [show (sentinelLeaf carry claim).toPTM.toNTM.q₀ = () from rfl]
+  have hn (move : Bool) := next_sentinel
+    (config (input := []) height bits path unary frontier status scratch) carry claim move
+    (by simpa using h)
+  simp only [hn]
+  cases carry <;> cases claim <;>
+    simp [AcceptsWithin, Cfg.withState, value, component, tree, hbits,
+      fstBits, sndBits, Fin.appendEquiv]
+
+/-- A genuine seven-tape leaf reads a true sentinel at an arbitrary private cursor after the
+cyclic controller has run. The private tape's other cells are unrestricted. Both possible claims
+and both compressor outputs are verified within the unchanged forty-two-step bound. -/
+example (scratch : Scratch 1) (h : scratch.tapes 6 (scratch.positions 6) = some true)
+    (path : List Bool) (carry claim : Bool) :
+    ((machine sentinelLeaf carry claim).AcceptsWithin 42
+      ((config (input := []) [true] [true] path [true] 0 false scratch).withState
+        (some (.header carry claim))) ↔ claim = true) ∧
+    (machine sentinelLeaf carry claim).HaltsWithin 42
+      ((config (input := []) [true] [true] path [true] 0 false scratch).withState
+        (some (.header carry claim))) := by
+  have hf : Frontier [true] 0 1 := by
+    intro j
+    rw [zero_add, tapeOfList_ofNat]
+    cases j <;> simp
+  constructor
+  · have ha := acceptsWithin_budget (w := 4) (fun _ _ => true) sentinelLeaf 1
+      (path.length + 3) (sentinel_bound scratch h _) (sentinel_correct scratch h _)
+      1 [true] [true] path [true] 0 false carry claim hf (by simp; omega) (by decide) (by decide)
+    have hv := value_true_one path carry
+    simpa [budget, lsbValue, hv, eq_comm] using ha
+  · simpa [budget] using haltsWithin_budget sentinelLeaf 1 (path.length + 3)
+      (sentinel_bound scratch h _) 1 [true] [true] path [true] 0 false carry claim hf
+      (by simp; omega)
 
 end CslibFrontierTests.CarrySaveStream

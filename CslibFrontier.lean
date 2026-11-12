@@ -2965,7 +2965,9 @@ public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Nativ
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Simulation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.CarrySavePath
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.CarrySaveStream
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Deterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicPhase
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Game
@@ -3457,6 +3459,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Pre
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInput
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInput.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PreparePair
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PreparePath
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareReplay
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ReadInput
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.RepeatUntilBlank
@@ -3753,6 +3756,7 @@ public import CslibFrontier.Computability.PolyTime.CSP.Table
 public import CslibFrontier.Computability.PolyTime.CSP.ToCNF
 public import CslibFrontier.Computability.PolyTime.CSP.Vars
 public import CslibFrontier.Computability.PolyTime.CommonCountingAccum
+public import CslibFrontier.Computability.PolyTime.CountingLeaf
 public import CslibFrontier.Computability.PolyTime.FineGrained.ParameterCheck
 public import CslibFrontier.Computability.PolyTime.GaloisRingArithmetic
 public import CslibFrontier.Computability.PolyTime.GaloisRingArithmetic.FastInverse
