@@ -22,7 +22,10 @@ public import CslibFrontier.Algorithms.LatticeReduction.Reduced
 public import CslibFrontier.Algorithms.Lean.AhoCorasick.Basic
 public import CslibFrontier.Algorithms.Lean.AhoCorasick.KMP
 public import CslibFrontier.Algorithms.Lean.AhoCorasick.Search
+public import CslibFrontier.Algorithms.Lean.Arborescence.Branching
 public import CslibFrontier.Algorithms.Lean.Arborescence.ChuLiuEdmonds
+public import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
+public import CslibFrontier.Algorithms.Lean.Arborescence.Table
 public import CslibFrontier.Algorithms.Lean.Assignment.Auction
 public import CslibFrontier.Algorithms.Lean.Assignment.Basic
 public import CslibFrontier.Algorithms.Lean.BellmanFord.Basic
@@ -4915,6 +4918,7 @@ public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
+public import CslibFrontier.Foundations.Combinatorics.Digraph.Branching
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Connectivity
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.ErdosSzekeres
