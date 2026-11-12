@@ -364,12 +364,102 @@ indices; only actual list lengths fund iteration. See the [graph certificate tes
 and [ordered CSP certificate tests](../../CslibFrontierTests/CSPRotationCertificate.lean).
 
 These are finite encoding and numerical-verification results; the indexed duality and lifting
-theorems below extend their mathematical interface. Geometric realization, identifying the outer
-face across disconnected components and bare-instance recognition/construction remain open.
+theorems below extend their mathematical interface. The guarded candidate constructor below
+adds success soundness. Geometric realization, identifying the outer face across disconnected
+components and complete bare-instance recognition/construction remain open.
 The complete explicit-table edge solver is documented below. Exact relation-arity and satisfiability guards are
 separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
 rotation does not prove that its graph is nonplanar. The full objective remains
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Frozen XOR queries and checked candidate recovery
+
+From the repository root, import
+`CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query` and
+`CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery`.
+The namespace is `Cslib.Complexity.Graph.RotationRecognition`. The
+[checked guide clients](../../guide/CslibFrontierGuide/NPCompleteness.lean#frozen-xor-queries-and-checked-recovery)
+show the ordinary imports, concrete validation/failure cases and success contracts.
+The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) additionally exercises
+loops, parallel edges, repeated scopes, nullaries and large binary labels; run
+`scripts/build.sh CslibFrontierTests.RotationRecognition` to check it. Successful compilation
+checks actual solver/recovery evaluations and theorem applications, without proving completeness.
+
+`FixedRotationInput` pairs the existing listed graph with optional complete clockwise dart
+words. `Valid` requires declared vertices exactly `List.range n`, endpoints below `n`, exactly
+`n` table entries, and every `some word` to enumerate its entire endpoint fiber without
+duplicates. `none` leaves a vertex free; `some []` is valid at an isolate. `Realizes` fixes the
+full cyclic successor, without reflection; `Consecutive` constrains only successive entries
+inside a directed block. `Feasible` is existence of the existing `RotationSystem` satisfying
+`NumericalGenusZero` and `Realizes`.
+
+`query` computes `validate I && XORSAT.solve (compile I)`. Each edge is twice subdivided;
+fixed vertices freeze their incident first/last segments, and middle segments stay movable.
+The stored segment components have named accessors `Segment.endpoints`, `Segment.source`,
+`Segment.target` and `Segment.frozen`; their tuple representation and encoding are unchanged.
+The reference order reverses prescribed leaves within each center block. Each independent
+unordered segment pair emits one sparse affine row of width at most four, with frozen
+contributions omitted. `query_eq_true_iff` proves exactly `Valid I` and affine satisfiability.
+Import the [finite move topic](../../CslibFrontier/Computability/Complexity/Problems/Graph/RotationSystem/Recognition/Moves.lean)
+for `query_eq_true_iff_exists_frozen_moves`: the same equations have a finite
+segment-by-vertex Boolean witness with literal frozen zeros. Neither statement identifies
+these equations with `Feasible`.
+
+`recover` tries clockwise append candidates using ephemeral `split` queries. A split redirects
+the selected indexed ends to fresh hub `n`, appends nonloop connector `(n,v)`, and fixes the
+hub's complete word to `block ++ [2m]`; the source remains free. The connector need not be a
+bridge. Old edge occurrences and earlier full orders are retained. The outer state stores the
+original graph and its current order table; split graphs and XOR systems do not accumulate.
+The final candidate must pass `RotationCertificate.verifyGenusZero` and `verifyFixed`.
+`recover_sound` gives these exact guards; `recover_feasible` supplies `Feasible` on success.
+`length_recover_successor` gives exactly `2m` output entries, and `length_enc_recover_le`
+bounds the complete framed certificate by `2m * (4m + 1)` bits.
+
+`ofCSP` uses the actual `CSP.incidenceGraph`: variable vertices are free, and each indexed
+constraint's actual scope fixes its full order. It retains repeated variables, identical
+constraints and nullary constraint vertices. Relation semantics and declared arity metadata
+are not consulted. `recoverCSP` also runs the existing original CSP argument-order checker;
+`recoverCSP_sound` proves that this checker accepts every returned certificate. A false nullary
+relation can therefore yield a successful numerical candidate: this program does not decide
+CSP satisfiability. `none` may come from input rejection, a false XOR query, failed candidate
+search or a rejected final table; it implies neither nonplanarity nor CSP unsatisfiability.
+Dvořák–Kupec's constraint-set convention and the indexed duplicate-preserving CSP convention
+are distinct models; applying a source theorem requires an explicit bridge, not deduplication.
+
+`query_polyTime`, `recover_polyTime` and `recoverCSP_polyTime` certify the actual native
+programs on all raw encodings, with no solver, growth or runtime provider. Binary names fund
+no unary scans. `encFixedRotationInput` frames the graph and optional binary dart-word list;
+the temporary frame uses a unary vertex count, binary segment endpoints/frozen bits, and a
+binary reference order. The [query-budget topic](../../CslibFrontier/Computability/Complexity/Problems/Graph/RotationSystem/Recognition/RecoveryBudget.lean)
+charges at most `1 + 2m²` queries generally and `1 + m²` for CSP incidence recovery, where `m`
+counts listed graph edges, hence actual scope occurrences for CSPs. These are query charges,
+not running-time exponents.
+For original CSP encoded length `B`, put `K = B + 1`. The
+[storage bounds](../../CslibFrontier/Computability/Complexity/Problems/Graph/RotationSystem/Recognition/CSPBounds.lean)
+give initial XOR storage at most `9K² * (32 * (log₂(9K²) + 1) + 21)` bits, including all
+framing. The same bound for a split requires `Valid (split (ofCSP F) v block)`;
+the general form requires validity and both frame dimensions at most `3K`.
+It is not a bound on arbitrary malformed compiled systems in terms of `B` alone.
+
+The finite equations reconstruct Schaefer's *Toward a Theory of Planarity*, §§5.3–5.4,
+printed pp. 399–401 ([primary source](https://jgaa.info/index.php/jgaa/article/download/paper298/2658/2465)).
+Here frozen segments have zero moves past every vertex; the paper's PEP restriction fixes
+embedded edges past embedded vertices. Equivalence needs proof. Fulek–Kynčl–Pálvölgyi,
+*Unified Hanani–Tutte theorem*, arXiv:1612.00688v3, Theorem 1, p. 2
+([primary source](https://arxiv.org/pdf/1612.00688v3)), is a prospective bridge from independent
+evenness and evenness at selected vertices to a rotation-preserving embedding; it is not
+formalized here. The contiguous candidate recovery is original, with reconstruction and
+implementation credit retained in the source headers.
+
+The open obligations are `Valid I → (XORSAT.Satisfiable (compile I) ↔ Feasible I)`, the
+split feasibility equivalence with original numerical genus zero, full orders and
+`Consecutive block` (including clockwise order, nonloop contraction and duplicate-declaration
+cleanup), and the geometric/source correspondence with frozen-switch and Hanani–Tutte proofs.
+The shared `Graph.RotationSystem.Declarations` supplies duplicate-declaration numerical
+transport; `Recognition.Declarations` adds only the fresh-range relabeling. These ingredients
+do not discharge the split equivalence. This bounded runtime/soundness milestone leaves
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) open; no final planarity
+P theorem or decision completeness is claimed.
 
 ## Indexed duality and Boolean difference lifting
 

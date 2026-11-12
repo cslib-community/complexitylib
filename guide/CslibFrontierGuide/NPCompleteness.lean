@@ -50,6 +50,10 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Corn
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
+import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query
+import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.CSPBounds
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryBudget
 import CslibFrontier.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet
 import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
@@ -99,30 +103,6 @@ development imports the problems it uses. The first examples need only these:
 ```
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.Clique
-import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
-import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
-import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CornerGenus
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.VertexMergeGenus
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
-import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
-import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
-import CslibFrontier.Computability.PolyTime.CSP.Table
-import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
-import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
-import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
-import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
-import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
-import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
-import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
-import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
-import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom
-import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality
-import CslibFrontier.Computability.PolyTime.CSP.Edge.Forest.Spec
-import CslibFrontier.Foundations.Data.BitString.CyclicDifference
-import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
 
 open Cslib.Complexity Turing.MultiTapeTM
@@ -838,9 +818,202 @@ example : ComputableInPolyTime
 Original variable labels remain binary. Iteration uses actual list lengths,
 never a maximum label or supplied successor index. Nullary port order is
 vacuous; semantic rejection and exact relation arity remain separate guards.
-These supplied-certificate theorems leave bare-instance construction, geometric
-correspondence and the dichotomy open. The complete edge solver appears below. The finite duality and
-Boolean difference interface is proved below.
+These supplied-certificate theorems leave complete bare-instance recognition,
+geometric correspondence and the dichotomy open. The guarded constructor below
+adds success soundness. The complete edge solver and finite duality follow.
+
+
+# Frozen XOR Queries and Checked Recovery
+
+Start a standalone client with these ordinary runtime imports:
+
+```
+import CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Query
+import
+  CslibFrontier.Computability.PolyTime.Graph.RotationSystem.Recognition.Recovery
+```
+
+The namespace is `Cslib.Complexity.Graph.RotationRecognition`.
+{name}`Cslib.Complexity.Graph.RotationRecognition.FixedRotationInput` stores an
+existing listed graph and one optional complete clockwise dart word per vertex.
+Validity requires declarations `List.range n`, endpoints below `n`, an order
+table of length `n`, and duplicate-free full fibers at prescribed vertices.
+`none` leaves a vertex free; `some []` prescribes an isolated vertex. The full
+cyclic successor is fixed without reflection. A directed `Consecutive` block
+constrains only internal adjacencies, without closing its last entry to its first.
+
+The actual query validates and calls the native XOR solver. These small examples
+check an isolate and reject a missing table entry:
+
+```lean
+open Cslib.Complexity.Graph.RotationRecognition in
+example : query ⟨([0], []), [some []]⟩ = true := by decide +kernel
+```
+
+```lean
+open Cslib.Complexity.Graph.RotationRecognition in
+example : recover ⟨([0], []), []⟩ = none := by decide +kernel
+```
+
+Each listed edge is replaced by three indexed segments. Prescribed endpoints
+freeze their first/last segments; middle segments stay movable. Independent
+unordered segment pairs give affine rows of width at most four. Query acceptance
+means exactly valid input and solvability of these concrete equations:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example (I : FixedRotationInput) :
+    query I = true ↔ Valid I ∧ XORSAT.Satisfiable (compile I) :=
+  query_eq_true_iff I
+```
+
+The finite semantics and budget examples also use the chapter's ordinary imports
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.CSPBounds`
+and `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryBudget`.
+`CSPBounds` publicly imports `Recognition.Moves`. A finite witness has one bit per
+segment/vertex pair, with actual zeros at frozen coordinates:
+
+```lean
+open Cslib.Complexity.Graph.RotationRecognition in
+example (I : FixedRotationInput) :
+    query I = true ↔ Valid I ∧ ∃ moves : Moves (frame I),
+      FrozenMoves (frame I) moves ∧ MoveEquations (frame I) moves :=
+  query_eq_true_iff_exists_frozen_moves I
+```
+
+These equations reconstruct Schaefer, *Toward a Theory of Planarity*, §§5.3–5.4,
+pp. 399–401. Their identification with drawings is open. The proposed use of
+Fulek–Kynčl–Pálvölgyi, arXiv:1612.00688v3, Theorem 1, p. 2, is also unformalized;
+see the [source mapping](../../manual/circuits-logic-and-other-models/proof-systems.md#frozen-xor-queries-and-checked-candidate-recovery).
+Contiguous candidate recovery is original.
+
+`recover` tests append candidates on ephemeral splits. A split redirects the
+selected ends to a fresh hub, appends a nonloop connector, and prescribes the
+hub's full order `block ++ [2m]`, leaving the source free. The connector need
+not be a bridge. The outer state keeps the original graph and current order
+table; query systems do not accumulate. Returned tables pass the existing
+numerical genus-zero checker and the original full-order guard:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example {I : FixedRotationInput} {c : Graph.RotationCertificate}
+    (h : recover I = some c) :
+    Graph.RotationCertificate.verifyGenusZero I.graph c = true ∧
+      verifyFixed I c = true :=
+  recover_sound h
+```
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example {I : FixedRotationInput} {c : Graph.RotationCertificate}
+    (h : recover I = some c) : Feasible I ∧
+      c.successor.length = 2 * I.graph.2.length :=
+  ⟨recover_feasible h, length_recover_successor h⟩
+```
+
+`ofCSP` uses the actual dense incidence graph. Variables are free; indexed
+constraints prescribe their actual cyclic scope orders, retaining repeated
+variables, duplicate constraints and nullaries. Relation semantics and arity
+metadata are ignored. `recoverCSP` additionally checks the original CSP order:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity
+  Cslib.Complexity.Graph.RotationRecognition in
+example {F : CSP Unit ℕ} {c : Graph.RotationCertificate}
+    (h : recoverCSP F = some c) :
+    Cslib.Complexity.CSP.verifyRotationCertificate F c = true :=
+  recoverCSP_sound h
+```
+
+Even a false nullary relation can return a certificate; satisfiability is a
+separate semantic question:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity.Graph.RotationRecognition in
+example : recoverCSP ([(false, [])] : CSP Bool ℕ) = some ⟨[]⟩ :=
+  by decide +kernel
+```
+
+`none` may mean invalid input, a false XOR query, exhausted candidates or a
+failed final guard. It implies neither nonplanarity nor CSP unsatisfiability.
+The actual runtime certificates cover every raw input, including malformed
+orders and arbitrarily large binary names; no solver or resource provider is
+supplied:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition
+  Turing.MultiTapeTM in
+example : ComputableInPolyTime query encFixedRotationInput encBool :=
+  query_polyTime
+```
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph
+  Cslib.Complexity.Graph.RotationRecognition Turing.MultiTapeTM in
+example : ComputableInPolyTime recover encFixedRotationInput
+    (encOption encRotationCertificate) :=
+  recover_polyTime
+```
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.Graph
+  Cslib.Complexity.Graph.RotationRecognition Turing.MultiTapeTM in
+example : ComputableInPolyTime (recoverCSP (Rel := Unit) (V := ℕ))
+    (encCSP encUnit encNat) (encOption encRotationCertificate) :=
+  recoverCSP_polyTime encUnit encNat
+```
+
+With `m` original edges, the initial query and charged candidate scans total at
+most `1 + 2m²`; fixed constraint vertices improve this to `1 + m²` for CSPs,
+where `m` is the actual scope-occurrence count. These charges are not runtime
+exponents:
+
+```lean
+open Cslib.Complexity Cslib.Complexity.Graph.RotationRecognition in
+example (I : FixedRotationInput) :
+    1 + recoveryWork (List.range I.graph.1.length) (some I) ≤
+      1 + 2 * I.graph.2.length ^ 2 :=
+  recoveryWork_le I
+```
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity
+  Cslib.Complexity.Graph.RotationRecognition in
+example (F : CSP Unit ℕ) :
+    1 + recoveryWork (List.range (CSP.incidenceGraph F).1.length)
+      (some (ofCSP F)) ≤ 1 + (CSP.incidenceGraph F).2.length ^ 2 :=
+  recoveryWork_ofCSP_le F
+```
+
+All sizes include framing and binary labels. Put `K = B + 1` for the original
+CSP encoded length `B`. Initial XOR storage is at most
+`9K² * (32 * (log₂(9K²) + 1) + 21)` bits. A split has the same bound under its
+validity guard; arbitrary malformed split blocks do not satisfy this premise:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity
+  Cslib.Complexity.Graph.RotationRecognition Turing.MultiTapeTM in
+example (F : CSP Unit ℕ) (v : ℕ) (block : List ℕ)
+    (h : Valid (split (ofCSP F) v block)) :
+    let K := (encCSP encUnit encNat F).length + 1
+    (XORSAT.encoding (compile (split (ofCSP F) v block))).length ≤
+      9 * K ^ 2 * (32 * (Nat.log2 (9 * K ^ 2) + 1) + 21) :=
+  length_encoding_compile_split_ofCSP_le encUnit encNat F v block h
+```
+
+Successful output has `2m` successors and full encoded length at most
+`2m * (4m + 1)`. The outer fold preserves the original graph and table width.
+Dense labels never erase distinct occurrences. Dvořák–Kupec's constraint-set
+model and indexed duplicate-preserving CSPs need a separate model bridge.
+
+The full objective in issue #3091 stays open. Required proofs are
+`Valid I → (XORSAT.Satisfiable (compile I) ↔ Feasible I)`, split feasibility
+equivalent to original numerical genus zero plus `Realizes` and internal
+`Consecutive block`, and geometric/source correspondence including frozen
+switches and Hanani–Tutte. The split equivalence must preserve clockwise order,
+use nonloop contraction and clean up duplicate declarations. No complete
+planarity recognizer or final native planarity P theorem follows from the
+runtime and success-soundness results above.
 
 
 # Indexed Duality and Boolean Difference Lifting
