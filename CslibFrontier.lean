@@ -984,6 +984,7 @@ public import CslibFrontier.Computability.Catalytic.VertexEquality
 public import CslibFrontier.Computability.CellProbe.Chronogram
 public import CslibFrontier.Computability.CellProbe.DecisionTree
 public import CslibFrontier.Computability.CellProbe.Defs
+public import CslibFrontier.Computability.CellProbe.OfWordRAM
 public import CslibFrontier.Computability.CellProbe.Randomized
 public import CslibFrontier.Computability.Circuit.Accumulate
 public import CslibFrontier.Computability.Circuit.Approximation
@@ -4095,6 +4096,7 @@ public import CslibFrontier.Computability.WordRAM.Turing
 public import CslibFrontier.Computability.WordRAM.Turing.ListOutput
 public import CslibFrontier.Computability.WordRAM.Turing.Overhead
 public import CslibFrontier.Computability.WordRAM.Width
+public import CslibFrontier.Computability.WordRAM.Word
 public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Computational.CollisionResistant
 public import CslibFrontier.Crypto.Computational.CollisionResistantToOneWay
@@ -4644,6 +4646,7 @@ public import CslibFrontier.DataStructure.BTree.PredSucc
 public import CslibFrontier.DataStructure.BTree.Range
 public import CslibFrontier.DataStructure.BTree.Rank
 public import CslibFrontier.DataStructure.BTree.TreeMap
+public import CslibFrontier.DataStructure.CellProbe.OfWordRAM
 public import CslibFrontier.DataStructure.CellProbe.Randomized.ObliviousSequence
 public import CslibFrontier.DataStructure.CellProbe.Randomized.StateTransition
 public import CslibFrontier.DataStructure.CellProbe.StateTransition
