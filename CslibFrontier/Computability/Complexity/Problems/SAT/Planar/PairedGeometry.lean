@@ -319,9 +319,7 @@ theorem raw_variable_cell_kind (φ : CNF ℕ) {v : Variable}
   obtain ⟨c, hc, b, hv⟩ := CNF.mem_vars.mp hv
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
   rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, _, e, _, hpc⟩
-  · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hv
-    obtain ⟨lj, _, rfl⟩ := List.mem_map.mp hlr
+  · obtain ⟨i, j, x, _, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hv
     have heq' := congrArg Prod.fst heq
     dsimp only [lastLiteral] at heq'
     subst v
@@ -400,13 +398,7 @@ theorem routes_regular (φ : CNF ℕ) :
   intro r hr
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
   rcases mem_placedClauses.mp hpc with hpc | ⟨p, _, hpc⟩ | ⟨p, _, hpc⟩ | ⟨o, ho, e, _, hpc⟩
-  · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
-    dsimp only at heq
-    subst r
+  · obtain ⟨i, j, x, ho, rfl⟩ := (exists_occurrence_of_mem_originalClauses hpc).2 _ hr
     exact lastLiteral_route_regular _ _ _ (PlanarCompile.occurrencePath_last_unit ho)
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨e, he, rfl⟩ := List.mem_map.mp hr
@@ -791,11 +783,7 @@ theorem raw_variable_cell_membership (φ : CNF ℕ) {v : Variable}
   obtain ⟨c, hc, b, hv⟩ := CNF.mem_vars.mp hv
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
   rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, e, he, hpc⟩
-  · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hv
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
+  · obtain ⟨i, j, x, ho, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hv
     have heq' := congrArg Prod.fst heq
     dsimp only [lastLiteral] at heq'
     subst v
@@ -968,23 +956,16 @@ theorem route_variable_contact (φ : CNF ℕ) {r : Route} (hr : r ∈ routes φ)
     r.getLast? = some (variablePosition v) := by
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
   rcases mem_placedClauses.mp hpc with hpc | ⟨c, hc, hpc⟩ | ⟨c, hc, hpc⟩ | ⟨o, _, e, _, hpc⟩
-  · obtain ⟨⟨c, i⟩, hci, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
-    obtain ⟨⟨l, j⟩, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (i, j, l) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨(c, i), hci, List.mem_map.mpr ⟨(l, j), hlj, rfl⟩⟩
-    dsimp only at heq
-    subst r
+  · obtain ⟨i, j, x, ho, rfl⟩ := (exists_occurrence_of_mem_originalClauses hpc).2 _ hr
     rw [support_lastLiteral _ _ _ (PlanarCompile.occurrencePath_last_unit ho)] at hp
     rcases hp with hp | hp
-    · have hcell : v.1 = (occurrencePath φ (i, j, l)).getLastD (0, 0) :=
+    · have hcell : v.1 = (occurrencePath φ (i, j, x)).getLastD (0, 0) :=
         cell_eq_of_mem_open_closed (by decide) (variablePosition_mem_openCell v)
           (spoke_support_cell _ _ hp)
       have hend := (PlanarCompile.occurrencePath_endpoints ho).2
       rw [List.getLastD_eq_getLast?, hend] at hcell
-      have hi : i < φ.length := by
-        simpa only [Nat.zero_add] using (List.mem_zipIdx hci).2.1
-      exact False.elim (raw_variable_not_clause_cell hv hi hcell)
+      exact False.elim
+        (raw_variable_not_clause_cell hv (Cslib.Logic.PL.mem_occurrences.mp ho).1 hcell)
     · have heq := access_variable_contact (raw_variable_cell_kind φ hv) hp
       exact heq ▸ (lastLiteral_endpoints _ _ _).2
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
@@ -1225,12 +1206,8 @@ theorem routes_length_ge_two (φ : CNF ℕ) : ∀ r ∈ routes φ, 2 ≤ r.lengt
   intro r hr
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
   rcases mem_placedClauses.mp hpc with hpc | ⟨_, _, hpc⟩ | ⟨_, _, hpc⟩ | ⟨_, _, e, _, hpc⟩
-  · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
-    obtain ⟨lj, _, rfl⟩ := List.mem_map.mp hlr
-    dsimp only [lastLiteral] at heq
-    subst r
-    simp
+  · obtain ⟨i, j, x, -, rfl⟩ := (exists_occurrence_of_mem_originalClauses hpc).2 _ hr
+    simp [lastLiteral]
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨e, he, rfl⟩ := List.mem_map.mp hr
     rw [translate, List.length_map, OrdinaryRing.incidence_pair e (List.mem_filter.mp he).1]
@@ -1736,13 +1713,7 @@ private theorem route_support_cases {φ : CNF ℕ} {r : Route} (hr : r ∈ route
           p ∈ support (translate (cellOrigin 120 c) (PairedPorts.spokeRoute s)) := by
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
   rcases mem_placedClauses.mp hpc with hpc | ⟨c, hc, hpc⟩ | ⟨c, hc, hpc⟩ | ⟨o, ho, e, he, hpc⟩
-  · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
-    dsimp only at heq
-    subst r
+  · obtain ⟨i, j, x, ho, rfl⟩ := (exists_occurrence_of_mem_originalClauses hpc).2 _ hr
     rw [support_lastLiteral _ _ _ (PlanarCompile.occurrencePath_last_unit ho)] at hp
     rcases hp with hp | hp
     · exact Or.inr (Or.inr ⟨_, _, SpokePiece.final ho, hp⟩)

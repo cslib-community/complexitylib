@@ -164,19 +164,14 @@ private def ClauseBound (φ : CNF ℕ) (pc : PlacedClause) : Prop :=
 private theorem originalClauses_bounds (φ : CNF ℕ) (sites : List Point) :
     ∀ pc ∈ originalClauses φ sites, ClauseBound φ pc := by
   intro pc hpc
+  have hocc := exists_occurrence_of_mem_originalClauses hpc
   obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
   refine ⟨outputBound_center (cellBound_clause (List.mem_zipIdx' hci).1), ?_, ?_⟩
   · intro l hl
-    obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hl
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
+    obtain ⟨i, j, x, ho, rfl⟩ := hocc.1 l hl
     exact (lastLiteral_bounds ho sites).1
   · intro r hr a ha
-    obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hr
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
+    obtain ⟨i, j, x, ho, rfl⟩ := hocc.2 r hr
     exact (lastLiteral_bounds ho sites).2 a ha
 
 private theorem ordinaryClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBound φ p) :
@@ -323,11 +318,8 @@ private theorem original_route_cost (φ : CNF ℕ) (sites : List Point) (cost : 
     have he : c.2.2.map cost = c.2.2.map (fun _ => k) := by
       apply List.map_congr_left
       intro r hr
-      obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hc
-      obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hr
-      obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-      exact h (ci.2, lj.2, lj.1)
-        (List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩)
+      obtain ⟨i, j, x, ho, rfl⟩ := (exists_occurrence_of_mem_originalClauses hc).2 r hr
+      exact h _ ho
     rw [he]
     simp [Nat.mul_comm]
   rw [hm, List.sum_map_mul_left, original_route_count]

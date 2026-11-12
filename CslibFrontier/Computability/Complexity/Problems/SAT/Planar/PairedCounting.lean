@@ -109,13 +109,9 @@ theorem raw_assignments_agree {φ : CNF ℕ}
   obtain ⟨c, hc, b, hl⟩ := CNF.mem_vars.mp hvar
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
   rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, hpc⟩
-  · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
-    obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hl
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
-    have heq' : (lastLiteral (crossingSites φ)
-        (occurrencePath φ (ci.2, lj.2, lj.1)) lj.1.2).1.1 = v := congrArg Prod.fst heq
+  · obtain ⟨i, j, x, ho, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hl
+    have heq' : (lastLiteral (crossingSites φ) (occurrencePath φ (i, j, x)) x.2).1.1 = v :=
+      congrArg Prod.fst heq
     rw [← heq']
     exact (lastLiteral_value hw hv hσ ho).trans
       ((he _ (variable_mem_of_mem_occurrences ho)).trans (lastLiteral_value hw hv hτ ho).symm)
