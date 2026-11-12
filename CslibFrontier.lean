@@ -1401,6 +1401,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Capa
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Components
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwoInputs
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.KaneWilliamsB
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.LTF
@@ -2259,6 +2260,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementParams
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import CslibFrontier.Computability.Complexity.FineGrained.Schoening
+public import CslibFrontier.Computability.Complexity.FineGrained.SchoeningMachine
 public import CslibFrontier.Computability.Complexity.FineGrained.SearchStep
 public import CslibFrontier.Computability.Complexity.FineGrained.SingleSubexp
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchAsymptotics
@@ -2296,6 +2298,7 @@ public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Cl
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Clique.Bracket
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
+public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import CslibFrontier.Computability.Complexity.Problems.BoundedHalting
@@ -3468,6 +3471,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilisti
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IntervalTensor
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.OrElse
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.OutputPrefix
@@ -3756,6 +3760,7 @@ public import CslibFrontier.Computability.Probabilistic.BoundedUniform
 public import CslibFrontier.Computability.Probabilistic.CenteredBinomial
 public import CslibFrontier.Computability.Probabilistic.CoinTape
 public import CslibFrontier.Computability.Probabilistic.CoinTape.Bounds
+public import CslibFrontier.Computability.Probabilistic.ExponentialIterate
 public import CslibFrontier.Computability.Probabilistic.Finite
 public import CslibFrontier.Computability.Probabilistic.Fold
 public import CslibFrontier.Computability.Probabilistic.LinearHash
@@ -5348,6 +5353,7 @@ public import CslibFrontier.Foundations.Data.BitString.WeightInterval
 public import CslibFrontier.Foundations.Data.BitString.WordCount
 public import CslibFrontier.Foundations.Data.BitString.ZModTwo
 public import CslibFrontier.Foundations.Data.Bracketing
+public import CslibFrontier.Foundations.Data.BranchingVector
 public import CslibFrontier.Foundations.Data.Code.AsymptoticallyGood
 public import CslibFrontier.Foundations.Data.Code.BallVolume
 public import CslibFrontier.Foundations.Data.Code.Basic
@@ -6163,6 +6169,7 @@ public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.Positivs
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.Tseitin
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander
 public import CslibFrontier.Logics.Propositional.CNF
+public import CslibFrontier.Logics.Propositional.CNF.Branching
 public import CslibFrontier.Logics.Propositional.CNF.Coding
 public import CslibFrontier.Logics.Propositional.CNF.Compact
 public import CslibFrontier.Logics.Propositional.CNF.Compact.ModelCount
