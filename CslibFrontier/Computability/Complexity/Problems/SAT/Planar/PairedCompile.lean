@@ -27,7 +27,8 @@ belong to their cell's implication ring and introduce no independent choices.
 
 ## Main definitions
 
-* `Cslib.Complexity.SAT.ParsimoniousPlanar.placedClauses`: actual clauses and geometric data.
+* `Cslib.Complexity.SAT.ParsimoniousPlanar.placedClauses`: actual clauses and geometric data;
+  `mem_placedClauses` splits membership into the four kinds of record.
 * `Cslib.Complexity.SAT.ParsimoniousPlanar.formula`: compact natural-number output labels.
 * `Cslib.Complexity.SAT.ParsimoniousPlanar.positions`, `.routes`: finite drawing data.
 
@@ -154,6 +155,22 @@ def positions (φ : CNF ℕ) : List Point :=
 
 /-- Incidence routes ordered by clauses and by literal positions. -/
 def routes (φ : CNF ℕ) : List Route := (placedClauses φ).flatMap fun c => c.2.2
+
+/-- The seam clauses of a route are the two lane clauses of each step before the final one. -/
+theorem mem_links {sites : List Point} {r : Route} {pc : PlacedClause} :
+    pc ∈ links sites r ↔ ∃ e ∈ r.dropLast.consecutivePairs,
+      pc = link sites e.1 e.2 0 ∨ pc = link sites e.1 e.2 1 := by
+  simp only [links, List.mem_flatMap, List.mem_cons, List.not_mem_nil, or_false]
+
+/-- Case analysis on the output records: an original clause, a clause of an ordinary ring or of
+a crossover in its cell, or one of the two lane clauses of an occurrence path step. -/
+theorem mem_placedClauses {φ : CNF ℕ} {pc : PlacedClause} :
+    pc ∈ placedClauses φ ↔ pc ∈ originalClauses φ (crossingSites φ) ∨
+      (∃ p ∈ ordinaryCells φ, pc ∈ ordinaryClauses p) ∨
+      (∃ p ∈ crossingSites φ, pc ∈ crossingClauses p) ∨
+      ∃ o ∈ Cslib.Logic.PL.occurrences φ, ∃ e ∈ (occurrencePath φ o).dropLast.consecutivePairs,
+        pc = link (crossingSites φ) e.1 e.2 0 ∨ pc = link (crossingSites φ) e.1 e.2 1 := by
+  simp only [placedClauses, List.mem_append, List.mem_flatMap, mem_links, or_assoc]
 
 /-- A point receives an ordinary ring exactly when a retained path uses it outside a crossing. -/
 theorem mem_ordinaryCells (φ : CNF ℕ) (p : Point) :

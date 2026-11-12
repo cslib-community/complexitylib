@@ -318,8 +318,7 @@ theorem raw_variable_cell_kind (φ : CNF ℕ) {v : Variable}
     by_cases hp : p ∈ crossingSites φ <;> simp [signal, port, hp, Sum.isLeft]
   obtain ⟨c, hc, b, hv⟩ := CNF.mem_vars.mp hv
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨p, hp, hpc⟩) | ⟨p, hp, hpc⟩) | ⟨o, _, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, _, e, _, hpc⟩
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hv
     obtain ⟨lj, _, rfl⟩ := List.mem_map.mp hlr
@@ -339,9 +338,7 @@ theorem raw_variable_cell_kind (φ : CNF ℕ) {v : Variable}
     change (p, Sum.inr l.1) = v at heq'
     subst v
     simp [hp]
-  · obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-    rcases hpc with rfl | rfl <;>
+  · rcases hpc with rfl | rfl <;>
       rcases link_literal_cases _ _ _ _ hv with heq | heq <;> dsimp only at heq <;> subst v <;>
       exact hsignal _ _ _
 
@@ -402,8 +399,7 @@ theorem routes_regular (φ : CNF ℕ) :
     ∀ r ∈ routes φ, IsOrthogonal r ∧ IsSimple r := by
   intro r hr
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨p, _, hpc⟩) | ⟨p, _, hpc⟩) | ⟨o, ho, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨p, _, hpc⟩ | ⟨p, _, hpc⟩ | ⟨o, ho, e, _, hpc⟩
   · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
     obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
@@ -422,9 +418,7 @@ theorem routes_regular (φ : CNF ℕ) :
     have he' := (List.mem_filter.mp he).1
     exact ⟨(isOrthogonal_translate_iff _ _).2 (PairedCrossover.incidence_orthogonal e he'),
       (isSimple_translate_iff _ _).2 (PairedCrossover.incidence_isSimple he')⟩
-  · obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-    rcases hpc with rfl | rfl <;> exact link_routes_regular _ _ _ _ hr
+  · rcases hpc with rfl | rfl <;> exact link_routes_regular _ _ _ _ hr
 
 private theorem ordinary_route_count : ∀ i : Fin 8,
     (OrdinaryRing.incidenceRoutes.filter fun e => e.1 == i.val).length =
@@ -438,8 +432,7 @@ private theorem crossing_route_count : ∀ i : Fin 78,
 theorem placedClause_route_count (φ : CNF ℕ) :
     ∀ pc ∈ placedClauses φ, pc.2.2.length = pc.1.length := by
   intro pc hpc
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨p, _, hpc⟩) | ⟨p, _, hpc⟩) | ⟨o, _, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨p, _, hpc⟩ | ⟨p, _, hpc⟩ | ⟨o, _, e, _, hpc⟩
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     simp
   · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
@@ -460,9 +453,7 @@ theorem placedClause_route_count (φ : CNF ℕ) :
     rw [List.getD_eq_getElem PairedCrossover.formula []
       (by simpa only [PairedCrossover.length_formula] using hi)] at hcount
     simpa only [List.length_map, Clause.length_relabel, hc] using hcount
-  · obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-    rcases hpc with rfl | rfl <;> rfl
+  · rcases hpc with rfl | rfl <;> rfl
 
 /-- The actual route count is the edge count of the final compact incidence graph. -/
 theorem routes_length (φ : CNF ℕ) :
@@ -595,16 +586,13 @@ private theorem consecutivePairs_dropLast (r : Route) :
 theorem placedClause_endpoints (φ : CNF ℕ) {pc : PlacedClause} (hpc : pc ∈ placedClauses φ)
     {l : Literal Variable} {r : Route} (hlr : (l, r) ∈ pc.1.zip pc.2.2) :
     r.head? = some pc.2.1 ∧ r.getLast? = some (variablePosition l.1) := by
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨_, _, hpc⟩) | ⟨_, _, hpc⟩) | ⟨o, ho, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨_, _, hpc⟩ | ⟨_, _, hpc⟩ | ⟨o, ho, e, he, hpc⟩
   · exact originalClause_endpoints hpc hlr
   · exact ordinaryClause_endpoints hpc hlr
   · exact crossingClause_endpoints hpc hlr
-  · obtain ⟨e, he, hpc⟩ := List.mem_flatMap.mp hpc
-    have he' : e ∈ (occurrencePath φ o).consecutivePairs := by
+  · have he' : e ∈ (occurrencePath φ o).consecutivePairs := by
       rw [consecutivePairs_dropLast] at he
       exact (List.dropLast_sublist _).subset he
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
     rcases hpc with rfl | rfl <;>
       exact link_endpoints _ (PlanarCompile.occurrencePath_unit ho he') _ hlr
 
@@ -802,8 +790,7 @@ theorem raw_variable_cell_membership (φ : CNF ℕ) {v : Variable}
     v.1 ∈ crossingSites φ ∨ ∃ r ∈ paths φ, v.1 ∈ r.dropLast := by
   obtain ⟨c, hc, b, hv⟩ := CNF.mem_vars.mp hv
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨p, hp, hpc⟩) | ⟨p, hp, hpc⟩) | ⟨o, ho, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, e, he, hpc⟩
   · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hv
     obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
@@ -826,9 +813,7 @@ theorem raw_variable_cell_membership (φ : CNF ℕ) {v : Variable}
     change (p, Sum.inr l.1) = v at heq'
     subst v
     exact Or.inl hp
-  · obtain ⟨e, he, hpc⟩ := List.mem_flatMap.mp hpc
-    have hpair := List.of_mem_zip he
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
+  · have hpair := List.of_mem_zip he
     rcases hpc with rfl | rfl <;>
       rcases link_literal_cases _ _ _ _ hv with heq | heq <;> dsimp only at heq <;> subst v
     all_goals
@@ -982,8 +967,7 @@ theorem route_variable_contact (φ : CNF ℕ) {r : Route} (hr : r ∈ routes φ)
     (hp : realPoint (variablePosition v) ∈ support r) :
     r.getLast? = some (variablePosition v) := by
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨c, hc, hpc⟩) | ⟨c, hc, hpc⟩) | ⟨o, _, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨c, hc, hpc⟩ | ⟨c, hc, hpc⟩ | ⟨o, _, e, _, hpc⟩
   · obtain ⟨⟨c, i⟩, hci, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
     obtain ⟨⟨l, j⟩, hlj, rfl⟩ := List.mem_map.mp hlr
@@ -1018,9 +1002,7 @@ theorem route_variable_contact (φ : CNF ℕ) {r : Route} (hr : r ∈ routes φ)
     subst v
     simp only [translate, List.getLast?_map, (PairedCrossover.incidence_endpoints _ he').2.2,
       Option.map_some, variablePosition, Sum.elim_inr, add_comm]
-  · obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-    rcases hpc with rfl | rfl <;>
+  · rcases hpc with rfl | rfl <;>
       rcases link_routes_cases _ _ _ _ hr with rfl | rfl <;>
       have heq := access_variable_contact (raw_variable_cell_kind φ hv) hp <;>
       rw [heq] <;> rfl
@@ -1135,9 +1117,8 @@ theorem linkPositions_nodup {φ : CNF ℕ}
 private theorem link_position_not_open {sites : List Point} {r : Route}
     {pc : PlacedClause} (hpc : pc ∈ links sites r) (c : Point) :
     realPoint pc.2.1 ∉ openCell 120 c := by
-  obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-  rcases hpc with rfl | rfl <;> exact PairedPorts.boundary_not_mem_openCell _ c _ _
+  obtain ⟨e, _, rfl | rfl⟩ := mem_links.mp hpc <;>
+    exact PairedPorts.boundary_not_mem_openCell _ c _ _
 
 private theorem original_interior_positions_disjoint (φ : CNF ℕ) (cells : List Point)
     (pcs : Point → List PlacedClause)
@@ -1243,8 +1224,7 @@ private theorem crossingRoute_length : ∀ e ∈ PairedCrossover.incidenceRoutes
 theorem routes_length_ge_two (φ : CNF ℕ) : ∀ r ∈ routes φ, 2 ≤ r.length := by
   intro r hr
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨_, _, hpc⟩) | ⟨_, _, hpc⟩) | ⟨_, _, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨_, _, hpc⟩ | ⟨_, _, hpc⟩ | ⟨_, _, e, _, hpc⟩
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
     obtain ⟨lj, _, rfl⟩ := List.mem_map.mp hlr
@@ -1259,15 +1239,12 @@ theorem routes_length_ge_two (φ : CNF ℕ) : ∀ r ∈ routes φ, 2 ≤ r.lengt
     obtain ⟨e, he, rfl⟩ := List.mem_map.mp hr
     rw [translate, List.length_map]
     exact crossingRoute_length e (List.mem_filter.mp he).1
-  · obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-    rcases hpc with rfl | rfl <;>
+  · rcases hpc with rfl | rfl <;>
       rcases link_routes_cases _ _ _ _ hr with rfl | rfl <;> simp [access]
 
 private theorem placedClause_nonempty_or_original {φ : CNF ℕ} {pc : PlacedClause}
     (hpc : pc ∈ placedClauses φ) : pc.1 ≠ [] ∨ pc ∈ originalClauses φ (crossingSites φ) := by
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨_, _, hpc⟩) | ⟨_, _, hpc⟩) | ⟨_, _, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨_, _, hpc⟩ | ⟨_, _, hpc⟩ | ⟨_, _, e, _, hpc⟩
   · exact Or.inr hpc
   · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
     apply Or.inl
@@ -1282,9 +1259,7 @@ private theorem placedClause_nonempty_or_original {φ : CNF ℕ} {pc : PlacedCla
     intro heq
     apply hnonempty ci.1 (List.fst_mem_of_mem_zipIdx hci)
     exact List.map_eq_nil_iff.mp heq
-  · obtain ⟨e, _, hpc⟩ := List.mem_flatMap.mp hpc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-    rcases hpc with rfl | rfl <;> exact Or.inl (by simp [link])
+  · rcases hpc with rfl | rfl <;> exact Or.inl (by simp [link])
 
 private theorem simple_head_ne_last {r : Route} (hn : r.Nodup) (hlen : 2 ≤ r.length)
     {p : Point} (hhead : r.head? = some p) (hlast : r.getLast? = some p) : False := by
@@ -1760,8 +1735,7 @@ private theorem route_support_cases {φ : CNF ℕ} {r : Route} (hr : r ∈ route
         ∃ c s, SpokePiece φ r c s ∧
           p ∈ support (translate (cellOrigin 120 c) (PairedPorts.spokeRoute s)) := by
   obtain ⟨pc, hpc, hr⟩ := List.mem_flatMap.mp hr
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨c, hc, hpc⟩) | ⟨c, hc, hpc⟩) | ⟨o, ho, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨c, hc, hpc⟩ | ⟨c, hc, hpc⟩ | ⟨o, ho, e, he, hpc⟩
   · obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨lr, hlr, heq⟩ := List.mem_map.mp hr
     obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
@@ -1779,9 +1753,7 @@ private theorem route_support_cases {φ : CNF ℕ} {r : Route} (hr : r ∈ route
   · obtain ⟨ci, _, rfl⟩ := List.mem_map.mp hpc
     obtain ⟨e, he, rfl⟩ := List.mem_map.mp hr
     exact Or.inl ⟨c, CorePiece.crossing hc (List.mem_filter.mp he).1⟩
-  · obtain ⟨e, he, hpc⟩ := List.mem_flatMap.mp hpc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
-    rcases hpc with rfl | rfl <;>
+  · rcases hpc with rfl | rfl <;>
       rcases link_routes_cases _ _ _ _ hr with rfl | rfl
     all_goals
       apply Or.inr
@@ -1877,8 +1849,7 @@ private theorem access_reverse_ne {sites : List Point} {p q : Point} {l : Fin 2}
 private theorem placedClause_routes_nodup {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3)
     {pc : PlacedClause} (hpc : pc ∈ placedClauses φ) : pc.2.2.Nodup := by
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨c, _, hpc⟩) | ⟨c, _, hpc⟩) | ⟨o, ho, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨c, _, hpc⟩ | ⟨c, _, hpc⟩ | ⟨o, ho, e, he, hpc⟩
   · obtain ⟨⟨c, i⟩, hci, rfl⟩ := List.mem_map.mp hpc
     exact originalClause_routes_nodup_at hw hv hci
   · obtain ⟨⟨sourceClause, i⟩, hci, rfl⟩ := List.mem_map.mp hpc
@@ -1895,10 +1866,8 @@ private theorem placedClause_routes_nodup {φ : CNF ℕ}
       (f := Orthogonal.translate (cellOrigin 120 c))
       (fun _ _ h => (List.map_inj_right (fun _ _ h => add_right_cancel h)).mp h)
     simpa only [List.map_map, Function.comp_def] using hn
-  · obtain ⟨e, he, hpc⟩ := List.mem_flatMap.mp hpc
-    have hne (l : Fin 2) := access_reverse_ne (sites := crossingSites φ) (l := l)
+  · have hne (l : Fin 2) := access_reverse_ne (sites := crossingSites φ) (l := l)
       (PlanarCompile.occurrencePath_unit ho (prefixStep_mem he))
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
     rcases hpc with rfl | rfl <;> simp [link, hne, Ne.symm (hne _)]
 
 private theorem placedClause_route_head (φ : CNF ℕ) {r : Route} (pc : PlacedClause)
