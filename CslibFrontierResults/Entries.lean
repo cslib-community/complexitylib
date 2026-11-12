@@ -36,6 +36,7 @@ import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
+import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
@@ -4379,3 +4380,39 @@ register_result "w-hierarchy-subset-xp" where
     WP denotes this library's reduction closure with arbitrary, potentially ineffective time \
     and parameter bounds; equivalence with the effective literature W[P] is not claimed. Circuits \
     are straight-line programs, with the basis conventions documented in WHierarchy.lean."
+
+register_result "dnnf-size-multipartition-cover" where
+  title := "DNNF size bounds the multi-partition rectangle cover number"
+  topic := "circuit complexity"
+  sources := [
+    { paper := BovaCapelliMengelSlivovsky2016, theorem := unverified, locator := unverified },
+    { paper := ArenasBroadrickLiewVanDenBroeck2026, theorem := "Theorem 3.1",
+      locator := "§3.2, p. 9" }
+  ]
+  theorems := [
+    Cslib.Circuits.NNF.exists_isCover,
+    Cslib.Circuits.NNF.coverNumberFun_le_size,
+    Cslib.Circuits.NNF.coverNumberFun_false_le_size
+  ]
+  scope := "NNF DAGs with literal and constant leaves and fan-in-two gates on finitely many \
+    nodes, size = number of nodes; for at least two variables, a DNNF with s nodes computing f \
+    gives a cover of f⁻¹(1) by s rectangles, each for its own partition with both sides of at \
+    least n/3 variables."
+
+register_result "ddnnf-negation-separation" where
+  title := "d-DNNF is not polynomially closed under negation, given cubic edge expanders"
+  topic := "circuit complexity"
+  sources := [
+    { paper := ArenasBroadrickLiewVanDenBroeck2026, theorem := "Theorem 1.1",
+      locator := "§1, p. 3; proof in §5 (Proposition 5.1, Theorem 5.3)" }
+  ]
+  theorems := [
+    Cslib.CubicEdgeColoring.ddnnf_negation_separation,
+    Cslib.Circuits.NNF.exponential_separation_of_expanders
+  ]
+  scope := "For every cubic graph with a proper 3-edge-colouring on n ≥ 2 vertices that is a \
+    balanced-cut γ-edge expander, f_G has a d-DNNF with at most 150n + 50 nodes and every DNNF \
+    for ¬f_G has at least (48/47)^(γn/126) nodes. Theorem 1.1 itself (a 2^(cn) lower bound \
+    with c > 0) is derived from a family of such expanders with γ > 0 on unboundedly many \
+    vertex counts, which is Proposition 5.2 of the paper \
+    and is a hypothesis, not proved (#4668)."
