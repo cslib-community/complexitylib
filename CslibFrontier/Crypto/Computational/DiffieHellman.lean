@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Computational.DiffieHellman.Finite
 public import CslibFrontier.Computability.Probabilistic.UniformNat
 public import CslibFrontier.Crypto.Computational.DiscreteLog
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
@@ -29,79 +30,59 @@ import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime.Init
 import Mathlib.FieldTheory.Finite.Basic
 import CslibFrontier.Probability.PMF.EventBind
+import CslibFrontier.Probability.PMF.Bind
 
 /-!
 # The Computational and Decisional Diffie–Hellman assumptions
 
-Over a `PrimeOrderGroupFamily`, the Computational Diffie–Hellman (CDH) experiment
-([BonehShoup2023], Attack Game 10.5) draws public group parameters `d` from a setup law and two
-independent uniform exponents `α, β : ZMod (F.order d)`, gives the adversary `(d, encode (α • g),
-encode (β • g))`, and accepts when the adversary outputs `encode ((α * β) • g)`.
+Over a `PrimeOrderGroupFamily`, the Computational Diffie–Hellman (CDH) game ([BonehShoup2023],
+Attack Game 10.5) draws public group parameters `d` from a setup law and runs the fixed-group
+experiment `Cslib.Crypto.cdhExperiment` in `F.Carrier d`: the adversary receives `a • g` and `b • g`
+(the textbook `g^a` and `g^b`) and wins when it outputs `(a * b) • g`. The Decisional
+Diffie–Hellman (DDH) games ([BonehShoup2023], Attack Game 10.6) likewise run
+`Cslib.Crypto.ddhRealExperiment` and `Cslib.Crypto.ddhRandomExperiment`.
 
-The Decisional Diffie–Hellman (DDH) experiment ([BonehShoup2023], Attack Game 10.6) compares the
-real tuple `(d, encode (α • g), encode (β • g), encode ((α * β) • g))` against the ideal tuple
-`(d, encode (α • g), encode (β • g), encode (γ • g))` with an independent uniform `γ`.
+Adversaries receive and return group elements. Their efficiency is stated on encodings: a CDH
+adversary is admissible when one uniform strict PPT machine reads `encCDHInput`, the unary security
+parameter, group parameters and encoded elements, and writes the encoding of its output element.
+`encCDHInput_apply` and `encDDHInput_apply` give the word layouts.
 
-We prove the implications `DDH ⇒ CDH ⇒ DiscreteLog` between the assumptions, the distributional
+We prove the implications `DDH ⇒ CDH ⇒ DiscreteLog` between the assumptions from the fixed-group
+bounds `Cslib.Crypto.dlAdvantage_le_cdhAdvantage_dlToCDH` and
+`Cslib.Crypto.ddhRandomExperiment_cdhToDDH_apply_true_le`, together with the distributional
 rerandomisation lemma underlying the random self-reducibility of DDH ([BonehShoup2023],
 Section 10.11, Exercises 10.8–10.9, pp. 425–426; `ddhRerandomizeLaw_real` and
-`ddhRerandomizeLaw_ideal`), its word-level and game-level consequences
-(`encodeDDHRerandomize`, `ddhRerandomizeGame`, `ddhRerandomizeGame_real`,
-`ddhRerandomizeGame_ideal`, `advantage_ddhRerandomizeGame_eq`, `DDH.ddhRerandomizeGame`), an
-original single-invocation worst-case-to-average-case DDH distinguishing reduction using
-`ProbComp.sampleModNat` (`ddhSampleModExponents`, `ddhSelfReduceDistinguisher`,
-`ddhWorstCaseGame`, `advantage_ddhRerandomizeGame_ddhWorstCaseGame_le`,
-`advantage_ddhRealGame_le_ddhWorstCaseGame`, `ddh_of_worstCase`), and the worst-case DDH decider
-of [BonehShoup2023], Section 10.11, Exercise 10.10 (p. 426; `ddhRealRefTuple`, `ddhIdealRefTuple`,
-`ddhAmplifiedDecider`, `isPPTOn_ddhAmplifiedDecider`, `ddhAmplifiedDecider_error_le_pow`,
-`negligible_ddhAmplifiedDecider_error`), which amplifies an average-case distinguisher with
-inverse-polynomial advantage via repeated random self-reduction trials and a Chernoff/Hoeffding
-tail bound (`ProbComp.countTrue_average_deviation_pow`) so that it correctly decides every input
-tuple `(α • g, β • g, γ • g)` except with negligible error probability. The Diffie–Hellman
+`ddhRerandomizeLaw_ideal`) and its word-level form `encodeDDHRerandomize`. The Diffie–Hellman
 assumptions are hypotheses, not theorems.
 
 ## Main definitions
 
-* `Cslib.Crypto.PrimeOrderGroupFamily.CDHChallenge`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.DDHChallenge`: named, arbitrary word-valued public challenges.
-* `Cslib.Crypto.PrimeOrderGroupFamily.cdhExperiment`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhRealExperiment`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhIdealExperiment`: exact `ProbComp` experiments with
-  fixed public group parameters; the outer games retain an arbitrary setup PMF.
-* `Cslib.Crypto.PrimeOrderGroupFamily.encCDHChallenge`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.encDDHChallenge`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.encCDHInput`: field-ordered challenge encodings and the
-  CDH input encoding with a unary security parameter.
-* `Cslib.Crypto.PrimeOrderGroupFamily.cdhGame`, `Cslib.Crypto.PrimeOrderGroupFamily.CDH`:
-  the Computational Diffie–Hellman experiment and assumption.
+* `Cslib.Crypto.PrimeOrderGroupFamily.CDHInput`, `Cslib.Crypto.PrimeOrderGroupFamily.DDHInput`:
+  the inputs of CDH adversaries and DDH distinguishers.
+* `Cslib.Crypto.PrimeOrderGroupFamily.encCDHInput`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.encDDHInput`: their encodings.
+* `Cslib.Crypto.PrimeOrderGroupFamily.CDHAdversary`, `Cslib.Crypto.PrimeOrderGroupFamily.cdhGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.CDH`: the Computational Diffie–Hellman game and assumption.
 * `Cslib.Crypto.PrimeOrderGroupFamily.dlToCDHAdversary`: the reduction from discrete logarithm to
   CDH.
-* `Cslib.Crypto.PrimeOrderGroupFamily.ddhRealGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhIdealGame`, `Cslib.Crypto.PrimeOrderGroupFamily.DDH`:
-  the real and ideal Decisional Diffie–Hellman experiments and assumption.
-* `Cslib.Crypto.PrimeOrderGroupFamily.encDDHTuple`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.encDDHInput`: the encodings of a DDH tuple `(u, v, w)` and
-  of a DDH distinguisher's input `(1ⁿ, d, u, v, w)`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.DDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhRealGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhRandomGame`, `Cslib.Crypto.PrimeOrderGroupFamily.DDH`:
+  the real and random Decisional Diffie–Hellman games and assumption.
 * `Cslib.Crypto.PrimeOrderGroupFamily.cdhToDDHDistinguisher`: the reduction from CDH to DDH.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomize`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeLaw`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.encodeDDHRerandomize`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeGame`: algebraic, word-level, and game-level
-  DDH rerandomisation ([BonehShoup2023], Exercises 10.8–10.9, pp. 425–426).
+  `Cslib.Crypto.PrimeOrderGroupFamily.encodeDDHRerandomize`: algebraic and word-level DDH
+  rerandomisation ([BonehShoup2023], Exercises 10.8–10.9, pp. 425–426).
 * `Cslib.Crypto.PrimeOrderGroupFamily.sampleExp`: approximate uniform exponent sampling modulo
   `F.order d` via `ProbComp.sampleModNat` with statistical distance at most `1 / 2 ^ n`.
-* `Cslib.Crypto.PrimeOrderGroupFamily.ddhSampleModExponents`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.sampleModZModLaw`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhSelfReduceDistinguisher`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhWorstCaseGame`: original single-invocation
-  worst-case-to-average-case DDH distinguishing reduction.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhRealRefTuple`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhIdealRefTuple`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider`: reference DDH / non-DDH tuples and
-  the Chernoff-amplified worst-case DDH decider ([BonehShoup2023], Exercise 10.10, p. 426).
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhIdealRefTuple`: reference DDH and non-DDH tuples.
 
 ## Main results
 
+* `Cslib.Crypto.PrimeOrderGroupFamily.encCDHInput_apply`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.encDDHInput_apply`: the input layouts.
 * `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_discreteLogGame_le_cdhGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.CDH.discreteLog`: `CDH` implies `DiscreteLog`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_cdhGame_le_advantage_ddh_add`,
@@ -111,29 +92,11 @@ assumptions are hypotheses, not theorems.
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeLaw_real`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeLaw_ideal`: the distributional rerandomisation
   lemma for DDH tuples ([BonehShoup2023], Exercises 10.8–10.9, pp. 425–426).
-* `Cslib.Crypto.PrimeOrderGroupFamily.encodeDDHRerandomize_encode`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.encodeDDHRerandomize_val`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_encodeDDHRerandomize`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeGame_real`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhRerandomizeGame_ideal`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRerandomizeGame_eq`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhRerandomizeGame`: word-level and game-level
-  consequences of Exercises 10.8–10.9 (pp. 425–426).
-* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_sampleExp`,
+* `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_encodeDDHRerandomize`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_sampleExp`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_bind_sampleExp_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhSampleModExponents`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.dist_sampleModZModLaw_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhSelfReduceDistinguisher`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRealGame_le_ddhWorstCaseGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddh_of_worstCase`: original single-invocation
-  worst-case-to-average-case DDH distinguishing reduction.
-* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhAmplifiedDecider`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider_error_le_pow`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider_correct_ge_one_sub_pow`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_ddhAmplifiedDecider_error`: worst-case DDH
-  decision with negligible error from an average-case distinguisher with inverse-polynomial
-  advantage ([BonehShoup2023], Exercise 10.10, p. 426).
+  `Cslib.Crypto.PrimeOrderGroupFamily.dist_sampleModZModLaw_le`: efficient rerandomisation.
 
 ## References
 
@@ -149,130 +112,232 @@ namespace Cslib.Crypto.PrimeOrderGroupFamily
 open Probability Turing.MultiTapeTM
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
-/-- An encoded CDH challenge. The words need not be valid group encodings, so adversaries remain
-defined on every input word. The experiment supplies encodings of two independent public
-elements. -/
-@[ext]
-structure CDHChallenge {GroupParameters : Type} where
-  /-- Public parameters selecting the group, its prime order and generator within the family.
-  For Schnorr groups these contain the modulus `p`, subgroup order `q` and generator `g`. -/
-  groupParameters : GroupParameters
-  /-- Encoding of the first public element, `a • g` in an honest challenge. -/
-  leftPublic : List Bool
-  /-- Encoding of the second public element, `b • g` in an honest challenge. -/
-  rightPublic : List Bool
-
-/-- An encoded DDH challenge. No validity or Diffie–Hellman relation is required of its words;
-the real and ideal experiments determine their respective distributions. -/
-@[ext]
-structure DDHChallenge {GroupParameters : Type} where
-  /-- Public parameters selecting the group, its prime order and generator within the family.
-  For Schnorr groups these contain the modulus `p`, subgroup order `q` and generator `g`. -/
-  groupParameters : GroupParameters
-  /-- Encoding of the first public element, `a • g` in an honest challenge. -/
-  leftPublic : List Bool
-  /-- Encoding of the second public element, `b • g` in an honest challenge. -/
-  rightPublic : List Bool
-  /-- Candidate shared element: `(a * b) • g` in the real experiment and independent `c • g`
-  in the ideal experiment, both encoded as words. -/
-  candidateShared : List Bool
-
 variable (F : PrimeOrderGroupFamily)
 
-/-- Encode a CDH challenge in order `groupParameters`, `leftPublic`, `rightPublic`.
-The group parameters and first public word are framed; the final public word is not. -/
-enc_structure encCDHChallenge (F : PrimeOrderGroupFamily) :
-    CDHChallenge (GroupParameters := F.Desc) where
-  groupParameters : F.encDesc, leftPublic : encBits, rightPublic : encBits
+/-! ### Adversary inputs and their encodings -/
 
-/-- Encode a DDH challenge in order `groupParameters`, `leftPublic`, `rightPublic`,
-`candidateShared`. The group parameters and both public words are framed;
-the candidate shared word is not. -/
-enc_structure encDDHChallenge (F : PrimeOrderGroupFamily) :
-    DDHChallenge (GroupParameters := F.Desc) where
-  groupParameters : F.encDesc, leftPublic : encBits, rightPublic : encBits,
-  candidateShared : encBits
+/-- Group elements are compared through their injective encodings, so the equality tests of
+`Cslib.Crypto.cdhExperiment` and `Cslib.Crypto.cdhToDDH` compare encoded words. -/
+instance (d : F.Desc) : DecidableEq (F.Carrier d) := fun x y =>
+  decidable_of_iff (F.encode d x = F.encode d y) (F.encode_injective d).eq_iff
 
-/-- CDH adversary input: the security parameter in unary, framed, followed by `encCDHChallenge`. -/
-abbrev encCDHInput : ℕ × CDHChallenge (GroupParameters := F.Desc) ↪ List Bool :=
-  encPair encUnary F.encCDHChallenge
+/-- The input of a CDH adversary: the security parameter, public group parameters `d` and two
+elements of `F.Carrier d`, which are `a • g` and `b • g` in the experiment. -/
+structure CDHInput where
+  /-- The security parameter, given to machines in unary. -/
+  secParam : ℕ
+  /-- Public parameters selecting the group, its prime order and generator within the family.
+  For Schnorr groups these contain the modulus `p`, subgroup order `q` and generator `g`. -/
+  groupParameters : F.Desc
+  /-- The first public element, `a • g` in the experiment. -/
+  leftPublic : F.Carrier groupParameters
+  /-- The second public element, `b • g` in the experiment. -/
+  rightPublic : F.Carrier groupParameters
+
+/-- The input of a DDH distinguisher: a CDH input and a candidate shared element, which is
+`(a * b) • g` in the real experiment and an independent `c • g` in the random one. -/
+structure DDHInput extends F.CDHInput where
+  /-- The candidate shared element. -/
+  candidateShared : F.Carrier groupParameters
+
+namespace CDHInput
+
+variable {F}
+
+/-- The words a machine reads for a CDH input: the security parameter, the group parameters and
+the encodings of the two public elements. -/
+def words (x : F.CDHInput) : ℕ × F.Desc × List Bool × List Bool :=
+  (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
+    F.encode x.groupParameters x.rightPublic)
+
+/-- A CDH input is determined by its words, since element encodings are injective. -/
+theorem words_injective : Function.Injective (words (F := F)) := by
+  rintro ⟨n, d, u, v⟩ ⟨n', d', u', v'⟩ h
+  simp only [words, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl, hu, hv⟩ := h
+  rw [F.encode_injective d hu, F.encode_injective d hv]
+
+end CDHInput
+
+namespace DDHInput
+
+variable {F}
+
+/-- The words a machine reads for a DDH input: the security parameter, the group parameters and
+the encodings of the three elements. -/
+def words (x : F.DDHInput) : ℕ × F.Desc × List Bool × List Bool × List Bool :=
+  (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic,
+    F.encode x.groupParameters x.rightPublic, F.encode x.groupParameters x.candidateShared)
+
+/-- A DDH input is determined by its words, since element encodings are injective. -/
+theorem words_injective : Function.Injective (words (F := F)) := by
+  rintro ⟨⟨n, d, u, v⟩, w⟩ ⟨⟨n', d', u', v'⟩, w'⟩ h
+  simp only [words, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl, hu, hv, hw⟩ := h
+  rw [F.encode_injective d hu, F.encode_injective d hv, F.encode_injective d hw]
+
+end DDHInput
+
+/-- The encoding of a CDH input: its `CDHInput.words` in order, each framed except the last
+(`encCDHInput_apply`). -/
+def encCDHInput : F.CDHInput ↪ List Bool :=
+  (⟨CDHInput.words, CDHInput.words_injective⟩ : F.CDHInput ↪ _).trans
+    (encPair encUnary (encPair F.encDesc (encPair encBits encBits)))
+
+/-- The encoding of a DDH input: its `DDHInput.words` in order, each framed except the last
+(`encDDHInput_apply`). -/
+def encDDHInput : F.DDHInput ↪ List Bool :=
+  (⟨DDHInput.words, DDHInput.words_injective⟩ : F.DDHInput ↪ _).trans
+    (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+
+/-- The CDH input layout: unary security parameter, group parameters and first element framed,
+then the second element. -/
+theorem encCDHInput_apply (x : F.CDHInput) :
+    F.encCDHInput x = frame (encUnary x.secParam) ++ frame (F.encDesc x.groupParameters) ++
+      frame (F.encode x.groupParameters x.leftPublic) ++
+        F.encode x.groupParameters x.rightPublic := by
+  simp [encCDHInput, CDHInput.words, encPair, encBits]
+
+/-- The DDH input layout: unary security parameter, group parameters and the first two elements
+framed, then the candidate shared element. -/
+theorem encDDHInput_apply (x : F.DDHInput) :
+    F.encDDHInput x = frame (encUnary x.secParam) ++ frame (F.encDesc x.groupParameters) ++
+      frame (F.encode x.groupParameters x.leftPublic) ++
+        frame (F.encode x.groupParameters x.rightPublic) ++
+          F.encode x.groupParameters x.candidateShared := by
+  simp [encDDHInput, DDHInput.words, encPair, encBits]
+
+/-- A Diffie–Hellman tuple `(u, v, w)` of group elements, each given by its encoding word, as in
+the tuple `(encode (α • g), encode (β • g), encode (γ • g))` of the DDH experiments. The words `u`
+and `v` are framed; `w` is not. -/
+abbrev encDDHTuple : List Bool × List Bool × List Bool ↪ List Bool :=
+  encPair encBits (encPair encBits encBits)
+
+namespace CDHInput
+
+variable {F}
+
+/-- Reading the words of a CDH input copies its encoding. -/
+theorem computableInPolyTime_words :
+    ComputableInPolyTime (words (F := F)) F.encCDHInput
+      (encPair encUnary (encPair F.encDesc (encPair encBits encBits))) :=
+  .of_eq fun _ => rfl
+
+/-- Reading the security parameter of a computed CDH input. -/
+@[fun_prop] theorem computableInPolyTime_secParam {α : Type} {enc : α ↪ List Bool}
+    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
+    ComputableInPolyTime (fun a => (g a).secParam) enc encUnary :=
+  (computableInPolyTime_words.comp h).fst'
+
+/-- Reading the group parameters of a computed CDH input. -/
+@[fun_prop] theorem computableInPolyTime_groupParameters {α : Type} {enc : α ↪ List Bool}
+    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
+    ComputableInPolyTime (fun a => (g a).groupParameters) enc F.encDesc :=
+  (computableInPolyTime_words.comp h).snd'.fst'
+
+/-- Reading the encoded first element of a computed CDH input. -/
+@[fun_prop] theorem computableInPolyTime_encode_leftPublic {α : Type} {enc : α ↪ List Bool}
+    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
+    ComputableInPolyTime (fun a => F.encode (g a).groupParameters (g a).leftPublic) enc encBits :=
+  (computableInPolyTime_words.comp h).snd'.snd'.fst'
+
+/-- Reading the encoded second element of a computed CDH input. -/
+@[fun_prop] theorem computableInPolyTime_encode_rightPublic {α : Type} {enc : α ↪ List Bool}
+    {g : α → F.CDHInput} (h : ComputableInPolyTime g enc F.encCDHInput) :
+    ComputableInPolyTime (fun a => F.encode (g a).groupParameters (g a).rightPublic) enc encBits :=
+  (computableInPolyTime_words.comp h).snd'.snd'.snd'
+
+end CDHInput
+
+namespace DDHInput
+
+variable {F}
+
+/-- Reading the words of a DDH input copies its encoding. -/
+theorem computableInPolyTime_words :
+    ComputableInPolyTime (words (F := F)) F.encDDHInput
+      (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))) :=
+  .of_eq fun _ => rfl
+
+/-- Dropping the candidate shared element of a computed DDH input. -/
+@[fun_prop] theorem computableInPolyTime_toCDHInput {α : Type} {enc : α ↪ List Bool}
+    {g : α → F.DDHInput} (h : ComputableInPolyTime g enc F.encDDHInput) :
+    ComputableInPolyTime (fun a => (g a).toCDHInput) enc F.encCDHInput :=
+  have hwords : ComputableInPolyTime (toCDHInput (F := F)) F.encDDHInput F.encCDHInput :=
+    ComputableInPolyTime.of_enc_eq
+      (f := fun x : F.DDHInput => (x.words.1, x.words.2.1, x.words.2.2.1, x.words.2.2.2.1))
+      (by have := computableInPolyTime_words (F := F); fun_prop) fun _ => rfl
+  hwords.comp h
+
+/-- Reading the encoded candidate shared element of a computed DDH input. -/
+@[fun_prop] theorem computableInPolyTime_encode_candidateShared {α : Type} {enc : α ↪ List Bool}
+    {g : α → F.DDHInput} (h : ComputableInPolyTime g enc F.encDDHInput) :
+    ComputableInPolyTime (fun a => F.encode (g a).groupParameters (g a).candidateShared) enc
+      encBits :=
+  (computableInPolyTime_words.comp h).snd'.snd'.snd'.snd'
+
+end DDHInput
 
 /-! ### Computational Diffie–Hellman (CDH) -/
 
-/-- The CDH experiment conditional on public group parameters. The exact uniform draws are part of
-this free probabilistic program; `cdhGame` chooses the group parameters and interprets the program.
-In additive notation, `a • g` is the textbook group element `g^a`. -/
-noncomputable def cdhExperiment
-    (adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool))
-    (n : ℕ) (d : F.Desc) : ProbComp Bool := do
-  let a ← ProbComp.uniform (ZMod (F.order d))
-  let b ← ProbComp.uniform (ZMod (F.order d))
-  let guess ← adversary n
-    { groupParameters := d
-      leftPublic := F.encode d (a • F.generator d)
-      rightPublic := F.encode d (b • F.generator d) }
-  return decide (guess = F.encode d ((a * b) • F.generator d))
-
-/-- Evaluating the fixed-parameter CDH program gives its exact uniform experiment law. -/
-@[simp] theorem eval_cdhExperiment
-    (adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool))
-    (n : ℕ) (d : F.Desc) :
-    ProbComp.eval (F.cdhExperiment adversary n d) = (do
-      let a ← PMF.uniformOfFintype (ZMod (F.order d))
-      let b ← PMF.uniformOfFintype (ZMod (F.order d))
-      let guess ← ProbComp.eval (adversary n
-        ⟨d, F.encode d (a • F.generator d), F.encode d (b • F.generator d)⟩)
-      return decide (guess = F.encode d ((a * b) • F.generator d))) := by
-  simp only [cdhExperiment, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+/-- A CDH adversary over the family: given the security parameter, public group parameters `d`
+and two elements of `F.Carrier d`, it outputs an element of `F.Carrier d`. `CDH` states its
+efficiency on encodings. -/
+abbrev CDHAdversary : Type :=
+  ℕ → (d : F.Desc) → F.Carrier d → F.Carrier d → ProbComp (F.Carrier d)
 
 /-- The Computational Diffie–Hellman experiment ([BonehShoup2023], Attack Game 10.5): choose
-group parameters using the arbitrary setup law, then evaluate `cdhExperiment`. No efficient sampler
-for setup is required. -/
-noncomputable def cdhGame (setup : ℕ → PMF F.Desc)
-    (adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool))
-    (n : ℕ) : Game := do
+group parameters `d` using the arbitrary setup law, then run `Cslib.Crypto.cdhExperiment` in the
+group `F.Carrier d`. No efficient sampler for setup is required. -/
+noncomputable def cdhGame (setup : ℕ → PMF F.Desc) (adversary : F.CDHAdversary) (n : ℕ) :
+    Game := do
   let d ← setup n
-  ProbComp.eval (F.cdhExperiment adversary n d)
+  ProbComp.eval (cdhExperiment (F.order d) (F.generator d) (adversary n d))
 
-/-- The Computational Diffie–Hellman assumption for a family and a setup law: every uniform strict
-PPT adversary computes `encode ((α * β) • g)` from `(d, encode (α • g), encode (β • g))` with
-negligible probability. -/
+/-- The Computational Diffie–Hellman assumption for a family and a setup law: every CDH adversary
+realized by a uniform strict PPT machine, which reads `encCDHInput` and writes the encoding of the
+output element, wins `cdhGame` with negligible probability. -/
 def CDH (setup : ℕ → PMF F.Desc) : Prop :=
-  ∀ adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool),
-    IsPPTOn F.encCDHInput encBits
-      (fun input => adversary input.1 input.2) →
+  ∀ adversary : F.CDHAdversary,
+    IsPPTOn F.encCDHInput encBits (fun x => F.encode x.groupParameters <$>
+      adversary x.secParam x.groupParameters x.leftPublic x.rightPublic) →
     Negligible fun n => Game.succProbability (F.cdhGame setup adversary n)
 
-/-- Turn a discrete-logarithm adversary into a CDH adversary by running it on `(d, encode (α • g))`
-to obtain a candidate exponent `a` and multiplying `encode (β • g)` by `a`. -/
-def dlToCDHAdversary (adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool))
-    (n : ℕ) (input : CDHChallenge (GroupParameters := F.Desc)) : ProbComp (List Bool) := do
-  let guess ← adversary n (input.groupParameters, input.leftPublic)
-  return F.smul (input.groupParameters, ofBits guess, input.rightPublic)
+/-- The fixed-group discrete-logarithm adversary run by a word-level one: encode the instance,
+run the word-level adversary and read its output as a binary exponent, as `discreteLogGame`
+does. -/
+noncomputable def discreteLogAdversary
+    (adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool)) (n : ℕ) (d : F.Desc)
+    (u : F.Carrier d) : ProbComp (ZMod (F.order d)) :=
+  (fun guess => (ofBits guess : ZMod (F.order d))) <$> adversary n (d, F.encode d u)
 
-/-- Whenever the discrete-logarithm adversary recovers `α`, `dlToCDHAdversary` outputs the valid
-Diffie–Hellman shared element `encode ((α * β) • g)`. -/
+/-- `discreteLogGame` averages `Cslib.Crypto.dlExperiment` of `discreteLogAdversary` over the
+setup law. -/
+theorem discreteLogGame_eq (setup : ℕ → PMF F.Desc)
+    (adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool)) (n : ℕ) :
+    F.discreteLogGame setup adversary n = (do
+      let d ← setup n
+      ProbComp.eval
+        (dlExperiment (F.order d) (F.generator d) (F.discreteLogAdversary adversary n d))) := by
+  simp [discreteLogGame, dlExperiment, discreteLogAdversary, PMF.map, Function.comp_def]
+
+/-- Turn a word-level discrete-logarithm adversary into a CDH adversary: run
+`Cslib.Crypto.dlToCDH` on its `discreteLogAdversary`. -/
+noncomputable def dlToCDHAdversary
+    (adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool)) : F.CDHAdversary :=
+  fun n d => dlToCDH (F.discreteLogAdversary adversary n d)
+
+/-- Whenever the discrete-logarithm adversary recovers `α`, `dlToCDHAdversary` outputs the
+Diffie–Hellman shared element. -/
 theorem succProbability_discreteLogGame_le_cdhGame (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool)) (n : ℕ) :
     Game.succProbability (F.discreteLogGame setup adversary n) ≤
       Game.succProbability (F.cdhGame setup (F.dlToCDHAdversary adversary) n) := by
+  rw [discreteLogGame_eq]
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
-  simp only [discreteLogGame, cdhGame, eval_cdhExperiment, dlToCDHAdversary,
-    ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [PMF.bind_apply, PMF.bind_apply]
-  refine tsum_le_tsum fun d => mul_le_mul_of_nonneg_left ?_ zero_le
-  rw [PMF.bind_apply, PMF.bind_apply]
-  refine tsum_le_tsum fun α => mul_le_mul_of_nonneg_left ?_ zero_le
-  rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
-    ((ProbComp.eval (adversary n (d, F.encode d (α • F.generator d)))).bind _)]
-  rw [PMF.bind_apply, PMF.bind_apply]
-  refine tsum_le_tsum fun β => mul_le_mul_of_nonneg_left ?_ zero_le
-  refine tsum_le_tsum fun guess => mul_le_mul_of_nonneg_left ?_ zero_le
-  by_cases hα : (ofBits guess : ZMod (F.order d)) = α
-  · simp only [hα, F.smul_encode, smul_smul, decide_true, le_rfl]
-  · simp only [hα, decide_false, PMF.pure_apply, Bool.true_eq_false, ↓reduceIte, zero_le]
+  refine PMF.bind_apply_mono_on_support _ _ fun d _ => ?_
+  exact (ENNReal.toNNReal_le_toNNReal (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)).mp
+    (dlAdvantage_le_cdhAdvantage_dlToCDH _ _ _)
 
 /-- The discrete-logarithm-to-CDH reduction is uniform strict PPT when the discrete-logarithm
 adversary is. -/
@@ -280,13 +345,15 @@ theorem isPPTOn_dlToCDHAdversary
     {adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool)}
     (hA : IsPPTOn (encPair encUnary (encPair F.encDesc encBits)) encBits
       (fun input => adversary input.1 input.2)) :
-    IsPPTOn F.encCDHInput encBits
-      (fun input => F.dlToCDHAdversary adversary input.1 input.2) := by
-  unfold dlToCDHAdversary
-  refine (hA.preprocess
-    (prepare := fun input : ℕ × CDHChallenge (GroupParameters := F.Desc) =>
-      (input.1, input.2.groupParameters, input.2.leftPublic)) (by fun_prop)).bind_with ?_
-  exact (F.computableInPolyTime_smul.comp (by fun_prop)).isPPTOn
+    IsPPTOn F.encCDHInput encBits fun x => F.encode x.groupParameters <$>
+      F.dlToCDHAdversary adversary x.secParam x.groupParameters x.leftPublic x.rightPublic := by
+  refine ((hA.preprocess (prepare := fun x : F.CDHInput =>
+      (x.secParam, x.groupParameters, F.encode x.groupParameters x.leftPublic))
+      (by fun_prop)).map_with
+    (f := fun x guess => F.smul (x.groupParameters, ofBits guess,
+      F.encode x.groupParameters x.rightPublic))
+    (F.computableInPolyTime_smul.comp (by fun_prop))).congr fun x => ?_
+  simp [dlToCDHAdversary, dlToCDH, discreteLogAdversary, F.smul_encode]
 
 /-- **CDH implies the discrete-logarithm assumption**. -/
 theorem CDH.discreteLog {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc} (h : F.CDH setup) :
@@ -297,228 +364,86 @@ theorem CDH.discreteLog {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
 
 /-! ### Decisional Diffie–Hellman (DDH) -/
 
-/-- The real DDH program conditional on group parameters: draw independent exact uniform exponents
-`a, b` and give the distinguisher the encodings of `a • g`, `b • g`, and `(a * b) • g`. -/
-noncomputable def ddhRealExperiment
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) (d : F.Desc) : ProbComp Bool := do
-  let a ← ProbComp.uniform (ZMod (F.order d))
-  let b ← ProbComp.uniform (ZMod (F.order d))
-  distinguisher n
-    { groupParameters := d
-      leftPublic := F.encode d (a • F.generator d)
-      rightPublic := F.encode d (b • F.generator d)
-      candidateShared := F.encode d ((a * b) • F.generator d) }
+/-- A DDH distinguisher over the family: given the security parameter, public group parameters
+`d` and three elements of `F.Carrier d`, it outputs a bit. `DDH` states its efficiency on
+encodings. -/
+abbrev DDHDistinguisher : Type :=
+  ℕ → (d : F.Desc) → F.Carrier d → F.Carrier d → F.Carrier d → ProbComp Bool
 
-/-- Evaluating the real DDH program gives the exact correlated challenge law. -/
-@[simp] theorem eval_ddhRealExperiment
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) (d : F.Desc) :
-    ProbComp.eval (F.ddhRealExperiment distinguisher n d) = (do
-      let a ← PMF.uniformOfFintype (ZMod (F.order d))
-      let b ← PMF.uniformOfFintype (ZMod (F.order d))
-      ProbComp.eval (distinguisher n
-        ⟨d, F.encode d (a • F.generator d), F.encode d (b • F.generator d),
-          F.encode d ((a * b) • F.generator d)⟩)) := by
-  simp only [ddhRealExperiment, ProbComp.eval_bind, ProbComp.eval_uniform,
-    PMF.monad_bind_eq_bind]
-
-/-- The real DDH game ([BonehShoup2023], Attack Game 10.6): choose group parameters using the
-arbitrary setup law, then evaluate `ddhRealExperiment`. -/
-noncomputable def ddhRealGame (setup : ℕ → PMF F.Desc)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
+/-- The real DDH game ([BonehShoup2023], Attack Game 10.6, Experiment 0): choose group parameters
+`d` using the arbitrary setup law, then run `Cslib.Crypto.ddhRealExperiment` in `F.Carrier d`. -/
+noncomputable def ddhRealGame (setup : ℕ → PMF F.Desc) (distinguisher : F.DDHDistinguisher)
     (n : ℕ) : Game := do
   let d ← setup n
-  ProbComp.eval (F.ddhRealExperiment distinguisher n d)
+  ProbComp.eval (ddhRealExperiment (F.order d) (F.generator d) (distinguisher n d))
 
-/-- The ideal DDH program conditional on group parameters: draw independent exact uniform exponents
-`a, b, c` and give the distinguisher the encodings of `a • g`, `b • g`, and `c • g`. -/
-noncomputable def ddhIdealExperiment
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) (d : F.Desc) : ProbComp Bool := do
-  let a ← ProbComp.uniform (ZMod (F.order d))
-  let b ← ProbComp.uniform (ZMod (F.order d))
-  let c ← ProbComp.uniform (ZMod (F.order d))
-  distinguisher n
-    { groupParameters := d
-      leftPublic := F.encode d (a • F.generator d)
-      rightPublic := F.encode d (b • F.generator d)
-      candidateShared := F.encode d (c • F.generator d) }
-
-/-- Evaluating the ideal DDH program gives the exact independent challenge law. -/
-@[simp] theorem eval_ddhIdealExperiment
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) (d : F.Desc) :
-    ProbComp.eval (F.ddhIdealExperiment distinguisher n d) = (do
-      let a ← PMF.uniformOfFintype (ZMod (F.order d))
-      let b ← PMF.uniformOfFintype (ZMod (F.order d))
-      let c ← PMF.uniformOfFintype (ZMod (F.order d))
-      ProbComp.eval (distinguisher n
-        ⟨d, F.encode d (a • F.generator d), F.encode d (b • F.generator d),
-          F.encode d (c • F.generator d)⟩)) := by
-  simp only [ddhIdealExperiment, ProbComp.eval_bind, ProbComp.eval_uniform,
-    PMF.monad_bind_eq_bind]
-
-/-- The ideal DDH game ([BonehShoup2023], Attack Game 10.6): choose group parameters using the
-arbitrary setup law, then evaluate `ddhIdealExperiment`. -/
-noncomputable def ddhIdealGame (setup : ℕ → PMF F.Desc)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
+/-- The random DDH game ([BonehShoup2023], Attack Game 10.6, Experiment 1): choose group
+parameters `d` using the arbitrary setup law, then run `Cslib.Crypto.ddhRandomExperiment` in
+`F.Carrier d`. -/
+noncomputable def ddhRandomGame (setup : ℕ → PMF F.Desc) (distinguisher : F.DDHDistinguisher)
     (n : ℕ) : Game := do
   let d ← setup n
-  ProbComp.eval (F.ddhIdealExperiment distinguisher n d)
+  ProbComp.eval (ddhRandomExperiment (F.order d) (F.generator d) (distinguisher n d))
 
-/-- A Diffie–Hellman tuple `(u, v, w)` of group elements, each given by its encoding word, as in
-the tuple `(encode (α • g), encode (β • g), encode (γ • g))` of the DDH experiments. The words `u`
-and `v` are framed; `w` is not. -/
-abbrev encDDHTuple : List Bool × List Bool × List Bool ↪ List Bool :=
-  encPair encBits (encPair encBits encBits)
-
-/-- DDH distinguisher input: the security parameter in unary, framed, followed by
-`encDDHChallenge`. Its field order is `n`, `groupParameters`, `leftPublic`, `rightPublic`,
-`candidateShared`, with every field except the last framed. -/
-abbrev encDDHInput : ℕ × DDHChallenge (GroupParameters := F.Desc) ↪ List Bool :=
-  encPair encUnary F.encDDHChallenge
-
-/-- The Decisional Diffie–Hellman assumption for a family and a setup law: every uniform strict PPT
-distinguisher has negligible advantage between `ddhRealGame` and `ddhIdealGame`. -/
+/-- The Decisional Diffie–Hellman assumption for a family and a setup law: every DDH
+distinguisher realized by a uniform strict PPT machine reading `encDDHInput` has negligible
+advantage between `ddhRealGame` and `ddhRandomGame`. -/
 def DDH (setup : ℕ → PMF F.Desc) : Prop :=
-  Game.Indistinguishable (F.ddhRealGame setup) (F.ddhIdealGame setup)
-    fun distinguisher =>
-      IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)
+  Game.Indistinguishable (F.ddhRealGame setup) (F.ddhRandomGame setup) fun distinguisher =>
+    IsPPTOn F.encDDHInput encBool fun x =>
+      distinguisher x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared
 
-/-- Turn a CDH adversary into a DDH distinguisher by testing whether its candidate shared element
-equals the challenge third element. -/
-def cdhToDDHDistinguisher
-    (adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool))
-    (n : ℕ) (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
-  let guess ← adversary n
-    { groupParameters := input.groupParameters, leftPublic := input.leftPublic,
-      rightPublic := input.rightPublic }
-  return decide (guess = input.candidateShared)
+/-- Turn a CDH adversary into a DDH distinguisher by running `Cslib.Crypto.cdhToDDH` in each
+group. -/
+def cdhToDDHDistinguisher (adversary : F.CDHAdversary) : F.DDHDistinguisher :=
+  fun n d => cdhToDDH (adversary n d)
 
-/-- In the real DDH game, `cdhToDDHDistinguisher` simulates the CDH game exactly. -/
+/-- In the real DDH game, `cdhToDDHDistinguisher` runs the CDH game. -/
 @[simp] theorem ddhRealGame_cdhToDDHDistinguisher (setup : ℕ → PMF F.Desc)
-    (adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool)) (n : ℕ) :
-    F.ddhRealGame setup (F.cdhToDDHDistinguisher adversary) n = F.cdhGame setup adversary n := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, cdhToDDHDistinguisher, cdhGame,
-    eval_cdhExperiment, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+    (adversary : F.CDHAdversary) (n : ℕ) :
+    F.ddhRealGame setup (F.cdhToDDHDistinguisher adversary) n = F.cdhGame setup adversary n :=
+  rfl
 
-/-- A fixed candidate word matches a uniformly chosen encoded group element with probability at
-most `(F.order d)⁻¹`. -/
-private theorem uniform_decide_eq_encode_le (d : F.Desc) (guess : List Bool) :
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind
-      (fun γ => PMF.pure (decide (guess = F.encode d (γ • F.generator d))))) true ≤
-      (F.order d : ℝ≥0∞)⁻¹ := by
-  rw [PMF.bind_apply, tsum_fintype]
-  simp only [PMF.uniformOfFintype_apply, ZMod.card, PMF.pure_apply, eq_comm (a := true),
-    decide_eq_true_eq]
-  have hcard :
-      (Finset.univ.filter
-        (fun γ : ZMod (F.order d) => guess = F.encode d (γ • F.generator d))).card ≤ 1 := by
-    refine Finset.card_le_one_iff.mpr fun {γ₁ γ₂} h₁ h₂ => ?_
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at h₁ h₂
-    exact F.smul_generator_injective d (F.encode_injective d (h₁.symm.trans h₂))
-  calc ∑ x : ZMod (F.order d),
-        (F.order d : ℝ≥0∞)⁻¹ *
-          (if guess = F.encode d (x • F.generator d) then 1 else 0)
-      = ((Finset.univ.filter
-          (fun γ : ZMod (F.order d) =>
-            guess = F.encode d (γ • F.generator d))).card : ℝ≥0∞) *
-          (F.order d : ℝ≥0∞)⁻¹ := by
-        rw [← Finset.mul_sum, Finset.sum_boole, mul_comm]
-    _ ≤ 1 * (F.order d : ℝ≥0∞)⁻¹ :=
-        mul_le_mul_of_nonneg_right (by exact_mod_cast hcard) zero_le
-    _ = (F.order d : ℝ≥0∞)⁻¹ := one_mul _
-
-/-- In the ideal DDH game, `cdhToDDHDistinguisher` succeeds with probability at most `1 / m`
+/-- In the random DDH game, `cdhToDDHDistinguisher` accepts with probability at most `1 / m`
 whenever every supported group order is at least `m`. -/
-theorem ddhIdealGame_cdhToDDHDistinguisher_true_le (setup : ℕ → PMF F.Desc)
-    (adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool)) (n m : ℕ)
-    (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
-    (F.ddhIdealGame setup (F.cdhToDDHDistinguisher adversary) n) true ≤ (m : ℝ≥0∞)⁻¹ := by
-  simp only [ddhIdealGame, eval_ddhIdealExperiment, cdhToDDHDistinguisher, ProbComp.eval_bind,
-    ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.bind_apply]
-  calc ∑' d, setup n d * ∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
-        ∑' β, PMF.uniformOfFintype (ZMod (F.order d)) β *
-          ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-            (ProbComp.eval (adversary n
-              ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d)⟩)).bind
-              fun guess =>
-                PMF.pure (decide (guess = F.encode d (γ • F.generator d)))) true
-      ≤ ∑' d, setup n d * (m : ℝ≥0∞)⁻¹ := by
-        refine tsum_le_tsum fun d => ?_
-        by_cases hd : d ∈ (setup n).support
-        · refine mul_le_mul_of_nonneg_left ?_ zero_le
-          have hord : (F.order d : ℝ≥0∞)⁻¹ ≤ (m : ℝ≥0∞)⁻¹ :=
-            ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr (hm d hd))
-          calc ∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
-                ∑' β, PMF.uniformOfFintype (ZMod (F.order d)) β *
-                  ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-                    (ProbComp.eval (adversary n
-                      ⟨d, F.encode d (α • F.generator d),
-                        F.encode d (β • F.generator d)⟩)).bind fun guess =>
-                      PMF.pure (decide (guess = F.encode d (γ • F.generator d)))) true
-              ≤ ∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
-                  ∑' β, PMF.uniformOfFintype (ZMod (F.order d)) β * (m : ℝ≥0∞)⁻¹ := by
-                refine tsum_le_tsum fun α => mul_le_mul_of_nonneg_left ?_ zero_le
-                refine tsum_le_tsum fun β => mul_le_mul_of_nonneg_left ?_ zero_le
-                rw [PMF.bind_comm, PMF.bind_apply]
-                calc ∑' guess, ProbComp.eval (adversary n
-                        ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d)⟩) guess *
-                      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-                        PMF.pure (decide (guess = F.encode d (γ • F.generator d)))) true
-                    ≤ ∑' guess, ProbComp.eval (adversary n
-                        ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d)⟩) guess *
-                      (m : ℝ≥0∞)⁻¹ := by
-                      refine tsum_le_tsum fun guess =>
-                        mul_le_mul_of_nonneg_left
-                          ((F.uniform_decide_eq_encode_le d guess).trans hord) zero_le
-                  _ = (m : ℝ≥0∞)⁻¹ := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-            _ = (m : ℝ≥0∞)⁻¹ := by
-                simp only [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-        · have hd0 : setup n d = 0 := by rwa [PMF.mem_support_iff, not_not] at hd
-          simp only [hd0, zero_mul, le_rfl]
-    _ = (m : ℝ≥0∞)⁻¹ := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+theorem ddhRandomGame_cdhToDDHDistinguisher_true_le (setup : ℕ → PMF F.Desc)
+    (adversary : F.CDHAdversary) (n m : ℕ) (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
+    F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n true ≤ (m : ℝ≥0∞)⁻¹ :=
+  PMF.bind_apply_le_on_support _ fun d hd =>
+    (ddhRandomExperiment_cdhToDDH_apply_true_le _ _ (F.smul_generator_injective d) _).trans
+      (ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr (hm d hd)))
 
 /-- **Quantitative reduction from CDH to DDH**: when every supported group at parameter `n` has
 order at least `m > 0`, any CDH adversary's success probability is at most the DDH distinguishing
 advantage of `cdhToDDHDistinguisher` plus `1 / m`. -/
 theorem succProbability_cdhGame_le_advantage_ddh_add (setup : ℕ → PMF F.Desc)
-    (adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool)) (n m : ℕ)
-    (hm0 : 0 < m) (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
+    (adversary : F.CDHAdversary) (n m : ℕ) (hm0 : 0 < m)
+    (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
     Game.succProbability (F.cdhGame setup adversary n) ≤
       Game.advantage (F.ddhRealGame setup (F.cdhToDDHDistinguisher adversary) n)
-        (F.ddhIdealGame setup (F.cdhToDDHDistinguisher adversary) n) + 1 / m := by
-  have hideal :
-      Game.succProbability (F.ddhIdealGame setup (F.cdhToDDHDistinguisher adversary) n) ≤
+        (F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n) + 1 / m := by
+  have hrandom :
+      Game.succProbability (F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n) ≤
         1 / m := by
     have htop : (m : ℝ≥0∞)⁻¹ ≠ ⊤ := ENNReal.inv_ne_top.mpr (Nat.cast_ne_zero.mpr hm0.ne')
     simpa only [one_div, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast] using
       ENNReal.toNNReal_mono htop
-        (F.ddhIdealGame_cdhToDDHDistinguisher_true_le setup adversary n m hm)
+        (F.ddhRandomGame_cdhToDDHDistinguisher_true_le setup adversary n m hm)
   game_trans
     [F.ddhRealGame setup (F.cdhToDDHDistinguisher adversary) n,
-     F.ddhIdealGame setup (F.cdhToDDHDistinguisher adversary) n]
-    using [F.ddhRealGame_cdhToDDHDistinguisher setup adversary n, le_rfl, hideal]
+     F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n]
+    using [F.ddhRealGame_cdhToDDHDistinguisher setup adversary n, le_rfl, hrandom]
 
 /-- The CDH-to-DDH reduction is uniform strict PPT when the CDH adversary is. -/
-theorem isPPTOn_cdhToDDHDistinguisher
-    {adversary : ℕ → CDHChallenge (GroupParameters := F.Desc) → ProbComp (List Bool)}
-    (hA : IsPPTOn F.encCDHInput encBits
-      (fun input => adversary input.1 input.2)) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.cdhToDDHDistinguisher adversary input.1 input.2) := by
-  unfold cdhToDDHDistinguisher
-  refine (hA.preprocess
-    (prepare := fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
-      (input.1, ⟨input.2.groupParameters, input.2.leftPublic, input.2.rightPublic⟩))
-    (show ComputableInPolyTime _ F.encDDHInput F.encCDHInput from by fun_prop)).bind_with ?_
-  exact (show ComputableInPolyTime
-    (fun p : (ℕ × DDHChallenge (GroupParameters := F.Desc)) × List Bool =>
-      decide (p.2 = p.1.2.candidateShared))
-    (encPair F.encDDHInput encBits) encBool from by fun_prop).isPPTOn
+theorem isPPTOn_cdhToDDHDistinguisher {adversary : F.CDHAdversary}
+    (hA : IsPPTOn F.encCDHInput encBits (fun x => F.encode x.groupParameters <$>
+      adversary x.secParam x.groupParameters x.leftPublic x.rightPublic)) :
+    IsPPTOn F.encDDHInput encBool fun x => F.cdhToDDHDistinguisher adversary x.secParam
+      x.groupParameters x.leftPublic x.rightPublic x.candidateShared := by
+  refine ((hA.preprocess (prepare := DDHInput.toCDHInput) (by fun_prop)).map_with
+    (f := fun x z => decide (z = F.encode x.groupParameters x.candidateShared))
+    (by fun_prop)).congr fun x => ?_
+  simp [cdhToDDHDistinguisher, cdhToDDH, (F.encode_injective _).eq_iff]
 
 /-- **DDH implies CDH** when every supported group at parameter `n` has order at least `m n > 0`
 and `1 / m n` is negligible. -/
@@ -827,291 +752,6 @@ theorem dist_sampleModZModLaw_le (n : ℕ) (d : F.Desc) :
     _ = 1 / 2 ^ n := by
         rw [div_mul_eq_div_div, div_self hpos.ne']
 
-/-- The single-invocation DDH random self-reduction distinguisher (original): given a DDH
-distinguisher `distinguisher`, re-randomize an input tuple `(d, u, v, w)` by sampling
-`(r, s₁, s₂) ← F.ddhSampleModExponents n d`, computing
-`(u', v', w') = F.encodeDDHRerandomize (d, (u, v, w), r, s₁, s₂)`, and running `distinguisher` on
-`(d, u', v', w')`. -/
-noncomputable def ddhSelfReduceDistinguisher
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
-  let exps ← F.ddhSampleModExponents n input.groupParameters
-  let (leftPublic, rightPublic, candidateShared) := F.encodeDDHRerandomize
-    (input.groupParameters, (input.leftPublic, input.rightPublic, input.candidateShared), exps)
-  distinguisher n
-    { groupParameters := input.groupParameters, leftPublic, rightPublic, candidateShared }
-
-/-- `ddhSelfReduceDistinguisher` is uniform strict PPT whenever `distinguisher` is (original). -/
-theorem isPPTOn_ddhSelfReduceDistinguisher
-    {distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool}
-    (hD : IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.ddhSelfReduceDistinguisher distinguisher input.1 input.2) := by
-  let encExps := encPair encNat (encPair encNat encNat)
-  let encState := encPair F.encDDHInput encExps
-  have hn : ComputableInPolyTime
-      (fun p : (ℕ × DDHChallenge (GroupParameters := F.Desc)) × ℕ × ℕ × ℕ => p.1.1)
-      encState encUnary := by fun_prop
-  have hd : ComputableInPolyTime
-      (fun p : (ℕ × DDHChallenge (GroupParameters := F.Desc)) × ℕ × ℕ × ℕ => p.1.2.groupParameters)
-      encState F.encDesc := by fun_prop
-  have hrerandomize := F.computableInPolyTime_encodeDDHRerandomize.comp
-    (show ComputableInPolyTime
-      (fun p : (ℕ × DDHChallenge (GroupParameters := F.Desc)) × ℕ × ℕ × ℕ =>
-        (p.1.2.groupParameters, (p.1.2.leftPublic, p.1.2.rightPublic, p.1.2.candidateShared), p.2))
-      encState (encPair F.encDesc (encPair encDDHTuple encExps)) from by fun_prop)
-  unfold ddhSelfReduceDistinguisher
-  refine (F.isPPTOn_ddhSampleModExponents.preprocess
-    (prepare := fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
-      (input.1, input.2.groupParameters)) (by fun_prop)).bind_with ?_
-  exact hD.preprocess
-    (hn.prod (F.encDDHChallenge_mk_polyTime hd hrerandomize.fst'
-      hrerandomize.snd'.fst' hrerandomize.snd'.snd'))
-
-/-- Game-level DDH tuple re-randomization experiment ([BonehShoup2023], Exercises 10.8–10.9,
-pp. 425–426): draw `d ← setup n` and independent uniform `r, s₁, s₂ : ZMod (F.order d)`,
-re-randomize the encoded tuple `tuple d` using `encodeDDHRerandomize`, and run `distinguisher`. -/
-noncomputable def ddhRerandomizeGame (setup : ℕ → PMF F.Desc)
-    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) : Game := do
-  let d ← setup n
-  let r ← PMF.uniformOfFintype (ZMod (F.order d))
-  let s₁ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let s₂ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let (u, v, w) := tuple d
-  let (leftPublic, rightPublic, candidateShared) := F.encodeDDHRerandomize
-    (d, (F.encode d u, F.encode d v, F.encode d w), r.val, s₁.val, s₂.val)
-  ProbComp.eval (distinguisher n { groupParameters := d, leftPublic, rightPublic, candidateShared })
-
-/-- Re-randomizing any family of real DDH tuples `(α d • g, β d • g, (α d * β d) • g)` with
-`encodeDDHRerandomize` produces the exact average-case `ddhRealGame`
-([BonehShoup2023], Exercises 10.8–10.9, pp. 425–426). -/
-@[simp] theorem ddhRerandomizeGame_real (setup : ℕ → PMF F.Desc)
-    (α β : ∀ d : F.Desc, ZMod (F.order d))
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ) :
-    F.ddhRerandomizeGame setup
-      (fun d => (α d • F.generator d, β d • F.generator d, (α d * β d) • F.generator d))
-      distinguisher n = F.ddhRealGame setup distinguisher n := by
-  simp only [ddhRerandomizeGame, ddhRealGame, eval_ddhRealExperiment, encodeDDHRerandomize_val,
-    PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => ?_)
-  have hlaw := congrArg
-    (fun p : PMF (F.Carrier d × F.Carrier d × F.Carrier d) =>
-      p.bind fun t =>
-        ProbComp.eval (distinguisher n ⟨d, F.encode d t.1, F.encode d t.2.1, F.encode d t.2.2⟩))
-    (F.ddhRerandomizeLaw_real d (α d) (β d))
-  simpa only [ddhRerandomizeLaw, ddhRealTupleLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind] using hlaw
-
-/-- Re-randomizing any family of non-DDH tuples `(α d • g, β d • g, γ d • g)` with
-`γ d ≠ α d * β d` on the support of `setup n` using `encodeDDHRerandomize` produces the exact
-average-case `ddhIdealGame` ([BonehShoup2023], Exercises 10.8–10.9, pp. 425–426). -/
-theorem ddhRerandomizeGame_ideal (setup : ℕ → PMF F.Desc)
-    (α β γ : ∀ d : F.Desc, ZMod (F.order d))
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ)
-    (hγ : ∀ d ∈ (setup n).support, γ d ≠ α d * β d) :
-    F.ddhRerandomizeGame setup
-      (fun d => (α d • F.generator d, β d • F.generator d, γ d • F.generator d))
-      distinguisher n = F.ddhIdealGame setup distinguisher n := by
-  simp only [ddhRerandomizeGame, ddhIdealGame, eval_ddhIdealExperiment,
-    encodeDDHRerandomize_val, PMF.monad_bind_eq_bind]
-  ext b
-  rw [PMF.bind_apply, PMF.bind_apply]
-  refine tsum_congr fun d => ?_
-  by_cases hd : d ∈ (setup n).support
-  · refine congrArg (setup n d * ·) ?_
-    have hlaw := congrArg
-      (fun p : PMF (F.Carrier d × F.Carrier d × F.Carrier d) =>
-        (p.bind fun t =>
-          ProbComp.eval
-            (distinguisher n ⟨d, F.encode d t.1, F.encode d t.2.1, F.encode d t.2.2⟩)) b)
-      (F.ddhRerandomizeLaw_ideal d (hγ d hd))
-    simpa only [ddhRerandomizeLaw, ddhIdealTupleLaw, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind] using hlaw
-  · have hd0 : setup n d = 0 := by rwa [PMF.mem_support_iff, not_not] at hd
-    simp only [hd0, zero_mul]
-
-/-- **DDH rerandomization advantage identity** ([BonehShoup2023], Exercises 10.8–10.9,
-pp. 425–426): for any real DDH tuple family `(α d, β d)` and any non-DDH tuple family
-`(α' d, β' d, γ' d)` with `γ' d ≠ α' d * β' d` on the support of `setup n`, the distinguishing
-advantage after `encodeDDHRerandomize` equals the average-case DDH advantage. -/
-theorem advantage_ddhRerandomizeGame_eq (setup : ℕ → PMF F.Desc)
-    (α β α' β' γ' : ∀ d : F.Desc, ZMod (F.order d))
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ)
-    (hγ' : ∀ d ∈ (setup n).support, γ' d ≠ α' d * β' d) :
-    Game.advantage
-      (F.ddhRerandomizeGame setup
-        (fun d => (α d • F.generator d, β d • F.generator d, (α d * β d) • F.generator d))
-        distinguisher n)
-      (F.ddhRerandomizeGame setup
-        (fun d => (α' d • F.generator d, β' d • F.generator d, γ' d • F.generator d))
-        distinguisher n) =
-      Game.advantage (F.ddhRealGame setup distinguisher n)
-        (F.ddhIdealGame setup distinguisher n) := by
-  rw [F.ddhRerandomizeGame_real, F.ddhRerandomizeGame_ideal setup α' β' γ' distinguisher n hγ']
-
-/-- **DDH rerandomization indistinguishability** ([BonehShoup2023], Exercises 10.8–10.9,
-pp. 425–426): under the average-case `DDH` assumption, no uniform strict PPT distinguisher can
-distinguish the exact re-randomization of any real DDH tuple family from the exact re-randomization
-of any non-DDH tuple family. -/
-theorem DDH.ddhRerandomizeGame {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
-    (hDDH : F.DDH setup) (α β α' β' γ' : ∀ d : F.Desc, ZMod (F.order d))
-    (hγ' : ∀ᶠ n in Filter.atTop, ∀ d ∈ (setup n).support, γ' d ≠ α' d * β' d) :
-    Game.Indistinguishable
-      (F.ddhRerandomizeGame setup
-        (fun d => (α d • F.generator d, β d • F.generator d, (α d * β d) • F.generator d)))
-      (F.ddhRerandomizeGame setup
-        (fun d => (α' d • F.generator d, β' d • F.generator d, γ' d • F.generator d)))
-      fun distinguisher =>
-        IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2) := by
-  intro distinguisher hD
-  have hddh := hDDH distinguisher hD
-  negligible eventually (hγ'.mono fun n hn =>
-    (F.advantage_ddhRerandomizeGame_eq setup α β α' β' γ' distinguisher n hn).le)
-
-/-- The worst-case DDH experiment on a fixed tuple family `tuple` (original): draw `d ← setup n`
-and give the encoded tuple `(d, encode u, encode v, encode w)` directly to `distinguisher`. -/
-noncomputable def ddhWorstCaseGame (setup : ℕ → PMF F.Desc)
-    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) : Game := do
-  let d ← setup n
-  let (u, v, w) := tuple d
-  ProbComp.eval (distinguisher n
-    ⟨d, F.encode d u, F.encode d v, F.encode d w⟩)
-
-private noncomputable def ddhRerandomizeStep
-    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (n : ℕ) (d : F.Desc) (r s₁ s₂ : ZMod (F.order d)) : Game :=
-  let t := F.ddhRerandomize d (tuple d).1 (tuple d).2.1 (tuple d).2.2 r s₁ s₂
-  ProbComp.eval (distinguisher n ⟨d, F.encode d t.1, F.encode d t.2.1, F.encode d t.2.2⟩)
-
-private theorem ddhRerandomizeGame_eq_bind_step (setup : ℕ → PMF F.Desc)
-    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ) :
-    F.ddhRerandomizeGame setup tuple distinguisher n =
-      (setup n).bind fun d =>
-        (PMF.uniformOfFintype (ZMod (F.order d))).bind fun r =>
-          (PMF.uniformOfFintype (ZMod (F.order d))).bind fun s₁ =>
-            (PMF.uniformOfFintype (ZMod (F.order d))).bind fun s₂ =>
-              F.ddhRerandomizeStep tuple distinguisher n d r s₁ s₂ := by
-  simp only [ddhRerandomizeGame, ddhRerandomizeStep, encodeDDHRerandomize_val,
-    PMF.monad_bind_eq_bind]
-
-private theorem ddhWorstCaseGame_ddhSelfReduceDistinguisher_eq_bind_step (setup : ℕ → PMF F.Desc)
-    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ) :
-    F.ddhWorstCaseGame setup tuple (F.ddhSelfReduceDistinguisher distinguisher) n =
-      (setup n).bind fun d =>
-        (F.sampleModZModLaw n d).bind fun r =>
-          (F.sampleModZModLaw n d).bind fun s₁ =>
-            (F.sampleModZModLaw n d).bind fun s₂ =>
-              F.ddhRerandomizeStep tuple distinguisher n d r s₁ s₂ := by
-  simp only [ddhWorstCaseGame, ddhSelfReduceDistinguisher, ddhSampleModExponents, sampleModZModLaw,
-    ddhRerandomizeStep, ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
-    PMF.bind_bind, PMF.pure_bind, PMF.bind_map, Function.comp_def, encodeDDHRerandomize_encode]
-
-/-- Combining `PMF.dist_bind_le` (different first-stage distributions on a finite type) with
-`Game.advantage_bind_le` (different kernels) bounds the Boolean advantage of two bound games by
-the first-stage statistical distance plus a uniform kernel advantage bound. -/
-private theorem advantage_bind_le_dist_add {α : Type*} [Fintype α] (p q : PMF α)
-    (f g : α → Game) {ε δ : ℝ} (hpq : dist p q ≤ ε)
-    (hfg : ∀ a, (Game.advantage (f a) (g a) : ℝ) ≤ δ) :
-    (Game.advantage (p.bind f) (q.bind g) : ℝ) ≤ ε + δ := by
-  have htri : (Game.advantage (p.bind f) (q.bind g) : ℝ) ≤
-      (Game.advantage (p.bind f) (q.bind f) : ℝ) +
-      (Game.advantage (q.bind f) (q.bind g) : ℝ) := by
-    exact_mod_cast Game.advantage_triangle (p.bind f) (q.bind f) (q.bind g)
-  have h1 : (Game.advantage (p.bind f) (q.bind f) : ℝ) ≤ ε := by
-    rw [Game.advantage_eq_nndist, coe_nndist]
-    exact (PMF.dist_bind_le p q f).trans hpq
-  have h2 : (Game.advantage (q.bind f) (q.bind g) : ℝ) ≤ δ :=
-    Game.advantage_bind_le q f g hfg
-  exact htri.trans (add_le_add h1 h2)
-
-/-- **Statistical distance bound for `ddhSelfReduceDistinguisher`** (original): replacing the three
-exact uniform `ZMod (F.order d)` exponents in `ddhRerandomizeGame` with
-`ddhSampleModExponents n d` changes the game output distribution by at most `3 / 2 ^ n`. -/
-theorem advantage_ddhRerandomizeGame_ddhWorstCaseGame_le (setup : ℕ → PMF F.Desc)
-    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ) :
-    Game.advantage (F.ddhRerandomizeGame setup tuple distinguisher n)
-      (F.ddhWorstCaseGame setup tuple (F.ddhSelfReduceDistinguisher distinguisher) n) ≤
-      3 / 2 ^ n := by
-  rw [F.ddhRerandomizeGame_eq_bind_step, F.ddhWorstCaseGame_ddhSelfReduceDistinguisher_eq_bind_step]
-  peel_binds d
-  apply NNReal.coe_le_coe.mp
-  push_cast
-  have hstep := F.dist_sampleModZModLaw_le n d
-  have hs₂ (r s₁ : ZMod (F.order d)) :
-      (Game.advantage
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun s₂ =>
-          F.ddhRerandomizeStep tuple distinguisher n d r s₁ s₂)
-        ((F.sampleModZModLaw n d).bind fun s₂ =>
-          F.ddhRerandomizeStep tuple distinguisher n d r s₁ s₂) : ℝ) ≤
-        1 / 2 ^ n + 0 :=
-    advantage_bind_le_dist_add _ _ _ _ hstep fun s₂ => by
-      simp only [Game.advantage_self, NNReal.coe_zero, le_rfl]
-  have hs₁ (r : ZMod (F.order d)) :
-      (Game.advantage
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun s₁ =>
-          (PMF.uniformOfFintype (ZMod (F.order d))).bind fun s₂ =>
-            F.ddhRerandomizeStep tuple distinguisher n d r s₁ s₂)
-        ((F.sampleModZModLaw n d).bind fun s₁ =>
-          (F.sampleModZModLaw n d).bind fun s₂ =>
-            F.ddhRerandomizeStep tuple distinguisher n d r s₁ s₂) : ℝ) ≤
-        1 / 2 ^ n + (1 / 2 ^ n + 0) :=
-    advantage_bind_le_dist_add _ _ _ _ hstep fun s₁ => hs₂ r s₁
-  exact (advantage_bind_le_dist_add _ _ _ _ hstep hs₁).trans_eq (by ring)
-
-/-- **Quantitative single-invocation worst-case-to-average-case DDH reduction** (original): the
-average-case DDH advantage of `distinguisher` is at most the worst-case DDH advantage of
-`ddhSelfReduceDistinguisher distinguisher` plus `6 / 2 ^ n`. -/
-theorem advantage_ddhRealGame_le_ddhWorstCaseGame (setup : ℕ → PMF F.Desc)
-    (α β α' β' γ' : ∀ d : F.Desc, ZMod (F.order d))
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ)
-    (hγ' : ∀ d ∈ (setup n).support, γ' d ≠ α' d * β' d) :
-    let tuple₀ := fun d => (α d • F.generator d, β d • F.generator d, (α d * β d) • F.generator d)
-    let tuple₁ := fun d => (α' d • F.generator d, β' d • F.generator d, γ' d • F.generator d)
-    Game.advantage (F.ddhRealGame setup distinguisher n)
-      (F.ddhIdealGame setup distinguisher n) ≤
-      Game.advantage
-        (F.ddhWorstCaseGame setup tuple₀
-          (F.ddhSelfReduceDistinguisher distinguisher) n)
-        (F.ddhWorstCaseGame setup tuple₁
-          (F.ddhSelfReduceDistinguisher distinguisher) n) +
-      6 / 2 ^ n := by
-  intro tuple₀ tuple₁
-  rw [← F.advantage_ddhRerandomizeGame_eq setup α β α' β' γ' distinguisher n hγ']
-  game_trans
-    [F.ddhWorstCaseGame setup tuple₀ (F.ddhSelfReduceDistinguisher distinguisher) n,
-     F.ddhWorstCaseGame setup tuple₁ (F.ddhSelfReduceDistinguisher distinguisher) n]
-    using [F.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le setup tuple₀ distinguisher n,
-           le_rfl,
-           F.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le setup tuple₁ distinguisher n]
-
-/-- **Average-case DDH from worst-case DDH via `ddhSelfReduceDistinguisher`** (original): if a
-worst-case real DDH tuple family is indistinguishable from a worst-case non-DDH tuple family for
-all uniform strict PPT distinguishers, then `F.DDH setup` holds. -/
-theorem ddh_of_worstCase {setup : ℕ → PMF F.Desc}
-    (α β α' β' γ' : ∀ d : F.Desc, ZMod (F.order d))
-    (hγ' : ∀ᶠ n in Filter.atTop, ∀ d ∈ (setup n).support, γ' d ≠ α' d * β' d)
-    (hworst : Game.Indistinguishable
-      (F.ddhWorstCaseGame setup
-        (fun d => (α d • F.generator d, β d • F.generator d, (α d * β d) • F.generator d)))
-      (F.ddhWorstCaseGame setup
-        (fun d => (α' d • F.generator d, β' d • F.generator d, γ' d • F.generator d)))
-      fun distinguisher =>
-        IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)) :
-    F.DDH setup := by
-  intro distinguisher hD
-  have hworstNeg := hworst (F.ddhSelfReduceDistinguisher distinguisher)
-    (F.isPPTOn_ddhSelfReduceDistinguisher hD)
-  negligible eventually (hγ'.mono fun n hn =>
-    F.advantage_ddhRealGame_le_ddhWorstCaseGame setup α β α' β' γ' distinguisher n hn)
-
 /-! ### Worst-case DDH decider via Chernoff amplification ([BonehShoup2023], Exercise 10.10) -/
 
 /-- Canonical encoded real DDH tuple `(0 • g, 0 • g, (0 * 0) • g)` for group parameters `d`,
@@ -1165,374 +805,5 @@ theorem computableInPolyTime_ddhIdealRefTuple :
   have hz := F.computableInPolyTime_smul.comp
     (ComputableInPolyTime.id'.prod ((ComputableInPolyTime.const 0).prod hg))
   exact hz.prod (hz.prod hg)
-
-/-- On a deterministic group setup `fun _ => PMF.pure d`, `ddhWorstCaseGame` evaluates
-`distinguisher` directly on `(d, encode (tuple d))`. -/
-@[simp] theorem ddhWorstCaseGame_pure (d : F.Desc)
-    (tuple : ∀ d : F.Desc, F.Carrier d × F.Carrier d × F.Carrier d)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ) :
-    F.ddhWorstCaseGame (fun _ => PMF.pure d) tuple distinguisher n =
-      let (u, v, w) := tuple d
-      ProbComp.eval (distinguisher n
-        ⟨d, F.encode d u, F.encode d v, F.encode d w⟩) := by
-  simp [ddhWorstCaseGame]
-
-/-- **Single-trial real DDH proximity**: on any fixed group `d` and any real DDH triple
-`(α • g, β • g, (α * β) • g)`, the acceptance probability of `ddhSelfReduceDistinguisher` differs
-from the average-case `ddhRealGame (fun _ => PMF.pure d)` acceptance probability by at most
-`3 / 2 ^ n`. -/
-theorem advantage_ddhRealGame_pure_ddhSelfReduceDistinguisher_le (d : F.Desc)
-    (α β : ZMod (F.order d))
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ) :
-    Game.advantage (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n)
-      (ProbComp.eval (F.ddhSelfReduceDistinguisher distinguisher n
-        ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-          F.encode d ((α * β) • F.generator d)⟩)) ≤ 3 / 2 ^ n := by
-  have h := F.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le (fun _ => PMF.pure d)
-    (fun d' => ((α.val : ZMod (F.order d')) • F.generator d',
-      (β.val : ZMod (F.order d')) • F.generator d',
-      ((α.val : ZMod (F.order d')) * (β.val : ZMod (F.order d'))) • F.generator d'))
-    distinguisher n
-  simpa only [ddhRerandomizeGame_real, ddhWorstCaseGame_pure, ZMod.natCast_zmod_val] using h
-
-/-- **Single-trial non-DDH proximity**: on any fixed group `d` and any non-DDH triple
-`(α • g, β • g, γ • g)` with `γ ≠ α * β`, the acceptance probability of
-`ddhSelfReduceDistinguisher` differs from the average-case `ddhIdealGame (fun _ => PMF.pure d)`
-acceptance probability by at most `3 / 2 ^ n`. -/
-theorem advantage_ddhIdealGame_pure_ddhSelfReduceDistinguisher_le (d : F.Desc)
-    {α β γ : ZMod (F.order d)} (hγ : γ ≠ α * β)
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool) (n : ℕ) :
-    Game.advantage (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n)
-      (ProbComp.eval (F.ddhSelfReduceDistinguisher distinguisher n
-        ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-          F.encode d (γ • F.generator d)⟩)) ≤ 3 / 2 ^ n := by
-  classical
-  let α' : ∀ d' : F.Desc, ZMod (F.order d') := fun d' =>
-    if h : d' = d then h ▸ α else 0
-  let β' : ∀ d' : F.Desc, ZMod (F.order d') := fun d' =>
-    if h : d' = d then h ▸ β else 0
-  let γ' : ∀ d' : F.Desc, ZMod (F.order d') := fun d' =>
-    if h : d' = d then h ▸ γ else 1
-  have hγ' : ∀ d' ∈ (PMF.pure d).support, γ' d' ≠ α' d' * β' d' := by
-    intro d' hd'
-    have hd_eq : d' = d := by simpa using hd'
-    subst hd_eq
-    simpa [α', β', γ'] using hγ
-  have h := F.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le (fun _ => PMF.pure d)
-    (fun d' => (α' d' • F.generator d', β' d' • F.generator d', γ' d' • F.generator d'))
-    distinguisher n
-  rw [F.ddhRerandomizeGame_ideal (fun _ => PMF.pure d) α' β' γ' distinguisher n hγ'] at h
-  simpa only [ddhWorstCaseGame_pure, α', β', γ', ↓reduceDIte] using h
-
-/-- **Chernoff-amplified worst-case DDH decider** ([BonehShoup2023], Section 10.11, Exercise 10.10,
-p. 426): given an average-case DDH distinguisher `distinguisher` and an inverse-advantage bound
-`invEps : ℕ → ℕ`, perform `N = (n + 3) * (7 * invEps n) ^ 2` independent trials of
-`ddhSelfReduceDistinguisher` on the input tuple `(d, u, v, w)`, on the reference DH tuple
-`ddhRealRefTuple d`, and on the reference non-DH tuple `ddhIdealRefTuple d`, and accept iff the
-empirical count `cIn` is at least as close to `cReal` as to `cIdeal`. -/
-noncomputable def ddhAmplifiedDecider
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (invEps : ℕ → ℕ) (n : ℕ)
-    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
-  let d := input.groupParameters
-  let N := (n + 3) * (7 * invEps n) ^ 2
-  let cIn ← OracleComp.countTrue N
-    (F.ddhSelfReduceDistinguisher distinguisher n input)
-  let (realLeft, realRight, realShared) := F.ddhRealRefTuple d
-  let cReal ← OracleComp.countTrue N
-    (F.ddhSelfReduceDistinguisher distinguisher n ⟨d, realLeft, realRight, realShared⟩)
-  let (idealLeft, idealRight, idealShared) := F.ddhIdealRefTuple d
-  let cIdeal ← OracleComp.countTrue N
-    (F.ddhSelfReduceDistinguisher distinguisher n ⟨d, idealLeft, idealRight, idealShared⟩)
-  return decide ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn))
-
-/-- `ddhAmplifiedDecider` is uniform strict PPT whenever `distinguisher` is uniform strict PPT and
-`invEps` is computable in polynomial time in unary ([BonehShoup2023], Exercise 10.10, p. 426). -/
-theorem isPPTOn_ddhAmplifiedDecider
-    {distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool}
-    (hD : IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2))
-    {invEps : ℕ → ℕ} (hinvEps : ComputableInPolyTime invEps encUnary encUnary) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.ddhAmplifiedDecider distinguisher invEps input.1 input.2) := by
-  let EIn := F.encDDHInput
-  have hself := F.isPPTOn_ddhSelfReduceDistinguisher hD
-  have hN_unary : ComputableInPolyTime
-      (fun n : ℕ => (n + 3) * (7 * invEps n) ^ 2) encUnary encUnary :=
-    (ComputableInPolyTime.id'.unary_add' (.const 3)).unary_mul'
-      ((ComputableInPolyTime.unary_pow 2).comp ((ComputableInPolyTime.const 7).unary_mul' hinvEps))
-  have hn := ComputableInPolyTime.fst encUnary F.encDDHChallenge
-  have hN := hN_unary.comp hn
-  have hd := F.encDDHChallenge_groupParameters_polyTime
-    (ComputableInPolyTime.snd encUnary F.encDDHChallenge)
-  have hcIn := hself.countTrue hN
-  have hrealTuple := F.computableInPolyTime_ddhRealRefTuple.comp hd
-  have hrealTrial := hself.preprocess
-    (hn.prod (F.encDDHChallenge_mk_polyTime hd hrealTuple.fst'
-      hrealTuple.snd'.fst' hrealTuple.snd'.snd'))
-  have hcReal := hrealTrial.countTrue hN
-  have hidealTuple := F.computableInPolyTime_ddhIdealRefTuple.comp hd
-  have hidealTrial := hself.preprocess
-    (hn.prod (F.encDDHChallenge_mk_polyTime hd hidealTuple.fst'
-      hidealTuple.snd'.fst' hidealTuple.snd'.snd'))
-  have hcIdeal := hidealTrial.countTrue hN
-  have hq1 := ComputableInPolyTime.fst encUnary (encPair encUnary encUnary)
-  have hq2 := ComputableInPolyTime.snd encUnary (encPair encUnary encUnary)
-  have hq21 := (ComputableInPolyTime.fst encUnary encUnary).comp hq2
-  have hq22 := (ComputableInPolyTime.snd encUnary encUnary).comp hq2
-  have hcmp : ComputableInPolyTime
-      (fun q : ℕ × ℕ × ℕ =>
-        decide ((q.1 - q.2.1) + (q.2.1 - q.1) ≤ (q.1 - q.2.2) + (q.2.2 - q.1)))
-      (encPair encUnary (encPair encUnary encUnary)) encBool :=
-    ((hq1.unary_sub' hq21).unary_add' (hq21.unary_sub' hq1)).unary_le'
-      ((hq1.unary_sub' hq22).unary_add' (hq22.unary_sub' hq1))
-  have hp1 := ComputableInPolyTime.fst (encPair (encPair EIn encUnary) encUnary) encUnary
-  have hp11 := (ComputableInPolyTime.fst (encPair EIn encUnary) encUnary).comp hp1
-  have hproj : ComputableInPolyTime
-      (fun p : (((ℕ × DDHChallenge (GroupParameters := F.Desc)) × ℕ) × ℕ) × ℕ =>
-        (p.1.1.2, p.1.2, p.2))
-      (encPair (encPair (encPair EIn encUnary) encUnary) encUnary)
-      (encPair encUnary (encPair encUnary encUnary)) :=
-    ((ComputableInPolyTime.snd EIn encUnary).comp hp11).prod
-      (((ComputableInPolyTime.snd (encPair EIn encUnary) encUnary).comp hp1).prod
-        (.snd (encPair (encPair EIn encUnary) encUnary) encUnary))
-  unfold ddhAmplifiedDecider
-  refine hcIn.bind_with ?_
-  refine (hcReal.preprocess (prepare := Prod.fst) (.fst EIn encUnary)).bind_with ?_
-  refine (hcIdeal.preprocess
-    (prepare := fun p : ((ℕ × DDHChallenge (GroupParameters := F.Desc)) × ℕ) × ℕ => p.1.1)
-    ((ComputableInPolyTime.fst EIn encUnary).comp
-      (.fst (encPair EIn encUnary) encUnary))).bind_with ?_
-  exact (hcmp.comp hproj).isPPTOn
-
-private theorem cast_sub_add_sub_eq_abs (a b : ℕ) :
-    (((a - b) + (b - a) : ℕ) : ℝ) = |(a : ℝ) - (b : ℝ)| := by
-  rcases le_total a b with h | h
-  · have hR : (a : ℝ) ≤ (b : ℝ) := by exact_mod_cast h
-    rw [Nat.sub_eq_zero_of_le h, zero_add, Nat.cast_sub h, abs_of_nonpos (sub_nonpos.mpr hR),
-      neg_sub]
-  · have hR : (b : ℝ) ≤ (a : ℝ) := by exact_mod_cast h
-    rw [Nat.sub_eq_zero_of_le h, add_zero, Nat.cast_sub h, abs_of_nonneg (sub_nonneg.mpr hR)]
-
-private theorem abs_succProbability_sub_le_of_advantage_le {g₁ g₂ : Game} {ε : ℝ}
-    (h : (Game.advantage g₁ g₂ : ℝ) ≤ ε) :
-    |(g₁ true).toReal - (g₂ true).toReal| ≤ ε := by
-  simpa only [Game.coe_advantage, Game.succProbability, ENNReal.coe_toNNReal_eq_toReal] using h
-
-private theorem abs_sub_lt_abs_sub_of_close
-    {x x₁ x₂ q q₁ q₂ p₁ p₂ ε : ℝ}
-    (hgap : ε ≤ |p₁ - p₂|)
-    (hq : |q - p₁| ≤ ε / 12) (hq₁ : |q₁ - p₁| ≤ ε / 12) (hq₂ : |q₂ - p₂| ≤ ε / 12)
-    (hx : |x - q| < ε / 7) (hx₁ : |x₁ - q₁| < ε / 7) (hx₂ : |x₂ - q₂| < ε / 7) :
-    |x - x₁| < |x - x₂| := by
-  have hu : |x - p₁| < ε / 7 + ε / 12 :=
-    (abs_sub_le x q p₁).trans_lt (add_lt_add_of_lt_of_le hx hq)
-  have hv : |p₁ - x₁| < ε / 7 + ε / 12 := by
-    rw [abs_sub_comm]
-    exact (abs_sub_le x₁ q₁ p₁).trans_lt (add_lt_add_of_lt_of_le hx₁ hq₁)
-  have hw : |x₂ - p₂| < ε / 7 + ε / 12 :=
-    (abs_sub_le x₂ q₂ p₂).trans_lt (add_lt_add_of_lt_of_le hx₂ hq₂)
-  have h1 := abs_sub_le x p₁ x₁
-  have h2 : |p₁ - p₂| ≤ |x - p₁| + (|x - x₂| + |x₂ - p₂|) := by
-    rw [abs_sub_comm x p₁]
-    exact (abs_sub_le p₁ x p₂).trans (add_le_add_right (abs_sub_le x x₂ p₂) _)
-  clear hq hq₁ hq₂ hx hx₁ hx₂
-  linarith [abs_nonneg (x - p₁)]
-
-private theorem toOuterMeasure_bind₃_failure_le_pow
-    (μ₁ μ₂ μ₃ : PMF ℕ) (S₁ S₂ S₃ : Set ℕ) (f : ℕ → ℕ → ℕ → Bool) (b₀ : Bool) (n : ℕ)
-    (h₁ : (μ₁.toOuterMeasure S₁ᶜ).toReal ≤ (1 / 2 : ℝ) ^ (n + 2))
-    (h₂ : (μ₂.toOuterMeasure S₂ᶜ).toReal ≤ (1 / 2 : ℝ) ^ (n + 2))
-    (h₃ : (μ₃.toOuterMeasure S₃ᶜ).toReal ≤ (1 / 2 : ℝ) ^ (n + 2))
-    (hdet : ∀ {c₁ c₂ c₃}, c₁ ∈ S₁ → c₂ ∈ S₂ → c₃ ∈ S₃ → f c₁ c₂ c₃ = b₀) :
-    ((μ₁.bind fun c₁ => μ₂.bind fun c₂ => μ₃.bind fun c₃ =>
-      PMF.pure (f c₁ c₂ c₃)).toOuterMeasure {b | b ≠ b₀}).toReal ≤ (1 / 2 : ℝ) ^ n := by
-  have hpow : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ (n + 2) := pow_nonneg (by norm_num) _
-  refine ((PMF.toOuterMeasure_bind_failure_toReal_le μ₁
-    (fun c₁ => μ₂.bind fun c₂ => μ₃.bind fun c₃ => PMF.pure (f c₁ c₂ c₃)) S₁ {b | b ≠ b₀}
-    (error := (1 / 2 : ℝ) ^ (n + 2) + (1 / 2 : ℝ) ^ (n + 2)) (add_nonneg hpow hpow)
-    fun c₁ _ hc₁ =>
-      (PMF.toOuterMeasure_bind_failure_toReal_le μ₂
-        (fun c₂ => μ₃.bind fun c₃ => PMF.pure (f c₁ c₂ c₃)) S₂ {b | b ≠ b₀}
-        (error := (1 / 2 : ℝ) ^ (n + 2)) hpow fun c₂ _ hc₂ =>
-          (PMF.toOuterMeasure_bind_failure_toReal_le μ₃
-            (fun c₃ => PMF.pure (f c₁ c₂ c₃)) S₃ {b | b ≠ b₀}
-            (error := 0) le_rfl fun c₃ _ hc₃ => by
-              rw [hdet hc₁ hc₂ hc₃, PMF.toOuterMeasure_pure_apply]
-              simp).trans ((add_zero _).le.trans h₃)).trans
-        (add_le_add_left h₂ _)).trans (add_le_add_left h₁ _)).trans ?_
-  calc (1 / 2 : ℝ) ^ (n + 2) + ((1 / 2 : ℝ) ^ (n + 2) + (1 / 2 : ℝ) ^ (n + 2))
-      = (1 / 2 : ℝ) ^ n * (3 / 4) := by rw [pow_add]; ring
-    _ ≤ (1 / 2 : ℝ) ^ n * 1 :=
-      mul_le_mul_of_nonneg_left (by norm_num) (pow_nonneg (by norm_num) n)
-    _ = (1 / 2 : ℝ) ^ n := mul_one _
-
-/-- **Quantitative worst-case DDH decision bound** ([BonehShoup2023], Section 10.11, Exercise 10.10,
-p. 426): if `distinguisher n` has average-case DDH advantage at least `1 / invEps n` on group `d`
-and the modular-sampling bias satisfies `3 / 2 ^ n ≤ 1 / (12 * invEps n)`, then for *every*
-triple `(α • g, β • g, γ • g)` over `d`, `ddhAmplifiedDecider` outputs an answer different from
-`decide (γ = α * β)` with probability at most `(1 / 2) ^ n`. -/
-theorem ddhAmplifiedDecider_error_le_pow
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (invEps : ℕ → ℕ) (n : ℕ) (d : F.Desc) (α β γ : ZMod (F.order d))
-    (hpos : 0 < invEps n)
-    (hadv : 1 / (invEps n : ℝ) ≤
-      Game.advantage (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n)
-        (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n))
-    (hmod : 3 / (2 ^ n : ℝ) ≤ 1 / (12 * (invEps n : ℝ))) :
-    ((ProbComp.eval (F.ddhAmplifiedDecider distinguisher invEps n
-      ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-        F.encode d (γ • F.generator d)⟩)).toOuterMeasure
-      {b | b ≠ decide (γ = α * β)}).toReal ≤ (1 / 2 : ℝ) ^ n := by
-  have : Fact (Nat.Prime (F.order d)) := ⟨F.prime_order d⟩
-  let N := (n + 3) * (7 * invEps n) ^ 2
-  have h7pos : 0 < 7 * invEps n := by positivity
-  have hNpos : (0 : ℝ) < N := by exact_mod_cast (by positivity : 0 < N)
-  let tIn := F.ddhSelfReduceDistinguisher distinguisher n
-    ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-      F.encode d (γ • F.generator d)⟩
-  let tReal := F.ddhSelfReduceDistinguisher distinguisher n
-    ⟨d, (F.ddhRealRefTuple d).1, (F.ddhRealRefTuple d).2.1, (F.ddhRealRefTuple d).2.2⟩
-  let tIdeal := F.ddhSelfReduceDistinguisher distinguisher n
-    ⟨d, (F.ddhIdealRefTuple d).1, (F.ddhIdealRefTuple d).2.1, (F.ddhIdealRefTuple d).2.2⟩
-  let pReal := (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n true).toReal
-  let pIdeal := (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n true).toReal
-  let ε : ℝ := 1 / (invEps n : ℝ)
-  have h12eq : 1 / (12 * (invEps n : ℝ)) = ε / 12 := by dsimp [ε]; ring
-  have h7eq' : 1 / ((7 * invEps n : ℕ) : ℝ) = ε / 7 := by dsimp [ε]; push_cast; ring
-  have hadv' : ε ≤ |pReal - pIdeal| := by
-    simpa only [Game.coe_advantage, Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-      pReal, pIdeal, ε] using hadv
-  have hmod' : 3 / (2 ^ n : ℝ) ≤ ε / 12 := h12eq ▸ hmod
-  have hRealClose (α' β' : ZMod (F.order d)) :
-      |(ProbComp.eval (F.ddhSelfReduceDistinguisher distinguisher n
-        ⟨d, F.encode d (α' • F.generator d), F.encode d (β' • F.generator d),
-          F.encode d ((α' * β') • F.generator d)⟩) true).toReal - pReal| ≤ ε / 12 := by
-    rw [abs_sub_comm]
-    refine (abs_succProbability_sub_le_of_advantage_le ?_).trans hmod'
-    simpa only [NNReal.coe_div, NNReal.coe_ofNat, NNReal.coe_pow] using
-      NNReal.coe_le_coe.mpr
-        (F.advantage_ddhRealGame_pure_ddhSelfReduceDistinguisher_le d α' β' distinguisher n)
-  have hIdealClose {α' β' γ' : ZMod (F.order d)} (hγ' : γ' ≠ α' * β') :
-      |(ProbComp.eval (F.ddhSelfReduceDistinguisher distinguisher n
-        ⟨d, F.encode d (α' • F.generator d), F.encode d (β' • F.generator d),
-          F.encode d (γ' • F.generator d)⟩) true).toReal - pIdeal| ≤ ε / 12 := by
-    rw [abs_sub_comm]
-    refine (abs_succProbability_sub_le_of_advantage_le ?_).trans hmod'
-    simpa only [NNReal.coe_div, NNReal.coe_ofNat, NNReal.coe_pow] using
-      NNReal.coe_le_coe.mpr
-        (F.advantage_ddhIdealGame_pure_ddhSelfReduceDistinguisher_le d hγ' distinguisher n)
-  have hRealRef : |(ProbComp.eval tReal true).toReal - pReal| ≤ ε / 12 := by
-    simpa only [tReal, ddhRealRefTuple_eq_encode] using hRealClose 0 0
-  have hIdealRef : |(ProbComp.eval tIdeal true).toReal - pIdeal| ≤ ε / 12 := by
-    simpa only [tIdeal, ddhIdealRefTuple_eq_encode] using
-      hIdealClose (by simp : (1 : ZMod (F.order d)) ≠ 0 * 0)
-  let good (t : ProbComp Bool) : Set ℕ :=
-    {c | |(c : ℝ) / N - (ProbComp.eval t true).toReal| < 1 / (7 * invEps n : ℕ)}
-  have hconc (t : ProbComp Bool) :
-      (((ProbComp.eval (OracleComp.countTrue N t)).toOuterMeasure (good t)ᶜ).toReal) ≤
-        (1 / 2 : ℝ) ^ (n + 2) := by
-    simpa only [good, N, Set.compl_ofPred, not_lt, show n + 3 = (n + 2) + 1 by omega] using
-      ProbComp.countTrue_average_deviation_pow (n + 2) (7 * invEps n) h7pos t
-  have hdet {cIn cReal cIdeal : ℕ} (hcIn : cIn ∈ good tIn) (hcReal : cReal ∈ good tReal)
-      (hcIdeal : cIdeal ∈ good tIdeal) :
-      decide ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn)) =
-        decide (γ = α * β) := by
-    have hcIn' : |(cIn : ℝ) / N - (ProbComp.eval tIn true).toReal| < ε / 7 := by
-      simpa only [good, Set.mem_ofPred_eq, h7eq'] using hcIn
-    have hcReal' : |(cReal : ℝ) / N - (ProbComp.eval tReal true).toReal| < ε / 7 := by
-      simpa only [good, Set.mem_ofPred_eq, h7eq'] using hcReal
-    have hcIdeal' : |(cIdeal : ℝ) / N - (ProbComp.eval tIdeal true).toReal| < ε / 7 := by
-      simpa only [good, Set.mem_ofPred_eq, h7eq'] using hcIdeal
-    have hcmp_iff :
-        ((cIn - cReal) + (cReal - cIn) ≤ (cIn - cIdeal) + (cIdeal - cIn)) ↔
-          |(cIn : ℝ) / N - (cReal : ℝ) / N| ≤ |(cIn : ℝ) / N - (cIdeal : ℝ) / N| := by
-      rw [← @Nat.cast_le ℝ, cast_sub_add_sub_eq_abs, cast_sub_add_sub_eq_abs,
-        ← div_le_div_iff_of_pos_right hNpos, ← abs_of_pos hNpos, ← abs_div, ← abs_div,
-        abs_of_pos hNpos, sub_div, sub_div]
-    by_cases hγ : γ = α * β
-    · have hInRef : |(ProbComp.eval tIn true).toReal - pReal| ≤ ε / 12 := by
-        simpa only [tIn, hγ] using hRealClose α β
-      have hlt := abs_sub_lt_abs_sub_of_close hadv' hInRef hRealRef hIdealRef hcIn' hcReal' hcIdeal'
-      simp only [hγ, decide_true, hcmp_iff, hlt.le]
-    · have hlt := abs_sub_lt_abs_sub_of_close (abs_sub_comm pReal pIdeal ▸ hadv')
-        (hIdealClose hγ) hIdealRef hRealRef hcIn' hcIdeal' hcReal'
-      simp only [hγ, decide_false, hcmp_iff, not_le.mpr hlt]
-  simp only [ddhAmplifiedDecider, ProbComp.eval_bind, ProbComp.eval_pure]
-  exact toOuterMeasure_bind₃_failure_le_pow _ _ _ (good tIn) (good tReal) (good tIdeal) _ _ n
-    (hconc tIn) (hconc tReal) (hconc tIdeal) hdet
-
-private theorem toOuterMeasure_ne_bool_toReal (p : PMF Bool) (b₀ : Bool) :
-    (p.toOuterMeasure {b | b ≠ b₀}).toReal = 1 - (p b₀).toReal := by
-  have hsum := PMF.sum_toReal p
-  rw [Fintype.sum_bool] at hsum
-  rw [PMF.toOuterMeasure_apply_toReal, Fintype.sum_bool]
-  cases b₀
-  · simp only [Set.mem_ofPred_eq, ne_eq, Bool.true_eq_false, not_false_eq_true, ↓reduceIte,
-      not_true_eq_false, add_zero]
-    exact eq_sub_of_add_eq hsum
-  · simp only [Set.mem_ofPred_eq, ne_eq, not_true_eq_false, ↓reduceIte, Bool.false_eq_true,
-      not_false_eq_true, zero_add]
-    exact eq_sub_of_add_eq' hsum
-
-/-- **Directional correctness of `ddhAmplifiedDecider`** ([BonehShoup2023], Section 10.11,
-Exercise 10.10, p. 426): under the hypotheses of `ddhAmplifiedDecider_error_le_pow`, on every
-triple `(α • g, β • g, γ • g)` over `d`, `ddhAmplifiedDecider` outputs the correct decision
-`decide (γ = α * β)` with probability at least `1 - (1 / 2) ^ n`. -/
-theorem ddhAmplifiedDecider_correct_ge_one_sub_pow
-    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
-    (invEps : ℕ → ℕ) (n : ℕ) (d : F.Desc) (α β γ : ZMod (F.order d))
-    (hpos : 0 < invEps n)
-    (hadv : 1 / (invEps n : ℝ) ≤
-      Game.advantage (F.ddhRealGame (fun _ => PMF.pure d) distinguisher n)
-        (F.ddhIdealGame (fun _ => PMF.pure d) distinguisher n))
-    (hmod : 3 / (2 ^ n : ℝ) ≤ 1 / (12 * (invEps n : ℝ))) :
-    1 - (1 / 2 : ℝ) ^ n ≤
-      (ProbComp.eval (F.ddhAmplifiedDecider distinguisher invEps n
-        ⟨d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-          F.encode d (γ • F.generator d)⟩) (decide (γ = α * β))).toReal := by
-  have herr := F.ddhAmplifiedDecider_error_le_pow distinguisher invEps n d α β γ hpos hadv hmod
-  rw [toOuterMeasure_ne_bool_toReal] at herr
-  exact sub_le_comm.mp herr
-
-private theorem three_div_le_one_div_twelve_mul {a b : ℝ} (hb : 0 < b)
-    (h : 1 / a ≤ 1 / (36 * b + 1)) : 3 / a ≤ 1 / (12 * b) := by
-  have h1 : 1 / a ≤ 1 / (36 * b) :=
-    h.trans (one_div_le_one_div_of_le (mul_pos (by norm_num) hb)
-      (le_add_of_nonneg_right zero_le_one))
-  simpa only [div_eq_mul_one_div 3 a, show 3 * (1 / (36 * b)) = 1 / (12 * b) by ring] using
-    mul_le_mul_of_nonneg_left h1 (by norm_num : (0 : ℝ) ≤ 3)
-
-/-- **Boneh–Shoup Exercise 10.10 (Worst-case DDH decider with negligible error, p. 426)**:
-if `invEps` is computable in polynomial time in unary and `distinguisher` has average-case DDH
-advantage at least `1 / invEps n` on `d n` eventually, then for *every* worst-case sequence of
-input tuples `(d n, α n, β n, γ n)`, `ddhAmplifiedDecider` decides whether `γ n = α n * β n` with
-negligible error probability. -/
-theorem negligible_ddhAmplifiedDecider_error
-    {distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool}
-    {invEps : ℕ → ℕ} (hinvEps : ComputableInPolyTime invEps encUnary encUnary)
-    (d : ℕ → F.Desc) (α β γ : ∀ n, ZMod (F.order (d n)))
-    (hpos : ∀ᶠ n in Filter.atTop, 0 < invEps n)
-    (hadv : ∀ᶠ n in Filter.atTop, 1 / (invEps n : ℝ) ≤
-      Game.advantage (F.ddhRealGame (fun _ => PMF.pure (d n)) distinguisher n)
-        (F.ddhIdealGame (fun _ => PMF.pure (d n)) distinguisher n)) :
-    Negligible fun n =>
-      ((ProbComp.eval (F.ddhAmplifiedDecider distinguisher invEps n
-        ⟨d n, F.encode (d n) (α n • F.generator (d n)),
-          F.encode (d n) (β n • F.generator (d n)),
-          F.encode (d n) (γ n • F.generator (d n))⟩)).toOuterMeasure
-        {b | b ≠ decide (γ n = α n * β n)}).toNNReal := by
-  have hgeom : Negligible fun n => ((2⁻¹ : ℝ≥0) ^ n) := by negligible
-  have hpoly : PolynomiallyBounded fun n => 36 * invEps n + 1 :=
-    ((PolynomiallyBounded.const 36).mul hinvEps.tidy.polynomiallyBounded).add (.const 1)
-  have hmod_ev : ∀ᶠ n in Filter.atTop, 3 / (2 ^ n : ℝ) ≤ 1 / (12 * (invEps n : ℝ)) := by
-    filter_upwards [hpos, hgeom.eventually_le_inv_polynomial hpoly (fun _ => Nat.succ_pos _)]
-      with n hn hlt
-    refine three_div_le_one_div_twelve_mul (Nat.cast_pos.mpr hn) ?_
-    simpa only [NNReal.coe_pow, NNReal.coe_inv, NNReal.coe_ofNat, inv_pow, one_div,
-      Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, Nat.cast_one] using hlt
-  negligible eventually (by
-    filter_upwards [hpos, hadv, hmod_ev] with n hn hadv_n hmod_n
-    exact F.ddhAmplifiedDecider_error_le_pow distinguisher invEps n (d n)
-      (α n) (β n) (γ n) hn hadv_n hmod_n)
 
 end Cslib.Crypto.PrimeOrderGroupFamily
