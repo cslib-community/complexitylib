@@ -134,6 +134,24 @@ exponents `a`, `b` and `c` and gives the distinguisher `a • g`, `b • g` and 
   Game.advantage (ProbComp.eval (ddhRealExperiment q g D))
     (ProbComp.eval (ddhRandomExperiment q g D))
 
+open Probability in
+/-- The law of `ddhRealExperiment`: uniform exponents `a` and `b` sampled at the `PMF` level. -/
+theorem eval_ddhRealExperiment (D : G → G → G → ProbComp Bool) :
+    ProbComp.eval (ddhRealExperiment q g D) =
+      (PMF.uniformOfFintype (ZMod q)).bind fun a => (PMF.uniformOfFintype (ZMod q)).bind fun b =>
+        ProbComp.eval (D (a • g) (b • g) ((a * b) • g)) := by
+  simp only [ddhRealExperiment, ProbComp.eval_bind, ProbComp.eval_uniform]
+
+open Probability in
+/-- The law of `ddhRandomExperiment`: uniform exponents `a`, `b` and `c` sampled at the `PMF`
+level. -/
+theorem eval_ddhRandomExperiment (D : G → G → G → ProbComp Bool) :
+    ProbComp.eval (ddhRandomExperiment q g D) =
+      (PMF.uniformOfFintype (ZMod q)).bind fun a => (PMF.uniformOfFintype (ZMod q)).bind fun b =>
+        (PMF.uniformOfFintype (ZMod q)).bind fun c =>
+          ProbComp.eval (D (a • g) (b • g) (c • g)) := by
+  simp only [ddhRandomExperiment, ProbComp.eval_bind, ProbComp.eval_uniform]
+
 end Experiments
 
 /-! ### Reductions -/
