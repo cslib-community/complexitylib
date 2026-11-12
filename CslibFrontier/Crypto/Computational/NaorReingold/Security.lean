@@ -73,8 +73,10 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
   adaptive Naor–Reingold group-PRF experiments.
 * `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldFrontierOracle`: memoized prefix DDH
   rerandomization followed by `naorReingoldWordSuffix`.
-* `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldToDDHDistinguisher`: single-challenge uniform
-  strict PPT DDH distinguisher constructed from an adaptive PRF distinguisher.
+* `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldDescToDDHDistinguisher`: single-challenge
+  uniform strict PPT DDH distinguisher constructed from an adaptive PRF distinguisher that reads the
+  group parameters; `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldToDDHDistinguisher` is its
+  instance for an `OracleDistinguisher`, which reads them encoded.
 * `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldHashedWordEval`,
   `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldHashedRealGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldHashedProbRealGame`,
@@ -84,8 +86,9 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
 ## Main results
 
-* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_naorReingoldToDDHDistinguisher`: uniform strict PPT
-  certificate for `naorReingoldToDDHDistinguisher` from any `IsOraclePPT` distinguisher.
+* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_naorReingoldDescToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_naorReingoldToDDHDistinguisher`: uniform strict PPT
+  certificates for both distinguishers from any oracle PPT distinguisher.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingoldWordGame_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingoldProbRealGame_wordRealGame_le`:
   quantitative single-distinguisher DDH reduction and modular-sampling bounds for the group-PRF.
@@ -409,8 +412,13 @@ noncomputable def naorReingoldFrontierOracle (n m k : ℕ) (d : F.Desc) (u v w :
       return (F.naorReingoldWordSuffix d child αs (query.drop (k + 1)), cache')
     else pure ([], cache)
 
-private noncomputable def naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFamily)
-    (inLen : ℕ → ℕ) (adv : ℕ → F.Desc → WordOracleComp Unit Bool) : F.DDHDistinguisher :=
+/-- Single-challenge uniform strict PPT DDH distinguisher constructed from an adaptive PRF
+distinguisher `adv` that reads the group parameters directly: sample a hybrid level
+`k ← sampleDyadicIndex (inLen n)`, draw suffix exponents `αs`, and run `adv n d` against
+`naorReingoldFrontierOracle`, given the encodings of the three DDH elements, from an empty cache
+([BonehShoup2023], Exercises 10.4(b) & 10.11; [NaorReingold2004], Theorem 4.1). -/
+noncomputable def naorReingoldDescToDDHDistinguisher (inLen : ℕ → ℕ)
+    (adv : ℕ → F.Desc → WordOracleComp Unit Bool) : F.DDHDistinguisher :=
   fun n d u v w => do
     let m := inLen n
     let k ← ProbComp.sampleDyadicIndex m
@@ -423,24 +431,11 @@ private noncomputable def naorReingoldDescToDDHDistinguisher (F : PrimeOrderGrou
         (adv n d)).run []
     else pure false
 
-/-- Single-challenge uniform strict PPT DDH distinguisher constructed from an adaptive PRF
-distinguisher `adversary`: sample a hybrid level `k ← sampleDyadicIndex (inLen n)`, draw suffix
-exponents `αs`, and run `adversary` against `naorReingoldFrontierOracle`, given the encodings of
-the three DDH elements, from an empty cache ([BonehShoup2023], Exercises 10.4(b) & 10.11;
-[NaorReingold2004], Theorem 4.1). -/
+/-- `naorReingoldDescToDDHDistinguisher` for an `OracleDistinguisher`, which reads the encoded
+group parameters `F.encDesc d`. -/
 noncomputable def naorReingoldToDDHDistinguisher (inLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) : F.DDHDistinguisher :=
-  fun n d u v w => do
-    let m := inLen n
-    let k ← ProbComp.sampleDyadicIndex m
-    if k < m then do
-      let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n d)
-      Prod.fst <$> (OracleComp.interpret
-        (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
-          (fun request => F.naorReingoldFrontierOracle n m k d
-            (F.encode d u) (F.encode d v) (F.encode d w) αs request.2))
-        (adversary n (F.encDesc d))).run []
-    else pure false
+  F.naorReingoldDescToDDHDistinguisher inLen fun n d => adversary n (F.encDesc d)
 
 private theorem isPPTOn_sampleNaorReingoldPair (F : PrimeOrderGroupFamily)
     {α : Type} {input : α ↪ List Bool}
@@ -547,7 +542,10 @@ private def ddhLevelInputEncoding (F : PrimeOrderGroupFamily) : DDHLevelInput F 
 private def ddhCallerEncoding (F : PrimeOrderGroupFamily) : DDHCaller F ↪ List Bool :=
   encPair (ddhLevelInputEncoding F) (encList encNat)
 
-private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFamily)
+/-- **`naorReingoldDescToDDHDistinguisher` is uniform strict PPT** whenever `inLen` is computable
+in polynomial time in unary and `adv` is oracle PPT on the security parameter and group
+parameters. -/
+theorem isPPTOn_naorReingoldDescToDDHDistinguisher
     {inLen : ℕ → ℕ} (hinLen : ComputableInPolyTime inLen encUnary encUnary)
     {adv : ℕ → F.Desc → WordOracleComp Unit Bool}
     (hadv : IsOraclePPTOn (encPair encUnary F.encDesc) encBool (fun p => adv p.1 p.2)) :
