@@ -215,27 +215,14 @@ abbrev kemToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
 
 /-- `kemToKDFDistinguisher` is uniform strict PPT whenever `distinguisher` is. -/
 theorem isPPT_kemToKDFDistinguisher {distinguisher : Distinguisher}
-    (hD : IsPPT encBool distinguisher) : (F.kemToKDFDistinguisher distinguisher).IsPPT := by
-  have hn : ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.1.secParam) F.encKDFInput
-      encUnary := by
-    fun_prop
-  have hpk : ComputableInPolyTime
-      (fun x : F.CDHInput × List Bool =>
-        encPair F.encDesc encBits (x.1.groupParameters, F.encode _ x.1.leftPublic))
-      F.encKDFInput encBits :=
-    ComputableInPolyTime.encoding_comp (by fun_prop)
-  have hkey : ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.2) F.encKDFInput
-      encBits := by
-    fun_prop
-  have hv : ComputableInPolyTime (fun x : F.CDHInput × List Bool => F.encode _ x.1.rightPublic)
-      F.encKDFInput encBits := by
-    fun_prop
-  exact hD.on.preprocess
-    (prepare := fun x : F.CDHInput × List Bool =>
-      (x.1.secParam, encPair encBits (encPair encBits encBits)
-        (encPair F.encDesc encBits (x.1.groupParameters, F.encode _ x.1.leftPublic),
-          (x.2, F.encode _ x.1.rightPublic))))
-    (hn.prod (hpk.prod (hkey.prod hv)).encoding_comp)
+    (hD : IsPPT encBool distinguisher) : (F.kemToKDFDistinguisher distinguisher).IsPPT :=
+  hD.on.preprocess
+    (prepare := fun x : F.KDFInput =>
+      (x.secParam, encPair encBits (encPair encBits encBits)
+        (encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic),
+          (x.key, F.encode _ x.rightPublic))))
+    (.prod (by fun_prop) (.encoding_comp (.prod (.encoding_comp (by fun_prop))
+      (.prod (by fun_prop) (by fun_prop)))))
 
 private theorem advantage_eval_kemRealGame_ddhRealGame_le
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)

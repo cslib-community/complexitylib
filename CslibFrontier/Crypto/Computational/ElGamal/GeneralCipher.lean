@@ -511,55 +511,24 @@ theorem isPPT_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg �
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
     (F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit).IsPPT := by
-  let E1 := encPair F.encKDFInput (Encryption.encChoiceOut encMsg)
-  let E2 := encPair E1 encBits
-  have hn : ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.1.secParam) F.encKDFInput
-      encUnary := by
-    fun_prop
-  have hpk : ComputableInPolyTime
-      (fun x : F.CDHInput × List Bool =>
-        encPair F.encDesc encBits (x.1.groupParameters, F.encode _ x.1.leftPublic))
-      F.encKDFInput encBits :=
-    ComputableInPolyTime.encoding_comp (by fun_prop)
-  have hn₁ : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut Msg => p.1.1.secParam) E1
-      encUnary := by
-    fun_prop
-  have hkey : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut Msg => p.1.2) E1 encBits := by
-    fun_prop
-  have hm₀ : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut Msg => p.2.1.1) E1 encMsg := by
-    fun_prop
-  have hm₁ : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut Msg => p.2.1.2) E1 encMsg := by
-    fun_prop
   have hm : ComputableInPolyTime
-      (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut Msg =>
-        if bit then p.2.1.2 else p.2.1.1) E1 encMsg := by
-    cases bit
-    · exact hm₀
-    · exact hm₁
-  have hn₂ : ComputableInPolyTime
-      (fun q : ((F.CDHInput × List Bool) × Encryption.ChoiceOut Msg) × List Bool =>
-        q.1.1.1.secParam) E2 encUnary := by
-    fun_prop
-  have hst : ComputableInPolyTime
-      (fun q : ((F.CDHInput × List Bool) × Encryption.ChoiceOut Msg) × List Bool => q.1.2.2) E2
-      encBits := by
-    fun_prop
-  have hv : ComputableInPolyTime
-      (fun q : ((F.CDHInput × List Bool) × Encryption.ChoiceOut Msg) × List Bool =>
-        F.encode _ q.1.1.1.rightPublic) E2 encBits := by
-    fun_prop
-  have hc : ComputableInPolyTime
-      (fun q : ((F.CDHInput × List Bool) × Encryption.ChoiceOut Msg) × List Bool => q.2) E2
-      encBits := by
-    fun_prop
+      (fun p : F.KDFInput × Encryption.ChoiceOut Msg => if bit then p.2.1.2 else p.2.1.1)
+      (encPair F.encKDFInput (Encryption.encChoiceOut encMsg)) encMsg :=
+    .ite' (encC := encBool) (.const bit) (by fun_prop) (by fun_prop)
   simp only [KDFDistinguisher.IsPPT, hashedElGamalCipherToKDFDistinguisher]
-  exact (hA.choose.on.preprocess (hn.prod hpk)).bind_with
-    ((hencryptSym.preprocess (hn₁.prod (hkey.prod hm))).bind_with
-      (hA.guess.preprocess (hn₂.prod (hst.prod (hv.prod hc).encoding_comp))))
+  exact (hA.choose.on.preprocess
+      (prepare := fun x : F.KDFInput =>
+        (x.secParam, encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic)))
+      (.prod (by fun_prop) (.encoding_comp (by fun_prop)))).bind_with
+    ((hencryptSym.preprocess
+        (prepare := fun p : F.KDFInput × Encryption.ChoiceOut Msg =>
+          (p.1.secParam, p.1.key, if bit then p.2.1.2 else p.2.1.1))
+        (.prod (by fun_prop) (.prod (by fun_prop) hm))).bind_with
+      (hA.guess.preprocess
+        (prepare := fun q : (F.KDFInput × Encryption.ChoiceOut Msg) × List Bool =>
+          (q.1.1.secParam, q.1.2.2, encPair encBits encBits (F.encode _ q.1.1.rightPublic, q.2)))
+        (.prod (by fun_prop) (.prod (by fun_prop) (.encoding_comp (.prod (by fun_prop)
+          (by fun_prop)))))))
 
 /-- Single hidden-bit KDF distinguisher $\mathcal{B}_{\mathrm{kdf}}$ ([BonehShoup2023],
 Section 11.5.2, proof of Theorem 11.5, Equation `(11.18)`, pp. 450–451): sample a uniform challenge
@@ -604,9 +573,9 @@ theorem isPPT_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
   have hFalse := F.isPPT_hashedElGamalCipherToKDFDistinguisher hencryptSym hA false
   have hTrue := F.isPPT_hashedElGamalCipherToKDFDistinguisher hencryptSym hA true
   have hStep : IsPPTOn E1 encBool
-      (fun p : (F.CDHInput × List Bool) × Bool =>
-        F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary p.2 p.1.1.secParam
-          p.1.1.groupParameters p.1.1.leftPublic p.1.1.rightPublic p.1.2) :=
+      (fun p : F.KDFInput × Bool =>
+        F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary p.2 p.1.secParam
+          p.1.groupParameters p.1.leftPublic p.1.rightPublic p.1.key) :=
     (IsPPTOn.cond' hp2 (hTrue.preprocess hp1) (hFalse.preprocess hp1)).congr
       (fun ⟨_, bit⟩ => by cases bit <;> rfl)
   exact (isPPTOn_uniform_bool E0).bind_with
