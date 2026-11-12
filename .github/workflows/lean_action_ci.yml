@@ -132,6 +132,25 @@ jobs:
       - name: "Projection chain report"
         if: github.event_name != 'pull_request'
         run: python3 -B scripts/check_projection_chains.py --report
+      # Security experiments read like their textbook figures, and adversaries are typed (#4817):
+      # encodings, `ProbComp.eval` and projection chains in experiment and reduction bodies, and
+      # `List Bool` in adversary types, are counted per module and category under
+      # CslibFrontier/Crypto in scripts/experiment_readability_baseline.json, with reviewed
+      # exceptions in scripts/experiment_readability_allowlist.txt. Enforced and reported as the
+      # projection chain ratchet above. Sources only: no Lean.
+      - name: "Experiment readability ratchet (changed modules)"
+        if: github.event_name == 'pull_request'
+        env:
+          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -e
+          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
+          BASE=${BASE:-$RECORDED_BASE}
+          git fetch --no-tags --depth=1 origin "$BASE"
+          python3 -B scripts/check_experiment_readability.py --base "$BASE"
+      - name: "Experiment readability report"
+        if: github.event_name != 'pull_request'
+        run: python3 -B scripts/check_experiment_readability.py --report
       # Advisory only: tactic blocks on lines a pull request adds or changes that repeat a block
       # of another proof in the same file or directory nearly verbatim (#3725). Candidates go to
       # the job summary and appear as notices; the step never fails the job. Sources only: no

@@ -1,0 +1,23 @@
+# Reviewed exceptions to scripts/check_experiment_readability.py. Format:
+# `<module path> <declaration or *> <category>  # reason`, with a category among encoding, eval,
+# chain and word_adversary; the reason is required. An entry suppresses the findings of its
+# category in that declaration (with `*`, in the whole module). The check reports entries that no
+# longer suppress anything, so this list only shrinks. Record debt in
+# scripts/experiment_readability_baseline.json instead; add an entry only with review, for a
+# finding that is part of the mathematics rather than word plumbing.
+
+# BHR12 garbling schemes are defined on strings: `En` and `De` are the scheme's own encoding and
+# decoding algorithms (`Garbling.Scheme.encode`, `Garbling.Scheme.decode`), not word codecs.
+CslibFrontier/Crypto/Primitives/Garbling/Games.lean prvIndExp encoding  # BHR12 En(e, x)
+CslibFrontier/Crypto/Primitives/Garbling/Games.lean prvSimExp encoding  # BHR12 En(e, x)
+CslibFrontier/Crypto/Primitives/Garbling/Games.lean obvIndExp encoding  # BHR12 En(e, x)
+CslibFrontier/Crypto/Primitives/Garbling/Games.lean obvSimExp encoding  # BHR12 En(e, x)
+CslibFrontier/Crypto/Primitives/Garbling/Games.lean autGame encoding  # BHR12 En(e, x), De(d, Y)
+CslibFrontier/Crypto/Primitives/Garbling/Adaptive.lean prv1Exp encoding  # BHR12 En(e, x)
+CslibFrontier/Crypto/Primitives/Garbling/Switch/Oblivious.lean realGame encoding  # BHR12 En(e, x)
+
+# The BCS transformation hashes serialized IOP symbols with a random oracle on strings: `encSym`
+# is part of the construction of Ben-Sasson, Chiesa and Spooner (2016), not plumbing.
+CslibFrontier/Crypto/Protocols/BCS/ROM.lean bcsHonestROMGame encoding  # BCS16 symbol serialization
+CslibFrontier/Crypto/Protocols/BCS/ROM.lean bcsSoundnessGame encoding  # BCS16 symbol serialization
+CslibFrontier/Crypto/Protocols/BCS/ROM.lean bcsKnowledgeSoundnessGame encoding  # BCS16 symbol serialization

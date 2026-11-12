@@ -190,8 +190,8 @@ class RatchetTests(unittest.TestCase):
 
 class RepositoryTests(unittest.TestCase):
     def test_the_checked_in_baseline_is_well_formed(self) -> None:
-        baseline = c.load_baseline(c.BASELINE)
-        self.assertEqual(c.BASELINE.read_text(), c.baseline_text(baseline))
+        baseline = c.ratchet.load_baseline(c.RATCHET, c.BASELINE)
+        self.assertEqual(c.BASELINE.read_text(), c.ratchet.baseline_text(c.RATCHET, baseline))
 
 
 if __name__ == "__main__":

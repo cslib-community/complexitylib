@@ -44,7 +44,8 @@ entry unless `--allow-increase` is given, for instance when a module moves.
 `--update-baseline --all --allow-increase` regenerates the whole baseline. `--list [PREFIX]`
 ignores the baseline and prints every counted chain in the modules under the path PREFIX (such as
 `CslibFrontier/DataStructure`), or in every module, with the most affected modules first; it
-always succeeds.
+always succeeds. `scripts/count_ratchet.py` implements this baseline handling, which
+`scripts/check_experiment_readability.py` shares.
 
 The scanner is adapted from the survey script of the #1764 projections lane. The check reads only
 the sources: it needs no build outputs.
@@ -52,10 +53,7 @@ the sources: it needs no build outputs.
 
 from __future__ import annotations
 
-import argparse
-from collections import defaultdict
 from dataclasses import dataclass
-import json
 from pathlib import Path
 import re
 import sys
@@ -63,6 +61,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import check_encoding_readability as cer  # noqa: E402
+import count_ratchet as ratchet  # noqa: E402
 
 BASELINE = ROOT / "scripts/projection_chains_baseline.json"
 UPDATE = "python3 scripts/check_projection_chains.py --update-baseline"
@@ -158,14 +157,6 @@ def module_chains(text: str) -> list[Chain]:
     return found
 
 
-def module_paths(root: Path, prefix: str = "") -> list[str]:
-    """The checked modules under `prefix`, as paths relative to `root`."""
-    parts = Path(prefix).parts
-    return [path.relative_to(root).as_posix()
-            for path in sorted((root / "CslibFrontier").rglob("*.lean"))
-            if path.relative_to(root).parts[:len(parts)] == parts]
-
-
 def scan(root: Path, paths: list[str]) -> dict[str, list[Chain]]:
     """The counted chains of each of `paths` that exists and has any."""
     found = {}
@@ -185,131 +176,17 @@ def scan(root: Path, paths: list[str]) -> dict[str, list[Chain]]:
     return found
 
 
-def load_baseline(path: Path) -> dict[str, int]:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or not all(
-            isinstance(k, str) and type(v) is int and v > 0 for k, v in data.items()):
-        sys.exit(f"{path}: expected a JSON object from source paths to positive counts")
-    return data
-
-
-def baseline_text(counts: dict[str, int]) -> str:
-    return json.dumps({k: v for k, v in sorted(counts.items()) if v}, indent=1) + "\n"
-
-
-Change = tuple[str, int, int]  # (path, count, baseline entry)
-
-
-def compare(counts: dict[str, int], baseline: dict[str, int], paths: list[str]
-            ) -> tuple[list[Change], list[Change]]:
-    """`(over, under)`: those of `paths` whose count exceeds or falls short of their entry. A
-    missing count or entry is 0."""
-    over, under = [], []
-    for path in sorted(paths):
-        count, entry = counts.get(path, 0), baseline.get(path, 0)
-        if count > entry:
-            over.append((path, count, entry))
-        elif count < entry:
-            under.append((path, count, entry))
-    return over, under
-
-
-def over_report(over: list[Change], found: dict[str, list[Chain]]) -> str:
-    out = ["Public statements and the bodies of public definitions bind tuple components by name "
+RATCHET = ratchet.Ratchet(
+    description=__doc__, baseline=BASELINE, update=UPDATE, unit="projection chain(s)",
+    short="chain(s)",
+    intro=("Public statements and the bodies of public definitions bind tuple components by name "
            f"instead of chaining positional projections such as `c.1.2` (#1764; {RULE}). These "
-           "modules have more chains than their baseline entry; the counted chains are:", ""]
-    for path, count, entry in over:
-        out.append(f"{path}: {count} chain(s), baseline {entry}:")
-        out += [f"  {path}:{row.line}: {row.declaration}: `{row.chain}`"
-                for row in found.get(path, [])]
-    return "\n".join(out)
-
-
-def under_report(under: list[Change]) -> str:
-    return "\n".join(f"  {path}: {count} (baseline {entry})" for path, count, entry in under)
-
-
-def listing(found: dict[str, list[Chain]]) -> str:
-    total = sum(len(rows) for rows in found.values())
-    out = [f"{total} counted projection chain(s) in {len(found)} module(s)."]
-    for path, rows in sorted(found.items(), key=lambda item: (-len(item[1]), item[0])):
-        out += ["", f"{path}: {len(rows)}"]
-        by_declaration: dict[str, list[Chain]] = defaultdict(list)
-        for row in rows:
-            by_declaration[row.declaration].append(row)
-        for name, chain_rows in by_declaration.items():
-            out.append(f"  {path}:{chain_rows[0].line}: {name}: "
-                       + " ".join(f"`{row.chain}`" for row in chain_rows))
-    return "\n".join(out)
+           "modules have more chains than their baseline entry; the counted chains are:"),
+    removed="Projection chains were removed", scan=scan, render=lambda row: f"`{row.chain}`")
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    scope = parser.add_mutually_exclusive_group()
-    scope.add_argument("--base", default="origin/main",
-                       help="enforce in the modules changed since the merge base with this "
-                            "revision (default origin/main)")
-    scope.add_argument("--all", action="store_true", help="enforce in every module")
-    scope.add_argument("--report", action="store_true",
-                       help="report every difference from the baseline and succeed")
-    scope.add_argument("--list", nargs="?", const="", metavar="PREFIX",
-                       help="ignore the baseline and list every counted chain in the modules "
-                            "under the path PREFIX, or in every module; always succeeds")
-    parser.add_argument("--update-baseline", action="store_true",
-                        help="lower the baseline entries of the enforced modules")
-    parser.add_argument("--allow-increase", action="store_true",
-                        help="with --update-baseline, allow adding and raising entries")
-    parser.add_argument("--root", type=Path, default=ROOT, help="the repository to check")
-    parser.add_argument("--baseline", type=Path, help="default: the root's baseline file")
-    args = parser.parse_args(argv)
-    if args.allow_increase and not args.update_baseline:
-        parser.error("--allow-increase needs --update-baseline")
-    if (args.report or args.list is not None) and args.update_baseline:
-        parser.error("--report and --list do not combine with --update-baseline")
-    if args.list is not None:
-        print(listing(scan(args.root, module_paths(args.root, args.list))))
-        return 0
-    baseline_path = args.baseline or args.root / BASELINE.relative_to(ROOT)
-    baseline = load_baseline(baseline_path) if baseline_path.exists() else {}
-    whole = args.all or args.report
-    paths = (sorted(set(module_paths(args.root)) | set(baseline)) if whole
-             else sorted(cer.touched_modules(args.root, args.base)))
-    found = scan(args.root, paths)
-    counts = {path: len(rows) for path, rows in found.items()}
-    over, under = compare(counts, baseline, paths)
-    scope_text = "every module" if whole else f"{len(paths)} changed module(s)"
-    status = (f"{sum(counts.values())} counted projection chain(s) in {len(counts)} module(s), "
-              f"checking {scope_text}")
-    if args.report:
-        if over:
-            print(over_report(over, found))
-        if under:
-            print(("\n" if over else "") + "Entries above the current count:\n"
-                  + under_report(under))
-        print(("\n" if over or under else "") + f"{status}; report only, nothing is enforced.")
-        return 0
-    if args.update_baseline:
-        if over and not args.allow_increase:
-            print(over_report(over, found), file=sys.stderr)
-            print("\nThe baseline only goes down; pass --allow-increase to raise it on purpose, "
-                  "for instance for a moved module.", file=sys.stderr)
-            return 1
-        updated = dict(baseline)
-        for path in paths:
-            updated[path] = counts.get(path, 0)
-        baseline_path.write_text(baseline_text(updated), encoding="utf-8")
-        print(f"Wrote {baseline_path} for {scope_text}: {status}.")
-        return 0
-    if under:
-        print("Projection chains were removed, so these entries can come down. Lower them with "
-              f"`{UPDATE}` and commit the result, so that the chains cannot come back:\n"
-              + under_report(under))
-    if over:
-        print(("\n" if under else "") + over_report(over, found), file=sys.stderr)
-        return 1
-    print(f"{status}; none exceeds its baseline entry.")
-    return 0
+    return ratchet.main(RATCHET, argv)
 
 
 if __name__ == "__main__":

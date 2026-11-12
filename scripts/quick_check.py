@@ -25,8 +25,11 @@ ENCODING_RATCHET = (
 PROJECTION_RATCHET = (
     "projection chain ratchet",
     [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", "{base}"])
+EXPERIMENT_RATCHET = (
+    "experiment readability ratchet",
+    [sys.executable, "-B", "scripts/check_experiment_readability.py", "--base", "{base}"])
 # The per-module ratchets of `ci-checks`, which read only the library sources.
-RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET)
+RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET, EXPERIMENT_RATCHET)
 
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
 # to one runs that check (with `{base}`, the merge base) instead of falling back to the full check.
@@ -36,6 +39,8 @@ DATA_CHECKS = {
     # (`.github/workflows/lean_action_ci.yml`).
     "scripts/encoding_readability_baseline.json": ENCODING_RATCHET,
     "scripts/projection_chains_baseline.json": PROJECTION_RATCHET,
+    "scripts/experiment_readability_baseline.json": EXPERIMENT_RATCHET,
+    "scripts/experiment_readability_allowlist.txt": EXPERIMENT_RATCHET,
 }
 
 # The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the
@@ -244,8 +249,11 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
             raise FullCheck(f"deleted, renamed or unusual change: {path}")
         if not path.endswith(".lean") and path not in DATA_CHECKS:
             raise FullCheck(f"non-Lean change: {path}")
-    checks = [(label, [base if part == "{base}" else part for part in command])
-              for path, (label, command) in DATA_CHECKS.items() if path in {p for _, p in changes}]
+    checks = []
+    for path, (label, command) in DATA_CHECKS.items():
+        check = (label, [base if part == "{base}" else part for part in command])
+        if path in {p for _, p in changes} and check not in checks:
+            checks.append(check)
     changes = [(status, path) for status, path in changes if path not in DATA_CHECKS]
     hygiene = sorted(path for _, path in changes if path.startswith(HYGIENE_ROOTS))
     if hygiene:

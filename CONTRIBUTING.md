@@ -155,6 +155,8 @@ statements and public definition bodies, leaving out proofs, these two exception
 accessors. CI fails a pull request when a module it changes has more chains than its entry in
 `scripts/projection_chains_baseline.json`; a new module starts at 0. Fewer chains pass, and
 `--update-baseline` lowers the entry. `--list PREFIX` shows the remaining chains of an area.
+This ratchet and the experiment readability ratchet below share their baseline handling,
+[count_ratchet.py](scripts/count_ratchet.py).
 
 **Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
@@ -178,6 +180,29 @@ compare each changed public declaration's type with its type on `main`, either a
 `Lean.Meta.deltaExpand` of the new names and of the reducible type synonyms they mention, or with
 `isDefEq` at reducible transparency. Expanding only the new names is not enough: a coercion's type
 argument can read `CNF V` on one side and `List (List (V × Bool))` on the other.
+
+**Readable security experiments**
+([#4817](https://github.com/cslib-community/cslib-frontier/issues/4817)). A security experiment
+reads like its figure in the source, on typed values, and its adversary is typed, with its word
+encoding confined to a named efficiency predicate. For example, the fixed-group
+[`cdhExperiment`](CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean) draws exponents `a`
+and `b`, gives the adversary the group elements `a • g` and `b • g`, and tests its answer against
+`(a * b) • g`. It has no encodings, security parameter or `ProbComp.eval`. The family `cdhGame` in
+[DiffieHellman.lean](CslibFrontier/Crypto/Computational/DiffieHellman.lean) draws group
+parameters and runs `cdhExperiment` in the drawn group, and `CDHAdversary.IsPPT` is the only
+place where the encodings of the adversary's inputs and output appear. New and changed
+cryptographic statements follow the rules in [AGENTS.md](AGENTS.md#security-experiments).
+
+`scripts/check_experiment_readability.py` checks the first two rules in `CslibFrontier/Crypto`. In
+the bodies of experiments and reductions it counts word encodings, `ProbComp.eval` (except where
+a game evaluates a fixed experiment) and projection chains. It also counts `List Bool` and
+`WordOracleComp` in adversary types. Its docstring says how it recognizes experiments by their
+type and name (`…Experiment`, `…Game`, `…Hybrid`, `…Exp`), reductions and adversaries. CI fails a
+pull request when a module it changes has more findings of a category than its entry in
+`scripts/experiment_readability_baseline.json`. Reviewed exceptions, such as a garbling scheme's
+own `encode` and `decode` algorithms (Bellare–Hoang–Rogaway's En and De), go in
+`scripts/experiment_readability_allowlist.txt` with a reason. `--list CslibFrontier/Crypto/Computational/Encryption` lists an area's findings
+for a sweep.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.

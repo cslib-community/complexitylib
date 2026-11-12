@@ -309,8 +309,8 @@ lake exe checkInitImports
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
 optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
 CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
-hygiene, the encoding readability and projection chain ratchets, documentation pins, and the
-post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
+hygiene, the encoding readability, projection chain and experiment readability ratchets,
+documentation pins, and the post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
 compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
 why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
 context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
@@ -337,13 +337,14 @@ For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean m
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability and projection chain ratchets: all read only
-sources and take seconds. Quick mode lints only the affected library modules, skips the global
+library module changed, the encoding readability, projection chain and experiment readability
+ratchets: all read only sources and take seconds. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
 not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
 and ambiguous change/import analysis fall back to the full check. The exceptions are the
-ratchet baselines `scripts/encoding_readability_baseline.json` and
-`scripts/projection_chains_baseline.json`, which no Lean gate reads: a change to one runs its
+ratchet baselines `scripts/encoding_readability_baseline.json`,
+`scripts/projection_chains_baseline.json` and `scripts/experiment_readability_baseline.json`, and
+`scripts/experiment_readability_allowlist.txt`, which no Lean gate reads: a change to one runs its
 ratchet instead. Quick success alone does not satisfy the full validation requirement above;
 documentation-only checks need not invoke quick mode.
 
@@ -508,8 +509,9 @@ For changed APIs and reuse refactors, follow [Check the API through its callers]
 inspect the actual caller and relevant sibling implementation, including generated certificates
 and any representation bridge. Compilation alone does not check placement or duplicated behavior.
 Check new and changed statements against
-[Structures for domain objects and records](#structures-for-domain-objects-and-records) and
-[Encodings in statements](#encodings-in-statements).
+[Structures for domain objects and records](#structures-for-domain-objects-and-records),
+[Encodings in statements](#encodings-in-statements) and, for cryptography,
+[Security experiments](#security-experiments).
 Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
 a new copy of an argument the library already makes is a finding when the
 [library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
@@ -738,6 +740,43 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
    the `enc%` proposal (#1830) is parked.
+
+### Security experiments
+
+A security experiment under `CslibFrontier/Crypto` reads like its figure in the source (Boneh–Shoup,
+Katz–Lindell, Goldreich), and word encodings stay at the efficiency boundary. New and changed
+experiments, games, reductions and adversary types follow these rules; existing ones are brought
+into line under [#4817](https://github.com/cslib-community/cslib-frontier/issues/4817). The
+[Operator's Manual](manual/programs-crypto-and-probability/security-games-and-primitives.md#write-an-experiment-like-its-textbook-figure)
+works through the Diffie–Hellman example.
+
+1. **Experiment bodies follow the textbook figure.** Sampling, the adversary call and the test
+   appear in the textbook's order, on typed values (`a • g`, keys, messages). The body contains no
+   encoding or decoding (`encode`, `decode`, `encPair`, a scheme's `enc…` field), no
+   `ProbComp.eval`, no security-parameter or setup plumbing and no `.1.2` projection chain.
+2. **Adversaries are typed.** They receive typed objects (group elements, keys, ciphertexts) and
+   return typed answers. Encodings appear only in a named efficiency predicate such as
+   `A.IsPPT`, never in the statements about the experiment.
+3. **The fixed experiment comes first.** State the experiment and its bound for a fixed instance
+   (a fixed group, key space or parameter set) as a `ProbComp Bool` program named `…Experiment`.
+   Derive the family or asymptotic `…Game` from it: draw the setup, then evaluate the fixed
+   experiment, as `cdhGame` does.
+4. **One experiment per notion.** A notion (IND-CPA, EUF-CMA, DDH) has one experiment, shared by
+   its clients. A reduction is one typed construction, with a `@[simp]` law in each hybrid where
+   it is `rfl`.
+5. **Typed inputs are records** with named fields, encoded with `enc_structure`
+   ([Encodings in statements](#encodings-in-statements), rule 5), so that efficiency
+   certificates read fields.
+6. **Shared facts live in shared modules.** Point-hit bounds, masks and uniform pushforwards go in
+   small `Probability/` topic modules ([Placement and reuse](#placement-and-reuse)), not in
+   private copies.
+7. **Strength is preserved.** Hypotheses, conclusions and resource bounds keep their strength;
+   record any exception in the PR with a follow-up issue.
+
+Computational games are `ProbComp` programs; information-theoretic ones (PIR, concrete Σ-protocols,
+randomized response) may stay `PMF`. `scripts/check_experiment_readability.py` checks rules 1 and 2
+in `CslibFrontier/Crypto` against a per-module, per-category baseline that may only fall, with
+reviewed exceptions in `scripts/experiment_readability_allowlist.txt`; review covers the rest.
 
 ## Design commitments (do not re-litigate casually)
 

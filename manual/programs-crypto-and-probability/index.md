@@ -43,6 +43,8 @@ Uniformity is load-bearing. The native witnesses are chosen before all inputs, a
 
 The formal contracts distinguish strict versus expected running time; exact uniform group laws versus approximate fair-coin samplers; fixed versus adaptive query selection; full versus proper MPC coalitions; and generable versus unrestricted auxiliary-input zero knowledge. These are properties of the formal statements, not incidental caveats.
 
+Security experiments are stated for a fixed instance on typed values, in the order of their textbook figure, and family games draw the setup and then run the fixed experiment. Adversaries are typed, and their encodings appear only in a named efficiency predicate such as `CDHAdversary.IsPPT`. **Inference:** a reader can check an experiment against its source without decoding words, and a reduction's efficiency is a separate obligation stated where it is proved. [Write an experiment like its textbook figure](security-games-and-primitives.md#write-an-experiment-like-its-textbook-figure) gives the procedure.
+
 ## Coverage and evidence
 
 The model map groups protocol constructions by their computational/security interface, rather than treating every named cipher as a new computational model. Sources covered include `Languages/Probabilistic`, `Computability/Probabilistic`, `Crypto/Game`, `Crypto/Computational`, `Crypto/Protocols`, and pinned cslib's cryptographic interfaces. The mathematical probability library supplies PMFs, couplings, distances, and concentration; these are semantic foundations, not additional execution machines.

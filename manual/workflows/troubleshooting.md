@@ -82,6 +82,38 @@ cut -f1,3 /proc/sys/fs/file-nr
 
 One Lake build runs roughly as many `lean` processes at once as its thread pool allows, which `LEAN_NUM_THREADS` sets. Bound both that setting and the number of builds running at the same time on the host; CPU quotas do not reduce the handles. Build the changed modules and their clients rather than the whole library, and use hosted CI for the full validation run. Rerun the failed command once the count has dropped. Lake reuses the modules that completed.
 
+## Diagnose a readability ratchet failure
+
+Three source-only checks count readability debt per module against a checked-in baseline:
+`scripts/check_encoding_readability.py` (repeated compound encodings,
+`scripts/encoding_readability_baseline.json`), `scripts/check_projection_chains.py` (positional
+projection chains, `scripts/projection_chains_baseline.json`) and
+`scripts/check_experiment_readability.py` (word plumbing in security experiments and adversary
+types under `CslibFrontier/Crypto`, `scripts/experiment_readability_baseline.json`). On a pull
+request, CI runs each on the modules the branch changes, and fails when one has more findings
+than its baseline entry; a new module's entry is 0. Run the failing command from the repository
+root to reproduce it:
+
+```bash
+python3 scripts/check_experiment_readability.py --base origin/main
+```
+
+The report lists each counted finding with its line and declaration. Fix the findings your change
+added: name the encoding, bind the components by name, or move the encoding out of the experiment
+into the adversary's efficiency predicate, as the
+[contributing rules](../../CONTRIBUTING.md#library-quality-standard) and
+[experiment walkthrough](../programs-crypto-and-probability/security-games-and-primitives.md#write-an-experiment-like-its-textbook-figure)
+describe. Run the command again; it succeeds when no module exceeds its entry.
+
+A count can rise without a new occurrence: a declaration or module moved, an experiment was
+renamed to match the naming convention, or, for the experiment check, a new codec elsewhere in
+the library shares a name the module uses. Record such an increase with
+`--update-baseline --allow-increase` and say why in the pull request. When a finding is part of
+the mathematics rather than plumbing, such as a scheme's own encoding algorithm, ask a reviewer
+to approve an entry in `scripts/experiment_readability_allowlist.txt`; the check fails on entries
+that no longer suppress anything. When counts fall, the check passes and prints the
+`--update-baseline` command that lowers the entries; commit the result so the debt cannot return.
+
 ## Distinguish the checks that passed
 
 A focused build, quick changed-client check, whole-library build, full `scripts/check.sh` run and axiom audit have different scopes. Record the actual command and revision. Quick mode can fall back to the full suite; inspect its report. The [contribution chapter](contributing.md) specifies integration requirements.

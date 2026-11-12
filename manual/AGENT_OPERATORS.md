@@ -43,6 +43,13 @@ A bounded implementation request can be as simple as:
 > Operator's Manual sections and assess the Agent Operator's Manual. Validate the change and
 > prepare it for independent review.
 
+For cryptography, name the textbook notion and its source, for example:
+
+> Act as a worker on issue `<number>`. State the `<notion>` experiment of `<source, locator>` for a
+> fixed `<instance>` on typed values, then the family game as setup followed by that experiment,
+> with typed adversaries whose encodings appear only in their `IsPPT` predicate. Preserve the
+> strength of every hypothesis and bound, and report what the experiment readability check counts.
+
 For an investigation, ask for a decision you can use:
 
 > Inspect how `<task>` is currently expressed in the library. Show the relevant definitions and a
