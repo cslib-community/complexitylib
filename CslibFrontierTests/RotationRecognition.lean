@@ -52,23 +52,23 @@ example : (recoverCSP (body
     [[2 ^ 250], [2 ^ 250], [2 ^ 250], [2 ^ 250], [2 ^ 250]])).isSome = true := by
   decide +kernel
 
-private def allFree : FixedRotationInput := ⟨([0, 1], [(0, 0), (0, 1), (0, 1)]), [none, none]⟩
+private def allFree : FixedRotationInput := ⟨⟨[0, 1], [(0, 0), (0, 1), (0, 1)]⟩, [none, none]⟩
 
 example : validate allFree = true := by decide +kernel
 example : (subdivide allFree).length = 9 := by decide +kernel
 example : (recover allFree).isSome = true := by decide +kernel
-example : !(validate ⟨([1], []), [none]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 1)]), [none]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], []), []⟩) = true := by decide +kernel
-example : !(validate ⟨([0], []), [some [0]]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 0)]), [some [0]]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 0)]), [some [0, 0]]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 0)]), [some [0, 2 ^ 250]]⟩) = true := by decide +kernel
-example : validate ⟨([0], []), [some []]⟩ = true := by decide +kernel
-example : validate ⟨([0], [(0, 0)]), [some [0, 1]]⟩ = true := by decide +kernel
-example : query ⟨([0], [(0, 0)]), [some [0, 1]]⟩ = true := by decide +kernel
-example : !query ⟨([0], [(0, 0), (0, 0)]), [some [0, 2, 1, 3]]⟩ = true := by decide +kernel
-example : query ⟨([0], [(0, 0), (0, 0)]), [some [0, 1, 2, 3]]⟩ = true := by decide +kernel
+example : !(validate ⟨⟨[1], []⟩, [none]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 1)]⟩, [none]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], []⟩, []⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], []⟩, [some [0]]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 0)]⟩, [some [0]]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 0)]⟩, [some [0, 0]]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 0)]⟩, [some [0, 2 ^ 250]]⟩) = true := by decide +kernel
+example : validate ⟨⟨[0], []⟩, [some []]⟩ = true := by decide +kernel
+example : validate ⟨⟨[0], [(0, 0)]⟩, [some [0, 1]]⟩ = true := by decide +kernel
+example : query ⟨⟨[0], [(0, 0)]⟩, [some [0, 1]]⟩ = true := by decide +kernel
+example : !query ⟨⟨[0], [(0, 0), (0, 0)]⟩, [some [0, 2, 1, 3]]⟩ = true := by decide +kernel
+example : query ⟨⟨[0], [(0, 0), (0, 0)]⟩, [some [0, 1, 2, 3]]⟩ = true := by decide +kernel
 example : validate (split allFree 0 [0]) = true := by decide +kernel
 example : (split allFree 0 [0]).graph.2 = [(2, 0), (0, 1), (0, 1), (2, 0)] := by decide +kernel
 

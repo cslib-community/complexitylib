@@ -72,13 +72,13 @@ example : SAT.groupClique 2 ([[]] : CNF ℕ) ∉ Clique := by
   rintro ⟨_, τ, hτ⟩
   simp [CNF.eval, Clause.eval] at hτ
 
-example : SAT.groupClique 2 non3CNF = (([], []), 2) := by decide
+example : SAT.groupClique 2 non3CNF = (⟨[], []⟩, 2) := by decide
 example : SAT.groupClique 2 non3CNF ∉ Clique := by
   rw [SAT.groupClique_mem_Clique_iff (by decide : 1 ≤ 2) non3CNF]
   rintro ⟨h3, _⟩
   exact absurd (h3 [(0, true), (1, true), (2, true), (3, true)] (by simp [non3CNF])) (by decide)
 
-example : SAT.groupClique 0 sat2 = (([], []), 1) := by decide
+example : SAT.groupClique 0 sat2 = (⟨[], []⟩, 1) := by decide
 
 /-- Non-vacuity typecheck of the ETH lower-bound and `FPT` theorems. -/
 example (hETH : ETH) : Clique ∉ FPT (Turing.MultiTapeTM.encPair encGraph Turing.MultiTapeTM.encNat)

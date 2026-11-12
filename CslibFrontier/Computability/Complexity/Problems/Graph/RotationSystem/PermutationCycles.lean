@@ -29,7 +29,7 @@ open Equiv
 
 /-- One actual listed edge from each index to its image under the finite permutation. -/
 @[expose] def permutationGraph {n : ℕ} (f : Perm (Fin n)) : Graph :=
-  (List.range n, (List.finRange n).map fun i => (i.val, (f i).val))
+  ⟨List.range n, (List.finRange n).map fun i => (i.val, (f i).val)⟩
 
 /-- Edge positions are exactly the original permutation indices. -/
 @[expose] def permutationEdgeEquiv {n : ℕ} (f : Perm (Fin n)) :

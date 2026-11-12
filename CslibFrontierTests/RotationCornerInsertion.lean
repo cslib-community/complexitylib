@@ -16,7 +16,7 @@ namespace CslibFrontierTests.RotationCornerInsertion
 open Cslib.Complexity
 open Graph.RotationSystem
 
-private abbrev edge : Graph := ([0, 1], [(0, 1)])
+private abbrev edge : Graph := ⟨[0, 1], [(0, 1)]⟩
 
 private def edgeRotation : Graph.RotationSystem edge where
   rotate := Equiv.refl _
@@ -41,7 +41,7 @@ example : Graph.RotationCertificate.ofRotation
 example : Graph.RotationCertificate.verifyGenusZero
     (cornerGraph (G := edge) (0, false) (0, true)) ⟨[2, 3, 0, 1]⟩ = true := by decide
 
-private abbrev loop : Graph := ([0], [(0, 0)])
+private abbrev loop : Graph := ⟨[0], [(0, 0)]⟩
 
 private def loopRotation : Graph.RotationSystem loop where
   rotate := Equiv.swap (0, false) (0, true)

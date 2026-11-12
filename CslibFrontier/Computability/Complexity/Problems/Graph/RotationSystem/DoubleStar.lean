@@ -30,8 +30,8 @@ open Equiv
 
 /-- Two centers attached to the same indexed leaves, with the second scope reversed. -/
 @[expose] def doubleStarGraph (n : ℕ) : Graph :=
-  (List.range (n + 2), (List.finRange n).map (fun i => (i.val, n)) ++
-    (List.finRange n).map (fun i => (i.rev.val, n + 1)))
+  ⟨List.range (n + 2), (List.finRange n).map (fun i => (i.val, n)) ++
+    (List.finRange n).map (fun i => (i.rev.val, n + 1))⟩
 
 /-- A leaf and a center-block bit identify an actual edge position. -/
 @[expose] def doubleStarEdgeEquiv (n : ℕ) : Fin n × Bool ≃ Fin (doubleStarGraph n).2.length :=

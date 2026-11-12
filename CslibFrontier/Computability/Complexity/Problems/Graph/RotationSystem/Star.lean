@@ -29,7 +29,7 @@ open Equiv
 
 /-- One distinct leaf per argument and one constraint center, including the arity-zero point. -/
 @[expose] def starGraph (n : ℕ) : Graph :=
-  (List.range (n + 1), (List.finRange n).map fun i => (i.val, n))
+  ⟨List.range (n + 1), (List.finRange n).map fun i => (i.val, n)⟩
 
 /-- Argument/end coordinates on the actual listed star. -/
 @[expose] def starDartEquiv (n : ℕ) : Fin n × Bool ≃ Dart (starGraph n) :=

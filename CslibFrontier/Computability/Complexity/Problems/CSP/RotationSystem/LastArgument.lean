@@ -169,10 +169,10 @@ theorem argumentNextIndex_append_last_argument_wrap (F : CSP Rel V) (r : Rel)
 /-- The actual source incidence prefix before its last argument edge. Its declarations
 and dense endpoint names are still those of the source, including a now isolated variable. -/
 @[expose] def lastArgumentPrefixGraph (F : CSP Rel V) (r : Rel) (scope : List V) (v : V) : Graph :=
-  ((incidenceGraph (F ++ [(r, scope ++ [v])])).1,
+  ⟨(incidenceGraph (F ++ [(r, scope ++ [v])])).vertices,
     (F ++ [(r, scope)]).occurrences.map fun (constraint, (_argument, varName)) =>
       ((F ++ [(r, scope ++ [v])]).distinctVars.idxOf varName,
-        (F ++ [(r, scope ++ [v])]).numVars + constraint))
+        (F ++ [(r, scope ++ [v])]).numVars + constraint)⟩
 
 /-- Source incidence is literally this prefix followed by the selected final edge. -/
 theorem incidenceGraph_append_last_argument (F : CSP Rel V) (r : Rel) (scope : List V) (v : V) :
@@ -180,7 +180,7 @@ theorem incidenceGraph_append_last_argument (F : CSP Rel V) (r : Rel) (scope : L
       lastEdgeGraph (lastArgumentPrefixGraph F r scope v)
         ((F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
         ((F ++ [(r, scope ++ [v])]).numVars + F.length) := by
-  apply Prod.ext
+  apply Graph.ext
   · rfl
   · rw [incidenceGraph_edges, CSP.occurrences_append_last_argument]
     simp [lastEdgeGraph, lastArgumentPrefixGraph]

@@ -32,8 +32,8 @@ variable {Rel V : Type} [DecidableEq V]
 /-- A trailing nullary adds exactly one isolated constraint declaration. -/
 theorem incidenceGraph_append_nullary (F : CSP Rel V) (r : Rel) :
     incidenceGraph (F ++ [(r, [])]) =
-      ((incidenceGraph F).1 ++ [F.numVars + F.length], (incidenceGraph F).2) := by
-  apply Prod.ext
+      ⟨(incidenceGraph F).vertices ++ [F.numVars + F.length], (incidenceGraph F).edges⟩ := by
+  apply Graph.ext
   · simp only [incidenceGraph_vertices, CSP.numVars_append_nullary, List.length_append,
       List.length_singleton, ← Nat.add_assoc, List.range_succ]
   · simp only [incidenceGraph_edges, CSP.occurrences_append_nullary,

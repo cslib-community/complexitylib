@@ -37,19 +37,19 @@ example : verifyGenusZero (morePoints, edges) ⟨[2 ^ 250]⟩ =
     verifyGenusZero (vertices, edges) ⟨[2 ^ 250]⟩ := raw_point_transport _
 
 -- The endpoint guards matter: omitting an incident endpoint changes raw acceptance.
-example : verifyGenusZero ([7], [(7, 8)]) ⟨[0, 1]⟩ = false ∧
-    verifyGenusZero ([7, 8], [(7, 8)]) ⟨[0, 1]⟩ = true := by decide +kernel
+example : verifyGenusZero ⟨[7], [(7, 8)]⟩ ⟨[0, 1]⟩ = false ∧
+    verifyGenusZero ⟨[7, 8], [(7, 8)]⟩ ⟨[0, 1]⟩ = true := by decide +kernel
 
 -- Adding points cannot repair positive genus: actual rotation validation still passes.
-example : verifyRotation ([0, 8, 8], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ = true ∧
-    verifyGenusZero ([0, 8, 8], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ = false := by decide +kernel
+example : verifyRotation ⟨[0, 8, 8], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ = true ∧
+    verifyGenusZero ⟨[0, 8, 8], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ = false := by decide +kernel
 
-example : verifyGenusZero ([0, 8, 8], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ =
-    verifyGenusZero ([0], [(0, 0), (0, 0)]) ⟨[2, 3, 1, 0]⟩ :=
+example : verifyGenusZero ⟨[0, 8, 8], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ =
+    verifyGenusZero ⟨[0], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ :=
   verifyGenusZero_redeclare [0] [0, 8, 8] [(0, 0), (0, 0)] (by decide) (by decide) _
 
-example : verifyGenusZero ([5, 5, 2 ^ 250], []) ⟨[]⟩ = true ∧
-    verifyGenusZero ([], []) ⟨[]⟩ = true := by decide +kernel
+example : verifyGenusZero ⟨[5, 5, 2 ^ 250], []⟩ ⟨[]⟩ = true ∧
+    verifyGenusZero ⟨[], []⟩ ⟨[]⟩ = true := by decide +kernel
 
 private abbrev body : CSP Bool ℕ := [(true, [7, 7]), (false, [])]
 

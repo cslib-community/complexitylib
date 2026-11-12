@@ -860,12 +860,12 @@ check an isolate and reject a missing table entry:
 
 ```lean
 open Cslib.Complexity.Graph.RotationRecognition in
-example : query ⟨([0], []), [some []]⟩ = true := by decide +kernel
+example : query ⟨⟨[0], []⟩, [some []]⟩ = true := by decide +kernel
 ```
 
 ```lean
 open Cslib.Complexity.Graph.RotationRecognition in
-example : recover ⟨([0], []), []⟩ = none := by decide +kernel
+example : recover ⟨⟨[0], []⟩, []⟩ = none := by decide +kernel
 ```
 
 Each listed edge is replaced by three indexed segments. Prescribed endpoints
@@ -1265,7 +1265,7 @@ example : (PolygonalDrawing.star 20).IsEmbedding :=
   PolygonalDrawing.star_isEmbedding 20
 
 open Cslib.Complexity Graph in
-example (r : RotationSystem ([7, 7, 100], [])) :
+example (r : RotationSystem ⟨[7, 7, 100], []⟩) :
     (PolygonalDrawing.points [7, 7, 100]).IsEmbedding ∧
       (PolygonalDrawing.points [7, 7, 100]).Realizes r :=
   ⟨PolygonalDrawing.points_isEmbedding _,
@@ -1350,8 +1350,8 @@ Here the actual two-loop certificate supplies the numerical premise:
 ```lean
 open Cslib.Complexity Graph in
 example : ∃ D : PolygonalDrawing
-    ([7, 7, 1000], [(7, 7), (7, 7)]), D.IsEmbedding := by
-  let G : Graph := ([7, 7, 1000], [(7, 7), (7, 7)])
+    ⟨[7, 7, 1000], [(7, 7), (7, 7)]⟩, D.IsEmbedding := by
+  let G : Graph := ⟨[7, 7, 1000], [(7, 7), (7, 7)]⟩
   let c : RotationCertificate := ⟨[2, 0, 3, 1]⟩
   have hc : RotationCertificate.verifyRotation G c = true := by decide
   let r := RotationCertificate.decode G c hc
