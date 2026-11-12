@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.SAT
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import CslibFrontier.Logics.Propositional.CNF.Vars
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Tactic.EncLen
 
@@ -65,7 +65,7 @@ theorem vars_units (answers : List (Literal ℕ)) : (units answers).vars = answe
 formula. -/
 theorem vars_units_append (answers : List (Literal ℕ)) (φ : CNF ℕ) :
     (units answers ++ φ).vars = answers.map Prod.fst ++ φ.vars := by
-  rw [CNF.vars, List.flatten_append, List.map_append, ← CNF.vars, ← CNF.vars, vars_units]
+  rw [CNF.vars_append, vars_units]
 
 /-- A formula after unit clauses holds exactly when the literals and the formula do. -/
 theorem eval_units_append (σ : ℕ → Bool) (answers : List (Literal ℕ)) (φ : CNF ℕ) :
@@ -90,8 +90,9 @@ theorem length_encNat_le_of_mem_vars {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.var
   obtain ⟨l, hl, rfl⟩ := List.mem_map.1 hv
   obtain ⟨c, hc, hl⟩ := List.mem_flatten.1 hl
   calc (encNat l.1).length ≤ (encPair encNat encBool l).length := length_le_encPair_left _ _ _
-    _ ≤ (encList (encPair encNat encBool) c).length := length_le_encList_of_mem _ hl
-    _ ≤ (encCNF φ).length := length_le_encList_of_mem _ hc
+    _ ≤ (encList (encPair encNat encBool) c).length := SizedListEncoding.length_elem_le c _ hl
+    _ ≤ (encCNF φ).length :=
+      SizedListEncoding.length_elem_le (encL := encList (encList (encPair encNat encBool))) φ c hc
 
 /-- Literals fixing variables of `φ` have short encodings: each takes at most `4 L + 5` bits,
 where `L` is the length of `φ`. -/
