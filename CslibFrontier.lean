@@ -1397,6 +1397,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Capa
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Components
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Cut
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwo
+public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwoInputs
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.InnerProduct
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.KaneWilliamsB
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.LTF
