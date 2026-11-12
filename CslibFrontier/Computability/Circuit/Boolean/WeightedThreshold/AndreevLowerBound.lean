@@ -99,9 +99,9 @@ theorem andreevParities_embedUpdate_andreevLiveVar (b m : ℕ) (σ : Fin b → F
 theorem andreev_embedUpdate_andreevLiveVar (b m : ℕ) (σ : Fin b → Fin m)
     (w : BitString (2 ^ b + b * m)) (u : BitString b) :
     andreev b m (embedUpdate (andreevLiveVar b m σ) w u) =
-      w (andreevTableIndex b m (BitString.equivFin b (u + andreevResidualParities b m σ w))) := by
-  rw [andreev_eq_table_parities, andreevParities_embedUpdate_andreevLiveVar,
-    embedUpdate_of_notMem w u (andreevTableIndex_notMem_image_andreevLiveVar b m σ _)]
+      andreevTable b m w (u + andreevResidualParities b m σ w) := by
+  rw [andreev_eq_table_parities, andreevParities_embedUpdate_andreevLiveVar]
+  exact embedUpdate_of_notMem w u (andreevTableIndex_notMem_image_andreevLiveVar b m σ _)
 
 /-! ### Measure-preserving truth-table involutions and Hoeffding tail bound -/
 
@@ -166,7 +166,7 @@ theorem card_subcube_agree_andreev_eq_card_tableCoords_true (b m : ℕ) (σ : Fi
   simp only [andreevSubcubePerm, Equiv.trans_apply, Function.Involutive.coe_toPerm,
     andreevAlignTable, andreevShiftResidual, andreevTranslateTableFun_castAdd, Bool.xor_false,
     andreevTableIndex, Fin.addCases_left, Equiv.symm_apply_apply,
-    andreev_embedUpdate_andreevLiveVar]
+    andreev_embedUpdate_andreevLiveVar, andreevTable]
   cases h u <;>
     cases w (Fin.castAdd (b * m) (BitString.equivFin b (u + andreevResidualParities b m σ w))) <;>
       decide
