@@ -4358,6 +4358,8 @@ public import CslibFrontier.Crypto.Protocols.MPC.SPDZ
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Crypto.Protocols.MPC.Yao
 public import CslibFrontier.Crypto.Protocols.PIR.Basic
+public import CslibFrontier.Crypto.Protocols.PIR.Block
+public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Crypto.Protocols.PIR.CoveringCode
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
 public import CslibFrontier.Crypto.Protocols.PIR.Interactive

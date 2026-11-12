@@ -204,6 +204,10 @@ def rows (ρ : Type) (P : Scheme ι S R Q A) : Scheme (ρ × ι) S R Q (ρ → A
   answer s x q j := P.answer s (fun i => x (j, i)) q
   reconstruct ji r a := P.reconstruct ji.2 r fun s => a s ji.1
 
+theorem query_rows (ρ : Type) (P : Scheme ι S R Q A) (ji : ρ × ι) :
+    (P.rows ρ).query ji = P.query ji.2 := by
+  rfl
+
 theorem run_rows (ρ : Type) (P : Scheme ι S R Q A) (x : ρ × ι → Bool) (j : ρ) (i : ι) :
     (P.rows ρ).run x (j, i) = P.run (fun i' => x (j, i')) i := by
   rfl
@@ -227,6 +231,10 @@ noncomputable def comap {ι' : Type} (P : Scheme ι' S R Q A) (e : ι ↪ ι') :
   query i := P.query (e i)
   answer s x q := P.answer s (Function.extend e x fun _ => false) q
   reconstruct i r a := P.reconstruct (e i) r a
+
+theorem query_comap {ι' : Type} (P : Scheme ι' S R Q A) (e : ι ↪ ι') (i : ι) :
+    (P.comap e).query i = P.query (e i) := by
+  rfl
 
 theorem serverQuery_comap {ι' : Type} (P : Scheme ι' S R Q A) (e : ι ↪ ι') (s : S) (i : ι) :
     (P.comap e).serverQuery s i = P.serverQuery s (e i) := by
