@@ -150,9 +150,9 @@ theorem isQueryBounded_singleQueryDistinguisher (n : ℕ) (aux : List Bool) :
 `singleQueryDistinguisher` on `schnorrGroups`. -/
 example :
     IsPPTOn schnorrGroups.encDDHInput encBool
-      (fun input =>
+      (fun x =>
         schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher
-          input.1 input.2) :=
+          x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared) :=
   schnorrGroups.isPPTOn_naorReingoldToDDHDistinguisher
     (ComputableInPolyTime.const 2) isOraclePPT_singleQueryDistinguisher
 
@@ -188,7 +188,7 @@ example (n : ℕ) :
         (Game.advantage
           (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
             (schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher) n)
-          (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+          (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23)
             (schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher) n)
           + 2 * (4 / (2 : ℝ≥0) ^ n) +
           (∑' d, (PMF.pure d23 : PMF schnorrGroups.Desc) d *

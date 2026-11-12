@@ -526,30 +526,30 @@ private theorem isPPTOn_run_cramerShoupCollisionPhase2Oracle
 encoding `encodeMsg : F.Desc × Msg → List Bool` and associated-data encoding
 `encodeAD : F.Desc × AD → List Bool` ([BonehShoup2023], proof of Theorem 12.9, Game 1 $\to$ Game 2,
 equation (12.22), printed pp. 490, 492, adapted to $\mathcal{E}_{\mathrm{MCS}}$ with associated
-data). -/
+data). It encodes the DDH elements `(u, v, w)` of group `d` and runs the word-level game on
+them. -/
 noncomputable def cramerShoupMsgToDDHDistinguisher
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
     (encodeAD : F.Desc × AD → List Bool)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool)
-    (n : ℕ) (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
-  let sk ← F.sampleCramerShoupSK n input.groupParameters
-  let pk := F.encodeCramerShoupPublicKey input.groupParameters input.leftPublic sk
+    (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) : F.DDHDistinguisher :=
+  fun n d u v w => do
+  let sk ← F.sampleCramerShoupSK n d
+  let pk := F.encodeCramerShoupPublicKey d (F.encode d u) sk
   let choiceOut ← (OracleComp.interpret
     (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (F.cramerShoupPhase1Oracle hasAD H isElem input.groupParameters sk))
+      (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
     (adversary.choose n pk)).run ()
   let choice := choiceOut.1
-  let m₀ := encodeMsg (input.groupParameters, csChoiceMsg₀ choice)
-  let m₁ := encodeMsg (input.groupParameters, csChoiceMsg₁ choice)
-  let ad := encodeAD (input.groupParameters, csChoiceAD choice)
-  if isElem (input.groupParameters, m₀) && isElem (input.groupParameters, m₁) then
+  let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
+  let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
+  let ad := encodeAD (d, csChoiceAD choice)
+  if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
-    let ct := F.encodeCramerShoupChallenge H input.groupParameters sk input.rightPublic
-      input.candidateShared m ad
+    let ct := F.encodeCramerShoupChallenge H d sk (F.encode d v) (F.encode d w) m ad
     let guessOut ← (OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (F.cramerShoupPhase2Oracle hasAD H isElem input.groupParameters sk ct ad))
+        (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
       (adversary.guess n choice.2 ct)).run ()
     return guessOut.1
   else
@@ -560,16 +560,14 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
 noncomputable abbrev cramerShoupADToDDHDistinguisher
     {AD : Type} (encAD : AD ↪ List Bool)
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (adversary : ADCCA2AdversaryOf (List Bool) AD) (bit : Bool) :
-    ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool :=
+    (adversary : ADCCA2AdversaryOf (List Bool) AD) (bit : Bool) : F.DDHDistinguisher :=
   F.cramerShoupMsgToDDHDistinguisher true Prod.snd (fun p => encAD p.2) H isElem adversary bit
 
 /-- The DDH distinguisher constructed from an associated-data-free group-message 1CCA adversary
 (`Msg = List Bool`, `encodeMsg = Prod.snd`, `ad = []`). -/
 noncomputable abbrev cramerShoupToDDHDistinguisher
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (adversary : CCA2AdversaryOf (List Bool)) (bit : Bool) :
-    ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool :=
+    (adversary : CCA2AdversaryOf (List Bool)) (bit : Bool) : F.DDHDistinguisher :=
   F.cramerShoupMsgToDDHDistinguisher false Prod.snd (fun _ => []) H isElem adversary.toADUnit bit
 
 /-- `cramerShoupMsgToDDHDistinguisher` is uniform strict PPT whenever `encodeMsg`, `encodeAD`, `H`,
@@ -585,26 +583,30 @@ theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encMsg encAD) (bit : Bool) :
-    IsPPTOn F.encDDHInput
-      encBool (fun p =>
-        F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit
-          p.1 p.2) := by
+    IsPPTOn F.encDDHInput encBool fun x =>
+      F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit
+        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared := by
   let E0 := F.encDDHInput
   let E1 := encPair E0 encCramerShoupSK
   let EChoice := encPair (encPair (encPair (encPair encMsg encMsg) encAD) encBits) (encFinEnum Unit)
-  have hp0 := ComputableInPolyTime.id' (encIn := E0)
   have hp1 := ComputableInPolyTime.id' (encIn := E1)
   have hp2 := ComputableInPolyTime.id' (encIn := encPair E1 EChoice)
-  have hd0 := F.encDDHChallenge_groupParameters_polyTime hp0.snd'
-  have hu0 := F.encDDHChallenge_leftPublic_polyTime hp0.snd'
-  have hv0 := F.encDDHChallenge_rightPublic_polyTime hp0.snd'
-  have hw0 := F.encDDHChallenge_candidateShared_polyTime hp0.snd'
+  have hn0 : ComputableInPolyTime (fun x : F.DDHInput => x.secParam) E0 encUnary := by fun_prop
+  have hd0 : ComputableInPolyTime (fun x : F.DDHInput => x.groupParameters) E0 F.encDesc := by
+    fun_prop
+  have hu0 : ComputableInPolyTime (fun x : F.DDHInput => F.encode x.groupParameters x.leftPublic)
+      E0 encBits := by fun_prop
+  have hv0 : ComputableInPolyTime (fun x : F.DDHInput => F.encode x.groupParameters x.rightPublic)
+      E0 encBits := by fun_prop
+  have hw0 : ComputableInPolyTime
+      (fun x : F.DDHInput => F.encode x.groupParameters x.candidateShared) E0 encBits := by
+    fun_prop
   have hd1 := hd0.comp hp1.fst'
-  have hsk := F.isPPTOn_sampleCramerShoupSK hp0.fst' hd0
+  have hsk := F.isPPTOn_sampleCramerShoupSK hn0 hd0
   have hpk := F.computableInPolyTime_encodeCramerShoupPublicKey.comp
     (hd1.prod ((hu0.comp hp1.fst').prod hp1.snd'))
   have hphase1 := F.isPPTOn_run_cramerShoupPhase1Oracle hasAD hH hisElem hA
-    hp1.fst'.fst' hd1 hp1.snd' hpk
+    (hn0.comp hp1.fst') hd1 hp1.snd' hpk
   have hd2 := hd0.comp hp2.fst'.fst'
   have hm₀ := hencMsg.comp (hd2.prod hp2.snd'.fst'.fst'.fst'.fst')
   have hm₁ := hencMsg.comp (hd2.prod hp2.snd'.fst'.fst'.fst'.snd')
@@ -612,14 +614,14 @@ theorem isPPTOn_cramerShoupMsgToDDHDistinguisher
   have hvalid := ComputableInPolyTime.bool_and.comp
     ((hisElem.comp (hd2.prod hm₀)).prod (hisElem.comp (hd2.prod hm₁)))
   have hm : ComputableInPolyTime
-      (fun p => if bit then encodeMsg (p.1.1.2.groupParameters, p.2.1.1.1.2)
-        else encodeMsg (p.1.1.2.groupParameters, p.2.1.1.1.1)) (encPair E1 EChoice) encBits := by
+      (fun p => if bit then encodeMsg (p.1.1.groupParameters, p.2.1.1.1.2)
+        else encodeMsg (p.1.1.groupParameters, p.2.1.1.1.1)) (encPair E1 EChoice) encBits := by
     cases bit <;> assumption
   have hct := (F.computableInPolyTime_encodeCramerShoupChallenge hH).comp
     (hd2.prod (hp2.fst'.snd'.prod ((hv0.comp hp2.fst'.fst').prod
       ((hw0.comp hp2.fst'.fst').prod (hm.prod had)))))
   have hphase2 := F.isPPTOn_run_cramerShoupPhase2Oracle hasAD hH hisElem hA
-    hp2.fst'.fst'.fst' hd2 hp2.fst'.snd' hp2.snd'.fst'.snd' hct had
+    (hn0.comp hp2.fst'.fst') hd2 hp2.fst'.snd' hp2.snd'.fst'.snd' hct had
   exact hsk.bind_with (hphase1.bind_with (IsPPTOn.cond' hvalid
     (hphase2.bind_with ((ComputableInPolyTime.snd
       (encPair E1 EChoice) (encPair encBool (encFinEnum Unit))).fst').isPPTOn)
@@ -635,8 +637,9 @@ theorem isPPTOn_cramerShoupADToDDHDistinguisher
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encBits encAD) (bit : Bool) :
-    IsPPTOn F.encDDHInput
-      encBool (fun p => F.cramerShoupADToDDHDistinguisher encAD H isElem adversary bit p.1 p.2) :=
+    IsPPTOn F.encDDHInput encBool fun x =>
+      F.cramerShoupADToDDHDistinguisher encAD H isElem adversary bit
+        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared :=
   F.isPPTOn_cramerShoupMsgToDDHDistinguisher true
     (ComputableInPolyTime.snd F.encDesc encBits)
     (ComputableInPolyTime.snd F.encDesc encAD).encoding_comp hH hisElem hA bit
@@ -649,8 +652,9 @@ theorem isPPTOn_cramerShoupToDDHDistinguisher
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hA : adversary.IsPPT encBits) (bit : Bool) :
-    IsPPTOn F.encDDHInput
-      encBool (fun p => F.cramerShoupToDDHDistinguisher H isElem adversary bit p.1 p.2) :=
+    IsPPTOn F.encDDHInput encBool fun x =>
+      F.cramerShoupToDDHDistinguisher H isElem adversary bit
+        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared :=
   F.isPPTOn_cramerShoupMsgToDDHDistinguisher false
     (ComputableInPolyTime.snd F.encDesc encBits) (.const [])
     hH hisElem hA.toADUnit bit

@@ -329,13 +329,14 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
     (hADA : adAdversary.IsPPT encBits)
     (hA : adversary.IsPPT) (bit : Bool) :
     IsPPTOn schnorrGroups.encDDHInput encBool
-      (fun p =>
-        schnorrGroups.cramerShoupADToDDHDistinguisher encBits H isElem adAdversary bit p.1 p.2) ∧
+      (fun x => schnorrGroups.cramerShoupADToDDHDistinguisher encBits H isElem adAdversary bit
+        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared) ∧
     IsPPTOn (encPair encUnary schnorrGroups.encDesc) (encPair encBits encBits)
       (fun p =>
         schnorrGroups.cramerShoupADToCollisionFinder encBits H isElem adAdversary bit p.1 p.2) ∧
     IsPPTOn schnorrGroups.encDDHInput encBool
-      (fun p => schnorrGroups.cramerShoupToDDHDistinguisher H isElem adversary bit p.1 p.2) ∧
+      (fun x => schnorrGroups.cramerShoupToDDHDistinguisher H isElem adversary bit
+        x.secParam x.groupParameters x.leftPublic x.rightPublic x.candidateShared) ∧
     IsPPTOn (encPair encUnary schnorrGroups.encDesc) (encPair encBits encBits)
       (fun p => schnorrGroups.cramerShoupToCollisionFinder H isElem adversary bit p.1 p.2) ∧
     IsPPTOn encUnary (encPair encBits encBits) (schnorrGroups.cramerShoupKeyGenProb d) ∧
@@ -368,14 +369,14 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
         (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupADToDDHDistinguisher encBits testHash isSchnorrElem
             adversary false) n)
-        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+        (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupADToDDHDistinguisher encBits testHash isSchnorrElem
             adversary false) n) +
       Game.advantage
         (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupADToDDHDistinguisher encBits testHash isSchnorrElem
             adversary true) n)
-        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+        (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupADToDDHDistinguisher encBits testHash isSchnorrElem
             adversary true) n) +
       Game.succProbability
@@ -412,12 +413,12 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
       Game.advantage
         (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary false) n)
-        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+        (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary false) n) +
       Game.advantage
         (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary true) n)
-        (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+        (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23)
           (schnorrGroups.cramerShoupToDDHDistinguisher testHash isSchnorrElem adversary true) n) +
       Game.succProbability
         (collisionGameFor (fun _ => PMF.pure d23) (schnorrGroups.cramerShoupHashMod testHash)
