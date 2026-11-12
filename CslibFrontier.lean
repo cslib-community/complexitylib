@@ -1103,6 +1103,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AgreementTwo
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
+public import CslibFrontier.Computability.Circuit.Boolean.AuxiliaryFormula
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
 public import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
@@ -1705,6 +1706,7 @@ public import CslibFrontier.Computability.Communication.Announce
 public import CslibFrontier.Computability.Communication.BinarySearch
 public import CslibFrontier.Computability.Communication.Corruption
 public import CslibFrontier.Computability.Communication.DagProtocol
+public import CslibFrontier.Computability.Communication.DenseRestriction
 public import CslibFrontier.Computability.Communication.Discrepancy
 public import CslibFrontier.Computability.Communication.Disjointness
 public import CslibFrontier.Computability.Communication.Distributional
@@ -5348,6 +5350,7 @@ public import CslibFrontier.Foundations.Data.Finset.Expect
 public import CslibFrontier.Foundations.Data.Finset.ExpectPi
 public import CslibFrontier.Foundations.Data.Finset.ExpectResample
 public import CslibFrontier.Foundations.Data.Finset.Finpartition
+public import CslibFrontier.Foundations.Data.Finset.Half
 public import CslibFrontier.Foundations.Data.Finset.Holder
 public import CslibFrontier.Foundations.Data.Finset.KthLargest
 public import CslibFrontier.Foundations.Data.Finset.KthLargest.Moment

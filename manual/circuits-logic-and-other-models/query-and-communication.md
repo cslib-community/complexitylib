@@ -224,6 +224,29 @@ and substitutes a fixed block with `Formula.depthWith_bind_le`. The
 the first-bit function of two bits and runs the halving cover on an identity matrix. Run
 `scripts/build.sh CslibFrontierTests.CircuitAgreementTwo` to check it.
 
+[DenseRestriction](../../CslibFrontier/Computability/Communication/DenseRestriction.lean)
+starts the composition part of submission 865. `composeKW g` is the source's `U_m ⋄ KW_g`
+with rejection: the players hold `m × n` bit matrices and name a differing cell `some (i, j)`,
+or answer `none` when every row has the same `g`-value. Its restriction `R_g(X)` is
+`ecomplexity (composeKW g) X X`. `le_ecomplexity_composeKW` is Lemma 6.7: if every `X` of density
+at least `2^{1-m}` has `CC(R_g(X)) ≥ d > 0`, then `CC(U_m ⋄ KW_g) ≥ m - 1 + d`. Two general
+lemmas sit behind it. `Protocol.exists_diagonal_subprotocol` is the diagonal walk, and
+`Protocol.le_ecomplexity_of_dense` is its packaging for any relation whose two players share an
+input type. The [dense-restriction client](../../CslibFrontierTests/CommunicationDenseRestriction.lean)
+checks `composeKW` on small matrices, applies Lemma 6.7 at `m = 1` and runs the walk on `Fin 8`.
+Run `scripts/build.sh CslibFrontierTests.CommunicationDenseRestriction` to check it.
+[AuxiliaryFormula](../../CslibFrontier/Computability/Circuit/Boolean/AuxiliaryFormula.lean)
+proves Lemma 6.1. `exists_auxFormula` turns a protocol solving `composeKW g` on `X × X` into a De
+Morgan formula `φ` of at most the same `binaryCost` depth. `φ` reads the matrix bits and one
+auxiliary bit `p_c` per `c ∈ {0, 1}ᵐ`, laid out by `auxInput`, and is monotone in the auxiliary
+bits. On every `Z ∈ X` it equals `p_{gᵐ(Z)}` (`rowValues g Z`). The formula is `auxFormula`,
+built like `Protocol.kwFormula`. `predictor φ Z` is the source's `τ_φ(Z)`: `some c` when
+`φ(Z, ·)` is the projection `p_c`, else `none`. `predictor_auxFormula` says it is correct on `X`.
+The [auxiliary-formula client](../../CslibFrontierTests/CircuitAuxiliaryFormula.lean) applies
+Lemma 6.1 to a rejecting protocol on one matrix and evaluates two predictors; run
+`scripts/build.sh CslibFrontierTests.CircuitAuxiliaryFormula`. The dense-restriction lower bounds
+(Lemmas 6.2–6.5, Theorem 6.6) are not formalized yet.
+
 This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
 and 1.5, and Corollaries 1.3 and 1.4. The composition/core results (Theorems 1.6–1.8) remain
 open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
