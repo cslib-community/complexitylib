@@ -456,7 +456,7 @@ theorem ret_convM {d t s : ℕ} (σ : Seed p) {As Bs Cs : List ℕ}
     refine ⟨fun i _ => by simp, ?_⟩
     rw [(hC c hc).2]; ring
 
-@[simp] theorem time_convM {d t s : ℕ} (σ : Seed p) {As Bs Cs : List ℕ}
+theorem time_convM {d t s : ℕ} (σ : Seed p) {As Bs Cs : List ℕ}
     (hC : ∀ c ∈ Cs, Ranked d (2 * t) (σ.target c)) (w v : ℕ → R) :
     (convM d s σ As Bs (Cs.map fun c => maskSet d (σ.target c)) w v).time =
       As.length + Bs.length + 3 * (d + 1) *
