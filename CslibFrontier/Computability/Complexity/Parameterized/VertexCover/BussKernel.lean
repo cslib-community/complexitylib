@@ -122,7 +122,7 @@ def edges (x : Graph × ℕ) : List (ℕ × ℕ) :=
 
 /-- The graph of the kernel, on the vertices `0, …, numVertices x - 1`. -/
 def graph (x : Graph × ℕ) : Graph :=
-  (List.range (numVertices x), edges x)
+  ⟨List.range (numVertices x), edges x⟩
 
 /-- Whether the kernel is the reduced graph: the target is at most the number of distinct declared
 vertices, there are at most `k` high vertices, and at most `k (k + 1)` active vertices. -/
@@ -131,7 +131,7 @@ def accept (x : Graph × ℕ) : Bool :=
     decide ((active x).length ≤ cap x * (cap x + 1))
 
 /-- A fixed instance outside `VertexCover`: one cover vertex in the empty graph. -/
-def noInstance : Graph × ℕ := (([], []), 1)
+def noInstance : Graph × ℕ := (⟨[], []⟩, 1)
 
 /-! ### Correctness -/
 
@@ -144,22 +144,22 @@ private def neighbors (G : Graph) (v : ℕ) : Finset ℕ :=
   (G.distinctVertices.filter (G.adjBool v)).toFinset
 
 private theorem mem_neighbors {G : Graph} {u v : ℕ} :
-    u ∈ neighbors G v ↔ u ∈ G.1 ∧ G.toSimpleGraph.Adj v u := by
+    u ∈ neighbors G v ↔ u ∈ G.vertices ∧ G.toSimpleGraph.Adj v u := by
   simp [neighbors, Graph.mem_distinctVertices]
 
 private theorem card_neighbors (G : Graph) (v : ℕ) : (neighbors G v).card = degree G v := by
   rw [neighbors, List.toFinset_card_of_nodup ((Graph.nodup_distinctVertices G).filter _), degree,
     List.countP_eq_length_filter]
 
-private theorem degree_le_card (G : Graph) (v : ℕ) : degree G v ≤ G.1.toFinset.card :=
+private theorem degree_le_card (G : Graph) (v : ℕ) : degree G v ≤ G.vertices.toFinset.card :=
   (List.countP_le_length).trans (Graph.length_distinctVertices G).le
 
 variable (x : Graph × ℕ)
 
-private theorem mem_high {v : ℕ} : v ∈ high x ↔ v ∈ x.1.1 ∧ isHigh x v = true := by
+private theorem mem_high {v : ℕ} : v ∈ high x ↔ v ∈ x.1.vertices ∧ isHigh x v = true := by
   simp [high, Graph.mem_distinctVertices]
 
-private theorem mem_low {v : ℕ} : v ∈ low x ↔ v ∈ x.1.1 ∧ isHigh x v = false := by
+private theorem mem_low {v : ℕ} : v ∈ low x ↔ v ∈ x.1.vertices ∧ isHigh x v = false := by
   simp [low, Graph.mem_distinctVertices]
 
 private theorem mem_active {v : ℕ} :
@@ -444,7 +444,7 @@ private theorem length_encode_le_of_accept (h : accept x = true) :
       have : x.2 * (x.2 + 1) ≤ x.2 * (x.2 + 2) := Nat.mul_le_mul_left _ (by omega)
       exact Nat.mul_le_mul this this
   have := length_encNat_le_self (param x)
-  simp only [graph, encGraph, length_encPair]
+  simp only [graph, encGraph_apply, length_encPair]
   exact le_trans (by omega) (size_arith (k := x.2) (K := K) le_rfl)
 
 end VertexCover.Buss
@@ -549,7 +549,7 @@ theorem computableInPolyTime_graph :
       (encPair encGraph encNat) (encList encNat) := by
     simpa only [Function.comp_def, List.map_id'] using
       (map unary_to_binary).comp (range.comp computableInPolyTime_numVertices)
-  exact (hV.prod computableInPolyTime_edges).of_enc_eq fun _ => rfl
+  exact encGraph_mk_polyTime hV computableInPolyTime_edges
 
 end VertexCover.Buss
 
@@ -571,7 +571,7 @@ theorem bussKernel_mem_iff (x : Graph × ℕ) : bussKernel x ∈ VertexCover ↔
 
 /-- Buss's kernel has at most `k (k + 2)` vertices. -/
 theorem length_bussKernel_vertices_le (x : Graph × ℕ) :
-    (bussKernel x).1.1.length ≤ x.2 * (x.2 + 2) := by
+    (bussKernel x).1.vertices.length ≤ x.2 * (x.2 + 2) := by
   unfold bussKernel
   split_ifs with h
   · simpa [graph] using numVertices_le_of_accept x h
@@ -579,7 +579,7 @@ theorem length_bussKernel_vertices_le (x : Graph × ℕ) :
 
 /-- Buss's kernel lists at most `(k (k + 1)) ^ 2` edges. -/
 theorem length_bussKernel_edges_le (x : Graph × ℕ) :
-    (bussKernel x).1.2.length ≤ (x.2 * (x.2 + 1)) * (x.2 * (x.2 + 1)) := by
+    (bussKernel x).1.edges.length ≤ (x.2 * (x.2 + 1)) * (x.2 * (x.2 + 1)) := by
   unfold bussKernel
   split_ifs with h
   · exact length_edges_le_of_accept x h

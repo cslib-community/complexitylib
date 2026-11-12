@@ -119,15 +119,16 @@ GT2][GareyJohnson1979]: `k` declared vertices such that every declared vertex is
 to a chosen one. -/
 @[expose]
 def DominatingSet : Set DominatingSetInstance :=
-  {x | ∃ S : Finset {v // v ∈ x.graph.1}, x.graph.induced.IsDominatingSet S ∧ S.card = x.bound}
+  {x | ∃ S : Finset {v // v ∈ x.graph.vertices},
+    x.graph.induced.IsDominatingSet S ∧ S.card = x.bound}
 
 /-- Membership in `DominatingSet` as a finite set of `k` declared vertices such that every declared
 vertex is chosen or adjacent to a chosen one. -/
 @[simp]
 theorem mem_DominatingSet_iff {G : Graph} {k : ℕ} :
     (⟨G, k⟩ : DominatingSetInstance) ∈ DominatingSet ↔
-      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
-        (∀ v ∈ G.1, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card = k := by
+      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.vertices) ∧
+        (∀ v ∈ G.vertices, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card = k := by
   constructor
   · rintro ⟨S, hS, hcard⟩
     refine ⟨S.map (.subtype _),
@@ -137,9 +138,9 @@ theorem mem_DominatingSet_iff {G : Graph} {k : ℕ} :
     · exact Or.inl (Finset.mem_map_of_mem _ h)
     · exact Or.inr ⟨s.1, Finset.mem_map_of_mem (.subtype _) hs, hadj⟩
   · rintro ⟨S, hSV, hS, rfl⟩
-    have hmap : (S.subtype (· ∈ G.1)).map (.subtype _) = S :=
+    have hmap : (S.subtype (· ∈ G.vertices)).map (.subtype _) = S :=
       (Finset.subtype_map _).trans (Finset.filter_eq_self.mpr hSV)
-    refine ⟨S.subtype (· ∈ G.1), SimpleGraph.isDominatingSet_iff.2 fun v => ?_,
+    refine ⟨S.subtype (· ∈ G.vertices), SimpleGraph.isDominatingSet_iff.2 fun v => ?_,
       by rw [← Finset.card_map (.subtype _), hmap]⟩
     rcases hS v.1 v.2 with h | ⟨s, hs, hadj⟩
     · exact Or.inl (Finset.mem_coe.2 (Finset.mem_subtype.2 h))
@@ -150,8 +151,8 @@ exactly when `k` is at most the number of distinct declared vertices and some do
 at most `k` vertices. -/
 theorem mem_DominatingSet_iff_exists_card_le {G : Graph} {k : ℕ} :
     (⟨G, k⟩ : DominatingSetInstance) ∈ DominatingSet ↔
-      k ≤ G.1.toFinset.card ∧ ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
-        (∀ v ∈ G.1, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card ≤ k := by
+      k ≤ G.vertices.toFinset.card ∧ ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.vertices) ∧
+        (∀ v ∈ G.vertices, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card ≤ k := by
   rw [mem_DominatingSet_iff]
   constructor
   · rintro ⟨S, hSV, hS, rfl⟩
@@ -169,11 +170,11 @@ namespace DominatingSet
 /-- Whether every declared vertex of `G` is in `C` or adjacent to a vertex of `C`. -/
 @[expose]
 def isDominating (G : Graph) (C : List ℕ) : Bool :=
-  G.1.all fun v => decide (v ∈ C) || C.any fun s => G.adjBool v s
+  G.vertices.all fun v => decide (v ∈ C) || C.any fun s => G.adjBool v s
 
 /-- `isDominating G C` holds exactly when `C` dominates the declared vertices of `G`. -/
 theorem isDominating_eq_true_iff {G : Graph} {C : List ℕ} :
-    isDominating G C = true ↔ ∀ v ∈ G.1, v ∈ C ∨ ∃ s ∈ C, G.toSimpleGraph.Adj v s := by
+    isDominating G C = true ↔ ∀ v ∈ G.vertices, v ∈ C ∨ ∃ s ∈ C, G.toSimpleGraph.Adj v s := by
   simp only [isDominating, List.all_eq_true, Bool.or_eq_true, decide_eq_true_eq, List.any_eq_true,
     Graph.adjBool_eq_true_iff]
 
@@ -188,14 +189,15 @@ theorem computableInPolyTime_isDominating :
 /-- `DominatingSet` belongs to `NP`: the certificate selects distinct declared vertices, and the
 verifier checks their number and `isDominating`. -/
 theorem mem_NP : DominatingSet ∈ NP encDominatingSet := by
-  have hset : DominatingSet = {x | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ x.graph.1) ∧
-      ((∀ v ∈ x.graph.1, v ∈ S ∨ ∃ s ∈ S, x.graph.toSimpleGraph.Adj v s) ∧
+  have hset : DominatingSet = {x | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ x.graph.vertices) ∧
+      ((∀ v ∈ x.graph.vertices, v ∈ S ∨ ∃ s ∈ S, x.graph.toSimpleGraph.Adj v s) ∧
         S.card = x.bound)} :=
     Set.ext fun ⟨_, _⟩ => mem_DominatingSet_iff
   rw [hset]
-  refine mem_NP_of_subsetWitness (encγ := encNat) (vs := fun x : DominatingSetInstance => x.graph.1)
+  refine mem_NP_of_subsetWitness (encγ := encNat)
+    (vs := fun x : DominatingSetInstance => x.graph.vertices)
     (check := fun y => decide (y.2.length = y.1.bound) && isDominating y.1.graph y.2)
-    ((fst _ _).comp (encDominatingSet_graph_polyTime (by fun_prop)))
+    (by fun_prop)
     (by fun_prop) fun x l hl _ => ?_
   · simp only [Bool.and_eq_true, decide_eq_true_eq, isDominating_eq_true_iff, List.mem_toFinset,
       List.toFinset_card_of_nodup hl, and_comm]
@@ -213,7 +215,7 @@ def properEdges (G : Graph) : List (ℕ × ℕ) :=
 
 /-- An edge is proper when it is listed and joins two distinct declared vertices. -/
 theorem mem_properEdges {G : Graph} {e : ℕ × ℕ} :
-    e ∈ properEdges G ↔ e ∈ G.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 ∧ e.1 ≠ e.2 := by
+    e ∈ properEdges G ↔ e ∈ G.edges ∧ e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices ∧ e.1 ≠ e.2 := by
   simp only [properEdges, List.mem_filter, mem_declaredEdges, decide_eq_true_eq, and_assoc]
 
 /-- The vertex of the edge `e` in `dominationGraph`: an odd number at least `5`. -/
@@ -232,19 +234,20 @@ declared vertex `v`, a hub `1` adjacent to every copy, a pendant `3` adjacent to
 every proper edge `e` a vertex `edgeVertex e` adjacent to the copies of the endpoints of `e`. -/
 @[expose]
 def dominationGraph (G : Graph) : Graph :=
-  (1 :: 3 :: G.1.map (2 * ·) ++ (properEdges G).map edgeVertex,
-    (1, 3) :: G.1.map (fun v => (1, 2 * v)) ++
-      (properEdges G).flatMap fun e => [(edgeVertex e, 2 * e.1), (edgeVertex e, 2 * e.2)])
+  ⟨1 :: 3 :: G.vertices.map (2 * ·) ++ (properEdges G).map edgeVertex,
+    (1, 3) :: G.vertices.map (fun v => (1, 2 * v)) ++
+      (properEdges G).flatMap fun e => [(edgeVertex e, 2 * e.1), (edgeVertex e, 2 * e.2)]⟩
 
 /-- The vertices of `dominationGraph G`. -/
 theorem mem_dominationGraph_fst {G : Graph} {w : ℕ} :
-    w ∈ (dominationGraph G).1 ↔ w = 1 ∨ w = 3 ∨ (∃ v ∈ G.1, 2 * v = w) ∨
+    w ∈ (dominationGraph G).vertices ↔ w = 1 ∨ w = 3 ∨ (∃ v ∈ G.vertices, 2 * v = w) ∨
       ∃ e ∈ properEdges G, edgeVertex e = w := by
   simp only [dominationGraph, List.mem_append, List.mem_cons, List.mem_map, or_assoc]
 
 /-- The edges of `dominationGraph G`. -/
 theorem mem_dominationGraph_snd {G : Graph} {a b : ℕ} :
-    (a, b) ∈ (dominationGraph G).2 ↔ (a = 1 ∧ b = 3) ∨ (a = 1 ∧ ∃ v ∈ G.1, b = 2 * v) ∨
+    (a, b) ∈ (dominationGraph G).edges ↔ (a = 1 ∧ b = 3) ∨
+      (a = 1 ∧ ∃ v ∈ G.vertices, b = 2 * v) ∨
       ∃ e ∈ properEdges G, a = edgeVertex e ∧ (b = 2 * e.1 ∨ b = 2 * e.2) := by
   simp only [dominationGraph, List.mem_append, List.mem_cons, List.mem_map, List.mem_flatMap,
     Prod.mk.injEq, List.not_mem_nil, or_false]
@@ -263,7 +266,7 @@ theorem mem_dominationGraph_snd {G : Graph} {a b : ℕ} :
 private theorem adj_three_one (G : Graph) : (dominationGraph G).toSimpleGraph.Adj 3 1 :=
   Graph.toSimpleGraph_adj.2 ⟨by decide, Or.inr (mem_dominationGraph_snd.2 (Or.inl ⟨rfl, rfl⟩))⟩
 
-private theorem adj_double_one {G : Graph} {v : ℕ} (hv : v ∈ G.1) :
+private theorem adj_double_one {G : Graph} {v : ℕ} (hv : v ∈ G.vertices) :
     (dominationGraph G).toSimpleGraph.Adj (2 * v) 1 :=
   Graph.toSimpleGraph_adj.2 ⟨by omega,
     Or.inr (mem_dominationGraph_snd.2 (Or.inr (Or.inl ⟨rfl, v, hv, rfl⟩)))⟩
@@ -385,13 +388,14 @@ private theorem exists_cover_of_mem_DominatingSet {G : Graph} {k : ℕ}
     · rcases of_adj_edgeVertex hadj with rfl | rfl
       · exact Or.inl (hdouble _ he1 hs)
       · exact Or.inr (hdouble _ he2 hs)
-  refine ⟨(((D.erase 1).erase 3).image decodeVertex).filter (· ∈ G.1),
+  refine ⟨(((D.erase 1).erase 3).image decodeVertex).filter (· ∈ G.vertices),
     fun v hv => (Finset.mem_filter.1 hv).2, fun u hu v hv huv => ?_, ?_⟩
   · obtain ⟨hne, he | he⟩ := Graph.toSimpleGraph_adj.1 huv
     · exact hedge _ (mem_properEdges.2 ⟨he, hu, hv, hne⟩)
     · exact (hedge _ (mem_properEdges.2 ⟨he, hv, hu, hne.symm⟩)).symm
   · -- The pendant `3` is dominated by itself or by the hub, so `D` loses a vertex.
-    have h3 : (3 : ℕ) ∈ (dominationGraph G).1 := mem_dominationGraph_fst.2 (Or.inr (Or.inl rfl))
+    have h3 : (3 : ℕ) ∈ (dominationGraph G).vertices :=
+      mem_dominationGraph_fst.2 (Or.inr (Or.inl rfl))
     have hD' : ((D.erase 1).erase 3).card + 1 ≤ D.card := by
       rcases hD 3 h3 with h3D | ⟨s, hs, hadj⟩
       · have h3D' : 3 ∈ D.erase 1 := Finset.mem_erase.2 ⟨by decide, h3D⟩
@@ -402,7 +406,8 @@ private theorem exists_cover_of_mem_DominatingSet {G : Graph} {k : ℕ}
         have := Finset.card_erase_add_one hs
         have := Finset.card_erase_le (s := D.erase 1) (a := 3)
         omega
-    have := (Finset.card_filter_le (((D.erase 1).erase 3).image decodeVertex) (· ∈ G.1)).trans
+    have := (Finset.card_filter_le
+        (((D.erase 1).erase 3).image decodeVertex) (· ∈ G.vertices)).trans
       (Finset.card_image_le (s := (D.erase 1).erase 3) (f := decodeVertex))
     omega
 
@@ -443,8 +448,9 @@ separately: `fun_prop` alone times out on the whole graph. -/
 @[fun_prop]
 theorem computableInPolyTime_dominationGraph :
     ComputableInPolyTime dominationGraph encGraph encGraph := by
-  have hfst : ComputableInPolyTime (fun G : Graph => G.1) encGraph (encList encNat) := fst _ _
-  have hV : ComputableInPolyTime (fun G : Graph => 1 :: 3 :: G.1.map (2 * ·)) encGraph
+  have hfst : ComputableInPolyTime (fun G : Graph => G.vertices) encGraph (encList encNat) := by
+    fun_prop
+  have hV : ComputableInPolyTime (fun G : Graph => 1 :: 3 :: G.vertices.map (2 * ·)) encGraph
       (encList encNat) :=
     (show ComputableInPolyTime (fun V : List ℕ => 1 :: 3 :: V.map (2 * ·)) (encList encNat)
       (encList encNat) by fun_prop).comp hfst
@@ -453,7 +459,7 @@ theorem computableInPolyTime_dominationGraph :
     (show ComputableInPolyTime (fun E : List (ℕ × ℕ) => E.map edgeVertex)
       (encList (encPair encNat encNat)) (encList encNat) by fun_prop).comp
       computableInPolyTime_properEdges
-  have hEV : ComputableInPolyTime (fun G : Graph => (1, 3) :: G.1.map fun v => (1, 2 * v))
+  have hEV : ComputableInPolyTime (fun G : Graph => (1, 3) :: G.vertices.map fun v => (1, 2 * v))
       encGraph (encList (encPair encNat encNat)) :=
     (show ComputableInPolyTime (fun V : List ℕ => (1, 3) :: V.map fun v => (1, 2 * v))
       (encList encNat) (encList (encPair encNat encNat)) by fun_prop).comp hfst
@@ -464,7 +470,9 @@ theorem computableInPolyTime_dominationGraph :
       E.flatMap fun e => [(edgeVertex e, 2 * e.1), (edgeVertex e, 2 * e.2)])
       (encList (encPair encNat encNat)) (encList (encPair encNat encNat)) by fun_prop).comp
       computableInPolyTime_properEdges
-  exact (of_tidy (ComputableTidilyInPolyTime.listAppend' hV.tidy hW.tidy)).prod
+  unfold dominationGraph
+  exact encGraph_mk_polyTime
+    (of_tidy (ComputableTidilyInPolyTime.listAppend' hV.tidy hW.tidy))
     (of_tidy (ComputableTidilyInPolyTime.listAppend' hEV.tidy hEW.tidy))
 
 /-- The reduction `toDominatingSet` is polynomial-time: the binary target is compared with the
@@ -472,13 +480,15 @@ number of distinct declared vertices, computed in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_toDominatingSet :
     ComputableInPolyTime toDominatingSet (encPair encGraph encNat) encDominatingSet := by
-  have hle : ComputableInPolyTime (fun x : Graph × ℕ => decide (x.2 ≤ x.1.1.toFinset.card))
+  have hle : ComputableInPolyTime
+      (fun x : Graph × ℕ => decide (x.2 ≤ x.1.vertices.toFinset.card))
       (encPair encGraph encNat) encBool := by
     simp_rw [← Graph.length_distinctVertices]
     fun_prop
   have heq : toDominatingSet = fun x : Graph × ℕ =>
       (⟨dominationGraph x.1,
-        if decide (x.2 ≤ x.1.1.toFinset.card) then x.2 + 1 else 0⟩ : DominatingSetInstance) := by
+        if decide (x.2 ≤ x.1.vertices.toFinset.card) then x.2 + 1 else 0⟩ :
+        DominatingSetInstance) := by
     funext ⟨G, k⟩
     simp only [toDominatingSet, decide_eq_true_eq]
   rw [heq]

@@ -33,13 +33,15 @@ open Cslib.Complexity Cslib.Complexity.Graph Turing.MultiTapeTM
 
 # Search and interpret the result
 
-A {name}`Cslib.Complexity.Graph` is a list of declared natural-number names paired with a list
-of edges. Names are binary, even when numerically large. Edges are undirected; loops and
-undeclared endpoints are discarded, and parallel or reversed duplicates are deduplicated.
-Repeated vertex declarations are harmless. Selected pairs retain their original orientation.
+A {name}`Cslib.Complexity.Graph` stores declared natural-number names in
+{name}`Cslib.Complexity.Graph.vertices` and original endpoint pairs in
+{name}`Cslib.Complexity.Graph.edges`. Names are binary, even when numerically large. The matching
+interpretation is undirected: it discards loops and undeclared endpoints, and deduplicates
+parallel or reversed edges and repeated declarations. Selected pairs retain their original
+orientation; the input record retains its original lists.
 
 ```lean
-def oneEdge : Graph := ([7, 42, 7], [(7, 7), (42, 7), (7, 42)])
+def oneEdge : Graph := ⟨[7, 42, 7], [(7, 7), (42, 7), (7, 42)]⟩
 
 example : oneEdge.maximumMatching = [(42, 7)] := by decide +kernel
 

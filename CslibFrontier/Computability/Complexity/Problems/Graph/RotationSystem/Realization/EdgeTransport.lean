@@ -28,10 +28,10 @@ namespace Cslib.Complexity.Graph
 /-- Move any selected indexed edge to the last position by an actual permutation of
 edge occurrences. Both end tags and all declared names remain unchanged. Equal edge
 pairs are still transported by their positions. -/
-theorem exists_lastEdge_reindex (G : Graph) (i : Fin G.2.length) :
+theorem exists_lastEdge_reindex (G : Graph) (i : Fin G.edges.length) :
     ∃ H : Graph, ∃ u v : ℕ,
-      ∃ e : Fin G.2.length ≃ Fin (RotationSystem.lastEdgeGraph H u v).2.length,
-        H.1 = G.1 ∧ H.2.length + 1 = G.2.length ∧
+      ∃ e : Fin G.edges.length ≃ Fin (RotationSystem.lastEdgeGraph H u v).edges.length,
+        H.vertices = G.vertices ∧ H.edges.length + 1 = G.edges.length ∧
         (∀ j b, Dart.vertex (e j, b) = Dart.vertex (j, b)) ∧
         e i = (RotationSystem.lastEdgeDart H u v false).1 ∧
         u = Dart.vertex (i, false) ∧ v = Dart.vertex (i, true) := by
@@ -42,20 +42,20 @@ theorem exists_lastEdge_reindex (G : Graph) (i : Fin G.2.length) :
   | cons edge E =>
     let σ : Equiv.Perm (Fin (E.length + 1)) := Equiv.swap i (Fin.last E.length)
     let f : Fin (E.length + 1) → ℕ × ℕ := fun j => (edge :: E)[(σ j).val]
-    let H : Graph := (V, List.ofFn fun j : Fin E.length => f j.castSucc)
+    let H : Graph := ⟨V, List.ofFn fun j : Fin E.length => f j.castSucc⟩
     let u := ((edge :: E)[i.val]).1
     let v := ((edge :: E)[i.val]).2
-    have hlist : (RotationSystem.lastEdgeGraph H u v).2 = List.ofFn f := by
+    have hlist : (RotationSystem.lastEdgeGraph H u v).edges = List.ofFn f := by
       rw [List.ofFn_succ']
       simp [RotationSystem.lastEdgeGraph, H, u, v, f, σ, List.concat_eq_append]
-    have hlen : (RotationSystem.lastEdgeGraph H u v).2.length = E.length + 1 := by
+    have hlen : (RotationSystem.lastEdgeGraph H u v).edges.length = E.length + 1 := by
       rw [hlist, List.length_ofFn]
-    let e : Fin (edge :: E).length ≃ Fin (RotationSystem.lastEdgeGraph H u v).2.length :=
+    let e : Fin (edge :: E).length ≃ Fin (RotationSystem.lastEdgeGraph H u v).edges.length :=
       σ.trans (finCongr hlen.symm)
     refine ⟨H, u, v, e, rfl, by simp [H], ?_, ?_, ?_, ?_⟩
     · intro j b
-      change (if b then ((RotationSystem.lastEdgeGraph H u v).2.getD (σ j).val (0, 0)).2
-        else ((RotationSystem.lastEdgeGraph H u v).2.getD (σ j).val (0, 0)).1) = _
+      change (if b then ((RotationSystem.lastEdgeGraph H u v).edges.getD (σ j).val (0, 0)).2
+        else ((RotationSystem.lastEdgeGraph H u v).edges.getD (σ j).val (0, 0)).1) = _
       rw [hlist, List.getD_eq_getElem _ _ (by simpa only [List.length_ofFn] using
         (σ j).isLt),
         List.getElem_ofFn]
@@ -67,7 +67,7 @@ theorem exists_lastEdge_reindex (G : Graph) (i : Fin G.2.length) :
         else ((edge :: E).getD j.val (0, 0)).1
       rw [List.getD_eq_getElem _ _ j.isLt]
     · apply Fin.ext
-      change (σ i).val = H.2.length
+      change (σ i).val = H.edges.length
       rw [show σ i = Fin.last E.length from Equiv.swap_apply_left _ _]
       simp [H]
     · change u = ((edge :: E).getD i.val (0, 0)).1
@@ -77,11 +77,11 @@ theorem exists_lastEdge_reindex (G : Graph) (i : Fin G.2.length) :
 
 /-- Actual indexed edge reindexing preserves declaration of all listed endpoints. -/
 theorem endpoints_declared_edge_reindex {G H : Graph}
-    (e : Fin G.2.length ≃ Fin H.2.length)
+    (e : Fin G.edges.length ≃ Fin H.edges.length)
     (hv : ∀ i b, Dart.vertex (G := H) (e i, b) = Dart.vertex (G := G) (i, b))
-    (hm : ∀ v, v ∈ G.1 ↔ v ∈ H.1)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
-    ∀ v ∈ H.incidenceVertices, v ∈ H.1 := by
+    (hm : ∀ v, v ∈ G.vertices ↔ v ∈ H.vertices)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) :
+    ∀ v ∈ H.incidenceVertices, v ∈ H.vertices := by
   intro v hvlist
   obtain ⟨k, hk, hkv⟩ := List.mem_iff_getElem.mp hvlist
   let d : Dart H := (Dart.indexEquiv H).symm ⟨k, by
@@ -156,7 +156,7 @@ namespace PolygonalDrawing
 /-- Reindex routes by actual edge occurrences, retaining the end tag and named endpoints.
 The declaration list may be changed separately. -/
 @[expose] def edgeTransport {G H : Graph} (D : PolygonalDrawing G)
-    (e : Fin G.2.length ≃ Fin H.2.length)
+    (e : Fin G.edges.length ≃ Fin H.edges.length)
     (hv : ∀ i b, Dart.vertex (e i, b) = Dart.vertex (i, b)) : PolygonalDrawing H where
   vertex := D.vertex
   route j := D.route (e.symm j)
@@ -166,9 +166,9 @@ The declaration list may be changed separately. -/
 /-- Indexed edge transport preserves the full real-affine embedding semantics.
 Repeated declarations are compared by membership, not by their list positions. -/
 theorem IsEmbedding.edgeTransport {G H : Graph} {D : PolygonalDrawing G}
-    (hD : D.IsEmbedding) (e : Fin G.2.length ≃ Fin H.2.length)
+    (hD : D.IsEmbedding) (e : Fin G.edges.length ≃ Fin H.edges.length)
     (hv : ∀ i b, Dart.vertex (e i, b) = Dart.vertex (i, b))
-    (hm : ∀ v, v ∈ G.1 ↔ v ∈ H.1) : (D.edgeTransport e hv).IsEmbedding := by
+    (hm : ∀ v, v ∈ G.vertices ↔ v ∈ H.vertices) : (D.edgeTransport e hv).IsEmbedding := by
   refine ⟨?_, fun i => hD.simple (e.symm i), ?_, ?_⟩
   · intro a ha b hb heq
     exact hD.vertices_injective ((hm _).mpr ha) ((hm _).mpr hb) heq
@@ -190,7 +190,7 @@ theorem IsEmbedding.edgeTransport {G H : Graph} {D : PolygonalDrawing G}
 
 /-- Actual germ vectors retain the edge occurrence and end tag under transport. -/
 theorem germ_edgeTransport {G H : Graph} (D : PolygonalDrawing G)
-    (e : Fin G.2.length ≃ Fin H.2.length)
+    (e : Fin G.edges.length ≃ Fin H.edges.length)
     (hv : ∀ i b, Dart.vertex (e i, b) = Dart.vertex (i, b)) (a : Dart G) :
     (D.edgeTransport e hv).germ (e a.1, a.2) = D.germ a := by
   simp [germ, edgeTransport]
@@ -199,7 +199,7 @@ theorem germ_edgeTransport {G H : Graph} (D : PolygonalDrawing G)
 ends of every loop. No reflection or change of the planar coordinates is used. -/
 theorem Realizes.edgeTransport {G H : Graph} {D : PolygonalDrawing G}
     {r : RotationSystem G} (hR : D.Realizes r)
-    (e : Fin G.2.length ≃ Fin H.2.length)
+    (e : Fin G.edges.length ≃ Fin H.edges.length)
     (hv : ∀ i b, Dart.vertex (e i, b) = Dart.vertex (i, b)) :
     (D.edgeTransport e hv).Realizes
       (r.transport (e.prodCongr (Equiv.refl Bool)) (by

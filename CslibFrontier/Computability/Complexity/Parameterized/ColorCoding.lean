@@ -95,7 +95,7 @@ colors `colors` parallel to its vertex list (`Cslib.Complexity.colorOf`), and a 
 structure ColorfulPathInstance where
   /-- The input graph. -/
   graph : Graph
-  /-- Vertex colors listed parallel to `graph.1` (`Cslib.Complexity.colorOf`). -/
+  /-- Vertex colors listed parallel to `graph.vertices` (`Cslib.Complexity.colorOf`). -/
   colors : List ℕ
   /-- The target number of vertices (and available colors). -/
   length : ℕ
@@ -149,7 +149,7 @@ variable {G χ}
 color set `m` ends at `v` exactly when `χ v ∈ m`, and either `m = {χ v}` or a colorful path with
 color set `m \ {χ v}` ends at a neighbor of `v`. -/
 theorem reaches_iff {m v : ℕ} :
-    Reaches G χ m v ↔ v ∈ G.1 ∧ m.testBit (χ v) = true ∧
+    Reaches G χ m v ↔ v ∈ G.vertices ∧ m.testBit (χ v) = true ∧
       (m = 2 ^ χ v ∨ ∃ u, Reaches G χ (m - 2 ^ χ v) u ∧ G.toSimpleGraph.Adj u v) := by
   constructor
   · rintro ⟨p, hp, hnd, hm⟩
@@ -302,7 +302,7 @@ namespace ColorCoding
 structure TableInput where
   /-- The input graph. -/
   graph : Graph
-  /-- Vertex colors listed parallel to `graph.1` (`Cslib.Complexity.colorOf`). -/
+  /-- Vertex colors listed parallel to `graph.vertices` (`Cslib.Complexity.colorOf`). -/
   colors : List ℕ
   /-- Number of color-set masks to tabulate (encoded in unary). -/
   numSets : ℕ

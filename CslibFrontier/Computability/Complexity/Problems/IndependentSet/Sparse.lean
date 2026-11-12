@@ -108,7 +108,7 @@ open SparseIndependentSet in
 Theorem 3.3][GareyJohnson1979]: the graph of `φ` with the target `n + m`, for `n` distinct
 variables and `m` clauses. -/
 def toSparseIndependentSet (φ : CNF ℕ) : Graph × ℕ :=
-  ((vertices φ, edges φ), φ.distinctVars.length + φ.length)
+  (⟨vertices φ, edges φ⟩, φ.distinctVars.length + φ.length)
 
 namespace SparseIndependentSet
 
@@ -413,7 +413,7 @@ open SparseIndependentSet in
 of `toSparseIndependentSet` has at most `(k ^ 2 + 5 k) m` vertices and edges in total, counted as
 listed. -/
 theorem length_toSparseIndependentSet_le {k : ℕ} {φ : CNF ℕ} (hφ : ∀ c ∈ φ, c.length ≤ k) :
-    (toSparseIndependentSet φ).1.1.length + (toSparseIndependentSet φ).1.2.length ≤
+    (toSparseIndependentSet φ).1.vertices.length + (toSparseIndependentSet φ).1.edges.length ≤
       (k * k + 5 * k) * φ.length := by
   have hzip : ∀ c ∈ φ.zipIdx, c.1.length ≤ k := fun c hc => by
     obtain ⟨cl, i⟩ := c
@@ -486,7 +486,10 @@ theorem computableInPolyTime_toSparseIndependentSet :
       (encList (encPair encNat encNat)) := by
     unfold edges
     fun_prop
-  exact (hV.prod hE).prod hk
+  have hG : ComputableInPolyTime (fun φ => (⟨vertices φ, edges φ⟩ : Graph))
+      (encList (encList (encPair encNat encBool))) encGraph := by
+    fun_prop
+  exact hG.prod hk
 
 end SAT
 
