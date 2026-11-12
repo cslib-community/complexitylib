@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingSh
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -1132,6 +1133,31 @@ register_result "hitting-set-sparse" where
     whatever its degree; more generally for any point whose monomials are pairwise distinct. \
     Zero test only: no interpolation algorithm, no bit complexity, nothing in positive \
     characteristic."
+
+register_result "hitting-set-sparse-affine-orbit" where
+  title := "Polynomial-size hitting sets for affine orbits of sparse polynomials"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BhargavaSengupta2026,
+      theorem := "Theorem 1.2 items 1 and 2, in characteristic zero; Lemmas 1.6, 3.1 and 3.2",
+      locator := "§1.1 p. 3, §3 pp. 8–9, §4 pp. 9–10" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_sparseOrbitHittingSet,
+    Cslib.Circuits.Arithmetic.card_sparseOrbitHittingSet_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of at most \
+    (n² + 1)(2d(ns² + s) + 1) points of Fⁿ that contains a non-root of every nonzero \
+    polynomial p(Ax + b) of degree at most d, with A an invertible matrix and p a polynomial \
+    with at most s monomials. The key lemma: if all coordinates of u are nonzero, the partial \
+    derivatives of the lowest nonzero homogeneous component of p(x + u) span a space of \
+    dimension at most the number of monomials of p. Ordinary partial derivatives instead of \
+    the source's Hasse derivatives, so characteristic zero throughout, although the source's \
+    lemma holds in every characteristic. The curve is the library's ln(1 + (i + 1)t) \
+    truncated below degree ns² + s, not the source's -ln(1 - it) truncated at that degree. \
+    Not the degree-free hitting set over the reals, the lower bound, the applications to \
+    other orbit classes, or the operation count. Existence and size of an explicit set only: \
+    no bit complexity and no black-box algorithm model."
 
 register_result "hitting-set-lower-bound" where
   title := "Heintz–Schnorr: hitting sets give lower bounds"
