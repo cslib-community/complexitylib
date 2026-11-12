@@ -68,6 +68,8 @@ inner existential quantifier used in the Karp–Lipton argument.
   mask (`Cslib.Complexity.selectDistinct`).
 * `Cslib.Complexity.maskVerifier`: the verifier of a sub-multiset problem, selecting entries by a
   mask (`Cslib.Complexity.maskSelect`).
+* `Cslib.Complexity.encInstanceList`: the encoding of an instance paired with selected entries,
+  read by the checks of both kinds of verifier.
 
 ## Main results
 
@@ -194,6 +196,11 @@ theorem mem_NP_of_check (D : Decoder encW) {check : α × β → Bool}
 
 end Witness
 
+/-- The input of the check of a subset or sub-multiset witness: an instance paired with the list
+of selected entries. The encoded instance is framed and followed by the entries, each framed. -/
+abbrev encInstanceList (enc : α ↪ List Bool) (encγ : γ ↪ List Bool) : α × List γ ↪ List Bool :=
+  encPair enc (encList encγ)
+
 /-! ### Subset witnesses -/
 
 section Subset
@@ -251,7 +258,7 @@ theorem isVerifier_subsetVerifier {vs : α → List γ}
 @[fun_prop]
 theorem computableInPolyTime_subsetVerifier {encγ : γ ↪ List Bool} {vs : α → List γ}
     (hvs : ComputableInPolyTime vs enc (encList encγ)) {check : α × List γ → Bool}
-    (hcheck : ComputableInPolyTime check (encPair enc (encList encγ)) encBool) :
+    (hcheck : ComputableInPolyTime check (encInstanceList enc encγ) encBool) :
     ComputableInPolyTime (subsetVerifier vs check) (encPair enc encBits) encBool :=
   hcheck.comp
     ((ComputableInPolyTime.fst enc encBits).prod ((computableInPolyTime_selectDistinct encγ).comp
@@ -263,7 +270,7 @@ candidates are polynomial-time, and `check` decides `P a` on duplicate-free list
 then having a set `S` of candidates with `P a S` is in `NP`. -/
 theorem mem_NP_of_subsetWitness {encγ : γ ↪ List Bool} {vs : α → List γ}
     (hvs : ComputableInPolyTime vs enc (encList encγ)) {check : α × List γ → Bool}
-    (hcheck : ComputableInPolyTime check (encPair enc (encList encγ)) encBool)
+    (hcheck : ComputableInPolyTime check (encInstanceList enc encγ) encBool)
     {P : α → Finset γ → Prop}
     (hP : ∀ a l, l.Nodup → (∀ v ∈ l, v ∈ vs a) → (check (a, l) = true ↔ P a l.toFinset)) :
     {a | ∃ S : Finset γ, (∀ v ∈ S, v ∈ vs a) ∧ P a S} ∈ NP enc := by
@@ -312,7 +319,7 @@ are. -/
 @[fun_prop]
 theorem computableInPolyTime_maskVerifier {encγ : γ ↪ List Bool} {items : α → List γ}
     (hitems : ComputableInPolyTime items enc (encList encγ)) {check : α × List γ → Bool}
-    (hcheck : ComputableInPolyTime check (encPair enc (encList encγ)) encBool) :
+    (hcheck : ComputableInPolyTime check (encInstanceList enc encγ) encBool) :
     ComputableInPolyTime (maskVerifier items check) (encPair enc encBits) encBool :=
   hcheck.comp
     ((ComputableInPolyTime.fst enc encBits).prod ((computableInPolyTime_maskSelect encγ).comp
@@ -324,7 +331,7 @@ selected entries are polynomial-time, and `check` decides `P a` on the sublists 
 then having a sub-multiset `s` of the entries with `P a s` is in `NP`. -/
 theorem mem_NP_of_subMultisetWitness {encγ : γ ↪ List Bool} {items : α → List γ}
     (hitems : ComputableInPolyTime items enc (encList encγ)) {check : α × List γ → Bool}
-    (hcheck : ComputableInPolyTime check (encPair enc (encList encγ)) encBool)
+    (hcheck : ComputableInPolyTime check (encInstanceList enc encγ) encBool)
     {P : α → Multiset γ → Prop}
     (hP : ∀ a l, l.Sublist (items a) → (check (a, l) = true ↔ P a l)) :
     {a | ∃ s ≤ (items a : Multiset γ), P a s} ∈ NP enc := by
