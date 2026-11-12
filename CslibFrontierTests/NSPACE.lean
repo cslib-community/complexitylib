@@ -37,7 +37,7 @@ theorem stcon_mem_log : STCON ∈ NSPACE encSTCON Nat.log2 :=
 
 /-- Logarithmic space is within linear space, so directed connectivity is in `NSPACE(n)`. -/
 theorem stcon_mem_linear : STCON ∈ NSPACE encSTCON id :=
-  NSPACE_subset_of_le_mul_add 1 0 (fun n => by simpa using Nat.log2_le_self n) stcon_mem_log
+  NSPACE_mono Nat.log2_le_self stcon_mem_log
 
 -- The complements, by the theorem.
 example : STCONᶜ ∈ NSPACE encSTCON Nat.log2 := compl_mem_NSPACE (fun _ => le_rfl) stcon_mem_log
