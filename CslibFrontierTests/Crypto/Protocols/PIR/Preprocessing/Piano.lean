@@ -17,11 +17,12 @@ Concrete smoke tests exercising:
    on a concrete `2 × 2` database (`Chunk = Fin 2`, `Offset = Fin 2`).
 2. Single-query and multi-query online execution (`HintTable.onlineStep`,
    `HintTable.runOnlineSteps`) with concrete bit reconstruction and hint refresh.
-3. Adaptive multi-query perfect privacy (`isPerfectlyPrivateWith_pianoScheme`,
-   `privacyAdvantage_pianoScheme_eq_zero`), non-adaptive multi-query transcript privacy
-   (`eval_queryTranscript_pianoScheme`), and compacted punctured query privacy
+3. Adaptive multi-query perfect privacy (`isPerfectlyPrivateWith_pianoHybridScheme`,
+   `privacyAdvantage_pianoHybridScheme_eq_zero`), non-adaptive multi-query transcript privacy
+   (`eval_queryTranscript_pianoHybridScheme`), and compacted punctured query privacy
    (`eval_compactedQuery_uniform`) on concrete finite chunk/offset types.
-4. Sublinear online communication cost (`onlineCommunication_pianoScheme`,
+4. The bridge `HintTable.onlineStep_sets_eq_pianoStepSets` between the full client and the hybrid.
+5. Online communication cost (`onlineCommunication_fullQuery_pow`,
    `onlineCommunication_compacted_pow`).
 -/
 
@@ -98,30 +99,42 @@ example :
       (exampleTable.onlineStep exampleDB (1, 0)).1.Valid exampleDB :=
   HintTable.onlineStep_correct (x := (1, 0)) exampleTable_valid ⟨⟨1, rfl⟩, by decide⟩
 
-/-! ### Ideal-random-set Piano scheme privacy and communication tests -/
+/-- The full client's server query and refreshed primary table on `exampleTable` for query `(0, 0)`
+are the two components of `pianoStepSets`, so the hypotheses of the bridge are satisfiable. -/
+example :
+    (exampleTable.onlineStep exampleDB (0, 0)).1.primarySets =
+        (pianoStepSets (0, 0) (exampleTable.primarySets,
+          replaceInChunk (exampleTable.backupSets 0 0) 0 (exampleTable.replOffsets 0 0))).1 ∧
+      replaceInChunk (exampleTable.primarySets 0) 0 (exampleTable.replOffsets 0 0) =
+        (pianoStepSets (0, 0) (exampleTable.primarySets,
+          replaceInChunk (exampleTable.backupSets 0 0) 0 (exampleTable.replOffsets 0 0))).2 :=
+  HintTable.onlineStep_sets_eq_pianoStepSets (x := (0, 0)) exampleDB exampleTable
+    (by decide) (by decide)
 
-/-- Adaptive multi-query perfect privacy for `pianoScheme 4 (Fin 3) (Fin 3)` against any
+/-! ### Ideal-random-set hybrid privacy and communication tests -/
+
+/-- Adaptive multi-query perfect privacy for `pianoHybridScheme 4 (Fin 3) (Fin 3)` against any
 adaptive malicious server. -/
 example :
-    (pianoScheme 4 (Fin 3) (Fin 3)).IsPerfectlyPrivateWith
+    (pianoHybridScheme 4 (Fin 3) (Fin 3)).IsPerfectlyPrivateWith
       (ProbComp.uniform (Fin 3 → Fin 3)) :=
-  isPerfectlyPrivateWith_pianoScheme
+  isPerfectlyPrivateWith_pianoHybridScheme
 
 /-- Every Boolean-output adaptive server has zero distinguishing advantage against
-`pianoScheme 4 (Fin 3) (Fin 3)` over any number of queries `k`. -/
+`pianoHybridScheme 4 (Fin 3) (Fin 3)` over any number of queries `k`. -/
 example (adv : AdaptiveServer (Fin 3 × Fin 3) (Fin 3 → Fin 3) Bool Bool)
     (db : Fin 3 × Fin 3 → Bool) (k : ℕ) :
-    (pianoScheme 4 (Fin 3) (Fin 3)).privacyAdvantage
+    (pianoHybridScheme 4 (Fin 3) (Fin 3)).privacyAdvantage
       (ProbComp.uniform (Fin 3 → Fin 3)) adv db k false = 0 :=
-  privacyAdvantage_pianoScheme_eq_zero adv db k false
+  privacyAdvantage_pianoHybridScheme_eq_zero adv db k false
 
-/-- Multi-query non-adaptive transcript privacy for `pianoScheme 4 (Fin 2) (Fin 2)` on the
+/-- Multi-query non-adaptive transcript privacy for `pianoHybridScheme 4 (Fin 2) (Fin 2)` on the
 3-query sequence `[(0, 0), (1, 1), (0, 1)]`. -/
 example :
     ProbComp.eval
-      ((pianoScheme 4 (Fin 2) (Fin 2)).queryTranscript exampleDB [(0, 0), (1, 1), (0, 1)]) =
+      ((pianoHybridScheme 4 (Fin 2) (Fin 2)).queryTranscript exampleDB [(0, 0), (1, 1), (0, 1)]) =
       ProbComp.eval (simTranscript (ProbComp.uniform (Fin 2 → Fin 2)) 3) :=
-  eval_queryTranscript_pianoScheme exampleDB [(0, 0), (1, 1), (0, 1)]
+  eval_queryTranscript_pianoHybridScheme exampleDB [(0, 0), (1, 1), (0, 1)]
 
 /-- Compacted punctured query privacy (`√n - 1 = 3` offsets for `4` chunks of size `4`). -/
 example (x : Fin 4 × Fin 4) :
@@ -132,10 +145,14 @@ example (x : Fin 4 × Fin 4) :
       ProbComp.eval (ProbComp.uniform (Fin 3 → Fin 4)) := by
   rw [eval_compactedQuery_uniform (M₁ := 8) x, ProbComp.eval_uniform]
 
-/-- Online communication cost of `pianoScheme` on `4 × 4` chunks (`n = 16`, `√n = 4`): the
-compacted punctured query sends `3` offsets in `Fin (2 ^ 2)` (`6` bits) and receives `1` bit
-(`3 * 2 + 1 = 7` bits total). -/
-example : onlineCommunication (Fin 3 → Fin (2 ^ 2)) Bool = 3 * 2 + 1 :=
+/-- Online communication on `4` chunks of size `4` (`n = 16`, `√n = 4`): the main scheme sends `4`
+offsets in `Fin (2 ^ 2)` and receives `1` bit (`9` bits). -/
+example : onlineCommunication (Fin 4 → Fin (2 ^ 2)) Bool = 9 :=
+  onlineCommunication_fullQuery_pow 4 2
+
+/-- The Appendix A variant on the same database sends `3` offsets (`6` bits) and receives `4` parity
+bits (`10` bits). -/
+example : onlineCommunication (Fin 3 → Fin (2 ^ 2)) (Fin 4 → Bool) = 10 :=
   onlineCommunication_compacted_pow 3 2
 
 /--
