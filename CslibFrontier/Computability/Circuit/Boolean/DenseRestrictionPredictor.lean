@@ -16,7 +16,41 @@ import Mathlib.Tactic
 /-!
 # Predicting `g` from a protocol for a dense restriction
 
-DRAFT
+[ChukhinKulikovMihajlinSmal2026], Lemma 6.2 (printed pp. 13–15; PDF pp. 14–16). Let `ν` be a
+distribution on `{0, 1}ⁿ`, and let `ρ` be the density of a set `X` of `m`-row matrices under the
+product `νᵐ` (`density`). If `R_g(X)` has a protocol of depth `d`, then some formula of
+`binaryCost` depth at most `d + 1` predicts `g` under `ν` (`accuracy`) with accuracy at least
+`1/2 + (2ᵐ ρ - 1) / (2 (2ᵐ - 1))` (`exists_accuracy_ge`).
+
+The proof follows the source. Take the formula `φ(Z, p)` of Lemma 6.1 (`exists_auxFormula`). For
+a set `U` of row-value vectors, given by its indicator, `Φ_U(Z) = φ(Z, 1_U) ∧ ¬φ(Z, 1_{Uᶜ})`
+equals `1[gᵐ(Z) ∈ U]` on `X`. Monotonicity in the auxiliary variables gives
+`Φ_U + Φ_V ≤ Φ_{U ∪ V}` for disjoint `U`, `V` everywhere. Let `C_r(Z)` be the vectors that agree
+with `g` on the first `r` rows of `Z`, and `M_r = E[Φ_{C_r(Z)}(Z)]`. Fixing all rows but row `r`
+(`Probability.PMF.sum_pi_mul_update`), the formulas `h_b` that claim the correct first `r` values
+and `b` on row `r` mix into a predictor of accuracy `1/2 + E[h_{g(x)}] - E[h₀ + h₁]/2`. So if
+every formula of depth `d + 1` has accuracy at most `1/2 + α`, then `M_{r+1} ≤ M_r / 2 + α`.
+Iterating from `M₀ ≤ 1` up to `M_m ≥ ρ` gives `ρ ≤ 2⁻ᵐ + 2α(1 - 2⁻ᵐ)`
+(`density_le_of_forall_accuracy_le`). The best formula exists, because only finitely many
+functions are computed, and taking `α` to be its advantage proves the lemma.
+
+Formulas have `binaryCost` depth, so negations are free, as the source's "negation can be pushed
+to the input literals and constants" requires.
+
+## Main definitions
+
+* `Cslib.Circuits.Boolean.accuracy`: `Pr_{x ∼ ν}[h(x) = g(x)]`.
+* `Cslib.Circuits.Boolean.density`: `Pr_{Z ∼ νᵐ}[Z ∈ X]`.
+
+## Main results
+
+* `Cslib.Circuits.Boolean.density_le_of_forall_accuracy_le`: the iterated recursion.
+* `Cslib.Circuits.Boolean.exists_accuracy_ge`: Lemma 6.2.
+
+## References
+
+* [N. Chukhin, A. S. Kulikov, I. Mihajlin and A. V. Smal, *Solving One of Many Instances is
+  Almost as Hard as Solving One*][ChukhinKulikovMihajlinSmal2026]
 -/
 
 public section
@@ -172,7 +206,7 @@ private theorem Mr_succ_le (ν : PMF (BitString n)) {D : ℕ} (hD : φ.depthWith
     set C := agreeRows g r Z
     have hC (x : BitString n) : agreeRows g r (Function.update Z i x) = C := by
       funext c
-      show decide (∀ j : Fin m, j.val < r → c j = g (Function.update Z i x j)) =
+      change decide (∀ j : Fin m, j.val < r → c j = g (Function.update Z i x j)) =
         decide (∀ j : Fin m, j.val < r → c j = g (Z j))
       refine decide_eq_decide.2 (forall_congr' fun j => imp_congr_right fun hj => ?_)
       rw [Function.update_of_ne (Fin.ne_of_val_ne (by change j.val ≠ r; omega))]
@@ -180,7 +214,7 @@ private theorem Mr_succ_le (ν : PMF (BitString n)) {D : ℕ} (hD : φ.depthWith
     have hC' (x : BitString n) :
         agreeRows g (r + 1) (Function.update Z i x) = q (g x) := by
       funext c
-      show decide (∀ j : Fin m, j.val < r + 1 → c j = g (Function.update Z i x j)) =
+      change decide (∀ j : Fin m, j.val < r + 1 → c j = g (Function.update Z i x j)) =
         (decide (∀ j : Fin m, j.val < r → c j = g (Z j)) && (c i == g x))
       rw [Bool.eq_iff_iff]
       simp only [decide_eq_true_eq, Bool.and_eq_true, beq_iff_eq]
@@ -296,7 +330,7 @@ theorem density_le_of_forall_accuracy_le (ν : PMF (BitString n)) {X : Set (Fin 
   refine le_trans ?_ (hiter m le_rfl)
   refine Finset.sum_le_sum fun Z _ => mul_le_mul_of_nonneg_left ?_ (hw0 Z)
   split_ifs with hZ
-  · show 1 ≤ ind (Phi φ (agreeRows g m Z) Z)
+  · change 1 ≤ ind (Phi φ (agreeRows g m Z) Z)
     rw [Phi_of_mem hφ hZ]
     simp [agreeRows, rowValues, ind]
   · exact ind_nonneg _
