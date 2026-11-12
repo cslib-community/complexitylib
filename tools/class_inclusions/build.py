@@ -267,8 +267,7 @@ def grid_table(title, grid, theorems, problems):
             f"<tr><td>{html.escape(f'{a} {SYMBOL[relation]} {b}')}</td>"
             f'<td><a href="{html.escape(href(declaration))}"><code>{html.escape(shown)}</code>'
             "</a></td></tr>")
-    return f"""<section class="panel">
-<h2>{html.escape(title)}</h2>
+    return f"""<h2>{html.escape(title)}</h2>
 <div class="table-scroll"><table class="grid"><caption>Row class ⊆ column class</caption>
 <thead>{head}</thead>
 <tbody>
@@ -278,51 +277,24 @@ def grid_table(title, grid, theorems, problems):
 <table class="list"><thead><tr><th scope="col">Statement</th><th scope="col">Declaration</th></tr></thead>
 <tbody>
 {chr(10).join(theorem_rows)}
-</tbody></table></details>
-</section>"""
+</tbody></table></details>"""
 
 
-STYLE = """:root{color-scheme:light dark;--bg:#f4f6fa;--panel:#fff;--ink:#16293b;--muted:#536779;\
---line:#d9e2ec;--accent:#126779;--yes:#1d7a46;--yes-bg:#e3f4ea;--no:#b3261e;--no-bg:#fbe7e5;\
---open:#8a5a00;--open-bg:#fff3d6}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,sans-serif}
-main{max-width:1150px;margin:auto;padding:36px 24px}
-a{color:var(--accent);text-underline-offset:3px}
-nav{font-size:14px}
-header{padding:44px 0 20px}
-h1{font-size:clamp(32px,6vw,56px);line-height:1.12;letter-spacing:-.045em;margin:10px 0 18px}
-h2{font-size:20px;margin:0 0 12px}
-.eyebrow{font-size:12px;font-weight:750;letter-spacing:.18em;color:var(--accent)}
-header>p:last-child{max-width:660px;color:var(--muted);font-size:19px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;margin:20px 0}
-.table-scroll{overflow:auto}
-table{border-collapse:collapse}
-caption{text-align:left;color:var(--muted);font-size:13px;margin-bottom:10px}
-th,td{padding:6px 8px;border:1px solid var(--line);white-space:nowrap}
-.grid td{text-align:center;min-width:2.6em}
-.grid thead th{position:sticky;top:0;background:var(--panel)}
-.grid tbody th{position:sticky;left:0;background:var(--panel);text-align:left}
-.grid a{text-decoration:none;color:inherit;display:block}
-.proved,.chained{color:var(--yes);background:var(--yes-bg);font-weight:650}
-.refuted{color:var(--no);background:var(--no-bg);font-weight:650}
-.known{color:var(--yes)}
-.false{color:var(--no)}
-.open{color:var(--open);background:var(--open-bg)}
-.same{color:var(--muted)}
-.list{margin-top:12px;font-size:14px}
-.list td,.list th{text-align:left}
-details{margin-top:16px}
-summary{cursor:pointer;color:var(--accent)}
-.notes{max-width:850px}
-.notes td{white-space:normal}
-.muted,footer{color:var(--muted);font-size:14px}
-footer{max-width:850px;padding:25px 0}
-:focus-visible{outline:3px solid #dc813c;outline-offset:4px}
-@media(max-width:650px){main{padding:24px 16px}.panel{padding:16px}}
-@media(prefers-color-scheme:dark){:root{--bg:#0f1823;--panel:#182535;--ink:#e7eef6;\
---muted:#b1c1d0;--line:#34475b;--accent:#63c3cc;--yes:#7fd6a0;--yes-bg:#173a28;--no:#ff9a8f;\
---no-bg:#45201d;--open:#f1c56b;--open-bg:#3d3015}}
+# Additions to doc-gen4's style.css, in its colour variables so they follow its light/dark theme.
+STYLE = """.table-scroll{overflow-x:auto;margin:1em 0}
+.class-inclusions table{border-collapse:collapse}
+.class-inclusions th,.class-inclusions td{padding:.25em .5em;border:1px solid var(--code-bg)}
+.class-inclusions caption{text-align:left;font-style:italic;margin-bottom:.5em}
+.grid td{text-align:center;min-width:2.4em;white-space:nowrap}
+.grid th{white-space:nowrap;background:var(--body-bg)}
+.grid tbody th{position:sticky;left:0;text-align:left}
+.grid a{display:block;color:inherit;text-decoration:none}
+.proved,.chained{background:var(--theorem-color)}
+.refuted{background:var(--axiom-and-constant-color)}
+.known{background:color-mix(in srgb,var(--theorem-color) 35%,var(--body-bg))}
+.false{background:color-mix(in srgb,var(--axiom-and-constant-color) 35%,var(--body-bg))}
+.open{background:color-mix(in srgb,var(--structure-and-inductive-color) 25%,var(--body-bg))}
+.list td,.list th{text-align:left;vertical-align:top}
 """
 
 LEGEND = [
@@ -350,16 +322,23 @@ def render(index: dict) -> str:
         for a, relation, b, source in LITERATURE)
     co_closed = "".join(f"<tr><td>{html.escape(name)}</td><td>{inline(source)}</td></tr>"
                         for name, source in CO_CLOSED.items())
+    root = "../"
     return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Class inclusions · cslib-frontier</title>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="{root}style.css"/><link rel="icon" href="{root}favicon.svg"/>
+<link rel="mask-icon" href="{root}favicon.svg" color="#000000"/>
+<title>Inclusions between complexity classes</title>
+<script>const SITE_ROOT="{root}";</script>
+<script type="module" src="{root}search.js"></script><script type="module" src="{root}expand-nav.js"></script>
 <style>
 {STYLE}</style></head>
-<body><main>
-<nav><a href="../">API documentation</a> / Class inclusions</nav>
-<header><p class="eyebrow">CSLIB FRONTIER</p><h1>Inclusions between complexity classes.</h1>
-<p>Whether each standard class is contained in another: what the library proves, and otherwise what is known.</p></header>
-<section class="panel notes"><h2>Reading the tables</h2>
+<body><input id="nav_toggle" type="checkbox"/><header><h1><label for="nav_toggle"></label><span>Documentation</span></h1>
+<h2 class="header_filename break_within"><span class="name">Inclusions between complexity classes</span></h2>
+<form id="search_form"><input type="text" name="q" autocomplete="off"/>&#32;<button id="search_button" onclick="javascript: form.action='{root}search.html';">Search</button></form></header>
+<main class="class-inclusions"><a id="top"></a>
+<h1>Inclusions between complexity classes</h1>
+<p>Whether each standard class is contained in another: what the library proves, and otherwise
+what is known. Rebuilt from the library's declarations with every documentation deployment.</p>
 <table class="list"><tbody>{legend}</tbody></table>
 <p>Known non-inclusions all come from hierarchy theorems or lower bounds: <code>Z ⊄ Y</code> gives
 <code>A ⊄ B</code> whenever <code>Z ⊆ A</code> and <code>B ⊆ Y</code>. For the uniform classes,
@@ -370,9 +349,9 @@ injective encoding <code>enc</code>. The strict inclusions behind the ✗ and �
 (<code>L ⊊ PSPACE</code>, <code>P ⊊ EXP</code>, <code>NP ⊊ NEXP</code>) are stated only for
 <code>encBits</code>, and they can fail for other encodings: with a single instance, every class
 is the same. The circuit classes are nonuniform, so they are not compared with the uniform
-classes: nonuniform AC⁰ already contains undecidable unary languages.</p></section>
+classes: nonuniform AC⁰ already contains undecidable unary languages.</p>
 {chr(10).join(body)}
-<section class="panel notes"><h2>Literature layer</h2>
+<h2>Literature layer</h2>
 <p>These unconditional results, closed under chaining and complements, decide every cell that is
 not marked ?. A cell marked ? is open: neither the inclusion nor its failure follows from them.</p>
 <table class="list"><thead><tr><th scope="col">Fact</th><th scope="col">Source</th></tr></thead>
@@ -380,12 +359,11 @@ not marked ?. A cell marked ? is open: neither the inclusion nor its failure fol
 <p>Complements are used only for these classes, which are closed under complement, and for the
 pairs NP/coNP and RP/coRP.</p>
 <table class="list"><thead><tr><th scope="col">Class</th><th scope="col">Why it is closed under complement</th></tr></thead>
-<tbody>{co_closed}</tbody></table></section>
-<footer><p>Rebuilt from the library's declarations with every API documentation deployment.
-Theorems named <code>A_subset_B</code>, <code>A_ssubset_B</code>, <code>A_eq_B</code> or
+<tbody>{co_closed}</tbody></table>
+<p>Theorems named <code>A_subset_B</code>, <code>A_ssubset_B</code>, <code>A_eq_B</code> or
 <code>A_not_subset_B</code> between classes of a grid appear automatically.
-<a href="https://github.com/cslib-community/cslib-frontier/tree/main/tools/class_inclusions">Source and literature layer</a>.</p></footer>
-</main></body></html>
+<a href="https://github.com/cslib-community/cslib-frontier/tree/main/tools/class_inclusions">Source and literature layer</a>.</p>
+</main><nav class="nav"><iframe src="{root}navbar.html" class="navframe" frameBorder="0"></iframe></nav></body></html>
 """
 
 
