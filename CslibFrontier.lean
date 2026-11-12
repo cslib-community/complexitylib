@@ -2671,6 +2671,7 @@ public import CslibFrontier.Computability.Complexity.Reduction.TruthTable.Compos
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTableVariants
 public import CslibFrontier.Computability.Complexity.Reduction.Turing
 public import CslibFrontier.Computability.Complexity.Reduction.TuringAutoreducible
+public import CslibFrontier.Computability.Complexity.Reduction.Word
 public import CslibFrontier.Computability.DecisionTree.AffineScore
 public import CslibFrontier.Computability.DecisionTree.Basic
 public import CslibFrontier.Computability.DecisionTree.CanonicalTree
