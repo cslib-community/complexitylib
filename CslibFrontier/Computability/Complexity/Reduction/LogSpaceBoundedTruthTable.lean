@@ -27,6 +27,9 @@ means at most `k`, including zero; an empty disjunction is false and an empty co
 
 * `Cslib.Complexity.LogSpaceKDTTReducible.logSpaceKTruthTableReducible`: evaluate OR.
 * `Cslib.Complexity.LogSpaceKCTTReducible.logSpaceKTruthTableReducible`: evaluate AND.
+* `Cslib.Complexity.logSpaceKDTTReducible_iff_dttReducibleBy`,
+  `Cslib.Complexity.logSpaceKCTTReducible_iff_cttReducibleBy`: bridges to the kernels of
+  `CslibFrontier.Computability.Reduction.TruthTable`.
 -/
 
 public section
@@ -42,48 +45,54 @@ variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
 @[expose] def LogSpaceKDTTReducible (k : ℕ) (encA : α ↪ List Bool) (encB : β ↪ List Bool)
     (A : Set α) (B : Set β) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → β),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encB ∧
-    (∀ a, r a ≤ k) ∧ ∀ a, a ∈ A ↔ ∃ i < r a, q (a, i) ∈ B
+    (ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encB ∧ ∀ a, r a ≤ k) ∧
+    ∀ a, a ∈ A ↔ ∃ i < r a, q (a, i) ∈ B
 
 /-- Conjunctive reduction with at most `k` active queries, using the existing indexed data. -/
 @[expose] def LogSpaceKCTTReducible (k : ℕ) (encA : α ↪ List Bool) (encB : β ↪ List Bool)
     (A : Set α) (B : Set β) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → β),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encB ∧
-    (∀ a, r a ≤ k) ∧ ∀ a, a ∈ A ↔ ∀ i < r a, q (a, i) ∈ B
+    (ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encB ∧ ∀ a, r a ≤ k) ∧
+    ∀ a, a ∈ A ↔ ∀ i < r a, q (a, i) ∈ B
+
+/-- Bounded disjunctive reducibility is disjunctive reducibility by logspace data making at most
+`k` queries. -/
+theorem logSpaceKDTTReducible_iff_dttReducibleBy :
+    LogSpaceKDTTReducible k encA encB A B ↔
+      DTTReducibleBy (fun r q => ComputableInLogSpace r encA encUnary ∧
+        ComputableInLogSpace q (encPair encA encUnary) encB ∧ ∀ a, r a ≤ k) A B :=
+  Iff.rfl
+
+/-- Bounded conjunctive reducibility is conjunctive reducibility by logspace data making at most
+`k` queries. -/
+theorem logSpaceKCTTReducible_iff_cttReducibleBy :
+    LogSpaceKCTTReducible k encA encB A B ↔
+      CTTReducibleBy (fun r q => ComputableInLogSpace r encA encUnary ∧
+        ComputableInLogSpace q (encPair encA encUnary) encB ∧ ∀ a, r a ≤ k) A B :=
+  Iff.rfl
 
 /-- Forgetting the query bound gives disjunctive reducibility. -/
 theorem LogSpaceKDTTReducible.logSpaceDTTReducible (h : LogSpaceKDTTReducible k encA encB A B) :
     LogSpaceDTTReducible encA encB A B :=
-  let ⟨r, q, hr, hq, _, hA⟩ := h
-  ⟨r, q, hr, hq, hA⟩
+  DTTReducibleBy.mono (fun _ _ ⟨hr, hq, _⟩ => ⟨hr, hq⟩) h
 
 /-- Forgetting the query bound gives conjunctive reducibility. -/
 theorem LogSpaceKCTTReducible.logSpaceCTTReducible (h : LogSpaceKCTTReducible k encA encB A B) :
     LogSpaceCTTReducible encA encB A B :=
-  let ⟨r, q, hr, hq, _, hA⟩ := h
-  ⟨r, q, hr, hq, hA⟩
+  CTTReducibleBy.mono (fun _ _ ⟨hr, hq, _⟩ => ⟨hr, hq⟩) h
 
 /-- A bounded disjunctive reduction is a truth-table reduction with the same bound. -/
 theorem LogSpaceKDTTReducible.logSpaceKTruthTableReducible
     (h : LogSpaceKDTTReducible k encA encB A B) :
-    LogSpaceKTruthTableReducible k encA encB A B := by
-  classical
-  obtain ⟨r, q, hr, hq, hk, hA⟩ := h
-  refine ⟨r, q, fun p => p.2.any id, hr, hq, by fun_prop, hk, fun a => ?_⟩
-  rw [hA a, truthTableAnswers_eq_map_range]
-  simp
+    LogSpaceKTruthTableReducible k encA encB A B :=
+  DTTReducibleBy.truthTableReducibleBy (fun _ _ ⟨hr, hq, hk⟩ => ⟨hr, hq, by fun_prop, hk⟩) h
 
 /-- A bounded conjunctive reduction is a truth-table reduction with the same bound. -/
 theorem LogSpaceKCTTReducible.logSpaceKTruthTableReducible
     (h : LogSpaceKCTTReducible k encA encB A B) :
-    LogSpaceKTruthTableReducible k encA encB A B := by
-  classical
-  obtain ⟨r, q, hr, hq, hk, hA⟩ := h
-  refine ⟨r, q, fun p => p.2.all id, hr, hq, by fun_prop, hk, fun a => ?_⟩
-  rw [hA a, truthTableAnswers_eq_map_range]
-  simp
+    LogSpaceKTruthTableReducible k encA encB A B :=
+  CTTReducibleBy.truthTableReducibleBy (fun _ _ ⟨hr, hq, hk⟩ => ⟨hr, hq, by fun_prop, hk⟩) h
 
 end Cslib.Complexity

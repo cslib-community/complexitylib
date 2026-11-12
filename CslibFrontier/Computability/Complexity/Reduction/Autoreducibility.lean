@@ -148,7 +148,7 @@ theorem PolyTimeKTruthTableAutoreducible.polyTimeKTruthTableReducible {k : ℕ}
     (h : PolyTimeKTruthTableAutoreducible k encA A) :
     PolyTimeKTruthTableReducible k encA encA A A :=
   let ⟨r, q, d, hr, hq, hd, hrk, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hrk, hA⟩
+  ⟨r, q, d, ⟨hr, hq, hd, hrk⟩, hA⟩
 
 /-- `A` is bounded truth-table autoreducible. -/
 def PolyTimeBTTAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
@@ -172,7 +172,7 @@ def PolyTimeDTTAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
 theorem PolyTimeDTTAutoreducible.polyTimeDTTReducible (h : PolyTimeDTTAutoreducible encA A) :
     PolyTimeDTTReducible encA encA A A :=
   let ⟨r, q, hr, hq, _, hA⟩ := h
-  ⟨r, q, hr, hq, hA⟩
+  ⟨r, q, ⟨hr, hq⟩, hA⟩
 
 /-- `A` is conjunctive truth-table autoreducible: accepting exactly when every query is in `A`,
 without querying `a`. -/
@@ -186,7 +186,7 @@ def PolyTimeCTTAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
 theorem PolyTimeCTTAutoreducible.polyTimeCTTReducible (h : PolyTimeCTTAutoreducible encA A) :
     PolyTimeCTTReducible encA encA A A :=
   let ⟨r, q, hr, hq, _, hA⟩ := h
-  ⟨r, q, hr, hq, hA⟩
+  ⟨r, q, ⟨hr, hq⟩, hA⟩
 
 /-- `A` is polynomial-time truth-table autoreducible: a truth-table reduction whose query generator
 never queries the input instance. -/
@@ -203,7 +203,7 @@ theorem PolyTimeTruthTableAutoreducible.polyTimeTruthTableReducible
     (h : PolyTimeTruthTableAutoreducible encA A) :
     PolyTimeTruthTableReducible encA encA A A :=
   let ⟨r, q, d, hr, hq, hd, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hA⟩
+  ⟨r, q, d, ⟨hr, hq, hd⟩, hA⟩
 
 /-- A many-one autoreduction is a `1`-truth-table autoreduction. -/
 theorem PolyTimeManyOneAutoreducible.polyTimeKTruthTableAutoreducible_one
@@ -823,7 +823,7 @@ cannot belong to the opposite piece (`A ∩ S` when `a ∉ S`, or `A ∖ S` when
 filtered out before querying `A`. -/
 theorem PolyTimeDTTMitotic.polyTimeDTTAutoreducible (h : PolyTimeDTTMitotic encA A) :
     PolyTimeDTTAutoreducible encA A := by
-  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, hr₁, hq₁, hA₁⟩, -⟩, ⟨⟨r₂, q₂, hr₂, hq₂, hA₂⟩, -⟩⟩ := h
+  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, ⟨hr₁, hq₁⟩, hA₁⟩, -⟩, ⟨⟨r₂, q₂, ⟨hr₂, hq₂⟩, hA₂⟩, -⟩⟩ := h
   let r₀ : α → ℕ := fun a => if s a then r₂ a else r₁ a
   have hr₀ : ComputableInPolyTime r₀ encA encUnary := ComputableInPolyTime.ite hs hr₂ hr₁
   let q₀ : α × ℕ → α := fun x => if s x.1 then q₂ x else q₁ x
@@ -863,8 +863,8 @@ reductions). -/
 theorem PolyTimeKTruthTableMitotic.polyTimeKTruthTableAutoreducible {k : ℕ}
     (h : PolyTimeKTruthTableMitotic k encA A) :
     PolyTimeKTruthTableAutoreducible k encA A := by
-  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, hr₁, hq₁, hd₁, hrk₁, hA₁⟩, -⟩,
-    ⟨⟨r₂, q₂, d₂, hr₂, hq₂, hd₂, hrk₂, hA₂⟩, -⟩⟩ := h
+  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, ⟨hr₁, hq₁, hd₁, hrk₁⟩, hA₁⟩, -⟩,
+    ⟨⟨r₂, q₂, d₂, ⟨hr₂, hq₂, hd₂, hrk₂⟩, hA₂⟩, -⟩⟩ := h
   obtain ⟨r, q, d, hr, hq, hd, hrr, hne, hA⟩ :=
     exists_mitotic_autoreduction hs hsS hr₁ hq₁ hd₁ hA₁ hr₂ hq₂ hd₂ hA₂
   exact ⟨r, q, d, hr, hq, hd, fun a => (hrr a).trans (max_le (hrk₁ a) (hrk₂ a)), hne, hA⟩
@@ -885,8 +885,8 @@ reductions). -/
 theorem PolyTimeTruthTableMitotic.polyTimeTruthTableAutoreducible
     (h : PolyTimeTruthTableMitotic encA A) :
     PolyTimeTruthTableAutoreducible encA A := by
-  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, hr₁, hq₁, hd₁, hA₁⟩, -⟩,
-    ⟨⟨r₂, q₂, d₂, hr₂, hq₂, hd₂, hA₂⟩, -⟩⟩ := h
+  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, ⟨hr₁, hq₁, hd₁⟩, hA₁⟩, -⟩,
+    ⟨⟨r₂, q₂, d₂, ⟨hr₂, hq₂, hd₂⟩, hA₂⟩, -⟩⟩ := h
   obtain ⟨r, q, d, hr, hq, hd, -, hne, hA⟩ :=
     exists_mitotic_autoreduction hs hsS hr₁ hq₁ hd₁ hA₁ hr₂ hq₂ hd₂ hA₂
   exact ⟨r, q, d, hr, hq, hd, hne, hA⟩
