@@ -51,7 +51,7 @@ Naor–Reingold contraction bounds for `CslibFrontier.DataStructure.Dictionary.K
   `Cslib.DataStructure.Dictionary.KickTree.quotientPermThreshold`,
   `Cslib.DataStructure.Dictionary.KickTree.reduceBits`,
   `Cslib.DataStructure.Dictionary.KickTree.reducedDoubleTab`,
-  `Cslib.DataStructure.Dictionary.KickTree.QuotientPermNRBotSeed`: concrete round-function parameter
+  `Cslib.DataStructure.Dictionary.KickTree.QuotientPermNRSeed`: concrete round-function parameter
   schedule and reduced double-tabulation evaluator.
 
 ## Main results
@@ -139,37 +139,47 @@ Round-2 `(m + b_aux)`-bit hash `f₁₂ : Fin (2 ^ (a - m)) → Fin (2 ^ (m + b_
   ((caseAEquiv hma ⟨g₀, fun q => (splitBucketAuxEquiv m b_aux (f₁₂ q)).1⟩ u).1, pair.2)
 
 /-- Pairwise-independent Round-1 quotient collision bound in Case A (via
-`FeistelPerm.dens_not_injOn_feistelHead_le`). -/
+`FeistelPerm.dens_not_injOn_feistelHead_le`), requiring pairwise independence only on the active
+left-coordinate image `S.image fun u => (bitDomainEquiv hma u).1`. -/
 theorem dens_not_injOn_caseAQuot_le {ι₀ : Type*} [Fintype ι₀] [Nonempty ι₀] {a m : ℕ}
     (hma : m ≤ a) {h₀ : ι₀ → Fin (2 ^ m) → Fin (2 ^ (a - m))}
-    (hh₀ : IsPairwiseIndependentHash h₀) (S : Finset (Fin (2 ^ a))) :
+    (S : Finset (Fin (2 ^ a)))
+    (hh₀ : IsPairwiseIndependentHash
+      (fun s₀ (x : S.image fun u => (bitDomainEquiv hma u).1) => h₀ s₀ x.1)) :
     (dens {s₀ : ι₀ | ¬ Set.InjOn (caseAQuot hma (h₀ s₀)) (S : Set (Fin (2 ^ a)))} : ℝ) ≤
       ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) := by
   classical
-  let swapEq : Fin (2 ^ a) ≃ Fin (2 ^ (a - m)) × Fin (2 ^ m) :=
-    (bitDomainEquiv hma).trans (Equiv.prodComm _ _)
-  let S' : Finset (Fin (2 ^ (a - m)) × Fin (2 ^ m)) := S.map swapEq.toEmbedding
-  have hS'_card : #S' = #S := card_map _
+  let S_L : Finset (Fin (2 ^ m)) := S.image fun u => (bitDomainEquiv hma u).1
+  let toPair : {u // u ∈ S} ↪ Fin (2 ^ (a - m)) × S_L :=
+    { toFun := fun ⟨u, hu⟩ =>
+        ((bitDomainEquiv hma u).2, ⟨(bitDomainEquiv hma u).1, mem_image_of_mem _ hu⟩)
+      inj' := fun ⟨u₁, _⟩ ⟨u₂, _⟩ h => by
+        rcases Prod.mk.inj h with ⟨h2, h1⟩
+        exact Subtype.ext ((bitDomainEquiv hma).injective
+          (Prod.ext (congrArg Subtype.val h1) h2)) }
+  let S_pair : Finset (Fin (2 ^ (a - m)) × S_L) := S.attach.map toPair
+  have hSp_card : #S_pair = #S := by simp [S_pair]
+  have hd := dens_not_injOn_feistelHead_le hh₀ S_pair
   have hiff (s₀ : ι₀) :
       Set.InjOn (caseAQuot hma (h₀ s₀)) (S : Set (Fin (2 ^ a))) ↔
-        Set.InjOn (feistelHead (h₀ s₀)) (S' : Set (Fin (2 ^ (a - m)) × Fin (2 ^ m))) := by
+        Set.InjOn (feistelHead (fun x : S_L => h₀ s₀ x.1)) (S_pair : Set _) := by
     constructor
     · intro h p₁ hp₁ p₂ hp₂ heq
-      rcases mem_map.mp hp₁ with ⟨u₁, hu₁, rfl⟩
-      rcases mem_map.mp hp₂ with ⟨u₂, hu₂, rfl⟩
-      exact congrArg swapEq (h hu₁ hu₂ heq)
+      rcases mem_map.mp hp₁ with ⟨⟨u₁, hu₁⟩, _, rfl⟩
+      rcases mem_map.mp hp₂ with ⟨⟨u₂, hu₂⟩, _, rfl⟩
+      exact congrArg toPair (Subtype.ext (h hu₁ hu₂ heq))
     · intro h u₁ hu₁ u₂ hu₂ heq
-      have hp₁ : swapEq u₁ ∈ S' := mem_map.mpr ⟨u₁, hu₁, rfl⟩
-      have hp₂ : swapEq u₂ ∈ S' := mem_map.mpr ⟨u₂, hu₂, rfl⟩
-      exact swapEq.injective (h hp₁ hp₂ heq)
+      have hp₁ : toPair ⟨u₁, hu₁⟩ ∈ S_pair := mem_map.mpr ⟨⟨u₁, hu₁⟩, mem_attach _ _, rfl⟩
+      have hp₂ : toPair ⟨u₂, hu₂⟩ ∈ S_pair := mem_map.mpr ⟨⟨u₂, hu₂⟩, mem_attach _ _, rfl⟩
+      exact congrArg Subtype.val (toPair.injective (h hp₁ hp₂ heq))
   have hset : (univ.filter fun s₀ : ι₀ =>
       ¬ Set.InjOn (caseAQuot hma (h₀ s₀)) (S : Set (Fin (2 ^ a)))) =
       (univ.filter fun s₀ : ι₀ =>
-        ¬ Set.InjOn (feistelHead (h₀ s₀)) (S' : Set (Fin (2 ^ (a - m)) × Fin (2 ^ m)))) := by
+        ¬ Set.InjOn (feistelHead (fun x : S_L => h₀ s₀ x.1)) (S_pair : Set _)) := by
     ext s₀
     simp only [mem_filter, mem_univ, true_and, hiff]
   rw [hset]
-  simpa only [hS'_card] using dens_not_injOn_feistelHead_le hh₀ S'
+  simpa only [hSp_card] using hd
 
 theorem isKWiseIndependentHash_caseABucketAux_of_comp {ι₁ : Type*} [Fintype ι₁]
     {a m b_aux κ : ℕ} (hma : m ≤ a) {g₀ : Fin (2 ^ m) → Fin (2 ^ (a - m))}
@@ -208,63 +218,66 @@ theorem isKWiseIndependentHash_caseABucketAux_of_comp {ι₁ : Type*} [Fintype �
   rw [hfilt, hcomp.dens_filter_restrict_eq hI vals']
   simp only [Fintype.card_prod, Fintype.card_fin, pow_add]
 
-/-- When `caseAQuot hma g₀` is injective on `S` and `h₁₂` is `κ`-wise independent, the induced
-`(bucket, aux)` family on `S` is exact `κ`-wise independent (`IsKWiseIndependentHash κ`). -/
+/-- When `caseAQuot hma g₀` is injective on `S` and `h₁₂` is `κ`-wise independent on the active
+quotient image `S.image (caseAQuot hma g₀)`, the induced `(bucket, aux)` family on `S` is exact
+`κ`-wise independent (`IsKWiseIndependentHash κ`). -/
 theorem isKWiseIndependentHash_caseABucketAux_of_injOn {ι₁ : Type*} [Fintype ι₁]
     {a m b_aux κ : ℕ} (hma : m ≤ a) {g₀ : Fin (2 ^ m) → Fin (2 ^ (a - m))}
     {S : Finset (Fin (2 ^ a))} (hinj : Set.InjOn (caseAQuot hma g₀) (S : Set (Fin (2 ^ a))))
     {h₁₂ : ι₁ → Fin (2 ^ (a - m)) → Fin (2 ^ (m + b_aux))}
-    (hh₁₂ : IsKWiseIndependentHash κ h₁₂) :
+    (hh₁₂ : IsKWiseIndependentHash κ (fun s₁ (q : S.image (caseAQuot hma g₀)) => h₁₂ s₁ q.1)) :
     IsKWiseIndependentHash κ (fun s₁ (u : S) => caseABucketAux hma g₀ (h₁₂ s₁) u.1) :=
   isKWiseIndependentHash_caseABucketAux_of_comp hma
-    (hh₁₂.comp fun u₁ u₂ h => Subtype.ext (hinj u₁.2 u₂.2 h))
+    (hh₁₂.comp (e := fun u : S => ⟨caseAQuot hma g₀ u.1, mem_image_of_mem _ u.2⟩)
+      fun u₁ u₂ h => Subtype.ext (hinj u₁.2 u₂.2 (congrArg Subtype.val h)))
 
-/-- **Abstract Case A distributional transfer**: over a two-stage seed `(τ, (s₀, s₁))` where
-`τ ∈ GoodTop` (failure probability `≤ δ_top`) makes `h₀ τ` pairwise independent and `h₁₂ τ`
-`κ`-wise independent, the restriction of `caseABucketAux` to any `T ⊆ S` (`#T ≤ κ`) is within
-statistical distance `δ_top + (#S * (#S - 1)) / (2 * 2 ^ (a - m))` of uniform. -/
+/-- **Abstract Case A distributional transfer**: over a three-stage seed `(τ, s₀, s₁)` where
+`τ ∈ GoodTop` (failure probability `≤ δ_top`) makes `h₀ τ` pairwise independent on the active
+left-coordinate image of `S` and `h₁₂ τ` within `δ₁` of uniform whenever `caseAQuot hma (h₀ τ s₀)`
+is injective on `S`, the restriction of `caseABucketAux` to `T` is within statistical distance
+`δ_top + (#S * (#S - 1)) / (2 * 2 ^ (a - m)) + δ₁` of uniform. -/
 theorem dist_caseA_restrict_le {Top ι₀ ι₁ : Type*}
     [Fintype Top] [Nonempty Top] [Fintype ι₀] [Nonempty ι₀] [Fintype ι₁] [Nonempty ι₁]
-    {a m b_aux κ : ℕ} (hma : m ≤ a)
+    {a m b_aux : ℕ} (hma : m ≤ a)
     (h₀ : Top → ι₀ → Fin (2 ^ m) → Fin (2 ^ (a - m)))
     (h₁₂ : Top → ι₁ → Fin (2 ^ (a - m)) → Fin (2 ^ (m + b_aux)))
-    {S T : Finset (Fin (2 ^ a))} (hTS : T ⊆ S) (hT : #T ≤ κ)
-    (GoodTop : Set Top) {δ_top : ℝ}
+    (S T : Finset (Fin (2 ^ a)))
+    (GoodTop : Set Top) {δ_top δ₁ : ℝ} (hδ₁ : 0 ≤ δ₁)
     (hδ_top : ((PMF.uniformOfFintype Top).toOuterMeasure GoodTopᶜ).toReal ≤ δ_top)
-    (hgood₀ : ∀ τ ∈ GoodTop, IsPairwiseIndependentHash (h₀ τ))
-    (hgood₁₂ : ∀ τ ∈ GoodTop, IsKWiseIndependentHash κ (h₁₂ τ)) :
+    (hgood₀ : ∀ τ ∈ GoodTop, IsPairwiseIndependentHash
+      (fun s₀ (x : S.image fun u => (bitDomainEquiv hma u).1) => h₀ τ s₀ x.1))
+    (hgood₁₂ : ∀ τ ∈ GoodTop, ∀ s₀ : ι₀,
+      Set.InjOn (caseAQuot hma (h₀ τ s₀)) (S : Set (Fin (2 ^ a))) →
+      dist ((PMF.uniformOfFintype ι₁).map fun s₁ (u : T) =>
+          caseABucketAux hma (h₀ τ s₀) (h₁₂ τ s₁) u.1)
+        (PMF.uniformOfFintype (T → Fin (2 ^ m) × Fin (2 ^ b_aux))) ≤ δ₁) :
     dist (((PMF.uniformOfFintype Top).bind fun τ =>
         (PMF.uniformOfFintype ι₀).bind fun s₀ =>
           (PMF.uniformOfFintype ι₁).map fun s₁ (u : T) =>
             caseABucketAux hma (h₀ τ s₀) (h₁₂ τ s₁) u.1))
       (PMF.uniformOfFintype (T → Fin (2 ^ m) × Fin (2 ^ b_aux))) ≤
-      δ_top + ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) := by
+      δ_top + ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) + δ₁ := by
   classical
   let U_target := PMF.uniformOfFintype (T → Fin (2 ^ m) × Fin (2 ^ b_aux))
-  have hT_card : Fintype.card T ≤ κ := by simpa using hT
   have hgood_τ (τ : Top) (hτ : τ ∈ GoodTop) :
       dist ((PMF.uniformOfFintype ι₀).bind fun s₀ =>
           (PMF.uniformOfFintype ι₁).map fun s₁ (u : T) =>
             caseABucketAux hma (h₀ τ s₀) (h₁₂ τ s₁) u.1) U_target ≤
-        ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) := by
+        ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) + δ₁ := by
     let Good₀ : Set ι₀ := {s₀ | Set.InjOn (caseAQuot hma (h₀ τ s₀)) (S : Set (Fin (2 ^ a)))}
-    refine (dist_bind_uniform_of_good _ U_target Good₀ le_rfl fun s₀ hs₀ => ?_).trans ?_
-    · have hinjT : Set.InjOn (caseAQuot hma (h₀ τ s₀)) (T : Set (Fin (2 ^ a))) :=
-        hs₀.mono (Finset.coe_subset.mpr hTS)
-      have hunif_eq : ((PMF.uniformOfFintype ι₁).map fun s₁ (u : T) =>
-          caseABucketAux hma (h₀ τ s₀) (h₁₂ τ s₁) u.1) = U_target :=
-        uniformOfFintype_map_of_isKWise
-          (isKWiseIndependentHash_caseABucketAux_of_injOn hma hinjT (hgood₁₂ τ hτ)) hT_card
-      simp [hunif_eq]
-    · rw [add_zero, toOuterMeasure_uniformOfFintype_toReal]
-      have hd := dens_not_injOn_caseAQuot_le hma (hgood₀ τ hτ) S
-      rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast] at hd
-      have hfilt : univ.filter (· ∈ Good₀ᶜ) =
-          univ.filter (fun s₀ : ι₀ => ¬ Set.InjOn (caseAQuot hma (h₀ τ s₀))
-            (S : Set (Fin (2 ^ a)))) :=
-        filter_congr fun _ _ => Iff.rfl
-      rwa [hfilt]
-  refine (dist_bind_uniform_of_good _ U_target GoodTop (by positivity) hgood_τ).trans ?_
+    refine (dist_bind_uniform_of_good _ U_target Good₀ hδ₁ (hgood₁₂ τ hτ)).trans ?_
+    rw [toOuterMeasure_uniformOfFintype_toReal]
+    have hd := dens_not_injOn_caseAQuot_le hma S (hgood₀ τ hτ)
+    rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast] at hd
+    have hfilt : univ.filter (· ∈ Good₀ᶜ) =
+        univ.filter (fun s₀ : ι₀ => ¬ Set.InjOn (caseAQuot hma (h₀ τ s₀))
+          (S : Set (Fin (2 ^ a)))) :=
+      filter_congr fun _ _ => Iff.rfl
+    rw [hfilt]
+    linarith
+  have hnn : 0 ≤ ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) + δ₁ :=
+    add_nonneg (by positivity) hδ₁
+  refine (dist_bind_uniform_of_good _ U_target GoodTop hnn hgood_τ).trans ?_
   linarith
 
 
@@ -659,35 +672,12 @@ theorem quotientPermInd_le_self_of_threshold {c n : ℕ} (hn : quotientPermThres
     _ ≤ n := Nat.pow_log_le_self 2 hn_pos.ne'
 
 
-/-- Bottom-level simple-tabulation tables `(t₀, t₁, t₂)` for one Case B Naor–Reingold block. -/
-structure QuotientPermNRBotSeed (c a m n : ℕ) where
-  /-- Pre-whitening round bottom table (`⌊a'/2⌋ → ⌈a'/2⌉`). -/
-  t₀ : DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (nrHalfHigh (suffixBits a m))
-  /-- Middle round bottom table (`⌈a'/2⌉ → ⌊a'/2⌋`). -/
-  t₁ : DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (nrHalfLow (suffixBits a m))
-  /-- Final round bottom table (`⌊a'/2⌋ → ⌈a'/2⌉`). -/
-  t₂ : DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (nrHalfHigh (suffixBits a m))
-
-/-- Equivalence between `QuotientPermNRBotSeed c a m n` and `NRBlockSeed` of its bottom tables. -/
-@[expose] def quotientPermNRBotEquiv (c a m n : ℕ) :
-    QuotientPermNRBotSeed c a m n ≃
-      NRBlockSeed
-        (DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n)
-          (nrHalfHigh (suffixBits a m)))
-        (DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n)
-          (nrHalfLow (suffixBits a m)))
-        (DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n)
-          (nrHalfHigh (suffixBits a m))) where
-  toFun s := ⟨s.t₀, s.t₁, s.t₂⟩
-  invFun s := ⟨s.s₀, s.s₁, s.s₂⟩
-  left_inv s := by cases s; rfl
-  right_inv s := by cases s; rfl
-
-instance {c a m n : ℕ} : Fintype (QuotientPermNRBotSeed c a m n) :=
-  Fintype.ofEquiv _ (quotientPermNRBotEquiv c a m n).symm
-
-instance {c a m n : ℕ} : Nonempty (QuotientPermNRBotSeed c a m n) :=
-  ⟨⟨fun _ _ => 0, fun _ _ => 0, fun _ _ => 0⟩⟩
+/-- Bottom-level simple-tabulation seed bundle for all `nrRounds c` Case B Naor–Reingold blocks. -/
+abbrev QuotientPermNRSeed (c a m n : ℕ) :=
+  NRComposedSeed (nrRounds c)
+    (DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (nrHalfHigh (suffixBits a m)))
+    (DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (nrHalfLow (suffixBits a m)))
+    (DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (nrHalfHigh (suffixBits a m)))
 
 theorem isKWise_doubleTab_pow_of_le {c n s_in s_out k : ℕ}
     (hs_in : s_in ≤ quotientPermChars c * quotientPermCharBits n)
@@ -715,7 +705,8 @@ theorem isKWise_reducedDoubleTab_of_injOn {c n s_in s_out k : ℕ}
   exact hdt.comp hinj_sub
 
 /-- Concrete 4-stage Case A statistical-distance bound for `caseABucketAux` instantiated with
-`reducedDoubleTab` over uniform `(Top, α₀, BotA₀, α₁, BotA₁₂)` (`≤ 1 / n ^ (c + 1)`). -/
+`reducedDoubleTab` over uniform `(Top, α₀, BotA₀, α₁, BotA₁₂)` (`≤ 1 / n ^ (c + 1)`), proved via
+`dist_caseA_restrict_le` and `isKWiseIndependentHash_caseABucketAux_of_injOn`. -/
 theorem dist_caseA_reducedDoubleTab_le {a m b_aux c n : ℕ}
     (hma : m ≤ a) (hgap : m + caseAGap c n ≤ a) (hn : quotientPermThreshold c ≤ n)
     {S T : Finset (Fin (2 ^ a))} (hS : #S ≤ n) (hTS : T ⊆ S)
@@ -743,6 +734,8 @@ theorem dist_caseA_reducedDoubleTab_le {a m b_aux c n : ℕ}
   have : Nonempty Top := ⟨fun _ _ _ => 0⟩
   have : Nonempty BotA₀ := ⟨fun _ _ => 0⟩
   have : Nonempty BotA₁₂ := ⟨fun _ _ => 0⟩
+  have : Nonempty (Fin (2 ^ (m - 1))) := ⟨0⟩
+  have : Nonempty (Fin (2 ^ (a - m - 1))) := ⟨0⟩
   let U_target := PMF.uniformOfFintype (T → Fin (2 ^ m) × Fin (2 ^ b_aux))
   have h4n : 4 ≤ n := (four_le_quotientPermThreshold c).trans hn
   have h2κ : 2 ≤ quotientPermInd c n := (quotientPermInd_le_self_of_threshold hn).2.1
@@ -769,103 +762,108 @@ theorem dist_caseA_reducedDoubleTab_le {a m b_aux c n : ℕ}
     have hreal : ((#S * (#S - 1) : ℕ) : ℝ) * (n : ℝ) ^ (c + 1) ≤ (2 ^ (a - m) : ℝ) := by
       exact_mod_cast hnat
     linarith
-  let GoodTop : Set Top := {τ | IsKUnique (quotientPermInd c n) (simpleTabTuple τ)}
-  have hgood_τ (τ : Top) (hτ : τ ∈ GoodTop) :
-      dist ((PMF.uniformOfFintype (Fin (2 ^ (m - 1)))).bind fun α₀ =>
-          (PMF.uniformOfFintype BotA₀).bind fun botA₀ =>
-            (PMF.uniformOfFintype (Fin (2 ^ (a - m - 1)))).bind fun α₁ =>
-              (PMF.uniformOfFintype BotA₁₂).map fun botA₁₂ (u : T) =>
-                caseABucketAux hma (reducedDoubleTab c n m (a - m) α₀ τ botA₀)
-                  (reducedDoubleTab c n (a - m) (m + b_aux) α₁ τ botA₁₂) u.1) U_target ≤
-        5 / (8 * (n : ℝ) ^ (c + 1)) := by
-    let Goodα₀ : Set (Fin (2 ^ (m - 1))) :=
-      {α₀ | Set.InjOn (reduceBits m (quotientPermRedBits c n) α₀) (S_L : Set _)}
-    have hgood_α₀ (α₀ : Fin (2 ^ (m - 1))) (hα₀ : α₀ ∈ Goodα₀) :
-        dist ((PMF.uniformOfFintype BotA₀).bind fun botA₀ =>
-            (PMF.uniformOfFintype (Fin (2 ^ (a - m - 1)))).bind fun α₁ =>
-              (PMF.uniformOfFintype BotA₁₂).map fun botA₁₂ (u : T) =>
-                caseABucketAux hma (reducedDoubleTab c n m (a - m) α₀ τ botA₀)
-                  (reducedDoubleTab c n (a - m) (m + b_aux) α₁ τ botA₁₂) u.1) U_target ≤
-          9 / (16 * (n : ℝ) ^ (c + 1)) := by
-      let GoodB₀ : Set BotA₀ := {botA₀ |
-        Set.InjOn (caseAQuot hma (reducedDoubleTab c n m (a - m) α₀ τ botA₀)) (S : Set _)}
-      have hgood_b₀ (botA₀ : BotA₀) (hb₀ : botA₀ ∈ GoodB₀) :
-          dist ((PMF.uniformOfFintype (Fin (2 ^ (a - m - 1)))).bind fun α₁ =>
-              (PMF.uniformOfFintype BotA₁₂).map fun botA₁₂ (u : T) =>
-                caseABucketAux hma (reducedDoubleTab c n m (a - m) α₀ τ botA₀)
-                  (reducedDoubleTab c n (a - m) (m + b_aux) α₁ τ botA₁₂) u.1) U_target ≤
-            1 / (16 * (n : ℝ) ^ (c + 1)) := by
-        let g₀ := reducedDoubleTab c n m (a - m) α₀ τ botA₀
-        let S_Q : Finset (Fin (2 ^ (a - m))) := S.image (caseAQuot hma g₀)
-        have hSQ : #S_Q ≤ n := card_image_le.trans hS
-        let Goodα₁ : Set (Fin (2 ^ (a - m - 1))) :=
-          {α₁ | Set.InjOn (reduceBits (a - m) (quotientPermRedBits c n) α₁) (S_Q : Set _)}
-        refine (dist_bind_uniform_of_good _ U_target Goodα₁ le_rfl fun α₁ hα₁ => ?_).trans ?_
-        · have hmin : min (a - m) (quotientPermRedBits c n) ≤
-              quotientPermChars c * quotientPermCharBits n :=
-            (min_le_right _ _).trans (clog_max_le_eight_mul_charBits hn).2
-          have hdt := isKWise_doubleTab_pow_of_le (s_out := m + b_aux) hmin hτ
-          have hinj_T : Function.Injective (fun u : T =>
-              reduceBits (a - m) (quotientPermRedBits c n) α₁ (caseAQuot hma g₀ u.1)) := by
-            intro u₁ u₂ heq
-            have hq₁ : caseAQuot hma g₀ u₁.1 ∈ S_Q := mem_image_of_mem _ (hTS u₁.2)
-            have hq₂ : caseAQuot hma g₀ u₂.1 ∈ S_Q := mem_image_of_mem _ (hTS u₂.2)
-            exact Subtype.ext (hb₀ (hTS u₁.2) (hTS u₂.2) (hα₁ hq₁ hq₂ heq))
-          have hkw_comb : IsKWiseIndependentHash (quotientPermInd c n)
-              (fun botA₁₂ (u : T) =>
-                caseABucketAux hma g₀
-                  (reducedDoubleTab c n (a - m) (m + b_aux) α₁ τ botA₁₂) u.1) :=
-            isKWiseIndependentHash_caseABucketAux_of_comp hma (hdt.comp hinj_T)
-          rw [uniformOfFintype_map_of_isKWise hkw_comb hT_card, dist_self]
-        · rw [add_zero]
-          exact prob_not_injOn_reduceBits_le hn S_Q hSQ
-      refine (dist_bind_uniform_of_good _ U_target GoodB₀ (by positivity) hgood_b₀).trans ?_
-      have hbad_b₀ : ((PMF.uniformOfFintype BotA₀).toOuterMeasure GoodB₀ᶜ).toReal ≤
-          1 / (2 * (n : ℝ) ^ (c + 1)) := by
-        let toPair : {u // u ∈ S} ↪ Fin (2 ^ (a - m)) × S_L :=
-          { toFun := fun ⟨u, hu⟩ =>
-              ((bitDomainEquiv hma u).2, ⟨(bitDomainEquiv hma u).1, mem_image_of_mem _ hu⟩)
-            inj' := fun ⟨u₁, _⟩ ⟨u₂, _⟩ h => by
-              rcases Prod.mk.inj h with ⟨h2, h1⟩
-              exact Subtype.ext ((bitDomainEquiv hma).injective
-                (Prod.ext (congrArg Subtype.val h1) h2)) }
-        let S_pair : Finset (Fin (2 ^ (a - m)) × S_L) := S.attach.map toPair
-        have hSp_card : #S_pair = #S := by simp [S_pair]
-        have hkw₀ := isKWise_reducedDoubleTab_of_injOn (s_out := a - m) hn hτ hα₀
-        have hpw₀ := hkw₀.isPairwiseIndependentHash h2κ
-        have hd := dens_not_injOn_feistelHead_le hpw₀ S_pair
-        rw [hSp_card, dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast,
-          NNRat.cast_natCast] at hd
-        rw [toOuterMeasure_uniformOfFintype_toReal]
-        have hsub : #(univ.filter (· ∈ GoodB₀ᶜ)) ≤
-            #{b : BotA₀ | ¬ Set.InjOn
-              (feistelHead (fun x : S_L => reducedDoubleTab c n m (a - m) α₀ τ b x.1))
-              (S_pair : Set _)} := by
-          refine card_le_card fun b hb => ?_
-          rw [mem_filter] at hb ⊢
-          refine ⟨mem_univ b, fun hInj => hb.2 fun u₁ hu₁ u₂ hu₂ heq => ?_⟩
-          have hp₁ : toPair ⟨u₁, hu₁⟩ ∈ S_pair := mem_map.mpr ⟨⟨u₁, hu₁⟩, mem_attach _ _, rfl⟩
-          have hp₂ : toPair ⟨u₂, hu₂⟩ ∈ S_pair := mem_map.mpr ⟨⟨u₂, hu₂⟩, mem_attach _ _, rfl⟩
-          exact congrArg Subtype.val (toPair.injective (hInj hp₁ hp₂ heq))
-        exact ((div_le_div_of_nonneg_right (Nat.cast_le.mpr hsub) (Nat.cast_nonneg _)).trans
-          hd).trans hquot_div
-      have hr₁ : 1 / (2 * (n : ℝ) ^ (c + 1)) + 1 / (16 * (n : ℝ) ^ (c + 1)) =
-          9 / (16 * (n : ℝ) ^ (c + 1)) := by ring
-      linarith
-    refine (dist_bind_uniform_of_good _ U_target Goodα₀ (by positivity) hgood_α₀).trans ?_
-    have hbad_α₀ := prob_not_injOn_reduceBits_le hn S_L hSL
-    have hr₂ : 1 / (16 * (n : ℝ) ^ (c + 1)) + 9 / (16 * (n : ℝ) ^ (c + 1)) =
-        5 / (8 * (n : ℝ) ^ (c + 1)) := by ring
-    linarith
-  refine (dist_bind_uniform_of_good _ U_target GoodTop (by positivity) hgood_τ).trans ?_
-  have hbad_τ := prob_not_isKUnique_quotientPerm_le hn
+  have hgroup : ((PMF.uniformOfFintype Top).bind fun τ =>
+      (PMF.uniformOfFintype (Fin (2 ^ (m - 1)))).bind fun α₀ =>
+        (PMF.uniformOfFintype BotA₀).bind fun botA₀ =>
+          (PMF.uniformOfFintype (Fin (2 ^ (a - m - 1)))).bind fun α₁ =>
+            (PMF.uniformOfFintype BotA₁₂).map fun botA₁₂ (u : T) =>
+              caseABucketAux hma (reducedDoubleTab c n m (a - m) α₀ τ botA₀)
+                (reducedDoubleTab c n (a - m) (m + b_aux) α₁ τ botA₁₂) u.1) =
+      (PMF.uniformOfFintype (Top × Fin (2 ^ (m - 1)))).bind fun p =>
+        (PMF.uniformOfFintype BotA₀).bind fun botA₀ =>
+          (PMF.uniformOfFintype (Fin (2 ^ (a - m - 1)) × BotA₁₂)).map fun q (u : T) =>
+            caseABucketAux hma (reducedDoubleTab c n m (a - m) p.2 p.1 botA₀)
+              (reducedDoubleTab c n (a - m) (m + b_aux) q.1 p.1 q.2) u.1 := by
+    rw [← uniformOfFintype_prod Top, PMF.bind_bind]
+    refine congrArg ((PMF.uniformOfFintype Top).bind ·) (funext fun τ => ?_)
+    rw [PMF.bind_map]
+    refine congrArg ((PMF.uniformOfFintype (Fin (2 ^ (m - 1)))).bind ·) (funext fun α₀ => ?_)
+    refine congrArg ((PMF.uniformOfFintype BotA₀).bind ·) (funext fun botA₀ => ?_)
+    rw [← uniformOfFintype_prod (Fin (2 ^ (a - m - 1))), PMF.map_bind]
+    simp only [PMF.map_comp, Function.comp_def]; rfl
+  rw [hgroup]
+  let GoodTop : Set (Top × Fin (2 ^ (m - 1))) :=
+    {p | IsKUnique (quotientPermInd c n) (simpleTabTuple p.1) ∧
+      Set.InjOn (reduceBits m (quotientPermRedBits c n) p.2) (S_L : Set _)}
+  have hbad_top : ((PMF.uniformOfFintype (Top × Fin (2 ^ (m - 1)))).toOuterMeasure
+      GoodTopᶜ).toReal ≤ 1 / (8 * (n : ℝ) ^ (c + 2)) + 1 / (16 * (n : ℝ) ^ (c + 1)) := by
+    let E₁ : Set Top := {τ | IsKUnique (quotientPermInd c n) (simpleTabTuple τ)}ᶜ
+    let E₂ : Set (Fin (2 ^ (m - 1))) :=
+      {α₀ | Set.InjOn (reduceBits m (quotientPermRedBits c n) α₀) (S_L : Set _)}ᶜ
+    have hsub : univ.filter (· ∈ GoodTopᶜ) ⊆
+        (univ.filter (· ∈ E₁)) ×ˢ univ ∪ univ ×ˢ (univ.filter (· ∈ E₂)) := by
+      intro ⟨τ, α₀⟩ hp
+      rw [mem_filter] at hp
+      by_cases hτ : IsKUnique (quotientPermInd c n) (simpleTabTuple τ)
+      · refine mem_union_right _ (mem_product.mpr ⟨mem_univ τ, mem_filter.mpr ⟨mem_univ α₀, ?_⟩⟩)
+        exact fun h => hp.2 ⟨hτ, h⟩
+      · exact mem_union_left _ (mem_product.mpr ⟨mem_filter.mpr ⟨mem_univ τ, hτ⟩, mem_univ α₀⟩)
+    have hcard : (#(univ.filter (· ∈ GoodTopᶜ)) : ℝ) ≤
+        (#(univ.filter (· ∈ E₁)) : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ) +
+          (Fintype.card Top : ℝ) * (#(univ.filter (· ∈ E₂)) : ℝ) := by
+      have hn1 : #(univ.filter (· ∈ GoodTopᶜ)) ≤
+          #(univ.filter (· ∈ E₁)) * Fintype.card (Fin (2 ^ (m - 1))) +
+            Fintype.card Top * #(univ.filter (· ∈ E₂)) := by
+        calc #(univ.filter (· ∈ GoodTopᶜ))
+            ≤ #((univ.filter (· ∈ E₁)) ×ˢ univ ∪ univ ×ˢ (univ.filter (· ∈ E₂))) :=
+              card_le_card hsub
+          _ ≤ #((univ.filter (· ∈ E₁)) ×ˢ (univ : Finset (Fin (2 ^ (m - 1))))) +
+                #((univ : Finset Top) ×ˢ (univ.filter (· ∈ E₂))) := card_union_le _ _
+          _ = _ := by simp
+      exact_mod_cast hn1
+    have hp₁ := prob_not_isKUnique_quotientPerm_le hn
+    have hp₂ := prob_not_injOn_reduceBits_le hn S_L hSL
+    rw [toOuterMeasure_uniformOfFintype_toReal] at hp₁ hp₂ ⊢
+    rw [Fintype.card_prod, Nat.cast_mul]
+    have hpos1 : (0 : ℝ) < Fintype.card Top := Nat.cast_pos.mpr Fintype.card_pos
+    have hpos2 : (0 : ℝ) < Fintype.card (Fin (2 ^ (m - 1))) := Nat.cast_pos.mpr Fintype.card_pos
+    calc (#(univ.filter (· ∈ GoodTopᶜ)) : ℝ) /
+            ((Fintype.card Top : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ))
+        ≤ ((#(univ.filter (· ∈ E₁)) : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ) +
+            (Fintype.card Top : ℝ) * (#(univ.filter (· ∈ E₂)) : ℝ)) /
+            ((Fintype.card Top : ℝ) * (Fintype.card (Fin (2 ^ (m - 1))) : ℝ)) :=
+          div_le_div_of_nonneg_right hcard (by positivity)
+      _ = (#(univ.filter (· ∈ E₁)) : ℝ) / (Fintype.card Top : ℝ) +
+            (#(univ.filter (· ∈ E₂)) : ℝ) / (Fintype.card (Fin (2 ^ (m - 1))) : ℝ) := by field_simp
+      _ ≤ 1 / (8 * (n : ℝ) ^ (c + 2)) + 1 / (16 * (n : ℝ) ^ (c + 1)) := add_le_add hp₁ hp₂
+  have habs := dist_caseA_restrict_le hma
+    (fun (p : Top × Fin (2 ^ (m - 1))) (botA₀ : BotA₀) =>
+      reducedDoubleTab c n m (a - m) p.2 p.1 botA₀)
+    (fun (p : Top × Fin (2 ^ (m - 1))) (q : Fin (2 ^ (a - m - 1)) × BotA₁₂) =>
+      reducedDoubleTab c n (a - m) (m + b_aux) q.1 p.1 q.2)
+    S T GoodTop (δ₁ := 1 / (16 * (n : ℝ) ^ (c + 1))) (by positivity) hbad_top
+    (fun p hp => (isKWise_reducedDoubleTab_of_injOn hn hp.1 hp.2).isPairwiseIndependentHash h2κ)
+    (fun p hp botA₀ hb₀ => by
+      let g₀ := reducedDoubleTab c n m (a - m) p.2 p.1 botA₀
+      let T_Q : Finset (Fin (2 ^ (a - m))) := T.image (caseAQuot hma g₀)
+      have hTQ : #T_Q ≤ n := card_image_le.trans ((card_le_card hTS).trans hS)
+      have hprod_map : ((PMF.uniformOfFintype (Fin (2 ^ (a - m - 1)) × BotA₁₂)).map fun q (u : T) =>
+          caseABucketAux hma g₀ (reducedDoubleTab c n (a - m) (m + b_aux) q.1 p.1 q.2) u.1) =
+          (PMF.uniformOfFintype (Fin (2 ^ (a - m - 1)))).bind fun α₁ =>
+            (PMF.uniformOfFintype BotA₁₂).map fun botA₁₂ (u : T) =>
+              caseABucketAux hma g₀
+                (reducedDoubleTab c n (a - m) (m + b_aux) α₁ p.1 botA₁₂) u.1 := by
+        rw [← uniformOfFintype_prod (Fin (2 ^ (a - m - 1))), PMF.map_bind]
+        simp only [PMF.map_comp, Function.comp_def]; rfl
+      rw [hprod_map]
+      let Goodα₁ : Set (Fin (2 ^ (a - m - 1))) :=
+        {α₁ | Set.InjOn (reduceBits (a - m) (quotientPermRedBits c n) α₁) (T_Q : Set _)}
+      refine (dist_bind_uniform_of_good _ U_target Goodα₁ le_rfl fun α₁ hα₁ => ?_).trans ?_
+      · have hinjT : Set.InjOn (caseAQuot hma g₀) (T : Set (Fin (2 ^ a))) :=
+          hb₀.mono (Finset.coe_subset.mpr hTS)
+        have hkw := isKWiseIndependentHash_caseABucketAux_of_injOn (b_aux := b_aux) hma hinjT
+          (isKWise_reducedDoubleTab_of_injOn (s_out := m + b_aux) hn hp.1 hα₁)
+        rw [uniformOfFintype_map_of_isKWise hkw hT_card, dist_self]
+      · rw [add_zero]
+        exact prob_not_injOn_reduceBits_le hn T_Q hTQ)
   have hτ_le : 1 / (8 * (n : ℝ) ^ (c + 2)) ≤ 1 / (32 * (n : ℝ) ^ (c + 1)) := by
     refine one_div_le_one_div_of_le (by positivity) ?_
     have h4r : (4 : ℝ) ≤ (n : ℝ) := by exact_mod_cast h4n
     calc 32 * (n : ℝ) ^ (c + 1) = 8 * ((n : ℝ) ^ (c + 1) * 4) := by ring
       _ ≤ 8 * ((n : ℝ) ^ (c + 1) * (n : ℝ)) := by gcongr
       _ = 8 * (n : ℝ) ^ (c + 2) := by ring
-  have hr₃ : 1 / (32 * (n : ℝ) ^ (c + 1)) + 5 / (8 * (n : ℝ) ^ (c + 1)) =
+  have hr₃ : 1 / (32 * (n : ℝ) ^ (c + 1)) + 1 / (16 * (n : ℝ) ^ (c + 1)) +
+      1 / (2 * (n : ℝ) ^ (c + 1)) + 1 / (16 * (n : ℝ) ^ (c + 1)) =
       (21 / 32 : ℝ) * (1 / (n : ℝ) ^ (c + 1)) := by ring
   have hpos_pow : 0 ≤ 1 / (n : ℝ) ^ (c + 1) := by positivity
   linarith

@@ -228,38 +228,58 @@ theorem fullQuotientPerm_perKey_small_and_huge_nonvacuous :
   simpa only [zero_add, pow_one] using hbound
 
 /-- Non-vacuity of `prob_concreteCaseB_shardLoad_outside_le` at `n = quotientPermThreshold 0`,
-`a = m = bucketIndexBits n`, `k_mom = 1`, `S = univ`. -/
+`a = 6, m = 2` (`2` shards, `64` keys, mean load `32`), `k_mom = 3`, and `a_dev = 24`, proving a
+nontrivial failure bound `≤ 65 / 128 < 1`. -/
 theorem shardLoad_concentration_nonvacuous :
     let n := quotientPermThreshold 0
-    let m := bucketIndexBits n
-    ((PMF.uniformOfFintype (QuotientPermSeed m m 1 0 n)).toOuterMeasure
-      {θ | ∃ σ : Fin (2 ^ shardBits m),
-        (1 : ℝ) ≤ |(#((univ : Finset (Fin (2 ^ m))).filter
-            fun u => bucketShard m (concreteBucket le_rfl θ u) = σ) : ℝ) -
-          (2 ^ m : ℝ) / (2 ^ shardBits m : ℝ)|}).toReal ≤
-      1 / (8 * (n : ℝ) ^ 2) +
-        (2 ^ (shardBits m + 1) : ℝ) * (3 * ((2 ^ m : ℝ) / (2 ^ shardBits m : ℝ))) := by
-  intro n m
+    let p_bad := ((PMF.uniformOfFintype (QuotientPermSeed 6 2 1 0 n)).toOuterMeasure
+      {θ | ∃ σ : Fin 2,
+        (24 : ℝ) ≤ |(#((univ : Finset (Fin 64)).filter
+            fun u => bucketShard 2 (concreteBucket (by decide : 2 ≤ 6) θ u) = σ) : ℝ) -
+          32|}).toReal
+    let rhs := 1 / (8 * (n : ℝ) ^ 2) + 4 * ((3 : ℝ) * 3 * 32 / 24 ^ 2) ^ 3
+    p_bad ≤ rhs ∧ rhs ≤ 65 / 128 := by
+  intro n p_bad rhs
   have h4n : 4 ≤ n := four_le_quotientPermThreshold 0
-  obtain ⟨hb_log, h2κ, _, _⟩ := quotientPermInd_le_self_of_threshold (c := 0) (n := n) le_rfl
   have hb_pos : 1 ≤ quotientPermCharBits n := by rw [quotientPermCharBits_eq]; omega
-  have hm_hi : m ≤ 8 * quotientPermCharBits n := by
-    dsimp only [m, bucketIndexBits]; rw [quotientPermCharBits_eq]; omega
-  have hcaseB : m < m + caseAGap 0 n := by
-    have : 1 ≤ Nat.clog 2 (max n 2) := Nat.clog_pos (by decide) (by omega)
-    unfold caseAGap; omega
-  have hmu : (2 : ℝ) ≤ 3 * ((2 ^ m : ℝ) / (2 ^ shardBits m : ℝ)) := by
-    have hle : shardBits m + 1 ≤ m := by dsimp only [m, bucketIndexBits, shardBits]; omega
-    have hpow : (2 : ℝ) ≤ (2 ^ m : ℝ) / (2 ^ shardBits m : ℝ) := by
-      rw [le_div_iff₀ (by positivity)]
-      have : 2 * 2 ^ shardBits m ≤ 2 ^ m := by
-        calc 2 * 2 ^ shardBits m = 2 ^ (shardBits m + 1) := by rw [pow_succ']
-          _ ≤ 2 ^ m := Nat.pow_le_pow_right (by decide) hle
-      exact_mod_cast this
-    linarith
-  have h := prob_concreteCaseB_shardLoad_outside_le (b_aux := 1) (c := 0) (k_mom := 1)
-    (a := m) (m := m) (n := n) le_rfl hcaseB le_rfl hm_hi le_rfl h2κ univ (a_dev := 1)
-    (by simpa using hmu) zero_lt_one
-  simpa using h
+  have hm_hi : 2 ≤ 8 * quotientPermCharBits n := by omega
+  have hclog2 : 2 ≤ Nat.clog 2 (max n 2) := by
+    calc 2 = Nat.clog 2 4 := by decide
+      _ ≤ Nat.clog 2 (max n 2) := Nat.clog_mono_right 2 (by omega)
+  have hcaseB : 6 < 2 + caseAGap 0 n := by unfold caseAGap; omega
+  have hk_ind : 2 * 3 ≤ quotientPermInd 0 n := by rw [quotientPermInd_eq]; omega
+  have h := prob_concreteCaseB_shardLoad_outside_le (b_aux := 1) (c := 0) (k_mom := 3)
+    (a := 6) (m := 2) (n := n) (by decide) hcaseB le_rfl hm_hi (by decide) hk_ind
+    (univ : Finset (Fin (2 ^ 6))) (a_dev := 24)
+    (by simp [shardBits]; norm_num) (by norm_num)
+  have hp_le : p_bad ≤ rhs := by
+    have hset :
+        {θ : QuotientPermSeed 6 2 1 0 n | ∃ σ : Fin 2,
+          (24 : ℝ) ≤ |(#((univ : Finset (Fin 64)).filter
+              fun u => bucketShard 2 (concreteBucket (by decide : 2 ≤ 6) θ u) = σ) : ℝ) - 32|} =
+        {θ | ∃ σ : Fin (2 ^ shardBits 2),
+          (24 : ℝ) ≤ |(#((univ : Finset (Fin (2 ^ 6))).filter
+              fun u => bucketShard 2 (concreteBucket (by decide : 2 ≤ 6) θ u) = σ) : ℝ) -
+            (#(univ : Finset (Fin (2 ^ 6))) : ℝ) / (2 ^ shardBits 2 : ℝ)|} := by
+      ext θ
+      exact exists_congr fun σ => by norm_num [shardBits]
+    have hrhs :
+        1 / (8 * (n : ℝ) ^ 2) +
+          (2 : ℝ) ^ 2 *
+            ((3 : ℝ) * 3 * ((#(univ : Finset (Fin (2 ^ 6))) : ℝ) / (2 ^ shardBits 2 : ℝ)) /
+              24 ^ 2) ^ 3 = rhs := by
+      norm_num [rhs, shardBits]
+    dsimp only [p_bad]
+    rw [hset, ← hrhs]
+    exact h
+  refine ⟨hp_le, ?_⟩
+  have hn_sq : (128 : ℝ) ≤ 8 * (n : ℝ) ^ 2 := by
+    have h4r : (4 : ℝ) ≤ (n : ℝ) := by exact_mod_cast h4n
+    nlinarith
+  have hinv : 1 / (8 * (n : ℝ) ^ 2) ≤ 1 / 128 :=
+    one_div_le_one_div_of_le (by norm_num) hn_sq
+  have htail : (4 : ℝ) * ((3 : ℝ) * 3 * 32 / 24 ^ 2) ^ 3 = 1 / 2 := by norm_num
+  dsimp only [rhs]
+  linarith
 
 end CslibFrontierTests.DataStructure.KickTreeQuotientPerm

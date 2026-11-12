@@ -25,12 +25,14 @@ import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
-# Universal key-quotienting bijection across all `0 ≤ n ≤ U < 2 ^ w`
+# Universal key-quotienting bijection across arbitrary universes `U ≥ n`
 
 This module constructs an explicit, computable, zero-collision key-quotienting bijection
-`quotientPermEquiv : Fin (2 ^ a) ≃ Fin (2 ^ m) × Fin (2 ^ (a - m))` (for all `m ≤ a`) with
-high-probability `κ`-wise (`κ = Θ(c log n)`) distributional transfer across **all** `0 ≤ n ≤ U`,
-without assuming `U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)`.
+`quotientPermEquiv : Fin (2 ^ a) ≃ Fin (2 ^ m) × Fin (2 ^ (a - m))` (for all `m ≤ a`) and a
+universal full-quotient bit-width bound `mul_fullQuotBits_le_clog_choose` (for all `U, n`),
+together with high-probability `κ`-wise (`κ = Θ(c log n)`) distributional transfer across every
+universe `U ≥ n` once `n ≥ quotientPermThreshold c`, without assuming `U ≥ n ^ (1 + Ω(1))` or
+`log U ≤ poly(log n)`.
 
 ## Source attribution and formalization adaptations
 
@@ -55,8 +57,9 @@ without assuming `U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)`.
     1-round Feistel sharding + `nrRounds c` unbalanced 3-round Feistel Naor–Reingold blocks).
   - `QuotientPermSeed` instantiates round functions via `multiplyShiftReduced` / `oddMulModWord`
     (`CslibFrontier.Probability.KWiseIndependent.ReducedLimbs`) and a shared `DoubleTabTopSeed`
-    (`CslibFrontier.Probability.KWiseIndependent.DoubleTabulation` [Thorup2013]), with explicit
-    threshold `quotientPermThreshold c ≤ n` (`4 ≤ quotientPermThreshold c`). Word-RAM circuit
+    (`CslibFrontier.Probability.KWiseIndependent.DoubleTabulation` [Thorup2013]), requiring an
+    explicit large asymptotic capacity threshold `quotientPermThreshold c ≤ n` (e.g.
+    `2 ^ 50239744` at `c = 0`, satisfying `4 ≤ quotientPermThreshold c`). Word-RAM circuit
     compilation belongs to the downstream Word-RAM hash layer.
 
 ## Main definitions
@@ -96,7 +99,8 @@ without assuming `U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)`.
   `Cslib.DataStructure.Dictionary.KickTree.prob_concreteQuotientPerm_forall_mem_perKey_le`,
   `Cslib.DataStructure.Dictionary.KickTree.prob_fullQuotientPerm_forall_mem_le`,
   `Cslib.DataStructure.Dictionary.KickTree.prob_fullQuotientPerm_forall_mem_perKey_le`: unified
-  all-regimes `κ`-tuple multiplicative tail transfer across all `n ≤ U` (`≤ 1 / n ^ (c + 1)`).
+  `κ`-tuple multiplicative tail transfer across all `U ≥ n` once `n ≥ quotientPermThreshold c`
+  (`≤ 1 / n ^ (c + 1)`).
 
 ## References
 
@@ -257,7 +261,7 @@ structure QuotientPermSeed (a m b_aux c n : ℕ) where
   /-- Case B Arbitman–Naor–Segev 1-round Feistel shard bottom table. -/
   botShard : DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (shardBits m)
   /-- Case B `nrRounds c` independent Naor–Reingold block bottom tables. -/
-  botNR : Fin (nrRounds c) → QuotientPermNRBotSeed c a m n
+  botNR : QuotientPermNRSeed c a m n
   /-- Case B auxiliary hash bottom table producing `b_aux`-bit outputs. -/
   botAuxB : DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) b_aux
 
@@ -271,7 +275,7 @@ def quotientPermSeedEquivProd (a m b_aux c n : ℕ) :
         Fin (2 ^ (a - m - 1)) ×
         DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (m + b_aux)) ×
       (DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (shardBits m) ×
-        (Fin (nrRounds c) → QuotientPermNRBotSeed c a m n) ×
+        QuotientPermNRSeed c a m n ×
         DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) b_aux) where
   toFun θ := (θ.top, (θ.α₀, θ.botA₀, θ.α₁, θ.botA₁₂), (θ.botShard, θ.botNR, θ.botAuxB))
   invFun
@@ -285,7 +289,7 @@ instance {a m b_aux c n : ℕ} : Fintype (QuotientPermSeed a m b_aux c n) :=
 
 instance {a m b_aux c n : ℕ} : Nonempty (QuotientPermSeed a m b_aux c n) :=
   ⟨⟨fun _ _ _ => 0, 0, fun _ _ => 0, 0, fun _ _ => 0, fun _ _ => 0,
-    fun _ => ⟨fun _ _ => 0, fun _ _ => 0, fun _ _ => 0⟩, fun _ _ => 0⟩⟩
+    ⟨fun _ => ⟨fun _ _ => 0, fun _ _ => 0, fun _ _ => 0⟩⟩, fun _ _ => 0⟩⟩
 
 /-- Concrete `QuotientPermRounds` instantiated from `θ : QuotientPermSeed a m b_aux c n`. -/
 @[expose] def concreteRounds {a m b_aux c n : ℕ} (θ : QuotientPermSeed a m b_aux c n) :
@@ -300,11 +304,14 @@ instance {a m b_aux c n : ℕ} : Nonempty (QuotientPermSeed a m b_aux c n) :=
         (2 ^ suffixBits a m) (shardBits m) θ.top θ.botShard
       nrBlocks := fun r =>
         { f₀ := doubleTabHash (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
-            (2 ^ nrHalfLow (suffixBits a m)) (nrHalfHigh (suffixBits a m)) θ.top (θ.botNR r).t₀
+            (2 ^ nrHalfLow (suffixBits a m)) (nrHalfHigh (suffixBits a m)) θ.top
+            (θ.botNR.blocks r).s₀
           f₁ := doubleTabHash (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
-            (2 ^ nrHalfHigh (suffixBits a m)) (nrHalfLow (suffixBits a m)) θ.top (θ.botNR r).t₁
+            (2 ^ nrHalfHigh (suffixBits a m)) (nrHalfLow (suffixBits a m)) θ.top
+            (θ.botNR.blocks r).s₁
           f₂ := doubleTabHash (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
-            (2 ^ nrHalfLow (suffixBits a m)) (nrHalfHigh (suffixBits a m)) θ.top (θ.botNR r).t₂ } }
+            (2 ^ nrHalfLow (suffixBits a m)) (nrHalfHigh (suffixBits a m)) θ.top
+            (θ.botNR.blocks r).s₂ } }
 
 /-- Concrete bucket index `(quotientPermEquiv hma (concreteRounds θ) u).1 : Fin (2 ^ m)`. -/
 @[expose] def concreteBucket {a m b_aux c n : ℕ} (hma : m ≤ a)
@@ -345,12 +352,12 @@ theorem dist_concreteCaseA_restrict_le {a m b_aux c n : ℕ}
   let BotA₀ := DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (a - m)
   let BotA₁₂ := DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (m + b_aux)
   let CaseB := DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (shardBits m) ×
-    (Fin (nrRounds c) → QuotientPermNRBotSeed c a m n) ×
+    QuotientPermNRSeed c a m n ×
     DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) b_aux
   have : Nonempty Top := ⟨fun _ _ _ => 0⟩
   have : Nonempty BotA₀ := ⟨fun _ _ => 0⟩
   have : Nonempty BotA₁₂ := ⟨fun _ _ => 0⟩
-  have : Nonempty CaseB := ⟨(fun _ _ => 0, fun _ => Classical.arbitrary _, fun _ _ => 0)⟩
+  have : Nonempty CaseB := ⟨(fun _ _ => 0, Classical.arbitrary _, fun _ _ => 0)⟩
   let eA : QuotientPermSeed a m b_aux c n ≃
       (Top × (Fin (2 ^ (m - 1)) × BotA₀ × Fin (2 ^ (a - m - 1)) × BotA₁₂)) × CaseB :=
     { toFun := fun θ =>
@@ -466,16 +473,11 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
   let eB : QuotientPermSeed a m b_aux c n ≃
       (Top × (BotSh × (NRComposedSeed (nrRounds c) NR₀ NR₁ NR₂ × BotAux))) × CaseA :=
     { toFun := fun θ =>
-        ((θ.top, (θ.botShard, (⟨fun r => quotientPermNRBotEquiv c a m n (θ.botNR r)⟩, θ.botAuxB))),
-          (θ.α₀, θ.botA₀, θ.α₁, θ.botA₁₂))
+        ((θ.top, (θ.botShard, (θ.botNR, θ.botAuxB))), (θ.α₀, θ.botA₀, θ.α₁, θ.botA₁₂))
       invFun := fun p =>
-        ⟨p.1.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2, p.1.2.1,
-          fun r => (quotientPermNRBotEquiv c a m n).symm (p.1.2.2.1.blocks r), p.1.2.2.2⟩
+        ⟨p.1.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2, p.1.2.1, p.1.2.2.1, p.1.2.2.2⟩
       left_inv := fun θ => by cases θ; rfl
-      right_inv := fun p => by
-        rcases p with ⟨⟨_, _, ⟨blks⟩, _⟩, ⟨_, _, _, _⟩⟩
-        simp only [quotientPermNRBotEquiv, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]
-        congr 4 }
+      right_inv := fun p => by rcases p with ⟨⟨_, _, _, _⟩, ⟨_, _, _, _⟩⟩; rfl }
   let h_sh (τ : Top) (b : BotSh) :=
     doubleTabHash (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
       (2 ^ suffixBits a m) (shardBits m) τ b
@@ -521,8 +523,7 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
             (nrComposedEquiv (suffixBits a m) (nrRounds c) (concreteRounds θ).caseB.nrBlocks) yEmb,
             fun u : T => concreteAux hma θ u.1))) = (G ∘ Prod.fst ∘ eB) := by
       ext θ : 1
-      simp [G, eB, concreteRounds, concreteAux, hnotA, quotientPermNRBotEquiv,
-        h_sh, h_nr₀, h_nr₁, h_nr₂, h_aux]
+      simp [G, eB, concreteRounds, concreteAux, hnotA, h_sh, h_nr₀, h_nr₁, h_nr₂, h_aux]
     rw [hfun, ← PMF.map_comp, ← PMF.map_comp, uniformOfFintype_map_equiv eB,
       uniformOfFintype_prod_map_fst]
     rw [← uniformOfFintype_prod Top, PMF.map_bind]
@@ -588,12 +589,12 @@ theorem prob_concreteCaseB_shardLoad_outside_le {a m b_aux c n k_mom : ℕ}
     DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (a - m) ×
     Fin (2 ^ (a - m - 1)) ×
     DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (m + b_aux)) ×
-    ((Fin (nrRounds c) → QuotientPermNRBotSeed c a m n) ×
+    (QuotientPermNRSeed c a m n ×
       DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) b_aux)
   have : Nonempty Top := ⟨fun _ _ _ => 0⟩
   have : Nonempty BotSh := ⟨fun _ _ => 0⟩
   have : Nonempty Rest := ⟨((0, fun _ _ => 0, 0, fun _ _ => 0),
-    (fun _ => Classical.arbitrary _, fun _ _ => 0))⟩
+    (Classical.arbitrary _, fun _ _ => 0))⟩
   let eSh : QuotientPermSeed a m b_aux c n ≃ (Top × BotSh) × Rest :=
     { toFun := fun θ => ((θ.top, θ.botShard),
         ((θ.α₀, θ.botA₀, θ.α₁, θ.botA₁₂), (θ.botNR, θ.botAuxB)))
@@ -863,8 +864,9 @@ private theorem bucketIndexBits_le_eight_mul_charBits (n : ℕ) :
     bucketIndexBits n ≤ 8 * quotientPermCharBits n := by
   rw [quotientPermCharBits_eq]; unfold bucketIndexBits; omega
 
-/-- **Universal `Fin U` multiplicative tail bound across all `n ≤ U`** (shared intra-shard `B, A`,
-factor `1`, zero `U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)` assumption). -/
+/-- **Universal `Fin U` multiplicative tail bound across every `U ≥ n` above
+`quotientPermThreshold c`** (shared intra-shard `B, A`, factor `1`, without assuming
+`U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)`). -/
 theorem prob_fullQuotientPerm_forall_mem_le {U b_aux c n : ℕ}
     (hnU : n ≤ U) (hn : quotientPermThreshold c ≤ n)
     {S T : Finset (Fin U)} (hS : #S ≤ n) (hTS : T ⊆ S) (hT : #T ≤ quotientPermInd c n)
@@ -892,8 +894,9 @@ theorem prob_fullQuotientPerm_forall_mem_le {U b_aux c n : ℕ}
   exact prob_concreteQuotientPerm_forall_mem_le (bucketIndexBits_le_keyBits hnU) hn le_rfl
     (bucketIndexBits_le_eight_mul_charBits n) hS' hTS' hT' σ B hB A
 
-/-- **Universal per-key `Fin U` multiplicative tail bound across all `n ≤ U`** (factor `2`, zero
-`U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)` assumption). -/
+/-- **Universal per-key `Fin U` multiplicative tail bound across every `U ≥ n` above
+`quotientPermThreshold c`** (factor `2`, without assuming `U ≥ n ^ (1 + Ω(1))` or
+`log U ≤ poly(log n)`). -/
 theorem prob_fullQuotientPerm_forall_mem_perKey_le {U b_aux c n : ℕ}
     (hnU : n ≤ U) (hn : quotientPermThreshold c ≤ n)
     {S T : Finset (Fin U)} (hS : #S ≤ n) (hTS : T ⊆ S) (hT : #T ≤ quotientPermInd c n)

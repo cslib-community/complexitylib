@@ -14,6 +14,7 @@ public import CslibFrontier.Probability.StatisticalDistance.ClosedForm
 public import CslibFrontier.Probability.StatisticalDistance.Event
 public import Mathlib.Data.Fintype.CardEmbedding
 public import Mathlib.Data.Matrix.Basic
+import CslibFrontier.Foundations.Data.Nat.Choose
 import CslibFrontier.Probability.KWiseIndependent.Coupling
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
@@ -65,8 +66,9 @@ This module develops two general finite-domain permutation building blocks used 
   `Cslib.DataStructure.Dictionary.KickTree.dist_permTupleKernel_composePermDist_le`:
   `(P₁ - U) * (P₂ - U) = P₁ * P₂ - U` and `(1 / 2) * (2 * δ) ^ t` statistical-distance contraction.
 * `Cslib.DataStructure.Dictionary.KickTree.prob_uniformOfFintype_embedding_forall_mem_le`,
-  `Cslib.DataStructure.Dictionary.KickTree.prob_perm_forall_mem_le_of_dist`: without-replacement
-  multiplicative upper bound and statistical-distance transfer.
+  `Cslib.DataStructure.Dictionary.KickTree.prob_uniformOfFintype_embedding_forall_mem_perKey_le`:
+  without-replacement multiplicative upper bounds (shared target set factor `1`, per-key target
+  sets factor `2`).
 
 ## References
 
@@ -330,28 +332,6 @@ theorem dist_permTupleKernel_composePermDist_le {T α : Type*}
 
 /-! ## Section 3: Negative correlation of without-replacement uniform injections -/
 
-/-- Falling-factorial comparison `Q.descFactorial r * U ^ r ≤ Q ^ r * U.descFactorial r` when
-`Q ≤ U` (sampling without replacement vs. sampling with replacement). -/
-theorem descFactorial_mul_pow_le {Q U : ℕ} (hQU : Q ≤ U) (r : ℕ) :
-    Q.descFactorial r * U ^ r ≤ Q ^ r * U.descFactorial r := by
-  induction r with
-  | zero => simp
-  | succ r ih =>
-    have hstep : (Q - r) * U ≤ Q * (U - r) := by
-      rcases le_or_gt Q r with hle | hlt
-      · rw [Nat.sub_eq_zero_of_le hle, zero_mul]
-        exact Nat.zero_le _
-      · rw [Nat.sub_mul, Nat.mul_sub, Nat.mul_comm r U]
-        exact Nat.sub_le_sub_left (Nat.mul_le_mul_right r hQU) (Q * U)
-    calc Q.descFactorial (r + 1) * U ^ (r + 1)
-        = (Q.descFactorial r * U ^ r) * ((Q - r) * U) := by
-          rw [Nat.descFactorial_succ, pow_succ]
-          ring
-      _ ≤ (Q ^ r * U.descFactorial r) * (Q * (U - r)) := Nat.mul_le_mul ih hstep
-      _ = Q ^ (r + 1) * U.descFactorial (r + 1) := by
-          rw [Nat.descFactorial_succ, pow_succ]
-          ring
-
 /-- **Without-replacement multiplicative upper bound**
 ([BenderFarachColtonKuszmaulKuszmaulLiu2022], `arXiv:2111.00602v2`, Section 5.3, PDF p. 36 /
 printed p. 35): for a uniform random injection `e ← PMF.uniformOfFintype (T ↪ α)`
@@ -388,32 +368,8 @@ theorem prob_uniformOfFintype_embedding_forall_mem_le {T α : Type*}
       #(univ.filter (· ∈ E)) * Fintype.card α ^ Fintype.card T ≤
         (#Q) ^ Fintype.card T * (Fintype.card α).descFactorial (Fintype.card T) :=
     (Nat.mul_le_mul_right _ hcard_good).trans
-      (descFactorial_mul_pow_le (card_le_univ Q) (Fintype.card T))
+      (Nat.descFactorial_mul_pow_le (card_le_univ Q) (Fintype.card T))
   exact_mod_cast hnat
-
-/-- Transferring the without-replacement multiplicative upper bound across `dist ≤ δ`: if a random
-permutation `ρ` is `δ`-close to uniform on `x : T ↪ α`, then `Pr[∀ i, π (x i) ∈ Q] ≤
-(#Q / |α|) ^ |T| + δ`. -/
-theorem prob_perm_forall_mem_le_of_dist {T α : Type*}
-    [Fintype T] [Fintype α] [Nonempty α]
-    (ρ : PMF (Equiv.Perm α)) (x : T ↪ α) (Q : Finset α) {δ : ℝ}
-    (hdist :
-      haveI : Nonempty (T ↪ α) := ⟨x⟩
-      dist (permTupleKernel ρ x) (PMF.uniformOfFintype (T ↪ α)) ≤ δ) :
-    (ρ.toOuterMeasure {π : Equiv.Perm α | ∀ i : T, π (x i) ∈ Q}).toReal ≤
-      ((#Q : ℝ) / (Fintype.card α : ℝ)) ^ Fintype.card T + δ := by
-  have : Nonempty (T ↪ α) := ⟨x⟩
-  have hcard : Fintype.card T ≤ Fintype.card α := Fintype.card_le_of_injective x x.injective
-  let E : Set (T ↪ α) := {e : T ↪ α | ∀ i : T, e i ∈ Q}
-  have hmap : ρ.toOuterMeasure {π : Equiv.Perm α | ∀ i : T, π (x i) ∈ Q} =
-      (permTupleKernel ρ x).toOuterMeasure E := by
-    rw [permTupleKernel, PMF.toOuterMeasure_map_apply]
-    rfl
-  rw [hmap]
-  have habs := abs_toOuterMeasure_toReal_sub_le_dist
-    (permTupleKernel ρ x) (PMF.uniformOfFintype (T ↪ α)) E
-  have hunif := prob_uniformOfFintype_embedding_forall_mem_le hcard Q
-  linarith [(le_abs_self _).trans habs]
 
 theorem ratio_not_injective_fun_le {T : Type*} [Fintype T] [DecidableEq T] (s : ℕ) :
     (#(univ.filter fun f : T → Fin (2 ^ s) => ¬ Function.Injective f) : ℝ) /
