@@ -14,7 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 # Native initialized serialization of the clocked coin matrix
 
 `clockedCoinTable` stores two threshold bits for every ordered pair of numeric clock/base IDs.
-At horizon `T = 2 * (2 * (n + 1)) ^ d`, the dimension is `(T + 1) * N`, where `N` is the
+At horizon `T = Turing.polyClock d n`, the dimension is `(T + 1) * N`, where `N` is the
 ordinary compact box. The count is the existing base count on remainders exactly when the
 target quotient is one greater than the source quotient. Thus terminal rows are zero.
 
@@ -98,8 +98,7 @@ theorem clockedCoinTable_count (u v : Fin (clockedVertexBound (k := k) D d w.len
 /-- Both encoded bits are zero throughout a terminal row, for every bounded target ID. -/
 theorem getD_clockedCoinTable_terminal
     (u v : Fin (clockedVertexBound (k := k) D d w.length)) (b : Fin 2)
-    (hu : u.val / vertexBound (k := k) (radix D w.length) =
-      2 * (2 * (w.length + 1)) ^ d) :
+    (hu : u.val / vertexBound (k := k) (radix D w.length) = polyClock d w.length) :
     (clockedCoinTable machine D d w).getD
       (2 * (u.val * clockedVertexBound (k := k) D d w.length + v.val) + b.val) false = false := by
   rw [getD_clockedCoinTable, clockedCoinCountWithSymbol_terminal machine u v hu]

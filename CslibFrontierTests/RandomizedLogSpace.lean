@@ -73,7 +73,7 @@ example (input : List Bool) :
 
 -- The polynomial clock applies with a single exponent for all inputs.
 example : ∃ d, ∀ input : List Bool,
-    haltAtOnce.RunsInTime input (2 * (2 * (input.length + 1)) ^ d) := by
+    haltAtOnce.RunsInTime input (polyClock d input.length) := by
   obtain ⟨d, hd⟩ := MultiTapeNTM.exists_runsInTime_polynomial_of_runsInSpace_log haltAtOnce 0
   exact ⟨d, fun input => hd (MultiTapeNTM.runsInSpace_zero_tapes _ _ _)
     (haltAtOnce_runsInTime input)⟩
