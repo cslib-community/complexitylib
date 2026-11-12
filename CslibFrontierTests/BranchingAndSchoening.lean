@@ -38,16 +38,10 @@ theorem fibRec_le_goldenBranchFactor_pow (n : ℕ) :
     (fibRec n : ℝ) ≤ goldenBranchFactor ^ n := by
   have hrec : BranchingRecurrence (fun m => (fibRec m : ℝ)) [1, 2] 1 :=
     BranchingRecurrence.of_step zero_le_one (by decide)
-      (by simp only [fibRec, Nat.cast_one, le_refl])
-      (fun m hm => by
+      (fun m => by
         rcases m with _ | _ | k
-        · omega
-        · simp only [fibRec, Nat.cast_one]
-          have hfilt : List.filter (· ≤ 1) [1, 2] = [1] := by decide
-          rw [hfilt]
-          simp only [List.map_cons, List.map_nil, Nat.add_sub_cancel, fibRec, Nat.cast_one,
-            List.sum_cons, List.sum_nil, add_zero]
-          exact le_rfl
+        · simp only [fibRec, Nat.cast_one, le_max_iff, le_refl, true_or]
+        · simp only [fibRec, Nat.cast_one, le_max_iff, le_refl, true_or]
         · have hfilt : List.filter (· ≤ k + 2) [1, 2] = [1, 2] := by
             simp only [List.filter_cons, decide_eq_true_eq]
             have h1 : 1 ≤ k + 2 := by omega
@@ -55,9 +49,10 @@ theorem fibRec_le_goldenBranchFactor_pow (n : ℕ) :
             simp only [h1, h2, ↓reduceIte, List.filter_nil]
           rw [hfilt]
           simp only [fibRec, List.map_cons, List.map_nil, show k + 1 + 1 - 1 = k + 1 by omega,
-            show k + 1 + 1 - 2 = k by omega, List.sum_cons, List.sum_nil, add_zero, Nat.cast_add]
-          exact le_rfl)
-  exact hrec.le_pow one_le_goldenBranchFactor charSum_fibonacci.le n
+            show k + 1 + 1 - 2 = k by omega, List.sum_cons, List.sum_nil, add_zero, Nat.cast_add,
+            le_max_iff]
+          exact Or.inr le_rfl)
+  exact hrec.le_pow one_lt_goldenBranchFactor.le charSum_fibonacci.le n
 
 def skippedRec : ℕ → ℕ
   | 0 => 1
@@ -81,7 +76,7 @@ theorem skippedRec_le_pow (n : ℕ) :
           rw [hfilt]
           simp only [skippedRec, List.map_cons, List.map_nil, show k + 2 + 1 - 2 = k + 1 by omega,
             show k + 2 + 1 - 3 = k by omega, List.sum_cons, List.sum_nil, add_zero, Nat.cast_add,
-            le_max_iff, or_true]
+            le_max_iff]
           exact Or.inr le_rfl)
   exact hrec.le_pow one_le_two (by norm_num [charSum]) n
 
