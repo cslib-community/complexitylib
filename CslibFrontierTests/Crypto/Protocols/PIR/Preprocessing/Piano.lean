@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Protocols.PIR.Preprocessing.Piano
 /-! # Tests for Single-Server Preprocessing PIR and the Piano Scheme
 
 Concrete smoke tests exercising:
+0. Satisfiability of `Scheme.IsCorrect` and `Scheme.IsPerfectlyPrivateWith` (`downloadScheme`).
 1. Single-pass chunk streaming (`streamChunk`, `foldr_streamChunk_univ`) and `HintTable.Valid`
    on a concrete `2 × 2` database (`Chunk = Fin 2`, `Offset = Fin 2`).
 2. Single-query and multi-query online execution (`HintTable.onlineStep`,
@@ -30,6 +31,42 @@ namespace Cslib.Crypto.Protocols.PIR.Preprocessing.Piano.Tests
 
 open Cslib.Crypto.Protocols.PIR.Preprocessing
 open Cslib.Crypto.Protocols.PIR.Preprocessing.Piano
+
+/-! ### The generic notions are satisfiable -/
+
+/-- The scheme that downloads the whole database offline and answers every query locally, sending
+the server a `Unit` message. It is correct and perfectly private, so neither `Scheme.IsCorrect`
+nor `Scheme.IsPerfectlyPrivateWith` is vacuous; it says nothing about Piano. -/
+def downloadScheme (ι : Type) : Scheme ι (ι → Bool) Bool Unit Unit where
+  preprocess x := pure x
+  query h i := pure (h i, ())
+  answer _ _ := ()
+  reconstruct b _ := b
+  refresh h _ _ _ := pure h
+
+example (ι : Type) : (downloadScheme ι).IsCorrect := by
+  refine Scheme.isCorrect_of_forall_preprocess fun x is h₀ hmem => ?_
+  simp only [downloadScheme, ProbComp.eval_pure, PMF.support_pure,
+    Set.mem_singleton_iff] at hmem
+  subst hmem
+  induction is with
+  | nil => exact Scheme.isCorrectFrom_nil _ _ _
+  | cons i is ih =>
+    refine Scheme.isCorrectFrom_cons fun h' β hmem => ?_
+    simp only [Scheme.step, downloadScheme, bind_pure_comp, map_pure, ProbComp.eval_pure,
+      PMF.support_pure, Set.mem_singleton_iff, Prod.mk.injEq] at hmem
+    obtain ⟨rfl, rfl⟩ := hmem
+    exact ⟨rfl, ih⟩
+
+example (ι : Type) : (downloadScheme ι).IsPerfectlyPrivateWith (pure ()) := by
+  intro St adv x k st₀
+  simp only [Scheme.realAdaptiveView, downloadScheme, ProbComp.eval_bind, ProbComp.eval_pure,
+    PMF.pure_bind]
+  induction k generalizing st₀ with
+  | zero => simp [Scheme.realAdaptiveFrom, idealAdaptiveView]
+  | succ k ih =>
+    simp [Scheme.realAdaptiveFrom, idealAdaptiveView, idealAdaptiveStep, Scheme.realAdaptiveStep,
+      ih]
 
 /-! ### Concrete 4-bit database (`2` chunks × `2` offsets) -/
 
