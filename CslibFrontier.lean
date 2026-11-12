@@ -2048,6 +2048,7 @@ public import CslibFrontier.Computability.Complexity.Classes.P
 public import CslibFrontier.Computability.Complexity.Classes.P.Closure
 public import CslibFrontier.Computability.Complexity.Classes.P.Complement
 public import CslibFrontier.Computability.Complexity.Classes.P.Countable
+public import CslibFrontier.Computability.Complexity.Classes.P.Finite
 public import CslibFrontier.Computability.Complexity.Classes.P.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.P.FirstOrder.ModelChecker
 public import CslibFrontier.Computability.Complexity.Classes.P.Slices
@@ -2134,6 +2135,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.GeneralizedGe
 public import CslibFrontier.Computability.Complexity.Classes.Space.Image
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
+public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 public import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 public import CslibFrontier.Computability.Complexity.Classes.Space.TM2
