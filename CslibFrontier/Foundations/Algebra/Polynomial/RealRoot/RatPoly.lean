@@ -15,6 +15,7 @@ public import Mathlib.Data.List.SignVariations
 public import Mathlib.Data.Nat.Log
 
 import Mathlib.Algebra.Polynomial.FieldDivision
+import Mathlib.Data.List.GetD
 import Mathlib.Data.Rat.Cast.Order
 
 /-!
@@ -143,12 +144,9 @@ private theorem coeff_last_of_getLast?_eq {l : List ℚ} {x : ℚ} (hx : l.getLa
     (ofCoeffList l).coeff (l.length - 1) = x := by
   have hl : l ≠ [] := fun h => by simp only [h, List.getLast?_nil, reduceCtorEq] at hx
   have hlt : l.length - 1 < l.length := Nat.sub_lt (List.length_pos_of_ne_nil hl) zero_lt_one
-  rw [coeff_ofCoeffList, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt]
-  have hlast : some l[l.length - 1] = l.getLast? :=
-    (List.getElem?_eq_getElem hlt).symm.trans List.getLast?_eq_getElem?.symm
-  rw [hx] at hlast
-  cases hlast
-  rfl
+  rw [coeff_ofCoeffList, List.getD_eq_getElem _ _ hlt]
+  exact Option.some.inj ((List.getElem?_eq_getElem hlt).symm.trans
+    (List.getLast?_eq_getElem?.symm.trans hx))
 
 /-- Leading-position coefficient `(ofCoeffList l).coeff (l.length - 1)` is nonzero for nonempty
 trimmed `l`. -/
@@ -199,7 +197,7 @@ theorem IsTrimmed.degree_lt_of_length_lt {u v : List ℚ} (hu : IsTrimmed u) (hv
 /-- Coefficients of `ofCoeffList l` at indices `≥ l.length` are zero. -/
 theorem coeff_ofCoeffList_eq_zero_of_le {R : Type*} [Semiring R] (l : List R) {i : ℕ}
     (hi : l.length ≤ i) : (ofCoeffList l).coeff i = 0 := by
-  rw [coeff_ofCoeffList, List.getD_eq_getElem?_getD, List.getElem?_eq_none hi, Option.getD_none]
+  rw [coeff_ofCoeffList, List.getD_eq_default _ _ hi]
 
 /-- Pointwise addition of rational coefficient lists. -/
 @[expose] def addList : List ℚ → List ℚ → List ℚ
@@ -624,16 +622,14 @@ theorem maxAbsList_nonneg (l : List ℚ) : 0 ≤ maxAbsList l := by
 /-- Every indexed entry `l.getD i 0` has absolute value at most `maxAbsList l`. -/
 theorem abs_getD_le_maxAbsList (l : List ℚ) (i : ℕ) : |l.getD i 0| ≤ maxAbsList l := by
   induction l generalizing i with
-  | nil => simp only [List.getD_eq_getElem?_getD, List.getElem?_nil, Option.getD_none, abs_zero,
-      maxAbsList, le_refl]
+  | nil => simp only [List.getD_nil, abs_zero, maxAbsList, le_refl]
   | cons a l ih =>
     cases i with
     | zero =>
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_cons_zero, Option.getD_some,
-        maxAbsList]
+      simp only [List.getD_cons_zero, maxAbsList]
       exact le_max_left _ _
     | succ i =>
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_cons_succ]
+      simp only [List.getD_cons_succ, maxAbsList]
       exact (ih i).trans (le_max_right _ _)
 
 /-- Computable positive integer upper bound strictly greater than the absolute value of every
@@ -660,9 +656,7 @@ private theorem getD_dropLast_of_lt {α : Type*} (l : List α) (d : α) {i : ℕ
     rw [List.length_dropLast]
     exact hi
   have hi_l : i < l.length := Nat.lt_of_lt_of_le hi (Nat.sub_le _ _)
-  rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD,
-    List.getElem?_eq_getElem hi', List.getElem?_eq_getElem hi_l, Option.getD_some,
-    Option.getD_some, List.getElem_dropLast]
+  rw [List.getD_eq_getElem _ _ hi', List.getD_eq_getElem _ _ hi_l, List.getElem_dropLast]
 
 /-- Every real root `r` of `(ofCoeffList cs).map (algebraMap ℚ ℝ)` (when nonzero) satisfies
 `|r| < cauchyBoundNat cs`. -/
@@ -800,8 +794,7 @@ private theorem foldl_sqNorm (acc : ℕ) (ns : List ℤ) :
   | cons a ns ih =>
     simp only [List.foldl_cons, List.length_cons, ih (acc + Int.natAbs a ^ 2)]
     rw [Finset.sum_range_succ']
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_cons_zero, List.getElem?_cons_succ,
-      Option.getD_some]
+    simp only [List.getD_cons_zero, List.getD_cons_succ]
     omega
 
 /-- `coeffSqNorm (ofCoeffList ns)` is bounded above by `sqNormList ns`. -/

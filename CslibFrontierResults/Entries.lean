@@ -6,12 +6,14 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
+import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -66,6 +68,7 @@ import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Converse
 import CslibFrontier.Computability.Complexity.Fagin.Ordered.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
+import CslibFrontier.Computability.Complexity.FineGrained.CliqueGrouping
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
@@ -3209,6 +3212,29 @@ register_result "tfnp-eopl-sopl-promised-normalization" where
     potentialLineBack. Presented on uniform families rather than canonical circuit codes; UEOPL \
     and CLS are not formalized."
 
+register_result "edmonds-optimum-branchings" where
+  title := "Edmonds: optimum branchings and minimum-cost spanning arborescences are in P"
+  topic := "algorithms"
+  sources := [
+    { paper := Edmonds1967Branchings, theorem := "Theorem 1",
+      locator := "Section 3 (Section 2 reduction, Section 4 algorithm and proof)" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_edmondsList,
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_edmondsOutList,
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_optimumBranchingList,
+    Cslib.Algorithms.Lean.Arborescence.minArborescenceDec_mem_P,
+    Cslib.Algorithms.Lean.Arborescence.minOutArborescenceDec_mem_P,
+    Cslib.Algorithms.Lean.Arborescence.maxBranchingDec_mem_P
+  ]
+  scope := "Adjacency matrices in Boolean row-major tables and integer arc weights and \
+    thresholds in binary (encIntBin); roots are binary naturals (encNat). Subtraction-free \
+    contraction keeps intermediate table entries within (n + 1) ^ i · M₀, yielding native \
+    multi-tape P deciders for bounded-cost spanning in- and out-arborescences and \
+    bounded-weight branchings. Related O(n³) TimeM bounds and weight-shift reductions live \
+    in the sibling Arborescence.Table and Arborescence.Branching modules; Edmonds' Theorem 2 \
+    (the branching polytope) and sparse O(m log n) / O(m + n log n) implementations are not \
+    formalized."
 register_result "simhash" where
   title := "Charikar's SimHash collision law"
   topic := "algorithms"
@@ -3728,3 +3754,43 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
     real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
     recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
     accounting for the reduction; FO-⊥ and OW-PCVA are not covered."
+register_result "clique-eth-lower-bound" where
+  title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"
+  topic := "fine-grained complexity"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "Theorem 14.21", locator := "p.485" }
+  ]
+  theorems := [
+    Cslib.Complexity.ETH.not_clique_subexpVertex,
+    Cslib.Complexity.ETH.not_clique_subexpEnc,
+    Cslib.Complexity.ETH.clique_not_mem_FPT,
+    Cslib.Complexity.DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
+  ]
+  scope := "Clause-grouping reduction SAT.groupClique on Clique (encPair encGraph encNat) and \
+    ThreeSAT (encCNF). Under ETH (relative to the library's native DecidableInTimeO model), no \
+    decider for Clique runs in time f(k) · (|V| + 1)^o(k) · poly(|enc|) or f(k) · (|enc| + 1)^o(k) \
+    with arbitrary f and real exponent g(k) satisfying g(k) ≤ ε k for large k; in particular \
+    Clique ∉ FPT. Unconditional subexponential-time transfers to ThreeSAT hold without ETH. \
+    This adapts the source's 3-Coloring vertex grouping to 3-CNF clauses and arbitrary f."
+
+register_result "csp-bounded-treewidth" where
+  title := "Exact counting and decision for finite-domain CSPs over bounded treewidth"
+  topic := "parameterized algorithms"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "Lemma 7.4 (nice trees)", locator := "p.161" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspDecideRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.time_cspCountRootedM_le,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountActiveRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountNiceM_equiv
+  ]
+  scope := "Finite constraint domains Fin q (and arbitrary Fintype/Inhabited D via Equiv D \
+    (Fin q)) over a supplied RootedTreeDecomposition of the primal or active primal graph. \
+    Normalizes via toNiceTreePruned to at most (3 w + 5)(|V| + 1) nice nodes (size, not runtime \
+    bound) and charges unit-cost TimeM inner-loop ticks bounded by (3 w + 5)(|V| + 1) · q^(w + 1) \
+    · dpNodeCost w F (excluding recursive list-manipulation overhead like bagList, sem \
+    evaluations, and unbounded integer arithmetic). The generic CSP-counting DP extension is an \
+    adaptation/original implementation. Computing the tree decomposition is external."
+

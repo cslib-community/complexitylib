@@ -89,8 +89,8 @@ STEPS = (
 LOCAL_STEPS = (
     # The local artifact cache restores outputs without their warnings, which `--wfail` and
     # `--iofail` then miss (#4523). CI's remote cache is published only from `main`.
-    Step("Re-elaborate changed files restored from the artifact cache",
-         ('python3 -B scripts/check_cache_restores.py --base "$BASE"',)),
+    Step("Re-elaborate root-package files restored from the artifact cache",
+         ("python3 -B scripts/check_cache_restores.py",)),
 )
 
 # Run by scripts/check.sh before the cache bootstrap, in both full and quick modes.
