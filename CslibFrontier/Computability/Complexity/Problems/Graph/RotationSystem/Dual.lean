@@ -36,7 +36,7 @@ namespace Cslib.Complexity.Graph.RotationSystem
 variable {G : Graph} (r : RotationSystem G)
 
 /-- Finite dart indices in an actual face orbit, including its least index. -/
-@[expose] def faceDartIndices (d : Dart G) : Finset (Fin (2 * G.2.length)) :=
+@[expose] def faceDartIndices (d : Dart G) : Finset (Fin (2 * G.edges.length)) :=
   Finset.univ.filter fun i => r.faceNext.SameCycle d ((Dart.indexEquiv G).symm i)
 
 /-- Every dart belongs to its own face orbit. -/
@@ -97,16 +97,16 @@ theorem faceId_eq_index_iff (d : Dart G) :
     exact he.symm.trans (congrArg Dart.index hed)
 
 /-- The canonical face name is bounded by the number of darts, even for huge vertex labels. -/
-theorem faceId_lt (d : Dart G) : r.faceId d < 2 * G.2.length :=
+theorem faceId_lt (d : Dart G) : r.faceId d < 2 * G.edges.length :=
   ((r.faceDartIndices d).min' (r.faceDartIndices_nonempty d)).isLt
 
 /-- Canonical dual vertex equality is exactly the existing executable face-table orbit test.
 This links the abstract construction to `faceTable (ofRotation r)` without another face
 enumeration or an existentially chosen relabeling. -/
 theorem faceId_eq_iff_faceTable
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d e : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d e : Dart G) :
     r.faceId d = r.faceId e ↔
-      RotationCertificate.orbitBool (2 * G.2.length)
+      RotationCertificate.orbitBool (2 * G.edges.length)
         (RotationCertificate.faceTable G (RotationCertificate.ofRotation r)) d.index e.index =
         true := by
   rw [r.faceId_eq_iff]
@@ -121,12 +121,12 @@ theorem faceId_eq_iff_faceTable
 /-- The listed dual has one vertex per actual face and one edge per source edge occurrence.
 The first/second ends of edge `i` are the faces of darts `(i,false)` and `(i,true)`. -/
 @[expose] def dualGraph : Graph :=
-  (((List.finRange (2 * G.2.length)).map fun i =>
+  ⟨((List.finRange (2 * G.edges.length)).map fun i =>
       r.faceId ((Dart.indexEquiv G).symm i)).dedup,
-    List.ofFn fun i : Fin G.2.length => (r.faceId (i, false), r.faceId (i, true)))
+    List.ofFn fun i : Fin G.edges.length => (r.faceId (i, false), r.faceId (i, true))⟩
 
 /-- Dualization preserves the number of listed edges, including loops and parallel edges. -/
-@[simp] theorem dualGraph_length : r.dualGraph.2.length = G.2.length := by
+@[simp] theorem dualGraph_length : r.dualGraph.edges.length = G.edges.length := by
   simp [dualGraph]
 
 /-- Identification of source and dual darts preserves edge positions and endpoint bits. -/
@@ -144,23 +144,23 @@ The first/second ends of edge `i` are the faces of darts `(i,false)` and `(i,tru
 @[simp] theorem vertex_dualDartEquiv (d : Dart G) :
     (r.dualDartEquiv d).vertex = r.faceId d := by
   rcases d with ⟨i, b⟩
-  change (if b then (r.dualGraph.2.getD i.val (0, 0)).2
-    else (r.dualGraph.2.getD i.val (0, 0)).1) = r.faceId (i, b)
-  have he : r.dualGraph.2.getD i.val (0, 0) =
+  change (if b then (r.dualGraph.edges.getD i.val (0, 0)).2
+    else (r.dualGraph.edges.getD i.val (0, 0)).1) = r.faceId (i, b)
+  have he : r.dualGraph.edges.getD i.val (0, 0) =
       (r.faceId (i, false), r.faceId (i, true)) := by
     rw [List.getD_eq_getElem _ _ (by simpa only [dualGraph_length] using i.isLt)]
     simp [dualGraph]
   cases b <;> simp only [he, Bool.false_eq_true, ite_false, ite_true]
 
 /-- Every dual dart endpoint is declared, with no assumption on source endpoint declarations. -/
-theorem dual_vertex_mem (d : Dart r.dualGraph) : d.vertex ∈ r.dualGraph.1 := by
+theorem dual_vertex_mem (d : Dart r.dualGraph) : d.vertex ∈ r.dualGraph.vertices := by
   obtain ⟨e, rfl⟩ := r.dualDartEquiv.surjective d
   rw [vertex_dualDartEquiv]
   apply List.mem_dedup.mpr
   exact List.mem_map.mpr ⟨Dart.indexEquiv G e, List.mem_finRange _, by simp⟩
 
 /-- Each declared dual vertex is incident to a dual dart. Source isolated vertices are omitted. -/
-theorem dualGraph_no_isolates (v : ℕ) (hv : v ∈ r.dualGraph.1) :
+theorem dualGraph_no_isolates (v : ℕ) (hv : v ∈ r.dualGraph.vertices) :
     ∃ d : Dart r.dualGraph, d.vertex = v := by
   obtain ⟨i, -, hi⟩ := List.mem_map.mp (List.mem_dedup.mp hv)
   exact ⟨r.dualDartEquiv ((Dart.indexEquiv G).symm i), by
@@ -168,10 +168,10 @@ theorem dualGraph_no_isolates (v : ℕ) (hv : v ∈ r.dualGraph.1) :
 
 /-- Every endpoint in the dual's flattened incidence list is declared. -/
 theorem dualGraph_endpoints_declared :
-    ∀ v ∈ r.dualGraph.incidenceVertices, v ∈ r.dualGraph.1 := by
+    ∀ v ∈ r.dualGraph.incidenceVertices, v ∈ r.dualGraph.vertices := by
   intro v hv
   obtain ⟨i, hi⟩ := List.mem_iff_get.mp hv
-  let j : Fin (2 * r.dualGraph.2.length) :=
+  let j : Fin (2 * r.dualGraph.edges.length) :=
     ⟨i.val, i.isLt.trans_eq (incidenceVertices_length _)⟩
   have h := r.dual_vertex_mem ((Dart.indexEquiv r.dualGraph).symm j)
   have hj : ((Dart.indexEquiv r.dualGraph).symm j).index = i.val :=
@@ -265,7 +265,7 @@ noncomputable def dualFaceVertexEquiv : r.dualRotation.Face ≃ IncidentVertex G
 theorem card_dual_faces : Nat.card r.dualRotation.Face = Nat.card (IncidentVertex G) :=
   Nat.card_congr r.dualFaceVertexEquiv
 
-private def faceDualVertex : r.Face → {v // v ∈ r.dualGraph.1} :=
+private def faceDualVertex : r.Face → {v // v ∈ r.dualGraph.vertices} :=
   Quotient.lift
     (fun d => ⟨r.faceId d, by
       simpa only [vertex_dualDartEquiv] using r.dual_vertex_mem (r.dualDartEquiv d)⟩)
@@ -274,7 +274,7 @@ private def faceDualVertex : r.Face → {v // v ∈ r.dualGraph.1} :=
       exact Subtype.ext ((r.faceId_eq_iff d e).mpr h))
 
 /-- Canonical names identify every source face with exactly one declared dual vertex. -/
-noncomputable def faceDualVertexEquiv : r.Face ≃ {v // v ∈ r.dualGraph.1} :=
+noncomputable def faceDualVertexEquiv : r.Face ≃ {v // v ∈ r.dualGraph.vertices} :=
   Equiv.ofBijective (faceDualVertex r) ⟨by
     intro f g
     induction f using Quotient.inductionOn with | _ d =>

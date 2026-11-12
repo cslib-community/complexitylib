@@ -154,7 +154,7 @@ example :
 /-! ### Vertex cover parameterized by target size -/
 
 /-- The triangle on `{0, 1, 2}`. -/
-private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (0, 2)])
+private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩
 
 /-- Bounded search tree evaluations and membership witnesses on the triangle graph, plus `XP`
 closure for `VertexCoverᶜ`. -/

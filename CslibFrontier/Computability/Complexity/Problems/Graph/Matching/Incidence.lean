@@ -55,8 +55,8 @@ theorem count_vars_perfectMatchingInstance_eq_two (G : Graph) {x : ℕ}
     Function.comp_def, hcount]
   rw [← List.sum_toFinset _ G.nodup_distinctVertices]
   rw [Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.sum_ite_eq']
-  have ha' : a ∈ G.1 := ha
-  have hb' : b ∈ G.1 := hb
+  have ha' : a ∈ G.vertices := ha
+  have hb' : b ∈ G.vertices := hb
   simp only [List.mem_toFinset, mem_distinctVertices, ha', hb', ↓reduceIte]
 
 /-- The generated perfect-matching instance is an actual positional edge instance. -/

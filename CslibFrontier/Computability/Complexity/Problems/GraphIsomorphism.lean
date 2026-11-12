@@ -162,7 +162,7 @@ namespace GraphIsomorphism
 many vertices as the first graph and preserves adjacency. -/
 @[expose]
 def verifier : GraphIsomorphismInstance × List Bool → Bool :=
-  Graph.verifyOrdering (fun x => x.second.1) fun x p =>
+  Graph.verifyOrdering (fun x => x.second.vertices) fun x p =>
     decide (p.length = x.first.distinctVertices.length) &&
       (List.range x.first.distinctVertices.length).all fun i =>
         (List.range x.first.distinctVertices.length).all fun j =>
@@ -176,8 +176,7 @@ theorem computableInPolyTime_verifier :
       (fun x : GraphIsomorphismInstance × List ℕ => x.1.first.distinctVertices.length)
       (encPair encGraphIsomorphism (encList encNat)) encUnary :=
     (length_list encNat).comp (by fun_prop)
-  refine Graph.computableInPolyTime_verifyOrdering
-    ((fst (encList encNat) (encList (encPair encNat encNat))).comp (by fun_prop))
+  refine Graph.computableInPolyTime_verifyOrdering (by fun_prop)
     (bool_and' (((length_list encNat).comp (snd _ _)).decide_eq' hlen) ?_)
   refine allWithInput (range.comp hlen)
     (allWithInput (range.comp (hlen.comp (fst _ _))) ?_)
@@ -189,7 +188,7 @@ of the length of the encoded pair of graphs. -/
 theorem isVerifier :
     IsVerifier encGraphIsomorphism (Polynomial.X ^ 2) verifier GraphIsomorphism := by
   have hset : GraphIsomorphism =
-      {x : GraphIsomorphismInstance | ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ x.second.1) ∧
+      {x : GraphIsomorphismInstance | ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ x.second.vertices) ∧
         p.length = x.first.distinctVertices.length ∧
         ∀ i < x.first.distinctVertices.length, ∀ j < x.first.distinctVertices.length,
           x.second.adjBool (p.getD i 0) (p.getD j 0) = x.first.adjIndex i j} := by
@@ -212,7 +211,7 @@ theorem isVerifier :
           ← Graph.induced_adj_vertexEquiv G ⟨i, hi⟩ ⟨j, hj⟩]
         exact φ.map_adj_iff
     · rintro ⟨p, hnd, hcov, hlen, hadj⟩
-      let e : Fin G.distinctVertices.length ≃ {v // v ∈ H.1} :=
+      let e : Fin G.distinctVertices.length ≃ {v // v ∈ H.vertices} :=
         (finCongr hlen.symm).trans ((hnd.getEquiv _).trans (Equiv.subtypeEquivRight hcov))
       refine ⟨⟨G.vertexEquiv.symm.trans e, fun {u v} => ?_⟩⟩
       obtain ⟨i, rfl⟩ := G.vertexEquiv.surjective u

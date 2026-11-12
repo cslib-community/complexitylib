@@ -36,7 +36,7 @@ public section
 namespace Cslib.Complexity.Graph
 
 /-- A listed edge occurrence together with a choice of endpoint. -/
-abbrev Dart (G : Graph) := Fin G.2.length × Bool
+abbrev Dart (G : Graph) := Fin G.edges.length × Bool
 
 namespace Dart
 
@@ -65,7 +65,7 @@ theorem reverse_ne {G : Graph} (d : Dart G) : d.reverse ≠ d := by
   right_inv := reverse_reverse
 
 /-- There are two darts per listed edge, counting loops and parallel occurrences. -/
-theorem card (G : Graph) : Fintype.card (Dart G) = 2 * G.2.length := by
+theorem card (G : Graph) : Fintype.card (Dart G) = 2 * G.edges.length := by
   simp [Dart, Nat.mul_comm]
 
 end Dart

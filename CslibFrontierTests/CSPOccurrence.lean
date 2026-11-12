@@ -28,7 +28,7 @@ private abbrev conflict : CSP (Fin 4) ℕ := [(1, [7]), (2, [7])]
 
 -- A repeated variable gives parallel edge records with distinct occurrence identities.
 example : repeated.occurrences = [(0, 0, 7), (0, 1, 7)] := by decide
-example : CSP.incidenceGraph repeated = ([0, 1], [(0, 1), (0, 1)]) := by decide
+example : CSP.incidenceGraph repeated = ⟨[0, 1], [(0, 1), (0, 1)]⟩ := by decide
 
 private abbrev first : repeated.Occurrence := ⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩
 private abbrev second : repeated.Occurrence := ⟨⟨0, by decide⟩, ⟨1, by decide⟩⟩
@@ -40,7 +40,7 @@ example : (CSP.incidenceGraph repeated).edgeEndpoint (CSP.incidenceEdgeIndex sec
   CSP.edgeEndpoint_incidenceEdgeIndex second true
 
 -- Identical constraints retain different vertices, even with the same relation and scope.
-example : CSP.incidenceGraph identical = ([0, 1, 2], [(0, 1), (0, 2)]) := by decide
+example : CSP.incidenceGraph identical = ⟨[0, 1, 2], [(0, 1), (0, 2)]⟩ := by decide
 example : identical.occurrences = [(0, 0, 7), (1, 0, 7)] := by decide
 example : identical.EdgeInstance := by
   unfold CSP.EdgeInstance
@@ -56,7 +56,7 @@ example : ¬ CSP.EdgeInstance ([(0, [7]), (0, [7]), (0, [7])] : CSP (Fin 4) ℕ)
   decide
 
 -- Nullary constraints survive as isolated constraint vertices and still affect semantics.
-example : CSP.incidenceGraph ([(0, [])] : CSP (Fin 4) ℕ) = ([0], []) := by decide
+example : CSP.incidenceGraph ([(0, [])] : CSP (Fin 4) ℕ) = ⟨[0], []⟩ := by decide
 example : CSP.EdgeInstance ([(0, [])] : CSP (Fin 4) ℕ) := by
   unfold CSP.EdgeInstance
   decide
@@ -71,7 +71,7 @@ example : ¬ ∃ l : CSP.OccurrenceLabeling ([(3, [])] : CSP (Fin 4) ℕ) Bool,
   cases hσ
 
 -- Empty instances have no occurrences; a global assignment uses the explicit outside value.
-example : CSP.incidenceGraph ([] : CSP (Fin 4) ℕ) = ([], []) := by decide
+example : CSP.incidenceGraph ([] : CSP (Fin 4) ℕ) = ⟨[], []⟩ := by decide
 example : CSP.EdgeInstance ([] : CSP (Fin 4) ℕ) := by
   unfold CSP.EdgeInstance
   decide
@@ -81,7 +81,7 @@ example : CSP.reconstruct (F := ([] : CSP (Fin 4) ℕ)) (fun o => Fin.elim0 o.1)
 
 -- Huge binary source names do not generate a huge vertex interval.
 example : CSP.incidenceGraph ([(0, [2 ^ 100, 3])] : CSP (Fin 4) ℕ) =
-    ([0, 1, 2], [(0, 2), (1, 2)]) := by decide
+    ⟨[0, 1, 2], [(0, 2), (1, 2)]⟩ := by decide
 
 private def disagree : repeated.OccurrenceLabeling Bool := fun o => o.2.val == 0
 

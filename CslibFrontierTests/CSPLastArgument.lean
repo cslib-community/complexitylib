@@ -33,10 +33,10 @@ private theorem twoVarsGenus : twoVarsRotation.NumericalGenusZero := by
 
 -- Variable 99 disappears. Its old dense vertex 1 becomes isolated in the prefix;
 -- the constraint center changes from old dense name 2 to target dense name 1.
-example : lastArgumentPrefixGraph noneBefore () [7] 99 = ([0, 1, 2], [(0, 2)]) := by
+example : lastArgumentPrefixGraph noneBefore () [7] 99 = ⟨[0, 1, 2], [(0, 2)]⟩ := by
   decide +kernel
 
-example : incidenceGraph (noneBefore ++ [((), [7])]) = ([0, 1], [(0, 1)]) := by decide +kernel
+example : incidenceGraph (noneBefore ++ [((), [7])]) = ⟨[0, 1], [(0, 1)]⟩ := by decide +kernel
 
 example : RotationCertificate.ofRotation
     (deleteLastArgumentRotation noneBefore () [7] 99 twoVarsRotation) = ⟨[0, 1]⟩ := by
@@ -78,7 +78,7 @@ private def unaryRotation : RotationSystem (incidenceGraph unaryAfterNullary) wh
 
 -- The remaining variable disappears entirely, and both distinct nullary constraints stay.
 -- These are two point components with conventional faces, with no supplied dart.
-example : incidenceGraph (nullaryBefore ++ [((), [])]) = ([0, 1], []) := by decide +kernel
+example : incidenceGraph (nullaryBefore ++ [((), [])]) = ⟨[0, 1], []⟩ := by decide +kernel
 
 example : RotationCertificate.ofRotation
     (deleteLastArgumentRotation nullaryBefore () [] (2 ^ 250) unaryRotation) = ⟨[]⟩ := by

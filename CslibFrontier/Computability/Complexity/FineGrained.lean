@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import CslibFrontier.Foundations.Analysis.RateExponent
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -274,12 +275,12 @@ theorem KSAT_three : KSAT 3 = ThreeSAT := rfl
 
 theorem KSAT_subset_SAT (k : ℕ) : KSAT k ⊆ SAT := fun _ h => h.2
 
-/-- The exponent `s_k` of `k`-SAT [ImpagliazzoPaturi2001]: the infimum of the `δ ≥ 0` for which
-`k`-SAT is decidable within time `2 ^ (δ * n)` times a polynomial in the length of the encoded
-formula, on formulas with `n` variables. Exhaustive search puts `1` in this set, so `s_k ∈ [0, 1]`
-(`Cslib.Complexity.satExponent_le_one`). -/
+/-- The exponent `s_k` of `k`-SAT [ImpagliazzoPaturi2001]: the infimum (`Cslib.rateExponent`) of the
+`δ ≥ 0` for which `k`-SAT is decidable within time `2 ^ (δ * n)` times a polynomial in the length of
+the encoded formula, on formulas with `n` variables. Exhaustive search puts `1` in this set, so
+`s_k ∈ [0, 1]` (`Cslib.Complexity.satExponent_le_one`). -/
 noncomputable def satExponent (k : ℕ) : ℝ :=
-  sInf {δ | 0 ≤ δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ}
+  rateExponent (DecidableInExpTime (KSAT k) encCNF CNF.numVars)
 
 /-- **The exponential time hypothesis** [ImpagliazzoPaturi2001]: for some `δ > 0`, 3SAT is not
 decidable within time `2 ^ (δ * n)` times any polynomial in the length of the encoded formula, on

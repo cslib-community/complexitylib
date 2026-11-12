@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.Measure.DTIME
-import CslibFrontier.Computability.Complexity.Classes.Immune
+import CslibFrontier.Computability.Complexity.Classes.P.Closure
+import CslibFrontier.Computability.Complexity.Classes.P.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 

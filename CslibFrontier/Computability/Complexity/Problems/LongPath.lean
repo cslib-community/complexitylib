@@ -54,7 +54,7 @@ namespace Graph
 vertices are adjacent. -/
 @[expose]
 def IsVertexPath (G : Graph) (p : List ℕ) : Prop :=
-  p.Nodup ∧ (∀ v ∈ p, v ∈ G.1) ∧ p.IsChain G.toSimpleGraph.Adj
+  p.Nodup ∧ (∀ v ∈ p, v ∈ G.vertices) ∧ p.IsChain G.toSimpleGraph.Adj
 
 /-- A path has at most as many vertices as the distinct declared vertices. -/
 theorem IsVertexPath.length_le {G : Graph} {p : List ℕ} (hp : G.IsVertexPath p) :
@@ -110,14 +110,14 @@ theorem not_mem_LongPath_of_lt {G : Graph} {k : ℕ} (hk : G.distinctVertices.le
 induced graph. -/
 theorem mem_LongPath_succ_iff {G : Graph} {k : ℕ} :
     (⟨G, k + 1⟩ : LongPathInstance) ∈ LongPath ↔
-      ∃ (u v : {v // v ∈ G.1}) (w : G.induced.Walk u v), w.IsPath ∧ w.length = k := by
+      ∃ (u v : {v // v ∈ G.vertices}) (w : G.induced.Walk u v), w.IsPath ∧ w.length = k := by
   rw [mem_LongPath_iff]
   constructor
   · rintro ⟨p, ⟨hnd, hV, hch⟩, hlen⟩
-    have hLne : p.pmap (fun a ha => (⟨a, ha⟩ : {v // v ∈ G.1})) hV ≠ [] := by
+    have hLne : p.pmap (fun a ha => (⟨a, ha⟩ : {v // v ∈ G.vertices})) hV ≠ [] := by
       grind [List.pmap_eq_nil_iff]
     have hLch := List.isChain_pmap_of_isChain (S := G.induced.Adj)
-      (f := fun a ha => (⟨a, ha⟩ : {v // v ∈ G.1})) (fun _ _ _ _ hab => hab) hch hV
+      (f := fun a ha => (⟨a, ha⟩ : {v // v ∈ G.vertices})) (fun _ _ _ _ hab => hab) hch hV
     refine ⟨_, _, SimpleGraph.Walk.ofSupport _ hLne hLch, ?_, ?_⟩
     · rw [SimpleGraph.Walk.isPath_def, SimpleGraph.Walk.support_ofSupport]
       exact hnd.pmap fun _ _ _ _ hab => congrArg Subtype.val hab
