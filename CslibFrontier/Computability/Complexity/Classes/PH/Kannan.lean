@@ -484,8 +484,7 @@ theorem exists_mem_SigmaP_two_inter_PiP_two_notMem_SIZE (k : ℕ) :
     have hcompl : (language k : Set (List Bool))ᶜ ∈ SigmaP 2 encBits := by
       rw [← hPH]
       exact PiP_subset_PH 3 (compl_mem_PiP_of_mem_SigmaP h₃)
-    refine ⟨language k, ⟨?_, compl_compl (language k : Set (List Bool)) ▸
-      compl_mem_PiP_of_mem_SigmaP hcompl⟩, language_notMem_SIZE k⟩
+    refine ⟨language k, ⟨?_, compl_mem_SigmaP_iff.mp hcompl⟩, language_notMem_SIZE k⟩
     rw [← hPH]
     exact SigmaP_subset_PH 3 h₃
   · have hNP : encCNF '' SAT ∈ SigmaP 1 encBits := SigmaP_one ▸ image_SAT_mem_NP

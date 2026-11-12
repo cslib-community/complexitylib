@@ -198,8 +198,8 @@ class MainTests(Fixture):
         self.assertEqual(run.call_args.args, (self.root, "DemoTests/Client.lean"))
 
 
-class RealLakeTests(Fixture):
-    """Lake restores a module that logged a warning without the warning; the check catches it.
+class IsolatedLakeFixture(Fixture):
+    """A dependency-free project using the installed toolchain and a private artifact cache.
 
     CI's "Test Python tooling" step runs before Lean is installed, so CI skips this test; it runs
     in a local `scripts/check.sh` or `python3 -m unittest` with the repository's toolchain.
@@ -231,6 +231,10 @@ class RealLakeTests(Fixture):
     def lake(self, *args: str) -> subprocess.CompletedProcess:
         return subprocess.run(["lake", *args], cwd=self.root, capture_output=True, text=True,
                               timeout=120)
+
+
+class RealLakeTests(IsolatedLakeFixture):
+    """Lake restores a warned module without its messages; the warning audit catches it."""
 
     def test_warning_dropped_by_a_cache_restore_is_reported(self) -> None:
         self.write("Demo/Base.lean", "theorem dropped : 1 = 2 := by sorry\n")

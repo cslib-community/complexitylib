@@ -112,7 +112,7 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
 /-- Nonzero-modular counting is in polynomial space, for every fixed modulus. -/
 theorem ModP_subset_PSPACE (k : ℕ) : ModP k enc ⊆ PSPACE enc := by
   intro A hA
-  have hc : Aᶜ ∈ coModP k enc := by simpa [coModP] using hA
+  have hc : Aᶜ ∈ coModP k enc := compl_mem_coModP.mpr hA
   simpa using compl_mem_PSPACE (coModP_subset_PSPACE k hc)
 
 /-- Polynomial time with a PP word oracle stays within polynomial space. -/

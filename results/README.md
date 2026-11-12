@@ -14,6 +14,15 @@ keys come from the library modules' citations; their source theorem numbers and 
 `unverified`. The bibliography remains [references.bib](../references.bib); it is not copied
 into another authored manifest.
 
+The [Arora–Barak 2007 draft audit](arora-barak-2007.md) records a source-pinned chapter-level
+coverage comparison, including missing endpoints, partial matches and source/model problems.
+Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
+and quantitative crypto bounds. Its Chapter 14 record includes a checked degree obstruction to the draft's literal
+circuit-to-determinant statement; it is not a claim of book-wide coverage.
+
+The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
+for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.
+
 ## Authoring
 
 For example, an entry records the source paper's theorem name or number separately from its
@@ -92,3 +101,10 @@ circuit bounds, communication and descriptive complexity contain substantial add
 Original results without external sources need an explicit representation before adding
 them. Publication and search are also tracked in #2012. Passing compilation and reference checks
 does not complete these objectives.
+
+The original [accepted-certificate measure example](../CslibFrontier/Computability/Circuit/Boolean/FormalComplexityMeasure/Certificate.lean)
+is also awaiting representation for source-free results. A singleton has measure `n` while at
+least half the truth tables have measure zero. This explains why the additive `-n` in
+Razborov–Rudich Theorem 5.1(b) cannot simply be omitted as in the 2007 Arora–Barak draft's
+Theorem 22.3. It is not registered as a proof of either source theorem; the corrected density
+amplification endpoint remains open under [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).

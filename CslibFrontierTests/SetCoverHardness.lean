@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import CslibFrontier.Computability.PCP.Approximation.SetCover.LundYannakakis
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.NormNum
@@ -389,8 +390,7 @@ example {A : WeightedSetSystem → List ℕ}
 
 private theorem quarter_lt_inv_four_log_two : (1 / 4 : ℝ) < 1 / (4 * Real.log 2) := by
   have hlog0 : 0 < Real.log 2 := Real.log_pos (by norm_num)
-  have hlog1 : Real.log 2 < 1 :=
-    (Real.log_lt_sub_one_of_pos (by norm_num) (by norm_num)).trans_eq (by norm_num)
+  have hlog1 : Real.log 2 < 1 := Real.log_two_lt_one
   exact div_lt_div_of_pos_left (by norm_num) (by positivity) (by linarith)
 
 example : let t := logGapThreshold (1 / 4 : ℝ) 3 satGraph.edges.length (Fintype.card Bool)

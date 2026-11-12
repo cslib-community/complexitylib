@@ -14,6 +14,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Computability.Kolmogorov.TimeBounded.Counting
 import CslibFrontier.Computability.Kolmogorov.TimeBounded.PolyTime
 
 /-!
@@ -124,21 +125,15 @@ whenever `n + 1 ≤ t n`. -/
 theorem card_filter_timeBoundedNat_lt {t : ℕ → ℕ} {n : ℕ} (ht : n + 1 ≤ t n) (r : ℕ) :
     ((Finset.univ : Finset (BitString n)).filter fun x =>
       timeBoundedNat t (List.ofFn x) < r).card < 2 ^ r := by
-  let S := (Finset.univ : Finset (BitString n)).filter fun x =>
-    timeBoundedNat t (List.ofFn x) < r
-  have hsub : (List.ofFn '' (S : Set (BitString n))) ⊆
-      {y : List Bool | y.length = n ∧ timeBounded t y < (r : ℕ)} := by
-    rintro y ⟨x, hx, rfl⟩
-    simp only [S, Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and] at hx
-    have hne : timeBounded t (List.ofFn x) ≠ ⊤ :=
-      timeBounded_ne_top (t := t) (x := List.ofFn x) (by simpa [List.length_ofFn] using ht)
-    refine ⟨List.length_ofFn, ?_⟩
-    rw [← natCast_timeBoundedNat hne]
-    exact_mod_cast hx
-  have hinj : Function.Injective (List.ofFn (α := Bool) (n := n)) := fun _ _ h => List.ofFn_inj.mp h
-  have henc := (Set.encard_le_encard hsub).trans_lt (encard_setOf_timeBounded_lt t n r)
-  rw [hinj.encard_image, Set.encard_coe_eq_coe_finsetCard] at henc
-  exact_mod_cast henc
+  obtain _ | s := r
+  · simp
+  refine (Finset.card_le_card fun x hx => ?_).trans_lt
+    (card_filter_timeBoundedAt_le_lt (fun _ _ h => List.ofFn_inj.mp h) (t n) s)
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
+  have hne : timeBounded t (List.ofFn x) ≠ ⊤ :=
+    timeBounded_ne_top (by simpa [List.length_ofFn] using ht)
+  have h := (timeBoundedNat_le_iff hne).mp (Nat.lt_add_one_iff.mp hx)
+  rwa [timeBounded_eq_timeBoundedAt, List.length_ofFn] at h
 
 /-- **[Liu and Pass, Proof of Theorem 5.2, Equation (2), §5.2, p. 11 of
 arXiv:2009.11514v1][LiuPass2020]:

@@ -11,8 +11,10 @@ public import CslibFrontier.Logics.SecondOrder.Horn.Ordered
 public import CslibFrontier.Computability.Complexity.Classes.P.FirstOrder
 public import CslibFrontier.Computability.Complexity.Fagin.Ordered
 import CslibFrontier.Computability.Complexity.Gradel.Tableau
-import CslibFrontier.Computability.Complexity.ImmermanVardi
+import CslibFrontier.Computability.Complexity.ImmermanVardi.Input
+import CslibFrontier.Computability.Complexity.ImmermanVardi.Machine
 import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Horn
+import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
 
 /-!
 # Grädel's characterization of polynomial time
@@ -83,37 +85,23 @@ theorem HornDefinable.of_encodedLanguage_mem_P [L.IsRelational]
     (v : Vocabulary L) {K : Query L} (hK : K.encodedLanguage v ∈ P encStructure) :
     HornDefinable K := by
   classical
-  obtain ⟨f, ⟨t, _, ht, _, m, State, hfinite, tm, htm⟩, hdec⟩ := hK
-  let _ := hfinite
-  let _ := Fintype.ofFinite State
-  obtain ⟨k, hk, har, hpow⟩ := v.exists_lfp_power_bound t ht 0
+  obtain ⟨m, State, _, tm, htm⟩ := exists_tm_of_encodedLanguage_mem_P v hK
+  obtain ⟨k, hk, har, hb, hdec⟩ := htm 0
   let Φ := Gradel.Tableau.acceptanceHornSentence v.powerLanguage tm v.inputSymbol
   let I := v.orderedPowerInterpretation k har
   refine HornDefinable.of_sentence (I.onHornSentence Φ) fun M => ?_
   have hw : v.WellFormed (encode v M) := v.wellFormed_encode M (Equiv.refl M)
-  have hbounds : (encStructure (encode v M)).length + 1 < M.size ^ k ∧
-      t (encStructure (encode v M)).length < M.size ^ k ∧ 0 ≤ M.size ^ k :=
-    hpow (encode v M) hw M.size_ge_two
-  obtain ⟨hlen, htime, _⟩ := hbounds
-  obtain ⟨hhalt, hout⟩ := (htm (encode v M)).runFrom_of_le
-    (show t (encStructure (encode v M)).length ≤ M.size ^ k - 1 by omega)
-  have hquery : M ∈ K ↔ f (encode v M) = true :=
-    (mem_encodedLanguage_encode v K M).symm.trans (hdec (encode v M))
-  have hk_pos : 0 < k := by omega
+  have hlen : (encStructure (encode v M)).length + 1 < M.size ^ k :=
+    (hb (encode v M) hw M.size_ge_two).1
   change M ∈ K ↔ (I.onHornSentence Φ).Realize (Fin M.size)
-  rw [hquery, I.realize_onHornSentence (n := M.size) hk_pos Φ]
-  have he : I.inputStructure (n := M.size) = v.powerStructure (encode v M) (M.size ^ k) :=
-    v.inputStructure_orderedPowerInterpretation k har hk M
-  rw [he]
+  rw [hdec, I.realize_onHornSentence (n := M.size) (by omega) Φ,
+    v.inputStructure_orderedPowerInterpretation k har hk M]
   let _ : v.powerLanguage.Structure (Fin (M.size ^ k)) :=
     v.powerStructure (encode v M) (M.size ^ k)
   let _ : Fact (2 ≤ M.size ^ k) := ⟨FullTupleInterpretation.two_le_pow (n := M.size) hk⟩
-  change f (encode v M) = true ↔ Φ.Realize (Fin (M.size ^ k))
-  rw [Gradel.Tableau.realize_acceptanceHornSentence tm v.inputSymbol
+  exact (Gradel.Tableau.realize_acceptanceHornSentence tm v.inputSymbol
     (encStructure (encode v M))
-    (fun s p => v.realize_inputSymbol hw ((Nat.lt_succ_self _).trans hlen) s p) hlen]
-  simp only [hout, Turing.MultiTapeTM.encBool_apply, List.singleton_inj]
-  exact ⟨fun hf => ⟨hhalt, hf⟩, And.right⟩
+    (fun s p => v.realize_inputSymbol hw ((Nat.lt_succ_self _).trans hlen) s p) hlen).symm
 
 /-- **Grädel's theorem (`SO∃-Horn = P`):** an ordered query is SO∃-Horn definable if and only if
 its source-only encoded language is decidable in native polynomial time. -/

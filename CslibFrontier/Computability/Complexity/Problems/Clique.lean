@@ -75,7 +75,7 @@ structure CliqueInstance where
   m : ℕ
   deriving DecidableEq, Repr, Inhabited
 
-/-- Encoding of `CliqueInstance` as `(graph, m)`. -/
+/-- Framed `encGraph` followed by binary target `encNat`, encoding `CliqueInstance`. -/
 enc_structure encCliqueInstance : CliqueInstance where
   graph : encGraph,
   m : encNat

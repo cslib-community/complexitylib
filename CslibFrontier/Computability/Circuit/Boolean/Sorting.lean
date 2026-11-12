@@ -174,11 +174,6 @@ def pack {t n r : ℕ} (c : Fin t → BitString 2) (x : Fin n → BitString r) :
     (x : Fin n → BitString r) : pack c x ∘ Fin.natAdd (t * 2) = flatten x :=
   Fin.append_comp_natAdd _ _
 
-/-- Flattening the record view recovers the original wire assignment. -/
-@[simp] theorem flatten_block {n r : ℕ} (x : BitString (n * r)) :
-    flatten (BitString.block x) = x :=
-  BitString.blocksEquiv.symm_apply_apply x
-
 /-- Apply a circuit to the payload while retaining every control pair by free wiring. -/
 theorem eval_parallel_pack {t n m r v : ℕ}
     (f : Circuit signature (n * r) (m * v)) (c : Fin t → BitString 2)
@@ -186,7 +181,7 @@ theorem eval_parallel_pack {t n m r v : ℕ}
     ((Circuit.id signature (t * 2)).parallel f).eval interpretation (pack c x) =
       pack c (BitString.block (f.eval interpretation (flatten x))) := by
   simp only [Circuit.eval_parallel, Circuit.id, Circuit.eval_wiring, Function.comp_id,
-    pack, Fin.append_comp_castAdd, Fin.append_comp_natAdd, flatten_block]
+    pack, Fin.append_comp_castAdd, Fin.append_comp_natAdd, BitString.blocksEquiv_symm_block]
 
 /-- Control pairs and payload records determine the complete wire assignment. -/
 theorem ext {t n r : ℕ} {x y : BitString (t * 2 + n * r)}

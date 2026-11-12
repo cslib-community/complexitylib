@@ -552,8 +552,7 @@ theorem computableInPolyTime_edges :
       ComputableInPolyTime (fun x : VertexCoverInstance => List.range (active x).length)
         encVertexCoverInstance (encList encUnary) :=
     ComputableInPolyTime.range.comp
-      ((ComputableTidilyInPolyTime.length_list encNat).computableInPolyTime.comp
-        computableInPolyTime_active)
+      ((ComputableInPolyTime.length_list encNat).comp computableInPolyTime_active)
   refine flatMapWithInput hrange ?_
   have hfilt_range :
       ComputableInPolyTime (fun p : VertexCoverInstance × ℕ => List.range (active p.1).length)
@@ -600,7 +599,7 @@ theorem computableInPolyTime_graph :
       encVertexCoverInstance (encList encNat) := by
     simpa only [Function.comp_def, List.map_id'] using
       (map unary_to_binary).comp (range.comp computableInPolyTime_numVertices)
-  exact (encGraph_mk_polyTime hV computableInPolyTime_edges).of_enc_eq fun _ => rfl
+  exact encGraph_mk_polyTime hV computableInPolyTime_edges
 
 end VertexCover.Buss
 

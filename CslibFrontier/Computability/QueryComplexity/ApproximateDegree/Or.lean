@@ -93,7 +93,7 @@ theorem approxDegree_threshold_one_right_le {d : ℕ} (hd : 2 * n ≤ d ^ 2 + 1)
     approxDegree (1 / 3) (threshold n 1) ≤ d := by
   rcases lt_or_ge n 2 with hn | hn
   · -- at most one bit: the disjunction itself has degree `n ≤ d`
-    refine (approxDegree_le_degree (by norm_num)).trans ?_
+    refine (approxDegree_le_degree).trans ?_
     rw [degree_threshold_one_right]
     rcases Nat.lt_or_ge d 1 with hd1 | hd1
     · interval_cases d

@@ -303,7 +303,9 @@ private theorem poly_loop : ComputableInPolyTime
 
 attribute [local fun_prop] poly_loop
 
-private theorem poly_binaryIndex {α : Type} {e : α ↪ List Bool}
+/-- Compute an occurrence record's binary output position by scanning the actual occurrence
+list; an absent record returns the actual list length, also encoded in binary. -/
+theorem poly_binaryIndex {α : Type} {e : α ↪ List Bool}
     {F : α → CSP Table ℕ} {o : α → Record}
     (hF : ComputableInPolyTime F e (encCSP encTable encNat))
     (ho : ComputableInPolyTime o e encRecord) :

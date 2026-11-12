@@ -12,6 +12,7 @@ public import Mathlib.Algebra.BigOperators.Group.List.Basic
 public import Mathlib.Algebra.Group.Nat.Even
 public import Mathlib.Data.Sym.Sym2
 public import Mathlib.Logic.Relation
+public import CslibFrontier.Foundations.Data.List.ConsecutivePairs
 
 /-!
 # Euler circuits in finite multigraphs
@@ -87,13 +88,6 @@ variable {α : Type*}
 /-! The edges of a walk `w` are the pairs of its consecutive entries, Mathlib's
 `w.consecutivePairs` (`w.zip w.tail`). -/
 
-@[simp] theorem consecutivePairs_nil : ([] : List α).consecutivePairs = [] := rfl
-
-@[simp] theorem consecutivePairs_singleton (a : α) : [a].consecutivePairs = [] := rfl
-
-@[simp] theorem consecutivePairs_cons_cons (a b : α) (l : List α) :
-    (a :: b :: l).consecutivePairs = (a, b) :: (b :: l).consecutivePairs := rfl
-
 /-- The unordered edge `{a, b}` underlying the ordered pair `(a, b)`. -/
 def undirected (e : α × α) : Sym2 α := s(e.1, e.2)
 
@@ -109,7 +103,7 @@ theorem consecutivePairs_append_cons (A : List α) (x : α) (B : List α) :
     cases A with
     | nil => simp
     | cons b A =>
-      simp only [List.cons_append, consecutivePairs_cons_cons] at ih ⊢
+      simp only [List.cons_append, List.consecutivePairs_cons_cons] at ih ⊢
       rw [ih]
 
 theorem mem_of_mem_consecutivePairs {w : List α} {e : α × α} (h : e ∈ w.consecutivePairs) :
@@ -120,7 +114,7 @@ theorem mem_of_mem_consecutivePairs {w : List α} {e : α × α} (h : e ∈ w.co
     cases l with
     | nil => simp at h
     | cons b l =>
-      rw [consecutivePairs_cons_cons, List.mem_cons] at h
+      rw [List.consecutivePairs_cons_cons, List.mem_cons] at h
       rcases h with rfl | h
       · simp
       · obtain ⟨h1, h2⟩ := ih h
@@ -284,7 +278,7 @@ theorem degree_consecutivePairs_cons (a : α) (l : List α) (x : α) :
     · simp [h, Ne.symm h]
   | cons b l ih =>
     have := ih b
-    rw [consecutivePairs_cons_cons, degree_cons, List.getLast_cons_cons, List.count_cons]
+    rw [List.consecutivePairs_cons_cons, degree_cons, List.getLast_cons_cons, List.count_cons]
     simp only [ends, beq_iff_eq] at this ⊢
     by_cases h : x = a
     · subst h
@@ -441,7 +435,7 @@ theorem walkFrom_spec (fuel : ℕ) (H : List (α × α)) (u t : α) (hfuel : H.l
       simp only [walkFrom, hfind]
       rw [hr1] at ih2 ih3 ⊢
       refine ⟨rfl, by simpa using ih2, ?_, ih4⟩
-      simp only [consecutivePairs_cons_cons, List.cons_append, List.map_cons]
+      simp only [List.consecutivePairs_cons_cons, List.cons_append, List.map_cons]
       refine (hperm.map undirected).trans ?_
       rw [List.map_cons, undirected_eq_of_touches hte]
       exact ih3.cons _

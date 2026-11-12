@@ -92,7 +92,7 @@ structure VertexCoverInstance where
   k : ℕ
   deriving DecidableEq, Repr, Inhabited
 
-/-- Encoding of `VertexCoverInstance` as `(graph, k)`. -/
+/-- Framed `encGraph` followed by binary target `encNat`, encoding `VertexCoverInstance`. -/
 enc_structure encVertexCoverInstance : VertexCoverInstance where
   graph : encGraph,
   k : encNat
@@ -373,7 +373,8 @@ theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encVertexCoverInstance encBits) encBool := by
   refine computableInPolyTime_subsetVerifier (encγ := encNat)
     (by fun_prop)
-    (bool_and' ?_ (by fun_prop))
+    (bool_and' ?_ (computableInPolyTime_isCover.comp
+      ((encVertexCoverInstance_graph_polyTime (fst _ _)).prod (snd _ _))))
   exact ((length_list_binary encNat).comp (snd _ _)).decide_eq' (by fun_prop)
 
 /-- `VertexCover` belongs to `NP`. -/

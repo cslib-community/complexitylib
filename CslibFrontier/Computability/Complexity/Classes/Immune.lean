@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.P.Closure
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import CslibFrontier.Computability.Complexity.Classes.P.Finite
 
 /-!
 # Immune and bi-immune sets
@@ -46,7 +46,6 @@ problems complete for `E` or `EXP` are not `P`-immune, is in
 * `Cslib.Complexity.isBiImmune_iff_of_sdiff_finite`, `Cslib.Complexity.isBiImmune_P_iff`: for a
   class containing the universe and closed under removing finite sets, the infiniteness conditions
   are automatic.
-* `Set.Finite.mem_P`: finite problems are in `P`.
 
 ## References
 
@@ -146,16 +145,6 @@ theorem isBiImmune_iff_of_sdiff_finite [Infinite α] (huniv : Set.univ ∈ C)
     exact hx₁.2 hx₂
   · obtain ⟨x, hx₁, hx₂⟩ := (h _ (hsdiff _ huniv _ hA) (Set.infinite_univ.sdiff hA)).2
     exact hx₂ (by simpa using hx₁.2)
-
-/-- **Finite problems are in `P`**, decided by comparing the encoded instance with the encodings
-of the finitely many members. -/
-theorem _root_.Set.Finite.mem_P {β : Type} {enc : β ↪ List Bool} {F : Set β} (hF : F.Finite) :
-    F ∈ P enc := by
-  classical
-  refine ⟨fun b => decide (enc b ∈ hF.toFinset.toList.map enc), ?_, fun b => ?_⟩
-  · have : ComputableInPolyTime (fun b : β => enc b) enc encBits := .of_eq fun _ => rfl
-    fun_prop
-  · simp
 
 /-- **`P`-bi-immunity by meeting and leaving**: `A` is `P`-bi-immune exactly when every infinite
 problem in `P` meets `A` and leaves it. -/

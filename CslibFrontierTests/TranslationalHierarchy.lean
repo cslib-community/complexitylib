@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 
 /-! Values of the iterated square root of the logarithm, and instances of the translational
 hierarchy: `DTIME(n) ⊊ DTIME(n (log₂ n + 1))`, the real-exponent form at `ε = 1`, and the
@@ -43,9 +44,7 @@ example : DTIME encBits (fun n => n ^ 2) ⊂ DTIME encBits (fun n => n ^ 2 * (Na
       exact_mod_cast Nat.lt_pow_succ_log_self (by norm_num) n
     have hlog := Real.log_lt_log hpos hlt
     rw [Real.log_pow] at hlog
-    have h2 : Real.log 2 < 1 := by
-      have := Real.log_lt_sub_one_of_pos (by norm_num : (0 : ℝ) < 2) (by norm_num)
-      linarith
+    have h2 : Real.log 2 < 1 := Real.log_two_lt_one
     have h0 : (0 : ℝ) ≤ Nat.log 2 n := Nat.cast_nonneg _
     push_cast at hlog
     nlinarith

@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 
 /-!
 # The space hierarchy theorem
@@ -389,8 +390,8 @@ theorem DSPACE_ssubset_DSPACE {f g : ℕ → ℕ} (hg : SpaceConstructible g)
   have hsub : DSPACE encBits f ⊆ DSPACE encBits g := DSPACE_mono_of_eventually_le <| by
     filter_upwards [hfg 1] with n h
     omega
-  refine (Set.ssubset_iff_of_subset hsub).mpr ⟨_, DSPACE_subset_of_le_mul_add 4 0
-    (fun n => (Nat.add_zero _).ge) (setOf_spaceDiagonal_mem_DSPACE (hg.const_mul 4)
+  refine (Set.ssubset_iff_of_subset hsub).mpr ⟨_, DSPACE_mono_of_le_mul_add (C := 4)
+    (fun n => Nat.le_add_right _ _) (setOf_spaceDiagonal_mem_DSPACE (hg.const_mul 4)
       fun n => (hlog n).trans (Nat.le_mul_of_pos_left _ (by norm_num))),
     setOf_spaceDiagonal_notMem_DSPACE (fun n => Nat.mul_le_mul_left 4 (hlog n)) fun c => ?_⟩
   filter_upwards [hfg c] with n h
@@ -449,7 +450,7 @@ theorem DSPACE_pow_ssubset_DSPACE_pow_succ (k : ℕ) :
   (DSPACE_ssubset_DSPACE (g := fun n => (n + 1) ^ (k + 1))
     (spaceConstructible_succ_pow (k + 1))
     (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)))
-    (eventually_mul_pow_add_le_succ_pow k)).trans_subset (DSPACE_subset_of_le_mul_add (2 ^ (k + 1))
-      1 fun n => by simpa using Nat.mul_add_one_pow_le_two_pow 1 (k + 1) n)
+    (eventually_mul_pow_add_le_succ_pow k)).trans_subset
+      (DSPACE_mono_of_le_mul_add (Nat.add_one_pow_le_two_pow_mul_add (k + 1)))
 
 end Cslib.Complexity
