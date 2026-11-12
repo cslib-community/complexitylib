@@ -172,7 +172,7 @@ theorem glAmpCandidate_block (h : BooleanFunction (k * n + k)) (masks : Fin K ‚Ü
     (guess : BitString K) (x : BitString (k * n)) :
     glAmpCandidate h masks guess (BitString.block x) =
       Crypto.GoldreichLevin.candidate (fun r => h (Fin.append x r)) masks guess := by
-  rw [glAmpCandidate_apply, ‚Üê BitString.blocksEquiv_apply, Equiv.symm_apply_apply]
+  rw [glAmpCandidate_apply, BitString.blocksEquiv_symm_block]
 
 /-- **The circuit complexity of the candidate.** If `h` has a De Morgan circuit with at most `s`
 gates, each output bit of the candidate, as a function of the flat input read in blocks, has one
