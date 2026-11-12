@@ -381,6 +381,33 @@ theorem clog_max_le_eight_mul_charBits {c n : ℕ} (hn : quotientPermThreshold c
       quotientPermRedBits c n ≤ quotientPermChars c * quotientPermCharBits n :=
   (clog_max_le_eight_mul_charBits_aux hn).2
 
+private theorem threshold_charBits_bounds {c n : ℕ} (hn : quotientPermThreshold c ≤ n) :
+    4 ≤ n ∧
+      n ≤ 2 ^ (8 * quotientPermCharBits n) ∧
+      quotientPermInd c n ≤ 8 * quotientPermChars c * quotientPermCharBits n ∧
+      40 ≤ quotientPermChars c ∧
+      11 ≤ quotientPermRep c ∧
+      4 * (44 * quotientPermChars c) ^ 2 ≤ quotientPermCharBits n ∧
+      4 * (quotientPermCodeExp c) ^ 2 ≤ quotientPermCharBits n := by
+  obtain ⟨hb_min, hclog4, _⟩ := clog_max_le_eight_mul_charBits_aux hn
+  have h4n : 4 ≤ n := (four_le_quotientPermThreshold c).trans hn
+  have hn_pow : n ≤ 2 ^ (8 * quotientPermCharBits n) :=
+    (le_max_left n 4).trans ((Nat.le_pow_clog (by decide) _).trans
+      (Nat.pow_le_pow_right (by decide) hclog4))
+  have hclog2 : Nat.clog 2 (max n 2) ≤ 8 * quotientPermCharBits n :=
+    (Nat.clog_mono_right 2 (max_le_max_left n (by decide))).trans hclog4
+  have hκ_le : quotientPermInd c n ≤ 8 * quotientPermChars c * quotientPermCharBits n := by
+    calc quotientPermInd c n = 8 * (c + 3) * Nat.clog 2 (max n 2) := rfl
+      _ ≤ 8 * (c + 5) * (8 * quotientPermCharBits n) := Nat.mul_le_mul (by omega) hclog2
+      _ = 8 * quotientPermChars c * quotientPermCharBits n := by unfold quotientPermChars; ring
+  have hc_ge : 40 ≤ quotientPermChars c := by unfold quotientPermChars; omega
+  have hq_ge : 11 ≤ quotientPermRep c := by unfold quotientPermRep; omega
+  have hD_ge : 44 * quotientPermChars c ≤ quotientPermCodeExp c := by
+    unfold quotientPermCodeExp; nlinarith
+  have hmin_eq : 4 * (quotientPermCodeExp c) ^ 2 ≤ quotientPermCharBits n := hb_min
+  exact ⟨h4n, hn_pow, hκ_le, hc_ge, hq_ge,
+    (Nat.mul_le_mul_left 4 (Nat.pow_le_pow_left hD_ge 2)).trans hmin_eq, hmin_eq⟩
+
 /-- Top-level `k`-uniqueness failure probability `≤ 1 / (8 * n ^ (c + 2))` above
 `quotientPermThreshold c`. -/
 theorem prob_not_isKUnique_quotientPerm_le {c n : ℕ} (hn : quotientPermThreshold c ≤ n) :
@@ -389,22 +416,12 @@ theorem prob_not_isKUnique_quotientPerm_le {c n : ℕ} (hn : quotientPermThresho
       {T₁ | IsKUnique (quotientPermInd c n) (simpleTabTuple T₁)}ᶜ).toReal ≤
       1 / (8 * (n : ℝ) ^ (c + 2)) := by
   classical
-  obtain ⟨hb_min, hclog4, _⟩ := clog_max_le_eight_mul_charBits_aux hn
-  have h4n : 4 ≤ n := (four_le_quotientPermThreshold c).trans hn
-  have hclog2 : Nat.clog 2 (max n 2) ≤ 8 * quotientPermCharBits n :=
-    (Nat.clog_mono_right 2 (max_le_max_left n (by decide))).trans hclog4
+  obtain ⟨h4n, hn_pow, hκ_le, hc_ge, hq_ge, hb_44c, hb_D⟩ := threshold_charBits_bounds hn
   have hκ_pos : 0 < quotientPermInd c n := by
     have : 1 ≤ Nat.clog 2 (max n 2) := Nat.clog_pos (by decide) (by omega)
     unfold quotientPermInd; positivity
-  have hκ_le : quotientPermInd c n ≤ 8 * quotientPermChars c * quotientPermCharBits n := by
-    calc quotientPermInd c n = 8 * (c + 3) * Nat.clog 2 (max n 2) := rfl
-      _ ≤ 8 * (c + 5) * (8 * quotientPermCharBits n) := Nat.mul_le_mul (by omega) hclog2
-      _ = 8 * quotientPermChars c * quotientPermCharBits n := by unfold quotientPermChars; ring
-  have hc_ge : 40 ≤ quotientPermChars c := by unfold quotientPermChars; omega
-  have hq_ge : 11 ≤ quotientPermRep c := by unfold quotientPermRep; omega
   have hq1 : 4 * (c + 2) + 1 ≤ quotientPermRep c - 1 := by unfold quotientPermRep; omega
   have hD_eq : quotientPermCodeExp c = (4 * quotientPermChars c + 1) * quotientPermRep c + 1 := rfl
-  have hmin_eq : quotientPermMinB c = 4 * (quotientPermCodeExp c) ^ 2 := rfl
   have hd_eq : quotientPermInter c = 2 * quotientPermRep c * quotientPermChars c := rfl
   generalize quotientPermChars c = c_tab at *
   generalize quotientPermRep c = q_tab at *
@@ -413,7 +430,6 @@ theorem prob_not_isKUnique_quotientPerm_le {c n : ℕ} (hn : quotientPermThresho
   generalize quotientPermInd c n = κ at *
   generalize quotientPermCodeExp c = D at *
   subst hd_eq
-  have hD_ge : 44 * c_tab ≤ D := by nlinarith
   have hb_c2 : 8 * c_tab ^ 2 ≤ b_char := by nlinarith
   have hb_d : 2 * q_tab * c_tab ≤ b_char := by nlinarith
   have hb_4c : 4 * c_tab ≤ b_char := by nlinarith
@@ -432,7 +448,7 @@ theorem prob_not_isKUnique_quotientPerm_le {c n : ℕ} (hn : quotientPermThresho
           Nat.mul_le_mul hb_4c (Nat.pow_le_pow_left hinner _)
       _ = b_char ^ D := by
           rw [← pow_mul, ← pow_succ']; exact congrArg (b_char ^ ·) (by omega)
-      _ ≤ 2 ^ b_char := Nat.pow_le_two_pow (by omega) (hmin_eq ▸ hb_min)
+      _ ≤ 2 ^ b_char := Nat.pow_le_two_pow (by omega) hb_D
   set B := doubleTabCodeBound c_tab (2 * q_tab * c_tab) q_tab κ
   set W := 2 ^ ((q_tab - 1) * b_char)
   have hexp_W : 4 * (c + 2) * b_char + b_char ≤ (q_tab - 1) * b_char := by
@@ -449,9 +465,6 @@ theorem prob_not_isKUnique_quotientPerm_le {c n : ℕ} (hn : quotientPermThresho
     nlinarith
   have hcard := card_not_isKUnique_le (c := c_tab) (d := 2 * q_tab * c_tab) (b := b_char)
     (q := q_tab) (k := κ) (by omega) (by omega) rfl h2B
-  have hn_pow : n ≤ 2 ^ (8 * b_char) :=
-    (le_max_left n 4).trans ((Nat.le_pow_clog (by decide) _).trans
-      (Nat.pow_le_pow_right (by decide) hclog4))
   have hnpow_c : n ^ (c + 2) ≤ (2 ^ (4 * (c + 2) * b_char)) ^ 2 := by
     calc n ^ (c + 2) ≤ (2 ^ (8 * b_char)) ^ (c + 2) := Nat.pow_le_pow_left hn_pow _
       _ = (2 ^ (4 * (c + 2) * b_char)) ^ 2 := by
@@ -547,27 +560,13 @@ theorem nr_contraction_quotientPerm_le {c n a' : ℕ} (hn : quotientPermThreshol
     (1 / 2 : ℝ) *
       (3 * (quotientPermInd c n : ℝ) ^ 2 / (2 ^ nrHalfLow a' : ℝ)) ^ (nrRounds c) ≤
       1 / (8 * (n : ℝ) ^ (c + 2)) := by
-  obtain ⟨hb_min, hclog4, _⟩ := clog_max_le_eight_mul_charBits_aux hn
-  have h4n : 4 ≤ n := (four_le_quotientPermThreshold c).trans hn
-  have hclog2 : Nat.clog 2 (max n 2) ≤ 8 * quotientPermCharBits n :=
-    (Nat.clog_mono_right 2 (max_le_max_left n (by decide))).trans hclog4
-  have hκ_le : quotientPermInd c n ≤ 8 * quotientPermChars c * quotientPermCharBits n := by
-    calc quotientPermInd c n = 8 * (c + 3) * Nat.clog 2 (max n 2) := rfl
-      _ ≤ 8 * (c + 5) * (8 * quotientPermCharBits n) := Nat.mul_le_mul (by omega) hclog2
-      _ = 8 * quotientPermChars c * quotientPermCharBits n := by unfold quotientPermChars; ring
-  have hc_ge : 40 ≤ quotientPermChars c := by unfold quotientPermChars; omega
-  have hq_ge : 11 ≤ quotientPermRep c := by unfold quotientPermRep; omega
-  have hD_eq : quotientPermCodeExp c = (4 * quotientPermChars c + 1) * quotientPermRep c + 1 := rfl
-  have hmin_eq : quotientPermMinB c = 4 * (quotientPermCodeExp c) ^ 2 := rfl
+  obtain ⟨_, hn_pow, hκ_le, hc_ge, _, hb_44c, _⟩ := threshold_charBits_bounds hn
   have hb_lo : quotientPermCharBits n ≤ nrHalfLow a' := by
     unfold nrHalfLow; omega
   generalize quotientPermChars c = c_tab at *
-  generalize quotientPermRep c = q_tab at *
   generalize quotientPermCharBits n = b_char at *
   generalize quotientPermInd c n = κ at *
-  generalize quotientPermCodeExp c = D at *
   set h_char := b_char / 2
-  have hD_ge : 44 * c_tab ≤ D := by nlinarith
   have hh_24c : 24 * c_tab ≤ h_char := by
     have : 48 * c_tab + 2 ≤ b_char := by nlinarith
     omega
@@ -595,9 +594,6 @@ theorem nr_contraction_quotientPerm_le {c n a' : ℕ} (hn : quotientPermThreshol
     have : (3 * (κ : ℝ) ^ 2) * (2 ^ h_char : ℝ) ≤ 1 * (2 ^ nrHalfLow a' : ℝ) := by
       exact_mod_cast (by simpa only [one_mul] using hstep_nat)
     exact this
-  have hn_pow : n ≤ 2 ^ (8 * b_char) :=
-    (le_max_left n 4).trans ((Nat.le_pow_clog (by decide) _).trans
-      (Nat.pow_le_pow_right (by decide) hclog4))
   have hexp : 8 * (c + 2) * b_char + 2 ≤ h_char * nrRounds c := by
     unfold nrRounds
     have h18 : 8 * b_char + 2 ≤ 18 * h_char := by omega
@@ -637,27 +633,13 @@ theorem quotientPermInd_le_self_of_threshold {c n : ℕ} (hn : quotientPermThres
     Nat.le_log_of_pow_le (by decide : 1 < 2) hn
   have hb_log : 4 * quotientPermCharBits n ≤ Nat.log 2 n := by
     unfold quotientPermCharBits; omega
-  obtain ⟨hb_min, hclog4, _⟩ := clog_max_le_eight_mul_charBits_aux hn
-  have h4n : 4 ≤ n := (four_le_quotientPermThreshold c).trans hn
+  obtain ⟨h4n, _, hκ_le, hc_ge, _, hb_44c, _⟩ := threshold_charBits_bounds hn
   have hκ_ge : 2 ≤ quotientPermInd c n := by
     have : 1 ≤ Nat.clog 2 (max n 2) := Nat.clog_pos (by decide) (by omega)
     unfold quotientPermInd; nlinarith
-  have hclog2 : Nat.clog 2 (max n 2) ≤ 8 * quotientPermCharBits n :=
-    (Nat.clog_mono_right 2 (max_le_max_left n (by decide))).trans hclog4
-  have hκ_le : quotientPermInd c n ≤ 8 * quotientPermChars c * quotientPermCharBits n := by
-    calc quotientPermInd c n = 8 * (c + 3) * Nat.clog 2 (max n 2) := rfl
-      _ ≤ 8 * (c + 5) * (8 * quotientPermCharBits n) := Nat.mul_le_mul (by omega) hclog2
-      _ = 8 * quotientPermChars c * quotientPermCharBits n := by unfold quotientPermChars; ring
-  have hc_ge : 40 ≤ quotientPermChars c := by unfold quotientPermChars; omega
-  have hq_ge : 11 ≤ quotientPermRep c := by unfold quotientPermRep; omega
-  have hD_eq : quotientPermCodeExp c = (4 * quotientPermChars c + 1) * quotientPermRep c + 1 := rfl
-  have hmin_eq : quotientPermMinB c = 4 * (quotientPermCodeExp c) ^ 2 := rfl
   generalize quotientPermChars c = c_tab at *
-  generalize quotientPermRep c = q_tab at *
   generalize quotientPermCharBits n = b_char at *
   generalize quotientPermInd c n = κ at *
-  generalize quotientPermCodeExp c = D at *
-  have hD_ge : 44 * c_tab ≤ D := by nlinarith
   have hb_8c : 8 * c_tab ≤ b_char := by nlinarith
   have hb_100 : 4 * 5 ^ 2 ≤ b_char := by nlinarith
   have hκ_b2 : κ ≤ b_char ^ 2 := by

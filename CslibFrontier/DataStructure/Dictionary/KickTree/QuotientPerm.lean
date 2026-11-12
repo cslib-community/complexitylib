@@ -394,6 +394,17 @@ theorem dist_concreteCaseA_restrict_le {a m b_aux c n : ℕ}
   rw [hmarg]
   exact dist_caseA_reducedDoubleTab_le hma hgap hn hS hTS hT
 
+private theorem le_chars_mul_charBits_of_lt_caseAGap {a m c n : ℕ}
+    (hcaseB : a < m + caseAGap c n) (hn : quotientPermThreshold c ≤ n)
+    (hm_hi : m ≤ 8 * quotientPermCharBits n) :
+    a ≤ quotientPermChars c * quotientPermCharBits n := by
+  have hclog2 : Nat.clog 2 (max n 2) ≤ 8 * quotientPermCharBits n :=
+    (Nat.clog_mono_right 2 (max_le_max_left n (by decide))).trans
+      (clog_max_le_eight_mul_charBits hn).1
+  have hgap_ub : caseAGap c n ≤ (c + 3) * (8 * quotientPermCharBits n) :=
+    Nat.mul_le_mul_left (c + 3) hclog2
+  rw [quotientPermChars_eq]; nlinarith
+
 /-- **Concrete Case B shard-tuple statistical-distance transfer**: when
 `bucketIndexBits n ≤ m ≤ a < m + caseAGap c n`, `m ≤ 8 * quotientPermCharBits n`,
 `quotientPermThreshold c ≤ n`, `#T ≤ quotientPermInd c n`, and
@@ -420,14 +431,8 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
   have : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
   have hnotA : ¬ (m + caseAGap c n ≤ a) := not_le.mpr hcaseB
   obtain ⟨hb_log, h2κ, _, _⟩ := quotientPermInd_le_self_of_threshold hn
-  obtain ⟨hclog4, _⟩ := clog_max_le_eight_mul_charBits hn
-  have hclog2 : Nat.clog 2 (max n 2) ≤ 8 * quotientPermCharBits n :=
-    (Nat.clog_mono_right 2 (max_le_max_left n (by decide))).trans hclog4
-  have ha_ub : a ≤ quotientPermChars c * quotientPermCharBits n := by
-    have hgap_ub : caseAGap c n ≤ (c + 3) * (8 * quotientPermCharBits n) :=
-      Nat.mul_le_mul_left (c + 3) hclog2
-    rw [quotientPermChars_eq]
-    nlinarith
+  have ha_ub : a ≤ quotientPermChars c * quotientPermCharBits n :=
+    le_chars_mul_charBits_of_lt_caseAGap hcaseB hn hm_hi
   have ha'_lo : 2 * quotientPermCharBits n ≤ suffixBits a m := by
     unfold bucketIndexBits at hm_lo
     dsimp only [suffixBits, shardBits]
@@ -573,13 +578,8 @@ theorem prob_concreteCaseB_shardLoad_outside_le {a m b_aux c n k_mom : ℕ}
           (3 * (k_mom : ℝ) * ((#S : ℝ) / (2 ^ shardBits m : ℝ)) / a_dev ^ 2) ^ k_mom := by
   classical
   have hnotA : ¬ (m + caseAGap c n ≤ a) := not_le.mpr hcaseB
-  obtain ⟨hclog4, _⟩ := clog_max_le_eight_mul_charBits hn
-  have hclog2 : Nat.clog 2 (max n 2) ≤ 8 * quotientPermCharBits n :=
-    (Nat.clog_mono_right 2 (max_le_max_left n (by decide))).trans hclog4
-  have ha_ub : a ≤ quotientPermChars c * quotientPermCharBits n := by
-    have hgap_ub : caseAGap c n ≤ (c + 3) * (8 * quotientPermCharBits n) :=
-      Nat.mul_le_mul_left (c + 3) hclog2
-    rw [quotientPermChars_eq]; nlinarith
+  have ha_ub : a ≤ quotientPermChars c * quotientPermCharBits n :=
+    le_chars_mul_charBits_of_lt_caseAGap hcaseB hn hm_hi
   have ha'_ub : suffixBits a m ≤ quotientPermChars c * quotientPermCharBits n :=
     (Nat.sub_le _ _).trans ha_ub
   let Top := DoubleTabTopSeed (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
