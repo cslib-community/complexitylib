@@ -31,7 +31,7 @@ namespace Cslib.Complexity.Graph
 an injectivity assumption on the map. -/
 theorem endpoints_declared_relabel (G : Graph) (f : ℕ → ℕ)
     (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) :
-    ∀ v ∈ (G.relabel f).incidenceVertices, v ∈ (G.relabel f).1 := by
+    ∀ v ∈ (G.relabel f).incidenceVertices, v ∈ (G.relabel f).vertices := by
   intro v hv
   obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
   obtain ⟨old, ho, rfl⟩ := List.mem_map.mp he
@@ -44,7 +44,7 @@ namespace Dart
 
 /-- A vertex-name map retains every original indexed edge end. No injection is required. -/
 @[expose] def relabelEquiv (G : Graph) (f : ℕ → ℕ) : Dart G ≃ Dart (G.relabel f) :=
-  (finCongr (show G.edges.length = (G.relabel f).2.length by simp [Graph.relabel])).prodCongr
+  (finCongr (show G.edges.length = (G.relabel f).edges.length by simp [Graph.relabel])).prodCongr
     (Equiv.refl Bool)
 
 /-- The actual endpoint is mapped by the supplied name function. -/

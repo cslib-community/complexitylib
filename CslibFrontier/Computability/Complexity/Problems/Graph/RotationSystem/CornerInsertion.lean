@@ -60,7 +60,7 @@ open Equiv.Perm.Insertion
 @[expose] def cornerDartEquiv {G : Graph} (h k : Dart G) :
     Dart (cornerGraph h k) ≃ Option (Option (Dart G)) :=
   (Equiv.prodCongr
-    (finCongr (show (cornerGraph h k).2.length = G.edges.length + 1 by simp [cornerGraph]))
+    (finCongr (show (cornerGraph h k).edges.length = G.edges.length + 1 by simp [cornerGraph]))
     (Equiv.refl Bool)).trans
     (appendedDartEquiv G.edges.length)
 

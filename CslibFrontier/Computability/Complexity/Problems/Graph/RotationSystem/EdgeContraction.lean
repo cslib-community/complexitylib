@@ -114,17 +114,17 @@ theorem contractLastEdge_coordinates (G : Graph) (u v : ℕ) :
         (Dart.relabelEquiv G (Function.update id u v)).optionCongr.optionCongr := by
   apply Equiv.ext
   rintro ⟨⟨i, hi⟩, b⟩
-  change (if h : i < (contractLastEdgeGraph G u v).2.length then
+  change (if h : i < (contractLastEdgeGraph G u v).edges.length then
       some (some (⟨i, h⟩, b)) else if b then none else some none) =
     (Dart.relabelEquiv G (Function.update id u v)).optionCongr.optionCongr
       (if h : i < G.edges.length then some (some (⟨i, h⟩, b))
         else if b then none else some none)
   by_cases h : i < G.edges.length
-  · have he : i < (contractLastEdgeGraph G u v).2.length := by
+  · have he : i < (contractLastEdgeGraph G u v).edges.length := by
       simpa only [contractLastEdgeGraph, Graph.relabel, List.length_map] using h
     rw [dite_eq_left he, dite_eq_left h]
     rfl
-  · have he : ¬i < (contractLastEdgeGraph G u v).2.length := by
+  · have he : ¬i < (contractLastEdgeGraph G u v).edges.length := by
       simpa only [contractLastEdgeGraph, Graph.relabel, List.length_map] using h
     rw [dite_eq_right he, dite_eq_right h]
     cases b <;> rfl

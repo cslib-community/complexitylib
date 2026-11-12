@@ -34,7 +34,7 @@ open Equiv Perm.CycleSurgery
 @[expose] def lastEdgeDartEquiv (G : Graph) (u v : ℕ) :
     Dart (lastEdgeGraph G u v) ≃ Option (Option (Dart G)) :=
   (Equiv.prodCongr
-    (finCongr (show (lastEdgeGraph G u v).2.length = G.edges.length + 1 by
+    (finCongr (show (lastEdgeGraph G u v).edges.length = G.edges.length + 1 by
       simp [lastEdgeGraph])) (Equiv.refl Bool)).trans (appendedDartEquiv G.edges.length)
 
 /-- The two indexed ends of the last listed edge, including when the old graph has no darts. -/

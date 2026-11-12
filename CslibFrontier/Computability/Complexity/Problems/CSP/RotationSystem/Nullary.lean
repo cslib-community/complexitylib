@@ -66,9 +66,9 @@ ordered numerical certificate. Its truth value under relation semantics is not a
 theorem verifyRotationCertificate_append_nullary (F : CSP Rel V) (r : Rel)
     (c : RotationCertificate) :
     verifyRotationCertificate (F ++ [(r, [])]) c = verifyRotationCertificate F c := by
-  have he : (incidenceGraph (F ++ [(r, [])])).2 = (incidenceGraph F).2 :=
+  have he : (incidenceGraph (F ++ [(r, [])])).edges = (incidenceGraph F).edges :=
     by simpa only using
-      congrArg (fun G : Graph => G.2) (incidenceGraph_append_nullary F r)
+      congrArg (fun G : Graph => G.edges) (incidenceGraph_append_nullary F r)
   have hg := RotationCertificate.verifyGenusZero_eq_of_edges_eq he
     (incidenceVertices_declared (F ++ [(r, [])])) (incidenceVertices_declared F) c
   simp only [verifyRotationCertificate, verifyArgumentOrder_append_nullary, hg]

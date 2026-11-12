@@ -56,8 +56,8 @@ theorem disjointDartEquiv_inr (G H : Graph) (d : Dart H) :
 theorem vertex_disjointDartEquiv_inl (G H : Graph) (d : Dart G) :
     (disjointDartEquiv G H (Sum.inl d)).vertex = 2 * d.vertex := by
   rw [disjointDartEquiv_inl]
-  change (if d.2 then ((G.disjointUnion H).2.getD d.1.val (0, 0)).2 else
-    ((G.disjointUnion H).2.getD d.1.val (0, 0)).1) = 2 * d.vertex
+  change (if d.2 then ((G.disjointUnion H).edges.getD d.1.val (0, 0)).2 else
+    ((G.disjointUnion H).edges.getD d.1.val (0, 0)).1) = 2 * d.vertex
   simp only [disjointUnion]
   rw [List.getD_eq_getElem _ _ (by
     simpa only [disjointUnion, List.length_append, List.length_map] using
@@ -73,8 +73,8 @@ theorem vertex_disjointDartEquiv_inl (G H : Graph) (d : Dart G) :
 theorem vertex_disjointDartEquiv_inr (G H : Graph) (d : Dart H) :
     (disjointDartEquiv G H (Sum.inr d)).vertex = 2 * d.vertex + 1 := by
   rw [disjointDartEquiv_inr]
-  change (if d.2 then ((G.disjointUnion H).2.getD (G.edges.length + d.1.val) (0, 0)).2 else
-    ((G.disjointUnion H).2.getD (G.edges.length + d.1.val) (0, 0)).1) = 2 * d.vertex + 1
+  change (if d.2 then ((G.disjointUnion H).edges.getD (G.edges.length + d.1.val) (0, 0)).2 else
+    ((G.disjointUnion H).edges.getD (G.edges.length + d.1.val) (0, 0)).1) = 2 * d.vertex + 1
   simp only [disjointUnion]
   rw [List.getD_eq_getElem _ _ (by
     simpa only [disjointUnion, List.length_append, List.length_map] using
@@ -96,7 +96,7 @@ theorem reverse_disjointDartEquiv (G H : Graph) (d : Dart G ⊕ Dart H) :
 theorem endpoints_declared_disjointUnion (G H : Graph)
     (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices)
     (hH : ∀ v ∈ H.incidenceVertices, v ∈ H.vertices) :
-    ∀ v ∈ (G.disjointUnion H).incidenceVertices, v ∈ (G.disjointUnion H).1 := by
+    ∀ v ∈ (G.disjointUnion H).incidenceVertices, v ∈ (G.disjointUnion H).vertices := by
   intro v hv
   obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
   rcases List.mem_append.mp he with he | he
