@@ -23,11 +23,11 @@ Nisan and Wigderson build designs from polynomials over a finite field `F` with 
 [NisanWigderson1994]. The universe is the plane `F × F`, and each polynomial `P` of degree less than
 `k` contributes its graph `{(x, P x) | x ∈ F}`, a set of `q` points. Two distinct such polynomials
 agree on at most `k - 1` points, because their difference is a nonzero polynomial of degree less
-than `k`, so two distinct graphs share at most `k - 1` points
-(`Cslib.polynomialBlock`, `Cslib.card_polynomialBlock_inter_le`, shared with `Cslib.rsDesign`). There are `q ^ k` polynomials of
-degree less than `k`, one for each list of `k` coefficients. Numbering the points of the plane and
-the polynomials gives a `(q ^ 2, q, k - 1)`-design with `q ^ k` blocks. Since finite fields exist in
-every prime power order, such a design exists whenever `q` is a prime power.
+than `k`, so two distinct graphs share at most `k - 1` points (`Cslib.polynomialBlock`,
+`Cslib.card_polynomialBlock_inter_le`, shared with `Cslib.rsDesign`). There are `q ^ k` polynomials
+of degree less than `k`, one for each list of `k` coefficients. Numbering the points of the plane
+and the polynomials gives a `(q ^ 2, q, k - 1)`-design with `q ^ k` blocks. Since finite fields
+exist in every prime power order, such a design exists whenever `q` is a prime power.
 
 Designs can be adjusted: one may keep only some of the blocks, embed the universe in a larger
 one, weaken the bound on intersections, or replace each block by a subset of a given size, since
