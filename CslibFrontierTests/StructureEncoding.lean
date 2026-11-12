@@ -4,12 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
-import CslibFrontier.Tactic.PolyTime
+module
+-- upstream: local-only (structure-encoding regression tests)
+
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+public import CslibFrontier.Tactic.PolyTime
 
 /-! Tests of `enc_structure`. -/
+
+public section
 
 namespace CslibFrontierTests.StructureEncoding
 
