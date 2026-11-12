@@ -395,10 +395,8 @@ private theorem gadgetColoring_palette (φ : CNF ℕ) (σ : ℕ → Bool) (c : �
 private theorem gadgetColoring_literal {φ : CNF ℕ} (σ : ℕ → Bool) {l : Literal ℕ}
     (hl : l.1 ∈ φ.vars) : gadgetColoring φ σ (literalVertex φ l) = literalColor σ l := by
   obtain ⟨x, b⟩ := l
-  have hlt : φ.vars.idxOf x < φ.vars.length := List.idxOf_lt_length_iff.2 hl
   simp only [gadgetColoring, literalVertex, Nat.unpair_pair]
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some,
-    List.getElem_idxOf hlt]
+  rw [List.getD_eq_getElem?_getD, List.getElem?_idxOf hl, Option.getD_some]
   cases b <;> rfl
 
 private theorem gadgetColoring_output (φ : CNF ℕ) (σ : ℕ → Bool) (i j : ℕ) :
