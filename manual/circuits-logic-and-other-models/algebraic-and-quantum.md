@@ -237,6 +237,26 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.SparseOrbit
 
 **Not certified here.** Positive characteristic: ordinary partial derivatives replace the source's Hasse derivatives, and the hitting set of [Hitting sets for small partial-derivative spaces](#hitting-sets-for-small-partial-derivative-spaces) needs characteristic zero. The source's curve `-ln (1 - i t)`; the library's is used. The degree-free hitting set over the reals, the lower bound on the number of monomials in every coordinate system, the applications to other orbit classes, and the operation count. The bit length of the points.
 
+## Hitting sets for affine orbits of sparse polynomials
+
+Import [HittingSet/SparseOrbit.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SparseOrbit.lean). The endpoint [isHittingSet_sparseOrbitHittingSet](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/SparseOrbit.lean) is for `[Field F] [CharZero F]`: `sparseOrbitHittingSet F n s d` hits every `f` with `f.totalDegree ≤ d` that equals `aeval (fun i => ∑ j, C (A i j) * X j + C (b i)) p` for some `p` with `p.support.card ≤ s`, a matrix `A` with `IsUnit A.det` and a point `b`: the polynomials `p (A x + b)` with `p` sparse. `card_sparseOrbitHittingSet_le s d` bounds the set by `(n ^ 2 + 1) * (2 * d * (n * s ^ 2 + s) + 1)`. The points are those of the curves `sparseOrbitCurve`, `t ↦ (β, β ^ 2, …, β ^ n) + t ^ B • G (t)` with `G` the truncated logarithmic curve of the previous section and `B = n * s ^ 2 + s`.
+
+The pieces, each usable alone:
+
+- [finrank_iteratedPDerivSpan_homogeneousComponent_shift_le](../../CslibFrontier/Foundations/Data/MvPolynomial/SparseShift.lean): if all coordinates of `u` are nonzero and `shift u p` has no homogeneous component below degree `m`, the partial derivatives of its component of degree `m` span a space of dimension at most `p.support.card`. `prod_X_add_C_mul_iteratedPDeriv_shift_mem` puts `∏ (X (α i) + C (u (α i))) * iteratedPDeriv α (shift u p)` in the image under the shift of Mathlib's `MvPolynomial.restrictSupport K ↑p.support`, the span of the monomials of `p`.
+- [iteratedPDerivSpan p](../../CslibFrontier/Foundations/Data/MvPolynomial/IteratedPDerivSpan.lean): the span of all iterated partial derivatives of `p`, closed under `pderiv` (`pderiv_mem_iteratedPDerivSpan`).
+- [linearIndependent_of_homogeneousComponent](../../CslibFrontier/Foundations/Data/MvPolynomial/LowestComponent.lean): polynomials `F i` with no homogeneous component below degree `e i` whose components of degree `e i` are linearly independent are linearly independent.
+- [linearSubst A](../../CslibFrontier/Foundations/Data/MvPolynomial/LinearSubstitution.lean), `p ↦ p (A x)`, with the chain rule `pderiv_linearSubst` (from the general `MvPolynomial.pderiv_aeval`, now in [Substitution.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/Substitution.lean)), `pderiv_mem_map_linearSubst` (the image of a derivative-closed space is derivative-closed) and `linearSubst_injective` for `IsUnit A.det`.
+- `not_X_pow_dvd_aeval_logCurve` ([Basic.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/Basic.lean)): a nonzero polynomial in a derivative-closed space of dimension at most `r` is not divisible by `X ^ (n * r ^ 2 + r)` on the truncated curve.
+
+Complete client: [SparseOrbit.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/SparseOrbit.lean) shows that `(X 0 + X 1) ^ 2` is `p (A x)` for the monomial `p = X 0 ^ 2` and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.SparseOrbit
+```
+
+**Not certified here.** Positive characteristic: ordinary partial derivatives replace the source's Hasse derivatives, and the hitting set of the previous section needs characteristic zero. The source's curve `-ln (1 - i t)`; the library's is used. The degree-free hitting set over the reals, the lower bound on the number of monomials in every coordinate system, the applications to other orbit classes, and the operation count. The bit length of the points.
+
 ## Hitting sets for multilinear any-order ROABPs
 
 Import [HittingSet/AnyOrder.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrder.lean). `IsAnyOrderROABP w f` says that `f : MvPolynomial (Fin n) F` is computed by a read-once oblivious branching program of width `w` in every order of the variables: for every list `l` of all the variables without repetition there are matrices `M : Fin n → Matrix (Fin w) (Fin w) F[X]` and indices `s t` with `f = roabpProd M l s t`, the `(s, t)` entry of the product of the `M i` evaluated at `X i` in the order of `l`. The matrices may depend on the order.
