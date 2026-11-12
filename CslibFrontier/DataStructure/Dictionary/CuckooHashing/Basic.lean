@@ -372,7 +372,8 @@ theorem putT1_entryIn_none {U m : ℕ} {h₁ : Fin U → Fin m} {tbl : PureTable
     EntryIn (putT1 h₁ tbl e).1 d ↔ EntryIn tbl d ∨ d = e := by
   have ht1_none : tbl.t1 (h₁ e.key) = none := hold
   dsimp only [EntryIn, putT1]
-  rw [Function.exists_update_iff, Option.some.injEq]
+  rw [Function.exists_update_iff tbl.t1 (a := h₁ e.key) (b := some e)
+    (p := fun _ slot => slot = some d), Option.some.injEq]
   constructor
   · rintro ((hd | ⟨i, _, hi⟩) | hi)
     · exact Or.inr hd.symm
@@ -408,7 +409,8 @@ theorem putT1_some_spec {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {tbl : PureTab
         exact hie hi_eq.symm
     · exact hwp.disjoint_keys (h₁ e.key) i e₁ d ht1_some hi hdk.symm
   · dsimp only [EntryIn, putT1]
-    rw [Function.exists_update_iff, Option.some.injEq]
+    rw [Function.exists_update_iff tbl.t1 (a := h₁ e.key) (b := some e)
+      (p := fun _ slot => slot = some d), Option.some.injEq]
     constructor
     · rintro (((hd | ⟨i, _, hi⟩) | hi) | hd)
       · exact Or.inr hd.symm
@@ -451,7 +453,8 @@ theorem putT2_entryIn_none {U m : ℕ} {h₂ : Fin U → Fin m} {tbl : PureTable
     EntryIn (putT2 h₂ tbl e).1 d ↔ EntryIn tbl d ∨ d = e := by
   have ht2_none : tbl.t2 (h₂ e.key) = none := hold
   dsimp only [EntryIn, putT2]
-  rw [Function.exists_update_iff, Option.some.injEq]
+  rw [Function.exists_update_iff tbl.t2 (a := h₂ e.key) (b := some e)
+    (p := fun _ slot => slot = some d), Option.some.injEq]
   constructor
   · rintro (hi | (hd | ⟨i, _, hi⟩))
     · exact Or.inl (Or.inl hi)
@@ -487,7 +490,8 @@ theorem putT2_some_spec {U m : ℕ} {h₁ h₂ : Fin U → Fin m} {tbl : PureTab
         rw [hdk, hhome₂] at hi_eq
         exact hie hi_eq.symm
   · dsimp only [EntryIn, putT2]
-    rw [Function.exists_update_iff, Option.some.injEq]
+    rw [Function.exists_update_iff tbl.t2 (a := h₂ e.key) (b := some e)
+      (p := fun _ slot => slot = some d), Option.some.injEq]
     constructor
     · rintro ((hi | (hd | ⟨i, _, hi⟩)) | hd)
       · exact Or.inl (Or.inl hi)
