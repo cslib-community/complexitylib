@@ -28,6 +28,8 @@ without mentioning a machine or error model.
 * `Cslib.Complexity.two_rpow_le_natCeil_mul_of_le_mul_add`,
   `Cslib.Complexity.two_rpow_mul_pow_le_natCeil_mul_add`: rescale an exponential rate, alone or
   in an envelope, under an additive linear parameter bound.
+* `Cslib.Complexity.two_rpow_mul_pow_le_natCeil_mul_add_of_le`: replace the exponential factor of
+  an envelope by one that dominates it up to a constant factor.
 * `Cslib.Complexity.natCast_mul_div_add_one_le`: the rate rescaling `c * (δ / (c + 1)) ≤ δ` behind
   subexponential transfers.
 * `Cslib.Complexity.one_le_two_rpow_mul_pow`,
@@ -95,16 +97,24 @@ theorem pow_le_two_rpow_mul_pow (hx : 0 ≤ x) (hde : d ≤ e) :
   (pow_le_pow_right₀ (le_add_of_nonneg_left (Nat.cast_nonneg L)) hde).trans
     (le_mul_of_one_le_left (by positivity) (Real.one_le_rpow (by norm_num) hx))
 
+/-- An exponential factor bounded by `K` times another one passes to the envelopes, with `K`
+rounded up to a natural constant: the bound that `TimeO.mono` needs to replace one exponential
+rate by another. -/
+theorem two_rpow_mul_pow_le_natCeil_mul_add_of_le {K : ℝ} (h : (2 : ℝ) ^ x ≤ K * 2 ^ y) :
+    (2 : ℝ) ^ x * ((L : ℝ) + 1) ^ e ≤ ⌈K⌉₊ * (2 ^ y * ((L : ℝ) + 1) ^ e) + ⌈K⌉₊ := by
+  rw [← mul_assoc]
+  exact le_add_of_le_of_nonneg (mul_le_mul_of_nonneg_right
+    (h.trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))) (by positivity))
+    (Nat.cast_nonneg _)
+
 /-- An additive linear bound on a natural parameter rescales an exponential-times-polynomial
 envelope at rate `δ ≥ 0` to one at rate `c * δ`, up to a natural ceiling constant: the bound that
 `TimeO.mono` needs to transfer an exponential runtime along the parameter change. -/
 theorem two_rpow_mul_pow_le_natCeil_mul_add {δ : ℝ} {n m c : ℕ} (hδ : 0 ≤ δ)
     (hn : n ≤ c * m + c) :
     (2 : ℝ) ^ (δ * n) * ((L : ℝ) + 1) ^ e ≤
-      ⌈(2 : ℝ) ^ (δ * c)⌉₊ * (2 ^ (c * δ * m) * ((L : ℝ) + 1) ^ e) + ⌈(2 : ℝ) ^ (δ * c)⌉₊ := by
-  rw [← mul_assoc]
-  exact le_add_of_le_of_nonneg (mul_le_mul_of_nonneg_right
-    (two_rpow_le_natCeil_mul_of_le_mul_add hδ hn) (by positivity)) (Nat.cast_nonneg _)
+      ⌈(2 : ℝ) ^ (δ * c)⌉₊ * (2 ^ (c * δ * m) * ((L : ℝ) + 1) ^ e) + ⌈(2 : ℝ) ^ (δ * c)⌉₊ :=
+  two_rpow_mul_pow_le_natCeil_mul_add_of_le (two_rpow_le_two_rpow_mul_of_le_mul_add hδ hn)
 
 end Envelope
 
