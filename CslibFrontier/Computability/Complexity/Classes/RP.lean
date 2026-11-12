@@ -88,9 +88,7 @@ random strings are accepted, and for every no-instance none is
 instances outside the promise. -/
 def SolvesWithOneSidedError (enc : α ↪ List Bool) (p : Polynomial ℕ) (V : α × List Bool → Bool)
     (Q : PromiseProblem α) : Prop :=
-  ∀ a, (a ∈ Q.yes → 2 ^ p.eval (enc a).length ≤
-      2 * (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn r) = true).card) ∧
+  ∀ a, (a ∈ Q.yes → 2 ^ p.eval (enc a).length ≤ 2 * acceptCount V a (p.eval (enc a).length)) ∧
     (a ∈ Q.no → ∀ r : Fin (p.eval (enc a).length) → Bool, V (a, List.ofFn r) = false)
 
 /-- A one-sided-error solver for a promise problem is a polynomial-time verifier on the promise: a
@@ -102,8 +100,7 @@ theorem SolvesWithOneSidedError.exists_certificate {enc : α ↪ List Bool} {p :
       ∀ a ∈ Q.no, ∀ w : List Bool, w.length = p.eval (enc a).length → V (a, w) = false := by
   refine ⟨fun a ha => ?_, fun a ha w hw => ?_⟩
   · have hpos := Nat.one_le_two_pow (n := p.eval (enc a).length)
-    have : 2 ^ p.eval (enc a).length ≤ 2 * acceptCount V a (p.eval (enc a).length) := (h a).1 ha
-    exact acceptCount_pos_iff.1 (by omega)
+    exact acceptCount_pos_iff.1 (by have := (h a).1 ha; omega)
   · have hno := (h a).2 ha fun i => w[i.val]'(by omega)
     rwa [show (List.ofFn fun i : Fin (p.eval (enc a).length) => w[i.val]'(by omega)) = w from
       List.ext_getElem (by simp [hw]) fun i _ _ => by simp] at hno
@@ -217,7 +214,6 @@ theorem SolvesWithOneSidedError.repeatAny {p : Polynomial ℕ} {V : α × List B
       V (a, List.ofFn u) = false).card ≤ 2 ^ p.eval (enc a).length := by
     have hsum := acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := p.eval (enc a).length)
     have hhalf := (h a).1 ha
-    rw [← acceptCount] at hhalf
     omega
   have hlen : (q * p).eval (enc a).length = q.eval (enc a).length * p.eval (enc a).length :=
     Polynomial.eval_mul
@@ -259,7 +255,6 @@ theorem solvesWithOneSidedError (h : Q.SolvesWithOneSidedErrorExponent enc q p V
   have hle := acceptCount_le_two_pow (V := V) (a := a) (n := p.eval (enc a).length)
   have h2 : 2 ^ 1 ≤ 2 ^ q.eval (enc a).length := Nat.pow_le_pow_right (by norm_num) (hq _)
   have := (Nat.mul_le_mul_right _ h2).trans (errorExponentAt_true_iff.1 ((h a).1 ha))
-  rw [← acceptCount]
   omega
 
 /-- One-sided error at most `2 ^ (-q(n))` is error at most `2 ^ (-q(n))`. -/

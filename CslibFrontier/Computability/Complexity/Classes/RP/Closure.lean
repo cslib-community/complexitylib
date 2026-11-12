@@ -68,7 +68,7 @@ theorem P_subset_RP : P enc ⊆ RP enc := by
   rintro A ⟨f, hf, hA⟩
   refine ⟨0, fun x => f x.1, hf.comp (.fst enc encBits),
     fun a => ⟨fun ha => ?_, fun ha r => ?_⟩⟩
-  · simp [(hA a).mp ha]
+  · simp [acceptCount_zero, (hA a).mp ha]
   · simpa [hA a] using ha
 
 /-- **`P ⊆ coRP`**: `P` is closed under complement. -/
@@ -92,9 +92,7 @@ theorem union_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A 
   obtain ⟨p₂, V₂, hV₂, h₂⟩ := mem_RP.mp hB
   refine ⟨p₁ + p₂, orVerifier (fun a => p₁.eval (enc a).length) V₁ V₂, by fun_prop,
     fun a => ⟨fun ha => ?_, fun (ha : a ∉ A ∪ B) r => ?_⟩⟩
-  · change 2 ^ (p₁ + p₂).eval (enc a).length ≤
-      2 * acceptCount _ a ((p₁ + p₂).eval (enc a).length)
-    rw [Polynomial.eval_add]
+  · rw [Polynomial.eval_add]
     generalize hk₁ : p₁.eval (enc a).length = k₁
     generalize hk₂ : p₂.eval (enc a).length = k₂
     have hc := acceptCount_orVerifier (fun a => p₁.eval (enc a).length) V₁ V₂ a k₂
@@ -136,8 +134,6 @@ theorem inter_mem_RP {A B : Set α} (hA : A ∈ RP enc) (hB : B ∈ RP enc) : A 
       omega
     have f₂ : 3 * 2 ^ p₂.eval (enc a).length ≤ 4 * acceptCount V₂ a (p₂.eval (enc a).length) := by
       omega
-    change 2 ^ (p₁ + p₂).eval (enc a).length ≤
-      2 * acceptCount _ a ((p₁ + p₂).eval (enc a).length)
     rw [Polynomial.eval_add, acceptCount_andVerifier, pow_add]
     nlinarith [Nat.mul_le_mul f₁ f₂]
   · have hA' := DecidesWithOneSidedError.isVerifier (h₁.solvesWithOneSidedError fun _ => by simp) a

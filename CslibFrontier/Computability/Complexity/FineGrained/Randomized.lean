@@ -1127,16 +1127,11 @@ theorem mem_PromiseRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} 
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP]
       linarith
     · have hn := (hQ a).2 ha
-      have h0 : acceptCount V a (p.eval (enc a).length) = 0 := by
-        rw [acceptCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-        intro r _
-        rw [hn r]
-        exact Bool.false_ne_true
+      have h0 : acceptCount V a (p.eval (enc a).length) = 0 := acceptCount_eq_zero_iff.2 hn
       simp only [h0, Nat.cast_zero, ErrorModel.rp, ErrorModel.oneSidedRP, zero_mul, le_rfl]
   · rintro ⟨hyes, hno⟩ a
     refine ⟨fun ha => ?_, fun ha r => ?_⟩
-    · change 2 ^ p.eval (enc a).length ≤ 2 * acceptCount V a (p.eval (enc a).length)
-      have hy := hyes a ha
+    · have hy := hyes a ha
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP] at hy
       have hsum : (acceptCount V a (p.eval (enc a).length) : ℝ) +
           acceptCount (fun q => !V q) a (p.eval (enc a).length) =
