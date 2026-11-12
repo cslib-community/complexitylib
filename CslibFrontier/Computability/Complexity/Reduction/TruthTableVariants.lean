@@ -51,11 +51,6 @@ Restrictions of polynomial-time truth-table reductions
   `Cslib.Complexity.PolyTimePTTReducible.polyTimeTruthTableReducible`.
 * `Cslib.Complexity.polyTimeDTTReducible_iff_polyTimeCTTReducible_compl`: disjunctive reductions
   of `L` to `B` are the conjunctive reductions of `Lᶜ` to `Bᶜ`.
-* Complementation of bounded truth-table reductions:
-  `Cslib.Complexity.PolyTimeKTruthTableReducible.compl_left`,
-  `Cslib.Complexity.PolyTimeKTruthTableReducible.compl_right`,
-  `Cslib.Complexity.PolyTimeKTruthTableReducible.compl`, and the same for
-  `Cslib.Complexity.PolyTimeBTTReducible`.
 * Bridges to the kernels of `CslibFrontier.Computability.Reduction.TruthTable`:
   `Cslib.Complexity.polyTimeKTruthTableReducible_iff_truthTableReducibleBy`,
   `Cslib.Complexity.polyTimeDTTReducible_iff_dttReducibleBy`,
@@ -154,37 +149,6 @@ theorem PolyTimeKTruthTableReducible.compl_left {k : ℕ}
     (h : PolyTimeKTruthTableReducible k encA encB L B) :
     PolyTimeKTruthTableReducible k encA encB Lᶜ B :=
   TruthTableReducibleBy.compl_left (fun _ _ _ ⟨hr, hq, hd, hrk⟩ => ⟨hr, hq, by fun_prop, hrk⟩) h
-
-/-- Negating each answer bit keeps the queries, so a `k`-truth-table reduction from `L` to `B`
-gives one from `L` to `Bᶜ`. -/
-theorem PolyTimeKTruthTableReducible.compl_right {k : ℕ}
-    (h : PolyTimeKTruthTableReducible k encA encB L B) :
-    PolyTimeKTruthTableReducible k encA encB L Bᶜ :=
-  TruthTableReducibleBy.compl_right (fun _ _ _ ⟨hr, hq, hd, hrk⟩ => ⟨hr, hq, by fun_prop, hrk⟩) h
-
-/-- A `k`-truth-table reduction from `L` to `B` also reduces `Lᶜ` to `Bᶜ`. -/
-theorem PolyTimeKTruthTableReducible.compl {k : ℕ}
-    (h : PolyTimeKTruthTableReducible k encA encB L B) :
-    PolyTimeKTruthTableReducible k encA encB Lᶜ Bᶜ :=
-  h.compl_left.compl_right
-
-/-- A bounded truth-table reduction from `L` to `B` gives one from `Lᶜ` to `B`. -/
-theorem PolyTimeBTTReducible.compl_left (h : PolyTimeBTTReducible encA encB L B) :
-    PolyTimeBTTReducible encA encB Lᶜ B :=
-  let ⟨k, hk⟩ := h
-  ⟨k, hk.compl_left⟩
-
-/-- A bounded truth-table reduction from `L` to `B` gives one from `L` to `Bᶜ`. -/
-theorem PolyTimeBTTReducible.compl_right (h : PolyTimeBTTReducible encA encB L B) :
-    PolyTimeBTTReducible encA encB L Bᶜ :=
-  let ⟨k, hk⟩ := h
-  ⟨k, hk.compl_right⟩
-
-/-- A bounded truth-table reduction from `L` to `B` also reduces `Lᶜ` to `Bᶜ`. -/
-theorem PolyTimeBTTReducible.compl (h : PolyTimeBTTReducible encA encB L B) :
-    PolyTimeBTTReducible encA encB Lᶜ Bᶜ :=
-  let ⟨k, hk⟩ := h
-  ⟨k, hk.compl⟩
 
 /-- `P` is closed under bounded truth-table reductions. -/
 theorem PolyTimeBTTReducible.mem_P (h : PolyTimeBTTReducible encA encB L B) (hB : B ∈ P encB) :

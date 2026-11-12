@@ -56,6 +56,18 @@ For a fixed bound with an OR or AND evaluator, import
 query generator and require that count to be at most `k` on every input. Their
 `logSpaceKTruthTableReducible` lemmas preserve that bound when introducing an explicit evaluator.
 
+Both families instantiate the resource-free kernels in
+[Reduction/TruthTable](../../CslibFrontier/Computability/Reduction/TruthTable.lean), as the
+many-one notions instantiate `ManyOneReducibleBy`. `TruthTableReducibleBy Good` asks for a count,
+query generator and evaluator satisfying `Good`, while `DTTReducibleBy` and `CTTReducibleBy` drop
+the evaluator. Each named predicate groups its resource conditions and any query bound or
+monotonicity condition into one conjunct. Its `_iff_truthTableReducibleBy`, `_iff_dttReducibleBy`
+or `_iff_cttReducibleBy` bridge is `Iff.rfl`. Monotonicity in `Good`, complementation, one-query
+many-one embeddings, the `List.any id` and `List.all id` evaluators and disjunctive/conjunctive
+duality are proved once at kernel level. A new resource bound needs only the closure facts of its
+own `Good`. Transitivity stays per family, sharing the combiner in
+[TruthTable/Composition](../../CslibFrontier/Computability/Complexity/Reduction/TruthTable/Composition.lean).
+
 ## Adaptive word-oracle access
 
 [`PolyTimeTuringReducible`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Turing.lean#L120) defines `A ≤T B` by membership in `PWithOracle (encB '' B) encA`. The underlying algorithm is a deterministic adaptive `WordQueryComp` with a native `IsOraclePPTOn` realization. Its polynomial clock charges query-symbol writes and bounds both query lengths and query count; the oracle evaluation itself is one step. The machine realization is efficient for arbitrary admissible handlers, while correctness of the reduction is stated for the designated language oracle.
