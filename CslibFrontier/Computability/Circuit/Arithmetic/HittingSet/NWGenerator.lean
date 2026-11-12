@@ -88,12 +88,6 @@ noncomputable def nwGenerator [CommSemiring K] (f : MvPolynomial (Fin m) K)
 
 section Hybrid
 
-/-- An algebra map commutes with substitution. -/
-private theorem algHom_aeval {σ R A B : Type*} [CommSemiring R] [CommSemiring A] [Algebra R A]
-    [CommSemiring B] [Algebra R B] (φ : A →ₐ[R] B) (g : σ → A) (p : MvPolynomial σ R) :
-    φ (aeval g p) = aeval (fun j => φ (g j)) p := by
-  rw [← AlgHom.comp_apply, comp_aeval]
-
 /-- The input `j` of the hybrid `k`: the generator polynomial of block `j` if `j < k`, the
 variable `x_j` otherwise. -/
 private noncomputable def hybridInput [CommSemiring K] (f : MvPolynomial (Fin m) K)
@@ -189,7 +183,7 @@ theorem exists_root_formula_of_generator_vanishing [Field K] [Infinite K] [Decid
     have : H n = rename Sum.inl (aeval (nwGenerator f S) C.polynomial) := by
       have hn : hybridInput f S n = fun j => rename Sum.inl (nwGenerator f S j) :=
         funext fun j => by simp [hybridInput]
-      rw [algHom_aeval, ← hn]
+      rw [comp_aeval_apply, ← hn]
     rw [this, hvan, map_zero]
   obtain ⟨i, hi, hHi, hHi1⟩ : ∃ i < n, H i ≠ 0 ∧ H (i + 1) = 0 := by
     by_contra! h
@@ -205,7 +199,7 @@ theorem exists_root_formula_of_generator_vanishing [Field K] [Infinite K] [Decid
   set G : Fin n → SPFormula K (m + 1) :=
     fun j => SPFormula.ofSparse (aeval ψ (hybridInput f S i j)) with hG
   have hpoly : (SPFormula.substFormula G C).polynomial = aeval ψ (H i) := by
-    rw [SPFormula.polynomial_substFormula, hH, algHom_aeval]
+    rw [SPFormula.polynomial_substFormula, hH, comp_aeval_apply]
     simp [hG]
   refine ⟨SPFormula.substFormula G C, ?_, ?_, hpoly ▸ hv, ?_⟩
   · exact (SPFormula.productDepth_substFormula_le
@@ -248,7 +242,7 @@ theorem exists_root_formula_of_generator_vanishing [Field K] [Infinite K] [Decid
       by_cases hji : j = i'
       · subst hji
         simp [hybridInput, hi', aeval_rename, Function.comp_def, hψ, specialize_inl_apply,
-          specialize_inr_self, algHom_aeval, aeval_X_left_apply]
+          specialize_inr_self, comp_aeval_apply, aeval_X_left_apply]
       · have hji' : (j : ℕ) ≠ i := fun h => hji (Fin.ext h)
         have : (j : ℕ) < i ↔ (j : ℕ) < i + 1 := by omega
         simp only [hybridInput, this]
@@ -256,7 +250,7 @@ theorem exists_root_formula_of_generator_vanishing [Field K] [Infinite K] [Decid
         (fun j => aeval (Fin.lastCases f X) (aeval ψ (hybridInput f S k j))) C.polynomial := by
       rw [hH]
       dsimp only
-      rw [algHom_aeval (aeval ψ) (hybridInput f S k), algHom_aeval]
+      rw [comp_aeval_apply (hybridInput f S k) (aeval ψ), comp_aeval_apply]
     rw [hpoly, hsub, funext key, ← hsub, hHi1, map_zero, map_zero]
 
 end Hybrid
@@ -283,7 +277,7 @@ theorem exists_eval_nwGenerator_ne_zero [Field K] [CharZero K] [Finite L]
   refine ⟨z, fun l => ?_, ?_⟩
   · obtain ⟨k, hk, hzk⟩ := mem_image.1 (hz l)
     exact ⟨k, Nat.lt_succ_iff.1 (mem_range.1 hk), hzk.symm⟩
-  · rwa [← aeval_eq_eval, algHom_aeval] at hne
+  · rwa [← aeval_eq_eval, comp_aeval_apply] at hne
 
 open Classical in
 /-- The **hitting set of the generator**: its values at the points of the grid `{0, …, D} ^ L`. -/

@@ -319,6 +319,52 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShif
 
 **Not certified here.** The proof of Forbes, Saptharishi and Shpilka by rank condensers, and their size bound: for every individual degree the statement is proved by the argument of `boundedDegreeShifts` above, and `concentratingShifts F P` is `boundedDegreeShifts F 1 P`. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
 
+## Roots of polynomial equations and hardness versus randomness
+
+This section collects the pieces of the hardness-versus-randomness route for constant-depth formulas (issue #4734); each is usable alone.
+
+**Lagrange inversion.** Import [LagrangeInversion.lean](../../CslibFrontier/Foundations/Algebra/Polynomial/LagrangeInversion.lean). For a commutative ring `R` that is an algebra over a field `F` of characteristic zero, an ideal `J` of `R`, a polynomial `G : R[X]` with `G.coeff 0 ∈ J` and `G.coeff 1 ∈ J`, and `f ∈ J` with `G.eval f = f`, `Polynomial.sub_sum_coeff_pow_mem_of_eval_eq` gives `f - ∑ m ∈ range N, ((m : F) + 1)⁻¹ • (G ^ (m + 1)).coeff m ∈ J ^ e` whenever `2 * e ≤ N`. `Polynomial.sum_coeff_mul_pow_sub_eval_mem` is the Lagrange–Good form for `H.eval f`. The proof is finite (no power series), with the weight filtration `Polynomial.HasWeight`.
+
+**Roots.** Import [LowDegreeRoot.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/LowDegreeRoot.lean); `J` is Mathlib's `MvPolynomial.idealOfVars`. For `P : Polynomial (MvPolynomial σ F)` in characteristic zero:
+
+- a *simple root at the origin* — `constantCoeff f = 0`, `P.eval f = 0`, `constantCoeff (P.coeff 1) ≠ 0` — has, for every `D`, `truncateTotalDegree D f` equal to the truncation of `∑ m ∈ range (2 * (D + 1)), ((m : F) + 1)⁻¹ • ((X - C (C a⁻¹) * P) ^ (m + 1)).coeff m` with `a = constantCoeff (P.coeff 1)` (`MvPolynomial.truncateTotalDegree_root_eq`);
+- *any root* of `P ≠ 0` reduces to that case after the `j`-th `y`-derivative and a shift of the variables by a point `x₀` (`MvPolynomial.exists_shift_eq_truncate_sum_of_root`, through `exists_iterate_derivative_eval_ne_zero`): `shift x₀ f = C (eval x₀ f) + truncateTotalDegree D (…)` for every `D ≥ f.totalDegree`.
+
+Complete clients: [LagrangeInversion.lean](../../CslibFrontierTests/Foundations/Algebra/Polynomial/LagrangeInversion.lean) (the fixed point `t` of `G = t` over `ℚ[t]`) and [LowDegreeRoot.lean](../../CslibFrontierTests/Foundations/Data/MvPolynomial/LowDegreeRoot.lean) (the root `x₀ x₁` of `y - x₀ x₁`, simple, and of `(y - x₀ x₁) ^ 2`, double). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Foundations.Algebra.Polynomial.LagrangeInversion \
+  CslibFrontierTests.Foundations.Data.MvPolynomial.LowDegreeRoot
+```
+
+**Formulas for roots.** Import [RootFormula.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/RootFormula.lean). For `[Field K] [CharZero K]` and a formula `F : SPFormula K (N + 1)` whose *last* input plays the role of `y`, with `F.productDepth ≤ Δ` and `F.polynomial ≠ 0`, a root `f : MvPolynomial (Fin N) K`, meaning `aeval (Fin.lastCases f X) F.polynomial = 0`, has a formula `G : SPFormula K N` with `G.polynomial = f`, `G.productDepth ≤ Δ + 1` and `G.nodeCount ≤ SPFormula.rootCost F.nodeCount f.totalDegree`, where `rootCost s D = 2 ^ 36 * (s + 1) ^ 8 * (D + 1) ^ 6` (`SPFormula.exists_formula_of_root`). It implements the formula for roots above: the powers are the only extra product layer.
+
+The formula operations it uses, each with exact `polynomial`, `productDepth` and `nodeCount` lemmas:
+
+- [FormulaOps.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaOps.lean): `substFormula` (formulas for the inputs; product-depths add), `constInput` and `affineInput` (constants and `a * x + b` for inputs; no product-depth), `ofSparse` (a polynomial as a sum of monomials, product-depth `≤ 1`, at most `p.support.card * (p.totalDegree + 1) + 1` nodes), and `totalDegree_polynomial_le_nodeCount`.
+- [FormulaInterpolation.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/FormulaInterpolation.lean), in characteristic zero and with no increase of product-depth: `coeffLast i r F`, the coefficient of the `i`-th power of the last input when the degree in it is at most `r`, and `lowPartFormula d r F`, the homogeneous components of degree at most `d` when the total degree is at most `r`. Both rest on `Lagrange.coeff_eq_sum_coeff_basis_smul_eval` ([InterpolationCoeff.lean](../../CslibFrontier/Foundations/Data/Polynomial/InterpolationCoeff.lean)).
+
+Complete clients: [RootFormula.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/RootFormula.lean) (the root `x₀ x₁` of the formula `y - x₀ x₁` gets a formula of product-depth at most `2`), [FormulaOps.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/FormulaOps.lean) and [FormulaInterpolation.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/FormulaInterpolation.lean). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.RootFormula \
+  CslibFrontierTests.Computability.Circuit.Arithmetic.FormulaOps \
+  CslibFrontierTests.Computability.Circuit.Arithmetic.FormulaInterpolation
+```
+
+**Hardness gives hitting sets.** Import [HittingSet/HardnessToHittingSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/HardnessToHittingSet.lean). For `[Field K] [CharZero K]`, a multilinear `f : MvPolynomial (Fin m) K` (`f.degreeOf i ≤ 1`) with `f.totalDegree ≤ d`, blocks `S : Fin n → (Fin m ↪ L)` into a finite type `L` that pairwise meet in at most `a` points, and the hardness hypothesis that every `G : SPFormula K m` with `G.polynomial = f` and `G.productDepth ≤ Δ + 2` has more than `SPFormula.rootCost (s * (2 ^ a * (a + 1) + 2)) d` nodes, `isHittingSet_generatorHittingSet_of_hard` says that `generatorHittingSet f S (s * d)` hits every polynomial in `n` variables computed by a formula of product-depth at most `Δ` with at most `s` nodes. The set is the image of the grid `{0, …, s * d} ^ L` under the Nisan–Wigderson generator `nwGenerator f S i = rename (S i) f` ([HittingSet/NWGenerator.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NWGenerator.lean)), so `card_generatorHittingSet_le` bounds it by `(s * d + 1) ^ Fintype.card L`. The pieces: the hybrid argument `exists_root_formula_of_generator_vanishing` and the grid lemma `exists_mem_generatorHittingSet_eval_ne_zero`; `MvPolynomial.exists_aeval_sumElim_ne_zero` ([PartialEval.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/PartialEval.lean)), a nonzero polynomial over an infinite domain stays nonzero after assigning constants to some variables; `Cslib.IsDesign`, `Cslib.rsDesign` and `Cslib.isDesign_rsDesign` ([Design/ReedSolomon.lean](../../CslibFrontier/Foundations/Combinatorics/Design/ReedSolomon.lean)), with `Cslib.card_polynomialBlock_inter_le`.
+
+Complete clients: [NWGenerator.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/NWGenerator.lean) (a vanishing hybrid on `x₀ - x₁`, a nonvanishing grid point, and a partial specialization) and [ReedSolomon.lean](../../CslibFrontierTests/Foundations/Combinatorics/Design/ReedSolomon.lean). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NWGenerator \
+  CslibFrontierTests.Foundations.Combinatorics.Design.ReedSolomon
+```
+
+The theorem is finite: it takes the hardness of one polynomial as a hypothesis. No hard family is instantiated here and nothing is said about running time.
+
+**Not certified here.** Positive characteristic (the formula divides by `m`, interpolation by node differences). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots. Circuits (only formulas), depth as opposed to product-depth, and any algorithm or bit-cost bound; `rootCost` is not optimized.
+
 ## Rational formulas and hitting lists
 
 [RatOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Rational/Defs.lean#L69) uses rational constants, addition, multiplication and inverse. Evaluation is a relation: an inverse node is defined only when both products with the proposed inverse are one. This supports noncommutative matrix substitution without silently assigning a value at poles. A formula is admissible if some positive-dimensional rational matrix substitution makes it defined, and nonzero if some defined value is nonzero.

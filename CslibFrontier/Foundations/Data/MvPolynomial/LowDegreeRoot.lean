@@ -177,9 +177,8 @@ theorem exists_shift_eq_truncate_sum_of_root [CharZero F]
     exact hj1 (funext fun x => by rw [hall x, map_zero])
   set φ : MvPolynomial σ F →+* MvPolynomial σ F := (shift x₀ : _ →ₐ[F] _).toRingHom with hφ
   have hcc : ∀ p : MvPolynomial σ F, constantCoeff (φ p) = eval x₀ p := fun p => by
-    have h := eval_shift x₀ 0 p
-    simp only [Pi.zero_apply, zero_add] at h
-    exact (RingHom.congr_fun eval_zero (φ p)).symm.trans h
+    rw [constantCoeff_eq]
+    exact coeff_zero_shift x₀ p
   have hmapeval : ∀ R : Polynomial (MvPolynomial σ F),
       (R.map φ).eval (shift x₀ f) = φ (R.eval f) := fun R => by
     rw [Polynomial.eval_map]
