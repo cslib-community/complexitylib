@@ -4923,6 +4923,7 @@ public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Multiplicatio
 public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Reciprocal
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Arccos
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
+public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpExpect
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.FiberCount

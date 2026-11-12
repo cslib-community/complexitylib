@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpExpect
 
 /-!
 # Mean lower bounds from fiber counts
@@ -20,7 +21,7 @@ Let `s : X → ℕ` take values at most `G` on a finite type `X`, and suppose ea
 This is the counting form of an entropy argument. If `x` is uniformly random and can be described
 by first giving `s x` and then one of at most `A * B ^ (s x)` descriptions, then
 `log |X| ≤ log (G + 1) + log A + E[s] log B`. The proof applies Jensen's inequality to the
-convex function `t ↦ B ^ (-t)`, via `1 + t ≤ exp t`, and needs no probability theory.
+convex function `t ↦ B ^ (-t)` (`Real.exp_expect_le`) and needs no probability theory.
 
 ## Main results
 
@@ -67,22 +68,13 @@ theorem card_mul_log_sub_le_of_card_fiber_le {X : Type*} [Fintype X] (s : X → 
                   (hfiber j (Nat.lt_succ_iff.mp (mem_range.mp hj))) (by positivity)
             _ = A := by field_simp
       _ = A * (G + 1) := by rw [sum_const, card_range, nsmul_eq_mul]; push_cast; ring
-  -- Jensen's inequality for `t ↦ exp (-t L)` by the tangent line at `μ`.
+  -- Jensen's inequality for `exp` over the uniform average.
   have hlower : c * exp (-(μ * L)) ≤ ∑ x, exp (-(s x * L)) := by
-    have htangent (x : X) :
-        exp (-(μ * L)) * (1 - (s x - μ) * L) ≤ exp (-(s x * L)) := by
-      have h := add_one_le_exp (-((s x - μ) * L))
-      calc exp (-(μ * L)) * (1 - (s x - μ) * L)
-          ≤ exp (-(μ * L)) * exp (-((s x - μ) * L)) :=
-            mul_le_mul_of_nonneg_left (by linarith) (exp_pos _).le
-        _ = exp (-(s x * L)) := by rw [← exp_add]; ring_nf
-    have hmean : ∑ x : X, (1 - ((s x : ℝ) - μ) * L) = c := by
-      rw [sum_sub_distrib, ← sum_mul, sum_sub_distrib, sum_const, card_univ, nsmul_eq_mul,
-        mul_one, sum_const, card_univ, nsmul_eq_mul]
-      simp only [μ, c]; field_simp; ring
-    calc c * exp (-(μ * L)) = exp (-(μ * L)) * ∑ x : X, (1 - ((s x : ℝ) - μ) * L) := by
-          rw [hmean, mul_comm]
-      _ ≤ ∑ x, exp (-(s x * L)) := by rw [mul_sum]; exact sum_le_sum fun x _ => htangent x
+    have : Nonempty X := Fintype.card_pos_iff.mp hc
+    have h := exp_expect_le fun x : X => -((s x : ℝ) * L)
+    rw [Fintype.expect_eq_sum_div_card, Fintype.expect_eq_sum_div_card, sum_neg_distrib,
+      ← sum_mul, neg_div, mul_div_right_comm] at h
+    rwa [le_div_iff₀ hcpos, mul_comm] at h
   have hmain := hlower.trans hupper
   have hlog := log_le_log (by positivity) hmain
   rw [log_mul hcpos.ne' (exp_pos _).ne', log_exp, log_mul hA.ne' (by positivity)] at hlog
