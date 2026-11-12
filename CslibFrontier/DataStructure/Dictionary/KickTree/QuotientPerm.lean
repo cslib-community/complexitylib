@@ -274,7 +274,9 @@ def quotientPermSeedEquivProd (a m b_aux c n : ℕ) :
         (Fin (nrRounds c) → QuotientPermNRBotSeed c a m n) ×
         DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) b_aux) where
   toFun θ := (θ.top, (θ.α₀, θ.botA₀, θ.α₁, θ.botA₁₂), (θ.botShard, θ.botNR, θ.botAuxB))
-  invFun p := ⟨p.1, p.2.1.1, p.2.1.2.1, p.2.1.2.2.1, p.2.1.2.2.2, p.2.2.1, p.2.2.2.1, p.2.2.2.2⟩
+  invFun
+    | (top, (α₀, botA₀, α₁, botA₁₂), (botShard, botNR, botAuxB)) =>
+      ⟨top, α₀, botA₀, α₁, botA₁₂, botShard, botNR, botAuxB⟩
   left_inv θ := by cases θ; rfl
   right_inv p := by rcases p with ⟨_, ⟨_, _, _, _⟩, ⟨_, _, _⟩⟩; rfl
 
@@ -309,7 +311,8 @@ instance {a m b_aux c n : ℕ} : Nonempty (QuotientPermSeed a m b_aux c n) :=
     (θ : QuotientPermSeed a m b_aux c n) (u : Fin (2 ^ a)) : Fin (2 ^ m) :=
   (quotientPermEquiv hma (concreteRounds θ) u).1
 
-/-- Concrete stored quotient `(quotientPermEquiv hma (concreteRounds θ) u).2 : Fin (2 ^ (a - m))`. -/
+/-- Concrete stored quotient `(quotientPermEquiv hma (concreteRounds θ) u).2` in
+`Fin (2 ^ (a - m))`. -/
 @[expose] def concreteQuot {a m b_aux c n : ℕ} (hma : m ≤ a)
     (θ : QuotientPermSeed a m b_aux c n) (u : Fin (2 ^ a)) : Fin (2 ^ (a - m)) :=
   (quotientPermEquiv hma (concreteRounds θ) u).2
@@ -344,10 +347,10 @@ theorem dist_concreteCaseA_restrict_le {a m b_aux c n : ℕ}
   let CaseB := DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (shardBits m) ×
     (Fin (nrRounds c) → QuotientPermNRBotSeed c a m n) ×
     DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) b_aux
-  haveI : Nonempty Top := ⟨fun _ _ _ => 0⟩
-  haveI : Nonempty BotA₀ := ⟨fun _ _ => 0⟩
-  haveI : Nonempty BotA₁₂ := ⟨fun _ _ => 0⟩
-  haveI : Nonempty CaseB := ⟨(fun _ _ => 0, fun _ => Classical.arbitrary _, fun _ _ => 0)⟩
+  have : Nonempty Top := ⟨fun _ _ _ => 0⟩
+  have : Nonempty BotA₀ := ⟨fun _ _ => 0⟩
+  have : Nonempty BotA₁₂ := ⟨fun _ _ => 0⟩
+  have : Nonempty CaseB := ⟨(fun _ _ => 0, fun _ => Classical.arbitrary _, fun _ _ => 0)⟩
   let eA : QuotientPermSeed a m b_aux c n ≃
       (Top × (Fin (2 ^ (m - 1)) × BotA₀ × Fin (2 ^ (a - m - 1)) × BotA₁₂)) × CaseB :=
     { toFun := fun θ =>
@@ -393,9 +396,9 @@ theorem dist_concreteCaseA_restrict_le {a m b_aux c n : ℕ}
 
 /-- **Concrete Case B shard-tuple statistical-distance transfer**: when
 `bucketIndexBits n ≤ m ≤ a < m + caseAGap c n`, `m ≤ 8 * quotientPermCharBits n`,
-`quotientPermThreshold c ≤ n`, `#T ≤ quotientPermInd c n`, and `yEmb : T ↪ Fin (2 ^ suffixBits a m)`,
-the joint distribution of `(shard, nrPerm ∘ yEmb, concreteAux)` under uniform
-`θ : QuotientPermSeed a m b_aux c n` is within `1 / (4 * n ^ (c + 2))` of
+`quotientPermThreshold c ≤ n`, `#T ≤ quotientPermInd c n`, and
+`yEmb : T ↪ Fin (2 ^ suffixBits a m)`, the distribution of `(shard, nrPerm ∘ yEmb, concreteAux)`
+under uniform `θ : QuotientPermSeed a m b_aux c n` is within `1 / (4 * n ^ (c + 2))` of
 `Uniform × UniformInj × Uniform`. -/
 theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
     (hma : m ≤ a) (hcaseB : a < m + caseAGap c n) (hn : quotientPermThreshold c ≤ n)
@@ -414,7 +417,7 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
           ((T ↪ Fin (2 ^ suffixBits a m)) × (T → Fin (2 ^ b_aux))))) ≤
       1 / (4 * (n : ℝ) ^ (c + 2)) := by
   classical
-  haveI : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
+  have : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
   have hnotA : ¬ (m + caseAGap c n ≤ a) := not_le.mpr hcaseB
   obtain ⟨hb_log, h2κ, _, _⟩ := quotientPermInd_le_self_of_threshold hn
   obtain ⟨hclog4, _⟩ := clog_max_le_eight_mul_charBits hn
@@ -448,13 +451,13 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
     DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (a - m) ×
     Fin (2 ^ (a - m - 1)) ×
     DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (m + b_aux)
-  haveI : Nonempty Top := ⟨fun _ _ _ => 0⟩
-  haveI : Nonempty BotSh := ⟨fun _ _ => 0⟩
-  haveI : Nonempty NR₀ := ⟨fun _ _ => 0⟩
-  haveI : Nonempty NR₁ := ⟨fun _ _ => 0⟩
-  haveI : Nonempty NR₂ := ⟨fun _ _ => 0⟩
-  haveI : Nonempty BotAux := ⟨fun _ _ => 0⟩
-  haveI : Nonempty CaseA := ⟨(0, fun _ _ => 0, 0, fun _ _ => 0)⟩
+  have : Nonempty Top := ⟨fun _ _ _ => 0⟩
+  have : Nonempty BotSh := ⟨fun _ _ => 0⟩
+  have : Nonempty NR₀ := ⟨fun _ _ => 0⟩
+  have : Nonempty NR₁ := ⟨fun _ _ => 0⟩
+  have : Nonempty NR₂ := ⟨fun _ _ => 0⟩
+  have : Nonempty BotAux := ⟨fun _ _ => 0⟩
+  have : Nonempty CaseA := ⟨(0, fun _ _ => 0, 0, fun _ _ => 0)⟩
   let eB : QuotientPermSeed a m b_aux c n ≃
       (Top × (BotSh × (NRComposedSeed (nrRounds c) NR₀ NR₁ NR₂ × BotAux))) × CaseA :=
     { toFun := fun θ =>
@@ -587,9 +590,9 @@ theorem prob_concreteCaseB_shardLoad_outside_le {a m b_aux c n k_mom : ℕ}
     DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (m + b_aux)) ×
     ((Fin (nrRounds c) → QuotientPermNRBotSeed c a m n) ×
       DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) b_aux)
-  haveI : Nonempty Top := ⟨fun _ _ _ => 0⟩
-  haveI : Nonempty BotSh := ⟨fun _ _ => 0⟩
-  haveI : Nonempty Rest := ⟨((0, fun _ _ => 0, 0, fun _ _ => 0),
+  have : Nonempty Top := ⟨fun _ _ _ => 0⟩
+  have : Nonempty BotSh := ⟨fun _ _ => 0⟩
+  have : Nonempty Rest := ⟨((0, fun _ _ => 0, 0, fun _ _ => 0),
     (fun _ => Classical.arbitrary _, fun _ _ => 0))⟩
   let eSh : QuotientPermSeed a m b_aux c n ≃ (Top × BotSh) × Rest :=
     { toFun := fun θ => ((θ.top, θ.botShard),
@@ -611,7 +614,8 @@ theorem prob_concreteCaseB_shardLoad_outside_le {a m b_aux c n k_mom : ℕ}
     unfold bucketLoad S_sh
     rw [filter_map, card_map]
     refine congrArg Finset.card (filter_congr fun u _ => ?_)
-    have hsh : bucketShard m (concreteBucket hma θ u) = caseBShard hma (concreteRounds θ).caseB u := by
+    have hsh :
+        bucketShard m (concreteBucket hma θ u) = caseBShard hma (concreteRounds θ).caseB u := by
       simp [concreteBucket, quotientPermEquiv, hnotA, caseBShard]
     rw [hsh, caseBShard_eq_feistelHead]
     rfl
@@ -625,7 +629,7 @@ theorem prob_concreteCaseB_shardLoad_outside_le {a m b_aux c n k_mom : ℕ}
       (PMF.uniformOfFintype (Top × BotSh)).toOuterMeasure E_pair := by
     rw [← hm_eq, PMF.toOuterMeasure_map_apply]
     congr 1; ext θ
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, Function.comp_apply, Equiv.coe_fn_mk,
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, Function.comp_apply, Equiv.coe_fn_mk,
       hload, hS_card, E_pair, eSh]
   rw [hev]
   have hp := prob_doubleTab_bucketLoad_outside_le hn ha'_ub hk_pos hk_ind S_sh
@@ -686,7 +690,7 @@ private theorem prob_concreteQuotientPerm_master_le {a m b_aux c n : ℕ}
     by_cases hinj : Set.InjOn (keySuffix hma) (T : Set (Fin (2 ^ a)))
     · let yEmb : T ↪ Fin (2 ^ suffixBits a m) :=
         ⟨fun u => keySuffix hma u.1, fun u₁ u₂ h => Subtype.ext (hinj u₁.2 u₂.2 h)⟩
-      haveI : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
+      have : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
       let Q (u : T) := intraShardSuffixSet hma (B u.1)
       let Ψ (θ : QuotientPermSeed a m b_aux c n) :=
         ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
@@ -696,12 +700,12 @@ private theorem prob_concreteQuotientPerm_master_le {a m b_aux c n : ℕ}
             fun u : T => concreteAux hma θ u.1))
       let S_all : Set ((T → Fin (2 ^ shardBits m)) ×
           ((T ↪ Fin (2 ^ suffixBits a m)) × (T → Fin (2 ^ b_aux)))) :=
-        {p | ∀ u : T, p.1 u = σ ∧ p.2.1 u ∈ Q u ∧ p.2.2 u ∈ A u.1}
+        {p | let (sh, emb, aux) := p; ∀ u : T, sh u = σ ∧ emb u ∈ Q u ∧ aux u ∈ A u.1}
       have hmap : μ.toOuterMeasure
           {θ | ∀ u ∈ T, concreteBucket hma θ u ∈ B u ∧ concreteAux hma θ u ∈ A u} =
           (μ.map Ψ).toOuterMeasure S_all := by
         rw [PMF.toOuterMeasure_map_apply]; congr 1; ext θ
-        simp only [Set.mem_setOf_eq, Set.mem_preimage, S_all, Subtype.forall]
+        simp only [Set.mem_ofPred_eq, Set.mem_preimage, S_all, Subtype.forall]
         refine forall₂_congr fun u hu => ?_
         have hbk : concreteBucket hma θ u =
             (shardLocalMergeEquiv a m ((Ψ θ).1 ⟨u, hu⟩,
@@ -723,7 +727,7 @@ private theorem prob_concreteQuotientPerm_master_le {a m b_aux c n : ℕ}
       linarith [(le_abs_self _).trans habs]
     · have hemp : {θ : QuotientPermSeed a m b_aux c n |
           ∀ u ∈ T, concreteBucket hma θ u ∈ B u ∧ concreteAux hma θ u ∈ A u} = ∅ := by
-        ext θ; simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+        ext θ; simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
         intro hmem; apply hinj
         refine (injOn_yR_of_caseBShard_eq hma (concreteRounds θ).caseB σ).mono fun u hu => ?_
         have h1 := (hmem u hu).1
@@ -753,7 +757,7 @@ theorem prob_concreteQuotientPerm_forall_mem_le {a m b_aux c n : ℕ}
     (fun _ => B) (fun _ _ => hB) (fun _ => A) (c_mult := 1) le_rfl fun _ hinj => by
       let yEmb : T ↪ Fin (2 ^ suffixBits a m) :=
         ⟨fun u => keySuffix hma u.1, fun u₁ u₂ h => Subtype.ext (hinj u₁.2 u₂.2 h)⟩
-      haveI : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
+      have : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
       let Q₀ := intraShardSuffixSet hma B
       have hcardT : Fintype.card T ≤ Fintype.card (Fin (2 ^ suffixBits a m)) :=
         Fintype.card_le_of_injective yEmb yEmb.injective
@@ -788,7 +792,7 @@ theorem prob_concreteQuotientPerm_forall_mem_perKey_le {a m b_aux c n : ℕ}
     (c_mult := 2) (by norm_num) fun _ hinj => by
       let yEmb : T ↪ Fin (2 ^ suffixBits a m) :=
         ⟨fun u => keySuffix hma u.1, fun u₁ u₂ h => Subtype.ext (hinj u₁.2 u₂.2 h)⟩
-      haveI : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
+      have : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
       let Q (u : T) := intraShardSuffixSet hma (B u.1)
       obtain ⟨_, _, _, h2κ2⟩ := quotientPermInd_le_self_of_threshold hn
       have ha'_b : quotientPermCharBits n ≤ suffixBits a m := by

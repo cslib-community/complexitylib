@@ -100,7 +100,7 @@ structure CaseARounds (a m : ℕ) where
   /-- Round 2 bucket mask `Fin (2 ^ (a - m)) → Fin (2 ^ m)`. -/
   g₁ : Fin (2 ^ (a - m)) → Fin (2 ^ m)
 
-/-- Case A 2-round unbalanced Feistel bijection `(u : Fin (2 ^ a)) ≃ Fin (2 ^ m) × Fin (2 ^ (a - m))`
+/-- Case A 2-round unbalanced Feistel bijection `Fin (2 ^ a) ≃ Fin (2 ^ m) × Fin (2 ^ (a - m))`
 sending `(x_L, x_R) = bitDomainEquiv hma u` to `(x_L ^^^ g₁ (x_R ^^^ g₀ x_L), x_R ^^^ g₀ x_L)`. -/
 @[expose] def caseAEquiv {a m : ℕ} (hma : m ≤ a) (r : CaseARounds a m) :
     Fin (2 ^ a) ≃ Fin (2 ^ m) × Fin (2 ^ (a - m)) :=
@@ -367,7 +367,8 @@ private theorem clog_max_le_eight_mul_charBits_aux {c n : ℕ} (hn : quotientPer
     unfold quotientPermCharBits; omega
   have hn_pow : max n 4 ≤ 2 ^ (8 * quotientPermCharBits n) := by
     rw [max_eq_left h4n]
-    exact (Nat.lt_pow_succ_log_self (by decide) n).le.trans (Nat.pow_le_pow_right (by decide) hlog_ub)
+    exact (Nat.lt_pow_succ_log_self (by decide) n).le.trans
+      (Nat.pow_le_pow_right (by decide) hlog_ub)
   have hclog : Nat.clog 2 (max n 4) ≤ 8 * quotientPermCharBits n :=
     Nat.clog_le_of_le_pow hn_pow
   refine ⟨hb_min, hclog, ?_⟩
@@ -460,8 +461,8 @@ theorem prob_not_isKUnique_quotientPerm_le {c n : ℕ} (hn : quotientPermThresho
     unfold B doubleTabCodeBound; positivity
   set Bad := univ.filter fun T₁ : DoubleTabTopSeed c_tab (2 * q_tab * c_tab) b_char =>
     ¬ IsKUnique κ (simpleTabTuple T₁)
-  have hmul_bad :
-      8 * n ^ (c + 2) * #Bad ≤ Fintype.card (DoubleTabTopSeed c_tab (2 * q_tab * c_tab) b_char) := by
+  have hmul_bad : 8 * n ^ (c + 2) * #Bad ≤
+      Fintype.card (DoubleTabTopSeed c_tab (2 * q_tab * c_tab) b_char) := by
     have hsq : (2 * B ^ 2) * (8 * n ^ (c + 2)) ≤ W ^ 2 := by
       calc (2 * B ^ 2) * (8 * n ^ (c + 2))
           = 16 * n ^ (c + 2) * B ^ 2 := by ring
@@ -497,7 +498,7 @@ theorem prob_not_injOn_reduceBits_le {c n s_in : ℕ} (hn : quotientPermThreshol
   · have hemp : ({α : Fin (2 ^ (0 - 1)) |
         Set.InjOn (reduceBits 0 (quotientPermRedBits c n) α) (X : Set _)}ᶜ : Set _) = ∅ := by
       ext α
-      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false, not_not]
+      simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_not]
       intro x _ y _ _
       exact Fin.ext (by omega : x.val = y.val)
     have hzero : univ.filter (· ∈ (∅ : Set (Fin (2 ^ (0 - 1))))) = ∅ :=
@@ -757,9 +758,9 @@ theorem dist_caseA_reducedDoubleTab_le {a m b_aux c n : ℕ}
   let Top := DoubleTabTopSeed (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
   let BotA₀ := DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (a - m)
   let BotA₁₂ := DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) (m + b_aux)
-  haveI : Nonempty Top := ⟨fun _ _ _ => 0⟩
-  haveI : Nonempty BotA₀ := ⟨fun _ _ => 0⟩
-  haveI : Nonempty BotA₁₂ := ⟨fun _ _ => 0⟩
+  have : Nonempty Top := ⟨fun _ _ _ => 0⟩
+  have : Nonempty BotA₀ := ⟨fun _ _ => 0⟩
+  have : Nonempty BotA₁₂ := ⟨fun _ _ => 0⟩
   let U_target := PMF.uniformOfFintype (T → Fin (2 ^ m) × Fin (2 ^ b_aux))
   have h4n : 4 ≤ n := (four_le_quotientPermThreshold c).trans hn
   have h2κ : 2 ≤ quotientPermInd c n := (quotientPermInd_le_self_of_threshold hn).2.1
@@ -909,8 +910,8 @@ theorem prob_doubleTab_bucketLoad_outside_le {c n s_in s_out k_mom : ℕ}
   classical
   let Top := DoubleTabTopSeed (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
   let BotSh := DoubleTabBotSeed (quotientPermInter c) (quotientPermCharBits n) s_out
-  haveI : Nonempty Top := ⟨fun _ _ _ => 0⟩
-  haveI : Nonempty BotSh := ⟨fun _ _ => 0⟩
+  have : Nonempty Top := ⟨fun _ _ _ => 0⟩
+  have : Nonempty BotSh := ⟨fun _ _ => 0⟩
   let h_sh (τ : Top) (b : BotSh) :=
     doubleTabHash (quotientPermChars c) (quotientPermInter c) (quotientPermCharBits n)
       (2 ^ s_in) s_out τ b
@@ -941,8 +942,7 @@ theorem prob_doubleTab_bucketLoad_outside_le {c n s_in s_out k_mom : ℕ}
               #((univ \ BadTop).biUnion fun τ => {τ} ×ˢ BadBot τ) := card_union_le _ _
         _ ≤ #BadTop * Fintype.card BotSh + ∑ τ ∈ univ \ BadTop, #({τ} ×ˢ BadBot τ) := by
               rw [card_product, card_univ]; exact Nat.add_le_add_left card_biUnion_le _
-        _ = #BadTop * Fintype.card BotSh + ∑ τ ∈ univ \ BadTop, #(BadBot τ) := by
-              simp [card_product]
+        _ = #BadTop * Fintype.card BotSh + ∑ τ ∈ univ \ BadTop, #(BadBot τ) := by simp
     have hbot_le (τ : Top) (hτ : τ ∈ univ \ BadTop) :
         (#(BadBot τ) : ℝ) ≤ (Fintype.card BotSh : ℝ) * tailB := by
       have huniq : IsKUnique (quotientPermInd c n) (simpleTabTuple τ) := by

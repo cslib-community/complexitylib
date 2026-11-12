@@ -36,10 +36,10 @@ This module develops two general finite-domain permutation building blocks used 
 
 1. **Elementary doubly-stochastic matrix contraction**: For any nonempty finite state space `Ω`,
    letting `U = unifMatrix Ω` have every entry `|Ω|⁻¹`, any two doubly-stochastic matrices `P₁, P₂`
-   satisfy `(P₁ - U) * (P₂ - U) = P₁ * P₂ - U` (`sub_unifMatrix_mul_sub_unifMatrix`). Submultiplicativity
-   of the row-`ℓ₁` norm yields total-variation contraction for composed random bijections on
-   injective `T`-tuples `T ↪ α` (`dist_permTupleKernel_composePermDist_le`), proving that `t ≥ 1`
-   independent `k`-wise `δ`-dependent permutations compose to a `k`-wise
+   satisfy `(P₁ - U) * (P₂ - U) = P₁ * P₂ - U` (`sub_unifMatrix_mul_sub_unifMatrix`).
+   Submultiplicativity of the row-`ℓ₁` norm yields total-variation contraction for composed random
+   bijections on injective `T`-tuples `T ↪ α` (`dist_permTupleKernel_composePermDist_le`), proving
+   that `t ≥ 1` independent `k`-wise `δ`-dependent permutations compose to a `k`-wise
    `((1 / 2) * (2 * δ) ^ t)`-dependent permutation ([ArbitmanNaorSegev2010], `arXiv:0912.5424v3`,
    Section 5.3, Theorem 5.6, PDF p. 25 / printed p. 24).
 2. **Negative correlation of uniform random injections**: Under `e ← PMF.uniformOfFintype (T ↪ α)`,
@@ -86,7 +86,7 @@ open scoped BigOperators ENNReal Matrix Cslib.Probability.PMF
 
 /-! ## Section 1: Doubly-stochastic matrix identity `(P₁ - U)(P₂ - U) = P₁ P₂ - U` -/
 
-/-- The uniform transition matrix on a finite type `Ω`, with every entry `(Fintype.card Ω : ℝ)⁻¹`. -/
+/-- The uniform transition matrix on a finite type `Ω` with entries `(Fintype.card Ω : ℝ)⁻¹`. -/
 noncomputable def unifMatrix (Ω : Type*) [Fintype Ω] : Matrix Ω Ω ℝ :=
   Matrix.of fun _ _ => (Fintype.card Ω : ℝ)⁻¹
 
@@ -229,7 +229,7 @@ theorem permTupleKernel_eq {T α : Type*} (ρ : PMF (Equiv.Perm α)) (x : T ↪ 
 /-- Every random permutation `ρ : PMF (Equiv.Perm α)` induces a **doubly-stochastic** transition
 matrix on injective `T`-tuples `T ↪ α`. -/
 theorem isDoublyStochastic_permTupleKernel {T α : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [DecidableEq α]
+    [Fintype T] [Fintype α]
     (ρ : PMF (Equiv.Perm α)) :
     IsDoublyStochastic (kernelMatrix (permTupleKernel (T := T) ρ)) where
   nonneg _ _ := ENNReal.toReal_nonneg
@@ -249,7 +249,7 @@ theorem isDoublyStochastic_permTupleKernel {T α : Type*}
     have hinner (π : Equiv.Perm α) :
         (∑ x : T ↪ α, if permTupleEquiv π x = y then (ρ π).toReal else 0) = (ρ π).toReal := by
       have hiff (x : T ↪ α) : permTupleEquiv π x = y ↔ x = (permTupleEquiv π).symm y :=
-        (permTupleEquiv π).apply_eq_iff_eq_symm_apply
+        ((permTupleEquiv π).eq_symm_apply).symm
       simp only [hiff, Fintype.sum_ite_eq']
     simp only [hinner]
     exact sum_toReal ρ
@@ -284,7 +284,7 @@ theorem permTupleKernel_composePermDist_succ {T α : Type*} (t : ℕ)
   simp only [PMF.map_comp, Function.comp_def, permTupleEquiv_trans]
 
 private theorem dist_permTupleKernel_composePermDist_succ_le {T α : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [DecidableEq α] [Nonempty (T ↪ α)] {δ : ℝ} :
+    [Fintype T] [Fintype α] [Nonempty (T ↪ α)] {δ : ℝ} :
     ∀ (m : ℕ) (ρs : Fin (m + 1) → PMF (Equiv.Perm α)),
       (∀ (i : Fin (m + 1)) (x : T ↪ α),
         dist (permTupleKernel (ρs i) x) (PMF.uniformOfFintype (T ↪ α)) ≤ δ) →
@@ -318,7 +318,7 @@ private theorem dist_permTupleKernel_composePermDist_succ_le {T α : Type*}
 independent random permutations, each within statistical distance `δ` of uniform on `T ↪ α`,
 yields a random permutation within `(1 / 2) * (2 * δ) ^ t` of uniform on `T ↪ α`. -/
 theorem dist_permTupleKernel_composePermDist_le {T α : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [DecidableEq α] [Nonempty (T ↪ α)]
+    [Fintype T] [Fintype α] [Nonempty (T ↪ α)]
     {t : ℕ} (ht : 1 ≤ t) (ρs : Fin t → PMF (Equiv.Perm α)) {δ : ℝ}
     (hδ : ∀ (i : Fin t) (x : T ↪ α),
       dist (permTupleKernel (ρs i) x) (PMF.uniformOfFintype (T ↪ α)) ≤ δ)
@@ -358,13 +358,13 @@ printed p. 35): for a uniform random injection `e ← PMF.uniformOfFintype (T �
 (`Fintype.card T ≤ Fintype.card α`, `Nonempty α`) and any target set `Q : Finset α`, the
 probability that `e i ∈ Q` for all `i : T` is at most `(#Q / |α|) ^ |T|`. -/
 theorem prob_uniformOfFintype_embedding_forall_mem_le {T α : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [DecidableEq α] [Nonempty α]
+    [Fintype T] [Fintype α] [Nonempty α]
     (hT : Fintype.card T ≤ Fintype.card α) (Q : Finset α) :
     haveI : Nonempty (T ↪ α) := Function.Embedding.nonempty_of_card_le hT
     ((PMF.uniformOfFintype (T ↪ α)).toOuterMeasure {e : T ↪ α | ∀ i : T, e i ∈ Q}).toReal ≤
       ((#Q : ℝ) / (Fintype.card α : ℝ)) ^ Fintype.card T := by
   classical
-  haveI : Nonempty (T ↪ α) := Function.Embedding.nonempty_of_card_le hT
+  have : Nonempty (T ↪ α) := Function.Embedding.nonempty_of_card_le hT
   let E : Set (T ↪ α) := {e : T ↪ α | ∀ i : T, e i ∈ Q}
   let toSub : {e : T ↪ α // e ∈ E} ↪ (T ↪ Q) :=
     { toFun := fun ⟨e, he⟩ =>
@@ -395,14 +395,14 @@ theorem prob_uniformOfFintype_embedding_forall_mem_le {T α : Type*}
 permutation `ρ` is `δ`-close to uniform on `x : T ↪ α`, then `Pr[∀ i, π (x i) ∈ Q] ≤
 (#Q / |α|) ^ |T| + δ`. -/
 theorem prob_perm_forall_mem_le_of_dist {T α : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [DecidableEq α] [Nonempty α]
+    [Fintype T] [Fintype α] [Nonempty α]
     (ρ : PMF (Equiv.Perm α)) (x : T ↪ α) (Q : Finset α) {δ : ℝ}
     (hdist :
       haveI : Nonempty (T ↪ α) := ⟨x⟩
       dist (permTupleKernel ρ x) (PMF.uniformOfFintype (T ↪ α)) ≤ δ) :
     (ρ.toOuterMeasure {π : Equiv.Perm α | ∀ i : T, π (x i) ∈ Q}).toReal ≤
       ((#Q : ℝ) / (Fintype.card α : ℝ)) ^ Fintype.card T + δ := by
-  haveI : Nonempty (T ↪ α) := ⟨x⟩
+  have : Nonempty (T ↪ α) := ⟨x⟩
   have hcard : Fintype.card T ≤ Fintype.card α := Fintype.card_le_of_injective x x.injective
   let E : Set (T ↪ α) := {e : T ↪ α | ∀ i : T, e i ∈ Q}
   have hmap : ρ.toOuterMeasure {π : Equiv.Perm α | ∀ i : T, π (x i) ∈ Q} =
@@ -461,7 +461,7 @@ theorem dist_uniform_embedding_to_fun {T : Type*} [Fintype T] [DecidableEq T]
       (PMF.uniformOfFintype (T → Fin (2 ^ a'))) ≤
       ((Fintype.card T * (Fintype.card T - 1) : ℕ) : ℝ) / (2 * (2 ^ a' : ℝ)) := by
   classical
-  haveI : Nonempty (T ↪ Fin (2 ^ a')) :=
+  have : Nonempty (T ↪ Fin (2 ^ a')) :=
     Function.Embedding.nonempty_of_card_le (by simpa using hcard)
   let j : (T ↪ Fin (2 ^ a')) → (T → Fin (2 ^ a')) := fun e i => e i
   have hj : Function.Injective j := fun _ _ h => DFunLike.ext' h
@@ -580,14 +580,14 @@ theorem pow_le_two_mul_descFactorial {A r : ℕ} (h : 2 * r ^ 2 ≤ A) :
 `Q : T → Finset α` and `2 * |T| ^ 2 ≤ |α|`, a uniform injection `e ← PMF.uniformOfFintype (T ↪ α)`
 lands in `∏ᵢ Q i` with probability at most `2 * ∏ᵢ (#(Q i) / |α|)`. -/
 theorem prob_uniformOfFintype_embedding_forall_mem_perKey_le {T α : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [DecidableEq α] [Nonempty α]
+    [Fintype T] [Fintype α] [Nonempty α]
     (hcard2 : 2 * (Fintype.card T) ^ 2 ≤ Fintype.card α) (Q : T → Finset α) :
     haveI : Nonempty (T ↪ α) := Function.Embedding.nonempty_of_card_le (by nlinarith)
     ((PMF.uniformOfFintype (T ↪ α)).toOuterMeasure {e : T ↪ α | ∀ i : T, e i ∈ Q i}).toReal ≤
       2 * ∏ i : T, ((#(Q i) : ℝ) / (Fintype.card α : ℝ)) := by
   classical
   have hT : Fintype.card T ≤ Fintype.card α := by nlinarith
-  haveI : Nonempty (T ↪ α) := Function.Embedding.nonempty_of_card_le hT
+  have : Nonempty (T ↪ α) := Function.Embedding.nonempty_of_card_le hT
   let E : Set (T ↪ α) := {e : T ↪ α | ∀ i : T, e i ∈ Q i}
   let toPi : {e : T ↪ α // e ∈ E} ↪ ((i : T) → Q i) :=
     { toFun := fun ⟨e, he⟩ i => ⟨e i, he i⟩

@@ -92,8 +92,9 @@ theorem nrHalfLow_add_nrHalfHigh (a' : ℕ) : nrHalfLow a' + nrHalfHigh a' = a' 
 theorem nrHalfLow_le_nrHalfHigh (a' : ℕ) : nrHalfLow a' ≤ nrHalfHigh a' := by
   dsimp only [nrHalfLow, nrHalfHigh]; omega
 
-/-- Split `Fin (2 ^ a') ≃ Fin (2 ^ ⌊a' / 2⌋) × Fin (2 ^ ⌈a' / 2⌉)` into low and high bit-halves. -/
-@[expose] def nrSplitEquiv (a' : ℕ) : Fin (2 ^ a') ≃ Fin (2 ^ nrHalfLow a') × Fin (2 ^ nrHalfHigh a') :=
+/-- Split `Fin (2 ^ a') ≃ Fin (2 ^ ⌊a' / 2⌋) × Fin (2 ^ ⌈a' / 2⌉)` into low and high halves. -/
+@[expose] def nrSplitEquiv (a' : ℕ) :
+    Fin (2 ^ a') ≃ Fin (2 ^ nrHalfLow a') × Fin (2 ^ nrHalfHigh a') :=
   bitDomainEquiv (nrHalfLow_le a')
 
 /-- Right-updating unbalanced Feistel involution `(L, R) ↦ (L, R ^^^ f L)`. -/
@@ -211,7 +212,7 @@ private theorem map_xor_restrict_eq_uniform {ι T : Type*}
           rw [uniformOfFintype_map_of_isKWise (hh.comp hinj) hT]
     _ = PMF.uniformOfFintype (T → Fin (2 ^ s)) := uniformOfFintype_map_equiv shiftEq
 
-/-- Seed triple `(s₀, s₁, s₂)` for one Naor–Reingold block over abstract seed spaces `ι₀, ι₁, ι₂`. -/
+/-- Seed triple `(s₀, s₁, s₂)` for one Naor–Reingold block over seed spaces `ι₀, ι₁, ι₂`. -/
 structure NRBlockSeed (ι₀ ι₁ ι₂ : Type*) where
   /-- Pre-whitening round seed. -/
   s₀ : ι₀
@@ -223,7 +224,7 @@ structure NRBlockSeed (ι₀ ι₁ ι₂ : Type*) where
 /-- Equivalence between `NRBlockSeed ι₀ ι₁ ι₂` and `ι₀ × ι₁ × ι₂`. -/
 def nrBlockSeedEquivProd (ι₀ ι₁ ι₂ : Type*) : NRBlockSeed ι₀ ι₁ ι₂ ≃ ι₀ × ι₁ × ι₂ where
   toFun s := (s.s₀, s.s₁, s.s₂)
-  invFun p := ⟨p.1, p.2.1, p.2.2⟩
+  invFun | (s₀, s₁, s₂) => ⟨s₀, s₁, s₂⟩
   left_inv s := by cases s; rfl
   right_inv p := by rcases p with ⟨_, _, _⟩; rfl
 
@@ -261,7 +262,7 @@ theorem nrBlockSeedDist_eq {ι₀ ι₁ ι₂ : Type*} [Fintype ι₀] [Nonempty
 Section 3.2 Definition 3.1, Section 5.2, Section 6 Definition 6.1, and Section 8 Corollary 8.1,
 printed pp. 38, 49–50, 52, 60–61 / PDF pp. 10, 21–22, 24, 32–33). -/
 theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
-    [Fintype ι₀] [Fintype ι₁] [Fintype ι₂] [Fintype T] [DecidableEq T]
+    [Fintype ι₀] [Fintype ι₁] [Fintype ι₂] [Fintype T]
     {a' k : ℕ}
     {h₀ : ι₀ → Fin (2 ^ nrHalfLow a') → Fin (2 ^ nrHalfHigh a')}
     {h₁ : ι₁ → Fin (2 ^ nrHalfHigh a') → Fin (2 ^ nrHalfLow a')}
@@ -279,10 +280,10 @@ theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
       3 * ((Fintype.card T * (Fintype.card T - 1) : ℕ) : ℝ) /
         (2 * (2 ^ nrHalfLow a' : ℝ)) := by
   classical
-  haveI : Nonempty ι₀ := hh₀.nonempty
-  haveI : Nonempty ι₁ := hh₁.nonempty
-  haveI : Nonempty ι₂ := hh₂.nonempty
-  haveI : Nonempty (T ↪ Fin (2 ^ a')) := ⟨x⟩
+  have : Nonempty ι₀ := hh₀.nonempty
+  have : Nonempty ι₁ := hh₁.nonempty
+  have : Nonempty ι₂ := hh₂.nonempty
+  have : Nonempty (T ↪ Fin (2 ^ a')) := ⟨x⟩
   have hT_a : Fintype.card T ≤ 2 ^ a' := by
     simpa using Fintype.card_le_of_injective x x.injective
   let j : (T ↪ Fin (2 ^ a')) → (T → Fin (2 ^ a')) := fun e i => e i
@@ -324,7 +325,7 @@ theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
         Equiv.trans_apply, feistelRightEquiv_apply, feistelPairEquiv_apply, feistelPair,
         feistelHead, nrBlockSeedEquivProd, splitFun, Equiv.coe_fn_mk, L₀, R₀, R₁, L₂, R₃]
     rw [h1, ← uniformOfFintype_prod, ← uniformOfFintype_prod]
-    simp only [μ_pair, PMF.map_bind, PMF.bind_map, PMF.map_comp, Function.comp_def]
+    simp only [μ_pair, PMF.map_bind, PMF.map_comp, Function.comp_def]
   have hunif_split : PMF.uniformOfFintype (T → Fin (2 ^ a')) =
       (PMF.uniformOfFintype ((T → Fin (2 ^ nrHalfLow a')) ×
         (T → Fin (2 ^ nrHalfHigh a')))).map splitFun :=
@@ -497,8 +498,7 @@ theorem nrComposedSeedDist_eq_composePermDist {ι₀ ι₁ ι₂ : Type*}
       rw [nrComposedSeedDist_eq, ← hunif, PMF.map_comp]
       refine PMF.map_congr_on_support _ _ _ fun s _ => ?_
       simp only [Function.comp_def, nrComposedEquiv_succ, seedEq, nrComposedSeedEquivFun, splitFin,
-        Equiv.trans_apply, Equiv.prodCongr_apply, Equiv.refl_apply, Equiv.coe_fn_mk,
-        Equiv.coe_fn_symm_mk]
+        Equiv.trans_apply, Equiv.prodCongr_apply, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk]
       rfl
     rw [hstep, ← PMF.uniformOfFintype_prod, composePermDist_succ,
       ← nrComposedSeedDist_eq_composePermDist a' h₀ h₁ h₂ t]
@@ -510,7 +510,7 @@ independent 3-round Feistel Naor–Reingold blocks with `2`-wise independent `h�
 independent `h₁, h₂` achieves statistical distance at most
 `(1 / 2) * (3 * k ^ 2 / 2 ^ ⌊a' / 2⌋) ^ t` from uniform on `T ↪ Fin (2 ^ a')`. -/
 theorem dist_permTupleKernel_nrComposed_le {ι₀ ι₁ ι₂ T : Type*}
-    [Fintype ι₀] [Fintype ι₁] [Fintype ι₂] [Fintype T] [DecidableEq T]
+    [Fintype ι₀] [Fintype ι₁] [Fintype ι₂] [Fintype T]
     {a' t k : ℕ} (ht : 1 ≤ t)
     {h₀ : ι₀ → Fin (2 ^ nrHalfLow a') → Fin (2 ^ nrHalfHigh a')}
     {h₁ : ι₁ → Fin (2 ^ nrHalfHigh a') → Fin (2 ^ nrHalfLow a')}
@@ -526,10 +526,10 @@ theorem dist_permTupleKernel_nrComposed_le {ι₀ ι₁ ι₂ T : Type*}
     dist (permTupleKernel (nrComposedSeedDist a' t h₀ h₁ h₂) x)
       (PMF.uniformOfFintype (T ↪ Fin (2 ^ a'))) ≤
       (1 / 2 : ℝ) * (3 * (k : ℝ) ^ 2 / (2 ^ nrHalfLow a' : ℝ)) ^ t := by
-  haveI : Nonempty ι₀ := hh₀.nonempty
-  haveI : Nonempty ι₁ := hh₁.nonempty
-  haveI : Nonempty ι₂ := hh₂.nonempty
-  haveI : Nonempty (T ↪ Fin (2 ^ a')) := ⟨x⟩
+  have : Nonempty ι₀ := hh₀.nonempty
+  have : Nonempty ι₁ := hh₁.nonempty
+  have : Nonempty ι₂ := hh₂.nonempty
+  have : Nonempty (T ↪ Fin (2 ^ a')) := ⟨x⟩
   rw [nrComposedSeedDist_eq_composePermDist]
   have h1 (y : T ↪ Fin (2 ^ a')) :
       dist (permTupleKernel (nrBlockSeedDist a' h₀ h₁ h₂) y)
@@ -583,11 +583,12 @@ structure CaseBRounds (a m t : ℕ) where
 @[expose] def suffixSplitEquiv {a m : ℕ} (hma : m ≤ a) :
     Fin (2 ^ suffixBits a m) ≃ Fin (2 ^ localBucketBits m) × Fin (2 ^ (a - m)) :=
   (bitDomainEquiv (localBucketBits_le_suffixBits hma)).trans
-    (Equiv.prodCongr (Equiv.refl _) (finCongr (pow_congr_right (suffixBits_sub_localBucketBits hma))))
+    (Equiv.prodCongr (Equiv.refl _)
+      (finCongr (pow_congr_right (suffixBits_sub_localBucketBits hma))))
 where
   pow_congr_right {x y : ℕ} (h : x = y) : 2 ^ x = 2 ^ y := congrArg (2 ^ ·) h
 
-/-- Combine `(shard, (localBucket, quot))` into `(bucket : Fin (2 ^ m), quot : Fin (2 ^ (a - m)))`. -/
+/-- Combine `(shard, (localBucket, quot))` into `(Fin (2 ^ m)) × (Fin (2 ^ (a - m)))`. -/
 @[expose] def shardLocalMergeEquiv (a m : ℕ) :
     Fin (2 ^ shardBits m) × (Fin (2 ^ localBucketBits m) × Fin (2 ^ (a - m))) ≃
       Fin (2 ^ m) × Fin (2 ^ (a - m)) :=
@@ -636,7 +637,7 @@ theorem injOn_yR_of_caseBShard_eq {a m t : ℕ} (hma : m ≤ a) (r : CaseBRounds
     (σ : Fin (2 ^ shardBits m)) :
     Set.InjOn (keySuffix hma) {u : Fin (2 ^ a) | caseBShard hma r u = σ} := by
   intro u₁ hu₁ u₂ hu₂ hsuf
-  rw [Set.mem_setOf_eq, caseBShard_eq_feistelHead] at hu₁ hu₂
+  rw [Set.mem_ofPred_eq, caseBShard_eq_feistelHead] at hu₁ hu₂
   exact (bitDomainEquiv (shardBits_le_of_le hma)).injective
     (eq_of_feistelHead_eq_of_snd_eq (hu₁.trans hu₂.symm) hsuf)
 
@@ -650,9 +651,12 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
     [Fintype ι_aux] [Nonempty ι_aux]
     {a m b_aux t κ : ℕ} (hma : m ≤ a) (ht : 1 ≤ t)
     (h_sh : Top → ι_sh → Fin (2 ^ suffixBits a m) → Fin (2 ^ shardBits m))
-    (h_nr₀ : Top → ι₀ → Fin (2 ^ nrHalfLow (suffixBits a m)) → Fin (2 ^ nrHalfHigh (suffixBits a m)))
-    (h_nr₁ : Top → ι₁ → Fin (2 ^ nrHalfHigh (suffixBits a m)) → Fin (2 ^ nrHalfLow (suffixBits a m)))
-    (h_nr₂ : Top → ι₂ → Fin (2 ^ nrHalfLow (suffixBits a m)) → Fin (2 ^ nrHalfHigh (suffixBits a m)))
+    (h_nr₀ : Top → ι₀ →
+      Fin (2 ^ nrHalfLow (suffixBits a m)) → Fin (2 ^ nrHalfHigh (suffixBits a m)))
+    (h_nr₁ : Top → ι₁ →
+      Fin (2 ^ nrHalfHigh (suffixBits a m)) → Fin (2 ^ nrHalfLow (suffixBits a m)))
+    (h_nr₂ : Top → ι₂ →
+      Fin (2 ^ nrHalfLow (suffixBits a m)) → Fin (2 ^ nrHalfHigh (suffixBits a m)))
     (h_aux : Top → ι_aux → Fin (2 ^ a) → Fin (2 ^ b_aux))
     {T : Finset (Fin (2 ^ a))} (hT : #T ≤ κ)
     (yEmb : T ↪ Fin (2 ^ suffixBits a m))
@@ -677,7 +681,7 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
       δ_top +
         (1 / 2 : ℝ) * (3 * (κ : ℝ) ^ 2 / (2 ^ nrHalfLow (suffixBits a m) : ℝ)) ^ t := by
   classical
-  haveI : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
+  have : Nonempty (T ↪ Fin (2 ^ suffixBits a m)) := ⟨yEmb⟩
   let U_sh := PMF.uniformOfFintype (T → Fin (2 ^ shardBits m))
   let U_nr := PMF.uniformOfFintype (T ↪ Fin (2 ^ suffixBits a m))
   let U_aux := PMF.uniformOfFintype (T → Fin (2 ^ b_aux))
@@ -702,7 +706,8 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
       have hraw := uniformOfFintype_map_of_isKWise ((hgood_sh τ hτ).comp yEmb.injective) hT_card
       calc ((PMF.uniformOfFintype ι_sh).map fun s_sh (u : T) =>
               (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^ h_sh τ s_sh (yEmb u))
-          = ((PMF.uniformOfFintype ι_sh).map fun s_sh (u : T) => h_sh τ s_sh (yEmb u)).map shiftSh := by
+          = ((PMF.uniformOfFintype ι_sh).map fun s_sh (u : T) =>
+              h_sh τ s_sh (yEmb u)).map shiftSh := by
               rw [PMF.map_comp]; rfl
         _ = U_sh.map shiftSh := by rw [hraw]
         _ = U_sh := uniformOfFintype_map_equiv shiftSh
@@ -756,8 +761,8 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
 
 
 theorem prob_uniformOfFintype_pi_prod_forall_mem {T α β : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [Nonempty α] [DecidableEq α]
-    [Fintype β] [Nonempty β] [DecidableEq β]
+    [Fintype T] [DecidableEq T] [Fintype α] [Nonempty α]
+    [Fintype β] [Nonempty β]
     (B : T → Finset α) (A : T → Finset β) :
     ((PMF.uniformOfFintype (T → α × β)).toOuterMeasure
       {f : T → α × β | ∀ i : T, (f i).1 ∈ B i ∧ (f i).2 ∈ A i}).toReal =
@@ -828,7 +833,7 @@ theorem prob_shardTuple_event_eq {T : Type*} [Fintype T] [DecidableEq T]
     ((PMF.uniformOfFintype
         ((T → Fin (2 ^ shardBits m)) ×
           ((T ↪ Fin (2 ^ suffixBits a m)) × (T → Fin (2 ^ b_aux))))).toOuterMeasure
-      {p | ∀ i : T, p.1 i = σ ∧ p.2.1 i ∈ Q i ∧ p.2.2 i ∈ A i}).toReal =
+      {p | let (sh, emb, aux) := p; ∀ i : T, sh i = σ ∧ emb i ∈ Q i ∧ aux i ∈ A i}).toReal =
       ((1 : ℝ) / (2 ^ shardBits m : ℝ)) ^ Fintype.card T *
         ((PMF.uniformOfFintype (T ↪ Fin (2 ^ suffixBits a m))).toOuterMeasure
           {e | ∀ i : T, e i ∈ Q i}).toReal *
@@ -840,12 +845,12 @@ theorem prob_shardTuple_event_eq {T : Type*} [Fintype T] [DecidableEq T]
   let E₃ : Finset (T → Fin (2 ^ b_aux)) := Fintype.piFinset A
   let S_all : Set ((T → Fin (2 ^ shardBits m)) ×
       ((T ↪ Fin (2 ^ suffixBits a m)) × (T → Fin (2 ^ b_aux)))) :=
-    {p | ∀ i : T, p.1 i = σ ∧ p.2.1 i ∈ Q i ∧ p.2.2 i ∈ A i}
+    {p | let (sh, emb, aux) := p; ∀ i : T, sh i = σ ∧ emb i ∈ Q i ∧ aux i ∈ A i}
   change ((PMF.uniformOfFintype _).toOuterMeasure S_all).toReal = _
   rw [toOuterMeasure_uniformOfFintype_toReal, toOuterMeasure_uniformOfFintype_toReal]
   have hfilt : univ.filter (· ∈ S_all) = E₁ ×ˢ (E₂ ×ˢ E₃) := by
     ext ⟨f₁, e, f₃⟩
-    simp only [mem_filter, mem_univ, true_and, S_all, Set.mem_setOf_eq, mem_product,
+    simp only [mem_filter, mem_univ, true_and, S_all, Set.mem_ofPred_eq, mem_product,
       E₁, mem_singleton, funext_iff, E₂, S₂, E₃, Fintype.mem_piFinset, forall_and]
   rw [hfilt, card_product, card_product, card_singleton, Fintype.card_piFinset]
   simp only [Fintype.card_prod, Fintype.card_pi, Finset.prod_const, Finset.card_univ,

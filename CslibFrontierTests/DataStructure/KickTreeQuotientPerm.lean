@@ -84,7 +84,7 @@ theorem caseB_tight_roundtrip :
         ((caseBEquiv (by decide : 2 ≤ 2) sampleCaseBTight2).symm p) = p) ∧
     (caseBEquiv (by decide : 2 ≤ 2) sampleCaseBTight2 ⟨0, by decide⟩).1 ≠ ⟨0, by decide⟩ := by
   simp only [caseBEquiv, Equiv.symm_trans_apply, Equiv.trans_apply, Equiv.prodCongr_symm,
-    Equiv.refl_symm, Equiv.prodCongr_apply, Equiv.coe_refl, id_eq, nrComposedEquiv_succ,
+    Equiv.refl_symm, Equiv.prodCongr_apply, Equiv.coe_refl, nrComposedEquiv_succ,
     nrComposedEquiv_zero]
   decide
 
@@ -118,14 +118,14 @@ theorem caseB_oddSuffix_roundtrip (rFull : QuotientPermRounds 4 3 0 8) :
     fun u => quotientPermDecode_quotientPermEncode (by decide : 3 ≤ 4) rFull u,
     injOn_yR_of_caseBShard_eq (by decide : 3 ≤ 4) sampleCaseBOdd2 0⟩
   · simp only [caseBEquiv, Equiv.symm_trans_apply, Equiv.trans_apply, Equiv.prodCongr_symm,
-      Equiv.refl_symm, Equiv.prodCongr_apply, Equiv.coe_refl, id_eq, nrComposedEquiv_succ,
+      Equiv.refl_symm, Equiv.prodCongr_apply, Equiv.coe_refl, nrComposedEquiv_succ,
       nrComposedEquiv_zero]
     decide
   · simp only [caseBEquiv, Equiv.symm_trans_apply, Equiv.trans_apply, Equiv.prodCongr_symm,
-      Equiv.refl_symm, Equiv.prodCongr_apply, Equiv.coe_refl, id_eq, nrComposedEquiv_succ,
+      Equiv.refl_symm, Equiv.prodCongr_apply, Equiv.coe_refl, nrComposedEquiv_succ,
       nrComposedEquiv_zero]
     decide
-  · simp only [caseBEquiv, Equiv.trans_apply, Equiv.prodCongr_apply, Equiv.coe_refl, id_eq,
+  · simp only [caseBEquiv, Equiv.trans_apply, Equiv.prodCongr_apply, Equiv.coe_refl,
       nrComposedEquiv_succ, nrComposedEquiv_zero]
     decide
 
@@ -169,7 +169,7 @@ theorem doublyStochastic_two_by_two_identity :
      fun j => by fin_cases j <;> simp [P₂, Fin.sum_univ_two] <;> norm_num⟩
   exact sub_unifMatrix_mul_sub_unifMatrix h₁ h₂
 
-/-! ## 4. Non-vacuity of concrete high-probability transfer across `U = n`, `U = 2n`, and `2^(2^n)` -/
+/-! ## 4. Non-vacuity across `U = n`, `U = 2n`, and `U = 2 ^ (2 ^ n)` -/
 
 /-- Tight `U = n` (`0`-bit quotients, Case B) non-vacuity of `prob_fullQuotientPerm_forall_mem_le`
 and `fullDecode` round-trip key recovery. -/
@@ -207,16 +207,15 @@ theorem fullQuotientPerm_perKey_small_and_huge_nonvacuous :
     let n := quotientPermThreshold 0
     ∀ U : ℕ, (U = 2 * n ∨ U = 2 ^ (2 ^ n)) →
       ∃ hnU : n ≤ U,
-        ∀ (B : Fin U → Finset (Fin (2 ^ bucketIndexBits n)))
-          (hB : ∀ u : Fin U, ∀ b ∈ B u, bucketShard (bucketIndexBits n) b = 0)
-          (A : Fin U → Finset (Fin (2 ^ 3)))
-          (T : Finset (Fin U)),
-          #T ≤ quotientPermInd 0 n →
-          ((PMF.uniformOfFintype
-              (QuotientPermSeed (FeistelQuotient.keyBits U) (bucketIndexBits n) 3 0 n)).toOuterMeasure
-            {θ | ∀ u ∈ T, fullBucket hnU θ u ∈ B u ∧ fullAux hnU θ u ∈ A u}).toReal ≤
-            2 * (∏ u ∈ T, (((#(B u) : ℝ) / (2 ^ bucketIndexBits n : ℝ)) *
-              ((#(A u) : ℝ) / (2 ^ 3 : ℝ)))) + 1 / (n : ℝ) := by
+        ∀ (B : Fin U → Finset (Fin (2 ^ bucketIndexBits n))),
+          (∀ u : Fin U, ∀ b ∈ B u, bucketShard (bucketIndexBits n) b = 0) →
+          ∀ (A : Fin U → Finset (Fin (2 ^ 3))) (T : Finset (Fin U)),
+            #T ≤ quotientPermInd 0 n →
+            let Seed := QuotientPermSeed (FeistelQuotient.keyBits U) (bucketIndexBits n) 3 0 n
+            ((PMF.uniformOfFintype Seed).toOuterMeasure
+              {θ | ∀ u ∈ T, fullBucket hnU θ u ∈ B u ∧ fullAux hnU θ u ∈ A u}).toReal ≤
+              2 * (∏ u ∈ T, (((#(B u) : ℝ) / (2 ^ bucketIndexBits n : ℝ)) *
+                ((#(A u) : ℝ) / (2 ^ 3 : ℝ)))) + 1 / (n : ℝ) := by
   intro n U hU
   have hnU : n ≤ U := by
     rcases hU with rfl | rfl
