@@ -171,7 +171,6 @@ theorem andreevTableScore_translateTable (b m : ℕ) (S : Finset (Fin b)) (u : B
 def andreevAddress (b m : ℕ) (w : BitString (2 ^ b + b * m)) : Fin b → Fin m → Bool :=
   fun j t => w (andreevBlockVar b m j t)
 
-@[simp]
 theorem andreevAddress_translateTable (b m : ℕ) (u : BitString b) (β : Bool)
     (w : BitString (2 ^ b + b * m)) :
     andreevAddress b m (andreevTranslateTable b m u β w) = andreevAddress b m w := by
