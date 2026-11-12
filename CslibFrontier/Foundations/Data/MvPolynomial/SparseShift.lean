@@ -55,7 +55,7 @@ members.
   orbits*][BhargavaSengupta2026], Lemmas 3.1 and 3.2
 -/
 
-@[expose] public section
+public section
 
 namespace MvPolynomial
 
