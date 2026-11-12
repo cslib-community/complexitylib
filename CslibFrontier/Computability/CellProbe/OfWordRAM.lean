@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.CellProbe.Randomized
 public import CslibFrontier.Computability.WordRAM.Subroutine
+public import CslibFrontier.Computability.WordRAM.Word
 public import CslibFrontier.Computability.WordRAM.Randomized.Expected
 import CslibFrontier.Foundations.Analysis.ENNRealTsum
 import CslibFrontier.Probability.PMF.Bind
@@ -23,7 +24,8 @@ import Mathlib.Data.Finset.Sort
 
 This file builds the computational simulation bridge (`Cslib.CellProbe`) from deterministic,
 finite-tree randomized, and unbounded Las Vegas Word-RAM executions (`Cslib.WordRAM`) to adaptive
-cell-probe trees (`ProbeTree`, `RandProbeTree`; [Miltersen1999], §1.2, pp. 1–2).
+deterministic cell-probe trees (`ProbeTree`; [Miltersen1999], §1.2, pp. 1–2) and distributional
+randomized cell-probe trees (`RandProbeTree`; [Yao1977]).
 
 On a `w`-bit Word RAM with `r` registers and contiguous memory footprint `[base, base + S)`, two
 model differences require explicit accounting in a formal simulation:
@@ -56,9 +58,11 @@ model differences require explicit accounting in a formal simulation:
      correctness** at finite tree depth while achieving expected probes `≤ T + overhead + η` for any
      `η > 0`.
 
-The `zeroOutside` framing, `persistentRegCount` / wide-cell register-spill layouts, and buffered
-finite-horizon Las Vegas truncation are original library constructions connecting `Cslib.WordRAM`
-to `Cslib.CellProbe`. For data-structure `Impl` bridges and contrapositive lower-bound transfer
+While [Miltersen1999], §1.2, p. 2 sketches only the informal unit-cost RAM-to-cell-probe transfer
+by storing a single accumulator register in an extra cell, the `zeroOutside` footprint framing,
+multi-register `persistentRegCount` / wide-cell spill layouts, intra-operation write buffering, and
+finite-horizon Las Vegas truncation are local library constructions connecting `Cslib.WordRAM` to
+`Cslib.CellProbe`. For data-structure `Impl` bridges and contrapositive lower-bound transfer
 corollaries, see `CslibFrontier.DataStructure.CellProbe.OfWordRAM`.
 
 ## Main definitions
@@ -209,15 +213,6 @@ theorem zeroOutside_bounded {r w : ℕ} (base S : ℕ) {x : Data r} (hx : x.Boun
   · simpa [zeroOutside, ha] using hx.2 a
   · simp [zeroOutside, ha]
 
-/-- Truncate a natural number into `Fin (2 ^ w)` (identity on `Fits w v`). -/
-@[expose] def wordOfNat (w v : ℕ) : Fin (2 ^ w) :=
-  if h : v < 2 ^ w then ⟨v, h⟩ else ⟨0, Nat.two_pow_pos w⟩
-
-@[simp]
-theorem wordOfNat_val_of_fits {w v : ℕ} (h : Fits w v) : (wordOfNat w v).1 = v := by
-  have hlt : v < 2 ^ w := h
-  simp [wordOfNat, hlt]
-
 /-- Pack `x : Data r` (`[base, base + S)` plus persistent registers) into
 `Mem (S + persCount input) w`. -/
 @[expose] def packMem {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) (x : Data r) :
@@ -266,7 +261,7 @@ theorem unpackData_packMem_regs {r : ℕ} {input : Fin r → Bool} {argRegs : Fi
     simp only [packMem, hnotlt, ↓reduceDIte]
     have hsub : (⟨(Fin.natAdd S k).1 - S, by omega⟩ : Fin (persCount input)) = k := by
       ext; simp
-    rw [hsub, persReg_persIdx input i hfalse, wordOfNat_val_of_fits (hx.1 i)]
+    rw [hsub, persReg_persIdx input i hfalse, wordOfNat_val_of_lt (hx.1 i)]
 
 theorem unpackData_packMem_mem {r : ℕ} {input : Fin r → Bool} {argRegs : Fin r → ℕ}
     {base S w : ℕ} {x : Data r} (hx : x.Bounded w) (a : ℕ) :
@@ -277,7 +272,7 @@ theorem unpackData_packMem_mem {r : ℕ} {input : Fin r → Bool} {argRegs : Fin
   · have hlt : a - base < S := by omega
     have hadd : base + (a - base) = a := by omega
     simp only [packMem, Fin.val_castAdd, hlt, ↓reduceDIte, hadd,
-      wordOfNat_val_of_fits (hx.2 a)]
+      wordOfNat_val_of_lt (hx.2 a)]
   · rfl
 
 /-! #### Wide-cell base-`2 ^ w` persistent-register codec (`wideLayout`) -/
@@ -418,7 +413,7 @@ theorem unpackDataWide_packMemWide_regs {r : ℕ} {input : Fin r → Bool} {argR
   · have hfalse : input i = false := Bool.eq_false_iff.mpr hi
     have hnotlt : ¬ (Fin.last S).1 < S := by simp
     simp only [packMemWide, hnotlt, ↓reduceDIte, unpackDigits_packDigits]
-    rw [persReg_persIdx input i hfalse, wordOfNat_val_of_fits (hx.1 i)]
+    rw [persReg_persIdx input i hfalse, wordOfNat_val_of_lt (hx.1 i)]
 
 theorem unpackDataWide_packMemWide_mem {r : ℕ} {input : Fin r → Bool} {argRegs : Fin r → ℕ}
     {base S w : ℕ} {x : Data r} (hx : x.Bounded w) (a : ℕ) :
@@ -429,7 +424,7 @@ theorem unpackDataWide_packMemWide_mem {r : ℕ} {input : Fin r → Bool} {argRe
   · have hlt : a - base < S := by omega
     have hadd : base + (a - base) = a := by omega
     simp only [packMemWide, Fin.val_castAdd, hlt, ↓reduceDIte, hadd]
-    rw [Nat.mod_eq_of_lt (wordOfNat w _).isLt, wordOfNat_val_of_fits (hx.2 a)]
+    rw [Nat.mod_eq_of_lt (wordOfNat w _).isLt, wordOfNat_val_of_lt (hx.2 a)]
   · rfl
 
 /-! #### Finite multi-cell read/write helpers and unified `RegLayout` -/
@@ -604,7 +599,7 @@ theorem unpack_pack_mem (L : RegLayout r input base S w regCells wCell)
   · rw [L.pack_data x ⟨a - base, by omega⟩]
     dsimp only
     have hadd : base + (a - base) = a := by omega
-    rw [hadd, Nat.mod_eq_of_lt (wordOfNat w _).isLt, wordOfNat_val_of_fits (hx.2 a)]
+    rw [hadd, Nat.mod_eq_of_lt (wordOfNat w _).isLt, wordOfNat_val_of_lt (hx.2 a)]
   · rfl
 
 end RegLayout
@@ -1035,11 +1030,11 @@ theorem commitHalted_spec {r : ℕ} {input : Fin r → Bool} {base S w regCells 
       cases hwb : writeBuf idx with
       | some v =>
         rw [hymem]
-        simp [hwb, liftCellWord, wordOfNat_val_of_fits v.isLt]
+        simp [hwb, liftCellWord, wordOfNat_val_of_lt v.isLt]
       | none =>
         have hlt_m : (m (Fin.castAdd regCells idx)).1 < 2 ^ w := L.validMem_data hm idx
         rw [hymem]
-        simp only [hwb, Nat.mod_eq_of_lt hlt_m, wordOfNat_val_of_fits hlt_m]
+        simp only [hwb, Nat.mod_eq_of_lt hlt_m, wordOfNat_val_of_lt hlt_m]
     · have hge : S ≤ c.1 := Nat.le_of_not_lt hc
       simp only [commitHalted, ProbeTree.run_bind]
       change ((L.spill y.regs).run m₁).2 c = L.pack y c
@@ -1264,7 +1259,7 @@ theorem simStepDet_spec {B : Basis} {r S regCells w wCell : ℕ} (base : ℕ) (p
             · subst hb
               rw [Function.update_self]
               split_ifs
-              simp [wb', wordOfNat_val_of_fits hfit_val]
+              simp [wb', wordOfNat_val_of_lt hfit_val]
             · rw [Function.update_of_ne hb]
               by_cases hba : base ≤ b ∧ b < base + S
               · have hne_idx : (⟨b - base, by omega⟩ : Fin S) ≠ ⟨regs a - base, by omega⟩ :=
@@ -1677,17 +1672,6 @@ def simStepRand {B : Basis} {r S regCells w wCell : ℕ} (base : ℕ) (p : Progr
     | _ => RandProbeTree.ofProbeTree (simStepDet base p (.running pc regs writeBuf extMem))
   | st => pure st
 
-private theorem stepRand_eq_ofOutcome_of_not_rand {B : Basis} {r w : ℕ} {p : Program B r}
-    {s : State r} (h : ∀ dst src, p[s.pc]? ≠ some (.rand dst src)) :
-    stepRand w p (.running s) = pure (.ofOutcome s.data (step w p s)) := by
-  rcases hpc : p[s.pc]? with _ | (_ | _ | _ | _ | ⟨dst, src⟩)
-  · simp only [stepRand, hpc]
-  · simp only [stepRand, hpc]
-  · simp only [stepRand, hpc]
-  · simp only [stepRand, hpc]
-  · simp only [stepRand, hpc]
-  · exact absurd hpc (h dst src)
-
 private theorem simStepRand_spec {B : Basis} {r S regCells w wCell : ℕ} (base : ℕ)
     (p : Program B r) (st : SimOutcome S w r) (m : Mem (S + regCells) wCell)
     (hcfg : (st.toRandCfg (w := w) base m).Bounded w) :
@@ -1789,7 +1773,7 @@ private theorem simStepRand_spec {B : Basis} {r S regCells w wCell : ℕ} (base 
           · rfl
           · exact absurd hpc (hnot_rand dst src)
         have hstep : stepRand w p (.running ⟨pc, x⟩) = pure (.ofOutcome x (step w p ⟨pc, x⟩)) :=
-          stepRand_eq_ofOutcome_of_not_rand (s := ⟨pc, x⟩) hnot_rand
+          stepRand_eq_ofOutcome_of_ne_rand (s := ⟨pc, x⟩) hnot_rand
         have hdet := simStepDet_spec (regCells := regCells) (wCell := wCell) base p pc m hx
         dsimp only at hdet
         obtain ⟨hm_eq, hdet_out⟩ := hdet
@@ -2155,7 +2139,7 @@ private theorem stepRand_haltedSet_identity {B : Basis} {r w : ℕ} (p : Program
             cases OracleComp.eq_of_mem_supportWith_pure hk
           · rw [stepRand_rand_of_not_fits hp hfit] at hmem_s
             cases OracleComp.eq_of_mem_supportWith_pure hmem_s
-        · rw [stepRand_eq_ofOutcome_of_not_rand fun dst src h => hrand ⟨dst, src, h⟩] at hmem_s
+        · rw [stepRand_eq_ofOutcome_of_ne_rand fun dst src h => hrand ⟨dst, src, h⟩] at hmem_s
           have heq := OracleComp.eq_of_mem_supportWith_pure hmem_s
           cases hs_step : step w p s with
           | next _ => rw [hs_step] at heq; cases heq

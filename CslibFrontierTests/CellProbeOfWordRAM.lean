@@ -35,11 +35,12 @@ Kernel-checked end-to-end instances, lower-bound transfers, and non-vacuity sani
    - **Finite-tree randomized `ObliviousSequenceImpl` (`exists_cellProbe_of_execRand`):** a
      `Code.rand` coin-flipping subroutine realizing `HasFiniteExecRand` across the module boundary
      with exact output law and zero `η`-loss.
-2. **Unconditional contrapositive Word-RAM lower-bound transfer over non-`Fintype`
+2. **Zero-error contrapositive Word-RAM lower-bound transfer over non-`Fintype`
    `Dictionary.Dynamic.Op 2` (`0` `η`-loss) + concrete instances:** proves a `3`-probe deterministic
    step-indexed `IndexedScheme` lower bound across `[.insert 0 0, .query 0]` and
-   `[.insert 0 1, .query 0]` at arbitrary cell count and word width, transfers it via
-   `wordRAM_lower_bound_of_det_cellProbe_lower_bound`,
+   `[.insert 0 1, .query 0]` at arbitrary cell count and word width, transfers it to the certified
+   potential-amortized resource budgets of zero-error implementations against oblivious sequences
+   via `wordRAM_lower_bound_of_det_cellProbe_lower_bound`,
    `wordRAM_lower_bound_of_det_cellProbe_wide`, and
    `oblivious_wordRAM_lower_bound_of_det_cellProbe`, and instantiates all three on
    `dynDictZeroPersImpl.toRandomized` and `dynDictRelocImpl.toRandomized`.
@@ -814,7 +815,7 @@ theorem coinFlipObliviousImpl_cellProbe_spec :
   exact ⟨P_cp, C_cp, by simpa [coinFlipObliviousImpl] using hip,
     fun o => by simpa [coinFlipObliviousImpl, hpers0] using hchg o⟩
 
-/-! ### 2. Unconditional contrapositive Word-RAM lower-bound transfer (`Dictionary.Dynamic.spec`) -/
+/-! ### 2. Zero-error contrapositive Word-RAM lower-bound transfer (`Dictionary.Dynamic.spec`) -/
 
 def dynLbOps0 : List (Dictionary.Dynamic.Op 2) := [.insert 0 0, .query 0]
 def dynLbOps1 : List (Dictionary.Dynamic.Op 2) := [.insert 0 1, .query 0]
@@ -936,11 +937,11 @@ private theorem dynLb_hardDist_valid :
   · exact ⟨dynLb_valid0, by decide, by simp [dynLbOps0, dynLbAlphabet]⟩
   · exact ⟨dynLb_valid1, by decide, by simp [dynLbOps1, dynLbAlphabet]⟩
 
-/-- **End-to-end unconditional Word-RAM lower-bound transfer (`0` `η`-loss, non-`Fintype`
+/-- **End-to-end zero-error Word-RAM lower-bound transfer (`0` `η`-loss, non-`Fintype`
 `Dictionary.Dynamic.Op 2`):**
 Every zero-error `WordRAM.Randomized.StateTransitionImpl` of `Dictionary.Dynamic.spec 2 3 2` over
 **any** `Basis`, register count `r_ds`, word width `w`, and space `C.space` satisfies the `3 / 2`
-certified expected instruction lower bound. -/
+lower bound on its certified potential-amortized resource budget against `dynLbHardDist`. -/
 theorem three_halves_le_any_wordRAM_randomized_impl
     {B : Basis} {r_ds k_init w base : ℕ}
     {P : SubroutineCode B r_ds k_init}
@@ -976,11 +977,11 @@ theorem three_halves_le_any_zeroPers_wordRAM_randomized_impl
   have hraw := three_halves_le_any_wordRAM_randomized_impl C hd₀ hfr hpar
   simpa [persistentRegCount_eq_zero_of_all_input hall] using hraw
 
-/-- **Wide-cell unconditional Word-RAM lower-bound transfer
+/-- **Wide-cell zero-error Word-RAM lower-bound transfer
 (`wordRAM_lower_bound_of_det_cellProbe_wide`):**
 Even when `P` retains arbitrarily many persistent registers `r_ds`, packing them into one wide cell
-of width `wideSubroutineWidth P w` transfers the lower bound with additive overhead at most `2` per
-operation (instead of `2 * r_ds`) and `0` `η`-loss. -/
+of width `wideSubroutineWidth P w` transfers the lower bound to the certified budget with additive
+overhead at most `2` per operation (instead of `2 * r_ds`) and `0` `η`-loss. -/
 theorem three_halves_le_any_wordRAM_randomized_impl_wide
     {B : Basis} {r_ds k_init w base : ℕ}
     {P : SubroutineCode B r_ds k_init}
@@ -998,7 +999,8 @@ theorem three_halves_le_any_wordRAM_randomized_impl_wide
     {dynLbOps0, dynLbOps1} dynLb_correctSeqs dynLbHardDist dynLb_hardDist_valid
     fun D_det hD => three_halves_le_expected_dynLb D_det hD
 
-/-- Unconditional lower-bound transfer to zero-error `WordRAM.Randomized.ObliviousSequenceImpl`s. -/
+/-- Zero-error lower-bound transfer to the certified budget of
+`WordRAM.Randomized.ObliviousSequenceImpl`s. -/
 theorem three_halves_le_any_oblivious_wordRAM_impl
     {B : Basis} {r_ds k_init w base : ℕ}
     {P : SubroutineCode B r_ds k_init}
