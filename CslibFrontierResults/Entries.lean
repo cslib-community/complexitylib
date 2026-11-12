@@ -3845,7 +3845,9 @@ register_result "kleene-post-below-jump" where
   topic := "computability"
   sources := [
     { paper := KleenePost1954, theorem := unverified, locator := unverified },
-    { paper := Soare1987, theorem := unverified, locator := unverified }
+    { paper := Soare1987, theorem := unverified, locator := unverified },
+    { paper := Simpson2005, theorem := "Theorem 2.6.4",
+      locator := "§2.6, pp. 30–31 (November 1, 2005 draft)" }
   ]
   theorems := [
     kleene_post_below_jump,
@@ -3857,5 +3859,5 @@ register_result "kleene-post-below-jump" where
     ordinary-code halting set halting = {c | (Nat.Partrec.Code.eval (ofNat Code c) c).Dom}, \
     via primitive-recursive stage-bounded oracle evaluation (RecursiveInEvalnPrimrec) and \
     many-one reduction of the one-step extension question Halts to halting. Constructs total \
-    Δ⁰₂ sets below ∅′, not computably enumerable sets; Friedberg–Muchnik, Sacks splitting/density \
+    Δ⁰₂ sets below ∅′; no c.e. property is proved. Friedberg–Muchnik, Sacks splitting/density \
     and Spector's minimal degree remain open (#3379)."

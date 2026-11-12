@@ -21,7 +21,8 @@ are Turing reducible to the halting problem (`∅'`).
 ## Source correspondence and notation mapping
 
 The Kleene–Post theorem [KleenePost1954] (see also [Soare1987]) constructs two Turing-incomparable
-sets below `∅'` by the finite extension method:
+sets below `∅'` by finite extension. An inspected exposition is [Simpson2005], Theorem 2.6.4,
+§2.6, pp. 30–31 (November 1, 2005 draft); the original-source locators remain unverified:
 
 * **Constructed sets and characteristic functions**: the sets are
   `A = {n | limA n = true}` and `B = {n | limB n = true}`, where
@@ -37,9 +38,14 @@ sets below `∅'` by the finite extension method:
   (`RecursiveIn {g} f`).
 * **Model boundary**: at each stage `s`, the finite-extension step queries `halting` via the
   primitive-recursive many-one reduction `halts_reducibleTo_halting` to decide the `Σ⁰₁` question
-  `Halts c τ σ.length`. Consequently `A` and `B` are `Δ⁰₂` sets Turing reducible to `∅'`, not
-  computably enumerable sets; the Friedberg–Muchnik theorem (incomparable c.e. sets by finite
-  injury without an oracle) is a separate theorem.
+  `Halts c τ σ.length`. Consequently `A` and `B` have total `Δ⁰₂` characteristic functions
+  reducible to `∅'`. No c.e. property is proved; Friedberg–Muchnik remains separate.
+
+Simpson's finite strings `σₙ, τₙ` and functions `χA, χB` correspond to the stage components and
+limit indicators above. His extension test asks for output `1`; `Halts` accepts any output `y`
+and `step` appends `decide (y = 0)`. His register-machine halting-on-input-`0` convention is
+replaced by the diagonal ordinary-code set above. No register-machine simulation or equality
+of numerical stage clocks is claimed.
 
 ## Main definitions
 
@@ -64,6 +70,7 @@ sets below `∅'` by the finite extension method:
 * [S. C. Kleene and E. L. Post, *The upper semi-lattice of degrees of recursive
   unsolvability*][KleenePost1954]
 * [R. I. Soare, *Recursively Enumerable Sets and Degrees*][Soare1987]
+* [S. G. Simpson, *Topics in Logic and Foundations: Spring 2004*][Simpson2005]
 -/
 
 public section
@@ -94,12 +101,8 @@ private def haltsPredOptAll (p : Nat.RecursiveIn.Code × List Bool × ℕ) (e : 
   let (c, τ, x) := p
   haltsPredOpt c τ x e
 
-private lemma primrec_bool_toNat : _root_.Primrec Bool.toNat :=
-  (_root_.Primrec.cond _root_.Primrec.id (_root_.Primrec.const 1) (_root_.Primrec.const 0)).of_eq
-    fun b => by cases b <;> rfl
-
 private lemma primrec_bits : _root_.Primrec bits :=
-  list_map _root_.Primrec.id (primrec_bool_toNat.comp snd).to₂
+  list_map _root_.Primrec.id ((_root_.Primrec.dom_bool Bool.toNat).comp snd).to₂
 
 private lemma primrec_evaln_all :
     _root_.Primrec (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
@@ -634,12 +637,12 @@ theorem kleene_post_below_jump :
     (pair h_id h_stage_idx).of_eq fun n => by simp [Seq.seq]
   have h_extA : _root_.Primrec (fun p : ℕ =>
       ((decodeStagePair p).1.getD p.unpair.1 false).toNat) :=
-    primrec_bool_toNat.comp
+    (_root_.Primrec.dom_bool Bool.toNat).comp
       ((_root_.Primrec.list_getD false).comp
         (fst.comp primrec_decodeStagePair) (fst.comp _root_.Primrec.unpair))
   have h_extB : _root_.Primrec (fun p : ℕ =>
       ((decodeStagePair p).2.getD p.unpair.1 false).toNat) :=
-    primrec_bool_toNat.comp
+    (_root_.Primrec.dom_bool Bool.toNat).comp
       ((_root_.Primrec.list_getD false).comp
         (snd.comp primrec_decodeStagePair) (fst.comp _root_.Primrec.unpair))
   have h_recA : Nat.RecursiveIn O (fun n => Part.some (limA n).toNat) := by
