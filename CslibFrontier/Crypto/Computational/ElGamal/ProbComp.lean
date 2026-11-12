@@ -214,11 +214,8 @@ abbrev kemToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
   F.kdfToDDHDistinguisher H (F.kemToKDFDistinguisher distinguisher)
 
 /-- `kemToKDFDistinguisher` is uniform strict PPT whenever `distinguisher` is. -/
-theorem isPPTOn_kemToKDFDistinguisher {distinguisher : Distinguisher}
-    (hD : IsPPT encBool distinguisher) :
-    IsPPTOn F.encKDFInput encBool fun x =>
-      F.kemToKDFDistinguisher distinguisher x.1.secParam x.1.groupParameters x.1.leftPublic
-        x.1.rightPublic x.2 := by
+theorem isPPT_kemToKDFDistinguisher {distinguisher : Distinguisher}
+    (hD : IsPPT encBool distinguisher) : (F.kemToKDFDistinguisher distinguisher).IsPPT := by
   have hn : ComputableInPolyTime (fun x : F.CDHInput × List Bool => x.1.secParam) F.encKDFInput
       encUnary := by
     fun_prop
@@ -357,8 +354,8 @@ theorem DDH.kemINDCPA_hashedElGamalEncapsProb {F : PrimeOrderGroupFamily} {keyLe
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits) :
     KEMINDCPA keyLen (F.elGamalKeyGenProb d) (F.hashedElGamalEncapsProb H d) := by
   intro distinguisher hD
-  have hddh := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH (F.isPPTOn_kemToKDFDistinguisher hD))
-  have hkdf := hKDF _ (F.isPPTOn_kemToKDFDistinguisher hD)
+  have hddh := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH (F.isPPT_kemToKDFDistinguisher hD))
+  have hkdf := hKDF _ (F.isPPT_kemToKDFDistinguisher hD)
   have h4 : Negligible fun n => (4 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 4
   refine negligible_of_le ((hddh.add hkdf).add h4) fun n => ?_
   dsimp only [Pi.add_apply]

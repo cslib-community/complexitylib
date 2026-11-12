@@ -547,10 +547,7 @@ noncomputable def firstBitKDFDistinguisher : schnorrGroups.KDFDistinguisher :=
   fun _ _ _ _ key => pure (key.headD false)
 
 /-- `firstBitKDFDistinguisher` is uniform strict PPT. -/
-theorem isPPTOn_firstBitKDFDistinguisher :
-    IsPPTOn schnorrGroups.encKDFInput encBool fun x =>
-      firstBitKDFDistinguisher x.1.secParam x.1.groupParameters x.1.leftPublic x.1.rightPublic
-        x.2 := by
+theorem isPPT_firstBitKDFDistinguisher : firstBitKDFDistinguisher.IsPPT := by
   have hhead : ComputableInPolyTime (fun s : List Bool => s.headD false) encBits encBool := by
     fun_prop
   have hproj : ComputableInPolyTime (fun x : schnorrGroups.CDHInput × List Bool => x.2)
@@ -587,7 +584,7 @@ confirming that `SecureKDF` is non-vacuous and refutable on bad KDF candidates. 
 theorem not_secureKDF_constZeroKDF :
     ¬ schnorrGroups.SecureKDF (fun _ => PMF.pure d23) constZeroKDF (fun _ => 1) := by
   intro hsec
-  have hneg := hsec firstBitKDFDistinguisher isPPTOn_firstBitKDFDistinguisher
+  have hneg := hsec firstBitKDFDistinguisher isPPT_firstBitKDFDistinguisher
   simp only [advantage_firstBitKDFDistinguisher_constZeroKDF] at hneg
   have h0 := hneg 0
   simp only [pow_zero, one_mul] at h0

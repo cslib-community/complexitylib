@@ -115,9 +115,10 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   `Cslib.Crypto.PrimeOrderGroupFamily.kdfRealGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.kdfIdealGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encKDFInput`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.KDFDistinguisher.IsPPT`,
   `Cslib.Crypto.PrimeOrderGroupFamily.SecureKDF`: typed key-derivation distinguishers, the
-  key-derivation experiments, and secure key derivation ([BonehShoup2023], Section 11.5.2, Attack
-  Game 11.3 and Definition 11.5, pp. 448–449).
+  key-derivation experiments, their uniform strict PPT predicate, and secure key derivation
+  ([BonehShoup2023], Section 11.5.2, Attack Game 11.3 and Definition 11.5, pp. 448–449).
 * `Cslib.Crypto.PrimeOrderGroupFamily.kdfToDDHDistinguisher`: a key-derivation distinguisher run
   on the key `H (d, encode w)` derived from a DDH candidate `w`; its random DDH game is the real
   key-derivation game.
@@ -155,7 +156,7 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhRandomGame_kdfToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_kdfToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_hashedElGamalCPAGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_hashedElGamalToKDFDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_hashedElGamalToKDFDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_hashedElGamalCPAGame`: Hashed ElGamal
   correctness, polynomial-time certificates, and IND-CPA security under DDH and `SecureKDF`
   ([BonehShoup2023], Section 11.5.2, Theorem 11.5, pp. 449–451).
@@ -924,16 +925,23 @@ followed by the candidate key word. -/
 abbrev encKDFInput : F.CDHInput × List Bool ↪ List Bool :=
   encPair F.encCDHInput encBits
 
+variable {F} in
+/-- A key-derivation distinguisher is uniform strict PPT: one machine reading the `encKDFInput`
+encoding of its security parameter, group parameters, two group elements and key word realizes
+it. -/
+def KDFDistinguisher.IsPPT (distinguisher : F.KDFDistinguisher) : Prop :=
+  IsPPTOn F.encKDFInput encBool fun x =>
+    distinguisher x.1.secParam x.1.groupParameters x.1.leftPublic x.1.rightPublic x.2
+
 /-- Secure key derivation for `H` over `F` ([BonehShoup2023], Section 11.5.2, Attack Game 11.3,
-p. 448, and Definition 11.5, p. 449): every key-derivation distinguisher realized by a uniform
-strict PPT machine reading `encKDFInput` has negligible advantage between `kdfRealGame` and
-`kdfIdealGame`. No nondegenerate `SecureKDF` instance (`msgLen n > 0`, e.g., via the leftover hash
-lemma) is constructed in this module. -/
+p. 448, and Definition 11.5, p. 449): every uniform strict PPT key-derivation distinguisher
+(`KDFDistinguisher.IsPPT`) has negligible advantage between `kdfRealGame` and `kdfIdealGame`. No
+nondegenerate `SecureKDF` instance (`msgLen n > 0`, e.g., via the leftover hash lemma) is
+constructed in this module. -/
 def SecureKDF (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
     (msgLen : ℕ → ℕ) : Prop :=
   Game.Indistinguishable (F.kdfRealGame setup H) (F.kdfIdealGame setup msgLen)
-    fun distinguisher => IsPPTOn F.encKDFInput encBool fun x =>
-      distinguisher x.1.secParam x.1.groupParameters x.1.leftPublic x.1.rightPublic x.2
+    KDFDistinguisher.IsPPT
 
 /-- Run a key-derivation distinguisher as a DDH distinguisher: derive the candidate key
 `H (d, encode w)` from the candidate shared element `w`. -/
@@ -953,9 +961,7 @@ def kdfToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
 key-derivation distinguisher is uniform strict PPT. -/
 theorem isPPTOn_kdfToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    {distinguisher : F.KDFDistinguisher}
-    (hD : IsPPTOn F.encKDFInput encBool fun x =>
-      distinguisher x.1.secParam x.1.groupParameters x.1.leftPublic x.1.rightPublic x.2) :
+    {distinguisher : F.KDFDistinguisher} (hD : distinguisher.IsPPT) :
     IsPPTOn F.encDDHInput encBool fun x =>
       F.kdfToDDHDistinguisher H distinguisher x.secParam x.groupParameters x.leftPublic
         x.rightPublic x.candidateShared :=
@@ -1000,11 +1006,9 @@ exactly. -/
   pmf_swap
 
 /-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is. -/
-theorem isPPTOn_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdversary}
+theorem isPPT_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdversary}
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn F.encKDFInput encBool fun x =>
-      F.hashedElGamalToKDFDistinguisher adversary bit x.1.secParam x.1.groupParameters
-        x.1.leftPublic x.1.rightPublic x.2 := by
+    (F.hashedElGamalToKDFDistinguisher adversary bit).IsPPT := by
   let E := encPair F.encKDFInput (Encryption.encChoiceOut encBits)
   have hn : ComputableInPolyTime
       (fun p : (F.CDHInput × List Bool) × Encryption.ChoiceOut (List Bool) => p.1.1.secParam) E
@@ -1034,7 +1038,7 @@ theorem isPPTOn_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdve
     cases bit
     · exact hm₀
     · exact hm₁
-  simp only [hashedElGamalToKDFDistinguisher]
+  simp only [KDFDistinguisher.IsPPT, hashedElGamalToKDFDistinguisher]
   refine (hA.choose.on.preprocess
     (prepare := fun x : F.CDHInput × List Bool =>
       (x.1.secParam, encPair F.encDesc encBits (x.1.groupParameters, F.encode _ x.1.leftPublic)))
@@ -1125,12 +1129,12 @@ theorem DDH.negligible_hashedElGamalCPAGame {F : PrimeOrderGroupFamily} {setup :
     Negligible fun n =>
       Game.advantage (F.hashedElGamalCPAGame setup H adversary false n)
         (F.hashedElGamalCPAGame setup H adversary true n) := by
-  have hkdf₀ := hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA false)
-  have hkdf₁ := hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA true)
+  have hkdf₀ := hKDF _ (F.isPPT_hashedElGamalToKDFDistinguisher hA false)
+  have hkdf₁ := hKDF _ (F.isPPT_hashedElGamalToKDFDistinguisher hA true)
   have hddh₀ := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH
-    (F.isPPTOn_hashedElGamalToKDFDistinguisher hA false))
+    (F.isPPT_hashedElGamalToKDFDistinguisher hA false))
   have hddh₁ := hDDH _ (F.isPPTOn_kdfToDDHDistinguisher hH
-    (F.isPPTOn_hashedElGamalToKDFDistinguisher hA true))
+    (F.isPPT_hashedElGamalToKDFDistinguisher hA true))
   negligible using F.advantage_hashedElGamalCPAGame_le setup H msgLen adversary
 
 end Cslib.Crypto.PrimeOrderGroupFamily
