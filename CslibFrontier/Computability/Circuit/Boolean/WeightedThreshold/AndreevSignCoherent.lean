@@ -47,7 +47,9 @@ determines the table (`eq_of_andreev_andreevCubePoint_add`).
   cubes (`Cslib.Combinatorics.card_cubeSplits_le`).
 * **Theorem 13** (`pow_mul_andreevCubeSplitBound_le`, `mul_andreevCubeSplitBound_le`,
   `min_le_card_circuitBottomGates`, `le_card_circuitBottomGates_of_balanced`): sum Lemma 14 over
-  all cubes and compare with Lemma 15.
+  all cubes and compare with Lemma 15. For circuits built with `depthTwoInputs`, whose `G` is the
+  constructor's bottom-gate count, `pow_mul_andreevCubeSplitBound_le_of_depthTwoInputs` and
+  `le_of_balanced_of_depthTwoInputs` take sign coherence of each `argWeight (bottom j) (args j)`.
 
 The circuits are arbitrary `Circuit signature n 1` of depth at most two, so the top gate may read
 inputs; only the bottom gates (`circuitBottomGates`) are required to be sign-coherent.
@@ -539,5 +541,53 @@ theorem le_card_circuitBottomGates_of_balanced (c : Circuit signature (2 ^ b + b
   rw [div_le_iff₀ (by positivity)]
   have hb3 : (1 : ℝ) ≤ 3 * (b : ℝ) ^ 3 := by nlinarith [pow_le_pow_left₀ zero_le_one hb1 3]
   nlinarith
+
+/-! ### Theorem 13 for `depthTwoInputs` circuits -/
+
+/-- **Theorem 13 for `depthTwoInputs`**: if a depth-two circuit `depthTwoInputs bottom args u v θ`
+with `G` bottom gates computes `andreev b m` and every bottom gate is sign-coherent on the address
+blocks, then `m ^ b D₀ ≤ (m ^ b - (m - 1) ^ b) G` with `D₀ = andreevCubeSplitBound b G`. -/
+theorem pow_mul_andreevCubeSplitBound_le_of_depthTwoInputs {G : ℕ} (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin (2 ^ b + b * m)) (u : Fin G → ℝ)
+    (v : Fin (2 ^ b + b * m) → ℝ) (θ : ℝ)
+    (hcomp : (depthTwoInputs bottom args u v θ).Computes interpretation (single (andreev b m)))
+    (hcoh : ∀ j, IsSignCoherent (andreevBlockVar b m) (argWeight (bottom j) (args j))) :
+    (m : ℝ) ^ b * andreevCubeSplitBound b G ≤ ((m ^ b - (m - 1) ^ b : ℕ) : ℝ) * G := by
+  set c := depthTwoInputs bottom args u v θ
+  obtain ⟨top, htop⟩ : ∃ top, c.outputs 0 = .gate top := ⟨_, rfl⟩
+  have hB : #(circuitBottomGates c 0) ≤ G := by
+    have := card_circuitBottomGates_lt_size htop
+    have hs : c.size = G + 1 := size_depthTwoInputs ..
+    omega
+  have hmain := pow_mul_andreevCubeSplitBound_le c (depth_depthTwoInputs_le ..) hcomp
+    fun k hk => isSignCoherent_inputWeight_depthTwoInputs bottom args u v θ hcoh htop
+      (by rwa [circuitBottomGates_eq_gateSupport htop] at hk)
+  calc (m : ℝ) ^ b * andreevCubeSplitBound b G
+      ≤ (m : ℝ) ^ b * andreevCubeSplitBound b #(circuitBottomGates c 0) :=
+        mul_le_mul_of_nonneg_left (andreevCubeSplitBound_anti b hB) (by positivity)
+    _ ≤ ((m ^ b - (m - 1) ^ b : ℕ) : ℝ) * #(circuitBottomGates c 0) := hmain
+    _ ≤ ((m ^ b - (m - 1) ^ b : ℕ) : ℝ) * G :=
+        mul_le_mul_of_nonneg_left (by exact_mod_cast hB) (Nat.cast_nonneg _)
+
+/-- **Theorem 13 for `depthTwoInputs`, balanced form**: if `b m = N = 2 ^ b`, a sign-coherent
+`depthTwoInputs` circuit computing `andreev b m` has `G ≥ N (N - 3 b - 1) / (3 b ^ 3)` bottom
+gates. -/
+theorem le_of_balanced_of_depthTwoInputs {G : ℕ} (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin (2 ^ b + b * m)) (u : Fin G → ℝ)
+    (v : Fin (2 ^ b + b * m) → ℝ) (θ : ℝ)
+    (hcomp : (depthTwoInputs bottom args u v θ).Computes interpretation (single (andreev b m)))
+    (hcoh : ∀ j, IsSignCoherent (andreevBlockVar b m) (argWeight (bottom j) (args j)))
+    (hbal : b * m = 2 ^ b) :
+    (2 : ℝ) ^ b * ((2 : ℝ) ^ b - 3 * b - 1) / (3 * (b : ℝ) ^ 3) ≤ G := by
+  set c := depthTwoInputs bottom args u v θ
+  obtain ⟨top, htop⟩ : ∃ top, c.outputs 0 = .gate top := ⟨_, rfl⟩
+  have hB : #(circuitBottomGates c 0) ≤ G := by
+    have := card_circuitBottomGates_lt_size htop
+    have hs : c.size = G + 1 := size_depthTwoInputs ..
+    omega
+  refine (le_card_circuitBottomGates_of_balanced c (depth_depthTwoInputs_le ..) hcomp
+    (fun k hk => isSignCoherent_inputWeight_depthTwoInputs bottom args u v θ hcoh htop
+      (by rwa [circuitBottomGates_eq_gateSupport htop] at hk)) hbal).trans ?_
+  exact_mod_cast hB
 
 end Cslib.Circuits.Boolean.WeightedThreshold

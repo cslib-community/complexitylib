@@ -43,6 +43,8 @@ gate, it uses that the top weights are fixed.
   circuit is an upper level set of its live form.
 * `Cslib.Circuits.Boolean.WeightedThreshold.card_image_eval_embedUpdate_le`: the count of
   restricted functions with `D` splitting gates.
+* `Cslib.Circuits.Boolean.WeightedThreshold.card_circuitBottomGates_lt_size`: an output gate has
+  fewer bottom gates than the circuit has gates.
 -/
 
 public section
@@ -81,6 +83,26 @@ variable {κ : Type*} [Fintype κ] {n : ℕ}
 noncomputable def circuitBottomGates (c : Circuit signature n 1) (o : Fin 1) :
     Finset (Fin c.size) :=
   match c.outputs o with | .input _ => ∅ | .gate top => gateSupport c.program top
+
+/-- When output `o` is the gate `top`, its bottom gates are the gates `top` reads. -/
+theorem circuitBottomGates_eq_gateSupport {c : Circuit signature n 1} {o : Fin 1}
+    {top : Fin c.size} (h : c.outputs o = .gate top) :
+    circuitBottomGates c o = gateSupport c.program top := by
+  unfold circuitBottomGates
+  rw [h]
+
+/-- The output gate is not among its own bottom gates, so there are fewer bottom gates than
+gates. -/
+theorem card_circuitBottomGates_lt_size {c : Circuit signature n 1} {o : Fin 1}
+    {top : Fin c.size} (h : c.outputs o = .gate top) :
+    #(circuitBottomGates c o) < c.size := by
+  classical
+  rw [circuitBottomGates_eq_gateSupport h]
+  have htop : top ∉ gateSupport c.program top := by
+    rw [mem_gateSupport, not_not]; exact gateWeight_eq_zero_of_le _ _ _ le_rfl
+  calc #(gateSupport c.program top) < #(univ : Finset (Fin c.size)) :=
+        card_lt_card ⟨subset_univ _, fun hsub => htop (hsub (mem_univ top))⟩
+    _ = c.size := by rw [card_univ, Fintype.card_fin]
 
 /-- The bottom gates of output `o` that are not forced to a constant outside `B` by `w`, i.e. the
 bottom gates that **split** the subcube. -/
