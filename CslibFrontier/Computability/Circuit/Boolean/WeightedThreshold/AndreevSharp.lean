@@ -71,10 +71,6 @@ variable {b m : ℕ}
 
 /-! ### Linear forms on Andreev inputs that read blocks through their sums -/
 
-/-- The table bits of an Andreev input, indexed by addresses. -/
-def andreevTable (b m : ℕ) (w : BitString (2 ^ b + b * m)) (c : BitString b) : Bool :=
-  w (andreevTableIndex b m (BitString.equivFin b c))
-
 /-- The block counts `s_j = |a_j|` of an Andreev input. -/
 def andreevBlockCount (b m : ℕ) (w : BitString (2 ^ b + b * m)) (j : Fin b) : ℕ :=
   ∑ t : Fin m, (w (andreevBlockVar b m j t)).toNat
@@ -92,7 +88,6 @@ theorem andreevParities_eq_blockParities (w : BitString (2 ^ b + b * m)) :
 theorem andreev_eq_andreevTable (w : BitString (2 ^ b + b * m)) :
     andreev b m w = andreevTable b m w (blockParities b (andreevBlockCount b m w)) := by
   rw [andreev_eq_table_parities, andreevParities_eq_blockParities]
-  rfl
 
 /-- Every block count is at most `m`. -/
 theorem andreevBlockCount_le (w : BitString (2 ^ b + b * m)) (j : Fin b) :
