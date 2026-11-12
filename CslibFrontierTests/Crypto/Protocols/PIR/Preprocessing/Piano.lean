@@ -157,13 +157,28 @@ example :
       (ProbComp.uniform (Fin 3 → Fin 3)) :=
   isPerfectlyPrivateWith_pianoHybridScheme
 
-/-- Every Boolean-output adaptive server has zero distinguishing advantage against
-`pianoHybridScheme 4 (Fin 3) (Fin 3)` over any number of queries `k`. -/
-example (adv : AdaptiveServer (Fin 3 × Fin 3) (Fin 3 → Fin 3) Bool Bool)
-    (db : Fin 3 × Fin 3 → Bool) (k : ℕ) :
+/-- Every adaptive server with state `St` and Boolean finalizer `finalize : St → Bool` has zero
+distinguishing advantage against `pianoHybridScheme 4 (Fin 3) (Fin 3)` over any number of queries
+`k`. -/
+example {St : Type} (adv : AdaptiveServer (Fin 3 × Fin 3) (Fin 3 → Fin 3) Bool St)
+    (finalize : St → Bool) (db : Fin 3 × Fin 3 → Bool) (k : ℕ) (st₀ : St) :
     (pianoHybridScheme 4 (Fin 3) (Fin 3)).privacyAdvantage
-      (ProbComp.uniform (Fin 3 → Fin 3)) adv db k false = 0 :=
-  privacyAdvantage_pianoHybridScheme_eq_zero adv db k false
+      (ProbComp.uniform (Fin 3 → Fin 3)) adv finalize db k st₀ = 0 :=
+  privacyAdvantage_pianoHybridScheme_eq_zero adv finalize db k st₀
+
+/-- Concrete adaptive server with non-Boolean state `ℕ × List (Fin 3 → Fin 3)` (step counter and
+recorded query log) and Boolean finalizer inspecting the logged transcript. -/
+def transcriptServer : AdaptiveServer (Fin 3 × Fin 3) (Fin 3 → Fin 3) Bool
+    (ℕ × List (Fin 3 → Fin 3)) where
+  chooseQuery st := pure ((st.1 + 1, st.2), (0, 0))
+  onQuery st q := pure ((st.1, q :: st.2), decide (q 0 = 0))
+
+example (db : Fin 3 × Fin 3 → Bool) :
+    (pianoHybridScheme 4 (Fin 3) (Fin 3)).privacyAdvantage
+      (ProbComp.uniform (Fin 3 → Fin 3)) transcriptServer
+      (fun st => decide (st.2.length = 2)) db 2 (0, []) = 0 :=
+  privacyAdvantage_pianoHybridScheme_eq_zero transcriptServer
+    (fun st => decide (st.2.length = 2)) db 2 (0, [])
 
 /-- Multi-query non-adaptive transcript privacy for `pianoHybridScheme 4 (Fin 2) (Fin 2)` on the
 3-query sequence `[(0, 0), (1, 1), (0, 1)]`. -/

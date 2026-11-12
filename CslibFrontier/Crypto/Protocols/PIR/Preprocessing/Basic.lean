@@ -18,7 +18,7 @@ import CslibFrontier.Probability.PMF.Uniform
 # Client-preprocessing single-server private information retrieval
 
 In the client-preprocessing (subscription) model of single-server private information retrieval
-[Zhou, Park, Shi and Zheng, Section 3.1][ZhouParkShiZheng2024], interaction is split into two
+[Zhou, Park, Zheng and Shi, Section 3.1][ZhouParkZhengShi2024], interaction is split into two
 phases:
 
 * **Offline setup** (`Scheme.preprocess`): the client streams the database `x : ι → Bool` once and
@@ -35,7 +35,7 @@ phases:
 sequence; `Scheme.IsCorrectFrom x h is` is the conditional form starting from a given hint state
 `h`.
 
-Privacy follows [Zhou, Park, Shi and Zheng, Definition 3.1][ZhouParkShiZheng2024]: an adversarial
+Privacy follows [Zhou, Park, Zheng and Shi, Definition 3.1][ZhouParkZhengShi2024]: an adversarial
 server `adv : AdaptiveServer ι Q A St` adaptively chooses each online query index `i_t ∈ ι` for the
 client based on its view so far, receives the client's query message `q_t : Q`, and returns a
 (possibly malicious) server response `a_t : A` that the client uses when reconstructing and
@@ -44,7 +44,8 @@ simulator `sim : ProbComp Q` generates each query message `q_t` without receivin
 `i_t` or the database `x`. `Scheme.IsPerfectlyPrivateWith sim` requires the adversarial server's
 final state distribution in the real and ideal experiments to be identical for every number of
 queries `k`, database `x`, and adaptive server `adv`; `Scheme.privacyAdvantage` measures the
-distinguishing advantage of a Boolean-output adaptive server.
+distinguishing advantage of an adaptive server with state `St` and a Boolean finalizer
+`finalize : St → Bool`.
 
 ## Main definitions
 
@@ -77,15 +78,16 @@ distinguishing advantage of a Boolean-output adaptive server.
   perfect privacy implies zero distinguishing advantage.
 * `Cslib.Crypto.Protocols.PIR.Preprocessing.Scheme.isPerfectlyPrivateWith_of_invariant`:
   state-invariance criterion for multi-query adaptive privacy (abstracting Lemma C.2 of
-  [Zhou, Park, Shi and Zheng][ZhouParkShiZheng2024]).
+  [Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024]).
 
 ## References
 
-* [M. Zhou, A. Park, E. Shi, W. Zheng, *Piano: Extremely Simple, Single-Server PIR with Sublinear
-  Server Computation*][ZhouParkShiZheng2024], Section 3.1 (Definition 3.1) and Appendix C
+* [M. Zhou, A. Park, W. Zheng, E. Shi, *Piano: Extremely Simple, Single-Server PIR with Sublinear
+  Server Computation*][ZhouParkZhengShi2024], Section 3.1 (Definition 3.1) and Appendix C
+  (source locators follow the full ePrint version, where the author order is Zhou, Park, Shi, Zheng)
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.PIR.Preprocessing
 
@@ -94,7 +96,7 @@ open scoped NNReal
 
 /-- A client-preprocessing single-server private information retrieval scheme for databases
 `x : ι → Bool`, with client hint state `H`, per-query retained state `R`, query message `Q`, and
-server answer `A` [Zhou, Park, Shi and Zheng, Section 3.1][ZhouParkShiZheng2024]. -/
+server answer `A` [Zhou, Park, Zheng and Shi, Section 3.1][ZhouParkZhengShi2024]. -/
 structure Scheme (ι H R Q A : Type) where
   /-- Offline setup phase: streams the database `x` and initializes the client's local hint
   state. -/
@@ -112,7 +114,7 @@ structure Scheme (ι H R Q A : Type) where
 
 /-- The per-query online communication cost of a single-server preprocessing scheme with queries `Q`
 and answers `A`: `⌈log₂ |Q|⌉ + ⌈log₂ |A|⌉`, specializing `PIR.communication Unit Q A`. -/
-def onlineCommunication (Q A : Type) [Fintype Q] [Fintype A] : ℕ :=
+@[expose] def onlineCommunication (Q A : Type) [Fintype Q] [Fintype A] : ℕ :=
   PIR.communication Unit Q A
 
 theorem onlineCommunication_eq (Q A : Type) [Fintype Q] [Fintype A] :
@@ -125,7 +127,7 @@ theorem onlineCommunication_bool (Q : Type) [Fintype Q] :
   rw [onlineCommunication_eq, Fintype.card_bool, Nat.clog_eq_one le_rfl le_rfl]
 
 /-- An adaptive (and potentially malicious) server in the privacy experiment of
-[Zhou, Park, Shi and Zheng, Definition 3.1][ZhouParkShiZheng2024]: at each online step, the server
+[Zhou, Park, Zheng and Shi, Definition 3.1][ZhouParkZhengShi2024]: at each online step, the server
 may adaptively choose the next query index `i ∈ ι` from its internal state `St`, and upon receiving
 the client's query `q : Q`, updates its state and returns a (possibly deviated) response `a : A`. -/
 structure AdaptiveServer (ι Q A St : Type) where
@@ -135,10 +137,10 @@ structure AdaptiveServer (ι Q A St : Type) where
   onQuery : St → Q → ProbComp (St × A)
 
 /-- One online step of the ideal privacy experiment
-[Zhou, Park, Shi and Zheng, Definition 3.1][ZhouParkShiZheng2024]: the adversarial server chooses
+[Zhou, Park, Zheng and Shi, Definition 3.1][ZhouParkZhengShi2024]: the adversarial server chooses
 the next query index (which is discarded), the simulator `sim` generates a query `q` without
 receiving the index, and the server updates its state on `q`. -/
-def idealAdaptiveStep {ι Q A St : Type} (sim : ProbComp Q) (adv : AdaptiveServer ι Q A St)
+@[expose] def idealAdaptiveStep {ι Q A St : Type} (sim : ProbComp Q) (adv : AdaptiveServer ι Q A St)
     (st : St) : ProbComp St := do
   let (st₁, _) ← adv.chooseQuery st
   let q ← sim
@@ -146,17 +148,17 @@ def idealAdaptiveStep {ι Q A St : Type} (sim : ProbComp Q) (adv : AdaptiveServe
   pure st₂
 
 /-- The `k`-query ideal privacy experiment
-[Zhou, Park, Shi and Zheng, Definition 3.1][ZhouParkShiZheng2024] with index-independent simulator
+[Zhou, Park, Zheng and Shi, Definition 3.1][ZhouParkZhengShi2024] with index-independent simulator
 `sim : ProbComp Q`. -/
-def idealAdaptiveView {ι Q A St : Type} (sim : ProbComp Q) (adv : AdaptiveServer ι Q A St) :
-    ℕ → St → ProbComp St
+@[expose] def idealAdaptiveView {ι Q A St : Type} (sim : ProbComp Q)
+    (adv : AdaptiveServer ι Q A St) : ℕ → St → ProbComp St
   | 0, st => pure st
   | k + 1, st => do
     let st' ← idealAdaptiveStep sim adv st
     idealAdaptiveView sim adv k st'
 
 /-- The `k`-query non-adaptive simulated transcript: `k` independent draws from `sim`. -/
-def simTranscript {Q : Type} (sim : ProbComp Q) : ℕ → ProbComp (List Q)
+@[expose] def simTranscript {Q : Type} (sim : ProbComp Q) : ℕ → ProbComp (List Q)
   | 0 => pure []
   | k + 1 => do
     let q ← sim
@@ -165,7 +167,7 @@ def simTranscript {Q : Type} (sim : ProbComp Q) : ℕ → ProbComp (List Q)
 
 /-- Iterates a projected state transition `stepS : S → St → PMF (S × St)` for `k` steps, returning
 the final server state distribution. -/
-noncomputable def runProjectedSteps {S St : Type} (stepS : S → St → PMF (S × St)) :
+private noncomputable def runProjectedSteps {S St : Type} (stepS : S → St → PMF (S × St)) :
     ℕ → S → St → PMF St
   | 0, _, st => PMF.pure st
   | k + 1, s, st => (stepS s st).bind (fun p => runProjectedSteps stepS k p.1 p.2)
@@ -178,7 +180,7 @@ variable {ι H R Q A : Type}
 
 /-- One honest online query-answer-reconstruct-refresh step on database `x`, hint state `h`, and
 index `i`, returning the refreshed hint state and the reconstructed bit. -/
-def step (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) (i : ι) : ProbComp (H × Bool) := do
+@[expose] def step (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) (i : ι) : ProbComp (H × Bool) := do
   let (r, q) ← P.query h i
   let β := P.reconstruct r (P.answer x q)
   let h' ← P.refresh h i r β
@@ -186,7 +188,8 @@ def step (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) (i : ι) : ProbComp (
 
 /-- Executes a sequence of online queries `is : List ι` starting from hint state `h`, threading the
 refreshed hint state across queries and collecting the reconstructed bits. -/
-def runQueriesFrom (P : Scheme ι H R Q A) (x : ι → Bool) : H → List ι → ProbComp (H × List Bool)
+@[expose] def runQueriesFrom (P : Scheme ι H R Q A) (x : ι → Bool) :
+    H → List ι → ProbComp (H × List Bool)
   | h, [] => pure (h, [])
   | h, i :: is => do
     let (h', β) ← P.step x h i
@@ -195,19 +198,20 @@ def runQueriesFrom (P : Scheme ι H R Q A) (x : ι → Bool) : H → List ι →
 
 /-- Full execution of the preprocessing PIR scheme on database `x` and online query sequence `is`:
 runs `preprocess x` once followed by `runQueriesFrom x h is`. -/
-def runQueries (P : Scheme ι H R Q A) (x : ι → Bool) (is : List ι) : ProbComp (List Bool) := do
+@[expose] def runQueries (P : Scheme ι H R Q A) (x : ι → Bool) (is : List ι) :
+    ProbComp (List Bool) := do
   let h ← P.preprocess x
   let (_, βs) ← P.runQueriesFrom x h is
   pure βs
 
 /-- Conditional multi-query correctness from a hint state `h` on database `x` and query list `is`:
 the reconstructed answer list equals `is.map x` with probability one. -/
-def IsCorrectFrom (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) (is : List ι) : Prop :=
+@[expose] def IsCorrectFrom (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) (is : List ι) : Prop :=
   ProbComp.eval (Prod.snd <$> P.runQueriesFrom x h is) = PMF.pure (is.map x)
 
 /-- Unconditional multi-query correctness: for every database `x` and query sequence `is`,
 `P.runQueries x is` outputs `is.map x` with probability one. -/
-def IsCorrect (P : Scheme ι H R Q A) : Prop :=
+@[expose] def IsCorrect (P : Scheme ι H R Q A) : Prop :=
   ∀ x is, ProbComp.eval (P.runQueries x is) = PMF.pure (is.map x)
 
 theorem isCorrectFrom_nil (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) :
@@ -272,14 +276,16 @@ theorem isCorrect_iff (P : Scheme ι H R Q A) :
 /-! ### Non-adaptive server query transcripts -/
 
 /-- One online step recording the refreshed hint state and the query `q : Q` sent to the server. -/
-def queryStep (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) (i : ι) : ProbComp (H × Q) := do
+@[expose] def queryStep (P : Scheme ι H R Q A) (x : ι → Bool) (h : H) (i : ι) :
+    ProbComp (H × Q) := do
   let (r, q) ← P.query h i
   let β := P.reconstruct r (P.answer x q)
   let h' ← P.refresh h i r β
   pure (h', q)
 
 /-- The sequence of queries sent to the server over `is : List ι` starting from hint state `h`. -/
-def queryTranscriptFrom (P : Scheme ι H R Q A) (x : ι → Bool) : H → List ι → ProbComp (List Q)
+@[expose] def queryTranscriptFrom (P : Scheme ι H R Q A) (x : ι → Bool) :
+    H → List ι → ProbComp (List Q)
   | _, [] => pure []
   | h, i :: is => do
     let (h', q) ← P.queryStep x h i
@@ -287,18 +293,19 @@ def queryTranscriptFrom (P : Scheme ι H R Q A) (x : ι → Bool) : H → List �
     pure (q :: qs)
 
 /-- The full sequence of online queries sent to the server on database `x` and query list `is`. -/
-def queryTranscript (P : Scheme ι H R Q A) (x : ι → Bool) (is : List ι) : ProbComp (List Q) := do
+@[expose] def queryTranscript (P : Scheme ι H R Q A) (x : ι → Bool) (is : List ι) :
+    ProbComp (List Q) := do
   let h ← P.preprocess x
   P.queryTranscriptFrom x h is
 
 /-! ### Adaptive malicious-server privacy (Definition 3.1) -/
 
 /-- One online step of the real privacy experiment
-[Zhou, Park, Shi and Zheng, Definition 3.1][ZhouParkShiZheng2024]: the adversarial server chooses
+[Zhou, Park, Zheng and Shi, Definition 3.1][ZhouParkZhengShi2024]: the adversarial server chooses
 the next query index `i`, the honest client produces query `q`, the server responds with `a`, and
 the client refreshes its hint state using the reconstructed bit `P.reconstruct r a`. -/
-def realAdaptiveStep {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer ι Q A St) (h : H)
-    (st : St) : ProbComp (H × St) := do
+@[expose] def realAdaptiveStep {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer ι Q A St)
+    (h : H) (st : St) : ProbComp (H × St) := do
   let (st₁, i) ← adv.chooseQuery st
   let (r, q) ← P.query h i
   let (st₂, a) ← adv.onQuery st₁ q
@@ -307,7 +314,7 @@ def realAdaptiveStep {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer �
 
 /-- Runs `k` online steps of the real privacy experiment starting from client hint state `h` and
 adversarial server state `st`. -/
-def realAdaptiveFrom {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer ι Q A St) :
+@[expose] def realAdaptiveFrom {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer ι Q A St) :
     ℕ → H → St → ProbComp St
   | 0, _, st => pure st
   | k + 1, h, st => do
@@ -315,50 +322,53 @@ def realAdaptiveFrom {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer �
     P.realAdaptiveFrom adv k h' st'
 
 /-- The full real privacy experiment of
-[Zhou, Park, Shi and Zheng, Definition 3.1][ZhouParkShiZheng2024]: the client runs `P.preprocess x`
+[Zhou, Park, Zheng and Shi, Definition 3.1][ZhouParkZhengShi2024]: the client runs `P.preprocess x`
 and then interacts with `adv` over `k` adaptive online queries. -/
-def realAdaptiveView {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer ι Q A St)
+@[expose] def realAdaptiveView {St : Type} (P : Scheme ι H R Q A) (adv : AdaptiveServer ι Q A St)
     (x : ι → Bool) (k : ℕ) (st₀ : St) : ProbComp St := do
   let h ← P.preprocess x
   P.realAdaptiveFrom adv k h st₀
 
 /-- Perfect privacy with simulator `sim : ProbComp Q`
-([Zhou, Park, Shi and Zheng, Definition 3.1][ZhouParkShiZheng2024] with zero distinguishing error):
+([Zhou, Park, Zheng and Shi, Definition 3.1][ZhouParkZhengShi2024] with zero distinguishing error):
 for every state type `St`, adaptive server `adv`, database `x`, query count `k`, and initial server
 state `st₀`, the server's final view in `realAdaptiveView` has the exact same distribution as in
 `idealAdaptiveView sim`. -/
-def IsPerfectlyPrivateWith (P : Scheme ι H R Q A) (sim : ProbComp Q) : Prop :=
+@[expose] def IsPerfectlyPrivateWith (P : Scheme ι H R Q A) (sim : ProbComp Q) : Prop :=
   ∀ (St : Type) (adv : AdaptiveServer ι Q A St) (x : ι → Bool) (k : ℕ) (st₀ : St),
     ProbComp.eval (P.realAdaptiveView adv x k st₀) =
       ProbComp.eval (idealAdaptiveView sim adv k st₀)
 
 /-- Perfect privacy: some index-independent simulator `sim : ProbComp Q` perfectly simulates the
 client in `realAdaptiveView`. -/
-def IsPerfectlyPrivate (P : Scheme ι H R Q A) : Prop :=
+@[expose] def IsPerfectlyPrivate (P : Scheme ι H R Q A) : Prop :=
   ∃ sim : ProbComp Q, P.IsPerfectlyPrivateWith sim
 
-/-- The distinguishing advantage of a Boolean-state adaptive server `adv` between the real privacy
-experiment and the ideal experiment with simulator `sim`. -/
-noncomputable def privacyAdvantage (P : Scheme ι H R Q A) (sim : ProbComp Q)
-    (adv : AdaptiveServer ι Q A Bool) (x : ι → Bool) (k : ℕ) (st₀ : Bool) : ℝ≥0 :=
-  Game.advantage (ProbComp.eval (P.realAdaptiveView adv x k st₀))
-    (ProbComp.eval (idealAdaptiveView sim adv k st₀))
+/-- The distinguishing advantage of an adaptive server `adv : AdaptiveServer ι Q A St` with Boolean
+finalizer `finalize : St → Bool` between the real privacy experiment and the ideal experiment with
+simulator `sim`. -/
+@[expose] noncomputable def privacyAdvantage {St : Type} (P : Scheme ι H R Q A) (sim : ProbComp Q)
+    (adv : AdaptiveServer ι Q A St) (finalize : St → Bool) (x : ι → Bool) (k : ℕ)
+    (st₀ : St) : ℝ≥0 :=
+  Game.advantage ((ProbComp.eval (P.realAdaptiveView adv x k st₀)).map finalize)
+    ((ProbComp.eval (idealAdaptiveView sim adv k st₀)).map finalize)
 
 theorem IsPerfectlyPrivateWith.isPerfectlyPrivate {P : Scheme ι H R Q A} {sim : ProbComp Q}
     (h : P.IsPerfectlyPrivateWith sim) : P.IsPerfectlyPrivate :=
   ⟨sim, h⟩
 
 /-- A scheme that is perfectly private with simulator `sim` has zero privacy advantage against every
-adaptive server. -/
-theorem IsPerfectlyPrivateWith.privacyAdvantage_eq_zero {P : Scheme ι H R Q A} {sim : ProbComp Q}
-    (h : P.IsPerfectlyPrivateWith sim) (adv : AdaptiveServer ι Q A Bool) (x : ι → Bool) (k : ℕ)
-    (st₀ : Bool) : P.privacyAdvantage sim adv x k st₀ = 0 := by
-  rw [privacyAdvantage, h Bool adv x k st₀, Game.advantage_self]
+adaptive server and Boolean finalizer `finalize : St → Bool`. -/
+theorem IsPerfectlyPrivateWith.privacyAdvantage_eq_zero {St : Type} {P : Scheme ι H R Q A}
+    {sim : ProbComp Q} (h : P.IsPerfectlyPrivateWith sim) (adv : AdaptiveServer ι Q A St)
+    (finalize : St → Bool) (x : ι → Bool) (k : ℕ) (st₀ : St) :
+    P.privacyAdvantage sim adv finalize x k st₀ = 0 := by
+  rw [privacyAdvantage, h St adv x k st₀, Game.advantage_self]
 
 /-! ### State-invariance criterion for multi-query adaptive privacy -/
 
 /-- **State-invariance criterion for adaptive privacy** (abstracting Lemma C.2 of
-[Zhou, Park, Shi and Zheng, Appendix C][ZhouParkShiZheng2024]): suppose a projection `proj : H → S`
+[Zhou, Park, Zheng and Shi, Appendix C][ZhouParkZhengShi2024]): suppose a projection `proj : H → S`
 of the client's hint state controls all online query distributions:
 
 1. For every database `x`, `proj <$> P.preprocess x` has distribution `inv : PMF S`.
@@ -389,10 +399,12 @@ theorem isPerfectlyPrivateWith_of_invariant {P : Scheme ι H R Q A} {S : Type} (
     induction m with
     | zero =>
       intro h st
-      simp [realAdaptiveFrom, runProjectedSteps]
+      dsimp only [runProjectedSteps]
+      simp [realAdaptiveFrom]
     | succ m ih =>
       intro h st
-      simp only [realAdaptiveFrom, ProbComp.eval_bind, runProjectedSteps]
+      dsimp only [runProjectedSteps]
+      simp only [realAdaptiveFrom, ProbComp.eval_bind]
       rw [← hcompat adv h st, PMF.bind_map]
       congr 1
       funext p
@@ -404,10 +416,12 @@ theorem isPerfectlyPrivateWith_of_invariant {P : Scheme ι H R Q A} {S : Type} (
     induction m with
     | zero =>
       intro st
-      simp [runProjectedSteps, idealAdaptiveView]
+      dsimp only [runProjectedSteps]
+      simp [idealAdaptiveView]
     | succ m ih =>
       intro st
-      simp only [runProjectedSteps, idealAdaptiveView, ProbComp.eval_bind]
+      dsimp only [runProjectedSteps]
+      simp only [idealAdaptiveView, ProbComp.eval_bind]
       rw [hstep adv st (runProjectedSteps (stepS adv) m)]
       congr 1
       funext st'
@@ -423,7 +437,7 @@ theorem isPerfectlyPrivateWith_of_invariant {P : Scheme ι H R Q A} {S : Type} (
 
 /-- Iterates a projected non-adaptive query step `stepQ : S → ι → PMF (S × Q)` over a query list
 `is : List ι`. -/
-noncomputable def runProjectedTranscript {S : Type} (stepQ : S → ι → PMF (S × Q)) :
+private noncomputable def runProjectedTranscript {S : Type} (stepQ : S → ι → PMF (S × Q)) :
     S → List ι → PMF (List Q)
   | _, [] => PMF.pure []
   | s, i :: is =>
@@ -450,11 +464,12 @@ theorem eval_queryTranscript_eq_of_invariant {P : Scheme ι H R Q A} {S : Type} 
     induction js with
     | nil =>
       intro h
-      simp [queryTranscriptFrom, runProjectedTranscript]
+      dsimp only [runProjectedTranscript]
+      simp [queryTranscriptFrom]
     | cons j js ih =>
       intro h
-      simp only [queryTranscriptFrom, ProbComp.eval_bind, ProbComp.eval_pure,
-        runProjectedTranscript, PMF.map]
+      dsimp only [runProjectedTranscript]
+      simp only [queryTranscriptFrom, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map]
       rw [← hcompat h j, PMF.bind_map]
       congr 1
       funext p
@@ -466,10 +481,11 @@ theorem eval_queryTranscript_eq_of_invariant {P : Scheme ι H R Q A} {S : Type} 
     intro js
     induction js with
     | nil =>
-      simp [runProjectedTranscript, simTranscript]
+      dsimp only [runProjectedTranscript]
+      simp [simTranscript]
     | cons j js ih =>
-      simp only [runProjectedTranscript, List.length_cons, simTranscript,
-        ProbComp.eval_bind, ProbComp.eval_pure]
+      dsimp only [runProjectedTranscript]
+      simp only [List.length_cons, simTranscript, ProbComp.eval_bind, ProbComp.eval_pure]
       rw [hstep j (fun s' q => (runProjectedTranscript stepQ s' js).map (q :: ·))]
       congr 1
       funext q

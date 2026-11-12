@@ -19,7 +19,7 @@ import Mathlib.Data.Fin.Tuple.Basic
 # The Piano client-preprocessing single-server PIR scheme
 
 This module formalizes the core of the Piano client-preprocessing single-server PIR scheme of
-[Zhou, Park, Shi and Zheng][ZhouParkShiZheng2024] (Sections 2–3, Figure 1, and Appendix C).
+[Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024] (Sections 2–3, Figure 1, and Appendix C).
 
 A database `db : Chunk × Offset → Bool` of size `n` is partitioned into `|Chunk| = √n` chunks of
 `|Offset| = √n` elements each. A *chunked set* `S : Chunk → Offset` selects one offset in each
@@ -116,11 +116,12 @@ chunk.
 
 ## References
 
-* [M. Zhou, A. Park, E. Shi, W. Zheng, *Piano: Extremely Simple, Single-Server PIR with Sublinear
-  Server Computation*][ZhouParkShiZheng2024], Sections 2–3, Figure 1, Appendix A, and Appendix C
+* [M. Zhou, A. Park, W. Zheng, E. Shi, *Piano: Extremely Simple, Single-Server PIR with Sublinear
+  Server Computation*][ZhouParkZhengShi2024], Sections 2–3, Figure 1, Appendix A, and Appendix C
+  (source locators follow the full ePrint version, where the author order is Zhou, Park, Shi, Zheng)
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Protocols.PIR.Preprocessing.Piano
 
@@ -132,8 +133,8 @@ variable {M₁ M₂ : ℕ} {Chunk Offset : Type}
 /-! ### Chunked sets and parity identities -/
 
 /-- Replaces the offset selected by `S : Chunk → Offset` in chunk `j` with `δ`, denoted
-`S⟨j → δ⟩` in [Zhou, Park, Shi and Zheng, Figure 1][ZhouParkShiZheng2024]. -/
-def replaceInChunk [DecidableEq Chunk] (S : Chunk → Offset) (j : Chunk) (δ : Offset) :
+`S⟨j → δ⟩` in [Zhou, Park, Zheng and Shi, Figure 1][ZhouParkZhengShi2024]. -/
+@[expose] def replaceInChunk [DecidableEq Chunk] (S : Chunk → Offset) (j : Chunk) (δ : Offset) :
     Chunk → Offset :=
   Function.update S j δ
 
@@ -159,13 +160,14 @@ theorem replaceInChunk_eq_self [DecidableEq Chunk] (S : Chunk → Offset) (j : C
 
 /-- The full parity `⊕_{j ∈ Chunk} db (j, S j)` of a chunked set `S : Chunk → Offset` against
 database `db : Chunk × Offset → Bool`, using the `BooleanRing Bool` addition (XOR). -/
-def setParity [Fintype Chunk] (db : Chunk × Offset → Bool) (S : Chunk → Offset) : Bool :=
+@[expose] def setParity [Fintype Chunk] (db : Chunk × Offset → Bool) (S : Chunk → Offset) : Bool :=
   ∑ j : Chunk, db (j, S j)
 
 /-- The punctured backup parity `⊕_{j ∈ Chunk \ {jStar}} db (j, B j)` of a backup set
 `B : Chunk → Offset` belonging to chunk `jStar`
-[Zhou, Park, Shi and Zheng, Figure 1][ZhouParkShiZheng2024]. -/
-def backupParity [Fintype Chunk] [DecidableEq Chunk] (db : Chunk × Offset → Bool) (jStar : Chunk)
+[Zhou, Park, Zheng and Shi, Figure 1][ZhouParkZhengShi2024]. -/
+@[expose] def backupParity [Fintype Chunk] [DecidableEq Chunk] (db : Chunk × Offset → Bool)
+    (jStar : Chunk)
     (B : Chunk → Offset) : Bool :=
   ∑ j ∈ Finset.univ.erase jStar, db (j, B j)
 
@@ -195,13 +197,13 @@ theorem setParity_replaceInChunk [Fintype Chunk] [DecidableEq Chunk]
     replaceInChunk_self, backupParity_replaceInChunk_self]
 
 /-- Client online answer reconstruction `β = q ⊕ p ⊕ v`
-([Zhou, Park, Shi and Zheng, Figure 1, Step 1(e)][ZhouParkShiZheng2024]). -/
-def reconstructBit (q p v : Bool) : Bool :=
+([Zhou, Park, Zheng and Shi, Figure 1, Step 1(e)][ZhouParkZhengShi2024]). -/
+@[expose] def reconstructBit (q p v : Bool) : Bool :=
   q + p + v
 
 /-- Client online parity refresh `p_new = p_bak ⊕ β`
-([Zhou, Park, Shi and Zheng, Figure 1, Step 2][ZhouParkShiZheng2024]). -/
-def refreshParity (pBak β : Bool) : Bool :=
+([Zhou, Park, Zheng and Shi, Figure 1, Step 2][ZhouParkZhengShi2024]). -/
+@[expose] def refreshParity (pBak β : Bool) : Bool :=
   pBak + β
 
 private theorem bool_xor_cancel (a b c : Bool) : a + b + (c + b) + a = c := by
@@ -232,7 +234,7 @@ theorem refreshParity_eq_setParity [Fintype Chunk] [DecidableEq Chunk]
 
 /-- Finds the first primary table index `i : Fin M₁` whose set `T i` contains `x` (`T i x.1 = x.2`),
 or returns `none` if no primary hint contains `x`. -/
-def findHint [DecidableEq Offset] (T : Fin M₁ → Chunk → Offset) (x : Chunk × Offset) :
+@[expose] def findHint [DecidableEq Offset] (T : Fin M₁ → Chunk → Offset) (x : Chunk × Offset) :
     Option (Fin M₁) :=
   (List.finRange M₁).find? (fun i => decide (T i x.1 = x.2))
 
@@ -265,13 +267,13 @@ theorem findHint_update_self [DecidableEq Offset] (T : Fin M₁ → Chunk → Of
 
 /-- The joint transformation of the primary set table `T : Fin M₁ → Chunk → Offset` and the active
 backup/replacement set `B : Chunk → Offset` during an online query for `x : Chunk × Offset`
-([Zhou, Park, Shi and Zheng, Figure 1 & Lemma C.2][ZhouParkShiZheng2024]):
+([Zhou, Park, Zheng and Shi, Figure 1 & Lemma C.2][ZhouParkZhengShi2024]):
 
 * If `findHint T x = some i`, primary slot `i` is refreshed to `replaceInChunk B x.1 x.2` and the
   server receives `replaceInChunk (T i) x.1 (B x.1)`.
 * If `findHint T x = none`, the primary table is unchanged (`T`) and the server receives the random
   fallback set `B`. -/
-def pianoStepSets [DecidableEq Chunk] [DecidableEq Offset] (x : Chunk × Offset)
+@[expose] def pianoStepSets [DecidableEq Chunk] [DecidableEq Offset] (x : Chunk × Offset)
     (tb : (Fin M₁ → Chunk → Offset) × (Chunk → Offset)) :
     (Fin M₁ → Chunk → Offset) × (Chunk → Offset) :=
   match findHint tb.1 x with
@@ -281,7 +283,7 @@ def pianoStepSets [DecidableEq Chunk] [DecidableEq Offset] (x : Chunk × Offset)
   | none => (tb.1, tb.2)
 
 /-- **Key involution property of Piano** (heart of Theorem 3.2 and Lemma C.2 of
-[Zhou, Park, Shi and Zheng][ZhouParkShiZheng2024]): `pianoStepSets x` is an involution on
+[Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024]): `pianoStepSets x` is an involution on
 `(Fin M₁ → Chunk → Offset) × (Chunk → Offset)`. -/
 theorem pianoStepSets_involutive [DecidableEq Chunk] [DecidableEq Offset] (x : Chunk × Offset) :
     Function.Involutive (pianoStepSets (M₁ := M₁) (Chunk := Chunk) (Offset := Offset) x) := by
@@ -303,7 +305,7 @@ theorem pianoStepSets_involutive [DecidableEq Chunk] [DecidableEq Offset] (x : C
 
 /-- `pianoStepSets x` packaged as a permutation (`Equiv.Perm`) of
 `(Fin M₁ → Chunk → Offset) × (Chunk → Offset)`. -/
-def pianoStepSetsEquiv [DecidableEq Chunk] [DecidableEq Offset] (x : Chunk × Offset) :
+@[expose] def pianoStepSetsEquiv [DecidableEq Chunk] [DecidableEq Offset] (x : Chunk × Offset) :
     Equiv.Perm ((Fin M₁ → Chunk → Offset) × (Chunk → Offset)) :=
   (pianoStepSets_involutive x).toPerm
 
@@ -338,7 +340,7 @@ section IdealUniform
 variable [Fintype Chunk] [DecidableEq Chunk] [Fintype Offset] [DecidableEq Offset] [Nonempty Offset]
 
 /-- **Joint resampling invariance of Piano** (Lemma C.2 of
-[Zhou, Park, Shi and Zheng][ZhouParkShiZheng2024]): when the primary table `T` and backup set `B`
+[Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024]): when the primary table `T` and backup set `B`
 are drawn independently and uniformly, the pair `pianoStepSets x (T, B)` of the refreshed primary
 table and the server query has the same distribution as two independent uniform draws `(T', Q)`. -/
 theorem uniformOfFintype_bind_bind_pianoStepSets {ε : Type*} (x : Chunk × Offset)
@@ -364,7 +366,7 @@ theorem eval_pianoStepSets_uniform (x : Chunk × Offset) :
   rfl
 
 /-- **Primary table distribution invariant** (Theorem 3.2 of
-[Zhou, Park, Shi and Zheng][ZhouParkShiZheng2024]): after refreshing the consumed hint with a
+[Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024]): after refreshing the consumed hint with a
 uniform backup set, the primary table distribution remains uniform on `Fin M₁ → Chunk → Offset`. -/
 theorem eval_pianoRefreshedTable_uniform (x : Chunk × Offset) :
     ProbComp.eval (do
@@ -377,7 +379,7 @@ theorem eval_pianoRefreshedTable_uniform (x : Chunk × Offset) :
   simp [PMF.bind_const]
 
 /-- **Single-query server view privacy** (Theorem 3.2 of
-[Zhou, Park, Shi and Zheng][ZhouParkShiZheng2024]): for any queried index `x`, the set sent to the
+[Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024]): for any queried index `x`, the set sent to the
 server is uniformly distributed on `Chunk → Offset`, independent of `x`. -/
 theorem eval_pianoServerQuery_uniform (x : Chunk × Offset) :
     ProbComp.eval (do
@@ -410,8 +412,9 @@ end IdealUniform
 /-- For a database partitioned into `m + 1` chunks (`Chunk = Fin (m + 1)`), `compactedOffsets` drops
 the queried chunk `jStar` from `S : Fin (m + 1) → Offset` via `Fin.succAbove`, leaving the
 `m = √n - 1` offsets in chunks `j ≠ jStar`
-([Zhou, Park, Shi and Zheng, Appendix A][ZhouParkShiZheng2024]). -/
-def compactedOffsets {m : ℕ} (S : Fin (m + 1) → Offset) (jStar : Fin (m + 1)) : Fin m → Offset :=
+([Zhou, Park, Zheng and Shi, Appendix A][ZhouParkZhengShi2024]). -/
+@[expose] def compactedOffsets {m : ℕ} (S : Fin (m + 1) → Offset) (jStar : Fin (m + 1)) :
+    Fin m → Offset :=
   fun k => S (jStar.succAbove k)
 
 /-- Removing chunk `jStar` erases any replacement offset inserted at `jStar`. -/
@@ -448,7 +451,7 @@ theorem uniformOfFintype_map_compactedOffsets {m : ℕ} [Fintype Offset] [Nonemp
           Cslib.Probability.PMF.uniformOfFintype_prod_map_fst
 
 /-- **Compacted punctured query privacy** (the observation in
-[Zhou, Park, Shi and Zheng, Appendix A][ZhouParkShiZheng2024] that the compacted offset vector
+[Zhou, Park, Zheng and Shi, Appendix A][ZhouParkZhengShi2024] that the compacted offset vector
 hides `x`): for any queried index `x`, removing the queried chunk from the hybrid's server query
 leaves `m = √n - 1` offsets that are uniformly distributed on `Fin m → Offset`, independent of `x`.
 This is a single-query statement about the offset vector only; the Appendix A variant's client and
@@ -473,7 +476,7 @@ theorem eval_compactedQuery_uniform {m : ℕ} [Fintype Offset] [DecidableEq Offs
 
 /-! ### Figure 1 `HintTable`, single-pass chunk streaming, and deterministic correctness -/
 
-/-- The client's local hint table in [Zhou, Park, Shi and Zheng, Figure 1][ZhouParkShiZheng2024],
+/-- The client's local hint table in [Zhou, Park, Zheng and Shi, Figure 1][ZhouParkZhengShi2024],
 consisting of:
 
 * `M₁` primary hints `(primarySets i, primaryParities i)`,
@@ -499,8 +502,8 @@ structure HintTable (M₁ M₂ : ℕ) (Chunk Offset : Type) where
 
 /-- Initializes a `HintTable` prior to streaming the database, with all parities and replacement
 values set to `false` (`0`) and all consumption counters set to `0`
-([Zhou, Park, Shi and Zheng, Figure 1, offline preprocessing][ZhouParkShiZheng2024]). -/
-def initHintTable (primarySets : Fin M₁ → Chunk → Offset)
+([Zhou, Park, Zheng and Shi, Figure 1, offline preprocessing][ZhouParkZhengShi2024]). -/
+@[expose] def initHintTable (primarySets : Fin M₁ → Chunk → Offset)
     (replOffsets : Chunk → Fin M₂ → Offset)
     (backupSets : Chunk → Fin M₂ → Chunk → Offset) : HintTable M₁ M₂ Chunk Offset where
   primarySets := primarySets
@@ -514,8 +517,8 @@ def initHintTable (primarySets : Fin M₁ → Chunk → Offset)
 /-- Processes a single streamed chunk `j : Chunk` using only the chunk slice
 `chunkDB : Offset → Bool` (`fun δ => db (j, δ)`), updating primary parities, chunk `j`'s
 replacement values, and the backup parities for all other chunks `j' ≠ j`
-([Zhou, Park, Shi and Zheng, Figure 1, offline preprocessing][ZhouParkShiZheng2024]). -/
-def streamChunk [DecidableEq Chunk] (j : Chunk) (chunkDB : Offset → Bool)
+([Zhou, Park, Zheng and Shi, Figure 1, offline preprocessing][ZhouParkZhengShi2024]). -/
+@[expose] def streamChunk [DecidableEq Chunk] (j : Chunk) (chunkDB : Offset → Bool)
     (t : HintTable M₁ M₂ Chunk Offset) : HintTable M₁ M₂ Chunk Offset where
   primarySets := t.primarySets
   primaryParities := fun i => chunkDB (t.primarySets i j) + t.primaryParities i
@@ -528,7 +531,7 @@ def streamChunk [DecidableEq Chunk] (j : Chunk) (chunkDB : Offset → Bool)
   used := t.used
 
 /-- The `HintTable` obtained after streaming the subset of chunks `s : Finset Chunk` of `db`. -/
-def streamUpTo [DecidableEq Chunk] (db : Chunk × Offset → Bool) (s : Finset Chunk)
+@[expose] def streamUpTo [DecidableEq Chunk] (db : Chunk × Offset → Bool) (s : Finset Chunk)
     (primarySets : Fin M₁ → Chunk → Offset) (replOffsets : Chunk → Fin M₂ → Offset)
     (backupSets : Chunk → Fin M₂ → Chunk → Offset) : HintTable M₁ M₂ Chunk Offset where
   primarySets := primarySets
@@ -540,7 +543,7 @@ def streamUpTo [DecidableEq Chunk] (db : Chunk × Offset → Bool) (s : Finset C
   used := fun _ => 0
 
 /-- Offline preprocessing result after streaming all chunks `Finset.univ` of `db`. -/
-def streamPreprocess [Fintype Chunk] [DecidableEq Chunk] (db : Chunk × Offset → Bool)
+@[expose] def streamPreprocess [Fintype Chunk] [DecidableEq Chunk] (db : Chunk × Offset → Bool)
     (primarySets : Fin M₁ → Chunk → Offset) (replOffsets : Chunk → Fin M₂ → Offset)
     (backupSets : Chunk → Fin M₂ → Chunk → Offset) : HintTable M₁ M₂ Chunk Offset :=
   streamUpTo db Finset.univ primarySets replOffsets backupSets
@@ -632,16 +635,16 @@ theorem valid_streamPreprocess [Fintype Chunk] [DecidableEq Chunk] (db : Chunk �
   valid_repl j _ := by simp [streamPreprocess, streamUpTo]
   valid_backup _ _ := rfl
 
-/-- Deterministic precondition of [Zhou, Park, Shi and Zheng, Theorem 3.3][ZhouParkShiZheng2024]
+/-- Deterministic precondition of [Zhou, Park, Zheng and Shi, Theorem 3.3][ZhouParkZhengShi2024]
 for answering query `x`: some primary hint contains `x`, and chunk `x.1` has an unconsumed
 backup/replacement entry (`t.used x.1 < M₂`). -/
-def CanAnswer (t : HintTable M₁ M₂ Chunk Offset) (x : Chunk × Offset) : Prop :=
+@[expose] def CanAnswer (t : HintTable M₁ M₂ Chunk Offset) (x : Chunk × Offset) : Prop :=
   (∃ i : Fin M₁, t.primarySets i x.1 = x.2) ∧ t.used x.1 < M₂
 
 /-- Deterministic online query-answer-reconstruct-refresh step on `t : HintTable M₁ M₂ Chunk Offset`
-([Zhou, Park, Shi and Zheng, Figure 1][ZhouParkShiZheng2024]), returning the refreshed `HintTable`
+([Zhou, Park, Zheng and Shi, Figure 1][ZhouParkZhengShi2024]), returning the refreshed `HintTable`
 and the reconstructed database bit `β`. -/
-def onlineStep [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
+@[expose] def onlineStep [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
     (db : Chunk × Offset → Bool) (t : HintTable M₁ M₂ Chunk Offset) (x : Chunk × Offset) :
     HintTable M₁ M₂ Chunk Offset × Bool :=
   match findHint t.primarySets x with
@@ -662,7 +665,7 @@ def onlineStep [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
   | none => (t, false)
 
 /-- **Single-query deterministic correctness of Piano**
-([Zhou, Park, Shi and Zheng, Theorem 3.3][ZhouParkShiZheng2024]): if `t.Valid db` and
+([Zhou, Park, Zheng and Shi, Theorem 3.3][ZhouParkZhengShi2024]): if `t.Valid db` and
 `t.CanAnswer x` (a primary hint contains `x` and chunk `x.1`'s backup group is not exhausted), then
 `t.onlineStep db x` reconstructs `db x` and preserves `Valid db`. -/
 theorem onlineStep_correct [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
@@ -691,7 +694,7 @@ theorem onlineStep_correct [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offs
 to contain `x` and chunk `x.1` still has an unconsumed entry `k = t.used x.1`. Let `B` be the
 backup set `t.backupSets x.1 k` with its `x.1`-th offset set to the replacement offset
 `r = t.replOffsets x.1 k`. Then the set `S⟨j* → r⟩` that `onlineStep` sends to the server
-([Zhou, Park, Shi and Zheng, Figure 1, Step 1(c)][ZhouParkShiZheng2024]) and its refreshed
+([Zhou, Park, Zheng and Shi, Figure 1, Step 1(c)][ZhouParkZhengShi2024]) and its refreshed
 primary table (Step 2) are the two components of `pianoStepSets x (t.primarySets, B)`. So the
 privacy results for `pianoHybridScheme` describe the same set map; they do not cover the
 replacement and backup entries that `onlineStep` stores in advance. -/
@@ -708,7 +711,7 @@ theorem onlineStep_sets_eq_pianoStepSets [Fintype Chunk] [DecidableEq Chunk] [De
 
 /-- Runs a sequence of deterministic online steps on `xs : List (Chunk × Offset)` starting from
 `t`, returning the final `HintTable` and the list of reconstructed bits. -/
-def runOnlineSteps [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
+@[expose] def runOnlineSteps [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
     (db : Chunk × Offset → Bool) : HintTable M₁ M₂ Chunk Offset → List (Chunk × Offset) →
       HintTable M₁ M₂ Chunk Offset × List Bool
   | t, [] => (t, [])
@@ -719,13 +722,13 @@ def runOnlineSteps [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
 
 /-- Sequential availability predicate over a query list `xs : List (Chunk × Offset)`: at each step,
 the current `HintTable` satisfies `CanAnswer` for the next query. -/
-def CanAnswerSeq [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
+@[expose] def CanAnswerSeq [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
     (db : Chunk × Offset → Bool) : HintTable M₁ M₂ Chunk Offset → List (Chunk × Offset) → Prop
   | _, [] => True
   | t, x :: xs => t.CanAnswer x ∧ CanAnswerSeq db (t.onlineStep db x).1 xs
 
 /-- **Multi-query deterministic correctness of Piano**
-([Zhou, Park, Shi and Zheng, Theorem 3.3][ZhouParkShiZheng2024]): over any sequence of queries
+([Zhou, Park, Zheng and Shi, Theorem 3.3][ZhouParkZhengShi2024]): over any sequence of queries
 `xs : List (Chunk × Offset)` for which `CanAnswerSeq db t xs` holds, `t.runOnlineSteps db xs`
 outputs the exact database bits `xs.map db` and preserves `Valid db`. -/
 theorem runOnlineSteps_correct [Fintype Chunk] [DecidableEq Chunk] [DecidableEq Offset]
@@ -781,7 +784,7 @@ structure PianoQueryRecord (M₁ : ℕ) (Chunk Offset : Type) where
 /-- The ideal-random-set hybrid of Piano, packaged as a
 `Preprocessing.Scheme (Chunk × Offset) (PianoHint M₁ Chunk Offset)
 (PianoQueryRecord M₁ Chunk Offset) (Chunk → Offset) Bool`. It follows the `Real*` experiment in the
-proof of [Zhou, Park, Shi and Zheng, Theorem C.1][ZhouParkShiZheng2024], with truly random sets in
+proof of [Zhou, Park, Zheng and Shi, Theorem C.1][ZhouParkZhengShi2024], with truly random sets in
 place of PRF sets: the primary sets are uniform, and each query draws a fresh uniform set `B` whose
 `j*`-th offset plays the replacement offset `r` and whose other offsets form the backup set
 (`eval_replaceInChunk_uniform` shows this matches drawing `r` and the backup set independently).
@@ -793,7 +796,7 @@ This is a model of the server's view only. Backups are never exhausted, and `rep
 `backupParityBit` are placeholders (`false`), so `reconstruct` returns `q ⊕ p` rather than `db x`
 and this is **not** a correct PIR scheme: no correctness result is stated for it. Correctness is
 proved for the full Figure 1 client `HintTable.onlineStep`. -/
-noncomputable def pianoHybridScheme (M₁ : ℕ) (Chunk Offset : Type) [Fintype Chunk]
+@[expose] noncomputable def pianoHybridScheme (M₁ : ℕ) (Chunk Offset : Type) [Fintype Chunk]
     [DecidableEq Chunk] [Fintype Offset] [DecidableEq Offset] [Nonempty Offset] :
     Scheme (Chunk × Offset) (PianoHint M₁ Chunk Offset)
       (PianoQueryRecord M₁ Chunk Offset) (Chunk → Offset) Bool where
@@ -829,7 +832,7 @@ variable [Fintype Chunk] [DecidableEq Chunk] [Fintype Offset] [DecidableEq Offse
 
 /-- Projected one-step transition of `(primarySets, serverState)` in the adaptive privacy
 experiment for `pianoHybridScheme`. -/
-noncomputable def pianoAdaptiveStepSets {St : Type}
+private noncomputable def pianoAdaptiveStepSets {St : Type}
     (adv : AdaptiveServer (Chunk × Offset) (Chunk → Offset) Bool St)
     (T : Fin M₁ → Chunk → Offset) (st : St) :
     PMF ((Fin M₁ → Chunk → Offset) × St) :=
@@ -840,7 +843,7 @@ noncomputable def pianoAdaptiveStepSets {St : Type}
 
 /-- **Multi-query adaptive perfect privacy of the Piano hybrid** (Definition 3.1, and the
 ideal-random-set part of the proof of Theorem C.1 in
-[Zhou, Park, Shi and Zheng][ZhouParkShiZheng2024]): `pianoHybridScheme` is perfectly private with
+[Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024]): `pianoHybridScheme` is perfectly private with
 simulator `ProbComp.uniform (Chunk → Offset)` against any adaptive malicious server `adv` over any
 number of queries `k`. The PRF step and the full `HintTable` client are not covered. -/
 theorem isPerfectlyPrivateWith_pianoHybridScheme :
@@ -856,9 +859,9 @@ theorem isPerfectlyPrivateWith_pianoHybridScheme :
       PMF.map_bind, PMF.pure_map]
     exact PMF.bind_pure _
   · intro St adv h st
+    dsimp only [pianoAdaptiveStepSets]
     simp only [Scheme.realAdaptiveStep, pianoHybridScheme, ProbComp.eval_bind,
-      ProbComp.eval_uniform, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
-      pianoAdaptiveStepSets, PMF.map]
+      ProbComp.eval_uniform, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, PMF.map]
     congr 1
     funext p
     congr 1
@@ -868,7 +871,8 @@ theorem isPerfectlyPrivateWith_pianoHybridScheme :
     cases hfind : findHint h.primarySets p.2 <;>
       simp [pianoStepSets, hfind]
   · intro St adv st kCont
-    simp only [pianoAdaptiveStepSets, idealAdaptiveStep, ProbComp.eval_bind, ProbComp.eval_uniform,
+    dsimp only [pianoAdaptiveStepSets]
+    simp only [idealAdaptiveStep, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, PMF.bind_map, Function.comp_def]
     rw [PMF.bind_comm (PMF.uniformOfFintype (Fin M₁ → Chunk → Offset))
       (ProbComp.eval (adv.chooseQuery st))]
@@ -888,17 +892,17 @@ theorem isPerfectlyPrivate_pianoHybridScheme :
     (pianoHybridScheme M₁ Chunk Offset).IsPerfectlyPrivate :=
   isPerfectlyPrivateWith_pianoHybridScheme.isPerfectlyPrivate
 
-/-- Every Boolean-output adaptive malicious server has zero distinguishing advantage against
-`pianoHybridScheme` in the ideal-random-set model. -/
-theorem privacyAdvantage_pianoHybridScheme_eq_zero
-    (adv : AdaptiveServer (Chunk × Offset) (Chunk → Offset) Bool Bool)
-    (db : Chunk × Offset → Bool) (k : ℕ) (st₀ : Bool) :
+/-- Every adaptive malicious server with Boolean finalizer `finalize : St → Bool` has zero
+distinguishing advantage against `pianoHybridScheme` in the ideal-random-set model. -/
+theorem privacyAdvantage_pianoHybridScheme_eq_zero {St : Type}
+    (adv : AdaptiveServer (Chunk × Offset) (Chunk → Offset) Bool St) (finalize : St → Bool)
+    (db : Chunk × Offset → Bool) (k : ℕ) (st₀ : St) :
     (pianoHybridScheme M₁ Chunk Offset).privacyAdvantage (ProbComp.uniform (Chunk → Offset))
-      adv db k st₀ = 0 :=
-  isPerfectlyPrivateWith_pianoHybridScheme.privacyAdvantage_eq_zero adv db k st₀
+      adv finalize db k st₀ = 0 :=
+  isPerfectlyPrivateWith_pianoHybridScheme.privacyAdvantage_eq_zero adv finalize db k st₀
 
 /-- **Multi-query non-adaptive transcript privacy of the Piano hybrid** (the uniform-set view in the
-proof sketch of [Zhou, Park, Shi and Zheng, Theorem 3.2][ZhouParkShiZheng2024]): for every database
+proof sketch of [Zhou, Park, Zheng and Shi, Theorem 3.2][ZhouParkZhengShi2024]): for every database
 `db` and fixed query sequence `xs : List (Chunk × Offset)`, the `xs.length` sets that
 `pianoHybridScheme` sends to the server are distributed as `xs.length` independent uniform draws
 from `Chunk → Offset`, independent of `db` and `xs`. -/
@@ -932,7 +936,7 @@ end PianoSchemePrivacy
 
 /-- For `Chunk = Fin c` and `Offset = Fin b`, a query that sends one offset per chunk
 (`Fin c → Fin b`, the edited set `S⟨j* → r⟩` of
-[Zhou, Park, Shi and Zheng, Figure 1, Step 1(c)][ZhouParkShiZheng2024]) and receives one parity bit
+[Zhou, Park, Zheng and Shi, Figure 1, Step 1(c)][ZhouParkZhengShi2024]) and receives one parity bit
 costs `⌈log₂ (b ^ c)⌉ + 1` bits. -/
 theorem onlineCommunication_fullQuery (c b : ℕ) :
     onlineCommunication (Fin c → Fin b) Bool = Nat.clog 2 (b ^ c) + 1 := by
@@ -940,13 +944,13 @@ theorem onlineCommunication_fullQuery (c b : ℕ) :
 
 /-- With `√n = c` chunks of size `b = 2 ^ ℓ`, each online query of the main scheme communicates
 `c * ℓ + 1` bits, the `O(√n)` online communication of
-[Zhou, Park, Shi and Zheng, Theorem 3.4][ZhouParkShiZheng2024] (up to the `log` factor of the offset
+[Zhou, Park, Zheng and Shi, Theorem 3.4][ZhouParkZhengShi2024] (up to the `log` factor of the offset
 encoding). -/
 theorem onlineCommunication_fullQuery_pow (c ℓ : ℕ) :
     onlineCommunication (Fin c → Fin (2 ^ ℓ)) Bool = c * ℓ + 1 := by
   rw [onlineCommunication_fullQuery, ← pow_mul, mul_comm, Nat.clog_pow _ _ (by decide)]
 
-/-- In the variant of [Zhou, Park, Shi and Zheng, Appendix A][ZhouParkShiZheng2024], the client
+/-- In the variant of [Zhou, Park, Zheng and Shi, Appendix A][ZhouParkZhengShi2024], the client
 sends the compacted offset vector of `m = √n - 1` offsets (`Fin m → Fin b`) and the server returns
 one parity for each of the `m + 1 = √n` possible positions of the removed chunk
 (`Fin (m + 1) → Bool`, Figure 3). This costs `⌈log₂ (b ^ m)⌉ + (m + 1)` bits. -/
