@@ -330,15 +330,20 @@ example : Realizes .exact readMany (Equiv.funUnique (Fin 1) ℕ).symm.toEmbeddin
 def countUp (d : ℕ × ℕ) : Memory.Prog ℕ :=
   iterate (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1)) d d.2 0
 
-/--
-error: realize: a loop body must begin with a memory query, which pays for the iteration;
-the body begins with
-  PFunctor.FreeM.pure (x.2 + 1)
--/
-#guard_msgs in
+/-- The input's fitting count bounds every increment; the loop retains its control work. -/
 example : Realizes .exact countUp pairWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (fun _ _ _ => True) (fun _ _ => 0) := by
+    (fun _ _ _ => True) (fun d _ => d.2) := by
   realize
+  · have hi (n a : ℕ) (t : Memory.State) (ha : a + n ≤ d.2) :
+        iterationSafe (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1))
+          (fun w x _ => True ∧ Fits w (x.2 + 1)) w d n a t := by
+      induction n generalizing a t with
+      | zero => trivial
+      | succ n ih =>
+        refine ⟨⟨trivial, (show Fits w d.2 from hwords 1).of_le (by omega)⟩, ?_⟩
+        exact ih (a + 1) t (by omega)
+    simpa only [true_and] using hi d.2 0 s (by omega)
+  · exact (iterationWork_zero (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1)) d d.2 0 s).le
 
 /-- Allocation is certified in the exact basis. -/
 def fresh (n : ℕ) : Memory.Prog ℕ := Memory.alloc n

@@ -279,7 +279,7 @@ the syntax inactive; a command-local open ends with that declaration. Open the c
 [scope clients](../../CslibFrontierTests/WordRAMRealizeScope.lean) for both activation forms and
 the check that local opens do not leak into later declarations.
 
-Place a callee's zero-local-work `Realizes` certificate in the local context to reuse an opaque
+Place a callee's `Realizes` certificate in the local context to reuse an opaque
 method before unfolding it. The tactic checks its basis and output encoding and uses existing
 `Realizes.reindex` to wire encoded argument coordinates to live words. When some coordinates
 need computation, it first certifies a charged `pure` stage for the whole argument using the
@@ -293,6 +293,9 @@ include a nine-word input, six-word result and empty-vector methods.
 Certificates are tried in context order; this does not search for a runtime bound.
 Zero local work is an absorbed grading: the callee still has its certified native allowance
 against memory charge. It does not mean zero machine instructions.
+Nonzero local work is retained at the call's actual argument and reached memory. Binds sum
+the component grades; branches charge only the selected alternative. Fixed staging and finite
+control are absorbed by the exchange factor, while input-dependent work remains visible.
 
 The called method's domain must hold at the memory actually reached by earlier queries.
 The call client after a write demonstrates that obligation explicitly. Write computed arguments
@@ -339,6 +342,38 @@ for native loop control; the cutoff stays proof data, and the remaining `whileSa
 must establish that it does not truncate the loop. General `a ≤ b`, compound tests and
 computed state operands remain unsupported loop guards.
 
+Query-free bodies are also supported. Counted loops retain `iterationWork`; guarded loops retain
+`whileWork`, charging the body and one control unit on every reached iteration. Guarded loops
+charge actual iterations, so a larger ghost cutoff does not charge unused iterations. A
+zero-work body beginning with a query retains the query-paid rule. Counted loops use the exact
+basis and compute their fuel as a fitting word; guarded loops support both existing bases and
+keep their cutoff as proof data. `iterationWork_zero` reduces a counted loop's zero-body work
+to its fuel.
+
+For a loop repackaged with another environment, use the checked
+[loop transport laws](../../CslibFrontier/Computability/WordRAM/Realization/LoopCongr.lean).
+`iterate_congr` takes equality of the body programs at the two fixed environments;
+`iterationSafe_congr` also takes equivalence of their domains, and `iterationWork_congr` takes
+equality of their charges. The hypotheses cover every loop state, and every memory for domains
+and charges, so the laws follow the actual reached states for any fuel. The
+[succinct search](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctSearch.lean)
+proofs use these same laws for their parameter packaging.
+
+After the fit and safety goals, a remaining budget comparison has the same entry context:
+`w d s hwords hmem hv h`, including input fits, well-formed memory, valid source history and the
+requested domain. Use the invariant in `h` to prove the generated work is within the requested
+grade. Zero or definitionally matching work closes automatically; an unpaid zero budget does
+not close a query-free loop. The [graded clients](../../CslibFrontierTests/WordRAMRealizeGraded.lean)
+check calls, changed memories, selected branches, nested/captured loops and contextual budgets.
+The [halving client](../../CslibFrontierTests/WordRAMRealizationWhile.lean) uses the frontend for
+one uniform native emitter, including early exit, zero word width and dirty-memory/register
+framing. Run both from the repository root with
+
+```bash
+scripts/build.sh --wfail --iofail \
+  CslibFrontierTests.WordRAMRealizeGraded CslibFrontierTests.WordRAMRealizationWhile
+```
+
 Returned choices can also stay inside `pure`, including tuple and option components:
 `pure (min a b, max a b)` and `pure (decide (a = 0))` need no separate source program with
 branches around the returns. `realize` transports checked equalities through the returned
@@ -351,7 +386,10 @@ fitting successor. The complete
 [conditional-result clients](../../CslibFrontierTests/WordRAMRealizeValues.lean) check these cases,
 inactive exact division/subtraction, rejected missing premises, and frontier-bounded
 certificates. Check them from the repository root with
-`scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues`.
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues
+```
 
 The succinct dictionary wraps `realize` for its parameter-free programs over `DictParams × D`.
 Import `CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctProg` and open
@@ -374,9 +412,9 @@ is a complete client in which `dictSide` closes every side goal;
 `scripts/build.sh --wfail --iofail CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabPool`.
 
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
-certificate's basis, output encoding, zero local work and whether its argument coordinates use
+certificate's basis, output encoding and whether its argument coordinates use
 supported word glue, then inspect the domain at the reached memory. Retain the fit and safety
-obligations left by the tactic;
+obligations and any work comparison left by the tactic;
 unfolding the method or dropping a resource premise does not supply those proofs. The
 [realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
 code and charging contract; the complete clients above supply imports and local context.

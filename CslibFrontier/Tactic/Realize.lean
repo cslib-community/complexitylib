@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Reindex
+public import CslibFrontier.Computability.WordRAM.Realization.Consequence
 
 /-!
 # The `realize` tactic
@@ -19,25 +20,27 @@ The tactic is available inside `Cslib.WordRAM`, or after `open Cslib.WordRAM` or
 `realize` proves a goal `Realizes B p input output safe work` for a memory client `p`. It walks
 the client syntax, unfolding definitions, with one rule per form:
 
-* `bind`: `Realizes.bind₀`. After each bind the live words are the previous ones followed by the
-  answer's encoding (`WordEncoding`); `realize` keeps this layout itself.
+* `bind`: compose the component work at the actual reply and next memory, absorbing fixed
+  control work. After each bind the live words are the previous ones followed by the answer's
+  encoding (`WordEncoding`); `realize` keeps this layout itself.
 * `pure`: `Realizes.pure₀`, with each result word certified by a `GlueComputable` proof assembled
   from the closure rules of `CslibFrontier.Computability.WordRAM.Glue`: projections, constants, and
   the exact- or standard-basis arithmetic and bitwise operations. Conditional values, natural
   minima/maxima and Boolean decisions are lifted to paid branches, including inside returned
   constructors; only the selected alternative contributes fit and definedness conditions.
 * the four memory queries: `Realizes.read`, `write`, `alloc` and `allocDirty`.
-* a method with a local zero-work `Realizes` certificate: `Realizes.reindex`, selecting its
+* a method with a local `Realizes` certificate: `Realizes.reindex`, selecting its
   arguments from live words before unfolding its implementation. Computed arguments are first
-  staged by certified glue using the method's input encoding.
+  staged by certified glue using the method's input encoding; the method's work is retained.
 * `if` on natural `=`, `≠`, `<`, `≤`, `>` or `≥`, combined with `¬`, `∧` and `∨`:
-  `Realizes.branch₀`, retaining short-circuiting. Named guards unfold to these forms.
+  `Realizes.branch` (`branch₀` for zero component work), retaining short-circuiting.
+  Named guards unfold to these forms.
 * `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
-* `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
+* `iterate step D n a`: `Realizes.iterateRuntime`, after
   adapting `D` and any captured live words to the whole environment. The source and reached-state
-  domain are transported back to the client's original loop.
-* `boundedWhile G step D n a` whose step begins with a query: `Realizes.while₀`. The guard
+  domain and `iterationWork` are transported back to the client's original loop.
+* `boundedWhile G step D n a`: `Realizes.whileBounded`. The guard
   `G D r` may be `a = b`, `a < b`, `a > b`, `a ≠ 0` (tested as `0 < a`), or `a + 1 ≤ b`
   (tested as `a < b`), with any decidability instance, over the live words and the state's words.
   An operand independent of the state is computed before the loop. The cutoff `n` is a ghost
@@ -47,8 +50,7 @@ the client syntax, unfolding definitions, with one rule per form:
   the loop's valid history (`Realizes.consequence_valid`), ready for `whileSafe_of_measure`.
 
 Operands are located among the live words by definitional equality. An operand that is not a
-live word is first computed by an inserted `pure`, which leaves the program unchanged up to
-definitional equality.
+live word is first computed by an inserted `pure`, preserving the program by a checked equality.
 
 Exact subtraction, division and remainder add their definedness conditions to the visible
 domain. The common glue envelope is the maximum of every intermediate value; `realize` proves
@@ -56,16 +58,20 @@ that it fits from the fit of the live words, from the domain, and from the fit o
 cannot derive, which become the visible fit conditions. A value is derived when another fitting
 value dominates it, for example `a - b` and `b` by `a`, or the summands by a sum.
 
-Local work is absorbed (`Realizes.mono_mul`): every certificate built by `realize` has local work
-`0`, so any local-work grading in the goal is accepted. Intermediate domains are stated in the
-client's own terms, with the replies of earlier queries written as `s.mem a`, `s.frontier`,
-updated memories, or the interpreter's result of a called method; a loop contributes its
-`iterationSafe` or `whileSafe` domain.
+Fixed glue and finite control work is absorbed (`Realizes.mono_mul`). Called methods retain
+their work; binds sum it and branches select only the reached alternative's work. Loops retain
+`iterationWork` or `whileWork`, including one control unit per reached iteration. A zero-work
+body that begins with a query keeps the existing query-paid rule (`iterate₀` or `while₀`).
+Intermediate domains and grades are stated in the client's own terms, with the replies of
+earlier queries written as `s.mem a`, `s.frontier`, updated memories, or the interpreter's result
+of a called method; a loop contributes its `iterationSafe` or `whileSafe` domain.
 
-After the composition, `realize` introduces `w d s hwords hmem h`: the word width, the
-environment, the memory, the fit of the input words, memory well-formedness, and the goal's
-domain. It splits the conjunctions and `if`s of the synthesized domain and leaves each remaining
-condition as a goal. Local method certificates are tried in context order; the remaining rule
+After composition, `realize` introduces `w d s hwords hmem h`: the word width, the environment,
+memory, input fits, memory well-formedness and the goal's domain. Nonzero generated work also
+adds the client's valid history as `hv`. It splits conjunctions and `if`s of the domain, then leaves
+the generated work's comparison with the requested budget under the same entry assumptions.
+Zero work and definitionally matching budgets close automatically. Local method certificates
+are tried in context order; the remaining rule
 selection follows the client syntax, without searching for bounds. An unsupported form is
 reported with its subterm. A called method whose arguments are not all live words first stages
 its whole encoded argument with a charged `pure` step. This also supports custom input encodings
@@ -100,12 +106,14 @@ private structure Env where
 
 /-- A certificate built by `realize`. -/
 private structure Out where
-  /-- A proof of `Realizes B prog input output safe (fun _ _ => 0)`. -/
+  /-- A proof of `Realizes B prog input output safe work`. -/
   proof : Expr
   /-- The output encoding. -/
   output : Expr
   /-- The domain `fun w d s => …`, in the client's terms, definitionally equal to the proof's. -/
   safe : Expr
+  /-- The local work in the client's terms, definitionally equal to the proof's. -/
+  work : Expr
 
 /-- `(i : Fin n)` as a numeral. -/
 private def finLit (n i : Nat) : MetaM Expr :=
@@ -461,6 +469,33 @@ private def zeroWork (δ : Expr) : MetaM Expr :=
   withLocalDeclD `d δ fun d => withLocalDeclD `s (mkConst ``Memory.State) fun s =>
     mkLambdaFVars #[d, s] (mkNatLit 0)
 
+/-- Whether a grading is definitionally zero, without assigning its metavariables. -/
+private def isZeroWork (δ work : Expr) : MetaM Bool := do
+  withNewMCtxDepth <| withReducible <| isDefEq work (← zeroWork δ)
+
+/-- The local-work grading of a completed certificate. -/
+private def certificateWork (proof : Expr) : MetaM Expr := do
+  let ty ← inferType proof
+  unless ty.isAppOfArity ``Realizes 10 do
+    throwError "realize: internal error reading a certificate's work"
+  return ty.getArg! 9
+
+/-- Absorb fixed finite composition control while retaining the component grades. -/
+private def absorbControl (proof work : Expr) (factor : Nat) : TermElabM Expr := do
+  let ty ← inferType proof
+  let target := mkAppN ty.getAppFn (ty.getAppArgs.set! 9 work)
+  let result ← mkFreshExprMVar target
+  let args := ty.getAppArgs
+  let transfer ← mkAppOptM ``Realizes.mono_mul
+    #[args[4]!, args[2]!, args[3]!, args[0]!, args[1]!, args[5]!, args[6]!, args[7]!,
+      args[8]!, args[9]!, work, proof, mkNatLit factor]
+  let [bound] ← result.mvarId!.apply transfer
+    | throwError "realize: internal error absorbing finite control"
+  let h ← Term.withSynthesize <| Term.elabTermEnsuringType
+    (← `(by intro d s; omega)) (some (← bound.getType))
+  bound.assign h
+  instantiateMVars result
+
 /-- `fun _ _ _ => True`. -/
 private def trueSafe (δ : Expr) : MetaM Expr :=
   withLocalDeclD `w (mkConst ``Nat) fun w => withLocalDeclD `d δ fun d =>
@@ -615,7 +650,7 @@ private def realizePure (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr) 
         #[env.input, out, f, gfun, need, hresult, hcoord, hneed]
       let safe ← withLocalDeclD `s (mkConst ``Memory.State) fun s =>
         mkLambdaFVars #[w, d, s] (mkAnd (conj st.domU.toList) (conj needU.toList))
-      return { proof, output := out, safe }
+      return { proof, output := out, safe, work := ← zeroWork env.ty }
 
 /-- The output encoding of a certificate. -/
 private def outputOf (proof : Expr) : MetaM Expr := do
@@ -797,20 +832,58 @@ private def proveQuery (body ty : Expr) : MetaM Expr :=
     let goal ← mkAppM ``LE.le #[mkNatLit 1, ← mkAppM ``memoryCost #[mkApp body x, s]]
     mkLambdaFVars #[x, s] (← mkExpectedTypeHint pf goal)
 
-/-- State `proof` as the certificate `Realizes B prog input output safe 0`, for the client `prog`
+/-- Keep query-paid loop control when the body has zero local work and begins with a query. -/
+private def queryPayment? (body ty work : Expr) : TermElabM (Option Expr) := do
+  unless ← isZeroWork ty work do return none
+  let saved ← saveState
+  try
+    return some (← proveQuery body ty)
+  catch _ =>
+    saved.restore
+    return none
+
+/-- Transport a certificate's domain or work along an equality of its functions. -/
+private def transportField (proof eq : Expr) (index : Nat) : MetaM Expr := do
+  let ty ← inferType proof
+  let wrap ← withLocalDeclD `field (← inferType (ty.getArg! index)) fun field =>
+    mkLambdaFVars #[field] (mkAppN ty.getAppFn (ty.getAppArgs.set! index field))
+  mkAppM ``Eq.mp #[← mkAppM ``congrArg #[wrap, eq], proof]
+
+/-- State `proof` as `Realizes B prog input output safe work`, for the client `prog`
 as written and the domain `safe` in the client's terms.
 
 The rule's statement agrees with this one by construction: up to unfolding `prog`, reducing pair
 projections, and evaluating the live words, which were located as the weak-head normal forms of
 `input d i`. The kernel checks the agreement locally at each form. Elaboration does not re-check
 it, because unfolding composed domains with nested interpreter runs grows with the client. -/
-private def certify (ctx : Ctx) (env : Env) (proof prog output safe : Expr) : MetaM Expr := do
+private def certify (ctx : Ctx) (env : Env) (proof prog output safe work : Expr) : MetaM Expr := do
   mkExpectedTypeHint proof
-    (← mkAppM ``Realizes #[ctx.basis, prog, env.input, output, safe, ← zeroWork env.ty])
+    (← mkAppM ``Realizes #[ctx.basis, prog, env.input, output, safe, work])
 
-/-- `Realizes.bind₀_of_run hP hQ reply next`, with the reply and next memory `fun d s => …` proved
-by `rfl`. -/
-private def bindRun (hP hQ reply next : Expr) : MetaM Expr := do
+/-- Compose at a closed-form reply and next memory, retaining component work while absorbing
+the bind's fixed control. The zero-work case keeps `Realizes.bind₀_of_run`. -/
+private def bindRun (hP hQ reply next : Expr) : TermElabM Expr := do
+  let pTy ← inferType hP
+  let workP := pTy.getArg! 9
+  let workQ ← certificateWork hQ
+  let pZero ← isZeroWork (pTy.getArg! 2) workP
+  let qZero ← isZeroWork ((← inferType hQ).getArg! 2) workQ
+  if !pZero || !qZero then
+    let (work, charged) ← withLocalDeclD `d (pTy.getArg! 2) fun d =>
+      withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+        let pair ← mkAppM ``Prod.mk #[d, reply.beta #[d, s]]
+        let wp := workP.beta #[d, s]
+        let wq := workQ.beta #[pair, next.beta #[d, s]]
+        let sum ← if pZero then pure wq else if qZero then pure wp
+          else mkAppM ``HAdd.hAdd #[wp, wq]
+        let charged ← mkAppM ``HAdd.hAdd
+          #[← mkAppM ``HAdd.hAdd #[wp, wq], mkNatLit 1]
+        return (← mkLambdaFVars #[d, s] (← reducePairs sum),
+          ← mkLambdaFVars #[d, s] (← reducePairs charged))
+    let proof ← mkAppM ``Realizes.bind #[hP, hQ]
+    let ty ← inferType proof
+    let proof ← mkExpectedTypeHint proof (mkAppN ty.getAppFn (ty.getAppArgs.set! 9 charged))
+    return ← absorbControl proof work 1
   let refl (f : Expr) : MetaM Expr :=
     lambdaBoundedTelescope f 2 fun xs b => do mkLambdaFVars xs (← mkEqRefl b)
   mkAppM ``Realizes.bind₀_of_run #[hP, hQ, reply, next, ← refl reply, ← refl next]
@@ -852,7 +925,9 @@ private def reindexCall (env : Env) (d arg certificate : Expr) (positions : Arra
   let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
     withLocalDeclD `s (mkConst ``Memory.State) fun s => do
       mkLambdaFVars #[w, d, s] (← reducePairs (mkApp3 args[8]! w arg s))
-  return { proof, output := args[7]!, safe }
+  let work ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+    mkLambdaFVars #[d, s] (← reducePairs (mkApp2 args[9]! arg s))
+  return { proof, output := args[7]!, safe, work }
 
 /-- Reuse a local method certificate before unfolding its body. Live arguments use static
 wiring; otherwise a certified `pure` stage computes the argument in the callee's encoding. -/
@@ -868,8 +943,6 @@ private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Exp
       let args := ty.getAppArgs
       unless ← withReducible (isDefEq args[4]! ctx.basis) do
         throwError "realize: the method's basis differs"
-      unless ← withReducible (isDefEq args[9]! (← zeroWork args[2]!)) do
-        throwError "realize: a called certificate must have absorbed local work"
       let arg ← callArgument args[2]!
       let called := (mkApp args[5]! arg).headBeta
       -- Solve dependent arguments in binder order without unfolding a matching method head.
@@ -909,7 +982,7 @@ private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Exp
         withLocalDeclD `s (mkConst ``Memory.State) fun s => do
           mkLambdaFVars #[w, d, s] (mkAnd (hP.safe.beta #[w, d, s])
             (← reducePairs (mkApp3 args[8]! w arg s)))
-      return some { proof, output := hQ.output, safe }
+      return some { proof, output := hQ.output, safe, work := ← certificateWork proof }
     catch _ => saved.restore
   return none
 
@@ -993,10 +1066,10 @@ private partial def realizeProg (ctx : Ctx) (env : Env) (prog : Expr) (output? :
       let body ← mkAppOptM ``Pure.pure #[mkConst ``Memory.Prog, none, none, a]
       realizeBody ctx env d atoms body (some output)
     if let some out ← tryRealizeCall ctx env d atoms (prog.beta #[d]).headBeta output? stage then
-      return { out with proof := ← certify ctx env out.proof prog out.output out.safe }
+      return { out with proof := ← certify ctx env out.proof prog out.output out.safe out.work }
     let body ← normBody (prog.beta #[d]).headBeta
     let out ← realizeBody ctx env d atoms body output?
-    return { out with proof := ← certify ctx env out.proof prog out.output out.safe }
+    return { out with proof := ← certify ctx env out.proof prog out.output out.safe out.work }
 
 /-- Certify the body of a client for the environment variable `d`. -/
 private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
@@ -1062,7 +1135,7 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
         mkAppOptM ``Realizes.allocDirty #[env.ty, kE, input, idx[0]!]
       | _ => throwError "realize: unsupported memory operation{indentExpr op}"
     let output ← checkOutput proof output?
-    return { proof, output, safe := ← trueSafe env.ty }
+    return { proof, output, safe := ← trueSafe env.ty, work := ← zeroWork env.ty }
   -- branching
   if body.isAppOfArity ``ite 5 then
     if (← cond? (body.getArg! 1)).isNone then
@@ -1082,19 +1155,55 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
       let rebuilt ← withLocalDeclD `r (mkConst ``Nat) fun r => do
         let c' ← if ia?.isNone then rebuildCond c r b else rebuildCond c a r
         mkLambdaFVars #[r] (← mkAppM ``ite #[c', t, e])
-      return ← realizeBody ctx env d atoms (← bindPure x rebuilt) output?
+      let out ← realizeBody ctx env d atoms (← bindPure x rebuilt) output?
+      let canonical := (rebuilt.beta #[x]).headBeta
+      let hc ← mkExpectedTypeHint (← mkEqRefl c) (← mkEq (canonical.getArg! 1) c)
+      let eq ← mkLambdaFVars #[d] (← mkAppOptM ``ite_cond_congr
+        #[body.getArg! 0, canonical.getArg! 1, c, canonical.getArg! 2, inst, t, e, hc])
+      return { out with proof := ← mkAppM ``Realizes.congr #[out.proof, eq] }
     let out ← match output? with
       | some o => pure o
       | none => encodingOf (← resultType body)
     let hp ← realizeProg ctx env (← mkLambdaFVars #[d] t) (some out)
     let hn ← realizeProg ctx env (← mkLambdaFVars #[d] e) (some out)
     let cond ← mkAppM kind #[← finLit k ia, ← finLit k ib]
-    let proof ← mkAppM ``Realizes.branch₀ #[cond, hp.proof, hn.proof]
+    let nativeCond ← mkAppM ``test #[cond, ← mkAppM ``DFunLike.coe #[env.input, d]]
+    let nativeInst ← synthInstance (← mkAppM ``Decidable #[nativeCond])
+    let hc ← mkExpectedTypeHint (← mkEqRefl c) (← mkEq nativeCond c)
+    let work ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+      mkLambdaFVars #[d, s] (← mkAppOptM ``ite
+        #[mkConst ``Nat, c, inst, hp.work.beta #[d, s], hn.work.beta #[d, s]])
+    let proof ← if (← isZeroWork env.ty hp.work) && (← isZeroWork env.ty hn.work) then
+        mkAppM ``Realizes.branch₀ #[cond, hp.proof, hn.proof]
+      else do
+        let nativeWork ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+          mkLambdaFVars #[d, s] (← mkAppOptM ``ite
+            #[mkConst ``Nat, nativeCond, nativeInst, hp.work.beta #[d, s], hn.work.beta #[d, s]])
+        let h ← absorbControl (← mkAppM ``Realizes.branch #[cond, hp.proof, hn.proof])
+          nativeWork 2
+        let pointwise ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+          mkLambdaFVars #[s] (← mkAppOptM ``ite_cond_congr
+            #[mkConst ``Nat, nativeCond, c, nativeInst, inst,
+              hp.work.beta #[d, s], hn.work.beta #[d, s], hc])
+        let eq ← mkAppM ``funext #[← mkLambdaFVars #[d]
+          (← mkAppM ``funext #[pointwise])]
+        transportField h eq 9
+    let eq ← mkLambdaFVars #[d] (← mkAppOptM ``ite_cond_congr
+      #[body.getArg! 0, nativeCond, c, nativeInst, inst, t, e, hc])
+    let proof ← mkAppM ``Realizes.congr #[proof, eq]
     let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
       withLocalDeclD `s (mkConst ``Memory.State) fun s => do
         mkLambdaFVars #[w, d, s] (mkApp5 (mkConst ``ite [Level.one]) (mkSort Level.zero) c inst
           (hp.safe.beta #[w, d, s]) (hn.safe.beta #[w, d, s]))
-    return { proof, output := out, safe }
+    let safeEq ← withLocalDeclD `w (mkConst ``Nat) fun w => do
+      let pointwise ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+        mkLambdaFVars #[s] (← mkAppOptM ``ite_cond_congr
+          #[mkSort Level.zero, nativeCond, c, nativeInst, inst,
+            hp.safe.beta #[w, d, s], hn.safe.beta #[w, d, s], hc])
+      mkLambdaFVars #[w] (← mkAppM ``funext #[← mkLambdaFVars #[d]
+        (← mkAppM ``funext #[pointwise])])
+    let proof ← transportField proof (← mkAppM ``funext #[safeEq]) 8
+    return { proof, output := out, safe, work := ← certificateWork proof }
   -- a guarded loop
   if body.isAppOfArity ``boundedWhile 8 then
     return ← realizeWhile ctx env d atoms body output?
@@ -1143,12 +1252,12 @@ private partial def realizeOptionSplit (ctx : Ctx) (env : Env) (d : Expr) (atoms
   let rhs ← mkAppM ``ite #[cond, bodyNone, bodySome]
   let eq ← proveSplit d r (← mkForallFVars #[d] (← mkEq rhs body))
   let out ← realizeBody ctx env d atoms rhs output?
-  let h ← certify ctx env out.proof (← mkLambdaFVars #[d] rhs) out.output out.safe
+  let h ← certify ctx env out.proof (← mkLambdaFVars #[d] rhs) out.output out.safe out.work
   let proof ← mkAppM ``Realizes.congr #[h, eq]
   return { out with proof }
 
-/-- Certify `iterate step D n a`: copy the initial state and the fuel, then run the loop over the
-whole environment (`iterate_comap`). The body must begin with a query (`Realizes.iterate₀`). -/
+/-- Certify `iterate step D n a`: copy the initial state and fuel, then run over the whole
+environment (`iterate_congr`). Retain iteration work unless a query pays for each iteration. -/
 private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
     (σ step D n a : Expr) (output? : Option Expr) : TermElabM Out := do
   unless ctx.exact do throwError "realize: loops are certified in the exact basis"
@@ -1166,8 +1275,10 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
       let Dx := (← mkLambdaFVars #[d] D).beta #[x1]
       mkLambdaFVars #[x] (mkApp (step.replaceFVar d x1) (← mkAppM ``Prod.mk #[Dx, x2]))
   let hB ← realizeProg ctx envB body (some out)
-  let hq ← proveQuery body envB.ty
-  let hLoop ← mkAppM ``Realizes.iterate₀ #[env.input, out, hB.proof, hq]
+  let hq? ← queryPayment? body envB.ty hB.work
+  let hLoop ← match hq? with
+    | some hq => mkAppM ``Realizes.iterate₀ #[env.input, out, hB.proof, hq]
+    | none => mkAppM ``Realizes.iterateRuntime #[env.input, out, hB.proof]
   -- the fuel, after the state
   let hN ← withLocalDeclD `x envB.ty fun x => do
     let x1 ← mkAppM ``Prod.fst #[x]
@@ -1193,27 +1304,40 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
       let sl ← mkAppM ``iterationSafe #[body, hB.safe, w, d, n, a, s]
       mkLambdaFVars #[w, d, s] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn sl))
   let progR ← mkLambdaFVars #[d] (← mkAppM ``iterate #[body, d, n, a])
-  let proof ← certify ctx env proof progR out safe
-  if D == d && !captured then return { proof, output := out, safe }
-  let g ← mkLambdaFVars #[d] D
-  let eq ← if captured then do
-    -- The adapted step agrees at this fixed environment, not at every possible environment.
-    let ty ← withLocalDeclD `n (mkConst ``Nat) fun n => withLocalDeclD `a σ fun a => do
-      mkForallFVars #[n, a] (← mkEq (← mkAppM ``iterate #[body, d, n, a])
-        (← mkAppM ``iterate #[step, D, n, a]))
-    let h ← Term.withSynthesize <| Term.elabTermEnsuringType (← `(by
-      intro n a
-      induction n generalizing a with
-      | zero => rfl
-      | succ n ih =>
-        simp only [iterate]
-        congr 1 with b : 1
-        exact ih b)) (some ty)
-    mkLambdaFVars #[d] (mkApp2 (← instantiateMVars h) n a)
-  else
-    mkLambdaFVars #[d] (← mkEqSymm (← mkAppM ``iterate_comap #[g, step, d, n, a]))
+  let work ← certificateWork proof
+  let proof ← certify ctx env proof progR out safe work
+  if D == d && !captured then return { proof, output := out, safe, work }
+  -- The adapted step agrees at this fixed environment, including any captured values.
+  let hbody ← withLocalDeclD `x σ fun x => do
+    let lhs := mkApp body (← mkAppM ``Prod.mk #[d, x])
+    let rhs := mkApp step (← mkAppM ``Prod.mk #[D, x])
+    mkLambdaFVars #[x] (← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs))
+  let eq ← mkLambdaFVars #[d] (← mkAppOptM ``iterate_congr
+    #[env.ty, σ, ← inferType D, body, step, d, D, hbody, n, a])
   let proof ← mkAppM ``Realizes.congr #[proof, eq]
-  if !captured then return { proof, output := out, safe }
+  -- Keep the grade in the original loop's terms, including a captured environment.
+  let (proof, work) ← if hq?.isSome then pure (proof, work) else do
+    let state := mkConst ``Memory.State
+    let pairTy ← mkAppM ``Prod #[← inferType D, σ]
+    let clientWork ← withLocalDeclD `x pairTy fun x =>
+      withLocalDeclD `s state fun s => do
+        let pair ← mkAppM ``Prod.mk #[d, ← mkAppM ``Prod.snd #[x]]
+        mkLambdaFVars #[x, s] (← reducePairs (hB.work.beta #[pair, s]))
+    let work' ← withLocalDeclD `s state fun s => do
+      mkLambdaFVars #[d, s] (← mkAppM ``iterationWork #[step, clientWork, D, n, a, s])
+    let hw ← withLocalDeclD `x σ fun x => withLocalDeclD `s state fun s => do
+      let lhs := hB.work.beta #[← mkAppM ``Prod.mk #[d, x], s]
+      let rhs := clientWork.beta #[← mkAppM ``Prod.mk #[D, x], s]
+      mkLambdaFVars #[x, s] (← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs))
+    let pointwise ← withLocalDeclD `s state fun s => do
+      let h ← mkAppOptM ``iterationWork_congr
+        #[env.ty, σ, ← inferType D, body, step, hB.work, clientWork, d, D, hbody, hw, n, a, s]
+      mkLambdaFVars #[s] (← mkExpectedTypeHint h
+        (← mkEq (work.beta #[d, s]) (work'.beta #[d, s])))
+    let workEq ← mkAppM ``funext #[← mkLambdaFVars #[d]
+      (← mkAppM ``funext #[pointwise])]
+    pure (← transportField proof workEq 9, work')
+  if !captured then return { proof, output := out, safe, work }
   -- State the reached-state domain in the original loop's terms, as in `realizeWhile`.
   let nat := mkConst ``Nat
   let state := mkConst ``Memory.State
@@ -1229,42 +1353,35 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
     let sl ← mkAppM ``iterationSafe #[step, clientSafe, w, D, n, a, s]
     mkLambdaFVars #[w, d, s] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn sl))
   let pointwise ← withLocalDeclD `w nat fun w => withLocalDeclD `s state fun s => do
-    let ty ← withLocalDeclD `n nat fun n => withLocalDeclD `a σ fun a =>
-      withLocalDeclD `s state fun s => do
-        mkForallFVars #[n, a, s] (← mkEq
-          (← mkAppM ``iterationSafe #[body, hB.safe, w, d, n, a, s])
-          (← mkAppM ``iterationSafe #[step, clientSafe, w, D, n, a, s]))
-    let h ← Term.withSynthesize <| Term.elabTermEnsuringType (← `(by
-      intro n a s
-      induction n generalizing a s with
-      | zero => rfl
-      | succ n ih =>
-        simp only [iterationSafe]
-        congr 1
-        exact ih _ _)) (some ty)
+    let hs ← withLocalDeclD `x σ fun x => withLocalDeclD `t state fun t => do
+      let lhs := hB.safe.beta #[w, ← mkAppM ``Prod.mk #[d, x], t]
+      let rhs := clientSafe.beta #[w, ← mkAppM ``Prod.mk #[D, x], t]
+      mkLambdaFVars #[x, t] (← mkExpectedTypeHint (← mkAppOptM ``Iff.rfl #[lhs])
+        (mkApp2 (mkConst ``Iff) lhs rhs))
+    let h ← mkAppOptM ``iterationSafe_congr
+      #[env.ty, σ, ← inferType D, body, step, hB.safe, clientSafe, w, d, D, hbody, hs, n, a, s]
+    let h ← mkAppM ``propext #[h]
     let pair ← mkAppM ``Prod.mk #[d, a]
     let sn ← reducePairs (hN.safe.beta #[w, pair, s])
     let wrap ← withLocalDeclD `p (mkSort Level.zero) fun p =>
       mkLambdaFVars #[p] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn p))
     mkLambdaFVars #[w, d, s] (← mkAppM ``congrArg
-      #[wrap, mkApp3 (← instantiateMVars h) n a s])
+      #[wrap, h])
   let safeEq ← withLocalDeclD `w nat fun w => do
     let hd ← withLocalDeclD `e env.ty fun e => do
       mkLambdaFVars #[e] (← mkAppM ``funext #[mkApp2 pointwise w e])
     mkLambdaFVars #[w] (← mkAppM ``funext #[hd])
   let safeEq ← mkAppM ``funext #[safeEq]
-  let proofTy ← inferType proof
-  let wrap ← withLocalDeclD `safe (← inferType safe) fun s =>
-    mkLambdaFVars #[s] (mkAppN proofTy.getAppFn (proofTy.getAppArgs.set! 8 s))
-  let proof ← mkAppM ``Eq.mp #[← mkAppM ``congrArg #[wrap, safeEq], proof]
-  return { proof, output := out, safe := safe' }
+  let proof ← transportField proof safeEq 8
+  return { proof, output := out, safe := safe', work }
 
 /-- Certify `boundedWhile G step D n a` for the environment variable `d`.
 
 The guard becomes a native comparison of the live words and the state's words. An operand that
 does not depend on the state, such as the `0` of `0 < r`, is computed first into one more live
-word. The body runs over the environment and the state, and must begin with a query
-(`Realizes.while₀`). The cutoff `n` is a ghost bound: it is never computed. The certificate is
+word. The body runs over the environment and state, retaining `whileWork` unless its zero work
+and initial query justify `Realizes.while₀`. The cutoff `n` is a ghost bound: it is never computed.
+The certificate is
 transported to the client's own guard, step and loop environment `D` (`boundedWhile_congr`,
 `whileSafe_imp`), and the loop's domain may assume the loop's valid history
 (`Realizes.consequence_valid`), which `whileSafe_of_measure` uses. -/
@@ -1316,8 +1433,10 @@ private partial def realizeWhile (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arr
     let x ← mkAppM ``Prod.mk #[← atEnv D e, ← mkAppM ``Prod.snd #[y]]
     return (← mkLambdaFVars #[y] (mkApp (← atEnv step e) x), ← mkLambdaFVars #[y] (← atEnv n e))
   let hB ← realizeProg ctx envB bodyN (some out)
-  let hLoop ← mkAppM ``Realizes.while₀
-    #[envP.input, out, cond, cutoff, hB.proof, ← proveQuery bodyN envB.ty]
+  let hq? ← queryPayment? bodyN envB.ty hB.work
+  let hLoop ← match hq? with
+    | some hq => mkAppM ``Realizes.while₀ #[envP.input, out, cond, cutoff, hB.proof, hq]
+    | none => mkAppM ``Realizes.whileBounded #[envP.input, out, cond, cutoff, hB.proof]
   -- the initial state, then the loop
   let (hA, h) ← withLocalDeclD `e envP.ty fun e => do
     let ae ← atEnv a e
@@ -1398,7 +1517,29 @@ private partial def realizeWhile (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arr
         | some p => mkAppM ``And.intro #[p, dom]
         | none => pure dom
       mkLambdaFVars (#[w, d, s] ++ hs) (← mkExpectedTypeHint pf goal)
-  return { proof := mkApp cv hsafe, output := out, safe }
+  let proof := mkApp cv hsafe
+  let work ← certificateWork proof
+  if hq?.isSome then return { proof, output := out, safe, work }
+  let clientWork ← withLocalDeclD `x pairTy fun x =>
+    withLocalDeclD `s state fun s => do
+      let y ← mkAppM ``Prod.mk #[e₀, ← mkAppM ``Prod.snd #[x]]
+      mkLambdaFVars #[x, s] (← reducePairs (hB.work.beta #[y, s]))
+  let work' ← withLocalDeclD `s state fun s => do
+    mkLambdaFVars #[d, s] (← mkAppOptM ``whileWork
+      #[Δ, σ, G, inst, step, clientWork, D, n, a, s])
+  let hw ← withLocalDeclD `x σ fun x => withLocalDeclD `s state fun s => do
+    let lhs := hB.work.beta #[← mkAppM ``Prod.mk #[e₀, x], s]
+    let rhs := clientWork.beta #[← mkAppM ``Prod.mk #[D, x], s]
+    mkLambdaFVars #[x, s] (← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs))
+  let pointwise ← withLocalDeclD `s state fun s => do
+    let h ← mkAppOptM ``whileWork_congr
+      #[envP.ty, Δ, σ, gN, iN, G, inst, bodyN, step, e₀, D, hB.work, clientWork,
+        hgN, hbN, hw, n, a, s]
+    mkLambdaFVars #[s] (← mkExpectedTypeHint h
+      (← mkEq (work.beta #[d, s]) (work'.beta #[d, s])))
+  let workEq ← mkAppM ``funext #[← mkLambdaFVars #[d]
+    (← mkAppM ``funext #[pointwise])]
+  return { proof := ← transportField proof workEq 9, output := out, safe, work := work' }
 
 /-- Certify `bind m f`: the first client, then the continuation over the extended environment. -/
 private partial def realizeBind (ctx : Ctx) (env : Env) (d m f : Expr) (output? : Option Expr) :
@@ -1423,7 +1564,7 @@ private partial def realizeBind (ctx : Ctx) (env : Env) (d m f : Expr) (output? 
       let pair ← mkAppM ``Prod.mk #[d, reply.beta #[d, s]]
       let sq ← reducePairs (hQ.safe.beta #[w, pair, next.beta #[d, s]])
       mkLambdaFVars #[w, d, s] (mkAnd (hP.safe.beta #[w, d, s]) sq)
-  return { proof, output := hQ.output, safe }
+  return { proof, output := hQ.output, safe, work := ← certificateWork proof }
 
 end
 
@@ -1450,13 +1591,23 @@ private partial def splitDomain (g : MVarId) : MetaM (List MVarId) := g.withCont
     return (← splitDomain pos) ++ (← splitDomain neg)
   return [g]
 
+/-- Present an entry obligation in the same source context as its domain and work budget. -/
+private def entryGoal (g : MVarId) (keepHistory : Bool) : MetaM MVarId := do
+  let (xs, g) ← g.introN 7 [`w, `d, `s, `hwords, `hmem, `hv, `h]
+  -- Preserve the existing zero-work context: clients may introduce their own `hv` from `h`.
+  let g ← if keepHistory then pure g else g.clear xs[5]!
+  g.withContext do
+    let g ← g.replaceTargetDefEq (← Core.betaReduce (← g.getType))
+    let hdecl := (← getLCtx).lastDecl.get!
+    g.replaceLocalDeclDefEq hdecl.fvarId (← Core.betaReduce hdecl.type)
+
 end Cslib.Tactic.Realize
 
 namespace Cslib.WordRAM
 
 open Lean Meta Elab Tactic Cslib.WordRAM Cslib.WordRAM.Realization Cslib.Tactic.Realize in
-/-- Prove `Realizes B p input output safe work` for a memory client `p`, leaving the genuine fit
-and domain conditions as goals in the context `w d s hwords hmem h`. -/
+/-- Prove `Realizes B p input output safe work`, leaving genuine fit, domain and budget
+conditions in the entry context, with valid history also available for nonzero generated work. -/
 scoped elab "realize" : tactic => withMainContext do
   let goal ← getMainGoal
   let target ← instantiateMVars (← whnfR (← goal.getType))
@@ -1476,17 +1627,18 @@ scoped elab "realize" : tactic => withMainContext do
   let env : Env := { ty := δ, k, input, atoms }
   -- `realizeProg` states the certificate for `p` itself, with the domain `out.safe`
   let out ← realizeProg { basis := B, exact, standard } env p (some output)
-  let cons ← mkAppOptM ``Realizes.consequence #[B, args[0]!, args[1]!, δ, args[3]!, p, input,
-    output, out.safe, ← zeroWork δ, args[8]!, args[9]!, out.proof]
+  let cons ← mkAppOptM ``Realizes.consequence_work
+    #[B, δ, args[3]!, args[0]!, args[1]!, p, input, output, out.safe, args[8]!,
+      out.work, args[9]!, out.proof]
   let [hsafe, hwork] ← goal.apply cons | throwError "realize: internal error in `consequence`"
   setGoals [hwork]
-  evalTactic (← `(tactic| exact fun _ _ => Nat.zero_le _))
-  let (_, g) ← hsafe.introN 6 [`w, `d, `s, `hwords, `hmem, `h]
-  let g ← g.withContext do
-    let t ← instantiateMVars (← g.getType)
-    let g ← g.replaceTargetDefEq (← Core.betaReduce t)
-    let hdecl := (← getLCtx).lastDecl.get!
-    g.replaceLocalDeclDefEq hdecl.fvarId (← Core.betaReduce hdecl.type)
+  let zero ← isZeroWork δ out.work
+  if zero then
+    evalTactic (← `(tactic| exact fun _ _ _ _ _ _ _ => Nat.zero_le _))
+  else
+    evalTactic (← `(tactic| try exact fun _ _ _ _ _ _ _ => le_rfl))
+  let workGoals ← (← getGoals).mapM fun g => liftMetaM (entryGoal g true)
+  let g ← entryGoal hsafe (!zero)
   setGoals [g]
   evalTactic (← `(tactic|
     try simp only [true_and, and_true, and_self, Nat.add_zero, iterationSafe_true]))
@@ -1503,6 +1655,6 @@ scoped elab "realize" : tactic => withMainContext do
     match dup? with
     | some g' => g.assign (mkMVar g')
     | none => kept := kept.push g
-  setGoals kept.toList
+  setGoals (kept.toList ++ workGoals)
 
 end Cslib.WordRAM
