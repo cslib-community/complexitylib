@@ -39,6 +39,22 @@ example : Cslib.Combinatorics.CubeSplits (m := 2) (fun _ s => (s : ℝ)) (3 / 2)
   exact ⟨![false, false], ![true, true], by simp [Fin.sum_univ_two]; norm_num,
     by simp [Fin.sum_univ_two]; norm_num⟩
 
+-- An antitone (reflected) form: along `s ↦ -(s₀ + s₁)` the threshold `-1 / 2` splits the corner
+-- cube `(0, 0)` (vertex sums `0` down to `-2`) but not the cube `(1, 1)` (sums `-2` to `-4`).
+example : Cslib.Combinatorics.CubeSplits (m := 2) (fun _ s => -(s : ℝ)) (-1 / 2) ![0, 0] := by
+  rw [Cslib.Combinatorics.cubeSplits_iff]
+  exact ⟨![true, true], ![false, false], by simp [Fin.sum_univ_two]; norm_num,
+    by simp [Fin.sum_univ_two]; norm_num⟩
+
+example : ¬ Cslib.Combinatorics.CubeSplits (m := 2) (fun _ s => -(s : ℝ)) (-1 / 2) ![1, 1] := by
+  rw [Cslib.Combinatorics.cubeSplits_iff]
+  rintro ⟨-, z', -, h⟩
+  simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one, Fin.val_one] at h
+  push_cast at h
+  have h₀ : (0 : ℝ) ≤ (z' 0).toNat := Nat.cast_nonneg _
+  have h₁ : (0 : ℝ) ≤ (z' 1).toNat := Nat.cast_nonneg _
+  linarith
+
 -- At the cube point with block counts `s`, Andreev's function reads the table at `s mod 2`.
 example (b m : ℕ) (x : BitString (2 ^ b)) (s : Fin b → ℕ) (hs : ∀ j, s j ≤ m) :
     Boolean.andreev b m (andreevCubePoint b m x s) =
