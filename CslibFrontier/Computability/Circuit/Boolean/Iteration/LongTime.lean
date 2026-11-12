@@ -197,10 +197,7 @@ private theorem longTimeBudget_le (n s m L : ℕ) :
     longTimeBudget n s m L ≤
       200000 * (n + 1) * powerBudget n s (2 ^ n) L + 80 * m * (n + 1) := by
   set B := powerBudget n s (2 ^ n) L
-  have hb : (n + 1) ^ 3 ≤ B := by
-    have h := Nat.mul_le_mul_left ((n + 1) ^ 3) (Nat.le_add_left 1 (L + 2 ^ n / L))
-    simp only [B, powerBudget]
-    nlinarith
+  have hb : (n + 1) ^ 3 ≤ B := cube_le_powerBudget n s (2 ^ n) L
   have hfour : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 2 := by
     have := Nat.pow_le_pow_left (show n + 4 ≤ 4 * (n + 1) by omega) 2
     nlinarith
@@ -226,10 +223,7 @@ theorem variable_time_additive (c : Circuit signature n n) (m L : ℕ) (hL : 0 <
   · obtain ⟨out, ho, hs⟩ := variable_time c m L hL hLN
     refine ⟨out, ho, hs.trans ?_⟩
     set B := powerBudget n c.size (2 ^ n) L
-    have hb : (n + 1) ^ 3 ≤ B := by
-      have h := Nat.mul_le_mul_left ((n + 1) ^ 3) (Nat.le_add_left 1 (L + 2 ^ n / L))
-      simp only [B, powerBudget]
-      nlinarith
+    have hb : (n + 1) ^ 3 ≤ B := cube_le_powerBudget n c.size (2 ^ n) L
     have hm : m ≤ n := by omega
     have h1 := Nat.mul_le_mul_right (40000 * B) hm
     have h2 : m * (4 * n) ≤ B := by

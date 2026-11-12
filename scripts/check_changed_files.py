@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Two narrow lints for the Lean files a change adds or modifies.
+"""Three narrow lints for the Lean files a change adds or modifies.
 
 Usage: python3 scripts/check_changed_files.py [--base REF] [--no-build-check]
 
@@ -10,8 +10,8 @@ REF itself.
 
 1. Module-doc names. In a changed module under `CslibFrontier/`, each backquoted name that heads a
    bullet of a "Main …" section of the module docstring (the names before the bullet's first
-   colon) must name a declaration: one that some library, test or abstract module defines or
-   refers to, matched exactly or as a suffix on a component boundary. Names of tactics, attributes
+   colon) must name a declaration: one that some library or test module defines or refers to,
+   matched exactly or as a suffix on a component boundary. Names of tactics, attributes
    and other syntax that the library declares (`syntax`, `macro`, `elab`,
    `declare_aesop_rule_sets`, `register_simp_attr`) also count, as do the upstream names in
    `UPSTREAM_SYNTAX`. Backquoted text that is not an identifier, such as notation or a pattern
@@ -22,8 +22,12 @@ REF itself.
 2. Restatement-only tests. A new file under `CslibFrontierTests/` fails when it has examples and
    every one of them is `example … := name` (or `:= by exact name`) for a name other than `rfl`,
    `trivial` and the like (`EVALUATION`): such a line only restates a signature, which is not a
-   test (CONTRIBUTING, review criterion 8). A file that imports or names a curated abstract
-   (`CslibFrontierAbstracts`) is exempt, since restatements pin those.
+   test (CONTRIBUTING, review criterion 8).
+3. Section-level `@[expose]`. A new or changed library or test file fails when an
+   `@[expose] … section` header has nothing to expose: the file declares no definition and nothing
+   that may generate one (`DEFINING`), so the attribute changes no declaration and only suggests
+   that bodies are exported. Write `public section` instead. Abbreviations, instances and
+   structures count as definitions here, to stay conservative.
 """
 
 from __future__ import annotations
@@ -64,7 +68,6 @@ EXAMPLE = re.compile(r"(?:@\[[^\]\n]*\]\s*)*(?:(?:private|noncomputable)\s+)*exa
 RESTATEMENT = re.compile(rf"(?:by\s+exact\s+)?@?({NAME.pattern})")
 # Bodies that check the statement by evaluation, or prove it outright: concrete tests.
 EVALUATION = {"rfl", "Eq.refl", "Iff.rfl", "HEq.rfl", "le_rfl", "trivial", "True.intro"}
-ABSTRACTS = re.compile(r"\bCslibFrontierAbstracts\b")
 
 
 # --- Changed files ------------------------------------------------------------------------------
@@ -225,8 +228,6 @@ def example_bodies(text: str) -> list[str | None]:
 
 def restatement_only(text: str) -> bool:
     """Whether a test file has examples and each only restates a declaration's signature."""
-    if ABSTRACTS.search(masks(text)[0]):
-        return False
     matches = [body and RESTATEMENT.fullmatch(body) for body in example_bodies(text)]
     return bool(matches) and all(m and m[1] not in EVALUATION for m in matches)
 
@@ -237,6 +238,52 @@ def check_new_tests(root: Path, added: list[str]) -> list[str]:
             for rel in added
             if rel.startswith("CslibFrontierTests/") and rel.endswith(".lean")
             and restatement_only((root / rel).read_text(encoding="utf-8"))]
+
+
+# --- Section-level `@[expose]` ------------------------------------------------------------------
+
+# A section header carrying the `expose` scope attribute, after masking.
+EXPOSE_SECTION = re.compile(
+    r"^[ \t]*@\[expose\][ \t]+(?:public[ \t]+)?(?:noncomputable[ \t]+)?(?:meta[ \t]+)?section\b",
+    re.M)
+# Commands and attributes that declare, or may generate, a definition (or a derived instance) that
+# could read the scope attribute. Any of them anywhere in the file leaves the header alone. The
+# list is deliberately broad: a missed keyword would make the lint wrong, an extra one only lets a
+# no-op header through.
+DEFINING = (
+    "def", "abbrev", "instance", "opaque", "structure", "class", "inductive", "coinductive",
+    "mutual", "irreducible_def", "alias", "deriving", "where", "let rec", "partial", "unsafe",
+    "termination_by", "decreasing_by", "notation", "local_notation", "infix", "infixl", "infixr",
+    "prefix", "postfix", "macro", "macro_rules", "syntax", "elab", "elab_rules", "initialize",
+    "builtin_initialize", "simproc", "dsimproc", "register_option", "register_simp_attr",
+    "register_label_attr", "implemented_by", "extern", "csimp", "simps",
+    "initialize_simps_projections", "to_additive", "to_dual", "reassoc", "elementwise", "mk_iff",
+    "make_lemma", "recall", "run_cmd", "run_elab", "run_meta", "#eval", "unif_hint", "export",
+    "seal", "unseal", "meta",
+)
+DEFINING_TOKEN = re.compile(
+    r"(?<![\w.'!?#])(?:declare_\w+|"
+    + "|".join(re.escape(t).replace(r"\ ", r"\s+") for t in DEFINING) + r")(?![\w'!?])")
+
+
+def noop_expose_sections(text: str) -> list[int]:
+    """Line numbers of the `@[expose] … section` headers of a source file that has no definition
+    for the attribute to expose. In Lean v4.36 only `def`-kind declarations (also those generated
+    by commands such as `irreducible_def` or `notation`) and the deriving handlers read it: it never
+    changes a theorem, abbreviation, structure or inductive, and non-Prop instances are exposed
+    anyway. Comments and string literals are ignored."""
+    syntax = masks(text)[1]
+    if DEFINING_TOKEN.search(syntax):
+        return []
+    return [syntax.count("\n", 0, m.start()) + 1 for m in EXPOSE_SECTION.finditer(syntax)]
+
+
+def check_expose_sections(root: Path, changed: list[str]) -> list[str]:
+    return [f"{rel}:{line}: this `@[expose]` section has no definition to expose; write `public "
+            "section` (CONTRIBUTING.md, Public surface under the module system)"
+            for rel in changed if rel.endswith(".lean")
+            and rel.startswith(("CslibFrontier/", "CslibFrontierTests/"))
+            for line in noop_expose_sections((root / rel).read_text(encoding="utf-8"))]
 
 
 # --- Driver -------------------------------------------------------------------------------------
@@ -257,7 +304,8 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         lo.check_outputs(lo.DEFAULT_BUILD_DIR, args.no_build_check)
         return lo.load_ileans(lo.DEFAULT_BUILD_DIR)
 
-    errors = check_new_tests(root, added) + check_doc_names(root, sorted(modules), load_ileans)
+    errors = (check_new_tests(root, added) + check_expose_sections(root, added + modified)
+              + check_doc_names(root, sorted(modules), load_ileans))
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
     if errors:

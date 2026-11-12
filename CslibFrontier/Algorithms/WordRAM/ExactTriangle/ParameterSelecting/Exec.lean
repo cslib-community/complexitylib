@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Time
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Header
+import CslibFrontier.Foundations.Data.List.GetD
 
 /-!
 # Complete parameter-selecting native caller execution
@@ -132,13 +133,8 @@ theorem exec_at {W n F ap bp cp b : ℕ} (values : List ℤ)
       finish p reference.mem r hbranch rf riff (fun _ => hp)
         (fun h => False.elim (h hfast)) frame regs
     exact ⟨p, reference.mem, y, he, yf, yiff, yp, yz, ym, yn, yF, ya, yb, yc, yfree⟩
-  · have hcell (i j : Fin n) : pairIndex (i, j) < n * n := by
-      simpa only [pairIndex, Fin.coe_mkDivMod, Nat.mul_comm] using (Fin.mkDivMod i j).isLt
-    have value_bound (q : ℕ) (hq : q < 3 * (n * n)) : (V q).natAbs ≤ F := by
-      have hq' : q < values.length := by omega
-      dsimp only [V]
-      rw [List.getD_eq_getElem _ _ hq']
-      exact hv _ (List.getElem_mem hq')
+  · have value_bound (q : ℕ) (hq : q < 3 * (n * n)) : (V q).natAbs ≤ F :=
+      hv (values.getD q 0) (List.getD_mem 0 (by omega))
     have abs_bound (q : ℕ) (hq : q < 3 * (n * n)) : |V q| ≤ (F : ℤ) := by
       have hcast : ((V q).natAbs : ℤ) ≤ (F : ℤ) := by exact_mod_cast value_bound q hq
       simpa only [Int.natCast_natAbs] using hcast
@@ -147,16 +143,16 @@ theorem exec_at {W n F ap bp cp b : ℕ} (values : List ℤ)
       (by simpa only [aAC] using hac) (slow_fits values hW)
       (fun i j => by
         rw [aAB, aMem]
-        simpa only [A, V, pairIndex, Nat.add_assoc] using vab _ (hcell i j))
+        simpa only [A, V, pairIndex, Nat.add_assoc] using vab _ (pairIndex_lt (i, j)))
       (fun i j => by
         rw [aBC, aMem]
-        simpa only [B, V, pairIndex, Nat.add_assoc] using vbc _ (hcell i j))
+        simpa only [B, V, pairIndex, Nat.add_assoc] using vbc _ (pairIndex_lt (i, j)))
       (fun i j => by
         rw [aAC, aMem]
-        simpa only [C, V, pairIndex, Nat.add_assoc] using vac _ (hcell i j))
-      (fun i j => abs_bound _ (by have := hcell i j; omega))
-      (fun i j => abs_bound _ (by have := hcell i j; omega))
-      (fun i j => abs_bound _ (by have := hcell i j; omega))
+        simpa only [C, V, pairIndex, Nat.add_assoc] using vac _ (pairIndex_lt (i, j)))
+      (fun i j => abs_bound _ (by have := pairIndex_lt (i, j); omega))
+      (fun i j => abs_bound _ (by have := pairIndex_lt (i, j); omega))
+      (fun i j => abs_bound _ (by have := pairIndex_lt (i, j); omega))
     have hc : ¬cond.Holds a := by
       simp only [cond, Cond.holds_lt, aPrime, aflag, ite_eq_right hfast,
         lt_self_iff_false, not_false_eq_true]

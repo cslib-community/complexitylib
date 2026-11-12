@@ -120,13 +120,7 @@ theorem exists_computableInTimeAndSpace_of_mem_SharpTIME
       (fun a => 2 ^ (C * T (enc a).length / Nat.sqrt (Nat.log 2 (T (enc a).length))))
       (fun a => T (enc a).length ^ d) := by
   obtain ⟨c₁, c₂, k, State, hfinite, machine, _, hm⟩ := hf
-  obtain ⟨bound, hbound⟩ := machine.exists_branchBound
-  let width := bound + 1
-  have hw : 0 < width := Nat.zero_lt_succ _
-  have hcodes (input : List Bool) (cfg : Cfg k Bool State input) :
-      (machine.actions cfg).length ≤ 2 ^ width :=
-    (hbound input cfg).trans ((Nat.le_succ bound).trans
-      (show width < 2 ^ width from Nat.lt_two_pow_self).le)
+  obtain ⟨width, hw, hcodes⟩ := machine.exists_branchWidth
   let c := width * (c₁ + c₂ + 1) + 1
   obtain ⟨C, d, h⟩ := exists_computableInTimeAndSpace_acceptCount hnet A hT hTn
     (MultiTapeCTM.CountingChoice.table hw machine) (c := c) (by omega)

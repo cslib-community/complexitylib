@@ -5,6 +5,7 @@ Authors: Erik Demaine, OpenAI
 -/
 
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse
+import CslibFrontier.Foundations.Geometry.Polygonal.NoncrossingOrder
 import Lean.Util.CollectAxioms
 import Batteries.Tactic.Lint
 
@@ -20,7 +21,11 @@ open Lean Elab Command Batteries.Tactic.Lint in
 run_cmd do
   let env := (← getEnv).setExporting false
   let targets : List Name :=
-    [`CslibFrontier.Foundations.Geometry.Polygonal.RouteInterior,
+    [`CslibFrontier.Foundations.Geometry.Polygonal.AngleOrder,
+     `CslibFrontier.Foundations.Geometry.Polygonal.LocalSplitFan,
+     `CslibFrontier.Foundations.Geometry.Polygonal.LocalSplitOrder,
+     `CslibFrontier.Foundations.Geometry.Polygonal.NoncrossingOrder,
+     `CslibFrontier.Foundations.Geometry.Polygonal.RouteInterior,
      `CslibFrontier.Foundations.Geometry.Polygonal.RayOrder,
      `CslibFrontier.Foundations.Geometry.Polygonal.RayParityTransport,
      `CslibFrontier.Foundations.Geometry.Polygonal.RayParityGerms,

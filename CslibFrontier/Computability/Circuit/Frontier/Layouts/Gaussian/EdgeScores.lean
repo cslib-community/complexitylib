@@ -150,22 +150,11 @@ theorem le_inner_edgeVector [Finite E] (hloop : G.Loopless) (hdeg : G.MaxDegreeL
 /-- The edge vectors at `v` vanish outside the closed ball of radius `R + 1` around `v`. -/
 theorem edgeVector_apply_eq_zero {v : V} {e : E} (he : e ∈ G.incidenceSet v) {z : V}
     (hz : z ∉ closedBall G.toSimpleGraph v (R + 1)) : edgeVector G q R e z = 0 := by
-  have hz : ((R + 1 : ℕ) : ℕ∞) < G.toSimpleGraph.edist v z := lt_of_not_ge hz
   -- Both ends of `e` are `v` or neighbours of `v`.
-  have hend (w : V) (hw : G.src e = w ∨ G.tgt e = w) :
-      unitKernelRow G.toSimpleGraph q R w z = 0 := by
-    refine unitKernelRow_eq_zero_of_lt (lt_of_not_ge fun hle => hz.not_ge ?_)
-    have hvw : G.toSimpleGraph.edist v z ≤ G.toSimpleGraph.edist w z + 1 := by
-      by_cases hvw : v = w
-      · rw [hvw]
-        exact le_self_add
-      · refine SimpleGraph.Adj.edist_le_edist_add_one (Multigraph.toSimpleGraph_adj.mpr
-          ⟨hvw, e, ?_⟩) z
-        rcases he with hv | hv <;> rcases hw with hw | hw <;>
-          simp_all [Multigraph.ends, Sym2.eq_swap]
-    calc G.toSimpleGraph.edist v z ≤ G.toSimpleGraph.edist w z + 1 := hvw
-      _ ≤ R + 1 := add_le_add_left hle 1
-      _ = ((R + 1 : ℕ) : ℕ∞) := by push_cast; rfl
+  have hend (w : V) (hw : e ∈ G.incidenceSet w) :
+      unitKernelRow G.toSimpleGraph q R w z = 0 :=
+    unitKernelRow_eq_zero_of_lt (lt_of_not_ge fun hle =>
+      hz (closedBall_subset_of_mem_incidenceSet he hw R hle))
   simp [edgeVector, hend _ (Or.inl rfl), hend _ (Or.inr rfl)]
 
 /-- **Locality.** The scores of the edges at `v` depend only on the coordinates of the sample in

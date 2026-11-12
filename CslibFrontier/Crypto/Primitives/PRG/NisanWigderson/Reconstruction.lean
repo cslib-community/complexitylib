@@ -172,7 +172,7 @@ variable (C : ListCode α (Fin n → Bool) Bool L) (D : Design ℓ n a m) (test 
 /-- **List size.** `k` trials list at most `k L` candidates. -/
 theorem card_trialCandidates_le (f : (Fin n → Bool) → Bool) {k : ℕ} (ts : Fin k → Trial ℓ m) :
     #(trialCandidates C D f test ts) ≤ k * L :=
-  card_biUnion_le.trans <| (sum_le_sum fun j _ => C.card_candidates_le _).trans_eq <| by simp
+  (card_biUnion_le_card_mul _ _ L fun j _ => C.card_candidates_le _).trans_eq <| by simp
 
 /-- **Sampling and list decoding** [Hirahara2018]. Let `0 < m`, `0 ≤ ε`, let the list code `C`
 list decode up to radius `1 / 2 - ε / (2 m)`, and let a deterministic test accept outputs of the

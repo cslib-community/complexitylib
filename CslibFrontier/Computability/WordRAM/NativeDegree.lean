@@ -86,21 +86,21 @@ theorem fits_degree :
 
 /-- Checking that a quadratic word value fits the unary width is quadratic. -/
 private theorem checkFits_degree {k : ℕ} {val : ℕ × (Fin k → ℕ) → ℕ}
-    (hval : ComputableInDegree val (encPair encUnary (encPi encNat)) encNat 2 1) :
+    (hval : ComputableInDegree val encWidthOperands encNat 2 1) :
     ComputableInDegree
       (fun p : ℕ × (Fin k → ℕ) => if decide (Fits p.1 (val p)) then some (val p) else none)
-      (encPair encUnary (encPi encNat)) (encOption encNat) 2 1 := by
+      encWidthOperands (encOption encNat) 2 1 := by
   have htest : ComputableInDegree (fun p : ℕ × (Fin k → ℕ) => decide (Fits p.1 (val p)))
-      (encPair encUnary (encPi encNat)) encBool 2 1 :=
+      encWidthOperands encBool 2 1 :=
     (fits_degree.comp ((fst encUnary (encPi encNat (Index := Fin k))).prod hval)).mono
   have hsome : ComputableInDegree (fun p : ℕ × (Fin k → ℕ) => some (val p))
-      (encPair encUnary (encPi encNat)) (encOption encNat) 2 1 :=
+      encWidthOperands (encOption encNat) 2 1 :=
     ((optionSome (enc₁ := encNat) (enc := encOption encNat)).comp hval).mono
   exact ite_le htest hsome (const none) (by omega) (by omega)
 
 /-- An operand register of a binary operation, read in linear time. -/
 private theorem operand_degree (i : Fin 2) :
-    ComputableInDegree (fun p : ℕ × (Fin 2 → ℕ) => p.2 i) (encPair encUnary (encPi encNat))
+    ComputableInDegree (fun p : ℕ × (Fin 2 → ℕ) => p.2 i) encWidthOperands
       encNat 1 1 :=
   ((degree_of_linear (ComputableInO.pi_apply encNat i)).comp
     (snd encUnary (encPi encNat))).mono
@@ -108,14 +108,14 @@ private theorem operand_degree (i : Fin 2) :
 /-- **Checked addition is quadratic** on a unary width and binary operands. -/
 theorem checkedAdd_degree :
     ComputableInDegree (Basis.standard.genericModel.checkedOp (.bin .add))
-      (encPair encUnary (encPi encNat)) (encOption encNat) 2 1 :=
+      encWidthOperands (encOption encNat) 2 1 :=
   checkFits_degree (k := 2) (val := fun p : ℕ × (Fin 2 → ℕ) => p.2 0 + p.2 1)
     (computableInDegree_add.comp ((operand_degree 0).prod (operand_degree 1))).mono
 
 /-- **Checked truncated subtraction is quadratic** on a unary width and binary operands. -/
 theorem checkedSub_degree :
     ComputableInDegree (Basis.standard.genericModel.checkedOp (.bin .sub))
-      (encPair encUnary (encPi encNat)) (encOption encNat) 2 1 :=
+      encWidthOperands (encOption encNat) 2 1 :=
   checkFits_degree (k := 2) (val := fun p : ℕ × (Fin 2 → ℕ) => p.2 0 - p.2 1)
     ((degree_of_quadratic ComputableInO.natSub).comp
       ((operand_degree 1).prod (operand_degree 0))).mono
@@ -131,23 +131,23 @@ theorem checkedConstant_degree (B : Basis) (c : ℕ) :
 /-- The word-RAM tests (`eq`, `lt` and the faulting test) are quadratic. -/
 theorem evalTest_degree (B : Basis) (t : Option Bool) :
     ComputableInDegree (fun p => B.genericModel.evalTest p.1 t p.2)
-      (encPair encUnary (encPi encNat)) (encOption encBool) 2 1 := by
+      encWidthOperands (encOption encBool) 2 1 := by
   cases t with
   | none =>
     change ComputableInDegree (fun _ : ℕ × (Fin 0 → ℕ) => (none : Option Bool))
-      (encPair encUnary (encPi encNat (Index := Fin 0))) (encOption encBool) 2 1
+      (encWidthOperands (k := 0)) (encOption encBool) 2 1
     exact (const none).mono
   | some b =>
     have hxy := (operand_degree 0).prod (operand_degree 1)
     cases b
     · change ComputableInDegree
         (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 = p.2 1)))
-        (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool) 2 1
+        (encWidthOperands (k := 2)) (encOption encBool) 2 1
       exact ((optionSome (enc₁ := encBool) (enc := encOption encBool)).comp
         (ComputableInDegree.natEq.comp hxy)).mono
     · change ComputableInDegree
         (fun p : ℕ × (Fin 2 → ℕ) => some (decide (p.2 0 < p.2 1)))
-        (encPair encUnary (encPi encNat (Index := Fin 2))) (encOption encBool) 2 1
+        (encWidthOperands (k := 2)) (encOption encBool) 2 1
       exact ((optionSome (enc₁ := encBool) (enc := encOption encBool)).comp
         ((degree_of_quadratic ComputableInO.natLt).comp hxy)).mono
 
@@ -161,7 +161,7 @@ theorem address_degree (B : Basis) :
 `d ≥ 2`; the literal, test, address, move and label primitives are quadratic. -/
 noncomputable def Basis.nativePrimitivesOfDegree (B : Basis) {d : ℕ} (hd : 2 ≤ d)
     (hop : ∀ op : B.Op, ComputableInDegree (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat) d 1) :
+      encWidthOperands (encOption encNat) d 1) :
     B.genericModel.NativePrimitives B.encoding where
   constant c := .ofDegree ((checkedConstant_degree B c).mono hd le_rfl)
   operation op := .ofDegree (hop op)
@@ -173,7 +173,7 @@ noncomputable def Basis.nativePrimitivesOfDegree (B : Basis) {d : ℕ} (hd : 2 �
 /-- `Basis.nativePrimitivesOfDegree` has degree `d`. -/
 theorem Basis.nativePrimitivesOfDegree_hasDegree (B : Basis) {d : ℕ} (hd : 2 ≤ d)
     (hop : ∀ op : B.Op, ComputableInDegree (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat) d 1) :
+      encWidthOperands (encOption encNat) d 1) :
     (B.nativePrimitivesOfDegree hd hop).HasDegree d :=
   ⟨fun c => NativeCertificate.ofDegree_hasDegree ((checkedConstant_degree B c).mono hd le_rfl),
     fun op => NativeCertificate.ofDegree_hasDegree (hop op),
@@ -187,7 +187,7 @@ theorem Basis.nativePrimitivesOfDegree_hasDegree (B : Basis) {d : ℕ} (hd : 2 �
 /-- Every checked operation of the additive basis is quadratic. -/
 theorem Basis.additive.checkedOp_degree (op : Basis.additive.Op) :
     ComputableInDegree (Basis.additive.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat) 2 1 := by
+      encWidthOperands (encOption encNat) 2 1 := by
   obtain ⟨f, hf⟩ := op
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hf
   rcases hf with rfl | rfl

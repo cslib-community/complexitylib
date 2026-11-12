@@ -114,8 +114,7 @@ theorem getD_evalCode (I : Interpretation σ U) (d : U) (x : List U)
     rw [← hrest, List.getD_append _ _ _ _ (by simp [hlen]), List.getD_append_right _ _ _ _
       (by omega), hlen, Nat.sub_self, List.getD_cons_zero]
   rw [hv]
-  congr 1
-  funext a
+  congr 1 with a : 1
   rcases ha : gates[j].2[a.val]? with _ | i
   · rfl
   · exact (hread i (hargs i (List.mem_of_getElem? ha))).symm
@@ -144,8 +143,7 @@ theorem Program.evalCode_code (p : Program σ n k) (I : Interpretation σ U) (d 
       List.append_assoc, Line.code, List.getD_eq_getElem?_getD, List.getElem?_ofFn, Fin.is_lt]
     congr 3
     rw [Line.eval]
-    congr 1
-    funext a
+    congr 1 with a : 1
     simp [← List.getD_eq_getElem?_getD, Wire.getD_append_toNat]
 
 /-- **Evaluation through the code.** Output `j` of a circuit is the value at the number of its

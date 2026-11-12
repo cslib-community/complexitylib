@@ -40,7 +40,7 @@ It is polynomial-time on all raw code, without a well-formedness or promised-dep
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 6.1][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Layered
 

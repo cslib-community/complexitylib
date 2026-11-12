@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliamson
 public import Mathlib.Probability.Distributions.Gaussian.Multivariate
+import CslibFrontier.Foundations.Analysis.Normed.UnitSphere
 import CslibFrontier.Foundations.MeasureTheory.Constructions.BorelSpace.Order
 import CslibFrontier.Foundations.Probability.Gaussian.Sheppard
 import Mathlib.MeasureTheory.Integral.Average
@@ -74,8 +75,10 @@ depend on the machine-level complexity of `MaxCut`.
 The theorem analyzes the rounding of a given vector solution under an exact Gaussian. Solving the
 semidefinite program to precision `ε` in polynomial time, a finite-precision or `ProbComp`
 realization of the Gaussian sample, the tightness of the analysis (the integrality gap of Feige and
-Schechtman, Karloff's examples), the extensions to MAX-2SAT and MAX-DICUT, and derandomization are
-not formalized.
+Schechtman, Karloff's examples), and derandomization are not formalized; see
+`CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson` and
+`CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson` for the MAX-2SAT and MAX-DICUT
+extensions.
 
 ## Main definitions
 
@@ -99,6 +102,11 @@ not formalized.
 * `exists_forall_goemansWilliamsonConstant_mul_sub_le`: some hyperplane cut achieves the
   guarantee.
 * `exists_isMaxOn_sdpValue`: the relaxation has an optimal solution.
+* `measurable_hyperplaneSide`, `measurableSet_hyperplaneSide_ne`, `measurableSet_hyperplaneSide_eq`,
+  `integrable_ite_const`, `integral_hyperplaneSide_ne`, `integral_hyperplaneSide_eq`,
+  `goemansWilliamsonConstant_mul_one_add_le_one_sub_arccos`: measurability, indicator
+  integrability, separation/same-side Gaussian integrals, and same-side Lemma 3.4 bound reused
+  by the §7 extensions.
 
 ## References
 
@@ -200,11 +208,40 @@ private theorem cutValue_hyperplaneSide_eq_sum_indicator (ends : ι → V × V) 
 
 variable [MeasurableSpace F] [BorelSpace F]
 
+/-- The hyperplane side `hyperplaneSide v r i` is a measurable function of `r`. -/
+theorem measurable_hyperplaneSide (v : V → F) (i : V) :
+    Measurable (fun r : F => hyperplaneSide v r i) := by
+  have hs : MeasurableSet {r : F | 0 ≤ ⟪v i, r⟫} := measurableSet_le measurable_const (by fun_prop)
+  have heq : (fun r : F => hyperplaneSide v r i) =
+      fun r : F => if 0 ≤ ⟪v i, r⟫ then true else false := by
+    ext r
+    simp [hyperplaneSide]
+  rw [heq]
+  exact Measurable.ite hs measurable_const measurable_const
+
 /-- The event that the hyperplane orthogonal to `r` separates two vertices is measurable. -/
 theorem measurableSet_hyperplaneSide_ne (v : V → F) (i j : V) :
     MeasurableSet {r : F | hyperplaneSide v r i ≠ hyperplaneSide v r j} := by
   simp only [hyperplaneSide_ne_iff]
   exact measurableSet_setOf_mem_uIoc (by fun_prop) (by fun_prop) 0
+
+/-- The event that the hyperplane orthogonal to `r` puts two vertices on the same side is
+measurable. -/
+theorem measurableSet_hyperplaneSide_eq (v : V → F) (i j : V) :
+    MeasurableSet {r : F | hyperplaneSide v r i = hyperplaneSide v r j} := by
+  simpa only [ne_eq, Set.compl_ofPred, not_not] using (measurableSet_hyperplaneSide_ne v i j).compl
+
+omit [Fintype ι] [NormedAddCommGroup F] [InnerProductSpace ℝ F] [BorelSpace F] in
+/-- An `if-then-else` indicator with constant value `c` on a measurable predicate is integrable
+under any finite measure. -/
+theorem integrable_ite_const (μ : Measure F) [IsFiniteMeasure μ]
+    {p : F → Prop} [DecidablePred p] (hp : MeasurableSet {r | p r}) (c : ℝ) :
+    Integrable (fun r => if p r then c else 0) μ := by
+  have heq : (fun r : F => if p r then c else 0) = {r | p r}.indicator (fun _ => c) := by
+    ext r
+    simp only [Set.indicator_apply, Set.mem_ofPred_eq]
+  rw [heq]
+  exact (integrable_const c).indicator hp
 
 /-- The weight of the rounded cut is integrable. -/
 theorem integrable_cutValue_hyperplaneSide (ends : ι → V × V) (w : ι → ℝ) (v : V → F)
@@ -231,6 +268,46 @@ theorem integral_cutValue_hyperplaneSide (ends : ι → V × V) (w : ι → ℝ)
   rw [integral_indicator_const _ (measurableSet_hyperplaneSide_ne v _ _), smul_eq_mul, mul_comm]
   simp only [hyperplaneSide_ne_iff]
   rw [measureReal_stdGaussian_zero_mem_uIoc_eq_arccos (hv _) (hv _)]
+
+/-- Probability that two unit vectors fall on opposite sides of a standard Gaussian hyperplane. -/
+theorem integral_hyperplaneSide_ne {v : V → F} (hv : ∀ k, ‖v k‖ = 1) (i j : V) :
+    ∫ r : F, (if hyperplaneSide v r i ≠ hyperplaneSide v r j then (1 : ℝ) else 0) ∂stdGaussian F =
+      arccos ⟪v i, v j⟫ / π := by
+  have heq : (fun r : F =>
+      if hyperplaneSide v r i ≠ hyperplaneSide v r j then (1 : ℝ) else 0) =
+      {r : F | hyperplaneSide v r i ≠ hyperplaneSide v r j}.indicator (fun _ => 1) := by
+    ext r
+    simp [Set.indicator_apply]
+  rw [heq, integral_indicator_const _ (measurableSet_hyperplaneSide_ne v i j), smul_eq_mul, mul_one]
+  simp only [hyperplaneSide_ne_iff]
+  exact measureReal_stdGaussian_zero_mem_uIoc_eq_arccos (hv i) (hv j)
+
+/-- Probability that two unit vectors fall on the same side of a standard Gaussian hyperplane. -/
+theorem integral_hyperplaneSide_eq {v : V → F} (hv : ∀ k, ‖v k‖ = 1) (i j : V) :
+    ∫ r : F, (if hyperplaneSide v r i = hyperplaneSide v r j then (1 : ℝ) else 0) ∂stdGaussian F =
+      1 - arccos ⟪v i, v j⟫ / π := by
+  have hcomp : (fun r : F =>
+      if hyperplaneSide v r i = hyperplaneSide v r j then (1 : ℝ) else 0) =
+      fun r : F => 1 - if hyperplaneSide v r i ≠ hyperplaneSide v r j then (1 : ℝ) else 0 := by
+    ext r
+    by_cases h : hyperplaneSide v r i = hyperplaneSide v r j <;> simp [h]
+  rw [hcomp,
+    integral_sub (integrable_const 1)
+      (integrable_ite_const (stdGaussian F) (measurableSet_hyperplaneSide_ne v i j) 1),
+    integral_const, probReal_univ, smul_eq_mul, mul_one, integral_hyperplaneSide_ne hv i j]
+
+omit [MeasurableSpace F] [BorelSpace F] [FiniteDimensional ℝ F] in
+/-- Same-side rounding inequality: `α · (1 + ⟪u, w⟫) / 2 ≤ 1 - arccos ⟪u, w⟫ / π` for unit
+vectors `u` and `w` [GoemansWilliamson1995, Lemma 3.4]. -/
+theorem goemansWilliamsonConstant_mul_one_add_le_one_sub_arccos {u w : F}
+    (hu : ‖u‖ = 1) (hw : ‖w‖ = 1) :
+    goemansWilliamsonConstant * ((1 + ⟪u, w⟫) / 2) ≤ 1 - arccos ⟪u, w⟫ / π := by
+  have h := abs_real_inner_le_norm u w
+  rw [hu, hw, mul_one, abs_le] at h
+  have hgw := goemansWilliamsonConstant_mul_le_arccos (y := -⟪u, w⟫) (by linarith) (by linarith)
+  rw [arccos_neg, show (1 - -⟪u, w⟫) / 2 = (1 + ⟪u, w⟫) / 2 by ring, sub_div,
+    div_self pi_ne_zero] at hgw
+  exact hgw
 
 /-- **Goemans–Williamson, Theorem 3.3.** For unit vectors `v` and nonnegative weights, the
 expected weight of the rounded cut is at least `α` times the relaxation's objective at `v`
@@ -296,16 +373,7 @@ assignment of unit vectors maximizes the relaxation's objective. The vertex type
 the objective depends only on the endpoints of the finitely many edges. -/
 theorem exists_isMaxOn_sdpValue [Nontrivial F] (ends : ι → V × V)
     (w : ι → ℝ) : ∃ v : V → F, (∀ i, ‖v i‖ = 1) ∧
-      IsMaxOn (sdpValue ends w) {v' | ∀ i, ‖v' i‖ = 1} v := by
-  have hK : IsCompact {v' : V → F | ∀ i, ‖v' i‖ = 1} := by
-    have := isCompact_univ_pi fun _ : V => isCompact_sphere (0 : F) 1
-    simpa only [Set.pi, mem_univ, mem_sphere_iff_norm, sub_zero, true_imp_iff] using this
-  obtain ⟨u, hu⟩ := (NormedSpace.sphere_nonempty_rclike ℝ (E := F) zero_le_one).some
-  rw [mem_sphere_zero_iff_norm] at hu
-  have hcont : Continuous (sdpValue ends w : (V → F) → ℝ) := by
-    unfold sdpValue
-    fun_prop
-  obtain ⟨v, hv, hmax⟩ := hK.exists_isMaxOn ⟨fun _ => u, fun _ => hu⟩ hcont.continuousOn
-  exact ⟨v, hv, hmax⟩
+      IsMaxOn (sdpValue ends w) {v' | ∀ i, ‖v' i‖ = 1} v :=
+  NormedSpace.exists_isMaxOn_unitSphereFun (by unfold sdpValue; fun_prop)
 
 end Cslib.Algorithms.Lean.MaxCut

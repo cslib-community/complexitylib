@@ -16,7 +16,7 @@ open Cslib Cslib.Crypto Probability ProbComp
 open scoped Matrix ENNReal
 
 private noncomputable def noise (η : ℕ) : PMF (Fin 1 → ZMod 32) :=
-  PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 η
+  PMF.pi fun _ => LWE.noiseLaw 5 η
 
 private noncomputable def secrets : PMF (Fin 1 → Fin 1 → ZMod 32) := PMF.pi fun _ => noise 1
 
@@ -37,9 +37,9 @@ private theorem secrets_bound {s} (hs : s ∈ secrets.support) :
   moduleLWECenteredBinomial_inInfNormBound (by decide) hs
 
 private theorem noise_eq_map (η : ℕ) :
-    noise η = (Homomorphic.GSW.noiseLaw 5 η).map (fun z => ![z]) := by
+    noise η = (LWE.noiseLaw 5 η).map (fun z => ![z]) := by
   have h := congrArg (fun law : PMF (ZMod 32) => law.map (fun z => ![z]))
-    (PMF.pi_map_eval (fun _ : Fin 1 => Homomorphic.GSW.noiseLaw 5 η) 0)
+    (PMF.pi_map_eval (fun _ : Fin 1 => LWE.noiseLaw 5 η) 0)
   rw [PMF.map_comp] at h
   have hid : (fun f : Fin 1 → ZMod 32 => ![f 0]) = id := by
     funext f i
@@ -67,7 +67,7 @@ private theorem noise_one_tail :
 private theorem noise_two_tail :
     (noise 2).toOuterMeasure {e | ¬ GeneralSIS.inInfNormBound 1 e} = (1 / 8 : ℝ≥0∞) := by
   classical
-  rw [noise_eq_map, Homomorphic.GSW.noiseLaw, eval_sampleCenteredBinomial_eq_map]
+  rw [noise_eq_map, LWE.noiseLaw, eval_sampleCenteredBinomial_eq_map]
   simp only [PMF.map_comp, BitString.uniformList, PMF.toOuterMeasure_map_apply]
   rw [PMF.toOuterMeasure_uniformOfFintype]
   have hc : (Finset.univ.filter (fun bits : Fin 4 → Bool =>

@@ -76,21 +76,14 @@ theorem unary_pred : ComputableInDegree (· - 1) encUnary encUnary 1 1 := by
 /-- The unary zero test preserves the original linear cost and output-degree contract. -/
 theorem unary_isZero :
     ComputableInDegree (fun n => decide (n = 0)) encUnary encBool 1 1 := by
-  have hn : ComputableInDegree (fun n => decide (n ≠ 0)) encUnary encBool 1 0 := by
-    refine ⟨⟨fun n => 2 * (encUnary n).length + 3, fun _ => 0,
-      ⟨3, fun _ => by simp only [pow_one]; omega⟩, DegreeBounded.const 0,
-      0, _, inferInstance, Internal.WordPredicates.nonemptyT.toTM, fun n => ?_⟩,
-      ⟨1, fun n => by simp⟩⟩
-    have heq : encBool (decide (n ≠ 0)) = Internal.WordPredicates.nonemptyT.run
-        Internal.WordPredicates.nonemptyT.q₀ (encUnary n) := by
+  have hn : ComputableInDegree (fun n => decide (n ≠ 0)) encUnary encBool 1 0 :=
+    Internal.WordPredicates.computableInDegree_of_nonemptyT fun n => by
       cases n with
       | zero => rfl
       | succ n =>
         change [true] = [true] ++ Internal.WordPredicates.nonemptyT.run true
           (List.replicate n true)
         rw [Internal.WordPredicates.nonemptyT_run_true, List.append_nil]
-    simpa only [heq] using
-      Internal.WordPredicates.nonemptyT.computesInTimeAndSpace_toTM (encUnary n)
   have hnot := (of_finite (encIn := encBool) (encMid := encBool) Bool.not).comp hn
   have hz : ComputableInDegree (fun n => decide (n = 0)) encUnary encBool 1 0 := by
     convert hnot using 1 <;> simp [Function.comp_def]

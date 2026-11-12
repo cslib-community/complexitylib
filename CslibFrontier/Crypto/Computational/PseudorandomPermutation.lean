@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 import CslibFrontier.Languages.Probabilistic.RandomPermutation
@@ -502,7 +503,7 @@ private theorem eval_interpret_liftForwardDistinguisher (blockLen : ℕ → ℕ)
   rw [liftForwardDistinguisher, liftForward_handler_eq, OracleComp.run_interpret_lift,
     OracleComp.interpret_map, OracleComp.interpret_map, Functor.map_map]
   simp only [id_map', OracleComp.interpret_interpret]
-  congr 1; funext q; rcases q with k | request
+  congr 1 with q : 1; rcases q with k | request
   · simp [OracleComp.sumHandler, ProbOracleComp.sample, ProbComp.unifFin]
   · simp [OracleComp.sumHandler, PMF.monad_map_eq_map]
 
@@ -616,22 +617,10 @@ theorem indistinguishable_prpIdealGame_randomFunctionIdealGame {blockLen : ℕ �
       (fun adversary n => ProbComp.eval (prpIdealGame blockLen adversary n))
       (fun adversary n => ProbComp.eval (randomFunctionIdealGame blockLen adversary n))
       (IsOraclePPT encBool) := by
-  intro adversary hadversary
-  obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
-  let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
-  have hQ : PolynomiallyBounded fun n => (Q n).choose 2 := by
-    refine PolynomiallyBounded.mono_of_le (g := fun n => Q n ^ 2)
-      (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2)
-      fun n => ?_
-    change (Q n).choose 2 ≤ Q n ^ 2
-    rw [Nat.choose_two_right, sq]
-    exact (Nat.div_le_self _ 2).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _))
-  refine negligible_of_le (hneg.polynomiallyBounded_mul hQ) fun n => ?_
-  rw [← NNReal.coe_le_coe]
-  have h := advantage_prpIdealGame_randomFunctionIdealGame_le blockLen adversary n (Q n)
-    (by simpa [Q] using (hbounds n []).1)
-  simpa only [NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_inv, NNReal.coe_pow,
-    NNReal.coe_ofNat, mul_comm] using h
+  refine Game.Indistinguishable.of_birthday_queryBounded_real 1 hneg fun n Q adversary hQ => ?_
+  simpa only [Nat.cast_one, one_mul, NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_inv,
+    NNReal.coe_pow, NNReal.coe_ofNat] using
+    advantage_prpIdealGame_randomFunctionIdealGame_le blockLen adversary n Q hQ
 
 /-- **A length-preserving pseudorandom permutation is a pseudorandom function**
 ([BonehShoup2023], Corollary 4.5). -/

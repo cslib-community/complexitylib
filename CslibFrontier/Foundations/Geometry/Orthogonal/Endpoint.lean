@@ -33,47 +33,18 @@ theorem infix_head_pair_getD {r : Route} (hn : r.Nodup) {a b : Point}
     (hp : [a, b] <:+: r) (hh : r.head? = some a) (d : Point) :
     2 ≤ r.length ∧ r.getD 1 d = b := by
   obtain ⟨tail, rfl⟩ := List.head?_eq_some_iff.1 hh
-  obtain ⟨start, hlen, hitems⟩ := List.infix_iff_getElem?.1 hp
-  have hs : start < (a :: tail).length := by
-    simp only [List.length_cons, List.length_nil] at hlen ⊢
-    omega
-  have ha : (a :: tail)[start] = a := by
-    have h := hitems 0 (by simp)
-    change (a :: tail)[0 + start]? = some a at h
-    simpa only [Nat.zero_add, List.getElem?_eq_getElem hs, Option.some.injEq] using h
-  have hz : start = 0 := hn.getElem_inj_iff.1 (ha.trans (show (a :: tail)[0] = a from rfl).symm)
-  subst start
-  refine ⟨by simpa using hlen, ?_⟩
-  have hb := hitems 1 (by simp)
-  change (a :: tail)[1 + 0]? = some b at hb
-  simp only [List.getD_eq_getElem?_getD, hb, Option.getD_some]
+  obtain ⟨t, ht⟩ := hn.prefix_of_head_mem_of_infix hp (hne := List.cons_ne_nil _ _) (by simp)
+  rw [← ht]
+  simp
 
 /-- A consecutive pair ending at the unique final point determines the penultimate index. -/
 theorem infix_last_pair_getD {r : Route} (hn : r.Nodup) {a b : Point}
     (hp : [a, b] <:+: r) (hh : r.getLast? = some b) (d : Point) :
     2 ≤ r.length ∧ r.getD (r.length - 2) d = a := by
   obtain ⟨initial, rfl⟩ := List.getLast?_eq_some_iff.1 hh
-  obtain ⟨start, hlen, hitems⟩ := List.infix_iff_getElem?.1 hp
-  have hs : start + 1 < (initial ++ [b]).length := by
-    simp only [List.length_cons, List.length_nil] at hlen
-    omega
-  have hb : (initial ++ [b])[start + 1] = b := by
-    have h := hitems 1 (by simp)
-    change (initial ++ [b])[1 + start]? = some b at h
-    simpa only [Nat.add_comm 1 start, List.getElem?_eq_getElem hs, Option.some.injEq] using h
-  have hl : initial.length < (initial ++ [b]).length := by simp
-  have he : (initial ++ [b])[initial.length] = b := by simp
-  have hz : start + 1 = initial.length := hn.getElem_inj_iff.1 (hb.trans he.symm)
-  have hk : (initial ++ [b]).length - 2 = start := by
-    simp only [List.length_append, List.length_cons, List.length_nil] at *
-    omega
-  refine ⟨?_, ?_⟩
-  · simp only [List.length_cons, List.length_nil] at hlen
-    omega
-  · have ha := hitems 0 (by simp)
-    change (initial ++ [b])[0 + start]? = some a at ha
-    rw [Nat.zero_add] at ha
-    rw [hk, List.getD_eq_getElem?_getD, ha, Option.getD_some]
+  obtain ⟨t, ht⟩ := hn.suffix_of_getLast_mem_of_infix hp (hne := by simp) (by simp)
+  rw [← ht]
+  simp [List.getD_eq_getElem?_getD]
 
 namespace Layout
 

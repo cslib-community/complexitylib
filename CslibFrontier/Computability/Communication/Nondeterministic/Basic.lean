@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Communication.FoolingSet
 public import CslibFrontier.Computability.Communication.Rectangle
 public import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.Data.ENat.IInf
 
 /-!
 # Nondeterministic communication complexity
@@ -197,12 +198,8 @@ theorem le_ecomplexity_iff {c : ℕ∞} :
 rectangles. -/
 theorem ecomplexity_le_iff : ecomplexity z R A B ≤ k ↔ HasCover z R A B k := by
   refine ⟨fun h => ?_, HasCover.ecomplexity_le⟩
-  have : Nonempty {k : ℕ // HasCover z R A B k} := by
-    rw [← ENat.iInf_natCast_ne_top]
-    exact ne_top_of_le_ne_top (ENat.natCast_ne_top k) h
-  obtain ⟨⟨j, hj⟩, hmin⟩ := ENat.exists_eq_iInf
-    (fun k : {k : ℕ // HasCover z R A B k} => (k.1 : ℕ∞))
-  exact hj.mono_bits (by exact_mod_cast (hmin.trans_le h : (j : ℕ∞) ≤ k))
+  obtain ⟨⟨j, hj⟩, hjk⟩ := ENat.iInf_natCast_le_natCast_iff.mp h
+  exact hj.mono_bits hjk
 
 /-- `ecomplexity_le_iff` for functions. -/
 theorem ecomplexityFun_le_iff :

@@ -41,7 +41,7 @@ decision tree complexity counts the maximum number of queried coordinates along 
 * [N. Nisan, M. Szegedy, *On the degree of Boolean functions as real polynomials*][NisanSzegedy1994]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

@@ -27,7 +27,7 @@ No decryption-circuit, bootstrappability or circular-security premise is hidden 
 * [Gentry, Sahai and Waters, Sections 3.1–3.2][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW.DepthParameters
 
@@ -36,9 +36,9 @@ open Parameters (dimension noise)
 /-- The actual serialized algorithms are IND-CPA under decision LWE for this exact new family.
 The LWE premise for the earlier, narrower modulus family is not used. -/
 theorem indCPA
-    (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k))) :
+    (hLWE : DecisionLWE dimension samples width (fun k => LWE.noiseLaw (width k) (noise k))) :
     Encryption.INDCPA
-      (fun k => keyGenSerialized (dimension k) (samples k) (width k) (noise k))
+      (fun k => LWE.keyGenSerialized (dimension k) (samples k) (width k) (noise k))
       (fun k => encryptSerialized (dimension k) (samples k) (width k)) :=
   indCPA_of_decisionLWE Parameters.computableInPolyTime_dimension
     DepthParameters.computableInPolyTime_samples DepthParameters.computableInPolyTime_width

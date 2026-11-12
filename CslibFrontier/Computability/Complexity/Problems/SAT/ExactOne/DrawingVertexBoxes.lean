@@ -39,7 +39,8 @@ open Cslib.Logic.PL Orthogonal
 def InPositiveLocalBox (p : Point) : Prop :=
   0 ≤ p.1 ∧ p.1 ≤ 540000 ∧ 0 ≤ p.2 ∧ p.2 ≤ 540000
 
-/-- Affine placement sends every point of the inner square strictly inside the collar box. -/
+/-- Affine placement sends every point of the side-180000 template square into the closed collar
+box; `collarPoint_in_innerBox` gives the stronger inner-square bounds. -/
 theorem collarPoint_in_positiveBox (reflected : Bool) {p : Point}
     (hp : 0 ≤ p.1 ∧ p.1 ≤ 180000 ∧ 0 ≤ p.2 ∧ p.2 ≤ 180000) :
     InPositiveLocalBox (collarPoint reflected p) := by
@@ -111,8 +112,8 @@ theorem positiveAuxiliaryPositions_point_injective {φ : CNF ℕ} {d : Graph.Ort
     (hw : (w, q) ∈ positiveAuxiliaryPositions φ d) (he : p = q) : v = w := by
   obtain ⟨c, i, hci, a, ha, hauxa, hva, hpa⟩ := positiveAuxiliaryPositions_origin φ d hv
   obtain ⟨c', j, hcj, b, hb, hauxb, hwb, hqb⟩ := positiveAuxiliaryPositions_origin φ d hw
-  obtain ⟨hi, hci'⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hci)
-  obtain ⟨hj, hcj'⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hcj)
+  obtain ⟨hi, hci'⟩ := List.mem_zipIdx' hci
+  obtain ⟨hj, hcj'⟩ := List.mem_zipIdx' hcj
   have hplaced := hpa.symm.trans (he.trans hqb)
   have hcenter := positiveBox_owner_injective (clauseGeometry_auxiliary_bounds φ d i c ha hauxa)
     (clauseGeometry_auxiliary_bounds φ d j c' hb hauxb) hplaced
@@ -120,7 +121,7 @@ theorem positiveAuxiliaryPositions_point_injective {φ : CNF ℕ} {d : Graph.Ort
     (sourceClause_declared φ hj) hcenter
   have hij : i = j := Nat.add_left_cancel hlabels
   subst j
-  have hcc : c = c' := hci'.symm.trans hcj'
+  have hcc : c = c' := hci'.trans hcj'.symm
   subst c'
   have hlocal := add_left_cancel hplaced
   have hab := clauseGeometry_auxiliary_injective φ d i c ha hb hauxa hauxb hlocal
@@ -138,7 +139,7 @@ theorem positiveSourceAuxiliary_positions_disjoint {φ : CNF ℕ} {d : Graph.Ort
       Graph.drawingPosition (SAT.incidenceGraph φ) d (φ.distinctVars.idxOf n) +
         positiveTranslation := (congrArg Prod.snd hv).symm
   have hnm : n ∈ φ.vars := CNF.mem_distinctVars.mp hn
-  obtain ⟨hi, _⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp hci)
+  have hi := (List.mem_zipIdx' hci).1
   intro he
   have hbox : InPositiveLocalBox positiveTranslation := by
     norm_num [InPositiveLocalBox, positiveTranslation, positiveRadius]

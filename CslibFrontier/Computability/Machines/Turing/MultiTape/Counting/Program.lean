@@ -111,8 +111,7 @@ theorem interpret_runProgram_succ (machine : MultiTapeCTM k Symbol State)
   simp only [runProgram, MultiTapeMachine.runConfigFrom, ht, h, ha, OracleComp.interpret_map,
     OracleComp.interpret_bind, interpret_chooseOccurrence, actions, List.flatMap_map, map_bind]
   change List.flatMap _ _ = List.flatMap _ _
-  congr 1
-  funext action
+  congr 1 with action : 1
   cases action with
   | step action symbol move =>
     dsimp only

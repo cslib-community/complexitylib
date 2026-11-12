@@ -144,6 +144,23 @@ private theorem sum_norm_sub_sq_symm (f : α → ℂ) (σ : Equiv.Perm α) :
   rw [← Equiv.sum_comp σ]
   simp [norm_sub_rev]
 
+/-- The squared changes of `f` along `σ ^ 4` and its inverse are at most `16` times that along
+`σ`. -/
+private theorem sum_norm_sub_sq_pow_four_le (f : α → ℂ) (σ : Equiv.Perm α) :
+    ∑ v, ‖f ((σ ^ 4) v) - f v‖ ^ 2 ≤ 16 * ∑ v, ‖f (σ v) - f v‖ ^ 2 ∧
+      ∑ v, ‖f ((σ ^ 4).symm v) - f v‖ ^ 2 ≤ 16 * ∑ v, ‖f (σ v) - f v‖ ^ 2 := by
+  have hle := sum_norm_sub_sq_pow_le f σ 4
+  rw [show ((4 : ℕ) : ℝ) ^ 2 = 16 by norm_num] at hle
+  exact ⟨hle, (sum_norm_sub_sq_symm f _).trans_le hle⟩
+
+omit [Fintype α] in
+/-- **Covering**: a set covered by two sets carries at most their masses together. -/
+private theorem sum_norm_sq_le_add_of_subset [DecidableEq α] (F : α → ℂ) {s t u : Finset α}
+    (h : s ⊆ t ∪ u) : ∑ z ∈ s, ‖F z‖ ^ 2 ≤ ∑ z ∈ t, ‖F z‖ ^ 2 + ∑ z ∈ u, ‖F z‖ ^ 2 := by
+  rw [← sum_union_inter]
+  refine (sum_le_sum_of_subset_of_nonneg h fun _ _ _ ↦ by positivity).trans ?_
+  exact le_add_of_nonneg_right (sum_nonneg fun _ _ ↦ by positivity)
+
 /-- **Mass transfer**: moving a set of points by a permutation `g` changes the mass `‖F z‖ ^ 2`
 on it by at most `8` times the squared change of `F` along `g` plus `1 / 8` of the total mass. -/
 private theorem sum_norm_sq_le_sum_comp (F : α → ℂ) (g : Equiv.Perm α) (E : Finset α) :
@@ -209,8 +226,7 @@ private theorem valMinAbs_add_mul {a b : ZMod n} {k : ℤ} (hk : |k| ≤ 4)
   have hn : (0 : ℤ) < n := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne n)
   have h₁ : |a.valMinAbs + k * b.valMinAbs| ≤ |a.valMinAbs| + |k| * |b.valMinAbs| :=
     (abs_add_le _ _).trans_eq (by rw [abs_mul])
-  have h₂ : |k| * |b.valMinAbs| ≤ 4 * |b.valMinAbs| :=
-    mul_le_mul_of_nonneg_right hk (abs_nonneg _)
+  have h₂ : |k| * |b.valMinAbs| ≤ 4 * |b.valMinAbs| := by gcongr
   have h₃ := neg_abs_le (a.valMinAbs + k * b.valMinAbs)
   have h₄ := le_abs_self (a.valMinAbs + k * b.valMinAbs)
   constructor <;> linarith
@@ -299,6 +315,43 @@ private def IsSmall (ξ : ZMod n × ZMod n) : Prop :=
 
 private instance : DecidablePred (IsSmall (n := n)) := fun _ ↦ instDecidableAnd
 
+/-- **One round of ping-pong**: let the shears `g k` add `k` times the coordinate `v` of a frequency
+to its coordinate `u` and fix `v`. If `E` consists of small frequencies with `|u| ≤ |v|` and
+`v ≠ 0`, the shears by `4` and `-4` move `E` into two disjoint sets of frequencies with `|v| < |u|`,
+which therefore carry at least twice the mass of `E`, up to the changes of `F` along the two shears
+and a quarter of the total mass. -/
+private theorem two_mul_sum_le_pingPong (F : ZMod n × ZMod n → ℂ)
+    (u v : ZMod n × ZMod n → ZMod n) (g : ZMod n → Equiv.Perm (ZMod n × ZMod n))
+    (hu : ∀ k ξ, u (g k ξ) = u ξ + k * v ξ) (hv : ∀ k ξ, v (g k ξ) = v ξ)
+    (E : Finset (ZMod n × ZMod n))
+    (hE : ∀ ξ ∈ E, (11 * |(u ξ).valMinAbs| ≤ n ∧ 11 * |(v ξ).valMinAbs| ≤ n) ∧
+      |(u ξ).valMinAbs| ≤ |(v ξ).valMinAbs| ∧ (v ξ).valMinAbs ≠ 0) :
+    2 * ∑ ξ ∈ E, ‖F ξ‖ ^ 2 ≤
+      ∑ ξ ∈ univ.filter (fun ξ ↦ |(v ξ).valMinAbs| < |(u ξ).valMinAbs|), ‖F ξ‖ ^ 2 +
+        8 * (∑ ξ, ‖F (g 4 ξ) - F ξ‖ ^ 2 + ∑ ξ, ‖F (g (-4) ξ) - F ξ‖ ^ 2) +
+        (∑ ξ, ‖F ξ‖ ^ 2) / 4 := by
+  -- On `E`, the shears by `±4` act as integer shears, and they make `|u|` exceed `|v|`.
+  have himage (k : ℤ) (hk : |k| = 4) (ξ : ZMod n × ZMod n) (hξ : ξ ∈ E) :
+      (u (g k ξ)).valMinAbs = (u ξ).valMinAbs + k * (v ξ).valMinAbs ∧
+        |(v (g k ξ)).valMinAbs| < |(u (g k ξ)).valMinAbs| := by
+    obtain ⟨⟨hsu, hsv⟩, hle, hq⟩ := hE ξ hξ
+    rw [hu, hv, valMinAbs_add_mul hk.le hsu hsv]
+    exact ⟨rfl, abs_lt_abs_add_mul hk hle hq⟩
+  have hT := sum_comp_add_sum_comp_le F (g 4) (g (-4)) E
+    (univ.filter fun ξ ↦ |(v ξ).valMinAbs| < |(u ξ).valMinAbs|)
+    (fun ξ hξ ↦ by simpa using (himage 4 (by norm_num) ξ hξ).2)
+    (fun ξ hξ ↦ by simpa using (himage (-4) (by norm_num) ξ hξ).2) fun ξ hξ ξ' hξ' h ↦ by
+      have h₁ := (himage 4 (by norm_num) ξ hξ).1
+      have h₂ := (himage (-4) (by norm_num) ξ' hξ').1
+      simp only [Int.cast_ofNat, Int.cast_neg] at h₁ h₂
+      have hv' : v ξ = v ξ' := by rw [← hv 4 ξ, ← hv (-4) ξ', h]
+      rw [h, h₂, ← hv'] at h₁
+      exact add_four_mul_ne (hE ξ hξ).2.1 (hv' ▸ (hE ξ' hξ').2.1) (hE ξ hξ).2.2 h₁.symm
+  -- Mass transfer along the two shears.
+  have t₁ := sum_norm_sq_le_sum_comp F (g 4) E
+  have t₂ := sum_norm_sq_le_sum_comp F (g (-4)) E
+  linarith
+
 /-- **The ping-pong inequality** for a function on the frequencies vanishing at `0`: its mass is
 at most `6` times its mass outside the small box plus `16` times its squared changes along the
 four dual shears by `±4`. -/
@@ -316,163 +369,47 @@ private theorem sum_norm_sq_le_pingPong (F : ZMod n × ZMod n → ℂ) (h0 : F 0
       s = univ.filter (fun ξ ↦ IsSmall ξ ∧ |ξ.1.valMinAbs| ≤ |ξ.2.valMinAbs| ∧ ξ ≠ 0) :=
     ⟨_, rfl⟩
   rw [← hOut]
-  have hite (p : Prop) [Decidable p] (ξ : ZMod n × ZMod n) :
-      0 ≤ if p then ‖F ξ‖ ^ 2 else 0 := by
-    split_ifs <;> positivity
   -- The two classes and the large frequencies cover everything but `0`, where `F` vanishes.
   have hpart : ∑ ξ, ‖F ξ‖ ^ 2 ≤
       ∑ ξ ∈ Out, ‖F ξ‖ ^ 2 + ∑ ξ ∈ X, ‖F ξ‖ ^ 2 + ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 := by
-    rw [hOut, hX, hY, sum_filter, sum_filter, sum_filter, ← sum_add_distrib, ← sum_add_distrib]
-    refine sum_le_sum fun ξ _ ↦ ?_
-    by_cases h : ξ = 0
-    · subst h
-      simp [h0]
-    have h₁ := hite (¬ IsSmall ξ) ξ
-    have h₂ := hite (IsSmall ξ ∧ |ξ.2.valMinAbs| < |ξ.1.valMinAbs|) ξ
-    have h₃ := hite (IsSmall ξ ∧ |ξ.1.valMinAbs| ≤ |ξ.2.valMinAbs| ∧ ξ ≠ 0) ξ
-    by_cases hs : IsSmall ξ
-    · by_cases hlt : |ξ.2.valMinAbs| < |ξ.1.valMinAbs|
-      · rw [ite_eq_left (show IsSmall ξ ∧ |ξ.2.valMinAbs| < |ξ.1.valMinAbs| from ⟨hs, hlt⟩)]
-        linarith
-      · rw [ite_eq_left (show IsSmall ξ ∧ |ξ.1.valMinAbs| ≤ |ξ.2.valMinAbs| ∧ ξ ≠ 0 from
-          ⟨hs, not_lt.1 hlt, h⟩)]
-        linarith
-    · rw [ite_eq_left hs]
-      linarith
+    have hcov : univ.erase 0 ⊆ Out ∪ X ∪ Y := fun ξ hξ ↦ by
+      simp only [hOut, hX, hY, mem_union, mem_filter, mem_univ, true_and]
+      by_cases hs : IsSmall ξ
+      · rcases lt_or_ge |ξ.2.valMinAbs| |ξ.1.valMinAbs| with hlt | hle
+        exacts [Or.inl (Or.inr ⟨hs, hlt⟩), Or.inr ⟨hs, hle, ne_of_mem_erase hξ⟩]
+      · exact Or.inl (Or.inl hs)
+    rw [← sum_erase (f := fun ξ ↦ ‖F ξ‖ ^ 2) univ (a := 0) (by simp [h0])]
+    linarith [sum_norm_sq_le_add_of_subset F hcov,
+      sum_norm_sq_le_add_of_subset F (subset_refl (Out ∪ X))]
   -- A frequency with a larger second coordinate is small and in `Y`, or large.
   have hY' : ∑ ξ ∈ univ.filter (fun ξ : ZMod n × ZMod n ↦ |ξ.1.valMinAbs| < |ξ.2.valMinAbs|),
       ‖F ξ‖ ^ 2 ≤ ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 + ∑ ξ ∈ Out, ‖F ξ‖ ^ 2 := by
-    rw [hOut, hY, sum_filter, sum_filter, sum_filter, ← sum_add_distrib]
-    refine sum_le_sum fun ξ _ ↦ ?_
-    have h₁ := hite (¬ IsSmall ξ) ξ
-    have h₃ := hite (IsSmall ξ ∧ |ξ.1.valMinAbs| ≤ |ξ.2.valMinAbs| ∧ ξ ≠ 0) ξ
-    by_cases hlt : |ξ.1.valMinAbs| < |ξ.2.valMinAbs|
-    · have hne : ξ ≠ 0 := by
-        rintro rfl
-        simp at hlt
-      rw [ite_eq_left hlt]
-      by_cases hs : IsSmall ξ
-      · rw [ite_eq_left (show IsSmall ξ ∧ |ξ.1.valMinAbs| ≤ |ξ.2.valMinAbs| ∧ ξ ≠ 0 from
-          ⟨hs, hlt.le, hne⟩)]
-        linarith
-      · rw [ite_eq_left hs]
-        linarith
-    · rw [ite_eq_right hlt]
-      linarith
+    refine sum_norm_sq_le_add_of_subset F fun ξ hξ ↦ ?_
+    simp only [hOut, hY, mem_union, mem_filter, mem_univ, true_and] at hξ ⊢
+    by_cases hs : IsSmall ξ
+    · refine Or.inl ⟨hs, hξ.le, ?_⟩
+      rintro rfl
+      simp at hξ
+    · exact Or.inr hs
   have hX' : ∑ ξ ∈ univ.filter (fun ξ : ZMod n × ZMod n ↦ |ξ.2.valMinAbs| < |ξ.1.valMinAbs|),
       ‖F ξ‖ ^ 2 ≤ ∑ ξ ∈ X, ‖F ξ‖ ^ 2 + ∑ ξ ∈ Out, ‖F ξ‖ ^ 2 := by
-    rw [hOut, hX, sum_filter, sum_filter, sum_filter, ← sum_add_distrib]
-    refine sum_le_sum fun ξ _ ↦ ?_
-    have h₁ := hite (¬ IsSmall ξ) ξ
-    have h₂ := hite (IsSmall ξ ∧ |ξ.2.valMinAbs| < |ξ.1.valMinAbs|) ξ
-    by_cases hlt : |ξ.2.valMinAbs| < |ξ.1.valMinAbs|
-    · rw [ite_eq_left hlt]
-      by_cases hs : IsSmall ξ
-      · rw [ite_eq_left (show IsSmall ξ ∧ |ξ.2.valMinAbs| < |ξ.1.valMinAbs| from ⟨hs, hlt⟩)]
-        linarith
-      · rw [ite_eq_left hs]
-        linarith
-    · rw [ite_eq_right hlt]
-      linarith
-  -- The dual shears `(a, b) ↦ (a, b ± 4 a)` move `X` into two disjoint sets of `Y'`.
-  have hXY : ∑ ξ ∈ X, ‖F (shearSnd (4 : ZMod n) ξ)‖ ^ 2 +
-      ∑ ξ ∈ X, ‖F (shearSnd (-4 : ZMod n) ξ)‖ ^ 2 ≤
-      ∑ ξ ∈ univ.filter (fun ξ : ZMod n × ZMod n ↦ |ξ.1.valMinAbs| < |ξ.2.valMinAbs|),
-        ‖F ξ‖ ^ 2 := by
-    have himage (k : ℤ) (hk : |k| = 4) (ξ : ZMod n × ZMod n) (hξ : ξ ∈ X) :
-        (shearSnd (k : ZMod n) ξ).2.valMinAbs = ξ.2.valMinAbs + k * ξ.1.valMinAbs ∧
-          |ξ.1.valMinAbs| < |(shearSnd (k : ZMod n) ξ).2.valMinAbs| := by
+    refine sum_norm_sq_le_add_of_subset F fun ξ hξ ↦ ?_
+    simp only [hOut, hX, mem_union, mem_filter, mem_univ, true_and] at hξ ⊢
+    by_cases hs : IsSmall ξ
+    exacts [Or.inl ⟨hs, hξ⟩, Or.inr hs]
+  -- The dual shears `(a, b) ↦ (a, b ± 4 a)` move `X` into two disjoint sets with `|a| < |b|`.
+  have s₁ := two_mul_sum_le_pingPong F Prod.snd Prod.fst shearSnd (fun _ _ ↦ rfl)
+    (fun _ _ ↦ rfl) X fun ξ hξ ↦ by
       simp only [hX, mem_filter, mem_univ, true_and] at hξ
-      unfold IsSmall at hξ
-      have h := valMinAbs_add_mul (a := ξ.2) (b := ξ.1) hk.le hξ.1.2 hξ.1.1
-      refine ⟨h, ?_⟩
-      rw [shearSnd_apply, h]
-      refine abs_lt_abs_add_mul hk hξ.2.le fun h0 ↦ ?_
-      rw [h0, abs_zero] at hξ
-      exact (abs_nonneg _).not_gt hξ.2
-    refine sum_comp_add_sum_comp_le F _ _ X _ (fun ξ hξ ↦ ?_) (fun ξ hξ ↦ ?_)
-      fun ξ hξ ξ' hξ' h ↦ ?_
-    · simpa using (himage 4 (by norm_num) ξ hξ).2
-    · simpa using (himage (-4) (by norm_num) ξ hξ).2
-    · have h₁ := (himage 4 (by norm_num) ξ hξ).1
-      have h₂ := (himage (-4) (by norm_num) ξ' hξ').1
-      simp only [Int.cast_ofNat, Int.cast_neg] at h₁ h₂
-      have hfst : ξ.1 = ξ'.1 := by simpa using congrArg Prod.fst h
-      rw [h, h₂, ← hfst] at h₁
-      simp only [hX, mem_filter, mem_univ, true_and] at hξ hξ'
-      refine add_four_mul_ne hξ.2.le (hfst ▸ hξ'.2.le) ?_ h₁.symm
-      intro h0
-      rw [h0, abs_zero] at hξ
-      exact (abs_nonneg _).not_gt hξ.2
-  -- The dual shears `(a, b) ↦ (a ± 4 b, b)` move `Y` into two disjoint sets of `X'`.
-  have hYX : ∑ ξ ∈ Y, ‖F (shearFst (4 : ZMod n) ξ)‖ ^ 2 +
-      ∑ ξ ∈ Y, ‖F (shearFst (-4 : ZMod n) ξ)‖ ^ 2 ≤
-      ∑ ξ ∈ univ.filter (fun ξ : ZMod n × ZMod n ↦ |ξ.2.valMinAbs| < |ξ.1.valMinAbs|),
-        ‖F ξ‖ ^ 2 := by
-    have hq (ξ : ZMod n × ZMod n) (hξ : ξ ∈ Y) : ξ.2.valMinAbs ≠ 0 := by
+      exact ⟨hξ.1.symm, hξ.2.le, abs_pos.1 ((abs_nonneg _).trans_lt hξ.2)⟩
+  -- The dual shears `(a, b) ↦ (a ± 4 b, b)` move `Y` into two disjoint sets with `|b| < |a|`.
+  have s₂ := two_mul_sum_le_pingPong F Prod.fst Prod.snd shearFst (fun _ _ ↦ rfl)
+    (fun _ _ ↦ rfl) Y fun ξ hξ ↦ by
       simp only [hY, mem_filter, mem_univ, true_and] at hξ
-      intro h0
+      refine ⟨hξ.1, hξ.2.1, fun h0 ↦ hξ.2.2 (Prod.ext ?_ ((ZMod.valMinAbs_eq_zero _).1 h0))⟩
       rw [h0, abs_zero, abs_nonpos_iff, ZMod.valMinAbs_eq_zero] at hξ
-      rw [ZMod.valMinAbs_eq_zero] at h0
-      exact hξ.2.2 (Prod.ext hξ.2.1 h0)
-    have himage (k : ℤ) (hk : |k| = 4) (ξ : ZMod n × ZMod n) (hξ : ξ ∈ Y) :
-        (shearFst (k : ZMod n) ξ).1.valMinAbs = ξ.1.valMinAbs + k * ξ.2.valMinAbs ∧
-          |ξ.2.valMinAbs| < |(shearFst (k : ZMod n) ξ).1.valMinAbs| := by
-      have hq := hq ξ hξ
-      simp only [hY, mem_filter, mem_univ, true_and] at hξ
-      unfold IsSmall at hξ
-      have h := valMinAbs_add_mul (a := ξ.1) (b := ξ.2) hk.le hξ.1.1 hξ.1.2
-      refine ⟨h, ?_⟩
-      rw [shearFst_apply, h]
-      exact abs_lt_abs_add_mul hk hξ.2.1 hq
-    refine sum_comp_add_sum_comp_le F _ _ Y _ (fun ξ hξ ↦ ?_) (fun ξ hξ ↦ ?_)
-      fun ξ hξ ξ' hξ' h ↦ ?_
-    · simpa using (himage 4 (by norm_num) ξ hξ).2
-    · simpa using (himage (-4) (by norm_num) ξ hξ).2
-    · have h₁ := (himage 4 (by norm_num) ξ hξ).1
-      have h₂ := (himage (-4) (by norm_num) ξ' hξ').1
-      simp only [Int.cast_ofNat, Int.cast_neg] at h₁ h₂
-      have hsnd : ξ.2 = ξ'.2 := by simpa using congrArg Prod.snd h
-      rw [h, h₂, ← hsnd] at h₁
-      have hq := hq ξ hξ
-      simp only [hY, mem_filter, mem_univ, true_and] at hξ hξ'
-      exact add_four_mul_ne hξ.2.1 (hsnd ▸ hξ'.2.1) hq h₁.symm
-  -- Mass transfer along each of the four dual shears.
-  have t₁ : ∑ ξ ∈ X, ‖F ξ‖ ^ 2 ≤ ∑ ξ ∈ X, ‖F (shearSnd (4 : ZMod n) ξ)‖ ^ 2 +
-      8 * ∑ ξ, ‖F (shearSnd (4 : ZMod n) ξ) - F ξ‖ ^ 2 + (∑ ξ, ‖F ξ‖ ^ 2) / 8 :=
-    sum_norm_sq_le_sum_comp F _ X
-  have t₂ : ∑ ξ ∈ X, ‖F ξ‖ ^ 2 ≤ ∑ ξ ∈ X, ‖F (shearSnd (-4 : ZMod n) ξ)‖ ^ 2 +
-      8 * ∑ ξ, ‖F (shearSnd (-4 : ZMod n) ξ) - F ξ‖ ^ 2 + (∑ ξ, ‖F ξ‖ ^ 2) / 8 :=
-    sum_norm_sq_le_sum_comp F _ X
-  have t₃ : ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 ≤ ∑ ξ ∈ Y, ‖F (shearFst (4 : ZMod n) ξ)‖ ^ 2 +
-      8 * ∑ ξ, ‖F (shearFst (4 : ZMod n) ξ) - F ξ‖ ^ 2 + (∑ ξ, ‖F ξ‖ ^ 2) / 8 :=
-    sum_norm_sq_le_sum_comp F _ Y
-  have t₄ : ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 ≤ ∑ ξ ∈ Y, ‖F (shearFst (-4 : ZMod n) ξ)‖ ^ 2 +
-      8 * ∑ ξ, ‖F (shearFst (-4 : ZMod n) ξ) - F ξ‖ ^ 2 + (∑ ξ, ‖F ξ‖ ^ 2) / 8 :=
-    sum_norm_sq_le_sum_comp F _ Y
-  have s₁ : 2 * ∑ ξ ∈ X, ‖F ξ‖ ^ 2 ≤ (∑ ξ ∈ Y, ‖F ξ‖ ^ 2 + ∑ ξ ∈ Out, ‖F ξ‖ ^ 2) +
-      8 * (∑ ξ, ‖F (shearSnd (4 : ZMod n) ξ) - F ξ‖ ^ 2 +
-        ∑ ξ, ‖F (shearSnd (-4 : ZMod n) ξ) - F ξ‖ ^ 2) + (∑ ξ, ‖F ξ‖ ^ 2) / 4 := by
-    calc 2 * ∑ ξ ∈ X, ‖F ξ‖ ^ 2 = ∑ ξ ∈ X, ‖F ξ‖ ^ 2 + ∑ ξ ∈ X, ‖F ξ‖ ^ 2 := two_mul _
-      _ ≤ _ := add_le_add t₁ t₂
-      _ = (∑ ξ ∈ X, ‖F (shearSnd (4 : ZMod n) ξ)‖ ^ 2 +
-            ∑ ξ ∈ X, ‖F (shearSnd (-4 : ZMod n) ξ)‖ ^ 2) +
-          8 * (∑ ξ, ‖F (shearSnd (4 : ZMod n) ξ) - F ξ‖ ^ 2 +
-            ∑ ξ, ‖F (shearSnd (-4 : ZMod n) ξ) - F ξ‖ ^ 2) + (∑ ξ, ‖F ξ‖ ^ 2) / 4 := by
-          ring
-      _ ≤ _ := add_le_add (add_le_add (hXY.trans hY') le_rfl) le_rfl
-  have s₂ : 2 * ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 ≤ (∑ ξ ∈ X, ‖F ξ‖ ^ 2 + ∑ ξ ∈ Out, ‖F ξ‖ ^ 2) +
-      8 * (∑ ξ, ‖F (shearFst (4 : ZMod n) ξ) - F ξ‖ ^ 2 +
-        ∑ ξ, ‖F (shearFst (-4 : ZMod n) ξ) - F ξ‖ ^ 2) + (∑ ξ, ‖F ξ‖ ^ 2) / 4 := by
-    calc 2 * ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 = ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 + ∑ ξ ∈ Y, ‖F ξ‖ ^ 2 := two_mul _
-      _ ≤ _ := add_le_add t₃ t₄
-      _ = (∑ ξ ∈ Y, ‖F (shearFst (4 : ZMod n) ξ)‖ ^ 2 +
-            ∑ ξ ∈ Y, ‖F (shearFst (-4 : ZMod n) ξ)‖ ^ 2) +
-          8 * (∑ ξ, ‖F (shearFst (4 : ZMod n) ξ) - F ξ‖ ^ 2 +
-            ∑ ξ, ‖F (shearFst (-4 : ZMod n) ξ) - F ξ‖ ^ 2) + (∑ ξ, ‖F ξ‖ ^ 2) / 4 := by
-          ring
-      _ ≤ _ := add_le_add (add_le_add (hYX.trans hX') le_rfl) le_rfl
-  linarith only [s₁, s₂, hpart]
+      exact hξ.2.1
+  linarith only [s₁, s₂, hpart, hX', hY']
 
 end PingPong
 
@@ -481,36 +418,6 @@ end PingPong
 section Gap
 
 variable {n : ℕ} [NeZero n]
-
-/-- The change along the shears by `4` and `-4` is at most `16` times that along the unit
-shear. -/
-private theorem sum_norm_sq_shearFst_four_le (f : ZMod n × ZMod n → ℂ) :
-    ∑ v, ‖f (shearFst (4 : ZMod n) v) - f v‖ ^ 2 ≤ 16 * ∑ v, ‖f (shearFst 1 v) - f v‖ ^ 2 ∧
-      ∑ v, ‖f (shearFst (-4 : ZMod n) v) - f v‖ ^ 2 ≤
-        16 * ∑ v, ‖f (shearFst 1 v) - f v‖ ^ 2 := by
-  have h4 : shearFst (4 : ZMod n) = shearFst 1 ^ 4 := by
-    rw [shearFst_pow]
-    norm_num
-  have hle := sum_norm_sub_sq_pow_le f (shearFst (1 : ZMod n)) 4
-  rw [← h4, show ((4 : ℕ) : ℝ) ^ 2 = 16 by norm_num] at hle
-  refine ⟨hle, ?_⟩
-  rw [← shearFst_symm, sum_norm_sub_sq_symm]
-  exact hle
-
-/-- The change along the shears by `4` and `-4` is at most `16` times that along the unit
-shear. -/
-private theorem sum_norm_sq_shearSnd_four_le (f : ZMod n × ZMod n → ℂ) :
-    ∑ v, ‖f (shearSnd (4 : ZMod n) v) - f v‖ ^ 2 ≤ 16 * ∑ v, ‖f (shearSnd 1 v) - f v‖ ^ 2 ∧
-      ∑ v, ‖f (shearSnd (-4 : ZMod n) v) - f v‖ ^ 2 ≤
-        16 * ∑ v, ‖f (shearSnd 1 v) - f v‖ ^ 2 := by
-  have h4 : shearSnd (4 : ZMod n) = shearSnd 1 ^ 4 := by
-    rw [shearSnd_pow]
-    norm_num
-  have hle := sum_norm_sub_sq_pow_le f (shearSnd (1 : ZMod n)) 4
-  rw [← h4, show ((4 : ℕ) : ℝ) ^ 2 = 16 by norm_num] at hle
-  refine ⟨hle, ?_⟩
-  rw [← shearSnd_symm, sum_norm_sub_sq_symm]
-  exact hle
 
 /-- **The Poincaré inequality for the shear-translation graph**, uniformly in `n`: a complex
 function of sum zero on `ZMod n × ZMod n` has squared norm at most `512` times its total squared
@@ -551,8 +458,10 @@ theorem sum_norm_sq_le_shearTranslation (f : ZMod n × ZMod n → ℂ) (hf : ∑
   have hD₄ := ZMod.sum_norm_sq_dftProd_shearSnd_sub f f (4 : ZMod n)
   rw [neg_neg] at hD₁ hD₃
   rw [← hF] at hD₁ hD₂ hD₃ hD₄
-  have e₁ := sum_norm_sq_shearFst_four_le f
-  have e₂ := sum_norm_sq_shearSnd_four_le f
+  have e₁ := sum_norm_sub_sq_pow_four_le f (shearFst (1 : ZMod n))
+  have e₂ := sum_norm_sub_sq_pow_four_le f (shearSnd (1 : ZMod n))
+  simp only [shearFst_pow, shearSnd_pow, shearFst_symm, shearSnd_symm, Nat.cast_ofNat,
+    mul_one] at e₁ e₂
   have hn : (0 : ℝ) < (n : ℝ) ^ 2 := by
     have : (0 : ℝ) < n := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne n)
     positivity

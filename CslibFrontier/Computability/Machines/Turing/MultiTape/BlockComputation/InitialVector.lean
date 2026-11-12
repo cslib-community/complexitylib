@@ -122,9 +122,7 @@ theorem values_inSpace (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) :
         obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hv
         exact length_chunk_le M e _ _)
     have hj := length_encNat_le_self i
-    have hpaid : i ≤ (encNat a.1).length := by
-      rw [length_encNat_eq_size]
-      exact hi.trans (Nat.min_le_right _ _)
+    have hpaid : i ≤ (encNat a.1).length := by grind [length_encNat_eq_size]
     simp only [encBuildState, encArgs, length_encPair, List.length_ofFn] at *
     nlinarith
   have hrun := ComputableInSpace.iterate

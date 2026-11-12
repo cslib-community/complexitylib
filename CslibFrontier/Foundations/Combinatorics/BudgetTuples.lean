@@ -11,6 +11,7 @@ public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.Order.Floor.Div
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Data.List.Chain
+import CslibFrontier.Foundations.Data.List.FlatMapRange
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.List.GetD
@@ -172,29 +173,6 @@ theorem nodup_budgetTuples (ws : List ℕ) (p : ℕ) : (budgetTuples ws p).Nodup
 
 /-! ### The successor walks the list -/
 
-private theorem getLast?_flatMap_range_succ {α : Type*} (f : ℕ → List α) (k : ℕ)
-    (hk : f k ≠ []) : ((List.range (k + 1)).flatMap f).getLast? = (f k).getLast? := by
-  rw [List.range_succ, List.flatMap_append, List.flatMap_singleton, List.getLast?_append]
-  cases h : (f k).getLast? with
-  | none => exact absurd (List.getLast?_eq_none_iff.mp h) hk
-  | some x => rfl
-
-private theorem isChain_flatMap_range {α : Type*} {R : α → α → Prop} (f : ℕ → List α) (n : ℕ)
-    (hne : ∀ b < n, f b ≠ []) (hblock : ∀ b < n, List.IsChain R (f b))
-    (hjoin : ∀ b, b + 1 < n → ∀ x ∈ (f b).getLast?, ∀ y ∈ (f (b + 1)).head?, R x y) :
-    List.IsChain R ((List.range n).flatMap f) := by
-  induction n with
-  | zero => simp
-  | succ k ih =>
-    rw [List.range_succ, List.flatMap_append, List.flatMap_singleton, List.isChain_append]
-    refine ⟨ih (fun b hb => hne b (by omega)) (fun b hb => hblock b (by omega))
-      (fun b hb => hjoin b (by omega)), hblock k (by omega), ?_⟩
-    intro x hx y hy
-    rcases k with _ | k
-    · simp at hx
-    · rw [getLast?_flatMap_range_succ f k (hne k (by omega))] at hx
-      exact hjoin k (by omega) x hx y hy
-
 /-- **The list starts at the zero tuple**, for positive weights and a positive budget. -/
 theorem head?_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ} (hp : 0 < p) :
     (budgetTuples ws p).head? = some (List.replicate ws.length 0) := by
@@ -227,7 +205,7 @@ theorem budgetNext_getLast? {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) {p : ℕ}
         rw [Ne, List.map_eq_nil_iff, ← List.head?_eq_none_iff,
           head?_budgetTuples (fun w' hw' => hw w' (List.mem_cons_of_mem _ hw')) (by omega)]
         simp
-      rw [hn, getLast?_flatMap_range_succ _ k hne, List.getLast?_map] at hx
+      rw [hn, List.getLast?_flatMap_range k.succ_pos hne, Nat.succ_sub_one, List.getLast?_map] at hx
       obtain ⟨x', hx', rfl⟩ := Option.map_eq_some_iff.mp hx
       have hnot : ¬ w * (k + 1) < p := fun h => by
         have := (lt_ceilDiv_iff hw0).mpr h; omega
@@ -244,7 +222,7 @@ theorem isChain_budgetTuples {ws : List ℕ} (hw : ∀ w ∈ ws, 0 < w) (p : ℕ
     have hw0 : 0 < w := hw w List.mem_cons_self
     have hws : ∀ w' ∈ ws, 0 < w' := fun w' hw' => hw w' (List.mem_cons_of_mem _ hw')
     rw [budgetTuples_cons]
-    refine isChain_flatMap_range _ _ (fun b hb => ?_) (fun b _ => ?_) (fun b hb x hx y hy => ?_)
+    refine List.isChain_flatMap_range (fun b hb => ?_) (fun b _ => ?_) (fun b hb x hx y hy => ?_)
     · have hb' := (lt_ceilDiv_iff hw0).mp hb
       rw [Ne, List.map_eq_nil_iff, ← List.head?_eq_none_iff, head?_budgetTuples hws (by omega)]
       simp

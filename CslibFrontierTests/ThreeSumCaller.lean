@@ -83,7 +83,7 @@ example : ∃ y, ExecWithin 64 (Host.bodyAt Host.Slow.callee.code) callerInput y
       subst i
       rfl)
     (by intro s hs; norm_num [Host.sideLength] at hs; interval_cases s <;> decide)
-    (by decide) (by decide)
+    (by decide)
     (by intro _ _; decide) (by decide) (by decide) (by decide) (by decide)
   exact ⟨y, he, hans.mpr ⟨0, 0, by decide, by decide⟩,
     (hm 0 (by decide)).trans rfl, (hm 20 (by decide)).trans rfl,

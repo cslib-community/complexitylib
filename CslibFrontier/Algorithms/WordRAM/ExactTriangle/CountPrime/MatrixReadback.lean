@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Matrix
 public import CslibFrontier.Algorithms.ExactTriangle.CountPrime
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Native CountPrime matrices agree with the existing coefficient specification
@@ -58,7 +59,6 @@ theorem exec_matrix_coefficients {w n p k source destination table : ℕ}
   obtain ⟨ha, hb⟩ := Nat.Morton.row_column_lt hcell
   change a < N at ha
   change b < N at hb
-  have hNpos : 0 < N := by positivity
   have hsquare : N * N = 4 ^ k := by dsimp only [N]; rw [← mul_pow]; rfl
   let j := a * N + b
   have hj : j < 4 ^ k := by
@@ -67,12 +67,8 @@ theorem exec_matrix_coefficients {w n p k source destination table : ℕ}
     dsimp only [j]
     rw [← hsquare]
     omega
-  have hjDiv : j / N = a := by
-    dsimp only [j]
-    rw [Nat.mul_comm a N, Nat.mul_add_div hNpos, Nat.div_eq_of_lt hb, Nat.add_zero]
-  have hjMod : j % N = b := by
-    dsimp only [j]
-    rw [Nat.mul_comm a N, Nat.mul_add_mod, Nat.mod_eq_of_lt hb]
+  have hjDiv : j / N = a := by dsimp only [j]; exact Nat.mul_add_div_of_lt a hb
+  have hjMod : j % N = b := by dsimp only [j]; exact Nat.mul_add_mod_of_lt hb
   have hpos : Nat.Morton.index a b = cell := Nat.Morton.index_row_column cell
   have hidx : cell * p + i % p = i := by
     simpa only [cell, Nat.mul_comm] using Nat.div_add_mod i p

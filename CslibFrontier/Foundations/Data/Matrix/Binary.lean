@@ -66,8 +66,7 @@ theorem ofBinary_apply (rows cols w : ℕ) (word : List Bool) (i : Fin rows) (j 
   rw [show i.val * cols + j.val = (finProdFinEquiv (i, j)).val by
     simp [finProdFinEquiv, Nat.add_comm, Nat.mul_comm]]
   rw [listRow_eq_ofFn w (finProdFinEquiv (i, j)) word]
-  congr 1
-  funext k
+  congr 1 with k : 1
   simp [block, ofList, finProdFinEquiv, Nat.mul_add, Nat.add_comm, Nat.add_left_comm,
     Nat.mul_comm, Nat.mul_left_comm]
 

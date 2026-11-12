@@ -109,6 +109,11 @@ theorem isClassical_flipCodes {S : List ℕ} (hS : ∀ j ∈ S, j < m) :
   obtain ⟨j, hj, rfl⟩ := List.mem_map.mp hg
   exact ⟨rfl, by simpa [WellFormed] using hS j hj⟩
 
+/-- Appending NOT gates on valid wires keeps every gate well formed. -/
+theorem wellFormed_append_flipCodes {gs : List GateCode} (hgs : ∀ g ∈ gs, g.WellFormed m)
+    {S : List ℕ} (hS : ∀ j ∈ S, j < m) : ∀ g ∈ gs ++ flipCodes S, g.WellFormed m :=
+  List.forall_mem_append.mpr ⟨hgs, fun g hg => (isClassical_flipCodes hS g hg).2⟩
+
 /-- A list of distinct NOT gates flips exactly the selected bits. -/
 theorem readBit_classicalRun_flipCodes {S : List ℕ} (hS : S.Nodup)
     (hvalid : ∀ j ∈ S, j < m) (x : Fin m → Bool) (c : ℕ) :
@@ -142,6 +147,13 @@ theorem patternZeros_sublist (ps : List (ℕ × Bool)) :
 /-- Converting a pattern to all-one form adds at most one gate per specified bit. -/
 theorem length_patternZeros_le (ps : List (ℕ × Bool)) : (patternZeros ps).length ≤ ps.length := by
   simpa [patternWires] using (patternZeros_sublist ps).length_le
+
+/-- The zero wires of a pattern on valid wires are valid. -/
+theorem patternZeros_lt {ps : List (ℕ × Bool)} (hvalid : ∀ p ∈ ps, p.1 < m) :
+    ∀ j ∈ patternZeros ps, j < m := by
+  intro j hj
+  obtain ⟨p, hp, rfl⟩ := List.mem_map.mp ((patternZeros_sublist ps).subset hj)
+  exact hvalid p hp
 
 /-- Zero wires are distinct when the pattern's wires are distinct. -/
 theorem nodup_patternZeros {ps : List (ℕ × Bool)} (hps : (patternWires ps).Nodup) :
@@ -186,10 +198,7 @@ theorem classicalRun_flipCodes_mem_onesAt_iff {ps : List (ℕ × Bool)}
     (hps : (patternWires ps).Nodup) (hvalid : ∀ p ∈ ps, p.1 < m) (y : Fin m → Bool) :
     GateCode.classicalRun (GateCode.flipCodes (patternZeros ps)) y ∈
         onesAt m (patternWires ps) ↔ y ∈ patternAt m ps := by
-  have hzero : ∀ j ∈ patternZeros ps, j < m := by
-    intro j hj
-    obtain ⟨p, hp, rfl⟩ := List.mem_map.mp ((patternZeros_sublist ps).subset hj)
-    exact hvalid p hp
+  have hzero := patternZeros_lt hvalid
   rw [mem_onesAt_iff, mem_patternAt]
   change (∀ j ∈ ps.map Prod.fst, _) ↔ _
   simp only [List.forall_mem_map]
@@ -211,10 +220,7 @@ theorem onesProb_append_flipCodes_eq_patternProb (gs : List GateCode)
     (hvalid : ∀ p ∈ ps, p.1 < m) (x : List Bool) :
     onesProb m (gs ++ GateCode.flipCodes (patternZeros ps)) (patternWires ps) x =
       patternProb m gs ps x := by
-  have hzero : ∀ j ∈ patternZeros ps, j < m := by
-    intro j hj
-    obtain ⟨p, hp, rfl⟩ := List.mem_map.mp ((patternZeros_sublist ps).subset hj)
-    exact hvalid p hp
+  have hzero := patternZeros_lt hvalid
   rw [onesProb, Circuit.ofCodes_append, Circuit.run, Circuit.eval_append,
     Circuit.measureProb_eval_ofCodes (GateCode.isClassical_flipCodes hzero)]
   change (∑ y, if GateCode.classicalRun (GateCode.flipCodes (patternZeros ps)) y ∈
@@ -302,16 +308,9 @@ theorem patternProb_eq_onesGap (gs : List GateCode) (hgs : ∀ g ∈ gs, g.WellF
     patternProb m gs ps x =
       (onesGap (patternWires ps) (gs ++ GateCode.flipCodes (patternZeros ps))
         (List.ofFn (inputState m x)) : ℝ) / 2 ^ hadamardCount gs := by
-  have hzero : ∀ j ∈ patternZeros ps, j < m := by
-    intro j hj
-    obtain ⟨p, hp, rfl⟩ := List.mem_map.mp ((patternZeros_sublist ps).subset hj)
-    exact hvalid p hp
-  have hwf : ∀ g ∈ gs ++ GateCode.flipCodes (patternZeros ps), g.WellFormed m := by
-    intro g hg
-    rcases List.mem_append.mp hg with hg | hg
-    · exact hgs g hg
-    · exact (GateCode.isClassical_flipCodes hzero g hg).2
+  have hzero := patternZeros_lt hvalid
   rw [← onesProb_append_flipCodes_eq_patternProb gs hps hvalid,
-    onesProb_eq_onesGap _ hwf, hadamardCount_append_flipCodes]
+    onesProb_eq_onesGap _ (GateCode.wellFormed_append_flipCodes hgs hzero),
+    hadamardCount_append_flipCodes]
 
 end Cslib.Quantum

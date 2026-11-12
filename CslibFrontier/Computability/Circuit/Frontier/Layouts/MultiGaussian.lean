@@ -36,7 +36,7 @@ the width is at most `vertexCoefficient d · |E| + ξ |V|` for every `ξ > 0`
   of large loopless multigraphs of maximum degree `d`.
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory ProbabilityTheory Real Set
 open scoped RealInnerProductSpace Interval
@@ -122,9 +122,7 @@ theorem exists_multi_vertex_sample [Finite V] [Finite E] (hloop : G.Loopless) {d
     have hmean : ∑ v, P.real (vertexEvent G q R f v) ≤ h * (1 / T ^ 2) :=
       vertexMean fun v => (measureReal_mono (μ := P) fun ω' hω' => hf _ hω').trans
         (measureReal_le_abs_le (unit v) hT)
-    have hbound : ({v | ω ∈ vertexEvent G q R f v}.ncard : ℝ) ≤ h / T ^ 2 + c := by
-      rw [div_eq_mul_one_div]
-      linarith
+    have hbound : ({v | ω ∈ vertexEvent G q R f v}.ncard : ℝ) ≤ h / T ^ 2 + c := by grind
     have hmult := mul_le_mul_of_nonneg_left hbound (Nat.cast_nonneg (α := ℝ) d)
     have hnonneg : 0 ≤ p * m + h * (d * δ / √(2 * π) + ε) := by positivity
     have hidentity : B = d * (h / T ^ 2 + c) + (p * m + h * (d * δ / √(2 * π) + ε)) := by

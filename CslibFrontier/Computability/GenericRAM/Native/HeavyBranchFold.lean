@@ -174,18 +174,13 @@ theorem toFinset_heavyVarList_eq_heavyVars (n b₀ : ℕ) (sys : List (List (Lis
   ext v; simp only [List.mem_toFinset, mem_heavyVarList_iff, heavyVars, Finset.mem_filter,
     Finset.mem_range, varIncidence_eq_varDegree]
 
-/-- **Markov heavy-variable bound (§5.5, p. 38)**: for `0 < b₀` and variables `< n`,
+/-- **Markov heavy-variable bound (§5.5, p. 38)**: for `0 < b₀`,
 `(heavyVarList n b₀ sys).length ≤ (sys.map fun eq => (equationVars eq).length).sum / b₀`. -/
-theorem length_heavyVarList_le_div {n b₀ : ℕ} {sys : List (List (List ℕ))}
-    (hb₀ : 0 < b₀) (hvars : ∀ eq ∈ sys, ∀ m ∈ eq, ∀ v ∈ m, v < n) :
+theorem length_heavyVarList_le_div (n : ℕ) (sys : List (List (List ℕ))) {b₀ : ℕ} (hb₀ : 0 < b₀) :
     (heavyVarList n b₀ sys).length ≤ (sys.map fun eq => (equationVars eq).length).sum / b₀ := by
   rw [← List.toFinset_card_of_nodup (nodup_heavyVarList n b₀ sys),
     toFinset_heavyVarList_eq_heavyVars]
-  have hU : ∀ i ∈ (Finset.univ : Finset (Fin sys.length)),
-      (equationVars sys[i]).toFinset ⊆ Finset.range n := fun i _ v hv => by
-    obtain ⟨m, hm, hvm⟩ := mem_equationVars.mp (List.mem_toFinset.mp hv)
-    exact Finset.mem_range.mpr (hvars sys[i] (List.getElem_mem i.2) m hm v hvm)
-  refine (card_heavyVars_le_div _ _ _ hb₀ hU).trans (Nat.div_le_div_right (le_of_eq ?_))
+  refine (card_heavyVars_le_div _ _ _ hb₀).trans (Nat.div_le_div_right (le_of_eq ?_))
   rw [totalIncidence, ← List.toFinset_finRange, List.sum_toFinset _ (List.nodup_finRange _)]
   conv_rhs => rw [← (List.ofFn_eq_map.symm.trans (List.ofFn_getElem (xs := sys))), List.map_map]
   exact congrArg List.sum (List.map_congr_left fun i _ => by simp only [Function.comp_apply,
@@ -1071,18 +1066,15 @@ private theorem branchCountCertificate_bounds {solver : ℕ → List (List (List
 theorem computableInPolyTime_prepareStep :
     ComputableInPolyTime (fun p : PrepareStepInput =>
       prepareBranch p.inp.numVars p.inp.vars p.vals p.inp.system)
-      (encPair (encPair encUnary encBits) (encPair encBranchInput encNat)) encBranchOutcome := by
+      (BooleanFold.encCallbackInput (encPair encBranchInput encNat)) encBranchOutcome := by
   unfold encBranchInput; fun_prop
-private theorem computableInPolyTime_binaryAdd :
-    ComputableInPolyTime (fun x : ℕ × ℕ => x.1 + x.2) (encPair encNat encNat) encNat :=
-  ComputableInPolyTime.binary_add
 private theorem computableInPolyTime_dim :
     ComputableInPolyTime (fun inp : BranchInput => inp.2.1.length) encBranchInput encUnary := by
   unfold encBranchInput; fun_prop
 private noncomputable def prepareStepCert :=
   NativeCertificate.ofPolyTime computableInPolyTime_prepareStep
 private noncomputable def binaryAddCert :=
-  NativeCertificate.ofPolyTime computableInPolyTime_binaryAdd
+  NativeCertificate.ofPolyTime ComputableInPolyTime.binary_add
 private noncomputable def dimCert := NativeCertificate.ofPolyTime computableInPolyTime_dim
 private noncomputable def initAccCert : NativeCertificate (fun inp : BranchInput => (inp, 0))
     encBranchInput (encPair encBranchInput encNat) :=
@@ -1095,7 +1087,7 @@ noncomputable def branchBodyCertificate {solver : ℕ → List (List (List ℕ))
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
       (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (branchBody solver)
-      (encPair (encPair encUnary encBits) (encPair encBranchInput encNat))
+      (BooleanFold.encCallbackInput (encPair encBranchInput encNat))
       (encPair encBranchInput encNat) :=
   let cpay := NativeCertificate.payload (encPair encUnary encBits) (encPair encBranchInput encNat)
   (cpay.fst).prod
@@ -1105,7 +1097,7 @@ noncomputable def certificate {solver : ℕ → List (List (List ℕ)) → ℕ}
     (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
       (encPair encUnary encSparseSystem) encNat) :
     NativeCertificate (streamBranches solver)
-      encBranchInput (encPair encNat (encPair encUnary (encPair encBranchInput encNat))) :=
+      encBranchInput (BooleanFold.encStreamState (encPair encBranchInput encNat)) :=
   BooleanFold.certificate dimCert initAccCert (branchBodyCertificate csolver)
 /-- Full streaming native certificate for `countByBranching solver` (for a fixed `solver`). -/
 noncomputable def countCertificate {solver : ℕ → List (List (List ℕ)) → ℕ}
@@ -1182,7 +1174,7 @@ private noncomputable def visitOverhead (L : ℕ) : ℕ :=
   let hpv := NativeCertificate.ofPolyTime_isPolynomial
     (BooleanFold.prepare_polyTime (encB := encPair encBranchInput encNat))
   let hps := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_prepareStep
-  let hadd := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_binaryAdd
+  let hadd := NativeCertificate.ofPolyTime_isPolynomial ComputableInPolyTime.binary_add
   17 * L + 18 + monoPolyBound hpv.1 (5 * L + 5) + monoPolyBound hpv.2 (5 * L + 5) +
     monoPolyBound hps.1 (6 * L + 4) + monoPolyBound hps.2 (6 * L + 4) +
     20 * monoPolyBound computableInPolyTime_prepareStep.polyBounded_length (6 * L + 4) +
@@ -1252,8 +1244,7 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
       simpa [Nat.size_eq_bits_len] using Nat.size_le_size hsum_le
     rw [BooleanFold.length_clock] at h; omega
   have hlen_acc : (encPair encBranchInput encNat st.2.2).length ≤ 3 * L + 1 := by
-    rw [hst_pair, length_encPair]
-    change 2 * L + 1 + (encNat st.2.2.2).length ≤ 3 * L + 1; omega
+    grind [length_encPair]
   have hst1 : st.1 = j := IndexFold.run_index _ _ _
   have hst21 : st.2.1 = inp.2.1.length := BooleanFold.prefix_width _ _ _ _
   have hlen_inner : (encPair encUnary (encPair encBranchInput encNat) st.2).length ≤ 4 * L + 1 := by
@@ -1303,7 +1294,7 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
   let hpv := NativeCertificate.ofPolyTime_isPolynomial
     (BooleanFold.prepare_polyTime (encB := encPair encBranchInput encNat))
   let hps := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_prepareStep
-  let hadd := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_binaryAdd
+  let hadd := NativeCertificate.ofPolyTime_isPolynomial ComputableInPolyTime.binary_add
   have hpvT := le_monoPolyBound hpv.1 st hlen_state
   have hpvS := le_monoPolyBound hpv.2 st hlen_state
   have hpsT := le_monoPolyBound hps.1 q hlen_q; have hpsS := le_monoPolyBound hps.2 q hlen_q
@@ -1320,17 +1311,14 @@ private theorem branch_step_bounds {solver : ℕ → List (List (List ℕ)) → 
     PrepareStepInput.accPair, PrepareStepInput.header,
     BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
     at hbcT hbcS houtL hlen_add haddT haddS hsolT hsolS hvT hvS hbodyT hbodyS
+  rw [hvT, hbodyT, hvS, hbodyS]
   refine ⟨hlen_inner, ?_, ?_⟩
-  · rw [hvT, hbodyT]
+  all_goals
     dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
       PrepareStepInput.inp, PrepareStepInput.vals,
       PrepareStepInput.accPair, PrepareStepInput.header,
-      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
-  · rw [hvS, hbodyS]
-    dsimp only [visitOverhead, prepareStepCert, binaryAddCert,
-      PrepareStepInput.inp, PrepareStepInput.vals,
-      PrepareStepInput.accPair, PrepareStepInput.header,
-      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]; omega
+      BranchInput.numVars, BranchInput.vars, BranchInput.system, BranchInput.varSystem]
+    omega
 
 /-- **Space-efficient streaming `ComputableInO` bound for `streamBranches`** (§5.5 of
 [OpenAI2026ETH]): for fixed `solver` bounded by `2 ^ n'` with time `≤ R_solver` and space
@@ -1356,7 +1344,7 @@ theorem streamBranches_computableInO {solver : ℕ → List (List (List ℕ)) �
         .reduced n' sys' →
       csolver.space (n', sys') ≤ Q_solver inp) :
     ComputableInO (streamBranches solver)
-      encBranchInput (encPair encNat (encPair encUnary (encPair encBranchInput encNat)))
+      encBranchInput (BooleanFold.encStreamState (encPair encBranchInput encNat))
       (fun inp =>
         stepOverhead (encBranchInput inp).length +
           (2 ^ inp.vars.length + 1) * (stepOverhead (encBranchInput inp).length + R_solver inp))

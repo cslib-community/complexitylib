@@ -16,6 +16,7 @@ specified fallback semantics and total runtime; they do not assert well-formedne
 namespace CslibFrontierTests.CircuitLayerPadding
 
 open Cslib.Circuits.Boolean.Layered Turing.MultiTapeTM
+open Cslib.BitString (readPositions)
 
 private def shared : List (List Node) :=
   [[.nand 0 1], [.copy 0, .nand 0 0, .copy 0]]
@@ -30,7 +31,7 @@ example : ∀ a b : Bool, eval [a, b] (padTo 2 5 shared) =
     [!(a && b), a && b, !(a && b)] := by decide +kernel
 
 -- With no original layers, padding carries the original row and free output permutation.
-example : select (eval [false, true] (padTo 2 3 [])) [1, 0, 1] =
+example : readPositions [1, 0, 1] (eval [false, true] (padTo 2 3 [])) =
     [true, false, true] := by decide +kernel
 example (inputs : List Bool) (target : ℕ) :
     eval inputs (padTo inputs.length target []) = inputs := by simp

@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.N
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Nondeterministic
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
-import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
@@ -45,7 +45,7 @@ never stuck, so every branch actually halts within the bound.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -65,30 +65,17 @@ theorem IsVerifier.exists_decidesInTime
       machine.toNTM.DecidesInTime enc A (fun a => c * ((enc a).length + 1) ^ d) ∧
       ∀ input (cfg : Cfg k Bool State input), ∃ cfg', machine.toNTM.Step cfg cfg' := by
   -- guess a certificate of the required length, then verify it
-  let program (a : α) : ProbComp Bool :=
-    (fun w => V (a, w)) <$> BitString.sampleList (p.eval (enc a).length)
-  have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary :=
-    (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length enc)
-  have hprogram : IsPPTOn enc encBool program :=
-    (hcount).sampleList.map_with hV
-  obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ := hprogram.exists_halting_machine
+  obtain ⟨k, State, hfinite, machine, c, d, heval, hhalt⟩ :=
+    (isPPTOn_sampleVerify p hV).exists_halting_machine
   refine ⟨k, State, hfinite, machine, c, d, fun a => ?_, fun _ => machine.exists_step_toNTM⟩
   have htime : machine.toNTM.RunsInTime (enc a) (c * ((enc a).length + 1) ^ d) :=
     machine.runsInTime_toNTM (hhalt (enc a))
   refine ⟨htime, ?_⟩
-  rw [hA a, MultiTapeNTM.accepts_iff_exists_time_eq htime,
-    machine.exists_computationPath_toNTM_iff (P := fun cfg => cfg.output = [true])]
   -- both sides say that `[true]` is a supported output
-  have hsupport := congrArg (fun μ => [true] ∈ μ.support) (heval a)
-  simp only [MultiTapePTM.runClosed_eq_map, ProbComp.eval_map, PMF.mem_support_map_iff,
-    program, BitString.eval_sampleList, BitString.mem_support_uniformList_iff, encBool_apply,
-    List.cons.injEq, and_true] at hsupport
-  rw [← hsupport]
-  constructor
-  · rintro ⟨w, hw, hV⟩
-    exact ⟨true, ⟨w, hw, hV⟩, rfl⟩
-  · rintro ⟨b, ⟨w, hw, hV⟩, rfl⟩
-    exact ⟨w, hw, hV⟩
+  rw [hA a, ← singleton_true_mem_support_sampleVerify_iff V a, heval a,
+    MultiTapeNTM.accepts_iff_exists_time_eq htime,
+    machine.exists_computationPath_toNTM_iff (P := fun cfg => cfg.output = [true]),
+    MultiTapePTM.runClosed_eq_map, ProbComp.eval_map, PMF.mem_support_map_iff]
 
 /-- Problems in `NP` are decidable in polynomial time by nondeterministic machines with a binary
 alphabet and finitely many states. -/

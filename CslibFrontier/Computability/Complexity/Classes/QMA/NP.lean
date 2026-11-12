@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.QMA
 public import CslibFrontier.Computability.Complexity.Classes.BQP.Classical
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 /-!
@@ -327,9 +328,7 @@ theorem measureProb_ofNP_inputState (F : UniformCircuitFamily) (p : Polynomial �
       (NPVerifier.gates F p x.length)) (ket (inputState _ (x ++ w))))
       (accepting (NPVerifier.width F p x.length)) = F.acceptProb (frame x ++ w) := by
   have hofFn : List.ofFn (fun i : Fin ((ofNP F p).witnessLength x.length) => w.getD i false) =
-      w := by
-    refine List.ext_getElem (by rw [List.length_ofFn, hw]; rfl) fun i h₁ h₂ => ?_
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h₂]
+      w := List.ofFn_getD_eq_of_length false hw
   have := acceptProb_ofNP_ket F p x fun i => w.getD i false
   rw [acceptProb_ket, hofFn] at this
   exact this
@@ -360,9 +359,7 @@ theorem PromiseNP_subset_PromiseQMA : PromiseNP enc ⊆ PromiseQMA (fun _ => 1) 
   refine ⟨UniformVerifierFamily.ofNP F p, fun a => ⟨fun ha => ?_, fun ha ψ _ => ?_⟩⟩
   · obtain ⟨w, hw, hVw⟩ := hyes a ha
     have hofFn : List.ofFn (fun i : Fin ((UniformVerifierFamily.ofNP F p).witnessLength
-        (enc a).length) => w.getD i false) = w := by
-      refine List.ext_getElem (by rw [List.length_ofFn, hw]; rfl) fun i h₁ h₂ => ?_
-      simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h₂]
+        (enc a).length) => w.getD i false) = w := List.ofFn_getD_eq_of_length false hw
     refine ⟨ket fun i => w.getD i false, norm_ket _, ?_⟩
     rw [hket, hofFn, hVw]
     norm_num

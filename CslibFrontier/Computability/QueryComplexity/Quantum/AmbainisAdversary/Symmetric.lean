@@ -88,18 +88,8 @@ theorem one_sub_mul_card_le_two_mul_of_parity (U : ℕ → State N W →ₗᵢ[�
       rw [h0] at this
       exact ⟨_, mem_filter.2 ⟨mem_univ _, this⟩⟩
     · exact ⟨fun _ => false, mem_filter.2 ⟨mem_univ _, h0⟩⟩
-  have h₁ : ∀ x ∈ A, 1 - ε ≤ measureProb (run U ψ₀ x T) S := by
-    intro x hx
-    have hx' : parity N x = true := (mem_filter.1 hx).2
-    have := (abs_le.1 (h x)).1
-    rw [hx', bitVal_true] at this
-    linarith
-  have h₂ : ∀ y ∈ B, measureProb (run U ψ₀ y T) S ≤ ε := by
-    intro y hy
-    have hy' : parity N y = false := (mem_filter.1 hy).2
-    have := (abs_le.1 (h y)).2
-    rw [hy', bitVal_false] at this
-    linarith
+  have h₁ : ∀ x ∈ A, 1 - ε ≤ measureProb (run U ψ₀ x T) S := by grind [bitVal_true]
+  have h₂ : ∀ y ∈ B, measureProb (run U ψ₀ y T) S ≤ ε := by grind [bitVal_false]
   have hm : ∀ x ∈ A, N ≤ #{i | update x i (!x i) ∈ B} := by
     intro x hx
     have hx' : parity N x = true := (mem_filter.1 hx).2

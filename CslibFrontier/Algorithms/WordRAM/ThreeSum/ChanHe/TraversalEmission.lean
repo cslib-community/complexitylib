@@ -83,6 +83,13 @@ structure Emission (Q : Finset ℕ) (Λ : ℕ) (e : Entry) (x y : Data 128)
   registers : ∀ i : Fin 128, 64 ≤ i.val → i ≠ selected → i ≠ heap →
     i ≠ outputCount → i ≠ temporary → (i.val < 88 ∨ 96 ≤ i.val) → y.regs i = x.regs i
 
+/-- A register fact that holds after both delivery blocks holds after the selected one. -/
+private theorem delivered_regs (published : Bool) (b : Data 128) {i : Fin 128} {v : ℕ}
+    (hg : (deliveryState b).regs i = v) (hl : (localDeliveryState b).regs i = v) :
+    (if published then deliveryState b else localDeliveryState b).regs i = v := by
+  cases published
+  exacts [hl, hg]
+
 /-- Shared semantic readback after either actual delivery block. The publication flag selects
 fixed code; it is not runtime advice. The private-table fit is required only for publication. -/
 theorem emission_readback {n : ℕ} (published : Bool) (x : Data 128) (e : Entry)
@@ -149,36 +156,19 @@ theorem emission_readback {n : ℕ} (published : Bool) (x : Data 128) (e : Entry
   refine ⟨⟨M, hMexact, hMpos, hMle, zs, hnd, hsets', hlen, ?_, ?_, ?_, ?_, ?_, ?_, ?_, b.mem,
     ?_, ?_, ?_⟩⟩
   · intro j
-    cases published with
-    | false =>
-      change (localDeliveryState b).regs (heavyLength j) = (zs j).length
-      rw [localDeliveryState_heavy_length, hL, hout.heavy_card j, ← hsets j]
-      exact List.toFinset_card_of_nodup (hnd j)
-    | true =>
-      change (deliveryState b).regs (heavyLength j) = (zs j).length
-      rw [deliveryState_heavy_length, hL, hout.heavy_card j, ← hsets j]
-      exact List.toFinset_card_of_nodup (hnd j)
+    rw [delivered_regs published b (deliveryState_heavy_length b j)
+      (localDeliveryState_heavy_length b j), hL, hout.heavy_card j, ← hsets j]
+    exact List.toFinset_card_of_nodup (hnd j)
   · intro j
-    cases published with
-    | false =>
-      change (localDeliveryState b).regs (heavyBase j) = (recordLayout x M).heavy j
-      rw [localDeliveryState_heavy_base, hL]
-    | true =>
-      change (deliveryState b).regs (heavyBase j) = (recordLayout x M).heavy j
-      rw [deliveryState_heavy_base, hL]
+    rw [delivered_regs published b (deliveryState_heavy_base b j)
+      (localDeliveryState_heavy_base b j), hL]
   · intro j i
     exact hdata j i.val i.isLt
   · intro i
     have hp := hd.packed i.val i.isLt
     rw [hnodeExact] at hp
     simpa only [Block.read, recordLayout] using hp
-  · cases published with
-    | false =>
-      change (localDeliveryState b).regs Traversal.packed = (recordLayout x M).packed
-      rw [localDeliveryState_packed, hL]
-    | true =>
-      change (deliveryState b).regs Traversal.packed = (recordLayout x M).packed
-      rw [deliveryState_packed, hL]
+  · rw [delivered_regs published b (deliveryState_packed b) (localDeliveryState_packed b), hL]
   · cases published with
     | false =>
       change (localDeliveryState b).regs outputCount = x.regs outputCount + 0
@@ -186,13 +176,7 @@ theorem emission_readback {n : ℕ} (published : Bool) (x : Data 128) (e : Entry
     | true =>
       change (deliveryState b).regs outputCount = x.regs outputCount + 1
       rw [deliveryState_count, hbp outputCount (by decide) (by decide)]
-  · cases published with
-    | false =>
-      change (localDeliveryState b).regs heap = (recordLayout x M).endpoint
-      rw [localDeliveryState_heap, hL]
-    | true =>
-      change (deliveryState b).regs heap = (recordLayout x M).endpoint
-      rw [deliveryState_heap, hL]
+  · rw [delivered_regs published b (deliveryState_heap b) (localDeliveryState_heap b), hL]
   · intro p hp
     exact (hout.frame p (Or.inl hp)).trans (hprefix p hp)
   · cases published with

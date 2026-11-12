@@ -297,8 +297,7 @@ theorem aeval_polynomial {R : Type*} [CommSemiring R] [Algebra K R] (F : SPFormu
       (sigmaPiInterpretationWith K (algebraMap K R)) :=
     ⟨aeval x, fun op args => by cases op <;> simp [sigmaPiInterpretationWith]⟩
   refine (F.map_eval h X).trans ?_
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact aeval_X x i
 
 /-- Evaluating the polynomial computed by a formula at a point of `K` is evaluating the formula

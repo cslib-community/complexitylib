@@ -90,22 +90,8 @@ variable [MeasurableSpace Z]
 
 theorem measurable_swapSamples {m : ℕ} (σ : Fin m → Bool) :
     Measurable (swapSamples (Z := Z) σ) := by
-  have h : ∀ (b : Bool) (i : Fin m), Measurable fun z : (Fin m → Z) × (Fin m → Z) =>
-      if b then z.2 i else z.1 i := fun b i => by
-    cases b
-    · exact (measurable_pi_apply i).comp measurable_fst
-    · exact (measurable_pi_apply i).comp measurable_snd
-  have h' : ∀ (b : Bool) (i : Fin m), Measurable fun z : (Fin m → Z) × (Fin m → Z) =>
-      if b then z.1 i else z.2 i := fun b i => by
-    cases b
-    · exact (measurable_pi_apply i).comp measurable_snd
-    · exact (measurable_pi_apply i).comp measurable_fst
-  have hfun : swapSamples (Z := Z) σ = fun z =>
-      (fun i => if σ i then z.2 i else z.1 i, fun i => if σ i then z.1 i else z.2 i) := by
-    funext z
-    ext i <;> simp only [fst_swapSamples_apply, snd_swapSamples_apply]
-  rw [hfun]
-  exact (measurable_pi_iff.2 fun i => h (σ i) i).prodMk (measurable_pi_iff.2 fun i => h' (σ i) i)
+  refine (measurable_pi_iff.2 fun i => ?_).prodMk (measurable_pi_iff.2 fun i => ?_) <;>
+    cases σ i <;> fun_prop
 
 /-- **Swapping coordinates preserves the product of two i.i.d. sample distributions**, on any
 measurable space and for any σ-finite `μ`. Under the identification of a double sample with a

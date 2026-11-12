@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.PCP.Amplification.Family
+public import CslibFrontier.Foundations.Combinatorics.Expander.Existence
 import Mathlib.Tactic.IrreducibleDef
 
 /-!
@@ -20,8 +21,9 @@ universal constant, and leaves the alphabet fixed. It is the composite of the th
 the proof:
 
 1. **preprocessing** (`Cslib.PCP.ConstraintGraph.preprocess`) with the family of `120`-regular
-   expanders `Cslib.RotationMap.expanderFamily`: a `242`-regular expander on the half-edges, losing
-   a factor `1452000` of the value, whatever the alphabet;
+   expanders `Cslib.RotationMap.expanderFamily`: a `242`-regular expander on the half-edges
+   (`spectralExpansion_preprocess_expanderFamily_le`), losing a factor `1452000` of the value,
+   whatever the alphabet (`le_unsatVal_preprocess_expanderFamily`);
 2. **powering** (`Cslib.PCP.RegularConstraintGraph.power`) along killed walks truncated at `T`
    steps, killed with probability `1 / q`, which multiplies the value by a factor linear in `q`, at
    the cost of an alphabet of size `|α| ^ (∑ ℓ ≤ T, 242 ^ ℓ)`;
@@ -58,6 +60,9 @@ asymptotic: despite the smaller answer alphabet, the size factors are triply exp
 
 ## Main results
 
+* `Cslib.PCP.ConstraintGraph.spectralExpansion_preprocess_expanderFamily_le`,
+  `Cslib.PCP.ConstraintGraph.le_unsatVal_preprocess_expanderFamily`: the constants of
+  preprocessing with the non-explicit family of expanders.
 * `Cslib.PCP.ConstraintGraph.satisfiable_amplify_iff`: the round preserves satisfiability.
 * `Cslib.PCP.ConstraintGraph.le_unsatVal_amplify`: the value of the round, for any alphabet.
 * `Cslib.PCP.ConstraintGraph.card_vertices_amplify`, `Cslib.PCP.ConstraintGraph.card_edges_amplify`:
@@ -107,6 +112,32 @@ instance {E α : Type*} [Fintype E] [Fintype α] [DecidableEq α] {T q : ℕ} :
 instance {E α : Type*} [Fintype E] [Fintype α] [DecidableEq α] {T q : ℕ} :
     Fintype (AmplifyEdge E α T q) :=
   inferInstanceAs (Fintype (_ × _))
+
+/-! ### Preprocessing with the non-explicit family of expanders -/
+
+section Preprocess
+
+variable {V E α : Type*} [Fintype E] [DecidableEq V]
+  (G : ConstraintGraph V E α)
+
+/-- **The preprocessed constraint graph is an expander**: with the non-explicit family
+`expanderFamily` of `120`-regular expanders, its spectral expansion is at most `1 - 1 / 726000`. -/
+theorem spectralExpansion_preprocess_expanderFamily_le :
+    (G.preprocess expanderFamily).graph.spectralExpansion ≤ 1 - 1 / 726000 := by
+  refine (G.spectralExpansion_preprocess_le expanderFamily).trans_eq ?_
+  rw [Fintype.card_fin]
+  norm_num
+
+/-- **Soundness of preprocessing** [Dinur, Section 3.1][Dinur2005]: with the non-explicit family
+`expanderFamily` of `120`-regular expanders, preprocessing divides the value by at most `1452000`,
+whatever the alphabet. -/
+theorem le_unsatVal_preprocess_expanderFamily [Nonempty α] :
+    G.unsatVal / 1452000 ≤ (G.preprocess expanderFamily).toConstraintGraph.unsatVal := by
+  refine le_of_eq_of_le ?_ (G.le_unsatVal_preprocess expanderFamily)
+  rw [Fintype.card_fin, min_eq_right (by norm_num)]
+  ring
+
+end Preprocess
 
 section Round
 

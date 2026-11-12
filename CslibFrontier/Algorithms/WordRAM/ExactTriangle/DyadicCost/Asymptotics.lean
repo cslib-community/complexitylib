@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.DyadicCost
 public import CslibFrontier.Foundations.Data.Nat.LogRpow
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -17,8 +18,9 @@ import Mathlib.Tactic.Ring
 /-!
 # Absorbing the complete cubic logarithmic box coefficient
 
-The finite native ledger has degree three in tensor depth. A single threshold per fixed
-original weight exponent absorbs that full coefficient into every positive real input power.
+The finite native ledger has degree three in tensor depth. For each fixed original weight
+exponent `κ ≥ 1` and each fixed real `ε > 0`, that full coefficient `costCoefficient κ n` is at
+most `n ^ ε` for all sufficiently large `n`.
 -/
 
 public section
@@ -67,11 +69,9 @@ private theorem coefficient_le_log_cube {n : ℕ} {κ : ℝ} (hn : 1 ≤ n) (hκ
     exact_mod_cast (Nat.lt_pow_succ_log_self (by decide : 1 < (2 : ℕ)) n).le
   have hl : Real.log (n : ℝ) ≤ L * Real.log 2 := by
     simpa only [Real.log_pow, Nat.cast_add, Nat.cast_one, L] using Real.log_le_log hn0 hpow
-  have htwo : Real.log (2 : ℝ) ≤ 1 := by
-    have h := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)
-    linarith only [h]
   have hlog : Real.log (n : ℝ) ≤ L ^ 3 :=
-    (hl.trans ((mul_le_mul_of_nonneg_left htwo (by positivity)).trans_eq (mul_one L))).trans hLcube
+    (hl.trans ((mul_le_mul_of_nonneg_left Real.log_two_lt_one.le (by positivity)).trans_eq
+      (mul_one L))).trans hLcube
   have hlevel : (level n : ℝ) ≤ Nat.log 2 n := by exact_mod_cast level_le_log n
   have hleft : ((21 * level n + 1 : ℕ) : ℝ) ≤ 21 * L := by
     push_cast

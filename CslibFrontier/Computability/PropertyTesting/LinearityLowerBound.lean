@@ -52,9 +52,7 @@ private theorem exists_subset_pair_of_card_le_two {α : Type*} [DecidableEq α] 
   classical
   by_cases hne : s.Nonempty
   · obtain ⟨a, ha⟩ := hne
-    have herase : (s.erase a).card ≤ 1 := by
-      rw [card_erase_of_mem ha]
-      omega
+    have herase : (s.erase a).card ≤ 1 := by grind
     obtain ⟨b, hb⟩ := card_le_one_iff_subset_singleton.1 herase
     refine ⟨a, b, ?_⟩
     intro x hx

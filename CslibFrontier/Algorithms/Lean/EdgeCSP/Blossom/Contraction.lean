@@ -28,6 +28,8 @@ buffers for its positional occurrence labeling, not a second CSP representation.
 
 public section
 
+open Cslib.BitString
+
 namespace Cslib.Logic.PL.CSP.Blossom
 
 open Table
@@ -91,7 +93,7 @@ one supplied central row. The buffers retain exactly the old constraint ordering
 /-- The local reference rows of the contracted instance. The central row is honestly one-hot;
 zero at all connector occurrences would not satisfy its exactly-one relation. -/
 @[expose] def referenceRows (f : OccurrenceLabeling F Bool) (vs : List ℕ) : List (List Bool) :=
-  transportRows f vs (fun _ => false) (oneHot (connectors F vs).length 0)
+  transportRows f vs (fun _ => false) (listSingle (connectors F vs).length 0)
 
 /-- Read an actual finite row buffer as the original positional labeling interface. -/
 @[expose] def labels (G : CSP Table ℕ) (rows : List (List Bool)) :
@@ -219,7 +221,7 @@ theorem get_contract_central (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
 
 /-- The reference buffer at the central constraint is one-hot, with position zero selected. -/
 theorem get_referenceRows_central (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
-    (referenceRows f vs).getD F.length [] = oneHot (connectors F vs).length 0 := by
+    (referenceRows f vs).getD F.length [] = listSingle (connectors F vs).length 0 := by
   simp [referenceRows, transportRows]
 
 /-- Each original local reference row is accepted by its actual output constraint. -/
@@ -256,7 +258,7 @@ theorem valid_reference {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem 
     · simpa only [get_contract_old f vs ⟨i.val, hi⟩] using
         referenceRow_length f vs ⟨i.val, hi⟩
     · have he : i.val = F.length := by have := i.isLt; simp only [length_contract] at this; omega
-      simp only [he, hlast, hconstraint, oneHot, List.length_map, List.length_range]
+      simp only [he, hlast, hconstraint, listSingle, List.length_map, List.length_range]
   · intro i
     by_cases hi : i.val < F.length
     · simpa only [get_contract_old f vs ⟨i.val, hi⟩] using
@@ -264,7 +266,7 @@ theorem valid_reference {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem 
     · have he : i.val = F.length := by have := i.isLt; simp only [length_contract] at this; omega
       simp only [he, hlast, hconstraint]
       apply (sem_exactlyOne_eq_true _ _).mpr
-      exact ⟨by simp [oneHot], count_true_oneHot hpos⟩
+      exact ⟨by simp [listSingle], count_true_listSingle hpos⟩
 
 /-- No output relation is empty: the explicit reference witnesses it, rather than an assumed
 model of the original instance. -/

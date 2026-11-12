@@ -363,18 +363,11 @@ private theorem menuHistory_step_gate (p : Program signature n g) (dir : Fin g �
             (∑ k, inputWeight p gate k * (x k).toNat) +
             ∑ j, gateWeight p gate j *
               ((menuHistory p dir w scale S (d + gate.val) x).2 j).toNat)) := by
-    have heval := eval_gate_eq p x gate
-    have hsum : (∑ j, gateWeight p gate j * (p.eval interpretation x j).toNat) =
-        ∑ j, gateWeight p gate j *
-          ((menuHistory p dir w scale S (d + gate.val) x).2 j).toNat := by
-      apply sum_congr rfl
-      intro j _
-      by_cases hj : j < gate
-      · have hj' : d + j.val < d + gate.val := by omega
-        dsimp [menuHistory]
+    have heval := eval_gate_eq_of_forall_lt p x gate
+      (v := (menuHistory p dir w scale S (d + gate.val) x).2) fun j hj => by
+        have hj' : d + j.val < d + gate.val := by omega
+        dsimp only [menuHistory]
         rw [ite_eq_left hj']
-      · simp [gateWeight_eq_zero_of_le p gate j (le_of_not_gt hj)]
-    rw [hsum] at heval
     funext j
     by_cases hj : j = gate
     · subst hj

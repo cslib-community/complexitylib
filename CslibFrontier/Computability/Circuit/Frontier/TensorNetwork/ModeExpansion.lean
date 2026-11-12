@@ -526,12 +526,10 @@ is `packetTensor`. -/
         exact h _ (Or.inl (congrArg Sum.inl (Subtype.ext he)))
       simp only
       split_ifs
-      · congr 1
-        funext e
+      · congr 1 with e : 1
         split_ifs with he
         exacts [hs e he, rfl]
-      · congr 1
-        funext e
+      · congr 1 with e : 1
         split_ifs with he
         exacts [ht e he, rfl]
     · refine S.packetTensor_congr β q g (fun e hq hg => ?_) (fun e hq hg => ?_)

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Commitment.PublicOperations
 public import CslibFrontier.Crypto.Computational.PedersenCommitment
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Public-operation certificates for Pedersen commitments
@@ -83,8 +84,7 @@ noncomputable def pedersenPublicOperations : F.pedersenScheme.PublicOperations w
     simp only [PMF.map_comp, pedersenScheme, pedersenCommitPairLaw]
     congr 1 with r : 1
     have hr : (ofBits r.val.bits : ZMod (F.order k.1)) = r := by
-      unfold ofBits
-      rw [Nat.foldr_bit_bits, ZMod.natCast_zmod_val]
+      rw [ofBits_bits, ZMod.natCast_zmod_val]
     simp only [Function.comp_apply, encodePedersenCommit_encode, hr]
   commit_polyTime := by
     have hkey : ComputableInPolyTime
