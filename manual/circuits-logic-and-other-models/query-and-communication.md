@@ -166,9 +166,42 @@ The [lower-bound client](../../CslibFrontierTests/CommunicationOneOutLowerBound.
 both theorems to equality of bits with `k = 2`. Run
 `scripts/build.sh CslibFrontierTests.CommunicationOneOutLowerBound` to check it.
 
-This is the communication part of submission 865: the upper bound, Lemma 5.2, Theorem 1.2 and
-Theorem 1.1. The formula-depth Corollary 1.3, Corollary 1.4, Theorem 1.5 and the
-composition/core results (Theorems 1.6–1.8) remain open in
+[OneOutEveryArity](../../CslibFrontier/Computability/Communication/OneOutEveryArity.lean)
+proves the communication half of Corollary 1.4, a linear bound at every arity.
+`ecomplexity_le_mul_oneOut` bounds `ecomplexity R univ univ` by
+`19 * ecomplexity (Relation (k := k) R) univ univ` plus
+`Nat.clog 2 (Fintype.card Z) + 3 * Nat.clog 2 (n + 1) + 3`. It needs the source's
+`k ≤ min {|X|, |Y|}`, because the proof pads tuples with distinct inputs.
+`ecomplexityFun_le_mul_oneOut` is the Boolean form with `+ 4` in place of the `Z` term.
+The proof keeps only the coordinates a protocol names at its leaves (`leafIndices`), at most
+`2 ^ depth` of them. `exists_solves_leafIndices` pads the inputs with
+`Function.Embedding.exists_extend_of_card_le` and then applies Theorem 1.2 at that arity.
+
+The formula-depth corollaries use partial Boolean functions `f : BitString n → Option Bool`,
+with `none` outside the domain.
+[PartialKarchmerWigderson](../../CslibFrontier/Computability/Circuit/Boolean/PartialKarchmerWigderson.lean)
+defines `partialFormulaDepth f`, the least `binaryCost` depth of a formula that agrees with `f`
+on its domain (`Formula.ComputesPartial`). On total functions it equals `formulaDepth`
+(`partialFormulaDepth_some`). `natCast_partialFormulaDepth_eq_ecomplexity` is the
+Karchmer–Wigderson theorem for partial functions, for `n ≥ 1`. Its game `kwRelation f` gives Alice
+an element of the subtype `f⁻¹(1)` and Bob one of `f⁻¹(0)`. The source puts Alice on `f⁻¹(0)`;
+exchanging the players does not change the complexity.
+[Agreement](../../CslibFrontier/Computability/Circuit/Boolean/Agreement.lean) defines
+`agreement k f`, the source's `Agr_k(f)`. It reads `k * n` bits as `k` blocks
+(`BitString.block`), and `agreement_eq_some_iff` gives its values for `k ≥ 1`.
+`ecomplexity_kwRelation_agreement` is Remark 3.5: the KW game of `agreement k f` is as hard
+as `OneOut.Relation (k := k) (kwRelation f)`. Corollary 1.3 is
+`partialFormulaDepth_agreement_le` together with `partialFormulaDepth_le_agreement`, which gives
+`D(f) ≤ D(Agr_k(f)) + 18 ⌈log₂ k⌉ + 4 ⌈log₂ (n + 1)⌉ + 3` for `k, n ≥ 1`.
+`partialFormulaDepth_le_mul` is the formula half of Corollary 1.4,
+`D(f) ≤ 19 D(Agr_k(f)) + 4 ⌈log₂ (n + 1)⌉ + 3`, when both preimages have at least `k` elements.
+The [agreement client](../../CslibFrontierTests/CircuitAgreement.lean) evaluates
+`agreement 2` on the first-bit function of two bits and applies both corollaries to it. Run
+`scripts/build.sh CslibFrontierTests.CircuitAgreement` to check it.
+
+This covers submission 865 through Corollary 1.4: the upper bound, Lemma 5.2, Theorems 1.1
+and 1.2, and Corollaries 1.3 and 1.4. Theorem 1.5 and the composition/core results
+(Theorems 1.6–1.8) remain open in
 [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
 
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).

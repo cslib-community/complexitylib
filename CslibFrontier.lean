@@ -1098,6 +1098,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.Step
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Operations
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Reduction
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.State
+public import CslibFrontier.Computability.Circuit.Boolean.Agreement
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
@@ -1298,6 +1299,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly.Closure
 public import CslibFrontier.Computability.Circuit.Boolean.PPolyHard
 public import CslibFrontier.Computability.Circuit.Boolean.Parity
+public import CslibFrontier.Computability.Circuit.Boolean.PartialKarchmerWigderson
 public import CslibFrontier.Computability.Circuit.Boolean.Polarization
 public import CslibFrontier.Computability.Circuit.Boolean.Polarization.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
@@ -1733,6 +1735,7 @@ public import CslibFrontier.Computability.Communication.Nondeterministic.Extensi
 public import CslibFrontier.Computability.Communication.Nondeterministic.Functions
 public import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
 public import CslibFrontier.Computability.Communication.OneOut
+public import CslibFrontier.Computability.Communication.OneOutEveryArity
 public import CslibFrontier.Computability.Communication.OneOutLargeRectangle
 public import CslibFrontier.Computability.Communication.OneOutLowerBound
 public import CslibFrontier.Computability.Communication.OneOutRectangle
