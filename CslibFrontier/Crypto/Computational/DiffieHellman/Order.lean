@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.DiffieHellman
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -18,7 +19,7 @@ import CslibFrontier.Tactic.PPT
 
 If a prime-order group family satisfies `DDH` for a setup distribution, then the expected inverse
 group order `n ↦ ∑' d, setup n d * (F.order d)⁻¹` is negligible, with no separate lower-bound
-hypothesis on the group orders. The distinguisher tests whether the third challenge element is the
+hypothesis on the group orders. The distinguisher tests whether the candidate shared element is the
 identity: it succeeds with probability `1 / q + (q - 1) / q²` on real triples and `1 / q` on
 random ones, so the expected inverse order is at most twice its advantage.
 
@@ -41,57 +42,24 @@ namespace Cslib.Crypto.PrimeOrderGroupFamily
 open Probability Probability.PMF Turing.MultiTapeTM
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
-/-- Test whether the third challenge element equals the encoded identity `0 • g` (original). -/
-private def ddhZeroDistinguisher (F : PrimeOrderGroupFamily) (_n : ℕ)
-    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
-  pure (decide (input.candidateShared =
-    F.smul (input.groupParameters, 0,
-      F.encode input.groupParameters (F.generator input.groupParameters))))
+/-- Test whether the candidate shared element is the identity (original). -/
+private def ddhZeroDistinguisher (F : PrimeOrderGroupFamily) : F.DDHDistinguisher :=
+  fun _ _ _ _ w => pure (decide (w = 0))
 
 private theorem isPPTOn_ddhZeroDistinguisher (F : PrimeOrderGroupFamily) :
-    IsPPTOn F.encDDHInput encBool (fun input => ddhZeroDistinguisher F input.1 input.2) := by
-  let EIn := F.encDDHInput
-  have hd : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) => input.2.groupParameters)
-      EIn F.encDesc := by
-    fun_prop
-  have hw : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) => input.2.candidateShared)
-      EIn encBits := by
-    fun_prop
-  have hgen : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
-        F.encode input.2.groupParameters (F.generator input.2.groupParameters)) EIn encBits :=
-    F.computableInPolyTime_generator.comp hd
-  have hzero : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
-        F.smul (input.2.groupParameters, 0,
-          F.encode input.2.groupParameters (F.generator input.2.groupParameters))) EIn encBits :=
-    F.computableInPolyTime_smul.comp (hd.prod ((ComputableInPolyTime.const 0).prod hgen))
-  have hdec : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
-        decide (input.2.candidateShared =
-          F.smul (input.2.groupParameters, 0,
-            F.encode input.2.groupParameters (F.generator input.2.groupParameters))))
-      EIn encBool := by
-    have hw_t := hw.tidy
-    have hzero_t := hzero.tidy
-    exact .of_tidy (by fun_prop)
-  exact hdec.isPPTOn
+    IsPPTOn F.encDDHInput encBool fun x => ddhZeroDistinguisher F x.secParam
+      x.groupParameters x.leftPublic x.rightPublic x.candidateShared := by
+  refine (ComputableInPolyTime.isPPTOn (f := fun x : F.DDHInput =>
+    decide (F.encode x.groupParameters x.candidateShared = F.encode x.groupParameters 0))
+    (by fun_prop)).congr fun x => ?_
+  simp [ddhZeroDistinguisher, (F.encode_injective _).eq_iff]
 
-private theorem decide_encode_smul_eq_zero_iff (F : PrimeOrderGroupFamily) (d : F.Desc)
+/-- The identity test accepts `γ • g` exactly when `γ = 0`. -/
+private theorem decide_smul_generator_eq_zero_iff (F : PrimeOrderGroupFamily) (d : F.Desc)
     (γ : ZMod (F.order d)) :
-    decide (F.encode d (γ • F.generator d) = F.smul (d, 0, F.encode d (F.generator d))) =
-      decide (γ = 0) := by
-  rw [F.smul_encode, Nat.cast_zero]
-  simp only [decide_eq_decide]
-  exact ⟨fun h => F.smul_generator_injective d (F.encode_injective d h), fun h => by rw [h]⟩
-
-private theorem uniform_decide_eq_zero_apply (F : PrimeOrderGroupFamily) (d : F.Desc) :
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-      PMF.pure (decide (γ = 0))) true = (F.order d : ℝ≥0∞)⁻¹ := by
-  rw [PMF.bind_apply, tsum_fintype]
-  simp [PMF.uniformOfFintype_apply, ZMod.card]
+    decide (γ • F.generator d = 0) = decide (γ = 0) :=
+  decide_eq_decide.mpr ⟨fun h => F.smul_generator_injective d (h.trans (zero_smul _ _).symm),
+    fun h => by rw [h, zero_smul]⟩
 
 private theorem uniform_mul_decide_eq_zero_apply (F : PrimeOrderGroupFamily) (d : F.Desc) :
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
@@ -108,7 +76,8 @@ private theorem uniform_mul_decide_eq_zero_apply (F : PrimeOrderGroupFamily) (d 
     · subst hα
       simp [PMF.bind_const]
     · simp only [hα, ↓reduceIte, mul_eq_zero, false_or]
-      exact uniform_decide_eq_zero_apply F d
+      simpa only [eq_comm, ZMod.card] using uniformOfFintype_bind_decide_eq_apply_true
+        (0 : ZMod (F.order d))
   rw [PMF.bind_apply, tsum_fintype]
   simp only [hinner, PMF.uniformOfFintype_apply, ZMod.card]
   rw [← Finset.sum_erase_add _ _ (Finset.mem_univ (0 : ZMod (F.order d)))]
@@ -129,41 +98,34 @@ private theorem uniform_mul_decide_eq_zero_apply (F : PrimeOrderGroupFamily) (d 
   simp [add_comm]
 
 /-- For any setup distribution `setup`, the expected inverse group order
-`∑' d, setup n d * (F.order d)⁻¹` is at most twice the DDH advantage of testing whether the third
-challenge element is the identity (original). -/
+`∑' d, setup n d * (F.order d)⁻¹` is at most twice the DDH advantage of testing whether the
+candidate shared element is the identity (original). -/
 private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroupFamily)
     (setup : ℕ → PMF F.Desc) (n : ℕ) :
     (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal ≤
       2 * Game.advantage (F.ddhRealGame setup (ddhZeroDistinguisher F) n)
-        (F.ddhIdealGame setup (ddhZeroDistinguisher F) n) := by
+        (F.ddhRandomGame setup (ddhZeroDistinguisher F) n) := by
   have hreal :
       (F.ddhRealGame setup (ddhZeroDistinguisher F) n) true =
         (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹) +
         (∑' d, setup n d *
           (((F.order d - 1 : ℕ) : ℝ≥0∞) * ((F.order d : ℝ≥0∞)⁻¹ * (F.order d : ℝ≥0∞)⁻¹))) := by
-    simp only [ddhRealGame, eval_ddhRealExperiment, ddhZeroDistinguisher,
-      ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.bind_apply]
-    rw [← tsum_add]
+    simp only [ddhRealGame, ddhRealExperiment, ddhZeroDistinguisher, ProbComp.eval_bind,
+      ProbComp.eval_uniform, ProbComp.eval_pure, decide_smul_generator_eq_zero_iff F,
+      PMF.monad_bind_eq_bind]
+    rw [PMF.bind_apply, ← tsum_add]
     refine tsum_congr fun d => ?_
-    have hstep :
-        (∑' α, PMF.uniformOfFintype (ZMod (F.order d)) α *
-          ∑' β, PMF.uniformOfFintype (ZMod (F.order d)) β *
-            PMF.pure (decide (F.encode d ((α * β) • F.generator d) =
-              F.smul (d, 0, F.encode d (F.generator d)))) true) =
-        ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-          (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
-            PMF.pure (decide (α * β = 0))) true := by
-      simp only [PMF.bind_apply, decide_encode_smul_eq_zero_iff F d]
-    rw [hstep, uniform_mul_decide_eq_zero_apply F d, mul_add]
+    rw [uniform_mul_decide_eq_zero_apply F d, mul_add]
   have hideal :
-      (F.ddhIdealGame setup (ddhZeroDistinguisher F) n) true =
+      (F.ddhRandomGame setup (ddhZeroDistinguisher F) n) true =
         ∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹ := by
-    simp only [ddhIdealGame, eval_ddhIdealExperiment, ddhZeroDistinguisher,
-      ProbComp.eval_pure, PMF.monad_bind_eq_bind]
+    simp only [ddhRandomGame, ddhRandomExperiment, ddhZeroDistinguisher, ProbComp.eval_bind,
+      ProbComp.eval_uniform, ProbComp.eval_pure, decide_smul_generator_eq_zero_iff F,
+      PMF.bind_const, PMF.monad_bind_eq_bind]
     rw [PMF.bind_apply]
     refine tsum_congr fun d => congrArg (setup n d * ·) ?_
-    simp only [decide_encode_smul_eq_zero_iff F d, PMF.bind_const]
-    exact uniform_decide_eq_zero_apply F d
+    simpa only [eq_comm, ZMod.card] using uniformOfFintype_bind_decide_eq_apply_true
+      (0 : ZMod (F.order d))
   have hle_sum :
       ∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹ ≤
         2 * ∑' d, setup n d *
@@ -186,7 +148,7 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
           ring
   have hreal_top : (F.ddhRealGame setup (ddhZeroDistinguisher F) n) true ≠ ⊤ :=
     PMF.apply_ne_top _ _
-  have hideal_top : (F.ddhIdealGame setup (ddhZeroDistinguisher F) n) true ≠ ⊤ :=
+  have hideal_top : (F.ddhRandomGame setup (ddhZeroDistinguisher F) n) true ≠ ⊤ :=
     PMF.apply_ne_top _ _
   have hrem_top :
       (∑' d, setup n d *
@@ -208,7 +170,7 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
         (((F.order d - 1 : ℕ) : ℝ≥0∞) *
           ((F.order d : ℝ≥0∞)⁻¹ * (F.order d : ℝ≥0∞)⁻¹))).toNNReal =
         Game.advantage (F.ddhRealGame setup (ddhZeroDistinguisher F) n)
-          (F.ddhIdealGame setup (ddhZeroDistinguisher F) n) := by
+          (F.ddhRandomGame setup (ddhZeroDistinguisher F) n) := by
     apply NNReal.eq
     rw [Game.coe_advantage]
     have hsucc_real :
@@ -220,7 +182,7 @@ private theorem expected_inv_order_le_two_mul_advantage_ddh (F : PrimeOrderGroup
       unfold Game.succProbability
       rw [hreal, ENNReal.toNNReal_add hexp_top hrem_top]
     have hsucc_ideal :
-        Game.succProbability (F.ddhIdealGame setup (ddhZeroDistinguisher F) n) =
+        Game.succProbability (F.ddhRandomGame setup (ddhZeroDistinguisher F) n) =
           (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal := by
       unfold Game.succProbability
       rw [hideal]

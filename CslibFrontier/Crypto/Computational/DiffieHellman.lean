@@ -273,6 +273,22 @@ theorem computableInPolyTime_words :
 
 end DDHInput
 
+variable {F} in
+/-- The encoded generator of computed group parameters. -/
+@[fun_prop] theorem computableInPolyTime_encode_generator {α : Type} {enc : α ↪ List Bool}
+    {d : α → F.Desc} (hd : ComputableInPolyTime d enc F.encDesc) :
+    ComputableInPolyTime (fun a => F.encode (d a) (F.generator (d a))) enc encBits :=
+  F.computableInPolyTime_generator.comp hd
+
+variable {F} in
+/-- The encoded identity of computed group parameters, computed as `0 • g`. -/
+@[fun_prop] theorem computableInPolyTime_encode_zero {α : Type} {enc : α ↪ List Bool}
+    {d : α → F.Desc} (hd : ComputableInPolyTime d enc F.encDesc) :
+    ComputableInPolyTime (fun a => F.encode (d a) 0) enc encBits :=
+  .of_enc_eq (F.computableInPolyTime_smul.comp
+      (hd.prod ((ComputableInPolyTime.const 0).prod (computableInPolyTime_encode_generator hd))))
+    fun a => by simp [F.smul_encode]
+
 /-! ### Computational Diffie–Hellman (CDH) -/
 
 /-- A CDH adversary over the family: given the security parameter, public group parameters `d`
