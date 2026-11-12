@@ -63,6 +63,7 @@ namespace Cslib.Logic.FO.Ordered.TCModelChecker
 
 open Turing Turing.CounterProgram Turing.CounterProgram.Block Expr Vocabulary.ModelChecker
 open Operator (Formula RelEnv)
+open ClosureKernel (termE getD_pair)
 
 variable {L : Language.{u, v}} [L.IsRelational] {v : Vocabulary L}
 
@@ -115,12 +116,12 @@ private theorem body_correct {Γ : List ℕ} {α : Type} {k : ℕ}
       cases x with
       | inl x => have := hfv x; simp only [Sum.elim_inl]; omega
       | inr i => have : (i : ℕ) < 2 * k := i.isLt; simp only [Sum.elim_inr]; omega)
-    hd ((hk.2.1 0 hbase).trans h0)
+    hd ((hk.getD_eq 0 hbase).trans h0)
     (fun x => by
       cases x with
-      | inl x => simp only [Sum.elim_inl]; exact (hk.2.1 _ (hfv x)).trans (hv x)
+      | inl x => simp only [Sum.elim_inl]; exact (hk.getD_eq _ (hfv x)).trans (hv x)
       | inr i => exact getD_pair hu hw i)
-    hk.2.2
+    hk.bounded
   exact ⟨hs.mono fun regs' h => ⟨h.1, hsat.mpr h.2⟩, fun h => hc (hsat.mp h)⟩
 
 /-- One test of the counting block of a negated closure, with the compiled body as walk and
@@ -175,31 +176,33 @@ private theorem test_correct (hE : Env v a P B Post R) {Γ : List ℕ} {α : Typ
     obtain ⟨⟨hk₃, -, hu, -⟩, hw⟩ := hmid
     rw [length_compile]
     exact ((body_correct ih hΓ hWb hbase hfv h0 hv hEiff (by omega) (by omega) true hwb
-      (hkW.trans (hk₃.mono (by omega))) (by rw [hk₃.1, hkW.1]; omega) hu hw).1).mono
+      (hkW.trans (hk₃.mono (by omega))) (by rw [hk₃.length_eq, hkW.length_eq]; omega) hu
+      hw).1).mono
       fun regs' h => ⟨h.1.mono (by omega), h.2⟩
   · intro regs₂ xs ys hk₂ hx hy
     exact sound_of_eq ((body_correct ih hΓ hWb hbase hfv h0 hv hEiff (by omega) (by omega)
-      true (codeAt_of_eq h18 (by omega)) hk₂ (by rw [hk₂.1]; omega) hx hy).1.mono
+      true (codeAt_of_eq h18 (by omega)) hk₂ (by rw [hk₂.length_eq]; omega) hx hy).1.mono
       fun regs' h => ⟨h.1, h.2⟩) (by omega) (by omega)
   · intro regs₂ xs ys hk₂ hx hy
     exact sound_of_eq ((body_correct ih hΓ hWb hbase hfv h0 hv hEiff (by omega) (by omega)
-      false (codeAt_of_eq h20 (by rw [length_compile]; omega)) hk₂ (by rw [hk₂.1]; omega) hx
+      false (codeAt_of_eq h20 (by rw [length_compile]; omega)) hk₂ (by rw [hk₂.length_eq]; omega) hx
       hy).1.mono fun regs' h => ⟨h.1, h.2⟩) (by rw [length_compile]; omega)
       (by simp only [length_compile]; omega)
   · intro regsW us ws t regs₃ hkW hmid he
     obtain ⟨⟨hk₃, -, hu, -⟩, hw⟩ := hmid
     rw [length_compile]
     exact ((body_correct ih hΓ hWb hbase hfv h0 hv hEiff (by omega) (by omega) true hwb
-      (hkW.trans (hk₃.mono (by omega))) (by rw [hk₃.1, hkW.1]; omega) hu hw).2 he).mono
+      (hkW.trans (hk₃.mono (by omega))) (by rw [hk₃.length_eq, hkW.length_eq]; omega) hu
+      hw).2 he).mono
       fun regs' h => h.mono (by omega)
   · intro regs₂ xs ys hk₂ hx hy he
     exact complete_of_eq ((body_correct ih hΓ hWb hbase hfv h0 hv hEiff (by omega)
-      (by omega) true (codeAt_of_eq h18 (by omega)) hk₂ (by rw [hk₂.1]; omega) hx hy).2 he)
+      (by omega) true (codeAt_of_eq h18 (by omega)) hk₂ (by rw [hk₂.length_eq]; omega) hx hy).2 he)
       (by omega) (by omega)
   · intro regs₂ xs ys hk₂ hx hy he
     exact complete_of_eq ((body_correct ih hΓ hWb hbase hfv h0 hv hEiff (by omega)
       (by omega) false (codeAt_of_eq h20 (by rw [length_compile]; omega)) hk₂
-      (by rw [hk₂.1]; omega) hx hy).2 he) (by rw [length_compile]; omega)
+      (by rw [hk₂.length_eq]; omega) hx hy).2 he) (by rw [length_compile]; omega)
       (by simp only [length_compile]; omega)
 
 theorem correct_op (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type} (k : ℕ)
@@ -276,7 +279,7 @@ theorem correct_op (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type} (k : �
     obtain ⟨⟨hk, hlen, hu, -⟩, hw⟩ := hmid
     rw [hcl]
     exact body_correct ih hΓ hWb hbase hfv h0 hv (fun _ _ => Iff.rfl) le_rfl (by omega) true
-      (tcCode_parts hP').2.2.2.2.2.2.1 hk (by rw [hk.1]; omega) hu hw
+      (tcCode_parts hP').2.2.2.2.2.2.1 hk (by rw [hk.length_eq]; omega) hu hw
   obtain ⟨regsI, hrI, hinvI⟩ := loop_init (w := encStructure a) hP' (by omega)
     hE.card_le hregs hsrc
   refine ⟨Sound.of_oblivious hE.one_le hrI ?_, fun hsat => Complete.of_oblivious hrI ?_⟩
@@ -400,7 +403,7 @@ theorem allBranches_decider {φ : Formula (language L) TC.shape [] Empty}
         RelEnv.empty (5 + 6 * v.count) (5 + 6 * v.count + len φ true) regs₁ hcomp (by decide)
         (fun e => e.elim) (by rw [hlen₁]; simp) (h0₁ hwf) (fun e => e.elim) hB₁
       refine hC.1.bind fun regs' ⟨hk, hsat⟩ => Sound.halt hB1 (by rw [hacc]; rfl)
-        (fun _ _ => ?_) hk.2.2
+        (fun _ _ => ?_) hk.bounded
       exact (show v.WellFormed a ∧ ∃ hn : 2 ≤ a.1, decoded v a hn ∈ K from
         ⟨hwf, hn, (hφ (decoded v a hn)).mpr hsat⟩)
     · refine Sound.of_oblivious hB1 (l' := 6 + 6 * v.count + len φ true) (regs' := regs₁) ?_
