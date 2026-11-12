@@ -82,6 +82,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.SchoeningMachine
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
+import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
@@ -4300,3 +4301,29 @@ register_result "kleene-post-below-jump" where
     many-one reduction of the one-step extension question Halts to halting. Constructs total \
     Δ⁰₂ sets below ∅′; no c.e. property is proved. Friedberg–Muchnik, Sacks splitting/density \
     and Spector's minimal degree remain open (#3379)."
+
+register_result "w-hierarchy-subset-xp" where
+  title := "WeightedCircuitSAT, W[P] and every level W[t] of the W-hierarchy lie in XP"
+  topic := "parameterized complexity"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "weighted-circuit enumeration; Definition 13.16 (W[t])",
+      locator := "Section 13.3, pp. 436–437 (authors' May 30, 2016 PDF)" }
+  ]
+  theorems := [
+    Cslib.Complexity.WeightedCircuitSAT_mem_XP,
+    Cslib.Complexity.WP_subset_XP,
+    Cslib.Complexity.W_subset_XP,
+    Cslib.Complexity.WCS_mem_XP,
+    Cslib.Complexity.W_subset_WP,
+    Cslib.Complexity.WP_eq_FPT_iff,
+    Cslib.Complexity.IndependentSet_mem_XP,
+    Cslib.Complexity.Clique_mem_XP
+  ]
+  scope := "Instances of WeightedCircuitSAT encode a one-output unbounded fan-in Boolean circuit \
+    with unary input count, framed before the binary target weight k. Exhaustive search \
+    over min(n, k)-tuples of input wires gives independent native multi-tape time and workspace \
+    bounds C * 2^(D*k) * (L+1)^(D*k+D), hence XP membership. Library fpt-reduction closure gives \
+    FPT ⊆ W[t] ⊆ WP ⊆ XP for every t and XP membership for WCS t d, Clique and IndependentSet. \
+    WP denotes this library's reduction closure with arbitrary, potentially ineffective time \
+    and parameter bounds; equivalence with the effective literature W[P] is not claimed. Circuits \
+    are straight-line programs, with the basis conventions documented in WHierarchy.lean."
