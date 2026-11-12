@@ -314,7 +314,7 @@ theorem Clique_wHard : WHard 1 encCliqueInstance (·.m) Clique :=
 /-- **`IndependentSet` is `W[1]`-hard** [Cygan et al., Chapter 13][CyganEtAl2015], by
 complementing the graph. -/
 theorem IndependentSet_wHard : WHard 1 encIndependentSetInstance (·.m) IndependentSet :=
-  Clique_wHard.fptReducible fptReducible_Clique_IndependentSet
+  Clique_wHard.trans fptReducible_Clique_IndependentSet
 
 /-- **`W[1] = FPT` exactly when `Clique` is in `FPT`**, for every problem type, encoding and
 parameter. -/
