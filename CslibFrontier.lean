@@ -3958,6 +3958,7 @@ public import CslibFrontier.Computability.RAM.Defs
 public import CslibFrontier.Computability.RAM.Input
 public import CslibFrontier.Computability.RAM.Squaring
 public import CslibFrontier.Computability.Reduction.ManyOne
+public import CslibFrontier.Computability.Reduction.TruthTable
 public import CslibFrontier.Computability.StreamArithmetic.EstimatorRecipes
 public import CslibFrontier.Computability.StreamArithmetic.Interface
 public import CslibFrontier.Computability.StreamArithmetic.Primitives
