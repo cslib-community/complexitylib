@@ -3515,6 +3515,7 @@ public import CslibFrontier.Computability.Pebbling.ReversiblePath
 public import CslibFrontier.Computability.Pebbling.ReversiblePathReachable
 public import CslibFrontier.Computability.Pebbling.Words
 public import CslibFrontier.Computability.PolyTime.BitString.InitialTestsSearch
+public import CslibFrontier.Computability.PolyTime.BitString.TannerSearch
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
@@ -4922,6 +4923,8 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.AffinePlane
 public import CslibFrontier.Foundations.Combinatorics.Expander.AffineTower
 public import CslibFrontier.Foundations.Combinatorics.Expander.Basic
 public import CslibFrontier.Foundations.Combinatorics.Expander.Bipartite
+public import CslibFrontier.Foundations.Combinatorics.Expander.BipartiteRotation
+public import CslibFrontier.Foundations.Combinatorics.Expander.BipartiteTanner
 public import CslibFrontier.Foundations.Combinatorics.Expander.BoxProduct
 public import CslibFrontier.Foundations.Combinatorics.Expander.Cayley
 public import CslibFrontier.Foundations.Combinatorics.Expander.Cheeger
@@ -5193,6 +5196,7 @@ public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.Constant
 public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import CslibFrontier.Foundations.Data.Code.Multilinearity
 public import CslibFrontier.Foundations.Data.Code.MultilinearitySoundness
+public import CslibFrontier.Foundations.Data.Code.ParityCheck
 public import CslibFrontier.Foundations.Data.Code.Plotkin
 public import CslibFrontier.Foundations.Data.Code.Plotkin.Asymptotic
 public import CslibFrontier.Foundations.Data.Code.ReedMuller

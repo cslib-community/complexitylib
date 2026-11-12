@@ -1730,3 +1730,13 @@ Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-
 ## zre15
 
 Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.
+
+<a id="hoorylinialwigderson06"></a>
+## hoorylinialwigderson06
+
+Shlomo Hoory, Nathan Linial and Avi Wigderson. "Expander graphs and their applications." *Bulletin of the American Mathematical Society* 43(4):439-561, 2006. The library formalization pins the May 3, 2006 draft (`expanderbookr1.pdf`). Section 2.4 (Lemma 2.5) covers the singular-value adaptation (separated from the GV coding background in §12.3.1), mapping the adjacency-eigenvalue normalization to the normalized biadjacency singular value (including bipartite trivial modes) with `d = |D|`, `N = |L| = |R|`, and edge count `d*N`.
+
+<a id="sipserspielman96"></a>
+## sipserspielman96
+
+Michael Sipser and Daniel A. Spielman. "Expander codes." *IEEE Transactions on Information Theory* 42(6):1710-1722, 1996. Section VI (Lemma 15, pp. 1715-1716) provides the local-to-global distance formula. The formalization marks two-code, asymmetric, arbitrary-alphabet, and finite-ring extensions as original adaptations.
