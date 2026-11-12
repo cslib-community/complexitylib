@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Communication.OneOutLargeRectangle
-public import CslibFrontier.Probability.MajorityTree
+public import CslibFrontier.Foundations.Combinatorics.MajorityTree
 import CslibFrontier.Probability.Minimax
 import CslibFrontier.Probability.PMF.Event
 import Mathlib.Tactic
@@ -20,17 +20,17 @@ import Mathlib.Tactic
 relation `R` on finite nonempty sets with `|A|, |B| ≤ 2ⁿ`,
 `CC(R) ≤ max {CC(OneOut_k(R)), ⌈log₂ |O|⌉} + O(log k + log n)`, and Theorem 1.1, its
 specialization to Boolean functions. Here the constant is explicit:
-`ecomplexity_le_oneOut` bounds the additive term by `18 ⌈log₂ k⌉ + 3 ⌈log₂ (n + 1)⌉ + 6`.
+`ecomplexity_le_oneOut` bounds the additive term by `18 ⌈log₂ k⌉ + 3 ⌈log₂ (n + 1)⌉ + 3`.
 
 The proof follows the source. A `SolvableRectangle R d` is a rectangle together with a protocol
 of depth at most `d` solving `R` on it. By Lemma 5.2 (`exists_large_solvable_rectangle`) and the
 minimax theorem, some distribution over solvable rectangles covers every input of either player
 with probability at least `1/2 + 1/(4k²)` (`exists_covering_distribution`). Valiant's
-amplification (`Probability.MajorityTree.exists_height_eq_forall_eval_eq`, the source's Lemma 3.7)
-turns it into a majority tree of solvable rectangles whose majority covers every input
-(`exists_covering_tree`). The players walk down the tree as in the Karchmer–Wigderson game of the
-monotone majority formula, with three bits per level, to a leaf rectangle containing both inputs
-(`walk`, `walk_solves`), where they run its protocol.
+amplification (`Cslib.exists_forall_majTree_majTree_eq`, the source's Lemma 3.7, over the
+majority trees `Cslib.majTree` weighted by that distribution) gives a majority tree of majority
+trees of rectangle sides whose majority covers every input. The players walk down the trees as in
+the Karchmer–Wigderson game of the monotone majority formula, with three bits per level, to a leaf
+rectangle containing both inputs (`walk`, `walk_solves`), where they run its protocol.
 
 Majority gates are walked directly rather than through `Circuits.Formula.monotoneKWProtocol`,
 because leaves are rectangles carrying protocols, not formula variables.
@@ -38,7 +38,8 @@ because leaves are rectangles carrying protocols, not formula variables.
 ## Main definitions
 
 * `Cslib.Communication.OneOut.SolvableRectangle`: a rectangle with a protocol solving `R` on it.
-* `Cslib.Communication.OneOut.walk`: the protocol walking a majority tree of solvable rectangles.
+* `Cslib.Communication.OneOut.walk`: the protocol walking a majority tree whose leaves carry
+  protocols.
 
 ## Main results
 
@@ -52,7 +53,7 @@ public section
 
 namespace Cslib.Communication.OneOut
 
-open Protocol Cslib.Probability
+open Protocol
 
 variable {X Y Z : Type*} {k : ℕ}
 
@@ -71,14 +72,6 @@ structure SolvableRectangle (R : X → Y → Z → Prop) (d : ℕ) where
   solves : protocol.Solves R alice bob
 
 variable {R : X → Y → Z → Prop} {d : ℕ}
-
-open scoped Classical in
-/-- Alice's leaf value: her input lies in the rectangle. -/
-noncomputable def aliceBit (x : X) (r : SolvableRectangle R d) : Bool := decide (x ∈ r.alice)
-
-open scoped Classical in
-/-- Bob's leaf value: his input lies outside the rectangle. -/
-noncomputable def bobBit (y : Y) (r : SolvableRectangle R d) : Bool := decide (y ∉ r.bob)
 
 /-- A solvable rectangle covers an input of either player when the input lies on its side. -/
 @[expose] def SolvableRectangle.Covers (r : SolvableRectangle R d) : X ⊕ Y → Prop :=
@@ -179,51 +172,67 @@ private theorem exists_covers_ge [Finite X] [Finite Y] [Fintype Z] (z₀ : Z)
   rw [hμA, hνB] at hm
   nlinarith
 
-/-- Walk a majority tree of solvable rectangles. At a majority of three subtrees, Alice holds at
-least two subtrees whose majority contains her input, and Bob at most one whose majority excludes
-his input. Alice says whether her two are the first two and, if not, whether the first is one of
-them; Bob then names one of her two candidates that he does not exclude. At a leaf the players run
-its protocol. -/
-noncomputable def walk : MajorityTree (SolvableRectangle R d) → Protocol X Y Z
-  | .leaf r => r.protocol
-  | .node a b c =>
-    .alice (fun x => a.eval (aliceBit x) && b.eval (aliceBit x))
-      (.alice (fun x => a.eval (aliceBit x))
-        (.bob (fun y => b.eval (bobBit y)) (walk b) (walk c))
-        (.bob (fun y => a.eval (bobBit y)) (walk a) (walk c)))
-      (.bob (fun y => a.eval (bobBit y)) (walk a) (walk b))
+section Walk
+
+variable {H : Type*} (leaf : H → Protocol X Y Z) (a : X → H → Bool) (b : Y → H → Bool)
+
+/-- The `j`-th of the three subtrees of a majority tree of depth `L + 1`. -/
+private def block {L : ℕ} (V : Fin (3 ^ (L + 1)) → H) (j : Fin 3) : Fin (3 ^ L) → H :=
+  fun i => V (tripleEquiv L (j, i))
+
+private theorem majTree_succ_comp {L : ℕ} (g : H → Bool) (V : Fin (3 ^ (L + 1)) → H) :
+    majTree (L + 1) (g ∘ V) =
+      maj3 (majTree L (g ∘ block V 0)) (majTree L (g ∘ block V 1)) (majTree L (g ∘ block V 2)) :=
+  rfl
+
+/-- Walk the majority tree `majTree L` over the leaves `V`. Alice's leaf value `a x h` says that
+her input is inside leaf `h`, and Bob's leaf value `b y h` that his input is outside it. At a
+majority of three subtrees, Alice holds at least two subtrees whose majority contains her input,
+and Bob at most one whose majority excludes his input. Alice says whether her two are the first
+two and, if not, whether the first is one of them; Bob then names one of her two candidates that he
+does not exclude. At a leaf the players run its protocol. -/
+def walk : (L : ℕ) → (Fin (3 ^ L) → H) → Protocol X Y Z
+  | 0, V => leaf (V ⟨0, by simp⟩)
+  | L + 1, V =>
+    .alice (fun x => majTree L (a x ∘ block V 0) && majTree L (a x ∘ block V 1))
+      (.alice (fun x => majTree L (a x ∘ block V 0))
+        (.bob (fun y => majTree L (b y ∘ block V 1)) (walk L (block V 1)) (walk L (block V 2)))
+        (.bob (fun y => majTree L (b y ∘ block V 0)) (walk L (block V 0)) (walk L (block V 2))))
+      (.bob (fun y => majTree L (b y ∘ block V 0)) (walk L (block V 0)) (walk L (block V 1)))
 
 /-- The walk sends three bits per level, then runs a leaf protocol. -/
-theorem depth_walk_le (t : MajorityTree (SolvableRectangle R d)) :
-    (walk t).depth ≤ 3 * t.height + d := by
-  induction t with
-  | leaf r => simpa [walk, MajorityTree.height] using r.depth_le
-  | node a b c iha ihb ihc =>
-    simp only [walk, depth_alice, depth_bob, MajorityTree.height]
+theorem depth_walk_le {d : ℕ} (hleaf : ∀ h, (leaf h).depth ≤ d) :
+    ∀ (L : ℕ) (V : Fin (3 ^ L) → H), (walk leaf a b L V).depth ≤ 3 * L + d
+  | 0, V => by simpa [walk] using hleaf _
+  | L + 1, V => by
+    have h0 := depth_walk_le hleaf L (block V 0)
+    have h1 := depth_walk_le hleaf L (block V 1)
+    have h2 := depth_walk_le hleaf L (block V 2)
+    simp only [walk, depth_alice, depth_bob]
     omega
 
-/-- If the tree's majority contains Alice's input and does not exclude Bob's, the walk solves
-`R`. -/
-theorem walk_solves (t : MajorityTree (SolvableRectangle R d)) (x : X) (y : Y)
-    (hx : t.eval (aliceBit x) = true) (hy : t.eval (bobBit y) = false) :
-    R x y ((walk t).run x y) := by
-  induction t with
-  | leaf r =>
-    simp only [MajorityTree.eval, aliceBit, bobBit, decide_eq_true_eq, decide_eq_false_iff_not,
-      not_not] at hx hy
-    exact r.solves x hx y hy
-  | node a b c iha ihb ihc =>
-    simp only [MajorityTree.eval] at hx hy
-    cases hea : a.eval (aliceBit x) <;> cases heb : b.eval (aliceBit x) <;>
-      cases hec : c.eval (aliceBit x) <;> cases hfa : a.eval (bobBit y) <;>
-      cases hfb : b.eval (bobBit y) <;> cases hfc : c.eval (bobBit y) <;>
+/-- If the majority of Alice's leaf values is `true` and the majority of Bob's is `false`, and
+every leaf protocol solves `R` where both leaf values say so, then the walk solves `R`. -/
+theorem walk_solves {R : X → Y → Z → Prop}
+    (hleaf : ∀ h x y, a x h = true → b y h = false → R x y ((leaf h).run x y)) :
+    ∀ (L : ℕ) (V : Fin (3 ^ L) → H) (x : X) (y : Y), majTree L (a x ∘ V) = true →
+      majTree L (b y ∘ V) = false → R x y ((walk leaf a b L V).run x y)
+  | 0, V, x, y, hx, hy => hleaf _ x y hx hy
+  | L + 1, V, x, y, hx, hy => by
+    have ih (j : Fin 3) := walk_solves hleaf L (block V j) x y
+    rw [majTree_succ_comp] at hx hy
+    cases hea : majTree L (a x ∘ block V 0) <;> cases heb : majTree L (a x ∘ block V 1) <;>
+      cases hec : majTree L (a x ∘ block V 2) <;> cases hfa : majTree L (b y ∘ block V 0) <;>
+      cases hfb : majTree L (b y ∘ block V 1) <;> cases hfc : majTree L (b y ∘ block V 2) <;>
       simp only [hea, heb, hec, hfa, hfb, hfc] at hx hy <;>
       first
         | exact absurd hx (by decide)
         | exact absurd hy (by decide)
         | (simp only [walk, run_alice, run_bob, hea, heb, hfa, hfb, Bool.and_true, Bool.and_false,
             Bool.cond_true, Bool.cond_false]
-           first | exact iha hea hfa | exact ihb heb hfb | exact ihc hec hfc)
+           first | exact ih 0 hea hfa | exact ih 1 heb hfb | exact ih 2 hec hfc)
+
+end Walk
 
 open scoped Classical in
 /-- **The minimax step** of the proof of Theorem 1.2. Some distribution over solvable
@@ -258,9 +267,9 @@ theorem exists_covering_distribution [Finite X] [Finite Y] [Fintype Z] [Nonempty
   exact ⟨Λ, fun x => hcov (.inl x), fun y => hcov (.inr y)⟩
 
 /-- The number of amplification levels used for arity `k` and `N = |X| + |Y|` inputs:
-`3 ⌈log₂ k²⌉` levels raise the advantage to `1/4`, and `2 + ⌈log₂ ⌈log₂ N⌉⌉` more make the
-error smaller than `1/N`. -/
-@[expose] def levels (k N : ℕ) : ℕ := 3 * Nat.clog 2 (k ^ 2) + (2 + Nat.clog 2 (Nat.clog 2 N))
+`3 ⌈log₂ k²⌉ + 1` inner levels push the error below `1/6`, and `⌈log₂ ⌈log₂ N⌉⌉` outer levels
+correct all `N` inputs at once. -/
+@[expose] def levels (k N : ℕ) : ℕ := 3 * Nat.clog 2 (k ^ 2) + 1 + Nat.clog 2 (Nat.clog 2 N)
 
 /-- `(11/8)^(3 ⌈log₂ k²⌉)` is at least `k²`. -/
 private theorem sq_le_eleven_eighths_pow (k : ℕ) :
@@ -275,7 +284,9 @@ open scoped Classical in
 /-- **The amplified protocol** (proof of [ChukhinKulikovMihajlinSmal2026], Theorem 1.2, printed
 pp. 11–12; PDF pp. 12–13). If `p` solves the one-out-of-`k` problem for a total relation `R` on
 finite nonempty types, some protocol of depth at most `max p.depth ⌈log₂ |Z|⌉ + 3 · levels k N`,
-with `N = |X| + |Y|`, solves `R` on all inputs. -/
+with `N = |X| + |Y|`, solves `R` on all inputs. The leaves are the finitely many sides of solvable
+rectangles, weighted by the covering distribution; `exists_forall_majTree_majTree_eq` amplifies
+it, and the players walk the two nested majority trees. -/
 theorem exists_solves_depth_le [Fintype X] [Fintype Y] [Fintype Z] [Nonempty X] [Nonempty Y]
     (htotal : ∀ x y, ∃ z, R x y z)
     {p : Protocol (Fin k ↪ X) (Fin k ↪ Y) (Answer k Z)}
@@ -289,42 +300,78 @@ theorem exists_solves_depth_le [Fintype X] [Fintype Y] [Fintype Z] [Nonempty X] 
   have : Nonempty Z := ⟨(htotal x₀ y₀).choose⟩
   set D := max p.depth (Nat.clog 2 (Fintype.card Z))
   obtain ⟨Λ, hA, hB⟩ := exists_covering_distribution htotal hp
-  -- Leaf values: Alice's input is inside, Bob's input is outside.
-  let v : SolvableRectangle R D → X ⊕ Y → Bool := fun r z =>
-    Sum.elim (fun x => aliceBit x r) (fun y => bobBit y r) z
+  -- Leaves: the finitely many sides of solvable rectangles, each with a chosen protocol.
+  let sides : SolvableRectangle R D → Set X × Set Y := fun r => (r.alice, r.bob)
+  let I := Set.range sides
+  have : Fintype I := Fintype.ofFinite I
+  let rep : I → SolvableRectangle R D := fun i => i.2.choose
+  have hrep (i : I) : sides (rep i) = i.1 := i.2.choose_spec
+  let Λ' : PMF I := Λ.map fun r => ⟨sides r, r, rfl⟩
+  let w : I → ℝ := fun i => (Λ' i).toReal
+  -- The weight of the leaves outside `{i | P (sides i)}` is one minus the covered mass.
+  have hmiss (P : Set X × Set Y → Prop) [DecidablePred P] :
+      ∑ i with ¬ P i.1, w i = 1 - (Λ.toOuterMeasure {r | P (sides r)}).toReal := by
+    have hc := Cslib.Probability.PMF.toOuterMeasure_toReal_add_compl Λ' {i | P i.1}
+    rw [PMF.toOuterMeasure_map_apply] at hc
+    have hsum : (Λ'.toOuterMeasure {i | P i.1}ᶜ).toReal = ∑ i with ¬ P i.1, w i := by
+      rw [Cslib.Probability.PMF.toOuterMeasure_apply_toReal, Finset.sum_filter]
+      exact Finset.sum_congr rfl fun i _ => by unfold w; split_ifs <;> simp_all
+    rw [← hsum]
+    exact eq_sub_of_add_eq' hc
+  let a : X → I → Bool := fun x i => decide (x ∈ i.1.1)
+  let b : Y → I → Bool := fun y i => decide (y ∉ i.1.2)
+  let val : X ⊕ Y → I → Bool := Sum.elim a b
   let f : X ⊕ Y → Bool := Sum.elim (fun _ => true) (fun _ => false)
-  have hmass (E : SolvableRectangle R D → Bool) :
-      (Λ.map E) true = Λ.toOuterMeasure {r | E r = true} := by
-    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-    rfl
+  set m₁ := 3 * Nat.clog 2 (k ^ 2)
+  set m₂ := Nat.clog 2 (Nat.clog 2 (Fintype.card (X ⊕ Y)))
   have hk' : (k : ℝ) ≠ 0 := by exact_mod_cast hk.ne'
-  obtain ⟨t, ht, hcorrect⟩ := MajorityTree.exists_height_eq_forall_eval_eq Λ v f
-    (ε := ((k : ℝ) ^ 2)⁻¹ / 4) (by positivity)
-    (fun z => by
+  obtain ⟨V, hV⟩ := exists_forall_majTree_majTree_eq (w := w) (fun _ => ENNReal.toReal_nonneg)
+    (Cslib.Probability.PMF.sum_toReal Λ') Finset.univ val f (ε := ((k : ℝ) ^ 2)⁻¹ / 4)
+    (by positivity)
+    (fun z _ => by
       rcases z with x | y
-      · simpa [v, f, hmass, aliceBit] using hA x
-      · simpa [v, f, hmass, bobBit] using hB y)
-    (m₁ := 3 * Nat.clog 2 (k ^ 2)) (m₂ := 2 + Nat.clog 2 (Nat.clog 2 (Fintype.card (X ⊕ Y))))
+      · simp only [val, f, a, Sum.elim_inl, ne_eq, decide_eq_true_eq]
+        rw [hmiss (fun s => x ∈ s.1)]
+        linarith [hA x]
+      · simp only [val, f, b, Sum.elim_inr, ne_eq, Bool.not_eq_false, decide_eq_true_eq]
+        rw [hmiss (fun s => y ∈ s.2)]
+        linarith [hB y])
+    (m₁ := m₁) (m₂ := m₂)
     (by
       have := sq_le_eleven_eighths_pow k
       have hpos : (0 : ℝ) < (k : ℝ) ^ 2 := by positivity
       calc (1 / 4 : ℝ) = (k : ℝ) ^ 2 * ((k : ℝ) ^ 2)⁻¹ / 4 := by field_simp
-        _ ≤ (11 / 8) ^ (3 * Nat.clog 2 (k ^ 2)) * (((k : ℝ) ^ 2)⁻¹ / 4) := by
+        _ ≤ (11 / 8) ^ m₁ * (((k : ℝ) ^ 2)⁻¹ / 4) := by
           rw [mul_div_assoc]
           exact mul_le_mul_of_nonneg_right this (by positivity))
-    (MajorityTree.card_mul_three_quarters_pow_lt _)
-  refine ⟨walk t, fun x _ y _ => walk_solves t x y (by simpa [v, f] using hcorrect (.inl x))
-    (by simpa [v, f] using hcorrect (.inr y)), ?_⟩
-  have hheight := MajorityTree.height_of_mem_support Λ ht
-  have hdepth := depth_walk_le t
-  rw [Fintype.card_sum] at hheight
-  rw [hheight] at hdepth
+    (by
+      rw [Finset.card_univ]
+      calc Fintype.card (X ⊕ Y) ≤ 2 ^ Nat.clog 2 (Fintype.card (X ⊕ Y)) :=
+            Nat.le_pow_clog one_lt_two _
+        _ ≤ 2 ^ 2 ^ m₂ := Nat.pow_le_pow_right two_pos (Nat.le_pow_clog one_lt_two _))
+  have hleaf (i : I) (x : X) (y : Y) (hx : a x i = true) (hy : b y i = false) :
+      R x y ((rep i).protocol.run x y) := by
+    simp only [a, b, decide_eq_true_eq, decide_eq_false_iff_not, not_not] at hx hy
+    have h := hrep i
+    exact (rep i).solves x (by rw [show (rep i).alice = i.1.1 from congrArg Prod.fst h]; exact hx)
+      y (by rw [show (rep i).bob = i.1.2 from congrArg Prod.snd h]; exact hy)
+  let inner : (Fin (3 ^ (m₁ + 1)) → I) → Protocol X Y Z := walk (fun i => (rep i).protocol) a b
+    (m₁ + 1)
+  refine ⟨walk inner (fun x U => majTree (m₁ + 1) (a x ∘ U))
+    (fun y U => majTree (m₁ + 1) (b y ∘ U)) m₂ V, fun x _ y _ => walk_solves _ _ _
+      (fun U x y hx hy => walk_solves _ _ _ hleaf _ U x y hx hy)
+      m₂ V x y (hV (.inl x) (Finset.mem_univ _)) (hV (.inr y) (Finset.mem_univ _)), ?_⟩
+  have hdepth := depth_walk_le inner (fun x U => majTree (m₁ + 1) (a x ∘ U))
+    (fun y U => majTree (m₁ + 1) (b y ∘ U))
+    (fun U => depth_walk_le _ a b (fun i => (rep i).depth_le) (m₁ + 1) U) m₂ V
+  have hm₂ : m₂ = Nat.clog 2 (Nat.clog 2 (Fintype.card X + Fintype.card Y)) := by
+    simp only [m₂, Fintype.card_sum]
   unfold levels
   omega
 
 /-- The additive term of Theorem 1.2 in terms of `k` and an `n` with `|X|, |Y| ≤ 2ⁿ`. -/
 private theorem three_mul_levels_le {N n : ℕ} (hN : N ≤ 2 ^ (n + 1)) (k : ℕ) :
-    3 * levels k N ≤ 18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 6 := by
+    3 * levels k N ≤ 18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3 := by
   have hk : Nat.clog 2 (k ^ 2) ≤ 2 * Nat.clog 2 k := by
     refine Nat.clog_le_of_le_pow ?_
     rw [pow_mul, sq]
@@ -339,15 +386,18 @@ private theorem three_mul_levels_le {N n : ℕ} (hN : N ≤ 2 ^ (n + 1)) (k : �
 
 /-- **[ChukhinKulikovMihajlinSmal2026], Theorem 1.2.** Let `R` be a total relation on finite
 nonempty types with `|X|, |Y| ≤ 2ⁿ`. Then
-`CC(R) ≤ max {CC(OneOut_k(R)), ⌈log₂ |Z|⌉} + 18 ⌈log₂ k⌉ + 3 ⌈log₂ (n + 1)⌉ + 6`,
+`CC(R) ≤ max {CC(OneOut_k(R)), ⌈log₂ |Z|⌉} + 18 ⌈log₂ k⌉ + 3 ⌈log₂ (n + 1)⌉ + 3`,
 which is the source's `O(log k + log n)` with explicit constants. The source's hypothesis
-`1 ≤ k ≤ min {|A|, |B|}` is not needed: otherwise `CC(OneOut_k(R)) = ⊤`. -/
+`1 ≤ k ≤ min {|A|, |B|}` is not needed. For `k = 0` there are no answers, so
+`CC(OneOut_k(R)) = ⊤`. For `k > min {|X|, |Y|}` there are no `k` distinct inputs on one side, so
+`CC(OneOut_k(R)) = 0`; the bound still holds because the heavy-atom case of Lemma 5.2 covers that
+side's inputs. -/
 theorem ecomplexity_le_oneOut [Fintype X] [Fintype Y] [Fintype Z] [Nonempty X] [Nonempty Y]
     (htotal : ∀ x y, ∃ z, R x y z) {n : ℕ} (hX : Fintype.card X ≤ 2 ^ n)
     (hY : Fintype.card Y ≤ 2 ^ n) :
     ecomplexity R Set.univ Set.univ ≤
       max (ecomplexity (Relation (k := k) R) Set.univ Set.univ) (Nat.clog 2 (Fintype.card Z)) +
-        (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 6 : ℕ) := by
+        (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3 : ℕ) := by
   by_cases h : ∃ p : Protocol (Fin k ↪ X) (Fin k ↪ Y) (Answer k Z),
       p.Solves (Relation R) Set.univ Set.univ
   · obtain ⟨p, hp, hpd⟩ := exists_solves_depth_eq_ecomplexity h
@@ -357,9 +407,9 @@ theorem ecomplexity_le_oneOut [Fintype X] [Fintype Y] [Fintype Z] [Nonempty X] [
     rw [← hpd]
     refine (ecomplexity_le_depth hq).trans ?_
     have : q.depth ≤ max p.depth (Nat.clog 2 (Fintype.card Z)) +
-        (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 6) := by omega
+        (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3) := by omega
     have hcast : (q.depth : ℕ∞) ≤ ((max p.depth (Nat.clog 2 (Fintype.card Z)) +
-        (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 6) : ℕ) : ℕ∞) := Nat.cast_le.mpr this
+        (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3) : ℕ) : ℕ∞) := Nat.cast_le.mpr this
     have hmax : ((max p.depth (Nat.clog 2 (Fintype.card Z)) : ℕ) : ℕ∞) =
         max (p.depth : ℕ∞) (Nat.clog 2 (Fintype.card Z) : ℕ) :=
       (Monotone.map_max (fun _ _ h => Nat.cast_le.mpr h))
@@ -370,12 +420,12 @@ theorem ecomplexity_le_oneOut [Fintype X] [Fintype Y] [Fintype Z] [Nonempty X] [
 
 /-- **[ChukhinKulikovMihajlinSmal2026], Theorem 1.1, lower bound.** For a Boolean function `F` on
 finite nonempty types with `|X|, |Y| ≤ 2ⁿ`,
-`CC(F) ≤ CC(OneOut_k(F)) + 18 ⌈log₂ k⌉ + 3 ⌈log₂ (n + 1)⌉ + 7`. The upper bound
+`CC(F) ≤ CC(OneOut_k(F)) + 18 ⌈log₂ k⌉ + 3 ⌈log₂ (n + 1)⌉ + 4`. The upper bound
 `CC(OneOut_k(F)) ≤ CC(F)` is `OneOut.ecomplexity_le`. -/
 theorem ecomplexityFun_le_oneOut [Fintype X] [Fintype Y] [Nonempty X] [Nonempty Y]
     (F : X → Y → Bool) {n : ℕ} (hX : Fintype.card X ≤ 2 ^ n) (hY : Fintype.card Y ≤ 2 ^ n) :
     ecomplexityFun F ≤ ecomplexity (Relation (k := k) fun x y z => F x y = z) Set.univ Set.univ +
-      (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 7 : ℕ) := by
+      (18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 4 : ℕ) := by
   have h := ecomplexity_le_oneOut (k := k) (R := fun x y z => F x y = z)
     (fun x y => ⟨_, rfl⟩) hX hY
   rw [Fintype.card_bool, show Nat.clog 2 2 = 1 by simpa using Nat.clog_pow 2 1 one_lt_two] at h
@@ -383,9 +433,9 @@ theorem ecomplexityFun_le_oneOut [Fintype X] [Fintype Y] [Nonempty X] [Nonempty 
   set E := ecomplexity (Relation (k := k) fun x y z => F x y = z) Set.univ Set.univ
   have hmax : max E ((1 : ℕ) : ℕ∞) ≤ E + 1 :=
     max_le le_self_add (by simp)
-  calc max E ((1 : ℕ) : ℕ∞) + ((18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 6 : ℕ) : ℕ∞)
-      ≤ E + 1 + ((18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 6 : ℕ) : ℕ∞) := by gcongr
-    _ = E + ((18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 7 : ℕ) : ℕ∞) := by
+  calc max E ((1 : ℕ) : ℕ∞) + ((18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3 : ℕ) : ℕ∞)
+      ≤ E + 1 + ((18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 3 : ℕ) : ℕ∞) := by gcongr
+    _ = E + ((18 * Nat.clog 2 k + 3 * Nat.clog 2 (n + 1) + 4 : ℕ) : ℕ∞) := by
       rw [add_assoc]; congr 1; push_cast; ring
 
 end Cslib.Communication.OneOut

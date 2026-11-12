@@ -10,7 +10,7 @@ import Mathlib.Tactic
 /-! Theorems 1.1 and 1.2 of submission 865 on equality of bits, and the amplification step. -/
 
 namespace CslibFrontierTests.CommunicationOneOutLowerBound
-open Cslib.Communication Protocol OneOut Cslib.Probability
+open Cslib Cslib.Communication Protocol OneOut
 
 /-- Equality of bits as a total relation. -/
 def eqRel (a b : Bool) (z : Bool) : Prop := z = decide (a = b)
@@ -33,14 +33,17 @@ example : ∃ q : Protocol Bool Bool Bool, q.Solves eqRel Set.univ Set.univ ∧
   exact ⟨q, hq, by simpa [eqProtocol, Protocol.depth] using hd⟩
 
 /-- Theorem 1.1's lower bound at `k = 2`, `n = 1`: choosing one of two distinct instances of
-equality saves at most `28` bits. -/
+equality saves at most `25` bits. -/
 example : ecomplexityFun (fun a b : Bool => decide (a = b)) ≤
     ecomplexity (Relation (k := 2) fun (a b : Bool) z => decide (a = b) = z) Set.univ Set.univ +
-      ((18 * Nat.clog 2 2 + 3 * Nat.clog 2 (1 + 1) + 7 : ℕ) : ℕ∞) :=
+      ((18 * Nat.clog 2 2 + 3 * Nat.clog 2 (1 + 1) + 4 : ℕ) : ℕ∞) :=
   ecomplexityFun_le_oneOut _ (by simp) (by simp)
 
-/-- One majority level fixes `1/2` and pushes `3/4` up to `27/32`. -/
-example : MajorityTree.amplify (1 / 2) = 1 / 2 ∧ MajorityTree.amplify (3 / 4) = 27 / 32 := by
-  norm_num [MajorityTree.amplify]
+/-- A majority tree of depth one over the votes `true, false, true` is `true`. -/
+example : majTree 1 (fun i : Fin (3 ^ 1) => decide (i.val ≠ 1)) = true := by decide
+
+/-- At `k = 2` and `N = 4` inputs the amplification uses `3 ⌈log₂ 4⌉ + 1 + ⌈log₂ 2⌉ = 8`
+levels. -/
+example : levels 2 4 = 8 := by decide
 
 end CslibFrontierTests.CommunicationOneOutLowerBound

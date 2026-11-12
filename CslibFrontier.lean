@@ -6515,7 +6515,6 @@ public import CslibFrontier.Probability.LocalitySensitiveHash.MinHash
 public import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 public import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
 public import CslibFrontier.Probability.LoomisWhitney
-public import CslibFrontier.Probability.MajorityTree
 public import CslibFrontier.Probability.MarkovChain.Basic
 public import CslibFrontier.Probability.MarkovChain.Coloring
 public import CslibFrontier.Probability.MarkovChain.Coloring.Count
