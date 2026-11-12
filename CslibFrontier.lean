@@ -4458,10 +4458,13 @@ public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.DealClient
 public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Information
 public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Protocol
 public import CslibFrontier.Crypto.Protocols.PIR.Basic
+public import CslibFrontier.Crypto.Protocols.PIR.Block
+public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Crypto.Protocols.PIR.CoveringCode
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
 public import CslibFrontier.Crypto.Protocols.PIR.Interactive
 public import CslibFrontier.Crypto.Protocols.PIR.LinearSummation
+public import CslibFrontier.Crypto.Protocols.PIR.Shamir
 public import CslibFrontier.Crypto.Protocols.PIR.SingleServer
 public import CslibFrontier.Crypto.Protocols.PIR.SmoothCode
 public import CslibFrontier.Crypto.Protocols.PolynomialCommitment.Basic
@@ -4474,6 +4477,7 @@ public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Desig
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Privacy
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Shamir
 public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
+public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Product
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.RandomOracle
@@ -5420,6 +5424,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import CslibFrontier.Foundations.Data.Nat.Choose.Real
 public import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 public import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
+public import CslibFrontier.Foundations.Data.Nat.Clog
 public import CslibFrontier.Foundations.Data.Nat.ClogPow
 public import CslibFrontier.Foundations.Data.Nat.ConstantDivision
 public import CslibFrontier.Foundations.Data.Nat.Div

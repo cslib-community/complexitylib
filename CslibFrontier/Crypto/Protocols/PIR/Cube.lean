@@ -267,8 +267,8 @@ end Cube
 communicating `4 m` bits. -/
 theorem hasScheme_two_of_le_mul_self {n m : ℕ} (h : n ≤ m * m) : HasScheme (Fin n) 2 (4 * m) := by
   let e : Fin n ↪ Fin m × Fin m := (Fin.castLEEmb h).trans finProdFinEquiv.symm.toEmbedding
-  have hP := (isCorrect_twoServer.rows (Fin m)).comap e
-    |>.hasScheme ((isPrivate_twoServer.rows (Fin m)).comap e)
+  have hP := ((isCorrect_twoServer.rows (Fin m)).comap e false).hasScheme
+    ((isPrivate_twoServer.rows (Fin m)).comap e false)
   rw [Fintype.card_bool, communication_twoServer_rows, Fintype.card_fin] at hP
   exact hP.mono (by omega)
 
@@ -284,7 +284,7 @@ theorem hasScheme_two_pow_of_le_pow {n d ℓ : ℕ} (h : n ≤ ℓ ^ d) :
     HasScheme (Fin n) (2 ^ d) (2 ^ d * (d * ℓ + 1)) := by
   let e : Fin n ↪ (Fin d → Fin ℓ) :=
     (Fin.castLEEmb h).trans finFunctionFinEquiv.symm.toEmbedding
-  have hP := isCorrect_cube.comap e |>.hasScheme (isPrivate_cube.comap e)
+  have hP := (isCorrect_cube.comap e false).hasScheme (isPrivate_cube.comap e false)
   rwa [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, communication_cube,
     Fintype.card_fin, Fintype.card_fin] at hP
 
