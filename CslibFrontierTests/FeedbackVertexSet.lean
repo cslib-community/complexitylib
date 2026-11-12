@@ -19,13 +19,13 @@ namespace CslibFrontierTests.FeedbackVertexSet
 open Cslib.Complexity Turing.MultiTapeTM
 
 /-- The directed triangle `0 → 1 → 2 → 0`. -/
-private def tri : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def tri : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 /-- A self-loop at `0`. -/
-private def loop : Graph := ([0], [(0, 0)])
+private def loop : Graph := ⟨[0], [(0, 0)]⟩
 
 /-- An acyclic graph with arcs `0 → 1 → 2` and `0 → 2`. -/
-private def dag : Graph := ([0, 1, 2], [(0, 1), (1, 2), (0, 2)])
+private def dag : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩
 
 /-! ### Headline results -/
 
@@ -126,7 +126,7 @@ example : (⟨dag, 0⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet := by
   rcases he with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> decide
 
 -- Arcs to undeclared vertices are ignored: `0 ⇄ 1` with only `0` declared has no cycle.
-example : (⟨(([0], [(0, 1), (1, 0)]) : Graph), 0⟩ : FeedbackVertexSetInstance) ∈
+example : (⟨(⟨[0], [(0, 1), (1, 0)]⟩ : Graph), 0⟩ : FeedbackVertexSetInstance) ∈
     FeedbackVertexSet := by
   refine ⟨∅, by simp, by simp, Graph.isDirAcyclic_of_rank (f := fun _ => 0) fun u v h => ?_⟩
   obtain ⟨⟨hu, hv, he⟩, -, -⟩ := Graph.dirAdj_deleteVerts.1 h
@@ -137,21 +137,22 @@ example : (⟨(([0], [(0, 1), (1, 0)]) : Graph), 0⟩ : FeedbackVertexSetInstanc
 /-! ### Karp's reduction from `VertexCover` -/
 
 -- The edge `0 - 1` becomes the arcs `0 → 1` and `1 → 0`.
-example : VertexCover.toFeedbackVertexSet ((([0, 1], [(0, 1)]) : Graph), 1) =
-    ⟨(([0, 1], [(0, 1), (1, 0)]) : Graph), 1⟩ := by
+example : VertexCover.toFeedbackVertexSet (((⟨[0, 1], [(0, 1)]⟩ : Graph), 1) : Graph × ℕ) =
+    ⟨(⟨[0, 1], [(0, 1), (1, 0)]⟩ : Graph), 1⟩ := by
   decide
 
 -- Self-loops of the undirected graph are dropped.
-example : VertexCover.bidirect (([0], [(0, 0)]) : Graph) = (([0], []) : Graph) := by
+example : VertexCover.bidirect (⟨[0], [(0, 0)]⟩ : Graph) = (⟨[0], []⟩ : Graph) := by
   decide
 
 -- A target above the number of distinct vertices goes to the self-loop with target `0`.
-example : VertexCover.toFeedbackVertexSet ((([0, 1], [(0, 1)]) : Graph), 3) =
-    ⟨(([0], [(0, 0)]) : Graph), 0⟩ := by
+example : VertexCover.toFeedbackVertexSet (((⟨[0, 1], [(0, 1)]⟩ : Graph), 3) : Graph × ℕ) =
+    ⟨(⟨[0], [(0, 0)]⟩ : Graph), 0⟩ := by
   decide
 
-example : ((([0, 1], [(0, 1)]) : Graph), 1) ∈ VertexCover ↔
-    VertexCover.toFeedbackVertexSet ((([0, 1], [(0, 1)]) : Graph), 1) ∈ FeedbackVertexSet :=
+example : (((⟨[0, 1], [(0, 1)]⟩ : Graph), 1) : Graph × ℕ) ∈ VertexCover ↔
+    VertexCover.toFeedbackVertexSet
+      (((⟨[0, 1], [(0, 1)]⟩ : Graph), 1) : Graph × ℕ) ∈ FeedbackVertexSet :=
   (VertexCover.toFeedbackVertexSet_mem_iff _).symm
 
 end CslibFrontierTests.FeedbackVertexSet

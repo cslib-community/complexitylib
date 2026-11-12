@@ -27,6 +27,11 @@ with a geometric drawing, or with a parity system, is asserted here.
 * `Cslib.Complexity.Graph.RotationRecognition.Valid`: dense closed graph and complete orders.
 * `Cslib.Complexity.Graph.RotationRecognition.Realizes`: literal cyclic successor equations.
 * `Cslib.Complexity.Graph.RotationRecognition.Consecutive`: internal block successor equations.
+
+## Main results
+
+* `Cslib.Complexity.Graph.RotationRecognition.Valid.edge_endpoints_lt`: validity bounds both
+  endpoints of every listed edge by the declared vertex count.
 -/
 
 public section
@@ -49,22 +54,29 @@ enc_structure encFixedRotationInput : FixedRotationInput where
 
 /-- All binary dart indices at a vertex, in edge/end order. The scan uses the actual edge count. -/
 @[expose] def fiber (G : Graph) (v : ℕ) : List ℕ :=
-  (List.range (2 * G.2.length)).filter fun i => decide (G.incidenceVertices.getD i 0 = v)
+  (List.range (2 * G.edges.length)).filter fun i => decide (G.incidenceVertices.getD i 0 = v)
 
 /-- Raw validity: dense declared vertices, closed endpoints, exact order-table width, and every
 prescribed word enumerating its entire endpoint fiber exactly once. -/
 @[expose] def Valid (I : FixedRotationInput) : Prop :=
-  I.graph.1 = List.range I.graph.1.length ∧
-    (∀ v ∈ I.graph.incidenceVertices, v < I.graph.1.length) ∧
-    I.orders.length = I.graph.1.length ∧
+  I.graph.vertices = List.range I.graph.vertices.length ∧
+    (∀ v ∈ I.graph.incidenceVertices, v < I.graph.vertices.length) ∧
+    I.orders.length = I.graph.vertices.length ∧
     ∀ v word, I.orders.getD v none = some word →
       word.Nodup ∧ ∀ d, d ∈ word ↔ d ∈ fiber I.graph v
 
+/-- Both endpoints of every listed edge of a valid input lie below its declared vertex count. -/
+theorem Valid.edge_endpoints_lt {I : FixedRotationInput} (hI : Valid I) {e : ℕ × ℕ}
+    (he : e ∈ I.graph.edges) :
+    e.1 < I.graph.vertices.length ∧ e.2 < I.graph.vertices.length :=
+  ⟨hI.2.1 _ (List.mem_flatMap.mpr ⟨e, he, by simp⟩),
+    hI.2.1 _ (List.mem_flatMap.mpr ⟨e, he, by simp⟩)⟩
+
 /-- Total finite validity test; malformed binary names and indices are only compared/read. -/
 @[expose] def validate (I : FixedRotationInput) : Bool :=
-  decide (I.graph.1 = List.range I.graph.1.length) &&
-    I.graph.incidenceVertices.all (fun v => decide (v < I.graph.1.length)) &&
-    decide (I.orders.length = I.graph.1.length) &&
+  decide (I.graph.vertices = List.range I.graph.vertices.length) &&
+    I.graph.incidenceVertices.all (fun v => decide (v < I.graph.vertices.length)) &&
+    decide (I.orders.length = I.graph.vertices.length) &&
     I.orders.zipIdx.all fun entry =>
       entry.1.elim true fun word => enumeratesBool (fiber I.graph entry.2) word
 
@@ -125,7 +137,7 @@ theorem consecutive_singleton {G : Graph} (r : RotationSystem G) (d : ℕ) :
 
 /-- Fiber membership retains both the binary width and the exact endpoint. -/
 theorem mem_fiber {G : Graph} {v d : ℕ} :
-    d ∈ fiber G v ↔ d < 2 * G.2.length ∧ G.incidenceVertices.getD d 0 = v := by
+    d ∈ fiber G v ↔ d < 2 * G.edges.length ∧ G.incidenceVertices.getD d 0 = v := by
   simp [fiber]
 
 /-- A dart's own binary index belongs to exactly its endpoint fiber. -/
@@ -137,8 +149,8 @@ theorem nodup_fiber (G : Graph) (v : ℕ) : (fiber G v).Nodup :=
   List.nodup_range.filter _
 
 /-- Every raw fiber is bounded by the actual dart-list length. -/
-theorem length_fiber_le (G : Graph) (v : ℕ) : (fiber G v).length ≤ 2 * G.2.length := by
+theorem length_fiber_le (G : Graph) (v : ℕ) : (fiber G v).length ≤ 2 * G.edges.length := by
   simpa only [fiber, List.length_range] using List.length_filter_le
-    (fun i => decide (G.incidenceVertices.getD i 0 = v)) (List.range (2 * G.2.length))
+    (fun i => decide (G.incidenceVertices.getD i 0 = v)) (List.range (2 * G.edges.length))
 
 end Cslib.Complexity.Graph.RotationRecognition

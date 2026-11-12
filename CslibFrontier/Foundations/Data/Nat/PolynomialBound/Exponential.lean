@@ -9,15 +9,15 @@ module
 
 public import Cslib.Foundations.Data.Nat.PolynomialBound
 import Cslib.Foundations.Data.Nat.Asymptotics
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 
 /-!
 # Polynomial bounds are eventually below exponentials
 
 A polynomially bounded function is eventually smaller than `2 ^ n`
 (`PolynomiallyBounded.eventually_lt_two_pow`): exponential lower bounds rule out polynomial upper
-bounds. Summing the finitely many exceptions, it is bounded everywhere by a constant multiple of
-`2 ^ n` (`PolynomiallyBounded.exists_le_mul_two_pow`).
+bounds. It is therefore bounded everywhere by a constant multiple of `2 ^ n`, the constant
+absorbing the finitely many exceptions (`PolynomiallyBounded.exists_le_mul_two_pow`).
 
 ## Main results
 
@@ -43,12 +43,12 @@ theorem eventually_lt_two_pow {f : ℕ → ℕ} (hf : PolynomiallyBounded f) :
 /-- A polynomially bounded function is bounded by a constant multiple of `2 ^ n`. -/
 theorem exists_le_mul_two_pow {p : ℕ → ℕ} (hp : PolynomiallyBounded p) :
     ∃ C, ∀ n, p n ≤ C * 2 ^ n := by
-  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp hp.eventually_lt_two_pow
-  refine ⟨∑ m ∈ Finset.range N, p m + 1, fun n => ?_⟩
-  have hpow : 1 ≤ 2 ^ n := Nat.one_le_two_pow
-  rcases le_or_gt N n with hn | hn
-  · exact (hN n hn).le.trans (Nat.le_mul_of_pos_left _ (Nat.succ_pos _))
-  · have := Finset.single_le_sum (f := p) (fun _ _ => Nat.zero_le _) (Finset.mem_range.mpr hn)
-    exact this.trans ((Nat.le_succ _).trans (Nat.le_mul_of_pos_right _ hpow))
+  obtain ⟨C, hC⟩ :=
+    Nat.exists_le_add_of_eventually_le (hp.eventually_lt_two_pow.mono fun _ => le_of_lt)
+  refine ⟨C + 1, fun n => ?_⟩
+  have := hC n
+  have := Nat.le_mul_of_pos_right C (Nat.two_pow_pos n)
+  rw [Nat.add_one_mul]
+  omega
 
 end Cslib.PolynomiallyBounded

@@ -336,6 +336,8 @@ theorem clique_mem_NP : Clique ∈ NP (encPair encGraph encNat) :=
 
 **When it fails:** separate a failed computation certificate from a failed membership or witness-length equivalence. Check the verifier's encoding and exact length convention before trying a different tactic.
 
+**Shortcuts:** when witnesses are values with a decoder, [mem_NP_of_check](../../CslibFrontier/Computability/Complexity/Classes/NP/Witness.lean) takes a polynomial-time check that accepts witnesses only for members and accepts a short witness for every member, and handles the exact-length convention. When the problem is an `NP` problem restricted by a polynomial-time syntax test, [mem_NP_of_guard](../../CslibFrontier/Computability/Complexity/Classes/NP/Closure.lean) takes the test and `a ∈ L ↔ c a = true ∧ a ∈ A`.
+
 <!-- /worked-example -->
 
 <!-- worked-example -->
@@ -363,6 +365,8 @@ theorem clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
 **Result:** `.symm` aligns the correctness lemma with the source-to-target membership equivalence, and `NPHard.trans` transports hardness forward. The final proof combines that hardness with `clique_mem_NP`. This client reuses known results; it is not a new completeness theorem.
 
 **When it fails:** check the reduction's direction and both encodings, then isolate its computation and equivalence obligations. A new problem still needs the verifier, certificate length, reduction cost and equivalence. Check empty instances and boundary targets as the client does.
+
+**Guarded maps:** when the map is faithful only on instances that pass a polynomial-time syntax test, use [PolyTimeReducible.of_guard](../../CslibFrontier/Computability/Complexity/Reduction/Guard.lean). It sends failing instances to a fixed instance outside the target, so you prove only `a ∈ A ↔ g a = true ∧ f a ∈ B` and the two cost certificates.
 
 <!-- /worked-example -->
 

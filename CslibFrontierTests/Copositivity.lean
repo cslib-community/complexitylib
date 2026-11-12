@@ -340,11 +340,11 @@ example :
 
 /-! ### Reduction instances (`cliqueToSymRatMatrix`) -/
 
-private def triangleG : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def triangleG : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
-private def path3G : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+private def path3G : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
-private def emptyG : Graph := ([], [])
+private def emptyG : Graph := ⟨[], []⟩
 
 example : cliqueToSymRatMatrix (triangleG, 3) ∈ NonCopositive := by
   rw [← cliqueToSymRatMatrix_mem_iff, mem_Clique_iff]

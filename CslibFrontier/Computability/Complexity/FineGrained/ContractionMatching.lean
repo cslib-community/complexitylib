@@ -282,11 +282,12 @@ theorem exists_perfectMatchingCounter (d : ℕ) :
       (∀ G : Graph, (∀ v, Nat.card (G.induced.neighborSet v) ≤ d) →
         count G = Nat.card {M : G.induced.Subgraph // M.IsPerfectMatching}) ∧
       ComputableInO count encGraph encNat
-        (fun G => 2 ^ (A * (G.1.toFinset.card + 1) / Nat.sqrt (Nat.log 2 (G.1.toFinset.card + 2))) *
+        (fun G => 2 ^ (A * (G.vertices.toFinset.card + 1) /
+            Nat.sqrt (Nat.log 2 (G.vertices.toFinset.card + 2))) *
           ((encGraph G).length + 1) ^ e)
         (fun G => ((encGraph G).length + 1) ^ b) := by
   obtain ⟨count, A, e, b, hcount, hc⟩ := exists_exactlyOneCounter d 1
-    (size := fun G : Graph => G.1.toFinset.card)
+    (size := fun G : Graph => G.vertices.toFinset.card)
     Graph.computableInPolyTime_perfectMatchingInstance
     (fun G => Graph.count_vars_perfectMatchingInstance G) fun G => by
       rw [Graph.length_perfectMatchingInstance]

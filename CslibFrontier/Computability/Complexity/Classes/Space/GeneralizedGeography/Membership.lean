@@ -194,20 +194,20 @@ private theorem choice_indicator (B i : ℕ) : choice (indicator B i) = i := by
   simp
 
 /-- The arc of index `i`, or `(0, 0)` past the last arc. -/
-def arc (G : Graph) (i : ℕ) : ℕ × ℕ := G.2.getD i (0, 0)
+def arc (G : Graph) (i : ℕ) : ℕ × ℕ := G.edges.getD i (0, 0)
 
 /-- The arc of index `i` is a legal move with the token at `v` and the vertices `vis` visited: it
 leaves `v` for an unvisited declared vertex. -/
 def legal (G : Graph) (vis : List ℕ) (v i : ℕ) : Bool :=
-  decide (i < G.2.length) && decide ((arc G i).1 = v) && decide ((arc G i).2 ∈ G.1) &&
+  decide (i < G.edges.length) && decide ((arc G i).1 = v) && decide ((arc G i).2 ∈ G.vertices) &&
     !decide ((arc G i).2 ∈ vis)
 
-private theorem arc_eq {G : Graph} {i : ℕ} (hi : i < G.2.length) : arc G i = G.2[i] :=
+private theorem arc_eq {G : Graph} {i : ℕ} (hi : i < G.edges.length) : arc G i = G.edges[i] :=
   List.getD_eq_getElem _ _ hi
 
 theorem legal_eq_true_iff {G : Graph} {vis : List ℕ} {v i : ℕ} :
-    legal G vis v i = true ↔ ∃ h : i < G.2.length, G.2[i].1 = v ∧ G.2[i].2 ∈ G.1 ∧
-      G.2[i].2 ∉ vis := by
+    legal G vis v i = true ↔ ∃ h : i < G.edges.length,
+      G.edges[i].1 = v ∧ G.edges[i].2 ∈ G.vertices ∧ G.edges[i].2 ∉ vis := by
   unfold legal
   simp only [Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true', decide_eq_false_iff_not]
   constructor
@@ -220,9 +220,9 @@ theorem legal_eq_true_iff {G : Graph} {vis : List ℕ} {v i : ℕ} :
 
 /-- Legal arcs are the moves of Generalized Geography. -/
 theorem exists_legal_iff {G : Graph} {vis : List ℕ} {v : ℕ} {R : ℕ → Prop} :
-    (∃ x : List Bool, x.length = G.2.length ∧ legal G vis v (choice x) = true ∧
+    (∃ x : List Bool, x.length = G.edges.length ∧ legal G vis v (choice x) = true ∧
         R (arc G (choice x)).2) ↔
-      ∃ w, (v, w) ∈ G.2 ∧ w ∈ G.1 ∧ w ∉ vis ∧ R w := by
+      ∃ w, (v, w) ∈ G.edges ∧ w ∈ G.vertices ∧ w ∉ vis ∧ R w := by
   constructor
   · rintro ⟨x, -, hlegal, hR⟩
     obtain ⟨hi, h₁, h₂, h₃⟩ := legal_eq_true_iff.1 hlegal
@@ -232,7 +232,7 @@ theorem exists_legal_iff {G : Graph} {vis : List ℕ} {v : ℕ} {R : ℕ → Pro
     exact List.getElem_mem hi
   · rintro ⟨w, hvw, hw, hwvis, hR⟩
     obtain ⟨i, hi, hiw⟩ := List.getElem_of_mem hvw
-    refine ⟨indicator G.2.length i, length_indicator hi, ?_, ?_⟩
+    refine ⟨indicator G.edges.length i, length_indicator hi, ?_, ?_⟩
     · rw [choice_indicator]
       exact legal_eq_true_iff.2 ⟨hi, by rw [hiw], by rw [hiw]; exact hw, by rw [hiw]; exact hwvis⟩
     · rw [choice_indicator, arc_eq hi, hiw]
@@ -240,9 +240,9 @@ theorem exists_legal_iff {G : Graph} {vis : List ℕ} {v : ℕ} {R : ℕ → Pro
 
 /-- The second player's legal arcs are the moves of Generalized Geography. -/
 theorem forall_legal_iff {G : Graph} {vis : List ℕ} {v : ℕ} {R : ℕ → Prop} :
-    (∀ y : List Bool, y.length = G.2.length → legal G vis v (choice y) = true →
+    (∀ y : List Bool, y.length = G.edges.length → legal G vis v (choice y) = true →
         R (arc G (choice y)).2) ↔
-      ∀ w, (v, w) ∈ G.2 → w ∈ G.1 → w ∉ vis → R w := by
+      ∀ w, (v, w) ∈ G.edges → w ∈ G.vertices → w ∉ vis → R w := by
   have h := exists_legal_iff (G := G) (vis := vis) (v := v) (R := fun w => ¬R w)
   constructor
   · intro hy w hvw hw hwvis
@@ -313,14 +313,14 @@ Geography from the position (if the first player is to move) or loses it (if the
 to move). -/
 theorem alternation_foldl_step (G : Graph) :
     ∀ (r : ℕ) (first : Bool) (vis : List ℕ) (v : ℕ),
-      (G.1.toFinset \ vis.toFinset).card < r →
-      (Alternation true (List.replicate (2 * G.2.length * r) 1) (fun z =>
-          ((blocks G.2.length r z).foldl (step G G.2.length) (none, first, vis, v)).1.getD false =
-            true) ↔
+      (G.vertices.toFinset \ vis.toFinset).card < r →
+      (Alternation true (List.replicate (2 * G.edges.length * r) 1) (fun z =>
+          ((blocks G.edges.length r z).foldl (step G G.edges.length)
+            (none, first, vis, v)).1.getD false = true) ↔
         (first = true ↔ G.GeographyWins vis v))
   | 0, _, _, _, h => absurd h (Nat.not_lt_zero _)
   | r + 1, first, vis, v, hr => by
-    set B := G.2.length
+    set B := G.edges.length
     -- the outcome after the first block
     have hP (z : List Bool) :
         ((blocks B (r + 1) z).foldl (step G B) (none, first, vis, v)).1.getD false = true ↔
@@ -334,7 +334,7 @@ theorem alternation_foldl_step (G : Graph) :
           ((!first) = true ↔ G.GeographyWins ((arc G (choice bits)).2 :: vis)
             (arc G (choice bits)).2) := by
       obtain ⟨hi, h₁, h₂, h₃⟩ := legal_eq_true_iff.1 hl
-      have hw : (arc G (choice bits)).2 ∈ G.1 := by rwa [arc_eq hi]
+      have hw : (arc G (choice bits)).2 ∈ G.vertices := by rwa [arc_eq hi]
       have hwvis : (arc G (choice bits)).2 ∉ vis := by rwa [arc_eq hi]
       rw [next, ite_eq_left hl]
       exact alternation_foldl_step G r _ _ _ (by have := Graph.card_sdiff_cons_lt hw hwvis; omega)
@@ -392,12 +392,12 @@ def verifier (x : GeneralizedGeographyInstance × List Bool) : Bool :=
 /-- The arcs and the declared vertex entries of a graph are no more than the length of the encoded
 instance. -/
 private theorem length_le_length_encode (x : GeneralizedGeographyInstance) :
-    x.graph.2.length ≤ (encGeneralizedGeography x).length ∧
-      x.graph.1.length ≤ (encGeneralizedGeography x).length := by
-  have h₁ := length_le_length_encList (encPair encNat encNat) x.graph.2
-  have h₂ := length_le_length_encList encNat x.graph.1
+    x.graph.edges.length ≤ (encGeneralizedGeography x).length ∧
+      x.graph.vertices.length ≤ (encGeneralizedGeography x).length := by
+  have h₁ := length_le_length_encList (encPair encNat encNat) x.graph.edges
+  have h₂ := length_le_length_encList encNat x.graph.vertices
   rw [encGeneralizedGeography_apply]
-  enc_len [encGraph]
+  enc_len [encGraph_apply]
 
 /-- **The replay is a game verifier of Generalized Geography**, with `2 * (n + 1) ^ 2` single-bit
 moves on instances of encoded length `n`. -/
@@ -408,14 +408,14 @@ theorem isGameVerifier_verifier :
   set n := (encGeneralizedGeography ⟨G, s⟩).length
   obtain ⟨hB, hV⟩ := length_le_length_encode ⟨G, s⟩
   dsimp only at hB hV
-  have hle : 2 * G.2.length * (G.1.length + 1) ≤
+  have hle : 2 * G.edges.length * (G.vertices.length + 1) ≤
       2 * ((Polynomial.X + 1) ^ 2 : Polynomial ℕ).eval n := by
     simp only [Polynomial.eval_pow, Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_one]
     rw [Nat.mul_assoc]
     refine Nat.mul_le_mul_left 2 ?_
     rw [sq]
     exact Nat.mul_le_mul (by omega) (by omega)
-  have hcount : (G.1.toFinset \ [s].toFinset).card < G.1.length + 1 :=
+  have hcount : (G.vertices.toFinset \ [s].toFinset).card < G.vertices.length + 1 :=
     Nat.lt_succ_of_le ((Finset.card_le_card Finset.sdiff_subset).trans (List.toFinset_card_le _))
   rw [mem_GeneralizedGeography, ← Nat.add_sub_cancel' hle, List.replicate_add,
     alternation_append_iff fun z => by rw [sum_replicate_one, verifier, verifier, blocks_take]]
@@ -453,10 +453,10 @@ private theorem computableInPolyTime_next :
   set encQ := encPair (encPair encGraph encPlay) (encList encBool)
   have hG : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1) encQ
       encGraph := by fun_prop
-  have hV : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.1) encQ
-      (encList encNat) := (fst _ _).comp hG
-  have hE : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.2) encQ
-      (encList (encPair encNat encNat)) := (snd _ _).comp hG
+  have hV : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.vertices) encQ
+      (encList encNat) := encGraph_vertices_polyTime hG
+  have hE : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.edges) encQ
+      (encList (encPair encNat encNat)) := encGraph_edges_polyTime hG
   have hfirst : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.1)
       encQ encBool := by fun_prop
   have hvis : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.2.2.2.1)
@@ -465,7 +465,7 @@ private theorem computableInPolyTime_next :
       encQ encNat := by fun_prop
   have hi : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => choice p.2)
       encQ encUnary := idxOfWithInput (snd _ _) (const true)
-  have hN : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.2.length)
+  have hN : ComputableInPolyTime (fun p : (Graph × Play) × List Bool => p.1.1.edges.length)
       encQ encUnary := (length_list _).comp hE
   have harc : ComputableInPolyTime
       (fun p : (Graph × Play) × List Bool => arc p.1.1 (choice p.2)) encQ
@@ -493,13 +493,13 @@ private theorem computableInPolyTime_next :
     (((optionSome encBool).comp (bool_not.comp hfirst)).prod (hfirst.prod (hvis.prod hv)))
 
 /-- A target of an arc is no longer in binary than the encoded graph. -/
-private theorem length_encNat_le_of_mem {G : Graph} {e : ℕ × ℕ} (he : e ∈ G.2) :
+private theorem length_encNat_le_of_mem {G : Graph} {e : ℕ × ℕ} (he : e ∈ G.edges) :
     (encNat e.2).length ≤ (encGraph G).length := by
-  have h₁ := sum_length_le_length_encList (encPair encNat encNat) G.2
+  have h₁ := sum_length_le_length_encList (encPair encNat encNat) G.edges
   have h₂ := List.le_sum_of_mem (List.mem_map_of_mem (f := fun a =>
     (encPair encNat encNat a).length) he)
   have h₃ := length_le_encPair_right encNat encNat e
-  enc_len [encGraph] at h₁ h₂ h₃ ⊢
+  enc_len [encGraph_apply] at h₁ h₂ h₃ ⊢
 
 /-- **A block adds at most one vertex to a play.** -/
 theorem length_encPlay_step_le (G : Graph) (B : ℕ) (st : Play) (block : List Bool) :
@@ -514,7 +514,7 @@ theorem length_encPlay_step_le (G : Graph) (B : ℕ) (st : Play) (block : List B
     split_ifs with hl
     · obtain ⟨hi, -, -, -⟩ := legal_eq_true_iff.1 hl
       have hw := length_encNat_le_of_mem (G := G)
-        (List.getElem_mem (l := G.2) (n := choice (moverBits B first block)) hi)
+        (List.getElem_mem (l := G.edges) (n := choice (moverBits B first block)) hi)
       rw [← arc_eq hi] at hw
       enc_len [encList_cons] at hw ⊢
     · enc_len

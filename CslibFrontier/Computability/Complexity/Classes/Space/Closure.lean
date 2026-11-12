@@ -37,7 +37,8 @@ reuses the space of the decider for each (`Turing.MultiTapeTM.ComputableInO.exis
 * `Cslib.Complexity.mem_PSPACE_iff_computableInO`: `PSPACE` in the quantitative calculus.
 * `Cslib.Complexity.mem_PSPACE_iff_computableInPolySpace`,
   `Cslib.Complexity.mem_PSPACE_of_computableInPolySpace`: `PSPACE` within polynomial space.
-* `Cslib.Complexity.compl_mem_PSPACE`, `Cslib.Complexity.inter_mem_PSPACE`,
+* `Cslib.Complexity.compl_mem_PSPACE`, `Cslib.Complexity.PSPACE_eq_preimage_compl_PSPACE`,
+  `Cslib.Complexity.inter_mem_PSPACE`,
   `Cslib.Complexity.union_mem_PSPACE`, `Cslib.Complexity.diff_mem_PSPACE`,
   `Cslib.Complexity.symmDiff_mem_PSPACE`, `Cslib.Complexity.PSPACE.booleanSubalgebra`,
   `Cslib.Complexity.PolyTimeReducible.mem_PSPACE`, `Cslib.Complexity.setOf_exists_mem_PSPACE`:
@@ -96,6 +97,11 @@ theorem compl_mem_PSPACE (hA : A ∈ PSPACE enc) : Aᶜ ∈ PSPACE enc := by
   exact mem_PSPACE_of_computableInPolySpace
     ((ComputableInPolySpace.of_polyTime ComputableInPolyTime.bool_not).comp hf)
     fun a => by simp [hA a]
+
+/-- `PSPACE` equals its preimage under complement. -/
+theorem PSPACE_eq_preimage_compl_PSPACE (enc : α ↪ List Bool) :
+    PSPACE enc = compl ⁻¹' PSPACE enc :=
+  Set.ext fun _ => ⟨compl_mem_PSPACE, fun h => by simpa using compl_mem_PSPACE h⟩
 
 open scoped symmDiff
 
