@@ -537,11 +537,11 @@ theorem computableInPolyTime_verifier :
     fun_prop
   have hB : ComputableInPolyTime
       (fun x : GeneralizedGeographyInstance × List Bool => x.1.graph.edges.length) encInput
-      encUnary := (length_list _).comp ((snd _ _).comp hG)
+      encUnary := (length_list _).comp (encGraph_edges_polyTime hG)
   have hR : ComputableInPolyTime
       (fun x : GeneralizedGeographyInstance × List Bool => x.1.graph.vertices.length + 1)
       encInput encUnary :=
-    unary_add.comp (((length_list _).comp ((fst _ _).comp hG)).prod (const 1))
+    unary_add.comp (((length_list _).comp (encGraph_vertices_polyTime hG)).prod (const 1))
   have hblocks : ComputableInPolyTime
       (fun x : GeneralizedGeographyInstance × List Bool =>
         blocks x.1.graph.edges.length (x.1.graph.vertices.length + 1) x.2)
