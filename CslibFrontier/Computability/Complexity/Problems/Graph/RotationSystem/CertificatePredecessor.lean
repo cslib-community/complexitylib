@@ -41,15 +41,4 @@ theorem idxOf_ofRotation {G : Graph} (r : RotationSystem G) (d : Dart G) :
   rw [← he]
   exact hn.idxOf_getElem _ _
 
-/-- For any accepted raw table, its actual inverse rotation is exactly the bounded list
-search for the given dart index. Empty graphs have no dart premise to manufacture. -/
-theorem index_decode_rotate_symm {G : Graph} {c : RotationCertificate}
-    (h : verifyRotation G c = true) (d : Dart G) :
-    ((decode G c h).rotate.symm d).index = c.successor.idxOf d.index := by
-  calc
-    _ = (ofRotation (decode G c h)).successor.idxOf d.index :=
-      (idxOf_ofRotation (decode G c h) d).symm
-    _ = c.successor.idxOf d.index :=
-      congrArg (fun t : RotationCertificate => t.successor.idxOf d.index) (ofRotation_decode h)
-
 end Cslib.Complexity.Graph.RotationCertificate

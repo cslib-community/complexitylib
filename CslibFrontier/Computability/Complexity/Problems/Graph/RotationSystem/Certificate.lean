@@ -418,9 +418,12 @@ theorem reverseIndex_index {G : Graph} (d : Dart G) : reverseIndex d.index = d.r
 @[expose] def faceRepBool (n : ℕ) (table : List ℕ) (i : ℕ) : Bool :=
   (List.range n).all fun j => !orbitBool n table i j || decide (i ≤ j)
 
-private theorem idxOf_decode {G : Graph} {c : RotationCertificate}
+/-- For any accepted raw table, its actual inverse rotation is exactly the bounded list
+search for the given dart index. Empty graphs have no dart premise to manufacture. -/
+theorem index_decode_rotate_symm {G : Graph} {c : RotationCertificate}
     (h : verifyRotation G c = true) (d : Dart G) :
-    c.successor.idxOf d.index = ((decode G c h).rotate.symm d).index := by
+    ((decode G c h).rotate.symm d).index = c.successor.idxOf d.index := by
+  symm
   let e := (decode G c h).rotate.symm d
   have hi : e.index < c.successor.length := by
     rw [(verifyRotation_parts h).2.1]
@@ -439,7 +442,7 @@ theorem getD_faceTable {G : Graph} {c : RotationCertificate}
   rw [List.getD_eq_getElem _ _ (by simpa only [faceTable, List.length_map,
     List.length_range] using hd)]
   simp only [faceTable, List.getElem_map, List.getElem_range, reverseIndex_index,
-    idxOf_decode h]
+    ← index_decode_rotate_symm h]
   rfl
 
 /-- Componentwise Euler test. Every declared root is checked separately. For a root with no
