@@ -6224,6 +6224,7 @@ public import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Probe
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Projection
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Relabel
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Restriction
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.SelfDual
 public import CslibFrontier.Logics.Propositional.CSP.Planar.NonSelfDual
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
 public import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree
@@ -6233,6 +6234,7 @@ public import CslibFrontier.Logics.Propositional.CSP.PrimalGraph
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
+public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
 public import CslibFrontier.Logics.Propositional.CSP.Table
 public import CslibFrontier.Logics.Propositional.CSP.Table.ContractionRows
 public import CslibFrontier.Logics.Propositional.CSP.Table.CyclicDifference
