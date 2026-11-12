@@ -22,7 +22,10 @@ public import CslibFrontier.Algorithms.LatticeReduction.Reduced
 public import CslibFrontier.Algorithms.Lean.AhoCorasick.Basic
 public import CslibFrontier.Algorithms.Lean.AhoCorasick.KMP
 public import CslibFrontier.Algorithms.Lean.AhoCorasick.Search
+public import CslibFrontier.Algorithms.Lean.Arborescence.Branching
 public import CslibFrontier.Algorithms.Lean.Arborescence.ChuLiuEdmonds
+public import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
+public import CslibFrontier.Algorithms.Lean.Arborescence.Table
 public import CslibFrontier.Algorithms.Lean.Assignment.Auction
 public import CslibFrontier.Algorithms.Lean.Assignment.Basic
 public import CslibFrontier.Algorithms.Lean.BellmanFord.Basic
@@ -3516,6 +3519,7 @@ public import CslibFrontier.Computability.Pebbling.ReversiblePath
 public import CslibFrontier.Computability.Pebbling.ReversiblePathReachable
 public import CslibFrontier.Computability.Pebbling.Words
 public import CslibFrontier.Computability.PolyTime.BitString.InitialTestsSearch
+public import CslibFrontier.Computability.PolyTime.BitString.TannerSearch
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceSemantics
@@ -4397,6 +4401,9 @@ public import CslibFrontier.Crypto.Protocols.MPC.PolyTime
 public import CslibFrontier.Crypto.Protocols.MPC.SPDZ
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Crypto.Protocols.MPC.Yao
+public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.DealClient
+public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Information
+public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Protocol
 public import CslibFrontier.Crypto.Protocols.PIR.Basic
 public import CslibFrontier.Crypto.Protocols.PIR.CoveringCode
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
@@ -4913,6 +4920,7 @@ public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
+public import CslibFrontier.Foundations.Combinatorics.Digraph.Branching
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Connectivity
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.ErdosSzekeres
@@ -4921,6 +4929,8 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.AffinePlane
 public import CslibFrontier.Foundations.Combinatorics.Expander.AffineTower
 public import CslibFrontier.Foundations.Combinatorics.Expander.Basic
 public import CslibFrontier.Foundations.Combinatorics.Expander.Bipartite
+public import CslibFrontier.Foundations.Combinatorics.Expander.BipartiteRotation
+public import CslibFrontier.Foundations.Combinatorics.Expander.BipartiteTanner
 public import CslibFrontier.Foundations.Combinatorics.Expander.BoxProduct
 public import CslibFrontier.Foundations.Combinatorics.Expander.Cayley
 public import CslibFrontier.Foundations.Combinatorics.Expander.Cheeger
@@ -5047,6 +5057,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Ba
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Bipartite
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Convex
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Cycle
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.CycleDarts
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Realization
@@ -5191,6 +5202,7 @@ public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.Constant
 public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import CslibFrontier.Foundations.Data.Code.Multilinearity
 public import CslibFrontier.Foundations.Data.Code.MultilinearitySoundness
+public import CslibFrontier.Foundations.Data.Code.ParityCheck
 public import CslibFrontier.Foundations.Data.Code.Plotkin
 public import CslibFrontier.Foundations.Data.Code.Plotkin.Asymptotic
 public import CslibFrontier.Foundations.Data.Code.ReedMuller
@@ -5281,6 +5293,7 @@ public import CslibFrontier.Foundations.Data.List.Perm
 public import CslibFrontier.Foundations.Data.List.Range
 public import CslibFrontier.Foundations.Data.List.RowMajor
 public import CslibFrontier.Foundations.Data.List.SelectDistinct
+public import CslibFrontier.Foundations.Data.List.Sort
 public import CslibFrontier.Foundations.Data.List.SortedAssoc
 public import CslibFrontier.Foundations.Data.List.SortedCount
 public import CslibFrontier.Foundations.Data.List.SumIndicator
@@ -6346,6 +6359,7 @@ public import CslibFrontier.Probability.MoserTardos.Lopsided
 public import CslibFrontier.Probability.MoserTardos.Symmetric
 public import CslibFrontier.Probability.MoserTardos.Witness
 public import CslibFrontier.Probability.MutualInformation
+public import CslibFrontier.Probability.MutualInformation.DataProcessing
 public import CslibFrontier.Probability.OptimalStopping.Basic
 public import CslibFrontier.Probability.OptimalStopping.Prophet
 public import CslibFrontier.Probability.OptimalStopping.ProphetIID

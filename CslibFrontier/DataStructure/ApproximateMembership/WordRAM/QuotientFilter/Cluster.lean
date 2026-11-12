@@ -12,6 +12,7 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
+import CslibFrontier.Foundations.Data.List.Sort
 import CslibFrontier.Tactic.Realize
 
 /-!
@@ -3363,7 +3364,7 @@ theorem FilterInv.calcTargetSlot_lt_calcDeleteStop_of_mem {U b f n : ℕ}
   have hr_mem : rem u ∈ bucketRun S quot rem (probeSlot b o a) :=
     (mem_bucketRun_iff S quot rem _ (rem u)).mpr ⟨u, hu, hq_probe, rfl⟩
   have hpw := pairwise_le_bucketRun S quot rem (probeSlot b o a)
-  have her := erase_eq_take_append_drop_of_pairwise hpw hr_mem
+  have her := hpw.erase_eq_take_append_drop hr_mem
   have hcnt_lt :
       (bucketRun S quot rem (probeSlot b o a)).countP (· < rem u) <
         (bucketRun S quot rem (probeSlot b o a)).length := by

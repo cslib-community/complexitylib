@@ -34,6 +34,16 @@ Divesh Aggarwal. *Secret Sharing Despite Non-Extractable Randomness*. arXiv:2610
 
 Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibliographic Search." *Communications of the ACM* 18(6), 333–340, 1975. https://doi.org/10.1145/360825.360855 . Scanned copy in D. J. Bernstein's bibliography archive, https://cr.yp.to/bib/1975/aho.pdf , checked 2026-11-08 for Algorithms 1 and 3, Lemmas 1–3, Theorems 1, 2 and 4, and Figures 1 and 2.
 
+<a id="ahlswedecsiszar93"></a>
+## ahlswedecsiszar93
+
+Rudolf Ahlswede and Imre Csiszár. "Common Randomness in Information Theory and Cryptography. Part I: Secret Sharing." *IEEE Transactions on Information Theory* 39(4), 1121–1132, 1993. https://doi.org/10.1109/18.243431 . Bibliographic metadata checked via secondary search summaries on 2026-11-11.
+
+<a id="ahlswedecsiszar07"></a>
+## ahlswedecsiszar07
+
+Rudolf Ahlswede and Imre Csiszár. "On Oblivious Transfer Capacity." ISIT 2007, Nice, France, pp. 2061–2064, https://doi.org/10.1109/ISIT.2007.4557524, https://www.math.uni-bielefeld.de/ahlswede/homepage/public/242.pdf. Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8). Used for the asymptotic single-choice-bit string-OT bound (which the Lean formalization adapts to finite exact batch-bit OT with independent choices).
+
 <a id="aik11"></a>
 ## aik11
 
@@ -514,7 +524,7 @@ Jack Edmonds. "Maximum Matching and a Polyhedron with 0,1-Vertices." *Journal of
 <a id="edmonds67b"></a>
 ## edmonds67b
 
-Jack Edmonds. "Optimum Branchings." *Journal of Research of the National Bureau of Standards, Section B* 71B(4), 233–240, 1967. https://doi.org/10.6028/jres.071B.032 . Bibliographic metadata checked against the Crossref record on 2026-11-08. Section 2 (the reduction of optimum spanning arborescences with a prescribed root to optimum branchings; arcs are directed away from the root), Theorem 1 (stated in Section 3: a *good*, that is polynomially bounded, algorithm for optimum branchings exists) and Section 4 (the algorithm, which selects the best arc into each node and contracts cycles, and its proof) were checked against the open NIST PDF on 2026-11-08. The library proves correctness and optimality of the Section 4 contraction algorithm, specialised to rooted minimum-cost spanning arborescences. It does not prove the polynomial-time content of Theorem 1, optimum branchings, or Theorem 2 (Section 5, the branching polytope).
+Jack Edmonds. "Optimum Branchings." *Journal of Research of the National Bureau of Standards, Section B* 71B(4), 233–240, 1967. https://doi.org/10.6028/jres.071B.032 . Bibliographic metadata checked against the Crossref record on 2026-11-08. Section 2 (the reduction of optimum spanning arborescences with a prescribed root to optimum branchings; arcs are directed away from the root), Theorem 1 (stated in Section 3: a *good*, that is polynomially bounded, algorithm for optimum branchings exists) and Section 4 (the algorithm, which selects the best arc into each node and contracts cycles, and its proof) were checked against the open NIST PDF on 2026-11-08. The library formalizes the Section 1 branching characterization, the Section 2 weight-shift reductions, the Section 4 contraction algorithm (including materialized `O(n³)` `TimeM` table solvers), and the polynomial-time content of Theorem 1 on binary-weighted adjacency tables (`minArborescenceDec_mem_P`, `minOutArborescenceDec_mem_P`, `maxBranchingDec_mem_P`). Theorem 2 (Section 5, the branching polytope) and sparse `O(m log n)` / `O(m + n log n)` implementations are not formalized.
 
 <a id="epsteinfeldmanmansour09"></a>
 ## epsteinfeldmanmansour09
@@ -1262,6 +1272,11 @@ Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungari
 
 Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptographic Applications.” *Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing (STOC 1989)*, 33–43, 1989. https://doi.org/10.1145/73007.73011 . Authors' revised manuscript (March 13, 1995): https://www.wisdom.weizmann.ac.il/~naor/PAPERS/uowhf.ps (§2, §2.3, §3 and §4).
 
+<a id="nascimentowinter08"></a>
+## nascimentowinter08
+
+Anderson C. A. Nascimento and Andreas Winter. "On the Oblivious-Transfer Capacity of Noisy Resources." *IEEE Transactions on Information Theory* 54(6), 2572–2581, 2008. https://doi.org/10.1109/TIT.2008.921856 . Bibliographic metadata checked via secondary search summaries on 2026-11-11; the full paper was not audited, so no internal theorem numbers are claimed.
+
 <a id="nash51"></a>
 ## nash51
 
@@ -1715,3 +1730,13 @@ Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-
 ## zre15
 
 Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.
+
+<a id="hoorylinialwigderson06"></a>
+## hoorylinialwigderson06
+
+Shlomo Hoory, Nathan Linial and Avi Wigderson. "Expander graphs and their applications." *Bulletin of the American Mathematical Society* 43(4):439-561, 2006. The library formalization pins the May 3, 2006 draft (`expanderbookr1.pdf`). Section 2.4 (Lemma 2.5) covers the singular-value adaptation (separated from the GV coding background in §12.3.1), mapping the adjacency-eigenvalue normalization to the normalized biadjacency singular value (including bipartite trivial modes) with `d = |D|`, `N = |L| = |R|`, and edge count `d*N`.
+
+<a id="sipserspielman96"></a>
+## sipserspielman96
+
+Michael Sipser and Daniel A. Spielman. "Expander codes." *IEEE Transactions on Information Theory* 42(6):1710-1722, 1996. Section VI (Lemma 15, pp. 1715-1716) provides the local-to-global distance formula. The formalization marks two-code, asymmetric, arbitrary-alphabet, and finite-ring extensions as original adaptations.

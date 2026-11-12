@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Foundations.Combinatorics.Expander.Bipartite
 public import CslibFrontier.Foundations.Data.Code.Basic
 public import CslibFrontier.Foundations.Data.BitString.Parity
+public import CslibFrontier.Foundations.Data.Code.ParityCheck
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.LinearAlgebra.Matrix.ToLin
 import CslibFrontier.Foundations.Data.BitString.Parity.DotProduct
@@ -85,7 +86,7 @@ def checkMatrix : Matrix κ ι Bool :=
 [GuruswamiRudraSudan2025, Definition 11.3.1]: the words on which every check, the sum of the
 bits of its neighbours, vanishes. -/
 def code : Submodule Bool (ι → Bool) :=
-  LinearMap.ker (checkMatrix G).mulVecLin
+  Code.parityCheckCode (checkMatrix G)
 
 /-- The syndrome of a word: the value of every check. -/
 def syndrome (x : ι → Bool) : κ → Bool :=
@@ -164,48 +165,22 @@ theorem card_unsat_le {c : ℕ} (hG : IsLeftBounded G c) {y w : ι → Bool} (hw
 /-- `2 ^ n ≤ |C(G)| · 2 ^ m`: the code is the kernel of a linear map into `2 ^ m` words. -/
 theorem two_pow_card_le :
     2 ^ Fintype.card ι ≤ Nat.card (code G) * 2 ^ Fintype.card κ := by
-  have h := AddSubgroup.card_ker_mul_card_range (checkMatrix G).mulVecLin.toAddMonoidHom
-  have hker : Nat.card ((checkMatrix G).mulVecLin.toAddMonoidHom.ker) = Nat.card (code G) := rfl
-  have hrange : Nat.card ((checkMatrix G).mulVecLin.toAddMonoidHom.range) ≤
-      2 ^ Fintype.card κ := by
-    refine (Nat.card_le_card_of_injective _ Subtype.val_injective).trans ?_
-    rw [Nat.card_fun, Nat.card_eq_fintype_card (α := Bool), Fintype.card_bool,
-      Nat.card_eq_fintype_card (α := κ)]
-  rw [hker, Nat.card_fun, Nat.card_eq_fintype_card (α := Bool), Fintype.card_bool,
-    Nat.card_eq_fintype_card (α := ι)] at h
-  rw [← h]
-  exact Nat.mul_le_mul_left _ hrange
+  simpa only [code, Fintype.card_bool] using Code.pow_card_le_card_parityCheckCode (checkMatrix G)
 
 /-- **Rate** [GuruswamiRudraSudan2025, proof of Theorem 11.3.6] [GuruswamiSharma2010, §1]: with
 `n` variables and `m` checks the code, the solution space of `m` homogeneous linear equations, has
 dimension at least `n - m`, i.e. at least `2 ^ (n - m)` codewords. -/
 theorem two_pow_sub_le_card_code :
     2 ^ (Fintype.card ι - Fintype.card κ) ≤ Nat.card (code G) := by
-  rcases le_total (Fintype.card κ) (Fintype.card ι) with hle | hle
-  · have h2 : 2 ^ (Fintype.card ι - Fintype.card κ) * 2 ^ Fintype.card κ =
-        2 ^ Fintype.card ι := by
-      rw [← pow_add, Nat.sub_add_cancel hle]
-    exact le_of_mul_le_mul_right (h2.le.trans two_pow_card_le) (by positivity)
-  · rw [Nat.sub_eq_zero_of_le hle, pow_zero]
-    exact Nat.card_pos
+  simpa only [code, Fintype.card_bool] using Code.pow_sub_le_card_parityCheckCode (checkMatrix G)
 
 /-- **Rate** in real form: `log₂ |C(G)| / n ≥ 1 - m / n`. -/
 theorem one_sub_card_div_card_le_rate (hι : 0 < Fintype.card ι) :
     1 - (Fintype.card κ : ℝ) / Fintype.card ι ≤
       Real.logb 2 (Nat.card (code G)) / Fintype.card ι := by
-  have hpos : (0 : ℝ) < Nat.card (code G) := by
-    exact_mod_cast Nat.card_pos (α := code G)
-  have h : (2 : ℝ) ^ (Fintype.card ι : ℝ) ≤
-      (Nat.card (code G) : ℝ) * (2 : ℝ) ^ (Fintype.card κ : ℝ) := by
-    rw [Real.rpow_natCast, Real.rpow_natCast]
-    exact_mod_cast two_pow_card_le (G := G)
-  have hlog : (Fintype.card ι : ℝ) ≤ Real.logb 2 (Nat.card (code G)) + Fintype.card κ := by
-    have := Real.logb_le_logb_of_le (b := 2) (by norm_num) (by positivity) h
-    rwa [Real.logb_mul hpos.ne' (by positivity), Real.logb_rpow (by norm_num) (by norm_num),
-      Real.logb_rpow (by norm_num) (by norm_num)] at this
-  have hι' : (0 : ℝ) < Fintype.card ι := by exact_mod_cast hι
-  rw [sub_le_iff_le_add, ← add_div, le_div_iff₀ hι', one_mul]
-  linarith
+  have h := Code.one_sub_card_div_card_le_rate_parityCheckCode hι (checkMatrix G)
+  rw [Code.rate, Fintype.card_bool, Nat.cast_ofNat] at h
+  exact h
 
 /-- **Rate of a biregular expander code**: if `G` is `(c, d)`-biregular, the rate
 `log₂ |C(G)| / n` is at least `1 - c / d`. -/
