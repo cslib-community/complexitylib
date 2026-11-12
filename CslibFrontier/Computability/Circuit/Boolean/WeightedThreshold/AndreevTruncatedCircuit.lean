@@ -186,9 +186,9 @@ private theorem cast_andreevTableScore_empty (b m : ℕ) (w : BitString (2 ^ b +
     (andreevTableScore b m ∅ w : ℝ) =
       2 ^ b - 2 * ∑ idx : Fin (2 ^ b), ((w (Fin.castAdd (b * m) idx)).toNat : ℝ) := by
   rw [andreevTableScore, Int.cast_sum, ← (BitString.equivFin b).sum_comp]
-  simp only [chi_empty, one_mul, andreevTableIndex, Int.cast_sub, Int.cast_one, Int.cast_mul,
-    Int.cast_ofNat, Int.cast_natCast, sum_sub_distrib, sum_const, card_univ, BitString.card,
-    nsmul_eq_mul, mul_one, ← mul_sum]
+  simp only [chi_empty, one_mul, andreevTable, andreevTableIndex, Int.cast_sub, Int.cast_one,
+    Int.cast_mul, Int.cast_ofNat, Int.cast_natCast, sum_sub_distrib, sum_const, card_univ,
+    BitString.card, nsmul_eq_mul, mul_one, ← mul_sum]
   push_cast
   ring
 
