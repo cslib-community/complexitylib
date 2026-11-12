@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Algebra.Module.ZMod
+import CslibFrontier.Probability.PMF.Bind
 
 /-!
 # Discrete-logarithm and Diffie–Hellman experiments in a fixed group
@@ -37,6 +38,15 @@ groups are in `CslibFrontier/Crypto/Computational/DiscreteLog.lean` and
   the two worlds of Attack Game 10.6 and their distinguishing advantage.
 * `Cslib.Crypto.dlToCDH`, `Cslib.Crypto.cdhToDDH`: the elementary reductions from DL to CDH and
   from CDH to DDH.
+
+## Main results
+
+* `Cslib.Crypto.dlAdvantage_le_cdhAdvantage_dlToCDH`: DL advantage is at most the CDH advantage
+  of `dlToCDH`, with no hypothesis on the group.
+* `Cslib.Crypto.cdhAdvantage_le_ddhAdvantage_cdhToDDH_add`: when `c ↦ c • g` is injective on
+  `ZMod q` (that is, `g` has order `q`), CDH advantage is at most the DDH advantage of `cdhToDDH`
+  plus `1 / q`. Its two one-sided parts, `ddhRealExperiment_cdhToDDH` and
+  `ddhRandomExperiment_cdhToDDH_apply_true_le`, average over a setup law separately.
 
 ## References
 
@@ -136,6 +146,81 @@ of `u` and `v`, and answer whether it is `w`. -/
     ProbComp Bool := do
   let z ← A u v
   return z = w
+
+/-! ### Concrete bounds -/
+
+section Bounds
+
+open Probability
+open scoped ENNReal
+
+variable {G : Type} [AddCommGroup G] [DecidableEq G] (q : ℕ) [NeZero q] [Module (ZMod q) G]
+  (g : G)
+
+/-- **DL is at least as hard as CDH**: whenever `A` finds `a` from `a • g`, `dlToCDH A` outputs
+`a • (b • g) = (a * b) • g`. No hypothesis on `G`, `q` or `g` is needed. -/
+theorem dlAdvantage_le_cdhAdvantage_dlToCDH (A : G → ProbComp (ZMod q)) :
+    dlAdvantage q g A ≤ cdhAdvantage q g (dlToCDH A) := by
+  refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
+  simp only [dlExperiment, cdhExperiment, dlToCDH, ProbComp.eval_bind, ProbComp.eval_pure,
+    ProbComp.eval_uniform, PMF.bind_bind, PMF.pure_bind]
+  refine PMF.bind_apply_mono_on_support _ _ fun a _ => ?_
+  rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod q)) (PMF.bind _ _)]
+  refine PMF.bind_apply_mono_on_support _ _ fun b _ => ?_
+  refine PMF.bind_apply_mono_on_support _ _ fun guess _ => ?_
+  by_cases h : guess = a
+  · simp [h, smul_smul]
+  · simp [h]
+
+/-- In the real DDH world, `cdhToDDH A` runs the CDH experiment for `A`. -/
+@[simp] theorem ddhRealExperiment_cdhToDDH (A : G → G → ProbComp G) :
+    ddhRealExperiment q g (cdhToDDH A) = cdhExperiment q g A := rfl
+
+/-- In the random DDH world, `cdhToDDH A` accepts with probability at most `1 / q` when `g` has
+order `q`: the independent `c • g` equals the adversary's output for at most one `c`. Injectivity
+of `c ↦ c • g` holds when `g` generates `G` and `Nat.card G = q`, and, for prime `q`, when
+`g ≠ 0` (`smul_left_injective`). -/
+theorem ddhRandomExperiment_cdhToDDH_apply_true_le
+    (hg : Function.Injective fun c : ZMod q => c • g) (A : G → G → ProbComp G) :
+    ProbComp.eval (ddhRandomExperiment q g (cdhToDDH A)) true ≤ (q : ℝ≥0∞)⁻¹ := by
+  simp only [ddhRandomExperiment, cdhToDDH, ProbComp.eval_bind, ProbComp.eval_pure,
+    ProbComp.eval_uniform]
+  refine PMF.bind_apply_le_on_support _ fun a _ => ?_
+  refine PMF.bind_apply_le_on_support _ fun b _ => ?_
+  rw [PMF.bind_comm]
+  refine PMF.bind_apply_le_on_support _ fun z _ => ?_
+  rw [PMF.bind_apply, tsum_fintype]
+  simp only [PMF.uniformOfFintype_apply, ZMod.card, PMF.pure_apply, eq_comm (a := true),
+    decide_eq_true_eq]
+  rw [← Finset.mul_sum, Finset.sum_boole]
+  have hcard : (Finset.univ.filter fun c : ZMod q => z = c • g).card ≤ 1 :=
+    Finset.card_le_one_iff.mpr fun h₁ h₂ => hg ((Finset.mem_filter.mp h₁).2.symm.trans
+      (Finset.mem_filter.mp h₂).2)
+  calc (q : ℝ≥0∞)⁻¹ * ((Finset.univ.filter fun c : ZMod q => z = c • g).card : ℝ≥0∞)
+      ≤ (q : ℝ≥0∞)⁻¹ * 1 := by gcongr; exact_mod_cast hcard
+    _ = (q : ℝ≥0∞)⁻¹ := mul_one _
+
+/-- **CDH is at least as hard as DDH, up to `1 / q`** ([BonehShoup2023], Section 10.5): when `g`
+has order `q`, the CDH advantage of `A` is at most the DDH advantage of `cdhToDDH A` plus
+`1 / q`. -/
+theorem cdhAdvantage_le_ddhAdvantage_cdhToDDH_add
+    (hg : Function.Injective fun c : ZMod q => c • g) (A : G → G → ProbComp G) :
+    cdhAdvantage q g A ≤ ddhAdvantage q g (cdhToDDH A) + 1 / q := by
+  have hrandom :
+      Game.succProbability (ProbComp.eval (ddhRandomExperiment q g (cdhToDDH A))) ≤ 1 / q := by
+    simpa only [one_div, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast] using
+      ENNReal.toNNReal_mono (by simp [NeZero.ne q])
+        (ddhRandomExperiment_cdhToDDH_apply_true_le q g hg A)
+  calc cdhAdvantage q g A
+      = Game.advantage (ProbComp.eval (ddhRealExperiment q g (cdhToDDH A))) (PMF.pure false) := by
+        rw [Game.advantage_pure_false, ddhRealExperiment_cdhToDDH, cdhAdvantage]
+    _ ≤ ddhAdvantage q g (cdhToDDH A) +
+          Game.advantage (ProbComp.eval (ddhRandomExperiment q g (cdhToDDH A))) (PMF.pure false) :=
+        Game.advantage_triangle _ _ _
+    _ ≤ ddhAdvantage q g (cdhToDDH A) + 1 / q := by
+        rw [Game.advantage_pure_false]; gcongr
+
+end Bounds
 
 end Cslib.Crypto
 
