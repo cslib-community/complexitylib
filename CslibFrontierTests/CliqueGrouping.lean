@@ -43,10 +43,10 @@ open Cslib.Logic.PL Cslib.Complexity
 @[expose] def non3CNF : CNF ℕ :=
   [[(0, true), (1, true), (2, true), (3, true)]]
 
-example : (SAT.groupClique 2 sat2).2 = 2 := by decide
-example : (SAT.groupClique 2 sat2).1.1.length ≤ 16 :=
+example : (SAT.groupClique 2 sat2).m = 2 := by decide
+example : (SAT.groupClique 2 sat2).graph.vertices.length ≤ 16 :=
   SAT.length_groupClique_vertices_le 2 sat2
-example : (SAT.groupClique 2 sat2).1.1.toFinset.card ≤ 16 :=
+example : (SAT.groupClique 2 sat2).graph.vertices.toFinset.card ≤ 16 :=
   SAT.card_groupClique_vertices_le 2 sat2
 
 /-- Witness `τ = (fun _ => true)` satisfies `sat2`, so `SAT.groupClique 2 sat2 ∈ Clique`. -/
@@ -55,7 +55,7 @@ example : SAT.groupClique 2 sat2 ∈ Clique :=
     ⟨by decide, fun _ => true, by decide⟩
 
 /-- Conflicting unit clauses produce no edges between block `0` and block `1`. -/
-example : (SAT.groupClique 2 unsat2).1.2 = [] := by decide
+example : (SAT.groupClique 2 unsat2).graph.edges = [] := by decide
 
 example : SAT.groupClique 2 unsat2 ∉ Clique := by
   rw [SAT.groupClique_mem_Clique_iff (by decide : 1 ≤ 2) unsat2]
@@ -72,24 +72,24 @@ example : SAT.groupClique 2 ([[]] : CNF ℕ) ∉ Clique := by
   rintro ⟨_, τ, hτ⟩
   simp [CNF.eval, Clause.eval] at hτ
 
-example : SAT.groupClique 2 non3CNF = (⟨[], []⟩, 2) := by decide
+example : SAT.groupClique 2 non3CNF = ⟨⟨[], []⟩, 2⟩ := by decide
 example : SAT.groupClique 2 non3CNF ∉ Clique := by
   rw [SAT.groupClique_mem_Clique_iff (by decide : 1 ≤ 2) non3CNF]
   rintro ⟨h3, _⟩
   exact absurd (h3 [(0, true), (1, true), (2, true), (3, true)] (by simp [non3CNF])) (by decide)
 
-example : SAT.groupClique 0 sat2 = (⟨[], []⟩, 1) := by decide
+example : SAT.groupClique 0 sat2 = ⟨⟨[], []⟩, 1⟩ := by decide
 
 /-- Non-vacuity typecheck of the ETH lower-bound and `FPT` theorems. -/
-example (hETH : ETH) : Clique ∉ FPT (Turing.MultiTapeTM.encPair encGraph Turing.MultiTapeTM.encNat)
-    Prod.snd :=
+example (hETH : ETH) : Clique ∉ FPT encCliqueInstance
+    CliqueInstance.m :=
   ETH.clique_not_mem_FPT hETH
 
 example (hETH : ETH) :
-    ¬DecidableInTimeO Clique (Turing.MultiTapeTM.encPair encGraph Turing.MultiTapeTM.encNat)
+    ¬DecidableInTimeO Clique encCliqueInstance
       (fun x =>
-        let graph := x.1
-        let verts := graph.1
+        let graph := x.graph
+        let verts := graph.vertices
         ((verts.length : ℝ) + 1) ^ (0 : ℝ)) := by
   have h := ETH.not_clique_subexpVertex hETH (fun _ => 1) (fun _ => 0) 0
     (fun ε hε => ⟨0, fun k _ => by positivity⟩)

@@ -164,13 +164,8 @@ theorem DecidableInSingleSubexpTime.decidableInSubexpTime {A : Set α} {enc : α
   obtain ⟨s, e, _, hs_o, hO⟩ := h
   intro δ hδ
   obtain ⟨K, _, hK⟩ := exists_two_pow_le_of_isLittleO hs_o hδ
-  refine ⟨e, hO.mono ⌈K⌉₊ (fun a => ?_) fun _ => by positivity⟩
-  have h1 : (2 : ℝ) ^ s (μ a) ≤ ⌈K⌉₊ * (2 : ℝ) ^ (δ * μ a) :=
-    (hK (μ a)).trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))
-  have h2 := mul_le_mul_of_nonneg_right h1
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
-  have h3 : (0 : ℝ) ≤ ⌈K⌉₊ := Nat.cast_nonneg _
-  nlinarith
+  exact ⟨e, hO.mono _ (fun a => two_rpow_mul_pow_le_natCeil_mul_add_of_le (hK (μ a)))
+    fun _ => by positivity⟩
 
 /-- **Single-machine implies family subexponential function computation.** -/
 theorem ComputableInSingleSubexpTime.computableInSubexpTime {f : α → β}
@@ -180,13 +175,8 @@ theorem ComputableInSingleSubexpTime.computableInSubexpTime {f : α → β}
   obtain ⟨s, e, _, hs_o, hO⟩ := h
   intro δ hδ
   obtain ⟨K, _, hK⟩ := exists_two_pow_le_of_isLittleO hs_o hδ
-  refine ⟨e, hO.mono ⌈K⌉₊ (fun a => ?_) fun _ => by positivity⟩
-  have h1 : (2 : ℝ) ^ s (μ a) ≤ ⌈K⌉₊ * (2 : ℝ) ^ (δ * μ a) :=
-    (hK (μ a)).trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))
-  have h2 := mul_le_mul_of_nonneg_right h1
-    (by positivity : (0 : ℝ) ≤ (((encIn a).length : ℝ) + 1) ^ e)
-  have h3 : (0 : ℝ) ≤ ⌈K⌉₊ := Nat.cast_nonneg _
-  nlinarith
+  exact ⟨e, hO.mono _ (fun a => two_rpow_mul_pow_le_natCeil_mul_add_of_le (hK (μ a)))
+    fun _ => by positivity⟩
 
 /-! ### Quantifier-order characterization (`∃ (M, e), ∀ δ > 0, ∃ c`) -/
 
@@ -277,15 +267,12 @@ theorem decidableInSingleSubexpTime_iff_exists_machine {A : Set α} {enc : α �
     refine ⟨t, sp, e, hdec, fun δ hδ => ?_⟩
     obtain ⟨K, _, hK⟩ := exists_two_pow_le_of_isLittleO hs_o hδ
     refine ⟨c₀ * ⌈K⌉₊ + c₀, fun a => (ht a).trans ?_⟩
-    have h1 : (2 : ℝ) ^ s (μ a) ≤ ⌈K⌉₊ * (2 : ℝ) ^ (δ * μ a) :=
-      (hK (μ a)).trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))
-    have h2 := mul_le_mul_of_nonneg_right h1
-      (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
-    have h3 := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg c₀)
-    have hpos : (0 : ℝ) ≤ (2 : ℝ) ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e := by positivity
-    have hc0 : (0 : ℝ) ≤ c₀ := Nat.cast_nonneg c₀
+    have h := mul_le_mul_of_nonneg_left (two_rpow_mul_pow_le_natCeil_mul_add_of_le
+      (L := (enc a).length) (e := e) (hK (μ a))) (Nat.cast_nonneg c₀ : (0 : ℝ) ≤ c₀)
+    have hpos := mul_nonneg (Nat.cast_nonneg c₀ : (0 : ℝ) ≤ c₀)
+      (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e)
     push_cast
-    nlinarith
+    linarith
   · rintro ⟨t, sp, e, hdec, h⟩
     obtain ⟨s, hnn, hs_o, hbound⟩ := exists_isLittleO_of_forall_exp_bound h
     refine ⟨s, e, hnn, hs_o, 1, t, sp, fun a => ?_, hdec⟩
@@ -307,15 +294,12 @@ theorem computableInSingleSubexpTime_iff_exists_machine {f : α → β} {encIn :
     refine ⟨t, sp, e, hcomp, fun δ hδ => ?_⟩
     obtain ⟨K, _, hK⟩ := exists_two_pow_le_of_isLittleO hs_o hδ
     refine ⟨c₀ * ⌈K⌉₊ + c₀, fun a => (ht a).trans ?_⟩
-    have h1 : (2 : ℝ) ^ s (μ a) ≤ ⌈K⌉₊ * (2 : ℝ) ^ (δ * μ a) :=
-      (hK (μ a)).trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))
-    have h2 := mul_le_mul_of_nonneg_right h1
-      (by positivity : (0 : ℝ) ≤ (((encIn a).length : ℝ) + 1) ^ e)
-    have h3 := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg c₀)
-    have hpos : (0 : ℝ) ≤ (2 : ℝ) ^ (δ * μ a) * (((encIn a).length : ℝ) + 1) ^ e := by positivity
-    have hc0 : (0 : ℝ) ≤ c₀ := Nat.cast_nonneg c₀
+    have h := mul_le_mul_of_nonneg_left (two_rpow_mul_pow_le_natCeil_mul_add_of_le
+      (L := (encIn a).length) (e := e) (hK (μ a))) (Nat.cast_nonneg c₀ : (0 : ℝ) ≤ c₀)
+    have hpos := mul_nonneg (Nat.cast_nonneg c₀ : (0 : ℝ) ≤ c₀)
+      (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a) * (((encIn a).length : ℝ) + 1) ^ e)
     push_cast
-    nlinarith
+    linarith
   · rintro ⟨t, sp, e, hcomp, h⟩
     obtain ⟨s, hnn, hs_o, hbound⟩ := exists_isLittleO_of_forall_exp_bound h
     refine ⟨s, e, hnn, hs_o, 1, t, sp, fun a => ?_, hcomp⟩
@@ -334,11 +318,8 @@ theorem DecidableInSingleSubexpTime.mono_measure {A : Set α} {enc : α ↪ List
   refine ⟨fun n => sBar (c * n + c), e, fun n => hnnBar _,
     isLittleO_comp_linear_of_nonneg hnnBar hsBar_o c c,
     hO.mono 1 (fun a => ?_) fun _ => by positivity⟩
-  have h1 : s (μ a) ≤ sBar (c * μ' a + c) := (hle (μ a)).trans (hmono (hμ a))
-  have h2 : (2 : ℝ) ^ s (μ a) ≤ 2 ^ sBar (c * μ' a + c) :=
-    Real.rpow_le_rpow_of_exponent_le (by norm_num) h1
-  have h3 := mul_le_mul_of_nonneg_right h2
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
+  have h := two_rpow_mul_pow_le_two_rpow_mul_pow (L := (enc a).length) (d := e) (e := e)
+    ((hle (μ a)).trans (hmono (hμ a))) le_rfl
   push_cast
   linarith
 
@@ -353,11 +334,8 @@ theorem ComputableInSingleSubexpTime.mono_measure {f : α → β} {encIn : α �
   refine ⟨fun n => sBar (c * n + c), e, fun n => hnnBar _,
     isLittleO_comp_linear_of_nonneg hnnBar hsBar_o c c,
     hO.mono 1 (fun a => ?_) fun _ => by positivity⟩
-  have h1 : s (μ a) ≤ sBar (c * μ' a + c) := (hle (μ a)).trans (hmono (hμ a))
-  have h2 : (2 : ℝ) ^ s (μ a) ≤ 2 ^ sBar (c * μ' a + c) :=
-    Real.rpow_le_rpow_of_exponent_le (by norm_num) h1
-  have h3 := mul_le_mul_of_nonneg_right h2
-    (by positivity : (0 : ℝ) ≤ (((encIn a).length : ℝ) + 1) ^ e)
+  have h := two_rpow_mul_pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := e) (e := e)
+    ((hle (μ a)).trans (hmono (hμ a))) le_rfl
   push_cast
   linarith
 
@@ -403,37 +381,26 @@ theorem ComputableInSingleSubexpTime.ite_polyTime {f g : α → β} {p : α → 
     ⟨_, _, dp + dg + e, hcomb_ts, fun δ hδ => ?_⟩
   obtain ⟨c, hc⟩ := hbound δ hδ
   refine ⟨c_comb * (2 * c + 4), fun a => ?_⟩
-  set L : ℝ := ((encIn a).length : ℝ)
-  have hL1 : (1 : ℝ) ≤ L + 1 := by
-    dsimp only [L]
-    linarith [(Nat.cast_nonneg (encIn a).length : (0 : ℝ) ≤ _)]
-  have hX1 : (1 : ℝ) ≤ 2 ^ (δ * μ a) := Real.one_le_rpow (by norm_num) (by positivity)
-  have hdp : (L + 1) ^ dp ≤ 2 ^ (δ * μ a) * (L + 1) ^ (dp + dg + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have hdg : (L + 1) ^ dg ≤ 2 ^ (δ * μ a) * (L + 1) ^ (dp + dg + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have he : (L + 1) ^ e ≤ (L + 1) ^ (dp + dg + e) := pow_le_pow_right₀ hL1 (by omega)
-  have hc0 : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  have hcc0 : (0 : ℝ) ≤ c_comb := Nat.cast_nonneg c_comb
-  have hpos : (0 : ℝ) ≤ 2 ^ (δ * μ a) * (L + 1) ^ (dp + dg + e) := by positivity
-  have ht_le : (t a : ℝ) ≤ (2 * c + 1) * (2 ^ (δ * μ a) * (L + 1) ^ (dp + dg + e)) := by
-    have hmul := mul_le_mul_of_nonneg_left he (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a))
-    have hmulc := mul_le_mul_of_nonneg_left hmul hc0
-    have hc1 : (c : ℝ) ≤ c * (2 ^ (δ * μ a) * (L + 1) ^ (dp + dg + e)) :=
-      le_mul_of_one_le_right hc0 (one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hL1))
-    dsimp only [L] at *
-    nlinarith [hc a]
-  have h1 : (1 : ℝ) ≤ 2 ^ (δ * μ a) * (L + 1) ^ (dp + dg + e) :=
-    one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hL1)
+  have hx : 0 ≤ δ * μ a := by positivity
+  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := dp + dg + e) hx
+  have ht := le_two_mul_mul_of_le_mul_add (hc a)
+    (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (by omega : e ≤ dp + dg + e)) hX
+  have hdp := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dp) (e := dp + dg + e) hx
+    (by omega)
+  have hdg := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dg) (e := dp + dg + e) hx
+    (by omega)
+  have hcX := mul_nonneg (Nat.cast_nonneg c : (0 : ℝ) ≤ c) (zero_le_one.trans hX)
+  -- the guarded runtime is at most `(2 * c + 4)` envelopes, in either branch
+  have hsum : ((((encIn a).length + 1) ^ dp +
+      if p a then t a else ((encIn a).length + 1) ^ dg) + 1 : ℕ) ≤
+      (2 * c + 4) * (2 ^ (δ * μ a) * (((encIn a).length : ℝ) + 1) ^ (dp + dg + e)) := by
+    split_ifs <;> push_cast <;> linarith
+  have hmul := mul_le_mul_of_nonneg_left hsum (Nat.cast_nonneg c_comb : (0 : ℝ) ≤ c_comb)
+  have hpos : (0 : ℝ) ≤ (c_comb * (2 * c + 4) : ℕ) := Nat.cast_nonneg _
   change ((c_comb * ((((encIn a).length + 1) ^ dp +
     if p a then t a else ((encIn a).length + 1) ^ dg) + 1) : ℕ) : ℝ) ≤ _
-  split_ifs
-  · push_cast
-    dsimp only [L] at *
-    nlinarith
-  · push_cast
-    dsimp only [L] at *
-    nlinarith
+  push_cast at hmul hpos ⊢
+  linarith
 
 /-- **Single-machine decision from function computation.** Composing a single-machine
 subexponential function of polynomially bounded output length with a polynomial-time test yields a
@@ -451,43 +418,25 @@ theorem DecidableInSingleSubexpTime.of_computableInSingleSubexpTime_polyBounded
   obtain ⟨c_comp, hcomp_ts, -⟩ := htest'.inO.comp hfO
   refine ⟨s, e + q * d, hnn, hs_o, c_comp * (2 * c + 2 + (p + 1) ^ d), _, _, fun a => ?_,
     decidableInTimeAndSpace_iff.mpr ⟨test ∘ f, hcomp_ts, fun _ => Iff.rfl⟩⟩
-  set L : ℕ := (encIn a).length
-  have hL1 : 1 ≤ L + 1 := Nat.le_add_left 1 L
-  have hLR1 : (1 : ℝ) ≤ (L : ℝ) + 1 := by exact_mod_cast hL1
-  have hX1 : (1 : ℝ) ≤ 2 ^ s (μ a) := Real.one_le_rpow (by norm_num) (hnn (μ a))
-  have hout_pow : ((encMid (f a)).length + 1) ^ d ≤ (p + 1) ^ d * (L + 1) ^ (q * d) :=
-    Nat.add_one_pow_le_of_le_mul_pow hL1 (hp a) d
-  have hqd : ((L : ℝ) + 1) ^ (q * d) ≤ ((L : ℝ) + 1) ^ (e + q * d) :=
-    pow_le_pow_right₀ hLR1 (Nat.le_add_left _ _)
-  have he : ((L : ℝ) + 1) ^ e ≤ ((L : ℝ) + 1) ^ (e + q * d) :=
-    pow_le_pow_right₀ hLR1 (Nat.le_add_right _ _)
-  have houtR : (((encMid (f a)).length : ℝ) + 1) ^ d ≤
-      ((p + 1) ^ d : ℕ) * (2 ^ s (μ a) * ((L : ℝ) + 1) ^ (e + q * d)) := by
-    have h1 : (((encMid (f a)).length : ℝ) + 1) ^ d ≤
-        ((p + 1) ^ d : ℕ) * ((L : ℝ) + 1) ^ (q * d) := by exact_mod_cast hout_pow
-    have h2 : ((L : ℝ) + 1) ^ (q * d) ≤ 2 ^ s (μ a) * ((L : ℝ) + 1) ^ (e + q * d) :=
-      hqd.trans (le_mul_of_one_le_left (by positivity) hX1)
-    exact h1.trans (mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg _))
-  have htR : (t a : ℝ) ≤ (2 * c + 1 : ℕ) * (2 ^ s (μ a) * ((L : ℝ) + 1) ^ (e + q * d)) := by
-    have h1 := mul_le_mul_of_nonneg_left he (by positivity : (0 : ℝ) ≤ 2 ^ s (μ a))
-    have h2 := mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg c)
-    have h3 : (1 : ℝ) ≤ 2 ^ s (μ a) * ((L : ℝ) + 1) ^ (e + q * d) :=
-      one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hLR1)
-    have h4 := mul_le_mul_of_nonneg_left h3 (Nat.cast_nonneg c)
-    push_cast
-    dsimp only [L] at *
-    linarith [ht a]
-  have h1 : (1 : ℝ) ≤ 2 ^ s (μ a) * ((L : ℝ) + 1) ^ (e + q * d) :=
-    one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hLR1)
-  have hsum : (t a : ℝ) + (((encMid (f a)).length : ℝ) + 1) ^ d + 1 ≤
-      (2 * c + 2 + (p + 1) ^ d : ℕ) * (2 ^ s (μ a) * ((L : ℝ) + 1) ^ (e + q * d)) := by
-    push_cast at htR houtR ⊢
+  have hx : 0 ≤ s (μ a) := hnn (μ a)
+  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := e + q * d) hx
+  have ht' : (t a : ℝ) ≤ 2 * c * (2 ^ s (μ a) * (((encIn a).length : ℝ) + 1) ^ (e + q * d)) :=
+    le_two_mul_mul_of_le_mul_add (ht a) (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (by omega)) hX
+  have hout : (((encMid (f a)).length : ℝ) + 1) ^ d ≤
+      ((p + 1) ^ d : ℕ) * (((encIn a).length : ℝ) + 1) ^ (q * d) := by
+    exact_mod_cast Nat.add_one_pow_le_of_le_mul_pow (Nat.le_add_left 1 _) (hp a) d
+  have hq := mul_le_mul_of_nonneg_left (pow_le_two_rpow_mul_pow (L := (encIn a).length)
+    (d := q * d) (e := e + q * d) hx (by omega)) (Nat.cast_nonneg ((p + 1) ^ d) : (0 : ℝ) ≤ _)
+  -- the composed runtime is at most `2 * c + 2 + (p + 1) ^ d` envelopes
+  have hsum : ((t a + ((encMid (f a)).length + 1) ^ d + 1 : ℕ) : ℝ) ≤
+      (2 * c + 2 + (p + 1) ^ d : ℕ) *
+        (2 ^ s (μ a) * (((encIn a).length : ℝ) + 1) ^ (e + q * d)) := by
+    push_cast at hout hq ⊢
     linarith
-  have hmul := mul_le_mul_of_nonneg_left hsum (Nat.cast_nonneg c_comp)
-  have hnonneg : (0 : ℝ) ≤ (c_comp * (2 * c + 2 + (p + 1) ^ d) : ℕ) := Nat.cast_nonneg _
+  have hmul := mul_le_mul_of_nonneg_left hsum (Nat.cast_nonneg c_comp : (0 : ℝ) ≤ c_comp)
+  have hpos : (0 : ℝ) ≤ (c_comp * (2 * c + 2 + (p + 1) ^ d) : ℕ) := Nat.cast_nonneg _
   change ((c_comp * ((t a + ((encMid (f a)).length + 1) ^ d) + 1) : ℕ) : ℝ) ≤ _
-  push_cast at hmul hnonneg ⊢
-  dsimp only [L] at *
+  push_cast at hmul hpos ⊢
   linarith
 
 /-- **Transfer along linear-parameter parsimonious reductions (`SingleSubexp`).** -/
@@ -761,35 +710,25 @@ theorem ComputableInSingleSubexpTime.SharpKSAT_length_of_numVars {k : ℕ}
     isLittleO_comp_linear_of_nonneg hnnBar hsBar_o k 0,
     (ComputableInTimeO.of_computableInO hite fun _ => le_rfl).mono (2 * c + 3)
       (fun φ => ?_) fun _ => by positivity⟩
-  set L : ℝ := ((encCNF φ).length : ℝ)
-  have hL1 : (1 : ℝ) ≤ L + 1 := by
-    dsimp only [L]
-    linarith [(Nat.cast_nonneg (encCNF φ).length : (0 : ℝ) ≤ _)]
-  have hX1 : (1 : ℝ) ≤ 2 ^ s' φ.length := Real.one_le_rpow (by norm_num) (hnnBar _)
-  have hdw : (L + 1) ^ dw ≤ 2 ^ s' φ.length * (L + 1) ^ (dw + dc + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have hdc : (L + 1) ^ dc ≤ 2 ^ s' φ.length * (L + 1) ^ (dw + dc + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have he : (L + 1) ^ e ≤ (L + 1) ^ (dw + dc + e) := pow_le_pow_right₀ hL1 (by omega)
-  have hc_nn : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  have hpos : (0 : ℝ) ≤ 2 ^ s' φ.length * (L + 1) ^ (dw + dc + e) := by positivity
+  have hx : 0 ≤ s' φ.length := hnnBar _
+  have hX := one_le_two_rpow_mul_pow (L := (encCNF φ).length) (e := dw + dc + e) hx
+  have hcX := mul_nonneg (Nat.cast_nonneg c : (0 : ℝ) ≤ c) (zero_le_one.trans hX)
+  have hdw := pow_le_two_rpow_mul_pow (L := (encCNF φ).length) (d := dw) (e := dw + dc + e) hx
+    (by omega)
+  have hdc := pow_le_two_rpow_mul_pow (L := (encCNF φ).length) (d := dc) (e := dw + dc + e) hx
+    (by omega)
   change ((((encCNF φ).length + 1) ^ dw +
     if φ.all (fun cl => decide (cl.length ≤ k)) then t φ
     else ((encCNF φ).length + 1) ^ dc : ℕ) : ℝ) ≤ _
   split_ifs with hφ
   · simp only [List.all_eq_true, decide_eq_true_eq] at hφ
-    have hexp : (2 : ℝ) ^ s φ.numVars ≤ 2 ^ s' φ.length := by
-      refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-      exact (hle _).trans (hmono (by simpa only [Nat.add_zero] using CNF.numVars_le_mul_length hφ))
-    have hmul := mul_le_mul hexp he (by positivity) (by positivity)
-    have hmulc := mul_le_mul_of_nonneg_left hmul hc_nn
-    have hc1 : (c : ℝ) ≤ c * (2 ^ s' φ.length * (L + 1) ^ (dw + dc + e)) :=
-      le_mul_of_one_le_right hc_nn (one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hL1))
+    have hexp : s φ.numVars ≤ s' φ.length :=
+      (hle _).trans (hmono (by simpa only [Nat.add_zero] using CNF.numVars_le_mul_length hφ))
+    have ht' := le_two_mul_mul_of_le_mul_add (ht φ)
+      (two_rpow_mul_pow_le_two_rpow_mul_pow hexp (by omega)) hX
     push_cast
-    dsimp only [L] at *
-    nlinarith [ht φ]
+    linarith
   · push_cast
-    dsimp only [L] at *
-    nlinarith
+    linarith
 
 end Cslib.Complexity

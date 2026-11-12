@@ -7,9 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-public import Mathlib.Data.Multiset.AddSub
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+public import CslibFrontier.Init
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Data.List.GetD
 
 /-!
 # Selecting list entries by a mask
@@ -17,7 +17,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 `Cslib.Complexity.maskSelect l w` keeps the entries of `l` at the positions where the bit string
 `w` is `true`. Masks describe exactly the sublists of `l`, and therefore, up to order, exactly the
 sub-multisets of `l`; this makes them polynomially long certificates for problems that ask for a
-sub-multiset of the input numbers, such as subset sum, partition and knapsack.
+sub-multiset of the input numbers, such as subset sum, partition and knapsack. Unlike
+`Cslib.Complexity.selectDistinct`, which selects each distinct entry at most once and so selects
+sets, a repeated entry may be selected repeatedly.
 
 ## Main definitions
 
@@ -31,17 +33,19 @@ sub-multiset of the input numbers, such as subset sum, partition and knapsack.
 * `Cslib.Complexity.exists_le_iff_exists_maskSelect`: a property of sub-multisets holds for one of
   them exactly when it holds for the selection of some mask of any length at least the length of
   the list.
-* `Cslib.Complexity.computableInPolyTime_maskSelect`: selection is polynomial-time.
+* `Cslib.Complexity.maskSelect_eq_map_filter_range`: the selection as the entries at the selected
+  indices.
+* `Cslib.Complexity.sum_maskSelect`: the sum of the selected numbers is the scalar product with
+  the mask.
 -/
 
 @[expose] public section
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM
 open scoped List
 
-variable {α : Type}
+variable {α : Type*}
 
 /-- The entries of `l` at the positions where `w` is `true`; positions beyond the end of `w` are
 not selected. Repeated entries may be selected repeatedly, so masks select sub-multisets; for sets,
@@ -91,6 +95,26 @@ theorem maskSelect_append_replicate_false (l : List α) (w : List Bool) (k : ℕ
   · rw [List.getElem?_eq_none (by lia : w.length ≤ p.2)]
     by_cases h : p.2 - w.length < k <;> simp [h]
 
+/-- The selection of a mask is the list of entries at the selected indices. -/
+theorem maskSelect_eq_map_filter_range (l : List α) (w : List Bool) (d : α) :
+    maskSelect l w = ((List.range l.length).filter fun i => w.getD i false).map (l.getD · d) := by
+  have hz : l.zipIdx = (List.range l.length).map fun i => (l.getD i d, i) := by
+    refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
+    simp [List.getElem?_eq_getElem (List.length_zipIdx ▸ h₁ : i < l.length)]
+  simp only [maskSelect, hz, List.filter_map, List.map_map, Function.comp_def]
+
+/-- The numbers selected by a mask sum to the scalar product with the mask. -/
+theorem sum_maskSelect (a : List ℕ) (w : List Bool) :
+    (maskSelect a w).sum =
+      ∑ j ∈ Finset.range a.length, a.getD j 0 * (w.getD j false).toNat := by
+  induction a generalizing w with
+  | nil => simp
+  | cons n a ih =>
+    rw [maskSelect_cons, List.sum_append, ih, List.length_cons, Finset.sum_range_succ']
+    cases w with
+    | nil => simp
+    | cons b w => cases b <;> simp [Nat.add_comm]
+
 /-- The sub-multisets of a list are the sublists, up to order. -/
 theorem exists_le_coe_iff_exists_sublist {l : List α} (P : Multiset α → Prop) :
     (∃ s ≤ (l : Multiset α), P s) ↔ ∃ s, s <+ l ∧ P s := by
@@ -117,13 +141,5 @@ theorem exists_le_iff_exists_maskSelect {l : List α} {n : ℕ} (hn : l.length �
       by rwa [maskSelect_append_replicate_false]⟩
   · rintro ⟨w, -, hP⟩
     exact ⟨_, maskSelect_sublist l w, hP⟩
-
-/-- Selecting the entries of a list by a mask is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_maskSelect (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × List Bool => maskSelect p.1 p.2)
-      (encPair (encList enc) encBits) (encList enc) := by
-  unfold maskSelect
-  fun_prop
 
 end Cslib.Complexity

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
 public import CslibFrontier.Computability.Complexity.Reduction
 import CslibFrontier.Computability.Complexity.Classes.PH.Projection
+import CslibFrontier.Computability.Complexity.Reduction.Word
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Foundations.Data.List.TakeQuantifiers
@@ -96,12 +97,7 @@ theorem mem_SigmaP_of_exists_length (hk : 1 ≤ k) {N : α → ℕ}
     (hC : C ∈ SigmaP k (encPair enc encBits)) :
     {a | ∃ w : List Bool, w.length = N a ∧ (a, w) ∈ C} ∈ SigmaP k enc := by
   obtain ⟨p, hp⟩ := hN.polyBounded.exists_polynomial
-  let C' : Set (α × List Bool) := {y | (y.1, y.2.take (N y.1)) ∈ C}
-  have hred : PolyTimeReducible (encPair enc encBits) (encPair enc encBits) C' C :=
-    ⟨fun y => (y.1, y.2.take (N y.1)),
-      (fst enc encBits).prod (bitsTakeWithInput (snd enc encBits) (hN.comp (fst enc encBits))),
-      fun _ => Iff.rfl⟩
-  convert mem_SigmaP_of_exists hk (hred.mem_SigmaP hC) p using 1
+  convert mem_SigmaP_of_exists hk ((polyTimeReducible_take hN C).mem_SigmaP hC) p using 1
   ext a
   exact (List.exists_length_eq_take_iff (P := fun u => (a, u) ∈ C) (hp a)).symm
 
@@ -115,13 +111,6 @@ theorem mem_PiP_of_forall_length (hk : 1 ≤ k) {N : α → ℕ}
   convert compl_mem_PiP_of_mem_SigmaP hex using 1
   ext a
   simp
-
-/-- Appending a word `u` to the word component of `(a, s)` is polynomial-time. -/
-private theorem polyTimeReducible_append (C : Set (α × List Bool)) :
-    PolyTimeReducible (encPair (encPair enc encBits) encBits) (encPair enc encBits)
-      {x : (α × List Bool) × List Bool | (x.1.1, x.1.2 ++ x.2) ∈ C} C :=
-  ⟨fun x => (x.1.1, x.1.2 ++ x.2), (fst _ _).fst'.prod (bitsAppend (fst _ _).snd' (snd _ _)),
-    fun _ => Iff.rfl⟩
 
 /-- **`Σₖ` on pairs is closed under existentially extending the word**, for `k ≥ 1`: if `C` is in
 `Σₖ`, so is the set of `(a, s)` with some `u` of computed length `N (a, s)` and

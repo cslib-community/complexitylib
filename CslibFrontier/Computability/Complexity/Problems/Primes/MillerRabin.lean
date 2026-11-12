@@ -274,11 +274,8 @@ theorem decidesWithOneSidedError :
   rw [hlen]
   refine ⟨fun hn => ?_, fun hn r => ?_⟩
   · simp only [PromiseProblem.yes_ofSet, Set.mem_ofPred_eq] at hn
-    have hsplit := Finset.card_filter_add_card_filter_not
-      (s := (Finset.univ : Finset (Fin (2 * n.size) → Bool)))
-      (fun r => verifier (n, List.ofFn r) = true)
-    simp only [Finset.card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool,
-      Bool.not_eq_true] at hsplit
+    have hsplit := acceptCount_add_card_filter_eq_false (V := verifier) (a := n)
+      (n := 2 * n.size)
     suffices hrej : 2 * (Finset.univ.filter fun r : Fin (2 * n.size) → Bool =>
         verifier (n, List.ofFn r) = false).card ≤ 2 ^ (2 * n.size) by omega
     by_cases hodd : n < 2 ∨ n % 2 = 0

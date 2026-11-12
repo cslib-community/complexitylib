@@ -293,6 +293,20 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ROABPHittingSet
 
 **Not certified here.** Positive characteristic and small fields. Layers that are sparse polynomials in several variables, sums of set-multilinear circuits, and the other theorems of the source. The source's bound: the weights are `a ^ (i + 1) % p` for one prime and the levels are combined one at a time, so the constants differ. The bit length of the points and the cost of computing them; `roabpPrime` is defined by `Nat.find`.
 
+## Hitting sets of matrices for non-commutative branching programs
+
+Import [HittingSet/NoncommABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean). A non-commutative polynomial is tested on tuples of matrices: `P : Fin n → Matrix (Fin (d + 1)) (Fin (d + 1)) F` hits `f : FreeAlgebra F (Fin n)` when `FreeAlgebra.lift F P f ≠ 0`. The endpoint [exists_mem_noncommABPHittingSet_lift_ne_zero](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NoncommABP.lean) is for `[Field F] [CharZero F]`, `A : NoncommABP F (Fin n) d` (the homogeneous layered programs of [Noncommutative/ABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/Noncommutative/ABP.lean)) with `A.width k ≤ W` for all `k ≤ d` and `A.polynomial ≠ 0`: some `P ∈ noncommABPHittingSet F n d W` has `FreeAlgebra.lift F P A.polynomial ≠ 0`. `card_noncommABPHittingSet_le n d W` bounds the set by the size of `roabpHittingSet F d W (n - 1)` of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), which is `(n d W) ^ O(log d)`.
+
+The tuples are `superdiagPoint a` for the points `a` of that set: the variable `x` becomes the matrix with entry `a k ^ x` at `(k, k + 1)` and zero elsewhere. `eval_roabpProd` ([ROABP.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/ROABP.lean)) evaluates a read-once oblivious program as an entry of the product of its evaluated layers.
+
+Complete client: [NoncommABPHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/NoncommABPHittingSet.lean) builds the width-one program computing `x₀ x₁` and obtains a tuple of the set where it does not vanish. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NoncommABPHittingSet
+```
+
+**Not certified here.** The reduction is that of [Forbes and Shpilka][forbesshpilka2013] (Construction 4.1 to Theorem 4.6), for homogeneous layered programs; the hitting set for read-once oblivious programs is the one of [Quasipolynomial hitting sets for ROABPs in an unknown order](#quasipolynomial-hitting-sets-for-roabps-in-an-unknown-order), the library's adaptation of Agrawal–Gurjar–Korwar–Saxena with a different weight family, not their generator, so the size is neither paper's bound; their Corollary 4.7 is not formalized. Programs that are not homogeneous and layered. Positive characteristic. White-box identity testing (Raz–Shpilka). The bit length of the matrix entries.
+
 ## Support-concentrating shifts and perfect hash families
 
 Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of [Hitting sets for multilinear any-order ROABPs](#hitting-sets-for-multilinear-any-order-roabps) takes from earlier work.
@@ -315,6 +329,26 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShif
 ```
 
 **Not certified here.** The proof of Forbes, Saptharishi and Shpilka by rank condensers, and their size bound: for every individual degree the statement is proved by the argument of `boundedDegreeShifts` above, and `concentratingShifts F P` is `boundedDegreeShifts F 1 P`. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
+
+## Roots of polynomial equations and hardness versus randomness
+
+This section collects the pieces of the hardness-versus-randomness route for constant-depth formulas (issue #4734); each is usable alone.
+
+**Lagrange inversion.** Import [LagrangeInversion.lean](../../CslibFrontier/Foundations/Algebra/Polynomial/LagrangeInversion.lean). For a commutative ring `R` that is an algebra over a field `F` of characteristic zero, an ideal `J` of `R`, a polynomial `G : R[X]` with `G.coeff 0 ∈ J` and `G.coeff 1 ∈ J`, and `f ∈ J` with `G.eval f = f`, `Polynomial.sub_sum_coeff_pow_mem_of_eval_eq` gives `f - ∑ m ∈ range N, ((m : F) + 1)⁻¹ • (G ^ (m + 1)).coeff m ∈ J ^ e` whenever `2 * e ≤ N`. `Polynomial.sum_coeff_mul_pow_sub_eval_mem` is the Lagrange–Good form for `H.eval f`. The proof is finite (no power series), with the weight filtration `Polynomial.HasWeight`.
+
+**Roots.** Import [LowDegreeRoot.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/LowDegreeRoot.lean); `J` is Mathlib's `MvPolynomial.idealOfVars`. For `P : Polynomial (MvPolynomial σ F)` in characteristic zero:
+
+- a *simple root at the origin* — `constantCoeff f = 0`, `P.eval f = 0`, `constantCoeff (P.coeff 1) ≠ 0` — has, for every `D`, `truncateTotalDegree D f` equal to the truncation of `∑ m ∈ range (2 * (D + 1)), ((m : F) + 1)⁻¹ • ((X - C (C a⁻¹) * P) ^ (m + 1)).coeff m` with `a = constantCoeff (P.coeff 1)` (`MvPolynomial.truncateTotalDegree_root_eq`);
+- *any root* of `P ≠ 0` reduces to that case after the `j`-th `y`-derivative and a shift of the variables by a point `x₀` (`MvPolynomial.exists_shift_eq_truncate_sum_of_root`, through `exists_iterate_derivative_eval_ne_zero`): `shift x₀ f = C (eval x₀ f) + truncateTotalDegree D (…)` for every `D ≥ f.totalDegree`.
+
+Complete clients: [LagrangeInversion.lean](../../CslibFrontierTests/Foundations/Algebra/Polynomial/LagrangeInversion.lean) (the fixed point `t` of `G = t` over `ℚ[t]`) and [LowDegreeRoot.lean](../../CslibFrontierTests/Foundations/Data/MvPolynomial/LowDegreeRoot.lean) (the root `x₀ x₁` of `y - x₀ x₁`, simple, and of `(y - x₀ x₁) ^ 2`, double). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Foundations.Algebra.Polynomial.LagrangeInversion \
+  CslibFrontierTests.Foundations.Data.MvPolynomial.LowDegreeRoot
+```
+
+**Not certified here.** Positive characteristic (the formula divides by `m`). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots.
 
 ## Rational formulas and hitting lists
 
@@ -511,6 +545,7 @@ The selected definitions and headline statements have been source-inspected; the
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [dewolf19]: ../sources.md#dewolf19
+[forbesshpilka2013]: ../sources.md#forbesshpilka2013
 [grenet11]: ../sources.md#grenet11
 [hoyerleespalek07]: ../sources.md#hoyerleespalek07
 [mahler64]: ../sources.md#mahler64

@@ -37,7 +37,8 @@ change the quantifiers (`Cslib.Complexity.alternation_takeBlocks`).
 
 * `Cslib.Complexity.alternation_takeBlocks`, `Cslib.Complexity.alternation_truncateBlocks`: cutting
   longer blocks does not change alternating quantifiers.
-* `Cslib.Complexity.computableInPolyTime_truncateBlocks`: cutting blocks is polynomial-time.
+* `Cslib.Complexity.computableInPolyTime_takeBlocks`,
+  `Cslib.Complexity.computableInPolyTime_truncateBlocks`: cutting blocks is polynomial-time.
 * `Cslib.Complexity.exists_mem_PiP_of_mem_SigmaP_succ`: a problem in `Σₖ₊₁` is the projection of
   a problem in `Πₖ` on pairs.
 
@@ -87,6 +88,23 @@ theorem alternation_takeBlocks {ls : List (ℕ × ℕ)} (h : ∀ l ∈ ls, l.1 �
         (List.exists_length_eq_take_iff (P := fun u => Alternation false (ls.map Prod.fst)
           fun v => P (u ++ v)) hl)
 
+/-- Cutting blocks is polynomial-time, for a fixed list of pairs of block lengths computed in
+unary. -/
+theorem computableInPolyTime_takeBlocks {γ : Type} {encIn : γ ↪ List Bool}
+    (ls : List ((γ → ℕ) × (γ → ℕ)))
+    (hL : ∀ l ∈ ls, ComputableInPolyTime l.1 encIn encUnary ∧
+      ComputableInPolyTime l.2 encIn encUnary)
+    {W : γ → List Bool} (hW : ComputableInPolyTime W encIn encBits) :
+    ComputableInPolyTime (fun x => takeBlocks (ls.map fun l => (l.1 x, l.2 x)) (W x))
+      encIn encBits := by
+  induction ls generalizing W with
+  | nil => exact .const []
+  | cons l ls ih =>
+    have ⟨h₁, h₂⟩ := hL l List.mem_cons_self
+    exact ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsTakeWithInput hW h₁)
+      (ih (fun l' hl' => hL l' (List.mem_cons_of_mem l hl'))
+        (ComputableInPolyTime.bitsDropWithInput hW h₂))
+
 /-- The blocks of `w` of lengths `p.eval m`, for the polynomials `p` of `ps` in order, each cut to
 its first `p.eval n` bits. -/
 def truncateBlocks (ps : List (Polynomial ℕ)) (n m : ℕ) : List Bool → List Bool :=
@@ -111,14 +129,13 @@ theorem computableInPolyTime_truncateBlocks {γ : Type} {encIn : γ ↪ List Boo
     (hM : ComputableInPolyTime M encIn encUnary) {W : γ → List Bool}
     (hW : ComputableInPolyTime W encIn encBits) :
     ComputableInPolyTime (fun x => truncateBlocks ps (N x) (M x) (W x)) encIn encBits := by
-  induction ps generalizing W with
-  | nil => exact .const []
-  | cons p ps ih =>
-    exact ComputableInPolyTime.bitsAppend
-      (ComputableInPolyTime.bitsTakeWithInput hW
-        ((ComputableInPolyTime.unary_eval p).comp hN))
-      (ih (ComputableInPolyTime.bitsDropWithInput hW
-        ((ComputableInPolyTime.unary_eval p).comp hM)))
+  simpa only [truncateBlocks, List.map_map, Function.comp_def] using
+    computableInPolyTime_takeBlocks
+      (ps.map fun p => (fun x => p.eval (N x), fun x => p.eval (M x)))
+      (fun l hl => by
+        obtain ⟨p, -, rfl⟩ := List.mem_map.mp hl
+        exact ⟨(ComputableInPolyTime.unary_eval p).comp hN,
+          (ComputableInPolyTime.unary_eval p).comp hM⟩) hW
 
 /-! ### Peeling off the first quantifier -/
 

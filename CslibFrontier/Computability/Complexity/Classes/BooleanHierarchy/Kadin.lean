@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
 public import CslibFrontier.Computability.Complexity.Problems.SATUNSAT
 import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Complexity.Classes.PH.Reduction
+import CslibFrontier.Computability.Complexity.Reduction.Word
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -104,26 +105,6 @@ open Turing.MultiTapeTM ComputableInPolyTime Polynomial
 
 variable {α β : Type} {enc : α ↪ List Bool}
 
-/-! ### Slices of the word component -/
-
-/-- Dropping the first `q |enc a|` bits of the word component is polynomial-time. -/
-private theorem polyTimeReducible_drop (q : Polynomial ℕ) (C : Set (α × List Bool)) :
-    PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-      {x : α × List Bool | (x.1, x.2.drop (q.eval (enc x.1).length)) ∈ C} C :=
-  ⟨fun x => (x.1, x.2.drop (q.eval (enc x.1).length)),
-    (fst _ _).prod (bitsDropWithInput (snd _ _)
-      ((unary_eval q).comp ((encoding_length enc).comp (fst _ _)))),
-    fun _ => Iff.rfl⟩
-
-/-- Keeping the first `q |enc a|` bits of the word component is polynomial-time. -/
-private theorem polyTimeReducible_take (q : Polynomial ℕ) (C : Set (α × List Bool)) :
-    PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-      {x : α × List Bool | (x.1, x.2.take (q.eval (enc x.1).length)) ∈ C} C :=
-  ⟨fun x => (x.1, x.2.take (q.eval (enc x.1).length)),
-    (fst _ _).prod (bitsTakeWithInput (snd _ _)
-      ((unary_eval q).comp ((encoding_length enc).comp (fst _ _)))),
-    fun _ => Iff.rfl⟩
-
 /-! ### Kadin's alternating tuple chain and word-tuple predicates -/
 
 /-- The canonical `BH r` language on concatenated `r`-tuples of words of length `m |enc a|`:
@@ -153,8 +134,9 @@ theorem kadinChain_mem_BH {m : Polynomial ℕ} {E : Set (α × List Bool)}
   induction r with
   | zero => simp [kadinChain]
   | succ r ih =>
-    exact ⟨_, (polyTimeReducible_drop (r • m) E).mem_NP hE, _,
-      (polyTimeReducible_take (r • m) _).mem_BH ih, rfl⟩
+    have hN := (unary_eval (r • m)).comp (encoding_length enc)
+    exact ⟨_, (polyTimeReducible_drop hN E).mem_NP hE, _,
+      (polyTimeReducible_take hN _).mem_BH ih, rfl⟩
 
 /-- The `NP` language checking that each of the first `d` consecutive blocks of length `m |enc a|`
 in `z` belongs to `E`. -/
@@ -181,8 +163,9 @@ theorem allWordsIn_mem_NP {m : Polynomial ℕ} {E : Set (α × List Bool)}
   induction d with
   | zero => exact ⟨0, fun _ => true, .const _, by simp [IsVerifier]⟩
   | succ d ih =>
-    exact inter_mem_NP ((polyTimeReducible_take m E).mem_NP hE)
-      ((polyTimeReducible_drop m _).mem_NP ih)
+    have hN := (unary_eval m).comp (encoding_length enc)
+    exact inter_mem_NP ((polyTimeReducible_take hN E).mem_NP hE)
+      ((polyTimeReducible_drop hN _).mem_NP ih)
 
 /-- Unpack a `BH (r + 1)` language `D ⊆ U` (where `U ∈ NP`) into `D = B \ D₁` with
 `D₁ ⊆ B ⊆ U`, so that `D₁ = B \ D ⊆ U \ D`. -/
@@ -247,7 +230,8 @@ private theorem kadinHardBranch_mem_SigmaP_three {p₁ p₂ m : Polynomial ℕ}
       (x.1, x.2.drop (q.eval (enc x.1).length)) ∈ allWordsIn enc m E d} ∈
         SigmaP 1 (encPair enc encBits) :=
     SigmaP_one (enc := encPair enc encBits) ▸
-      (polyTimeReducible_drop q _).mem_NP (allWordsIn_mem_NP (m := m) hE d)
+      (polyTimeReducible_drop ((unary_eval q).comp (encoding_length enc)) _).mem_NP
+        (allWordsIn_mem_NP (m := m) hE d)
   -- `kadinIsHard`: `s` is outside the chain, and no extension `w` whose last `d` words are in `E`
   -- reaches `D₁`
   have hHard : (kadinChain enc m E r)ᶜ ∩ {x : α × List Bool | ∀ w : List Bool,
