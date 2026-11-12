@@ -1040,6 +1040,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Defs
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LogCurve
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.NoncommABP
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ROABP
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ROABPMonomials
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ROABPWeights
