@@ -389,8 +389,8 @@ from one `VectorConvolution.solveM` run per split of `balancedSize r d`.
   `a`, `b` and `r ^ d ≤ p`, `#balancedPairs (p - 1) ≤ #accepting seeds + #balancedPairs #L (r !) ^ (d / r)`.
 
 The full reduction of Theorem 3.4 (handling `A_bad`, repetition, a random prime, the choice of `d`
-and `μ`, the expected cost and `#balancedPairs`), Corollary 3.5 and odd k-SUM (Corollary 3.6) are
-not formalized. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
+and `μ`, the expected cost and `#balancedPairs`), the Chernoff bound on `H_r(d, ≤ s)` and the
+bound on `H_r(d, t, ≥ s)`, Corollary 3.5 and odd k-SUM (Corollary 3.6) are not formalized. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
 `solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with
 
 ```bash

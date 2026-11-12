@@ -46,7 +46,7 @@ uses this in `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability`.
 `trialM` computes the accepted queries with one selected-entries subset convolution
 (`Cslib.Algorithms.Lean.TrimmedYates.solveM`) over the ring `ℤ ^ 6` (`Moments`), whose coordinates
 are the six moments `∑ a ^ i * b ^ j` (`i + j ≤ 2`) over the covering pairs; `σ` and `τ` are linear
-combinations of them (`tau_eq`, `momentTest_iff`). This is the paper's "`O(1)` similar subset
+combinations of them (`pairSum_sq_eq`, `momentTest_iff`). This is the paper's "`O(1)` similar subset
 convolutions" run as one. `ret_trialM` proves that it returns the accepted queries.
 
 **Witnesses** (`accepts_or_exists_covers_ne`): if `c = a + b` and the hashes of `a` and `b` are
@@ -558,13 +558,6 @@ The six moments are computed by one selected-entries subset convolution over `�
   let acc ← filterTickM (fun row : ℕ × Moments => MomentTest row.1 row.2) (Cs.zip ms)
   pure (acc.map Prod.fst)
 
-/-- Zipping a list with its image pairs each element with its value. -/
-theorem zip_map_self {α γ : Type*} (l : List α) (g : α → γ) :
-    l.zip (l.map g) = l.map fun a => (a, g a) := by
-  induction l with
-  | nil => rfl
-  | cons a l ih => simp [ih]
-
 /-- The starred inputs and the ranked queries of a trial, as the program computes them. -/
 private theorem trial_filters {d t : ℕ} (σ : Seed p) (Ag Bg C : List ℕ) :
     (filterTickM (fun a => Ranked d t (σ.left a)) Ag).ret = starLeft d t σ Ag ∧
@@ -592,7 +585,10 @@ theorem ret_trialM {d t s : ℕ} (σ : Seed p) (Ag Bg C : List ℕ) (hs : s ≤ 
   obtain ⟨e₁, e₂, e₃⟩ := trial_filters (d := d) (t := t) σ Ag Bg C
   rw [trialM]
   simp only [ret_bind, ret_pure]
-  rw [e₁, e₂, e₃, ret_convM_trial σ Ag Bg C hs, ret_filterTickM, zip_map_self, List.filter_map,
+  rw [e₁, e₂, e₃, ret_convM_trial σ Ag Bg C hs, ret_filterTickM,
+    show ∀ (l : List ℕ) (g : ℕ → Moments), l.zip (l.map g) = l.map fun a => (a, g a) from
+      fun l g => by simpa using List.zip_map' (f := id) (g := g) (l := l),
+    List.filter_map,
     List.map_map, List.filter_filter]
   rw [show (Prod.fst ∘ fun c => (c, pairSum (Covers d σ · · c) (starLeft d t σ Ag)
       (starRight d t σ Bg)
@@ -619,7 +615,7 @@ theorem time_trialM {d t s : ℕ} (σ : Seed p) (Ag Bg C : List ℕ) (hs : s ≤
   rw [trialM]
   simp only [time_bind, time_pure]
   rw [e₁, e₂, e₃, htconv, ret_convM_trial σ Ag Bg C hs, time_filterTickM, time_filterTickM,
-    time_filterTickM, time_filterTickM, zip_map_self, List.length_map]
+    time_filterTickM, time_filterTickM, List.length_zip, List.length_map, min_self]
   ring
 
 /-! ### Witnesses -/

@@ -52,7 +52,9 @@ the `O(t)` splits.
 The `TimeM` unit-cost model of `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial`: one tick
 to test an element or a query, to insert one weighted vector into a dictionary or to test the
 moments of one query, and the ticks of the `VectorConvolution.solveM` runs. Splitting the starred
-inputs by the size of their digit vectors is uncharged. `time_vtrialM` is exact.
+inputs by the size of their digit vectors (the filters in `leftEntries` and `rightEntries`, run
+once per split in `vconvM`) is uncharged; only the dictionary insertions of each split are
+charged. `time_vtrialM` is exact.
 
 ## Main definitions
 
@@ -509,7 +511,10 @@ theorem ret_vtrialM {r d s : ℕ} (σ : Seed p) (Ag Bg C : List ℕ) (hs : s ≤
   obtain ⟨e₁, e₂, e₃⟩ := vtrial_filters (r := r) (d := d) σ Ag Bg C
   rw [vtrialM]
   simp only [ret_bind, ret_pure]
-  rw [e₁, e₂, e₃, ret_vconvM_trial σ Ag Bg C hs, ret_filterTickM, zip_map_self, List.filter_map,
+  rw [e₁, e₂, e₃, ret_vconvM_trial σ Ag Bg C hs, ret_filterTickM,
+    show ∀ (l : List ℕ) (g : ℕ → Moments), l.zip (l.map g) = l.map fun a => (a, g a) from
+      fun l g => by simpa using List.zip_map' (f := id) (g := g) (l := l),
+    List.filter_map,
     List.map_map, List.filter_filter]
   rw [show (Prod.fst ∘ fun c => (c, (vecFactorial (digitVec r d (σ.target c)) : Moments) *
       pairSum (VCovers r d σ · · c) (starLeftV r d σ Ag) (starRightV r d σ Bg)
