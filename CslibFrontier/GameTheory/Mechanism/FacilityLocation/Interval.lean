@@ -29,8 +29,6 @@ with transfer lemmas for isometric intervals in an arbitrary metric space.
 
 ## Main results
 
-* `Cslib.GameTheory.FacilityLocation.unanimous_of_surjective_isStrategyProof`: every deterministic,
-  surjective, strategyproof mechanism on a metric space is unanimous.
 * `Cslib.GameTheory.FacilityLocation.MoulinScheme.eval_isGroupStrategyProof`: every Moulin scheme
   defines a group-strategyproof deterministic mechanism.
 * `Cslib.GameTheory.FacilityLocation.isStrategyProof_and_surjective_iff_exists_moulinScheme`:
@@ -50,69 +48,6 @@ with transfer lemmas for isometric intervals in an arbitrary metric space.
 public section
 
 namespace Cslib.GameTheory.FacilityLocation
-
-section Unanimity
-
-/-- Every surjective, strategyproof deterministic facility-location mechanism on a metric space is
-unanimous: when all agents report the same location `y`, the mechanism places the facility at
-`y`. -/
-theorem unanimous_of_surjective_isStrategyProof {ι G : Type*} [Finite ι] [DecidableEq ι]
-    [MetricSpace G] [MeasurableSpace G] [OpensMeasurableSpace G]
-    {f : (ι → G) → G} (hf_sp : (Mechanism.deterministic f).IsStrategyProof)
-    (hf_onto : Function.Surjective f) (y : G) :
-    f (fun _ => y) = y := by
-  classical
-  let _ := Fintype.ofFinite ι
-  have hsp : ∀ (x : ι → G) (i : ι) (z : G),
-      dist (f x) (x i) ≤ dist (f (Function.update x i z)) (x i) := fun x i z => by
-    simpa only [dist_comm] using (Mechanism.isStrategyProof_deterministic_iff f).mp hf_sp x i z
-  suffices h : ∀ (n : ℕ) (x : ι → G),
-      (Finset.univ.filter fun i => x i ≠ y).card = n → f x = y → f (fun _ => y) = y by
-    obtain ⟨x₀, hx₀⟩ := hf_onto y
-    exact h _ x₀ rfl hx₀
-  intro n
-  induction n with
-  | zero =>
-    intro x hcard hfx
-    have hemp : (Finset.univ.filter fun i => x i ≠ y) = ∅ := Finset.card_eq_zero.mp hcard
-    have heq : x = fun _ => y := by
-      funext i
-      by_contra hne
-      have hi : i ∈ Finset.univ.filter fun i => x i ≠ y := by simp [hne]
-      rw [hemp] at hi
-      exact Finset.notMem_empty i hi
-    simpa [heq] using hfx
-  | succ k ih =>
-    intro x hcard hfx
-    have hne : (Finset.univ.filter fun i => x i ≠ y).Nonempty :=
-      Finset.card_pos.mp (hcard ▸ Nat.succ_pos k)
-    obtain ⟨i₀, hi₀⟩ := hne
-    have hi₀_ne : x i₀ ≠ y := (Finset.mem_filter.mp hi₀).2
-    let x' := Function.update x i₀ y
-    have hfx' : f x' = y := by
-      have h1 : dist (f x') y ≤ dist (f x) y := by
-        have hupd := hsp x' i₀ (x i₀)
-        have hxx : Function.update x' i₀ (x i₀) = x := by
-          funext j
-          by_cases hj : j = i₀
-          · subst hj; simp [x']
-          · simp [x', hj]
-        simpa [x', hxx] using hupd
-      rw [hfx, dist_self] at h1
-      exact dist_le_zero.mp h1
-    have hsub : Finset.univ.filter (fun i => x' i ≠ y) =
-        (Finset.univ.filter fun i => x i ≠ y).erase i₀ := by
-      ext j
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_erase, x']
-      by_cases hj : j = i₀
-      · subst hj; simp
-      · simp [hj]
-    have hcard' : (Finset.univ.filter fun i => x' i ≠ y).card = k := by
-      rw [hsub, Finset.card_erase_of_mem hi₀, hcard]
-      simp
-    exact ih x' hcard' hfx'
-
-end Unanimity
 
 section Moulin
 
@@ -557,30 +492,11 @@ private lemma profile_mono_of_sp [DecidableEq ι]
     (hf_sp : (Mechanism.deterministic f).IsStrategyProof)
     {x y : ι → Set.Icc a b} (hxy : ∀ i, (x i : ℝ) ≤ (y i : ℝ)) :
     (f x : ℝ) ≤ (f y : ℝ) := by
-  classical
-  let _ := Fintype.ofFinite ι
-  let m : Finset ι → ι → Set.Icc a b := fun S i => if i ∈ S then y i else x i
-  have hm_mono : ∀ S : Finset ι, (f (m ∅) : ℝ) ≤ (f (m S) : ℝ) := by
-    intro S
-    induction S using Finset.induction with
-    | empty => exact le_rfl
-    | insert i S hi ih =>
-      refine ih.trans ?_
-      have hupd1 : m S = Function.update (m S) i (x i) := by
-        funext j
-        by_cases hj : j = i
-        · subst hj; simp [m, hi]
-        · simp [m, hj]
-      have hupd2 : m (insert i S) = Function.update (m S) i (y i) := by
-        funext j
-        by_cases hj : j = i
-        · subst hj; simp [m]
-        · simp [m, hj]
-      rw [hupd1, hupd2]
-      exact coord_mono_of_sp hf_sp (m S) i (hxy i)
-  have hx_eq : m ∅ = x := by funext i; simp [m]
-  have hy_eq : m Finset.univ = y := by funext i; simp [m]
-  simpa [hx_eq, hy_eq] using hm_mono Finset.univ
+  refine profile_update_induction (P := fun z => (f x : ℝ) ≤ f z) le_rfl ?_
+  intro z _ hfz i hzi _
+  have h := coord_mono_of_sp hf_sp z i (hxy i)
+  rw [← hzi, Function.update_eq_self] at h
+  exact hfz.trans h
 
 omit [Nonempty ι] in
 private lemma pareto_bounds_of_sp [DecidableEq ι]

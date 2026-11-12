@@ -48,39 +48,19 @@ open SimpleGraph SimpleGraph.MetricGraph
 
 section CoalitionAndMerge
 
-private theorem coalition_sp {ι G : Type*} [DecidableEq ι] [MetricSpace G]
+private theorem coalition_sp {ι G : Type*} [Finite ι] [DecidableEq ι] [MetricSpace G]
     [MeasurableSpace G] [OpensMeasurableSpace G] {f : (ι → G) → G}
     (hf_sp : (Mechanism.deterministic f).IsStrategyProof) (S : Finset ι) (a b : G)
     (x : ι → G) (hx : ∀ i ∈ S, x i = a) :
     dist a (f x) ≤ dist a (f fun i => if i ∈ S then b else x i) := by
-  have hsp := (Mechanism.isStrategyProof_deterministic_iff f).mp hf_sp
-  induction S using Finset.induction_on generalizing x with
-  | empty =>
-    simp only [Finset.notMem_empty, ↓reduceIte]
-    exact le_rfl
-  | @insert j T hjT ih =>
-    have hxj : x j = a := hx j (Finset.mem_insert_self j T)
-    let x' : ι → G := Function.update x j b
-    have hx' : ∀ i ∈ T, x' i = a := by
-      intro i hi
-      have hij : i ≠ j := fun h => hjT (h ▸ hi)
-      simpa only [x', Function.update_of_ne hij] using hx i (Finset.mem_insert_of_mem hi)
-    have hstep : dist a (f x) ≤ dist a (f x') := by
-      simpa only [hxj] using hsp x j b
-    have htail : dist a (f x') ≤ dist a (f fun i => if i ∈ T then b else x' i) := ih x' hx'
-    have hfun : (fun i => if i ∈ T then b else x' i) =
-        (fun i => if i ∈ insert j T then b else x i) := by
-      ext i
-      by_cases hiT : i ∈ T
-      · have hij : i ∈ insert j T := Finset.mem_insert_of_mem hiT
-        simp only [hiT, hij, ↓reduceIte]
-      · by_cases hij : i = j
-        · subst hij
-          simp only [hjT, Finset.mem_insert_self, ↓reduceIte, x', Function.update_self]
-        · have hin : i ∉ insert j T := by simp [hij, hiT]
-          simp only [hiT, hin, ↓reduceIte, x', Function.update_of_ne hij]
-    rw [hfun] at htail
-    exact hstep.trans htail
+  refine profile_update_induction (P := fun z => dist a (f x) ≤ dist a (f z)) le_rfl ?_
+  intro z _ hz i hzi hne
+  have hiS : i ∈ S := by
+    by_contra hiS
+    exact hne (by simp [hzi, hiS])
+  have hstep := (Mechanism.isStrategyProof_deterministic_iff f).mp hf_sp z i b
+  rw [hzi, hx i hiS] at hstep
+  simpa only [hiS, ↓reduceIte] using hz.trans hstep
 
 private theorem merge_isStrategyProof {ι ι' G : Type*} [Finite ι] [DecidableEq ι]
     [DecidableEq ι'] [MetricSpace G] [MeasurableSpace G] [OpensMeasurableSpace G]
