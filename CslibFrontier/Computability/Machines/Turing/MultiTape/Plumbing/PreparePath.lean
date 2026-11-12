@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Reverse
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.KernelOnWords
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.RunsBetween
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.FromLeftBlank
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.RewindWork
 import Mathlib.Tactic.FinCases
@@ -74,11 +74,8 @@ private theorem runsBetween_core (input path out : List Bool) :
     convert hs using 1 <;> (first | rfl | omega)
   convert hr.seq hs' using 1 <;> (first | rfl | omega)
 
-private def inputStep (direction : SignType) : MultiTapeTM 3 Bool Unit :=
-  ofTr () fun _ _ _ => ⟨direction, fun _ => (none, 0), none, none⟩
-
 /-- Prepare a path at the stream's real-input left blank, restoring that input position. -/
-noncomputable def machine := (inputStep 1).seq (core.seq (inputStep (-1)))
+noncomputable def machine := core.fromLeftBlank
 
 /-- Stream-facing initial storage, with the real input at its left blank. -/
 def initial (input path : List Bool) (out : List Bool := []) : Cfg 3 Bool Unit input :=
@@ -104,19 +101,8 @@ theorem final_eq (input path out : List Bool) :
 theorem runsBetween (input path out : List Bool) :
     RunsBetween machine (initial input path out) (final input path out)
       (4 * path.length + 12) (7 * path.length + 39) := by
-  have hstart : RunsBetween (inputStep 1) (initial input path out)
-      (coreInitial input path out) 1 6 := by
-    apply RunsBetween.of_runFrom
-    simp [runFrom, step_of_state, inputStep, initial, coreInitial,
-      tapesCfg, Cfg.withState, Action.apply, moveInputPos]
-  have hfinish : RunsBetween (inputStep (-1)) (coreFinal input path out)
-      (final input path out) 1 6 := by
-    apply RunsBetween.of_runFrom
-    simp [runFrom, step_of_state, inputStep, final, coreFinal,
-      tapesCfg, Cfg.withState, Action.apply, moveInputPos]
-    rfl
-  convert hstart.seq ((runsBetween_core input path out).seq hfinish) using 1 <;>
-    (first | rfl | omega)
+  exact (runsBetween_core input path out).fromLeftBlank rfl rfl
+
 
 
 end Turing.MultiTapeTM.PreparePath

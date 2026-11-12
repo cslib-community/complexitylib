@@ -2965,6 +2965,7 @@ public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Nativ
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Runtime
 public import CslibFrontier.Computability.Machines.ReadMachine.VirtualWord.Simulation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.CarrySaveLeaf
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.CarrySavePath
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.CarrySaveStream
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Deterministic
@@ -3441,6 +3442,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Map
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.OutView
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.AppendAtCursor
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.AppendWord
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrement
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrementFlag
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Branch
@@ -3450,6 +3452,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Cop
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Cursor
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapes
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ExtendTapesView
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.FromLeftBlank
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.InputFromTape
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.InputHead
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.MarkWork
@@ -3476,10 +3479,12 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Whi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WordMoves
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WordUpdate
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WorkTapePredicate
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.AcceptCount
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.BlockNetwork
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.BlockNetwork.RelativeSearch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Blocks
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Clock
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
@@ -3757,6 +3762,9 @@ public import CslibFrontier.Computability.PolyTime.CSP.ToCNF
 public import CslibFrontier.Computability.PolyTime.CSP.Vars
 public import CslibFrontier.Computability.PolyTime.CommonCountingAccum
 public import CslibFrontier.Computability.PolyTime.CountingLeaf
+public import CslibFrontier.Computability.PolyTime.CountingLeaf.Native
+public import CslibFrontier.Computability.PolyTime.CountingLeaf.Raw
+public import CslibFrontier.Computability.PolyTime.CountingLeaf.Serialize
 public import CslibFrontier.Computability.PolyTime.FineGrained.ParameterCheck
 public import CslibFrontier.Computability.PolyTime.GaloisRingArithmetic
 public import CslibFrontier.Computability.PolyTime.GaloisRingArithmetic.FastInverse

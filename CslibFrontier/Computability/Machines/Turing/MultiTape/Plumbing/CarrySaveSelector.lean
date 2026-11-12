@@ -105,7 +105,7 @@ private theorem flags_contains (n : ℕ) (w : List Bool) :
 /-- Finite control for a selector with a fixed shift of at most two. -/
 abbrev State (amount : Fin 3) := ((Unit ⊕ RewindWorkState) ⊕ ShiftState amount.val) ⊕ Unit
 
-instance shiftState_fintype (n : ℕ) : Fintype (ShiftState n) := by
+instance instFintypeShiftState (n : ℕ) : Fintype (ShiftState n) := by
   induction n with
   | zero => exact inferInstanceAs (Fintype Unit)
   | succ n ih => exact inferInstanceAs (Fintype ((Unit ⊕ RewindWorkState) ⊕ ShiftState n))

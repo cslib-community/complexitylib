@@ -880,4 +880,20 @@ theorem acceptsWithin_budget {S : Type} {w : ℕ}
   simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
   rfl
 
+/-- Controller tape 1 holds the current little-endian bit-index word. -/
+@[simp] theorem config_bits_tape {input : List Bool} (height bits path unary : List Bool)
+    (frontier : ℤ) (status : Bool) :
+    (config (scratch := scratch) (input := input) height bits path unary frontier status).workTapes
+      (coreEmb k 1) = tapeOfList bits := by
+  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
+  rfl
+
+/-- The current bit-index word is ready for reading at its first cell. -/
+@[simp] theorem config_bits_head {input : List Bool} (height bits path unary : List Bool)
+    (frontier : ℤ) (status : Bool) :
+    (config (scratch := scratch) (input := input) height bits path unary frontier
+      status).workTapePos (coreEmb k 1) = 0 := by
+  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
+  rfl
+
 end Turing.MultiTapeATM.CarrySaveStream
