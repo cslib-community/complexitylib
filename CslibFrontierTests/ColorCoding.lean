@@ -21,7 +21,7 @@ namespace CslibFrontierTests.ColorCoding
 open Cslib.Complexity Turing.MultiTapeTM
 
 /-- The path `0 - 1 - 2 - 3`. -/
-def P4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)])
+def P4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)]⟩
 
 /-! ### k-Path -/
 

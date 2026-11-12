@@ -42,15 +42,15 @@ example :
 
 /-- Independence number, vertex cover number, and complement clique number on small graphs. -/
 example :
-    1 ≤ Graph.indepNum ([0], []) ∧
-    Graph.indepNum ([], []) = 0 ∧
-    Graph.vertexCoverNum ([], []) = 0 ∧
-    (Graph.compl ([0], [])).cliqueNum = Graph.indepNum ([0], []) := by
-  have h := Graph.indepNum_le_card ([], [])
+    1 ≤ Graph.indepNum ⟨[0], []⟩ ∧
+    Graph.indepNum ⟨[], []⟩ = 0 ∧
+    Graph.vertexCoverNum ⟨[], []⟩ = 0 ∧
+    (Graph.compl ⟨[0], []⟩).cliqueNum = Graph.indepNum ⟨[0], []⟩ := by
+  have h := Graph.indepNum_le_card ⟨[], []⟩
   simp only [List.toFinset_nil, Finset.card_empty, Nat.le_zero] at h
   exact ⟨Graph.le_indepNum_iff.2 ⟨{⟨0, by simp⟩}, by simp, rfl⟩,
     h, by rw [Graph.vertexCoverNum_eq_card_sub_indepNum, h]; rfl,
-    Graph.cliqueNum_compl ([0], [])⟩
+    Graph.cliqueNum_compl ⟨[0], []⟩⟩
 
 /-! ### Yes- and no-instances at the constants of the hardness theorems -/
 
@@ -101,7 +101,7 @@ example :
 /-! ### Generalized Geography -/
 
 /-- With one arc from the start, the first player moves and the second player is stuck. -/
-example : (⟨([0, 1], [(0, 1)]), 0⟩ : GeneralizedGeographyInstance) ∈ GeneralizedGeography := by
+example : (⟨⟨[0, 1], [(0, 1)]⟩, 0⟩ : GeneralizedGeographyInstance) ∈ GeneralizedGeography := by
   rw [mem_GeneralizedGeography, Graph.geographyWins_iff]
   refine ⟨1, by simp, by simp, by simp, ?_⟩
   rw [Graph.geographyWins_iff]
@@ -109,7 +109,7 @@ example : (⟨([0, 1], [(0, 1)]), 0⟩ : GeneralizedGeographyInstance) ∈ Gener
 
 /-- On a path of two arcs, the second player makes the last move. -/
 example :
-    (⟨([0, 1, 2], [(0, 1), (1, 2)]), 0⟩ : GeneralizedGeographyInstance) ∉
+    (⟨⟨[0, 1, 2], [(0, 1), (1, 2)]⟩, 0⟩ : GeneralizedGeographyInstance) ∉
       GeneralizedGeography := by
   rw [mem_GeneralizedGeography, Graph.not_geographyWins_iff]
   intro w hw _ _
@@ -120,13 +120,13 @@ example :
   simp
 
 /-- An arc to an undeclared vertex is not a move. -/
-example : (⟨([0], [(0, 1)]), 0⟩ : GeneralizedGeographyInstance) ∉ GeneralizedGeography := by
+example : (⟨⟨[0], [(0, 1)]⟩, 0⟩ : GeneralizedGeographyInstance) ∉ GeneralizedGeography := by
   rw [mem_GeneralizedGeography, Graph.geographyWins_iff]
   simp
 
 /-- On a cycle of two arcs, the second player cannot return to the visited start. -/
 example :
-    (⟨([0, 1], [(0, 1), (1, 0)]), 0⟩ : GeneralizedGeographyInstance) ∈ GeneralizedGeography := by
+    (⟨⟨[0, 1], [(0, 1), (1, 0)]⟩, 0⟩ : GeneralizedGeographyInstance) ∈ GeneralizedGeography := by
   rw [mem_GeneralizedGeography, Graph.geographyWins_iff]
   refine ⟨1, by simp, by simp, by simp, ?_⟩
   rw [Graph.geographyWins_iff]

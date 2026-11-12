@@ -64,8 +64,10 @@ namespace Cslib.Complexity
 namespace Graph
 
 /-- A move to an unvisited declared vertex leaves fewer unvisited declared vertices. -/
-theorem card_sdiff_cons_lt {G : Graph} {vis : List ℕ} {w : ℕ} (hw : w ∈ G.1) (hvis : w ∉ vis) :
-    (G.1.toFinset \ (w :: vis).toFinset).card < (G.1.toFinset \ vis.toFinset).card := by
+theorem card_sdiff_cons_lt {G : Graph} {vis : List ℕ} {w : ℕ} (hw : w ∈ G.vertices)
+    (hvis : w ∉ vis) :
+    (G.vertices.toFinset \ (w :: vis).toFinset).card <
+      (G.vertices.toFinset \ vis.toFinset).card := by
   rw [List.toFinset_cons, Finset.sdiff_insert]
   exact Finset.card_erase_lt_of_mem
     (Finset.mem_sdiff.2 ⟨List.mem_toFinset.2 hw, fun h => hvis (List.mem_toFinset.1 h)⟩)
@@ -75,14 +77,14 @@ to move wins when some arc from `v` leads to an unvisited declared vertex `w` fr
 player, to move with `w` visited, does not win. -/
 @[expose]
 def GeographyWins (G : Graph) (vis : List ℕ) (v : ℕ) : Prop :=
-  ∃ w, ∃ _ : (v, w) ∈ G.2 ∧ w ∈ G.1 ∧ w ∉ vis, ¬G.GeographyWins (w :: vis) w
-termination_by (G.1.toFinset \ vis.toFinset).card
+  ∃ w, ∃ _ : (v, w) ∈ G.edges ∧ w ∈ G.vertices ∧ w ∉ vis, ¬G.GeographyWins (w :: vis) w
+termination_by (G.vertices.toFinset \ vis.toFinset).card
 decreasing_by rename_i h; exact card_sdiff_cons_lt h.2.1 h.2.2
 
 /-- **The backward induction of Generalized Geography.** -/
 theorem geographyWins_iff {G : Graph} {vis : List ℕ} {v : ℕ} :
     G.GeographyWins vis v ↔
-      ∃ w, (v, w) ∈ G.2 ∧ w ∈ G.1 ∧ w ∉ vis ∧ ¬G.GeographyWins (w :: vis) w := by
+      ∃ w, (v, w) ∈ G.edges ∧ w ∈ G.vertices ∧ w ∉ vis ∧ ¬G.GeographyWins (w :: vis) w := by
   rw [GeographyWins]
   simp only [exists_prop, and_assoc]
 
@@ -90,14 +92,14 @@ theorem geographyWins_iff {G : Graph} {vis : List ℕ} {v : ℕ} :
 player. -/
 theorem not_geographyWins_iff {G : Graph} {vis : List ℕ} {v : ℕ} :
     ¬G.GeographyWins vis v ↔
-      ∀ w, (v, w) ∈ G.2 → w ∈ G.1 → w ∉ vis → G.GeographyWins (w :: vis) w := by
+      ∀ w, (v, w) ∈ G.edges → w ∈ G.vertices → w ∉ vis → G.GeographyWins (w :: vis) w := by
   rw [geographyWins_iff]
   simp only [not_exists, not_and, not_not]
 
 /-- **Only the set of visited vertices matters.** -/
 theorem geographyWins_congr {G : Graph} {vis vis' : List ℕ} (h : ∀ u, u ∈ vis ↔ u ∈ vis')
     (v : ℕ) : G.GeographyWins vis v ↔ G.GeographyWins vis' v := by
-  suffices ∀ n (vis vis' : List ℕ), (G.1.toFinset \ vis.toFinset).card < n →
+  suffices ∀ n (vis vis' : List ℕ), (G.vertices.toFinset \ vis.toFinset).card < n →
       (∀ u, u ∈ vis ↔ u ∈ vis') → ∀ v, G.GeographyWins vis v → G.GeographyWins vis' v from
     ⟨this _ vis vis' (Nat.lt_succ_self _) h v,
       this _ vis' vis (Nat.lt_succ_self _) (fun u => (h u).symm) v⟩
@@ -111,7 +113,8 @@ theorem geographyWins_congr {G : Graph} {vis vis' : List ℕ} (h : ∀ u, u ∈ 
     have hlt := card_sdiff_cons_lt hw hwvis
     refine ih (w :: vis') (w :: vis) ?_ (fun u => ?_) w hwin'
     · have hcard :
-          (G.1.toFinset \ (w :: vis').toFinset) = (G.1.toFinset \ (w :: vis).toFinset) := by
+          (G.vertices.toFinset \ (w :: vis').toFinset) =
+            (G.vertices.toFinset \ (w :: vis).toFinset) := by
         ext u
         simp only [Finset.mem_sdiff, List.mem_toFinset, List.mem_cons, h]
       rw [hcard]
@@ -150,7 +153,7 @@ theorem mem_GeneralizedGeography {x : GeneralizedGeographyInstance} :
 
 /-- On a graph without arcs the first player cannot move and loses. -/
 theorem notMem_GeneralizedGeography_of_nil {V : List ℕ} {s : ℕ} :
-    (⟨(V, []), s⟩ : GeneralizedGeographyInstance) ∉ GeneralizedGeography := by
+    (⟨⟨V, []⟩, s⟩ : GeneralizedGeographyInstance) ∉ GeneralizedGeography := by
   rw [mem_GeneralizedGeography, Graph.geographyWins_iff]
   simp
 

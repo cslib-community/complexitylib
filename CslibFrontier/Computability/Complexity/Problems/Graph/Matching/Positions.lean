@@ -37,7 +37,8 @@ variable {G : Graph}
 /-- The edges of `G.induced`, each listed once: the edges of `G` between distinct declared
 vertices, with repetitions in either orientation erased. -/
 @[expose] def edgeList (G : Graph) : List (ℕ × ℕ) :=
-  (G.2.filter fun e => decide (e.1 ≠ e.2) && decide (e.1 ∈ G.1) && decide (e.2 ∈ G.1)).eraseDupsBy
+  (G.edges.filter fun e =>
+    decide (e.1 ≠ e.2) && decide (e.1 ∈ G.vertices) && decide (e.2 ∈ G.vertices)).eraseDupsBy
     fun a b => decide (a = b) || decide (a = (b.2, b.1))
 
 /-- Whether the vertex `v` is an end of the edge `e`. -/
@@ -47,20 +48,21 @@ vertices, with repetitions in either orientation erased. -/
 
 /-- An entry of the edge list joins two distinct declared vertices by an edge of `G`. -/
 theorem of_mem_edgeList {e : ℕ × ℕ} (he : e ∈ G.edgeList) :
-    e ∈ G.2 ∧ e.1 ≠ e.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 := by
+    e ∈ G.edges ∧ e.1 ≠ e.2 ∧ e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices := by
   have := List.mem_filter.mp ((List.eraseDupsBy_sublist _).subset he)
   simp only [Bool.and_eq_true, decide_eq_true_eq] at this
   exact ⟨this.1, this.2.1.1, this.2.1.2, this.2.2⟩
 
 /-- Each edge of `G.induced` is in the edge list in one of its orientations. -/
-theorem exists_mem_edgeList {u v : {v // v ∈ G.1}} (h : G.induced.Adj u v) :
+theorem exists_mem_edgeList {u v : {v // v ∈ G.vertices}} (h : G.induced.Adj u v) :
     (u.1, v.1) ∈ G.edgeList ∨ (v.1, u.1) ∈ G.edgeList := by
   rw [induced_adj, toSimpleGraph_adj] at h
   obtain ⟨hne, huv⟩ := h
-  have key : ∀ e ∈ G.2, e.1 ≠ e.2 → e.1 ∈ G.1 → e.2 ∈ G.1 → e ∈ G.edgeList ∨ e.swap ∈ G.edgeList :=
+  have key : ∀ e ∈ G.edges, e.1 ≠ e.2 → e.1 ∈ G.vertices → e.2 ∈ G.vertices →
+      e ∈ G.edgeList ∨ e.swap ∈ G.edgeList :=
     fun e he h1 h2 h3 => by
-      have hmem : e ∈ G.2.filter fun e =>
-          decide (e.1 ≠ e.2) && decide (e.1 ∈ G.1) && decide (e.2 ∈ G.1) :=
+      have hmem : e ∈ G.edges.filter fun e =>
+          decide (e.1 ≠ e.2) && decide (e.1 ∈ G.vertices) && decide (e.2 ∈ G.vertices) :=
         List.mem_filter.mpr ⟨he, by simp [h1, h2, h3]⟩
       obtain ⟨b, hb, rfl | hab⟩ := List.exists_mem_eraseDupsBy (r := fun a b =>
         decide (a = b) || decide (a = (b.2, b.1))) hmem
@@ -111,7 +113,7 @@ theorem exists_getD_edgeList {e : ℕ × ℕ} (he : e ∈ G.edgeList) :
   exact ⟨i, hi, List.getD_eq_getElem _ _ hi⟩
 
 /-- Every actual adjacency has a retained edge position, in one of its two orientations. -/
-theorem exists_getD_edgeList_of_adj {u v : {v // v ∈ G.1}} (h : G.induced.Adj u v) :
+theorem exists_getD_edgeList_of_adj {u v : {v // v ∈ G.vertices}} (h : G.induced.Adj u v) :
     ∃ i < G.edgeList.length, G.edgeList.getD i (0, 0) = (u.val, v.val) ∨
       G.edgeList.getD i (0, 0) = (v.val, u.val) := by
   rcases exists_mem_edgeList h with he | he
@@ -122,7 +124,7 @@ theorem exists_getD_edgeList_of_adj {u v : {v // v ∈ G.1}} (h : G.induced.Adj 
 
 /-- The adjacency of a subgraph of `G.induced`, read on natural numbers. -/
 @[expose] def AdjNat (M : G.induced.Subgraph) (u w : ℕ) : Prop :=
-  ∃ (hu : u ∈ G.1) (hw : w ∈ G.1), M.Adj ⟨u, hu⟩ ⟨w, hw⟩
+  ∃ (hu : u ∈ G.vertices) (hw : w ∈ G.vertices), M.Adj ⟨u, hu⟩ ⟨w, hw⟩
 
 /-- The positions of the edges of a subgraph. -/
 noncomputable def positions (M : G.induced.Subgraph) : Finset ℕ := by
@@ -156,7 +158,7 @@ theorem exists_other_end {e : ℕ × ℕ} {v : ℕ} (hv : incident e v = true) :
 
 /-- Exactly one selected incident edge at every declared vertex gives a perfect matching. -/
 theorem isPerfectMatching_ofPositions {S : Finset ℕ} (hS : ∀ i ∈ S, i < G.edgeList.length)
-    (hcov : ∀ v ∈ G.1, ∃! i, i < G.edgeList.length ∧
+    (hcov : ∀ v ∈ G.vertices, ∃! i, i < G.edgeList.length ∧
       incident (G.edgeList.getD i (0, 0)) v = true ∧ i ∈ S) :
     (ofPositions G S).IsPerfectMatching := by
   refine SimpleGraph.Subgraph.isPerfectMatching_iff.mpr fun u => ?_
@@ -164,7 +166,7 @@ theorem isPerfectMatching_ofPositions {S : Finset ℕ} (hS : ∀ i ∈ S, i < G.
   have hmem := getD_edgeList_mem hi
   obtain ⟨hG, hne, h1, h2⟩ := of_mem_edgeList hmem
   obtain ⟨w, hw⟩ := exists_other_end hinc
-  have hw' : w ∈ G.1 := by rcases hw with hw | hw <;> rw [hw] at h1 h2 <;> assumption
+  have hw' : w ∈ G.vertices := by rcases hw with hw | hw <;> rw [hw] at h1 h2 <;> assumption
   have hadj : G.induced.Adj u ⟨w, hw'⟩ := by
     rw [induced_adj, toSimpleGraph_adj]
     rcases hw with hw | hw <;> rw [hw] at hG hne
@@ -182,7 +184,8 @@ theorem isPerfectMatching_ofPositions {S : Finset ℕ} (hS : ∀ i ∈ S, i < G.
 
 /-- A covered vertex of any matching has exactly one incident original edge position. -/
 theorem cover_positions {M : G.induced.Subgraph} (hM : M.IsMatching) :
-    ∀ (v : ℕ) (hv : v ∈ G.1), (⟨v, hv⟩ : {v // v ∈ G.1}) ∈ M.verts → ∃! i, i < G.edgeList.length ∧
+    ∀ (v : ℕ) (hv : v ∈ G.vertices), (⟨v, hv⟩ : {v // v ∈ G.vertices}) ∈ M.verts →
+      ∃! i, i < G.edgeList.length ∧
       incident (G.edgeList.getD i (0, 0)) v = true ∧ i ∈ positions M := by
   intro v hv hvM
   obtain ⟨w, hvw, hwuniq⟩ := hM hvM

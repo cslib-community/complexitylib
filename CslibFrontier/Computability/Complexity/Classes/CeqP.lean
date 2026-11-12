@@ -24,6 +24,7 @@ machine characterization is assumed.
 
 ## Main results
 
+* `Cslib.Complexity.mem_CeqP`, `Cslib.Complexity.mem_coCeqP`: unfolding the definitions.
 * `Cslib.Complexity.mem_CeqP_iff_exists_SharpP`: equality of two `#P` functions.
 * `Cslib.Complexity.inter_mem_CeqP`, `Cslib.Complexity.union_mem_CeqP`.
 * `Cslib.Complexity.coNP_subset_CeqP`, `Cslib.Complexity.CeqP_subset_PP`.
@@ -48,6 +49,9 @@ variable {α : Type} {enc : α ↪ List Bool} {A B : Set α}
 [Fortnow, Classification 4.5][Fortnow1997]. -/
 def CeqP (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ g ∈ GapP enc, ∀ a, a ∈ A ↔ g a = 0}
+
+theorem mem_CeqP : A ∈ CeqP enc ↔ ∃ g ∈ GapP enc, ∀ a, a ∈ A ↔ g a = 0 :=
+  Iff.rfl
 
 /-- A language is in `C=P` iff membership is equality of two accepting counts. -/
 theorem mem_CeqP_iff_exists_SharpP : A ∈ CeqP enc ↔

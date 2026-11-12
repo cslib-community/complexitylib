@@ -28,9 +28,9 @@ open Cslib.BitString
 variable {G : Graph}
 
 /-- An incident selected subgraph edge certifies that its endpoint belongs to the subgraph. -/
-theorem mem_verts_of_incident_positions {M : G.induced.Subgraph} {v i : ℕ} (hv : v ∈ G.1)
+theorem mem_verts_of_incident_positions {M : G.induced.Subgraph} {v i : ℕ} (hv : v ∈ G.vertices)
     (hi : i ∈ positions M) (hinc : incident (G.edgeList.getD i (0, 0)) v = true) :
-    (⟨v, hv⟩ : {v // v ∈ G.1}) ∈ M.verts := by
+    (⟨v, hv⟩ : {v // v ∈ G.vertices}) ∈ M.verts := by
   obtain ⟨_, hu, hw, hadj⟩ := mem_positions.mp hi
   obtain ⟨w, he⟩ := exists_other_end hinc
   rcases he with he | he <;> simp only [he] at hu hw hadj
@@ -38,7 +38,7 @@ theorem mem_verts_of_incident_positions {M : G.induced.Subgraph} {v i : ℕ} (hv
   · exact M.edge_vert hadj.symm
 
 /-- A Mathlib matching contains at most one incident edge position per vertex. -/
-theorem positions_unique {M : G.induced.Subgraph} (hM : M.IsMatching) (v : ℕ) (hv : v ∈ G.1)
+theorem positions_unique {M : G.induced.Subgraph} (hM : M.IsMatching) (v : ℕ) (hv : v ∈ G.vertices)
     (i : ℕ) (hi : i ∈ positions M) (j : ℕ) (hj : j ∈ positions M)
     (hinc : incident (G.edgeList.getD i (0, 0)) v = true)
     (hinc' : incident (G.edgeList.getD j (0, 0)) v = true) : i = j := by
@@ -65,7 +65,7 @@ theorem comparisonPort_lt (G : Graph) (S : Finset ℕ) (v : ℕ) :
   next => simp [matchingScope]
 
 /-- At an actual matching edge, uniqueness forces the comparison to choose that edge. -/
-theorem comparisonPort_eq {M : G.induced.Subgraph} (hM : M.IsMatching) (v : ℕ) (hv : v ∈ G.1)
+theorem comparisonPort_eq {M : G.induced.Subgraph} (hM : M.IsMatching) (v : ℕ) (hv : v ∈ G.vertices)
     (i : ℕ) (hi : i ∈ positions M)
     (hinc : incident (G.edgeList.getD i (0, 0)) v = true) :
     G.comparisonPort (positions M) v = (G.matchingScope v).idxOf (2 * i) := by
@@ -131,7 +131,7 @@ theorem positions_subset_comparison {M : G.induced.Subgraph} (hM : M.IsMatching)
   have hv : o.var ∈ G.matchingInstance[o.1.val].2 := List.getElem_mem o.2.isLt
   by_cases hc : o.1.val < G.distinctVertices.length
   · let v := G.distinctVertices.getD o.1.val 0
-    have hvm : v ∈ G.1 := mem_distinctVertices.mp (by
+    have hvm : v ∈ G.vertices := mem_distinctVertices.mp (by
       change G.distinctVertices.getD o.1.val 0 ∈ G.distinctVertices
       rw [List.getD_eq_getElem _ _ hc]
       exact List.getElem_mem hc)
