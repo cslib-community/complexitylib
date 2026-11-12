@@ -2318,6 +2318,7 @@ public import CslibFrontier.Computability.Complexity.Problems.FeedbackVertexSet
 public import CslibFrontier.Computability.Complexity.Problems.GeneralizedGeography
 public import CslibFrontier.Computability.Complexity.Problems.Graph
 public import CslibFrontier.Computability.Complexity.Problems.Graph.Arborescences
+public import CslibFrontier.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
 public import CslibFrontier.Computability.Complexity.Problems.Graph.DartConnectivity
 public import CslibFrontier.Computability.Complexity.Problems.Graph.DirectedCycle
 public import CslibFrontier.Computability.Complexity.Problems.Graph.EulerianCircuits
@@ -2337,6 +2338,12 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalLa
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalPath
 public import CslibFrontier.Computability.Complexity.Problems.Graph.PerfectMatching
 public import CslibFrontier.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
+public import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing
+public import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Bouquet
+public import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
+public import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
+public import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
+public import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star
 public import CslibFrontier.Computability.Complexity.Problems.Graph.Ports
 public import CslibFrontier.Computability.Complexity.Problems.Graph.ReducedLaplacian
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem
@@ -2361,6 +2368,9 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntersectionParity
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.PermutationCycles
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Basic
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.BouquetOrder
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Relabel
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Star
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Transport
@@ -5514,6 +5524,13 @@ public import CslibFrontier.Foundations.Geometry.Orthogonal.Separation
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Simple
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Subdivision
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Trim
+public import CslibFrontier.Foundations.Geometry.Polygonal.Germs
+public import CslibFrontier.Foundations.Geometry.Polygonal.Neighborhood
+public import CslibFrontier.Foundations.Geometry.Polygonal.Noncrossing
+public import CslibFrontier.Foundations.Geometry.Polygonal.NoncrossingOrder
+public import CslibFrontier.Foundations.Geometry.Polygonal.Route
+public import CslibFrontier.Foundations.Geometry.Polygonal.Segment
+public import CslibFrontier.Foundations.Geometry.Polygonal.Translation
 public import CslibFrontier.Foundations.Geometry.Polyhedra
 public import CslibFrontier.Foundations.Geometry.Polyhedra.Complex
 public import CslibFrontier.Foundations.Geometry.Polyhedra.PiecewiseLinear
