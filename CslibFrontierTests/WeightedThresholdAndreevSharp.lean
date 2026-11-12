@@ -56,6 +56,14 @@ example (b m : ℕ) (idx : AndreevSharpIndex b m) :
     IsSignCoherent (andreevBlockVar b m) (argWeight (andreevSharpBottomOp b m idx) id) :=
   isSignCoherent_andreevSharpBottomOp idx
 
+-- In the form of lower bounds over the gates read by the output gate (#4718's `hcoh`).
+example (b m : ℕ) {top : Fin (andreevSharpCircuit b m).size}
+    (htop : (andreevSharpCircuit b m).outputs 0 = .gate top)
+    {k : Fin (andreevSharpCircuit b m).size}
+    (hk : k ∈ gateSupport (andreevSharpCircuit b m).program top) :
+    IsSignCoherent (andreevBlockVar b m) (inputWeight (andreevSharpCircuit b m).program k) :=
+  isSignCoherent_inputWeight_andreevSharpCircuit htop hk
+
 -- The score has margin `N`: at `b = 1`, with the table `x_c = c_0` and block count `1`
 -- (parity `1`), the selected bit is `true` and the score is at most `-2`.
 example : andreevSharpScore 1 1 (fun c => c 0) (fun _ => 1) ≤ -(2 : ℝ) ^ 1 := by

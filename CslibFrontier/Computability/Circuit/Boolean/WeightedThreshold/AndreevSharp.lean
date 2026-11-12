@@ -48,7 +48,8 @@ top weights and threshold are integers.
 * Theorem 5, `m = ⌊N / b⌋`: `size_andreevSharpCircuit_floor_le`,
   `16 · size ≤ 5 (n + b)² + 52 (n + b) + 24` with `b ≤ log₂ n` (`le_log_two_andreev_length`).
 * Theorem 5, integer weights and sign coherence (Section 5): `andreevSharpCircuit_int_weights`,
-  `weight_andreevSharpBottomOp_blockVar`, `isSignCoherent_andreevSharpBottomOp`. The preprint's
+  `weight_andreevSharpBottomOp_blockVar`, `isSignCoherent_andreevSharpBottomOp`, and for the
+  circuit's program gates `isSignCoherent_inputWeight_andreevSharpCircuit`. The preprint's
   bound "polynomial in `n`" on the weight magnitudes is not formalized.
 
 ## References
@@ -821,6 +822,17 @@ theorem isSignCoherent_andreevSharpBottomOp (idx : AndreevSharpIndex b m) :
     IsSignCoherent (andreevBlockVar b m) (argWeight (andreevSharpBottomOp b m idx) id) := by
   rw [argWeight_id]
   exact isSignCoherent_andreevFormWeight _ _ (andreevSharpBlock_eq_zero_or_one idx)
+
+/-- **The bottom gates of the circuit are sign-coherent**, in the form consumed by lower bounds
+over the gates read by the output gate: every such gate of `andreevSharpCircuit b m` has
+sign-coherent input weights `inputWeight` for Andreev's blocks. -/
+theorem isSignCoherent_inputWeight_andreevSharpCircuit {top : Fin (andreevSharpCircuit b m).size}
+    (htop : (andreevSharpCircuit b m).outputs 0 = .gate top)
+    {k : Fin (andreevSharpCircuit b m).size}
+    (hk : k ∈ gateSupport (andreevSharpCircuit b m).program top) :
+    IsSignCoherent (andreevBlockVar b m) (inputWeight (andreevSharpCircuit b m).program k) :=
+  isSignCoherent_inputWeight_depthTwoInputs _ _ _ _ _
+    (fun _ => isSignCoherent_andreevSharpBottomOp _) htop hk
 
 /-- **Integer weights**: the bottom weights and thresholds, the top weights on gates and inputs, and
 the top threshold of `andreevSharpCircuit b m` are integers. -/

@@ -53,6 +53,12 @@ and it proves no result about Andreev's function.
   depth.
 * `Cslib.Circuits.Boolean.WeightedThreshold.eval_depthTwo_eq_eval_depthTwoInputs`: `depthTwo` as
   the case of zero top input weights.
+* `Cslib.Circuits.Boolean.WeightedThreshold.lines_depthTwoInputs_bottom_or_output`,
+  `Cslib.Circuits.Boolean.WeightedThreshold.inputWeight_depthTwoInputs_of_ne`: every gate other
+  than the output gate is a bottom gate with input weights `argWeight (bottom j) (args j)`.
+* `Cslib.Circuits.Boolean.WeightedThreshold.isSignCoherent_inputWeight_depthTwoInputs`: if every
+  `bottom j` read through `args j` is sign-coherent, so are the input weights `inputWeight` of
+  every gate read by the output gate.
 * `Cslib.Circuits.Boolean.WeightedThreshold.IsSignCoherent.of_mem_zero_one`: weight vectors with
   block weights in `{0, 1}` are sign-coherent; closure under negation and scaling.
 
@@ -227,5 +233,81 @@ end IsSignCoherent
 theorem isSignCoherent_neg_iff {b m : ℕ} {blockVar : Fin b → Fin m → Fin n} {w : Fin n → ℝ} :
     IsSignCoherent blockVar (-w) ↔ IsSignCoherent blockVar w :=
   ⟨fun h => by simpa using h.neg, IsSignCoherent.neg⟩
+
+/-! ### The bottom gates of `depthTwoInputs` as program gates -/
+
+/-- Every gate of `depthTwoInputs bottom args u v θ` is a bottom gate `bottom j` reading the
+original inputs `args j`, or it is the output gate. -/
+theorem lines_depthTwoInputs_bottom_or_output (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ) (v : Fin n → ℝ) (θ : ℝ)
+    (k : Fin (depthTwoInputs bottom args u v θ).size) :
+    (∃ j, (depthTwoInputs bottom args u v θ).program.lines k =
+        ⟨bottom j, fun a => .input (args j a)⟩) ∨
+      (depthTwoInputs bottom args u v θ).outputs 0 = .gate k := by
+  set inner := (Circuit.pi fun j => Circuit.oneGate (σ := signature) (bottom j) (args j)).append
+    (Circuit.wiring signature (id : Fin n → Fin n)) with hinner
+  obtain ⟨k, rfl⟩ | ⟨k, rfl⟩ :
+      (∃ k', k = Fin.castAdd 1 k') ∨ ∃ k', k = Fin.natAdd inner.size k' :=
+    Fin.addCases (motive := fun k => (∃ k', k = Fin.castAdd 1 k') ∨ ∃ k', k = Fin.natAdd _ k')
+      (fun k' => .inl ⟨k', rfl⟩) (fun k' => .inr ⟨k', rfl⟩) k
+  · refine .inl ?_
+    obtain ⟨k, rfl⟩ : ∃ k', k = Fin.castAdd 0 k' := ⟨k, rfl⟩
+    obtain ⟨j, k', f, hi, -, hk⟩ := Circuit.exists_lines_pi
+      (fun j => Circuit.oneGate (σ := signature) (bottom j) (args j)) k
+    refine ⟨j, ?_⟩
+    obtain rfl : k' = Fin.last 0 := Fin.fin_one_eq_zero k'
+    refine (Program.lines_append_castAdd _ _ _ _).trans ?_
+    refine (congrArg (fun l => Line.mapWires l (Wire.castAdd 1))
+      (Program.lines_append_castAdd _ _ _ k)).trans ?_
+    rw [hk]
+    change (((((Program.empty : Program signature n 0).gate
+      (⟨bottom j, fun a => Wire.input (args j a)⟩ : Line signature n 0)).lines
+        (Fin.last 0)).mapWires f).mapWires (Wire.castAdd 0)).mapWires (Wire.castAdd 1) = _
+    rw [Program.lines_gate_last]
+    exact congrArg (Line.mk (σ := signature) (bottom j))
+      (funext fun a => by
+        change Wire.castAdd 1 (Wire.castAdd 0 (f (Wire.input (args j a)))) = _
+        rw [hi]
+        rfl)
+  · refine .inr ?_
+    obtain rfl : k = Fin.last 0 := Fin.fin_one_eq_zero k
+    rfl
+
+/-- The input weights of a gate of `depthTwoInputs` other than the output gate are the
+aggregated weights `argWeight (bottom j) (args j)` of some bottom gate `j`. -/
+theorem inputWeight_depthTwoInputs_of_ne (bottom : Fin G → Op)
+    (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ) (v : Fin n → ℝ) (θ : ℝ)
+    {k : Fin (depthTwoInputs bottom args u v θ).size}
+    (hk : (depthTwoInputs bottom args u v θ).outputs 0 ≠ .gate k) :
+    ∃ j, inputWeight (depthTwoInputs bottom args u v θ).program k =
+      argWeight (bottom j) (args j) := by
+  rcases lines_depthTwoInputs_bottom_or_output bottom args u v θ k with ⟨j, hj⟩ | h
+  · refine ⟨j, funext fun i => ?_⟩
+    change lineWeight _ _ = _
+    rw [hj]
+    simp only [argWeight, lineWeight, inputLine, Wire.input.injEq]
+    congr 1
+  · exact (hk h).elim
+
+/-- **Sign coherence of the bottom gates.** If every bottom gate `bottom j`, read through
+`args j`, is sign-coherent, then every gate read by an output gate of
+`depthTwoInputs bottom args u v θ` has sign-coherent input weights. This is the hypothesis form of
+lower bounds stated over the gate support of the output gate. -/
+theorem isSignCoherent_inputWeight_depthTwoInputs {b m : ℕ} {blockVar : Fin b → Fin m → Fin n}
+    (bottom : Fin G → Op) (args : ∀ j, Fin (bottom j).arity → Fin n) (u : Fin G → ℝ)
+    (v : Fin n → ℝ) (θ : ℝ) (h : ∀ j, IsSignCoherent blockVar (argWeight (bottom j) (args j)))
+    {o : Fin 1} {top : Fin (depthTwoInputs bottom args u v θ).size}
+    (htop : (depthTwoInputs bottom args u v θ).outputs o = .gate top)
+    {k : Fin (depthTwoInputs bottom args u v θ).size}
+    (hk : k ∈ gateSupport (depthTwoInputs bottom args u v θ).program top) :
+    IsSignCoherent blockVar (inputWeight (depthTwoInputs bottom args u v θ).program k) := by
+  obtain rfl : o = 0 := Fin.fin_one_eq_zero o
+  have hne : (depthTwoInputs bottom args u v θ).outputs 0 ≠ .gate k := by
+    rw [htop]
+    intro hkt
+    cases hkt
+    exact (mem_gateSupport _ _ _).mp hk (gateWeight_eq_zero_of_le _ _ _ le_rfl)
+  obtain ⟨j, hj⟩ := inputWeight_depthTwoInputs_of_ne bottom args u v θ hne
+  exact hj ▸ h j
 
 end Cslib.Circuits.Boolean.WeightedThreshold
