@@ -96,15 +96,6 @@ variable {J}
 theorem hasWeight_zero (Q : R[X]) : HasWeight J 0 Q := fun j => by
   simp
 
-theorem HasWeight.mono {m n : ℕ} {Q : R[X]} (h : HasWeight J n Q) (hmn : m ≤ n) :
-    HasWeight J m Q := fun j =>
-  Ideal.pow_le_pow_right (by omega) (h j)
-
-theorem HasWeight.add {n : ℕ} {Q Q' : R[X]} (h : HasWeight J n Q) (h' : HasWeight J n Q') :
-    HasWeight J n (Q + Q') := fun j => by
-  rw [coeff_add]
-  exact Ideal.add_mem _ (h j) (h' j)
-
 theorem HasWeight.mul {m n : ℕ} {Q Q' : R[X]} (h : HasWeight J m Q) (h' : HasWeight J n Q') :
     HasWeight J (m + n) (Q * Q') := fun j => by
   rw [coeff_mul]

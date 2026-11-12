@@ -83,13 +83,6 @@ theorem mem_idealOfVars_iff_constantCoeff {p : MvPolynomial σ F} :
     exact hx
   exact hp
 
-/-- A polynomial agrees with its truncation to degree at most `d` to order `d + 1`. -/
-theorem sub_truncateTotalDegree_mem (d : ℕ) (p : MvPolynomial σ F) :
-    p - truncateTotalDegree d p ∈ idealOfVars σ F ^ (d + 1) := by
-  rw [mem_pow_idealOfVars_iff']
-  intro x hx
-  simp [coeff_truncateTotalDegree, Nat.lt_succ_iff.1 hx]
-
 /-- Polynomials that agree to order `d + 1` have the same truncation to degree at most `d`. -/
 theorem truncateTotalDegree_eq_of_sub_mem {d : ℕ} {p q : MvPolynomial σ F}
     (h : p - q ∈ idealOfVars σ F ^ (d + 1)) :
