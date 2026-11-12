@@ -580,7 +580,7 @@ theorem dom_delete (tbl : StorageTable I m Q V) (k : Fin (2 ^ I)) :
     refine ⟨i, ?_⟩
     have hbeq : (tbl.tableMeta.slots i == some k) = false := by
       rw [hi]; exact beq_eq_false_iff_ne.mpr (fun h => hne (Option.some.inj h))
-    rw [if_neg (by simp [hbeq])]
+    rw [ite_eq_right (by simp [hbeq])]
     exact hi
 
 @[simp]
@@ -614,7 +614,7 @@ theorem query_delete (tbl : StorageTable I m Q V) (k k' : Fin (2 ^ I)) :
         dsimp only [delete]
         have hbeq : (tbl.tableMeta.slots i == some k) = false := by
           rw [hi]; exact beq_eq_false_iff_ne.mpr (fun h => hkk (Option.some.inj h))
-        rw [if_neg (by simp [hbeq])]
+        rw [ite_eq_right (by simp [hbeq])]
         exact hi
       rw [hl']
       rfl
@@ -740,7 +740,7 @@ theorem query_replace (tbl : StorageTable I m Q V) (k_old k_new : Fin (2 ^ I))
 
 /-- Bulk-initialize a storage table from `S : Finset (Fin (2 ^ I))` (`#S ≤ m`) and `f`
 (`Algorithm 4` `Rehash`). -/
-noncomputable def ofFinset (S : Finset (Fin (2 ^ I))) (hS : S.card ≤ m)
+noncomputable def ofFinset (S : Finset (Fin (2 ^ I))) (_hS : S.card ≤ m)
     (hQ : 1 ≤ Q) (hV : 1 ≤ V) (f : Fin (2 ^ I) → Fin Q × Fin V) : StorageTable I m Q V :=
   let iso := S.orderIsoOfFin rfl
   { tableMeta :=
@@ -828,6 +828,7 @@ structure LeafNode where
   deriving DecidableEq
 
 /-- Underlying `Minimap.FixedEncoded` representation of a `LeafNode`. -/
+@[expose]
 def LeafNode.toFixedEncoded (ln : P.LeafNode) :
     Minimap.FixedEncoded (2 ^ P.idBits P.depth) (P.nLow P.depth)
       (P.quotUniv P.depth * P.valBound) where
@@ -835,6 +836,7 @@ def LeafNode.toFixedEncoded (ln : P.LeafNode) :
   slots := ln.slots
 
 /-- Construct a `LeafNode` from `seed`, `wait`, and a `Minimap.FixedEncoded` state. -/
+@[expose]
 def LeafNode.ofFixedEncoded (seed : P.NodeSeed P.depth)
     (wait : WaitingList (P.idBits P.depth) (P.idBits (P.depth - 1)) (P.waitCap P.depth))
     (enc : Minimap.FixedEncoded (2 ^ P.idBits P.depth) (P.nLow P.depth)

@@ -96,10 +96,11 @@ private theorem dens_of_equiv {α β : Type*} [Fintype α] [Fintype β] (e : α 
   rw [dens_eq_card_div_card, dens_eq_card_div_card, hset, card_map, Fintype.card_congr e]
 
 private theorem dens_prod_le_of_good {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq α]
-    [Fintype β] [Nonempty β] [DecidableEq β] (G : Finset α) (Q : α → β → Prop)
+    [Fintype β] [Nonempty β] (G : Finset α) (Q : α → β → Prop)
     [∀ a, DecidablePred (Q a)] [DecidablePred fun p : α × β => Q p.1 p.2]
     {δ : ℝ} (hδ0 : 0 ≤ δ) (hgood : ∀ a ∈ G, (dens {y : β | Q a y} : ℝ) ≤ δ) :
     (dens {p : α × β | Q p.1 p.2} : ℝ) ≤ (dens {a : α | a ∉ G} : ℝ) + δ := by
+  classical
   have hA : (0 : ℝ) < Fintype.card α := Nat.cast_pos.mpr Fintype.card_pos
   have hB : (0 : ℝ) < Fintype.card β := Nat.cast_pos.mpr Fintype.card_pos
   have hsub : (univ.filter fun p : α × β => Q p.1 p.2) ⊆
@@ -273,6 +274,20 @@ theorem smallRouterDegree_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (hℓ : �
     Nat.clog_mono_right 2 (max_le_max_right 2 hnhi)
   omega
 
+/-- Zero-pad a small-node trinomial router seed from `2 * childRouterHalfInd (nHigh ℓ)`
+coefficients to the static capacity-independent degree `smallRouterMaxDegree P.epsInv P.alphaInv`,
+so Word-RAM polynomial evaluation (`KWise.evalCode`) can use a single `O(1)`-degree circuit across
+all small-node levels. -/
+@[expose]
+def padSmallRouterSeed (ℓ : ℕ) (seed : P.SmallRouterSeed ℓ) :
+    Fin (smallRouterMaxDegree P.epsInv P.alphaInv) →
+      Fin (2 ^ trinomialDeg (P.routerRightUniv ℓ) (P.branchBits ℓ)) :=
+  fun i =>
+    if hi : i.val < 2 * FeistelPerm.childRouterHalfInd (P.nHigh ℓ) then
+      seed ⟨i.val, hi⟩
+    else
+      ⟨0, Nat.two_pow_pos _⟩
+
 /-- Regime-switched Feistel round function `Fin (routerRightUniv ℓ) → Fin (2 ^ branchBits ℓ)`. -/
 noncomputable def routerRound (ℓ : ℕ) :
     P.RouterSeed ℓ → Fin (P.routerRightUniv ℓ) → Fin (2 ^ P.branchBits ℓ)
@@ -289,11 +304,57 @@ noncomputable def routerRound (ℓ : ℕ) :
       (2 * FeistelPerm.childRouterHalfInd (P.nHigh ℓ))
       (P.routerRightUniv ℓ) (P.branchBits ℓ) seed
 
+/-- Below `childRouterThreshold`, evaluating `routerRound` on a `.trinomial` seed equals evaluating
+`trinomialPolyHash` at the static degree `smallRouterMaxDegree P.epsInv P.alphaInv` on
+`padSmallRouterSeed ℓ seed`. -/
+theorem routerRound_trinomial_eq_padded (hcr : P.ConcentrationReady) {ℓ : ℕ} (hℓ : ℓ < P.depth)
+    (hsmall : ¬ P.usesDoubleTabRouter ℓ) (seed : P.SmallRouterSeed ℓ)
+    (x : Fin (P.routerRightUniv ℓ)) :
+    P.routerRound ℓ (.trinomial hsmall seed) x =
+      trinomialPolyHash
+        (trinomialStep (P.routerRightUniv ℓ) (P.branchBits ℓ))
+        (smallRouterMaxDegree P.epsInv P.alphaInv)
+        (P.routerRightUniv ℓ) (P.branchBits ℓ) (P.padSmallRouterSeed ℓ seed) x := by
+  have hkM : 2 * FeistelPerm.childRouterHalfInd (P.nHigh ℓ) ≤
+      smallRouterMaxDegree P.epsInv P.alphaInv := P.smallRouterDegree_le hcr hℓ hsmall
+  let t := trinomialStep (P.routerRightUniv ℓ) (P.branchBits ℓ)
+  let k := 2 * FeistelPerm.childRouterHalfInd (P.nHigh ℓ)
+  let M := smallRouterMaxDegree P.epsInv P.alphaInv
+  apply Fin.ext
+  dsimp only [routerRound, trinomialPolyHash, trinomialPolyEval, polynomialHash,
+    SmallRouterSeed, trinomialDeg] at seed ⊢
+  apply congrArg (· % 2 ^ P.branchBits ℓ)
+  apply congrArg Fin.val
+  apply congrArg (TrinomialField.equivFin t)
+  rw [← Finset.sum_filter_add_sum_filter_not (s := (Finset.univ : Finset (Fin M)))
+    (p := fun i : Fin M => i.val < k)]
+  have htail : ∑ i ∈ Finset.univ.filter (fun i : Fin M => ¬ i.val < k),
+      (TrinomialField.equivFin t).symm (P.padSmallRouterSeed ℓ seed i) *
+        AdjoinRoot.mk (trinomial t) (polyOfCode x.val) ^ (i : ℕ) = 0 := by
+    refine Finset.sum_eq_zero fun i hi => ?_
+    have hnot : ¬ i.val < 2 * FeistelPerm.childRouterHalfInd (P.nHigh ℓ) := (mem_filter.mp hi).2
+    dsimp only [padSmallRouterSeed, trinomialDeg]
+    rw [dite_eq_right hnot, TrinomialField.equivFin_symm_eq_mk_polyOfCode]
+    simp
+  rw [htail, add_zero]
+  refine Finset.sum_bij (fun (j : Fin k) _ => (⟨j.val, j.isLt.trans_le hkM⟩ : Fin M))
+    (fun j _ => mem_filter.mpr ⟨mem_univ _, j.isLt⟩)
+    (fun _ _ _ _ h => Fin.ext (Fin.mk.inj h))
+    (fun i hi => ⟨⟨i.val, (mem_filter.mp hi).2⟩, mem_univ _, rfl⟩)
+    fun j _ => ?_
+  dsimp only [padSmallRouterSeed, trinomialDeg]
+  rw [dite_eq_left j.isLt]
+
 /-- Regime-switched child-router Feistel involution on
 `Fin (2 ^ branchBits ℓ) × Fin (routerRightUniv ℓ)`. -/
 noncomputable def routerPerm (ℓ : ℕ) (θ : P.RouterSeed ℓ) :
     Equiv.Perm (Fin (2 ^ P.branchBits ℓ) × Fin (P.routerRightUniv ℓ)) :=
   FeistelPerm.feistelPairEquiv (P.routerRound ℓ θ)
+
+@[simp]
+theorem routerPerm_apply (ℓ : ℕ) (θ : P.RouterSeed ℓ)
+    (x : Fin (2 ^ P.branchBits ℓ) × Fin (P.routerRightUniv ℓ)) :
+    P.routerPerm ℓ θ x = FeistelPerm.feistelPair (P.routerRound ℓ θ) x := by rfl
 
 @[simp]
 theorem routerPerm_symm (ℓ : ℕ) (θ : P.RouterSeed ℓ) :
@@ -483,8 +544,7 @@ theorem dens_routerRound_outside_bounds_le (hcr : P.ConcentrationReady) {ℓ : �
 /-- Level-`ℓ` primitive key-ID domain (`Section 5.5` input `x_prim` to `g_u`):
 `Fin (2 ^ branchBits 0) × Fin (routerRightUniv 0)` at `ℓ = 0`, and
 `Fin (2 ^ idBits ℓ) × Fin (idCompRightUniv ℓ)` at `ℓ ≥ 1`. -/
-@[expose]
-def PrimId (P : TreeSchedule) : ℕ → Type
+abbrev PrimId (P : TreeSchedule) : ℕ → Type
   | 0 => Fin (2 ^ P.branchBits 0) × Fin (P.routerRightUniv 0)
   | ℓ + 1 => Fin (2 ^ P.idBits (ℓ + 1)) × Fin (P.idCompRightUniv (ℓ + 1))
 
@@ -588,6 +648,7 @@ theorem card_nodeSeed (ℓ : ℕ) :
         FeistelPerm.card_idCompressorSeed]
 
 /-- Extract the ID-compressor seed component of `g : P.NodeSeed (ℓ + 1)`. -/
+@[expose]
 def idSeedOfNodeSeed {ℓ : ℕ} :
     P.NodeSeed (ℓ + 1) →
       FeistelPerm.IdCompressorSeed (P.idBits (ℓ + 1)) (P.idCompRightUniv (ℓ + 1))
@@ -595,6 +656,7 @@ def idSeedOfNodeSeed {ℓ : ℕ} :
   | .leaf _ idS => idS
 
 /-- Extract the child-router seed component of `g : P.NodeSeed ℓ` when `ℓ < P.depth`. -/
+@[expose]
 def routerSeedOfNodeSeed : ∀ {ℓ : ℕ}, ℓ < P.depth → P.NodeSeed ℓ → P.RouterSeed ℓ
   | 0, _, .top r => r
   | _ + 1, _, .inner _ _ r => r
@@ -603,6 +665,7 @@ def routerSeedOfNodeSeed : ∀ {ℓ : ℕ}, ℓ < P.depth → P.NodeSeed ℓ →
 /-- Node-seed goodness predicate (`Section 5.5` "does not fail", PDF p. 34 / printed p. 33):
 no ID collision on `S` (`ℓ ≥ 1`), and every child bucket load lies in
 `[nLow (ℓ + 1), nHigh (ℓ + 1)]` (`ℓ < depth`). -/
+@[expose]
 def IsGoodNodeSeed : ∀ ℓ : ℕ, P.NodeSeed ℓ → Finset (P.PrimId ℓ) → Prop
   | 0, .top router, S =>
     ∀ b : Fin (2 ^ P.branchBits 0),
