@@ -53,6 +53,7 @@ obligations they cannot prove as goals; their references say which.
 | `wram_call h canonical hf with pats` | `Computability.WordRAM.SymbolicExec.CanonicalCall` | the same, keeping the caller state as `small.extend bank caller` | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `ram_keep view`, `ram_keep view using frame` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.MemoryView` | a block, list or footprint view, kept through stores outside its support | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `realize` (scoped, `Cslib.WordRAM`) | `Tactic.Realize` | `Realizes B p input output safe work` for a memory client | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
+| `realizeDict`, `realizeDictWith [h]`, `dictSide` (scoped, `Cslib.DataStructure.Dictionary.WordRAM.Succinct`) | `DataStructure.Dictionary.WordRAM.SuccinctProg` | `Realizes` for a parameter-free succinct-dictionary program over `DictParams × D`; `dictSide` closes its routine envelope, index and `Fits` side goals | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
 | `simp only [client_simps]` (simp set) | `DataStructure.StateTransition`; `Computability.WordRAM.Realization.Basic` for `memoryCost` | splits `clientResult`, `clientState`, `clientHistory`, `totalCost`, `ValidHistory` and `memoryCost` at the binds of a client | [Relational operations and adaptive clients](../algorithms-and-memory/memory-specifications.md#relational-operations-and-adaptive-clients) |
 | `cp_step`, `cp_step [h]` | `Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` | one step of `P.Reaches w Q (l, regs) s'` for a counter program | [Step through counter programs](#step-through-counter-programs) |
 
@@ -324,9 +325,19 @@ scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGuards \
 ```
 
 An unsupported predicate is reported at its guard. Expose its supported comparisons, or use a
-separately certified memory method to compute a word and compare that word. Loop guards keep
-their existing grammar: `=`, `<`,
-`>` and `≠ 0`; this branch support does not extend the loop guard rules.
+separately certified memory method to compute a word and compare that word.
+
+Loop guards accept `=`, `<`, `>` and `≠ 0`, as well as successor lower bounds
+`a + 1 ≤ b` or `Nat.succ a ≤ b` and their reversed `≥` forms, including positive literals.
+For example, sift-up keeps its original `2 ≤ k` guard, tested natively as `1 < k`.
+The successor is never computed, so `a` may be the largest fitting word without a fit
+premise for `a + 1`. The compared operands must be live words; a state-independent operand
+may instead be prepared before the loop with its usual fit and arithmetic obligations.
+The [successor-loop clients](../../CslibFrontierTests/WordRAMRealizeSuccessorWhile.lean)
+check these cases, arbitrary decidability and rejected missing premises. A queryful body pays
+for native loop control; the cutoff stays proof data, and the remaining `whileSafe` obligation
+must establish that it does not truncate the loop. General `a ≤ b`, compound tests and
+computed state operands remain unsupported loop guards.
 
 Returned choices can also stay inside `pure`, including tuple and option components:
 `pure (min a b, max a b)` and `pure (decide (a = 0))` need no separate source program with
@@ -341,6 +352,26 @@ fitting successor. The complete
 inactive exact division/subtraction, rejected missing premises, and frontier-bounded
 certificates. Check them from the repository root with
 `scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues`.
+
+The succinct dictionary wraps `realize` for its parameter-free programs over `DictParams × D`.
+Import `CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctProg` and open
+`Cslib.DataStructure.Dictionary.WordRAM.Succinct`, where these tactics are scoped. `realizeDict`
+runs `realize`, splits the input into `(dp, d)`, substitutes `dp = mkDictParams U V w₀ n_max h_space`
+from the precondition's `DictEnvGen` and simplifies the parameter accessors;
+`realizeDictWith [h]` also simplifies with `h`, typically the `_mk` equations of the
+sub-programs and preconditions. Both bind `hw : 0 < w₀`, `hnU : n_max ≤ U` and `hU : U < 2 ^ w₀`
+in every remaining goal. Destructure the precondition and the program's bounds lemma by name in
+an `all_goals` block, then run `all_goals dictSide`. From that context, `dictSide` closes the
+envelope `DictEnvGen …`, an index bound `i < globalMetaLen n_max`, also one stated under the
+current branch condition, and `Fits w x` for a constant `x ≤ 24`, a `GlobalMeta` index (given
+`0 < bucketBits n_max`) or a value `x ≤ n_max`. It fails on any other goal and never searches
+further. It matches hypotheses only up to reducible unfolding, so it never evaluates the programs
+inside `clientResult`; state each bound in the form the goal uses (`4 + 3 * b < globalMetaLen n_max`
+rather than `gmQIdx b < globalMetaLen n_max`). [realizes_gmPushSlabGen](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctSlabPool.lean#L318)
+is a complete client in which `dictSide` closes every side goal;
+[realizes_resolveIndexedSlotGen](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctProg.lean#L1169) proves the goals that
+`dictSide` leaves directly. Check both from the repository root with
+`scripts/build.sh --wfail --iofail CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabPool`.
 
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
 certificate's basis, output encoding, zero local work and whether its argument coordinates use

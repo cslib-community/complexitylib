@@ -40,6 +40,12 @@ and branches at any base point `p` partition `{ q | q ≠ p }`.
 * `SimpleGraph.MetricGraph.exists_treeMedian`, `SimpleGraph.MetricGraph.eq_treeMedian_of_mem`,
   `SimpleGraph.MetricGraph.dist_add_dist_eq_treeMedian`: existence, uniqueness, and shortest-path
   projection property of `treeMedian`.
+* `SimpleGraph.MetricGraph.exists_isometry_interval`,
+  `SimpleGraph.MetricGraph.interval_subset_union`: intervals are isometric to real segments, and
+  `interval x z ⊆ interval x y ∪ interval y z`.
+* `SimpleGraph.MetricGraph.mem_branch_iff_of_mem_interval`,
+  `SimpleGraph.MetricGraph.mem_branch_vertex_iff_edgeProj_pos`: branch membership through a point
+  between `z` and the base points, and branches at a vertex through bridge projections.
 * `SimpleGraph.MetricGraph.branch_eq_of_mem`,
   `SimpleGraph.MetricGraph.branch_disjoint_of_mem_interval`,
   `SimpleGraph.MetricGraph.exists_stem_segment`: branch equivalence and unbranched stem geometry
@@ -397,6 +403,28 @@ theorem vertexDist_adj [Finite V] (hT : W.graph.IsTree) {u v : V} (h : W.graph.A
     (fun hrev => bridge_deleteEdges hT d hrev.symm)
   simpa [d, vertexDist_self W.weight_nonneg] using hcut
 
+/-- In a tree, every path between two vertices is a shortest path. -/
+theorem walkLength_eq_vertexDist_of_isPath [Finite V] (hT : W.graph.IsTree) {a b : V}
+    (p : W.graph.Walk a b) (hp : p.IsPath) :
+    walkLength W.weight p = vertexDist W.graph W.weight a b := by
+  obtain ⟨q, hqp, hq⟩ := exists_isPath_walkLength_eq_vertexDist W.weight_nonneg (W.connected a b)
+  have heq : (⟨p, hp⟩ : W.graph.Path a b) = ⟨q, hqp⟩ :=
+    (hT.isAcyclic.subsingleton_path a b).elim _ _
+  exact (congrArg (fun x => walkLength W.weight x.1) heq).trans hq
+
+/-- In a tree, the vertices of a path from `a` to `b` lie on the interval between `a` and `b`. -/
+theorem vertex_mem_interval_of_mem_support [Finite V] (hT : W.graph.IsTree) {a b w : V}
+    {p : W.graph.Walk a b} (hp : p.IsPath) (hw : w ∈ p.support) :
+    (vertex w : MetricGraph W) ∈ interval (vertex a) (vertex b) := by
+  classical
+  have hlen : walkLength W.weight (p.takeUntil w hw) + walkLength W.weight (p.dropUntil w hw) =
+      walkLength W.weight p := by
+    rw [← walkLength_append, Walk.take_spec p hw]
+  rw [mem_interval_iff, dist_vertex, dist_vertex, dist_vertex,
+    ← walkLength_eq_vertexDist_of_isPath hT _ (hp.takeUntil hw),
+    ← walkLength_eq_vertexDist_of_isPath hT _ (hp.dropUntil hw),
+    ← walkLength_eq_vertexDist_of_isPath hT p hp, hlen]
+
 theorem dist_edgePoint_edgePoint_same_eq [Finite V] (hT : W.graph.IsTree) (d : W.graph.Dart)
     (s t : unitInterval) :
     Dist.dist (edgePoint d s : MetricGraph W) (edgePoint d t) =
@@ -624,6 +652,37 @@ theorem edgePoint_mem_interval_of_edgeProj_le [Finite V] (hT : W.graph.IsTree) (
       rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr (hsy_le.trans htz))] at h3
       rw [h1, h2, h3]
       ring
+
+/-- In a tree, the zero set of a bridge projection is convex: it contains the interval between any
+two of its points. -/
+theorem edgeProj_eq_zero_of_mem_interval [Finite V] (hT : W.graph.IsTree) {d : W.graph.Dart}
+    {p q z : MetricGraph W} (hp : edgeProj hT d p = 0) (hq : edgeProj hT d q = 0)
+    (hz : z ∈ interval p q) : edgeProj hT d z = 0 := by
+  by_contra hne
+  have hpos : 0 < edgeProj hT d z := lt_of_le_of_ne (edgeProj_nonneg hT d z) (Ne.symm hne)
+  have hm₁ := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d hp hpos)
+  have hm₂ := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d hq hpos)
+  have hz_mem := mem_interval_iff.mp hz
+  have hd_pos : 0 < Dist.dist (vertex d.fst : MetricGraph W) z := by
+    refine _root_.dist_pos.mpr fun heq => ?_
+    have h0 : edgeProj hT d (vertex d.fst) = 0 :=
+      (edgeProj_vertex_eq_zero_iff hT d d.fst).mpr (.refl _)
+    rw [heq] at h0
+    exact hne h0
+  linarith [_root_.dist_triangle p (vertex d.fst) q,
+    _root_.dist_comm (vertex d.fst : MetricGraph W) z, _root_.dist_comm q z,
+    _root_.dist_comm q (vertex d.fst)]
+
+/-- In a tree, every point of an edge lies on the interval between the edge's endpoints. -/
+theorem edgePoint_mem_interval_vertex [Finite V] (hT : W.graph.IsTree) (d : W.graph.Dart)
+    (t : unitInterval) : edgePoint d t ∈ interval (vertex d.fst) (vertex d.snd) := by
+  rw [mem_interval_iff, ← edgePoint_zero d, ← edgePoint_one d,
+    dist_edgePoint_edgePoint_same_eq hT d 0 t, dist_edgePoint_edgePoint_same_eq hT d t 1,
+    dist_edgePoint_edgePoint_same_eq hT d 0 1, Set.Icc.coe_zero, Set.Icc.coe_one,
+    abs_of_nonpos (by linarith [t.2.1] : (0 : ℝ) - t ≤ 0),
+    abs_of_nonpos (by linarith [t.2.2] : (t : ℝ) - 1 ≤ 0),
+    abs_of_nonpos (by norm_num : (0 : ℝ) - 1 ≤ 0)]
+  ring
 
 end TreeProjection
 
@@ -941,6 +1000,26 @@ theorem isClosed_interval [Finite V] (x y : MetricGraph W) :
     IsClosed (interval x y) :=
   isClosed_eq ((continuous_const.dist continuous_id).add (continuous_id.dist continuous_const))
     continuous_const
+
+/-- In a tree metric graph, the interval between `a` and `b` is the image of an isometric
+parametrization of `[0, dist a b]` from `a` to `b`. -/
+theorem exists_isometry_interval [Finite V] (hT : W.graph.IsTree) (a b : MetricGraph W) :
+    ∃ φ : Set.Icc (0 : ℝ) (Dist.dist a b) → MetricGraph W,
+      Isometry φ ∧
+      φ ⟨0, le_rfl, _root_.dist_nonneg⟩ = a ∧
+      φ ⟨Dist.dist a b, _root_.dist_nonneg, le_rfl⟩ = b ∧
+      Set.range φ = interval a b := by
+  obtain ⟨γ, hγ⟩ := exists_isGeodesic a b
+  refine ⟨fun t => γ t.1, hγ.isometry, hγ.map_zero, hγ.map_dist, Set.ext fun z => ?_⟩
+  constructor
+  · rintro ⟨t, rfl⟩
+    exact hγ.mem_interval t.2
+  · intro hz
+    obtain ⟨γ', hγ', hgz⟩ := exists_isGeodesic_through_of_mem_interval hz
+    have hmem : Dist.dist a z ∈ Set.Icc 0 (Dist.dist a b) :=
+      ⟨_root_.dist_nonneg,
+        by linarith [mem_interval_iff.mp hz, _root_.dist_nonneg (x := z) (y := b)]⟩
+    exact ⟨⟨Dist.dist a z, hmem⟩, (hγ'.eq_on hT hγ hmem).symm.trans hgz⟩
 
 end TreeGeodesic
 
@@ -1309,6 +1388,24 @@ theorem dist_add_dist_eq_treeMedian [Finite V] (hT : W.graph.IsTree) {x y z p : 
     linarith [_root_.dist_triangle y p z, _root_.dist_triangle z m p, _root_.dist_comm y p,
       _root_.dist_comm p z, _root_.dist_comm y m, _root_.dist_comm m z, _root_.dist_comm y z]
 
+/-- The median `treeMedian hT x y z` is the gate of `z` on `interval x y`: it lies between `z`
+and every point of that interval. -/
+theorem treeMedian_mem_interval_of_mem [Finite V] (hT : W.graph.IsTree) {x y p : MetricGraph W}
+    (hp : p ∈ interval x y) (z : MetricGraph W) : treeMedian hT x y z ∈ interval z p :=
+  mem_interval_iff.mpr (dist_add_dist_eq_treeMedian hT hp).symm
+
+/-- In a tree metric graph, the interval from `x` to `z` is covered by the intervals from `x` to
+`y` and from `y` to `z`. -/
+theorem interval_subset_union [Finite V] (hT : W.graph.IsTree) (x y z : MetricGraph W) :
+    interval x z ⊆ interval x y ∪ interval y z := by
+  intro w hw
+  have hm : treeMedian hT x y z ∈ interval x z := interval_comm z x ▸ treeMedian_mem_zx hT x y z
+  rcases le_total (Dist.dist x w) (Dist.dist x (treeMedian hT x y z)) with hle | hle
+  · exact Or.inl (interval_subset_of_mem hT (left_mem_interval x y) (treeMedian_mem_xy hT x y z)
+      (mem_interval_of_mem_interval_dist_le hT hw hm hle))
+  · exact Or.inr (interval_subset_of_mem hT (treeMedian_mem_yz hT x y z) (right_mem_interval y z)
+      (mem_interval_trans_right hw (mem_interval_of_mem_interval_dist_le hT hm hw hle)))
+
 /-- The branch of a tree metric graph at base point `p` in the direction of `q`:
 `{ w | p ∉ interval q w }`. Equal to `∅` when `q = p`. -/
 @[expose] def branch [Finite V] (p q : MetricGraph W) : Set (MetricGraph W) :=
@@ -1388,6 +1485,127 @@ theorem branch_disjoint_of_mem_interval [Finite V] (hT : W.graph.IsTree)
       exact mem_branch_self h1
     simp only [branch, Set.mem_ofPred_eq, interval_comm q₂ q₁] at hq1
     exact hq1 hp
+
+/-- Two distinct branches at the same base point of a tree metric graph are disjoint. -/
+theorem branch_disjoint_of_ne [Finite V] (hT : W.graph.IsTree) {y p q : MetricGraph W}
+    (hpq : branch y p ≠ branch y q) : Disjoint (branch y p) (branch y q) :=
+  Set.disjoint_left.mpr fun _ hwp hwq =>
+    hpq ((branch_eq_of_mem hT hwp).symm.trans (branch_eq_of_mem hT hwq))
+
+/-- Moving the base point toward `q` shrinks the branch toward `q`. -/
+theorem branch_subset_branch_of_mem_interval [Finite V] {y p q : MetricGraph W}
+    (hp : p ∈ interval y q) : branch p q ⊆ branch y q := by
+  intro w hw
+  by_contra hnot
+  simp only [branch, Set.mem_ofPred_eq, Classical.not_not] at hnot hw
+  have h1 := mem_interval_iff.mp hp
+  have h2 := mem_interval_iff.mp hnot
+  have hqpw : Dist.dist q p + Dist.dist p w ≤ Dist.dist q w := by
+    have htri := _root_.dist_triangle p y w
+    linarith [_root_.dist_comm q p, _root_.dist_comm q y, _root_.dist_comm q w,
+      _root_.dist_comm p y, _root_.dist_comm y w]
+  exact hw (mem_interval_iff.mpr (le_antisymm hqpw (_root_.dist_triangle q p w)))
+
+/-- Every point other than `y` between `y` and a point of the branch at `y` toward `q` lies in
+that branch. -/
+theorem mem_branch_of_mem_interval [Finite V] (hT : W.graph.IsTree) {y b q z : MetricGraph W}
+    (hb : b ∈ branch y q) (hz : z ∈ interval y b) (hzy : z ≠ y) : z ∈ branch y q := by
+  rw [← branch_eq_of_mem hT hb]
+  simp only [branch, Set.mem_ofPred_eq]
+  intro hmem
+  have h1 := mem_interval_iff.mp hz
+  have h2 := mem_interval_iff.mp hmem
+  have hd : Dist.dist y z = 0 := by
+    linarith [_root_.dist_comm b y, _root_.dist_comm b z, _root_.dist_comm y z,
+      _root_.dist_comm z b]
+  exact hzy (_root_.dist_eq_zero.mp hd).symm
+
+/-- A point `π` between `z` and both `p` and `q` lies in the branch at `p` toward `q` exactly
+when `z` does. This is the branch property of gates (`IsConvex.mem_branch_gate_iff`) and of
+medians. -/
+theorem mem_branch_iff_of_mem_interval [Finite V] {p q z π : MetricGraph W}
+    (hp : π ∈ interval z p) (hq : π ∈ interval z q) : z ∈ branch p q ↔ π ∈ branch p q := by
+  have hzp := mem_interval_iff.mp hp
+  have hzq := mem_interval_iff.mp hq
+  simp only [branch, Set.mem_ofPred_eq, mem_interval_iff]
+  constructor <;> intro h heq <;> apply h <;>
+    linarith [_root_.dist_comm z p, _root_.dist_comm z q, _root_.dist_comm p π,
+      _root_.dist_comm q π]
+
+/-- The branch at a vertex `c` toward an adjacent vertex `w` is the set where the projection
+along the dart `(c, w)` is positive. -/
+theorem mem_branch_vertex_iff_edgeProj_pos [Finite V] (hT : W.graph.IsTree) {c w : V}
+    (hadj : W.graph.Adj c w) (z : MetricGraph W) :
+    z ∈ branch (vertex c) (vertex w) ↔ 0 < edgeProj hT ⟨(c, w), hadj⟩ z := by
+  let d : W.graph.Dart := ⟨(c, w), hadj⟩
+  change z ∈ branch (vertex d.fst) (vertex d.snd) ↔ 0 < edgeProj hT d z
+  have hw_pos := W.dart_weight_pos d
+  have hc0 : edgeProj hT d (vertex d.fst) = 0 :=
+    (edgeProj_vertex_eq_zero_iff hT d d.fst).mpr (.refl _)
+  have hw_proj : edgeProj hT d (vertex d.snd) = W.weight d.edge := by
+    rw [edgeProj_vertex_eq_weight_iff]
+    exact fun hr => bridge_deleteEdges hT d hr.symm
+  constructor
+  · intro hz
+    by_contra hle
+    have h0 : edgeProj hT d z = 0 := le_antisymm (not_lt.mp hle) (edgeProj_nonneg hT d z)
+    have hmem := vertex_fst_mem_interval_of_edgeProj hT d h0 (by rw [hw_proj]; exact hw_pos)
+    exact hz (interval_comm z (vertex d.snd) ▸ hmem)
+  · intro hpos
+    simp only [branch, Set.mem_ofPred_eq]
+    intro hmem
+    have hmem' := mem_interval_iff.mp hmem
+    have hdist_pos : 0 < Dist.dist (vertex d.fst : MetricGraph W) z := by
+      refine _root_.dist_pos.mpr fun heq => ?_
+      rw [← heq, hc0] at hpos
+      exact lt_irrefl 0 hpos
+    have hsym_lt : edgeProj hT d.symm z < W.weight d.edge := by
+      rw [edgeProj_symm]
+      linarith
+    rcases lt_or_ge (edgeProj hT d z) (W.weight d.edge) with hlt | hge
+    · obtain ⟨t, ht0, ht1, rfl⟩ : ∃ t : unitInterval, 0 < (t : ℝ) ∧ (t : ℝ) < 1 ∧
+          z = edgePoint d t := by
+        rcases edgeProj_cases hT d z with h0 | hw | ⟨t, ht0, ht1, hzeq⟩
+        · linarith
+        · linarith
+        · exact ⟨t, ht0, ht1, hzeq⟩
+      have h1 := dist_edgePoint_edgePoint_same_eq hT d 0 t
+      have h2 := dist_edgePoint_edgePoint_same_eq hT d t 1
+      have h3 := dist_edgePoint_edgePoint_same_eq hT d 0 1
+      simp only [edgePoint_zero, edgePoint_one, Set.Icc.coe_zero, Set.Icc.coe_one, zero_sub,
+        abs_neg, abs_one, one_mul] at h1 h2 h3
+      rw [abs_of_nonneg ht0.le] at h1
+      rw [abs_of_neg (sub_neg.mpr ht1)] at h2
+      linarith [_root_.dist_comm (vertex d.snd : MetricGraph W) (vertex d.fst),
+        _root_.dist_comm (vertex d.snd : MetricGraph W) (edgePoint d t)]
+    · have hw_eq : edgeProj hT d z = W.weight d.edge :=
+        le_antisymm (edgeProj_le_weight hT d z) hge
+      have h0 : edgeProj hT d.symm z = 0 := by rw [edgeProj_symm, hw_eq, sub_self]
+      have hpos' : 0 < edgeProj hT d.symm (vertex d.fst) := by
+        rw [edgeProj_symm, hc0, sub_zero]
+        exact hw_pos
+      have hm := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d.symm h0 hpos')
+      rw [Dart.fst_symm d] at hm
+      have hcd_pos : 0 < Dist.dist (vertex d.snd : MetricGraph W) (vertex d.fst) :=
+        _root_.dist_pos.mpr fun h => d.fst_ne_snd (vertex_injective (W := W) h.symm)
+      linarith [_root_.dist_comm (vertex d.snd : MetricGraph W) (vertex d.fst),
+        _root_.dist_comm (vertex d.snd : MetricGraph W) z,
+        _root_.dist_comm z (vertex d.fst)]
+
+/-- At a vertex of a tree metric graph, the branches toward distinct neighbours are disjoint. -/
+theorem disjoint_branch_vertex_of_adj [Finite V] (hT : W.graph.IsTree) {c w₁ w₂ : V}
+    (hadj₁ : W.graph.Adj c w₁) (hadj₂ : W.graph.Adj c w₂) (hne : w₁ ≠ w₂) :
+    Disjoint (branch (vertex c : MetricGraph W) (vertex w₁))
+      (branch (vertex c : MetricGraph W) (vertex w₂)) := by
+  refine branch_disjoint_of_ne hT fun heq => ?_
+  have hw₁ : (vertex w₁ : MetricGraph W) ∈ branch (vertex c) (vertex w₂) :=
+    heq ▸ mem_branch_self fun h => hadj₁.ne (vertex_injective (W := W) h.symm)
+  rw [mem_branch_vertex_iff_edgeProj_pos hT hadj₂, ← not_le] at hw₁
+  refine hw₁ (le_of_eq ((edgeProj_vertex_eq_zero_iff hT _ w₁).mpr ?_))
+  refine SimpleGraph.Adj.reachable ⟨hadj₁.symm, fun h => ?_⟩
+  rcases Sym2.eq_iff.mp (Set.mem_singleton_iff.mp h.1) with ⟨h1, _⟩ | ⟨h1, _⟩
+  · exact hadj₁.ne h1.symm
+  · exact hne h1
 
 /-- Every nonzero direction `q ≠ y` in a finite tree metric graph begins along a positive-length
 unbranched segment `interval y v₀ ⊆ branch y q ∪ {y}` inside which small balls stay in the

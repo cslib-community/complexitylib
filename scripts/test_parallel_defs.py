@@ -622,5 +622,71 @@ class CompiledStatementFixtureTests(unittest.TestCase):
         self.assertEqual(rows[-1]["external"], 0)
 
 
+# The statements from #4466, including the Fin-index notation and generated additive theorem.
+# Mathlib states these identities in reverse using natural-number indices (`xs[i.1]`).
+LIST_STATEMENT_FIXTURE = """module
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Data.List.OfFn
+public section
+open scoped BigOperators
+
+@[to_additive]
+theorem prod_map_eq_prod_fin {α β : Type*} [CommMonoid β] (xs : List α) (f : α → β) :
+    (xs.map f).prod = ∏ i : Fin xs.length, f xs[i] := by
+  rw [← List.ofFn_getElem_eq_map, List.prod_ofFn]
+  rfl
+
+theorem index_left (xs : List Nat) (i j : Fin xs.length)
+    (h : xs[i] ≤ xs[j] ∧ xs[j] ≤ xs[i]) : xs[i] ≤ xs[j] := h.1
+
+theorem index_right (xs : List Nat) (i j : Fin xs.length)
+    (h : xs[i] ≤ xs[j] ∧ xs[j] ≤ xs[i]) : xs[j] ≤ xs[i] := h.2
+
+theorem list_left (xs ys : List Nat) (i : Nat) (hx : i < xs.length) (hy : i < ys.length)
+    (h : xs[i] ≤ ys[i] ∧ ys[i] ≤ xs[i]) : xs[i] ≤ ys[i] := h.1
+
+theorem list_right (xs ys : List Nat) (i : Nat) (hx : i < xs.length) (hy : i < ys.length)
+    (h : xs[i] ≤ ys[i] ∧ ys[i] ≤ xs[i]) : ys[i] ≤ xs[i] := h.2
+"""
+
+
+@unittest.skipUnless(shutil.which("lake") and (p.ROOT / ".lake/packages").is_dir(),
+                     "needs Lean and the repository's packages (CI runs this after the build)")
+class CompiledListStatementFixtureTests(unittest.TestCase):
+    """The real list-indexing statements, through compilation and the dependency reader."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        tmp = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(tmp.cleanup)
+        root = pathlib.Path(tmp.name)
+        build = root / "build"
+        build.mkdir()
+        source = root / "ListStatementFixture.lean"
+        source.write_text(LIST_STATEMENT_FIXTURE)
+        subprocess.run(["lake", "env", "lean", f"--root={root}", "-o",
+                        str(build / "ListStatementFixture.olean"), str(source)],
+                       cwd=p.ROOT, check=True, capture_output=True)
+        cls.rows = p.run_reader(build, "theorems\nexternal\nlines ListStatementFixture *\n", 0, 0)
+
+    def test_reversed_product_and_generated_sum_find_mathlib(self) -> None:
+        for operation in ("prod", "sum"):
+            with self.subTest(operation=operation):
+                name = f"{operation}_map_eq_{operation}_fin"
+                row = next((r for r in self.rows
+                            if any(t["n"] == name for t in r.get("thms", []))), None)
+                self.assertIsNotNone(row, name)
+                self.assertFalse(row["exact"])
+                self.assertIn({"n": f"Fin.{operation}_univ_fun_getElem",
+                               "m": "Mathlib.Algebra.BigOperators.Fin"}, row["ext"])
+
+    def test_different_indices_and_lists_stay_apart(self) -> None:
+        self.assertEqual(self.rows[-1]["examined"], 6)
+        for row in self.rows:
+            names = {t["n"] for t in row.get("thms", [])}
+            self.assertFalse({"index_left", "index_right"} <= names)
+            self.assertFalse({"list_left", "list_right"} <= names)
+
+
 if __name__ == "__main__":
     unittest.main()

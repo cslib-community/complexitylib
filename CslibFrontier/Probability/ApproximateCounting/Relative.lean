@@ -145,11 +145,12 @@ theorem dens_filter_not_hashEstimate_le (h : ∀ j, ι j → X → Y j) (y : ∀
   simp only [mem_filter, mem_univ, true_and] at hω ⊢
   exact fun ha => hω ⟨ha.estimate_le, ha.le_estimate hS⟩
 
+omit [∀ j, Nonempty (ι j)] in
 /-- **Approximate counting with relative error**: if every `h j` is a pairwise independent hash
-family on `k`-tuples into a set of `2 ^ j` elements, with seeds from a nonempty type `ι j`,
-`#S ^ k ≤ 2 ^ n`, and `128 ≤ (1 + 1 / p) ^ k`, then for `2 r` independent uniform seeds per level
-`j ≤ n`, the relative estimate fails to lie between `#S` and `(1 + 1 / p) #S` with probability at
-most `(n + 1) (8 / 9) ^ r`. -/
+family on `k`-tuples into a set of `2 ^ j` elements, `#S ^ k ≤ 2 ^ n`, and
+`128 ≤ (1 + 1 / p) ^ k`, then for `2 r` independent uniform seeds per level `j ≤ n`, the relative
+estimate fails to lie between `#S` and `(1 + 1 / p) #S` with probability at most
+`(n + 1) (8 / 9) ^ r`. -/
 theorem dens_filter_not_relativeHashEstimate_le {k p : ℕ} (h : ∀ j, ι j → (Fin k → X) → Y j)
     (y : ∀ j, Y j) (S : Finset X) (hh : ∀ j, IsPairwiseIndependentHash (h j))
     (hY : ∀ j, Fintype.card (Y j) = 2 ^ j) (hS : #S ^ k ≤ 2 ^ n)
@@ -160,18 +161,45 @@ theorem dens_filter_not_relativeHashEstimate_le {k p : ℕ} (h : ∀ j, ι j →
   have hk : k ≠ 0 := by
     rintro rfl
     simp at hp
-  have hcard : #(Fintype.piFinset fun _ : Fin k => S) = #S ^ k := Fintype.card_piFinset_const S k
-  refine (dens_le_dens fun ω hω => ?_).trans
-    (dens_filter_not_hashEstimate_le h y _ hh hY (hcard ▸ hS))
-  simp only [mem_filter, mem_univ, true_and, hcard] at hω ⊢
-  refine fun ⟨hle, hge⟩ => hω (le_nthRoot_and_mul_nthRoot_le hk hge ?_ hp)
-  rw [show 128 = 16 * 8 by norm_num, mul_assoc]
-  exact Nat.mul_le_mul_left 16 hle
+  by_cases hX : Nonempty X
+  · obtain ⟨x⟩ := hX
+    have : ∀ j, Nonempty (ι j) := fun j => (hh j).nonempty (fun _ => x) (y j)
+    have hcard : #(Fintype.piFinset fun _ : Fin k => S) = #S ^ k := Fintype.card_piFinset_const S k
+    refine (dens_le_dens fun ω hω => ?_).trans
+      (dens_filter_not_hashEstimate_le h y _ hh hY (hcard ▸ hS))
+    simp only [mem_filter, mem_univ, true_and, hcard] at hω ⊢
+    refine fun ⟨hle, hge⟩ => hω (le_nthRoot_and_mul_nthRoot_le hk hge ?_ hp)
+    rw [show 128 = 16 * 8 by norm_num, mul_assoc]
+    exact Nat.mul_le_mul_left 16 hle
+  · have : IsEmpty X := not_nonempty_iff.mp hX
+    have hS0 : S = ∅ := eq_empty_of_isEmpty S
+    subst hS0
+    have hpi : (Fintype.piFinset fun _ : Fin k => (∅ : Finset X)) = ∅ :=
+      card_eq_zero.mp (by rw [Fintype.card_piFinset_const, card_empty, zero_pow hk])
+    have hest : ∀ ω : ∀ j : Fin (n + 1), Fin (2 * r) → ι j,
+        relativeHashEstimate h y ∅ ω = 0 := fun ω => by
+      have ha : ¬ hashAnswer h y ∅ ω 0 := by
+        rintro ⟨_, hr⟩
+        simp at hr
+      have hhe : hashEstimate h y ∅ ω = 0 := by
+        simp only [hashEstimate, estimate, ha, ↓reduceIte]
+      simp only [relativeHashEstimate, hpi, hhe, mul_zero]
+      by_contra hne
+      have h0 := (Nat.le_nthRoot_iff hk).mp (Nat.one_le_iff_ne_zero.mpr hne)
+      simp at h0
+    have hemp : ({ω : ∀ j : Fin (n + 1), Fin (2 * r) → ι j |
+        ¬ (#(∅ : Finset X) ≤ relativeHashEstimate h y ∅ ω ∧
+          p * relativeHashEstimate h y ∅ ω ≤ (p + 1) * #(∅ : Finset X))} : Finset _) = ∅ := by
+      ext ω
+      simp [hest ω]
+    rw [hemp, dens_empty]
+    positivity
 
 /-- **Approximate counting with relative error and small failure probability**: under the
-hypotheses of `dens_filter_not_relativeHashEstimate_le`, for `12 (n + 1 + t)` independent uniform
-seeds per level `j ≤ n`, the relative estimate lies between `#S` and `(1 + 1 / p) #S` with
-probability at least `1 - 2 ^ (-t)`; at least `3 / 4` for `t = 2`. -/
+hypotheses of `dens_filter_not_relativeHashEstimate_le` with nonempty seed types `ι j`, for
+`12 (n + 1 + t)` independent uniform seeds per level `j ≤ n`, the relative estimate lies between
+`#S` and `(1 + 1 / p) #S` with probability at least `1 - 2 ^ (-t)`; at least `3 / 4` for
+`t = 2`. -/
 theorem one_sub_inv_two_pow_le_dens_filter_relativeHashEstimate {k p : ℕ}
     (h : ∀ j, ι j → (Fin k → X) → Y j) (y : ∀ j, Y j) (S : Finset X)
     (hh : ∀ j, IsPairwiseIndependentHash (h j)) (hY : ∀ j, Fintype.card (Y j) = 2 ^ j)

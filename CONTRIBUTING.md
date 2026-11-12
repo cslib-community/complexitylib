@@ -311,7 +311,10 @@ options. On pull requests CI also runs
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another
 library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has, up to binder names,
-universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
+universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`.
+It also handles reversed equalities and built-in list lookup by a `Fin` index versus its natural
+value, ignoring that lookup's bounds proof while retaining the list and index. It does not unfold
+arbitrary definitions or custom indexing instances, or match specializations of a general theorem.
 CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
 --theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
 The reports link project declarations at the checked revision and disclose skipped or incomplete
