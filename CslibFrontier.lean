@@ -4134,13 +4134,17 @@ public import CslibFrontier.Crypto.Computational.Kilian.MicaliSoundness
 public import CslibFrontier.Crypto.Computational.Kilian.NP
 public import CslibFrontier.Crypto.Computational.Kilian.Soundness
 public import CslibFrontier.Crypto.Computational.Kilian.Succinct
+public import CslibFrontier.Crypto.Computational.LPN
 public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Crypto.Computational.LWE.Decoding
 public import CslibFrontier.Crypto.Computational.LWE.DualRegev
 public import CslibFrontier.Crypto.Computational.LWE.DualRegev.Security
 public import CslibFrontier.Crypto.Computational.LWE.KeyGen
+public import CslibFrontier.Crypto.Computational.LWE.NormalForm
+public import CslibFrontier.Crypto.Computational.LWE.PrimeModulus
 public import CslibFrontier.Crypto.Computational.LWE.Regev
 public import CslibFrontier.Crypto.Computational.LWE.Regev.Security
+public import CslibFrontier.Crypto.Computational.LWE.SearchToDecision
 public import CslibFrontier.Crypto.Computational.Lattice.ShortestVector
 public import CslibFrontier.Crypto.Computational.LubyRackoff
 public import CslibFrontier.Crypto.Computational.MAC
@@ -5740,6 +5744,7 @@ public import CslibFrontier.Languages.Probabilistic.RandomPermutation.ExtPermsCa
 public import CslibFrontier.Languages.Probabilistic.RejectionSampling
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Retry
+public import CslibFrontier.Languages.Probabilistic.SampleEach
 public import CslibFrontier.Languages.Probabilistic.Sampling.F4
 public import CslibFrontier.Languages.Probabilistic.Selection
 public import CslibFrontier.Languages.Probabilistic.Semantics

@@ -6,6 +6,8 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Crypto.Computational.LWE.NormalForm
+import CslibFrontier.Crypto.Computational.LWE.SearchToDecision
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -3618,6 +3620,53 @@ register_result "sperner-2d-ppad-completeness" where
     Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
+
+
+register_result "lwe-normal-form-decision" where
+  title := "Reduction of general Decision LWE to Decision LWE in normal form"
+  topic := "cryptography"
+  sources := [
+    { paper := Peikert2016, theorem := "Normal form", locator := "§4.2.1, p. 23" }
+  ]
+  theorems := [
+    Cslib.Crypto.PrimeLWE.decisionNormalForm
+  ]
+  scope := "Proved finite inequalities bounding the standard Decision LWE distinguishing \
+    advantage by the normal-form advantage (plus the probability of a singular top block). \
+    The reduction is executed on explicitly encoded words via `decisionNormalForm`. \
+    The underlying reduction uses `gaussInv?` and lacks a formalized PPT closure \
+    (an open M07 objective)."
+
+register_result "lwe-normal-form-search" where
+  title := "Reduction of general Search LWE to Search LWE in normal form"
+  topic := "cryptography"
+  sources := [
+    { paper := Peikert2016, theorem := "Normal form", locator := "§4.2.1, p. 23" }
+  ]
+  theorems := [
+    Cslib.Crypto.PrimeLWE.searchNormalForm
+  ]
+  scope := "Proved finite inequalities bounding the standard Search LWE success probability \
+    by the normal-form success probability (plus the singular top block probability). \
+    Executed on explicitly encoded words via `searchNormalForm`. Like the decision reduction, \
+    it lacks a formalized PPT closure for `gaussInv?` (an open M07 objective)."
+
+register_result "lwe-search-to-decision" where
+  title := "Search-to-Decision reduction for LWE"
+  topic := "cryptography"
+  sources := [
+    { paper := Regev2009, theorem := "Lemmas 4.1 & 4.2",
+      locator := "pp. 30-31 & p. 31 (May 2, 2009 version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.PrimeLWE.searchToDecision
+  ]
+  scope := "Concrete Search-to-Decision reduction showing that an adversary breaking
+    Decision LWE over a prime modulus can be used to construct a solver for Search LWE.
+    The result bounds the success probability using Chernoff-Hoeffding bounds and a
+    union bound over coordinate trials. The asymptotic PPT (IsPPTOn) SearchLWE ->
+    DecisionLWE corollary is not proved because uniform ZMod q sampling for
+    non-powers-of-2 is not perfectly PPT."
 
 register_result "sturm-real-root-counting" where
   title := "Sturm's theorem for separable real polynomials"

@@ -83,15 +83,15 @@ example : (Game.advantage
 
 -- The reduction covers this adversary under the generated-key law with the actual noise law.
 example : (Game.advantage
-      (lorGame (LWE.publicMatrixLaw 1 2 4 (LWE.noiseLaw 4 1)) 2 adaptiveAdversary false)
-      (lorGame (LWE.publicMatrixLaw 1 2 4 (LWE.noiseLaw 4 1)) 2 adaptiveAdversary
+      (lorGame (LWE.publicMatrixLaw 1 2 (LWE.noiseLaw 4 1)) 2 adaptiveAdversary false)
+      (lorGame (LWE.publicMatrixLaw 1 2 (LWE.noiseLaw 4 1)) 2 adaptiveAdversary
         true) : ℝ) ≤
     Game.advantage
-        ((LWE.publicMatrixLaw 1 2 4 (LWE.noiseLaw 4 1)).bind
+        ((LWE.publicMatrixLaw 1 2 (LWE.noiseLaw 4 1)).bind
           (lorDistinguisher 2 adaptiveAdversary false))
         ((PMF.uniformOfFintype (PublicKey 1 2 4)).bind (lorDistinguisher 2 adaptiveAdversary false))
       + Game.advantage
-        ((LWE.publicMatrixLaw 1 2 4 (LWE.noiseLaw 4 1)).bind
+        ((LWE.publicMatrixLaw 1 2 (LWE.noiseLaw 4 1)).bind
           (lorDistinguisher 2 adaptiveAdversary true))
         ((PMF.uniformOfFintype (PublicKey 1 2 4)).bind (lorDistinguisher 2 adaptiveAdversary true))
       + 2 * Real.sqrt ((2 : ℝ) ^ ((1 + 1) * 4) / (2 : ℝ) ^ 2) := by
