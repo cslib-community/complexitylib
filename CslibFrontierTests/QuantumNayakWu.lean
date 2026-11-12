@@ -4,9 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
-import CslibFrontier.Computability.QueryComplexity.Quantum.BitQuery
-import CslibFrontierTests.QuantumPolynomial
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
+public import CslibFrontier.Computability.QueryComplexity.Quantum.BitQuery
+public import CslibFrontierTests.QuantumPolynomial
+public import CslibFrontier.Foundations.LinearAlgebra.UnitarySpectrum
 
 /-! Nonvacuous checks and concrete witnesses for multi-outcome readouts (`Readout`), unitary
 spectral diagonalization (`UnitarySpectrum`), value-query and index-to-value simulations
@@ -17,6 +21,8 @@ namespace CslibFrontierTests.QuantumNayakWu
 
 open Cslib Cslib.Quantum Cslib.BitString Finset
 open CslibFrontierTests.QuantumPolynomial
+
+public section
 
 /-! ### Multi-outcome readouts (`Readout.lean`) -/
 
@@ -40,7 +46,7 @@ example :
 
 /-! ### Unitary spectrum (`UnitarySpectrum.lean`) -/
 
-private noncomputable def swap2 :
+noncomputable def swap2 :
     EuclideanSpace ℂ (Fin 2) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (Fin 2) :=
   LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ (Equiv.swap (0 : Fin 2) 1)
 
@@ -78,7 +84,7 @@ example : ∀ (U : ℕ → ValueState (Fin 2) (BitString 1) Unit →ₗᵢ[ℂ] 
 
 /-! ### Theorem 1.11: exact (`readBit`) and `2`-query (`count2Alg`) counting -/
 
-private def readBitOut : Fin 1 × Bool × Unit → ℝ := fun p => if p.2.1 then 1 else 0
+def readBitOut : Fin 1 × Bool × Unit → ℝ := fun p => if p.2.1 then 1 else 0
 
 theorem readBit_exactCount (x : BitString 1) :
     1 - (0 : ℝ) ≤
@@ -130,7 +136,7 @@ example :
   one_sub_mul_exactCount_le readBit norm_ψ₀ 1 readBitOut (t := 1) (Δ := 1 / 2)
     (ε := 0) le_rfl le_rfl (by norm_num) le_rfl readBit_exactCount (by norm_num)
 
-private def count2Perm : ℕ → Equiv.Perm (Fin 2 × Bool × Bool)
+def count2Perm : ℕ → Equiv.Perm (Fin 2 × Bool × Bool)
   | 1 =>
     { toFun := fun (i, b, w) => (Equiv.swap (0 : Fin 2) 1 i, w, b)
       invFun := fun (i, b, w) => (Equiv.swap (0 : Fin 2) 1 i, w, b)
@@ -138,12 +144,12 @@ private def count2Perm : ℕ → Equiv.Perm (Fin 2 × Bool × Bool)
       right_inv := fun ⟨i, b, w⟩ => by simp }
   | _ => 1
 
-private noncomputable def count2Alg : ℕ → State 2 Bool →ₗᵢ[ℂ] State 2 Bool :=
+noncomputable def count2Alg : ℕ → State 2 Bool →ₗᵢ[ℂ] State 2 Bool :=
   bitQueryAlg 2 count2Perm LinearIsometry.id LinearIsometry.id
 
-private noncomputable def count2Init : State 2 Bool := ket (0, false, false)
+noncomputable def count2Init : State 2 Bool := ket (0, false, false)
 
-private def count2Out : Fin 2 × Bool × Bool → ℝ := fun (_, b, w) => (b.toNat + w.toNat : ℝ)
+def count2Out : Fin 2 × Bool × Bool → ℝ := fun (_, b, w) => (b.toNat + w.toNat : ℝ)
 
 theorem run_count2Alg (x : BitString 2) :
     run count2Alg count2Init x 2 = ket (1, x 1, x 0) := by
@@ -175,19 +181,19 @@ example : √((2 : ℕ) / (1 / 2 : ℝ)) + √((1 : ℕ) * ((2 : ℕ) - 1)) / (1
 
 /-! ### Theorems 1.5 and Corollary 1.6: exact 4-query value-query sorter (`Fin 4 → Bool`) -/
 
-private def flipBitPerm : Bool → Equiv.Perm Bool
+def flipBitPerm : Bool → Equiv.Perm Bool
   | true => Equiv.swap false true
   | false => Equiv.refl Bool
 
-private noncomputable def stepBool : Bool → (EuclideanSpace ℂ Bool ≃ₗᵢ[ℂ] EuclideanSpace ℂ Bool) :=
+noncomputable def stepBool : Bool → (EuclideanSpace ℂ Bool ≃ₗᵢ[ℂ] EuclideanSpace ℂ Bool) :=
   permStep flipBitPerm
 
-private theorem stepBool_ket {inst : DecidableEq Bool} (a v : Bool) :
+theorem stepBool_ket {inst : DecidableEq Bool} (a v : Bool) :
     stepBool a (@ket Bool inst v) = @ket Bool inst (flipBitPerm a v) := by
   ext b
   cases a <;> cases v <;> cases b <;> simp [stepBool, permStep_apply, flipBitPerm, ket_apply]
 
-private theorem stepBool_rel_involutive (φ : EuclideanSpace ℂ Bool) :
+theorem stepBool_rel_involutive (φ : EuclideanSpace ℂ Bool) :
     ((stepBool false).symm.trans (stepBool true))
       (((stepBool false).symm.trans (stepBool true)) φ) = φ := by
   ext b
@@ -195,7 +201,7 @@ private theorem stepBool_rel_involutive (φ : EuclideanSpace ℂ Bool) :
     LinearIsometryEquiv.piLpCongrLeft_symm, LinearIsometryEquiv.piLpCongrLeft_apply, flipBitPerm]
   cases b <;> simp
 
-private def swapBit4 (t : Fin 4) : Equiv.Perm (Fin 4 × Bool × (Fin 4 → Bool)) where
+def swapBit4 (t : Fin 4) : Equiv.Perm (Fin 4 × Bool × (Fin 4 → Bool)) where
   toFun | (i, b, w) => if i = t then (t, w t, Function.update w t b) else (i, b, w)
   invFun | (i, b, w) => if i = t then (t, w t, Function.update w t b) else (i, b, w)
   left_inv q := by
@@ -215,21 +221,21 @@ private def swapBit4 (t : Fin 4) : Equiv.Perm (Fin 4 × Bool × (Fin 4 → Bool)
       by_cases hj : j = i <;> simp [hj, Function.update]
     · simp [h]
 
-private def stagePerm4 : ℕ → Equiv.Perm (Fin 4 × Bool × (Fin 4 → Bool))
+def stagePerm4 : ℕ → Equiv.Perm (Fin 4 × Bool × (Fin 4 → Bool))
   | 1 => ((Equiv.swap (0 : Fin 4) 1).prodCongr (Equiv.refl _)) * swapBit4 0
   | 2 => ((Equiv.swap (1 : Fin 4) 2).prodCongr (Equiv.refl _)) * swapBit4 1
   | 3 => ((Equiv.swap (2 : Fin 4) 3).prodCongr (Equiv.refl _)) * swapBit4 2
   | 4 => swapBit4 3
   | _ => 1
 
-private noncomputable def readAll4 :
+noncomputable def readAll4 :
     ℕ → ValueState (Fin 4) Bool (Fin 4 → Bool) →ₗᵢ[ℂ] ValueState (Fin 4) Bool (Fin 4 → Bool) :=
   fun t => (LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ (stagePerm4 t)).toLinearIsometry
 
-private noncomputable def initAll4 : ValueState (Fin 4) Bool (Fin 4 → Bool) :=
+noncomputable def initAll4 : ValueState (Fin 4) Bool (Fin 4 → Bool) :=
   ket (0, false, fun _ => false)
 
-private theorem valueOracle_stepBool_ket (X : Fin 4 → Bool) (i : Fin 4) (b : Bool)
+theorem valueOracle_stepBool_ket (X : Fin 4 → Bool) (i : Fin 4) (b : Bool)
     (w : Fin 4 → Bool) :
     valueOracle stepBool X (ket (i, b, w)) = ket (i, b ^^ X i, w) := by
   ext ⟨i', b', w'⟩
@@ -242,12 +248,12 @@ private theorem valueOracle_stepBool_ket (X : Fin 4 → Bool) (i : Fin 4) (b : B
   · simp [valueOracle_apply, stepBool, permStep_apply, ket_apply, hi, hw]
   · simp [valueOracle_apply, stepBool, permStep_apply, ket_apply, hi, hw]
 
-private theorem piLpCongrLeft_ket {γ : Type*} [Fintype γ] [DecidableEq γ] (p : Equiv.Perm γ)
+theorem piLpCongrLeft_ket {γ : Type*} [Fintype γ] [DecidableEq γ] (p : Equiv.Perm γ)
     (q : γ) : LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ p (ket q) = ket (p q) := by
   ext q'
   simp [LinearIsometryEquiv.piLpCongrLeft_apply, ket_apply, Equiv.symm_apply_eq]
 
-private theorem run_readAll4 (X : Fin 4 → Bool) :
+theorem run_readAll4 (X : Fin 4 → Bool) :
     runValue stepBool readAll4 initAll4 X 4 = ket (3, false, X) := by
   rw [runValue, runValue, runValue, runValue, runValue]
   dsimp only [initAll4, readAll4]
@@ -274,10 +280,10 @@ private theorem run_readAll4 (X : Fin 4 → Bool) :
   ext j
   fin_cases j <;> simp [Function.update]
 
-private def out4 : Fin 4 × Bool × (Fin 4 → Bool) → Bool :=
+def out4 : Fin 4 × Bool × (Fin 4 → Bool) → Bool :=
   fun (_, _, w) => decide (3 ≤ #{i : Fin 4 | w i = true})
 
-private theorem card_bool_part {ι : Type*} [Fintype ι] (X : ι → Bool) :
+theorem card_bool_part {ι : Type*} [Fintype ι] (X : ι → Bool) :
     #{i : ι | X i = false} + #{i : ι | X i = true} = Fintype.card ι := by
   have hs := card_filter_add_card_filter_not (s := (univ : Finset ι)) (fun i => X i = true)
   simp only [card_univ] at hs
@@ -285,7 +291,7 @@ private theorem card_bool_part {ι : Type*} [Fintype ι] (X : ι → Bool) :
     congrArg card (filter_congr fun i _ => by cases X i <;> simp)
   omega
 
-private theorem out4_isKthSmallest (X : Fin 4 → Bool) :
+theorem out4_isKthSmallest (X : Fin 4 → Bool) :
     IsKthSmallest X 2 (out4 (3, false, X)) := by
   have hpart := card_bool_part X
   simp only [Fintype.card_fin] at hpart
@@ -309,11 +315,11 @@ private theorem out4_isKthSmallest (X : Fin 4 → Bool) :
         congrArg card (filter_congr fun i _ => by cases X i <;> simp)
       omega
 
-private theorem out4_isApproxKthSmallest (X : Fin 4 → Bool) :
+theorem out4_isApproxKthSmallest (X : Fin 4 → Bool) :
     IsApproxKthSmallest X 2 1 (out4 (3, false, X)) :=
   ⟨2, by omega, by simp, by norm_num, by norm_num, out4_isKthSmallest X⟩
 
-private theorem out4_isApproxMedian (X : Fin 4 → Bool) :
+theorem out4_isApproxMedian (X : Fin 4 → Bool) :
     IsApproxMedian X (1 / 3) (out4 (3, false, X)) := by
   have hpart := card_bool_part X
   simp only [Fintype.card_fin] at hpart
@@ -343,7 +349,7 @@ private theorem out4_isApproxMedian (X : Fin 4 → Bool) :
     rw [h1, Nat.cast_zero]
     constructor <;> linarith
 
-private theorem readAll4_kthSmallest_good (X : Fin 4 → Bool) :
+theorem readAll4_kthSmallest_good (X : Fin 4 → Bool) :
     1 - (1 / 3 : ℝ) ≤ (open Classical in
       measureProb (runValue stepBool readAll4 initAll4 X 4)
         (univ.filter fun p => IsApproxKthSmallest X 2 1 (out4 p))) := by
@@ -353,7 +359,7 @@ private theorem readAll4_kthSmallest_good (X : Fin 4 → Bool) :
   · norm_num
   · exact absurd (by rw [mem_filter]; exact ⟨mem_univ _, out4_isApproxKthSmallest X⟩) hmem
 
-private theorem readAll4_median_good (X : Fin 4 → Bool) :
+theorem readAll4_median_good (X : Fin 4 → Bool) :
     1 - (1 / 3 : ℝ) ≤ (open Classical in
       measureProb (runValue stepBool readAll4 initAll4 X 4)
         (univ.filter fun p => IsApproxMedian X (1 / 3) (out4 p))) := by
@@ -391,10 +397,10 @@ example : min (1 / (1 / 3 : ℝ)) (Fintype.card (Fin 4)) ≤ 216 * 4 :=
 
 /-! ### Index-returning `0`-query vs `1`-query witness at `n = 3, δ = 1 / 3` -/
 
-private noncomputable def unif3Init : ValueState (Fin 3) Bool Unit :=
+noncomputable def unif3Init : ValueState (Fin 3) Bool Unit :=
   ((1 / Real.sqrt 3 : ℝ) : ℂ) • ∑ i : Fin 3, ket (i, false, ())
 
-private theorem norm_unif3Init : ‖unif3Init‖ = 1 := by
+theorem norm_unif3Init : ‖unif3Init‖ = 1 := by
   have hsum : ‖∑ i : Fin 3, (ket (i, false, ()) : ValueState (Fin 3) Bool Unit)‖ = Real.sqrt 3 := by
     have hsq : ‖∑ i : Fin 3, (ket (i, false, ()) : ValueState (Fin 3) Bool Unit)‖ ^ 2 = 3 := by
       rw [EuclideanSpace.norm_sq_eq]
@@ -413,11 +419,11 @@ private theorem norm_unif3Init : ‖unif3Init‖ = 1 := by
   rw [unif3Init, norm_smul, Complex.norm_real, hsum, Real.norm_of_nonneg (by positivity),
     one_div_mul_cancel (by positivity)]
 
-private noncomputable def zeroQueryAlg :
+noncomputable def zeroQueryAlg :
     ℕ → ValueState (Fin 3) Bool Unit →ₗᵢ[ℂ] ValueState (Fin 3) Bool Unit :=
   fun _ => LinearIsometry.id
 
-private theorem zeroQuery_median_good (X : Fin 3 → Bool) :
+theorem zeroQuery_median_good (X : Fin 3 → Bool) :
     1 - (1 / 3 : ℝ) ≤ (open Classical in
       measureProb (runValue stepBool zeroQueryAlg unif3Init X 0)
         (univ.filter fun p : Fin 3 × Bool × Unit => IsApproxMedian X (1 / 3) (X p.1))) := by
@@ -493,4 +499,6 @@ example : min (1 / (1 / 3 : ℝ)) (Fintype.card (Fin 3)) ≤ 432 * ((0 : ℕ) + 
     zeroQueryAlg norm_unif3Init 0 (fun p => p.1) (δ := 1 / 3) (by simp) (by norm_num)
     (by norm_num) (fun X _ => zeroQuery_median_good X)
 
+
+end
 end CslibFrontierTests.QuantumNayakWu

@@ -83,6 +83,12 @@ Import [StatisticalDistance/Event.lean](../../CslibFrontier/Probability/Statisti
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
 over a finite type, active after `open scoped Cslib.Probability.PMF`. It uses the half-L1
 convention: distinct point masses have distance `1`, half of Mathlib's `tvDist` above.
+[StatisticalDistance/TotalVariation.lean](../../CslibFrontier/Probability/StatisticalDistance/TotalVariation.lean)
+connects the three notions: `dist_eq_tvDist_toMeasure_div_two` converts `dist` to `tvDist`,
+`closeTo_coe_iff_dist_le` states that the all-event `CloseTo μ ν ε` is exactly `dist μ ν ≤ ε`, and
+`closeTo_iff_etvDist_le` states that it is exactly a total variation bound `2 * ε`, also on
+infinite types with measurable singletons. The real-valued form `closeTo_ofReal_iff_tvDist_le`
+needs `0 ≤ ε`: a negative error becomes `0` under `ENNReal.ofReal`.
 `abs_toOuterMeasure_toReal_sub_le_dist p q E` bounds `|Pr_p[E] − Pr_q[E]|` by `dist p q`;
 `abs_bind_apply_toReal_sub_le_dist p q T b` does the same for the probability that a randomized
 distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchanged under an
@@ -367,27 +373,27 @@ tensorization and comparison inequalities ([Tsybakov, Section 2.4](../sources.md
 
 - **Bhattacharyya coefficient and Hellinger distance.** Import
   [Hellinger.lean](../../CslibFrontier/Probability/Hellinger.lean). The definitions
-  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L134)
+  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L135)
   (`∑' a, √((p a).toReal * (q a).toReal) ∈ [0, 1]`),
-  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L138) (`1 - bhattacharyya p q`),
-  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L142)
+  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L139) (`1 - bhattacharyya p q`),
+  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L143)
   (`√(hellingerSq p q) ∈ [0, 1]`)—along with their symmetry, `[0, 1]` bounds, and definiteness
   (`= 0 ↔ p = q`)—apply to any `PMF α`, while the theorem API below assumes finite types
   `[Finite α]` / `[Fintype α]`. No competing `MetricSpace (PMF α)` instance is registered because
   `Cslib.Probability.PMF` already uses that slot for half-`L¹` `dist`;
-  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L305) supplies the
+  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L306) supplies the
   metric triangle inequality directly.
 - **Total-variation comparison and `n`-fold i.i.d. tensorization (finite types).**
-  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L346) and
-  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L399) give
+  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L347) and
+  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L400) give
   `h²(p, q) ≤ dist p q ≤ √2 * h(p, q)` (with `tvDist` corollaries on `toMeasure`).
-  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L427) and
-  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L445) prove multiplicative
+  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L428) and
+  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L446) prove multiplicative
   tensorization, yielding the sample-complexity acceptance bound
-  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L498):
+  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L499):
   `dist (iid p n) (iid q n) ≤ √(2 * n) * hellingerDist p q`. Markov kernel and map data
-  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L577) and
-  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L596).
+  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L578) and
+  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L597).
 - **Pearson `χ²` divergence and Ingster / Le Cam mixture bounds (finite types).** Import
   [ChiSquare.lean](../../CslibFrontier/Probability/ChiSquare.lean).
   [`echiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L142) (`ℝ≥0∞`-valued
@@ -1478,7 +1484,7 @@ provides it for every seed, while the simple split map needs real keys of length
 The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
 postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
 
-When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the IND-CCA bound `Scheme.indCcaRomAdvantage_le` from IND-CPA security, `δ`-correctness and `γ`-spreadness is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
+When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the IND-CCA bound `Scheme.indCcaRomAdvantage_le` from IND-CPA security, `δ`-correctness and `γ`-spreadness is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`Scheme.roIndCcaBotGame`, `Scheme.indCcaBotAdvantage_le`) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)) prove the corresponding ROM IND-CCA bound for explicit-rejection `FO^⊥ = U^⊥ ∘ T` and the necessity of its `qD · 2^{-γ}` spreadness term, and [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
 
 ## Certify a list accumulator
 
@@ -1830,7 +1836,16 @@ two-endpoint counterexample to dropping width.
 
 [ReserveOutput](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/ReserveOutput.lean)
 assembles the actual finite output from explicit lower-child conditional-error-cost fourth
-moments. `actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
+moments. Its finite geometric, routing and cutoff hypotheses are the documented fields of
+`ReserveOutputContext`; `ReserveOutputChildren` contains the independently supplied raw,
+preparation and maximum families. Their shared
+[OutputContext](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/OutputContext.lean)
+module gives named constructions `amplification`, `tolerance`, `rawSteps`, `prepSteps`,
+`rawWalk`, `prepWalk`, `cost` and `increment`. The records are supplied after the output
+constant is selected: `Cbound` depends on HP, ζ, scale and the positive floor, before P,
+J, the prime instance, horizon, prefix length or child families. These names preserve the
+finite terms and their explicit losses; they do not bundle the output guarantee.
+`actualEstimatedResidual_output_from_cost_reserves` derives common deterministic B
 matrices by finite maxima of the actual first/B1 envelopes divided by `2^dyadicSlack`.
 The first payment uses absolute mean error over `rate kt + G`; the second retains
 `A = P * (|ζ| * (Lh + Lρ) / rate kt)^4`. At horizon m its uniform child-cost reserve is
@@ -1842,8 +1857,9 @@ RAW steps are the maximum of the actual first-noise requirement and the fully am
 by `genuineNormalizedRecipe_eq_request`; capacities are actually `(K+1)*2^(64*slack)`.
 The theorem derives nonnegativity, row mass and zero extension, with finite cover,
 narrower-source horizon, gate/cutoff/cap and routing agreements still explicit.
-The [new regressions](../../CslibFrontierTests/ReserveOutput.lean) evaluate a positive,
-nonconstant full-matrix input with a free spectator, show the once-negative arithmetic,
+The [regressions](../../CslibFrontierTests/ReserveOutput.lean) construct an inhabited shared
+context with two bins and distinct full/usage exponents, evaluate a positive nonconstant
+full-matrix input with a free spectator, show the once-negative arithmetic,
 compute nonzero common B and check the actual completed prefix at index zero.
 The bounded fixture does not assert the canonical routed-bin mean or recursive reserves.
 A separate actual lower-child conditional-cost client proves that the finite reserve is
@@ -1893,8 +1909,10 @@ alone does not provide an absolute residual error.
 For a coarser source, `source_incoming_cost_le` quantifies the generic incoming cost as
 `32 * R * (sourceRate / stageRate)`; the fixed incoming rank is not proved to pay that
 inflated budget. Arbitrary coarser sampling sources, a fully assembled recursive hierarchy,
-lower-child budget induction, native realization and RL=L remain in
-[issue #1721](https://github.com/cslib-community/cslib-frontier/issues/1721).
+lower-child budget induction, native realization and RL=L remain unproved by this API.
+The scope and status of this route are recorded in
+[issue #1721](https://github.com/cslib-community/cslib-frontier/issues/1721); the shared-context
+extraction maintains its existing finite results and does not resume the dropped route.
 
 ## Extract an emitted pseudorandom prefix
 

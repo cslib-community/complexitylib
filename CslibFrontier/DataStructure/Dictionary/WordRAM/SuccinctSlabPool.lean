@@ -320,6 +320,34 @@ theorem realizes_gmPushSlabGen :
       (WordEncoding.encode (α := DictParams × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
       GmPushSlabGenPre
       (fun _ _ => 0) := by
+  -- Retain shared argument stages: the inline-argument proof exceeds the default budget.
+  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
+      let q_idx ← pure (4 + 3 * d.2.2)
+      let q_b ← readGMGenProg (d.1, (d.2.1, q_idx))
+      let i0 ← pure 0
+      let p_new ← readGMGenProg (d.1, (d.2.1, i0))
+      let top_idx ← pure (4 + 3 * d.2.2 + 2)
+      let top_old ← readGMGenProg (d.1, (d.2.1, top_idx))
+      let ownB_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_new)
+      writeGMGenProg (d.1, ((d.2.1, ownB_idx), d.2.2))
+      let ownS_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_new + 1)
+      writeGMGenProg (d.1, ((d.2.1, ownS_idx), q_b))
+      let bel_idx ← pure (dpGmSlabMetaBase d.1 + 4 * p_new + 2)
+      writeGMGenProg (d.1, ((d.2.1, bel_idx), top_old))
+      (if i0 < q_b then do
+        let abv_idx ← pure (dpGmSlabMetaBase d.1 + 4 * top_old + 3)
+        writeGMGenProg (d.1, ((d.2.1, abv_idx), p_new))
+      else pure ()) >>= fun _ => do
+      (if q_b < dpDirSlabs d.1 then do
+        let dir_idx ← pure (dpGmSlabDirBase d.1 + d.2.2 * dpDirSlabs d.1 + q_b)
+        writeGMGenProg (d.1, ((d.2.1, dir_idx), p_new))
+      else pure ()) >>= fun _ => do
+      writeGMGenProg (d.1, ((d.2.1, top_idx), p_new))
+      let q_next ← pure (q_b + 1)
+      writeGMGenProg (d.1, ((d.2.1, q_idx), q_next))
+      let p_next ← pure (p_new + 1)
+      writeGMGenProg (d.1, ((d.2.1, i0), p_next))) ?_
+    (fun d => by simp only [gmPushSlabGenProg, pure_bind])
   realizeDictWith [gmPushSlabGenPre_mk] using [realizes_readGMGen, realizes_writeGMGen]
   all_goals
     obtain ⟨hdict, hslab, hb, hp_lt, hb_pos⟩ := h

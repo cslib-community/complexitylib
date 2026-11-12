@@ -27,7 +27,9 @@ positions of one block takes that block from the first tuple and every other blo
 
 * `Cslib.BitString.block`: the `i`-th block of `k` entries of a tuple of `m * k` entries.
 * `Cslib.BitString.blocksEquiv`: cutting a tuple into its blocks; its inverse reads entry `p` of
-  the tuple in its block (`BitString.blocksEquiv_symm_apply`).
+  the tuple in its block (`BitString.blocksEquiv_symm_apply`). The simp lemmas
+  `BitString.block_blocksEquiv_symm` and `BitString.blocksEquiv_symm_block` state the two inverse
+  laws with `block`.
 * `Cslib.BitString.blockBits`: the positions of the entries of a block.
 * `Cslib.BitString.listBlock`: a block of a list (`BitString.listBlock_ofFn`,
   `BitString.listBlock_flatMap`).
@@ -78,6 +80,11 @@ def blocksEquiv : (Fin (m * k) → α) ≃ (Fin m → Fin k → α) where
 @[simp] theorem block_blocksEquiv_symm (z : Fin m → Fin k → α) :
     block (blocksEquiv.symm z) = z :=
   blocksEquiv.apply_symm_apply z
+
+/-- Concatenating the blocks of a tuple recovers it. `Equiv.symm_apply_apply` does not fire after
+`blocksEquiv_apply` has rewritten `blocksEquiv x` to `block x`. -/
+@[simp] theorem blocksEquiv_symm_block (x : Fin (m * k) → α) : blocksEquiv.symm (block x) = x :=
+  blocksEquiv.symm_apply_apply x
 
 /-- The positions of the bits of the `i`-th block of `k` bits. -/
 def blockBits (k : ℕ) (i : Fin m) : Finset (Fin (m * k)) :=

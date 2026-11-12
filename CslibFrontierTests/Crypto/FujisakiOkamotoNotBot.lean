@@ -22,7 +22,7 @@ Exercises `Scheme.indCcaRomAdvantage_le` on two concrete schemes:
    bound `indCcaRomAdvantage ≤ 3 / 8`.
 -/
 
-public section
+@[expose] public section
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.FujisakiOkamoto
 open Cslib.Probability
@@ -122,9 +122,11 @@ theorem eval_romCpaReduction_probeZeroKeyAdv (m₀ m₁ : Fin 16) (pk : Unit)
     (cStar : Fin 16 × Fin 16) :
     ProbComp.eval (pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁ pk cStar) =
       PMF.pure (decide (m₁ = 0)) := by
-  simp only [Scheme.romCpaReduction, probeZeroKeyAdv, Scheme.simHandler, Scheme.simHashH,
-    OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
-    StateT.run_bind, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_pure]
+  simp only [Scheme.romCpaReduction, Scheme.romFilterCpaReduction, probeZeroKeyAdv,
+    Scheme.simFilterHandler, Scheme.simFilterDispatch,
+    Scheme.simHashH, OracleComp.interpret_bind, OracleComp.interpret_query,
+    OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure, ProbComp.eval_bind,
+    ProbComp.eval_pure]
   refine (PMF.bind_congr_on_support _ _ (fun _ => PMF.pure (decide (m₁ = 0)))
     fun kStar _ => ?_).trans (PMF.bind_const _ _)
   simp only [PMF.bind_bind]

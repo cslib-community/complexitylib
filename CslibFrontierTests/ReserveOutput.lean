@@ -1,10 +1,11 @@
 /-
 Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 module
 -- upstream: local-only (tests of common envelopes and actual finite reserve output)
+import CslibFrontier.Computability.LogSpaceDerandomization.NormalizedAtomRows.CommonEnvelope
 import CslibFrontier.Computability.LogSpaceDerandomization.NormalizedAtomRows.ReserveOutput
 
 /-! Actual full-matrix two-bin input, nonzero common envelopes and empty prefixes. -/
@@ -35,6 +36,11 @@ private def prep (HP : FourthRootHierarchyParams 16 1 16 32 8)
 private def maximum (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (_precision _bin : ℕ) (_r : HierarchyTask.Request HP.k (Fin 4) (ZMod 5))
     (_σ : Environment 5 4) : ZMod 5 → ℝ := fun _ => 0
+
+-- The same nonconstant families are supplied through the public child-family record.
+private def children (HP : FourthRootHierarchyParams 16 1 16 32 8) :
+    ReserveOutputChildren HP 5 4 :=
+  ⟨estimates HP, prep HP, maximum HP⟩
 
 private def fixtureCutoff (i : ℕ) (d : ℝ) : ℝ := min 4 (max 0 ((i + 1) * d))
 
@@ -107,7 +113,8 @@ private theorem actual_positive_child (HP : FourthRootHierarchyParams 16 1 16 32
 
 private def input (HP : FourthRootHierarchyParams 16 1 16 32 8) (precision : ℕ) :=
   estimatedResidualInput HP 1 id roles 0 0 0 0 1 [1] [2, 3] [4]
-    (fun _ => 0) 6 fixtureCutoff (estimates HP) (prep HP) (maximum HP) precision
+    (fun _ => 0) 6 fixtureCutoff (children HP).raw (children HP).prep
+      (children HP).maximum precision
 
 -- The finite scalar fixture is globally bounded; the routed-bin noise client below
 -- uses the genuine top/fine recipes. Summing over five midpoints gives each positive
@@ -117,7 +124,7 @@ private theorem input_eq (HP : FourthRootHierarchyParams 16 1 16 32 8)
     (precision : ℕ) (σ : Environment 5 4) :
     input HP precision σ 0 0 = 3 * value σ + HP.Q 1 * (15 * value σ - 1) := by
   have hs : side 5 0 = 5 := by norm_num [side]
-  simp only [input, estimatedResidualInput, HierarchyTask.rawPositiveSample,
+  simp only [input, children, estimatedResidualInput, HierarchyTask.rawPositiveSample,
     HierarchyTask.rawNegativeSample, HierarchyTask.rawRequests,
     HierarchyTask.correctionAtomTask_last HP.k_pos]
   dsimp only [roles]
@@ -215,7 +222,7 @@ private def actualCost (HP : FourthRootHierarchyParams 16 1 16 32 8) :
   let cutoff := fun i => routedBinCutoff χ (fun _ => rate 0) i (fun _ => 1)
   let bounded := fun i => boundedRoutedBinCutoff χ (fun _ => rate 0) 4 i (fun _ => 1)
   let estimated := fun i σ r => incomingChildren HP 1 id 6 (bounded i)
-    (estimates HP 1 i) (prep HP 1 i) (maximum HP 1 i) r σ
+    ((children HP).raw 1 i) ((children HP).prep 1 i) ((children HP).maximum 1 i) r σ
   let canonical := fun i σ r => canonicalRequestChild HP 1 id (fun _ _ => 0)
     (cutoff i) (fun _ => 1) (fun _ => 1) 66 r σ
   rowSliceMean (retainedMask roles.source (side 5 0) 1 [1])
@@ -252,5 +259,74 @@ example (HP : FourthRootHierarchyParams 16 1 16 32 8) {amplification : ℝ}
     dsimp only [t]
     nlinarith [mul_nonneg hM ha, sq_nonneg M, sq_nonneg amplification]
   exact this.trans ht4
+
+-- Every finite-context assumption is inhabited for the existing regular hierarchy. The fixture
+-- has two bins, a positive prefix horizon and a usage mask narrower than its full terminal rank.
+example : ∃ (HP : FourthRootHierarchyParams 16 1 16 32 8)
+    (ctx : ReserveOutputContext HP 5 4),
+      ctx.sourceExponent = 0 ∧ ctx.usageExponent = 1 ∧ ctx.prefixLength = 1 ∧
+      ctx.tolerance 2 = 1 / 2 := by
+  obtain ⟨HP⟩ := FourthRootHierarchyParams.nonempty
+    (by norm_num : (0 : ℝ) < 16) (by norm_num : (0 : ℝ) < 1)
+  obtain ⟨Lh, Lρ, hLh, hLρ, hh, hρ⟩ := preparation_stability_constants HP
+  let ctx : ReserveOutputContext HP 5 4 := {
+    direction := 1
+    direction_ne_zero := by decide
+    horizon := ⟨0, 4, by decide, by decide⟩
+    roles := roles
+    level := 0
+    sourceExponent := 0
+    midpointExponent := 0
+    terminalExponent := 0
+    lastBin := 1
+    source_in_horizon := le_rfl
+    midpoint_le_source := le_rfl
+    sourceSuffix := [1]
+    midpointSuffix := [2, 3]
+    terminalSuffix := [4]
+    binExponent := fun _ => 0
+    bins_in_horizon := by intros; exact le_rfl
+    kernel := fun _ _ => 0
+    kernel_nonneg := by intros; exact le_rfl
+    kernel_row_mass := by intro x; simp [Matrix.mulVec]
+    kernel_rate := by intros; exact (rate_pos 0).le
+    binCutoff := polynomialSwitch4 (1 / 2) 1
+    cutoff_one := fun _ hv => polynomialSwitch4_of_ge (by norm_num) hv
+    preparationCutoff := fun _ _ => 1
+    requestGate := fun _ => 1
+    requestRank := 66
+    preparation_one := by intros; rfl
+    requestGate_nonneg := by intros; norm_num
+    requestGate_le_one := by intros; exact le_rfl
+    gateThreshold := 1
+    gateThreshold_pos := by norm_num
+    gate_one := by intros; rfl
+    rank_bound := by norm_num
+    cutoff_monotone := monotone_polynomialSwitch4 (by norm_num)
+    cutoff_zero := fun _ hv => polynomialSwitch4_of_le (by norm_num) hv
+    cutoff_range := fun v =>
+      ⟨polynomialSwitch4_nonneg _ _ v, polynomialSwitch4_le_one _ _ v⟩
+    rates_antitone := by
+      intro i j hij
+      exact (le_rfl : rate 0 ≤ rate 0)
+    rate_ratio := by intro i; norm_num [rate]
+    densityCap := 0
+    densityCap_nonneg := le_rfl
+    kernel_cap := by intros; simp
+    correctionRank := 6
+    kernel_cover := by intros; exact Or.inl rfl
+    usageExponent := 1
+    terminal_le_usage := by decide
+    terminal_in_horizon := le_rfl
+    preparationLipschitz := Lh
+    gateLipschitz := Lρ
+    preparationLipschitz_nonneg := hLh
+    gateLipschitz_nonneg := hLρ
+    preparation_lipschitz := hh
+    gate_lipschitz := hρ
+    prefixLength := 1
+    prefixLength_pos := by decide }
+  refine ⟨HP, ctx, rfl, rfl, rfl, ?_⟩
+  norm_num [ReserveOutputContext.tolerance, ctx]
 
 end ReserveOutputRegression

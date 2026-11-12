@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Interactive.Security.Oracle
-import CslibFrontier.Crypto.Game.CloseTo.Statistical
+import CslibFrontier.Probability.StatisticalDistance.TotalVariation
 import CslibFrontier.Foundations.Control.Monad.Memoize
 
 /-!

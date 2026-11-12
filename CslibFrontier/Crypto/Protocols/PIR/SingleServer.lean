@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Protocols.PIR.Basic
+public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 
 /-!
 # Single-server private information retrieval
@@ -19,11 +19,9 @@ private one-server scheme has some query `q` on which the answer map `x ↦ answ
 (`Scheme.card_le_communication`). Downloading the database (`PIR.download`) attains the bound, so
 `HasScheme ι 1 c` holds exactly when `|ι| ≤ c` (`PIR.hasScheme_one_iff`).
 
-This is the one-round case of [Chor, Goldreich, Kushilevitz and Sudan,
-Section 5.1][ChorGoldreichKushilevitzSudan1998], whose argument also covers interactive protocols;
-`PIR.Interactive` proves the interactive case. The proof adapts theirs to one round. By privacy, a
-query that the user can send for one index can be sent for every index; on that query the user must
-recover every bit of the database from the one answer.
+This is the one-round `k = 1` specialization of the full-coalition lower bound in `PIR.Collusion`,
+formalizing the one-round case of [Chor, Goldreich, Kushilevitz and Sudan,
+Section 5.1][ChorGoldreichKushilevitzSudan1998] (`PIR.Interactive` proves the interactive case).
 
 ## Main definitions
 
@@ -49,37 +47,29 @@ public section
 
 namespace Cslib.Crypto.Protocols.PIR
 
-open Probability
-
 namespace Scheme
 
-variable {ι S R Q A : Type} {P : Scheme ι S R Q A}
+variable {ι S R Q A β : Type}
 
 /-- **One server must send the database.** In a perfectly correct and perfectly private scheme
 with one server, some query `q` makes the answer map `x ↦ P.answer default x q` injective
-[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. -/
-theorem exists_injective_answer [Unique S] [Nonempty ι] (hcorrect : P.IsCorrect)
-    (hprivate : P.IsPrivate) : ∃ q : Q, Function.Injective fun x => P.answer default x q := by
-  obtain ⟨i₀⟩ := ‹Nonempty ι›
-  obtain ⟨⟨r₀, q₀⟩, h₀⟩ := (ProbComp.eval (P.query i₀)).support_nonempty
-  refine ⟨q₀ default, fun x y hxy => funext fun i => ?_⟩
-  -- By privacy, the query `q₀ default` can also be sent for the index `i`.
-  have hq : q₀ default ∈ (ProbComp.eval (P.serverQuery default i)).support := by
-    rw [hprivate.eval_serverQuery_eq default i i₀, P.eval_serverQuery]
-    exact (PMF.mem_support_map_iff _ _ _).2 ⟨_, h₀, rfl⟩
-  rw [P.eval_serverQuery] at hq
-  obtain ⟨⟨r, q⟩, hrq, hq⟩ := (PMF.mem_support_map_iff _ _ _).1 hq
-  change q default = q₀ default at hq
-  have hanswers : (fun s => P.answer s x (q s)) = fun s => P.answer s y (q s) := by
-    funext s
-    rw [Subsingleton.elim s default, hq]
-    exact hxy
-  rw [← hcorrect.reconstruct_eq x i hrq, ← hcorrect.reconstruct_eq y i hrq, hanswers]
+[CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]. Derived as the `|S| = 1`, `t = 1` case of
+`Scheme.exists_injective_answers_of_card_le`. -/
+theorem exists_injective_answer {P : Scheme ι S R Q A β} [Unique S] [Nonempty ι]
+    (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
+    ∃ q : Q, Function.Injective fun x => P.answer default x q := by
+  let _ : Fintype S := Unique.fintype
+  obtain ⟨q, hq⟩ := P.exists_injective_answers_of_card_le hcorrect
+    (P.isTPrivate_one_iff.mpr hprivate) (by simp [Fintype.card_unique])
+  refine ⟨q default, fun x y hxy => hq (funext fun s => ?_)⟩
+  rw [Subsingleton.elim s default]
+  exact hxy
 
 /-- A perfectly correct and perfectly private one-server scheme for `n`-bit databases has at least
 `2 ^ n` answers. -/
-theorem two_pow_card_le_card_answer [Unique S] [Nonempty ι] [Fintype ι] [Fintype A]
-    (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) : 2 ^ Fintype.card ι ≤ Fintype.card A := by
+theorem two_pow_card_le_card_answer {P : Scheme ι S R Q A} [Unique S] [Nonempty ι] [Fintype ι]
+    [Fintype A] (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
+    2 ^ Fintype.card ι ≤ Fintype.card A := by
   classical
   obtain ⟨q, hq⟩ := exists_injective_answer hcorrect hprivate
   have h := Fintype.card_le_of_injective _ hq
@@ -88,36 +78,26 @@ theorem two_pow_card_le_card_answer [Unique S] [Nonempty ι] [Fintype ι] [Finty
 /-- **A perfectly correct and perfectly private one-server scheme for `n`-bit databases
 communicates at least `n` bits** [CGKS, Section 5.1][ChorGoldreichKushilevitzSudan1998]; the
 answer alone has at least `n` bits. -/
-theorem card_le_communication [Fintype S] [Unique S] [Fintype ι] [Fintype Q] [Fintype A]
-    (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
-    Fintype.card ι ≤ communication S Q A := by
-  rcases isEmpty_or_nonempty ι with hι | hι
-  · rw [Fintype.card_eq_zero]
-    exact Nat.zero_le _
-  · have h := two_pow_card_le_card_answer hcorrect hprivate
-    have hA : Fintype.card ι ≤ Nat.clog 2 (Fintype.card A) := by
-      by_contra hlt
-      push Not at hlt
-      have := Nat.le_pow_clog (by norm_num : 1 < 2) (Fintype.card A)
-      have := Nat.pow_lt_pow_right (by norm_num : 1 < 2) hlt
-      omega
-    rw [communication_eq, Fintype.card_unique (α := S), one_mul]
-    omega
+theorem card_le_communication {P : Scheme ι S R Q A} [Fintype S] [Unique S] [Fintype ι]
+    [Fintype Q] [Fintype A] (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
+    Fintype.card ι ≤ communication S Q A :=
+  P.card_le_communication_of_card_le hcorrect (P.isTPrivate_one_iff.mpr hprivate)
+    (by simp [Fintype.card_unique])
 
 end Scheme
 
-/-- The trivial one-server scheme: the server sends the whole database and the user reads the bit
-it wants. -/
-def download (ι : Type) : Scheme ι Unit Unit Unit (ι → Bool) where
+/-- The trivial one-server scheme: the server sends the whole database `ι → β` and the user reads
+the entry it wants. -/
+def download (ι : Type) (β : Type := Bool) : Scheme ι Unit Unit Unit (ι → β) β where
   query _ := pure ((), fun _ => ())
   answer _ x _ := x
   reconstruct i _ a := a () i
 
-theorem isCorrect_download (ι : Type) : (download ι).IsCorrect :=
-  (download ι).isCorrect_iff.mpr fun _ _ _ _ _ => rfl
+theorem isCorrect_download (ι : Type) (β : Type := Bool) : (download ι β).IsCorrect :=
+  (download ι β).isCorrect_iff.mpr fun _ _ _ _ _ => rfl
 
-theorem isPrivate_download (ι : Type) : (download ι).IsPrivate :=
-  (download ι).isPrivate_iff.mpr fun _ _ _ => by
+theorem isPrivate_download (ι : Type) (β : Type := Bool) : (download ι β).IsPrivate :=
+  (download ι β).isPrivate_iff.mpr fun _ _ _ => by
     rw [Scheme.eval_serverQuery, Scheme.eval_serverQuery]
     rfl
 
@@ -129,10 +109,8 @@ theorem communication_download (ι : Type) [Fintype ι] [DecidableEq ι] :
 
 /-- One server needs at least `n` bits. -/
 theorem HasScheme.card_le {ι : Type} [Fintype ι] {c : ℕ} (h : HasScheme ι 1 c) :
-    Fintype.card ι ≤ c := by
-  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := hasScheme_iff.mp h
-  let : Unique S := (Fintype.card_eq_one_iff_nonempty_unique.mp hk).some
-  exact (P.card_le_communication hcorrect hprivate).trans hcomm
+    Fintype.card ι ≤ c :=
+  (hasTPrivateScheme_one_iff.mpr h).card_le_of_le le_rfl
 
 theorem hasScheme_download (ι : Type) [Fintype ι] : HasScheme ι 1 (Fintype.card ι) := by
   classical

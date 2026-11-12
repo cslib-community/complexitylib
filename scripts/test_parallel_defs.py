@@ -22,6 +22,15 @@ import parallel_defs as p  # noqa: E402
 TIERS = p.parse_tiers("200:0.3,120:0.6")
 
 
+class FreshnessTests(unittest.TestCase):
+    def test_uses_central_preflight_with_library_only_scope(self) -> None:
+        for current in (False, True):
+            with self.subTest(current=current), \
+                 mock.patch.object(p.lo, "lake_outputs_current", return_value=current) as probe:
+                self.assertEqual(p.outputs_current(), current)
+                probe.assert_called_once_with(("CslibFrontier",))
+
+
 def pair(a: str, b: str, size: int, sizes: tuple[int, int], am: str = "CslibFrontier.New",
          bm: str = "CslibFrontier.Old", private: bool = False, constants: tuple[str, ...] = ()
          ) -> dict:
