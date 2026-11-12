@@ -7,6 +7,11 @@ The table selects substantial results demonstrating how the models connect. It i
 
 The [native exact-counting chapter](native-counting.md) separately treats the fixed-width CNF counter and its SAT/ETH/SETH consequences, including the primary-manuscript mapping and the scope of this review.
 
+The [Arora–Barak draft chapters 1–5 audit](../../results/arora-barak-2007.md#chapter-1-the-computational-model)
+compares the computational-model, NP, hierarchy, space and alternation results at a recorded
+revision. It distinguishes exact native endpoints from missing tape-model conversions, general
+integer programming, prenex-QBF normalization, sharp time hierarchies and PH oracle equivalences.
+
 ## Completeness and containment map
 
 | Endpoint | Models connected | Exact formal boundary and source |
