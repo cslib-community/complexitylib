@@ -180,11 +180,28 @@ theorem sum_ridge_steps (κ : ℤ) {u L : ℕ} (h : (u + 1) / 2 ≤ L) :
   rw [hd]
   ring
 
-/-- A gated staircase step: with `t < B`, the gate `[B + k ≤ t + B x]` (`k ≥ 1`) is
-`x ∧ [k ≤ t]`. -/
-theorem decide_big_le_add_mul {B t k : ℤ} (x : Bool) (hk : 1 ≤ k) (htB : t < B) :
-    decide (B + k ≤ t + B * x.toNat) = (x && decide (k ≤ t)) := by
-  cases x <;> simp <;> omega
+/-- **Gated staircase count.** Let `t < B` and `q ≤ L`, and let the levels `lev j ≥ 1` satisfy
+`lev j ≤ t ↔ j + 1 ≤ q`. Then the gates `[B + lev j ≤ t + B x]`, `j < L`, count `x · q`: they are
+all off when `x = false`, and when `x = true` exactly the first `q` of them are on. -/
+theorem sum_decide_big_le_add_mul {B t : ℤ} (x : Bool) {q L : ℕ} (lev : ℕ → ℤ)
+    (hlev : ∀ j, 1 ≤ lev j) (htB : t < B) (hq : q ≤ L) (hiff : ∀ j, lev j ≤ t ↔ j + 1 ≤ q) :
+    ∑ j : Fin L, ((decide (B + lev j ≤ t + B * x.toNat)).toNat : ℝ) = x.toNat * q := by
+  have hstep (j : Fin L) :
+      decide (B + lev j ≤ t + B * x.toNat) = (x && decide (j.1 + 1 ≤ q)) := by
+    have h1 := hiff j
+    have h2 := hlev j
+    cases x
+    · simp only [Bool.toNat_false, Nat.cast_zero, mul_zero, add_zero, Bool.false_and,
+        decide_eq_false_iff_not, not_le]
+      omega
+    · simp only [Bool.toNat_true, Nat.cast_one, mul_one, Bool.true_and]
+      exact decide_eq_decide.mpr (by omega)
+  simp only [hstep]
+  cases x
+  · simp
+  · have h : ∑ j : Fin L, ((decide (j.1 + 1 ≤ q)).toNat : ℝ) = q := by
+      exact_mod_cast sum_decide_succ_le_nat hq
+    simpa using h
 
 /-! ### The bottom gates -/
 
@@ -216,7 +233,8 @@ def andreevSharpTable : AndreevSharpIndex b m → BitString b → ℤ
   | .inl ⟨S, _⟩ => fun c => 2 * andreevSharpMult b m c * (parityOn S c).toNat
   | .inr (.inl _) => fun c => 2 * andreevSharpMult b m c
   | .inr (.inr (.inl _)) => 0
-  | .inr (.inr (.inr (.inl (i, _)))) => fun c => if c = unitAddr i then andreevSharpBig b m else 0
+  | .inr (.inr (.inr (.inl (i, _)))) => fun c =>
+    if c = Pi.single i true then andreevSharpBig b m else 0
   | .inr (.inr (.inr (.inr _))) => fun c => if c = 0 then andreevSharpBig b m else 0
 
 /-- Block coefficients of the bottom gates; all lie in `{0, 1}`. -/
@@ -251,7 +269,7 @@ def andreevSharpTopWeight : AndreevSharpIndex b m → ℤ
 of the score. -/
 def andreevSharpTopTable (c : BitString b) : ℤ :=
   (if c = 0 then ((andreevSharpRange b m : ℤ) + 4) * 2 ^ b else -(4 * 2 ^ b)) +
-    if IsUnitAddr c then 2 * 2 ^ b * ((andreevSharpAmp m : ℤ) ^ 2 + 1) else 0
+    if IsSingle c then 2 * 2 ^ b * ((andreevSharpAmp m : ℤ) ^ 2 + 1) else 0
 
 /-- Top block coefficient: minus the affine block part `-2 α N σ` of the score. -/
 def andreevSharpTopBlock : ℤ :=
@@ -313,7 +331,7 @@ theorem andreevSharpForm_square (i : Fin b) (ℓ : Fin m) :
 
 theorem andreevSharpForm_product (i : Fin b) (ℓ : Fin m) :
     andreevSharpForm (.inr (.inr (.inr (.inl (i, ℓ))))) x s =
-      s i + andreevSharpBig b m * (x (unitAddr i)).toNat := by
+      s i + andreevSharpBig b m * (x (Pi.single i true)).toNat := by
   simp only [andreevSharpForm, andreevSharpTable, andreevSharpBlock, ite_mul,
     zero_mul, one_mul, sum_ite_eq', mem_univ, ite_true]
   ring
@@ -369,7 +387,7 @@ theorem two_mul_andreevSharpW_le (x : BitString b → Bool) {S : Finset (Fin b)}
       · subst hc
         simp [parityOn]
       · rfl
-    have hε := oddForm_spread (1 : Fin b → ℝ) S
+    have hε := oddForm_onSingles (1 : Fin b → ℝ) S
     simp only [oddForm, Pi.one_apply, sum_const, nsmul_eq_mul, mul_one] at hε
     rw [h0, hε]
   have : (2 * andreevSharpW b m x S : ℝ) ≤ 2 ^ b + 2 * andreevSharpAmp m * #S := by
@@ -459,27 +477,20 @@ theorem sum_topWeight_product (x : BitString b → Bool) (s : Fin b → ℕ) (hs
       (andreevSharpTopWeight b m (.inr (.inr (.inr (.inl p)))) : ℝ) *
         (andreevSharpGate (.inr (.inr (.inr (.inl p)))) x s).toNat =
       -(2 * 2 ^ b * (1 + andreevSharpAmp m) *
-        ∑ i, ((x (unitAddr i)).toNat : ℝ) * s i) := by
+        ∑ i, ((x (Pi.single i true)).toNat : ℝ) * s i) := by
   rw [Fintype.sum_prod_type, mul_sum, ← sum_neg_distrib]
   refine sum_congr rfl fun i _ => ?_
-  have hB : (s i : ℤ) < andreevSharpBig b m := by
-    simpa using big_gt s hs {i}
   have hg (ℓ : Fin m) : (andreevSharpGate (.inr (.inr (.inr (.inl (i, ℓ))))) x s).toNat =
-      (x (unitAddr i)).toNat * (decide (ℓ.1 + 1 ≤ s i)).toNat := by
-    simp only [andreevSharpGate, andreevSharpThreshold, andreevSharpForm_product]
-    rw [add_comm (s i : ℤ), show andreevSharpBig b m + ℓ + 1 = andreevSharpBig b m + (ℓ + 1) by
-      ring, add_comm (andreevSharpBig b m * _), mul_comm (andreevSharpBig b m),
-      show ((x (unitAddr i)).toNat : ℤ) * andreevSharpBig b m =
-        andreevSharpBig b m * (x (unitAddr i)).toNat by ring,
-      decide_big_le_add_mul _ (by omega) hB]
-    have hd : decide ((ℓ : ℤ) + 1 ≤ s i) = decide (ℓ.1 + 1 ≤ s i) :=
-      decide_eq_decide.mpr (by omega)
-    rw [hd]
-    cases x (unitAddr i) <;> simp
-  have h' : ∑ ℓ : Fin m, ((decide (ℓ.1 + 1 ≤ s i)).toNat : ℝ) = s i := by
-    exact_mod_cast sum_decide_succ_le_nat (hs i)
-  simp only [hg, Nat.cast_mul, ← mul_assoc, andreevSharpTopWeight]
-  rw [← mul_sum, h']
+      (decide (andreevSharpBig b m + ((ℓ.1 : ℤ) + 1) ≤
+        (s i : ℤ) + andreevSharpBig b m * (x (Pi.single i true)).toNat)).toNat := by
+    simp only [andreevSharpGate, andreevSharpThreshold, andreevSharpForm_product, add_assoc]
+  have hc : ∑ ℓ : Fin m, ((decide (andreevSharpBig b m + ((ℓ.1 : ℤ) + 1) ≤
+      (s i : ℤ) + andreevSharpBig b m * (x (Pi.single i true)).toNat)).toNat : ℝ) =
+      (x (Pi.single i true)).toNat * s i :=
+    sum_decide_big_le_add_mul _ (fun j => (j : ℤ) + 1) (fun _ => by omega)
+      (by simpa using big_gt s hs {i}) (hs i) fun _ => by omega
+  simp only [hg, andreevSharpTopWeight]
+  rw [← mul_sum, hc]
   push_cast
   ring
 
@@ -490,26 +501,20 @@ theorem sum_topWeight_zero (x : BitString b → Bool) (s : Fin b → ℕ) (hs : 
         (andreevSharpGate (.inr (.inr (.inr (.inr (.inl j))))) x s).toNat =
       -((andreevSharpRange b m + 4) * 2 ^ b * ((x 0).toNat : ℝ) *
         (((∑ i, s i) + 1) / 2 : ℕ)) := by
-  have hB : ∑ i, (s i : ℤ) < andreevSharpBig b m := big_gt s hs univ
   have hσ : ∑ i, s i ≤ b * m := (sum_le_sum fun i _ => hs i).trans (by simp)
   have hg (j : Fin ((b * m + 1) / 2)) :
       (andreevSharpGate (.inr (.inr (.inr (.inr (.inl j))))) x s).toNat =
-        (x 0).toNat * (decide (j.1 + 1 ≤ ((∑ i, s i) + 1) / 2)).toNat := by
-    simp only [andreevSharpGate, andreevSharpThreshold, andreevSharpForm_zero]
-    rw [show andreevSharpBig b m + 2 * j + 1 = andreevSharpBig b m + (2 * j + 1) by ring,
-      show andreevSharpBig b m * ((x 0).toNat : ℤ) = andreevSharpBig b m * (x 0).toNat from rfl,
-      decide_big_le_add_mul _ (by omega) hB]
-    have hσ' : ((∑ i, s i : ℕ) : ℤ) = ∑ i, (s i : ℤ) := by push_cast; rfl
-    have hd : decide (2 * (j : ℤ) + 1 ≤ ∑ i, (s i : ℤ)) =
-        decide (j.1 + 1 ≤ ((∑ i, s i) + 1) / 2) :=
-      decide_eq_decide.mpr (by rw [← hσ']; omega)
-    rw [hd]
-    cases x 0 <;> simp
-  have h' : ∑ j : Fin ((b * m + 1) / 2),
-      ((decide (j.1 + 1 ≤ ((∑ i, s i) + 1) / 2)).toNat : ℝ) = (((∑ i, s i) + 1) / 2 : ℕ) := by
-    exact_mod_cast sum_decide_succ_le_nat (q := ((∑ i, s i) + 1) / 2) (by omega)
-  simp only [hg, Nat.cast_mul, ← mul_assoc, andreevSharpTopWeight]
-  rw [← mul_sum, h']
+        (decide (andreevSharpBig b m + (2 * (j.1 : ℤ) + 1) ≤
+          ((∑ i, s i : ℕ) : ℤ) + andreevSharpBig b m * (x 0).toNat)).toNat := by
+    simp only [andreevSharpGate, andreevSharpThreshold, andreevSharpForm_zero, add_assoc,
+      Nat.cast_sum]
+  have hc : ∑ j : Fin ((b * m + 1) / 2), ((decide (andreevSharpBig b m + (2 * (j.1 : ℤ) + 1) ≤
+      ((∑ i, s i : ℕ) : ℤ) + andreevSharpBig b m * (x 0).toNat)).toNat : ℝ) =
+      (x 0).toNat * (((∑ i, s i) + 1) / 2 : ℕ) :=
+    sum_decide_big_le_add_mul _ (fun j => 2 * (j : ℤ) + 1) (fun _ => by omega)
+      (by simpa using big_gt s hs univ) (by omega) fun _ => by omega
+  simp only [hg, andreevSharpTopWeight]
+  rw [← mul_sum, hc]
   push_cast
   ring
 
@@ -522,24 +527,19 @@ theorem sum_topWeight_half (x : BitString b → Bool) (s : Fin b → ℕ) (hs : 
         if S = univ then ((andreevSharpRange b m : ℝ) + 4) * 2 ^ b else 0) *
           ((x 0).toNat : ℝ) * ((∑ i ∈ S, s i) / 2 : ℕ) := by
   refine sum_congr rfl fun S _ => ?_
-  have hB := big_gt s hs S
   have ht : ∑ i ∈ S, s i ≤ #S * m := (sum_le_sum fun i _ => hs i).trans (by simp)
   have hg (j : Fin (#S * m / 2)) :
       (andreevSharpGate (.inr (.inr (.inr (.inr (.inr ⟨S, j⟩))))) x s).toNat =
-        (x 0).toNat * (decide (j.1 + 1 ≤ (∑ i ∈ S, s i) / 2)).toNat := by
-    simp only [andreevSharpGate, andreevSharpThreshold, andreevSharpForm_half]
-    rw [decide_big_le_add_mul _ (by omega) hB]
-    have hσ' : ((∑ i ∈ S, s i : ℕ) : ℤ) = ∑ i ∈ S, (s i : ℤ) := by push_cast; rfl
-    have hd : decide (2 * ((j : ℤ) + 1) ≤ ∑ i ∈ S, (s i : ℤ)) =
-        decide (j.1 + 1 ≤ (∑ i ∈ S, s i) / 2) :=
-      decide_eq_decide.mpr (by rw [← hσ']; omega)
-    rw [hd]
-    cases x 0 <;> simp
-  have h' : ∑ j : Fin (#S * m / 2),
-      ((decide (j.1 + 1 ≤ (∑ i ∈ S, s i) / 2)).toNat : ℝ) = ((∑ i ∈ S, s i) / 2 : ℕ) := by
-    exact_mod_cast sum_decide_succ_le_nat (q := (∑ i ∈ S, s i) / 2) (by omega)
-  simp only [hg, Nat.cast_mul, ← mul_assoc, andreevSharpTopWeight]
-  rw [← mul_sum, h']
+        (decide (andreevSharpBig b m + 2 * ((j.1 : ℤ) + 1) ≤
+          ((∑ i ∈ S, s i : ℕ) : ℤ) + andreevSharpBig b m * (x 0).toNat)).toNat := by
+    simp only [andreevSharpGate, andreevSharpThreshold, andreevSharpForm_half, Nat.cast_sum]
+  have hc : ∑ j : Fin (#S * m / 2), ((decide (andreevSharpBig b m + 2 * ((j.1 : ℤ) + 1) ≤
+      ((∑ i ∈ S, s i : ℕ) : ℤ) + andreevSharpBig b m * (x 0).toNat)).toNat : ℝ) =
+      (x 0).toNat * ((∑ i ∈ S, s i) / 2 : ℕ) :=
+    sum_decide_big_le_add_mul _ (fun j => 2 * ((j : ℤ) + 1)) (fun _ => by omega)
+      (by simpa using big_gt s hs S) (by omega) fun _ => by omega
+  simp only [hg, andreevSharpTopWeight]
+  rw [← mul_sum, hc]
   push_cast
   ring
 
@@ -549,9 +549,9 @@ theorem four_mul_sum_half (s : Fin b → ℕ) :
     4 * ∑ S : Finset (Fin b), (((∑ i ∈ S, s i) / 2 : ℕ) : ℝ) =
       2 ^ b * ∑ i, (s i : ℝ) - 2 ^ b * (1 - if blockParities b s = 0 then 1 else 0) := by
   have hdiv (S : Finset (Fin b)) : 2 * (((∑ i ∈ S, s i) / 2 : ℕ) : ℝ) =
-      oddForm (spread fun i => (s i : ℝ)) S -
+      oddForm (onSingles fun i => (s i : ℝ)) S -
         oddForm (fun c => if c = blockParities b s then 1 else 0) S := by
-    rw [oddForm_spread]
+    rw [oddForm_onSingles]
     have hpar : oddForm (fun c => if c = blockParities b s then (1 : ℝ) else 0) S =
         (parityOn S (blockParities b s)).toNat := by
       simp [oddForm]
@@ -562,13 +562,13 @@ theorem four_mul_sum_half (s : Fin b → ℕ) :
     exact_mod_cast (show ((2 * ((∑ i ∈ S, s i) / 2) : ℕ) : ℤ) =
       ((∑ i ∈ S, s i : ℕ) : ℤ) - ((∑ i ∈ S, s i) % 2 : ℕ) by push_cast; omega)
   have h4 : 4 * ∑ S : Finset (Fin b), (((∑ i ∈ S, s i) / 2 : ℕ) : ℝ) =
-      2 * ∑ S, oddForm (spread fun i => (s i : ℝ)) S -
+      2 * ∑ S, oddForm (onSingles fun i => (s i : ℝ)) S -
         2 * ∑ S, oddForm (fun c => if c = blockParities b s then 1 else 0) S := by
     rw [← mul_sub, ← sum_sub_distrib, show (4 : ℝ) = 2 * 2 by norm_num, mul_assoc, mul_sum]
     simp_rw [hdiv]
-  rw [h4, two_mul_sum_oddForm, two_mul_sum_oddForm, Fintype.card_fin, spread_zero]
-  have hs1 : ∑ c, spread (fun i => (s i : ℝ)) c = ∑ i, (s i : ℝ) := by
-    simpa using sum_spread_mul (fun i => (s i : ℝ)) fun _ => 1
+  rw [h4, two_mul_sum_oddForm, two_mul_sum_oddForm, Fintype.card_fin, onSingles_zero]
+  have hs1 : ∑ c, onSingles (fun i => (s i : ℝ)) c = ∑ i, (s i : ℝ) := by
+    simpa using sum_onSingles_mul (fun i => (s i : ℝ)) fun _ => 1
   rw [hs1]
   simp [eq_comm (a := (0 : BitString b))]
 
@@ -578,29 +578,29 @@ theorem cast_andreevSharpTopAffine (x : BitString b → Bool) (s : Fin b → ℕ
       ∑ j, andreevSharpTopBlock b m * s j : ℤ) : ℝ) =
       (andreevSharpRange b m + 4) * 2 ^ b * tableVal x 0 -
         4 * 2 ^ b * (∑ c, if c = 0 then 0 else tableVal x c) +
-        2 * 2 ^ b * ((andreevSharpAmp m : ℝ) ^ 2 + 1) * (∑ i, tableVal x (unitAddr i)) +
+        2 * 2 ^ b * ((andreevSharpAmp m : ℝ) ^ 2 + 1) * (∑ i, tableVal x (Pi.single i true)) +
         2 * andreevSharpAmp m * 2 ^ b * ∑ i, (s i : ℝ) := by
   push_cast
   simp only [andreevSharpTopTable, andreevSharpTopBlock]
   push_cast
-  have hE : ∑ c, (if IsUnitAddr c then (1 : ℝ) else 0) * tableVal x c =
-      ∑ i, tableVal x (unitAddr i) := by
-    simp_rw [ite_isUnitAddr_eq_spread]
-    rw [sum_spread_mul]
+  have hE : ∑ c, (if IsSingle c then (1 : ℝ) else 0) * tableVal x c =
+      ∑ i, tableVal x (Pi.single i true) := by
+    simp_rw [ite_isSingle_eq_onSingles]
+    rw [sum_onSingles_mul]
     simp
   have hsplit (c : BitString b) :
       ((if c = 0 then ((andreevSharpRange b m : ℝ) + 4) * 2 ^ b else -(4 * 2 ^ b)) +
-        if IsUnitAddr c then 2 * 2 ^ b * ((andreevSharpAmp m : ℝ) ^ 2 + 1) else 0) *
+        if IsSingle c then 2 * 2 ^ b * ((andreevSharpAmp m : ℝ) ^ 2 + 1) else 0) *
           ((x c).toNat : ℝ) =
       (if c = 0 then ((andreevSharpRange b m : ℝ) + 4) * 2 ^ b * tableVal x c else 0) -
         4 * 2 ^ b * (if c = 0 then 0 else tableVal x c) +
         2 * 2 ^ b * ((andreevSharpAmp m : ℝ) ^ 2 + 1) *
-          ((if IsUnitAddr c then (1 : ℝ) else 0) * tableVal x c) := by
+          ((if IsSingle c then (1 : ℝ) else 0) * tableVal x c) := by
     by_cases h0 : c = 0
     · subst h0
-      have hu : ¬IsUnitAddr (0 : BitString b) := fun ⟨i, h⟩ => unitAddr_ne_zero i h.symm
+      have hu : ¬IsSingle (0 : BitString b) := fun ⟨i, h⟩ => single_true_ne_zero i h.symm
       simp [hu, tableVal]
-    · by_cases hu : IsUnitAddr c <;> simp [h0, hu, tableVal]
+    · by_cases hu : IsSingle c <;> simp [h0, hu, tableVal]
       ring
   simp only [hsplit, sum_add_distrib, sum_sub_distrib, ← mul_sum, hE, sum_ite_eq', mem_univ,
     ite_true]

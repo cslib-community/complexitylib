@@ -4995,6 +4995,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.Mobius
 public import CslibFrontier.Foundations.BooleanAnalysis.Monotone
 public import CslibFrontier.Foundations.BooleanAnalysis.MultilinearExtension
 public import CslibFrontier.Foundations.BooleanAnalysis.Noise
+public import CslibFrontier.Foundations.BooleanAnalysis.OddForm
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialCorrelation
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialThreshold
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialThresholdWeight
