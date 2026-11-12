@@ -1498,6 +1498,7 @@ public import CslibFrontier.Computability.Circuit.Frontier.Reduction
 public import CslibFrontier.Computability.Circuit.Frontier.Sweep
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ActiveCall
+public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.BalancedRecovery
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Binarize
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.BinaryDigits
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.BinaryDigitsPolyTime
@@ -3420,6 +3421,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.App
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrement
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrementFlag
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Branch
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.CarrySaveSelector
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ClearShadowed
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.CopyBlock
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Cursor
@@ -5092,6 +5094,7 @@ public import CslibFrontier.Foundations.Combinatorics.BinomialTail
 public import CslibFrontier.Foundations.Combinatorics.Bregman
 public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial
+public import CslibFrontier.Foundations.Combinatorics.CollisionSchedules
 public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
@@ -5208,6 +5211,8 @@ public import CslibFrontier.Foundations.Combinatorics.PessimisticEstimator
 public import CslibFrontier.Foundations.Combinatorics.PowersetTail
 public import CslibFrontier.Foundations.Combinatorics.ReplacementCounting
 public import CslibFrontier.Foundations.Combinatorics.ReplacementDesignBridge
+public import CslibFrontier.Foundations.Combinatorics.SeededPacketLabels
+public import CslibFrontier.Foundations.Combinatorics.SeededPacking
 public import CslibFrontier.Foundations.Combinatorics.SetFamily.Oddtown
 public import CslibFrontier.Foundations.Combinatorics.SetFamily.RayChaudhuriWilson
 public import CslibFrontier.Foundations.Combinatorics.SetPartition.Basic
@@ -6593,6 +6598,7 @@ public import CslibFrontier.Probability.KWiseIndependent.CountSketch
 public import CslibFrontier.Probability.KWiseIndependent.Coupling
 public import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation
 public import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation.Parameters
+public import CslibFrontier.Probability.KWiseIndependent.Incidence
 public import CslibFrontier.Probability.KWiseIndependent.Polynomial
 public import CslibFrontier.Probability.KWiseIndependent.Reduced
 public import CslibFrontier.Probability.KWiseIndependent.ReducedLimbs
