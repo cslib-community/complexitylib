@@ -234,8 +234,18 @@ lemmas sit behind it. `Protocol.exists_diagonal_subprotocol` is the diagonal wal
 `Protocol.le_ecomplexity_of_dense` is its packaging for any relation whose two players share an
 input type. The [dense-restriction client](../../CslibFrontierTests/CommunicationDenseRestriction.lean)
 checks `composeKW` on small matrices, applies Lemma 6.7 at `m = 1` and runs the walk on `Fin 8`.
-Run `scripts/build.sh CslibFrontierTests.CommunicationDenseRestriction` to check it. The
-dense-restriction lower bounds themselves (Lemmas 6.1–6.5, Theorem 6.6) are not formalized yet.
+Run `scripts/build.sh CslibFrontierTests.CommunicationDenseRestriction` to check it.
+[AuxiliaryFormula](../../CslibFrontier/Computability/Circuit/Boolean/AuxiliaryFormula.lean)
+proves Lemma 6.1. `exists_auxFormula` turns a protocol solving `composeKW g` on `X × X` into a De
+Morgan formula `φ` of at most the same `binaryCost` depth. `φ` reads the matrix bits and one
+auxiliary bit `p_c` per `c ∈ {0, 1}ᵐ`, laid out by `auxInput`, and is monotone in the auxiliary
+bits. On every `Z ∈ X` it equals `p_{gᵐ(Z)}` (`rowValues g Z`). The formula is `auxFormula`,
+built like `Protocol.kwFormula`. `predictor φ Z` is the source's `τ_φ(Z)`: `some c` when
+`φ(Z, ·)` is the projection `p_c`, else `none`. `predictor_auxFormula` says it is correct on `X`.
+The [auxiliary-formula client](../../CslibFrontierTests/CircuitAuxiliaryFormula.lean) applies
+Lemma 6.1 to a rejecting protocol on one matrix and evaluates two predictors; run
+`scripts/build.sh CslibFrontierTests.CircuitAuxiliaryFormula`. The dense-restriction lower bounds
+(Lemmas 6.2–6.5, Theorem 6.6) are not formalized yet.
 
 This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
 and 1.5, and Corollaries 1.3 and 1.4. The composition/core results (Theorems 1.6–1.8) remain

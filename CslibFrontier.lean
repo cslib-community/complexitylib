@@ -1103,6 +1103,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AgreementTwo
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
+public import CslibFrontier.Computability.Circuit.Boolean.AuxiliaryFormula
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
 public import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
