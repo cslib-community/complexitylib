@@ -40,9 +40,9 @@ list `seeds` of the trials' seeds.
   `two_pow_le_card_primeWindow`. Averaged over a uniform prime of the window
   (`average_miss_le`), the error is at most `#bad / #window + (1 - 3 #P / 4 ^ (d + 2)) ^ μ`.
 
-The paper's final choices (`μ = Õ(n̂ ^ 2 / (d choose 2 t))`, `d = ⌈t + lg n̂ + lg lg N + 1⌉`), the
-conversion of expected to worst-case time and the exponent `1.965` of Corollary 2.4 are not
-formalized here; see the cost model below.
+The parameter choices, the expected cost, the conversion to worst-case time and the truly
+subquadratic exponent of Corollary 2.4 are in
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary`.
 
 ## Cost model
 
@@ -52,9 +52,8 @@ tick. Charged: one tick per element when counting residues and when splitting, o
 sum and per inserted reported value, one per query in the final look-up, and the ticks of the
 trials (`time_trialM`). The random choices are inputs; sampling them is uncharged. The cost depends
 on the random choices through `|A_bad|`, `|B_bad|`, `|A*|`, `|B*|`, `|C*|` and the number of
-reported values; `time_threeSumM` states it exactly. Bounds on the expectations of these
-quantities over the random choices, which give the paper's expected running time, are not
-formalized.
+reported values; `time_threeSumM` states it exactly. Their expectations are bounded in
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Expectation`.
 
 ## Main definitions
 
@@ -337,7 +336,7 @@ theorem card_falsePairs_mono {q c : ℕ} {Ag Bg A B : List ℕ} (hA : ∀ x ∈ 
 
 /-- The probability that the reduction misses `c` over `μ` uniform seeds, for the modulus `q`
 (`0` if `q` is not prime). -/
-noncomputable def missProb (d t s μ : ℕ) (A B C : List ℕ) (c q : ℕ) : ℝ :=
+@[expose] noncomputable def missProb (d t s μ : ℕ) (A B C : List ℕ) (c q : ℕ) : ℝ :=
   if h : q.Prime then
     haveI : Fact q.Prime := ⟨h⟩
     (#((Fintype.piFinset fun _ : Fin μ => seeds q).filter fun ss =>

@@ -297,9 +297,7 @@ hashes `a ↦ a ξ + α`, `b ↦ b ξ + β` and `c ↦ c ξ + α + β` modulo `p
   `#bad / #window + (1 - 3 #P / 4 ^ (d + 2)) ^ μ`, and bad primes are few.
 
 The probabilities are counts over finite uniform sample spaces (`seeds p`, tuples of seeds, the
-prime window); sampling is not charged. Not formalized: the paper's choice of `μ` and `d`, bounds
-on the expected values of the cost terms, the conversion to worst-case time, and the exponent of
-Corollary 2.4. The [tests](../../CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSum.lean) run
+prime window); sampling is not charged. The [tests](../../CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSum.lean) run
 the reduction with `p = 17`, `d = 4`, `t = 1` by kernel reduction and apply
 `card_accepts_add_ge` and `miss_le` to a sum with no false pairs. Check with
 
@@ -311,6 +309,41 @@ lake env lean CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSum.lean
 If `miss_le` does not apply, check that `p` carries a `Fact p.Prime` instance, that `2 ^ d ≤ p`,
 and the goodness hypothesis, which is stated for the isolated sublists
 `A.filter fun a => decide (Isolated p A a)` and its counterpart for `B`.
+
+### Truly subquadratic integer 3SUM (Corollary 2.4)
+
+Import `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary`. `corollary_2_4 κ` gives
+`K > 0` and `m₀` such that, for every unit `m ≥ m₀`, every `R` and all duplicate-free `A`, `B` and
+any `C` with at most `n = 2 ^ (100 m)` elements below `n ^ κ`, the algorithm
+`corollaryM m (budget K m) R A B C qs ωs`:
+
+- costs at most `R (T + n) + n` ticks for every choice of the primes `qs` and seeds `ωs`, where
+  `T = budget K m = ⌈20 K n ^ (2 - 1/100)⌉`;
+- reports only values `a + b` with `a ∈ A`, `b ∈ B`;
+- misses each `c ∈ C ∩ (A + B)` with probability `allFailProb ≤ (1/5) ^ R`.
+
+The parameters (`Params`) are `t = 18 m`, `d = 119 m`, `s = 33 m` and
+`μ = ⌊4 ^ (d + 2) / #P⌋ + 1`. Each copy runs the reduction under a step counter of `T` ticks and
+is cut off, reporting nothing, if it would exceed it; the counter is not charged. The ingredients
+are:
+
+- binomial bounds with integer bases (`Nat.pow_le_succ_mul_choose_mul_pow_mul_pow`,
+  `Nat.sum_choose_mul_pow_mul_pow_le_pow`);
+- exact expectations: `sum_length_rankedTargets` gives `E |C*|`, and `mul_sum_length_bad_le`
+  gives the bad elements summed over the window;
+- the expected cost `avgTime ≤ K n ^ (2 - 1/100)` (`exists_avgTime_le`);
+- per-copy failure at most `1/20` each from bad primes, from all trials rejecting and from the
+  budget (Markov's inequality);
+- independence of copies (`allFailProb_eq_pow`).
+
+The exponent is `2 - 1/100`, not the paper's `1.965`, which uses real parameters `γ = 0.2`,
+`δ = 0.033`. The [tests](../../CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSumCorollary.lean)
+check the binomial and seed counts on small instances. Check with
+
+```bash
+lake build --wfail CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
+lake env lean CslibFrontierTests/Algorithms/Lean/SubsetConvThreeSumCorollary.lean
+```
 
 ## Conservative ordinary integer 3SUM
 
