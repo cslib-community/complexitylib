@@ -19,6 +19,9 @@ coverage comparison, including missing endpoints, partial matches and source/mod
 Its Chapter 14 record includes a checked degree obstruction to the draft's literal
 circuit-to-determinant statement; it is not a claim of book-wide coverage.
 
+The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
+for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.
+
 ## Authoring
 
 For example, an entry records the source paper's theorem name or number separately from its
