@@ -470,64 +470,14 @@ theorem measureProb_codes (hnp : n + p ≤ m) (hm : m ≤ W) (hW : n + 2 * R * p
     rw [codes_eq, Circuit.ofCodes_append, Circuit.eval_append, eval_prep hnp hm hW hW0 X0 hX0high,
       Circuit.ofCodes_append, Circuit.eval_append]
   rw [hsplit, Circuit.measureProb_eval_ofCodes (Amplify.isClassical_counter_swap hW0)]
-  simp only [hamp]
-  set F : (Fin (2 * R) × Fin m → Bool) → ℝ := fun z =>
-    if R < (univ.filter fun j => (fun i => z (j, i)) ∈ accepting m).card then
-      ‖T (fun j i => z (j, i))‖ ^ 2 else 0 with hF
-  have hterm (Y : Fin (Amplify.width W (2 * R) R) → Bool) :
-      (if classicalRun (Counter.codes (Amplify.base W (2 * R)) (R + 1) (fun s => (s + 1) * W)
-          (2 * R) ++ swapCodes (Amplify.answer W (2 * R) R)) Y ∈
-          accepting (Amplify.width W (2 * R) R) then
-        ‖if AgreeOff (Amplify.blocks W (2 * R) R hm) Y X1 then
-          T (fun j => Y ∘ Amplify.block (t := R) hm j) else 0‖ ^ 2
-        else 0) =
+  have hnorm (Y : Fin (Amplify.width W (2 * R) R) → Bool) :
+      ‖if AgreeOff (Amplify.blocks W (2 * R) R hm) Y X1 then
+        T (fun j => Y ∘ Amplify.block (t := R) hm j) else 0‖ ^ 2 =
       if AgreeOff (Amplify.blocks W (2 * R) R hm) Y X1 then
-        F (Y ∘ Amplify.blocks W (2 * R) R hm) else 0 := by
-    by_cases hY : AgreeOff (Amplify.blocks W (2 * R) R hm) Y X1
-    · have hYhigh (c : ℕ) (hc : Amplify.base W (2 * R) ≤ c) : readBit Y c = false := by
-        rw [← hX1high c hc]
-        by_cases hcN : c < Amplify.width W (2 * R) R
-        · rw [readBit_of_lt _ hcN, readBit_of_lt _ hcN]
-          refine hY _ fun q h => ?_
-          have h' : (q.2 : ℕ) + (q.1 + 1) * W = c := congrArg Fin.val h
-          have := Amplify.block_lt (k := 2 * R) q.1.2 (lt_of_lt_of_le q.2.2 hm)
-          omega
-        · rw [readBit_of_le _ (not_lt.mp hcN), readBit_of_le _ (not_lt.mp hcN)]
-      have hbit (j : Fin (2 * R)) :
-          readBit Y ((j + 1) * W) = (Y ∘ Amplify.blocks W (2 * R) R hm) (j, ⟨0, hm0⟩) := by
-        rw [Function.comp_apply, ← readBit_fin Y (Amplify.blocks W (2 * R) R hm (j, ⟨0, hm0⟩))]
-        congr 1
-        simp
-      have hcount : Counter.count Y (fun s => (s + 1) * W) (2 * R) =
-          (univ.filter fun j : Fin (2 * R) =>
-            (fun i => (Y ∘ Amplify.blocks W (2 * R) R hm) (j, i)) ∈ accepting m).card := by
-        unfold Counter.count
-        rw [← card_map Fin.valEmbedding]
-        congr 1
-        ext s
-        simp only [mem_filter, mem_range, mem_map, mem_univ, true_and, Fin.valEmbedding_apply,
-          mem_accepting hm0]
-        constructor
-        · rintro ⟨hs, h⟩
-          exact ⟨⟨s, hs⟩, (hbit ⟨s, hs⟩).symm.trans h, rfl⟩
-        · rintro ⟨j, h, rfl⟩
-          exact ⟨j.2, (hbit j).trans h⟩
-      have hacc : (classicalRun (Counter.codes (Amplify.base W (2 * R)) (R + 1)
-          (fun s => (s + 1) * W) (2 * R) ++ swapCodes (Amplify.answer W (2 * R) R)) Y ∈
-          accepting (Amplify.width W (2 * R) R)) ↔
-          R < (univ.filter fun j : Fin (2 * R) =>
-            (fun i => (Y ∘ Amplify.blocks W (2 * R) R hm) (j, i)) ∈ accepting m).card := by
-        have h0 : 0 < Amplify.width W (2 * R) R := lt_width_of_lt hW0
-        rw [mem_accepting h0, ← readBit_fin (classicalRun _ Y) (⟨0, h0⟩ : Fin _)]
-        change readBit _ 0 = true ↔ _
-        rw [Amplify.readBit_classicalRun_counter_swap hW0 Y hYhigh, hcount, decide_eq_true_iff]
-      rw [if_congr hacc rfl rfl]
-      simp only [hY, ↓reduceIte, hF]
-      rfl
-    · simp [hY]
-  rw [sum_congr rfl fun Y _ => hterm Y, sum_agreeOff_comp (Amplify.blocks W (2 * R) R hm) X1 F,
-    sum_filter]
-  exact Fintype.sum_equiv (Equiv.curry _ _ _) _ _ fun z => rfl
+        ‖T (fun j => Y ∘ Amplify.block (t := R) hm j)‖ ^ 2 else 0 := by
+    split_ifs <;> simp
+  simp only [hamp, hnorm, mem_accepting hm0]
+  exact Amplify.sum_accepting_counter_swap hm hm0 hX1high fun u => ‖T u‖ ^ 2
 
 /-! ### The amplified verifier is constructed in polynomial time -/
 
