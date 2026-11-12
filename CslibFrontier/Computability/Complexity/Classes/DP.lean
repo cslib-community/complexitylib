@@ -112,6 +112,11 @@ theorem NPComplete.dpComplete_prod {encA : α ↪ List Bool} {encB : β ↪ List
 /-- The complement of the difference class DP. -/
 def coDP (enc : α ↪ List Bool) : Set (Set α) := {A | Aᶜ ∈ DP enc}
 
+theorem mem_coDP : A ∈ coDP enc ↔ Aᶜ ∈ DP enc := Iff.rfl
+
+theorem compl_mem_coDP_iff : Aᶜ ∈ coDP enc ↔ A ∈ DP enc := by
+  rw [mem_coDP, compl_compl]
+
 /-- coDP consists of unions of an NP language and a coNP language. -/
 theorem mem_coDP_iff_union : A ∈ coDP enc ↔
     ∃ B ∈ NP enc, ∃ C ∈ coNP enc, A = B ∪ C := by

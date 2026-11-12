@@ -52,7 +52,9 @@ Boolean negation. These transformations use the polynomial-time machine calculus
 
 * `Cslib.Complexity.not_alternation`: the duality of alternating quantifiers.
 * `Cslib.Complexity.SigmaP_zero`, `Cslib.Complexity.PiP_zero`: `Σ₀ = Π₀ = P`.
-* `Cslib.Complexity.PiP_eq_preimage_compl_SigmaP`: `Πₖ = coΣₖ`.
+* `Cslib.Complexity.PiP_eq_preimage_compl_SigmaP`: `Πₖ = coΣₖ`; `Cslib.Complexity.compl_mem_PiP_iff`
+  and `Cslib.Complexity.compl_mem_SigmaP_iff` state it for one problem.
+* `Cslib.Complexity.PiP_eq_SigmaP_of_PiP_subset_SigmaP`: `Πₖ ⊆ Σₖ` gives `Πₖ = Σₖ`.
 * `Cslib.Complexity.SigmaP_one`: `Σ₁ = NP`; `Cslib.Complexity.PiP_one_eq_coNP`: `Π₁ = coNP`.
 * `Cslib.Complexity.SigmaP_subset_SigmaP_succ`, `Cslib.Complexity.SigmaP_subset_PiP_succ`,
   `Cslib.Complexity.PiP_subset_SigmaP_succ`, `Cslib.Complexity.PiP_subset_PiP_succ`: the
@@ -318,17 +320,35 @@ theorem compl_mem_SigmaP_of_mem_PiP (hA : A ∈ PiP k enc) : Aᶜ ∈ SigmaP k e
   let ⟨ps, V, hk, hV, h⟩ := hA
   ⟨ps, fun x => !V x, hk, by fun_prop, h.compl⟩
 
+/-- **Quantifier duality**: a complement is in `Πₖ` exactly when the problem is in `Σₖ`. -/
+@[simp]
+theorem compl_mem_PiP_iff : Aᶜ ∈ PiP k enc ↔ A ∈ SigmaP k enc :=
+  ⟨fun h => compl_compl A ▸ compl_mem_SigmaP_of_mem_PiP h, compl_mem_PiP_of_mem_SigmaP⟩
+
+/-- **Quantifier duality**: a complement is in `Σₖ` exactly when the problem is in `Πₖ`. -/
+@[simp]
+theorem compl_mem_SigmaP_iff : Aᶜ ∈ SigmaP k enc ↔ A ∈ PiP k enc :=
+  ⟨fun h => compl_compl A ▸ compl_mem_PiP_of_mem_SigmaP h, compl_mem_SigmaP_of_mem_PiP⟩
+
 /-- **`Πₖ = coΣₖ`.** -/
 theorem PiP_eq_preimage_compl_SigmaP : PiP k enc = compl ⁻¹' SigmaP k enc := by
   ext A
-  refine ⟨compl_mem_SigmaP_of_mem_PiP, fun hA => ?_⟩
-  simpa using compl_mem_PiP_of_mem_SigmaP hA
+  simp
 
 /-- **`Σₖ = coΠₖ`.** -/
 theorem SigmaP_eq_preimage_compl_PiP : SigmaP k enc = compl ⁻¹' PiP k enc := by
   ext A
-  refine ⟨compl_mem_PiP_of_mem_SigmaP, fun hA => ?_⟩
-  simpa using compl_mem_SigmaP_of_mem_PiP hA
+  simp
+
+/-- By quantifier duality, `Πₖ ⊆ Σₖ` gives the reverse inclusion. -/
+theorem SigmaP_subset_PiP_of_PiP_subset_SigmaP (h : PiP k enc ⊆ SigmaP k enc) :
+    SigmaP k enc ⊆ PiP k enc :=
+  fun _ hA => compl_mem_SigmaP_iff.mp (h (compl_mem_PiP_iff.mpr hA))
+
+/-- **`Πₖ ⊆ Σₖ` gives `Πₖ = Σₖ`**, by quantifier duality. -/
+theorem PiP_eq_SigmaP_of_PiP_subset_SigmaP (h : PiP k enc ⊆ SigmaP k enc) :
+    PiP k enc = SigmaP k enc :=
+  h.antisymm (SigmaP_subset_PiP_of_PiP_subset_SigmaP h)
 
 /-- **`Π₁ = coNP`.** -/
 theorem PiP_one_eq_coNP : PiP 1 enc = coNP enc := by

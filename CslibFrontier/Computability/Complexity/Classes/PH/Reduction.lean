@@ -75,8 +75,8 @@ theorem PolyTimeReducible.mem_SigmaP (h : PolyTimeReducible enc encB A B) (hB : 
 
 /-- **`Πₖ` is closed under polynomial-time reductions**, by quantifier duality. -/
 theorem PolyTimeReducible.mem_PiP (h : PolyTimeReducible enc encB A B) (hB : B ∈ PiP k encB) :
-    A ∈ PiP k enc := by
-  simpa using compl_mem_PiP_of_mem_SigmaP (h.compl.mem_SigmaP (compl_mem_SigmaP_of_mem_PiP hB))
+    A ∈ PiP k enc :=
+  compl_mem_SigmaP_iff.mp (h.compl.mem_SigmaP (compl_mem_SigmaP_iff.mpr hB))
 
 /-- **`PH` is closed under polynomial-time reductions.** -/
 theorem PolyTimeReducible.mem_PH (h : PolyTimeReducible enc encB A B) (hB : B ∈ PH encB) :
