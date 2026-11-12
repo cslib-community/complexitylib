@@ -31,7 +31,7 @@ private def dag : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩
 
 example : FeedbackVertexSet ∈ NP encFeedbackVertexSet ∧
     NPHard encFeedbackVertexSet FeedbackVertexSet ∧
-    PolyTimeReducible (encPair encGraph encNat) encFeedbackVertexSet VertexCover
+    PolyTimeReducible encVertexCoverInstance encFeedbackVertexSet VertexCover
       FeedbackVertexSet :=
   ⟨FeedbackVertexSet_npComplete.1, FeedbackVertexSet_npComplete.2,
     polyTimeReducible_VertexCover_FeedbackVertexSet⟩
@@ -47,6 +47,7 @@ example : ComputableInPolyTime (fun x : FeedbackVertexSetInstance => x.bound)
 example : ComputableInPolyTime (fun p : Graph × ℕ => (⟨p.1, p.2⟩ : FeedbackVertexSetInstance))
     (encPair encGraph encNat) encFeedbackVertexSet := by
   fun_prop
+
 
 /-! ### Directed cycles -/
 
@@ -137,7 +138,7 @@ example : (⟨(⟨[0], [(0, 1), (1, 0)]⟩ : Graph), 0⟩ : FeedbackVertexSetIns
 /-! ### Karp's reduction from `VertexCover` -/
 
 -- The edge `0 - 1` becomes the arcs `0 → 1` and `1 → 0`.
-example : VertexCover.toFeedbackVertexSet (((⟨[0, 1], [(0, 1)]⟩ : Graph), 1) : Graph × ℕ) =
+example : VertexCover.toFeedbackVertexSet (⟨⟨[0, 1], [(0, 1)]⟩, 1⟩ : VertexCoverInstance) =
     ⟨(⟨[0, 1], [(0, 1), (1, 0)]⟩ : Graph), 1⟩ := by
   decide
 
@@ -146,13 +147,13 @@ example : VertexCover.bidirect (⟨[0], [(0, 0)]⟩ : Graph) = (⟨[0], []⟩ : 
   decide
 
 -- A target above the number of distinct vertices goes to the self-loop with target `0`.
-example : VertexCover.toFeedbackVertexSet (((⟨[0, 1], [(0, 1)]⟩ : Graph), 3) : Graph × ℕ) =
+example : VertexCover.toFeedbackVertexSet (⟨⟨[0, 1], [(0, 1)]⟩, 3⟩ : VertexCoverInstance) =
     ⟨(⟨[0], [(0, 0)]⟩ : Graph), 0⟩ := by
   decide
 
-example : (((⟨[0, 1], [(0, 1)]⟩ : Graph), 1) : Graph × ℕ) ∈ VertexCover ↔
+example : (⟨⟨[0, 1], [(0, 1)]⟩, 1⟩ : VertexCoverInstance) ∈ VertexCover ↔
     VertexCover.toFeedbackVertexSet
-      (((⟨[0, 1], [(0, 1)]⟩ : Graph), 1) : Graph × ℕ) ∈ FeedbackVertexSet :=
+      (⟨⟨[0, 1], [(0, 1)]⟩, 1⟩ : VertexCoverInstance) ∈ FeedbackVertexSet :=
   (VertexCover.toFeedbackVertexSet_mem_iff _).symm
 
 end CslibFrontierTests.FeedbackVertexSet

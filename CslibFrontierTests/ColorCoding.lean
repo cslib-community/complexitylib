@@ -109,13 +109,13 @@ example : ColorfulPath ∈
 
 /-! ### Clique and Independent Set -/
 
-example : FPTReducible (encPair encGraph encNat) (encPair encGraph encNat) Prod.snd Prod.snd
+example : FPTReducible encCliqueInstance encIndependentSetInstance (·.m) (·.m)
     Clique IndependentSet :=
   fptReducible_Clique_IndependentSet
 
 -- `Clique` and `IndependentSet` stand or fall together in `FPT`.
-example (h : IndependentSet ∈ FPT (encPair encGraph encNat) Prod.snd) :
-    Clique ∈ FPT (encPair encGraph encNat) Prod.snd :=
+example (h : IndependentSet ∈ FPT encIndependentSetInstance (·.m)) :
+    Clique ∈ FPT encCliqueInstance (·.m) :=
   Clique_mem_FPT_iff.2 h
 
 -- Compositional `fun_prop` clients using the `enc_structure`-generated rules and

@@ -159,15 +159,15 @@ private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩
 /-- Bounded search tree evaluations and membership witnesses on the triangle graph, plus `XP`
 closure for `VertexCoverᶜ`. -/
 example :
-    VertexCover.search (triangle, 1) = false ∧
-      VertexCover.search (triangle, 2) = true ∧
-      VertexCover.search (triangle, 3) = true ∧
-      VertexCover.search (triangle, 4) = false ∧
-      (triangle, 2) ∈ VertexCover ∧
-      (triangle, 1) ∉ VertexCover ∧
-      VertexCoverᶜ ∈ XP (encPair encGraph encNat) Prod.snd := by
+    VertexCover.search ⟨triangle, 1⟩ = false ∧
+      VertexCover.search ⟨triangle, 2⟩ = true ∧
+      VertexCover.search ⟨triangle, 3⟩ = true ∧
+      VertexCover.search ⟨triangle, 4⟩ = false ∧
+      (⟨triangle, 2⟩ : VertexCoverInstance) ∈ VertexCover ∧
+      (⟨triangle, 1⟩ : VertexCoverInstance) ∉ VertexCover ∧
+      VertexCoverᶜ ∈ XP encVertexCoverInstance VertexCoverInstance.k := by
   refine ⟨by decide, by decide, by decide, by decide,
-    (VertexCover.search_eq_true_iff (triangle, 2)).mp (by decide), ?_,
+    (VertexCover.search_eq_true_iff ⟨triangle, 2⟩).mp (by decide), ?_,
     FPT_subset_XP (compl_mem_FPT VertexCover_mem_FPT)⟩
   rw [← VertexCover.search_eq_true_iff]
   decide
