@@ -21,6 +21,7 @@ The existing memory program supplies the array reads, swap and order proof. A fi
 preserves its complete free-monad program. Its logarithmic cutoff is proof data, while native
 code tests the actual index against a charged prepared threshold. No runtime logarithm or fuel
 register is supplied for free. The initially-zero index exits before threshold preparation.
+The compiler handles the original named priority and non-strict right-child guards directly.
 
 ## Main results
 
@@ -46,27 +47,10 @@ abbrev Argument := (HeapLayout × ℕ) × ℕ
 
 /-- The original four-write sink, returning the selected child or a stop sentinel. -/
 def sink {n : ℕ} (L : BinaryHeap.Memory.Layout n) (S k c vk kk vc kc : ℕ) : Memory.Prog ℕ :=
-  if kc < kk then do
+  if IndexedMinPQ.RawPrioLT (vc, kc) (vk, kk) then do
     BinaryHeap.Memory.swap L k c vk vc
     pure c
-  else if kc = kk then
-    if vc < vk then do
-      BinaryHeap.Memory.swap L k c vk vc
-      pure c
-    else pure (S + 1)
   else pure (S + 1)
-
-/-- The scalar tests express exactly the original priority relation, including its handle tie. -/
-theorem sink_eq {n : ℕ} (L : BinaryHeap.Memory.Layout n) (S k c vk kk vc kc : ℕ) :
-    sink L S k c vk kk vc kc =
-      if IndexedMinPQ.RawPrioLT (vc, kc) (vk, kk) then do
-        BinaryHeap.Memory.swap L k c vk vc
-        pure c
-      else pure (S + 1) := by
-  by_cases h : kc < kk
-  · simp [sink, IndexedMinPQ.RawPrioLT, h]
-  · by_cases he : kc = kk <;> by_cases hv : vc < vk <;>
-      simp [sink, IndexedMinPQ.RawPrioLT, h, he, hv]
 
 /-- Four reads, two additional right-child reads when present, and exactly the source swap. -/
 def step (d : Argument × ℕ) : Memory.Prog ℕ := do
@@ -77,50 +61,13 @@ def step (d : Argument × ℕ) : Memory.Prog ℕ := do
   let kk ← L.key.get vk
   let vl ← L.heap.get (2 * k)
   let kl ← L.key.get vl
-  if 2 * k < S then do
+  if 2 * k + 1 ≤ S then do
     let vr ← L.heap.get (2 * k + 1)
     let kr ← L.key.get vr
-    if kr < kl then sink L S k (2 * k + 1) vk kk vr kr
-    else if kr = kl then
-      if vr < vl then sink L S k (2 * k + 1) vk kk vr kr
-      else sink L S k (2 * k) vk kk vl kl
+    if IndexedMinPQ.RawPrioLT (vr, kr) (vl, kl) then
+      sink L S k (2 * k + 1) vk kk vr kr
     else sink L S k (2 * k) vk kk vl kl
   else sink L S k (2 * k) vk kk vl kl
-
-/-- The body spells the existing child selection with native scalar comparisons. -/
-theorem step_eq (d : Argument × ℕ) :
-    step d = (do
-      let L := d.1.1.1.2
-      let S := d.1.1.2
-      let k := d.2
-      let vk ← L.heap.get k
-      let kk ← L.key.get vk
-      let vl ← L.heap.get (2 * k)
-      let kl ← L.key.get vl
-      if 2 * k + 1 ≤ S then do
-        let vr ← L.heap.get (2 * k + 1)
-        let kr ← L.key.get vr
-        if IndexedMinPQ.RawPrioLT (vr, kr) (vl, kl) then
-          sink L S k (2 * k + 1) vk kk vr kr
-        else sink L S k (2 * k) vk kk vl kl
-      else sink L S k (2 * k) vk kk vl kl) := by
-  unfold step
-  dsimp only
-  congr 1 with vk : 1
-  congr 1 with kk : 1
-  congr 1 with vl : 1
-  congr 1 with kl : 1
-  by_cases hr : 2 * d.2 < d.1.1.2
-  · have hr' : 2 * d.2 + 1 ≤ d.1.1.2 := by omega
-    simp only [hr, hr', ↓reduceIte]
-    congr 1 with vr : 1
-    congr 1 with kr : 1
-    by_cases h : kr < kl
-    · simp [IndexedMinPQ.RawPrioLT, h]
-    · by_cases he : kr = kl <;> by_cases hv : vr < vl <;>
-        simp [IndexedMinPQ.RawPrioLT, h, he, hv]
-  · have hr' : ¬2 * d.2 + 1 ≤ d.1.1.2 := by omega
-    simp only [hr, hr', ↓reduceIte]
 
 /-- Actual scalar native guard; the threshold is computed by preceding certified glue. -/
 def guard (d : Argument) (k : ℕ) : Prop := k < d.2
@@ -163,7 +110,7 @@ theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
           pure ()) =
           BinaryHeap.Memory.sink d.1.1.2 k c vk kk vc kc
             (BinaryHeap.Memory.siftDown d.1.1.2 d.1.2 c) := by
-      rw [sink_eq, BinaryHeap.Memory.sink]
+      unfold sink BinaryHeap.Memory.sink
       split
       · simp only [bind_assoc, pure_bind]
         congr 1 with _ : 1
@@ -175,7 +122,7 @@ theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
     rw [BinaryHeap.Memory.siftDown]
     by_cases hg : guard d k
     · have hsrc := (guard_iff ht hk).mp hg
-      simp only [boundedWhile, hg, hsrc, ↓reduceIte, step_eq, bind_assoc]
+      simp only [boundedWhile, hg, hsrc, ↓reduceIte, step, bind_assoc]
       congr 1 with vk : 1
       congr 1 with kk : 1
       congr 1 with vl : 1
@@ -224,7 +171,7 @@ theorem step_triple {w : ℕ} {d : Argument} {k : ℕ} {s : Memory.State}
         (fun a s' => Shape w d a s' ∧ rank d a < rank d k) := by
     have hc1 : 1 ≤ c := by omega
     have hvc := hshape.vertex_lt c hc1 hcS
-    rw [sink_eq]
+    unfold sink
     split
     · obtain ⟨hshape', -, -, -, -, -⟩ :=
         hshape.swap (a := k) (b := c) hk (by omega) hc1 hcS (by omega)
@@ -242,7 +189,7 @@ theorem step_triple {w : ℕ} {d : Argument} {k : ℕ} {s : Memory.State}
       rw [hz]
       change 0 < Nat.log 2 d.1.2 - Nat.log 2 k
       omega
-  rw [step_eq]
+  unfold step
   dsimp only
   refine Triple.read_bind (BinaryHeap.Memory.heap_lt hA (by omega)) <|
     Triple.read_bind (BinaryHeap.Memory.key_lt hA hvk) <|
@@ -310,34 +257,13 @@ theorem realizes_loop : Realizes .exact
     (appendWords inputWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
     (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
     (fun w (d, k) s => Shape w d k s) (fun _ _ => 0) := by
-  have h := Realizes.whileMeasure inputWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (.lt 6 5) (fun (d, k) => rank d k) realizes_step
-    (fun w d k s => Shape w d k s) (fun d k _ => rank d k)
-    (fun w d k s hi hz hg => by
-      change guard d k at hg
-      have hsrc := (guard_iff hi.1 hi.2.2.2.2.1).mp hg
-      have hm := Nat.log_mono_right (b := 2) hsrc.2
-      have hl := log_child hsrc.1 (show (2 * k) / 2 = k by omega)
-      unfold rank at hz
-      omega)
-    (fun w d k s hi hg _ => by
-      change guard d k at hg
-      obtain ⟨_, _, hp⟩ := triple_iff.mp (step_triple hi hg)
-      rw [clientResult_width w, clientState_width w] at hp
-      exact ⟨⟨hi, hg⟩, hp⟩)
-  have h' := h.consequence (fun _ _ _ _ _ hi => ⟨hi, le_rfl⟩) (fun _ _ => le_rfl)
-  refine h'.mono_mul 1 ?_
-  intro d s
-  have hc := whileWork_zero_le
-    (fun d a => test (.lt 6 5)
-      ((appendWords inputWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding) (d, a))) step
-    (fun x s => one_le_memoryCost_liftBind _ _ s) d.1 (rank d.1 d.2) d.2 s
-  simpa only [Nat.add_zero, Nat.one_mul] using hc.trans (Nat.le_succ _)
-
-/-- A genuinely emitted constant zero, also legal at word width zero. -/
-def zeroWords : Unit ↪ (Fin 1 → ℕ) where
-  toFun _ := fun _ => 0
-  inj' := by intro a b _; cases a; cases b; rfl
+  have hStep := realizes_step
+  realize
+  intro hv
+  -- Compare body domains at the loop's fixed captured environment.
+  refine whileSafe_imp _ _ (fun _ => Iff.rfl) (fun _ => rfl) ?_ (loop_safe h hv)
+  intro a t hg hi
+  exact hi
 
 /-- The original source storage/shape domain, admitting index zero as an immediate exit. -/
 def Safe (w : ℕ) (d : Argument) (s : Memory.State) : Prop :=
@@ -346,62 +272,36 @@ def Safe (w : ℕ) (d : Argument) (s : Memory.State) : Prop :=
 
 /-- The existing source sift-down has one fixed native emitter before every runtime layout,
 size, start index, width and memory. Zero exits before division; otherwise threshold preparation,
-all guard/control operations, body glue and final Unit return are certified and charged. -/
+all guard/control operations, body glue and final Unit return are certified and charged.
+The local loop certificate lets `realize` prepare the threshold and wire the call. -/
 theorem realizes_siftDown : Realizes .exact
     (fun d : Argument => BinaryHeap.Memory.siftDown d.1.1.2 d.1.2 d.2)
     inputWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding Safe (fun _ _ => 0) := by
-  have hzero : Realizes .exact (fun _ : Argument => pure ()) inputWords zeroWords
-      (fun _ _ _ => True) (fun _ _ => 0) := by realize
-  have hthreshold : Realizes .exact (fun e : Argument × Unit => pure (e.1.1.2 / 2 + 1))
-      (appendWords inputWords zeroWords) (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-      (fun w e s => Safe w e.1 s ∧ e.1.2 ≠ 0) (fun _ _ => 0) := by
+  let p (d : Argument) : Memory.Prog Unit :=
+    if d.2 = 0 then pure () else do
+      let _ ← boundedWhile guard step (d.1, d.1.2 / 2 + 1)
+        (rank (d.1, d.1.2 / 2 + 1) d.2) d.2
+      pure ()
+  have hp : Realizes .exact p inputWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+      Safe (fun _ _ => 0) := by
+    have hLoop := realizes_loop
     realize
     all_goals
-      rcases h with ⟨⟨hn, hA, hshape, hkS⟩, hk⟩
+      rcases h with ⟨hn, hA, hshape, hkS⟩
       have hSn := hshape.size_le
-      have halloc : d.1.1.1.2.base + (3 * d.1.1.1.1 + 1) ≤ s.frontier := hA
-      first | omega | exact hmem.frontier_fits.of_le (by omega)
-  have hloop := realizes_loop.reindex
-    (fun e : (Argument × Unit) × ℕ => ((e.1.1.1, e.2), e.1.1.2))
-    (appendWords (appendWords inputWords zeroWords)
-      (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding) ![0, 1, 2, 3, 4, 7, 5]
-    (by intro e i; fin_cases i <;> rfl)
-  have hfinish : Realizes .exact (fun _ : (Argument × Unit) × ℕ => pure ())
-      (appendWords (appendWords inputWords zeroWords)
-        (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
-      (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding (fun _ _ _ => True)
-      (fun _ _ => 0) := by realize
-  have hpositive := ((hthreshold.bind₀ hloop).bind₀ hfinish).consequence
-    (safe' := fun w e s => Safe w e.1 s ∧ e.1.2 ≠ 0) ?_ (fun _ _ => le_rfl)
-  · have hstop : Realizes .exact (fun _ : Argument × Unit => pure ())
-        (appendWords inputWords zeroWords) (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
-        (fun _ _ _ => True) (fun _ _ => 0) := by realize
-    have hbranch := Realizes.branch₀ (.eq 5 6) hstop hpositive
-    have h := hzero.bind₀ hbranch
-    refine (h.congr (p' := fun d : Argument =>
-      BinaryHeap.Memory.siftDown d.1.1.2 d.1.2 d.2) ?_).consequence ?_ (fun _ _ => le_rfl)
-    · intro d
-      change (if d.2 = 0 then pure () else do
-        let _ ← boundedWhile guard step (d.1, d.1.2 / 2 + 1)
-          (rank (d.1, d.1.2 / 2 + 1) d.2) d.2
-        pure ()) = _
-      by_cases hk : d.2 = 0
-      · simp [hk, BinaryHeap.Memory.siftDown]
-      · rw [ite_eq_right hk]
-        exact finish_loop_eq (d.1, d.1.2 / 2 + 1) rfl
-          (rank (d.1, d.1.2 / 2 + 1) d.2) d.2 (by omega) le_rfl
-    · intro w d s _ _ hi
-      refine ⟨trivial, ?_⟩
-      change if d.2 = 0 then True else Safe w d s ∧ d.2 ≠ 0
-      split
-      · trivial
-      · exact ⟨hi, by assumption⟩
-  · intro w e s _ _ hi
-    refine ⟨⟨hi, ?_⟩, trivial⟩
-    change Shape w (e.1.1, e.1.1.2 / 2 + 1) e.1.2 s
-    refine ⟨rfl, hi.1.1, hi.1.2.1, hi.1.2.2.1, Nat.pos_of_ne_zero hi.2, ?_⟩
-    change e.1.2 ≤ e.1.1.2 + 1
-    exact hi.1.2.2.2.trans (Nat.le_succ _)
+      have halloc : d.1.1.2.base + (3 * d.1.1.1 + 1) ≤ s.frontier := hA
+      first
+      | exact ⟨rfl, hn, hA, hshape, by omega, hkS.trans (Nat.le_succ _)⟩
+      | omega
+      | exact hmem.frontier_fits.of_le (by omega)
+  refine hp.congr ?_
+  intro d
+  dsimp only [p]
+  by_cases hk : d.2 = 0
+  · simp [hk, BinaryHeap.Memory.siftDown]
+  · rw [ite_eq_right hk]
+    exact finish_loop_eq (d.1, d.1.2 / 2 + 1) rfl
+      (rank (d.1, d.1.2 / 2 + 1) d.2) d.2 (by omega) le_rfl
 
 /-- The exact source's logarithmic order repair and rearrangement lift to one uniform native
 code witness. The caller supplies already installed arguments, word bounds and an allocated

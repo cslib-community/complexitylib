@@ -181,7 +181,8 @@ theorem realizes_step :
     | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.pos_lt hA hvp)
 
 /-- The actual index guard selects a native early exit; the logarithmic cutoff is proof data.
-No register contains a fuel counter or a computed logarithm. -/
+No register contains a fuel counter or a computed logarithm. The source guard `2 ≤ k` is tested
+as `1 < k`, using the prepared constant-one word. -/
 theorem realizes_loop :
     Realizes .exact
       (fun (d, k) => boundedWhile guard step d (Nat.log 2 k) k)
@@ -190,79 +191,53 @@ theorem realizes_loop :
       (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
       (fun w (d, k) s => Shape w d k s)
       (fun (d, k) s => whileWork guard step (fun _ _ => 0) d (Nat.log 2 k) k s) := by
-  have h := Realizes.whileMeasure (appendWords layoutWords oneWords)
-    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (.lt 4 5)
-    (fun (_, k) => Nat.log 2 k) realizes_step (fun w d k s => Shape w d k s)
-    (fun _ k _ => Nat.log 2 k)
-    (fun _ _ k _ _ hz => by
-      change ¬(1 < k)
-      intro hk
+  have hStep := realizes_step
+  realize
+  intro hv
+  refine whileSafe_of_measure _ _ _ w _ (Shape w d.1) (fun k _ => Nat.log 2 k)
+    (fun k _ _ hz hk => by
       have := Nat.log_of_one_lt_of_le one_lt_two hk
       omega)
-    (fun w d k s hi hg _ => by
-      change 1 < k at hg
-      obtain ⟨_, _, hp⟩ := triple_iff.mp (step_triple hi hg)
-      rw [clientResult_width w, clientState_width w] at hp
-      exact ⟨⟨hg, hi⟩, hp⟩)
-  exact h.consequence (fun _ _ _ _ _ hi => ⟨hi, le_rfl⟩) (fun _ _ => le_rfl)
+    (fun k t hi hg _ => ?_) h le_rfl hv
+  obtain ⟨_, _, hp⟩ := triple_iff.mp (step_triple hi hg)
+  rw [clientResult_width w, clientState_width w] at hp
+  exact ⟨⟨hg, hi⟩, hp⟩
 
 /-- Actual reached loop controls, plus two binds. Constant preparation and the Unit return are
 certified native glue, absorbed into the same fixed exchange factor. -/
 def localWork (d : HeapLayout × ℕ) (s : Memory.State) : ℕ :=
   whileWork guard step (fun _ _ => 0) (d.1, ()) (Nat.log 2 d.2) d.2 s + 2
 
-/-- Realize the original sift-up, with one emitter before all runtime layouts, indices, memory
-contents and widths. Constant-one preparation and loop/finish composition use shared rules. -/
-private theorem realizes_siftUp_graded :
-    Realizes .exact (fun d : HeapLayout × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
-      indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
-      (fun w d s => Shape w (d.1, ()) d.2 s) localWork := by
-  have hprepare : Realizes .exact (fun _ : HeapLayout × ℕ => pure ())
-      indexWords oneWords (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
-    realize
-    obtain ⟨hn, _, S, hk, hkS, hshape⟩ := h
-    exact hn.of_le (hk.trans (hkS.trans hshape.size_le))
-  have hloop := realizes_loop.reindex
-    (fun e : (HeapLayout × ℕ) × Unit => ((e.1.1, e.2), e.1.2))
-    (appendWords indexWords oneWords) ![0, 1, 2, 3, 5, 4]
-    (by intro e i; fin_cases i <;> rfl)
-  have hfinish : Realizes .exact (fun _ : (HeapLayout × ℕ) × ℕ => pure ())
-      (appendWords indexWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
-      (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
-    realize
-  have h := (hprepare.bind hloop).bind hfinish
-  refine (h.congr (p' := fun d => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
-    ?_).consequence ?_ ?_
-  · intro d
-    simpa only [← PFunctor.FreeM.bind_eq_bind, PFunctor.FreeM.pure_bind] using
-      finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
-  · intro w d s _ _ hi
-    exact ⟨⟨hi, hi⟩, trivial⟩
-  · intro d s
-    simp [localWork, StateTransitionSpec.clientResult, StateTransitionSpec.clientState,
-      StateTransitionSpec.runClient_pure', Nat.add_assoc]
-
 /-- The queryful source pays every executed loop control. Bounded preparation/finish work is
 absorbed into one fixed factor, so call sites may use the standard zero-work certificate.
-This does not discard a query-free or arbitrary grading. -/
+This does not discard a query-free or arbitrary grading. The local loop certificate lets
+`realize` prepare the constant-one word and wire the call. -/
 theorem realizes_siftUp :
     Realizes .exact (fun d : HeapLayout × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
       indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
       (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
-  refine realizes_siftUp_graded.mono_mul 2 (fun d s => ?_)
   have hquery : ∀ x t, 1 ≤ memoryCost (step x) t := by
     intro x t
     change 1 ≤ 1 + _
     omega
-  have hc := whileWork_zero_le guard step hquery (d.1, ()) (Nat.log 2 d.2) d.2 s
-  have he := finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
-  have hm : memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2) s =
-      memoryCost (boundedWhile guard step (d.1, ()) (Nat.log 2 d.2) d.2) s := by
-    rw [← he]
-    simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_pure, Nat.add_zero]
-  rw [← hm] at hc
-  dsimp only [localWork]
-  omega
+  have hLoop := realizes_loop.mono_mul (work' := fun _ _ => 0) 1 (fun (d, k) s => by
+    have hc := whileWork_zero_le guard step hquery d (Nat.log 2 k) k s
+    dsimp only
+    omega)
+  let p (d : HeapLayout × ℕ) : Memory.Prog Unit := do
+    let _ ← boundedWhile guard step (d.1, ()) (Nat.log 2 d.2) d.2
+    pure ()
+  have hp : Realizes .exact p indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+      (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
+    realize
+    all_goals
+      first
+      | exact h
+      | obtain ⟨hn, _, S, hk, hkS, hshape⟩ := h
+        exact hn.of_le (hk.trans (hkS.trans hshape.size_le))
+  refine hp.congr ?_
+  intro d
+  exact finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
 
 /-- The actual combined currency is logarithmic. The premise is admissibility of the original
 program's complete history, not an assumed cost of a different implementation. -/

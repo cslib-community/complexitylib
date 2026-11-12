@@ -23,7 +23,9 @@ graph on `V` in which each pair of distinct vertices is an edge independently wi
 `p`. This file computes the basic probabilities of `G(V, p)` for countable `V`:
 
 * `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`
-  (`SimpleGraph.binomialRandom_real_subset_edgeSet`), so it contains a fixed subgraph `H` on its
+  (`SimpleGraph.binomialRandom_real_subset_edgeSet`) and avoids a fixed finite set `t` of
+  non-diagonal edges with probability `(1 - p) ^ |t|`
+  (`SimpleGraph.binomialRandom_real_disjoint_edgeSet`), so it contains a fixed subgraph `H` on its
   own vertex set with probability `p ^ e(H)` (`SimpleGraph.binomialRandom_real_setOf_le`);
 * for finite `V` the expected number of labelled copies of a finite graph `H` is the falling
   factorial `|V| (|V| - 1) ⋯ (|V| - v(H) + 1)` times `p ^ e(H)`
@@ -41,8 +43,10 @@ graph on `V` in which each pair of distinct vertices is an edge independently wi
 
 * `SimpleGraph.measurableSet_subset_edgeSet`, `SimpleGraph.measurableSet_setOf_le`: events
   defined by required edges are measurable.
-* `SimpleGraph.binomialRandom_real_subset_edgeSet`, `SimpleGraph.binomialRandom_real_setOf_le`:
-  the probability of a fixed set of edges or a fixed subgraph.
+* `SimpleGraph.binomialRandom_real_subset_edgeSet`,
+  `SimpleGraph.binomialRandom_real_disjoint_edgeSet`,
+  `SimpleGraph.binomialRandom_real_setOf_le`:
+  the probability of containing or avoiding a fixed set of edges or containing a fixed subgraph.
 * `SimpleGraph.integral_labelledCopyCount`: the expected number of labelled copies of `H`.
 * `SimpleGraph.binomialRandom_real_isContained_le`: the first-moment bound for containing `H`.
 * `SimpleGraph.tendsto_binomialRandom_real_isContained`: its asymptotic form.
@@ -88,6 +92,26 @@ theorem binomialRandom_real_subset_edgeSet [Countable V] (p : I) (s : Finset (Sy
     (hs : ∀ e ∈ s, ¬e.IsDiag) :
     G(V, p).real {G | (s : Set (Sym2 V)) ⊆ G.edgeSet} = (p : ℝ) ^ #s := by
   rw [measureReal_def, binomialRandom_subset_edgeSet p s hs]
+  simp
+
+/-- `G(V, p)` has no edge in a fixed finite set `t` of non-diagonal edges with probability
+`(1 - p) ^ |t|`: the constant pattern `false` in `SimpleGraph.binomialRandom_edgePattern`. -/
+theorem binomialRandom_disjoint_edgeSet [Countable V] (p : I) (t : Finset (Sym2 V))
+    (ht : ∀ e ∈ t, ¬e.IsDiag) :
+    G(V, p) {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} = toNNReal (σ p) ^ #t := by
+  have h := binomialRandom_edgePattern p t ht fun _ => false
+  simp only [Bool.false_eq_true, iff_false, ↓reduceIte, Finset.prod_const] at h
+  rw [← h]
+  congr 1
+  ext G
+  simp [Set.disjoint_left]
+
+/-- `G(V, p)` has no edge in a fixed finite set `t` of non-diagonal edges with probability
+`(1 - p) ^ |t|`. -/
+theorem binomialRandom_real_disjoint_edgeSet [Countable V] (p : I) (t : Finset (Sym2 V))
+    (ht : ∀ e ∈ t, ¬e.IsDiag) :
+    G(V, p).real {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} = (1 - p : ℝ) ^ #t := by
+  rw [measureReal_def, binomialRandom_disjoint_edgeSet p t ht]
   simp
 
 /-- `G(V, p)` contains a fixed subgraph `H` with finitely many edges with probability

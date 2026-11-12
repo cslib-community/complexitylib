@@ -315,8 +315,10 @@ compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_
 why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
 context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
 there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
-After the Lean gates, full and quick modes also re-elaborate the changed library and test files
-whose outputs Lake restored from the shared local artifact cache, which keeps no warnings
+After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
+restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
+affected sources, including unchanged importing clients, built import aggregates and executable
+helpers
 ([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
 generated research data. They catch source/link drift and malformed visual markup; they do not
@@ -585,6 +587,12 @@ under this cycle. Approve without queueing, and say why in the approval, when:
   to that human or to whomever they name;
 - the approval names a hold, such as an unlanded lower PR, a migration or an upstream dependency;
   queue once the hold clears.
+
+Pending source, advisory-notice or rendered-manual review is also a hold. `--wait` queues
+automatically when the check passes; do not start it while completing CI will produce material
+that still needs review. Inspect that material first, then record the hold's resolution and link
+the existing proof/API/caller assessment before queueing. A successful check does not release a
+review hold, and the helper does not judge whether that review is complete.
 
 The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
 conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with

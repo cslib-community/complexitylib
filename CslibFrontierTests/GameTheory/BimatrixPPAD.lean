@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import CslibFrontier.GameTheory.Bimatrix.PPAD
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PPADS
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Mathlib.Tactic.FinCases
