@@ -50,7 +50,7 @@ example (n : ℕ) : ∃ ρ > 0, ∀ e, ((PolygonalDrawing.star n).outsideRoute n
 private abbrev big : ℕ := 2 ^ 250
 
 private abbrev listed : Graph :=
-  ([big, 7, big, 12, 12], [(big, big), (big, big), (7, 7)])
+  ⟨[big, 7, big, 12, 12], [(big, big), (big, big), (7, 7)]⟩
 
 private def certificate : Graph.RotationCertificate := ⟨[1, 2, 3, 0, 5, 4]⟩
 

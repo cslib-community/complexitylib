@@ -8,11 +8,12 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.ParityP
+public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Foundations.Order.BooleanSubalgebra
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
 
 /-!
-# Boolean closure of ParityP
+# Boolean and reduction closure of ParityP
 
 ## Main definitions
 
@@ -20,7 +21,8 @@ import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
 
 ## Main results
 
-`ParityP` is closed under union, intersection, set difference, and symmetric difference.
+`ParityP` is closed under union, intersection, set difference, and symmetric difference, and
+under polynomial-time many-one reductions (`Cslib.Complexity.PolyTimeReducible.mem_ParityP`).
 
 ## References
 
@@ -70,5 +72,13 @@ theorem diff_mem_ParityP (hA : A ∈ ParityP enc) (hB : B ∈ ParityP enc) :
 theorem symmDiff_mem_ParityP (hA : A ∈ ParityP enc) (hB : B ∈ ParityP enc) :
     A ∆ B ∈ ParityP enc :=
   (ParityP.booleanSubalgebra enc).symmDiff_mem hA hB
+
+/-- Exact-count precomposition preserves the parity of the count. -/
+theorem PolyTimeReducible.mem_ParityP {β : Type} {encB : β ↪ List Bool} {B : Set β}
+    (h : PolyTimeReducible enc encB A B) (hB : B ∈ ParityP encB) : A ∈ ParityP enc := by
+  obtain ⟨g, hg, hAB⟩ := h
+  obtain ⟨f, hf, hB⟩ := mem_ParityP_iff_exists_SharpP.mp hB
+  exact mem_ParityP_iff_exists_SharpP.mpr
+    ⟨f ∘ g, SharpP.comp_mem hf hg, fun a => (hAB a).trans (hB (g a))⟩
 
 end Cslib.Complexity

@@ -56,13 +56,14 @@ theorem clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
   ⟨clique_mem_NP, IndependentSet_npHard.trans independentSet_to_clique⟩
 
 -- The reduction keeps a zero target and complements only the declared vertices.
-example : complementInstance (([0, 1], []), 0) = (([0, 1], [(0, 1), (1, 0)]), 0) := by decide
+example : complementInstance ((⟨[0, 1], []⟩ : Graph), 0) =
+    ((⟨[0, 1], [(0, 1), (1, 0)]⟩ : Graph), 0) := by decide
 
 -- The empty graph has a zero-size clique, but no clique of size one.
-example : ((([], []) : Graph), 0) ∈ Clique :=
+example : ((⟨[], []⟩ : Graph), 0) ∈ Clique :=
   ⟨∅, by simp, rfl⟩
 
-example : ((([], []) : Graph), 1) ∉ Clique := by
+example : ((⟨[], []⟩ : Graph), 1) ∉ Clique := by
   intro h
   have := Graph.le_card_of_mem_Clique h
   simp at this

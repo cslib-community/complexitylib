@@ -16,8 +16,12 @@ into another authored manifest.
 
 The [Arora–Barak 2007 draft audit](arora-barak-2007.md) records a source-pinned chapter-level
 coverage comparison, including missing endpoints, partial matches and source/model problems.
-Its Chapter 14 record includes a checked degree obstruction to the draft's literal
+Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
+and quantitative crypto bounds. Its Chapter 14 record includes a checked degree obstruction to the draft's literal
 circuit-to-determinant statement; it is not a claim of book-wide coverage.
+
+The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
+for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.
 
 ## Authoring
 

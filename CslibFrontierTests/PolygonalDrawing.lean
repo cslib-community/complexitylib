@@ -38,7 +38,7 @@ example : (PolygonalDrawing.points [7, 7, 100]).vertex 7 ≠
     (PolygonalDrawing.points [7, 7, 100]).vertex 100 :=
   (PolygonalDrawing.points_isEmbedding _).vertex_ne (by decide) (by decide) (by decide)
 
-example (r : RotationSystem ([7, 7, 100], [])) :
+example (r : RotationSystem ⟨[7, 7, 100], []⟩) :
     (PolygonalDrawing.points [7, 7, 100]).Realizes r := PolygonalDrawing.points_realizes _ r
 
 -- Checking listed endpoints alone would accept this degenerate loop; simplicity rejects it.
@@ -107,7 +107,7 @@ private theorem triangle_simple : triangle.IsSimple := by
     | exact Or.inr (Or.inl ⟨by linarith [hs.1, hs.2, ht.1, ht.2], by linarith⟩)
     | exact Or.inr (Or.inr ⟨by linarith [hs.1, hs.2, ht.1, ht.2], by linarith⟩)
 
-private abbrev loopGraph : Graph := ([7, 7], [(7, 7)])
+private abbrev loopGraph : Graph := ⟨[7, 7], [(7, 7)]⟩
 
 private def loopDrawing : PolygonalDrawing loopGraph where
   vertex := fun _ => 0
@@ -188,7 +188,7 @@ private theorem bowed_simple (upper : Bool) : (bowed upper).IsSimple := by
   rw [← bowed_re, ← bowed_re]
   exact congrArg Complex.re h
 
-private abbrev digonGraph : Graph := ([7, 100, 7], [(7, 100), (7, 100)])
+private abbrev digonGraph : Graph := ⟨[7, 100, 7], [(7, 100), (7, 100)]⟩
 
 private def digonDrawing : PolygonalDrawing digonGraph where
   vertex := fun v => if v = 7 then 0 else 2

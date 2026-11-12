@@ -169,10 +169,10 @@ theorem argumentNextIndex_append_last_argument_wrap (F : CSP Rel V) (r : Rel)
 /-- The actual source incidence prefix before its last argument edge. Its declarations
 and dense endpoint names are still those of the source, including a now isolated variable. -/
 @[expose] def lastArgumentPrefixGraph (F : CSP Rel V) (r : Rel) (scope : List V) (v : V) : Graph :=
-  ((incidenceGraph (F ++ [(r, scope ++ [v])])).1,
+  ⟨(incidenceGraph (F ++ [(r, scope ++ [v])])).vertices,
     (F ++ [(r, scope)]).occurrences.map fun (constraint, (_argument, varName)) =>
       ((F ++ [(r, scope ++ [v])]).distinctVars.idxOf varName,
-        (F ++ [(r, scope ++ [v])]).numVars + constraint))
+        (F ++ [(r, scope ++ [v])]).numVars + constraint)⟩
 
 /-- Source incidence is literally this prefix followed by the selected final edge. -/
 theorem incidenceGraph_append_last_argument (F : CSP Rel V) (r : Rel) (scope : List V) (v : V) :
@@ -180,7 +180,7 @@ theorem incidenceGraph_append_last_argument (F : CSP Rel V) (r : Rel) (scope : L
       lastEdgeGraph (lastArgumentPrefixGraph F r scope v)
         ((F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
         ((F ++ [(r, scope ++ [v])]).numVars + F.length) := by
-  apply Prod.ext
+  apply Graph.ext
   · rfl
   · rw [incidenceGraph_edges, CSP.occurrences_append_last_argument]
     simp [lastEdgeGraph, lastArgumentPrefixGraph]
@@ -201,7 +201,7 @@ theorem vertex_lastArgumentDartEquiv_symm (F : CSP Rel V) (r : Rel) (scope : Lis
   have hidx : T.occurrences.idxOf o.record < T.occurrences.length :=
     List.idxOf_lt_length_of_mem (CSP.mem_occurrences.mpr ⟨o, rfl⟩)
   have hi : incidenceEdgeIndex o < T.occurrences.length := hidx
-  have he : (lastArgumentPrefixGraph F r scope v).2.getD (incidenceEdgeIndex o) (0, 0) =
+  have he : (lastArgumentPrefixGraph F r scope v).edges.getD (incidenceEdgeIndex o) (0, 0) =
       (S.distinctVars.idxOf o.var, S.numVars + o.1) := by
     change (T.occurrences.map fun a => (S.distinctVars.idxOf a.2.2, S.numVars + a.1)).getD
       (incidenceEdgeIndex o) (0, 0) = _
@@ -210,8 +210,8 @@ theorem vertex_lastArgumentDartEquiv_symm (F : CSP Rel V) (r : Rel) (scope : Lis
       S.numVars + (T.occurrences[T.occurrences.idxOf o.record]'hidx).1) = _
     rw [List.getElem_idxOf (List.idxOf_lt_length_of_mem (CSP.mem_occurrences.mpr ⟨o, rfl⟩))]
     rfl
-  change (if side then ((lastArgumentPrefixGraph F r scope v).2.getD
-    (incidenceEdgeIndex o) (0, 0)).2 else ((lastArgumentPrefixGraph F r scope v).2.getD
+  change (if side then ((lastArgumentPrefixGraph F r scope v).edges.getD
+    (incidenceEdgeIndex o) (0, 0)).2 else ((lastArgumentPrefixGraph F r scope v).edges.getD
       (incidenceEdgeIndex o) (0, 0)).1) = _
   rw [he]
 
@@ -301,7 +301,7 @@ retain all old edge/end positions while accounting for changed dense vertex name
 theorem lastArgumentPrefixGraph_endpoints_declared (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) :
     ∀ w ∈ (lastArgumentPrefixGraph F r scope v).incidenceVertices,
-      w ∈ (lastArgumentPrefixGraph F r scope v).1 := by
+      w ∈ (lastArgumentPrefixGraph F r scope v).vertices := by
   apply endpoints_declared_deleteLastEdge (u := (F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
     (v := (F ++ [(r, scope ++ [v])]).numVars + F.length)
   rw [← incidenceGraph_append_last_argument]
