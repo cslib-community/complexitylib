@@ -265,7 +265,7 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShif
   CslibFrontierTests.Foundations.Combinatorics.PerfectHashFamily
 ```
 
-**Not certified here.** Polynomials of individual degree above one: the argument is for multilinear polynomials only, and the general statement of Forbes, Saptharishi and Shpilka needs their rank condensers. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
+**Not certified here.** The proof of Forbes, Saptharishi and Shpilka by rank condensers, and their size bound: for every individual degree the statement is proved by the argument of `boundedDegreeShifts` above, and `concentratingShifts F P` is `boundedDegreeShifts F 1 P`. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
 
 ## Rational formulas and hitting lists
 

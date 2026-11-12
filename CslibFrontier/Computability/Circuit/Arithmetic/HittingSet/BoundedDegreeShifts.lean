@@ -171,9 +171,6 @@ noncomputable def seedPoint (δ : ℕ) (P : Finset (Fin n → Fin k)) (j : Fin n
 
 variable {F}
 
-private theorem node_injective (N : ℕ) : Function.Injective fun e : Fin N => ((e : ℕ) : F) :=
-  Nat.cast_injective.comp Fin.val_injective
-
 omit [CharZero F] in
 private theorem eval_C_seedPoint (δ : ℕ) (P : Finset (Fin n → Fin k)) (c : F) (j : Fin n) :
     (seedPoint F δ P j).eval (Polynomial.C c) = ∑ e : Fin P.card,
@@ -187,8 +184,9 @@ private theorem eval_node_seedPoint (δ : ℕ) (P : Finset (Fin n → Fin k)) (e
       Polynomial.X ^ (δ + 1) ^ ((P.equivFin.symm e₀ : Fin n → Fin k) j : ℕ) := by
   classical
   rw [eval_C_seedPoint, Finset.sum_eq_single e₀]
-  · rw [Lagrange.eval_basis_self (v := fun e : Fin P.card => ((e : ℕ) : F))
-      (node_injective _).injOn (mem_univ _), map_one, one_mul]
+  · have hinj : Function.Injective fun e : Fin P.card => ((e : ℕ) : F) :=
+      Nat.cast_injective.comp Fin.val_injective
+    rw [Lagrange.eval_basis_self hinj.injOn (mem_univ _), map_one, one_mul]
   · intro e _ he
     rw [Lagrange.eval_basis_of_ne (v := fun e : Fin P.card => ((e : ℕ) : F)) he (mem_univ _),
       map_zero, zero_mul]
@@ -201,8 +199,9 @@ private theorem natDegree_seedPoint_le (δ : ℕ) (P : Finset (Fin n → Fin k))
   refine Polynomial.natDegree_mul_le.trans ?_
   rw [Polynomial.natDegree_C, add_zero]
   refine Polynomial.natDegree_map_le.trans ?_
-  rw [Lagrange.natDegree_basis (node_injective _).injOn (mem_univ _), card_univ,
-    Fintype.card_fin]
+  have hinj : Function.Injective fun e : Fin P.card => ((e : ℕ) : F) :=
+    Nat.cast_injective.comp Fin.val_injective
+  rw [Lagrange.natDegree_basis hinj.injOn (mem_univ _), card_univ, Fintype.card_fin]
   exact Nat.sub_le _ _
 
 omit [CharZero F] in

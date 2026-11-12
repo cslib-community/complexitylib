@@ -88,17 +88,6 @@ theorem pderiv_shift (a : σ → A) (i : σ) (f : MvPolynomial σ R) :
       Pi.single_apply]
     split_ifs <;> simp
 
-/-- A polynomial of degree at most one in each of its finitely many variables has total degree
-at most the number of variables. -/
-theorem totalDegree_le_card_of_degreeOf_le_one [Fintype σ] {f : MvPolynomial σ R}
-    (hmul : ∀ i, f.degreeOf i ≤ 1) : f.totalDegree ≤ Fintype.card σ :=
-  Finset.sup_le fun m hm =>
-    calc (m.sum fun _ e => e) ≤ ∑ j ∈ m.support, 1 :=
-          Finset.sum_le_sum fun j _ => (monomial_le_degreeOf j hm).trans (hmul j)
-      _ ≤ Fintype.card σ := by
-          rw [Finset.sum_const, smul_eq_mul, mul_one]
-          exact Finset.card_le_univ _
-
 /-- A polynomial of degree at most `δ` in each of its finitely many variables has total degree
 at most `δ` times the number of variables. -/
 theorem totalDegree_le_card_mul_of_degreeOf_le [Fintype σ] {f : MvPolynomial σ R} {δ : ℕ}
@@ -109,6 +98,12 @@ theorem totalDegree_le_card_mul_of_degreeOf_le [Fintype σ] {f : MvPolynomial σ
       _ ≤ Fintype.card σ * δ := by
           rw [Finset.sum_const, smul_eq_mul]
           exact Nat.mul_le_mul_right _ (Finset.card_le_univ _)
+
+/-- A polynomial of degree at most one in each of its finitely many variables has total degree
+at most the number of variables. -/
+theorem totalDegree_le_card_of_degreeOf_le_one [Fintype σ] {f : MvPolynomial σ R}
+    (hmul : ∀ i, f.degreeOf i ≤ 1) : f.totalDegree ≤ Fintype.card σ :=
+  (totalDegree_le_card_mul_of_degreeOf_le hmul).trans_eq (mul_one _)
 
 /-- Substituting the variables of the polynomial ring over an algebra is a base change. -/
 theorem aeval_X_eq_map (p : MvPolynomial σ R) :
