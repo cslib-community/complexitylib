@@ -13,9 +13,9 @@ public import CslibFrontier.Crypto.Computational.LWE.Trapdoor.Gadget
 /-!
 # Micciancio–Peikert Gadget Trapdoors for LWE
 
-Root module re-exporting the power-of-two primitive gadget matrices, short kernel bases, and
+Root module re-exporting the power-of-two primitive gadget matrices, short kernel matrices, and
 gadget LWE inversion (`CslibFrontier.Crypto.Computational.LWE.Trapdoor.Gadget`) together with the
 Micciancio–Peikert (2012) gadget-based trapdoor construction (`GenTrap`, syndrome lifting,
-extended kernel bases, and deterministic trapdoor LWE inversion in
+lifted kernel vectors, and deterministic trapdoor LWE inversion in
 `CslibFrontier.Crypto.Computational.LWE.Trapdoor.Basic`).
 -/

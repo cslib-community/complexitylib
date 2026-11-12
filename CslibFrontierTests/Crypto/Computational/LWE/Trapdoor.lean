@@ -108,6 +108,7 @@ example :
 -- support of `genTrap n mbar w η H` whenever `4 * (1 + mbar * η) * B_e < 2 ^ w`.
 example {n mbar w η B_e : ℕ}
     {H Hinv : _root_.Matrix (Fin n) (Fin n) (ZMod (2 ^ w))} (hH : H * Hinv = 1)
+    (hHinv : Hinv * H = 1)
     {out : _root_.Matrix (Fin n) (Fin mbar ⊕ (Fin n × Fin w)) (ZMod (2 ^ w)) ×
       _root_.Matrix (Fin mbar) (Fin n × Fin w) ℤ}
     (hout : out ∈ (ProbComp.eval (genTrap n mbar w η H)).support)
@@ -115,11 +116,15 @@ example {n mbar w η B_e : ℕ}
     (e : Fin mbar ⊕ (Fin n × Fin w) → ℤ)
     (he : ∀ k, (e k).natAbs ≤ B_e)
     (hbound : 4 * (1 + mbar * η) * B_e < 2 ^ w) :
-    ∃ Abar : _root_.Matrix (Fin n) (Fin mbar) (ZMod (2 ^ w)),
-      out.1 = taggedMatrix w Abar out.2 H ∧
-        invertLWE w Abar out.2 H Hinv (trapdoorLWE w out.1 s e) = (s, e) := by
-  rcases mem_support_genTrap n mbar w η H hout with ⟨_, hR, Abar, hA⟩
-  refine ⟨Abar, hA, ?_⟩
+    IsHTagTrapdoor w out.1 out.2 H ∧
+      Function.Surjective
+        (fun x : Fin mbar ⊕ (Fin n × Fin w) → ℤ => out.1 *ᵥ (Int.cast ∘ x)) ∧
+      ∃ Abar : _root_.Matrix (Fin n) (Fin mbar) (ZMod (2 ^ w)),
+        out.1 = taggedMatrix w Abar out.2 H ∧
+          invertLWE w Abar out.2 H Hinv (trapdoorLWE w out.1 s e) = (s, e) := by
+  have hHunit : IsUnit H := ⟨⟨H, Hinv, hH, hHinv⟩, rfl⟩
+  rcases mem_support_genTrap n mbar w η hHunit hout with ⟨htrap, hR, Abar, hA⟩
+  refine ⟨htrap, htrap.surjective, Abar, hA, ?_⟩
   rw [hA]
   exact invertLWE_trapdoorLWE_of_norm_bound w Abar out.2 hH s e hR he
     (by simpa [Fintype.card_fin] using hbound)

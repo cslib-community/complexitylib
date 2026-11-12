@@ -61,7 +61,9 @@ sampling over cosets of `Λ^⊥(G)` are not formalized here.
 * `Cslib.Crypto.LWE.Trapdoor.InScalarKernel`, `Cslib.Crypto.LWE.Trapdoor.InKernelLattice`:
   membership in `Λ^⊥(gᵀ)` and `Λ^⊥(A)`.
 * `Cslib.Crypto.LWE.Trapdoor.scalarBasis`, `Cslib.Crypto.LWE.Trapdoor.gadgetBasis`: the explicit
-  short basis `S_w` of `Λ^⊥(gᵀ)` and block basis `S = I_ι ⊗ S_w` of `Λ^⊥(G)`.
+  short kernel matrix `S_w` in `Λ^⊥(gᵀ)` and block matrix `S = I_ι ⊗ S_w` in `Λ^⊥(G)` (shown to be
+  bases in Section 4.1; kernel membership, `det S_w = 2 ^ w`, and norm bounds are proved here,
+  not lattice generation).
 * `Cslib.Crypto.LWE.Trapdoor.gadgetLWE`, `Cslib.Crypto.LWE.Trapdoor.invertScalarAux`,
   `Cslib.Crypto.LWE.Trapdoor.invertScalar`, `Cslib.Crypto.LWE.Trapdoor.invertGadget`: the
   gadget LWE map `g_G(s, e) = sᵀ G + eᵀ` and its iterative Section 4.1 inversion algorithm.
@@ -80,9 +82,9 @@ sampling over cosets of `Λ^⊥(G)` are not formalized here.
   `Cslib.Crypto.LWE.Trapdoor.det_scalarBasis`,
   `Cslib.Crypto.LWE.Trapdoor.sum_sq_scalarBasis_col_le_five`,
   `Cslib.Crypto.LWE.Trapdoor.gadgetMatrix_mul_gadgetBasis`,
-  `Cslib.Crypto.LWE.Trapdoor.sum_sq_gadgetBasis_col_le_five`: kernel membership, determinant
-  `2 ^ w`, and Euclidean column length `≤ √5` for `S_w` and `S` (Theorem 4.1 / Proposition 4.2;
-  the basis property itself is not proved).
+  `Cslib.Crypto.LWE.Trapdoor.sum_sq_gadgetBasis_col_le_five`: `det S_w = 2 ^ w` for `S_w`, and
+  kernel membership and Euclidean column length `≤ √5` for both `S_w` and `S` (Theorem 4.1 /
+  Proposition 4.2; the basis property itself is not proved).
 * `Cslib.Crypto.LWE.Trapdoor.invertScalar_correct`,
   `Cslib.Crypto.LWE.Trapdoor.invertGadget_gadgetLWE`: exact inversion of `g_G(s, e)` under
   `4 * (e p).natAbs < 2 ^ w` (Theorem 4.1 / Section 4.1).
@@ -286,14 +288,14 @@ theorem natAbs_scalarBasis_le_two (w : ℕ) (i j : Fin w) :
   simp only [scalarBasis]
   split_ifs <;> decide
 
-/-- Every column of `S_w` belongs to `Λ^⊥(gᵀ)` ([MicciancioPeikert2012], Section 4.1). -/
-theorem scalarBasis_col_inScalarKernel (w : ℕ) (j : Fin w) :
-    InScalarKernel w (fun i => scalarBasis w i j) := by
-  unfold InScalarKernel
-  simp only [dotProduct, gadgetVector_apply, Function.comp_apply, scalarBasis]
+private theorem sum_scalarBasis_col {M : Type*} [AddCommMonoid M] (w : ℕ) (j : Fin w)
+    (f : Fin w → ℤ → M) (hf0 : ∀ i, f i 0 = 0) :
+    (∑ i : Fin w, f i (scalarBasis w i j)) =
+      if hj : j.val + 1 < w then f j 2 + f ⟨j.val + 1, hj⟩ (-1) else f j 2 := by
+  simp only [scalarBasis]
   have hdiag : ∀ i : Fin w, i.val = j.val ↔ i = j := fun i => Fin.ext_iff.symm
   simp only [hdiag]
-  by_cases hj : j.val + 1 < w
+  split_ifs with hj
   · let j' : Fin w := ⟨j.val + 1, hj⟩
     have hsub : ∀ i : Fin w, i.val = j.val + 1 ↔ i = j' :=
       fun i => (Fin.ext_iff (a := i) (b := j')).symm
@@ -303,16 +305,28 @@ theorem scalarBasis_col_inScalarKernel (w : ℕ) (j : Fin w) :
       omega
     simp only [hsub]
     rw [Finset.sum_eq_add j j' hne.symm
-      (fun i _ ⟨hij, hij'⟩ => by simp [hij, hij'])
+      (fun i _ ⟨hij, hij'⟩ => by simp [hij, hij', hf0])
       (fun h => (h (Finset.mem_univ j)).elim)
       (fun h => (h (Finset.mem_univ j')).elim)]
-    simp only [↓reduceIte, hne, Int.cast_ofNat, Int.cast_neg, Int.cast_one]
-    change (2 : ZMod (2 ^ w)) ^ j.val * 2 + 2 ^ (j.val + 1) * (-1) = 0
-    rw [pow_succ]
-    ring
+    simp [hne, j']
   · have hno : ∀ i : Fin w, ¬(i.val = j.val + 1) := fun i => by omega
-    simp only [hno, ↓reduceIte, Int.cast_ite, Int.cast_ofNat, Int.cast_zero, mul_ite, mul_zero,
-      Finset.sum_ite_eq', Finset.mem_univ]
+    simp only [hno, ↓reduceIte]
+    rw [Finset.sum_eq_single j
+      (fun i _ hij => by simp [hij, hf0])
+      (fun h => (h (Finset.mem_univ j)).elim)]
+    simp
+
+/-- Every column of `S_w` belongs to `Λ^⊥(gᵀ)` ([MicciancioPeikert2012], Section 4.1). -/
+theorem scalarBasis_col_inScalarKernel (w : ℕ) (j : Fin w) :
+    InScalarKernel w (fun i => scalarBasis w i j) := by
+  unfold InScalarKernel
+  simp only [dotProduct, Function.comp_apply]
+  rw [sum_scalarBasis_col w j (fun i (z : ℤ) => gadgetVector w i * (z : ZMod (2 ^ w)))
+    (fun _ => by simp)]
+  split_ifs with hj
+  · simp only [gadgetVector_apply, Int.cast_ofNat, Int.cast_neg, Int.cast_one, pow_succ]
+    ring
+  · simp only [gadgetVector_apply, Int.cast_ofNat]
     have hjw : j.val + 1 = w := by omega
     calc
       (2 : ZMod (2 ^ w)) ^ j.val * 2 = 2 ^ (j.val + 1) := (pow_succ 2 j.val).symm
@@ -329,29 +343,8 @@ theorem scalarBasis_col_inScalarKernel (w : ℕ) (j : Fin w) :
 [MicciancioPeikert2012], Proposition 4.2). -/
 theorem sum_sq_scalarBasis_col_le_five (w : ℕ) (j : Fin w) :
     (∑ i : Fin w, (scalarBasis w i j) ^ 2) ≤ 5 := by
-  simp only [scalarBasis]
-  have hdiag : ∀ i : Fin w, i.val = j.val ↔ i = j := fun i => Fin.ext_iff.symm
-  simp only [hdiag]
-  by_cases hj : j.val + 1 < w
-  · let j' : Fin w := ⟨j.val + 1, hj⟩
-    have hsub : ∀ i : Fin w, i.val = j.val + 1 ↔ i = j' :=
-      fun i => (Fin.ext_iff (a := i) (b := j')).symm
-    have hne : j' ≠ j := by
-      intro h
-      have hval : j.val + 1 = j.val := congrArg Fin.val h
-      omega
-    simp only [hsub]
-    rw [Finset.sum_eq_add j j' hne.symm
-      (fun i _ ⟨hij, hij'⟩ => by simp [hij, hij'])
-      (fun h => (h (Finset.mem_univ j)).elim)
-      (fun h => (h (Finset.mem_univ j')).elim)]
-    simp [hne]
-  · have hno : ∀ i : Fin w, ¬(i.val = j.val + 1) := fun i => by omega
-    simp only [hno, ↓reduceIte]
-    rw [Finset.sum_eq_single j
-      (fun i _ hij => by simp [hij])
-      (fun h => (h (Finset.mem_univ j)).elim)]
-    simp
+  rw [sum_scalarBasis_col w j (fun _ z => z ^ 2) (fun _ => by simp)]
+  split_ifs <;> decide
 
 /-- The block-diagonal matrix `S = I_ι ⊗ S_w`, the short basis of `Λ^⊥(G)` for `q = 2 ^ w` in
 [MicciancioPeikert2012], Section 4 and Theorem 4.1 (only kernel membership and norm bounds are
@@ -444,28 +437,14 @@ def invertScalar (w : ℕ) (b : Fin w → ZMod (2 ^ w)) : ZMod (2 ^ w) :=
 def invertGadget (w : ℕ) (b : ι × Fin w → ZMod (2 ^ w)) : ι → ZMod (2 ^ w) :=
   fun i => invertScalar w (fun j => b (i, j))
 
-private theorem nat_decomp_step (n l : ℕ) :
-    n = n % 2 ^ l + (n.testBit l).toNat * 2 ^ l + 2 ^ (l + 1) * (n / 2 ^ (l + 1)) := by
-  have hdiv2 := Nat.div_add_mod (n / 2 ^ l) 2
-  rw [Nat.div_div_eq_div_mul, ← pow_succ, ← Nat.toNat_testBit] at hdiv2
-  have hdiv := Nat.div_add_mod n (2 ^ l)
-  calc
-    n = 2 ^ l * (n / 2 ^ l) + n % 2 ^ l := hdiv.symm
-    _ = 2 ^ l * (2 * (n / 2 ^ (l + 1)) + (n.testBit l).toNat) + n % 2 ^ l := by rw [hdiv2]
-    _ = n % 2 ^ l + (n.testBit l).toNat * 2 ^ l + (2 ^ l * 2) * (n / 2 ^ (l + 1)) := by ring
-    _ = n % 2 ^ l + (n.testBit l).toNat * 2 ^ l + 2 ^ (l + 1) * (n / 2 ^ (l + 1)) := by
-      rw [pow_succ]
-
 private theorem mod_two_pow_succ (n l : ℕ) :
     n % 2 ^ l + (n.testBit l).toNat * 2 ^ l = n % 2 ^ (l + 1) := by
-  have hstep := nat_decomp_step n l
-  have hrem : n % 2 ^ l < 2 ^ l := Nat.mod_lt n (Nat.two_pow_pos l)
-  have hlt : n % 2 ^ l + (n.testBit l).toNat * 2 ^ l < 2 ^ (l + 1) := by
-    rw [pow_succ]
-    cases n.testBit l <;> simp <;> omega
-  have hmod := congrArg (· % 2 ^ (l + 1)) hstep
-  rw [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hlt] at hmod
-  exact hmod.symm
+  rw [pow_succ, Nat.mod_mul, ← Nat.toNat_testBit, mul_comm]
+
+private theorem nat_decomp_step (n l : ℕ) :
+    n = n % 2 ^ l + (n.testBit l).toNat * 2 ^ l + 2 ^ (l + 1) * (n / 2 ^ (l + 1)) := by
+  rw [mod_two_pow_succ]
+  exact (Nat.mod_add_div n (2 ^ (l + 1))).symm
 
 private theorem shifted_sub_mod_eq (w l : ℕ) (hl : l < w) (s : ZMod (2 ^ w)) :
     (2 : ZMod (2 ^ w)) ^ (w - 1 - l) * s -
