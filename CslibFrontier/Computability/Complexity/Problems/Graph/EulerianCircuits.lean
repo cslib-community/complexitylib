@@ -273,12 +273,9 @@ theorem computableInPolyTime_eulerianCircuitCount :
       (encPair encGraph encNat) (encList (encPair encNat encNat)) :=
     computableInPolyTime_validArcs.comp hfst
   have hlen : ComputableInPolyTime (fun p : Graph × ℕ => p.1.validArcs.length)
-      (encPair encGraph encNat) encNat := by
-    have hu : ComputableInPolyTime (fun p : Graph × ℕ => p.1.validArcs.countP fun _ => true)
-        (encPair encGraph encNat) encUnary :=
-      ComputableInPolyTime.countPWithInput harcs (ComputableInPolyTime.const true)
-    refine (ComputableInPolyTime.unary_to_binary.comp hu).of_enc_eq fun p => ?_
-    simp [List.countP_true]
+      (encPair encGraph encNat) encNat :=
+    ComputableInPolyTime.unary_to_binary.comp
+      ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp harcs)
   have hlt : ComputableInPolyTime (fun p : Graph × ℕ => decide (p.2 < p.1.validArcs.length))
       (encPair encGraph encNat) encBool :=
     ComputableInPolyTime.binary_lt' hsnd hlen
