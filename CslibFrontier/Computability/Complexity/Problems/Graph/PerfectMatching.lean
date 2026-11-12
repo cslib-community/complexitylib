@@ -110,10 +110,13 @@ theorem partitionFunction_perfectMatchingInstance (G : Graph) :
         rcases he with he | he <;> simp only [he] at hu hw hadj
         · exact hadj
         · exact hadj.symm
-      · rcases exists_mem_edgeList (M.adj_sub h) with he | he <;>
-          obtain ⟨i, hi, hie⟩ := exists_getD_edgeList he
-        · exact ⟨i, mem_positions.mpr ⟨hi, by rw [hie]; exact ⟨u.2, w.2, h⟩⟩, Or.inl hie⟩
-        · exact ⟨i, mem_positions.mpr ⟨hi, by rw [hie]; exact ⟨w.2, u.2, h.symm⟩⟩, Or.inr hie⟩
+      · obtain ⟨i, hi, hie⟩ := exists_getD_edgeList_of_adj (M.adj_sub h)
+        refine ⟨i, mem_positions.mpr ⟨hi, ?_⟩, hie⟩
+        rcases hie with hie | hie
+        · rw [hie]
+          exact ⟨u.2, w.2, h⟩
+        · rw [hie]
+          exact ⟨w.2, u.2, h.symm⟩
   · -- the positions of the subgraph spanned by a set of positions are that set
     obtain ⟨S, hS⟩ := S
     have hS' := hsub.mp (Finset.mem_powerset.mp (Finset.mem_filter.mp hS).1)

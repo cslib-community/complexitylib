@@ -24,6 +24,8 @@ must restrict its vertex set to their covered vertices.
 These declarations and proofs were extracted from `Graph.PerfectMatching` for constructive
 matching algorithms, preserving the original public names and normalization conventions.
 `cover_positions` now also applies at each covered vertex of an incomplete matching.
+`exists_getD_edgeList_of_adj` supplies a valid edge position directly from adjacency,
+so coverage, edge-cardinality and legacy counting proofs share the same orientation witness.
 -/
 
 public section
@@ -108,6 +110,16 @@ theorem exists_getD_edgeList {e : ℕ × ℕ} (he : e ∈ G.edgeList) :
   obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp he
   exact ⟨i, hi, List.getD_eq_getElem _ _ hi⟩
 
+/-- Every actual adjacency has a retained edge position, in one of its two orientations. -/
+theorem exists_getD_edgeList_of_adj {u v : {v // v ∈ G.1}} (h : G.induced.Adj u v) :
+    ∃ i < G.edgeList.length, G.edgeList.getD i (0, 0) = (u.val, v.val) ∨
+      G.edgeList.getD i (0, 0) = (v.val, u.val) := by
+  rcases exists_mem_edgeList h with he | he
+  · obtain ⟨i, hi, hie⟩ := exists_getD_edgeList he
+    exact ⟨i, hi, Or.inl hie⟩
+  · obtain ⟨i, hi, hie⟩ := exists_getD_edgeList he
+    exact ⟨i, hi, Or.inr hie⟩
+
 /-- The adjacency of a subgraph of `G.induced`, read on natural numbers. -/
 @[expose] def AdjNat (M : G.induced.Subgraph) (u w : ℕ) : Prop :=
   ∃ (hu : u ∈ G.1) (hw : w ∈ G.1), M.Adj ⟨u, hu⟩ ⟨w, hw⟩
@@ -175,14 +187,7 @@ theorem cover_positions {M : G.induced.Subgraph} (hM : M.IsMatching) :
   intro v hv hvM
   obtain ⟨w, hvw, hwuniq⟩ := hM hvM
   -- the edge `vw` sits at a position of the edge list
-  have hpos : ∃ i < G.edgeList.length, G.edgeList.getD i (0, 0) = (v, w.1) ∨
-      G.edgeList.getD i (0, 0) = (w.1, v) := by
-    rcases exists_mem_edgeList (M.adj_sub hvw) with h | h
-    · obtain ⟨i, hi, he⟩ := exists_getD_edgeList h
-      exact ⟨i, hi, Or.inl he⟩
-    · obtain ⟨i, hi, he⟩ := exists_getD_edgeList h
-      exact ⟨i, hi, Or.inr he⟩
-  obtain ⟨i, hi, he⟩ := hpos
+  obtain ⟨i, hi, he⟩ := exists_getD_edgeList_of_adj (M.adj_sub hvw)
   refine ⟨i, ⟨hi, by rcases he with h | h <;> rw [h] <;> simp [incident],
     mem_positions.mpr ⟨hi, ?_⟩⟩,
     fun j ⟨hj, hinc, hjS⟩ => ?_⟩

@@ -243,6 +243,10 @@ normalization rules also apply to disconnected and nonbipartite inputs; callers 
 canonicality or degree hypothesis. For position-based clients, `maximumMatchingPositions` returns
 canonical normalized edge positions and `edgesAtPositions` converts them executably.
 
+The shared `Matching.Positions` API includes `exists_getD_edgeList_of_adj`: actual adjacency
+gives a valid retained position in either orientation. Coverage, edge-cardinality and the
+legacy perfect-matching counting proof reuse this fact instead of rebuilding the witness.
+
 `computableInPolyTime_maximumMatching`, `computableInPolyTime_perfectMatching` and
 `computableInPolyTime_decidePerfectMatching` use ordinary native multitape bit complexity on the
 complete framed `encGraph` input, with framed original pairs in `encMatching` and optional output

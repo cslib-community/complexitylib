@@ -95,23 +95,19 @@ theorem card_positions (M : G.induced.Subgraph) : (positions M).card = M.edgeSet
   have hsurj : Function.Surjective f := by
     rintro ⟨e, he⟩
     induction e using Sym2.ind with | h u w =>
-      rcases exists_mem_edgeList (M.adj_sub he) with h | h
-      · obtain ⟨i, hi, hie⟩ := exists_getD_edgeList h
-        refine ⟨⟨i, mem_positions.mpr ⟨hi, ?_⟩⟩, ?_⟩
+      obtain ⟨i, hi, hie⟩ := exists_getD_edgeList_of_adj (M.adj_sub he)
+      refine ⟨⟨i, mem_positions.mpr ⟨hi, ?_⟩⟩, ?_⟩
+      · rcases hie with hie | hie
         · rw [hie]
           exact ⟨u.2, w.2, he⟩
-        · apply Subtype.ext
-          apply (Sym2.map.injective Subtype.val_injective)
-          change s((G.edgeList.getD i (0, 0)).1, (G.edgeList.getD i (0, 0)).2) = s(u.val, w.val)
-          rw [hie]
-      · obtain ⟨i, hi, hie⟩ := exists_getD_edgeList h
-        refine ⟨⟨i, mem_positions.mpr ⟨hi, ?_⟩⟩, ?_⟩
         · rw [hie]
           exact ⟨w.2, u.2, he.symm⟩
-        · apply Subtype.ext
-          apply (Sym2.map.injective Subtype.val_injective)
-          change s((G.edgeList.getD i (0, 0)).1, (G.edgeList.getD i (0, 0)).2) = s(u.val, w.val)
-          rw [hie, Sym2.eq_swap]
+      · apply Subtype.ext
+        apply (Sym2.map.injective Subtype.val_injective)
+        change s((G.edgeList.getD i (0, 0)).1, (G.edgeList.getD i (0, 0)).2) = s(u.val, w.val)
+        rcases hie with hie | hie
+        · rw [hie]
+        · rw [hie, Sym2.eq_swap]
   rw [← Nat.card_eq_finsetCard, ← Nat.card_coe_set_eq]
   exact Nat.card_congr (Equiv.ofBijective f ⟨hinj, hsurj⟩)
 
