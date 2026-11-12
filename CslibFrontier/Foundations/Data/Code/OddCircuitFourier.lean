@@ -77,7 +77,7 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 /-- The unnormalized Fourier transform `∑_{x ∈ B} (-1) ^ (y ⬝ᵥ x)` of the indicator of a finite set
 `B` of vectors over `𝔽₂`, at `y`. Saglam's `μ̂(y)` [Saglam2027, Section 3] is `charSum B y / |B|`.
 -/
-noncomputable def charSum (B : Finset (ι → ZMod 2)) (y : ι → ZMod 2) : ℝ :=
+@[expose] noncomputable def charSum (B : Finset (ι → ZMod 2)) (y : ι → ZMod 2) : ℝ :=
   ∑ x ∈ B, (-1 : ℝ) ^ (y ⬝ᵥ x).val
 
 omit [Fintype ι] [DecidableEq ι] in
