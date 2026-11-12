@@ -16,8 +16,9 @@ Before applying a result, identify its input/output types and encoding, quantifi
 
 For textbook-oriented searches, the [Goldreich draft audit](../../results/goldreich-2007.md)
 maps chapters 5–7 to declarations and remaining endpoints. Check its snapshot and model notes:
-space-accounting constants, expected-time ZPP and uniform versus nonuniform hardness can prevent
-a nearby theorem from establishing the source statement.
+visited-cell versus binary-space accounting and uniform versus nonuniform hardness can prevent
+a nearby theorem from establishing the source statement. Goldreich 6.10 uses bounded-time
+partial answers, matching the library’s ZPP; expected-time ZPP is a separate alternative interface.
 
 ## Build a shared Boolean circuit
 
