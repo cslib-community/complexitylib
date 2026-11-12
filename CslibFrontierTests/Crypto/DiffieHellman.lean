@@ -303,7 +303,7 @@ example :
   schnorrGroups.ddhRerandomizeLaw_real d23 3 5
 
 /-- Under DDH random self-reducibility on the concrete group `d23`, re-randomizing the non-DDH
-tuple `(3 • g, 5 • g, 7 • g)` (`7 ≠ 3 * 5` in `ZMod 11`) yields the uniform ideal DDH tuple
+tuple `(3 • g, 5 • g, 7 • g)` (`7 ≠ 3 * 5` in `ZMod 11`) yields the uniform random DDH tuple
 distribution. -/
 example :
     let α : ZMod (schnorrGroups.order d23) := 3
@@ -311,8 +311,8 @@ example :
     let γ : ZMod (schnorrGroups.order d23) := 7
     schnorrGroups.ddhRerandomizeLaw d23 (α • schnorrGroups.generator d23)
       (β • schnorrGroups.generator d23) (γ • schnorrGroups.generator d23) =
-        schnorrGroups.ddhIdealTupleLaw d23 :=
-  schnorrGroups.ddhRerandomizeLaw_ideal d23 (by decide)
+        schnorrGroups.ddhRandomTupleLaw d23 :=
+  schnorrGroups.ddhRerandomizeLaw_random d23 (by decide)
 
 /-- Encoded elements of any Schnorr group have bit-length polynomially bounded in the description
 bit-length. -/

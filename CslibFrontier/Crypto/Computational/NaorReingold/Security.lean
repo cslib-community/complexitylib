@@ -353,15 +353,15 @@ private theorem multiDDHRealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGr
   symm
   exact PMF.bind_uniformOfFintype_update (⟨k, hk⟩ : Fin m) _
 
-private theorem multiDDHIdealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGroupFamily)
+private theorem multiDDHRandomTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGroupFamily)
     (d : F.Desc) {m : ℕ} (k : ℕ) (hk : k < m) (prog : WordOracleComp Unit Bool) :
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α_k =>
-      (F.multiDDHIdealTupleLaw d (BitString k)).bind
+      (F.multiDDHRandomTupleLaw d (BitString k)).bind
         (naorReingoldWordLevelTest F d k hk prog (α_k • F.generator d))) =
       naorReingoldWordHybridAt F d m (k + 1) prog := by
   simp_rw [naorReingoldWordLevelTest_eq_uniform_full F d k hk prog]
   rw [PMF.bind_const]
-  simp only [multiDDHIdealTupleLaw, naorReingoldWordHybridAt, PMF.monad_bind_eq_bind, PMF.bind_map,
+  simp only [multiDDHRandomTupleLaw, naorReingoldWordHybridAt, PMF.monad_bind_eq_bind, PMF.bind_map,
     Function.comp_def]
   rw [← PMF.uniformOfFintype_map_equiv (wordPrefixTableEquiv (ZMod (F.order d)) k), PMF.bind_map]
   congr 1; funext B
@@ -1331,10 +1331,10 @@ private theorem advantage_exactDDHRandom_le (F : PrimeOrderGroupFamily)
     by_cases hk : i.val < m
     · simp only [hk, ↓reduceIte,
         frontierLevelWithExpLaw_uniform_eq_multi F d i.val hk (adv d),
-        ← multiDDHIdealTupleLaw_naorReingoldWordLevelTest F d i.val hk (adv d)]
+        ← multiDDHRandomTupleLaw_naorReingoldWordLevelTest F d i.val hk (adv d)]
       refine Game.advantage_bind_le_nnreal _ _ _ fun α => ?_
       rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
-        ((F.multiDDHIdealTupleLaw d (BitString i.val)).bind
+        ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
           (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))]
       refine Game.advantage_bind_le_nnreal _ _ _ fun β => ?_
       simpa only [ZMod.card] using
@@ -1342,9 +1342,9 @@ private theorem advantage_exactDDHRandom_le (F : PrimeOrderGroupFamily)
           (fun γ => (F.multiDDHRerandomizeLaw d (BitString i.val)
             (α • F.generator d) (β • F.generator d) (γ • F.generator d)).bind
             (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-          ((F.multiDDHIdealTupleLaw d (BitString i.val)).bind
+          ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
             (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-          (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_ideal d (BitString i.val) hγ])
+          (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_random d (BitString i.val) hγ])
     · simp [hk]
   rw [herr_true, ← ENNReal.coe_natCast,
     ← ENNReal.coe_inv (by exact_mod_cast (F.prime_order d).ne_zero)]
