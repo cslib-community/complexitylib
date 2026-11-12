@@ -25,10 +25,14 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Data.List.Append
 import CslibFrontier.Languages.Probabilistic.Oracle.Transcript
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Tactic.EncLen
 
 /-!
 # Oracle-model `IP[k]` and polynomial-round equivalence
+
+See `CslibFrontier.Computability.Complexity.Classes.IP.Games.PolyRounds` for the mapped
+source citations to [GoldwasserSipser1986] (GS1986).
 
 Every oracle-PPT interactive proof verifier making at most `q(n)` queries can be simulated by a
 game-tree private-coin verifier with `2 * q(n)` alternating moves, and conversely every dynamic
@@ -206,22 +210,50 @@ private theorem computableInPolyTime_encodeWord :
   exact (ComputableInPolyTime.bitsAppend hrep hcons).of_enc_eq fun p => by
     simp [Interaction.encodeWord]
 
+
+/-- State for extracting interaction history from a transcript. -/
+private structure ExtractState where
+  /-- Remaining transcript to parse. -/
+  rem : List Bool
+  /-- Accumulated interaction history so far. -/
+  hist : Interaction.History
+  /-- Whether parsing is still successful. -/
+  ok : Bool
+  deriving Repr, DecidableEq
+
+/-- Encoding for `ExtractState`. -/
+private enc_structure encExtractState : ExtractState where
+  rem : encBits, hist : Interaction.encHistory, ok : encBool
+
+/-- State for simulating the interactive protocol. -/
+private structure SimState where
+  /-- The current round number. -/
+  round : ℕ
+  /-- The interaction transcript so far. -/
+  transcript : List Bool
+  deriving Repr, DecidableEq
+
+/-- Encoding for `SimState`. -/
+private enc_structure encSimState : SimState where
+  round : encUnary, transcript : encBits
+
+
 /-- One step of decoding a transcript prefix into a `History`. Stops (`ok := false`) once a
 chunk starts with `false` or fewer than `2 * t + 3` bits remain. -/
-private def extractStep (t : ℕ) (st : List Bool × Interaction.History × Bool) :
-    List Bool × Interaction.History × Bool :=
-  let (rem, hist, ok) := st
+private def extractStep (t : ℕ) (st : ExtractState) : ExtractState :=
+  let ⟨rem, hist, ok⟩ := st
   if ok && decide (2 * t + 3 ≤ rem.length) && rem.getD 0 false then
     let m := Interaction.decodeWord ((rem.take (t + 2)).drop 1)
     let y := Interaction.decodeWord ((rem.drop (t + 2)).take (t + 1))
-    (rem.drop (2 * t + 3), hist ++ [(m, y)], true)
+    ⟨rem.drop (2 * t + 3), hist ++ [(m, y)], true⟩
   else
-    (rem, hist, false)
+    ⟨rem, hist, false⟩
 
 /-- Decode a transcript prefix into a query-reply `History`, halting at the first padded round
 whose verifier tag bit is `false`. -/
 private def extractHistory (t : ℕ) (p : List Bool) : Interaction.History :=
-  ((List.replicate p.length false).foldl (fun st _ => extractStep t st) (p, [], true)).2.1
+  ((List.replicate p.length false).foldl (fun st _ => extractStep t st)
+    (ExtractState.mk p [] true)).hist
 
 private theorem length_decodeWord_le_length (u : List Bool) :
     (Interaction.decodeWord u).length ≤ u.length := by
@@ -234,103 +266,101 @@ private theorem computableInPolyTime_extractHistory {γ : Type} {encIn : γ ↪ 
     (hp : ComputableInPolyTime p encIn encBits) :
     ComputableInPolyTime (fun x => extractHistory (t x) (p x))
       encIn Interaction.encHistory := by
-  let encSt : (List Bool × Interaction.History × Bool) ↪ List Bool :=
-    encPair encBits (encPair Interaction.encHistory encBool)
-  let encStep : ((ℕ × (List Bool × Interaction.History × Bool)) × Bool) ↪ List Bool :=
+  let encSt : ExtractState ↪ List Bool := encExtractState
+  let encStep : ((ℕ × ExtractState) × Bool) ↪ List Bool :=
     encFoldStep encUnary encSt encBool
   have hstep : ComputableInPolyTime
-      (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => extractStep q.1.1 q.1.2)
+      (fun q : (ℕ × ExtractState) × Bool => extractStep q.1.1 q.1.2)
       encStep encSt := by
     have htq : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.1)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.1)
         encStep encUnary :=
       (ComputableInPolyTime.fst _ _).comp (.fst _ _)
     have hrem : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.2.1)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.2.rem)
         encStep encBits :=
-      (ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd _ _).comp (.fst _ _))
+      encExtractState_rem_polyTime ((ComputableInPolyTime.snd _ _).comp (.fst _ _))
     have hhist : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.2.2.1)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.2.hist)
         encStep Interaction.encHistory :=
-      (ComputableInPolyTime.fst _ _).comp
-        ((ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp (.fst _ _)))
+      encExtractState_hist_polyTime ((ComputableInPolyTime.snd _ _).comp (.fst _ _))
     have hok : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.2.2.2)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.2.ok)
         encStep encBool :=
-      (ComputableInPolyTime.snd _ _).comp
-        ((ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp (.fst _ _)))
+      encExtractState_ok_polyTime ((ComputableInPolyTime.snd _ _).comp (.fst _ _))
     have h2t3 : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => 2 * q.1.1 + 3)
+        (fun q : (ℕ × ExtractState) × Bool => 2 * q.1.1 + 3)
         encStep encUnary :=
       ComputableInPolyTime.unary_add'
         (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2) htq)
         (ComputableInPolyTime.const 3)
     have ht2 : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.1 + 2)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.1 + 2)
         encStep encUnary :=
       ComputableInPolyTime.unary_add' htq (ComputableInPolyTime.const 2)
     have ht1 : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.1 + 1)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.1 + 1)
         encStep encUnary :=
       ComputableInPolyTime.unary_add' htq (ComputableInPolyTime.const 1)
     have hlen : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.2.1.length)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.2.rem.length)
         encStep encUnary :=
       ComputableInPolyTime.length_bits.comp hrem
     have hle : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool =>
-          decide (2 * q.1.1 + 3 ≤ q.1.2.1.length)) encStep encBool :=
+        (fun q : (ℕ × ExtractState) × Bool =>
+          decide (2 * q.1.1 + 3 ≤ q.1.2.rem.length)) encStep encBool :=
       .of_tidy (ComputableTidilyInPolyTime.unary_le' h2t3.tidy hlen.tidy)
     have hhead : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool => q.1.2.1.getD 0 false)
+        (fun q : (ℕ × ExtractState) × Bool => q.1.2.rem.getD 0 false)
         encStep encBool :=
       ComputableInPolyTime.bitsGetDWithInput hrem (ComputableInPolyTime.const 0) false
     have hcond : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool =>
-          q.1.2.2.2 && decide (2 * q.1.1 + 3 ≤ q.1.2.1.length) && q.1.2.1.getD 0 false)
+        (fun q : (ℕ × ExtractState) × Bool =>
+          q.1.2.ok && decide (2 * q.1.1 + 3 ≤ q.1.2.rem.length) && q.1.2.rem.getD 0 false)
         encStep encBool :=
       ComputableInPolyTime.bool_and' (ComputableInPolyTime.bool_and' hok hle) hhead
     have hm : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool =>
-          Interaction.decodeWord ((q.1.2.1.take (q.1.1 + 2)).drop 1))
+        (fun q : (ℕ × ExtractState) × Bool =>
+          Interaction.decodeWord ((q.1.2.rem.take (q.1.1 + 2)).drop 1))
         encStep encBits :=
       Interaction.computableInPolyTime_decodeWord.comp
         (ComputableInPolyTime.bitsDropWithInput
           (ComputableInPolyTime.bitsTakeWithInput hrem ht2) (ComputableInPolyTime.const 1))
     have hy : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool =>
-          Interaction.decodeWord ((q.1.2.1.drop (q.1.1 + 2)).take (q.1.1 + 1)))
+        (fun q : (ℕ × ExtractState) × Bool =>
+          Interaction.decodeWord ((q.1.2.rem.drop (q.1.1 + 2)).take (q.1.1 + 1)))
         encStep encBits :=
       Interaction.computableInPolyTime_decodeWord.comp
         (ComputableInPolyTime.bitsTakeWithInput
           (ComputableInPolyTime.bitsDropWithInput hrem ht2) ht1)
     have hrem' : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool =>
-          q.1.2.1.drop (2 * q.1.1 + 3))
+        (fun q : (ℕ × ExtractState) × Bool =>
+          q.1.2.rem.drop (2 * q.1.1 + 3))
         encStep encBits :=
       ComputableInPolyTime.bitsDropWithInput hrem h2t3
     have hhist' : ComputableInPolyTime
-        (fun q : (ℕ × (List Bool × Interaction.History × Bool)) × Bool =>
-          q.1.2.2.1 ++ [(Interaction.decodeWord ((q.1.2.1.take (q.1.1 + 2)).drop 1),
-            Interaction.decodeWord ((q.1.2.1.drop (q.1.1 + 2)).take (q.1.1 + 1)))])
+        (fun q : (ℕ × ExtractState) × Bool =>
+          q.1.2.hist ++ [(Interaction.decodeWord ((q.1.2.rem.take (q.1.1 + 2)).drop 1),
+            Interaction.decodeWord ((q.1.2.rem.drop (q.1.1 + 2)).take (q.1.1 + 1)))])
         encStep Interaction.encHistory :=
       ComputableInPolyTime.listAppend' hhist ((hm.prod hy).cons' (ComputableInPolyTime.const []))
-    exact (hcond.ite (hrem'.prod (hhist'.prod (ComputableInPolyTime.const true)))
-      (hrem.prod (hhist.prod (ComputableInPolyTime.const false)))).of_enc_eq fun q => rfl
+    exact (hcond.ite (encExtractState_mk_polyTime hrem' hhist' (ComputableInPolyTime.const true))
+      (encExtractState_mk_polyTime hrem hhist
+        (ComputableInPolyTime.const false))).of_enc_eq fun q => rfl
   obtain ⟨c, d, hplen⟩ := hp.polyBounded_length.exists_le
   have hlist : ComputableInPolyTime (fun x => List.replicate (p x).length false) encIn encBits :=
     (ComputableInPolyTime.bitsReplicate false).comp (ComputableInPolyTime.length_bits.comp hp)
-  have hinit : ComputableInPolyTime (fun x => (p x, ([] : Interaction.History), true))
+  have hinit : ComputableInPolyTime (fun x => ExtractState.mk (p x) ([] : Interaction.History) true)
       encIn encSt :=
-    hp.prod ((ComputableInPolyTime.const ([] : Interaction.History)).prod
-      (ComputableInPolyTime.const true))
+    encExtractState_mk_polyTime hp (ComputableInPolyTime.const ([] : Interaction.History))
+      (ComputableInPolyTime.const true)
   have hspec := ComputableInPolyTime.foldlWith_spec
     (encP := encUnary) (encB := encSt) (encA := encBool) (encL := encBits)
     (par := t) (list := fun x => List.replicate (p x).length false)
-    (init := fun x => (p x, ([] : Interaction.History), true))
+    (init := fun x => ExtractState.mk (p x) ([] : Interaction.History) true)
     (step := fun t' st _ => extractStep t' st)
     ht hlist hinit hstep
-    (fun x _ st => 6 * st.1.length + (Interaction.encHistory st.2.1).length ≤
+    (fun x _ st => 6 * st.rem.length + (Interaction.encHistory st.hist).length ≤
       6 * (p x).length + 1)
     (fun x => by simp [Interaction.encHistory, encList_nil])
     (fun x _ st _ _ hs => by
@@ -381,14 +411,15 @@ private theorem computableInPolyTime_extractHistory {γ : Type} {encIn : γ ↪ 
       have hp' := hplen x
       simp only [encBits_apply] at hp'
       have hstLen : (encSt st).length =
-          2 * st.1.length + 1 + 2 * (Interaction.encHistory st.2.1).length + 1 + 1 := by
-        simp only [encSt, length_encPair, encBits_apply, encBool_apply, List.length_singleton,
-          Nat.add_assoc]
+          2 * st.rem.length + 1 + 2 * (Interaction.encHistory st.hist).length + 1 + 1 := by
+        change (encExtractState st).length = _
+        simp only [encExtractState_apply, encExtractStateFields, length_encPair,
+          encBits_apply, encBool_apply, List.length_singleton, Nat.add_assoc]
       omega)
   exact ((ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd _ _).comp hspec.1))
 
 private theorem foldl_extractStep_false (t k : ℕ) (rem : List Bool) (hist : Interaction.History) :
-    ((List.replicate k false).foldl (fun st _ => extractStep t st) (rem, hist, false)).2.1 =
+    ((List.replicate k false).foldl (fun st _ => extractStep t st) ⟨rem, hist, false⟩).hist =
       hist := by
   induction k with
   | zero => rfl
@@ -398,16 +429,16 @@ private theorem foldl_extractStep_append (t k : ℕ) (v w rest : List Bool)
     (hist : Interaction.History)
     (hv : v.length = t + 2) (hw : w.length = t + 1) (hk : 1 ≤ k) :
     ((List.replicate k false).foldl (fun st _ => extractStep t st)
-      (v ++ w ++ rest, hist, true)).2.1 =
+      ⟨v ++ w ++ rest, hist, true⟩).hist =
       if v.headD false then
         ((List.replicate (k - 1) false).foldl (fun st _ => extractStep t st)
-          (rest, hist ++ [(Interaction.decodeWord (v.drop 1), Interaction.decodeWord w)],
-            true)).2.1
+          ⟨rest, hist ++ [(Interaction.decodeWord (v.drop 1), Interaction.decodeWord w)],
+            true⟩).hist
       else hist := by
   cases k with
   | zero => omega
   | succ k' =>
-    simp only [List.replicate_succ, List.foldl_cons, Nat.add_sub_cancel]
+    simp only [List.replicate_succ, List.foldl_cons]
     have hlen : 2 * t + 3 ≤ (v ++ w ++ rest).length := by
       simp only [List.length_append, hv, hw]
       omega
@@ -426,18 +457,18 @@ private theorem foldl_extractStep_append (t k : ℕ) (v w rest : List Bool)
         List.drop_left' (show (v ++ w).length = 2 * t + 3 by
           simp only [List.length_append, hv, hw]; omega)
       rw [hm, hy, hdrop]
+      rfl
     · exact foldl_extractStep_false t k' (v ++ w ++ rest) hist
 
 private theorem foldl_extractStep_length_ge (t k₁ k₂ : ℕ) (rem : List Bool)
     (hist : Interaction.History)
     (hk₁ : rem.length ≤ k₁) (hk₂ : rem.length ≤ k₂) :
-    ((List.replicate k₁ false).foldl (fun st _ => extractStep t st) (rem, hist, true)).2.1 =
-      ((List.replicate k₂ false).foldl (fun st _ => extractStep t st) (rem, hist, true)).2.1 := by
+    ((List.replicate k₁ false).foldl (fun st _ => extractStep t st) ⟨rem, hist, true⟩).hist =
+      ((List.replicate k₂ false).foldl (fun st _ => extractStep t st) ⟨rem, hist, true⟩).hist := by
   induction k₁ generalizing k₂ rem hist with
   | zero =>
     have hr : rem = [] := List.eq_nil_of_length_eq_zero (by omega)
     subst hr
-    clear hk₁ hk₂
     induction k₂ with
     | zero => rfl
     | succ k₂ _ =>
@@ -459,7 +490,7 @@ private theorem foldl_extractStep_length_ge (t k₁ k₂ : ℕ) (rem : List Bool
       · simp only [extractStep, hif, ite_true]
         simp only [Bool.true_and, Bool.and_eq_true, decide_eq_true_eq] at hif
         refine ih k₂ (rem.drop (2 * t + 3)) _ ?_ ?_ <;> (rw [List.length_drop]; omega)
-      · have hstep : extractStep t (rem, hist, true) = (rem, hist, false) :=
+      · have hstep : extractStep t ⟨rem, hist, true⟩ = ⟨rem, hist, false⟩ :=
           ite_eq_right fun h => absurd h hif
         rw [hstep, foldl_extractStep_false, foldl_extractStep_false]
 
@@ -467,10 +498,10 @@ private theorem foldl_extractStep_step_true {t : ℕ} {v w rest : List Bool}
     (hist : Interaction.History) (hv : v.length = t + 2) (hw : w.length = t + 1)
     (htr : v.headD false = true) :
     ((List.replicate (v ++ w ++ rest).length false).foldl (fun st _ => extractStep t st)
-      (v ++ w ++ rest, hist, true)).2.1 =
+      ⟨v ++ w ++ rest, hist, true⟩).hist =
       ((List.replicate rest.length false).foldl (fun st _ => extractStep t st)
-        (rest, hist ++ [(Interaction.decodeWord (v.drop 1), Interaction.decodeWord w)],
-          true)).2.1 := by
+        ⟨rest, hist ++ [(Interaction.decodeWord (v.drop 1), Interaction.decodeWord w)],
+          true⟩).hist := by
   have h1 := foldl_extractStep_append t (v ++ w ++ rest).length v w rest hist hv hw (by
     simp only [List.length_append, hv, hw]; omega)
   rw [htr] at h1
@@ -483,14 +514,14 @@ private theorem foldl_extractStep_step_false {t : ℕ} {v w rest : List Bool}
     (hist : Interaction.History) (hv : v.length = t + 2) (hw : w.length = t + 1)
     (hf : v.headD false = false) :
     ((List.replicate (v ++ w ++ rest).length false).foldl (fun st _ => extractStep t st)
-      (v ++ w ++ rest, hist, true)).2.1 = hist := by
+      ⟨v ++ w ++ rest, hist, true⟩).hist = hist := by
   have h1 := foldl_extractStep_append t (v ++ w ++ rest).length v w rest hist hv hw (by
     simp only [List.length_append, hv, hw]; omega)
   rw [hf] at h1
   exact h1
 
 private theorem foldl_extractStep_nil (t k : ℕ) (hist : Interaction.History) :
-    ((List.replicate k false).foldl (fun st _ => extractStep t st) ([], hist, true)).2.1 =
+    ((List.replicate k false).foldl (fun st _ => extractStep t st) ⟨[], hist, true⟩).hist =
       hist := by
   cases k with
   | zero => rfl
@@ -704,7 +735,8 @@ private theorem computableInPolyTime_simMsg {enc : α ↪ List Bool} {k : ℕ} {
       (IPGame.encMsgInput enc) encBits :=
     (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp (.snd _ _))
   have hh : ComputableInPolyTime
-      (fun x : α × List Bool × ℕ × List Bool => extractHistory (t (enc x.1).length) x.2.2.2)
+      (fun x : α × List Bool × ℕ × List Bool =>
+        extractHistory (t (enc x.1).length) x.2.2.2)
       (IPGame.encMsgInput enc) Interaction.encHistory :=
     computableInPolyTime_extractHistory htn hp
   have halive : ComputableInPolyTime
@@ -802,7 +834,7 @@ private theorem simGameShape_map_fst (t q : ℕ) :
 
 private def HistLive (t : ℕ) (p : List Bool) (h : Interaction.History) : Prop :=
   ∀ rem, extractHistory t (p ++ rem) =
-    ((List.replicate rem.length false).foldl (fun st _ => extractStep t st) (rem, h, true)).2.1
+    ((List.replicate rem.length false).foldl (fun st _ => extractStep t st) ⟨rem, h, true⟩).hist
 
 private def HistStopped (t : ℕ) (p : List Bool) (h : Interaction.History) : Prop :=
   ∀ rem, extractHistory t (p ++ rem) = h
@@ -1091,12 +1123,12 @@ private theorem trace_sim_eq {enc : α ↪ List Bool} {k : ℕ} {Control : Type}
 
 private noncomputable def proverOfGame (t_n : ℕ) (PGame : ℕ → List Bool → List Bool) :
     Prover Unit where
-  State := ℕ × List Bool
-  init := (0, [])
+  State := SimState
+  init := SimState.mk 0 []
   respond q st :=
     let v := [true] ++ Interaction.encodeWord t_n q.2
-    let w := List.ofFn (BitString.ofList (t_n + 1) (PGame (st.1 + 1) (st.2 ++ v)))
-    PMF.pure (Interaction.decodeWord w, (st.1 + 2, st.2 ++ v ++ w))
+    let w := List.ofFn (BitString.ofList (t_n + 1) (PGame (st.round + 1) (st.transcript ++ v)))
+    PMF.pure (Interaction.decodeWord w, SimState.mk (st.round + 2) (st.transcript ++ v ++ w))
 
 private noncomputable def gameProverOfOptimal {R : Type} [Fintype R]
     (F : R → WordQueryComp Unit Bool) (t_n D : ℕ) (_j : ℕ) (q_str : List Bool) : List Bool :=
@@ -1140,8 +1172,9 @@ private theorem sim_bestCount_eq_value {enc : α ↪ List Bool} {k : ℕ} {Contr
               (simGameShape t_n D) 0 []) = true) : ENNReal) := by
       rw [Finset.card_filter, Nat.cast_sum]
       refine Finset.sum_congr rfl fun c _ => ?_
-      have htr := trace_sim_eq MUnit t a hF c PGame PUnit (fun j p _ st => st = (j, p))
-        (fun j p _ s m hm _ _ => ⟨(j + 2, p ++ ([true] ++ Interaction.encodeWord t_n m) ++
+      have htr := trace_sim_eq MUnit t a hF c PGame PUnit (fun j p _ st => st = SimState.mk j p)
+        (fun j p _ s m hm _ _ => ⟨SimState.mk (j + 2) (p ++ ([true] ++ Interaction.encodeWord t_n m)
+          ++
           List.ofFn (BitString.ofList (t_n + 1)
             (PGame (j + 1) (p ++ ([true] ++ Interaction.encodeWord t_n m))))),
           by rw [hm]; rfl, rfl⟩)
@@ -1374,23 +1407,23 @@ section SimOracle
 
 private noncomputable def oracleStep (enc : α ↪ List Bool) (g : ℕ → List (IPMove × ℕ))
     (msg : α × List Bool × ℕ × List Bool → List Bool)
-    (ac : α × List Bool) (st : ℕ × List Bool) : WordOracleComp Unit (ℕ × List Bool) :=
+    (ac : α × List Bool) (st : SimState) : WordOracleComp Unit SimState :=
   let n := (enc ac.1).length
-  let nv := ((g n).getD st.1 (.verifier, 0)).2
-  let np := ((g n).getD (st.1 + 1) (.prover, 0)).2
-  let m := BitString.listRow nv 0 (msg (ac.1, ac.2, st.1, st.2))
-  (fun y => (st.1 + 2, st.2 ++ m ++ BitString.listRow np 0 y)) <$>
+  let nv := ((g n).getD st.round (.verifier, 0)).2
+  let np := ((g n).getD (st.round + 1) (.prover, 0)).2
+  let m := BitString.listRow nv 0 (msg (ac.1, ac.2, st.round, st.transcript))
+  (fun y => SimState.mk (st.round + 2) (st.transcript ++ m ++ BitString.listRow np 0 y)) <$>
     (List.take np <$> ProbOracleComp.query ((), m))
 
 private noncomputable def oracleVerifier (enc : α ↪ List Bool) (g : ℕ → List (IPMove × ℕ))
     (ρ q : ℕ → ℕ) (msg : α × List Bool × ℕ × List Bool → List Bool)
     (dec : α × List Bool × List Bool → Bool) (a : α) : WordOracleComp Unit Bool := do
   let c ← ProbOracleComp.sample (BitString.sampleList (ρ (enc a).length))
-  let st ← OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (0, [])
-  pure (dec (a, c, st.2))
+  let st ← OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (SimState.mk 0 [])
+  pure (dec (a, c, st.transcript))
 
 private theorem isQueryBounded_oracleStep (enc : α ↪ List Bool) (g : ℕ → List (IPMove × ℕ))
-    (msg : α × List Bool × ℕ × List Bool → List Bool) (ac : α × List Bool) (st : ℕ × List Bool) :
+    (msg : α × List Bool × ℕ × List Bool → List Bool) (ac : α × List Bool) (st : SimState) :
     (oracleStep enc g msg ac st).IsQueryBounded 1 := by
   unfold oracleStep ProbOracleComp.IsQueryBounded
   rw [OracleComp.isCostBounded_map_iff, OracleComp.isCostBounded_map_iff]
@@ -1416,18 +1449,18 @@ private theorem isQueryBounded_oracleVerifier (enc : α ↪ List Bool) (g : ℕ 
   unfold oracleVerifier
   dsimp only [ProbOracleComp.IsQueryBounded]
   have hiter : ∀ c, OracleComp.IsCostBounded (Sum.elim (fun _ => 0) fun _ => 1)
-      (OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (0, []) >>=
-        fun st => pure (dec (a, c, st.2))) (q (enc a).length + 0) := fun c => by
+      (OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (SimState.mk 0 []) >>=
+        fun st => pure (dec (a, c, st.transcript))) (q (enc a).length + 0) := fun c => by
     have hunit : OracleComp.IsCostBounded (Sum.elim (fun _ => 0) fun _ => 1)
-        (OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (0, []))
+        (OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (SimState.mk 0 []))
         (q (enc a).length) :=
       isQueryBounded_iterate_unit (isQueryBounded_oracleStep enc g msg (a, c))
-        (q (enc a).length) (0, [])
+        (q (enc a).length) (SimState.mk 0 [])
     exact OracleComp.IsCostBounded.bind hunit (fun st => .pure _ 0)
   have hwhole : OracleComp.IsCostBounded (Sum.elim (fun _ => 0) fun _ => 1)
       (ProbOracleComp.sample (BitString.sampleList (ρ (enc a).length)) >>= fun c =>
-        OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (0, []) >>=
-          fun st => pure (dec (a, c, st.2))) (0 + (q (enc a).length + 0)) :=
+        OracleComp.iterate (q (enc a).length) (oracleStep enc g msg (a, c)) (SimState.mk 0 []) >>=
+          fun st => pure (dec (a, c, st.transcript))) (0 + (q (enc a).length + 0)) :=
     OracleComp.IsCostBounded.bind (ProbOracleComp.IsQueryBounded.sample _) hiter
   exact hwhole.mono (by omega)
 
@@ -1442,61 +1475,62 @@ private theorem isOraclePPTOn_oracleVerifier {enc : α ↪ List Bool}
     (hdec : ComputableInPolyTime dec (IPGame.encDecInput enc) encBool) :
     IsOraclePPTOn enc encBool (oracleVerifier enc g ρ q msg dec) := by
   let encAC : (α × List Bool) ↪ List Bool := encPair enc encBits
-  let encSt : (ℕ × List Bool) ↪ List Bool := encPair encUnary encBits
-  let encArg : ((α × List Bool) × (ℕ × List Bool)) ↪ List Bool := encPair encAC encSt
+  let encSt : SimState ↪ List Bool := encSimState
+  let encArg : ((α × List Bool) × SimState) ↪ List Bool := encPair encAC encSt
   have hsample : IsOraclePPTOn (Operation := Unit) enc encBits
       (fun a => ProbOracleComp.sample (BitString.sampleList (ρ (enc a).length))) :=
     (ComputableInPolyTime.sampleList
       (hρ.comp (ComputableInPolyTime.encoding_length enc))).isOraclePPTOn (Operation := Unit)
   have hstepPPT : IsOraclePPTOn encArg encSt (fun arg => oracleStep enc g msg arg.1 arg.2) := by
-    have hac : ComputableInPolyTime (fun arg : (α × List Bool) × (ℕ × List Bool) => arg.1)
+    have hac : ComputableInPolyTime (fun arg : (α × List Bool) × SimState => arg.1)
         encArg encAC := .fst _ _
-    have ha : ComputableInPolyTime (fun arg : (α × List Bool) × (ℕ × List Bool) => arg.1.1)
+    have ha : ComputableInPolyTime (fun arg : (α × List Bool) × SimState => arg.1.1)
         encArg enc := (ComputableInPolyTime.fst _ _).comp hac
-    have hc : ComputableInPolyTime (fun arg : (α × List Bool) × (ℕ × List Bool) => arg.1.2)
+    have hc : ComputableInPolyTime (fun arg : (α × List Bool) × SimState => arg.1.2)
         encArg encBits := (ComputableInPolyTime.snd _ _).comp hac
-    have hst : ComputableInPolyTime (fun arg : (α × List Bool) × (ℕ × List Bool) => arg.2)
+    have hst : ComputableInPolyTime (fun arg : (α × List Bool) × SimState => arg.2)
         encArg encSt := .snd _ _
-    have hj : ComputableInPolyTime (fun arg : (α × List Bool) × (ℕ × List Bool) => arg.2.1)
-        encArg encUnary := (ComputableInPolyTime.fst _ _).comp hst
-    have hp : ComputableInPolyTime (fun arg : (α × List Bool) × (ℕ × List Bool) => arg.2.2)
-        encArg encBits := (ComputableInPolyTime.snd _ _).comp hst
+    have hj : ComputableInPolyTime (fun arg : (α × List Bool) × SimState => arg.2.round)
+        encArg encUnary := encSimState_round_polyTime hst
+    have hp : ComputableInPolyTime (fun arg : (α × List Bool) × SimState => arg.2.transcript)
+        encArg encBits := encSimState_transcript_polyTime hst
     have hn : ComputableInPolyTime
-        (fun arg : (α × List Bool) × (ℕ × List Bool) => (enc arg.1.1).length) encArg encUnary :=
+        (fun arg : (α × List Bool) × SimState => (enc arg.1.1).length) encArg encUnary :=
       (ComputableInPolyTime.encoding_length enc).comp ha
     have hgn : ComputableInPolyTime
-        (fun arg : (α × List Bool) × (ℕ × List Bool) => g (enc arg.1.1).length)
+        (fun arg : (α × List Bool) × SimState => g (enc arg.1.1).length)
         encArg encIPShape := hg.comp hn
     have hnv : ComputableInPolyTime
-        (fun arg : (α × List Bool) × (ℕ × List Bool) =>
-          ((g (enc arg.1.1).length).getD arg.2.1 (.verifier, 0)).2) encArg encUnary :=
+        (fun arg : (α × List Bool) × SimState =>
+          ((g (enc arg.1.1).length).getD arg.2.round (.verifier, 0)).2) encArg encUnary :=
       (ComputableInPolyTime.snd encIPMove encUnary).comp
         (ComputableInPolyTime.listGetDWithInput hgn hj (.verifier, 0))
     have hnp : ComputableInPolyTime
-        (fun arg : (α × List Bool) × (ℕ × List Bool) =>
-          ((g (enc arg.1.1).length).getD (arg.2.1 + 1) (.prover, 0)).2) encArg encUnary :=
+        (fun arg : (α × List Bool) × SimState =>
+          ((g (enc arg.1.1).length).getD (arg.2.round + 1) (.prover, 0)).2) encArg encUnary :=
       (ComputableInPolyTime.snd encIPMove encUnary).comp
         (ComputableInPolyTime.listGetDWithInput hgn
           (ComputableInPolyTime.unary_add' hj (ComputableInPolyTime.const 1)) (.prover, 0))
     have hm : ComputableInPolyTime
-        (fun arg : (α × List Bool) × (ℕ × List Bool) =>
-          BitString.listRow ((g (enc arg.1.1).length).getD arg.2.1 (.verifier, 0)).2 0
-            (msg (arg.1.1, arg.1.2, arg.2.1, arg.2.2))) encArg encBits :=
+        (fun arg : (α × List Bool) × SimState =>
+          BitString.listRow ((g (enc arg.1.1).length).getD arg.2.round (.verifier, 0)).2 0
+            (msg (arg.1.1, arg.1.2, arg.2.round, arg.2.transcript))) encArg encBits :=
       ComputableInPolyTime.bitsRowWithInput hnv (ComputableInPolyTime.const 0)
         (hmsg.comp (ha.prod (hc.prod (hj.prod hp))))
     have hqry := IsOraclePPTOn.query_take' () hm hnp
     have hy : ComputableInPolyTime
-        (fun p : ((α × List Bool) × (ℕ × List Bool)) × List Bool =>
-          (p.1.2.1 + 2, p.1.2.2 ++
-            BitString.listRow ((g (enc p.1.1.1).length).getD p.1.2.1 (.verifier, 0)).2 0
-              (msg (p.1.1.1, p.1.1.2, p.1.2.1, p.1.2.2)) ++
-            BitString.listRow ((g (enc p.1.1.1).length).getD (p.1.2.1 + 1) (.prover, 0)).2 0 p.2))
+        (fun p : ((α × List Bool) × SimState) × List Bool =>
+          SimState.mk (p.1.2.round + 2) (p.1.2.transcript ++
+            BitString.listRow ((g (enc p.1.1.1).length).getD p.1.2.round (.verifier, 0)).2 0
+              (msg (p.1.1.1, p.1.1.2, p.1.2.round, p.1.2.transcript)) ++
+            BitString.listRow ((g (enc p.1.1.1).length).getD (p.1.2.round + 1)
+              (.prover, 0)).2 0 p.2))
         (encPair encArg encBits) encSt := by
       have ha1 : ComputableInPolyTime
-          (fun p : ((α × List Bool) × (ℕ × List Bool)) × List Bool => p.1)
+          (fun p : ((α × List Bool) × SimState) × List Bool => p.1)
           (encPair encArg encBits) encArg := .fst _ _
       have hy2 : ComputableInPolyTime
-          (fun p : ((α × List Bool) × (ℕ × List Bool)) × List Bool => p.2)
+          (fun p : ((α × List Bool) × SimState) × List Bool => p.2)
           (encPair encArg encBits) encBits := .snd _ _
       have hj' := ComputableInPolyTime.unary_add' (hj.comp ha1) (ComputableInPolyTime.const 2)
       have hp' := ComputableInPolyTime.bitsAppend
@@ -1511,17 +1545,17 @@ private theorem isOraclePPTOn_oracleVerifier {enc : α ↪ List Bool}
       encAC encUnary :=
     hq.comp ((ComputableInPolyTime.encoding_length enc).comp (.fst _ _))
   have hiter := IsOraclePPTOn.iterateWith_spec' (input := encAC) (stateEncoding := encSt)
-    hcount (ComputableInPolyTime.const (0, [])) hstepPPT
-    (fun ac i st => st.1 = 2 * i ∧
-      st.2.length = IPGame.transcriptLength ((g (enc ac.1).length).take (2 * i)))
-    (fun _ => ⟨rfl, rfl⟩)
+    hcount (ComputableInPolyTime.const (SimState.mk 0 [])) hstepPPT
+    (fun ac i st => st.round = 2 * i ∧
+      st.transcript.length = IPGame.transcriptLength ((g (enc ac.1).length).take (2 * i)))
+    (fun _ => by dsimp [SimState.round, SimState.transcript]; exact ⟨rfl, rfl⟩)
     (fun ac i st hi hinv next hnext => by
       obtain ⟨hst1, hplen⟩ := hinv
       dsimp only [oracleStep, OracleComp.support] at hnext
       simp only [OracleComp.mem_supportWith_map_iff, ProbOracleComp.supportWith_query,
         Set.mem_univ, true_and] at hnext
       obtain ⟨y, _, rfl⟩ := hnext
-      refine ⟨by omega, ?_⟩
+      refine ⟨by dsimp only [SimState.round]; omega, ?_⟩
       have hlenG : (g (enc ac.1).length).length = 2 * q (enc ac.1).length := by
         have hm := congrArg List.length (hgmap (enc ac.1).length)
         simp only [List.length_map] at hm
@@ -1564,32 +1598,34 @@ private theorem isOraclePPTOn_oracleVerifier {enc : α ↪ List Bool}
       have hqB' : q n ≤ c₁ * ((encAC ac).length + 1) ^ D := hqB.trans (Nat.mul_le_mul_left _ hpow1)
       have hgB := hglen n
       simp only [encUnary_apply, List.length_replicate] at hgB
-      have htrB : st.2.length ≤ (encIPShape (g n)).length := by
+      have htrB : st.transcript.length ≤ (encIPShape (g n)).length := by
         rw [hp]
         refine le_trans ?_ (IPGame.transcriptLength_le_length_encIPShape (g n))
         conv_rhs => rw [← List.take_append_drop (2 * i) (g n)]
         simp only [IPGame.transcriptLength, List.map_append, List.sum_append]
         exact Nat.le_add_right _ _
-      have hgB' : st.2.length ≤ c₂ * ((encAC ac).length + 1) ^ D :=
+      have hgB' : st.transcript.length ≤ c₂ * ((encAC ac).length + 1) ^ D :=
         htrB.trans (hgB.trans (Nat.mul_le_mul_left _ hpow2))
-      simp only [encSt, length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+      simp only [encSt, encSimState_apply, encSimStateFields, length_encPair, encUnary_apply,
+        List.length_replicate, encBits_apply]
       nlinarith)
   have hdecPPT : IsOraclePPTOn (Operation := Unit) (encPair encAC encSt) encBool
-      (fun x : (α × List Bool) × (ℕ × List Bool) => pure (dec (x.1.1, x.1.2, x.2.2))) := by
+      (fun x : (α × List Bool) × SimState => pure (dec (x.1.1, x.1.2, x.2.transcript))) := by
     have ha : ComputableInPolyTime
-        (fun x : (α × List Bool) × (ℕ × List Bool) => x.1.1) (encPair encAC encSt) enc :=
+        (fun x : (α × List Bool) × SimState => x.1.1) (encPair encAC encSt) enc :=
       (ComputableInPolyTime.fst _ _).comp (.fst _ _)
     have hc : ComputableInPolyTime
-        (fun x : (α × List Bool) × (ℕ × List Bool) => x.1.2) (encPair encAC encSt) encBits :=
+        (fun x : (α × List Bool) × SimState => x.1.2) (encPair encAC encSt) encBits :=
       (ComputableInPolyTime.snd _ _).comp (.fst _ _)
     have hp : ComputableInPolyTime
-        (fun x : (α × List Bool) × (ℕ × List Bool) => x.2.2) (encPair encAC encSt) encBits :=
-      (ComputableInPolyTime.snd _ _).comp (.snd _ _)
+        (fun x : (α × List Bool) × SimState => x.2.transcript) (encPair encAC encSt) encBits :=
+      encSimState_transcript_polyTime (.snd _ _)
     exact (hdec.comp (ha.prod (hc.prod hp))).isOraclePPTOn (Operation := Unit)
   have hcont : IsOraclePPTOn encAC encBool
       (fun ac => do
-        let st ← OracleComp.iterate (q (enc ac.1).length) (oracleStep enc g msg ac) (0, [])
-        pure (dec (ac.1, ac.2, st.2))) :=
+        let st ← OracleComp.iterate (q (enc ac.1).length) (oracleStep enc g msg ac)
+          (SimState.mk 0 [])
+        pure (dec (ac.1, ac.2, st.transcript))) :=
     hiter.1.bind_with hdecPPT
   unfold oracleVerifier
   exact hsample.bind_with hcont
@@ -1627,8 +1663,8 @@ private theorem execProg_acceptProb_le {enc : α ↪ List Bool} (g : ℕ → Lis
       g'.map Prod.fst = (alternatingMoves .arthur (2 * m)).map AMMove.toIP →
       (∀ k, g'.getD k (.verifier, 0) = (g (enc a).length).getD (j + k) (.verifier, 0)) →
       (∀ k, g'.getD k (.prover, 0) = (g (enc a).length).getD (j + k) (.prover, 0)) →
-      (∑ c ∈ S, (P.run ((fun st => dec (a, List.ofFn c, st.2)) <$>
-          OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c)) (j, p)) s).map
+      (∑ c ∈ S, (P.run ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
+          OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c)) (SimState.mk j p)) s).map
             Prod.fst true : ENNReal) ≤
         IPGame.count g' (fun t => #(S.filter fun c =>
           (IPGame.agrees (fun j' p' => msg (a, List.ofFn c, j', p')) g' j p t &&
@@ -1666,21 +1702,23 @@ private theorem execProg_acceptProb_le {enc : α ↪ List Bool} (g : ℕ → Lis
       rw [show j + 2 + k = j + (k + 2) by omega]
       exact hgetP (k + 2)
     have hstepEq : ∀ c : BitString ρn,
-        (P.run ((fun st => dec (a, List.ofFn c, st.2)) <$>
-            OracleComp.iterate (m + 1) (oracleStep enc g msg (a, List.ofFn c)) (j, p)) s).map
+        (P.run ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
+            OracleComp.iterate (m + 1) (oracleStep enc g msg (a, List.ofFn c))
+              (SimState.mk j p)) s).map
             Prod.fst true =
           ∑' ys : List Bool × P.State,
             (P.respond
               ((), List.ofFn (BitString.ofList nv (msg (a, List.ofFn c, j, p))))).run s ys *
-            (P.run ((fun st => dec (a, List.ofFn c, st.2)) <$>
+            (P.run ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
               OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c))
-                (j + 2, p ++ List.ofFn (BitString.ofList nv (msg (a, List.ofFn c, j, p))) ++
-                  List.ofFn (BitString.ofList np ys.1))) ys.2).map Prod.fst true := by
+                (SimState.mk (j + 2) (p ++ List.ofFn (BitString.ofList nv
+                  (msg (a, List.ofFn c, j, p))) ++
+                  List.ofFn (BitString.ofList np ys.1)))) ys.2).map Prod.fst true := by
       intro c
       rw [OracleComp.iterate_succ_bind, map_eq_bind_pure_comp]
-      change (P.run ((oracleStep enc g msg (a, List.ofFn c) (j, p) >>= fun st' =>
+      change (P.run ((oracleStep enc g msg (a, List.ofFn c) (SimState.mk j p) >>= fun st' =>
           OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c)) st' >>=
-            fun st => pure (dec (a, List.ofFn c, st.2)))) s).map Prod.fst true = _
+            fun st => pure (dec (a, List.ofFn c, st.transcript)))) s).map Prod.fst true = _
       unfold oracleStep
       simp only [hnv, hnp, BitString.listRow_zero]
       conv_lhs => rw [Prover.run_bind, Prover.run_map, Prover.run_map, Prover.run_query]
@@ -1700,15 +1738,17 @@ private theorem execProg_acceptProb_le {enc : α ↪ List Bool} (g : ℕ → Lis
     have hswap : ∑ c ∈ S.filter (fun c => BitString.ofList nv (msg (a, List.ofFn c, j, p)) = m0),
         ∑' ys : List Bool × P.State,
           (P.respond ((), List.ofFn (BitString.ofList nv (msg (a, List.ofFn c, j, p))))).run s ys *
-            (P.run ((fun st => dec (a, List.ofFn c, st.2)) <$>
+            (P.run ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
               OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c))
-                (j + 2, p ++ List.ofFn (BitString.ofList nv (msg (a, List.ofFn c, j, p))) ++
-                  List.ofFn (BitString.ofList np ys.1))) ys.2).map Prod.fst true =
+                (SimState.mk (j + 2) (p ++ List.ofFn (BitString.ofList nv
+                  (msg (a, List.ofFn c, j, p))) ++
+                  List.ofFn (BitString.ofList np ys.1)))) ys.2).map Prod.fst true =
         ∑' ys : List Bool × P.State, (P.respond ((), List.ofFn m0)).run s ys *
           ∑ c ∈ S.filter (fun c => BitString.ofList nv (msg (a, List.ofFn c, j, p)) = m0),
-            (P.run ((fun st => dec (a, List.ofFn c, st.2)) <$>
+            (P.run ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
               OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c))
-                (j + 2, p ++ List.ofFn m0 ++ List.ofFn (BitString.ofList np ys.1))) ys.2).map
+                (SimState.mk (j + 2) (p ++ List.ofFn m0 ++
+                  List.ofFn (BitString.ofList np ys.1)))) ys.2).map
               Prod.fst true := by
       rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
       refine tsum_congr fun ys => ?_
@@ -1745,12 +1785,12 @@ private theorem execProg_acceptProb_le {enc : α ↪ List Bool} (g : ℕ → Lis
 
 @[reducible] private noncomputable def proverOfIPGame (enc : α ↪ List Bool)
     (g : ℕ → List (IPMove × ℕ)) (a : α) (PGame : ℕ → List Bool → List Bool) : Prover Unit where
-  State := ℕ × List Bool
-  init := (0, [])
+  State := SimState
+  init := SimState.mk 0 []
   respond q st :=
-    let np := ((g (enc a).length).getD (2 * st.1 + 1) (.prover, 0)).2
-    let y := List.ofFn (BitString.ofList np (PGame (2 * st.1 + 1) (st.2 ++ q.2)))
-    PMF.pure (y, (st.1 + 1, st.2 ++ q.2 ++ y))
+    let np := ((g (enc a).length).getD (2 * st.round + 1) (.prover, 0)).2
+    let y := List.ofFn (BitString.ofList np (PGame (2 * st.round + 1) (st.transcript ++ q.2)))
+    PMF.pure (y, SimState.mk (st.round + 1) (st.transcript ++ q.2 ++ y))
 
 private theorem execProg_acceptProb_proverOfIPGame {enc : α ↪ List Bool}
     (g : ℕ → List (IPMove × ℕ)) (msg : α × List Bool × ℕ × List Bool → List Bool)
@@ -1760,9 +1800,9 @@ private theorem execProg_acceptProb_proverOfIPGame {enc : α ↪ List Bool}
       g'.map Prod.fst = (alternatingMoves .arthur (2 * m)).map AMMove.toIP →
       (∀ k, g'.getD k (.verifier, 0) = (g (enc a).length).getD (2 * i + k) (.verifier, 0)) →
       (∀ k, g'.getD k (.prover, 0) = (g (enc a).length).getD (2 * i + k) (.prover, 0)) →
-      ((proverOfIPGame enc g a PGame).run ((fun st => dec (a, List.ofFn c, st.2)) <$>
-          OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c)) (2 * i, p))
-          (i, p)).map Prod.fst true =
+      ((proverOfIPGame enc g a PGame).run ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
+          OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c)) (SimState.mk (2 * i) p))
+          (SimState.mk i p)).map Prod.fst true =
         if dec (a, List.ofFn c,
             p ++ IPGame.run (fun j' p' => msg (a, List.ofFn c, j', p')) PGame g' (2 * i) p) =
             true then 1 else 0 := by
@@ -1801,18 +1841,19 @@ private theorem execProg_acceptProb_proverOfIPGame {enc : α ↪ List Bool}
         (p ++ List.ofFn (BitString.ofList nv (msg (a, List.ofFn c, 2 * i, p))))))
     have hstep :
         (PMF.map Prod.fst ((proverOfIPGame enc g a PGame).run
-          ((fun st => dec (a, List.ofFn c, st.2)) <$>
-            OracleComp.iterate (m + 1) (oracleStep enc g msg (a, List.ofFn c)) (2 * i, p))
-          (i, p))) true =
+          ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
+            OracleComp.iterate (m + 1) (oracleStep enc g msg (a, List.ofFn c))
+              (SimState.mk (2 * i) p)) (SimState.mk i p))) true =
         (PMF.map Prod.fst ((proverOfIPGame enc g a PGame).run
-          ((fun st => dec (a, List.ofFn c, st.2)) <$>
-            OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c)) (2 * (i + 1), p1))
-          (i + 1, p1))) true := by
+          ((fun st => dec (a, List.ofFn c, st.transcript)) <$>
+            OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c))
+              (SimState.mk (2 * (i + 1)) p1)) (SimState.mk (i + 1) p1))) true := by
       rw [OracleComp.iterate_succ_bind, map_eq_bind_pure_comp]
       change ((proverOfIPGame enc g a PGame).run
-          (oracleStep enc g msg (a, List.ofFn c) (2 * i, p) >>= fun st' =>
+          (oracleStep enc g msg (a, List.ofFn c) (SimState.mk (2 * i) p) >>= fun st' =>
             OracleComp.iterate m (oracleStep enc g msg (a, List.ofFn c)) st' >>=
-              fun st => pure (dec (a, List.ofFn c, st.2))) (i, p)).map Prod.fst true = _
+              fun st => pure (dec (a, List.ofFn c, st.transcript)))
+            (SimState.mk i p)).map Prod.fst true = _
       conv_lhs =>
         dsimp only [oracleStep]
         simp only [hnv, hnp, BitString.listRow_zero]
@@ -1849,8 +1890,8 @@ theorem IPPolyRounds_subset_IPPolyQueryBounded {enc : α ↪ List Bool} {q : ℕ
     have hsum : ∑ c : BitString (ρ (enc a).length),
         acceptProb (do
           let st ← OracleComp.iterate (q (enc a).length)
-            (oracleStep enc g msg (a, List.ofFn c)) (0, [])
-          pure (dec (a, List.ofFn c, st.2))) (proverOfIPGame enc g a PGame) =
+            (oracleStep enc g msg (a, List.ofFn c)) (SimState.mk 0 [])
+          pure (dec (a, List.ofFn c, st.transcript))) (proverOfIPGame enc g a PGame) =
         (#(univ.filter fun c : BitString (ρ (enc a).length) =>
           dec (a, List.ofFn c,
             IPGame.run (fun j p => msg (a, List.ofFn c, j, p)) PGame
@@ -1875,8 +1916,8 @@ theorem IPPolyRounds_subset_IPPolyQueryBounded {enc : α ↪ List Bool} {q : ℕ
     have hle' : ∑ c : BitString (ρ (enc a).length),
         acceptProb (do
           let st ← OracleComp.iterate (q (enc a).length)
-            (oracleStep enc g msg (a, List.ofFn c)) (0, [])
-          pure (dec (a, List.ofFn c, st.2))) P ≤
+            (oracleStep enc g msg (a, List.ofFn c)) (SimState.mk 0 [])
+          pure (dec (a, List.ofFn c, st.transcript))) P ≤
         (IPGame.bestCount (fun (c : BitString (ρ (enc a).length)) j p =>
             msg (a, List.ofFn c, j, p))
           (fun (c : BitString (ρ (enc a).length)) tr => dec (a, List.ofFn c, tr))
