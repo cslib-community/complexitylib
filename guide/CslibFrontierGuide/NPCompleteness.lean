@@ -56,11 +56,16 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Reco
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Recognition.RecoveryBudget
 import CslibFrontier.Computability.Complexity.Problems.Graph.ClosedPassages.Loop
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Bouquet
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse
 import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Germs
 import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Neighborhood
 import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Points
 import CslibFrontier.Computability.Complexity.Problems.Graph.PolygonalDrawing.Star
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
+import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary
+import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Projection
+import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic
+import CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Equality
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Size
 import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
@@ -1181,9 +1186,9 @@ For permutation-only proofs, import `CslibFrontier.Foundations.GroupTheory.Perm.
 
 The loop-only forward realization is proved below. The general equivalence
 between numerical genus zero and geometric realization remains unproved.
-Its remaining steps are geometric restoration of nonloop contractions by
-directed contiguous vertex splits and the finite segment-to-face-color converse
-with subdivision and suppression. Topological taming, indexed FZ versus DK set conventions and
+It still needs general forward restoration of nonloop contractions by directed
+contiguous vertex splits. The finite segment-to-face-color converse is proved
+below. Topological taming, indexed FZ versus DK set conventions and
 source comparison, frozen-switch completeness, Hanani–Tutte recognition and the
 full #3091 endpoint remain open.
 
@@ -1326,8 +1331,86 @@ Numerical nonalternation supplies disjoint or nested port intervals; the
 construction proves actual real-parameter nonintersection internally.
 `CslibFrontierTests/PolygonalBouquet.lean` also checks a nonvacuous unbounded-degree
 family, nested/disjoint loops, interlacing obstruction and reversed-order
-rejection. This loop-only forward theorem leaves nonloop restoration and the
-geometric converse open, without a coordinate-bit or native-runtime claim.
+rejection. This loop-only forward theorem combines with the converse below.
+General nonloop restoration remains open; no coordinate-bit or native-runtime
+claim is made.
+
+## Polygonal-to-Numerical Converse
+
+Ordinary import
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse`
+supplies the arbitrary finite PL direction, on the existing genuine drawing
+and numerical models:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} {r : RotationSystem G}
+    (hD : D.IsEmbedding) (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hR : D.Realizes r) : r.NumericalGenusZero :=
+  hD.numericalGenusZero hG hR
+```
+
+There is no genus, face-color, disk, Jordan or HT provider. The proof retains
+all real segment parameters, both loop ends, indexed parallel occurrences,
+arbitrary degree, sparse/duplicate declarations, disconnected components and
+points. Endpoint declarations remain explicit.
+
+The actual intermediate colors are also available to clients:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} {D : PolygonalDrawing G} {r : RotationSystem G}
+    (hD : D.IsEmbedding) (hR : D.Realizes r)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (x : Fin G.2.length → Bool) (hx : G.VertexEven x) :
+    ∃ q : r.Face → Bool, r.faceBoundary q = x :=
+  hD.exists_faceColors hR hG x hx
+```
+
+Right-side ray values transport through actual segments and bends, then through
+the empty literal clockwise vertex sectors. They descend to the existing face
+quotient. The indexed-dual/lifting exactness criterion supplies Euler equality;
+its face-color premise is discharged internally in the final theorem.
+
+Combining the two directions gives the exact loop-only equivalence:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hloop : ∀ e : Fin G.2.length,
+      (Dart.vertex (G := G) (e, false)) = Dart.vertex (e, true)) :
+    r.NumericalGenusZero ↔
+      ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r := by
+  constructor
+  · exact fun hr => r.exists_polygonalDrawing_of_loops hG hr hloop
+  · rintro ⟨D, hD, hR⟩
+    exact hD.numericalGenusZero hG hR
+```
+
+A failure of numerical genus excludes that specific realized rotation:
+
+```lean
+open Cslib.Complexity Graph in
+example {G : Graph} (r : RotationSystem G)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
+    (hbad : ¬r.NumericalGenusZero) :
+    ¬∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r := by
+  rintro ⟨D, hD, hR⟩
+  exact hbad (hD.numericalGenusZero hG hR)
+```
+
+This does not assert nonplanarity of the underlying graph. The complete
+`CslibFrontierTests/PolygonalConverse.lean` applies the endpoint to actual loop,
+bridge, parallel-digon and degree-five clockwise star drawings; it also checks
+nonzero loop face colors, sparse/duplicate points, emptiness and a torus
+rotation obstruction. `PolygonalConverseAudit.lean` records scoped stored
+declaration/axiom/environment checks.
+
+The proof is an original finite PL argument. General forward restoration,
+arbitrary topological-arc/source comparison, frozen-switch completeness,
+Hanani–Tutte/recognition and full #3091 remain open. No coordinate-bit or
+native-runtime bound is claimed.
 
 # Ordered Incidence-to-Polygon Rotations
 
@@ -1823,6 +1906,195 @@ encoded bookkeeping are original. `CslibFrontierTests/EdgeCSPSolver.lean` execut
 nonempty preparation, repeated copied constraints, changed outside values,
 multiple improvements, `r=b` and sparse `2^250` names. Geometry/recognition,
 ordered planar hardness and full #3091 remain open.
+
+
+# Ordered Boundary and Static Gadget Closure
+
+Ordinary imports are `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary`,
+`...Embedding.Projection`, `...Embedding.GadgetCyclic` and `...Embedding.Equality`.
+The actual semantic
+objects remain `Cslib.Logic.PL.CSP.PPGadget`; numerical boundary witnesses live
+in `Cslib.Complexity.CSP.OrderedBoundary`.
+
+A structural probe uses the reversed port word and has no original-language
+relation semantics. `Witness F ports` checks both its augmented rotation and
+the literal first-return restriction to `F`. `GadgetWitness g` uses `g.body`
+and all canonical free ports, including unused ones. Every atom has a full
+witness, at arbitrary arity, without a truth or planarity premise:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} (arity : Rel → ℕ)
+    (sem : Rel → List Bool → Bool) (r : Rel) :
+    GadgetWitness (PPGadget.atom (arity := arity) (sem := sem) r) :=
+  Witness.atom arity sem r
+```
+
+The explicit atom/probe table handles arity zero with two isolated centers.
+A false nullary relation can pass structural checks; this is not a SAT test.
+Repeated constraint positions are never deduplicated. Atom tests include
+mirrored numerical rotations rejected by argument order.
+
+Probe-to-body extraction has an explicit duplicate-free port premise. The
+body may still have repeated names, duplicate constraints and cut vertices:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity in
+open Cslib.Complexity.CSP Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel V : Type} [DecidableEq V] (F : CSP Rel V)
+    (ports : List V) (hn : ports.Nodup) (c : Graph.RotationCertificate)
+    (h : verifyRotationCertificate (probeBody F ports) c = true) :
+    verifyRotationCertificate F (bodyCertificate F c) = true :=
+  bodyCertificate_accepted_of_probe F ports hn c h
+```
+
+The last-argument operation proves the full target checker on the original
+CSP lists. Applied to a probe it removes a boundary marker; it makes no SAT
+claim for editing a Gamma constraint:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity in
+open Cslib.Complexity.CSP Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel V : Type} [DecidableEq V] (F : CSP Rel V) (r : Rel)
+    (scope : List V) (v : V) (c : Graph.RotationCertificate)
+    (h : verifyRotationCertificate (F ++ [(r, scope ++ [v])]) c = true) :
+    verifyRotationCertificate (F ++ [(r, scope)])
+      (restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length) c) =
+        true :=
+  verifyRotationCertificate_restrictPrefix_lastArgument F r scope v c h
+```
+
+`Witness.forgetAt` retains the exact survivor word on the same body, using a
+directed cycle, deletion and inverse cycle. It requires a valid position and
+a duplicate-free whole word. The special `forgetHead` only needs its tail
+to be duplicate-free; that weaker contract is not asserted for all positions.
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    {ports : List V} (w : Witness F ports) (k : ℕ)
+    (hn : ports.Nodup) (hk : k < ports.length) :
+    Witness F (ports.eraseIdx k) :=
+  Witness.forgetAt k w hn hk
+```
+
+The gadget constructors internally prove canonical port distinctness and
+variable-map injection. Projection uses exactly `g.project j`, hiding the
+port at auxiliary zero before old auxiliaries. Cyclic rotation is the existing
+positive-arity `Construction.gadget` free-label map:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 1) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) (j : Fin (n + 1)) :
+    GadgetWitness (g.project j) := w.project j
+
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 1) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) :
+    GadgetWitness (g.relabelFree (fun i => i + 1)) := w.rotate
+```
+
+Adjacent equality targets the exact existing `g.equalDrop`; it adds no equality
+symbol. Consecutive probe arguments supply cofacial variable corners internally.
+The duplicate marker is removed before Nodup body extraction, retaining the
+original scopes, nullaries and repeated constraint positions:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+noncomputable example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 2) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) : GadgetWitness g.equalDrop := w.equalDrop
+
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 2) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) :
+    w.equalDrop.certificate = equalDropCertificate g.body n w.certificate :=
+  w.equalDrop_certificate
+```
+
+The whole generated NAE table is explicit, not merely an existence claim:
+
+```lean
+open Cslib.Complexity.CSP.OrderedBoundary in
+example :
+    equalDropCertificate
+      ([((), [0, 1, 2])] : Cslib.Logic.PL.CSP Unit ℕ) 1
+      (atomBoundaryCertificate 3) =
+        (⟨[8, 3, 0, 5, 6, 1, 4, 9, 2, 7]⟩ :
+          Cslib.Complexity.Graph.RotationCertificate) := by
+  decide +kernel
+```
+
+`CslibFrontierTests/PlanarEqualityBoundary.lean` ties that table to the exact
+original-language NAE body and derives disequality and both OneHot pins.
+General attachment and expanded-language recipes remain separate obligations.
+The raw table program uses bounded predecessor lookup, an outgoing swap and
+prefix restriction. Its residual arity is static; it carries no uniform native
+runtime claim for arbitrary binary arity or language/template size.
+
+First-port projection keeps a simpler literal prefix equation:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example {Rel : Type} {arity : Rel → ℕ}
+    {sem : Rel → List Bool → Bool} {n : ℕ}
+    {R : Set (Fin (n + 1) → Bool)} {g : PPGadget arity sem R}
+    (w : GadgetWitness g) :
+    w.projectHead.certificate =
+      restrictPrefix (2 * (g.body.occurrences.length + n))
+        w.certificate := w.projectHead_certificate
+```
+
+Empty alphabets and unused huge binary names remain valid structural cases.
+Here the body is unchanged and position one is removed, not a value:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity in
+open Cslib.Complexity.CSP.OrderedBoundary in
+example : ∃ c : Graph.RotationCertificate,
+    verify ([] : CSP Empty ℕ) [2 ^ 250, 9] c = true := by
+  let w : Witness ([] : CSP Empty ℕ) [2 ^ 250, 7, 9] :=
+    Witness.empty _ (by decide)
+  let h := Witness.forgetAt 1 w (by decide) (by decide)
+  exact ⟨h.certificate, h.accepted⟩
+```
+
+Original nullary constraints and their truth values remain in the body.
+Zero-port extraction removes only the isolated structural probe. Literal
+last-argument tables and dense-variable transport are proved internally.
+Numerical scope reindexing alone does not preserve ordered acceptance: the
+actual cycles commute with positive `finRotate`; higher-arity reflection
+is rejected.
+
+`CslibFrontierTests/PlanarCyclicBoundary.lean` proves equality of an entire
+constructed twelve-entry table from all source dart steps, then executes the
+full checkers. `CslibFrontierTests/PlanarProjectionAll.lean` checks exact
+middle/wrap bodies and semantics, canonical Nodup extraction, degree five,
+unused ports, an empty alphabet and true/false nullaries.
+
+These are static finite constructors. General projection/cyclic inverses use
+finite choice and are intentionally `noncomputable`. Fixing a language and
+its templates permits nonuniform certificate preprocessing; it does not prove
+the input-varying native compiler's target acceptance or framed time bound.
+Figure 1/NAND boundary tables are macro skeletons until original-language
+substitution is supplied. Remaining pin/disequality
+recipes, expanded language endpoints, native target acceptance, geometric/
+source comparison, recognition and full #3091 remain open.
 
 
 # Finite Crossover Gadget Semantics
