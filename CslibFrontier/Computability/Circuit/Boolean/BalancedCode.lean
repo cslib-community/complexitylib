@@ -302,11 +302,8 @@ private theorem computedGetD {α β : Type} {encIn : α ↪ List Bool} {enc : β
     (hf : ComputableInPolyTime fallback encIn enc) :
     ComputableInPolyTime (fun a => (values a).getD (index a) (fallback a)) encIn enc := by
   have hhead := (head? enc).comp ((dropUnary (encA := enc)).comp (hv.prod hi))
-  refine (optionGetDWithInput hhead hf).of_enc_eq fun a => ?_
-  simp only [Function.comp_def, List.head?_drop]
-  rcases Nat.lt_or_ge (index a) (values a).length with h | h
-  · rw [List.getElem?_eq_getElem h, Option.getD_some, List.getD_eq_getElem _ _ h]
-  · rw [List.getElem?_eq_none h, Option.getD_none, List.getD_eq_default _ _ h]
+  simpa only [Function.comp_def, List.head?_drop, List.getD_eq_getElem?_getD] using
+    optionGetDWithInput hhead hf
 
 private theorem computable_intervalRow {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {op unit : α → Code} {leaves : α → List Code}

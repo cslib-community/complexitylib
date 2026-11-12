@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Machine
+import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -137,10 +138,7 @@ private lemma getD_drop' (l : List (Option ℕ)) (k m : ℕ) :
 private lemma getD_take' (l : List (Option ℕ)) (k m : ℕ) :
     (l.take k).getD m none = if m < k then l.getD m none else none := by
   split_ifs with hmk
-  · rcases Nat.lt_or_ge m l.length with h | h
-    · rw [List.getD_eq_getElem _ _ (by simp [hmk, h]), List.getElem_take,
-        List.getD_eq_getElem _ _ h]
-    · rw [List.getD_eq_default _ _ (by simp; omega), List.getD_eq_default _ _ h]
+  · simpa only [List.drop_zero, Nat.zero_add] using (List.getD_take_drop l 0 hmk none)
   · exact List.getD_eq_default _ _ (by simp; omega)
 
 private lemma cellAt_of_nonneg (t : Tape) {i : ℤ} (h : 0 ≤ i) :

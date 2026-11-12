@@ -79,9 +79,7 @@ theorem readBit_eq {q : σ} {A : ℕ} (h : m.addr q = some A) : m.readBit x q = 
 private theorem inputSymbolAt_getD {pos : Fin (x.length + 2)} {A : ℕ} (hpos : pos.val = A + 1) :
     (MultiTapeTM.inputSymbolAt x pos).getD false = x.getD A false := by
   simp only [MultiTapeTM.inputSymbolAt, hpos, Nat.succ_ne_zero, ↓reduceIte, Nat.add_sub_cancel]
-  rcases Nat.lt_or_ge A x.length with h | h
-  · rw [List.getElem?_eq_getElem h, Option.getD_some, List.getD_eq_getElem _ _ h]
-  · rw [List.getElem?_eq_none h, Option.getD_none, List.getD_eq_default _ _ h]
+  exact List.getD_eq_getElem?_getD.symm
 
 /-- The walk of the head to the cell of the address read next, and the step there. -/
 theorem exists_iterate_stepCfg_some {q : σ} {A : ℕ} (hA : m.addr q = some A)
