@@ -17,9 +17,10 @@ any encoding and parameter, fpt-reduces to `B` (`FPTReducible`). This is the par
 counterpart of `PolyTimeHard`. `W[t]`-hardness (`WHard t`) and `W[P]`-hardness (`WPHard`) are its
 instances, so the lemmas below apply to them through dot notation.
 
-`FPTHard` is not an instance of `HardUnder`, which indexes a class and a reducibility by the
-encoding alone. A parameterized class and an fpt-reduction also depend on the parameter of each
-problem, and `HardUnder` has no place for it.
+`FPTHard` is stated directly rather than as an instance of `HardUnder`, whose class and
+reducibility are indexed by the encoding alone. Expressing it through `HardUnder` would mean pairing
+each problem with its parameter (problem type `(α → ℕ) × Set α`), and every statement would then
+carry the pair instead of separate parameter and problem arguments.
 
 ## Main definitions
 
