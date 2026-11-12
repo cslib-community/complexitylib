@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevOddErrors
 public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.DepthTwoInputs
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
 # Truncated depth-two circuits for Andreev's function
@@ -371,12 +372,6 @@ theorem andreevTruncationRadius_le (b m r : ℕ) (δ : ℝ) :
         Real.log (16 * andreevVarianceProxy b m / (2 ^ r * δ))) + 1 :=
   (Nat.ceil_lt_add_one (by positivity)).le
 
-private theorem half_le_log_two : (1 : ℝ) / 2 ≤ Real.log 2 := by
-  rw [Real.le_log_iff_exp_le (by norm_num)]
-  have h := add_one_le_exp (-1 / 2 : ℝ)
-  have h2 : exp (1 / 2) * exp (-1 / 2) = 1 := by rw [← exp_add]; norm_num
-  nlinarith [exp_pos (1 / 2 : ℝ)]
-
 /-- At balance (`k m = N`), `v = 5 N / 4`. -/
 private theorem andreevVarianceProxy_of_balanced {b m : ℕ} (hbal : b * m = 2 ^ b) :
     andreevVarianceProxy b m = 5 / 4 * 2 ^ b := by
@@ -405,7 +400,7 @@ theorem size_andreevTruncatedCircuit_le_of_balanced {b m : ℕ} (hbal : b * m = 
   set L := Real.log (1 / δ)
   have hN : 1 ≤ N := one_le_pow₀ (by norm_num)
   have hL : Real.log 2 ≤ L := Real.log_le_log (by norm_num) (by rw [le_div_iff₀ hδ]; linarith)
-  have hl2 := half_le_log_two
+  have hl2 : (1 : ℝ) / 2 ≤ Real.log 2 := by linarith [Real.log_two_gt_d9]
   -- `log (20 / δ) ≤ 6 L`, as `log 20 ≤ log 32 = 5 log 2`.
   have h20 : Real.log (16 * andreevVarianceProxy b m / (2 ^ b * δ)) ≤ 6 * L := by
     rw [andreevVarianceProxy_of_balanced hbal,
@@ -516,7 +511,7 @@ theorem andreevTruncatedCircuit_part_two_of_balanced {b m : ℕ} (hbal : b * m =
     linarith
   have hq32 := le_two_pow_andreevVoteLevel b ε
   set L := Real.log (1 / ε)
-  have hl2 := half_le_log_two
+  have hl2 : (1 : ℝ) / 2 ≤ Real.log 2 := by linarith [Real.log_two_gt_d9]
   have hL : 3 * Real.log 2 ≤ L := by
     have h3 := Real.log_pow (2 : ℝ) 3
     push_cast at h3
