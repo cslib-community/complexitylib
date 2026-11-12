@@ -201,17 +201,17 @@ theorem hashedElGamalDecaps_hashedElGamalEncapsProb (H : F.Desc × List Bool →
 `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`. -/
 def kemToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (distinguisher : Distinguisher) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
+  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
   distinguisher n
     (encPair encBits (encPair encBits encBits)
-      (pk, (H (input.description, input.candidateShared), input.rightPublic)))
+      (pk, (H (input.groupParameters, input.candidateShared), input.rightPublic)))
 
 /-- KDF distinguisher constructed from a `KEMAdversary` (`Distinguisher`) for
 `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)`. -/
 def kemToKDFDistinguisher (distinguisher : Distinguisher) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
-  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
+  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
   distinguisher n
     (encPair encBits (encPair encBits encBits) (pk, (input.candidateShared, input.rightPublic)))
 
@@ -232,7 +232,7 @@ theorem isPPTOn_kemToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
     IsPPTOn F.encDDHInput
       encBool (fun input => F.kemToDDHDistinguisher H distinguisher input.1 input.2) := by
   let hchallenge := ComputableInPolyTime.snd encUnary F.encDDHChallenge
-  let hd := F.encDDHChallenge_description_polyTime hchallenge
+  let hd := F.encDDHChallenge_groupParameters_polyTime hchallenge
   let hu := F.encDDHChallenge_leftPublic_polyTime hchallenge
   let hv := F.encDDHChallenge_rightPublic_polyTime hchallenge
   let hw := F.encDDHChallenge_candidateShared_polyTime hchallenge

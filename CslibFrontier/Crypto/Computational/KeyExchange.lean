@@ -227,7 +227,7 @@ noncomputable def dhIdealKey (_n : ℕ) (transcript : F.Desc × List Bool × Lis
 tuple `(d, u, v, w)` is passed on as the transcript `(d, u, v)` with key `w`. -/
 @[expose]
 def dhEavToDDH (adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool)
-    (n : ℕ) (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+    (n : ℕ) (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
   let ⟨d, u, v, w⟩ := input
   adversary n ((d, u, v), w)
 
@@ -258,8 +258,8 @@ theorem isPPTOn_dhEavToDDH
     IsPPTOn F.encDDHInput encBool (fun input => F.dhEavToDDH adversary input.1 input.2) := by
   unfold dhEavToDDH
   exact hA.preprocess
-    (prepare := fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
-      (input.1, ((input.2.description, input.2.leftPublic, input.2.rightPublic),
+    (prepare := fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
+      (input.1, ((input.2.groupParameters, input.2.leftPublic, input.2.rightPublic),
         input.2.candidateShared))) (by fun_prop)
 
 /-- **Diffie–Hellman key exchange is secure against eavesdroppers under DDH**

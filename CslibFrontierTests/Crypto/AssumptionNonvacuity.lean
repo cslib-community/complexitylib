@@ -80,7 +80,7 @@ theorem not_cdh_const : ¬ F.CDH fun _ => PMF.pure d :=
 
 /-- Accept when the first and third elements are both the identity of the fixed group `d`. -/
 noncomputable def identityTest :
-    ℕ → DDHChallenge (Desc := F.Desc) → ProbComp Bool :=
+    ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool :=
   fun _ input =>
     pure (decide (input.leftPublic = F.encode d 0 ∧ input.candidateShared = F.encode d 0))
 

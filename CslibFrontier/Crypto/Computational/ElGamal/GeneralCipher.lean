@@ -441,11 +441,11 @@ theorem hashedElGamalCipherUniformKeyGame_restrict {Msg : Type}
 def hashedElGamalCipherToDDHDistinguisher {Msg : Type} (H : F.Desc × List Bool → List Bool)
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
   let choice ← adversary.choose n pk
   let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let k := H (input.description, input.candidateShared)
+  let k := H (input.groupParameters, input.candidateShared)
   let c ← encryptSym n k m
   let ct := encPair encBits encBits (input.rightPublic, c)
   adversary.guess n choice.2 ct
@@ -497,7 +497,7 @@ theorem isPPTOn_hashedElGamalCipherToDDHDistinguisher {Msg : Type} {encMsg : Msg
   let E1 := encPair E0 EChoice
   let hp1 := ComputableInPolyTime.fst encUnary EIn
   let hp2 := ComputableInPolyTime.snd encUnary EIn
-  let hd := F.encDDHChallenge_description_polyTime hp2
+  let hd := F.encDDHChallenge_groupParameters_polyTime hp2
   let hu := F.encDDHChallenge_leftPublic_polyTime hp2
   let hv := F.encDDHChallenge_rightPublic_polyTime hp2
   let hw := F.encDDHChallenge_candidateShared_polyTime hp2
@@ -525,7 +525,7 @@ noncomputable def hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
     (H : F.Desc × List Bool → List Bool)
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : Encryption.AdversaryOf Msg) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
   let bit ← ProbComp.uniform Bool
   let guess ← F.hashedElGamalCipherToDDHDistinguisher H encryptSym adversary bit n input
   return (guess ^^ bit)
@@ -554,7 +554,7 @@ theorem isPPTOn_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
   have hFalse := F.isPPTOn_hashedElGamalCipherToDDHDistinguisher hH hencryptSym hA false
   have hTrue := F.isPPTOn_hashedElGamalCipherToDDHDistinguisher hH hencryptSym hA true
   have hStep : IsPPTOn E1 encBool
-      (fun p : (ℕ × DDHChallenge (Desc := F.Desc)) × Bool =>
+      (fun p : (ℕ × DDHChallenge (GroupParameters := F.Desc)) × Bool =>
         F.hashedElGamalCipherToDDHDistinguisher H encryptSym adversary p.2 p.1.1 p.1.2) :=
     (IsPPTOn.cond' hp2 (hTrue.preprocess hp1) (hFalse.preprocess hp1)).congr
       (fun ⟨_, bit⟩ => by cases bit <;> rfl)
@@ -569,8 +569,8 @@ theorem isPPTOn_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
 def hashedElGamalCipherToKDFDistinguisher {Msg : Type}
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
   let choice ← adversary.choose n pk
   let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
   let c ← encryptSym n input.candidateShared m
@@ -627,7 +627,7 @@ bit `bit ← ProbComp.uniform Bool`, run `hashedElGamalCipherToKDFDistinguisher`
 noncomputable def hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
     (encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool))
     (adversary : Encryption.AdversaryOf Msg) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
   let bit ← ProbComp.uniform Bool
   let guess ← F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit n input
   return (guess ^^ bit)

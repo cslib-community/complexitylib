@@ -409,7 +409,7 @@ private theorem advantage_eval_cramerShoupMsgToDDHDistinguisher_le
     Game.advantage
       (ProbComp.eval
         (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit n
-          { description := d
+          { groupParameters := d
             leftPublic := F.encode d (α • F.generator d)
             rightPublic := F.encode d (β • F.generator d)
             candidateShared := F.encode d (γ • F.generator d) }))

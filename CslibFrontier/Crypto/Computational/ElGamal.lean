@@ -368,14 +368,14 @@ using `F.add` and return the adversary's guess, and otherwise return `false`. -/
 def elGamalMsgToDDHDistinguisher {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encodeMsg : F.Desc → Msg → List Bool)
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
   let choice ← adversary.choose n pk
   if valid n pk (Encryption.ChoiceOut.msg₀ choice) (Encryption.ChoiceOut.msg₁ choice) then
     let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
     let ct := encPair encBits encBits
       (input.rightPublic,
-        F.add (input.description, input.candidateShared, encodeMsg input.description m))
+        F.add (input.groupParameters, input.candidateShared, encodeMsg input.groupParameters m))
     adversary.guess n choice.2 ct
   else
     return false
@@ -478,7 +478,7 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
   let EChoice := encPair (encPair encMsg encMsg) encBits
   let E2 := encPair EIn EChoice
   have hin2 := ComputableInPolyTime.snd encUnary F.encDDHChallenge
-  have hd_in := F.encDDHChallenge_description_polyTime hin2
+  have hd_in := F.encDDHChallenge_groupParameters_polyTime hin2
   have hu_in := F.encDDHChallenge_leftPublic_polyTime hin2
   have hv_in := F.encDDHChallenge_rightPublic_polyTime hin2
   have hw_in := F.encDDHChallenge_candidateShared_polyTime hin2
@@ -495,7 +495,7 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
   have hm1 := (ComputableInPolyTime.snd encMsg encMsg).comp hmsgs
   have hm : ComputableInPolyTime
       (fun p :
-          (ℕ × DDHChallenge (Desc := F.Desc)) ×
+          (ℕ × DDHChallenge (GroupParameters := F.Desc)) ×
             (Msg × Msg) × List Bool =>
         if bit then p.2.1.2 else p.2.1.1)
       E2 encMsg := by
@@ -506,18 +506,18 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
   have hvalidStep := (hvalid.comp (hn.prod ((hpk_in.comp hp1).prod (hm0.prod hm1)))).tidy
   have hguessStep := hA.guess.preprocess
     (prepare := fun p :
-        (ℕ × DDHChallenge (Desc := F.Desc)) ×
+        (ℕ × DDHChallenge (GroupParameters := F.Desc)) ×
           (Msg × Msg) × List Bool =>
       (p.1.1, p.2.2, encPair encBits encBits
         (p.1.2.rightPublic,
-          F.add (p.1.2.description, p.1.2.candidateShared,
-            encodeMsg p.1.2.description (if bit then p.2.1.2 else p.2.1.1)))))
+          F.add (p.1.2.groupParameters, p.1.2.candidateShared,
+            encodeMsg p.1.2.groupParameters (if bit then p.2.1.2 else p.2.1.1)))))
     (hn.prod (hst.prod
       (hv.prod (F.computableInPolyTime_add.comp (hd.prod (hw.prod hencM)))).encoding_comp))
   unfold elGamalMsgToDDHDistinguisher
   refine (hA.choose.on.preprocess
-    (prepare := fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
-      (input.1, encPair F.encDesc encBits (input.2.description, input.2.leftPublic)))
+    (prepare := fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
+      (input.1, encPair F.encDesc encBits (input.2.groupParameters, input.2.leftPublic)))
     ((ComputableInPolyTime.fst encUnary F.encDDHChallenge).prod hpk_in)).bind_with ?_
   exact IsPPTOn.cond hvalidStep hguessStep (ComputableTidilyInPolyTime.const false).isPPTOn
 
@@ -625,7 +625,7 @@ def elGamalINDCPA (setup : ℕ → PMF F.Desc) : Prop :=
 Exercise 11.5(a), p. 459): given `(d, u, v, w)`, pass `(d, u)` as the public key, encrypt the
 selected challenge bit by masking with `w`, and return the adversary's guess. -/
 abbrev elGamalToDDHDistinguisher (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
   F.elGamalMsgToDDHDistinguisher (fun _ _ _ _ => true) F.encodeBit adversary bit n input
 
 /-- In the real DDH game, `elGamalToDDHDistinguisher` simulates `elGamalCPAGame` exactly. -/
@@ -694,7 +694,7 @@ noncomputable abbrev elGamalGroupCPAGameOn (valid : ℕ → List Bool → List B
 identity message encoding. -/
 abbrev elGamalGroupToDDHDistinguisher (valid : ℕ → List Bool → List Bool → List Bool → Bool)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
   F.elGamalMsgToDDHDistinguisher valid (fun _ m => m) adversary bit n input
 
 /-- **Quantitative reduction of group-element ElGamal IND-CPA to DDH** ([BonehShoup2023],
@@ -916,14 +916,14 @@ noncomputable def hashedElGamalUniformPadGame (setup : ℕ → PMF F.Desc)
 Experiment `0`, p. 448): draw `d ← setup n` and independent uniform `α, β, γ : ZMod (F.order d)`,
 and give the distinguisher `(d, encode (α • g), encode (β • g), H (d, encode (γ • g)))`. -/
 noncomputable def kdfRealGame (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
-    (distinguisher : ℕ → DDHChallenge (Desc := F.Desc) → ProbComp Bool)
+    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
     (n : ℕ) : Game := do
   let d ← setup n
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let γ ← PMF.uniformOfFintype (ZMod (F.order d))
   ProbComp.eval (distinguisher n
-    { description := d
+    { groupParameters := d
       leftPublic := F.encode d (α • F.generator d)
       rightPublic := F.encode d (β • F.generator d)
       candidateShared := H (d, F.encode d (γ • F.generator d)) })
@@ -934,14 +934,14 @@ Attack Game 11.3, Experiment `1`, p. 448): draw `d ← setup n`, independent uni
 `pad ← Cslib.BitString.uniformList (msgLen n)`, and give the distinguisher
 `(d, encode (α • g), encode (β • g), pad)`. -/
 noncomputable def kdfIdealGame (setup : ℕ → PMF F.Desc) (msgLen : ℕ → ℕ)
-    (distinguisher : ℕ → DDHChallenge (Desc := F.Desc) → ProbComp Bool)
+    (distinguisher : ℕ → DDHChallenge (GroupParameters := F.Desc) → ProbComp Bool)
     (n : ℕ) : Game := do
   let d ← setup n
   let α ← PMF.uniformOfFintype (ZMod (F.order d))
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let pad ← Cslib.BitString.uniformList (msgLen n)
   ProbComp.eval (distinguisher n
-    { description := d
+    { groupParameters := d
       leftPublic := F.encode d (α • F.generator d)
       rightPublic := F.encode d (β • F.generator d)
       candidateShared := pad })
@@ -962,11 +962,11 @@ public key, mask the selected message word with `pad = H (d, w)` via
 `Cslib.BitString.listXor pad.length [pad, m]`, and return the adversary's guess. -/
 def hashedElGamalToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
   let choice ← adversary.choose n pk
   let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let pad := H (input.description, input.candidateShared)
+  let pad := H (input.groupParameters, input.candidateShared)
   let ct := encPair encBits encBits
     (input.rightPublic, Cslib.BitString.listXor pad.length [pad, m])
   adversary.guess n choice.2 ct
@@ -1006,7 +1006,7 @@ theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → Lis
   let EChoice := encPair (encPair encBits encBits) encBits
   let E := encPair EIn EChoice
   have hin2 := ComputableInPolyTime.snd encUnary F.encDDHChallenge
-  have hd_in := F.encDDHChallenge_description_polyTime hin2
+  have hd_in := F.encDDHChallenge_groupParameters_polyTime hin2
   have hu_in := F.encDDHChallenge_leftPublic_polyTime hin2
   have hv_in := F.encDDHChallenge_rightPublic_polyTime hin2
   have hw_in := F.encDDHChallenge_candidateShared_polyTime hin2
@@ -1019,7 +1019,7 @@ theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → Lis
   have hst := (ComputableInPolyTime.snd (encPair encBits encBits) encBits).comp hp2
   have hm : ComputableInPolyTime
       (fun p :
-          (ℕ × DDHChallenge (Desc := F.Desc)) ×
+          (ℕ × DDHChallenge (GroupParameters := F.Desc)) ×
             (List Bool × List Bool) × List Bool =>
         if bit then p.2.1.2 else p.2.1.1) E encBits := by
     cases bit
@@ -1028,15 +1028,15 @@ theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → Lis
   have hpad := hH.comp ((hd_in.comp hp1).prod hw)
   unfold hashedElGamalToDDHDistinguisher
   refine (hA.choose.on.preprocess
-    (prepare := fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
-      (input.1, encPair F.encDesc encBits (input.2.description, input.2.leftPublic)))
+    (prepare := fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
+      (input.1, encPair F.encDesc encBits (input.2.groupParameters, input.2.leftPublic)))
     ((ComputableInPolyTime.fst encUnary F.encDDHChallenge).prod
       (hd_in.prod hu_in).encoding_comp)).bind_with ?_
   exact hA.guess.preprocess
     (prepare := fun p :
-        (ℕ × DDHChallenge (Desc := F.Desc)) ×
+        (ℕ × DDHChallenge (GroupParameters := F.Desc)) ×
           (List Bool × List Bool) × List Bool =>
-      let pad := H (p.1.2.description, p.1.2.candidateShared)
+      let pad := H (p.1.2.groupParameters, p.1.2.candidateShared)
       (p.1.1, p.2.2, encPair encBits encBits
         (p.1.2.rightPublic,
           Cslib.BitString.listXor pad.length [pad, if bit then p.2.1.2 else p.2.1.1])))
@@ -1047,8 +1047,8 @@ Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, pad)`, p
 public key, mask the selected message word with `pad` via
 `Cslib.BitString.listXor pad.length [pad, m]`, and return the adversary's guess. -/
 def hashedElGamalToKDFDistinguisher (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.description, input.leftPublic)
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool := do
+  let pk := encPair F.encDesc encBits (input.groupParameters, input.leftPublic)
   let choice ← adversary.choose n pk
   let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
   let pad := input.candidateShared

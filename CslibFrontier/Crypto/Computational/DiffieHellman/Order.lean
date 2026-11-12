@@ -43,34 +43,37 @@ open scoped ENNReal NNReal Cslib.Probability.PMF
 
 /-- Test whether the third challenge element equals the encoded identity `0 • g` (original). -/
 private def ddhZeroDistinguisher (F : PrimeOrderGroupFamily) (_n : ℕ)
-    (input : DDHChallenge (Desc := F.Desc)) : ProbComp Bool :=
+    (input : DDHChallenge (GroupParameters := F.Desc)) : ProbComp Bool :=
   pure (decide (input.candidateShared =
-    F.smul (input.description, 0, F.encode input.description (F.generator input.description))))
+    F.smul (input.groupParameters, 0,
+      F.encode input.groupParameters (F.generator input.groupParameters))))
 
 private theorem isPPTOn_ddhZeroDistinguisher (F : PrimeOrderGroupFamily) :
     IsPPTOn F.encDDHInput encBool (fun input => ddhZeroDistinguisher F input.1 input.2) := by
   let EIn := F.encDDHInput
   have hd : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (Desc := F.Desc) => input.2.description) EIn F.encDesc := by
+      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) => input.2.groupParameters)
+      EIn F.encDesc := by
     fun_prop
   have hw : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (Desc := F.Desc) => input.2.candidateShared)
+      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) => input.2.candidateShared)
       EIn encBits := by
     fun_prop
   have hgen : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
-        F.encode input.2.description (F.generator input.2.description)) EIn encBits :=
+      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
+        F.encode input.2.groupParameters (F.generator input.2.groupParameters)) EIn encBits :=
     F.computableInPolyTime_generator.comp hd
   have hzero : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
-        F.smul (input.2.description, 0,
-          F.encode input.2.description (F.generator input.2.description))) EIn encBits :=
+      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
+        F.smul (input.2.groupParameters, 0,
+          F.encode input.2.groupParameters (F.generator input.2.groupParameters))) EIn encBits :=
     F.computableInPolyTime_smul.comp (hd.prod ((ComputableInPolyTime.const 0).prod hgen))
   have hdec : ComputableInPolyTime
-      (fun input : ℕ × DDHChallenge (Desc := F.Desc) =>
+      (fun input : ℕ × DDHChallenge (GroupParameters := F.Desc) =>
         decide (input.2.candidateShared =
-          F.smul (input.2.description, 0,
-            F.encode input.2.description (F.generator input.2.description)))) EIn encBool := by
+          F.smul (input.2.groupParameters, 0,
+            F.encode input.2.groupParameters (F.generator input.2.groupParameters))))
+      EIn encBool := by
     have hw_t := hw.tidy
     have hzero_t := hzero.tidy
     exact .of_tidy (by fun_prop)
