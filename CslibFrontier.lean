@@ -1697,6 +1697,7 @@ public import CslibFrontier.Computability.Circuit.Weft
 public import CslibFrontier.Computability.Circuit.WireNumber
 public import CslibFrontier.Computability.Circuit.Wiring
 public import CslibFrontier.Computability.Communication.Amplification
+public import CslibFrontier.Computability.Communication.Announce
 public import CslibFrontier.Computability.Communication.BinarySearch
 public import CslibFrontier.Computability.Communication.Corruption
 public import CslibFrontier.Computability.Communication.DagProtocol
@@ -1732,6 +1733,7 @@ public import CslibFrontier.Computability.Communication.Nondeterministic.Extensi
 public import CslibFrontier.Computability.Communication.Nondeterministic.Functions
 public import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
 public import CslibFrontier.Computability.Communication.OneOut
+public import CslibFrontier.Computability.Communication.OneOutLargeRectangle
 public import CslibFrontier.Computability.Communication.OneOutRectangle
 public import CslibFrontier.Computability.Communication.Operations
 public import CslibFrontier.Computability.Communication.PartitionJoin
@@ -6464,6 +6466,7 @@ public import CslibFrontier.Probability.OptimalStopping.ProphetIID
 public import CslibFrontier.Probability.OptimalStopping.Secretary
 public import CslibFrontier.Probability.Option
 public import CslibFrontier.Probability.PMF
+public import CslibFrontier.Probability.PMF.AboveMean
 public import CslibFrontier.Probability.PMF.Bind
 public import CslibFrontier.Probability.PMF.BindFailure
 public import CslibFrontier.Probability.PMF.Bool
@@ -6514,6 +6517,7 @@ public import CslibFrontier.Probability.Product.ConditionalExpectation
 public import CslibFrontier.Probability.Product.Estimator
 public import CslibFrontier.Probability.Product.Event
 public import CslibFrontier.Probability.Product.Reindex
+public import CslibFrontier.Probability.Product.Resample
 public import CslibFrontier.Probability.Product.Split
 public import CslibFrontier.Probability.ProductConditioning
 public import CslibFrontier.Probability.ProductConditioning.SideInformation
