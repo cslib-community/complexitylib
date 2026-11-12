@@ -7,6 +7,7 @@ Authors: OpenAI
 -- upstream: candidate
 
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.EdgeContractionGenus
+import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Declarations
 
 /-! Actual nonbridge contractions, directed loop blocks, empty blocks and point components. -/
 
@@ -96,6 +97,39 @@ example : RotationCertificate.ofRotation (pendant.contractLastEdge (by decide)) 
 example : (pendant.contractLastEdge (by decide)).NumericalGenusZero :=
   pendant.numericalGenusZero_contractLastEdge (by decide) (by decide)
     (checkedGenus pendant (by decide) (by decide +kernel))
+
+
+private abbrev splitBody : Graph := (List.range 4, [(3, 0), (1, 2)])
+
+private def splitHub : RotationSystem (lastEdgeGraph splitBody 3 1) where
+  rotate := Equiv.swap ((⟨0, by decide⟩, false) : Dart (lastEdgeGraph splitBody 3 1))
+    (⟨2, by decide⟩, false) * Equiv.swap
+      ((⟨1, by decide⟩, false) : Dart (lastEdgeGraph splitBody 3 1)) (⟨2, by decide⟩, true)
+  sameCycle_iff := by decide +kernel
+
+-- The marked fresh hub is n=3, with connector h -> v=1. Contraction really leaves
+-- [0,1,2,1], not the original declaration list. Only the declaration transport removes
+-- that extra occurrence; the two old edges and their directed successor table agree.
+example : contractLastEdgeGraph splitBody 3 1 = ([0, 1, 2, 1], [(1, 0), (1, 2)]) := by
+  decide +kernel
+
+example : contractLastEdgeGraph splitBody 3 1 ≠ (List.range 3, [(1, 0), (1, 2)]) := by
+  decide +kernel
+
+example : RotationCertificate.ofRotation
+    ((splitHub.contractLastEdge (by decide)).redeclare (List.range 3)) = ⟨[2, 1, 0, 3]⟩ := by
+  decide +kernel
+
+example : ((splitHub.contractLastEdge (by decide)).redeclare (List.range 3)).NumericalGenusZero :=
+  (numericalGenusZero_append_duplicate_iff (by decide : 1 ∈ List.range 3)
+    (splitHub.contractLastEdge (by decide))).mpr
+      (splitHub.numericalGenusZero_contractLastEdge (by decide) (by decide)
+        (checkedGenus splitHub (by decide) (by decide +kernel)))
+
+example : RotationCertificate.verifyGenusZero (List.range 3, [(1, 0), (1, 2)])
+    (RotationCertificate.ofRotation
+      ((splitHub.contractLastEdge (by decide)).redeclare (List.range 3))) = true := by
+  decide +kernel
 
 
 end CslibFrontierTests.RotationContraction

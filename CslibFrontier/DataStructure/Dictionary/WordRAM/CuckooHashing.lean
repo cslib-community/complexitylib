@@ -7,9 +7,8 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import CslibFrontier.DataStructure.Dictionary.CuckooHashing
 public import CslibFrontier.DataStructure.Dictionary.Spec
-public import CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing.HashFamily
+public import CslibFrontier.DataStructure.Dictionary.WordRAM.CuckooHashing.Analysis
 public import CslibFrontier.DataStructure.WordRAM.Randomized.StateTransition
 public import CslibFrontier.Computability.WordRAM.Randomized.UniformLoopExit
 
@@ -71,7 +70,7 @@ expected-amortized sequence theorem `cuckoo_seq_expected_amortized`.
    - Whenever `U ≤ max n_max 4 ^ c_exp`, `isCuckooHashFamily_tableBits` discharges
      `IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4` unconditionally
      for every `n_max : ℕ` via
-     `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`
+     `Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.isCuckooHashPair_provableFamily`
      [PaghRodler2004, Thorup2013], yielding assumption-free `O_{c_exp}(1)` worst-case `query` cost
      `queryChargeBound c_exp` and `O_{c_exp}(1)` expected-amortized `insert` cost
      `insertChargeBound c_exp` (`expectedOpCharge c_exp`) independent of `n_max` and `U`.
@@ -124,6 +123,7 @@ public section
 
 namespace Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 
+open Cslib.DataStructure.Dictionary.CuckooHashing
 open Cslib.WordRAM
 open Cslib.WordRAM.Randomized
 open Cslib.Probability
@@ -5852,7 +5852,7 @@ satisfies `IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_ma
 theorem isCuckooHashFamily_tableBits {c_exp U n_max : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) :
     IsCuckooHashFamily c_exp U n_max (tableBits n_max) (maxEvictions n_max) 3 4 :=
-  Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily
+  Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing.isCuckooHashPair_provableFamily
     hU (thirtyTwo_mul_max_le_tableSize n_max)
 
 /-- `O(c_exp⁴) = O_{c_exp}(1)` worst-case step bound for `queryCode c_exp n_max`, independent of

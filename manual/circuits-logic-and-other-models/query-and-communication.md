@@ -97,6 +97,26 @@ constant original messages to output both input bits and checks incompatible goa
 valid/invalid selected answers and the empty-index edge. From the repository root run
 `scripts/build.sh CslibFrontierTests.CommunicationOneOut` to check it.
 
+[OneOutRectangle](../../CslibFrontier/Computability/Communication/OneOutRectangle.lean)
+connects this construction to the original tuple-input protocol. `aliceProjection` and
+`bobProjection` project each leaf's actual rectangle at its announced coordinate;
+`projections_valid` proves that its answer is valid on the product of these projections.
+For a coordinate `i` and a background set of leaf occurrences, `rectangleProtocol`
+solves the original single-input relation on `aliceSide × bobSide` at exactly the
+original protocol depth. `canForce_aliceProjection` and `canForce_bobProjection`
+supply the two hybrid endpoint strategies by following the original messages.
+
+[IID.Distinct](../../CslibFrontier/Probability/IID/Distinct.lean) supplies the independent
+sampling estimate, reusing the existing collision-count mean. For finite sources,
+`iid_not_injective_le_of_mass_le` bounds repetitions by `choose k 2 * bound` when every
+atom has mass at most `bound`. `iid_injective_pair_ge` shows that the two tuple-validity
+probabilities sum to at least `1 + 1/k` under the light-atom bound `1/k²`, for positive `k`.
+The [projected-rectangle client](../../CslibFrontierTests/CommunicationOneOutRectangle.lean)
+checks actual equality computation at depth two, singleton/empty sampling edges and a
+nonempty light-atom instance. Run
+`scripts/build.sh CslibFrontierTests.CommunicationOneOutRectangle` from the repository root.
+These facts do not yet select a coordinate and background with a large enough forcing rectangle.
+
 This is infrastructure and the upper-bound portion of submission 865. The large solvable
 rectangle bound, minimax/majority construction, headline lower bounds and later formula/core
 results remain open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
