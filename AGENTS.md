@@ -307,14 +307,20 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
-optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
-CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
-hygiene, the encoding readability and projection chain ratchets, documentation pins, and the
-post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
-compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
-why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
-context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
-there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+optional caches and runs every locally reproducible step from CI's parallel `source-checks` and
+`lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands
+(`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source hygiene, the
+encoding readability and projection chain ratchets, documentation pins, and the post-build tidy
+statement ratchet, result registry and changed-file lints. Changed-file checks compare with the
+merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining
+step stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
+fails when either execution job gains a step that is neither mirrored nor recorded there, when a
+mirrored step runs a line or sets an option that the local run does not repeat, or when the
+required aggregator stops requiring both jobs to succeed and forwarding the Lean job's publication
+output.
+The split overlaps work rather than removing it: it adds another checkout and runner plus the
+aggregator's scheduling time, and saves only source-check time that would otherwise extend the
+slower Lean path. Treat observed wall-time improvements as run-specific, not a fixed reduction.
 After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
 restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
 affected sources, including unchanged importing clients, built import aggregates and executable
@@ -583,10 +589,14 @@ and [API review with explicit nonblocking nits](https://github.com/leanprover/cs
 ### Approve and queue
 
 Approving a PR's exact current head and queueing it are one step. A non-authoring reviewer with
-write access who approves runs `python3 scripts/queue_pr.py <PR> <approved head>`, which queues
-exactly that head once the required check has passed there; `--wait 30` waits up to 30 minutes
-for a check that is still running. Write access is sufficient authority to queue a head approved
-under this cycle. Approve without queueing, and say why in the approval, when:
+write access who approves uses `scripts/queue_pr.py` from a trusted checkout of current `main`,
+or an isolated copy obtained from a pinned revision of current `main`. Do not use the PR branch's
+helper or an old copy. Invoke the trusted script by its path; from private scratch, pass `--repo OWNER/NAME`
+explicitly ([queue command](manual/workflows/agent-operations.md#queue-approved-work-and-keep-its-approval)).
+Keep the approved PR head; do not refresh its branch just to obtain the tool. The helper queues
+exactly that head once its required check passes; `--wait 30` waits up to 30 minutes for a running
+check. Write access is sufficient authority to queue a head approved under this cycle. Approve
+without queueing, and say why in the approval, when:
 
 - human review has been requested in the PR, its comments or a linked issue; queueing is then left
   to that human or to whomever they name;
@@ -597,7 +607,8 @@ Pending source, advisory-notice or rendered-manual review is also a hold. `--wai
 automatically when the check passes; do not start it while completing CI will produce material
 that still needs review. Inspect that material first, then record the hold's resolution and link
 the existing proof/API/caller assessment before queueing. A successful check does not release a
-review hold, and the helper does not judge whether that review is complete.
+review hold, and the helper does not judge whether that review is complete. Updating `main` does
+not upgrade a running copy; an old waiter's owner stops it before replacing it after holds clear.
 
 When the helper actually waits, including its automatic mergeability retries, it snapshots the
 PR body, comments, submitted reviews and inline discussion before the first sleep and rereads

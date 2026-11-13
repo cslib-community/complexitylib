@@ -288,6 +288,33 @@ They also cover a non-halting tree that generates nothing and has infinite cost.
 `scripts/build.sh CslibFrontierTests.KnuthYao`. The model counts coin flips only; it does not certify
 that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
 
+To run the same trees on a biased coin, import
+[DDGTree/Biased.lean](../../CslibFrontier/Probability/DDGTree/Biased.lean). `T.runWith c n`,
+`T.outputProbWith c`, `T.GeneratesWith c p` and `T.expectedFlipsWith c` replace fair bits by
+independent flips of `c : PMF Bool`; `run_eq_runWith` and its siblings recover the fair-bit API at
+`PMF.uniformOfFintype Bool`. `T.expectedCostWith c w` charges `w n` for flip number `n + 1`, which
+is read exactly when the tree has not stopped after `n` flips, so it is `∑ₙ w n P(T > n)`. Use a
+tree rather than an `OracleComp` program when the sampler loops without a bound: oracle programs
+are finite call trees, so `OracleComp.retry` only expresses the truncated loop, with a visible
+failure outcome. `vonNeumann` reads flips in pairs until they differ
+([Arora–Barak draft Lemma 7.15](../../results/arora-barak-2007.md#chapter-7-randomized-computation)).
+On `PMF.coin ρ` with `0 < ρ < 1`, `vonNeumann_generatesWith_coin` gives an exactly fair bit and
+`expectedFlipsWith_coin_vonNeumann` gives exactly `ENNReal.ofReal (ρ * (1 - ρ))⁻¹` flips.
+`exists_generatesWith_coin_iff` shows that `0 < ρ < 1` is necessary: at bias `0` or `1` the coin is
+deterministic (`runWith_pure`). In the other direction, import
+[DDGTree/Digits.lean](../../CslibFrontier/Probability/DDGTree/Digits.lean) for Lemma 7.14.
+`coinOfDigits d` compares fair bits with a binary expansion `d` of `ρ`, stated as
+`HasSum (fun i => if d i then 2⁻¹ ^ (i + 1) else 0) ρ`. Use the expansion `0.111⋯` for `ρ = 1`.
+It generates `PMF.coin ρ` (`coinOfDigits_generates`) and reads exactly two fair bits in expectation
+(`expectedFlips_coinOfDigits`). Its expected digit cost is `∑ₙ w n 2⁻ⁿ`
+(`expectedCostWith_coinOfDigits`), which is finite for polynomially bounded `w`.
+[Computability/Probabilistic/CoinOfDigits.lean](../../CslibFrontier/Computability/Probabilistic/CoinOfDigits.lean)
+instantiates `w` with the time bound of a multitape machine computing the digits from `encUnary`.
+The comparison loop itself is charged one unit per flip, not compiled to a machine. The
+[checked clients](../../CslibFrontierTests/BiasedCoinSamplers.lean) cover bias `1/3` (`9/2` flips),
+the impossible bias `0`, `ρ = 1` and a constant digit machine; run
+`scripts/build.sh CslibFrontierTests.BiasedCoinSamplers`.
+
 When an exact sampler instead repeats a fixed-width `width`-bit decoder `attempt : List Bool → Option α`,
 import [DDGTree/Rejection.lean](../../CslibFrontier/Probability/DDGTree/Rejection.lean) for
 `BlockRejectionSpec`, [Languages/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Languages/Probabilistic/RejectionSampling.lean)
@@ -1820,6 +1847,11 @@ length `4*n+1` and are not uniform words of that length. For perfect correctness
 provides it for every seed, while the simple split map needs real keys of length `3*n`.
 The clients also distinguish failed decapsulation from accepted empty keys, detect omitted
 postprocessing on forwarded replies, and exhibit a failed real hop without KEM correctness.
+
+For a concrete PKE that needs the generic explicit-coin interface but not an FO transform, import
+[`PKE/ExplicitCoin.lean`](../../CslibFrontier/Crypto/Protocols/PKE/ExplicitCoin.lean) directly.
+It owns `ExplicitCoinPKE`, `DeltaCorrect`, `GammaSpread`, and the deliberately fixed-message
+`indCpaGame`; the FO module publicly re-exports that API for existing transform clients.
 
 When the KEM instead derandomizes an explicit-coin public-key encryption scheme `encDet : PK → M → R → CT` with a mandatory re-encryption check (`T[PKE, G]`, `FO^⊥`, and domain-separated implicit-rejection `FO-notbot`), import [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) and [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean) rather than `KEMFromPKE.lean`. Those modules supply `ExplicitCoinPKE` (`DeltaCorrect`, `GammaSpread`, `indCpaGame`), deterministic recovery and re-encryption rigidity lemmas (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsBot_eq_none_of_reencrypt_ne`, `Scheme.decapsNotBot_encT_eq`, `Scheme.decapsNotBot_of_reencrypt_ne`), and the `FO-notbot` ROM IND-CCA games (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`) and keyless IND-CPA reduction (`Scheme.simHandler`, `Scheme.romCpaReduction`, `Scheme.indCpaAdvantage_romCpaReduction`, `Scheme.sum_simHitProb_le`, `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`; checked clients in [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)); the IND-CCA bound `Scheme.indCcaRomAdvantage_le` from IND-CPA security, `δ`-correctness and `γ`-spreadness is in [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean), with its hybrid games in `NotBot/Hybrids.lean` and one module per hop, while [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`Scheme.roIndCcaBotGame`, `Scheme.indCcaBotAdvantage_le`) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)) prove the corresponding ROM IND-CCA bound for explicit-rejection `FO^⊥ = U^⊥ ∘ T` and the necessity of its `qD · 2^{-γ}` spreadness term, and [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean) (`leakyPKE`, `decapsNotBot_leakyPKE_some`, `Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`, `leakAdv`, `advantage_eagerNoCheckGame_leakAdv`) proves that dropping the re-encryption check breaks `FO-notbot` with advantage `≥ 1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys.
 

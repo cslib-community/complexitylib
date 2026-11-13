@@ -399,8 +399,20 @@ class PublicationPermissionTests(unittest.TestCase):
         self.assertIn("artifact-ids: ${{ needs.ci-checks.outputs.publication }}", gcs)
         self.assertLess(gcs.index('verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"'),
                         gcs.index("uses: google-github-actions/auth@"))
-        self.assertNotIn("google-github-actions/auth@", jobs["ci-checks"])
-        self.assertIn("env.CACHE_RECOVERY_GENERATION", jobs["ci-checks"])
+        for name in ("source-checks", "lean-checks", "ci-checks"):
+            self.assertNotIn("google-github-actions/auth@", jobs[name])
+        lean = jobs["lean-checks"]
+        aggregator = jobs["ci-checks"]
+        self.assertIn("env.CACHE_RECOVERY_GENERATION", lean)
+        self.assertIn("needs: [source-checks, lean-checks]", aggregator)
+        self.assertIn("if: always()", aggregator)
+        self.assertIn("publication: ${{ needs.lean-checks.outputs.publication }}", aggregator)
+        for name in ("publish-gcs-cache", "publish-mit-cache"):
+            with self.subTest(publisher=name):
+                publisher = jobs[name]
+                self.assertIn("ci-checks", publisher.split("\n", 1)[0])
+                self.assertIn("needs.ci-checks.result == 'success'", publisher)
+                self.assertIn("artifact-ids: ${{ needs.ci-checks.outputs.publication }}", publisher)
         self.assertIn("CACHE_RECOVERY_GENERATION:", workflow)
         self.assertIn("COMPLEXITYLIB_CACHE_URLS:", workflow)
 

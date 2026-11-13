@@ -12,6 +12,7 @@ public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.LinearAlgebra.AffineSpace.AffineMap
+import CslibFrontier.Foundations.Data.Fin.Counting
 import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
@@ -402,14 +403,6 @@ section Soundness
 
 variable [Fintype F] [DecidableEq F] {n : ℕ}
 
-omit [Field F] [DecidableEq F] in
-/-- Counting the points of `F ^ (n + 1)` by their first coordinate and their tail. -/
-private theorem card_filter_zero_tail (P : F → (Fin n → F) → Prop) [∀ t, DecidablePred (P t)] :
-    #{x : Fin (n + 1) → F | P (x 0) (Fin.tail x)} = ∑ t, #{y : Fin n → F | P t y} := by
-  simp only [card_filter]
-  rw [← (Fin.consEquiv fun _ => F).sum_comp, Fintype.sum_prod_type]
-  simp [Fin.consEquiv]
-
 omit [Field F] [Fintype F] [DecidableEq F] in
 /-- The lines of `f` in direction `j.succ` are the lines of its slices `x 0 = t` in direction
 `j`. -/
@@ -427,7 +420,7 @@ theorem card_wrongPoints_succ (f : (Fin (n + 1) → F) → F) (j : Fin n) :
     ext x
     simp only [wrongPoints, mem_filter, mem_univ, true_and, lineRestrict_succ]
   rw [this]
-  exact card_filter_zero_tail
+  exact Fin.card_filter_zero_tail
     (fun t y => ¬IsAffineFun (lineRestrict (fun y => f (Fin.cons t y)) y j))
 
 omit [DecidableEq F] in
@@ -510,7 +503,7 @@ theorem exists_isMultilinear_hammingDist_le_of_slices (f : (Fin (n + 1) → F) �
     exact hx (by simpa using congrFun hline (x 0))
   have hcard (t : F) (h : (Fin n → F) → F) :
       #(bad t h) = Fintype.card F * hammingDist (fun y => f (Fin.cons t y)) h := by
-    rw [card_filter_zero_tail (fun _ y => f (Fin.cons t y) ≠ h y), sum_const, card_univ,
+    rw [Fin.card_filter_zero_tail (fun _ y => f (Fin.cons t y) ≠ h y), sum_const, card_univ,
       smul_eq_mul, hammingDist]
   calc hammingDist f g = #({x | f x ≠ g x} : Finset (Fin (n + 1) → F)) := rfl
     _ ≤ #(wrongPoints f 0) + (#(bad t₁ g₁) + #(bad t₂ g₂)) :=

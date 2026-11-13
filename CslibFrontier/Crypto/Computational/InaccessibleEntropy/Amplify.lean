@@ -65,7 +65,7 @@ formalizes STEPS 1–3 of `[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1 (pp
 * `Cslib.Crypto.InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`: STEPS 1–3 of Theorem 5.1
   from any `InaccessibleEntropyFamily`.
 * `Cslib.Crypto.OneWay.exists_shrinkingCollisionGrid`: STEPS 1–3 of Theorem 5.1 composed with
-  the constant-threshold adaptation of Theorem 4.5 (`OneWay.exists_inaccessibleEntropyFamily`).
+  Theorem 4.5 (`OneWay.exists_inaccessibleEntropyFamily`).
 
 ## References
 
@@ -472,11 +472,10 @@ theorem InaccessibleEntropyFamily.exists_shrinkingCollisionGrid (F : Inaccessibl
   filter_upwards [Filter.eventually_ge_atTop N₀] with n hn
   exact amp_randomCollisionGame_succProbability_le F hN₀ B hn
 
-/-- **Constant-threshold adaptation of `[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21) composed
-with Section 5.1.5, Theorem 5.1, STEPS 1–3 (pp. 30–31)**: every uniform `OneWay` function yields a
-uniform polynomial-time `ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates
-containing a sequence that is collision-resistant on random inputs against all uniform strict-PPT
-adversaries. -/
+/-- **`[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21) composed with Section 5.1.5, Theorem 5.1,
+STEPS 1–3 (pp. 30–31)**: every uniform `OneWay` function yields a uniform polynomial-time
+`ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates containing a sequence that is
+collision-resistant on random inputs against all uniform strict-PPT adversaries. -/
 theorem OneWay.exists_shrinkingCollisionGrid {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty ShrinkingCollisionGrid :=
   let ⟨F⟩ := hf.exists_inaccessibleEntropyFamily

@@ -21,12 +21,16 @@ expected-time and expander-concentration gaps and identify literal source defect
 Its Chapter 11 connectivity milestone records the exact total edge-query lower bound and its
 empty-graph conventions; it does not establish the other chapter endpoints.
 Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
-and quantitative crypto bounds. Its Chapter 14 record includes a checked degree obstruction to the draft's literal
+and quantitative crypto bounds. The native `dip-eq-np` entry covers deterministic interaction in the oracle-PPT IP model;
+`perfect-soundness-ip-subset-np` covers perfect soundness with any positive completeness.
+Its Chapter 14 record includes a checked degree obstruction to the draft's literal
 circuit-to-determinant statement.
 Its chapters 11–13, 15, 21 and 22 distinguish exact endpoints, model restrictions and
 source defects. The later expected-cost Yao endpoint includes numerical equality, optimal
 finite-support algorithms and hard distributions for arbitrary output types; the three-bit
-majority example has exact expected complexity $8/3$, including the arbitrary-tree lower bound. Chapter 22 preserves the constant-free formula restriction and the open
+majority example has exact expected complexity $8/3$, including the arbitrary-tree lower bound. The later Chapter 11
+Exercise 1 endpoint bounds relevant coordinates by $s4^s$ and gives an explicit logarithmic
+maximum-sensitivity lower bound. Chapter 22 preserves the constant-free formula restriction and the open
 corrected density-amplification objective.
 Chapters 16–17 distinguish finite pseudorandomness/coding
 results from uniform machine bounds and general-hardness endpoints; this is not a claim of

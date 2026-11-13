@@ -57,7 +57,9 @@ lake exe lint-style
 lake exe checkInitImports
 ```
 
-`scripts/check.sh` restores available caches and runs every required step of CI's `ci-checks` job that can run locally, with CI's commands: these gates, the Python tooling tests, source hygiene, the encoding readability and projection chain ratchets, documentation pins, and the tidy statement ratchet, result registry and changed-file lints that read the build outputs. [`scripts/full_check.py`](../../scripts/full_check.py) lists the steps and why the rest stay CI-only. After the Lean gates, it also re-elaborates built root-package sources whose outputs Lake restored from the shared local artifact cache without their warnings, including unchanged clients ([diagnosis](troubleshooting.md#diagnose-warnings-that-only-ci-reports)). A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
+`scripts/check.sh` restores available caches and runs every locally reproducible step from CI's parallel `source-checks` and `lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands: these gates, the Python tooling tests, source hygiene, the encoding readability and projection chain ratchets, documentation pins, and the tidy statement ratchet, result registry and changed-file lints that read the build outputs. [`scripts/full_check.py`](../../scripts/full_check.py) lists the steps and why the rest stay CI-only. After the Lean gates, it also re-elaborates built root-package sources whose outputs Lake restored from the shared local artifact cache without their warnings, including unchanged clients ([diagnosis](troubleshooting.md#diagnose-warnings-that-only-ci-reports)). A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
+
+This split overlaps work rather than removing it. It adds another checkout and runner plus the aggregator's scheduling time, and saves only source-check time that would otherwise extend the slower Lean path. Treat measured wall-time improvements as run-specific rather than a fixed reduction.
 
 ## Update and review both manuals
 
@@ -112,14 +114,15 @@ Keep a source approval conditional while notices, rendered pages or other source
 need review. When releasing that hold, link the earlier proof/API/caller assessment and record
 which remaining questions were resolved; reuse unchanged evidence. The queue helper's `--wait`
 option queues automatically when CI passes, so finish any review of newly produced material
-before starting it. Follow [Approve and queue](../../AGENTS.md#approve-and-queue).
+before starting it. Use the [helper procedure from trusted current main](agent-operations.md#queue-approved-work-and-keep-its-approval)
+without refreshing the approved PR branch, following [Approve and queue](../../AGENTS.md#approve-and-queue).
 
 If the helper sleeps for CI or mergeability, it records the PR body, top-level comments,
 submitted reviews and inline threads before sleeping, then rereads their complete discussion
 before enqueueing. A change, including an edit to an older comment or a dismissed review,
 prints `not queued: its review discussion changed while waiting` and exits with status 1.
 Reread the discussion and any holds; once they are resolved and the head remains approved,
-rerun `python3 scripts/queue_pr.py <PR> <approved head>`. An incomplete discussion read instead
+rerun that trusted helper for the same approved head. An incomplete discussion read instead
 exits with status 2; resolve the reported API error and retry. Check events and reactions alone
 do not stop the wait, and an existing queue entry is only reported. This check neither interprets
 hold prose nor reads linked issues. GitHub checks the expected head atomically, but provides no

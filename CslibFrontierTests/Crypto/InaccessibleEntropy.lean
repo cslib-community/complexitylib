@@ -19,13 +19,17 @@ Checks concrete unconditional instances of:
    declaring the full fiber accessible collapses the gap to `0` (so `InaccessibleEntropyFamily`
    cannot be trivially satisfied by taking `accSet = fiberSet`).
 3. Concrete unconditional instantiations of `isPPT_rompelBaseInverter`,
-   `rompelBase_escape_le_four_mul_inversion`, and `rompelBase_accessible_le_conditionalEntropy_sub`
-   on `g = id` at security parameter `n = 2`, plus the explicit `bind_with` and
-   `IsPPT.preprocess` composition that certifies such inverters.
+   `rompelBase_escape_le_mul_inversion` (at `c = 0` and `c = 2`), and
+   `rompelBase_accessible_le_conditionalEntropy_sub` on `g = id` both at `c = 0, n = 2` (`1 / 192`
+   gap) and at `c = 1, n = 8` (`1 / 144` gap, four times the `c = 0` bound `1 / 576` via the four
+   separating truncation lengths), plus the explicit `bind_with` and `IsPPT.preprocess` composition
+   that certifies such inverters.
 4. Parallel repetition (`repHashFin`, `repAccessibleSet`, `repEscapeInverter`), two-universal
    input/output entropy reduction (`shrunkHashOutLen_add_one`, `card_image_inputHashFin_le`,
-   `shrunkHashFin_false_positive_le`, `shrunkHash_randomCollision_le`), and the candidate-grid
-   amplification endpoints (`InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`,
+   `shrunkHashFin_false_positive_le`, `shrunkHash_randomCollision_le`), and the Theorem 4.5 /
+   candidate-grid endpoints (`OneWay.exists_rompelBase_logGap`,
+   `OneWay.exists_inaccessibleEntropyFamily_logGap`, `OneWay.exists_inaccessibleEntropyFamily`,
+   `InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`,
    `OneWay.exists_shrinkingCollisionGrid`).
 -/
 
@@ -167,28 +171,65 @@ example {A : ℕ → List Bool → ProbComp (List Bool)} (hA : IsPPT encBits A) 
 example (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
     (Game.succProbability (ProbComp.eval
       (accessibleEscapeGame (rompelBaseEvalWord id id)
-        (fun k => rompelBaseInLen k k) (rompelAccessibleSet id id) A n)) : ℝ) ≤
+        (fun k => rompelBaseInLen k k) (rompelAccessibleSet 0 id id) A n)) : ℝ) ≤
       4 * (Game.succProbability (ProbComp.eval
-        (inversionGame id (rompelBaseInverter id id A) n)) : ℝ) :=
-  rompelBase_escape_le_four_mul_inversion id id A n (fun _ hw => hw)
+        (inversionGame id (rompelBaseInverter id id A) n)) : ℝ) := by
+  simpa only [pow_zero, mul_one, id_eq] using
+    rompelBase_escape_le_mul_inversion 0 id id A n (fun _ hw => hw)
 
-/-- Unconditional concrete check of `rompelBase_accessible_le_conditionalEntropy_sub` on `g = id`
-at `n = 2`: since `collisionProbability (uniformList 2) = 1 / 4 ≤ 1 / 2`, the Rompel base hash has
-an unconditional real-vs-accessible entropy gap of at least `1 / 192` bits. -/
+example (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
+    (Game.succProbability (ProbComp.eval
+      (accessibleEscapeGame (rompelBaseEvalWord id id)
+        (fun k => rompelBaseInLen k k) (rompelAccessibleSet 2 id id) A n)) : ℝ) ≤
+      (4 * (n + 1 : ℝ) ^ 2) * (Game.succProbability (ProbComp.eval
+        (inversionGame id (rompelBaseInverter id id A) n)) : ℝ) :=
+  rompelBase_escape_le_mul_inversion 2 id id A n (fun _ hw => hw)
+
+/-- Unconditional concrete check of `rompelBase_accessible_le_conditionalEntropy_sub` at `c = 0` on
+`g = id` at `n = 2`: since `collisionProbability (uniformList 2) = 1 / 4 ≤ 1 / 2`, the Rompel base
+hash has an unconditional real-vs-accessible entropy gap of at least `1 / 192` bits. -/
 theorem rompelBase_id_two_entropy_gap :
-    accessibleSetExpectation (rompelAccessibleSet id id 2) ≤
+    accessibleSetExpectation (rompelAccessibleSet 0 id id 2) ≤
       PMF.conditionalEntropy
         ((PMF.uniformOfFintype (BitString (rompelBaseInLen 2 2))).map fun b =>
           (wordToFinMap (rompelBaseInLen 2 2) (rompelBaseOutLen 2 2)
             (rompelBaseEvalWord id id 2) b, b)) -
         1 / 192 := by
-  have hcoll : PMF.collisionProbability ((Cslib.BitString.uniformList 2).map id) ≤ 1 / 2 := by
+  have hcoll : (4 * (2 : ℝ) ^ (0 * Nat.log 2 2) - 3) *
+      PMF.collisionProbability ((Cslib.BitString.uniformList 2).map id) ≤ 1 / 2 := by
     rw [PMF.map_id, Cslib.BitString.uniformList,
       PMF.collisionProbability_map_of_injective _ _ List.ofFn_injective,
       PMF.collisionProbability_uniform]
     simp only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool, Nat.cast_pow, Nat.cast_ofNat]
     norm_num
-  have hgap := rompelBase_accessible_le_conditionalEntropy_sub id id 2 (fun _ hw => hw) hcoll
+  have hgap := rompelBase_accessible_le_conditionalEntropy_sub 0 id id 2 (by decide)
+    (fun _ hw => hw) hcoll
+  norm_num at hgap ⊢
+  exact hgap
+
+/-- Unconditional concrete check of `rompelBase_accessible_le_conditionalEntropy_sub` with
+polynomial light-image threshold `c = 1` on `g = id` at `n = 8`: since `Nat.log 2 8 = 3 ≤ 8` and
+`(4 * 2 ^ 3 - 3) * (1 / 256) = 29 / 256 ≤ 1 / 2`, all `4` separating truncation lengths contribute,
+giving an unconditional `(3 + 1) / (64 * 9) = 1 / 144`-bit entropy gap (`4` times the `c = 0`
+constant-threshold bound `1 / 576`). -/
+theorem rompelBase_id_eight_polyThreshold_entropy_gap :
+    accessibleSetExpectation (rompelAccessibleSet 1 id id 8) ≤
+      PMF.conditionalEntropy
+        ((PMF.uniformOfFintype (BitString (rompelBaseInLen 8 8))).map fun b =>
+          (wordToFinMap (rompelBaseInLen 8 8) (rompelBaseOutLen 8 8)
+            (rompelBaseEvalWord id id 8) b, b)) -
+        1 / 144 := by
+  have hlog : Nat.log 2 8 = 3 := by decide
+  have hcoll : (4 * (2 : ℝ) ^ (1 * Nat.log 2 8) - 3) *
+      PMF.collisionProbability ((Cslib.BitString.uniformList 8).map id) ≤ 1 / 2 := by
+    rw [hlog, PMF.map_id, Cslib.BitString.uniformList,
+      PMF.collisionProbability_map_of_injective _ _ List.ofFn_injective,
+      PMF.collisionProbability_uniform]
+    simp only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool, Nat.cast_pow, Nat.cast_ofNat]
+    norm_num
+  have hgap := rompelBase_accessible_le_conditionalEntropy_sub 1 id id 8
+    (by rw [hlog]; decide) (fun _ hw => hw) hcoll
+  rw [hlog] at hgap
   norm_num at hgap ⊢
   exact hgap
 
@@ -266,5 +307,38 @@ example (F : InaccessibleEntropyFamily) : Nonempty ShrinkingCollisionGrid :=
 example {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty InaccessibleEntropyFamily ∧ Nonempty ShrinkingCollisionGrid :=
   ⟨hf.exists_inaccessibleEntropyFamily, hf.exists_shrinkingCollisionGrid⟩
+
+/-- Client check of `OneWay.exists_rompelBase_logGap`: one fixed family `(inLen, outLen, evalWord)`
+simultaneously achieves eventual entropy gap `1 * log₂ n / n` and `(7 / 2) * log₂ n / n` via two
+accessible-set families against all uniform strict-PPT adversaries. -/
+example {f : List Bool → List Bool} (hf : OneWay f) :
+    ∃ (inLen outLen : ℕ → ℕ) (evalWord : ℕ → List Bool → List Bool),
+      ComputableInPolyTime inLen encUnary encUnary ∧
+      ComputableInPolyTime outLen encUnary encUnary ∧
+      (∃ accSet₁ : (n : ℕ) → BitString (inLen n) → Finset (BitString (inLen n)),
+        ∃ N₁ : ℕ, ∀ n, N₁ ≤ n →
+          accessibleSetExpectation (accSet₁ n) ≤
+            PMF.conditionalEntropy
+              ((PMF.uniformOfFintype (BitString (inLen n))).map fun z =>
+                (wordToFinMap (inLen n) (outLen n) (evalWord n) z, z)) -
+              Real.logb 2 n / n) ∧
+      (∃ accSet₂ : (n : ℕ) → BitString (inLen n) → Finset (BitString (inLen n)),
+        ∃ N₂ : ℕ, ∀ n, N₂ ≤ n →
+          accessibleSetExpectation (accSet₂ n) ≤
+            PMF.conditionalEntropy
+              ((PMF.uniformOfFintype (BitString (inLen n))).map fun z =>
+                (wordToFinMap (inLen n) (outLen n) (evalWord n) z, z)) -
+              (7 / 2 : ℝ) * Real.logb 2 n / n) := by
+  obtain ⟨inLen, outLen, evalWord, hIn, hOut, _, _, hall⟩ := hf.exists_rompelBase_logGap
+  obtain ⟨accSet₁, _, _, ⟨N₁, hN₁⟩, _⟩ := hall 1 one_pos
+  obtain ⟨accSet₂, _, _, ⟨N₂, hN₂⟩, _⟩ := hall (7 / 2) (by norm_num)
+  exact ⟨inLen, outLen, evalWord, hIn, hOut,
+    ⟨accSet₁, N₁, fun n hn => by simpa only [one_mul] using hN₁ n hn⟩,
+    ⟨accSet₂, N₂, hN₂⟩⟩
+
+example {f : List Bool → List Bool} (hf : OneWay f) :
+    ∃ F : InaccessibleEntropyFamily,
+      ∀ᶠ n : ℕ in Filter.atTop, 3 * Real.logb 2 n / n ≤ 1 / (F.denom n : ℝ) :=
+  hf.exists_inaccessibleEntropyFamily_logGap (by norm_num)
 
 end CslibFrontierTests.Crypto.InaccessibleEntropy
