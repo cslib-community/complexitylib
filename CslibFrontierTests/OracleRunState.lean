@@ -38,6 +38,12 @@ example : twoQueries.runLogWith (fun log q => if log.isEmpty then some (pure (10
     pure (0, [(0, 0)]) :=
   rfl
 
+-- `logOracle_run` steps one call of the logging oracle: a refused query keeps the log.
+example (log : List (ℕ × ℕ)) (q : ℕ) :
+    (ProbOracleComp.logOracle (fun _ _ => (none : Option (ProbComp ℕ))) q).run log =
+      pure (0, log) := by
+  simp
+
 -- A memoryless oracle that never refuses is `runLog`.
 example (O : ℕ → ProbComp ℕ) :
     twoQueries.runLogWith (fun _ q => some (O q)) = twoQueries.runLog O :=

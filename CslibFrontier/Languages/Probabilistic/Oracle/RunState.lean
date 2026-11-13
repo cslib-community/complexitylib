@@ -47,6 +47,7 @@ the oracle state by at most its cost, a run raises it by at most the program's c
 * `Cslib.ProbOracleComp.measure_runState_le`: a run raises a measure of the oracle state by at most
   the cost budget, when each query raises it by at most its cost
   (`OracleComp.IsCostBounded.measure_le` for this handler).
+* `Cslib.ProbOracleComp.logOracle_run`: one call of the logging oracle.
 * `Cslib.ProbOracleComp.IsQueryBounded.length_runLogWith_le`,
   `Cslib.ProbOracleComp.IsQueryBounded.length_runLog_le`: a program with at most `n` queries
   leaves a log of length at most `n`.
@@ -153,6 +154,14 @@ log, or answer `default` and keep the log when `O log q = none`. -/
   | some reply => (fun r => (r, log ++ [(q, r)])) <$> reply
   | none => pure (default, log)
 
+/-- One call of the logging oracle runs `O log q` and appends the answered pair, or answers
+`default` and keeps the log when `O log q = none`. -/
+@[simp] theorem logOracle_run [Inhabited R] (O : List (Q × R) → Q → Option (ProbComp R)) (q : Q)
+    (log : List (Q × R)) :
+    (logOracle O q).run log = match O log q with
+      | some reply => (fun r => (r, log ++ [(q, r)])) <$> reply
+      | none => pure (default, log) := rfl
+
 /-- Run `A` against an oracle that reads the log so far, returning the result and the log of
 answered queries with their replies, oldest first. A refused query (`O log q = none`) is answered
 with `default` and not logged. -/
@@ -179,7 +188,7 @@ theorem IsQueryBounded.length_runLogWith_le [Inhabited R] {A : ProbOracleComp (f
   have hbound := measure_runState_le (cost := fun _ => 1) h (logOracle O) List.length
     (fun q log z hz => ?_) [] z hz
   · simpa using hbound
-  · simp only [StateT.run, logOracle] at hz
+  · rw [logOracle_run] at hz
     split at hz
     · simp only [ProbComp.eval_map, PMF.support_map, Set.mem_image] at hz
       obtain ⟨r, -, rfl⟩ := hz
