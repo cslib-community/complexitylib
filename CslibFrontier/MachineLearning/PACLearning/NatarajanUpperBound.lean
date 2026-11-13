@@ -131,7 +131,7 @@ section Fintype
 variable [Fintype β]
 
 /-- **The multiclass upper bound for consistent learners** on a countable domain with finitely many
-labels [ShalevShwartzBenDavid2014, Theorem 29.3]: if every finite set N-shattered by `C` has at
+labels [ShalevShwartzBenDavid2014, Theorem 29.3(3)]: if every finite set N-shattered by `C` has at
 most `d` points, `D` is realizable by `C`, `A` is consistent with `C`, and
 `m ≥ (8 / ε) (d log (48 / ε) + 2 d log k + log (4 / δ))` with `k` labels, then the output of `A` on
 `m` i.i.d. examples has error greater than `ε` with probability at most `δ`. -/
@@ -171,8 +171,8 @@ theorem IsConsistent.measure_pi_lt_error_le_of_natarajanSampleSize_le {C : Conce
         measure_pi_not_isEpsNet_le_of_growthFunction_le D (lossClass C) h8 hgrowth
 
 /-- **The multiclass upper bound for realizable PAC learning** on a countable domain with finitely
-many labels [ShalevShwartzBenDavid2014, Theorem 29.3]: a class whose N-shattered finite sets have
-at most `d` points is `(ε, δ)`-PAC learnable over the distributions it realizes from
+many labels [ShalevShwartzBenDavid2014, Theorem 29.3(3)]: a class whose N-shattered finite sets
+have at most `d` points is `(ε, δ)`-PAC learnable over the distributions it realizes from
 `m ≥ (8 / ε) (d log (48 / ε) + 2 d log k + log (4 / δ))` examples, by any consistent learner (by
 any learner at all if the class is empty, since then no distribution is realizable). -/
 theorem isPACLearnerFor_realizableDistributions_of_natarajanSampleSize_le [Nonempty β]
@@ -203,7 +203,7 @@ theorem sampleComplexity_realizableDistributions_le_of_hasFiniteNatarajanDim [No
 end Fintype
 
 /-- **Finite Natarajan dimension implies realizable PAC learnability** on a countable domain with
-finitely many labels [ShalevShwartzBenDavid2014, Theorem 29.3]. -/
+finitely many labels [ShalevShwartzBenDavid2014, Theorem 29.3(3)]. -/
 theorem isPACLearnable_realizableDistributions_of_hasFiniteNatarajanDim [Finite β] [Nonempty β]
     {C : ConceptClass α β} (hC : HasFiniteNatarajanDim C) :
     IsPACLearnable C (realizableDistributions C) := by

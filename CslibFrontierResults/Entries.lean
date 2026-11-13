@@ -210,6 +210,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.LossMinimization.RLM
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACLearning.MDL
+import CslibFrontier.MachineLearning.PACLearning.NatarajanUpperBound
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
@@ -1651,6 +1652,26 @@ register_result "srm-nonuniform-learnability" where
     upstream IsPACLearnable conventions. Countable classes need measurable misclassification \
     sets. Theorem 7.5's explicit sample complexity is not stated, only learnability. The \
     converse characterization (Theorem 7.2) is not proved."
+
+open Cslib.MachineLearning.PACLearning in
+register_result "natarajan-realizable-upper-bound" where
+  title := "Realizable PAC learnability of multiclass classes of finite Natarajan dimension"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 29.3(3)",
+      locator := "Section 29.2, p. 403" }
+  ]
+  theorems := [
+    IsConsistent.measure_pi_lt_error_le_of_natarajanSampleSize_le,
+    isPACLearnerFor_realizableDistributions_of_natarajanSampleSize_le,
+    sampleComplexity_realizableDistributions_le_of_hasFiniteNatarajanDim,
+    isPACLearnable_realizableDistributions_of_hasFiniteNatarajanDim
+  ]
+  scope := "Upper bound of item 3 only, on countable domains with measurable singletons and \
+    finitely many labels k: every consistent learner (every ERM) learns from \
+    (8/ε)(d log (48/ε) + 2 d log k + log (4/δ)) examples, where d bounds the N-shattered \
+    sets. The constants are explicit and unoptimized, and d log (k/ε) is at most the \
+    source's d log (kd/ε). The lower bound and items 1 and 2 are not part of this entry."
 
 register_result "mdl-bound" where
   title := "Minimum description length bound for prefix-free descriptions"
