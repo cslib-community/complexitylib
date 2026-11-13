@@ -14,15 +14,16 @@ public import Cslib.Computability.Circuit.Full
 /-!
 # Bit-blasting circuits over a finite carrier
 
-Let `enc : F ≃ BitString w` encode the elements of a carrier `F` by `w` bits. A circuit over the
-full binary basis of `F` (`fullInterpretation (k := 2)`, where every constant and every operation
-with at most two arguments is a gate) is simulated by a De Morgan circuit on the encodings: each
-gate is replaced by `w` circuits, one for each bit of its value, each a function of the `2 * w`
-bits of the gate's arguments and so computable with `2 ^ (2 * w) * (4 * w + 2) + 1` gates by its
-disjunctive normal form (`Cslib.Circuits.Synthesis.selected`). A gate of the full basis therefore
-costs at most `bitBlastCost w = w * (2 ^ (2 * w) * (4 * w + 2) + 1)` De Morgan gates. For a field
-`F` with `q = 2 ^ w` elements this is `O(w ^ 2 * q ^ 2)` gates per field operation, a polynomial
-in `q`, which suffices for reconstruction arguments whose circuits are polynomial in `q` anyway.
+Let `enc : F → BitString w` and `decode : BitString w → F` satisfy
+`Function.LeftInverse decode enc`. The encoding need only be injective: unused bit strings may
+be decoded arbitrarily. Thus the carrier need not have exactly `2 ^ w` elements. A circuit over
+the full binary basis of `F` (`fullInterpretation (k := 2)`, where every constant and every
+operation with at most two arguments is a gate) is simulated on valid encodings. Each gate is
+replaced by `w` circuits, one per output bit, each a Boolean function of at most `2 * w` argument
+bits. Its disjunctive normal form costs `2 ^ (2 * w) * (4 * w + 2) + 1` gates by
+`Cslib.Circuits.Synthesis.selected`, giving per-symbol cost
+`bitBlastCost w = w * (2 ^ (2 * w) * (4 * w + 2) + 1)`. The bound is unchanged from the
+bijective-encoding case. No semantics on malformed input encodings are claimed.
 
 The simulation is stated as a synthesis bound (`Cslib.Circuits.Synthesis.bitBlast`): if the bits
 of the `F`-valued functions feeding the circuit's inputs are available, then the bits of all its
@@ -30,7 +31,7 @@ outputs can be made available with `size * bitBlastCost w` further gates.
 
 ## Main definitions
 
-* `Cslib.Circuits.bitsOf`: the bits of an `F`-valued function under an encoding.
+* `Cslib.Circuits.bitsOf`: the bits of an `F`-valued function under an encoding function.
 * `Cslib.Circuits.bitBlastCost`: the De Morgan cost of one gate of the full binary basis.
 
 ## Main results
@@ -58,7 +59,7 @@ open Boolean
 variable {F : Type*} {w n : ℕ}
 
 /-- The `j`-th bit, under the encoding `enc`, of an `F`-valued function `φ` of the inputs. -/
-def bitsOf (enc : F ≃ BitString w) (φ : (Fin n → Bool) → F) (j : Fin w) : BooleanFunction n :=
+def bitsOf (enc : F → BitString w) (φ : (Fin n → Bool) → F) (j : Fin w) : BooleanFunction n :=
   fun x => enc (φ x) j
 
 /-- The number of De Morgan gates that simulate one gate of the full binary basis on `w`-bit
@@ -69,7 +70,9 @@ namespace Synthesis
 
 /-- One bit of a gate of the full binary basis, as a Boolean function of the bits of the gate's
 arguments, costs at most `2 ^ (2 * w) * (4 * w + 2) + 1` gates on top of these bits. -/
-private theorem bitBlast_gateBit (enc : F ≃ BitString w) {s : Set (BooleanFunction n)}
+private theorem bitBlast_gateBit (enc : F → BitString w)
+    (decode : BitString w → F) (hdecode : Function.LeftInverse decode enc)
+    {s : Set (BooleanFunction n)}
     (op : FullOp 2 F) (args : Fin ((fullSignature 2 F).Arity op) → (Fin n → Bool) → F)
     (hargs : ∀ a j, bitsOf enc (args a) j ∈ s) (j : Fin w) :
     Synthesis interpretation s
@@ -78,7 +81,7 @@ private theorem bitBlast_gateBit (enc : F ≃ BitString w) {s : Set (BooleanFunc
   have hk : (fullSignature 2 F).Arity op ≤ 2 := by
     rcases op with _ | _ <;> simp [fullSignature]
   let ψ : BooleanFunction ((fullSignature 2 F).Arity op * w) := fun y =>
-    enc (fullInterpretation op fun a => enc.symm fun j' => y (finProdFinEquiv (a, j'))) j
+    enc (fullInterpretation op fun a => decode fun j' => y (finProdFinEquiv (a, j'))) j
   obtain ⟨c, hc, hsize⟩ := (selected (n := (fullSignature 2 F).Arity op * w) id ψ).exists_circuit
   have h := Synthesis.circuit (I := interpretation) c
     (fun idx => bitsOf enc (args (finProdFinEquiv.symm idx).1) (finProdFinEquiv.symm idx).2)
@@ -87,6 +90,8 @@ private theorem bitBlast_gateBit (enc : F ≃ BitString w) {s : Set (BooleanFunc
   · funext x
     refine (congrFun (hc _) 0).trans ?_
     simp only [single_apply, Function.comp_id, ψ, bitsOf, Equiv.symm_apply_apply]
+    exact congrArg (fun v => enc (fullInterpretation op v) j)
+      (funext fun a => hdecode (args a x))
   · have hkw : (fullSignature 2 F).Arity op * w ≤ 2 * w := Nat.mul_le_mul_right w hk
     have hpow : 2 ^ ((fullSignature 2 F).Arity op * w) ≤ 2 ^ (2 * w) :=
       Nat.pow_le_pow_right (by decide) hkw
@@ -96,7 +101,9 @@ private theorem bitBlast_gateBit (enc : F ≃ BitString w) {s : Set (BooleanFunc
 /-- **Bit-blasting a program.** If the bits of the functions `φ i` feeding the inputs of a
 program over the full binary basis of `F` are available, then the bits of the values of all its
 wires can be made available with `bitBlastCost w` De Morgan gates for each of its gates. -/
-theorem bitBlast_program (enc : F ≃ BitString w) {s : Set (BooleanFunction n)} {N g : ℕ}
+theorem bitBlast_program (enc : F → BitString w)
+    (decode : BitString w → F) (hdecode : Function.LeftInverse decode enc)
+    {s : Set (BooleanFunction n)} {N g : ℕ}
     (p : Program (fullSignature 2 F) N g) (φ : Fin N → (Fin n → Bool) → F)
     (hφ : ∀ i j, bitsOf enc (φ i) j ∈ s) :
     Synthesis interpretation s
@@ -121,7 +128,7 @@ theorem bitBlast_program (enc : F ≃ BitString w) {s : Set (BooleanFunction n)}
         (fun j => bitsOf enc (fun x => line.eval fullInterpretation (fun i => φ i x)
           (p.eval fullInterpretation fun i => φ i x)) j)
         (fun _ => 2 ^ (2 * w) * (4 * w + 2) + 1)
-        (fun j => bitBlast_gateBit enc line.op
+        (fun j => bitBlast_gateBit enc decode hdecode line.op
           (fun a x => p.trace fullInterpretation (fun i => φ i x) (line.wires a))
           (fun a j' => Set.mem_union_right s (⟨(line.wires a, j'), rfl⟩ : _ ∈ T)) j)
       simpa [bitBlastCost, Finset.sum_const, Finset.card_univ, Fintype.card_fin] using this
@@ -140,14 +147,16 @@ theorem bitBlast_program (enc : F ≃ BitString w) {s : Set (BooleanFunction n)}
 /-- **Bit-blasting a circuit.** If the bits of the functions `φ i` feeding the inputs of a circuit
 over the full binary basis of `F` are available, then the bits of all its outputs can be made
 available with `c.size * bitBlastCost w` De Morgan gates. -/
-theorem bitBlast (enc : F ≃ BitString w) {s : Set (BooleanFunction n)} {N M : ℕ}
+theorem bitBlast (enc : F → BitString w)
+    (decode : BitString w → F) (hdecode : Function.LeftInverse decode enc)
+    {s : Set (BooleanFunction n)} {N M : ℕ}
     (c : Circuit (fullSignature 2 F) N M) (φ : Fin N → (Fin n → Bool) → F)
     (hφ : ∀ i j, bitsOf enc (φ i) j ∈ s) :
     Synthesis interpretation s
       (Set.range fun oj : Fin M × Fin w =>
         bitsOf enc (fun x => c.eval fullInterpretation (fun i => φ i x) oj.1) oj.2)
       (c.size * bitBlastCost w) := by
-  refine (bitBlast_program enc c.program φ hφ).mono Set.Subset.rfl ?_ le_rfl
+  refine (bitBlast_program enc decode hdecode c.program φ hφ).mono Set.Subset.rfl ?_ le_rfl
   rintro _ ⟨⟨o, j⟩, rfl⟩
   exact ⟨(c.outputs o, j), rfl⟩
 
@@ -155,7 +164,9 @@ theorem bitBlast (enc : F ≃ BitString w) {s : Set (BooleanFunction n)} {N M : 
 synthesized over the full binary basis from the input projections with `cost` gates, and the bits
 of the functions `φ i` feeding the inputs are available, then the bits of all `Ψ o (φ ·)` can be
 made available with `cost * bitBlastCost w` De Morgan gates. -/
-theorem bitBlast_synthesis (enc : F ≃ BitString w) {N : ℕ} {ι : Type*} [Finite ι]
+theorem bitBlast_synthesis (enc : F → BitString w)
+    (decode : BitString w → F) (hdecode : Function.LeftInverse decode enc)
+    {N : ℕ} {ι : Type*} [Finite ι]
     (Ψ : ι → (Fin N → F) → F) {cost : ℕ}
     (h : Synthesis (fullInterpretation (k := 2)) (inputs N) (Set.range Ψ) cost)
     {s : Set (BooleanFunction n)} (φ : Fin N → (Fin n → Bool) → F)
@@ -170,7 +181,7 @@ theorem bitBlast_synthesis (enc : F ≃ BitString w) {N : ℕ} {ι : Type*} [Fin
       (Set.range fun j => Ψ (e.symm j)) cost :=
     h.mono Set.Subset.rfl (by rintro _ ⟨j, rfl⟩; exact ⟨_, rfl⟩) le_rfl
   obtain ⟨c, hc, hsize⟩ := h'.exists_circuit_outputs
-  refine (bitBlast enc c φ hφ).mono Set.Subset.rfl ?_ (Nat.mul_le_mul_right _ hsize)
+  refine (bitBlast enc decode hdecode c φ hφ).mono Set.Subset.rfl ?_ (Nat.mul_le_mul_right _ hsize)
   rintro _ ⟨⟨o, j⟩, rfl⟩
   refine ⟨(e o, j), ?_⟩
   funext x

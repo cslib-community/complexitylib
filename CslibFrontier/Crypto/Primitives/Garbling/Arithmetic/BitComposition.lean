@@ -178,13 +178,13 @@ theorem eval_activeShares {m : ℕ} [NeZero m] (c : Fin m → R) (s : ι → R) 
   · simp only [ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.sampleAdditiveShares,
       ProbComp.eval_map, ProbComp.eval_uniform, hshift]
     have hcomp : (ProbComp.initOfShares m ∘ fun b => v + b) ∘ ProbComp.completeShares m key =
-        Equiv.addLeft (ProbComp.initOfShares m v) := by
+        (ProbComp.initOfShares m v + ·) := by
       funext init
-      simp only [Function.comp_apply, Equiv.coe_addLeft]
+      simp only [Function.comp_apply]
       funext k
       simp [ProbComp.initOfShares]
     change PMF.map _ ((PMF.map _ _).bind (PMF.pure ∘ fun b => v + b)) = _
     rw [PMF.bind_pure_comp, PMF.map_comp, PMF.map_comp]
-    rw [hcomp, PMF.uniformOfFintype_map_equiv]
+    rw [hcomp, PMF.uniformOfFintype_map_add_left]
 
 end Cslib.Crypto.Garbling.Arithmetic

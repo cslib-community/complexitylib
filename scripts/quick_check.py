@@ -271,6 +271,12 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
         checks.insert(0, ("source hygiene (changed files)",
                           [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp",
                            "--", *hygiene]))
+        # CI's changed-file lints that read only sources: a section-level `@[expose]` with no
+        # definition, and new tests that only restate signatures. The module-doc name lint reads
+        # whole-library build outputs, so it stays in the full check.
+        checks.insert(1, ("changed-file source lints (doc-name lint skipped)",
+                          [sys.executable, "-B", "scripts/check_changed_files.py", "--base", base,
+                           "--source-only"]))
     if any(path.startswith(RATCHET_ROOT) for _, path in changes):
         for label, command in RATCHETS:
             ratchet = (label, [base if part == "{base}" else part for part in command])

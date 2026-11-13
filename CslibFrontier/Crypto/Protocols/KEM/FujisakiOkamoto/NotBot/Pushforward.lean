@@ -193,8 +193,8 @@ theorem eagerCoupledGame_eq_eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Fin
                   (ProbComp.eval S.sampleKey).bind fun kRand =>
                     OracleComp.interpret
                       (S.eagerCoupledHandler G Hq Hraw pk sk (encT S.pke G pk mStar))
-                      (A (pk, encT S.pke G pk mStar, if b = true then kRand else
-                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar))) := by
+                      (A ⟨pk, encT S.pke G pk mStar, if b = true then kRand else
+                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar)⟩) := by
         congr 1 with s : 1
         congr 1 with G : 1
         rw [bind_pi_reindex S G pk sk]

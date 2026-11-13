@@ -336,9 +336,11 @@ any Lean examples introduced; a local whole-library rebuild is unnecessary.
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability and projection chain ratchets: all read only
-sources and take seconds. Quick mode lints only the affected library modules, skips the global
+it does not fetch. It also runs source hygiene and the source-only changed-file lints
+(`scripts/check_changed_files.py --source-only`) on the changed library and test files and,
+when a library module changed, the encoding readability and projection chain ratchets: all read
+only sources and take seconds. Run the same changed-file lints when building targets directly
+instead. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
 not full validation. Non-Lean changes, deletions/renames, aggregate edits other than the import
 lines `lake exe mk_all` adds for new modules, unsupported layouts and ambiguous change/import

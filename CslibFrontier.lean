@@ -993,6 +993,7 @@ public import CslibFrontier.Computability.Circuit.Approximation
 public import CslibFrontier.Computability.Circuit.Approximation.Hamming
 public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Computability.Circuit.Arithmetic.Adjugate
+public import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 public import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Asymptotics
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.CircuitRank
@@ -4176,6 +4177,7 @@ public import CslibFrontier.Crypto.Computational.Commitment.Basic
 public import CslibFrontier.Crypto.Computational.Commitment.PublicOperations
 public import CslibFrontier.Crypto.Computational.CompositeResiduosity
 public import CslibFrontier.Crypto.Computational.CramerShoup
+public import CslibFrontier.Crypto.Computational.CramerShoup.Interleaved
 public import CslibFrontier.Crypto.Computational.CramerShoup.ProjectiveHash
 public import CslibFrontier.Crypto.Computational.CramerShoup.Reductions
 public import CslibFrontier.Crypto.Computational.CramerShoup.Scheme
@@ -4209,6 +4211,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.Hybrid
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CompositionCCA
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.DEMCCA
+public import CslibFrontier.Crypto.Computational.Encryption.KEM
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.MACThenEncrypt
@@ -6067,6 +6070,7 @@ public import CslibFrontier.Languages.Probabilistic.Notation
 public import CslibFrontier.Languages.Probabilistic.Oracle
 public import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 public import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
+public import CslibFrontier.Languages.Probabilistic.Oracle.LimitQueries
 public import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 public import CslibFrontier.Languages.Probabilistic.Oracle.Norm.Init
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
