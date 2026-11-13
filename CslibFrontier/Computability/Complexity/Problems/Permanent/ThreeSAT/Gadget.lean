@@ -100,21 +100,35 @@ def keptRows (Out : Finset (Fin 3)) : List (Fin 8) :=
 def keptCols (In : Finset (Fin 3)) : List (Fin 8) :=
   colsB (decide (0 ∈ In)) (decide (1 ∈ In)) (decide (2 ∈ In))
 
+theorem mem_rowsB (o₀ o₁ o₂ : Bool) (a : Fin 8) : a ∈ rowsB o₀ o₁ o₂ ↔
+    ¬((a = 3 ∧ o₀ = true) ∨ (a = 4 ∧ o₁ = true) ∨ (a = 5 ∧ o₂ = true)) := by
+  revert o₀ o₁ o₂ a
+  decide
+
+theorem mem_colsB (i₀ i₁ i₂ : Bool) (a : Fin 8) : a ∈ colsB i₀ i₁ i₂ ↔
+    ¬((a = 0 ∧ i₀ = true) ∨ (a = 1 ∧ i₁ = true) ∨ (a = 2 ∧ i₂ = true)) := by
+  revert i₀ i₁ i₂ a
+  decide
+
 theorem mem_keptRows (Out : Finset (Fin 3)) (a : Fin 8) :
     a ∈ keptRows Out ↔ a ∉ Out.map exitE := by
-  have h : a ∈ Out.map exitE ↔ ∃ p ∈ Out, p.val + 3 = a.val := by
-    simp only [mem_map, exitE, Function.Embedding.coeFn_mk, Fin.ext_iff]
-  rw [h]
-  fin_cases a <;>
-    simp [keptRows, rowsB, Fin.exists_fin_succ, Fin.ext_iff] <;> split_ifs <;> simp_all
+  rw [keptRows, mem_rowsB, not_iff_not]
+  simp only [decide_eq_true_eq, mem_map]
+  constructor
+  · rintro (⟨rfl, h⟩ | ⟨rfl, h⟩ | ⟨rfl, h⟩) <;> exact ⟨_, h, rfl⟩
+  · rintro ⟨p, hp, rfl⟩
+    fin_cases p
+    exacts [Or.inl ⟨rfl, hp⟩, Or.inr (Or.inl ⟨rfl, hp⟩), Or.inr (Or.inr ⟨rfl, hp⟩)]
 
 theorem mem_keptCols (In : Finset (Fin 3)) (a : Fin 8) :
     a ∈ keptCols In ↔ a ∉ In.map entryE := by
-  have h : a ∈ In.map entryE ↔ ∃ p ∈ In, p.val = a.val := by
-    simp only [mem_map, entryE, Function.Embedding.coeFn_mk, Fin.ext_iff]
-  rw [h]
-  fin_cases a <;>
-    simp [keptCols, colsB, Fin.exists_fin_succ, Fin.ext_iff] <;> split_ifs <;> simp_all
+  rw [keptCols, mem_colsB, not_iff_not]
+  simp only [decide_eq_true_eq, mem_map]
+  constructor
+  · rintro (⟨rfl, h⟩ | ⟨rfl, h⟩ | ⟨rfl, h⟩) <;> exact ⟨_, h, rfl⟩
+  · rintro ⟨p, hp, rfl⟩
+    fin_cases p
+    exacts [Or.inl ⟨rfl, hp⟩, Or.inr (Or.inl ⟨rfl, hp⟩), Or.inr (Or.inr ⟨rfl, hp⟩)]
 
 theorem keptRows_nodup (Out : Finset (Fin 3)) : (keptRows Out).Nodup := by
   unfold keptRows
@@ -158,7 +172,9 @@ the permanent is `12` if `Out = In` is nonempty, and `0` otherwise. -/
 theorem gadget_minor (Out In : Finset (Fin 3)) :
     permOnList gadget (keptRows Out) (keptCols In) =
       if Out = In ∧ Out.Nonempty then 12 else 0 := by
-  rw [← permOnListZ_eq, keptRows, keptCols, gadget_minorB]
+  rw [show permOnList gadget (keptRows Out) (keptCols In) =
+      permOnListZ gadget (keptRows Out) (keptCols In) from (permOnListZ_eq _ _ _).symm,
+    keptRows, keptCols, gadget_minorB]
   have hOI : Out = In ↔ (decide (0 ∈ Out) = decide (0 ∈ In) ∧
       decide (1 ∈ Out) = decide (1 ∈ In) ∧ decide (2 ∈ Out) = decide (2 ∈ In)) := by
     simp only [decide_eq_decide]
@@ -213,7 +229,7 @@ private theorem permOn_placed_gadget (g : Fin 8 ↪ V) (A : Matrix V V ℤ)
     sdiff_map_eq_toFinset g _ _ (mem_keptCols In),
     permOn_eq_permOnList _ _ _ ((keptRows_nodup Out).map g.injective)
       ((keptCols_nodup In).map g.injective)]
-  show permOnList (fun u v => A u v) _ _ = _
+  change permOnList (fun u v => A u v) _ _ = _
   rw [permOnList_map]
   simp only [hA]
   exact gadget_minor Out In
@@ -333,7 +349,8 @@ theorem permOn_gadget_add (g : Fin 8 ↪ V) (A D : Matrix V V ℤ)
   simp only [hpg, hsd S _ hS, hsd T _ hT, ite_mul, zero_mul]
   by_cases hO : Out.Nonempty
   · simp only [hO, and_true]
-    rw [sum_ite_eq univ Out, if_pos (mem_univ _), if_pos hO]
+    rw [sum_ite_eq univ Out]
+    simp
   · simp [hO]
 
 end Cslib.Complexity.PermanentGadget
