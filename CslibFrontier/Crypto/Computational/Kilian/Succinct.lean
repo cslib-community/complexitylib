@@ -74,7 +74,7 @@ variable {α : Type} {H : List Bool → List Bool → List Bool} {V : PCPVerifie
 /-! ### Counting bits -/
 
 /-- The payload bits of an opening: its bit and the bits of its path labels. -/
-def kilianOpeningBits : KilianOpening → ℕ
+def kilianOpeningBits : MerkleOpening Bool → ℕ
   | o => 1 + (o.path.map List.length).sum
 
 /-- The payload bits of a response: the bits of all its openings. -/
@@ -225,7 +225,7 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     | nil => simp
     | cons y ys =>
       rw [List.headD_cons, length_of_mem_merkleLevel hlen (h ▸ List.mem_cons_self), hk]
-  have hopening (ρ : List Bool) (o : KilianOpening) (ho : o ∈ kilianOpen H V k x table ρ) :
+  have hopening (ρ : List Bool) (o : MerkleOpening Bool) (ho : o ∈ kilianOpen H V k x table ρ) :
       (encKilianOpening o).length ≤ 3 + d * (2 * n + 1) := by
     obtain ⟨a, -, rfl⟩ := List.mem_map.mp ho
     have hpath := length_encList_le encBits
