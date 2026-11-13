@@ -15,7 +15,7 @@ public import Mathlib.Data.Nat.Totient
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
+import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.UniformSubset
@@ -138,7 +138,7 @@ theorem Game.advantage_sampleModNat_units_le {p q n : ℕ} [NeZero (p * q)] (hp 
     Game.advantage
       ((ProbComp.eval (ProbComp.sampleModNat (n + (encNat (p * q)).length) (p * q))).bind k)
       ((PMF.uniformOfFintype (ZMod (p * q))ˣ).bind fun u => k u.val.val) ≤ 5 / 2 ^ n := by
-  have h1 := Homomorphic.Scheme.advantage_bind_sampleModNat_fin_le
+  have h1 := Game.advantage_bind_sampleModNat_fin_le
     (n + (encNat (p * q)).length) (p * q) k
   rw [Probability.PMF.uniformOfFintype_fin_bind] at h1
   have hw : ((p * q : ℕ) : ℝ≥0) / 2 ^ (n + (encNat (p * q)).length) ≤ 1 / 2 ^ n := by

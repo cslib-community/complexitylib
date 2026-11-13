@@ -243,6 +243,17 @@ private lemma sum_reversed_counts {h : ℕ} (d : Fin h → ℕ) (L : ℕ) (hd : 
   have := hd j
   omega
 
+/-- Every basis polynomial of the polynomial space of a subspace of `K^M` has a root of
+multiplicity at most `M - 1` at `a`. -/
+private lemma rootMultiplicity_basis_le {M : ℕ} (a : K) {V : Submodule K (Fin M → K)} {h : ℕ}
+    (b : Basis (Fin h) K (polynomialSpace V)) (j : Fin h) :
+    (b j : K[X]).rootMultiplicity a ≤ M - 1 := by
+  have hle : (b j : K[X]).rootMultiplicity a ≤ (b j : K[X]).natDegree := by
+    rw [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply]
+    exact (natTrailingDegree_le_natDegree _).trans (le_of_eq (natDegree_taylor _ _))
+  have hh := polynomialSpace_bound V _ (b j).property fun hz => b.ne_zero j (Subtype.ext hz)
+  omega
+
 /-- Summation of order reversal, without selecting incompatible auxiliary
 subspaces: all inequalities concern the fixed filtration of the same W. -/
 theorem order_reversal_sum (M : ℕ) (a : K)
@@ -254,24 +265,8 @@ theorem order_reversal_sum (M : ℕ) (a : K)
     k * (M - 1) ≤ (∑ j, (b j : K[X]).rootMultiplicity a) +
       (∑ j, (c j : K[X]).rootMultiplicity a) := by
   classical
-  have hbd : ∀ j, (b j : K[X]).rootMultiplicity a ≤ M - 1 := by
-    intro j
-    have hle : (b j : K[X]).rootMultiplicity a ≤ (b j : K[X]).natDegree := by
-      rw [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply]
-      exact (natTrailingDegree_le_natDegree _).trans (le_of_eq (natDegree_taylor _ _))
-    apply hle.trans
-    have hh := polynomialSpace_bound (reducedSubspace U) _ (b j).property
-      (fun hz => b.ne_zero j (Subtype.ext hz))
-    omega
-  have hcd : ∀ j, (c j : K[X]).rootMultiplicity a ≤ M - 1 := by
-    intro j
-    have hle : (c j : K[X]).rootMultiplicity a ≤ (c j : K[X]).natDegree := by
-      rw [rootMultiplicity_eq_natTrailingDegree, ← taylor_apply]
-      exact (natTrailingDegree_le_natDegree _).trans (le_of_eq (natDegree_taylor _ _))
-    apply hle.trans
-    have hh := polynomialSpace_bound (reducedSubspace W) _ (c j).property
-      (fun hz => c.ne_zero j (Subtype.ext hz))
-    omega
+  have hbd := rootMultiplicity_basis_le a b
+  have hcd := rootMultiplicity_basis_le a c
   have hh := Finset.sum_le_sum (s := Finset.range (M - 1))
     (fun A _ => order_reversal_counts M a A U W hW b c hb hc)
   rw [sum_threshold_counts, sum_reversed_counts _ _ hcd] at hh

@@ -20,7 +20,7 @@ private def sem (r : Bool) : List Bool → Bool
   | _ => false
 
 private abbrev star : CSP Bool ℕ :=
-  [(false, [0, 1, 2]), (true, [0]), (false, [1]), (true, [2])]
+  [⟨false, [0, 1, 2]⟩, ⟨true, [0]⟩, ⟨false, [1]⟩, ⟨true, [2]⟩]
 
 private def labels : star.OccurrenceLabeling Bool :=
   fun o => o.1.val == 1 || o.1.val == 3

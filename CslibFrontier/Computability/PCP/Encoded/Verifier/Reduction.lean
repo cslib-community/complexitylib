@@ -65,11 +65,11 @@ theorem polyTime_reductionVerifier {graph : Input → Graph C} (width repeats : 
     (hgraph : ComputableInPolyTime graph input (encoding enc))
     (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
-    (reductionVerifier graph width repeats decode eval).PolyTime input := by
-  obtain ⟨hcoins, hqueries, hverdict⟩ := polyTime_repeatedEdgeVerifier width repeats decode heval
-  exact ⟨hcoins.comp hgraph,
-    hqueries.comp (by fun_prop),
-    hverdict.comp (by fun_prop)⟩
+    (reductionVerifier graph width repeats decode eval).PolyTime input :=
+  have h := polyTime_repeatedEdgeVerifier width repeats decode heval
+  { coins := h.coins.comp hgraph
+    queries := h.queries.comp (by fun_prop)
+    verdict := h.verdict.comp (by fun_prop) }
 
 /-- An efficient well-formed graph reduction with a fixed positive gap gives a PCP using logarithmic
 randomness and constantly many queries. The alphabet representation precedes the input. -/
@@ -96,8 +96,9 @@ theorem mem_PCP_of_gapReduction {graph : Input → Graph C} (width : ℕ)
   refine ⟨reductionVerifier graph width repeats decode eval,
     repeats * constant, repeats * (2 * width),
     polyTime_reductionVerifier width repeats decode hgraph heval, ?_⟩
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · intro x
+  constructor
+  case coins_le =>
+    intro x
     change repeats * Nat.clog 2 (graph x).edges.length ≤
       repeats * constant * (Nat.log 2 (input x).length + 1)
     have hb : (graph x).edges.length ≤ c * ((input x).length + 1) ^ d := by
@@ -107,14 +108,17 @@ theorem mem_PCP_of_gapReduction {graph : Input → Graph C} (width : ℕ)
       _ ≤ repeats * (constant * (Nat.log 2 (input x).length + 1)) :=
         Nat.mul_le_mul_left _ (hconstant _)
       _ = _ := (Nat.mul_assoc _ _ _).symm
-  · intro x random _
+  case length_queries_le =>
+    intro x random _
     simp only [reductionVerifier, length_queries_repeatedEdgeVerifier, mul_one, le_refl]
-  · intro x hx
+  case complete =>
+    intro x hx
     obtain ⟨labels, hlabels⟩ := hcomplete x hx
     exact ⟨proofOfLabels width (graph x).vertices encode labels, fun random _ =>
       repeated_accepts_proofOfLabels width repeats encode decode hdecode eval
         (hwellFormed x) labels hlabels random⟩
-  · intro x hx proof
+  case sound =>
+    intro x hx proof
     apply (acceptCount_le_half_iff _ _ _).mpr
     change (((BitString.uniformList (repeats * Nat.clog 2 (graph x).edges.length)).map
       (fun random => (repeatedEdgeVerifier width repeats decode eval).accepts

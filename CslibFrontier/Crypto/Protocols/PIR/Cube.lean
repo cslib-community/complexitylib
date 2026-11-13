@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Foundations.Data.Code.Hadamard
 public import Mathlib.Data.Nat.Sqrt
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Probability.Uniform
 
 /-!
@@ -110,9 +111,8 @@ theorem eval_serverQuery_twoServer (σ : Bool) (i : ι) :
 theorem query_add_query_twoServer {i : ι} {r : Unit} {q : Bool → ι → Bool}
     (hrq : (r, q) ∈ (ProbComp.eval ((twoServer ι).query i)).support) :
     q false + q true = Pi.single i true := by
-  simp only [twoServer, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨t, -, -, rfl⟩ := hrq
+  simp only [twoServer, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨t, -, rfl⟩ := hrq
   funext j
   change (t + (Pi.single i false : ι → Bool)) j + (t + (Pi.single i true : ι → Bool)) j =
     (Pi.single i true : ι → Bool) j
@@ -203,9 +203,8 @@ number of them. -/
 theorem isCorrect_cube : (cube D ι).IsCorrect := by
   rw [Scheme.isCorrect_iff]
   intro x i r q hrq
-  simp only [cube, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨t, -, -, rfl⟩ := hrq
+  simp only [cube, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨t, -, rfl⟩ := hrq
   change ∑ σ : D → Bool, ∑ j : D → ι, x j * ∏ l, (t l + (Pi.single (i l) (σ l) : ι → Bool)) (j l) =
     x i
   rw [Finset.sum_comm]
@@ -246,9 +245,8 @@ theorem query_update_cube {i : D → ι} {r : Unit} {q : (D → Bool) → D → 
     (hrq : (r, q) ∈ (ProbComp.eval ((cube D ι).query i)).support) (σ : D → Bool) (l : D) :
     q (Function.update σ l (!σ l)) =
       Function.update (q σ) l (q σ l + Pi.single (i l) true) := by
-  simp only [cube, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨t, -, -, rfl⟩ := hrq
+  simp only [cube, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨t, -, rfl⟩ := hrq
   funext l'
   beta_reduce
   by_cases hl : l' = l

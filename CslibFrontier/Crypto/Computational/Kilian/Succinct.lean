@@ -213,8 +213,9 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     {n : ℕ} {k : List Bool} (hk : k.length = n) {x : α} {table : List Bool}
     {ρs : List (List Bool)} (hn : ρs.length = n) (hρs : ∀ ρ ∈ ρs, ρ.length = V.coins x) {q : ℕ}
     (hq : ∀ ρ : List Bool, ρ.length = V.coins x → (V.queries (x, ρ)).length ≤ q) :
-    (encPair (encKilianInput enc) (encPair (encList encBits) encKilianResponse)
-      ((k, x, kilianCommit H V k x table), ρs, kilianRespond H V k x table ρs)).length ≤
+    (encKilianView enc
+      { key := k, stmt := x, root := kilianCommit H V k x table, challenges := ρs,
+        response := kilianRespond H V k x table ρs }).length ≤
       4 * (enc x).length + 6 * n + 6 + 2 * (n * (2 * V.coins x + 1)) +
         n * (2 * (q * (2 * (3 + (V.coins x + Nat.clog 2 q) * (2 * n + 1)) + 1)) + 1) := by
   set d := V.coins x + Nat.clog 2 q
@@ -252,7 +253,7 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     · simp [kilianRespond, hn]
   have hchallenges : (encList encBits ρs).length ≤ n * (2 * V.coins x + 1) :=
     (length_encList_le _ _ (b := V.coins x) fun ρ hρ => (hρs ρ hρ).le).trans (by rw [hn])
-  simp only [length_encPair, encBits_apply, hk]
+  simp only [encKilianView_apply, encKilianClaim_apply, length_encPair, encBits_apply, hk]
   omega
 
 end Cslib.Crypto

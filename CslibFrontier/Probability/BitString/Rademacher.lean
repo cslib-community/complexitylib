@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Data.BitString.Sign
 public import Mathlib.Algebra.BigOperators.Expect
+public import Mathlib.Analysis.InnerProductSpace.Basic
 public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Analysis.SpecialFunctions.Exp
 import CslibFrontier.Foundations.Probability.Gaussian.ExpSq
@@ -29,7 +30,8 @@ moment-generating-function bounds used for random sign projections.
 * **Moments.** `𝔼 Y² = ∑ a²` and `𝔼 Y⁴ = 3 (∑ a²)² - 2 ∑ a⁴ ≤ 3 (∑ a²)²`. These are the tug-of-war
   moments of `CslibFrontier.Probability.KWiseIndependent.TugOfWar` for the fully independent family
   of
-  all functions `ι → Bool`.
+  all functions `ι → Bool`. The second moment also holds for vector coefficients in a real inner
+  product space: `𝔼 ‖∑ i, signVal (x i) • v i‖² = ∑ i, ‖v i‖²`.
 * **Exponential moments.** The coordinates factor, so `𝔼 exp (s Y) = ∏ i, cosh (s a i)`. Since
   `cosh u ≤ exp (u² / 2)`, `Y` is sub-Gaussian: `𝔼 exp (s Y) ≤ exp (s² ∑ a² / 2)`.
 * **Gaussian comparison.** For `0 ≤ t` and `t ∑ a² < 1 / 2`,
@@ -49,6 +51,7 @@ moment-generating-function bounds used for random sign projections.
 
 * `Cslib.BitString.expect_sq_sum_mul_signVal`, `Cslib.BitString.expect_sum_mul_signVal_pow_four`,
   `Cslib.BitString.expect_sum_mul_signVal_pow_four_le`: the second and fourth moments.
+* `Cslib.BitString.expect_norm_sum_signVal_smul_sq`: the second moment of a vector Rademacher sum.
 * `Cslib.BitString.expect_exp_mul_sum_mul_signVal`: `𝔼 exp (s Y) = ∏ i, cosh (s a i)`.
 * `Cslib.BitString.expect_exp_mul_sum_mul_signVal_le`: `𝔼 exp (s Y) ≤ exp (s² ∑ a² / 2)`.
 * `Cslib.BitString.expect_exp_mul_sq_sum_mul_signVal_le`: `𝔼 exp (t Y²) ≤ 1 / √(1 - 2 t ∑ a²)`.
@@ -87,6 +90,32 @@ theorem expect_sq_sum_mul_signVal (a : ι → ℝ) :
     𝔼 x : ι → Bool, (∑ i, a i * signVal (x i)) ^ 2 = ∑ i, a i ^ 2 :=
   (Probability.isKWiseIndependentHash_id 2).expect_sq_sum_mul_sign signVal_sq expect_bool_signVal
     univ a
+
+/-- **The second moment of a vector Rademacher sum**: for vectors `v i` in a real inner product
+space, `𝔼 ‖∑ i, signVal (x i) • v i‖² = ∑ i, ‖v i‖²`, because distinct signs are uncorrelated. -/
+theorem expect_norm_sum_signVal_smul_sq {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    (v : ι → E) : 𝔼 x : ι → Bool, ‖∑ i, signVal (x i) • v i‖ ^ 2 = ∑ i, ‖v i‖ ^ 2 := by
+  have hpair (i j : ι) :
+      𝔼 x : ι → Bool, signVal (x i) * signVal (x j) = if i = j then 1 else 0 := by
+    split_ifs with hij
+    · subst hij
+      simp only [signVal_mul_self, Fintype.expect_const]
+    · exact (Probability.isKWiseIndependentHash_id (X := ι) (Y := Bool) 2).expect_sign_mul_sign
+        expect_bool_signVal hij
+  have hexp (x : ι → Bool) : ‖∑ i, signVal (x i) • v i‖ ^ 2 =
+      ∑ i, ∑ j, signVal (x i) * signVal (x j) * inner ℝ (v i) (v j) := by
+    rw [← real_inner_self_eq_norm_sq, sum_inner]
+    refine sum_congr rfl fun i _ => ?_
+    rw [inner_sum]
+    refine sum_congr rfl fun j _ => ?_
+    rw [real_inner_smul_left, real_inner_smul_right]
+    ring
+  simp only [hexp]
+  rw [expect_sum_comm]
+  refine sum_congr rfl fun i _ => ?_
+  rw [expect_sum_comm]
+  simp only [← expect_mul, hpair, ite_mul, one_mul, zero_mul, sum_ite_eq, mem_univ, ite_true,
+    real_inner_self_eq_norm_sq]
 
 /-- **The fourth moment of a Rademacher sum**:
 `𝔼 (∑ i, a i signVal (x i))⁴ = 3 (∑ i, a i ²)² - 2 ∑ i, a i ⁴`. -/
