@@ -53,7 +53,11 @@ The proof composes four game hops for each challenge bit `b : Bool`:
    `Scheme.eval_romIndCcaExperiment_eq_eager`.
 2. `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`: lazy-sampling simulation with `CloseTo`
    error `qD · 2^{-γ}` (the §3.1 ciphertext-validity hop for `T[PKE, G]`), replacing `decT`'s check
-   on `G(m')` by a lookup in the cached `G`-queries `gCache`.
+   on `G(m')` by a lookup in the cached `G`-queries `gCache`. The hop applies the approximate
+   simulation `OracleComp.closeTo_run_interpret_simulation_readOnly` to the joined cache
+   `SimState.coupledCache` of `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy`,
+   on which `G` and `H` are exact (`RandomOracle.eval_run_interpret_bind_complete`); only
+   decapsulation needs spreadness.
 3. `advantage_cachedCoupledBotGame_simBotGame_le`: dropping the secret-key decryption test from
    both `H` and `decaps` via `NotBot.Correctness.advantage_coupledFilterGame_simFilterGame_le` costs
    `(qG + qH + 1) δ`.
