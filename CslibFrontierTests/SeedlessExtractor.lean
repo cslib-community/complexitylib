@@ -4,10 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+
 import CslibFrontier.Probability.Extractor.Basic
+import CslibFrontier.Probability.Product
 import CslibFrontier.Probability.StatisticalDistance
 
 /-! Ordinary-import clients for seedless extraction, including the smallest lengths. -/
+
+set_option linter.privateModule false
 
 open Cslib Cslib.Probability Cslib.Probability.PMF
 

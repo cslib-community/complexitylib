@@ -51,6 +51,8 @@ two-source extractors are the two standard ways around this.
 
 ## References
 
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak07],
+  January 8, 2007 draft, Chapter 16, Exercise 7
 * [N. Nisan, D. Zuckerman, *Randomness is Linear in Space*][NisanZuckerman1996]
 * [S. Vadhan, *Pseudorandomness*][Vadhan2012], Chapter 6
 -/
