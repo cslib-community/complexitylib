@@ -4151,6 +4151,7 @@ public import CslibFrontier.Computability.WordRAM.Realization.Reindex
 public import CslibFrontier.Computability.WordRAM.Realization.Result
 public import CslibFrontier.Computability.WordRAM.Realization.While
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
+public import CslibFrontier.Computability.WordRAM.Realization.WordEncoding.Equiv
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 public import CslibFrontier.Computability.WordRAM.RegisterCopy
 public import CslibFrontier.Computability.WordRAM.RegisterFrame
