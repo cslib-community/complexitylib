@@ -55,6 +55,8 @@ against the monotone model beyond the literature.
 
 public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone
 
 open Cslib.Circuits.Clique

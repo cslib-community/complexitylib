@@ -87,6 +87,8 @@ lines.
 
 public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Logic.PL
 
 open Cslib.Circuits Cslib.Circuits.Clique

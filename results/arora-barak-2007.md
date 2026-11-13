@@ -246,6 +246,24 @@ names below are in `Cslib.Crypto` unless otherwise indicated.
   Mathlib source searches did not identify the named missing computational endpoints; this is
   not a whole-library semantic audit. No Lean elaboration or axiom-dependency audit was run.
 
+## Chapter 11: connectivity evasiveness milestone
+
+Theorem 11.4 (printed 212 / PDF 228 in the source-pinned public draft) is formalized by
+`Cslib.BitString.Graph.complexity_connectivity` in
+[QueryComplexity/Connectivity](../CslibFrontier/Computability/QueryComplexity/Connectivity.lean):
+for every vertex count $m$, the total labelled undirected simple-graph connectivity function has
+exact deterministic edge-query complexity $\binom m2$. Repeated queries are allowed. The proof
+uses the draft's bridge adversary with existing partial assignments and Mathlib graph paths;
+its graph/edge-word representation is the shared encoding extracted from the clique library.
+
+The result includes the conventions that the empty graph is disconnected and the one-vertex
+graph is connected; both functions have complexity zero. The
+[checked clients](../CslibFrontierTests/ConnectivityEvasiveness.lean) include a connected path and
+a triangle with an isolated vertex, each with three edges, so the claim is not a surrogate based
+only on edge count. It does not assert a randomized or machine-runtime lower bound. This is one
+formalized mathematical endpoint with validation, review and integration tracked in #4984; the remaining Chapter 11 audit/theory
+objectives, including expected-cost Yao minimax, and the broader #4711 objective remain open.
+
 ## Chapter 14: algebraic computation models
 
 Snapshot: `b33272859bedf13f13abe0a6e841a56b41807d5f` on 2026-11-12, with CSLib pin
