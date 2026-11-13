@@ -1524,6 +1524,41 @@ child-table equations remain local mathematical obligations. These eager tables 
 prove distributional equalities; the executable reductions retain their existing separate
 runtime and query-bound certificates.
 
+## Replace a game's own caches by complete tables
+
+Use this route when a game keeps its random-oracle caches in its own state, such as association
+lists in a record or several caches for several oracles, rather than running a program through
+`memoize`. Import
+[RandomOracle/Represented.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Represented.lean).
+
+1. Join the oracles into one interface with `⊕ₒ` and write each game query as an oracle program
+   over it. Write the lazy handler and the complete-table handler as `interpret` of the same
+   program, so the game logic is stated once.
+2. Choose `rep : State → RandomOracle.Cache spec`, the cache that the state represents. Build it
+   from one cache per oracle with `RandomOracle.Cache.sum` from
+   [RandomOracle/Sum.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Sum.lean),
+   which `Represented.lean` re-exports, and read list caches with `RandomOracle.ofList`.
+3. Prove the per-call step: each lazy handler call, with its next state mapped by `rep`, is
+   `RandomOracle.answer` on the represented cache. On a joined cache, `answer_sum_inl` and
+   `answer_sum_inr` reduce this to one side, and `RandomOracle.eval_zoom_memoize_map` proves it for
+   a `zoomStateT`/`memoize` cache.
+4. Apply `RandomOracle.eval_run_interpret_eq_complete_bind`, or `run_interpret_eq_complete_bind`
+   for a handler that already returns `PMF`. The run's result law becomes completing `rep s` once
+   and answering every call from the table. `RandomOracle.bind_complete_sum` then splits the
+   completed table into one independent table per oracle.
+
+This proves an exact equality, so step 3 fails when a handler also inspects its caches directly,
+for example a decapsulation filter that checks whether a message was already queried. Such a hop
+needs an approximate simulation instead, as in `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`
+in [FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean).
+
+The checked clients are `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame` in
+[FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
+with two caches for `G` and `H`, and `Scheme.eval_coupledGame_eq_eagerCoupledGame` in
+[NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
+with three caches and a key-derivation query that calls two oracles. Check them with
+`scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy`.
+
 ## Certify an adaptive oracle client
 
 For native oracle efficiency, start with `WordOracleComp Operation α`: finite operation names and word payloads/replies.
