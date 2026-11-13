@@ -1500,6 +1500,37 @@ reuse its laws and native efficiency certificates. Substitution preserves the fr
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
 [untouched oracle effects](https://github.com/Verified-zkEVM/VCVio/blob/87bc1892fff1982e97cfd8c7303c9d1f2bfdc2f9/VCVio/OracleComp/SimSemantics/Append/Core.lean).
 
+## Compare two runs one step at a time
+
+To relate the laws of two loops, prove the relation for one step and lift it. Import
+[Iteration/Chain.lean](../../CslibFrontier/Languages/Probabilistic/Iteration/Chain.lean) to write a
+loop as a chain of distributions: `ProbComp.eval_iterate` for a closed loop and
+`OracleComp.run_interpret_iterate_pmf` for a loop run with a probabilistic stateful handler. When
+only the step laws agree, `ProbComp.eval_iterate_congr` gives equal loop laws directly.
+
+Then import [PMF/Coupling.lean](../../CslibFrontier/Probability/PMF/Coupling.lean).
+`PMF.map_iterate_bind_of_invariant` lifts a state representation that commutes with every step.
+`PMF.iterate_bind_comm_of_invariant` handles the case where the ideal chain first draws a hidden
+sample `k` and then runs on a smaller state. The link between the two chains is the law
+`(exp a).map (·, rep a)`, where `exp a` samples what the real state `a` has not yet fixed, as in
+lazy and eager sampling. The local step equation is needed only on states satisfying an invariant
+indexed by the round. Each lemma returns the lifted equation together with that invariant on the
+reachable states, so you can chain hops. `bind_bind_comm_of_invariant` and `map_bind_of_invariant`
+are the one-step forms for straight-line code, and `iterate_bind_invariant` gives only the
+invariant.
+
+For an adaptive program with a query budget, import
+[Oracle/QueryBoundedSimulation.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/QueryBoundedSimulation.lean).
+`ProbOracleComp.IsQueryBounded.run_interpret_bind_comm_of_invariant` lifts the same link through
+every external query. Its invariant is indexed by the remaining budget, for example room in a
+bounded cache. Without a budget, use `run_interpret_simulation_of_invariant` or
+`run_interpret_map_state_of_invariant` from
+[Simulation.lean](../../CslibFrontier/Languages/Probabilistic/Simulation.lean). The open-round loops
+of [CCA/Interleaved.lean](../../CslibFrontier/Crypto/Computational/Encryption/CCA/Interleaved.lean)
+and the certification and key-expansion hops of
+[TreeSignature/Security.lean](../../CslibFrontier/Crypto/Computational/TreeSignature/Security.lean)
+are worked clients.
+
 ## Pass a query adapter through an eager/lazy game hop
 
 Import [Oracle/Substitution.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution.lean)
@@ -1551,6 +1582,41 @@ into child labels, and those labels become the next level's cache. The prefix-le
 child-table equations remain local mathematical obligations. These eager tables are used to
 prove distributional equalities; the executable reductions retain their existing separate
 runtime and query-bound certificates.
+
+## Replace a game's own caches by complete tables
+
+Use this route when a game keeps its random-oracle caches in its own state, such as association
+lists in a record or several caches for several oracles, rather than running a program through
+`memoize`. Import
+[RandomOracle/Represented.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Represented.lean).
+
+1. Join the oracles into one interface with `⊕ₒ` and write each game query as an oracle program
+   over it. Write the lazy handler and the complete-table handler as `interpret` of the same
+   program, so the game logic is stated once.
+2. Choose `rep : State → RandomOracle.Cache spec`, the cache that the state represents. Build it
+   from one cache per oracle with `RandomOracle.Cache.sum` from
+   [RandomOracle/Sum.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Sum.lean),
+   which `Represented.lean` re-exports, and read list caches with `RandomOracle.ofList`.
+3. Prove the per-call step: each lazy handler call, with its next state mapped by `rep`, is
+   `RandomOracle.answer` on the represented cache. On a joined cache, `answer_sum_inl` and
+   `answer_sum_inr` reduce this to one side, and `RandomOracle.eval_zoom_memoize_map` proves it for
+   a `zoomStateT`/`memoize` cache.
+4. Apply `RandomOracle.eval_run_interpret_eq_complete_bind`, or `run_interpret_eq_complete_bind`
+   for a handler that already returns `PMF`. The run's result law becomes completing `rep s` once
+   and answering every call from the table. `RandomOracle.bind_complete_sum` then splits the
+   completed table into one independent table per oracle.
+
+This proves an exact equality, so step 3 fails when a handler also inspects its caches directly,
+for example a decapsulation filter that checks whether a message was already queried. Such a hop
+needs an approximate simulation instead, as in `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`
+in [FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean).
+
+The checked clients are `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame` in
+[FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
+with two caches for `G` and `H`, and `Scheme.eval_coupledGame_eq_eagerCoupledGame` in
+[NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
+with three caches and a key-derivation query that calls two oracles. Check them with
+`scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy`.
 
 ## Certify an adaptive oracle client
 

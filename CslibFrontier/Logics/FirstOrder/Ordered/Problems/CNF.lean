@@ -453,58 +453,42 @@ private theorem varNeg_ne_varX {n : ℕ} [Fact (2 ≤ n)] (c x y : Fin n) :
   have ht := (mkTagged_inj.mp h).1
   exact ThreeSATTag.noConfusion (tagCode_injective ht)
 
+/-- The image's literal relation of polarity `b` dispatches on the clause tag to that polarity's
+branch formulas, with `tautHalf` on untagged clauses. -/
+private theorem relMap_lit (M : Structure FO.cnf) (b : Bool) (u v : Fin (3 + 2) → Fin M.size) :
+    (satToThreeSATInterpretation.tupleStructure M).RelMap (FO.cnf.lit b) ![u, v] ↔
+      (∃ t ∈ allThreeSATTags, MatchBinaryTag (tagCode t) u ∧
+          ((if b then posBranch t else negBranch t)).toFormula.Realize
+            (fun p : Fin 2 × Fin (3 + 2) => (![u, v] p.1) p.2)) ∨
+        ((∀ t ∈ allThreeSATTags, ¬ MatchBinaryTag (tagCode t) u) ∧ v = varX 0) := by
+  rw [← realize_tautHalf u v, satToThreeSATInterpretation,
+    FullTupleInterpretation.relMap_tupleStructure_ofQFProjection]
+  cases b
+  · exact realize_dispatchBinaryTag 0 tagCode_injective allThreeSATTags negBranch tautHalf _
+  · exact realize_dispatchBinaryTag 0 tagCode_injective allThreeSATTags posBranch tautHalf _
+
 /-- On a tagged clause `u = mkTagged (tagCode t) p`, `dispatchBinaryTag 0` selects `branchFn t`. -/
 private theorem relMap_on_tagged (M : Structure FO.cnf) (b : Bool) (t : ThreeSATTag)
     (u v : Fin (3 + 2) → Fin M.size) (hm : MatchBinaryTag (tagCode t) u) :
     (satToThreeSATInterpretation.tupleStructure M).RelMap (FO.cnf.lit b) ![u, v] ↔
       ((if b then posBranch t else negBranch t)).toFormula.Realize
         (fun p : Fin 2 × Fin (3 + 2) => (![u, v] p.1) p.2) := by
-  let x : Fin 2 × Fin (3 + 2) → Fin M.size := fun p => (![u, v] p.1) p.2
-  have hx0 : (fun j => x (0, j)) = u := rfl
-  cases b
-  · rw [FO.cnf.lit_false, satToThreeSATInterpretation,
-      FullTupleInterpretation.relMap_tupleStructure_ofQFProjection, satToThreeSATFormula,
-      realize_dispatchBinaryTag 0 tagCode_injective allThreeSATTags negBranch tautHalf x]
-    simp only [hx0, Bool.false_eq_true, ↓reduceIte]
-    constructor
-    · rintro (⟨t', _, hm', hb⟩ | ⟨hall, -⟩)
-      · have heq := tagCode_injective (matchBinaryTag_unique hm hm')
-        subst heq
-        exact hb
-      · exact False.elim (hall t (mem_allThreeSATTags t) hm)
-    · intro hb
-      exact Or.inl ⟨t, mem_allThreeSATTags t, hm, hb⟩
-  · rw [FO.cnf.lit_true, satToThreeSATInterpretation,
-      FullTupleInterpretation.relMap_tupleStructure_ofQFProjection, satToThreeSATFormula,
-      realize_dispatchBinaryTag 0 tagCode_injective allThreeSATTags posBranch tautHalf x]
-    simp only [hx0, ↓reduceIte]
-    constructor
-    · rintro (⟨t', _, hm', hb⟩ | ⟨hall, -⟩)
-      · have heq := tagCode_injective (matchBinaryTag_unique hm hm')
-        subst heq
-        exact hb
-      · exact False.elim (hall t (mem_allThreeSATTags t) hm)
-    · intro hb
-      exact Or.inl ⟨t, mem_allThreeSATTags t, hm, hb⟩
+  rw [relMap_lit]
+  constructor
+  · rintro (⟨t', _, hm', hb⟩ | ⟨hall, -⟩)
+    · have heq := tagCode_injective (matchBinaryTag_unique hm hm')
+      subst heq
+      exact hb
+    · exact False.elim (hall t (mem_allThreeSATTags t) hm)
+  · intro hb
+    exact Or.inl ⟨t, mem_allThreeSATTags t, hm, hb⟩
 
 private theorem relMap_on_untagged (M : Structure FO.cnf) (b : Bool)
     (u v : Fin (3 + 2) → Fin M.size) (hun : ∀ t, ¬ MatchBinaryTag (tagCode t) u) :
     (satToThreeSATInterpretation.tupleStructure M).RelMap (FO.cnf.lit b) ![u, v] ↔ v = varX 0 := by
-  let x : Fin 2 × Fin (3 + 2) → Fin M.size := fun p => (![u, v] p.1) p.2
-  have hx0 : (fun j => x (0, j)) = u := rfl
-  cases b
-  · rw [FO.cnf.lit_false, satToThreeSATInterpretation,
-      FullTupleInterpretation.relMap_tupleStructure_ofQFProjection, satToThreeSATFormula,
-      realize_dispatchBinaryTag 0 tagCode_injective allThreeSATTags negBranch tautHalf x]
-    rw [hx0, realize_tautHalf u v]
-    exact ⟨fun | .inl ⟨t, _, hm, _⟩ => False.elim (hun t hm) | .inr ⟨_, hv⟩ => hv,
-      fun hv => .inr ⟨fun t _ => hun t, hv⟩⟩
-  · rw [FO.cnf.lit_true, satToThreeSATInterpretation,
-      FullTupleInterpretation.relMap_tupleStructure_ofQFProjection, satToThreeSATFormula,
-      realize_dispatchBinaryTag 0 tagCode_injective allThreeSATTags posBranch tautHalf x]
-    rw [hx0, realize_tautHalf u v]
-    exact ⟨fun | .inl ⟨t, _, hm, _⟩ => False.elim (hun t hm) | .inr ⟨_, hv⟩ => hv,
-      fun hv => .inr ⟨fun t _ => hun t, hv⟩⟩
+  rw [relMap_lit]
+  exact ⟨fun | .inl ⟨t, _, hm, _⟩ => False.elim (hun t hm) | .inr ⟨_, hv⟩ => hv,
+    fun hv => .inr ⟨fun t _ => hun t, hv⟩⟩
 
 private theorem encard_le_three_of_subset_triple {α : Type*} {s : Set α} (a b d : α)
     (hs : s ⊆ {a, b, d}) : s.encard ≤ 3 := by
@@ -875,6 +859,36 @@ private theorem satisfiable_satToThreeSAT_of_satisfiable (M : Structure FO.cnf)
       ((relMap_on_untagged M true u (varX 0) htag).mpr rfl)
       ((relMap_on_untagged M false u (varX 0) htag).mpr rfl)
 
+/-- A satisfying assignment of the image satisfies a literal of the clause with tag `t` at payload
+`(c, x)`, read through that tag's branch formulas. -/
+private theorem exists_branch_of_satisfies (M : Structure FO.cnf)
+    {B : (Fin (3 + 2) → Fin M.size) → Prop}
+    (hB : letI := satToThreeSATInterpretation.tupleStructure M; FO.cnf.Satisfies B)
+    (t : ThreeSATTag) (c x : Fin M.size) :
+    ∃ u : Fin (3 + 2) → Fin M.size, u pay0 = c ∧ u pay1 = x ∧ ∃ v,
+      ((posBranch t).toFormula.Realize (fun p : Fin 2 × Fin (3 + 2) => (![u, v] p.1) p.2) ∧
+          B v) ∨
+        ((negBranch t).toFormula.Realize (fun p : Fin 2 × Fin (3 + 2) => (![u, v] p.1) p.2) ∧
+          ¬ B v) := by
+  let _ := satToThreeSATInterpretation.tupleStructure M
+  let u := mkTagged (tagCode t) ![c, x]
+  have hm : MatchBinaryTag (tagCode t) u := (matchBinaryTag_mkTagged _ _ _).mpr rfl
+  refine ⟨u, mkTagged_payload _ ![c, x] 0, mkTagged_payload _ ![c, x] 1, ?_⟩
+  obtain ⟨v, ⟨hp, hBv⟩ | ⟨hn, hnBv⟩⟩ := hB u
+  · rw [← FO.cnf.lit_true, relMap_on_tagged M true t u v hm] at hp
+    exact ⟨v, .inl ⟨hp, hBv⟩⟩
+  · rw [← FO.cnf.lit_false, relMap_on_tagged M false t u v hm] at hn
+    exact ⟨v, .inr ⟨hn, hnBv⟩⟩
+
+/-- Position `k` of a chain is not the last one when `k + 1` is a position. -/
+private theorem exists_nextFin_eq {n : ℕ} [Fact (2 ≤ n)] {k : ℕ} (hk : k + 1 < n) {x : Fin n}
+    (hx : x.val = k) : ∃ hmax : x ≠ QFNumeric.maxFin n, nextFin x hmax = ⟨k + 1, hk⟩ := by
+  have hmax : x ≠ QFNumeric.maxFin n := fun h => by
+    have hv := congrArg Fin.val h
+    change x.val = n - 1 at hv
+    omega
+  exact ⟨hmax, Fin.ext (congrArg (· + 1) hx)⟩
+
 private theorem satisfiable_of_satisfiable_satToThreeSAT (M : Structure FO.cnf)
     (h : letI := satToThreeSATInterpretation.tupleStructure M;
       FO.cnf.Satisfiable (Fin (3 + 2) → Fin M.size)) :
@@ -889,48 +903,26 @@ private theorem satisfiable_of_satisfiable_satToThreeSAT (M : Structure FO.cnf)
     induction k with
     | zero =>
       intro hk hBp
-      have h0_eq : (⟨0, hk⟩ : Fin M.size) = 0 := Fin.ext rfl
-      rw [h0_eq] at hBp
-      let u := mkTagged (tagCode .posStart) ![c, (0 : Fin M.size)]
-      have hm : MatchBinaryTag (tagCode .posStart) u :=
-        (matchBinaryTag_mkTagged _ _ _).mpr rfl
-      have hu0 : u pay0 = c := mkTagged_payload _ ![c, 0] 0
-      have hu1 : u pay1 = 0 := mkTagged_payload _ ![c, 0] 1
-      obtain ⟨v, ⟨hp, hBv⟩ | ⟨hn, hnBv⟩⟩ := hB u
-      · rw [← FO.cnf.lit_true, relMap_on_tagged M true .posStart u v hm] at hp
-        simp only [↓reduceIte, posBranch, ProjectionFormula.realize_toFormula_branch,
+      obtain ⟨u, hu0, hu1, v, ⟨hp, hBv⟩ | ⟨hn, hnBv⟩⟩ :=
+        exists_branch_of_satisfies M hB .posStart c 0
+      · simp only [posBranch, ProjectionFormula.realize_toFormula_branch,
           QFNumeric.realize_isZero, Matrix.cons_val_zero, hu1, true_and, not_true_eq_false,
           false_and, or_false, ProjectionFormula.realize_guardAnd, realize_isVarXZero,
           ProjectionFormula.realize_posLit, realize_pair_arg00, hu0] at hp
         obtain ⟨rfl, hrel⟩ := hp
         exact ⟨0, .inl ⟨hrel, hBv⟩⟩
-      · rw [← FO.cnf.lit_false, relMap_on_tagged M false .posStart u v hm] at hn
-        simp only [Bool.false_eq_true, ↓reduceIte, negBranch,
-          ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_isZero,
-          Matrix.cons_val_zero, hu1, true_and, not_true_eq_false, false_and, or_false,
-          ProjectionFormula.realize_guardAnd, realize_isVarPosZero, hu0,
+      · simp only [negBranch, ProjectionFormula.realize_toFormula_branch,
+          QFNumeric.realize_isZero, Matrix.cons_val_zero, hu1, true_and, not_true_eq_false,
+          false_and, or_false, ProjectionFormula.realize_guardAnd, realize_isVarPosZero, hu0,
           ProjectionFormula.realize_const_true, and_true] at hn
         subst hn
         exact False.elim (hnBv hBp)
     | succ k ih =>
       intro hk hBp
-      let x : Fin M.size := ⟨k, by omega⟩
-      have hx : x ≠ QFNumeric.maxFin M.size := by
-        intro heq
-        have hv := congrArg Fin.val heq
-        change k = M.size - 1 at hv
-        omega
-      let u := mkTagged (tagCode .posStep) ![c, x]
-      have hm : MatchBinaryTag (tagCode .posStep) u :=
-        (matchBinaryTag_mkTagged _ _ _).mpr rfl
-      have hu0 : u pay0 = c := mkTagged_payload _ ![c, x] 0
-      have hu1 : u pay1 = x := mkTagged_payload _ ![c, x] 1
-      have hx_u : u pay1 ≠ QFNumeric.maxFin M.size := hu1 ▸ hx
-      have hnext_eq : nextFin (u pay1) hx_u = ⟨k + 1, hk⟩ :=
-        Fin.ext (congrArg (fun z : Fin M.size => z.val + 1) hu1)
-      obtain ⟨v, ⟨hp, hBv⟩ | ⟨hn, hnBv⟩⟩ := hB u
-      · rw [← FO.cnf.lit_true, relMap_on_tagged M true .posStep u v hm] at hp
-        simp only [↓reduceIte, posBranch, ProjectionFormula.realize_toFormula_branch,
+      obtain ⟨u, hu0, hu1, v, hlit⟩ := exists_branch_of_satisfies M hB .posStep c ⟨k, by omega⟩
+      obtain ⟨hx_u, hnext_eq⟩ := exists_nextFin_eq hk (congrArg Fin.val hu1)
+      rcases hlit with ⟨hp, hBv⟩ | ⟨hn, hnBv⟩
+      · simp only [posBranch, ProjectionFormula.realize_toFormula_branch,
           Formula.realize_not, QFNumeric.realize_isMax, Matrix.cons_val_zero, hx_u,
           not_false_eq_true, true_and, not_true_eq_false, false_and, or_false,
           realize_isVarPosSame, ProjectionFormula.realize_const_true, and_true,
@@ -944,9 +936,7 @@ private theorem satisfiable_of_satisfiable_satToThreeSAT (M : Structure FO.cnf)
             mkTagged_payload (tagCode .posStart) ![0, ⟨k + 1, hk⟩] 1
           rw [hpay] at hrel
           exact ⟨⟨k + 1, hk⟩, .inl ⟨hrel, hBv⟩⟩
-      · rw [← FO.cnf.lit_false, relMap_on_tagged M false .posStep u v hm] at hn
-        simp only [Bool.false_eq_true, ↓reduceIte, negBranch,
-          ProjectionFormula.realize_toFormula_branch, Formula.realize_not,
+      · simp only [negBranch, ProjectionFormula.realize_toFormula_branch, Formula.realize_not,
           QFNumeric.realize_isMax, Matrix.cons_val_zero, hx_u, not_false_eq_true, true_and,
           not_true_eq_false, false_and, or_false, ProjectionFormula.realize_guardAnd,
           realize_isVarPosSucc hx_u, hu0, hnext_eq,
@@ -959,59 +949,36 @@ private theorem satisfiable_of_satisfiable_satToThreeSAT (M : Structure FO.cnf)
     induction k with
     | zero =>
       intro hk hBn
-      have h0_eq : (⟨0, hk⟩ : Fin M.size) = 0 := Fin.ext rfl
-      rw [h0_eq] at hBn
-      let u := mkTagged (tagCode .bridge) ![c, (0 : Fin M.size)]
-      have hm : MatchBinaryTag (tagCode .bridge) u :=
-        (matchBinaryTag_mkTagged _ _ _).mpr rfl
-      have hu0 : u pay0 = c := mkTagged_payload _ ![c, 0] 0
-      have hu1 : u pay1 = 0 := mkTagged_payload _ ![c, 0] 1
-      obtain ⟨v, ⟨hp, hBv⟩ | ⟨hn, hnBv⟩⟩ := hB u
-      · rw [← FO.cnf.lit_true, relMap_on_tagged M true .bridge u v hm] at hp
-        simp only [↓reduceIte, posBranch, ProjectionFormula.realize_toFormula_branch,
+      obtain ⟨u, hu0, hu1, v, ⟨hp, hBv⟩ | ⟨hn, hnBv⟩⟩ :=
+        exists_branch_of_satisfies M hB .bridge c 0
+      · simp only [posBranch, ProjectionFormula.realize_toFormula_branch,
           QFNumeric.realize_isZero, Matrix.cons_val_zero, hu1, true_and, not_true_eq_false,
           false_and, or_false, ProjectionFormula.realize_guardAnd, realize_isVarPosMax, hu0,
           ProjectionFormula.realize_const_true, and_true] at hp
         subst hp
         exact hpos_chain (M.size - 1) (NumericFunction.index_lt M.size_ge_two .max) hBv
-      · rw [← FO.cnf.lit_false, relMap_on_tagged M false .bridge u v hm] at hn
-        simp only [Bool.false_eq_true, ↓reduceIte, negBranch,
-          ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_isZero,
-          Matrix.cons_val_zero, hu1, true_and, not_true_eq_false, false_and, or_false,
-          realize_isVarNegZero, ProjectionFormula.realize_const_true, and_true,
-          ProjectionFormula.realize_guardAnd, realize_isVarXZero,
+      · simp only [negBranch, ProjectionFormula.realize_toFormula_branch,
+          QFNumeric.realize_isZero, Matrix.cons_val_zero, hu1, true_and, not_true_eq_false,
+          false_and, or_false, realize_isVarNegZero, ProjectionFormula.realize_const_true,
+          and_true, ProjectionFormula.realize_guardAnd, realize_isVarXZero,
           ProjectionFormula.realize_posLit, realize_pair_arg00, hu0] at hn
         rcases hn with rfl | ⟨_, rfl, hrel⟩
         · exact False.elim (hnBv hBn)
         · exact ⟨0, .inr ⟨hrel, hnBv⟩⟩
     | succ k ih =>
       intro hk hBn
-      let x : Fin M.size := ⟨k, by omega⟩
-      have hx : x ≠ QFNumeric.maxFin M.size := by
-        intro heq
-        have hv := congrArg Fin.val heq
-        change k = M.size - 1 at hv
-        omega
-      let u := mkTagged (tagCode .negStep) ![c, x]
-      have hm : MatchBinaryTag (tagCode .negStep) u :=
-        (matchBinaryTag_mkTagged _ _ _).mpr rfl
-      have hu0 : u pay0 = c := mkTagged_payload _ ![c, x] 0
-      have hu1 : u pay1 = x := mkTagged_payload _ ![c, x] 1
-      have hx_u : u pay1 ≠ QFNumeric.maxFin M.size := hu1 ▸ hx
-      have hnext_eq : nextFin (u pay1) hx_u = ⟨k + 1, hk⟩ :=
-        Fin.ext (congrArg (fun z : Fin M.size => z.val + 1) hu1)
-      obtain ⟨v, ⟨hp, hBv⟩ | ⟨hn, hnBv⟩⟩ := hB u
-      · rw [← FO.cnf.lit_true, relMap_on_tagged M true .negStep u v hm] at hp
-        simp only [↓reduceIte, posBranch, ProjectionFormula.realize_toFormula_branch,
-          Formula.realize_not, QFNumeric.realize_isMax, Matrix.cons_val_zero, hu1, hx,
+      obtain ⟨u, hu0, hu1, v, hlit⟩ := exists_branch_of_satisfies M hB .negStep c ⟨k, by omega⟩
+      obtain ⟨hx_u, hnext_eq⟩ := exists_nextFin_eq hk (congrArg Fin.val hu1)
+      rcases hlit with ⟨hp, hBv⟩ | ⟨hn, hnBv⟩
+      · simp only [posBranch, ProjectionFormula.realize_toFormula_branch,
+          Formula.realize_not, QFNumeric.realize_isMax, Matrix.cons_val_zero, hx_u,
           not_false_eq_true, true_and, not_true_eq_false, false_and, or_false,
           ProjectionFormula.realize_guardAnd, realize_isVarNegSame, hu0,
           ProjectionFormula.realize_const_true, and_true] at hp
         subst hp
+        rw [hu1] at hBv
         exact ih (by omega) hBv
-      · rw [← FO.cnf.lit_false, relMap_on_tagged M false .negStep u v hm] at hn
-        simp only [Bool.false_eq_true, ↓reduceIte, negBranch,
-          ProjectionFormula.realize_toFormula_branch, Formula.realize_not,
+      · simp only [negBranch, ProjectionFormula.realize_toFormula_branch, Formula.realize_not,
           QFNumeric.realize_isMax, Matrix.cons_val_zero, hx_u, not_false_eq_true, true_and,
           not_true_eq_false, false_and, or_false, realize_isVarNegSucc hx_u,
           ProjectionFormula.realize_const_true, and_true,
@@ -1023,23 +990,15 @@ private theorem satisfiable_of_satisfiable_satToThreeSAT (M : Structure FO.cnf)
             mkTagged_payload (tagCode .posStart) ![0, ⟨k + 1, hk⟩] 1
           rw [hpay] at hrel
           exact ⟨⟨k + 1, hk⟩, .inr ⟨hrel, hnBv⟩⟩
-  let uGoal := mkTagged (tagCode .goal) ![c, (0 : Fin M.size)]
-  have hmGoal : MatchBinaryTag (tagCode .goal) uGoal :=
-    (matchBinaryTag_mkTagged _ _ _).mpr rfl
-  have huGoal0 : uGoal pay0 = c := mkTagged_payload _ ![c, 0] 0
-  have huGoal1 : uGoal pay1 = 0 := mkTagged_payload _ ![c, 0] 1
-  obtain ⟨v, ⟨hp, hBv⟩ | ⟨hn, -⟩⟩ := hB uGoal
-  · rw [← FO.cnf.lit_true, relMap_on_tagged M true .goal uGoal v hmGoal] at hp
-    simp only [↓reduceIte, posBranch, ProjectionFormula.realize_toFormula_branch,
-      QFNumeric.realize_isZero, Matrix.cons_val_zero, huGoal1, true_and, not_true_eq_false,
-      false_and, or_false, ProjectionFormula.realize_guardAnd, realize_isVarNegMax, huGoal0,
+  obtain ⟨u, hu0, hu1, v, ⟨hp, hBv⟩ | ⟨hn, -⟩⟩ := exists_branch_of_satisfies M hB .goal c 0
+  · simp only [posBranch, ProjectionFormula.realize_toFormula_branch,
+      QFNumeric.realize_isZero, Matrix.cons_val_zero, hu1, true_and, not_true_eq_false,
+      false_and, or_false, ProjectionFormula.realize_guardAnd, realize_isVarNegMax, hu0,
       ProjectionFormula.realize_const_true, and_true] at hp
     subst hp
     exact hneg_chain (M.size - 1) (NumericFunction.index_lt M.size_ge_two .max) hBv
-  · rw [← FO.cnf.lit_false, relMap_on_tagged M false .goal uGoal v hmGoal] at hn
-    simp only [Bool.false_eq_true, ↓reduceIte, negBranch,
-      ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_isZero,
-      Matrix.cons_val_zero, huGoal1, true_and, ProjectionFormula.realize_const_false,
+  · simp only [negBranch, ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_isZero,
+      Matrix.cons_val_zero, hu1, true_and, ProjectionFormula.realize_const_false,
       not_true_eq_false, false_and, or_self] at hn
 
 end SatToThreeSAT
