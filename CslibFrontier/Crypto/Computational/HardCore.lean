@@ -127,7 +127,7 @@ private theorem real_probability (f : List Bool → List Bool) (predicate : List
     Pr[prgRealGame (fun seed => f seed ++ [predicate seed]) adversary n] =
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         Pr[adversary n (f (List.ofFn bits) ++ [predicate (List.ofFn bits)])] := by
-  simp only [pmf_norm, eval_prgRealGame, distinguishingGame, generatorEnsemble,
+  simp only [pmf_norm, eval_prgRealGame, distinguishingGame_eq_bind, generatorEnsemble,
     BitString.uniformList, PMF.bind_apply_toReal]
 
 private theorem ideal_probability (f : List Bool → List Bool) (adversary : Distinguisher)
@@ -136,7 +136,7 @@ private theorem ideal_probability (f : List Bool → List Bool) (adversary : Dis
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         ((Pr[adversary n (f (List.ofFn bits) ++ [false])] +
           Pr[adversary n (f (List.ofFn bits) ++ [true])]) / 2) := by
-  simp only [pmf_norm, Game.coe_succProbability, distinguishingGame, hardCoreIdeal,
+  simp only [pmf_norm, Game.coe_succProbability, distinguishingGame_eq_bind, hardCoreIdeal,
     BitString.uniformList, PMF.bind_apply_toReal]
   apply Finset.sum_congr rfl
   intro bits _

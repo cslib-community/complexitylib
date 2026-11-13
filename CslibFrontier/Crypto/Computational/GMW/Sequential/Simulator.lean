@@ -958,7 +958,7 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
     rw [← eval_gmwSeqInteract,
       eval_gmwSeqInteract_eq_machine_of_isOraclePPTOn generator s m K φ w machine c d hspec n a z,
       eval_gmwSeqInteract_runOracle_eq_iterate_realSessionStep]
-    simp only [pmf_norm, distinguishingGame, post, st₀, T, word, encIn]
+    simp only [pmf_norm, distinguishingGame_eq_bind, post, st₀, T, word, encIn]
     rfl
   let guessGame : Game :=
     (ProbComp.eval (OracleComp.iterate K
@@ -968,8 +968,8 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
       (adversary n a z) =
     (ProbComp.eval (OracleComp.iterate K
       (simSessionStep machine generator s m T att φ) st₀)).bind post := by
-    simp only [pmf_norm, gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d, distinguishingGame,
-      post, st₀, T, word, s, m, att, K, φ]
+    simp only [pmf_norm, gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d,
+      distinguishingGame_eq_bind, post, st₀, T, word, s, m, att, K, φ]
     rfl
   have h1 : Game.advantage
       ((ProbComp.eval (OracleComp.iterate K
@@ -999,6 +999,7 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
   have hseq := sequenceTest_advantage
     (BitString.sampleList m) (generator <$> BitString.sampleList s)
     (K * (att * totalLen φ)) testPads
+  simp only [Experiment.advantage] at hseq
   rw [hprg_eq, hunif_eq] at hseq
   have hred_eq : sequenceTest (BitString.sampleList m) (generator <$> BitString.sampleList s)
       (K * (att * totalLen φ)) testPads =
@@ -1243,7 +1244,8 @@ theorem gmwSeqView_indistinguishable_gmwSeqSimulator {α : Type} {enc : α ↪ L
   have herr := hgeom.polynomiallyBounded_mul hk_poly
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
   intro n
-  simpa only [pmf_norm, distinguishingGame, BitString.eval_sampleList, generatorEnsemble, red] using
+  simpa only [pmf_norm, distinguishingGame_eq_bind, BitString.eval_sampleList, generatorEnsemble,
+    red] using
     gmwSeqView_advantage_le generator length f k hV (fun n _ _ view => adversary n view)
       n (a n) (w n) (z n) (hw_sat n)
 

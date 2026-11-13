@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.BitString.List
@@ -483,8 +484,7 @@ theorem indcpa_macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
   have hcomp : Negligible (fun n => Game.advantage
       (ProbComp.eval (E.cpaGame (mteToCPAAdversary M ptLen ctBound adversary) false (ptLen n)))
       (ProbComp.eval (E.cpaGame (mteToCPAAdversary M ptLen ctBound adversary) true (ptLen n)))) :=
-    hred.comp_of_polynomial_bound (bound := id) hmono.tendsto_atTop
-      (by fun_prop) (Filter.Eventually.of_forall hmono.id_le)
+    hred.comp_polynomiallyLowerBounded (.mono_of_le .id hmono.id_le)
   refine hcomp.congr fun n => ?_
   dsimp only
   rw [eval_cpaGame_mteToCPAAdversary E M ptLen hptLenPoly hmono hmsgLen hpairLen ctBound

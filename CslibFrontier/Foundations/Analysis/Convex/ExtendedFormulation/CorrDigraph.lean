@@ -334,34 +334,6 @@ theorem corrDigraphAdj_irrefl {p : ℕ} (hp : 1 ≤ p) (u : CorrDigraphV p) :
 
 section TourAssignment
 
-private theorem slotClause_inj_slot {p : ℕ} {v : CorrVar p} {ℓ₁ ℓ₂ : Fin (chainSlots p v)}
-    {q : CorrPairIdx p × Fin 4} {lit₁ lit₂ : Bool}
-    (h₁ : slotClause p v ℓ₁ = some (q, lit₁))
-    (h₂ : slotClause p v ℓ₂ = some (q, lit₂)) :
-    ℓ₁ = ℓ₂ := by
-  rcases q with ⟨e, c⟩
-  rw [slotClause_eq_some_iff] at h₁ h₂
-  rcases h₁ with ⟨rfl, hl₁, _⟩ | ⟨rfl, hl₁, _⟩ | ⟨rfl, hl₁, _⟩ <;>
-    rcases h₂ with ⟨h2, hl₂, _⟩ | ⟨h2, hl₂, _⟩ | ⟨h2, hl₂, _⟩
-  · exact Fin.ext (hl₁.trans hl₂.symm)
-  · exfalso
-    have hlt := e.lt
-    have heq := CorrVar.diag.inj h2
-    rw [← heq] at hlt
-    exact lt_irrefl _ hlt
-  · cases h2
-  · exfalso
-    have hlt := e.lt
-    have heq := CorrVar.diag.inj h2
-    rw [heq] at hlt
-    exact lt_irrefl _ hlt
-  · exact Fin.ext (hl₁.trans hl₂.symm)
-  · cases h2
-  · cases h2
-  · cases h2
-  · exact Fin.ext (hl₁.trans hl₂.symm)
-
-
 private noncomputable def varAt (p : ℕ)
     (k : Fin (Fintype.card (CorrVar p))) : CorrVar p :=
   (Fintype.equivFin (CorrVar p)).symm k
@@ -505,10 +477,7 @@ private theorem getLast_varBlock {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (
       else
         .chain v ⟨0, by have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ := by
   have hs := chainSlots_pos hp v
-  have hfr : List.finRange (chainSlots p v) ≠ [] := by
-    intro h
-    have := congrArg List.length h
-    simp only [List.length_finRange, List.length_nil] at this; omega
+  have hfr : List.finRange (chainSlots p v) ≠ [] := mt List.finRange_eq_nil_iff.1 hs.ne'
   have hrev : (List.finRange (chainSlots p v)).map Fin.rev ≠ [] :=
     mt List.map_eq_nil_iff.1 hfr
   dsimp only [varBlock]
@@ -535,77 +504,30 @@ private theorem List.consecutivePairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b 
     (v : CorrVar p) (ℓ : Fin (chainSlots p v)) {x y : CorrDigraphV p}
     (hmem : (x, y) ∈ List.consecutivePairs (slotVisit hp b v ℓ)) :
     corrDigraphAdj p hp x y := by
-  dsimp only [slotVisit] at hmem
-  by_cases hval : assignVarVal b v = false
-  · simp only [hval, ↓reduceIte] at hmem
-    dsimp only [slotDetour] at hmem
-    cases hs : slotClause p v ℓ with
-    | none =>
-        simp only [hs, List.append_nil, List.cons_append, List.nil_append,
-          List.consecutivePairs_cons_cons, List.consecutivePairs_singleton, List.mem_cons,
-          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
-        rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
-          simp only [corrDigraphAdj, true_and] <;>
-          exact Or.inl trivial
-    | some ql =>
-        rcases ql with ⟨⟨e, c⟩, lit⟩
-        simp only [hs] at hmem
-        split_ifs at hmem with ho
-        · simp only [List.cons_append, List.nil_append, List.consecutivePairs_cons_cons,
-          List.consecutivePairs_singleton,
-          List.mem_cons,
-          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
-          have hcl := slotClause_clauseOwner b (e, c)
-          rw [ho, hs, Option.some.injEq, Prod.mk.injEq] at hcl
-          have hlit : lit = false := hcl.2.trans hval
-          rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-          · simp only [corrDigraphAdj, true_and]
-            exact Or.inl trivial
-          · exact ⟨ℓ, false, hlit ▸ hs, Or.inl ⟨rfl, rfl⟩⟩
-          · exact ⟨ℓ, false, hlit ▸ hs, Or.inl ⟨rfl, rfl⟩⟩
-        · simp only [List.append_nil, List.cons_append, List.nil_append, 
-          List.consecutivePairs_cons_cons,
-          List.consecutivePairs_singleton,
-          List.mem_cons,
-          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
-          rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
-            simp only [corrDigraphAdj, true_and] <;>
-            exact Or.inl trivial
-  · have htrue : assignVarVal b v = true := Bool.eq_true_of_not_eq_false hval
-    simp only [htrue, Bool.true_eq_false, ↓reduceIte] at hmem
-    dsimp only [slotDetour] at hmem
-    cases hs : slotClause p v ℓ with
-    | none =>
-        simp only [hs, List.append_nil, List.cons_append, List.nil_append,
-          List.consecutivePairs_cons_cons, List.consecutivePairs_singleton, List.mem_cons,
-          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
-        rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
-          simp only [corrDigraphAdj, true_and] <;>
-          exact Or.inr trivial
-    | some ql =>
-        rcases ql with ⟨⟨e, c⟩, lit⟩
-        simp only [hs] at hmem
-        split_ifs at hmem with ho
-        · simp only [List.cons_append, List.nil_append, List.consecutivePairs_cons_cons,
-          List.consecutivePairs_singleton,
-          List.mem_cons,
-          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
-          have hcl := slotClause_clauseOwner b (e, c)
-          rw [ho, hs, Option.some.injEq, Prod.mk.injEq] at hcl
-          have hlit : lit = true := hcl.2.trans htrue
-          rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-          · exact ⟨ℓ, true, hlit ▸ hs, Or.inr ⟨rfl, rfl⟩⟩
-          · exact ⟨ℓ, true, hlit ▸ hs, Or.inr ⟨rfl, rfl⟩⟩
-          · simp only [corrDigraphAdj, true_and]
-            exact Or.inr trivial
-        · simp only [List.append_nil, List.cons_append, List.nil_append, 
-          List.consecutivePairs_cons_cons,
-          List.consecutivePairs_singleton,
-          List.mem_cons,
-          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
-          rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
-            simp only [corrDigraphAdj, true_and] <;>
-            exact Or.inr trivial
+  have hchain {i j : Fin (chainLen p v)} (h : i.1 + 1 = j.1 ∨ j.1 + 1 = i.1) :
+      corrDigraphAdj p hp (.chain v i) (.chain v j) := ⟨rfl, h⟩
+  -- The clause visited by its owner slot carries the variable's value as its literal.
+  have hown {q : CorrPairIdx p × Fin 4} {lit : Bool} (hs : slotClause p v ℓ = some (q, lit))
+      (ho : clauseOwner b q = ⟨v, ℓ⟩) : lit = assignVarVal b v := by
+    have hcl := slotClause_clauseOwner b q
+    rw [ho, hs, Option.some.injEq, Prod.mk.injEq] at hcl
+    exact hcl.2
+  -- A visit walks the slot's three chain vertices upwards (value `false`) or downwards (`true`),
+  -- detouring through the slot's clause between `3ℓ + 1` and `3ℓ + 2` when the slot owns it.
+  dsimp only [slotVisit, slotDetour] at hmem
+  cases hval : assignVarVal b v <;> rcases hs : slotClause p v ℓ with _ | ⟨q, lit⟩ <;>
+    simp only [hval, hs, Bool.true_eq_false, ↓reduceIte] at hmem <;>
+    try split_ifs at hmem with ho
+  all_goals
+    simp only [List.append_nil, List.cons_append, List.nil_append,
+      List.consecutivePairs_cons_cons, List.consecutivePairs_singleton, List.mem_cons,
+      Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+    casesm* _ ∨ _ <;> obtain ⟨rfl, rfl⟩ := hmem <;>
+    first
+      | exact hchain (.inl rfl)
+      | exact hchain (.inr rfl)
+      | exact ⟨ℓ, lit, hs, .inl ⟨(hown hs ho).trans hval, rfl⟩⟩
+      | exact ⟨ℓ, lit, hs, .inr ⟨(hown hs ho).trans hval, rfl⟩⟩
 
 private theorem head_slotVisit {p : ℕ} (_hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVar p)
     (ℓ : Fin (chainSlots p v)) :
@@ -665,9 +587,7 @@ private theorem List.consecutivePairs_varBlock_mem {p : ℕ} (hp : 1 ≤ p) (b :
     (hmem : (x, y) ∈ List.consecutivePairs (varBlock hp b v)) :
     corrDigraphAdj p hp x y := by
   have hs := chainSlots_pos hp v
-  have hfr : List.finRange (chainSlots p v) ≠ [] := by
-    intro h; have := congrArg List.length h
-    simp only [List.length_finRange, List.length_nil] at this; omega
+  have hfr : List.finRange (chainSlots p v) ≠ [] := mt List.finRange_eq_nil_iff.1 hs.ne'
   have hrev : (List.finRange (chainSlots p v)).map Fin.rev ≠ [] :=
     mt List.map_eq_nil_iff.1 hfr
   by_cases hval : assignVarVal b v = false
@@ -741,31 +661,13 @@ private theorem mem_slotVisit_iff {p : ℕ} (_hp : 1 ≤ p) (b : Finset (Fin p))
        x = .chain v ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩ ∨
        x = .chain v ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩) ∨
       ∃ q, x = .clause q.1 q.2 ∧ clauseOwner b q = ⟨v, ℓ⟩ := by
+  -- Both orientations list the same vertices, in opposite orders.
   dsimp only [slotVisit]
   split_ifs <;> simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false,
-    mem_slotDetour_iff]
-  · constructor
-    · rintro (((rfl | rfl) | h) | rfl)
-      · exact Or.inl (Or.inl rfl)
-      · exact Or.inl (Or.inr (Or.inl rfl))
-      · exact Or.inr h
-      · exact Or.inl (Or.inr (Or.inr rfl))
-    · rintro ((rfl | rfl | rfl) | h)
-      · exact Or.inl (Or.inl (Or.inl rfl))
-      · exact Or.inl (Or.inl (Or.inr rfl))
-      · exact Or.inr rfl
-      · exact Or.inl (Or.inr h)
-  · constructor
-    · rintro ((rfl | h) | rfl | rfl)
-      · exact Or.inl (Or.inr (Or.inr rfl))
-      · exact Or.inr h
-      · exact Or.inl (Or.inr (Or.inl rfl))
-      · exact Or.inl (Or.inl rfl)
-    · rintro ((rfl | rfl | rfl) | h)
-      · exact Or.inr (Or.inr rfl)
-      · exact Or.inr (Or.inl rfl)
-      · exact Or.inl (Or.inl rfl)
-      · exact Or.inl (Or.inr h)
+    mem_slotDetour_iff] <;>
+    generalize (∃ q : CorrPairIdx p × Fin 4, x = .clause q.1 q.2 ∧ clauseOwner b q = ⟨v, ℓ⟩) =
+      hd <;>
+    tauto
 
 private theorem slotVisit_nodup {p : ℕ} (_hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVar p)
     (ℓ : Fin (chainSlots p v)) : (slotVisit _hp b v ℓ).Nodup := by
@@ -850,60 +752,39 @@ private theorem mem_varBlock_iff {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (
       ℓ ∈ (List.finRange (chainSlots p v)).map Fin.rev := fun ℓ => by
     rw [List.mem_map]
     exact ⟨ℓ.rev, List.mem_finRange _, Fin.rev_rev ℓ⟩
-  dsimp only [varBlock]
-  split_ifs <;>
-    simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false, List.mem_flatMap,
-      List.mem_finRange, true_and, hrev_mem, mem_slotVisit_iff]
-  · constructor
-    · rintro ((rfl | ⟨ℓ, (rfl | rfl | rfl) | ⟨q, rfl, hq⟩⟩) | rfl)
-      · exact Or.inl rfl
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-      · exact Or.inr (Or.inr ⟨q, rfl, by rw [hq]⟩)
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-    · rintro (rfl | ⟨k, rfl⟩ | ⟨q, rfl, hq⟩)
-      · exact Or.inl (Or.inl rfl)
-      · by_cases hk : k.1 = 3 * chainSlots p v
-        · exact Or.inr (congrArg (CorrDigraphV.chain v) (Fin.ext hk))
-        · have hk_lt : k.1 < 3 * chainSlots p v := by
-            have := k.2; simp only [chainLen] at this; omega
-          let ℓ : Fin (chainSlots p v) := ⟨k.1 / 3, by omega⟩
-          left; right; refine ⟨ℓ, Or.inl ?_⟩
-          have hcases : k.1 % 3 = 0 ∨ k.1 % 3 = 1 ∨ k.1 % 3 = 2 := by omega
-          rcases hcases with h | h | h
-          · left; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
-          · right; left; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
-          · right; right; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
-      · left; right
-        rcases hco : clauseOwner b q with ⟨v', ℓ⟩
-        rw [hco] at hq; dsimp only at hq; subst hq
-        exact ⟨ℓ, Or.inr ⟨q, rfl, hco⟩⟩
-  · constructor
-    · rintro ((rfl | rfl) | ⟨ℓ, (rfl | rfl | rfl) | ⟨q, rfl, hq⟩⟩)
-      · exact Or.inl rfl
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-      · exact Or.inr (Or.inl ⟨_, rfl⟩)
-      · exact Or.inr (Or.inr ⟨q, rfl, by rw [hq]⟩)
-    · rintro (rfl | ⟨k, rfl⟩ | ⟨q, rfl, hq⟩)
-      · exact Or.inl (Or.inl rfl)
-      · by_cases hk : k.1 = 3 * chainSlots p v
-        · exact Or.inl (Or.inr (congrArg (CorrDigraphV.chain v) (Fin.ext hk)))
-        · have hk_lt : k.1 < 3 * chainSlots p v := by
-            have := k.2; simp only [chainLen] at this; omega
-          let ℓ : Fin (chainSlots p v) := ⟨k.1 / 3, by omega⟩
-          right; refine ⟨ℓ, Or.inl ?_⟩
-          have hcases : k.1 % 3 = 0 ∨ k.1 % 3 = 1 ∨ k.1 % 3 = 2 := by omega
-          rcases hcases with h | h | h
-          · left; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
-          · right; left; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
-          · right; right; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
-      · right
-        rcases hco : clauseOwner b q with ⟨v', ℓ⟩
-        rw [hco] at hq; dsimp only at hq; subst hq
-        exact ⟨ℓ, Or.inr ⟨q, rfl, hco⟩⟩
+  -- Both orientations visit the gate, the last chain vertex and every slot.
+  have hblock : x ∈ varBlock hp b v ↔ x = .gate v ∨
+      x = .chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩ ∨
+      ∃ ℓ, x ∈ slotVisit hp b v ℓ := by
+    dsimp only [varBlock]
+    split_ifs <;> simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false,
+      List.mem_flatMap, List.mem_finRange, true_and, hrev_mem] <;> tauto
+  simp only [hblock, mem_slotVisit_iff]
+  constructor
+  · rintro (rfl | rfl | ⟨ℓ, (rfl | rfl | rfl) | ⟨q, rfl, hq⟩⟩)
+    · exact Or.inl rfl
+    · exact Or.inr (Or.inl ⟨_, rfl⟩)
+    · exact Or.inr (Or.inl ⟨_, rfl⟩)
+    · exact Or.inr (Or.inl ⟨_, rfl⟩)
+    · exact Or.inr (Or.inl ⟨_, rfl⟩)
+    · exact Or.inr (Or.inr ⟨q, rfl, by rw [hq]⟩)
+  · rintro (rfl | ⟨k, rfl⟩ | ⟨q, rfl, hq⟩)
+    · exact Or.inl rfl
+    · by_cases hk : k.1 = 3 * chainSlots p v
+      · exact Or.inr (Or.inl (congrArg (CorrDigraphV.chain v) (Fin.ext hk)))
+      · have hk_lt : k.1 < 3 * chainSlots p v := by
+          have := k.2; simp only [chainLen] at this; omega
+        let ℓ : Fin (chainSlots p v) := ⟨k.1 / 3, by omega⟩
+        refine Or.inr (Or.inr ⟨ℓ, Or.inl ?_⟩)
+        have hcases : k.1 % 3 = 0 ∨ k.1 % 3 = 1 ∨ k.1 % 3 = 2 := by omega
+        rcases hcases with h | h | h
+        · left; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
+        · right; left; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
+        · right; right; exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only [ℓ]; omega))
+    · right; right
+      rcases hco : clauseOwner b q with ⟨v', ℓ⟩
+      rw [hco] at hq; dsimp only at hq; subst hq
+      exact ⟨ℓ, Or.inr ⟨q, rfl, hco⟩⟩
 
 private theorem varBlock_nodup {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVar p) :
     (varBlock hp b v).Nodup := by
@@ -968,48 +849,25 @@ private theorem chain_one_zero_not_mem_forward {p : ℕ} (hp : 1 ≤ p) (b : Fin
       .chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) ∉
         List.consecutivePairs (varBlock hp b v) := by
   have hs := chainSlots_pos hp v
-  have hfr : List.finRange (chainSlots p v) ≠ [] := by
-    intro h; have := congrArg List.length h
-    simp only [List.length_finRange, List.length_nil] at this; omega
+  have hfr : List.finRange (chainSlots p v) ≠ [] := mt List.finRange_eq_nil_iff.1 hs.ne'
   intro hmem
   rw [varBlock_forward_edges hp b v hval hfr] at hmem
   rcases hmem with ⟨h1, _⟩ | hflat | ⟨_, h2⟩
   · cases h1
   · rw [List.mem_consecutivePairs_flatMap hfr (fun ℓ => slotVisit_ne_nil hp b v ℓ)] at hflat
     rcases hflat with ⟨ℓ, _, hxy⟩ | ⟨⟨ℓ₁, ℓ₂⟩, hadj, _, h2⟩
-    · dsimp only [slotVisit] at hxy
+    · -- Within a forward slot visit every chain step goes up.
+      dsimp only [slotVisit, slotDetour] at hxy
       simp only [hval, ↓reduceIte] at hxy
-      dsimp only [slotDetour] at hxy
-      cases hsc : slotClause p v ℓ with
-      | none =>
-          simp only [hsc, List.append_nil, List.cons_append, List.nil_append,
-            List.consecutivePairs_cons_cons, List.consecutivePairs_singleton, List.mem_cons,
-            Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
-          rcases hxy with ⟨h1, h2⟩ | ⟨h1, h2⟩
-          · have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h2).2)
-            dsimp only at this; omega
-          · have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h1).2)
-            have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h2).2)
-            dsimp only at *; omega
-      | some ql =>
-          simp only [hsc] at hxy
-          split_ifs at hxy
-          · simp only [List.cons_append, List.nil_append, List.consecutivePairs_cons_cons,
-            List.consecutivePairs_singleton, List.mem_cons,
-            Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
-            rcases hxy with ⟨_, h2⟩ | ⟨_, h2⟩ | ⟨h1, _⟩
-            · cases h2
-            · cases h2
-            · cases h1
-          · simp only [List.append_nil, List.cons_append, List.nil_append,
-            List.consecutivePairs_cons_cons, List.consecutivePairs_singleton, List.mem_cons,
-            Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
-            rcases hxy with ⟨_, h2⟩ | ⟨h1, h2⟩
-            · have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h2).2)
-              dsimp only at this; omega
-            · have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h1).2)
-              have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h2).2)
-              dsimp only at *; omega
+      rcases hsc : slotClause p v ℓ with _ | ql <;> simp only [hsc] at hxy <;>
+        try split_ifs at hxy
+      all_goals
+        simp only [List.append_nil, List.cons_append, List.nil_append,
+          List.consecutivePairs_cons_cons, List.consecutivePairs_singleton, List.mem_cons,
+          Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
+        casesm* _ ∨ _ <;> obtain ⟨h1, h2⟩ := hxy <;>
+          simp only [CorrDigraphV.chain.injEq, reduceCtorEq, heq_eq_eq, Fin.mk.injEq,
+            true_and] at h1 h2
     · rw [head_slotVisit, hval] at h2
       simp only [↓reduceIte, CorrDigraphV.chain.injEq, heq_eq_eq] at h2
       have := congrArg Fin.val h2.2
@@ -1031,9 +889,7 @@ private theorem chain_one_zero_mem_backward {p : ℕ} (hp : 1 ≤ p) (b : Finset
       .chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) ∈
         List.consecutivePairs (varBlock hp b v) := by
   have hs := chainSlots_pos hp v
-  have hfr : List.finRange (chainSlots p v) ≠ [] := by
-    intro h; have := congrArg List.length h
-    simp only [List.length_finRange, List.length_nil] at this; omega
+  have hfr : List.finRange (chainSlots p v) ≠ [] := mt List.finRange_eq_nil_iff.1 hs.ne'
   have hrev : (List.finRange (chainSlots p v)).map Fin.rev ≠ [] :=
     mt List.map_eq_nil_iff.1 hfr
   have hfm := List.flatMap_ne_nil hrev (fun ℓ _ => slotVisit_ne_nil hp b v ℓ)
@@ -1080,9 +936,7 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
   classical
   let M := Fintype.card (CorrVar p)
   have hM_pos : 0 < M := Fintype.card_pos
-  have hM_ne : List.finRange M ≠ [] := by
-    intro h; have := congrArg List.length h
-    simp only [List.length_finRange, List.length_nil] at this; omega
+  have hM_ne : List.finRange M ≠ [] := mt List.finRange_eq_nil_iff.1 hM_pos.ne'
   let tourList : List (CorrDigraphV p) :=
     (List.finRange M).flatMap (fun k => varBlock hp b (varAt p k))
   have htl_ne : tourList ≠ [] :=
@@ -1138,6 +992,14 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
     (finCongr hlen.symm).trans τFin
   have hτ_apply : ∀ t : Fin (Fintype.card (CorrDigraphV p)),
       τ t = tourList[(finCongr hlen.symm t).1] := fun _ => rfl
+  have hsucc : ∀ t : Fin (Fintype.card (CorrDigraphV p)),
+      finCongr hlen.symm (t + 1) = finCongr hlen.symm t + 1 := fun t => by
+    ext
+    have h1a : (1 : Fin (Fintype.card (CorrDigraphV p))).1 = 1 := by
+      rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
+    have h1b : (1 : Fin tourList.length).1 = 1 := by
+      rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
+    simp only [finCongr_apply, Fin.val_cast, Fin.val_add, h1a, h1b, hlen]
   have hpair_iff : ∀ x y : CorrDigraphV p,
       (∃ t : Fin (Fintype.card (CorrDigraphV p)), τ t = x ∧ τ (t + 1) = y) ↔
         (x, y) ∈ (tourList.getLast htl_ne, tourList.head htl_ne) ::
@@ -1146,28 +1008,21 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
     rw [← List.cyclicPairs_mem_iff tourList htl_ne hlen2]
     constructor
     · rintro ⟨t, rfl, rfl⟩
-      refine ⟨finCongr hlen.symm t, rfl, ?_⟩
-      have h1eq : finCongr hlen.symm (t + 1) = finCongr hlen.symm t + 1 := by
-        ext
-        have h1a : (1 : Fin (Fintype.card (CorrDigraphV p))).1 = 1 := by
-          rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
-        have h1b : (1 : Fin tourList.length).1 = 1 := by
-          rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
-        simp only [finCongr_apply, Fin.val_cast, Fin.val_add, h1a, h1b, hlen]
-      simp only [hτ_apply, h1eq]
+      exact ⟨finCongr hlen.symm t, rfl, by simp only [hτ_apply, hsucc]⟩
     · rintro ⟨i, rfl, rfl⟩
       refine ⟨(finCongr hlen.symm).symm i, by simp only [hτ_apply, Equiv.apply_symm_apply], ?_⟩
-      have h1eq : (finCongr hlen.symm) ((finCongr hlen.symm).symm i + 1) = i + 1 := by
-        ext
-        have h1a : (1 : Fin (Fintype.card (CorrDigraphV p))).1 = 1 := by
-          rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
-        have h1b : (1 : Fin tourList.length).1 = 1 := by
-          rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
-        simp only [finCongr_apply, finCongr_symm_apply, Fin.val_cast, Fin.val_add, h1a, h1b, hlen]
-      simp only [hτ_apply, h1eq]
+      simp only [hτ_apply, hsucc, Equiv.apply_symm_apply]
   have hcyc_adj : ∀ {x y : CorrDigraphV p},
       (x, y) ∈ (tourList.getLast htl_ne, tourList.head htl_ne) :: List.consecutivePairs tourList →
         corrDigraphAdj p hp x y := by
+    -- Consecutive variable blocks are linked from a chain end to the next gate.
+    have hlink {u w : CorrVar p} (hvn : varNext hp u = w) :
+        corrDigraphAdj p hp ((varBlock hp b u).getLast (varBlock_ne_nil hp b u))
+          ((varBlock hp b w).head (varBlock_ne_nil hp b w)) := by
+      rw [getLast_varBlock, head_varBlock]
+      split_ifs <;> simp only [corrDigraphAdj, hvn, chainLen, true_and]
+      · exact Or.inr trivial
+      · exact Or.inl trivial
     intro x y hmem
     rw [List.mem_cons, Prod.mk.injEq, List.mem_consecutivePairs_flatMap hM_ne
       (fun k => varBlock_ne_nil hp b (varAt p k))] at hmem
@@ -1181,7 +1036,7 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
       have hhead : (List.finRange M).head hM_ne = ⟨0, hM_pos⟩ := by
         apply Fin.ext
         simp only [List.head_eq_getElem, List.getElem_finRange, Fin.val_cast]
-      rw [hlast, hhead, getLast_varBlock, head_varBlock]
+      rw [hlast, hhead]
       have hvn : varNext hp (varAt p ⟨M - 1, by omega⟩) = varAt p ⟨0, hM_pos⟩ := by
         rw [varNext_varAt]
         congr 1; ext
@@ -1194,22 +1049,16 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
         · have h1M : (1 : Fin M).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
           rw [Fin.val_add]; dsimp only
           rw [h1M, show M - 1 + 1 = M by omega, Nat.mod_self]
-      split_ifs <;> simp only [corrDigraphAdj, hvn, chainLen, true_and]
-      · exact Or.inr trivial
-      · exact Or.inl trivial
+      exact hlink hvn
     · exact List.consecutivePairs_varBlock_mem hp b (varAt p k) hxy
     · rw [List.mem_consecutivePairs_iff_exists_getElem] at hadj
       obtain ⟨i, hi, h1, h2⟩ := hadj
       simp only [List.length_finRange, List.getElem_finRange] at hi h1 h2
-      rw [getLast_varBlock, head_varBlock]
-      have hvn : varNext hp (varAt p k₁) = varAt p k₂ := by
-        rw [varNext_varAt]; congr 1; ext
-        have h1M : (1 : Fin M).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
-        rw [Fin.val_add, h1M, ← h1, ← h2]
-        exact Nat.mod_eq_of_lt hi
-      split_ifs <;> simp only [corrDigraphAdj, hvn, chainLen, true_and]
-      · exact Or.inr trivial
-      · exact Or.inl trivial
+      refine hlink ?_
+      rw [varNext_varAt]; congr 1; ext
+      have h1M : (1 : Fin M).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
+      rw [Fin.val_add, h1M, ← h1, ← h2]
+      exact Nat.mod_eq_of_lt hi
   have h10_iff : ∀ v : CorrVar p,
       (∃ t : Fin (Fintype.card (CorrDigraphV p)),
         τ t = .chain v ⟨1, by have := two_le_chainLen hp v; omega⟩ ∧
@@ -1277,115 +1126,40 @@ private theorem corrDigraphAdj_gate_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
         · exact ⟨rfl, Or.inr (by simp only [chainLen]; omega)⟩
   | clause _ _ => simp only [corrDigraphAdj, reduceCtorEq, or_self]
 
-private theorem corrDigraphAdj_chain0_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    (x : CorrDigraphV p) :
-    corrDigraphAdj p hp x (.chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) ↔
-      x = .gate v ∨ x = .chain v ⟨1, by have := two_le_chainLen hp v; omega⟩ := by
+/-- At an endpoint `k` of the chain of `v` (its first or last vertex) with interior neighbor `k'`,
+the in-neighbors are the gate of `v` and `k'`, and the out-neighbors are the next gate and `k'`. -/
+private theorem corrDigraphAdj_chainEnd {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
+    {k k' : Fin (chainLen p v)} (hk : k.1 = 0 ∨ k.1 + 1 = chainLen p v)
+    (hk' : k'.1 + 1 = k.1 ∨ k.1 + 1 = k'.1) (x : CorrDigraphV p) :
+    (corrDigraphAdj p hp x (.chain v k) ↔ x = .gate v ∨ x = .chain v k') ∧
+      (corrDigraphAdj p hp (.chain v k) x ↔ x = .gate (varNext hp v) ∨ x = .chain v k') := by
+  have hnb (j : Fin (chainLen p v)) : (j.1 + 1 = k.1 ∨ k.1 + 1 = j.1) ↔ j = k' := by
+    rw [Fin.ext_iff]
+    have := j.2
+    have := k'.2
+    omega
   cases x with
   | gate v' =>
-      simp only [corrDigraphAdj, CorrDigraphV.gate.injEq, reduceCtorEq, or_false]
-      constructor
-      · rintro ⟨rfl, _⟩; rfl
-      · rintro rfl; exact ⟨rfl, Or.inl trivial⟩
-  | chain v' k =>
+      simp only [corrDigraphAdj, and_iff_left hk, CorrDigraphV.gate.injEq, reduceCtorEq, or_false,
+        iff_self, and_true]
+      exact ⟨And.left, by rintro rfl; exact ⟨rfl, hk⟩⟩
+  | chain v' j =>
       dsimp only [corrDigraphAdj]
       simp only [reduceCtorEq, false_or]
-      constructor
-      · rintro ⟨rfl, hk⟩
-        exact congrArg (CorrDigraphV.chain v') (Fin.ext (by dsimp only; omega))
-      · rintro h
-        obtain ⟨rfl, hk⟩ := CorrDigraphV.chain.inj h
-        have hv := congrArg Fin.val (eq_of_heq hk)
-        dsimp only at hv
-        exact ⟨rfl, by omega⟩
+      refine ⟨⟨?_, ?_⟩, ⟨?_, ?_⟩⟩
+      · rintro ⟨rfl, h⟩
+        rw [(hnb j).1 h]
+      · rintro ⟨⟩
+        exact ⟨rfl, hk'⟩
+      · rintro ⟨rfl, h⟩
+        rw [(hnb j).1 h.symm]
+      · rintro ⟨⟩
+        exact ⟨rfl, hk'.symm⟩
   | clause e c =>
       simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨ℓ, lit, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;> omega
-
-private theorem corrDigraphAdj_chain0_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    (x : CorrDigraphV p) :
-    corrDigraphAdj p hp (.chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) x ↔
-      x = .gate (varNext hp v) ∨ x = .chain v ⟨1, by have := two_le_chainLen hp v; omega⟩ := by
-  cases x with
-  | gate v' =>
-      simp only [corrDigraphAdj, CorrDigraphV.gate.injEq, reduceCtorEq, or_false]
-      constructor
-      · rintro ⟨rfl, _⟩; rfl
-      · rintro rfl; exact ⟨rfl, Or.inl trivial⟩
-  | chain v' k =>
-      dsimp only [corrDigraphAdj]
-      simp only [reduceCtorEq, false_or, or_false]
-      constructor
-      · rintro ⟨rfl, hk⟩
-        exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-      · rintro h
-        obtain ⟨rfl, hk⟩ := CorrDigraphV.chain.inj h
-        have hv := congrArg Fin.val (eq_of_heq hk)
-        dsimp only at hv
-        exact ⟨rfl, by omega⟩
-  | clause e c =>
-      simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨ℓ, lit, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;> omega
-
-private theorem corrDigraphAdj_chainLast_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    (x : CorrDigraphV p) :
-    corrDigraphAdj p hp x (.chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩) ↔
-      x = .gate v ∨
-      x = .chain v ⟨3 * chainSlots p v - 1, by
-        have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ := by
-  have hs := chainSlots_pos hp v
-  cases x with
-  | gate v' =>
-      simp only [corrDigraphAdj, CorrDigraphV.gate.injEq, reduceCtorEq, or_false]
-      constructor
-      · rintro ⟨rfl, _⟩; rfl
-      · rintro rfl; exact ⟨rfl, Or.inr (by simp only [chainLen])⟩
-  | chain v' k =>
-      dsimp only [corrDigraphAdj]
-      simp only [reduceCtorEq, false_or]
-      constructor
-      · rintro ⟨rfl, h | h⟩
-        · exact congrArg (CorrDigraphV.chain v') (Fin.ext (by dsimp only; omega))
-        · simp only [chainLen] at h; omega
-      · rintro h
-        obtain ⟨rfl, hk⟩ := CorrDigraphV.chain.inj h
-        have hv := congrArg Fin.val (eq_of_heq hk)
-        dsimp only at hv
-        exact ⟨rfl, Or.inl (by omega)⟩
-  | clause e c =>
-      simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨ℓ, lit, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;>
-        · have hℓ := ℓ.2; omega
-
-private theorem corrDigraphAdj_chainLast_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    (x : CorrDigraphV p) :
-    corrDigraphAdj p hp (.chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩) x ↔
-      x = .gate (varNext hp v) ∨
-      x = .chain v ⟨3 * chainSlots p v - 1, by
-        have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ := by
-  have hs := chainSlots_pos hp v
-  cases x with
-  | gate v' =>
-      simp only [corrDigraphAdj, CorrDigraphV.gate.injEq, reduceCtorEq, or_false]
-      constructor
-      · rintro ⟨rfl, _⟩; rfl
-      · rintro rfl; exact ⟨rfl, Or.inr (by simp only [chainLen])⟩
-  | chain v' k =>
-      dsimp only [corrDigraphAdj]
-      simp only [reduceCtorEq, false_or]
-      constructor
-      · rintro ⟨rfl, h | h⟩
-        · simp only [chainLen] at h; omega
-        · exact congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-      · rintro h
-        obtain ⟨rfl, hk⟩ := CorrDigraphV.chain.inj h
-        have hv := congrArg Fin.val (eq_of_heq hk)
-        dsimp only at hv
-        exact ⟨rfl, Or.inr (by omega)⟩
-  | clause e c =>
-      simp only [corrDigraphAdj, reduceCtorEq, or_self, iff_false]
-      rintro ⟨ℓ, lit, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;>
-        · have hℓ := ℓ.2; omega
+      have hℓ (ℓ : Fin (chainSlots p v)) := ℓ.2
+      simp only [chainLen] at hk
+      constructor <;> rintro ⟨ℓ, lit, _, ⟨_, h⟩ | ⟨_, h⟩⟩ <;> have := hℓ ℓ <;> omega
 
 private theorem corrDigraphAdj_chain_iff {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
     (k k_prev k_next : Fin (chainLen p v))
@@ -1433,60 +1207,49 @@ private theorem corrDigraphAdj_chain_iff {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p
             · contradiction
             · injection heq with h1 h2; subst h1 h2; exact h
 
-private theorem corrDigraphAdj_mul3_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
+private theorem corrDigraphAdj_mul3 {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
     {j : ℕ} (hj0 : 0 < j) (hjS : j < chainSlots p v) (x : CorrDigraphV p) :
-    corrDigraphAdj p hp x (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) ↔
+    (corrDigraphAdj p hp (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) x ↔
       x = .chain v ⟨3 * j - 1, by simp only [chainLen]; omega⟩ ∨
-      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩ := by
-  rw [(corrDigraphAdj_chain_iff hp v
+      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩) ∧
+    (corrDigraphAdj p hp x (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) ↔
+      x = .chain v ⟨3 * j - 1, by simp only [chainLen]; omega⟩ ∨
+      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩) := by
+  have h := corrDigraphAdj_chain_iff hp v
     ⟨3 * j, by simp only [chainLen]; omega⟩
     ⟨3 * j - 1, by simp only [chainLen]; omega⟩
     ⟨3 * j + 1, by simp only [chainLen]; omega⟩
     (by dsimp only; omega) rfl (by dsimp only; omega)
-    (by dsimp only [chainLen]; omega) x).2]
-  exact or_congr_right (or_iff_left fun ⟨_, _, _, _, _, _, h⟩ => by
-    rcases h with ⟨_, h⟩ | ⟨_, h⟩ <;> dsimp only at h <;> omega)
+    (by dsimp only [chainLen]; omega) x
+  -- No clause is attached to a multiple of three, in either direction.
+  refine ⟨h.1.trans ?_, h.2.trans ?_⟩ <;>
+    exact or_congr_right (or_iff_left fun ⟨_, _, _, _, _, _, h⟩ => by
+      rcases h with ⟨_, h⟩ | ⟨_, h⟩ <;> dsimp only at h <;> omega)
 
-private theorem corrDigraphAdj_mul3_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    {j : ℕ} (hj0 : 0 < j) (hjS : j < chainSlots p v) (x : CorrDigraphV p) :
-    corrDigraphAdj p hp (.chain v ⟨3 * j, by simp only [chainLen]; omega⟩) x ↔
-      x = .chain v ⟨3 * j - 1, by simp only [chainLen]; omega⟩ ∨
-      x = .chain v ⟨3 * j + 1, by simp only [chainLen]; omega⟩ := by
-  rw [(corrDigraphAdj_chain_iff hp v
-    ⟨3 * j, by simp only [chainLen]; omega⟩
-    ⟨3 * j - 1, by simp only [chainLen]; omega⟩
-    ⟨3 * j + 1, by simp only [chainLen]; omega⟩
-    (by dsimp only; omega) rfl (by dsimp only; omega)
-    (by dsimp only [chainLen]; omega) x).1]
-  exact or_congr_right (or_iff_left fun ⟨_, _, _, _, _, _, h⟩ => by
-    rcases h with ⟨_, h⟩ | ⟨_, h⟩ <;> dsimp only at h <;> omega)
-
-private theorem corrDigraphAdj_slot1_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    (ℓ : Fin (chainSlots p v)) (x : CorrDigraphV p) :
-    corrDigraphAdj p hp x (.chain v ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩) ↔
-      x = .chain v ⟨3 * ℓ.1, by simp only [chainLen]; omega⟩ ∨
-      x = .chain v ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩ ∨
-      ∃ e c, slotClause p v ℓ = some ((e, c), true) ∧ x = .clause e c := by
-  have hk0 : 3 * ℓ.1 + 1 ≠ 0 := by omega
-  have hkn : 3 * ℓ.1 + 1 + 1 ≠ chainLen p v := by simp only [chainLen]; omega
-  rw [(corrDigraphAdj_chain_iff hp v
-    ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩
-    ⟨3 * ℓ.1, by simp only [chainLen]; omega⟩
-    ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩
-    rfl rfl hk0 hkn x).2]
+/-- Out-neighbors of the slot vertex `k = 3ℓ + r` (`r ∈ {1, 2}`) of the chain of `v`: its chain
+neighbors and the slot's clause when the slot literal is `false` (`r = 1`) or `true` (`r = 2`). -/
+private theorem corrDigraphAdj_slot_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
+    (ℓ : Fin (chainSlots p v)) {r : ℕ} (hr : r = 1 ∨ r = 2) (k kPrev kNext : Fin (chainLen p v))
+    (hk : k.1 = 3 * ℓ.1 + r) (hPrev : kPrev.1 + 1 = k.1) (hNext : k.1 + 1 = kNext.1)
+    (x : CorrDigraphV p) :
+    corrDigraphAdj p hp (.chain v k) x ↔
+      x = .chain v kPrev ∨ x = .chain v kNext ∨
+      ∃ e c, slotClause p v ℓ = some ((e, c), decide (r = 2)) ∧ x = .clause e c := by
+  have hℓ := ℓ.2
+  rw [(corrDigraphAdj_chain_iff hp v k kPrev kNext hPrev hNext (by omega)
+    (by simp only [chainLen]; omega) x).1]
   simp only [corrDigraphAdj]
-  constructor
-  · rintro (h | h | ⟨e, c, rfl, ℓ', lit, hs, hk⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · have heq := eq_slot_of_clauseAdj (Or.inl rfl) hs hk.symm
-      rcases heq with ⟨rfl, ⟨_, rfl⟩ | ⟨hbad, _⟩⟩
-      · exact Or.inr (Or.inr ⟨e, c, hs, rfl⟩)
-      · contradiction
-  · rintro (h | h | ⟨e', c', hs, rfl⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · exact Or.inr (Or.inr ⟨e', c', rfl, ℓ, true, hs, Or.inr ⟨rfl, rfl⟩⟩)
+  refine or_congr_right (or_congr_right ⟨?_, ?_⟩)
+  · rintro ⟨e, c, rfl, ℓ', lit, hs, hk'⟩
+    rw [hk] at hk'
+    obtain ⟨rfl, hlit⟩ := eq_slot_of_clauseAdj hr hs hk'
+    refine ⟨e, c, ?_, rfl⟩
+    rcases hlit with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> exact hs
+  · rintro ⟨e, c, hs, rfl⟩
+    refine ⟨e, c, rfl, ℓ, _, hs, ?_⟩
+    rcases hr with rfl | rfl
+    · exact Or.inl ⟨rfl, hk⟩
+    · exact Or.inr ⟨rfl, hk⟩
 
 private theorem corrDigraphAdj_slot1_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
     (ℓ : Fin (chainSlots p v)) (x : CorrDigraphV p) :
@@ -1494,53 +1257,7 @@ private theorem corrDigraphAdj_slot1_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p
       x = .chain v ⟨3 * ℓ.1, by simp only [chainLen]; omega⟩ ∨
       x = .chain v ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩ ∨
       ∃ e c, slotClause p v ℓ = some ((e, c), false) ∧ x = .clause e c := by
-  have hk0 : 3 * ℓ.1 + 1 ≠ 0 := by omega
-  have hkn : 3 * ℓ.1 + 1 + 1 ≠ chainLen p v := by simp only [chainLen]; omega
-  rw [(corrDigraphAdj_chain_iff hp v
-    ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩
-    ⟨3 * ℓ.1, by simp only [chainLen]; omega⟩
-    ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩
-    rfl rfl hk0 hkn x).1]
-  simp only [corrDigraphAdj]
-  constructor
-  · rintro (h | h | ⟨e, c, rfl, ℓ', lit, hs, hk⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · have heq := eq_slot_of_clauseAdj (Or.inl rfl) hs hk
-      rcases heq with ⟨rfl, ⟨_, rfl⟩ | ⟨hbad, _⟩⟩
-      · exact Or.inr (Or.inr ⟨e, c, hs, rfl⟩)
-      · contradiction
-  · rintro (h | h | ⟨e', c', hs, rfl⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · exact Or.inr (Or.inr ⟨e', c', rfl, ℓ, false, hs, Or.inl ⟨rfl, rfl⟩⟩)
-
-private theorem corrDigraphAdj_slot2_in {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
-    (ℓ : Fin (chainSlots p v)) (x : CorrDigraphV p) :
-    corrDigraphAdj p hp x (.chain v ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩) ↔
-      x = .chain v ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩ ∨
-      x = .chain v ⟨3 * (ℓ.1 + 1), by simp only [chainLen]; omega⟩ ∨
-      ∃ e c, slotClause p v ℓ = some ((e, c), false) ∧ x = .clause e c := by
-  have hk0 : 3 * ℓ.1 + 2 ≠ 0 := by omega
-  have hkn : 3 * ℓ.1 + 2 + 1 ≠ chainLen p v := by simp only [chainLen]; omega
-  rw [(corrDigraphAdj_chain_iff hp v
-    ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩
-    ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩
-    ⟨3 * (ℓ.1 + 1), by simp only [chainLen]; omega⟩
-    rfl rfl hk0 hkn x).2]
-  simp only [corrDigraphAdj]
-  constructor
-  · rintro (h | h | ⟨e, c, rfl, ℓ', lit, hs, hk⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · have heq := eq_slot_of_clauseAdj (Or.inr rfl) hs hk.symm
-      rcases heq with ⟨rfl, ⟨hbad, _⟩ | ⟨_, rfl⟩⟩
-      · contradiction
-      · exact Or.inr (Or.inr ⟨e, c, hs, rfl⟩)
-  · rintro (h | h | ⟨e', c', hs, rfl⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · exact Or.inr (Or.inr ⟨e', c', rfl, ℓ, false, hs, Or.inl ⟨rfl, rfl⟩⟩)
+  refine corrDigraphAdj_slot_out hp v ℓ (.inl rfl) _ _ _ ?_ ?_ ?_ x <;> rfl
 
 private theorem corrDigraphAdj_slot2_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p)
     (ℓ : Fin (chainSlots p v)) (x : CorrDigraphV p) :
@@ -1548,28 +1265,7 @@ private theorem corrDigraphAdj_slot2_out {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p
       x = .chain v ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩ ∨
       x = .chain v ⟨3 * (ℓ.1 + 1), by simp only [chainLen]; omega⟩ ∨
       ∃ e c, slotClause p v ℓ = some ((e, c), true) ∧ x = .clause e c := by
-  have hk0 : 3 * ℓ.1 + 2 ≠ 0 := by omega
-  have hkn : 3 * ℓ.1 + 2 + 1 ≠ chainLen p v := by simp only [chainLen]; omega
-  rw [(corrDigraphAdj_chain_iff hp v
-    ⟨3 * ℓ.1 + 2, by simp only [chainLen]; omega⟩
-    ⟨3 * ℓ.1 + 1, by simp only [chainLen]; omega⟩
-    ⟨3 * (ℓ.1 + 1), by simp only [chainLen]; omega⟩
-    rfl rfl hk0 hkn x).1]
-  simp only [corrDigraphAdj]
-  constructor
-  · rintro (h | h | ⟨e, c, rfl, ℓ', lit, hs, hk⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · have heq := eq_slot_of_clauseAdj (Or.inr rfl) hs hk
-      rcases heq with ⟨rfl, ⟨hbad, _⟩ | ⟨_, rfl⟩⟩
-      · contradiction
-      · exact Or.inr (Or.inr ⟨e, c, hs, rfl⟩)
-  · rintro (h | h | ⟨e', c', hs, rfl⟩)
-    · exact Or.inl h
-    · exact Or.inr (Or.inl h)
-    · exact Or.inr (Or.inr ⟨e', c', rfl, ℓ, true, hs, Or.inr ⟨rfl, rfl⟩⟩)
-
-
+  refine corrDigraphAdj_slot_out hp v ℓ (.inr rfl) _ _ _ ?_ ?_ ?_ x <;> rfl
 
 /-- Every directed Hamiltonian tour `τ` of `corrDigraphAdj p hp` induces an assignment
 `b : Finset (Fin p)` such that `chain v 1 → chain v 0` occurs in `τ` iff `v` evaluates to `true`
@@ -1599,6 +1295,23 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
   have hsucc_adj : ∀ u : CorrDigraphV p, corrDigraphAdj p hp u (τ (τ.symm u + 1)) := fun u => by
     have h := hτ (τ.symm u)
     rwa [τ.apply_symm_apply] at h
+  have hprev_of_next : ∀ {x y : CorrDigraphV p},
+      τ (τ.symm x + 1) = y → τ (τ.symm y - 1) = x := fun {x y} h => by
+    have heq : τ.symm y = τ.symm x + 1 := τ.symm_apply_eq.2 h.symm
+    rw [heq, add_sub_cancel_right, τ.apply_symm_apply]
+  have hnext_of_prev : ∀ {x y : CorrDigraphV p},
+      τ (τ.symm y - 1) = x → τ (τ.symm x + 1) = y := fun {x y} h => by
+    have heq : τ.symm x = τ.symm y - 1 := τ.symm_apply_eq.2 h.symm
+    rw [heq, sub_add_cancel, τ.apply_symm_apply]
+  -- The top two vertices of the last slot are the last two vertices of the chain.
+  have hlast_eq : ∀ (v : CorrVar p) (ℓ : ℕ) (_h : ℓ + 1 = chainSlots p v),
+      (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩ : CorrDigraphV p) =
+          .chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩ ∧
+        (.chain v ⟨3 * ℓ + 2, by simp only [chainLen]; omega⟩ : CorrDigraphV p) =
+          .chain v ⟨3 * chainSlots p v - 1, by
+            have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ :=
+    fun v ℓ h => ⟨congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega)),
+      congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))⟩
   have hchain0_dich : ∀ v : CorrVar p,
       let c0 : CorrDigraphV p := .chain v ⟨0, by have := two_le_chainLen hp v; omega⟩
       let c1 : CorrDigraphV p := .chain v ⟨1, by have := two_le_chainLen hp v; omega⟩
@@ -1613,10 +1326,17 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
     have hc0_ne_cL : c0 ≠ cL := fun h => by
       have hv := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h).2)
       have hs := chainSlots_pos hp v; dsimp only at hv; omega
-    have hc0_in := (corrDigraphAdj_chain0_in hp v _).1 (hpred_adj c0)
-    have hc0_out := (corrDigraphAdj_chain0_out hp v _).1 (hsucc_adj c0)
-    have hcL_in := (corrDigraphAdj_chainLast_in hp v _).1 (hpred_adj cL)
-    have hcL_out := (corrDigraphAdj_chainLast_out hp v _).1 (hsucc_adj cL)
+    have hc0 := corrDigraphAdj_chainEnd hp v
+      (k := ⟨0, by have := two_le_chainLen hp v; omega⟩)
+      (k' := ⟨1, by have := two_le_chainLen hp v; omega⟩) (.inl rfl) (.inr rfl)
+    have hcL := corrDigraphAdj_chainEnd hp v
+      (k := ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩)
+      (k' := ⟨3 * chainSlots p v - 1, by have := chainSlots_pos hp v; simp only [chainLen]; omega⟩)
+      (.inr (by simp only [chainLen])) (.inl (by have := chainSlots_pos hp v; dsimp only; omega))
+    have hc0_in := (hc0 _).1.1 (hpred_adj c0)
+    have hc0_out := (hc0 _).2.1 (hsucc_adj c0)
+    have hcL_in := (hcL _).1.1 (hpred_adj cL)
+    have hcL_out := (hcL _).2.1 (hsucc_adj cL)
     have hg_out := (corrDigraphAdj_gate_out hp v _).1 (hsucc_adj (.gate v))
     have hbranch : ∀ {a aN b bN : CorrDigraphV p}, a ≠ b →
         τ (τ.symm (.gate v) + 1) = a →
@@ -1626,9 +1346,7 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
         τ (τ.symm a - 1) = .gate v ∧ τ (τ.symm a + 1) = aN ∧
           τ (τ.symm b - 1) = bN ∧ τ (τ.symm b + 1) = .gate (varNext hp v) := by
       intro a aN b bN hab hg ha_out hb_in hb_out
-      have hta_in : τ (τ.symm a - 1) = .gate v := by
-        have heq : τ.symm a = τ.symm (.gate v) + 1 := τ.symm_apply_eq.2 hg.symm
-        rw [heq, add_sub_cancel_right, τ.apply_symm_apply]
+      have hta_in : τ (τ.symm a - 1) = .gate v := hprev_of_next hg
       have htb_in_ne : τ (τ.symm b - 1) ≠ .gate v := fun hb => by
         have ht_eq := congrArg (· + 1) (τ.injective (hta_in.trans hb.symm))
         rw [sub_add_cancel, sub_add_cancel] at ht_eq
@@ -1649,14 +1367,6 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
     · obtain ⟨htL_in, htL_out, ht0_in, ht0_out⟩ :=
         hbranch hc0_ne_cL.symm hg hcL_out hc0_in hc0_out
       exact Or.inr ⟨ht0_in, ht0_out, htL_in, htL_out⟩
-  have hprev_of_next : ∀ {x y : CorrDigraphV p},
-      τ (τ.symm x + 1) = y → τ (τ.symm y - 1) = x := fun {x y} h => by
-    have heq : τ.symm y = τ.symm x + 1 := τ.symm_apply_eq.2 h.symm
-    rw [heq, add_sub_cancel_right, τ.apply_symm_apply]
-  have hnext_of_prev : ∀ {x y : CorrDigraphV p},
-      τ (τ.symm y - 1) = x → τ (τ.symm x + 1) = y := fun {x y} h => by
-    have heq : τ.symm x = τ.symm y - 1 := τ.symm_apply_eq.2 h.symm
-    rw [heq, sub_add_cancel, τ.apply_symm_apply]
   have hno_clash : ∀ (v : CorrVar p) (ℓ : ℕ) (hℓ : ℓ < chainSlots p v),
       let c0 : CorrDigraphV p := .chain v ⟨3 * ℓ, by simp only [chainLen]; omega⟩
       let c1 : CorrDigraphV p := .chain v ⟨3 * ℓ + 1, by simp only [chainLen]; omega⟩
@@ -1683,6 +1393,10 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
   let isFwd (v : CorrVar p) : Prop :=
     τ (τ.symm (.chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) + 1) =
       .chain v ⟨1, by have := two_le_chainLen hp v; omega⟩
+  have hdich_fwd (v : CorrVar p) (hf : isFwd v) :=
+    (hchain0_dich v).resolve_right fun h => by cases hf.symm.trans h.2.1
+  have hdich_bwd (v : CorrVar p) (hnf : ¬ isFwd v) :=
+    (hchain0_dich v).resolve_left fun h => hnf h.2.1
   have hslot_fwd : ∀ (v : CorrVar p) (hf : isFwd v) (ℓ : ℕ) (hℓ : ℓ < chainSlots p v),
       let c0 : CorrDigraphV p := .chain v ⟨3 * ℓ, by simp only [chainLen]; omega⟩
       let c2 : CorrDigraphV p := .chain v ⟨3 * ℓ + 2, by simp only [chainLen]; omega⟩
@@ -1702,25 +1416,14 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
             by simp only [chainLen]; omega⟩) - 1) =
             .chain v ⟨3 * chainSlots p v - 1, by
               have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ := by
-          rcases hchain0_dich v with h | h
-          · exact h.2.2.1
-          · exfalso; cases hf.symm.trans h.2.1
-        have hc3_eq : (.chain v ⟨3 * (ℓ' + 1), by simp only [chainLen]; omega⟩ :
-            CorrDigraphV p) =
-            .chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩ :=
-          congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-        have hc2_eq : (.chain v ⟨3 * ℓ' + 2, by simp only [chainLen]; omega⟩ :
-            CorrDigraphV p) =
-            .chain v ⟨3 * chainSlots p v - 1, by
-              have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ :=
-          congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-        rw [hc3_eq, hc2_eq]
+          exact (hdich_fwd v hf).2.2.1
+        rw [(hlast_eq v ℓ' hlast).1, (hlast_eq v ℓ' hlast).2]
         exact hnext_of_prev hL
       · have hj0 : 0 < ℓ' + 1 := Nat.succ_pos ℓ'
         have hjS : ℓ' + 1 < chainSlots p v := by omega
-        have hc3_in := (corrDigraphAdj_mul3_in hp v hj0 hjS _).1
+        have hc3_in := (corrDigraphAdj_mul3 hp v hj0 hjS _).2.1
           (hpred_adj (.chain v ⟨3 * (ℓ' + 1), by simp only [chainLen]; omega⟩))
-        have hc3_out := (corrDigraphAdj_mul3_out hp v hj0 hjS _).1
+        have hc3_out := (corrDigraphAdj_mul3 hp v hj0 hjS _).1.1
           (hsucc_adj (.chain v ⟨3 * (ℓ' + 1), by simp only [chainLen]; omega⟩))
         have hc2_eq : (.chain v ⟨3 * ℓ' + 2, by simp only [chainLen]; omega⟩ :
             CorrDigraphV p) =
@@ -1743,7 +1446,7 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
         have hprev := (ih (by omega)).2
         have h0_in : τ (τ.symm (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩) - 1) =
             .chain v ⟨3 * ℓ + 2, by simp only [chainLen]; omega⟩ := hprev_of_next hprev
-        have h0_out_raw := (corrDigraphAdj_mul3_out hp v (Nat.succ_pos ℓ) hℓ _).1
+        have h0_out_raw := (corrDigraphAdj_mul3 hp v (Nat.succ_pos ℓ) hℓ _).1.1
           (hsucc_adj (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩))
         have hc0_out : τ (τ.symm (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩) + 1) =
             .chain v ⟨3 * (ℓ + 1) + 1, by simp only [chainLen]; omega⟩ := by
@@ -1773,15 +1476,10 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
       intro ℓ' hℓ' hc3_out
       have hc2_in := hprev_of_next hc3_out
       rcases Nat.eq_zero_or_pos ℓ' with rfl | hpos
-      · have h0_in : τ (τ.symm (.chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) - 1) =
-            .chain v ⟨1, by have := two_le_chainLen hp v; omega⟩ := by
-          rcases hchain0_dich v with h | h
-          · exfalso; exact hnf h.2.1
-          · exact h.1
-        exact hnext_of_prev h0_in
-      · have hc0_in_raw := (corrDigraphAdj_mul3_in hp v hpos hℓ' _).1
+      · exact hnext_of_prev (hdich_bwd v hnf).1
+      · have hc0_in_raw := (corrDigraphAdj_mul3 hp v hpos hℓ' _).2.1
           (hpred_adj (.chain v ⟨3 * ℓ', by simp only [chainLen]; omega⟩))
-        have hc0_out_raw := (corrDigraphAdj_mul3_out hp v hpos hℓ' _).1
+        have hc0_out_raw := (corrDigraphAdj_mul3 hp v hpos hℓ' _).1.1
           (hsucc_adj (.chain v ⟨3 * ℓ', by simp only [chainLen]; omega⟩))
         have hc0_in : τ (τ.symm (.chain v ⟨3 * ℓ', by simp only [chainLen]; omega⟩) - 1) =
             .chain v ⟨3 * ℓ' + 1, by simp only [chainLen]; omega⟩ := by
@@ -1798,24 +1496,8 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
         intro ℓ hd
         have hc3_out : τ (τ.symm (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩) + 1) =
             .chain v ⟨3 * ℓ + 2, by simp only [chainLen]; omega⟩ := by
-          have hL_out : τ (τ.symm (.chain v ⟨3 * chainSlots p v,
-              by simp only [chainLen]; omega⟩) + 1) =
-              .chain v ⟨3 * chainSlots p v - 1, by
-                have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ := by
-            rcases hchain0_dich v with h | h
-            · exfalso; exact hnf h.2.1
-            · exact h.2.2.2
-          have hc3_eq : (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩ :
-              CorrDigraphV p) =
-              .chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩ :=
-            congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-          have hc2_eq : (.chain v ⟨3 * ℓ + 2, by simp only [chainLen]; omega⟩ :
-              CorrDigraphV p) =
-              .chain v ⟨3 * chainSlots p v - 1, by
-                have := chainSlots_pos hp v; simp only [chainLen]; omega⟩ :=
-            congrArg (CorrDigraphV.chain v) (Fin.ext (by dsimp only; omega))
-          rw [hc3_eq, hc2_eq]
-          exact hL_out
+          rw [(hlast_eq v ℓ (by omega)).1, (hlast_eq v ℓ (by omega)).2]
+          exact (hdich_bwd v hnf).2.2.2
         exact ⟨hc3_out, hc1_of_c3 ℓ (by omega) hc3_out⟩
     | succ d ih =>
         intro ℓ hd
@@ -1825,7 +1507,7 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
         have h_in : τ (τ.symm (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩) - 1) =
             .chain v ⟨3 * (ℓ + 1) + 1, by simp only [chainLen]; omega⟩ :=
           hprev_of_next hnext_slot
-        have h_out_raw := (corrDigraphAdj_mul3_out hp v hj0 hjS _).1
+        have h_out_raw := (corrDigraphAdj_mul3 hp v hj0 hjS _).1.1
           (hsucc_adj (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩))
         have hc3_out : τ (τ.symm (.chain v ⟨3 * (ℓ + 1), by simp only [chainLen]; omega⟩) + 1) =
             .chain v ⟨3 * ℓ + 2, by simp only [chainLen]; omega⟩ := by
@@ -1851,16 +1533,10 @@ theorem exists_assignment_of_dirTour {p : ℕ} [NeZero p] (hp : 1 ≤ p)
           .chain v ⟨0, by have := two_le_chainLen hp v; omega⟩ by
         simpa only [τ.symm_apply_apply] using ht0)
       rw [ht1] at h0_in
-      rcases hchain0_dich v with h | h
-      · cases h.1.symm.trans h0_in
-      · cases hf.symm.trans h.2.1
+      cases (hdich_fwd v hf).1.symm.trans h0_in
     · intro hnf
-      have h0_in : τ (τ.symm (.chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) - 1) =
-          .chain v ⟨1, by have := two_le_chainLen hp v; omega⟩ := by
-        rcases hchain0_dich v with h | h
-        · exfalso; exact hnf h.2.1
-        · exact h.1
-      refine ⟨τ.symm (.chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) - 1, h0_in, ?_⟩
+      refine ⟨τ.symm (.chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) - 1,
+        (hdich_bwd v hnf).1, ?_⟩
       rw [sub_add_cancel, τ.apply_symm_apply]
   let b : Finset (Fin p) := Finset.univ.filter (fun i => ¬ isFwd (.diag i))
   refine ⟨b, ?_, ?_⟩

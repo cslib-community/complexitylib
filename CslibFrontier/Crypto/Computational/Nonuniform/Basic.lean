@@ -131,7 +131,7 @@ theorem IndistinguishableWithAdvice.map {advice : ℕ → List Bool} {X Y : ℕ 
         (encPair encUnary encBits) := by fun_prop
     exact (ComputableInPolyTime.fst _ _).prod (hf.comp hpair)
   have hneg := h (fun input => test (input.1, f input.1.1 input.2)) (htest.preprocess hprepare)
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
     using hneg
 
 /-- Every ensemble is nonuniformly indistinguishable from itself. -/
@@ -179,7 +179,7 @@ theorem IndistinguishableWithAdvice.negligible_encoded {X Y : ℕ → PMF (List 
       ProbComp.eval (extension (encAdvisedInput ((n, encAdvice (advice n)), word))) =
         ProbComp.eval (test ((n, advice n), word)) :=
     heq ((n, advice n), word)
-  simpa only [distinguishingGame, hkey] using h _ hword
+  simpa only [distinguishingGame_eq_bind, hkey] using h _ hword
 
 /-- **Typed advice tests suffice.** The converse of `negligible_encoded`: if every uniform strict
 PPT test that reads the advice value `advice n` itself has negligible advantage, the ensembles are
@@ -212,11 +212,11 @@ theorem not_computationallyIndistinguishable_pure_uniformList (target : ℕ → 
   obtain ⟨m, hm⟩ : ∃ m, length n = m + 1 := ⟨length n - 1, by omega⟩
   have hreal : distinguishingGame (PMF.pure (target n)) (fun word => pure (word.headD false)) =
       PMF.pure ((target n).headD false) := by
-    simp [distinguishingGame]
+    simp [distinguishingGame_eq_bind]
   have hideal : distinguishingGame (BitString.uniformList (length n))
       (fun word => pure (word.headD false)) = PMF.uniformOfFintype Bool := by
     rw [hm, BitString.uniformList_succ]
-    simp [distinguishingGame, PMF.bind_map, Function.comp_def]
+    simp [distinguishingGame_eq_bind, PMF.bind_map, Function.comp_def]
   rw [← NNReal.coe_le_coe, Game.coe_advantage, hreal, hideal]
   cases (target n).headD false <;> norm_num [Game.succProbability, ENNReal.toNNReal_ofNat]
 
