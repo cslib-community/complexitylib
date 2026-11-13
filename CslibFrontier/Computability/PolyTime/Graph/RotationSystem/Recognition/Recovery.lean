@@ -50,14 +50,16 @@ private theorem redirectEnd_polyTime : ComputableTidilyInPolyTime
 
 /-- The split is a native list construction even on malformed raw labels and blocks. -/
 private theorem splitEdges_polyTime : ComputableTidilyInPolyTime
-    (fun p : (FixedRotationInput × ℕ) × List ℕ => (split p.1.1 p.1.2 p.2).graph.2)
+    (fun p : (FixedRotationInput × ℕ) × List ℕ => (split p.1.1 p.1.2 p.2).graph.edges)
     encBlockInput (encList (encPair encNat encNat)) := by
   let hp := (ComputableTidilyInPolyTime.fst encFixedRotationInput encNat).comp
     (ComputableTidilyInPolyTime.fst encWordInput (encList encNat))
   let hg := encFixedRotationInput_graph_deg.computableInPolyTime.tidy.comp hp
   let hn := ComputableTidilyInPolyTime.unary_to_binary.comp
-    ((ComputableTidilyInPolyTime.length_list encNat).comp hg.fst')
-  let hedges := (ComputableTidilyInPolyTime.zipIdx (encPair encNat encNat)).comp hg.snd'
+    ((ComputableTidilyInPolyTime.length_list encNat).comp
+      (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg))
+  let hedges := (ComputableTidilyInPolyTime.zipIdx (encPair encNat encNat)).comp
+    (encGraph_edges_deg.computableInPolyTime.tidy.comp hg)
   unfold split
   apply ComputableTidilyInPolyTime.listAppend'
   · apply ComputableTidilyInPolyTime.mapWithInput hedges
@@ -85,7 +87,8 @@ private theorem splitOrders_polyTime : ComputableTidilyInPolyTime
   let ho := encFixedRotationInput_orders_deg.computableInPolyTime.tidy.comp hp
   let hm := ComputableTidilyInPolyTime.unary_to_binary.comp
     (ComputableTidilyInPolyTime.unary_mul.comp ((ComputableTidilyInPolyTime.const 2).prod
-      ((ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp hg.snd')))
+      ((ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp
+        (encGraph_edges_deg.computableInPolyTime.tidy.comp hg))))
   unfold split
   apply ComputableTidilyInPolyTime.listAppend'
   · exact ho
@@ -103,17 +106,20 @@ theorem split_polyTime : ComputableInPolyTime
     (ComputableTidilyInPolyTime.fst encWordInput (encList encNat))
   let hg := encFixedRotationInput_graph_deg.computableInPolyTime.tidy.comp hp
   have hr : ComputableTidilyInPolyTime
-      (fun p : (FixedRotationInput × ℕ) × List ℕ => List.range (p.1.1.graph.1.length + 1))
+      (fun p : (FixedRotationInput × ℕ) × List ℕ => List.range (p.1.1.graph.vertices.length + 1))
       encBlockInput (encList encNat) := by
     have hc : ComputableTidilyInPolyTime
-        (fun p : (FixedRotationInput × ℕ) × List ℕ => p.1.1.graph.1.length + 1)
+        (fun p : (FixedRotationInput × ℕ) × List ℕ => p.1.1.graph.vertices.length + 1)
         encBlockInput encUnary := ComputableTidilyInPolyTime.unary_add.comp
-      (((ComputableTidilyInPolyTime.length_list encNat).comp hg.fst').prod
+      (((ComputableTidilyInPolyTime.length_list encNat).comp
+        (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg)).prod
         (ComputableTidilyInPolyTime.const 1))
     simpa [Function.comp_def] using ((ComputableTidilyInPolyTime.map
       ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range).comp hc
-  have hfields := (hr.prod splitEdges_polyTime).prod splitOrders_polyTime
-  exact .of_tidy (hfields.of_enc_eq fun _ => rfl)
+  exact encFixedRotationInput_mk_polyTime
+    (encGraph_mk_polyTime (ComputableInPolyTime.of_tidy hr)
+      (ComputableInPolyTime.of_tidy splitEdges_polyTime))
+    (ComputableInPolyTime.of_tidy splitOrders_polyTime)
 
 /-- Only actual unused fiber darts are scanned as candidates. -/
 theorem remaining_polyTime : ComputableInPolyTime
@@ -173,9 +179,10 @@ theorem recoverWord_polyTime : ComputableInPolyTime
     fiber_polyTime.tidy.comp ((hg.comp (ComputableTidilyInPolyTime.fst _ _)).prod
       (ComputableTidilyInPolyTime.snd _ _))
   have hm : ComputableTidilyInPolyTime
-      (fun p : FixedRotationInput × ℕ => p.1.graph.2.length) encWordInput encUnary :=
+      (fun p : FixedRotationInput × ℕ => p.1.graph.edges.length) encWordInput encUnary :=
     (ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp
-      (hg.snd'.comp (ComputableTidilyInPolyTime.fst _ _))
+      ((encGraph_edges_deg.computableInPolyTime.tidy.comp hg).comp
+        (ComputableTidilyInPolyTime.fst _ _))
   apply ComputableInPolyTime.of_tidy
   unfold recoverWord
   apply ComputableTidilyInPolyTime.iterateWith_of_bounded_growth
@@ -220,7 +227,8 @@ theorem prescribe_polyTime : ComputableInPolyTime
     exact ComputableTidilyInPolyTime.ite_decide (hi.decide_eq' hv)
       ((ComputableTidilyInPolyTime.optionSome (encList encNat)).comp
         ((ComputableTidilyInPolyTime.snd encWordInput (encList encNat)).comp hp')) he.fst'
-  exact .of_tidy ((hg.prod ht).of_enc_eq fun _ => rfl)
+  exact encFixedRotationInput_mk_polyTime
+    (ComputableInPolyTime.of_tidy hg) (ComputableInPolyTime.of_tidy ht)
 
 /-- A complete-vertex step uses only the current optional state and a binary vertex. -/
 theorem completeVertex_polyTime : ComputableInPolyTime
@@ -251,16 +259,19 @@ theorem recoverOrders_polyTime : ComputableInPolyTime recoverOrders
     encFixedRotationInput (encOption encFixedRotationInput) := by
   have hg := encFixedRotationInput_graph_deg.computableInPolyTime.tidy
   have ho := encFixedRotationInput_orders_deg.computableInPolyTime.tidy
-  have hn := (ComputableTidilyInPolyTime.length_list encNat).comp hg.fst'
-  have hm := (ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp hg.snd'
+  have hn := (ComputableTidilyInPolyTime.length_list encNat).comp
+    (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg)
+  have hm := (ComputableTidilyInPolyTime.length_list (encPair encNat encNat)).comp
+    (encGraph_edges_deg.computableInPolyTime.tidy.comp hg)
   have hw := (ComputableTidilyInPolyTime.length_list (encOption (encList encNat))).comp ho
   have hr : ComputableTidilyInPolyTime
-      (fun I : FixedRotationInput => List.range I.graph.1.length)
+      (fun I : FixedRotationInput => List.range I.graph.vertices.length)
       encFixedRotationInput (encList encNat) := by
     simpa [Function.comp_def] using ((ComputableTidilyInPolyTime.map
       ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range).comp hn
   have hb : PolyBounded (fun I => (encFixedRotationInput I).length)
-      (fun I => (encFixedRotationInput I).length + 1 + I.graph.1.length * outerGrowth I) := by
+      (fun I => (encFixedRotationInput I).length + 1 +
+        I.graph.vertices.length * outerGrowth I) := by
     unfold outerGrowth
     exact (PolyBounded.self.add (.const 1)).add
       (hn.polyBounded.mul (hw.polyBounded.mul ((PolyBounded.const 2).mul
@@ -271,11 +282,13 @@ theorem recoverOrders_polyTime : ComputableInPolyTime recoverOrders
   apply ComputableTidilyInPolyTime.foldl' hr
     (ComputableTidilyInPolyTime.optionSome encFixedRotationInput) completeVertex_polyTime.tidy hb
   intro I i hi
-  rcases completeVertex_fold I ((List.range I.graph.1.length).take i) with hn | ⟨J, hj, _, _, hb⟩
+  rcases completeVertex_fold I ((List.range I.graph.vertices.length).take i) with
+    hn | ⟨J, hj, _, _, hb⟩
   · rw [hn, encOption_none, List.length_nil]
     exact Nat.zero_le _
   · rw [hj, encOption_some, List.length_cons]
-    have hlen : ((List.range I.graph.1.length).take i).length ≤ I.graph.1.length := by simp
+    have hlen : ((List.range I.graph.vertices.length).take i).length ≤
+        I.graph.vertices.length := by simp
     exact hb.trans (Nat.add_le_add_left (Nat.mul_le_mul_right (outerGrowth I) hlen) _)
 
 /-- Native cyclic successor lookup, with unary word position and binary word entries. -/
@@ -300,20 +313,19 @@ theorem certificate_polyTime : ComputableInPolyTime certificate
   have hg := encFixedRotationInput_graph_deg.computableInPolyTime.tidy
   have ho := encFixedRotationInput_orders_deg.computableInPolyTime.tidy
   have hc : ComputableTidilyInPolyTime
-      (fun I : FixedRotationInput => 2 * I.graph.2.length) encFixedRotationInput encUnary := by
-    unfold encGraph at hg
-    fun_prop
+      (fun I : FixedRotationInput => 2 * I.graph.edges.length) encFixedRotationInput encUnary :=
+    (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 2)
+      ((ComputableInPolyTime.length_list (encPair encNat encNat)).comp
+        (encGraph_edges_polyTime (ComputableInPolyTime.of_tidy hg)))).tidy
   have hr : ComputableTidilyInPolyTime
-      (fun I : FixedRotationInput => List.range (2 * I.graph.2.length))
+      (fun I : FixedRotationInput => List.range (2 * I.graph.edges.length))
       encFixedRotationInput (encList encNat) := by
     simpa [Function.comp_def] using ((ComputableTidilyInPolyTime.map
       ComputableTidilyInPolyTime.unary_to_binary).comp ComputableTidilyInPolyTime.range).comp hc
   have hendpoints : ComputableTidilyInPolyTime
       (fun I : FixedRotationInput => I.graph.incidenceVertices)
-      encFixedRotationInput (encList encNat) := by
-    unfold incidenceVertices
-    have he := hg.snd'
-    fun_prop
+      encFixedRotationInput (encList encNat) :=
+    RotationCertificate.incidenceVertices_polyTime.tidy.comp hg
   have hword : ComputableTidilyInPolyTime
       (fun p : FixedRotationInput × ℕ =>
         (p.1.orders.getD (p.1.graph.incidenceVertices.getD p.2 0) none).getD [])
@@ -397,7 +409,8 @@ theorem freePrefix_polyTime : ComputableInPolyTime
       (fun p : Graph × ℕ => (freePrefix p.1 p.2).orders)
       (encPair encGraph encNat) (encList (encOption (encList encNat))) := by
     unfold freePrefix
-    apply ComputableTidilyInPolyTime.mapWithInput hg.fst'
+    apply ComputableTidilyInPolyTime.mapWithInput
+      (encGraph_vertices_deg.computableInPolyTime.tidy.comp hg)
     let hp := ComputableTidilyInPolyTime.fst (encPair encGraph encNat) encNat
     let hv := ComputableTidilyInPolyTime.snd (encPair encGraph encNat) encNat
     exact ComputableTidilyInPolyTime.ite_decide
@@ -406,7 +419,8 @@ theorem freePrefix_polyTime : ComputableInPolyTime
       (ComputableTidilyInPolyTime.const none)
       ((ComputableTidilyInPolyTime.optionSome (encList encNat)).comp
         (fiber_polyTime.tidy.comp ((hg.comp hp).prod hv)))
-  exact .of_tidy ((hg.prod ho).of_enc_eq fun _ => rfl)
+  exact encFixedRotationInput_mk_polyTime
+    (ComputableInPolyTime.of_tidy hg) (ComputableInPolyTime.of_tidy ho)
 
 /-- Original CSP scopes compile through the existing dense incidence graph. Binary source
 names are compared as bit strings; relation semantics and declared arity fund no scans. -/

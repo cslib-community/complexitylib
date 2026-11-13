@@ -39,14 +39,14 @@ open Turing.MultiTapeTM
 /-! ### 1. The path on four vertices attains the factor 2 -/
 
 /-- The path `0 - 1 - 2 - 3`. -/
-def path4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)])
+def path4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)]⟩
 
-example : greedyMatching path4.2 = [(0, 1), (2, 3)] := by decide +kernel
+example : greedyMatching path4.edges = [(0, 1), (2, 3)] := by decide +kernel
 
 example : approxCover path4 = [0, 1, 2, 3] := by decide +kernel
 
 /-- `{1, 2}` covers the path. -/
-theorem path4_mem : (path4, 2) ∈ VertexCover := by
+theorem path4_mem : (⟨path4, 2⟩ : VertexCoverInstance) ∈ VertexCover := by
   refine mem_VertexCover_iff.2 ⟨{1, 2}, by decide +kernel, ?_, rfl⟩
   intro u hu v hv huv
   simp only [Graph.toSimpleGraph, SimpleGraph.fromRel_adj, path4, List.mem_cons,
@@ -70,12 +70,12 @@ example : (approxCover path4).length = 2 * path4.vertexCoverNum := by
 /-! ### 2. The star attains the factor 2 -/
 
 /-- The star with centre `0` and leaves `1`, `2`, `3`. -/
-def star3 : Graph := ([0, 1, 2, 3], [(0, 1), (0, 2), (0, 3)])
+def star3 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (0, 2), (0, 3)]⟩
 
 example : approxCover star3 = [0, 1] := by decide +kernel
 
 /-- The centre covers the star. -/
-theorem star3_mem : (star3, 1) ∈ VertexCover := by
+theorem star3_mem : (⟨star3, 1⟩ : VertexCoverInstance) ∈ VertexCover := by
   refine mem_VertexCover_iff.2 ⟨{0}, by decide +kernel, ?_, rfl⟩
   intro u hu v hv huv
   simp only [Graph.toSimpleGraph, SimpleGraph.fromRel_adj, star3, List.mem_cons,
@@ -95,13 +95,13 @@ example : star3.vertexCoverNum = 1 ∧ (approxCover star3).length = 2 * star3.ve
 example : matchingCover [(1, 1), (1, 2), (2, 1), (1, 2), (3, 3)] = [1, 2] := by decide +kernel
 
 /-- A loop and an edge to the undeclared vertex `5` impose nothing; the cover is empty. -/
-example : approxCover ([0, 1, 2], [(2, 2), (0, 5)]) = [] := by decide +kernel
+example : approxCover ⟨[0, 1, 2], [(2, 2), (0, 5)]⟩ = [] := by decide +kernel
 
 /-- Undeclared edges are discarded before the scan, so they cannot block a declared edge. -/
-example : approxCover ([0, 1, 2], [(0, 5), (0, 1)]) = [0, 1] := by decide +kernel
+example : approxCover ⟨[0, 1, 2], [(0, 5), (0, 1)]⟩ = [0, 1] := by decide +kernel
 
 /-- The empty graph gets the empty cover. -/
-example : approxCover ([], []) = [] := by decide +kernel
+example : approxCover ⟨[], []⟩ = [] := by decide +kernel
 
 /-! ### 4. Polynomial time -/
 

@@ -27,9 +27,9 @@ example (n : ℕ) (D : PolygonalDrawing (starGraph n))
     (starGraph_endpoints_declared n)).mpr ⟨D, hD, hR⟩
 
 -- No connectedness, nonempty incidence or unique-declaration premise is introduced.
-example (r : RotationSystem ([7, 7, 1000], [])) :
+example (r : RotationSystem ⟨[7, 7, 1000], []⟩) :
     r.NumericalGenusZero ↔
-      ∃ D : PolygonalDrawing ([7, 7, 1000], []), D.IsEmbedding ∧ D.Realizes r :=
+      ∃ D : PolygonalDrawing ⟨[7, 7, 1000], []⟩, D.IsEmbedding ∧ D.Realizes r :=
   r.numericalGenusZero_iff_exists_polygonalDrawing (by decide)
 
 end CslibFrontierTests.PolygonalEquivalence

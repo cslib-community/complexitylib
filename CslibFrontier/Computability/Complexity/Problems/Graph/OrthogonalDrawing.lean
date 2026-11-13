@@ -49,43 +49,43 @@ abbrev OrthogonalDrawing : Type := List Point × List Route
 
 /-- Displayed position of a declared vertex, using its first position in the vertex list. -/
 def drawingPosition (G : Graph) (d : OrthogonalDrawing) (v : ℕ) : Point :=
-  d.1.getD (G.1.idxOf v) (0, 0)
+  d.1.getD (G.vertices.idxOf v) (0, 0)
 
 /-- A supplied planar orthogonal embedding of the loopless listed graph. Parallel listed edges
 have distinct simple routes; all contacts are tested in the real plane. -/
 structure IsPlanarOrthogonalDrawing (G : Graph) (d : OrthogonalDrawing) : Prop where
   /-- Exactly one position per declared vertex. -/
-  vertexCount : d.1.length = G.1.length
+  vertexCount : d.1.length = G.vertices.length
   /-- Exactly one route per listed edge occurrence. -/
-  edgeCount : d.2.length = G.2.length
+  edgeCount : d.2.length = G.edges.length
   /-- Labels describe distinct vertices. -/
-  labelsNodup : G.1.Nodup
+  labelsNodup : G.vertices.Nodup
   /-- Distinct declared vertices have distinct positions. -/
   positionsNodup : d.1.Nodup
   /-- Both endpoints of every edge are declared. -/
-  endpointsDeclared : ∀ e ∈ G.2, e.1 ∈ G.1 ∧ e.2 ∈ G.1
+  endpointsDeclared : ∀ e ∈ G.edges, e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices
   /-- This interface concerns loopless graphs. -/
-  loopless : ∀ e ∈ G.2, e.1 ≠ e.2
+  loopless : ∀ e ∈ G.edges, e.1 ≠ e.2
   /-- Route endpoints are the incident vertices, in either order. -/
-  endpoints : ∀ i (hi : i < G.2.length),
+  endpoints : ∀ i (hi : i < G.edges.length),
     let r := d.2.getD i []
-    let a := drawingPosition G d G.2[i].1
-    let b := drawingPosition G d G.2[i].2
+    let a := drawingPosition G d G.edges[i].1
+    let b := drawingPosition G d G.edges[i].2
     (r.head? = some a ∧ r.getLast? = some b) ∨
       (r.head? = some b ∧ r.getLast? = some a)
   /-- Every segment is nondegenerate and axis aligned. -/
-  orthogonal : ∀ i < G.2.length, IsOrthogonal (d.2.getD i [])
+  orthogonal : ∀ i < G.edges.length, IsOrthogonal (d.2.getD i [])
   /-- Every route has no retracing, repeated points, or self-crossing. -/
-  simple : ∀ i < G.2.length, IsSimple (d.2.getD i [])
+  simple : ∀ i < G.edges.length, IsSimple (d.2.getD i [])
   /-- A route visits only its incident graph vertices. -/
-  avoidsVertices : ∀ i (hi : i < G.2.length), ∀ v ∈ G.1,
+  avoidsVertices : ∀ i (hi : i < G.edges.length), ∀ v ∈ G.vertices,
     realPoint (drawingPosition G d v) ∈ support (d.2.getD i []) →
-      v = G.2[i].1 ∨ v = G.2[i].2
+      v = G.edges[i].1 ∨ v = G.edges[i].2
   /-- Distinct routes intersect only at common graph endpoints. -/
-  contacts : ∀ i (hi : i < G.2.length), ∀ j (hj : j < G.2.length), i ≠ j →
+  contacts : ∀ i (hi : i < G.edges.length), ∀ j (hj : j < G.edges.length), i ≠ j →
     ∀ p ∈ support (d.2.getD i []), p ∈ support (d.2.getD j []) →
-      ∃ v ∈ G.1, (v = G.2[i].1 ∨ v = G.2[i].2) ∧
-        (v = G.2[j].1 ∨ v = G.2[j].2) ∧ p = realPoint (drawingPosition G d v)
+      ∃ v ∈ G.vertices, (v = G.edges[i].1 ∨ v = G.edges[i].2) ∧
+        (v = G.edges[j].1 ∨ v = G.edges[j].2) ∧ p = realPoint (drawingPosition G d v)
 
 /-- Every listed position and route point lies in the nonnegative integer rectangle. -/
 def drawingFits (d : OrthogonalDrawing) (width height : ℕ) : Prop :=

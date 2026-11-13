@@ -51,7 +51,7 @@ example (n : ℕ) (a b : Dart (starRotation n).dualGraph) : a.vertex = b.vertex 
 -- Three repeated loops at 100: cyclic word 0-,1-,1+,0+,2-,2+.
 -- Two repeated loops at 7 are disjoint; 42 and 1000000 are disconnected isolates.
 private abbrev listed : Graph :=
-  ([100, 7, 100, 42, 1000000, 7], [(100, 100), (100, 100), (100, 100), (7, 7), (7, 7)])
+  ⟨[100, 7, 100, 42, 1000000, 7], [(100, 100), (100, 100), (100, 100), (7, 7), (7, 7)]⟩
 
 private def certificate : RotationCertificate := ⟨[2, 4, 3, 1, 5, 0, 7, 8, 9, 6]⟩
 
@@ -140,7 +140,7 @@ example : ¬(PolygonalDrawing.bouquet rotation (by decide)).Realizes wrongRotati
 
 -- Three indexed loops in the cyclic word 0-,1-,0+,1+,2-,2+ contain a torus obstruction.
 -- This differs from the existing private two-loop regression model.
-private abbrev interlaced : Graph := ([11, 11, 90], [(11, 11), (11, 11), (11, 11)])
+private abbrev interlaced : Graph := ⟨[11, 11, 90], [(11, 11), (11, 11), (11, 11)]⟩
 
 private def interlacedCertificate : RotationCertificate := ⟨[2, 3, 1, 4, 5, 0]⟩
 
@@ -161,8 +161,8 @@ example : ¬interlacedRotation.NumericalGenusZero := by
     (by decide) (by decide) hcross
 
 -- No edges, repeated sparse isolates, and no declared vertices at all.
-example (vs : List ℕ) (r : RotationSystem (vs, [])) :
-    ∃ D : PolygonalDrawing (vs, []), D.IsEmbedding ∧ D.Realizes r := by
+example (vs : List ℕ) (r : RotationSystem ⟨vs, []⟩) :
+    ∃ D : PolygonalDrawing ⟨vs, []⟩, D.IsEmbedding ∧ D.Realizes r := by
   apply r.exists_polygonalDrawing_of_loops
   · simp [Graph.incidenceVertices]
   · intro root _
@@ -170,8 +170,8 @@ example (vs : List ℕ) (r : RotationSystem (vs, [])) :
   · intro e
     exact Fin.elim0 e
 
-example (r : RotationSystem ([], [])) :
-    ∃ D : PolygonalDrawing ([], []), D.IsEmbedding ∧ D.Realizes r := by
+example (r : RotationSystem ⟨[], []⟩) :
+    ∃ D : PolygonalDrawing ⟨[], []⟩, D.IsEmbedding ∧ D.Realizes r := by
   apply r.exists_polygonalDrawing_of_loops
   · simp [Graph.incidenceVertices]
   · intro root hroot

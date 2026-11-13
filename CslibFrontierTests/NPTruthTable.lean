@@ -69,7 +69,8 @@ theorem computableInPolyTime_wordOrReverse :
 truth-table reduction to `B`. -/
 theorem polyTimeCTTReducible_and_reverse (B : Set (List Bool)) :
     PolyTimeCTTReducible encBits encBits {w | w ∈ B ∧ w.reverse ∈ B} B := by
-  refine ⟨fun _ => 2, wordOrReverse, by fun_prop, computableInPolyTime_wordOrReverse, fun w => ?_⟩
+  refine ⟨fun _ => 2, wordOrReverse, ⟨by fun_prop, computableInPolyTime_wordOrReverse⟩,
+    fun w => ?_⟩
   simp only [Set.mem_ofPred_eq, wordOrReverse]
   constructor
   · rintro ⟨hw, hrev⟩ i hi

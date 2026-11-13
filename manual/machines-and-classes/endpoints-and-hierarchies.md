@@ -7,6 +7,13 @@ The table selects substantial results demonstrating how the models connect. It i
 
 The [native exact-counting chapter](native-counting.md) separately treats the fixed-width CNF counter and its SAT/ETH/SETH consequences, including the primary-manuscript mapping and the scope of this review.
 
+The [Arora–Barak draft chapters 1–5 audit](../../results/arora-barak-2007.md#chapter-1-the-computational-model)
+compares the computational-model, NP, hierarchy, space and alternation results at a recorded
+revision. It distinguishes exact native endpoints from missing tape-model conversions, general
+integer programming, prenex-QBF normalization, sharp time hierarchies and PH oracle equivalences.
+Its space comparisons explicitly distinguish the library's visited cells from the draft's
+ever-nonblank cells; a bound-preserving equivalence is not claimed.
+
 ## Completeness and containment map
 
 | Endpoint | Models connected | Exact formal boundary and source |
@@ -139,6 +146,62 @@ The library connects nonuniform circuit lower bounds to its native uniform machi
 The [worst-case endpoint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BPP/WorstCaseHardness.lean#L80) instead assumes a native `E` language, a real `gamma > 0`, and an eventual lower bound `2^(gamma*n)` on the De Morgan gate complexity of each slice. It concludes the same equality for arbitrary instance encodings. This is the Impagliazzo–Wigderson conditional endpoint; the source uses the Sudan–Trevisan–Vadhan route through Reed–Muller/Hadamard encoding and local list decoding. The original result and this proof route are distinct credits. [impagliazzowigderson97][impagliazzowigderson97] [sudantrevisanvadhan01][sudantrevisanvadhan01]
 
 The circuit-hardness hypothesis is not proved by these declarations. It must hold at **all sufficiently large lengths**; an infinitely-often hypothesis and infinitely-often simulation are not formalized by this endpoint. The [circuit-methods account](../circuits-logic-and-other-models/metacomplexity-and-methods.md) owns the nonuniform models. Publisher metadata and abstracts were checked for the three cited sources; the source-to-proof route above is reported from the inspected Lean declarations and module documentation, not from a new full literature proof audit.
+
+## Apply the sublinear-time boundary
+
+Import [Time.Sublinear](../../CslibFrontier/Computability/Complexity/Classes/Time/Sublinear.lean)
+to use `DTIME_eq_const_of_isLittleO hp` on all raw bit words. Its hypothesis is
+`hp : (fun n : ℕ => (p n : ℝ)) =o[Filter.atTop] (fun n : ℕ => (n : ℝ))`.
+It proves `DTIME encBits p = DTIME encBits (fun _ => 1)`, including affine clock constants.
+This is Goldreich's draft Exercise 4.3 for the native sequential-input model.
+
+For functions, import
+[Complexity.Sublinear](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Sublinear.lean).
+Apply `hf.exists_const_time_of_isLittleO hp` to a certificate
+`hf : ComputableInTimeAndSpace f encBits encOut (fun x => p x.length) s`.
+The result uses a constant time bound, the same output encoding and original independent
+workspace bound `s`. Specify `(p := fun _ => 1)` when a constant clock does not determine
+`p` by unification. The complete clients below show the call and required imports.
+
+The input model matters: length is not supplied separately, and symbols are read sequentially.
+An arbitrary encoding may have invalid prefixes on which a certificate imposes no bound.
+Use the raw `encBits` theorem here; it supplies no random-access or arbitrary-encoding result.
+
+For a fixed machine, `exists_uniform_time_of_fast_length h hN` only needs a uniform total
+clock `h : ∀ x, tm.RunsInTime x (p x.length)` and one width with `hN : p N ≤ N`.
+Longer words follow their `N`-symbol prefixes; a finite maximum over lengths at most `N`
+handles shorter inputs. A fast width alone does not establish totality on shorter inputs.
+The [input-prefix API](../../CslibFrontier/Computability/Machines/Turing/MultiTape/InputPrefix.lean)
+preserves every runtime field through the prefix's length. At the final step the head may
+have reached the extra symbol, but no transition has inspected it yet.
+
+Run `scripts/build.sh CslibFrontierTests.SublinearTime` for the
+[complete clients](../../CslibFrontierTests/SublinearTime.lean). A one-step, zero-workspace
+machine reads the first bit, demonstrating input-sensitive constant-time behavior. The
+clients check the inclusive prefix boundary, failure beyond the empty prefix, and the zero
+asymptotic bound with DTIME's additive constant.
+
+## Exact native step counters
+
+Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter`
+([source](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepCounter.lean))
+for `Turing.MultiTapeTM.exists_stepCounter`. It supplies one finite native deterministic machine
+with a fixed number of work tapes and one designated signal state. Its input is `encNat n`,
+least-significant-first binary. For the resulting `counter`, `counter.signal_count n` says that
+`counter.signalTimes n` has exactly `n` elements; `counter.initial_ne_signal` and
+`counter.leaves_signal` ensure that these are entering-and-leaving events. The uniform bound
+`counter.runsInTime n` is `counter.timeConstant * (n + 1)`, including preparation and zero input.
+
+This is the total-time statement of Goldreich's January 2007 draft Exercise 4.5
+([r2.pdf, PDF page 36 / printed page 152](https://www.wisdom.weizmann.ac.il/~oded/CC/r2.pdf)).
+The machine converts binary to exact unary in linear time, writes it to a work tape, then
+uses the existing clock controller to consume one cell per signal. It counts actual control-state
+visits, rather than emitted output symbols. The
+[checked examples](../../CslibFrontierTests/StepCounter.lean) instantiate the complete machine,
+check zero, one and three signals, and expose the prepared controller's state times.
+Use `Classical.choice exists_stepCounter` when an actual record is needed in a proof; no
+transition-table computation is promised by this existence API. There is no logarithmic-space
+or per-prefix signal-latency guarantee: the preparation may precede all signals.
 
 ## Constructibility and diagonalization
 

@@ -77,4 +77,61 @@ example : Pr[pure true] = 1 := by
   rw [ProbComp.probability_pure]
   rfl
 
+/-! ### Uniform sampling `$ᵗ α` -/
+
+section Sampling
+
+set_option linter.hashCommand false
+
+-- `$ᵗ α` is exactly `ProbComp.uniform α`: no new constant.
+#guard_expr ($ᵗ Fin 3) =ₛ ProbComp.uniform (Fin 3)
+#guard_expr ($ᵗ (Fin 3 × Bool)) =ₛ ProbComp.uniform (Fin 3 × Bool)
+
+end Sampling
+
+-- It prints back, inside `do` blocks and next to other operators.
+/-- info: $ᵗ Fin 3 : ProbComp (Fin 3) -/
+#guard_msgs in
+#check ProbComp.uniform (Fin 3)
+
+/--
+info: do
+  let a ← $ᵗ Fin 3
+  let b ← $ᵗ Fin 3
+  pure (a * b) : ProbComp (Fin 3)
+-/
+#guard_msgs in
+#check (do let a ← $ᵗ Fin 3; let b ← $ᵗ Fin 3; return a * b : ProbComp (Fin 3))
+
+/-- info: (fun x => x + 1) <$> $ᵗ Fin 3 : ProbComp (Fin 3) -/
+#guard_msgs in
+#check (· + 1) <$> $ᵗ Fin 3
+
+/-- info: $ᵗ (Fin 3 × Bool) : ProbComp (Fin 3 × Bool) -/
+#guard_msgs in
+#check $ᵗ (Fin 3 × Bool)
+
+-- `$` application still parses next to it (repo style prefers `<|`; this checks the parser).
+set_option linter.style.dollarSyntax false in
+example : (id $ $ᵗ Bool) = ProbComp.uniform Bool := rfl
+
+-- The law, `simp` and `Pr[·]` see `ProbComp.uniform`.
+example : ProbComp.eval ($ᵗ Bool) = PMF.uniformOfFintype Bool := by
+  rw [ProbComp.eval_uniform]
+
+example : Pr[do let b ← $ᵗ Bool; return b] = 1 / 2 := by
+  simp
+
 end CslibFrontierTests.ProbabilityNotation
+
+/-! Outside the `Probability` scope, `ProbComp.uniform` prints as itself. -/
+
+namespace CslibFrontierTests.ProbabilityNotation.Unscoped
+
+open Cslib
+
+/-- info: ProbComp.uniform (Fin 3) : ProbComp (Fin 3) -/
+#guard_msgs in
+#check ProbComp.uniform (Fin 3)
+
+end CslibFrontierTests.ProbabilityNotation.Unscoped

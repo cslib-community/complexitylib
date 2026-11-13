@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTable
 public import CslibFrontier.Computability.Complexity.Reduction.TruthTableVariants
+import CslibFrontier.Computability.Complexity.Reduction.TruthTable.Composition
 import CslibFrontier.Tactic.LogSpace
 import CslibFrontier.Foundations.Data.List.Filter
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
@@ -36,7 +37,9 @@ bounded-query truth-table reductions preserve membership in `L` and compose in `
 with the formula/`NC¹` convention is claimed.
 
 This module also defines the standard restricted logspace truth-table notions mirroring
-`TruthTableVariants`:
+`TruthTableVariants`. As there, each definition is by definition an instance of a resource-free
+kernel of `CslibFrontier.Computability.Reduction.TruthTable`, whose lemmas prove the inclusions,
+embeddings, complementation and duality below:
 
 * **`k`-query truth-table** (`LogSpaceKTruthTableReducible k`): at most `k` nonadaptive queries per
   input (`∀ a, r a ≤ k`).
@@ -113,9 +116,9 @@ and a logspace evaluator `d` decide `a ∈ A` from `a` and the answer word
 def LogSpaceTruthTableReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α)
     (B : Set β) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → β) (d : α × List Bool → Bool),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encB ∧
-    ComputableInLogSpace d (encPair encA encBits) encBool ∧
+    (ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encB ∧
+      ComputableInLogSpace d (encPair encA encBits) encBool) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true
 
 /-- `A` `k`-truth-table reduces to `B` in logarithmic space: a logspace truth-table reduction
@@ -123,10 +126,10 @@ asking at most `k` queries on every input. -/
 def LogSpaceKTruthTableReducible (k : ℕ) (encA : α ↪ List Bool) (encB : β ↪ List Bool)
     (A : Set α) (B : Set β) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → β) (d : α × List Bool → Bool),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encB ∧
-    ComputableInLogSpace d (encPair encA encBits) encBool ∧
-    (∀ a, r a ≤ k) ∧
+    (ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encB ∧
+      ComputableInLogSpace d (encPair encA encBits) encBool ∧
+      ∀ a, r a ≤ k) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true
 
 /-- `A` bounded-truth-table reduces to `B` in logarithmic space: it `k`-truth-table reduces to `B`
@@ -140,8 +143,7 @@ def LogSpaceBTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A 
 def LogSpaceDTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α)
     (B : Set β) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → β),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encB ∧
+    (ComputableInLogSpace r encA encUnary ∧ ComputableInLogSpace q (encPair encA encUnary) encB) ∧
     ∀ a, a ∈ A ↔ ∃ i < r a, q (a, i) ∈ B
 
 /-- `A` conjunctive-truth-table reduces to `B` in logarithmic space: a logspace query generator
@@ -149,8 +151,7 @@ def LogSpaceDTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A 
 def LogSpaceCTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α)
     (B : Set β) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → β),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encB ∧
+    (ComputableInLogSpace r encA encUnary ∧ ComputableInLogSpace q (encPair encA encUnary) encB) ∧
     ∀ a, a ∈ A ↔ ∀ i < r a, q (a, i) ∈ B
 
 /-- `A` positive-truth-table reduces to `B` in logarithmic space: a logspace truth-table reduction
@@ -158,10 +159,10 @@ whose evaluator is monotone in the answer word with respect to `List.Forall₂ (
 def LogSpacePTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A : Set α)
     (B : Set β) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → β) (d : α × List Bool → Bool),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encB ∧
-    ComputableInLogSpace d (encPair encA encBits) encBool ∧
-    (∀ a u v, List.Forall₂ (· ≤ ·) u v → d (a, u) ≤ d (a, v)) ∧
+    (ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encB ∧
+      ComputableInLogSpace d (encPair encA encBits) encBool ∧
+      ∀ a u v, List.Forall₂ (· ≤ ·) u v → d (a, u) ≤ d (a, v)) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' B) r a) = true
 
 /-! ### Inclusions within logarithmic space -/
@@ -169,19 +170,16 @@ def LogSpacePTTReducible (encA : α ↪ List Bool) (encB : β ↪ List Bool) (A 
 /-- A logspace many-one reduction is a `1`-truth-table reduction: one query `f a`, with the first
 answer bit returned directly. -/
 theorem LogSpaceReducible.logSpaceKTruthTableReducible_one
-    (h : LogSpaceReducible encA encB A B) : LogSpaceKTruthTableReducible 1 encA encB A B := by
-  obtain ⟨f, hf, hA⟩ := h
-  refine ⟨fun _ => 1, fun p => f p.1, fun p => p.2.headD false,
-    ComputableInLogSpace.const 1, by fun_prop, by fun_prop, fun _ => le_rfl, fun a => ?_⟩
-  rw [hA a]
-  simp [truthTableAnswers]
+    (h : LogSpaceReducible encA encB A B) : LogSpaceKTruthTableReducible 1 encA encB A B :=
+  ManyOneReducibleBy.truthTableReducibleBy
+    (fun _ hf => ⟨.const 1, by fun_prop, by fun_prop, fun _ => le_rfl⟩) h
 
 /-- `k`-truth-table reducibility in logarithmic space is monotone in the query bound `k`. -/
 theorem LogSpaceKTruthTableReducible.mono {k k' : ℕ}
     (h : LogSpaceKTruthTableReducible k encA encB A B) (hk : k ≤ k') :
     LogSpaceKTruthTableReducible k' encA encB A B :=
-  let ⟨r, q, d, hr, hq, hd, hrk, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, fun a => (hrk a).trans hk, hA⟩
+  TruthTableReducibleBy.mono
+    (fun _ _ _ ⟨hr, hq, hd, hrk⟩ => ⟨hr, hq, hd, fun a => (hrk a).trans hk⟩) h
 
 /-- A `k`-truth-table reduction in logarithmic space is a bounded-truth-table reduction. -/
 theorem LogSpaceKTruthTableReducible.logSpaceBTTReducible {k : ℕ}
@@ -191,8 +189,8 @@ theorem LogSpaceKTruthTableReducible.logSpaceBTTReducible {k : ℕ}
 /-- A bounded-truth-table reduction in logarithmic space is a truth-table reduction. -/
 theorem LogSpaceBTTReducible.logSpaceTruthTableReducible
     (h : LogSpaceBTTReducible encA encB A B) : LogSpaceTruthTableReducible encA encB A B :=
-  let ⟨_, r, q, d, hr, hq, hd, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hA⟩
+  let ⟨_, h⟩ := h
+  TruthTableReducibleBy.mono (fun _ _ _ ⟨hr, hq, hd, _⟩ => ⟨hr, hq, hd⟩) h
 
 /-- A logspace many-one reduction is a logspace bounded-truth-table reduction. -/
 theorem LogSpaceReducible.logSpaceBTTReducible (h : LogSpaceReducible encA encB A B) :
@@ -206,43 +204,32 @@ theorem LogSpaceReducible.logSpaceTruthTableReducible (h : LogSpaceReducible enc
 
 /-- A logspace many-one reduction is a logspace disjunctive truth-table reduction. -/
 theorem LogSpaceReducible.logSpaceDTTReducible (h : LogSpaceReducible encA encB A B) :
-    LogSpaceDTTReducible encA encB A B := by
-  obtain ⟨f, hf, hA⟩ := h
-  exact ⟨fun _ => 1, fun p => f p.1, ComputableInLogSpace.const 1, by fun_prop,
-    fun a => by simp [hA a]⟩
+    LogSpaceDTTReducible encA encB A B :=
+  ManyOneReducibleBy.dttReducibleBy (fun _ hf => ⟨.const 1, by fun_prop⟩) h
 
 /-- A logspace many-one reduction is a logspace conjunctive truth-table reduction. -/
 theorem LogSpaceReducible.logSpaceCTTReducible (h : LogSpaceReducible encA encB A B) :
-    LogSpaceCTTReducible encA encB A B := by
-  obtain ⟨f, hf, hA⟩ := h
-  exact ⟨fun _ => 1, fun p => f p.1, ComputableInLogSpace.const 1, by fun_prop,
-    fun a => by simp [hA a]⟩
+    LogSpaceCTTReducible encA encB A B :=
+  ManyOneReducibleBy.cttReducibleBy (fun _ hf => ⟨.const 1, by fun_prop⟩) h
 
 /-- A logspace disjunctive truth-table reduction is a logspace positive truth-table reduction,
 evaluated by `List.any id`. -/
 theorem LogSpaceDTTReducible.logSpacePTTReducible (h : LogSpaceDTTReducible encA encB A B) :
-    LogSpacePTTReducible encA encB A B := by
-  obtain ⟨r, q, hr, hq, hA⟩ := h
-  refine ⟨r, q, fun p => p.2.any id, hr, hq, by fun_prop,
-    fun _ _ _ huv => List.any_id_le_of_forall₂ huv, fun a => ?_⟩
-  rw [hA a]
-  simp [truthTableAnswers, List.any_eq_true, List.mem_ofFn, Fin.exists_iff]
+    LogSpacePTTReducible encA encB A B :=
+  DTTReducibleBy.truthTableReducibleBy
+    (fun _ _ ⟨hr, hq⟩ => ⟨hr, hq, by fun_prop, fun _ _ _ => List.any_id_le_of_forall₂⟩) h
 
 /-- A logspace conjunctive truth-table reduction is a logspace positive truth-table reduction,
 evaluated by `List.all id`. -/
 theorem LogSpaceCTTReducible.logSpacePTTReducible (h : LogSpaceCTTReducible encA encB A B) :
-    LogSpacePTTReducible encA encB A B := by
-  obtain ⟨r, q, hr, hq, hA⟩ := h
-  refine ⟨r, q, fun p => p.2.all id, hr, hq, by fun_prop,
-    fun _ _ _ huv => List.all_id_le_of_forall₂ huv, fun a => ?_⟩
-  rw [hA a]
-  simp [truthTableAnswers, List.all_eq_true, List.mem_ofFn, Fin.forall_iff]
+    LogSpacePTTReducible encA encB A B :=
+  CTTReducibleBy.truthTableReducibleBy
+    (fun _ _ ⟨hr, hq⟩ => ⟨hr, hq, by fun_prop, fun _ _ _ => List.all_id_le_of_forall₂⟩) h
 
 /-- A logspace positive truth-table reduction is a logspace truth-table reduction. -/
 theorem LogSpacePTTReducible.logSpaceTruthTableReducible
     (h : LogSpacePTTReducible encA encB A B) : LogSpaceTruthTableReducible encA encB A B :=
-  let ⟨r, q, d, hr, hq, hd, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hA⟩
+  TruthTableReducibleBy.mono (fun _ _ _ ⟨hr, hq, hd, _⟩ => ⟨hr, hq, hd⟩) h
 
 /-- A logspace disjunctive truth-table reduction is a logspace truth-table reduction. -/
 theorem LogSpaceDTTReducible.logSpaceTruthTableReducible
@@ -259,18 +246,16 @@ theorem LogSpaceCTTReducible.logSpaceTruthTableReducible
 /-- Every logspace truth-table reduction is a polynomial-time truth-table reduction. -/
 theorem LogSpaceTruthTableReducible.polyTimeTruthTableReducible
     (h : LogSpaceTruthTableReducible encA encB A B) :
-    PolyTimeTruthTableReducible encA encB A B := by
-  obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
-  exact ⟨r, q, d, hr.computableInPolyTime, hq.computableInPolyTime,
-    hd.computableInPolyTime, hA⟩
+    PolyTimeTruthTableReducible encA encB A B :=
+  TruthTableReducibleBy.mono (fun _ _ _ ⟨hr, hq, hd⟩ =>
+    ⟨hr.computableInPolyTime, hq.computableInPolyTime, hd.computableInPolyTime⟩) h
 
 /-- Every logspace `k`-truth-table reduction is a polynomial-time `k`-truth-table reduction. -/
 theorem LogSpaceKTruthTableReducible.polyTimeKTruthTableReducible {k : ℕ}
     (h : LogSpaceKTruthTableReducible k encA encB A B) :
-    PolyTimeKTruthTableReducible k encA encB A B := by
-  obtain ⟨r, q, d, hr, hq, hd, hrk, hA⟩ := h
-  exact ⟨r, q, d, hr.computableInPolyTime, hq.computableInPolyTime,
-    hd.computableInPolyTime, hrk, hA⟩
+    PolyTimeKTruthTableReducible k encA encB A B :=
+  TruthTableReducibleBy.mono (fun _ _ _ ⟨hr, hq, hd, hrk⟩ =>
+    ⟨hr.computableInPolyTime, hq.computableInPolyTime, hd.computableInPolyTime, hrk⟩) h
 
 /-- Every logspace bounded-truth-table reduction is a polynomial-time bounded-truth-table
 reduction. -/
@@ -282,24 +267,21 @@ theorem LogSpaceBTTReducible.polyTimeBTTReducible (h : LogSpaceBTTReducible encA
 /-- Every logspace disjunctive truth-table reduction is a polynomial-time disjunctive truth-table
 reduction. -/
 theorem LogSpaceDTTReducible.polyTimeDTTReducible (h : LogSpaceDTTReducible encA encB A B) :
-    PolyTimeDTTReducible encA encB A B := by
-  obtain ⟨r, q, hr, hq, hA⟩ := h
-  exact ⟨r, q, hr.computableInPolyTime, hq.computableInPolyTime, hA⟩
+    PolyTimeDTTReducible encA encB A B :=
+  DTTReducibleBy.mono (fun _ _ ⟨hr, hq⟩ => ⟨hr.computableInPolyTime, hq.computableInPolyTime⟩) h
 
 /-- Every logspace conjunctive truth-table reduction is a polynomial-time conjunctive truth-table
 reduction. -/
 theorem LogSpaceCTTReducible.polyTimeCTTReducible (h : LogSpaceCTTReducible encA encB A B) :
-    PolyTimeCTTReducible encA encB A B := by
-  obtain ⟨r, q, hr, hq, hA⟩ := h
-  exact ⟨r, q, hr.computableInPolyTime, hq.computableInPolyTime, hA⟩
+    PolyTimeCTTReducible encA encB A B :=
+  CTTReducibleBy.mono (fun _ _ ⟨hr, hq⟩ => ⟨hr.computableInPolyTime, hq.computableInPolyTime⟩) h
 
 /-- Every logspace positive truth-table reduction is a polynomial-time positive truth-table
 reduction. -/
 theorem LogSpacePTTReducible.polyTimePTTReducible (h : LogSpacePTTReducible encA encB A B) :
-    PolyTimePTTReducible encA encB A B := by
-  obtain ⟨r, q, d, hr, hq, hd, hmono, hA⟩ := h
-  exact ⟨r, q, d, hr.computableInPolyTime, hq.computableInPolyTime,
-    hd.computableInPolyTime, hmono, hA⟩
+    PolyTimePTTReducible encA encB A B :=
+  TruthTableReducibleBy.mono (fun _ _ _ ⟨hr, hq, hd, hmono⟩ =>
+    ⟨hr.computableInPolyTime, hq.computableInPolyTime, hd.computableInPolyTime, hmono⟩) h
 
 /-- `P` is closed under logspace truth-table reductions. -/
 theorem LogSpaceTruthTableReducible.mem_P (h : LogSpaceTruthTableReducible encA encB A B)
@@ -366,19 +348,14 @@ theorem LogSpacePTTReducible.refl (encA : α ↪ List Bool) (A : Set α) :
 /-- Negating the evaluator turns a logspace truth-table reduction from `A` to `B` into one from
 `Aᶜ` to `B`. -/
 theorem LogSpaceTruthTableReducible.compl_left (h : LogSpaceTruthTableReducible encA encB A B) :
-    LogSpaceTruthTableReducible encA encB Aᶜ B := by
-  obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
-  refine ⟨r, q, fun p => !d p, hr, hq, by fun_prop, fun a => ?_⟩
-  simp [Set.mem_compl_iff, hA a]
+    LogSpaceTruthTableReducible encA encB Aᶜ B :=
+  TruthTableReducibleBy.compl_left (fun _ _ _ ⟨hr, hq, hd⟩ => ⟨hr, hq, by fun_prop⟩) h
 
 /-- Negating the answer bits before evaluation turns a logspace truth-table reduction from `A` to
 `B` into one from `A` to `Bᶜ`. -/
 theorem LogSpaceTruthTableReducible.compl_right (h : LogSpaceTruthTableReducible encA encB A B) :
-    LogSpaceTruthTableReducible encA encB A Bᶜ := by
-  obtain ⟨r, q, d, hr, hq, hd, hA⟩ := h
-  refine ⟨r, q, fun p => d (p.1, p.2.map (!·)), hr, hq, by fun_prop, fun a => ?_⟩
-  rw [hA a, show q ⁻¹' Bᶜ = (q ⁻¹' B)ᶜ from rfl, truthTableAnswers_compl]
-  simp [List.map_map, Function.comp_def]
+    LogSpaceTruthTableReducible encA encB A Bᶜ :=
+  TruthTableReducibleBy.compl_right (fun _ _ _ ⟨hr, hq, hd⟩ => ⟨hr, hq, by fun_prop⟩) h
 
 /-- A logspace truth-table reduction from `A` to `B` gives one from `Aᶜ` to `Bᶜ`. -/
 theorem LogSpaceTruthTableReducible.compl (h : LogSpaceTruthTableReducible encA encB A B) :
@@ -389,20 +366,15 @@ theorem LogSpaceTruthTableReducible.compl (h : LogSpaceTruthTableReducible encA 
 `Aᶜ` to `B`. -/
 theorem LogSpaceKTruthTableReducible.compl_left {k : ℕ}
     (h : LogSpaceKTruthTableReducible k encA encB A B) :
-    LogSpaceKTruthTableReducible k encA encB Aᶜ B := by
-  obtain ⟨r, q, d, hr, hq, hd, hrk, hA⟩ := h
-  refine ⟨r, q, fun p => !d p, hr, hq, by fun_prop, hrk, fun a => ?_⟩
-  simp [Set.mem_compl_iff, hA a]
+    LogSpaceKTruthTableReducible k encA encB Aᶜ B :=
+  TruthTableReducibleBy.compl_left (fun _ _ _ ⟨hr, hq, hd, hrk⟩ => ⟨hr, hq, by fun_prop, hrk⟩) h
 
 /-- Negating the answer bits before evaluation turns a logspace `k`-truth-table reduction from `A`
 to `B` into one from `A` to `Bᶜ`. -/
 theorem LogSpaceKTruthTableReducible.compl_right {k : ℕ}
     (h : LogSpaceKTruthTableReducible k encA encB A B) :
-    LogSpaceKTruthTableReducible k encA encB A Bᶜ := by
-  obtain ⟨r, q, d, hr, hq, hd, hrk, hA⟩ := h
-  refine ⟨r, q, fun p => d (p.1, p.2.map (!·)), hr, hq, by fun_prop, hrk, fun a => ?_⟩
-  rw [hA a, show q ⁻¹' Bᶜ = (q ⁻¹' B)ᶜ from rfl, truthTableAnswers_compl]
-  simp [List.map_map, Function.comp_def]
+    LogSpaceKTruthTableReducible k encA encB A Bᶜ :=
+  TruthTableReducibleBy.compl_right (fun _ _ _ ⟨hr, hq, hd, hrk⟩ => ⟨hr, hq, by fun_prop, hrk⟩) h
 
 /-- A logspace `k`-truth-table reduction from `A` to `B` gives one from `Aᶜ` to `Bᶜ`. -/
 theorem LogSpaceKTruthTableReducible.compl {k : ℕ}
@@ -433,11 +405,8 @@ theorem LogSpaceBTTReducible.compl (h : LogSpaceBTTReducible encA encB A B) :
 /-- De Morgan duality for logspace disjunctive and conjunctive truth-table reductions: `A`
 disjunctively reduces to `B` iff `Aᶜ` conjunctively reduces to `Bᶜ`, by the same queries. -/
 theorem logSpaceDTTReducible_iff_logSpaceCTTReducible_compl :
-    LogSpaceDTTReducible encA encB A B ↔ LogSpaceCTTReducible encA encB Aᶜ Bᶜ := by
-  refine ⟨fun ⟨r, q, hr, hq, hA⟩ => ⟨r, q, hr, hq, fun a => by simp [hA a]⟩,
-    fun ⟨r, q, hr, hq, hA⟩ => ⟨r, q, hr, hq, fun a => ?_⟩⟩
-  have := not_congr (hA a)
-  simpa [not_forall] using this
+    LogSpaceDTTReducible encA encB A B ↔ LogSpaceCTTReducible encA encB Aᶜ Bᶜ :=
+  dttReducibleBy_iff_cttReducibleBy_compl
 
 /-! ### Closure of `L` and transitivity for bounded-query truth-table reductions -/
 
@@ -462,7 +431,7 @@ theorem kTruthTable_mem_L {k : ℕ} {r : α → ℕ} {q : α × ℕ → β} {d :
 /-- `L` is closed under logspace `k`-truth-table reductions. -/
 theorem LogSpaceKTruthTableReducible.mem_L {k : ℕ}
     (h : LogSpaceKTruthTableReducible k encA encB A B) (hB : B ∈ L encB) : A ∈ L encA := by
-  obtain ⟨r, q, d, hr, hq, hd, hrk, hA⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd, hrk⟩, hA⟩ := h
   exact kTruthTable_mem_L hr hq hd hrk hA hB
 
 /-- `L` is closed under logspace bounded-truth-table reductions. -/
@@ -481,15 +450,16 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
     (hAB : LogSpaceKTruthTableReducible k₁ encA encB A B)
     (hBC : LogSpaceKTruthTableReducible k₂ encB encC B C) :
     LogSpaceKTruthTableReducible (k₁ * k₂) encA encC A C := by
-  classical
-  obtain ⟨r₁, q₁, d₁, hr₁, hq₁, hd₁, hr₁k, hA⟩ := hAB
-  obtain ⟨r₂, q₂, d₂, hr₂, hq₂, hd₂, hr₂k, hB⟩ := hBC
+  obtain ⟨r₁, q₁, d₁, ⟨hr₁, hq₁, hd₁, hr₁k⟩, hA⟩ := hAB
+  obtain ⟨r₂, q₂, d₂, ⟨hr₂, hq₂, hd₂, hr₂k⟩, hB⟩ := hBC
   let r (a : α) : ℕ := r₁ a * k₂
   let q (p : α × ℕ) : γ :=
     q₂ (q₁ (p.1, min p.2 (k₁ * k₂) / k₂), min p.2 (k₁ * k₂) % k₂)
   let innerAns (p : (α × List Bool) × ℕ) : Bool :=
     let b := q₁ (p.1.1, p.2)
     d₂ (b, (p.1.2.drop (p.2 * k₂)).take (r₂ b))
+  -- The final `exact` relies on `d` unfolding to the shared combiner
+  -- `truthTableCompCombiner r₁ q₁ d₁ r₂ d₂ fun _ => k₂`.
   let d (p : α × List Bool) : Bool :=
     d₁ (p.1, (List.range (r₁ p.1)).map fun i => innerAns (p, i))
   have hr : ComputableInLogSpace r encA encUnary := by
@@ -506,41 +476,20 @@ theorem LogSpaceKTruthTableReducible.trans {k₁ k₂ : ℕ}
     have hbound : ∀ p : α × List Bool, r₁ p.1 ≤ k₁ := fun p => hr₁k p.1
     simp only [d]
     logspace
-  refine ⟨r, q, d, hr, hq, hd, fun a => Nat.mul_le_mul_right k₂ (hr₁k a), fun a => ?_⟩
-  rw [hA a, truthTableAnswers_eq_map_range]
-  dsimp only [d]
-  suffices hmap :
-      ((List.range (r₁ a)).map fun i =>
-          innerAns ((a, truthTableAnswers (q ⁻¹' C) r a), i)) =
-        (List.range (r₁ a)).map fun i => decide ((a, i) ∈ q₁ ⁻¹' B) by
-    rw [hmap]
-  refine List.map_congr_left fun i hi => ?_
-  have hi_lt : i < r₁ a := List.mem_range.mp hi
-  have hslice_eq :
-      ((truthTableAnswers (q ⁻¹' C) r a).drop (i * k₂)).take (r₂ (q₁ (a, i))) =
-        truthTableAnswers (q₂ ⁻¹' C) r₂ (q₁ (a, i)) := by
-    rw [truthTableAnswers_eq_map_range, truthTableAnswers_eq_map_range]
-    have h_end : i * k₂ + r₂ (q₁ (a, i)) ≤ r a := by
-      calc i * k₂ + r₂ (q₁ (a, i))
-          ≤ i * k₂ + k₂ := Nat.add_le_add_left (hr₂k _) _
-        _ = (i + 1) * k₂ := by ring
-        _ ≤ r₁ a * k₂ := Nat.mul_le_mul_right k₂ (Nat.succ_le_of_lt hi_lt)
-    refine List.ext_getElem ?_ fun j hj₁ hj₂ => ?_
-    · simp only [List.length_take, List.length_drop, List.length_map, List.length_range]
-      omega
-    · simp only [List.length_map, List.length_range] at hj₂
-      have hk₂_pos : 0 < k₂ := lt_of_le_of_lt (Nat.zero_le j) (lt_of_lt_of_le hj₂ (hr₂k _))
-      have hj_lt_k₂ : j < k₂ := lt_of_lt_of_le hj₂ (hr₂k _)
-      have hm_lt_r : i * k₂ + j < r a := lt_of_lt_of_le (Nat.add_lt_add_left hj₂ _) h_end
-      have hm_le_M : i * k₂ + j ≤ k₁ * k₂ :=
-        le_trans (le_of_lt hm_lt_r) (Nat.mul_le_mul_right k₂ (hr₁k a))
-      have hdiv_eq : (i * k₂ + j) / k₂ = i := by
-        rw [mul_comm i k₂, Nat.mul_add_div hk₂_pos, Nat.div_eq_of_lt hj_lt_k₂, add_zero]
-      have hmod_eq : (i * k₂ + j) % k₂ = j := by
-        rw [mul_comm i k₂, Nat.mul_add_mod, Nat.mod_eq_of_lt hj_lt_k₂]
-      simp [q, Nat.min_eq_left hm_le_M, hdiv_eq, hmod_eq]
-  simp only [innerAns, hslice_eq]
-  exact Bool.eq_iff_iff.mpr (by simpa using (hB (q₁ (a, i))).symm)
+  -- Block `i` of the composite queries lists the inner queries of `q₁ (a, i)`.
+  have hQ : ∀ a, ∀ i < r₁ a, ∀ j < r₂ (q₁ (a, i)), q (a, i * k₂ + j) = q₂ (q₁ (a, i), j) := by
+    intro a i hi j hj
+    have hj : j < k₂ := hj.trans_le (hr₂k _)
+    have hle : i * k₂ + j ≤ k₁ * k₂ :=
+      calc i * k₂ + j ≤ (i + 1) * k₂ := by rw [Nat.succ_mul]; omega
+        _ ≤ k₁ * k₂ := Nat.mul_le_mul_right _ ((Nat.succ_le_of_lt hi).trans (hr₁k a))
+    have hdiv : (i * k₂ + j) / k₂ = i := by
+      rw [mul_comm, Nat.mul_add_div (Nat.zero_lt_of_lt hj), Nat.div_eq_of_lt hj, add_zero]
+    have hmod : (i * k₂ + j) % k₂ = j := by
+      rw [mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hj]
+    simp only [q, Nat.min_eq_left hle, hdiv, hmod]
+  exact ⟨r, q, d, ⟨hr, hq, hd, fun a => Nat.mul_le_mul_right k₂ (hr₁k a)⟩,
+    mem_iff_truthTableCompCombiner (M := fun _ => k₂) hA hB (fun _ _ _ => hr₂k _) hQ⟩
 
 /-- **Logspace bounded-truth-table reductions compose.** -/
 @[trans]

@@ -270,13 +270,10 @@ theorem closeTo_lyubashevskySignAttemptNative (hash : List Bool × List Bool →
   have hreal :
       ProbComp.eval (lyubashevskySignAttemptNative hash (lyubashevskySignInput p S y.1 msg)) =
       (ProbComp.eval (sampleIntBoxVec p.γ p.m p.width)).map post := by
-    have hlist : ProbComp.eval (sampleIntBoxList p.γ p.m p.width) =
-        (ProbComp.eval (sampleIntBoxVec p.γ p.m p.width)).map List.ofFn := by
-      rw [eval_sampleIntBoxVec_eq_iid, sampleIntBoxList, ProbComp.eval_replicate_iid]
     change ProbComp.eval
       ((fun r => lyubashevskySignPostprocess hash (lyubashevskySignInput p S y.1 msg, r)) <$>
         sampleIntBoxList p.γ p.m p.width) = _
-    rw [ProbComp.eval_map, hlist, PMF.map_comp]
+    rw [ProbComp.eval_map, eval_sampleIntBoxList_eq_map_ofFn, PMF.map_comp]
     rfl
   rw [hideal, hreal]
   exact (closeTo_uniform_intBox_sampleIntBoxVec p.γ p.m p.width).map post

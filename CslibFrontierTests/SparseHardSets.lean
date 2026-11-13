@@ -193,8 +193,8 @@ private theorem mem_SAT_iff_negQuery (ψ : CNF ℕ) : ψ ∈ SAT ↔
 
 /-- One-query reductions may negate the answer: `SAT` reduces to `UNSAT` with one query. -/
 example : PolyTimeKTruthTableReducible 1 encCNF encCNF SAT UNSAT := by
-  refine ⟨fun _ => 1, fun p => p.1, negQuery, by fun_prop, by fun_prop,
-    by unfold negQuery; fun_prop, fun _ => le_rfl, mem_SAT_iff_negQuery⟩
+  refine ⟨fun _ => 1, fun p => p.1, negQuery,
+    ⟨by fun_prop, by fun_prop, by unfold negQuery; fun_prop, fun _ => le_rfl⟩, mem_SAT_iff_negQuery⟩
 
 /-- The signed label of a formula under the negated reduction is its marked encoding with the
 sign `false`, and the labels decide satisfiability. -/

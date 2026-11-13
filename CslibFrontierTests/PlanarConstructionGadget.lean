@@ -70,16 +70,16 @@ private def unequal : PPGadget arity sem disequality :=
 
 -- Exact atom order and adjacent identification, followed by the selected hidden port.
 example : (PPGadget.atom (arity := arity) (sem := sem) ()).body =
-    [((), [.inl 0, .inl 1, .inl 2])] := rfl
+    [⟨(), [.inl 0, .inl 1, .inl 2]⟩] := rfl
 
 example : falsePin.body =
-    ([((), [.inl 0, .inl 0, .inr 0])] : CSP Unit (Fin 1 ⊕ Fin 1)) := rfl
+    ([⟨(), [.inl 0, .inl 0, .inr 0]⟩] : CSP Unit (Fin 1 ⊕ Fin 1)) := rfl
 
 example : truePin.body =
-    ([((), [.inr 0, .inr 0, .inl 0])] : CSP Unit (Fin 1 ⊕ Fin 1)) := rfl
+    ([⟨(), [.inr 0, .inr 0, .inl 0]⟩] : CSP Unit (Fin 1 ⊕ Fin 1)) := rfl
 
 example : unequal.body =
-    ([((), [.inl 0, .inl 1, .inr 0]), ((), [.inr 0, .inr 0, .inr 1])] :
+    ([⟨(), [.inl 0, .inl 1, .inr 0]⟩, ⟨(), [.inr 0, .inr 0, .inr 1]⟩] :
       CSP Unit (Fin 2 ⊕ Fin 2)) := rfl
 
 -- Two occurrences require DIFFERENT witnesses: falsePin's hidden bit is true, whereas
@@ -91,7 +91,7 @@ private def oppositePins : PPGadget arity sem
 example : oppositePins.numAux = 2 := rfl
 
 example : oppositePins.body =
-    ([((), [.inl 0, .inl 0, .inr 0]), ((), [.inr 1, .inr 1, .inl 1])] :
+    ([⟨(), [.inl 0, .inl 0, .inr 0]⟩, ⟨(), [.inr 1, .inr 1, .inl 1]⟩] :
       CSP Unit (Fin 2 ⊕ Fin 2)) := rfl
 
 example : oppositePins.body.eval sem
@@ -102,32 +102,32 @@ example : ∀ b : Bool, oppositePins.body.eval sem
 
 -- Projection keeps survivor order, including a deleted middle coordinate.
 example : ((PPGadget.atom (arity := arity) (sem := sem) ()).project 1).body =
-    ([((), [.inl 0, .inr 0, .inl 1])] : CSP Unit (Fin 2 ⊕ Fin 1)) := rfl
+    ([⟨(), [.inl 0, .inr 0, .inl 1]⟩] : CSP Unit (Fin 2 ⊕ Fin 1)) := rfl
 
 example : ((PPGadget.atom (arity := arity) (sem := sem) ()).relabelFree
-    (fun i : Fin 3 => i + 1)).body = [((), [.inl 1, .inl 2, .inl 0])] := by decide
+    (fun i : Fin 3 => i + 1)).body = [⟨(), [.inl 1, .inl 2, .inl 0]⟩] := by decide
 
 example : ((PPGadget.atom (arity := arity) (sem := sem) ()).flip 1 unequal).body =
-    ([((), [.inl 0, .inr 0, .inl 2]),
-      ((), [.inl 1, .inr 0, .inr 1]), ((), [.inr 1, .inr 1, .inr 2])] :
+    ([⟨(), [.inl 0, .inr 0, .inl 2]⟩,
+      ⟨(), [.inl 1, .inr 0, .inr 1]⟩, ⟨(), [.inr 1, .inr 1, .inr 2]⟩] :
       CSP Unit (Fin 3 ⊕ Fin 3)) := rfl
 
 example : ((PPGadget.atom (arity := arity) (sem := sem) ()).differentDrop unequal).body =
-    ([((), [.inr 0, .inl 0, .inl 1]),
-      ((), [.inr 0, .inl 0, .inr 1]), ((), [.inr 1, .inr 1, .inr 2])] :
+    ([⟨(), [.inr 0, .inl 0, .inl 1]⟩,
+      ⟨(), [.inr 0, .inl 0, .inr 1]⟩, ⟨(), [.inr 1, .inr 1, .inr 2]⟩] :
       CSP Unit (Fin 2 ⊕ Fin 3)) := rfl
 
 -- Exercise recursive interpretation, including binary intersection and enabling trees.
 private def atomTree : Construction arity sem relation := .atom ()
 
 example : (Construction.project atomTree 1).gadget.body =
-    ([((), [.inl 0, .inr 0, .inl 1])] : CSP Unit (Fin 2 ⊕ Fin 1)) := rfl
+    ([⟨(), [.inl 0, .inr 0, .inl 1]⟩] : CSP Unit (Fin 2 ⊕ Fin 1)) := rfl
 
 example : (Construction.rotate atomTree).gadget.body =
-    [((), [.inl 1, .inl 2, .inl 0])] := by decide
+    [⟨(), [.inl 1, .inl 2, .inl 0]⟩] := by decide
 
 example : (Construction.binaryMeet (.project atomTree 0) (.project atomTree 2)).gadget.body =
-    ([((), [.inr 0, .inl 0, .inl 1]), ((), [.inl 0, .inl 1, .inr 1])] :
+    ([⟨(), [.inr 0, .inl 0, .inl 1]⟩, ⟨(), [.inl 0, .inl 1, .inr 1]⟩] :
       CSP Unit (Fin 2 ⊕ Fin 2)) := rfl
 
 -- The endpoint theorem's hypotheses are realized by this SINGLE original symbol.
@@ -167,10 +167,10 @@ private def expanded : PPGadget arity sem (oneHotRelation (Fin 3)) :=
 example : expanded.numAux = 3 := rfl
 
 example : expanded.body =
-    ([((), [.inl 0, .inl 1, .inl 2]),
-      ((), [.inl 0, .inl 1, .inr 0]),
-      ((), [.inl 1, .inl 2, .inr 1]),
-      ((), [.inl 2, .inl 0, .inr 2])] : CSP Unit (Fin 3 ⊕ Fin 3)) := rfl
+    ([⟨(), [.inl 0, .inl 1, .inl 2]⟩,
+      ⟨(), [.inl 0, .inl 1, .inr 0]⟩,
+      ⟨(), [.inl 1, .inl 2, .inr 1]⟩,
+      ⟨(), [.inl 2, .inl 0, .inr 2]⟩] : CSP Unit (Fin 3 ⊕ Fin 3)) := rfl
 
 example : expanded.body.eval sem (Sum.elim ![false, true, false] ![false, false, true]) =
     true := by decide
@@ -190,7 +190,7 @@ private def nullarySem (r : Bool) : List Bool → Bool
   | _ => false
 
 example : (PPGadget.atom (arity := nullaryArity) (sem := nullarySem) true).body =
-    [(true, [])] := rfl
+    [⟨true, []⟩] := rfl
 
 example : ∃ b, (PPGadget.atom (arity := nullaryArity) (sem := nullarySem) true).body.eval
     nullarySem (Sum.elim Fin.elim0 b) = true := by decide
@@ -198,7 +198,7 @@ example : ∃ b, (PPGadget.atom (arity := nullaryArity) (sem := nullarySem) true
 example : ¬∃ b, (PPGadget.atom (arity := nullaryArity) (sem := nullarySem) false).body.eval
     nullarySem (Sum.elim Fin.elim0 b) = true := by decide
 
-example : validArity arity ([((), [0, 1])] : CSP Unit ℕ) = false := rfl
-example : validArity nullaryArity ([(true, [0])] : CSP Bool ℕ) = false := rfl
+example : validArity arity ([⟨(), [0, 1]⟩] : CSP Unit ℕ) = false := rfl
+example : validArity nullaryArity ([⟨true, [0]⟩] : CSP Bool ℕ) = false := rfl
 
 end CslibFrontierTests.PlanarConstructionGadget

@@ -115,46 +115,6 @@ private theorem isRegular_of_iff {P Q : List β → Prop} (h : Language.IsRegula
   rw [← e]
   exact h
 
-private theorem isRegular_true : Language.IsRegular {_u : List β | True} :=
-  isRegular_of_iff Cslib.Language.IsRegular.top fun _ => Iff.rfl
-
-private theorem isRegular_false : Language.IsRegular {_u : List β | False} :=
-  isRegular_of_iff Cslib.Language.IsRegular.zero fun _ => Iff.rfl
-
-private theorem isRegular_and {P Q : List β → Prop} (hP : Language.IsRegular {u | P u})
-    (hQ : Language.IsRegular {u | Q u}) : Language.IsRegular {u | P u ∧ Q u} :=
-  isRegular_of_iff (Cslib.Language.IsRegular.inf hP hQ) fun _ => Language.mem_inf
-
-private theorem isRegular_or {P Q : List β → Prop} (hP : Language.IsRegular {u | P u})
-    (hQ : Language.IsRegular {u | Q u}) : Language.IsRegular {u | P u ∨ Q u} :=
-  isRegular_of_iff (Cslib.Language.IsRegular.add hP hQ) fun u => Language.mem_add _ _ u
-
-private theorem isRegular_not {P : List β → Prop} (hP : Language.IsRegular {u | P u}) :
-    Language.IsRegular {u | ¬ P u} :=
-  isRegular_of_iff (Cslib.Language.IsRegular.compl hP) fun _ => Iff.rfl
-
-private theorem isRegular_forall_fin {k : ℕ} {P : Fin k → List β → Prop}
-    (hP : ∀ x, Language.IsRegular {u | P x u}) : Language.IsRegular {u | ∀ x, P x u} := by
-  induction k with
-  | zero => exact isRegular_of_iff isRegular_true fun _ => ⟨fun _ x => x.elim0, fun _ => trivial⟩
-  | succ k ih =>
-    exact isRegular_of_iff (isRegular_and (hP 0) (ih fun x => hP x.succ))
-      fun u => (Fin.forall_fin_succ (P := fun x => P x u)).symm
-
-private theorem isRegular_forall_getElem (p : β → Prop) :
-    Language.IsRegular {u : List β | ∀ i : Fin u.length, p u[i]} :=
-  isRegular_of_iff (Cslib.Language.IsRegular.setOf_forall_mem p) fun u =>
-    ⟨fun h i => h _ (List.getElem_mem _), fun h a ha => by
-      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.1 ha
-      exact h ⟨i, hi⟩⟩
-
-private theorem isRegular_exists_getElem (p : β → Prop) :
-    Language.IsRegular {u : List β | ∃ i : Fin u.length, p u[i]} :=
-  isRegular_of_iff (Cslib.Language.IsRegular.setOf_exists_mem p) fun u =>
-    ⟨fun ⟨a, ha, hpa⟩ => by
-      obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.1 ha
-      exact ⟨⟨i, hi⟩, hpa⟩, fun ⟨i, hi⟩ => ⟨_, List.getElem_mem _, hi⟩⟩
-
 /-- Transport a predicate on letter functions along an equality of lengths. -/
 private theorem transport {P : (ℓ : ℕ) → (Fin ℓ → β) → Prop} {ℓ ℓ' : ℕ} (h : ℓ = ℓ')
     {g : Fin ℓ → β} {g' : Fin ℓ' → β} (hg : ∀ i, g' (Fin.cast h i) = g i) :
@@ -225,10 +185,10 @@ private theorem valid_iff {ℓ : ℕ} (g : Fin ℓ → ExtLetter α m n) :
 
 private theorem isRegular_valid :
     Language.IsRegular {u : List (ExtLetter α m n) | Valid (fun i : Fin u.length => u[i])} := by
-  refine isRegular_of_iff (isRegular_forall_fin fun x => isRegular_and
-    (isRegular_exists_getElem fun e : ExtLetter α m n => e.vars x = true)
-    (isRegular_not (Cslib.Language.IsRegular.setOf_exists_lt (fun e : ExtLetter α m n =>
-      e.vars x = true) fun e => e.vars x = true))) fun u => (valid_iff _).symm
+  refine isRegular_of_iff (Cslib.Language.IsRegular.setOf_forall fun x =>
+    (Cslib.Language.IsRegular.setOf_exists_getElem fun e : ExtLetter α m n => e.vars x = true).inf
+      (Cslib.Language.IsRegular.setOf_exists_lt (fun e : ExtLetter α m n => e.vars x = true)
+        fun e => e.vars x = true).compl) fun u => (valid_iff _).symm
 
 /-- For a formula whose satisfaction at the marked assignment is a condition `Q` on the marked
 positions, satisfaction amounts to validity together with `Q` at all candidate positions. -/
@@ -331,19 +291,19 @@ private theorem sat_exSet {ℓ : ℕ} (g' : Fin ℓ → ExtLetter α m n) (φ : 
 
 private theorem isRegular_sat : ∀ {m n : ℕ} (φ : Formula α m n),
     Language.IsRegular {u : List (ExtLetter α m n) | Sat φ u.length (fun i => u[i])}
-  | _, _, letter a x => isRegular_of_iff (isRegular_and isRegular_valid
-      (isRegular_forall_getElem fun e => e.vars x = true → e.letter = a))
+  | _, _, letter a x => isRegular_of_iff (isRegular_valid.inf
+      (Cslib.Language.IsRegular.setOf_forall_getElem fun e => e.vars x = true → e.letter = a))
       fun _ => (sat_letter _ a x).symm
-  | _, _, lt x y => isRegular_of_iff (isRegular_and isRegular_valid
+  | _, _, lt x y => isRegular_of_iff (isRegular_valid.inf
       (Cslib.Language.IsRegular.setOf_exists_lt (fun e => e.vars x = true) fun e =>
         e.vars y = true))
       fun _ => (sat_lt _ x y).symm
-  | _, _, mem x X => isRegular_of_iff (isRegular_and isRegular_valid
-      (isRegular_forall_getElem fun e => e.vars x = true → e.sets X = true))
+  | _, _, mem x X => isRegular_of_iff (isRegular_valid.inf
+      (Cslib.Language.IsRegular.setOf_forall_getElem fun e => e.vars x = true → e.sets X = true))
       fun _ => (sat_mem _ x X).symm
-  | _, _, falsum => isRegular_of_iff isRegular_false fun _ => (sat_falsum _).symm
-  | _, _, imp φ ψ => isRegular_of_iff (isRegular_and isRegular_valid
-      (isRegular_or (isRegular_not (isRegular_sat φ)) (isRegular_sat ψ)))
+  | _, _, falsum => isRegular_of_iff Cslib.Language.IsRegular.zero fun _ => (sat_falsum _).symm
+  | _, _, imp φ ψ => isRegular_of_iff
+      (isRegular_valid.inf ((isRegular_sat φ).compl.add (isRegular_sat ψ)))
       fun _ => (sat_imp _ φ ψ).symm
   | _, _, ex φ => isRegular_map dropVar (isRegular_sat φ) fun _ g' => sat_ex g' φ
   | _, _, exSet φ => isRegular_map dropSet (isRegular_sat φ) fun _ g' => sat_exSet g' φ

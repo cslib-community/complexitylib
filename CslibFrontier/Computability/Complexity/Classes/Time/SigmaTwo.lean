@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
+import CslibFrontier.Foundations.Data.List.TakeQuantifiers
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Tactic.EncLen
 
@@ -281,16 +282,11 @@ theorem exists_mem_SigmaTwoTIME_of_mem_SigmaP_two {A : Set α} (hA : A ∈ Sigma
     rw [hA a]
     simp only [List.map_cons, List.map_nil, alternation_true_cons, alternation_false_cons,
       alternation_nil, List.append_nil, Function.comp_apply, cutBlocks]
-    constructor
-    · rintro ⟨w, hw, h⟩
-      refine ⟨w ++ List.replicate (L - p₁.eval (enc a).length) false, by simp [hw]; omega,
-        fun v hv => ?_⟩
-      rw [List.take_left' hw]
-      exact h _ (by simp [hv]; omega)
-    · rintro ⟨u, hu, h⟩
-      refine ⟨u.take (p₁.eval (enc a).length), by simp [hu]; omega, fun w hw => ?_⟩
-      have := h (w ++ List.replicate (L - p₂.eval (enc a).length) false) (by simp [hw]; omega)
-      rwa [List.take_left' hw] at this
+    -- the padded blocks quantify, through their prefixes, over the original blocks
+    exact ((List.exists_length_eq_take_iff (P := fun u => ∀ v : List Bool, v.length = L →
+        V (a, u ++ v.take (p₂.eval (enc a).length)) = true) hP₁).trans
+      (exists_congr fun u => and_congr_right fun _ =>
+        List.forall_length_eq_take_iff (P := fun v => V (a, u ++ v) = true) hP₂)).symm
 
 /-- **The second level of the polynomial hierarchy is the union of `Σ₂TIME(n ^ k)`.** -/
 theorem mem_SigmaP_two_iff_exists_mem_SigmaTwoTIME {A : Set α} :

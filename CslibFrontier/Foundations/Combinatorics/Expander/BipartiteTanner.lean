@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.Expander.BipartiteRotation
 public import CslibFrontier.Foundations.Data.Code.ParityCheck
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -372,9 +373,7 @@ theorem rate_submodule_ge [Fintype L] [Finite R] [Fintype D] [CommRing α] [Fint
   have hlog := Real.logb_le_logb_of_le hα (by positivity) hpow_r
   rw [Real.logb_pow, Real.logb_mul hCL_pos.ne' hCR_pos.ne',
     Real.logb_mul hSub_pos.ne' (by positivity), Real.logb_pow,
-    show ((Fintype.card α : ℝ) ^ Fintype.card D) =
-      (Fintype.card α : ℝ) ^ (Fintype.card D : ℝ) by rw [Real.rpow_natCast],
-    Real.logb_rpow hα0 (by linarith)] at hlog
+    Real.logb_self_pow hα0 hα.ne'] at hlog
   have hL0 : (0 : ℝ) < Fintype.card L := by exact_mod_cast hL
   have hD0 : (0 : ℝ) < Fintype.card D := by exact_mod_cast hD
   have hcardL : Nat.card (CL : Set (D → α)) = Nat.card CL := rfl

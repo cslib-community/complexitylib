@@ -38,22 +38,22 @@ theorem Constraint.countUnsat_toCNF (sem : Rel → List Bool → Bool)
     (toCNF sem c).countUnsat σ = if eval sem σ c then 0 else 1 := by
   rw [CNF.countUnsat, toCNF, List.countP_map, List.countP_filter]
   simp only [Function.comp_def]
-  have hcongr : ∀ w ∈ BitString.enumList c.2.length,
-      (!(forbidClause c.2 w).eval σ && !sem c.1 w) ↔
-        (!eval sem σ c && (w == c.2.map σ)) := by
+  have hcongr : ∀ w ∈ BitString.enumList c.scope.length,
+      (!(forbidClause c.scope w).eval σ && !sem c.rel w) ↔
+        (!eval sem σ c && (w == c.scope.map σ)) := by
     intro w hw
-    rw [eval_forbidClause c.2 (BitString.length_of_mem_enumList hw) σ]
-    by_cases heq : w = c.2.map σ
+    rw [eval_forbidClause c.scope (BitString.length_of_mem_enumList hw) σ]
+    by_cases heq : w = c.scope.map σ
     · subst w
       simp [eval]
     · simp [heq, Ne.symm heq]
   rw [List.countP_congr hcongr]
-  have hnodup : (BitString.enumList c.2.length).Nodup :=
+  have hnodup : (BitString.enumList c.scope.length).Nodup :=
     (BitString.nodup_enum _).map List.ofFn_injective
   cases eval sem σ c with
   | false =>
     simp only [Bool.not_false, Bool.true_and, Bool.false_eq_true, ↓reduceIte]
-    change (BitString.enumList c.2.length).count (c.2.map σ) = 1
+    change (BitString.enumList c.scope.length).count (c.scope.map σ) = 1
     exact hnodup.count_of_mem (BitString.mem_enumList.mpr (List.length_map _))
   | true => simp
 
@@ -73,7 +73,7 @@ theorem CSP.countUnsat_toCNF (sem : Rel → List Bool → Bool) (F : CSP Rel V)
 /-- The width-guarded compiler preserves violation counts when every scope satisfies its width
 bound. -/
 theorem CSP.countUnsat_toCNFBounded {k : ℕ} (sem : Rel → List Bool → Bool)
-    {F : CSP Rel V} (hF : ∀ c ∈ F, c.2.length ≤ k) (σ : V → Bool) :
+    {F : CSP Rel V} (hF : ∀ c ∈ F, c.scope.length ≤ k) (σ : V → Bool) :
     (F.toCNFBounded k sem).countUnsat σ = F.countP fun c => !Constraint.eval sem σ c := by
   rw [toCNFBounded_eq_toCNF hF, countUnsat_toCNF]
 

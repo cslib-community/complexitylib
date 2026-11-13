@@ -39,7 +39,8 @@ extension axioms of simple graphs in `CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 
 ## Main definitions
 
-* `Cslib.Logic.FO.Relational.NewAtom`: the atomic facts mentioning the new element.
+* `Cslib.Logic.FO.Relational.NewAtom`: the atomic facts mentioning the new element, with their
+  relation symbol `NewAtom.symbol` and argument positions `NewAtom.args`.
 * `Cslib.Logic.FO.Relational.IsExtensionWitness`: a witness of the extension of a tuple by a
   pattern.
 * `Cslib.Logic.FO.Relational.HasExtension`: the extension property for a fixed pattern.
@@ -87,6 +88,13 @@ instance {k : ℕ} [Finite (Σ l, L.Relations l)] : Finite (NewAtom L k) :=
   have : Finite (Atom L (k + 1)) := inferInstanceAs (Finite (Σ _ : Σ l, L.Relations l, _))
   Subtype.finite
 
+/-- The relation symbol of a new atomic fact, with its arity. -/
+abbrev NewAtom.symbol {k : ℕ} (a : NewAtom L k) : Σ l, L.Relations l := a.1.1
+
+/-- The arguments of a new atomic fact, as positions in `Fin (k + 1)`, where `0` is the new
+element. -/
+abbrev NewAtom.args {k : ℕ} (a : NewAtom L k) : Fin a.symbol.1 → Fin (k + 1) := a.1.2
+
 variable {M : Type w} [L.Structure M]
 
 /-- `z` witnesses the extension of the tuple `x` by the pattern `p`: it differs from every `x i`,
@@ -95,7 +103,7 @@ says so. -/
 @[expose]
 def IsExtensionWitness {k : ℕ} (x : Fin k → M) (p : NewAtom L k → Bool) (z : M) : Prop :=
   (∀ i, z ≠ x i) ∧
-    ∀ a : NewAtom L k, (RelMap a.1.1.2 ((Fin.cons z x : Fin (k + 1) → M) ∘ a.1.2) ↔ p a = true)
+    ∀ a : NewAtom L k, (RelMap a.symbol.2 ((Fin.cons z x : Fin (k + 1) → M) ∘ a.args) ↔ p a = true)
 
 variable (M) in
 /-- The extension property for the pattern `p`: every tuple of `k` distinct elements has a witness
@@ -212,7 +220,7 @@ theorem isExtensionPair_of_hasExtension [L.IsRelational] {N : Type*} [L.Structur
   let x : Fin (Fintype.card S) → N := fun i => f (e i)
   have hx : Function.Injective x := f.injective.comp e.injective
   let p : NewAtom L (Fintype.card S) → Bool := fun a =>
-    decide (RelMap a.1.1.2 ((Fin.cons m xs : Fin (Fintype.card S + 1) → M) ∘ a.1.2))
+    decide (RelMap a.symbol.2 ((Fin.cons m xs : Fin (Fintype.card S + 1) → M) ∘ a.args))
   obtain ⟨z, hzne, hzp⟩ := hN _ p x hx
   have hzf : ∀ a : S, f a ≠ z := fun a h => hzne (e.symm a) (by simp [x, ← h])
   let U : L.Substructure M := Substructure.closure L {m} ⊔ S
