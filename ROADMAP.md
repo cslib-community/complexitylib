@@ -21,7 +21,7 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 | Optional experiment: formalize unformalized STOC 2027 submission results, subject to independent source-correspondence review | [#2527](https://github.com/cslib-community/cslib-frontier/issues/2527) |
 | Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798](https://github.com/cslib-community/cslib-frontier/issues/798), cleanup [#4644](https://github.com/cslib-community/cslib-frontier/issues/4644) |
 | Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862](https://github.com/cslib-community/cslib-frontier/issues/862), from [#456](https://github.com/cslib-community/cslib-frontier/issues/456) |
-| Consolidation: duplicates, accurate statements and docs, less churn | [#949](https://github.com/cslib-community/cslib-frontier/issues/949), [#939](https://github.com/cslib-community/cslib-frontier/issues/939) |
+| Consolidation: duplicates, accurate statements and docs, less churn | [#949](https://github.com/cslib-community/cslib-frontier/issues/949) |
 | Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#2585](https://github.com/cslib-community/cslib-frontier/issues/2585) |
 | Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640](https://github.com/cslib-community/cslib-frontier/issues/640), [#643](https://github.com/cslib-community/cslib-frontier/issues/643) |
 | Crypto frontier track: Kilian's succinct arguments | [#999](https://github.com/cslib-community/cslib-frontier/issues/999) |
