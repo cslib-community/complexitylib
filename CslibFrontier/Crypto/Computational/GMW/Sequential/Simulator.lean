@@ -999,6 +999,7 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
   have hseq := sequenceTest_advantage
     (BitString.sampleList m) (generator <$> BitString.sampleList s)
     (K * (att * totalLen φ)) testPads
+  simp only [Experiment.advantage] at hseq
   rw [hprg_eq, hunif_eq] at hseq
   have hred_eq : sequenceTest (BitString.sampleList m) (generator <$> BitString.sampleList s)
       (K * (att * totalLen φ)) testPads =

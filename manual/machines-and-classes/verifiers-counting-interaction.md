@@ -187,6 +187,8 @@ The proved class chain is `IP ⊆ MIP₂ ⊆ MIP ⊆ NEXP`. The last containment
 
 ## PCP, local tests, and two-prover games
 
+The [2007 draft Chapters 18–19 audit](../../results/arora-barak-2007.md#chapter-18-pcp-and-hardness-of-approximation) distinguishes the proved class-level PCP theorem and small-soundness Label Cover from the remaining encoded Håstad reduction and the draft-specific fixed-walk lemmas. Its source locators and snapshot qualify each coverage claim.
+
 [PCPVerifier](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/PCP.lean#L70) consists of three polynomial-time functions: a computable coin count, a list of queried natural-number addresses, and a verdict based on the answers. Queries are nonadaptive. A proof is a finite bit string, with `false` beyond its end; address encodings are binary. The class charges random bits and number of proof queries, with constant factors, while the three functions have native polynomial-time certificates.
 
 The verifier computes its own coin count. The external function `r(n)` only bounds that count; the verifier is not handed a potentially uncomputable amount of random tape. Completeness is perfect and every false instance is accepted with probability at most one half under every proof. The full theorem is `NP = PCP(log₂ n + 1, 1)`. [NP_eq_PCP_log](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L80)

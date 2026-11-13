@@ -203,7 +203,8 @@ theorem firstBitZero_isOraclePPT : IsOraclePPT encBool firstBitZero := by
 
 theorem eval_prfRealGame_firstBitZero (n : ℕ) :
     ProbComp.eval (prfRealGame zeroFamily firstBitZero (n + 1)) = PMF.pure true := by
-  simp only [prfRealGame, firstBitZero, zeroFamily, prfOracle, List.replicate_succ,
+  simp only [prfRealGame, ProbOracleComp.run, firstBitZero, zeroFamily, prfOracle,
+    List.replicate_succ,
     List.headD_eq_head?_getD, bind_pure_comp, Functor.map_map, OracleComp.interpret_map,
     ProbOracleComp.interpret_query, List.length_cons, List.length_replicate, ↓reduceIte, map_pure,
     ProbComp.eval_map, BitString.eval_sampleList]
@@ -211,7 +212,7 @@ theorem eval_prfRealGame_firstBitZero (n : ℕ) :
 
 theorem eval_prfIdealGame_firstBitZero (n : ℕ) :
     ProbComp.eval (prfIdealGame firstBitZero (n + 1)) = PMF.uniformOfFintype Bool := by
-  simp only [prfIdealGame, firstBitZero, randomFunctionOracle, List.ofFn_succ,
+  simp only [prfIdealGame, ProbOracleComp.run, firstBitZero, randomFunctionOracle, List.ofFn_succ,
     List.headD_eq_head?_getD, bind_pure_comp, Functor.map_map, OracleComp.interpret_map,
     ProbOracleComp.interpret_query, List.length_replicate, ↓reduceIte, map_pure,
     List.take_succ_cons, List.head?_cons, Option.getD_some, ProbComp.eval_map,

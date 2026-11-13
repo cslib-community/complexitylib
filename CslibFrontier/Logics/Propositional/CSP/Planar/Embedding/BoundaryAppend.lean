@@ -38,13 +38,13 @@ theorem Witness.nonempty_appendOfFn {F H : CSP Rel V} {m n : ℕ}
     (hd : List.Disjoint (F.vars ++ List.ofFn p) (H.vars ++ List.ofFn q))
     (hn : (List.ofFn p ++ List.ofFn q).Nodup) :
     Nonempty (Witness (F ++ H) (List.ofFn p ++ List.ofFn q)) := by
-  let B : CSP (Option Rel) V := F.map (fun c => (some c.1, c.2))
-  let C : CSP (Option Rel) V := H.map (fun c => (some c.1, c.2))
+  let B : CSP (Option Rel) V := F.map (fun c => Constraint.mk (some c.rel) c.scope)
+  let C : CSP (Option Rel) V := H.map (fun c => Constraint.mk (some c.rel) c.scope)
   let x : Fin (m + 1) → V := fun i => p i.rev
   let y : Fin (n + 1) → V := fun i => q i.rev
-  have hF : B ++ [(none, List.ofFn x)] = probeBody F (List.ofFn p) := by
+  have hF : B ++ [Constraint.mk none (List.ofFn x)] = probeBody F (List.ofFn p) := by
     simp only [probeBody, List.reverse_ofFn, B, x]
-  have hH : C ++ [(none, List.ofFn y)] = probeBody H (List.ofFn q) := by
+  have hH : C ++ [Constraint.mk none (List.ofFn y)] = probeBody H (List.ofFn q) := by
     simp only [probeBody, List.reverse_ofFn, C, y]
   have hw := w.probe_realization
   have hv := v.probe_realization
@@ -52,8 +52,8 @@ theorem Witness.nonempty_appendOfFn {F H : CSP Rel V} {m n : ℕ}
   rw [← hH] at hv
   obtain ⟨rho, hr, hor⟩ := hw
   obtain ⟨tau, hs, hos⟩ := hv
-  have hd' : List.Disjoint (B ++ [(none, List.ofFn x)]).vars
-      (C ++ [(none, List.ofFn y)]).vars := by
+  have hd' : List.Disjoint (B ++ [Constraint.mk none (List.ofFn x)]).vars
+      (C ++ [Constraint.mk none (List.ofFn y)]).vars := by
     rw [hF, hH]
     apply List.disjoint_left.mpr
     intro z hz hz'
@@ -64,7 +64,7 @@ theorem Witness.nonempty_appendOfFn {F H : CSP Rel V} {m n : ℕ}
     exact List.disjoint_left.mp hd hzF hzH
   let certificate := RotationCertificate.ofRotation (scopeJoinRotation B C none x y hd' rho tau)
   have ht := verifyRotationCertificate_scopeJoinRotation B C none x y hd' rho tau hr hs hor hos
-  change verifyRotationCertificate ((B ++ C) ++ [(none, List.ofFn (Fin.addCases y x))])
+  change verifyRotationCertificate ((B ++ C) ++ [Constraint.mk none (List.ofFn (Fin.addCases y x))])
     certificate = true at ht
   have hscope : List.ofFn (Fin.addCases y x) = List.ofFn y ++ List.ofFn x := by
     rw [List.ofFn_add]
@@ -73,7 +73,7 @@ theorem Witness.nonempty_appendOfFn {F H : CSP Rel V} {m n : ℕ}
       List.ofFn (fun i : Fin (m + 1) =>
         (Fin.addCases y x (Fin.natAdd (n + 1) i) : V)) = _
     simp only [Fin.addCases_left, Fin.addCases_right]
-  have htarget : ((B ++ C) ++ [(none, List.ofFn (Fin.addCases y x))]) =
+  have htarget : ((B ++ C) ++ [Constraint.mk none (List.ofFn (Fin.addCases y x))]) =
       probeBody (F ++ H) (List.ofFn p ++ List.ofFn q) := by
     simp only [probeBody, List.map_append, List.reverse_append, List.reverse_ofFn, B, C,
       hscope, x, y]

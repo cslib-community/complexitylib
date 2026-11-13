@@ -40,9 +40,9 @@ variable {F : CSP Table ℕ}
 theorem get_transportRows_old (g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) (central : List Bool) (i : Fin F.length) :
     (transportRows g vs bits central).getD i.val [] =
-      if (positions vs F[i.val].2).isEmpty then localTuple g i
+      if (positions vs F[i.val].scope).isEmpty then localTuple g i
       else project (localTuple g i)
-        (outsidePositions F[i.val].2.length (positions vs F[i.val].2)) ++ [bits i] := by
+        (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++ [bits i] := by
   rw [List.getD_eq_getElem _ _ (by simp [transportRows])]
   simp [transportRows]
 
@@ -55,7 +55,8 @@ theorem get_transportRows_central (g : OccurrenceLabeling F Bool) (vs : List ℕ
 /-- Every projected old row has exactly the constructor's actual scope width. -/
 theorem transportRow_length (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) (central : List Bool) (i : Fin F.length) :
-    ((transportRows g vs bits central).getD i.val []).length = (constraint f vs i).2.length := by
+    ((transportRows g vs bits central).getD i.val []).length =
+      (constraint f vs i).scope.length := by
   rw [get_transportRows_old]
   unfold constraint
   split <;> simp [localTuple, project]
@@ -64,7 +65,8 @@ theorem transportRow_length (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
 theorem transportRows_length (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) {central : List Bool}
     (hc : central.length = (connectors F vs).length) (i : Fin (contract f vs).length) :
-    ((transportRows g vs bits central).getD i.val []).length = (contract f vs)[i.val].2.length := by
+    ((transportRows g vs bits central).getD i.val []).length =
+      (contract f vs)[i.val].scope.length := by
   by_cases hi : i.val < F.length
   · simpa only [get_contract_old f vs ⟨i.val, hi⟩] using
       transportRow_length f g vs bits central ⟨i.val, hi⟩
@@ -76,13 +78,14 @@ precisely at touched constraints. -/
 theorem transportRows_project (g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) (central : List Bool) (i : Fin F.length) :
     (transportRows g vs bits central).getD i.val [] =
-      project (localTuple g i) (outsidePositions F[i.val].2.length (positions vs F[i.val].2)) ++
-        if (positions vs F[i.val].2).isEmpty then [] else [bits i] := by
+      project (localTuple g i)
+          (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
+        if (positions vs F[i.val].scope).isEmpty then [] else [bits i] := by
   rw [get_transportRows_old]
   split
   next hp =>
     have he := List.isEmpty_iff.mp hp
-    have hl : (localTuple g i).length = F[i.val].2.length := by simp [localTuple]
+    have hl : (localTuple g i).length = F[i.val].scope.length := by simp [localTuple]
     simp only [he, outsidePositions, List.contains_nil, Bool.not_false, List.filter_true,
       project, List.append_nil]
     rw [← hl, List.map_getD_range]
@@ -92,7 +95,7 @@ theorem transportRows_project (g : OccurrenceLabeling F Bool) (vs : List ℕ)
 theorem transport_oldPort (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) (central : List Bool) (o : Occurrence F) (ho : o.var ∉ vs) :
     transport f vs g bits central (oldPort f vs o ho) = g o := by
-  let os := outsidePositions F[o.1.val].2.length (positions vs F[o.1.val].2)
+  let os := outsidePositions F[o.1.val].scope.length (positions vs F[o.1.val].scope)
   have hm : o.2.val ∈ os := (mem_outsidePositions _ _ _).mpr
     ⟨o.2.isLt, by simpa only [List.getD_eq_getElem _ _ o.2.isLt, Occurrence.var] using ho⟩
   have hl := List.idxOf_lt_length_iff.mpr hm
@@ -107,10 +110,10 @@ theorem transport_connectorPort (f g : OccurrenceLabeling F Bool) (vs : List ℕ
     (bits : Fin F.length → Bool) (central : List Bool) (i : Fin F.length)
     (hi : i ∈ touched F vs) :
     transport f vs g bits central (connectorPort f vs i hi) = bits i := by
-  have hp : (positions vs F[i.val].2).isEmpty = false := by
+  have hp : (positions vs F[i.val].scope).isEmpty = false := by
     simpa only [List.isEmpty_eq_false_iff] using (mem_touched vs i).mp hi
   change ((transportRows g vs bits central).getD i.val []).getD
-    (outsidePositions F[i.val].2.length (positions vs F[i.val].2)).length false = bits i
+    (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)).length false = bits i
   rw [transportRows_project]
   simp only [hp, Bool.false_eq_true, ↓reduceIte]
   rw [List.getD_append_right _ _ _ _ (by simp [project])]
@@ -129,9 +132,9 @@ theorem valid_transport {f g : OccurrenceLabeling F Bool} (hf : ValidLabeling se
     (hg : ValidLabeling sem g) (vs : List ℕ) (bits : Fin F.length → Bool)
     {central : List Bool} (hc : (exactlyOne (connectors F vs)).sem central = true)
     (hd : ∀ i ∈ touched F vs, deviations (localTuple f i) (localTuple g i)
-      (positions vs F[i.val].2) ≤ 1)
+      (positions vs F[i.val].scope) ≤ 1)
     (hb : ∀ i ∈ touched F vs, bits i = decide (deviations (localTuple f i)
-      (localTuple g i) (positions vs F[i.val].2) = 1)) :
+      (localTuple g i) (positions vs F[i.val].scope) = 1)) :
     ValidLabeling sem (transport f vs g bits central) := by
   apply valid_labels
   · exact transportRows_length f g vs bits (sem_exactlyOne_eq_true _ _ |>.mp hc).1
@@ -164,7 +167,7 @@ theorem valid_of_transport_zero {f g : OccurrenceLabeling F Bool} (hf : ValidLab
     simp only [length_contract]
     omega⟩
   have hv := hg j
-  change (contract f vs)[i.val].1.sem
+  change (contract f vs)[i.val].rel.sem
     (localTuple (labels _ (transportRows g vs (fun _ => false) central)) j) = true at hv
   rw [localTuple_labels _ _ j (transportRows_length f g vs _ hc j),
     get_contract_old f vs i, get_transportRows_old g vs (fun _ => false) central i] at hv

@@ -17,7 +17,7 @@ open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP
 example {Rel V : Type} [DecidableEq V] (F : CSP Rel V) (o : F.Occurrence) (side : Bool) :
     incidenceDartEquiv F (o, side) = incidenceDart o side := by simp
 
-private abbrev F : CSP Unit ℕ := [((), [7, 9, 7])]
+private abbrev F : CSP Unit ℕ := [⟨(), [7, 9, 7]⟩]
 private def final : F.Occurrence := ⟨(0 : Fin 1), (2 : Fin 3)⟩
 
 example : (incidenceDartEquiv F (final, false)).1.val = 2 ∧

@@ -14,6 +14,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.FieldSimp
@@ -599,9 +600,7 @@ theorem randomFunctionGame_feistel1CPAAttack_true [Nonempty G] (l₀ r₀ : G) :
             Prod.fst).map (fun v => decide (v = r₀)) := by
           simp [randomFunctionGame, feistel1CPAAttack, PMF.map_comp, Function.comp_def]; rfl
       _ = (PMF.uniformOfFintype G).map (fun v => decide (v = r₀)) := by rw [heval, hfst]
-  rw [hgame, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-  have hpre : (fun v : G => decide (v = r₀)) ⁻¹' {true} = {r₀} := by ext v; simp
-  rw [hpre, PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
+  rw [hgame, Cslib.Probability.PMF.map_decide_eq_apply_true, PMF.uniformOfFintype_apply]
 
 /-- `feistel1CPAAttack l₀ r₀` distinguishes any 1-round Feistel network `feistelRoundEquiv f` from
 `randomFunctionGame` with exact advantage `1 - |G|⁻¹` (original bound). -/

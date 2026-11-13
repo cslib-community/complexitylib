@@ -65,8 +65,8 @@ private theorem chainScope_step (fresh first b c d : ℕ) (rest : List ℕ) (i :
 /-- Exact bounded-map implementation of the recursive chain tail. -/
 theorem parityChainTail_eq_map (fresh first : ℕ) (rest : List ℕ) :
     parityChainTail fresh first rest =
-      (List.range (max 1 (rest.length - 1))).map fun i =>
-        (smallEvenTable (min 3 (rest.length + 1)), chainScope fresh first rest i) := by
+      (List.range (max 1 (rest.length - 1))).map fun i => Constraint.mk
+        (smallEvenTable (min 3 (rest.length + 1))) (chainScope fresh first rest i) := by
   induction rest using List.twoStepInduction generalizing fresh first with
   | nil => simp [parityChainTail, smallEvenTable, chainScope]
   | singleton b => simp [parityChainTail, smallEvenTable, chainScope]
@@ -91,7 +91,7 @@ theorem parityChainTail_eq_map (fresh first : ℕ) (rest : List ℕ) :
           simp only [List.length_cons]; omega,
           show min 3 ((b :: c :: d :: rest).length + 1) = 3 by
             simp only [List.length_cons]; omega]
-        exact congrArg (Prod.mk (smallEvenTable 3))
+        exact congrArg (Constraint.mk (smallEvenTable 3))
           (chainScope_step fresh first b c d rest i hb).symm
 
 /-- Framed unary fresh offset, framed binary first name and binary remaining scope. -/
@@ -130,6 +130,6 @@ theorem computableInPolyTime_parityChainTail :
   have htable := hsmall.comp (show ComputableInPolyTime
     (fun p : (ℕ × ℕ × List ℕ) × ℕ => min 3 (p.1.2.2.length + 1))
     (encPair encParityTail encUnary) encUnary by unfold encParityTail; fun_prop)
-  exact htable.prod hscope
+  exact encConstraint_mk_polyTime htable hscope
 
 end Cslib.Complexity.CSP.CyclicCompiler

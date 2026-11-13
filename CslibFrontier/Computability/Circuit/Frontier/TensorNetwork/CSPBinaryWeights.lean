@@ -48,8 +48,8 @@ private theorem size_getD_le {l : List ℕ} {W : ℕ}
 /-- Every table entry of the constraint network satisfies the local weight-bit bound, provided
 that the bound also covers the equality tensors' unit entries. -/
 theorem size_entry_cspNetwork_le (hW : 1 ≤ W)
-    (hk : ∀ c ∈ F, c.2.length ≤ k)
-    (hwt : ∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length → (wt c.1 w).size ≤ W) :
+    (hk : ∀ c ∈ F, c.scope.length ≤ k)
+    (hwt : ∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length → (wt c.rel w).size ≤ W) :
     ∀ v ∈ (cspNetwork k wt F).2.vertices, ∀ n ∈ v.2, n.size ≤ W := by
   have hrow (i j : ℕ) : (cspRow k wt F i j).size ≤ W := by
     apply size_getD_le
@@ -79,9 +79,9 @@ theorem size_entry_cspNetwork_le (hW : 1 ≤ W)
 /-- If each local weight has at most `(N + 1) ^ d` bits, the automatic network table-bit bound is
 at most `(3 * 2 ^ (max k 4) + 1) * (s + 1) ^ (d + 1)`, where `s = 3 N` is its edge count. -/
 theorem binaryTableBound_cspNetwork_le (d : ℕ)
-    (hk : ∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k)
-    (hwt : ∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length →
-      (wt c.1 w).size ≤ (F.vars.length + 1) ^ d) :
+    (hk : ∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k)
+    (hwt : ∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length →
+      (wt c.rel w).size ≤ (F.vars.length + 1) ^ d) :
     (cspNetwork k wt F).2.binaryTableBound ≤
       (3 * 2 ^ (max k 4) + 1) * ((cspNetwork k wt F).2.numEdges + 1) ^ (d + 1) := by
   let G := (cspNetwork k wt F).2

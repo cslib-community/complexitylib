@@ -11,6 +11,42 @@ digests are listed in #4772. Numbers and pages belong to those drafts, not the 2
 The results registry remains [Entries.lean](../CslibFrontierResults/Entries.lean). A nearby theorem is
 not counted as full coverage.
 
+## Exact advice-length comparison: a model qualification
+
+The January 2007 draft defines advice strings of exactly $\ell(n)$ bits (Definition 3.5,
+`r2.pdf` PDF4/printed120). Exercise 3.3 (PDF16/printed132) and Theorem 4.1 (PDF22/printed138)
+display an unbounded additive gap. Prose following Theorem 3.7 also writes a positive difference,
+which may express an intended extra condition. These formulations must be distinguished when
+the length functions are arbitrary and not assumed computable.
+
+[Advice/LengthComparison](../CslibFrontier/Computability/Complexity/Classes/Advice/LengthComparison.lean)
+proves an **original counterexample for the exact-length model**. Its
+`exists_nonmonotone_advice_bounds` supplies polynomially bounded lower/gap functions, both source
+capacity bounds, an unbounded gap, and a language in P/lower that is outside P/(lower+gap).
+This refutes containment from an unbounded nonnegative gap alone; it does not refute a theorem
+with an additional strictly positive-gap hypothesis. The length functions and advice families
+are not claimed computable. Since the bounds are polynomial, the complete-pair running-time
+convention does not introduce a superpolynomial input-time allowance in this counterexample.
+
+The mechanism is explicit. At selected odd lengths the upper bound is exactly one bit, giving
+any fixed decider only two possible output patterns on the all-false and all-true words. A lower
+decider uses three codes (empty, `[false]`, `[true]`) for the patterns 00, 11 and 01. Choosing a
+missing pattern diagonalizes against a countable enumeration of native P predicates. On even
+lengths the lower advice is empty and the upper bound grows linearly, making the gap unbounded.
+Length metadata, rather than a new gate model or unbounded running time, supplies the third code.
+
+The author's [official tighter Theorem 4.1 addendum](https://www.wisdom.weizmann.ac.il/~oded/CC/ad-hier.txt)
+uses a constant one-bit gap. It is not contradicted here: `PWithAdvice_subset_succ` proves the
+safe inclusion direction for arbitrary lower bounds. More generally,
+`PWithAdvice_subset_of_lt` proves containment under strict pointwise growth, with no
+computability assumptions on either bound: append a true delimiter and false padding, then
+normalize the binary word and remove its last bit.
+The addendum's strict separation still needs formalization, with small/zero advice lengths
+handled explicitly. Strict separation for general positive gaps also remains open. The
+[checked clients](../CslibFrontierTests/AdviceLengthComparison.lean) state the failed universal
+containment contract and verify zero-baseline, fixed-bit and variable positive-gap inclusions.
+This qualification does not close Exercise 3.3, Theorem 4.1, or the book-wide objective.
+
 ## Theory exercise 4.3: sublinear time
 
 Source: January 2007 `r2.pdf`, PDF35/printed151, SHA-256
