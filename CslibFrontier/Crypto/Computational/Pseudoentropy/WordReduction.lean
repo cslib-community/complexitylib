@@ -292,15 +292,14 @@ theorem eval_wordInversionGame {n imageLength : ℕ} {Image : Type*} [DecidableE
     (hlength : ∀ image, (encodeImage image).length = imageLength)
     (evaluate : (ℕ × List Bool) → List Bool → Bool) (c d degree : ℕ) :
     ProbComp.eval (inversionGame f (wordInverter f evaluate c d degree) n) =
-      inversionExperiment finiteFunction (fun image => do
+      inversionExperiment (PMF.uniformOfFintype _) finiteFunction (fun image => do
         let coins ← PMF.uniformOfFintype (BitString (coinBudget c d n imageLength))
         matrixInverter finiteFunction
           (fixedPredictor encodeImage evaluate c d n imageLength coins)
           (precision degree n) image) := by
-  simp only [pmf_norm, inversionGame, eval_sampleList, uniformList, hf]
+  simp only [pmf_norm, inversionGame, inversionExperiment, eval_sampleList, uniformList, hf]
   simp_rw [wordInverter_eval f finiteFunction encodeImage hf evaluate c d degree _ (hlength _)]
-  simp only [pmf_norm, inversionExperiment, PMF.map, hf, beq_eq_decide,
-    encodeImage.injective.eq_iff]
+  simp only [pmf_norm, PMF.map, hf, beq_eq_decide, encodeImage.injective.eq_iff]
 
 /-- Holenstein's entropy-versus-prediction bound for the executable word games. Every sampled
 bit and decoder query is included in the inverter certified by `isPPTOn_wordInverter`. -/

@@ -560,36 +560,6 @@ theorem succProbability_eufCmaGame_le
     (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _, PMF.apply_ne_top _ _⟩) key).trans_eq ?_
   rw [ENNReal.toNNReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)]
 
-private theorem exists_sigLengthBound :
-    ∃ bound : ℕ → ℕ,
-      ComputableInPolyTime bound encUnary encUnary ∧
-      ∀ n : ℕ, ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support,
-        ∀ msg : List Bool, msg.length = n →
-          ∀ sig ∈ (ProbComp.eval (S.sign keys.2 msg)).support, sig.length ≤ bound n := by
-  obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
-  let bound (n : ℕ) : ℕ := cs * (2 * (ck * (n + 1) ^ dk) + n + 2) ^ ds
-  have hboundPoly : ComputableInPolyTime bound encUnary encUnary := by
-    let hn := ComputableInPolyTime.id' (encIn := encUnary)
-    let cst (k : ℕ) := ComputableInPolyTime.const (encIn := encUnary) (encOut := encUnary) k
-    exact ComputableInPolyTime.unary_mul' (cst cs)
-      ((ComputableInPolyTime.unary_pow ds).comp
-        (ComputableInPolyTime.unary_add'
-          (ComputableInPolyTime.unary_add'
-            (ComputableInPolyTime.unary_mul' (cst 2)
-              (ComputableInPolyTime.unary_mul' (cst ck)
-                ((ComputableInPolyTime.unary_pow dk).comp
-                  (ComputableInPolyTime.unary_add' hn (cst 1)))))
-            hn)
-          (cst 2)))
-  refine ⟨bound, hboundPoly, fun n keys hkeys msg hmsg sig hsig => ?_⟩
-  have hkeyLen := hlenk n keys hkeys
-  simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeyLen
-  have hsigLen := hlens (keys.2, msg) sig hsig
-  simp only [length_encPair, encBits_apply] at hsigLen
-  refine hsigLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left ?_ ds))
-  omega
-
 /-! ### Key-Independent Collisions Break the Scheme -/
 
 /-- One-query forger that queries `m₀`, truncates the reply to `bound n` bits, and outputs it as a
@@ -666,7 +636,7 @@ theorem not_eufCMA_scheme_of_collision
     {m₀ m₁ : List Bool} (hne : m₁ ≠ m₀) (hcoll : ∀ s, H s m₀ = H s m₁) :
     ¬ (scheme S H hH hlen).EUFCMA := by
   intro heuf
-  obtain ⟨bound, hboundPoly, hbound_le⟩ := exists_sigLengthBound S
+  obtain ⟨bound, hboundPoly, hbound_le⟩ := S.exists_sign_length_bound_of_length_eq
   have hneg := heuf.negligible (fixedCollisionForger bound m₀ m₁)
     (isOraclePPT_fixedCollisionForger hboundPoly m₀ m₁)
   have hzero : Negligible (fun _ : ℕ => (1 : ℝ≥0)) :=
@@ -691,7 +661,7 @@ theorem SignatureScheme.EUFCMA.wordEUFCMA_hashAndSign
       (encPair encBits encBits) encBits)
     (hlen : ∀ s msg, (H s msg).length = s.length) :
     (scheme S H hH hlen).EUFCMA := by
-  obtain ⟨bound, hboundPoly, hbound_le⟩ := exists_sigLengthBound S
+  obtain ⟨bound, hboundPoly, hbound_le⟩ := S.exists_sign_length_bound_of_length_eq
   apply WordSignatureScheme.EUFCMA.of_negligible
   intro adversary hadversary
   have hbase := hS.negligible (baseForger H bound adversary)

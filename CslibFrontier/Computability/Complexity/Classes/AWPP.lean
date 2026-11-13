@@ -33,6 +33,7 @@ adaptive oracle-verifier model in
 
 ## Main results
 
+* `mem_AWPP`: unfolding the definition.
 * `BPP_subset_AWPP`, `SPP_subset_AWPP`, `AWPP_subset_PP`.
 * `compl_mem_AWPP`, `PolyTimeReducible.mem_AWPP`: complement and reduction closure.
 * `mem_AWPP_of_polyTime_exponent`: padding input-dependent dyadic denominators.
@@ -57,6 +58,12 @@ def AWPP (enc : α ↪ List Bool) : Set (Set α) :=
     (0 ≤ g a ∧ g a ≤ (2 : ℤ) ^ p.eval (enc a).length) ∧
     (a ∈ A → 2 * (2 : ℤ) ^ p.eval (enc a).length ≤ 3 * g a) ∧
     (a ∉ A → 3 * g a ≤ (2 : ℤ) ^ p.eval (enc a).length)}
+
+theorem mem_AWPP : A ∈ AWPP enc ↔ ∃ g ∈ GapP enc, ∃ p : Polynomial ℕ, ∀ a,
+    (0 ≤ g a ∧ g a ≤ (2 : ℤ) ^ p.eval (enc a).length) ∧
+    (a ∈ A → 2 * (2 : ℤ) ^ p.eval (enc a).length ≤ 3 * g a) ∧
+    (a ∉ A → 3 * g a ≤ (2 : ℤ) ^ p.eval (enc a).length) :=
+  Iff.rfl
 
 /-- Acceptance counts are GapP functions, so bounded-error computation gives an AWPP ratio. -/
 theorem BPP_subset_AWPP : BPP enc ⊆ AWPP enc := by

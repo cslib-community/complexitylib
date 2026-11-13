@@ -344,28 +344,27 @@ variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
 
 open scoped Classical in
 /-- **`BPL` through polynomial-size configuration matrices**: a `BPL` machine has, on every
-encoded instance of length `n`, a set `V` of at most `2 * (2 * (n + 1)) ^ d` views, all reachable
-from the initial view and closed under coin steps, such that every branch halts within
-`T = 2 * (2 * (n + 1)) ^ d` steps, the live configuration matrix `S` on `V` satisfies
+encoded instance of length `n`, a set `V` of at most `T = polyClock d n` views, all reachable from
+the initial view and closed under coin steps, such that every branch halts within `T` steps, the
+live configuration matrix `S` on `V` satisfies
 `S ^ (T + 1) = 0`, and the entry at the initial view of `(1 - S / 2)⁻¹ *ᵥ e` is at least `2/3` on
 members and at most `1/3` on non-members, with `e` the indicator of the accepting halted
 views. -/
 theorem exists_configMatrix_of_mem_BPL (h : A ∈ BPL enc) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (M : MultiTapePTM k Bool State) (d : ℕ),
       ∀ a, ∃ (V : Finset (FiniteCfg k Bool State)) (hinit : M.toNTM.initView (enc a) ∈ V),
-        V.card ≤ 2 * (2 * ((enc a).length + 1)) ^ d ∧
+        V.card ≤ polyClock d (enc a).length ∧
         (∀ finite ∈ V, ∀ bit, M.viewCoinStep finite bit ∈ V) ∧
         (∀ finite ∈ V,
           Relation.ReflTransGen M.toNTM.ViewStep (M.toNTM.initView (enc a)) finite) ∧
-        M.toNTM.RunsInTime (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) ∧
-        M.liveConfigMatrix ℚ V ^ (2 * (2 * ((enc a).length + 1)) ^ d + 1) = 0 ∧
+        M.toNTM.RunsInTime (enc a) (polyClock d (enc a).length) ∧
+        M.liveConfigMatrix ℚ V ^ (polyClock d (enc a).length + 1) = 0 ∧
         (a ∈ A → 2 / 3 ≤ ((1 - (2 : ℚ)⁻¹ • M.liveConfigMatrix ℚ V)⁻¹ *ᵥ
           FiniteCfg.acceptVec ℚ V) ⟨_, hinit⟩) ∧
         (a ∉ A → ((1 - (2 : ℚ)⁻¹ • M.liveConfigMatrix ℚ V)⁻¹ *ᵥ
           FiniteCfg.acceptVec ℚ V) ⟨_, hinit⟩ ≤ 1 / 3) := by
   obtain ⟨k, State, hfin, M, c, hM⟩ := h
-  refine ⟨k, State, hfin, M, 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1),
-    fun a => ?_⟩
+  refine ⟨k, State, hfin, M, MultiTapeNTM.logSpaceClockExponent k State c, fun a => ?_⟩
   obtain ⟨hs, t, ht, hmem, hnot⟩ := hM a
   obtain ⟨V, hreach, hV, hcard⟩ := M.exists_finset_reachable hs
   have hinit : M.toNTM.initView (enc a) ∈ V := (hreach _).mpr .refl

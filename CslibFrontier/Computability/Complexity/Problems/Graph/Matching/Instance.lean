@@ -40,8 +40,9 @@ open Cslib.Logic.PL
 /-- An exactly-one choice at every vertex, with every private unmatched port pinned false.
 This instance always has a valid local labeling; consistency is not required by optimization. -/
 @[expose] def matchingInstance (G : Graph) : CSP CSP.Table ℕ :=
-  (G.distinctVertices.map fun v => (CSP.Table.exactlyOne (G.matchingScope v), G.matchingScope v)) ++
-    (G.distinctVertices.map fun v => (CSP.Table.pinTable false, [2 * v + 1]))
+  (G.distinctVertices.map fun v =>
+      Constraint.mk (CSP.Table.exactlyOne (G.matchingScope v)) (G.matchingScope v)) ++
+    (G.distinctVertices.map fun v => Constraint.mk (CSP.Table.pinTable false) [2 * v + 1])
 
 /-- An original edge belongs to a choice scope precisely at its two original endpoints. -/
 theorem mem_matchingScope_even (G : Graph) (v i : ℕ) :
@@ -102,7 +103,7 @@ theorem count_vars_matchingInstance_even (G : Graph) (i : ℕ) :
 
 /-- Each declared vertex's private port occurs exactly twice. -/
 theorem count_vars_matchingInstance_odd (G : Graph) (w : ℕ) :
-    G.matchingInstance.vars.count (2 * w + 1) = if w ∈ G.1 then 2 else 0 := by
+    G.matchingInstance.vars.count (2 * w + 1) = if w ∈ G.vertices then 2 else 0 := by
   have hc (v : ℕ) : (G.matchingScope v).count (2 * w + 1) = if v = w then 1 else 0 := by
     have he : (((List.range G.edgeList.length).filter fun i =>
         incident (G.edgeList.getD i (0, 0)) v).map fun i => 2 * i).count (2 * w + 1) = 0 := by
@@ -124,7 +125,7 @@ theorem count_vars_matchingInstance_odd (G : Graph) (w : ℕ) :
 /-- Every generated variable is an original edge position or a declared private port. -/
 theorem mem_vars_matchingInstance (G : Graph) {x : ℕ} :
     x ∈ G.matchingInstance.vars ↔
-      (∃ i < G.edgeList.length, x = 2 * i) ∨ ∃ v ∈ G.1, x = 2 * v + 1 := by
+      (∃ i < G.edgeList.length, x = 2 * i) ∨ ∃ v ∈ G.vertices, x = 2 * v + 1 := by
   simp only [matchingInstance, CSP.vars, List.flatMap_append, List.flatMap_map,
     List.mem_append, List.mem_flatMap, mem_distinctVertices, matchingScope, List.mem_cons,
     List.mem_map, List.mem_filter, List.mem_range, List.not_mem_nil, or_false]
@@ -156,8 +157,8 @@ theorem edgeInstance_matchingInstance (G : Graph) : CSP.EdgeInstance G.matchingI
 theorem evenConstraints_matchingInstance (G : Graph) :
     CSP.EdgeInstance.EvenConstraints CSP.Table.sem G.matchingInstance := by
   have hgood (c : Constraint CSP.Table ℕ) (hc : c ∈ G.matchingInstance) :
-      BitString.IsEvenDeltaMatroid {t : Fin c.2.length → Bool |
-        c.1.sem (List.ofFn t) = true} := by
+      BitString.IsEvenDeltaMatroid {t : Fin c.scope.length → Bool |
+        c.rel.sem (List.ofFn t) = true} := by
     simp only [matchingInstance, List.mem_append, List.mem_map, mem_distinctVertices] at hc
     rcases hc with ⟨v, _, rfl⟩ | ⟨v, _, rfl⟩
     · exact CSP.Table.isEvenDeltaMatroid_exactlyOne _ (List.cons_ne_nil _ _)

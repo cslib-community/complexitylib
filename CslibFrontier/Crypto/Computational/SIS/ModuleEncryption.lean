@@ -23,19 +23,15 @@ ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [Lyubashevsk
 [DucasEtAl2018]), in which the public key is a Module-LWE sample and the ciphertext is a second
 Module-LWE sample masked by the encoded message:
 
-1. **Commutative ring structure of negacyclic multiplication (`negacyclicMul_comm`,
-   `rotMatrix_negacyclicMul`, `negacyclicMul_assoc`, `innerPoly`)**:
-   Over any commutative ring `R`, negacyclic polynomial multiplication `negacyclicMul` is
-   commutative and associative, `rotMatrix` is multiplicative (`rotMatrix (negacyclicMul a b) =
-   rotMatrix a * rotMatrix b`), and the polynomial inner product
-   `innerPoly b r = ∑ j, negacyclicMul (b j) (r j)` satisfies the adjoint identity
-   `innerPoly (moduleSISMap A s) r = innerPoly (moduleSISMap Aᵀ r) s`
-   (`innerPoly_moduleSISMap_eq`).
+1. **Adjoint identity (`innerPoly_moduleSISMap_eq`)**: the polynomial inner product
+   `innerPoly b r = ∑ j, negacyclicMul (b j) (r j)` and the commutative ring algebra of
+   `negacyclicMul` are in `CslibFrontier.Foundations.Algebra.Negacyclic`. Here they give
+   `innerPoly (moduleSISMap A s) r = innerPoly (moduleSISMap Aᵀ r) s`.
 2. **Polynomial-ring message encoding and centered-lift rounding (`encodePolyMsg`,
    `decodePolyMsg`, `decodePolyMsg_encodePolyMsg_add_noise`)**:
    A message bit-vector `m : Fin n → Bool` is encoded into `Fin n → ZMod q` by mapping
    `false ↦ 0` and `true ↦ ⌊q / 2⌋`, and decoded by lifting each coefficient to its centered
-   representative in `(-q/2, q/2]` (`GeneralSIS.liftCentered`) and testing whether its magnitude
+   representative in `(-q/2, q/2]` (`SIS.liftCentered`) and testing whether its magnitude
    exceeds `⌊q / 4⌋`. Whenever `4 * B + 2 < q` and every coefficient of an integer error
    polynomial `err` has magnitude at most `B`, decoding `encodePolyMsg q m + err` recovers `m`
    (`decodePolyMsg_encodePolyMsg_add_noise`).
@@ -78,8 +74,6 @@ the hypothesis on `q` then forces `B_e = 0`, that is, `e`, `e₁` and `e₂` are
 
 ## Main definitions
 
-* `Cslib.Crypto.innerPoly`: polynomial inner product `∑ j, negacyclicMul (b j) (r j)` over
-  `R[X] / (X^n + 1)`.
 * `Cslib.Crypto.encodePolyMsg`, `Cslib.Crypto.decodePolyMsg`: `n`-bit polynomial message encoding
   and centered-lift threshold decoding modulo `q`.
 * `Cslib.Crypto.ModuleLWEPublicKey`, `Cslib.Crypto.ModuleLWECiphertext`: public-key and ciphertext
@@ -98,11 +92,6 @@ the hypothesis on `q` then forces `B_e = 0`, that is, `e`, `e₁` and `e₂` are
 
 ## Main results
 
-* `Cslib.Crypto.negacyclicMul_comm`, `Cslib.Crypto.rotMatrix_negacyclicMul`,
-  `Cslib.Crypto.negacyclicMul_assoc`: commutativity and associativity of negacyclic polynomial
-  multiplication.
-* `Cslib.Crypto.sum_abs_rotMatrix_apply`, `Cslib.Crypto.abs_negacyclicMul_le_sum_abs_mul`: rows of
-  the negacyclic matrix are signed rearrangements, giving the `ℓ₁`-`ℓ∞` product bound.
 * `Cslib.Crypto.innerPoly_moduleSISMap_eq`, `Cslib.Crypto.innerPoly_moduleSISMap_add_sub`:
   adjoint identity for `moduleSISMap` and noisy bilinear cancellation.
 * `Cslib.Crypto.decodePolyMsg_encodePolyMsg_add_noise`: bounded-error recovery for
@@ -135,281 +124,13 @@ namespace Cslib.Crypto
 open Probability Turing.MultiTapeTM
 open scoped _root_.Matrix ENNReal NNReal
 
-/-! ### Part 1: Commutativity, Associativity and Bilinearity over `R[X] / (X^n + 1)` -/
-
-/-- Index involution on `Fin n` swapping `j` with `i - j mod n` in a negacyclic convolution at
-output degree `i`. -/
-private def negacyclicSwap {n : ℕ} (i j : Fin n) : Fin n :=
-  if h : j.val ≤ i.val then
-    ⟨i.val - j.val, by omega⟩
-  else
-    ⟨n + i.val - j.val, by omega⟩
-
-private lemma negacyclicSwap_val {n : ℕ} (i j : Fin n) :
-    (negacyclicSwap i j).val = if j.val ≤ i.val then i.val - j.val else n + i.val - j.val := by
-  unfold negacyclicSwap
-  split_ifs <;> rfl
-
-private theorem negacyclicSwap_involutive {n : ℕ} (i : Fin n) :
-    Function.Involutive (negacyclicSwap i) := by
-  intro j
-  ext
-  rw [negacyclicSwap_val, negacyclicSwap_val]
-  split_ifs <;> omega
-
-private def negacyclicSwapEquiv {n : ℕ} (i : Fin n) : Fin n ≃ Fin n where
-  toFun := negacyclicSwap i
-  invFun := negacyclicSwap i
-  left_inv j := negacyclicSwap_involutive i j
-  right_inv j := negacyclicSwap_involutive i j
-
-@[simp]
-private lemma negacyclicSwapEquiv_apply {n : ℕ} (i j : Fin n) :
-    negacyclicSwapEquiv i j = negacyclicSwap i j := rfl
-
-private lemma rotMatrix_apply_eq_negacyclicSwap {n : ℕ} {R : Type*} [Ring R]
-    (a : Fin n → R) (i j : Fin n) :
-    rotMatrix a i j =
-      if j.val ≤ i.val then a (negacyclicSwap i j) else -a (negacyclicSwap i j) := by
-  simp only [rotMatrix, Matrix.of_apply, negacyclicSwap]
-  split_ifs <;> rfl
-
-/-- **Commutativity of negacyclic polynomial multiplication**: `a * b = b * a` in
-`R[X] / (X^n + 1)` over any commutative ring `R`. -/
-theorem negacyclicMul_comm {n : ℕ} {R : Type*} [CommRing R] (a b : Fin n → R) :
-    negacyclicMul a b = negacyclicMul b a := by
-  funext i
-  simp only [negacyclicMul, Matrix.mulVec, dotProduct]
-  rw [← (negacyclicSwapEquiv i).sum_comp]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  simp only [negacyclicSwapEquiv_apply, rotMatrix_apply_eq_negacyclicSwap,
-    negacyclicSwap_involutive i j]
-  rw [negacyclicSwap_val]
-  split_ifs <;> first | omega | ring
-
-/-- Cyclic index addition `(l + k) mod n` on `Fin n`. -/
-private def cyclicAdd {n : ℕ} (k l : Fin n) : Fin n :=
-  if h : l.val + k.val < n then
-    ⟨l.val + k.val, h⟩
-  else
-    ⟨l.val + k.val - n, by omega⟩
-
-/-- Cyclic index subtraction `(j - k) mod n` on `Fin n`. -/
-private def cyclicSub {n : ℕ} (k j : Fin n) : Fin n :=
-  if h : k.val ≤ j.val then
-    ⟨j.val - k.val, by omega⟩
-  else
-    ⟨n + j.val - k.val, by omega⟩
-
-private lemma cyclicAdd_val {n : ℕ} (k l : Fin n) :
-    (cyclicAdd k l).val = if l.val + k.val < n then l.val + k.val else l.val + k.val - n := by
-  unfold cyclicAdd
-  split_ifs <;> rfl
-
-private lemma cyclicSub_val {n : ℕ} (k j : Fin n) :
-    (cyclicSub k j).val = if k.val ≤ j.val then j.val - k.val else n + j.val - k.val := by
-  unfold cyclicSub
-  split_ifs <;> rfl
-
-private theorem cyclicSub_cyclicAdd {n : ℕ} (k l : Fin n) :
-    cyclicSub k (cyclicAdd k l) = l := by
-  ext
-  rw [cyclicSub_val, cyclicAdd_val]
-  split_ifs <;> omega
-
-private theorem cyclicAdd_cyclicSub {n : ℕ} (k j : Fin n) :
-    cyclicAdd k (cyclicSub k j) = j := by
-  ext
-  rw [cyclicAdd_val, cyclicSub_val]
-  split_ifs <;> omega
-
-private def cyclicShiftEquiv {n : ℕ} (k : Fin n) : Fin n ≃ Fin n where
-  toFun := cyclicAdd k
-  invFun := cyclicSub k
-  left_inv l := cyclicSub_cyclicAdd k l
-  right_inv j := cyclicAdd_cyclicSub k j
-
-@[simp]
-private lemma cyclicShiftEquiv_apply {n : ℕ} (k l : Fin n) :
-    cyclicShiftEquiv k l = cyclicAdd k l := rfl
-
-private lemma rotMatrix_apply_eq_cyclicSub {n : ℕ} {R : Type*} [Ring R]
-    (a : Fin n → R) (i j : Fin n) :
-    rotMatrix a i j = if j.val ≤ i.val then a (cyclicSub j i) else -a (cyclicSub j i) := by
-  simp only [rotMatrix, Matrix.of_apply, cyclicSub]
-  split_ifs <;> rfl
-
-private lemma cyclicSub_cyclicAdd_eq {n : ℕ} (i k l : Fin n) :
-    cyclicSub (cyclicAdd k l) i = cyclicSub l (cyclicSub k i) := by
-  ext
-  rw [cyclicSub_val, cyclicAdd_val, cyclicSub_val, cyclicSub_val]
-  split_ifs <;> omega
-
-/-- **Multiplicativity of `rotMatrix`**: the negacyclic multiplication matrix of `negacyclicMul a b`
-is the matrix product `rotMatrix a * rotMatrix b`. -/
-theorem rotMatrix_negacyclicMul {n : ℕ} {R : Type*} [CommRing R] (a b : Fin n → R) :
-    rotMatrix (negacyclicMul a b) = rotMatrix a * rotMatrix b := by
-  ext i k
-  simp only [Matrix.mul_apply]
-  rw [← (cyclicShiftEquiv k).sum_comp]
-  rw [rotMatrix_apply_eq_cyclicSub (negacyclicMul a b) i k]
-  simp only [negacyclicMul, Matrix.mulVec, dotProduct, ← Finset.sum_neg_distrib]
-  by_cases hik : k.val ≤ i.val
-  · simp only [hik, ↓reduceIte]
-    refine Finset.sum_congr rfl fun l _ => ?_
-    simp only [cyclicShiftEquiv_apply, rotMatrix_apply_eq_cyclicSub, cyclicSub_cyclicAdd,
-      cyclicSub_cyclicAdd_eq]
-    rw [cyclicSub_val, cyclicAdd_val]
-    split_ifs <;> first | omega | ring
-  · simp only [hik, ↓reduceIte]
-    refine Finset.sum_congr rfl fun l _ => ?_
-    simp only [cyclicShiftEquiv_apply, rotMatrix_apply_eq_cyclicSub, cyclicSub_cyclicAdd,
-      cyclicSub_cyclicAdd_eq]
-    rw [cyclicSub_val, cyclicAdd_val]
-    split_ifs <;> first | omega | ring
-
-/-- **Associativity of negacyclic polynomial multiplication**: `(a * b) * c = a * (b * c)` in
-`R[X] / (X^n + 1)` over any commutative ring `R`. -/
-theorem negacyclicMul_assoc {n : ℕ} {R : Type*} [CommRing R] (a b c : Fin n → R) :
-    negacyclicMul (negacyclicMul a b) c = negacyclicMul a (negacyclicMul b c) := by
-  rw [negacyclicMul, rotMatrix_negacyclicMul, ← Matrix.mulVec_mulVec, ← rotMatrix_mulVec,
-    ← rotMatrix_mulVec]
-
-/-- Negacyclic multiplication commutes with negation on the right. -/
-@[simp] theorem negacyclicMul_neg {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    negacyclicMul a (-b) = -negacyclicMul a b := by
-  simp only [negacyclicMul, Matrix.mulVec_neg]
-
-/-- Negacyclic multiplication commutes with negation on the left. -/
-@[simp] theorem neg_negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    negacyclicMul (-a) b = -negacyclicMul a b := by
-  simp only [negacyclicMul, rotMatrix_neg, Matrix.neg_mulVec]
-
-/-- Negacyclic multiplication distributes over subtraction on the right. -/
-theorem negacyclicMul_sub {n : ℕ} {R : Type*} [Ring R] (a b c : Fin n → R) :
-    negacyclicMul a (b - c) = negacyclicMul a b - negacyclicMul a c := by
-  simp only [negacyclicMul, Matrix.mulVec_sub]
-
-/-- Negacyclic multiplication distributes over subtraction on the left. -/
-theorem sub_negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b c : Fin n → R) :
-    negacyclicMul (a - b) c = negacyclicMul a c - negacyclicMul b c := by
-  simp only [negacyclicMul, rotMatrix_sub, Matrix.sub_mulVec]
-
-/-- Negacyclic multiplication distributes over finite sums on the left. -/
-theorem sum_negacyclicMul {n : ℕ} {R : Type*} [Ring R] {ι : Type*} (s : Finset ι)
-    (f : ι → Fin n → R) (b : Fin n → R) :
-    negacyclicMul (∑ i ∈ s, f i) b = ∑ i ∈ s, negacyclicMul (f i) b := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert i s hi ih =>
-    rw [Finset.sum_insert hi, add_negacyclicMul, ih, Finset.sum_insert hi]
-
-/-- Negacyclic multiplication distributes over finite sums on the right. -/
-theorem negacyclicMul_sum {n : ℕ} {R : Type*} [Ring R] {ι : Type*} (s : Finset ι)
-    (a : Fin n → R) (f : ι → Fin n → R) :
-    negacyclicMul a (∑ i ∈ s, f i) = ∑ i ∈ s, negacyclicMul a (f i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert i s hi ih =>
-    rw [Finset.sum_insert hi, negacyclicMul_add, ih, Finset.sum_insert hi]
-
-/-- Each row of `rotMatrix a` is a signed rearrangement of `a`, so its absolute values sum to
-the `ℓ₁` norm of `a`. -/
-theorem sum_abs_rotMatrix_apply {n : ℕ} (a : Fin n → ℤ) (i : Fin n) :
-    ∑ j, |rotMatrix a i j| = ∑ j, |a j| :=
-  calc ∑ j, |rotMatrix a i j| = ∑ j, |a (negacyclicSwap i j)| :=
-        Finset.sum_congr rfl fun j _ => by
-          rw [rotMatrix_apply_eq_negacyclicSwap]
-          split_ifs <;> simp only [abs_neg]
-    _ = ∑ j, |a j| := (negacyclicSwapEquiv i).sum_comp fun j => |a j|
-
-/-- **`ℓ₁`-`ℓ∞` bound for negacyclic multiplication**: if `‖b‖_∞ ≤ β`, then every coefficient of
-`negacyclicMul a b` has absolute value at most `‖a‖₁ · β`. -/
-theorem abs_negacyclicMul_le_sum_abs_mul {n β : ℕ} {a b : Fin n → ℤ} (hb : ∀ j, |b j| ≤ β)
-    (i : Fin n) : |negacyclicMul a b i| ≤ (∑ j, |a j|) * β :=
-  calc |negacyclicMul a b i|
-      = |∑ j : Fin n, rotMatrix a i j * b j| := rfl
-    _ ≤ ∑ j : Fin n, |rotMatrix a i j * b j| := Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ j : Fin n, |rotMatrix a i j| * β := Finset.sum_le_sum fun j _ => by
-      rw [abs_mul]
-      exact mul_le_mul_of_nonneg_left (hb j) (abs_nonneg _)
-    _ = (∑ j, |a j|) * β := by rw [← Finset.sum_mul, sum_abs_rotMatrix_apply]
-
-/-- Polynomial inner product `⟨b, r⟩ = ∑ j : Fin k, negacyclicMul (b j) (r j)` over
-`R[X] / (X^n + 1)`. -/
-def innerPoly {k n : ℕ} {R : Type*} [Ring R]
-    (b r : Fin k → Fin n → R) : Fin n → R :=
-  ∑ j : Fin k, negacyclicMul (b j) (r j)
+/-! ### Part 1: Bilinearity of `innerPoly` against `moduleSISMap` -/
 
 /-- Over `ZMod q`, `innerPoly` agrees with `ringSISMap`. -/
 @[simp] theorem innerPoly_eq_ringSISMap {k n q : ℕ}
     (a z : Fin k → Fin n → ZMod q) :
     innerPoly a z = ringSISMap a z :=
   rfl
-
-/-- `innerPoly` is symmetric over any commutative ring `R`. -/
-theorem innerPoly_comm {k n : ℕ} {R : Type*} [CommRing R]
-    (a b : Fin k → Fin n → R) :
-    innerPoly a b = innerPoly b a := by
-  simp only [innerPoly, negacyclicMul_comm]
-
-@[simp] theorem innerPoly_zero_left {k n : ℕ} {R : Type*} [Ring R]
-    (r : Fin k → Fin n → R) :
-    innerPoly 0 r = 0 := by
-  simp [innerPoly]
-
-@[simp] theorem innerPoly_zero_right {k n : ℕ} {R : Type*} [Ring R]
-    (b : Fin k → Fin n → R) :
-    innerPoly b 0 = 0 := by
-  simp [innerPoly]
-
-/-- `innerPoly` is additive in its first argument. -/
-theorem innerPoly_add_left {k n : ℕ} {R : Type*} [Ring R]
-    (a b r : Fin k → Fin n → R) :
-    innerPoly (a + b) r = innerPoly a r + innerPoly b r := by
-  simp only [innerPoly, Pi.add_apply, add_negacyclicMul, Finset.sum_add_distrib]
-
-/-- `innerPoly` is additive in its second argument. -/
-theorem innerPoly_add_right {k n : ℕ} {R : Type*} [Ring R]
-    (b r s : Fin k → Fin n → R) :
-    innerPoly b (r + s) = innerPoly b r + innerPoly b s := by
-  simp only [innerPoly, Pi.add_apply, negacyclicMul_add, Finset.sum_add_distrib]
-
-/-- `innerPoly` commutes with subtraction in its first argument. -/
-theorem innerPoly_sub_left {k n : ℕ} {R : Type*} [Ring R]
-    (a b r : Fin k → Fin n → R) :
-    innerPoly (a - b) r = innerPoly a r - innerPoly b r := by
-  simp only [innerPoly, Pi.sub_apply, sub_negacyclicMul, Finset.sum_sub_distrib]
-
-/-- `innerPoly` commutes with subtraction in its second argument. -/
-theorem innerPoly_sub_right {k n : ℕ} {R : Type*} [Ring R]
-    (b r s : Fin k → Fin n → R) :
-    innerPoly b (r - s) = innerPoly b r - innerPoly b s := by
-  simp only [innerPoly, Pi.sub_apply, negacyclicMul_sub, Finset.sum_sub_distrib]
-
-/-- `innerPoly` commutes with ring homomorphisms applied to polynomial coefficients. -/
-theorem map_innerPoly {k n : ℕ} {R S : Type*} [Ring R] [Ring S] (f : R →+* S)
-    (a b : Fin k → Fin n → R) :
-    f ∘ innerPoly a b = innerPoly (fun j => f ∘ a j) (fun j => f ∘ b j) := by
-  funext i
-  simp only [Function.comp_apply, innerPoly, Finset.sum_apply, map_sum, ← map_negacyclicMul]
-
-/-- **Infinity-norm bound for `innerPoly`**: if every coefficient of `a` has absolute value at most
-`α` and every coefficient of `b` has absolute value at most `β`, then every coefficient of
-`innerPoly a b` has absolute value at most `k * n * α * β`. -/
-theorem abs_innerPoly_le {k n α β : ℕ} {a b : Fin k → Fin n → ℤ}
-    (ha : ∀ j i, |a j i| ≤ α) (hb : ∀ j i, |b j i| ≤ β) (i : Fin n) :
-    |innerPoly a b i| ≤ k * n * α * β := by
-  calc |innerPoly a b i|
-      = |∑ j : Fin k, negacyclicMul (a j) (b j) i| := by simp [innerPoly]
-    _ ≤ ∑ j : Fin k, |negacyclicMul (a j) (b j) i| := Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ _j : Fin k, ((n : ℤ) * α * β) :=
-      Finset.sum_le_sum fun j _ => abs_negacyclicMul_le (ha j) (hb j) i
-    _ = k * n * α * β := by
-      simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-      ring
 
 /-- **Adjoint identity for `moduleSISMap` and `innerPoly`**:
 `⟨A · s, r⟩ = ⟨Aᵀ · r, s⟩` over `ℤ_q[X] / (X^n + 1)`. -/
@@ -445,18 +166,18 @@ def encodePolyMsg {n : ℕ} (q : ℕ) (m : Fin n → Bool) : Fin n → ZMod q :=
   rfl
 
 /-- Decode a noisy ring element `w : Fin n → ZMod q` into `Fin n → Bool` by lifting each
-coefficient to its centered representative `GeneralSIS.liftCentered w i` in `(-q/2, q/2]` and
+coefficient to its centered representative `SIS.liftCentered w i` in `(-q/2, q/2]` and
 testing whether its magnitude exceeds `q / 4` (`false` when `|liftCentered w i| ≤ q / 4`, `true`
 when `|liftCentered w i| > q / 4`). -/
 def decodePolyMsg {n q : ℕ} (w : Fin n → ZMod q) : Fin n → Bool :=
-  fun i => decide (q / 4 < (GeneralSIS.liftCentered w i).natAbs)
+  fun i => decide (q / 4 < (SIS.liftCentered w i).natAbs)
 
 @[simp] theorem decodePolyMsg_apply_eq_false_iff {n q : ℕ} (w : Fin n → ZMod q) (i : Fin n) :
-    decodePolyMsg w i = false ↔ (GeneralSIS.liftCentered w i).natAbs ≤ q / 4 := by
+    decodePolyMsg w i = false ↔ (SIS.liftCentered w i).natAbs ≤ q / 4 := by
   simp [decodePolyMsg]
 
 @[simp] theorem decodePolyMsg_apply_eq_true_iff {n q : ℕ} (w : Fin n → ZMod q) (i : Fin n) :
-    decodePolyMsg w i = true ↔ q / 4 < (GeneralSIS.liftCentered w i).natAbs := by
+    decodePolyMsg w i = true ↔ q / 4 < (SIS.liftCentered w i).natAbs := by
   simp [decodePolyMsg]
 
 /-- **Bounded-error decoding correctness for `encodePolyMsg` and `decodePolyMsg`**: if
@@ -472,8 +193,8 @@ theorem decodePolyMsg_encodePolyMsg_add_noise {n q B : ℕ} (hB : 4 * B + 2 < q)
   cases hmi : m i
   · rw [decodePolyMsg_apply_eq_false_iff]
     have hval :
-        GeneralSIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i = err i := by
-      rw [GeneralSIS.liftCentered, ZMod.valMinAbs_spec]
+        SIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i = err i := by
+      rw [SIS.liftCentered, ZMod.valMinAbs_spec]
       refine ⟨?_, by omega, by omega⟩
       simp only [encodePolyMsg, hmi, Bool.false_eq_true, ↓reduceIte, Pi.add_apply, zero_add]
     rw [hval]
@@ -481,17 +202,17 @@ theorem decodePolyMsg_encodePolyMsg_add_noise {n q B : ℕ} (hB : 4 * B + 2 < q)
   · rw [decodePolyMsg_apply_eq_true_iff]
     by_cases hwrap : (((q / 2 : ℕ) : ℤ) + err i) * 2 ≤ (q : ℤ)
     · have hval :
-          GeneralSIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
+          SIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
             ((q / 2 : ℕ) : ℤ) + err i := by
-        rw [GeneralSIS.liftCentered, ZMod.valMinAbs_spec]
+        rw [SIS.liftCentered, ZMod.valMinAbs_spec]
         refine ⟨?_, by omega, hwrap⟩
         simp only [encodePolyMsg, hmi, ↓reduceIte, Pi.add_apply, Int.cast_add, Int.cast_natCast]
       rw [hval]
       omega
     · have hval :
-          GeneralSIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
+          SIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
             ((q / 2 : ℕ) : ℤ) + err i - (q : ℤ) := by
-        rw [GeneralSIS.liftCentered, ZMod.valMinAbs_spec]
+        rw [SIS.liftCentered, ZMod.valMinAbs_spec]
         refine ⟨?_, by omega, by omega⟩
         simp only [encodePolyMsg, hmi, ↓reduceIte, Pi.add_apply, Int.cast_sub, Int.cast_add,
           Int.cast_natCast, ZMod.natCast_self, sub_zero]
@@ -618,32 +339,32 @@ theorem intCast_moduleLWEErrorPoly_liftCentered {k n q : ℕ}
     (s r e e₁ : Fin k → Fin n → ZMod q)
     (e₂ : Fin n → ZMod q) :
     (fun i => (moduleLWEErrorPoly
-        (fun j => GeneralSIS.liftCentered (s j))
-        (fun j => GeneralSIS.liftCentered (r j))
-        (fun j => GeneralSIS.liftCentered (e j))
-        (fun j => GeneralSIS.liftCentered (e₁ j))
-        (GeneralSIS.liftCentered e₂) i : ZMod q)) =
+        (fun j => SIS.liftCentered (s j))
+        (fun j => SIS.liftCentered (r j))
+        (fun j => SIS.liftCentered (e j))
+        (fun j => SIS.liftCentered (e₁ j))
+        (SIS.liftCentered e₂) i : ZMod q)) =
       innerPoly e r - innerPoly e₁ s + e₂ := by
   have her := map_innerPoly (Int.castRingHom (ZMod q))
-    (fun j => GeneralSIS.liftCentered (e j))
-    (fun j => GeneralSIS.liftCentered (r j))
+    (fun j => SIS.liftCentered (e j))
+    (fun j => SIS.liftCentered (r j))
   have hes := map_innerPoly (Int.castRingHom (ZMod q))
-    (fun j => GeneralSIS.liftCentered (e₁ j))
-    (fun j => GeneralSIS.liftCentered (s j))
+    (fun j => SIS.liftCentered (e₁ j))
+    (fun j => SIS.liftCentered (s j))
   change (Int.cast : ℤ → ZMod q) ∘ _ =
-    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (e j))
-      (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (r j)) at her
+    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (e j))
+      (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (r j)) at her
   change (Int.cast : ℤ → ZMod q) ∘ _ =
-    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (e₁ j))
-      (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (s j)) at hes
-  simp only [GeneralSIS.intCast_comp_liftCentered] at her hes
+    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (e₁ j))
+      (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (s j)) at hes
+  simp only [SIS.intCast_comp_liftCentered] at her hes
   funext i
   simp only [moduleLWEErrorPoly, Pi.add_apply, Pi.sub_apply, Int.cast_add, Int.cast_sub]
   have her_i := congrFun her i
   have hes_i := congrFun hes i
   simp only [Function.comp_apply] at her_i hes_i
   rw [her_i, hes_i]
-  simp only [GeneralSIS.liftCentered, ZMod.coe_valMinAbs]
+  simp only [SIS.liftCentered, ZMod.coe_valMinAbs]
 
 /-- **Infinity-norm bound on `moduleLWEErrorPoly`**: if `‖s‖_∞ ≤ B_s`, `‖r‖_∞ ≤ B_r`, and
 `‖e‖_∞, ‖e₁‖_∞, ‖e₂‖_∞ ≤ B_e`, then every coefficient of `moduleLWEErrorPoly s r e e₁ e₂` has
@@ -679,7 +400,7 @@ theorem moduleLWEDecrypt_moduleLWEEncrypt_eq_of_bounds {k n q B_s B_r B_e : ℕ}
     (hr : ModuleSIS.inInfNormBound B_r r)
     (he : ModuleSIS.inInfNormBound B_e e)
     (he₁ : ModuleSIS.inInfNormBound B_e e₁)
-    (he₂ : GeneralSIS.inInfNormBound B_e e₂)
+    (he₂ : SIS.inInfNormBound B_e e₂)
     (m : Fin n → Bool) :
     moduleLWEDecrypt s (moduleLWEEncrypt (moduleLWEKeyGen A s e) r e₁ e₂ m) = m := by
   rw [moduleLWEDecrypt, moduleLWEDecrypt_phase_eq,
@@ -701,7 +422,7 @@ theorem moduleLWEDecrypt_moduleLWEEncrypt_eq {k n q B_s B_r B_e : ℕ}
     (hr : ModuleSIS.inInfNormBound B_r r)
     (he : ModuleSIS.inInfNormBound B_e e)
     (he₁ : ModuleSIS.inInfNormBound B_e e₁)
-    (he₂ : GeneralSIS.inInfNormBound B_e e₂)
+    (he₂ : SIS.inInfNormBound B_e e₂)
     (m : Fin n → Bool) :
     moduleLWEDecrypt s (moduleLWEEncrypt (moduleLWEKeyGen A s e) r e₁ e₂ m) = m := by
   have hle : k * n * B_e * B_s ≤ k * n * B_e * B_r := Nat.mul_le_mul_left (k * n * B_e) hBs

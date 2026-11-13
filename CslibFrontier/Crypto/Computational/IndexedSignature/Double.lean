@@ -669,25 +669,10 @@ theorem isOraclePPT_doubleForger (S : IndexedSignatureScheme) {bound : ℕ → �
       (fun pair : DoubleCaller × List Bool => resources pair.1 pair.2)
       (encPair encDoubleCaller encBits) encUnary := by
     have hp := ComputableInPolyTime.id' (encIn := encPair encDoubleCaller encBits)
-    have hn := hp.fst'.fst'.fst'
-    have hotherSk := hp.fst'.snd'.snd'
-    have hw := hp.snd'
-    have hr2Len := ComputableInPolyTime.length_bits.comp (hdec.comp hw).snd'
-    have hb := hboundPoly.comp (hn.prod hr2Len)
-    have hskLen := ComputableInPolyTime.length_bits.comp hotherSk
-    have hwLen := ComputableInPolyTime.length_bits.comp hw
-    have h2sk := ComputableInPolyTime.unary_mul.comp
-      ((ComputableInPolyTime.const 2).prod hskLen)
-    have hbase := ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_add.comp (h2sk.prod hwLen)).prod (.const 4))
-    have hpow := ComputableInPolyTime.unary_mul.comp
-      ((ComputableInPolyTime.const cs).prod
-        ((ComputableInPolyTime.unary_pow ds).comp hbase))
-    have h2w := ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_mul.comp
-        ((ComputableInPolyTime.const 2).prod hwLen)).prod (.const 12))
-    exact ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_add.comp (hb.prod hpow)).prod h2w)
+    have hr2Len := ComputableInPolyTime.length_bits.comp (hdec.comp hp.snd').snd'
+    have hb := hboundPoly.comp (hp.fst'.fst'.fst'.prod hr2Len)
+    dsimp only [resources]
+    fun_prop
   have hprepare : ComputableInPolyTime
       (fun caller : DoubleCaller => (caller.1.1, caller.2.1))
       encDoubleCaller (encPair encUnary encBits) := by
@@ -798,39 +783,15 @@ is indexed EUF-CMA secure of capacity `2`. -/
 theorem IndexedEUFCMA.double {S : IndexedSignatureScheme} (hS : S.IndexedEUFCMA)
     (hcap : ∀ n, 1 ≤ S.capacity n) :
     (S.double hcap).IndexedEUFCMA := by
-  obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
-  obtain ⟨bound, hboundPoly, hbound⟩ : ∃ bound : ℕ → ℕ → ℕ,
-      ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2) (encPair encUnary encUnary) encUnary ∧
-      ∀ n, ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support, ∀ msg,
-        ∀ σ ∈ (ProbComp.eval (S.sign keys.2 0 msg)).support, σ.length ≤ bound n msg.length := by
-    have hp := ComputableTidilyInPolyTime.id' (encIn := encPair encUnary encUnary)
-    have hn1 := ComputableTidilyInPolyTime.unary_add.comp (hp.fst'.prod (.const 1))
-    have hck := ComputableTidilyInPolyTime.unary_mul.comp
-      ((ComputableTidilyInPolyTime.const ck).prod
-        ((ComputableTidilyInPolyTime.unary_pow dk).comp hn1))
-    have h2ck := ComputableTidilyInPolyTime.unary_mul.comp
-      ((ComputableTidilyInPolyTime.const 2).prod hck)
-    have hbase := ComputableTidilyInPolyTime.unary_add.comp
-      ((ComputableTidilyInPolyTime.unary_add.comp (h2ck.prod hp.snd')).prod (.const 3))
-    refine ⟨fun n L => cs * (2 * (ck * (n + 1) ^ dk) + L + 3) ^ ds,
-      .of_tidy (ComputableTidilyInPolyTime.unary_mul.comp
-        ((ComputableTidilyInPolyTime.const cs).prod
-          ((ComputableTidilyInPolyTime.unary_pow ds).comp hbase))),
-      fun n keys hkeys msg σ hσ => ?_⟩
-    have hkeyLen := hlenk n keys hkeys
-    simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeyLen
-    have hσLen := hlens (keys.2, 0, msg) σ hσ
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hσLen
-    refine hσLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left ?_ ds))
-    omega
+  obtain ⟨bound, hboundPoly, hbound⟩ := S.exists_sign_length_bound
   apply IndexedEUFCMA.of_negligible
   intro adversary hadversary
   have hneg := hS.negligible (S.doubleForger bound adversary)
     (isOraclePPT_doubleForger S hboundPoly hadversary)
   refine negligible_of_le (hneg.const_mul 2) fun n => ?_
   simpa only [Pi.mul_apply] using
-    succProbability_indexedEufCmaGame_double_le hcap (hbound n) adversary
+    succProbability_indexedEufCmaGame_double_le hcap
+      (fun keys hkeys => hbound n keys hkeys 0 (hcap n)) adversary
 
 end IndexedSignatureScheme
 

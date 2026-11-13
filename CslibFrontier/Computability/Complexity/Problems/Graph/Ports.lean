@@ -36,16 +36,16 @@ Parallel listed edges remain distinct; a loop contributes two incidences.
 namespace Cslib.Complexity.Graph
 
 /-- Endpoints of all listed edges, counting edge occurrences rather than simple-graph degree. -/
-def incidenceVertices (G : Graph) : List ℕ := G.2.flatMap fun e => [e.1, e.2]
+def incidenceVertices (G : Graph) : List ℕ := G.edges.flatMap fun e => [e.1, e.2]
 
 /-- Number of endpoint occurrences is twice the edge-list length. -/
 @[simp] theorem incidenceVertices_length (G : Graph) :
-    G.incidenceVertices.length = 2 * G.2.length := by
+    G.incidenceVertices.length = 2 * G.edges.length := by
   simp [incidenceVertices, List.length_flatMap, List.map_const', Nat.mul_comm]
 
 /-- The even endpoint occurrence is the first endpoint of the corresponding listed edge. -/
 theorem getD_incidenceVertices_even (G : Graph) (i : ℕ) :
-    G.incidenceVertices.getD (2 * i) 0 = (G.2.getD i (0, 0)).1 := by
+    G.incidenceVertices.getD (2 * i) 0 = (G.edges.getD i (0, 0)).1 := by
   rcases G with ⟨V, E⟩
   induction E generalizing i with
   | nil => simp [incidenceVertices]
@@ -58,7 +58,7 @@ theorem getD_incidenceVertices_even (G : Graph) (i : ℕ) :
 
 /-- The odd endpoint occurrence is the second endpoint of the corresponding listed edge. -/
 theorem getD_incidenceVertices_odd (G : Graph) (i : ℕ) :
-    G.incidenceVertices.getD (2 * i + 1) 0 = (G.2.getD i (0, 0)).2 := by
+    G.incidenceVertices.getD (2 * i + 1) 0 = (G.edges.getD i (0, 0)).2 := by
   rcases G with ⟨V, E⟩
   induction E generalizing i with
   | nil => simp [incidenceVertices]
@@ -76,14 +76,14 @@ def incidencePort (G : Graph) (k : ℕ) : Fin 3 :=
 
 /-- The edge-indexed finite table of canonical port pairs. -/
 def canonicalPorts (G : Graph) : List (Fin 3 × Fin 3) :=
-  (List.range G.2.length).map fun i => (G.incidencePort (2 * i), G.incidencePort (2 * i + 1))
+  (List.range G.edges.length).map fun i => (G.incidencePort (2 * i), G.incidencePort (2 * i + 1))
 
 /-- One canonical port pair per listed edge. -/
-@[simp] theorem canonicalPorts_length (G : Graph) : G.canonicalPorts.length = G.2.length := by
+@[simp] theorem canonicalPorts_length (G : Graph) : G.canonicalPorts.length = G.edges.length := by
   simp [canonicalPorts]
 
 /-- Reading the canonical table at an existing edge returns its two incidence ports. -/
-theorem getD_canonicalPorts (G : Graph) {i : ℕ} (hi : i < G.2.length) :
+theorem getD_canonicalPorts (G : Graph) {i : ℕ} (hi : i < G.edges.length) :
     G.canonicalPorts.getD i (0, 0) = (G.incidencePort (2 * i), G.incidencePort (2 * i + 1)) := by
   rw [List.getD_eq_getElem _ _ (by simpa using hi)]
   simp [canonicalPorts]
@@ -120,7 +120,7 @@ theorem incidencePort_injective (G : Graph)
 
 /-- Endpoint label of a listed edge occurrence; `false` means first, `true` second. -/
 def edgeEndpoint (G : Graph) (i : ℕ) (side : Bool) : ℕ :=
-  if side then (G.2.getD i (0, 0)).2 else (G.2.getD i (0, 0)).1
+  if side then (G.edges.getD i (0, 0)).2 else (G.edges.getD i (0, 0)).1
 
 /-- The endpoint occurrence index agrees with the finite flattened endpoint list. -/
 theorem getD_incidenceVertices_endpoint (G : Graph) (i : ℕ) (side : Bool) :
@@ -130,7 +130,7 @@ theorem getD_incidenceVertices_endpoint (G : Graph) (i : ℕ) (side : Bool) :
   · exact getD_incidenceVertices_odd G i
 
 /-- A listed endpoint occurrence lies in the endpoint list's index range. -/
-theorem endpoint_index_lt (G : Graph) {i : ℕ} (hi : i < G.2.length) (side : Bool) :
+theorem endpoint_index_lt (G : Graph) {i : ℕ} (hi : i < G.edges.length) (side : Bool) :
     2 * i + side.toNat < G.incidenceVertices.length := by
   rw [incidenceVertices_length]
   cases side <;> simp only [Bool.toNat_false, Bool.toNat_true] <;> omega
@@ -138,7 +138,7 @@ theorem endpoint_index_lt (G : Graph) {i : ℕ} (hi : i < G.2.length) (side : Bo
 /-- Vertex and canonical port determine both the edge occurrence and which end it is. -/
 theorem endpoint_port_injective (G : Graph)
     (hdeg : ∀ v, G.incidenceVertices.count v ≤ 3) {i j : ℕ}
-    (hi : i < G.2.length) (hj : j < G.2.length) (left right : Bool)
+    (hi : i < G.edges.length) (hj : j < G.edges.length) (left right : Bool)
     (hv : G.edgeEndpoint i left = G.edgeEndpoint j right)
     (hp : G.incidencePort (2 * i + left.toNat) = G.incidencePort (2 * j + right.toNat)) :
     i = j ∧ left = right := by
@@ -158,27 +158,27 @@ def portAt (ports : List (Fin 3 × Fin 3)) (i : ℕ) (side : Bool) : Fin 3 :=
   if side then (ports.getD i (0, 0)).2 else (ports.getD i (0, 0)).1
 
 /-- The canonical table reads the corresponding incidence's occurrence-rank port. -/
-theorem portAt_canonicalPorts (G : Graph) {i : ℕ} (hi : i < G.2.length) (side : Bool) :
+theorem portAt_canonicalPorts (G : Graph) {i : ℕ} (hi : i < G.edges.length) (side : Bool) :
     portAt G.canonicalPorts i side = G.incidencePort (2 * i + side.toNat) := by
   rw [portAt, getD_canonicalPorts G hi]
   cases side <;> rfl
 
 /-- Every indexed endpoint of a graph with declared endpoints is declared. -/
 theorem edgeEndpoint_mem (G : Graph)
-    (hG : ∀ edge ∈ G.2, edge.1 ∈ G.1 ∧ edge.2 ∈ G.1) {i : ℕ}
-    (hi : i < G.2.length) (side : Bool) : G.edgeEndpoint i side ∈ G.1 := by
-  have hmem : G.2.getD i (0, 0) ∈ G.2 := by grind
+    (hG : ∀ edge ∈ G.edges, edge.1 ∈ G.vertices ∧ edge.2 ∈ G.vertices) {i : ℕ}
+    (hi : i < G.edges.length) (side : Bool) : G.edgeEndpoint i side ∈ G.vertices := by
+  have hmem : G.edges.getD i (0, 0) ∈ G.edges := by grind
   cases side
   · exact (hG _ hmem).1
   · exact (hG _ hmem).2
 
 /-- Canonical vertex-position/port pairs are distinct at every pair of different listed edges. -/
 theorem canonical_index_port_ne (G : Graph)
-    (hG : ∀ edge ∈ G.2, edge.1 ∈ G.1 ∧ edge.2 ∈ G.1)
+    (hG : ∀ edge ∈ G.edges, edge.1 ∈ G.vertices ∧ edge.2 ∈ G.vertices)
     (hdeg : ∀ v, G.incidenceVertices.count v ≤ 3) {i j : ℕ}
-    (hi : i < G.2.length) (hj : j < G.2.length) (hij : i ≠ j) (left right : Bool) :
-    (G.1.idxOf (G.edgeEndpoint i left), portAt G.canonicalPorts i left) ≠
-      (G.1.idxOf (G.edgeEndpoint j right), portAt G.canonicalPorts j right) := by
+    (hi : i < G.edges.length) (hj : j < G.edges.length) (hij : i ≠ j) (left right : Bool) :
+    (G.vertices.idxOf (G.edgeEndpoint i left), portAt G.canonicalPorts i left) ≠
+      (G.vertices.idxOf (G.edgeEndpoint j right), portAt G.canonicalPorts j right) := by
   intro h
   have hv := (List.idxOf_inj (edgeEndpoint_mem G hG hi left)).1 (congrArg Prod.fst h)
   have hp := congrArg Prod.snd h

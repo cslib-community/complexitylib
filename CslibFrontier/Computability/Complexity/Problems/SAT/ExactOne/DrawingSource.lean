@@ -46,11 +46,11 @@ open Orthogonal
 
 /-- The clause endpoint of a listed incidence, with a fixed fallback for invalid indices. -/
 def sourceStart (G : Graph) (d : Graph.OrthogonalDrawing) (i : ℕ) : Point :=
-  Graph.drawingPosition G d (G.2.getD i (0, 0)).2
+  Graph.drawingPosition G d (G.edges.getD i (0, 0)).2
 
 /-- The variable endpoint of a listed incidence, with a fixed fallback for invalid indices. -/
 def sourceFinish (G : Graph) (d : Graph.OrthogonalDrawing) (i : ℕ) : Point :=
-  Graph.drawingPosition G d (G.2.getD i (0, 0)).1
+  Graph.drawingPosition G d (G.edges.getD i (0, 0)).1
 
 /-- Normalize the supplied incidence route to begin at its clause endpoint. -/
 def sourceRoute (G : Graph) (d : Graph.OrthogonalDrawing) (i : ℕ) : Route :=
@@ -59,12 +59,12 @@ def sourceRoute (G : Graph) (d : Graph.OrthogonalDrawing) (i : ℕ) : Route :=
 
 /-- Declared vertices with equal positions are equal in a valid drawing. -/
 theorem drawingPosition_injOn {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {v w : ℕ} (hv : v ∈ G.1) (hw : w ∈ G.1)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {v w : ℕ} (hv : v ∈ G.vertices) (hw : w ∈ G.vertices)
     (he : Graph.drawingPosition G d v = Graph.drawingPosition G d w) : v = w := by
   have hi := List.idxOf_lt_length_of_mem hv
   have hj := List.idxOf_lt_length_of_mem hw
-  have hi' : G.1.idxOf v < d.1.length := by rw [hd.vertexCount]; exact hi
-  have hj' : G.1.idxOf w < d.1.length := by rw [hd.vertexCount]; exact hj
+  have hi' : G.vertices.idxOf v < d.1.length := by rw [hd.vertexCount]; exact hi
+  have hj' : G.vertices.idxOf w < d.1.length := by rw [hd.vertexCount]; exact hj
   simp only [Graph.drawingPosition, List.getD_eq_getElem _ _ hi',
     List.getD_eq_getElem _ _ hj'] at he
   have he' := hd.positionsNodup.getElem_inj_iff.mp he
@@ -103,14 +103,14 @@ theorem wireLength_sourceRoute (G : Graph) (d : Graph.OrthogonalDrawing) (i : �
 
 /-- The normalized route begins at the clause and ends at the variable. -/
 theorem sourceRoute_endpoints {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length) :
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length) :
     (sourceRoute G d i).head? = some (sourceStart G d i) ∧
       (sourceRoute G d i).getLast? = some (sourceFinish G d i) := by
   have he := hd.endpoints i hi
   dsimp only at he
-  have hs : sourceStart G d i = Graph.drawingPosition G d G.2[i].2 := by
+  have hs : sourceStart G d i = Graph.drawingPosition G d G.edges[i].2 := by
     rw [sourceStart, List.getD_eq_getElem _ _ hi]
-  have hf : sourceFinish G d i = Graph.drawingPosition G d G.2[i].1 := by
+  have hf : sourceFinish G d i = Graph.drawingPosition G d G.edges[i].1 := by
     rw [sourceFinish, List.getD_eq_getElem _ _ hi]
   rw [← hs, ← hf] at he
   unfold sourceRoute
@@ -125,7 +125,7 @@ theorem sourceRoute_endpoints {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- The clause and variable endpoints occupy different points. -/
 theorem sourceStart_ne_finish {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length) :
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length) :
     sourceStart G d i ≠ sourceFinish G d i := by
   have hm := hd.endpointsDeclared _ (List.getElem_mem hi)
   have hn := hd.loopless _ (List.getElem_mem hi)
@@ -135,7 +135,7 @@ theorem sourceStart_ne_finish {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- Every normalized valid incidence has at least two listed points. -/
 theorem sourceRoute_length_ge_two {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length) :
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length) :
     2 ≤ (sourceRoute G d i).length := by
   have he := sourceRoute_endpoints hd hi
   have hn := sourceStart_ne_finish hd hi
@@ -148,7 +148,7 @@ theorem sourceRoute_length_ge_two {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- Normalization preserves proper orthogonality and continuous simplicity. -/
 theorem sourceRoute_regular {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length) :
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length) :
     IsOrthogonal (sourceRoute G d i) ∧ IsSimple (sourceRoute G d i) := by
   unfold sourceRoute
   split
@@ -158,7 +158,7 @@ theorem sourceRoute_regular {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- A normalized incidence starts with its actual clause vertex and a proper next point. -/
 theorem sourceRoute_shape {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length) :
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length) :
     ∃ b r, sourceRoute G d i = sourceStart G d i :: b :: r := by
   have hh := (sourceRoute_endpoints hd hi).1
   obtain ⟨r, hr⟩ := List.head?_eq_some_iff.mp hh
@@ -173,8 +173,8 @@ def sourceDirection (G : Graph) (d : Graph.OrthogonalDrawing) (i : ℕ) : Point 
 /-- Incidences at the same clause vertex leave in different cardinal directions. -/
 theorem sourceDirection_ne {G : Graph} {d : Graph.OrthogonalDrawing}
     (hd : Graph.IsPlanarOrthogonalDrawing G d) {i j : ℕ}
-    (hi : i < G.2.length) (hj : j < G.2.length) (hij : i ≠ j)
-    (hc : G.2[i].2 = G.2[j].2) : sourceDirection G d i ≠ sourceDirection G d j := by
+    (hi : i < G.edges.length) (hj : j < G.edges.length) (hij : i ≠ j)
+    (hc : G.edges[i].2 = G.edges[j].2) : sourceDirection G d i ≠ sourceDirection G d j := by
   obtain ⟨b, r, hr⟩ := sourceRoute_shape hd hi
   obtain ⟨c, s, hs⟩ := sourceRoute_shape hd hj
   have he : sourceStart G d i = sourceStart G d j := by grind [sourceStart]
@@ -205,7 +205,7 @@ def exteriorPort (k radius : ℕ) (G : Graph) (d : Graph.OrthogonalDrawing) (i :
 
 /-- The trimmed exterior incidence is proper and continuously simple. -/
 theorem exteriorRoute_regular {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length)
     {k radius : ℕ} (hr : radius < k) :
     IsOrthogonal (exteriorRoute k radius G d i) ∧ IsSimple (exteriorRoute k radius G d i) :=
   ⟨isOrthogonal_cutStart (sourceRoute_regular hd hi).1 hr,
@@ -213,7 +213,7 @@ theorem exteriorRoute_regular {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- The exterior incidence has its designated box port and the original scaled variable endpoint. -/
 theorem exteriorRoute_endpoints {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length)
     (k radius : ℕ) :
     (exteriorRoute k radius G d i).head? = some (exteriorPort k radius G d i) ∧
       (exteriorRoute k radius G d i).getLast? = some (k • sourceFinish G d i) := by
@@ -231,7 +231,7 @@ theorem exteriorRoute_endpoints {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- Cutting removes exactly the radius from the scaled Manhattan cost. -/
 theorem exteriorRoute_wireLength {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length)
     {k radius : ℕ} (hr : radius < k) :
     wireLength (exteriorRoute k radius G d i) + radius =
       k * wireLength (d.2.getD i []) := by
@@ -247,7 +247,7 @@ theorem exteriorRoute_segmentCount (k radius : ℕ) (G : Graph) (d : Graph.Ortho
 
 /-- The exterior route meets its own closed clause box only at the designated port. -/
 theorem exteriorRoute_box_contact {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length)
     {k radius : ℕ} (hr : radius < k) {p : ℝ × ℝ}
     (hp : p ∈ support (exteriorRoute k radius G d i))
     (hb : inPointBox (k • sourceStart G d i) radius p) :
@@ -263,8 +263,8 @@ theorem exteriorRoute_box_contact {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- A nonincident declared vertex has a closed replacement box disjoint from an exterior route. -/
 theorem exteriorRoute_avoids_box {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length)
-    {v : ℕ} (hv : v ∈ G.1) (hv₁ : v ≠ G.2[i].1) (hv₂ : v ≠ G.2[i].2)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length)
+    {v : ℕ} (hv : v ∈ G.vertices) (hv₁ : v ≠ G.edges[i].1) (hv₂ : v ≠ G.edges[i].2)
     {k radius : ℕ} (hr : radius < k) {p : ℝ × ℝ}
     (hp : p ∈ support (exteriorRoute k radius G d i)) :
     ¬ inPointBox (k • Graph.drawingPosition G d v) radius p := by
@@ -298,7 +298,7 @@ theorem exteriorPort_ne_center (k radius : ℕ) (hr : 0 < radius) (G : Graph)
 
 /-- A trimmed incidence no longer contains the scaled source clause vertex. -/
 theorem exteriorRoute_not_mem_center {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.2.length)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {i : ℕ} (hi : i < G.edges.length)
     {k radius : ℕ} (hr₀ : 0 < radius) (hr : radius < k) :
     realPoint (k • sourceStart G d i) ∉ support (exteriorRoute k radius G d i) := by
   intro hp
@@ -318,11 +318,11 @@ theorem exteriorRoute_not_mem_center {G : Graph} {d : Graph.OrthogonalDrawing}
 The common source clause endpoint has been removed by the positive-radius cut. -/
 theorem exteriorRoute_contacts {G : Graph} {d : Graph.OrthogonalDrawing}
     (hd : Graph.IsPlanarOrthogonalDrawing G d) {i j : ℕ}
-    (hi : i < G.2.length) (hj : j < G.2.length) (hij : i ≠ j)
+    (hi : i < G.edges.length) (hj : j < G.edges.length) (hij : i ≠ j)
     {k radius : ℕ} (hr₀ : 0 < radius) (hr : radius < k) {p : ℝ × ℝ}
     (hp : p ∈ support (exteriorRoute k radius G d i))
     (hq : p ∈ support (exteriorRoute k radius G d j)) :
-    G.2[i].1 = G.2[j].1 ∧ p = realPoint (k • sourceFinish G d i) := by
+    G.edges[i].1 = G.edges[j].1 ∧ p = realPoint (k • sourceFinish G d i) := by
   have hp' := support_cutStart_subset (sourceRoute_regular hd hi).1 hr hp
   have hq' := support_cutStart_subset (sourceRoute_regular hd hj).1 hr hq
   rw [support_dilateRoute] at hp' hq'
@@ -336,12 +336,12 @@ theorem exteriorRoute_contacts {G : Graph} {d : Graph.OrthogonalDrawing}
   obtain ⟨v, _, hvi, hvj, hv⟩ := hd.contacts i hi j hj hij q hq₁ hr₁
   have hpv : p = realPoint (k • Graph.drawingPosition G d v) := by
     rw [← he₁, hv, realPoint_nsmul]
-  have hvi₂ : v ≠ G.2[i].2 := by
+  have hvi₂ : v ≠ G.edges[i].2 := by
     intro he
     have hs : sourceStart G d i = Graph.drawingPosition G d v := by
       rw [sourceStart, List.getD_eq_getElem _ _ hi, ← he]
     exact exteriorRoute_not_mem_center hd hi hr₀ hr (by simpa only [hs, hpv] using hp)
-  have hvj₂ : v ≠ G.2[j].2 := by
+  have hvj₂ : v ≠ G.edges[j].2 := by
     intro he
     have hs : sourceStart G d j = Graph.drawingPosition G d v := by
       rw [sourceStart, List.getD_eq_getElem _ _ hj, ← he]
@@ -353,7 +353,8 @@ theorem exteriorRoute_contacts {G : Graph} {d : Graph.OrthogonalDrawing}
 
 /-- A different source vertex center lies outside the closed local replacement box. -/
 theorem sourceVertex_not_mem_box {G : Graph} {d : Graph.OrthogonalDrawing}
-    (hd : Graph.IsPlanarOrthogonalDrawing G d) {v w : ℕ} (hv : v ∈ G.1) (hw : w ∈ G.1)
+    (hd : Graph.IsPlanarOrthogonalDrawing G d) {v w : ℕ}
+    (hv : v ∈ G.vertices) (hw : w ∈ G.vertices)
     (hvw : v ≠ w) {k radius : ℕ} (hr : radius < k) :
     ¬ inPointBox (k • Graph.drawingPosition G d v) radius
       (realPoint (k • Graph.drawingPosition G d w)) := by

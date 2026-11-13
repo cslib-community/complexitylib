@@ -186,7 +186,7 @@ enumeration, whole-input access, paired ports, and a native estimator remain sep
 theorem exists_timeLayer_configMatrix_of_mem_BPL (h : A ∈ BPL enc) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (M : MultiTapePTM k Bool State) (d : ℕ),
       ∀ a,
-        let T := 2 * (2 * ((enc a).length + 1)) ^ d
+        let T := polyClock d (enc a).length
         ∃ (V : Finset (FiniteCfg k Bool State)) (hinit : M.toNTM.initView (enc a) ∈ V)
           (order : LinearOrder V),
           letI := order

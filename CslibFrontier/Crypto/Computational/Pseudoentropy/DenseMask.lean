@@ -30,10 +30,9 @@ Neither the program nor its parameters are chosen separately at each input lengt
 
 ## Main results
 
-* `HasGapWithAdvice.eventually_exists_indexed_mask`,
-  `HasGap.eventually_exists_indexed_mask`: one threshold for all tests in an efficient family.
-* `HasGapWithAdvice.eventually_exists_mask`,
-  `HasGap.eventually_exists_mask`: specialize to a single sequence test.
+* `HasGapWithAdvice.eventually_exists_indexed_mask`: one threshold for all tests in an efficient
+  family.
+* `HasGapWithAdvice.eventually_exists_mask`: specialize to a single sequence test.
 
 ## References
 
@@ -237,43 +236,6 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
       4 * (1 / (4 * (params (n, advice n) i).predictionInverseTolerance)) := by ring
   linarith
 
-/-- All tests in a uniformly efficient polynomial-size family eventually admit dense soft masks
-with small distinguishing gap whenever their density is valid. The common eventual threshold
-allows arbitrary choices of index in the proof without supplying that choice to the program. -/
-theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (test : ℕ → ℕ → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encLabeledSamples) encBool
-        (fun ((n, i), samples) => test n i samples))
-    {candidates count densityBound inverseGap : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ}
-    (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
-    (hcount : ComputableInPolyTime count encUnary encUnary)
-    (hnumerator : ComputableInPolyTime (fun input => numerator input.1 input.2)
-      (encPair encUnary encUnary) encUnary)
-    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
-    (hinverseGap : ComputableInPolyTime inverseGap encUnary encUnary)
-    (hgap : ∀ n, 0 < inverseGap n) :
-    ∀ᶠ n in atTop, ∀ i < candidates n,
-      0 < numerator n i → numerator n i ≤ dyadicSize (densityBound n) →
-      (numerator n i : ℝ) / dyadicSize (densityBound n) ≤
-        PMF.conditionalEntropy (pair.joint n) + gap n →
-      ∃ mask : pair.Observation n × Bool → ProbComp Bool,
-        (numerator n i : ℝ) / dyadicSize (densityBound n) ≤
-          Pr[pair.latentSample n >>= mask] ∧
-        (∀ value, 0 < Pr[mask value] →
-          1 / (dyadicSize (2 * inverseGap n * dyadicSize (densityBound n)) : ℝ) ≤
-            Pr[mask value]) ∧
-        (Game.advantage
-          (ProbComp.eval (OracleComp.replicate (count n) (pair.sample n) >>= test n i))
-          (ProbComp.eval (OracleComp.replicate (count n) (maskedSample (pair.latentSample n)
-            (fun value => pair.encode n value.1) Prod.snd mask) >>= test n i)) : ℝ) <
-              (dyadicSize (count n) : ℝ) / inverseGap n := by
-  have hp1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary)
-    (encList (encPair encBits encBool))
-  have htest' := htest.preprocess ((hp1.fst'.fst'.prod hp1.snd').prod (.snd _ _))
-  exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).eventually_exists_indexed_mask
-    (fun a => test a.1) htest'
-    hcandidates hcount hnumerator hdensity hinverseGap hgap
-
 /-- Every advised sequence test eventually admits a dense soft mask with small distinguishing gap.
 The mask may depend on the test, advice and parameter; its positive probabilities are uniformly
 bounded below by the configured dyadic rate. The statement exposes no boosting state. -/
@@ -312,38 +274,5 @@ theorem HasGapWithAdvice.eventually_exists_mask {pair : SamplablePair} {gap : �
     (.const 1) hcount hnum' hdensity hinverseGap hgap
   filter_upwards [h] with n hn
   exact hn 0 (by decide)
-
-/-- Every uniform sequence test eventually admits a dense soft mask with small distinguishing
-gap. The mask may depend on the test and parameter; its positive probabilities are uniformly
-bounded below by the configured dyadic rate. The statement exposes no boosting state. -/
-theorem HasGap.eventually_exists_mask {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (test : ℕ → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair encUnary encLabeledSamples) encBool
-        (fun input => test input.1 input.2))
-    {count numerator densityBound inverseGap : ℕ → ℕ}
-    (hcount : ComputableInPolyTime count encUnary encUnary)
-    (hnumerator : ComputableInPolyTime numerator encUnary encUnary)
-    (hdensity : ComputableInPolyTime densityBound encUnary encUnary)
-    (hinverseGap : ComputableInPolyTime inverseGap encUnary encUnary)
-    (hgap : ∀ n, 0 < inverseGap n) :
-    ∀ᶠ n in atTop, 0 < numerator n → numerator n ≤ dyadicSize (densityBound n) →
-      (numerator n : ℝ) / dyadicSize (densityBound n) ≤
-        PMF.conditionalEntropy (pair.joint n) + gap n →
-      ∃ mask : pair.Observation n × Bool → ProbComp Bool,
-        (numerator n : ℝ) / dyadicSize (densityBound n) ≤
-          Pr[pair.latentSample n >>= mask] ∧
-        (∀ value, 0 < Pr[mask value] →
-          1 / (dyadicSize (2 * inverseGap n * dyadicSize (densityBound n)) : ℝ) ≤
-            Pr[mask value]) ∧
-        (Game.advantage (ProbComp.eval (OracleComp.replicate (count n) (pair.sample n) >>= test n))
-          (ProbComp.eval (OracleComp.replicate (count n) (maskedSample (pair.latentSample n)
-            (fun value => pair.encode n value.1) Prod.snd mask) >>= test n)) : ℝ) <
-              (dyadicSize (count n) : ℝ) / inverseGap n := by
-  have hp1 := ComputableInPolyTime.fst (encPair encUnary encBits)
-    (encList (encPair encBits encBool))
-  have htest' := htest.preprocess (hp1.fst'.prod (.snd _ _))
-  exact (hasGap_iff_hasGapWithAdvice_nil.mp hpair).eventually_exists_mask
-    (fun a => test a.1) htest'
-    hcount hnumerator hdensity hinverseGap hgap
 
 end Cslib.Crypto.Pseudoentropy.SamplablePair

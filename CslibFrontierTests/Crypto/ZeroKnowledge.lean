@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.Complexity.Classes.IP.Repetition
 import CslibFrontier.Crypto.Computational.ZeroKnowledge.Amplification
+import CslibFrontier.Crypto.Computational.ZeroKnowledge.AuxClock
 import CslibFrontier.Tactic.PPT
 
 /-! Tests for Naor's bit commitment scheme and the Goldreich–Micali–Wigderson
@@ -38,23 +39,24 @@ example (n : ℕ) :
     naorBindingProb tripleGen (fun k => 3 * k + 1) n ≤ (1 / 2 : ENNReal) ^ (n + 1) :=
   naorBindingProb_le_of_three_mul_add_one length_tripleGen n le_rfl
 
-/-- Unconditional non-vacuity instance of `ZeroKnowledgeProof` for the empty language `∅`. -/
-noncomputable def emptyZeroKnowledgeProof : ZeroKnowledgeProof encBits (∅ : Set (List Bool)) where
+/-- Unconditional non-vacuity instance of `ZKProof` for the empty language `∅`, with soundness
+`1 / 3`. -/
+noncomputable def emptyZKProof : ZKProof encBits (∅ : Set (List Bool)) (fun _ => 1 / 3) where
   verifier _ _ := pure false
   prover _ _ _ :=
-    { State := ℕ × List Bool
-      init := (0, [false, false, false])
+    { State := GMW.TwoRoundState
+      init := .init
       respond := fun q s => PMF.pure (GMW.twoRoundStep (fun _ => []) (fun _ => []) q.2 s) }
   isWitness _ _ := false
   polyTime_isWitness := by fun_prop
   mem_iff_exists_witness a := by simp
   isOraclePPT_verifier := by fun_prop
   interact _ _ _ prog :=
-    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])
+    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog .init
   eval_interact _ _ _ prog :=
     (ProbComp.eval_map _ _).trans
       (congrArg (PMF.map Prod.fst)
-        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])))
+        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog .init))
   isPPT_interact {Vstar} hV := by
     have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
@@ -68,27 +70,26 @@ noncomputable def emptyZeroKnowledgeProof : ZeroKnowledgeProof encBits (∅ : Se
   zero_knowledge {_} _ :=
     ⟨fun _ _ _ => pure [], by ppt, fun _ _ _ _ _ _ hw => Bool.noConfusion (hw 0)⟩
 
-/-- Unconditional instance of `ZeroKnowledgeProof` for the full language `Set.univ`, in which
+/-- Unconditional instance of `ZKProof` for the full language `Set.univ`, in which
 every witness is valid. The verifier always accepts, the prover sends empty replies, and the
 simulator runs `Vstar` against that same silent prover, so the zero-knowledge quantifiers range over
 satisfiable witness families. -/
-noncomputable def univZeroKnowledgeProof :
-    ZeroKnowledgeProof encBits (Set.univ : Set (List Bool)) where
+noncomputable def univZKProof : ZKProof encBits (Set.univ : Set (List Bool)) (fun _ => 1 / 3) where
   verifier _ _ := pure true
   prover _ _ _ :=
-    { State := ℕ × List Bool
-      init := (0, [false, false, false])
+    { State := GMW.TwoRoundState
+      init := .init
       respond := fun q s => PMF.pure (GMW.twoRoundStep (fun _ => []) (fun _ => []) q.2 s) }
   isWitness _ _ := true
   polyTime_isWitness := by fun_prop
   mem_iff_exists_witness a := by simp
   isOraclePPT_verifier := by fun_prop
   interact _ _ _ prog :=
-    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])
+    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog .init
   eval_interact _ _ _ prog :=
     (ProbComp.eval_map _ _).trans
       (congrArg (PMF.map Prod.fst)
-        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])))
+        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog .init))
   isPPT_interact {Vstar} hV := by
     have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
@@ -101,7 +102,7 @@ noncomputable def univZeroKnowledgeProof :
   sound _ _ ha := absurd (Set.mem_univ _) ha
   zero_knowledge {Vstar} hV := by
     refine ⟨fun n a z => Prod.fst <$>
-      GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) (0, [false, false, false]),
+      GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) .init,
       ?_, fun _ _ _ _ _ _ _ => ?_⟩
     · have hrun := GMW.isPPTOn_runTwoRound hV
         (input := encPair encUnary (encPair encBits encBits))
@@ -113,15 +114,15 @@ noncomputable def univZeroKnowledgeProof :
     · convert ComputationallyIndistinguishable.refl _ using 2 with n
       exact (ProbComp.eval_map _ _).trans
         (congrArg (PMF.map Prod.fst)
-          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ (0, [false, false, false])))
+          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ .init))
 
-/-- Unconditional general auxiliary-input zero-knowledge for `univZeroKnowledgeProof` across all
+/-- Unconditional general auxiliary-input zero-knowledge for `univZKProof` across all
 arbitrary polynomially bounded valid instance, witness, and auxiliary-input families. -/
-theorem univZeroKnowledgeProof_auxiliaryInputZeroKnowledge :
-    univZeroKnowledgeProof.AuxiliaryInputZeroKnowledge := by
+theorem univZKProof_auxiliaryInputZeroKnowledge :
+    univZKProof.AuxiliaryInputZeroKnowledge := by
   intro Vstar hV
   refine ⟨fun n a z => Prod.fst <$>
-    GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) (0, [false, false, false]),
+    GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) .init,
     ?_, fun a w z _ _ _ _ _ _ _ _ => ?_⟩
   · have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits encBits))
@@ -133,19 +134,19 @@ theorem univZeroKnowledgeProof_auxiliaryInputZeroKnowledge :
   · convert negligible_zero using 2 with n
     have heq :
         ProbComp.eval (Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => [])
-          (Vstar n (a n) (z n)) (0, [false, false, false])) =
-        ((univZeroKnowledgeProof.prover n (a n) (w n)).run (Vstar n (a n) (z n))
-          (univZeroKnowledgeProof.prover n (a n) (w n)).init).map Prod.fst :=
+          (Vstar n (a n) (z n)) .init) =
+        ((univZKProof.prover n (a n) (w n)).run (Vstar n (a n) (z n))
+          (univZKProof.prover n (a n) (w n)).init).map Prod.fst :=
       (ProbComp.eval_map _ _).trans
         (congrArg (PMF.map Prod.fst)
-          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ (0, [false, false, false])))
+          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ .init))
     rw [heq, Game.advantage_self]
 
 -- The stronger-to-restricted bridge recovers `GenerableZeroKnowledge` from
 -- `AuxiliaryInputZeroKnowledge`.
-example : GenerableZeroKnowledge encBits univZeroKnowledgeProof.prover
-    univZeroKnowledgeProof.isWitness :=
-  univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.generableZeroKnowledge
+example : GenerableZeroKnowledge encBits univZKProof.prover
+    univZKProof.isWitness :=
+  univZKProof_auxiliaryInputZeroKnowledge.generableZeroKnowledge
 
 -- Concrete satisfiable 3CNF formula and witness check.
 private def satFormula : CNF ℕ := [[(0, true), (1, false)]]
@@ -174,24 +175,36 @@ example (n : ℕ) (P : Prover Unit) :
 
 -- Every language with a zero-knowledge interactive proof system belongs to `IP`.
 example : (∅ : Set (List Bool)) ∈ IP encBits :=
-  emptyZeroKnowledgeProof.mem_IP
+  emptyZKProof.mem_IP ⟨0, le_rfl⟩
 
 example : (Set.univ : Set (List Bool)) ∈ IP encBits :=
-  univZeroKnowledgeProof.mem_IP
+  univZKProof.mem_IP ⟨0, le_rfl⟩
 
--- `ThreeSAT` has a computational zero-knowledge proof system from any one-way function.
-example {f : List Bool → List Bool} (hf : OneWay f) :
-    Nonempty (ZeroKnowledgeProof encCNF ThreeSAT) :=
-  hf.exists_zeroKnowledgeProof_of_mem_NP ThreeSAT.mem_NP
-
--- Under an explicit advice-PRG premise, every NP language has a GMW zero-knowledge proof system
--- satisfying general `AuxiliaryInputZeroKnowledge`.
+-- Under an explicit advice-PRG premise, the single-session GMW proof system for `ThreeSAT`
+-- satisfies general `AuxiliaryInputZeroKnowledge`.
 example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (hAdv : GMW.AdvicePRG encCNF generator length) :
-    ∃ zk : ZeroKnowledgeProof encCNF ThreeSAT, zk.AuxiliaryInputZeroKnowledge :=
-  hG.exists_auxiliaryInputZeroKnowledge_of_mem_NP hstretch hAdv ThreeSAT.mem_NP
+    (hG.singleZKProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge :=
+  hG.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT hstretch hAdv
+
+-- Weakening the soundness bound: an amplified proof system is in particular `1 / 3`-sound.
+example {f : List Bool → List Bool} (hf : OneWay f) :
+    Nonempty (ZKProof encCNF ThreeSAT (fun _ => 1 / 3)) :=
+  let ⟨zk, _⟩ := hf.exists_zkProof_of_mem_NP ThreeSAT.mem_NP
+  ⟨zk.mono one_third_pow_succ_le⟩
+
+-- `ZKProof.mono` keeps the witness check and auxiliary-input zero knowledge, so the strongest
+-- single-session `1 / 3` existence statement for an NP relation's own witnesses follows from the
+-- amplified one.
+example {α : Type} {enc : α ↪ List Bool} {generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (hG : PseudorandomGenerator generator length) (hstretch : ∀ k, 3 * k + 1 ≤ length k)
+    (hAdv : GMW.AdvicePRG enc generator length) (R : NPRelation enc) :
+    ∃ zk : ZKProof enc R.language (fun _ => 1 / 3),
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge :=
+  let ⟨zk, hw, _, hzk⟩ := hG.exists_auxiliaryInputZKProof_of_npRelation hstretch hAdv R
+  ⟨zk.mono one_third_pow_succ_le, hw, hzk⟩
 
 -- Machine-level input-tape prefix locality: a `fuel`-step run on `u ++ v` depends only on
 -- `u ++ v.take fuel`.
@@ -259,16 +272,16 @@ example {program : List Bool → List Bool → WordOracleComp Unit (List Bool)}
   h.isOraclePPTWithAux_take 2 3
 
 -- Unconditional non-vacuity of `UnboundedAuxiliaryInputZeroKnowledge` and
--- `InstanceAuxiliaryInputZeroKnowledge` for `univZeroKnowledgeProof`.
-example : univZeroKnowledgeProof.UnboundedAuxiliaryInputZeroKnowledge :=
-  univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
+-- `InstanceAuxiliaryInputZeroKnowledge` for `univZKProof`.
+example : univZKProof.UnboundedAuxiliaryInputZeroKnowledge :=
+  univZKProof_auxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
 
-example : univZeroKnowledgeProof.InstanceAuxiliaryInputZeroKnowledge :=
-  let hub := univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
+example : univZKProof.InstanceAuxiliaryInputZeroKnowledge :=
+  let hub := univZKProof_auxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
   hub.instanceAuxiliaryInputZeroKnowledge
 
-example : univZeroKnowledgeProof.InstanceAuxiliaryInputZeroKnowledge :=
-  univZeroKnowledgeProof_auxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
+example : univZKProof.InstanceAuxiliaryInputZeroKnowledge :=
+  univZKProof_auxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
 
 -- Under `GMW.AdvicePRG`, the GMW `ThreeSAT` proof system satisfies both
 -- `UnboundedAuxiliaryInputZeroKnowledge` and Goldreich-style `InstanceAuxiliaryInputZeroKnowledge`.
@@ -276,9 +289,9 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (hAdv : GMW.AdvicePRG encCNF generator length) :
-    (hG.zeroKnowledgeProofThreeSAT hstretch).UnboundedAuxiliaryInputZeroKnowledge ∧
-      (hG.zeroKnowledgeProofThreeSAT hstretch).InstanceAuxiliaryInputZeroKnowledge :=
-  let hzk := hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT hstretch hAdv
+    (hG.singleZKProofThreeSAT hstretch).UnboundedAuxiliaryInputZeroKnowledge ∧
+      (hG.singleZKProofThreeSAT hstretch).InstanceAuxiliaryInputZeroKnowledge :=
+  let hzk := hG.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT hstretch hAdv
   ⟨hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩
 
 -- Polynomial-count sequential repetition of any strict oracle PPT verifier is strict oracle PPT.
@@ -288,24 +301,24 @@ example {round : ℕ × List Bool → WordOracleComp Unit Bool}
       (fun (n, a) => sequentialRepeat (n + 1) (round (n, a))) :=
   hround.sequentialRepeat_count (by fun_prop)
 
--- Sequentially repeating `emptyZeroKnowledgeProof`'s verifier `n + 1` times yields a `ZKProof`
+-- Sequentially repeating `emptyZKProof`'s verifier `n + 1` times yields a `ZKProof`
 -- with soundness `(1 / 3) ^ (n + 1)` and `NegligibleSoundness`.
 private noncomputable def amplifiedEmptyZKProof :
     ZKProof encBits (∅ : Set (List Bool)) (fun n => (1 / 3 : ENNReal) ^ (n + 1)) where
-  verifier n a := sequentialRepeat (n + 1) (emptyZeroKnowledgeProof.verifier n a)
-  prover := emptyZeroKnowledgeProof.prover
-  isWitness := emptyZeroKnowledgeProof.isWitness
-  polyTime_isWitness := emptyZeroKnowledgeProof.polyTime_isWitness
-  mem_iff_exists_witness := emptyZeroKnowledgeProof.mem_iff_exists_witness
+  verifier n a := sequentialRepeat (n + 1) (emptyZKProof.verifier n a)
+  prover := emptyZKProof.prover
+  isWitness := emptyZKProof.isWitness
+  polyTime_isWitness := emptyZKProof.polyTime_isWitness
+  mem_iff_exists_witness := emptyZKProof.mem_iff_exists_witness
   isOraclePPT_verifier :=
-    emptyZeroKnowledgeProof.isOraclePPT_verifier.sequentialRepeat_count (by fun_prop)
-  interact := emptyZeroKnowledgeProof.interact
-  eval_interact := emptyZeroKnowledgeProof.eval_interact
-  isPPT_interact := emptyZeroKnowledgeProof.isPPT_interact
+    emptyZKProof.isOraclePPT_verifier.sequentialRepeat_count (by fun_prop)
+  interact := emptyZKProof.interact
+  eval_interact := emptyZKProof.eval_interact
+  isPPT_interact := emptyZKProof.isPPT_interact
   complete _ _ _ hw := Bool.noConfusion hw
   sound n a ha P :=
-    acceptProb_sequentialRepeat_le (emptyZeroKnowledgeProof.sound n a ha) (n + 1) P
-  zero_knowledge := emptyZeroKnowledgeProof.zero_knowledge
+    acceptProb_sequentialRepeat_le (emptyZKProof.sound n a ha) (n + 1) P
+  zero_knowledge := emptyZKProof.zero_knowledge
 
 example : amplifiedEmptyZKProof.NegligibleSoundness :=
   amplifiedEmptyZKProof.negligibleSoundness_one_third_pow (fun n => Nat.le_succ n)
@@ -318,8 +331,8 @@ example (a : ℕ → List Bool) (P : ℕ → Prover Unit) :
 example : (∅ : Set (List Bool)) ∈ IP encBits :=
   (amplifiedEmptyZKProof.negligibleSoundness_one_third_pow (fun n => Nat.le_succ n)).mem_IP
 
--- Negative guard: constant `1 / 3` soundness (`toZKProof`) is not `NegligibleSoundness`.
-example : ¬ univZeroKnowledgeProof.toZKProof.NegligibleSoundness := by
+-- Negative guard: constant `1 / 3` soundness is not `NegligibleSoundness`.
+example : ¬ univZKProof.NegligibleSoundness := by
   intro h
   refine not_negligible_const (c := ((1 / 3 : ENNReal).toNNReal)) ?_ h.2
   rw [ENNReal.toNNReal_div, ENNReal.toNNReal_one, ENNReal.toNNReal_ofNat]

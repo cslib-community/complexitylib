@@ -109,6 +109,12 @@ example : SubsetSum.verifier (⟨[2 ^ 100, 2 ^ 100, 1], 2 ^ 101⟩, [true, true,
 example : maskSelect [3, 5] [true, false, true, true] = [3] := rfl
 example : maskSelect [3, 5, 5] [false, true, true] = [5, 5] := rfl
 
+-- The sub-multiset witness helper gives `NP` membership from polynomial-time code for the list of
+-- numbers and for the check of the selected numbers.
+example : SubsetSum ∈ NP encSubsetSum :=
+  mem_NP_of_subMultisetWitness (encγ := encNat) (check := fun x => decide (x.2.sum = x.1.target))
+    (by fun_prop) (by fun_prop) fun _ _ _ => by simp
+
 /-! ### Sipser's digit construction -/
 
 -- One clause `x₀`: numbers `9 = 1 + 8` (literal `x₀`), `1` (literal `¬x₀`) and two slack numbers

@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Oracle.Space
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 
 /-!
 # Counting classes within polynomial space
@@ -62,7 +63,7 @@ theorem PP_subset_PSPACE : PP enc ⊆ PSPACE enc := by
       ((ComputableInPolySpace.of_polyTime hpow).prod
         ((ComputableInPolySpace.of_polyTime hdouble).comp
           (SharpP.computableInPolySpace hf)))
-  exact mem_PSPACE_of_computableInPolySpace htest fun a => by simpa using hA a
+  exact ⟨_, htest, fun a => by simpa using hA a⟩
 
 /-- Testing whether a fixed modulus divides a #P count is in polynomial space. A quotient has
 at most one more bit than the verifier's certificate length, even for moduli zero and one. -/
@@ -87,9 +88,9 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
         (hle.comp ((ComputableInPolySpace.of_polyTime hright).prod hleft)))
   have hB : {x : α × List Bool | f x.1 = k * ofBits x.2} ∈
       PSPACE (encPair enc encBits) :=
-    mem_PSPACE_of_computableInPolySpace htest fun x => by
+    ⟨_, htest, fun x => by
       simp only [Set.mem_ofPred_eq, Bool.and_eq_true, decide_eq_true_eq]
-      exact le_antisymm_iff
+      exact le_antisymm_iff⟩
   have hbound : ComputableInPolyTime (fun a => p.eval (enc a).length + 1)
       enc encUnary := by fun_prop
   have h := setOf_exists_mem_PSPACE hB hbound
@@ -104,7 +105,7 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
         (Nat.pow_lt_pow_right (by norm_num) (by lia)))
     obtain ⟨hv, hl⟩ := BitString.iterate_increment _ _ hlt
     refine ⟨_, hl, ?_⟩
-    rw [ofBits, ← BitString.lsbValue_eq_foldr_bit, hv]
+    rw [ofBits_eq_lsbValue, hv]
     exact (Nat.mul_div_cancel' (Nat.dvd_of_mod_eq_zero hdiv)).symm
   · rintro ⟨w, _, hw⟩
     exact Nat.mod_eq_zero_of_dvd ⟨ofBits w, hw⟩
@@ -112,7 +113,7 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
 /-- Nonzero-modular counting is in polynomial space, for every fixed modulus. -/
 theorem ModP_subset_PSPACE (k : ℕ) : ModP k enc ⊆ PSPACE enc := by
   intro A hA
-  have hc : Aᶜ ∈ coModP k enc := by simpa [coModP] using hA
+  have hc : Aᶜ ∈ coModP k enc := compl_mem_coModP.mpr hA
   simpa using compl_mem_PSPACE (coModP_subset_PSPACE k hc)
 
 /-- Polynomial time with a PP word oracle stays within polynomial space. -/

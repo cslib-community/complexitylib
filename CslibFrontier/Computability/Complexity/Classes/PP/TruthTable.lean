@@ -15,7 +15,7 @@ public import CslibFrontier.Foundations.Order.BooleanSubalgebra
 import CslibFrontier.Computability.Complexity.Classes.PP.Characterization
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Products
 import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Foundations.Data.List.Lookup
@@ -345,7 +345,7 @@ theorem truthTable_mem_PP (hA : A ∈ PP (encPair enc encUnary))
 theorem PolyTimeTruthTableReducible.mem_PP {β : Type} {encB : β ↪ List Bool}
     {L : Set α} {B : Set β} (h : PolyTimeTruthTableReducible enc encB L B)
     (hB : B ∈ PP encB) : L ∈ PP enc := by
-  obtain ⟨r, q, d, hr, hq, hd, hL⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd⟩, hL⟩ := h
   have hqB : q ⁻¹' B ∈ PP (encPair enc encUnary) :=
     PolyTimeReducible.mem_PP ⟨q, hq, fun _ => Iff.rfl⟩ hB
   convert truthTable_mem_PP hqB hr hd using 1
@@ -358,11 +358,7 @@ theorem PolyTimeTruthTableReducible.mem_PP {β : Type} {encB : β ↪ List Bool}
 theorem forall_lt_mem_PP (hA : A ∈ PP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary) :
     {a | ∀ i < r a, (a, i) ∈ A} ∈ PP enc := by
-  have hd : ComputableInPolyTime (fun x : α × List Bool => x.2.all id)
-      (encPair enc encBits) encBool :=
-    ComputableInPolyTime.allWithEncoding (encP := encBool) (encA := encBool) (encL := encBits)
-      (test := fun p : Bool × Bool => p.2) (by fun_prop) (.const false) (.snd enc encBits)
-  convert truthTable_mem_PP hA hr hd using 1
+  convert truthTable_mem_PP (d := fun x => x.2.all id) hA hr (by fun_prop) using 1
   ext a
   simp [truthTableAnswers, List.all_eq_true, Fin.forall_iff]
 
@@ -370,11 +366,7 @@ theorem forall_lt_mem_PP (hA : A ∈ PP (encPair enc encUnary))
 theorem exists_lt_mem_PP (hA : A ∈ PP (encPair enc encUnary))
     (hr : ComputableInPolyTime r enc encUnary) :
     {a | ∃ i < r a, (a, i) ∈ A} ∈ PP enc := by
-  have hd : ComputableInPolyTime (fun x : α × List Bool => x.2.any id)
-      (encPair enc encBits) encBool :=
-    ComputableInPolyTime.anyWithEncoding (encP := encBool) (encA := encBool) (encL := encBits)
-      (test := fun p : Bool × Bool => p.2) (by fun_prop) (.const false) (.snd enc encBits)
-  convert truthTable_mem_PP hA hr hd using 1
+  convert truthTable_mem_PP (d := fun x => x.2.any id) hA hr (by fun_prop) using 1
   ext a
   simp [truthTableAnswers, List.any_eq_true, Fin.exists_iff]
 

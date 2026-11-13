@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.SplayTree.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 
 /-!
 # Sleator–Tarjan's Access Lemma, Static Optimality, and Update Bounds
@@ -285,7 +286,7 @@ private theorem two_add_logb_two_add_le {a b s : ℝ} (ha : 0 < a) (hb : 0 < b) 
     Real.logb_le_logb_of_le (by norm_num) (mul_pos (by norm_num) (mul_pos ha hb)) hsq
   have h4 : Real.logb 2 4 = 2 := by
     have hpow : (4 : ℝ) = (2 : ℝ) ^ (2 : ℕ) := by norm_num
-    rw [hpow, Real.logb_pow, Real.logb_self_eq_one (by norm_num)]
+    rw [hpow, Real.logb_two_pow]
     norm_num
   rw [Real.logb_mul (by norm_num) (mul_ne_zero ha.ne' hb.ne'),
     Real.logb_mul ha.ne' hb.ne', h4, Real.logb_pow] at hlog

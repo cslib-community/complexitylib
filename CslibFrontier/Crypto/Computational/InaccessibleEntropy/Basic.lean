@@ -13,7 +13,7 @@ public import CslibFrontier.Crypto.Negligible
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Probability.Entropy
-import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Uniform
 
@@ -182,33 +182,6 @@ theorem accessibleSetExpectation_nonneg {α : Type*} [Fintype α] [Nonempty α]
   sum_nonneg fun _ _ => mul_nonneg ENNReal.toReal_nonneg
     (div_nonneg (Real.log_natCast_nonneg _) (Real.log_nonneg one_le_two))
 
-private theorem sub_div_le_logb_sub {a b : ℝ} (ha : 1 ≤ a) (hab : a ≤ b) :
-    (b - a) / b ≤ Real.logb 2 b - Real.logb 2 a := by
-  have hb_pos : 0 < b := lt_of_lt_of_le zero_lt_one (ha.trans hab)
-  have ha_pos : 0 < a := lt_of_lt_of_le zero_lt_one ha
-  let α := (b - a) / b
-  have hα_nonneg : 0 ≤ α := div_nonneg (sub_nonneg.mpr hab) hb_pos.le
-  have h1_sub : 1 - α = a / b := by
-    dsimp only [α]
-    field_simp [hb_pos.ne']
-    ring
-  have h1_pos : 0 < 1 - α := by
-    rw [h1_sub]
-    exact div_pos ha_pos hb_pos
-  have hexp : 1 - α ≤ Real.exp (-α) := by
-    linarith [Real.add_one_le_exp (-α)]
-  have hlog : Real.log (1 - α) ≤ -α := by
-    simpa only [Real.log_exp] using Real.log_le_log h1_pos hexp
-  have hlog2_pos : 0 < Real.log 2 := Real.log_pos (by norm_num)
-  have hlog2_le_one : Real.log 2 ≤ 1 := Real.log_two_lt_one.le
-  have hdiv : α ≤ -Real.log (1 - α) / Real.log 2 := by
-    rw [le_div_iff₀ hlog2_pos]
-    nlinarith
-  have hlogb : -Real.log (1 - α) / Real.log 2 = Real.logb 2 b - Real.logb 2 a := by
-    rw [h1_sub, Real.log_div ha_pos.ne' hb_pos.ne', Real.logb, Real.logb]
-    ring
-  exact hlogb ▸ hdiv
-
 /-- Pointwise bound behind `[HHRVW2020]`, Claim 4.7 (p. 24): when
 $x \in L(x) \subseteq F^{-1}(F(x))$, the gap $\log_2 |F^{-1}(F(x))| - \log_2 |L(x)|$ is at least
 $|F^{-1}(F(x)) \setminus L(x)| / |F^{-1}(F(x))|$. -/
@@ -224,13 +197,13 @@ theorem expected_realSampleEntropy_sub_accessibleSetExpectation_ge {α β : Type
   refine sum_le_sum fun x _ => ?_
   rw [← mul_sub]
   refine mul_le_mul_of_nonneg_left ?_ ENNReal.toReal_nonneg
-  have ha : (1 : ℝ) ≤ #(L x) := by exact_mod_cast card_pos.mpr ⟨x, hself x⟩
+  have ha : (0 : ℝ) < #(L x) := by exact_mod_cast card_pos.mpr ⟨x, hself x⟩
   have hab : (#(L x) : ℝ) ≤ #(fiberSet F (F x)) := by
     exact_mod_cast card_le_card (hsub x)
   have hsdiff : (#(fiberSet F (F x) \ L x) : ℝ) = #(fiberSet F (F x)) - #(L x) := by
     rw [card_sdiff_of_subset (hsub x), Nat.cast_sub (card_le_card (hsub x))]
   rw [hsdiff, realSampleEntropy]
-  exact sub_div_le_logb_sub ha hab
+  exact Real.sub_div_le_logb_sub ha hab
 
 /-- Conditional-entropy form of `expected_realSampleEntropy_sub_accessibleSetExpectation_ge`
 (`[HHRVW2020]`, Section 4.2, p. 24). -/

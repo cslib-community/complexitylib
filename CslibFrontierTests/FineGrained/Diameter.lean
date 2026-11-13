@@ -29,18 +29,18 @@ private def p₂ : List (List Bool) × List (List Bool) := ([[true, true]], [[fa
 
 /-- The coordinates `0 ↦ 4` and `1 ↦ 6`, the vectors `0 ↦ 5` and `1 ↦ 7`, and the constants. -/
 example : toDiameter p₁ =
-    ([4, 6, 5, 4, 6, 7, 0, 1, 2, 3],
+    ⟨[4, 6, 5, 4, 6, 7, 0, 1, 2, 3],
       [(0, 4), (1, 4), (4, 5), (0, 6), (1, 6), (0, 5),
         (0, 4), (1, 4), (0, 6), (1, 6), (6, 7), (1, 7),
-        (0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]) := rfl
+        (0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]⟩ := rfl
 
 /-- The instance with no vectors: the hubs and the padding vertices. -/
 example : toDiameter ([], []) =
-    ([0, 1, 2, 3], [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]) := rfl
+    ⟨[0, 1, 2, 3], [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3)]⟩ := rfl
 
 /-- The parser emits the same vertices on the encoded instance. -/
 example : parseRun Diameter.bitVertices Diameter.endVertices ((((false, false), false), 0), 0)
-    (encOV p₁) ++ Diameter.constVertices = (toDiameter p₁).1 := by decide
+    (encOV p₁) ++ Diameter.constVertices = (toDiameter p₁).vertices := by decide
 
 /-! ### The diameter -/
 
@@ -87,7 +87,8 @@ example : (∀ G : Graph, G.induced.ediam ≤ 2 → G ∈ {G : Graph | G.induced
 
 /-- Under `OVH`, the size form excludes deciders within time `(n + m) ^ 1.5 + L`. -/
 example (h : OVH) : ¬DecidableInTimeO {G : Graph | G.induced.ediam ≤ 2} encGraph
-    fun G => ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - (1 / 2 : ℝ)) + (encGraph G).length :=
+    fun G => ((G.vertices.length + G.edges.length : ℕ) : ℝ) ^ (2 - (1 / 2 : ℝ)) +
+      (encGraph G).length :=
   not_decidableInTimeO_diameter_size_of_OVH h (by norm_num) (fun _ h => h) fun G h hG => by
     have h₂ : G.induced.ediam ≤ 2 := hG
     rw [h] at h₂

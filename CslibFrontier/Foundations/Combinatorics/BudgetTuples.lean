@@ -261,9 +261,7 @@ variable {ms}
 private theorem ofList_map (hcover : ∀ Z, Z ∈ ms) (β : M → ℕ) :
     ofList ms (ms.map β) = β := by
   funext Z
-  have hi : ms.idxOf Z < ms.length := List.idxOf_lt_length_iff.mpr (hcover Z)
-  rw [ofList, List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map,
-    List.getElem_idxOf hi]
+  simp [ofList, List.getD_eq_getElem?_getD, hcover Z]
 
 /-- Listing the values of `ofList ms l` at the coordinates `ms` recovers `l`. -/
 private theorem map_ofList (hms : ms.Nodup) {l : List ℕ} (hl : l.length = ms.length) :

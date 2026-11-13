@@ -26,6 +26,7 @@ ring operations: complement uses `1 - f`, intersection `f * g`, and union De Mor
 
 ## Main results
 
+* `Cslib.Complexity.mem_SPP`: unfolding the definition.
 * `Cslib.Complexity.UP_subset_SPP`, `Cslib.Complexity.SPP_subset_CeqP`.
 * `Cslib.Complexity.compl_mem_SPP`, `Cslib.Complexity.inter_mem_SPP`,
   `Cslib.Complexity.union_mem_SPP`, `Cslib.Complexity.diff_mem_SPP`,
@@ -49,6 +50,9 @@ variable {α : Type} {enc : α ↪ List Bool} {A B : Set α}
 [Fenner, Fortnow and Kurtz][FennerFortnowKurtz1994], [Fortnow, Classification 4.4][Fortnow1997]. -/
 def SPP (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ f ∈ GapP enc, (∀ a, f a = 0 ∨ f a = 1) ∧ ∀ a, a ∈ A ↔ f a = 1}
+
+theorem mem_SPP : A ∈ SPP enc ↔ ∃ f ∈ GapP enc, (∀ a, f a = 0 ∨ f a = 1) ∧ ∀ a, a ∈ A ↔ f a = 1 :=
+  Iff.rfl
 
 /-- `UP ⊆ SPP` [Fortnow, Corollary 4.11][Fortnow1997]. -/
 theorem UP_subset_SPP : UP enc ⊆ SPP enc := by

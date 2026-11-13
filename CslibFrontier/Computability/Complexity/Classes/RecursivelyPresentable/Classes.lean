@@ -155,54 +155,17 @@ theorem recursivelyPresentable_EXP : RecursivelyPresentable encBits (EXP encBits
 namespace RecursivelyPresentablePH
 
 /-- Cut consecutive blocks of uniform length `M` to lengths `p.eval n` for `p ∈ ps`. -/
-private def trimUniformBlocks : List (Polynomial ℕ) → ℕ → ℕ → List Bool → List Bool
-  | [], _, _, _ => []
-  | p :: ps, n, M, w => w.take (p.eval n) ++ trimUniformBlocks ps n M (w.drop M)
+private def trimUniformBlocks (ps : List (Polynomial ℕ)) (n M : ℕ) : List Bool → List Bool :=
+  takeBlocks (ps.map fun p => (p.eval n, M))
 
 private theorem alternation_trimUniformBlocks {ps : List (Polynomial ℕ)} {n M : ℕ}
     (hle : ∀ p ∈ ps, p.eval n ≤ M) {q : Bool} {P : List Bool → Prop} :
     Alternation q (List.replicate ps.length M) (fun w => P (trimUniformBlocks ps n M w)) ↔
       Alternation q (ps.map fun p => p.eval n) P := by
-  induction ps generalizing q P with
-  | nil => simp only [List.length_nil, List.replicate_zero, List.map_nil, alternation_nil,
-      trimUniformBlocks]
-  | cons p ps ih =>
-    have hp : p.eval n ≤ M := hle p List.mem_cons_self
-    have hps : ∀ r ∈ ps, r.eval n ≤ M := fun r hr => hle r (List.mem_cons_of_mem p hr)
-    have hcut (w v : List Bool) (hw : w.length = M) :
-        trimUniformBlocks (p :: ps) n M (w ++ v) =
-          w.take (p.eval n) ++ trimUniformBlocks ps n M v :=
-      by simp only [trimUniformBlocks, List.take_append_of_le_length (hw ▸ hp), List.drop_left' hw]
-    have key (w : List Bool) (hw : w.length = M) {q' : Bool} :
-        Alternation q' (List.replicate ps.length M)
-          (fun v => P (trimUniformBlocks (p :: ps) n M (w ++ v))) ↔
-        Alternation q' (ps.map fun r => r.eval n) fun v => P (w.take (p.eval n) ++ v) :=
-      (alternation_congr fun v => by rw [hcut w v hw]).trans
-        (ih hps (P := fun v => P (w.take (p.eval n) ++ v)))
-    have hpad (w : List Bool) (hw : w.length = p.eval n) :
-        (w ++ List.replicate (M - p.eval n) false).length = M := by
-      rw [List.length_append, List.length_replicate, hw]
-      omega
-    have htake (w : List Bool) (hw : w.length = p.eval n) :
-        (w ++ List.replicate (M - p.eval n) false).take (p.eval n) = w := by
-      rw [← hw, List.take_left]
-    have hlen (w : List Bool) (hw : w.length = M) : (w.take (p.eval n)).length = p.eval n := by
-      rw [List.length_take, hw, Nat.min_eq_left hp]
-    cases q
-    · simp only [List.length_cons, List.replicate_succ, List.map_cons, alternation_false_cons]
-      constructor
-      · intro hP w hw
-        have := (key _ (hpad w hw)).mp (hP _ (hpad w hw))
-        rwa [htake w hw] at this
-      · intro hP w hw
-        exact (key w hw).mpr (hP _ (hlen w hw))
-    · simp only [List.length_cons, List.replicate_succ, List.map_cons, alternation_true_cons]
-      constructor
-      · rintro ⟨w, hw, hP⟩
-        exact ⟨_, hlen w hw, (key w hw).mp hP⟩
-      · rintro ⟨w, hw, hP⟩
-        refine ⟨_, hpad w hw, (key _ (hpad w hw)).mpr ?_⟩
-        rwa [htake w hw]
+  simpa only [trimUniformBlocks, List.map_map, Function.comp_def, List.map_const',
+    List.length_map] using
+    alternation_takeBlocks (ls := ps.map fun p => (p.eval n, M)) (q := q) (P := P)
+      (by simpa only [List.forall_mem_map] using hle)
 
 private theorem computableInPolyTime_trimUniformBlocks (ps : List (Polynomial ℕ)) (d : ℕ) :
     ∀ {W : List Bool × List Bool → List Bool},
@@ -211,32 +174,22 @@ private theorem computableInPolyTime_trimUniformBlocks (ps : List (Polynomial �
         (fun x : List Bool × List Bool =>
           trimUniformBlocks ps x.1.length (Ladner.clock d x.1.length) (W x))
         (encPair encBits encBits) encBits := by
-  induction ps with
-  | nil => intro _ _; exact .const []
-  | cons p ps ih =>
-    intro W hW
-    have hn : ComputableInPolyTime (fun x : List Bool × List Bool => x.1.length)
-        (encPair encBits encBits) encUnary := by fun_prop
-    have hm : ComputableInPolyTime (fun x : List Bool × List Bool => Ladner.clock d x.1.length)
-        (encPair encBits encBits) encUnary := (unary_pow d).comp (by fun_prop)
-    exact bitsAppend (bitsTakeWithInput hW ((unary_eval p).comp hn))
-      (ih (bitsDropWithInput hW hm))
+  intro W hW
+  have hm : ComputableInPolyTime (fun x : List Bool × List Bool => Ladner.clock d x.1.length)
+      (encPair encBits encBits) encUnary := (unary_pow d).comp (by fun_prop)
+  simpa only [trimUniformBlocks, List.map_map, Function.comp_def] using
+    computableInPolyTime_takeBlocks
+      (ps.map fun p => (fun x : List Bool × List Bool => p.eval x.1.length,
+        fun x => Ladner.clock d x.1.length))
+      (fun l hl => by
+        obtain ⟨p, -, rfl⟩ := List.mem_map.mp hl
+        exact ⟨(unary_eval p).comp (by fun_prop), hm⟩) hW
 
 private noncomputable def clockPoly (d : ℕ) : Polynomial ℕ := (2 * Polynomial.X + 2) ^ d
 
 private theorem eval_clockPoly (d n : ℕ) : (clockPoly d).eval n = Ladner.clock d n := by
   simp only [clockPoly, Polynomial.eval_pow, Polynomial.eval_add, Polynomial.eval_mul,
     Polynomial.eval_ofNat, Polynomial.eval_X, Ladner.clock]
-
-private theorem eval_le_sum {ps : List (Polynomial ℕ)} {p : Polynomial ℕ} (hp : p ∈ ps) (n : ℕ) :
-    p.eval n ≤ ps.sum.eval n := by
-  induction ps with
-  | nil => cases hp
-  | cons q qs ih =>
-    rw [List.sum_cons, Polynomial.eval_add]
-    rcases List.mem_cons.mp hp with rfl | hmem
-    · exact Nat.le_add_right _ _
-    · exact (ih hmem).trans (Nat.le_add_left _ _)
 
 private theorem exists_clock_ge (ps : List (Polynomial ℕ)) :
     ∃ d : ℕ, ∀ p ∈ ps, ∀ n : ℕ, p.eval n ≤ Ladner.clock d n := by
@@ -247,7 +200,9 @@ private theorem exists_clock_ge (ps : List (Polynomial ℕ)) :
   refine ⟨c + e, fun p hp n => ?_⟩
   have hsum : ps.sum.eval n ≤ c * (n + 1) ^ e := by
     simpa only [encUnary_apply, List.length_replicate] using hle n
-  exact (eval_le_sum hp n).trans (hsum.trans (Ladner.le_clock le_rfl n))
+  have hp' : p.eval n ≤ ps.sum.eval n := by
+    rw [Polynomial.eval_listSum]; exact List.le_sum_of_mem (List.mem_map_of_mem hp)
+  exact hp'.trans (hsum.trans (Ladner.le_clock le_rfl n))
 
 private theorem mem_SigmaP_encBits_iff {k : ℕ} {A : Set (List Bool)} :
     A ∈ SigmaP k encBits ↔

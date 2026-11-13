@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lift
 
 open Cslib.Complexity Graph Graph.RotationSystem
 
-private abbrev edgeAndPoint : Graph := ([0, 1, 8, 8], [(0, 1)])
+private abbrev edgeAndPoint : Graph := ⟨[0, 1, 8, 8], [(0, 1)]⟩
 
 private def edgeRotation : RotationSystem edgeAndPoint where
   rotate := Equiv.refl _
@@ -33,7 +33,7 @@ example : edgeRotation.NumericalGenusZero := by
   subst i
   simp [edgeGradient, Dart.vertex, Graph.edgeEndpoint]
 
-private abbrev points : Graph := ([2 ^ 250, 7, 7], [])
+private abbrev points : Graph := ⟨[2 ^ 250, 7, 7], []⟩
 
 private def pointRotation : RotationSystem points where
   rotate := Equiv.refl _
@@ -46,7 +46,7 @@ example : pointRotation.NumericalGenusZero := by
   intro x _
   exact ⟨fun _ => false, funext fun i => i.elim0⟩
 
-private abbrev torus : Graph := ([0, 9], [(0, 0), (0, 0)])
+private abbrev torus : Graph := ⟨[0, 9], [(0, 0), (0, 0)]⟩
 
 private def torusRotation : RotationSystem torus where
   rotate := ((Dart.indexEquiv torus).trans

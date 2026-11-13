@@ -366,13 +366,12 @@ open MultiTapeTM ComputableInSpace
 /-- When `u` is at least `clockedVertexBound D d n`, `clockedAccept` returns `false`. -/
 theorem clockedAccept_eq_false_of_ge_bound {k : ℕ} {State : Type} [Fintype State]
     {D d n u : ℕ} (hu : clockedVertexBound (k := k) D d n ≤ u) :
-    clockedAccept (k := k) (State := State) (radix D n) n (2 * (2 * (n + 1)) ^ d) u = false := by
+    clockedAccept (k := k) (State := State) (radix D n) n (polyClock d n) u = false := by
   have hB : 1 ≤ radix D n := Nat.one_le_pow D (n + 2) (by omega)
   have hN : 0 < vertexBound (k := k) (radix D n) := Nat.pow_pos hB
-  have hu' : (2 * (2 * (n + 1)) ^ d + 1) * vertexBound (k := k) (radix D n) ≤ u := hu
-  have hdiv : 2 * (2 * (n + 1)) ^ d + 1 ≤ u / vertexBound (k := k) (radix D n) :=
-    (Nat.le_div_iff_mul_le hN).mpr hu'
-  have hne : u / vertexBound (k := k) (radix D n) ≠ 2 * (2 * (n + 1)) ^ d :=
+  have hdiv : polyClock d n + 1 ≤ u / vertexBound (k := k) (radix D n) :=
+    (Nat.le_div_iff_mul_le hN).mpr hu
+  have hne : u / vertexBound (k := k) (radix D n) ≠ polyClock d n :=
     Nat.ne_of_gt hdiv
   dsimp only [clockedAccept]
   exact ite_eq_right hne
@@ -431,7 +430,7 @@ space. -/
 theorem computableInLogSpace_clockedAccept {k : ℕ} {State : Type} [Fintype State] (D d : ℕ) :
     ComputableInLogSpace
       (fun (w, u) => clockedAccept (k := k) (State := State)
-        (radix D w.length) w.length (2 * (2 * (w.length + 1)) ^ d) u)
+        (radix D w.length) w.length (polyClock d w.length) u)
       (encPair encBits encNat) encBool := by
   let E := D * Fintype.card (Register k) + d + 2
   let encWU := encPair encBits encNat
@@ -503,19 +502,18 @@ theorem computableInLogSpace_clockedAccept {k : ℕ} {State : Type} [Fintype Sta
             _ ≤ (2 * E + 4) * L := Nat.mul_le_mul_right L (by omega)
   have hacc_space : ComputableInSpace
       (fun p : ℕ × ℕ => clockedAccept (k := k) (State := State)
-        (radix D p.1) p.1 (2 * (2 * (p.1 + 1)) ^ d) p.2)
+        (radix D p.1) p.1 (polyClock d p.1) p.2)
       (encPair encNat encNat) encBool fun p => (encPair encNat encNat p).length := by
     have hn := fst encNat encNat
     have hu := snd encNat encNat
     have htwo : ComputableInSpace (fun _ : ℕ × ℕ => 2) (encPair encNat encNat) encNat
         fun p => (encPair encNat encNat p).length := budget_const 2 (.refl _)
     have hB := budget_natPow (budget_natAdd hn htwo) (.refl _) D
-    have hT := budget_natMul htwo
-      (budget_natPow (budget_natMul htwo (budget_natSucc hn)) (.refl _) d)
+    have hT := polyClock_budget d hn (.refl _)
     exact clockedAccept_budget (k := k) (State := State) hB hn hT hu (.refl _)
   let f (x : List Bool × ℕ) : Bool :=
     clockedAccept (k := k) (State := State)
-      (radix D x.1.length) x.1.length (2 * (2 * (x.1.length + 1)) ^ d) x.2
+      (radix D x.1.length) x.1.length (polyClock d x.1.length) x.2
   have htrue : ComputableInLogSpace (f ∘ Subtype.val) encSub encBool :=
     (comp_logSpace_of_length_log hnu_log hnu_len hacc_space).congr_fun fun _ => rfl
   have hfalse : ComputableInLogSpace

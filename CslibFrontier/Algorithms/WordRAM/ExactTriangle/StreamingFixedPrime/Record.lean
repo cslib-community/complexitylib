@@ -59,12 +59,12 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
       let q := RecordProduct.recordQueries n (D m) p idx
       let Q := RecordProduct.recordQueryCount n (D m) p (fun k => values.getD k 0) idx
       (Block.mk out 6).Realizes x.mem
-        ![idx.1.val, idx.2.2, q, Q, out + 6, out + 6 + n * D m] ∧
+        ![idx.residue.val, idx.piece, q, Q, out + 6, out + 6 + n * D m] ∧
       (Block.mk (out + 6) (n * D m)).Realizes x.mem (fun j =>
-        WriteMatrices.entry false (RecordProduct.matrixArgs n (D m) g p idx.1.val idx.2.2)
+        WriteMatrices.entry false (RecordProduct.matrixArgs n (D m) g p idx.residue.val idx.piece)
           (fun k => (values.getD (2 * (n * n) + k) 0 % (p : ℤ)).toNat) j.val) ∧
       (Block.mk (out + 6 + n * D m) (n * D m)).Realizes x.mem (fun j =>
-        WriteMatrices.entry true (RecordProduct.matrixArgs n (D m) g p idx.1.val idx.2.2)
+        WriteMatrices.entry true (RecordProduct.matrixArgs n (D m) g p idx.residue.val idx.piece)
           (fun k => (values.getD (n * n + k) 0 % (p : ℤ)).toNat) j.val)) :
     let V := fun q => values.getD q 0
     let hn : 0 < n := lt_of_lt_of_le (by omega : 0 < D m)
@@ -81,8 +81,8 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
         y.regs (recordBank RecordWitness.Reg.found) ∧
       S ≤ n * n + 1 ∧
       (y.regs (recordBank RecordWitness.Reg.found) = 1 ↔
-        ∃ q ∈ chunkOf (fun u v : Fin n => V (pairIndex (u, v))) (D m) p idx.1 idx.2.1,
-          ∃ c ∈ piece n (D m) g idx.2.2,
+        ∃ q ∈ chunkOf (fun u v : Fin n => V (pairIndex (u, v))) (D m) p idx.residue idx.chunk,
+          ∃ c ∈ piece n (D m) g idx.piece,
             V (pairIndex (q.1, q.2)) + V (n * n + pairIndex (q.2, c)) +
               V (2 * (n * n) + pairIndex (q.1, c)) = 0) ∧
       (y.regs (recordBank RecordWitness.Reg.found) = 1 →
@@ -222,7 +222,7 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
         (42 * pieceSize (D m) g + 28) * S + 52) := by
     apply (he.rename (Fin.castLE_injective (by decide : 400 ≤ 416))).mono
     have ht := Nat.mul_le_mul_right S (show
-      42 * min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g) + 28 ≤
+      42 * min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g) + 28 ≤
         42 * pieceSize (D m) g + 28 by omega)
     omega
   refine ⟨y, S, hex, (yr _).trans rs, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
@@ -232,10 +232,10 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
       yr, V, wAB, wBC, wAC] using hh
   · have hc : Nat.count (fun j =>
         r.mem (r.regs (RecordWitness.productBank RecordProduct.Reg.result) + j) ≠ 0 ∧
-        ∀ c : Fin (min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g)),
+        ∀ c : Fin (min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g)),
           AB (z.mem (q + 2 * j)) (z.mem (q + 2 * j + 1)) +
-            BC (z.mem (q + 2 * j + 1)) (idx.2.2 * pieceSize (D m) g + c.val) +
-            AC (z.mem (q + 2 * j)) (idx.2.2 * pieceSize (D m) g + c.val) ≠ 0) Q ≤ Q :=
+            BC (z.mem (q + 2 * j + 1)) (idx.piece * pieceSize (D m) g + c.val) +
+            AC (z.mem (q + 2 * j)) (idx.piece * pieceSize (D m) g + c.val) ≠ 0) Q ≤ Q :=
       Nat.count_le _
     have hflag : r.regs RecordWitness.Reg.found ≤ 1 := by rcases rf with h | h <;> omega
     have hQ' := FixedPrime.recordQueryCount_le n (D m) p V idx
@@ -245,7 +245,7 @@ theorem exec_record {w m n g p A : ℕ} (values : List ℤ)
   · simpa only [yr, wAB, wBC, wAC, weightSum] using riff.trans hsuccess
   · intro hf
     obtain ⟨ha, hb, hlo, hhi, hz, -⟩ := rwit ((yr _).symm.trans hf)
-    have hlen := min_le_right (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g)
+    have hlen := min_le_right (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g)
     exact ⟨by simpa only [yr] using ha, by simpa only [yr] using hb,
       by simp only [yr]; omega, by simpa only [yr] using hz⟩
   · intro u hu

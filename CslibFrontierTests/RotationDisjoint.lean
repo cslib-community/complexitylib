@@ -15,7 +15,7 @@ namespace CslibFrontierTests.RotationDisjoint
 
 open Cslib.Complexity Graph.RotationSystem
 
-private abbrev G : Graph := ([1000, 100000, 7, 9, 9], [(1000, 100000), (7, 7)])
+private abbrev G : Graph := ⟨[1000, 100000, 7, 9, 9], [(1000, 100000), (7, 7)]⟩
 private abbrev c : Graph.RotationCertificate := ⟨[0, 1, 3, 2]⟩
 private noncomputable def r : Graph.RotationSystem G :=
   Graph.RotationCertificate.decode G c (by decide)
@@ -64,7 +64,7 @@ example : Graph.RotationCertificate.ofRotation
 example : Graph.RotationCertificate.verifyGenusZero (mergeGraph h k)
     ⟨[4, 1, 3, 2, 0, 5, 7, 6]⟩ = true := by decide
 
-private def emptyRotation : Graph.RotationSystem (([99, 99], []) : Graph) where
+private def emptyRotation : Graph.RotationSystem (⟨[99, 99], []⟩ : Graph) where
   rotate := Equiv.refl _
   sameCycle_iff d := Fin.elim0 d.1
 
