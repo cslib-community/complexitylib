@@ -932,7 +932,8 @@ structure KDFInput extends F.CDHInput where
 /-- The encoding of a key-derivation input: the fields of its CDH input followed by the key word,
 each framed except the last. This is the layout of `encDDHInput` with the key word in place of the
 encoded candidate shared element. -/
-enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F where
+enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F
+    flattened toCDHInput : (F.encCDHInput) where
   secParam : encUnary, groupParameters : F.encDesc,
   leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
   rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),

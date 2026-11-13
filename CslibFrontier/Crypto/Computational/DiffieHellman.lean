@@ -168,20 +168,12 @@ enc_structure encCDHInput (F : PrimeOrderGroupFamily) : CDHInput F where
 
 /-- The encoding of a DDH input: the fields of its CDH input followed by the word of the candidate
 shared element, each framed except the last (`encDDHInput_apply`). -/
-enc_structure encDDHInput (F : PrimeOrderGroupFamily) : DDHInput F where
+enc_structure encDDHInput (F : PrimeOrderGroupFamily) : DDHInput F
+    flattened toCDHInput : (F.encCDHInput) where
   secParam : encUnary, groupParameters : F.encDesc,
   leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
   rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
   candidateShared : (F.encode groupParameters) using (F.encode_injective groupParameters)
-
-variable {F} in
-/-- Dropping the candidate shared element of a computed DDH input. -/
-@[fun_prop] theorem DDHInput.computableInPolyTime_toCDHInput {α : Type} {enc : α ↪ List Bool}
-    {g : α → F.DDHInput} (h : ComputableInPolyTime g enc F.encDDHInput) :
-    ComputableInPolyTime (fun a => (g a).toCDHInput) enc F.encCDHInput :=
-  F.encCDHInput_mk_polyTime (F.encDDHInput_secParam_polyTime h)
-    (F.encDDHInput_groupParameters_polyTime h) (F.encDDHInput_leftPublic_polyTime h)
-    (F.encDDHInput_rightPublic_polyTime h)
 
 variable {F} in
 /-- The encoded generator of computed group parameters. -/
