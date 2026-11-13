@@ -4491,6 +4491,7 @@ public import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 public import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.FourHop
+public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Order
 public import CslibFrontier.Crypto.Game.Statistical
@@ -6596,6 +6597,7 @@ public import CslibFrontier.Privacy.DifferentialPrivacy.RandomizedResponse
 public import CslibFrontier.Privacy.DifferentialPrivacy.Reconstruction
 public import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
 public import CslibFrontier.Probability.AdaptiveWeights
+public import CslibFrontier.Probability.ApproxEq
 public import CslibFrontier.Probability.ApproximateCounting
 public import CslibFrontier.Probability.ApproximateCounting.Relative
 public import CslibFrontier.Probability.BitString
