@@ -16,6 +16,7 @@ import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.Support
 import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
@@ -88,10 +89,6 @@ namespace Cslib.Crypto
 
 open Probability Turing.MultiTapeTM
 open scoped NNReal ENNReal
-
-private theorem bind_eq_pure_of_support {α β : Type} (μ : PMF α) (b : β) {f : α → PMF β}
-    (h : ∀ a ∈ μ.support, f a = PMF.pure b) : μ.bind f = PMF.pure b :=
-  (PMF.bind_congr_on_support μ f _ h).trans (PMF.bind_const μ _)
 
 private theorem succProbability_bind_pure_bool_le {α : Type} (p : PMF α) (f g : α → Bool)
     (hfg : ∀ a ∈ p.support, f a = true → g a = true) :
@@ -306,7 +303,8 @@ theorem eval_ciOneTimeGame_tailFallback_prependFalseBitCIAdversary (E : Symmetri
   simp only [ciOneTimeGame, prependFalseBitCIAdversary, oneTimeCIEncryptionOracle,
     List.isEmpty_nil, List.length_replicate, beq_self_eq_true, Bool.and_self, ↓reduceIte,
     runWith_norm, pmf_norm]
-  refine bind_eq_pure_of_support _ _ fun k hk => bind_eq_pure_of_support _ _ fun ct hct => ?_
+  refine PMF.bind_eq_pure_of_forall_mem_support fun k hk =>
+    PMF.bind_eq_pure_of_forall_mem_support fun ct hct => ?_
   rw [List.take_of_length_le (hctBound k hk _ List.length_replicate ct hct),
     singleton_contains_false_cons,
     decrypt_tailFallback_false_cons_isSome E n k _ ct hk List.length_replicate hct]
@@ -324,7 +322,8 @@ theorem eval_ciGame_tailFallback_prependFalseBitCIAdversary (E : SymmetricCipher
         PMF.pure true := by
   simp only [ciGame, prependFalseBitCIAdversary, ciEncryptionOracle,
     List.length_replicate, beq_self_eq_true, ↓reduceIte, runWith_norm, pmf_norm]
-  refine bind_eq_pure_of_support _ _ fun k hk => bind_eq_pure_of_support _ _ fun ct hct => ?_
+  refine PMF.bind_eq_pure_of_forall_mem_support fun k hk =>
+    PMF.bind_eq_pure_of_forall_mem_support fun ct hct => ?_
   rw [List.take_of_length_le (hctBound k hk _ List.length_replicate ct hct),
     singleton_contains_false_cons,
     decrypt_tailFallback_false_cons_isSome E n k _ ct hk List.length_replicate hct]
@@ -750,7 +749,8 @@ theorem eval_sufOneTimeGame_redundantTag_redundantTagForger (M : MACScheme)
       PMF.pure true := by
   simp only [sufOneTimeGame, redundantTagForger, oneTimeSigningPairOracle,
     List.isEmpty_nil, ↓reduceIte, runWith_norm, pmf_norm]
-  refine bind_eq_pure_of_support _ _ fun sk hsk => bind_eq_pure_of_support _ _ fun tag htag => ?_
+  refine PMF.bind_eq_pure_of_forall_mem_support fun sk hsk =>
+    PMF.bind_eq_pure_of_forall_mem_support fun tag htag => ?_
   have htake : List.take (tagBound n) tag = tag :=
     List.take_of_length_le (htagBound sk hsk _ List.length_replicate tag htag)
   have hver := M.verify_sign n sk hsk _ List.length_replicate tag htag
@@ -766,7 +766,8 @@ theorem eval_sufCmaGame_redundantTag_redundantTagForger (M : MACScheme)
     ProbComp.eval (M.redundantTag.sufCmaGame (M.redundantTagForger tagBound) n) =
       PMF.pure true := by
   simp only [sufCmaGame, redundantTagForger, signingPairOracle, runWith_norm, pmf_norm]
-  refine bind_eq_pure_of_support _ _ fun sk hsk => bind_eq_pure_of_support _ _ fun tag htag => ?_
+  refine PMF.bind_eq_pure_of_forall_mem_support fun sk hsk =>
+    PMF.bind_eq_pure_of_forall_mem_support fun tag htag => ?_
   have htake : List.take (tagBound n) tag = tag :=
     List.take_of_length_le (htagBound sk hsk _ List.length_replicate tag htag)
   have hver := M.verify_sign n sk hsk _ List.length_replicate tag htag
@@ -910,7 +911,8 @@ theorem eval_ciOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCIAdversary
   simp only [SymmetricCipher.ciOneTimeGame, etmRedundantCIAdversary,
     SymmetricCipher.oneTimeCIEncryptionOracle, List.isEmpty_nil, List.length_replicate,
     beq_self_eq_true, Bool.and_self, ↓reduceIte, runWith_norm, pmf_norm]
-  refine bind_eq_pure_of_support _ _ fun k hk => bind_eq_pure_of_support _ _ fun ct hct => ?_
+  refine PMF.bind_eq_pure_of_forall_mem_support fun k hk =>
+    PMF.bind_eq_pure_of_forall_mem_support fun ct hct => ?_
   obtain ⟨hnotMem, hdec⟩ :=
     decrypt_encryptThenMAC_redundantTag_of_mem_support E M hctLen hk List.length_replicate hct
   rw [List.take_of_length_le (hctBound k hk _ List.length_replicate ct hct), hnotMem, hdec]
@@ -935,7 +937,8 @@ theorem eval_ciGame_encryptThenMAC_redundantTag_etmRedundantCIAdversary
   simp only [SymmetricCipher.ciGame, etmRedundantCIAdversary,
     SymmetricCipher.ciEncryptionOracle, List.length_replicate, beq_self_eq_true,
     ↓reduceIte, runWith_norm, pmf_norm]
-  refine bind_eq_pure_of_support _ _ fun k hk => bind_eq_pure_of_support _ _ fun ct hct => ?_
+  refine PMF.bind_eq_pure_of_forall_mem_support fun k hk =>
+    PMF.bind_eq_pure_of_forall_mem_support fun ct hct => ?_
   obtain ⟨hnotMem, hdec⟩ :=
     decrypt_encryptThenMAC_redundantTag_of_mem_support E M hctLen hk List.length_replicate hct
   rw [List.take_of_length_le (hctBound k hk _ List.length_replicate ct hct), hnotMem, hdec]
@@ -1073,7 +1076,8 @@ theorem eval_ccaOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCCAAdversary
     SymmetricCipher.oneTimeCCAOracle, hunf, hdrop, hbit, List.isEmpty_nil,
     List.length_replicate, beq_self_eq_true, Bool.and_self, Bool.false_eq_true, ↓reduceIte,
     runWith_norm, pmf_norm]
-  refine bind_eq_pure_of_support _ _ fun k hk => bind_eq_pure_of_support _ _ fun ct hct => ?_
+  refine PMF.bind_eq_pure_of_forall_mem_support fun k hk =>
+    PMF.bind_eq_pure_of_forall_mem_support fun ct hct => ?_
   obtain ⟨hnotMem, hdec⟩ :=
     decrypt_encryptThenMAC_redundantTag_of_mem_support E M hctLen hk List.length_replicate hct
   rw [List.take_of_length_le (hctBound k hk _ List.length_replicate ct hct), hnotMem, hdec]

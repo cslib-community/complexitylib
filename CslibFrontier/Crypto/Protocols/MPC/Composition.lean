@@ -864,13 +864,6 @@ combines `(rI i, (v i).coins)` into the simulated coin tape. -/
     let v ← S I (fun i => (xI i, rI i)) yI
     return fun i => ⟨xI i, (rI i, (v i).coins), (v i).received⟩
 
-private theorem eval_pi_uniform_bitString (m coins : ℕ) :
-    ProbComp.eval (OracleComp.pi (fun _ : Fin m => ProbComp.uniform (BitString coins))) =
-      PMF.uniformOfFintype (Fin m → BitString coins) := by
-  rw [ProbComp.eval_pi]
-  simp only [ProbComp.eval_uniform]
-  exact PMF.pi_uniformOfFintype
-
 private theorem restrict_update_of_notMem {m : ℕ} {α : Fin m → Type}
     {I : Finset (Fin m)} {ℓ : Fin m} (hℓ : ℓ ∉ I)
     (r : (i : Fin m) → α i) (v : α ℓ) :
@@ -911,7 +904,7 @@ private theorem bind_restrict_and_sum_pi_uniform {m : ℕ} (coins : ℕ) {β : T
         fun r =>
           (ProbComp.eval (ProbComp.uniform (BitString coins))).bind fun s =>
             k (I.restrict r) s := by
-    rw [eval_pi_uniform_bitString]
+    rw [ProbComp.eval_pi_uniform]
     conv_lhs => rw [← PMF.uniformOfFintype_update ℓ, PMF.bind_bind]
     simp only [PMF.bind_map, Function.comp_def, ProbComp.eval_uniform]
     pmf_swap with r

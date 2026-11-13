@@ -34,7 +34,8 @@ public section
 namespace Cslib.Algorithms.Lean.Dijkstra.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure Cslib.DataStructure.Memory
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 
 /-- **The flat export of a native Dijkstra memory client.** Let `p` be uniformly realized on the
 input words of every graph at every word size that holds `8 (n + m + 2) (W + 2)`, and on those

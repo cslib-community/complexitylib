@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.Basic
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Basic
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!

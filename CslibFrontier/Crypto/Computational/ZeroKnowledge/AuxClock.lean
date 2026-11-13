@@ -325,7 +325,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
           (prover n (a n) (w n)).run (Vstar n (a n) (z_V n)) (prover n (a n) (w n)).init =
           (prover n (a n) (w n)).run (Vstar n (a n) (z n)) (prover n (a n) (w n)).init :=
         hV_take (n, a n) (z n) le_rfl (prover n (a n) (w n)) (prover n (a n) (w n)).init
-      simp only [distinguishingGame, hrun_eq, PMF.monad_bind_eq_bind, PMF.bind_map]
+      simp only [distinguishingGame_eq_bind, hrun_eq, PMF.monad_bind_eq_bind, PMF.bind_map]
       refine PMF.bind_congr_on_support _ _ _ fun p hp => ?_
       have hview_le : p.1.length ≤ L_view n (a n) := by
         have h1 : (encBits p.1).length ≤
@@ -342,7 +342,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
         distinguishingGame
           (ProbComp.eval (S n (a n) (z n)))
           (adversary n (a n) (z n)) := by
-      simp only [distinguishingGame, S, z_V, PMF.monad_bind_eq_bind]
+      simp only [distinguishingGame_eq_bind, S, z_V, PMF.monad_bind_eq_bind]
       refine PMF.bind_congr_on_support _ _ _ fun view hview => ?_
       have hview_le : view.length ≤ L_view n (a n) := by
         have h1 : (encBits view).length ≤

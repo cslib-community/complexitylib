@@ -1140,8 +1140,7 @@ theorem clockedOutPort_eq_some_iff (machine : MultiTapePTM k Bool State)
           0 < b / N := ⟨hb_lt, hq_lt, by rw [hb_div]; exact Nat.succ_pos _⟩
       obtain ⟨hp_len, hp_val⟩ := List.getElem?_eq_some_iff.mp hg
       dsimp only [clockedInPort]
-      rw [ite_eq_left hb_cond, hb_mod, ← hq_eq, List.getElem?_eq_getElem hq_len,
-        List.getElem_idxOf hq_len]
+      rw [ite_eq_left hb_cond, hb_mod, ← hq_eq, List.getElem?_idxOf hu_mem]
       simp only [Option.some.injEq, Prod.mk.injEq]
       refine ⟨?_, ?_⟩
       · rw [hb_div, Nat.add_sub_cancel, Nat.mul_comm]
@@ -1183,8 +1182,7 @@ theorem clockedOutPort_eq_some_iff (machine : MultiTapePTM k Bool State)
         ⟨ha_lt, hp_lt, ha_div_lt⟩
       obtain ⟨hq_len, hq_val⟩ := List.getElem?_eq_some_iff.mp hg
       dsimp only [clockedOutPort]
-      rw [ite_eq_left ha_cond, ha_mod, ← hp_eq, List.getElem?_eq_getElem hp_len,
-        List.getElem_idxOf hp_len]
+      rw [ite_eq_left ha_cond, ha_mod, ← hp_eq, List.getElem?_idxOf hv_mem]
       simp only [Option.some.injEq, Prod.mk.injEq]
       refine ⟨?_, ?_⟩
       · have hsub : b / N - 1 + 1 = b / N := by omega

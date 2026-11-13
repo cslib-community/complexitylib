@@ -34,7 +34,9 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.Negligible
 
 /-!
@@ -485,7 +487,7 @@ theorem decide_ne_pair_and_verify_eq [DecidableEq M] [DecidableEq Y]
 distributed on `Y` for every `k` and `m`. -/
 theorem map_sign_eq_uniform [Fintype Y] [Nonempty Y] (hash : K → M → Y) (k : K) (m : M) :
     (PMF.uniformOfFintype Y).map (sign hash k · m) = PMF.uniformOfFintype Y :=
-  PMF.uniformOfFintype_map_equiv (Equiv.addLeft (hash k m))
+  PMF.uniformOfFintype_map_add_left (hash k m)
 
 /-- **Pad-to-tag change of variables**: sampling a uniform pad `r ← PMF.uniformOfFintype Y` and
 passing `(sign hash k r m, r)` to a continuation `f` is identical to sampling a uniform tag
@@ -494,11 +496,8 @@ theorem bind_uniform_sign {α : Type*} [Fintype Y] [Nonempty Y] (hash : K → M 
     (f : Y → Y → PMF α) :
     ((PMF.uniformOfFintype Y).bind fun r => f (sign hash k r m) r) =
       (PMF.uniformOfFintype Y).bind fun t => f t (-hash k m + t) := by
-  conv_rhs => rw [← PMF.uniformOfFintype_map_equiv (Equiv.addLeft (hash k m))]
-  rw [PMF.bind_map]
-  congr 1
-  funext r
-  simp [sign, neg_add_cancel_left]
+  conv_rhs => rw [← PMF.uniformOfFintype_bind_add_left (hash k m)]
+  simp only [sign, neg_add_cancel_left]
 
 /-- Under `IsDeltaUniversalHash seed hash ε`, for any fixed `(m, t)` and candidate `(m', t')`,
 the probability over `k ← seed` that `m' ≠ m` and `(m', t')` verifies against the reconstructed
@@ -1077,13 +1076,6 @@ theorem eval_prfRealGame_prfPadDistinguisher (family : List Bool → List Bool �
   funext key
   simp [prfOracle, show ProbComp.unifFin = OracleComp.query from rfl]
 
-/-- Evaluating a uniformly random function `table : BitString n → BitString n` at any single point
-`x : BitString n` produces the uniform distribution on `BitString n`. -/
-private theorem map_eval_uniformOfFintype_fun (n : ℕ) (x : BitString n) :
-    (PMF.uniformOfFintype (BitString n → BitString n)).map (fun table => table x) =
-      PMF.uniformOfFintype (BitString n) := by
-  rw [← PMF.pi_uniformOfFintype, PMF.pi_map_eval]
-
 /-- In `prfIdealGame`, `prfPadDistinguisher test` evaluates `test n` on a uniform pad
 `r ← PMF.uniformOfFintype (BitString n)`. -/
 theorem eval_prfIdealGame_prfPadDistinguisher (test : (k : ℕ) → BitString k → ProbComp Bool)
@@ -1091,8 +1083,9 @@ theorem eval_prfIdealGame_prfPadDistinguisher (test : (k : ℕ) → BitString k 
     ProbComp.eval (prfIdealGame (prfPadDistinguisher test) n) =
       (PMF.uniformOfFintype (BitString n)).bind (fun r => ProbComp.eval (test n r)) := by
   conv_rhs =>
-    rw [← map_eval_uniformOfFintype_fun n (BitString.ofList n (List.replicate n false)),
-      PMF.bind_map]
+    rw [← PMF.pi_map_eval (fun _ => PMF.uniformOfFintype (BitString n))
+        (BitString.ofList n (List.replicate n false)),
+      PMF.pi_uniformOfFintype, PMF.bind_map]
   simp only [prfIdealGame, prfPadDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
     Function.comp_def]
   congr 1
@@ -2025,14 +2018,11 @@ private theorem bind_bool_mono_of_imp {α β γ δ : Type}
     (pa.bind fun a => pb.bind fun b => pc.bind fun c =>
       (pd a b c).bind fun d => PMF.pure (f a b d)) true ≤
     (pa.bind fun a => pb.bind fun b => pc.bind fun c =>
-      (pd a b c).bind fun d => PMF.pure (g a b d)) true := by
-  refine bind_apply_mono_on_support pa true fun a _ =>
+      (pd a b c).bind fun d => PMF.pure (g a b d)) true :=
+  bind_apply_mono_on_support pa true fun a _ =>
     bind_apply_mono_on_support pb true fun b _ =>
       bind_apply_mono_on_support pc true fun c _ =>
-        bind_apply_mono_on_support (pd a b c) true fun d _ => ?_
-  by_cases h : f a b d = true
-  · rw [h, hfg a b d h]
-  · simp [Bool.eq_false_iff.mpr h]
+        map_true_mono (pd a b c) fun d _ => hfg a b d
 
 /-! ### Full nonce-based Carter–Wegman MAC (Boneh–Shoup Attack Game 7.4 and Theorem 7.10) -/
 

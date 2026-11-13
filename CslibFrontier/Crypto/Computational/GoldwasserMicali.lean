@@ -83,8 +83,7 @@ modulus `N = p * q` and public nonresidue `z ∈ QNR_N^{+1}`:
 namespace Cslib.Crypto.GoldwasserMicali
 
 open Probability Turing.MultiTapeTM Encryption
-open Paillier (powMod unitOrOne coprime_unitOrOne powMod_of_ne_zero computableInPolyTime_powMod
-  computableInPolyTime_unitOrOne unframe_encPair_encNat dropFrame_encPair_encNat)
+open Paillier (unframe_encPair_encNat dropFrame_encPair_encNat)
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
 local instance (p q : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime] : NeZero (p * q) :=
@@ -618,14 +617,14 @@ private theorem distinguishingGame_publicKeyLaw (setup : ℕ → PMF ModulusDesc
     (n : ℕ) :
     distinguishingGame (publicKeyLaw setup n) (D n) =
       qrIdealGame setup (fun n input => D n (encPair encNat encNat input)) n := by
-  simp only [distinguishingGame, publicKeyLaw, qrIdealGame, PMF.monad_bind_eq_bind,
+  simp only [distinguishingGame_eq_bind, publicKeyLaw, qrIdealGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
 
 private theorem distinguishingGame_qrPublicKeyLaw (setup : ℕ → PMF ModulusDesc)
     (D : Distinguisher) (n : ℕ) :
     distinguishingGame (qrPublicKeyLaw setup n) (D n) =
       qrRealGame setup (fun n input => D n (encPair encNat encNat input)) n := by
-  simp only [distinguishingGame, qrPublicKeyLaw, qrRealGame, PMF.monad_bind_eq_bind,
+  simp only [distinguishingGame_eq_bind, qrPublicKeyLaw, qrRealGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
 
 /-- **Single-bit QR reduction distinguisher** ([KatzLindell2020], proof of Theorem 15.29). -/
@@ -908,8 +907,9 @@ private theorem distinguishingGame_wordKeyDistinguisher (maxLen : ℕ → ℕ) (
     distinguishingGame keys (wordKeyDistinguisher maxLen adversary n) =
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (publicKeyWordGame maxLen keys adversary bit n).map (fun guess => guess ^^ bit) := by
-  simp only [distinguishingGame, wordKeyDistinguisher, publicKeyWordGame, ProbComp.eval_bind,
-    ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind,
+  simp only [distinguishingGame_eq_bind, wordKeyDistinguisher, publicKeyWordGame,
+    ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
+    PMF.map_bind,
     apply_ite ProbComp.eval]
   pmf_swap with bit pk choice
   cases validBoundedWords maxLen n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) with

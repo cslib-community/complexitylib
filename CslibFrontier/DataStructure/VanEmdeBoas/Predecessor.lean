@@ -91,16 +91,6 @@ private theorem pred_of_max_lt {d m M x : ℕ} {t : Tree d} (ht : t.Valid)
   have he := ht.extrema_of_bounds hb
   ⟨he.2.2.2.1, hM, fun z hz _ => (he.2.2.2.2 z hz).2⟩
 
-private theorem cluster_lt_split {d : ℕ} {j i : Fin (universeSize d)} {a b : ℕ}
-    (hb : b < universeSize d) (h : j.val * universeSize d + a < i.val * universeSize d + b) :
-    j.val < i.val ∨ j = i ∧ a < b := by
-  rcases lt_trichotomy j.val i.val with hlt | heq | hgt
-  · exact Or.inl hlt
-  · rw [heq] at h
-    exact Or.inr ⟨Fin.ext heq, by omega⟩
-  · have := index_lt_index (b := a) hb hgt
-    omega
-
 private theorem pred_cluster_ans {d m M x : ℕ} {s : Tree d}
     {c : Fin (universeSize d) → Tree d} (ht : (node (some (m, M)) s c).Valid)
     {k : Fin (universeSize d)} {b : ℕ} (hb : (c k).Contains b)

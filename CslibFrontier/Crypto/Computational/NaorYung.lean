@@ -24,6 +24,7 @@ import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Tactic.PolyTime.Init
 import CslibFrontier.Probability.PMF.Finiteness
 import CslibFrontier.Crypto.Game.Order
@@ -382,32 +383,6 @@ theorem isPPT_naorYungStepInverter
     ((ha.choose.preprocess (.of_tidy hn0)).bind_with
       ((ha.find.preprocess (.of_tidy (hn1.prod (hq.snd'.snd'.prod hδ1)))).bind_with hcb.isPPTOn))
 
-private def xorFixedWidth (u y : List Bool) : List Bool :=
-  if y.length = u.length then BitString.listXor u.length [u, y] else y
-
-private theorem length_xorFixedWidth (u y : List Bool) :
-    (xorFixedWidth u y).length = y.length := by
-  unfold xorFixedWidth; split_ifs with h
-  · rw [BitString.length_listXor, h]
-  · rfl
-
-private theorem involutive_xorFixedWidth (u : List Bool) :
-    Function.Involutive (xorFixedWidth u) := by
-  intro y; unfold xorFixedWidth
-  by_cases h : y.length = u.length
-  · simp [h, BitString.length_listXor, BitString.listXor_pair_self_left_of_length u h]
-  · simp [h]
-
-private theorem uniformList_map_listXor {m : ℕ} {u : List Bool} (hu : u.length = m) :
-    (BitString.uniformList m).map (fun y => BitString.listXor m [u, y]) =
-      BitString.uniformList m := by
-  have heq : (BitString.uniformList m).map (fun y => BitString.listXor m [u, y]) =
-      (BitString.uniformList m).map (xorFixedWidth u) := by
-    refine PMF.bind_congr_on_support _ _ _ fun y hy => ?_
-    simp [xorFixedWidth, BitString.length_of_mem_support_uniformList hy, hu]
-  exact heq.trans (BitString.uniformList_map_of_bijective (xorFixedWidth u)
-    (involutive_xorFixedWidth u).bijective (length_xorFixedWidth u) m)
-
 private theorem exists_true_listXor_of_ne {m : ℕ} {u v : List Bool}
     (hu : u.length = m) (hv : v.length = m) (hne : u ≠ v) :
     ∃ i < m, (BitString.listXor m [u, v]).getD i false = true := by
@@ -446,11 +421,14 @@ private theorem naorYungStep_inversion_eval_eq
   · rw [BitString.uniformList_map_of_bijective f hf_bij hf_len (n + 2), PMF.bind_comm]
     refine PMF.bind_congr_on_support _ _ _ fun choice _ => ?_
     let w₀ := BitString.listRow (n + 2) 0 choice.1
-    have hfw₀ : (f w₀).length = n + 2 :=
-      (hf_len w₀).trans (BitString.length_listRow (n + 2) 0 choice.1)
-    conv_rhs => rw [← uniformList_map_listXor hfw₀, PMF.bind_map]
+    have hmask :
+        (BitString.uniformList (n + 2)).map (fun y => BitString.listXor (n + 2) [f w₀, y]) =
+          BitString.uniformList (n + 2) := by
+      simp only [BitString.listXor_pair_comm _ (f w₀)]
+      exact BitString.uniformList_map_listXor (n + 2) (f w₀)
+    conv_rhs => rw [← hmask, PMF.bind_map]
     refine PMF.bind_congr_on_support _ _ _ fun y hy => ?_
-    dsimp only [Function.comp_def, w₀] at hfw₀ ⊢
+    dsimp only [Function.comp_def, w₀]
     simp only [BitString.listXor_pair_self_left_of_length _
       (BitString.length_of_mem_support_uniformList hy)]
 

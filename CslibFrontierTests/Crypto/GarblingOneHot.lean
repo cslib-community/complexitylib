@@ -83,7 +83,7 @@ example (x : Fin 3 → Bool) (D : OneHotView (ZMod 2) 2 → ProbComp Bool) :
 -- satisfiable.
 example (x : Fin 3 → Bool) (D : OneHotView (ZMod 2) 2 → ProbComp Bool) :
     Game.advantage (realGame toyH2 stepTw id 2 x D) (simGame 2 D) =
-      PRF.advantage (ccrOracle toyH2 id) (reduction toyH2 stepTw 2 x D) :=
+      CCR.advantage toyH2 id id (reduction toyH2 stepTw 2 x D) :=
   advantage_realGame_simGame_eq toyH2 stepTw id 2 stepTw_separated x D
 
 end CslibFrontierTests.GarblingOneHot
