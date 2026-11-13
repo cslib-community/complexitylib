@@ -42,6 +42,12 @@ seconds; accepted range 0.1–600). Mapping lookups made by the missing-only hel
 five-second connection and twenty-second request limits, within that origin's overall budget.
 These limits cover lookup and transfer work together, including a stalled server.
 
+Each origin reports its elapsed time and whether the native request completed, failed or timed
+out. Completion means that request succeeded, not that the checkout is fully built or that all
+artifacts were downloaded anew. Missing-only lookups retain the revision/module counts and
+report the final HTTP/curl status when no usable mapping was found; a denied lookup is not
+evidence that no uploaded artifacts exist.
+
 CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, Lean CI runs
 `scripts/cache/get-missing.sh`, which downloads the same outputs except those of modules whose
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
@@ -163,6 +169,9 @@ download deadlines, recovery generation and `LAKE_CACHE_DIR`.
 Working proof edits do not trigger another download. A changed `HEAD`, pin or configuration
 triggers a new attempt; an unchanged state is retried after ten minutes, including a previous miss or
 network failure. The stamp is written atomically after the fetch command finishes.
+The bootstrap prints when it starts and finishes an attempt, and when it reuses a recent
+attempt record. These messages include elapsed time or record age and the fetch exit status;
+an optional fetch can exit zero after a miss, so neither a zero exit nor the stamp certifies a hit.
 
 ```bash
 scripts/cache/ensure.sh --refresh             # retry now, e.g. after clearing caches
