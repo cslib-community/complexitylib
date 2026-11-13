@@ -137,10 +137,7 @@ theorem not_wordRealization_sendWitness (hDL : F.DiscreteLog setup)
     {program : (ℕ × F.Desc) × List Bool × List Bool → ProbComp (List Bool × List Bool)}
     (hprog : IsPPTOn (encSimulatorWordInput (sendWitnessEncoding F).index)
       (encPair encBits encBits) program)
-    (hreal : ∀ i y c, CloseTo ((simulate i y c).map
-        (Prod.map ((sendWitnessEncoding F).commitment i) ((sendWitnessEncoding F).response i)))
-      (ProbComp.eval (program (i, (sendWitnessEncoding F).statement i y,
-        (sendWitnessEncoding F).challenge i c))) (δ i)) : False := by
+    (hreal : WordSimulatorRealizedBy (sendWitnessEncoding F) simulate program δ) : False := by
   refine not_half_le_discreteLog hDL
     (adversary := fun n input => Prod.fst <$> program ((n, input.1), input.2, encBool true))
     ((hprog.preprocess (prepare := fun input : ℕ × F.Desc × List Bool =>

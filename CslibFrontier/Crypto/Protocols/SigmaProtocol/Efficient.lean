@@ -77,6 +77,8 @@ negligible function, `EfficientSpecialHVZK.exists_computationalSpecialHVZK` deri
 * `SigmaProtocol.ExtractorRealizedBy`: a word function computes an extractor family on encodings.
 * `SigmaProtocol.SimulatorRealizedBy`: a typed simulator family is `δ`-close to a family of
   distributions.
+* `SigmaProtocol.WordSimulatorRealizedBy`: a word program is `δ`-close to the encoded output of a
+  family of distributions, the word-level form provided by `SimulatorRealizedBy.exists_word`.
 * `SigmaProtocol.EfficientSpecialSoundness`: special soundness with a polynomial-time extractor.
 * `SigmaProtocol.EfficientSpecialHVZK`: special HVZK with a strict PPT simulator, up to `δ`.
 
@@ -165,6 +167,17 @@ statement are framed. -/
 abbrev encSimulatorWordInput (encI : I ↪ List Bool) : I × List Bool × List Bool ↪ List Bool :=
   encPair encI (encPair encBits encBits)
 
+/-- The word program `program` realizes the simulator family `simulate` on encodings up to
+statistical distance `δ`: on the index, the encoded statement and the encoded challenge, its output
+is within `δ i` of the encoded commitment and response sampled by `simulate i`. This is the
+word-level form of `SimulatorRealizedBy` that `SimulatorRealizedBy.exists_word` provides. -/
+def WordSimulatorRealizedBy (enc : Encoding I Y T C Z)
+    (simulate : ∀ i, Y i → C i → PMF (T i × Z i))
+    (program : I × List Bool × List Bool → ProbComp (List Bool × List Bool)) (δ : I → ℝ≥0∞) :
+    Prop :=
+  ∀ i y c, CloseTo ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i)))
+    (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i)
+
 /-- A uniform strict PPT word program on the index and the encoded statement and challenge that
 computes a typed program on encodings certifies the typed program. Its output type `β` and its
 output encoding `out` are arbitrary, so this also certifies simulators with aborts. -/
@@ -225,8 +238,7 @@ theorem SimulatorRealizedBy.exists_word {enc : Encoding I Y T C Z}
     (h : SimulatorRealizedBy simulate sim δ) (hppt : Simulator.IsPPT enc sim) :
     ∃ program : I × List Bool × List Bool → ProbComp (List Bool × List Bool),
       IsPPTOn (encSimulatorWordInput enc.index) (encPair encBits encBits) program ∧
-      ∀ i y c, CloseTo ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i)))
-        (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i) := by
+      WordSimulatorRealizedBy enc simulate program δ := by
   obtain ⟨program, hprogram, hword⟩ := hppt.exists_word
   refine ⟨program, hprogram, fun i y c => ?_⟩
   rw [← hword]

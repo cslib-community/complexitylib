@@ -577,8 +577,7 @@ theorem simulatorRealizedBy_interactiveSimWord
     {sampleChallenge : ∀ i, ProbComp (CF i)}
     {δ δC : I → ℝ≥0∞}
     (hsim : ∀ i y c, ProbComp.eval (simComp i y c) = simulate i y c)
-    (hreal : ∀ i y c, CloseTo ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i)))
-      (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i))
+    (hreal : WordSimulatorRealizedBy enc simulate program δ)
     (hchal : ∀ i, CloseTo (PMF.uniformOfFintype (CF i))
       (ProbComp.eval (sampleChallenge i)) (δC i)) :
     Interactive.SimulatorRealizedBy (enc.toInteractiveEncoding PF)
