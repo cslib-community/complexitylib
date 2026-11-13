@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Probabilistic.Parameter
 public import CslibFrontier.Crypto.Computational.TwoStage
 public import CslibFrontier.Crypto.Game.CloseTo
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Efficient
-import CslibFrontier.Languages.Probabilistic.Norm
+public import CslibFrontier.Languages.Probabilistic.Lift
 
 /-!
 # Computational special honest-verifier zero knowledge
@@ -120,10 +120,10 @@ the challenger samples a conversation from `conv x y` and the experiment outputs
 guess on it; it outputs `false` when `R x y` fails or `conv x y` returns `none`. -/
 noncomputable def chvzkExperiment (R : X → Y → Prop) (conv : X → Y → PMF (Option (T × C × Z)))
     (A : TwoStage Unit (X × Y) (T × C × Z) Bool σ) : Game := do
-  let ((x, y), state) ← ProbComp.eval (A.choose ())
+  let ((x, y), state) ← A.choose ()
   if R x y then
     match ← conv x y with
-    | some conversation => ProbComp.eval (A.guess state conversation)
+    | some conversation => A.guess state conversation
     | none => return false
   else
     return false
@@ -134,10 +134,10 @@ conversation of a Sigma protocol. -/
 theorem chvzkExperiment_map_some (R : X → Y → Prop) (conv : X → Y → PMF (T × C × Z))
     (A : TwoStage Unit (X × Y) (T × C × Z) Bool σ) :
     chvzkExperiment R (fun x y => (conv x y).map some) A = do
-      let ((x, y), state) ← ProbComp.eval (A.choose ())
+      let ((x, y), state) ← A.choose ()
       if R x y then
         let conversation ← conv x y
-        ProbComp.eval (A.guess state conversation)
+        A.guess state conversation
       else
         return false := by
   simp only [chvzkExperiment, PMF.monad_bind_eq_bind, PMF.bind_map]
@@ -260,7 +260,7 @@ noncomputable def simulatedConversation [∀ i, Fintype (C i)] [∀ i, Nonempty 
     (sim : I × List Bool × List Bool → ProbComp (List Bool × List Bool))
     (i : I) (y : Y i) : PMF (Option (T i × C i × Z i)) := do
   let c ← PMF.uniformOfFintype (C i)
-  let words ← ProbComp.eval (sim (i, enc.statement i y, enc.challenge i c))
+  let words ← sim (i, enc.statement i y, enc.challenge i c)
   return decodeConversation enc i c words
 
 /-- Experiment 0 of Attack Game 20.4 ([BonehShoup2023], Section 20.4.2, p. 840): draw `i ← setup n`

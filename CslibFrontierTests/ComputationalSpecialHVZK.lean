@@ -201,7 +201,7 @@ theorem not_computationalSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
     sim A
   have hreal (n : ℕ) : realGame n = PMF.pure true := by
     simp only [realGame, chvzkRealGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
-      chvzkExperiment_map_some]
+      chvzkExperiment_map_some, ProbComp.liftM_eq_eval]
     refine (PMF.bind_congr_on_support _ _ _ fun d _ => ?_).trans (PMF.bind_const _ _)
     simp only [A, sendWitnessAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
@@ -222,9 +222,9 @@ theorem not_computationalSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
         (ProbComp.eval (F.sampleExp n d)).bind fun s => simTest d s := by
       simp only [simGame, chvzkSimGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
       refine congrArg _ (funext fun d => ?_)
-      simp only [simTest, chvzkExperiment, A, sendWitnessAdversary, ProbComp.eval_bind,
-        ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-        PMF.pure_bind]
+      simp only [simTest, chvzkExperiment, A, sendWitnessAdversary, ProbComp.liftM_eq_eval,
+        ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+        PMF.bind_bind, PMF.pure_bind]
     let unifGame : Game :=
       (setup n).bind fun d => (PMF.uniformOfFintype (ZMod (F.order d))).bind (simTest d)
     have hadv : Game.advantage (simGame n) unifGame ≤ (1 / 2 : ℝ≥0) ^ n := by
@@ -241,9 +241,9 @@ theorem not_computationalSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
       refine PMF.bind_apply_mono_on_support _ _ fun d _ =>
         PMF.bind_apply_mono_on_support _ _ fun α _ => ?_
       simp only [simTest, chvzkExperiment, simulatedConversation, dlAdv, A, sendWitnessAdversary,
-        hstatement, hchallenge, ProbComp.eval_pure, ProbComp.eval_bind, ProbComp.eval_map,
-        ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind,
-        PMF.bind_bind, PMF.bind_map, Function.comp_def, ↓reduceIte]
+        ProbComp.liftM_eq_eval, hstatement, hchallenge, ProbComp.eval_pure, ProbComp.eval_bind,
+        ProbComp.eval_map, ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+        PMF.pure_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def, ↓reduceIte]
       refine PMF.bind_apply_mono_on_support _ _ fun c _ =>
         PMF.bind_apply_mono_on_support _ _ fun words _ => ?_
       rcases hdec : decodeConversation (sendWitnessEncoding F) (n, d) c words with
@@ -433,8 +433,8 @@ theorem computationalSpecialHVZK_prgWitnessSigma
       have hreal_eq :
           chvzkRealGame (prgWitnessSigma generator length) (fun _ _ _ => True) PMF.pure
             adversary n = distinguishingGame (generatorEnsemble generator n) (D n) := by
-        simp only [chvzkRealGame, chvzkExperiment_map_some, distinguishingGame, D,
-          PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
+        simp only [chvzkRealGame, chvzkExperiment_map_some, ProbComp.liftM_eq_eval,
+          distinguishingGame, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (generatorEnsemble generator n)]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨x, ⟨⟩⟩, state⟩ _ => ?_
         cases x
@@ -451,14 +451,14 @@ theorem computationalSpecialHVZK_prgWitnessSigma
         have hdec (c : Bool) (t : List Bool) :
             decodeConversation prgWitnessEncoding n c (t, encUnit ()) = some (t, c, ()) :=
           decodeConversation_encode prgWitnessEncoding n c t ()
-        simp only [simulatedConversation, prgWitnessSim, ProbComp.eval_bind,
+        simp only [simulatedConversation, prgWitnessSim, ProbComp.liftM_eq_eval, ProbComp.eval_bind,
           BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
           PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, hdec]
       have hsim_eq :
           chvzkSimGame (fun _ _ _ => True) prgWitnessEncoding PMF.pure (prgWitnessSim length)
             adversary n = distinguishingGame (BitString.uniformList (length n)) (D n) := by
-        simp only [chvzkSimGame, chvzkExperiment, hconv, distinguishingGame, D,
-          PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
+        simp only [chvzkSimGame, chvzkExperiment, hconv, ProbComp.liftM_eq_eval,
+          distinguishingGame, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (BitString.uniformList (length n))]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨x, ⟨⟩⟩, state⟩ _ => ?_
         cases x
