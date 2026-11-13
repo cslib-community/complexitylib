@@ -297,6 +297,107 @@ Unbounded-error communication is characterized by sign-rank. `SignRepresents A f
 
 The deterministic lifting theorem composes a Boolean function with an index gadget. For the theorem's parameters m and tau, a protocol of cost c yields a decision tree of depth d with `(m/tau)^d <= 4^c`, assuming `4 <= tau`, `tau^2 <= m` and `320 n^2 (log2 m+1) <= tau`. Choosing tau around the square root of m gives a gadget on the order of `n^4 log^2 n`, rather than the smaller gadgets of more recent sharp lifting theorems. This is a documented quantitative scope choice. The source is [the lifting simulation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Communication/Lifting/Simulation.lean).
 
+The low-discrepancy lifting development includes a recursive protocol-to-query simulation
+from local density guarantees, together with a finite discrepancy criterion for those guarantees. [Discrepancy/Extractor](../../CslibFrontier/Computability/Communication/Discrepancy/Extractor.lean)
+bounds the bias under independent sources using their atom caps or min-entropies and gives a
+strict sampling-tail bound (CFKMP, arXiv:1904.13056v4, Lemmas 2.9–2.10).
+[SmallBias/Pointwise](../../CslibFrontier/Probability/SmallBias/Pointwise.lean) contains the
+pointwise and min-entropy versions of Vazirani's lemma (Lemmas 2.5–2.6).
+[Discrepancy/Xor](../../CslibFrontier/Computability/Communication/Discrepancy/Xor.lean)
+uses cube tensorization to prove `disc(g XOR ... XOR g)^4 ≤ (4 disc(g))^k` under uniform
+inputs. This is an elementary alternative with weaker constants than the paper's cited
+Lee–Shraibman–Špalek XOR theorem. It is not a formalization of that sharper bound.
+[Lifting/FullRange](../../CslibFrontier/Computability/Communication/Lifting/FullRange.lean)
+turns explicit parity estimates into preimages in the product of the source supports.
+[Lifting/Dangerous](../../CslibFrontier/Computability/Communication/Lifting/Dangerous.lean)
+defines safety using the existing blockwise density predicate and proves the finite-set Bayes
+certificate for density failure (Definition 3.8 and Claim 3.12).
+[Lifting/SafeParities](../../CslibFrontier/Computability/Communication/Lifting/SafeParities.lean)
+derives safety from explicit conditional parity bounds and integer thresholds, keeping exact
+slice sizes and the number of low-order parities. This includes empty and singleton cubes.
+[Lifting/DenseDiscrepancy](../../CslibFrontier/Computability/Communication/Lifting/DenseDiscrepancy.lean)
+turns joint block density into marginal and conditional atom caps; conditioning pays its actual
+probability once, rather than a separate loss for every remaining coordinate.
+[Lifting/DangerousProbability](../../CslibFrontier/Computability/Communication/Lifting/DangerousProbability.lean)
+proves strict conditional-parity tails and a finite-family union bound.
+[Lifting/RatioWitness](../../CslibFrontier/Computability/Communication/Lifting/RatioWitness.lean)
+extracts a canonical parity witness from every unsafe value, with conditioning size controlled
+by the density ratio. [Lifting/RatioCounting](../../CslibFrontier/Computability/Communication/Lifting/RatioCounting.lean)
+counts each witness once, without multiplying by its possible outer coordinate sets.
+[Lifting/RareDanger](../../CslibFrontier/Computability/Communication/Lifting/RareDanger.lean)
+combines these with the discrepancy tail: `card_le_two_mul_card_safe_of_discrepancy` proves
+that at least half the speaker values are safe under explicit scalar inequalities on density,
+alphabet size, discrepancy and counting parameters. It assumes no witness coverage or tail budget.
+The same hypotheses give every prescribed output a preimage in the rectangle
+(`exists_pair_of_discrepancy`), supplying terminal correctness.
+[Lifting/ParameterSpecialization](../../CslibFrontier/Computability/Communication/Lifting/ParameterSpecialization.lean)
+checks a concrete polynomial-alphabet family: for `2 ≤ n ≤ B`, use `m = B^2048`, densities
+`σ = B^1984` and `τ = B^2016`, and gadget discrepancy at most `B^(-1024)`.
+These deliberately loose constants use the elementary fourth-power XOR bound. This fixed
+family is now a specialization of the general density-parameter certificate below.
+
+[Density restoration](../../CslibFrontier/Computability/Communication/Lifting/Partition.lean)
+now exposes the single maximal fiber with no factor-two loss (the flat-source form of
+Proposition 3.6). [Lifting/DensitySimulation](../../CslibFrontier/Computability/Communication/Lifting/DensitySimulation.lean)
+proves a single-bit simulation step **conditional on at least half the speaker's values being
+safe**. Its message, speaker fiber and query set are chosen before the answers; every answer
+preserves nonemptiness, the two residual densities, and the gadget constraints.
+`DensityStep.Valid` exposes these facts and the product-size loss through named fields.
+[Lifting/Volume](../../CslibFrontier/Computability/Communication/Lifting/Volume.lean)
+provides finite-step telescoping and the cardinal-volume query bound.
+[Lifting/SimulationTrace](../../CslibFrontier/Computability/Communication/Lifting/SimulationTrace.lean)
+derives the fixed-coordinate partition and the bound `(m / (2 * τ)) ^ q ≤ 8 ^ c` from an
+executed valid trace starting at the full rectangle. No endpoint fixedness or accumulated-budget
+hypothesis is needed. The numerical theorem `exists_densityStep_of_discrepancy` supplies each
+single step directly from the density and discrepancy inequalities.
+[Protocol/Alternating](../../CslibFrontier/Computability/Communication/Protocol/Alternating.lean)
+inserts dummy messages, preserves outputs, and bounds the new depth by twice the original depth;
+this prevents consecutive same-speaker steps from repeatedly consuming listener density slack.
+[Lifting/DensityCompiler](../../CslibFrontier/Computability/Communication/Lifting/DensityCompiler.lean)
+constructs the decision tree from these local guarantees and proves correctness for every outer
+input, with `(m / (2 * τ)) ^ t.depth ≤ 8 ^ (2 * p.depth)`.
+The factor two accounts for alternating normalization. The compiler carries actual executed
+traces and derives the bound on the full tree depth, rather than assuming a simulation or budget.
+[Lifting/DiscrepancyLifting](../../CslibFrontier/Computability/Communication/Lifting/DiscrepancyLifting.lean)
+connects these results: for any outer relation and protocol `p`, the polynomial family above
+admits a correct decision tree `t` with `B ^ (31 * t.depth) ≤ 8 ^ (2 * p.depth)`.
+This endpoint has no assumed safety, full-range or simulation guarantees.
+[Lifting/ExponentLifting](../../CslibFrontier/Computability/Communication/Lifting/ExponentLifting.lean)
+now covers every positive discrepancy exponent `η`. Its `exists_general_lifting_parameter`
+chooses an integer `1 ≤ k ≤ 1/(2η)+1`, uniformly over all input dimensions and relations.
+For `n ≥ 2`, any nonempty alphabet of size `m ≥ n^(2048k²)`, and any gadget with discrepancy
+at most `m^(-η)`, every correct protocol has a correct decision-tree simulation satisfying
+`m ^ t.depth ≤ 8 ^ (256*k*p.depth)`. Equivalently, taking logarithms gives
+`t.depth * log₂ m ≤ 768*k*p.depth`.
+[Lifting/LogarithmicLifting](../../CslibFrontier/Computability/Communication/Lifting/LogarithmicLifting.lean)
+checks the logarithmic bound, the equivalent bit-length threshold for `m = 2^b`, and the
+resulting `t.depth*b ≤ 768*k*p.depth`.
+[Lifting/BitStringLifting](../../CslibFrontier/Computability/Communication/Lifting/BitStringLifting.lean)
+exposes this theorem directly for gadgets and protocols on literal `BitString b` inputs.
+`exists_decisionTree_bitString_of_log_bound` accepts discrepancy at most `2^(-η*b)` and
+the bit-length threshold above. It reuses `BitString.equivFin` and `Protocol.comap`, which
+preserves protocol depth. [Discrepancy/Transport](../../CslibFrontier/Computability/Communication/Discrepancy/Transport.lean)
+proves that separate input-alphabet equivalences preserve uniform discrepancy.
+[Lifting/Complexity](../../CslibFrontier/Computability/Communication/Lifting/Complexity.lean)
+packages the bound using the existing `DecisionTree.complexity` and `Protocol.ecomplexityFun`:
+`b * Dquery(f) ≤ 768*k*Dcomm(f ∘ gⁿ)`, with the natural query measure cast into `ℕ∞`.
+`exists_complexity_lifting_parameter` chooses `k` uniformly for every positive `η`.
+Callers can transfer a query lower bound directly, without exhibiting a protocol or tree;
+the proof handles infinite communication complexity. Arbitrary output relations retain the
+more general protocol-to-tree simulation above.
+[Lifting/GeneralParameters](../../CslibFrontier/Computability/Communication/Lifting/GeneralParameters.lean)
+uses density levels `m^(1−1/(32k))` and `m^(1−1/(64k))` in its real-base representation.
+[Lifting/ExponentParameters](../../CslibFrontier/Computability/Communication/Lifting/ExponentParameters.lean)
+takes a real root of `m`, so this result has no perfect-power restriction on the alphabet.
+This proves the deterministic lifting conclusion of CFKMP Theorem 1.2 with explicit constants;
+randomized lifting and round-sensitive refinements remain open.
+[General-exponent clients](../../CslibFrontierTests/DiscrepancyExponent.lean) include exponent
+`1/100` and the arbitrary-alphabet root argument.
+[Safety clients](../../CslibFrontierTests/DiscrepancyDensity.lean) include a constant-gadget
+failure and the empty-coordinate boundary; [witness and trace clients](../../CslibFrontierTests/DiscrepancyWitnesses.lean)
+check exact counts, threshold rounding, repeated-speaker normalization and the trace query bound.
+
+
 [CoverNumber](../../CslibFrontier/Computability/Communication/Nondeterministic/CoverNumber.lean) counts rectangles instead of guessed bits. `coverNumber z R A B : ℕ∞` is the least size of a `z`-cover. On all of `X × Y` it is Kushilevitz and Nisan's `C^z(f)`, and for `z = true` the rectangle covering bound. `ecomplexity_le_iff_coverNumber_le` and `ecomplexity_eq_clog_coverNumber` show that `ecomplexity` is `⌈log₂ coverNumber⌉`. `card_le_coverNumberFun_of_isFoolingSet` is the fooling-set bound on the count itself. [ExtensionComplexity](../../CslibFrontier/Computability/Communication/Nondeterministic/ExtensionComplexity.lean) proves Yannakakis's rectangle covering bound [yannakakis91][yannakakis91], [fmptw15][fmptw15] (Theorem 4). The support of a matrix `M` over an ordered semiring has a `1`-cover by `rank₊ M` rectangles (`coverNumberFun_ne_zero_le_nonnegRank`), so `N¹` of the support is at most `⌈log₂ rank₊ M⌉`. Through the factorization theorem in [extended formulations](../algorithms-and-memory/optimization-and-duality.md#extended-formulations-and-yannakakiss-factorization-theorem), the same bounds hold for the slack matrix of a nontrivial polytope with `xc P` in place of `rank₊ M`. `card_le_extensionComplexity_of_isFoolingSet` turns a fooling set of the slack matrix's support into a lower bound on extension complexity. For an explicit exponential rectangle-cover separation, [UniqueDisjointness](../../CslibFrontier/Computability/Communication/Nondeterministic/UniqueDisjointness.lean) formalizes Kaibel and Weltge's `(3 / 2)^n` bound [kaibelweltge15][kaibelweltge15] (§§2–3, Theorem 1): every [valid disjoint-pair subset](../../CslibFrontier/Computability/Communication/Nondeterministic/UniqueDisjointness.lean#L98) of `D(U)` (`3 ^ |U|` pairs) has size at most `2 ^ |U|` (`card_le_two_pow_of_isValidDisjointSet`), giving `three_pow_le_two_pow_mul_coverNumber_uniqueDisjointnessRel` (`⌈(3 / 2)^|α|⌉ ≤ coverNumber true (uniqueDisjointnessRel α) Set.univ Set.univ`) and `clog_ceil_div_le_ecomplexity_uniqueDisjointnessRel` (`⌈log₂ ⌈(3 / 2)^|α|⌉⌉ ≤ N¹(UDISJ)`), which in turn drives the exponential polytope lower bounds for `CORR`, `CUT`, `STAB` and `TSP` in [extended formulations](../algorithms-and-memory/optimization-and-duality.md#extended-formulations-and-yannakakiss-factorization-theorem).
 
 ### Spectral bounds for uniform discrepancy
