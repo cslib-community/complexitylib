@@ -3901,6 +3901,10 @@ public import CslibFrontier.Computability.PropertyTesting.Linearity
 public import CslibFrontier.Computability.PropertyTesting.LinearityLowerBound
 public import CslibFrontier.Computability.PropertyTesting.Monotonicity.Basic
 public import CslibFrontier.Computability.PropertyTesting.Monotonicity.EdgeTester
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair.Balanced
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair.Blocks
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair.Local
 public import CslibFrontier.Computability.QueryComplexity.AndOrTree
 public import CslibFrontier.Computability.QueryComplexity.AndOrTree.Randomized
 public import CslibFrontier.Computability.QueryComplexity.ApproximateDegree
@@ -3914,6 +3918,7 @@ public import CslibFrontier.Computability.QueryComplexity.Midrijanis
 public import CslibFrontier.Computability.QueryComplexity.Monotone
 public import CslibFrontier.Computability.QueryComplexity.NisanSzegedy
 public import CslibFrontier.Computability.QueryComplexity.OneSided
+public import CslibFrontier.Computability.QueryComplexity.OrBlocks
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Adversary
 public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary
 public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
@@ -5532,6 +5537,7 @@ public import CslibFrontier.Foundations.Data.Code.Sudan
 public import CslibFrontier.Foundations.Data.Code.SudanInterpolant
 public import CslibFrontier.Foundations.Data.ENat.IInf
 public import CslibFrontier.Foundations.Data.Fin.Append
+public import CslibFrontier.Foundations.Data.Fin.BalancedBlocks
 public import CslibFrontier.Foundations.Data.Fin.Order
 public import CslibFrontier.Foundations.Data.Fin.Tuple
 public import CslibFrontier.Foundations.Data.Finset.ApplyUpdate

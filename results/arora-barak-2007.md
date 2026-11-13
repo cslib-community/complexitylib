@@ -640,6 +640,12 @@ an existing theorem should be mapped to that theorem rather than reproved. Exerc
 must be pinned to the source chapter, including subparts; placeholders do not supply a precise
 mathematical specification.
 
+Chapter 11 Exercise 2 appears on printed p. 218/PDF p. 234.
+
+| Exercise | Endpoint and disposition |
+|---|---|
+| 11 §2 | Adjacent-pair blocks: sensitivity versus block sensitivity. **Covered for every length n ≥ 4.** [AdjacentPair](../CslibFrontier/Computability/QueryComplexity/AdjacentPair.lean) defines `Cslib.BitString.adjacentPairSqrt n` with `k = Nat.sqrt n` balanced contiguous blocks of sizes `n / k + [i < n % k]` (not only squares); a block accepts exactly two adjacent true bits, overlapping choices such as `0110` included. `adjacentPairSqrt_measures` proves $k\le s(f_n)\le3k$, $n\le3\,bs(f_n)$ and $bs\le C\le D\le n$ for the native measures, hence $s=\Theta(\sqrt n)$ and $bs=C=D=\Theta(n)$. General unequal-block bounds (`sensitivity_adjacentPairBlocks_le`: $s\le\max(3k,M)$; `sum_half_le_blockSensitivity_adjacentPairBlocks`: $\sum_b\lfloor m_b/2\rfloor\le bs$) sit in [Blocks](../CslibFrontier/Computability/QueryComplexity/AdjacentPair/Blocks.lean), on the shared OR-of-blocks count in [OrBlocks](../CslibFrontier/Computability/QueryComplexity/OrBlocks.lean). For $n=0$ the function is constantly false; for $1\le n\le3$ it is one block. No exact values (such as $D=n$) are claimed. [Clients](../CslibFrontierTests/AdjacentPair.lean). |
+
 The six exercise prompts at the end of Chapter 14 all appear on printed p. 265/PDF p. 281.
 Their current dispositions are:
 

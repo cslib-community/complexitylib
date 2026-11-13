@@ -20,6 +20,7 @@ import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
+import CslibFrontier.Computability.QueryComplexity.AdjacentPair
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -678,6 +679,24 @@ register_result "yao-zero-error-expected-cost" where
     including repeated queries; free local computation. Numerical equality with the maximum \
     optimized distributional expected cost, both sides attained. No finite-output assumption, \
     no bounded-error depth substitution, no expected Turing-machine runtime claim."
+
+register_result "adjacent-pair-sensitivity-separation" where
+  title := "Adjacent-pair block functions: sensitivity Θ(√n), block sensitivity Θ(n)"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 11, Exercise 2",
+      locator := "Web draft 2007-01-08, printed p. 218; PDF p. 234" }
+  ]
+  theorems := [
+    Cslib.BitString.adjacentPairSqrt_measures,
+    Cslib.BitString.sensitivity_adjacentPairBlocks_le,
+    Cslib.BitString.sum_half_le_blockSensitivity_adjacentPairBlocks
+  ]
+  scope := "Every length n ≥ 4, with Nat.sqrt n balanced contiguous blocks of sizes \
+    n / k + [i < n % k]; a block accepts exactly two adjacent true bits, overlapping choices \
+    included. Native CSLib sensitivity, block sensitivity, certificate complexity and \
+    decision-tree complexity: √n ≤ s ≤ 3√n (floor square root), n ≤ 3 bs and \
+    bs ≤ C ≤ D ≤ n. No exact values (such as D = n) are claimed."
 
 register_result "boolean-two-element-arithmetic-simulation" where
   title := "Boolean and two-element arithmetic circuits have linearly related sizes"
