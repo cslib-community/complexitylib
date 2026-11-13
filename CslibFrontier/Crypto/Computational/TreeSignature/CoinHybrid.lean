@@ -619,25 +619,14 @@ at most `1`, on a message of length at most `L`. -/
 
 theorem computableInPolyTime_keyBound (ck dk cb db : ℕ) :
     ComputableInPolyTime (keyBound ck dk cb db) encUnary encUnary := by
-  have hn := ComputableInPolyTime.id' (encIn := encUnary)
-  exact ((ComputableInPolyTime.const ck).unary_mul'
-    ((ComputableInPolyTime.unary_pow dk).comp'
-      ((((ComputableInPolyTime.const 2).unary_mul' hn).unary_add' (.const 2)).unary_add'
-        ((ComputableInPolyTime.const cb).unary_mul'
-          ((ComputableInPolyTime.unary_pow db).comp' (hn.unary_add' (.const 1))))))).of_enc_eq
-    fun _ => rfl
+  unfold keyBound
+  fun_prop
 
 theorem computableInPolyTime_sigBound (cs ds cB dB : ℕ) :
     ComputableInPolyTime (fun p : ℕ × ℕ => sigBound cs ds cB dB p.1 p.2)
       (encPair encUnary encUnary) encUnary := by
-  have hp := ComputableInPolyTime.id' (encIn := encPair encUnary encUnary)
-  have h2KL := ((ComputableInPolyTime.const 2).unary_mul' hp.fst').unary_add' hp.snd'
-  exact ((ComputableInPolyTime.const cs).unary_mul'
-    ((ComputableInPolyTime.unary_pow ds).comp'
-      ((((ComputableInPolyTime.const 2).unary_mul' (h2KL.unary_add' (.const 4))).unary_add'
-        ((ComputableInPolyTime.const cB).unary_mul'
-          ((ComputableInPolyTime.unary_pow dB).comp' (h2KL.unary_add' (.const 5))))).unary_add'
-        (.const 2)))).of_enc_eq fun _ => rfl
+  unfold sigBound
+  fun_prop
 
 private theorem sigBound_funProp {α : Type} {enc : α ↪ List Bool} {K L : α → ℕ}
     (cs ds cB dB : ℕ) (hK : ComputableInPolyTime K enc encUnary)

@@ -11,7 +11,7 @@ import CslibFrontier.Crypto.Computational.SIS.ModulusSwitch.Native
 
 namespace CslibFrontierTests.Crypto.ModulusSwitchCorrectness
 
-open Cslib.Crypto
+open Cslib Cslib.Crypto
 open scoped Matrix
 
 private def secret (q : ℕ) : Fin 1 → Fin 2 → ZMod q := ![![1, -1]]
@@ -27,10 +27,10 @@ example : moduleLWEDecrypt (secret 16) (moduleLWEModulusSwitch 16 (ct 32)) =
   have h := moduleLWEDecrypt_modulusSwitch_encrypt_eq
     (q := 32) (p := 16) (Bq := 1) (Bp := 3) (by decide) (by decide)
     (!![![7, 5]]) (secret 32) (![![1, 0]]) (![![1, 0]]) 0 (![0, -1]) (![true, false])
-    (by decide) (by norm_num [secret, GeneralSIS.liftCentered, Fin.sum_univ_succ,
+    (by decide) (by norm_num [secret, SIS.liftCentered, Fin.sum_univ_succ,
       show (1 : ZMod 32).valMinAbs = 1 by decide,
       show (-1 : ZMod 32).valMinAbs = -1 by decide])
-  have hs : (fun j i => (GeneralSIS.liftCentered (secret 32 j) i : ZMod 16)) =
+  have hs : (fun j i => (SIS.liftCentered (secret 32 j) i : ZMod 16)) =
       secret 16 := by decide
   rw [hs] at h
   exact h
@@ -40,10 +40,10 @@ example : moduleLWEDecrypt (secret 17) (moduleLWEModulusSwitch 17 (ct 32)) =
   have h := moduleLWEDecrypt_modulusSwitch_encrypt_eq
     (q := 32) (p := 17) (Bq := 1) (Bp := 3) (by decide) (by decide)
     (!![![7, 5]]) (secret 32) (![![1, 0]]) (![![1, 0]]) 0 (![0, -1]) (![true, false])
-    (by decide) (by norm_num [secret, GeneralSIS.liftCentered, Fin.sum_univ_succ,
+    (by decide) (by norm_num [secret, SIS.liftCentered, Fin.sum_univ_succ,
       show (1 : ZMod 32).valMinAbs = 1 by decide,
       show (-1 : ZMod 32).valMinAbs = -1 by decide])
-  have hs : (fun j i => (GeneralSIS.liftCentered (secret 32 j) i : ZMod 17)) =
+  have hs : (fun j i => (SIS.liftCentered (secret 32 j) i : ZMod 17)) =
       secret 17 := by decide
   rw [hs] at h
   exact h
@@ -53,10 +53,10 @@ example : moduleLWEDecrypt (secret 16) (moduleLWEModulusSwitch 16 (ct 31)) =
   have h := moduleLWEDecrypt_modulusSwitch_encrypt_eq
     (q := 31) (p := 16) (Bq := 1) (Bp := 3) (by decide) (by decide)
     (!![![7, 5]]) (secret 31) (![![1, 0]]) (![![1, 0]]) 0 (![0, -1]) (![true, false])
-    (by decide) (by norm_num [secret, GeneralSIS.liftCentered, Fin.sum_univ_succ,
+    (by decide) (by norm_num [secret, SIS.liftCentered, Fin.sum_univ_succ,
       show (1 : ZMod 31).valMinAbs = 1 by decide,
       show (-1 : ZMod 31).valMinAbs = -1 by decide])
-  have hs : (fun j i => (GeneralSIS.liftCentered (secret 31 j) i : ZMod 16)) =
+  have hs : (fun j i => (SIS.liftCentered (secret 31 j) i : ZMod 16)) =
       secret 16 := by decide
   rw [hs] at h
   exact h
@@ -66,10 +66,10 @@ example : moduleLWEDecrypt (secret 17) (moduleLWEModulusSwitch 17 (ct 31)) =
   have h := moduleLWEDecrypt_modulusSwitch_encrypt_eq
     (q := 31) (p := 17) (Bq := 1) (Bp := 3) (by decide) (by decide)
     (!![![7, 5]]) (secret 31) (![![1, 0]]) (![![1, 0]]) 0 (![0, -1]) (![true, false])
-    (by decide) (by norm_num [secret, GeneralSIS.liftCentered, Fin.sum_univ_succ,
+    (by decide) (by norm_num [secret, SIS.liftCentered, Fin.sum_univ_succ,
       show (1 : ZMod 31).valMinAbs = 1 by decide,
       show (-1 : ZMod 31).valMinAbs = -1 by decide])
-  have hs : (fun j i => (GeneralSIS.liftCentered (secret 31 j) i : ZMod 17)) =
+  have hs : (fun j i => (SIS.liftCentered (secret 31 j) i : ZMod 17)) =
       secret 17 := by decide
   rw [hs] at h
   exact h

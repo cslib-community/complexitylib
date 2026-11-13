@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.BitString.Counter
 import Mathlib.Data.Int.CardIntervalMod
@@ -186,18 +187,16 @@ private theorem card_filter_ofBits_mod_mem_le {k N : ℕ} (hN : 0 < N) (S : Fins
   classical
   refine Finset.card_le_mul_card_image_of_maps_to (f := fun r => ofBits (List.ofFn r) % N)
     (fun r hr => (Finset.mem_filter.1 hr).2) _ fun v _ => ?_
-  have hval : ∀ r : Fin k → Bool, ofBits (List.ofFn r) = (BitString.equivFin k r : ℕ) := fun r => by
-    rw [ofBits, ← BitString.lsbValue_eq_foldr_bit, BitString.lsbValue_ofFn]
   calc _ ≤ ((Finset.range (2 ^ k)).filter fun x => x ≡ v [MOD N]).card := by
         refine Finset.card_le_card_of_injOn (fun r => ofBits (List.ofFn r)) ?_ ?_
         · intro r hr
           simp only [Finset.coe_filter, Finset.mem_filter, Finset.mem_univ, true_and,
             Set.mem_ofPred_eq] at hr
-          simp only [Finset.coe_filter, Finset.mem_range, Set.mem_ofPred_eq, hval]
+          simp only [Finset.coe_filter, Finset.mem_range, Set.mem_ofPred_eq, ofBits_ofFn]
           refine ⟨(BitString.equivFin k r).2, ?_⟩
-          rw [← hval, Nat.ModEq, ← hr.2, Nat.mod_mod]
+          rw [← ofBits_ofFn r, Nat.ModEq, ← hr.2, Nat.mod_mod]
         · intro r _ r' _ h
-          simp only [hval] at h
+          simp only [ofBits_ofFn] at h
           exact (BitString.equivFin k).injective (Fin.ext h)
     _ = (2 ^ k).count (· ≡ v [MOD N]) := (Nat.count_eq_card_filter_range _ _).symm
     _ ≤ 2 ^ k / N + 1 := by

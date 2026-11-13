@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.GameTheory.Mechanism.Knapsack
 import CslibFrontier.GameTheory.Mechanism.VCG
 import CslibFrontier.GameTheory.Mechanism.Vickrey
+import CslibFrontier.GameTheory.Mechanism.VickreyVCG
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
@@ -15,7 +16,8 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
 Concrete Vickrey auctions (a strict winner and a tie), a non-monotone rule that is not
 implementable, Myerson's payments for a continuous (linear) allocation rule, VCG payments in a
-two-agent public project, knapsack feasibility, and nonvacuity of the existence theorems.
+two-agent public project, VCG on single-item outcomes as the Vickrey auction, knapsack feasibility,
+and nonvacuity of the existence theorems.
 -/
 
 namespace CslibFrontierTests.GameTheory.MechanismDesign
@@ -30,7 +32,7 @@ open SingleParameter.Vickrey
 
 /-- On bids `(3, 5, 4)` bidder `1` wins, pays the second-highest bid `4`, and the others pay
 nothing. -/
-example :
+theorem vickrey_three_bids :
     Wins ![(3 : ℝ), 5, 4] 1 ∧ mechanism.payment ![(3 : ℝ), 5, 4] 1 = 4 ∧
       mechanism.payment ![(3 : ℝ), 5, 4] 0 = 0 ∧ mechanism.payment ![(3 : ℝ), 5, 4] 2 = 0 := by
   have hw : Wins ![(3 : ℝ), 5, 4] 1 := by
@@ -170,6 +172,41 @@ outcomes. -/
 example : ∃ M : Mechanism (Fin 3) (Fin 3), M.IsDSIC ∧ Mechanism.IsWelfareMaximizing M.outcome ∧
     M.IsIR ∧ ∀ b i, 0 ≤ M.payment b i :=
   Mechanism.exists_isDSIC_isWelfareMaximizing
+
+/-! ### VCG on single-item outcomes is the Vickrey auction -/
+
+section VickreyVCG
+
+open SingleParameter.Vickrey
+
+/-- Run on linear valuations, VCG on single-item outcomes is a DSIC and individually rational
+single-parameter mechanism, whatever its welfare-maximizing rule. -/
+example {f : (Fin 3 → Option (Fin 3) → ℝ) → Option (Fin 3)}
+    (hf : Mechanism.IsWelfareMaximizing f) :
+    ((Mechanism.vcg f).toSingleParameter singleItem).IsDSIC ∧
+      ((Mechanism.vcg f).toSingleParameter singleItem).IsIR :=
+  ⟨(Mechanism.vcg_isDSIC hf).toSingleParameter _,
+    (Mechanism.vcg_isIR hf).toSingleParameter singleItem_nonneg⟩
+
+/-- With Vickrey's tie-breaking, VCG charges bidder `1` the second price `4` on bids `(3, 5, 4)`,
+as the Vickrey auction does (`vickrey_three_bids`). -/
+example : ∃ f : (Fin 3 → Option (Fin 3) → ℝ) → Option (Fin 3), Mechanism.IsWelfareMaximizing f ∧
+    ((Mechanism.vcg f).toSingleParameter singleItem).payment ![(3 : ℝ), 5, 4] 1 = 4 := by
+  obtain ⟨f, hf, h⟩ := exists_vcg_toSingleParameter_eq (ι := Fin 3)
+  refine ⟨f, hf, ?_⟩
+  rw [(h _ fun i => by fin_cases i <;> norm_num).2]
+  exact vickrey_three_bids.2.1
+
+/-- On bids `(3, 5, 4)` the Vickrey outcome gives the item to bidder `1`. -/
+example : winner ![(3 : ℝ), 5, 4] = some 1 :=
+  winner_eq_some vickrey_three_bids.1
+
+/-- A single-parameter mechanism is its general form on linear valuations of allocation
+vectors. -/
+example : (mechanism (ι := Fin 3)).toMechanism.toSingleParameter id = mechanism :=
+  Mechanism.toSingleParameter_toMechanism _
+
+end VickreyVCG
 
 /-! ### Knapsack auctions -/
 

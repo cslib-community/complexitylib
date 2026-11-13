@@ -133,7 +133,7 @@ private theorem expandedWord_ofFn {d k n q : ℕ} (hq : 0 < q)
     expandedWord ((((d, k), n), q),
       List.ofFn fun i => List.ofFn fun j => List.ofFn fun l => (A i j l).val) =
       ModuleSIS.encodeMatrix A := by
-  unfold expandedWord expandedRows ModuleSIS.encodeMatrix GeneralSIS.encodeMatrix
+  unfold expandedWord expandedRows ModuleSIS.encodeMatrix SIS.encodeMatrix
   simp only [List.map_range_eq_ofFn]
   congr 1
   congr 1 with i : 1

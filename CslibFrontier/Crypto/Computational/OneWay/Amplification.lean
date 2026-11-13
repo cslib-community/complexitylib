@@ -698,7 +698,7 @@ theorem familyInversionGame_parallelCore_negligible {f : List Bool → List Bool
         (((BitString.uniformList (w n)).bind (fun x =>
           (BitString.uniformList (t n * seedLen n)).map (fun allSeeds =>
             f (runTrials k w t seedLen f evalA n (f x) allSeeds) == f x))) true) := by
-    simp [inversionGame, B_inv, w, PMF.map]
+    simp [inversionGame, inversionExperiment, B_inv, w, PMF.map]
   have hpar_le := parallelCore_inversion_le (k := k) (w := w) (evalA := evalA) hlen n (B n) c
   have hgood_le := good_prob_le_runTrials (k := k) (w := w) (t := t) (seedLen := seedLen)
     (f := f) (evalA := evalA) n c

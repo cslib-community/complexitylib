@@ -48,7 +48,7 @@ multi-round public-coin Interactive Oracle Proof (`PublicCoinIOP`) into a non-in
   statements on a given set of good challenge vectors, round-by-round soundness, and
   straight-line knowledge soundness at one challenge vector and, with zero error, at all of them,
   for a `PublicCoinIOP`. These are deterministic predicates; none of them bounds a probability.
-* `Cslib.Crypto.Protocols.BCS.BCSOpening`, `Cslib.Crypto.Protocols.BCS.BCSProof`,
+* `Cslib.Crypto.Protocols.BCS.BCSProof`,
   `Cslib.Crypto.Protocols.BCS.rootPrefix`, `Cslib.Crypto.Protocols.BCS.bcsChallenge`: BCS proof
   structure and Fiat–Shamir challenge derivation from Merkle root prefixes.
 * `Cslib.Crypto.Protocols.BCS.bcsHonestTables`, `Cslib.Crypto.Protocols.BCS.bcsHonestRoots`,
@@ -294,19 +294,14 @@ end IOP
 
 /-! ### The BCS Transform (`BCSProof`, `bcsProve`, `bcsVerify`) -/
 
-/-- A single query opening in a BCS proof: the claimed symbol `Sym` and its Merkle authentication
-path `List (List Bool)`. -/
-abbrev BCSOpening (Sym : Type) : Type :=
-  Sym × List (List Bool)
-
 /-- A non-interactive BCS proof for an `r`-round `PublicCoinIOP`: one Merkle root per round and one
-`BCSOpening` per verifier query ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024],
+`MerkleOpening` per verifier query ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024],
 Construction 25.1.1). -/
 structure BCSProof (r : ℕ) (Sym : Type) where
   /-- The Merkle root committed in each round `j : Fin r`. -/
   roots : Fin r → List Bool
   /-- The opened symbol and authentication path for each query in `iop.queries x chals`. -/
-  openings : List (BCSOpening Sym)
+  openings : List (MerkleOpening Sym)
 
 /-- The prefix of Merkle roots `[rt_0, ..., rt_j]` through round `j : Fin r`. -/
 def rootPrefix {r : ℕ} (roots : Fin r → List Bool) (j : Fin r) : List (List Bool) :=
@@ -400,11 +395,11 @@ def bcsHonestChallenges (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
 /-- The Merkle openings produced by the honest BCS prover for all queries in `iop.queries`. -/
 def bcsHonestOpenings (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     (H : List Bool → List Bool → List Bool) (k : List Bool) (encSym : Sym → List Bool)
-    (hFS : Stmt → List (List Bool) → Chal) (x : Stmt) (w : Wit) : List (BCSOpening Sym) :=
+    (hFS : Stmt → List (List Bool) → Chal) (x : Stmt) (w : Wit) : List (MerkleOpening Sym) :=
   let tables := bcsHonestTables iop H k encSym hFS x w
   let chals := bcsHonestChallenges iop H k encSym hFS x w
   (iop.queries x chals).map fun (j, idx) =>
-    (tables j idx, merklePath H k (oracleLeaves encSym d (tables j)) idx.val)
+    ⟨tables j idx, merklePath H k (oracleLeaves encSym d (tables j)) idx.val⟩
 
 /-- **The BCS prover** (`bcsProve`): sequentially computes each round's IOP oracle table, commits to
 it with `merkleRoot`, derives the Fiat–Shamir challenges via `hFS`, and opens every queried entry
@@ -426,9 +421,19 @@ def bcsVerify (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
   let chals := bcsChallenge hFS x prf.roots
   let qs := iop.queries x chals
   prf.openings.length == qs.length &&
-    (qs.zip prf.openings).all (fun ((j, idx), (val, path)) =>
-      merkleVerify H k d (prf.roots j) idx.val (encSym val) path) &&
-    iop.decide x chals (prf.openings.map Prod.fst)
+    (qs.zip prf.openings).all (fun ((j, idx), o) => o.verify H k encSym d (prf.roots j) idx.val) &&
+    iop.decide x chals (prf.openings.map MerkleOpening.leaf)
+
+/-- Every queried opening of a proof accepted by `bcsVerify` is accepted against its root. -/
+theorem verify_of_bcsVerify {iop : PublicCoinIOP r d Stmt Wit Sym Chal}
+    {H : List Bool → List Bool → List Bool} {k : List Bool} {encSym : Sym → List Bool}
+    {hFS : Stmt → List (List Bool) → Chal} {x : Stmt} {prf : BCSProof r Sym}
+    (hver : bcsVerify iop H k encSym hFS x prf = true) {j : Fin r} {idx : Fin (2 ^ d)}
+    {o : MerkleOpening Sym}
+    (hmem : ((j, idx), o) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings) :
+    o.verify H k encSym d (prf.roots j) idx.val = true := by
+  simp only [bcsVerify, Bool.and_eq_true, List.all_eq_true] at hver
+  exact hver.1.2 _ hmem
 
 /-! ### Perfect completeness -/
 
@@ -461,15 +466,15 @@ theorem bcsVerify_bcsProve_of_iopVerify (iop : PublicCoinIOP r d Stmt Wit Sym Ch
   set tables := bcsHonestTables iop H k encSym hFS x w
   set chals := bcsHonestChallenges iop H k encSym hFS x w
   set qs := iop.queries x chals
-  have hzip (g : Fin r × Fin (2 ^ d) → BCSOpening Sym) :
+  have hzip (g : Fin r × Fin (2 ^ d) → MerkleOpening Sym) :
       qs.zip (qs.map g) = qs.map fun q => (q, g q) := by
     simpa only [List.map_id, id] using List.zip_map' (f := id) (g := g) (l := qs)
   change ((qs.map _).length == qs.length &&
-    (qs.zip (qs.map _)).all (fun ((j, idx), (val, path)) =>
-      merkleVerify H k d (bcsHonestRoots iop H k encSym hFS x w j) idx.val (encSym val) path) &&
-    iop.decide x chals ((qs.map _).map Prod.fst)) = true
-  simp only [hzip, Bool.and_eq_true, beq_iff_eq, List.length_map, List.all_map, List.all_eq_true,
-    Function.comp_def, List.map_map, true_and]
+    (qs.zip (qs.map _)).all (fun (((j, idx), o) : _ × MerkleOpening Sym) =>
+      o.verify H k encSym d (bcsHonestRoots iop H k encSym hFS x w j) idx.val) &&
+    iop.decide x chals ((qs.map _).map MerkleOpening.leaf)) = true
+  simp only [hzip, MerkleOpening.verify, Bool.and_eq_true, beq_iff_eq, List.length_map,
+    List.all_map, List.all_eq_true, Function.comp_def, List.map_map, true_and]
   refine ⟨fun ⟨j, idx⟩ _ => ?_, ?_⟩
   · exact merkleVerify_oracleLeaves H k encSym d (tables j) idx
   · rw [bcsHonestTables_eq_iopProverOracles]
@@ -489,13 +494,13 @@ theorem bcsVerify_bcsProve_eq_true {iop : PublicCoinIOP r d Stmt Wit Sym Chal}
 
 /-! ### Binding extraction and soundness / knowledge reductions -/
 
-/-- Find the first query-opening pair `((j, idx), (val, path))` in a BCS proof whose encoded symbol
+/-- Find the first query-opening pair `((j, idx), ⟨val, path⟩)` in a BCS proof whose encoded symbol
 `encSym val` disagrees with the committed oracle table entry `encSym (oracles j idx)`. -/
 def bcsFindConflict (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (encSym : Sym → List Bool)
     (hFS : Stmt → List (List Bool) → Chal) (x : Stmt) (oracles : Fin r → OracleTable d Sym)
-    (prf : BCSProof r Sym) : Option ((Fin r × Fin (2 ^ d)) × BCSOpening Sym) :=
+    (prf : BCSProof r Sym) : Option ((Fin r × Fin (2 ^ d)) × MerkleOpening Sym) :=
   let chals := bcsChallenge hFS x prf.roots
-  ((iop.queries x chals).zip prf.openings).find? fun ((j, idx), (val, _)) =>
+  ((iop.queries x chals).zip prf.openings).find? fun ((j, idx), ⟨val, _⟩) =>
     encSym val != encSym (oracles j idx)
 
 /-- **Deterministic Merkle collision extractor for the BCS transform**: given committed oracle
@@ -508,7 +513,7 @@ def bcsExtractTableCollision (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     (prf : BCSProof r Sym) : List Bool × List Bool :=
   match bcsFindConflict iop encSym hFS x oracles prf with
   | none => ([], [])
-  | some ((j, idx), (val, path)) =>
+  | some ((j, idx), ⟨val, path⟩) =>
     extractMerkleCollision H k (encSym val) (encSym (oracles j idx)) idx.val path
       (merklePath H k (oracleLeaves encSym d (oracles j)) idx.val)
 
@@ -521,7 +526,7 @@ theorem iopVerify_eq_true_of_bcsVerify_of_openings_eq
     {hFS : Stmt → List (List Bool) → Chal} {x : Stmt} {oracles : Fin r → OracleTable d Sym}
     {prf : BCSProof r Sym} (hver : bcsVerify iop H k encSym hFS x prf = true)
     (hagree : ∀ j idx val path,
-      ((j, idx), (val, path)) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings →
+      ((j, idx), ⟨val, path⟩) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings →
       val = oracles j idx) :
     iopVerify iop x (bcsChallenge hFS x prf.roots) oracles = true := by
   simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq] at hver
@@ -536,7 +541,7 @@ theorem iopVerify_eq_true_of_bcsVerify_of_openings_eq
   have hmo : m < prf.openings.length := by simpa only [List.length_map] using h₁
   have hmem : (qs[m], prf.openings[m]) ∈ qs.zip prf.openings :=
     List.mem_iff_getElem.mpr ⟨m, by simp [hmq, hmo], by simp⟩
-  have heq := hagree qs[m].1 qs[m].2 prf.openings[m].1 prf.openings[m].2 hmem
+  have heq := hagree qs[m].1 qs[m].2 prf.openings[m].leaf prf.openings[m].path hmem
   simpa only [iopAnswers, List.getElem_map] using heq
 
 /-- **Committed-table binding extraction (`bcs_sound_or_merkleCollision`)**: if `bcsVerify` accepts
@@ -560,9 +565,8 @@ theorem bcs_sound_or_merkleCollision
     have hmem := List.mem_of_find?_eq_some hsome
     have hne_bool := List.find?_some hsome
     simp only [bne_iff_ne, ne_eq] at hne_bool
-    simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver
     have hmv₁ : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true :=
-      hver.1.2 ((j, idx), (val, path)) hmem
+      verify_of_bcsVerify hver hmem
     have hmv₂ : merkleVerify H k d (prf.roots j) idx.val (encSym (oracles j idx))
         (merklePath H k (oracleLeaves encSym d (oracles j)) idx.val) = true := by
       rw [hroots j]
@@ -572,7 +576,7 @@ theorem bcs_sound_or_merkleCollision
   · left
     rw [Bool.not_eq_true, Option.isSome_eq_false_iff, Option.isNone_iff_eq_none] at hfind
     refine iopVerify_eq_true_of_bcsVerify_of_openings_eq hver fun j idx val path hmem => ?_
-    have hnone := List.find?_eq_none.mp hfind ((j, idx), (val, path)) hmem
+    have hnone := List.find?_eq_none.mp hfind ((j, idx), ⟨val, path⟩) hmem
     simp only [bne_iff_ne, ne_eq, Decidable.not_not] at hnone
     exact hinj hnone
 
@@ -606,19 +610,18 @@ theorem isCollision_of_bcsVerify_conflict
     (hver₂ : bcsVerify iop H k encSym hFS x₂ prf₂ = true)
     {j : Fin r} (hroot : prf₁.roots j = prf₂.roots j) {idx : Fin (2 ^ d)}
     {val₁ val₂ : Sym} {path₁ path₂ : List (List Bool)}
-    (ho₁ : ((j, idx), (val₁, path₁)) ∈
+    (ho₁ : ((j, idx), ⟨val₁, path₁⟩) ∈
       (iop.queries x₁ (bcsChallenge hFS x₁ prf₁.roots)).zip prf₁.openings)
-    (ho₂ : ((j, idx), (val₂, path₂)) ∈
+    (ho₂ : ((j, idx), ⟨val₂, path₂⟩) ∈
       (iop.queries x₂ (bcsChallenge hFS x₂ prf₂.roots)).zip prf₂.openings)
     (hne : encSym val₁ ≠ encSym val₂) (n : ℕ) :
     let col := extractMerkleCollision H k (encSym val₁) (encSym val₂) idx.val path₁ path₂
     isCollision H (fun _ _ => true) n k col.1 col.2 = true := by
-  simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver₁ hver₂
   have hmv₁ : merkleVerify H k d (prf₁.roots j) idx.val (encSym val₁) path₁ = true :=
-    hver₁.1.2 ((j, idx), (val₁, path₁)) ho₁
+    verify_of_bcsVerify hver₁ ho₁
   have hmv₂ : merkleVerify H k d (prf₁.roots j) idx.val (encSym val₂) path₂ = true := by
     rw [hroot]
-    exact hver₂.1.2 ((j, idx), (val₂, path₂)) ho₂
+    exact verify_of_bcsVerify hver₂ ho₂
   exact isCollision_of_merkleVerify hmv₁ hmv₂ hne n
 
 /-- **Knowledge extraction when openings match the committed tables**: if `bcsVerify` accepts `prf`
@@ -632,7 +635,7 @@ theorem rel_iopExtract_of_bcsVerify_of_openings_eq
     {hFS : Stmt → List (List Bool) → Chal} {x : Stmt} {oracles : Fin r → OracleTable d Sym}
     {prf : BCSProof r Sym} (hver : bcsVerify iop H k encSym hFS x prf = true)
     (hagree : ∀ j idx val path,
-      ((j, idx), (val, path)) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings →
+      ((j, idx), ⟨val, path⟩) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings →
       val = oracles j idx)
     (hks : IOPKnowledgeSoundnessAt iop rel iopExtract x (bcsChallenge hFS x prf.roots) oracles) :
     rel x (iopExtract x oracles) :=
