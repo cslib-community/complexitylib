@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Complexity.Classes.Advice
 public import CslibFrontier.Computability.Circuit.Boolean.Encoding.Certificate
 public import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
 public import CslibFrontier.Computability.Circuit.Boolean.Substitution
@@ -190,6 +191,26 @@ theorem PAdvice_subset_PPoly : PAdvice ⊆ PPoly := by
   rintro L ⟨α, hα, A, hA, hL⟩
   obtain ⟨M, hM, hAM⟩ := P_subset_PPolyOn hA
   exact PPoly.of_advice hM α hα fun x => (hL x).trans (hAM _)
+
+/-- Polynomial advice is the union of the exact polynomially bounded advice-length classes. -/
+theorem mem_PAdvice_iff_exists_mem_PWithAdvice {L : Language Bool} :
+    L ∈ PAdvice ↔ ∃ length : ℕ → ℕ, PolynomiallyBounded length ∧
+      L ∈ Complexity.PWithAdvice length := by
+  constructor
+  · rintro ⟨advice, hpoly, A, hA, hL⟩
+    exact ⟨fun n => (advice n).length, hpoly, advice, fun _ => rfl, A, hA, hL⟩
+  · rintro ⟨length, hpoly, advice, hlen, A, hA, hL⟩
+    exact ⟨advice, by simpa only [hlen] using hpoly, A, hA, hL⟩
+
+/-- A specified polynomially bounded advice length is polynomial advice. -/
+theorem PWithAdvice_subset_PAdvice {length : ℕ → ℕ} (h : PolynomiallyBounded length) :
+    Complexity.PWithAdvice length ⊆ PAdvice :=
+  fun _ hL => mem_PAdvice_iff_exists_mem_PWithAdvice.mpr ⟨length, h, hL⟩
+
+/-- An exact polynomially bounded advice length gives polynomial-size circuits. -/
+theorem PWithAdvice_subset_PPoly {length : ℕ → ℕ} (h : PolynomiallyBounded length) :
+    Complexity.PWithAdvice length ⊆ PPoly :=
+  (PWithAdvice_subset_PAdvice h).trans PAdvice_subset_PPoly
 
 /-- **Advice strings for `P/poly` up to a polynomial length bound.** For any language `L ∈ P/poly`
 and polynomial `N : Polynomial ℕ`, there exist polynomials `S W P : Polynomial ℕ` (for the circuit

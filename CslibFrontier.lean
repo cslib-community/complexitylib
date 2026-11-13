@@ -1816,6 +1816,8 @@ public import CslibFrontier.Computability.Complexity.Classes.AWPP.Closure
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.OracleWeights
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.WPP
+public import CslibFrontier.Computability.Complexity.Classes.Advice
+public import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 public import CslibFrontier.Computability.Complexity.Classes.Alternation
 public import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
 public import CslibFrontier.Computability.Complexity.Classes.Alternation.Game
@@ -2276,6 +2278,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.CountingSparsif
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 public import CslibFrontier.Computability.Complexity.FineGrained.DensityBranchCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
+public import CslibFrontier.Computability.Complexity.FineGrained.DisjointInstances
 public import CslibFrontier.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
@@ -2369,6 +2372,7 @@ public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentCorners
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentIndices
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentOrderTable
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentPermutation
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Darts
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Identification
@@ -2662,6 +2666,7 @@ public import CslibFrontier.Computability.Complexity.Problems.XORSAT.Dense
 public import CslibFrontier.Computability.Complexity.ProofSystem
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Reduction.Autoreducibility
+public import CslibFrontier.Computability.Complexity.Reduction.BoundedOracle
 public import CslibFrontier.Computability.Complexity.Reduction.Equiv
 public import CslibFrontier.Computability.Complexity.Reduction.Guard
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism
@@ -4568,6 +4573,7 @@ public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.MXCircuit
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Queries
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Reconstruction
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Sampling
+public import CslibFrontier.Crypto.Primitives.PRP.Finite
 public import CslibFrontier.Crypto.Protocols.BCS.Basic
 public import CslibFrontier.Crypto.Protocols.BCS.ROM
 public import CslibFrontier.Crypto.Protocols.Cipher.EvenMansour
@@ -4988,6 +4994,7 @@ public import CslibFrontier.Foundations.Algebra.DFT
 public import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 public import CslibFrontier.Foundations.Algebra.GeometricTail
 public import CslibFrontier.Foundations.Algebra.Module.ZLattice.CoefficientFiber
+public import CslibFrontier.Foundations.Algebra.Negacyclic
 public import CslibFrontier.Foundations.Algebra.Polynomial.LagrangeInversion
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.BitBounds
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Isolation
@@ -6074,8 +6081,10 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.LimitQueries
 public import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 public import CslibFrontier.Languages.Probabilistic.Oracle.Norm.Init
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
+public import CslibFrontier.Languages.Probabilistic.Oracle.Run
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
+public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 public import CslibFrontier.Languages.Probabilistic.Oracle.Support
 public import CslibFrontier.Languages.Probabilistic.Oracle.Tabulate
 public import CslibFrontier.Languages.Probabilistic.Oracle.Transcript
@@ -6087,6 +6096,8 @@ public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
 public import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 public import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
+public import CslibFrontier.Languages.Probabilistic.RandomOracle.Represented
+public import CslibFrontier.Languages.Probabilistic.RandomOracle.Sum
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation.ExtPermsCard
 public import CslibFrontier.Languages.Probabilistic.Rational
@@ -6455,6 +6466,7 @@ public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Composition
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
+public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement
 public import CslibFrontier.Logics.Propositional.CSP.Table
 public import CslibFrontier.Logics.Propositional.CSP.Table.ContractionRows
 public import CslibFrontier.Logics.Propositional.CSP.Table.CyclicDifference
@@ -6580,8 +6592,11 @@ public import CslibFrontier.MachineLearning.PACLearning.EpsilonNet
 public import CslibFrontier.MachineLearning.PACLearning.FiniteClass
 public import CslibFrontier.MachineLearning.PACLearning.FundamentalTheorem
 public import CslibFrontier.MachineLearning.PACLearning.GrowthFunction
+public import CslibFrontier.MachineLearning.PACLearning.MDL
+public import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 public import CslibFrontier.MachineLearning.PACLearning.Realizable
 public import CslibFrontier.MachineLearning.PACLearning.RealizableSample
+public import CslibFrontier.MachineLearning.PACLearning.SRM
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.AdversarialMeasure
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.EHKVProof
@@ -6618,6 +6633,9 @@ public import CslibFrontier.MachineLearning.UniformLearning.CIKK.DenseTest
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.PPoly
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Parameters
+public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness
+public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Circuit
+public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses
@@ -6795,6 +6813,7 @@ public import CslibFrontier.Probability.PMF.ToReal
 public import CslibFrontier.Probability.PMF.TwoBranch
 public import CslibFrontier.Probability.PMF.Uniform
 public import CslibFrontier.Probability.PMF.UniformBound
+public import CslibFrontier.Probability.PMF.UniformPoint
 public import CslibFrontier.Probability.PMF.UniformPowerset
 public import CslibFrontier.Probability.PMF.UniformSubset
 public import CslibFrontier.Probability.PMF.Union

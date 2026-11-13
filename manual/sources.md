@@ -1712,6 +1712,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
 
+<a id="valiant84"></a>
+## valiant84
+
+L. G. Valiant. "A Theory of the Learnable." *Proceedings of the Sixteenth Annual ACM Symposium on Theory of Computing* (STOC '84), 436–445, 1984. https://doi.org/10.1145/800057.808710 . Bibliographic data from the library's `references.bib` entry `Valiant1984`; the paper was not inspected for this citation. The manual attributes to it, following the standard account, the observation that pseudorandom functions make polynomial-size circuits unlearnable; no section or theorem locator is claimed.
+
 <a id="vanaardenneehrenfestdebruijn51"></a>
 ## vanaardenneehrenfestdebruijn51
 

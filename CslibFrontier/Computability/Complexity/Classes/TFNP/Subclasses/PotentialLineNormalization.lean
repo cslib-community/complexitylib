@@ -228,8 +228,7 @@ theorem sinkOfPotentialLineViolationRel_iff_promised_of_promise (h : LineSourceP
 relation `endOfPotentialLinePromisedRel`. -/
 theorem isTotalSearch_endOfPotentialLinePromisedRel
     (hprom : ∀ a, LineSourcePromise n P S a)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     IsTotalSearch (endOfPotentialLinePromisedRel n P S V) := fun a => by
   obtain ⟨u, hu⟩ := isTotalSearch_endOfPotentialLineRel (P := P) (V := V) hS_len a
   exact ⟨potentialLineBack n P S V (a, u),
@@ -240,7 +239,7 @@ theorem isTotalSearch_endOfPotentialLinePromisedRel
 sink-only relation `sinkOfPotentialLinePromisedRel`. -/
 theorem isTotalSearch_sinkOfPotentialLinePromisedRel
     (hprom : ∀ a, LineSourcePromise n P S a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     IsTotalSearch (sinkOfPotentialLinePromisedRel n P S V) := fun a => by
   obtain ⟨u, hu⟩ := isTotalSearch_sinkOfPotentialLineRel (P := P) (V := V) hS_len a
   exact ⟨potentialLineBack n P S V (a, u),
@@ -815,7 +814,7 @@ theorem sinkOfPotentialLineViolationRel_normalizedViolationBack
 `n a` (no length hypothesis on `P` is needed because `normalizedPotentialPred` uses pruned
 `potentialPred` only on active potential-increasing edges). -/
 theorem isTotalSearch_endOfPotentialLinePromisedRel_normalized
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     IsTotalSearch (endOfPotentialLinePromisedRel (normalizedPotentialWidth n)
       (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
       (normalizedPotential V)) := fun a => by
@@ -825,7 +824,7 @@ theorem isTotalSearch_endOfPotentialLinePromisedRel_normalized
 /-- The normalized family is total for `sinkOfPotentialLinePromisedRel` whenever `S` preserves
 length `n a`. -/
 theorem isTotalSearch_sinkOfPotentialLinePromisedRel_normalized
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     IsTotalSearch (sinkOfPotentialLinePromisedRel (normalizedPotentialWidth n)
       (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
       (normalizedPotential V)) := fun a => by
@@ -931,7 +930,7 @@ theorem exists_normalizedPotentialBound
 /-- `endOfPotentialLineRel` search-reduces to the pure `(R1)/(R2)` relation of its promised-source
 normalization via `w ↦ w.tail`. -/
 theorem endOfPotentialLineRel_searchReducible_promised_normalized
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     SearchReducible enc enc (endOfPotentialLineRel n P S V)
       (endOfPotentialLinePromisedRel (normalizedPotentialWidth n)
         (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
@@ -943,7 +942,7 @@ theorem endOfPotentialLineRel_searchReducible_promised_normalized
 /-- The pure `(R1)/(R2)` relation of the promised-source normalization search-reduces back to
 `endOfPotentialLineRel` via `u ↦ true :: u`. -/
 theorem promised_normalized_searchReducible_endOfPotentialLineRel
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     SearchReducible enc enc
       (endOfPotentialLinePromisedRel (normalizedPotentialWidth n)
         (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
@@ -956,7 +955,7 @@ theorem promised_normalized_searchReducible_endOfPotentialLineRel
 /-- `sinkOfPotentialLineRel` search-reduces to the pure sink-only `(R1)/(R2)` relation of its
 promised-source normalization via `w ↦ w.tail`. -/
 theorem sinkOfPotentialLineRel_searchReducible_promised_normalized
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     SearchReducible enc enc (sinkOfPotentialLineRel n P S V)
       (sinkOfPotentialLinePromisedRel (normalizedPotentialWidth n)
         (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
@@ -968,7 +967,7 @@ theorem sinkOfPotentialLineRel_searchReducible_promised_normalized
 /-- The pure sink-only `(R1)/(R2)` relation of the promised-source normalization search-reduces back
 to `sinkOfPotentialLineRel` via `u ↦ true :: u`. -/
 theorem promised_normalized_searchReducible_sinkOfPotentialLineRel
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     SearchReducible enc enc
       (sinkOfPotentialLinePromisedRel (normalizedPotentialWidth n)
         (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
@@ -986,8 +985,7 @@ theorem endOfPotentialLineViolationRel_searchReducible_promised_normalized
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hV : ComputableInPolyTime V (encPair enc encBits) encNat)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     SearchReducible enc enc (endOfPotentialLineViolationRel n P S V)
       (endOfPotentialLinePromisedRel (normalizedPotentialWidth n)
         (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
@@ -1004,7 +1002,7 @@ theorem sinkOfPotentialLineViolationRel_searchReducible_promised_normalized
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hV : ComputableInPolyTime V (encPair enc encBits) encNat)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hS_len : PreservesWidth n S) :
     SearchReducible enc enc (sinkOfPotentialLineViolationRel n P S V)
       (sinkOfPotentialLinePromisedRel (normalizedPotentialWidth n)
         (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
@@ -1025,8 +1023,7 @@ theorem mem_EOPL_iff_promised {R : α → List Bool → Prop} :
         ComputableInPolyTime P (encPair enc encBits) encBits ∧
         ComputableInPolyTime S (encPair enc encBits) encBits ∧
         ComputableInPolyTime V (encPair enc encBits) encNat ∧
-        (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-        (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+        PreservesWidth n P ∧ PreservesWidth n S ∧
         (∀ a, PromisedPotentialLine n P S V a) ∧
         SearchReducible enc enc R (endOfPotentialLinePromisedRel n P S V) := by
   constructor
@@ -1060,8 +1057,7 @@ theorem mem_EOPL_iff_promised_bounded {R : α → List Bool → Prop} :
         ComputableInPolyTime P (encPair enc encBits) encBits ∧
         ComputableInPolyTime S (encPair enc encBits) encBits ∧
         ComputableInPolyTime V (encPair enc encBits) encNat ∧
-        (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-        (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+        PreservesWidth n P ∧ PreservesWidth n S ∧
         (∀ a u, u.length = n a → V (a, u) < 2 ^ m a) ∧
         (∀ a, PromisedPotentialLine n P S V a) ∧
         SearchReducible enc enc R (endOfPotentialLinePromisedRel n P S V) := by
@@ -1083,8 +1079,7 @@ theorem mem_SOPL_iff_promised {R : α → List Bool → Prop} :
         ComputableInPolyTime P (encPair enc encBits) encBits ∧
         ComputableInPolyTime S (encPair enc encBits) encBits ∧
         ComputableInPolyTime V (encPair enc encBits) encNat ∧
-        (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-        (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+        PreservesWidth n P ∧ PreservesWidth n S ∧
         (∀ a, PromisedPotentialLine n P S V a) ∧
         SearchReducible enc enc R (sinkOfPotentialLinePromisedRel n P S V) := by
   constructor
@@ -1116,8 +1111,7 @@ theorem mem_SOPL_iff_promised_bounded {R : α → List Bool → Prop} :
         ComputableInPolyTime P (encPair enc encBits) encBits ∧
         ComputableInPolyTime S (encPair enc encBits) encBits ∧
         ComputableInPolyTime V (encPair enc encBits) encNat ∧
-        (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-        (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+        PreservesWidth n P ∧ PreservesWidth n S ∧
         (∀ a u, u.length = n a → V (a, u) < 2 ^ m a) ∧
         (∀ a, PromisedPotentialLine n P S V a) ∧
         SearchReducible enc enc R (sinkOfPotentialLinePromisedRel n P S V) := by
