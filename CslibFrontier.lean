@@ -6627,6 +6627,7 @@ public import CslibFrontier.MachineLearning.PACLearning.FiniteClass
 public import CslibFrontier.MachineLearning.PACLearning.GrowthFunction
 public import CslibFrontier.MachineLearning.PACLearning.Halfspaces
 public import CslibFrontier.MachineLearning.PACLearning.MDL
+public import CslibFrontier.MachineLearning.PACLearning.NatarajanAgnostic
 public import CslibFrontier.MachineLearning.PACLearning.NatarajanDimension
 public import CslibFrontier.MachineLearning.PACLearning.NatarajanUpperBound
 public import CslibFrontier.MachineLearning.PACLearning.Nonuniform
