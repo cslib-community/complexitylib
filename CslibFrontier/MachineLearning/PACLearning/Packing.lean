@@ -34,8 +34,9 @@ A maximal separated subset is also a net at the same scale
 (`Cslib.Code.exists_subset_pairwise_lt_hammingDist_forall_exists_le`), so the bound also limits the
 size of nets. Chaining arguments need nets at every scale whose sizes grow polynomially in `1 / ε`.
 They give the agnostic sample complexity `O((d + log (1 / δ)) / ε²)` stated in
-[ShalevShwartzBenDavid2014, Theorem 6.8]; the proof in that book (Chapter 28) has an extra
-`log (1 / ε)` factor.
+[ShalevShwartzBenDavid2014, Theorem 6.8]. That book proves only the weaker
+`O((d log (d / ε) + log (1 / δ)) / ε²)` (Section 28.1), leaving out the chaining argument
+(Lemma 27.4) that the sharp form needs.
 
 ## Main results
 
