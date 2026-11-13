@@ -13,30 +13,28 @@ public import CslibFrontier.Crypto.Computational.SIS.Basic
 public import CslibFrontier.Foundations.Algebra.Negacyclic
 
 /-!
-# Negacyclic Polynomial Rings and Module-SIS
+# Module-SIS
 
-This module states structured lattice problems over the negacyclic polynomial ring
+This module states the short integer solution problem over the negacyclic polynomial ring
 `R_q = ℤ_q[X] / (X^n + 1)` ([Lyubashevsky2012], [DucasEtAl2018]). The unstructured short integer
-solution problem is in `CslibFrontier.Crypto.Computational.SIS.Basic`.
+solution problem is in `CslibFrontier.Crypto.Computational.SIS.Basic`, and Module-LWE over the same
+ring is in `CslibFrontier.Crypto.Computational.LWE.Module`. Elements of `R_q` are represented by
+their coefficient vectors `Fin n → ZMod q`, multiplied by `negacyclicMul a b = rotMatrix a *ᵥ b`;
+these operations and the ring `Negacyclic R n` are in
+`CslibFrontier.Foundations.Algebra.Negacyclic`.
 
-1. **Negacyclic polynomial rings**: elements of `R[X] / (X^n + 1)` are represented by their
-   coefficient vectors `Fin n → R`, multiplied by `negacyclicMul a b = rotMatrix a *ᵥ b`; these
-   and the ring `Negacyclic R n` are in `CslibFrontier.Foundations.Algebra.Negacyclic`.
-2. **Module-SIS, Ring-SIS and the structured-to-unstructured embedding (`ModuleSIS`, `RingSIS`)**:
-   A `d × k` module matrix `A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)` defines the linear map
-   `moduleSISMap A z i = ∑ j, negacyclicMul (A i j) (z j)` (`RingSIS` is the rank-`1` case).
-   Replacing each polynomial entry `A i j` by its `n × n` block `rotMatrix (A i j)` gives an
-   unstructured `(d * n) × (k * n)` matrix `expandModuleMatrix A` over `ZMod q` that preserves
-   the linear relation (`expandModuleMatrix_mulVec`), non-zeroness and the `ℓ_∞` norm bound under
-   coefficient flattening `flattenPolyVec`. Consequently, `ModuleSIS.IsSolution` is equivalent to
-   `SIS.IsSolution` on `expandModuleMatrix A` (`isSolution_expandModuleMatrix_iff`).
-   `moduleSISExperiment` draws a uniform module matrix and tests the solver's answer as
-   `sisExperiment` does, and `ModuleSIS M` asserts that every PPT solver has negligible
-   advantage for the parameter family `M`. Solver machines read a module matrix through its
-   expansion (`ModuleSIS.encodeMatrix`). This module proves no relation between `ModuleSIS` and
-   `SIS`, whose experiment draws a uniform unstructured matrix.
-
-Module-LWE over the same ring is in `CslibFrontier.Crypto.Computational.LWE.Module`.
+A `d × k` module matrix `A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)` defines the linear map
+`moduleSISMap A z i = ∑ j, negacyclicMul (A i j) (z j)` (`RingSIS` is the rank-`1` case).
+Replacing each polynomial entry `A i j` by its `n × n` block `rotMatrix (A i j)` gives an
+unstructured `(d * n) × (k * n)` matrix `expandModuleMatrix A` over `ZMod q` that preserves the
+linear relation (`expandModuleMatrix_mulVec`), non-zeroness and the `ℓ_∞` norm bound under
+coefficient flattening `flattenPolyVec`. Consequently, `ModuleSIS.IsSolution` is equivalent to
+`SIS.IsSolution` on `expandModuleMatrix A` (`isSolution_expandModuleMatrix_iff`).
+`moduleSISExperiment` draws a uniform module matrix and tests the solver's answer as
+`sisExperiment` does, and `ModuleSIS M` asserts that every PPT solver has negligible advantage for
+the parameter family `M`. Solver machines read a module matrix through its expansion
+(`ModuleSIS.encodeMatrix`). This module proves no relation between `ModuleSIS` and `SIS`, whose
+experiment draws a uniform unstructured matrix.
 
 ## Main definitions
 
