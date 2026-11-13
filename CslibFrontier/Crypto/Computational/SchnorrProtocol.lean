@@ -90,10 +90,6 @@ representatives. -/
 def encScalar (d : F.Desc) : ZMod (F.order d) ↪ List Bool :=
   ⟨fun a => encNat a.val, encNat.injective.comp (ZMod.val_injective _)⟩
 
-/-- Equality of group elements, decided on their encodings. -/
-instance (d : F.Desc) : DecidableEq (F.Carrier d) := fun a b =>
-  decidable_of_iff (F.encode d a = F.encode d b) (F.encode_injective d).eq_iff
-
 /-- Schnorr's Sigma protocol ([BonehShoup2023], Example 19.1) in the group described by `i.2`,
 with challenges in `ZMod q`. The security parameter `i.1` does not change the protocol. -/
 noncomputable def schnorrFamily (i : ℕ × F.Desc) :

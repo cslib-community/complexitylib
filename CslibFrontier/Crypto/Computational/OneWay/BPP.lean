@@ -151,7 +151,7 @@ theorem half_le_succProbability_inversionGame {p : Polynomial ℕ}
         (BitString.uniformList (searchCoinLength p (n, f x))).map fun coins =>
           f (preimageSearch (fun inst =>
             V (inst, coins.take (p.eval (encPreimagePrefix inst).length))) (n, f x)) == f x := by
-    simp [inversionGame, randomizedPreimageSearch]
+    simp [inversionGame, inversionExperiment, randomizedPreimageSearch]
   have hhalf : (1 / 2 : ENNReal) ≤
       ProbComp.eval (inversionGame f (randomizedPreimageSearch p V) n) true := by
     rw [hgame]

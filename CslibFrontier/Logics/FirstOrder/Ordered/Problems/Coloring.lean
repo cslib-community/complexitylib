@@ -407,6 +407,12 @@ private theorem orGate_forces {t f in0 in1 g0 g1 gOut : Fin 3} (htf : t ≠ f)
     fin_three_eq_of_ne g0 g1 gOut f he0.symm he1.symm hg01 hg0o.symm hg1o.symm
   exact htf (hout.symm.trans hgo_f)
 
+/-- On inputs colored `0` (true) or `1` (false), `orGateOut` outputs the color of the
+disjunction. -/
+private theorem orGateOut_ite (p q : Prop) [Decidable p] [Decidable q] :
+    orGateOut (if p then 0 else 1) (if q then 0 else 1) = if p ∨ q then 0 else 1 := by
+  by_cases hp : p <;> by_cases hq : q <;> simp [orGateOut, hp, hq]
+
 /-! ### Completeness: `Satisfiable M → Colorable 3` -/
 
 open Classical in
@@ -415,142 +421,61 @@ private theorem colorable_of_satisfiable (M : Structure FO.cnf) (hM : FO.cnf.Sat
     FO.graph.Colorable 3 (Fin (4 + 2) → Fin M.size) := by
   let _ := satToColoringInterpretation.tupleStructure M
   obtain ⟨A, hA⟩ := hM
-  let actPosVal (c x : Fin M.size) : Fin 3 :=
-    if RelMap (M := M) FO.cnf.pos ![c, x] ∧ A x then 0 else 1
-  let actNegVal (c x : Fin M.size) : Fin 3 :=
-    if RelMap (M := M) FO.cnf.neg ![c, x] ∧ ¬ A x then 0 else 1
-  let posPref (c x : Fin M.size) : Fin 3 :=
-    if ∃ y : Fin M.size, y ≤ x ∧ RelMap (M := M) FO.cnf.pos ![c, y] ∧ A y then 0 else 1
-  let negPref (c x : Fin M.size) : Fin 3 :=
-    if (∃ y : Fin M.size, RelMap (M := M) FO.cnf.pos ![c, y] ∧ A y) ∨
-        (∃ y : Fin M.size, y ≤ x ∧ RelMap (M := M) FO.cnf.neg ![c, y] ∧ ¬ A y) then 0 else 1
-  let inPos0 (c x : Fin M.size) : Fin 3 :=
-    if hx : x.val = 0 then 1 else posPref c ⟨x.val - 1, by omega⟩
-  let inNeg0 (c x : Fin M.size) : Fin 3 :=
-    if hx : x.val = 0 then posPref c (QFNumeric.maxFin M.size)
-    else negPref c ⟨x.val - 1, by omega⟩
-  have hinPos0_ne2 (c x : Fin M.size) : inPos0 c x ≠ 2 := by
-    dsimp only [inPos0, posPref]
-    split_ifs <;> decide
-  have hinNeg0_ne2 (c x : Fin M.size) : inNeg0 c x ≠ 2 := by
-    dsimp only [inNeg0, posPref, negPref]
-    split_ifs <;> decide
-  have hactPos_ne2 (c x : Fin M.size) : actPosVal c x ≠ 2 := by
-    dsimp only [actPosVal]; split_ifs <;> decide
-  have hactNeg_ne2 (c x : Fin M.size) : actNegVal c x ≠ 2 := by
-    dsimp only [actNegVal]; split_ifs <;> decide
-  have horPos_eq (c x : Fin M.size) : orGateOut (inPos0 c x) (actPosVal c x) = posPref c x := by
-    have hiff : (inPos0 c x = 0 ∨ actPosVal c x = 0) ↔
-        ∃ y : Fin M.size, y ≤ x ∧ RelMap (M := M) FO.cnf.pos ![c, y] ∧ A y := by
-      by_cases hx0 : x.val = 0
-      · have hx_eq : x = 0 := Fin.ext hx0
-        subst hx_eq
-        simp only [inPos0, Fin.val_zero, ↓reduceDIte, actPosVal]
-        constructor
-        · rintro (hbad | h0)
-          · exact False.elim (by revert hbad; decide)
-          · split_ifs at h0 with hp
-            · exact ⟨0, le_rfl, hp.1, hp.2⟩
-            · exact False.elim (by revert h0; decide)
-        · rintro ⟨y, hy0, hp, hAy⟩
-          have hy : y = 0 := Fin.ext (Nat.eq_zero_of_le_zero hy0)
-          subst hy
-          exact .inr (by simp [hp, hAy])
-      · simp only [inPos0, hx0, ↓reduceDIte, posPref, actPosVal]
-        constructor
-        · rintro (hprev | hcur)
-          · split_ifs at hprev with hex
-            · obtain ⟨y, hyle, hp, hAy⟩ := hex
-              exact ⟨y, le_trans hyle (by change x.val - 1 ≤ x.val; omega), hp, hAy⟩
-            · exact False.elim (by revert hprev; decide)
-          · split_ifs at hcur with hp
-            · exact ⟨x, le_rfl, hp.1, hp.2⟩
-            · exact False.elim (by revert hcur; decide)
-        · rintro ⟨y, hyle, hp, hAy⟩
-          by_cases hyx : y = x
-          · subst hyx
-            exact .inr (by simp [hp, hAy])
-          · have hylt : y ≤ ⟨x.val - 1, by omega⟩ := by
-              have hne_val : y.val ≠ x.val := fun h => hyx (Fin.ext h)
-              change y.val ≤ x.val - 1
-              change y.val ≤ x.val at hyle
-              omega
-            have hex : ∃ z : Fin M.size, z ≤ ⟨x.val - 1, by omega⟩ ∧
-                RelMap (M := M) FO.cnf.pos ![c, z] ∧ A z := ⟨y, hylt, hp, hAy⟩
-            exact .inl (by simp [hex])
-    dsimp only [orGateOut, posPref]
-    by_cases h : ∃ y : Fin M.size, y ≤ x ∧ RelMap (M := M) FO.cnf.pos ![c, y] ∧ A y
-    · simp only [h, ↓reduceIte]
-      rcases hiff.mpr h with h0 | h1
-      · simp [h0]
-      · simp [h1]
-    · simp only [h, ↓reduceIte]
-      have hn : ¬ (inPos0 c x = 0 ∨ actPosVal c x = 0) := fun ho => h (hiff.mp ho)
-      push Not at hn
-      simp [hn.1, hn.2]
+  let litPos (c y : Fin M.size) : Prop := RelMap (M := M) FO.cnf.pos ![c, y] ∧ A y
+  let litNeg (c y : Fin M.size) : Prop := RelMap (M := M) FO.cnf.neg ![c, y] ∧ ¬ A y
+  -- An OR-gate chain scans the literals `L` of a clause after a carried-in value `P`; color `0`
+  -- means true and `1` false. Gate `x` combines `inp` (true before `x`) with `act` (literal `x`)
+  -- into `out` (true up to `x`). The positive chain carries in `False`, the negative chain the
+  -- result of the positive one.
+  let act (L : Fin M.size → Prop) (x : Fin M.size) : Fin 3 := if L x then 0 else 1
+  let inp (P : Prop) (L : Fin M.size → Prop) (x : Fin M.size) : Fin 3 :=
+    if P ∨ ∃ y < x, L y then 0 else 1
+  let out (P : Prop) (L : Fin M.size → Prop) (x : Fin M.size) : Fin 3 :=
+    if P ∨ ∃ y ≤ x, L y then 0 else 1
+  have hact_ne2 (L : Fin M.size → Prop) (x : Fin M.size) : act L x ≠ 2 := by
+    dsimp only [act]; split_ifs <;> decide
+  have hinp_ne2 (P : Prop) (L : Fin M.size → Prop) (x : Fin M.size) : inp P L x ≠ 2 := by
+    dsimp only [inp]; split_ifs <;> decide
   have hle_max (y : Fin M.size) : y ≤ QFNumeric.maxFin M.size := by
     change y.val ≤ M.size - 1
     have := y.isLt
     omega
-  have horNeg_eq (c x : Fin M.size) : orGateOut (inNeg0 c x) (actNegVal c x) = negPref c x := by
-    have hiff : (inNeg0 c x = 0 ∨ actNegVal c x = 0) ↔
-        ((∃ y : Fin M.size, RelMap (M := M) FO.cnf.pos ![c, y] ∧ A y) ∨
-          ∃ y : Fin M.size, y ≤ x ∧ RelMap (M := M) FO.cnf.neg ![c, y] ∧ ¬ A y) := by
-      by_cases hx0 : x.val = 0
-      · have hx_eq : x = 0 := Fin.ext hx0
-        subst hx_eq
-        simp only [inNeg0, Fin.val_zero, ↓reduceDIte, posPref, actNegVal]
-        constructor
-        · rintro (hpos | hneg0)
-          · split_ifs at hpos with hex
-            · obtain ⟨y, _, hp, hAy⟩ := hex
-              exact .inl ⟨y, hp, hAy⟩
-            · exact False.elim (by revert hpos; decide)
-          · split_ifs at hneg0 with hn
-            · exact .inr ⟨0, le_rfl, hn.1, hn.2⟩
-            · exact False.elim (by revert hneg0; decide)
-        · rintro (⟨y, hp, hAy⟩ | ⟨y, hy0, hn, hnAy⟩)
-          · have hex : ∃ z : Fin M.size, z ≤ QFNumeric.maxFin M.size ∧
-                RelMap (M := M) FO.cnf.pos ![c, z] ∧ A z := ⟨y, hle_max y, hp, hAy⟩
-            exact .inl (by simp [hex])
-          · have hy : y = 0 := Fin.ext (Nat.eq_zero_of_le_zero hy0)
-            subst hy
-            exact .inr (by simp [hn, hnAy])
-      · simp only [inNeg0, hx0, ↓reduceDIte, negPref, actNegVal]
-        constructor
-        · rintro (hprev | hcur)
-          · split_ifs at hprev with hex
-            · rcases hex with hp | ⟨y, hyle, hn, hnAy⟩
-              · exact .inl hp
-              · exact .inr ⟨y, le_trans hyle (by change x.val - 1 ≤ x.val; omega), hn, hnAy⟩
-            · exact False.elim (by revert hprev; decide)
-          · split_ifs at hcur with hn
-            · exact .inr ⟨x, le_rfl, hn.1, hn.2⟩
-            · exact False.elim (by revert hcur; decide)
-        · rintro (hp | ⟨y, hyle, hn, hnAy⟩)
-          · exact .inl (by simp [hp])
-          · by_cases hyx : y = x
-            · subst hyx
-              exact .inr (by simp [hn, hnAy])
-            · have hylt : y ≤ ⟨x.val - 1, by omega⟩ := by
-                have hne_val : y.val ≠ x.val := fun h => hyx (Fin.ext h)
-                change y.val ≤ x.val - 1
-                change y.val ≤ x.val at hyle
-                omega
-              have hex : ∃ z : Fin M.size, z ≤ ⟨x.val - 1, by omega⟩ ∧
-                  RelMap (M := M) FO.cnf.neg ![c, z] ∧ ¬ A z := ⟨y, hylt, hn, hnAy⟩
-              exact .inl (by simp [hex])
-    dsimp only [orGateOut, negPref]
-    by_cases h : (∃ y : Fin M.size, RelMap (M := M) FO.cnf.pos ![c, y] ∧ A y) ∨
-        ∃ y : Fin M.size, y ≤ x ∧ RelMap (M := M) FO.cnf.neg ![c, y] ∧ ¬ A y
-    · simp only [h, ↓reduceIte]
-      rcases hiff.mpr h with h0 | h1
-      · simp [h0]
-      · simp [h1]
-    · simp only [h, ↓reduceIte]
-      have hn : ¬ (inNeg0 c x = 0 ∨ actNegVal c x = 0) := fun ho => h (hiff.mp ho)
-      push Not at hn
-      simp [hn.1, hn.2]
+  have hout_ne2 (P : Prop) (L : Fin M.size → Prop) (x : Fin M.size) : out P L x ≠ 2 := by
+    dsimp only [out]; split_ifs <;> decide
+  -- The edges of gate `x`, and the link from the output of gate `x'` into gate `x = x' + 1`, are
+  -- properly colored in either chain.
+  have hgate (P : Prop) (L : Fin M.size → Prop) (x : Fin M.size) :
+      act L x ≠ orGate1 (inp P L x) (act L x) ∧
+        orGate0 (inp P L x) (act L x) ≠ orGate1 (inp P L x) (act L x) ∧
+        orGate0 (inp P L x) (act L x) ≠ out P L x ∧
+        orGate1 (inp P L x) (act L x) ≠ out P L x ∧
+        ∀ x' : Fin M.size, x'.val + 1 = x.val → orGate0 (inp P L x) (act L x) ≠ out P L x' := by
+    have hout : orGateOut (inp P L x) (act L x) = out P L x := by
+      rw [orGateOut_ite]
+      simp only [out, le_iff_lt_or_eq, or_and_right, exists_or, exists_eq_left, or_assoc]
+    have hin := hinp_ne2 P L x
+    have ha := hact_ne2 L x
+    refine ⟨orGate_in1_ne _ _ hin ha, orGate_g0_ne_g1 _ _ hin ha,
+      hout ▸ orGate_g0_ne_out _ _ hin ha, hout ▸ orGate_g1_ne_out _ _ hin ha, fun x' hx' => ?_⟩
+    have hlt (y : Fin M.size) : y < x ↔ y ≤ x' := by rw [Fin.lt_def, Fin.le_def]; omega
+    have hio : inp P L x = out P L x' := by simp only [inp, out, hlt]
+    exact hio ▸ (orGate_in0_ne _ _ hin ha).symm
+  -- The combined intra-gate / successor edge `g0 ~ out` of either chain of clause `c`.
+  have hgateOut (P : Fin M.size → Prop) (L : Fin M.size → Fin M.size → Prop)
+      {u v : Fin (4 + 2) → Fin M.size}
+      (hp : gateG0OutFormula.toFormula.Realize
+        (fun q : Fin 2 × Fin (4 + 2) => (![u, v] q.1) q.2)) :
+      orGate0 (inp (P (u cPay0)) (L (u cPay0)) (u cPay1)) (act (L (u cPay0)) (u cPay1)) ≠
+        out (P (v cPay0)) (L (v cPay0)) (v cPay1) := by
+    simp only [gateG0OutFormula, ProjectionFormula.realize_guardAnd,
+      ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_varEq,
+      QFNumeric.realize_varSucc, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_fin_one, ProjectionFormula.realize_const_true, and_true] at hp
+    rcases hp with ⟨hc, hsame | ⟨_, hsucc⟩⟩
+    · rw [hc, hsame]
+      exact (hgate _ _ _).2.2.1
+    · rw [hc]
+      exact (hgate _ _ _).2.2.2.2 _ hsucc
   let tagCol (t : ColorTag) (c x : Fin M.size) : Fin 3 :=
     match t with
     | .pT => 0
@@ -558,14 +483,14 @@ private theorem colorable_of_satisfiable (M : Structure FO.cnf) (hM : FO.cnf.Sat
     | .pB => if c = 0 ∧ x = 0 then 2 else 0
     | .vPos => if c = 0 then (if A x then 2 else 0) else 0
     | .vNeg => if c = 0 then (if A x then 0 else 2) else 0
-    | .actPos => actPosVal c x
-    | .actNeg => actNegVal c x
-    | .posG0 => orGate0 (inPos0 c x) (actPosVal c x)
-    | .posG1 => orGate1 (inPos0 c x) (actPosVal c x)
-    | .posOut => posPref c x
-    | .negG0 => orGate0 (inNeg0 c x) (actNegVal c x)
-    | .negG1 => orGate1 (inNeg0 c x) (actNegVal c x)
-    | .negOut => negPref c x
+    | .actPos => act (litPos c) x
+    | .actNeg => act (litNeg c) x
+    | .posG0 => orGate0 (inp False (litPos c) x) (act (litPos c) x)
+    | .posG1 => orGate1 (inp False (litPos c) x) (act (litPos c) x)
+    | .posOut => out False (litPos c) x
+    | .negG0 => orGate0 (inp (∃ y, litPos c y) (litNeg c) x) (act (litNeg c) x)
+    | .negG1 => orGate1 (inp (∃ y, litPos c y) (litNeg c) x) (act (litNeg c) x)
+    | .negOut => out (∃ y, litPos c y) (litNeg c) x
   let col (u : Fin (4 + 2) → Fin M.size) : Fin 3 :=
     if h : ∃ t : ColorTag, MatchBinaryTag (colorCode t) u then
       tagCol (Classical.choose h) (u cPay0) (u cPay1)
@@ -578,6 +503,24 @@ private theorem colorable_of_satisfiable (M : Structure FO.cnf) (hM : FO.cnf.Sat
     have heq : Classical.choose hex = t :=
       colorCode_injective (matchBinaryTag_unique (Classical.choose_spec hex) hm)
     rw [heq]
+  have hsameCell {u v : Fin (4 + 2) → Fin M.size}
+      (hp : (ProjectionFormula.guardAnd guardSameCell (.const true) :
+        ProjectionFormula qfNumericLanguage FO.cnf _).toFormula.Realize
+          (fun q : Fin 2 × Fin (4 + 2) => (![u, v] q.1) q.2)) :
+      u cPay0 = v cPay0 ∧ u cPay1 = v cPay1 := by
+    simpa only [ProjectionFormula.realize_guardAnd, guardSameCell, Formula.realize_inf,
+      QFNumeric.realize_varEq, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_fin_one, ProjectionFormula.realize_const_true, and_true] using hp
+  -- The palette vertex `pB` (color `2`) differs from every Boolean-colored gate vertex.
+  have hpB {u v : Fin (4 + 2) → Fin M.size} {z : Fin 3}
+      (hp : (ProjectionFormula.guardAnd guardOrigin0 (.const true) :
+        ProjectionFormula qfNumericLanguage FO.cnf _).toFormula.Realize
+          (fun q : Fin 2 × Fin (4 + 2) => (![u, v] q.1) q.2)) (hz : z ≠ 2) :
+      tagCol .pB (u cPay0) (u cPay1) ≠ z := by
+    simp only [ProjectionFormula.realize_guardAnd, guardOrigin0, Formula.realize_inf,
+      QFNumeric.realize_isZero, Matrix.cons_val_zero] at hp
+    rcases hp with ⟨⟨hu0, hu1⟩, -⟩
+    simpa [tagCol, hu0, hu1] using hz.symm
   have hupper_proper : ∀ {u v : Fin (4 + 2) → Fin M.size},
       UpperTagEdge colorCode allColorTags upperColorEdge u v → col u ≠ col v := by
     rintro u v ⟨t₁, _, t₂, _, hm₁, hm₂, p, h12, hp⟩
@@ -598,12 +541,12 @@ private theorem colorable_of_satisfiable (M : Structure FO.cnf) (hM : FO.cnf.Sat
         QFNumeric.realize_isZero, ProjectionFormula.realize_negLit, pair_arg1_pay,
         Matrix.cons_val_zero] at hp
       rcases hp with ⟨⟨hu0, hu1⟩, hnpos⟩
-      simp [tagCol, actPosVal, hnpos]
+      simp [tagCol, act, litPos, hnpos]
     · simp only [ProjectionFormula.realize_guardAnd, guardOrigin0, Formula.realize_inf,
         QFNumeric.realize_isZero, ProjectionFormula.realize_negLit, pair_arg1_pay,
         Matrix.cons_val_zero] at hp
       rcases hp with ⟨⟨hu0, hu1⟩, hnneg⟩
-      simp [tagCol, actNegVal, hnneg]
+      simp [tagCol, act, litNeg, hnneg]
     · simp only [ProjectionFormula.realize_guardAnd, guardOriginBoth, guardOrigin0,
         Formula.realize_inf, QFNumeric.realize_isZero, Matrix.cons_val_zero, Matrix.cons_val_one,
         Matrix.cons_val_fin_one] at hp
@@ -625,42 +568,24 @@ private theorem colorable_of_satisfiable (M : Structure FO.cnf) (hM : FO.cnf.Sat
         Formula.realize_inf, QFNumeric.realize_isZero, Matrix.cons_val_zero, Matrix.cons_val_one,
         Matrix.cons_val_fin_one] at hp
       rcases hp with ⟨⟨⟨hu0, hu1⟩, hv1⟩, -⟩
-      have hin0 : inPos0 (v cPay0) (v cPay1) = 1 := by simp [inPos0, hv1]
-      have hv := orGate_in0_ne (inPos0 (v cPay0) (v cPay1)) (actPosVal (v cPay0) (v cPay1))
-        (hinPos0_ne2 _ _) (hactPos_ne2 _ _)
+      have hnlt (y : Fin M.size) : ¬ y < v cPay1 := by rw [Fin.lt_def, hv1]; exact Nat.not_lt_zero _
+      have hin0 : inp False (litPos (v cPay0)) (v cPay1) = 1 := by simp [inp, hnlt]
+      have hv := orGate_in0_ne _ _ (hinp_ne2 False (litPos (v cPay0)) (v cPay1))
+        (hact_ne2 (litPos (v cPay0)) (v cPay1))
       rw [hin0] at hv
       simpa [tagCol, hu0, hu1, hin0] using hv
     · simp only [ProjectionFormula.realize_guardAnd, guardOriginToMax1, guardOrigin0,
         Formula.realize_inf, QFNumeric.realize_isZero, QFNumeric.realize_isMax,
         Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one] at hp
       rcases hp with ⟨⟨⟨hu0, hu1⟩, hv1⟩, -⟩
-      have hgoal : negPref (v cPay0) (QFNumeric.maxFin M.size) = 0 := by
-        dsimp only [negPref]
-        rcases hA (v cPay0) with ⟨y, ⟨hpos, hAy⟩ | ⟨hneg, hnAy⟩⟩
-        · have hex : ∃ z, RelMap (M := M) FO.cnf.pos ![v cPay0, z] ∧ A z := ⟨y, hpos, hAy⟩
-          simp [hex]
-        · have hex : ∃ z ≤ QFNumeric.maxFin M.size,
-              RelMap (M := M) FO.cnf.neg ![v cPay0, z] ∧ ¬ A z := ⟨y, hle_max y, hneg, hnAy⟩
-          simp [hex]
-      simp [tagCol, hu0, hu1, hv1, hgoal]
-    · simp only [ProjectionFormula.realize_guardAnd, guardOrigin0, Formula.realize_inf,
-        QFNumeric.realize_isZero, Matrix.cons_val_zero] at hp
-      rcases hp with ⟨⟨hu0, hu1⟩, -⟩
-      simpa [tagCol, hu0, hu1] using (hactPos_ne2 (v cPay0) (v cPay1)).symm
-    · simp only [ProjectionFormula.realize_guardAnd, guardOrigin0, Formula.realize_inf,
-        QFNumeric.realize_isZero, Matrix.cons_val_zero] at hp
-      rcases hp with ⟨⟨hu0, hu1⟩, -⟩
-      simpa [tagCol, hu0, hu1] using (hactNeg_ne2 (v cPay0) (v cPay1)).symm
-    · simp only [ProjectionFormula.realize_guardAnd, guardOrigin0, Formula.realize_inf,
-        QFNumeric.realize_isZero, Matrix.cons_val_zero] at hp
-      rcases hp with ⟨⟨hu0, hu1⟩, -⟩
-      simp only [tagCol, hu0, hu1, and_self, ↓reduceIte, posPref]
-      split_ifs <;> decide
-    · simp only [ProjectionFormula.realize_guardAnd, guardOrigin0, Formula.realize_inf,
-        QFNumeric.realize_isZero, Matrix.cons_val_zero] at hp
-      rcases hp with ⟨⟨hu0, hu1⟩, -⟩
-      simp only [tagCol, hu0, hu1, and_self, ↓reduceIte, negPref]
-      split_ifs <;> decide
+      have hgoal : out (∃ y, litPos (v cPay0) y) (litNeg (v cPay0)) (v cPay1) = 0 := by
+        obtain ⟨y, hy⟩ := hA (v cPay0)
+        exact ite_eq_left (hy.imp (⟨y, ·⟩) fun hy => ⟨y, hv1 ▸ hle_max y, hy⟩)
+      simp [tagCol, hu0, hu1, hgoal]
+    · exact hpB hp (hact_ne2 _ _)
+    · exact hpB hp (hact_ne2 _ _)
+    · exact hpB hp (hout_ne2 _ _ _)
+    · exact hpB hp (hout_ne2 _ _ _)
     · simp only [ProjectionFormula.realize_guardAnd, guardSameVar0, Formula.realize_inf,
         QFNumeric.realize_isZero, QFNumeric.realize_varEq, Matrix.cons_val_zero,
         Matrix.cons_val_one, Matrix.cons_val_fin_one] at hp
@@ -671,7 +596,7 @@ private theorem colorable_of_satisfiable (M : Structure FO.cnf) (hM : FO.cnf.Sat
         QFNumeric.realize_isZero, QFNumeric.realize_varEq, Matrix.cons_val_zero,
         Matrix.cons_val_one, Matrix.cons_val_fin_one] at hp
       rcases hp with ⟨⟨hu0, h1⟩, -⟩
-      simp only [tagCol, hu0, h1, ↓reduceIte, actPosVal]
+      simp only [tagCol, hu0, h1, ↓reduceIte, act, litPos]
       by_cases hAv : A (v cPay1)
       · simp only [hAv, ↓reduceIte, and_true]; split_ifs <;> decide
       · simp [hAv]
@@ -679,106 +604,44 @@ private theorem colorable_of_satisfiable (M : Structure FO.cnf) (hM : FO.cnf.Sat
         QFNumeric.realize_isZero, QFNumeric.realize_varEq, Matrix.cons_val_zero,
         Matrix.cons_val_one, Matrix.cons_val_fin_one] at hp
       rcases hp with ⟨⟨hu0, h1⟩, -⟩
-      simp only [tagCol, hu0, h1, ↓reduceIte, actNegVal]
+      simp only [tagCol, hu0, h1, ↓reduceIte, act, litNeg]
       by_cases hAv : A (v cPay1)
       · simp [hAv]
       · simp only [hAv, ↓reduceIte, not_false_eq_true, and_true]; split_ifs <;> decide
-    · simp only [ProjectionFormula.realize_guardAnd, guardSameCell, Formula.realize_inf,
-        QFNumeric.realize_varEq, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one] at hp
-      rcases hp with ⟨⟨hc, hx⟩, -⟩
-      simpa [tagCol, hc, hx] using
-        orGate_in1_ne (inPos0 (v cPay0) (v cPay1)) (actPosVal (v cPay0) (v cPay1))
-          (hinPos0_ne2 _ _) (hactPos_ne2 _ _)
-    · simp only [ProjectionFormula.realize_guardAnd, guardSameCell, Formula.realize_inf,
-        QFNumeric.realize_varEq, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one] at hp
-      rcases hp with ⟨⟨hc, hx⟩, -⟩
-      simpa [tagCol, hc, hx] using
-        orGate_in1_ne (inNeg0 (v cPay0) (v cPay1)) (actNegVal (v cPay0) (v cPay1))
-          (hinNeg0_ne2 _ _) (hactNeg_ne2 _ _)
-    · simp only [ProjectionFormula.realize_guardAnd, guardSameCell, Formula.realize_inf,
-        QFNumeric.realize_varEq, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one] at hp
-      rcases hp with ⟨⟨hc, hx⟩, -⟩
-      simpa [tagCol, hc, hx] using
-        orGate_g0_ne_g1 (inPos0 (v cPay0) (v cPay1)) (actPosVal (v cPay0) (v cPay1))
-          (hinPos0_ne2 _ _) (hactPos_ne2 _ _)
-    · simp only [gateG0OutFormula, ProjectionFormula.realize_guardAnd,
-        ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_varEq,
-        QFNumeric.realize_varSucc, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one, ProjectionFormula.realize_const_true, and_true] at hp
-      rcases hp with ⟨hc, hsame | ⟨_, hsucc⟩⟩
-      · have hv := orGate_g0_ne_out (inPos0 (v cPay0) (v cPay1)) (actPosVal (v cPay0) (v cPay1))
-          (hinPos0_ne2 _ _) (hactPos_ne2 _ _)
-        rw [horPos_eq] at hv
-        simpa [tagCol, hc, hsame] using hv
-      · have hnz : u cPay1 ≠ 0 := by
-          intro h
-          have hv0 : (u cPay1).val = 0 := congrArg Fin.val h
-          omega
-        have hpred : (⟨(u cPay1).val - 1, by omega⟩ : Fin M.size) = v cPay1 := by
-          apply Fin.ext; change (u cPay1).val - 1 = (v cPay1).val; omega
-        have hin0 : inPos0 (u cPay0) (u cPay1) = posPref (v cPay0) (v cPay1) := by
-          simp [inPos0, hnz, hpred, hc]
-        have hv := orGate_in0_ne (inPos0 (u cPay0) (u cPay1)) (actPosVal (u cPay0) (u cPay1))
-          (hinPos0_ne2 _ _) (hactPos_ne2 _ _)
-        rw [hin0] at hv
-        simpa [tagCol, hin0] using hv.symm
-    · simp only [ProjectionFormula.realize_guardAnd, guardSameCell, Formula.realize_inf,
-        QFNumeric.realize_varEq, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one] at hp
-      rcases hp with ⟨⟨hc, hx⟩, -⟩
-      have hv := orGate_g1_ne_out (inPos0 (v cPay0) (v cPay1)) (actPosVal (v cPay0) (v cPay1))
-        (hinPos0_ne2 _ _) (hactPos_ne2 _ _)
-      rw [horPos_eq] at hv
-      simpa [tagCol, hc, hx] using hv
+    · obtain ⟨hc, hx⟩ := hsameCell hp
+      rw [hc, hx]
+      exact (hgate _ _ _).1
+    · obtain ⟨hc, hx⟩ := hsameCell hp
+      rw [hc, hx]
+      exact (hgate _ _ _).1
+    · obtain ⟨hc, hx⟩ := hsameCell hp
+      rw [hc, hx]
+      exact (hgate _ _ _).2.1
+    · exact hgateOut (fun _ => False) litPos hp
+    · obtain ⟨hc, hx⟩ := hsameCell hp
+      rw [hc, hx]
+      exact (hgate _ _ _).2.2.2.1
     · simp only [ProjectionFormula.realize_guardAnd, guardBridgeLink, Formula.realize_inf,
         QFNumeric.realize_varEq, QFNumeric.realize_isMax, QFNumeric.realize_isZero,
         Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one] at hp
       rcases hp with ⟨⟨hc, hu1, hv1⟩, -⟩
-      have hin0 : inNeg0 (v cPay0) (v cPay1) = posPref (v cPay0) (QFNumeric.maxFin M.size) := by
-        simp [inNeg0, hv1]
-      have hv := orGate_in0_ne (inNeg0 (v cPay0) (v cPay1)) (actNegVal (v cPay0) (v cPay1))
-        (hinNeg0_ne2 _ _) (hactNeg_ne2 _ _)
+      have hin0 : inp (∃ y, litPos (v cPay0) y) (litNeg (v cPay0)) (v cPay1) =
+          out False (litPos (v cPay0)) (u cPay1) := by
+        have hnlt (y : Fin M.size) : ¬ y < v cPay1 := by
+          rw [Fin.lt_def, hv1]; exact Nat.not_lt_zero _
+        have hle (y : Fin M.size) : y ≤ u cPay1 := hu1 ▸ hle_max y
+        simp [inp, out, hnlt, hle]
+      have hv := orGate_in0_ne _ _ (hinp_ne2 (∃ y, litPos (v cPay0) y) (litNeg (v cPay0)) (v cPay1))
+        (hact_ne2 (litNeg (v cPay0)) (v cPay1))
       rw [hin0] at hv
-      simpa [tagCol, hc, hu1, hin0] using hv
-    · simp only [ProjectionFormula.realize_guardAnd, guardSameCell, Formula.realize_inf,
-        QFNumeric.realize_varEq, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one] at hp
-      rcases hp with ⟨⟨hc, hx⟩, -⟩
-      simpa [tagCol, hc, hx] using
-        orGate_g0_ne_g1 (inNeg0 (v cPay0) (v cPay1)) (actNegVal (v cPay0) (v cPay1))
-          (hinNeg0_ne2 _ _) (hactNeg_ne2 _ _)
-    · simp only [gateG0OutFormula, ProjectionFormula.realize_guardAnd,
-        ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_varEq,
-        QFNumeric.realize_varSucc, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one, ProjectionFormula.realize_const_true, and_true] at hp
-      rcases hp with ⟨hc, hsame | ⟨_, hsucc⟩⟩
-      · have hv := orGate_g0_ne_out (inNeg0 (v cPay0) (v cPay1)) (actNegVal (v cPay0) (v cPay1))
-          (hinNeg0_ne2 _ _) (hactNeg_ne2 _ _)
-        rw [horNeg_eq] at hv
-        simpa [tagCol, hc, hsame] using hv
-      · have hnz : u cPay1 ≠ 0 := by
-          intro h
-          have hv0 : (u cPay1).val = 0 := congrArg Fin.val h
-          omega
-        have hpred : (⟨(u cPay1).val - 1, by omega⟩ : Fin M.size) = v cPay1 := by
-          apply Fin.ext; change (u cPay1).val - 1 = (v cPay1).val; omega
-        have hin0 : inNeg0 (u cPay0) (u cPay1) = negPref (v cPay0) (v cPay1) := by
-          simp [inNeg0, hnz, hpred, hc]
-        have hv := orGate_in0_ne (inNeg0 (u cPay0) (u cPay1)) (actNegVal (u cPay0) (u cPay1))
-          (hinNeg0_ne2 _ _) (hactNeg_ne2 _ _)
-        rw [hin0] at hv
-        simpa [tagCol, hin0] using hv.symm
-    · simp only [ProjectionFormula.realize_guardAnd, guardSameCell, Formula.realize_inf,
-        QFNumeric.realize_varEq, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one] at hp
-      rcases hp with ⟨⟨hc, hx⟩, -⟩
-      have hv := orGate_g1_ne_out (inNeg0 (v cPay0) (v cPay1)) (actNegVal (v cPay0) (v cPay1))
-        (hinNeg0_ne2 _ _) (hactNeg_ne2 _ _)
-      rw [horNeg_eq] at hv
-      simpa [tagCol, hc, hx] using hv
+      simpa [tagCol, hc, hin0] using hv
+    · obtain ⟨hc, hx⟩ := hsameCell hp
+      rw [hc, hx]
+      exact (hgate _ _ _).2.1
+    · exact hgateOut (fun c => ∃ y, litPos c y) litNeg hp
+    · obtain ⟨hc, hx⟩ := hsameCell hp
+      rw [hc, hx]
+      exact (hgate _ _ _).2.2.2.1
   refine ⟨col, fun u v hadj => ?_⟩
   rw [satToColoringInterpretation,
     FullTupleInterpretation.relMap_tupleStructure_ofQFProjection, satToColoringFormula,
@@ -828,22 +691,11 @@ private theorem satisfiable_of_colorable (M : Structure FO.cnf)
     have hnb : col (mkVertex .vNeg 0 x) ≠ bCol := fun h => hnv (hAx.trans h.symm)
     exact fin_three_eq_of_ne fCol bCol (col (mkVertex .vNeg 0 x)) tCol
       htf.symm htb.symm hfb hnf hnb
-  have hactPos_or (c x : Fin M.size) :
-      col (mkVertex .actPos c x) = tCol ∨ col (mkVertex .actPos c x) = fCol :=
-    color_or_of_ne htf htb hfb
-      (hedge (t₁ := .pB) (t₂ := .actPos) rfl 0 0 c x (by simp [guardOrigin0, mkVertex])).symm
-  have hactNeg_or (c x : Fin M.size) :
-      col (mkVertex .actNeg c x) = tCol ∨ col (mkVertex .actNeg c x) = fCol :=
-    color_or_of_ne htf htb hfb
-      (hedge (t₁ := .pB) (t₂ := .actNeg) rfl 0 0 c x (by simp [guardOrigin0, mkVertex])).symm
-  have hposOut_or (c x : Fin M.size) :
-      col (mkVertex .posOut c x) = tCol ∨ col (mkVertex .posOut c x) = fCol :=
-    color_or_of_ne htf htb hfb
-      (hedge (t₁ := .pB) (t₂ := .posOut) rfl 0 0 c x (by simp [guardOrigin0, mkVertex])).symm
-  have hnegOut_or (c x : Fin M.size) :
-      col (mkVertex .negOut c x) = tCol ∨ col (mkVertex .negOut c x) = fCol :=
-    color_or_of_ne htf htb hfb
-      (hedge (t₁ := .pB) (t₂ := .negOut) rfl 0 0 c x (by simp [guardOrigin0, mkVertex])).symm
+  -- Vertices adjacent to the palette's `pB` are colored true or false.
+  have hbool {t : ColorTag}
+      (ht : upperColorEdge .pB t = some (.guardAnd guardOrigin0 (.const true)))
+      (c x : Fin M.size) : col (mkVertex t c x) = tCol ∨ col (mkVertex t c x) = fCol :=
+    color_or_of_ne htf htb hfb (hedge ht 0 0 c x (by simp [guardOrigin0, mkVertex])).symm
   have hactPos_sound (c x : Fin M.size) (ht : col (mkVertex .actPos c x) = tCol) :
       RelMap (M := M) FO.cnf.pos ![c, x] ∧ A x := by
     constructor
@@ -868,117 +720,68 @@ private theorem satisfiable_of_colorable (M : Structure FO.cnf)
       have hne := hedge (t₁ := .vNeg) (t₂ := .actNeg) rfl 0 x c x
         (by simp [guardVarToAct, mkVertex])
       exact hne (hvt.trans ht.symm)
+  -- If the output of an OR-gate chain of clause `c` is true at some position, then its carried-in
+  -- color `inCol` is true or one of its active-literal gates is true.
+  have hchain {act g0 g1 out : ColorTag}
+      (hact : upperColorEdge .pB act = some (.guardAnd guardOrigin0 (.const true)))
+      (hout : upperColorEdge .pB out = some (.guardAnd guardOrigin0 (.const true)))
+      (h1 : upperColorEdge act g1 = some (.guardAnd guardSameCell (.const true)))
+      (h01 : upperColorEdge g0 g1 = some (.guardAnd guardSameCell (.const true)))
+      (h0o : upperColorEdge g0 out = some gateG0OutFormula)
+      (h1o : upperColorEdge g1 out = some (.guardAnd guardSameCell (.const true)))
+      (c : Fin M.size) {inCol : Fin 3} (hin : inCol = tCol ∨ inCol = fCol)
+      (he0 : inCol ≠ col (mkVertex g0 c 0)) :
+      ∀ k : ℕ, (hk : k < M.size) → col (mkVertex out c ⟨k, hk⟩) = tCol →
+        inCol = tCol ∨ ∃ x, col (mkVertex act c x) = tCol := by
+    have hgate (x : Fin M.size) {i : Fin 3} (hi : i = tCol ∨ i = fCol)
+        (hi0 : i ≠ col (mkVertex g0 c x)) (hx : col (mkVertex out c x) = tCol) :
+        i = tCol ∨ col (mkVertex act c x) = tCol :=
+      orGate_forces htf hi (hbool hact c x) hi0
+        (hedge h1 c x c x (by simp [guardSameCell, mkVertex]))
+        (hedge h01 c x c x (by simp [guardSameCell, mkVertex]))
+        (hedge h0o c x c x
+          (by simp [gateG0OutFormula, ProjectionFormula.realize_toFormula_branch, mkVertex]))
+        (hedge h1o c x c x (by simp [guardSameCell, mkVertex])) hx
+    intro k
+    induction k with
+    | zero =>
+      intro hk hout0
+      exact (hgate 0 hin he0 hout0).imp_right (⟨0, ·⟩)
+    | succ k ih =>
+      intro hk hout'
+      let x : Fin M.size := ⟨k, by omega⟩
+      have hlink : col (mkVertex out c x) ≠ col (mkVertex g0 c ⟨k + 1, hk⟩) :=
+        (hedge h0o c ⟨k + 1, hk⟩ c x (by
+          simp only [gateG0OutFormula, ProjectionFormula.realize_guardAnd,
+            ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_varEq,
+            QFNumeric.realize_varSucc, ProjectionFormula.realize_const_true, and_true, mkVertex,
+            mkTagged_payload, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one]
+          refine ⟨trivial, .inr ⟨fun h => ?_, rfl⟩⟩
+          have hv := congrArg Fin.val h
+          change k + 1 = k at hv
+          omega)).symm
+      rcases hgate ⟨k + 1, hk⟩ (hbool hout c x) hlink hout' with hprev | hact'
+      · exact ih (by omega) hprev
+      · exact .inr ⟨_, hact'⟩
   refine ⟨A, fun c => ?_⟩
-  have hpos_chain : ∀ k : ℕ, (hk : k < M.size) → col (mkVertex .posOut c ⟨k, hk⟩) = tCol →
-      FO.cnf.ClauseSatisfied A c := by
-    intro k
-    induction k with
-    | zero =>
-      intro hk hout
-      have h0_eq : (⟨0, hk⟩ : Fin M.size) = 0 := Fin.ext rfl
-      rw [h0_eq] at hout
-      have he0 : fCol ≠ col (mkVertex .posG0 c 0) :=
-        hedge (t₁ := .pF) (t₂ := .posG0) rfl 0 0 c 0
-          (by simp [guardOriginToZero1, guardOrigin0, mkVertex])
-      have he1 : col (mkVertex .actPos c 0) ≠ col (mkVertex .posG1 c 0) :=
-        hedge (t₁ := .actPos) (t₂ := .posG1) rfl c 0 c 0 (by simp [guardSameCell, mkVertex])
-      have hg01 : col (mkVertex .posG0 c 0) ≠ col (mkVertex .posG1 c 0) :=
-        hedge (t₁ := .posG0) (t₂ := .posG1) rfl c 0 c 0 (by simp [guardSameCell, mkVertex])
-      have hg0o : col (mkVertex .posG0 c 0) ≠ col (mkVertex .posOut c 0) :=
-        hedge (t₁ := .posG0) (t₂ := .posOut) rfl c 0 c 0
-          (by simp [gateG0OutFormula, ProjectionFormula.realize_toFormula_branch, mkVertex])
-      have hg1o : col (mkVertex .posG1 c 0) ≠ col (mkVertex .posOut c 0) :=
-        hedge (t₁ := .posG1) (t₂ := .posOut) rfl c 0 c 0 (by simp [guardSameCell, mkVertex])
-      rcases orGate_forces htf (.inr rfl) (hactPos_or c 0) he0 he1 hg01 hg0o hg1o hout with
-          hbad | hact
-      · exact False.elim (htf hbad.symm)
-      · exact ⟨0, .inl (hactPos_sound c 0 hact)⟩
-    | succ k ih =>
-      intro hk hout
-      let x : Fin M.size := ⟨k, by omega⟩
-      let x' : Fin M.size := ⟨k + 1, hk⟩
-      have he0 : col (mkVertex .posOut c x) ≠ col (mkVertex .posG0 c x') :=
-        (hedge (t₁ := .posG0) (t₂ := .posOut) rfl c x' c x (by
-          simp only [gateG0OutFormula, ProjectionFormula.realize_guardAnd,
-            ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_varEq,
-            QFNumeric.realize_varSucc, ProjectionFormula.realize_const_true, and_true, mkVertex,
-            mkTagged_payload, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-          refine ⟨trivial, .inr ⟨fun h => ?_, rfl⟩⟩
-          have hv := congrArg Fin.val h
-          change k + 1 = k at hv
-          omega)).symm
-      have he1 : col (mkVertex .actPos c x') ≠ col (mkVertex .posG1 c x') :=
-        hedge (t₁ := .actPos) (t₂ := .posG1) rfl c x' c x' (by simp [guardSameCell, mkVertex])
-      have hg01 : col (mkVertex .posG0 c x') ≠ col (mkVertex .posG1 c x') :=
-        hedge (t₁ := .posG0) (t₂ := .posG1) rfl c x' c x' (by simp [guardSameCell, mkVertex])
-      have hg0o : col (mkVertex .posG0 c x') ≠ col (mkVertex .posOut c x') :=
-        hedge (t₁ := .posG0) (t₂ := .posOut) rfl c x' c x'
-          (by simp [gateG0OutFormula, ProjectionFormula.realize_toFormula_branch, mkVertex])
-      have hg1o : col (mkVertex .posG1 c x') ≠ col (mkVertex .posOut c x') :=
-        hedge (t₁ := .posG1) (t₂ := .posOut) rfl c x' c x' (by simp [guardSameCell, mkVertex])
-      rcases orGate_forces htf (hposOut_or c x) (hactPos_or c x') he0 he1 hg01 hg0o hg1o hout with
-          hprev | hact
-      · exact ih (by omega) hprev
-      · exact ⟨x', .inl (hactPos_sound c x' hact)⟩
-  have hneg_chain : ∀ k : ℕ, (hk : k < M.size) → col (mkVertex .negOut c ⟨k, hk⟩) = tCol →
-      FO.cnf.ClauseSatisfied A c := by
-    intro k
-    induction k with
-    | zero =>
-      intro hk hout
-      have h0_eq : (⟨0, hk⟩ : Fin M.size) = 0 := Fin.ext rfl
-      rw [h0_eq] at hout
-      let mx := QFNumeric.maxFin M.size
-      have he0 : col (mkVertex .posOut c mx) ≠ col (mkVertex .negG0 c 0) :=
-        hedge (t₁ := .posOut) (t₂ := .negG0) rfl c mx c 0
-          (by simp [guardBridgeLink, mkVertex, mx])
-      have he1 : col (mkVertex .actNeg c 0) ≠ col (mkVertex .negG1 c 0) :=
-        hedge (t₁ := .actNeg) (t₂ := .negG1) rfl c 0 c 0 (by simp [guardSameCell, mkVertex])
-      have hg01 : col (mkVertex .negG0 c 0) ≠ col (mkVertex .negG1 c 0) :=
-        hedge (t₁ := .negG0) (t₂ := .negG1) rfl c 0 c 0 (by simp [guardSameCell, mkVertex])
-      have hg0o : col (mkVertex .negG0 c 0) ≠ col (mkVertex .negOut c 0) :=
-        hedge (t₁ := .negG0) (t₂ := .negOut) rfl c 0 c 0
-          (by simp [gateG0OutFormula, ProjectionFormula.realize_toFormula_branch, mkVertex])
-      have hg1o : col (mkVertex .negG1 c 0) ≠ col (mkVertex .negOut c 0) :=
-        hedge (t₁ := .negG1) (t₂ := .negOut) rfl c 0 c 0 (by simp [guardSameCell, mkVertex])
-      rcases orGate_forces htf (hposOut_or c mx) (hactNeg_or c 0) he0 he1 hg01 hg0o hg1o hout with
-          hposMax | hact
-      · exact hpos_chain (M.size - 1) (NumericFunction.index_lt M.size_ge_two .max) hposMax
-      · exact ⟨0, .inr (hactNeg_sound c 0 hact)⟩
-    | succ k ih =>
-      intro hk hout
-      let x : Fin M.size := ⟨k, by omega⟩
-      let x' : Fin M.size := ⟨k + 1, hk⟩
-      have he0 : col (mkVertex .negOut c x) ≠ col (mkVertex .negG0 c x') :=
-        (hedge (t₁ := .negG0) (t₂ := .negOut) rfl c x' c x (by
-          simp only [gateG0OutFormula, ProjectionFormula.realize_guardAnd,
-            ProjectionFormula.realize_toFormula_branch, QFNumeric.realize_varEq,
-            QFNumeric.realize_varSucc, ProjectionFormula.realize_const_true, and_true, mkVertex,
-            mkTagged_payload, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-          refine ⟨trivial, .inr ⟨fun h => ?_, rfl⟩⟩
-          have hv := congrArg Fin.val h
-          change k + 1 = k at hv
-          omega)).symm
-      have he1 : col (mkVertex .actNeg c x') ≠ col (mkVertex .negG1 c x') :=
-        hedge (t₁ := .actNeg) (t₂ := .negG1) rfl c x' c x' (by simp [guardSameCell, mkVertex])
-      have hg01 : col (mkVertex .negG0 c x') ≠ col (mkVertex .negG1 c x') :=
-        hedge (t₁ := .negG0) (t₂ := .negG1) rfl c x' c x' (by simp [guardSameCell, mkVertex])
-      have hg0o : col (mkVertex .negG0 c x') ≠ col (mkVertex .negOut c x') :=
-        hedge (t₁ := .negG0) (t₂ := .negOut) rfl c x' c x'
-          (by simp [gateG0OutFormula, ProjectionFormula.realize_toFormula_branch, mkVertex])
-      have hg1o : col (mkVertex .negG1 c x') ≠ col (mkVertex .negOut c x') :=
-        hedge (t₁ := .negG1) (t₂ := .negOut) rfl c x' c x' (by simp [guardSameCell, mkVertex])
-      rcases orGate_forces htf (hnegOut_or c x) (hactNeg_or c x') he0 he1 hg01 hg0o hg1o hout with
-          hprev | hact
-      · exact ih (by omega) hprev
-      · exact ⟨x', .inr (hactNeg_sound c x' hact)⟩
   let mx := QFNumeric.maxFin M.size
-  have hgoal_nf : col (mkVertex .negOut c mx) ≠ fCol :=
-    (hedge (t₁ := .pF) (t₂ := .negOut) rfl 0 0 c mx
+  have hmx : M.size - 1 < M.size := NumericFunction.index_lt M.size_ge_two .max
+  have hnegOut : col (mkVertex .negOut c mx) = tCol :=
+    (hbool rfl c mx).resolve_right (hedge (t₁ := .pF) (t₂ := .negOut) rfl 0 0 c mx
       (by simp [guardOriginToMax1, guardOrigin0, mkVertex, mx])).symm
-  have hgoal_t : col (mkVertex .negOut c mx) = tCol :=
-    (hnegOut_or c mx).resolve_right hgoal_nf
-  exact hneg_chain (M.size - 1) (NumericFunction.index_lt M.size_ge_two .max) hgoal_t
+  rcases hchain (act := .actNeg) (g0 := .negG0) (g1 := .negG1) (out := .negOut)
+      rfl rfl rfl rfl rfl rfl c (hbool rfl c mx)
+      (hedge (t₁ := .posOut) (t₂ := .negG0) rfl c mx c 0
+        (by simp [guardBridgeLink, mkVertex, mx])) (M.size - 1) hmx hnegOut with
+    hposOut | ⟨x, hx⟩
+  · rcases hchain (act := .actPos) (g0 := .posG0) (g1 := .posG1) (out := .posOut)
+        rfl rfl rfl rfl rfl rfl c (.inr rfl)
+        (hedge (t₁ := .pF) (t₂ := .posG0) rfl 0 0 c 0
+          (by simp [guardOriginToZero1, guardOrigin0, mkVertex])) (M.size - 1) hmx hposOut with
+      hft | ⟨x, hx⟩
+    · exact absurd hft.symm htf
+    · exact ⟨x, .inl (hactPos_sound c x hx)⟩
+  · exact ⟨x, .inr (hactNeg_sound c x hx)⟩
 
 end SatToColoring
 
