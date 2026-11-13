@@ -31,10 +31,11 @@ Exercise 11.5, p. 459) uses a group description `d`, a secret exponent `α : ZMo
 and the public key `u = α • g`.
 To encrypt a group element `m : F.Carrier d` with randomness `β : ZMod (F.order d)`, the sender
 forms the ciphertext `(v, e) = (β • g, β • u + m) = (β • g, (α * β) • g + m)`. Decryption recovers
-`e - α • v = m`, and the word-level operations `encodeElGamalPublicKey`, `encodeElGamalEncrypt`,
-and `decodeElGamal` compute public-key generation, encryption, and decryption in polynomial time
-from natural-number exponents and encoded group elements using `F.generator`, `F.order`, `F.smul`,
-and `F.add`.
+`e - α • v = m`. These operations are `Cslib.Crypto.elGamalEncrypt` and
+`Cslib.Crypto.elGamalDecrypt` of `CslibFrontier/Crypto/Computational/ElGamal/Finite.lean`. The
+word-level operations `encodeElGamalPublicKey`, `encodeElGamalEncrypt`, and `decodeElGamal` compute
+public-key generation, encryption, and decryption in polynomial time from natural-number exponents
+and encoded group elements using `F.generator`, `F.order`, `F.smul`, and `F.add`.
 
 We prove IND-CPA security under DDH in the following settings:
 1. **Shared typed-message ElGamal reduction** (`elGamalMsgCPAGameOn`,
@@ -94,8 +95,6 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
 
 ## Main definitions
 
-* `Cslib.Crypto.PrimeOrderGroupFamily.elGamalEncrypt`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.elGamalDecrypt`: algebraic ElGamal encryption and decryption.
 * `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalPublicKey`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.decodeElGamal`: polynomial-time public-key generation,
@@ -144,7 +143,6 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.secureKDF_iff_encoded`: `SecureKDF` is the word-level
   key-derivation assumption.
-* `Cslib.Crypto.PrimeOrderGroupFamily.elGamalDecrypt_elGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalPublicKey_eq_encode`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalEncrypt_encode`,
   `Cslib.Crypto.PrimeOrderGroupFamily.decodeElGamal_encode`,
@@ -192,33 +190,10 @@ open Probability Turing.MultiTapeTM
 
 variable (F : PrimeOrderGroupFamily)
 
-/-! ### Group-element ElGamal encryption and decryption -/
+/-! ### Group-element ElGamal encryption and decryption
 
-/-- Algebraic ElGamal encryption of a group element `m : F.Carrier d` under public key
-`u : F.Carrier d` with randomness `β : ZMod (F.order d)`. -/
-def elGamalEncrypt (d : F.Desc) (u m : F.Carrier d) (β : ZMod (F.order d)) :
-    F.Carrier d × F.Carrier d :=
-  (β • F.generator d, β • u + m)
-
-/-- Under a genuine public key `u = α • g`, the second ciphertext component is
-`(α * β) • g + m`. -/
-theorem elGamalEncrypt_smul_generator (d : F.Desc) (α β : ZMod (F.order d)) (m : F.Carrier d) :
-    F.elGamalEncrypt d (α • F.generator d) m β =
-      (β • F.generator d, (α * β) • F.generator d + m) := by
-  simp only [elGamalEncrypt, smul_smul, mul_comm β α]
-
-/-- Algebraic ElGamal decryption of a ciphertext pair `(v, e)` using secret key
-`α : ZMod (F.order d)`. -/
-def elGamalDecrypt (d : F.Desc) (α : ZMod (F.order d)) (ct : F.Carrier d × F.Carrier d) :
-    F.Carrier d :=
-  ct.2 - α • ct.1
-
-/-- **ElGamal decryption correctness**: decrypting an encryption under `u = α • g` with secret key
-`α` recovers the message `m`. -/
-@[simp] theorem elGamalDecrypt_elGamalEncrypt (d : F.Desc) (α β : ZMod (F.order d))
-    (m : F.Carrier d) :
-    F.elGamalDecrypt d α (F.elGamalEncrypt d (α • F.generator d) m β) = m := by
-  simp only [elGamalDecrypt, elGamalEncrypt, smul_smul, mul_comm β α, add_sub_cancel_left]
+The algebraic operations are `Cslib.Crypto.elGamalEncrypt` and `Cslib.Crypto.elGamalDecrypt` in
+`F.Carrier d`, with generator `F.generator d`. -/
 
 /-- Word-level ElGamal public-key computation: given `(d, a)`, compute `encode ((a : ZMod q) • g)`
 as `F.smul (d, a, F.encode d (F.generator d))`. -/
@@ -288,8 +263,8 @@ def encodeElGamalEncrypt (input : F.Desc × List Bool × List Bool × ℕ) : Lis
 /-- `encodeElGamalEncrypt` evaluates `elGamalEncrypt` on encoded group elements. -/
 @[simp] theorem encodeElGamalEncrypt_encode (d : F.Desc) (u m : F.Carrier d) (b : ℕ) :
     F.encodeElGamalEncrypt (d, F.encode d u, F.encode d m, b) =
-      (F.encode d (F.elGamalEncrypt d u m (b : ZMod (F.order d))).1,
-        F.encode d (F.elGamalEncrypt d u m (b : ZMod (F.order d))).2) := by
+      (F.encode d (elGamalEncrypt (F.generator d) u m (b : ZMod (F.order d))).1,
+        F.encode d (elGamalEncrypt (F.generator d) u m (b : ZMod (F.order d))).2) := by
   simp only [encodeElGamalEncrypt, elGamalEncrypt, F.smul_encode, F.add_encode]
 
 /-- Word-level ElGamal encryption is computable in polynomial time. -/
@@ -314,10 +289,10 @@ def decodeElGamal (input : F.Desc × ℕ × List Bool × List Bool) : List Bool 
   F.add (input.1, F.decBody input,
     F.smul (input.1, F.order input.1 - F.decSk input % F.order input.1, F.decEph input))
 
-/-- `decodeElGamal` computes `encode (elGamalDecrypt d a (v, e))` on encoded group elements. -/
+/-- `decodeElGamal` computes `encode (elGamalDecrypt a (v, e))` on encoded group elements. -/
 theorem decodeElGamal_encode (d : F.Desc) (a : ℕ) (v e : F.Carrier d) :
     F.decodeElGamal (d, a, F.encode d v, F.encode d e) =
-      F.encode d (F.elGamalDecrypt d (a : ZMod (F.order d)) (v, e)) := by
+      F.encode d (elGamalDecrypt (a : ZMod (F.order d)) (v, e)) := by
   have hneg : ((F.order d - a % F.order d : ℕ) : ZMod (F.order d)) = -(a : ZMod (F.order d)) := by
     rw [Nat.cast_sub (Nat.le_of_lt (Nat.mod_lt _ (F.prime_order d).pos)), ZMod.natCast_self,
       ZMod.natCast_mod, zero_sub]
@@ -328,10 +303,11 @@ theorem decodeElGamal_encode (d : F.Desc) (a : ℕ) (v e : F.Carrier d) :
 @[simp] theorem decodeElGamal_elGamalEncrypt (d : F.Desc) (a : ℕ) (β : ZMod (F.order d))
     (m : F.Carrier d) :
     F.decodeElGamal (d, a,
-      F.encode d (F.elGamalEncrypt d ((a : ZMod (F.order d)) • F.generator d) m β).1,
-      F.encode d (F.elGamalEncrypt d ((a : ZMod (F.order d)) • F.generator d) m β).2) =
+      F.encode d (elGamalEncrypt (F.generator d) ((a : ZMod (F.order d)) • F.generator d) m β).1,
+      F.encode d
+        (elGamalEncrypt (F.generator d) ((a : ZMod (F.order d)) • F.generator d) m β).2) =
       F.encode d m := by
-  rw [F.decodeElGamal_encode, F.elGamalDecrypt_elGamalEncrypt]
+  rw [F.decodeElGamal_encode, elGamalDecrypt_elGamalEncrypt]
 
 /-- Word-level ElGamal decryption of `encodeElGamalEncrypt` under `encodeElGamalPublicKey` recovers
 the encoded message. -/
@@ -642,11 +618,11 @@ theorem elGamalCPAGame_eq_elGamalMsgCPAGameOn (setup : ℕ → PMF F.Desc)
       F.elGamalMsgCPAGameOn (fun _ _ _ _ => true) F.encodeBit setup adversary bit n := by
   cases bit <;>
   simp only [elGamalCPAGame, elGamalMsgCPAGameOn, Game.withSetup, PKE.eval_cpaExperiment, elGamal,
-    bitAdversary, eval_lrExperiment, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
-    ProbComp.eval_uniform, PMF.bind_map, PMF.map_bind, PMF.bind_bind, PMF.pure_bind,
-    PMF.monad_bind_eq_bind, Function.comp_def, ↓reduceIte, Bool.false_eq_true,
+    elGamalEncrypt_smul, bitAdversary, eval_lrExperiment, ProbComp.eval_bind, ProbComp.eval_map,
+    ProbComp.eval_pure, ProbComp.eval_uniform, PMF.bind_map, PMF.map_bind, PMF.bind_bind,
+    PMF.pure_bind, PMF.monad_bind_eq_bind, Function.comp_def, ↓reduceIte, Bool.false_eq_true,
     MessagePair.select_false, MessagePair.select_true, F.encodeBit_eq_encode_bitElement,
-    F.add_encode, smul_smul, mul_comm]
+    F.add_encode]
 
 /-- IND-CPA security of ElGamal bit encryption over `F` for a setup law `setup`: every uniform
 strict PPT `Encryption.Adversary` has negligible distinguishing advantage between challenge bit

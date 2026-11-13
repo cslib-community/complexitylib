@@ -38,7 +38,8 @@ theorem eval_cpaExperiment_unmask (b : Bool) :
   have hconst (c : Bool) : (PMF.uniformOfFintype (ZMod 5)).map (fun _ => c) = PMF.pure c :=
     PMF.map_const _ _
   have h01 : (0 : ZMod 5) ≠ 1 := by decide
-  cases b <;> simp [PKE.cpaExperiment, lrExperiment, elGamal, unmask, mul_comm, hconst, h01]
+  cases b <;>
+    simp [PKE.cpaExperiment, lrExperiment, elGamal, elGamalEncrypt, unmask, mul_comm, hconst, h01]
 
 /-- The unmasking adversary has chosen-plaintext advantage `1`. -/
 theorem advantage_cpaExperiment_unmask :

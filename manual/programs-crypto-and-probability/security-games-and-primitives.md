@@ -123,10 +123,12 @@ scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibF
 
 ElGamal follows the same split. In one group,
 [`ElGamal/Finite.lean`](../../CslibFrontier/Crypto/Computational/ElGamal/Finite.lean) defines the
-typed scheme `elGamal q g : PKE G (ZMod q) G (G × G)` (public key `a • g`, ciphertext
-`(b • g, b • u + m)`), and `advantage_cpaExperiment_elGamal_le` bounds its chosen-plaintext
-advantage by the DDH advantages of `elGamalToDDH valid A false` and `elGamalToDDH valid A true`
-when every element of `G` is a multiple of `g`. The family bit game `F.elGamalCPAGame` in
+typed scheme `elGamal q g : PKE G (ZMod q) G (G × G)`: public key `a • g`, ciphertext
+`elGamalEncrypt g u m b = (b • g, b • u + m)` and decryption `elGamalDecrypt`, the operations that
+the family's word-level certificates also evaluate. `advantage_cpaExperiment_elGamal_le` bounds its
+chosen-plaintext advantage by the DDH advantages of `elGamalToDDH valid A false` and
+`elGamalToDDH valid A true` when every element of `G` is a multiple of `g`. The family bit game
+`F.elGamalCPAGame` in
 [`ElGamal.lean`](../../CslibFrontier/Crypto/Computational/ElGamal.lean) is
 `Game.withSetup (setup n) fun d => (elGamal (F.order d) (F.generator d)).cpaExperiment …` against
 `F.bitAdversary adversary n d`, which holds the game's encodings. The shared game
