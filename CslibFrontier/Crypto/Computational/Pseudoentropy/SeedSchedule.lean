@@ -13,9 +13,10 @@ public import CslibFrontier.Crypto.Computational.Pseudoentropy.Seed
 /-!
 # The repetition schedule of a seed realization
 
-Label extraction from a sampler repeats it `ExtractionSchedule.count n (length n) inverseSlack`
-times, where `length n` is the sampler's seed length, and reserves two entropy slacks of
-`ExtractionSchedule.slack n (length n) inverseSlack` bits. This module names both quantities for
+Label extraction from a sampler repeats it
+`ExtractionSchedule.count n (length n) (inverseSlack n)` times, where `length n` is the sampler's
+seed length, and reserves two entropy slacks of
+`ExtractionSchedule.slack n (length n) (inverseSlack n)` bits. This module names both quantities for
 a `SeedRealization`, so extraction statements do not restate the schedule's arguments.
 
 ## Main definitions
