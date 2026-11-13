@@ -311,7 +311,9 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         return lo.load_ileans(lo.DEFAULT_BUILD_DIR)
 
     errors = check_new_tests(root, added) + check_expose_sections(root, added + modified)
-    if not args.source_only:
+    if args.source_only:
+        print("Skipped the module-doc name lint (--source-only); the full check and CI run it.")
+    else:
         errors += check_doc_names(root, sorted(modules), load_ileans)
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)

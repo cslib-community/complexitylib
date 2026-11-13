@@ -480,10 +480,10 @@ class QuickCheckTests(unittest.TestCase):
                     [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
         projection = ("projection chain ratchet",
                       [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", base])
-        source_lints = ("changed-file source lints",
+        source_lints = ("changed-file source lints (doc-name lint skipped)",
                         [sys.executable, "-B", "scripts/check_changed_files.py", "--base", base,
                          "--source-only"])
-        labels = ["source hygiene (changed files)", "changed-file source lints",
+        labels = ["source hygiene (changed files)", source_lints[0],
                   "encoding readability ratchet", "projection chain ratchet"]
         with patch.object(quick, "HYGIENE_ROOTS", ("Demo/", "DemoTests/")), \
              patch.object(quick, "RATCHET_ROOT", "Demo/"):

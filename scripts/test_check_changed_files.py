@@ -236,14 +236,15 @@ class ChangedFileTests(unittest.TestCase):
     def run_main(self, *flags: str) -> tuple[int, str]:
         import contextlib
         import io
-        err = io.StringIO()
-        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+        err, self.out = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(self.out):
             code = c.main(list(flags or ["--no-build-check"]), root=self.root)
         return code, err.getvalue()
 
     def test_source_only_runs_the_source_lints_without_build_outputs(self) -> None:
         # A missing "Main" name would need `.ilean` outputs; the source-only run must not load them.
-        self.write("CslibFrontier/Kept.lean", "/-! # Kept\n\n## Main results\n\n* `missing`: x\n-/\n"
+        self.write("CslibFrontier/Kept.lean",
+                   "/-! # Kept\n\n## Main results\n\n* `missing`: x\n-/\n"
                    "@[expose] public section\n\ntheorem t : True := trivial\n")
         self.write("CslibFrontierTests/New.lean", "example := @kept\n")
         with mock.patch.object(c.lo, "check_outputs", side_effect=AssertionError("build read")):
@@ -252,6 +253,12 @@ class ChangedFileTests(unittest.TestCase):
         self.assertEqual(err.count("ERROR"), 2)
         self.assertIn("CslibFrontier/Kept.lean:7: this `@[expose]` section", err)
         self.assertIn("CslibFrontierTests/New.lean: every example only restates", err)
+        self.assertIn("Skipped the module-doc name lint", self.out.getvalue())
+        self.write("CslibFrontier/Kept.lean", "def kept := 1\n")
+        self.write("CslibFrontierTests/New.lean", "example : kept = 1 := rfl\n")
+        self.assertEqual(self.run_main("--source-only"), (0, ""))
+        self.assertIn("Changed-file source lints passed", self.out.getvalue())
+        self.assertIn("Skipped the module-doc name lint", self.out.getvalue())
         with self.assertRaises(SystemExit):
             self.run_main("--source-only", "--no-build-check")
 
