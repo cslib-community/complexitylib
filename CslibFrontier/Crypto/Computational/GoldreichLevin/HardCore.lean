@@ -13,6 +13,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 
 /-!
 # The Goldreich–Levin hard-core predicate
@@ -71,7 +72,7 @@ theorem polyTime_paddedFunction {f : List Bool → List Bool}
 @[fun_prop]
 theorem polyTime_paddedPredicate :
     ComputableInPolyTime paddedPredicate encBits encBool := by
-  unfold paddedPredicate listDot
+  unfold paddedPredicate
   polytime
 
 /-- On two equal chunks and at most one spare bit, only the first chunk is transformed. -/

@@ -21,7 +21,8 @@ function and input distribution.
   it returns the bit `h x`.
 
 The input distribution is a parameter, so the same experiment serves fixed-length inputs of a
-word function, uniform residues for RSA and Rabin, and the finite Goldreich–Levin analysis.
+word function and the finite Goldreich–Levin analysis, and can serve other input laws such as
+uniform residues.
 There is no security parameter, setup or encoding: asymptotic notions such as
 `Cslib.Crypto.OneWay` draw their setup and then run these experiments. The experiments are written
 for any monad. Programs use `ProbComp`; finite distributional arguments use `PMF`, and
@@ -44,10 +45,10 @@ for any monad. Programs use `ProbComp`; finite distributional arguments use `PMF
 
 ## References
 
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 9.2
-  (Definitions 9.4 and 9.12).
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09],
+  Section 9.2.1, Definition 9.4 (one-way functions).
 * [O. Goldreich, *Foundations of Cryptography, Volume 1*][Goldreich2001], Definitions 2.2.1
-  and 2.5.1.
+  (strong one-way functions) and 2.5.1 (hard-core predicates).
 -/
 
 @[expose] public section

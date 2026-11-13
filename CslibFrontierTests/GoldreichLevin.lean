@@ -98,7 +98,7 @@ open Turing.MultiTapeTM
 -- The complete decoder has a closed uniform certificate with an input-dependent parity predictor.
 example (degree : ℕ) : ComputableInPolyTime
     (fun p : ℕ × List Bool × List Bool =>
-      wordDecode id (fun query => (p.2.1.zipWith Bool.and query).foldl Bool.xor false)
+      wordDecode id (fun query => BitString.listDot p.2.1 query)
         degree p.1 p.2.1 p.2.2)
     (encPair encUnary (encPair encBits encBits)) encBits := by polytime
 
@@ -125,14 +125,14 @@ example (f : List Bool → List Bool) (image : List Bool) :
     wordCheckCandidates f 3 image [] = [false, false, false] := rfl
 
 -- A one-bit mask tape is padded to the requested matrix; the perfect predictor still recovers x.
-example : wordDecode id (fun query => (query.zipWith Bool.and [true, false]).foldl Bool.xor false)
+example : wordDecode id (fun query => BitString.listDot query [true, false])
     0 2 [true, false] [true] = [true, false] := by decide
 example : wordDecode id (fun _ => false) 0 0 [] [] = [] := by decide
 
 -- A closed randomized inverter certificate includes captured input and saved-seed processing.
 example (c d degree : ℕ) : IsPPT encBits
     (wordInverter id
-      (fun input coins => (input.2.zipWith Bool.and coins).foldl Bool.xor false) c d degree) := by
+      (fun input coins => BitString.listDot input.2 coins) c d degree) := by
   ppt
 
 -- The budget uses the actual framing, including the unary parameter and arbitrary image length.
