@@ -67,4 +67,3 @@ theorem parity_fiber_nonempty {n : ℕ} (hn : 0 < n) (b : Bool) :
   exact ⟨parityComplete b (fun _ => false), by simp [parity_parityComplete]⟩
 
 end Cslib.BitString
-
