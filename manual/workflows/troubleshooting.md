@@ -21,6 +21,7 @@ Use editor or MCP diagnostics and goal inspection. A partial diagnostic response
 | Logspace composition needs a large temporary string | Whether the rule stores or recomputes it | Use the appropriate replay rule and stated output-bound hypotheses |
 | A RAM theorem does not apply to a Turing-time goal | Word width, basis and simulation | Apply a bridge and account for its overhead |
 | An endpoint needs a powerful added assumption | Whether it supplies the desired result | Locate the missing construction and reassess the claim |
+| `failed to read file … .olean` on `lake test`, `lake lint` or `checkInitImports` while focused builds succeed | Per-process Linux mapping limit `/proc/sys/vm/max_map_count` | Run `python3 scripts/check_vm_map_count.py` ([diagnosis](#diagnose-failed-to-read-file-on-whole-library-imports)) |
 
 The [automation reference](../design-and-assurance/automation.md) documents the tactics. The [plain `polytime` implementation](../../CslibFrontier/Tactic/PolyTime.lean) and [`ppt`](../../CslibFrontier/Tactic/PPT.lean) may report a failed compositional attempt. This is a search hint, not a theorem of inefficiency or noncomputability. When `degree`, `logspace`, `space`, `fo_qf`, `fo_iso_closed` or `fo_definable` fails, the backend's error ends with a note saying what to supply: a certificate for the named routine, an unfolded definition, an input-length allowance, a bound on an answer vector or a registered rule. `degree` and `logspace` reject a goal of another kind before searching. The [failure tests](../../CslibFrontierTests/TacticFailureNotes.lean) show each failure next to the input that then closes the goal.
 
@@ -85,6 +86,22 @@ before each local elaboration, so a long-running file remains visible. The final
 reports total elapsed time. When `CI` is set, per-file progress is quiet by default; use
 `python3 -B scripts/check_cache_restores.py --progress` to request it, or `--quiet` to suppress
 it locally. Both modes retain all selected checks, failure messages and the final summary.
+
+## Diagnose "failed to read file" on whole-library imports
+
+On Linux hosts and containers with the stock kernel default `vm.max_map_count = 65530`, focused module builds and `lake build CslibFrontier` can succeed while whole-library importers (`CslibFrontierTests/Smoke.lean`, `CslibFrontierTests/Axioms.lean`, `lake lint`, and `lake exe checkInitImports`) fail with bare errors such as `uncaught exception: failed to read file … .olean` or `.olean.private`, even though the named file is intact, readable, has a matching toolchain header, and imports cleanly in isolation ([#5012](https://github.com/cslib-community/cslib-frontier/issues/5012)).
+
+Under the `module` system, importing a compiled module maps up to five files into the `lean` process (`.olean`, `.olean.server`, `.olean.private`, `.ir`, and `.ir.sig`). Importing `CslibFrontierResults` alone creates about 46,400 virtual memory areas (VMAs) across ~9,267 transitive modules, and importing `CslibFrontier` (as `Smoke.lean`, `Axioms.lean`, `lake lint`, and `checkInitImports` do) creates about 70,800 VMAs across ~14,133 transitive modules in one process. When a single `lean` process reaches `/proc/sys/vm/max_map_count`, `mmap` fails with `ENOMEM`; Lean's `src/library/module.cpp` heap-copy fallback then calls `malloc` and passes an unchecked `NULL` buffer to `read` (`EFAULT`), hiding VMA exhaustion behind a file-read exception. Inspecting `/proc/<pid>/maps` on the parent `lake` launcher (~6,000 mappings) misses this limit because the mappings belong to the child `lean`, `runLinter`, or `checkInitImports` executable. Keep this failure mode distinct from host-wide file-handle exhaustion (`fs.file-max`, below) and from `setImportedIREntries` segmentation faults on hosts that already have a large `vm.max_map_count` ([#4122](https://github.com/cslib-community/cslib-frontier/issues/4122)).
+
+Full `scripts/check.sh` and `scripts/full_check.py` run [`scripts/check_vm_map_count.py`](../../scripts/check_vm_map_count.py) before whole-library steps; quick mode (`scripts/check.sh --quick`) does not require this headroom. To check the host limit or measure the live VMA breakdown inside a child `lean` importer process:
+
+```bash
+python3 scripts/check_vm_map_count.py
+python3 scripts/check_vm_map_count.py --measure CslibFrontierResults
+python3 scripts/check_vm_map_count.py --measure CslibFrontier
+```
+
+When an operator controls the host or VM kernel configuration, raise `vm.max_map_count` to `262144` or higher (for example `sudo sysctl -w vm.max_map_count=262144` or a persistent `/etc/sysctl.d/` setting; GitHub-hosted Ubuntu runners use `2097152`, and unprivileged containers inherit the host kernel's sysctl). Do not silently modify shared-host kernel settings without operator authorization, and do not claim a local full `scripts/check.sh` run passed when whole-library steps were skipped or blocked: validate affected modules with `scripts/check.sh --quick --no-full-fallback` (and targeted `lake build` commands), record the `vm.max_map_count` blocker in the PR or issue, and rely on hosted CI for whole-library validation.
 
 ## Diagnose "Too many open files in system"
 

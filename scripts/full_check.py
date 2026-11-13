@@ -35,6 +35,11 @@ import sys
 import tempfile
 from typing import TextIO
 
+try:
+    import check_vm_map_count
+except ModuleNotFoundError:
+    from scripts import check_vm_map_count
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -162,7 +167,11 @@ def main(argv: list[str] | None = None) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", default="origin/main",
                         help="comparison ref; changes are taken from its merge base with HEAD")
+    parser.add_argument("--skip-map-count-check", action="store_true",
+                        help="skip the Linux vm.max_map_count preflight for whole-library imports")
     args = parser.parse_args(argv)
+    if not args.skip_map_count_check and check_vm_map_count.preflight(ROOT, sys.stdout) != 0:
+        return 1
     return run_steps(STEPS + LOCAL_STEPS, args.base)
 
 
