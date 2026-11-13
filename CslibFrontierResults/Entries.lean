@@ -106,8 +106,10 @@ import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
+import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.AnyEndpoints
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.Complexity.Problems.TMSAT
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
@@ -184,6 +186,7 @@ import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Tree
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.GameTheory.Strategic.SwapRegretDynamics
+import CslibFrontier.Logics.Propositional.CNF.TruthTable
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
@@ -288,6 +291,44 @@ register_result "cook-levin" where
     certificates of exact polynomial length; hardness is under total native polynomial-time \
     many-one reductions from problems with arbitrary injective encodings. UNSAT \
     coNP-completeness follows by complementation."
+
+register_result "tmsat-np-complete" where
+  title := "TMSAT is NP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 2.9",
+      locator := "Web draft 2007-01-08, printed p. 44; PDF p. 60" }
+  ]
+  theorems := [Cslib.Complexity.TMSAT.npComplete]
+  scope := "Instances (α, x, 1^n, 1^t) as the structure TMSATInstance under encTMSATInstance, \
+    with the native machine description, raw input bits and unary n and t. Acceptance is a \
+    halted run with output [true] of the universal interpreter for t steps on frame x ++ u, \
+    for a witness u of exactly n bits. Hardness for every NP problem and instance encoding."
+
+register_result "truth-table-cnf-size" where
+  title := "Every Boolean function has a CNF with at most ℓ·2^ℓ AND/OR symbols"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Claim 2.14",
+      locator := "Web draft 2007-01-08, printed p. 46; PDF p. 62" }
+  ]
+  theorems := [Cslib.Logic.PL.CNF.exists_eval_eq_connectiveCount_le]
+  scope := "Functions (Fin ℓ → Bool) → Bool and list CNFs over Fin ℓ. The size measure \
+    connectiveCount counts binary connectives: k - 1 ORs per clause of k literals and m - 1 \
+    ANDs between m clauses. The source's size ℓ·2^ℓ is read as an upper bound."
+
+register_result "dir-ham-path-any-np-complete" where
+  title := "Directed Hamiltonian path without given endpoints is NP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 2.18",
+      locator := "Web draft 2007-01-08, printed p. 52; PDF p. 68" }
+  ]
+  theorems := [Cslib.Complexity.DirHamPathAny_npComplete]
+  scope := "Finite listed graphs under encGraph with some Hamiltonian path; graphs without \
+    declared vertices are not members. Hardness reduces the designated-endpoint DirHamPath \
+    (Sipser's diamond construction) by adding a fresh source and sink, not the draft's \
+    direct 3SAT reduction."
 
 register_result "pcp" where
   title := "The PCP theorem"

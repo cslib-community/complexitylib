@@ -2543,6 +2543,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors
 public import CslibFrontier.Computability.Complexity.Problems.Graph.WeightedSpanningTrees
 public import CslibFrontier.Computability.Complexity.Problems.GraphIsomorphism
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian
+public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.AnyEndpoints
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Defs
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Soundness
@@ -2654,6 +2655,7 @@ public import CslibFrontier.Computability.Complexity.Problems.StatisticalDiffere
 public import CslibFrontier.Computability.Complexity.Problems.StatisticalDifference.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum.Digits
+public import CslibFrontier.Computability.Complexity.Problems.TMSAT
 public import CslibFrontier.Computability.Complexity.Problems.TQBF
 public import CslibFrontier.Computability.Complexity.Problems.TQBF.Closed
 public import CslibFrontier.Computability.Complexity.Problems.TSP
@@ -6461,6 +6463,7 @@ public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.Exact.PolyTime
 public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import CslibFrontier.Logics.Propositional.CNF.ThreeOccurrence
 public import CslibFrontier.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
+public import CslibFrontier.Logics.Propositional.CNF.TruthTable
 public import CslibFrontier.Logics.Propositional.CNF.TwoCNF
 public import CslibFrontier.Logics.Propositional.CNF.UnitPropagation
 public import CslibFrontier.Logics.Propositional.CNF.UnsatVal
