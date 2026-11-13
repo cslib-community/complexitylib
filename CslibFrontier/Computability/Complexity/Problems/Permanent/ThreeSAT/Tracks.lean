@@ -440,27 +440,21 @@ theorem permOn_trackMatrix (hφ : WellFormed φ) {P : Finset ℕ}
         (bijOfAssign hlt a u).val = succOf φ a u := by
       intro u hu
       simp [bijOfAssign, hu]
-    refine ⟨⟨fun u hu => ?_, fun u hu v hv h => ?_, ?_, fun u hu => ?_⟩, fun u hu => ?_⟩
-    · simp only [rowSet, colSet, mem_filter, mem_univ, true_and] at hu ⊢
+    have hmap : ∀ u ∈ rowSet φ P, bijOfAssign hlt a u ∈ colSet φ P := fun u hu => by
+      simp only [rowSet, colSet, mem_filter, mem_univ, true_and] at hu ⊢
       rw [hF u hu]
       exact inCols_succOf hφ hP a ha hu
-    · simp only [rowSet, mem_filter, mem_univ, true_and] at hu hv
+    have hinj : ∀ u ∈ rowSet φ P, ∀ v ∈ rowSet φ P,
+        bijOfAssign hlt a u = bijOfAssign hlt a v → u = v := fun u hu v hv h => by
+      simp only [rowSet, mem_filter, mem_univ, true_and] at hu hv
       have := congrArg Fin.val h
       rw [hF u hu, hF v hv] at this
       exact Fin.ext (succOf_injOn hφ hP a ha hu hv this)
+    refine ⟨⟨hmap, hinj, ?_, fun u hu => ?_⟩, fun u hu => ?_⟩
     · intro t ht
       have hsurj := Finset.surj_on_of_inj_on_of_card_le
         (s := rowSet φ P) (t := colSet φ P) (fun u _ => bijOfAssign hlt a u)
-        (fun u hu => by
-          simp only [rowSet, colSet, mem_filter, mem_univ, true_and] at hu ⊢
-          rw [hF u hu]
-          exact inCols_succOf hφ hP a ha hu)
-        (fun u v hu hv h => by
-          simp only [rowSet, mem_filter, mem_univ, true_and] at hu hv
-          have := congrArg Fin.val h
-          rw [hF u hu, hF v hv] at this
-          exact Fin.ext (succOf_injOn hφ hP a ha hu hv this))
-        (card_rowSet hP).ge
+        hmap (fun u v hu hv h => hinj u hu v hv h) (card_rowSet hP).ge
       obtain ⟨u, hu, rfl⟩ := hsurj t ht
       exact ⟨u, hu, rfl⟩
     · have hu' : ¬ InRows φ P u := by simpa [rowSet] using hu

@@ -103,6 +103,7 @@ import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
+import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
@@ -1567,6 +1568,23 @@ register_result "sharp-p-lowness" where
   scope := "Equality of #P^A and #P on binary words iff A is in UP ∩ coUP. Uses strict \
     polynomial-time adaptive word-oracle verifiers, with resource bounds for \
     arbitrary replies; does not assert an oracle-machine counting characterization."
+
+register_result "goldreich-sharp-three-sat-to-integer-permanent" where
+  title := "#3SAT reduces to the permanent of small-integer matrices"
+  topic := "counting classes"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Proposition 6.21",
+      locator := "February 2007 draft r3.pdf, PDF pp. 24–27; printed pp. 226–229" }
+  ]
+  theorems := [
+    Cslib.Complexity.goldreich_prop_6_21,
+    Cslib.Complexity.metricReducible_sharpThreeSAT_intPermanent
+  ]
+  scope := "c = 12 and I = {-1, 0, 1, 2, 3}: a native polynomial-time map from encCNF to the \
+    dense integer-table encoding with perm(M_φ) = 12^m · #3SAT(φ) for every CNF φ with m \
+    clauses, using Goldreich's Figure 6.3 gadget. Counts are over the variables occurring in \
+    φ; formulas with an empty or over-long clause map to the 1×1 zero matrix. Not the 0/1 \
+    permanent endpoint (Proposition 6.22) nor Theorem 6.20."
 
 register_result "gap-p-spp-lowness" where
   title := "GapP and SPP lowness characterize SPP"
