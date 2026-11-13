@@ -69,7 +69,7 @@ structure FamilySimInput (α : Type) (m : ℕ) (n k : α → ℕ) (I : Finset (F
 
 /-- Pad a coalition-indexed bitstring tuple `vI : (i : I) → BitString len` with `0` outside `I`
 and serialize the resulting `m` blocks of width `len` to a `m * len`-bit list. -/
-def extendCoalitionBits {m len : ℕ} (I : Finset (Fin m)) (vI : (i : I) → BitString len) :
+@[expose] def extendCoalitionBits {m len : ℕ} (I : Finset (Fin m)) (vI : (i : I) → BitString len) :
     List Bool :=
   List.ofFn ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := len)).symm
     (GMWCircuit.extendByZero I vI))

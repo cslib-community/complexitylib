@@ -1170,54 +1170,19 @@ private theorem isPPTOn_sampleTwoPiBits {α : Type} {input : α ↪ List Bool}
   have h2_pair := h2.pair (snd input ePi)
   simpa only [sampleTwoPiBits, bind_map_left] using h1.keep_input.bind h2_pair
 
-private theorem computableTidilyInPolyTime_familyRunInput_unpack
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n : α → ℕ} :
-    ComputableTidilyInPolyTime
-      (fun inp : FamilyRunInput α m n =>
-        (inp.index, List.ofFn
-          ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := n inp.index)).symm inp.inputs)))
-      (encFamilyRunInput encA m n) (encPair encA encBits) :=
-  of_eq fun _ => rfl
-
-private theorem computableTidilyInPolyTime_familyRunInput_fst
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n : α → ℕ} :
-    ComputableTidilyInPolyTime (fun inp : FamilyRunInput α m n => inp.index)
-      (encFamilyRunInput encA m n) encA := by
-  have hres := comp' (fst encA encBits)
-    (computableTidilyInPolyTime_familyRunInput_unpack (encA := encA) (m := m) (n := n))
-  exact hres
-
 private theorem computableTidilyInPolyTime_familyRunInput_bits
     {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n : α → ℕ}
     (hn : ComputableTidilyInPolyTime n encA encUnary) :
     ComputableTidilyInPolyTime
       (fun (inp : FamilyRunInput α m n) (i : Fin m) => List.ofFn (inp.inputs i))
       (encFamilyRunInput encA m n) (encPi encBits) := by
-  have ha := computableTidilyInPolyTime_familyRunInput_fst (encA := encA) (m := m) (n := n)
-  have hword := comp' (snd encA encBits)
-    (computableTidilyInPolyTime_familyRunInput_unpack (encA := encA) (m := m) (n := n))
+  have ha := (encFamilyRunInput_index_polyTime encA m n ComputableInPolyTime.id').tidy
+  have hword := (encFamilyRunInput_inputs_polyTime encA m n ComputableInPolyTime.id').tidy
   refine pi fun i => ?_
   convert bitsRowWithInput (comp' hn ha) (const i.val) hword using 1
   funext inp
   rw [Cslib.BitString.listRow_eq_ofFn (n inp.index) i,
     Cslib.BitString.ofList_ofFn, Cslib.BitString.block_blocksEquiv_symm]
-
-private theorem computableTidilyInPolyTime_familySimInput_unpack
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)} :
-    ComputableTidilyInPolyTime
-      (fun inp : FamilySimInput α m n k I =>
-        (inp.index, (extendCoalitionBits I inp.inputs, extendCoalitionBits I inp.outputs)))
-      (encFamilySimInput encA m n k I) (encPair encA (encPair encBits encBits)) :=
-  of_eq fun _ => rfl
-
-private theorem computableTidilyInPolyTime_familySimInput_fst
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)} :
-    ComputableTidilyInPolyTime (fun inp : FamilySimInput α m n k I => inp.index)
-      (encFamilySimInput encA m n k I) encA := by
-  have hres := comp' (fst encA (encPair encBits encBits))
-    (computableTidilyInPolyTime_familySimInput_unpack
-      (encA := encA) (m := m) (n := n) (k := k) (I := I))
-  exact hres
 
 private theorem listRow_extendCoalitionBits {m len : ℕ} (I : Finset (Fin m))
     (vI : (i : I) → BitString len) (i : Fin m) :
@@ -1240,8 +1205,7 @@ private theorem computableTidilyInPolyTime_familySimInput_bits
       (fun (inp : FamilySimInput α m n k I) (i : Fin m) =>
         if hi : i ∈ I then List.ofFn (v inp ⟨i, hi⟩) else List.replicate (len inp.index) false)
       (encFamilySimInput encA m n k I) (encPi encBits) := by
-  have ha := computableTidilyInPolyTime_familySimInput_fst
-    (encA := encA) (m := m) (n := n) (k := k) (I := I)
+  have ha := (encFamilySimInput_index_polyTime encA m n k I ComputableInPolyTime.id').tidy
   refine pi fun i => ?_
   convert bitsRowWithInput (comp' hlen ha) (const i.val) hword using 1
   funext inp
@@ -1255,8 +1219,7 @@ private theorem computableTidilyInPolyTime_familySimInput_x_bits
         if hi : i ∈ I then List.ofFn (inp.inputs ⟨i, hi⟩) else List.replicate (n inp.index) false)
       (encFamilySimInput encA m n k I) (encPi encBits) :=
   computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.inputs) hn
-    (comp' (fst encBits encBits) (comp' (snd encA (encPair encBits encBits))
-      computableTidilyInPolyTime_familySimInput_unpack))
+    (encFamilySimInput_inputs_polyTime encA m n k I ComputableInPolyTime.id').tidy
 
 private theorem computableTidilyInPolyTime_familySimInput_y_bits
     {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)}
@@ -1266,8 +1229,7 @@ private theorem computableTidilyInPolyTime_familySimInput_y_bits
         if hi : i ∈ I then List.ofFn (inp.outputs ⟨i, hi⟩) else List.replicate (k inp.index) false)
       (encFamilySimInput encA m n k I) (encPi encBits) :=
   computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.outputs) hk
-    (comp' (snd encBits encBits) (comp' (snd encA (encPair encBits encBits))
-      computableTidilyInPolyTime_familySimInput_unpack))
+    (encFamilySimInput_outputs_polyTime encA m n k I ComputableInPolyTime.id').tidy
 
 /-- Word-level runner for `Protocol.runEncoded` applied to `gmwOT14RandomizedProtocol` on a
 polynomial-time circuit code family `D : α → List (Boolean.Op × List ℕ) × List ℕ`. -/
@@ -1321,7 +1283,7 @@ private theorem isOraclePPTOn_realRunWord {α : Type} {encA : α ↪ List Bool}
   let e1 := encPair e0 eRC
   let e2 := encPair e1 (encStep2Acc m)
   let e3 := encPair e2 (encStep3Acc m)
-  have ha0 := computableTidilyInPolyTime_familyRunInput_fst (encA := encA) (m := m) (n := n)
+  have ha0 := (encFamilyRunInput_index_polyTime encA m n ComputableInPolyTime.id').tidy
   have hx0 := computableTidilyInPolyTime_familyRunInput_bits (encA := encA) (m := m) hn
   have hcoins0 := comp' hcoins ha0
   have hn0 := comp' hn ha0
@@ -1400,8 +1362,7 @@ private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
   let e1 := encPair e0 eRC
   let e2 := encPair e1 (encStep2Acc m)
   let e3 := encPair e2 (encStep3Acc m)
-  have ha0 := computableTidilyInPolyTime_familySimInput_fst
-    (encA := encA) (m := m) (n := n) (k := k) (I := I)
+  have ha0 := (encFamilySimInput_index_polyTime encA m n k I ComputableInPolyTime.id').tidy
   have hx0 := computableTidilyInPolyTime_familySimInput_x_bits
     (encA := encA) (m := m) (k := k) (I := I) hn
   have hy0 := computableTidilyInPolyTime_familySimInput_y_bits
