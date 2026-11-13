@@ -668,18 +668,17 @@ private theorem emitLeafCode_exec {δ α : Type} [WordEncoding δ] [WordEncoding
   have hs : ∀ i, src i ≠ fr := fun i hsi => hsrc_ne i (congrArg Fin.val hsi)
   have hms_eq : memoryState fr x.toData = { mem := x.mem, frontier := x.frontier } := by
     ext <;> [rfl; exact hfr]
-  have hspec := h.choose_spec.choose_spec.choose_spec fr src tmp hi hd hf hs
-  obtain ⟨y_d, hy, hm_eq, hout, hframe⟩ := hspec.2 w d x.toData hx.1 hin
-    (by rw [hms_eq]; exact hsafe) (by rw [hms_eq]; exact hv)
-  have hy_fr : y_d.regs fr ≤ x.frontier := by
-    have hm_fr := congrArg Memory.State.frontier hm_eq
-    change y_d.regs fr =
-      ((Memory.spec w).clientState (memoryState fr x.toData) (p d)).frontier at hm_fr
-    rw [hm_fr, hms_eq, hnoalloc]
+  obtain ⟨y_d, hdem, hm_eq, hout, hframe⟩ :=
+    RDemonicExec.of_realizesBounded (C := h.choose_spec.choose)
+      (output := WordEncoding.encode (α := α)) (work := fun _ _ => 0)
+      (emit := fun {r} => h.choose_spec.choose_spec.choose (r := r))
+      (fun {r} => h.choose_spec.choose_spec.choose_spec (r := r))
+      fr src tmp hi hd hf hs d hx hL_peak hin
+      (by rw [hms_eq]; exact hsafe) (by rw [hms_eq]; exact hv)
+      (by rw [hms_eq, hnoalloc])
   have hdem' : RDemonicExec w L_peak (emitLeafCode h hle_out hle_scr src) x
       (leafConst h * (memoryCost (p d) ms + 1)) (· = ⟨y_d.regs, y_d.mem, x.frontier⟩) := by
-    simpa [emitLeafCode, leafConst, fr, tmp, hms_eq, ms] using
-      RDemonicExec.of_execBounded hL_peak hy_fr hy
+    simpa [emitLeafCode, leafConst, fr, tmp, hms_eq, ms] using hdem
   refine ⟨⟨y_d.regs, y_d.mem, x.frontier⟩, hdem', rDemonicExec_eq_bounded hdem' hx, rfl, ?_, ?_, ?_⟩
   · have hm := congrArg Memory.State.mem hm_eq
     dsimp only at hm ⊢

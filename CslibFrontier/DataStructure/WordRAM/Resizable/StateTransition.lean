@@ -16,10 +16,11 @@ public import CslibFrontier.DataStructure.StateTransition.Amortized
 # Deterministic Resizable Word RAM State-Transition Implementations
 
 Reusable deterministic (demonic-growth-resilient) subroutine packaging (`SubroutineCode`) and
-state-transition implementation certificates (`StateTransitionImpl`) over the word-granular
-**Resizable Word RAM** (`Cslib.WordRAM.Resizable`), accompanying the resizable word-prefix memory
-model of [LiLiangYuZhou2023Succincter], Section 2.1, [LiLiangYuZhou2024], Section 3.2, and
-[KuszmaulLiangZhou2026], Section 5.1.
+potential-amortized ([CLRS2009], Chapter 17) state-transition implementation certificates
+(`StateTransitionImpl`) over the word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable`),
+accompanying the word-granular resizable memory models of [LiLiangYuZhou2023Succincter],
+Section 2.1, and [KuszmaulLiangZhou2026], Section 5.1, and adapting the bit-granular virtual-memory
+variant of [LiLiangYuZhou2024], Section 3.2, at word granularity.
 
 Unlike fixed-capacity `Cslib.DataStructure.WordRAM.StateTransitionImpl` (whose workspace
 `[base, base + space)` has a single state-independent length `space`), a Resizable Word RAM
@@ -83,9 +84,6 @@ tracks two state/operation-indexed word bounds:
 
 * [CLRS2009] Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein,
   *Introduction to Algorithms*, 3rd ed., MIT Press, 2009, Chapter 17.
-* [Hagerup1998] Torben Hagerup, *Sorting and Searching on the Word RAM*, STACS 1998.
-* [RamanRao2003] Rajeev Raman and Satti Srinivasa Rao, *Succinct Dynamic Dictionaries and Trees*,
-  ICALP 2003, LNCS 2719, pp. 357–368, Section 1.1.
 * [LiLiangYuZhou2023Succincter] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
   "Succincter"*, FOCS 2023, pp. 1715–1733 (`arXiv:2309.12950v1`, Section 2.1, PDF pp. 6–7 /
   printed pp. 5–6).
@@ -358,8 +356,8 @@ theorem peakFitsHistory_of_fits_maxPeakSpaceHistory {D : StateTransitionSpec.{u,
 /-- Reusable deterministic (demonic-growth-resilient) Resizable Word RAM implementation certificate
 for `P : SubroutineCode B r_ds k_init` realizing `D : StateTransitionSpec` at word width `w`, base
 address `base`, runtime initialization parameters `params`, and initial state `s₀`, with
-state-dependent resting footprint `[base, base + spaceBound s)` and intermediate peak bound
-`[base, base + peakSpaceBound s o)`. -/
+potential-amortized operation charges ([CLRS2009], Chapter 17), state-dependent resting footprint
+`[base, base + spaceBound s)`, and intermediate peak bound `[base, base + peakSpaceBound s o)`. -/
 structure StateTransitionImpl {B : Basis} {r_ds k_init : ℕ}
     (P : SubroutineCode B r_ds k_init) (D : StateTransitionSpec.{u, v, z})
     (w base : ℕ) (params : Fin k_init → ℕ) (s₀ : D.State) : Type (max u v z) where

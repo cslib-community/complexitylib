@@ -20,12 +20,15 @@ import CslibFrontier.Probability.PMF.SupportTsum
 
 Reusable randomized subroutine implementation certificates (`Randomized.StateTransitionImpl`) over
 the word-granular **Resizable Word RAM** (`Cslib.WordRAM.Resizable.ExecRCodeDist` and
-`ExecRProgramDist`) ([LiLiangYuZhou2023Succincter]; [LiLiangYuZhou2024]; [KuszmaulLiangZhou2026];
-[MitzenmacherUpfal2017], Sections 2.1, 2.3, and 2.4). A certificate couples `[base, x.frontier)`
-execution with `Seed : Type`, state-indexed `seedLaw : D.State → PMF Seed` up to `seedSlack : ℝ≥0∞`,
-resting bound `spaceBound`, and peak bound `peakSpaceBound`; sequence theorems require
-`Fits w (base + peakSpaceBound s_t o_t)` only along reachable states of `ops` and compile to
-`ExecRProgramDist` (rejecting 1-instruction `[.halt out]` stubs).
+`ExecRProgramDist`), accompanying the word-granular resizable memory models of
+[LiLiangYuZhou2023Succincter], Section 2.1, and [KuszmaulLiangZhou2026], Section 5.1, and adapting
+the bit-granular virtual-memory variant of [LiLiangYuZhou2024], Section 3.2, at word granularity.
+Expected potential-amortized step charges ([CLRS2009], Chapter 17) compose across sequences by
+linearity of expectation ([MitzenmacherUpfal2017], Section 2.1). A certificate couples
+`[base, x.frontier)` execution with `Seed : Type`, state-indexed `seedLaw : D.State → PMF Seed` up
+to `seedSlack : ℝ≥0∞`, resting bound `spaceBound`, and peak bound `peakSpaceBound`; sequence
+theorems require `Fits w (base + peakSpaceBound s_t o_t)` only along reachable states of `ops` and
+compile to `ExecRProgramDist` (rejecting 1-instruction `[.halt out]` stubs).
 
 ## Main definitions
 
@@ -61,7 +64,7 @@ resting bound `spaceBound`, and peak bound `peakSpaceBound`; sequence theorems r
 * [CLRS2009] Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein,
   *Introduction to Algorithms*, 3rd ed., MIT Press, 2009, Chapter 17.
 * [MitzenmacherUpfal2017] Michael Mitzenmacher and Eli Upfal, *Probability and Computing*, 2nd ed.,
-  Cambridge University Press, 2017, Sections 2.1, 2.3, and 2.4.
+  Cambridge University Press, 2017, Section 2.1.
 * [LiLiangYuZhou2023Succincter] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
   "Succincter"*, FOCS 2023, pp. 1715–1733 (`arXiv:2309.12950v1`, Section 2.1, PDF pp. 6–7 /
   printed pp. 5–6).
@@ -188,6 +191,27 @@ variable {B : Basis} {r_ds k_init w base : ℕ}
   {P : SubroutineCode B r_ds k_init} {D : StateTransitionSpec.{u, v, z}}
   {params : Fin k_init → ℕ} {s₀ : D.State}
 
+private structure DetStepChoice (C : StateTransitionImpl P D w base params s₀)
+    (s : D.State) (x : RData r_ds) (o : D.Op) where
+  y : RData r_ds
+  s' : D.State
+  a : D.Result o
+  n : ℕ
+  exec : RDemonicExec w (base + C.peakSpaceBound s o) P.code x n (· = y)
+  step : D.step s o s' a
+  decode_eq : C.decode o y.regs = some a
+  rep_post : C.rep s' y
+  caller_mem : ∀ addr < base, y.mem addr = x.mem addr
+  amort : n + C.potential y ≤ C.charge s o + C.potential x
+
+private noncomputable def chooseDetStep (C : StateTransitionImpl P D w base params s₀)
+    {s : D.State} {x : RData r_ds} (o : D.Op)
+    (hrep : C.rep s x) (hv : D.valid s o) (harg : C.argMatch o x.regs)
+    (hfit : Fits w (base + C.peakSpaceBound s o)) : DetStepChoice C s x o :=
+  Classical.choice <|
+    let ⟨y, s', a, n, hexec, hstep, hdec, hrep', hcaller, hamort⟩ := C.step_exec o hrep hv harg hfit
+    ⟨⟨y, s', a, n, hexec, hstep, hdec, hrep', hcaller, hamort⟩⟩
+
 /-- Canonical embedding of any deterministic `Resizable.StateTransitionImpl` certificate into
 `Resizable.Randomized.StateTransitionImpl` (`Seed := Unit`, `seedLaw := fun _ => PMF.pure ()`,
 `seedSlack := 1`). -/
@@ -212,38 +236,26 @@ variable {B : Basis} {r_ds k_init w base : ℕ}
     let hasInv (t : CoupledRState Unit D.State r_ds) : Prop :=
       D.valid t.state o ∧ C.rep t.state t.data ∧ C.argMatch o t.data.regs ∧
       Fits w (base + C.peakSpaceBound t.state o)
+    let pick (t : CoupledRState Unit D.State r_ds) (ht : hasInv t) :=
+      let ⟨hv, hrep, harg, hfit⟩ := ht; chooseDetStep C o hrep hv harg hfit
     let nextData (t : CoupledRState Unit D.State r_ds) : RData r_ds :=
-      if ht : hasInv t then Classical.choose (C.step_exec o ht.2.1 ht.1 ht.2.2.1 ht.2.2.2)
-      else t.data
+      if ht : hasInv t then (pick t ht).y else t.data
     let nextState (t : CoupledRState Unit D.State r_ds) : D.State :=
-      if ht : hasInv t then
-        Classical.choose (Classical.choose_spec (C.step_exec o ht.2.1 ht.1 ht.2.2.1 ht.2.2.2))
-      else t.state
+      if ht : hasInv t then (pick t ht).s' else t.state
     let nextSteps (t : CoupledRState Unit D.State r_ds) : ℕ :=
-      if ht : hasInv t then
-        Classical.choose (Classical.choose_spec (Classical.choose_spec
-          (Classical.choose_spec (C.step_exec o ht.2.1 ht.1 ht.2.2.1 ht.2.2.2))))
-      else 0
+      if ht : hasInv t then (pick t ht).n else 0
     let μ_step (t : CoupledRState Unit D.State r_ds) : PMF (CoupledRState Unit D.State r_ds) :=
       PMF.pure ⟨(), nextState t, nextData t⟩
     let T_step (t : CoupledRState Unit D.State r_ds) : ℝ≥0∞ := (nextSteps t : ℝ≥0∞)
     refine ⟨μ_step, T_step, ?_, ?_, nofun, ?_⟩
     · intro t ht_mem
       have ht : hasInv t := hsupp t ht_mem
-      have hspec1 := Classical.choose_spec (C.step_exec o ht.2.1 ht.1 ht.2.2.1 ht.2.2.2)
-      have hspec2 := Classical.choose_spec hspec1
-      let a := Classical.choose hspec2
-      have hspec3 := Classical.choose_spec hspec2
-      have hspec4 := Classical.choose_spec hspec3
-      have hd_eq : nextData t = Classical.choose (C.step_exec o ht.2.1 ht.1 ht.2.2.1 ht.2.2.2) := by
-        simp [nextData, ht]
-      have hs_eq : nextState t = Classical.choose hspec1 := by simp [nextState, ht]
-      have hn_eq : nextSteps t = Classical.choose hspec3 := by simp [nextSteps, ht]
-      refine ⟨by simpa [μ_step, T_step, hd_eq, hn_eq] using ExecRCodeDist.of_demonicExec hspec4.1,
-        fun q hq => ?_⟩
+      refine ⟨by simpa [μ_step, T_step, nextData, nextSteps, ht] using
+          ExecRCodeDist.of_demonicExec (pick t ht).exec, fun q hq => ?_⟩
       have hq_eq : q = ⟨(), nextState t, nextData t⟩ := by simpa [μ_step] using hq
-      subst hq_eq; dsimp only; rw [hd_eq, hs_eq]
-      exact ⟨a, hspec4.2.1, hspec4.2.2.1, hspec4.2.2.2.1, hspec4.2.2.2.2.1⟩
+      subst hq_eq; simp only [nextData, nextState, ht, ↓reduceDIte]
+      exact ⟨(pick t ht).a, (pick t ht).step, (pick t ht).decode_eq,
+        (pick t ht).rep_post, (pick t ht).caller_mem⟩
     · intro _ _ θ'; cases θ'
       have hconst : ((ν.bind μ_step).map CoupledRState.seed) () = 1 := by
         rw [PMF.map_bind]; simp [μ_step]
@@ -252,16 +264,11 @@ variable {B : Basis} {r_ds k_init w base : ℕ}
       by_cases ht_mem : t ∈ ν.support
       · refine mul_le_mul_right ?_ _
         have ht : hasInv t := hsupp t ht_mem
-        have hspec3 := Classical.choose_spec (Classical.choose_spec
-          (Classical.choose_spec (C.step_exec o ht.2.1 ht.1 ht.2.2.1 ht.2.2.2)))
-        have hspec4 := Classical.choose_spec hspec3
-        have hd_eq : nextData t = Classical.choose (C.step_exec o ht.2.1 ht.1 ht.2.2.1 ht.2.2.2) :=
-          by simp [nextData, ht]
-        have hn_eq : nextSteps t = Classical.choose hspec3 := by simp [nextSteps, ht]
         rw [tsum_eq_single ⟨(), nextState t, nextData t⟩
           (fun q hq => by simp [μ_step, PMF.pure_apply, hq])]
-        simp only [μ_step, T_step, PMF.pure_apply_self, one_mul, hd_eq, hn_eq]
-        exact_mod_cast hspec4.2.2.2.2.2
+        simp only [μ_step, T_step, PMF.pure_apply_self, one_mul, nextData, nextSteps, ht,
+          ↓reduceDIte]
+        exact_mod_cast (pick t ht).amort
       · rw [(PMF.apply_eq_zero_iff _ _).mpr ht_mem, zero_mul, zero_mul]
 
 @[simp] theorem toRandomized_spaceBound (C : StateTransitionImpl P D w base params s₀) :
@@ -857,6 +864,14 @@ inductive ExecProgramStepsOfFn (C : StateTransitionImpl P D w base params s₀)
       C.ExecProgramStepsOfFn p_op out (D.stepFn s o).1 ops (ν.bind μ_step) ν_final T_rest →
       C.ExecProgramStepsOfFn p_op out s (o :: ops) ν ν_final ((∑' p, ν p * T_step p) + T_rest)
 
+/-- Expected per-step `+ 1` `halt` charge accumulated over `o :: ops`. -/
+theorem tsum_add_one_add_length_cons {α : Type*} {β : Type*}
+    (ν : PMF α) (T_step : α → ℝ≥0∞) (T_rest : ℝ≥0∞) (o : β) (ops : List β) :
+    (∑' a, ν a * (T_step a + 1)) + (T_rest + (ops.length : ℝ≥0∞)) =
+      ((∑' a, ν a * T_step a) + T_rest) + ((o :: ops).length : ℝ≥0∞) := by
+  simp_rw [mul_add, tsum_add, mul_one, ν.tsum_coe, List.length_cons, Nat.cast_add, Nat.cast_one]
+  ac_rfl
+
 /-- Compile a structured `C.ExecSteps` derivation to `C.ExecProgramSteps (P.opProg out) out`,
 charging `+ 1` instruction per operation for the trailing `halt out`. -/
 theorem ExecSteps.toExecRProgramDist {C : StateTransitionImpl P D w base params s₀}
@@ -867,12 +882,7 @@ theorem ExecSteps.toExecRProgramDist {C : StateTransitionImpl P D w base params 
   induction h with
   | nil ν => simpa using ExecProgramSteps.nil ν
   | @cons o ops ν ν_final μ_step T_step T_rest C_rest hstep _ ih =>
-    have hsum : (∑' t, ν t * (T_step t + 1)) + (T_rest + (ops.length : ℝ≥0∞)) =
-        ((∑' t, ν t * T_step t) + T_rest) + ((o :: ops).length : ℝ≥0∞) := by
-      simp_rw [mul_add, tsum_add, mul_one, ν.tsum_coe, List.length_cons, Nat.cast_add,
-        Nat.cast_one]
-      ac_rfl
-    rw [← hsum]
+    rw [← tsum_add_one_add_length_cons ν T_step T_rest o ops]
     refine .cons (μ_step := μ_step) (T_step := fun t => T_step t + 1) (fun t ht => ?_) ih
     obtain ⟨he, hq⟩ := hstep t ht
     exact ⟨he.toExecRProgramDist out, hq⟩
@@ -888,15 +898,16 @@ theorem ExecStepsOfFn.toExecRProgramDist {C : StateTransitionImpl P D w base par
   induction h with
   | nil s ν => simpa using ExecProgramStepsOfFn.nil s ν
   | @cons s o ops ν ν_final μ_step T_step T_rest hstep _ ih =>
-    have hsum : (∑' p, ν p * (T_step p + 1)) + (T_rest + (ops.length : ℝ≥0∞)) =
-        ((∑' p, ν p * T_step p) + T_rest) + ((o :: ops).length : ℝ≥0∞) := by
-      simp_rw [mul_add, tsum_add, mul_one, ν.tsum_coe, List.length_cons, Nat.cast_add,
-        Nat.cast_one]
-      ac_rfl
-    rw [← hsum]
+    rw [← tsum_add_one_add_length_cons ν T_step T_rest o ops]
     refine .cons (μ_step := μ_step) (T_step := fun p => T_step p + 1) (fun p hp => ?_) ih
     obtain ⟨he, hq⟩ := hstep p hp
     exact ⟨he.toExecRProgramDist out, hq⟩
+
+private theorem add_halt_amort_le {a b c d e L : ℝ≥0∞} (h : a + b + c ≤ a + d + e) :
+    (a + 1) + (b + L) + c ≤ (a + 1) + d + e + L :=
+  calc (a + 1) + (b + L) + c = (a + b + c) + 1 + L := by ac_rfl
+    _ ≤ (a + d + e) + 1 + L := add_le_add (add_le_add h le_rfl) le_rfl
+    _ = (a + 1) + d + e + L := by ac_rfl
 
 /-- **End-to-end flat-`RProgram` expected-amortized theorem (`seq_toExecRProgramDist`).** -/
 theorem seq_toExecRProgramDist (C : StateTransitionImpl P D w base params s₀)
@@ -917,14 +928,8 @@ theorem seq_toExecRProgramDist (C : StateTransitionImpl P D w base params s₀)
         (C.initTime + 1) + (C.initPotential : ℝ≥0∞) + C_ops + (ops.length : ℝ≥0∞) := by
   obtain ⟨ν₀, ν_final, T_ops, C_ops, he_init, hinit_supp, hex, _, hfin_supp, hamort⟩ :=
     C.seq_expected_amortized ops hx₀ hfr₀ hpar hfit₀ hv hfit_ops
-  refine ⟨ν₀, ν_final, T_ops + (ops.length : ℝ≥0∞), C_ops,
-    he_init.toExecRProgramDist out, hinit_supp, hex.toExecRProgramDist out, hfin_supp, ?_⟩
-  calc (C.initTime + 1) + (T_ops + ↑ops.length) + ∑' q, ν_final q * ↑(C.potential q.seed q.data)
-      = (C.initTime + T_ops + ∑' q, ν_final q * ↑(C.potential q.seed q.data)) + 1 + ↑ops.length :=
-        by ac_rfl
-    _ ≤ (C.initTime + ↑C.initPotential + C_ops) + 1 + ↑ops.length :=
-        add_le_add (add_le_add hamort le_rfl) le_rfl
-    _ = (C.initTime + 1) + ↑C.initPotential + C_ops + ↑ops.length := by ac_rfl
+  exact ⟨ν₀, ν_final, T_ops + (ops.length : ℝ≥0∞), C_ops, he_init.toExecRProgramDist out,
+    hinit_supp, hex.toExecRProgramDist out, hfin_supp, add_halt_amort_le hamort⟩
 
 /-- **End-to-end flat-`RProgram` expected-amortized theorem for functional specifications
 (`seq_toExecRProgramDist_ofFn`).** -/
@@ -946,15 +951,8 @@ theorem seq_toExecRProgramDist_ofFn (C : StateTransitionImpl P D w base params s
           (D.totalCost C.charge s₀ ops : ℝ≥0∞) + (ops.length : ℝ≥0∞) := by
   obtain ⟨ν₀, ν_final, T_ops, he_init, hinit_supp, hex, _, hfin_supp, hamort⟩ :=
     C.seq_expected_amortized_ofFn ops hx₀ hfr₀ hpar hfit₀ hv hfit_ops
-  refine ⟨ν₀, ν_final, T_ops + (ops.length : ℝ≥0∞),
-    he_init.toExecRProgramDist out, hinit_supp, hex.toExecRProgramDist out, hfin_supp, ?_⟩
-  calc (C.initTime + 1) + (T_ops + ↑ops.length) + ∑' q, ν_final q * ↑(C.potential q.1 q.2)
-      = (C.initTime + T_ops + ∑' q, ν_final q * ↑(C.potential q.1 q.2)) + 1 + ↑ops.length := by
-        ac_rfl
-    _ ≤ (C.initTime + ↑C.initPotential + ↑(D.totalCost C.charge s₀ ops)) + 1 + ↑ops.length :=
-        add_le_add (add_le_add hamort le_rfl) le_rfl
-    _ = (C.initTime + 1) + ↑C.initPotential + ↑(D.totalCost C.charge s₀ ops) + ↑ops.length := by
-        ac_rfl
+  exact ⟨ν₀, ν_final, T_ops + (ops.length : ℝ≥0∞), he_init.toExecRProgramDist out,
+    hinit_supp, hex.toExecRProgramDist out, hfin_supp, add_halt_amort_le hamort⟩
 
 /-- **`.halt`-rejection soundness check (`not_execProgramSteps_halt`):** `[.halt out]` cannot
 satisfy `C.ExecProgramSteps [.halt out] out` on `(o :: ops)` whenever some `t ∈ ν.support` has no

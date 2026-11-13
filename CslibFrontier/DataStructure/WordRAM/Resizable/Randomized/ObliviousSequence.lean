@@ -21,11 +21,13 @@ import CslibFrontier.Probability.PMF.SupportTsum
 
 Connects state-free oblivious-sequence specifications (`Cslib.DataStructure.ObliviousSequenceSpec`)
 to randomized subroutines on the word-granular **Resizable Word RAM**
-(`Cslib.WordRAM.Resizable.ExecRCodeDist` and `ExecRProgramDist`), tracking trajectory-dependent
-resting (`spaceBound : List S.Op → ℕ`) and peak (`peakSpaceBound : List S.Op → S.Op → ℕ`) word
-bounds along any admissible oblivious sequence `ops : List S.Op` while preserving caller memory
-`[0, base)` ([LiLiangYuZhou2023Succincter]; [LiLiangYuZhou2024]; [KuszmaulLiangZhou2026];
-[MitzenmacherUpfal2017]).
+(`Cslib.WordRAM.Resizable.ExecRCodeDist` and `ExecRProgramDist`), accompanying the word-granular
+resizable memory models of [LiLiangYuZhou2023Succincter], Section 2.1, and
+[KuszmaulLiangZhou2026], Section 5.1, and adapting the bit-granular virtual-memory variant of
+[LiLiangYuZhou2024], Section 3.2, at word granularity. Expected step times sum across
+`ops : List S.Op` by linearity of expectation ([MitzenmacherUpfal2017], Section 2.1), tracking
+trajectory-dependent resting (`spaceBound : List S.Op → ℕ`) and peak
+(`peakSpaceBound : List S.Op → S.Op → ℕ`) word bounds while preserving caller memory `[0, base)`.
 
 ## Main definitions
 
@@ -56,10 +58,8 @@ bounds along any admissible oblivious sequence `ops : List S.Op` while preservin
 
 ## References
 
-* [CLRS2009] Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein,
-  *Introduction to Algorithms*, 3rd ed., MIT Press, 2009, Chapter 17.
 * [MitzenmacherUpfal2017] Michael Mitzenmacher and Eli Upfal, *Probability and Computing*, 2nd ed.,
-  Cambridge University Press, 2017, Sections 2.1, 2.3, and 2.4.
+  Cambridge University Press, 2017, Section 2.1.
 * [LiLiangYuZhou2023Succincter] Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic
   "Succincter"*, FOCS 2023, pp. 1715–1733 (`arXiv:2309.12950v1`, Section 2.1, PDF pp. 6–7 /
   printed pp. 5–6).
@@ -328,12 +328,7 @@ theorem ExecSteps.toExecRProgramDist {B : Basis} {r_ds k_init : ℕ}
   induction h with
   | nil prefOps ν => simpa using ExecProgramSteps.nil prefOps ν
   | @cons prefOps o ops ν ν_final μ_step T_step T_rest hstep _ ih =>
-    have hsum : (∑' t, ν t * (T_step t + 1)) + (T_rest + (ops.length : ℝ≥0∞)) =
-        ((∑' t, ν t * T_step t) + T_rest) + ((o :: ops).length : ℝ≥0∞) := by
-      simp_rw [mul_add, tsum_add, mul_one, ν.tsum_coe, List.length_cons, Nat.cast_add,
-        Nat.cast_one]
-      ac_rfl
-    rw [← hsum]
+    rw [← StateTransitionImpl.tsum_add_one_add_length_cons ν T_step T_rest o ops]
     refine .cons (μ_step := μ_step) (T_step := fun t => T_step t + 1) (fun t ht => ?_) ih
     obtain ⟨_, _, _, he, hq⟩ := hstep t ht
     exact ⟨he.toExecRProgramDist out, hq⟩
