@@ -1075,7 +1075,7 @@ theorem eval_prfRealGame_prfPadDistinguisher (family : List Bool → List Bool �
   simp only [pmf_norm, prfRealGame, prfPadDistinguisher, prfPadDist, BitString.eval_sampleList]
   congr 1
   funext key
-  simp [prfOracle, show ProbComp.unifFin = OracleComp.query from rfl]
+  simp [prfOracle]
 
 /-- Evaluating a uniformly random function `table : BitString n → BitString n` at any single point
 `x : BitString n` produces the uniform distribution on `BitString n`. -/
@@ -1097,7 +1097,7 @@ theorem eval_prfIdealGame_prfPadDistinguisher (test : (k : ℕ) → BitString k 
     Function.comp_def]
   congr 1
   funext table
-  simp [randomFunctionOracle, show ProbComp.unifFin = OracleComp.query from rfl]
+  simp [randomFunctionOracle]
 
 /-- **Exact single-query PRF-pad reduction for an explicit `OracleDistinguisher`** in the
 one-query, fixed-nonce case (after [BonehShoup2023], Section 7.4): if `D` simulates

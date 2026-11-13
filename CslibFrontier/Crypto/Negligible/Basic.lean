@@ -26,7 +26,6 @@ negligible.
 * `Cslib.Crypto.negligible_geometric`: geometric decay of nonnegative error bounds.
 * `Cslib.Crypto.not_negligible_const`: constant nonzero success contradicts security.
 * `Cslib.Crypto.Negligible.comp_of_polynomial_bound`: polynomially related parameters.
-* `Cslib.Crypto.Negligible.comp_strictMono`: reindexing along a strictly monotone schedule.
 * `Cslib.Crypto.Negligible.div_const`: division of the parameter by a positive constant.
 * `Cslib.Crypto.Negligible.sqrt`: taking square roots preserves negligible decay.
 
@@ -94,12 +93,6 @@ theorem Negligible.comp_of_polynomial_bound {ε : ℕ → ℝ≥0} {index bound 
     (Eventually.of_forall (fun _ => zero_le)) ?_
   filter_upwards [hle] with n hn
   exact mul_le_mul' (pow_le_pow_left' (by exact_mod_cast hn) degree) le_rfl
-
-/-- Negligible decay survives reindexing along a strictly monotone schedule. -/
-theorem Negligible.comp_strictMono {ε : ℕ → ℝ≥0} (hε : Negligible ε) {f : ℕ → ℕ}
-    (hf : StrictMono f) : Negligible (fun n => ε (f n)) :=
-  hε.comp_of_polynomial_bound (bound := id) hf.tendsto_atTop PolynomiallyBounded.id
-    (Filter.Eventually.of_forall hf.id_le)
 
 open Filter in
 /-- Dividing the security parameter by a fixed positive natural preserves negligible decay. -/

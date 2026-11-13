@@ -46,8 +46,8 @@ directly, and computational definitions over infinite sample spaces can reuse th
   `Cslib.Crypto.Game.Indistinguishable.of_succProbability_reduction`: one-sided search/forgery game
   characterizations and success-probability reductions against `PMF.pure false`.
 * `Cslib.Crypto.Game.advantage_pure_true`, `Cslib.Crypto.Game.advantage_pure_true_left`,
-  `Cslib.Crypto.Game.coe_advantage_pure_true_left`: comparison with certain success measures
-  failure probability.
+  `Cslib.Crypto.Game.coe_advantage_pure_true_left`: the advantage of a game against the
+  always-`true` game is its failure probability.
 * `Cslib.Crypto.Game.coe_succProbability`, `Cslib.Crypto.Game.coe_failProbability`: real-valued
   success and failure probabilities.
 * `Cslib.Crypto.Game.advantage_le_of_apply_le`, `Cslib.Crypto.Game.advantage_bind_le`: bound

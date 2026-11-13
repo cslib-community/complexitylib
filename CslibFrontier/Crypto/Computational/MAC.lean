@@ -1201,7 +1201,8 @@ theorem SUFCMA.reindex {M : MACScheme} (h : M.SUFCMA) {ℓ : ℕ → ℕ}
   apply SUFCMA.of_negligible
   intro adversary hadversary
   refine ((h.negligible (reindexForger ℓ adversary)
-    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_polynomiallyLowerBounded
+      (.mono_of_le .id hmono.id_le)).congr fun n => ?_
   rw [sufCmaGame_reindex M hℓ hmono adversary n]
 
 /-- Strong one-time unforgeability (`OneTimeSUFCMA`) is preserved under reindexing along any
@@ -1212,7 +1213,8 @@ theorem OneTimeSUFCMA.reindex {M : MACScheme} (h : M.OneTimeSUFCMA) {ℓ : ℕ �
   apply OneTimeSUFCMA.of_negligible
   intro adversary hadversary
   refine ((h.negligible (reindexForger ℓ adversary)
-    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_polynomiallyLowerBounded
+      (.mono_of_le .id hmono.id_le)).congr fun n => ?_
   rw [sufOneTimeGame_reindex M hℓ hmono adversary n]
 
 /-- Ordinary fresh-message unforgeability (`EUFCMA`) is preserved under reindexing along any
@@ -1223,7 +1225,8 @@ theorem EUFCMA.reindex {M : MACScheme} (h : M.EUFCMA) {ℓ : ℕ → ℕ}
   apply EUFCMA.of_negligible
   intro adversary hadversary
   refine ((h.negligible (reindexForger ℓ adversary)
-    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_polynomiallyLowerBounded
+      (.mono_of_le .id hmono.id_le)).congr fun n => ?_
   rw [eufCmaGame_reindex M hℓ hmono adversary n]
 
 /-- One-time unforgeability (`OneTimeEUFCMA`) is preserved under reindexing along any strictly
@@ -1234,7 +1237,8 @@ theorem OneTimeEUFCMA.reindex {M : MACScheme} (h : M.OneTimeEUFCMA) {ℓ : ℕ �
   apply OneTimeEUFCMA.of_negligible
   intro adversary hadversary
   refine ((h.negligible (reindexForger ℓ adversary)
-    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_polynomiallyLowerBounded
+      (.mono_of_le .id hmono.id_le)).congr fun n => ?_
   rw [eufOneTimeGame_reindex M hℓ hmono adversary n]
 
 end MACScheme
