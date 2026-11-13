@@ -57,12 +57,12 @@ fallback is semantically irrelevant when the scope has the correct arity and the
 correct. -/
 @[expose] def Constraint.instantiateCNF (fallback : V) (template : Rel → CNF ℕ)
     (c : Constraint Rel V) : CNF V :=
-  (template c.1).relabel (fun i => c.2.getD i fallback)
+  (template c.rel).relabel (fun i => c.scope.getD i fallback)
 
 /-- Exact evaluation equivalence for a well-formed instantiated constraint. -/
 theorem Constraint.eval_instantiateCNF {arity : Rel → ℕ} {sem : Rel → List Bool → Bool}
     {template : Rel → CNF ℕ} (h : CSP.CNFTemplates arity sem template) (fallback : V)
-    {c : Constraint Rel V} (hc : c.2.length = arity c.1) (σ : V → Bool) :
+    {c : Constraint Rel V} (hc : c.scope.length = arity c.rel) (σ : V → Bool) :
     (c.instantiateCNF fallback template).eval σ = c.eval sem σ := by
   obtain ⟨R, vs⟩ := c
   simp only [instantiateCNF, CNF.eval_relabel]
@@ -85,7 +85,7 @@ theorem CSP.length_clause_mem_instantiateCNF {template : Rel → CNF ℕ} {k : �
     {c : Clause V} (hc : c ∈ F.instantiateCNF fallback template) : c.length ≤ k := by
   obtain ⟨d, _, hd⟩ := List.mem_flatMap.mp hc
   obtain ⟨e, he, rfl⟩ := List.mem_map.mp hd
-  simpa [Clause.relabel] using h d.1 e he
+  simpa [Clause.relabel] using h d.rel e he
 
 /-- Instantiation preserves evaluation under every assignment to well-formed instances. -/
 theorem CSP.eval_instantiateCNF {arity : Rel → ℕ} {sem : Rel → List Bool → Bool}

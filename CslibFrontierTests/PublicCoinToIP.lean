@@ -77,8 +77,8 @@ theorem bitCoinReduction_complete :
   have hempty :
       ((fun r : Transcript bitCoinSpec × Unit × Unit =>
         (r.1, bitCoinReduction.verifier.outputOn true r.1, r.2)) ⁻¹'
-          {r : Transcript bitCoinSpec × Option Unit × (Unit × Unit) |
-            ¬(r.2.1 = some r.2.2.1 ∧ Accept r.2.2.1 r.2.2.2)}) =
+          {r : Execution bitCoinSpec Unit (Unit × Unit) |
+            ¬(r.output = some r.result.1 ∧ Accept r.result.1 r.result.2)}) =
       {r : Transcript bitCoinSpec × Unit × Unit | r.1.1 = false} := by
     ext ⟨⟨m, ch, ⟨⟩⟩, ⟨⟩, ⟨⟩⟩
     cases m
@@ -100,8 +100,8 @@ theorem bitCoinReduction_sound :
   have hempty :
       ((fun r : Transcript bitCoinSpec × α =>
         (r.1, bitCoinReduction.verifier.outputOn false r.1, r.2)) ⁻¹'
-          {r : Transcript bitCoinSpec × Option Unit × α |
-            ∃ x' ∈ (Set.univ : Set Unit), r.2.1 = some x'}) = ∅ := by
+          {r : Execution bitCoinSpec Unit α |
+            ∃ x' ∈ (Set.univ : Set Unit), r.output = some x'}) = ∅ := by
     ext r
     exact iff_of_false (fun ⟨_, _, h⟩ => by cases h) id
   rw [hempty]
@@ -156,8 +156,8 @@ theorem zeroRoundReduction_complete :
   have hempty :
       ((fun r : Transcript [] × Unit × Unit =>
         (r.1, zeroRoundReduction.verifier.outputOn true r.1, r.2)) ⁻¹'
-          {r : Transcript [] × Option Unit × (Unit × Unit) |
-            ¬(r.2.1 = some r.2.2.1 ∧ Accept r.2.2.1 r.2.2.2)}) = ∅ := by
+          {r : Execution [] Unit (Unit × Unit) |
+            ¬(r.output = some r.result.1 ∧ Accept r.result.1 r.result.2)}) = ∅ := by
     ext ⟨⟨⟩, ⟨⟩, ⟨⟩⟩
     exact iff_of_false (fun h => h ⟨rfl, trivial⟩) id
   rw [hempty]
@@ -176,8 +176,7 @@ theorem zeroRoundReduction_sound :
   have hempty :
       ((fun r : Transcript [] × α =>
         (r.1, zeroRoundReduction.verifier.outputOn false r.1, r.2)) ⁻¹'
-          {r : Transcript [] × Option Unit × α |
-            ∃ x' ∈ (Set.univ : Set Unit), r.2.1 = some x'}) = ∅ := by
+          {r : Execution [] Unit α | ∃ x' ∈ (Set.univ : Set Unit), r.output = some x'}) = ∅ := by
     ext r
     exact iff_of_false (fun ⟨_, _, h⟩ => by cases h) id
   rw [hempty]

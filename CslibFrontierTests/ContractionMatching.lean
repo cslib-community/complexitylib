@@ -50,7 +50,7 @@ example : (rowsMatrix [[true], [true, true, true]]).permanent = 1 := by
 
 -- Each nonzero entry `(i, j)` is the variable `3 i + j`, in its row and its column.
 example : (CSP.permanentInstance 3 (rowEntry id₃)) =
-    [((), [0]), ((), [4]), ((), [8]), ((), [0]), ((), [4]), ((), [8])] := by
+    [⟨(), [0]⟩, ⟨(), [4]⟩, ⟨(), [8]⟩, ⟨(), [0]⟩, ⟨(), [4]⟩, ⟨(), [8]⟩] := by
   decide
 
 example : (CSP.permanentInstance 3 (rowEntry ones₃)).vars.count 5 = 2 := by

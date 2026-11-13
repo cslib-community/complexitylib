@@ -300,8 +300,7 @@ theorem not_indcca_of_ciphertext_length_eq (E : SymmetricCipher)
   have hcomp : Negligible (fun n =>
       Game.advantage (ProbComp.eval (E.ccaGame detCCAAdversary false (n + 1)))
         (ProbComp.eval (E.ccaGame detCCAAdversary true (n + 1)))) :=
-    hneg.comp_of_polynomial_bound (bound := fun m => m) (Filter.tendsto_add_atTop_nat 1)
-      (by fun_prop) (Filter.Eventually.of_forall fun n => by lia)
+    hneg.shift 1
   have hcongr : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
     rw [eval_ccaGame_detCCAAdversary_false E (n + 1) (hctLen (n + 1)),
       eval_ccaGame_detCCAAdversary_true E (by lia) (hctLen (n + 1)), Game.advantage]

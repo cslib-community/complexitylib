@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Converse
 import Mathlib.Tactic.NormNum
 
@@ -98,7 +99,7 @@ example (E : Fin 4 → BitString 1) (D : BitString 1 → Fin 4) :
   rw [h, binEntropy_zero_div, Real.binEntropy_zero, zero_div, zero_mul, add_zero, add_zero,
     sub_zero, mul_one, Fintype.card_fin, Fintype.card_fin] at this
   have h4 : logb 2 (4 : ℕ) = 2 := by
-    rw [show ((4 : ℕ) : ℝ) = 2 ^ 2 by norm_num, logb_pow, logb_self_eq_one one_lt_two]
+    rw [show ((4 : ℕ) : ℝ) = 2 ^ 2 by norm_num, logb_two_pow]
     norm_num
   rw [h4] at this
   norm_num at this
@@ -110,7 +111,7 @@ example (E : Fin 4 → BitString 3) (D : BitString 3 → Fin 4) :
   have h := one_sub_expect_decodingError_mul_logb_card_le half E D
   rw [binEntropy_half, sub_self, mul_zero, zero_add, Fintype.card_fin] at h
   have h4 : logb 2 (4 : ℕ) = 2 := by
-    rw [show ((4 : ℕ) : ℝ) = 2 ^ 2 by norm_num, logb_pow, logb_self_eq_one one_lt_two]
+    rw [show ((4 : ℕ) : ℝ) = 2 ^ 2 by norm_num, logb_two_pow]
     norm_num
   rw [h4] at h
   linarith

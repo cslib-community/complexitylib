@@ -165,20 +165,20 @@ theorem time_subsetListM (xs LB : List V) :
   | c :: F => do
     let r ← checkNilScopeM hq sem F
     TimeM.tick 1
-    let ok := match c.2 with
-      | [] => sem c.1 []
+    let ok := match c.scope with
+      | [] => sem c.rel []
       | _ :: _ => true
     pure (ok && r)
 
 omit [DecidableEq V] in
 theorem ret_checkNilScopeM {q : ℕ} (hq : 0 < q) (sem : Rel → List (Fin q) → Bool) (F : CSP Rel V) :
     (checkNilScopeM hq sem F).ret =
-      F.all fun c => !decide (c.2 = []) || c.eval sem (fun _ => ⟨0, hq⟩) := by
+      F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩) := by
   induction F with
   | nil => rfl
   | cons c F ih =>
     simp only [checkNilScopeM, TimeM.ret_bind, TimeM.ret_pure, ih, List.all_cons]
-    cases hc : c.2 with
+    cases hc : c.scope with
     | nil => simp [Constraint.eval, hc]
     | cons _ _ => simp
 
@@ -197,18 +197,18 @@ theorem time_checkNilScopeM {q : ℕ} (hq : 0 < q) (sem : Rel → List (Fin q) �
     (v : V) (LB : List V) (m : ℕ) : CSP Rel V → TimeM ℕ Bool
   | [] => pure true
   | c :: F => do
-    let hsub ← subsetListM c.2 LB
-    let hv ← memM v c.2
-    let vals ← evalScopeM q hq LB m c.2
+    let hsub ← subsetListM c.scope LB
+    let hv ← memM v c.scope
+    let vals ← evalScopeM q hq LB m c.scope
     let r ← checkIntroScopeM q hq sem v LB m F
     TimeM.tick 1
-    pure ((!(hsub && hv) || sem c.1 vals) && r)
+    pure ((!(hsub && hv) || sem c.rel vals) && r)
 
 theorem ret_checkIntroScopeM {q : ℕ} (hq : 0 < q) (sem : Rel → List (Fin q) → Bool)
     (v : V) (LB : List V) (m : ℕ) (F : CSP Rel V) :
     (checkIntroScopeM q hq sem v LB m F).ret =
       F.all fun c =>
-        !(decide (c.2.toFinset ⊆ LB.toFinset) && decide (v ∈ c.2)) ||
+        !(decide (c.scope.toFinset ⊆ LB.toFinset) && decide (v ∈ c.scope)) ||
           c.eval sem (ofRadixFin q hq LB m) := by
   induction F with
   | nil => rfl
@@ -428,11 +428,11 @@ private noncomputable def dpSpec {β : Type} (A : DPAlg β) (q : ℕ) (hq : 0 < 
     (sem : Rel → List (Fin q) → Bool) (F : CSP Rel V) (U : Finset V) :
     NiceTree V → (V → Fin q) → β
   | .leaf, _ =>
-    if F.all (fun c => !decide (c.2 = []) || c.eval sem (fun _ => ⟨0, hq⟩)) then
+    if F.all (fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩)) then
       A.one
     else A.zero
   | .introduce v child, α =>
-    if F.all (fun c => !(decide (c.2.toFinset ⊆ insert v child.bag) && decide (v ∈ c.2)) ||
+    if F.all (fun c => !(decide (c.scope.toFinset ⊆ insert v child.bag) && decide (v ∈ c.scope)) ||
         c.eval sem α) then
       dpSpec A q hq sem F U child α
     else A.zero
@@ -735,12 +735,12 @@ private theorem dpSpec_congr {β : Type} (A : DPAlg β) (q : ℕ) (hq : 0 < q)
   | .introduce v child, hval, α₁, α₂, h => by
     simp only [dpSpec]
     have hbag : ∀ u ∈ child.bag, α₁ u = α₂ u := fun u hu => h u (Finset.mem_insert_of_mem hu)
-    have hAll : (F.all fun c => !(decide (c.2.toFinset ⊆ insert v child.bag) &&
-        decide (v ∈ c.2)) || c.eval sem α₁) =
-      (F.all fun c => !(decide (c.2.toFinset ⊆ insert v child.bag) &&
-        decide (v ∈ c.2)) || c.eval sem α₂) := by
+    have hAll : (F.all fun c => !(decide (c.scope.toFinset ⊆ insert v child.bag) &&
+        decide (v ∈ c.scope)) || c.eval sem α₁) =
+      (F.all fun c => !(decide (c.scope.toFinset ⊆ insert v child.bag) &&
+        decide (v ∈ c.scope)) || c.eval sem α₂) := by
       refine List.all_congr rfl fun c => ?_
-      by_cases hc : c.2.toFinset ⊆ insert v child.bag
+      by_cases hc : c.scope.toFinset ⊆ insert v child.bag
       · have hev : c.eval sem α₁ = c.eval sem α₂ :=
           Constraint.eval_congr fun u hu => h u (hc (List.mem_toFinset.2 hu))
         rw [hev]
@@ -878,16 +878,18 @@ private theorem dpSpec_dpCountAlg_eq {q : ℕ} (hq : 0 < q) (sem : Rel → List 
       @CSP.specDPCount _ _ (Fin q) _ inferInstance ⟨⟨0, hq⟩⟩ sem F U T α
   | .leaf, α => by
     dsimp only [dpSpec, CSP.specDPCount, dpCountAlg]
-    by_cases h : ∀ c ∈ F, c.2 = [] → c.eval sem (fun _ => ⟨0, hq⟩) = true
-    · have h1 : (F.all fun c => !decide (c.2 = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = true := by
+    by_cases h : ∀ c ∈ F, c.scope = [] → c.eval sem (fun _ => ⟨0, hq⟩) = true
+    · have h1 :
+          (F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = true := by
         rw [List.all_eq_true]
         intro x hx
-        by_cases hx2 : x.2 = []
+        by_cases hx2 : x.scope = []
         · rw [Bool.or_eq_true]
           exact Or.inr (h x hx hx2)
         · simp [hx2]
       rw [h1, ite_eq_left rfl, ite_eq_left h]
-    · have h0 : (F.all fun c => !decide (c.2 = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = false := by
+    · have h0 :
+          (F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = false := by
         by_contra hnt
         rw [Bool.not_eq_false, List.all_eq_true] at hnt
         apply h
@@ -898,19 +900,19 @@ private theorem dpSpec_dpCountAlg_eq {q : ℕ} (hq : 0 < q) (sem : Rel → List 
       rw [h0, ite_eq_right Bool.false_ne_true, ite_eq_right h]
   | .introduce v child, α => by
     dsimp only [dpSpec, CSP.specDPCount]
-    by_cases h : ∀ c ∈ F, c.2.toFinset ⊆ insert v child.bag → v ∈ c.2 → c.eval sem α = true
-    · have h1 : (F.all fun c => !(decide (c.2.toFinset ⊆ insert v child.bag) &&
-          decide (v ∈ c.2)) || c.eval sem α) = true := by
+    by_cases h : ∀ c ∈ F, c.scope.toFinset ⊆ insert v child.bag → v ∈ c.scope → c.eval sem α = true
+    · have h1 : (F.all fun c => !(decide (c.scope.toFinset ⊆ insert v child.bag) &&
+          decide (v ∈ c.scope)) || c.eval sem α) = true := by
         rw [List.all_eq_true]
         intro c hc
-        by_cases hcb : c.2.toFinset ⊆ insert v child.bag
-        · by_cases hvc : v ∈ c.2
+        by_cases hcb : c.scope.toFinset ⊆ insert v child.bag
+        · by_cases hvc : v ∈ c.scope
           · simp [hcb, hvc, h c hc hcb hvc]
           · simp [hvc]
         · simp [hcb]
       rw [h1, ite_eq_left rfl, ite_eq_left h, dpSpec_dpCountAlg_eq hq sem F U child α]
-    · have h0 : (F.all fun c => !(decide (c.2.toFinset ⊆ insert v child.bag) &&
-          decide (v ∈ c.2)) || c.eval sem α) = false := by
+    · have h0 : (F.all fun c => !(decide (c.scope.toFinset ⊆ insert v child.bag) &&
+          decide (v ∈ c.scope)) || c.eval sem α) = false := by
         by_contra hnt
         rw [Bool.not_eq_false, List.all_eq_true] at hnt
         apply h
@@ -942,19 +944,19 @@ private theorem dpSpec_dpDecideAlg_eq {q : ℕ} (hq : 0 < q) (sem : Rel → List
       @CSP.specDPDecide _ _ (Fin q) _ inferInstance ⟨⟨0, hq⟩⟩ sem F U T α
   | .leaf, α => by
     dsimp only [dpSpec, CSP.specDPDecide, dpDecideAlg]
-    cases h : F.all fun c => !decide (c.2 = []) || c.eval sem (fun _ => ⟨0, hq⟩) <;> simp
+    cases h : F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩) <;> simp
   | .introduce v child, α => by
     dsimp only [dpSpec, CSP.specDPDecide]
     rw [dpSpec_dpDecideAlg_eq hq sem F U child α]
-    have hall : (F.all fun c => !(decide (c.2.toFinset ⊆ insert v child.bag) &&
-        decide (v ∈ c.2)) || c.eval sem α) =
-      (F.all fun c => !decide (c.2.toFinset ⊆ insert v child.bag) ||
-        !decide (v ∈ c.2) || c.eval sem α) := by
+    have hall : (F.all fun c => !(decide (c.scope.toFinset ⊆ insert v child.bag) &&
+        decide (v ∈ c.scope)) || c.eval sem α) =
+      (F.all fun c => !decide (c.scope.toFinset ⊆ insert v child.bag) ||
+        !decide (v ∈ c.scope) || c.eval sem α) := by
       simp only [Bool.not_and, Bool.or_assoc]
     rw [hall]
     dsimp only [dpDecideAlg]
-    cases h : F.all fun c => !decide (c.2.toFinset ⊆ insert v child.bag) ||
-        !decide (v ∈ c.2) || c.eval sem α <;> simp
+    cases h : F.all fun c => !decide (c.scope.toFinset ⊆ insert v child.bag) ||
+        !decide (v ∈ c.scope) || c.eval sem α <;> simp
   | .forget v child, α => by
     dsimp only [dpSpec, CSP.specDPDecide]
     by_cases hvU : v ∈ U
@@ -1033,7 +1035,7 @@ variable {Rel V : Type*} [DecidableEq V]
 
 theorem ret_cspCountNiceTreeM {q : ℕ} (hq : 0 < q) (sem : Rel → List (Fin q) → Bool)
     {F : CSP Rel V} {T : NiceTree V} (hval : T.LocalValid) (hbag : T.bag = ∅)
-    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.2.toFinset) :
+    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.scope.toFinset) :
     (cspCountNiceTreeM q hq sem F T).ret =
       @CSP.modelCount _ _ (Fin q) _ inferInstance ⟨⟨0, hq⟩⟩ sem F := by
   have hm : 0 < q ^ (bagList T).length := Nat.one_le_pow _ _ hq
@@ -1044,7 +1046,7 @@ theorem ret_cspCountNiceTreeM {q : ℕ} (hq : 0 < q) (sem : Rel → List (Fin q)
 
 theorem ret_cspDecideNiceTreeM {q : ℕ} (hq : 0 < q) (sem : Rel → List (Fin q) → Bool)
     {F : CSP Rel V} {T : NiceTree V} (hval : T.LocalValid) (hbag : T.bag = ∅)
-    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.2.toFinset) :
+    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.scope.toFinset) :
     (cspDecideNiceTreeM q hq sem F T).ret = true ↔
       CSP.Satisfiable sem F := by
   have hm : 0 < q ^ (bagList T).length := Nat.one_le_pow _ _ hq

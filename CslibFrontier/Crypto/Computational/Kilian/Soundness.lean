@@ -44,7 +44,7 @@ output at parameter `n` has a compact table of at most `M` entries, then
 The proof is `Cslib.Probability.Rewinding.le_add_mul_sqrt_disagreement`: at each saved state, a
 run that accepts while its opened bits agree with a fixed table makes the PCP verifier accept the
 proof spelled by that table on all `n` independent random strings, which happens with
-probability at most `2⁻ⁿ` when `x ∉ L` (`IsPCPVerifier`'s soundness); otherwise two runs disagree.
+probability at most `2⁻ⁿ` when `x ∉ L` (`IsPCPVerifier.sound`); otherwise two runs disagree.
 Composing with `succProbability_merkleBindingGame_le` bounds the advantage by that of the collision
 finder `merkleCollisionFinder H (kilianBindingAdversary P)`.
 
@@ -67,6 +67,8 @@ verifier time) is in `CslibFrontier.Crypto.Computational.Kilian.Succinct`.
 ## Main definitions
 
 * `Cslib.Crypto.KilianProver`, `Cslib.Crypto.KilianProver.IsPPT`: cheating provers.
+* `Cslib.Crypto.KilianMessage`, `Cslib.Crypto.KilianCommitment`: a cheating prover's first message
+  and its commitment, with their encodings `encKilianMessage` and `encKilianCommitment`.
 * `Cslib.Crypto.kilianSoundnessGame`, `Cslib.Crypto.KilianSound`: the soundness experiment and
   computational soundness.
 * `Cslib.Crypto.kilianOpenings`, `Cslib.Crypto.kilianConflict`, `Cslib.Crypto.kilianBindingOutput`,
@@ -105,21 +107,42 @@ variable {α : Type} (H : List Bool → List Bool → List Bool) (V : PCPVerifie
 
 /-! ### Cheating provers and the soundness experiment -/
 
+/-- A cheating prover's first message: the statement it chose and the root it committed to. -/
+structure KilianMessage (α : Type) where
+  /-- The statement. -/
+  stmt : α
+  /-- The committed Merkle root. -/
+  root : List Bool
+
+/-- A cheating prover's commitment: its first message and the state it saves for the second
+stage. -/
+structure KilianCommitment (α : Type) extends KilianMessage α where
+  /-- The saved state. -/
+  state : List Bool
+
+/-- The encoding of a first message: the framed statement, then the root. -/
+enc_structure encKilianMessage (enc : α ↪ List Bool) : KilianMessage α where
+  stmt : enc, root : encBits
+
+/-- The encoding of a commitment: the first message as one framed word, then the state. -/
+enc_structure encKilianCommitment (enc : α ↪ List Bool) : KilianCommitment α where
+  toKilianMessage : (encKilianMessage enc), state : encBits
+
 /-- A cheating prover for Kilian's protocol. The first stage `commit n k` receives the unary
 security parameter and the hash key, and outputs a statement, a root and a saved state; the second
 stage `answer n state ρs` receives the saved state and the verifier's random strings, and outputs
 the openings. -/
 structure KilianProver (α : Type) where
-  /-- First stage: output `((x, root), state)`. -/
-  commit : ℕ → List Bool → ProbComp ((α × List Bool) × List Bool)
+  /-- First stage: output the statement, the root and the saved state. -/
+  commit : ℕ → List Bool → ProbComp (KilianCommitment α)
   /-- Second stage: answer the random strings `ρs` from the saved `state`. -/
   answer : ℕ → List Bool → List (List Bool) → ProbComp KilianResponse
 
 /-- A cheating prover is strict PPT if both stages run in polynomial time in their full encoded
 inputs, the saved state and the random strings included. -/
 structure KilianProver.IsPPT (enc : α ↪ List Bool) (P : KilianProver α) : Prop where
-  /-- The first stage is a strict PPT family from `(n, k)` to `((x, root), state)`. -/
-  commit : Probability.IsPPT (encPair (encPair enc encBits) encBits) P.commit
+  /-- The first stage is a strict PPT family from `(n, k)` to the commitment. -/
+  commit : Probability.IsPPT (encKilianCommitment enc) P.commit
   /-- The second stage is strict PPT on `(n, state, ρs)`. -/
   answer : IsPPTOn (encPair encUnary (encPair encBits (encList encBits))) encKilianResponse
     (fun ⟨n, state, ρs⟩ => P.answer n state ρs)
@@ -131,11 +154,10 @@ verifier samples a key, `P` chooses a statement and a root, the verifier samples
 noncomputable def kilianSoundnessGame (L : Set α) (P : KilianProver α) (n : ℕ) :
     ProbComp Bool := do
   let k ← BitString.sampleList n
-  let out ← P.commit n k
-  let ((x, root), state) := out
-  let ρs ← kilianChallenges V n x
-  let response ← P.answer n state ρs
-  return (decide (x ∉ L) && kilianVerify H V k x root ρs response)
+  let c ← P.commit n k
+  let ρs ← kilianChallenges V n c.stmt
+  let response ← P.answer n c.state ρs
+  return (decide (c.stmt ∉ L) && kilianVerify H V k c.stmt c.root ρs response)
 
 /-- **Computational soundness** of Kilian's protocol for `L`: every uniform strict PPT cheating
 prover, which may choose its statement after seeing the hash key, convinces the verifier of a
@@ -172,14 +194,13 @@ def kilianBindingOutput (x : α) (root : List Bool)
 second stage on two independent challenges, and output a conflicting pair of openings. -/
 noncomputable def kilianBindingAdversary (P : KilianProver α) : MerkleBindingAdversary :=
   fun n k => do
-    let out ← P.commit n k
-    let ((x, root), state) := out
-    let ρs₁ ← kilianChallenges V n x
-    let response₁ ← P.answer n state ρs₁
-    let ρs₂ ← kilianChallenges V n x
-    let response₂ ← P.answer n state ρs₂
-    return kilianBindingOutput V x root (kilianOpenings V x ρs₁ response₁)
-      (kilianOpenings V x ρs₂ response₂)
+    let c ← P.commit n k
+    let ρs₁ ← kilianChallenges V n c.stmt
+    let response₁ ← P.answer n c.state ρs₁
+    let ρs₂ ← kilianChallenges V n c.stmt
+    let response₂ ← P.answer n c.state ρs₂
+    return kilianBindingOutput V c.stmt c.root (kilianOpenings V c.stmt ρs₁ response₁)
+      (kilianOpenings V c.stmt ρs₂ response₂)
 
 variable {H V}
 
@@ -288,34 +309,34 @@ theorem accepts_kilianProof {k : List Bool} {x : α} {root : List Bool}
 
 variable (H V)
 
-/-- The first stage of the soundness experiment: the key and the prover's first message. -/
+/-- The first stage of the soundness experiment: the key and the prover's commitment. -/
 private noncomputable def kilianFirst (P : KilianProver α) (n : ℕ) :
-    PMF (List Bool × (α × List Bool) × List Bool) :=
+    PMF (List Bool × KilianCommitment α) :=
   ProbComp.eval do
     let k ← BitString.sampleList n
-    let out ← P.commit n k
-    return (k, out)
+    let c ← P.commit n k
+    return (k, c)
 
 /-- The second stage of the soundness experiment from a saved first stage: the challenges and the
 prover's response. -/
 private noncomputable def kilianRun (P : KilianProver α) (n : ℕ)
-    (s : List Bool × (α × List Bool) × List Bool) : PMF (List (List Bool) × KilianResponse) :=
+    (s : List Bool × KilianCommitment α) : PMF (List (List Bool) × KilianResponse) :=
   ProbComp.eval do
-    let ρs ← kilianChallenges V n s.2.1.1
-    let response ← P.answer n s.2.2 ρs
+    let ρs ← kilianChallenges V n s.2.stmt
+    let response ← P.answer n s.2.state ρs
     return (ρs, response)
 
 open Classical in
 /-- The prover wins a run: the statement is outside `L` and the verifier accepts. -/
-private noncomputable def kilianWins (L : Set α) (s : List Bool × (α × List Bool) × List Bool)
+private noncomputable def kilianWins (L : Set α) (s : List Bool × KilianCommitment α)
     (r : List (List Bool) × KilianResponse) : Bool :=
-  decide (s.2.1.1 ∉ L) && kilianVerify H V s.1 s.2.1.1 s.2.1.2 r.1 r.2
+  decide (s.2.stmt ∉ L) && kilianVerify H V s.1 s.2.stmt s.2.root r.1 r.2
 
 /-- A run opens position `j` to the bit `b`. -/
-private def kilianOpens (s : List Bool × (α × List Bool) × List Bool)
+private def kilianOpens (s : List Bool × KilianCommitment α)
     (r : List (List Bool) × KilianResponse) (j : ℕ) (b : Bool) : Bool :=
-  (kilianOpenings V s.2.1.1 r.1 r.2).any fun o =>
-    kilianPosition V s.2.1.1 o.1 == j && o.2.leaf == b
+  (kilianOpenings V s.2.stmt r.1 r.2).any fun o =>
+    kilianPosition V s.2.stmt o.1 == j && o.2.leaf == b
 
 private theorem eval_kilianSoundnessGame (L : Set α) (P : KilianProver α) (n : ℕ) :
     ProbComp.eval (kilianSoundnessGame H V L P n) =
@@ -355,22 +376,22 @@ private theorem disagreement_le_merkleBindingGame (L : Set α) (P : KilianProver
 variable {H V}
 
 private theorem mem_support_kilianFirst {P : KilianProver α} {n : ℕ}
-    {s : List Bool × (α × List Bool) × List Bool} (hs : s ∈ (kilianFirst P n).support) :
+    {s : List Bool × KilianCommitment α} (hs : s ∈ (kilianFirst P n).support) :
     s.1.length = n ∧ s.2 ∈ (ProbComp.eval (P.commit n s.1)).support := by
   supp_cases hs [kilianFirst, BitString.eval_sampleList] with ⟨k, hk, out, hout, rfl⟩
   exact ⟨BitString.length_of_mem_support_uniformList hk, hout⟩
 
 private theorem length_of_mem_support_kilianRun {P : KilianProver α} {n : ℕ}
-    {s : List Bool × (α × List Bool) × List Bool} {r : List (List Bool) × KilianResponse}
-    (hr : r ∈ (kilianRun V P n s).support) : ∀ ρ ∈ r.1, ρ.length = V.coins s.2.1.1 := by
+    {s : List Bool × KilianCommitment α} {r : List (List Bool) × KilianResponse}
+    (hr : r ∈ (kilianRun V P n s).support) : ∀ ρ ∈ r.1, ρ.length = V.coins s.2.stmt := by
   supp_cases hr [kilianRun] with ⟨ρs, hρs, response, -, rfl⟩
   rw [kilianChallenges, ProbComp.mem_support_replicate_iff] at hρs
   intro ρ hρ
   exact BitString.length_of_mem_support_uniformList (by simpa using hρs.2 ρ hρ)
 
 private theorem map_fst_kilianRun (P : KilianProver α) (n : ℕ)
-    (s : List Bool × (α × List Bool) × List Bool) :
-    (kilianRun V P n s).map Prod.fst = ProbComp.eval (kilianChallenges V n s.2.1.1) := by
+    (s : List Bool × KilianCommitment α) :
+    (kilianRun V P n s).map Prod.fst = ProbComp.eval (kilianChallenges V n s.2.stmt) := by
   simp only [kilianRun, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.pure_map,
     PMF.bind_const, PMF.bind_pure]
 
@@ -415,9 +436,8 @@ original packaging (see the module documentation); it makes no efficiency assump
 theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α) (n M : ℕ)
     (hsound : ∀ x ∉ L, ∀ π : List Bool,
       2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x)
-    (hM : ∀ k : List Bool, k.length = n → ∀ x root state,
-      ((x, root), state) ∈ (ProbComp.eval (P.commit n k)).support →
-        (V.queryTable x).length ≤ M) :
+    (hM : ∀ k : List Bool, k.length = n → ∀ c ∈ (ProbComp.eval (P.commit n k)).support,
+      (V.queryTable c.stmt).length ≤ M) :
     Game.succProbability (ProbComp.eval (kilianSoundnessGame H V L P n)) ≤
       (1 / 2) ^ n + M * NNReal.sqrt (Game.succProbability
         (ProbComp.eval (merkleBindingGame H (kilianBindingAdversary V P) n))) := by
@@ -429,10 +449,10 @@ theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α
     simp only [kilianOpens, List.any_eq_true, Bool.and_eq_true, beq_iff_eq] at hopen
     obtain ⟨o, ho, rfl, -⟩ := hopen
     exact (kilianPosition_lt_of_mem_kilianOpenings (length_of_mem_support_kilianRun hr)
-      ho).trans_le (hM _ hk _ _ _ hout)
+      ho).trans_le (hM _ hk _ hout)
   case hcons =>
     intro s hs π
-    by_cases hx : s.2.1.1 ∈ L
+    by_cases hx : s.2.stmt ∈ L
     · have hempty : {r | kilianWins H V L s r = true ∧
           ∀ j b, kilianOpens V s r j b = true → b = π j} = ∅ := by
         ext r
@@ -442,14 +462,14 @@ theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α
     · have hsub : (kilianRun V P n s).toOuterMeasure {r | kilianWins H V L s r = true ∧
           ∀ j b, kilianOpens V s r j b = true → b = π j} ≤
           (kilianRun V P n s).toOuterMeasure (Prod.fst ⁻¹'
-            {ρs | ∀ ρ ∈ ρs, V.accepts s.2.1.1 (kilianProof V s.2.1.1 π) ρ = true}) := by
+            {ρs | ∀ ρ ∈ ρs, V.accepts s.2.stmt (kilianProof V s.2.stmt π) ρ = true}) := by
         rw [← PMF.toOuterMeasure_apply_inter_support]
         refine MeasureTheory.measure_mono fun r ⟨⟨hwin, hcons⟩, hr⟩ => ?_
         simp only [kilianWins, Bool.and_eq_true] at hwin
         intro ρ hρ
         refine accepts_kilianProof hwin.2 (fun o ho => ?_) hρ
           (length_of_mem_support_kilianRun hr ρ hρ)
-        exact hcons (kilianPosition V s.2.1.1 o.1) o.2.leaf
+        exact hcons (kilianPosition V s.2.stmt o.1) o.2.leaf
           (List.any_eq_true.mpr ⟨o, ho, by simp⟩)
       rw [← PMF.toOuterMeasure_map_apply, map_fst_kilianRun] at hsub
       refine (ENNReal.toReal_mono (by simp) (hsub.trans
@@ -490,7 +510,7 @@ private theorem computableInPolyTime_kilianOpenings (hV : V.PolyTime enc) :
     encKilianResponse)) (encPair encBits (encList encKilianOpening))
   have hρ := (ComputableInPolyTime.fst encBits (encList encKilianOpening)).comp hps
   have hanswers := (ComputableInPolyTime.snd encBits (encList encKilianOpening)).comp hps
-  have hqueries := hV.2.1.comp ((hx.comp hpf).prod hρ)
+  have hqueries := hV.queries.comp ((hx.comp hpf).prod hρ)
   unfold kilianOpenings
   exact ComputableInPolyTime.flatMapWithInput
     (f := fun (p : α × List (List Bool) × KilianResponse)
@@ -588,50 +608,50 @@ theorem isPPT_kilianBindingAdversary (hV : V.PolyTime enc)
   have hout := computableInPolyTime_kilianBindingOutput hV hcoins
   -- The encodings of the growing context.
   set I := encPair encUnary encBits
-  set O := encPair (encPair enc encBits) encBits
+  set O := encKilianCommitment enc
   set C₁ := encPair I O
   set C₂ := encPair C₁ (encList encBits)
   set C₃ := encPair C₂ encKilianResponse
   set C₄ := encPair C₃ (encList encBits)
   set C₅ := encPair C₄ encKilianResponse
   change IsPPTOn I encMerkleBindingOutput fun a => do
-    let out ← P.commit a.1 a.2
-    let ρs₁ ← kilianChallenges V a.1 out.1.1
-    let response₁ ← P.answer a.1 out.2 ρs₁
-    let ρs₂ ← kilianChallenges V a.1 out.1.1
-    let response₂ ← P.answer a.1 out.2 ρs₂
-    return kilianBindingOutput V out.1.1 out.1.2 (kilianOpenings V out.1.1 ρs₁ response₁)
-      (kilianOpenings V out.1.1 ρs₂ response₂)
+    let c ← P.commit a.1 a.2
+    let ρs₁ ← kilianChallenges V a.1 c.stmt
+    let response₁ ← P.answer a.1 c.state ρs₁
+    let ρs₂ ← kilianChallenges V a.1 c.stmt
+    let response₂ ← P.answer a.1 c.state ρs₂
+    return kilianBindingOutput V c.stmt c.root (kilianOpenings V c.stmt ρs₁ response₁)
+      (kilianOpenings V c.stmt ρs₂ response₂)
   refine IsPPTOn.bind_with hcommit ?_
   refine IsPPTOn.bind_with (hchal.preprocess
-    (prepare := fun p : (ℕ × List Bool) × (α × List Bool) × List Bool => (p.1.1, p.2.1.1))
+    (prepare := fun p : (ℕ × List Bool) × KilianCommitment α => (p.1.1, p.2.stmt))
     (by fun_prop)) ?_
   refine IsPPTOn.bind_with (hanswer.preprocess
-    (prepare := fun p : ((ℕ × List Bool) × (α × List Bool) × List Bool) × List (List Bool) =>
-      (p.1.1.1, p.1.2.2, p.2)) (by fun_prop)) ?_
+    (prepare := fun p : ((ℕ × List Bool) × KilianCommitment α) × List (List Bool) =>
+      (p.1.1.1, p.1.2.state, p.2)) (by fun_prop)) ?_
   refine IsPPTOn.bind_with (hchal.preprocess
-    (prepare := fun p : (((ℕ × List Bool) × (α × List Bool) × List Bool) × List (List Bool)) ×
-      KilianResponse => (p.1.1.1.1, p.1.1.2.1.1)) (by fun_prop)) ?_
+    (prepare := fun p : (((ℕ × List Bool) × KilianCommitment α) × List (List Bool)) ×
+      KilianResponse => (p.1.1.1.1, p.1.1.2.stmt)) (by fun_prop)) ?_
   refine IsPPTOn.bind_with (hanswer.preprocess
-    (prepare := fun p : ((((ℕ × List Bool) × (α × List Bool) × List Bool) × List (List Bool)) ×
-      KilianResponse) × List (List Bool) => (p.1.1.1.1.1, p.1.1.1.2.2, p.2)) (by fun_prop)) ?_
-  have hx : ComputableInPolyTime (fun q : ((((((ℕ × List Bool) × (α × List Bool) × List Bool) ×
-      List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse) =>
-      q.1.1.1.1.2.1.1) C₅ enc := by fun_prop
-  have hroot : ComputableInPolyTime (fun q : ((((((ℕ × List Bool) × (α × List Bool) ×
-      List Bool) × List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse) =>
-      q.1.1.1.1.2.1.2) C₅ encBits := by fun_prop
-  have hρs₁ : ComputableInPolyTime (fun q : ((((((ℕ × List Bool) × (α × List Bool) ×
-      List Bool) × List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse) =>
+    (prepare := fun p : ((((ℕ × List Bool) × KilianCommitment α) × List (List Bool)) ×
+      KilianResponse) × List (List Bool) => (p.1.1.1.1.1, p.1.1.1.2.state, p.2)) (by fun_prop)) ?_
+  have hx : ComputableInPolyTime (fun q : (((((ℕ × List Bool) × KilianCommitment α) ×
+      List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse =>
+      q.1.1.1.1.2.stmt) C₅ enc := by fun_prop
+  have hroot : ComputableInPolyTime (fun q : (((((ℕ × List Bool) × KilianCommitment α) ×
+      List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse =>
+      q.1.1.1.1.2.root) C₅ encBits := by fun_prop
+  have hρs₁ : ComputableInPolyTime (fun q : (((((ℕ × List Bool) × KilianCommitment α) ×
+      List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse =>
       q.1.1.1.2) C₅ (encList encBits) := by fun_prop
-  have hr₁ : ComputableInPolyTime (fun q : ((((((ℕ × List Bool) × (α × List Bool) ×
-      List Bool) × List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse) =>
+  have hr₁ : ComputableInPolyTime (fun q : (((((ℕ × List Bool) × KilianCommitment α) ×
+      List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse =>
       q.1.1.2) C₅ encKilianResponse := by fun_prop
-  have hρs₂ : ComputableInPolyTime (fun q : ((((((ℕ × List Bool) × (α × List Bool) ×
-      List Bool) × List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse) =>
+  have hρs₂ : ComputableInPolyTime (fun q : (((((ℕ × List Bool) × KilianCommitment α) ×
+      List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse =>
       q.1.2) C₅ (encList encBits) := by fun_prop
-  have hr₂ : ComputableInPolyTime (fun q : ((((((ℕ × List Bool) × (α × List Bool) ×
-      List Bool) × List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse) =>
+  have hr₂ : ComputableInPolyTime (fun q : (((((ℕ × List Bool) × KilianCommitment α) ×
+      List (List Bool)) × KilianResponse) × List (List Bool)) × KilianResponse =>
       q.2) C₅ encKilianResponse := by fun_prop
   exact (hout.comp ((hx.prod hroot).prod ((hopen.comp (hx.prod (hρs₁.prod hr₁))).prod
     (hopen.comp (hx.prod (hρs₂.prod hr₂)))))).isPPTOn
@@ -645,9 +665,8 @@ end Efficiency
 theorem succProbability_kilianSoundnessGame_le_collision (L : Set α) (P : KilianProver α) (n M : ℕ)
     (hsound : ∀ x ∉ L, ∀ π : List Bool,
       2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x)
-    (hM : ∀ k : List Bool, k.length = n → ∀ x root state,
-      ((x, root), state) ∈ (ProbComp.eval (P.commit n k)).support →
-        (V.queryTable x).length ≤ M) :
+    (hM : ∀ k : List Bool, k.length = n → ∀ c ∈ (ProbComp.eval (P.commit n k)).support,
+      (V.queryTable c.stmt).length ≤ M) :
     Game.succProbability (ProbComp.eval (kilianSoundnessGame H V L P n)) ≤
       (1 / 2) ^ n + M * NNReal.sqrt (Game.succProbability (ProbComp.eval
         (collisionGame H (fun _ _ => true) (merkleCollisionFinder H (kilianBindingAdversary V P))
@@ -666,30 +685,29 @@ theorem HashFamily.kilianSound (hH : HashFamily H) {enc : α ↪ List Bool} {L :
     (hpcp : IsPCPVerifier enc (fun m => c * (Nat.log 2 m + 1)) q V L) :
     KilianSound H V enc L := by
   intro P hP
-  have hcoins := hpcp.1
+  have hcoins := hpcp.coins_le
   obtain ⟨c₁, d₁, hlen₁⟩ := hP.commit.on.length_le
-  have hq : ComputableInPolyTime (fun out : (α × List Bool) × List Bool => V.queryTable out.1.1)
-      (encPair (encPair enc encBits) encBits) (encList encNat) :=
+  have hq : ComputableInPolyTime (fun c : KilianCommitment α => V.queryTable c.stmt)
+      (encKilianCommitment enc) (encList encNat) :=
     (PCPVerifier.isPolyTime_queryTable hV hcoins).comp (by fun_prop)
   obtain ⟨c₂, d₂, hlen₂⟩ := hq.polyBounded_length.exists_le
-  have hM (n : ℕ) (k : List Bool) (hk : k.length = n) (x : α) (root state : List Bool)
-      (hout : ((x, root), state) ∈ (ProbComp.eval (P.commit n k)).support) :
-      (V.queryTable x).length ≤ c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by
+  have hM (n : ℕ) (k : List Bool) (hk : k.length = n) (cm : KilianCommitment α)
+      (hout : cm ∈ (ProbComp.eval (P.commit n k)).support) :
+      (V.queryTable cm.stmt).length ≤ c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by
     have h₁ := hlen₁ (n, k) _ hout
     have hin : (encPair encUnary encBits (n, k)).length + 1 = 3 * n + 2 := by
       simp [hk]
       ring
     rw [hin] at h₁
-    calc (V.queryTable x).length ≤ (encList encNat (V.queryTable x)).length :=
+    calc (V.queryTable cm.stmt).length ≤ (encList encNat (V.queryTable cm.stmt)).length :=
           length_le_length_encList _ _
-      _ ≤ c₂ * ((encPair (encPair enc encBits) encBits ((x, root), state)).length + 1) ^ d₂ :=
-          hlen₂ ((x, root), state)
+      _ ≤ c₂ * ((encKilianCommitment enc cm).length + 1) ^ d₂ := hlen₂ cm
       _ ≤ c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by gcongr
   have hpoly : PolynomiallyBounded fun n => c₂ * (c₁ * (3 * n + 2) ^ d₁ + 1) ^ d₂ := by
     fun_prop
   have hbind := hH.merklePositionBinding.negligible _ (isPPT_kilianBindingAdversary hV hcoins hP)
   refine negligible_of_le ((negligible_geometric (by norm_num : (1 / 2 : NNReal) < 1)).add
     (hbind.sqrt.polynomiallyBounded_mul hpoly)) fun n => ?_
-  exact succProbability_kilianSoundnessGame_le L P n _ hpcp.2.2.2 (hM n)
+  exact succProbability_kilianSoundnessGame_le L P n _ hpcp.sound (hM n)
 
 end Cslib.Crypto
