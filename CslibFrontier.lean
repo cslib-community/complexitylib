@@ -1167,6 +1167,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Gates
 public import CslibFrontier.Computability.Circuit.Boolean.Hamming
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore.Set
+public import CslibFrontier.Computability.Circuit.Boolean.HardDistribution
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Complexity
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Decode
