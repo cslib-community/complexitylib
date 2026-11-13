@@ -56,7 +56,7 @@ theorem first_index {n D g p : ℕ} (values : ℕ → ℤ)
     rw [he, Nat.zero_mul] at hc
     omega
   have hnonempty : (instanceIndices wAB D g p).Nonempty := by
-    refine ⟨(rho, 0, 0), (mem_instanceIndices wAB _).mpr ⟨hchunks, hpieces⟩⟩
+    refine ⟨⟨rho, 0, 0⟩, (mem_instanceIndices wAB _).mpr ⟨hchunks, hpieces⟩⟩
   have hcount : 0 < ChunkCatalogue.before C (queryCap n D) p * numPieces n D g := by
     rw [QuerySpec.before_mul_numPieces wAB hp R (by intro q; rfl)]
     exact Finset.card_pos.mpr hnonempty

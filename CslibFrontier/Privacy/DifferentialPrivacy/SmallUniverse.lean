@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Privacy.DifferentialPrivacy.Packing
+public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 import CslibFrontier.Foundations.Data.Code.HammingBound
 
 /-!
@@ -330,7 +331,7 @@ with probability at least `p`, then `2 ^ L · p ≤ exp (t L ε)`. -/
 theorem exists_symmetric_query_two_pow_mul_le {k L t : ℕ} (hLk : L ≤ k)
     (hX : 16 * L < Fintype.card X) (hι : t * L ≤ Fintype.card ι) :
     ∃ F : (ι → X) → Fin k → ℝ, (∀ (x : ι → X) (σ : Equiv.Perm ι), F (x ∘ σ) = F x) ∧
-      (∀ x y : ι → X, HammingAdjacent x y → ∀ j, |F x j - F y j| ≤ 1) ∧
+      PointwiseSensitivity HammingAdjacent F 1 ∧
       ∀ (M : (ι → X) → PMF (Fin k → ℝ)) (ε : ℝ) (p : ℝ≥0∞),
         DifferentiallyPrivate HammingAdjacent M ε 0 →
         (∀ x, p ≤ (M x).toOuterMeasure {a | ∀ j, |a j - F x j| < t * L / 4}) →
@@ -413,7 +414,7 @@ theorem exists_symmetric_query_forall_exists_half_lt {k : ℕ} (hk : 2 ≤ k)
     (hX : 33 ≤ Fintype.card X) {ε : ℝ} (hε : 0 < ε) (hε' : ε ≤ 1 / 18)
     (hι : min (k : ℝ) (Fintype.card X) / ε ≤ Fintype.card ι) :
     ∃ F : (ι → X) → Fin k → ℝ, (∀ (x : ι → X) (σ : Equiv.Perm ι), F (x ∘ σ) = F x) ∧
-      (∀ x y : ι → X, HammingAdjacent x y → ∀ j, |F x j - F y j| ≤ 1) ∧
+      PointwiseSensitivity HammingAdjacent F 1 ∧
       ∀ M : (ι → X) → PMF (Fin k → ℝ), DifferentiallyPrivate HammingAdjacent M ε 0 →
         ∃ x, 2⁻¹ < (M x).toOuterMeasure
           {a | ∃ j, min (k : ℝ) (Fintype.card X) / (1024 * ε) ≤ |a j - F x j|} := by

@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Counting
 public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.Exact
 import CslibFrontier.Computability.Complexity.CookLevin.Counting
-import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
+import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Syntax
 import CslibFrontier.Logics.Propositional.CNF.ModelCount.Relabel
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
