@@ -37,11 +37,14 @@ Length metadata, rather than a new gate model or unbounded running time, supplie
 
 The author's [official tighter Theorem 4.1 addendum](https://www.wisdom.weizmann.ac.il/~oded/CC/ad-hier.txt)
 uses a constant one-bit gap. It is not contradicted here: `PWithAdvice_subset_succ` proves the
-safe inclusion direction for arbitrary lower bounds by appending and then removing one bit.
+safe inclusion direction for arbitrary lower bounds. More generally,
+`PWithAdvice_subset_of_lt` proves containment under strict pointwise growth, with no
+computability assumptions on either bound: append a true delimiter and false padding, then
+normalize the binary word and remove its last bit.
 The addendum's strict separation still needs formalization, with small/zero advice lengths
-handled explicitly. General positive-gap comparison also remains separate. The
+handled explicitly. Strict separation for general positive gaps also remains open. The
 [checked clients](../CslibFrontierTests/AdviceLengthComparison.lean) state the failed universal
-containment contract and verify zero-baseline and repeated fixed-bit padding inclusions.
+containment contract and verify zero-baseline, fixed-bit and variable positive-gap inclusions.
 This qualification does not close Exercise 3.3, Theorem 4.1, or the book-wide objective.
 
 ## Chapter 5: Space Complexity

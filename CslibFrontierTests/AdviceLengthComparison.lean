@@ -33,3 +33,13 @@ example (length : ℕ → ℕ) : PWithAdvice (fun _ => 0) ⊆ PWithAdvice length
 example (length : ℕ → ℕ) :
     PWithAdvice length ⊆ PWithAdvice (fun n => (length n + 1) + 1) :=
   (PWithAdvice_subset_succ length).trans (PWithAdvice_subset_succ (fun n => length n + 1))
+
+-- A growing positive gap works even when the lower bound is arbitrary/noncomputable.
+example (lower : ℕ → ℕ) :
+    PWithAdvice lower ⊆ PWithAdvice (fun n => lower n + n + 1) :=
+  PWithAdvice_subset_of_lt (fun _ => by omega)
+
+-- Positivity is pointwise: no unboundedness or computability of the extra space is needed.
+example (lower gap : ℕ → ℕ) (hgap : ∀ n, 0 < gap n) :
+    PWithAdvice lower ⊆ PWithAdvice (fun n => lower n + gap n) :=
+  PWithAdvice_subset_of_lt (fun n => by have := hgap n; omega)

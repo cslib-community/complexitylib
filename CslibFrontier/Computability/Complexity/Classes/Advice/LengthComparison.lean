@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Advice
 import CslibFrontier.Computability.Complexity.Classes.P.Countable
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Nat
 import Mathlib.Data.Fintype.Card
 
 /-!
@@ -31,11 +32,14 @@ condition. This is a model qualification, not a claim that every advice hierarch
 
 The author's official fixed-one-bit addendum [GoldreichAdviceHierarchyAddendum] is separate.
 `PWithAdvice_subset_succ` proves its safe inclusion direction by appending one bit and
-removing the final advice bit, without computing the length bound. Strict fixed-gap
-separation and general positive-gap hierarchy results are not proved here.
+removing the final advice bit, without computing the length bound. More generally,
+`PWithAdvice_subset_of_lt` proves inclusion for every strictly larger bound using a delimiter
+and arbitrary false padding. Strict fixed-gap separation and general positive-gap strict
+hierarchy results are not proved here.
 
 ## Main results
 
+* `Cslib.Complexity.PWithAdvice_subset_of_lt`: strictly more advice preserves the class.
 * `Cslib.Complexity.PWithAdvice_subset_succ`: one extra bit preserves exact-length advice.
 * `Cslib.Complexity.exists_nonmonotone_advice_bounds`: an unbounded nonnegative gap does not
   suffice for monotonicity of arbitrary exact-length advice classes.
@@ -85,24 +89,46 @@ private theorem decodePattern_code (c : Fin 3) (x : List Bool) :
   | nil => rfl
   | cons b xs => cases b <;> rfl
 
-/-- One extra advice bit preserves the class without requiring the length bound to be
-computable: append a bit and have the decider remove its last advice bit. -/
-theorem PWithAdvice_subset_succ (length : ℕ → ℕ) :
-    PWithAdvice length ⊆ PWithAdvice (fun n => length n + 1) := by
+/-- Strict pointwise growth preserves exact advice classes, even for noncomputable bounds.
+A final `true` marks the old advice; trailing `false` padding fills the new length. Binary
+normalization strips the padding, and removing the marker recovers the original advice. -/
+theorem PWithAdvice_subset_of_lt {lower upper : ℕ → ℕ} (hlt : ∀ n, lower n < upper n) :
+    PWithAdvice lower ⊆ PWithAdvice upper := by
   rintro L ⟨advice, hlength, A, ⟨v, hv, hvA⟩, hL⟩
   let trim : List Bool × List Bool → List Bool × List Bool :=
-    fun p => (p.1.reverse.tail.reverse, p.2)
+    fun p => ((encNat (ofBits p.1)).reverse.tail.reverse, p.2)
+  have hn : ComputableInPolyTime (fun w => encNat (ofBits w)) encBits encBits :=
+    ComputableInPolyTime.bitsToNat.of_enc_eq (fun _ => rfl)
   have ht : ComputableInPolyTime trim (encPair encBits encBits) (encPair encBits encBits) := by
     dsimp only [trim]
     fun_prop
-  refine ⟨fun n => advice n ++ [false], ?_, {p | v (trim p) = true}, ?_, ?_⟩
+  have htrim (w : List Bool) (k : ℕ) :
+      (encNat (ofBits (w ++ [true] ++ List.replicate k false))).reverse.tail.reverse = w := by
+    rw [encNat_apply, bits_ofBits]
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      simpa only [List.replicate_succ', ← List.append_assoc,
+        List.rdropWhile_concat_pos (fun b : Bool => !b) _ false (by decide)] using ih
+  refine ⟨fun n => advice n ++ [true] ++ List.replicate (upper n - lower n - 1) false,
+    ?_, {p | v (trim p) = true}, ?_, ?_⟩
   · intro n
-    simp [hlength]
+    simp only [List.length_append, List.length_cons, List.length_nil, List.length_replicate,
+      hlength]
+    have := hlt n
+    omega
   · exact ⟨fun p => v (trim p), hv.comp ht, fun _ => Iff.rfl⟩
   · intro x
-    change x ∈ L ↔ v (trim (advice x.length ++ [false], x)) = true
+    change x ∈ L ↔ v (trim (advice x.length ++ [true] ++
+      List.replicate (upper x.length - lower x.length - 1) false, x)) = true
     rw [hL x, hvA]
-    simp [trim]
+    simp only [trim, htrim]
+
+/-- One extra advice bit preserves the class without requiring the length bound to be
+computable. This is the zero-padding case of delimiter padding. -/
+theorem PWithAdvice_subset_succ (length : ℕ → ℕ) :
+    PWithAdvice length ⊆ PWithAdvice (fun n => length n + 1) :=
+  PWithAdvice_subset_of_lt (fun _ => Nat.lt_succ_self _)
 
 /-- Arbitrary exact advice-length classes need not be monotone, even for polynomial bounds
 and an unbounded additive gap. The gap here vanishes at some lengths; this is not a
