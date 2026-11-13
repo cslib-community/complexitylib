@@ -79,7 +79,7 @@ example (generator : List Bool → List Bool) (n : ℕ) :
       (fun _ _ => ProbOracleComp.sample (ProbComp.uniform Bool)) n 0) =
         PMF.uniformOfFintype Bool := by
   rw [GGM.hybridGame_zero]
-  simp only [prfRealGame, ProbComp.eval_bind, ProbOracleComp.eval_interpret]
+  simp only [prfRealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbOracleComp.eval_interpret]
   simpa [ProbOracleComp.interpret_sample] using
     (show OracleComp.interpret ProbComp.unifOracle (ProbComp.uniform Bool) =
       PMF.uniformOfFintype Bool from ProbComp.eval_uniform Bool)

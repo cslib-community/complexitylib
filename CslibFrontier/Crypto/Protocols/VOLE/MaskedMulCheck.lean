@@ -87,10 +87,10 @@ def maskedMulCheckValue (left right output : ι → Fin n) (delta : F)
 /-- The receiver's masked verification equation on its private share `(delta, q)` and a
 transcript `(d, r, (a, b), ())` of corrections, weights and reply:
 `maskedMulCheckValue left right output delta q d r = a * delta + b`. -/
-abbrev MaskedMulCheckAccepts (left right output : ι → Fin n) (share : F × (Fin (n + 1) → F))
-    (t : Transcript (maskedMulCheckSpec F ι n)) : Prop :=
-  maskedMulCheckValue left right output share.1 share.2 t.1 t.2.1 =
-    t.2.2.1.1 * share.1 + t.2.2.1.2
+abbrev MaskedMulCheckAccepts (left right output : ι → Fin n) :
+    F × (Fin (n + 1) → F) → Transcript (maskedMulCheckSpec F ι n) → Prop :=
+  fun (delta, q) (d, r, (a, b), ()) =>
+    maskedMulCheckValue left right output delta q d r = a * delta + b
 
 /-- Adding the fresh VOLE mask preserves honest completeness at every receiver key. -/
 theorem maskedMulCheckReply_correct (left right output : ι → Fin n) (w : Fin n → F)

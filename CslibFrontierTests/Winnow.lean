@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.MonotoneDisjunctions
 
 /-! Checked instances for WINNOW1 and monotone disjunctions: concrete runs with a promotion step
@@ -82,8 +83,7 @@ example : mistakeBound (winnow 2 (((8 : ℕ) : ℝ) / ((2 : ℕ) : ℝ)) false)
     (monotoneDisjunctions 8 2) ≤ 14 := by
   have h := mistakeBound_winnow_two_div_le (n := 8) (k := 2) (by norm_num) false
   have hlog : Real.logb 2 (((8 : ℕ) : ℝ) / ((2 : ℕ) : ℝ)) = 2 := by
-    rw [show ((8 : ℕ) : ℝ) / ((2 : ℕ) : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_pow,
-      Real.logb_self_eq_one one_lt_two]
+    rw [show ((8 : ℕ) : ℝ) / ((2 : ℕ) : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_two_pow]
     norm_num
   rw [hlog] at h
   refine h.trans ?_

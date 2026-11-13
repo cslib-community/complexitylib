@@ -31,7 +31,7 @@ variable {F : CSP Table ℕ}
 /-- Internal agreement gives zero local deviations at every actual constraint. -/
 theorem deviations_zero_of_agree (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (h : ∀ o : Occurrence F, o.var ∈ vs → g o = f o) (i : Fin F.length) :
-    deviations (localTuple f i) (localTuple g i) (positions vs F[i.val].2) = 0 := by
+    deviations (localTuple f i) (localTuple g i) (positions vs F[i.val].scope) = 0 := by
   apply (deviations_eq_zero_iff _ _ _).mpr
   intro j hj
   have hjb := List.mem_range.mp (List.mem_filter.mp hj).1
@@ -44,14 +44,14 @@ theorem deviations_of_one_flip (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (e : Occurrence F) (hev : e.var ∈ vs)
     (h : ∀ o : Occurrence F, o.var ∈ vs → g o = if o = e then !(f o) else f o)
     (i : Fin F.length) :
-    deviations (localTuple f i) (localTuple g i) (positions vs F[i.val].2) =
+    deviations (localTuple f i) (localTuple g i) (positions vs F[i.val].scope) =
       if i = e.1 then 1 else 0 := by
   cases e with | mk ei ej =>
   by_cases hi : i = ei
   · subst i
     rw [ite_eq_left rfl]
     calc
-      _ = (positions vs F[ei.val].2).count ej.val := by
+      _ = (positions vs F[ei.val].scope).count ej.val := by
         rw [List.count_eq_countP]
         apply List.countP_congr
         intro j hj
@@ -70,7 +70,7 @@ theorem deviations_of_one_flip (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
             exact hj0 (congrArg (fun o : Occurrence F => o.2.val) heq)
           simp [hne, hj0]
       _ = 1 := List.count_eq_one_of_mem
-        (validPositions_eq_true.mp (validPositions_positions vs F[ei.val].2)).1
+        (validPositions_eq_true.mp (validPositions_positions vs F[ei.val].scope)).1
         ((mem_positions vs ei ej).mpr hev)
   · rw [ite_eq_right hi]
     apply (deviations_eq_zero_iff _ _ _).mpr

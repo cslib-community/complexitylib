@@ -59,6 +59,7 @@ It is open.
 
 * `Cslib.Communication.Protocol.rank_communicationMatrix_le`: the rank of the communication matrix
   is at most the number of leaves labelled `true`.
+* `Cslib.Communication.rank_communicationMatrix_le_tilingNumber`: the arbitrary tiling bound.
 * `Cslib.Communication.Protocol.rank_add_rank_not_le_leafCount`: the ranks of the matrices of `f`
   and of `!f` add up to at most the number of leaves.
 * `Cslib.Communication.clog_rank_le_ecomplexity`: the rank bound.
@@ -102,6 +103,56 @@ def communicationMatrix (R : Type*) [Zero R] [One R] (f : X → Y → Bool) : Ma
     (y : Y) : communicationMatrix R f x y = if f x y then 1 else 0 :=
   rfl
 
+namespace RectanglePartition
+
+variable {R : Type*} [CommSemiring R] [StrongRankCondition R]
+
+/-- **The rank bound for arbitrary tilings.** For a partition `p`, maps `a` and `b` into Alice's
+and Bob's inputs and a relabelling `g` of the outputs, the matrix with entry `g (p.run (a x) (b y))`
+at `x` and `y` has rank at most the size of any set `T` of pieces outside which `g` vanishes on the
+labels: it is the sum, over the pieces in `T`, of matrices of rank at most one supported on their
+rectangles. -/
+theorem rank_comp_run_le {X' Y' : Type*} [Fintype Y'] (p : RectanglePartition X Y Z) (a : X' → X)
+    (b : Y' → Y) (g : Z → R) {T : Finset (Fin p.size)}
+    (hT : ∀ i ∉ T, g (p.output i) = 0) :
+    (Matrix.of fun x y => g (p.run (a x) (b y))).rank ≤ #T := by
+  classical
+  let U : Matrix X' T R := Matrix.of fun x i => if a x ∈ p.alice i then 1 else 0
+  let V : Matrix T Y' R :=
+    Matrix.of fun i y => if b y ∈ p.bob i then g (p.output i) else 0
+  have hUV : (Matrix.of fun x y => g (p.run (a x) (b y))) = U * V := by
+    ext x y
+    simp only [Matrix.mul_apply, U, V, Matrix.of_apply, ite_mul, one_mul, zero_mul, ← ite_and]
+    rw [sum_coe_sort T fun i =>
+      if a x ∈ p.alice i ∧ b y ∈ p.bob i then g (p.output i) else 0]
+    simp only [← part_eq_iff, sum_ite_eq]
+    split_ifs with h
+    · rw [run_eq_output_part]
+    · rw [run_eq_output_part, hT _ h]
+  rw [hUV]
+  exact (Matrix.rank_mul_le_left U V).trans ((Matrix.rank_le_card_width U).trans_eq
+    (Fintype.card_coe T))
+
+/-- The zero/one communication matrix has rank at most the number of true-labelled pieces. -/
+theorem rank_communicationMatrix_le [Fintype Y] {p : RectanglePartition X Y Bool}
+    {f : X → Y → Bool} (hp : p.run = f) :
+    (communicationMatrix R f).rank ≤ #{i | p.output i = true} := by
+  subst hp
+  exact rank_comp_run_le p id id (fun b => if b then 1 else 0)
+    fun i hi => by simpa using hi
+
+end RectanglePartition
+
+/-- The rank of the zero/one matrix bounds the minimum arbitrary tiling number
+[AroraBarak07, Theorem 12.10]. -/
+theorem rank_communicationMatrix_le_tilingNumber [Fintype Y] (R : Type*) [CommSemiring R]
+    [StrongRankCondition R] (f : X → Y → Bool) :
+    ((communicationMatrix R f).rank : ℕ∞) ≤ tilingNumber f := by
+  classical
+  refine le_tilingNumber_iff.mpr fun p hp => ?_
+  exact_mod_cast (p.rank_communicationMatrix_le hp).trans
+    ((card_le_univ _).trans_eq (card_fin p.size))
+
 namespace Protocol
 
 variable {R : Type*} [CommSemiring R] [StrongRankCondition R]
@@ -115,22 +166,9 @@ theorem rank_comp_run_le {X' Y' : Type*} [Fintype Y'] (p : Protocol X Y Z) (a : 
     (b : Y' → Y) (g : Z → R) {T : Finset (Fin p.leafCount)}
     (hT : ∀ i ∉ T, g (p.leafOutput i) = 0) :
     (Matrix.of fun x y => g (p.run (a x) (b y))).rank ≤ #T := by
-  classical
-  let U : Matrix X' T R := Matrix.of fun x i => if a x ∈ p.leafAlice i then 1 else 0
-  let V : Matrix T Y' R :=
-    Matrix.of fun i y => if b y ∈ p.leafBob i then g (p.leafOutput i) else 0
-  have hUV : (Matrix.of fun x y => g (p.run (a x) (b y))) = U * V := by
-    ext x y
-    simp only [Matrix.mul_apply, U, V, Matrix.of_apply, ite_mul, one_mul, zero_mul, ← ite_and]
-    rw [sum_coe_sort T fun i =>
-      if a x ∈ p.leafAlice i ∧ b y ∈ p.leafBob i then g (p.leafOutput i) else 0]
-    simp only [← leaf_eq_iff, sum_ite_eq]
-    split_ifs with h
-    · rw [run_eq_leafOutput_leaf]
-    · rw [run_eq_leafOutput_leaf, hT _ h]
-  rw [hUV]
-  exact (Matrix.rank_mul_le_left U V).trans ((Matrix.rank_le_card_width U).trans_eq
-    (Fintype.card_coe T))
+  have h := p.toRectanglePartition.rank_comp_run_le a b g hT
+  rw [run_toRectanglePartition] at h
+  simpa only [toRectanglePartition] using h
 
 /-- **The rank bound on a rectangle.** If a protocol computes `f` on `A × B`, the rank of the
 communication matrix of `f` restricted to `A × B` is at most the number of leaves labelled
