@@ -5966,6 +5966,7 @@ public import CslibFrontier.Foundations.Order.Changes
 public import CslibFrontier.Foundations.Order.FiniteFixedPoint
 public import CslibFrontier.Foundations.Order.Mirsky
 public import CslibFrontier.Foundations.Order.UpperLower
+public import CslibFrontier.Foundations.Probability.AzumaPi
 public import CslibFrontier.Foundations.Probability.Bonferroni
 public import CslibFrontier.Foundations.Probability.Cauchy
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
@@ -6620,6 +6621,7 @@ public import CslibFrontier.MachineLearning.LossMinimization.RLM
 public import CslibFrontier.MachineLearning.LossMinimization.Stability
 public import CslibFrontier.MachineLearning.OnlineLearning.FTRL
 public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
+public import CslibFrontier.MachineLearning.OnlineLearning.HighProbabilityOnlineToBatch
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Agnostic
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Basic
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Halving
