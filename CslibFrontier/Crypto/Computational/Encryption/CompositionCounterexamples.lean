@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Encryption.EncForge
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Crypto.Negligible.Basic
@@ -435,19 +436,14 @@ private theorem eval_ccaOneTimeGame_tailFallback_tailFallbackCCAAdversary (E : S
             (List.take (n + 1)
               (encOption encBits (E.tailFallback.decrypt n p.1 (false :: p.2))) ==
                 encOption encBits (some (List.replicate n true)))) := by
-  have hunf : unframe (encPair encBits encBits
-      (List.replicate n false, List.replicate n true)) = List.replicate n false := by
-    simp [encPair_apply, unframe_frame_append]
-  have hdrop : dropFrame (encPair encBits encBits
-      (List.replicate n false, List.replicate n true)) = List.replicate n true := by
-    simp [encPair_apply, dropFrame_frame_append]
   have hbit : (if bit then List.replicate n true else List.replicate n false) =
       List.replicate n bit := by
     cases bit <;> rfl
   have hkeyGen : E.tailFallback.keyGen = E.keyGen := rfl
   have henc : E.tailFallback.encrypt = E.encrypt := rfl
   simp only [ccaOneTimeGame, tailFallbackCCAAdversary, oneTimeCCAOracle, hkeyGen, henc,
-    hunf, hdrop, hbit, List.isEmpty_nil, List.length_replicate, beq_self_eq_true, Bool.and_self,
+    unframe_encPair_encBits, dropFrame_encPair_encBits, hbit, List.isEmpty_nil,
+    List.length_replicate, beq_self_eq_true, Bool.and_self,
     Bool.false_eq_true, ↓reduceIte, runWith_norm, pmf_norm]
   peel_binds k ct
   simp [List.take_of_length_le (hctBound k k_mem _ List.length_replicate ct ct_mem)]
@@ -881,12 +877,8 @@ private theorem decrypt_encryptThenMAC_redundantTag_of_mem_support (E : Symmetri
   simp only [encryptThenMAC, MACScheme.redundantTag, pmf_norm,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hct
   obtain ⟨c, hc, tag, htag, rfl⟩ := hct
-  have hunf (a b : List Bool) : unframe (encPair encBits encBits (a, b)) = a := by
-    simp [encPair_apply, unframe_frame_append]
-  have hdrop (a b : List Bool) : dropFrame (encPair encBits encBits (a, b)) = b := by
-    simp [encPair_apply, dropFrame_frame_append]
-  rw [hunf] at hc; rw [hdrop] at htag
-  rw [hunf, hdrop]
+  rw [unframe_encPair_encBits] at hc; rw [dropFrame_encPair_encBits] at htag
+  rw [unframe_encPair_encBits, dropFrame_encPair_encBits]
   exact ⟨singleton_encPair_contains_false_cons c tag,
     decrypt_encryptThenMAC_redundantTag_false_cons E M hctLen n ke km msg c tag hke hkm hmsg hc
       htag⟩
@@ -1060,17 +1052,12 @@ theorem eval_ccaOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCCAAdversary
       PMF.pure
         (List.take (n + 1) (encOption encBits (some (List.replicate n bit))) ==
           encOption encBits (some (List.replicate n true))) := by
-  have hunf : unframe (encPair encBits encBits
-      (List.replicate n false, List.replicate n true)) = List.replicate n false := by
-    simp [encPair_apply, unframe_frame_append]
-  have hdrop : dropFrame (encPair encBits encBits
-      (List.replicate n false, List.replicate n true)) = List.replicate n true := by
-    simp [encPair_apply, dropFrame_frame_append]
   have hbit : (if bit then List.replicate n true else List.replicate n false) =
       List.replicate n bit := by
     cases bit <;> rfl
   simp only [SymmetricCipher.ccaOneTimeGame, etmRedundantCCAAdversary,
-    SymmetricCipher.oneTimeCCAOracle, hunf, hdrop, hbit, List.isEmpty_nil,
+    SymmetricCipher.oneTimeCCAOracle, unframe_encPair_encBits, dropFrame_encPair_encBits, hbit,
+    List.isEmpty_nil,
     List.length_replicate, beq_self_eq_true, Bool.and_self, Bool.false_eq_true, ↓reduceIte,
     runWith_norm, pmf_norm]
   refine bind_eq_pure_of_support _ _ fun k hk => bind_eq_pure_of_support _ _ fun ct hct => ?_
