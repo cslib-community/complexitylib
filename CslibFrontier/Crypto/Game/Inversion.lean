@@ -42,6 +42,8 @@ for any monad. Programs use `ProbComp`; finite distributional arguments use `PMF
   evaluating a program experiment gives the same experiment on distributions.
 * `Cslib.Crypto.inversionExperiment_bind`: randomness that the inverter samples independently of
   its challenge may be sampled before the experiment.
+* `Cslib.Crypto.predictionExperiment_uniform_bit`: an independent uniform hidden bit is guessed
+  with probability exactly one half.
 
 ## References
 
@@ -103,6 +105,22 @@ theorem inversionExperiment_bind [BEq β] {Coins : Type*} (sample : PMF α) (f :
       coins.bind fun seed => inversionExperiment sample f (inverter seed) := by
   simp only [inversionExperiment_eq_bind_map, PMF.map_bind]
   rw [PMF.bind_comm]
+
+/-- An independent uniform hidden bit is guessed correctly with probability exactly one half,
+whatever the predictor: with a fixed view `o`, the experiment's outcome is a fair bit. -/
+theorem predictionExperiment_uniform_bit {O : Type} (o : O) (predictor : O → PMF Bool) :
+    predictionExperiment ((PMF.uniformOfFintype Bool).map (o, ·)) Prod.fst Prod.snd predictor =
+      PMF.uniformOfFintype Bool := by
+  have hbit (guess : Bool) :
+      (PMF.uniformOfFintype Bool).bind (fun bit => PMF.pure (guess == bit)) =
+        PMF.uniformOfFintype Bool := by
+    ext bit
+    cases guess <;> cases bit <;>
+      simp [PMF.bind_apply, tsum_fintype, PMF.uniformOfFintype_apply]
+  simp only [predictionExperiment, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
+    Function.comp_def]
+  rw [PMF.bind_comm]
+  simp only [hbit, PMF.bind_const]
 
 end Cslib.Crypto
 

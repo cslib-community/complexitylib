@@ -48,10 +48,11 @@ The original saved state and the `false` ciphertext tag are passed to the guessi
     (evaluateGuess : (ℕ × List Bool × List Bool) → List Bool → Bool)
     (bit : Bool) (chooseCoins encCoins : ℕ)
     (input : ℕ × List (List Bool) × List (List (List Bool))) (tape : List Bool) : Bool :=
-  let choice := evaluateChoose (input.1, encPublicKey input.2) (tape.take chooseCoins)
+  let artifact := input.2
+  let choice := evaluateChoose (input.1, encPublicKey artifact) (tape.take chooseCoins)
   let remaining := tape.drop chooseCoins
-  let ciphertext := evaluateEncrypt
-    (input.1, input.2.1.getD 0 [], if bit then choice.1.2 else choice.1.1)
+  let ciphertext := evaluateEncrypt (input.1, artifact.1.getD 0 [],
+    if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice)
     (remaining.take encCoins)
   evaluateGuess (input.1, choice.2, false :: ciphertext) (remaining.drop encCoins)
 
@@ -71,7 +72,8 @@ theorem eval_publicKeyGame_eq_map_coins (E : Scheme) (adversary : Encryption.Adv
         (evaluateEncrypt (n, artifact.1.getD 0 [], message)))
     (hguess : ∀ choice ∈ (ProbComp.eval (adversary.choose n (encPublicKey artifact))).support,
       ∀ ciphertext ∈ (ProbComp.eval (E.encrypt n (artifact.1.getD 0 [])
-        (if bit then choice.1.2 else choice.1.1))).support,
+        (if bit then Encryption.ChoiceOut.msg₁ choice
+          else Encryption.ChoiceOut.msg₀ choice))).support,
       ProbComp.eval (adversary.guess n choice.2 (false :: ciphertext)) =
         (BitString.uniformList guessCoins).map
           (evaluateGuess (n, choice.2, false :: ciphertext))) :
@@ -82,7 +84,8 @@ theorem eval_publicKeyGame_eq_map_coins (E : Scheme) (adversary : Encryption.Adv
   simp only [publicKeyGame, ProbComp.eval_bind]
   trans (ProbComp.eval (adversary.choose n (encPublicKey artifact))).bind (fun choice =>
     (ProbComp.eval (E.encrypt n (artifact.1.getD 0 [])
-      (if bit then choice.1.2 else choice.1.1))).bind (fun ciphertext =>
+      (if bit then Encryption.ChoiceOut.msg₁ choice
+        else Encryption.ChoiceOut.msg₀ choice))).bind (fun ciphertext =>
       (BitString.uniformList guessCoins).map
         (evaluateGuess (n, choice.2, false :: ciphertext))))
   · apply PMF.bind_congr_on_support

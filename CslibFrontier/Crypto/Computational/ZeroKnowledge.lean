@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Complexity.Classes.IP
 public import CslibFrontier.Crypto.Computational.GMW.Simulator
 public import CslibFrontier.Crypto.Computational.GMW.Soundness
+public import CslibFrontier.Crypto.Computational.ZeroKnowledge.View
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
@@ -29,7 +30,9 @@ single-session GMW proof system, with soundness `1 / 3`, for `ThreeSAT` and for 
 Karp-reducible to it, using Naor's bit commitment scheme [Naor1991]
 (`CslibFrontier.Crypto.Computational.Commitment`). Sequential repetition to negligible soundness
 is in `CslibFrontier.Crypto.Computational.ZeroKnowledge.Amplification`, which states the
-existence theorems for every language in `NP`.
+existence theorems for every language in `NP`. The statements compare the real view
+`zkRealView` with the simulator's output against distinguishers of type `ZKDistinguisher`, both
+from `CslibFrontier.Crypto.Computational.ZeroKnowledge.View`.
 
 ### Protocol design and source credit
 
@@ -154,8 +157,7 @@ def GenerableZeroKnowledge {α : Type} (enc : α ↪ List Bool)
         ComputableInPolyTime z encUnary encBits →
         (∀ n, isWitness (a n) (w n) = true) →
         ComputationallyIndistinguishable
-          (fun n => ((prover n (a n) (w n)).run (Vstar n (a n) (z n))
-            (prover n (a n) (w n)).init).map Prod.fst)
+          (fun n => zkRealView (prover n (a n) (w n)) (Vstar n (a n) (z n)))
           (fun n => ProbComp.eval (S n (a n) (z n)))
 
 /-- **General auxiliary-input computational zero-knowledge for arbitrary polynomially bounded
@@ -182,17 +184,11 @@ def AuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
         PolynomiallyBounded (fun n => (z n).length) →
         PolynomiallyBounded (fun n => (z' n).length) →
         (∀ n, isWitness (a n) (w n) = true) →
-        ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
-          IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-            (fun ⟨⟨n, a, z'⟩, view⟩ => adversary n a z' view) →
+        ∀ adversary : ZKDistinguisher α, adversary.IsPPT enc →
           Negligible (fun n => Game.advantage
-            (distinguishingGame
-              (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
-                (prover n (a n) (w n)).init).map Prod.fst)
+            (distinguishingGame (zkRealView (prover n (a n) (w n)) (Vstar n (a n) (z n)))
               (adversary n (a n) (z' n)))
-            (distinguishingGame
-              (ProbComp.eval (S n (a n) (z n)))
-              (adversary n (a n) (z' n))))
+            (distinguishingGame (ProbComp.eval (S n (a n) (z n))) (adversary n (a n) (z' n))))
 
 /-- **General auxiliary-input zero-knowledge implies poly-time-generable zero-knowledge.**
 Every deterministic polynomial-time-generable family has polynomially bounded encoded output length,
@@ -232,17 +228,11 @@ theorem GenerableZeroKnowledge.advantage_negligible {α : Type} {enc : α ↪ Li
         ComputableInPolyTime w encUnary encBits →
         ComputableInPolyTime z encUnary encBits →
         (∀ n, isWitness (a n) (w n) = true) →
-        ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
-          IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-            (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
+        ∀ adversary : ZKDistinguisher α, adversary.IsPPT enc →
           Negligible (fun n => Game.advantage
-            (distinguishingGame
-              (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
-                (prover n (a n) (w n)).init).map Prod.fst)
+            (distinguishingGame (zkRealView (prover n (a n) (w n)) (Vstar n (a n) (z n)))
               (adversary n (a n) (z n)))
-            (distinguishingGame
-              (ProbComp.eval (S n (a n) (z n)))
-              (adversary n (a n) (z n)))) := by
+            (distinguishingGame (ProbComp.eval (S n (a n) (z n))) (adversary n (a n) (z n)))) := by
   obtain ⟨S, hS_ppt, hS_zk⟩ := h Vstar hV
   refine ⟨S, hS_ppt, fun a w z ha hw hz hw_sat adversary hadversary => ?_⟩
   have ha_tidy := ha.tidy
@@ -305,8 +295,7 @@ structure ZKProof {α : Type} (enc : α ↪ List Bool) (A : Set α) (soundness :
   interact : ℕ → α → List Bool → WordOracleComp Unit (List Bool) → ProbComp (List Bool)
   /-- `interact` has the exact output distribution of `prover.run`. -/
   eval_interact : ∀ n a w prog,
-    ProbComp.eval (interact n a w prog) =
-      ((prover n a w).run prog (prover n a w).init).map Prod.fst
+    ProbComp.eval (interact n a w prog) = zkRealView (prover n a w) prog
   /-- Running any uniform strict oracle PPT verifier against the honest prover is uniform strict
   PPT in `(1^n, a, w, z)`. -/
   isPPT_interact :
@@ -366,17 +355,11 @@ theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZKProof enc A sou
       ∀ a w (z : ℕ → List Bool),
         zk.isWitness a w = true →
         PolynomiallyBounded (fun n => (z n).length) →
-        ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
-          IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-            (fun ⟨⟨n, a, z⟩, view⟩ => adversary n a z view) →
+        ∀ adversary : ZKDistinguisher α, adversary.IsPPT enc →
           Negligible (fun n => Game.advantage
-            (distinguishingGame
-              (((zk.prover n a w).run (Vstar n a (z n))
-                (zk.prover n a w).init).map Prod.fst)
+            (distinguishingGame (zkRealView (zk.prover n a w) (Vstar n a (z n)))
               (adversary n a (z n)))
-            (distinguishingGame
-              (ProbComp.eval (S n a (z n)))
-              (adversary n a (z n)))) := by
+            (distinguishingGame (ProbComp.eval (S n a (z n))) (adversary n a (z n)))) := by
   obtain ⟨S, hS_ppt, hS_zk⟩ := h Vstar hV
   exact ⟨S, hS_ppt, fun a w z hw hz adversary hadv =>
     hS_zk (fun _ => a) (fun _ => w) z z (.const _) (.const _) hz hz (fun _ => hw) adversary hadv⟩
@@ -414,8 +397,7 @@ theorem zero_knowledge_const (zk : ZKProof enc A soundness)
         zk.isWitness a w = true →
         ComputableInPolyTime z encUnary encBits →
         ComputationallyIndistinguishable
-          (fun n => ((zk.prover n a w).run (Vstar n a (z n))
-            (zk.prover n a w).init).map Prod.fst)
+          (fun n => zkRealView (zk.prover n a w) (Vstar n a (z n)))
           (fun n => ProbComp.eval (S n a (z n))) := by
   obtain ⟨S, hS_ppt, hS_zk⟩ := zk.zero_knowledge Vstar hV
   exact ⟨S, hS_ppt, fun a w z hw hz =>
