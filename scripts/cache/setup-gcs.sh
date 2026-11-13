@@ -7,7 +7,7 @@
 #
 # Steps (default: all, in order): project bucket writer budget killswitch alert variables.
 # Each step can be rerun on its own. Optional settings: BUCKET (complexitylib-lake-cache),
-# REGION (us-east1, inside Cloud Storage's free tier), BUDGET_USD (10), EGRESS_ALERT_GB (20 per
+# REGION (us-east1, inside Cloud Storage's free tier), BUDGET_USD (100), EGRESS_ALERT_GB (20 per
 # hour). Billing account and e-mail are arguments so that they never enter the repository.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -15,7 +15,7 @@ cd "$(dirname "$0")"
 : "${PROJECT:?set PROJECT to the id of a new, dedicated Google Cloud project}"
 BUCKET="${BUCKET:-complexitylib-lake-cache}"
 REGION="${REGION:-us-east1}"
-BUDGET_USD="${BUDGET_USD:-10}"
+BUDGET_USD="${BUDGET_USD:-100}"
 EGRESS_ALERT_GB="${EGRESS_ALERT_GB:-20}"
 REPO="cslib-community/cslib-frontier"
 REPO_ID="1420662136"          # `gh api repos/cslib-community/cslib-frontier --jq .id`

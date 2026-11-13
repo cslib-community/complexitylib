@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Protocols.BCS.Basic
-public import CslibFrontier.Crypto.Computational.Kilian.Micali
+public import CslibFrontier.Crypto.Computational.MerkleTree.Prog
 public import CslibFrontier.Crypto.Computational.MerkleTree.ROMExtract
 public import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Foundations.Data.List.Counting
@@ -416,22 +416,6 @@ theorem chainedFSChallenges_concat {Stmt Chal : Type} (f : BCSFSQuery Stmt Chal 
   subst hp₁
   rw [← hp₂]
 
-/-- Append one element at index `m` to a vector `Fin m → α`. -/
-private def snocFin {m : ℕ} {α : Type} (v : Fin m → α) (last : α) (i : Fin (m + 1)) : α :=
-  if h : i.val < m then v ⟨i.val, h⟩ else last
-
-private theorem ofFn_snocFin {m : ℕ} {α : Type} (v : Fin m → α) (last : α) :
-    List.ofFn (snocFin v last) = List.ofFn v ++ [last] := by
-  refine List.ext_getElem (by simp) fun k hk₁ hk₂ => ?_
-  simp only [List.length_ofFn] at hk₁
-  by_cases hkm : k < m
-  · rw [List.getElem_ofFn, List.getElem_append_left (by simpa using hkm), List.getElem_ofFn]
-    simp [snocFin, hkm]
-  · have hkeq : k = m := by omega
-    subst hkeq
-    rw [List.getElem_ofFn, List.getElem_append_right (by simp)]
-    simp [snocFin]
-
 private theorem rootPrefix_eq_take_append {r : ℕ} (roots : Fin r → List Bool) {m : ℕ}
     (hm : m + 1 ≤ r) :
     rootPrefix roots ⟨m, hm⟩ = (List.ofFn roots).take m ++ [roots ⟨m, hm⟩] := by
@@ -448,7 +432,7 @@ private def bcsChallengesAuxProg {r : ℕ} {Stmt Chal : Type} (x : Stmt)
     let prev ← bcsChallengesAuxProg x roots m (Nat.le_of_succ_le hm)
     let c ← OracleComp.query (spec := BCSFSSpec Stmt Chal)
       (x, rootPrefix roots ⟨m, hm⟩, List.ofFn prev)
-    return snocFin prev c
+    return Fin.snoc prev c
 
 /-- Sequentially query the transcript-chained Fiat–Shamir oracle to derive all `r` round challenges
 `(c_0, ..., c_{r-1})` from `(x, roots)`. -/
@@ -474,16 +458,13 @@ private theorem evalPure_bcsChallengesAuxProg {r : ℕ} {Stmt Chal : Type}
         bcsChallenge (chainedFS f) x roots ⟨m, hm⟩ := by
       rw [hlist, bcsChallenge, chainedFS, rootPrefix_eq_take_append roots hm, List.dropLast_concat]
     refine ⟨?_, fun i => ?_⟩
-    · rw [ofFn_snocFin, hc, hlist, bcsChallenge, rootPrefix_eq_take_append roots hm,
+    · simp only [List.ofFn_succ_last, Fin.snoc_castSucc, Fin.snoc_last]
+      rw [hc, hlist, bcsChallenge, rootPrefix_eq_take_append roots hm,
         ← chainedFSChallenges_concat, ← rootPrefix_eq_take_append roots hm,
         rootPrefix_eq_take_ofFn]
-    · by_cases him : i.val < m
-      · simp only [snocFin, him, ↓reduceDIte]
-        exact hidx ⟨i.val, him⟩
-      · have hieq : i.val = m := by omega
-        simp only [snocFin, him, ↓reduceDIte, hc]
-        congr 1
-        exact Fin.ext hieq.symm
+    · induction i using Fin.lastCases with
+      | last => rw [Fin.snoc_last]; exact hc
+      | cast i => rw [Fin.snoc_castSucc]; exact hidx i
 
 @[simp]
 theorem evalPure_bcsChallengesProg {r : ℕ} {Stmt Chal : Type}
@@ -511,10 +492,10 @@ private def bcsProveRoundsProg (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     let π := iop.proveRound ⟨m, hm⟩ x w chals
     let rt ← OracleComp.liftLeft (spec₂ := BCSFSSpec Stmt Chal)
       (merkleRootProg (oracleLeaves encSym d π))
-    let roots' := snocFin roots rt
+    let roots' : Fin (m + 1) → List Bool := Fin.snoc roots rt
     let c ← OracleComp.liftRight (spec₁ := MerkleHashSpec)
       (OracleComp.query (spec := BCSFSSpec Stmt Chal) (x, List.ofFn roots', List.ofFn chals))
-    return (snocFin tables π, roots', snocFin chals c)
+    return (Fin.snoc tables π, roots', Fin.snoc chals c)
 
 /-- **The BCS prover in the two-channel random-oracle model** (`bcsProveROM`): runs all `r`
 commit-and-challenge rounds via `bcsProveRoundsProg` and opens every queried entry under
@@ -590,16 +571,17 @@ private theorem evalPure_bcsProveRoundsProg (hTree : List Bool → List Bool)
       rw [hπ]
       rfl
     have hroots'_list :
-        List.ofFn (snocFin roots (merkleRoot (fun _ => hTree) []
-          (oracleLeaves encSym d (iop.proveRound ⟨m, hm⟩ x w chals)))) =
+        List.ofFn (Fin.snoc roots (merkleRoot (fun _ => hTree) []
+          (oracleLeaves encSym d (iop.proveRound ⟨m, hm⟩ x w chals))) : Fin (m + 1) → List Bool) =
         rootPrefix (bcsHonestRoots iop (fun _ => hTree) [] encSym (chainedFS f) x w) ⟨m, hm⟩ := by
-      rw [ofFn_snocFin, hrt_m, rootPrefix_eq_take_append _ hm]
+      simp only [List.ofFn_succ_last, Fin.snoc_castSucc, Fin.snoc_last]
+      rw [hrt_m, rootPrefix_eq_take_append _ hm]
       congr 1
       refine List.ext_getElem (by simp [Nat.le_of_succ_le hm]) fun k hk₁ hk₂ => ?_
       simp only [List.length_ofFn] at hk₁
       simp [hrt ⟨k, hk₁⟩]
-    have hc_m : f (x, List.ofFn (snocFin roots (merkleRoot (fun _ => hTree) []
-          (oracleLeaves encSym d (iop.proveRound ⟨m, hm⟩ x w chals)))),
+    have hc_m : f (x, List.ofFn (Fin.snoc roots (merkleRoot (fun _ => hTree) []
+          (oracleLeaves encSym d (iop.proveRound ⟨m, hm⟩ x w chals))) : Fin (m + 1) → List Bool),
         List.ofFn chals) =
         bcsHonestChallenges iop (fun _ => hTree) [] encSym (chainedFS f) x w ⟨m, hm⟩ := by
       rw [hroots'_list, hchList, bcsHonestChallenges, bcsChallenge, chainedFS,
@@ -608,28 +590,18 @@ private theorem evalPure_bcsProveRoundsProg (hTree : List Bool → List Bool)
       evalPure_merkleRootProg, OracleComp.evalPure_liftRight, OracleComp.evalPure_query,
       OracleComp.evalPure_pure]
     refine ⟨fun i => ?_, fun i => ?_, fun i => ?_, ?_⟩
-    · by_cases him : i.val < m
-      · simp only [snocFin, him, ↓reduceDIte]
-        exact htab ⟨i.val, him⟩
-      · have hieq : i.val = m := by omega
-        simp only [snocFin, him, ↓reduceDIte, hπ]
-        congr 1
-        exact Fin.ext (by simp [hieq])
-    · by_cases him : i.val < m
-      · simp only [snocFin, him, ↓reduceDIte]
-        exact hrt ⟨i.val, him⟩
-      · have hieq : i.val = m := by omega
-        simp only [snocFin, him, ↓reduceDIte, hrt_m]
-        congr 1
-        exact Fin.ext (by simp [hieq])
-    · by_cases him : i.val < m
-      · simp only [snocFin, him, ↓reduceDIte]
-        exact hch ⟨i.val, him⟩
-      · have hieq : i.val = m := by omega
-        simp only [snocFin, him, ↓reduceDIte, hc_m]
-        congr 1
-        exact Fin.ext (by simp [hieq])
-    · rw [ofFn_snocFin, hc_m, hchList, bcsHonestChallenges, bcsChallenge,
+    · induction i using Fin.lastCases with
+      | last => rw [Fin.snoc_last]; exact hπ
+      | cast i => rw [Fin.snoc_castSucc]; exact htab i
+    · induction i using Fin.lastCases with
+      | last => rw [Fin.snoc_last]; exact hrt_m
+      | cast i => rw [Fin.snoc_castSucc]; exact hrt i
+    · induction i using Fin.lastCases with
+      | last => rw [Fin.snoc_last]; exact hc_m
+      | cast i => rw [Fin.snoc_castSucc]; exact hch i
+    · rw [hc_m]
+      simp only [List.ofFn_succ_last, Fin.snoc_castSucc, Fin.snoc_last]
+      rw [hchList, bcsHonestChallenges, bcsChallenge,
         rootPrefix_eq_take_append _ hm, ← chainedFSChallenges_concat,
         ← rootPrefix_eq_take_append _ hm, rootPrefix_eq_take_ofFn]
 
@@ -1605,7 +1577,7 @@ private theorem isQueryBounded_bcsChallengesAuxProg (x : Stmt) (roots : Fin r �
       hprev.bind fun prev =>
         (IsCostBounded.query (cost := fun _ => 1)
           (x, rootPrefix roots ⟨m, hm⟩, List.ofFn prev)).bind fun c =>
-            IsCostBounded.pure (snocFin prev c) 0
+            IsCostBounded.pure (Fin.snoc prev c : Fin (m + 1) → Chal) 0
 
 /-- `bcsChallengesProg x roots` makes at most `r` Fiat–Shamir queries. -/
 theorem isQueryBounded_bcsChallengesProg (x : Stmt) (roots : Fin r → List Bool) :
@@ -1847,12 +1819,14 @@ private theorem validFSChain_of_mem_support_bcsChallengesAuxProg
             (((List.ofFn roots).take m).take (i + 1)) := by
         rw [List.take_take, List.take_take, Nat.min_eq_left (by omega),
           Nat.min_eq_left (Nat.succ_le_of_lt him)]
-      have htake_ch : (List.ofFn (snocFin prev c)).take i = (List.ofFn prev).take i := by
-        rw [ofFn_snocFin, List.take_append_of_le_length (by simp [Nat.le_of_lt him])]
-      have hget_ch : (List.ofFn (snocFin prev c))[i]'(by simp [hi_le]) =
+      have htake_ch :
+          (List.ofFn (Fin.snoc prev c : Fin (m + 1) → Chal)).take i = (List.ofFn prev).take i := by
+        simp only [List.ofFn_succ_last, Fin.snoc_castSucc, Fin.snoc_last]
+        exact List.take_append_of_le_length (by simp [Nat.le_of_lt him])
+      have hget_ch : (List.ofFn (Fin.snoc prev c : Fin (m + 1) → Chal))[i]'(by simp [hi_le]) =
           (List.ofFn prev)[i]'(by simp [him]) := by
         rw [List.getElem_ofFn, List.getElem_ofFn]
-        simp [snocFin, him]
+        exact Fin.snoc_castSucc (α := fun _ => Chal) c prev ⟨i, him⟩
       rw [htake_rts, htake_ch, hget_ch]
       exact hsub₂ _ (hsteps_prev i (by simpa [Nat.le_of_succ_le hm] using him))
     · have hieq : i = m := by omega
@@ -1860,11 +1834,13 @@ private theorem validFSChain_of_mem_support_bcsChallengesAuxProg
       have htake_rts :
           ((List.ofFn roots).take (i + 1)).take (i + 1) = rootPrefix roots ⟨i, hm⟩ := by
         rw [List.take_take, Nat.min_self, rootPrefix_eq_take_ofFn]
-      have htake_ch : (List.ofFn (snocFin prev c)).take i = List.ofFn prev := by
-        rw [ofFn_snocFin, List.take_left' (by simp)]
-      have hget_ch : (List.ofFn (snocFin prev c))[i]'(by simp) = c := by
+      have htake_ch :
+          (List.ofFn (Fin.snoc prev c : Fin (i + 1) → Chal)).take i = List.ofFn prev := by
+        simp only [List.ofFn_succ_last, Fin.snoc_castSucc, Fin.snoc_last]
+        exact List.take_left' (by simp)
+      have hget_ch : (List.ofFn (Fin.snoc prev c : Fin (i + 1) → Chal))[i]'(by simp) = c := by
         rw [List.getElem_ofFn]
-        simp [snocFin]
+        exact Fin.snoc_last (α := fun _ => Chal) c prev
       rw [htake_rts, htake_ch, hget_ch]
       exact hc_mem
 
@@ -1882,45 +1858,6 @@ private theorem validFSChain_of_mem_support_bcsChallengesProg
     List.take_of_length_le (by simp)
   simpa only [htake] using
     validFSChain_of_mem_support_bcsChallengesAuxProg x roots r le_rfl hnodup hsupp hmem
-
-private theorem allOpenings_of_mem_support_mapM_merkleVerifyProg
-    (dist : List Bool → PMF (List Bool)) (encSym : Sym → List Bool)
-    (roots : Fin r → List Bool)
-    (qa : List ((Fin r × Fin (2 ^ d)) × MerkleOpening Sym))
-    {tr tr' : List (List Bool × List Bool)} {checks : List Bool}
-    (hnodup : (tr.map Prod.fst).Nodup)
-    (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
-    (hmem : (checks, tr') ∈
-      ((OracleComp.interpret (memoize dist)
-        (qa.mapM fun ((j, idx), ⟨val, path⟩) =>
-          merkleVerifyProg d (roots j) idx.val (encSym val) path)).run tr).support)
-    {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
-    ∀ j idx val path, ((j, idx), ⟨val, path⟩) ∈ qa →
-      PathQueriedInTrace (fun _ => h) [] tr' idx.val (encSym val) path := by
-  induction qa generalizing tr checks with
-  | nil =>
-    intro _ _ _ _ ho
-    cases ho
-  | cons hd tl ih =>
-    rcases hd with ⟨⟨j₀, idx₀⟩, ⟨val₀, path₀⟩⟩
-    simp only [List.mapM_cons, run_interpret_bind, run_interpret_pure, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hmem
-    rcases hmem with ⟨⟨c, tr₁⟩, hc, ⟨cs, tr₂⟩, hcs, rfl, rfl⟩
-    obtain ⟨hsub₁, hnodup₁, hsupp₁, -⟩ :=
-      mem_support_run_memoize_invariant dist
-        (merkleVerifyProg d (roots j₀) idx₀.val (encSym val₀) path₀) hnodup hsupp hc
-    obtain ⟨hsub₂, -, -, -⟩ :=
-      mem_support_run_memoize_invariant dist _ hnodup₁ hsupp₁ hcs
-    have hcons₁ : TraceConsistentWith h tr₁ := fun p hp => hcons p (hsub₂ p hp)
-    have hhd := pathQueriedInTrace_of_mem_support_merkleVerifyProg dist d (roots j₀)
-      idx₀.val (encSym val₀) path₀ hnodup hsupp hc hcons₁
-    intro j idx val path ho
-    rcases List.mem_cons.mp ho with heq | htl
-    · rw [Prod.mk.injEq, Prod.mk.injEq, MerkleOpening.mk.injEq] at heq
-      rcases heq with ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩
-      intro q hq
-      exact hsub₂ _ (hhd q hq)
-    · exact ih hnodup₁ hsupp₁ hcs j idx val path htl
 
 /-- Core trace soundness/consistency lemma for `bcsVerifyROM`: when `bcsVerifyROM iop encSym x prf`
 runs from a valid trace state `(tr_MT₁, tr_FS₁)` and returns `(true, (tr_MT₃, tr_FS₂))`, if
@@ -1983,8 +1920,11 @@ private theorem exists_validFSChain_and_iopVerify_of_mem_support_bcsVerifyROM
       PMF.mem_support_pure_iff] at hmt_mem
     rcases hmt_mem with ⟨⟨checks, tr_MT_mid⟩, hchecks, hpair_mid⟩
     obtain ⟨_, rfl⟩ := Prod.mk.inj hpair_mid
-    exact allOpenings_of_mem_support_mapM_merkleVerifyProg _ encSym prf.roots _
-      hnodup_MT₁ hsupp_MT₁ hchecks hcons_MT
+    intro j idx val path hq
+    exact pathQueriedInTrace_of_mem_support_mapM_merkleVerifyProg hnodup_MT₁ hsupp_MT₁ hchecks d
+      (fun ((j, _), _) => prf.roots j) (fun ((_, idx), _) => idx.val)
+      (fun (_, o) => encSym o.leaf) (fun (_, o) => o.path) (fun ⟨⟨_, _⟩, ⟨_, _⟩⟩ => rfl)
+      hcons_MT _ hq
   have hver : bcsVerify iop (fun _ => hTree) [] encSym (chainedFS f) x prf = true := by
     have heq := (heval_MT hTree hcons_MT).symm
     rw [evalPure_bcsVerifyOpeningsProg, hchals_eq] at heq
