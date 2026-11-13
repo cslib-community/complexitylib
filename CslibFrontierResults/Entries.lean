@@ -4486,13 +4486,14 @@ register_result "ajtai-collision-sis" where
     Cslib.Crypto.isSolution_sub_of_abs_le,
     Cslib.Crypto.ajtaiAdvantage_le_sisAdvantage
   ]
-  scope := "Ajtai's hash x ↦ A x mod q on integer vectors, for every modulus q, dimensions n × m \
-    and bound β, with no primality or compression assumption. Distinct inputs in [0, β]^m (or \
-    [-β, β]^m) with equal hashes differ by a nonzero solution with ∞-norm at most β (or 2β), \
-    and the collision-finding success probability of any finder against a uniform \
-    A ∈ ℤ_q^{n×m} is at most the SIS success probability of collisionToSIS, which subtracts \
-    the two inputs. Ajtai's worst-case-to-average-case reduction for lattice problems is not \
-    formalized; no running time is charged."
+  scope := "Ajtai's hash x ↦ A x mod q on integer vectors, for every nonzero modulus q (the two \
+    collision lemmas need no assumption on q), dimensions n × m and bound β, with no primality \
+    or compression assumption. Distinct inputs in [0, β]^m (or [-β, β]^m) with equal hashes \
+    differ by a nonzero solution with ∞-norm at most β (or 2β), and the collision-finding \
+    success probability of any finder against a uniform A ∈ ℤ_q^{n×m} is at most the SIS \
+    success probability of collisionToSIS, which subtracts the two inputs. Ajtai's \
+    worst-case-to-average-case reduction for lattice problems is not formalized; no running \
+    time is charged."
 
 register_result "mldsa-key-only-forgery" where
   title := "ML-DSA key-only unforgeability from Module-LWE and self-target MSIS"
