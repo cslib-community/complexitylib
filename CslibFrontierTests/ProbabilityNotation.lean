@@ -123,3 +123,15 @@ example : Pr[do let b ← $ᵗ Bool; return b] = 1 / 2 := by
   simp
 
 end CslibFrontierTests.ProbabilityNotation
+
+/-! Outside the `Probability` scope, `ProbComp.uniform` prints as itself. -/
+
+namespace CslibFrontierTests.ProbabilityNotation.Unscoped
+
+open Cslib
+
+/-- info: ProbComp.uniform (Fin 3) : ProbComp (Fin 3) -/
+#guard_msgs in
+#check ProbComp.uniform (Fin 3)
+
+end CslibFrontierTests.ProbabilityNotation.Unscoped
