@@ -6,7 +6,7 @@ Authors: Samuel Schlesinger
 
 module
 
-import CslibFrontier.MachineLearning.PACLearning.AgnosticVCSharp
+public import CslibFrontier.MachineLearning.PACLearning.AgnosticVCSharp
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.Linarith
 
