@@ -637,6 +637,20 @@ class BookInputs(unittest.TestCase):
             book.validate_manifest(self.root, self.output, ["README.md"])
 
 
+class MissingGlyphs(unittest.TestCase):
+    def test_log_lines_name_each_missing_character_once(self):
+        log = ("Missing character: There is no 𝔼 (U+1D53C) in font DejaVuSansMono:mode=node;\n"
+               "Missing character: There is no ⬝ in font texgyrepagella-regular:mode=node;\n"
+               "Missing character: There is no 𝔼 (U+1D53C) in font DejaVuSansMono:mode=node;\n")
+        self.assertEqual(book.missing_glyphs(log), ["𝔼 (U+1D53C)", "⬝"])
+        self.assertEqual(book.missing_glyphs("Output written on book.pdf (2 pages).\n"), [])
+
+    def test_unicode_absent_from_the_fonts_is_set_in_math(self):
+        self.assertEqual(book.base.inline_tex("𝔼"), r"\ensuremath{\mathbb{E}}")
+        self.assertEqual(book.base.inline_tex("A ⬝ v"), r"A \ensuremath{\cdot} v")
+        self.assertTrue(all(book.base.MATH.values()))
+
+
 class PortableLinks(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-links-")

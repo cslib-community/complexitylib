@@ -34,6 +34,13 @@ NON_CHAPTER_DOCUMENTS = {'sources.md', 'history/paper-plan.md', 'AGENT_OPERATORS
 CONVERTER_INPUTS = ['data/build_manual.py', 'data/build_latex.py', 'data/visuals.py']
 
 
+def missing_glyphs(log):
+    """Characters XeTeX reported as missing from a font, in first-seen order. Lines in the log can
+    wrap, so only the character and its code point are read."""
+    found = re.findall(r'Missing character: There is no (\S+)(?: \(U\+([0-9A-F]+)\))?', log)
+    return list(dict.fromkeys(f'{char} (U+{code})' if code else char for char, code in found))
+
+
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -282,6 +289,10 @@ def main():
             if result.returncode:
                 print((result.stdout + result.stderr)[-7000:])
                 raise SystemExit(result.returncode)
+        missing = missing_glyphs((out / (stem + '.log')).read_text(errors='replace'))
+        if missing:
+            raise SystemExit('Glyphs missing from the PDF fonts (add them to MATH in '
+                             'manual/data/build_latex.py): ' + ', '.join(missing))
         (out / ('agent-manual-build-output.txt' if args.agent_manual else 'manual-build-output.txt')).write_text(result.stdout + result.stderr)
         manifest['pdf_sha256'] = sha(out / (stem + '.pdf'))
         print(base.run(['pdfinfo', str(out / (stem + '.pdf'))]))
