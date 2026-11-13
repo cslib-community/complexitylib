@@ -61,12 +61,12 @@ example (adversary : Inverter) (h : IsPPT encBits adversary) :
 -- even when they invert the original function.
 example : Game.succProbability (ProbComp.eval (inversionGame
     (OneWayNormalization.normalize (fun _ => []) id) (fun _ _ => pure []) 1)) = 0 := by
-  simp [inversionGame, OneWayNormalization.normalize, BitString.sampleList,
+  simp [inversionGame, inversionExperiment, OneWayNormalization.normalize, BitString.sampleList,
     BitString.padWord, Game.succProbability, frame]
 
 example : Game.succProbability (ProbComp.eval (inversionGame
     (fun _ => []) (fun _ _ => pure []) 1)) = 1 := by
-  simp [inversionGame, Game.succProbability]
+  simp [inversionGame, inversionExperiment, Game.succProbability]
 
 example {f : List Bool → List Bool} (hf : OneWay f) :
     ∃ (g : List Bool → List Bool) (length : ℕ → ℕ),

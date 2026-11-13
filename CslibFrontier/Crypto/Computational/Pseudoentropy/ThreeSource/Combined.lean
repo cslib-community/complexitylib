@@ -25,9 +25,8 @@ the program itself never chooses or estimates an entropy.
 
 * `isPolyTime_combinedGenerate`: one uniform implementation of the complete grid.
 * `length_combinedGenerate`: output length is one bit beyond the grid's total seed cost.
-* `combinedGenerate_indistinguishableWithAdvice`, `combinedGenerate_indistinguishable`: security
-  against every efficient test of the full output, relative to fixed advice and in the uniform
-  case.
+* `combinedGenerate_indistinguishableWithAdvice`: security against every efficient test of the
+  full output.
 
 ## References
 
@@ -105,20 +104,5 @@ theorem combinedGenerate_indistinguishableWithAdvice {pair : SamplablePair} {gap
       (densityBound n) (common n) index (saved.evaluate n))
     hsize hcommon ((hsize.unary_mul' hcommon).unary_add' (.const 1))
     (isPolyTime_amplifiedGenerate saved hobservation hdensity hcommon) hchoose hsecure
-
-/-- One entropy-valid choice suffices for security of the complete, explicitly computed grid. -/
-theorem combinedGenerate_indistinguishable {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
-    {observationBound densityBound common : ℕ → ℕ}
-    (bounds : PaddingBounds saved observationBound densityBound common)
-    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
-    ComputationallyIndistinguishable
-      (fun n => (uniformList (size (saved.length n) (densityBound n) * common n)).map
-        (combinedGenerate n (saved.length n) (observationBound n) (densityBound n) (common n)
-          (saved.evaluate n)))
-      (fun n => uniformList (size (saved.length n) (densityBound n) * common n + 1)) :=
-  computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr
-    (combinedGenerate_indistinguishableWithAdvice
-      (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved bounds hgap)
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

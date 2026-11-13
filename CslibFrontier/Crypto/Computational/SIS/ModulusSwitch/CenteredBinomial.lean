@@ -148,7 +148,7 @@ theorem toOuterMeasure_moduleLWECBD_switch_failure_le (l : ℕ) (m : Fin (l + 1)
         (moduleLWEPublicKeyLaw t t (2 ^ (w + 1)) noise (PMF.pure s)) noise m secrets
       pure (s, view)).toOuterMeasure
         {out | moduleLWEDecrypt
-          (fun j i => (GeneralSIS.liftCentered (out.1 j) i : ZMod (2 ^ w)))
+          (fun j i => (SIS.liftCentered (out.1 j) i : ZMod (2 ^ w)))
           (moduleLWEModulusSwitch (2 ^ w) out.2.2) ≠ m} ≤
       ENNReal.ofReal (4 * (2 * (t : ℝ) + 1) * t * Real.exp (-(t : ℝ))) := by
   dsimp only
@@ -208,7 +208,7 @@ theorem negligible_moduleLWECBD_switch_failure (m : (l : ℕ) → Fin (l + 1) �
           (moduleLWEPublicKeyLaw t t (2 ^ (w + 1)) noise (PMF.pure s)) noise (m l) secrets
         pure (s, view)).toOuterMeasure
           {out | moduleLWEDecrypt
-            (fun j i => (GeneralSIS.liftCentered (out.1 j) i : ZMod (2 ^ w)))
+            (fun j i => (SIS.liftCentered (out.1 j) i : ZMod (2 ^ w)))
             (moduleLWEModulusSwitch (2 ^ w) out.2.2) ≠ m l}).toNNReal) := by
   let ratio : ℝ≥0 := ⟨Real.exp (-1), (Real.exp_pos _).le⟩
   have hratio : ratio < 1 := by

@@ -298,7 +298,8 @@ theorem matrixPrediction_correlation_le {n count : ℕ} [NeZero count] {Image : 
       1 - ((∑ x, (PMF.uniformOfFintype (BitString n) x).toReal *
         Real.logb 2 (Nat.card {y // f y = f x})) + 4) / count +
       128 * (dyadicSize (16 * count) : ℝ) ^ 2 *
-        (inversionExperiment f (matrixInverter f predictor precision) true).toReal := by
+        (inversionExperiment (PMF.uniformOfFintype _) f
+          (matrixInverter f predictor precision) true).toReal := by
   classical
   let source := PMF.uniformOfFintype (BitString n)
   let joint := source.map (fun x => (f x, x))
@@ -359,7 +360,7 @@ theorem matrixPrediction_correlation_le {n count : ℕ} [NeZero count] {Image : 
   simp only [mul_add, mul_sub, mul_one, ← mul_div_assoc, Finset.sum_add_distrib,
     Finset.sum_sub_distrib, ← Finset.sum_div, ← Finset.sum_mul, sum_toReal, one_mul,
     mul_left_comm _ (128 * (dyadicSize (16 * count) : ℝ) ^ 2), ← Finset.mul_sum,
-    inversionExperiment, monad_bind_eq_bind, bind_apply_toReal, success, source]
+    inversionExperiment_eq_bind_map, bind_apply_toReal, success, source]
 
 /-- Prediction beyond the hashed pair's entropy threshold forces inversion with polynomial
 loss. This is the finite content of Holenstein's Lemma 4, for public matrix hashing. -/
@@ -369,7 +370,8 @@ theorem matrixPrediction_entropy_le {n count : ℕ} [NeZero count] {Image : Type
     2 * (matrixPrediction f predictor true).toReal - 1 +
         conditionalEntropy (HashPair.joint (count := count) f) ≤
       1 - 2 / (count : ℝ) + 128 * (dyadicSize (16 * count) : ℝ) ^ 2 *
-        (inversionExperiment f (matrixInverter f predictor precision) true).toReal := by
+        (inversionExperiment (PMF.uniformOfFintype _) f
+          (matrixInverter f predictor precision) true).toReal := by
   have hprediction := matrixPrediction_correlation_le f hcount predictor precision hp
   have hentropy := HashPair.conditionalEntropy_joint_le (count := count) f
   simp only [PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
@@ -388,7 +390,7 @@ theorem matrixPrediction_entropy_le_of_coins {n count : ℕ} [NeZero count] {Ima
     2 * ((coins.bind (fun seed => matrixPrediction f (predictor seed))) true).toReal - 1 +
         conditionalEntropy (HashPair.joint (count := count) f) ≤
       1 - 2 / (count : ℝ) + 128 * (dyadicSize (16 * count) : ℝ) ^ 2 *
-        (inversionExperiment f (fun image => coins.bind
+        (inversionExperiment (PMF.uniformOfFintype _) f (fun image => coins.bind
           (fun seed => matrixInverter f (predictor seed) precision image)) true).toReal := by
   let := Fintype.ofFinite Coins
   have h := Finset.sum_le_sum (s := Finset.univ) (fun seed _ =>
@@ -407,7 +409,8 @@ theorem matrixInverter_success_ge {n count : ℕ} [NeZero count] {Image : Type*}
     (hprediction : 1 - conditionalEntropy (HashPair.joint (count := count) f) - 1 / (count : ℝ) ≤
       2 * (matrixPrediction f predictor true).toReal - 1) :
     1 / (128 * count * (dyadicSize (16 * count) : ℝ) ^ 2) ≤
-      (inversionExperiment f (matrixInverter f predictor precision) true).toReal := by
+      (inversionExperiment (PMF.uniformOfFintype _) f
+        (matrixInverter f predictor precision) true).toReal := by
   have h := matrixPrediction_entropy_le f hcount predictor precision hp
   have hscale : (0 : ℝ) < dyadicSize (16 * count) := by
     exact_mod_cast dyadicSize_pos (16 * count)

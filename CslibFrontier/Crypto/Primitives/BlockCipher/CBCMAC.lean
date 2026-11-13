@@ -827,14 +827,8 @@ private theorem uniformOfFintype_bind_comm {ℓ : ℕ} {G : Type} [Fintype G] [N
     (D : PMF (OracleComp (CBCOracleSpec n ℓ) Bool))
     (h : G → OracleComp (CBCOracleSpec n ℓ) Bool → Bool) : (do
       let g ← PMF.uniformOfFintype G let T ← D return h g T) =
-      D.bind (fun T => (PMF.uniformOfFintype G).map (fun g => h g T)) := by
-  calc _
-      = (PMF.uniformOfFintype G).bind
-          (fun g => D.bind (fun T => PMF.pure (h g T))) := rfl
-    _ = D.bind (fun T =>
-          (PMF.uniformOfFintype G).bind fun g => PMF.pure (h g T)) :=
-        PMF.bind_comm _ _ _
-    _ = _ := rfl
+      D.bind (fun T => (PMF.uniformOfFintype G).map (fun g => h g T)) :=
+  PMF.bind_comm _ D fun g T => PMF.pure (h g T)
 /-- **Prefix-Free CBC-MAC Adaptive PRF Security Bound ([KatzLindell2020], Section 4.4, Theorem
   4.12, p. 124)**: for every block width `n`, query budget `q`, maximum block length `ℓ`, and
   distribution `D` over `q`-admissible adaptive oracle programs, the distinguishing advantage

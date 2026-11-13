@@ -61,3 +61,17 @@ run_cmd do
       throwError "default-public enc_structure did not export {visible}"
     if env.contains hidden then
       throwError "private enc_structure exported {hidden}"
+
+-- A private encoding with an explicit parameter and a dependent field exports none of its family.
+-- It has no `_mk_deg`, since its tuple holds the word of `elt` rather than the field.
+run_cmd do
+  let env ← Lean.getEnv
+  let fieldSuffixes := ["_size", "_desc", "_elt"].flatMap fun f =>
+    ["_deg", "_inO", "_budget", "_polyTime"].map (f ++ ·)
+  let suffixes := ["", "Fields", "_apply", "_fields_deg", "_mk_deg", "_mk_inO", "_mk_budget",
+    "_mk_polyTime"] ++ fieldSuffixes
+  for suffix in suffixes do
+    let hidden :=
+      (`CslibFrontierTests.StructureEncodingVisibility.encPrivateElement).appendAfter suffix
+    if env.contains hidden then
+      throwError "private enc_structure exported {hidden}"

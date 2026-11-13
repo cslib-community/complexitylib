@@ -171,11 +171,8 @@ theorem exists_lt_two_pow_bitsAssignment_eq {vs : List V} (σ : V → Bool) :
     ∃ i < 2 ^ vs.length, ∀ v ∈ vs, bitsAssignment vs i v = σ v := by
   refine ⟨(BitVec.ofBoolListLE (vs.map σ)).toNat, (BitVec.isLt _).trans_eq (by simp),
     fun v hv => ?_⟩
-  have hlt : vs.idxOf v < vs.length := List.idxOf_lt_length_iff.mpr hv
-  rw [bitsAssignment, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE,
-    List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem hlt,
-    List.getElem_idxOf hlt]
-  rfl
+  simp [bitsAssignment, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE,
+    List.getD_eq_getElem?_getD, hv]
 
 /-- **Satisfiability by exhaustive search.** A formula whose variables are all in the list `vs` is
 satisfiable exactly when it is satisfied by an assignment numbered by some `i < 2 ^ |vs|`. -/

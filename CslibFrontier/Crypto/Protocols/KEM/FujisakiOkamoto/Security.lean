@@ -7,8 +7,11 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Computational.Encryption.KEM
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
+import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
+import CslibFrontier.Languages.Probabilistic.RandomOracle.Represented
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Tactic.PMFSwap
@@ -48,8 +51,9 @@ In addition to the `ExplicitCoinPKE` and `Scheme` modeling choices documented in
 choices:
 
 * **Deterministic oracle adversaries (`ROAdversary`)**: adversaries are deterministic oracle
-  programs `PK × CT × K → OracleComp (ROResp R K) Bool` with no private-coin channel; randomized
-  oracle adversaries reduce to these by fixing coins (see `ProbOracleComp.coinLaw` / `fixCoins`).
+  programs `KEM.Challenge PK CT K → OracleComp (ROResp R K) Bool` with no private-coin channel;
+  randomized oracle adversaries reduce to these by fixing coins (see `ProbOracleComp.coinLaw` /
+  `fixCoins`).
 * **Standard KEM IND-CCA experiment (`Scheme.roIndCcaGame`, `Scheme.eagerIndCcaGame`, not
   separately located in the source map above)**: the real-or-random key experiment draws the
   random challenge key via `kRand ← S.sampleKey` (rather than a uniform draw on `K`), leaves
@@ -62,8 +66,9 @@ On top of those definitions, this module formalizes:
 1. **Executable lazy and eager ROM IND-CCA games for `FO-notbot`** (`Scheme.roIndCcaGame`,
    `Scheme.indCcaRomAdvantage`, `Scheme.eagerIndCcaGame`) over the oracle interface
    `ROQuery M CT` (`G`, `H`, and punctured decapsulation rejecting `c = cStar` with `none`),
-   together with exact eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_h1`,
-   `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`, `Scheme.indCcaRomAdvantage_eq_eager`).
+   together with exact eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
+   `Scheme.indCcaRomAdvantage_eq_eager`), obtained from the generic represented-cache law
+   `RandomOracle.eval_run_interpret_eq_complete_bind`.
 2. **Keyless ROM simulator and IND-CPA reduction** (`Scheme.simHandler`,
    `Scheme.romCpaReduction`, `Scheme.simHitProb`). Neither is a verbatim construction from
    [HofheinzHoevelmannsKiltz2017]; both are adapted to domain-separated `FO-notbot`. `simHandler` is
@@ -94,6 +99,9 @@ On top of those definitions, this module formalizes:
   `Cslib.Crypto.Protocols.FujisakiOkamoto.ROAdversary`: query/response family and deterministic
   oracle adversary for the ROM IND-CCA experiment with random oracles `G`, `H` and decapsulation
   oracle.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.ROQuery.dispatch`: the oracle interface in any monad.
+  Every lazy, eager and simulated handler of the FO games and proof hybrids is this dispatcher
+  applied to its own `G`, `H` and decapsulation implementations.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.ROQueryBounds`: query-count bounds `(qG, qH)` on
   `G` and `H` expressed via `Cslib.OracleComp.IsCostBounded`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.ROCache`,
@@ -161,11 +169,23 @@ abbrev ROResp (R K : Type) : ROQuery M CT → Type
   | .H _ => K
   | .decaps _ => Option K
 
-/-- A deterministic IND-CCA oracle adversary in the Random Oracle Model receives `(pk, c*, k*)`
-and interacts with `G`, `H`, and the decapsulation oracle before outputting a Boolean guess.
-Randomized oracle adversaries reduce to these by fixing coins (see `ProbOracleComp.coinLaw`). -/
+/-- The oracle interface of the FO IND-CCA games, in any monad: `G` and `H` queries go to the
+given random-oracle implementations, decapsulation of the challenge `cStar` is refused with
+`none`, and any other ciphertext is answered by `decaps`. Every lazy, eager and simulated handler
+of the games and proof hybrids is this dispatcher applied to its own `G`, `H` and `decaps`. -/
+@[simp] def ROQuery.dispatch [DecidableEq CT] {m : Type → Type} [Monad m] (G : M → m R)
+    (H : Bool × M × CT → m K) (decaps : CT → m (Option K)) (cStar : CT) :
+    (q : ROQuery M CT) → m (ROResp R K q)
+  | .G msg => G msg
+  | .H x => H x
+  | .decaps c => if c = cStar then pure none else decaps c
+
+/-- A deterministic IND-CCA oracle adversary in the Random Oracle Model receives the challenge
+`⟨pk, c*, k*⟩` and interacts with `G`, `H`, and the decapsulation oracle before outputting a
+Boolean guess. Randomized oracle adversaries reduce to these by fixing coins (see
+`ProbOracleComp.coinLaw`). -/
 abbrev ROAdversary (PK M R CT K : Type) : Type :=
-  PK × CT × K → OracleComp (ROResp (M := M) (CT := CT) R K) Bool
+  KEM.Challenge PK CT K → OracleComp (ROResp (M := M) (CT := CT) R K) Bool
 
 /-- Query cost counting calls to `G`. -/
 @[simp] def ROQuery.gCost : ROQuery M CT → ℕ
@@ -191,19 +211,24 @@ abbrev ROAdversary (PK M R CT K : Type) : Type :=
   | .H _ => 0
   | .decaps _ => 1
 
-/-- An `ROAdversary` satisfies query bounds `(qG, qH)` if for every challenge input `inp`,
-its execution makes at most `qG` queries to `G` and at most `qH` queries to `H`. -/
+/-- An `ROAdversary` satisfies query bounds `(qG, qH)` if on every challenge `ch` its execution
+makes at most `qG` queries to `G` and at most `qH` queries to `H`. -/
 def ROQueryBounds (A : ROAdversary PK M R CT K) (qG qH : ℕ) : Prop :=
-  ∀ inp : PK × CT × K,
-    OracleComp.IsCostBounded ROQuery.gCost (A inp) qG ∧
-    OracleComp.IsCostBounded ROQuery.hCost (A inp) qH
+  ∀ ch : KEM.Challenge PK CT K,
+    OracleComp.IsCostBounded ROQuery.gCost (A ch) qG ∧
+    OracleComp.IsCostBounded ROQuery.hCost (A ch) qH
 
-/-- An `ROAdversary` satisfies full query bounds `(qG, qH, qD)` if for every challenge input `inp`,
-its execution makes at most `qG` queries to `G`, `qH` queries to `H`, and `qD` queries to
-`decaps`. -/
+/-- Bounds `(qG, qH)` on `G` and `H` queries bound their combined count by `qG + qH`. -/
+theorem ROQueryBounds.ghCost {A : ROAdversary PK M R CT K} {qG qH : ℕ} (hq : ROQueryBounds A qG qH)
+    (ch : KEM.Challenge PK CT K) : OracleComp.IsCostBounded ROQuery.ghCost (A ch) (qG + qH) := by
+  convert OracleComp.IsCostBounded.add (hq ch).1 (hq ch).2 using 1
+  funext q; cases q <;> rfl
+
+/-- An `ROAdversary` satisfies full query bounds `(qG, qH, qD)` if on every challenge `ch` its
+execution makes at most `qG` queries to `G`, `qH` queries to `H`, and `qD` queries to `decaps`. -/
 def ROFullQueryBounds (A : ROAdversary PK M R CT K) (qG qH qD : ℕ) : Prop :=
   ROQueryBounds A qG qH ∧
-  ∀ inp : PK × CT × K, OracleComp.IsCostBounded ROQuery.dCost (A inp) qD
+  ∀ ch : KEM.Challenge PK CT K, OracleComp.IsCostBounded ROQuery.dCost (A ch) qD
 
 /-- Association-list caches for the lazy random oracles `G : M → R` and
 `H : Bool × M × CT → K` in the executable ROM IND-CCA game. -/
@@ -254,6 +279,17 @@ def simHashHq (sampleKey : ProbComp K) (c : CT) : StateT (SimState M R CT K) Pro
   RandomOracle.zoomStateT SimState.hqCache (fun st c' => { st with hqCache := c' })
     (memoize (fun _ => sampleKey) c)
 
+/-- Filtered decapsulation branch of the lazy `SimState` handlers: answer `some (Hq c)` when the
+filter `d` accepts `c` on the current `G` cache, and `none` otherwise. -/
+def filterDecaps (Hq : CT → StateT (SimState M R CT K) ProbComp K)
+    (d : List (M × R) → CT → Bool) (c : CT) : StateT (SimState M R CT K) ProbComp (Option K) :=
+  fun st =>
+    cond (d st.gCache c)
+      ((do
+        let k ← Hq c
+        return some k) st)
+      ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)
+
 end LazyOracles
 
 namespace Scheme
@@ -261,30 +297,13 @@ namespace Scheme
 variable [DecidableEq M] [DecidableEq CT]
 
 /-- Stateful oracle handler for the real ROM IND-CCA game of `FO-notbot`. Queries to the
-challenge ciphertext `cStar` are rejected with `none`; other decapsulation queries
-re-encrypt under the lazy random oracle `G` and derive the key via the lazy random oracle
-`H`, falling back to `H(true, dk.fallback, c)` on implicit rejection. -/
+challenge ciphertext `cStar` are rejected with `none`; other decapsulation queries run the scheme's
+decapsulation `decapsNotBotM` against the lazy random oracles `G` and `H`. -/
 def roHandler (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT)
     (q : ROQuery M CT) : StateT (ROCache M R CT K) ProbComp (ROResp R K q) :=
-  match q with
-  | .G m => roHashG S.pke.sampleCoins m
-  | .H x => roHashH S.sampleKey x
-  | .decaps c =>
-    if c = cStar then
-      return none
-    else
-      match S.pke.dec dk.sk c with
-      | none => do
-        let k ← roHashH S.sampleKey (true, dk.fallback, c)
-        return some k
-      | some m' => do
-        let r' ← roHashG S.pke.sampleCoins m'
-        if S.pke.encDet dk.pk m' r' = c then do
-          let k ← roHashH S.sampleKey (false, m', c)
-          return some k
-        else do
-          let k ← roHashH S.sampleKey (true, dk.fallback, c)
-          return some k
+  ROQuery.dispatch (roHashG S.pke.sampleCoins) (roHashH S.sampleKey)
+    (fun c => some <$> S.decapsNotBotM (roHashG S.pke.sampleCoins) (roHashH S.sampleKey) dk c)
+    cStar q
 
 /-- The executable ROM IND-CCA security game for `FO-notbot` with bit `b : Bool` (standard KEM
 IND-CCA experiment, not separately located in the source map above). When `b = false`, the
@@ -303,7 +322,7 @@ def roIndCcaGame (S : Scheme PK SK M R CT K)
   let st₀ : ROCache M R CT K :=
     { gCache := [(mStar, rStar)], hCache := [((false, mStar, cStar), kReal)] }
   let (guess, _) ←
-    (OracleComp.interpret (S.roHandler dk cStar) (A (pk, cStar, kStar))).run st₀
+    (OracleComp.interpret (S.roHandler dk cStar) (A ⟨pk, cStar, kStar⟩)).run st₀
   return guess
 
 /-- The ROM IND-CCA advantage of an adversary `A` against `FO-notbot`. -/
@@ -317,10 +336,8 @@ noncomputable def indCcaRomAdvantage (S : Scheme PK SK M R CT K)
 decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
 noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
     (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) : PMF (ROResp R K q) :=
-  match q with
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (H x)
-  | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNotBot G H dk c))
+  ROQuery.dispatch (PMF.pure ∘ G) (PMF.pure ∘ H)
+    (fun c => PMF.pure (some (S.decapsNotBot G H dk c))) cStar q
 
 /-- The eager random-oracle IND-CCA game for `FO-notbot` (standard KEM IND-CCA experiment, not
 separately located in the source map above), defined directly from `S.keyGenNotBot`,
@@ -335,7 +352,7 @@ noncomputable def eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   let kStar := if b then kRand else kReal
-  OracleComp.interpret (S.eagerHandler G H dk cStar) (A (pk, cStar, kStar))
+  OracleComp.interpret (S.eagerHandler G H dk cStar) (A ⟨pk, cStar, kStar⟩)
 
 /-- Simulated `H` oracle of `simHandler`: on key-derivation queries `(false, m, c)`, checks whether
 `S.pke.encDet pk m (G(m)) = c` and if so returns `H_q(c)`. This is designed so that decapsulation
@@ -362,18 +379,7 @@ def simFilterDispatch (S : Scheme PK SK M R CT K)
     (hH : Bool × M × CT → StateT (SimState M R CT K) ProbComp K)
     (d : List (M × R) → CT → Bool) (cStar : CT) (q : ROQuery M CT) :
     StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
-  match q with
-  | .G m => simHashG S.pke.sampleCoins m
-  | .H x => hH x
-  | .decaps c =>
-    if c = cStar then
-      return none
-    else fun st =>
-      cond (d st.gCache c)
-        ((do
-          let k ← simHashHq S.sampleKey c
-          return some k) st)
-        ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)
+  ROQuery.dispatch (simHashG S.pke.sampleCoins) hH (filterDecaps (simHashHq S.sampleKey) d) cStar q
 
 /-- Keyless ROM simulator parameterized by a decapsulation acceptance filter
 `d : List (M × R) → CT → Bool` on the cached `G`-queries `gCache`. On `c ≠ cStar`, decapsulation
@@ -398,19 +404,19 @@ def simHandler (S : Scheme PK SK M R CT K) (pk : PK) (cStar : CT) (q : ROQuery M
 
 /-- IND-CPA adversary built from a ROM IND-CCA adversary `A` and decapsulation filter `d`:
 given an IND-CPA challenge `pk` and `cStar`, samples a challenge key `kStar ← S.sampleKey`, runs
-`A(pk, cStar, kStar)` against `S.simFilterHandler (d pk) pk cStar`, and outputs whether `m1` was
+`A ⟨pk, cStar, kStar⟩` against `S.simFilterHandler (d pk) pk cStar`, and outputs whether `m1` was
 queried to `G`. -/
 def romFilterCpaReduction (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
     (A : ROAdversary PK M R CT K) (_m0 m1 : M) : PK → CT → ProbComp Bool :=
   fun pk cStar => do
     let kStar ← S.sampleKey
     let (_, st) ←
-      (OracleComp.interpret (S.simFilterHandler (d pk) pk cStar) (A (pk, cStar, kStar))).run {}
+      (OracleComp.interpret (S.simFilterHandler (d pk) pk cStar) (A ⟨pk, cStar, kStar⟩)).run {}
     return (st.gCache.lookup m1).isSome
 
 /-- IND-CPA adversary built from a ROM IND-CCA adversary `A` against domain-separated `FO-notbot`:
 given an IND-CPA challenge `pk` and `cStar`, samples a challenge key `kStar ← S.sampleKey`, runs
-`A(pk, cStar, kStar)` against `S.simHandler pk cStar`, and outputs whether `m1` was
+`A ⟨pk, cStar, kStar⟩` against `S.simHandler pk cStar`, and outputs whether `m1` was
 queried to `G`.
 
 It is modelled on the IND-CPA adversary in the proof of the §3.1 theorem for `T` in
@@ -426,342 +432,127 @@ def romCpaReduction (S : Scheme PK SK M R CT K)
     (A : ROAdversary PK M R CT K) (m0 m1 : M) : PK → CT → ProbComp Bool :=
   S.romFilterCpaReduction (fun _ _ _ => true) A m0 m1
 
-/-! ### Section 2: Connecting `memoize` to `RandomOracle.answer` and Eager/Lazy Equivalence -/
+/-! ### Section 2: Eager/Lazy Equivalence
 
-/-- Hybrid 1 handler: `G : M → R` is a complete table while `H : Bool × M × CT → K` is answered
-lazily via `RandomOracle.answer`. Decapsulation uses `decT S.pke G dk.pk dk.sk c`. -/
-noncomputable def h1Handler (S : Scheme PK SK M R CT K)
-    (G : M → R) (dk : ImplicitSK PK SK M) (cStar : CT)
-    (q : ROQuery M CT) :
-    StateT (RandomOracle.Cache (fun _ : Bool × M × CT => K)) PMF (ROResp R K q) := fun tH =>
-  match q with
-  | .G m => PMF.pure (G m, tH)
-  | .H x => RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) x tH
-  | .decaps c =>
-    if c = cStar then
-      PMF.pure (none, tH)
-    else
-      match decT S.pke G dk.pk dk.sk c with
-      | some m' =>
-        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m', c) tH).map
-          (fun (k, tH') => (some k, tH'))
-      | none =>
-        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, dk.fallback, c) tH).map
-          (fun (k, tH') => (some k, tH'))
+The lazy oracles `G` and `H` of `roHandler` are one lazy random oracle on the joined interface
+`ROSpec`, kept in `ROCache` and read through `RandomOracle.ofList`. Every query of the game is the
+oracle program `roProgram` over that interface, so
+`RandomOracle.eval_run_interpret_eq_complete_bind` replaces both caches by complete tables in one
+step, and `RandomOracle.bind_complete_sum` splits the completed table into `G` and `H`. -/
 
-/-- Intermediate handler answering `G` and `H` via `RandomOracle.answer` on a pair of
-`RandomOracle.Cache` tables `(tG, tH)`. -/
-noncomputable def roAnswerHandler (S : Scheme PK SK M R CT K)
-    (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) :
-    StateT (RandomOracle.Cache (fun _ : M => R) ×
-      RandomOracle.Cache (fun _ : Bool × M × CT => K)) PMF (ROResp R K q) := fun (tG, tH) =>
-  match q with
-  | .G m =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m tG).map
-      (fun (r, tG') => (r, (tG', tH)))
-  | .H x =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) x tH).map
-      (fun (k, tH') => (k, (tG, tH')))
-  | .decaps c =>
-    if c = cStar then
-      PMF.pure (none, (tG, tH))
-    else
-      match S.pke.dec dk.sk c with
-      | none =>
-        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, dk.fallback, c) tH).map
-          (fun (k, tH') => (some k, (tG, tH')))
-      | some m' =>
-        (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m' tG).bind fun (r', tG') =>
-          if S.pke.encDet dk.pk m' r' = c then
-            (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m', c) tH).map
-              (fun (k, tH') => (some k, (tG', tH')))
-          else
-            (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, dk.fallback, c) tH).map
-              (fun (k, tH') => (some k, (tG', tH')))
+/-- The random oracles `G : M → R` and `H : Bool × M × CT → K` as one interface. -/
+private abbrev ROSpec (M R CT K : Type) := (fun _ : M => R) ⊕ₒ (fun _ : Bool × M × CT => K)
 
-/-- Evaluating `(do let k ← roHashH sampleKey x; return some k) st` and mapping `ROCache` via
-`RandomOracle.ofList`. -/
-private theorem eval_roHashH_some_map_ofList (sampleKey : ProbComp K) (x : Bool × M × CT)
-    (st : ROCache M R CT K) :
-    (ProbComp.eval ((do let k ← roHashH sampleKey x; return some k) st)).map
-      (fun (res, st') =>
-        (res, (RandomOracle.ofList st'.gCache, RandomOracle.ofList st'.hCache))) =
-    (RandomOracle.answer (fun _ => ProbComp.eval sampleKey) x
-      (RandomOracle.ofList st.hCache)).map
-      (fun (k, tH') => (some k, (RandomOracle.ofList st.gCache, tH'))) := by
-  dsimp only [roHashH]
-  change (ProbComp.eval
-    (RandomOracle.zoomStateT ROCache.hCache (fun st c => { st with hCache := c })
-      (memoize (fun _ => sampleKey) x) st >>= fun a => pure (some a.fst, a.snd))).map _ = _
-  simp only [ProbComp.eval_bind, RandomOracle.eval_zoomStateT_memoize, ProbComp.eval_pure,
-    PMF.map_bind, PMF.bind_map, PMF.pure_map, Function.comp_def]
-  have h := congrArg (PMF.map (fun (k, tH') => (some k, (RandomOracle.ofList st.gCache, tH'))))
-    (RandomOracle.memoize_map_ofList (fun _ => ProbComp.eval sampleKey) x st.hCache)
-  simpa only [PMF.map_comp, Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind] using h
+/-- Each query of the ROM IND-CCA game as a program over the random oracles: `G` and `H` are
+forwarded, and decapsulation runs `decapsNotBotM` against them. -/
+private def roProgram (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT) :
+    (q : ROQuery M CT) → OracleComp (ROSpec M R CT K) (ROResp R K q) :=
+  ROQuery.dispatch (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
+    (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x))
+    (fun c => some <$> S.decapsNotBotM
+      (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
+      (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x)) dk c) cStar
 
-/-- Mapping `ROCache` via `RandomOracle.ofList` turns `S.roHandler` into `S.roAnswerHandler`. -/
-theorem roHandler_map_ofList (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT)
-    (q : ROQuery M CT) (st : ROCache M R CT K) :
-    (ProbComp.eval (S.roHandler dk cStar q st)).map
-      (fun (res, st') =>
-        (res, (RandomOracle.ofList st'.gCache, RandomOracle.ofList st'.hCache))) =
-    S.roAnswerHandler dk cStar q
-      (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache) := by
-  let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
-  let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
+omit [DecidableEq M] in
+/-- Interpreting `decapsNotBotM` against oracle calls runs it against the interpreted calls. -/
+private theorem interpret_decapsNotBotM {ι : Type} {spec : OracleSpec ι} {n : Type → Type}
+    [Monad n] [LawfulMonad n] (oracle : (q : ι) → n (spec q)) (S : Scheme PK SK M R CT K)
+    (G : M → OracleComp spec R) (H : Bool × M × CT → OracleComp spec K)
+    (dk : ImplicitSK PK SK M) (c : CT) :
+    OracleComp.interpret oracle (S.decapsNotBotM G H dk c) =
+      S.decapsNotBotM (fun m => OracleComp.interpret oracle (G m))
+        (fun x => OracleComp.interpret oracle (H x)) dk c := by
+  rw [decapsNotBotM_eq, decapsNotBotM_eq]
+  cases S.pke.dec dk.sk c with
+  | none => rfl
+  | some m' =>
+    simp only [OracleComp.interpret_bind]
+    congr 1 with r'
+    split_ifs <;> rfl
+
+/-- `roHandler` interprets `roProgram` with the lazy oracles `roHashG` and `roHashH`. -/
+private theorem roHandler_eq_interpret (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M)
+    (cStar : CT) (q : ROQuery M CT) :
+    S.roHandler dk cStar q = OracleComp.interpret
+      (OracleComp.sumHandler (roHashG S.pke.sampleCoins) (roHashH S.sampleKey))
+      (S.roProgram dk cStar q) := by
   cases q with
-  | G m =>
-    dsimp only [roHandler, roHashG, roAnswerHandler]
-    rw [RandomOracle.eval_zoomStateT_memoize]
-    have h := congrArg (PMF.map (fun (r, tG') => (r, (tG', RandomOracle.ofList st.hCache))))
-      (RandomOracle.memoize_map_ofList dG m st.gCache)
-    simpa only [PMF.map_comp, Function.comp_def, dG] using h
-  | H x =>
-    dsimp only [roHandler, roHashH, roAnswerHandler]
-    rw [RandomOracle.eval_zoomStateT_memoize]
-    have h := congrArg (PMF.map (fun (k, tH') => (k, (RandomOracle.ofList st.gCache, tH'))))
-      (RandomOracle.memoize_map_ofList dH x st.hCache)
-    simpa only [PMF.map_comp, Function.comp_def, dH] using h
+  | G m => exact (OracleComp.interpret_query _ _).symm
+  | H x => exact (OracleComp.interpret_query _ _).symm
   | decaps c =>
-    dsimp only [roHandler, roAnswerHandler]
     by_cases hc : c = cStar
-    · simp only [hc, ↓reduceIte]
-      exact PMF.pure_map _ _
-    · simp only [hc, ↓reduceIte]
-      cases hdec : S.pke.dec dk.sk c with
-      | none => exact eval_roHashH_some_map_ofList S.sampleKey (true, dk.fallback, c) st
-      | some m' =>
-        change (ProbComp.eval (roHashG S.pke.sampleCoins m' st >>= fun a =>
-            (if S.pke.encDet dk.pk m' a.fst = c then do
-              let k ← roHashH S.sampleKey (false, m', c)
-              return some k
-            else do
-              let k ← roHashH S.sampleKey (true, dk.fallback, c)
-              return some k) a.snd)).map _ = _
-        dsimp only [roHashG]
-        simp only [ProbComp.eval_bind, RandomOracle.eval_zoomStateT_memoize, PMF.map_bind,
-          PMF.bind_map, Function.comp_def]
-        rw [← RandomOracle.memoize_map_ofList dG m' st.gCache, PMF.bind_map]
-        congr 1; funext ⟨r', gC'⟩
-        dsimp only [Function.comp_def]
-        by_cases henc : S.pke.encDet dk.pk m' r' = c <;>
-          simp only [henc, ↓reduceIte] <;>
-          exact eval_roHashH_some_map_ofList S.sampleKey _ { st with gCache := gC' }
+    · simp [roHandler, roProgram, hc]
+    · simp only [roHandler, roProgram, ROQuery.dispatch, hc, ↓reduceIte,
+        OracleComp.interpret_map, interpret_decapsNotBotM, OracleComp.interpret_query]
 
-/-- Single-step simulation from `S.roAnswerHandler` to `S.h1Handler` via
-`RandomOracle.answer_complete`. -/
-theorem roAnswerHandler_sim_h1 [Fintype M] [Finite R]
-    (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT)
-    (q : ROQuery M CT)
-    (st : RandomOracle.Cache (fun _ : M => R) × RandomOracle.Cache (fun _ : Bool × M × CT => K)) :
-    (do
-      let (res, st') ← S.roAnswerHandler dk cStar q st
-      let G ← RandomOracle.complete (fun _ : M => ProbComp.eval S.pke.sampleCoins) st'.fst
-      PMF.pure (res, (G, st'.snd))) =
-    (do
-      let G ← RandomOracle.complete (fun _ : M => ProbComp.eval S.pke.sampleCoins) st.fst
-      let (res, tH') ← S.h1Handler G dk cStar q st.snd
-      PMF.pure (res, (G, tH'))) := by
-  rcases st with ⟨tG, tH⟩
-  let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
-  let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
-  simp only [Probability.PMF.monad_bind_eq_bind]
+omit [DecidableEq M] in
+/-- `eagerHandler` interprets `roProgram` with the complete tables `G` and `H`. -/
+private theorem eagerHandler_eq_interpret (S : Scheme PK SK M R CT K) (G : M → R)
+    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) :
+    S.eagerHandler G H dk cStar q = OracleComp.interpret
+      (OracleComp.sumHandler (fun m => PMF.pure (G m)) (fun x => PMF.pure (H x)))
+      (S.roProgram dk cStar q) := by
   cases q with
-  | G m =>
-    dsimp only [roAnswerHandler, h1Handler]
-    have hc := congrArg (PMF.map (fun (r, G) => (r, (G, tH))))
-      (RandomOracle.answer_complete dG tG m)
-    simpa only [Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
-      Function.comp_def, PMF.bind_bind, PMF.pure_bind, PMF.map, dG] using hc
-  | H x =>
-    dsimp only [roAnswerHandler, h1Handler]
-    rw [PMF.bind_map, PMF.bind_comm]
-    rfl
+  | G m => exact (OracleComp.interpret_query _ _).symm
+  | H x => exact (OracleComp.interpret_query _ _).symm
   | decaps c =>
-    dsimp only [roAnswerHandler, h1Handler]
     by_cases hc : c = cStar
-    · simp [hc]
-    · simp only [hc, ↓reduceIte]
-      cases hdec : S.pke.dec dk.sk c with
-      | none =>
-        simp only [decT, hdec, Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind]
-        exact PMF.bind_comm _ _ _
-      | some m' =>
-        simp only [decT, encT, hdec, PMF.bind_bind]
-        trans (((RandomOracle.answer dG m' tG).bind (fun (r', tG') =>
-            (RandomOracle.complete dG tG').map (fun G => (r', G)))).bind (fun (r', G) =>
-            if S.pke.encDet dk.pk m' r' = c then
-              (RandomOracle.answer dH (false, m', c) tH).bind
-                fun (k, tH') => PMF.pure (some k, (G, tH'))
-            else
-              (RandomOracle.answer dH (true, dk.fallback, c) tH).bind
-                fun (k, tH') => PMF.pure (some k, (G, tH'))))
-        · simp only [PMF.bind_bind]
-          congr 1; funext ⟨r', tG'⟩
-          by_cases henc : S.pke.encDet dk.pk m' r' = c <;>
-            simp only [henc, ↓reduceIte, PMF.bind_map, Function.comp_def] <;>
-            exact PMF.bind_comm _ _ _
-        · have hG := RandomOracle.answer_complete dG tG m'
-          simp only [Probability.PMF.monad_bind_eq_bind] at hG
-          rw [hG, PMF.bind_map]
-          congr 1 with G : 1
-          dsimp only [Function.comp_def]
-          by_cases henc : S.pke.encDet dk.pk m' (G m') = c <;>
-            simp [henc, dH, PMF.map]
+    · simp [eagerHandler, roProgram, hc]
+    · simp only [eagerHandler, roProgram, ROQuery.dispatch, hc, ↓reduceIte,
+        OracleComp.interpret_map, interpret_decapsNotBotM, OracleComp.interpret_query]
+      change PMF.pure _ = some <$> S.decapsNotBotM (m := PMF) (pure ∘ G) (pure ∘ H) dk c
+      rw [decapsNotBotM_pure, map_pure]
+      rfl
 
-/-- Running `A` under `S.roHandler` from `st` has the same output distribution as completing
-`st.gCache` via `RandomOracle.complete` and running `A` under `S.h1Handler`. -/
-theorem eval_run_roHandler_eq_h1 [Fintype M] [Finite R]
-    (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT)
-    (prog : OracleComp (ROResp (M := M) (CT := CT) R K) Bool) (st : ROCache M R CT K) :
+/-- The joined cache represented by the two list caches of an `ROCache`. -/
+private abbrev roTables (st : ROCache M R CT K) : RandomOracle.Cache (ROSpec M R CT K) :=
+  RandomOracle.Cache.sum (RandomOracle.ofList st.gCache) (RandomOracle.ofList st.hCache)
+
+/-- Each lazy oracle call, read on the joined cache, is a lazy call of the joined oracle. -/
+private theorem eval_roHash_map_roTables (S : Scheme PK SK M R CT K)
+    (q : M ⊕ (Bool × M × CT)) (st : ROCache M R CT K) :
+    (ProbComp.eval (OracleComp.sumHandler (roHashG S.pke.sampleCoins) (roHashH S.sampleKey) q
+        st)).map (fun z => (z.1, roTables z.2)) =
+      RandomOracle.answer (OracleComp.sumHandler (fun _ => ProbComp.eval S.pke.sampleCoins)
+        (fun _ => ProbComp.eval S.sampleKey)) q (roTables st) := by
+  rcases q with m | x
+  · rw [roTables, RandomOracle.answer_sum_inl]
+    exact RandomOracle.eval_zoom_memoize_map ROCache.gCache (fun st c => { st with gCache := c })
+      S.pke.sampleCoins m st (fun r => r) roTables
+      (fun c => RandomOracle.Cache.sum c (RandomOracle.ofList st.hCache)) (fun _ => rfl)
+  · rw [roTables, RandomOracle.answer_sum_inr]
+    exact RandomOracle.eval_zoom_memoize_map ROCache.hCache (fun st c => { st with hCache := c })
+      S.sampleKey x st (fun k => k) roTables
+      (fun c => RandomOracle.Cache.sum (RandomOracle.ofList st.gCache) c) (fun _ => rfl)
+
+/-- Running a program under `roHandler` has the law of completing both caches into tables `G` and
+`H` and running it under `eagerHandler`. -/
+private theorem eval_run_roHandler_eq_eager [Fintype M] [Finite R] [Fintype CT] [Finite K]
+    (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT) {α : Type}
+    (prog : OracleComp (ROResp (M := M) (CT := CT) R K) α) (st : ROCache M R CT K) :
     (ProbComp.eval ((OracleComp.interpret (S.roHandler dk cStar) prog).run st)).map Prod.fst =
-      (RandomOracle.complete (fun _ : M => ProbComp.eval S.pke.sampleCoins)
-        (RandomOracle.ofList st.gCache)).bind (fun G =>
-          ((OracleComp.interpret (S.h1Handler G dk cStar) prog).run
-            (RandomOracle.ofList st.hCache)).map Prod.fst) := by
-  rw [OracleComp.map_run_interpret ProbComp.isMonadHom_eval]
-  have hmap := congrArg (PMF.map Prod.fst)
-    (OracleComp.run_interpret_map_state
-      (fun q s => ProbComp.eval (S.roHandler dk cStar q s))
-      (S.roAnswerHandler dk cStar)
-      (fun s => (RandomOracle.ofList s.gCache, RandomOracle.ofList s.hCache))
-      (fun q s => S.roHandler_map_ofList dk cStar q s) prog st)
-  simp only [PMF.map_comp, Function.comp_def] at hmap
-  rw [hmap]
-  let sim : (RandomOracle.Cache (fun _ : M => R) ×
-      RandomOracle.Cache (fun _ : Bool × M × CT => K)) →
-      PMF ((M → R) × RandomOracle.Cache (fun _ : Bool × M × CT => K)) :=
-    fun (tG, tH) => (RandomOracle.complete (fun _ : M => ProbComp.eval S.pke.sampleCoins) tG).map
-      (fun G => (G, tH))
-  let h₂ : (q : ROQuery M CT) →
-      StateT ((M → R) × RandomOracle.Cache (fun _ : Bool × M × CT => K)) PMF (ROResp R K q) :=
-    fun q (G, tH) => (S.h1Handler G dk cStar q tH).map (fun (res, tH') => (res, (G, tH')))
-  have hsim := OracleComp.run_interpret_simulation_fst
-    (S.roAnswerHandler dk cStar) h₂ sim
-    (fun q s => by
-      simpa only [sim, h₂, Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind,
-        Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind] using
-        S.roAnswerHandler_sim_h1 dk cStar q s)
-    prog (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache)
-  simp only [sim, PMF.bind_map, Function.comp_def] at hsim
-  rw [hsim]
-  congr 1 with G : 1
-  have hproj := congrArg (PMF.map Prod.fst)
-    (OracleComp.run_interpret_map_state
-      (S.h1Handler G dk cStar) h₂ (fun tH => (G, tH))
-      (fun q tH => rfl) prog (RandomOracle.ofList st.hCache))
-  simpa only [PMF.map_comp, Function.comp_def] using hproj.symm
-
-/-- Evaluating `S.roIndCcaGame A b` equals sampling `G` eagerly from `pi` and running `A`
-against `S.h1Handler`. -/
-theorem eval_roIndCcaGame_eq_h1 [Fintype M] [Finite R]
-    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
-    ProbComp.eval (S.roIndCcaGame A b) =
-      (ProbComp.eval S.keyGenNotBot).bind (fun (pk, dk) =>
-      (ProbComp.eval S.sampleMsg).bind (fun mStar =>
-      (pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)).bind (fun G =>
-      let cStar := S.pke.encDet pk mStar (G mStar)
-      (ProbComp.eval S.sampleKey).bind (fun kReal =>
-      (ProbComp.eval S.sampleKey).bind (fun kRand =>
-      let kStar := if b then kRand else kReal
-      let tH₀ := RandomOracle.ofList [((false, mStar, cStar), kReal)]
-      ((OracleComp.interpret (S.h1Handler G dk cStar) (A (pk, cStar, kStar))).run tH₀).map
-        Prod.fst))))) := by
-  dsimp only [roIndCcaGame]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure]
-  congr 1; funext ⟨pk, dk⟩
-  congr 1 with mStar : 1
-  let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
-  have hstep (rStar : R) (kReal kRand : K) :
-      (ProbComp.eval ((OracleComp.interpret (S.roHandler dk (S.pke.encDet pk mStar rStar))
-        (A (pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal))).run
-        { gCache := [(mStar, rStar)],
-          hCache := [((false, mStar, S.pke.encDet pk mStar rStar), kReal)] })).bind
-          (fun x => PMF.pure x.fst) =
-      (pi (Function.update dG mStar (PMF.pure rStar))).bind (fun G =>
-        ((OracleComp.interpret (S.h1Handler G dk (S.pke.encDet pk mStar rStar))
-          (A (pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal))).run
-          (RandomOracle.ofList [((false, mStar, S.pke.encDet pk mStar rStar), kReal)])).map
-            Prod.fst) := by
-    change (ProbComp.eval _).map Prod.fst = _
-    rw [eval_run_roHandler_eq_h1, RandomOracle.complete_ofList_singleton]
-  simp only [hstep]
-  rw [← bind_pi_update dG mStar (fun rStar G =>
-    let cStar := S.pke.encDet pk mStar rStar
-    (ProbComp.eval S.sampleKey).bind fun kReal =>
-    (ProbComp.eval S.sampleKey).bind fun kRand =>
-    ((OracleComp.interpret (S.h1Handler G dk cStar)
-      (A (pk, cStar, if b then kRand else kReal))).run
-      (RandomOracle.ofList [((false, mStar, cStar), kReal)])).map Prod.fst)]
-  congr 1 with rStar : 1
-  pmf_swap
-
-/-- Single-step simulation from `S.h1Handler` to `S.eagerHandler` via
-`RandomOracle.answer_complete`. -/
-theorem h1Handler_sim_eager [Fintype M] [Fintype CT] [Finite K]
-    (S : Scheme PK SK M R CT K) (G : M → R) (dk : ImplicitSK PK SK M) (cStar : CT)
-    (q : ROQuery M CT) (tH : RandomOracle.Cache (fun _ : Bool × M × CT => K)) :
-    (do
-      let (res, tH') ← S.h1Handler G dk cStar q tH
-      let H ← RandomOracle.complete (fun _ : Bool × M × CT => ProbComp.eval S.sampleKey) tH'
-      PMF.pure (res, H)) =
-    (do
-      let H ← RandomOracle.complete (fun _ : Bool × M × CT => ProbComp.eval S.sampleKey) tH
-      let res ← S.eagerHandler G H dk cStar q
-      PMF.pure (res, H)) := by
-  let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
-  simp only [Probability.PMF.monad_bind_eq_bind]
-  cases q with
-  | G m =>
-    simp [h1Handler, eagerHandler]
-  | H x =>
-    dsimp only [h1Handler, eagerHandler]
-    simpa only [Probability.PMF.monad_bind_eq_bind, PMF.pure_bind, PMF.map, Function.comp_def, dH]
-      using RandomOracle.answer_complete dH tH x
-  | decaps c =>
-    dsimp only [h1Handler, eagerHandler, decapsNotBot]
-    by_cases hc : c = cStar
-    · simp [hc]
-    · simp only [hc, ↓reduceIte]
-      cases hdec : decT S.pke G dk.pk dk.sk c with
-      | none =>
-        have hH := congrArg (PMF.map (fun (k, H) => (some k, H)))
-          (RandomOracle.answer_complete dH tH (true, dk.fallback, c))
-        simpa only [Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
-          Function.comp_def, PMF.bind_bind, PMF.pure_bind, PMF.map, dH] using hH
-      | some m' =>
-        have hH := congrArg (PMF.map (fun (k, H) => (some k, H)))
-          (RandomOracle.answer_complete dH tH (false, m', c))
-        simpa only [Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
-          Function.comp_def, PMF.bind_bind, PMF.pure_bind, PMF.map, dH] using hH
-
-/-- Running `prog` under `S.h1Handler G dk cStar` from `tH` has the same output distribution as
-completing `tH` via `RandomOracle.complete` and interpreting `prog` under `S.eagerHandler`. -/
-theorem eval_run_h1Handler_eq_eager [Fintype M] [Fintype CT] [Finite K]
-    (S : Scheme PK SK M R CT K) (G : M → R) (dk : ImplicitSK PK SK M) (cStar : CT)
-    (prog : OracleComp (ROResp (M := M) (CT := CT) R K) Bool)
-    (tH : RandomOracle.Cache (fun _ : Bool × M × CT => K)) :
-    ((OracleComp.interpret (S.h1Handler G dk cStar) prog).run tH).map Prod.fst =
-      (RandomOracle.complete (fun _ : Bool × M × CT => ProbComp.eval S.sampleKey) tH).bind (fun H =>
-        OracleComp.interpret (S.eagerHandler G H dk cStar) prog) := by
-  let h₂ : (q : ROQuery M CT) → StateT (Bool × M × CT → K) PMF (ROResp R K q) :=
-    fun q H => (S.eagerHandler G H dk cStar q).map (fun res => (res, H))
-  have hsim := OracleComp.run_interpret_simulation_fst
-    (S.h1Handler G dk cStar) h₂
-    (RandomOracle.complete (fun _ : Bool × M × CT => ProbComp.eval S.sampleKey))
-    (fun q s => by
-      simpa only [h₂, Probability.PMF.monad_bind_eq_bind, PMF.map, Function.comp_def] using
-        S.h1Handler_sim_eager G dk cStar q s)
-    prog tH
-  rw [hsim]
-  congr 1 with H : 1
-  have hro := congrArg (PMF.map Prod.fst)
-    (OracleComp.run_interpret_readOnly (fun q H' => S.eagerHandler G H' dk cStar q) prog H)
-  change ((OracleComp.interpret h₂ prog).run H).map Prod.fst =
-    ((OracleComp.interpret (fun q => S.eagerHandler G H dk cStar q) prog).map
-      (fun a => (a, H))).map Prod.fst at hro
-  rw [PMF.map_comp] at hro
-  exact hro.trans (PMF.map_id _)
+      (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins)
+          (RandomOracle.ofList st.gCache)).bind fun G =>
+        (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey)
+            (RandomOracle.ofList st.hCache)).bind fun H =>
+          OracleComp.interpret (S.eagerHandler G H dk cStar) prog := by
+  have himpl : S.roHandler dk cStar = fun q => OracleComp.interpret
+      (OracleComp.sumHandler (roHashG S.pke.sampleCoins) (roHashH S.sampleKey))
+      (S.roProgram dk cStar q) := funext (S.roHandler_eq_interpret dk cStar)
+  have heager (G : M → R) (H : Bool × M × CT → K) : S.eagerHandler G H dk cStar = fun q =>
+      OracleComp.interpret
+        (OracleComp.sumHandler (fun m => PMF.pure (G m)) (fun x => PMF.pure (H x)))
+        (S.roProgram dk cStar q) := funext (S.eagerHandler_eq_interpret G H dk cStar)
+  simp only [heager, himpl, ← OracleComp.interpret_interpret]
+  rw [RandomOracle.eval_run_interpret_eq_complete_bind
+      (OracleComp.sumHandler (fun _ => ProbComp.eval S.pke.sampleCoins)
+        (fun _ => ProbComp.eval S.sampleKey))
+      (OracleComp.sumHandler (roHashG S.pke.sampleCoins) (roHashH S.sampleKey)) roTables
+      S.eval_roHash_map_roTables,
+    ← RandomOracle.bind_complete_sum]
+  congr 1 with T : 1
+  congr 1 with q : 1
+  rcases q with m | x <;> rfl
 
 /-- **Eager/lazy equivalence for the `FO-notbot` ROM IND-CCA game**: evaluating the executable
 lazy-cached game `S.roIndCcaGame A b` yields the exact same output distribution as the eager
@@ -769,26 +560,41 @@ random-oracle game `S.eagerIndCcaGame A b`. -/
 theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
     ProbComp.eval (S.roIndCcaGame A b) = S.eagerIndCcaGame A b := by
-  rw [eval_roIndCcaGame_eq_h1]
+  let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
+  let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
+  dsimp only [roIndCcaGame]
   simp only [eagerIndCcaGame, encapsNotBot, encapsBot, encT, Probability.PMF.monad_bind_eq_bind,
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   congr 1; funext ⟨pk, dk⟩
-  let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
-  pmf_swap with G mStar
-  set cStar := S.pke.encDet pk mStar (G mStar)
-  have hstep (kReal kRand : K) :
-      ((OracleComp.interpret (S.h1Handler G dk cStar)
-        (A (pk, cStar, if b then kRand else kReal))).run
-        (RandomOracle.ofList [((false, mStar, cStar), kReal)])).map Prod.fst =
-      (pi (Function.update dH (false, mStar, cStar) (PMF.pure kReal))).bind (fun H =>
-        OracleComp.interpret (S.eagerHandler G H dk cStar)
-          (A (pk, cStar, if b then kRand else kReal))) := by
-    rw [eval_run_h1Handler_eq_eager, RandomOracle.complete_ofList_singleton]
+  have hstep (mStar : M) (rStar : R) (kReal kRand : K) :
+      (ProbComp.eval ((OracleComp.interpret (S.roHandler dk (S.pke.encDet pk mStar rStar))
+        (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩)).run
+        { gCache := [(mStar, rStar)],
+          hCache := [((false, mStar, S.pke.encDet pk mStar rStar), kReal)] })).bind
+          (fun x => PMF.pure x.fst) =
+      (pi (Function.update dG mStar (PMF.pure rStar))).bind fun G =>
+        (pi (Function.update dH (false, mStar, S.pke.encDet pk mStar rStar)
+            (PMF.pure kReal))).bind fun H =>
+          OracleComp.interpret (S.eagerHandler G H dk (S.pke.encDet pk mStar rStar))
+            (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩) := by
+    change (ProbComp.eval _).map Prod.fst = _
+    rw [eval_run_roHandler_eq_eager, RandomOracle.complete_ofList_singleton,
+      RandomOracle.complete_ofList_singleton]
   simp only [hstep]
-  refine Eq.trans ?_ (bind_pi_update dH (false, mStar, cStar) (fun kReal H =>
+  pmf_hoist (ProbComp.eval S.sampleMsg)
+  congr 1 with mStar : 1
+  rw [← bind_pi_update dG mStar fun rStar G =>
+    (pi dH).bind fun H => (ProbComp.eval S.sampleKey).bind fun kRand =>
+      OracleComp.interpret (S.eagerHandler G H dk (S.pke.encDet pk mStar rStar))
+        (A ⟨pk, S.pke.encDet pk mStar rStar,
+          if b then kRand else H (false, mStar, S.pke.encDet pk mStar rStar)⟩)]
+  congr 1 with rStar : 1
+  pmf_hoist (pi (Function.update dG mStar (PMF.pure rStar)))
+  congr 1 with G : 1
+  rw [← bind_pi_update dH (false, mStar, S.pke.encDet pk mStar rStar) fun kReal H =>
     (ProbComp.eval S.sampleKey).bind fun kRand =>
-      OracleComp.interpret (S.eagerHandler G H dk cStar)
-        (A (pk, cStar, if b then kRand else kReal))))
+      OracleComp.interpret (S.eagerHandler G H dk (S.pke.encDet pk mStar rStar))
+        (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩)]
   congr 1 with kReal : 1
   exact PMF.bind_comm _ _ _
 
@@ -841,12 +647,14 @@ theorem simFilterHandler_gCache_length_le (S : Scheme PK SK M R CT K)
     st'.gCache.length ≤ st.gCache.length + q.ghCost := by
   cases q with
   | G m =>
-    simpa only [simFilterHandler, simFilterDispatch, ROQuery.ghCost] using
+    simpa only [simFilterHandler, simFilterDispatch, ROQuery.ghCost, ROQuery.dispatch,
+      filterDecaps] using
       simHashG_gCache_length_le S.pke.sampleCoins m st (res, st') hmem
   | H x =>
     rcases x with ⟨isFb, m, c⟩
     cases isFb
-    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.ghCost] at hmem ⊢
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.ghCost, ROQuery.dispatch,
+        filterDecaps] at hmem ⊢
       change (res, st') ∈ (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun z =>
         (if S.pke.encDet pk m z.fst = c then
           simHashHq S.sampleKey c
@@ -862,11 +670,13 @@ theorem simFilterHandler_gCache_length_le (S : Scheme PK SK M R CT K)
       · simp only [henc, ↓reduceIte] at hmem₂
         rw [simHashHRaw_gCache_eq S.sampleKey (false, m, c) z.snd (res, st') hmem₂]
         exact hz_le
-    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.ghCost] at hmem ⊢
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.ghCost, ROQuery.dispatch,
+        filterDecaps] at hmem ⊢
       rw [simHashHRaw_gCache_eq S.sampleKey (true, m, c) st (res, st') hmem]
       exact Nat.le_add_right _ 1
   | decaps c =>
-    dsimp only [simFilterHandler, simFilterDispatch, ROQuery.ghCost] at hmem ⊢
+    dsimp only [simFilterHandler, simFilterDispatch, ROQuery.ghCost, ROQuery.dispatch,
+      filterDecaps] at hmem ⊢
     by_cases hc : c = cStar
     · simp only [hc, ↓reduceIte] at hmem
       change (res, st') ∈ (ProbComp.eval (pure (none, st))).support at hmem
@@ -875,12 +685,12 @@ theorem simFilterHandler_gCache_length_le (S : Scheme PK SK M R CT K)
       simp
     · simp only [hc, ↓reduceIte] at hmem
       cases hd : d st.gCache c
-      · simp only [hd, Bool.cond_false] at hmem
+      · simp only [hd, filterDecaps, Bool.cond_false] at hmem
         change (res, st') ∈ (ProbComp.eval (pure (none, st))).support at hmem
         simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
         rcases hmem with ⟨-, rfl⟩
         simp
-      · simp only [hd, Bool.cond_true] at hmem
+      · simp only [hd, filterDecaps, Bool.cond_true] at hmem
         change (res, st') ∈ (ProbComp.eval (simHashHq S.sampleKey c st >>= fun a =>
           pure (some a.fst, a.snd))).support at hmem
         rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hmem
@@ -991,7 +801,7 @@ theorem sum_simFilterHitProb_le [Fintype M] (S : Scheme PK SK M R CT K)
       let cStar := S.pke.encDet keys.fst m₀ rStar
       (OracleComp.interpret (m := StateT (SimState M R CT K) PMF)
         (fun q st => ProbComp.eval (S.simFilterHandler (d keys.fst) keys.fst cStar q st))
-        (A (keys.fst, cStar, kStar))).run {}
+        (A ⟨keys.fst, cStar, kStar⟩)).run {}
   have heq (m₁ : M) :
       ProbComp.eval (S.pke.indCpaGame m₀ m₁ false (S.romFilterCpaReduction d A m₀ m₁)) =
         runDist.map fun p => (p.snd.gCache.lookup m₁).isSome := by
@@ -1006,11 +816,7 @@ theorem sum_simFilterHitProb_le [Fintype M] (S : Scheme PK SK M R CT K)
     obtain ⟨keys, -, rStar, -, kStar, -, hrun⟩ := hx
     set pk := keys.fst
     set cStar := S.pke.encDet pk m₀ rStar
-    have hcost : OracleComp.IsCostBounded ROQuery.ghCost (A (pk, cStar, kStar)) (qG + qH) := by
-      have ⟨hG, hH⟩ := hq (pk, cStar, kStar)
-      convert OracleComp.IsCostBounded.add hG hH using 1
-      funext q; cases q <;> rfl
-    have hlen := hcost.measure_le
+    have hlen := (hq.ghCost ⟨pk, cStar, kStar⟩).measure_le
       (fun q st => ProbComp.eval (S.simFilterHandler (d pk) pk cStar q st))
       (fun st : SimState M R CT K => st.gCache.length)
       (S.simFilterHandler_gCache_length_le (d pk) pk cStar)

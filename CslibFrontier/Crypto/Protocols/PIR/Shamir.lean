@@ -14,6 +14,7 @@ import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Product
 import CslibFrontier.Foundations.Data.Nat.Clog
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Probability.PMF.Support
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
@@ -193,15 +194,6 @@ theorem isCorrect_shamir {ι : Type} [Fintype ι] [DecidableEq ι] (params : Sha
   rw [hsum]
   cases x i <;> simp
 
-omit [Fintype F] [Fintype S] in
-private theorem ne_of_map_eq_pure_one_zero {α : Type} {p q : PMF α} (f : α → F)
-    (hp : p.map f = PMF.pure 1) (hq : q.map f = PMF.pure 0) : p ≠ q := by
-  intro heq
-  rw [heq, hq] at hp
-  have hsupp := congrArg PMF.support hp
-  rw [PMF.support_pure, PMF.support_pure, Set.singleton_eq_singleton_iff] at hsupp
-  exact zero_ne_one hsupp
-
 /-- **Sharpness of the collusion threshold**: `(params.threshold + 1)` servers are authorized in
 Shamir secret sharing and can reconstruct the target index, so `PIR.shamir` is not
 `(params.threshold + 1)`-private on any nontrivial database index type (`|ι| ≥ 2`). -/
@@ -220,9 +212,7 @@ theorem not_isTPrivate_succ_shamir {ι : Type} [Fintype ι] [DecidableEq ι] [No
     rw [Scheme.eval_coalitionQuery, shamir, ProbComp.eval_bind]
     simp only [ProbComp.eval_pure, ProbComp.eval_uniform, PMF.map_bind, PMF.pure_map,
       Shamir.reconstruct_share_eq_secret params _ _ hT, PMF.bind_const]
-  refine ne_of_map_eq_pure_one_zero
-    (fun (qT : T → ι → F) => Shamir.reconstruct params T (fun s => qT s i₀))
-    (by rw [hrec i₀, ite_eq_left rfl]) (by rw [hrec i₁, ite_eq_right hne])
+  exact Probability.PMF.ne_of_map_eq_pure (hrec i₀) (hrec i₁) (by simp [hne])
     (hpriv.eval_coalitionQuery_eq T hcard.le i₀ i₁)
 
 /-- Any coalition `T` of at most `params.threshold` servers in `PIR.shamirCube` sees uniform
@@ -281,9 +271,7 @@ theorem not_isTPrivate_succ_shamirCube {D ι : Type} [Fintype D] [DecidableEq D]
     rw [Scheme.eval_coalitionQuery, shamirCube, ProbComp.eval_bind]
     simp only [ProbComp.eval_pure, ProbComp.eval_uniform, PMF.map_bind, PMF.pure_map,
       Shamir.reconstruct_share_eq_secret params _ _ hT, PMF.bind_const]
-  refine ne_of_map_eq_pure_one_zero
-    (fun (qT : T → D → ι → F) => Shamir.reconstruct params T (fun s => qT s l₀ u₀))
-    (by rw [hrec (fun _ => u₀), ite_eq_left rfl]) (by rw [hrec (fun _ => u₁), ite_eq_right hne])
+  exact Probability.PMF.ne_of_map_eq_pure (hrec fun _ => u₀) (hrec fun _ => u₁) (by simp [hne])
     (hpriv.eval_coalitionQuery_eq T hcard.le (fun _ => u₀) (fun _ => u₁))
 
 /-- **Degree-`d` polynomial PIR is perfectly correct** whenever `|D| * params.threshold < |S|`:
