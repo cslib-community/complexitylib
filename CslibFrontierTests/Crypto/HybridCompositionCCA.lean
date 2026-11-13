@@ -110,6 +110,41 @@ example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFun
   intro n keys hkeys kc hkc
   exact decrypt_encryptKeyEncaps_some decrypt (fun m ct _ hc => hcorrect n keys hkeys m ct hc) hkc
 
+/-- `HybridCCAReductions` is read by field and still yields the original unbundled statement of
+`exists_hybridCCA_reductions`: two oracle-PPT reductions with the factor-two bound at every `n`. -/
+example (E : SymmetricCipher) {keyLen : ℕ → ℕ} {F : ℕ → List Bool → List Bool}
+    {keyGen : ℕ → ProbComp (List Bool × List Bool)}
+    {encaps : ℕ → List Bool → ProbComp (List Bool × List Bool)}
+    {decaps : ℕ → List Bool → List Bool → Option (List Bool)}
+    (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
+    (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
+      (fun p => encaps p.1 p.2))
+    (hdecaps : ComputableInPolyTime (fun ⟨n, sk, ct⟩ => decaps n sk ct)
+      (encKeyedInput encBits) (encOption encBits))
+    (hF : ComputableInPolyTime (fun p : ℕ × List Bool => F p.1 p.2)
+      (encPair encUnary encBits) encBits)
+    (hlaw : ∀ n, (BitString.uniformList (keyLen n)).map (F n) = ProbComp.eval (E.keyGen n))
+    (hcorrect : ∀ n keys, keys ∈ (ProbComp.eval (keyGen n)).support →
+      ∀ kc ∈ (ProbComp.eval (encaps n keys.1)).support, decaps n keys.2 kc.2 = some kc.1)
+    (adversary : WordCCA2Adversary) (hA : adversary.IsPPT) :
+    let encaps' := fun n pk => (fun kc => (F n kc.1, kc.2)) <$> encaps n pk
+    let decaps' := fun n sk ct => (decaps n sk ct).map (F n)
+    ∃ (Bkem : OracleDistinguisher) (Bs : CCAAdversary),
+      IsOraclePPT encBool Bkem ∧ IsOraclePPT encBool Bs ∧ ∀ n,
+      Game.advantage
+        (ProbComp.eval (cca2GameOn
+          (fun n _ m0 m1 => (m0.length == n) && (m1.length == n)) encBits keyGen
+          (hybridEncrypt encaps' E.encrypt) (hybridDecrypt decaps' E.decrypt) adversary false n))
+        (ProbComp.eval (cca2GameOn
+          (fun n _ m0 m1 => (m0.length == n) && (m1.length == n)) encBits keyGen
+          (hybridEncrypt encaps' E.encrypt) (hybridDecrypt decaps' E.decrypt) adversary true n)) ≤
+        2 * Game.advantage (ProbComp.eval (kemCCARealGame keyGen encaps decaps Bkem n))
+          (ProbComp.eval (kemCCAIdealGame keyLen keyGen encaps decaps Bkem n)) +
+        Game.advantage (ProbComp.eval (E.ccaOneTimeGame Bs false n))
+          (ProbComp.eval (E.ccaOneTimeGame Bs true n)) := by
+  obtain ⟨R⟩ := exists_hybridCCA_reductions E hkeyGen hencaps hdecaps hF hlaw hcorrect adversary hA
+  exact ⟨R.kem, R.dem, R.kem_isOraclePPT, R.dem_isOraclePPT, R.advantage_le⟩
+
 /-- The tight split map's correctness is checked on actual 3n-bit encapsulations. No real-key
 length is silently inferred from asymptotic KEM security. -/
 example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family)

@@ -11,6 +11,7 @@ public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.Module.Pi
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # Affine wire labels for arithmetic garbling
@@ -240,13 +241,12 @@ theorem eval_mulEncode (s c : ι → R) (x y : R) :
     (mulEncode s c x y).eval = (mulSimulate (affineLabel c s (x * y))).eval := by
   simp only [mulEncode, mulSimulate, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure]
-  rw [← PMF.uniformOfFintype_bind_equiv (Equiv.subRight x)]
+  rw [← PMF.uniformOfFintype_bind_sub_right x]
   refine congrArg _ (funext fun z => ?_)
-  rw [← PMF.uniformOfFintype_bind_equiv (Equiv.subRight (y • s))]
+  rw [← PMF.uniformOfFintype_bind_sub_right (y • s)]
   refine congrArg _ (funext fun v => ?_)
-  rw [← PMF.uniformOfFintype_bind_equiv (Equiv.subLeft (c - z • (v - y • s)))]
+  rw [← PMF.uniformOfFintype_bind_sub_left (c - z • (v - y • s))]
   refine congrArg _ (funext fun u => ?_)
-  simp only [Equiv.subRight_apply, Equiv.subLeft_apply]
   rw [mulEncodeWith_eq_mulSimulateWith]
 
 end Mul

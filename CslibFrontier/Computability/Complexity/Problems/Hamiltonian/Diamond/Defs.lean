@@ -103,12 +103,12 @@ def vertices (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) : List ℕ :=
 /-- The diamond graph with `N` diamonds whose rows have `slots i` slots, `M` clause nodes and the
 detours `D`. -/
 def graph (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) (D : List Detour) : Graph :=
-  (vertices N slots M, arcs N slots D)
+  ⟨vertices N slots M, arcs N slots D⟩
 
 /-- The diamond graph closed by an arc from the bottom of the last diamond to the top of the
 first. -/
 def cycleGraph (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) (D : List Detour) : Graph :=
-  (vertices N slots M, (topNode N, topNode 0) :: arcs N slots D)
+  ⟨vertices N slots M, (topNode N, topNode 0) :: arcs N slots D⟩
 
 /-- The detours go through declared nodes, and the detours across each slot all belong to one
 clause. -/

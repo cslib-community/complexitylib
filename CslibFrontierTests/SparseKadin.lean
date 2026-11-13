@@ -3,6 +3,7 @@ Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
+import CslibFrontier.Computability.Complexity.Classes.NP.Closure
 import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Kadin
 
@@ -71,9 +72,6 @@ example (answer : Unit × List Bool → List Bool) :
 
 -- With the empty sparse set, the census is `0`: the request `(a, 0, false)` holds and
 -- `(a, 1, false)` does not.
-private theorem empty_mem_NP : (∅ : Set (List Bool)) ∈ NP encBits :=
-  P_subset_NP ⟨fun _ => false, ComputableInPolyTime.const false, fun _ => by simp⟩
-
 example (G : (List Bool × List Bool) × List (List Bool) → Bool) (a : List Bool) :
     (a, 0, false) ∈ KadinCensus.language ∅ encBits 1 1 G ∧
       (a, 1, false) ∉ KadinCensus.language ∅ encBits 1 1 G := by

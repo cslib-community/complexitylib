@@ -180,9 +180,8 @@ example :
   have hcheck := maskedMulCheckReceiverSimulate_accepts leftWire leftWire outWire
     (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
     (inputOfMaps leftWire leftWire outWire) hv
-  have hfalse : ¬ (maskedMulCheckValue leftWire leftWire outWire falseView.1.1 falseView.1.2
-      falseView.2.1.1 falseView.2.1.2.1 =
-        falseView.2.1.2.2.1.1 * falseView.1.1 + falseView.2.1.2.2.1.2) := by decide
+  have hfalse : ¬ MaskedMulCheckAccepts leftWire leftWire outWire falseView.1 falseView.2.1 := by
+    decide
   exact hfalse hcheck
 
 
@@ -288,5 +287,19 @@ example : ComputableInPolyTime
         View Bool Bool))
     (encView encBool encBool) (encView encBool encBool) := by
   fun_prop
+
+/-! The record encodings keep the former tuple words. -/
+
+example {F : Type} (eF : F ↪ List Bool) (s : Share F) :
+    encShare eF s = encPair eF (encList eF) (s.key, s.tags) :=
+  rfl
+
+example {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool)
+    (v : View F Result) :
+    encView eF eResult v =
+      encPair (encShare eF) (encPair (encList eF) (encPair (encList eF)
+        (encPair (encPair eF eF) eResult)))
+        (v.share, v.corrections, v.weights, v.reply, v.result) :=
+  rfl
 
 end CslibFrontierTests.Crypto.VOLENative

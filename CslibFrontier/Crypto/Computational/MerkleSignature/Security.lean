@@ -251,7 +251,8 @@ private theorem eval_run_plantedHandler
             exact hguard.2 (List.mem_map.mpr ⟨e, he, heq⟩)
           simp only [↓reduceIte, hempty, sign, secretKey, secretKeyDecoder.decode_enc, signWith,
             List.getD_append_cons_length, hkeys, OracleComp.interpret_map,
-            ProbOracleComp.interpret_query, SignatureScheme.oneTimeSigningOracle, List.isEmpty_nil,
+            ProbOracleComp.interpret_query, SignatureScheme.oneTimeSigningOracle,
+            SignatureScheme.oneTimeSigningOracleOf, List.isEmpty_nil,
             ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.bind_bind, PMF.pure_bind,
             PMF.pure_map, hmapApply]
           refine PMF.bind_congr_on_support _ _ _ fun σ hσ => ?_
@@ -808,6 +809,8 @@ private theorem computableInPolyTime_handlerBound
   have hL := hfst.encoding_comp.trans ComputableInPolyTime.length_bits
   have hW := (ComputableInPolyTime.snd enc encBits).trans ComputableInPolyTime.length_bits
   have hb := hfst.trans hbound
+  -- An explicit chain: `fun_prop` on this goal exhausts the default heartbeat budget at `whnf`,
+  -- unfolding `(enc pair.1).length` for the generic encoding `enc`.
   open ComputableInPolyTime in
   have h2L1 := unary_add' (unary_mul' (const 2) hL) (const 1)
   exact unary_add'
@@ -977,31 +980,7 @@ theorem _root_.Cslib.Crypto.SignatureScheme.OneTimeEUFCMA.indexedEUFCMA_merkle
     (hlen : ∀ k m, (H k m).length = k.length) {depth : ℕ → ℕ}
     (hcap : ComputableInPolyTime (fun n => 2 ^ depth n) encUnary encUnary) :
     (scheme S H depth hH hlen hcap).IndexedEUFCMA := by
-  obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
-  let bound (n : ℕ) : ℕ := cs * (2 * (ck * (n + 1) ^ dk) + n + 2) ^ ds
-  have hboundPoly : ComputableInPolyTime bound encUnary encUnary := by
-    let hn := ComputableInPolyTime.id' (encIn := encUnary)
-    let cst (k : ℕ) := ComputableInPolyTime.const (encIn := encUnary) (encOut := encUnary) k
-    exact ComputableInPolyTime.unary_mul' (cst cs)
-      ((ComputableInPolyTime.unary_pow ds).comp
-        (ComputableInPolyTime.unary_add'
-          (ComputableInPolyTime.unary_add'
-            (ComputableInPolyTime.unary_mul' (cst 2)
-              (ComputableInPolyTime.unary_mul' (cst ck)
-                ((ComputableInPolyTime.unary_pow dk).comp
-                  (ComputableInPolyTime.unary_add' hn (cst 1)))))
-            hn)
-          (cst 2)))
-  have hbound (n : ℕ) : ∀ x ∈ (ProbComp.eval (S.keyGen n)).support, ∀ msg, msg.length = n →
-      ∀ σ ∈ (ProbComp.eval (S.sign x.2 msg)).support, σ.length ≤ bound n := by
-    intro x hx msg hmsg σ hσ
-    have hkeyLen := hlenk n x hx
-    simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeyLen
-    have hσLen := hlens (x.2, msg) σ hσ
-    simp only [length_encPair, encBits_apply] at hσLen
-    refine hσLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left ?_ ds))
-    omega
+  obtain ⟨bound, hboundPoly, hbound⟩ := S.exists_sign_length_bound_of_length_eq
   apply IndexedSignatureScheme.IndexedEUFCMA.of_negligible
   intro adversary hadversary
   have hB := hS.negligible (oneTimeForger S H depth bound adversary)

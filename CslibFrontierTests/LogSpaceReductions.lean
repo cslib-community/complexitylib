@@ -61,7 +61,7 @@ def pairOr (B : Set (List Bool)) : Set (List Bool × List Bool) :=
 /-- `pairOr B` disjunctive-truth-table reduces to `B` in logarithmic space with two queries. -/
 theorem pairOr_logSpaceDTTReducible (B : Set (List Bool)) :
     LogSpaceDTTReducible (encPair encBits encBits) encBits (pairOr B) B := by
-  refine ⟨fun _ => 2, pairQuery, ComputableInLogSpace.const 2, computableInLogSpace_pairQuery,
+  refine ⟨fun _ => 2, pairQuery, ⟨ComputableInLogSpace.const 2, computableInLogSpace_pairQuery⟩,
     fun p => ?_⟩
   simp only [pairOr, Set.mem_ofPred_eq]
   constructor
@@ -85,7 +85,7 @@ def pairAnd (B : Set (List Bool)) : Set (List Bool × List Bool) :=
 /-- `pairAnd B` conjunctive-truth-table reduces to `B` in logarithmic space with two queries. -/
 theorem pairAnd_logSpaceCTTReducible (B : Set (List Bool)) :
     LogSpaceCTTReducible (encPair encBits encBits) encBits (pairAnd B) B := by
-  refine ⟨fun _ => 2, pairQuery, ComputableInLogSpace.const 2, computableInLogSpace_pairQuery,
+  refine ⟨fun _ => 2, pairQuery, ⟨ComputableInLogSpace.const 2, computableInLogSpace_pairQuery⟩,
     fun p => ?_⟩
   simp only [pairAnd, Set.mem_ofPred_eq]
   constructor
@@ -109,9 +109,9 @@ theorem pairXor_logSpaceKTruthTableReducible (B : Set (List Bool)) :
     LogSpaceKTruthTableReducible 2 (encPair encBits encBits) encBits (pairXor B) B := by
   classical
   refine ⟨fun _ => 2, pairQuery, fun p => p.2.foldl xor false,
-    ComputableInLogSpace.const 2, computableInLogSpace_pairQuery,
-    (ComputableInLogSpace.bitsFoldl xor false).comp (ComputableInLogSpace.snd _ _),
-    fun _ => le_rfl, fun p => ?_⟩
+    ⟨ComputableInLogSpace.const 2, computableInLogSpace_pairQuery,
+      (ComputableInLogSpace.bitsFoldl xor false).comp (ComputableInLogSpace.snd _ _),
+      fun _ => le_rfl⟩, fun p => ?_⟩
   rw [truthTableAnswers_eq_map_range]
   simp only [pairXor, Set.mem_ofPred_eq, Set.mem_preimage, List.range_succ, List.range_zero,
     List.nil_append, List.singleton_append, List.map_cons, List.map_nil, List.foldl_cons,
@@ -138,13 +138,13 @@ example (B : Set (List Bool)) :
     refine ⟨fun _ => 2,
       fun p => if decide (p.2 ≤ 0) then p.1.1 else p.1.2,
       fun p => p.2.foldl xor false,
-      ComputableInLogSpace.const 2,
-      ComputableInLogSpace.ite
-        (ComputableInLogSpace.unaryLeConst 0 (ComputableInLogSpace.snd _ _))
-        ((ComputableInLogSpace.fst _ _).comp (ComputableInLogSpace.fst _ _))
-        ((ComputableInLogSpace.snd _ _).comp (ComputableInLogSpace.fst _ _)),
-      (ComputableInLogSpace.bitsFoldl xor false).comp (ComputableInLogSpace.snd _ _),
-      fun _ => le_rfl,
+      ⟨ComputableInLogSpace.const 2,
+        ComputableInLogSpace.ite
+          (ComputableInLogSpace.unaryLeConst 0 (ComputableInLogSpace.snd _ _))
+          ((ComputableInLogSpace.fst _ _).comp (ComputableInLogSpace.fst _ _))
+          ((ComputableInLogSpace.snd _ _).comp (ComputableInLogSpace.fst _ _)),
+        (ComputableInLogSpace.bitsFoldl xor false).comp (ComputableInLogSpace.snd _ _),
+        fun _ => le_rfl⟩,
       fun q => ?_⟩
     rw [truthTableAnswers_eq_map_range]
     simp only [Set.mem_ofPred_eq, Set.mem_preimage, List.range_succ, List.range_zero,

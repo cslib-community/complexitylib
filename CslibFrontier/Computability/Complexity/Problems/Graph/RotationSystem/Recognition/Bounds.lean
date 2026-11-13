@@ -36,14 +36,11 @@ theorem boundedEndpoints_frame {I : FixedRotationInput} (hI : Valid I) :
   intro segment hs
   obtain ⟨entry, he, hs⟩ := List.mem_flatMap.mp hs
   obtain ⟨hi, hv⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp he)
-  have hem : entry.1 ∈ I.graph.2 := by rw [← hv]; exact List.getElem_mem hi
-  have hu : entry.1.1 < I.graph.1.length :=
-    hI.2.1 _ (List.mem_flatMap.mpr ⟨entry.1, hem, by simp⟩)
-  have hw : entry.1.2 < I.graph.1.length :=
-    hI.2.1 _ (List.mem_flatMap.mpr ⟨entry.1, hem, by simp⟩)
-  change segment ∈ [((entry.1.1, I.graph.1.length + 2 * entry.2), _),
-    ((I.graph.1.length + 2 * entry.2, I.graph.1.length + 2 * entry.2 + 1), false),
-    ((I.graph.1.length + 2 * entry.2 + 1, entry.1.2), _)] at hs
+  have hem : entry.1 ∈ I.graph.edges := by rw [← hv]; exact List.getElem_mem hi
+  obtain ⟨hu, hw⟩ := hI.edge_endpoints_lt hem
+  change segment ∈ [((entry.1.1, I.graph.vertices.length + 2 * entry.2), _),
+    ((I.graph.vertices.length + 2 * entry.2, I.graph.vertices.length + 2 * entry.2 + 1), false),
+    ((I.graph.vertices.length + 2 * entry.2 + 1, entry.1.2), _)] at hs
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hs
   rcases hs with rfl | rfl | rfl <;> change _ < subdivisionSize I ∧ _ < subdivisionSize I <;>
     unfold subdivisionSize <;> constructor <;>
@@ -52,7 +49,7 @@ theorem boundedEndpoints_frame {I : FixedRotationInput} (hI : Valid I) :
 /-- Every variable in a literal row lies in the finite rectangular move frame. -/
 theorem label_lt_row {F : Frame} (hF : BoundedEndpoints F)
     {e f : Segment × ℕ} (he : e ∈ F.segments.zipIdx) (hf : f ∈ F.segments.zipIdx)
-    {label : ℕ} (hl : label ∈ (row F e f).1) :
+    {label : ℕ} (hl : label ∈ (row F e f).vars) :
     label < F.segments.length * F.vertexCount := by
   have entry (x : Segment × ℕ) (hx : x ∈ F.segments.zipIdx) :
       x.2 < F.segments.length ∧ x.1 ∈ F.segments := by
@@ -91,25 +88,26 @@ theorem mem_compileFrame {F : Frame} {r : AffineEquation ℕ} :
 
 /-- The finite system uses at most four labels per row. -/
 theorem width_compileFrame {F : Frame} {r : AffineEquation ℕ} (hr : r ∈ compileFrame F) :
-    r.1.length ≤ 4 := by
+    r.vars.length ≤ 4 := by
   obtain ⟨e, _, f, _, _, _, rfl⟩ := mem_compileFrame.mp hr
   exact length_row_le F e f
 
 /-- Full binary label width including the zero/empty-frame case. -/
 theorem bits_compileFrame {F : Frame} (hF : BoundedEndpoints F)
-    {r : AffineEquation ℕ} (hr : r ∈ compileFrame F) {label : ℕ} (hl : label ∈ r.1) :
+    {r : AffineEquation ℕ} (hr : r ∈ compileFrame F) {label : ℕ} (hl : label ∈ r.vars) :
     (encNat label).length ≤ Nat.log2 (F.segments.length * F.vertexCount) + 1 := by
   obtain ⟨e, he, f, hf, _, _, rfl⟩ := mem_compileFrame.mp hr
   exact length_encNat_le_log2 (label_lt_row hF he hf hl).le
 
 /-- Each fully framed sparse row costs at most `32 ell + 21` bits in its outer system list. -/
-theorem framed_row_length_le {r : AffineEquation ℕ} {ell : ℕ} (hw : r.1.length ≤ 4)
-    (hb : ∀ label ∈ r.1, (encNat label).length ≤ ell) :
-    2 * (XORSAT.equationEncoding r).length + 1 ≤ 32 * ell + 21 := by
-  have hl := length_encList_le encNat r.1 hb
-  have hv : (encList encNat r.1).length ≤ 4 * (2 * ell + 1) :=
+theorem framed_row_length_le {r : AffineEquation ℕ} {ell : ℕ} (hw : r.vars.length ≤ 4)
+    (hb : ∀ label ∈ r.vars, (encNat label).length ≤ ell) :
+    2 * (encAffineEquation encNat r).length + 1 ≤ 32 * ell + 21 := by
+  have hl := length_encList_le encNat r.vars hb
+  have hv : (encList encNat r.vars).length ≤ 4 * (2 * ell + 1) :=
     hl.trans (Nat.mul_le_mul_right _ hw)
-  simp only [XORSAT.equationEncoding, length_encPair, encBool_apply, List.length_singleton]
+  simp only [encAffineEquation_apply, encAffineEquationFields, length_encPair, encBool_apply,
+    List.length_singleton]
   omega
 
 /-- The entire sparse system encoding, including equation and list framing. -/

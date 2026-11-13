@@ -18,7 +18,7 @@ open Cslib.Complexity
 
 -- Inner edges I0,I1,I2 followed by the parallel outer edges O0,O1,O2.
 private abbrev triangleGraph : Graph :=
-  ([0, 1, 2], [(0, 1), (1, 2), (2, 0), (0, 1), (1, 2), (2, 0)])
+  ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0), (0, 1), (1, 2), (2, 0)]⟩
 
 private def triangleRho : Equiv.Perm (Graph.Dart triangleGraph) :=
   [(0, false), (3, false), (5, true), (2, true)].formPerm *
@@ -54,7 +54,7 @@ example : ((triangleFaces.drop 1).take 3).map (List.map Graph.Dart.vertex) =
     [[0, 1], [1, 2], [2, 0]] := by decide
 
 -- The only binary intersection used for the constant lemma is three parallel edges.
-private abbrev binaryGraph : Graph := ([0, 1], [(0, 1), (0, 1), (0, 1)])
+private abbrev binaryGraph : Graph := ⟨[0, 1], [(0, 1), (0, 1), (0, 1)]⟩
 
 private def binaryRho : Equiv.Perm (Graph.Dart binaryGraph) :=
   [(0, false), (2, false), (1, false)].formPerm *

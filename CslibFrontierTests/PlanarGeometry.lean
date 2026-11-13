@@ -26,7 +26,7 @@ example :
     (∀ r ∈ routes [[(7, true)]], IsOrthogonal r ∧ IsSimple r) ∧
     (routes [[(7, true)]]).length =
       (SAT.incidenceGraph (formula [[(7, true)]])).2.length ∧
-    (occurrencePath [[(7, true)]] (0, 0, (7, true))).Nodup ∧
+    (occurrencePath [[(7, true)]] ⟨0, 0, (7, true)⟩).Nodup ∧
     cellPort 120 (-1, -2) (side (-1, -2) (0, -2)) =
       cellPort 120 (0, -2) (side (0, -2) (-1, -2)) ∧
     Disjoint (support (access [(0, 0)] (0, 0) (-1, 0) 0))

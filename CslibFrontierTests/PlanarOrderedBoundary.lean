@@ -40,10 +40,10 @@ example : verify ([] : CSP Unit ℕ) [7] ⟨[0, 1]⟩ = true := by decide +kerne
 example : verify ([] : CSP Empty ℕ) [] ⟨[]⟩ = true := by decide +kernel
 
 -- Both nullary truth values give isolated constraint vertices; truth is a semantic issue.
-example : verify ([(true, []), (false, [])] : CSP Bool ℕ) [] ⟨[]⟩ = true := by decide +kernel
+example : verify ([⟨true, []⟩, ⟨false, []⟩] : CSP Bool ℕ) [] ⟨[]⟩ = true := by decide +kernel
 
 example : ¬ CSP.Satisfiable (fun (r : Bool) (_ : List Bool) => r)
-    ([(true, []), (false, [])] : CSP Bool ℕ) := by
+    ([⟨true, []⟩, ⟨false, []⟩] : CSP Bool ℕ) := by
   simp [CSP.Satisfiable, CSP.eval, Constraint.eval]
 
 -- The general atom-star theorem includes zero, one and unrestricted higher arity.

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 public import Mathlib.MeasureTheory.Measure.TotalVariation.Defs
+import CslibFrontier.Probability.ChangeOfMeasure
 import Mathlib.MeasureTheory.Measure.TotalVariation.Basic
 import Mathlib.Probability.Moments.SubGaussian
 
@@ -19,10 +20,10 @@ import Mathlib.Probability.Moments.SubGaussian
 For probability measures `μ` and `ν` and a measurable event `s`,
 `2 (μ s - ν s)² ≤ klDiv μ ν`, the Kullback–Leibler divergence in nats
 (`Cslib.Probability.ofReal_two_mul_sq_measureReal_sub_le_klDiv`). The proof is the variational
-one: Gibbs' inequality for an exponentially tilted measure (Mathlib's
-`integral_llr_tilted_right`) and Hoeffding's lemma for the indicator of the event. A Hahn
-decomposition then gives the form with Mathlib's total variation distance,
-`tvDist μ ν ^ 2 / 2 ≤ klDiv μ ν` (`Cslib.Probability.ofReal_tvDist_sq_div_two_le_klDiv`).
+one: the change-of-measure inequality
+(`Cslib.Probability.integral_le_toReal_klDiv_add_log_integral_exp`) and Hoeffding's lemma for the
+indicator of the event. A Hahn decomposition then gives the form with Mathlib's total variation
+distance, `tvDist μ ν ^ 2 / 2 ≤ klDiv μ ν` (`Cslib.Probability.ofReal_tvDist_sq_div_two_le_klDiv`).
 The finite-distribution forms, in terms of statistical distance, are in `Probability/Divergence`.
 
 ## Main results
@@ -51,13 +52,9 @@ theorem ofReal_two_mul_sq_measureReal_sub_le_klDiv {mα : MeasurableSpace α}
     {μ ν : Measure α} [IsProbabilityMeasure μ] [IsProbabilityMeasure ν]
     {s : Set α} (hs : MeasurableSet s) :
     ENNReal.ofReal (2 * (μ.real s - ν.real s) ^ 2) ≤ klDiv μ ν := by
-  by_cases hac : μ ≪ ν
-  swap; · simp [klDiv_of_not_ac hac]
-  by_cases hint : Integrable (llr μ ν) μ
-  swap; · simp [klDiv_of_not_integrable hint]
-  rw [klDiv_of_ac_of_integrable hac hint]
-  apply ENNReal.ofReal_le_ofReal
-  simp only [probReal_univ, add_sub_cancel_right]
+  by_cases hkl : klDiv μ ν = ⊤
+  · simp [hkl]
+  rw [ENNReal.ofReal_le_iff_le_toReal hkl]
   set δ := μ.real s - ν.real s
   set t := 4 * δ
   let X : α → ℝ := s.indicator fun _ => 1
@@ -72,14 +69,7 @@ theorem ofReal_two_mul_sq_measureReal_sub_le_klDiv {mα : MeasurableSpace α}
         _ ≤ |t| * 1 := mul_le_mul_of_nonneg_left (hXmem x).2 (abs_nonneg t)
         _ = |t| := mul_one _)
   have hfμ : Integrable (fun x => t * X x) μ := ((integrable_const 1).indicator hs).const_mul t
-  -- Gibbs' inequality for the tilted measure `ν.tilted (t * X)`.
-  have hgibbs : 0 ≤ ∫ x, llr μ (ν.tilted fun x => t * X x) x ∂μ := by
-    have := isProbabilityMeasure_tilted hexp
-    have h := integral_llr_add_sub_measure_univ_nonneg
-      (hac.trans (absolutelyContinuous_tilted hexp))
-      (integrable_llr_tilted_right hac hfμ hint hexp)
-    simpa only [probReal_univ, add_sub_cancel_right] using h
-  rw [integral_llr_tilted_right hac hfμ hexp hint] at hgibbs
+  have hgibbs := integral_le_toReal_klDiv_add_log_integral_exp hkl hfμ hexp
   -- Hoeffding's lemma for the indicator of `s` under `ν`.
   have hmean : ∫ x, X x ∂ν = ν.real s := by
     rw [integral_indicator_const (1 : ℝ) hs, smul_eq_mul, mul_one]

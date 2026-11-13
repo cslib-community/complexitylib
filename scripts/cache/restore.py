@@ -9,11 +9,15 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from urllib.parse import urlsplit
 
 from bounded import UnsafeShutdown, interruptible, run, seconds
 
-DEFAULT_URL = "https://storage.googleapis.com/complexitylib-lake-cache"
+DEFAULT_URLS = (
+    "https://storage.googleapis.com/complexitylib-lake-cache",
+    "https://complexitycache.csail.mit.edu",
+)
 SCOPE = "cslib-community/complexitylib"
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -23,7 +27,7 @@ def origins(env):
     if "COMPLEXITYLIB_CACHE_URL" in env:
         values = [env["COMPLEXITYLIB_CACHE_URL"]] if env["COMPLEXITYLIB_CACHE_URL"] else []
     else:
-        values = env.get("COMPLEXITYLIB_CACHE_URLS", "").split() or [DEFAULT_URL]
+        values = env.get("COMPLEXITYLIB_CACHE_URLS", "").split() or list(DEFAULT_URLS)
     if len(values) > 8:
         raise ValueError("At most eight cache origins may be configured")
     for value in values:
@@ -53,12 +57,16 @@ def one_origin(root, origin, work, missing):
                 "curl", "--disable", "--fail", "--silent",
                 "--connect-timeout", "5", "--max-time", "20", "--retry", "2",
                 "--retry-max-time", "20", "--max-filesize", str(8 * 1024 * 1024),
-                "--output", str(mapping),
-                f"{origin}/r0/{SCOPE}/tc/{toolchain}/{revision}.jsonl"], cwd=root)
+                "--output", str(mapping), "--write-out", "%{http_code}",
+                f"{origin}/r0/{SCOPE}/tc/{toolchain}/{revision}.jsonl"], cwd=root,
+                stdout=subprocess.PIPE, text=True)
             if result.returncode == 0:
                 break
         else:
-            print(f"No uploaded outputs among {len(revisions)} revisions at {origin}", flush=True)
+            detail = (f"last lookup HTTP {result.stdout.strip() or 'unknown'}, "
+                      f"curl exit {result.returncode}") if revisions else "no revisions to check"
+            print(f"No usable cached mapping among {len(revisions)} revisions at {origin} "
+                  f"({detail})", flush=True)
             return 1
         current = set()
         for trace in (root / ".lake/build").rglob("*.trace"):
@@ -115,12 +123,17 @@ def restore(root, env, missing=False):
                     print("warning: could not deepen clone; using available history", file=sys.stderr)
     for index, origin in enumerate(urls, 1):
         print(f"cslib-frontier cache origin {index}/{len(urls)}: {origin}", flush=True)
+        started = time.monotonic()
         with tempfile.TemporaryDirectory(prefix="cslib-frontier-cache-") as temporary:
             args = [sys.executable, "-B", str(Path(__file__).resolve()), "--one", origin,
                     "--work", temporary, "--checkout", str(root)]
             if missing:
                 args.append("--missing")
             result = run(args, timeout=timeout, cwd=root, env=env)
+        outcome = ("completed" if result.returncode == 0 else "timed out"
+                   if result.returncode == 124 else f"failed (exit {result.returncode})")
+        print(f"cslib-frontier cache origin {index}/{len(urls)}: {outcome} in "
+              f"{time.monotonic() - started:.1f}s: {origin}", flush=True)
         if result.returncode == 0:
             return True
         print("note: origin missed, failed or timed out; trying the next configured origin", flush=True)

@@ -161,7 +161,7 @@ native key law remains separate and is compared by `closeTo_schnorrSigKeyGen`. -
 theorem schnorrEncodedROMScheme_keyGen_ideal :
     (F.schnorrEncodedROMScheme d m (F.schnorrIdealKeyGen d) nonceLaw).keyGen =
       ((F.schnorrWordROMScheme d hm).keyGen).map
-        (fun keys => (F.encode d keys.1, F.encScalar d keys.2.1)) := by
+        (fun (pk, sk, _) => (F.encode d pk, F.encScalar d sk)) := by
   simp only [schnorrEncodedROMScheme, schnorrIdealKeyGen, schnorrWordROMScheme, fiatShamir,
     schnorrKeyGen, PMF.map_comp]
   rfl

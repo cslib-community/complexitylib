@@ -39,7 +39,7 @@ variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 positions together with its original incidence faces. All face orbits are counted. -/
 theorem polygon_component_face_card (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (root : ℕ) (hr : root < F.numVars) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (root : ℕ) (hr : root < F.numVars) :
     Nat.card {f : (polygonRotation r).Face // ∃ d : Graph.Dart (polygonGraph F),
       SameComponent (polygonGraph F) root d.vertex ∧ Quotient.mk _ d = f} =
     Nat.card {i : Fin F.length // SameComponent (incidenceGraph F) root (F.numVars + i.val)} +
@@ -113,9 +113,9 @@ open Classical in
 /-- The component edge counts agree exactly: both lists retain one edge position per
 occurrence, and its first endpoint is the same dense variable. -/
 theorem polygon_component_edge_count (root : ℕ) (hr : root < F.numVars) :
-    (polygonGraph F).2.countP
+    (polygonGraph F).edges.countP
       (fun e => decide (SameComponent (polygonGraph F) root e.1)) =
-    (incidenceGraph F).2.countP
+    (incidenceGraph F).edges.countP
       (fun e => decide (SameComponent (incidenceGraph F) root e.1)) := by
   classical
   rw [incidenceGraph_edges]
@@ -134,15 +134,15 @@ preserves the existing componentwise numerical genus-zero predicate in both dire
 This includes disconnected and empty instances. It asserts no geometric realization. -/
 theorem numericalGenusZero_polygon_iff (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     (polygonRotation r).NumericalGenusZero ↔ r.NumericalGenusZero := by
   classical
   let Euler (G : Graph) (s : Graph.RotationSystem G) (root : ℕ) : Prop :=
     G.distinctVertices.countP (fun v => decide (SameComponent G root v)) +
-      ((List.finRange (2 * G.2.length)).countP fun i =>
+      ((List.finRange (2 * G.edges.length)).countP fun i =>
         decide (SameComponent G root ((Graph.Dart.indexEquiv G).symm i).vertex ∧
           s.IsFaceRepresentative ((Graph.Dart.indexEquiv G).symm i))) =
-      G.2.countP (fun e => decide (SameComponent G root e.1)) + 2
+      G.edges.countP (fun e => decide (SameComponent G root e.1)) + 2
   have hdense (o : F.Occurrence) : F.distinctVars.idxOf o.var < F.numVars := by
     rw [← CSP.length_distinctVars]
     exact List.idxOf_lt_length_of_mem (CSP.mem_distinctVars.mpr o.var_mem)
@@ -156,11 +156,11 @@ theorem numericalGenusZero_polygon_iff (r : Graph.RotationSystem (incidenceGraph
     have hE := polygon_component_edge_count root hr
     dsimp only [ComponentFace] at *
     omega
-  have hPdart (root : ℕ) (hr : root ∈ (polygonGraph F).1) :
+  have hPdart (root : ℕ) (hr : root ∈ (polygonGraph F).vertices) :
       ∃ d : Graph.Dart (polygonGraph F), d.vertex = root := by
     obtain ⟨o, ho⟩ := exists_occurrence_dense root (List.mem_range.mp hr)
     exact ⟨polygonDart o false, (vertex_polygonDart o false).trans ho⟩
-  have hIdart (root : ℕ) (hr : root ∈ (incidenceGraph F).1) :
+  have hIdart (root : ℕ) (hr : root ∈ (incidenceGraph F).vertices) :
       ∃ o : F.Occurrence, ∃ b : Bool, (incidenceDart o b).vertex = root := by
     by_cases hv : root < F.numVars
     · obtain ⟨o, ho⟩ := exists_occurrence_dense root hv
@@ -203,7 +203,7 @@ theorem numericalGenusZero_polygon_iff (r : Graph.RotationSystem (incidenceGraph
     unfold Graph.RotationSystem.NumericalGenusZero at hI ⊢
     intro root hr
     rw [ite_eq_left (hPdart root hr)]
-    have hroot : root ∈ (incidenceGraph F).1 := by
+    have hroot : root ∈ (incidenceGraph F).vertices := by
       rw [incidenceGraph_vertices, List.mem_range]
       have := List.mem_range.mp hr
       omega

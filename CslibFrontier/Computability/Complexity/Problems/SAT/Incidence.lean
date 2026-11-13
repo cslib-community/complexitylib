@@ -56,44 +56,42 @@ variable {V : Type} [DecidableEq V]
 
 /-- The finite incidence graph, with one edge record for every literal occurrence. -/
 def incidenceGraph (φ : CNF V) : Graph :=
-  (List.range (φ.distinctVars.length + φ.length),
+  ⟨List.range (φ.distinctVars.length + φ.length),
     (Cslib.Logic.PL.occurrences φ).map fun o =>
-      (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1))
+      (φ.distinctVars.idxOf o.lit.1, φ.distinctVars.length + o.clause)⟩
 
 /-- There is one vertex per distinct variable and per clause position. -/
 theorem length_vertices_incidenceGraph (φ : CNF V) :
-    (incidenceGraph φ).1.length = φ.numVars + φ.length := by
+    (incidenceGraph φ).vertices.length = φ.numVars + φ.length := by
   simp [incidenceGraph, CNF.length_distinctVars]
 
 /-- Every literal occurrence gives exactly one edge record. -/
 theorem length_edges_incidenceGraph (φ : CNF V) :
-    (incidenceGraph φ).2.length = φ.vars.length := by
+    (incidenceGraph φ).edges.length = φ.vars.length := by
   simp [incidenceGraph, length_occurrences]
 
 /-- The edge records join the variable and clause parts of the declared vertex interval. -/
 theorem incidenceGraph_bipartite {φ : CNF V} {e : ℕ × ℕ}
-    (he : e ∈ (incidenceGraph φ).2) :
+    (he : e ∈ (incidenceGraph φ).edges) :
     e.1 < φ.distinctVars.length ∧ φ.distinctVars.length ≤ e.2 ∧
       e.2 < φ.distinctVars.length + φ.length := by
   obtain ⟨o, ho, rfl⟩ := List.mem_map.mp he
-  have hvar : o.2.2.1 ∈ φ.vars := by
-    rw [← Cslib.Logic.PL.map_occurrences]
-    exact List.mem_map_of_mem ho
-  have hindex := List.idxOf_lt_length_of_mem (CNF.mem_distinctVars.mpr hvar)
+  have hindex := List.idxOf_lt_length_of_mem
+    (CNF.mem_distinctVars.mpr (variable_mem_of_mem_occurrences ho))
   obtain ⟨hclause, _, _⟩ := Cslib.Logic.PL.mem_occurrences.mp ho
   exact ⟨hindex, Nat.le_add_right _ _, Nat.add_lt_add_left hclause _⟩
 
 /-- Every edge endpoint occurs in the list of declared vertices. -/
 theorem incidenceGraph_endpoints {φ : CNF V} {e : ℕ × ℕ}
-    (he : e ∈ (incidenceGraph φ).2) :
-    e.1 ∈ (incidenceGraph φ).1 ∧ e.2 ∈ (incidenceGraph φ).1 := by
+    (he : e ∈ (incidenceGraph φ).edges) :
+    e.1 ∈ (incidenceGraph φ).vertices ∧ e.2 ∈ (incidenceGraph φ).vertices := by
   obtain ⟨hu, _, hv⟩ := incidenceGraph_bipartite he
   simp only [incidenceGraph, List.mem_range]
   exact ⟨hu.trans_le (Nat.le_add_right _ _), hv⟩
 
 /-- The variable and clause name intervals are disjoint, so incidence edges are not loops. -/
 theorem incidenceGraph_loopless {φ : CNF V} {e : ℕ × ℕ}
-    (he : e ∈ (incidenceGraph φ).2) : e.1 ≠ e.2 := by
+    (he : e ∈ (incidenceGraph φ).edges) : e.1 ≠ e.2 := by
   obtain ⟨hu, hv, _⟩ := incidenceGraph_bipartite he
   omega
 
@@ -106,20 +104,23 @@ theorem computableInPolyTime_incidenceGraph (enc : V ↪ List Bool) :
   let unaryGraph := encPair (encList encUnary) (encList (encPair encUnary encUnary))
   have hd := CNF.computableInPolyTime_distinctVars enc
   have ho := Cslib.Logic.PL.computableInPolyTime_occurrences enc
-  unfold Cslib.Logic.PL.encOccurrence at ho
-  have hu : ComputableInPolyTime (incidenceGraph (V := V))
+  have hu : ComputableInPolyTime (fun φ : CNF V =>
+      (List.range (φ.distinctVars.length + φ.length),
+        (Cslib.Logic.PL.occurrences φ).map fun o =>
+          (φ.distinctVars.idxOf o.lit.1, φ.distinctVars.length + o.clause)))
       (encList (encList (encPair enc encBool))) unaryGraph := by
-    unfold incidenceGraph unaryGraph
+    dsimp only [unaryGraph]
     fun_prop
-  have hc : ComputableInPolyTime (fun g : Graph => g) unaryGraph encGraph := by
-    open ComputableInPolyTime in
-    have hp := (unary_to_binary.comp (fst encUnary encUnary)).prod
-      (unary_to_binary.comp (snd encUnary encUnary))
-    open ComputableInPolyTime in
-    have h := ((map unary_to_binary).comp
-      (fst (encList encUnary) (encList (encPair encUnary encUnary)))).prod
-        ((map hp).comp (snd (encList encUnary) (encList (encPair encUnary encUnary))))
-    simpa [Function.comp_def, unaryGraph, encGraph] using h
-  exact hc.comp hu
+  open ComputableInPolyTime in
+  have hp := (unary_to_binary.comp (fst encUnary encUnary)).prod
+    (unary_to_binary.comp (snd encUnary encUnary))
+  open ComputableInPolyTime in
+  have hV := (map unary_to_binary).comp
+    (fst (encList encUnary) (encList (encPair encUnary encUnary)))
+  have hE := (map hp).comp (snd (encList encUnary) (encList (encPair encUnary encUnary)))
+  have hc := encGraph_mk_polyTime hV hE
+  have hcomp := hc.comp hu
+  convert hcomp using 2 with φ
+  ext <;> simp [incidenceGraph]
 
 end Cslib.Complexity.SAT

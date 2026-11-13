@@ -354,11 +354,11 @@ variable {Rel V D R : Type*}
 `e : D ≃ Fin d`. -/
 @[expose] def ofConstraint [Inhabited D] (d : ℕ) (e : D ≃ Fin d) (wt : Rel → List D → R)
     (c : Constraint Rel V) : FactorTable R V :=
-  { scope := c.2
-    entries := Array.ofFn fun i : Fin (d ^ c.2.length) =>
-      let args := (lsbDecode d c.2.length i.1).map fun k =>
+  { scope := c.scope
+    entries := Array.ofFn fun i : Fin (d ^ c.scope.length) =>
+      let args := (lsbDecode d c.scope.length i.1).map fun k =>
         if hk : k < d then e.symm ⟨k, hk⟩ else default
-      wt c.1 args }
+      wt c.rel args }
 
 /-- Compile an entire CSP instance into a list of explicit factor tables. -/
 @[expose] def ofCSP [Inhabited D] (d : ℕ) (e : D ≃ Fin d) (wt : Rel → List D → R)
@@ -385,25 +385,25 @@ theorem vars_ofCSP [DecidableEq V] [Inhabited D] (d : ℕ) (e : D ≃ Fin d)
 preserving arbitrary repeated variables and empty scopes. -/
 theorem evalAt_ofConstraint [Zero R] [Inhabited D] (d : ℕ) (e : D ≃ Fin d)
     (wt : Rel → List D → R) (c : Constraint Rel V) (σ : V → D) :
-    (ofConstraint d e wt c).evalAt d (fun v => (e (σ v)).1) = wt c.1 (c.2.map σ) := by
-  have hlt : ∀ x ∈ c.2.map (fun v => (e (σ v)).1), x < d := by
+    (ofConstraint d e wt c).evalAt d (fun v => (e (σ v)).1) = wt c.rel (c.scope.map σ) := by
+  have hlt : ∀ x ∈ c.scope.map (fun v => (e (σ v)).1), x < d := by
     intro x hx
     rcases List.mem_map.mp hx with ⟨v, _, rfl⟩
     exact (e (σ v)).2
-  have hidx : Nat.ofDigits d (c.2.map fun v => (e (σ v)).1) < d ^ c.2.length := by
+  have hidx : Nat.ofDigits d (c.scope.map fun v => (e (σ v)).1) < d ^ c.scope.length := by
     simpa [List.length_map] using ofDigits_lt_pow_length _ hlt
-  have hdec : lsbDecode d c.2.length (Nat.ofDigits d (c.2.map fun v => (e (σ v)).1)) =
-      c.2.map fun v => (e (σ v)).1 := by
-    have := lsbDecode_ofDigits (c.2.map fun v => (e (σ v)).1) hlt
+  have hdec : lsbDecode d c.scope.length (Nat.ofDigits d (c.scope.map fun v => (e (σ v)).1)) =
+      c.scope.map fun v => (e (σ v)).1 := by
+    have := lsbDecode_ofDigits (c.scope.map fun v => (e (σ v)).1) hlt
     simpa [List.length_map] using this
   rw [evalAt, ofConstraint, Array.getD]
   dsimp only
   split_ifs with hsz
-  · change (Array.ofFn fun i : Fin (d ^ c.2.length) =>
-        let args := (lsbDecode d c.2.length i.1).map fun k =>
+  · change (Array.ofFn fun i : Fin (d ^ c.scope.length) =>
+        let args := (lsbDecode d c.scope.length i.1).map fun k =>
           if hk : k < d then e.symm ⟨k, hk⟩ else default
-        wt c.1 args)[Nat.ofDigits d (c.2.map fun v => (e (σ v)).1)]'(by simpa using hidx) =
-      wt c.1 (c.2.map σ)
+        wt c.rel args)[Nat.ofDigits d (c.scope.map fun v => (e (σ v)).1)]'(by simpa using hidx) =
+      wt c.rel (c.scope.map σ)
     rw [Array.getElem_ofFn]
     dsimp only
     rw [hdec, List.map_map]
@@ -430,7 +430,7 @@ theorem contractionOn_ofCSP [Semiring R] [DecidableEq V] [Fintype D] [Inhabited 
   rw [CSP.weight]
   congr 1
   refine List.map_congr_left fun c hc => ?_
-  have hcvar : ∀ v ∈ c.2, v ∈ declared := fun v hv =>
+  have hcvar : ∀ v ∈ c.scope, v ∈ declared := fun v hv =>
     hvars (List.mem_toFinset.mpr (List.mem_flatMap.mpr ⟨c, hc, hv⟩))
   have hcongr : (ofConstraint d e wt c).evalAt d
       (fun v => if h : v ∈ declared then (σ ⟨v, h⟩).1 else 0) =

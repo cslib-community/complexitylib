@@ -481,6 +481,8 @@ CSLib contributors. *CSLib*, pinned dependency snapshot `254e30e6d4299c51323aaea
 
 Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. On 2026-11-08 the same PDF returned HTTP 403, so the crown material of Section 2.3 cited by [Crown](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Crown.lean) was not inspected. Secondary sources number the crown lemma Lemma 2.14 and the `3k` kernel Theorem 2.16; these numbers are unverified and are not used in the Lean docstrings. The color-coding locators Section 5.2 and Lemma 5.5, the fpt-reduction locator Section 13.1, and the tree-decomposition locator Section 7.3.1 (weighted independent set, stated for `n`-vertex graphs), used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected. Section 4.4 (iterative compression for odd cycle transversal), cited by [OddCycleTransversal](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/OddCycleTransversal.lean) and its algorithm, was not inspected either; its locator comes from secondary sources. Likewise, nice tree-decomposition normalization (Lemma 7.4, p. 161), bounded-treewidth CSP dynamic programming, and the clause-grouping `3-SAT`-to-`Clique` ETH lower bound (Theorem 14.21, p. 485) were inspected in the companion PDF and verified, matching the locators in the [results registry](../CslibFrontierResults/Entries.lean).
 
+The same author PDF supports the weighted-circuit enumeration in Section 13.3, p. 436, and the definition of `W[t]` in Definition 13.16, p. 437, used in [parameterized complexity](machines-and-classes/parameterized-complexity.md). This section does not define `W[P]`; the library's `WP` reduction closure is documented separately and its equivalence with an effective literature class is not claimed.
+
 <a id="dasguptagupta03"></a>
 ## dasguptagupta03
 
@@ -605,6 +607,11 @@ Michael L. Fredman, János Komlós, Endre Szemerédi. "Storing a Sparse Table wi
 
 Robert W. Floyd. "Algorithm 97: Shortest Path." *Communications of the ACM* 5(6), 345, 1962. https://doi.org/10.1145/367766.368168 . Bibliographic metadata checked on 2026-11-07; the manual attributes only the Floyd–Warshall recurrence to this note.
 
+<a id="flumgrohe2006"></a>
+## flumgrohe2006
+
+Jörg Flum and Martin Grohe. *Parameterized Complexity Theory*. Springer, 2006. [DOI](https://doi.org/10.1007/3-540-29953-X). The [publisher's Chapter 3 preview](https://page-one.springer.com/pdf/preview/10.1007/3-540-29953-X_3) was inspected: Definition 3.1 on printed p. 45 defines `W[P]` by restricted nondeterministic multitape machines with computable time and nondeterminism bounds, and Proposition 3.2 on printed p. 46 states `FPT ⊆ W[P] ⊆ XP ∩ paraNP`. The preview does not give a weighted-circuit characterization. It is used in [parameterized complexity](machines-and-classes/parameterized-complexity.md) to contrast conventions; equivalence with the library's potentially ineffective reduction closure `WP` is not established.
+
 <a id="fly22"></a>
 ## fly22
 
@@ -623,7 +630,12 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section. It is also cited at book level for search-tree branching vectors and disjoint clause-prefix branching on fixed-width SAT; no internal chapter, theorem, or page locators are claimed.
+
+<a id="forbesshpilka2013"></a>
+## forbesshpilka2013
+
+Michael A. Forbes and Amir Shpilka. "Quasipolynomial-time Identity Testing of Non-commutative and Read-once Oblivious Algebraic Branching Programs." FOCS 2013, 243–252; arXiv:1209.2408v2, https://arxiv.org/abs/1209.2408v2 . Read in the arXiv version: §1.1 (pp. 2–3) for the set-multilinear and univariate encodings, and §4 for the reduction from non-commutative programs: Construction 4.1 and Lemma 4.2 (p. 22), Lemma 4.3 (p. 23), Lemma 4.5 and Theorem 4.6 (p. 24). The library formalizes this reduction for homogeneous layered programs only and feeds it the hitting set of its own adaptation of Agrawal–Gurjar–Korwar–Saxena; Corollary 4.7 (p. 25), with the paper's generator and bound, is not formalized.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
@@ -759,6 +771,7 @@ Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lect
 ## guruswamirudrasudan25
 
 Venkatesan Guruswami, Atri Rudra and Madhu Sudan. *Essential Coding Theory*. Draft book, version of 26 August 2025. https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/ ; open PDF https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/web-coding-book.pdf . The library's key is `GuruswamiRudraSudan2019`. Read in the open PDF on 2026-11-08 for Chapter 6:
+
 - §6.2 (the binary symmetric channel) and §6.2.2 (capacity: reliable communication is possible below it and impossible above it);
 - Theorem 6.3.1 (p. 119): part (1), achievability with error `2^(−δn)`, and part (2), for `0 ≤ p < 1/2` and `k ≥ ⌈(1 − H(p) + ε) n⌉` with `0 ≤ ε ≤ 1/2 − p`, some message misdecoded with probability more than `1/2`;
 - §6.3.1, the packing proof of part (2) (pp. 120–122), and Remark 6.3.2, the error bound `1 − 2^(−βn)`;
@@ -1015,6 +1028,11 @@ Iordanis Kerenidis and Ronald de Wolf. "Exponential Lower Bound for 2-Query Loca
 ## khot10
 
 Subhash Khot. "On the Unique Games Conjecture (Invited Survey)." *2010 IEEE 25th Annual Conference on Computational Complexity (CCC)*, 99–121, 2010. https://doi.org/10.1109/CCC.2010.19 . Author-hosted copy inspected: https://cs.nyu.edu/~khot/papers/UGCSurvey.pdf (Section 2.4, p. 6 of the author copy: the second paragraph after Definition 2.4, beginning "Let us return", on finding a satisfying labelling of a value-1 instance by trying every label for one vertex and propagating along each connected component, and the remark after Conjecture 2.5 that the conjecture would be false with `ε = 0`). The page range and DOI are from the bibliographic record and were not checked against the typeset proceedings.
+
+<a id="kirshnersamorodnitsky21"></a>
+## kirshnersamorodnitsky21
+
+Naomi Kirshner and Alex Samorodnitsky. "A Moment Ratio Bound for Polynomials and Some Extremal Properties of Krawtchouk Polynomials and Hamming Spheres." *IEEE Transactions on Information Theory* 67(6), 3509–3541, 2021. https://doi.org/10.1109/TIT.2021.3071597 ; arXiv:1909.11929v1. The statements of Theorem 1.3, Corollary 1.4 and Theorem 1.5 in arXiv v1 were read on 2026-11-12. They hold for every `n`, with no `o(1)` terms, for polynomials of degree `s ≤ n / 2`. The independent review of [#4735](https://github.com/cslib-community/cslib-frontier/pull/4735) checked Saglam's specializations against the same version. Saglam's explicit `γ` is `H(ρ)/2 - ψ(3, ρ)`, by Proposition 2.6 at `p = 3` with `t = 1 - 2δ` (so `t² = ρ/(2 - 3ρ)`). His integral form is their `τ(x, y) = H(x) + I(y, x) - I(0, x)` for `y ≤ 1/2 - √(x(1 - x))` (§2.1.1–2.1.2). As printed, Theorem 1.5 fails at degree `0`: for `f ≡ 1` and `i = 0` the `≥` event has probability `1 > 2^{-n}`. The library's hypotheses therefore use a strict event and require `0 < w`. [Code/PuncturedBallFourier](../CslibFrontier/Foundations/Data/Code/PuncturedBallFourier.lean) states Corollary 1.4 (third moment) and Theorem 1.5 (tail) as hypotheses (`KSThirdMomentBound`, `KSTailBound`), in the specialization quoted in [Saglam](#saglam27), Appendix A. They are not proved.
 
 <a id="kleeminty72"></a>
 ## kleeminty72
@@ -1274,7 +1292,7 @@ Michael Mitzenmacher and Eli Upfal. *Probability and Computing: Randomization an
 <a id="mohrirostamizadehtalwalkar18"></a>
 ## mohrirostamizadehtalwalkar18
 
-Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
+Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. Theorem 7.2 (AdaBoost's empirical error, p. 149) and Corollary 7.5 were read in a PDF of the book on 2026-11-13. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
 
 <a id="monderershapley96"></a>
 ## monderershapley96
@@ -1380,6 +1398,11 @@ Ryan O'Donnell. *Analysis of Boolean Functions*. Cambridge University Press, 201
 ## oliveirapichsanthanam2019
 
 Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography. The Lean modules cite its Lemmas 4.1 and 4.7 and Theorem 1.4. For Theorem 1.4, worker meta-proj read the authors' copy of ECCC TR18-158 revision 1 (https://www.dcs.warwick.ac.uk/~igorcarb/documents/papers/OPS19.pdf) on 2026-11-11 UTC: Theorem 4 there is the same statement with an unspecified universal constant `c ≥ 1`, its proof in Section 4.1 uses `c = 10`, Definition 9 has no-instances of size `> s₂`, and Section 2 says gate types do not matter. The journal numbering `1.4` was not checked against the journal text.
+
+<a id="oliveirasanthanam2017"></a>
+## oliveirasanthanam2017
+
+Igor Carboni Oliveira and Rahul Santhanam. *Conspiracies Between Learning Algorithms, Circuit Lower Bounds, and Pseudorandomness*. CCC 2017, LIPIcs 79, 18:1–18:49. https://doi.org/10.4230/LIPIcs.CCC.2017.18 . Full version arXiv:1611.01190. Bibliographic data comes from the repository bibliography and the LIPIcs record. The Lean module [CryptoHardness/NaturalProperty.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/NaturalProperty.lean) cites Theorem 8, (1) ⇒ (5) (a learner yields a distinguisher, hence a natural property) and Lemma 4 from the arXiv full version; the page locators are not recorded in the results registry.
 
 <a id="oliveirasanthanam2018"></a>
 ## oliveirasanthanam2018
@@ -1516,6 +1539,11 @@ Tim Roughgarden and Éva Tardos. *How Bad Is Selfish Routing?* Journal of the AC
 
 Tim Roughgarden and Éva Tardos. "Introduction to the Inefficiency of Equilibria." Chapter 17 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 443–459. A university-hosted PDF of the book was consulted on 2026-11-08 for §17.1.3 (the definitions of the price of anarchy and the price of stability) and Example 17.3 with Figure 17.3 (the `H_k` lower bound for Shapley network design games).
 
+<a id="saglam27"></a>
+## saglam27
+
+Mert Saglam. *Linear Codes Exceeding the Gilbert–Varshamov Bound*. STOC 2027 submission 1516. https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1516.pdf (PDF SHA-256 `ac6f2bba913aa15cfec8dda07a8e9e37b7186e145fef4719cb623dd04d15baa3`). The submission PDF was read on 2026-11-12: the abstract (main theorem), Section 1, Section 2 (odd circuits, the extension row and the bound on the expected number of odd circuits), Section 3.1, Lemma 3.1 (statement only), Section 3.3 (the three-range estimate on `sinh z - z` and the moment/tail split) and Appendix A. [Code/OddCircuit](../CslibFrontier/Foundations/Data/Code/OddCircuit.lean) and [Code/OddCircuitFourier](../CslibFrontier/Foundations/Data/Code/OddCircuitFourier.lean) formalize Section 2 and the reduction of Section 3.3 to the moment and tail estimates. [Code/PuncturedBallFourier](../CslibFrontier/Foundations/Data/Code/PuncturedBallFourier.lean) derives Lemma 3.1, with explicit constants, from the Kirshner–Samorodnitsky bounds quoted in Appendix A ([kirshnersamorodnitsky21](#kirshnersamorodnitsky21)), which are hypotheses. [Code/OddCircuitAsymptotic](../CslibFrontier/Foundations/Data/Code/OddCircuitAsymptotic.lean) proves the main theorem from Lemma 3.1 with `ζ = 1 / 2`, so the leading constant `(1 - ζ) / 4` with `ζ → 0` is not formalized. These are submissions, not confirmed acceptances.
+
 <a id="sakszhou99"></a>
 ## sakszhou99
 
@@ -1530,6 +1558,11 @@ Mark A. Satterthwaite. "Strategy-Proofness and Arrow's Conditions: Existence and
 ## schoenebeck08
 
 Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th Annual IEEE Symposium on Foundations of Computer Science (FOCS 2008), 593–602. https://doi.org/10.1109/FOCS.2008.74 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. On the same date worker w96-sos consulted the author-hosted copy https://schoeneb.people.si.umich.edu/papers/LasserreNew.pdf (19 pages, TeX output dated 6 December 2008) for Definition 5 (rounds of Lasserre), Definition 10 (width-`w` resolution on XOR formulas), Lemma 13 (the main lemma, p. 8) and Claim 14. In that copy Lemma 13 grants a feasible solution at the `w/2`-th round of Lasserre. An independent review reported `w/4` from a different version, so the constant is version-dependent. The library proves the sum-of-squares form of the lemma and does not construct Lasserre vectors. The typeset FOCS version was not consulted.
+
+<a id="schoening99"></a>
+## schoening99
+
+Uwe Schöning. *A Probabilistic Algorithm for k-SAT and Constraint Satisfaction Problems*. 40th Annual Symposium on Foundations of Computer Science (FOCS 1999), 410–414. https://doi.org/10.1109/SFFCS.1999.814612 . Bibliographic metadata taken from `references.bib` (`Schoening1999`); the paywalled conference proceedings were not directly inspected, and no internal theorem or page locators are claimed. Cited at paper level for the `3n`-step randomized local-search trial on width-`k` CNFs and its `(2 (k - 1) / k) ^ n` amplified decision algorithm (`(4 / 3) ^ n` for `3`-SAT).
 
 <a id="schrijver03"></a>
 ## schrijver03
@@ -1560,6 +1593,11 @@ James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Jou
 ## schummervohra07
 
 James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 243–265. A university-hosted PDF of the book was consulted on 2026-11-08 for §10.3 (the definition of blocking coalitions and the core, Definition 10.5, Theorems 10.6 and 10.7, pp. 253–255). Its core uses weak blocking, the strict core of the housing-market modules. Its claim on p. 255 that the core and the strict core coincide under strict preferences is refuted by a checked three-agent market in `CslibFrontierTests/HousingMarket.lean`.
+
+<a id="shalevshwartzbendavid14"></a>
+## shalevshwartzbendavid14
+
+Shai Shalev-Shwartz and Shai Ben-David. *Understanding Machine Learning: From Theory to Algorithms*. Cambridge University Press, 2014. ISBN 978-1-107-05713-5. A PDF of the book was read on 2026-11-13 for Section 10.2 (AdaBoost, Theorem 10.2 and its proof, pp. 135–137, including the product form `Z_{t+1}/Z_t = 2 √(ε_{t+1} (1 - ε_{t+1}))`) and Lemma 10.3 (Section 10.3). [Boosting/AdaBoost](../CslibFrontier/MachineLearning/Boosting/AdaBoost.lean) records its differences from Theorem 10.2: early stopping at `ε_t = 0` and ties predicting `false`.
 
 <a id="shamir1979"></a>
 ## shamir1979
@@ -1684,6 +1722,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 ## tutte48
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
+
+<a id="valiant84"></a>
+## valiant84
+
+L. G. Valiant. "A Theory of the Learnable." *Proceedings of the Sixteenth Annual ACM Symposium on Theory of Computing* (STOC '84), 436–445, 1984. https://doi.org/10.1145/800057.808710 . Bibliographic data from the library's `references.bib` entry `Valiant1984`; the paper was not inspected for this citation. The manual attributes to it, following the standard account, the observation that pseudorandom functions make polynomial-size circuits unlearnable; no section or theorem locator is claimed.
 
 <a id="vanaardenneehrenfestdebruijn51"></a>
 ## vanaardenneehrenfestdebruijn51

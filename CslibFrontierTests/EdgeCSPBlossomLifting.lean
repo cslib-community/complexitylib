@@ -24,8 +24,8 @@ private abbrev x₁ : ℕ := 2 ^ 200
 private abbrev x₂ : ℕ := 2 ^ 250
 private abbrev y : ℕ := 2 ^ 120
 private abbrev csp : CSP Table ℕ :=
-  [(starTable, [x₀, x₁, x₂]), (equalTable, [x₁, x₂]),
-    (equalTable, [x₀, y]), (falseTable, [y])]
+  [⟨starTable, [x₀, x₁, x₂]⟩, ⟨equalTable, [x₁, x₂]⟩,
+    ⟨equalTable, [x₀, y]⟩, ⟨falseTable, [y]⟩]
 private def labels : OccurrenceLabeling csp Bool :=
   fun o => (o.1.val == 0 && o.2.val < 2) || o.1.val == 2
 private abbrev cp (j : Fin 3) : Occurrence csp := ⟨0, j⟩

@@ -210,7 +210,7 @@ theorem exec_traverse {w m n g p A : ℕ} (values : List ℤ)
   let I := instanceIndices wAB (D m) g p
   obtain ⟨f, finj, hf, fsurj⟩ := exists_occupied_order V hout hD hDn hg hp0
   let order : ℕ → InstanceIndex p := fun i =>
-    if hi : i < M then f ⟨i, hi⟩ else (⟨0, Nat.pos_of_ne_zero hp0⟩, 0, 0)
+    if hi : i < M then f ⟨i, hi⟩ else ⟨⟨0, Nat.pos_of_ne_zero hp0⟩, 0, 0⟩
   have order_at (i : ℕ) (hi : i < M) : order i = f ⟨i, hi⟩ := dite_eq_left hi
   have order_mem (i : ℕ) (hi : i < M) : order i ∈ I := by
     rw [order_at i hi]
@@ -299,9 +299,9 @@ theorem exec_traverse {w m n g p A : ℕ} (values : List ℤ)
       obtain ⟨u, v, c, hw⟩ := hzero
       have hans := RecordProduct.product_answers_correct V wAB wBC wAC hD hg hp
         (by intro b c; rfl) (by intro u c; rfl)
-      obtain ⟨rho, k, piece, hacc, hc⟩ := exists_mem_acceptedPairs hD hDn hg hp0 hans hw
+      obtain ⟨idx, hacc, hc⟩ := exists_mem_acceptedPairs hD hDn hg hp0 hans hw
       obtain ⟨hidx, hquery, -⟩ := mem_acceptedPairs.mp hacc
-      obtain ⟨j, hj⟩ := fsurj (rho, k, piece) hidx
+      obtain ⟨j, hj⟩ := fsurj idx hidx
       have hh : recordHit (m := m) (n := n) (g := g) V (order j.val) := by
         rw [order_at j.val j.isLt, hj]
         exact ⟨(u, v), hquery, c, hc, hw⟩

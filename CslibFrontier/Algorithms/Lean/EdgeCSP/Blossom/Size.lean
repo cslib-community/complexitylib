@@ -48,15 +48,15 @@ theorem internal_subset_vars (w : Walk F) : (internal w).toFinset ⊆ F.vars.toF
 
 /-- Summed internal position counts are funded by the original finite occurrence list. -/
 theorem sum_length_positions (vs : List ℕ) :
-    (∑ i : Fin F.length, (positions vs F[i.val].2).length) =
+    (∑ i : Fin F.length, (positions vs F[i.val].scope).length) =
       (F.vars.filter fun v => vs.contains v).length := by
   calc
     _ = (List.ofFn fun i : Fin F.length =>
-        (F[i.val].2.filter fun v => vs.contains v).length).sum := by
+        (F[i.val].scope.filter fun v => vs.contains v).length).sum := by
       simp only [List.sum_ofFn, length_positions]
-    _ = (F.map fun c => (c.2.filter fun v => vs.contains v).length).sum :=
+    _ = (F.map fun c => (c.scope.filter fun v => vs.contains v).length).sum :=
       congrArg List.sum (List.ofFn_getElem_eq_map F
-        (fun c => (c.2.filter fun v => vs.contains v).length))
+        (fun c => (c.scope.filter fun v => vs.contains v).length))
     _ = _ := by simp [vars, List.filter_flatMap, List.length_flatMap]
 
 /-- An edge instance spends precisely two old ports per selected occurring variable. -/
@@ -84,12 +84,12 @@ nodes of a repeated original constraint occur several times in the blossom. -/
 theorem length_touched_le_internal (hF : EdgeInstance F) (hw : w.IsWalk)
     (hc : w.finish = w.start) : (touched F (internal w)).length ≤ (internal w).toFinset.card := by
   have hle : 2 * (touched F (internal w)).length ≤
-      ∑ i : Fin F.length, (positions (internal w) F[i.val].2).length := by
+      ∑ i : Fin F.length, (positions (internal w) F[i.val].scope).length := by
     calc
       _ = ∑ _i ∈ (touched F (internal w)).toFinset, 2 := by
         simp [List.toFinset_card_of_nodup (nodup_touched F (internal w)), mul_comm]
       _ ≤ ∑ i ∈ (touched F (internal w)).toFinset,
-          (positions (internal w) F[i.val].2).length :=
+          (positions (internal w) F[i.val].scope).length :=
         sum_le_sum fun i hi => two_le_positions hF hw hc (List.mem_toFinset.mp hi)
       _ ≤ _ := sum_le_sum_of_subset_of_nonneg (subset_univ _)
         (fun _ _ _ => Nat.zero_le _)
@@ -119,16 +119,16 @@ theorem contractionMeasure_contract_lt (hF : EdgeInstance F) {f : OccurrenceLabe
 rows of width `r`; thus its new Boolean row data is quadratic in `r`, not linear in `r`.
 Every old table retains at most its original number of rows, with original outside order. -/
 theorem totalRows_contract_le (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
-    ((contract f vs).map fun c => c.1.rows.length).sum ≤
-      (F.map fun c => c.1.rows.length).sum + (touched F vs).length := by
+    ((contract f vs).map fun c => c.rel.rows.length).sum ≤
+      (F.map fun c => c.rel.rows.length).sum + (touched F vs).length := by
   simp only [contract, List.map_append, List.map_cons, List.map_nil, List.sum_append,
     List.sum_cons, List.sum_nil, Table.length_rows_exactlyOne, length_connectors, Nat.add_zero]
   apply Nat.add_le_add_right
   rw [List.map_ofFn, List.sum_ofFn]
   calc
-    _ ≤ ∑ i : Fin F.length, F[i.val].1.rows.length :=
+    _ ≤ ∑ i : Fin F.length, F[i.val].rel.rows.length :=
       sum_le_sum (fun i _ => rows_constraint_le f vs i)
-    _ = (List.ofFn fun i : Fin F.length => F[i.val].1.rows.length).sum := by rw [List.sum_ofFn]
-    _ = _ := congrArg List.sum (List.ofFn_getElem_eq_map F (fun c => c.1.rows.length))
+    _ = (List.ofFn fun i : Fin F.length => F[i.val].rel.rows.length).sum := by rw [List.sum_ofFn]
+    _ = _ := congrArg List.sum (List.ofFn_getElem_eq_map F (fun c => c.rel.rows.length))
 
 end Cslib.Logic.PL.CSP.Blossom

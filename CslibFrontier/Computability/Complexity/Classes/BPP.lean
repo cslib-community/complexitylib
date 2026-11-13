@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Complexity.AcceptCount
 public import CslibFrontier.Computability.Complexity.Classes.P
 public import CslibFrontier.Computability.Complexity.Classes.Promise.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
@@ -53,6 +54,8 @@ The probability is written as a count over the random strings, which are functio
 
 ## Main results
 
+* `Cslib.Complexity.boundedErrorAt_true_iff`, `Cslib.Complexity.boundedErrorAt_false_iff`:
+  per-instance bounded error as a bound on `Cslib.Complexity.acceptCount`.
 * `Cslib.Complexity.BoundedErrorAt.congr`, `Cslib.Complexity.BoundedErrorAt.not`: extensionality
   and negation for per-instance bounded error.
 * `Cslib.Complexity.PromiseProblem.SolvesWithBoundedError.compl`,
@@ -88,30 +91,33 @@ abbrev BoundedErrorAt (enc : α ↪ List Bool) (p : Polynomial ℕ) (V : α × L
     3 * (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
       V (a, List.ofFn r) = b).card
 
+/-- Bounded error towards `true` is acceptance of at least two thirds of the random strings. -/
+theorem boundedErrorAt_true_iff {enc : α ↪ List Bool} {p : Polynomial ℕ}
+    {V : α × List Bool → Bool} {a : α} : BoundedErrorAt enc p V a true ↔
+      2 * 2 ^ p.eval (enc a).length ≤ 3 * acceptCount V a (p.eval (enc a).length) :=
+  Iff.rfl
+
+/-- Bounded error towards `false` is acceptance of at most one third of the random strings. -/
+theorem boundedErrorAt_false_iff {enc : α ↪ List Bool} {p : Polynomial ℕ}
+    {V : α × List Bool → Bool} {a : α} : BoundedErrorAt enc p V a false ↔
+      3 * acceptCount V a (p.eval (enc a).length) ≤ 2 ^ p.eval (enc a).length := by
+  have := acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := p.eval (enc a).length)
+  rw [BoundedErrorAt]
+  omega
+
 /-- Bounded error at an instance depends only on the verifier's values on strings of length
 `p(|a|)`. -/
 theorem BoundedErrorAt.congr {enc : α ↪ List Bool} {p : Polynomial ℕ}
     {V W : α × List Bool → Bool} {a : α} {b : Bool} (h : BoundedErrorAt enc p V a b)
     (hVW : ∀ r : Fin (p.eval (enc a).length) → Bool, V (a, List.ofFn r) = W (a, List.ofFn r)) :
     BoundedErrorAt enc p W a b := by
-  have hcard : (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-      V (a, List.ofFn r) = b).card =
-    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-      W (a, List.ofFn r) = b).card :=
-    congrArg Finset.card (Finset.filter_congr fun r _ => by rw [hVW r])
-  rwa [BoundedErrorAt, ← hcard]
+  simpa only [BoundedErrorAt, hVW] using h
 
 /-- Negating the verifier negates the bounded-error answer at `a`. -/
 theorem BoundedErrorAt.not {enc : α ↪ List Bool} {p : Polynomial ℕ}
     {V : α × List Bool → Bool} {a : α} {b : Bool} (h : BoundedErrorAt enc p V a b) :
     BoundedErrorAt enc p (fun x => !V x) a (!b) := by
-  have hcard : (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-      (!V (a, List.ofFn r)) = !b).card =
-    (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-      V (a, List.ofFn r) = b).card :=
-    congrArg Finset.card
-      (Finset.filter_congr fun _ _ => by rw [Bool.not_eq_eq_eq_not, Bool.not_not])
-  rwa [BoundedErrorAt, hcard]
+  simpa only [BoundedErrorAt, Bool.not_eq_eq_eq_not, Bool.not_not] using h
 
 namespace PromiseProblem
 

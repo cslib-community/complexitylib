@@ -12,6 +12,7 @@ public import CslibFrontier.Foundations.Data.BitString.List.Single
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import Mathlib.Data.Matrix.Mul
 import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.List.GetD
 
 /-!
 # Algebraic operations on lists of bits
@@ -33,11 +34,15 @@ Collection XOR has a declared width and treats missing bits as false.
 ## Main results
 
 * `Cslib.BitString.ofFn_add`, `Cslib.BitString.zipWith_xor_self_left`,
-  `Cslib.BitString.dotProduct_eq_foldl`: algebraic representation and cancellation laws.
+  `Cslib.BitString.zipWith_xor_self_right`, `Cslib.BitString.dotProduct_eq_foldl`: algebraic
+  representation and cancellation laws.
 * `Cslib.BitString.listStrictMajority_map`: a list with distinct voting indices agrees with
   finite-set strict majority.
 * `Cslib.BitString.listXorSelected_eq_ofFn_sum`: the selector fold computes the finite mask sum.
 * `Cslib.BitString.listXor_eq_ofFn_sum`: collection XOR computes the finite sum of padded views.
+* `Cslib.BitString.listXor_pair_left_inj`, `Cslib.BitString.exists_getD_listXor_pair_of_ne`:
+  two-word XOR cancels a common right word, and distinct words of the declared width have a set
+  bit in their XOR.
 
 ## References
 
@@ -68,6 +73,17 @@ theorem zipWith_xor_self_left :
     simp only [List.length_cons, Nat.add_right_cancel_iff] at h
     simp only [List.zipWith_cons_cons, zipWith_xor_self_left pad msg h]
     cases b <;> cases m <;> rfl
+
+/-- Pointwise XOR of equal-length bit lists is right-involutive:
+`List.zipWith Bool.xor (List.zipWith Bool.xor msg pad) pad = msg`. -/
+theorem zipWith_xor_self_right :
+    ∀ msg pad : List Bool, msg.length = pad.length →
+      List.zipWith Bool.xor (List.zipWith Bool.xor msg pad) pad = msg
+  | [], [], _ => rfl
+  | m :: msg, b :: pad, h => by
+    simp only [List.length_cons, Nat.add_right_cancel_iff] at h
+    simp only [List.zipWith_cons_cons, zipWith_xor_self_right msg pad h]
+    cases m <;> cases b <;> rfl
 
 /-- A Boolean dot product is a pointwise AND followed by a parity fold on words. -/
 theorem dotProduct_eq_foldl {n : ℕ} (left right : BitString n) :
@@ -215,6 +231,28 @@ theorem getD_listXor_pair (m : ℕ) (u v : List Bool) (i : ℕ) (hi : i < m) :
     (listXor m [u, v]).getD i false = (u.getD i false ^^ v.getD i false) := by
   have h := congrFun (ofList_listXor_pair m u v) ⟨i, hi⟩
   simpa [ofList, Pi.add_apply, Bool.add_eq_xor] using h
+
+/-- Two-word `listXor` at the common width `m` of the left words cancels the right word. -/
+theorem listXor_pair_left_inj {m : ℕ} {u v : List Bool} (hu : u.length = m) (hv : v.length = m)
+    (w : List Bool) : listXor m [u, w] = listXor m [v, w] ↔ u = v := by
+  refine ⟨fun h => ?_, fun h => h ▸ rfl⟩
+  have hof := congrArg (ofList m) h
+  rw [ofList_listXor_pair, ofList_listXor_pair, add_left_inj] at hof
+  rw [← ofFn_ofList hu, ← ofFn_ofList hv, hof]
+
+/-- Distinct words of the declared width `m` have a set bit below `m` in their XOR. -/
+theorem exists_getD_listXor_pair_of_ne {m : ℕ} {u v : List Bool}
+    (hu : u.length = m) (hv : v.length = m) (hne : u ≠ v) :
+    ∃ i < m, (listXor m [u, v]).getD i false = true := by
+  by_contra hall
+  simp only [not_exists, not_and] at hall
+  apply hne (List.ext_getElem (hu.trans hv.symm) fun i hi_u hi_v => ?_)
+  have hi_m : i < m := by omega
+  have hzero := Bool.eq_false_iff.mpr (hall i hi_m)
+  rw [getD_listXor_pair m u v i hi_m] at hzero
+  have heq_bit : u.getD i false = v.getD i false := by
+    cases h1 : u.getD i false <;> cases h2 : v.getD i false <;> simp_all
+  simpa only [List.getD_eq_getElem _ _ hi_u, List.getD_eq_getElem _ _ hi_v] using heq_bit
 
 /-- Below the width `m`, row `0` of a word agrees bitwise with the word itself, with missing bits
 read as `false`. -/

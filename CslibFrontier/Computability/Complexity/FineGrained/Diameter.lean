@@ -205,10 +205,10 @@ each vector and each coordinate, the hubs `0` and `1` and the padding vertices `
 each other, to the coordinates and to the padding vertices, and a vector to the coordinates where it
 holds `true`. -/
 def toDiameter (p : List (List Bool) × List (List Bool)) : Graph :=
-  (vecsOut bitVertices (endVertices false) 0 p.1 ++
+  ⟨vecsOut bitVertices (endVertices false) 0 p.1 ++
       vecsOut bitVertices (endVertices true) p.1.length p.2 ++ constVertices,
     vecsOut bitEdges (endEdges false) 0 p.1 ++
-      vecsOut bitEdges (endEdges true) p.1.length p.2 ++ constEdges)
+      vecsOut bitEdges (endEdges true) p.1.length p.2 ++ constEdges⟩
 
 /-! ### Vertices and edges of the gadget -/
 
@@ -217,10 +217,10 @@ section Gadget
 variable {p : List (List Bool) × List (List Bool)}
 
 /-- The vertices of the gadget: four constants, coordinates, and vectors. -/
-theorem mem_vertices_toDiameter {v : ℕ} (hv : v ∈ (toDiameter p).1) :
+theorem mem_vertices_toDiameter {v : ℕ} (hv : v ∈ (toDiameter p).vertices) :
     v = 0 ∨ v = 1 ∨ v = 2 ∨ v = 3 ∨
-      (∃ i, v = coordVertex i ∧ (0, coordVertex i) ∈ (toDiameter p).2 ∧
-        (1, coordVertex i) ∈ (toDiameter p).2) ∨
+      (∃ i, v = coordVertex i ∧ (0, coordVertex i) ∈ (toDiameter p).edges ∧
+        (1, coordVertex i) ∈ (toDiameter p).edges) ∨
       (∃ k < p.1.length, v = vecVertex k) ∨
       (∃ j < p.2.length, v = vecVertex (p.1.length + j)) := by
   simp only [toDiameter, List.mem_append, mem_vecsOut, bitVertices, endVertices, constVertices,
@@ -236,8 +236,13 @@ theorem mem_vertices_toDiameter {v : ℕ} (hv : v ∈ (toDiameter p).1) :
   · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨j, hj, rfl⟩)))))
   · omega
 
+private theorem mem_bitEdges {k i : ℕ} {b : Bool} {e : ℕ × ℕ} (h : e ∈ bitEdges k i b) :
+    (e = (0, coordVertex i) ∨ e = (1, coordVertex i)) ∨
+      b = true ∧ e = (coordVertex i, vecVertex k) := by
+  cases b <;> simpa [bitEdges, or_assoc] using h
+
 /-- The edges of the gadget. -/
-theorem mem_edges_toDiameter {e : ℕ × ℕ} (he : e ∈ (toDiameter p).2) :
+theorem mem_edges_toDiameter {e : ℕ × ℕ} (he : e ∈ (toDiameter p).edges) :
     e ∈ constEdges ∨ (∃ i, e = (0, coordVertex i) ∨ e = (1, coordVertex i)) ∨
       (∃ k < p.1.length, e = (0, vecVertex k)) ∨
       (∃ j < p.2.length, e = (1, vecVertex (p.1.length + j))) ∨
@@ -247,30 +252,20 @@ theorem mem_edges_toDiameter {e : ℕ × ℕ} (he : e ∈ (toDiameter p).2) :
         p.2[j][i] = true ∧ e = (coordVertex i, vecVertex (p.1.length + j))) := by
   simp only [toDiameter, List.mem_append, mem_vecsOut, Nat.zero_add] at he
   rcases he with ((⟨k, hk, ⟨i, hi, h⟩ | h⟩ | ⟨j, hj, ⟨i, hi, h⟩ | h⟩) | h)
-  · simp only [bitEdges, List.mem_cons] at h
-    rcases h with rfl | rfl | h
-    · exact Or.inr (Or.inl ⟨i, Or.inl rfl⟩)
-    · exact Or.inr (Or.inl ⟨i, Or.inr rfl⟩)
-    · split_ifs at h with hb
-      · rw [List.mem_singleton] at h
-        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨k, hk, i, hi, hb, h⟩))))
-      · exact absurd h List.not_mem_nil
+  · rcases mem_bitEdges h with h | ⟨hb, h⟩
+    · exact Or.inr (Or.inl ⟨i, h⟩)
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨k, hk, i, hi, hb, h⟩))))
   · simp only [endEdges, sideVertex, List.mem_singleton] at h
     exact Or.inr (Or.inr (Or.inl ⟨k, hk, h⟩))
-  · simp only [bitEdges, List.mem_cons] at h
-    rcases h with rfl | rfl | h
-    · exact Or.inr (Or.inl ⟨i, Or.inl rfl⟩)
-    · exact Or.inr (Or.inl ⟨i, Or.inr rfl⟩)
-    · split_ifs at h with hb
-      · rw [List.mem_singleton] at h
-        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨j, hj, i, hi, hb, h⟩))))
-      · exact absurd h List.not_mem_nil
+  · rcases mem_bitEdges h with h | ⟨hb, h⟩
+    · exact Or.inr (Or.inl ⟨i, h⟩)
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨j, hj, i, hi, hb, h⟩))))
   · simp only [endEdges, sideVertex, List.mem_singleton] at h
     exact Or.inr (Or.inr (Or.inr (Or.inl ⟨j, hj, h⟩)))
   · exact Or.inl h
 
 /-- An edge starts at a hub or at a coordinate. -/
-theorem fst_mem_edges_toDiameter {a b : ℕ} (h : (a, b) ∈ (toDiameter p).2) :
+theorem fst_mem_edges_toDiameter {a b : ℕ} (h : (a, b) ∈ (toDiameter p).edges) :
     a = 0 ∨ a = 1 ∨ ∃ i, a = coordVertex i := by
   rcases mem_edges_toDiameter h with h | ⟨i, h | h⟩ | ⟨k, -, h⟩ | ⟨j, -, h⟩ |
     ⟨k, -, i, -, -, h⟩ | ⟨j, -, i, -, -, h⟩
@@ -283,7 +278,7 @@ theorem fst_mem_edges_toDiameter {a b : ℕ} (h : (a, b) ∈ (toDiameter p).2) :
 
 /-- The neighbours of a vector of the first list: the hub `0` and its coordinates. -/
 theorem eq_of_mem_edges_toDiameter_vec₁ {w k : ℕ} (hk : k < p.1.length)
-    (h : (w, vecVertex k) ∈ (toDiameter p).2 ∨ (vecVertex k, w) ∈ (toDiameter p).2) :
+    (h : (w, vecVertex k) ∈ (toDiameter p).edges ∨ (vecVertex k, w) ∈ (toDiameter p).edges) :
     w = 0 ∨ ∃ i, ∃ hi : i < p.1[k].length, p.1[k][i] = true ∧ w = coordVertex i := by
   rcases h with h | h
   · rcases mem_edges_toDiameter h with h | ⟨i, h | h⟩ | ⟨k', hk', h⟩ | ⟨j, hj, h⟩ |
@@ -307,8 +302,8 @@ theorem eq_of_mem_edges_toDiameter_vec₁ {w k : ℕ} (hk : k < p.1.length)
 
 /-- The neighbours of a vector of the second list: the hub `1` and its coordinates. -/
 theorem eq_of_mem_edges_toDiameter_vec₂ {w j : ℕ} (hj : j < p.2.length)
-    (h : (w, vecVertex (p.1.length + j)) ∈ (toDiameter p).2 ∨
-      (vecVertex (p.1.length + j), w) ∈ (toDiameter p).2) :
+    (h : (w, vecVertex (p.1.length + j)) ∈ (toDiameter p).edges ∨
+      (vecVertex (p.1.length + j), w) ∈ (toDiameter p).edges) :
     w = 1 ∨ ∃ i, ∃ hi : i < p.2[j].length, p.2[j][i] = true ∧ w = coordVertex i := by
   rcases h with h | h
   · rcases mem_edges_toDiameter h with h | ⟨i, h | h⟩ | ⟨k', hk', h⟩ | ⟨j', hj', h⟩ |
@@ -331,60 +326,61 @@ theorem eq_of_mem_edges_toDiameter_vec₂ {w j : ℕ} (hj : j < p.2.length)
       simp only [vecVertex, coordVertex] at h <;> omega
 
 /-- The constant vertices are vertices of the gadget. -/
-theorem const_mem_toDiameter {v : ℕ} (hv : v ∈ constVertices) : v ∈ (toDiameter p).1 :=
+theorem const_mem_toDiameter {v : ℕ} (hv : v ∈ constVertices) : v ∈ (toDiameter p).vertices :=
   List.mem_append_right _ hv
 
 /-- The constant edges are edges of the gadget. -/
-theorem const_mem_edges_toDiameter {e : ℕ × ℕ} (he : e ∈ constEdges) : e ∈ (toDiameter p).2 :=
+theorem const_mem_edges_toDiameter {e : ℕ × ℕ} (he : e ∈ constEdges) : e ∈ (toDiameter p).edges :=
   List.mem_append_right _ he
 
 /-- The hub `0` is adjacent to the vectors of the first list. -/
 theorem vec_mem_edges_toDiameter₁ {k : ℕ} (hk : k < p.1.length) :
-    (0, vecVertex k) ∈ (toDiameter p).2 := by
+    (0, vecVertex k) ∈ (toDiameter p).edges := by
   simp only [toDiameter, List.mem_append, mem_vecsOut]
   exact Or.inl (Or.inl ⟨k, hk, Or.inr (by simp [endEdges, sideVertex])⟩)
 
 /-- The hub `1` is adjacent to the vectors of the second list. -/
 theorem vec_mem_edges_toDiameter₂ {j : ℕ} (hj : j < p.2.length) :
-    (1, vecVertex (p.1.length + j)) ∈ (toDiameter p).2 := by
+    (1, vecVertex (p.1.length + j)) ∈ (toDiameter p).edges := by
   simp only [toDiameter, List.mem_append, mem_vecsOut]
   exact Or.inl (Or.inr ⟨j, hj, Or.inr (by simp [endEdges, sideVertex])⟩)
 
 /-- A vector of the first list is adjacent to the coordinates where it holds `true`. -/
 theorem coord_mem_edges_toDiameter₁ {k i : ℕ} (hk : k < p.1.length) (hi : i < p.1[k].length)
-    (hb : p.1[k][i] = true) : (coordVertex i, vecVertex k) ∈ (toDiameter p).2 := by
+    (hb : p.1[k][i] = true) : (coordVertex i, vecVertex k) ∈ (toDiameter p).edges := by
   simp only [toDiameter, List.mem_append, mem_vecsOut]
   exact Or.inl (Or.inl ⟨k, hk, Or.inl ⟨i, hi, by simp [bitEdges, hb]⟩⟩)
 
 /-- A vector of the second list is adjacent to the coordinates where it holds `true`. -/
 theorem coord_mem_edges_toDiameter₂ {j i : ℕ} (hj : j < p.2.length) (hi : i < p.2[j].length)
     (hb : p.2[j][i] = true) :
-    (coordVertex i, vecVertex (p.1.length + j)) ∈ (toDiameter p).2 := by
+    (coordVertex i, vecVertex (p.1.length + j)) ∈ (toDiameter p).edges := by
   simp only [toDiameter, List.mem_append, mem_vecsOut]
   exact Or.inl (Or.inr ⟨j, hj, Or.inl ⟨i, hi, by simp [bitEdges, hb]⟩⟩)
 
 /-- The coordinates of the vectors of the first list are vertices of the gadget. -/
 theorem coord_mem_toDiameter₁ {k i : ℕ} (hk : k < p.1.length) (hi : i < p.1[k].length) :
-    coordVertex i ∈ (toDiameter p).1 := by
+    coordVertex i ∈ (toDiameter p).vertices := by
   simp only [toDiameter, List.mem_append, mem_vecsOut]
   exact Or.inl (Or.inl ⟨k, hk, Or.inl ⟨i, hi, by simp [bitVertices]⟩⟩)
 
 /-- The vectors of the first list are vertices of the gadget. -/
-theorem vec_mem_toDiameter₁ {k : ℕ} (hk : k < p.1.length) : vecVertex k ∈ (toDiameter p).1 := by
+theorem vec_mem_toDiameter₁ {k : ℕ} (hk : k < p.1.length) :
+    vecVertex k ∈ (toDiameter p).vertices := by
   simp only [toDiameter, List.mem_append, mem_vecsOut]
   exact Or.inl (Or.inl ⟨k, hk, Or.inr (by simp [endVertices])⟩)
 
 /-- The vectors of the second list are vertices of the gadget. -/
 theorem vec_mem_toDiameter₂ {j : ℕ} (hj : j < p.2.length) :
-    vecVertex (p.1.length + j) ∈ (toDiameter p).1 := by
+    vecVertex (p.1.length + j) ∈ (toDiameter p).vertices := by
   simp only [toDiameter, List.mem_append, mem_vecsOut]
   exact Or.inl (Or.inr ⟨j, hj, Or.inr (by simp [endVertices])⟩)
 
 /-! ### Distances in the gadget -/
 
 /-- Two vertices joined by an edge, or equal, are at distance at most one. -/
-private theorem edist_le_one_of {u v : {v // v ∈ (toDiameter p).1}}
-    (h : u.1 = v.1 ∨ (u.1, v.1) ∈ (toDiameter p).2 ∨ (v.1, u.1) ∈ (toDiameter p).2) :
+private theorem edist_le_one_of {u v : {v // v ∈ (toDiameter p).vertices}}
+    (h : u.1 = v.1 ∨ (u.1, v.1) ∈ (toDiameter p).edges ∨ (v.1, u.1) ∈ (toDiameter p).edges) :
     (toDiameter p).induced.edist u v ≤ 1 := by
   rw [SimpleGraph.edist_le_one_iff_adj_or_eq]
   by_cases huv : u.1 = v.1
@@ -396,7 +392,7 @@ private theorem edist_le_one_of {u v : {v // v ∈ (toDiameter p).1}}
     · exact Or.inr h
 
 /-- Two vertices with a common neighbour are at distance at most two. -/
-private theorem edist_le_two_of {u v w : {v // v ∈ (toDiameter p).1}}
+private theorem edist_le_two_of {u v w : {v // v ∈ (toDiameter p).vertices}}
     (hu : (toDiameter p).induced.edist u w ≤ 1) (hv : (toDiameter p).induced.edist w v ≤ 1) :
     (toDiameter p).induced.edist u v ≤ 2 :=
   (SimpleGraph.edist_triangle).trans (by
@@ -404,7 +400,7 @@ private theorem edist_le_two_of {u v w : {v // v ∈ (toDiameter p).1}}
       _ = 2 := one_add_one_eq_two)
 
 /-- Two vertices joined by a path of three edges are at distance at most three. -/
-private theorem edist_le_three_of {u v w x : {v // v ∈ (toDiameter p).1}}
+private theorem edist_le_three_of {u v w x : {v // v ∈ (toDiameter p).vertices}}
     (hu : (toDiameter p).induced.edist u w ≤ 1) (hw : (toDiameter p).induced.edist w x ≤ 1)
     (hv : (toDiameter p).induced.edist x v ≤ 1) :
     (toDiameter p).induced.edist u v ≤ 3 :=
@@ -416,23 +412,23 @@ private theorem edist_le_three_of {u v w x : {v // v ∈ (toDiameter p).1}}
       _ = 3 := by norm_num)
 
 /-- The hub `0` of the first list, a vertex of the gadget. -/
-def toDiameterHub₀ (p : List (List Bool) × List (List Bool)) : {v // v ∈ (toDiameter p).1} :=
+def toDiameterHub₀ (p : List (List Bool) × List (List Bool)) : {v // v ∈ (toDiameter p).vertices} :=
   ⟨0, const_mem_toDiameter (by simp [constVertices])⟩
 
 /-- The hub `1` of the second list, a vertex of the gadget. -/
-def toDiameterHub₁ (p : List (List Bool) × List (List Bool)) : {v // v ∈ (toDiameter p).1} :=
+def toDiameterHub₁ (p : List (List Bool) × List (List Bool)) : {v // v ∈ (toDiameter p).vertices} :=
   ⟨1, const_mem_toDiameter (by simp [constVertices])⟩
 
 /-- **The vertices of the gadget**: every vertex is a neighbour of both hubs `0` and `1`, or a
 vector of the first list, adjacent to `0`, or a vector of the second list, adjacent to `1`. -/
-theorem classify_toDiameter (u : {v // v ∈ (toDiameter p).1}) :
+theorem classify_toDiameter (u : {v // v ∈ (toDiameter p).vertices}) :
     ((toDiameter p).induced.edist (toDiameterHub₀ p) u ≤ 1 ∧
         (toDiameter p).induced.edist (toDiameterHub₁ p) u ≤ 1) ∨
       (∃ k < p.1.length, u.1 = vecVertex k ∧
         (toDiameter p).induced.edist (toDiameterHub₀ p) u ≤ 1) ∨
       (∃ j < p.2.length, u.1 = vecVertex (p.1.length + j) ∧
         (toDiameter p).induced.edist (toDiameterHub₁ p) u ≤ 1) := by
-  have hc {a b : ℕ} (h : (a, b) ∈ constEdges) : (a, b) ∈ (toDiameter p).2 :=
+  have hc {a b : ℕ} (h : (a, b) ∈ constEdges) : (a, b) ∈ (toDiameter p).edges :=
     const_mem_edges_toDiameter h
   obtain ⟨v, hv⟩ := u
   rcases mem_vertices_toDiameter hv with rfl | rfl | rfl | rfl | ⟨i, rfl, h₀, h₁⟩ |
@@ -469,12 +465,12 @@ theorem exists_getElem_of_not_orthogonal {a b : List Bool} (h : ¬OV.Orthogonal 
   · rwa [List.getD_eq_getElem _ _ hib] at hb
 
 /-- **Diameter at most three**: through the hubs `0` and `1`. -/
-theorem edist_toDiameter_le_three (u v : {v // v ∈ (toDiameter p).1}) :
+theorem edist_toDiameter_le_three (u v : {v // v ∈ (toDiameter p).vertices}) :
     (toDiameter p).induced.edist u v ≤ 3 := by
   have h01 : (toDiameter p).induced.edist (toDiameterHub₀ p) (toDiameterHub₁ p) ≤ 1 :=
     edist_le_one_of (Or.inr (Or.inl (const_mem_edges_toDiameter
       (by simp [constEdges, toDiameterHub₀, toDiameterHub₁]))))
-  have near (u : {v // v ∈ (toDiameter p).1}) :
+  have near (u : {v // v ∈ (toDiameter p).vertices}) :
       (toDiameter p).induced.edist u (toDiameterHub₀ p) ≤ 1 ∨
       (toDiameter p).induced.edist u (toDiameterHub₁ p) ≤ 1 := by
     rcases classify_toDiameter u with ⟨h, -⟩ | ⟨-, -, -, h⟩ | ⟨-, -, -, h⟩
@@ -490,9 +486,9 @@ theorem edist_toDiameter_le_three (u v : {v // v ∈ (toDiameter p).1}) :
 
 /-- **Diameter at most two without an orthogonal pair**: a vector of each list share a coordinate
 holding `true` in both, and all other pairs of vertices share a hub. -/
-theorem edist_toDiameter_le_two (hp : p ∉ OV) (u v : {v // v ∈ (toDiameter p).1}) :
+theorem edist_toDiameter_le_two (hp : p ∉ OV) (u v : {v // v ∈ (toDiameter p).vertices}) :
     (toDiameter p).induced.edist u v ≤ 2 := by
-  have cross {u v : {v // v ∈ (toDiameter p).1}} {k j : ℕ} (hk : k < p.1.length)
+  have cross {u v : {v // v ∈ (toDiameter p).vertices}} {k j : ℕ} (hk : k < p.1.length)
       (hj : j < p.2.length) (hu : u.1 = vecVertex k) (hv : v.1 = vecVertex (p.1.length + j)) :
       (toDiameter p).induced.edist u v ≤ 2 := by
     have hno : ¬OV.Orthogonal p.1[k] p.2[j] := fun h =>
@@ -524,18 +520,19 @@ theorem two_lt_edist_toDiameter {k j : ℕ} (hk : k < p.1.length) (hj : j < p.2.
     simp only [vecVertex] at this
     omega
   · obtain ⟨-, he⟩ := Graph.toSimpleGraph_adj.mp he
-    have he' : (vecVertex (p.1.length + j), vecVertex k) ∈ (toDiameter p).2 ∨
-        (vecVertex k, vecVertex (p.1.length + j)) ∈ (toDiameter p).2 := he.symm
+    have he' : (vecVertex (p.1.length + j), vecVertex k) ∈ (toDiameter p).edges ∨
+        (vecVertex k, vecVertex (p.1.length + j)) ∈ (toDiameter p).edges := he.symm
     rcases eq_of_mem_edges_toDiameter_vec₁ hk he' with he | ⟨i, -, -, he⟩ <;>
       simp only [vecVertex, coordVertex] at he <;> omega
   · refine Set.eq_empty_of_forall_notMem fun w hw => ?_
     rw [SimpleGraph.mem_commonNeighbors] at hw
     obtain ⟨-, hu⟩ := Graph.toSimpleGraph_adj.mp hw.1
     obtain ⟨-, hv⟩ := Graph.toSimpleGraph_adj.mp hw.2
-    have hu' : (w.1, vecVertex k) ∈ (toDiameter p).2 ∨ (vecVertex k, w.1) ∈ (toDiameter p).2 :=
+    have hu' : (w.1, vecVertex k) ∈ (toDiameter p).edges ∨
+        (vecVertex k, w.1) ∈ (toDiameter p).edges :=
       hu.symm
-    have hv' : (w.1, vecVertex (p.1.length + j)) ∈ (toDiameter p).2 ∨
-        (vecVertex (p.1.length + j), w.1) ∈ (toDiameter p).2 := hv.symm
+    have hv' : (w.1, vecVertex (p.1.length + j)) ∈ (toDiameter p).edges ∨
+        (vecVertex (p.1.length + j), w.1) ∈ (toDiameter p).edges := hv.symm
     rcases eq_of_mem_edges_toDiameter_vec₁ hk hu' with hu | ⟨i, hia, ha, hu⟩ <;>
       rcases eq_of_mem_edges_toDiameter_vec₂ hj hv' with hv | ⟨i', hib, hb, hv⟩
     · omega
@@ -557,7 +554,8 @@ theorem one_lt_edist_toDiameter_two_three :
   refine lt_of_not_ge fun h => ?_
   rcases SimpleGraph.edist_le_one_iff_adj_or_eq.mp h with he | he
   · obtain ⟨-, he⟩ := Graph.toSimpleGraph_adj.mp he
-    have he' : ((2 : ℕ), (3 : ℕ)) ∈ (toDiameter p).2 ∨ ((3 : ℕ), (2 : ℕ)) ∈ (toDiameter p).2 := he
+    have he' : ((2 : ℕ), (3 : ℕ)) ∈ (toDiameter p).edges ∨
+        ((3 : ℕ), (2 : ℕ)) ∈ (toDiameter p).edges := he
     rcases he' with he | he <;> rcases fst_mem_edges_toDiameter he with h | h | ⟨i, h⟩ <;>
       first | omega | (simp only [coordVertex] at h; omega)
   · have := congrArg Subtype.val he
@@ -1098,23 +1096,23 @@ theorem not_decidableInTimeO_diameter_size_of_OVH (hOVH : OVH) {ε : ℝ} (hε :
     {S : Set Graph} (hS₂ : ∀ G : Graph, G.induced.ediam ≤ 2 → G ∈ S)
     (hS₃ : ∀ G : Graph, G.induced.ediam = 3 → G ∉ S) :
     ¬DecidableInTimeO S encGraph fun G =>
-      ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) + (encGraph G).length := by
+      ((G.vertices.length + G.edges.length : ℕ) : ℝ) ^ (2 - ε) + (encGraph G).length := by
   intro hS
   refine not_decidableInTimeO_diameter_of_OVH hOVH (lt_min hε one_pos) hS₂ hS₃
     (hS.mono 2 (fun G => ?_) (fun G => Real.rpow_nonneg (Nat.cast_nonneg _) _))
-  have hle : ((G.1.length + G.2.length : ℕ) : ℝ) ≤ (encGraph G).length := by
+  have hle : ((G.vertices.length + G.edges.length : ℕ) : ℝ) ≤ (encGraph G).length := by
     exact_mod_cast G.length_vertices_add_length_edges_le_encGraph
   have hL : (1 : ℝ) ≤ (encGraph G).length := by
     have : 0 < (encGraph G).length := by
-      rw [encGraph, length_encPair]
+      rw [encGraph_apply, length_encPair]
       omega
     exact_mod_cast this
   have hpos : (0 : ℝ) ≤ ((encGraph G).length : ℝ) ^ (2 - min ε 1) :=
     Real.rpow_nonneg (Nat.cast_nonneg _) _
   -- the size term
-  have hA : ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) ≤
+  have hA : ((G.vertices.length + G.edges.length : ℕ) : ℝ) ^ (2 - ε) ≤
       ((encGraph G).length : ℝ) ^ (2 - min ε 1) + 1 := by
-    rcases Nat.eq_zero_or_pos (G.1.length + G.2.length) with h0 | h0
+    rcases Nat.eq_zero_or_pos (G.vertices.length + G.edges.length) with h0 | h0
     · rw [h0, Nat.cast_zero]
       have h₁ : (0 : ℝ) ^ (2 - ε) ≤ 1 := by
         by_cases h2 : 2 - ε = 0
@@ -1122,8 +1120,8 @@ theorem not_decidableInTimeO_diameter_size_of_OVH (hOVH : OVH) {ε : ℝ} (hε :
         · rw [Real.zero_rpow h2]
           exact zero_le_one
       linarith
-    · have h1 : (1 : ℝ) ≤ ((G.1.length + G.2.length : ℕ) : ℝ) := by exact_mod_cast h0
-      have h₁ : ((G.1.length + G.2.length : ℕ) : ℝ) ^ (2 - ε) ≤
+    · have h1 : (1 : ℝ) ≤ ((G.vertices.length + G.edges.length : ℕ) : ℝ) := by exact_mod_cast h0
+      have h₁ : ((G.vertices.length + G.edges.length : ℕ) : ℝ) ^ (2 - ε) ≤
           ((encGraph G).length : ℝ) ^ (2 - min ε 1) :=
         (Real.rpow_le_rpow_of_exponent_le h1 (by linarith [min_le_left ε 1])).trans
           (Real.rpow_le_rpow (by linarith) hle (by linarith [min_le_right ε 1]))

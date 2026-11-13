@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Polynomial
 import CslibFrontier.Computability.Complexity.Problems.STCON.Completeness
 
 /-!
@@ -15,7 +16,9 @@ The Immerman–Szelepcsényi theorem for nondeterministic space
 (`Cslib.Complexity.NSPACE_eq_coNSPACE`) is instantiated at logarithmic, linear and quadratic
 space, none of which needs a constructibility hypothesis. The classes are nonvacuous: directed
 `s`–`t` connectivity is in `NSPACE(log₂ n)` and in `NSPACE(n)`, and so is its complement. `NL` is
-`NSPACE(log₂ n)`, and `NL = coNL` remains its special case.
+`NSPACE(log₂ n)`, and `NL = coNL` remains its special case. A polynomially bounded
+nondeterministic space class is within `NPSPACE` (`Cslib.Complexity.NSPACE_subset_NPSPACE`), so
+directed connectivity is in `NPSPACE`.
 
 Nondeterministic space within deterministic exponential time
 (`Cslib.Complexity.exists_mem_DTIME_of_mem_NSPACE`) is instantiated at a bound below `log₂ n`, at
@@ -37,7 +40,7 @@ theorem stcon_mem_log : STCON ∈ NSPACE encSTCON Nat.log2 :=
 
 /-- Logarithmic space is within linear space, so directed connectivity is in `NSPACE(n)`. -/
 theorem stcon_mem_linear : STCON ∈ NSPACE encSTCON id :=
-  NSPACE_subset_of_le_mul_add 1 0 (fun n => by simpa using Nat.log2_le_self n) stcon_mem_log
+  NSPACE_mono Nat.log2_le_self stcon_mem_log
 
 -- The complements, by the theorem.
 example : STCONᶜ ∈ NSPACE encSTCON Nat.log2 := compl_mem_NSPACE (fun _ => le_rfl) stcon_mem_log
@@ -52,6 +55,13 @@ example : STCONᶜ ∈ NSPACE encSTCON id := compl_mem_NSPACE Nat.log2_le_self s
 
 example : STCON ∈ coNSPACE encSTCON id :=
   (NSPACE_eq_coNSPACE (s := id) Nat.log2_le_self) ▸ stcon_mem_linear
+
+/-- Linear space is polynomially bounded, so directed connectivity is in `NPSPACE`. -/
+example : STCON ∈ NPSPACE encSTCON := NSPACE_subset_NPSPACE .id stcon_mem_linear
+
+/-- The same membership through the union of the classes `NSPACE (n ^ k)`. -/
+example : ∃ k, STCON ∈ NSPACE encSTCON (· ^ k) :=
+  mem_NPSPACE_iff_exists_mem_NSPACE.mp (NSPACE_subset_NPSPACE .id stcon_mem_linear)
 
 /-! ### Nondeterministic space within deterministic exponential time -/
 

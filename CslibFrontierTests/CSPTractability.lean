@@ -33,11 +33,11 @@ private theorem pins_majority : CSP.HasPolymorphism unary pin (majority 3) := by
 example : CSPSAT unary pin ∈ P (encCSP encBool encNat) :=
   CSPSAT.mem_P_of_majority encBool unary pin pins_majority
 
-example : [(true, [0]), (false, [1])] ∈ CSPSAT unary pin := by
+example : [⟨true, [0]⟩, ⟨false, [1]⟩] ∈ CSPSAT unary pin := by
   refine ⟨by decide, fun n => n == 0, ?_⟩
   decide
 
-example : [(true, [0]), (false, [0])] ∉ CSPSAT unary pin := by
+example : [⟨true, [0]⟩, ⟨false, [0]⟩] ∉ CSPSAT unary pin := by
   rintro ⟨_, σ, hσ⟩
   cases h : σ 0 <;> simp [CSP.eval, Constraint.eval, pin, h] at hσ
 
@@ -54,11 +54,11 @@ private theorem maybePin_true :
 example : CSPSAT unary maybePin ∈ P (encCSP encBool encNat) :=
   CSPSAT.mem_P_of_constant encBool unary maybePin true maybePin_true
 
-example : [(false, [2 ^ 80])] ∈ CSPSAT unary maybePin := by
+example : [⟨false, [2 ^ 80]⟩] ∈ CSPSAT unary maybePin := by
   refine ⟨by decide, fun _ => true, ?_⟩
   decide
 
-example : [(true, [0])] ∉ CSPSAT unary maybePin := by
+example : [⟨true, [0]⟩] ∉ CSPSAT unary maybePin := by
   rintro ⟨_, _, hσ⟩
   exact Bool.false_ne_true hσ
 
