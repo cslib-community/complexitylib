@@ -112,6 +112,15 @@ example (b : Bool) :
     lrExperiment (fun _ _ _ => false) (fun _ m => pure m) echo b () = pure false := by
   simp [lrExperiment, echo]
 
+-- With every pair admissible, `eval_lrExperiment` gives the output distribution as the challenge
+-- on the chosen pair, the form a reduction's experiment is compared with.
+example {I₁ M C σ : Type} (enc : I₁ → M → ProbComp C) (A : TwoStage I₁ (MessagePair M) C Bool σ)
+    (b : Bool) (x : I₁) :
+    ProbComp.eval (lrExperiment (fun _ _ _ => true) enc A b x) =
+      (ProbComp.eval (A.choose x)).bind fun p =>
+        (ProbComp.eval (enc x (p.1.select b))).bind fun c => ProbComp.eval (A.guess p.2 c) := by
+  simp
+
 -- A family with deterministic polynomial-time stages is PPT. The saved state is a typed pair, a
 -- flag and the public key; the guess reads the flag back.
 example : TwoStage.IsPPT encBits (encMessagePair encBits) encBits encBool
@@ -141,19 +150,12 @@ example {Msg : Type} (encMsg : Msg ↪ List Bool) (pair : MessagePair Msg) (stat
       Encryption.encChoiceOut encMsg ((pair.msg₀, pair.msg₁), state) :=
   rfl
 
-/-- The two-stage family of a word-level chosen-message adversary: the same stages, with the
-challenge pair as a `MessagePair`. -/
-def ofWord {Msg : Type} (adversary : Encryption.AdversaryOf Msg) :
-    ℕ → TwoStage (List Bool) (MessagePair Msg) (List Bool) Bool (List Bool) := fun n =>
-  { choose := fun pk => (fun r => (⟨r.1.1, r.1.2⟩, r.2)) <$> adversary.choose n pk
-    guess := adversary.guess n }
-
 -- A PPT word-level adversary is a PPT two-stage family over the same encodings, so typed
 -- security quantifying over all state types implies word-level security.
 example {Msg : Type} (encMsg : Msg ↪ List Bool) (adversary : Encryption.AdversaryOf Msg)
     (h : adversary.IsPPT encMsg) :
-    TwoStage.IsPPT encBits (encMessagePair encMsg) encBits encBool encBits (ofWord adversary) where
-  choose := IsPPTOn.map h.choose.on (ComputableInPolyTime.of_eq fun _ => rfl)
-  guess := h.guess
+    TwoStage.IsPPT encBits (encMessagePair encMsg) encBits encBool encBits
+      adversary.toTwoStage :=
+  Encryption.AdversaryOf.isPPT_toTwoStage h
 
 end CslibFrontierTests.Experiment

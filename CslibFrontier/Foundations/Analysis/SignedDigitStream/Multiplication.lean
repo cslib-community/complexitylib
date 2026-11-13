@@ -564,19 +564,13 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
       _ = 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
           rw [pow_add]
           field_simp
-  have hO1 : ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2), w p ≤
-      ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-    have hsub1 : (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2) ⊆
-        Sq.filter (fun p => t + bandMargin (bandIdx p.1) < p.1 + p.2) := by
-      intro p hp
-      obtain ⟨hpDiff, hpLe⟩ := mem_filter.mp hp
-      have hmin : min p.1 p.2 = p.1 := min_eq_left hpLe
-      have hgt := homit_gt p hpDiff
-      rw [hmin] at hgt
-      exact mem_filter.mpr ⟨(mem_sdiff.mp hpDiff).1, hgt⟩
-    calc ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2), w p
+  -- pairs whose first index governs the omission contribute at most one row bound per row
+  have hrows : ∀ T ⊆ Sq.filter (fun p => t + bandMargin (bandIdx p.1) < p.1 + p.2),
+      ∑ p ∈ T, w p ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
+    intro T hT
+    calc ∑ p ∈ T, w p
         ≤ ∑ p ∈ Sq.filter (fun p => t + bandMargin (bandIdx p.1) < p.1 + p.2), w p :=
-          sum_le_sum_of_subset_of_nonneg hsub1 fun _ _ _ => by dsimp [w]; positivity
+          sum_le_sum_of_subset_of_nonneg hT fun _ _ _ => by dsimp [w]; positivity
       _ = ∑ r ∈ range (N + 1),
             ∑ j ∈ (range (N + 1)).filter (fun j => t + bandMargin (bandIdx r) < r + j),
               w (r, j) := by
@@ -586,32 +580,28 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
           rw [sum_filter]
       _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) :=
           sum_le_sum fun r _ => hrow r
+  have hO1 : ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2), w p ≤
+      ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
+    refine hrows _ fun p hp => ?_
+    obtain ⟨hpDiff, hpLe⟩ := mem_filter.mp hp
+    have hgt := homit_gt p hpDiff
+    rw [min_eq_left hpLe] at hgt
+    exact mem_filter.mpr ⟨(mem_sdiff.mp hpDiff).1, hgt⟩
+  -- the remaining pairs are the first kind with their two indices swapped
   have hO2 : ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2), w p ≤
       ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-    have hsub2 : (Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2) ⊆
-        Sq.filter (fun p => t + bandMargin (bandIdx p.2) < p.1 + p.2) := by
-      intro p hp
-      obtain ⟨hpDiff, hpGt⟩ := mem_filter.mp hp
-      have hle : p.2 ≤ p.1 := (not_le.mp hpGt).le
-      have hmin : min p.1 p.2 = p.2 := min_eq_right hle
-      have hgt := homit_gt p hpDiff
-      rw [hmin] at hgt
-      exact mem_filter.mpr ⟨(mem_sdiff.mp hpDiff).1, hgt⟩
-    calc ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2), w p
-        ≤ ∑ p ∈ Sq.filter (fun p => t + bandMargin (bandIdx p.2) < p.1 + p.2), w p :=
-          sum_le_sum_of_subset_of_nonneg hsub2 fun _ _ _ => by dsimp [w]; positivity
-      _ = ∑ r ∈ range (N + 1),
-            ∑ i ∈ (range (N + 1)).filter (fun i => t + bandMargin (bandIdx r) < r + i),
-              w (r, i) := by
-          dsimp [Sq]
-          rw [sum_filter, sum_product_right]
-          refine sum_congr rfl fun r _ => ?_
-          rw [sum_filter]
-          refine sum_congr rfl fun i _ => ?_
-          dsimp [w]
-          rw [add_comm i r]
-      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) :=
-          sum_le_sum fun r _ => hrow r
+    have hswap := hrows (((Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2)).image Prod.swap)
+      fun p hp => by
+        obtain ⟨q, hq, rfl⟩ := mem_image.mp hp
+        obtain ⟨hqDiff, hqGt⟩ := mem_filter.mp hq
+        have hgt := homit_gt q hqDiff
+        rw [min_eq_right (not_le.mp hqGt).le] at hgt
+        have hqSq := (mem_sdiff.mp hqDiff).1
+        simp only [Sq, mem_filter, mem_product, Prod.fst_swap, Prod.snd_swap] at hqSq ⊢
+        exact ⟨hqSq.symm, by rwa [add_comm q.2 q.1]⟩
+    rw [sum_image fun p _ q _ h => Prod.swap_injective h] at hswap
+    refine le_of_eq_of_le (sum_congr rfl fun p _ => ?_) hswap
+    simp only [w, Prod.fst_swap, Prod.snd_swap, add_comm]
   have hsum_r : ∑ r ∈ range (N + 1), 72 / (2 : ℝ) ^ bandMargin (bandIdx r) ≤ 9 / 64 := by
     set B := bandIdx N + 1
     have hcover : range (N + 1) ⊆ (range B).biUnion fun k => Ico (bandStart k) (bandEnd k) := by
