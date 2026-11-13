@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.Data.Code.HintDecoding
 import CslibFrontier.Foundations.Data.Code.LowDegreeExtension
 import CslibFrontier.Foundations.GroupTheory.Perm.Fin
@@ -303,7 +304,8 @@ section Entropy
 open Cslib.Probability Cslib.Probability.PMF
 
 private theorem logb_two_four : Real.logb 2 4 = 2 := by
-  rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one] <;> norm_num
+  rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_two_pow]
+  norm_num
 
 -- Exposing the parity and then the first bit of a uniform two-bit word accounts for both bits.
 example : entropy ((PMF.uniformOfFintype (Bool × Bool)).map fun w => xor w.1 w.2) +

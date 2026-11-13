@@ -26,8 +26,8 @@ namespace Cslib.Logic.PL.CSP
 Repeated variables and identical constraints remain indexed rather than deduplicated. -/
 theorem occurrences_append_last_argument {Rel V : Type} (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) :
-    (F ++ [(r, scope ++ [v])]).occurrences =
-      (F ++ [(r, scope)]).occurrences ++ [(F.length, scope.length, v)] := by
+    (F ++ [Constraint.mk r (scope ++ [v])]).occurrences =
+      (F ++ [Constraint.mk r scope]).occurrences ++ [(F.length, scope.length, v)] := by
   simp [CSP.occurrences, CSP.varCNF, Cslib.Logic.PL.occurrences,
     List.zipIdx_append, List.zipIdx_map, List.flatMap_append, List.map_flatMap,
     List.map_map, Function.comp_def]

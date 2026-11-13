@@ -56,7 +56,7 @@ variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 /-- A constraint's actual scope length, read from the input list. Missing constraints return zero;
 relation arities are never used as clocks. -/
 @[expose] def scopeLength (F : CSP Rel V) (i : ℕ) : ℕ :=
-  (F.map fun c => c.2.length).getD i 0
+  (F.map fun c => c.scope.length).getD i 0
 
 /-- Edge position of the next argument, with last-to-first wraparound in its original scope. -/
 @[expose] def argumentNextIndex (F : CSP Rel V) (i j : ℕ) : ℕ :=
@@ -86,7 +86,7 @@ private theorem getElem_argumentPositions (o : F.Occurrence) :
 omit [DecidableEq V] in
 /-- The executable length reader uses the occurrence's actual scope. -/
 theorem scopeLength_occurrence (o : F.Occurrence) :
-    scopeLength F o.1 = F[o.1.val].2.length := by
+    scopeLength F o.1 = F[o.1.val].scope.length := by
   unfold scopeLength
   rw [List.getD_eq_getElem _ _ (by simpa only [List.length_map] using o.1.isLt)]
   simp only [List.getElem_map]

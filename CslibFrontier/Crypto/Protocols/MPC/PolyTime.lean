@@ -44,7 +44,7 @@ by a word-level evaluator
    `Protocol.eval_runEncoded_eq_evalWith_map` proves that running `Π.runEncoded` against
    `ot14WordHandler` yields the exact distribution of `(Π.evalWith ot14World x).map
    (encodeViewsAndOutputs encView encOut)`.
-3. **Uniform Efficiency Certificates:** Over `Sigma`-packaged family inputs `FamilyRunInput` and
+3. **Uniform Efficiency Certificates:** Over the family input records `FamilyRunInput` and
    `FamilySimInput`, `familyIsOraclePPT_gmwOT14RandomizedProtocol` certifies that the
    centralized joint word-encoded execution `Protocol.runEncoded` of
    `gmwOT14RandomizedProtocol` across all `m` parties is uniformly oracle-PPT

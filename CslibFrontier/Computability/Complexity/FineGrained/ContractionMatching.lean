@@ -97,12 +97,12 @@ open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The instance answered in place of an instance with an empty or overlong scope: one
 exactly-one constraint on a repeated variable, whose partition function is zero. -/
-@[expose] def zeroInstance : CSP Unit ℕ := [((), [0, 0])]
+@[expose] def zeroInstance : CSP Unit ℕ := [⟨(), [0, 0]⟩]
 
 /-- The instance handed to the counter: `F` itself when each of its constraints has between one
 and `d` variables, and `zeroInstance` otherwise. -/
 @[expose] def guarded (d : ℕ) (F : CSP Unit ℕ) : CSP Unit ℕ :=
-  if F.all fun c => decide (1 ≤ c.2.length ∧ c.2.length ≤ d) then F else zeroInstance
+  if F.all fun c => decide (1 ≤ c.scope.length ∧ c.scope.length ≤ d) then F else zeroInstance
 
 /-- No assignment makes exactly one of the two copies of the variable `0` true. -/
 theorem partitionFunction_zeroInstance :
@@ -111,7 +111,7 @@ theorem partitionFunction_zeroInstance :
 
 /-- **Guarding preserves the partition function** of an instance whose constraints have at most
 `d` variables: if one of them has none, both partition functions are zero. -/
-theorem partitionFunction_guarded {d : ℕ} {F : CSP Unit ℕ} (hF : ∀ c ∈ F, c.2.length ≤ d) :
+theorem partitionFunction_guarded {d : ℕ} {F : CSP Unit ℕ} (hF : ∀ c ∈ F, c.scope.length ≤ d) :
     (guarded d F).partitionFunction CSP.exactlyOneWeight =
       F.partitionFunction CSP.exactlyOneWeight := by
   unfold guarded
@@ -120,14 +120,14 @@ theorem partitionFunction_guarded {d : ℕ} {F : CSP Unit ℕ} (hF : ∀ c ∈ F
   · rw [partitionFunction_zeroInstance]
     simp only [List.all_eq_true, decide_eq_true_eq, not_forall] at hg
     obtain ⟨c, hc, hlen⟩ := hg
-    have h0 : c.2 = [] := List.eq_nil_of_length_eq_zero (by have := hF c hc; omega)
+    have h0 : c.scope = [] := List.eq_nil_of_length_eq_zero (by have := hF c hc; omega)
     refine (CSP.partitionFunction_eq_zero_of_mem hc fun w hw => ?_).symm
     rw [h0, List.length_nil, List.length_eq_zero_iff] at hw
     rw [hw]
     rfl
 
 private theorem length_mem_guarded {d : ℕ} {F : CSP Unit ℕ} {c : Constraint Unit ℕ}
-    (hc : c ∈ guarded d F) : 1 ≤ c.2.length ∧ c.2.length ≤ d + 2 := by
+    (hc : c ∈ guarded d F) : 1 ≤ c.scope.length ∧ c.scope.length ≤ d + 2 := by
   unfold guarded at hc
   split_ifs at hc with hg
   · simp only [List.all_eq_true, decide_eq_true_eq] at hg
@@ -171,7 +171,7 @@ theorem exists_exactlyOneCounter {α : Type} {enc : α ↪ List Bool} (d C : ℕ
     (hinst : ComputableInPolyTime inst enc (encCSP encUnit encNat))
     (hocc : ∀ a v, (inst a).vars.count v ≤ 2) (hsize : ∀ a, (inst a).length ≤ C * size a + C) :
     ∃ (count : α → ℕ) (A e b : ℕ),
-      (∀ a, (∀ c ∈ inst a, c.2.length ≤ d) →
+      (∀ a, (∀ c ∈ inst a, c.scope.length ≤ d) →
         count a = (inst a).partitionFunction CSP.exactlyOneWeight) ∧
       ComputableInO count enc encNat
         (fun a => 2 ^ (A * (size a + 1) / Nat.sqrt (Nat.log 2 (size a + 2))) *
@@ -237,7 +237,7 @@ variables. -/
 private theorem length_le_of_mem_permanentInstance {d : ℕ} {rows : List (List Bool)}
     (hrow : ∀ i, #{j | rowsMatrix rows i j ≠ 0} ≤ d)
     (hcol : ∀ j, #{i | rowsMatrix rows i j ≠ 0} ≤ d) {c : Constraint Unit ℕ}
-    (hc : c ∈ CSP.permanentInstance rows.length (rowEntry rows)) : c.2.length ≤ d := by
+    (hc : c ∈ CSP.permanentInstance rows.length (rowEntry rows)) : c.scope.length ≤ d := by
   simp only [CSP.permanentInstance, List.mem_append, List.mem_map, List.mem_range] at hc
   rcases hc with ⟨i, hi, rfl⟩ | ⟨j, hj, rfl⟩
   · rw [List.length_map, ← List.countP_eq_length_filter, List.countP_range_eq_card_filter]

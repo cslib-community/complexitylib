@@ -112,6 +112,15 @@ example (b : Bool) :
     lrExperiment (fun _ _ _ => false) (fun _ m => pure m) echo b () = pure false := by
   simp [lrExperiment, echo]
 
+-- With every pair admissible, `eval_lrExperiment` gives the output distribution as the challenge
+-- on the chosen pair, the form a reduction's experiment is compared with.
+example {I₁ M C σ : Type} (enc : I₁ → M → ProbComp C) (A : TwoStage I₁ (MessagePair M) C Bool σ)
+    (b : Bool) (x : I₁) :
+    ProbComp.eval (lrExperiment (fun _ _ _ => true) enc A b x) =
+      (ProbComp.eval (A.choose x)).bind fun p =>
+        (ProbComp.eval (enc x (p.1.select b))).bind fun c => ProbComp.eval (A.guess p.2 c) := by
+  simp
+
 -- A family with deterministic polynomial-time stages is PPT. The saved state is a typed pair, a
 -- flag and the public key; the guess reads the flag back.
 example : TwoStage.IsPPT encBits (encMessagePair encBits) encBits encBool
