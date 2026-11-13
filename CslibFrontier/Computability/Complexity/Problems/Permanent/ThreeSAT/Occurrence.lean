@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT.Construction
+public import Mathlib.Data.List.GetD
 
 /-!
 # Occurrences and tracks of the 3CNF matrix
@@ -32,12 +33,11 @@ theorem litAt_mem (hφ : WellFormed φ) {o : ℕ} (ho : o < numOcc φ) :
     litAt φ o ∈ φ[o / 3]'(by unfold numOcc at ho; omega) := by
   have hj : o / 3 < φ.length := by unfold numOcc at ho; omega
   have hc := hφ _ (List.getElem_mem hj)
-  rw [litAt, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj, Option.getD_some]
-  rw [List.getD_eq_getElem?_getD]
+  rw [litAt, List.getD_eq_getElem _ _ hj]
   by_cases hp : o % 3 < (φ[o / 3]).length
-  · rw [List.getElem?_eq_getElem hp, Option.getD_some]
+  · rw [List.getD_eq_getElem _ _ hp]
     exact List.getElem_mem hp
-  · rw [List.getElem?_eq_none (by omega), Option.getD_none]
+  · rw [List.getD_eq_default _ _ (by omega)]
     have hne : φ[o / 3] ≠ [] := List.ne_nil_of_length_pos (by omega)
     rw [List.getLastD_eq_getLast?, List.getLast?_eq_getLast hne, Option.getD_some]
     exact List.getLast_mem hne
@@ -50,8 +50,7 @@ theorem exists_litAt_eq (hφ : WellFormed φ) {j : ℕ} (hj : j < φ.length) {l 
   refine ⟨p, by omega, ?_⟩
   have h1 : (3 * j + p) / 3 = j := by omega
   have h2 : (3 * j + p) % 3 = p := by omega
-  rw [litAt, h1, h2, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj, Option.getD_some,
-    List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hp, Option.getD_some]
+  rw [litAt, h1, h2, List.getD_eq_getElem _ _ hj, List.getD_eq_getElem _ _ hp]
 
 /-- The variable of an occurrence is listed. -/
 theorem fst_litAt_mem_varList (hφ : WellFormed φ) {o : ℕ} (ho : o < numOcc φ) :
@@ -73,19 +72,17 @@ theorem varList_nodup (φ : CNF ℕ) : (varList φ).Nodup := List.nodup_dedup _
 /-- The listed variable at its index. -/
 theorem getD_varList_idxOf {x : ℕ} (hx : x ∈ varList φ) :
     (varList φ).getD ((varList φ).idxOf x) 0 = x := by
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (List.idxOf_lt_length_iff.2 hx),
-    Option.getD_some, List.getElem_idxOf]
+  rw [List.getD_eq_getElem _ _ (List.idxOf_lt_length_iff.2 hx), List.getElem_idxOf]
 
 /-- The index of the listed variable at an index. -/
 theorem idxOf_getD_varList {i : ℕ} (hi : i < numAux φ) :
     (varList φ).idxOf ((varList φ).getD i 0) = i := by
   unfold numAux at hi
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some,
-    List.idxOf_getElem (varList_nodup φ)]
+  rw [List.getD_eq_getElem _ _ hi, (varList_nodup φ).idxOf_getElem]
 
 theorem getD_varList_mem {i : ℕ} (hi : i < numAux φ) : (varList φ).getD i 0 ∈ varList φ := by
   unfold numAux at hi
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, Option.getD_some]
+  rw [List.getD_eq_getElem _ _ hi]
   exact List.getElem_mem hi
 
 /-! ### First and next occurrences -/
@@ -98,7 +95,7 @@ theorem firstOcc_eq_some {ℓ : Literal ℕ} {o : ℕ} :
 
 theorem firstOcc_eq_none {ℓ : Literal ℕ} :
     firstOcc φ ℓ = none ↔ ∀ o < numOcc φ, litAt φ o ≠ ℓ := by
-  simp [firstOcc, List.find?_range_eq_none]
+  simp [firstOcc]
 
 theorem nextOcc_eq_some {o o' : ℕ} :
     nextOcc φ o = some o' ↔ o' < numOcc φ ∧ o < o' ∧ litAt φ o' = litAt φ o ∧
@@ -166,7 +163,7 @@ theorem exitIdx_exitOcc {k : ℕ} (hk : numAux φ ≤ k) (h3 : 3 ≤ (k - numAux
     (h6 : (k - numAux φ) % 8 < 6) : exitIdx φ (exitOcc φ k) = k := by
   unfold exitOcc exitIdx; omega
 
-theorem exitOcc_lt {k : ℕ} (hk : k < size φ) (h6 : (k - numAux φ) % 8 < 6) :
+theorem exitOcc_lt {k : ℕ} (hn : numAux φ ≤ k) (hk : k < size φ) (h6 : (k - numAux φ) % 8 < 6) :
     exitOcc φ k < numOcc φ := by
   unfold exitOcc numOcc; unfold size at hk; omega
 
@@ -174,19 +171,19 @@ theorem exitOcc_lt {k : ℕ} (hk : k < size φ) (h6 : (k - numAux φ) % 8 < 6) :
 
 theorem auxSucc_eq_some {i : ℕ} {b : Bool} {o : ℕ}
     (h : firstOcc φ ((varList φ).getD i 0, b) = some o) : auxSucc φ i b = entryIdx φ o := by
-  simp [auxSucc, h]
+  unfold auxSucc; rw [h]
 
 theorem auxSucc_eq_none {i : ℕ} {b : Bool} (h : firstOcc φ ((varList φ).getD i 0, b) = none) :
     auxSucc φ i b = i := by
-  simp [auxSucc, h]
+  unfold auxSucc; rw [h]
 
 theorem exitSucc_eq_some {o o' : ℕ} (h : nextOcc φ o = some o') :
     exitSucc φ o = entryIdx φ o' := by
-  simp [exitSucc, h]
+  unfold exitSucc; rw [h]
 
 theorem exitSucc_eq_none {o : ℕ} (h : nextOcc φ o = none) :
     exitSucc φ o = (varList φ).idxOf (litAt φ o).1 := by
-  simp [exitSucc, h]
+  unfold exitSucc; rw [h]
 
 theorem auxSucc_lt_size {i : ℕ} (hi : i < numAux φ) (b : Bool) : auxSucc φ i b < size φ := by
   rcases h : firstOcc φ ((varList φ).getD i 0, b) with _ | o
