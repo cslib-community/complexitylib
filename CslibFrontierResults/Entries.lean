@@ -20,6 +20,7 @@ import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
+import CslibFrontier.Computability.Complexity.Problems.SharpCycle
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -519,6 +520,23 @@ register_result "toda" where
     every oracle language answering the bits of some #P function (explicit witness counts). \
     The class does not count queries; the construction asks a single one. PH uses \
     polynomial-time alternating verifiers; arbitrary injective encodings."
+
+register_result "sharp-cycle-fp-p-eq-np" where
+  title := "If #CYCLE is in FP then P = NP"
+  topic := "counting classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 9.4",
+      locator := "Web draft 2007-01-08, §9.1, printed p. 173; PDF p. 189" }
+  ]
+  theorems := [
+    Cslib.Complexity.P_eq_NP_of_computableInPolyTime_SharpCycle,
+    Cslib.Complexity.SharpCycle.mem_DirHamCycle_iff
+  ]
+  scope := "#CYCLE counts the simple directed cycles (Cycle values: nonempty, no repeated \
+    vertex, declared vertices, arcs of the edge list; a self-loop is a cycle of length one) of \
+    a graph under encGraph. FP is native polynomial-time computability with binary output \
+    encNat. The gadget reduction uses n*n+n+1 layers and threshold 2^(m*n) instead of the \
+    draft's n log n + 1 and n^(n^2). P = NP holds for every injective encoding."
 
 register_result "bqp-pp" where
   title := "Adleman–DeMarrais–Huang: BQP is contained in PP"
