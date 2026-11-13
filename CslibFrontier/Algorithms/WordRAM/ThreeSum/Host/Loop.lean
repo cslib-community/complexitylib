@@ -256,45 +256,34 @@ private theorem exec_finish {w r s : ℕ} (x : Data (64 + (r + 7)))
         y.regs (hostRegisters i) = x.regs (hostRegisters i)) ∧ y.mem = x.mem := by
   change x.regs ⟨45, by omega⟩ = 1 at ho
   change x.regs ⟨42, by omega⟩ = s at hi
-  by_cases ha : x.regs (callRegisters 6) = 1
-  · change x.regs ⟨70, by omega⟩ = 1 at ha
-    refine ⟨(x.set (hostRegisters found) 1).set (hostRegisters inst) (s + 1),
-      ?exec, ?inst, ?found, ?frame, ?mem⟩
-    case exec =>
+  refine ⟨(x.set (hostRegisters found)
+      (if x.regs (callRegisters 6) = 1 then 1 else x.regs (hostRegisters found))).set
+      (hostRegisters inst) (s + 1), ?exec, ?inst, ?found, ?frame, rfl⟩
+  case exec =>
+    -- The flag test skips one instruction when the solver reports no triple.
+    by_cases ha : x.regs (callRegisters 6) = 1
+    · change x.regs ⟨70, by omega⟩ = 1 at ha
       apply ExecWithin.of_eval (fuel := 0) (n := 3)
       · simp +decide [finish, Code.eval, Op.eval_copy, Op.eval_bin, Data.put,
           Data.set_regs, Cond.holds_eq, BinOp.eval,
           callRegisters, solverArg, solverRegisters, hostRegisters, one, inst, found,
           ho, hi, ha, hfit]
       · omega
-    case inst => simp
-    case found =>
-      simp +decide [ha, callRegisters, solverArg, solverRegisters, hostRegisters, inst, found]
-    case frame =>
-      intro i hi hf
-      have hni := (hostRegisters_injective (r := r + 7)).ne hi
-      have hnf := (hostRegisters_injective (r := r + 7)).ne hf
-      simp only [Data.set_regs, Function.update_of_ne hni, Function.update_of_ne hnf]
-    case mem => rfl
-  · change ¬x.regs ⟨70, by omega⟩ = 1 at ha
-    refine ⟨(x.set (hostRegisters found) (x.regs (hostRegisters found))).set
-      (hostRegisters inst) (s + 1), ?exec, ?inst, ?found, ?frame, ?mem⟩
-    case exec =>
+    · change ¬x.regs ⟨70, by omega⟩ = 1 at ha
       apply ExecWithin.of_eval (fuel := 0) (n := 4)
       · simp +decide [finish, Code.eval, Op.eval_copy, Op.eval_bin, Data.put,
           Data.set_regs, Cond.holds_eq, BinOp.eval,
           callRegisters, solverArg, solverRegisters, hostRegisters, one, inst, found,
           ho, hi, ha, hfit]
       · omega
-    case inst => simp
-    case found =>
-      simp +decide [ha, callRegisters, solverArg, solverRegisters, hostRegisters, inst, found]
-    case frame =>
-      intro i hi hf
-      have hni := (hostRegisters_injective (r := r + 7)).ne hi
-      have hnf := (hostRegisters_injective (r := r + 7)).ne hf
-      simp only [Data.set_regs, Function.update_of_ne hni, Function.update_of_ne hnf]
-    case mem => rfl
+  case inst => simp
+  case found =>
+    simp +decide [callRegisters, solverArg, solverRegisters, hostRegisters, inst, found]
+  case frame =>
+    intro i hi hf
+    have hni := (hostRegisters_injective (r := r + 7)).ne hi
+    have hnf := (hostRegisters_injective (r := r + 7)).ne hf
+    simp only [Data.set_regs, Function.update_of_ne hni, Function.update_of_ne hnf]
 
 /-- One generated instance, with the concrete solver's native execution proof supplied by the
 caller. The solver may overwrite matrices and scratch, but preserves the memory prefix below
