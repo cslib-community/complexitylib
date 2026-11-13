@@ -125,8 +125,8 @@ private theorem query_uniform {n k : ℕ} (i : Fin n) (s : Finset (Fin k)) (hs :
         (fun masks => Pi.single i 1 + ∑ j ∈ s, masks j) =
       PMF.uniformOfFintype (BitString n) := by
   change (PMF.uniformOfFintype (Fin k → BitString n)).map
-    ((Equiv.addLeft (Pi.single i 1)) ∘ (fun masks => ∑ j ∈ s, masks j)) = _
-  rw [← PMF.map_comp, PMF.uniformOfFintype_map_sum s hs, PMF.uniformOfFintype_map_equiv]
+    ((Pi.single i 1 + ·) ∘ (fun masks => ∑ j ∈ s, masks j)) = _
+  rw [← PMF.map_comp, PMF.uniformOfFintype_map_sum s hs, PMF.uniformOfFintype_map_add_left]
 
 private theorem query_pair_uniform {n k : ℕ} (i : Fin n)
     (s t : Finset (Fin k)) (hs : s.Nonempty) (ht : t.Nonempty) (hst : s ≠ t) :
@@ -135,10 +135,10 @@ private theorem query_pair_uniform {n k : ℕ} (i : Fin n)
           Pi.single i 1 + ∑ j ∈ t, masks j)) =
       PMF.uniformOfFintype (BitString n × BitString n) := by
   change (PMF.uniformOfFintype (Fin k → BitString n)).map
-    ((Equiv.addLeft (Pi.single i 1, Pi.single i 1)) ∘
+    (((Pi.single i 1, Pi.single i 1) + ·) ∘
       (fun masks => (∑ j ∈ s, masks j, ∑ j ∈ t, masks j))) = _
   rw [← PMF.map_comp, PMF.uniformOfFintype_map_sum_pair s t hs ht hst,
-    PMF.uniformOfFintype_map_equiv]
+    PMF.uniformOfFintype_map_add_left]
 
 private theorem coordinate_error_le {n k : ℕ} (predictor : BitString n → Bool)
     (x : BitString n) (i : Fin n) (ε : ℝ) (hε : 0 < ε) (hk : 0 < k)
