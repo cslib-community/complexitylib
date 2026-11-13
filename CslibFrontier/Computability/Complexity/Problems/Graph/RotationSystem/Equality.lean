@@ -15,11 +15,20 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 The explicit edge/end equivalence `graphEqDartEquiv` changes neither the generated certificate
 nor numerical genus. Equality elimination proves these facts without unfolding a concrete
 graph-construction program during subsequent transport proofs.
+`ext_rotate` identifies two rotations on the same graph from their literal successor permutations.
 -/
 
 public section
 
 namespace Cslib.Complexity.Graph.RotationSystem
+
+/-- A rotation system is determined by its literal successor permutation. -/
+@[ext] theorem ext_rotate {G : Graph} {r s : RotationSystem G} (h : r.rotate = s.rotate) :
+    r = s := by
+  cases r
+  cases s
+  cases h
+  rfl
 
 /-- Equality transport retains the exact generated successor list. -/
 theorem ofRotation_graphEqDartEquiv {G H : Graph} (r : RotationSystem G) (h : G = H) :
