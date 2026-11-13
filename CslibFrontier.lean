@@ -2125,6 +2125,7 @@ public import CslibFrontier.Computability.Complexity.Classes.PCP.ZeroRandomness
 public import CslibFrontier.Computability.Complexity.Classes.PH
 public import CslibFrontier.Computability.Complexity.Classes.PH.Closure
 public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
+public import CslibFrontier.Computability.Complexity.Classes.PH.Complete
 public import CslibFrontier.Computability.Complexity.Classes.PH.Kannan
 public import CslibFrontier.Computability.Complexity.Classes.PH.KarpLipton
 public import CslibFrontier.Computability.Complexity.Classes.PH.OracleNP
@@ -2703,6 +2704,7 @@ public import CslibFrontier.Computability.Complexity.Problems.TSP.Approximation
 public import CslibFrontier.Computability.Complexity.Problems.TSP.Christofides
 public import CslibFrontier.Computability.Complexity.Problems.TSP.HeldKarp
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
+public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Levin
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Counting
