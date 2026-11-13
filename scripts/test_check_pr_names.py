@@ -71,6 +71,25 @@ theorem _root_.Nat.demo_root : True := trivial
 theorem Iff.mp : True := trivial
 """
 
+ENCODINGS = """\
+namespace Cslib.Crypto.VOLE
+
+enc_structure Native.encShare (eF : Encoding F) : Share F where
+  key : eF
+  tags : encList eF
+
+enc_structure
+  Native.encView
+  (eF : Encoding F) (eResult : Encoding R) : View F R where
+  share : Native.encShare eF
+  result : eResult
+
+end Cslib.Crypto.VOLE
+"""
+
+ENCODING_NAMES = ["Native.encShare", "Native.encView", "encViewFields", "encShare_apply",
+                  "encView_apply", "Cslib.Crypto.VOLE.Native.encShareFields"]
+
 
 class CheckPrNamesTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -200,6 +219,61 @@ class CheckPrNamesTests(unittest.TestCase):
         cpn.parse_source('syntax "demo_keyword" : tactic\n', decls)
         self.assertIn("demo_keyword", decls.keywords)
 
+    def test_enc_structure_names_find_the_command_individually(self) -> None:
+        self.write("CslibFrontier/Crypto/VOLE/Encoding.lean", ENCODINGS)
+        for name in ENCODING_NAMES:
+            with self.subTest(name=name):
+                self.assertEqual(self.check(f"`{name}`"), {})
+        self.assertEqual(cpn.search_words("Native.encViewFields"),
+                         {"encViewFields", "encView"})
+        self.assertEqual(list(self.check("`Native.encViewFieldz`")), ["Native.encViewFieldz"])
+
+    def test_enc_structure_ignores_comments_literals_and_ordinary_defs(self) -> None:
+        self.write("CslibFrontier/Demo/Encoding.lean", '''\
+/- enc_structure commentedEncoder : Pair where -/
+def text : String := r#"
+enc_structure literalEncoder : Pair where
+"#
+def ordinaryEncoder : Nat := 0
+''')
+        names = ["commentedEncoder", "literalEncoder", "literalEncoderFields",
+                 "ordinaryEncoderFields"]
+        self.assertEqual(list(self.check(" ".join(f"`{name}`" for name in names))), names)
+
+    def test_enc_structure_root_name_ignores_the_current_namespace(self) -> None:
+        self.write("CslibFrontier/Demo/Encoding.lean", "namespace Inner\n"
+                   "enc_structure _root_.Outer.encPair : Pair where\n"
+                   "  first : encUnary\nend Inner\n")
+        for name in ["Outer.encPair", "Outer.encPairFields", "Outer.encPair_apply"]:
+            self.assertEqual(self.check(f"`{name}`"), {})
+        self.assertEqual(list(self.check("`Inner.Outer.encPairFields`")),
+                         ["Inner.Outer.encPairFields"])
+
+    def test_enc_structure_field_is_not_a_command(self) -> None:
+        self.write("CslibFrontier/Demo/State.lean", "structure ToolState where\n"
+                   "  enc_structure : Nat\n  next : Nat\n")
+        self.assertEqual(list(self.check("`ToolState.enc_structure` `ToolState.next` "
+                                         "`nextFields`")), ["nextFields"])
+
+    def test_enc_structure_multiple_fields_preserve_the_member_context(self) -> None:
+        self.write("CslibFrontier/Demo/State.lean", "structure ToolState where\n"
+                   "  enc_structure next : Nat\n  tail : Nat\n")
+        self.assertEqual(list(self.check("`ToolState.enc_structure` `ToolState.next` "
+                                         "`ToolState.tail` `nextFields`")), ["nextFields"])
+
+    def test_enc_structure_continued_field_preserves_following_fields(self) -> None:
+        self.write("CslibFrontier/Demo/State.lean", "structure ToolState where\n"
+                   "  enc_structure\n    : Nat\n  next : Nat\n")
+        self.assertEqual(list(self.check("`ToolState.next` `nextFields`")), ["nextFields"])
+
+    def test_enc_structure_in_a_quoted_body_is_not_a_declaration(self) -> None:
+        self.write("CslibFrontier/Demo/Quotation.lean", "def quotedCommand := by\n"
+                   "  exact `(command|\n"
+                   "    enc_structure phantomEncoder : Share where\n"
+                   "      key : encUnary)\n")
+        names = ["phantomEncoder", "phantomEncoderFields", "phantomEncoder_apply"]
+        self.assertEqual(list(self.check(" ".join(f"`{name}`" for name in names))), names)
+
     # --- Base revision and CLI ----------------------------------------------------------------
 
     def git(self, *args: str) -> str:
@@ -225,6 +299,25 @@ class CheckPrNamesTests(unittest.TestCase):
         self.assertFalse(found["brandNew"].removed)
         report = cpn.Report(["Cslib.Old.old_lemma", "brandNew"], list(found.values()), base)
         self.assertEqual([f.token for f in report.unexplained], ["brandNew"])
+
+    def test_enc_structure_replacement_does_not_report_generated_names_removed(self) -> None:
+        path = "CslibFrontier/Crypto/VOLE/Encoding.lean"
+        self.write(path, "namespace Cslib.Crypto.VOLE\n"
+                   "def Native.encShare := 0\ndef Native.encView := 0\n"
+                   "abbrev Native.encViewFields := Nat\n"
+                   "theorem Native.encShare_apply : True := trivial\n"
+                   "theorem Native.encView_apply : True := trivial\n"
+                   "def Native.legacyEncoder := 0\nend Cslib.Crypto.VOLE\n")
+        self.git("init", "-q")
+        self.git("add", ".")
+        self.commit("-m", "handwritten encodings")
+        base = self.git("rev-parse", "HEAD")
+        self.write(path, ENCODINGS)
+        names = ENCODING_NAMES + ["Native.legacyEncoder", "Native.encViewFieldz"]
+        found = self.check(" ".join(f"`{name}`" for name in names), base=base)
+        self.assertEqual(list(found), ["Native.legacyEncoder", "Native.encViewFieldz"])
+        self.assertTrue(found["Native.legacyEncoder"].removed)
+        self.assertFalse(found["Native.encViewFieldz"].removed)
 
     def test_cli_event_payload_strict_and_github_summary(self) -> None:
         event = self.root / "event.json"
