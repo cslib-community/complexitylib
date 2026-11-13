@@ -23,6 +23,8 @@ the distinguishing advantage of two experiments bounds one success probability b
 * `Cslib.Crypto.Game.succProbability_le_add_of_advantage_le`,
   `Cslib.Crypto.Game.coe_succProbability_le_add_of_advantage_le`: bound a game's success probability
   by another game's success probability plus their distinguishing advantage.
+* `Cslib.Crypto.Game.apply_true_le_add_of_advantage_le`: the same bound on the mass of `true` in
+  `ℝ≥0∞`.
 -/
 
 public section
@@ -43,6 +45,15 @@ theorem succProbability_le_add_of_advantage_le {g₀ g₁ : Game} {B : ℝ≥0}
   have htri := advantage_triangle g₀ g₁ (PMF.pure false)
   rw [advantage_pure_false, advantage_pure_false, add_comm] at htri
   exact htri.trans (add_le_add le_rfl h)
+
+/-- Bounding `advantage g₀ g₁ ≤ B` bounds the mass of `true` in `g₀` by its mass in `g₁` plus `B`.
+For the other direction, rewrite `h` with `advantage_comm`. -/
+theorem apply_true_le_add_of_advantage_le {g₀ g₁ : Game} {B : ℝ≥0}
+    (h : advantage g₀ g₁ ≤ B) :
+    g₀ true ≤ g₁ true + B := by
+  rw [← ENNReal.coe_toNNReal (PMF.apply_ne_top g₀ true),
+    ← ENNReal.coe_toNNReal (PMF.apply_ne_top g₁ true)]
+  exact_mod_cast succProbability_le_add_of_advantage_le h
 
 /-- Real-valued version of `succProbability_le_add_of_advantage_le`. -/
 theorem coe_succProbability_le_add_of_advantage_le {g₀ g₁ : Game} {B : ℝ}

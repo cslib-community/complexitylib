@@ -19,6 +19,7 @@ import CslibFrontier.Crypto.Computational.GGM.Security
 import CslibFrontier.Crypto.Computational.GeneratorReindex
 import CslibFrontier.Crypto.Computational.PseudorandomFunction.TruthTable
 import CslibFrontier.Crypto.Computational.Stretch
+import CslibFrontier.Crypto.Game.Hop
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Norm
@@ -705,19 +706,8 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
     rw [naorReingoldHashedIdealGame_pure_const]
     simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, randomFunctionOracle, id_eq]
-  dsimp only
+  dsimp only [Pi.add_apply]
   rw [hreal_eq, hideal_eq]
-  have h12 := Game.advantage_triangle
-    (distinguishingGame (generatorEnsemble expand n) (D_tape n))
-    (distinguishingGame (BitString.uniformList (targetLen n)) (D_tape n))
-    (F.naorReingoldHashedIdealGame (fun k => PMF.pure (desc k)) id id bound
-      (fun k _ => adversary k []) n)
-  have h23 := Game.advantage_triangle
-    (distinguishingGame (BitString.uniformList (targetLen n)) (D_tape n))
-    (F.naorReingoldHashedRealGame (fun k => PMF.pure (desc k)) id id bound
-      (fun k _ => adversary k []) n)
-    (F.naorReingoldHashedIdealGame (fun k => PMF.pure (desc k)) id id bound
-      (fun k _ => adversary k []) n)
   have hexp_le :
       Game.advantage
         (distinguishingGame (BitString.uniformList (targetLen n)) (D_tape n))
@@ -727,9 +717,15 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
     rw [hunif_trunc]
     exact advantage_evalNaorReingoldTape_uniform_le F id id desc bound expWidth adversary n
       (hexpWidth n)
-  have hstep := (h12.trans (add_le_add le_rfl h23)).trans
-    (add_le_add le_rfl (add_le_add hexp_le le_rfl))
-  simpa only [Pi.add_apply, add_assoc] using hstep
+  exact Game.advantage_le_of_approxEq
+    -- the PRG expansion, the truncated uniform tape, then the hashed NR game under DDH
+    (calc Pr[distinguishingGame (generatorEnsemble expand n) (D_tape n)]
+      _ ≈[_] Pr[distinguishingGame (BitString.uniformList (targetLen n)) (D_tape n)] :=
+        Game.approxEq_advantage _ _
+      _ ≈[_] Pr[F.naorReingoldHashedRealGame (fun k => PMF.pure (desc k)) id id bound
+          (fun k _ => adversary k []) n] := Game.approxEq_of_advantage_le hexp_le
+      _ ≈[_] Pr[F.naorReingoldHashedIdealGame (fun k => PMF.pure (desc k)) id id bound
+          (fun k _ => adversary k []) n] := Game.approxEq_advantage _ _)
 
 /-! ### Direct Algebraic `PseudorandomGenerator` from DDH Alone -/
 

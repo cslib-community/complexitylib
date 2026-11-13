@@ -185,8 +185,10 @@ a single `PMF.apply_ne_top _ _` keep the term. To compare success probabilities,
 [Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
 `apply Game.succProbability_mono` leaves the goal `g₁ true ≤ g₂ true`, without unfolding
 `Game.succProbability`, and `Game.succProbability_le_add_of_advantage_le` turns a bound on
-`Game.advantage g₀ g₁` into `succProbability g₀ ≤ succProbability g₁ + B`. The [checked examples](../../CslibFrontierTests/PMFFiniteness.lean) cover
-each rule and the failure.
+`Game.advantage g₀ g₁` into `succProbability g₀ ≤ succProbability g₁ + B`.
+`Game.apply_true_le_add_of_advantage_le` gives the same bound on the masses, `g₀ true ≤ g₁ true + B`
+in `ℝ≥0∞`; for the other direction, rewrite the hypothesis with `Game.advantage_comm`. The
+[checked examples](../../CslibFrontierTests/PMFFiniteness.lean) cover each rule and the failure.
 
 ## Count the fair coins used by an exact sampler
 

@@ -6,11 +6,11 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Probability.PMF.Finiteness
 
-/-! # `finiteness` on bounds about discrete distributions, and `Game.succProbability_mono` -/
+/-! # `finiteness` on bounds about discrete distributions, and comparing success probabilities -/
 
 namespace CslibFrontierTests.PMFFiniteness
 
-open scoped ENNReal
+open scoped ENNReal NNReal
 
 variable {α ι G : Type*}
 
@@ -60,5 +60,12 @@ example (g₁ g₂ : Cslib.Crypto.Game) (h : g₁ true ≤ g₂ true) :
     g₁.succProbability ≤ g₂.succProbability := by
   apply Cslib.Crypto.Game.succProbability_mono
   exact h
+
+-- An advantage bound bounds each game's mass of `true` by the other's, staying in `ℝ≥0∞`.
+open Cslib.Crypto in
+example (g₀ g₁ : Game) (B : ℝ≥0) (h : Game.advantage g₀ g₁ ≤ B) :
+    g₀ true ≤ g₁ true + B ∧ g₁ true ≤ g₀ true + B :=
+  ⟨Game.apply_true_le_add_of_advantage_le h,
+    Game.apply_true_le_add_of_advantage_le ((Game.advantage_comm _ _).trans_le h)⟩
 
 end CslibFrontierTests.PMFFiniteness

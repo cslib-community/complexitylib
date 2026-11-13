@@ -836,11 +836,6 @@ private theorem eval_sampleNaorReingoldPair_eq_iid (F : PrimeOrderGroupFamily) (
     eval_sampleNaorReingoldExp_eq_map_val F n d, PMF.bind_map, Function.comp_def]
   rfl
 
-private theorem pi_uniformOfFintype {ι α : Type*} [Fintype ι] [DecidableEq ι] [Fintype α]
-    [Nonempty α] :
-    PMF.pi (fun _ : ι => PMF.uniformOfFintype α) = PMF.uniformOfFintype (ι → α) :=
-  PMF.pi_uniformOfFintype (ι := ι) (α := fun _ => α)
-
 private theorem pi_ddhFixedURerandomizeLaw_eq_multi (F : PrimeOrderGroupFamily) (d : F.Desc)
     (ι : Type*) [Fintype ι] [DecidableEq ι] (u₀ v₀ w₀ : F.Carrier d) :
     PMF.pi (fun _ : ι => F.ddhFixedURerandomizeLaw d u₀ v₀ w₀) =
@@ -854,7 +849,7 @@ private theorem pi_ddhFixedURerandomizeLaw_eq_multi (F : PrimeOrderGroupFamily) 
       PMF.map_comp, Function.comp_def]
     rfl
   simp_rw [hcoord]
-  rw [PMF.pi_map, pi_uniformOfFintype, multiDDHRerandomizeLaw]
+  rw [PMF.pi_map, PMF.pi_uniformOfFintype, multiDDHRerandomizeLaw]
 
 private noncomputable def frontierLevelWithExpLaw (F : PrimeOrderGroupFamily) (d : F.Desc)
     (m k : ℕ) (prog : WordOracleComp Unit Bool) (u v w : List Bool)
@@ -1251,21 +1246,6 @@ private theorem eval_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFami
       (F.encode d u) (F.encode d v) (F.encode d w)
   · simp [hk]
 
-private theorem apply_true_le_of_advantage_le {g₁ g₂ : Game} {c : ℝ≥0}
-    (h : Game.advantage g₁ g₂ ≤ c) :
-    g₁ true ≤ g₂ true + (c : ℝ≥0∞) ∧ g₂ true ≤ g₁ true + (c : ℝ≥0∞) := by
-  have hadv : |(g₁ true).toReal - (g₂ true).toReal| ≤ (c : ℝ) := by
-    simpa only [Game.coe_advantage, Game.coe_succProbability, Real.dist_eq] using
-      NNReal.coe_le_coe.mpr h
-  have hle {a b : Game} (hab : (a true).toReal ≤ (b true).toReal + (c : ℝ)) :
-      a true ≤ b true + (c : ℝ≥0∞) := by
-    rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top a true),
-      ← ENNReal.ofReal_toReal
-        (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top b true, ENNReal.coe_ne_top⟩),
-      ENNReal.toReal_add (PMF.apply_ne_top b true) ENNReal.coe_ne_top, ENNReal.coe_toReal]
-    exact ENNReal.ofReal_le_ofReal hab
-  exact ⟨hle (by linarith [(abs_le.mp hadv).2]), hle (by linarith [(abs_le.mp hadv).1])⟩
-
 private theorem bind_ite_comm {α β γ : Type} (μ : PMF α) (ν : PMF γ) (p : γ → Prop)
     [DecidablePred p] (f : α → γ → PMF β) (fallback : PMF β) :
     (μ.bind fun a => ν.bind fun c => if p c then f a c else fallback) =
@@ -1348,7 +1328,8 @@ private theorem advantage_exactDDHRandom_le (F : PrimeOrderGroupFamily)
     · simp [hk]
   rw [herr_true, ← ENNReal.coe_natCast,
     ← ENNReal.coe_inv (by exact_mod_cast (F.prime_order d).ne_zero)]
-  exact apply_true_le_of_advantage_le hadv_d
+  exact ⟨Game.apply_true_le_add_of_advantage_le hadv_d,
+    Game.apply_true_le_add_of_advantage_le ((Game.advantage_comm _ _).trans_le hadv_d)⟩
 
 private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
     (setup : ℕ → PMF F.Desc) (inLen : ℕ → ℕ)
@@ -2033,7 +2014,7 @@ private theorem advantage_naorReingoldHashedIdeal_at_le (F : PrimeOrderGroupFami
               (fun B x => hashSeed seed (F.paddedGeneratorMultiple bound d (B x))) := by
         dsimp only [source]
         simp_rw [PMF.map_comp]
-        rw [PMF.pi_map, pi_uniformOfFintype]
+        rw [PMF.pi_map, PMF.pi_uniformOfFintype]
         rfl
       rw [hpi, PMF.bind_map]
       congr 1; funext B
@@ -2071,7 +2052,7 @@ private theorem advantage_naorReingoldHashedIdeal_at_le (F : PrimeOrderGroupFami
     simp only [linearHashSeedLen, Cslib.BitString.uniformList, PMF.bind_map, PMF.bind_bind,
       Function.comp_def, idealTable, seedLaw]
     congr 1; funext seed
-    rw [← pi_uniformOfFintype (ι := BitString m) (α := BitString ℓ),
+    rw [← PMF.pi_uniformOfFintype (ι := BitString m) (α := fun _ => BitString ℓ),
       run_eager_bitStringTable_eq_presample (hQ seed) (PMF.uniformOfFintype (BitString ℓ))]
   rw [hreal, hideal, Game.advantage_eq_nndist, ← NNReal.coe_le_coe, coe_nndist]
   have hlhl : dist realPair idealPair ≤
@@ -2612,8 +2593,8 @@ theorem DDH.negligible_naorReingoldHashedGame_const {F : PrimeOrderGroupFamily}
         (by positivity)
     · simp [show setup n d = 0 by simpa [PMF.mem_support_iff] using hd]
   have hadv_fin := Game.advantage_le_of_apply_le (by simp : ((lhlBound n : ℝ≥0) : ℝ≥0∞) ≠ ⊤)
-    (hle_apply g1 g2 fun d _ => (apply_true_le_of_advantage_le le_rfl).1)
-    (hle_apply g2 g1 fun d _ => (apply_true_le_of_advantage_le le_rfl).2)
+    (hle_apply g1 g2 fun d _ => Game.apply_true_le_add_of_advantage_le le_rfl)
+    (hle_apply g2 g1 fun d _ => Game.apply_true_le_add_of_advantage_le (Game.advantage_comm _ _).le)
   rw [ENNReal.coe_toReal] at hadv_fin
   exact NNReal.coe_le_coe.mp hadv_fin
 
