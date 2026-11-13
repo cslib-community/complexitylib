@@ -54,7 +54,7 @@ losses, and running time are not treated here.
 ## References
 
 * [S. Shalev-Shwartz, S. Ben-David, *Understanding Machine Learning: From Theory to
-  Algorithms*][ShalevShwartzBenDavid2014], Section 14.5
+  Algorithms*][ShalevShwartzBenDavid2014], Sections 14.3 and 14.5 (locators unverified)
 -/
 
 public section

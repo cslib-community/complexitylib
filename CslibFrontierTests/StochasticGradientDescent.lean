@@ -22,11 +22,8 @@ noncomputable def absLoss (w z : ℝ) : ℝ := |w - z|
 /-- A subgradient of `absLoss · z` at `w`: `-1` for `w ≤ z` and `1` otherwise. -/
 noncomputable def absGrad (w z : ℝ) : ℝ := if w ≤ z then -1 else 1
 
-private theorem real_inner (a b : ℝ) : ⟪a, b⟫ = a * b := by
-  rw [RCLike.inner_apply, conj_trivial, mul_comm]
-
 theorem absLoss_add_inner_le (z w y : ℝ) : absLoss w z + ⟪absGrad w z, y - w⟫ ≤ absLoss y z := by
-  rw [real_inner]
+  rw [Real.inner_apply]
   unfold absLoss absGrad
   split_ifs with h
   · rw [abs_of_nonpos (sub_nonpos.mpr h)]
