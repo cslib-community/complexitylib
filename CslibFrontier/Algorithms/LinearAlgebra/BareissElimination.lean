@@ -599,6 +599,29 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
         rw [hinv.table_eq ⟨p, hp_m⟩ ⟨c, hc⟩,
           hinv.table_eq i j, hinv.table_eq i ⟨c, hc⟩, hinv.table_eq ⟨p, hp_m⟩ j, hinv.pivotDet_eq]
         exact Matrix.bareissStep_ediv_eq_int T.toMatrix hΔ hp_fin ⟨c, hc⟩ hΔ' hine j
+    -- Columns left of the new pivot column vanish in the extended elimination matrix at every
+    -- row that is not a pivot row, or is the pivot row of a later column.
+    have hzero : ∀ j : Fin T.numCols, j.val < c → ∀ r : Fin T.numRows,
+        ((∀ a, S a ≠ r) ∨ ∃ a, S a = r ∧ j.val < (C a).val) →
+        Matrix.bareissMatrix T.toMatrix (Fin.snoc S ⟨p, hp_m⟩) (Fin.snoc C ⟨c, hc⟩) r j = 0 := by
+      intro j hjlt r hr
+      let f := Int.castRingHom ℚ
+      have hΔQ : Matrix.pivotDet (T.toMatrix.map f) S C ≠ 0 := by
+        rw [← Matrix.map_pivotDet]; exact Int.cast_ne_zero.mpr hΔ
+      have hΔ'Q : Matrix.bareissMatrix (T.toMatrix.map f) S C ⟨p, hp_m⟩ ⟨c, hc⟩ ≠ 0 := by
+        rw [← Matrix.map_bareissMatrix]; change f _ ≠ 0; exact Int.cast_ne_zero.mpr hΔ'
+      let Q : Fin T.numRows → Prop := fun r =>
+        (∀ a, S a ≠ r) ∨ ∃ a, S a = r ∧ j.val < (C a).val
+      have hQzero : ∀ r, Q r → Matrix.bareissMatrix (T.toMatrix.map f) S C r j = 0 := by
+        intro r hr
+        rw [← Matrix.map_bareissMatrix, Matrix.map_apply]
+        rcases hr with hnr | ⟨a, rfl, hja⟩
+        · rw [hinv.term_cols r hnr j hjlt]; rfl
+        · rw [hinv.echelon_zero a j hja]; rfl
+      have hres := Matrix.bareissMatrix_snoc_zero_of_forall (T.toMatrix.map f) hΔQ hp_fin
+        ⟨c, hc⟩ hΔ'Q j Q (Or.inl hp_fin) hQzero r hr
+      rw [← Matrix.map_bareissMatrix, Matrix.map_apply] at hres
+      exact Int.cast_eq_zero.mp hres
     refine
       { wellFormed := hwf'
         dims := hinv.dims
@@ -628,28 +651,10 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
         S' C' hk_eq hS'_eq hC'_eq i j
       rw [← heq]
       rcases Nat.lt_succ_iff_lt_or_eq.mp hj with hjlt | hjeq
-      · let f := Int.castRingHom ℚ
-        have hΔQ : Matrix.pivotDet (T.toMatrix.map f) S C ≠ 0 := by
-          rw [← Matrix.map_pivotDet]; exact Int.cast_ne_zero.mpr hΔ
-        have hΔ'Q : Matrix.bareissMatrix (T.toMatrix.map f) S C ⟨p, hp_m⟩ ⟨c, hc⟩ ≠ 0 := by
-          rw [← Matrix.map_bareissMatrix]; change f _ ≠ 0; exact Int.cast_ne_zero.mpr hΔ'
-        let Q : Fin T.numRows → Prop := fun r =>
-          (∀ a, S a ≠ r) ∨ ∃ a, S a = r ∧ j.val < (C a).val
-        have hQp : Q ⟨p, hp_m⟩ := Or.inl hp_fin
-        have hQzero : ∀ r, Q r →
-            Matrix.bareissMatrix (T.toMatrix.map f) S C r j = 0 := by
-          intro r hr
-          rw [← Matrix.map_bareissMatrix, Matrix.map_apply]
-          rcases hr with hnr | ⟨a, rfl, hja⟩
-          · rw [hinv.term_cols r hnr j hjlt]; rfl
-          · rw [hinv.echelon_zero a j hja]; rfl
-        have hres := Matrix.bareissMatrix_snoc_zero_of_forall (T.toMatrix.map f) hΔQ hp_fin
-          ⟨c, hc⟩ hΔ'Q j Q hQp hQzero i (Or.inl fun a ha => ?_)
-        · rw [← Matrix.map_bareissMatrix, Matrix.map_apply] at hres
-          exact Int.cast_eq_zero.mp hres
-        · have ha' : S' ⟨a.val, by simp only [List.length_append, List.length_singleton]; omega⟩ =
-              S a := Fin.ext (List.getElem_append_left a.isLt)
-          exact hi _ (ha' ▸ ha)
+      · refine hzero j hjlt i (Or.inl fun a ha => ?_)
+        have ha' : S' ⟨a.val, by simp only [List.length_append, List.length_singleton]; omega⟩ =
+            S a := Fin.ext (List.getElem_append_left a.isLt)
+        exact hi _ (ha' ▸ ha)
       · have hjc : j = ⟨c, hc⟩ := Fin.ext hjeq
         subst hjc
         have hlast : (⟨c, hc⟩ : Fin T.numCols) =
@@ -669,21 +674,7 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
       have hcol_bound : (st.pivotCols ++ [c])[a.val]'(hlen' ▸ a.isLt) < c + 1 :=
         hcol_lt' _ (List.getElem_mem _)
       have hjlt : j.val < c := by omega
-      let f := Int.castRingHom ℚ
-      have hΔQ : Matrix.pivotDet (T.toMatrix.map f) S C ≠ 0 := by
-          rw [← Matrix.map_pivotDet]; exact Int.cast_ne_zero.mpr hΔ
-      have hΔ'Q : Matrix.bareissMatrix (T.toMatrix.map f) S C ⟨p, hp_m⟩ ⟨c, hc⟩ ≠ 0 := by
-          rw [← Matrix.map_bareissMatrix]; change f _ ≠ 0; exact Int.cast_ne_zero.mpr hΔ'
-      let Q : Fin T.numRows → Prop := fun r =>
-        (∀ b, S b ≠ r) ∨ ∃ b, S b = r ∧ j.val < (C b).val
-      have hQp : Q ⟨p, hp_m⟩ := Or.inl hp_fin
-      have hQzero : ∀ r, Q r → Matrix.bareissMatrix (T.toMatrix.map f) S C r j = 0 := by
-        intro r hr
-        rw [← Matrix.map_bareissMatrix, Matrix.map_apply]
-        rcases hr with hnr | ⟨b, rfl, hjb⟩
-        · rw [hinv.term_cols r hnr j hjlt]; rfl
-        · rw [hinv.echelon_zero b j hjb]; rfl
-      have hQS' : Q (S' a) := by
+      exact hzero j hjlt (S' a) <| by
         by_cases hal : a.val < st.pivotRows.length
         · have haS : S' a = S ⟨a.val, hal⟩ :=
             Fin.ext (List.getElem_append_left hal)
@@ -701,10 +692,6 @@ theorem bareissInv_step {T : IntTable} {c : ℕ} (hc : c < T.numCols) {st : Bare
               List.getElem_singleton])
           rw [haS]
           exact Or.inl hp_fin
-      have hres := Matrix.bareissMatrix_snoc_zero_of_forall (T.toMatrix.map f) hΔQ hp_fin
-        ⟨c, hc⟩ hΔ'Q j Q hQp hQzero (S' a) hQS'
-      rw [← Matrix.map_bareissMatrix, Matrix.map_apply] at hres
-      exact Int.cast_eq_zero.mp hres
 
 private theorem bareissElimCols_inv_aux {T : IntTable} (hT : T.WellFormed) :
     ∀ k ≤ T.numCols, BareissInv T k ((List.range k).foldl bareissStep (bareissInit T))

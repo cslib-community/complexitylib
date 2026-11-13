@@ -49,6 +49,7 @@ the oracle state by at most its cost, a run raises it by at most the program's c
   the cost budget, when each query raises it by at most its cost
   (`OracleComp.IsCostBounded.measure_le` for this handler).
 * `Cslib.ProbOracleComp.logOracle_run`: one call of the logging oracle.
+* `Cslib.ProbOracleComp.runLogWith_map`: mapping the program's result keeps the log.
 * `Cslib.ProbOracleComp.IsQueryBounded.length_runLogWith_le`,
   `Cslib.ProbOracleComp.IsQueryBounded.length_runLog_le`: a program with at most `n` queries
   leaves a log of length at most `n`.
@@ -181,6 +182,13 @@ replies, oldest first. -/
 /-- An oracle that never refuses and ignores the log is `runLog`. -/
 theorem runLogWith_some [Inhabited R] (A : ProbOracleComp (fun _ : Q => R) α)
     (O : Q → ProbComp R) : A.runLogWith (fun _ q => some (O q)) = A.runLog O := rfl
+
+/-- Mapping the program's result maps the result of the logged run and keeps the log. -/
+theorem runLogWith_map [Inhabited R] (f : α → β) (A : ProbOracleComp (fun _ : Q => R) α)
+    (O : List (Q × R) → Q → Option (ProbComp R)) :
+    (f <$> A).runLogWith O = Prod.map f id <$> A.runLogWith O := by
+  simp only [runLogWith, runState_map, StateT.run_map]
+  rfl
 
 /-- On every supported run, a program with at most `n` queries leaves a log of length at most
 `n`. -/

@@ -126,6 +126,13 @@ The queue helper's `--wait` option queues automatically when CI passes; do not s
 newly produced reports or pages still need inspection. A green check alone does not release
 those holds. This needs a coverage decision, not another full review of unchanged code.
 
+If discussion changes after a helper starts waiting, its final reread stops that enqueue.
+Have the reviewer inspect the new or edited discussion and any holds before rerunning for the
+still-approved head; no extra approval count is required. The guard covers the PR body,
+comments, submitted reviews and inline threads, including edits and resolution changes. It does
+not inspect linked issues or prevent a change racing with the enqueue mutation. Existing queue
+entries are left in place, so coordinators still need to track review holds through landing.
+
 When the queue ejects a PR whose only conflict is in `references.bib`, the coordinator or author
 can run `python3 scripts/resolve_bib_conflict.py origin/<branch>` after `git fetch origin` to
 write the merge with `main` instead of sending the PR back. It refuses any other conflict and

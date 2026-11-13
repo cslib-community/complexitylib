@@ -212,7 +212,7 @@ private theorem positiveIncidenceRoute_segmentCount {φ : CNF ℕ} {d : Graph.Or
 
 private theorem sourceEdgeIndex_occurrence (φ : CNF ℕ) {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    sourceEdgeIndex φ o.1 o.2.1 = (Cslib.Logic.PL.occurrences φ).idxOf o := by
+    sourceEdgeIndex φ o.clause o.pos = (Cslib.Logic.PL.occurrences φ).idxOf o := by
   obtain ⟨hi, hj, he⟩ := Cslib.Logic.PL.mem_occurrences.mp ho
   unfold sourceEdgeIndex
   congr 1
@@ -235,7 +235,7 @@ private theorem source_edge_weight_sum {φ : CNF ℕ} {d : Graph.OrthogonalDrawi
       List.getD_eq_getElem _ _ hj', List.getElem_map]
   calc
     _ = ((Cslib.Logic.PL.occurrences φ).map fun o =>
-        weight (d.2.getD (sourceEdgeIndex φ o.1 o.2.1) [])).sum := by
+        weight (d.2.getD (sourceEdgeIndex φ o.clause o.pos) [])).sum := by
       rw [Cslib.Logic.PL.occurrences, List.sum_map_flatMap]
       simp only [List.map_map, Function.comp_def]
     _ = ((Cslib.Logic.PL.occurrences φ).map fun o =>

@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
 import CslibFrontier.Computability.Circuit.Boolean.Advice.Hierarchy
@@ -19,6 +20,7 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.QueryComplexity.MajorityThree
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
@@ -38,7 +40,9 @@ import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQ
 import CslibFrontier.Computability.Circuit.Boolean.ArithmeticRing
 import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
+import CslibFrontier.Computability.Circuit.Boolean.FiniteSimulation
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
+import CslibFrontier.Computability.Circuit.Boolean.ParityNC1
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
@@ -49,8 +53,11 @@ import CslibFrontier.Computability.Circuit.Boolean.NonuniformSeparation
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
+import CslibFrontier.Foundations.BooleanAnalysis.OrDegree
 import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
 import CslibFrontier.Computability.Communication.Discrepancy
+import CslibFrontier.Computability.Communication.Discrepancy.Spectral
+import CslibFrontier.Computability.Communication.DistinctRows
 import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Communication.FoolingSet
 import CslibFrontier.Computability.Communication.Rank
@@ -102,8 +109,10 @@ import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
+import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.AnyEndpoints
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.Complexity.Problems.TMSAT
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
@@ -130,10 +139,13 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCou
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
+import CslibFrontier.Computability.QueryComplexity.Connectivity
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
+import CslibFrontier.Crypto.Computational.Encryption.CTRMode
+import CslibFrontier.Crypto.Computational.Encryption.OFBMode
 import CslibFrontier.Crypto.Computational.GoldreichLevin.HardCore
 import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
@@ -177,6 +189,7 @@ import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Tree
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.GameTheory.Strategic.SwapRegretDynamics
+import CslibFrontier.Logics.Propositional.CNF.TruthTable
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
@@ -213,9 +226,12 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
+import CslibFrontier.MachineLearning.Boosting.AdaBoost
 import CslibFrontier.MachineLearning.LossMinimization.RLM
+import CslibFrontier.MachineLearning.LossMinimization.Squared
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACBayes.Basic
+import CslibFrontier.MachineLearning.PACBayes.KL
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -248,6 +264,21 @@ left out: they are original results, which `results/README.md` admits only once 
 have an explicit representation.
 -/
 
+register_result "connectivity-evasiveness" where
+  title := "Graph connectivity requires every possible edge query"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 11.4 (2007 public draft)",
+      locator := "2007 public draft, PDF 228 / printed p. 212" }
+  ]
+  theorems := [Cslib.BitString.Graph.complexity_connectivity]
+  scope := "For every m, the total connectivity function on labelled undirected simple graphs \
+    on Fin m has deterministic decision-tree complexity m.choose 2. Each input coordinate \
+    represents one unordered pair of distinct vertices; repeated queries are allowed. Mathlib \
+    regards the empty graph as disconnected and the one-vertex graph as connected, and both \
+    functions have complexity zero. No graph promise, arbitrary edge-permutation symmetry, \
+    randomized bound or machine-runtime bound is asserted."
+
 register_result "cook-levin" where
   title := "Cook–Levin: SAT is NP-complete"
   topic := "NP-completeness"
@@ -264,6 +295,44 @@ register_result "cook-levin" where
     certificates of exact polynomial length; hardness is under total native polynomial-time \
     many-one reductions from problems with arbitrary injective encodings. UNSAT \
     coNP-completeness follows by complementation."
+
+register_result "tmsat-np-complete" where
+  title := "TMSAT is NP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 2.9",
+      locator := "Web draft 2007-01-08, printed p. 44; PDF p. 60" }
+  ]
+  theorems := [Cslib.Complexity.TMSAT.npComplete]
+  scope := "Instances (α, x, 1^n, 1^t) as the structure TMSATInstance under encTMSATInstance, \
+    with the native machine description, raw input bits and unary n and t. Acceptance is a \
+    halted run with output [true] of the universal interpreter for t steps on frame x ++ u, \
+    for a witness u of exactly n bits. Hardness for every NP problem and instance encoding."
+
+register_result "truth-table-cnf-size" where
+  title := "Every Boolean function has a CNF with at most ℓ·2^ℓ AND/OR symbols"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Claim 2.14",
+      locator := "Web draft 2007-01-08, printed p. 46; PDF p. 62" }
+  ]
+  theorems := [Cslib.Logic.PL.CNF.exists_eval_eq_connectiveCount_le]
+  scope := "Functions (Fin ℓ → Bool) → Bool and list CNFs over Fin ℓ. The size measure \
+    connectiveCount counts binary connectives: k - 1 ORs per clause of k literals and m - 1 \
+    ANDs between m clauses. The source's size ℓ·2^ℓ is read as an upper bound."
+
+register_result "dir-ham-path-any-np-complete" where
+  title := "Directed Hamiltonian path without given endpoints is NP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 2.18",
+      locator := "Web draft 2007-01-08, printed p. 52; PDF p. 68" }
+  ]
+  theorems := [Cslib.Complexity.DirHamPathAny_npComplete]
+  scope := "Finite listed graphs under encGraph with some Hamiltonian path; graphs without \
+    declared vertices are not members. Hardness reduces the designated-endpoint DirHamPath \
+    (Sipser's diamond construction) by adding a fresh source and sink, not the draft's \
+    direct 3SAT reduction."
 
 register_result "pcp" where
   title := "The PCP theorem"
@@ -661,6 +730,25 @@ register_result "braverman" where
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
 
+register_result "majority-three-zero-error-expected-cost" where
+  title := "Three-bit majority has exact zero-error expected query complexity 8/3"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Examples 11.14 and 11.18",
+      locator := "Web draft 2007-01-08, printed pp. 215–216; PDF pp. 231–232" }
+  ]
+  theorems := [
+    Cslib.QueryComplexity.zeroErrorComplexity_majority_three,
+    Cslib.QueryComplexity.MajorityThree.algorithm_expectedCost,
+    Cslib.QueryComplexity.MajorityThree.hardDistribution_lower,
+    Cslib.QueryComplexity.MajorityThree.weights_hardDistribution
+  ]
+  scope := "Total majority on three Boolean coordinates. Existing finite-support zero-error \
+    randomized-tree model; cost counts executed queries, including repeats. The uniform \
+    six-order short-circuit algorithm has expected cost 2 on constants and 8/3 otherwise. \
+    The uniform law on six nonconstant inputs forces cost at least 8/3 on all correct \
+    adaptive deterministic trees, including arbitrary repeats. Local computation is free."
+
 register_result "yao-zero-error-expected-cost" where
   title := "Expected-cost Yao minimax with optimal algorithm and hardest input law"
   topic := "query complexity"
@@ -725,6 +813,33 @@ register_result "biased-coin-from-fair-digits" where
     flip) is the finite series sum_n (t n + 1) 2^-n. The comparison loop is not compiled to a \
     Turing machine."
 
+register_result "or-exact-degree" where
+  title := "Polynomials computing OR on the cube have full degree"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 13, Exercise 6",
+      locator := "Web draft 2007-01-08, printed p. 252; PDF p. 268" }
+  ]
+  theorems := [Cslib.BitString.card_le_totalDegree_of_eval_eq_or,
+    Cslib.BitString.le_totalDegree_of_eval_eq_or_zmod,
+    Cslib.BitString.totalDegree_orPoly]
+  scope := "Every polynomial over a nontrivial commutative ring, multilinear or not, that \
+    agrees with OR at the 0/1 points has total degree at least the number of variables; \
+    1 - prod (1 - X_i) attains it. The GF(q) corollary is stated over ZMod q with q prime. \
+    Exact representation only; no approximate-degree statement."
+
+register_result "parity-nc-one" where
+  title := "Parity is in NC¹"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 13, Exercise 7 (PARITY)",
+      locator := "Web draft 2007-01-08, printed p. 253; PDF p. 269" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.parity_mem_NC_one]
+  scope := "Nonuniform NC¹: polynomial-size fan-in-two De Morgan circuit families of depth \
+    O(log n), negations free. Proved by an explicit balanced XOR formula of depth \
+    2 ceil(log2 n), not by the Karchmer–Wigderson game the exercise suggests."
+
 register_result "formal-complexity-measure-leaf-bound" where
   title := "Formal complexity measures lower-bound constant-free formula leaf size"
   topic := "circuit complexity"
@@ -784,6 +899,19 @@ register_result "one-bit-advice-undecidable" where
     decider and has the same membership for all words of equal length. Advice need not be \
     computable; no efficient construction of the undecidable advice family is claimed. \
     Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
+register_result "sat-decidable-envelope-sparse-difference" where
+  title := "SAT reductions into a decidable envelope with sparse difference imply SAT in P"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 3.12",
+      locator := "January 2007 draft r2.pdf, PDF pp. 19–20; printed pp. 135–136" }
+  ]
+  theorems := [Cslib.Complexity.SAT_mem_P_of_sparse_diff]
+  scope := "Native polynomial-time many-one SAT reduction to S under an explicit target \
+    encoding; S is contained in a set G in P, and G minus S is sparse in prefix-census form. \
+    Concludes SAT in P. G need not be sparse and S need not be decidable. Reuses Fortune \
+    through a guarded UNSAT reduction; does not implement the source DFS proof."
 
 register_result "boolean-ring-arithmetic-simulation" where
   title := "Boolean circuits simulated over any ring with size factor five"
@@ -861,6 +989,21 @@ register_result "constant-advice-strict-subset-ppoly" where
   scope := "Every constant exact-advice class, including P/1, is strictly contained in \
     P/poly on bit languages. Uses the native full-pair polynomial-time advice class and \
     its existing polynomial-advice/circuit bridge; no uniform advice is claimed."
+
+register_result "finite-carrier-boolean-simulation" where
+  title := "Constant-factor Boolean simulation over every finite nonempty carrier"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (arithmetic-to-Boolean direction)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Circuit.exists_finite_boolean]
+  scope := "Any arity-at-most-two interpreted circuit over finite nonempty F is simulated \
+    on valid encoded inputs by a Boolean circuit with all outputs and at most \
+    size * bitBlastCost (Nat.clog 2 (Fintype.card F)) gates. The fixed encoding \
+    fintypeEncoding uses a finite enumeration and least-significant-bit-first indexBits. \
+    Constants count; wiring is free. No supplied encoding hypothesis, reverse simulation, \
+    formal polynomial identity or uniform runtime claim; the enumeration is noncomputable."
 
 register_result "exact-advice-length-comparison-qualification" where
   title := "Unbounded nonnegative gaps do not imply exact-advice containment"
@@ -1074,6 +1217,23 @@ register_result "communication-tiling-rank" where
     hence at most the minimum tiling number. Finite columns; fields are included. \
     This is not a sign-matrix rank bound or a protocol-realization theorem."
 
+register_result "communication-rank-distinct-rows" where
+  title := "Zero/one rank bounds deterministic communication from above"
+  topic := "communication complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 12, Exercises 4 (corrected) and 6",
+      locator := "Web draft 2007-01-08; printed p. 232 / PDF p. 248" }
+  ]
+  theorems := [Cslib.Communication.card_image_le_two_pow_rank,
+    Cslib.Communication.ecomplexityFun_le_rank_add_one,
+    Cslib.Communication.le_rank_of_injective,
+    Cslib.Communication.clog_le_ecomplexityFun_of_injective]
+  scope := "A zero/one matrix of rank r over a field has at most 2^r distinct rows. Hence \
+    C(f) <= rank_K M(f) + 1 for finite inputs and every field K; the printed Exercise 4 lacks \
+    its relation symbol, and this is its evident repair. Pairwise distinct rows on n-bit \
+    inputs give rank >= n and C(f) >= ceil(log2 n), with no n >= 1 hypothesis. C(f) is \
+    the depth of leaf-labelled protocol trees in which both players know the output."
+
 register_result "communication-tiling-discrepancy" where
   title := "Discrepancy bounds the minimum arbitrary monochromatic tiling size"
   topic := "communication complexity"
@@ -1102,6 +1262,22 @@ register_result "communication-inner-product" where
     inner product modulo two of n-bit strings (least worst-case tree depth over distributions \
     on protocol trees with per-input error at most 1/3), via the discrepancy method. Stated \
     for this infimum rather than per protocol."
+
+register_result "communication-spectral-discrepancy" where
+  title := "Uniform discrepancy bounded by the Euclidean operator norm"
+  topic := "communication complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 12.13 (corrected operator-norm version)",
+      locator := "Web draft 2007-01-08; printed p. 225 / PDF p. 241" }
+  ]
+  theorems := [Cslib.Communication.discrepancy_uniformOfFintype_le_l2_opNorm,
+    Cslib.Communication.discrepancy_uniformOfFintype_mul_sqrt_card_le_l2_opNorm,
+    Cslib.Communication.discrepancy_bitString_le_l2_opNorm]
+  scope := "Finite nonempty rectangular input sets and uniform PMF: discrepancy is at most \
+    the real sign matrix's Euclidean operator norm divided by sqrt(|X|*|Y|), or by 2^n \
+    on equal n-bit cubes. Decidable equality on columns. The sign convention differs by \
+    an overall minus sign from the draft. This corrects its false unrestricted eigenvalue \
+    bound; no general spectral-radius or numerical norm-computation claim is made."
 
 register_result "sipser-lautemann" where
   title := "Sipser–Gács–Lautemann: BPP lies in the second polynomial level"
@@ -1764,6 +1940,27 @@ register_result "blum-mansour-swap-regret" where
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
 
+register_result "adaboost-training-error" where
+  title := "AdaBoost training-error bound"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 10.2", locator := "pp. 135–137" },
+    { paper := MohriRostamizadehTalwalkar2018, theorem := "Theorem 7.2", locator := "p. 149" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.Boosting.empiricalMiscount_adaBoost_le_prod,
+    Cslib.MachineLearning.Boosting.empiricalMiscount_adaBoost_le_exp_sum,
+    Cslib.MachineLearning.Boosting.empiricalMiscount_adaBoost_le_exp,
+    Cslib.MachineLearning.Boosting.IsWeakLearner.empiricalMiscount_adaBoost_eq_zero
+  ]
+  scope := "AdaBoost on a finite labelled sample with a deterministic weak learner mapping \
+    weights on the sample to a Boolean hypothesis. If every round has weighted error < 1, the \
+    training error after T rounds is at most the product of 2 √(ε_t (1 - ε_t)), hence at most \
+    exp(-2 Σ_t (1/2 - ε_t)²); if every \
+    ε_t ≤ 1/2 - γ with γ ≥ 0, it is at most exp(-2 γ² T), and a weak learner of edge γ gives \
+    a consistent output once log m < 2 γ² T. A round with ε_t = 0 stops AdaBoost with its \
+    consistent hypothesis; vote ties predict false. Generalization is not covered."
+
 register_result "rlm-stability" where
   title := "Stability and oracle inequality of Tikhonov-regularized loss minimization"
   topic := "statistical learning"
@@ -1781,6 +1978,40 @@ register_result "rlm-stability" where
     minimizes over K and the comparator ranges over K. The replace-one stability rate proved is \
     ρ² / (r m), half the source's; the oracle inequalities are stated with the source's \
     constants. Integrability of the losses of the rule's output is a hypothesis."
+
+register_result "rlm-smooth-stability" where
+  title := "Stability and oracle inequality of Tikhonov-regularized loss minimization for smooth \
+    losses"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Corollaries 13.7, 13.10 and 13.11",
+      locator := "Sections 13.3.2 and 13.4" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.IsRLM.replaceOneGap_le_tikhonov_of_lipschitzWith_fderiv,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_tikhonov_of_lipschitzWith_fderiv,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_add_of_lipschitzWith_fderiv
+  ]
+  scope := "Regularizer r‖w‖² on a convex subset K of a real inner product space, losses convex \
+    on K, nonnegative, and differentiable on the whole space with β-Lipschitz derivative, m \
+    i.i.d. examples from an arbitrary probability measure. Corollaries 13.7 and 13.10 are proved \
+    with the factor 5β / (r m) in place of the source's 48β / (r m); Corollary 13.11 keeps the \
+    source's parameters, for which the factor 48 does not suffice. Integrability of the losses \
+    of the rule's output is a hypothesis."
+
+register_result "ridge-regression-learnability" where
+  title := "Learnability by ridge regression"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 13.1", locator := "Section 13.1.1" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_squaredLoss_le_add
+  ]
+  scope := "The squared loss (⟪w, x⟫ - y)² / 2 in a real inner product space, features of norm \
+    at most 1 and labels in [-1, 1], the rule minimizing over the whole space, and comparators \
+    of norm at most B, with the source's parameters m ≥ 150 B² / ε² and r = ε / (3 B²). \
+    Integrability of the losses of the rule's output is a hypothesis."
 
 register_result "srm-nonuniform-learnability" where
   title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
@@ -1835,6 +2066,27 @@ register_result "pac-bayes-mcallester" where
     E_Q L_D ≤ E_Q L_S + √((KL(Q ‖ P) + log (m / δ)) / (2 (m - 1))); the proved form has \
     log (√m / δ). Point masses give the Occam bound with log (1 / P {i}). Measurable \
     hypothesis spaces, the kl form and Catoni's bound are not covered."
+
+register_result "pac-bayes-kl" where
+  title := "The PAC-Bayes-kl bound of Seeger and Maurer and its Occam form"
+  topic := "statistical learning"
+  sources := [
+    { paper := Seeger2002, theorem := "Theorem 1 and Appendix A",
+      locator := "Section 1.3, p. 239, and pp. 264–265" },
+    { paper := Maurer2004, theorem := "Lemma 3", locator := "Section 2, p. 4" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_binaryKL_integral_risk_gt,
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_binaryKL_risk_gt
+  ]
+  scope := "Countable hypothesis index with measurable singletons, a prior fixed before the \
+    sample, measurable losses in [0, 1], m ≥ 1 i.i.d. examples and δ > 0. With probability at \
+    least 1 - δ every posterior Q with KL(Q ‖ P) < ∞, possibly depending on the sample, has \
+    kl(E_Q L_S ‖ E_Q L_D) ≤ (KL(Q ‖ P) + log ((m + 1) / δ)) / m, the binary relative entropy \
+    in nats; Seeger states it for the 0-1 loss and Maurer's Lemma 3 extends it to [0, 1]. \
+    Point masses give the Occam form with log (1 / P {i}). Maurer's log (2√m / δ) for m ≥ 8, \
+    the square-root form through binary Pinsker, measurable hypothesis spaces and Catoni's \
+    bound are not covered."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
@@ -4918,6 +5170,41 @@ register_result "mldsa-key-only-forgery" where
     term is not routed through the uniform-secret DecisionModuleLWE. Chosen-message security \
     (signing-oracle simulation in the random-oracle model) and asymptotic packaging are not \
     formalized; no running time is charged."
+
+register_result "ctr-mode-cpa" where
+  title := "CTR mode is CPA-secure for a pseudorandom function"
+  topic := "cryptography"
+  sources := [
+    { paper := KatzLindell2020, theorem := "Theorem 3.33", locator := "Section 3.6.3, p. 93" }
+  ]
+  theorems := [
+    Cslib.Crypto.advantage_ctrCpaGame_le,
+    Cslib.Crypto.advantage_ctrCpaGame_ctrModCounter_le
+  ]
+  scope := "Left-or-right multiple-encryption CPA (Definition 3.22) for CTR mode on n-bit blocks, \
+    with a finite key set and a keyed function F : Key → BitString n → BitString n, against \
+    block-mode oracle adversaries asking at most K blocks in total and at most ℓ per query. For \
+    any counter schedule that is distinct within a query and injective in the IV at each \
+    offset, and in particular for the modular counter iv + i mod 2^n when ℓ ≤ 2^n, the \
+    advantage is at most the PRF advantages of the two explicit reductions plus 2 K² / 2^n. \
+    Concrete bound; no running time is charged and no asymptotic form is stated."
+
+register_result "ofb-mode-cpa" where
+  title := "OFB mode is CPA-secure for a pseudorandom function"
+  topic := "cryptography"
+  sources := [
+    { paper := KatzLindell2020, theorem := "unnumbered statement that OFB mode is CPA-secure",
+      locator := "Section 3.6.3, p. 92" }
+  ]
+  theorems := [
+    Cslib.Crypto.advantage_ofbCpaGame_le
+  ]
+  scope := "Left-or-right multiple-encryption CPA (Definition 3.22) for OFB mode on n-bit blocks, \
+    with a finite key set and a keyed function F : Key → BitString n → BitString n, against \
+    block-mode oracle adversaries asking at most K blocks in total and at most ℓ per query: the \
+    advantage is at most the PRF advantages of the two explicit reductions plus \
+    2 K (K + ℓ) / 2^n. The source states OFB security without a numbered theorem or proof; the \
+    proof follows its Theorem 3.33 template. Concrete bound; no running time is charged."
 
 register_result "clique-eth-lower-bound" where
   title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"

@@ -599,6 +599,13 @@ that still needs review. Inspect that material first, then record the hold's res
 the existing proof/API/caller assessment before queueing. A successful check does not release a
 review hold, and the helper does not judge whether that review is complete.
 
+When the helper actually waits, including its automatic mergeability retries, it snapshots the
+PR body, comments, submitted reviews and inline discussion before the first sleep and rereads
+them before enqueueing. Any change stops that enqueue: reread the discussion and holds, then
+rerun for the still-approved head when appropriate. It does not recheck linked issues or make
+the discussion read atomic with enqueue, so the reviewer's final hold check remains necessary.
+Instant-ready invocations and reports of already-queued entries are unchanged.
+
 The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
 conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with
 write access may run the same command for the approved head; coordinators sweep for approved heads

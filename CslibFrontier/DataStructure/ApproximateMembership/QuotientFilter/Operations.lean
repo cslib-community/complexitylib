@@ -1322,17 +1322,6 @@ private theorem FilterInv.cluster_spec {U b f n : ℕ} {S : Finset (Fin U)}
     rw [probeSlot_backSlot_add]
     exact hinv.isFull_probeSlot_fwdLen hS_lt q
 
-/-- Under `FilterInv`, the bucket of an empty slot has no run. -/
-private theorem FilterInv.bucketRun_eq_nil_of_isFull_eq_false {U b f n : ℕ} {S : Finset (Fin U)}
-    {quot : Fin U → Fin (2 ^ b)} {rem : Fin U → Fin (2 ^ f)} {st : FilterState b f}
-    (hinv : FilterInv n S quot rem st) {p : Fin (2 ^ b)} (hp : st.isFull p = false) :
-    bucketRun S quot rem p = [] := by
-  have h1 := hinv.isOcc_eq p
-  rw [(hinv.empty_slot p hp).1] at h1
-  cases h : bucketRun S quot rem p
-  · rfl
-  · simp [h] at h1
-
 /-- A valid interval whose slots avoid the slots `[o₀ .. o₀ + ℓ₀]` rewritten by `insertCluster`
 stays valid after inserting `u` into bucket `probeSlot b o₀ a` of that cluster. -/
 private theorem IntervalValid.insertCluster_of_disjoint {U b f : ℕ} {S : Finset (Fin U)}
@@ -1547,7 +1536,6 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
   obtain ⟨hq_eq, hback_o₀, hfull_end₀⟩ := hinv.cluster_spec hS_lt (quot u)
   set q := quot u
   set a := hinv.backLen hS_lt q
-  set t := hinv.fwdLen hS_lt q
   set o₀ := hinv.clusterStart hS_lt q
   set ℓ₀ := hinv.clusterLen hS_lt q
   set st' := hinv.deleteState hS_lt u
@@ -1555,16 +1543,9 @@ theorem FilterInv.deleteState_filterInv {U b f n : ℕ} {S : Finset (Fin U)}
   have hℓ₀_le_S : ℓ₀ ≤ #S := hinv.clusterLen_le_card hS_lt q
   have hℓ₀_lt : ℓ₀ < 2 ^ b := lt_of_le_of_lt hℓ₀_le_S hS_lt
   have hvalid₀ : IntervalValid S quot rem st o₀ ℓ₀ := hinv.intervalValid_cluster hS_lt q
-  -- Bucket `q` holds `rem u`, so its slot is full and lies strictly inside the cluster.
-  have ha_lt : a < ℓ₀ := by
-    have hr_mem : rem u ∈ bucketRun S quot rem q :=
-      (mem_bucketRun_iff S quot rem q (rem u)).mpr ⟨u, hu, rfl, rfl⟩
-    have hfull_q : st.isFull q = true := Bool.eq_true_of_not_eq_false fun h => by
-      rw [hinv.bucketRun_eq_nil_of_isFull_eq_false h] at hr_mem
-      cases hr_mem
-    refine lt_of_le_of_ne (Nat.le_add_right a t) fun ha_eq => ?_
-    rw [← ha_eq, ← hq_eq, hfull_q] at hfull_end₀
-    cases hfull_end₀
+  -- Bucket `q` holds `u`, so its forward full run is nonempty and `q` lies strictly inside the
+  -- cluster.
+  have ha_lt : a < ℓ₀ := Nat.lt_add_of_pos_right (hinv.fwdLen_pos_of_mem hS_lt hu)
   let e := calcDeleteStop st o₀ a ℓ₀
   obtain ⟨ha_lt_e, he_le, he_run, _⟩ := hvalid₀.calcDeleteStop_spec hinv.isOcc_eq ha_lt
   obtain ⟨hvalid'_left, hocc'_q, hempty_e1⟩ :=

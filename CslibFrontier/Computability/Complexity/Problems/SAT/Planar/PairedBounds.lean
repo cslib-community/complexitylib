@@ -133,8 +133,8 @@ private theorem outputBound_access {φ : CNF ℕ} (sites : List Point) {p q a : 
 
 private theorem lastLiteral_bounds {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) (sites : List Point) :
-    OutputBound φ (variablePosition (lastLiteral sites (occurrencePath φ o) o.2.2.2).1.1) ∧
-      ∀ a ∈ (lastLiteral sites (occurrencePath φ o) o.2.2.2).2, OutputBound φ a := by
+    OutputBound φ (variablePosition (lastLiteral sites (occurrencePath φ o) o.lit.2).1.1) ∧
+      ∀ a ∈ (lastLiteral sites (occurrencePath φ o) o.lit.2).2, OutputBound φ a := by
   let r := occurrencePath φ o
   have hlen : 2 ≤ r.length := PlanarCompile.occurrencePath_length_ge_two ho
   have hp : CellBound φ (r.getD (r.length - 2) (0, 0)) :=
@@ -309,7 +309,7 @@ private theorem original_route_count (φ : CNF ℕ) (sites : List Point) :
 
 private theorem original_route_cost (φ : CNF ℕ) (sites : List Point) (cost : Route → ℕ)
     (k : ℕ) (h : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
-      cost (lastLiteral sites (occurrencePath φ o) o.2.2.2).2 = k) :
+      cost (lastLiteral sites (occurrencePath φ o) o.lit.2).2 = k) :
     ((originalClauses φ sites).map fun c => (c.2.2.map cost).sum).sum = k * φ.vars.length := by
   have hm : (originalClauses φ sites).map (fun c => (c.2.2.map cost).sum) =
       (originalClauses φ sites).map (fun c => k * c.2.2.length) := by

@@ -83,15 +83,15 @@ private theorem readIndex_injective (S : Scheme PK SK M R CT K) (G : M → R) (p
 
 /-- Reading the independent tables `(Hq, Hraw, Hfb')` through `readIndex` gives independent tables
 `(H, Hfb)`. -/
-private theorem bind_pi_reindex [Fintype M] [Fintype CT] [Finite K]
+private theorem bind_keyTable_reindex [Fintype M] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (G : M → R) (pk : PK) (sk : SK) {β : Type}
     (F : (Bool × M × CT → K) → (CT → K) → PMF β) :
-    ((pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun H =>
-      (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hfb => F H Hfb) =
-    (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hq =>
-      (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun Hraw =>
-        (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hfb' =>
+    ((S.keyTable (Bool × M × CT)).bind fun H => (S.keyTable CT).bind fun Hfb => F H Hfb) =
+    (S.keyTable CT).bind fun Hq =>
+      (S.keyTable (Bool × M × CT)).bind fun Hraw =>
+        (S.keyTable CT).bind fun Hfb' =>
           F (S.coupledH G Hq Hraw pk sk) (S.coupledFb G Hq Hfb' pk sk) := by
+  unfold keyTable
   set μ := ProbComp.eval S.sampleKey
   have hR : ((pi fun _ : CT => μ).bind fun Hq =>
       (pi fun _ : Bool × M × CT => μ).bind fun Hraw =>
@@ -124,14 +124,13 @@ private theorem bind_pi_reindex [Fintype M] [Fintype CT] [Finite K]
 
 /-- Reading the independent tables `(Hq, Hraw)` through `coupledH` gives an independent table
 `H`. -/
-theorem bind_pi_coupledH [Fintype M] [Fintype CT] [Finite K]
+theorem bind_keyTable_coupledH [Fintype M] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (G : M → R) (pk : PK) (sk : SK) {β : Type}
     (F : (Bool × M × CT → K) → PMF β) :
-    ((pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun H => F H) =
-    (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hq =>
-      (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun Hraw =>
-        F (S.coupledH G Hq Hraw pk sk) := by
-  simpa only [PMF.bind_const] using S.bind_pi_reindex G pk sk (fun H _ => F H)
+    ((S.keyTable (Bool × M × CT)).bind fun H => F H) =
+    (S.keyTable CT).bind fun Hq =>
+      (S.keyTable (Bool × M × CT)).bind fun Hraw => F (S.coupledH G Hq Hraw pk sk) := by
+  simpa only [PMF.bind_const] using S.bind_keyTable_reindex G pk sk (fun H _ => F H)
 
 /-- Under the re-indexing, the oracle of `eagerFbGame` is the oracle of `eagerCoupledGame`. -/
 private theorem eagerFbHandler_reindex (S : Scheme PK SK M R CT K) (G : M → R) (Hq Hfb' : CT → K)
@@ -167,10 +166,10 @@ theorem eagerCoupledGame_eq_eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Fin
   dsimp only
   symm
   calc _ = (ProbComp.eval S.sampleMsg).bind fun _ =>
-        (pi fun _ : M => ProbComp.eval S.pke.sampleCoins).bind fun G =>
-          (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hq =>
-            (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun Hraw =>
-              (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun _ =>
+        S.coinTable.bind fun G =>
+          (S.keyTable CT).bind fun Hq =>
+            (S.keyTable (Bool × M × CT)).bind fun Hraw =>
+              (S.keyTable CT).bind fun _ =>
                 (ProbComp.eval S.sampleMsg).bind fun mStar =>
                   (ProbComp.eval S.sampleKey).bind fun kRand =>
                     OracleComp.interpret
@@ -179,7 +178,7 @@ theorem eagerCoupledGame_eq_eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Fin
                         S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar)⟩) := by
         congr 1 with s : 1
         congr 1 with G : 1
-        rw [bind_pi_reindex S G pk sk]
+        rw [bind_keyTable_reindex S G pk sk]
         congr 1 with Hq : 1
         congr 1 with Hraw : 1
         congr 1 with Hfb' : 1
