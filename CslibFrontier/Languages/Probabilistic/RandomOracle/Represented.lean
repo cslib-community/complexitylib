@@ -31,6 +31,10 @@ splits the completed table back into one table per oracle.
 * `Cslib.RandomOracle.run_interpret_eq_complete_bind`,
   `Cslib.RandomOracle.eval_run_interpret_eq_complete_bind`: a handler that is a lazy random oracle
   on a represented cache has the law of the completed table.
+* `Cslib.RandomOracle.run_interpret_bind_complete`,
+  `Cslib.RandomOracle.eval_run_interpret_bind_complete`: the joint law of its result and the
+  completion of its final represented cache, the relation an approximate simulation
+  (`OracleComp.closeTo_run_interpret_simulation`) is stated against.
 * `Cslib.RandomOracle.bind_complete_sum`: completing a joined cache completes each side
   independently.
 -/
@@ -48,6 +52,23 @@ variable {Query State α : Type} {Response : Query → Type} [DecidableEq Query]
   [∀ q, Finite (Response q)]
 
 /-- A stateful handler that, read through `rep`, answers every call as the lazy random oracle
+`answer distribution` has the joint law of its result and the completion of its represented final
+cache: completing the represented initial cache, answering every call from the completed table, and
+keeping that table. -/
+theorem run_interpret_bind_complete (distribution : (q : Query) → PMF (Response q))
+    (impl : (q : Query) → StateT State PMF (Response q)) (rep : State → Cache Response)
+    (step : ∀ q s, (impl q s).map (fun z => (z.1, rep z.2)) = answer distribution q (rep s))
+    (program : OracleComp Response α) (s : State) :
+    ((OracleComp.interpret impl program).run s).bind
+        (fun z => (complete distribution (rep z.2)).map (z.1, ·)) =
+      (complete distribution (rep s)).bind fun table =>
+        (OracleComp.interpret (fun q => PMF.pure (table q)) program).map (·, table) := by
+  have hcomplete := run_interpret_answer_complete distribution program (rep s)
+  rw [← OracleComp.run_interpret_map_state impl _ rep step] at hcomplete
+  simpa only [PMF.monad_bind_eq_bind, PMF.monad_map_eq_map, PMF.bind_map,
+    Function.comp_def] using hcomplete
+
+/-- A stateful handler that, read through `rep`, answers every call as the lazy random oracle
 `answer distribution` has the result law of completing the represented initial cache and answering
 every call from the completed table. -/
 theorem run_interpret_eq_complete_bind (distribution : (q : Query) → PMF (Response q))
@@ -57,19 +78,28 @@ theorem run_interpret_eq_complete_bind (distribution : (q : Query) → PMF (Resp
     ((OracleComp.interpret impl program).run s).map Prod.fst =
       (complete distribution (rep s)).bind fun table =>
         OracleComp.interpret (fun q => PMF.pure (table q)) program := by
-  have hrep := congrArg (PMF.map Prod.fst)
-    (OracleComp.run_interpret_map_state impl (answer distribution) rep step program s)
-  have hcomplete := congrArg (PMF.map Prod.fst)
-    (run_interpret_answer_complete distribution program (rep s))
-  simp only [PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def] at hcomplete
-  change ((OracleComp.interpret (answer distribution) program).run (rep s)).bind
-      (fun a => (complete distribution a.2).map (Function.const _ a.1)) =
+  have h := congrArg (PMF.map Prod.fst)
+    (run_interpret_bind_complete distribution impl rep step program s)
+  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def] at h
+  change ((OracleComp.interpret impl program).run s).bind
+      (fun z => (complete distribution (rep z.2)).map (Function.const _ z.1)) =
     (complete distribution (rep s)).bind (fun table =>
-      (OracleComp.interpret (fun q => PMF.pure (table q)) program).map id) at hcomplete
-  simp only [PMF.map_const, PMF.map_id] at hcomplete
-  simp only [PMF.map_comp, Function.comp_def] at hrep
-  rw [hrep, ← hcomplete]
-  rfl
+      (OracleComp.interpret (fun q => PMF.pure (table q)) program).map id) at h
+  simp only [PMF.map_const, PMF.map_id] at h
+  exact h
+
+/-- `run_interpret_bind_complete` for a closed stateful handler. -/
+theorem eval_run_interpret_bind_complete (distribution : (q : Query) → PMF (Response q))
+    (impl : (q : Query) → StateT State ProbComp (Response q)) (rep : State → Cache Response)
+    (step : ∀ q s,
+      (ProbComp.eval (impl q s)).map (fun z => (z.1, rep z.2)) = answer distribution q (rep s))
+    (program : OracleComp Response α) (s : State) :
+    (ProbComp.eval ((OracleComp.interpret impl program).run s)).bind
+        (fun z => (complete distribution (rep z.2)).map (z.1, ·)) =
+      (complete distribution (rep s)).bind fun table =>
+        (OracleComp.interpret (fun q => PMF.pure (table q)) program).map (·, table) := by
+  rw [OracleComp.map_run_interpret ProbComp.isMonadHom_eval]
+  exact run_interpret_bind_complete distribution _ rep step program s
 
 /-- A closed stateful handler that, read through `rep`, answers every call as the lazy random
 oracle `answer distribution` has the result law of completing the represented initial cache and

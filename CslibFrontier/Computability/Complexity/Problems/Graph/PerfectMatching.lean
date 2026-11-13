@@ -55,7 +55,7 @@ exactly-one constraint for each distinct declared vertex on the positions of its
 edges. -/
 @[expose] def perfectMatchingInstance (G : Graph) : CSP Unit ℕ :=
   G.distinctVertices.map fun v =>
-    ((), (List.range G.edgeList.length).filter fun i => incident (G.edgeList.getD i (0, 0)) v)
+    ⟨(), (List.range G.edgeList.length).filter fun i => incident (G.edgeList.getD i (0, 0)) v⟩
 
 variable {G : Graph}
 
@@ -72,7 +72,7 @@ theorem mem_vars_perfectMatchingInstance {x : ℕ} :
 /-- The exactly-one conditions of the perfect-matching instance on a set `S` of positions: every
 declared vertex is an end of exactly one edge at a position in `S`. -/
 private theorem forall_mem_perfectMatchingInstance_iff {S : Finset ℕ} :
-    (∀ c ∈ G.perfectMatchingInstance, (c.2.filter fun v => v ∈ S).length = 1) ↔
+    (∀ c ∈ G.perfectMatchingInstance, (c.scope.filter fun v => v ∈ S).length = 1) ↔
       ∀ v ∈ G.vertices, ∃! i, i < G.edgeList.length ∧ incident (G.edgeList.getD i (0, 0)) v = true ∧
         i ∈ S := by
   simp only [perfectMatchingInstance, List.forall_mem_map, mem_distinctVertices,
@@ -171,7 +171,7 @@ theorem count_vars_perfectMatchingInstance (G : Graph) (x : ℕ) :
 /-- **A vertex constraint has at most as many variables as the vertex has neighbours.** -/
 theorem length_le_of_mem_perfectMatchingInstance {d : ℕ}
     (hdeg : ∀ v, Nat.card (G.induced.neighborSet v) ≤ d) {c : Constraint Unit ℕ}
-    (hc : c ∈ G.perfectMatchingInstance) : c.2.length ≤ d := by
+    (hc : c ∈ G.perfectMatchingInstance) : c.scope.length ≤ d := by
   classical
   simp only [perfectMatchingInstance, List.mem_map, mem_distinctVertices] at hc
   obtain ⟨v, hv, rfl⟩ := hc

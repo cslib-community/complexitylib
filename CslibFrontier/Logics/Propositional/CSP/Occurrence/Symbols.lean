@@ -23,12 +23,12 @@ namespace Cslib.Logic.PL.CSP
 
 /-- Relation-symbol maps retain the literal positive-clause adapter. -/
 theorem varCNF_mapRelation {Rel Other V : Type} (F : CSP Rel V) (f : Rel → Other) :
-    CSP.varCNF (F.map fun (r, scope) => (f r, scope)) = F.varCNF := by
+    CSP.varCNF (F.map fun c => ⟨f c.rel, c.scope⟩) = F.varCNF := by
   simp [CSP.varCNF, List.map_map, Function.comp_def]
 
 /-- Every indexed argument record stays unchanged under a relation-symbol map. -/
 theorem occurrences_mapRelation {Rel Other V : Type} (F : CSP Rel V) (f : Rel → Other) :
-    CSP.occurrences (F.map fun (r, scope) => (f r, scope)) = F.occurrences := by
+    CSP.occurrences (F.map fun c => ⟨f c.rel, c.scope⟩) = F.occurrences := by
   simp only [CSP.occurrences, varCNF_mapRelation]
 
 end Cslib.Logic.PL.CSP

@@ -15,7 +15,8 @@ The arithmetization of concrete closed formulas over `ZMod 7`, prenex and not, w
 at the origin and their round degrees; the variables and the size of a formula; perfect
 completeness on a true formula and a concrete soundness bound below `1` on a false one over
 `ZMod 101`, against every prover; the decision of closedness and the parameters of the machine
-verifier on concrete formulas; `TQBF ∈ IP`, `IP = PSPACE` and its corollaries; and the axioms of
+verifier on concrete formulas; the encoded words of the records of the machine, unchanged from the
+tuples they replaced; `TQBF ∈ IP`, `IP = PSPACE` and its corollaries; and the axioms of
 the headline theorems.
 -/
 
@@ -122,6 +123,37 @@ example : primeBound (QBF.ex 0 (.var 0)) = 144 := rfl
 example : verifier (QBF.var 0) = pure false := by
   rw [verifier, decide_eq_false (by decide)]
   rfl
+
+/-! The records of the machine encode as the tuples they replaced: encoded words unchanged. -/
+
+section MachineRecords
+
+open Turing.MultiTapeTM Cslib.Complexity.QBFProtocol.Machine
+
+example (P : Params) :
+    encParams P = encPair (encList encNat) (encPair encUnary encUnary)
+      (P.xs, P.modulusPred, P.degree) := rfl
+
+example (I : LoopInput) :
+    encLoopInput I = encPair encParams (encList encArithToken) (I.toParams, I.tokens) := rfl
+
+example (c : Claim) : encClaim c = encPair encPt encUnary (c.point, c.value) := rfl
+
+/-- A stack of claims encodes as the list of its pairs of a point and a value. -/
+private theorem encList_encClaim (St : List Claim) :
+    encList encClaim St =
+      encList (encPair encPt encUnary) (St.map fun c => (c.point, c.value)) := by
+  induction St with
+  | nil => rfl
+  | cons c St ih => rw [List.map_cons, encList_cons, encList_cons, ih]; rfl
+
+example (st : VState) :
+    encVState st = encPair (encList encArithToken)
+      (encPair (encList (encPair encPt encUnary)) encBool)
+      (st.tokens, st.claims.map (fun c => (c.point, c.value)), st.passed) := by
+  simp only [encVState_apply, encVStateFields, encPair_apply, encList_encClaim]
+
+end MachineRecords
 
 example : TQBFᶜ ∈ IP encQBF :=
   IP_eq_PSPACE encQBF ▸ compl_mem_PSPACE (IP_eq_PSPACE encQBF ▸ TQBF_mem_IP)

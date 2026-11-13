@@ -51,19 +51,24 @@ and `encBitString`.
    `efficientVerifier_lyubashevsky`): a uniform polynomial-time word verifier
    `lyubashevskyVerifyWord` checks inner-box membership `z ∈ [-(γ - β), γ - β]^m` and the linear
    relation `A z = w + T ĉ` modulo `q`.
-3. **Strict-PPT non-abort special HVZK simulator** (`NonAbortSimulatorRealizedBy`,
-   `EfficientNonAbortSpecialHVZK`, `lyubashevskySimulateCoins`, `lyubashevskySimulateWord`,
-   `efficientNonAbortSpecialHVZK_lyubashevsky`): realizes `lyubashevskySimulate` on encoded words
-   within statistical distance `m * ((2 * γ + 1) / 2 ^ width)`.
+3. **Strict-PPT non-abort special HVZK simulator** (`NonAbortSimulator`,
+   `EfficientNonAbortSpecialHVZK`, `lyubashevskySimulator`,
+   `efficientNonAbortSpecialHVZK_lyubashevsky`): the typed simulator `lyubashevskySimulator`
+   samples the integer box with fair bits and is within statistical distance
+   `m * ((2 * γ + 1) / 2 ^ width)` of `lyubashevskySimulate`. Its strict-PPT certificate is the
+   word program `lyubashevskySimulateWord` (with coin form `lyubashevskySimulateCoins`), which
+   computes it on encodings (`eval_lyubashevskySimulateWord`).
 
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.SigmaProtocol.VerifierRealizedBy`,
   `Cslib.Crypto.Protocols.SigmaProtocol.EfficientVerifier`: polynomial-time verifier certificates
   for indexed Sigma protocol families.
-* `Cslib.Crypto.Protocols.SigmaProtocol.NonAbortSimulatorRealizedBy`,
-  `Cslib.Crypto.Protocols.SigmaProtocol.EfficientNonAbortSpecialHVZK`: strict-PPT simulator
-  certificates for Sigma protocols with aborts.
+* `Cslib.Crypto.Protocols.SigmaProtocol.NonAbortSimulator`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.NonAbortSimulator.IsPPT`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.EfficientNonAbortSpecialHVZK`: typed simulators that may
+  abort, their uniform strict PPT admissibility, and strict-PPT simulator certificates for Sigma
+  protocols with aborts.
 * `Cslib.Crypto.Protocols.SigmaProtocol.encCommitResponseOrAbort`: the encoding of the optional
   commitment-response pair output by a program that may abort.
 * `Cslib.Crypto.Protocols.SigmaProtocol.LyubashevskyParams`,
@@ -71,6 +76,7 @@ and `encBitString`.
 * `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyFamily`,
   `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyEncoding`,
   `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskyVerifyWord`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskySimulator`,
   `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskySimulateCoins`,
   `Cslib.Crypto.Protocols.SigmaProtocol.lyubashevskySimulateWord`.
 
@@ -78,9 +84,13 @@ and `encBitString`.
 
 * `Cslib.Crypto.Protocols.SigmaProtocol.efficientSpecialSoundness_lyubashevsky`.
 * `Cslib.Crypto.Protocols.SigmaProtocol.efficientVerifier_lyubashevsky`.
+* `Cslib.Crypto.Protocols.SigmaProtocol.SimulatorRealizedBy.closeTo_acceptedTranscript`: a
+  simulator realizing a non-abort simulator is close to the honest accepted transcript.
 * `Cslib.Crypto.Protocols.SigmaProtocol.computableInPolyTime_lyubashevskySimulateCoins`,
   `Cslib.Crypto.Protocols.SigmaProtocol.isPPTOn_lyubashevskySimulateWord`,
-  `Cslib.Crypto.Protocols.SigmaProtocol.nonAbortSimulatorRealizedBy_lyubashevskySimulateWord`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.eval_lyubashevskySimulateWord`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.isPPT_lyubashevskySimulator`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.simulatorRealizedBy_lyubashevskySimulator`,
   `Cslib.Crypto.Protocols.SigmaProtocol.efficientNonAbortSpecialHVZK_lyubashevsky`.
 
 ## References
@@ -131,23 +141,26 @@ is framed. -/
 abbrev encCommitResponseOrAbort : Option (List Bool × List Bool) ↪ List Bool :=
   encOption (encPair encBits encBits)
 
-/-- The program `program` realizes the non-abort simulator family `simulate` on encodings up to
-statistical distance `δ`: on the index, the encoded statement and the encoded challenge, its output
-in `Option (List Bool × List Bool)` is within `δ i` of the encoded commitment/response pair (or
-`none` for an abort) sampled by `simulate i`. -/
-def NonAbortSimulatorRealizedBy
-    (enc : Encoding I Y T C (fun i => Option (Z i)))
-    (simulate : ∀ i, Y i → C i → PMF (Option (T i × Z i)))
-    (program : I × List Bool × List Bool → ProbComp (Option (List Bool × List Bool)))
-    (δ : I → ℝ≥0∞) : Prop :=
-  ∀ i y c, CloseTo
-    ((simulate i y c).map
-      (Option.map fun tz => (enc.commitment i tz.1, enc.response i (some tz.2))))
-    (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i)
+variable (I Y T C Z) in
+/-- A family of non-abort special HVZK simulators: at index `i`, a probabilistic program from a
+statement and a challenge to a commitment and a response, or `none` on an abort.
+`NonAbortSimulator.IsPPT` states its efficiency on encodings. -/
+abbrev NonAbortSimulator : Type :=
+  ∀ i, Y i → C i → ProbComp (Option (T i × Z i))
+
+/-- A family of simulators that may abort is uniform strict PPT: one machine reads
+`encSimulatorInput enc` and writes the encoded commitment and response, or the empty word on an
+abort (`encCommitResponseOrAbort`). The response encoding is that of the protocol's optional
+responses at `some`. -/
+def NonAbortSimulator.IsPPT (enc : Encoding I Y T C (fun i => Option (Z i)))
+    (sim : NonAbortSimulator I Y T C Z) : Prop :=
+  IsPPTOn (encSimulatorInput enc) encCommitResponseOrAbort fun s =>
+    Option.map (fun tz => (enc.commitment s.index tz.1, enc.response s.index (some tz.2))) <$>
+      sim s.index s.statement s.challenge
 
 /-- **Efficient special HVZK up to aborts**, with statistical error `δ`. At every index `simulate i`
-is a perfect `NonAbortSpecialHVZK` simulator for `P i`, and one uniform strict PPT program realizes
-the family on encodings up to `δ`. -/
+is a perfect `NonAbortSpecialHVZK` simulator for `P i`, and one uniform strict PPT simulator family
+realizes the family up to `δ`. -/
 structure EfficientNonAbortSpecialHVZK
     (P : ∀ i, SigmaProtocol (X i) (Y i) (T i) (C i) (Option (Z i)))
     (R : ∀ i, X i → Y i → Prop)
@@ -155,27 +168,21 @@ structure EfficientNonAbortSpecialHVZK
     (simulate : ∀ i, Y i → C i → PMF (Option (T i × Z i))) (δ : I → ℝ≥0∞) : Prop where
   /-- `simulate i` is a perfect non-abort special HVZK simulator at every index. -/
   nonAbortSpecialHVZK : ∀ i, (P i).NonAbortSpecialHVZK (R i) (simulate i)
-  /-- One uniform strict PPT program realizes the simulator family up to `δ`. -/
-  realized : ∃ program,
-    IsPPTOn (encSimulatorInput enc.index) encCommitResponseOrAbort program ∧
-    NonAbortSimulatorRealizedBy enc simulate program δ
+  /-- One uniform strict PPT simulator family realizes `simulate` up to `δ`. -/
+  realized : ∃ sim : NonAbortSimulator I Y T C Z, NonAbortSimulator.IsPPT enc sim ∧
+    SimulatorRealizedBy simulate sim δ
 
-/-- A program realizing a non-abort simulator is `δ i`-close to the honest prover's encoded
+/-- A simulator realizing a non-abort simulator is `δ i`-close to the honest prover's
 `acceptedTranscript` (published transcripts and aborts) at every challenge. -/
-theorem NonAbortSimulatorRealizedBy.closeTo_acceptedTranscript
+theorem SimulatorRealizedBy.closeTo_acceptedTranscript
     {P : ∀ i, SigmaProtocol (X i) (Y i) (T i) (C i) (Option (Z i))}
     {R : ∀ i, X i → Y i → Prop}
-    {enc : Encoding I Y T C (fun i => Option (Z i))}
     {simulate : ∀ i, Y i → C i → PMF (Option (T i × Z i))}
-    {program : I × List Bool × List Bool → ProbComp (Option (List Bool × List Bool))}
-    {δ : I → ℝ≥0∞}
+    {sim : NonAbortSimulator I Y T C Z} {δ : I → ℝ≥0∞}
     (hS : ∀ i, (P i).NonAbortSpecialHVZK (R i) (simulate i))
-    (h : NonAbortSimulatorRealizedBy enc simulate program δ)
+    (h : SimulatorRealizedBy simulate sim δ)
     {i : I} {x : X i} {y : Y i} (hxy : R i x y) (c : C i) :
-    CloseTo
-      (((P i).acceptedTranscript x y c).map
-        (Option.map fun tz => (enc.commitment i tz.1, enc.response i (some tz.2))))
-      (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i) := by
+    CloseTo ((P i).acceptedTranscript x y c) (ProbComp.eval (sim i y c)) (δ i) := by
   rw [← (hS i).acceptedTranscript_eq x y hxy c]
   exact h i y c
 
@@ -314,8 +321,8 @@ theorem extractorRealizedBy_lyubashevskyExtractorAdapter :
         ((p.m, p.k),
           ((lyubashevskyEncoding.challenge p c, lyubashevskyEncoding.response p z),
             (lyubashevskyEncoding.challenge p c', lyubashevskyEncoding.response p z'))) =
-      encLyubashevskyExtractInput ((p.m, p.k),
-        ((List.ofFn c, z.map List.ofFn), (List.ofFn c', z'.map List.ofFn))) := rfl
+      encLyubashevskyExtractInput
+        ⟨⟨p.m, p.k⟩, ⟨List.ofFn c, z.map List.ofFn⟩, ⟨List.ofFn c', z'.map List.ofFn⟩⟩ := rfl
   dsimp only [lyubashevskyExtractorAdapter]
   rw [hinput, lyubashevskyExtractWord_eq_extract p.n p.m p.k p.q y t c z c' z']
   rfl
@@ -598,7 +605,7 @@ def lyubashevskySimulatePostprocess
 @[fun_prop]
 theorem computableInPolyTime_lyubashevskySimulatePostprocess :
     ComputableInPolyTime lyubashevskySimulatePostprocess
-      (encPair (encSimulatorInput encLyubashevskyParams) (encList encIntBin))
+      (encPair (encSimulatorWordInput encLyubashevskyParams) (encList encIntBin))
       encCommitResponseOrAbort := by
   let encIn := encPair (encPair encLyubashevskyParams (encPair encBits encBits)) (encList encIntBin)
   have hcond : ComputableInPolyTime
@@ -662,12 +669,13 @@ def lyubashevskySimulateCoins
 @[fun_prop]
 theorem computableInPolyTime_lyubashevskySimulateCoins :
     ComputableInPolyTime lyubashevskySimulateCoins
-      (encPair (encSimulatorInput encLyubashevskyParams) encBits)
+      (encPair (encSimulatorWordInput encLyubashevskyParams) encBits)
       encCommitResponseOrAbort := by
   unfold lyubashevskySimulateCoins
   fun_prop
 
-/-- Uniform strict-PPT simulator program for `lyubashevskyFamily` on encoded words. -/
+/-- Uniform strict-PPT simulator program for `lyubashevskyFamily` on words: the certificate of
+`lyubashevskySimulator`, which it computes on encodings (`eval_lyubashevskySimulateWord`). -/
 noncomputable def lyubashevskySimulateWord
     (inp : LyubashevskyParams × List Bool × List Bool) :
     ProbComp (Option (List Bool × List Bool)) :=
@@ -677,7 +685,7 @@ noncomputable def lyubashevskySimulateWord
 
 /-- `lyubashevskySimulateWord` is uniformly strict PPT. -/
 theorem isPPTOn_lyubashevskySimulateWord :
-    IsPPTOn (encSimulatorInput encLyubashevskyParams)
+    IsPPTOn (encSimulatorWordInput encLyubashevskyParams)
       encCommitResponseOrAbort lyubashevskySimulateWord := by
   let encIn := encPair encLyubashevskyParams (encPair encBits encBits)
   have hγ : ComputableInPolyTime
@@ -726,37 +734,52 @@ theorem lyubashevskySimulatePostprocess_ofFn (p : LyubashevskyParams)
   simp only [decide_eq_true_eq]
   split_ifs <;> rfl
 
-/-- **Simulator realization.** `lyubashevskySimulateWord` realizes `lyubashevskySimulate` on
-encodings up to statistical distance `m * ((2 * γ + 1) / 2 ^ width)`. -/
-theorem nonAbortSimulatorRealizedBy_lyubashevskySimulateWord :
-    NonAbortSimulatorRealizedBy lyubashevskyEncoding
-      (fun p => lyubashevskySimulate p.n p.m p.k p.q p.γ p.β)
-      lyubashevskySimulateWord
+/-- Lyubashevsky's simulator with fair coins: sample `z` from the fair-bit integer box
+`sampleIntBoxVec γ m width`, keep it only inside `[-(γ - β), γ - β]^m`, and solve the verification
+equation for the commitment `w = A z - T ĉ`. It approximates `lyubashevskySimulate`, which samples
+`[-γ, γ]^m` exactly (`simulatorRealizedBy_lyubashevskySimulator`). -/
+noncomputable def lyubashevskySimulator :
+    NonAbortSimulator LyubashevskyParams
+      (fun p => Matrix (Fin p.n) (Fin p.m) (ZMod p.q) × Matrix (Fin p.n) (Fin p.k) (ZMod p.q))
+      (fun p => Fin p.n → ZMod p.q) (fun p => BitString p.k) (fun p => Fin p.m → ℤ) :=
+  fun p y c => (fun z => if z ∈ intBox (Fin p.m) (p.γ - p.β) then
+      some (y.1 *ᵥ (Int.cast ∘ z) - y.2 *ᵥ (Int.cast ∘ lyubashevskyChallenge c), z)
+    else none) <$> sampleIntBoxVec p.γ p.m p.width
+
+/-- On encoded statements and challenges, `lyubashevskySimulateWord` computes the encoded output of
+`lyubashevskySimulator`. -/
+theorem eval_lyubashevskySimulateWord (p : LyubashevskyParams)
+    (y : Matrix (Fin p.n) (Fin p.m) (ZMod p.q) × Matrix (Fin p.n) (Fin p.k) (ZMod p.q))
+    (c : BitString p.k) :
+    ProbComp.eval (lyubashevskySimulateWord
+        (p, lyubashevskyEncoding.statement p y, lyubashevskyEncoding.challenge p c)) =
+      (ProbComp.eval (lyubashevskySimulator p y c)).map (Option.map fun tz =>
+        (lyubashevskyEncoding.commitment p tz.1, lyubashevskyEncoding.response p (some tz.2))) := by
+  rw [lyubashevskySimulateWord, ProbComp.eval_map, eval_sampleIntBoxList_eq_map_ofFn, PMF.map_comp,
+    lyubashevskySimulator, ProbComp.eval_map, PMF.map_comp]
+  congr 1 with z : 1
+  simp only [Function.comp_apply, lyubashevskySimulatePostprocess_ofFn]
+  split_ifs <;> rfl
+
+/-- `lyubashevskySimulator` is uniformly strict PPT, certified by `lyubashevskySimulateWord`. -/
+theorem isPPT_lyubashevskySimulator :
+    NonAbortSimulator.IsPPT lyubashevskyEncoding lyubashevskySimulator :=
+  isPPTOn_encSimulatorInput_of_word lyubashevskyEncoding isPPTOn_lyubashevskySimulateWord
+    fun s => by rw [eval_lyubashevskySimulateWord, ProbComp.eval_map]
+
+/-- **Simulator realization.** `lyubashevskySimulator` is within statistical distance
+`m * ((2 * γ + 1) / 2 ^ width)` of `lyubashevskySimulate`. -/
+theorem simulatorRealizedBy_lyubashevskySimulator :
+    SimulatorRealizedBy (fun p : LyubashevskyParams => lyubashevskySimulate p.n p.m p.k p.q p.γ p.β)
+      lyubashevskySimulator
       (fun p => (p.m : ℝ≥0∞) * ((2 * p.γ + 1 : ℝ≥0∞) / 2 ^ p.width)) := by
   intro p y c
-  let post (z : Fin p.m → ℤ) : Option (List Bool × List Bool) :=
-    lyubashevskySimulatePostprocess
-      ((p, lyubashevskyEncoding.statement p y, lyubashevskyEncoding.challenge p c), List.ofFn z)
-  have hideal :
-      ((lyubashevskySimulate p.n p.m p.k p.q p.γ p.β y c).map
-        (Option.map fun tz =>
-          (lyubashevskyEncoding.commitment p tz.1,
-            lyubashevskyEncoding.response p (some tz.2)))) =
-        (PMF.uniformOfFinset (intBox (Fin p.m) p.γ)
-          (intBox_nonempty p.γ)).map post := by
-    simp only [lyubashevskySimulate, boxReject, shiftReject, PMF.map_comp]
-    congr 1 with z : 1
-    simp only [Function.comp_apply, add_zero, post, lyubashevskySimulatePostprocess_ofFn]
-    split_ifs <;> rfl
-  have hreal :
-      ProbComp.eval (lyubashevskySimulateWord
-        (p, lyubashevskyEncoding.statement p y, lyubashevskyEncoding.challenge p c)) =
-        (ProbComp.eval (sampleIntBoxVec p.γ p.m p.width)).map post := by
-    rw [lyubashevskySimulateWord, ProbComp.eval_map, eval_sampleIntBoxList_eq_map_ofFn,
-      PMF.map_comp]
-    rfl
-  rw [hideal, hreal]
-  exact (closeTo_uniform_intBox_sampleIntBoxVec p.γ p.m p.width).map post
+  simp only [lyubashevskySimulate, boxReject, shiftReject, PMF.map_comp, lyubashevskySimulator,
+    ProbComp.eval_map]
+  convert (closeTo_uniform_intBox_sampleIntBoxVec p.γ p.m p.width).map _ using 2
+  congr 1 with z : 1
+  simp only [Function.comp_apply, add_zero]
+  split_ifs <;> rfl
 
 /-- Witness-statement relation for `lyubashevskyFamily` at norm bound `η p`, bundling the
 rejection-sampling parameter conditions `p.β ≤ p.γ` and `p.k * η p ≤ p.β` required for perfect
@@ -792,7 +815,7 @@ theorem lyubashevskyFamily_nonAbortSpecialHVZK (η : LyubashevskyParams → ℕ)
     (lyubashevsky_nonAbortSpecialHVZK hSy.1 hSy.2.1).acceptedTranscript_eq S y hSy.2.2 c
 
 /-- **Efficient non-abort special HVZK for Lyubashevsky's identification protocol.** For any witness
-norm schedule `η : LyubashevskyParams → ℕ`, `lyubashevskySimulateWord` realizes non-abort special
+norm schedule `η : LyubashevskyParams → ℕ`, `lyubashevskySimulator` realizes non-abort special
 HVZK for `lyubashevskyFamilyRelation η` with statistical error `m * ((2 * γ + 1) / 2 ^ width)`. -/
 theorem efficientNonAbortSpecialHVZK_lyubashevsky (η : LyubashevskyParams → ℕ) :
     EfficientNonAbortSpecialHVZK lyubashevskyFamily
@@ -801,8 +824,7 @@ theorem efficientNonAbortSpecialHVZK_lyubashevsky (η : LyubashevskyParams → �
       (fun p => lyubashevskySimulate p.n p.m p.k p.q p.γ p.β)
       (fun p => (p.m : ℝ≥0∞) * ((2 * p.γ + 1 : ℝ≥0∞) / 2 ^ p.width)) where
   nonAbortSpecialHVZK := lyubashevskyFamily_nonAbortSpecialHVZK η
-  realized := ⟨lyubashevskySimulateWord,
-    isPPTOn_lyubashevskySimulateWord,
-    nonAbortSimulatorRealizedBy_lyubashevskySimulateWord⟩
+  realized := ⟨lyubashevskySimulator, isPPT_lyubashevskySimulator,
+    simulatorRealizedBy_lyubashevskySimulator⟩
 
 end Cslib.Crypto.Protocols.SigmaProtocol

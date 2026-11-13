@@ -116,6 +116,46 @@ The nondeterministic cover convention does not charge a final output announcemen
 
 ## Major communication bridges and bounds
 
+### Arbitrary monochromatic tilings
+
+Import [Partition](../../CslibFrontier/Computability/Communication/Partition.lean) for
+`Cslib.Communication.RectanglePartition X Y Z`. Its named fields are the number `size`,
+rectangle sides `alice` and `bob`, output labels and the exact-partition law. Every input pair
+belongs to one piece, and `p.run = f` says that each rectangle has the corresponding constant
+value of `f`. These are arbitrary labelled tilings; constructing one does not require a protocol.
+Empty pieces count toward `size`. `RectanglePartition.constant` and `singletons` supply basic
+examples. The latter needs finite input types.
+
+`tilingNumber f` is the minimum size in `ℕ∞`, with `⊤` if there is no finite tiling.
+On finite input types, `exists_minimal_tiling f` supplies a tiling attaining the minimum.
+An empty input product has minimum zero. For lower bounds, `le_tilingNumber_iff` reduces the
+claim to a bound for every tiling. Import the corresponding bound module:
+
+- [FoolingSet](../../CslibFrontier/Computability/Communication/FoolingSet.lean):
+  `IsFoolingSet.card_le_tilingNumber` gives the cardinality bound, with the stronger
+  `card_le_partition` counting only pieces with the fooling set's label.
+- [Rank](../../CslibFrontier/Computability/Communication/Rank.lean):
+  `rank_communicationMatrix_le_tilingNumber` bounds the rank of the **zero/one** matrix with
+  finite columns, over a commutative semiring with the strong rank condition, including any field.
+- [Discrepancy](../../CslibFrontier/Computability/Communication/Discrepancy.lean):
+  `one_le_tilingNumber_mul_discrepancy` gives $1 \leq \chi(f)\,\mathrm{disc}_\nu(f)$,
+  and `one_div_discrepancy_le_tilingNumber` gives the reciprocal form. These use finite
+  input types and any PMF on the input product. The finite minimum is converted with `toNat`.
+  A PMF cannot exist on an empty input product.
+
+These are Arora–Barak's draft Lemma 12.8, Theorem 12.10 and Lemma 12.11
+([printed 224–225 / PDF 240–241](https://theory.cs.princeton.edu/complexity/book.pdf)).
+The uniform PMF on two equal bit cubes gives the draft's discrepancy normalization; arbitrary
+finite rectangular input sets and nonuniform PMFs are supported too. The cost is piece count;
+no implementation runtime is certified. No reconstruction of a protocol from an arbitrary tiling is
+claimed. `Protocol.toRectanglePartition` connects protocol leaves to this interface; the existing
+protocol sum, fooling-set, rank and discrepancy results now reuse its general proofs. The
+fooling-set injection is also shared with nondeterministic covers.
+
+Run `scripts/build.sh CslibFrontierTests.CommunicationTilings` for the
+[complete examples](../../CslibFrontierTests/CommunicationTilings.lean): Boolean equality,
+constant functions, a charged empty piece, uniform and point-mass discrepancy, and an empty domain.
+
 ### Choosing an instance and steering a protocol
 
 Import [OneOut](../../CslibFrontier/Computability/Communication/OneOut.lean) for
@@ -498,6 +538,14 @@ The Gilbert–Varshamov bound for linear codes comes from a union bound over a r
 - the exponents at sample points;
 - Parseval for a singleton;
 - the main theorem at `ε = 1/4`.
+
+## Nearest decoding with radial noise
+
+Import [Code/NearestDecoding](../../CslibFrontier/Foundations/Data/Code/NearestDecoding.lean) for `IsNearestDecoder E D` and the finite tie set `nearestMessages E y`. This is the same decoder predicate used by the binary symmetric channel. With an injective encoder, uniform messages give uniform codewords; for a finite code `C`, use its subtype as the message type and `Subtype.val` as encoder.
+
+[Code/RadialDecoding](../../CslibFrontier/Foundations/Data/Code/RadialDecoding.lean) samples the message and additive noise independently, returning `(received word, message)`. `IsRadial ν` requires equal noise masses for equal Hamming weights, without requiring independent noise coordinates. `nearestMessages_card_mul_joint` proves that the tie-set cardinality times the joint success mass equals the mass of receiving `y` with the sent message in that tie set. It holds at null observations; `nearestMessages_conditional_success` divides only when the conditioning event has nonzero mass. `twoWayTie_failure_eq_half` gives exact half-error probability on two-way ties at each specified noise weight.
+
+These are the deterministic tie statements of [HQC v5.1, §6.1.5, Lemma 6.2, p. 60](https://pqc-hqc.org/doc/hqc_specifications_v5.1.pdf#page=60). They do not establish radiality of actual HQC noise, correctness of its implemented decoder, independence of Reed–Solomon blocks, or a decoding-failure/security bound. The [checked client](../../CslibFrontierTests/RadialDecoding.lean) uses the code `{00, 11}` and uniform weight-one noise, checks null and singleton cases, and changes the prior to show conditional success `3/4` instead of `1/2`. Run `scripts/build.sh --wfail --iofail CslibFrontierTests.RadialDecoding`.
 
 ## Channel coding on the binary symmetric channel
 

@@ -7,6 +7,7 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Local
 public import CslibFrontier.Computability.Circuit.Topology
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Algebra.Ring.BooleanRing
@@ -32,7 +33,8 @@ label's *colour* (the least significant bit in [ZahurRosulekEvans2015]). A globa
 The garbled table therefore has exactly two entries per AND gate and none per XOR gate: it is
 indexed by `Slot C` (`card_slot`). The zero labels and the evaluator's labels are computed by
 one evaluation round iterated `n + size` times; on the ordered topology of a circuit the result
-is the unique labelling fixed by one round (`iterate_eq_of_isFixed`, `isFixed_iterate`).
+is the unique labelling fixed by one round, since the round is local
+(`Cslib.Circuits.IsLocal.iterate_eq_of_isFixed`, `Cslib.Circuits.IsLocal.isFixed_iterate`).
 
 Correctness (`Garbled.run_garbleWith`) holds for every hash and tweak assignment, every offset
 key and every choice of input zero labels, provided `x + x = 0` in `K`: the evaluator holding
@@ -137,55 +139,6 @@ abbrev Slot.gate (p : Slot C) : Fin C.size := p.1.1
 theorem card_slot :
     Fintype.card (Slot C) = 2 * (Finset.univ.filter fun g => op C g = .and).card := by
   rw [Fintype.card_prod, Fintype.card_bool, Fintype.card_subtype, mul_comm]
-
-/-! ### Labels as fixed points of an evaluation round -/
-
-/-- A labelling round is *local* when the new label of a wire depends only on the labels of
-lower-numbered wires. -/
-def IsLocal {s : ℕ} {α : Type} (S : (Wire n s → α) → Wire n s → α) : Prop :=
-  ∀ A B w, (∀ v : Wire n s, v.toNat < w.toNat → A v = B v) → S A w = S B w
-
-section FixedPoint
-
-variable {s : ℕ} {α : Type} {S : (Wire n s → α) → Wire n s → α}
-
-theorem IsLocal.iterate_succ (hS : IsLocal S) (B : Wire n s → α) :
-    ∀ t (w : Wire n s), w.toNat < t → S^[t + 1] B w = S^[t] B w := by
-  intro t
-  induction t with
-  | zero => intro w hw; exact absurd hw (Nat.not_lt_zero _)
-  | succ t ih =>
-    intro w hw
-    calc S^[t + 1 + 1] B w = S (S^[t + 1] B) w := by rw [Function.iterate_succ_apply' S (t + 1)]
-      _ = S (S^[t] B) w := hS _ _ w fun v hv => ih v (by omega)
-      _ = S^[t + 1] B w := by rw [Function.iterate_succ_apply' S t]
-
-/-- Iterating a local round `n + s` times reaches a labelling it fixes. -/
-theorem IsLocal.isFixed_iterate (hS : IsLocal S) (B : Wire n s → α) :
-    S (S^[n + s] B) = S^[n + s] B := by
-  funext w
-  rw [← Function.iterate_succ_apply' S]
-  exact hS.iterate_succ B _ w w.toNat_lt
-
-/-- Every labelling fixed by a local round is its `n + s`-fold iterate from any start. -/
-theorem IsLocal.iterate_eq_of_isFixed (hS : IsLocal S) (B : Wire n s → α) {A : Wire n s → α}
-    (hA : S A = A) : S^[n + s] B = A := by
-  have key : ∀ t (w : Wire n s), w.toNat < t → S^[t] B w = A w := by
-    intro t
-    induction t with
-    | zero => intro w hw; exact absurd hw (Nat.not_lt_zero _)
-    | succ t ih =>
-      intro w hw
-      rw [Function.iterate_succ_apply', ← hA]
-      exact hS _ _ w fun v hv => ih v (by omega)
-  exact funext fun w => key _ w w.toNat_lt
-
-/-- A local round fixes at most one labelling. -/
-theorem IsLocal.eq_of_isFixed (hS : IsLocal S) {A B : Wire n s → α} (hA : S A = A)
-    (hB : S B = B) : A = B :=
-  (hS.iterate_eq_of_isFixed A hA).symm.trans (hS.iterate_eq_of_isFixed A hB)
-
-end FixedPoint
 
 /-! ### Garbling and evaluation -/
 
