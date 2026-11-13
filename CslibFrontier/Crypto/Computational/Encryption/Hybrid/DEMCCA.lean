@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
@@ -174,8 +175,7 @@ theorem run_hybridDEMHandler_after (E : SymmetricCipher)
       · simp [hd, List.take_of_length_le (hbound _)]
     · have hne : request.2 ≠ encPair encBits encBits (ctK, ctD) := by
         intro h
-        apply hk
-        simpa only [encPair_apply, encBits_apply, unframe_frame_append] using congrArg unframe h
+        exact hk ((congrArg unframe h).trans (unframe_encPair_encBits _ _ _))
       simp only [hybridDEMHandler, hybridDecrypt, beq_iff_eq, hc, hk, hne, ↓reduceIte,
         OracleComp.interpret_pure, StateT.run_pure]
   · have hne : request.2 ≠ encPair encBits encBits (ctK, ctD) := by
