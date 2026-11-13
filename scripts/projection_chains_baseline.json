@@ -254,7 +254,6 @@
  "CslibFrontier/Crypto/Computational/Stretch/Quantitative.lean": 6,
  "CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean": 5,
  "CslibFrontier/Crypto/Game/CloseTo/RandomOracle.lean": 1,
- "CslibFrontier/Crypto/Primitives/Garbling/CircuitInverters.lean": 6,
  "CslibFrontier/Crypto/Protocols/MPC/DDHOT.lean": 16,
  "CslibFrontier/Crypto/Protocols/MPC/OTCommitment/Opening.lean": 6,
  "CslibFrontier/Crypto/Protocols/Signature/RandomOracle.lean": 4,

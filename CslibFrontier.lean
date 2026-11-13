@@ -4563,6 +4563,7 @@ public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.Experiment
 public import CslibFrontier.Crypto.Game.Forgery
 public import CslibFrontier.Crypto.Game.FourHop
+public import CslibFrontier.Crypto.Game.HiddenBit
 public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Inversion
