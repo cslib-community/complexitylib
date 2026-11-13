@@ -14,6 +14,11 @@ import sys
 import tempfile
 import tomllib
 
+try:
+    from check_progress import run_logged
+except ModuleNotFoundError:
+    from scripts.check_progress import run_logged
+
 
 class FullCheck(Exception):
     """The change cannot safely use the bounded quick-check path."""
@@ -359,11 +364,12 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                           for exe in selected_executables}))
 
 
-def run_check(root: Path, command: list[str], label: str) -> int:
+def run_check(root: Path, command: list[str], label: str, *, progress: bool = False) -> int:
     with tempfile.NamedTemporaryFile(prefix="cslib-frontier-quick-", suffix=".log", delete=False) as log:
         path = Path(log.name)
         try:
-            result = subprocess.run(command, cwd=root, stdout=log, stderr=subprocess.STDOUT)
+            result = run_logged(command, cwd=root, log=log,
+                                progress=sys.stdout if progress else None)
         except OSError as error:
             print(f"FAIL  {label}: {error}", file=sys.stderr)
             path.unlink(missing_ok=True)
@@ -420,10 +426,12 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         with tempfile.TemporaryDirectory(prefix="cslib-frontier-restores-") as directory:
             files = Path(directory) / "files.json"
             files.write_text(json.dumps(plan.restore_files))
-            command = [sys.executable, "-B", "scripts/check_cache_restores.py", "--files-from", str(files)]
+            command = [sys.executable, "-B", "scripts/check_cache_restores.py", "--progress",
+                       "--files-from", str(files)]
             for source in plan.restore_built:
                 command.extend(["--built-under", source])
-            status = run_check(root, command, "affected files restored from the artifact cache")
+            status = run_check(root, command, "affected files restored from the artifact cache",
+                               progress=True)
         if status:
             return status
     status = run_lint(root, plan)
