@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -698,6 +699,23 @@ register_result "bpp-proper-subset-ppoly" where
     machine decider and is obtained nonconstructively using P-selective sets/countability. \
     No efficient separator or uniform circuit-family construction. Strictness is not asserted \
     for arbitrary encoded finite instance domains, where the two classes coincide."
+
+register_result "one-bit-advice-undecidable" where
+  title := "One bit of advice decides a length-dependent undecidable bit language"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Theorem 3.7 (one-bit undecidability endpoint)",
+      locator := "January 2007 draft r2.pdf, PDF p. 6; printed p. 122" }
+  ]
+  theorems := [
+    Cslib.Complexity.length_preimage_mem_PWithAdvice_one,
+    Cslib.Complexity.exists_mem_PWithAdvice_one_not_isDecidable
+  ]
+  scope := "Native polynomial-time decider on framed advice/input pairs, with exactly one \
+    arbitrary advice bit per input length. Some accepted bit language has no native machine \
+    decider and has the same membership for all words of equal length. Advice need not be \
+    computable; no efficient construction of the undecidable advice family is claimed. \
+    Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
 
 register_result "arithmetic-bit-synthesis-injective-encoding" where
   title := "Arithmetic bit-synthesis with injective fixed-width encodings"
