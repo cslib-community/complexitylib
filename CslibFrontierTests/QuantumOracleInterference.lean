@@ -43,11 +43,6 @@ private theorem hadamard_one (q r : Bool) : h₁.eval (ket ![q, r]) =
     fin_cases i <;> simp
   simpa [Fintype.sum_bool, hu, add_comm] using h
 
-private theorem hadamard_twice (A : Fin 1 ↪ Fin 2) (ψ : Qubits 2) :
-    (PlacedGate.mk 1 Gate.hadamard A).eval ((PlacedGate.mk 1 Gate.hadamard A).eval ψ) = ψ := by
-  change unitaryEquiv (place A Gate.hadamard) (unitaryEquiv (place A Gate.hadamard) ψ) = ψ
-  rw [← unitaryEquiv_mul, ← map_mul, Gate.hadamard_mul_self, map_one, unitaryEquiv_one]
-
 /-- Prepare a negative-phase response, query once, and interfere the address amplitudes. -/
 @[expose] def parityProgram : OracleCircuit :=
   [.gate (false, true, 0, []), .gate (false, true, 1, []), .query,
