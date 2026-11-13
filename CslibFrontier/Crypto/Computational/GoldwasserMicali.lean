@@ -92,61 +92,34 @@ local instance (p q : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime] : NeZero (p *
 
 /-! ### Key parameters and Blum specialization -/
 
-/-- Validity predicate for Goldwasser–Micali key parameters `((p, q), z)`: `p` and `q` are distinct
-odd primes and `z` is the canonical residue `< p * q` of an element in `positiveNonresidues p q`. -/
-structure KeyValid (raw : (ℕ × ℕ) × ℕ) : Prop where
-  /-- First prime factor is prime. -/
-  prime_p : raw.1.1.Prime
-  /-- Second prime factor is prime. -/
-  prime_q : raw.1.2.Prime
-  /-- Prime factors are distinct. -/
-  ne_pq : raw.1.1 ≠ raw.1.2
-  /-- First prime factor is odd. -/
-  two_lt_p : 2 < raw.1.1
-  /-- Second prime factor is odd. -/
-  two_lt_q : 2 < raw.1.2
+/-- Goldwasser–Micali key parameters: distinct odd primes `p` and `q` (`ModulusDesc`) together with
+the canonical residue `z < p * q` of an element of `positiveNonresidues p q`. -/
+structure KeyDesc extends ModulusDesc where
+  /-- Public quadratic nonresidue `z` with `J_N(z) = +1`. -/
+  z : ℕ
   /-- `z` represents an element of `positiveNonresidues p q` (`QNR_N^{+1}`). -/
   exists_posNonresidue :
-    ∃ u ∈ @positiveNonresidues raw.1.1 raw.1.2 ⟨prime_p⟩ ⟨prime_q⟩, u.val.val = raw.2
-
-/-- Valid Goldwasser–Micali key parameters `((p, q), z)`. -/
-abbrev KeyDesc : Type := { raw : (ℕ × ℕ) × ℕ // KeyValid raw }
+    ∃ u ∈ @positiveNonresidues p q ⟨prime_p⟩ ⟨prime_q⟩, u.val.val = z
 
 namespace KeyDesc
-
-/-- First odd prime factor `p`. -/
-abbrev p (k : KeyDesc) : ℕ := k.val.1.1
-
-/-- Second odd prime factor `q`. -/
-abbrev q (k : KeyDesc) : ℕ := k.val.1.2
-
-/-- Public quadratic nonresidue `z` with `J_N(z) = +1`. -/
-abbrev z (k : KeyDesc) : ℕ := k.val.2
 
 /-- Composite modulus `N = p * q`. -/
 abbrev modulus (k : KeyDesc) : ℕ := k.p * k.q
 
-/-- Underlying `ModulusDesc` `(p, q)` of a `KeyDesc`. -/
-@[reducible] def toModulusDesc (k : KeyDesc) : ModulusDesc :=
-  ⟨k.p, k.q, k.2.prime_p, k.2.prime_q, k.2.ne_pq, k.2.two_lt_p, k.2.two_lt_q⟩
-
-instance (k : KeyDesc) : Fact k.p.Prime := ⟨k.2.prime_p⟩
-instance (k : KeyDesc) : Fact k.q.Prime := ⟨k.2.prime_q⟩
-
 /-- Every valid Goldwasser–Micali modulus exceeds `1`. -/
 theorem one_lt_modulus (k : KeyDesc) : 1 < k.modulus := by
-  have hp := k.2.two_lt_p; have hq := k.2.two_lt_q
-  change 1 < k.val.1.1 * k.val.1.2; nlinarith
+  have hp := k.two_lt_p; have hq := k.two_lt_q
+  change 1 < k.p * k.q; nlinarith
 
 /-- `z` is strictly smaller than `N = p * q`. -/
 theorem z_lt_modulus (k : KeyDesc) : k.z < k.modulus := by
-  obtain ⟨u, _, huz⟩ := k.2.exists_posNonresidue
-  rw [KeyDesc.z, ← huz]; exact u.val.val_lt
+  obtain ⟨u, _, huz⟩ := k.exists_posNonresidue
+  rw [← huz]; exact u.val.val_lt
 
 /-- `z` is coprime to `N = p * q`. -/
 theorem coprime_z (k : KeyDesc) : k.z.Coprime k.modulus := by
-  obtain ⟨u, _, huz⟩ := k.2.exists_posNonresidue
-  rw [KeyDesc.z, ← huz]; exact ZMod.val_coe_unit_coprime u
+  obtain ⟨u, _, huz⟩ := k.exists_posNonresidue
+  rw [← huz]; exact ZMod.val_coe_unit_coprime u
 
 /-- `z` viewed as a unit in `(ZMod k.modulus)ˣ`. -/
 def zUnit (k : KeyDesc) : (ZMod k.modulus)ˣ := ZMod.unitOfCoprime k.z k.coprime_z
@@ -158,11 +131,10 @@ theorem val_zUnit (k : KeyDesc) : k.zUnit.val.val = k.z := by
 /-- `k.zUnit` lies in `positiveNonresidues k.p k.q` (`QNR_N^{+1}`). -/
 theorem zUnit_mem_positiveNonresidues (k : KeyDesc) :
     k.zUnit ∈ positiveNonresidues k.p k.q := by
-  obtain ⟨u, hu, huz⟩ := k.2.exists_posNonresidue
+  obtain ⟨u, hu, huz⟩ := k.exists_posNonresidue
   have heq : k.zUnit = u := by
     ext
-    change ((ZMod.unitOfCoprime k.val.2 k.coprime_z : (ZMod k.modulus)ˣ) : ZMod k.modulus) = ↑u
-    rw [ZMod.coe_unitOfCoprime, ← huz, ZMod.natCast_zmod_val]
+    rw [zUnit, ZMod.coe_unitOfCoprime, ← huz, ZMod.natCast_zmod_val]
   simpa only [heq] using hu
 
 /-- `k.zUnit` is not a square in `(ZMod k.modulus)ˣ`. -/
@@ -174,21 +146,23 @@ theorem not_isSquare_zUnit (k : KeyDesc) : ¬ IsSquare k.zUnit := by
 /-- Deterministic Blum-integer Goldwasser–Micali key description ([KatzLindell2020],
 Exercise 15.12): for a Blum modulus `N = p * q` (`p ≡ q ≡ 3 (mod 4)`), `N - 1` represents `-1` in
 `positiveNonresidues p q`. -/
-def ofBlum (d : ModulusDesc) (h : IsBlumModulus d.p d.q) : KeyDesc :=
-  ⟨((d.p, d.q), d.p * d.q - 1),
-    { prime_p := d.prime_p, prime_q := d.prime_q, ne_pq := d.ne_pq,
-      two_lt_p := d.two_lt_p, two_lt_q := d.two_lt_q,
-      exists_posNonresidue := by
-        have : Fact (1 < d.p * d.q) := ⟨by have := d.two_lt_p; have := d.two_lt_q; nlinarith⟩
-        refine ⟨-1, neg_one_mem_positiveNonresidues d.p d.q h, ?_⟩
-        change (-1 : (ZMod (d.p * d.q))ˣ).val.val = d.p * d.q - 1
-        rw [Units.val_neg, Units.val_one, ZMod.val_neg_of_ne_zero, ZMod.val_one] }⟩
+def ofBlum (d : ModulusDesc) (h : IsBlumModulus d.p d.q) : KeyDesc where
+  toModulusDesc := d
+  z := d.p * d.q - 1
+  exists_posNonresidue := by
+    have : Fact (1 < d.p * d.q) := ⟨by have := d.two_lt_p; have := d.two_lt_q; nlinarith⟩
+    refine ⟨-1, neg_one_mem_positiveNonresidues d.p d.q h, ?_⟩
+    rw [Units.val_neg, Units.val_one, ZMod.val_neg_of_ne_zero, ZMod.val_one]
 
 end KeyDesc
 
+/-- The parameters `((p, q), z)` of a key; the proof fields are determined by them. -/
+def KeyDesc.toTriple : KeyDesc ↪ (ℕ × ℕ) × ℕ :=
+  ⟨fun k => ((k.p, k.q), k.z), by rintro ⟨⟨p, q⟩, z⟩ ⟨⟨p', q'⟩, z'⟩ h; cases h; rfl⟩
+
 /-- Encoding of `KeyDesc` as the binary triple `((p, q), z)`. -/
 def encKeyDesc : KeyDesc ↪ List Bool :=
-  (Function.Embedding.subtype _).trans (encPair (encPair encNat encNat) encNat)
+  KeyDesc.toTriple.trans (encPair (encPair encNat encNat) encNat)
 
 /-! ### Arithmetic encryption, Euler-criterion decryption, and homomorphic multiplication -/
 
@@ -363,8 +337,8 @@ theorem computableInPolyTime_decryptNat {α : Type} {input : α ↪ List Bool}
 theorem isPPTOn_keyGen {gen : ℕ → ProbComp KeyDesc} (hgen : IsPPTOn encUnary encKeyDesc gen) :
     IsPPTOn encUnary (encPair encBits encBits) (keyGen gen) := by
   unfold keyGen
-  have hk := (ComputableInPolyTime.of_eq (f := Subtype.val) (encIn := encKeyDesc)
-    (encOut := encPair (encPair encNat encNat) encNat) fun _ => rfl).comp
+  have hk := (ComputableInPolyTime.of_eq (f := KeyDesc.toTriple)
+    (encIn := encKeyDesc) (encOut := encPair (encPair encNat encNat) encNat) fun _ => rfl).comp
     (ComputableInPolyTime.snd encUnary encKeyDesc)
   have hp := hk.fst'.fst'; have hq := hk.fst'.snd'; have hz := hk.snd'
   have hN : ComputableInPolyTime (fun x : ℕ × KeyDesc => x.2.modulus)

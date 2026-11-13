@@ -241,7 +241,6 @@
  "CslibFrontier/Computability/WordRAM/Realization/Loop.lean": 12,
  "CslibFrontier/Crypto/Computational/Encryption/CCA.lean": 12,
  "CslibFrontier/Crypto/Computational/GMW/Sequential.lean": 20,
- "CslibFrontier/Crypto/Computational/GoldwasserMicali.lean": 8,
  "CslibFrontier/Crypto/Computational/HashAndSign.lean": 6,
  "CslibFrontier/Crypto/Computational/Kilian/MicaliSoundness.lean": 8,
  "CslibFrontier/Crypto/Computational/LWE/DualRegev.lean": 1,

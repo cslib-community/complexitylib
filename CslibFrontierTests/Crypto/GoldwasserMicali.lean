@@ -60,6 +60,10 @@ theorem isBlumModulus_3_7 : IsBlumModulus 3 7 :=
 def k21 : KeyDesc := KeyDesc.ofBlum d21 isBlumModulus_3_7
 
 example : k21.modulus = 21 ∧ k21.z = 20 := ⟨rfl, rfl⟩
+
+/-- The `KeyDesc` record keeps the former left-grouped triple encoding `((p, q), z)`. -/
+example (k : KeyDesc) :
+    encKeyDesc k = encPair (encPair encNat encNat) encNat ((k.p, k.q), k.z) := rfl
 example : ciphertext 21 20 false 5 = 4 ∧ ciphertext 21 20 true 5 = 17 := by decide
 example : decryptNat 3 7 4 = false ∧ decryptNat 3 7 17 = true := by decide
 
