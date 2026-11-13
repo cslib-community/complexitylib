@@ -4,10 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-module
-
 import CslibFrontier.MachineLearning.PACLearning.AgnosticVCSharp
 import CslibFrontierTests.AgnosticVC
+import CslibFrontierTests.AgnosticVCSharpModule
 
 /-! Checks for the sharp agnostic sample size, for thresholds on `ℕ` under the non-realizable
 distribution `CslibFrontierTests.AgnosticVC.noisy`. -/
@@ -37,21 +36,9 @@ example {m : ℕ} {A : Learner ℕ Bool m} (hA : IsERM A thresholds) {ε : ℝ} 
     hA.measure_pi_lt_error_le_exp noisy (fun _ hW => card_le_one_of_setShatters_thresholds hW) hε
       (by simpa using hm)
 
-/-- The chaining sample size of thresholds at `ε = δ = 1 / 10` is
-`400 (16384 + 32 log 40) ≤ 6607000`, since `40 ≤ 2 ^ 6`. -/
-public theorem chainingSampleSize_tenth_le :
-    chainingSampleSize 1 ((1 / 10 : ℝ) / 2) (1 / 10) ≤ 6607000 := by
-  have h40 : Real.log (4 / (1 / 10 : ℝ)) ≤ 6 * Real.log 2 := by
-    calc Real.log (4 / (1 / 10 : ℝ)) ≤ Real.log ((2 : ℝ) ^ 6) :=
-          Real.log_le_log (by norm_num) (by norm_num)
-      _ = 6 * Real.log 2 := by rw [Real.log_pow]; norm_num
-  rw [chainingSampleSize, div_le_iff₀ (by norm_num)]
-  push_cast
-  nlinarith [Real.log_two_lt_d9]
-
 /-- **An explicit sharp agnostic sample size**: `6607000` examples learn thresholds on `ℕ` to
 accuracy and confidence `1 / 10` under every distribution, including `noisy`. -/
-public theorem isPACLearnerFor_thresholds_univ_chaining :
+theorem isPACLearnerFor_thresholds_univ_chaining :
     IsPACLearnerFor 6607000 tenth tenth thresholds Set.univ := by
   refine isPACLearnerFor_univ_of_chainingSampleSize_le
     (fun _ hW => card_le_one_of_setShatters_thresholds hW) ?_
