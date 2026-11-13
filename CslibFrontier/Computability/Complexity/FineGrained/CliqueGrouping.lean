@@ -737,19 +737,6 @@ private theorem computableInPolyTime_edgesOfBound :
     (computableInPolyTime_vertex hbdB hiB haB)
     (computableInPolyTime_vertex hbdB hjB hbB)
 
-private theorem computableInPolyTime_isThreeCNF :
-    ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ 3))
-      encCNF encBool := by
-  have hid :
-      ComputableInPolyTime (fun φ : CNF ℕ => φ)
-        encCNF (encList (encList (encPair encNat encBool))) :=
-    ComputableInPolyTime.of_eq fun _ => rfl
-  refine ComputableInPolyTime.allWithInput hid ?_
-  have hlen :=
-    (ComputableInPolyTime.length_list_binary (encPair encNat encBool)).comp
-      (ComputableInPolyTime.snd encCNF (encList (encPair encNat encBool)))
-  exact ComputableInPolyTime.binary_le' hlen (ComputableInPolyTime.const 3)
-
 private theorem computableInPolyTime_graphOfBound :
     ComputableInPolyTime
       (fun p : (ℕ × CNF ℕ) × ℕ => GroupClique.graphOfBound p.1.1 p.1.2 p.2)
@@ -767,7 +754,7 @@ private theorem computableInPolyTime_graphOfBound :
       ComputableInPolyTime
         (fun p : (ℕ × CNF ℕ) × ℕ => !p.1.2.all fun c => decide (c.length ≤ 3))
         encIn encBool :=
-    ComputableInPolyTime.bool_not.comp (computableInPolyTime_isThreeCNF.comp hφ)
+    ComputableInPolyTime.bool_not.comp ((computableInPolyTime_all_length_le 3).comp hφ)
   have hmain :
       ComputableInPolyTime
         (fun p : (ℕ × CNF ℕ) × ℕ =>
