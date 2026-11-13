@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Foundations.Data.Code.Hadamard
 public import Mathlib.Data.Nat.Sqrt
+import CslibFrontier.Foundations.Data.BitString.Single
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Probability.Uniform
@@ -113,11 +114,7 @@ theorem query_add_query_twoServer {i : ι} {r : Unit} {q : Bool → ι → Bool}
     q false + q true = Pi.single i true := by
   simp only [twoServer, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
   obtain ⟨t, -, rfl⟩ := hrq
-  funext j
-  change (t + (Pi.single i false : ι → Bool)) j + (t + (Pi.single i true : ι → Bool)) j =
-    (Pi.single i true : ι → Bool) j
-  rw [show (Pi.single i false : ι → Bool) = 0 from Pi.single_zero i, add_zero, Pi.add_apply,
-    ← add_assoc, BooleanRing.add_self, zero_add]
+  exact BitString.add_single_false_add_add_single_true t i
 
 /-- **The two-server scheme is private** [CGKS, Section 3.1][ChorGoldreichKushilevitzSudan1998]. -/
 theorem isPrivate_twoServer : (twoServer ι).IsPrivate :=
@@ -181,13 +178,6 @@ theorem isPrivate_cube : (cube D ι).IsPrivate :=
   (cube D ι).isPrivate_iff.mpr fun σ i i' => by
     rw [eval_serverQuery_cube, eval_serverQuery_cube]
 
-omit [Fintype D] [DecidableEq D] [Fintype ι] in
-/-- Adding both choices of the flipped coordinate leaves the indicator of the flipped position. -/
-private theorem sum_bool_add_single (t : ι → Bool) (k j : ι) :
-    ∑ b : Bool, (t + (Pi.single k b : ι → Bool)) j = (Pi.single k true : ι → Bool) j := by
-  rw [Fintype.sum_bool, show (Pi.single k false : ι → Bool) = 0 from Pi.single_zero k, add_zero,
-    Pi.add_apply, add_comm, ← add_assoc, BooleanRing.add_self, zero_add]
-
 omit [DecidableEq D] [Fintype ι] in
 private theorem prod_single_eq (i j : D → ι) :
     ∏ l, (Pi.single (i l) true : ι → Bool) (j l) = if j = i then 1 else 0 := by
@@ -214,7 +204,9 @@ theorem isCorrect_cube : (cube D ι).IsCorrect := by
         if j = i then 1 else 0 := by
     rw [← prod_single_eq,
       ← Fintype.prod_sum (fun l (b : Bool) => (t l + (Pi.single (i l) b : ι → Bool)) (j l))]
-    exact Finset.prod_congr rfl fun l _ => sum_bool_add_single (t l) (i l) (j l)
+    refine Finset.prod_congr rfl fun l _ => ?_
+    rw [Fintype.sum_bool, add_comm]
+    exact congrFun (BitString.add_single_false_add_add_single_true (t l) (i l)) (j l)
   simp only [← Finset.mul_sum, hcount, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq',
     Finset.mem_univ, ite_true]
 

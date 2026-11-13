@@ -46,8 +46,8 @@ open Cslib.Matrix
 /-- A finite search result returns a zero triangle, or certifies that no zero triangle exists.
 This specifies mathematical correctness only. -/
 def IsSearchAnswer {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ)
-    (r : Option (Fin n × Fin n × Fin n)) : Prop :=
-  (∀ a b c, r = some (a, b, c) → weightSum wAB wBC wAC a b c = 0) ∧
+    (r : Option (Triangle n)) : Prop :=
+  (∀ t, r = some t → weightSum wAB wBC wAC t.a t.b t.c = 0) ∧
     (r = none → ¬ HasZeroTriangle wAB wBC wAC)
 
 /-- Proof of Theorem 17: "scan the piece C_k of its instance for a c with S(a,b,c) = 0".  The
@@ -70,11 +70,11 @@ def acceptedPairs {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (D g p : ℕ
 soon as a zero triangle is found."  The result is the triangle found (or `none`) together with the
 number of scans that were carried out. -/
 def runScans {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (D g : ℕ) {p : ℕ} :
-    List (InstanceIndex p × (Fin n × Fin n)) → Option (Fin n × Fin n × Fin n) × ℕ
+    List (InstanceIndex p × (Fin n × Fin n)) → Option (Triangle n) × ℕ
   | [] => (none, 0)
   | (ι, a, b) :: rest =>
     match scanPiece wAB wBC wAC D g ι.piece a b with
-    | some c => (some (a, b, c), 1)
+    | some c => (some ⟨a, b, c⟩, 1)
     | none => ((runScans wAB wBC wAC D g rest).1, (runScans wAB wBC wAC D g rest).2 + 1)
 
 /-- Proof of Theorem 17: "For every query pair that the oracle accepts, scan [...]".  The paper does
@@ -116,14 +116,15 @@ variable (wAB wBC wAC) (D g)
 index `ι = ⟨ϱ, j, k⟩`: the piece `C_k` is scanned for the pair `(a, b)`. -/
 abbrev scanOf (wAB wBC wAC : Fin n → Fin n → ℤ) (D g : ℕ)
     (x : InstanceIndex p × (Fin n × Fin n)) : Option (Fin n) :=
-  scanPiece wAB wBC wAC D g x.1.piece x.2.1 x.2.2
+  let (ι, a, b) := x
+  scanPiece wAB wBC wAC D g ι.piece a b
 
 /-- What the scans over a list of pairs return: a triangle that is returned is a zero triangle; if
 none is returned, then every scan failed; and all the scans that are carried out, except possibly
 the last one, fail. -/
 private theorem runScans_spec (wAB wBC wAC : Fin n → Fin n → ℤ) (D g : ℕ)
     (l : List (InstanceIndex p × (Fin n × Fin n))) :
-    (∀ a b c, (runScans wAB wBC wAC D g l).1 = some (a, b, c) → weightSum wAB wBC wAC a b c = 0) ∧
+    (∀ t, (runScans wAB wBC wAC D g l).1 = some t → weightSum wAB wBC wAC t.a t.b t.c = 0) ∧
     ((runScans wAB wBC wAC D g l).1 = none → ∀ x ∈ l, scanOf wAB wBC wAC D g x = none) ∧
     (runScans wAB wBC wAC D g l).2 ≤
       (l.filter fun x => decide (scanOf wAB wBC wAC D g x = none)).length + 1 := by
@@ -131,19 +132,19 @@ private theorem runScans_spec (wAB wBC wAC : Fin n → Fin n → ℤ) (D g : ℕ
   | nil => simp [runScans]
   | cons x rest ih =>
     obtain ⟨ihzero, ihnone, ihcount⟩ := ih
-    cases hscan : scanOf wAB wBC wAC D g x with
+    obtain ⟨ι, a, b⟩ := x
+    cases hscan : scanOf wAB wBC wAC D g (ι, a, b) with
     | some c =>
       -- The first scan finds `c`, and the scans stop.
-      have hrun : runScans wAB wBC wAC D g (x :: rest) = (some (x.2.1, x.2.2, c), 1) := by
+      have hrun : runScans wAB wBC wAC D g ((ι, a, b) :: rest) = (some ⟨a, b, c⟩, 1) := by
         simp only [runScans, hscan]
       rw [hrun]
-      refine ⟨fun a b c' h => ?_, fun h => by simp at h, by simp⟩
-      simp only [Option.some.injEq, Prod.mk.injEq] at h
-      obtain ⟨rfl, rfl, rfl⟩ := h
+      refine ⟨fun t h => ?_, fun h => by simp at h, by simp⟩
+      obtain rfl := Option.some.inj h
       exact (scanPiece_eq_some hscan).2
     | none =>
       -- The first scan fails, and the scans go on with the rest of the list.
-      have hrun : runScans wAB wBC wAC D g (x :: rest)
+      have hrun : runScans wAB wBC wAC D g ((ι, a, b) :: rest)
           = ((runScans wAB wBC wAC D g rest).1, (runScans wAB wBC wAC D g rest).2 + 1) := by
         simp only [runScans, hscan]
       rw [hrun, List.filter_cons_of_pos (by simpa using hscan), List.length_cons]
@@ -207,7 +208,7 @@ theorem exists_isFalsePositive_of_mem_failedScans (hp : p ≠ 0)
     (hans : AnswersCorrect wAB wBC wAC D g p ans)
     {ι : InstanceIndex p} {a b : Fin n}
     (hx : (ι, (a, b)) ∈ failedScans wAB wBC wAC D g p ans) :
-    ∃ c ∈ piece n D g ι.piece, IsFalsePositive wAB wBC wAC p (a, b, c) := by
+    ∃ c ∈ piece n D g ι.piece, IsFalsePositive wAB wBC wAC p ⟨a, b, c⟩ := by
   obtain ⟨hacc, hnone⟩ := Finset.mem_filter.mp hx
   obtain ⟨hι, hquery, htrue⟩ := mem_acceptedPairs.mp hacc
   obtain ⟨c, hc, hS⟩ := (hasCommonNeighbor_lopInstance_iff wAB wBC wAC hp hquery).mp
@@ -238,7 +239,7 @@ failed scans", for any finite family `s` of scans and any notion "the scan `x` c
 `t`".  This applies to the accepted-pair scans in `card_failedScans_le`. -/
 theorem card_le_falsePositiveCount_of_distinct_scans
     (wAB wBC wAC : Fin n → Fin n → ℤ) {σ : Type*} (s : Finset σ)
-    (contains : σ → Fin n × Fin n × Fin n → Prop)
+    (contains : σ → Triangle n → Prop)
     (hfalse : ∀ x ∈ s, ∃ t, contains x t ∧ IsFalsePositive wAB wBC wAC p t)
     (hdistinct : ∀ t, ∀ x ∈ s, ∀ y ∈ s, contains x t → contains y t → x = y) :
     s.card ≤ falsePositiveCount wAB wBC wAC p := by
@@ -254,10 +255,10 @@ theorem card_failedScans_le (hp : p ≠ 0)
     (failedScans wAB wBC wAC D g p ans).card ≤ falsePositiveCount wAB wBC wAC p := by
   -- The scan of the piece `C_k` for the pair `(a, b)` contains the triples `(a, b, c)`, `c ∈ C_k`.
   refine card_le_falsePositiveCount_of_distinct_scans wAB wBC wAC _
-    (fun x t => x.2 = (t.1, t.2.1) ∧ t.2.2 ∈ piece n D g x.1.piece) ?_ ?_
+    (fun x t => x.2 = (t.a, t.b) ∧ t.c ∈ piece n D g x.1.piece) ?_ ?_
   · rintro ⟨ι, a, b⟩ hx
     obtain ⟨c, hc, hfalse⟩ := exists_isFalsePositive_of_mem_failedScans hp hans hx
-    exact ⟨(a, b, c), ⟨rfl, hc⟩, hfalse⟩
+    exact ⟨⟨a, b, c⟩, ⟨rfl, hc⟩, hfalse⟩
   · rintro ⟨a, b, c⟩ ⟨ι, q⟩ hx ⟨ι', q'⟩ hy ⟨rfl, hc⟩ ⟨rfl, hc'⟩
     rw [eq_of_mem_acceptedPairs (Finset.mem_filter.mp hx).1 (Finset.mem_filter.mp hy).1 hc hc']
 
@@ -401,8 +402,6 @@ theorem recovery_eq_none_iff (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g)
   refine ⟨hcomplete, fun hn => ?_⟩
   cases h : (runScans wAB wBC wAC D g L).1 with
   | none => rfl
-  | some t =>
-    obtain ⟨a, b, c⟩ := t
-    exact False.elim (hn ⟨a, b, c, hsound a b c h⟩)
+  | some t => exact False.elim (hn ⟨t.a, t.b, t.c, hsound t h⟩)
 
 end Cslib.Algorithms.ExactTriangle

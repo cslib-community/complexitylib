@@ -65,22 +65,13 @@ example (n : ℕ) :
   exact ⟨rfl, fairPair_entropy n⟩
 
 private theorem fairPair_gap : fairPair.HasGap (fun _ => 0) := by
-  intro adversary _
+  intro predictor _
   apply Eventually.of_forall
   intro n
-  have hbit (guess : Bool) : (uniformOfFintype Bool).map (fun bit => guess == bit) =
-      uniformOfFintype Bool := by
-    ext bit
-    cases guess <;> cases bit <;>
-      norm_num [PMF.map_apply, tsum_fintype, Fintype.sum_bool, PMF.uniformOfFintype_apply]
-  have hgame : ProbComp.eval (predictionGame fairPair.sample adversary n) =
-      uniformOfFintype Bool := by
-    simp only [predictionGame, fairPair, ProbComp.eval_bind, ProbComp.eval_map,
-      ProbComp.eval_uniform, ProbComp.eval_pure, PMF.bind_map, Function.comp_def]
-    rw [PMF.bind_comm]
-    change (ProbComp.eval (adversary n [true, false])).bind
-      (fun guess => (uniformOfFintype Bool).map (fun bit => guess == bit)) = _
-    simp only [hbit, PMF.bind_const]
+  have hgame : ProbComp.eval (predictionExperiment (fairPair.latentSample n) Prod.fst Prod.snd
+      (predictor n)) = uniformOfFintype Bool := by
+    simp only [ProbComp.eval_predictionExperiment, fairPair.eval_latentSample]
+    exact predictionExperiment_uniform_bit () _
   rw [hgame, fairPair_entropy]
   norm_num [PMF.uniformOfFintype_apply]
 

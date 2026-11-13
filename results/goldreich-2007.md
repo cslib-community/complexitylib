@@ -41,11 +41,39 @@ safe inclusion direction for arbitrary lower bounds. More generally,
 `PWithAdvice_subset_of_lt` proves containment under strict pointwise growth, with no
 computability assumptions on either bound: append a true delimiter and false padding, then
 normalize the binary word and remove its last bit.
-The addendum's strict separation still needs formalization, with small/zero advice lengths
-handled explicitly. Strict separation for general positive gaps also remains open. The
+[Advice/Hierarchy](../CslibFrontier/Computability/Complexity/Classes/Advice/Hierarchy.lean)
+now proves the positive-gap strict hierarchy: `PWithAdvice_ssubset_of_lt` requires strict
+pointwise growth and only eventual upper capacity. `PWithAdvice_pred_ssubset` specializes it
+to one fewer bit, with positivity explicit so natural subtraction actually removes a bit.
+`PWithAdvice_const_ssubset_succ` handles all constant lengths, without a short-input capacity
+restriction. The
 [checked clients](../CslibFrontierTests/AdviceLengthComparison.lean) state the failed universal
 containment contract and verify zero-baseline, fixed-bit and variable positive-gap inclusions.
-This qualification does not close Exercise 3.3, Theorem 4.1, or the book-wide objective.
+The positive-gap, upper-capacity versions of Exercise 3.3 and Theorem 4.1 are therefore
+covered under the exact full-pair model. Exercise 3.3 places upper capacity in its guideline,
+rather than its displayed hypotheses; that restriction is material to this coverage claim. Their unqualified displayed nonnegative-gap formulations remain
+subject to the counterexample above; they are not silently reported as proved. The
+book-wide objective remains open.
+
+The strict hierarchy proof maps the source argument directly. Enumerate the countable native
+P predicates on advice/input pairs. At each assigned length, lower advice gives at most
+$2^{\mathrm{lower}(n)}$ patterns on the first $\mathrm{upper}(n)$ binary inputs. There are
+$2^{\mathrm{upper}(n)}$ higher advice words, so choose a missing pattern. The fixed decoder
+reads that pattern by a capped, zero-based most-significant-bit-first binary index (the
+source numbers inputs from one); its certificate is polynomial in the complete
+pair length, not in the numeric index or solely the ordinary input length. Each predicate
+fails at one assigned length, sufficient under the exact/no-exception convention explicitly
+allowed by the official addendum. No effective enumeration or computation of the advice is
+asserted, and no infinitely-often separation against arbitrary-time lower machines is claimed.
+
+[Boolean/Advice/Hierarchy](../CslibFrontier/Computability/Circuit/Boolean/Advice/Hierarchy.lean)
+combines constant-length strictness with the existing polynomial-advice/circuit bridge.
+`PWithAdvice_const_ssubset_PPoly 1` supplies the strict P/1 versus P/poly assertion following
+Theorem 3.7 (PDF6/printed122). Together with the one-bit undecidable language already proved
+in [Advice/OneBit](../CslibFrontier/Computability/Complexity/Classes/Advice/OneBit.lean), this
+covers that draft theorem's endpoints in the stated model. The
+[checked hierarchy clients](../CslibFrontierTests/AdviceHierarchy.lean) extract a two-bit
+separating language and check zero, short constant and exponential-capacity boundaries.
 
 ## Theory exercise 4.3: sublinear time
 
@@ -82,6 +110,24 @@ The [checked clients](../CslibFrontierTests/SublinearTime.lean) exhibit input-se
 time, the inclusive prefix boundary, the necessary extension restriction and the zero-bound
 class. The source's philosophical quantification over reasonable models is represented by
 this precise native model, not by a theorem over all computational models.
+
+## Chapter 4: exact step-counter exercise
+
+Exercise 4.5 (January 2007 `r2.pdf`, PDF page 36 / printed page 152) is covered by
+`Turing.MultiTapeTM.exists_stepCounter` in
+[StepCounter](../CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepCounter.lean).
+The fixed finite native machine receives `encNat n` (least-significant-first binary), visits one
+designated signal state exactly $n$ times, starts outside that state and leaves every visit on
+the next transition. It halts within $c(n+1)$ steps for one uniform constant, including all
+preparation and $n=0$. The draft's default binary-number convention is in December 2006
+`r1.pdf`, PDF page 45 / printed page 20; this differs only in binary digit order.
+
+The construction reuses exact binary-to-unary conversion and the existing native clock, rather
+than counting a rounded budget or output length. The source's displayed endpoint asks for total
+runtime; no logarithmic workspace or per-prefix latency guarantee is inferred. The
+[checked clients](../CslibFrontierTests/StepCounter.lean) instantiate the full machine and check
+zero and positive counts. This completes this exercise endpoint only; the chapter-wide audit
+and other theory-establishing exercises remain under [#4772](https://github.com/cslib-community/cslib-frontier/issues/4772).
 
 ## Chapter 5: Space Complexity
 
