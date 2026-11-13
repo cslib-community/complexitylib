@@ -23,6 +23,8 @@ independent uniform bit strings. This includes zero-width rows and zero rows.
 * `Cslib.BitString.uniformList_ofList`: a uniform list gives a uniform finite bit string.
 * `Cslib.BitString.uniformList_blocks`: fixed-width blocks are jointly uniform.
 * `Cslib.BitString.uniformList_listRows`: the same law for the ordinary list-of-lists program.
+* `Cslib.BitString.uniformOfFintype_map_flatten`: concatenating independent uniform rows gives a
+  uniform list.
 * `Cslib.BitString.uniformList_replaceRow`: replacing one row with an independent uniform row
   preserves uniformity.
 * `Cslib.BitString.uniformList_map_listXor`,
@@ -65,6 +67,16 @@ theorem uniformList_listRows (count width : ℕ) :
   rw [← uniformList_blocks count width, PMF.map_comp]
   congr 1 with word : 1
   exact listRows_eq_ofFn count width word
+
+/-- Concatenating `count` independent uniform rows of `width` bits gives a uniform list. -/
+theorem uniformOfFintype_map_flatten (count width : ℕ) :
+    (PMF.uniformOfFintype (Fin count → BitString width)).map
+      (fun rows => (List.ofFn fun i => List.ofFn (rows i)).flatten) =
+        uniformList (count * width) := by
+  rw [uniformList, ← PMF.uniformOfFintype_map_equiv (blocksEquiv (α := Bool) (m := count)
+    (k := width)), PMF.map_comp]
+  congr 1 with word : 1
+  rw [Function.comp_apply, ← ofFn_blocksEquiv_symm, Equiv.symm_apply_apply]
 
 /-- XORing a uniform `m`-bit word with any word `r` preserves the uniform distribution; see
 `uniformList_map_zipWith_xor` and `uniformList_map_take_zipWith_xor` for the direct
@@ -154,10 +166,7 @@ theorem uniformList_replaceRow (width count : ℕ) (j : Fin count) :
       (PMF.uniformOfFintype (Fin count → BitString width)).map
         (fun rows => List.ofFn (blocksEquiv.symm rows)) =
       uniformList (count * width) := by
-    have h := congrArg (PMF.map List.ofFn)
-      (PMF.uniformOfFintype_map_equiv
-        (blocksEquiv : BitString (count * width) ≃ (Fin count → BitString width)).symm)
-    simpa only [PMF.map_comp, Function.comp_def, uniformList] using h
+    simpa only [ofFn_blocksEquiv_symm] using uniformOfFintype_map_flatten count width
   have hupd := congrArg
     (PMF.map (fun rows : Fin count → BitString width => List.ofFn (blocksEquiv.symm rows)))
     (PMF.uniformOfFintype_update (γ := BitString width) j)

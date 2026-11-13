@@ -3400,7 +3400,7 @@ register_result "learning-hardness-from-generators" where
 
 register_result "learning-from-no-weak-owf" where
   title := "Without weak one-way functions, polynomial-time keyed families are learnable on \
-    average"
+    average on infinitely many scales"
   topic := "meta-complexity"
   sources := [
     { paper := BlumFurstKearnsLipton1993, theorem := unverified, locator := unverified },
@@ -3414,7 +3414,9 @@ register_result "learning-from-no-weak-owf" where
     positive polynomial q, a uniform strict PPT inverter for the labelling map gives a learner \
     whose key has uniform error above eps with probability at most \
     1/q n + 2^(k n) (1 - eps)^(m n), for a uniform key and m n uniform examples, on infinitely \
-    many n. Uniform examples only; no samplable distributions or membership queries; the \
+    many n. Only the inverter is certified uniform strict PPT; the learner runs it on the encoded \
+    sample and reads the key prefix, and its running time as a map on samples is not separately \
+    certified. Uniform examples only; no samplable distributions or membership queries; the \
     converse is not formalized."
 
 register_result "nw-reconstruction-learner" where

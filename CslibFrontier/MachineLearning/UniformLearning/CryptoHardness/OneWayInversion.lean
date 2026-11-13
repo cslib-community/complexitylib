@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.OneWay.Weak
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Inversion
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Probability.BitString
+import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -33,7 +34,9 @@ game with probability above `1 - 1 / q n` on infinitely many scales. This is the
 the equivalence between average-case learning and one-way functions
 [BlumFurstKearnsLipton1993] [ImpagliazzoLevin1990], over uniform examples. The learning guarantee
 holds only on infinitely many scales, because the negation of one-wayness supplies a good
-inverter only there.
+inverter only there. Only the inverter is certified uniform strict PPT: the learner runs it on the
+encoded sample and reads the key prefix, and its running time as a map on samples is not
+separately certified.
 
 ## Main definitions
 
@@ -52,8 +55,8 @@ inverter only there.
 * `Cslib.MachineLearning.UniformLearning.OneWayInversion.computableInPolyTime_labelMap`: the
   labelling map is polynomial-time computable.
 * `Cslib.MachineLearning.UniformLearning.OneWayInversion.exists_learner_of_not_exists_weakOneWay`:
-  without weak one-way functions, every polynomial-time key-and-point family is learned on
-  infinitely many scales.
+  without weak one-way functions, every polynomial-time key-and-point family is learned by a
+  uniform strict PPT inverter on infinitely many scales.
 
 ## References
 
@@ -87,7 +90,7 @@ def labelMap (n : ℕ) (w : List Bool) : List Bool :=
   rows.flatten ++ rows.map fun x => F n (key ++ x)
 
 /-- The bit encoding of a labelled sample: its points followed by their labels. -/
-@[expose] def encodeSample {n m : ℕ} (S : LabeledSample (Fin n → Bool) Bool m) : List Bool :=
+def encodeSample {n m : ℕ} (S : LabeledSample (Fin n → Bool) Bool m) : List Bool :=
   (List.ofFn fun i => List.ofFn (S i).1).flatten ++ List.ofFn fun i => (S i).2
 
 /-- The rows of `s` points of `n` bits followed by anything are the points. -/
@@ -138,17 +141,6 @@ theorem consistent_of_labelMap_eq {n : ℕ} {S : LabeledSample (Fin n → Bool) 
   have := congrFun (List.ofFn_inj.1 hlabels) i
   simpa only [Function.comp_apply, BitString.listRow_zero, family] using this
 
-/-- Independent uniform points of `n` bits, concatenated, form a uniform word. -/
-theorem map_flatten_uniformOfFintype (s n : ℕ) :
-    (PMF.uniformOfFintype (Fin s → Fin n → Bool)).map
-      (fun x => (List.ofFn fun i => List.ofFn (x i)).flatten) = BitString.uniformList (s * n) := by
-  rw [BitString.uniformList,
-    ← PMF.uniformOfFintype_map_equiv (BitString.blocksEquiv (α := Bool) (m := s) (k := n)),
-    PMF.map_comp]
-  congr 1
-  funext y
-  rw [Function.comp_apply, ← BitString.ofFn_blocksEquiv_symm, Equiv.symm_apply_apply]
-
 /-- A uniform input of the labelling map is a uniform key, then uniform points, then uniform spare
 bits. -/
 theorem uniformList_inputLength (n : ℕ) :
@@ -158,18 +150,18 @@ theorem uniformList_inputLength (n : ℕ) :
           (BitString.uniformList (n + 1)).map fun rest =>
             List.ofFn K ++ ((List.ofFn fun i => List.ofFn (x i)).flatten ++ rest) := by
   rw [inputLength, add_assoc, BitString.uniformList_add (keyBits n),
-    BitString.uniformList_add (samples n * n), ← map_flatten_uniformOfFintype]
+    BitString.uniformList_add (samples n * n), ← BitString.uniformOfFintype_map_flatten]
   simp only [BitString.uniformList, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
 
 /-- The learner obtained from an inverter `A` for the labelling map: run `A` on the encoded sample
 and read a key from the first `keyBits n` bits of its answer. -/
-@[expose] noncomputable def inverterLearner (A : Inverter) (n : ℕ) {m : ℕ}
+noncomputable def inverterLearner (A : Inverter) (n : ℕ) {m : ℕ}
     (S : LabeledSample (Fin n → Bool) Bool m) : PMF (BitString (keyBits n)) :=
   (ProbComp.eval (A n (encodeSample S))).map (BitString.ofList (keyBits n))
 
 /-- The learning experiment at scale `n`: a uniform key `K`, `samples n` uniform examples `S` of its
 function, and the key `K'` that `inverterLearner keyBits A n` returns on `S`. -/
-@[expose] noncomputable def learningExperiment (A : Inverter) (n : ℕ) :
+noncomputable def learningExperiment (A : Inverter) (n : ℕ) :
     PMF (BitString (keyBits n) × LabeledSample (Fin n → Bool) Bool (samples n) ×
       BitString (keyBits n)) :=
   (PMF.uniformOfFintype (BitString (keyBits n))).bind fun K =>
@@ -248,7 +240,8 @@ PPT inverter `A` gives a learner with the following guarantee on infinitely many
 a uniform key and `samples n` uniform examples of its function (`learningExperiment`), the learner
 `inverterLearner keyBits A n` returns a key whose function has uniform error above `ε` with
 probability at most
-`1 / q n + 2 ^ keyBits n * (1 - ε) ^ samples n`, simultaneously for all `ε ≥ 0`. -/
+`1 / q n + 2 ^ keyBits n * (1 - ε) ^ samples n`, simultaneously for all `ε ≥ 0`. Only `A` is
+certified PPT; the learner's running time as a map on samples is not separately certified. -/
 theorem exists_learner_of_not_exists_weakOneWay
     (hOWF : ¬ ∃ f, WeakOneWay f)
     (hkeyBits : ComputableInPolyTime keyBits encUnary encUnary)
