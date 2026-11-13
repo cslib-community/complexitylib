@@ -16,8 +16,8 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
-import CslibFrontier.Languages.Probabilistic.RandomPermutation
+import CslibFrontier.Crypto.Primitives.PRP.Finite
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -43,9 +43,10 @@ There are two adaptive security notions against uniform `IsOraclePPT encBool` di
    cannot tell `BlockCipher.strongPRPRealGame` from `strongPRPIdealGame`; this is the strongly
    secure block cipher sketched in [BonehShoup2023], Section 4.1.3, and left as Exercise 4.9(a).
 
-Fixing the private coins of a randomized adversary (`ProbOracleComp.coinLaw`) transfers the
-deterministic PRP/PRF switching bound `RandomPermutation.abs_sub_uniformPerm_uniformFunc_le` to
-word-oracle adversaries (`advantage_prpIdealGame_randomFunctionIdealGame_le`). Consequently a
+The PRP/PRF switching lemma for word-oracle adversaries
+(`advantage_prpIdealGame_randomFunctionIdealGame_le`) is the finite switching lemma
+`PRP.advantage_idealExperiment_prfIdealExperiment_le` on `blockLen n`-bit blocks, applied to the
+adversary that reads valid words as blocks. Consequently a
 `PRP` with `keyLen = blockLen = id` is a `PseudorandomFunction`
 (`BlockCipher.PRP.pseudorandomFunction`), and every `StrongPRP` is a `PRP`
 (`BlockCipher.StrongPRP.prp`).
@@ -552,61 +553,51 @@ theorem BlockCipher.StrongPRP.prp {E : BlockCipher} (h : E.StrongPRP) : E.PRP :=
 
 /-! ### The PRP/PRF switching lemma -/
 
+/-- Answer the valid word queries of `adversary n []` through the finite-domain interface on
+`blockLen n`-bit blocks, answering malformed words with `[]` without a query. -/
+private noncomputable def toFinite (blockLen : ℕ → ℕ) (adversary : OracleDistinguisher) (n : ℕ) :
+    PRF.Adversary (BitString (blockLen n)) (BitString (blockLen n)) :=
+  ProbOracleComp.simulate
+    (fun request : Unit × List Bool => randomFunctionQuery (blockLen n) request.2) (adversary n [])
+
+/-- Running `toFinite` against a table `f` runs the word adversary against `f` read on words. -/
+private theorem run_toFinite (blockLen : ℕ → ℕ) (adversary : OracleDistinguisher) (n : ℕ)
+    (f : BitString (blockLen n) → BitString (blockLen n)) :
+    (toFinite blockLen adversary n).run (fun x => pure (f x)) =
+      (adversary n []).run fun request => pure (randomFunctionOracle (blockLen n) f request.2) := by
+  rw [toFinite, ProbOracleComp.run_simulate]
+  exact congrArg _ (funext fun request =>
+    interpret_randomFunctionQuery ProbComp.unifFin (blockLen n) f request.2)
+
+/-- `toFinite` makes as many queries as the word adversary. -/
+private theorem isQueryBounded_toFinite (blockLen : ℕ → ℕ) {adversary : OracleDistinguisher}
+    {n Q : ℕ} (hQ : (adversary n []).IsQueryBounded Q) :
+    (toFinite blockLen adversary n).IsQueryBounded Q := by
+  rw [toFinite]
+  exact hQ.simulate fun request => isQueryBounded_randomFunctionQuery (blockLen n) request.2
+
 /-- **PRP/PRF switching lemma** ([BonehShoup2023], Theorem 4.4): a randomized word-oracle
 adversary making at most `Q` queries distinguishes a uniform permutation of `blockLen n`-bit blocks
-from a uniform random function on them with advantage at most `Q.choose 2 / 2 ^ blockLen n`. -/
+from a uniform random function on them with advantage at most `Q.choose 2 / 2 ^ blockLen n`. This
+is `PRP.advantage_idealExperiment_prfIdealExperiment_le` for the adversary reading valid words as
+blocks. -/
 theorem advantage_prpIdealGame_randomFunctionIdealGame_le (blockLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n Q : ℕ) (hQ : (adversary n []).IsQueryBounded Q) :
     (Game.advantage
       (ProbComp.eval (prpIdealGame blockLen adversary n))
       (ProbComp.eval (randomFunctionIdealGame blockLen adversary n)) : ℝ) ≤
       (Q.choose 2 : ℝ) * ((2 : ℝ) ^ blockLen n)⁻¹ := by
-  let m := blockLen n
-  let adapted : ProbOracleComp (fun _ : BitString m => BitString m) Bool :=
-    OracleComp.interpret
-      (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-        (fun request : Unit × List Bool => randomFunctionQuery m request.2))
-      (adversary n [])
-  have hadaptedQ : adapted.IsQueryBounded Q := hQ.interpret fun
-    | .inl k => ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-    | .inr request => isQueryBounded_randomFunctionQuery m request.2
-  have heval (table : BitString m → BitString m) :
-      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
-          (fun request : Unit × List Bool => PMF.pure (randomFunctionOracle m table request.2)))
-        (adversary n []) =
-      OracleComp.interpret
-        (OracleComp.sumHandler ProbComp.unifOracle (fun x => PMF.pure (table x))) adapted := by
-    have heager (query : List Bool) :
-        OracleComp.interpret
-          (OracleComp.sumHandler ProbComp.unifOracle (fun bits => PMF.pure (table bits)))
-          (randomFunctionQuery m query) = PMF.pure (randomFunctionOracle m table query) :=
-      interpret_randomFunctionQuery ProbComp.unifOracle m table query
-    simp only [adapted, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
-      ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query, heager]
-  have hperm : ProbComp.eval (prpIdealGame blockLen adversary n) =
-      (PMF.uniformOfFintype (Equiv.Perm (BitString m))).bind fun π =>
-        OracleComp.interpret
-          (OracleComp.sumHandler ProbComp.unifOracle (fun x => PMF.pure (π x))) adapted := by
-    simp only [prpIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-      ProbOracleComp.eval_interpret, ProbComp.eval_pure]; exact congrArg _ (funext fun π => heval π)
-  have hfunc : ProbComp.eval (randomFunctionIdealGame blockLen adversary n) =
-      (PMF.uniformOfFintype (BitString m → BitString m)).bind fun f =>
-        OracleComp.interpret
-          (OracleComp.sumHandler ProbComp.unifOracle (fun x => PMF.pure (f x))) adapted := by
-    simp only [randomFunctionIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-      ProbOracleComp.eval_interpret, ProbComp.eval_pure]; exact congrArg _ (funext heval)
-  rw [hperm, hfunc, ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-      (PMF.uniformOfFintype (Equiv.Perm (BitString m))) (fun π x => π x) adapted,
-    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
-      (PMF.uniformOfFintype (BitString m → BitString m)) (fun f x => f x) adapted]
-  refine Game.advantage_bind_le _ _ _ fun ω => ?_
-  rw [Game.coe_advantage]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-  have hdet := RandomPermutation.abs_sub_uniformPerm_uniformFunc_le
-    (ProbOracleComp.isQueryBounded_fixCoins hadaptedQ ω) PMF.pure true
-  simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_pure] at hdet
-  simpa only [Fintype.card_pi, Fintype.card_fin, Fintype.card_bool, Finset.prod_const,
-    Finset.card_univ, Nat.cast_pow, Nat.cast_ofNat] using hdet
+  have hperm : prpIdealGame blockLen adversary n =
+      PRP.idealExperiment (toFinite blockLen adversary n) := by
+    simp only [PRP.idealExperiment, run_toFinite]
+    rfl
+  have hfunc : randomFunctionIdealGame blockLen adversary n =
+      PRF.idealExperiment (toFinite blockLen adversary n) := by
+    simp only [PRF.idealExperiment, run_toFinite]
+    rfl
+  rw [hperm, hfunc, ← div_eq_mul_inv]
+  simpa only [BitString.card, Nat.cast_pow, Nat.cast_ofNat] using
+    PRP.advantage_idealExperiment_prfIdealExperiment_le (isQueryBounded_toFinite blockLen hQ)
 
 /-- Asymptotic PRP/PRF switching: when `(2 ^ blockLen n)⁻¹` is negligible, no oracle-PPT
 distinguisher tells a uniform permutation from a uniform random function on `blockLen n`-bit

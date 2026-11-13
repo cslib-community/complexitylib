@@ -21,7 +21,9 @@ Exercises the HHK17 modular Fujisaki–Okamoto transforms (`T`, `FO^⊥`, `FO-no
    for `T`, `FO^⊥`, and `FO-notbot`, and rejection of a valid underlying PKE ciphertext encrypted
    under
    non-canonical coins (`c = (1, 6)` decrypts to `some 2` under PKE, yet `decapsBot` rejects with
-   `none` and `decapsNotBot` returns the domain-separated fallback key `H(true, fallback, c)`).
+   `none` and `decapsNotBot` returns the domain-separated fallback key `H(true, fallback, c)`),
+   and the same decapsulations with oracle access (`decapsBotM`, `decapsNotBotM`) against a `G`
+   oracle that records its queries.
 2. **Positive and negative witnesses for `DeltaCorrect` (including `δ > 0` tight and non-tight
    bounds)**: `identityPKE` (`DeltaCorrect 0`), `alwaysZeroDecPKE` (`¬ DeltaCorrect 0`), and
    `noisyCoinPKE` whose decryptor fails on coin `r = 1` with probability `1 / 2`, satisfying
@@ -108,6 +110,24 @@ example :
   exact ⟨by decide,
     maskedShiftScheme.decapsBot_eq_none_of_reencrypt_ne testG testH 3 3 (1, 6) hbad,
     maskedShiftScheme.decapsNotBot_of_reencrypt_ne testG testH ⟨3, 3, 7⟩ (1, 6) hbad⟩
+
+/-- `testG` as an oracle that records each query. -/
+def logG (m : Fin 8) : StateM (List (Fin 8)) (Fin 8) := do
+  modify (m :: ·)
+  return testG m
+
+/-- Decapsulation with oracle access: on the honest ciphertext `(0, 5)` and the non-canonical
+`(1, 6)`, `decapsBotM` and `decapsNotBotM` query `G(2)` exactly once, and the rejected `(1, 6)`
+keeps that query before returning `none` or the fallback key. With pure oracles, `decapsNotBotM`
+is `decapsNotBot`. -/
+example :
+    (maskedShiftScheme.decapsBotM logG (pure ∘ testH) 3 3 (1, 6)).run [] = (none, [2]) ∧
+    (maskedShiftScheme.decapsNotBotM logG (pure ∘ testH) ⟨3, 3, 7⟩ (1, 6)).run [] = (15, [2]) ∧
+    (maskedShiftScheme.decapsNotBotM logG (pure ∘ testH) ⟨3, 3, 7⟩
+      (encT maskedShiftPKE testG 3 2)).run [] = (2, [2]) ∧
+    maskedShiftScheme.decapsNotBotM (m := Id) (pure ∘ testG) (pure ∘ testH) ⟨3, 3, 7⟩ (1, 6) =
+      maskedShiftScheme.decapsNotBot testG testH ⟨3, 3, 7⟩ (1, 6) :=
+  ⟨rfl, rfl, rfl, maskedShiftScheme.decapsNotBotM_pure testG testH _ _⟩
 
 /-! ### 2. `DeltaCorrect` Witnesses (Zero-Error, Tight Non-Zero `δ > 0`, Non-Tight, and Negative) -/
 
@@ -215,13 +235,13 @@ def identityScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
   sampleMsg := ProbComp.unifFin 3
   sampleKey := pure 0
 
-/-- ROM adversary against `identityScheme` that queries `G` on the challenge ciphertext `cStar`
-(which equals the plaintext message in `identityPKE`), queries punctured decapsulation on `cStar`,
+/-- ROM adversary against `identityScheme` that queries `G` on the challenge ciphertext `ch.ct`
+(which equals the plaintext message in `identityPKE`), queries punctured decapsulation on `ch.ct`,
 and outputs `true`. -/
 def queryCiphertextGAdv : ROAdversary Unit (Fin 4) Unit (Fin 4) (Fin 2) :=
-  fun (_, cStar, _) => do
-    let _ ← OracleComp.query (ROQuery.G cStar)
-    let _ ← OracleComp.query (ROQuery.decaps cStar)
+  fun ch => do
+    let _ ← OracleComp.query (ROQuery.G ch.ct)
+    let _ ← OracleComp.query (ROQuery.decaps ch.ct)
     return true
 
 /-- `queryCiphertextGAdv` makes at most `1` query to `G` and `0` queries to `H`. -/
@@ -243,7 +263,7 @@ theorem identityScheme_simHitProb_diag (m : Fin 4) :
     Scheme.simHitProb, Scheme.romCpaReduction, Scheme.romFilterCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
     Scheme.simFilterHandler, Scheme.simFilterDispatch, simHashG, OracleComp.interpret_bind,
-    OracleComp.interpret_query, OracleComp.interpret_pure]
+    OracleComp.interpret_query, OracleComp.interpret_pure, ROQuery.dispatch]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ m [] rfl]
 
@@ -255,7 +275,7 @@ theorem identityScheme_simHitProb_zero_one :
     Scheme.simHitProb, Scheme.romCpaReduction, Scheme.romFilterCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
     Scheme.simFilterHandler, Scheme.simFilterDispatch, simHashG, OracleComp.interpret_bind,
-    OracleComp.interpret_query, OracleComp.interpret_pure]
+    OracleComp.interpret_query, OracleComp.interpret_pure, ROQuery.dispatch]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ (0 : Fin 4) [] rfl]
 
@@ -277,12 +297,12 @@ def identityUnifKeyScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
   sampleMsg := pure 0
   sampleKey := ProbComp.unifFin 1
 
-/-- ROM adversary that queries `H(false, cStar, cStar)` and checks whether the returned key equals
-the challenge key `kStar`. -/
+/-- ROM adversary that queries `H(false, c*, c*)` on the challenge ciphertext `c* = ch.ct` and
+checks whether the returned key equals the challenge key `ch.key`. -/
 def checkKeyHAdv : ROAdversary Unit (Fin 4) Unit (Fin 4) (Fin 2) :=
-  fun (_, cStar, kStar) => do
-    let k ← OracleComp.query (ROQuery.H (false, cStar, cStar))
-    return decide (k = kStar)
+  fun ch => do
+    let k ← OracleComp.query (ROQuery.H (false, ch.ct, ch.ct))
+    return decide (k = ch.key)
 
 /-- Positive-advantage witness for `indCcaRomAdvantage`: `checkKeyHAdv` distinguishes real from
 random keys in `identityUnifKeyScheme` with advantage `1 / 2`. -/
@@ -296,7 +316,8 @@ theorem identityUnifKeyScheme_indCcaRomAdvantage_eq_half :
           return decide (kReal = if b then kRand else kReal)) := by
     simp [-bind_pure_comp, Scheme.roIndCcaGame, Scheme.keyGenNotBot,
       identityUnifKeyScheme, identityPKE, checkKeyHAdv, Scheme.roHandler, roHashH,
-      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure]
+      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
+      ROQuery.dispatch]
     simp [StateT.run, RandomOracle.zoomStateT,
       memoize_of_some _ (false, (0 : Fin 4), (0 : Fin 4)) [((false, 0, 0), _)] _ rfl]
   rw [Scheme.indCcaRomAdvantage, hgame false, hgame true, Game.coe_advantage,

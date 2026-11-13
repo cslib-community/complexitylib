@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
+import CslibFrontier.Probability.Uniform
 
 /-!
 # Lower bound for two-server linear-summation schemes
@@ -311,8 +312,7 @@ theorem isPrivate_evenTwoServer : (evenTwoServer h₀).IsPrivate := by
   have key (σ : Bool) (i : ι) : ProbComp.eval ((evenTwoServer h₀).serverQuery σ i) =
       (PMF.uniformOfFintype (ι → Bool)).map fun u => makeEven h₀ u + Pi.single h₀ σ := by
     rw [eval_serverQuery_evenTwoServer]
-    conv_lhs => rw [← Cslib.Probability.PMF.uniformOfFintype_map_equiv
-      (Equiv.addRight (Pi.single i σ : ι → Bool)), PMF.map_comp]
+    conv_lhs => rw [← PMF.uniformOfFintype_map_add_right (Pi.single i σ : ι → Bool), PMF.map_comp]
     congr 1 with u : 1
     change makeEven h₀ (u + Pi.single i σ) + Pi.single i σ = makeEven h₀ u + Pi.single h₀ σ
     rw [makeEven_add_single]

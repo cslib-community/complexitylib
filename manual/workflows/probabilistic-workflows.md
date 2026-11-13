@@ -106,7 +106,16 @@ counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+box `{u | ∀ i, u i ∈ E i}`. For a uniform draw on a finite group, import
+[Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
+`uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
+pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
+through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
+through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
+[Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
+fibres. On any finite type, `uniformOfFintype_bind_bijective` in
+[PMF/Uniform.lean](../../CslibFrontier/Probability/PMF/Uniform.lean) changes variables in a uniform
+draw along a bijection. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
@@ -151,12 +160,37 @@ For a Boolean distribution `p : PMF Bool`, import
 `PMF.apply_true_add_apply_false p : p true + p false = 1` rather than rewriting with `tsum_bool`
 and `PMF.tsum_coe` by hand. Its real forms are `PMF.toReal_true_add_toReal_false` and
 `PMF.toReal_false_eq_one_sub`. The same module bounds Boolean events written as `(p.map E) true`:
-`PMF.map_true_mono`, `PMF.map_true_le_add` and `PMF.map_any_range_true_le_sum` (a union bound),
-and `PMF.map_not_true` for complements. To compose an event bound through `PMF.bind`, use the
-`PMF.toOuterMeasure_bind_*` lemmas in
+`PMF.map_true_mono`, `PMF.map_true_le_add`, the union bounds `PMF.map_true_le_sum` (over any
+`s : Finset ι`) and `PMF.map_any_range_true_le_sum`, `PMF.map_apply_true` (the expectation of the
+indicator of `E`), and `PMF.map_not_true` for complements. A two-stage experiment
+`p.bind fun a => PMF.pure (E a)` is `p.map E` by definition, so these lemmas apply to it directly.
+To compose an event bound through `PMF.bind`, use the `PMF.toOuterMeasure_bind_*` lemmas in
 [PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean). The
 [checked examples](../../CslibFrontierTests/PMFBool.lean) recover the mass of `false` from the mass of
-`true`; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+`true` and apply the finite union bound; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+
+To show that a pushforward or a two-stage experiment is deterministic, import
+[PMF/Support.lean](../../CslibFrontier/Probability/PMF/Support.lean): `PMF.map_eq_pure_iff` says
+`p.map f = PMF.pure b` exactly when `f a = b` for every `a ∈ p.support`, and
+`PMF.bind_eq_pure_of_forall_mem_support` gives `p.bind f = PMF.pure b` from `f a = PMF.pure b` on the
+support. Perfect-correctness statements of the form `Pr[correct] = 1` written as
+`(...).map isCorrect = PMF.pure true` reduce to a pointwise check this way, and
+`PMF.ne_of_map_eq_pure` separates two distributions whose pushforwards are different point masses.
+The same module records that pairing with a constant (`snd_eq_of_mem_support_map_pair`) or lifting
+into `StateT` (`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`) keeps the state fixed on
+the support. The [checked examples](../../CslibFrontierTests/PMFSupport.lean) cover each direction;
+run `scripts/build.sh CslibFrontierTests.PMFSupport`.
+
+For a guessing bound, import
+[PMF/UniformPoint.lean](../../CslibFrontier/Probability/PMF/UniformPoint.lean) instead of summing
+over the uniform law by hand. For any law `μ`, `PMF.bind_pure_decide_eq_apply_true μ a` (and its
+`'` and `map_` forms for the other comparison order and for `μ.map`) says an equality test against
+`a` accepts with probability `μ a`. `PMF.uniformOfFintype_bind_decide_eq_apply_true a` specializes
+it: a uniform draw equals `a` with probability `(Fintype.card α)⁻¹`, and
+`PMF.uniformOfFintype_bind_pure_apply_true_le` gives the upper bound `(Fintype.card α)⁻¹` for any
+test accepting at most one value, such as comparing a fixed point with an injective image of the
+draw. The [fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
+compute discrete-logarithm advantages `1 / q` with it.
 
 For a guessing bound, import
 [PMF/UniformPoint.lean](../../CslibFrontier/Probability/PMF/UniformPoint.lean) instead of summing
@@ -1279,6 +1313,23 @@ normal form; it does not unfold support membership or probability masses. The ch
 To prove that two normal forms differ only in the order of independent samples, use `pmf_swap`
 ([Reorder independent samples](../design-and-assurance/automation.md#reorder-independent-samples)).
 
+## Bind a program inside a distribution
+
+A game that has to stay a `PMF`, for example because its setup law is not sampleable, can bind
+programs directly once it imports
+[Lift.lean](../../CslibFrontier/Languages/Probabilistic/Lift.lean). Write
+`let ((x, y), s) ← A.choose ()` instead of `let ((x, y), s) ← ProbComp.eval (A.choose ())`, and end
+the block with `A.guess s c` instead of `ProbComp.eval (A.guess s c)`. The lift is `ProbComp.eval`,
+so the lifted definition equals the explicit one by `rfl`. `simp only [pmf_norm]` rewrites each lift
+back to `ProbComp.eval`, after which the existing law lemmas apply. Use `ProbComp.liftM_eq_eval`
+for a bare `rw` after `unfold`. With the import, any program passed where a distribution is
+expected is lifted silently: `Game.advantage program μ` elaborates. So public statements keep
+naming `ProbComp.eval`, `Pr[e]` or `Experiment` explicitly, and the lift is for definition bodies.
+`Pr[e]` on a program still elaborates to `(ProbComp.eval e true).toReal`. A computational
+experiment that is a program throughout stays a `ProbComp Bool`. The
+[checked examples](../../CslibFrontierTests/ProbabilisticLift.lean) prove a chooser/guesser game
+equal to its explicit form both ways. Run `scripts/build.sh CslibFrontierTests.ProbabilisticLift`.
+
 ## Invert a support membership
 
 A proof that starts from `h : x ∈ m.support` usually needs the intermediate results that produced
@@ -1418,6 +1469,14 @@ response types are preserved. For the cryptographic clients, inspect
 [hybridDEMContinuation](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean)
 and [hybridKEMCCAContinuation](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean):
 each phase names only the oracle simulation it needs.
+
+To bound a substituted program's queries, import
+[Oracle/Substitution/QueryCount.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution/QueryCount.lean).
+`hQ.simulate hhandler` keeps the adversary's budget `hQ` when every handler program makes at
+most one query, and `isCostBounded_simulate` does the same for general costs. Neither needs a case
+split on the private-sampling branch. The forward lift
+[PRP.StrongAdversary.isQueryBounded_ofForward](../../CslibFrontier/Crypto/Primitives/PRP/Finite.lean)
+is a one-line client.
 
 If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.simulate` to
 reuse its laws and native efficiency certificates. Substitution preserves the free program;

@@ -88,8 +88,9 @@ theorem computableInPolyTime_xorHash :
 /-- Position `1` of the tree over `leaves` under `xorHash`, opened by its honest path both to its
 leaf `[false, true]` and to `[true, true]`. -/
 abbrev breakOut : MerkleBindingOutput :=
-  ((merkleRoot xorHash key leaves, 1), ([false, true], merklePath xorHash key leaves 1),
-    ([true, true], merklePath xorHash key leaves 1))
+  { root := merkleRoot xorHash key leaves, position := 1,
+    first := ⟨[false, true], merklePath xorHash key leaves 1⟩,
+    second := ⟨[true, true], merklePath xorHash key leaves 1⟩ }
 
 example : merkleBreaksBinding xorHash key breakOut = true := by decide
 
@@ -113,11 +114,21 @@ def constHash (k _ : List Bool) : List Bool := k
 
 /-- The adversary that opens position `0` of the depth-zero tree with root `k` to `[false]` and to
 `[true]`. -/
-def constBreaker : MerkleBindingAdversary := fun _ k => pure ((k, 0), ([false], []), ([true], []))
+def constBreaker : MerkleBindingAdversary := fun _ k =>
+  pure { root := k, position := 0, first := ⟨[false], []⟩, second := ⟨[true], []⟩ }
 
 theorem isPPT_constBreaker : IsPPT encMerkleBindingOutput constBreaker := by
   unfold constBreaker
   ppt
+
+-- Encoded words unchanged: the binding output keeps the grouped layout of the former tuple
+-- `(root, position), (leaf₁, path₁), (leaf₂, path₂)`.
+example (out : MerkleBindingOutput) :
+    encMerkleBindingOutput out =
+      encPair (encPair encBits encUnary)
+          (encPair (encPair encBits (encList encBits)) (encPair encBits (encList encBits)))
+        ((out.root, out.position), (out.first.leaf, out.first.path),
+          (out.second.leaf, out.second.path)) := rfl
 
 -- The reduction applies to this adversary for an efficient length-preserving hash.
 example : IsPPT (encPair encBits encBits) (merkleCollisionFinder xorHash constBreaker) :=
@@ -132,8 +143,8 @@ theorem not_merklePositionBinding_constHash : ¬ MerklePositionBinding constHash
     have hbne : ([false] != [true]) = true := rfl
     have heval :
         ProbComp.eval (merkleBindingGame constHash constBreaker n) = PMF.pure true := by
-      simp only [merkleBindingGame, constBreaker, merkleBreaksBinding, merkleVerify,
-        merkleRootOfPath, constHash, pure_bind,
+      simp only [merkleBindingGame, constBreaker, merkleBreaksBinding, MerkleOpening.verify_id,
+        merkleVerify, merkleRootOfPath, constHash, pure_bind,
         ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure]
       simp [hbne]
     rw [Game.succProbability, heval, PMF.pure_apply_self, ENNReal.toNNReal_one]

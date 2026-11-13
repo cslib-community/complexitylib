@@ -21,22 +21,23 @@ import Mathlib.Tactic.Ring
 /-!
 # The negacyclic ring `R[X] / (X^n + 1)` on coefficient vectors
 
-An element of `R[X] / (X^n + 1)` has a unique representative of degree less than `n`, so it is
-stored as its coefficient vector `Fin n → R`. Multiplication by `a` is the linear action of the
-`n × n` negacyclic (anticirculant) matrix `rotMatrix a`, whose column `j` holds the coefficients
+For `n ≠ 0`, an element of `R[X] / (X^n + 1)` has a unique representative of degree less than `n`,
+so it is stored as its coefficient vector `Fin n → R`. Multiplication by `a` is the linear action of
+the `n × n` negacyclic (anticirculant) matrix `rotMatrix a`, whose column `j` holds the coefficients
 of `X^j · a mod (X^n + 1)`: `negacyclicMul a b = rotMatrix a *ᵥ b`. Over a commutative ring
-`negacyclicMul` is commutative and associative, `rotMatrix` is multiplicative, and the
-polynomial inner product `innerPoly b r = ∑ j, negacyclicMul (b j) (r j)` is symmetric.
+`negacyclicMul` is commutative and associative, `rotMatrix` is multiplicative, and the polynomial
+inner product `innerPoly b r = ∑ j, negacyclicMul (b j) (r j)` is symmetric.
 
 `Negacyclic R n` packages the coefficient vector as a ring. It is a one-field structure rather
 than a synonym of `Fin n → R`, so that `a * b` always means `negacyclicMul`: a synonym would
 unfold to the function type, where `*` also elaborates as the pointwise product. The coefficient
 vector is `Negacyclic.coeffs`, and `Negacyclic.ofCoeffs` builds an element from one; addition,
 negation and scalar multiplication act coefficientwise. For `[CommRing R]` and every `n`,
-`Negacyclic R n` is a commutative `R`-algebra with `1` the constant polynomial; at `n = 0` it is
-the zero ring. Sampling, encoding and norm bounds transfer along `Negacyclic.coeffsEquiv` and
-`Negacyclic.coeffsLinearEquiv`, and `innerPoly` becomes the dot product `⬝ᵥ` over
-`Negacyclic R n` (`Negacyclic.ofCoeffs_innerPoly`).
+`Negacyclic R n` is a commutative `R`-algebra with `1` the constant polynomial. At `n = 0` it is
+the zero ring on `Fin 0 → R`, a chosen zero-dimensional extension rather than the quotient:
+there `X^0 + 1 = 2` and `R[X] / (2)` is generally nonzero. Sampling, encoding and norm bounds
+transfer along `Negacyclic.coeffsEquiv` and `Negacyclic.coeffsLinearEquiv`, and `innerPoly`
+becomes the dot product `⬝ᵥ` over `Negacyclic R n` (`Negacyclic.ofCoeffs_innerPoly`).
 
 ## Main definitions
 
@@ -44,7 +45,7 @@ the zero ring. Sampling, encoding and norm bounds transfer along `Negacyclic.coe
   multiplication on coefficient vectors.
 * `Cslib.innerPoly`: the inner product `∑ j, negacyclicMul (b j) (r j)` of coefficient-vector
   tuples.
-* `Cslib.Negacyclic`: the commutative ring `R[X] / (X^n + 1)` on coefficient vectors, with
+* `Cslib.Negacyclic`: the commutative ring `R[X] / (X^n + 1)` (`n ≠ 0`) on coefficient vectors, with
   `Negacyclic.coeffsEquiv` and `Negacyclic.coeffsLinearEquiv` to `Fin n → R`.
 
 ## Main results
@@ -468,9 +469,10 @@ theorem abs_innerPoly_le {k n α β : ℕ} {a b : Fin k → Fin n → ℤ}
 
 /-! ### The ring `Negacyclic R n` -/
 
-/-- The negacyclic ring `R[X] / (X^n + 1)`, stored as the coefficient vector of the unique
-representative of degree less than `n`. Multiplication is `negacyclicMul`, never the pointwise
-product of coefficient vectors; for `n = 0` this is the zero ring. -/
+/-- For `n ≠ 0`, the negacyclic ring `R[X] / (X^n + 1)`, stored as the coefficient vector of the
+unique representative of degree less than `n`. Multiplication is `negacyclicMul`, never the
+pointwise product of coefficient vectors. For `n = 0` this is the zero ring, a chosen extension
+rather than the quotient `R[X] / (2)`. -/
 @[ext]
 structure Negacyclic (R : Type*) (n : ℕ) where
   /-- Build the element of `R[X] / (X^n + 1)` with the given coefficients. -/

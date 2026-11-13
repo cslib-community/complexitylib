@@ -14,12 +14,13 @@ import Mathlib.Algebra.Group.Fin.Basic
 /-!
 # Polynomial interpretation of negacyclic coefficient vectors
 
-The ring `Negacyclic R n` represents `R[X]/(X^n + 1)` on coefficient vectors. This module
-identifies it with Mathlib's canonical quotient `AdjoinRoot (X^n + 1)` as an `R`-algebra, for
+For `n ≠ 0`, the ring `Negacyclic R n` represents `R[X]/(X^n + 1)` on coefficient vectors. This
+module identifies it with Mathlib's canonical quotient `AdjoinRoot (X^n + 1)` as an `R`-algebra, for
 positive `n` over a nontrivial commutative ring. No primality or irreducibility assumption is
-needed. The positive-dimension restriction matters: at `n = 0` the quotient is `R/(2)`, while
-`Negacyclic R 0` is the zero ring. Matrix-vector products, such as the Module-SIS map read
-through `ofCoeffs_comp_moduleSISMap`, transport entrywise to the quotient.
+needed. The positive-dimension restriction matters: at `n = 0` the quotient is `R[X]/(2)`, while
+`Negacyclic R 0` is the zero ring, a chosen zero-dimensional extension. Matrix-vector products,
+such as the Module-SIS map read through `ofCoeffs_comp_moduleSISMap`, transport entrywise to the
+quotient.
 
 ## Main definitions
 
