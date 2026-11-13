@@ -8,6 +8,7 @@ module
 -- upstream: submitted #1070 @833a3b94f940982cc7374c5d76fe6558b031accc
 
 public import CslibFrontier.Crypto.Game
+import CslibFrontier.Crypto.Game.Hop
 import CslibFrontier.Probability.PMF
 
 /-!
@@ -157,16 +158,10 @@ theorem advantage_four_le (g₀ g₁ : Bool → Game) {ε₀ εsim ε₁ : ℝ}
     (h₀ : (advantage (g₀ false) (g₁ false) : ℝ) ≤ ε₀)
     (hsim : (advantage (g₁ false) (g₁ true) : ℝ) ≤ εsim)
     (h₁ : (advantage (g₀ true) (g₁ true) : ℝ) ≤ ε₁) :
-    (advantage (g₀ false) (g₀ true) : ℝ) ≤ ε₀ + εsim + ε₁ := by
-  have htri : (advantage (g₀ false) (g₀ true) : ℝ) ≤
-      advantage (g₀ false) (g₁ false) +
-        advantage (g₁ false) (g₁ true) +
-        advantage (g₀ true) (g₁ true) := by
-    rw [advantage_comm (g₀ true)]
-    have h := (advantage_triangle (g₀ false) (g₁ false) (g₀ true)).trans
-      (add_le_add le_rfl (advantage_triangle (g₁ false) (g₁ true) (g₀ true)))
-    rw [← add_assoc] at h
-    exact_mod_cast h
-  exact htri.trans (add_le_add (add_le_add h₀ hsim) h₁)
+    (advantage (g₀ false) (g₀ true) : ℝ) ≤ ε₀ + εsim + ε₁ :=
+  approxEq_iff_advantage_le.mp <|
+    calc Pr[g₀ false] ≈[ε₀] Pr[g₁ false] := approxEq_iff_advantage_le.mpr h₀
+      _ ≈[εsim] Pr[g₁ true] := approxEq_iff_advantage_le.mpr hsim
+      _ ≈[ε₁] Pr[g₀ true] := (approxEq_iff_advantage_le.mpr h₁).symm
 
 end Cslib.Crypto.Game
