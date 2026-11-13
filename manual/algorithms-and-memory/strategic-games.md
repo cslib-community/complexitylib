@@ -492,8 +492,9 @@ parity argument:
   `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`, `BimatrixNash_mem_PPAD`,
   `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`.
   `strategyVec` reads a rational strategy list as a real vector, so `BimatrixNash.isNash` states
-  that every witness decodes to a pair `s` with `c.toGame.IsNash (strategyVec s.x)
-  (strategyVec s.y)`.
+  that every witness of a well-formed code decodes to a pair `s` with
+  `c.toGame.IsNash (strategyVec s.x) (strategyVec s.y)`; `isMixedStrategy_strategyVec` gives the
+  mixed-strategy condition from the list's length, nonnegativity and sum.
 
 Executing the Lemke–Howson path as a standalone solver, extending the undirected parity theorem
 directly to degenerate bimatrix games, and proving the Savani–von Stengel exponential lower
