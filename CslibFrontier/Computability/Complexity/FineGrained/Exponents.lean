@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.FineGrained.BruteForce
 public import Mathlib.Topology.Order.Real
 import CslibFrontier.Computability.Complexity.FineGrained.Bounds
+import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 
 /-!
 # The exponents of `k`-SAT

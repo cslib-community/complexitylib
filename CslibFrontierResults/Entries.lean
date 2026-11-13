@@ -36,6 +36,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
+import CslibFrontier.Computability.Circuit.Boolean.NonuniformSeparation
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
@@ -658,6 +659,24 @@ register_result "formal-complexity-measure-quarter-density" where
     at least one quarter of all truth tables have measure at least c/4. \
     Natural-number cardinalities with denominators cleared; no computational claim. \
     Theorem 22.3's stronger near-total-density endpoint is not included."
+
+register_result "bpp-proper-subset-ppoly" where
+  title := "BPP is strictly contained in P/poly on ordinary bit languages"
+  topic := "circuit complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Theorem 6.3",
+      locator := "February 2007 draft r3.pdf, PDF p. 9; printed p. 211" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.not_countable_PPoly,
+    Cslib.Circuits.Boolean.exists_mem_PPoly_not_isDecidable,
+    Cslib.Circuits.Boolean.BPP_ssubset_PPoly
+  ]
+  scope := "Ordinary bit languages with identity encoding encBits: nonuniform polynomial-size \
+    De Morgan circuits strictly contain native seeded-verifier BPP. The witness has no native \
+    machine decider and is obtained nonconstructively using P-selective sets/countability. \
+    No efficient separator or uniform circuit-family construction. Strictness is not asserted \
+    for arbitrary encoded finite instance domains, where the two classes coincide."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"

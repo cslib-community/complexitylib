@@ -184,11 +184,6 @@ theorem eval_allLinks_iff (φ : CNF V) (wire : Occurrence V → List (W × W)) (
       ∀ o ∈ Cslib.Logic.PL.occurrences φ, (links o.2.2.2 (wire o)).eval σ = true := by
   exact eval_flatMap_eq_true_iff σ _ _
 
-private theorem occurrence_mem {φ : CNF V} {c : Clause V × ℕ} (hc : c ∈ φ.zipIdx)
-    {l : Literal V × ℕ} (hl : l ∈ c.1.zipIdx) :
-    (c.2, l.2, l.1) ∈ Cslib.Logic.PL.occurrences φ := by
-  exact List.mem_flatMap.mpr ⟨c, hc, List.mem_map.mpr ⟨l, hl, rfl⟩⟩
-
 /-- Satisfaction projects back to the ordinary source formula when the caller proves local
 cell equality and agreement between the first entries and source variable values. -/
 theorem eval_assemble_sound (φ : CNF V) (wire : Occurrence V → List (W × W))
@@ -205,7 +200,7 @@ theorem eval_assemble_sound (φ : CNF V) (wire : Occurrence V → List (W × W))
   rw [← List.zipIdx_map_fst 0 φ, eval_map_eq_true_iff]
   intro c hc
   obtain ⟨l, hl, hv⟩ := hr c hc
-  have ho := occurrence_mem hc hl
+  have ho := mk_mem_occurrences_of_mem_zipIdx hc hl
   apply (Clause.eval_eq_true_iff τ c.1).2
   refine ⟨l.1, List.fst_mem_of_mem_zipIdx hl, ?_⟩
   have hp := propagate_of_ne_nil σ l.1.2 fallback (wire (c.2, l.2, l.1))
@@ -230,7 +225,7 @@ theorem eval_assemble_complete (φ : CNF V) (wire : Occurrence V → List (W × 
     rw [← List.zipIdx_map_fst 0 c.1] at hl
     obtain ⟨li, hli, rfl⟩ := List.mem_map.mp hl
     refine ⟨li, hli, ?_⟩
-    have ho := occurrence_mem hc hli
+    have ho := mk_mem_occurrences_of_mem_zipIdx hc hli
     have hm : (wire (c.2, li.2, li.1)).getLastD (fallback, fallback) ∈
         wire (c.2, li.2, li.1) := by
       cases hw : wire (c.2, li.2, li.1) with
