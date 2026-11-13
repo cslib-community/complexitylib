@@ -1721,19 +1721,11 @@ private theorem bind_map_of_invariant {α₁ β₁ α β : Type}
   exact ⟨by simpa only [PMF.map, PMF.pure_bind, PMF.bind_pure, PMF.bind_bind,
     Function.comp_def] using congrArg (PMF.map Prod.snd) hmain.1, hmain.2⟩
 
-private theorem eval_ite {α : Type} (P : Prop) [Decidable P] (a b : ProbComp α) :
-    ProbComp.eval (if P then a else b) = if P then ProbComp.eval a else ProbComp.eval b := by
-  split_ifs <;> rfl
-
 private theorem run_interpret_ite {ι ext α : Type} {spec : ι → Type}
     (h : (q : ι) → StateT ext PMF (spec q)) (P : Prop) [Decidable P]
     (a b : OracleComp spec α) (s : ext) :
     (OracleComp.interpret h (if P then a else b)).run s =
       if P then (OracleComp.interpret h a).run s else (OracleComp.interpret h b).run s := by
-  split_ifs <;> rfl
-
-private theorem pmf_map_ite {α β : Type} (P : Prop) [Decidable P] (a b : PMF α) (f : α → β) :
-    (if P then a else b).map f = if P then a.map f else b.map f := by
   split_ifs <;> rfl
 
 private theorem iterate_pmf_bind_comm_of_invariant {α β γ : Type}
@@ -2433,7 +2425,7 @@ private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.S
     ∀ a s', (a, s') ∈ (jointCoinHandler S T depth M n req s).support →
       jointLazyInv S T M (depth n) n root s' := by
   obtain ⟨cc, ⟨nodes, edges⟩, queried, seenLeaves, bad⟩ := s
-  simp only [jointCoinHandler, lazySignHandler, eval_ite, ProbComp.eval_bind,
+  simp only [jointCoinHandler, lazySignHandler, apply_ite ProbComp.eval, ProbComp.eval_bind,
     BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   refine (fun h => ⟨h.1, fun a s' hm => h.2 (a, s') hm⟩)
     (treeHandler_map_of_invariant (req.2.length = n) (bad = true)
@@ -3131,7 +3123,7 @@ private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (dept
   conv =>
     arg 1
     rhs
-    simp only [run_interpret_ite, pmf_map_ite, OracleComp.run_interpret_bind,
+    simp only [run_interpret_ite, apply_ite (PMF.map _), OracleComp.run_interpret_bind,
       OracleComp.run_interpret_pure, ProbOracleComp.run_interpret_sample, BitString.eval_sampleList,
       Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_map,
       PMF.map_bind, PMF.pure_map, Function.comp_def]
@@ -3531,7 +3523,7 @@ private theorem jointKeysHandler_lazy_step (S : IndexedSignatureScheme) (depth :
       jointKeysInv S n root st' := by
   obtain ⟨uk, ⟨⟨vis, edg⟩, queried, seenLeaves, bad⟩, allSigned⟩ := st
   simp only [lazyStateOfJoint]
-  simp only [jointKeysHandler, lazySignHandler, eval_ite, ProbComp.eval_bind,
+  simp only [jointKeysHandler, lazySignHandler, apply_ite ProbComp.eval, ProbComp.eval_bind,
     BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   refine (fun h => ⟨h.1, fun ans st' hm => h.2 (ans, st') hm⟩)
     (treeHandler_map_of_invariant (req.2.length = n) (bad = true)

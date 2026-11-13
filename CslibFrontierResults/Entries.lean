@@ -16,6 +16,7 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
@@ -711,6 +712,20 @@ register_result "boolean-ring-arithmetic-simulation" where
     Arithmetic uses constant/addition/multiplication gates; constants count and wires are free. \
     The zero/one representation is injective for nontrivial rings. No arbitrary ring-input \
     agreement, reverse simulation, formal polynomial identity or compiler-runtime claim."
+
+register_result "arithmetic-bit-synthesis-injective-encoding" where
+  title := "Arithmetic bit-synthesis with injective fixed-width encodings"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (synthesis-direction milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Synthesis.bitBlast_arithmetic]
+  scope := "Arithmetic circuits on a semiring with supplied w-bit encoding and total decoder \
+    satisfying a left-inverse law. Given already-available encoded input functions, all output \
+    bits cost at most size * bitBlastCost w additional De Morgan gates. The encoding need not \
+    be surjective, admitting odd fields. No free-input compiler, reverse simulation, encoding \
+    construction or runtime claim; the full finite-field exercise remains open."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"

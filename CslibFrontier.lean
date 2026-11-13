@@ -993,6 +993,7 @@ public import CslibFrontier.Computability.Circuit.Approximation
 public import CslibFrontier.Computability.Circuit.Approximation.Hamming
 public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Computability.Circuit.Arithmetic.Adjugate
+public import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 public import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Asymptotics
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.CircuitRank
@@ -3332,6 +3333,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Counting.Ver
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Counting.Verifier
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Deterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Basic
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Bool
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Capabilities
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Configuration
@@ -3376,6 +3378,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Ta
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Unary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.WordEquality
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Words
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.ZMod
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Feature
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.FiniteConfiguration
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting
@@ -3821,6 +3824,7 @@ public import CslibFrontier.Computability.Probabilistic.CoinTape.Bounds
 public import CslibFrontier.Computability.Probabilistic.ExponentialIterate
 public import CslibFrontier.Computability.Probabilistic.Finite
 public import CslibFrontier.Computability.Probabilistic.Fold
+public import CslibFrontier.Computability.Probabilistic.IntBox
 public import CslibFrontier.Computability.Probabilistic.LinearHash
 public import CslibFrontier.Computability.Probabilistic.Memoize
 public import CslibFrontier.Computability.Probabilistic.Oracle
@@ -4495,13 +4499,16 @@ public import CslibFrontier.Crypto.Computational.ZeroKnowledge.Soundness
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Crypto.Game.CloseTo
+public import CslibFrontier.Crypto.Game.CloseTo.IntBox
 public import CslibFrontier.Crypto.Game.CloseTo.RandomOracle
 public import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 public import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.FourHop
+public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Order
+public import CslibFrontier.Crypto.Game.Retry
 public import CslibFrontier.Crypto.Game.Statistical
 public import CslibFrontier.Crypto.Game.UntilBad
 public import CslibFrontier.Crypto.Negligible
@@ -4521,7 +4528,7 @@ public import CslibFrontier.Crypto.Primitives.Garbling.Basic
 public import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHot
 public import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHotObliviousness
 public import CslibFrontier.Crypto.Primitives.Garbling.CircuitInverters
-public import CslibFrontier.Crypto.Primitives.Garbling.CorrelationRobust
+public import CslibFrontier.Crypto.Primitives.Garbling.CircularCorrelationRobust
 public import CslibFrontier.Crypto.Primitives.Garbling.Foundations
 public import CslibFrontier.Crypto.Primitives.Garbling.FreeXOR
 public import CslibFrontier.Crypto.Primitives.Garbling.Games
@@ -4607,6 +4614,11 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Serial.Receiver
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Session
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.World
 public import CslibFrontier.Crypto.Protocols.MPC.PolyTime
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Certificates
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Encoding
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.InputProgEquiv
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.RunEncoded
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Runner
 public import CslibFrontier.Crypto.Protocols.MPC.SPDZ
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Crypto.Protocols.MPC.Yao
@@ -5982,6 +5994,7 @@ public import CslibFrontier.Foundations.RingTheory.RootsOfUnity.Principal
 public import CslibFrontier.Foundations.Syntax.PrefixParser
 public import CslibFrontier.GameTheory.Bimatrix.Basic
 public import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
+public import CslibFrontier.GameTheory.Bimatrix.CostGame
 public import CslibFrontier.GameTheory.Bimatrix.Existence
 public import CslibFrontier.GameTheory.Bimatrix.LemkeHowson
 public import CslibFrontier.GameTheory.Bimatrix.PPAD
@@ -6040,7 +6053,9 @@ public import CslibFrontier.Languages.Probabilistic.Concentration
 public import CslibFrontier.Languages.Probabilistic.Expect
 public import CslibFrontier.Languages.Probabilistic.Forking
 public import CslibFrontier.Languages.Probabilistic.IdealCipher
+public import CslibFrontier.Languages.Probabilistic.IntBox
 public import CslibFrontier.Languages.Probabilistic.Iteration
+public import CslibFrontier.Languages.Probabilistic.Lift
 public import CslibFrontier.Languages.Probabilistic.LinearHash
 public import CslibFrontier.Languages.Probabilistic.Memoize
 public import CslibFrontier.Languages.Probabilistic.Norm
@@ -6612,6 +6627,7 @@ public import CslibFrontier.Privacy.DifferentialPrivacy.Reconstruction
 public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 public import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
 public import CslibFrontier.Probability.AdaptiveWeights
+public import CslibFrontier.Probability.ApproxEq
 public import CslibFrontier.Probability.ApproximateCounting
 public import CslibFrontier.Probability.ApproximateCounting.Relative
 public import CslibFrontier.Probability.BitString
@@ -6756,6 +6772,7 @@ public import CslibFrontier.Probability.PMF.Markov
 public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind
 public import CslibFrontier.Probability.PMF.PolynomialAgreement
+public import CslibFrontier.Probability.PMF.Support
 public import CslibFrontier.Probability.PMF.SupportTsum
 public import CslibFrontier.Probability.PMF.TailQuantile
 public import CslibFrontier.Probability.PMF.ToMeasure
