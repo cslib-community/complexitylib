@@ -2716,6 +2716,7 @@ public import CslibFrontier.Computability.DecisionTree.Leaves
 public import CslibFrontier.Computability.DecisionTree.NormalForm
 public import CslibFrontier.Computability.DecisionTree.Observations
 public import CslibFrontier.Computability.DecisionTree.Parity
+public import CslibFrontier.Computability.DecisionTree.Prune
 public import CslibFrontier.Computability.DecisionTree.Restrict
 public import CslibFrontier.Computability.DecisionTree.Sensitivity
 public import CslibFrontier.Computability.DecisionTree.Separable
@@ -3934,6 +3935,7 @@ public import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdvers
 public import CslibFrontier.Computability.QueryComplexity.Randomized
 public import CslibFrontier.Computability.QueryComplexity.Randomized.Counting
 public import CslibFrontier.Computability.QueryComplexity.Randomized.DeutschJozsa
+public import CslibFrontier.Computability.QueryComplexity.Randomized.DistributionalCost
 public import CslibFrontier.Computability.QueryComplexity.Randomized.Nisan
 public import CslibFrontier.Computability.QueryComplexity.Randomized.ZeroError
 public import CslibFrontier.Computability.QueryComplexity.Relations
@@ -3987,6 +3989,7 @@ public import CslibFrontier.Computability.QueryComplexity.Simon
 public import CslibFrontier.Computability.QueryComplexity.SpectralSensitivity
 public import CslibFrontier.Computability.QueryComplexity.Threshold
 public import CslibFrontier.Computability.QueryComplexity.Yao
+public import CslibFrontier.Computability.QueryComplexity.YaoExpected
 public import CslibFrontier.Computability.RAM.Cost
 public import CslibFrontier.Computability.RAM.Defs
 public import CslibFrontier.Computability.RAM.Input

@@ -18,6 +18,7 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.QueryComplexity.YaoExpected
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -653,6 +654,25 @@ register_result "braverman" where
     coordinates) once k ≥ (64q)^((2d + 3)(d + 7) + 1). Our own constants and exponent, weaker \
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
+
+register_result "yao-zero-error-expected-cost" where
+  title := "Expected-cost Yao minimax with optimal algorithm and hardest input law"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 11.17; Definitions 11.13, 11.15–11.16",
+      locator := "Web draft 2007-01-08, printed pp. 215–216; PDF pp. 231–232" }
+  ]
+  theorems := [
+    Cslib.QueryComplexity.zeroErrorComplexity_eq_iSup_distributionalExpectedComplexity,
+    Cslib.QueryComplexity.exists_optimal_expectedCost,
+    Cslib.QueryComplexity.exists_computes_distributionalCost_eq,
+    Cslib.QueryComplexity.exists_distributionalExpectedComplexity_eq_zeroErrorComplexity
+  ]
+  scope := "Finite Boolean coordinate space, arbitrary output type, total everywhere-correct \
+    deterministic trees and finitely supported randomized trees. Expected executed queries, \
+    including repeated queries; free local computation. Numerical equality with the maximum \
+    optimized distributional expected cost, both sides attained. No finite-output assumption, \
+    no bounded-error depth substitution, no expected Turing-machine runtime claim."
 
 register_result "boolean-two-element-arithmetic-simulation" where
   title := "Boolean and two-element arithmetic circuits have linearly related sizes"
