@@ -193,7 +193,7 @@ theorem PolyTimeTruthTableAutoreducible.polyTimeTuringAutoreducible
     (h : PolyTimeTruthTableAutoreducible encA A) :
     PolyTimeTuringAutoreducible encA A := by
   classical
-  obtain ⟨r, q, d, hr, hq, hd, hne, hA⟩ := h
+  obtain ⟨r, q, d, ⟨⟨hr, hq, hd⟩, hne⟩, hA⟩ := h
   let words : α → List (List Bool) :=
     fun a => (List.range (r a)).map fun i => encA (q (a, i))
   have hwords : ComputableInPolyTime words encA (encList encBits) :=

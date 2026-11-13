@@ -136,9 +136,7 @@ example : maskedMulCheckReceiverView wire wire wire constantReceiver
   have hv := falseView_real
   rw [heq] at hv
   have hcheck := maskedMulCheckReceiverSimulate_accepts wire wire wire constantReceiver () hv
-  have hfalse : ¬ (maskedMulCheckValue wire wire wire falseView.1.1 falseView.1.2
-      falseView.2.1.1 falseView.2.1.2.1 =
-        falseView.2.1.2.2.1.1 * falseView.1.1 + falseView.2.1.2.2.1.2) := by decide
+  have hfalse : ¬ MaskedMulCheckAccepts wire wire wire falseView.1 falseView.2.1 := by decide
   exact hfalse hcheck
 
 end CslibFrontierTests.Crypto.VOLEAdaptiveMulCheck

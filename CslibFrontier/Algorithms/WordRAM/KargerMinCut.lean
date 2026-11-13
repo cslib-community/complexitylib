@@ -10,7 +10,7 @@ module
 import CslibFrontier.Computability.WordRAM.Call
 import CslibFrontier.Algorithms.WordRAM.NatLog
 public import CslibFrontier.Init
-public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
+public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.Algorithms.WordRAM.Karger.Contract
 public import CslibFrontier.Algorithms.WordRAM.Karger.OutputLaw
 public import CslibFrontier.Computability.WordRAM.Copy
@@ -142,6 +142,7 @@ open scoped ENNReal
 open Cslib.WeightedCut
 open Cslib.Probability.PMF
 open Cslib.WordRAM
+open Cslib.Algorithms.Karger
 
 /-! ### Word-size sufficiency and `Data.init` matrix layout -/
 

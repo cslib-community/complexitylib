@@ -85,15 +85,23 @@ variable {P : CounterProgram} {w : List Bool} {n B b base k T R : ℕ} {Post : C
 variable (n B base k regs₀) in
 /-- The loop invariant at the test label: registers below `base` and the length are kept, the
 current tuple is in registers `base + i`, and the step counter is `t`. -/
-@[expose] def LoopInv (us : Fin k → Fin n) (t : ℕ) (regs : List ℕ) : Prop :=
-  Kept B base regs₀ regs ∧ base + 2 * k + 2 ≤ regs.length ∧
-    (∀ i : Fin k, regs.getD (base + i) 0 = us i) ∧ regs.getD (base + 2 * k + 1) 0 = t
+structure LoopInv (us : Fin k → Fin n) (t : ℕ) (regs : List ℕ) : Prop where
+  /-- The registers below `base` and the length are kept, and every register is bounded. -/
+  kept : Kept B base regs₀ regs
+  /-- The loop's registers exist. -/
+  le_length : base + 2 * k + 2 ≤ regs.length
+  /-- The current tuple is in registers `base + i`. -/
+  cur : ∀ i : Fin k, regs.getD (base + i) 0 = us i
+  /-- The step counter is in register `base + 2 * k + 1`. -/
+  counter : regs.getD (base + 2 * k + 1) 0 = t
 
 variable (n B base k regs₀) in
 /-- The state after decoding a successor: the loop invariant, the decoded tuple in registers
 `base + k + i`. -/
-@[expose] def LoopMid (us ws : Fin k → Fin n) (t : ℕ) (regs : List ℕ) : Prop :=
-  LoopInv n B base k regs₀ us t regs ∧ ∀ i : Fin k, regs.getD (base + k + i) 0 = ws i
+structure LoopMid (us ws : Fin k → Fin n) (t : ℕ) (regs : List ℕ) : Prop
+    extends LoopInv n B base k regs₀ us t regs where
+  /-- The decoded successor is in registers `base + k + i`. -/
+  next : ∀ i : Fin k, regs.getD (base + k + i) 0 = ws i
 
 /-- Initialization: copy the source tuple and reset the step counter. -/
 theorem loop_init (hP : P.CodeAt b (tcCode b base k src dst M body T R))
@@ -161,8 +169,8 @@ private theorem loop_test_eq (hP : P.CodeAt b (tcCode b base k src dst M body T 
       ∀ i, (dst i).eval regs = z₀ i) (heq : us = z₀) :
     P.Reaches w (P.Oblivious B) (b + k + 1, 0 :: regs) (T, 0 :: regs) := by
   obtain ⟨-, -, h3, -⟩ := tcCode_parts hP
-  have := hinv.1.bounded
-  cp_step [↓mt (lt_eval_testExpr hinv.2.2.1 (hdst regs hinv.1.getD_eq)).mp (not_not.mpr heq)]
+  have := hinv.kept.bounded
+  cp_step [↓mt (lt_eval_testExpr hinv.cur (hdst regs hinv.kept.getD_eq)).mp (not_not.mpr heq)]
 
 private theorem loop_test_ne (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     (hinv : LoopInv n B base k regs₀ us t regs)
@@ -170,24 +178,24 @@ private theorem loop_test_ne (hP : P.CodeAt b (tcCode b base k src dst M body T 
       ∀ i, (dst i).eval regs = z₀ i) (hne : us ≠ z₀) :
     P.Reaches w (P.Oblivious B) (b + k + 1, 0 :: regs) (b + k + 2, 0 :: regs) := by
   obtain ⟨-, -, h3, -⟩ := tcCode_parts hP
-  have := hinv.1.bounded
-  cp_step [↓(lt_eval_testExpr hinv.2.2.1 (hdst regs hinv.1.getD_eq)).mpr hne]
+  have := hinv.kept.bounded
+  cp_step [↓(lt_eval_testExpr hinv.cur (hdst regs hinv.kept.getD_eq)).mpr hne]
 
 private theorem loop_bound_lt (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     (hM : ∀ regs, (∀ j < base, regs.getD j 0 = regs₀.getD j 0) → M.eval regs = M₀)
     (hinv : LoopInv n B base k regs₀ us t regs) (ht : t < M₀) :
     P.Reaches w (P.Oblivious B) (b + k + 2, 0 :: regs) (b + k + 3, 0 :: regs) := by
   obtain ⟨-, -, -, h4, -⟩ := tcCode_parts hP
-  have := hinv.1.bounded
-  cp_step [hM regs hinv.1.getD_eq, hinv.2.2.2]
+  have := hinv.kept.bounded
+  cp_step [hM regs hinv.kept.getD_eq, hinv.counter]
 
 private theorem loop_bound_ge (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     (hM : ∀ regs, (∀ j < base, regs.getD j 0 = regs₀.getD j 0) → M.eval regs = M₀)
     (hinv : LoopInv n B base k regs₀ us t regs) (ht : M₀ ≤ t) :
     P.Reaches w (P.Oblivious B) (b + k + 2, 0 :: regs) (R, 0 :: regs) := by
   obtain ⟨-, -, -, h4, -⟩ := tcCode_parts hP
-  have := hinv.1.bounded
-  cp_step [hM regs hinv.1.getD_eq, hinv.2.2.2]
+  have := hinv.kept.bounded
+  cp_step [hM regs hinv.kept.getD_eq, hinv.counter]
 
 private theorem loop_decode (hP : P.CodeAt b (tcCode b base k src dst M body T R))
     (hbase : 0 < base)
@@ -197,21 +205,21 @@ private theorem loop_decode (hP : P.CodeAt b (tcCode b base k src dst M body T R
       (b + 2 * k + 7, 0 :: regs₃) ∧
       LoopMid n B base k regs₀ us (finFunctionFinEquiv.symm g) t regs₃ := by
   obtain ⟨-, -, -, -, -, hc, -⟩ := tcCode_parts hP
-  have hlen := hinv.2.1
+  have hlen := hinv.le_length
   obtain ⟨regs₃, hr, hlen₃, hout, hin, hB₃⟩ := reaches_digits (w := w) hc (by omega)
     (by omega) (regs := regs.set (base + 2 * k) g) (by rw [List.length_set]; omega)
-    (by rw [List.getD_set_ne (by omega)]; exact (hinv.1.getD_eq 0 hbase).trans h0) hnB
-    (List.forall_mem_set_of_forall_mem hinv.1.bounded (g.isLt.le.trans hNB)) g
+    (by rw [List.getD_set_ne (by omega)]; exact (hinv.kept.getD_eq 0 hbase).trans h0) hnB
+    (List.forall_mem_set_of_forall_mem hinv.kept.bounded (g.isLt.le.trans hNB)) g
     (List.getD_set_self (by omega))
   refine ⟨regs₃, by rw [show b + 2 * k + 7 = b + k + 7 + k by omega]; exact hr,
     ⟨⟨?_, ?_, hB₃⟩, ?_, ?_, ?_⟩, hin⟩
-  · rw [hlen₃, List.length_set, hinv.1.length_eq]
+  · rw [hlen₃, List.length_set, hinv.kept.length_eq]
   · intro j hj
-    rw [hout j (by omega), List.getD_set_ne (by omega), hinv.1.getD_eq j hj]
+    rw [hout j (by omega), List.getD_set_ne (by omega), hinv.kept.getD_eq j hj]
   · rw [hlen₃, List.length_set]; exact hlen
   · intro i
-    rw [hout _ (by omega), List.getD_set_ne (by omega), hinv.2.2.1 i]
-  · rw [hout _ (by omega), List.getD_set_ne (by omega), hinv.2.2.2]
+    rw [hout _ (by omega), List.getD_set_ne (by omega), hinv.cur i]
+  · rw [hout _ (by omega), List.getD_set_ne (by omega), hinv.counter]
 
 variable {E : (Fin k → Fin n) → (Fin k → Fin n) → Prop} {s₀ : Fin k → Fin n}
 
@@ -238,21 +246,21 @@ theorem loop_sound (hP : P.CodeAt b (tcCode b base k src dst M body T R)) (hbase
     intro t us regs he ht hinv hpath
     by_cases heq : us = z₀
     · exact Sound.of_oblivious hB1 (loop_test_eq hP hinv hdst heq)
-        (Sound.exit ⟨hinv.1, heq ▸ hpath.mono ht⟩)
+        (Sound.exit ⟨hinv.kept, heq ▸ hpath.mono ht⟩)
     · refine Sound.of_oblivious hB1
         ((loop_test_ne hP hinv hdst heq).trans (loop_bound_ge hP hM hinv (by omega))) ?_
-      exact Sound.halt hB1 hR (fun _ => hPost _ rfl) hinv.1.bounded
+      exact Sound.halt hB1 hR (fun _ => hPost _ rfl) hinv.kept.bounded
   | succ e ih =>
     intro t us regs he ht hinv hpath
     by_cases heq : us = z₀
     · exact Sound.of_oblivious hB1 (loop_test_eq hP hinv hdst heq)
-        (Sound.exit ⟨hinv.1, heq ▸ hpath.mono ht⟩)
+        (Sound.exit ⟨hinv.kept, heq ▸ hpath.mono ht⟩)
     refine Sound.of_oblivious hB1
       ((loop_test_ne hP hinv hdst heq).trans (loop_bound_lt hP hM hinv (by omega))) ?_
-    have hNe := eval_pow_reg0 (k := k) ((hinv.1.getD_eq 0 hbase).trans h0)
-    refine (Sound.guess hB1 hguess hR hPost (by have := hinv.2.1; omega)
+    have hNe := eval_pow_reg0 (k := k) ((hinv.kept.getD_eq 0 hbase).trans h0)
+    refine (Sound.guess hB1 hguess hR hPost (by have := hinv.le_length; omega)
       (fun y => by simp only [eval_pow, eval_reg]; rw [List.getD_set_ne (by omega)])
-      (hNe ▸ hNB) hinv.1.bounded).bind ?_
+      (hNe ▸ hNB) hinv.kept.bounded).bind ?_
     rintro _ ⟨m, hm, rfl⟩
     rw [hNe] at hm
     obtain ⟨regs₃, hr₃, hmid⟩ := loop_decode hP hbase hnB hNB h0 hinv ⟨m, hm⟩
@@ -279,18 +287,18 @@ theorem loop_complete (hP : P.CodeAt b (tcCode b base k src dst M body T R)) (hb
   induction m with
   | zero =>
     intro t us regs h ht hinv
-    exact Complete.of_oblivious (loop_test_eq hP hinv hdst h.zero) (Complete.refl hinv.1)
+    exact Complete.of_oblivious (loop_test_eq hP hinv hdst h.zero) (Complete.refl hinv.kept)
   | succ m ih =>
     intro t us regs h ht hinv
     by_cases heq : us = z₀
-    · exact Complete.of_oblivious (loop_test_eq hP hinv hdst heq) (Complete.refl hinv.1)
+    · exact Complete.of_oblivious (loop_test_eq hP hinv hdst heq) (Complete.refl hinv.kept)
     obtain ⟨u₁, he, hrest⟩ := h.succ'
     refine Complete.of_oblivious
       ((loop_test_ne hP hinv hdst heq).trans (loop_bound_lt hP hM hinv (by omega))) ?_
-    have hNe := eval_pow_reg0 (k := k) ((hinv.1.getD_eq 0 hbase).trans h0)
-    refine (Complete.guess hguess (by have := hinv.2.1; omega)
+    have hNe := eval_pow_reg0 (k := k) ((hinv.kept.getD_eq 0 hbase).trans h0)
+    refine (Complete.guess hguess (by have := hinv.le_length; omega)
       (fun y => by simp only [eval_pow, eval_reg]; rw [List.getD_set_ne (by omega)])
-      (hNe ▸ hNB) hinv.1.bounded (m := finFunctionFinEquiv u₁)
+      (hNe ▸ hNB) hinv.kept.bounded (m := finFunctionFinEquiv u₁)
       (by rw [hNe]; exact (finFunctionFinEquiv u₁).isLt)).bind ?_
     rintro _ rfl
     obtain ⟨regs₃, hr₃, hmid⟩ := loop_decode hP hbase hnB hNB h0 hinv (finFunctionFinEquiv u₁)

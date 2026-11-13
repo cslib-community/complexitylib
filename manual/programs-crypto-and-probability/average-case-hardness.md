@@ -4,6 +4,19 @@ This family specifies how often an efficient algorithm can compute or approximat
 
 Levin's distributional framework, which pairs languages with arbitrary ensembles and defines `AvgP`, `HeurP` and dominating reductions, is described in [Distributional problems, AvgP, HeurP and Levin reductions](distributional-complexity.md). Its bridge theorem shows that a Boolean target whose uniform distributional problem lies in `HeurP` is not mildly hard on average.
 
+## Nonuniform circuit hardness and derandomization
+
+The [Arora–Barak chapters 16–17 audit](../../results/arora-barak-2007.md#chapter-16-derandomization-and-extractors)
+compares the draft's circuit hardness with the NW, XOR, hard-core and coding APIs. These
+nonuniform De Morgan circuit predicates differ from the uniform heuristic predicates below.
+The native [BPP derandomization theorem](../../CslibFrontier/Computability/Complexity/Classes/BPP/Derandomization.lean)
+proves `P = BPP` from eventual exponential average-case hardness in `E`; the
+[worst-case theorem](../../CslibFrontier/Computability/Complexity/Classes/BPP/WorstCaseHardness.lean)
+uses eventual exponential worst-case hardness. Neither establishes every general-$S$ tradeoff
+in the draft. Likewise, finite read-once branching-program security for Nisan's generator does
+not itself certify a native space-bounded simulation. Consult the audit for precise declarations,
+source locators, parameter differences and existing development issues.
+
 ## Heuristics, success events, and quantifiers
 
 [MildlyHardOnAverage](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/AverageCase.lean#L94) chooses one polynomial `p : Polynomial ℕ`, positive at every natural input, before quantifying over heuristics. For every `H : List Bool → ProbComp ℕ` with `IsPPTOn encBits encNat H`, there is a length threshold, allowed to depend on `H`, after which

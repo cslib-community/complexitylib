@@ -21,6 +21,20 @@
     "snapshot_end_line": 165
   },
   {
+    "id": "private-sampling-substitution",
+    "document": "workflows/probabilistic-workflows.md",
+    "source_path": "CslibFrontierTests/ProbOracleSubstitution.lean",
+    "snapshot_start_line": 14,
+    "snapshot_end_line": 24
+  },
+  {
+    "id": "random-oracle-adapter",
+    "document": "workflows/probabilistic-workflows.md",
+    "source_path": "CslibFrontierTests/RandomOracleAdapter.lean",
+    "snapshot_start_line": 18,
+    "snapshot_end_line": 31
+  },
+  {
     "id": "oracle-adaptive-prefix",
     "document": "workflows/probabilistic-workflows.md",
     "source_path": "CslibFrontierTests/OracleComposition.lean",

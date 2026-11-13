@@ -734,7 +734,17 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    `ComputableInO`, workspace budgets and `ComputableInPolyTime`), rather than writing a `.trans`
    embedding and proving the certificates by hand. The
    [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
-   shows the declaration and what it generates.
+   shows the declaration and what it generates. Migrating a tuple to a record keeps its encoded
+   words, which `IsPPTOn` and the other machine predicates read. `enc_structure` frames every
+   field but the last and adds no nested grouping, so it reproduces a right-nested tuple such as
+   `encPair a (encPair b c)` but not a left-grouped one such as
+   `encPair (encPair a b) (encPair c d)`. For a left-grouped tuple, nest sub-records whose
+   generated layout matches, or define the encoding as `encOfEquiv` into the former tuple encoding
+   and keep the named projection and constructor certificates. Every migration, including a
+   right-nested one, adds a checked equality `encX r = <former tuple encoding> (…)` to the tests
+   (usually `rfl`) and states "encoded words unchanged" in the PR. Changing the layout needs a
+   coordinator's scope decision and a checked transport of efficiency and security in both
+   directions; a claim that the re-association is polynomial-time equivalent is not enough.
 6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs
    and matrices, and framing that changes a length bound stay visible: the name or the first line
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.

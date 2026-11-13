@@ -111,6 +111,8 @@ proportional to the change; a successful build alone does not establish these de
 problem instances, certificates, configurations, and multi-field algorithm contexts, states or
 records as documented `structure`s with named, documented fields, and declare their field-tuple
 encodings with `enc_structure` ([AGENTS.md](AGENTS.md#structures-for-domain-objects-and-records)).
+A migration keeps the encoded words, with a checked equality; a left-grouped tuple needs nested
+sub-records or `encOfEquiv` ([encoding rule 5](AGENTS.md#encodings-in-statements)).
 Do not introduce tuple type synonyms such as
 `abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ` or bare-product problem sets such as
 `Set (List (ℕ × ℕ) × ℕ × ℕ)` or `Set (Graph × ℕ)`. Named fields document the mathematical
