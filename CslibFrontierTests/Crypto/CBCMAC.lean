@@ -125,8 +125,8 @@ example : let trace := cbcLeakedTagsAttack (cbcAllTagsTwo testPerm)
       (cbcAllTagsTwo testPerm trace.message).2 = trace.tag.2 :=
   cbcLeakedTagsAttack_valid (by decide) testPerm
 /-- Concrete instantiation of the random-IV CBC-MAC forgery (`cbcRandomIVAttack_valid`). -/
-example : let (message, tag) := cbcRandomIVAttack (cbcRandomIVMac testPerm b0 [0])
-    message ≠ 0 ∧ cbcRandomIVMac testPerm tag.1 [message] = tag :=
+example : let (message, iv', tag) := cbcRandomIVAttack (cbcRandomIVMac testPerm b0 [0])
+    message ≠ 0 ∧ cbcRandomIVMac testPerm iv' [message] = (iv', tag) :=
   cbcRandomIVAttack_valid (by decide) testPerm b0
 /-- Concrete instantiation of the append-length CBC-MAC forgery (`cbcLengthSuffixAttack_valid`). -/
 example : let encodeLength : ℕ → List (BitString 4) := fun _ => [b0]

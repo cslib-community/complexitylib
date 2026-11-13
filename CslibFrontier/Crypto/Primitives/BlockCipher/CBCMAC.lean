@@ -939,8 +939,8 @@ def cbcRandomIVAttack (tag : BitString n × BitString n) :
   (`cbcRandomIVMac`) validates for every `iv` and `g` whenever `0 < n` ([KatzLindell2020],
   Exercise 4.14(b), p. 142). -/
 theorem cbcRandomIVAttack_valid (hn : 0 < n) (g : BitString n → BitString n) (iv : BitString n) :
-    let (message, tag) := cbcRandomIVAttack (cbcRandomIVMac g iv [0])
-    message ≠ 0 ∧ cbcRandomIVMac g tag.1 [message] = tag :=
+    let (message, iv', tag) := cbcRandomIVAttack (cbcRandomIVMac g iv [0])
+    message ≠ 0 ∧ cbcRandomIVMac g iv' [message] = (iv', tag) :=
   ⟨(zero_ne_one_of_pos hn).symm, by simp [cbcRandomIVMac]⟩
 /-- Insecure CBC-MAC variant that appends `encodeLength (msg.length * n)` at the end of `msg`
   ([KatzLindell2020], Exercise 4.15, p. 142). -/
