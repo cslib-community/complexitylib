@@ -1738,8 +1738,9 @@ and apply `hybrid_indcca2On`. Supply the existing KEM CCA indistinguishability a
 `F` satisfying `(uniformList (keyLen n)).map (F n) = eval (E.keyGen n)` for every `n`.
 Postprocess every successful decapsulation with `Option.map (F n)` too. The conclusion uses
 `INDCCA2On` with both challenge lengths equal to `n`, not unrestricted `WordINDCCA2`.
-`exists_hybridCCA_reductions` returns native KEM and symmetric adversaries and the exact
-`2 * KEM advantage + symmetric advantage` bound. Reply caps are derived from supported
+`exists_hybridCCA_reductions` returns a `HybridCCAReductions` record: native KEM and symmetric
+adversaries `kem` and `dem` with the exact `2 * KEM advantage + symmetric advantage` bound
+`advantage_le`. Reply caps are derived from supported
 secret-key lengths and the native decryptor; external replies need no assumed length bound.
 
 The [complete composition clients](../../CslibFrontierTests/Crypto/HybridCompositionCCA.lean)
