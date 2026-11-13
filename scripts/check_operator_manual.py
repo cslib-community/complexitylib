@@ -68,36 +68,36 @@ STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
 }
 
 
-def unfenced_lines(text: str):
-    """Yield `(line number, line)` outside fenced code; a fence yields `(number, None)`."""
+def fenced_lines(text: str):
+    """Yield `(line number, line, fenced)`, where `fenced` marks fences and their contents."""
     fence = None
     for number, line in enumerate(text.splitlines(), 1):
         match = FENCE.match(line)
         if fence is not None:
             if match and match[1][0] == fence[0] and len(match[1]) >= len(fence):
                 fence = None
-            yield number, None
+            yield number, line, True
             continue
         if match:
             fence = match[1]
-            yield number, None
-            continue
-        yield number, line
+        yield number, line, fence is not None
 
 
 def prose(text: str) -> str:
     """Ignore fenced and inline code when scanning Markdown links/headings."""
     return "\n".join(re.sub(r"(`+).*?\1", "", line)
-                     for _, line in unfenced_lines(text) if line is not None)
+                     for _, line, fenced in fenced_lines(text) if not fenced)
 
 
 # Pandoc, which builds the PDFs, reads a list item directly after a paragraph line (including a
-# quotation or inline HTML line) as more of that paragraph, while GitHub starts a list there. Items
-# of an open list, nested ones included, need no blank line, nor does a list after a heading,
-# table row, HTML block or comment, thematic break or reference definition.
+# quotation, inline HTML or `#…` line) as more of that paragraph, while GitHub starts a list there.
+# Items of an open list need no blank line, including nested items and items after an indented
+# fence in an earlier item; nor does a list after a heading, table row, HTML block or comment,
+# thematic break or reference definition. Lists inside block quotes are not checked.
 LIST_ITEM = re.compile(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]|$)")
+HEADING = re.compile(r"\s*#{1,6}(?:[ \t]|$)")
 BLOCK_LINE = re.compile(
-    r"\s*(?:#|\||=+\s*$|<!--|</?(?:address|article|aside|blockquote|details|div|dl|figure|footer"
+    r"\s*(?:\||=+\s*$|<!--|</?(?:address|article|aside|blockquote|details|div|dl|figure|footer"
     r"|form|h[1-6]|header|hr|ol|p|pre|section|summary|table|ul)\b)|(?: {0,3}[-*_][ \t]*){3,}$",
     re.I)
 REFERENCE = re.compile(r" {0,3}\[[^\]]+\]:\s")
@@ -108,18 +108,23 @@ LIST_AFTER_PARAGRAPH = ("list item directly after a paragraph line (add a blank 
 def lists_after_paragraphs(text: str) -> list[int]:
     """Line numbers of list items that pandoc would read as part of the paragraph above them."""
     found, paragraph, in_list, after_blank = [], False, False, True
-    for number, line in unfenced_lines(text):
-        if line is None or not line.strip():
-            paragraph, after_blank, in_list = False, True, in_list and line is not None
+    for number, line, fenced in fenced_lines(text):
+        indented = line[:1].isspace()
+        if not line.strip():
+            paragraph, after_blank = False, True
+            continue
+        if fenced:
+            # A fence and its contents stay inside an open list only when indented under its item.
+            paragraph, after_blank, in_list = False, False, in_list and indented
             continue
         if LIST_ITEM.match(line):
             if paragraph and not in_list:
                 found.append(number)
             paragraph, in_list = False, True
-        elif BLOCK_LINE.match(line):
-            paragraph, in_list = False, in_list and line[0].isspace()
+        elif BLOCK_LINE.match(line) or HEADING.match(line) and not paragraph:
+            paragraph, in_list = False, in_list and indented
         elif paragraph or not REFERENCE.match(line):
-            in_list = in_list and not (after_blank and not line[0].isspace())
+            in_list = in_list and not (after_blank and not indented)
             paragraph = True
         after_blank = False
     return found

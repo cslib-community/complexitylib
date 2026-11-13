@@ -723,7 +723,11 @@ class ListsAfterParagraphs(unittest.TestCase):
                 ("- a\n\nA paragraph after the list.\n- b\n", [4]),
                 ("> Quote.\n- a\n", [2]),
                 ('<a id="anchor"></a>\n- a\n', [2]),
-                ("Intro:\n[ref]: https://example.org\n- a\n", [3])):
+                ("Intro:\n[ref]: https://example.org\n- a\n", [3]),
+                ("Para\n# Not a heading after a paragraph line\n- a\n", [3]),
+                ("A wrapped reference to\n#4903 landed.\n- a\n", [3]),
+                ("```text\nx\n```\nPara\n- a\n", [5]),
+                ("- a\n\n  ```text\n  x\n  ```\n\nA paragraph after the list.\n- b\n", [8])):
             with self.subTest(text=text):
                 self.assertEqual(lists_after_paragraphs(text), lines)
 
@@ -734,6 +738,9 @@ class ListsAfterParagraphs(unittest.TestCase):
                      "- a lazy\ncontinuation line\n- b\n",
                      "- a\n\n  A second paragraph of the item.\n  - nested\n",
                      "1. a\n2. b\n   - nested\n",
+                     "1. Run:\n\n   ```bash\n   python3 x\n   ```\n\n   Then inspect.\n2. Build.\n",
+                     "- a\n\n  ```text\n  x\n\n  y\n  ```\n  after fence\n- b\n",
+                     "- a\n\n  ```text\n  x\n  ```\nlazy text continues the item\n- b\n",
                      "| a | b |\n- a\n",
                      "<!-- comment -->\n- a\n",
                      "</div>\n- a\n",
