@@ -150,7 +150,7 @@ private theorem eagerHandler_fbTable (S : Scheme PK SK M R CT K) (G : M → R)
   | G m => rfl
   | H x => simp [eagerHandler, eagerFbHandler, fbTable, hq x rfl]
   | decaps c =>
-    simp only [eagerHandler, eagerFbHandler, decapsNotBot, ROQuery.dispatch]
+    simp only [eagerHandler, eagerFbHandler, decapsNotBot_eq, ROQuery.dispatch]
     cases decT S.pke G pk sk c <;> simp [fbTable]
 
 /-- The logged oracles of the two games are identical until the log contains the seed. -/

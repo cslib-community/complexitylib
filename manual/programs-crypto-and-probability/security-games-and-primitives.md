@@ -605,9 +605,11 @@ implicit-rejection `FO-notbot` (§3.2.2, Fig. 12; `ImplicitSK`, `Scheme.keyGenNo
 `decapsNotBot_of_reencrypt_ne`) that tags `H : Bool × M × CT → K` with `false` for valid key
 derivations and `true` for fallback rejection keys `H(true, dk.fallback, c)` in place of HHK17's
 untagged `H(s, c)`. `FujisakiOkamoto.decTM`, `Scheme.decapsBotM` and `Scheme.decapsNotBotM` are
-the same algorithms with oracle access to `G` and `H` in any monad. `decT` is `decTM` in `Id`, and
-with pure oracles the decapsulations are `decapsBot` and `decapsNotBot` (`Scheme.decapsBotM_pure`,
-`Scheme.decapsNotBotM_pure`). The random-oracle game handlers run them against lazy or table
+the same algorithms with oracle access to `G` and `H` in any monad. `decT`, `decapsBot` and
+`decapsNotBot` are these in `Id` (`decT_eq`, `Scheme.decapsBot_eq` and `Scheme.decapsNotBot_eq`
+give their direct forms), and with pure oracles in any lawful monad the oracle-access
+decapsulations return them (`Scheme.decapsBotM_pure`, `Scheme.decapsNotBotM_pure`). The
+random-oracle game handlers run them against lazy or table
 oracles instead of restating the re-encryption check. For Random Oracle Model (ROM) IND-CCA games
 and the keyless IND-CPA reduction
 on `FO-notbot`, import
@@ -615,8 +617,10 @@ on `FO-notbot`, import
 It defines the ROM query family `ROQuery M CT` (`G`, `H`, and punctured decapsulation rejecting
 `c = cStar` with `none`) and its dispatcher `ROQuery.dispatch`, on which every lazy, eager and
 simulated FO handler is built from its own `G`, `H` and decapsulation implementations (build new
-hybrid handlers the same way), pathwise `(qG, qH)` query budgets `ROQueryBounds` via
-`OracleComp.IsCostBounded`, the lazy-cached executable game `Scheme.roIndCcaGame`
+hybrid handlers the same way), deterministic oracle adversaries `ROAdversary` on the challenge
+record `KEM.Challenge PK CT K` (fields `pk`, `ct`, `key`; defined in
+[`Encryption/KEM.lean`](../../CslibFrontier/Crypto/Computational/Encryption/KEM.lean)), pathwise
+`(qG, qH)` query budgets `ROQueryBounds` via `OracleComp.IsCostBounded`, the lazy-cached executable game `Scheme.roIndCcaGame`
 (`Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
 eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
 `Scheme.indCcaRomAdvantage_eq_eager`), and the keyless simulator `Scheme.simHandler` and IND-CPA

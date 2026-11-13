@@ -360,7 +360,7 @@ private theorem answerBotROHandler_sim [Fintype M] [Finite R] [Fintype CT] [Fini
     · dsimp only [answerBotROHandler, completeROTables, eagerBotHandler, ROQuery.dispatch]
       simp only [hc, ↓reduceIte, pure, StateT.pure, pmf_norm, PMF.map]
     · rw [answerBotROHandler_decaps S pk sk hc]
-      dsimp only [completeROTables, eagerBotHandler, decapsBot, ROQuery.dispatch]
+      dsimp only [completeROTables, eagerBotHandler, decapsBot_eq, ROQuery.dispatch]
       simp only [hc, ↓reduceIte, decT_eq, encT]
       cases hdec : S.pke.dec sk c with
       | none =>
@@ -499,7 +499,7 @@ private theorem eagerBotHandler_coupledH (S : Scheme PK SK M R CT K) (G : M → 
   | G m => rfl
   | H x => rfl
   | decaps c =>
-    simp only [eagerBotHandler, eagerCoupledBotHandler, decapsBot, ROQuery.dispatch]
+    simp only [eagerBotHandler, eagerCoupledBotHandler, decapsBot_eq, ROQuery.dispatch]
     by_cases hc : c = cStar
     · simp [hc]
     · simp only [hc, ↓reduceIte]

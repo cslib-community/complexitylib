@@ -746,7 +746,7 @@ theorem h1Handler_sim_eager [Fintype M] [Fintype CT] [Finite K]
     · dsimp only [h1Handler, eagerHandler, ROQuery.dispatch]
       simp [hc, pure, StateT.pure]
     · rw [h1Handler_decaps S G dk hc]
-      dsimp only [eagerHandler, decapsNotBot, ROQuery.dispatch]
+      dsimp only [eagerHandler, decapsNotBot_eq, ROQuery.dispatch]
       simp only [hc, ↓reduceIte]
       cases hdec : decT S.pke G dk.pk dk.sk c with
       | none =>
