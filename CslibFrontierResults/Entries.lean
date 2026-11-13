@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -5719,3 +5720,20 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
+
+register_result "tally-np-exp-nexp" where
+  title := "Easy tally NP collapses EXP and NEXP"
+  topic := "complexity classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 23",
+      locator := "2007 public draft, printed p. 64 / PDF p. 80" },
+    { paper := HartmanisImmermanSewelson1985, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.EXP_eq_NEXP_of_tally,
+    Cslib.Complexity.E_eq_NE_of_tally,
+    Cslib.Complexity.expPaddedNPEasy_of_tally
+  ]
+  scope := "(∀ L ∈ TALLY, L ∈ NP encBits → L ∈ P encBits) → EXP enc = NEXP enc and E enc = NE enc \
+    for every encoding enc; TALLY is the set of bit-languages of all-true words. Only this \
+    direction of Hartmanis–Immerman–Sewelson is proved."
