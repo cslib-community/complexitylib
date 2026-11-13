@@ -18,7 +18,8 @@ returns an address `v`, and the output is the length-prefixed array
 `[mem (v + 1), …, mem (v + mem v)]` in the memory just before the halting step (`outputList`).
 This mirrors the input convention of `State.init`, with the length at address `0` and the words
 at `1, …, n`. In particular, returning address `0` without writing outputs the input itself
-(`outputList_init`).
+(`outputList_init`). A successful list-valued execution requires the header and every output
+cell to have a word-sized address; the final occupied address is `v + l.length`.
 
 `Program.parkHalts` replaces every `halt i` by a jump to a self-loop at label `p.length + i`.
 A halting run of `p` becomes a run of `p.parkHalts` that reaches the *parked* state, which has
@@ -88,14 +89,16 @@ theorem outputList_init (input : List ℕ) :
 
 /-- `ExecutesList w p s l n`: running `p` at word size `w` from `s` halts after exactly `n`
 instructions, the final `halt` included, returning an address at which the memory just before
-halting holds `l` as a length-prefixed array. -/
+halting holds `l` as a length-prefixed array. The final occupied address must fit a word,
+including the header address when `l` is empty. -/
 def ExecutesList (w : ℕ) (p : Program B r) (s : State r) (l : List ℕ) (n : ℕ) : Prop :=
-  ∃ t m v, Runs w p s t m ∧ step w p t = .halt v ∧ outputList t.data.mem v = l ∧ n = m + 1
+  ∃ t m v, Runs w p s t m ∧ step w p t = .halt v ∧ outputList t.data.mem v = l ∧
+    Fits w (v + l.length) ∧ n = m + 1
 
 /-- A list-valued run is in particular a halting run, returning the address of the list. -/
 theorem ExecutesList.executes {w : ℕ} {p : Program B r} {s : State r} {l : List ℕ} {n : ℕ}
     (h : ExecutesList w p s l n) : ∃ v, Executes w p s v n := by
-  obtain ⟨t, m, v, hr, hh, -, rfl⟩ := h
+  obtain ⟨t, m, v, hr, hh, -, -, rfl⟩ := h
   exact ⟨v, t, m, hr, hh, rfl⟩
 
 /-- One program returns the list `f a` at every admitted fitting width within `time a w`
@@ -106,11 +109,13 @@ def Program.ComputesListInTime (p : Program B r) (encode : ℕ → α → List �
     ∃ n, ExecutesList w p (.init (encode w a)) (f a) n ∧ n ≤ time a w
 
 /-- A fixed program computes a list-valued function in polynomially many instructions in
-`size a`, at every fitting width above a positive logarithmic threshold. -/
+`size a`, at every fitting width above a positive logarithmic threshold. Every input must
+admit such a width. -/
 def UniformComputableListInPolyTime (B : Basis) (f : α → List ℕ) (encode : ℕ → α → List ℕ)
     (size : α → ℕ) : Prop :=
   ∃ T, PolynomiallyBounded T ∧ ∃ k, 0 < k ∧ ∃ r, ∃ p : Program B r,
-    p.ComputesListInTime encode (fun a _ => T (size a)) (fun a w => logWidth k (size a) ≤ w) f
+    p.ComputesListInTime encode (fun a _ => T (size a)) (fun a w => logWidth k (size a) ≤ w) f ∧
+      InputAdmissible encode (fun a w => logWidth k (size a) ≤ w)
 
 /-- Increase a fixed program's time bound and restrict its admitted widths. -/
 theorem Program.ComputesListInTime.mono {p : Program B r} {encode : ℕ → α → List ℕ}
@@ -125,12 +130,12 @@ theorem Program.ComputesListInTime.mono {p : Program B r} {encode : ℕ → α �
 /-- A structured execution followed by `halt out` returns the array at the address in `out`,
 with one more instruction. -/
 theorem Exec.executesList {w : ℕ} {c : Code B r} {x y : Data r} {n : ℕ} (h : Exec w c x y n)
-    (out : Fin r) :
+    (out : Fin r) (hfit : Fits w (y.regs out + (outputList y.mem (y.regs out)).length)) :
     ExecutesList w (c.program out) ⟨0, x⟩ (outputList y.mem (y.regs out)) (n + 1) := by
   have hr := h.runs (pc := 0) (p := c.program out) (Program.Contains.self _).append_left
   have hh : step w (c.program out) ⟨0 + c.size, y⟩ = .halt (y.regs out) :=
     step_halt (by simp [Code.program])
-  exact ⟨_, n, _, hr, hh, rfl, rfl⟩
+  exact ⟨_, n, _, hr, hh, rfl, hfit, rfl⟩
 
 /-- A structured certificate leaving the address of `f a` in register `out` computes `f`, with
 one more instruction for the final halt. -/
@@ -138,11 +143,11 @@ theorem Code.computesListInTime_program {encode : ℕ → α → List ℕ} {time
     {allowed : α → ℕ → Prop} {f : α → List ℕ} (c : Code B r) (out : Fin r)
     (h : ∀ a w, allowed a w → InputFits w (encode w a) →
       ∃ y, ExecWithin w c (.init (encode w a)) y (time a w) ∧
-        outputList y.mem (y.regs out) = f a) :
+        outputList y.mem (y.regs out) = f a ∧ Fits w (y.regs out + (f a).length)) :
     (c.program out).ComputesListInTime encode (fun a w => time a w + 1) allowed f := by
   intro a w hw hi
-  obtain ⟨y, ⟨n, hn, he⟩, hy⟩ := h a w hw hi
-  exact ⟨n + 1, hy ▸ he.executesList out, Nat.add_le_add_right hn 1⟩
+  obtain ⟨y, ⟨n, hn, he⟩, hy, hfit⟩ := h a w hw hi
+  exact ⟨n + 1, hy ▸ he.executesList out (by rwa [hy]), Nat.add_le_add_right hn 1⟩
 
 /-! ## Parking the halts -/
 
@@ -231,7 +236,7 @@ theorem ExecutesList.runs_parkHalts {w : ℕ} {p : Program B r} {s : State r} {l
     (h : ExecutesList w p s l n) (hN : n ≤ N) :
     ∃ (i : Fin r) (x : Data r), Runs w p.parkHalts s ⟨p.length + i, x⟩ N ∧
       outputList x.mem (x.regs i) = l := by
-  obtain ⟨t, m, v, hr, hh, hl, rfl⟩ := h
+  obtain ⟨t, m, v, hr, hh, hl, -, rfl⟩ := h
   obtain ⟨i, hv, hn⟩ := Program.next_parkHalts_of_halt hh
   refine ⟨i, t.data, ?_, hv ▸ hl⟩
   have h₁ := (Program.runs_parkHalts hr).tail _ _ _ _ hn

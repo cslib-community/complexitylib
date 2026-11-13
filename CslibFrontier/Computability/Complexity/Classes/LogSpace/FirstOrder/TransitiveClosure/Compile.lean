@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Block
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Assigns
-public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Kept
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.ClosureKernel
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Positive
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
@@ -40,11 +40,13 @@ formula at each polarity, with every register at most `B`.
 * `Cslib.Logic.FO.Ordered.TCModelChecker.Env`, `Cslib.Logic.FO.Ordered.TCModelChecker.Correct`:
   the hypotheses and statement of compiler correctness.
 
+The register-machine kernel shared with the FO(DTC) compiler (term expressions, the loop test,
+digit decoding and loading the source tuple) is in
+`Cslib.Logic.FO.Ordered.ClosureKernel`; the effect of a block on the registers is
+`Turing.CounterProgram.Kept`.
+
 ## Main results
 
-* `Cslib.Logic.FO.Ordered.TCModelChecker.reaches_digitsCode`,
-  `Cslib.Logic.FO.Ordered.TCModelChecker.reaches_loadCode`: decoding a code into a tuple and
-  loading the source tuple of a closure, shared with the FO(DTC) loop.
 * `Cslib.Logic.FO.Ordered.TCModelChecker.correct_ofFO`, `correct_neg`, `correct_conj`,
   `correct_ex`: correctness for the first-order constructors.
 
@@ -62,6 +64,7 @@ namespace Cslib.Logic.FO.Ordered.TCModelChecker
 
 open Turing Turing.CounterProgram Turing.CounterProgram.Block Expr Vocabulary.ModelChecker
 open Operator (Formula RelEnv)
+open ClosureKernel
 
 variable {L : Language.{u, v}} [L.IsRelational] (v : Vocabulary L)
 
@@ -74,10 +77,6 @@ variable {L : Language.{u, v}} [L.IsRelational] (v : Vocabulary L)
   | _, _, .ex φ => scratch φ + 1
   | _, _, .op k body _ => 4 * k + 9 + scratch (body ⟨0, Nat.one_pos⟩)
 
-/-- A term with free variables in registers, as an expression. -/
-@[expose] def termE {α : Type*} (fv : α → ℕ) (t : (language L).Term α) : Expr :=
-  ModelChecker.termExpr fv 0 (t.relabel (Sum.inl : α → α ⊕ Fin 0))
-
 /-- Straight-line assignments of `e i` to register `r + i` above the choice, for `i < k`. -/
 @[expose] def assignChain (b r k : ℕ) (e : ℕ → Expr) : List Instr :=
   (List.range k).map fun i => (Instr.assign (r + i) (e i) (b + i + 1)).shift
@@ -89,87 +88,6 @@ theorem length_assignChain (b r k : ℕ) (e : ℕ → Expr) : (assignChain b r k
 theorem assignChain_eq (b r k : ℕ) (e : ℕ → Expr) :
     assignChain b r k e = (assignsCode b r k e).map Instr.shift := by
   simp [assignChain, assignsCode, List.map_map, Function.comp_def]
-
-/-- The test of the closure loop: positive exactly when the current tuple differs from the
-target tuple. -/
-@[expose] def testExpr (base k : ℕ) (z : Fin k → Expr) : Expr :=
-  Expr.sum ((List.finRange k).map fun i : Fin k =>
-    add (sub (reg (base + i.val)) (z i)) (sub (z i) (reg (base + i.val))))
-
-theorem lt_eval_testExpr {base k n : ℕ} {z : Fin k → Expr} {regs : List ℕ}
-    {us zs : Fin k → Fin n} (hu : ∀ i : Fin k, regs.getD (base + i) 0 = us i)
-    (hz : ∀ i : Fin k, (z i).eval regs = zs i) :
-    (const 0).eval regs < (testExpr base k z).eval regs ↔ us ≠ zs := by
-  rw [Expr.eval_const, Nat.pos_iff_ne_zero, Ne, Ne, not_iff_not, testExpr, Expr.eval_sum,
-    List.map_map, List.sum_eq_zero_iff]
-  simp only [List.mem_map, List.mem_finRange, true_and, forall_exists_index,
-    forall_apply_eq_imp_iff, Function.comp_apply, Expr.eval_add, Expr.eval_sub, Expr.eval_reg,
-    hu, hz]
-  constructor
-  · intro h
-    funext i
-    exact Fin.ext (by have := h i; omega)
-  · rintro rfl i
-    omega
-
-/-- Digit `i` in base `n` (register `0`) of register `r`: the decoding of a code into a tuple. -/
-@[expose] def digitE (r i : ℕ) : Expr := Expr.mod (Expr.div (reg r) (pow (reg 0) i)) (reg 0)
-
-/-- With `n` in register `0` and a code `g < n ^ k` in register `r`, `digitE r i` is digit `i` of
-the tuple `finFunctionFinEquiv.symm g`. -/
-theorem eval_digitE {regs : List ℕ} {r k n : ℕ} (h0 : regs.getD 0 0 = n) (g : Fin (n ^ k))
-    (hg : regs.getD r 0 = g) (i : Fin k) :
-    (digitE r i).eval regs = finFunctionFinEquiv.symm g i := by
-  rw [finFunctionFinEquiv_symm_apply_val]
-  simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg, hg, h0]
-
-/-- Decoding register `r`, holding `g < n ^ k`, into registers `d + i` writes the tuple
-`finFunctionFinEquiv.symm g`. -/
-theorem reaches_digitsCode {P : CounterProgram} {w : List Bool} {B b r d k n : ℕ}
-    (hP : P.CodeAt b (assignsCode b d k (digitE r))) (hrd : r < d ∨ d + k ≤ r) (hd : 0 < d)
-    {regs : List ℕ} (hlen : d + k ≤ regs.length) (h0 : regs.getD 0 0 = n)
-    (hnB : n ≤ B) (hB : ∀ x ∈ regs, x ≤ B) (g : Fin (n ^ k)) (hg : regs.getD r 0 = g) :
-    ∃ regs', P.Reaches w (P.Running B) (b, regs) (b + k, regs') ∧
-      regs'.length = regs.length ∧
-      (∀ j, (j < d ∨ d + k ≤ j) → regs'.getD j 0 = regs.getD j 0) ∧
-      (∀ i : Fin k, regs'.getD (d + i) 0 = finFunctionFinEquiv.symm g i) ∧
-      ∀ x ∈ regs', x ≤ B := by
-  have hdig : ∀ i : Fin k, (digitE r i).eval regs = finFunctionFinEquiv.symm g i :=
-    eval_digitE h0 g hg
-  obtain ⟨regs', hr, hlen', hout, hin, hB'⟩ := reaches_assignsCode (w := w) hP hlen
-    (fun i hi regs' h => by
-      simp only [digitE, Expr.eval_mod, Expr.eval_div, Expr.eval_pow, Expr.eval_reg]
-      rw [h r (by omega), h 0 (by omega)]) hB
-    (fun i hi => by
-      rw [show (digitE r i).eval regs = (digitE r (⟨i, hi⟩ : Fin k)).eval regs from rfl, hdig]
-      exact (Fin.isLt _).le.trans hnB)
-  exact ⟨regs', hr, hlen', hout, fun i => (hin i i.isLt).trans (hdig i), hB'⟩
-
-/-- Loading the source tuple `s₀` of a closure, denoted by expressions `src` that read only
-registers below `base`, into registers `base + i`. -/
-theorem reaches_loadCode {P : CounterProgram} {w : List Bool} {B b base k n : ℕ}
-    {src : Fin k → Expr} (hP : P.CodeAt b
-      (assignsCode b base k (fun i => if h : i < k then src ⟨i, h⟩ else const 0)))
-    {regs₀ : List ℕ} (hlen : base + k ≤ regs₀.length) (hnB : n ≤ B) (hB : ∀ x ∈ regs₀, x ≤ B)
-    {s₀ : Fin k → Fin n}
-    (hsrc : ∀ regs, (∀ j < base, regs.getD j 0 = regs₀.getD j 0) →
-      ∀ i, (src i).eval regs = s₀ i) :
-    ∃ regs', P.Reaches w (P.Running B) (b, regs₀) (b + k, regs') ∧
-      regs'.length = regs₀.length ∧
-      (∀ j, (j < base ∨ base + k ≤ j) → regs'.getD j 0 = regs₀.getD j 0) ∧
-      (∀ i : Fin k, regs'.getD (base + i) 0 = s₀ i) ∧ ∀ x ∈ regs', x ≤ B := by
-  obtain ⟨regs', hr, hlen', hout, hin, hB'⟩ := reaches_assignsCode (w := w) hP hlen
-    (fun i hi regs' h => by
-      simp only [hi, ↓reduceDIte]
-      rw [hsrc regs' (fun j hj => h j (by omega)), hsrc regs₀ (fun _ _ => rfl)]) hB
-    (fun i hi => by
-      simp only [hi, ↓reduceDIte]
-      rw [hsrc regs₀ (fun _ _ => rfl)]
-      exact (Fin.isLt _).le.trans hnB)
-  refine ⟨regs', hr, hlen', hout, fun i => ?_, hB'⟩
-  rw [hin i i.isLt]
-  simp only [i.isLt, ↓reduceDIte]
-  exact hsrc regs₀ (fun _ _ => rfl) i
 
 /-- `|x - y|` for registers `x` and `y`: positive exactly when they differ. -/
 @[expose] def distE (x y : ℕ) : Expr := add (sub (reg x) (reg y)) (sub (reg y) (reg x))
@@ -382,28 +300,6 @@ theorem reaches_assignChain {P : CounterProgram} {w : List Bool} {B b r : ℕ} {
     (codeAt_padded b (assignsCode b r k e)) hlen he hB heB
   exact ⟨regs', Reaches.unpad (Nat.zero_le B) (assignChain_eq b r k e ▸ hP) hr, hrest⟩
 
-private theorem pair_apply_lt {A : Type*} {k : ℕ} (xs ys : Fin k → A) (i : Fin (2 * k))
-    (h : (i : ℕ) < k) : TC.pair xs ys i = xs ⟨i, h⟩ := by
-  have : Fin.cast (Nat.two_mul k) i = Fin.castAdd k ⟨i, h⟩ := Fin.ext rfl
-  simp only [TC.pair, this, Fin.append_left]
-
-private theorem pair_apply_ge {A : Type*} {k : ℕ} (xs ys : Fin k → A) (i : Fin (2 * k))
-    (h : k ≤ (i : ℕ)) : TC.pair xs ys i = ys ⟨i - k, by have := i.isLt; omega⟩ := by
-  have : Fin.cast (Nat.two_mul k) i = Fin.natAdd k ⟨i - k, by have := i.isLt; omega⟩ :=
-    Fin.ext (by simp; omega)
-  simp only [TC.pair, this, Fin.append_right]
-
-theorem getD_pair {regs : List ℕ} {base k n : ℕ} {us vs : Fin k → Fin n}
-    (hu : ∀ i : Fin k, regs.getD (base + i) 0 = us i)
-    (hv : ∀ i : Fin k, regs.getD (base + k + i) 0 = vs i) (i : Fin (2 * k)) :
-    regs.getD (base + i) 0 = ((TC.pair us vs i : Fin n) : ℕ) := by
-  by_cases h : (i : ℕ) < k
-  · rw [pair_apply_lt _ _ _ h]; exact hu ⟨i, h⟩
-  · rw [pair_apply_ge _ _ _ (by omega), ← hv]
-    congr 1
-    simp only
-    omega
-
 section Correct
 
 variable {a : EncodedStructure} [L.Structure (Fin a.1)] [Fact (2 ≤ a.1)]
@@ -414,50 +310,6 @@ variable {a : EncodedStructure} [L.Structure (Fin a.1)] [Fact (2 ≤ a.1)]
 
 private theorem sat_not (s : Bool) (p : Prop) : Sat s (¬ p) ↔ Sat (!s) p := by
   cases s <;> simp [Sat]
-
-/-- The registers after a block: same length, unchanged below `base`, at most `B`. -/
-@[expose] def Kept (B base : ℕ) (regs regs' : List ℕ) : Prop :=
-  regs'.length = regs.length ∧ (∀ i < base, regs'.getD i 0 = regs.getD i 0) ∧ ∀ r ∈ regs', r ≤ B
-
-theorem Kept.trans {B base : ℕ} {r₁ r₂ r₃ : List ℕ} (h₁ : Kept B base r₁ r₂)
-    (h₂ : Kept B base r₂ r₃) : Kept B base r₁ r₃ :=
-  ⟨h₂.1.trans h₁.1, fun i hi => (h₂.2.1 i hi).trans (h₁.2.1 i hi), h₂.2.2⟩
-
-/-- Keeping the registers below `base'` keeps those below any `base ≤ base'`. -/
-theorem Kept.mono {B base base' : ℕ} {regs regs' : List ℕ} (h : Kept B base' regs regs')
-    (hle : base ≤ base') : Kept B base regs regs' :=
-  ⟨h.1, fun i hi => h.2.1 i (by omega), h.2.2⟩
-
-theorem Kept.refl {B base : ℕ} {regs : List ℕ} (hB : ∀ r ∈ regs, r ≤ B) :
-    Kept B base regs regs :=
-  ⟨rfl, fun _ _ => rfl, hB⟩
-
-/-- Setting a register at or above `base` to a value at most `B` keeps the registers. -/
-theorem Kept.set_right {B base j m : ℕ} {regs regs' : List ℕ} (h : Kept B base regs regs')
-    (hj : base ≤ j) (hm : m ≤ B) : Kept B base regs (regs'.set j m) :=
-  ⟨by rw [List.length_set, h.1], fun i hi => by rw [List.getD_set_ne (by omega), h.2.1 i hi],
-    List.forall_mem_set_of_forall_mem h.2.2 hm⟩
-
-private theorem Kept.of_set {B base m : ℕ} {regs regs' : List ℕ}
-    (hk : Kept B (base + 1) (regs.set base m) regs') : Kept B base regs regs' :=
-  ⟨by rw [hk.1, List.length_set], fun i hi => by
-    rw [hk.2.1 i (by omega), List.getD_set_ne (by omega)], hk.2.2⟩
-
-theorem Kept.facts {B base d n : ℕ} {regs regs' : List ℕ} {α : Type} {fv : α → ℕ}
-    {val : α → Fin n} (hk : Kept B base regs regs') (hbase : 0 < base) (hfv : ∀ x, fv x < base)
-    (hd : base + d ≤ regs.length) (h0 : regs.getD 0 0 = n)
-    (hv : ∀ x, regs.getD (fv x) 0 = val x) :
-    base + d ≤ regs'.length ∧ regs'.getD 0 0 = n ∧ ∀ x, regs'.getD (fv x) 0 = val x :=
-  ⟨by rw [hk.1]; exact hd, by rw [hk.2.1 0 hbase, h0], fun x => by rw [hk.2.1 _ (hfv x), hv]⟩
-
-/-- A term compiled by `termE` computes its value, given correct atomic handlers. -/
-theorem eval_termE_of_atomic {w : List Bool} {α : Type} {fv : α → ℕ} {val : α → Fin a.1}
-    (hC : (ModelChecker.atomicCompiler v fv 0).Correct w fv 0 val) {regs : List ℕ}
-    (h0 : regs.getD 0 0 = a.1) (hv : ∀ x, regs.getD (fv x) 0 = val x)
-    (t : (language L).Term α) : (termE fv t).eval regs = ((t.realize val : Fin a.1) : ℕ) := by
-  have := hC.term regs (Fin.elim0 : Fin 0 → Fin a.1) h0 hv (fun i => i.elim0) (t.relabel Sum.inl)
-  rw [Term.realize_relabel] at this
-  exact this
 
 variable (v a P B Post R) in
 /-- The hypotheses of the compiler correctness proof. -/
@@ -493,20 +345,20 @@ theorem correct_ofFO (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
     Correct v a P B Post R (Formula.ofFO (shape := TC.shape) (Γ := Γ) φ) := by
   intro _ s _ fv base val ρ b T regs hP hbase hfv hd h0 hv hregs
   let code := ModelChecker.formulaCode v fv base φ b (cond s T R) (cond s R T)
-  obtain ⟨res, regs', hres, hreach, hlen, hkeep, hB'⟩ :=
+  obtain ⟨res, regs', hres, hreach, hk'⟩ :=
     reaches_formulaCodeWith (P := padded b code) hE.card_le fv base hbase hfv val _
       (hE.atomic fv base val) φ b (cond s T R) (cond s R T) regs default (codeAt_padded b code)
       hd h0 hregs hv (fun i => i.elim0)
   have hP' : P.CodeAt b (code.map Instr.shift) := hP
-  have hk : Kept B base regs regs' := ⟨hlen, fun i hi => hkeep i (by omega), hB'⟩
+  have hk : Kept B base regs regs' := hk'.mono (Nat.le_add_right _ _)
   have hX : (Formula.ofFO (shape := TC.shape) (Γ := Γ) φ).Realize TC.interpretation ρ val ↔
       res = true := hres.symm
   refine ⟨Sound.of_reaches hE.one_le hP' hreach ?_, fun hs => Complete.of_reaches hP' hreach ?_⟩
   · cases s <;> cases res <;>
       simp only [Bool.cond_true, Bool.cond_false, Bool.false_eq_true, ↓reduceIte]
     · exact Sound.exit ⟨hk, by simp [Sat, hX]⟩
-    · exact Sound.halt hE.one_le hE.halts (fun _ => hE.post _ rfl) hB'
-    · exact Sound.halt hE.one_le hE.halts (fun _ => hE.post _ rfl) hB'
+    · exact Sound.halt hE.one_le hE.halts (fun _ => hE.post _ rfl) hk.bounded
+    · exact Sound.halt hE.one_le hE.halts (fun _ => hE.post _ rfl) hk.bounded
     · exact Sound.exit ⟨hk, by simp [Sat, hX]⟩
   · cases s <;> cases res <;>
       simp only [Bool.cond_true, Bool.cond_false, Bool.false_eq_true, ↓reduceIte]
@@ -544,11 +396,11 @@ theorem correct_conj (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
     refine ⟨sφ.bind fun regs₁ ⟨hk₁, hX⟩ => ?_, fun ⟨hX, hY⟩ => (cφ hX).bind fun regs₁ hk₁ => ?_⟩
     · obtain ⟨hd₁, h0₁, hv₁⟩ := hk₁.facts hbase hfv hdψ h0 hv
       obtain ⟨sψ, -⟩ := ihψ hΓ true hWψ fv base val ρ _ T regs₁ hPψ hbase hfv hd₁ h0₁ hv₁
-        hk₁.2.2
+        hk₁.bounded
       exact sψ.mono fun regs₂ ⟨hk₂, hY⟩ => ⟨hk₁.trans hk₂, hX, hY⟩
     · obtain ⟨hd₁, h0₁, hv₁⟩ := hk₁.facts hbase hfv hdψ h0 hv
       obtain ⟨-, cψ⟩ := ihψ hΓ true hWψ fv base val ρ _ T regs₁ hPψ hbase hfv hd₁ h0₁ hv₁
-        hk₁.2.2
+        hk₁.bounded
       exact (cψ hY).mono fun regs₂ hk₂ => hk₁.trans hk₂
   | false =>
     have hP' : P.CodeAt b ([(Instr.lt (const 0) (const 0) (b + 1) (b + 1)).shift,
@@ -586,15 +438,6 @@ theorem correct_conj (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
 
 @[simp] theorem sat_false (p : Prop) : Sat false p ↔ ¬ p := Iff.rfl
 
-private theorem getD_elim_set {α : Type} {fv : α → ℕ} {base : ℕ} {regs : List ℕ} {n : ℕ}
-    {val : α → Fin n} (hfv : ∀ x, fv x < base) (hlen : base < regs.length)
-    (hv : ∀ x, regs.getD (fv x) 0 = val x) (x : Fin n) :
-    ∀ y : Option α, (regs.set base x).getD (y.elim base fv) 0 = (Option.elim y x val : Fin n)
-  | none => List.getD_set_self hlen
-  | some y => by
-    simp only [Option.elim_some]
-    rw [List.getD_set_ne (by have := hfv y; omega), hv]
-
 theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
     {φ : Formula (language L) TC.shape Γ (Option α)}
     (ih : Correct v a P B Post R φ) : Correct v a P B Post R φ.ex := by
@@ -627,7 +470,8 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
             (Kept B (base + 1) (regs.set base x))) := fun x =>
       ih hΓ true hW _ (base + 1) _ ρ (b + 4) T _ hPφ (by omega) hfv'
         (by rw [List.length_set]; exact hdepth) (h0set x)
-        (getD_elim_set hfv hlen hv x) (hset x x.isLt.le)
+        (getD_elim_eq (fun y => by rw [List.getD_set_ne (by have := hfv y; omega), hv])
+          (c := x) (List.getD_set_self hlen)) (hset x x.isLt.le)
     have hN : ∀ y, (reg 0).eval (regs.set base y) = (reg 0).eval regs := fun y => by
       simp only [eval_reg, h0set, h0]
     have hN' : (reg 0).eval regs = a.1 := by simp only [eval_reg, h0]
@@ -671,15 +515,12 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
           Complete P (encStructure a) (b + 2) regs₁ (b + 2 + len φ false)
             (Kept B (base + 1) regs₁)) := fun x regs₁ hk hx => by
       obtain ⟨hd₁, h0₁, hv₁⟩ := hk.facts hbase hfv (d := 1 + scratch φ) (by omega) h0 hv
-      refine ih hΓ false hW _ (base + 1) _ ρ (b + 2) _ regs₁ hPφ (by omega) hfv'
-        (by omega) h0₁ (fun y => ?_) hk.2.2
-      cases y with
-      | none => simpa using hx
-      | some y => simpa using hv₁ y
+      exact ih hΓ false hW _ (base + 1) _ ρ (b + 2) _ regs₁ hPφ (by omega) hfv'
+        (by omega) h0₁ (getD_elim_eq hv₁ (c := x) hx) hk.bounded
     have hstep : ∀ regs₁ : List ℕ, Kept B base regs regs₁ → ∀ m, regs₁.getD base 0 = m →
         P.Reaches (encStructure a) (P.Oblivious B) (b + 1, 0 :: regs₁)
           (if m < a.1 then b + 2 else T, 0 :: regs₁) := fun regs₁ hk m hm => by
-      have := hk.2.2
+      have := hk.bounded
       cp_step [hm, (hk.facts hbase hfv (d := 0) (by omega) h0 hv).2.1]
     have hinc : ∀ regs₂ : List ℕ, (∀ r ∈ regs₂, r ≤ B) → ∀ m, regs₂.getD base 0 = m → m < B →
         P.Reaches (encStructure a) (P.Oblivious B) (b + 2 + len φ false, 0 :: regs₂)
@@ -704,12 +545,13 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
         refine Sound.of_oblivious hE.one_le (hstep regs₁ hk m hx) ?_
         rw [ite_eq_left hmn]
         refine Sound.bind (hbody ⟨m, hmn⟩ regs₁ hk hx).1 fun regs₂ ⟨hk₂, hn₂⟩ => ?_
-        have hx₂ : regs₂.getD base 0 = m := by rw [hk₂.2.1 base (by omega), hx]
+        have hx₂ : regs₂.getD base 0 = m := by rw [hk₂.getD_eq base (by omega), hx]
         refine Sound.of_oblivious hE.one_le
-          (hinc regs₂ hk₂.2.2 m hx₂ (by have := hE.card_le; omega)) ?_
+          (hinc regs₂ hk₂.bounded m hx₂ (by have := hE.card_le; omega)) ?_
         refine ih' (m + 1) _ (by omega) hmn
           (hk.trans ((hk₂.mono (by omega)).set_right le_rfl (by have := hE.card_le; omega)))
-          (by rw [List.getD_set_self (by rw [hk₂.1, hk.1]; exact hlen)]) fun x hxm => ?_
+          (by rw [List.getD_set_self (by rw [hk₂.length_eq, hk.length_eq]; exact hlen)])
+          fun x hxm => ?_
         rcases Nat.lt_succ_iff_lt_or_eq.mp hxm with hxm | hxm
         · exact hall x hxm
         · have : x = ⟨m, hmn⟩ := Fin.ext hxm
@@ -731,12 +573,12 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
         rw [ite_eq_left hmn]
         refine Complete.bind ((hbody ⟨m, hmn⟩ regs₁ hk hx).2 fun h => hn ⟨⟨m, hmn⟩, h⟩)
           fun regs₂ hk₂ => ?_
-        have hx₂ : regs₂.getD base 0 = m := by rw [hk₂.2.1 base (by omega), hx]
+        have hx₂ : regs₂.getD base 0 = m := by rw [hk₂.getD_eq base (by omega), hx]
         refine Complete.of_oblivious
-          (hinc regs₂ hk₂.2.2 m hx₂ (by have := hE.card_le; omega)) ?_
+          (hinc regs₂ hk₂.bounded m hx₂ (by have := hE.card_le; omega)) ?_
         exact ih' (m + 1) _ (by omega) hmn
           (hk.trans ((hk₂.mono (by omega)).set_right le_rfl (by have := hE.card_le; omega)))
-          (by rw [List.getD_set_self (by rw [hk₂.1, hk.1]; exact hlen)]) hn
+          (by rw [List.getD_set_self (by rw [hk₂.length_eq, hk.length_eq]; exact hlen)]) hn
     have hk₀ : Kept B base regs (regs.set base 0) :=
       ⟨List.length_set .., fun i hi => List.getD_set_ne (by omega) .., hset 0 (Nat.zero_le _)⟩
     have hr₀ : P.Reaches (encStructure a) (P.Oblivious B) (b, 0 :: regs)

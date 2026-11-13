@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Probabilistic.Oracle.Parameter
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Languages.Probabilistic.BitString
+public import CslibFrontier.Languages.Probabilistic.Oracle.Run
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 
@@ -104,16 +105,12 @@ noncomputable def lazyRandomFunctionOracle (n : ℕ) (query : List Bool) :
 noncomputable def prfRealGame (family : List Bool → List Bool → List Bool)
     (adversary : OracleDistinguisher) (n : ℕ) : ProbComp Bool := do
   let key ← BitString.sampleList n
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
-      pure (prfOracle family n key request.2))) (adversary n [])
+  (adversary n []).run fun request => pure (prfOracle family n key request.2)
 
 /-- Sample one whole random function, independently of the adversary's private samples. -/
 noncomputable def prfIdealGame (adversary : OracleDistinguisher) (n : ℕ) : ProbComp Bool := do
   let table ← ProbComp.uniform (BitString n → BitString n)
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
-      pure (randomFunctionOracle n table request.2))) (adversary n [])
+  (adversary n []).run fun request => pure (randomFunctionOracle n table request.2)
 
 /-- The ideal game admits consistent lazy answers to adaptive queries, with private randomness
 independent of the table and the same rejection convention for malformed inputs. -/
@@ -134,7 +131,7 @@ theorem prfIdealGame_eq_lazy (adversary : OracleDistinguisher) (n : ℕ) :
           (randomFunctionQuery n query) = PMF.pure (randomFunctionOracle n table query) :=
     interpret_randomFunctionQuery ProbComp.unifOracle n table query
   simpa only [ProbOracleComp.runWith, OracleComp.runWith, adapted, prfIdealGame,
-    ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_interpret, ProbComp.eval_pure,
+    ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_run, ProbComp.eval_pure,
     OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
     ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query, heager,
     lazyRandomFunctionOracle, PMF.monad_bind_eq_bind] using h

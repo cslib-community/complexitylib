@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.DiscreteLog
+public import CslibFrontier.Crypto.Computational.DiscreteLog.Extract
 public import CslibFrontier.Probability.BitString
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import Cslib.Foundations.Data.BitString
@@ -16,12 +16,11 @@ import CslibFrontier.Crypto.Protocols.SigmaProtocol.Identification
 import CslibFrontier.Foundations.Data.BitString.Counter
 import CslibFrontier.Foundations.Data.Nat.Bits
 import CslibFrontier.Probability.PMF
-import CslibFrontier.Foundations.FieldTheory.Finite.Basic
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 
 /-!
 # Schnorr identification under the discrete-logarithm assumption
@@ -36,8 +35,8 @@ elements this is Schnorr's check `z • g = t + c • u`.
 
 Rewinding an impersonator gives a discrete-logarithm adversary, `SchnorrImpersonator.rewind`. It
 runs the impersonator to its commitment, answers two independent uniform challenges from the same
-state, and computes `(c - c')⁻¹ (z - z')` modulo `q`, inverting by Fermat's little theorem. For each
-security parameter, if `2 ^ k ≤ q` for every description the setup can produce,
+state, and computes `(c - c')⁻¹ (z - z')` modulo `q` with `extractNat`, inverting by Fermat's little
+theorem. For each security parameter, if `2 ^ k ≤ q` for every description the setup can produce,
 
   `ε ≤ 1 / 2 ^ k + √ε'`,
 
@@ -58,14 +57,13 @@ exactly, which matters for the honest prover and for simulation but not for this
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrDirectGame`: the direct impersonation attack.
 * `Cslib.Crypto.PrimeOrderGroupFamily.SchnorrImpersonator.rewind`: the rewinding
   discrete-logarithm adversary.
+* `Cslib.Crypto.PrimeOrderGroupFamily.challengeEmbedding`: `m`-bit challenges as scalars modulo
+  the group order, injective when `2 ^ m ≤ q`.
 
 ## Main results
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_schnorrDirectGame_le`: `ε ≤ 1 / 2 ^ k + √ε'`
   at each security parameter.
-* `Cslib.Crypto.PrimeOrderGroupFamily.extractNat_cast`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_extractNat`: the extracted witness is
-  `(c - c')⁻¹ (z - z')` modulo `q`, and is computable in polynomial time.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_rewind`: the rewinding adversary is uniform strict
   PPT.
 * `Cslib.Crypto.PrimeOrderGroupFamily.negligible_schnorrDirectGame`: Schnorr identification is
@@ -117,11 +115,6 @@ noncomputable def schnorrDirectGame (setup : ℕ → PMF F.Desc) (k : ℕ → �
   return decide (ts.1 = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
     (ofBits c : ZMod (F.order d)) • (α • F.generator d)))
 
-/-- The extracted witness `(c - c')⁻¹ (z - z')` modulo `q`, computed on natural numbers with the
-inverse as a `(q - 2)`nd power. -/
-def extractNat (q c z c' z' : ℕ) : ℕ :=
-  ((c % q + q - c' % q) % q) ^ (q - 2) % q * ((z % q + q - z' % q) % q) % q
-
 /-- The rewinding discrete-logarithm adversary (proof of [BonehShoup2023], Theorem 19.1): run the
 impersonator to its commitment, answer two independent uniform `k n`-bit challenges from the same
 state, and output the extracted witness in binary. -/
@@ -134,31 +127,21 @@ noncomputable def SchnorrImpersonator.rewind (k : ℕ → ℕ) (A : F.SchnorrImp
   let z' ← A.respond n (ts.2, c')
   return (extractNat (F.order input.1) (ofBits c) (ofBits z) (ofBits c') (ofBits z')).bits
 
+/-! ### Bit challenges as scalars -/
+
+variable (F) in
+/-- When `2 ^ m ≤ F.order d`, `m`-bit challenges `BitString m` embed injectively into
+`ZMod (F.order d)` via their binary values. -/
+def challengeEmbedding (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d) :
+    BitString m ↪ ZMod (F.order d) where
+  toFun c := (ofBits (List.ofFn c) : ZMod (F.order d))
+  inj' c c' h := by
+    have hlt (c : BitString m) : ofBits (List.ofFn c) < F.order d :=
+      (ofBits_lt_two_pow _).trans_le (by simpa using hm)
+    rw [ZMod.natCast_eq_natCast_iff', Nat.mod_eq_of_lt (hlt c), Nat.mod_eq_of_lt (hlt c')] at h
+    exact List.ofFn_injective (ofBits_injective_of_length_eq (by simp) h)
+
 /-! ### The exact bound -/
-
-/-- Distinct `k`-bit challenges are distinct modulo `q` when `2 ^ k ≤ q`. -/
-private theorem challenge_ne {q k : ℕ} (hkq : 2 ^ k ≤ q) {c c' : BitString k} (hc : c ≠ c') :
-    (ofBits (List.ofFn c) : ZMod q) ≠ ofBits (List.ofFn c') := by
-  intro h
-  rw [ZMod.natCast_eq_natCast_iff', ofBits, ofBits, ← BitString.lsbValue_eq_foldr_bit,
-    ← BitString.lsbValue_eq_foldr_bit,
-    Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hkq)),
-    Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hkq))] at h
-  exact hc (List.ofFn_injective (BitString.lsbValue_injective (by simp) h))
-
-/-- Fermat's little theorem gives the inverse in `extractNat`: modulo a prime `q`, it is
-`(c - c')⁻¹ (z - z')` whenever `c` and `c'` are distinct modulo `q`. -/
-theorem extractNat_cast {q : ℕ} [Fact q.Prime] {c z c' z' : ℕ}
-    (hc : (c : ZMod q) ≠ c') :
-    (extractNat q c z c' z' : ZMod q) = ((c : ZMod q) - c')⁻¹ * ((z : ZMod q) - z') := by
-  have hsub (a b : ℕ) : (((a % q + q - b % q) % q : ℕ) : ZMod q) = (a : ZMod q) - b := by
-    rw [ZMod.natCast_mod, Nat.cast_sub ((Nat.mod_lt _ (Fact.out : q.Prime).pos).le.trans
-      (Nat.le_add_left _ _)), Nat.cast_add, ZMod.natCast_mod, ZMod.natCast_mod, ZMod.natCast_self,
-      add_zero]
-  have hne : (c : ZMod q) - c' ≠ 0 := sub_ne_zero.mpr hc
-  have hinv : ((c : ZMod q) - c') ^ (q - 2) = ((c : ZMod q) - c')⁻¹ :=
-    ZMod.pow_card_sub_two_eq_inv hne
-  simp only [extractNat, Nat.cast_mul, ZMod.natCast_mod, Nat.cast_pow, hsub, hinv]
 
 /-- Schnorr's protocol on encoded commitments and binary responses, with statements carrying their
 group description; only its verifier is used. -/
@@ -220,7 +203,8 @@ private theorem specialSoundOn (setup : ℕ → PMF F.Desc) {k : ℕ → ℕ} {n
     exact hdd ▸ hd'
   simp only [SigmaProtocol.Accepts, wordProtocol, decide_eq_true_eq] at hz hz'
   have heq := F.encode_injective d (hz.symm.trans hz')
-  have hcne := challenge_ne (hkq d hd) hc
+  have hcne : (ofBits (List.ofFn c) : ZMod (F.order d)) ≠ ofBits (List.ofFn c') :=
+    (F.challengeEmbedding d (hkq d hd)).injective.ne hc
   simp only [wordRelation, wordExtract, extractNat_cast hcne, mul_smul]
   rw [sub_smul, sub_eq_sub_iff_sub_eq_sub.mp heq, ← sub_smul,
     inv_smul_smul₀ (sub_ne_zero.mpr hcne)]
@@ -262,41 +246,6 @@ theorem succProbability_schnorrDirectGame_le (setup : ℕ → PMF F.Desc) (k : �
 
 /-! ### Efficiency of the rewinding adversary -/
 
-/-- The extracted witness is computable in polynomial time from the group description and the
-four binary numbers. -/
-private theorem computableTidilyInPolyTime_extractNat {α : Type} {input : α ↪ List Bool}
-    {d : α → F.Desc} {c z c' z' : α → ℕ} (hd : ComputableTidilyInPolyTime d input F.encDesc)
-    (hc : ComputableTidilyInPolyTime c input encNat)
-    (hz : ComputableTidilyInPolyTime z input encNat)
-    (hc' : ComputableTidilyInPolyTime c' input encNat)
-    (hz' : ComputableTidilyInPolyTime z' input encNat) :
-    ComputableTidilyInPolyTime (fun a => extractNat (F.order (d a)) (c a) (z a) (c' a) (z' a))
-      input encNat := by
-  have hq : ComputableTidilyInPolyTime (fun a => F.order (d a)) input encNat :=
-    F.computableInPolyTime_order.tidy.comp hd
-  have hdiff {x y : α → ℕ} (hx : ComputableTidilyInPolyTime x input encNat)
-      (hy : ComputableTidilyInPolyTime y input encNat) :
-      ComputableTidilyInPolyTime
-        (fun a => (x a % F.order (d a) + F.order (d a) - y a % F.order (d a)) % F.order (d a))
-        input encNat :=
-    .binary_mod' (.binary_sub' (.binary_add' (.binary_mod' hx hq) hq) (.binary_mod' hy hq)) hq
-  have hpow := (ComputableInPolyTime.binary_powMod (ComputableInPolyTime.of_tidy (hdiff hc hc'))
-    (ComputableInPolyTime.of_tidy (.binary_sub' hq (.const 2)))
-    (ComputableInPolyTime.of_tidy hq) fun a => (F.prime_order (d a)).pos).tidy
-  exact .binary_mod' (.binary_mul' hpow (hdiff hz hz')) hq
-
-attribute [local fun_prop] computableTidilyInPolyTime_extractNat
-
-/-- The extracted witness `extractNat` is computable in polynomial time from the group description
-and the four binary numbers. -/
-theorem computableInPolyTime_extractNat {α : Type} {input : α ↪ List Bool}
-    {d : α → F.Desc} {c z c' z' : α → ℕ} (hd : ComputableInPolyTime d input F.encDesc)
-    (hc : ComputableInPolyTime c input encNat) (hz : ComputableInPolyTime z input encNat)
-    (hc' : ComputableInPolyTime c' input encNat) (hz' : ComputableInPolyTime z' input encNat) :
-    ComputableInPolyTime (fun a => extractNat (F.order (d a)) (c a) (z a) (c' a) (z' a))
-      input encNat :=
-  .of_tidy (computableTidilyInPolyTime_extractNat hd.tidy hc.tidy hz.tidy hc'.tidy hz'.tidy)
-
 /-- **The rewinding adversary is uniform strict PPT** when the impersonator is and the challenge
 length is computable in polynomial time. -/
 theorem isPPTOn_rewind {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary encUnary)
@@ -315,7 +264,7 @@ theorem isPPTOn_rewind {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary e
   refine (hrespond.preprocess
     (prepare := fun p : ((((ℕ × F.Desc × List Bool) × List Bool × List Bool) × List Bool) ×
       List Bool) × List Bool => (p.1.1.1.1.1, (p.1.1.1.2.2, p.1.2))) (by fun_prop)).bind_with ?_
-  exact ComputableTidilyInPolyTime.isPPTOn (by fun_prop)
+  exact (ComputableInPolyTime.tidy (by fun_prop)).isPPTOn
 
 /-! ### Security under the discrete-logarithm assumption -/
 

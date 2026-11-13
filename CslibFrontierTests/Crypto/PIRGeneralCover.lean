@@ -101,13 +101,14 @@ example : Fintype.card (RadiusBallQuery (Fin 5) 2 (Fin 3)) = 106 := by
   decide
 
 /-- `{00000, 11111}` covers `Fin 5 → Bool` at radius `2` (achieving `21 122 < 2 ^ 25` bits at
-`n = 2 ^ 25, ℓ = 32`, and satisfying CGKS's `k d ℓ + k d² ℓ² = 51 520` bound), whereas a single
+`n = 2 ^ 25, ℓ = 32`, i.e., CGKS p. 10's displayed `20 800` leading term plus `322` radius-`0`/`1`
+answer bits, and satisfying the coarser `k d ℓ + k d² ℓ² = 51 520` bound), whereas a single
 codeword `{00000}` does not cover `Fin 5 → Bool` at radius `2`. -/
 example : HasScheme (Fin (2 ^ 25)) 2 21122 :=
   hasScheme_two_radius_two_of_le_pow_five (ℓ := 32) (by decide)
 
 example : HasScheme (Fin (2 ^ 25)) 2 (2 * 5 * 32 + 2 * 5 ^ 2 * 32 ^ 2) :=
-  hasScheme_of_hammingDist_two_cgks repetitionFive_covers_two (by decide) (ℓ := 32) (by decide)
+  hasScheme_of_hammingDist_two_sq repetitionFive_covers_two (by decide) (ℓ := 32) (by decide)
     (by decide)
 
 example : ¬ ∀ w : Fin 5 → Bool, hammingDist (fun _ : Fin 5 => false) w ≤ 2 := by

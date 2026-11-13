@@ -111,7 +111,7 @@ theorem PolyTimeReducible.mem_NPPoly (h : PolyTimeReducible enc encB A B)
     (hB : B ∈ NPPoly encB) : A ∈ NPPoly enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨adv, hadv, B', hB', hBB'⟩ := hB
-  obtain ⟨q, hq⟩ := ((encoding_length encB).comp hf).polyBounded.exists_polynomial
+  obtain ⟨q, hq⟩ := hf.polyBounded_length.exists_polynomial
   obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.1 hadv
   -- the advice: the target advice for all lengths up to `q n`
   let adv' : ℕ → List Bool := fun n => encList encBits ((List.range (q.eval n + 1)).map adv)

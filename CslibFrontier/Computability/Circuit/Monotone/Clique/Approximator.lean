@@ -46,6 +46,8 @@ on the two kinds of test inputs, counted in
 
 @[expose] public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone
 
 open Cslib.Circuits.Clique Finset

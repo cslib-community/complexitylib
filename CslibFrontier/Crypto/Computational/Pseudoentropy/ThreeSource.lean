@@ -38,14 +38,12 @@ only to the security argument; the efficient test handles all indices uniformly.
 * `ThreeSource.isPolyTime_seedLength`, `ThreeSource.isPolyTime_outputLength`: extraction ledger
   lengths are computable in polynomial time.
 * `ThreeSource.replace_remaining`, `ThreeSource.replace_observations`,
-  `ThreeSource.replace_indexed_labels_withAdvice`, `ThreeSource.replace_indexed_labels`: hybrid
-  reductions replacing each source component with uniform bits.
+  `ThreeSource.replace_indexed_labels_withAdvice`: hybrid reductions replacing each source
+  component with uniform bits.
 * `ThreeSource.isPPTOn_extract`: the composed program has a strict PPT certificate.
-* `SamplablePair.HasGapWithAdvice.extract_indexed_three`,
-  `SamplablePair.HasGap.extract_indexed_three`: security for any valid candidate choice relative
-  to fixed advice and in the uniform case.
-* `SamplablePair.HasGapWithAdvice.extract_three`, `SamplablePair.HasGap.extract_three`: the
-  single-candidate computational interface.
+* `SamplablePair.HasGapWithAdvice.extract_indexed_three`: security for any valid candidate
+  choice.
+* `SamplablePair.HasGapWithAdvice.extract_three`: the single-candidate computational interface.
 
 ## References
 
@@ -275,11 +273,11 @@ the first two components. No efficiency assumption is needed for this postproces
 theorem replace_remaining {pair : SamplablePair} (saved : pair.SeedRealization)
     (bound inverseSlack observationBits labelBits remainingBits : ℕ → ℕ)
     (hbudget : ∀ᶠ n in atTop, remainingBits n = 0 ∨
-      remainingBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      remainingBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           (saved.length n - entropy ((pair.joint n).map Prod.fst) -
             conditionalEntropy (pair.joint n))) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    let count := saved.sampleCount inverseSlack
     Game.Indistinguishable
       (fun (test : ℕ → List Bool → Game) n =>
         (ProbComp.eval (extract (count n) (saved.length n) (bound n)
@@ -290,7 +288,7 @@ theorem replace_remaining {pair : SamplablePair} (saved : pair.SeedRealization)
       (fun _ => True) := by
   dsimp only
   intro test _
-  let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+  let count := saved.sampleCount inverseSlack
   have h := saved.extract_word_seeds inverseSlack remainingBits hbudget
     (fun n third => (ProbComp.eval (do
       let middle ← extractWordLabels (count n) (labelBits n) third.1
@@ -309,10 +307,10 @@ theorem replace_observations {pair : SamplablePair} (saved : pair.SeedRealizatio
     (hbound : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
       (pair.encode n observation).length ≤ bound n)
     (hbudget : ∀ᶠ n in atTop, observationBits n = 0 ∨
-      observationBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      observationBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           entropy ((pair.joint n).map Prod.fst)) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    let count := saved.sampleCount inverseSlack
     Game.Indistinguishable
       (fun (test : ℕ → List Bool → Game) n =>
         (ProbComp.eval (withoutLabels (count n) (saved.length n) (bound n)
@@ -322,7 +320,7 @@ theorem replace_observations {pair : SamplablePair} (saved : pair.SeedRealizatio
         (observationBits n) (labelBits n) (remainingBits n))).bind (test n)) (fun _ => True) := by
   dsimp only
   intro test _
-  let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+  let count := saved.sampleCount inverseSlack
   have h := saved.extract_word_observations bound inverseSlack observationBits hbound hbudget
     (fun n first => (ProbComp.eval (do
       let middle ← BitString.sampleList (labelBits n * count n + labelBits n)
@@ -370,13 +368,13 @@ theorem replace_indexed_labels_withAdvice {pair : SamplablePair} {gap : ℕ → 
         conditionalEntropy (pair.joint n) + gap n)
     (hbudget : ∀ᶠ n in atTop,
       labelBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+        2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
     (adversary : ℕ × List Bool → ℕ → List Bool → ProbComp Bool)
     (hadversary : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
       encBool (fun input => adversary input.1.1 input.1.2 input.2)) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    let count := saved.sampleCount inverseSlack
     Negligible (fun n => Game.advantage
       (ProbComp.eval (withoutSeeds (count n) (saved.length n) (bound n)
         (observationBits n (choose n))
@@ -386,9 +384,8 @@ theorem replace_indexed_labels_withAdvice {pair : SamplablePair} {gap : ℕ → 
         (observationBits n (choose n))
         (labelBits n (choose n)) (remainingBits n (choose n)) (Prod.fst <$> pair.sample n) >>=
           adversary (n, advice n) (choose n)))) := by
-  let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
-  have hcount := ExtractionSchedule.isPolyTime_count .id' saved.length_isPolyTime
-    efficient.slack_isPolyTime
+  let count := saved.sampleCount inverseSlack
+  have hcount := saved.isPolyTime_sampleCount efficient.slack_isPolyTime
   let test (a : ℕ × List Bool) (i : ℕ)
       (middle : List (List Bool) × List Bool × List Bool) : ProbComp Bool := do
     let front ← finish (bound a.1) (observationBits a.1 i) middle
@@ -438,51 +435,6 @@ theorem replace_indexed_labels_withAdvice {pair : SamplablePair} {gap : ℕ → 
   rw [hideal (n, advice n)]
   simp only [pmf_norm, count, test, withoutSeeds]
 
-open Probability.PMF Filter in
-/-- Indexed label extraction remains secure when the test computes the observation hash and
-supplies the independent third component. Only the proof uses the chosen valid index. -/
-theorem replace_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ} (hpair : pair.HasGap gap)
-    (saved : pair.SeedRealization) (choose : ℕ → ℕ)
-    {candidates bound inverseSlack densityBound : ℕ → ℕ}
-    {observationBits labelBits remainingBits numerator : ℕ → ℕ → ℕ}
-    (efficient : ThreeSource.Efficient candidates bound inverseSlack densityBound
-      observationBits labelBits remainingBits numerator)
-    (hchoose : ∀ᶠ n in atTop, choose n < candidates n)
-    (hvalid : ∀ᶠ n in atTop, 0 < numerator n (choose n) ∧
-      numerator n (choose n) ≤ dyadicSize (densityBound n) ∧
-      (numerator n (choose n) : ℝ) / dyadicSize (densityBound n) ≤
-        conditionalEntropy (pair.joint n) + gap n)
-    (hbudget : ∀ᶠ n in atTop,
-      labelBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
-          ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
-    (adversary : ℕ → ℕ → List Bool → ProbComp Bool)
-    (hadversary : IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-      encBool (fun input => adversary input.1.1 input.1.2 input.2)) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
-    Negligible (fun n => Game.advantage
-      (ProbComp.eval (withoutSeeds (count n) (saved.length n) (bound n)
-        (observationBits n (choose n))
-        (labelBits n (choose n)) (remainingBits n (choose n)) (pair.sample n) >>=
-          adversary n (choose n)))
-      (ProbComp.eval (withoutLabels (count n) (saved.length n) (bound n)
-        (observationBits n (choose n))
-        (labelBits n (choose n)) (remainingBits n (choose n)) (Prod.fst <$> pair.sample n) >>=
-          adversary n (choose n)))) := by
-  let p0 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-  have hprepare := (p0.fst'.fst'.prod p0.snd').prod (.snd _ encBits)
-  have htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-      encBool (fun ((a, i), word) => adversary a.1 i word) :=
-    (show (fun ((a, i), word) => adversary a.1 i word) =
-        (fun x : ((ℕ × List Bool) × ℕ) × List Bool => adversary x.1.1.1 x.1.2 x.2) from rfl) ▸
-      hadversary.preprocess hprepare
-  have h := replace_indexed_labels_withAdvice
-    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved choose efficient hchoose
-    hvalid hbudget (fun a i => adversary a.1 i) htest
-  dsimp only at h ⊢
-  exact h
-
 end Cslib.Crypto.Pseudoentropy.ThreeSource
 
 namespace Cslib.Crypto.Pseudoentropy
@@ -509,24 +461,24 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_three {pair : SamplablePa
         conditionalEntropy (pair.joint n) + gap n)
     (hfirst : ∀ᶠ n in atTop, observationBits n (choose n) = 0 ∨
       observationBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+        2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           entropy ((pair.joint n).map Prod.fst))
     (hmiddle : ∀ᶠ n in atTop,
       labelBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+        2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
     (hlast : ∀ᶠ n in atTop, remainingBits n (choose n) = 0 ∨
       remainingBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+        2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           (saved.length n - entropy ((pair.joint n).map Prod.fst) -
             conditionalEntropy (pair.joint n)))
     (test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
       encBool (fun ((a, i), word) => test a i word)) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    let count := saved.sampleCount inverseSlack
     Negligible (fun n => Game.advantage
       (ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
         (observationBits n (choose n))
@@ -551,64 +503,6 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_three {pair : SamplablePa
   exact (Game.advantage_triangle _ _ _).trans
     (add_le_add le_rfl (Game.advantage_triangle _ _ _))
 
-/-- A valid candidate in an efficient polynomial-size family passes the complete three-source
-game argument. The candidate may vary arbitrarily with the parameter; one efficient indexed test
-handles the entire family. All three entropy budgets are needed only at the chosen candidate. -/
-theorem SamplablePair.HasGap.extract_indexed_three {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization) (choose : ℕ → ℕ)
-    {candidates bound inverseSlack densityBound : ℕ → ℕ}
-    {observationBits labelBits remainingBits numerator : ℕ → ℕ → ℕ}
-    (efficient : ThreeSource.Efficient candidates bound inverseSlack densityBound
-      observationBits labelBits remainingBits numerator)
-    (hfits : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
-      (pair.encode n observation).length ≤ bound n)
-    (hchoose : ∀ᶠ n in atTop, choose n < candidates n)
-    (hvalid : ∀ᶠ n in atTop, 0 < numerator n (choose n) ∧
-      numerator n (choose n) ≤ dyadicSize (densityBound n) ∧
-      (numerator n (choose n) : ℝ) / dyadicSize (densityBound n) ≤
-        conditionalEntropy (pair.joint n) + gap n)
-    (hfirst : ∀ᶠ n in atTop, observationBits n (choose n) = 0 ∨
-      observationBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
-          entropy ((pair.joint n).map Prod.fst))
-    (hmiddle : ∀ᶠ n in atTop,
-      labelBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
-          ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
-    (hlast : ∀ᶠ n in atTop, remainingBits n (choose n) = 0 ∨
-      remainingBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
-          (saved.length n - entropy ((pair.joint n).map Prod.fst) -
-            conditionalEntropy (pair.joint n)))
-    (test : ℕ → ℕ → List Bool → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-      encBool (fun ((n, i), word) => test n i word)) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
-    Negligible (fun n => Game.advantage
-      (ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
-        (observationBits n (choose n))
-        (labelBits n (choose n)) (remainingBits n (choose n)) (saved.sampleWithSeed n) >>=
-          test n (choose n)))
-      (ProbComp.eval (BitString.sampleList (ThreeSource.outputLength
-        (count n) (saved.length n) (bound n)
-        (observationBits n (choose n)) (labelBits n (choose n)) (remainingBits n (choose n))) >>=
-          test n (choose n)))) := by
-  let p0 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-  have hprepare := (p0.fst'.fst'.prod p0.snd').prod (.snd _ encBits)
-  have htest' : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-      encBool (fun ((a, i), word) => test a.1 i word) :=
-    (show (fun ((a, i), word) => test a.1 i word) =
-        (fun x : ((ℕ × List Bool) × ℕ) × List Bool => test x.1.1.1 x.1.2 x.2) from rfl) ▸
-      htest.preprocess hprepare
-  have h := (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_indexed_three
-    saved choose efficient hfits hchoose hvalid hfirst hmiddle hlast
-    (fun a i => test a.1 i) htest'
-  dsimp only at h ⊢
-  exact h
-
 /-- The three-source construction is computationally uniform relative to fixed advice under its
 three entropy budgets. The schedules must be computed by uniform polynomial-time algorithms.
 `ThreeSource.Seeded` implements this ensemble deterministically with an exact seed budget, and
@@ -626,19 +520,19 @@ theorem SamplablePair.HasGapWithAdvice.extract_three {pair : SamplablePair} {gap
       (numerator n : ℝ) / dyadicSize (densityBound n) ≤
         conditionalEntropy (pair.joint n) + gap n)
     (hfirst : ∀ᶠ n in atTop, observationBits n = 0 ∨
-      observationBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      observationBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           entropy ((pair.joint n).map Prod.fst))
     (hmiddle : ∀ᶠ n in atTop,
-      labelBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      labelBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           ((numerator n : ℝ) / dyadicSize (densityBound n)))
     (hlast : ∀ᶠ n in atTop, remainingBits n = 0 ∨
-      remainingBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      remainingBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           (saved.length n - entropy ((pair.joint n).map Prod.fst) -
             conditionalEntropy (pair.joint n))) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    let count := saved.sampleCount inverseSlack
     IndistinguishableWithAdvice advice
       (fun n => ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
         (observationBits n) (labelBits n) (remainingBits n) (saved.sampleWithSeed n)))
@@ -659,45 +553,7 @@ theorem SamplablePair.HasGapWithAdvice.extract_three {pair : SamplablePair} {gap
     (numerator := fun n _ => numerator n) efficient hfits
     (Eventually.of_forall (by intro n; decide))
     hvalid hfirst hmiddle hlast (fun a _ word => adversary (a, word)) htest
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
     BitString.eval_sampleList] using h
-
-/-- The three-source construction is computationally uniform under its three entropy budgets.
-The schedules must be computed by uniform polynomial-time algorithms. `ThreeSource.Seeded`
-implements this ensemble deterministically with an exact seed budget, and `EntropyGrid` supplies
-budgets for which some candidate is valid. -/
-theorem SamplablePair.HasGap.extract_three {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
-    {bound inverseSlack observationBits labelBits remainingBits numerator densityBound : ℕ → ℕ}
-    (efficient : ThreeSource.Efficient (fun _ => 1) bound inverseSlack densityBound
-      (fun n _ => observationBits n) (fun n _ => labelBits n)
-      (fun n _ => remainingBits n) (fun n _ => numerator n))
-    (hfits : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
-      (pair.encode n observation).length ≤ bound n)
-    (hvalid : ∀ᶠ n in atTop, 0 < numerator n ∧ numerator n ≤ dyadicSize (densityBound n) ∧
-      (numerator n : ℝ) / dyadicSize (densityBound n) ≤
-        conditionalEntropy (pair.joint n) + gap n)
-    (hfirst : ∀ᶠ n in atTop, observationBits n = 0 ∨
-      observationBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
-          entropy ((pair.joint n).map Prod.fst))
-    (hmiddle : ∀ᶠ n in atTop,
-      labelBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
-          ((numerator n : ℝ) / dyadicSize (densityBound n)))
-    (hlast : ∀ᶠ n in atTop, remainingBits n = 0 ∨
-      remainingBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
-          (saved.length n - entropy ((pair.joint n).map Prod.fst) -
-            conditionalEntropy (pair.joint n))) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
-    ComputationallyIndistinguishable
-      (fun n => ProbComp.eval (ThreeSource.extract (count n) (saved.length n) (bound n)
-        (observationBits n) (labelBits n) (remainingBits n) (saved.sampleWithSeed n)))
-      (fun n => uniformList (ThreeSource.outputLength (count n) (saved.length n) (bound n)
-        (observationBits n) (labelBits n) (remainingBits n))) :=
-  computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr
-    ((SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair).extract_three saved efficient
-      hfits hvalid hfirst hmiddle hlast)
 
 end Cslib.Crypto.Pseudoentropy

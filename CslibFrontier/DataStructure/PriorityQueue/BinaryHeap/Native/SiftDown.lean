@@ -45,6 +45,22 @@ open Cslib.DataStructure.PriorityQueue Cslib.DataStructure.PriorityQueue.BinaryH
 /-- Layout, size and one control word: a threshold inside the loop, an index at entry. -/
 abbrev Argument := (HeapLayout × ℕ) × ℕ
 
+namespace Argument
+
+/-- The number of handles. -/
+abbrev capacity (d : Argument) : ℕ := d.1.1.1
+
+/-- The heap layout. -/
+abbrev layout (d : Argument) : BinaryHeap.Memory.Layout d.capacity := d.1.1.2
+
+/-- The number of occupied heap positions. -/
+abbrev size (d : Argument) : ℕ := d.1.2
+
+/-- The control word: the prepared threshold inside the loop, the start index at entry. -/
+abbrev control (d : Argument) : ℕ := d.2
+
+end Argument
+
 /-- The original four-write sink, returning the selected child or a stop sentinel. -/
 def sink {n : ℕ} (L : BinaryHeap.Memory.Layout n) (S k c vk kk vc kc : ℕ) : Memory.Prog ℕ :=
   if IndexedMinPQ.RawPrioLT (vc, kc) (vk, kk) then do
@@ -54,8 +70,8 @@ def sink {n : ℕ} (L : BinaryHeap.Memory.Layout n) (S k c vk kk vc kc : ℕ) : 
 
 /-- Four reads, two additional right-child reads when present, and exactly the source swap. -/
 def step (d : Argument × ℕ) : Memory.Prog ℕ := do
-  let L := d.1.1.1.2
-  let S := d.1.1.2
+  let L := d.1.layout
+  let S := d.1.size
   let k := d.2
   let vk ← L.heap.get k
   let kk ← L.key.get vk
@@ -70,13 +86,14 @@ def step (d : Argument × ℕ) : Memory.Prog ℕ := do
   else sink L S k (2 * k) vk kk vl kl
 
 /-- Actual scalar native guard; the threshold is computed by preceding certified glue. -/
-def guard (d : Argument) (k : ℕ) : Prop := k < d.2
+def guard (d : Argument) (k : ℕ) : Prop := k < d.control
 
-instance (d : Argument) (k : ℕ) : Decidable (guard d k) := inferInstanceAs (Decidable (k < d.2))
+instance (d : Argument) (k : ℕ) : Decidable (guard d k) :=
+  inferInstanceAs (Decidable (k < d.control))
 
 /-- Positive positions turn the source multiplication test into a native threshold test. -/
-theorem guard_iff {d : Argument} {k : ℕ} (ht : d.2 = d.1.2 / 2 + 1) (hk : 1 ≤ k) :
-    guard d k ↔ 1 ≤ k ∧ 2 * k ≤ d.1.2 := by
+theorem guard_iff {d : Argument} {k : ℕ} (ht : d.control = d.size / 2 + 1) (hk : 1 ≤ k) :
+    guard d k ↔ 1 ≤ k ∧ 2 * k ≤ d.size := by
   unfold guard
   rw [ht]
   omega
@@ -88,13 +105,13 @@ private theorem log_child {k c : ℕ} (hk : 1 ≤ k) (hc : c / 2 = k) :
 
 /-- Forgetting the final index preserves the exact source, including every query and write.
 The cutoff is an input-only logarithmic bound, and it never truncates on this domain. -/
-theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
-    (hk : 1 ≤ k) (hcut : Nat.log 2 d.1.2 - Nat.log 2 k ≤ fuel) :
+theorem finish_loop_eq (d : Argument) (ht : d.control = d.size / 2 + 1) (fuel k : ℕ)
+    (hk : 1 ≤ k) (hcut : Nat.log 2 d.size - Nat.log 2 k ≤ fuel) :
     (do let _ ← boundedWhile guard step d fuel k; pure ()) =
-      BinaryHeap.Memory.siftDown d.1.1.2 d.1.2 k := by
+      BinaryHeap.Memory.siftDown d.layout d.size k := by
   induction fuel generalizing k with
   | zero =>
-    have hstop : ¬(1 ≤ k ∧ 2 * k ≤ d.1.2) := by
+    have hstop : ¬(1 ≤ k ∧ 2 * k ≤ d.size) := by
       intro hg
       have hm := Nat.log_mono_right (b := 2) hg.2
       have hl := log_child hk (show (2 * k) / 2 = k by omega)
@@ -102,14 +119,14 @@ theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
     rw [BinaryHeap.Memory.siftDown, ite_eq_right hstop]
     rfl
   | succ fuel ih =>
-    have hstop : ¬guard d (d.1.2 + 1) := by simp only [guard, ht]; omega
-    have hsink (c vk kk vc kc : ℕ) (hc : c / 2 = k) (hcS : c ≤ d.1.2) :
+    have hstop : ¬guard d (d.size + 1) := by simp only [guard, ht]; omega
+    have hsink (c vk kk vc kc : ℕ) (hc : c / 2 = k) (hcS : c ≤ d.size) :
         (do
-          let a ← sink d.1.1.2 d.1.2 k c vk kk vc kc
+          let a ← sink d.layout d.size k c vk kk vc kc
           let _ ← boundedWhile guard step d fuel a
           pure ()) =
-          BinaryHeap.Memory.sink d.1.1.2 k c vk kk vc kc
-            (BinaryHeap.Memory.siftDown d.1.1.2 d.1.2 c) := by
+          BinaryHeap.Memory.sink d.layout k c vk kk vc kc
+            (BinaryHeap.Memory.siftDown d.layout d.size c) := by
       unfold sink BinaryHeap.Memory.sink
       split
       · simp only [bind_assoc, pure_bind]
@@ -118,7 +135,7 @@ theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
         have hl := log_child hk hc
         have hm := Nat.log_mono_right (b := 2) hcS
         omega
-      · simp only [pure_bind, boundedWhile_of_not guard step d fuel (d.1.2 + 1) hstop]
+      · simp only [pure_bind, boundedWhile_of_not guard step d fuel (d.size + 1) hstop]
     rw [BinaryHeap.Memory.siftDown]
     by_cases hg : guard d k
     · have hsrc := (guard_iff ht hk).mp hg
@@ -137,17 +154,17 @@ theorem finish_loop_eq (d : Argument) (ht : d.2 = d.1.2 / 2 + 1) (fuel k : ℕ)
         · exact hsink (2 * k) vk kk vl kl (by omega) hsrc.2
       next hr =>
         exact hsink (2 * k) vk kk vl kl (by omega) hsrc.2
-    · have hsrc : ¬(1 ≤ k ∧ 2 * k ≤ d.1.2) := mt (guard_iff ht hk).mpr hg
+    · have hsrc : ¬(1 ≤ k ∧ 2 * k ≤ d.size) := mt (guard_iff ht hk).mpr hg
       simp only [boundedWhile, hg, hsrc, ↓reduceIte, pure_bind]
 
 /-- Reached loop indices are occupied positions or the stop sentinel `S+1`. The original
 whole-memory heap shape and allocated array block remain explicit. -/
 def Shape (w : ℕ) (d : Argument) (k : ℕ) (s : Memory.State) : Prop :=
-  d.2 = d.1.2 / 2 + 1 ∧ Fits w d.1.1.1 ∧ d.1.1.2.arrays.Allocated s ∧
-    HeapShape d.1.1.1 d.1.1.2.base d.1.2 s.mem ∧ 1 ≤ k ∧ k ≤ d.1.2 + 1
+  d.control = d.size / 2 + 1 ∧ Fits w d.capacity ∧ d.layout.arrays.Allocated s ∧
+    HeapShape d.capacity d.layout.base d.size s.mem ∧ 1 ≤ k ∧ k ≤ d.size + 1
 
 /-- The logarithmic distance to the last occupied level. -/
-def rank (d : Argument) (k : ℕ) : ℕ := Nat.log 2 d.1.2 - Nat.log 2 k
+def rank (d : Argument) (k : ℕ) : ℕ := Nat.log 2 d.size - Nat.log 2 k
 
 /-- Each continuing body keeps the existing shape and strictly decreases its ghost rank.
 It uses at most four ordinary reads, two right reads and the original four-write swap. -/
@@ -161,13 +178,13 @@ theorem step_triple {w : ℕ} {d : Argument} {k : ℕ} {s : Memory.State}
   have hvl := hshape.vertex_lt (2 * k) (by omega) hsrc.2
   have hlog2 := log_child hk (show (2 * k) / 2 = k by omega)
   have hlogS := Nat.log_mono_right (b := 2) hsrc.2
-  have hsink (c : ℕ) (hc : c / 2 = k) (hcS : c ≤ d.1.2) :
+  have hsink (c : ℕ) (hc : c / 2 = k) (hcS : c ≤ d.size) :
       Triple w s
-        (sink d.1.1.2 d.1.2 k c
-          (s.mem (d.1.1.2.base + d.1.1.1 + k))
-          (s.mem (d.1.1.2.base + s.mem (d.1.1.2.base + d.1.1.1 + k)))
-          (s.mem (d.1.1.2.base + d.1.1.1 + c))
-          (s.mem (d.1.1.2.base + s.mem (d.1.1.2.base + d.1.1.1 + c)))) 4
+        (sink d.layout d.size k c
+          (s.mem (d.layout.base + d.capacity + k))
+          (s.mem (d.layout.base + s.mem (d.layout.base + d.capacity + k)))
+          (s.mem (d.layout.base + d.capacity + c))
+          (s.mem (d.layout.base + s.mem (d.layout.base + d.capacity + c)))) 4
         (fun a s' => Shape w d a s' ∧ rank d a < rank d k) := by
     have hc1 : 1 ≤ c := by omega
     have hvc := hshape.vertex_lt c hc1 hcS
@@ -183,11 +200,11 @@ theorem step_triple {w : ℕ} {d : Argument} {k : ℕ} {s : Memory.State}
       unfold rank
       omega
     · refine Triple.pure ⟨⟨ht, hn, hA, hshape, by omega, le_rfl⟩, ?_⟩
-      have hm : Nat.log 2 d.1.2 ≤ Nat.log 2 (d.1.2 + 1) :=
+      have hm : Nat.log 2 d.size ≤ Nat.log 2 (d.size + 1) :=
         Nat.log_mono_right (by omega)
-      have hz : rank d (d.1.2 + 1) = 0 := Nat.sub_eq_zero_of_le hm
+      have hz : rank d (d.size + 1) = 0 := Nat.sub_eq_zero_of_le hm
       rw [hz]
-      change 0 < Nat.log 2 d.1.2 - Nat.log 2 k
+      change 0 < Nat.log 2 d.size - Nat.log 2 k
       omega
   unfold step
   dsimp only
@@ -222,7 +239,7 @@ theorem realizes_step : Realizes .exact step
     have hSn := hshape.size_le
     have hvk := hshape.vertex_lt d.2 hk (by omega)
     have hvl := hshape.vertex_lt (2 * d.2) (by omega) hsrc.2
-    have halloc : d.1.1.1.2.base + (3 * d.1.1.1.1 + 1) ≤ s.frontier := hA
+    have halloc : d.1.layout.base + (3 * d.1.capacity + 1) ≤ s.frontier := hA
     first
     | omega
     | exact hn.of_le (by omega)
@@ -267,20 +284,20 @@ theorem realizes_loop : Realizes .exact
 
 /-- The original source storage/shape domain, admitting index zero as an immediate exit. -/
 def Safe (w : ℕ) (d : Argument) (s : Memory.State) : Prop :=
-  Fits w d.1.1.1 ∧ d.1.1.2.arrays.Allocated s ∧
-    HeapShape d.1.1.1 d.1.1.2.base d.1.2 s.mem ∧ d.2 ≤ d.1.2
+  Fits w d.capacity ∧ d.layout.arrays.Allocated s ∧
+    HeapShape d.capacity d.layout.base d.size s.mem ∧ d.control ≤ d.size
 
 /-- The existing source sift-down has one fixed native emitter before every runtime layout,
 size, start index, width and memory. Zero exits before division; otherwise threshold preparation,
 all guard/control operations, body glue and final Unit return are certified and charged.
 The local loop certificate lets `realize` prepare the threshold and wire the call. -/
 theorem realizes_siftDown : Realizes .exact
-    (fun d : Argument => BinaryHeap.Memory.siftDown d.1.1.2 d.1.2 d.2)
+    (fun d : Argument => BinaryHeap.Memory.siftDown d.layout d.size d.control)
     inputWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding Safe (fun _ _ => 0) := by
   let p (d : Argument) : Memory.Prog Unit :=
-    if d.2 = 0 then pure () else do
-      let _ ← boundedWhile guard step (d.1, d.1.2 / 2 + 1)
-        (rank (d.1, d.1.2 / 2 + 1) d.2) d.2
+    if d.control = 0 then pure () else do
+      let _ ← boundedWhile guard step (d.1, d.size / 2 + 1)
+        (rank (d.1, d.size / 2 + 1) d.control) d.control
       pure ()
   have hp : Realizes .exact p inputWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
       Safe (fun _ _ => 0) := by
@@ -289,7 +306,7 @@ theorem realizes_siftDown : Realizes .exact
     all_goals
       rcases h with ⟨hn, hA, hshape, hkS⟩
       have hSn := hshape.size_le
-      have halloc : d.1.1.2.base + (3 * d.1.1.1 + 1) ≤ s.frontier := hA
+      have halloc : d.layout.base + (3 * d.capacity + 1) ≤ s.frontier := hA
       first
       | exact ⟨rfl, hn, hA, hshape, by omega, hkS.trans (Nat.le_succ _)⟩
       | omega
@@ -297,11 +314,11 @@ theorem realizes_siftDown : Realizes .exact
   refine hp.congr ?_
   intro d
   dsimp only [p]
-  by_cases hk : d.2 = 0
+  by_cases hk : d.control = 0
   · simp [hk, BinaryHeap.Memory.siftDown]
   · rw [ite_eq_right hk]
-    exact finish_loop_eq (d.1, d.1.2 / 2 + 1) rfl
-      (rank (d.1, d.1.2 / 2 + 1) d.2) d.2 (by omega) le_rfl
+    exact finish_loop_eq (d.1, d.size / 2 + 1) rfl
+      (rank (d.1, d.size / 2 + 1) d.control) d.control (by omega) le_rfl
 
 /-- The exact source's logarithmic order repair and rearrangement lift to one uniform native
 code witness. The caller supplies already installed arguments, word bounds and an allocated

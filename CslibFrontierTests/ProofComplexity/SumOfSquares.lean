@@ -186,7 +186,7 @@ example : ¬ SOS.RefutableInDegree ((tseitin K4 fun v => decide (v = 0)).toPolys
 
 /-- The expander family at `n = 2`: at most `240` variables, `2` equations. -/
 example : ∃ m ≤ 120 * 2, ∃ P : ParitySystem (Fin m),
-    P.length = 2 ∧ (∀ e ∈ P, #e.1 ≤ 120) ∧ (∀ a, ¬ P.Holds a) ∧
+    P.length = 2 ∧ (∀ e ∈ P, #e.vars ≤ 120) ∧ (∀ a, ¬ P.Holds a) ∧
     ∀ (R : Type) [CommRing R] [LinearOrder R] [IsStrictOrderedRing R] (d : ℕ),
       SOS.RefutableInDegree (P.toPolys R) d → 2 ≤ 18000 * d :=
   exists_forall_sos_refutableInDegree_le 2 le_rfl

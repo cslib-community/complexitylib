@@ -48,6 +48,8 @@ The windowed circuits of `AndreevWindowed` reuse the same two staircase forms
 
 ## Main definitions
 
+* `Cslib.Circuits.Boolean.WeightedThreshold.andreevTable`: the truth-table bit `x_c(w)` at an
+  address `c : BitString b`; the table reads of the Andreev modules go through it.
 * `Cslib.Circuits.Boolean.WeightedThreshold.AndreevBottomIndex`: index type
   `Σ S : Finset (Fin b), Σ τ : Bool, Fin (andreevStairLength b m S τ)` of bottom gates, where
   `τ = true` indexes the staircase for `X_S + t_S` and `τ = false` the staircase for `t_S`.
@@ -61,6 +63,9 @@ The windowed circuits of `AndreevWindowed` reuse the same two staircase forms
   circuit for `andreev b m`.
 * `Cslib.Circuits.Boolean.WeightedThreshold.andreevCircuitEvalInt`: choice-free computable integer
   evaluation of the two-layer threshold network.
+* `Cslib.Circuits.Boolean.WeightedThreshold.andreevTranslateTableFun`: translation of the truth
+  table by a fixed index, optionally flipped; the shared body of the table shifts used by the
+  average-case and lower-bound modules.
 
 ## Main results
 
@@ -157,20 +162,70 @@ noncomputable def andreevBottomEquiv (b m : ℕ) :
 def andreevParities (b m : ℕ) (w : BitString (2 ^ b + b * m)) : BitString b :=
   fun j => parity m fun t => w (andreevBlockVar b m j t)
 
+/-- The truth-table bit `x_c(w)` of an Andreev input `w` at the address `c : BitString b`. -/
+def andreevTable (b m : ℕ) (w : BitString (2 ^ b + b * m)) (c : BitString b) : Bool :=
+  w (andreevTableIndex b m (BitString.equivFin b c))
+
 /-- `andreev b m w` reads the truth-table bit indexed by `andreevParities b m w`. -/
 theorem andreev_eq_table_parities (b m : ℕ) (w : BitString (2 ^ b + b * m)) :
-    andreev b m w = w (andreevTableIndex b m (BitString.equivFin b (andreevParities b m w))) :=
+    andreev b m w = andreevTable b m w (andreevParities b m w) :=
   rfl
 
 /-- `andreevTableIndex b m` is injective. -/
 theorem andreevTableIndex_injective (b m : ℕ) : Function.Injective (andreevTableIndex b m) :=
   Fin.castAdd_injective (2 ^ b) (b * m)
 
+/-- The table translation of an Andreev input: the table bit at index `c` becomes the bit at
+`c + u`, flipped when `β = true`; the address bits are unchanged. `andreevShiftTableFun` and
+`andreevShiftResidual` are the instances with an input-dependent `u` and `β = false`. -/
+def andreevTranslateTableFun (b m : ℕ) (u : BitString b) (β : Bool)
+    (w : BitString (2 ^ b + b * m)) : BitString (2 ^ b + b * m) :=
+  Fin.addCases (fun idx => xor (w (andreevTableIndex b m
+    (BitString.equivFin b ((BitString.equivFin b).symm idx + u)))) β)
+    (fun i => w (Fin.natAdd (2 ^ b) i))
+
+@[simp]
+theorem andreevTranslateTableFun_castAdd (b m : ℕ) (u : BitString b) (β : Bool)
+    (w : BitString (2 ^ b + b * m)) (idx : Fin (2 ^ b)) :
+    andreevTranslateTableFun b m u β w (Fin.castAdd (b * m) idx) =
+      xor (w (andreevTableIndex b m
+        (BitString.equivFin b ((BitString.equivFin b).symm idx + u)))) β := by
+  simp [andreevTranslateTableFun]
+
+@[simp]
+theorem andreevTranslateTableFun_natAdd (b m : ℕ) (u : BitString b) (β : Bool)
+    (w : BitString (2 ^ b + b * m)) (i : Fin (b * m)) :
+    andreevTranslateTableFun b m u β w (Fin.natAdd (2 ^ b) i) = w (Fin.natAdd (2 ^ b) i) := by
+  simp [andreevTranslateTableFun]
+
+@[simp]
+theorem andreevTranslateTableFun_tableIndex (b m : ℕ) (u : BitString b) (β : Bool)
+    (w : BitString (2 ^ b + b * m)) (idx : Fin (2 ^ b)) :
+    andreevTranslateTableFun b m u β w (andreevTableIndex b m idx) =
+      xor (w (andreevTableIndex b m
+        (BitString.equivFin b ((BitString.equivFin b).symm idx + u)))) β :=
+  andreevTranslateTableFun_castAdd b m u β w idx
+
+@[simp]
+theorem andreevTranslateTableFun_blockVar (b m : ℕ) (u : BitString b) (β : Bool)
+    (w : BitString (2 ^ b + b * m)) (j : Fin b) (t : Fin m) :
+    andreevTranslateTableFun b m u β w (andreevBlockVar b m j t) = w (andreevBlockVar b m j t) :=
+  andreevTranslateTableFun_natAdd b m u β w _
+
+/-- The table translation in terms of `andreevTable`: the translated table at `c` is the table at
+`c + u`, flipped when `β = true`. -/
+@[simp]
+theorem andreevTable_translateTableFun (b m : ℕ) (u : BitString b) (β : Bool)
+    (w : BitString (2 ^ b + b * m)) (c : BitString b) :
+    andreevTable b m (andreevTranslateTableFun b m u β w) c =
+      xor (andreevTable b m w (c + u)) β := by
+  simp [andreevTable]
+
 /-- The unnormalized integer Walsh-Fourier score
 `X_S(w) = ∑_{c : BitString b} χ_S(c) * (1 - 2 * x_c(w))`. -/
 def andreevTableScore (b m : ℕ) (S : Finset (Fin b)) (w : BitString (2 ^ b + b * m)) : ℤ :=
   ∑ c : BitString b,
-    chi ℤ S c * (1 - 2 * (w (andreevTableIndex b m (BitString.equivFin b c))).toNat)
+    chi ℤ S c * (1 - 2 * (andreevTable b m w c).toNat)
 
 /-- The integer sum `t_S(w) = ∑_{j ∈ S} ∑_{t < m} w (andreevBlockVar b m j t)` of the blocks in
 `S`. -/
@@ -257,10 +312,10 @@ theorem andreevTableScore_bounds (b m : ℕ) (S : Finset (Fin b))
     (w : BitString (2 ^ b + b * m)) :
     -(2 ^ b : ℤ) ≤ andreevTableScore b m S w ∧ andreevTableScore b m S w ≤ (2 ^ b : ℤ) := by
   have hterm (c : BitString b) :
-      (-1 : ℤ) ≤ chi ℤ S c * (1 - 2 * (w (andreevTableIndex b m (BitString.equivFin b c))).toNat) ∧
-        chi ℤ S c * (1 - 2 * (w (andreevTableIndex b m (BitString.equivFin b c))).toNat) ≤ 1 := by
+      (-1 : ℤ) ≤ chi ℤ S c * (1 - 2 * (andreevTable b m w c).toNat) ∧
+        chi ℤ S c * (1 - 2 * (andreevTable b m w c).toNat) ≤ 1 := by
     rcases chi_int_eq_one_or_neg_one S c with h | h <;>
-      cases w (andreevTableIndex b m (BitString.equivFin b c)) <;> simp [h]
+      cases andreevTable b m w c <;> simp [h]
   exact ⟨(by simp : -(2 ^ b : ℤ) = ∑ _c : BitString b, (-1 : ℤ)).trans_le
     (sum_le_sum fun c _ => (hterm c).1),
     (sum_le_sum fun c _ => (hterm c).2).trans_eq (by simp)⟩
@@ -305,7 +360,7 @@ theorem sum_andreevStairWeightInt_mul (b m : ℕ) (S : Finset (Fin b)) (τ : Boo
       (fun idx => -2 * chi ℤ S ((BitString.equivFin b).symm idx) *
         ((w (Fin.castAdd (b * m) idx)).toNat : ℤ))]
     simp only [Equiv.symm_apply_apply, andreevTableScore, andreevTableOffset, ← sum_sub_distrib,
-      andreevTableIndex]
+      andreevTable, andreevTableIndex]
     exact sum_congr rfl fun _ _ => by ring
   have hright :
       (∑ u : Fin (b * m),
@@ -372,7 +427,7 @@ theorem sum_andreevTableScore_mul_chi (b m : ℕ) (w : BitString (2 ^ b + b * m)
       (andreevTableScore b m S w : ℝ) * chi ℝ S (andreevParities b m w)) =
       (2 ^ b : ℝ) * signVal (andreev b m w) := by
   let f : BitString b → ℝ :=
-    fun c => signVal (w (andreevTableIndex b m (BitString.equivFin b c)))
+    fun c => signVal (andreevTable b m w c)
   have hX (S : Finset (Fin b)) :
       (andreevTableScore b m S w : ℝ) = (2 ^ b : ℝ) * BitString.fourierCoeff f S := by
     rw [BitString.fourierCoeff_eq_sum]; simp only [Fintype.card_fin]

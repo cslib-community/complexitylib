@@ -220,7 +220,7 @@ def npVerifier (enc : α ↪ List Bool) (p : Polynomial ℕ) (V : α × List Boo
 
 /-- The one-message verifier of a polynomial-time `NP` verifier is strict oracle PPT: it reads only
 a polynomially long prefix of the prover's reply. -/
-private theorem isOraclePPTOn_npVerifier {p : Polynomial ℕ} {V : α × List Bool → Bool}
+theorem isOraclePPTOn_npVerifier {p : Polynomial ℕ} {V : α × List Bool → Bool}
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
     IsOraclePPTOn enc encBool (npVerifier enc p V) := by
   unfold npVerifier
@@ -240,11 +240,12 @@ theorem acceptProb_npVerifier_const {p : Polynomial ℕ} {V : α × List Bool �
     PMF.pure_map, PMF.pure_apply, Prod.map_fst, List.take_of_length_le hw.le, hw, decide_true,
     Bool.true_and, eq_comm (a := true)]
 
-/-- **`NP ⊆ IP`**, with one message, completeness `1` and soundness error `0`. -/
-theorem NP_subset_IP (enc : α ↪ List Bool) : NP enc ⊆ IP enc := by
-  rintro A ⟨p, V, hV, hA⟩
-  refine mem_IP_of (isOraclePPTOn_npVerifier (p := p) hV) (c := 1) (s := 0)
-    ⟨fun a ha => ?_, fun a ha P => ?_⟩ (ENNReal.div_le_of_le_mul (by norm_num)) bot_le
+/-- The one-message verifier of an `NP` verifier is an interactive proof with completeness `1` and
+soundness error `0`: a member is accepted against the prover sending a certificate, and no reply
+makes the verifier accept a non-member. -/
+theorem isInteractiveProof_npVerifier {p : Polynomial ℕ} {V : α × List Bool → Bool} {A : Set α}
+    (hA : IsVerifier enc p V A) : IsInteractiveProof (npVerifier enc p V) A 1 0 := by
+  refine ⟨fun a ha => ?_, fun a ha P => ?_⟩
   · obtain ⟨w, hw, hVw⟩ := (hA a).1 ha
     refine ⟨Prover.const w, ?_⟩
     rw [acceptProb_npVerifier_const hw, hVw]
@@ -255,6 +256,12 @@ theorem NP_subset_IP (enc : α ↪ List Bool) : NP enc ⊆ IP enc := by
     by_contra hacc
     simp only [Prod.map_fst, Bool.not_eq_false, Bool.and_eq_true, decide_eq_true_eq] at hacc
     exact ha ((hA a).2 ⟨_, hacc.1, hacc.2⟩)
+
+/-- **`NP ⊆ IP`**, with one message, completeness `1` and soundness error `0`. -/
+theorem NP_subset_IP (enc : α ↪ List Bool) : NP enc ⊆ IP enc := by
+  rintro A ⟨p, V, hV, hA⟩
+  exact mem_IP_of (isOraclePPTOn_npVerifier (p := p) hV) (isInteractiveProof_npVerifier hA)
+    (ENNReal.div_le_of_le_mul (by norm_num)) bot_le
 
 /-! ### `BPP ⊆ IP` -/
 
@@ -275,8 +282,7 @@ strings. -/
 private theorem acceptProb_bppVerifier {p : Polynomial ℕ} {V : α × List Bool → Bool} (a : α)
     (P : Prover Unit) :
     acceptProb (bppVerifier enc p V a) P =
-      (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        V (a, List.ofFn r) = true).card / 2 ^ p.eval (enc a).length := by
+      acceptCount V a (p.eval (enc a).length) / 2 ^ p.eval (enc a).length := by
   simp only [acceptProb, bppVerifier, Prover.run_sample, PMF.map_comp, ProbComp.eval_map,
     BitString.eval_sampleList]
   exact BitString.uniformList_map_apply _ _ true
@@ -286,16 +292,10 @@ theorem BPP_subset_IP (enc : α ↪ List Bool) : BPP enc ⊆ IP enc := by
   rintro A ⟨p, V, hV, hA⟩
   refine ⟨_, isOraclePPTOn_bppVerifier (p := p) hV, fun a ha => ⟨Prover.const [], ?_⟩,
     fun a ha P => ?_⟩ <;> rw [acceptProb_bppVerifier]
-  · have h := (hA a).1 ha
-    unfold BoundedErrorAt at h
+  · have h := boundedErrorAt_true_iff.1 ((hA a).1 ha)
     exact_mod_cast (ENNReal.natCast_div_le_natCast_div_iff (a := 2) (b := 3)
       (d := 2 ^ p.eval (enc a).length) three_ne_zero (pow_pos two_pos _).ne').mpr (by omega)
-  · have h := (hA a).2 ha
-    unfold BoundedErrorAt at h
-    have hsum := Finset.card_filter_add_card_filter_not (s := Finset.univ)
-      (fun r : Fin (p.eval (enc a).length) → Bool => V (a, List.ofFn r) = true)
-    simp only [Bool.not_eq_true, Finset.card_univ, Fintype.card_fun, Fintype.card_bool,
-      Fintype.card_fin] at hsum
+  · have h := boundedErrorAt_false_iff.1 ((hA a).2 ha)
     exact_mod_cast (ENNReal.natCast_div_le_natCast_div_iff (c := 1) (d := 3)
       (b := 2 ^ p.eval (enc a).length) (pow_pos two_pos _).ne' three_ne_zero).mpr (by omega)
 

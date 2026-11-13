@@ -153,12 +153,12 @@ noncomputable def encrypt {n m w : ℕ} (η : ℕ) (pk : PublicKey n m w) (μ : 
   return encryptWithCoins pk μ s x x₀
 
 /-- Generated keys have the form `(A, eᵀ A)` with a binary secret. -/
-theorem mem_support_keyGen {n m w : ℕ} {keys : PublicKey n m w × (Fin m → ℤ)}
-    (hkeys : keys ∈ (ProbComp.eval (keyGen n m w)).support) :
-    keys.1 = publicKeyOf keys.1.1 keys.2 ∧ ∀ i, (keys.2 i).natAbs ≤ 1 := by
+theorem mem_support_keyGen {n m w : ℕ} {pk : PublicKey n m w} {e : Fin m → ℤ}
+    (hkeys : (pk, e) ∈ (ProbComp.eval (keyGen n m w)).support) :
+    pk = publicKeyOf pk.1 e ∧ ∀ i, (e i).natAbs ≤ 1 := by
   simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hkeys
-  obtain ⟨A, -, bits, -, rfl⟩ := hkeys
+    PMF.mem_support_pure_iff, Prod.mk.injEq] at hkeys
+  obtain ⟨A, -, bits, -, rfl, rfl⟩ := hkeys
   exact ⟨rfl, fun i => by simpa using Bool.toNat_le (bits i)⟩
 
 /-- Supported ciphertexts are encryptions with errors bounded by `η`. -/

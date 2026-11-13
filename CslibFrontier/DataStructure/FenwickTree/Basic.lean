@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.FenwickTree.Lowbit
+public import CslibFrontier.DataStructure.PrefixSums.Spec
 public import Cslib.Algorithms.Lean.TimeM
 public import Mathlib.Algebra.BigOperators.Group.List.Basic
 import CslibFrontier.Foundations.Data.List.Lookup
@@ -41,7 +42,7 @@ without word-width side conditions.
   `((s.take m).drop (m - lowbit m)).sum`.
 * **Out-of-bounds totality:** `prefixSum t len` clamps `len` to `t.size` (matching
   `(s.take len).sum` for all `len : ℕ`), and `add t pos δ` / `set t pos v` leave `t` unchanged
-  when `pos ≥ t.size` (matching `addAt s pos δ` and `s.set pos v`).
+  when `pos ≥ t.size` (matching `PrefixSums.addAt s pos δ` and `s.set pos v`).
 * **Algebraic generality and standard extensions:** `[Fenwick1994]` presents cumulative prefix
   queries (`GetCumul`, "THE CUMULATIVE FREQUENCY", Figure 4, p. 330) and upward point increments
   ("UPDATING THE TABLE", pp. 331–332, Figures 5–6 on p. 331) over integer frequencies (plus
@@ -70,7 +71,6 @@ without word-width side conditions.
 
 * `Cslib.DataStructure.FenwickTree`: array-backed Fenwick tree of size `t.size`.
 * `Cslib.DataStructure.FenwickTree.Valid`: invariant coupling `t` to `s : List α`.
-* `Cslib.DataStructure.FenwickTree.addAt`: point increment on `List α` (`no-op` out of bounds).
 * `Cslib.DataStructure.FenwickTree.zeros`, `ofArrayM`, `ofArray`, `ofListM`, `ofList`:
   zero initialization and `a.size`-tick immediate-parent construction.
 * `Cslib.DataStructure.FenwickTree.prefixSumM`, `prefixSum`, `addM`, `add`: logarithmic prefix
@@ -87,8 +87,8 @@ without word-width side conditions.
   `prefixSumM_time_le_log`: `prefixSum` computes `(s.take len).sum` in at most
   `⌈log₂ (t.size + 1)⌉` (`≤ ⌊log₂ t.size⌋ + 1`) ticks.
 * `Cslib.DataStructure.FenwickTree.valid_add`, `addM_time_eq_upChain`, and
-  `addM_time_le_clog` / `addM_time_le_log`: `add` preserves `Valid` for `addAt s pos δ` in at most
-  `⌈log₂ (t.size + 1)⌉` ticks.
+  `addM_time_le_clog` / `addM_time_le_log`: `add` preserves `Valid` for
+  `PrefixSums.addAt s pos δ` in at most `⌈log₂ (t.size + 1)⌉` ticks.
 * `Cslib.DataStructure.FenwickTree.valid_ofArray` and `ofArrayM_time_eq`: `ofArray` builds a
   valid Fenwick tree for `a.toList` in `a.size` parent-propagation ticks.
 * `Cslib.DataStructure.FenwickTree.ret_rangeSumM_eq`, `ret_getM_eq`, `valid_set`, and their
@@ -116,28 +116,6 @@ namespace FenwickTree
 /-- Logical length of the represented sequence. -/
 @[expose] def size {α : Type*} (t : FenwickTree α) : ℕ :=
   t.tree.size
-
-/-- Point increment on a list at `0`-based index `pos` (no-op when `s.length ≤ pos`). -/
-@[expose] def addAt {α : Type*} [AddZeroClass α] (s : List α) (pos : ℕ) (δ : α) : List α :=
-  s.set pos (s.getD pos 0 + δ)
-
-@[simp]
-theorem length_addAt {α : Type*} [AddZeroClass α] (s : List α) (pos : ℕ) (δ : α) :
-    (addAt s pos δ).length = s.length :=
-  List.length_set
-
-theorem addAt_of_length_le {α : Type*} [AddZeroClass α] {s : List α} {pos : ℕ} (δ : α)
-    (h : s.length ≤ pos) : addAt s pos δ = s :=
-  List.set_eq_of_length_le h
-
-theorem getD_addAt {α : Type*} [AddZeroClass α] (s : List α) {pos : ℕ} (δ : α)
-    (hpos : pos < s.length) (i : ℕ) :
-    (addAt s pos δ).getD i 0 = if i = pos then s.getD i 0 + δ else s.getD i 0 := by
-  unfold addAt
-  split_ifs with heq
-  · subst heq
-    exact List.getD_set_self hpos
-  · exact List.getD_set_ne (Ne.symm heq)
 
 /-- Fenwick tree representation invariant: `t` has length `s.length` and each `1`-based node `m`
 (`1 ≤ m ≤ t.tree.size`) stores the interval sum `((s.take m).drop (m - lowbit m)).sum`. -/
@@ -463,17 +441,17 @@ private theorem addLoopM_getElem {α : Type*} [AddCommMonoid α]
       rw [upChain]
       simp only [hm, ↓reduceDIte, List.not_mem_nil, ↓reduceIte]
 
-/-- `add t pos δ` preserves `Valid` with respect to `addAt s pos δ` (`[Fenwick1994]`,
-"UPDATING THE TABLE", pp. 331–332, Figures 5–6 on p. 331). -/
+/-- `add t pos δ` preserves `Valid` with respect to `PrefixSums.addAt s pos δ`
+(`[Fenwick1994]`, "UPDATING THE TABLE", pp. 331–332, Figures 5–6 on p. 331). -/
 theorem valid_add {α : Type*} [AddCommMonoid α]
     {t : FenwickTree α} {s : List α} (hv : Valid t s) (pos : ℕ) (δ : α) :
-    Valid (add t pos δ) (addAt s pos δ) := by
+    Valid (add t pos δ) (PrefixSums.addAt s pos δ) := by
   unfold add addM
   split_ifs with hpos
   · simp only [TimeM.ret_bind, TimeM.ret_pure]
     have hpos_s : pos < s.length := hv.1 ▸ hpos
     rw [valid_iff_sum_Ico] at hv ⊢
-    refine ⟨by rw [addLoopM_size, hv.1, length_addAt], fun idx hidx1 hidx_sz => ?_⟩
+    refine ⟨by rw [addLoopM_size, hv.1, PrefixSums.length_addAt], fun idx hidx1 hidx_sz => ?_⟩
     rw [addLoopM_size] at hidx_sz
     rw [addLoopM_getElem t.tree.size (pos + 1) δ t.tree hidx1 hidx_sz, hv.2 idx hidx1 hidx_sz]
     have hmem_ico : idx ∈ upChain t.tree.size (pos + 1) ↔
@@ -481,11 +459,12 @@ theorem valid_add {α : Type*} [AddCommMonoid α]
       rw [mem_upChain_iff (by omega : 0 < pos + 1), Finset.mem_Ico]
       omega
     simp only [hmem_ico]
-    have hsum_eq : ∑ i ∈ Finset.Ico (idx - lowbit idx) idx, (addAt s pos δ).getD i 0 =
+    have hsum_eq :
+        ∑ i ∈ Finset.Ico (idx - lowbit idx) idx, (PrefixSums.addAt s pos δ).getD i 0 =
         ∑ i ∈ Finset.Ico (idx - lowbit idx) idx,
           (s.getD i 0 + if i = pos then δ else 0) := by
       refine Finset.sum_congr rfl fun i _ => ?_
-      rw [getD_addAt s δ hpos_s i]
+      rw [PrefixSums.getD_addAt s δ hpos_s i]
       split_ifs <;> simp only [add_zero]
     rw [hsum_eq, Finset.sum_add_distrib]
     by_cases hmem : pos ∈ Finset.Ico (idx - lowbit idx) idx
@@ -504,7 +483,7 @@ theorem valid_add {α : Type*} [AddCommMonoid α]
       rw [hzero, add_zero]
   · simp only [TimeM.ret_pure]
     have hge : s.length ≤ pos := by have := hv.1; omega
-    rwa [addAt_of_length_le δ hge]
+    rwa [PrefixSums.addAt_of_length_le δ hge]
 
 @[simp]
 theorem size_add {α : Type*} [AddCommMonoid α]
@@ -846,7 +825,7 @@ theorem valid_set {α : Type*} [AddCommGroup α]
   split_ifs with hpos
   · simp only [TimeM.ret_bind, ret_getM_eq hv, ret_addM]
     have hadd := valid_add hv pos (v - s.getD pos 0)
-    unfold addAt at hadd
+    unfold PrefixSums.addAt at hadd
     rwa [add_sub_cancel] at hadd
   · simp only [TimeM.ret_pure]
     have hge : s.length ≤ pos := by have := hv.1; omega

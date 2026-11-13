@@ -4,7 +4,7 @@ cslib-frontier represents propositional syntax as concrete finite data and disti
 
 ## CNF, CSP and quantified formulas
 
-[CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals.
+[CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals. A further measure, `CNF.connectiveCount`, counts the binary AND and OR symbols of the written formula (`k - 1` ORs per clause of `k` literals, `m - 1` ANDs between `m` clauses); [CNF/TruthTable.lean](../../CslibFrontier/Logics/Propositional/CNF/TruthTable.lean) proves that the truth-table formula `CNF.ofTruthTable f` of any `f : (Fin ℓ → Bool) → Bool` computes it with at most `ℓ * 2 ^ ℓ` such symbols and at most `ℓ * 2 ^ ℓ` literal occurrences (Arora–Barak draft, Claim 2.14).
 
 To certify a program that evaluates a formula, import
 `CslibFrontier.Logics.Propositional.CNF.PolyTime`. Its `fun_prop` rules
@@ -159,7 +159,7 @@ supplies `declaredCNFDecoder` and the polynomial-time well-formed word recognize
 `declaredCNFCode`. See the [CNF basis tests](../../CslibFrontierTests/CNFBasics.lean), checked with
 `scripts/build.sh CslibFrontierTests.CNFBasics`.
 
-[Constraint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface; see [weighted CSP partition functions and variable elimination](networks-and-iteration.md#weighted-csp-partition-functions-and-variable-elimination) for `partitionFunctionOn`, separator conditioning, `FactorTable` tensor bridges, and `TimeM` / weight-cost variable elimination.
+[Constraint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label `rel` plus a variable list `scope`; write `⟨R, vs⟩` for a literal constraint, and use `Constraint.equivProd` where a pair is needed. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface; see [weighted CSP partition functions and variable elimination](networks-and-iteration.md#weighted-csp-partition-functions-and-variable-elimination) for `partitionFunctionOn`, separator conditioning, `FactorTable` tensor bridges, and `TimeM` / weight-cost variable elimination.
 
 [QBF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
 
@@ -209,7 +209,8 @@ variable names remain binary throughout. The shared arity-check certificate is
 `Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`;
 `CSPSAT.polyTimeReducible_of_guard` in `Problems.CSP.Basic` turns any polynomial-time compiler
 that is faithful on well-formed instances, together with a fixed reject instance outside the
-target, into the guarded reduction used by each endpoint.
+target, into the guarded reduction used by each endpoint. It specializes the general
+`PolyTimeReducible.of_guard` in `Reduction.Guard` to the exact-arity test.
 
 [The full checked client](../../CslibFrontierTests/Schaefer.lean) exercises every tractable arm,
 a concrete NAE hard language, arbitrary fixed arities, sparse labels and an empty alphabet.
@@ -231,7 +232,7 @@ variables and include empty/nullary relations. See the [majority examples](../..
 
 The ordinary solvers are also reusable: `TwoSAT.mem_P`
 ([TwoSAT/PolyTime.lean](../../CslibFrontier/Computability/Complexity/Problems/TwoSAT/PolyTime.lean)),
-`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.satisfiable_mem_P`. For `TwoSAT`,
+`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.mem_P`. For `TwoSAT`,
 `TwoSAT.assignment` constructs a satisfying assignment in polynomial time on binary CNF encodings
 (`TwoSAT.computableInPolyTime_assignment`, `TwoSAT.eval_assignment_of_mem`) by filtering
 occurrence-bounded implication-graph reachability lists (`TwoSAT.reach`). Horn syntax counts
@@ -262,6 +263,14 @@ of general equality elimination. See [clone examples](../../CslibFrontierTests/B
 [gadget examples](../../CslibFrontierTests/CSPGadget.lean) and
 [hardness examples](../../CslibFrontierTests/SchaeferHardness.lean).
 
+For the template, instantiation, replacement and guarded semantic theorems alone, import
+`CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement`.
+The ordinary `CslibFrontier.Computability.PolyTime.CSP.Gadget` import still supplies those
+same APIs together with their native runtime certificates. The
+[logical-import client](../../CslibFrontierTests/PPGadgetReplacement.lean) computes replacement
+with repeated and sparse binary names and checks that the logical import does not load the
+native theorem. Names, bodies, encodings and runtime bounds are unchanged by this separation.
+
 `CSPSAT.exists_linear_size_reduction_from_threeSAT` supplies one reduction with native
 polynomial-time computation, correctness and the bound
 $n' + m' \le C_\Gamma m \le C_\Gamma(n + m)$. Here `numVars` counts distinct occurring
@@ -272,6 +281,9 @@ constraint and occurrence counts; distinct variables are bounded by occurrences.
 compiler retains a uniform linear bound because an invalid input is nonempty. These are
 combinatorial size bounds; neither linear running time nor linear binary encoding length is
 asserted. See the [checked size clients](../../CslibFrontierTests/SchaeferSize.lean).
+`CslibFrontier.Computability.PolyTime.CSP.Gadget.Size` now imports only the logical replacement
+API: it supplies counts, not the native Gadget certificates it previously exported incidentally.
+Import `...PolyTime.CSP.Gadget` explicitly when using those runtime certificates.
 
 The result is the Boolean dichotomy; symmetric and larger-domain dichotomies are outside its scope.
 
@@ -380,10 +392,15 @@ From the repository root, import
 The namespace is `Cslib.Complexity.Graph.RotationRecognition`. The
 [checked guide clients](../../guide/CslibFrontierGuide/NPCompleteness.lean#frozen-xor-queries-and-checked-recovery)
 show the ordinary imports, concrete validation/failure cases and success contracts.
-The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) additionally exercises
-loops, parallel edges, repeated scopes, nullaries and large binary labels; run
-`scripts/build.sh CslibFrontierTests.RotationRecognition` to check it. Successful compilation
-checks actual solver/recovery evaluations and theorem applications, without proving completeness.
+The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) checks small successful
+recoveries, raw-loop order acceptance and rejection, repeated scopes, nullaries, malformed inputs
+and relation-metadata insensitivity. The [CSP certificate cases](../../CslibFrontierTests/CSPRotationCertificate.lean)
+cover large variable names and supplied-table checking. Run
+`scripts/build.sh CslibFrontierTests.RotationRecognition` to check the recovery examples.
+These kernel-checked evaluations and theorem applications witness particular outcomes; they
+do not prove completeness or check generated code. The
+[profiling and coverage record](https://github.com/cslib-community/cslib-frontier/issues/4972#issuecomment-6845165353)
+explains the choice of small fixtures.
 
 `FixedRotationInput` pairs the existing listed graph with optional complete clockwise dart
 words. `Valid` requires declared vertices exactly `List.range n`, endpoints below `n`, exactly
@@ -547,6 +564,21 @@ coincide. In the selected component, the edge and face counts each increase by o
 same-face premise; its actual name update retains indexed edges and directed port order.
 Arbitrary noninjective relabeling alone is not a genus-preservation result.
 
+`VertexJoinGenus` supplies the complementary case:
+`numericalGenusZero_mergeVertices_of_not_sameComponent r hG hr h k hk hc` merges
+distinct corners' vertices in different actual components. It requires declared endpoints,
+source numerical genus zero, `hk : h.vertex ≠ k.vertex` and
+`hc : ¬ Graph.RotationCertificate.SameComponent G h.vertex k.vertex`;
+it needs no same-face premise.
+The joined components lose one vertex and one face, while all indexed edges and untouched
+closed/point components remain. Import `DisjointGenus` and apply
+`numericalGenusZero_disjointUnion` at the same namespace to two source rotations with
+their endpoint and genus guards.
+The actual `Graph.disjointUnion` tags names by parity and concatenates declaration and edge
+lists without deduplicating occurrences. The [join](../../CslibFrontierTests/RotationVertexJoin.lean)
+and [disjoint](../../CslibFrontierTests/RotationDisjoint.lean) clients check exact tables,
+sparse names, duplicate points, empty blocks and a same-component negative case.
+
 For `r : RotationSystem (lastEdgeGraph G u v)`, `r.deleteLastEdge` removes exactly the final
 listed edge and retains the original graph `G`. `numericalGenusZero_deleteLastEdge r hH hr`
 requires declared source endpoints and source numerical genus zero. It covers splitting
@@ -585,18 +617,21 @@ The general point-insertion, cycle-surgery and selected-orbit APIs live in
 `Equiv.Perm.SelectedOrbits`; they import no graph modules. The complete
 [permutation-only client](../../CslibFrontierTests/PermutationSurgery.lean) uses these imports
 without the graph layer.
+`SelectedOrbitJoin` adds disjoint invariant-support union and different-cycle swap counts,
+including fixed points and empty selections; its [standalone client](../../CslibFrontierTests/SelectedOrbitJoin.lean)
+also imports no graph module.
 These are original permutation/algebraic proofs, with no native runtime or geometric
-realization claim. Full gadget-recipe realization, recognition, Hanani–Tutte and the planar
+realization claim. The static construction grammar is realized below; expanded-language
+macros, recognition, Hanani–Tutte and the planar
 dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Polygonal geometry prerequisites
 
-Loop-only numerical-genus-zero rotations now have actual polygonal embeddings with their
-exact clockwise order, as documented below. The general numerical-genus / polygonal-realization
-equivalence remains unproved. Its two remaining obligations are geometric restoration of nonloop
-contractions by directed contiguous vertex splits and a finite segment-to-face-color converse
-including subdivision and suppression. Topological taming, indexed FZ versus DK set conventions
-and source comparison, frozen-switch completeness, Hanani–Tutte recognition and the full
+For every supplied rotation with declared incident endpoints, componentwise numerical genus
+zero is equivalent to an actual polygonal embedding with its exact literal clockwise order.
+The forward construction and finite polygonal-to-numerical converse are documented below.
+Topological taming, indexed FZ versus DK set conventions and source comparison,
+frozen-switch completeness, Hanani–Tutte recognition and the full
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) endpoint remain open.
 
 **Start:** complete [checkout setup](../workflows/getting-started.md#prerequisites-and-the-checkouts-version)
@@ -685,10 +720,126 @@ The [bouquet tests](../../CslibFrontierTests/PolygonalBouquet.lean) supply a non
 at every degree, nested/disjoint loops, negative interlacing and reversed-order cases;
 [their audit](../../CslibFrontierTests/PolygonalBouquetAudit.lean) checks stored declarations.
 Run `scripts/build.sh CslibFrontierTests.PolygonalBouquet CslibFrontierTests.PolygonalBouquetAudit --wfail --iofail`.
-This proves the loop-only forward direction. Nonloop restoration and the geometric converse
-remain open, along with the full planar objective.
+This loop-only construction is the base of the general forward theorem below.
+
+### General clockwise realization and automatic restoration
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Forward`.
+For any `r : RotationSystem G`, apply `r.exists_polygonalDrawing hG hr` to obtain
+`∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r`. The only hypotheses declare
+every actual incident endpoint (`hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1`) and require
+the existing componentwise `r.NumericalGenusZero` (`hr`). There is no degree, connectedness,
+loop-only, bridge, cofaciality, rational-coordinate or geometric-provider premise.
+The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean) applies it to nonloop
+stars at every degree, using `starGraph_endpoints_declared` and `numericalGenusZero_starRotation`
+from `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Star`.
+
+The proof moves an actual indexed nonloop occurrence last, contracts it, recurses on the
+strictly smaller edge list, restores it and transports back to the exact original ordering.
+The generic rank API now lives in
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.IntervalOrder`;
+ordinary `Realization.BouquetOrder` imports retain that public API without aliases.
+`Realization.SplitBlocks` supplies `contractionRank_lt_iff_sourceDistance_lt` to both
+interval transport and split-fan order, so callers need not reconstruct deletion offsets.
+
+For a supplied `D : PolygonalDrawing (contractLastEdgeGraph G u v)` with `hD : D.IsEmbedding`
+and `hR : D.Realizes (r.contractLastEdge huv)`, the ordinary `Realization.Restoration` topic
+provides `hR.exists_restoration r huv hG hD`. Here `r` is the source rotation on
+`lastEdgeGraph G u v`, `huv : u ≠ v`, and `hG` declares its incident endpoints. The result
+chooses `ρ > 0` and `a b : ℂ` internally and proves both embedding and exact realization of
+`D.restoration huv ρ a b`. It accepts any such actual contracted drawing.
+
+`PolygonalDrawing.Restriction` chooses an isolated cut ball and cuts the two ends independently;
+`IsEmbedding.restrictionTime_bounds` provides the nonnegative cuts and their sum bound
+for simplicity, contact and germ proofs.
+`CslibFrontier.Foundations.Geometry.Polygonal.Join` supplies exact one-segment route joins.
+Two contiguous retained dart blocks determine separating fans and the connector's precise
+clockwise insertion gaps, including one or both empty blocks. The restored routes retain
+their exterior segments, independently reattach both ends of target loops, and check all
+real contacts, simplicity and unchanged vertices. No source-model or runtime theorem follows.
+
+From the repository root, run
+`scripts/build.sh CslibFrontierTests.PolygonalForward CslibFrontierTests.PolygonalContractionSplit CslibFrontierTests.PolygonalForwardAudit CslibFrontierTests.PolygonalRestorationAudit --wfail --iofail`.
+The [forward client](../../CslibFrontierTests/PolygonalForward.lean) covers arbitrary degree,
+bridges, both one-empty orientations, two empty blocks, parallel edges, loops at both endpoints,
+an untouched loop component, sparse duplicate declarations, isolates and empty graphs.
+The [restoration client](../../CslibFrontierTests/PolygonalContractionSplit.lean) reopens the
+two independent ends of a target loop in an actual contracted drawing.
+[Join](../../CslibFrontierTests/PolygonalJoin.lean),
+[restriction](../../CslibFrontierTests/PolygonalRestriction.lean) and
+[split-fan](../../CslibFrontierTests/PolygonalSplitFans.lean) clients expose the local APIs.
+All should elaborate; use the artifact troubleshooting linked above for missing imports.
+
+## Polygonal embeddings imply numerical genus zero
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Converse`.
+For an actual `D : PolygonalDrawing G`, `hD : D.IsEmbedding`, declared incident endpoints
+`hG` and literal clockwise realization `hR : D.Realizes r`, apply
+`hD.numericalGenusZero hG hR`. The conclusion is the existing componentwise
+`r.NumericalGenusZero`. No genus, face-color, lifting, disk, Jordan or Hanani–Tutte premise
+is supplied. Coordinates are arbitrary complex numbers; all real parameters on every affine
+segment are retained. Loops keep two ends, parallel occurrences keep their positions, and
+arbitrary degree, disconnected graphs, sparse/duplicate declarations, points and empty graphs
+are included. The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean) gives
+complete ordinary-import clients of both general directions.
+
+The constructive intermediate API is `hD.exists_faceColors hR hG x hx`, from
+`PolygonalDrawing.FaceColors`. For every actual `x : Fin G.2.length → Bool` satisfying
+`hx : G.VertexEven x`, it constructs colors `q : r.Face → Bool` with
+`r.faceBoundary q = x`. These are the actual permutation face classes, not a replacement
+geometric-face definition. A generic ray direction is chosen from the finite segment endpoints;
+angular-prefix values transport along all real segment interiors, through bends and through
+the empty inverse-rotation sectors. Vertex-evenness cancels endpoint cuts, including singleton
+rotations and both ends of loops. The values descend through the literal `faceNext`; the exact
+indexed dual/lifting cycle-space criterion then proves numerical genus zero.
+
+Generic ray, determinant, segment and fan-order facts live under
+`CslibFrontier.Foundations.Geometry.Polygonal`; their proofs have no graph dependency.
+`AngleOrder` supplies the one-turn span criterion shared by fixed horizontal ports and
+moving local fans, allowing either choice of argument cut.
+`RayParityEven` supplies local constancy from zero total endpoint jump on the observation
+ray; even incidence derives that premise. `RayParityTransport` reuses this criterion after
+removing the observed segment, whose endpoint heights differ from the observation height.
+The [ray-parity tests](../../CslibFrontierTests/PolygonalRayParity.lean) check a single selected
+segment with odd endpoint incidence where the weaker local criterion applies.
+The graph-specific construction data stay private. The existing lifting-based criterion is a
+proof tool: callers of the final theorem do not supply its face-color premise. `LocalSplitFan`
+and `LocalSplitOrder` supply the needed fan/order facts, with the span-order proof shared through
+`AngleOrder`; these modules are shared with the forward restoration proof.
+
+Run `scripts/build.sh CslibFrontierTests.PolygonalConverse CslibFrontierTests.PolygonalConverseAudit --wfail --iofail`.
+The [concrete converse client](../../CslibFrontierTests/PolygonalConverse.lean) applies the endpoint
+to actual loop, bridge and parallel-digon embeddings and a clockwise degree-five star, then
+checks sparse/duplicate isolates and emptiness. A nonzero loop label separates its two actual
+faces. The torus test rules out realizing that interlaced rotation; it makes no nonplanarity
+claim about the underlying graph. The [audit](../../CslibFrontierTests/PolygonalConverseAudit.lean)
+covers stored declarations in the new endpoint modules, with its exclusions explicit.
+
+### Finite PL equivalence
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Realization.Equivalence`.
+`r.numericalGenusZero_iff_exists_polygonalDrawing hG` combines the two endpoints:
+`r.NumericalGenusZero ↔ ∃ D : PolygonalDrawing G, D.IsEmbedding ∧ D.Realizes r`.
+Use `.mp hr` to construct a drawing or `.mpr ⟨D, hD, hR⟩` to recover numerical genus zero.
+The [ordinary client](../../CslibFrontierTests/PolygonalEquivalence.lean) checks both directions
+on nonloop stars at arbitrary degree and the equivalence for repeated isolated declarations.
+Run `scripts/build.sh CslibFrontierTests.PolygonalEquivalence --wfail --iofail`.
+
+These are original finite PL proofs. Arbitrary topological-arc taming, indexed FZ versus
+DK set source-model comparison, frozen-switch completeness, Hanani–Tutte, bare recognition,
+coordinate-bit/runtime/P bounds and the CSP dichotomy under
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) remain separate obligations.
 
 ## Ordered incidence-to-polygon rotations
+
+For cyclic argument succession without the polygon construction, import
+`CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentPermutation`.
+`Cslib.Complexity.CSP.argumentPermutation F` follows each original scope, and
+`sameCycle_argumentPermutation o p` characterizes its orbits by equality of constraint
+positions. Repeated names and identical rows keep distinct occurrences; a nullary row has no
+occurrence to rotate. The [ordinary-import client](../../CslibFrontierTests/CSPArgumentPermutation.lean)
+checks these cases and that this import does not load `polygonGraph`.
+The old `...RotationSystem.Primal.Graph` import publicly retains both names without aliases.
 
 Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
 In `Cslib.Complexity.CSP`, `polygonGraph F` has one listed edge per actual argument occurrence,
@@ -1392,6 +1543,193 @@ shared width bridge. The guide checks the native P endpoint, all-raw solver cert
 optimality theorem and concrete decisions. Geometric realization/recognition, ordered planar
 hardness transfer and final dichotomy assembly remain open under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Ordered boundaries and static gadget closure
+
+From the repository root, import
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.AtomBoundary`,
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Projection` and
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.GadgetCyclic` and
+`CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Equality`.
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.Construction` for the complete
+existing construction grammar and all these primitive closures.
+The namespace is `Cslib.Complexity.CSP.OrderedBoundary`; gadgets remain the existing
+`Cslib.Logic.PL.CSP.PPGadget`. The [checked guide](../../guide/CslibFrontierGuide/NPCompleteness.lean)
+shows ordinary-import clients, including empty alphabets and nullaries.
+
+`probeBody F ports` retains every original constraint position and appends one structural
+probe with the reversed boundary word. The probe has no original-language relation semantics;
+it is certificate scaffolding, not an added Gamma constraint. Repeated names retain separate
+probe occurrences; unused ports become leaves. `Witness F ports` stores one successor table,
+checking both the ordered numerical probe rotation and its first-return restriction to the
+actual body. `GadgetWitness g` uses exactly `g.body` and `List.ofFn Sum.inl`. Neither interface
+stores a geometric embedding or oracle.
+
+`Witness.atom arity sem r` supplies the actual boundary of the existing `PPGadget.atom`
+at every arity, including zero, without a truth or planarity premise. The explicit
+`atomBoundaryCertificate` uses opposite leaf orders in an indexed double star, with one
+four-dart face per port. At arity zero both nullary centers use the isolated-point convention.
+A false relation can have an accepted structural certificate: this does not imply SAT.
+`Witness.empty ports hn` supplies an empty-body boundary when `hn : ports.Nodup`.
+The [atom tests](../../CslibFrontierTests/PlanarAtomBoundary.lean) keep duplicate constraint
+positions and reject reflected argument order even when the raw graph rotation has genus zero.
+
+`bodyCertificate F c` follows successors to the first original-body dart and has exactly
+`2 * F.occurrences.length` entries. The search clock is the supplied list length, not a
+binary entry or vertex name. `bodyCertificate_accepted_of_probe F ports hn c h` derives
+full body acceptance from probe acceptance with explicit `hn : ports.Nodup`.
+`Witness.ofProbe hn c h` packages both checks. This extraction theorem is not asserted for
+arbitrary repeated words; the underlying witness interface still permits repeated markers.
+
+`verifyRotationCertificate_restrictPrefix_lastArgument F r scope v c h` applies to the
+original CSP lists: acceptance of `F ++ [⟨r, scope ++ [v]⟩]` implies acceptance of the literal
+restricted table on `F ++ [⟨r, scope⟩]`. Occurrence and endpoint maps internally handle dense
+renumbering, disappearing variables, repeated labels and nullaries. In gadget recipes this
+edits a structural probe. It makes no SAT-preservation claim for deleting an argument of a
+Gamma constraint. Zero-port extraction removes only the structural nullary, retaining
+original false or true nullary constraints.
+
+`Witness.forgetAt k w hn hk` deletes position `k` from the boundary of the same body, retaining
+`ports.eraseIdx k` in its original order. It requires the whole word to be duplicate-free and
+`hk : k < ports.length`. Directed cyclic transport, deletion and inverse transport discharge
+the target checks. The earlier `forgetHead` has the weaker tail-Nodup contract and retains its
+repeated-marker regression; do not infer that contract for arbitrary positions.
+
+`GadgetWitness.project w j` supplies a witness for exactly `g.project j`, at every valid free
+coordinate. The hidden label becomes auxiliary zero before the old auxiliary block; original
+relation scopes are retained through the existing substitution map. Canonical port distinctness
+and the required injection are proved internally. `projectHead_certificate` retains the simpler
+literal prefix equation for first-port projection. The existing `PPGadget` theorem supplies
+the semantics; these constructors add ordered numerical realization without primitive relations.
+
+`GadgetWitness.rotate w` realizes exactly `g.relabelFree (fun i => i + 1)` at positive arity,
+the existing cyclic constructor used by `Construction.gadget`. The reversed probe word requires
+the opposite directed scope shift. Numerical incidence transport alone can handle a scope
+permutation; ordered acceptance additionally requires commuting with positive `finRotate`.
+Arbitrary permutations or higher-arity reflection are not asserted.
+The [cyclic tests](../../CslibFrontierTests/PlanarCyclicBoundary.lean) prove equality of the entire
+constructed twelve-entry table from all dart successors, then execute the full checkers.
+The [projection tests](../../CslibFrontierTests/PlanarProjectionAll.lean) check middle/wrap bodies
+and semantics, canonical Nodup extraction, degree five, unused sparse names, an empty alphabet
+and retained nullaries.
+
+`GadgetWitness.equalDrop w` supplies the boundary of exactly the existing `g.equalDrop`,
+identifying its first two free labels without adding an equality symbol. Their consecutive
+directed probe arguments give the selected variable corners two literal face steps apart;
+cofaciality is proved internally before applying the outgoing corner swap. Original argument
+cycles, indexed duplicates, cut vertices and closed/nullary components are retained. The label
+map needs only the selected-pair kernel on occurring names, not global injectivity.
+
+Identification leaves a duplicate probe marker. It is deleted before the surviving canonical
+ports are proved Nodup and body extraction is applied. `equalDrop_certificate` identifies the
+entire output with `equalDropCertificate g.body n w.certificate`: bounded predecessor lookup,
+an outgoing successor swap and first-return restriction. Residual arity `n` is static; there
+is no uniform native runtime bound for arbitrary binary arity or language/template size.
+The [equality client](../../CslibFrontierTests/PlanarEqualityBoundary.lean) proves the complete
+NAE-derived table, executes both checkers, derives disequality with original symbols, and checks
+both OneHot-derived pins. Generic attachments are supplied below; expanded-language macro
+proofs remain separate. Empty alphabets/bodies, degree five, repeated constraints and false
+nullaries also have nonvacuous tests.
+
+`RelationMinor.Construction.orderedWitness c` supplies `GadgetWitness c.gadget` for every
+existing finite `Construction arity sem R`, on exactly the existing original-language PP
+interpreter. All eight branches are covered: atom, projection, adjacent equality,
+adjacent disequality deletion, cofactor, flip, positive cyclic rotation and binary meet.
+The enabling pin and disequality trees recurse to original atoms. There is no finite-language,
+body-occurrence, degree, connectedness or target-witness provider hypothesis.
+`RelationMinor.Available.nonempty_orderedGadget` packages the existential consequence.
+
+For individual steps, `UnaryAttachment` gives `GadgetWitness.cofactor w j b v` on the exact
+`g.cofactor j b p`; `DifferenceAttachment` gives `w.differentDrop v` on `g.differentDrop d`;
+`FlipAttachment` gives `w.flip j v` on `g.flip j d`; and `BinaryMeet` gives `w.binaryMeet v`
+on `g.conj h` only when both free arities are two. The source pin/disequality gadgets have
+their own actual witnesses; the full tree theorem supplies them recursively. This does not
+assert arbitrary higher-arity conjunction closure. Hidden coordinates and each old auxiliary
+block retain the existing interpreter's row and scope order.
+
+The attachment proof starts with disjoint actual bodies and probes, joins different components,
+then uses adjacent probe corners for the cofacial join. Even wholly unused ports have actual
+probe corners. Flip uses its noncanonical enlarged boundary directly: insert the new last
+marker, remove the selected old marker, swap their names and hide the last coordinate. It
+does not assume that enlarged intermediate has canonical port order.
+
+The [complete tree client](../../CslibFrontierTests/PlanarConstructionBoundary.lean) uses one
+original one-in-three symbol and genuine enabling subtrees to exercise all eight branches,
+accepted structural certificates, satisfying/rejecting semantic rows and a closed result.
+It also checks literal flip/disequality bodies, empty and unused attachments, nullary cofactors,
+repeated constraints and mirrored-order rejection. The [boundary-join client](../../CslibFrontierTests/PlanarBoundaryJoin.lean)
+retains a degree-six cut vertex and nullary rows. The [scoped audit](../../CslibFrontierTests/PlanarConstructionAudit.lean)
+covers stored declarations, including private/generated ones, environment linters and public
+`Cslib.Init` reachability. The [projection import client](../../CslibFrontierTests/PlanarProjectionPublic.lean)
+checks the published injectivity lemma reused by these constructors.
+
+These are static finite constructors. Some inverse occurrence maps use finite choice, so
+general projection and cyclic constructors are intentionally `noncomputable`. Fixing a language
+and its templates permits nonuniform certificate preprocessing; it does not supply the
+input-varying native compiler's target-checker and framed polynomial-time proof. No unbounded
+embedding search is claimed. The Figure 1 and NAND-triangle tables in `Embedding.Crossover`
+are macro skeletons, not yet expanded original-language substitution.
+
+The lower APIs preserve existing access: import
+`CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Darts` for
+`incidenceDartEquiv` and its application lemma without polygon construction. The old
+`Primal.Graph` import retains both names. `List.idxOf_map_injOn` moved unchanged to
+`CslibFrontier.Foundations.Data.List.IdxOfInjective`, with CNF clients migrated.
+`RotationCertificate.length_of_verifyRotation` applies to any accepted raw table, independently
+of numerical genus. Equal-edge point-declaration transport keeps both endpoint-declaration guards.
+
+Run `scripts/build.sh CslibFrontierTests.PlanarProjectionAll CslibFrontierTests.PlanarCyclicBoundary CslibFrontierTests.PlanarProbeProjection --wfail --iofail`.
+For the complete grammar run
+`scripts/build.sh CslibFrontierTests.PlanarConstructionBoundary CslibFrontierTests.PlanarConstructionAudit CslibFrontierTests.PlanarBoundaryJoin --wfail --iofail`.
+The boundary convention is Dvořák–Kupec's reverse outer port order, printed p. 436; the probe
+and finite surgery are original. Fulla–Živný's indexed positive-arity model and the original
+decision/nullary extension are distinguished from DK's constraint sets; no deduplication or
+geometric equivalence is assumed. OneHot3/CROSS macro expansion, normalization caps and
+Figure-1 substitution, native whole-instance target acceptance, geometric/source comparison
+and bare recognition remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+
+## Original-language ordered disequality
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Embedding.SelfDual` and open
+`Cslib.Complexity.CSP.OrderedBoundary`. `exists_disequality_of_common_not` takes only a
+common unary NOT operation and failure of the unary false-constant operation:
+`HasPolymorphism arity sem (fun a : Fin 1 → Bool => !(a 0))` and
+`¬HasPolymorphism arity sem (fun _ : Fin 1 → Bool => false)`.
+It returns an actual `PPGadget arity sem RelationMinor.disequality` together with
+`Nonempty (GadgetWitness g)`. There is no finite-alphabet, pin, template, PP-definition,
+target-rotation or genus-provider premise. The supplied gadget uses original symbols;
+its witness checks both the actual body and the ordered structural probe.
+
+The minimum ranges over actual gadgets with actual accepted boundaries, nonempty relations
+and a missing all-zero tuple. An arbitrary-arity original atom seeds it; proved projection
+and adjacent equality provide every descent step. Common NOT excludes the unary outcome,
+leaving binary disequality. This follows DK Lemma 3, printed pp. 437–438, with the semantic
+descent adapted from Erik Demaine's relation-minor proof and original actual-body/certificate
+reconstruction. It does not assume arbitrary PP operations preserve ordered boundaries.
+
+The minimum is classical, static language preprocessing. No uniform algorithm or bound in
+alphabet/template size is claimed. The [complete enabling client](../../CslibFrontierTests/PlanarSelfDualEnabling.lean)
+uses `{NAE3, CROSS}` to supply an original-language body, an accepted table, a satisfying
+unequal free row and rejection of the equal false row. Empty and true/false-nullary languages
+show why unsatisfiability alone does not imply the failed-constant premise.
+
+For semantic preservation alone, import
+`CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Polymorphism`.
+`HasPolymorphism.eval` preserves satisfying assignments of any actual wellformed CSP body;
+`PPGadget.isPolymorphism` passes the same common operation through existential auxiliaries.
+The operation index `J` is arbitrary, including a nullary operation. These are forward
+semantic facts, with no ordered or planar PP-closure assertion. The
+[semantic-only client](../../CslibFrontierTests/CSPGadgetPolymorphism.lean) checks repeated
+scopes, nullary operations and a false nullary body, and asserts that its imports do not
+include `Graph.RotationSystem`. The [guide](../../guide/CslibFrontierGuide/NPCompleteness.lean)
+provides complete ordinary-import examples for both APIs.
+
+Run `scripts/build.sh CslibFrontierTests.PlanarSelfDualEnabling CslibFrontierTests.CSPGadgetPolymorphism --wfail --iofail`.
+The existing static grammar now has ordered witnesses. NAND-triangle and OneHot3/CROSS
+macro expansion, normalization/Figure-1 and expanded original-language
+endpoints, native whole-instance target acceptance, geometry/source comparison and recognition
+remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Finite crossover gadget semantics
 

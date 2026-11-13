@@ -250,7 +250,7 @@ theorem sampleAdaptiveClient_run_initialized :
         ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).1 y traces ∧
       SetRep 1 8 28 8 ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).2.1 y ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
-        ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).2.2.length * 152 ∧
+        ((spec 1 8).runClient (∅ : Finset ℕ) sampleAdaptiveClient).2.2.length * 160 ∧
       (∀ j, j < 8 ∨ 36 ≤ j → y.mem j = initStart.mem j) :=
   run_initialized (d := 1) (w := 8) (base := 8)
     initStart_bounded (by decide) rfl rfl sampleAdaptiveClient
@@ -261,5 +261,20 @@ theorem sampleAdaptiveClient_run_initialized :
       refine ⟨by decide, by decide, ?_, by decide, ?_, trivial⟩
       · change 0 < 2 ^ 8; decide
       · change 1 < 2 ^ 8; decide)
+
+/-- Actual native dynamic calls share the canonical flag/payload bank. Membership supplies the
+branch answer, successor returns its payload, and an out-of-universe membership query is false. -/
+example :
+    (do
+      let P := dynamicProgram 1 8
+      let (a, present, _) ← P.eval 8 16 (.member 1) (caller 1)
+      let (b, next, _) ← P.eval 8 16 (.successor (if present then 1 else 0)) a
+      let (_, absent, _) ← P.eval 8 16 (.member 4) b
+      pure (present, next, absent)) = some (true, some 3, false) := by
+  decide +kernel
+
+/-- The native Boolean parser rejects a noncanonical flag; normalization is executed in code. -/
+example : (dynamicProgram 1 8).decode (.member 0) (fun _ => 7) = none := by
+  decide
 
 end CslibFrontierTests.VanEmdeBoasRAM

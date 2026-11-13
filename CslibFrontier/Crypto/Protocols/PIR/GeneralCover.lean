@@ -46,15 +46,17 @@ This module completes both directions of Section 3.3 (pp. 8–10):
   (`hasIndexedScheme_seven_of_le_pow_five`), whereas `7 ∤ 32` rules out any balanced uniform cover.
 * **General radius-`r` and radius-`2` covering-code schemes (`PIR.radiusCoverScheme`,
   `PIR.hasScheme_of_hammingDist_le`, `PIR.hasScheme_of_hammingDist_two`,
-  `PIR.hasScheme_of_hammingDist_two_cgks`).** For any radius-`r` covering code of `D → Bool`, each
+  `PIR.hasScheme_of_hammingDist_two_sq`).** For any radius-`r` covering code of `D → Bool`, each
   server tabulates emulated subcube parities over `RadiusBallQuery D r ι` (`∑ j ≤ r, C(d, j) · ℓ^j`
   bits), giving a uniform `PIR.Scheme` communicating
   `k · (d · ℓ + ∑ j ≤ r, C(d, j) · ℓ ^ j)` bits. At `r = 2` this gives
-  `k · (2 d ℓ + C(d, 2) ℓ² + 1)` bits (`hasScheme_of_hammingDist_two`), which for `d ≥ 2` and
-  `ℓ ≥ 1` implies Section 3.3's stated radius-`2` bound `k · d · ℓ + k · d² · ℓ²` (p. 10,
-  `hasScheme_of_hammingDist_two_cgks`). Instantiated on `{00000, 11111}` (`repetitionFive`), this
-  gives a `2`-server radius-`2` scheme on `n ≤ ℓ ^ 5` with `20 ℓ² + 20 ℓ + 2` bits
-  (`hasScheme_two_radius_two_of_le_pow_five`).
+  `k · (2 d ℓ + C(d, 2) ℓ² + 1) = k · d · ℓ + k · C(d, 2) · ℓ² + k · (d · ℓ + 1)` bits
+  (`hasScheme_of_hammingDist_two`, matching Section 3.3's displayed leading expression
+  `k · d · ℓ + k · C(d, 2) · ℓ²` on p. 10 plus the `k · (d · ℓ + 1)` lower-order radius-`0` and
+  radius-`1` answer bits), and for `d ≥ 2`, `ℓ ≥ 1` the coarser polynomial upper bound
+  `k · d · ℓ + k · d² · ℓ²` (`hasScheme_of_hammingDist_two_sq`). Instantiated on `{00000, 11111}`
+  (`repetitionFive`), this gives a `2`-server radius-`2` scheme on `n ≤ ℓ ^ 5` with
+  `20 ℓ² + 20 ℓ + 2` bits (`hasScheme_two_radius_two_of_le_pow_five`).
 
 ## Main definitions
 
@@ -80,7 +82,7 @@ This module completes both directions of Section 3.3 (pp. 8–10):
   for `n ≤ ℓ ^ 5` (CGKS Figure 1, `d = 5`).
 * `Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_le`,
   `Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_two`,
-  `Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_two_cgks`: radius-`r` and radius-`2`
+  `Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_two_sq`: radius-`r` and radius-`2`
   covering-code PIR bounds.
 * `Cslib.Crypto.Protocols.PIR.hasScheme_two_radius_two_of_le_pow_five`: `2`-server radius-`2` PIR
   on `Fin 5 → Bool`.
@@ -585,10 +587,12 @@ theorem hasScheme_of_hammingDist_le [Fintype S] {r : ℕ} {c : S → D → Bool}
   rwa [communication_radiusCoverScheme, Fintype.card_fin] at hP
 
 omit [DecidableEq D] in
-/-- **Radius-`2` covering-code PIR scheme (exact count)**
+/-- **Radius-`2` covering-code PIR scheme (full-ball count)**
 [CGKS, Section 3.3, pp. 9–10][ChorGoldreichKushilevitzSudan1998]: a `k`-word radius-`2` covering
 code of `D → Bool` yields a `k`-server PIR scheme for `n ≤ ℓ ^ d` communicating
-`k · (2 d ℓ + C(d, 2) · ℓ² + 1)` bits. -/
+`k · (2 d ℓ + C(d, 2) · ℓ² + 1) = k · d · ℓ + k · C(d, 2) · ℓ² + k · (d · ℓ + 1)` bits (the
+`k · d · ℓ + k · C(d, 2) · ℓ²` query and distance-`2` answer terms displayed on p. 10 of CGKS,
+together with the `k · (d · ℓ + 1)` distance-`0` and distance-`1` answer bits). -/
 theorem hasScheme_of_hammingDist_two [Fintype S] {c : S → D → Bool}
     (hc : ∀ w, ∃ s, hammingDist (c s) w ≤ 2) {n ℓ : ℕ} (h : n ≤ ℓ ^ Fintype.card D) :
     HasScheme (Fin n) (Fintype.card S)
@@ -599,11 +603,11 @@ theorem hasScheme_of_hammingDist_two [Fintype S] {c : S → D → Bool}
   ring
 
 omit [DecidableEq D] in
-/-- **CGKS Section 3.3 radius-`2` bound (`k · d · ℓ + k · d² · ℓ²`, p. 10)**
-[CGKS][ChorGoldreichKushilevitzSudan1998]: when `2 ≤ |D|` and `1 ≤ ℓ`, any `k`-word radius-`2`
-covering code of `D → Bool` gives a `k`-server scheme for `n ≤ ℓ ^ d` within
+/-- **Coarser polynomial radius-`2` bound (`k · d · ℓ + k · d² · ℓ²`)**: when `2 ≤ |D|` and `1 ≤ ℓ`,
+replacing `C(d, 2)` by `d²` absorbs the lower-order `k · (d · ℓ + 1)` distance-`0` and distance-`1`
+answer bits in `hasScheme_of_hammingDist_two`, giving a `k`-server scheme for `n ≤ ℓ ^ d` within
 `k · d · ℓ + k · d² · ℓ²` bits. -/
-theorem hasScheme_of_hammingDist_two_cgks [Fintype S] {c : S → D → Bool}
+theorem hasScheme_of_hammingDist_two_sq [Fintype S] {c : S → D → Bool}
     (hc : ∀ w, ∃ s, hammingDist (c s) w ≤ 2) (hD : 2 ≤ Fintype.card D) {n ℓ : ℕ}
     (hℓ : 1 ≤ ℓ) (h : n ≤ ℓ ^ Fintype.card D) :
     HasScheme (Fin n) (Fintype.card S)

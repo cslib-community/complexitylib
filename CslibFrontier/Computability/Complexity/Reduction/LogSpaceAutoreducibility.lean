@@ -16,7 +16,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 Query-avoiding versions of the indexed logspace truth-table reductions: the count, generator,
 evaluator, encodings and answer word are exactly those of `LogSpaceTruthTableReducible`.
 Only active queries must avoid the input; unused indices are unrestricted. Since `encA` is
-injective, avoidance of instances is equivalent to avoidance of their encoded words.
+injective, avoidance of instances is equivalent to avoidance of their encoded words. The
+resource conditions and avoidance form the admissibility predicate of `TruthTableReducibleBy`,
+whose lemmas give the forgetful maps and closure under complement.
 
 ## Main definitions
 
@@ -26,6 +28,8 @@ injective, avoidance of instances is equivalent to avoidance of their encoded wo
 
 ## Main results
 
+* `Cslib.Complexity.LogSpaceKTruthTableAutoreducible.compl`: `k`-tt autoreducibility is closed
+  under complement.
 * `Cslib.Complexity.logSpaceKTruthTableAutoreducible_one_of_complement_witness`:
   query a complement-reduction witness and negate its answer.
 * `Cslib.Complexity.LogSpaceComplete.logSpaceKTruthTableAutoreducible_one`:
@@ -69,20 +73,21 @@ variable {α : Type} {encA : α ↪ List Bool} {A : Set α}
 /-- A logspace truth-table reduction to the same set, with no active query equal to its input. -/
 @[expose] def LogSpaceTruthTableAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → α) (d : α × List Bool → Bool),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encA ∧
-    ComputableInLogSpace d (encPair encA encBits) encBool ∧
-    (∀ a i, i < r a → q (a, i) ≠ a) ∧
+    ((ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encA ∧
+      ComputableInLogSpace d (encPair encA encBits) encBool) ∧
+      ∀ a i, i < r a → q (a, i) ≠ a) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' A) r a) = true
 
 /-- A query-avoiding logspace truth-table reduction with at most `k` queries on each input. -/
 @[expose] def LogSpaceKTruthTableAutoreducible (k : ℕ) (encA : α ↪ List Bool)
     (A : Set α) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → α) (d : α × List Bool → Bool),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encA ∧
-    ComputableInLogSpace d (encPair encA encBits) encBool ∧
-    (∀ a, r a ≤ k) ∧ (∀ a i, i < r a → q (a, i) ≠ a) ∧
+    ((ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encA ∧
+      ComputableInLogSpace d (encPair encA encBits) encBool ∧
+      ∀ a, r a ≤ k) ∧
+      ∀ a i, i < r a → q (a, i) ≠ a) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' A) r a) = true
 
 /-- A query-avoiding logspace truth-table reduction with some constant query bound. -/
@@ -93,22 +98,30 @@ variable {α : Type} {encA : α ↪ List Bool} {A : Set α}
 theorem LogSpaceTruthTableAutoreducible.logSpaceTruthTableReducible
     (h : LogSpaceTruthTableAutoreducible encA A) :
     LogSpaceTruthTableReducible encA encA A A :=
-  let ⟨r, q, d, hr, hq, hd, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hA⟩
+  TruthTableReducibleBy.mono (fun _ _ _ h => h.1) h
 
 /-- Forgetting query avoidance preserves the query bound. -/
 theorem LogSpaceKTruthTableAutoreducible.logSpaceKTruthTableReducible {k : ℕ}
     (h : LogSpaceKTruthTableAutoreducible k encA A) :
     LogSpaceKTruthTableReducible k encA encA A A :=
-  let ⟨r, q, d, hr, hq, hd, hk, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hk, hA⟩
+  TruthTableReducibleBy.mono (fun _ _ _ h => h.1) h
 
 /-- Increasing the allowed number of queries preserves autoreducibility. -/
 theorem LogSpaceKTruthTableAutoreducible.mono {k k' : ℕ}
     (h : LogSpaceKTruthTableAutoreducible k encA A) (hk : k ≤ k') :
     LogSpaceKTruthTableAutoreducible k' encA A :=
-  let ⟨r, q, d, hr, hq, hd, hrk, hne, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, fun a => (hrk a).trans hk, hne, hA⟩
+  TruthTableReducibleBy.mono
+    (fun _ _ _ ⟨⟨hr, hq, hd, hrk⟩, hne⟩ => ⟨⟨hr, hq, hd, fun a => (hrk a).trans hk⟩, hne⟩) h
+
+/-- Negating the combiner and the answers it reads gives an autoreduction of the complement with
+the same queries. -/
+theorem LogSpaceKTruthTableAutoreducible.compl {k : ℕ}
+    (h : LogSpaceKTruthTableAutoreducible k encA A) :
+    LogSpaceKTruthTableAutoreducible k encA Aᶜ :=
+  TruthTableReducibleBy.compl_right
+    (fun _ _ _ ⟨⟨hr, hq, hd, hrk⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop, hrk⟩, hne⟩) <|
+  TruthTableReducibleBy.compl_left
+    (fun _ _ _ ⟨⟨hr, hq, hd, hrk⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop, hrk⟩, hne⟩) h
 
 /-- A fixed query bound witnesses bounded truth-table autoreducibility. -/
 theorem LogSpaceKTruthTableAutoreducible.logSpaceBTTAutoreducible {k : ℕ}
@@ -118,8 +131,8 @@ theorem LogSpaceKTruthTableAutoreducible.logSpaceBTTAutoreducible {k : ℕ}
 /-- Forgetting the constant bound gives truth-table autoreducibility, retaining avoidance. -/
 theorem LogSpaceBTTAutoreducible.logSpaceTruthTableAutoreducible
     (h : LogSpaceBTTAutoreducible encA A) : LogSpaceTruthTableAutoreducible encA A :=
-  let ⟨_, r, q, d, hr, hq, hd, _, hne, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hne, hA⟩
+  let ⟨_, h⟩ := h
+  TruthTableReducibleBy.mono (fun _ _ _ ⟨⟨hr, hq, hd, _⟩, hne⟩ => ⟨⟨hr, hq, hd⟩, hne⟩) h
 
 /-- A bounded autoreduction is an ordinary bounded reduction. -/
 theorem LogSpaceBTTAutoreducible.logSpaceBTTReducible
@@ -135,8 +148,8 @@ theorem logSpaceKTruthTableAutoreducible_one_of_complement_witness {f : α → �
     LogSpaceKTruthTableAutoreducible 1 encA A := by
   have hne : ∀ a, f a ≠ a := by grind
   refine ⟨fun _ => 1, fun p => f p.1, fun p => !p.2.headD false,
-    ComputableInLogSpace.const 1, by fun_prop, by fun_prop,
-    fun _ => le_rfl, fun a _ _ => hne a, fun a => ?_⟩
+    ⟨⟨ComputableInLogSpace.const 1, by fun_prop, by fun_prop, fun _ => le_rfl⟩,
+      fun a _ _ => hne a⟩, fun a => ?_⟩
   classical
   simp only [truthTableAnswers]
   simp [← hA a]

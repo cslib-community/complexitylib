@@ -404,8 +404,7 @@ theorem decodePairs_encodePhrases (dict ws : List (List α)) (ht : IsTreeStructu
     obtain ⟨⟨q, hq, a, rfl⟩, ht⟩ := (isTreeStructured_cons _ _ _).1 ht
     simp only [encodePhrases, List.getLast?_concat, List.dropLast_concat, decodePairs]
     have hidx : ([] :: dict).getD (([] :: dict).idxOf q) [] = q := by
-      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (List.idxOf_lt_length_of_mem hq),
-        Option.getD_some, List.getElem_idxOf]
+      rw [List.getD_eq_getElem?_getD, List.getElem?_idxOf hq, Option.getD_some]
     rw [hidx, ih _ ht]
 
 /-- **The LZ78 code is lossless.** -/

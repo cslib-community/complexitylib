@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.HashFamily
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
+import CslibFrontier.Probability.Uniform.Translate
 import Mathlib.Algebra.Group.Equiv.Basic
 
 /-!
@@ -46,7 +47,7 @@ theorem isDeltaUniversalHash_uniformOfFintype {X G : Type*} [Fintype X] [Decidab
   have hsub (f : X → G) :
       ((PMF.uniformOfFintype G).bind fun a => PMF.pure (a - f x')) =
         PMF.uniformOfFintype G :=
-    Probability.PMF.uniformOfFintype_map_equiv (Equiv.subRight (f x'))
+    Probability.PMF.uniformOfFintype_map_sub_right (f x')
   simp only [hsub, PMF.bind_const]
 
 /-- The negated uniform random function `f ↦ (fun x => -f x)` from a finite domain `X` into a

@@ -111,6 +111,8 @@ proportional to the change; a successful build alone does not establish these de
 problem instances, certificates, configurations, and multi-field algorithm contexts, states or
 records as documented `structure`s with named, documented fields, and declare their field-tuple
 encodings with `enc_structure` ([AGENTS.md](AGENTS.md#structures-for-domain-objects-and-records)).
+A migration keeps the encoded words, with a checked equality; a left-grouped tuple needs nested
+sub-records or `encOfEquiv` ([encoding rule 5](AGENTS.md#encodings-in-statements)).
 Do not introduce tuple type synonyms such as
 `abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ` or bare-product problem sets such as
 `Set (List (ℕ × ℕ) × ℕ × ℕ)` or `Set (Graph × ℕ)`. Named fields document the mathematical
@@ -153,8 +155,12 @@ Two places keep projections, as standing exceptions:
 `scripts/check_projection_chains.py` counts the chains of depth 2 or more in each module's public
 statements and public definition bodies, leaving out proofs, these two exceptions and named
 accessors. CI fails a pull request when a module it changes has more chains than its entry in
-`scripts/projection_chains_baseline.json`; a new module starts at 0. Fewer chains pass, and
-`--update-baseline` lowers the entry. `--list PREFIX` shows the remaining chains of an area.
+`scripts/projection_chains_baseline.json`, or than it had at the merge base unless the pull request
+raises the entry; a new module starts at 0. Removing chains needs no baseline edit, which keeps
+pull requests from colliding on neighbouring lines of the baseline in the merge queue; a periodic
+`--update-baseline --all` prunes stale entries. Edit the baseline only to raise an entry on
+purpose, as for a moved module (`--update-baseline --allow-increase`). `--list PREFIX` shows the
+remaining chains of an area.
 
 **Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
@@ -205,6 +211,13 @@ file even when `f` is private (Lean v4.36; `unfold f`, `dsimp only [f]` and `rfl
 tests, [#4243](https://github.com/cslib-community/cslib-frontier/issues/4243)). `import all` also
 loads private information, so such edits do reach its clients.
 
+Evidence that a public API is usable must include a representative `module` client with ordinary
+imports of that API, exercising intended operations through exposed bodies or public equations.
+[QuantumOracleModule.lean](CslibFrontierTests/QuantumOracleModule.lean) is an example.
+A test without `module`, or using `import all` for that API, has broader access and cannot
+establish usability for ordinary clients. Intentional internal, metaprogramming and axiom tests
+keep their documented access and supplement this representative evidence.
+
 - **What is a helper.** A helper is proof plumbing: a step meaningful only inside one proof, or a
   fact about a module-local construction, encoding or intermediate quantity. Helpers are `private`
   by default. Keep `@[expose]` for bodies that downstream proofs unfold.
@@ -248,8 +261,8 @@ Tidy computability (`ComputableTidily…`, `ComputesTidily…`, `IsTidy…`) may
 proofs, through `.tidy`, `.of_tidy`, a proof-local `attribute [local fun_prop] … in` or a tidy
 `have`. It never appears in a public statement: a theorem's type, or a definition's type, exposed
 body or fields. Only the raw machine constructions in `scripts/tidy_allowlist.txt` are exempt.
-CI enforces this with `scripts/check_tidy_surface.py`. The existing tidy statements, which #456 is
-restating, are counted per module in `scripts/tidy_surface_baseline.json`, and CI fails when a
+CI enforces this with `scripts/check_tidy_surface.py`. The existing tidy statements, which #862 is
+removing, are counted per module in `scripts/tidy_surface_baseline.json`, and CI fails when a
 module's count differs from its entry. When you remove some, lower the baseline in the same PR
 with `python3 scripts/check_tidy_surface.py --update`, so that they cannot come back. Until your
 PR lands, any other merge that removes tidy statements makes your baseline stale: rebase and
@@ -298,7 +311,8 @@ candidate modules). After a build,
 `python3 scripts/check_changed_files.py` checks the files your branch adds or changes: each name
 listed in a module docstring's "Main …" sections must exist, a new test file must do more
 than restate signatures with `example … := name`, and an `@[expose] … section` header must have a
-definition to expose. CI runs both, and also
+definition to expose; `--source-only` runs the last two without build outputs, as
+`scripts/check.sh --quick` does. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
 public statements and check against compound-encoding `local notation`s
 ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
@@ -513,20 +527,22 @@ not a decision.
   [#858](https://github.com/leanprover/cslib/pull/858).
   [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
   `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
-  `AgnosticFiniteClass` and `GrowthFunction`. Before submission, reconcile names with
-  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline),
-  which proves the EHKV `Ω(d/ε)` lower bound; do not reprove it locally.
+  `AgnosticFiniteClass`, `AgnosticVC` and `GrowthFunction`. `PACLearning/SampleComplexityLower*`
+  vendors the EHKV `Ω(d/ε)` lower bound from
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline);
+  submit or update it through that branch, not as a competing copy, and reconcile `VCLowerBound`
+  and `FundamentalTheorem` with its names before submitting them.
 * **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
   [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
   [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and
   [#39864](https://github.com/leanprover-community/mathlib4/pull/39864), not as a competing
   candidate; the module docstring records the differences. Renaming to match the unmerged PRs is
   not required.
-* **Oracle codes.** Upstream `Foundations/Computability/RecursiveInCode` by reconciling with
+* **Oracle codes.** Upstream `Foundations/Computability/{RecursiveInCode,RecursiveInEvalnPrimrec,KleenePost,KleenePostJump}` by reconciling with
   [mathlib4#38973](https://github.com/leanprover-community/mathlib4/pull/38973) (oracle codes, a
   relativized `evaln` and the jump), not by competing with it; the module docstring records the
-  design differences. The prefix-based `evaln`, the use principle and `KleenePost` are what that PR
-  lacks.
+  design differences. The prefix-based `evaln`, the use principle and `KleenePost` / `KleenePostJump`
+  are what that PR lacks.
 * **Withdrawn submissions.** The redos of
   [#1099](https://github.com/leanprover/cslib/pull/1099)–[#1101](https://github.com/leanprover/cslib/pull/1101)
   (`Circuit/Boolean/{PPoly,MachineSimulation,PolynomialTime}`) should answer the review requests

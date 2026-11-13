@@ -81,7 +81,7 @@ variable {Rel : Type}
 /-- The instances handed to the contraction algorithm: nonempty, with every constraint of between
 one and `k` variables. -/
 @[expose] def guard (k : ℕ) (F : CSP Rel ℕ) : Bool :=
-  !F.isEmpty && F.all fun c => decide (1 ≤ c.2.length ∧ c.2.length ≤ k)
+  !F.isEmpty && F.all fun c => decide (1 ≤ c.scope.length ∧ c.scope.length ≤ k)
 
 /-- The precision of the contraction, `(W + 1) 3 N` for `N` variable occurrences. -/
 @[expose] def precision (W : ℕ) (F : CSP Rel ℕ) : ℕ := (W + 1) * (3 * F.vars.length)
@@ -138,14 +138,14 @@ omit encRel hwt
 variable {k W wt}
 
 theorem guard_eq_true_iff {F : CSP Rel ℕ} :
-    guard k F = true ↔ F ≠ [] ∧ ∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k := by
+    guard k F = true ↔ F ≠ [] ∧ ∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k := by
   simp [guard]
 
 /-- **The machine computes the partition function** of every instance whose constraints have
 between one and `k` variables, when the weights at patterns of length at most `k` are at most
 `W`. -/
 theorem count_eq (hW : ∀ R w, w.length ≤ k → wt R w ≤ W) {F : CSP Rel ℕ}
-    (hk : ∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) :
+    (hk : ∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) :
     count k W wt F = F.partitionFunction wt := by
   unfold count
   split
@@ -156,7 +156,7 @@ theorem count_eq (hW : ∀ R w, w.length ≤ k → wt R w ≤ W) {F : CSP Rel �
     have h1 : 1 ≤ F.length := List.length_pos_iff.mpr hne
     have hn : F.numVars ≤ F.vars.length := List.toFinset_card_le _
     have hZ := CSP.partitionFunction_le (wt := wt) (F := F) (W := W) fun c hc w hw =>
-      hW c.1 w (hw ▸ (hk c hc).2)
+      hW c.rel w (hw ▸ (hk c hc).2)
     rw [Fintype.card_bool] at hZ
     set N := F.vars.length
     have hW2 : W + 1 ≤ 2 ^ W := Nat.lt_two_pow_self
@@ -189,7 +189,7 @@ is admissible at size `3 N`, its number of edges, with constant `k + 4`. -/
 theorem explicitAdmissible_cspNetwork {F : CSP Rel ℕ} (hg : guard k F = true) :
     ExplicitAdmissible (k + 4) (3 * F.vars.length) (cspNetwork k wt F) := by
   obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
-  have hk : ∀ c ∈ F, c.2.length ≤ k := fun c hc => (hcl c hc).2
+  have hk : ∀ c ∈ F, c.scope.length ≤ k := fun c hc => (hcl c hc).2
   have h1 : 1 ≤ F.length := List.length_pos_iff.mpr hne
   have hm := CSP.length_le_length_vars fun c hc => (hcl c hc).1
   have hlog : 1 ≤ Nat.log 2 (3 * F.vars.length) := Nat.log_pos (by norm_num) (by omega)
@@ -215,7 +215,7 @@ theorem exists_partitionFunctionCounter (encRel : Rel ↪ List Bool) (k W : ℕ)
       ComputableInPolyTime (fun R : Rel => wt R w) encRel encNat)
     (hW : ∀ R w, w.length ≤ k → wt R w ≤ W) :
     ∃ (count : CSP Rel ℕ → ℕ) (A e b : ℕ),
-      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) →
+      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) →
         count F = F.partitionFunction wt) ∧
       ComputableInO count (encCSP encRel encNat) encNat
         (fun F => 2 ^ (A * (F.vars.length + 1) / Nat.sqrt (Nat.log 2 (F.numVars + 2))) *
@@ -254,7 +254,7 @@ theorem exists_partitionFunctionCounter_boundedDegree (encRel : Rel ↪ List Boo
       ComputableInPolyTime (fun R : Rel => wt R w) encRel encNat)
     (hW : ∀ R w, w.length ≤ k → wt R w ≤ W) :
     ∃ (count : CSP Rel ℕ → ℕ) (T S : CSP Rel ℕ → ℕ) (e b : ℕ),
-      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) →
+      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) →
         count F = F.partitionFunction wt) ∧
       ComputableInO count (encCSP encRel encNat) encNat T S ∧
       (∀ F, S F = ((encCSP encRel encNat F).length + 1) ^ b) ∧
@@ -274,7 +274,7 @@ patterns of length at most `k` are then bounded and polynomial-time in the relat
 theorem exists_partitionFunctionCounter_of_finite [Finite Rel] (encRel : Rel ↪ List Bool)
     (k : ℕ) (wt : Rel → List Bool → ℕ) :
     ∃ (count : CSP Rel ℕ → ℕ) (T S : CSP Rel ℕ → ℕ) (e b : ℕ),
-      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) →
+      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) →
         count F = F.partitionFunction wt) ∧
       ComputableInO count (encCSP encRel encNat) encNat T S ∧
       (∀ F, S F = ((encCSP encRel encNat F).length + 1) ^ b) ∧

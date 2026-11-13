@@ -71,16 +71,16 @@ end WeightedSpanningTrees
 section Arborescences
 
 private def bal4Graph : Graph :=
-  ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (2, 0)])
+  ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (2, 0)]⟩
 
 private def doubled2Cycle : Graph :=
-  ([0, 1], [(0, 1), (0, 1), (1, 0), (1, 0)])
+  ⟨[0, 1], [(0, 1), (0, 1), (1, 0), (1, 0)]⟩
 
 private def unbalancedMulti : Graph :=
-  ([0, 1], [(0, 1), (0, 1), (1, 0)])
+  ⟨[0, 1], [(0, 1), (0, 1), (1, 0)]⟩
 
 private def loopAndIsolated : Graph :=
-  ([0, 1], [(0, 0)])
+  ⟨[0, 1], [(0, 0)]⟩
 
 -- Simple digraph: balanced asymmetric 4-vertex digraph has `2` in-arborescences at every root
 -- and `0` at undeclared vertex `99`.
@@ -140,10 +140,10 @@ end Arborescences
 section EulerianCircuits
 
 private def twoCycleWithLoop : Graph :=
-  ([0, 1], [(0, 1), (1, 0), (0, 0)])
+  ⟨[0, 1], [(0, 1), (1, 0), (0, 0)]⟩
 
 private def bidirectedK3 : Graph :=
-  ([0, 1, 2], [(0, 1), (1, 2), (2, 0), (0, 2), (2, 1), (1, 0)])
+  ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0), (0, 2), (2, 1), (1, 0)]⟩
 
 -- BEST counts: doubled `2`-cycle has `2`, `2`-cycle + loop has `1`, bidirected `K₃` has `3`,
 -- loop + isolated vertex has `1` circuit (via `activeVertices`), unbalanced has `0`,

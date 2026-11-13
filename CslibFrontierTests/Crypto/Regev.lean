@@ -70,7 +70,7 @@ example (security : ℕ) (μ : Bool)
 private noncomputable def adaptiveAdversary :
     LoRAdversary 1 2 4 (List (Ciphertext 1 4)) where
   start _ := PMF.pure []
-  query transcript := PMF.pure ((false, (transcript.headD 0) 0 == 0), transcript)
+  query transcript := PMF.pure (⟨false, (transcript.headD 0) 0 == 0⟩, transcript)
   receive transcript c := c :: transcript
   guess transcript := PMF.pure ((transcript.headD 0) 0 == 0)
 

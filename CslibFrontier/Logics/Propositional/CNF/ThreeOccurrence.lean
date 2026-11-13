@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CNF.ImplicationCycle
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
+import CslibFrontier.Logics.Propositional.CNF.Vars
 import Mathlib.Data.List.Dedup
 import Mathlib.Data.List.Enum
 import Mathlib.Data.List.Sigma
@@ -220,15 +221,13 @@ theorem count_vars_toThreeOccurrence [DecidableEq V] (φ : CNF V) (x : V × ℕ 
         exact List.mem_map.2 ⟨x, hx, rfl⟩
       simp [nodup_distinctVars, mem_distinctVars, hm]
     · simp [List.count_eq_zero.2 hx]
-  have hv (a b : CNF (V × ℕ × ℕ)) : (a ++ b).vars = a.vars ++ b.vars := by
-    simp [vars]
   have hflat (l : List V) :
       CNF.vars (l.flatMap fun v => implicationCycle (φ.occurrenceCopies v)) =
         l.flatMap (fun v => (implicationCycle (φ.occurrenceCopies v)).vars) := by
     induction l with
     | nil => rfl
-    | cons v l ih => simp [hv, ih]
-  rw [toThreeOccurrence, hv, List.count_append, hflat, List.count_flatMap]
+    | cons v l ih => simp [vars_append, ih]
+  rw [toThreeOccurrence, vars_append, List.count_append, hflat, List.count_flatMap]
   simp_rw [Function.comp_def, count_vars_implicationCycle]
   rw [List.sum_map_mul_left, hs]
   omega

@@ -108,10 +108,10 @@ theorem exists_polyTimeTruthTableReducible_adviceTally (hA : A ∈ PPolyOn enc) 
   refine ⟨adv, hadv, fun a => P.eval (enc a).length,
     fun p => encUnary (Nat.pair (enc p.1).length p.2),
     fun p => evalAdvice (S.eval (enc p.1).length) (W.eval (enc p.1).length) p.2 (enc p.1),
-    (unary_eval P).comp (encoding_length enc),
-    encoding_comp (unary_pair.comp (((encoding_length enc).comp (fst _ _)).prod (snd _ _))),
-    computableInPolyTime_evalAdvice_eval S W hn (snd _ _)
-      ((of_eq (encIn := enc) (encOut := encBits) fun _ => rfl).comp (fst _ _)), fun a => ?_⟩
+    ⟨(unary_eval P).comp (encoding_length enc),
+      encoding_comp (unary_pair.comp (((encoding_length enc).comp (fst _ _)).prod (snd _ _))),
+      computableInPolyTime_evalAdvice_eval S W hn (snd _ _)
+        ((of_eq (encIn := enc) (encOut := encBits) fun _ => rfl).comp (fst _ _))⟩, fun a => ?_⟩
   have hans : truthTableAnswers
       ((fun p : α × ℕ => encUnary (Nat.pair (enc p.1).length p.2)) ⁻¹' adviceTally adv)
       (fun a => P.eval (enc a).length) a = adv (enc a).length := by

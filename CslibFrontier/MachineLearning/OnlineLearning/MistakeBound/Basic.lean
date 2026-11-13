@@ -278,6 +278,9 @@ theorem optimalMistakeBound_le (A : OnlineLearner α) (C : ConceptClass α Bool)
 theorem le_optimalMistakeBound_iff {C : ConceptClass α Bool} {m : ℕ∞} :
     m ≤ optimalMistakeBound C ↔ ∀ A : OnlineLearner α, m ≤ mistakeBound A C := le_iInf_iff
 
+theorem optimalMistakeBound_lt_iff {C : ConceptClass α Bool} {m : ℕ∞} :
+    optimalMistakeBound C < m ↔ ∃ A : OnlineLearner α, mistakeBound A C < m := iInf_lt_iff
+
 theorem optimalMistakeBound_mono {C C' : ConceptClass α Bool} (h : C ⊆ C') :
     optimalMistakeBound C ≤ optimalMistakeBound C' :=
   iInf_mono fun A => mistakeBound_mono A h

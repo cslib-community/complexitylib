@@ -17,7 +17,7 @@ public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 The primary computability predicates allow code and constants to depend on word size, with
 one register count and a uniform bound on program length. Their `Uniform` counterparts use
 one program at every width; that program may read the width, branch on it, and have
-width-dependent execution time. Both permit arbitrary
+width-dependent execution time. Both require a fitting allowed width for every input, and permit
 admissible-width conditions, width-dependent input encodings and width-dependent time bounds.
 Instruction counts include halt. Input placement follows `State.init`; loading registers and
 constructing maintained representations must be part of the certified program.
@@ -70,17 +70,20 @@ def WordSizeDependentProgram.ComputesInTime (P : WordSizeDependentProgram B r)
   ∀ a w, allowed a w → InputFits w (encode w a) →
     ∃ n, Executes w (P w) (.init (encode w a)) (f a) n ∧ n ≤ time a w
 
-/-- A width-indexed family with uniformly bounded program length computes the function. -/
+/-- A width-indexed family with uniformly bounded program length computes the function. Every
+instance must have an allowed fitting width. -/
 @[fun_prop]
 def ComputableInTime (B : Basis) (f : α → ℕ) (encode : ℕ → α → List ℕ)
     (time : α → ℕ → ℕ) (allowed : α → ℕ → Prop) : Prop :=
-  ∃ r, ∃ P : WordSizeDependentProgram B r, P.BoundedCode ∧ P.ComputesInTime encode time allowed f
+  ∃ r, ∃ P : WordSizeDependentProgram B r,
+    P.BoundedCode ∧ P.ComputesInTime encode time allowed f ∧ InputAdmissible encode allowed
 
-/-- One program computes the function uniformly at every admitted fitting width. -/
+/-- One program computes the function uniformly at every admitted fitting width, and each
+instance has at least one such width. -/
 @[fun_prop]
 def UniformComputableInTime (B : Basis) (f : α → ℕ) (encode : ℕ → α → List ℕ)
     (time : α → ℕ → ℕ) (allowed : α → ℕ → Prop) : Prop :=
-  ∃ r, ∃ p : Program B r, p.ComputesInTime encode time allowed f
+  ∃ r, ∃ p : Program B r, p.ComputesInTime encode time allowed f ∧ InputAdmissible encode allowed
 
 /-- Computation under the transdichotomous word-size assumption: every fitting width
 above some positive multiple of the logarithmic input size is admitted. -/
@@ -187,31 +190,47 @@ theorem WordSizeDependentProgram.ComputesInTime.of_inputFits {P : WordSizeDepend
       ∃ n, Executes w (P w) (.init (encode w a)) (f a) n ∧ n ≤ time a w :=
   fun a w ha => h a w ha (hi a w ha)
 
+/-- A bounded-code computation certificate admits each instance at a fitting width. -/
+theorem ComputableInTime.inputAdmissible {encode : ℕ → α → List ℕ}
+    {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop} {f : α → ℕ}
+    (h : ComputableInTime B f encode time allowed) : InputAdmissible encode allowed := by
+  obtain ⟨_, _, _, _, hi⟩ := h
+  exact hi
+
+/-- A uniform computation certificate admits each instance at a fitting width. -/
+theorem UniformComputableInTime.inputAdmissible {encode : ℕ → α → List ℕ}
+    {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop} {f : α → ℕ}
+    (h : UniformComputableInTime B f encode time allowed) : InputAdmissible encode allowed := by
+  obtain ⟨_, _, _, hi⟩ := h
+  exact hi
+
 /-- A uniform certificate gives a nonuniform certificate using a constant family. -/
 theorem UniformComputableInTime.computableInTime {encode : ℕ → α → List ℕ}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop} {f : α → ℕ}
     (h : UniformComputableInTime B f encode time allowed) :
     ComputableInTime B f encode time allowed := by
-  obtain ⟨r, p, hp⟩ := h
-  exact ⟨r, .const p, WordSizeDependentProgram.const_boundedCode p, hp⟩
+  obtain ⟨r, p, hp, hi⟩ := h
+  exact ⟨r, .const p, WordSizeDependentProgram.const_boundedCode p, hp, hi⟩
 
 /-- Increase an existential family's time bound and restrict its admitted widths. -/
 theorem ComputableInTime.mono {encode : ℕ → α → List ℕ} {time time' : α → ℕ → ℕ}
     {allowed allowed' : α → ℕ → Prop} {f : α → ℕ}
     (h : ComputableInTime B f encode time allowed) (ht : ∀ a w, time a w ≤ time' a w)
-    (ha : ∀ a w, allowed' a w → allowed a w) :
+    (ha : ∀ a w, allowed' a w → allowed a w)
+    (hadmit : InputAdmissible encode allowed') :
     ComputableInTime B f encode time' allowed' := by
-  obtain ⟨r, P, hb, hp⟩ := h
-  exact ⟨r, P, hb, hp.mono ht ha⟩
+  obtain ⟨r, P, hb, hp, _⟩ := h
+  exact ⟨r, P, hb, hp.mono ht ha, hadmit⟩
 
 /-- Increase an existential fixed program's time bound and restrict its admitted widths. -/
 theorem UniformComputableInTime.mono {encode : ℕ → α → List ℕ} {time time' : α → ℕ → ℕ}
     {allowed allowed' : α → ℕ → Prop} {f : α → ℕ}
     (h : UniformComputableInTime B f encode time allowed) (ht : ∀ a w, time a w ≤ time' a w)
-    (ha : ∀ a w, allowed' a w → allowed a w) :
+    (ha : ∀ a w, allowed' a w → allowed a w)
+    (hadmit : InputAdmissible encode allowed') :
     UniformComputableInTime B f encode time' allowed' := by
-  obtain ⟨r, p, hp⟩ := h
-  exact ⟨r, p, hp.mono ht ha⟩
+  obtain ⟨r, p, hp, _⟩ := h
+  exact ⟨r, p, hp.mono ht ha, hadmit⟩
 
 /-- Transfer bounded-code computation along an encoding-preserving instance map. -/
 theorem ComputableInTime.recode {encode : ℕ → α → List ℕ}
@@ -220,10 +239,11 @@ theorem ComputableInTime.recode {encode : ℕ → α → List ℕ}
     (g : α → β) (he : ∀ w a, encode w a = encode' w (g a))
     (hf : ∀ a, f a = f' (g a)) (ht : ∀ a w, time' (g a) w ≤ time a w)
     (ha : ∀ a w, allowed a w → allowed' (g a) w)
+    (hadmit : InputAdmissible encode allowed)
     (h : ComputableInTime B f' encode' time' allowed') :
     ComputableInTime B f encode time allowed := by
-  obtain ⟨r, P, hb, hp⟩ := h
-  exact ⟨r, P, hb, hp.recode g he hf ht ha⟩
+  obtain ⟨r, P, hb, hp, _⟩ := h
+  exact ⟨r, P, hb, hp.recode g he hf ht ha, hadmit⟩
 
 /-- Transfer uniform computation along an encoding-preserving instance map. -/
 theorem UniformComputableInTime.recode {encode : ℕ → α → List ℕ}
@@ -232,10 +252,11 @@ theorem UniformComputableInTime.recode {encode : ℕ → α → List ℕ}
     (g : α → β) (he : ∀ w a, encode w a = encode' w (g a))
     (hf : ∀ a, f a = f' (g a)) (ht : ∀ a w, time' (g a) w ≤ time a w)
     (ha : ∀ a w, allowed a w → allowed' (g a) w)
+    (hadmit : InputAdmissible encode allowed)
     (h : UniformComputableInTime B f' encode' time' allowed') :
     UniformComputableInTime B f encode time allowed := by
-  obtain ⟨r, p, hp⟩ := h
-  exact ⟨r, p, hp.recode g he hf ht ha⟩
+  obtain ⟨r, p, hp, _⟩ := h
+  exact ⟨r, p, hp.recode g he hf ht ha, hadmit⟩
 
 /-- Basis translation preserves fixed-program computation with the same instruction count. -/
 theorem Program.ComputesInTime.mapOp {p : Program B r} {encode : ℕ → α → List ℕ}
@@ -260,16 +281,16 @@ theorem ComputableInTime.mapOp {encode : ℕ → α → List ℕ} {time : α →
     {allowed : α → ℕ → Prop} {f : α → ℕ} (φ : B.Hom B')
     (h : ComputableInTime B f encode time allowed) :
     ComputableInTime B' f encode time allowed := by
-  obtain ⟨r, P, hP, hp⟩ := h
-  exact ⟨r, P.mapOp φ, hP.mapOp φ, hp.mapOp φ⟩
+  obtain ⟨r, P, hP, hp, hi⟩ := h
+  exact ⟨r, P.mapOp φ, hP.mapOp φ, hp.mapOp φ, hi⟩
 
 /-- Uniform computation transfers to a basis implementing the original operations. -/
 theorem UniformComputableInTime.mapOp {encode : ℕ → α → List ℕ} {time : α → ℕ → ℕ}
     {allowed : α → ℕ → Prop} {f : α → ℕ} (φ : B.Hom B')
     (h : UniformComputableInTime B f encode time allowed) :
     UniformComputableInTime B' f encode time allowed := by
-  obtain ⟨r, p, hp⟩ := h
-  exact ⟨r, p.mapOp φ, hp.mapOp φ⟩
+  obtain ⟨r, p, hp, hi⟩ := h
+  exact ⟨r, p.mapOp φ, hp.mapOp φ, hi⟩
 
 /-- Uniform logarithmic-threshold computation gives bounded-code computation. -/
 theorem UniformComputableInTimeLogWord.computableInTimeLogWord {encode : ℕ → α → List ℕ}
@@ -320,20 +341,22 @@ theorem WordSizeDependentProgram.computesInTime_program {encode : ℕ → α →
 theorem UniformComputableInTime.of_code {encode : ℕ → α → List ℕ}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop} {f : α → ℕ}
     (c : Code B r) (out : Fin r)
+    (hi : InputAdmissible encode allowed)
     (h : ∀ a w, allowed a w → InputFits w (encode w a) →
       ∃ y, ExecWithin w c (.init (encode w a)) y (time a w) ∧ y.regs out = f a) :
     UniformComputableInTime B f encode (fun a w => time a w + 1) allowed :=
-  ⟨r, c.program out, c.computesInTime_program out h⟩
+  ⟨r, c.program out, c.computesInTime_program out h, hi⟩
 
 /-- Structured families with uniformly bounded assembled size yield computation including halt. -/
 theorem ComputableInTime.of_code {encode : ℕ → α → List ℕ}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop} {f : α → ℕ}
     (c : ℕ → Code B r) (out : Fin r) (hsize : ∃ L, ∀ w, (c w).size ≤ L)
+    (hi : InputAdmissible encode allowed)
     (h : ∀ a w, allowed a w → InputFits w (encode w a) →
       ∃ y, ExecWithin w (c w) (.init (encode w a)) y (time a w) ∧ y.regs out = f a) :
     ComputableInTime B f encode (fun a w => time a w + 1) allowed := by
   refine ⟨r, fun w => (c w).program out, ?_,
-    WordSizeDependentProgram.computesInTime_program c out h⟩
+    WordSizeDependentProgram.computesInTime_program c out h, hi⟩
   obtain ⟨L, hL⟩ := hsize
   refine ⟨L + 1, fun w => ?_⟩
   simpa only [Code.program, List.length_append, List.length_cons, List.length_nil,
@@ -342,33 +365,37 @@ theorem ComputableInTime.of_code {encode : ℕ → α → List ℕ}
 /-- A supplied polynomial bound for complete flat execution yields a uniform certificate. -/
 theorem UniformComputableInPolyTime.of_program {encode : ℕ → α → List ℕ} {size f : α → ℕ}
     (p : Program B r) {T : ℕ → ℕ} (hT : PolynomiallyBounded T) (k : ℕ) (hk : 0 < k)
+    (hi : InputAdmissible encode (fun a w => logWidth k (size a) ≤ w))
     (h : p.ComputesInTime encode (fun a _ => T (size a)) (fun a w => logWidth k (size a) ≤ w) f) :
-    UniformComputableInPolyTime B f encode size := ⟨T, hT, k, hk, r, p, h⟩
+    UniformComputableInPolyTime B f encode size := ⟨T, hT, k, hk, r, p, h, hi⟩
 
 /-- A supplied polynomial bound and bounded program length yield a family certificate. -/
 theorem ComputableInPolyTime.of_family {encode : ℕ → α → List ℕ} {size f : α → ℕ}
     (P : WordSizeDependentProgram B r) (hP : P.BoundedCode) {T : ℕ → ℕ}
     (hT : PolynomiallyBounded T) (k : ℕ) (hk : 0 < k)
+    (hi : InputAdmissible encode (fun a w => logWidth k (size a) ≤ w))
     (h : P.ComputesInTime encode (fun a _ => T (size a)) (fun a w => logWidth k (size a) ≤ w) f) :
-    ComputableInPolyTime B f encode size := ⟨T, hT, k, hk, r, P, hP, h⟩
+    ComputableInPolyTime B f encode size := ⟨T, hT, k, hk, r, P, hP, h, hi⟩
 
 /-- Structured execution yields uniform polynomial RAM time, including the final halt. -/
 theorem UniformComputableInPolyTime.of_code {encode : ℕ → α → List ℕ} {size f : α → ℕ}
     (c : Code B r) (out : Fin r) {T : ℕ → ℕ} (hT : PolynomiallyBounded T)
     (k : ℕ) (hk : 0 < k)
+    (hi : InputAdmissible encode (fun a w => logWidth k (size a) ≤ w))
     (h : ∀ a w, logWidth k (size a) ≤ w → InputFits w (encode w a) →
       ∃ y, ExecWithin w c (.init (encode w a)) y (T (size a)) ∧ y.regs out = f a) :
     UniformComputableInPolyTime B f encode size := by
-  apply of_program (c.program out) (hT.add (.const 1)) k hk
+  apply of_program (c.program out) (hT.add (.const 1)) k hk hi
   exact c.computesInTime_program out h
 
 /-- Bounded structured families yield polynomial RAM time, including the final halt. -/
 theorem ComputableInPolyTime.of_code {encode : ℕ → α → List ℕ} {size f : α → ℕ}
     (c : ℕ → Code B r) (out : Fin r) (hsize : ∃ L, ∀ w, (c w).size ≤ L)
     {T : ℕ → ℕ} (hT : PolynomiallyBounded T) (k : ℕ) (hk : 0 < k)
+    (hi : InputAdmissible encode (fun a w => logWidth k (size a) ≤ w))
     (h : ∀ a w, logWidth k (size a) ≤ w → InputFits w (encode w a) →
       ∃ y, ExecWithin w (c w) (.init (encode w a)) y (T (size a)) ∧ y.regs out = f a) :
     ComputableInPolyTime B f encode size :=
-  ⟨fun n => T n + 1, hT.add (.const 1), k, hk, ComputableInTime.of_code c out hsize h⟩
+  ⟨fun n => T n + 1, hT.add (.const 1), k, hk, ComputableInTime.of_code c out hsize hi h⟩
 
 end Cslib.WordRAM

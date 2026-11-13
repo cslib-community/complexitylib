@@ -17,7 +17,7 @@ import Mathlib.Tactic.Linarith
 
 This module states the CRYSTALS-Dilithium signature scheme ([DucasEtAl2018]), standardized as
 ML-DSA in [NISTFIPS204], over `R_q = ℤ_q[X] / (X^n + 1)` (coefficient vectors `Fin n → ZMod q`
-with `Cslib.Crypto.negacyclicMul`), and proves its correctness.
+with `Cslib.negacyclicMul`), and proves its correctness.
 
 The model is the *uncompressed-public-key* scheme: the public key is `(A, t)` with
 `t = A s₁ + s₂`, a signature is `(z, c)`, and verification recomputes
@@ -50,6 +50,7 @@ drawn from an arbitrary `ProbComp` sampler.
 * `Cslib.Crypto.MLDSA.InBall`: the challenge set `B_τ`.
 * `Cslib.Crypto.MLDSA.PublicKey`, `Cslib.Crypto.MLDSA.SecretKey`,
   `Cslib.Crypto.MLDSA.SecretKey.publicKey`: keys, with `t = A s₁ + s₂`.
+* `Cslib.Crypto.MLDSA.Signature`: signatures `(z, c)`.
 * `Cslib.Crypto.MLDSA.signAttempt`, `Cslib.Crypto.MLDSA.sign`, `Cslib.Crypto.MLDSA.verify`:
   signing with aborts and verification.
 
@@ -229,8 +230,17 @@ structure SecretKey where
 def SecretKey.publicKey {P : Params} (sk : SecretKey P) : PublicKey P :=
   ⟨sk.A, moduleSISMap sk.A sk.s₁ + sk.s₂⟩
 
-/-- A signature `(z, c)` with response `z ∈ R_q^ℓ` and challenge `c ∈ R_q`. -/
-abbrev Signature := (Fin P.ℓ → Fin P.n → ZMod P.q) × (Fin P.n → ZMod P.q)
+/-- An ML-DSA signature `(z, c)`: a response `z ∈ R_q^ℓ` and a challenge `c ∈ R_q`. -/
+@[ext] structure Signature where
+  /-- The response `z = y + c s₁`. -/
+  z : Fin P.ℓ → Fin P.n → ZMod P.q
+  /-- The challenge polynomial. -/
+  c : Fin P.n → ZMod P.q
+
+/-- Signatures are compared field by field; unlike a derived instance, this one reduces under
+`decide`. -/
+instance : DecidableEq (Signature P) := fun _ _ =>
+  decidable_of_iff _ (Signature.ext_iff (P := P)).symm
 
 /-- The commitment hash `(w₁, M) ↦ c`, standing for `SampleInBall ∘ H` of [NISTFIPS204]: it maps
 a high-bits vector `w₁ ∈ ℤ^{k × n}` and a message to a challenge polynomial. -/
@@ -267,7 +277,7 @@ def signAttempt (H : Hash P) (sk : SecretKey P) (msg : List Bool)
   let c := H (highBitsVec P w, msg)
   let z := y + fun j => negacyclicMul c (sk.s₁ j)
   if ResponseShort P z ∧ LowBitsShort P (w - fun i => negacyclicMul c (sk.s₂ i)) then
-    some (z, c)
+    some ⟨z, c⟩
   else none
 
 /-- Signing by rejection sampling: draw a mask from `mask` and run `signAttempt`, retrying after
@@ -284,8 +294,8 @@ def sign (H : Hash P) (sk : SecretKey P) (mask : ProbComp (Fin P.ℓ → Fin P.n
 /-- Verification: accept `(z, c)` on `M` iff `‖z‖_∞ < γ₁ - β`, `c ∈ B_τ`, and
 `c = H(HighBits(A z - c t), M)`. -/
 def verify (H : Hash P) (pk : PublicKey P) (msg : List Bool) (σ : Signature P) : Bool :=
-  decide (ResponseShort P σ.1) && decide (InBall P.τ σ.2) &&
-    decide (H (highBitsVec P (verifierCommitment P pk σ.1 σ.2), msg) = σ.2)
+  decide (ResponseShort P σ.z) && decide (InBall P.τ σ.c) &&
+    decide (H (highBitsVec P (verifierCommitment P pk σ.z σ.c), msg) = σ.c)
 
 /-! ### Correctness -/
 

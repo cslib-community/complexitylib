@@ -519,20 +519,7 @@ Section 14.6.4): the signer of an indexed EUF-CMA secure scheme may choose its i
 counter. The reduction is `counterForger`, with loss `1`
 (`succProbability_counterEufCmaGame_le`). -/
 theorem IndexedEUFCMA.counterEUFCMA (h : S.IndexedEUFCMA) : S.CounterEUFCMA := by
-  obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
-  obtain ⟨bound, hboundPoly, hbound⟩ : ∃ bound : ℕ → ℕ → ℕ,
-      ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2) (encPair encUnary encUnary) encUnary ∧
-      ∀ n, ∀ x ∈ (ProbComp.eval (S.keyGen n)).support, ∀ j < S.capacity n, ∀ msg,
-        ∀ σ ∈ (ProbComp.eval (S.sign x.2 j msg)).support, σ.length ≤ bound n msg.length := by
-    refine ⟨fun n L => cs * (2 * (ck * (n + 1) ^ dk) + 2 * S.capacity n + L + 3) ^ ds,
-      by fun_prop, fun n x hx j hj msg σ hσ => ?_⟩
-    have hkeyLen := hlenk n x hx
-    simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeyLen
-    have hσLen := hlens (x.2, j, msg) σ hσ
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hσLen
-    refine hσLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left ?_ ds))
-    omega
+  obtain ⟨bound, hboundPoly, hbound⟩ := S.exists_sign_length_bound
   apply CounterEUFCMA.of_negligible
   intro adversary hadversary
   exact negligible_of_le

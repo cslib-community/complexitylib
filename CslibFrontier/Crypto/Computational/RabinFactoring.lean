@@ -16,8 +16,8 @@ public import CslibFrontier.Crypto.Computational.QuadraticResiduosity
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import Cslib.Foundations.Data.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Tactic.PPT
@@ -479,10 +479,6 @@ theorem factoringHard_of_rabinOneWay {gen : BlumGen} (h : RabinOneWay gen) :
     FactoringHard gen := fun F hF =>
   negligible_of_le (h _ (isPPTOn_factorToRabin hF)) (succProbability_factoringGame_le gen F)
 
-private theorem ofBits_ofFn_equivFin_symm (L : ℕ) (x : Fin (2 ^ L)) :
-    ofBits (List.ofFn ((BitString.equivFin L).symm x)) = x.1 := by
-  rw [ofBits, ← BitString.lsbValue_eq_foldr_bit, BitString.lsbValue_ofFn, Equiv.apply_symm_apply]
-
 private theorem tsum_uniformList_mul (L : ℕ) (g : List Bool → ℝ≥0∞) :
     (∑' r : List Bool, BitString.uniformList L r * g r) =
       (2 ^ L : ℝ≥0∞)⁻¹ * ∑ x : Fin (2 ^ L), g (List.ofFn ((BitString.equivFin L).symm x)) := by
@@ -855,7 +851,7 @@ theorem succProbability_rabinInversionGame_le (gen : BlumGen)
     omega
   -- Average both experiments over the `2 ^ L` uniform draws `x`.
   simp only [rabinToFactor, ProbComp.eval_bind, BitString.eval_sampleList, PMF.tsum_bind_mul,
-    tsum_uniformList_mul, ofBits_ofFn_equivFin_symm]
+    tsum_uniformList_mul, ofBits_ofFn, Equiv.apply_symm_apply]
   rw [mul_left_comm (3 : ℝ≥0∞)]
   refine mul_le_mul_of_nonneg_left ?_ zero_le
   refine (sum_rabin_success_le desc.hp desc.hq desc.hpq hp2 hq2 rfl hk

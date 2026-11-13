@@ -99,6 +99,24 @@ example (bit : Bool) (n : ℕ) :
       (zeroLinkAdversary fixture (fun _ => 2) adversary) bit n) = PMF.pure bit :=
   eval_zeroLinkGame (fun _ => 2) bit n
 
+-- At zero depth the two link branches reject. The surviving zero-link branch has weight
+-- (1/4) * (1/2) * (1/2), including the two dyadic coins at their zero bounds.
+example (bit : Bool) (n : ℕ) :
+    (Game.succProbability (ProbComp.eval
+      (leveledSelectorGame fixture (fun _ => 0) (fun _ => 0) adversary bit n)) : ℝ) =
+      if bit then 1 / 16 else 0 := by
+  have hlink (world challenge : Bool) :
+      ProbComp.eval (Encryption.game fixture.keyGen fixture.encrypt
+        (fixture.linkAdversary (fun _ => 0) (fun _ => 0)
+          (publicKeyGame fixture adversary world)) challenge n) = PMF.pure false := by
+    rw [fixture.eval_linkAdversary (fun _ => 0) (fun _ => 0)
+      (publicKeyGame fixture adversary world) n 2 challenge (secret_width n)]
+    simp [Scheme.keyChainHybridGame]
+  have h := succProbability_leveledSelectorGame fixture (fun _ => 0) (fun _ => 0)
+    adversary bit n
+  rw [hlink false bit, hlink true (!bit), eval_zeroLinkGame] at h
+  cases bit <;> norm_num [dyadicSize, Game.succProbability] at h ⊢ <;> linarith
+
 -- The actual serialized leveled game agrees at budgets zero and one (zero and two links).
 example (bit : Bool) (n : ℕ) :
     ProbComp.eval (Encryption.game (fun n => keyGen fixture n 0) (encrypt fixture)

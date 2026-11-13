@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.SpaceInTime
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 
 /-!
 # Deterministic space classes
@@ -30,8 +31,8 @@ The concrete classes expose their `DSPACE` characterizations in `Classes.LogSpac
 ## Main results
 
 * `Cslib.Complexity.mem_DSPACE_iff`: membership with an arbitrary time bound.
+* `Cslib.Complexity.DSPACE_mono_of_le_mul_add`: `DSPACE` absorbs constant factors.
 * `Cslib.Complexity.DSPACE_mono`, `Cslib.Complexity.DSPACE_mono_of_eventually_le`: monotonicity.
-* `Cslib.Complexity.DSPACE_subset_of_le_mul_add`: absorb constant factors and additive constants.
 
 ## References
 
@@ -64,37 +65,23 @@ theorem mem_DSPACE_iff {s : ℕ → ℕ} : A ∈ DSPACE enc s ↔
   obtain ⟨t', h'⟩ := ComputableInTimeAndSpace.exists_time_of_length (s := fun n => c₁ * s n + c₂) h
   exact ⟨c₁, c₂, t', h'⟩
 
-/-- `DSPACE` is monotone in the space bound. -/
-theorem DSPACE_mono {s₁ s₂ : ℕ → ℕ} (h : ∀ n, s₁ n ≤ s₂ n) : DSPACE enc s₁ ⊆ DSPACE enc s₂ := by
+/-- `DSPACE` absorbs constant factors: a bound `s₁ n ≤ C * s₂ n + C` puts `DSPACE enc s₁` inside
+`DSPACE enc s₂`. -/
+theorem DSPACE_mono_of_le_mul_add {s₁ s₂ : ℕ → ℕ} {C : ℕ} (h : ∀ n, s₁ n ≤ C * s₂ n + C) :
+    DSPACE enc s₁ ⊆ DSPACE enc s₂ := by
   rintro A ⟨c₁, c₂, t, hA⟩
-  exact ⟨c₁, c₂, t, ComputableInTimeAndSpace.mono hA (fun _ => le_rfl)
-    fun a => Nat.add_le_add_right (Nat.mul_le_mul_left _ (h _)) _⟩
+  exact ⟨c₁ * C, c₁ * C + c₂, t, ComputableInTimeAndSpace.mono hA (fun _ => le_rfl)
+    fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (h _) c₁ c₂⟩
+
+/-- `DSPACE` is monotone in the space bound. -/
+theorem DSPACE_mono {s₁ s₂ : ℕ → ℕ} (h : ∀ n, s₁ n ≤ s₂ n) : DSPACE enc s₁ ⊆ DSPACE enc s₂ :=
+  DSPACE_mono_of_le_mul_add (C := 1) fun n => by have := h n; omega
 
 /-- `DSPACE` only depends on the space bound eventually: the finitely many other values are
 absorbed by the additive constant. -/
 theorem DSPACE_mono_of_eventually_le {s₁ s₂ : ℕ → ℕ} (h : ∀ᶠ n in atTop, s₁ n ≤ s₂ n) :
-    DSPACE enc s₁ ⊆ DSPACE enc s₂ := by
-  obtain ⟨N, hN⟩ := eventually_atTop.mp h
-  rintro A ⟨c₁, c₂, t, hA⟩
-  refine ⟨c₁, c₁ * ∑ n ∈ Finset.range N, s₁ n + c₂, t,
-    ComputableInTimeAndSpace.mono hA (fun _ => le_rfl) fun a => ?_⟩
-  have : s₁ (enc a).length ≤ s₂ (enc a).length + ∑ n ∈ Finset.range N, s₁ n := by
-    rcases le_or_gt N (enc a).length with h | h
-    · have := hN _ h
-      omega
-    · have := Finset.single_le_sum (f := s₁) (fun _ _ => Nat.zero_le _) (Finset.mem_range.mpr h)
-      omega
-  have := Nat.mul_le_mul_left c₁ this
-  rw [Nat.mul_add] at this
-  omega
-
-/-- `DSPACE` depends on the space bound only up to a constant factor and an additive constant. -/
-theorem DSPACE_subset_of_le_mul_add {s₁ s₂ : ℕ → ℕ} (c d : ℕ) (h : ∀ n, s₁ n ≤ c * s₂ n + d) :
-    DSPACE enc s₁ ⊆ DSPACE enc s₂ := by
-  rintro A ⟨c₁, c₂, t, hA⟩
-  refine ⟨c₁ * c, c₁ * d + c₂, t, ComputableInTimeAndSpace.mono hA (fun _ => le_rfl) fun a => ?_⟩
-  have := Nat.mul_le_mul_left c₁ (h (enc a).length)
-  rw [Nat.mul_add, ← Nat.mul_assoc] at this
-  omega
+    DSPACE enc s₁ ⊆ DSPACE enc s₂ :=
+  let ⟨_, hC⟩ := Nat.exists_le_mul_add_of_eventually_le h
+  DSPACE_mono_of_le_mul_add hC
 
 end Cslib.Complexity

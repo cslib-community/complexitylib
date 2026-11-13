@@ -357,7 +357,7 @@ Ran Canetti and Marc Fischlin. *Universally Composable Commitments*. CRYPTO 2001
 <a id="cgks98"></a>
 ## cgks98
 
-Benny Chor, Oded Goldreich, Eyal Kushilevitz and Madhu Sudan. *Private Information Retrieval*. Journal of the ACM 45(6), 965–981, 1998; preliminary version FOCS 1995. https://doi.org/10.1145/293347.293350 . Definition 1 (§2.1, p. 4), the coalition `t`-privacy extension of §2.2 (pp. 4–5, and the polynomial family noted without construction in §1.1, pp. 1–2), the polynomial-time requirement of §2.4 (p. 6), the schemes of §§3.1, 3.2 and 3.4 (Proposition 4, Corollary 3; pp. 6–8, 11), the covering-code schemes of §3.3 (Theorem 1, Footnote 1 on exact covers, the `d = 5, k = 7` row of Figure 1, the radius-`2` covering remark `k · d · n ^ (1 / d) + k · d² · n ^ (2 / d)`, and Corollary 2; pp. 8–10), the block-retrieval transformations and constant-overhead schemes of §4 (Propositions 4 and 5, the group-homomorphism note on p. 12, Corollaries 6, 7 and 8; pp. 11–13), the single-server bound of §5.1 in its one-round and interactive forms, and §5.2 (the Claim, its two observations and the closing note on the even-set scheme) were checked on 2026-11-08, 2026-11-11 and 2026-11-12 against the authors' journal version of April 21, 1998, at http://people.csail.mit.edu/madhu/papers/1995/pir-journ.pdf (§5 is on pp. 13–15). In [PIR/GeneralCover.lean](../CslibFrontier/Crypto/Protocols/PIR/GeneralCover.lean), Theorem 1 (`hasIndexedScheme_of_hammingDist`) states explicit `0 < |D|` and `Function.Injective code` hypotheses (`d - 1` truncates at `d = 0` in `ℕ`, and duplicate codewords would violate `k ≤ 2 ^ d`), while the radius-`2` bound `k · d · ℓ + k · d² · ℓ²` (`hasScheme_of_hammingDist_two_cgks`) holds for `2 ≤ |D|` and `1 ≤ ℓ` alongside the exact radius-`r` count `k · (d · ℓ + ∑_{j ≤ r} C(d, j) · ℓ ^ j)`. Because §1.1 omits the polynomial-interpolation construction while stating `O(t(n) · n ^ (1 / c))` for `c · t(n)` servers, [PIR/Shamir.lean](../CslibFrontier/Crypto/Protocols/PIR/Shamir.lean) formalizes an explicit finite-field adaptation over `Shamir.Params F S` that matches `k = c · t` servers and fixed-`t` exponent `n ^ (1 / c)` while retaining the field bit-width factor `⌈log₂ |F|⌉` (`|F| > c · t`, a weaker finite-field communication variant). Neither polynomial-time computation (§2.4, p. 6; §3.3 Remark, p. 10) nor fair-coin simulation of finite-uniform `ProbComp` primitives is modeled. In the interactive form, the user's output may depend on its coins, so the source's step that the same communication forces the same output is replaced by the rectangle property of protocols. The typeset JACM PDF was not consulted; locators follow the authors' version.
+Benny Chor, Oded Goldreich, Eyal Kushilevitz and Madhu Sudan. *Private Information Retrieval*. Journal of the ACM 45(6), 965–981, 1998; preliminary version FOCS 1995. https://doi.org/10.1145/293347.293350 . Definition 1 (§2.1, p. 4), the coalition `t`-privacy extension of §2.2 (pp. 4–5, and the polynomial family noted without construction in §1.1, pp. 1–2), the polynomial-time requirement of §2.4 (p. 6), the schemes of §§3.1, 3.2 and 3.4 (Proposition 4, Corollary 3; pp. 6–8, 11), the covering-code schemes of §3.3 (Theorem 1, Footnote 1 on exact covers, the `d = 5, k = 7` row of Figure 1, the radius-`2` covering remark `k · d · n ^ (1 / d) + k · C(d, 2) · n ^ (2 / d)`, and Corollary 2; pp. 8–10), the block-retrieval transformations and constant-overhead schemes of §4 (Propositions 4 and 5, the group-homomorphism note on p. 12, Corollaries 6, 7 and 8; pp. 11–13), the single-server bound of §5.1 in its one-round and interactive forms, and §5.2 (the Claim, its two observations and the closing note on the even-set scheme) were checked on 2026-11-08, 2026-11-11 and 2026-11-12 against the authors' journal version of April 21, 1998, at http://people.csail.mit.edu/madhu/papers/1995/pir-journ.pdf (§5 is on pp. 13–15). In [PIR/GeneralCover.lean](../CslibFrontier/Crypto/Protocols/PIR/GeneralCover.lean), Theorem 1 (`hasIndexedScheme_of_hammingDist`) states explicit `0 < |D|` and `Function.Injective code` hypotheses (`d - 1` truncates at `d = 0` in `ℕ`, and duplicate codewords would violate `k ≤ 2 ^ d`), while for radius-`2` covers `hasScheme_of_hammingDist_two` proves the full-ball count `k · (2 · d · ℓ + C(d, 2) · ℓ² + 1) = k · d · ℓ + k · C(d, 2) · ℓ² + k · (d · ℓ + 1)` (CGKS p. 10's displayed leading expression `k · d · ℓ + k · C(d, 2) · ℓ²` plus the `k · (d · ℓ + 1)` distance-`0`/`1` answer bits; the literal `k · d · ℓ + k · C(d, 2) · ℓ²` bound without lower-order answer terms is not proved) alongside the exact radius-`r` count `k · (d · ℓ + ∑_{j ≤ r} C(d, j) · ℓ ^ j)` and the coarser `d²` upper bound `k · d · ℓ + k · d² · ℓ²` (`hasScheme_of_hammingDist_two_sq`, for `2 ≤ |D|` and `1 ≤ ℓ`). Because §1.1 omits the polynomial-interpolation construction while stating `O(t(n) · n ^ (1 / c))` for `c · t(n)` servers, [PIR/Shamir.lean](../CslibFrontier/Crypto/Protocols/PIR/Shamir.lean) formalizes an explicit finite-field adaptation over `Shamir.Params F S` that matches `k = c · t` servers and fixed-`t` exponent `n ^ (1 / c)` while retaining the field bit-width factor `⌈log₂ |F|⌉` (`|F| > c · t`, a weaker finite-field communication variant). Neither polynomial-time computation (§2.4, p. 6; §3.3 Remark, p. 10) nor fair-coin simulation of finite-uniform `ProbComp` primitives is modeled. In the interactive form, the user's output may depend on its coins, so the source's step that the same communication forces the same output is replaced by the rectangle property of protocols. The typeset JACM PDF was not consulted; locators follow the authors' version.
 
 <a id="chaitin74"></a>
 ## chaitin74
@@ -481,6 +481,8 @@ CSLib contributors. *CSLib*, pinned dependency snapshot `254e30e6d4299c51323aaea
 
 Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, Marcin Pilipczuk, Michał Pilipczuk, and Saket Saurabh. *Parameterized Algorithms*. Springer, 2015. [DOI](https://doi.org/10.1007/978-3-319-21275-3). Inspected the authors' companion PDF dated 2016-05-30: Definitions 1.2–1.3 (p. 13), Definition 2.1 (pp. 18–19), Lemma 2.2 (p. 20), and Section 2.2.1 (pp. 21–22); accessed 2026-11-02. On 2026-11-08 the same PDF returned HTTP 403, so the crown material of Section 2.3 cited by [Crown](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Crown.lean) was not inspected. Secondary sources number the crown lemma Lemma 2.14 and the `3k` kernel Theorem 2.16; these numbers are unverified and are not used in the Lean docstrings. The color-coding locators Section 5.2 and Lemma 5.5, the fpt-reduction locator Section 13.1, and the tree-decomposition locator Section 7.3.1 (weighted independent set, stated for `n`-vertex graphs), used in [parameterized complexity](machines-and-classes/parameterized-complexity.md), were not re-inspected. Section 4.4 (iterative compression for odd cycle transversal), cited by [OddCycleTransversal](../CslibFrontier/Foundations/Combinatorics/SimpleGraph/OddCycleTransversal.lean) and its algorithm, was not inspected either; its locator comes from secondary sources. Likewise, nice tree-decomposition normalization (Lemma 7.4, p. 161), bounded-treewidth CSP dynamic programming, and the clause-grouping `3-SAT`-to-`Clique` ETH lower bound (Theorem 14.21, p. 485) were inspected in the companion PDF and verified, matching the locators in the [results registry](../CslibFrontierResults/Entries.lean).
 
+The same author PDF supports the weighted-circuit enumeration in Section 13.3, p. 436, and the definition of `W[t]` in Definition 13.16, p. 437, used in [parameterized complexity](machines-and-classes/parameterized-complexity.md). This section does not define `W[P]`; the library's `WP` reduction closure is documented separately and its equivalence with an effective literature class is not claimed.
+
 <a id="dasguptagupta03"></a>
 ## dasguptagupta03
 
@@ -524,6 +526,11 @@ E. A. Dinic. “Algorithm for Solution of a Problem of Maximum Flow in Networks 
 ## dinur2007
 
 Irit Dinur. “The PCP Theorem by Gap Amplification.” *Journal of the ACM* 54(3), Article 12 (2007). DOI: https://doi.org/10.1145/1236457.1236459. Author copy dated 2007-02-13 inspected: https://www.wisdom.weizmann.ac.il/~dinuri/mypapers/combpcp.pdf (opening definition and Theorem 1.1).
+
+<a id="dinur2016"></a>
+## dinur2016
+
+Irit Dinur. “Mildly Exponential Reduction from Gap 3SAT to Polynomial-Gap Label-Cover.” *Electronic Colloquium on Computational Complexity*, Report TR16-128, 2016. https://eccc.weizmann.ac.il/report/2016/128/ . Bibliographic metadata checked against the ECCC report record; the report's full text was inspected for Hypothesis 2.5 (p. 5), which has at most $D n$ clauses and fixed soundness $< 0.9$. Used alongside [manurangsiraghavendra2017](#manurangsiraghavendra2017) to document the Gap Exponential Time Hypothesis adaptation (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
 
 <a id="dosasgall2013"></a>
 ## dosasgall2013
@@ -600,6 +607,11 @@ Michael L. Fredman, János Komlós, Endre Szemerédi. "Storing a Sparse Table wi
 
 Robert W. Floyd. "Algorithm 97: Shortest Path." *Communications of the ACM* 5(6), 345, 1962. https://doi.org/10.1145/367766.368168 . Bibliographic metadata checked on 2026-11-07; the manual attributes only the Floyd–Warshall recurrence to this note.
 
+<a id="flumgrohe2006"></a>
+## flumgrohe2006
+
+Jörg Flum and Martin Grohe. *Parameterized Complexity Theory*. Springer, 2006. [DOI](https://doi.org/10.1007/3-540-29953-X). The [publisher's Chapter 3 preview](https://page-one.springer.com/pdf/preview/10.1007/3-540-29953-X_3) was inspected: Definition 3.1 on printed p. 45 defines `W[P]` by restricted nondeterministic multitape machines with computable time and nondeterminism bounds, and Proposition 3.2 on printed p. 46 states `FPT ⊆ W[P] ⊆ XP ∩ paraNP`. The preview does not give a weighted-circuit characterization. It is used in [parameterized complexity](machines-and-classes/parameterized-complexity.md) to contrast conventions; equivalence with the library's potentially ineffective reduction closure `WP` is not established.
+
 <a id="fly22"></a>
 ## fly22
 
@@ -618,7 +630,12 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. Inspected the author-hosted manuscript dated October 12, 2010 (https://fedorvf.github.io/BookEA/BookEA.pdf): Section 4.1, Theorem 4.2 for the general inclusion–exclusion principle, and Section 4.2.2, Theorem 4.5 and Eq. (4.4), printed pp. 56–57 (PDF pp. 68–69), for the inclusion–exclusion Hamiltonian path algorithm (where the book fixes start and end vertices `s, t` and counts `(s, t)`-walks on `n + 2` vertices, adapted in [`HamiltonianCount.lean`](../CslibFrontier/Algorithms/Lean/TSP/HamiltonianCount.lean) to count all endpoint choices on `n` vertices and charged in `TimeM` integer-addition ticks rather than the book's unit-cost versus log-cost discussion). The Section 1.2 locator for the Held–Karp TSP dynamic program was taken from secondary descriptions and issue #3013 without inspecting that section. It is also cited at book level for search-tree branching vectors and disjoint clause-prefix branching on fixed-width SAT; no internal chapter, theorem, or page locators are claimed.
+
+<a id="forbesshpilka2013"></a>
+## forbesshpilka2013
+
+Michael A. Forbes and Amir Shpilka. "Quasipolynomial-time Identity Testing of Non-commutative and Read-once Oblivious Algebraic Branching Programs." FOCS 2013, 243–252; arXiv:1209.2408v2, https://arxiv.org/abs/1209.2408v2 . Read in the arXiv version: §1.1 (pp. 2–3) for the set-multilinear and univariate encodings, and §4 for the reduction from non-commutative programs: Construction 4.1 and Lemma 4.2 (p. 22), Lemma 4.3 (p. 23), Lemma 4.5 and Theorem 4.6 (p. 24). The library formalizes this reduction for homogeneous layered programs only and feeds it the hitting set of its own adaptation of Agrawal–Gurjar–Korwar–Saxena; Corollary 4.7 (p. 25), with the paper's generator and bound, is not formalized.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
@@ -754,6 +771,7 @@ Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lect
 ## guruswamirudrasudan25
 
 Venkatesan Guruswami, Atri Rudra and Madhu Sudan. *Essential Coding Theory*. Draft book, version of 26 August 2025. https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/ ; open PDF https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/web-coding-book.pdf . The library's key is `GuruswamiRudraSudan2019`. Read in the open PDF on 2026-11-08 for Chapter 6:
+
 - §6.2 (the binary symmetric channel) and §6.2.2 (capacity: reliable communication is possible below it and impossible above it);
 - Theorem 6.3.1 (p. 119): part (1), achievability with error `2^(−δn)`, and part (2), for `0 ≤ p < 1/2` and `k ≥ ⌈(1 − H(p) + ε) n⌉` with `0 ≤ ε ≤ 1/2 − p`, some message misdecoded with probability more than `1/2`;
 - §6.3.1, the packing proof of part (2) (pp. 120–122), and Remark 6.3.2, the error bound `1 − 2^(−βn)`;
@@ -809,12 +827,12 @@ Christopher Henson and Fabrizio Montesi. *Computer Science as Infrastructure: th
 <a id="hhk17"></a>
 ## hhk17
 
-Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean module and chapter text.
+Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean modules and chapter text.
 
 <a id="hhrvw20"></a>
 ## hhrvw20
 
-Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, adapted to a constant light-image threshold with inverse-linear gap `1 / (64 * (n + 1))`; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32).
+Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15, including canonical collision-finder sanitization and adversary-dependent accessible preimage sets; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, with polynomial light-image threshold and `d * Real.logb 2 n / n` entropy gap against uniform strict-PPT adversaries; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32, proved from Definition 3.9's adversary-dependent hypothesis).
 
 <a id="hierholzer73"></a>
 ## hierholzer73
@@ -1011,6 +1029,11 @@ Iordanis Kerenidis and Ronald de Wolf. "Exponential Lower Bound for 2-Query Loca
 
 Subhash Khot. "On the Unique Games Conjecture (Invited Survey)." *2010 IEEE 25th Annual Conference on Computational Complexity (CCC)*, 99–121, 2010. https://doi.org/10.1109/CCC.2010.19 . Author-hosted copy inspected: https://cs.nyu.edu/~khot/papers/UGCSurvey.pdf (Section 2.4, p. 6 of the author copy: the second paragraph after Definition 2.4, beginning "Let us return", on finding a satisfying labelling of a value-1 instance by trying every label for one vertex and propagating along each connected component, and the remark after Conjecture 2.5 that the conjecture would be false with `ε = 0`). The page range and DOI are from the bibliographic record and were not checked against the typeset proceedings.
 
+<a id="kirshnersamorodnitsky21"></a>
+## kirshnersamorodnitsky21
+
+Naomi Kirshner and Alex Samorodnitsky. "A Moment Ratio Bound for Polynomials and Some Extremal Properties of Krawtchouk Polynomials and Hamming Spheres." *IEEE Transactions on Information Theory* 67(6), 3509–3541, 2021. https://doi.org/10.1109/TIT.2021.3071597 ; arXiv:1909.11929v1. The statements of Theorem 1.3, Corollary 1.4 and Theorem 1.5 in arXiv v1 were read on 2026-11-12. They hold for every `n`, with no `o(1)` terms, for polynomials of degree `s ≤ n / 2`. The independent review of [#4735](https://github.com/cslib-community/cslib-frontier/pull/4735) checked Saglam's specializations against the same version. Saglam's explicit `γ` is `H(ρ)/2 - ψ(3, ρ)`, by Proposition 2.6 at `p = 3` with `t = 1 - 2δ` (so `t² = ρ/(2 - 3ρ)`). His integral form is their `τ(x, y) = H(x) + I(y, x) - I(0, x)` for `y ≤ 1/2 - √(x(1 - x))` (§2.1.1–2.1.2). As printed, Theorem 1.5 fails at degree `0`: for `f ≡ 1` and `i = 0` the `≥` event has probability `1 > 2^{-n}`. The library's hypotheses therefore use a strict event and require `0 < w`. [Code/PuncturedBallFourier](../CslibFrontier/Foundations/Data/Code/PuncturedBallFourier.lean) states Corollary 1.4 (third moment) and Theorem 1.5 (tail) as hypotheses (`KSThirdMomentBound`, `KSTailBound`), in the specialization quoted in [Saglam](#saglam27), Appendix A. They are not proved.
+
 <a id="kleeminty72"></a>
 ## kleeminty72
 
@@ -1206,6 +1229,11 @@ Udi Manber and Gene Myers. "Suffix Arrays: A New Method for On-Line String Searc
 
 Ju. I. Manin. "On cubic congruences to a prime modulus." *Izvestiya Akademii Nauk SSSR. Seriya Matematicheskaya* 20(5), 673–678, 1956 (in Russian). https://www.mathnet.ru/eng/im3844 . Bibliographic metadata was checked against secondary sources; the Math-Net.ru page itself could not be opened and the paper was not inspected. The locators §2 (pp. 675–676: the recurrence for the heights of a sequence of points and its closed form) and Lemma 2 (p. 676: the cancellation count) were supplied by an independent reviewer who read the paper, and were not rechecked for this entry. The Lean modules under `CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/` adapt Manin's proof of Hasse's bound rather than transcribe it; the implementation notes of [`ManinHeight.lean`](../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/ManinHeight.lean) list the differences (projective rather than affine point count, reversed sequence index, a cubic that keeps its quadratic term so that characteristic three is included, and a recurrence derived from Mathlib's add-sub map).
 
+<a id="manurangsiraghavendra2017"></a>
+## manurangsiraghavendra2017
+
+Pasin Manurangsi and Prasad Raghavendra. “A Birthday Repetition Theorem and Complexity of Approximating Dense CSPs.” *44th International Colloquium on Automata, Languages, and Programming (ICALP 2017)*, LIPIcs 80, 78:1–78:15, 2017. https://doi.org/10.4230/LIPIcs.ICALP.2017.78 . Bibliographic metadata checked against the LIPIcs DOI record; the paper's full text was inspected for the approximation ETHA formulation (§1.1, p. 78:5). Used alongside [dinur2016](#dinur2016) to document the Gap Exponential Time Hypothesis adaptation (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
+
 <a id="mathlib"></a>
 ## mathlib
 
@@ -1264,7 +1292,7 @@ Michael Mitzenmacher and Eli Upfal. *Probability and Computing: Randomization an
 <a id="mohrirostamizadehtalwalkar18"></a>
 ## mohrirostamizadehtalwalkar18
 
-Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
+Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. Theorem 7.2 (AdaBoost's empirical error, p. 149) and Corollary 7.5 were read in a PDF of the book on 2026-11-13. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
 
 <a id="monderershapley96"></a>
 ## monderershapley96
@@ -1370,6 +1398,11 @@ Ryan O'Donnell. *Analysis of Boolean Functions*. Cambridge University Press, 201
 ## oliveirapichsanthanam2019
 
 Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography. The Lean modules cite its Lemmas 4.1 and 4.7 and Theorem 1.4. For Theorem 1.4, worker meta-proj read the authors' copy of ECCC TR18-158 revision 1 (https://www.dcs.warwick.ac.uk/~igorcarb/documents/papers/OPS19.pdf) on 2026-11-11 UTC: Theorem 4 there is the same statement with an unspecified universal constant `c ≥ 1`, its proof in Section 4.1 uses `c = 10`, Definition 9 has no-instances of size `> s₂`, and Section 2 says gate types do not matter. The journal numbering `1.4` was not checked against the journal text.
+
+<a id="oliveirasanthanam2017"></a>
+## oliveirasanthanam2017
+
+Igor Carboni Oliveira and Rahul Santhanam. *Conspiracies Between Learning Algorithms, Circuit Lower Bounds, and Pseudorandomness*. CCC 2017, LIPIcs 79, 18:1–18:49. https://doi.org/10.4230/LIPIcs.CCC.2017.18 . Full version arXiv:1611.01190. Bibliographic data comes from the repository bibliography and the LIPIcs record. The Lean module [CryptoHardness/NaturalProperty.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/NaturalProperty.lean) cites Theorem 8, (1) ⇒ (5) (a learner yields a distinguisher, hence a natural property) and Lemma 4 from the arXiv full version; the page locators are not recorded in the results registry.
 
 <a id="oliveirasanthanam2018"></a>
 ## oliveirasanthanam2018
@@ -1506,6 +1539,11 @@ Tim Roughgarden and Éva Tardos. *How Bad Is Selfish Routing?* Journal of the AC
 
 Tim Roughgarden and Éva Tardos. "Introduction to the Inefficiency of Equilibria." Chapter 17 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 443–459. A university-hosted PDF of the book was consulted on 2026-11-08 for §17.1.3 (the definitions of the price of anarchy and the price of stability) and Example 17.3 with Figure 17.3 (the `H_k` lower bound for Shapley network design games).
 
+<a id="saglam27"></a>
+## saglam27
+
+Mert Saglam. *Linear Codes Exceeding the Gilbert–Varshamov Bound*. STOC 2027 submission 1516. https://github.com/sigact-stoc/stoc2027/releases/download/papers-2/1516.pdf (PDF SHA-256 `ac6f2bba913aa15cfec8dda07a8e9e37b7186e145fef4719cb623dd04d15baa3`). The submission PDF was read on 2026-11-12: the abstract (main theorem), Section 1, Section 2 (odd circuits, the extension row and the bound on the expected number of odd circuits), Section 3.1, Lemma 3.1 (statement only), Section 3.3 (the three-range estimate on `sinh z - z` and the moment/tail split) and Appendix A. [Code/OddCircuit](../CslibFrontier/Foundations/Data/Code/OddCircuit.lean) and [Code/OddCircuitFourier](../CslibFrontier/Foundations/Data/Code/OddCircuitFourier.lean) formalize Section 2 and the reduction of Section 3.3 to the moment and tail estimates. [Code/PuncturedBallFourier](../CslibFrontier/Foundations/Data/Code/PuncturedBallFourier.lean) derives Lemma 3.1, with explicit constants, from the Kirshner–Samorodnitsky bounds quoted in Appendix A ([kirshnersamorodnitsky21](#kirshnersamorodnitsky21)), which are hypotheses. [Code/OddCircuitAsymptotic](../CslibFrontier/Foundations/Data/Code/OddCircuitAsymptotic.lean) proves the main theorem from Lemma 3.1 with `ζ = 1 / 2`, so the leading constant `(1 - ζ) / 4` with `ζ → 0` is not formalized. These are submissions, not confirmed acceptances.
+
 <a id="sakszhou99"></a>
 ## sakszhou99
 
@@ -1520,6 +1558,11 @@ Mark A. Satterthwaite. "Strategy-Proofness and Arrow's Conditions: Existence and
 ## schoenebeck08
 
 Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th Annual IEEE Symposium on Foundations of Computer Science (FOCS 2008), 593–602. https://doi.org/10.1109/FOCS.2008.74 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. On the same date worker w96-sos consulted the author-hosted copy https://schoeneb.people.si.umich.edu/papers/LasserreNew.pdf (19 pages, TeX output dated 6 December 2008) for Definition 5 (rounds of Lasserre), Definition 10 (width-`w` resolution on XOR formulas), Lemma 13 (the main lemma, p. 8) and Claim 14. In that copy Lemma 13 grants a feasible solution at the `w/2`-th round of Lasserre. An independent review reported `w/4` from a different version, so the constant is version-dependent. The library proves the sum-of-squares form of the lemma and does not construct Lasserre vectors. The typeset FOCS version was not consulted.
+
+<a id="schoening99"></a>
+## schoening99
+
+Uwe Schöning. *A Probabilistic Algorithm for k-SAT and Constraint Satisfaction Problems*. 40th Annual Symposium on Foundations of Computer Science (FOCS 1999), 410–414. https://doi.org/10.1109/SFFCS.1999.814612 . Bibliographic metadata taken from `references.bib` (`Schoening1999`); the paywalled conference proceedings were not directly inspected, and no internal theorem or page locators are claimed. Cited at paper level for the `3n`-step randomized local-search trial on width-`k` CNFs and its `(2 (k - 1) / k) ^ n` amplified decision algorithm (`(4 / 3) ^ n` for `3`-SAT).
 
 <a id="schrijver03"></a>
 ## schrijver03
@@ -1550,6 +1593,11 @@ James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Jou
 ## schummervohra07
 
 James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 243–265. A university-hosted PDF of the book was consulted on 2026-11-08 for §10.3 (the definition of blocking coalitions and the core, Definition 10.5, Theorems 10.6 and 10.7, pp. 253–255). Its core uses weak blocking, the strict core of the housing-market modules. Its claim on p. 255 that the core and the strict core coincide under strict preferences is refuted by a checked three-agent market in `CslibFrontierTests/HousingMarket.lean`.
+
+<a id="shalevshwartzbendavid14"></a>
+## shalevshwartzbendavid14
+
+Shai Shalev-Shwartz and Shai Ben-David. *Understanding Machine Learning: From Theory to Algorithms*. Cambridge University Press, 2014. ISBN 978-1-107-05713-5. A PDF of the book was read on 2026-11-13 for Section 10.2 (AdaBoost, Theorem 10.2 and its proof, pp. 135–137, including the product form `Z_{t+1}/Z_t = 2 √(ε_{t+1} (1 - ε_{t+1}))`) and Lemma 10.3 (Section 10.3). [Boosting/AdaBoost](../CslibFrontier/MachineLearning/Boosting/AdaBoost.lean) records its differences from Theorem 10.2: early stopping at `ε_t = 0` and ties predicting `false`.
 
 <a id="shamir1979"></a>
 ## shamir1979
@@ -1590,6 +1638,11 @@ Yaoyun Shi. "Both Toffoli and Controlled-NOT Need Little Help to Do Universal Qu
 ## shoup1990
 
 Victor Shoup. "New Algorithms for Finding Irreducible Polynomials over Finite Fields." *Mathematics of Computation* 54(189), 435–447, 1990. https://doi.org/10.1090/s0025-5718-1990-0993933-0 . Bibliographic metadata checked on 2026-11-11 UTC; the full primary PDF was not read directly, so the library relies on the standard deterministic Frobenius/trace construction and deterministic Berlekamp splitting verified directly in Lean without claiming section/theorem locators from the paper.
+
+<a id="simpson05"></a>
+## simpson05
+
+Stephen G. Simpson. *Topics in Logic and Foundations: Spring 2004*. Draft dated November 1, 2005. [Author-hosted PDF](https://sgslogic.net/t20/notes/topics-s04.pdf), inspected on 2026-11-12: §2.6, Theorem 2.6.4 and its finite-extension proof, pp. 30–31; register-machine conventions in §1.1.1 and halting-on-input-0 in §2.5. This is the checked exposition for `KleenePostJump`; the original Kleene–Post article and Soare locators remain unverified.
 
 <a id="sipser13"></a>
 ## sipser13
@@ -1669,6 +1722,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 ## tutte48
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
+
+<a id="valiant84"></a>
+## valiant84
+
+L. G. Valiant. "A Theory of the Learnable." *Proceedings of the Sixteenth Annual ACM Symposium on Theory of Computing* (STOC '84), 436–445, 1984. https://doi.org/10.1145/800057.808710 . Bibliographic data from the library's `references.bib` entry `Valiant1984`; the paper was not inspected for this citation. The manual attributes to it, following the standard account, the observation that pseudorandom functions make polynomial-size circuits unlearnable; no section or theorem locator is claimed.
 
 <a id="vanaardenneehrenfestdebruijn51"></a>
 ## vanaardenneehrenfestdebruijn51
@@ -1774,6 +1832,11 @@ Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compres
 ## zivlempel78
 
 Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
+
+<a id="zpzs24"></a>
+## zpzs24
+
+Mingxun Zhou, Andrew Park, Wenting Zheng and Elaine Shi. "Piano: Extremely Simple, Single-Server PIR with Sublinear Server Computation." *2024 IEEE Symposium on Security and Privacy (SP)*, 4296–4314, 2024. https://doi.org/10.1109/SP54263.2024.00055 ; full version (author order Mingxun Zhou, Andrew Park, Elaine Shi and Wenting Zheng): Cryptology ePrint Archive, Paper 2023/452, https://eprint.iacr.org/2023/452.pdf . Checked against the full ePrint version on 2026-11-12: Section 2 and Section 3.1–3.2 (Figure 1 on p. 6, Definition 3.1 on pp. 7–8, Theorems 3.2–3.4 on pp. 8–9), Appendix A (pp. 20–21, Figure 3 compacted query offsets and `√n`-parity server replies), and Appendix C.1–C.2 (pp. 24–26, Theorem C.1 and Lemma C.2). The library formalizes deterministic conditional correctness for the Figure 1 `HintTable` client (`CanAnswerSeq`, with replacement and backup entries sharing one per-chunk counter `used`), exact perfect privacy in the ideal-random-set model for the separate unbounded-backup server-view hybrid `pianoHybridScheme` (which sets replacement and backup parity bits to `false` and is not a correct PIR scheme), and the exact bit-alphabet online communication counts; the PRF reduction, full-client privacy, the Theorem 3.3 failure-probability bound, pipelining, the Appendix A server algorithm, and storage/runtime bounds are not formalized.
 
 <a id="zre15"></a>
 ## zre15

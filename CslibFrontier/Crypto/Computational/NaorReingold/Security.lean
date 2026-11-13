@@ -73,8 +73,10 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
   adaptive Naor–Reingold group-PRF experiments.
 * `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldFrontierOracle`: memoized prefix DDH
   rerandomization followed by `naorReingoldWordSuffix`.
-* `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldToDDHDistinguisher`: single-challenge uniform
-  strict PPT DDH distinguisher constructed from an adaptive PRF distinguisher.
+* `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldDescToDDHDistinguisher`: single-challenge
+  uniform strict PPT DDH distinguisher constructed from an adaptive PRF distinguisher that reads the
+  group parameters; `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldToDDHDistinguisher` is its
+  instance for an `OracleDistinguisher`, which reads them encoded.
 * `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldHashedWordEval`,
   `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldHashedRealGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.naorReingoldHashedProbRealGame`,
@@ -84,8 +86,9 @@ Theorem 4.1, Lemma 4.2, Construction 4.2, Theorem 4.3, and Remark 4.2):
 
 ## Main results
 
-* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_naorReingoldToDDHDistinguisher`: uniform strict PPT
-  certificate for `naorReingoldToDDHDistinguisher` from any `IsOraclePPT` distinguisher.
+* `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_naorReingoldDescToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_naorReingoldToDDHDistinguisher`: uniform strict PPT
+  certificates for both distinguishers from any oracle PPT distinguisher.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingoldWordGame_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_naorReingoldProbRealGame_wordRealGame_le`:
   quantitative single-distinguisher DDH reduction and modular-sampling bounds for the group-PRF.
@@ -350,15 +353,15 @@ private theorem multiDDHRealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGr
   symm
   exact PMF.bind_uniformOfFintype_update (⟨k, hk⟩ : Fin m) _
 
-private theorem multiDDHIdealTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGroupFamily)
+private theorem multiDDHRandomTupleLaw_naorReingoldWordLevelTest (F : PrimeOrderGroupFamily)
     (d : F.Desc) {m : ℕ} (k : ℕ) (hk : k < m) (prog : WordOracleComp Unit Bool) :
     ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α_k =>
-      (F.multiDDHIdealTupleLaw d (BitString k)).bind
+      (F.multiDDHRandomTupleLaw d (BitString k)).bind
         (naorReingoldWordLevelTest F d k hk prog (α_k • F.generator d))) =
       naorReingoldWordHybridAt F d m (k + 1) prog := by
   simp_rw [naorReingoldWordLevelTest_eq_uniform_full F d k hk prog]
   rw [PMF.bind_const]
-  simp only [multiDDHIdealTupleLaw, naorReingoldWordHybridAt, PMF.monad_bind_eq_bind, PMF.bind_map,
+  simp only [multiDDHRandomTupleLaw, naorReingoldWordHybridAt, PMF.monad_bind_eq_bind, PMF.bind_map,
     Function.comp_def]
   rw [← PMF.uniformOfFintype_map_equiv (wordPrefixTableEquiv (ZMod (F.order d)) k), PMF.bind_map]
   congr 1; funext B
@@ -409,38 +412,30 @@ noncomputable def naorReingoldFrontierOracle (n m k : ℕ) (d : F.Desc) (u v w :
       return (F.naorReingoldWordSuffix d child αs (query.drop (k + 1)), cache')
     else pure ([], cache)
 
-private noncomputable def naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFamily)
-    (inLen : ℕ → ℕ) (adv : ℕ → F.Desc → WordOracleComp Unit Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let m := inLen n
-  let k ← ProbComp.sampleDyadicIndex m
-  if k < m then do
-    let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n input.1)
-    Prod.fst <$> (OracleComp.interpret
-      (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
-        (fun request => F.naorReingoldFrontierOracle n m k input.1
-          input.2.1 input.2.2.1 input.2.2.2 αs request.2))
-      (adv n input.1)).run []
-  else pure false
-
 /-- Single-challenge uniform strict PPT DDH distinguisher constructed from an adaptive PRF
-distinguisher `adversary`: sample a hybrid level `k ← sampleDyadicIndex (inLen n)`, draw suffix
-exponents `αs`, and run `adversary` against `naorReingoldFrontierOracle` from an empty cache
+distinguisher `adv` that reads the group parameters directly: sample a hybrid level
+`k ← sampleDyadicIndex (inLen n)`, draw suffix exponents `αs`, and run `adv n d` against
+`naorReingoldFrontierOracle`, given the encodings of the three DDH elements, from an empty cache
 ([BonehShoup2023], Exercises 10.4(b) & 10.11; [NaorReingold2004], Theorem 4.1). -/
+noncomputable def naorReingoldDescToDDHDistinguisher (inLen : ℕ → ℕ)
+    (adv : ℕ → F.Desc → WordOracleComp Unit Bool) : F.DDHDistinguisher :=
+  fun n d u v w => do
+    let m := inLen n
+    let k ← ProbComp.sampleDyadicIndex m
+    if k < m then do
+      let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n d)
+      Prod.fst <$> (OracleComp.interpret
+        (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
+          (fun request => F.naorReingoldFrontierOracle n m k d
+            (F.encode d u) (F.encode d v) (F.encode d w) αs request.2))
+        (adv n d)).run []
+    else pure false
+
+/-- `naorReingoldDescToDDHDistinguisher` for an `OracleDistinguisher`, which reads the encoded
+group parameters `F.encDesc d`. -/
 noncomputable def naorReingoldToDDHDistinguisher (inLen : ℕ → ℕ)
-    (adversary : OracleDistinguisher) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let m := inLen n
-  let k ← ProbComp.sampleDyadicIndex m
-  if k < m then do
-    let (d, u, v, w) := input
-    let αs ← OracleComp.replicate (m - (k + 1)) (F.sampleNaorReingoldExp n d)
-    Prod.fst <$> (OracleComp.interpret
-      (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
-        (fun request => F.naorReingoldFrontierOracle n m k d
-          u v w αs request.2))
-      (adversary n (F.encDesc d))).run []
-  else pure false
+    (adversary : OracleDistinguisher) : F.DDHDistinguisher :=
+  F.naorReingoldDescToDDHDistinguisher inLen fun n d => adversary n (F.encDesc d)
 
 private theorem isPPTOn_sampleNaorReingoldPair (F : PrimeOrderGroupFamily)
     {α : Type} {input : α ↪ List Bool}
@@ -537,10 +532,7 @@ private theorem isPPTOn_naorReingoldFrontierOracle (F : PrimeOrderGroupFamily)
     ((ComputableInPolyTime.const ([] : List Bool)).prod hcache))).congr fun a => ?_
   by_cases h : (query a).length = m a <;> simp [h]
 
-private abbrev DDHInput (F : PrimeOrderGroupFamily) :=
-  ℕ × F.Desc × List Bool × List Bool × List Bool
-
-private abbrev DDHLevelInput (F : PrimeOrderGroupFamily) := DDHInput F × ℕ
+private abbrev DDHLevelInput (F : PrimeOrderGroupFamily) := F.DDHInput × ℕ
 
 private abbrev DDHCaller (F : PrimeOrderGroupFamily) := DDHLevelInput F × List ℕ
 
@@ -550,12 +542,15 @@ private def ddhLevelInputEncoding (F : PrimeOrderGroupFamily) : DDHLevelInput F 
 private def ddhCallerEncoding (F : PrimeOrderGroupFamily) : DDHCaller F ↪ List Bool :=
   encPair (ddhLevelInputEncoding F) (encList encNat)
 
-private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFamily)
+/-- **`naorReingoldDescToDDHDistinguisher` is uniform strict PPT** whenever `inLen` is computable
+in polynomial time in unary and `adv` is oracle PPT on the security parameter and group
+parameters. -/
+theorem isPPT_naorReingoldDescToDDHDistinguisher
     {inLen : ℕ → ℕ} (hinLen : ComputableInPolyTime inLen encUnary encUnary)
     {adv : ℕ → F.Desc → WordOracleComp Unit Bool}
     (hadv : IsOraclePPTOn (encPair encUnary F.encDesc) encBool (fun p => adv p.1 p.2)) :
-    IsPPTOn F.encDDHInput encBool
-      (fun input => naorReingoldDescToDDHDistinguisher F inLen adv input.1 input.2) := by
+    (naorReingoldDescToDDHDistinguisher F inLen adv).IsPPT := by
+  unfold DDHDistinguisher.IsPPT
   obtain ⟨cO, eO, hO⟩ := F.computableInPolyTime_order.tidy.polyBounded_length.exists_le
   obtain ⟨cR, eR, hR⟩ :=
     F.computableInPolyTime_ddhFixedUWordRerandomize.tidy.polyBounded_length.exists_le
@@ -567,14 +562,19 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
     polyB (ddhCallerEncoding F caller).length
   have hpair_support :
       ∀ (caller : DDHCaller F) (vw : List Bool × List Bool),
-        vw ∈ (ProbComp.eval (F.sampleNaorReingoldPair caller.1.1.1 caller.1.1.2.1
-          caller.1.1.2.2.1 caller.1.1.2.2.2.1 caller.1.1.2.2.2.2)).support →
+        vw ∈ (ProbComp.eval (F.sampleNaorReingoldPair caller.1.1.secParam
+          caller.1.1.groupParameters (F.encode caller.1.1.groupParameters caller.1.1.leftPublic)
+          (F.encode caller.1.1.groupParameters caller.1.1.rightPublic)
+          (F.encode caller.1.1.groupParameters caller.1.1.candidateShared))).support →
         (encPair encBits encBits vw).length ≤ pairBound caller := by
     intro caller vw hvw
     simp only [sampleNaorReingoldPair, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hvw
     obtain ⟨σ, hσ, τ, hτ, rfl⟩ := hvw
-    let d := caller.1.1.2.1
+    let d := caller.1.1.groupParameters
+    let u := F.encode d caller.1.1.leftPublic
+    let v := F.encode d caller.1.1.rightPublic
+    let w := F.encode d caller.1.1.candidateShared
     have hlen_ord : ∀ x < F.order d, (encNat x).length ≤ (encNat (F.order d)).length :=
       fun _ hx => by simp only [encNat_apply, Nat.size_eq_bits_len]; exact Nat.size_le_size hx.le
     have hσ_len := hlen_ord σ (F.lt_order_of_mem_support_sampleNaorReingoldExp hσ)
@@ -583,28 +583,26 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
         (encNat (F.order d)).length ≤ cO * ((ddhCallerEncoding F caller).length + 1) ^ eO := by
       refine (hO d).trans ?_
       have hd_le : (F.encDesc d).length ≤ (ddhCallerEncoding F caller).length := by
-        simp only [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput, encDDHTuple,
-          length_encPair]
+        simp only [d, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply, length_encPair]
         lia
       exact Nat.mul_le_mul_left cO (Nat.pow_le_pow_left (by lia) eO)
     have hinput_le :
         (encPair F.encDesc
           (encPair encBits (encPair encBits (encPair encBits (encPair encNat encNat))))
-          (d, caller.1.1.2.2.1, caller.1.1.2.2.2.1, caller.1.1.2.2.2.2, σ, τ)).length + 1 ≤
+          (d, u, v, w, σ, τ)).length + 1 ≤
         16 * (ddhCallerEncoding F caller).length +
           16 * (cO * ((ddhCallerEncoding F caller).length + 1) ^ eO) + 16 := by
       have hcaller :
-          2 * (F.encDesc d).length + 2 * caller.1.1.2.2.1.length +
-            2 * caller.1.1.2.2.2.1.length + 2 * caller.1.1.2.2.2.2.length ≤
+          2 * (F.encDesc d).length + 2 * u.length + 2 * v.length + 2 * w.length ≤
           (ddhCallerEncoding F caller).length := by
-        simp only [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput, encDDHTuple,
+        simp only [d, u, v, w, ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply,
           length_encPair, encBits_apply]
         lia
       simp only [length_encPair, encBits_apply]
       lia
     dsimp only [pairBound]
     rw [hpolyB_def]
-    exact (hR (d, caller.1.1.2.2.1, caller.1.1.2.2.2.1, caller.1.1.2.2.2.2, σ, τ)).trans
+    exact (hR (d, u, v, w, σ, τ)).trans
       (Nat.mul_le_mul_left cR (Nat.pow_le_pow_left hinput_le eR))
   obtain ⟨polyRes, hpolyRes_def⟩ : ∃ polyRes : ℕ × ℕ → ℕ, ∀ L Q,
       polyRes (L, Q) =
@@ -654,38 +652,44 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
       fun_prop
     exact hpolyRes.comp' (hL.prod hQ)
   have hprepare : ComputableTidilyInPolyTime
-      (fun caller : DDHCaller F => (caller.1.1.1, caller.1.1.2.1))
+      (fun caller : DDHCaller F => (caller.1.1.secParam, caller.1.1.groupParameters))
       (ddhCallerEncoding F) (encPair encUnary F.encDesc) := by
-    unfold ddhCallerEncoding ddhLevelInputEncoding encDDHInput encDDHTuple; fun_prop
+    apply ComputableInPolyTime.tidy
+    unfold ddhCallerEncoding ddhLevelInputEncoding; fun_prop
   have hhandler : IsPPTOn
       (encPair (ddhCallerEncoding F)
         (encPair (encPair (encFinEnum Unit) encBits) naorReingoldCacheEncoding))
       (encPair encBits naorReingoldCacheEncoding)
-      (fun pair => F.naorReingoldFrontierOracle pair.1.1.1.1 (inLen pair.1.1.1.1) pair.1.1.2
-        pair.1.1.1.2.1 pair.1.1.1.2.2.1 pair.1.1.1.2.2.2.1 pair.1.1.1.2.2.2.2
+      (fun pair => F.naorReingoldFrontierOracle pair.1.1.1.secParam (inLen pair.1.1.1.secParam)
+        pair.1.1.2 pair.1.1.1.groupParameters
+        (F.encode pair.1.1.1.groupParameters pair.1.1.1.leftPublic)
+        (F.encode pair.1.1.1.groupParameters pair.1.1.1.rightPublic)
+        (F.encode pair.1.1.1.groupParameters pair.1.1.1.candidateShared)
         pair.1.2 pair.2.1.2 pair.2.2) := by
-    unfold ddhCallerEncoding ddhLevelInputEncoding encDDHInput encDDHTuple
+    unfold ddhCallerEncoding ddhLevelInputEncoding
     exact isPPTOn_naorReingoldFrontierOracle F
       (by fun_prop) (hinLen.comp (by fun_prop)) (by fun_prop) (by fun_prop)
       (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop)
   let runFrontier : DDHCaller F → ProbComp (Bool × NaorReingoldCache) := fun caller =>
     (OracleComp.interpret
       (OracleComp.sumHandler (fun r => StateT.lift (ProbComp.unifFin r))
-        (fun request => F.naorReingoldFrontierOracle caller.1.1.1 (inLen caller.1.1.1)
-          caller.1.2 caller.1.1.2.1 caller.1.1.2.2.1 caller.1.1.2.2.2.1 caller.1.1.2.2.2.2
-          caller.2 request.2))
-      (adv caller.1.1.1 caller.1.1.2.1)).run []
+        (fun request => F.naorReingoldFrontierOracle caller.1.1.secParam
+          (inLen caller.1.1.secParam) caller.1.2 caller.1.1.groupParameters
+          (F.encode caller.1.1.groupParameters caller.1.1.leftPublic)
+          (F.encode caller.1.1.groupParameters caller.1.1.rightPublic)
+          (F.encode caller.1.1.groupParameters caller.1.1.candidateShared) caller.2 request.2))
+      (adv caller.1.1.secParam caller.1.1.groupParameters)).run []
   have hrun : IsPPTOn (ddhCallerEncoding F) (encPair encBool naorReingoldCacheEncoding)
       runFrontier := by
     refine hadv.run_interpret_preprocess
-      (prepare := fun caller : DDHCaller F => (caller.1.1.1, caller.1.1.2.1))
+      (prepare := fun caller : DDHCaller F => (caller.1.1.secParam, caller.1.1.groupParameters))
       (resources := resources)
       hprepare hhandler (by fun_prop)
       (fun caller cache => ∀ entry ∈ cache, (encPair encBits encBits entry.2).length ≤
         pairBound caller)
       (fun _ _ h => by cases h) hresources ?_
     intro caller request cache hcache result hresult
-    by_cases hq : request.2.length = inLen caller.1.1.1
+    by_cases hq : request.2.length = inLen caller.1.1.secParam
     · simp only [naorReingoldFrontierOracle, hq, ↓reduceIte, ProbComp.eval_bind,
         PMF.mem_support_bind_iff] at hresult
       obtain ⟨⟨vw, cache'⟩, hvw, hres⟩ := hresult
@@ -693,8 +697,10 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
       subst result
       rw [ProbComp.eval_memoize] at hvw
       obtain ⟨hvw_len, hcache', hgrowth⟩ := memoize_call_size_le encBits (encPair encBits encBits)
-        (fun _ : List Bool => ProbComp.eval (F.sampleNaorReingoldPair caller.1.1.1
-          caller.1.1.2.1 caller.1.1.2.2.1 caller.1.1.2.2.2.1 caller.1.1.2.2.2.2))
+        (fun _ : List Bool => ProbComp.eval (F.sampleNaorReingoldPair caller.1.1.secParam
+          caller.1.1.groupParameters (F.encode caller.1.1.groupParameters caller.1.1.leftPublic)
+          (F.encode caller.1.1.groupParameters caller.1.1.rightPublic)
+          (F.encode caller.1.1.groupParameters caller.1.1.candidateShared)))
         (request.2.take caller.1.2) cache (pairBound caller) hcache
         (fun value hval => hpair_support caller value hval) (vw, cache') hvw
       have hchild_le :
@@ -702,21 +708,21 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
         simp only [length_encPair, encBits_apply] at hvw_len
         split_ifs <;> lia
       have hsuf_le :
-          (F.naorReingoldWordSuffix caller.1.1.2.1
+          (F.naorReingoldWordSuffix caller.1.1.groupParameters
             (if request.2.getD caller.1.2 false then vw.2 else vw.1)
             caller.2 (request.2.drop (caller.1.2 + 1))).length ≤
           cS * (8 * (ddhCallerEncoding F caller).length + 8 * pairBound caller +
             8 * request.2.length + 16) ^ eS := by
         have hS' := hS
-          (caller.1.1.2.1, (if request.2.getD caller.1.2 false then vw.2 else vw.1),
+          (caller.1.1.groupParameters, (if request.2.getD caller.1.2 false then vw.2 else vw.1),
             caller.2, request.2.drop (caller.1.2 + 1))
         simp only [encBits_apply] at hS'
         refine hS'.trans (Nat.mul_le_mul_left cS (Nat.pow_le_pow_left ?_ eS))
         have hcaller_le :
-            2 * (F.encDesc caller.1.1.2.1).length + 8 * (encList encNat caller.2).length ≤
+            2 * (F.encDesc caller.1.1.groupParameters).length +
+              8 * (encList encNat caller.2).length ≤
             8 * (ddhCallerEncoding F caller).length := by
-          simp only [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput, encDDHTuple,
-            length_encPair]
+          simp only [ddhCallerEncoding, ddhLevelInputEncoding, encDDHInput_apply, length_encPair]
           lia
         simp only [encBits_apply, length_encPair, List.length_drop]
         lia
@@ -737,49 +743,49 @@ private theorem isPPTOn_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupF
         PMF.mem_support_pure_iff] at hresult
       subst result
       exact ⟨hcache, Nat.zero_le _, Nat.le_add_right _ _⟩
-  have hm_t : ComputableTidilyInPolyTime (fun p : DDHLevelInput F => inLen p.1.1)
+  have hm_t : ComputableTidilyInPolyTime (fun p : DDHLevelInput F => inLen p.1.secParam)
       (ddhLevelInputEncoding F) encUnary := by
-    unfold ddhLevelInputEncoding encDDHInput encDDHTuple; exact (hinLen.comp (by fun_prop)).tidy
+    unfold ddhLevelInputEncoding; exact (hinLen.comp (by fun_prop)).tidy
   have hk_t : ComputableTidilyInPolyTime (fun p : DDHLevelInput F => p.2)
       (ddhLevelInputEncoding F) encUnary := by
-    unfold ddhLevelInputEncoding encDDHInput encDDHTuple; fun_prop
+    unfold ddhLevelInputEncoding; fun_prop
   have hrep : IsPPTOn (ddhLevelInputEncoding F) (encList encNat)
       (fun p : DDHLevelInput F =>
-        OracleComp.replicate (inLen p.1.1 - (p.2 + 1))
-          (F.sampleNaorReingoldExp p.1.1 p.1.2.1)) := by
+        OracleComp.replicate (inLen p.1.secParam - (p.2 + 1))
+          (F.sampleNaorReingoldExp p.1.secParam p.1.groupParameters)) := by
     have hexp : IsPPTOn (ddhLevelInputEncoding F) encNat
-        (fun p : DDHLevelInput F => F.sampleNaorReingoldExp p.1.1 p.1.2.1) := by
-      unfold ddhLevelInputEncoding encDDHInput encDDHTuple
+        (fun p : DDHLevelInput F =>
+          F.sampleNaorReingoldExp p.1.secParam p.1.groupParameters) := by
+      unfold ddhLevelInputEncoding
       exact F.isPPTOn_sampleNaorReingoldExp (by fun_prop) (by fun_prop)
     exact hexp.replicate (.of_tidy (ComputableTidilyInPolyTime.unary_sub.comp (hm_t.prod
       (ComputableTidilyInPolyTime.unary_add.comp
         (hk_t.prod (ComputableTidilyInPolyTime.const 1))))))
   have hvalidK : IsPPTOn (ddhLevelInputEncoding F) encBool
       (fun p : DDHLevelInput F => do
-        let αs ← OracleComp.replicate (inLen p.1.1 - (p.2 + 1))
-          (F.sampleNaorReingoldExp p.1.1 p.1.2.1)
+        let αs ← OracleComp.replicate (inLen p.1.secParam - (p.2 + 1))
+          (F.sampleNaorReingoldExp p.1.secParam p.1.groupParameters)
         Prod.fst <$> runFrontier (p, αs)) :=
     hrep.bind_with (hrun.map (ComputableInPolyTime.fst _ _))
   have hdyadic : IsPPTOn F.encDDHInput encUnary
-      (fun inp : DDHInput F => ProbComp.sampleDyadicIndex (inLen inp.1)) := by
-    unfold encDDHInput encDDHTuple
+      (fun x : F.DDHInput => ProbComp.sampleDyadicIndex (inLen x.secParam)) := by
     exact isPPTOn_sampleDyadicIndex (hinLen.comp (by fun_prop))
   have hguard : ComputableTidilyInPolyTime
-      (fun p : DDHLevelInput F => decide (p.2 < inLen p.1.1))
+      (fun p : DDHLevelInput F => decide (p.2 < inLen p.1.secParam))
       (ddhLevelInputEncoding F) encBool :=
     ComputableTidilyInPolyTime.unary_lt.comp (hk_t.prod hm_t)
   refine hdyadic.bind_with ((IsPPTOn.ite hguard hvalidK
     (ComputableInPolyTime.isPPTOn (ComputableInPolyTime.const false))).congr fun p => ?_)
-  by_cases h : p.2 < inLen p.1.1 <;> simp [h, runFrontier]
+  by_cases h : p.2 < inLen p.1.secParam <;>
+    simp [h, runFrontier]
 
 /-- **`naorReingoldToDDHDistinguisher` is uniform strict PPT** whenever `inLen` is computable in
 polynomial time in unary and `adversary` satisfies `IsOraclePPT encBool` ([BonehShoup2023],
 Exercise 10.4(b); [NaorReingold2004], Theorem 4.1). -/
-theorem isPPTOn_naorReingoldToDDHDistinguisher {inLen : ℕ → ℕ}
+theorem isPPT_naorReingoldToDDHDistinguisher {inLen : ℕ → ℕ}
     (hinLen : ComputableInPolyTime inLen encUnary encUnary)
     {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
-    IsPPTOn F.encDDHInput encBool
-      (fun input => F.naorReingoldToDDHDistinguisher inLen adversary input.1 input.2) := by
+    (F.naorReingoldToDDHDistinguisher inLen adversary).IsPPT := by
   have henc : ComputableTidilyInPolyTime
       (fun p : ℕ × F.Desc => (p.1, F.encDesc p.2))
       (encPair encUnary F.encDesc) (encPair encUnary encBits) :=
@@ -788,7 +794,7 @@ theorem isPPTOn_naorReingoldToDDHDistinguisher {inLen : ℕ → ℕ}
   have hadv : IsOraclePPTOn (encPair encUnary F.encDesc) encBool
       (fun p => adversary p.1 (F.encDesc p.2)) :=
     hadversary.on.preprocess henc
-  exact isPPTOn_naorReingoldDescToDDHDistinguisher F
+  exact isPPT_naorReingoldDescToDDHDistinguisher F
     (adv := fun n d => adversary n (F.encDesc d)) hinLen hadv
 
 /-! ### Quantitative and asymptotic DDH security of the Naor–Reingold group-PRF -/
@@ -1228,12 +1234,12 @@ private noncomputable def naorReingoldDescIdealGame (F : PrimeOrderGroupFamily)
 
 private theorem eval_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFamily)
     (inLen : ℕ → ℕ) (adv : ℕ → F.Desc → WordOracleComp Unit Bool) (n : ℕ)
-    (d : F.Desc) (u v w : List Bool) :
-    ProbComp.eval (naorReingoldDescToDDHDistinguisher F inLen adv n (d, u, v, w)) =
+    (d : F.Desc) (u v w : F.Carrier d) :
+    ProbComp.eval (naorReingoldDescToDDHDistinguisher F inLen adv n d u v w) =
       (PMF.uniformOfFintype (Fin (dyadicSize (inLen n)))).bind fun i =>
         if i.val < inLen n then
-          frontierLevelWithExpLaw F d (inLen n) i.val (adv n d) u v w
-            (F.sampleModZModLaw (n + (F.encDesc d).length) d)
+          frontierLevelWithExpLaw F d (inLen n) i.val (adv n d) (F.encode d u) (F.encode d v)
+            (F.encode d w) (F.sampleModZModLaw (n + (F.encDesc d).length) d)
         else PMF.pure false := by
   unfold naorReingoldDescToDDHDistinguisher
   rw [ProbComp.eval_bind, ProbComp.eval_sampleDyadicIndex, PMF.bind_map]
@@ -1241,7 +1247,8 @@ private theorem eval_naorReingoldDescToDDHDistinguisher (F : PrimeOrderGroupFami
   dsimp only [Function.comp_apply]
   by_cases hk : i.val < inLen n
   · simp only [hk, ↓reduceIte]
-    exact eval_frontierLevel_eq_withExpLaw F n (inLen n) i.val d (adv n d) u v w
+    exact eval_frontierLevel_eq_withExpLaw F n (inLen n) i.val d (adv n d)
+      (F.encode d u) (F.encode d v) (F.encode d w)
   · simp [hk]
 
 private theorem apply_true_le_of_advantage_le {g₁ g₂ : Game} {c : ℝ≥0}
@@ -1267,7 +1274,7 @@ private theorem bind_ite_comm {α β γ : Type} (μ : PMF α) (ν : PMF γ) (p :
   congr 1; funext c
   by_cases hc : p c <;> simp [hc, PMF.bind_const]
 
-private theorem advantage_exactDDHIdeal_le (F : PrimeOrderGroupFamily)
+private theorem advantage_exactDDHRandom_le (F : PrimeOrderGroupFamily)
     (setup : ℕ → PMF F.Desc) (m : ℕ) (adv : F.Desc → WordOracleComp Unit Bool) (n : ℕ) :
     Game.advantage
       ((setup n).bind fun d =>
@@ -1324,10 +1331,10 @@ private theorem advantage_exactDDHIdeal_le (F : PrimeOrderGroupFamily)
     by_cases hk : i.val < m
     · simp only [hk, ↓reduceIte,
         frontierLevelWithExpLaw_uniform_eq_multi F d i.val hk (adv d),
-        ← multiDDHIdealTupleLaw_naorReingoldWordLevelTest F d i.val hk (adv d)]
+        ← multiDDHRandomTupleLaw_naorReingoldWordLevelTest F d i.val hk (adv d)]
       refine Game.advantage_bind_le_nnreal _ _ _ fun α => ?_
       rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
-        ((F.multiDDHIdealTupleLaw d (BitString i.val)).bind
+        ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
           (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))]
       refine Game.advantage_bind_le_nnreal _ _ _ fun β => ?_
       simpa only [ZMod.card] using
@@ -1335,9 +1342,9 @@ private theorem advantage_exactDDHIdeal_le (F : PrimeOrderGroupFamily)
           (fun γ => (F.multiDDHRerandomizeLaw d (BitString i.val)
             (α • F.generator d) (β • F.generator d) (γ • F.generator d)).bind
             (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-          ((F.multiDDHIdealTupleLaw d (BitString i.val)).bind
+          ((F.multiDDHRandomTupleLaw d (BitString i.val)).bind
             (naorReingoldWordLevelTest F d i.val hk (adv d) (α • F.generator d)))
-          (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_ideal d (BitString i.val) hγ])
+          (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_random d (BitString i.val) hγ])
     · simp [hk]
   rw [herr_true, ← ENNReal.coe_natCast,
     ← ENNReal.coe_inv (by exact_mod_cast (F.prime_order d).ne_zero)]
@@ -1356,7 +1363,7 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
       (dyadicSize (inLen n) : ℝ≥0) *
         (Game.advantage
           (F.ddhRealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n)
-          (F.ddhIdealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n) +
+          (F.ddhRandomGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n) +
           2 * ε +
           (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal) := by
   let m := inLen n
@@ -1373,7 +1380,7 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
   rw [← hH0, ← hHm, Game.advantage_hybrid_average H m cap (lt_dyadicSize m).le]
   refine mul_le_mul_of_nonneg_left ?_ (Nat.cast_nonneg _)
   let ddhReal := F.ddhRealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n
-  let ddhIdeal := F.ddhIdealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n
+  let ddhRandom := F.ddhRandomGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n
   let tail : Game := (PMF.uniformOfFintype (Fin cap)).bind fun i =>
     if i.val < m then H (i.val + 1) else PMF.pure false
   let frontierAt : (d : F.Desc) → ZMod (F.order d) → ZMod (F.order d) → ZMod (F.order d) →
@@ -1389,7 +1396,7 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
           (PMF.uniformOfFintype (Fin cap)).bind fun i =>
             frontierAt d α β (α * β) (PMF.uniformOfFintype (ZMod (F.order d))) i
-  let exactDDHIdeal : Game :=
+  let exactDDHRandom : Game :=
     (setup n).bind fun d =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
@@ -1443,18 +1450,18 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
             push_cast; ring
     · simp [hk]
   have hAdvRealApprox : Game.advantage exactDDHReal ddhReal ≤ ε := by
-    simp only [ddhReal, ddhRealGame, PMF.monad_bind_eq_bind,
+    simp only [ddhReal, ddhRealGame, eval_ddhRealExperiment, PMF.monad_bind_eq_bind,
       eval_naorReingoldDescToDDHDistinguisher F inLen adv n]
     peel_binds d α β i
     exact hstep_err d d_mem α β (α * β) i
-  have hAdvIdealApprox : Game.advantage exactDDHIdeal ddhIdeal ≤ ε := by
-    simp only [ddhIdeal, ddhIdealGame, PMF.monad_bind_eq_bind,
+  have hAdvRandomApprox : Game.advantage exactDDHRandom ddhRandom ≤ ε := by
+    simp only [ddhRandom, ddhRandomGame, eval_ddhRandomExperiment, PMF.monad_bind_eq_bind,
       eval_naorReingoldDescToDDHDistinguisher F inLen adv n]
     peel_binds d α β γ i
     exact hstep_err d d_mem α β γ i
-  game_trans [exactDDHReal, ddhReal, ddhIdeal, exactDDHIdeal]
-    using [hEqReal, hAdvRealApprox, le_rfl, hAdvIdealApprox,
-      advantage_exactDDHIdeal_le F setup m (adv n) n]
+  game_trans [exactDDHReal, ddhReal, ddhRandom, exactDDHRandom]
+    using [hEqReal, hAdvRealApprox, le_rfl, hAdvRandomApprox,
+      advantage_exactDDHRandom_le F setup m (adv n) n]
 
 /-- **Quantitative single-distinguisher DDH security bound for the Naor–Reingold group-PRF**
 ([BonehShoup2023], Exercises 10.4 & 10.11; [NaorReingold2004], Theorem 4.1): if `adversary` makes at
@@ -1473,7 +1480,7 @@ theorem advantage_naorReingoldWordGame_le (setup : ℕ → PMF F.Desc) (inLen : 
       (dyadicSize (inLen n) : ℝ≥0) *
         (Game.advantage
           (F.ddhRealGame setup (F.naorReingoldToDDHDistinguisher inLen adversary) n)
-          (F.ddhIdealGame setup (F.naorReingoldToDDHDistinguisher inLen adversary) n) +
+          (F.ddhRandomGame setup (F.naorReingoldToDDHDistinguisher inLen adversary) n) +
           2 * ε +
           (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal) :=
   advantage_naorReingoldDescGame_le F setup inLen (fun n d => adversary n (F.encDesc d)) n Q hQ hε
@@ -1681,13 +1688,13 @@ private theorem DDH.negligible_naorReingoldDescGame {F : PrimeOrderGroupFamily}
   have hddh_neg : Negligible fun n =>
       Game.advantage
         (F.ddhRealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n)
-        (F.ddhIdealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n) :=
-    hDDH _ (isPPTOn_naorReingoldDescToDDHDistinguisher F hinLen hadv)
+        (F.ddhRandomGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n) :=
+    hDDH _ (isPPT_naorReingoldDescToDDHDistinguisher F hinLen hadv)
   have hinv_neg := hDDH.negligible_expected_inv_order
   have hsum_neg : Negligible fun n =>
       Game.advantage
         (F.ddhRealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n)
-        (F.ddhIdealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n) +
+        (F.ddhRandomGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n) +
         2 * ε n +
         (∑' d, setup n d * (F.order d : ℝ≥0∞)⁻¹).toNNReal :=
     (hddh_neg.add (hε_neg.const_mul 2)).add hinv_neg

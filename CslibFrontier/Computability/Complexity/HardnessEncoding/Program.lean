@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.AffineDisperser.Coordinates
 public import CslibFrontier.Foundations.Data.BitString.Block
 public import CslibFrontier.Foundations.Data.BitString.Enumeration
 import Mathlib.Algebra.CharP.Two
+import Mathlib.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.FieldTheory.Finite.Basic
 
@@ -163,7 +164,8 @@ theorem isMulTable_fieldTable {w : ℕ} (hw : w ≠ 0) : IsMulTable (𝔅 hw) (f
   have huv : (u : ℕ) + v < 2 * l.length := by omega
   have hentry : tableEntry (fieldTable l.length) u v =
       (powerTable (l ++ [true])).getD (u + v) [] := by
-    simp [tableEntry, fieldTable, powerMulTable, hglen, ← hl, List.getD_eq_getElem?_getD]
+    simp only [tableEntry, fieldTable, powerMulTable, hglen, ← hl]
+    rw [List.getD_map_range _ [] u.2, List.getD_map_range _ [] v.2]
   rw [BinaryField.basis_apply, BinaryField.basis_apply, ← pow_add,
     pow_eq_sum_powerTable l hα huv, fieldOfBits, ofBits, hentry, Finset.sum_range]
   refine Finset.sum_congr rfl fun d _ => ?_
@@ -227,8 +229,9 @@ private theorem embed_eq_fieldOfBits (hw : w ≠ 0) {b : ℕ} (hbw : b ≤ w) (a
     BinaryField.embed hw hbw a = fieldOfBits (𝔅 hw) (List.ofFn a) := by
   rw [BinaryField.embed_apply, fieldOfBits_basis]
   congr 1 with j : 1
-  rw [List.getD_eq_getElem?_getD, List.getElem?_ofFn]
-  split_ifs <;> rfl
+  split_ifs with hj
+  · exact (List.getD_ofFn_of_lt a hj false).symm
+  · exact (List.getD_eq_default _ _ (by simp; omega)).symm
 
 /-- The element with the bits of `v` as coordinates. -/
 theorem fieldOfBits_ofFn (hw : w ≠ 0) (v : BitString w) :
@@ -337,8 +340,7 @@ private theorem drop_take_eq_ofFn {M : ℕ} {y : List Bool} {Y : BitString (M * 
     simp only [List.length_take, List.length_drop, List.length_ofFn]
     omega) fun j h₁ h₂ => ?_
   rw [List.getElem_take, List.getElem_drop, List.getElem_ofFn, hY, Fin.val_natAdd,
-    List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by rw [List.length_ofFn] at h₂; omega)]
-  rfl
+    List.getD_eq_getElem _ _ (by rw [List.length_ofFn] at h₂; omega)]
 
 /-- The parity selected by the last `w` bits is the dot product of the bits of the field element
 with them. -/
@@ -349,10 +351,8 @@ private theorem traceBit_eq (hw : w ≠ 0) {a : List Bool} (ha : a.length = w) (
   refine List.ext_getElem (by simp) fun j h₁ h₂ => ?_
   simp only [List.length_map, List.length_range, List.length_ofFn] at h₁
   rw [List.getElem_map, List.getElem_range, List.getElem_zipWith, List.getElem_ofFn,
-    List.getElem_ofFn, equivBits_fieldOfBits, List.getD_eq_getElem?_getD,
-    List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega),
-    List.getElem?_eq_getElem (by simpa using h₁)]
-  simp only [Option.getD_some, List.getElem_ofFn]
+    List.getElem_ofFn, equivBits_fieldOfBits, List.getD_ofFn_of_lt r (by simpa using h₁) false,
+    List.getD_eq_getElem a false (by omega)]
 
 /-- **The program computes the encoded slices**: on every input `y`, with a decider `gL` of `L`
 and the length parameter `|y|`, the program returns the encoded slice of `L` at length `|y|`. -/
@@ -366,9 +366,8 @@ theorem encodedProgram_eq {L : Language Bool} {gL : List Bool → Bool}
   have hw : 2 ≤ 4 * blockLength M y.length := by omega
   have hw0 : 4 * blockLength M y.length ≠ 0 := by omega
   have hle := encodedLength_le M y.length
-  have hY : ∀ k, (fun i : Fin y.length => y[i]) (Fin.castLE hle k) = y.getD k false := fun k => by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by have := k.2; omega)]
-    rfl
+  have hY : ∀ k, (fun i : Fin y.length => y[i]) (Fin.castLE hle k) = y.getD k false := fun k =>
+    (List.getD_eq_getElem y false (by have := k.2; omega)).symm
   have hlen : (ldeVal (fieldTable (4 * blockLength M y.length)) (4 * blockLength M y.length)
       (blockLength M y.length) M (BitString.enumList (blockLength M y.length))
       ((BitString.enumList (M * blockLength M y.length)).filter

@@ -38,6 +38,8 @@ This is the single-challenge IND-CPA theorem of [Regev2009, Section 5] and
 * `Regev.serializeCiphertext`: canonical ciphertext words.
 * `Regev.encryptWithCoinsSerialized`, `Regev.encryptSerialized`: the actual word encryption.
 * `Regev.lweDistinguisher`: the uniform hidden-bit reduction.
+* `Regev.typedAdversary`: a word-level adversary at one parameter, as a typed two-stage adversary
+  on public matrices and ciphertexts through their canonical encodings.
 * `Regev.hidingError`: the explicit statistical term.
 
 ## Main results
@@ -223,18 +225,29 @@ theorem isPPT_lweDistinguisher {n m w : ℕ → ℕ} {adversary : Encryption.Adv
   exact isPPTOn_encryptSerialized (hn.comp (by fun_prop)) (hm.comp (by fun_prop))
     (hw.comp (by fun_prop)) (by fun_prop) (by fun_prop)
 
+/-- The word-level adversary at parameter `security` as a typed two-stage adversary: it reads the
+public matrix through `Matrix.toBinary` and the challenge ciphertext through
+`serializeCiphertext`. -/
+noncomputable def typedAdversary {n m w : ℕ} (adversary : Encryption.Adversary) (security : ℕ) :
+    TwoStage (PublicKey n m w) (MessagePair Bool) (Ciphertext n w) Bool (List Bool) where
+  choose A := (adversary.toTwoStage security).choose (Cslib.Matrix.toBinary A)
+  guess state c := (adversary.toTwoStage security).guess state (serializeCiphertext c)
+
 /-- Under the uniform decision-LWE ensemble, the word experiment is the typed single-challenge
-experiment with the adversary's stages composed with the canonical encodings. -/
+experiment of `typedAdversary`. -/
 theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ) (adversary : Encryption.Adversary)
     (bit : Bool) (security : ℕ) :
     Encryption.publicKeyGame (LWE.uniformEnsemble n m w security)
       (fun k => encryptSerialized (n k) (m k) (w k)) adversary bit security =
         challengeGame (PMF.uniformOfFintype (PublicKey (n security) (m security) (w security)))
-          (fun A => ProbComp.eval (adversary.choose security (Cslib.Matrix.toBinary A)))
-          (fun state c => ProbComp.eval (adversary.guess security state (serializeCiphertext c)))
-          bit := by
-  simp only [Encryption.publicKeyGame, LWE.uniformEnsemble, challengeGame,
-    PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, eval_encryptSerialized_toBinary]
+          (typedAdversary adversary security) bit := by
+  cases bit <;>
+    simp only [Encryption.publicKeyGame, Encryption.publicKeyGameOn, LWE.uniformEnsemble,
+      challengeGame, Game.withSetup, lrExperiment, typedAdversary,
+      Encryption.AdversaryOf.toTwoStage,
+      MessagePair.select_false, MessagePair.select_true, Bool.false_eq_true, ↓reduceIte,
+      PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, ProbComp.eval_bind,
+      ProbComp.eval_map, eval_encryptSerialized_toBinary]
 
 /-- Under the uniform ensemble, the advantage is at most the leftover-hash term. -/
 theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ) (adversary : Encryption.Adversary)
@@ -248,7 +261,7 @@ theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ) (adversary : Encrypti
   apply NNReal.coe_le_coe.mp
   rw [publicKeyGame_uniformEnsemble, publicKeyGame_uniformEnsemble]
   simpa only [hidingError, Real.coe_sqrt, NNReal.coe_div, NNReal.coe_pow, NNReal.coe_ofNat] using
-    challengeGame_uniform_advantage_le _ _
+    challengeGame_uniform_advantage_le _
 
 /-- One uniform reduction bounds the actual IND-CPA advantage by twice its decision-LWE
 advantage plus the leftover-hash term. No efficiency is needed for this inequality. -/
@@ -281,7 +294,7 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
     Encryption.INDCPA (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
       (fun k => encryptSerialized (n k) (m k) (w k)) := by
   intro adversary hadversary
-  have hsource := hLWE (lweDistinguisher n m w adversary)
+  have hsource := hLWE.encoded (lweDistinguisher n m w adversary)
     (isPPT_lweDistinguisher hn hm hw hadversary)
   have herror := negligible_mul_sqrt_pow_two_div_pow_two
     (count := fun _ => 1) (outputBits := fun k => (n k + 1) * w k) (by fun_prop) hmargin

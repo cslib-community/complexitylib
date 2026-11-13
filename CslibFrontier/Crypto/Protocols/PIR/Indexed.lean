@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.SingleServer
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.Support
 
 /-!
 # Private information retrieval with per-server query and answer types
@@ -195,12 +196,8 @@ theorem eval_tupleQuery {τ : Type} (servers : τ → S) (i : ι) :
 theorem isCorrect_iff : P.IsCorrect ↔ ∀ x i r q, (r, q) ∈ (ProbComp.eval (P.query i)).support →
     P.reconstruct i r (fun s => P.answer s x (q s)) = x i := by
   refine forall_congr' fun x => forall_congr' fun i => ?_
-  let g (rq : R × ((s : S) → Q s)) : β := P.reconstruct i rq.1 fun s => P.answer s x (rq.2 s)
-  rw [eval_run]
-  exact ⟨fun h r q hrq => Set.mem_singleton_iff.mp
-      (PMF.support_pure (x i) ▸ h ▸ (PMF.mem_support_map_iff g _ _).2 ⟨(r, q), hrq, rfl⟩),
-    fun h => (Cslib.Probability.PMF.map_congr_on_support _ _ (Function.const _ (x i))
-      fun rq hrq => h rq.1 rq.2 hrq).trans (PMF.map_const _ _)⟩
+  rw [eval_run, Probability.PMF.map_eq_pure_iff]
+  exact ⟨fun h r q hrq => h (r, q) hrq, fun h rq hrq => h rq.1 rq.2 hrq⟩
 
 theorem isPrivate_iff : P.IsPrivate ↔
     ∀ s i i', ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i') := by
