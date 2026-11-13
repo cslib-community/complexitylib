@@ -75,6 +75,9 @@ about `evalWith`.
 * `Cslib.ProbComp.eval_eq_evalWith`, `Cslib.ProbComp.support_eval`,
   `Cslib.ProbComp.support_nonempty`, `Cslib.ProbComp.mem_support_unifFin`: closed probabilistic
   programs are the instance with uniform answers.
+* `Cslib.ProbComp.interpret_unifFin`: answering each draw by `unifFin` is the identity.
+* `Cslib.ProbComp.mem_support_eval_uniform_bind_pure`: the possible results of returning a
+  function of a uniform draw are the values of the function.
 * `Cslib.ProbComp.isMonadHom_eval`, `Cslib.ProbComp.eval_interpret`: the instances of
   `isMonadHom_evalWith` and `evalWith_interpret`.
 
@@ -443,6 +446,19 @@ theorem support_nonempty (program : ProbComp α) : program.support.Nonempty := b
 @[simp]
 theorem mem_support_unifFin (n : ℕ) (k : Fin (n + 1)) : k ∈ (unifFin n).support := by
   simp [unifFin, OracleComp.support]
+
+/-- Answering each uniform draw by `unifFin` leaves a closed probabilistic program unchanged. -/
+@[simp]
+theorem interpret_unifFin (program : ProbComp α) :
+    OracleComp.interpret unifFin program = program :=
+  OracleComp.interpret_query_eq_self program
+
+/-- A result of drawing a uniform `a` and returning `f a` is a value of `f`. -/
+theorem mem_support_eval_uniform_bind_pure {β : Type} [Fintype α] [Nonempty α] (f : α → β)
+    (b : β) : b ∈ (eval (uniform α >>= fun a => pure (f a))).support ↔ ∃ a, f a = b := by
+  simp only [eval_bind, eval_uniform, eval_pure, PMF.mem_support_bind_iff,
+    PMF.mem_support_pure_iff]
+  exact ⟨fun ⟨a, _, h⟩ => ⟨a, h.symm⟩, fun ⟨a, h⟩ => ⟨a, by simp [PMF.mem_support_iff], h.symm⟩⟩
 
 /-- Evaluating a closed probabilistic program is a monad morphism into `PMF`. -/
 theorem isMonadHom_eval : IsMonadHom ProbComp PMF (@eval) :=

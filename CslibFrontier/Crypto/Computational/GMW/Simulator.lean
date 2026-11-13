@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.GMW.PolyTime
 public import CslibFrontier.Crypto.Computational.Hybrid.Sequence
+public import CslibFrontier.Crypto.Computational.ZeroKnowledge.View
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Extension
@@ -674,7 +675,10 @@ private theorem gmwViewReduction_advantage {α : Type} (generator : List Bool �
   have hr : ProbComp.eval (replAttempt >>= outer) =
       ProbComp.eval (OracleComp.replicate (totalLen (f a)) replacement >>= inner) := by
     simp only [replAttempt, gmwRealUniformPads, replacement, inner, bind_assoc]
-  rw [sequenceTest_advantage, ho, hr, sequenceTest_advantage, mul_assoc]
+  have hattempts := sequenceTest_advantage replAttempt origAttempt (n + 1) test
+  have hpads := sequenceTest_advantage replacement original (totalLen (f a)) inner
+  simp only [Experiment.advantage] at hattempts hpads
+  rw [hattempts, ho, hr, hpads, mul_assoc]
   simp only [ProbComp.eval_bind]; rfl
 
 /-- Pointwise finite GMW view reduction for every valid instance, witness and auxiliary word.
@@ -687,12 +691,11 @@ public instance and auxiliary word in both views, and the simulator receives no 
 theorem gmwView_advantage_le {α : Type} (generator : List Bool → List Bool)
     (length : ℕ → ℕ) (f : α → CNF ℕ)
     (Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool))
-    (adversary : ℕ → α → List Bool → List Bool → ProbComp Bool)
+    (adversary : ZKDistinguisher α)
     (n : ℕ) (a : α) (w z : List Bool) (hw : ThreeSAT.verifier (f a, w) = true) :
     Game.advantage
         (distinguishingGame
-          (((gmwProver generator (n + 7) (length (n + 7)) (f a) w).run (Vstar n a z)
-            (gmwProver generator (n + 7) (length (n + 7)) (f a) w).init).map Prod.fst)
+          (zkRealView (gmwProver generator (n + 7) (length (n + 7)) (f a) w) (Vstar n a z))
           (adversary n a z))
         (distinguishingGame
           (ProbComp.eval (gmwSimulator generator length f Vstar n a z)) (adversary n a z)) ≤
@@ -721,7 +724,7 @@ theorem gmwView_advantage_le {α : Type} (generator : List Bool → List Bool)
         (adversary n a z) =
       ProbComp.eval (OracleComp.replicate (n + 1) g >>=
         fun attempts => adversary n a z (firstSuccess [] attempts)) := by
-    simp only [pmf_norm, distinguishingGame]
+    simp only [pmf_norm, distinguishingGame_eq_bind]
   have hzero : ProbComp.eval (firstSuccess [] <$> OracleComp.replicate (n + 1)
       (gmwRealPRGPads generator (n + 7) (length (n + 7)) (f a) w (Vstar n a z))) = guess := by
     simp only [guess, ProbComp.eval_map,
@@ -895,13 +898,12 @@ samples, and the verifier interaction; the verifier may retain its private coins
 theorem isPPTOn_gmwViewReduction {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    {adversary : ZKDistinguisher α}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-      (fun ((n, a, z), view) => adversary n a z view)) :
+    (hadv : adversary.IsPPT enc) :
     IsPPTOn
       (encPair (encInstanceWitnessAuxInput enc) encBits) encBool
       (fun ((n, a, w, z), challenge) =>
@@ -999,12 +1001,11 @@ distinguisher-auxiliary families. -/
 theorem AdvicePRG.gmwView_negligible {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    {adversary : ZKDistinguisher α}
     (hAdv : AdvicePRG enc generator length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-      (fun ((n, a, z'), view) => adversary n a z' view))
+    (hadv : adversary.IsPPT enc)
     {a : ℕ → α} {w z z' : ℕ → List Bool}
     (ha : PolynomiallyBounded (fun n => (enc (a n)).length))
     (hw : PolynomiallyBounded (fun n => (w n).length))
@@ -1013,9 +1014,8 @@ theorem AdvicePRG.gmwView_negligible {α : Type} {enc : α ↪ List Bool}
     (hw_sat : ∀ n, ThreeSAT.verifier (f (a n), w n) = true) :
     Negligible (fun n => Game.advantage
       (distinguishingGame
-        (((gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).run
-          (Vstar n (a n) (z n))
-          (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).init).map Prod.fst)
+        (zkRealView (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n))
+          (Vstar n (a n) (z n)))
         (adversary n (a n) (z' n)))
       (distinguishingGame (ProbComp.eval (gmwSimulator generator length f Vstar n (a n) (z n)))
         (adversary n (a n) (z' n)))) := by
@@ -1050,13 +1050,12 @@ from this single-execution masked-3SAT view theorem. -/
 theorem gmwView_negligible_of_advice_prg {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    {adversary : ZKDistinguisher α}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-      (fun ((n, a, z), view) => adversary n a z view))
+    (hadv : adversary.IsPPT enc)
     (hPRG : ∀ test : (ℕ × (α × (List Bool × List Bool))) × List Bool → ProbComp Bool,
       IsPPTOn
         (encPair (encInstanceWitnessAuxInput enc) encBits)
@@ -1077,9 +1076,8 @@ theorem gmwView_negligible_of_advice_prg {α : Type} {enc : α ↪ List Bool}
     (hw_sat : ∀ n, ThreeSAT.verifier (f (a n), w n) = true) :
     Negligible (fun n => Game.advantage
       (distinguishingGame
-        (((gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).run
-          (Vstar n (a n) (z n))
-          (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).init).map Prod.fst)
+        (zkRealView (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n))
+          (Vstar n (a n) (z n)))
         (adversary n (a n) (z n)))
       (distinguishingGame (ProbComp.eval (gmwSimulator generator length f Vstar n (a n) (z n)))
         (adversary n (a n) (z n)))) :=
@@ -1101,9 +1099,8 @@ theorem gmwView_indistinguishable_gmwSimulator {α : Type} {enc : α ↪ List Bo
     (hz : ComputableInPolyTime z encUnary encBits)
     (hw_sat : ∀ n, ThreeSAT.verifier (f (a n), w n) = true) :
     ComputationallyIndistinguishable
-      (fun n => ((gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).run
-        (Vstar n (a n) (z n))
-        (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n)).init).map Prod.fst)
+      (fun n => zkRealView (gmwProver generator (n + 7) (length (n + 7)) (f (a n)) (w n))
+        (Vstar n (a n) (z n)))
       (fun n => ProbComp.eval (gmwSimulator generator length f Vstar n (a n) (z n))) := by
   intro adversary hadversary
   have htest : IsPPTOn (encPair (encPair encUnary (encPair enc encBits)) encBits) encBool
@@ -1132,7 +1129,7 @@ theorem gmwView_indistinguishable_gmwSimulator {α : Type} {enc : α ↪ List Bo
   have herr := (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).shift 1
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
   intro n
-  simpa only [pmf_norm, distinguishingGame, BitString.eval_sampleList, generatorEnsemble,
+  simpa only [pmf_norm, distinguishingGame_eq_bind, BitString.eval_sampleList, generatorEnsemble,
     Nat.cast_mul, red] using
     gmwView_advantage_le generator length f Vstar (fun n _ _ view => adversary n view)
       n (a n) (w n) (z n) (hw_sat n)

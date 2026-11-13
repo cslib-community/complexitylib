@@ -42,11 +42,11 @@ variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
   invFun o := ⟨o.1, (finRotate _).symm o.2⟩
   left_inv := by
     rintro ⟨i, j⟩
-    exact congrArg (fun k : Fin F[i.val].2.length => (⟨i, k⟩ : F.Occurrence))
+    exact congrArg (fun k : Fin F[i.val].scope.length => (⟨i, k⟩ : F.Occurrence))
       ((finRotate _).symm_apply_apply j)
   right_inv := by
     rintro ⟨i, j⟩
-    exact congrArg (fun k : Fin F[i.val].2.length => (⟨i, k⟩ : F.Occurrence))
+    exact congrArg (fun k : Fin F[i.val].scope.length => (⟨i, k⟩ : F.Occurrence))
       ((finRotate _).apply_symm_apply j)
 
 omit [DecidableEq V] in

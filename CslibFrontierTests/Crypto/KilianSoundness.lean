@@ -75,7 +75,7 @@ example : merkleBreaksBinding idHash key (kilianBindingOutput trivialVerifier x
 
 /-- A prover that always claims `x` with the key as its root, and answers nothing. -/
 def constantProver : KilianProver (List Bool) where
-  commit _ k := pure ((x, k), [])
+  commit _ k := pure { stmt := x, root := k, state := [] }
   answer _ _ ρs := pure (ρs.map fun _ => [])
 
 -- Its two stages are strict PPT, so the hypothesis of `HashFamily.kilianSound` can be met.
@@ -86,5 +86,10 @@ example : constantProver.IsPPT encBits where
   answer := by
     unfold constantProver
     ppt
+
+-- Encoded words unchanged: a commitment keeps the former `((x, root), state)` layout.
+example {α : Type} (enc : α ↪ List Bool) (c : KilianCommitment α) :
+    encKilianCommitment enc c = encPair (encPair enc encBits) encBits ((c.stmt, c.root), c.state) :=
+  rfl
 
 end CslibFrontierTests.Crypto.KilianSoundness

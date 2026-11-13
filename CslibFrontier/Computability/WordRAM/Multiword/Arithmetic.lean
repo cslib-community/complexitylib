@@ -130,33 +130,6 @@ theorem preserves_program (as bs ds os : List (Fin (r + 4)))
   ⟨preserves_setup i hi, preserves_clear ds i hi (fun hm => hid (by simp [hm])),
     preserves_rows as bs ds os i hi hid⟩
 
-/-- Clear a digit list, with its full frame and exact cost. -/
-private theorem exec_clear_framed {w : ℕ} (ds : List (Fin (r + 4)))
-    (hds : ∀ i ∈ ds, Workspace.IsDigit i) (hnd : ds.Nodup) (x : Data (r + 4)) :
-    ∃ y, Exec w (clear ds) x y (ds.length + 1) ∧
-      (∀ i ∈ ds, y.regs i = 0) ∧ Arithmetic.Frame x y ds := by
-  induction ds generalizing x with
-  | nil =>
-    let y := x.set Workspace.carry (x.regs Workspace.carry)
-    have he : Exec w (clear []) x y 1 := by ram_eval [clear, y]
-    exact ⟨y, he, by simp, rfl, fun i hi hid =>
-      he.regs_eq (preserves_clear [] i hi hid)⟩
-  | cons d ds ih =>
-    let z := x.set d 0
-    obtain ⟨y, hey, hy, hyf⟩ := ih (fun i hi => hds i (by simp [hi]))
-      (List.nodup_cons.mp hnd).2 z
-    have hez : Exec w (.op (.const (B := .standard) d 0)) x z 1 := by ram_eval [z]
-    have he : Exec w (clear (d :: ds)) x y ((d :: ds).length + 1) := by
-      simpa only [clear, List.length_cons, Nat.add_comm, Nat.add_left_comm,
-        Nat.add_assoc] using hez.seq hey
-    refine ⟨y, he, ?_, hyf.1, fun i hi hid =>
-      he.regs_eq (preserves_clear (d :: ds) i hi hid)⟩
-    intro i hi
-    rcases List.mem_cons.mp hi with rfl | hi
-    · rw [hyf.2 i (hds i (by simp)) (List.nodup_cons.mp hnd).1]
-      simp [z]
-    · exact hy i hi
-
 /-- Full multiplication preserves every non-destination digit register. The destination lists
 and operands have arbitrary fixed lengths and arbitrary disjoint register layouts. -/
 theorem exec_framed {w : ℕ} (hw : 2 ≤ w) (as bs ds os : List (Fin (r + 4)))
@@ -282,7 +255,7 @@ theorem exec_truncating {w : ℕ} (hw : 2 ≤ w) (bs ds : List (Fin (r + 4)))
   obtain ⟨z, he, hzd, hzc, hzo, hzeq, hzf⟩ :=
     exec_borrow_framed hw bs ds hlen hbs hds hnd hdis x hb hd
   by_cases hc : z.regs borrow = 1
-  · obtain ⟨y, hey, hy, hyf⟩ := Schoolbook.exec_clear_framed (w := w) ds hds hnd z
+  · obtain ⟨y, hey, hy, hyf⟩ := Schoolbook.exec_clear (w := w) ds hds hnd z
     have hbranch : Exec w
         (.branch (.eq borrow one) (Schoolbook.clear ds) (.op (.copy borrow borrow)))
         z y (ds.length + 2) := by

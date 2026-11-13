@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Memoize
@@ -33,12 +34,15 @@ import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Languages.Probabilistic.Iteration.Chain
+import CslibFrontier.Languages.Probabilistic.Oracle.QueryBoundedSimulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.BindFailure
+import CslibFrontier.Probability.PMF.Coupling
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.Negligible
@@ -1260,13 +1264,13 @@ private theorem eval_treeIdealGame_eq_lazyCoin (S : IndexedSignatureScheme) (T :
     (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) adapt) prog
   have hmem := RandomOracle.interpret_prob_eq_memoize_map
     (Query := BitString M) (Value := BitString M) (Key' := List Bool) (Value' := List Bool)
-    ⟨List.ofFn, List.ofFn_injective⟩ List.ofFn
+    (encBitString M) List.ofFn
     (fun _ => PMF.uniformOfFintype (BitString M))
     (fun _ => BitString.uniformList M)
     (fun _ => rfl)
     adapted
   rw [PMF.pi_uniformOfFintype, Probability.PMF.monad_bind_eq_bind] at hmem
-  simp only [Function.Embedding.coeFn_mk] at hmem
+  simp only [encBitString_apply] at hmem
   have hlhs : (PMF.uniformOfFintype (BitString M → BitString M)).bind (fun table =>
         OracleComp.interpret
           (OracleComp.sumHandler ProbComp.unifOracle (fun key => PMF.pure (List.ofFn (table key))))
@@ -1647,151 +1651,6 @@ private noncomputable def jointCoinHandler (S : IndexedSignatureScheme) (T : S.S
   else
     PMF.pure ([], (cc, ((nodes, edges), (msg :: queried, seenLeaves, bad))))
 
-private theorem interpret_iterate_pmf {σ ext : Type}
-    (h : Unit × List Bool → StateT ext PMF (List Bool))
-    (m : ℕ) (step : σ → WordOracleComp Unit σ) (init : σ) (cc : ext) :
-    (OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) h)
-      (OracleComp.iterate m step init)).run cc =
-      Nat.iterate
-        (fun dist => dist.bind fun (s, c) =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) h)
-            (step s)).run c)
-        m (PMF.pure (init, cc)) := by
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    rw [OracleComp.iterate_succ, OracleComp.run_interpret_bind,
-      Probability.PMF.monad_bind_eq_bind, ih, Function.iterate_succ_apply']
-
-private theorem eval_iterate_probComp {σ : Type}
-    (m : ℕ) (step : σ → ProbComp σ) (init : σ) :
-    ProbComp.eval (OracleComp.iterate m step init) =
-      Nat.iterate (fun dist => dist.bind fun s => ProbComp.eval (step s)) m (PMF.pure init) := by
-  induction m with
-  | zero => rfl
-  | succ m ih =>
-    rw [OracleComp.iterate_succ, ProbComp.eval_bind, ih, Function.iterate_succ_apply']
-
-private theorem bind_bind_comm_of_invariant {α₁ β₁ α β γ : Type}
-    (d₁ : PMF α₁) (exp₁ : α₁ → PMF γ) (rep₁ : α₁ → β₁) (d₂ : γ → PMF β₁) (inv₁ : α₁ → Prop)
-    (exp₀ : PMF γ)
-    (f₁ : α₁ → PMF α) (exp : α → PMF γ) (rep : α → β) (f₂ : γ → β₁ → PMF β) (inv : α → Prop)
-    (hd : (d₁.bind fun a => (exp₁ a).map (·, rep₁ a)) =
-        (exp₀.bind fun k => (d₂ k).map (k, ·)) ∧ ∀ a ∈ d₁.support, inv₁ a)
-    (hf : ∀ a ∈ d₁.support, inv₁ a →
-      ((f₁ a).bind fun b => (exp b).map (·, rep b)) =
-        ((exp₁ a).bind fun k => (f₂ k (rep₁ a)).map (k, ·)) ∧
-      ∀ b ∈ (f₁ a).support, inv b) :
-    ((d₁.bind f₁).bind fun b => (exp b).map (·, rep b)) =
-      (exp₀.bind fun k => ((d₂ k).bind (f₂ k)).map (k, ·)) ∧
-    ∀ b ∈ (d₁.bind f₁).support, inv b := by
-  refine ⟨?_, ?_⟩
-  · rw [PMF.bind_bind]
-    have hcongr : (d₁.bind fun a => (f₁ a).bind fun b => (exp b).map (·, rep b)) =
-        (d₁.bind fun a => (exp₁ a).bind fun k => (f₂ k (rep₁ a)).map (k, ·)) :=
-      PMF.bind_congr_on_support _ _ _ fun a ha => (hf a ha (hd.2 a ha)).1
-    rw [hcongr]
-    have h2 := congrArg (fun d => d.bind fun (k, b₁) => (f₂ k b₁).map (k, ·)) hd.1
-    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2 ⊢
-    rw [h2]
-    refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
-    simp only [PMF.map_bind]
-  · intro b hb
-    obtain ⟨a, ha, hmem⟩ := (PMF.mem_support_bind_iff _ _ _).mp hb
-    exact (hf a ha (hd.2 a ha)).2 b hmem
-
-private theorem bind_map_of_invariant {α₁ β₁ α β : Type}
-    (d₁ : PMF α₁) (d₂ : PMF β₁) (rep₁ : α₁ → β₁) (inv₁ : α₁ → Prop)
-    (f₁ : α₁ → PMF α) (f₂ : β₁ → PMF β) (rep : α → β) (inv : α → Prop)
-    (hd : d₁.map rep₁ = d₂ ∧ ∀ a ∈ d₁.support, inv₁ a)
-    (hf : ∀ a ∈ d₁.support, inv₁ a →
-      (f₁ a).map rep = f₂ (rep₁ a) ∧ ∀ b ∈ (f₁ a).support, inv b) :
-    (d₁.bind f₁).map rep = d₂.bind f₂ ∧ ∀ b ∈ (d₁.bind f₁).support, inv b := by
-  have hmain := bind_bind_comm_of_invariant d₁ (fun _ => PMF.pure ()) rep₁ (fun _ => d₂) inv₁
-    (PMF.pure ()) f₁ (fun _ => PMF.pure ()) rep (fun _ => f₂) inv
-    ⟨by rw [PMF.pure_bind, ← hd.1]; simp only [PMF.map, PMF.bind_bind,
-      PMF.pure_bind, Function.comp_def], hd.2⟩
-    fun a ha hia => by
-      obtain ⟨heq, hinv⟩ := hf a ha hia
-      refine ⟨?_, hinv⟩
-      rw [PMF.pure_bind, ← heq]
-      simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
-  exact ⟨by simpa only [PMF.map, PMF.pure_bind, PMF.bind_pure, PMF.bind_bind,
-    Function.comp_def] using congrArg (PMF.map Prod.snd) hmain.1, hmain.2⟩
-
-private theorem run_interpret_ite {ι ext α : Type} {spec : ι → Type}
-    (h : (q : ι) → StateT ext PMF (spec q)) (P : Prop) [Decidable P]
-    (a b : OracleComp spec α) (s : ext) :
-    (OracleComp.interpret h (if P then a else b)).run s =
-      if P then (OracleComp.interpret h a).run s else (OracleComp.interpret h b).run s := by
-  split_ifs <;> rfl
-
-private theorem iterate_pmf_bind_comm_of_invariant {α β γ : Type}
-    (step₁ : α → PMF α) (step₂ : γ → β → PMF β)
-    (exp : α → PMF γ) (rep : α → β) (inv : ℕ → α → Prop)
-    (m : ℕ) (init : α) (hinit : inv 0 init)
-    (hstep : ∀ i < m, ∀ a, inv i a →
-      ((step₁ a).bind fun a' => (exp a').map (·, rep a')) =
-        ((exp a).bind fun k => (step₂ k (rep a)).map (k, ·)) ∧
-      ∀ a' ∈ (step₁ a).support, inv (i + 1) a') :
-    let jDist := Nat.iterate (fun d => d.bind step₁) m (PMF.pure init)
-    (jDist.bind fun a => (exp a).map (·, rep a)) =
-      ((exp init).bind fun k =>
-        (Nat.iterate (fun d => d.bind (step₂ k)) m (PMF.pure (rep init))).map (k, ·)) ∧
-      ∀ a ∈ jDist.support, inv m a := by
-  induction m with
-  | zero =>
-    refine ⟨?_, fun a ha => ?_⟩
-    · simp only [Function.iterate_zero, id_eq, PMF.pure_bind, PMF.map, Function.comp_def]
-    · obtain rfl := (PMF.mem_support_pure_iff _ _).mp ha
-      exact hinit
-  | succ m ih =>
-    obtain ⟨heq, hsupp⟩ := ih fun i hi => hstep i (Nat.lt_succ_of_lt hi)
-    set jDist_m := Nat.iterate (fun d => d.bind step₁) m (PMF.pure init)
-    refine ⟨?_, ?_⟩
-    · rw [Function.iterate_succ_apply', PMF.bind_bind]
-      have hbind : (jDist_m.bind fun a => (step₁ a).bind fun a' => (exp a').map (·, rep a')) =
-          (jDist_m.bind fun a => (exp a).bind fun k => (step₂ k (rep a)).map (k, ·)) :=
-        PMF.bind_congr_on_support _ _ _ fun a ha =>
-          (hstep m (Nat.lt_succ_self m) a (hsupp a ha)).1
-      rw [hbind]
-      have h2 := congrArg (fun d => d.bind fun (k, b) => (step₂ k b).map (k, ·)) heq
-      simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2 ⊢
-      rw [h2]
-      refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
-      rw [Function.iterate_succ_apply']
-      simp only [PMF.map_bind]
-    · intro a' ha'
-      rw [Function.iterate_succ_apply'] at ha'
-      obtain ⟨a, ha, hm⟩ := (PMF.mem_support_bind_iff _ _ _).mp ha'
-      exact (hstep m (Nat.lt_succ_self m) a (hsupp a ha)).2 a' hm
-
-private theorem iterate_pmf_map_of_invariant {α β : Type}
-    (step₁ : α → PMF α) (step₂ : β → PMF β) (rep : α → β) (inv : ℕ → α → Prop)
-    (m : ℕ) (init : α) (hinit : inv 0 init)
-    (hstep : ∀ i < m, ∀ a, inv i a →
-      (step₁ a).map rep = step₂ (rep a) ∧ ∀ a' ∈ (step₁ a).support, inv (i + 1) a') :
-    let dist := Nat.iterate (fun d => d.bind step₁) m (PMF.pure init)
-    dist.map rep = Nat.iterate (fun d => d.bind step₂) m (PMF.pure (rep init)) ∧
-      ∀ a ∈ dist.support, inv m a := by
-  have hmain := iterate_pmf_bind_comm_of_invariant step₁ (fun _ => step₂)
-    (fun _ => PMF.pure ()) rep inv m init hinit fun i hi a ha => by
-      obtain ⟨heq, hinv⟩ := hstep i hi a ha
-      refine ⟨?_, hinv⟩
-      rw [PMF.pure_bind, ← heq]
-      simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
-  exact ⟨by simpa only [PMF.map, PMF.pure_bind, PMF.bind_pure, PMF.bind_bind,
-    Function.comp_def] using congrArg (PMF.map Prod.snd) hmain.1, hmain.2⟩
-
-private theorem iterate_pmf_invariant {α : Type}
-    (step : α → PMF α) (inv : ℕ → α → Prop) (m : ℕ) (init : α) (hinit : inv 0 init)
-    (hstep : ∀ i < m, ∀ a, inv i a → ∀ a' ∈ (step a).support, inv (i + 1) a') :
-    ∀ a ∈ (Nat.iterate (fun d => d.bind step) m (PMF.pure init)).support, inv m a :=
-  (iterate_pmf_map_of_invariant step (fun _ => PMF.pure ()) (fun _ => ()) inv m init hinit
-    fun i hi a ha => ⟨by rw [PMF.map_const], hstep i hi a ha⟩).2
-
 private theorem treeHandler_bind_comm_of_invariant {α β γ : Type}
     (P Q : Prop) [Decidable P] [Decidable Q]
     (leafDist : PMF (List Bool)) (seen : List Bool → Bool)
@@ -1897,133 +1756,6 @@ private theorem treeHandler_support_invariant {α : Type}
     (fun _ => PMF.pure ()) inv ⟨rfl, hrn⟩ ⟨rfl, hrb⟩ ⟨rfl, hrc⟩
     fun hP hQ leaf hl hs => ⟨by rw [PMF.map_const], hgood hP hQ leaf hl hs⟩).2
 
-private theorem run_interpret_queryBounded_bind_comm {α σ₁ σ₂ γ : Type}
-    (h₁ : Unit × List Bool → StateT σ₁ PMF (List Bool))
-    (h₂ : γ → Unit × List Bool → StateT σ₂ PMF (List Bool))
-    (exp : σ₁ → PMF γ) (rep : σ₁ → σ₂) (inv : ℕ → σ₁ → Prop)
-    (hweaken : ∀ r s, inv (r + 1) s → inv r s)
-    (hstep : ∀ rem req s, inv (rem + 1) s →
-      ((h₁ req s).bind fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) =
-        ((exp s).bind fun k => (h₂ k req (rep s)).map fun y => (k, y.1, y.2)) ∧
-      ∀ ans s', (ans, s') ∈ (h₁ req s).support → inv rem s')
-    {prog : WordOracleComp Unit α} {rem : ℕ} (hq : prog.IsQueryBounded rem)
-    {st : σ₁} (hinv : inv rem st) :
-    (((OracleComp.interpret
-      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
-      prog).run st).bind fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) =
-      ((exp st).bind fun k =>
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
-          prog).run (rep st)).map fun y => (k, y.1, y.2)) ∧
-    ∀ res st', (res, st') ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
-      prog).run st).support → inv 0 st' := by
-  have hzero : ∀ r s, inv r s → inv 0 s := by
-    intro r
-    induction r with
-    | zero => exact fun _ h => h
-    | succ r ih => exact fun s h => ih s (hweaken r s h)
-  induction hq generalizing st with
-  | pure a rem =>
-    refine ⟨?_, fun res st' hm => ?_⟩
-    · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
-        PMF.pure_bind, PMF.map, Function.comp_def]
-    · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure] at hm
-      obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-      exact hzero rem _ hinv
-  | liftBind q cont rem _ ih =>
-    cases q with
-    | inl j =>
-      simp only [Sum.elim_inl, Nat.add_zero] at hinv
-      refine ⟨?_, ?_⟩
-      · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-          Probability.PMF.monad_bind_eq_bind]
-        change (((ProbComp.unifOracle j).map (·, st)).bind fun x =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
-            (cont x.1)).run x.2).bind
-            (fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) = _
-        rw [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-        simp_rw [(ih _ hinv).1]
-        rw [PMF.bind_comm]
-        refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
-        change _ = (((ProbComp.unifOracle j).map (·, rep st)).bind fun x =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
-            (cont x.1)).run x.2).map fun y => (k, y.1, y.2)
-        rw [PMF.bind_map, PMF.map_bind]
-        rfl
-      · intro res st' hm
-        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-          Probability.PMF.monad_bind_eq_bind] at hm
-        change (res, st') ∈ (((ProbComp.unifOracle j).map (·, st)).bind fun x =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
-            (cont x.1)).run x.2).support at hm
-        obtain ⟨⟨i, st₁⟩, hmi, hmc⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
-        obtain ⟨_, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hmi
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq
-        exact (ih _ hinv).2 res st' hmc
-    | inr req =>
-      simp only [Sum.elim_inr] at hinv
-      obtain ⟨hstep_eq, hstep_supp⟩ := hstep rem req st hinv
-      refine ⟨?_, ?_⟩
-      · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-          Probability.PMF.monad_bind_eq_bind]
-        change ((h₁ req st).bind fun x =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
-            (cont x.1)).run x.2).bind
-            (fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) = _
-        rw [PMF.bind_bind]
-        have hcont : ((h₁ req st).bind fun x =>
-              (((OracleComp.interpret
-                (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
-                (cont x.1)).run x.2).bind fun x =>
-                  (exp x.2).map fun k => (k, x.1, rep x.2))) =
-            ((h₁ req st).bind fun x =>
-              (exp x.2).bind fun k =>
-                ((OracleComp.interpret
-                  (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
-                  (cont x.1)).run (rep x.2)).map fun y => (k, y.1, y.2)) :=
-          PMF.bind_congr_on_support _ _ _ fun ⟨ans, s'⟩ hm =>
-            (ih ans (hstep_supp ans s' hm)).1
-        rw [hcont]
-        have h2 := congrArg (fun d => d.bind fun x =>
-          ((OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ x.1))
-            (cont x.2.1)).run x.2.2).map fun y => (x.1, y.1, y.2)) hstep_eq
-        simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2
-        rw [h2]
-        refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
-        change _ = ((h₂ k req (rep st)).bind fun x =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
-            (cont x.1)).run x.2).map fun y => (k, y.1, y.2)
-        rw [PMF.map_bind]
-      · intro res st' hm
-        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-          Probability.PMF.monad_bind_eq_bind] at hm
-        change (res, st') ∈ ((h₁ req st).bind fun x =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
-            (cont x.1)).run x.2).support at hm
-        obtain ⟨⟨ans, s'⟩, hms, hmc⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
-        exact (ih ans (hstep_supp ans s' hms)).2 res st' hmc
-
-private theorem run_interpret_queryBounded_invariant {α σ : Type}
-    (h : Unit × List Bool → StateT σ PMF (List Bool)) (inv : ℕ → σ → Prop)
-    (hweaken : ∀ r s, inv (r + 1) s → inv r s)
-    (hstep : ∀ rem req s, inv (rem + 1) s → ∀ ans s', (ans, s') ∈ (h req s).support → inv rem s')
-    {prog : WordOracleComp Unit α} {rem : ℕ} (hq : prog.IsQueryBounded rem)
-    {st : σ} (hinv : inv rem st) :
-    ∀ res st', (res, st') ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h)
-      prog).run st).support → inv 0 st' :=
-  (run_interpret_queryBounded_bind_comm h (fun _ => h) (fun _ => PMF.pure ()) id inv hweaken
-    (fun rem req s hs => ⟨by simp only [PMF.pure_bind, PMF.pure_map]; rfl, hstep rem req s hs⟩)
-    hq hinv).2
-
 private theorem map_dropCaches_jointSignAt (S : IndexedSignatureScheme) (T : S.Seeded)
     (M : ℕ) (path sk : List Bool) (u : ℕ) (msg : List Bool) (c : CoinCache)
     (es : EdgeSigCache) :
@@ -2066,8 +1798,8 @@ private theorem map_dropCaches_jointCertify (S : IndexedSignatureScheme) (T : S.
     Probability.PMF.monad_bind_eq_bind, PMF.map_bind, ← hnk [] cc caches.1, PMF.bind_map,
     Function.comp_def]
   refine PMF.bind_congr_on_support _ _ _ fun ⟨root, cc₀, nodes₀⟩ _ => ?_
-  rw [interpret_iterate_pmf]
-  refine (iterate_pmf_map_of_invariant (jointCertifyStep S T M n leaf) _
+  rw [OracleComp.run_interpret_iterate_pmf]
+  refine (PMF.map_iterate_bind_of_invariant (jointCertifyStep S T M n leaf) _
     (fun out => (out.2.1, out.1)) (fun _ _ => True) (depth n - 1)
     (cc₀, (([], root, []), (nodes₀, caches.2))) trivial fun _ _ out _ => ?_).1
   obtain ⟨c, ⟨node, ⟨pk, sk⟩, certs⟩, ns, es⟩ := out
@@ -2306,13 +2038,13 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
       simp only [jointNodeKey, lazyCoinRequest, memoize, hcc, hrootSome,
         Probability.PMF.monad_pure_eq_pure, PMF.pure_map, hw]
   simp only [jointCertify, PMF.monad_bind_eq_bind, hnk0_pure, PMF.pure_bind, certifyLazy,
-    eval_iterate_probComp]
+    ProbComp.eval_iterate]
   let stepInv (m : ℕ) (out : CoinCache × LazyCertState) : Prop :=
     jointLazyInv S T M (depth n) n root (out.1, (out.2.2, (queried, seenLeaves, bad))) ∧
     out.2.1.1 = leaf.take m ∧
     out.2.2.1.lookup out.2.1.1 = some out.2.1.2.1 ∧
     out.2.1.2.1 ∈ (ProbComp.eval (S.keyGen n)).support
-  have hmain := iterate_pmf_map_of_invariant (jointCertifyStep S T M n leaf)
+  have hmain := PMF.map_iterate_bind_of_invariant (jointCertifyStep S T M n leaf)
     (fun s => ProbComp.eval (certifyStepLazy S n leaf s)) Prod.snd stepInv (depth n - 1)
     (cc, (([], root, []), (nodes, edges)))
     ⟨hinv, rfl, hrootSome, (hinv.2.1 [] root (lookup_mem hrootSome)).2⟩
@@ -2337,7 +2069,7 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
         omega
       simp only [jointCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
         PMF.monad_bind_eq_bind]
-      refine bind_map_of_invariant (jointNodeKey S T M n childPath (c, ns))
+      refine PMF.map_bind_of_invariant (jointNodeKey S T M n childPath (c, ns))
         (ProbComp.eval (memoize (fun _ => S.keyGen n) childPath ns))
         (fun x => (x.1, x.2.2))
         (fun x =>
@@ -2437,7 +2169,7 @@ private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.S
   have hnotMem : leaf ∉ seenLeaves := fun h => by simp [h] at hseen
   obtain ⟨hcert_eq, hcert_inv⟩ :=
     jointCertify_spec S T depth hdepth_pos hwidth hkgBudget hsgBudget hinv hleaf_len
-  refine bind_map_of_invariant (jointCertify S T depth M n leaf (cc, (nodes, edges)))
+  refine PMF.map_bind_of_invariant (jointCertify S T depth M n leaf (cc, (nodes, edges)))
     (ProbComp.eval (certifyLazy S depth n root leaf (nodes, edges))) Prod.snd
     (fun (cc', (cert, (ns', es'))) =>
       jointLazyInv S T M (depth n) n root (cc', ((ns', es'), (queried, seenLeaves, bad))) ∧
@@ -3040,11 +2772,11 @@ private theorem localCertify_planted_spec (S : IndexedSignatureScheme) (depth : 
   have hlenEq : keys'.length = keys.length := by
     simp only [keys, keys', List.length_append, List.length_cons]
   dsimp only [localCertify, certifyPlanted]
-  rw [interpret_iterate_pmf]
+  rw [OracleComp.run_interpret_iterate_pmf]
   let loopInv (st : LocalCertState) : Prop :=
     let ((node, idx, _), (v, e, a)) := st
     (node, idx) ∈ v ∧ slotEdgeInv keys.length (((v, e), rest), a)
-  have hmain := iterate_pmf_map_of_invariant
+  have hmain := PMF.map_iterate_bind_of_invariant
     (localCertifyStep S keys sigCap leaf)
     (fun (cs, sg) =>
       (OracleComp.interpret
@@ -3123,7 +2855,8 @@ private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (dept
   conv =>
     arg 1
     rhs
-    simp only [run_interpret_ite, apply_ite (PMF.map _), OracleComp.run_interpret_bind,
+    simp only [apply_ite (OracleComp.interpret _), apply_ite StateT.run, ite_apply,
+      apply_ite (PMF.map _), OracleComp.run_interpret_bind,
       OracleComp.run_interpret_pure, ProbOracleComp.run_interpret_sample, BitString.eval_sampleList,
       Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_map,
       PMF.map_bind, PMF.pure_map, Function.comp_def]
@@ -3135,7 +2868,7 @@ private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (dept
       ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ fun _ _ leaf _ _ => ?_)
   obtain ⟨hcert_eq, hcert_inv⟩ := localCertify_planted_spec S depth hcap leaf hinv
   dsimp only [keys, keys', target] at hcert_eq ⊢
-  refine bind_map_of_invariant
+  refine PMF.map_bind_of_invariant
     (localCertify S depth keys sigCap n leaf (visited, edges, allSigned))
     ((OracleComp.interpret
       (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
@@ -3456,14 +3189,14 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
     have := hvis0 ([], 0) (lookup_mem hrootVis0)
     omega
   dsimp only [jointKeysCertify, certifyLazy]
-  rw [eval_iterate_probComp]
+  rw [ProbComp.eval_iterate]
   let rep : JointKeysCertState → LazyCertState :=
     fun (uk', ((node, idx, certs), (vis', edg', _))) =>
       ((node, uk'.getD idx ([], []), certs), (nodesOf uk' vis', edg'))
   let stepInv (out : JointKeysCertState) : Prop :=
     let (uk, ((_, idx, _), (vis, edg, all))) := out
     jointKeysInv S n root (uk, (((vis, edg), rest), all)) ∧ idx < uk.length
-  have hmain := iterate_pmf_map_of_invariant
+  have hmain := PMF.map_iterate_bind_of_invariant
     (jointKeysCertifyStep S sigCap n leaf)
     (fun s => ProbComp.eval (certifyStepLazy S n leaf s)) rep
     (fun _ out => stepInv out) (depth n - 1)
@@ -3478,7 +3211,7 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
       have hbu : bit.toNat ≤ 1 := Bool.toNat_le bit
       simp only [jointKeysCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
         PMF.monad_bind_eq_bind]
-      refine bind_map_of_invariant (jointVisitKey S n childPath (uk, vis))
+      refine PMF.map_bind_of_invariant (jointVisitKey S n childPath (uk, vis))
         (ProbComp.eval (memoize (fun _ => S.keyGen n) childPath (nodesOf uk vis)))
         (fun (idx, (uk', vis')) => (uk'.getD idx ([], []), nodesOf uk' vis'))
         (fun (childIdx, (uk', vis')) =>
@@ -3532,7 +3265,7 @@ private theorem jointKeysHandler_lazy_step (S : IndexedSignatureScheme) (depth :
       (fun x : List Bool × JointKeysState => jointKeysInv S n root x.2)
       ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ fun hmsg _ leaf _ _ => ?_)
   obtain ⟨hcert_eq, hcert_inv⟩ := jointKeysCertify_lazy_spec S depth hsigCap hinv leaf
-  refine bind_map_of_invariant
+  refine PMF.map_bind_of_invariant
     (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned)))
     (ProbComp.eval (certifyLazy S depth n root leaf (nodesOf uk vis, edg)))
     (fun (uk', ((node, idx, certs), (vis', edg', _))) =>
@@ -3631,7 +3364,7 @@ private theorem jointKeysCertify_expandKeys (S : IndexedSignatureScheme) (depth 
     st.1.length = st.2.2.1.length ∧ 0 < st.1.length ∧
     (∀ e ∈ st.2.2.1, e.2 < st.2.2.1.length) ∧
     st.2.1.2.1 < st.1.length ∧ st.2.2.1.length ≤ vis.length + m
-  have hmain := iterate_pmf_bind_comm_of_invariant (jointKeysCertifyStep S sigCap n leaf)
+  have hmain := PMF.iterate_bind_comm_of_invariant (jointKeysCertifyStep S sigCap n leaf)
     (fun keys => localCertifyStep S keys sigCap leaf) (fun st => expandKeys S n K st.1) Prod.snd
     inv (depth n - 1) (uk, (([], 0, []), (vis, edg, all)))
     ⟨hlen0, hpos0, hvis0, hpos0, Nat.le_add_right _ _⟩
@@ -3642,7 +3375,7 @@ private theorem jointKeysCertify_expandKeys (S : IndexedSignatureScheme) (depth 
       set bit := leaf.getD node.length false
       set childPath := node ++ [bit]
       simp only [jointKeysCertifyStep, localCertifyStep, PMF.monad_bind_eq_bind]
-      have hstep := bind_bind_comm_of_invariant (jointVisitKey S n childPath (uk_m, vis_m))
+      have hstep := PMF.bind_bind_comm_of_invariant (jointVisitKey S n childPath (uk_m, vis_m))
         (fun x => expandKeys S n K x.2.1) (fun x => (x.1, x.2.2))
         (fun keys => PMF.pure (visitNodePure keys.length childPath vis_m))
         (fun x => x.2.1.length = x.2.2.length ∧ 0 < x.2.1.length ∧
@@ -3749,7 +3482,7 @@ private theorem jointKeysHandler_expandKeys (S : IndexedSignatureScheme) (depth 
         uk'.length = cs'.2.1.length ∧ 0 < uk'.length ∧
         (∀ e ∈ cs'.2.1, e.2 < cs'.2.1.length) ∧
         cs'.1.2.1 < uk'.length ∧ cs'.2.1.length ≤ vis.length + (depth n - 1)
-      exact bind_bind_comm_of_invariant
+      exact PMF.bind_bind_comm_of_invariant
         (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned)))
         (fun x => expandKeys S n K x.1) Prod.snd
         (fun keys => localCertify S depth keys sigCap n leaf (vis, edg, allSigned))
@@ -3798,7 +3531,8 @@ private theorem expand_jointKeys_run_interpret {α : Type} (S : IndexedSignature
           (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
             (localTreeHandler S depth keys sigCap n))
           prog).run st.2).map fun (res, ps') => (keys, res, ps') := by
-  exact (run_interpret_queryBounded_bind_comm (jointKeysHandler S depth sigCap n)
+  exact (ProbOracleComp.IsQueryBounded.run_interpret_bind_comm_of_invariant
+    (jointKeysHandler S depth sigCap n)
     (fun keys => localTreeHandler S depth keys sigCap n)
     (fun st => expandKeys S n K st.1) Prod.snd
     (fun rem st => jointExpandInv K (rem * (depth n - 1)) st)
@@ -3978,7 +3712,7 @@ private theorem localCertify_bounded_inv (S : IndexedSignatureScheme) (depth : �
           b.toNat = u ∧ (p ++ [b], childIdx) ∈ cs.2.1 ∧
             m = (keys.getD childIdx ([], [])).1) ∨
         (p.length + 1 = depth n ∧ m ∈ queried))
-  have hmain := iterate_pmf_invariant (localCertifyStep S keys sigCap leaf) inv (depth n - 1)
+  have hmain := PMF.iterate_bind_invariant (localCertifyStep S keys sigCap leaf) inv (depth n - 1)
     (([], 0, []), (visited, edges, allSigned))
     ⟨rfl, hroot, hroot, Nat.le_add_right _ _, hvis, huniq, hall⟩
     fun k hk ⟨⟨node, idx, certs⟩, v, e, a⟩
@@ -4121,7 +3855,7 @@ private theorem run_interpret_localTreeHandler_bounded_inv {α : Type}
           (localTreeHandler S depth keys sigCap n))
         prog).run st).support →
       presampledBoundedInv (depth n) keys 0 st' :=
-  run_interpret_queryBounded_invariant (localTreeHandler S depth keys sigCap n)
+  ProbOracleComp.IsQueryBounded.run_interpret_invariant (localTreeHandler S depth keys sigCap n)
     (presampledBoundedInv (depth n) keys)
     (fun r _ ⟨h1, h2, h3, h4, h5⟩ =>
       ⟨h1, le_trans (Nat.add_le_add_left (Nat.mul_le_mul_right _ (Nat.le_succ r)) _) h2,
