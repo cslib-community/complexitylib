@@ -30,6 +30,16 @@ Small PRs usually need one or two paragraphs plus validation/review links and a 
 disclosure. State what changed, why, and important limitations. Keep evidence in one place;
 link to it instead of copying full reports, hashes or logs across threads.
 
+Write for a contributor who has not followed the task. Introduce the problem or mathematical
+setting, explain the central idea, and say what the change enables. Introduce specialized terms
+and notation before relying on them. For substantial developments, give a short roadmap
+explaining how the main steps connect and why consequential choices are needed. Use an example,
+equation, or before/after comparison when helpful. Scale the explanation to what the reader
+needs to understand, and put validation, manual impact and AI disclosure after it.
+
+For a substantial mathematical example, see the setting, statement and proof-strategy sections
+of [shmcg's lifting PR #4908](https://github.com/cslib-community/cslib-frontier/pull/4908).
+
 Comments should add a finding, answer, decision, blocker or useful handoff. Keep CI polling and
 internal agent discussion out of public threads. Reply directly to questions and fixes; a short
 "Fixed in <commit>" is enough when the change is clear. Be courteous, welcome disagreement, and
