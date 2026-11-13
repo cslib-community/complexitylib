@@ -258,6 +258,19 @@ formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) c
 case and a toy instance that signs, verifies, rejects a modified response and yields a self-target
 solution.
 
+Falcon's current checked layer is deliberately narrower. Import
+[`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
+the NIST-selected Falcon Round 3 submission version 1.2's post-decoding verification algebra.
+`Falcon.reconstructFirst` computes the centered representative of `c - s₂h` in the existing
+negacyclic coefficient ring, `Falcon.pairSquaredNorm` computes `‖(s₁,s₂)‖²`, and
+`Falcon.verify_of_signingRelation` proves that a centered pair satisfying `s₁ + s₂h = c mod q`
+and the configured bound is accepted. The [checked client](../../CslibFrontierTests/Crypto/Falcon.lean)
+includes one pair accepted exactly at the bound and one rejected above it. This is not an FN-DSA
+security theorem: decompression, salt and hash-to-point processing, NTRU key generation,
+FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law, average-case
+NTRU-SIS, ROM/QROM reductions, efficiency, and reconciliation with the still-developing FIPS 206
+remain separate obligations.
+
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. `DecisionLWE` runs the fixed-instance experiments `LWE.realExperiment` and `LWE.randomExperiment` over `ZMod (2 ^ w)`: a typed distinguisher receives a uniform matrix `A` and either `A t + e`, with independent errors and one shared uniform secret, or an independent uniform vector. For other secret and error laws over any finite commutative ring, `LWE.advantage` is the distance between `LWE.realGame` and `LWE.randomGame`. The distinguisher's machine reads only the row-major binary word of `[b | A]`, and `decisionLWE_iff_encoded` shows that this is the word-level assumption on the serialized public matrix `[B*t+e | B]` (checked in [`CslibFrontierTests/Crypto/DecisionLWE.lean`](../../CslibFrontierTests/Crypto/DecisionLWE.lean)); in [`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`CslibFrontierTests/Crypto/ModuleSIS.lean`](../../CslibFrontierTests/Crypto/ModuleSIS.lean)); [`LWE/Module.lean`](../../CslibFrontier/Crypto/Computational/LWE/Module.lean) states decision Module-LWE as the typed games `ModuleLWE.realGame` and `ModuleLWE.randomGame` for any secret and error laws, whose advantage `ModuleLWE.advantage` is the LWE advantage over the ring `Negacyclic (ZMod q) n` (`ModuleLWE.advantage_eq_lweAdvantage`), and `DecisionModuleLWE` fixes a uniform secret and is the word-level assumption by `decisionModuleLWE_iff_encoded` (checked in [`CslibFrontierTests/Crypto/DecisionModuleLWE.lean`](../../CslibFrontierTests/Crypto/DecisionModuleLWE.lean)); and [`SIS/ModuleEncryption.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean) builds Module-LWE public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`CslibFrontierTests/Crypto/ModuleEncryption.lean`](../../CslibFrontierTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
 For deterministic native key generation, import
@@ -772,9 +785,19 @@ the typed experiment of the scheme with key generation `keyGen n` and encryption
 played by `adversary.toTwoStage n`. Rewrite advantages with
 `Encryption.advantage_gameOn_eq_cpaExperiment`: `Encryption.advantage` applies `gameOn`
 partially, so `rw` with the experiment equation does not reach it. `AdversaryOf.isPPT_toTwoStage`
-turns a word-level PPT certificate into a `TwoStage.IsPPT` family. The
+turns a word-level PPT certificate into a `TwoStage.IsPPT` family. For chosen-plaintext attacks
+with an encryption oracle, import
+[`Encryption/PublicKeyCPA.lean`](../../CslibFrontier/Crypto/Computational/Encryption/PublicKeyCPA.lean):
+the stages of a `PKE.CPAOracleAdversary` are oracle programs over the typed oracle
+`E.encrypt pk`, and `PKE.cpaOracleExperiment_eq_cpaExperiment` rewrites
+`E.cpaOracleExperiment valid A b` into `E.cpaExperiment valid (A.toTwoStage E) b`, where
+`A.toTwoStage E` answers the queries itself under the public key it saved
+([katzlindell20][katzlindell20], Proposition 12.3, at one scheme). At parameter `n`,
+`Encryption.cpaOracleGameOn_eq_cpaOracleExperiment` says that the word-level game is this typed
+experiment, played by `adversary.toCPAOracleAdversary n`. The
 [checked examples](../../CslibFrontierTests/Crypto/PKEScheme.lean) separate the two challenge
-bits of a key-leaking scheme and rewrite `gameOn` into the typed experiment; run
+bits of a key-leaking scheme, with and without the oracle, and rewrite `gameOn` and
+`cpaOracleGameOn` into the typed experiments; run
 `scripts/build.sh CslibFrontierTests.Crypto.PKEScheme`. The PPT transfer is checked in
 [`CslibFrontierTests/Crypto/Experiment.lean`](../../CslibFrontierTests/Crypto/Experiment.lean).
 

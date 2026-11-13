@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.Oracle.Parameter
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
+public import CslibFrontier.Languages.Probabilistic.Oracle.Run
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
@@ -30,25 +31,45 @@ attacks ([KatzLindell2020], Section 12.2.1, Proposition 12.3, p. 406). This modu
 chosen-plaintext experiment with an explicit encryption oracle and proves that implication.
 
 The chosen-plaintext experiment is the public-key form of [KatzLindell2020], Definition 3.21: both
-stages of a `Cslib.Crypto.Encryption.WordCPAAdversary` may query an encryption oracle that
-encrypts any bit word under the public key with fresh coins. The challenge stage and the
-admissibility predicate `valid` are those of `gameOn`. Messages and oracle queries are bit words.
+stages of the adversary may query an encryption oracle that encrypts any message under the public
+key with fresh coins. For one fixed scheme `E : PKE PK SK M C`, `E.cpaOracleExperiment` is stated
+with typed keys, messages and ciphertexts against a `PKE.CPAOracleAdversary`, whose stages are
+oracle programs over the typed encryption oracle `E.encrypt pk`. The adversary that answers its own
+queries, `A.toTwoStage E`, plays the eavesdropping experiment `E.cpaExperiment` with exactly the
+same law (`PKE.cpaOracleExperiment_eq_cpaExperiment`), which is Proposition 12.3 at one scheme.
+
+Asymptotic security quantifies over uniform strict oracle PPT adversaries, which are word-level
+oracle programs: both stages of a `Cslib.Crypto.Encryption.WordCPAAdversary` query the oracle with
+bit words. The challenge stage and the admissibility predicate `valid` are those of `gameOn`. At
+each parameter, `cpaOracleGameOn` is the typed experiment of the scheme with the same algorithms,
+played by `adversary.toCPAOracleAdversary n` (`cpaOracleGameOn_eq_cpaOracleExperiment`).
 
 ## Main definitions
 
+* `Cslib.Crypto.PKE.CPAOracleAdversary`, `Cslib.Crypto.PKE.cpaOracleExperiment`: typed
+  chosen-plaintext adversaries and the chosen-plaintext experiment of one fixed scheme.
+* `Cslib.Crypto.PKE.CPAOracleAdversary.toTwoStage`: the eavesdropper that answers the oracle
+  queries itself, by encrypting under the public key it saved.
 * `Cslib.Crypto.Encryption.encryptionOracle`, `Cslib.Crypto.Encryption.runWithEncryption`: the
-  encryption oracle and the execution of an oracle program against it.
+  word-level encryption oracle and the execution of an oracle program against it.
 * `Cslib.Crypto.Encryption.WordCPAAdversary`, `Cslib.Crypto.Encryption.WordCPAAdversary.IsPPT`,
   `Cslib.Crypto.Encryption.encEncryptInput`: chosen-plaintext adversaries, their uniform strict
   oracle PPT admissibility, and the `(1ⁿ, pk, msg)` encryption-input encoding.
 * `Cslib.Crypto.Encryption.cpaOracleGameOn`, `Cslib.Crypto.Encryption.WordINDCPAOracleOn`,
   `Cslib.Crypto.Encryption.WordINDCPAOracle`: the chosen-plaintext experiment and security, the
   latter under the equal-length rule of [KatzLindell2020], Definition 3.21.
-* `Cslib.Crypto.Encryption.WordCPAAdversary.toAdversary`: the eavesdropper that answers the
-  oracle queries itself, by encrypting under the public key it saved.
+* `Cslib.Crypto.Encryption.WordCPAAdversary.toCPAOracleAdversary`: the typed adversary that a word
+  adversary plays at one parameter.
+* `Cslib.Crypto.Encryption.WordCPAAdversary.toAdversary`: the word-level eavesdropper that answers
+  the oracle queries itself.
 
 ## Main results
 
+* `Cslib.Crypto.PKE.cpaOracleExperiment_eq_cpaExperiment`: the eavesdropping experiment of
+  `A.toTwoStage E` is the chosen-plaintext experiment of `A` ([KatzLindell2020], Proposition 12.3,
+  for one scheme).
+* `Cslib.Crypto.Encryption.cpaOracleGameOn_eq_cpaOracleExperiment`: the word-level experiment at
+  one parameter is the typed one.
 * `Cslib.Crypto.Encryption.WordCPAAdversary.isPPT_toAdversary`: the eavesdropper is uniform
   strict PPT when the adversary and the honest encryption algorithm are.
 * `Cslib.Crypto.Encryption.WordCPAAdversary.eval_gameOn_toAdversary`: its eavesdropping
@@ -68,6 +89,55 @@ Theorem 12.6, p. 408) is not formalized here.
 -/
 
 public section
+
+namespace Cslib.Crypto.PKE
+
+variable {PK SK M C σ : Type}
+
+/-- A chosen-plaintext adversary against a public-key scheme with public keys `PK`, messages `M`
+and ciphertexts `C`. Both stages are oracle programs that may ask the encryption oracle for an
+encryption of any message `m : M`; `σ` is the state saved between the stages. -/
+structure CPAOracleAdversary (PK M C σ : Type) where
+  /-- Receive the public key, query the oracle, and choose two challenge messages and a state. -/
+  choose : PK → ProbOracleComp (fun _ : M => C) (MessagePair M × σ)
+  /-- Receive the saved state and the challenge ciphertext, query the oracle, and return a
+  guess. -/
+  guess : σ → C → ProbOracleComp (fun _ : M => C) Bool
+
+/-- The chosen-plaintext experiment of the scheme `E` with challenge-pair admissibility predicate
+`valid` (the public-key form of [KatzLindell2020], Definition 3.21). Draw a key pair; run message
+selection against the encryption oracle `E.encrypt pk`; if `valid pk m₀ m₁` holds, encrypt the
+message selected by `b` and run the guessing stage against the same oracle, and otherwise return
+`false`. -/
+@[expose]
+def cpaOracleExperiment (E : PKE PK SK M C) (valid : PK → M → M → Bool)
+    (A : CPAOracleAdversary PK M C σ) (b : Bool) : Experiment := do
+  let (pk, _) ← E.keyGen
+  let (pair, state) ← (A.choose pk).run (E.encrypt pk)
+  if valid pk pair.msg₀ pair.msg₁ then
+    let challenge ← E.encrypt pk (pair.select b)
+    (A.guess state challenge).run (E.encrypt pk)
+  else
+    return false
+
+/-- The eavesdropper that runs `A` and answers its oracle queries by encrypting under the public
+key, which it saves next to `A`'s state. -/
+@[expose]
+def CPAOracleAdversary.toTwoStage (E : PKE PK SK M C) (A : CPAOracleAdversary PK M C σ) :
+    TwoStage PK (MessagePair M) C Bool (PK × σ) where
+  choose pk := (fun out => (out.1, (pk, out.2))) <$> (A.choose pk).run (E.encrypt pk)
+  guess saved challenge := (A.guess saved.2 challenge).run (E.encrypt saved.1)
+
+/-- Against a public-key scheme, the encryption oracle gives the adversary nothing that the public
+key does not: the eavesdropping experiment of `A.toTwoStage E` is the chosen-plaintext experiment
+of `A` ([KatzLindell2020], Proposition 12.3, for one fixed scheme). -/
+theorem cpaOracleExperiment_eq_cpaExperiment (E : PKE PK SK M C) (valid : PK → M → M → Bool)
+    (A : CPAOracleAdversary PK M C σ) (b : Bool) :
+    E.cpaOracleExperiment valid A b = E.cpaExperiment valid (A.toTwoStage E) b := by
+  simp only [cpaOracleExperiment, cpaExperiment, lrExperiment, CPAOracleAdversary.toTwoStage,
+    bind_map_left]
+
+end Cslib.Crypto.PKE
 
 namespace Cslib.Crypto.Encryption
 
@@ -144,6 +214,54 @@ Definition 3.21. -/
 abbrev WordINDCPAOracle (keyGen : ℕ → ProbComp (List Bool × List Bool))
     (encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)) : Prop :=
   WordINDCPAOracleOn (fun _ _ m₀ m₁ => m₀.length == m₁.length) keyGen encrypt
+
+/-- The typed adversary that `adversary` plays at parameter `n`: each word query `(_, m)` becomes
+the typed query `m`, message selection returns the chosen pair as a `MessagePair`, and the saved
+state word is the typed state. -/
+@[expose]
+def WordCPAAdversary.toCPAOracleAdversary (adversary : WordCPAAdversary) (n : ℕ) :
+    PKE.CPAOracleAdversary (List Bool) (List Bool) (List Bool) (List Bool) where
+  choose pk := (fun choice : ChoiceOut (List Bool) =>
+      (⟨ChoiceOut.msg₀ choice, ChoiceOut.msg₁ choice⟩, ChoiceOut.state choice)) <$>
+    ProbOracleComp.simulate (fun request => ProbOracleComp.query request.2) (adversary.choose n pk)
+  guess state ciphertext :=
+    ProbOracleComp.simulate (fun request => ProbOracleComp.query request.2)
+      (adversary.guess n state ciphertext)
+
+/-- Running a word oracle program against `encryptionOracle encrypt n pk` runs its typed form
+against the typed oracle `encrypt n pk`. -/
+theorem runWithEncryption_eq_run {α : Type}
+    (encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)) (n : ℕ) (pk : List Bool)
+    (program : WordOracleComp Unit α) :
+    runWithEncryption encrypt n pk program =
+      (ProbOracleComp.simulate (fun request => ProbOracleComp.query request.2) program).run
+        (encrypt n pk) := by
+  have horacle : (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+      (encryptionOracle encrypt n pk)) =
+      fun q => StateT.lift (OracleComp.sumHandler ProbComp.unifFin
+        (fun request : Unit × List Bool => encrypt n pk request.2) q) := by
+    funext q
+    cases q <;> rfl
+  rw [runWithEncryption, horacle, OracleComp.run_interpret_lift, ProbOracleComp.run_simulate]
+  simp only [ProbOracleComp.run_query, map_eq_pure_bind, bind_assoc, pure_bind, bind_pure]
+  rfl
+
+/-- The chosen-plaintext experiment at parameter `n` is the typed experiment of the scheme with
+key generation `keyGen n` and encryption `encrypt n`, played by
+`adversary.toCPAOracleAdversary n`. The experiment never decrypts, so `decrypt` is arbitrary. -/
+theorem cpaOracleGameOn_eq_cpaOracleExperiment
+    (valid : ℕ → List Bool → List Bool → List Bool → Bool)
+    (keyGen : ℕ → ProbComp (List Bool × List Bool))
+    (encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool))
+    (decrypt : List Bool → List Bool → Option (List Bool)) (adversary : WordCPAAdversary)
+    (bit : Bool) (n : ℕ) :
+    cpaOracleGameOn valid keyGen encrypt adversary bit n =
+      (PKE.mk (keyGen n) (encrypt n) decrypt).cpaOracleExperiment (valid n)
+        (adversary.toCPAOracleAdversary n) bit := by
+  cases bit <;>
+    simp only [cpaOracleGameOn, PKE.cpaOracleExperiment, WordCPAAdversary.toCPAOracleAdversary,
+      runWithEncryption_eq_run, ProbOracleComp.run_map, bind_map_left, MessagePair.select_false,
+      MessagePair.select_true, Bool.false_eq_true, ↓reduceIte]
 
 /-- The eavesdropper that runs a chosen-plaintext adversary and answers its oracle queries by
 encrypting under the public key. Message selection saves the public key in front of the

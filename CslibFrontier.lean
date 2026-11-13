@@ -4334,6 +4334,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.RealIdealAE
 public import CslibFrontier.Crypto.Computational.Encryption.Scheme
 public import CslibFrontier.Crypto.Computational.EvenMansour
 public import CslibFrontier.Crypto.Computational.Factoring.PollardRho
+public import CslibFrontier.Crypto.Computational.Falcon.Verification
 public import CslibFrontier.Crypto.Computational.GGM.Circuit
 public import CslibFrontier.Crypto.Computational.GGM.Evaluation
 public import CslibFrontier.Crypto.Computational.GGM.Expansion
@@ -6814,6 +6815,7 @@ public import CslibFrontier.MachineLearning.PACLearning.VCLowerBound
 public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import CslibFrontier.MachineLearning.Rademacher.Basic
+public import CslibFrontier.MachineLearning.Rademacher.Chaining
 public import CslibFrontier.MachineLearning.Rademacher.Classification
 public import CslibFrontier.MachineLearning.Rademacher.Contraction
 public import CslibFrontier.MachineLearning.Rademacher.Generalization
@@ -6846,6 +6848,7 @@ public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Parameters
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Circuit
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
+public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Inversion
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.NaturalProperty
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
@@ -6885,6 +6888,7 @@ public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Achieva
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Capacity
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Converse
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.StrongConverse
+public import CslibFrontier.Probability.BitString.Chaining
 public import CslibFrontier.Probability.BitString.CoinFlips
 public import CslibFrontier.Probability.BitString.Collision
 public import CslibFrontier.Probability.BitString.FixedWeight
