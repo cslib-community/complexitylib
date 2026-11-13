@@ -459,8 +459,9 @@ The ROM IND-CCA games of `FO-notbot` and `FO^⊥` differ only in their key gener
 decapsulation they run against the random oracles `G` and `H`. `romIndCcaExperiment` takes both as
 parameters, with decapsulation a program over the joined interface `ROSpec` of `G` and `H`.
 `roIndCcaGame` and `eagerIndCcaGame` are its `FO-notbot` instances
-(`romIndCcaExperiment_notBot`, `eagerRomIndCcaExperiment_notBot`); `FujisakiOkamoto/Bot.lean` gives
-the `FO^⊥` instances. Every query of the experiment is the oracle program `romProgram`, so
+(`romIndCcaExperiment_notBot`, `eagerRomIndCcaExperiment_notBot`), and
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot` gives the `FO^⊥` instances. Every query
+of the experiment is the oracle program `romProgram`, so
 `RandomOracle.eval_run_interpret_eq_complete_bind` replaces both caches by complete tables in one
 step, and `RandomOracle.bind_complete_sum` splits the completed table into `G` and `H`
 (`eval_romIndCcaExperiment_eq_eager`). -/
