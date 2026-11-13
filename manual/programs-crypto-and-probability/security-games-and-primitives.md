@@ -439,9 +439,10 @@ encryption of `m₂` gives exactly a fresh encryption of `m₁ + m₂` (`eval_mu
 `eval_paillierEncrypt_mul_paillierEncrypt`). The fixed-modulus DCR worlds `dcrRealExperiment N D`
 and `dcrRandomExperiment N D` are in
 [`CompositeResiduosity/Finite.lean`](../../CslibFrontier/Crypto/Computational/CompositeResiduosity/Finite.lean),
-and the asymptotic games `dcrRealGame` and `dcrRandomGame` are `Game.withSetup` over them. `paillierCPAExperiment N A b` is the left-or-right experiment
-`lrExperiment` against a two-stage adversary `A : TwoStage ℕ (MessagePair (ZMod N)) (ZMod (N ^ 2))ˣ
-Bool σ` that receives the public key `N`. `paillierCPAAdvantage_le_dcrAdvantage` bounds its
+and the asymptotic games `dcrRealGame` and `dcrRandomGame` are `Game.withSetup` over them.
+`paillierCPAExperiment N A b` is the left-or-right experiment `lrExperiment` against a two-stage
+adversary `A : TwoStage ℕ (MessagePair (ZMod N)) (ZMod (N ^ 2))ˣ Bool σ` that receives the public
+key `N`. `paillierCPAAdvantage_le_dcrAdvantage` bounds its
 advantage by `dcrAdvantage N (paillierToDCR N A false) + dcrAdvantage N (paillierToDCR N A true)`,
 with no sampling loss. Connecting this bound to `DCR` and to the word scheme is a separate step.
 
