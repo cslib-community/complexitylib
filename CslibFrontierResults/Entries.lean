@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
 import CslibFrontier.Computability.Circuit.Boolean.Advice.Hierarchy
@@ -756,6 +757,19 @@ register_result "one-bit-advice-undecidable" where
     decider and has the same membership for all words of equal length. Advice need not be \
     computable; no efficient construction of the undecidable advice family is claimed. \
     Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
+register_result "sat-decidable-envelope-sparse-difference" where
+  title := "SAT reductions into a decidable envelope with sparse difference imply SAT in P"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 3.12",
+      locator := "January 2007 draft r2.pdf, PDF pp. 19–20; printed pp. 135–136" }
+  ]
+  theorems := [Cslib.Complexity.SAT_mem_P_of_sparse_diff]
+  scope := "Native polynomial-time many-one SAT reduction to S under an explicit target \
+    encoding; S is contained in a set G in P, and G minus S is sparse in prefix-census form. \
+    Concludes SAT in P. G need not be sparse and S need not be decidable. Reuses Fortune \
+    through a guarded UNSAT reduction; does not implement the source DFS proof."
 
 register_result "boolean-ring-arithmetic-simulation" where
   title := "Boolean circuits simulated over any ring with size factor five"

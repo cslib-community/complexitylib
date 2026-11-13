@@ -11,6 +11,47 @@ digests are listed in #4772. Numbers and pages belong to those drafts, not the 2
 The results registry remains [Entries.lean](../CslibFrontierResults/Entries.lean). A nearby theorem is
 not counted as full coverage.
 
+## Theory exercises: Chapter 3
+
+Source: January 2007 `r2.pdf`, PDF pp. 15–20/printed pp. 131–136, SHA-256
+`40c735ae7a67331b4b008e09b21bc7b65103937c05a148fac222e5b72d253704`.
+The twelve exercise numbers and their subparts were read from the primary text. Mapping uses
+`3611ca71f` plus the new envelope theorem below. This is a bounded exercise inventory, not a
+book-wide classification. Christian Reitwiessner's scope includes theory-establishing exercises;
+routine representation checks are recorded without creating proof work. Existing results are
+reused. [Checked correspondence clients](../CslibFrontierTests/GoldreichExercises.lean) cover
+3.2(2), 3.5 and the nonsparse-envelope specialization of 3.12.
+
+Here `SPARSE` counts words of length at most $n$, while the source bounds each exact length.
+Polynomial sparseness is unchanged: a prefix census sums at most $n+1$ per-length bounds,
+and a per-length census is bounded by the prefix census. No coefficient-one identity is claimed.
+`PWithOracle` means adaptive native polynomial-time oracle computation; it is not a many-one
+reduction. Ordinary bit languages use `encBits` throughout the class identities.
+
+| Exercise | PDF / printed page | Endpoint and disposition |
+|---|---|---|
+| 3.1 | 15–16 / 131–132 | **Routine representation reformulation, outside implementation scope.** The prompt changes devices from exact-length to up-to-length inputs with an explicit delimiter encoding. Its representation choice is relevant to 3.11; the existing exact-length/advice equivalence alone is not recorded as that encoding bridge. |
+| 3.2(1) | 16 / 132 | **Covered.** `Cslib.Circuits.Boolean.PPoly.of_sparse` in [Boolean/Sparse](../CslibFrontier/Computability/Circuit/Boolean/Sparse.lean) takes a polynomial bound on each slice, matching the source's census; `PPoly.of_mem_SPARSE` accepts the prefix-census class. No decidability is required. |
+| 3.2(2) | 16 / 132 | **Covered.** `Cslib.Complexity.mem_PPolyOn_iff_exists_mem_SPARSE_mem_PWithOracle` in [Sparse/Meyer](../CslibFrontier/Computability/Complexity/Classes/Sparse/Meyer.lean) is P/poly = P with a suitable sparse oracle. The checked client converts the `encBits` agreement interface to ordinary circuit languages. |
+| 3.3 | 16 / 132 | **Endpoint not located.** The source asks for $\mathrm{P}/\ell \subsetneq \mathrm{P}/(\ell+\delta)$ when $\ell(n)<2^{n-1}$ and $\delta$ is unbounded; this is separate from polynomial advice and circuit-size hierarchies. A formal endpoint must retain the possibility that the additional-length function oscillates; eventual monotonic growth must not silently replace unboundedness. This direction is already proposed in [#4777](https://github.com/cslib-community/cslib-frontier/pull/4777), alongside its numbered-result audit. |
+| 3.4 | 16 / 132 | **Covered.** `Cslib.Complexity.PWithOracle_subset_SigmaP_two` in [PH/OracleNP](../CslibFrontier/Computability/Complexity/Classes/PH/OracleNP.lean) applies to every NP oracle, so includes every Cook reduction to an NP set. |
+| 3.5 | 16 / 132 | **Covered.** `Cslib.Complexity.iUnion_PWithOracle_NP_inter_coNP` in [Oracle/Lowness](../CslibFrontier/Computability/Complexity/Classes/Oracle/Lowness.lean) identifies exactly the union of these oracle classes with NP ∩ coNP; the existential formulation is checked in the client. |
+| 3.6 | 16 / 132 | **Covered by the existing characterization.** `PiP`, `mem_PiP`, `IsAlternatingVerifier.compl` and `PiP_eq_preimage_compl_SigmaP` in [PH](../CslibFrontier/Computability/Complexity/Classes/PH.lean) give universal-first alternating verification. The source's common polynomial block length is a specialization of the independent block bounds. |
+| 3.7 | 17 / 133 | **Endpoint not located.** No bounded-alternation `kQBF` language and Σₖ-completeness endpoint was found. Unrestricted `TQBF_pspaceComplete` and `TQBFCNF_pspaceComplete` do not supply it. |
+| 3.8(1–2) | 17–18 / 133–134 | **Endpoints not located.** Neither the PH-to-highly-uniform depth-k circuit/succinct-input reduction nor the converse evaluation theorem was found. Generic circuit evaluation does not certify the source's polynomial-time local gate/edge query interface. |
+| 3.9(1–2) | 18 / 134 | **Partial.** `mem_PWithOracle_self` supplies the lower inclusions. At k=1 the NP-oracle bounds in `PH/OracleNP` supply the upper inclusions; the all-k oracle simulations were not located. |
+| 3.9(3–4) | 18 / 134 | **Covered by existing hierarchy/duality APIs.** `SigmaP_subset_PiP_succ`, `PiP_subset_SigmaP_succ`, `PH_eq_iUnion_PiP`, `PiP_eq_SigmaP_of_PiP_subset_SigmaP` and the complement identities in `PH` give the inclusions, union and equality from either same-level inclusion. |
+| 3.10(1–2) | 19 / 135 | **Endpoints not located.** No defined `1QBF` equivalence with SAT or general bounded-level QBF oracle identities were found. SAT's NP-completeness and unrestricted QBF completeness do not establish these particular interfaces. |
+| 3.11(1) | 19 / 135 | **Endpoint not located.** A generic downward-self-reduction interface with coNP certification of circuit correctness was not found. The guideline uses the up-to-length representation from 3.1; an exact-length circuit alone does not provide all shorter answers. |
+| 3.11(2) | 19 / 135 | **Conclusion covered; alternative proof route remains open.** `NP_subset_PPolyOn_iff_SAT` and `PiP_two_eq_SigmaP_two_of_SAT` in [PH/KarpLipton](../CslibFrontier/Computability/Complexity/Classes/PH/KarpLipton.lean) yield the collapse. They do not certify Part 1's circuit-correctness construction. |
+| 3.12 | 19–20 / 135–136 | **New formalization.** `Cslib.Complexity.SAT_mem_P_of_sparse_diff` in [Sparse/Envelope](../CslibFrontier/Computability/Complexity/Classes/Sparse/Envelope.lean) proves SAT ∈ P from a many-one reduction to S ⊆ G, G ∈ P and sparse G ∖ S. G itself need not be sparse or S decidable. The proof reuses Fortune through a guarded reduction of UNSAT, with the empty-difference case separate; it does not reproduce the source's DFS proof. |
+
+Negative searches inspected the PH, Oracle, Sparse, SAT/QBF, advice and circuit interfaces for
+these endpoints. “Not located” is a scoped search result, not proof of semantic absence.
+The remaining theory exercises, source-model bridges and book-wide formalization stay open in
+[#4772](https://github.com/cslib-community/cslib-frontier/issues/4772); this exercise layer does
+not complete the numbered-result audit or take ownership of its other proposals.
+
 ## Exact advice-length comparison: a model qualification
 
 The January 2007 draft defines advice strings of exactly $\ell(n)$ bits (Definition 3.5,

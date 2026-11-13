@@ -2179,6 +2179,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.Time
 public import CslibFrontier.Computability.Complexity.Classes.Sparse
 public import CslibFrontier.Computability.Complexity.Classes.Sparse.BoundedTruthTable
 public import CslibFrontier.Computability.Complexity.Classes.Sparse.Conjunctive
+public import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 public import CslibFrontier.Computability.Complexity.Classes.Sparse.Fortune
 public import CslibFrontier.Computability.Complexity.Classes.Sparse.Hausdorff
 public import CslibFrontier.Computability.Complexity.Classes.Sparse.Kadin
