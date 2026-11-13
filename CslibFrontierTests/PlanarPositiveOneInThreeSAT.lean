@@ -97,4 +97,6 @@ example : Turing.MultiTapeTM.ComputableInPolyTime
     encDrawnPlanarPositiveOneInExactThreeSATThree := by
   fun_prop
 
+example : (default : DrawnPlanarPositiveOneInExactThreeSATThreeInstance) = ⟨default, default⟩ := rfl
+
 end CslibFrontierTests.PlanarPositiveOneInThreeSAT

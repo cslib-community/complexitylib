@@ -121,10 +121,10 @@ attribute [local fun_prop] poly_checkPairWith
 @[fun_prop] theorem computableInPolyTime_checkConstraint :
     ComputableInPolyTime checkConstraint (encConstraint encTable encNat) encBool := by
   unfold checkConstraint
-  have hlen : ComputableInPolyTime (fun c : Constraint Table ℕ => c.2.length)
+  have hlen : ComputableInPolyTime (fun c : Constraint Table ℕ => c.scope.length)
       (encConstraint encTable encNat) encUnary := by fun_prop
   have hwidth : ComputableInPolyTime
-      (fun c : Constraint Table ℕ => decide (c.1.arity = c.2.length))
+      (fun c : Constraint Table ℕ => decide (c.rel.arity = c.scope.length))
       (encConstraint encTable encNat) encBool :=
     ComputableInPolyTime.decide_eq' (by fun_prop)
       (ComputableInPolyTime.unary_to_binary.comp hlen)
@@ -136,7 +136,7 @@ binary names. Its count results are unary and bounded by the explicit occurrence
     ComputableInPolyTime checkEdge (encCSP encTable encNat) encBool := by
   unfold checkEdge
   have hnodup : ComputableInPolyTime
-      (fun p : CSP Table ℕ × Constraint Table ℕ => decide p.2.2.Nodup)
+      (fun p : CSP Table ℕ × Constraint Table ℕ => decide p.2.scope.Nodup)
       (encPair (encCSP encTable encNat) (encConstraint encTable encNat)) encBool :=
     ComputableInPolyTime.decide_nodup (by fun_prop)
   have hcount : ComputableInPolyTime

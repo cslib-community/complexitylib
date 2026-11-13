@@ -27,7 +27,10 @@ belong to their cell's implication ring and introduce no independent choices.
 
 ## Main definitions
 
-* `Cslib.Complexity.SAT.ParsimoniousPlanar.placedClauses`: actual clauses and geometric data.
+* `Cslib.Complexity.SAT.ParsimoniousPlanar.placedClauses`: actual clauses and geometric data;
+  `mem_placedClauses` splits membership into the four kinds of record, and
+  `exists_occurrence_of_mem_originalClauses` traces each literal and route of an original
+  clause record to its source occurrence.
 * `Cslib.Complexity.SAT.ParsimoniousPlanar.formula`: compact natural-number output labels.
 * `Cslib.Complexity.SAT.ParsimoniousPlanar.positions`, `.routes`: finite drawing data.
 
@@ -116,7 +119,7 @@ def lastLiteral (sites : List Point) (r : Route) (positive : Bool) : Literal Var
 def originalClauses (φ : CNF ℕ) (sites : List Point) : List PlacedClause :=
   φ.zipIdx.map fun (c, i) =>
     let ls := c.zipIdx.map fun (l, j) =>
-      lastLiteral sites (occurrencePath φ (i, j, l)) l.2
+      lastLiteral sites (occurrencePath φ ⟨i, j, l⟩) l.2
     (ls.map Prod.fst, center (Layout.center (φ.distinctVars.length + i)), ls.map Prod.snd)
 
 /-- The ordinary fixed implication ring in an occupied cell. -/
@@ -154,6 +157,39 @@ def positions (φ : CNF ℕ) : List Point :=
 
 /-- Incidence routes ordered by clauses and by literal positions. -/
 def routes (φ : CNF ℕ) : List Route := (placedClauses φ).flatMap fun c => c.2.2
+
+/-- The seam clauses of a route are the two lane clauses of each step before the final one. -/
+theorem mem_links {sites : List Point} {r : Route} {pc : PlacedClause} :
+    pc ∈ links sites r ↔ ∃ e ∈ r.dropLast.consecutivePairs,
+      pc = link sites e.1 e.2 0 ∨ pc = link sites e.1 e.2 1 := by
+  simp only [links, List.mem_flatMap, List.mem_cons, List.not_mem_nil, or_false]
+
+/-- Case analysis on the output records: an original clause, a clause of an ordinary ring or of
+a crossover in its cell, or one of the two lane clauses of an occurrence path step. -/
+theorem mem_placedClauses {φ : CNF ℕ} {pc : PlacedClause} :
+    pc ∈ placedClauses φ ↔ pc ∈ originalClauses φ (crossingSites φ) ∨
+      (∃ p ∈ ordinaryCells φ, pc ∈ ordinaryClauses p) ∨
+      (∃ p ∈ crossingSites φ, pc ∈ crossingClauses p) ∨
+      ∃ o ∈ Cslib.Logic.PL.occurrences φ, ∃ e ∈ (occurrencePath φ o).dropLast.consecutivePairs,
+        pc = link (crossingSites φ) e.1 e.2 0 ∨ pc = link (crossingSites φ) e.1 e.2 1 := by
+  simp only [placedClauses, List.mem_append, List.mem_flatMap, mem_links, or_assoc]
+
+/-- Each literal and each route of an original clause record `(c, p, rs)` is the final literal
+or final incidence of one occurrence `⟨i, j, x⟩` of the source formula, carrying the sign of its
+source literal `x`. -/
+theorem exists_occurrence_of_mem_originalClauses {φ : CNF ℕ} {sites : List Point}
+    {c : Clause Variable} {p : Point} {rs : List Route}
+    (hpc : (c, p, rs) ∈ originalClauses φ sites) :
+    (∀ l ∈ c, ∃ i j x, ⟨i, j, x⟩ ∈ Cslib.Logic.PL.occurrences φ ∧
+      (lastLiteral sites (occurrencePath φ ⟨i, j, x⟩) x.2).1 = l) ∧
+    ∀ r ∈ rs, ∃ i j x, ⟨i, j, x⟩ ∈ Cslib.Logic.PL.occurrences φ ∧
+      (lastLiteral sites (occurrencePath φ ⟨i, j, x⟩) x.2).2 = r := by
+  obtain ⟨⟨d, i⟩, hdi, heq⟩ := List.mem_map.mp hpc
+  simp only [Prod.mk.injEq] at heq
+  obtain ⟨rfl, -, rfl⟩ := heq
+  constructor <;> intro y hy <;> obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hy <;>
+    obtain ⟨⟨x, j⟩, hxj, rfl⟩ := List.mem_map.mp hlr <;>
+    exact ⟨i, j, x, mk_mem_occurrences_of_mem_zipIdx hdi hxj, rfl⟩
 
 /-- A point receives an ordinary ring exactly when a retained path uses it outside a crossing. -/
 theorem mem_ordinaryCells (φ : CNF ℕ) (p : Point) :

@@ -42,7 +42,8 @@ namespace Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 
 /-- Interpret the existing indexed Fibonacci methods through their existing record layout. -/
 @[expose] def pqMethods (n K w base : ℕ) :

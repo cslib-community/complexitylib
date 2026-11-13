@@ -78,8 +78,9 @@ example : ¬ IndistinguishableWithAdvice (fun _ => []) (fun n => PMF.pure (List.
 it to the GMW length `3 * n + 1` itself. -/
 example {generator : List Bool → List Bool} (h : NonuniformPRG generator (fun n => n + 1))
     {α : Type} {enc : α ↪ List Bool} {A : Set α} (hA : A ∈ Complexity.NP enc) :
-    ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge :=
-  h.exists_auxiliaryInputZeroKnowledge_of_mem_NP hA
+    ∃ zk : ZKProof enc A (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      zk.NegligibleSoundness ∧ zk.AuxiliaryInputZeroKnowledge :=
+  h.exists_zkProof_of_mem_NP hA
 
 private noncomputable def fairPair : Pseudoentropy.SamplablePair where
   Observation _ := Unit
@@ -106,24 +107,13 @@ private theorem fairPair_entropy (n : ℕ) :
 fixed advice family. -/
 private theorem fairPair_gapWithAdvice (advice : ℕ → List Bool) :
     fairPair.HasGapWithAdvice (fun _ => 0) advice := by
-  intro adversary _
+  intro predictor _
   apply Filter.Eventually.of_forall
   intro n
-  have hbit (guess : Bool) : (PMF.uniformOfFintype Bool).map (fun bit => guess == bit) =
-      PMF.uniformOfFintype Bool := by
-    ext bit
-    cases guess <;> cases bit <;>
-      norm_num [PMF.map_apply, tsum_fintype, Fintype.sum_bool, PMF.uniformOfFintype_apply]
-  have hgame : ProbComp.eval
-      (Pseudoentropy.predictionGame fairPair.sample
-        (fun n word => adversary ((n, advice n), word)) n) =
-      PMF.uniformOfFintype Bool := by
-    simp only [Pseudoentropy.predictionGame, fairPair, ProbComp.eval_bind, ProbComp.eval_map,
-      ProbComp.eval_uniform, ProbComp.eval_pure, PMF.bind_map, Function.comp_def]
-    rw [PMF.bind_comm]
-    change (ProbComp.eval (adversary ((n, advice n), [true, false]))).bind
-      (fun guess => (PMF.uniformOfFintype Bool).map (fun bit => guess == bit)) = _
-    simp only [hbit, PMF.bind_const]
+  have hgame : ProbComp.eval (predictionExperiment (fairPair.latentSample n) Prod.fst Prod.snd
+      (predictor n (advice n))) = PMF.uniformOfFintype Bool := by
+    simp only [ProbComp.eval_predictionExperiment, fairPair.eval_latentSample]
+    exact predictionExperiment_uniform_bit () _
   rw [hgame, fairPair_entropy]
   norm_num [PMF.uniformOfFintype_apply]
 
@@ -146,11 +136,13 @@ example (n : ℕ) :
 `1 / 2` via `HasGapWithAdvice.eventually_error_ge`. -/
 example :
     ∀ᶠ n in Filter.atTop, (1 / 2 : ℝ) ≤
-      (ProbComp.eval
-        (Pseudoentropy.predictionGame fairPair.sample
-          (fun n _ => pure ((nonemptyAdvice n).headD false)) n) false).toReal := by
+      (ProbComp.eval (predictionExperiment (fairPair.latentSample n) Prod.fst Prod.snd
+        fun _ => pure ((nonemptyAdvice n).headD false)) false).toReal := by
   have h := (fairPair_gapWithAdvice nonemptyAdvice).eventually_error_ge
-    (fun input => pure (input.1.2.headD false)) (by fun_prop)
+    (fun _ advice _ => pure (advice.headD false)) (by
+      open Pseudoentropy Pseudoentropy.SamplablePair in
+      unfold AdvisedPredictor.IsPPT
+      fun_prop)
   filter_upwards [h] with n hn
   simpa [fairPair_entropy] using hn
 
@@ -199,11 +191,11 @@ example (n : ℕ) :
 
 /-- Concrete exercised client of `HasGapWithAdvice.extract_three` on `fairPair` with nonempty
 advice `nonemptyAdvice`, positive extracted label output
-`ExtractionSchedule.slack n (saved.length n) 0`, and the advice-dependent distinguisher
+`saved.sampleSlack (fun _ => 0) n`, and the advice-dependent distinguisher
 `advisedWordDistinguisher`. -/
 example :
-    let count := fun n => Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0
-    let bits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0
+    let count := saved.sampleCount (fun _ => 0)
+    let bits := saved.sampleSlack (fun _ => 0)
     Negligible (fun n => Game.advantage
       (distinguishingGame
         (ProbComp.eval
@@ -218,19 +210,19 @@ example :
   have hind : IndistinguishableWithAdvice nonemptyAdvice
       (fun n => ProbComp.eval
         (Pseudoentropy.ThreeSource.extract
-          (Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0)
+          (saved.sampleCount (fun _ => 0) n)
           (saved.length n) 2 0
-          (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0) 0
+          (saved.sampleSlack (fun _ => 0) n) 0
           (saved.sampleWithSeed n)))
       (fun n => BitString.uniformList
         (Pseudoentropy.ThreeSource.outputLength
-          (Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0)
+          (saved.sampleCount (fun _ => 0) n)
           (saved.length n) 2 0
-          (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0) 0)) := by
+          (saved.sampleSlack (fun _ => 0) n) 0)) := by
     apply (fairPair_gapWithAdvice nonemptyAdvice).extract_three saved
       (bound := fun _ => 2) (inverseSlack := fun _ => 0)
       (observationBits := fun _ => 0) (remainingBits := fun _ => 0)
-      (labelBits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)
+      (labelBits := fun n => saved.sampleSlack (fun _ => 0) n)
       (numerator := fun _ => 2) (densityBound := fun _ => 0)
       (by constructor <;> fun_prop)
       (by intro n observation _; exact Nat.le_refl 2)
@@ -242,14 +234,14 @@ example :
     have h := Pseudoentropy.ExtractionSchedule.two_slack_eq n (saved.length n) 0
     norm_num [dyadicSize] at h ⊢
     linarith [Nat.cast_nonneg (α := ℝ)
-      (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)]
+      (saved.sampleSlack (fun _ => 0) n)]
   exact hind advisedWordDistinguisher (by unfold advisedWordDistinguisher; fun_prop)
 
 /-- Concrete exercised client of `HasGapWithAdvice.extract_indexed_word_labels` on `fairPair` with
 nonempty advice `nonemptyAdvice` and an advice-dependent indexed test. -/
 example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
-    let count := fun n => Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0
-    let bits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0
+    let count := saved.sampleCount (fun _ => 0)
+    let bits := saved.sampleSlack (fun _ => 0)
     let test : ℕ × List Bool → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool :=
       fun a i result => pure (a.2.headD false && (result.2.2.headD false ^^ decide (i < a.1)))
     Negligible (fun n => Game.advantage
@@ -264,7 +256,7 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
   have hlength := saved.length_isPolyTime
   apply (fairPair_gapWithAdvice nonemptyAdvice).extract_indexed_word_labels saved choose
     (candidates := fun n => n + 1) (inverseSlack := fun _ => 0)
-    (outputBits := fun n _ => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)
+    (outputBits := fun n _ => saved.sampleSlack (fun _ => 0) n)
     (numerator := fun _ _ => 2) (densityBound := fun _ => 0)
     (by fun_prop)
     (Pseudoentropy.ExtractionSchedule.isPolyTime_slack (by fun_prop) (by fun_prop) (by fun_prop))
@@ -278,7 +270,7 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
   intro n
   have h := Pseudoentropy.ExtractionSchedule.two_slack_eq n (saved.length n) 0
   norm_num [dyadicSize] at h ⊢
-  linarith [Nat.cast_nonneg (α := ℝ) (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)]
+  linarith [Nat.cast_nonneg (α := ℝ) (saved.sampleSlack (fun _ => 0) n)]
 
 /-- Conditional client of `EntropyGrid.exists_secure_padded_choice_withAdvice` assuming a
 nonuniform one-way function `hf : NonuniformOneWay f` (which supplies a pseudoentropy pair with
@@ -316,8 +308,48 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       ⟨hbound, hdensity, hcommon, hfits, hsize⟩
       (Filter.Eventually.of_forall Pseudoentropy.EntropyGrid.four_steps_le_owf_gap)
   refine ⟨pair, savedPair, bound, common, choose, hchoose, ?_⟩
-  exact hsecure (fun a _ word => advisedWordDistinguisher (a, word))
-    (by unfold advisedWordDistinguisher; fun_prop)
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
+    hsecure.negligible_encoded (encAdvice := Turing.MultiTapeTM.encPair
+        Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encUnary)
+      (test := fun input => advisedWordDistinguisher ((input.1.1, input.1.2.1), input.2))
+      (by unfold advisedWordDistinguisher; fun_prop)
+
+open Turing.MultiTapeTM in
+/-- The ThreeSource conclusion `IndistinguishableWithAdvice (fun n => encPair encBits encUnary
+(advice n, choose n)) X Y`, whose tests read `(n, (advice, i))`, implies the former form with an
+indexed test reading `((n, advice), i)`: the named form loses no strength. -/
+example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : ℕ → ℕ}
+    (h : IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n)) X Y) :
+    ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
+      IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+        encBool (fun ((a, i), word) => test a i word) →
+      Negligible (fun n => Game.advantage
+        ((X n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
+        ((Y n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
+  intro test htest
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
+    h.negligible_encoded (encAdvice := encPair encBits encUnary)
+      (test := fun input => test (input.1.1, input.1.2.1) input.1.2.2 input.2)
+      (htest.preprocess (prepare := fun input : (ℕ × (List Bool × ℕ)) × List Bool =>
+        (((input.1.1, input.1.2.1), input.1.2.2), input.2)) (by fun_prop))
+
+open Turing.MultiTapeTM in
+/-- Conversely, the former indexed-test form implies the named form used by the GeneratorXor
+`hsecure` hypotheses, so restating them requires nothing stronger. -/
+example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : ℕ → ℕ}
+    (h : ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
+      IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+        encBool (fun ((a, i), word) => test a i word) →
+      Negligible (fun n => Game.advantage
+        ((X n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
+        ((Y n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word))))) :
+    IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n)) X Y := by
+  apply IndistinguishableWithAdvice.of_negligible_encoded
+  intro test htest
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
+    h (fun a i word => test ((a.1, (a.2, i)), word))
+      (htest.preprocess (prepare := fun input : ((ℕ × List Bool) × ℕ) × List Bool =>
+        ((input.1.1.1, (input.1.1.2, input.1.2)), input.2)) (by fun_prop))
 
 /-- Unconditional concrete client of `GeneratorXor.indistinguishableWithAdvice`: combining a
 constant-zero candidate (`index = 0`) with an identity candidate (`index = 1`) yields an ensemble
@@ -351,7 +383,7 @@ example :
     apply GeneratorXor.indistinguishableWithAdvice (choose := fun _ => 1)
       (by fun_prop) (by fun_prop) (by fun_prop) hcand
       (Filter.Eventually.of_forall fun _ => by decide)
-    intro adversary _
+    intro test _
     have hid (n : ℕ) :
         (BitString.uniformList (n + 1)).map (candidate n 1) = BitString.uniformList (n + 1) := by
       simpa only [candidate, one_ne_zero, ↓reduceIte] using
@@ -360,23 +392,14 @@ example :
   exact hind advisedWordDistinguisher (by unfold advisedWordDistinguisher; fun_prop)
 
 /-- Concrete exercised client of `NonuniformOneWay.exists_nonuniformPRG`,
-`NonuniformOneWay.exists_nonuniformPRG_three_mul`,
-`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP` (chained to
-`UnboundedAuxiliaryInputZeroKnowledge` and `InstanceAuxiliaryInputZeroKnowledge`),
-`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation`, and the soundness-amplified
+`NonuniformOneWay.exists_nonuniformPRG_three_mul`, and the soundness-amplified
 (`(1 / 3) ^ (n + 1)`, `ZKProof.NegligibleSoundness`) landmark theorems
 `NonuniformOneWay.exists_zkProof_of_mem_NP` and
-`NonuniformOneWay.exists_zkProof_of_npRelation` on `ThreeSAT`. -/
+`NonuniformOneWay.exists_zkProof_of_npRelation` on `ThreeSAT` (chained to
+`UnboundedAuxiliaryInputZeroKnowledge` and `InstanceAuxiliaryInputZeroKnowledge`). -/
 example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
     (∃ g₁ : List Bool → List Bool, NonuniformPRG g₁ (fun n => n + 1)) ∧
     (∃ g₃ : List Bool → List Bool, NonuniformPRG g₃ (fun n => 3 * n + 1)) ∧
-    (∃ zk : ZeroKnowledgeProof Complexity.encCNF Complexity.ThreeSAT,
-      zk.AuxiliaryInputZeroKnowledge ∧
-      zk.UnboundedAuxiliaryInputZeroKnowledge ∧
-      zk.InstanceAuxiliaryInputZeroKnowledge) ∧
-    (∃ zk : ZeroKnowledgeProof Complexity.encCNF Complexity.ThreeSAT.npRelation.language,
-      (∀ a w, zk.isWitness a w = true ↔ Complexity.ThreeSAT.npRelation.IsWitness a w) ∧
-      zk.AuxiliaryInputZeroKnowledge) ∧
     (∃ zk : ZKProof Complexity.encCNF Complexity.ThreeSAT
         (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
       zk.NegligibleSoundness ∧
@@ -390,20 +413,25 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       zk.AuxiliaryInputZeroKnowledge ∧
       zk.UnboundedAuxiliaryInputZeroKnowledge ∧
       zk.InstanceAuxiliaryInputZeroKnowledge) := by
-  obtain ⟨zk, hzk⟩ :=
-    hf.exists_auxiliaryInputZeroKnowledge_of_mem_NP Complexity.ThreeSAT.mem_NP
   obtain ⟨zkSeq, hnegSeq, hzkSeq⟩ :=
     hf.exists_zkProof_of_mem_NP Complexity.ThreeSAT.mem_NP
   obtain ⟨zkRel, hwRel, hnegRel, hzkRel⟩ :=
     hf.exists_zkProof_of_npRelation Complexity.ThreeSAT.npRelation
   exact ⟨hf.exists_nonuniformPRG, hf.exists_nonuniformPRG_three_mul,
-    ⟨zk, hzk, hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩,
-    hf.exists_auxiliaryInputZeroKnowledge_of_npRelation Complexity.ThreeSAT.npRelation,
     ⟨zkSeq, hnegSeq, hzkSeq,
       hzkSeq.unboundedAuxiliaryInputZeroKnowledge,
       hzkSeq.instanceAuxiliaryInputZeroKnowledge⟩,
     ⟨zkRel, hwRel, hnegRel, hzkRel,
       hzkRel.unboundedAuxiliaryInputZeroKnowledge,
       hzkRel.instanceAuxiliaryInputZeroKnowledge⟩⟩
+
+-- `ZKProof.mono` keeps the witness check and auxiliary-input zero knowledge, so the single-session
+-- `1 / 3` statement for an NP relation's own witnesses follows from the amplified one.
+example {α : Type} {enc : α ↪ List Bool} {f : List Bool → List Bool} (hf : NonuniformOneWay f)
+    (R : Complexity.NPRelation enc) :
+    ∃ zk : ZKProof enc R.language (fun _ => 1 / 3),
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge :=
+  let ⟨zk, hw, _, hzk⟩ := hf.exists_zkProof_of_npRelation R
+  ⟨zk.mono one_third_pow_succ_le, hw, hzk⟩
 
 end CslibFrontierTests.Crypto.Nonuniform

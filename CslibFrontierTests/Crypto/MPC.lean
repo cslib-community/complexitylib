@@ -865,16 +865,18 @@ example :
         (encFamilyRunInput Turing.MultiTapeTM.encUnary 2 id)
         Turing.MultiTapeTM.encBits
         (fun inp =>
-          (gmwOT14RandomizedProtocol 2 inp.1 inp.1 inp.1 (C inp.1)).runEncoded
-            (encGMWPartyView 2 inp.1 inp.1 inp.1 (C inp.1))
-            (fun _ y => List.ofFn y) inp.2) ∧
+          (gmwOT14RandomizedProtocol 2 inp.index inp.index inp.index (C inp.index)).runEncoded
+            (encGMWPartyView 2 inp.index inp.index inp.index (C inp.index))
+            (fun _ y => List.ofFn y) inp.inputs) ∧
       (∀ (I : Finset (Fin 2)), I ≠ Finset.univ →
         Cslib.Probability.IsPPTOn
           (encFamilySimInput Turing.MultiTapeTM.encUnary 2 id id I)
           Turing.MultiTapeTM.encBits
           (fun inp =>
-            encodeCoalitionView (encGMWPartyView 2 inp.1 inp.1 inp.1 (C inp.1)) I <$>
-              gmwOT14RandomizedSim 2 inp.1 inp.1 inp.1 (C inp.1) I inp.2.1 inp.2.2)) :=
+            encodeCoalitionView
+                (encGMWPartyView 2 inp.index inp.index inp.index (C inp.index)) I <$>
+              gmwOT14RandomizedSim 2 inp.index inp.index inp.index (C inp.index) I
+                inp.inputs inp.outputs)) :=
   exists_perfectSemiHonestPrivate_ot14_of_polyTime 2
     Turing.MultiTapeTM.ComputableInPolyTime.id'
     Turing.MultiTapeTM.ComputableInPolyTime.id'
@@ -883,5 +885,22 @@ example :
       (Turing.MultiTapeTM.ComputableTidilyInPolyTime.bitsTail.comp
         (Turing.MultiTapeTM.ComputableTidilyInPolyTime.snd
           Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encBits)))
+
+/-! The family input records keep the former `Sigma` words. -/
+
+example {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n : α → ℕ) (inp : FamilyRunInput α m n) :
+    encFamilyRunInput enc m n inp =
+      Turing.MultiTapeTM.encPair enc Turing.MultiTapeTM.encBits
+        (inp.index, List.ofFn
+          ((BitString.blocksEquiv (α := Bool) (m := m) (k := n inp.index)).symm inp.inputs)) :=
+  rfl
+
+example {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n k : α → ℕ) (I : Finset (Fin m))
+    (inp : FamilySimInput α m n k I) :
+    encFamilySimInput enc m n k I inp =
+      Turing.MultiTapeTM.encPair enc
+        (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encBits)
+        (inp.index, (extendCoalitionBits I inp.inputs, extendCoalitionBits I inp.outputs)) :=
+  rfl
 
 end CslibFrontierTests.Crypto.MPC

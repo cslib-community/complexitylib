@@ -18,12 +18,29 @@ The [Arora–Barak 2007 draft audit](arora-barak-2007.md) records a source-pinne
 coverage comparison, including missing endpoints, partial matches and source/model problems.
 Its chapters 6–7 records distinguish native circuit/randomized endpoints from uniformity,
 expected-time and expander-concentration gaps and identify literal source defects.
+Its Chapter 11 connectivity milestone records the exact total edge-query lower bound and its
+empty-graph conventions; it does not establish the other chapter endpoints.
 Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
-and quantitative crypto bounds. Its Chapter 14 record includes a checked degree obstruction to the draft's literal
-circuit-to-determinant statement; it is not a claim of book-wide coverage.
+and quantitative crypto bounds. The native `dip-eq-np` entry covers deterministic interaction in the oracle-PPT IP model;
+`perfect-soundness-ip-subset-np` covers perfect soundness with any positive completeness.
+Its Chapter 14 record includes a checked degree obstruction to the draft's literal
+circuit-to-determinant statement.
+Its chapters 11–13, 15, 21 and 22 distinguish exact endpoints, model restrictions and
+source defects. The later expected-cost Yao endpoint includes numerical equality, optimal
+finite-support algorithms and hard distributions for arbitrary output types; the three-bit
+majority example has exact expected complexity $8/3$, including the arbitrary-tree lower bound. The later Chapter 11
+Exercise 1 endpoint bounds relevant coordinates by $s4^s$ and gives an explicit logarithmic
+maximum-sensitivity lower bound. Chapter 22 preserves the constant-free formula restriction and the open
+corrected density-amplification objective.
+Chapters 16–17 distinguish finite pseudorandomness/coding
+results from uniform machine bounds and general-hardness endpoints; this is not a claim of
+book-wide coverage. Its companion [exercise inventory](arora-barak-2007-exercises.md) classifies
+every end-of-chapter exercise as establishing new theory, covered, a source issue or routine.
 
 The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
 for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.
+Its companion [exercise inventory](goldreich-2007-exercises.md) classifies the end-of-chapter
+exercises of chapters 2 and 5–10 as establishing new theory, covered, a source issue or routine.
 
 ## Authoring
 

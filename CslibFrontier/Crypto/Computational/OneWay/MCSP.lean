@@ -223,7 +223,7 @@ theorem interpret_mcspDistinguisher (d : ℕ) (oracle : List Bool → List Bool)
         (restriction oracle n (tableArity d n)), 2 ^ tableArity d n / (5 * tableArity d n)⟩ := by
   rw [mcspDistinguisher, OracleComp.interpret_bind, interpret_queryTable, pure_bind,
     ProbOracleComp.interpret_sample, tableInstance_map_tableQueries]
-  exact OracleComp.interpret_query_eq_self _
+  exact ProbComp.interpret_unifFin _
 
 /-! ### The distinguisher is uniform strict oracle PPT -/
 
@@ -317,7 +317,7 @@ theorem eval_prfRealGame_mcspDistinguisher (family : List Bool → List Bool →
         ⟨tableArity d n, MCSP.truthTable (tableArity d n)
           (restriction (family key) n (tableArity d n)),
           2 ^ tableArity d n / (5 * tableArity d n)⟩) := by
-  simp only [prfRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
+  simp only [prfRealGame, ProbOracleComp.run, ProbComp.eval_bind, BitString.eval_sampleList,
     interpret_mcspDistinguisher, restriction_prfOracle hm]
 
 /-- In the ideal game, the decider runs on the truth table of the restriction of a uniformly
@@ -328,7 +328,7 @@ theorem eval_prfIdealGame_mcspDistinguisher {d n : ℕ} (hn : 0 < n) (hm : table
         ProbComp.eval (mcspRun p V ⟨tableArity d n, MCSP.truthTable (tableArity d n)
           (restrictTable n (tableArity d n) hn table),
           2 ^ tableArity d n / (5 * tableArity d n)⟩) := by
-  simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+  simp only [prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
     interpret_mcspDistinguisher, restriction_randomFunctionOracle hn hm]
 
 /-- For large `n`, the arity `m = d ⌈log₂ n⌉` with `d = c + 2` satisfies `16 ≤ m ≤ n`, and the

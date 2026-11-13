@@ -45,6 +45,8 @@ what removes the square of the family bound from Razborov's estimate
 
 @[expose] public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone.Closure.Positive
 
 open Cslib.Circuits.Clique Finset Cslib.Circuits.Monotone.Closure.Approximator

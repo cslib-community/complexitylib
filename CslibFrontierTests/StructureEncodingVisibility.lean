@@ -65,4 +65,31 @@ example (t : TaggedTable n) :
 
 end
 
+/-- A private encoding with an explicit parameter and a dependent field. -/
+private enc_structure encPrivateElement (F : Family) : Element F where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc)
+
+example (F : Family) (x : Element F) :
+    encPrivateElement F x =
+      encPair encUnary (encPair F.encDesc encBits) (x.size, x.desc, F.encode x.desc x.elt) :=
+  rfl
+
+-- Rebuilding a record reads each field and builds the dependent word with the private rules.
+example (F : Family) :
+    ComputableInPolyTime (fun x : Element F => (⟨x.size, x.desc, x.elt⟩ : Element F))
+      (encPrivateElement F) (encPrivateElement F) := by
+  fun_prop
+
+/-- A private flattened encoding whose parent rule must remain local to this module. -/
+private enc_structure encPrivateElementPair (F : Family) : ElementPair F
+    flattened toElement : (eElement F) where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc),
+  other : (F.encode desc) using (F.encode_injective desc)
+
+-- Private flattened-parent rules are active in their defining scope.
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPair F}
+    (hf : ComputableInPolyTime f enc (encPrivateElementPair F)) :
+    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) := by
+  fun_prop
+
 end CslibFrontierTests.StructureEncodingVisibility

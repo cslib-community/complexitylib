@@ -4,7 +4,7 @@ cslib-frontier represents propositional syntax as concrete finite data and disti
 
 ## CNF, CSP and quantified formulas
 
-[CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals.
+[CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals. A further measure, `CNF.connectiveCount`, counts the binary AND and OR symbols of the written formula (`k - 1` ORs per clause of `k` literals, `m - 1` ANDs between `m` clauses); [CNF/TruthTable.lean](../../CslibFrontier/Logics/Propositional/CNF/TruthTable.lean) proves that the truth-table formula `CNF.ofTruthTable f` of any `f : (Fin ℓ → Bool) → Bool` computes it with at most `ℓ * 2 ^ ℓ` such symbols and at most `ℓ * 2 ^ ℓ` literal occurrences (Arora–Barak draft, Claim 2.14).
 
 To certify a program that evaluates a formula, import
 `CslibFrontier.Logics.Propositional.CNF.PolyTime`. Its `fun_prop` rules
@@ -159,7 +159,7 @@ supplies `declaredCNFDecoder` and the polynomial-time well-formed word recognize
 `declaredCNFCode`. See the [CNF basis tests](../../CslibFrontierTests/CNFBasics.lean), checked with
 `scripts/build.sh CslibFrontierTests.CNFBasics`.
 
-[Constraint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface; see [weighted CSP partition functions and variable elimination](networks-and-iteration.md#weighted-csp-partition-functions-and-variable-elimination) for `partitionFunctionOn`, separator conditioning, `FactorTable` tensor bridges, and `TimeM` / weight-cost variable elimination.
+[Constraint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label `rel` plus a variable list `scope`; write `⟨R, vs⟩` for a literal constraint, and use `Constraint.equivProd` where a pair is needed. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface; see [weighted CSP partition functions and variable elimination](networks-and-iteration.md#weighted-csp-partition-functions-and-variable-elimination) for `partitionFunctionOn`, separator conditioning, `FactorTable` tensor bridges, and `TimeM` / weight-cost variable elimination.
 
 [QBF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
 
@@ -263,6 +263,14 @@ of general equality elimination. See [clone examples](../../CslibFrontierTests/B
 [gadget examples](../../CslibFrontierTests/CSPGadget.lean) and
 [hardness examples](../../CslibFrontierTests/SchaeferHardness.lean).
 
+For the template, instantiation, replacement and guarded semantic theorems alone, import
+`CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement`.
+The ordinary `CslibFrontier.Computability.PolyTime.CSP.Gadget` import still supplies those
+same APIs together with their native runtime certificates. The
+[logical-import client](../../CslibFrontierTests/PPGadgetReplacement.lean) computes replacement
+with repeated and sparse binary names and checks that the logical import does not load the
+native theorem. Names, bodies, encodings and runtime bounds are unchanged by this separation.
+
 `CSPSAT.exists_linear_size_reduction_from_threeSAT` supplies one reduction with native
 polynomial-time computation, correctness and the bound
 $n' + m' \le C_\Gamma m \le C_\Gamma(n + m)$. Here `numVars` counts distinct occurring
@@ -273,6 +281,9 @@ constraint and occurrence counts; distinct variables are bounded by occurrences.
 compiler retains a uniform linear bound because an invalid input is nonempty. These are
 combinatorial size bounds; neither linear running time nor linear binary encoding length is
 asserted. See the [checked size clients](../../CslibFrontierTests/SchaeferSize.lean).
+`CslibFrontier.Computability.PolyTime.CSP.Gadget.Size` now imports only the logical replacement
+API: it supplies counts, not the native Gadget certificates it previously exported incidentally.
+Import `...PolyTime.CSP.Gadget` explicitly when using those runtime certificates.
 
 The result is the Boolean dichotomy; symmetric and larger-domain dichotomies are outside its scope.
 
@@ -381,10 +392,15 @@ From the repository root, import
 The namespace is `Cslib.Complexity.Graph.RotationRecognition`. The
 [checked guide clients](../../guide/CslibFrontierGuide/NPCompleteness.lean#frozen-xor-queries-and-checked-recovery)
 show the ordinary imports, concrete validation/failure cases and success contracts.
-The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) additionally exercises
-loops, parallel edges, repeated scopes, nullaries and large binary labels; run
-`scripts/build.sh CslibFrontierTests.RotationRecognition` to check it. Successful compilation
-checks actual solver/recovery evaluations and theorem applications, without proving completeness.
+The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) checks small successful
+recoveries, raw-loop order acceptance and rejection, repeated scopes, nullaries, malformed inputs
+and relation-metadata insensitivity. The [CSP certificate cases](../../CslibFrontierTests/CSPRotationCertificate.lean)
+cover large variable names and supplied-table checking. Run
+`scripts/build.sh CslibFrontierTests.RotationRecognition` to check the recovery examples.
+These kernel-checked evaluations and theorem applications witness particular outcomes; they
+do not prove completeness or check generated code. The
+[profiling and coverage record](https://github.com/cslib-community/cslib-frontier/issues/4972#issuecomment-6845165353)
+explains the choice of small fixtures.
 
 `FixedRotationInput` pairs the existing listed graph with optional complete clockwise dart
 words. `Valid` requires declared vertices exactly `List.range n`, endpoints below `n`, exactly
@@ -815,6 +831,15 @@ coordinate-bit/runtime/P bounds and the CSP dichotomy under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) remain separate obligations.
 
 ## Ordered incidence-to-polygon rotations
+
+For cyclic argument succession without the polygon construction, import
+`CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentPermutation`.
+`Cslib.Complexity.CSP.argumentPermutation F` follows each original scope, and
+`sameCycle_argumentPermutation o p` characterizes its orbits by equality of constraint
+positions. Repeated names and identical rows keep distinct occurrences; a nullary row has no
+occurrence to rotate. The [ordinary-import client](../../CslibFrontierTests/CSPArgumentPermutation.lean)
+checks these cases and that this import does not load `polygonGraph`.
+The old `...RotationSystem.Primal.Graph` import publicly retains both names without aliases.
 
 Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
 In `Cslib.Complexity.CSP`, `polygonGraph F` has one listed edge per actual argument occurrence,
@@ -1557,8 +1582,8 @@ full body acceptance from probe acceptance with explicit `hn : ports.Nodup`.
 arbitrary repeated words; the underlying witness interface still permits repeated markers.
 
 `verifyRotationCertificate_restrictPrefix_lastArgument F r scope v c h` applies to the
-original CSP lists: acceptance of `F ++ [(r, scope ++ [v])]` implies acceptance of the literal
-restricted table on `F ++ [(r, scope)]`. Occurrence and endpoint maps internally handle dense
+original CSP lists: acceptance of `F ++ [⟨r, scope ++ [v]⟩]` implies acceptance of the literal
+restricted table on `F ++ [⟨r, scope⟩]`. Occurrence and endpoint maps internally handle dense
 renumbering, disappearing variables, repeated labels and nullaries. In gadget recipes this
 edits a structural probe. It makes no SAT-preservation claim for deleting an argument of a
 Gamma constraint. Zero-port extraction removes only the structural nullary, retaining

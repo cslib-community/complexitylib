@@ -91,13 +91,8 @@ theorem acceptProb_circuitCodes {n : ℕ} (code : List (Op × List ℕ) × List 
   set W := n + code.1.length + 1
   set z := n + code.1.length
   set o := code.2.getD 0 0
-  have hX (p : ℕ) : readBit (inputState W x) p = x.getD p false := by
-    by_cases hp : p < W
-    · rw [readBit_of_lt _ hp]
-      rfl
-    · rw [readBit_of_le _ (not_lt.mp hp), List.getD_eq_getElem?_getD,
-        List.getElem?_eq_none (by omega)]
-      rfl
+  have hX (p : ℕ) : readBit (inputState W x) p = x.getD p false :=
+    readBit_inputState (by omega) p
   have hcodes := readBit_classicalRun_codes (W := W) (gates := code.1) le_rfl (by omega) hx hX
   -- the compiled gates leave the output wire on `outQubit z o`
   have hout : readBit (classicalRun (codes n z code.1) (inputState W x)) (outQubit z o) =

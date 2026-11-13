@@ -123,13 +123,8 @@ private theorem isCorrect_pairedTwoServer : pairedTwoServer.IsCorrect := by
   simp only [add_assoc, BooleanRing.add_self, add_zero]
   rw [add_comm, hbase]
 
-private theorem isPrivate_pairedTwoServer : pairedTwoServer.IsPrivate := by
-  rw [Scheme.isPrivate_iff]
-  intro σ i i'
-  rw [Scheme.eval_serverQuery, Scheme.eval_serverQuery]
-  dsimp only [pairedTwoServer]
-  rw [← Scheme.eval_serverQuery, ← Scheme.eval_serverQuery]
-  exact isPrivate_twoServer.eval_serverQuery_eq σ i i'
+private theorem isPrivate_pairedTwoServer : pairedTwoServer.IsPrivate :=
+  isPrivate_twoServer.of_query_eq id fun _ => rfl
 
 /-- End-to-end check of the CGKS §4.1 homomorphism note + Proposition 5: `mapAnswerHom` compresses
 `Bool × Bool` answers to `1` bit with `HasXorReconstruct`, and `sumChunks 3` then expands `3`

@@ -213,7 +213,27 @@ theorem nonvacuous_fin3_weighted_sampling :
   simpa only [Fintype.card_fin, hnv, Nat.cast_ofNat] using
     F.exists_sample_score_abs_sub_ge_le neqFin3 (by decide) 20 hw (by norm_num)
 
-/-! ### 5. Fixed-width SAT reduction, `O(log m)` binary search, and native solver transfer -/
+/-! ### 5. Encoded words of constraints and `Max-CSP` instances
+
+`Constraint` is a structure and `MaxCSPInstance` stores a `CSP`, but the encodings still write
+the same words as the pair encodings they replaced (`encMaxConstraint` encoded `(c.rel, c.scope)`
+with `encPair encRel (encList encNat)`). -/
+
+example {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) (c : Constraint Rel V) :
+    encConstraint encRel encV c = encPair encRel (encList encV) (c.rel, c.scope) := rfl
+
+example {Rel : Type} (encRel : Rel ↪ List Bool) (F : MaxCSPInstance Rel ℕ) :
+    encMaxCSPInstance encRel F =
+      encPair encUnary (encList (encPair encRel (encList encNat)))
+        (F.numVars, F.constraints.map fun c => (c.rel, c.scope)) := by
+  simp only [encMaxCSPInstance_apply, encPair_apply, encList, Function.Embedding.coeFn_mk,
+    List.flatMap_map, Function.comp_def, encConstraint_apply]
+
+example : encMaxCSPInstance encUnit xorCycleCSP =
+    encPair encUnary (encList (encPair encUnit (encList encNat)))
+      (3, [((), [0, 1]), ((), [1, 2]), ((), [0, 2])]) := rfl
+
+/-! ### 6. Fixed-width SAT reduction, `O(log m)` binary search, and native solver transfer -/
 
 /-- Unsatisfiable 4-clause 2-CNF instance (`optimum = 3`). -/
 def fourClauseInst : StructInstance where
@@ -321,12 +341,12 @@ theorem thresholdLanguage_expTime_bruteForce :
       (KSAT_decidableInExpTime_one 3)
 
 /-- Native `FixedWidthSATSolver 3` instantiated via `FixedWidthSATSolver.exists_bruteForce` to
-verify `FixedWidthSATSolver.exists_optimum_algorithm` end-to-end in `2 ^ (957 * workSize + 957)`
-time and polynomial space. -/
+verify `FixedWidthSATSolver.exists_optimum_algorithm` end-to-end in
+`2 ^ thresholdVarBudget workSize` time and polynomial space. -/
 theorem exists_bruteForce_optimum_from_solver :
     ∃ d : ℕ,
       ComputableInO StructInstance.optimum encStructInstance encNat
-        (fun F => 2 ^ (957 * F.workSize + 957) * ((encStructInstance F).length + 1) ^ d)
+        (fun F => 2 ^ thresholdVarBudget F.workSize * ((encStructInstance F).length + 1) ^ d)
         (fun F => ((encStructInstance F).length + 1) ^ d) := by
   obtain ⟨solver, -, hrate⟩ := FixedWidthSATSolver.exists_bruteForce 3
   obtain ⟨d, hinO⟩ := solver.exists_optimum_algorithm (k := 3) le_rfl

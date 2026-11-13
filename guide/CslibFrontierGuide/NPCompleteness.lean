@@ -501,6 +501,14 @@ The shared guard certificate is
 {name}`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
 {module}`CslibFrontier.Computability.PolyTime.CSP.Boolean`.
 
+For replacement definitions and semantic correctness without native runtime imports, use
+{module}`CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement`.
+The existing {module}`CslibFrontier.Computability.PolyTime.CSP.Gadget` import retains those
+definitions and adds the native certificates. Its `Gadget.Size` topic supplies pure counts
+and no longer incidentally exports the runtime certificates; import `Gadget` explicitly
+when using them. The complete `PPGadgetReplacement` test checks the logical-only import on
+repeated names, sparse binary labels and the empty source alphabet.
+
 The hard branch is native and unconditional:
 {name}`CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves NP-completeness
 for any fixed finite language lacking all six common operations. The proof imports
@@ -802,14 +810,14 @@ can pass numerical genus zero while failing this order condition:
 ```lean
 open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
 example : verifyRotationCertificate
-    ([((), [0, 1, 2])] : CSP Unit ℕ) ⟨[0, 3, 2, 5, 4, 1]⟩ = true :=
+    ([⟨(), [0, 1, 2]⟩] : CSP Unit ℕ) ⟨[0, 3, 2, 5, 4, 1]⟩ = true :=
   by decide
 ```
 
 ```lean
 open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
 example : verifyRotationCertificate
-    ([((), [0, 1, 2])] : CSP Unit ℕ) ⟨[0, 5, 2, 1, 4, 3]⟩ = false :=
+    ([⟨(), [0, 1, 2]⟩] : CSP Unit ℕ) ⟨[0, 5, 2, 1, 4, 3]⟩ = false :=
   by decide
 ```
 
@@ -945,7 +953,7 @@ separate semantic question:
 
 ```lean
 open Cslib.Logic.PL Cslib.Complexity.Graph.RotationRecognition in
-example : recoverCSP ([(false, [])] : CSP Bool ℕ) = some ⟨[]⟩ :=
+example : recoverCSP ([⟨false, []⟩] : CSP Bool ℕ) = some ⟨[]⟩ :=
   by decide +kernel
 ```
 
@@ -1508,6 +1516,14 @@ runtime/P bound or CSP dichotomy is claimed.
 
 # Ordered Incidence-to-Polygon Rotations
 
+For argument succession alone, use
+{module}`CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentPermutation`.
+It supplies {name}`Cslib.Complexity.CSP.argumentPermutation` and
+{name}`Cslib.Complexity.CSP.sameCycle_argumentPermutation` without polygon construction.
+The latter identifies each orbit by its original constraint position, even for repeated
+names and duplicate rows. Nullary scopes have no argument occurrences. The complete
+`CSPArgumentPermutation` test uses only this import; `Primal.Graph` retains both APIs.
+
 Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
 The actual `polygonGraph` puts one edge between successive variables of each
 cyclic scope, retaining occurrence positions and dense variable names. Unary
@@ -1520,7 +1536,7 @@ open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
 noncomputable example {Rel V : Type} [DecidableEq V] (F : CSP Rel V)
     (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     (polygonRotation r).Face ≃ Fin F.length ⊕ r.Face :=
   polygonFaceEquiv r hOrder hPos
 ```
@@ -1533,7 +1549,7 @@ open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
 example {Rel V : Type} [DecidableEq V] (F : CSP Rel V)
     (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     (polygonRotation r).NumericalGenusZero ↔ r.NumericalGenusZero :=
   numericalGenusZero_polygon_iff r hOrder hPos
 ```
@@ -1983,7 +1999,7 @@ example : Program.decideSAT [] = true := by decide
 
 open Cslib.Complexity.CSP.EdgeSolver in
 example : Program.decideSAT
-    [(⟨1, [[false]]⟩, [2 ^ 100]), (⟨1, [[true]]⟩, [2 ^ 100])] = false := by
+    [⟨⟨1, [[false]]⟩, [2 ^ 100]⟩, ⟨⟨1, [[true]]⟩, [2 ^ 100]⟩] = false := by
   decide +kernel
 ```
 
@@ -2053,9 +2069,11 @@ open Cslib.Logic.PL Cslib.Complexity in
 open Cslib.Complexity.CSP Cslib.Complexity.CSP.OrderedBoundary in
 example {Rel V : Type} [DecidableEq V] (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) (c : Graph.RotationCertificate)
-    (h : verifyRotationCertificate (F ++ [(r, scope ++ [v])]) c = true) :
-    verifyRotationCertificate (F ++ [(r, scope)])
-      (restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length) c) =
+    (h : verifyRotationCertificate
+      (F ++ [Constraint.mk r (scope ++ [v])]) c = true) :
+    verifyRotationCertificate (F ++ [Constraint.mk r scope])
+      (restrictPrefix
+        (2 * (F ++ [Constraint.mk r scope]).occurrences.length) c) =
         true :=
   verifyRotationCertificate_restrictPrefix_lastArgument F r scope v c h
 ```
@@ -2127,7 +2145,7 @@ The whole generated NAE table is explicit, not merely an existence claim:
 open Cslib.Complexity.CSP.OrderedBoundary in
 example :
     equalDropCertificate
-      ([((), [0, 1, 2])] : Cslib.Logic.PL.CSP Unit ℕ) 1
+      ([⟨(), [0, 1, 2]⟩] : Cslib.Logic.PL.CSP Unit ℕ) 1
       (atomBoundaryCertificate 3) =
         (⟨[8, 3, 0, 5, 6, 1, 4, 9, 2, 7]⟩ :
           Cslib.Complexity.Graph.RotationCertificate) := by

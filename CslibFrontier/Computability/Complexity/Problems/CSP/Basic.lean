@@ -87,7 +87,7 @@ theorem mem_NP [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel → ℕ)
     refine polyTimeReducible_of_guard encRel arity sem [[]]
       (CSP.computableInPolyTime_toCNFBounded_of_finite encRel encNat k sem) (fun F hF => ?_)
       (by simp [mem_SAT, CNF.Satisfiable, CNF.eval, Clause.eval])
-    have hw : ∀ c ∈ F, c.2.length ≤ k := fun c hc => (hF c hc).le.trans (hbound c.1)
+    have hw : ∀ c ∈ F, c.scope.length ≤ k := fun c hc => (hF c hc).le.trans (hbound c.rel)
     rw [mem_SAT, CSP.toCNFBounded_eq_toCNF hw, CSP.satisfiable_toCNF]
   exact hred.mem_NP SAT.mem_NP
 

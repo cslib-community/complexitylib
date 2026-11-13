@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
@@ -23,10 +24,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
 import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.List.OfFn
-import CslibFrontier.Foundations.Data.Nat.Power
 
 /-!
 # `#k-SAT` exponents, `#ETH`, and `#SETH`
@@ -139,6 +138,16 @@ theorem SharpKSAT_of_not_width {k : ℕ} {φ : CNF ℕ} (h : ¬∀ c ∈ φ, c.l
     exact fun hall => h fun c hc => decide_eq_true_eq.mp (hall c hc)
   simp only [SharpKSAT, hw, Bool.false_eq_true, ↓reduceIte]
 
+/-- Guarding a `#k'-SAT` count by the width test of `k ≤ k'` gives the `#k-SAT` count. -/
+theorem ite_all_length_le_SharpKSAT {k k' : ℕ} (hk : k ≤ k') (φ : CNF ℕ) :
+    (if φ.all (fun c => decide (c.length ≤ k)) then SharpKSAT k' φ else 0) = SharpKSAT k φ := by
+  unfold SharpKSAT
+  split_ifs with h₁ h₂
+  · rfl
+  · simp only [List.all_eq_true, decide_eq_true_eq] at h₁ h₂
+    exact absurd (fun c hc => (h₁ c hc).trans hk) h₂
+  · rfl
+
 /-- The binary encoding of `SharpSAT φ` has length bounded linearly in `(encCNF φ).length`. -/
 theorem polyBounded_length_encNat_SharpSAT :
     PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) (fun φ => (encNat (SharpSAT φ)).length) := by
@@ -232,12 +241,9 @@ theorem count_eq_modelCount (φ : CNF ℕ) : count φ = φ.modelCount := by
     (fun σ τ _ _ => ?_) (fun i => ?_)
   · constructor
     · intro h v hv
-      have hlt : vs.idxOf v < vs.length :=
-        List.idxOf_lt_length_iff.mpr (CNF.mem_distinctVars.mpr hv)
       have hbit := congrArg (fun n => n.testBit (vs.idxOf v)) (Fin.mk.inj h)
-      simpa only [BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
-        List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt, Option.map_some,
-        Option.getD_some] using hbit
+      simpa [vs, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
+        CNF.mem_distinctVars.mpr hv] using hbit
     · intro h
       have hmap : vs.map σ = vs.map τ :=
         List.map_congr_left fun v hv => h v (CNF.mem_distinctVars.mp hv)
@@ -250,12 +256,8 @@ theorem count_eq_modelCount (φ : CNF ℕ) : count φ = φ.modelCount := by
       exact toNat_ofBoolListLE_bitsAssignment φ.nodup_distinctVars i.isLt
     · rintro ⟨σ, hσ, rfl⟩
       refine (CNF.eval_congr fun v hv => ?_).trans hσ
-      have hidx : vs.idxOf v < vs.length :=
-        List.idxOf_lt_length_iff.mpr (CNF.mem_distinctVars.mpr hv)
-      rw [bitsAssignment, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE,
-        List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem hidx,
-        List.getElem_idxOf hidx]
-      rfl
+      simp [vs, bitsAssignment, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE,
+        List.getD_eq_getElem?_getD, CNF.mem_distinctVars.mpr hv]
 
 open ComputableInPolyTime in
 private theorem computableInPolyTime_init : ComputableInPolyTime init encCNF encState := by
@@ -397,18 +399,8 @@ theorem DecidableInSubexpTime.KSAT_of_SharpKSAT {k : ℕ}
 theorem ComputableInExpTime.SharpKSAT_of_le {k k' : ℕ} (hk : k ≤ k') {δ : ℝ} (hδ : 0 ≤ δ)
     (h : ComputableInExpTime (SharpKSAT k') encCNF encNat CNF.numVars δ) :
     ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ := by
-  have hite := h.ite_polyTime hδ (computableInPolyTime_all_length_le k)
-    (ComputableInPolyTime.const 0)
-  have heq : (fun φ : CNF ℕ => if φ.all (fun c => decide (c.length ≤ k)) then SharpKSAT k' φ
-      else 0) = SharpKSAT k := by
-    funext φ
-    unfold SharpKSAT
-    split_ifs with h₁ h₂
-    · rfl
-    · simp only [List.all_eq_true, decide_eq_true_eq] at h₁ h₂
-      exact absurd (fun c hc => (h₁ c hc).trans hk) h₂
-    · rfl
-  rwa [heq] at hite
+  simpa only [ite_all_length_le_SharpKSAT hk] using
+    h.ite_polyTime hδ (computableInPolyTime_all_length_le k) (ComputableInPolyTime.const 0)
 
 /-! ### The `#k-SAT` exponent `sharpSatExponent`, `SharpETH`, and `SharpSETH` -/
 
@@ -628,54 +620,23 @@ at most `k * m` variables, a `#k-SAT` counter at variable rate `δ ≥ 0` runs a
 theorem ComputableInExpTime.SharpKSAT_length_of_numVars {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ) :
     ComputableInExpTime (SharpKSAT k) encCNF encNat List.length (k * δ) := by
-  obtain ⟨e, h⟩ := h
-  obtain ⟨t, c, hO, ht⟩ := h.exists_computableInO
-  obtain ⟨dw, _, hw⟩ := (computableInPolyTime_all_length_le k).exists_degree
-  obtain ⟨dc, _, hc0⟩ := (ComputableInPolyTime.const (encIn := encCNF) (0 : ℕ)).exists_degree
-  have hite := (hw.inO.ite hO hc0.inO).of_enc_eq (g := SharpKSAT k) fun φ => congrArg encNat <| by
-    split_ifs with hφ
-    · simp only [SharpKSAT, hφ, ↓reduceIte]
-    · simp only [SharpKSAT, hφ, Bool.false_eq_true, ↓reduceIte]
-  refine ComputableInExpTime.of_computableInO hite (2 * c + 3) (dw + dc + e) fun φ => ?_
-  set L : ℝ := ((encCNF φ).length : ℝ)
-  have hL1 : (1 : ℝ) ≤ L + 1 := by
-    dsimp only [L]
-    linarith [(Nat.cast_nonneg (encCNF φ).length : (0 : ℝ) ≤ _)]
-  have hX1 : (1 : ℝ) ≤ 2 ^ (k * δ * φ.length) := Real.one_le_rpow (by norm_num) (by positivity)
-  have hdw : (L + 1) ^ dw ≤ 2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have hdc : (L + 1) ^ dc ≤ 2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e) :=
-    (pow_le_pow_right₀ hL1 (by omega)).trans (le_mul_of_one_le_left (by positivity) hX1)
-  have he : (L + 1) ^ e ≤ (L + 1) ^ (dw + dc + e) := pow_le_pow_right₀ hL1 (by omega)
-  have hc_nn : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  have hpos : (0 : ℝ) ≤ 2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e) := by positivity
-  change ((((encCNF φ).length + 1) ^ dw +
-    if φ.all (fun cl => decide (cl.length ≤ k)) then t φ
-    else ((encCNF φ).length + 1) ^ dc : ℕ) : ℝ) ≤ _
-  split_ifs with hφ
-  · simp only [List.all_eq_true, decide_eq_true_eq] at hφ
-    have hn : (φ.numVars : ℝ) ≤ k * φ.length := by exact_mod_cast CNF.numVars_le_mul_length hφ
-    have hexp : (2 : ℝ) ^ (δ * φ.numVars) ≤ 2 ^ (k * δ * φ.length) :=
-      Real.rpow_le_rpow_of_exponent_le (by norm_num) (by nlinarith)
-    have hmul := mul_le_mul hexp he (by positivity) (by positivity)
-    have hmulc := mul_le_mul_of_nonneg_left hmul hc_nn
-    have hc1 : (c : ℝ) ≤ c * (2 ^ (k * δ * φ.length) * (L + 1) ^ (dw + dc + e)) :=
-      le_mul_of_one_le_right hc_nn (one_le_mul_of_one_le_of_one_le hX1 (one_le_pow₀ hL1))
-    push_cast
-    dsimp only [L] at *
-    nlinarith [ht φ]
-  · push_cast
-    dsimp only [L] at *
-    nlinarith
+  obtain ⟨_, h⟩ := h
+  obtain ⟨e', hite⟩ := h.ite_polyTime_of_le (computableInPolyTime_all_length_le k)
+    (ComputableInPolyTime.const 0) (y := fun φ => k * δ * φ.length)
+    (fun φ => mul_nonneg (mul_nonneg (Nat.cast_nonneg k) hδ) (Nat.cast_nonneg _)) fun φ hφ => by
+      have hn : (φ.numVars : ℝ) ≤ k * φ.length := by
+        exact_mod_cast CNF.numVars_le_mul_length
+          (by simpa only [List.all_eq_true, decide_eq_true_eq] using hφ)
+      change δ * φ.numVars ≤ k * δ * φ.length
+      nlinarith
+  exact ⟨e', by simpa only [ite_all_length_le_SharpKSAT le_rfl] using hite⟩
 
 /-- Subexponential `#k-SAT` counting in `numVars` gives subexponential counting in `length`. -/
 theorem ComputableInSubexpTime.SharpKSAT_length_of_numVars {k : ℕ}
     (h : ComputableInSubexpTime (SharpKSAT k) encCNF encNat CNF.numVars) :
-    ComputableInSubexpTime (SharpKSAT k) encCNF encNat List.length := by
-  intro δ hδ
-  refine ((h (δ / (k + 1)) (by positivity)).SharpKSAT_length_of_numVars (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    ComputableInSubexpTime (SharpKSAT k) encCNF encNat List.length := fun δ hδ =>
+  ((h (δ / (k + 1)) (by positivity)).SharpKSAT_length_of_numVars (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le k)
 
 /-- **From clauses to variables via disjoint counting sparsification.** For every width `k` and
 every `ε > 0`, there is a constant `c` such that any `#k-SAT` counter within time
@@ -715,13 +676,9 @@ theorem exists_computableInExpTime_SharpKSAT_numVars_of_length (k : ℕ) {ε : �
       (1 / B + occBound K M * δ) := by
     refine ComputableInExpTime.of_computableInO hsearchO (2 * C₀ + 1) E fun φ => ?_
     have hTφ := hT φ
-    have h1 : (1 : ℝ) ≤ (2 : ℝ) ^ ((1 / (B : ℝ) + occBound K M * δ) * φ.numVars) *
-        (((encCNF φ).length : ℝ) + 1) ^ E :=
-      one_le_mul_of_one_le_of_one_le (Real.one_le_rpow (by norm_num) (by positivity))
-        (one_le_pow₀ (le_add_of_nonneg_left (Nat.cast_nonneg _)))
-    have hC₀ : (C₀ : ℝ) ≤ C₀ * ((2 : ℝ) ^ ((1 / (B : ℝ) + occBound K M * δ) * φ.numVars) *
-        (((encCNF φ).length : ℝ) + 1) ^ E) :=
-      le_mul_of_one_le_right (Nat.cast_nonneg C₀) h1
+    have h1 := one_le_two_rpow_mul_pow (L := (encCNF φ).length) (e := E)
+      (by positivity : 0 ≤ (1 / (B : ℝ) + occBound K M * δ) * φ.numVars)
+    have hC₀ := le_mul_of_one_le_right (Nat.cast_nonneg C₀ : (0 : ℝ) ≤ C₀) h1
     push_cast
     linarith
   exact hrate.mono (by linarith)
@@ -735,11 +692,7 @@ theorem ComputableInSubexpTime.SharpKSAT_numVars_of_length {k : ℕ}
   obtain ⟨c, hc⟩ := exists_computableInExpTime_SharpKSAT_numVars_of_length k (half_pos hδ)
   have hδ' : 0 < δ / 2 / (c + 1) := by positivity
   refine (hc _ hδ'.le (h _ hδ')).mono ?_
-  have hc0 : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  have : (c : ℝ) * (δ / 2 / (c + 1)) ≤ δ / 2 := by
-    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-    nlinarith
-  linarith
+  linarith [natCast_mul_div_add_one_le (half_pos hδ).le c]
 
 /-- **`#ETH` in terms of clauses:** `SharpETH` holds iff `#3-SAT` is not computable in
 subexponential time in the number of clauses. -/

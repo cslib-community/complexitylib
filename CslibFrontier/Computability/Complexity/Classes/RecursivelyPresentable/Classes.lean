@@ -174,32 +174,22 @@ private theorem computableInPolyTime_trimUniformBlocks (ps : List (Polynomial �
         (fun x : List Bool × List Bool =>
           trimUniformBlocks ps x.1.length (Ladner.clock d x.1.length) (W x))
         (encPair encBits encBits) encBits := by
-  induction ps with
-  | nil => intro _ _; exact .const []
-  | cons p ps ih =>
-    intro W hW
-    have hn : ComputableInPolyTime (fun x : List Bool × List Bool => x.1.length)
-        (encPair encBits encBits) encUnary := by fun_prop
-    have hm : ComputableInPolyTime (fun x : List Bool × List Bool => Ladner.clock d x.1.length)
-        (encPair encBits encBits) encUnary := (unary_pow d).comp (by fun_prop)
-    exact bitsAppend (bitsTakeWithInput hW ((unary_eval p).comp hn))
-      (ih (bitsDropWithInput hW hm))
+  intro W hW
+  have hm : ComputableInPolyTime (fun x : List Bool × List Bool => Ladner.clock d x.1.length)
+      (encPair encBits encBits) encUnary := (unary_pow d).comp (by fun_prop)
+  simpa only [trimUniformBlocks, List.map_map, Function.comp_def] using
+    computableInPolyTime_takeBlocks
+      (ps.map fun p => (fun x : List Bool × List Bool => p.eval x.1.length,
+        fun x => Ladner.clock d x.1.length))
+      (fun l hl => by
+        obtain ⟨p, -, rfl⟩ := List.mem_map.mp hl
+        exact ⟨(unary_eval p).comp (by fun_prop), hm⟩) hW
 
 private noncomputable def clockPoly (d : ℕ) : Polynomial ℕ := (2 * Polynomial.X + 2) ^ d
 
 private theorem eval_clockPoly (d n : ℕ) : (clockPoly d).eval n = Ladner.clock d n := by
   simp only [clockPoly, Polynomial.eval_pow, Polynomial.eval_add, Polynomial.eval_mul,
     Polynomial.eval_ofNat, Polynomial.eval_X, Ladner.clock]
-
-private theorem eval_le_sum {ps : List (Polynomial ℕ)} {p : Polynomial ℕ} (hp : p ∈ ps) (n : ℕ) :
-    p.eval n ≤ ps.sum.eval n := by
-  induction ps with
-  | nil => cases hp
-  | cons q qs ih =>
-    rw [List.sum_cons, Polynomial.eval_add]
-    rcases List.mem_cons.mp hp with rfl | hmem
-    · exact Nat.le_add_right _ _
-    · exact (ih hmem).trans (Nat.le_add_left _ _)
 
 private theorem exists_clock_ge (ps : List (Polynomial ℕ)) :
     ∃ d : ℕ, ∀ p ∈ ps, ∀ n : ℕ, p.eval n ≤ Ladner.clock d n := by
@@ -210,7 +200,9 @@ private theorem exists_clock_ge (ps : List (Polynomial ℕ)) :
   refine ⟨c + e, fun p hp n => ?_⟩
   have hsum : ps.sum.eval n ≤ c * (n + 1) ^ e := by
     simpa only [encUnary_apply, List.length_replicate] using hle n
-  exact (eval_le_sum hp n).trans (hsum.trans (Ladner.le_clock le_rfl n))
+  have hp' : p.eval n ≤ ps.sum.eval n := by
+    rw [Polynomial.eval_listSum]; exact List.le_sum_of_mem (List.mem_map_of_mem hp)
+  exact hp'.trans (hsum.trans (Ladner.le_clock le_rfl n))
 
 private theorem mem_SigmaP_encBits_iff {k : ℕ} {A : Set (List Bool)} :
     A ∈ SigmaP k encBits ↔

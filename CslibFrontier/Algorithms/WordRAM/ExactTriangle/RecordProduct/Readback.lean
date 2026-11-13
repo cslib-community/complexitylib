@@ -32,7 +32,7 @@ ordinary queried product. -/
 theorem raw_left_block {m n g p s : ℕ} (values : ℕ → ℤ) (idx : InstanceIndex p)
     (mem : ℕ → ℕ) (qs : List (Fin n × Fin n))
     (hleft : (Block.mk s (n * D m)).Realizes mem (fun j =>
-      WriteMatrices.entry false (matrixArgs n (D m) g p idx.1.val idx.2.2)
+      WriteMatrices.entry false (matrixArgs n (D m) g p idx.residue.val idx.piece)
         (fun q => (values (2 * (n * n) + q) % (p : ℤ)).toNat) j)) :
     ∀ a < n * D m, mem (s + a) =
       (State.init (QueriedProduct.input true (19 * m)
@@ -49,7 +49,7 @@ the ordinary queried product. -/
 theorem raw_right_block {m n g p t : ℕ} (hn : 0 < n) (values : ℕ → ℤ) (idx : InstanceIndex p)
     (mem : ℕ → ℕ) (qs : List (Fin n × Fin n))
     (hright : (Block.mk t (n * D m)).Realizes mem (fun j =>
-      WriteMatrices.entry true (matrixArgs n (D m) g p idx.1.val idx.2.2)
+      WriteMatrices.entry true (matrixArgs n (D m) g p idx.residue.val idx.piece)
         (fun q => (values (n * n + q) % (p : ℤ)).toNat) j)) :
     ∀ a < n * D m, mem (t + a) =
       (State.init (QueriedProduct.input true (19 * m)
@@ -79,7 +79,7 @@ theorem producer_readback {m n g p : ℕ} (values : ℕ → ℤ)
     x.mem 1 = D m ∧ x.mem 3 = n ∧
       base + 6 ≤ x.regs 42 ∧
       (Block.mk base 6).Realizes x.mem
-        ![idx.1.val, idx.2.2, q, qs.length, base + 6, base + 6 + n * D m] ∧
+        ![idx.residue.val, idx.piece, q, qs.length, base + 6, base + 6 + n * D m] ∧
       base + 6 + n * D m ≤ x.regs 42 ∧
       base + 6 + n * D m + n * D m ≤ x.regs 42 ∧
       q + 2 * qs.length ≤ x.regs 42 ∧
@@ -112,18 +112,18 @@ theorem producer_readback {m n g p : ℕ} (values : ℕ → ℤ)
   let qs := decodedQueries hn x.mem q Q
   have hlen : qs.length = Q := decodedQueries_length hn x.mem q Q
   obtain ⟨hk, hj⟩ := (mem_instanceIndices wAB idx).mp hidx
-  have hcard : (residueClass wAB p idx.1).card = C idx.1.val :=
-    QuerySpec.card_residueClass wAB hp R (by intro pair; rfl) idx.1
-  have hchunk : idx.2.1 < C idx.1.val ⌈/⌉ queryCap n (D m) := by
+  have hcard : (residueClass wAB p idx.residue).card = C idx.residue.val :=
+    QuerySpec.card_residueClass wAB hp R (by intro pair; rfl) idx.residue
+  have hchunk : idx.chunk < C idx.residue.val ⌈/⌉ queryCap n (D m) := by
     simpa only [numChunks, hcard] using hk
-  have hord := ChunkCatalogue.before_add_lt C (queryCap n (D m)) idx.1.isLt hchunk
+  have hord := ChunkCatalogue.before_add_lt C (queryCap n (D m)) idx.residue.isLt hchunk
   have hiCount : ord < K * H := by
     have hh := Nat.mul_le_mul_right H (Nat.succ_le_of_lt hord)
-    change (ChunkCatalogue.before C (queryCap n (D m)) idx.1.val + idx.2.1) * H +
-      idx.2.2 < K * H
-    change (ChunkCatalogue.before C (queryCap n (D m)) idx.1.val + idx.2.1 + 1) * H ≤
+    change (ChunkCatalogue.before C (queryCap n (D m)) idx.residue.val + idx.chunk) * H +
+      idx.piece < K * H
+    change (ChunkCatalogue.before C (queryCap n (D m)) idx.residue.val + idx.chunk + 1) * H ≤
       K * H at hh
-    change idx.2.2 < H at hj
+    change idx.piece < H at hj
     rw [Nat.add_mul, Nat.one_mul] at hh
     omega
   have hfull := h
@@ -136,20 +136,21 @@ theorem producer_readback {m n g p : ℕ} (values : ℕ → ℤ)
     rw [yb]
     nlinarith only [ht]
   have hcap : 0 < queryCap n (D m) := one_le_queryCap (by omega) hDn
-  have hkcard : idx.2.1 * queryCap n (D m) < C idx.1.val := by
+  have hkcard : idx.chunk * queryCap n (D m) < C idx.residue.val := by
     have hpositive := recordQueryCount_pos values hp (by omega) hDn idx hidx
-    change 0 < min (queryCap n (D m)) (C idx.1.val - idx.2.1 * queryCap n (D m)) at hpositive
+    change 0 < min (queryCap n (D m)) (C idx.residue.val - idx.chunk * queryCap n (D m))
+      at hpositive
     omega
-  have hQ : idx.2.1 * queryCap n (D m) + Q ≤ N := by
-    have hc : C idx.1.val ≤ N := Nat.count_le _
+  have hQ : idx.chunk * queryCap n (D m) + Q ≤ N := by
+    have hc : C idx.residue.val ≤ N := Nat.count_le _
     dsimp only [Q, recordQueryCount]
-    change idx.2.1 * queryCap n (D m) +
-      min (queryCap n (D m)) (C idx.1.val - idx.2.1 * queryCap n (D m)) ≤ N
+    change idx.chunk * queryCap n (D m) +
+      min (queryCap n (D m)) (C idx.residue.val - idx.chunk * queryCap n (D m)) ≤ N
     omega
   have hqEnd : q + 2 * Q ≤ x.regs 42 := by
-    have hrho := Nat.mul_le_mul_right (2 * N) (Nat.succ_le_of_lt idx.1.isLt)
+    have hrho := Nat.mul_le_mul_right (2 * N) (Nat.succ_le_of_lt idx.residue.isLt)
     dsimp only [q, recordQueries]
-    change 5 + 6 * N + p + 2 * idx.1.val * N + 2 * (idx.2.1 * queryCap n (D m)) +
+    change 5 + 6 * N + p + 2 * idx.residue.val * N + 2 * (idx.chunk * queryCap n (D m)) +
       2 * Q ≤ _
     rw [yb]
     dsimp only [out]
@@ -158,7 +159,7 @@ theorem producer_readback {m n g p : ℕ} (values : ℕ → ℤ)
   obtain ⟨hdr, hleft, hright⟩ := PreparationSpec.instance_readback values wAB hp
     (by intro a b; rfl) hD hDn hg hfull idx hidx
   have hcoord := (output_query_coordinates values wAB hp (by intro a b; rfl)
-    (by omega) hDn hfull idx.1 idx.2.1 hk).1
+    (by omega) hDn hfull idx.residue idx.chunk hk).1
   rw [hcard] at hcoord
   have hc : ∀ j < Q, x.mem (q + 2 * j) < n ∧ x.mem (q + 2 * j + 1) < n := hcoord
   dsimp only

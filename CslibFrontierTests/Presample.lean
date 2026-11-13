@@ -68,10 +68,7 @@ example (state values : List Bool) :
         (OracleComp.withSampleList false respond))
           (ProbOracleComp.sample (ProbComp.uniform Bool))).run (state, values) =
       (fun bit => (bit, state, values)) <$> ProbComp.uniform Bool := by
-  rw [ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift]
-  change (fun bit => (bit, state, values)) <$>
-    OracleComp.interpret OracleComp.query (ProbComp.uniform Bool) = _
-  rw [OracleComp.interpret_query_eq_self]
+  rw [ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift, ProbComp.interpret_unifFin]
 
 private noncomputable def adaptive : ProbOracleComp (fun _ : Bool => Bool) (Bool × Bool) := do
   let first ← ProbOracleComp.query false

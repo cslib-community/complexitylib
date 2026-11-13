@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Data.Finset.Expect
 public import Mathlib.MeasureTheory.Constructions.Pi
 public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import CslibFrontier.Foundations.MeasureTheory.Integral.CauchySchwarz
 import CslibFrontier.Foundations.MeasureTheory.Integral.Pi
 import CslibFrontier.Foundations.MeasureTheory.Integral.PiUpdate
 import Mathlib.MeasureTheory.Function.LpSeminorm.CompareExp
@@ -46,6 +47,8 @@ mentions, integrating out one coordinate at a time.
   `Inf_i[F] = ∑_S (D_i F)^(S) ^ 2`.
 * `ProbabilityTheory.sum_multilinearInfluence`: `∑_i Inf_i[F] = ∑_S |S| c S ^ 2`.
 * `ProbabilityTheory.memLp_multilinearEval`: `F(z) ∈ Lᵖ` when every variable is in `Lᵖ`.
+* `ProbabilityTheory.integral_add_mul_sq`, `ProbabilityTheory.integral_add_mul_pow_four`: the
+  second and fourth moments of `e + z d` when `E[z] = 0` (and `E[z³] = 0` for the fourth).
 * `ProbabilityTheory.integral_multilinearEval_sq`: `E[F(z)²] = ∑_S c S ^ 2`.
 
 ## References
@@ -269,20 +272,47 @@ theorem multilinearDerivCoeff_eq_zero_of_not_subset {c : Finset ι → ℝ} {i :
   · rfl
   · exact hc _ (by rwa [insert_subset_insert_iff h])
 
-/-- `E[(e + z d)²] = e² + d²` for `z` with mean `0` and second moment `1`. -/
-theorem integral_add_mul_sq {m : Measure ℝ} [IsProbabilityMeasure m] (hm : MemLp id 2 m)
-    (h1 : ∫ z, z ∂m = 0) (h2 : ∫ z, z ^ 2 ∂m = 1) (e d : ℝ) :
-    ∫ z, (e + z * d) ^ 2 ∂m = e ^ 2 + d ^ 2 := by
-  have hz : Integrable (fun z : ℝ => z) m := hm.integrable one_le_two
-  have hz2 : Integrable (fun z : ℝ => z ^ 2) m := by
-    simpa using hm.integrable_norm_pow two_ne_zero
-  have : (fun z => (e + z * d) ^ 2) = fun z => e ^ 2 + ((2 * e * d) * z + d ^ 2 * z ^ 2) := by
-    funext z; ring
-  rw [this, integral_add (f := fun _ => e ^ 2) (g := fun z => 2 * e * d * z + d ^ 2 * z ^ 2)
-      (integrable_const _) ((hz.const_mul _).add (hz2.const_mul _)),
-    integral_add (f := fun z => 2 * e * d * z) (g := fun z => d ^ 2 * z ^ 2) (hz.const_mul _)
-      (hz2.const_mul _), integral_const_mul, integral_const_mul, h1, h2]
-  simp
+/-! ### Moments of `e + z d` -/
+
+section Moments
+
+variable {m : Measure ℝ} [IsProbabilityMeasure m]
+
+/-- Expanding `E[(e + z d) ^ n]` by the binomial theorem. -/
+private theorem integral_add_mul_pow {n : ℕ} (hm : MemLp id n m) (e d : ℝ) :
+    ∫ z, (e + z * d) ^ n ∂m =
+      ∑ j ∈ range (n + 1), (n.choose j : ℝ) * e ^ (n - j) * d ^ j * ∫ z, z ^ j ∂m := by
+  have hint (j : ℕ) (hj : j ∈ range (n + 1)) :
+      Integrable (fun z => (z * d) ^ j * e ^ (n - j) * (n.choose j : ℝ)) m := by
+    refine ((integrable_pow_of_memLp hm (j := j) (Nat.lt_succ_iff.1 (mem_range.1 hj))).mul_const
+      (d ^ j * e ^ (n - j) * (n.choose j : ℝ))).congr (ae_of_all _ fun z => ?_)
+    simp only [mul_pow]; ring
+  simp_rw [add_comm e, add_pow]
+  rw [integral_finsetSum _ hint]
+  refine sum_congr rfl fun j _ => ?_
+  rw [← integral_const_mul]; congr 1 with z : 1; simp only [mul_pow]; ring
+
+/-- `E[(e + z d)⁴] = e⁴ + 6 E[z²] e² d² + E[z⁴] d⁴` for `z` with `E[z] = E[z³] = 0`. -/
+theorem integral_add_mul_pow_four (hm : MemLp id 4 m) (h1 : ∫ z, z ∂m = 0)
+    (h3 : ∫ z, z ^ 3 ∂m = 0) (e d : ℝ) :
+    ∫ z, (e + z * d) ^ 4 ∂m =
+      e ^ 4 + 6 * (e ^ 2 * d ^ 2) * ∫ z, z ^ 2 ∂m + d ^ 4 * ∫ z, z ^ 4 ∂m := by
+  rw [integral_add_mul_pow (by exact_mod_cast hm) e d]
+  simp only [sum_range_succ, sum_range_zero, pow_one, h1, h3, pow_zero, integral_const,
+    probReal_univ, smul_eq_mul, Nat.choose]
+  push_cast
+  ring
+
+/-- `E[(e + z d)²] = e² + E[z²] d²` for `z` with mean `0`. -/
+theorem integral_add_mul_sq (hm : MemLp id 2 m) (h1 : ∫ z, z ∂m = 0) (e d : ℝ) :
+    ∫ z, (e + z * d) ^ 2 ∂m = e ^ 2 + d ^ 2 * ∫ z, z ^ 2 ∂m := by
+  rw [integral_add_mul_pow (by exact_mod_cast hm) e d]
+  simp only [sum_range_succ, sum_range_zero, pow_one, h1, pow_zero, integral_const,
+    probReal_univ, smul_eq_mul, Nat.choose]
+  push_cast
+  ring
+
+end Moments
 
 omit [DecidableEq ι] in
 private theorem integral_multilinearEval_sq_aux (μ : ι → Measure ℝ)
@@ -303,7 +333,7 @@ private theorem integral_multilinearEval_sq_aux (μ : ι → Measure ℝ)
     have h4 (c' : Finset ι → ℝ) := integrable_multilinearEval_pow μ hμ c' (j := 2) (by norm_num)
     rw [← integral_integral_update μ (h4 c) a]
     simp_rw [multilinearEval_update c a,
-      integral_add_mul_sq ((hμ a).mono_exponent (by norm_num)) (h1 a) (h2 a)]
+      integral_add_mul_sq ((hμ a).mono_exponent (by norm_num)) (h1 a), h2 a, mul_one]
     rw [integral_add (h4 _) (h4 _), ih _ (multilinearExpectCoeff_eq_zero_of_not_subset hc),
       ih _ (multilinearDerivCoeff_eq_zero_of_not_subset hc),
       sum_sq_eq_sum_multilinearExpectCoeff_sq_add c a]
