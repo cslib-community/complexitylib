@@ -6588,6 +6588,8 @@ public import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 public import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 public import CslibFrontier.Logics.SecondOrder.WordMSO.ToRegular
 public import CslibFrontier.MachineLearning.LossMinimization.Basic
+public import CslibFrontier.MachineLearning.LossMinimization.StochasticGradientDescent
+public import CslibFrontier.MachineLearning.OnlineLearning.ConvexOnlineToBatch
 public import CslibFrontier.MachineLearning.OnlineLearning.FTRL
 public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
 public import CslibFrontier.MachineLearning.OnlineLearning.HighProbabilityOnlineToBatch
