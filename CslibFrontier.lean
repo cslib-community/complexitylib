@@ -1375,6 +1375,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.SparseSynthesis
 public import CslibFrontier.Computability.Circuit.Boolean.SparseSynthesisConstruction
 public import CslibFrontier.Computability.Circuit.Boolean.Spira
 public import CslibFrontier.Computability.Circuit.Boolean.Substitution
+public import CslibFrontier.Computability.Circuit.Boolean.SuccinctVerifier
+public import CslibFrontier.Computability.Circuit.Boolean.SuccinctVerifier.Encoding
 public import CslibFrontier.Computability.Circuit.Boolean.SymAnd
 public import CslibFrontier.Computability.Circuit.Boolean.SymAnd.ACC0
 public import CslibFrontier.Computability.Circuit.Boolean.SymAnd.Collapse
@@ -1815,6 +1817,7 @@ public import CslibFrontier.Computability.Complexity.Classes.AWPP.Closure
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.OracleWeights
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.WPP
+public import CslibFrontier.Computability.Complexity.Classes.AlgorithmsToLowerBounds
 public import CslibFrontier.Computability.Complexity.Classes.Alternation
 public import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
 public import CslibFrontier.Computability.Complexity.Classes.Alternation.Game

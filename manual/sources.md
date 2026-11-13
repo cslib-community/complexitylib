@@ -1747,6 +1747,11 @@ Paul S. Wang. "A p-adic Algorithm for Univariate Partial Fractions." *Proceeding
 
 Roger Wattenhofer. *Principles of Distributed Computing*, lecture notes, ETH Zürich, Chapter 7 "Maximal Independent Set". https://disco.ethz.ch/courses/podc_allstars/lecture/chapter7.pdf (PDF dated 2016-08-23). Inspected 2026-11-08: Algorithm 7.12 ("Fast MIS 2"), Lemma 7.14 (edge removal), Theorem 7.15, Corollary 7.18 and the chapter notes, which attribute the algorithm to Métivier, Robson, Saheb-Djahromi and Zemmari (Distributed Computing 23(5–6), 2011) as a simplification of Luby (SIAM J. Comput. 15(4), 1986). Those two papers were not inspected.
 
+<a id="williams2010"></a>
+## williams2010
+
+R. Ryan Williams. *Improving Exhaustive Search Implies Superpolynomial Lower Bounds*. STOC 2010. The author's full version dated May 4, 2010, https://people.csail.mit.edu/rrw/improved-algs-lbs2.pdf , was checked on 2026-11-11 for Theorem 1.1, the violated-clause circuit in the proof of Theorem 3.2 (printed p. 10), and Lemma 3.2. The succinct-verifier modules formalize the violated-clause test and its native guess-and-verify simulation, with a quadratic unary certificate format; they do not claim the full NEXP circuit lower bound or the source's `O(s log s)` description length.
+
 <a id="williams25"></a>
 ## williams25
 
