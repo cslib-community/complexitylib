@@ -569,7 +569,7 @@ For Goldwasser–Micali public-key encryption under `QuadraticResiduosityHard`, 
 ([katzlindell20][katzlindell20], §15.4.4, Definition 15.14, Construction 15.28, Theorem 15.29, and
 Exercises 15.11–15.12; checked instances are in
 [`CslibFrontierTests/Crypto/GoldwasserMicali.lean`](../../CslibFrontierTests/Crypto/GoldwasserMicali.lean)).
-`KeyDesc` bundles distinct odd primes `(p, q)` (`2 < p, q`) with a residue `z < p * q`
+`KeyDesc` extends `ModulusDesc`, distinct odd primes `(p, q)` (`2 < p, q`), with a residue `z < p * q`
 representing an element of `positiveNonresidues p q` (`KeyDesc.ofBlum` specializes to Blum primes `p % 4 = 3`, `q % 4 = 3` with `z = N - 1`, Exercise
 15.12), and `keyGen gen` wraps an abstract generator `gen : ℕ → ProbComp KeyDesc` (prime and
 nonresidue sampling are not constructed) emitting `pk = encPair encNat encNat (N, z)` and
