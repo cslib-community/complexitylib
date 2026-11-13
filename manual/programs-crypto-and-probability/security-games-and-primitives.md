@@ -263,6 +263,20 @@ formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) c
 case and a toy instance that signs, verifies, rejects a modified response and yields a self-target
 solution.
 
+The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
+[`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
+layouts in [`SLHDSAAddress.lean`](../../CslibFrontierTests/Crypto/SLHDSAAddress.lean).
+`Address.toBits` serializes the common layer and tree fields, the seven-valued address type and the
+three type-dependent words as the standard's canonical 32-byte big-endian address.
+`Address.setTypeAndClear` preserves the common fields while clearing all final 12 bytes, and the
+seven typed constructors satisfy the padding, fixed-layer and fixed-height requirements in
+Figures 3–9. `Address.toCompressedBits` is literally the byte-slice projection of Figure 18 used
+by the SHA2 parameter sets; it is injective under `Address.FitsCompressed`, which records that the
+one-byte layer and eight-byte tree fields do not overflow. The unrestricted compressed format is
+not injective, and the checked client exhibits the discarded high tree word. This module does not
+define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
+nor does it prove classical or quantum security.
+
 Falcon's current checked layer is deliberately narrower. Import
 [`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
 the NIST-selected Falcon Round 3 submission version 1.2's post-decoding verification algebra.
@@ -778,10 +792,38 @@ uses `circulant_mulVec_comm` and `circulant_mulVec_assoc` to cancel the two publ
 one-bit truncation, proves a length-three repetition decoder corrects one error, refutes the same
 contract for a constant decoder, checks key/coin support and runs the packaged PKE.
 
+Import [`HQC/Correctness.lean`](../../CslibFrontier/Crypto/Primitives/HQC/Correctness.lean) for
+the decryption-failure bridge from Definition 6.2.1 and Equations (11), (13) and (14), §6.2.2,
+pp. 64–65. The definition, Equations (11)/(13), and the source's exact-failure sentence are on
+p. 64; Equation (14) is on p. 65. `pkeFullNoiseFailureExperiment` samples `y`, `x`, then
+`(r₂, e, r₁)` and tests
+whether the complete word `x * r₂ - r₁ * y + e` has weight greater than `Δ`.
+`pkeDeltaCorrect_fullNoiseFailureProbability` proves that the packaged PKE is `δ`-correct at
+exactly that experiment's real probability: its left side is still the expectation over generated
+keys of the worst failure probability over messages. `pkeDeltaCorrect_of_fullNoiseFailureProbability_le`
+accepts any proved real upper bound on that probability.
+
+For numerical bounds, `pkeKeyGen_expect` and `pkeSampleCoins_expect` expose the two independent
+key draws, uniform public word, and three independent encryption draws in their source order while
+the sampler implementations stay opaque. `pkeFullNoiseFailureMass_eq_iterated_expect` presents
+Equation (14) directly as five nested expectations of its event indicator, and
+`pkeFullNoiseFailProb_eq_iterated_expect` gives the corresponding three-draw law for fixed key
+witnesses. Bounds proved with the ordinary expectation monotonicity API therefore feed directly
+through `pkeFullNoiseFailureProbability_eq_toReal_mass` and
+`pkeDeltaCorrect_of_fullNoiseFailureProbability_le`.
+
+The source event is a conservative upper bound here because decryption sees only the retained
+prefix and `weight_truncate_le` proves that restriction cannot increase weight. The formalization
+does not assert the source's stronger “if and only if” sentence: `DecoderCorrects` guarantees success
+inside the decoding radius but does not say every larger error fails. The
+[correctness client](../../CslibFrontierTests/Crypto/HQCCorrectness.lean) applies the bridge to the
+repetition-code fixture and checks a positive-weight one-bit instance where the full-noise failure
+probability is exactly one.
+
 This module does not replace the source's seeds and XOF with a proved implementation model, build
-the concatenated Reed–Muller/Reed–Solomon codec, establish primitive-prime admissibility or a DFR
-bound, or prove IND-CPA, Fujisaki–Okamoto or KEM security. It is therefore a correctness
-prerequisite, not an HQC security endpoint.
+the concatenated Reed–Muller/Reed–Solomon codec, establish primitive-prime admissibility or a
+numerical DFR bound for the published parameter sets, or prove IND-CPA, Fujisaki–Okamoto or KEM
+security. These modules are therefore correctness prerequisites, not an HQC security endpoint.
 
 ## Encryption and chosen-message attacks
 
