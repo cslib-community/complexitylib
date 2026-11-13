@@ -11,7 +11,6 @@ public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.PPSZ.Round
 public import CslibFrontier.Algorithms.WordRAM.PPZ.Amplify
 public import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.General
-import CslibFrontier.Foundations.Data.Nat.CeilDiv
 
 /-!
 # The PPSZ algorithm on the randomized word RAM
@@ -150,23 +149,14 @@ theorem ofDigits_ppszDigits (a b n c : ℕ) :
     Nat.ofDigits 2 (ppszDigits a b n c) = ppszRounds a b n c :=
   PPZ.ofDigits_countDigits _ _
 
-/-- `ppszExp a b n` is the ceiling division `a · n ⌈/⌉ b` by definition, so it is the ceiling of
-`(a / b) · n`. -/
-private theorem ppszExp_eq_ceil {a b : ℕ} (hb : 0 < b) (n : ℕ) :
-    ppszExp a b n = ⌈(a : ℝ) / b * n⌉₊ := by
-  rw [div_mul_eq_mul_div, ← Nat.cast_mul]
-  exact (Nat.ceil_div_eq_ceilDiv _ hb).symm
-
 /-- The exponent is at least `(a / b) n`. -/
-theorem le_ppszExp {a b : ℕ} (hb : 0 < b) (n : ℕ) : (a : ℝ) / b * n ≤ ppszExp a b n := by
-  rw [ppszExp_eq_ceil hb]
-  exact Nat.le_ceil _
+theorem le_ppszExp {a b : ℕ} (hb : 0 < b) (n : ℕ) : (a : ℝ) / b * n ≤ ppszExp a b n :=
+  PPZ.div_mul_le_add_pred_div hb n
 
 /-- The exponent is at most `(a / b) n + 1`. -/
 theorem ppszExp_le_add_one {a b : ℕ} (hb : 0 < b) (n : ℕ) :
-    (ppszExp a b n : ℝ) ≤ (a : ℝ) / b * n + 1 := by
-  rw [ppszExp_eq_ceil hb]
-  exact (Nat.ceil_lt_add_one (by positivity)).le
+    (ppszExp a b n : ℝ) ≤ (a : ℝ) / b * n + 1 :=
+  PPZ.add_pred_div_le_div_mul_add_one hb n
 
 /-! ### The setup -/
 
@@ -401,9 +391,8 @@ theorem ampProgram_failure_le_exp {k h s a b c : ℕ} (hk : 3 ≤ k) (hb : 0 < b
     ((evalRand w ampProgram (ampTime s a b c n (s :: a :: b :: c :: encode φ).length)
       (.init (s :: a :: b :: c :: encode φ))).map Schoening.cfgSuccess false).toReal ≤
       Real.exp (-c) :=
-  ampProgram_failure_le_exp_of_le hb (le_trans (Real.rpow_le_rpow_of_exponent_le one_le_two
-    (neg_le_neg (mul_le_mul_of_nonneg_right hab (Nat.cast_nonneg n))))
-    (roundSuccessProb_ge hk hφ hlen hs)) hw
+  ampProgram_failure_le_exp_of_le hb
+    ((two_rpow_neg_mul_le n hab).trans (roundSuccessProb_ge hk hφ hlen hs)) hw
 
 /-- **PPSZ for k-SAT on the randomized word RAM, `ε`-form**
 [Paturi, Pudlák, Saks, Zane][PaturiPudlakSaksZane2005], [Hertli][Hertli2011]. Let `k ≥ 3` and
@@ -422,8 +411,7 @@ theorem ampProgram_failure_le_exp_limit {k : ℕ} (hk : 3 ≤ k) {ε : ℝ} (hε
           Real.exp (-c) := by
   obtain ⟨s, hs⟩ := round_success_limit hk ε hε
   refine ⟨s, fun hb hab n φ hφ hlen w hw => ampProgram_failure_le_exp_of_le hb ?_ hw⟩
-  exact le_trans (Real.rpow_le_rpow_of_exponent_le one_le_two
-    (neg_le_neg (mul_le_mul_of_nonneg_right hab (Nat.cast_nonneg n))))
+  exact (two_rpow_neg_mul_le n hab).trans
     ((hs n φ hφ hlen).trans (PPZ.sum_le_roundSuccessProbWith _ φ))
 
 /-- **PPSZ for 3-SAT on the randomized word RAM.** With `s = 3` and the bound `39 / 70` on the
@@ -446,16 +434,13 @@ theorem ampTime_le {s a b : ℕ} (hb : 0 < b) (c n L : ℕ) :
     (ampTime s a b c n L : ℝ) ≤
       600 * ((s + 1) ^ 2 : ℕ) * ((n + L + 1 : ℕ) : ℝ) ^ (2 * s + 1) *
         (2 : ℝ) ^ ((a : ℝ) / b * n) * (c + 1) := by
-  set X := (2 : ℝ) ^ ((a : ℝ) / b * n) with hX
+  set X := (2 : ℝ) ^ ((a : ℝ) / b * n)
   set e := ppszExp a b n with he
   obtain ⟨N, hN⟩ : ∃ N, n + L + 1 = N := ⟨_, rfl⟩
   rw [hN]
   have hX1 : 1 ≤ X := Real.one_le_rpow one_le_two (by positivity)
   -- the number of rounds
-  have h2e : (2 : ℝ) ^ e ≤ 2 * X := by
-    rw [← Real.rpow_natCast, hX, show 2 * (2 : ℝ) ^ ((a : ℝ) / b * n) =
-      (2 : ℝ) ^ ((a : ℝ) / b * n + 1) by rw [Real.rpow_add two_pos, Real.rpow_one]; ring]
-    exact Real.rpow_le_rpow_of_exponent_le one_le_two (ppszExp_le_add_one hb n)
+  have h2e : (2 : ℝ) ^ e ≤ 2 * X := PPZ.two_pow_le_two_mul_rpow (ppszExp_le_add_one hb n)
   -- one round
   set K := (s + 1) ^ 2 * N ^ (2 * s + 1) with hK
   have hP : n * (impliedTime s L + 25) + 12 * L + 41 ≤ 181 * K := by

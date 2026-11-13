@@ -9,9 +9,10 @@ module
 
 public import CslibFrontier.Crypto.Computational.Encryption.EncryptThenMAC
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
-import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
@@ -126,13 +127,13 @@ theorem isPPTOn_run_encForgeOracle (E : SymmetricCipher) {adversary : CIAdversar
   obtain ⟨c, d, hlen⟩ := E.encrypt_ppt.length_le
   let EIn := encPair (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
-  have hcond : ComputableTidilyInPolyTime
+  have hcond : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         p.2.1.2.length == p.1.1)
       EIn encBool :=
-    ComputableTidilyInPolyTime.unary_beq
+    ComputableInPolyTime.unary_beq'
       (by dsimp only [EIn]; fun_prop) (by dsimp only [EIn]; fun_prop)
-  have hencArg : ComputableTidilyInPolyTime
+  have hencArg : ComputableInPolyTime
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         (p.1.1, p.1.2, p.2.1.2))
       EIn (encPair encUnary (encPair encBits encBits)) := by
@@ -141,21 +142,21 @@ theorem isPPTOn_run_encForgeOracle (E : SymmetricCipher) {adversary : CIAdversar
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) => do
         let ct ← E.encrypt p.1.1 p.1.2 p.2.1.2
         return (ct, p.2.1.2 :: p.2.2)) :=
-    (E.encrypt_ppt.preprocess hencArg.computableInPolyTime).bind_with
-      ((by dsimp only [EIn]; fun_prop : ComputableTidilyInPolyTime
+    (E.encrypt_ppt.preprocess hencArg).bind_with
+      ((by dsimp only [EIn]; fun_prop : ComputableInPolyTime
         (fun q : ((ℕ × List Bool) × ((Unit × List Bool) × List (List Bool))) × List Bool =>
           (q.2, q.1.2.1.2 :: q.1.2.2))
         (encPair EIn encBits) (encPair encBits (encList encBits))).isPPTOn)
   have hno : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun p : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         pure ([], p.2.2)) :=
-    (ComputableTidilyInPolyTime.prod (ComputableTidilyInPolyTime.const [])
+    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
       (by dsimp only [EIn]; fun_prop)).isPPTOn
   have hhandler : IsPPTOn EIn (encPair encBits (encList encBits))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         E.encForgeOracle pair.1.1 pair.1.2 pair.2.1 pair.2.2) := by
     unfold encForgeOracle
-    exact IsPPTOn.cond hcond hyes hno
+    exact IsPPTOn.cond' hcond hyes hno
   apply hadversary.run_interpret_preprocess'
     (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
     (initial := fun _ => ([] : List (List Bool)))
@@ -180,34 +181,32 @@ theorem isPPTOn_run_encForgeOracle (E : SymmetricCipher) {adversary : CIAdversar
     subst result
     exact ⟨trivial, by simp, by lia⟩
 
-private theorem computableTidilyInPolyTime_encForgePost (E : SymmetricCipher) :
-    ComputableTidilyInPolyTime
+private theorem computableInPolyTime_encForgePost (E : SymmetricCipher) :
+    ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) =>
         (E.decrypt pair.1.1 pair.1.2 pair.2.1).isSome &&
           !pair.2.2.contains ((E.decrypt pair.1.1 pair.1.2 pair.2.1).getD []))
       (encPair (encPair encUnary encBits) (encPair encBits (encList encBits))) encBool := by
   let EOut := encPair (encPair encUnary encBits) (encPair encBits (encList encBits))
-  have hdecArg : ComputableTidilyInPolyTime
+  have hdecArg : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) =>
         (pair.1.1, pair.1.2, pair.2.1))
       EOut (encPair encUnary (encPair encBits encBits)) := by
     dsimp only [EOut]; fun_prop
-  have hdec : ComputableTidilyInPolyTime
+  have hdec : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) =>
         E.decrypt pair.1.1 pair.1.2 pair.2.1)
       EOut (encOption encBits) :=
-    E.decrypt_polyTime.tidy.comp hdecArg
+    E.decrypt_polyTime.comp hdecArg
   have hisSome := hdec.optionIsSome
-  have hgetD := ComputableTidilyInPolyTime.optionGetDWithInput hdec
-    (ComputableTidilyInPolyTime.const [])
-  have hlist : ComputableTidilyInPolyTime
+  have hgetD := ComputableInPolyTime.optionGetDWithInput hdec (ComputableInPolyTime.const [])
+  have hlist : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (List Bool × List (List Bool)) => pair.2.2)
       EOut (encList encBits) := by
     dsimp only [EOut]; fun_prop
-  have hcontains :=
-    (ComputableInPolyTime.contains hlist.computableInPolyTime hgetD.computableInPolyTime).tidy
-  exact ComputableTidilyInPolyTime.bool_and.comp
-    (hisSome.prod (ComputableTidilyInPolyTime.bool_not.comp hcontains))
+  have hcontains := ComputableInPolyTime.contains hlist hgetD
+  exact ComputableInPolyTime.bool_and.comp
+    (hisSome.prod (ComputableInPolyTime.bool_not.comp hcontains))
 
 /-- The fresh-message encryption unforgeability experiment is uniformly strict PPT in the unary
 security parameter. -/
@@ -217,7 +216,7 @@ theorem isPPTOn_encForgeGame (E : SymmetricCipher) {adversary : CIAdversary}
     IsPPTOn encUnary encBool (E.encForgeGame adversary) := by
   have hrun := E.isPPTOn_run_encForgeOracle hadversary
   unfold encForgeGame
-  exact E.keyGen_ppt.bind_with (hrun.bind_with E.computableTidilyInPolyTime_encForgePost.isPPTOn)
+  exact E.keyGen_ppt.bind_with (hrun.bind_with E.computableInPolyTime_encForgePost.isPPTOn)
 
 /-- The fresh-message encryption unforgeability experiment is uniformly strict PPT, independently of
 unused auxiliary input. -/
@@ -387,9 +386,7 @@ private noncomputable def etmForgeJointOracle (E : SymmetricCipher) (M : MACSche
       return ([], queriedPairs)
 
 private theorem eval_run_encForgeOracle_encryptThenMAC_eq (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (n : ℕ) (ke km : List Bool) (prog : WordOracleComp Unit (List Bool)) :
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -400,10 +397,6 @@ private theorem eval_run_encForgeOracle_encryptThenMAC_eq (E : SymmetricCipher) 
         (etmForgeJointOracle E M n ke km)) prog).run [])).map
       (fun (a, s') => (a, s'.map Prod.fst)) := by
   rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
-  have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-    simp [encPair_apply, unframe_frame_append]
-  have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-    simp [encPair_apply, dropFrame_frame_append]
   exact (ProbOracleComp.run_interpret_map_state
     (oracle := fun q s => ProbComp.eval (etmForgeJointOracle E M n ke km q s))
     (oracle' := fun q s =>
@@ -414,15 +407,13 @@ private theorem eval_run_encForgeOracle_encryptThenMAC_eq (E : SymmetricCipher) 
       intro ⟨⟨⟩, msg⟩ queriedPairs
       unfold etmForgeJointOracle SymmetricCipher.encForgeOracle
       dsimp only [encryptThenMAC]
-      rw [hunframe_k, hdrop_k]
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits]
       split_ifs <;> simp [ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.pure_map,
         PMF.map_comp, Function.comp_def])
     prog []).symm
 
 private theorem eval_run_etmToMACHandler_signingOracle_eq (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (n : ℕ) (tagBound : ℕ → ℕ) (ke km : List Bool)
     (hke : ke ∈ (ProbComp.eval (E.keyGen n)).support)
     (hkm : km ∈ (ProbComp.eval (M.keyGen n)).support)
@@ -523,9 +514,7 @@ private theorem mem_support_etmForgeJointOracle (E : SymmetricCipher) (M : MACSc
 winning probability of `adversary` against `encryptThenMAC E M hctLen` is at most the `eufCmaGame`
 winning probability of `etmToMACForger E M tagBound adversary` against `M`. -/
 theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (tagBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
     (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
       ∀ c, c.length = M.msgLen n →
@@ -603,12 +592,8 @@ theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M 
         PMF.bind_map, PMF.bind_map]
       refine Probability.PMF.map_true_mono _ fun out hout hwin => ?_
       have hinv := mem_support_etmForgeJointOracle E M n ke km (adversary n []) out.1 out.2 hout
-      have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-        simp [encPair_apply, unframe_frame_append]
-      have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-        simp [encPair_apply, dropFrame_frame_append]
       dsimp only [Function.comp_def, encryptThenMAC] at hwin ⊢
-      rw [hunframe_k, hdrop_k] at hwin
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits] at hwin
       split_ifs at hwin with hcond
       · simp only [Bool.and_eq_true, Bool.not_eq_true'] at hwin hcond
         have hpairCond : ((encPair encBits encBits (unframe out.1, dropFrame out.1) == out.1) &&
@@ -641,9 +626,7 @@ theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M 
 existential unforgeability (`M.EUFCMA`), then `encryptThenMAC E M hctLen` satisfies fresh-message
 encryption unforgeability (`EncForge`), without requiring `M.SUFCMA` or `E.INDCPA`. -/
 theorem encForge_encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (heuf : M.EUFCMA) :
     (encryptThenMAC E M hctLen).EncForge := by
   obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq

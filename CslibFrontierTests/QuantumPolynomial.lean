@@ -4,8 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.QueryComplexity.Quantum.Polynomial
-import CslibFrontier.Computability.Circuit.Quantum.Basic
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.QueryComplexity.Quantum.Polynomial
+public import CslibFrontier.Computability.Circuit.Quantum.Basic
+public import CslibFrontier.Foundations.Quantum.Measurement
+public import CslibFrontier.Foundations.Data.BitString.Sign
 
 /-! The polynomial method: a one-query algorithm that reads its input bit exactly, so the
 hypotheses of the lower bounds are satisfiable by a non-constant function. -/
@@ -14,25 +19,27 @@ namespace CslibFrontierTests.QuantumPolynomial
 
 open Cslib Cslib.Quantum Cslib.BitString Cslib.QueryComplexity
 
+public section
+
 /-- With one query index and a trivial workspace, a basis state is determined by its control bit. -/
-def ctrl : Fin 1 × Bool × Unit ≃ Bool :=
+@[expose] def ctrl : Fin 1 × Bool × Unit ≃ Bool :=
   (Equiv.uniqueProd (Bool × Unit) (Fin 1)).trans (Equiv.prodUnique Bool Unit)
 
 /-- The Hadamard gate on the control bit. -/
-noncomputable def hadamardCtrl : State 1 Unit →ₗᵢ[ℂ] State 1 Unit :=
+@[expose] noncomputable def hadamardCtrl : State 1 Unit →ₗᵢ[ℂ] State 1 Unit :=
   (unitaryEquiv ⟨Gate.hadamardMatrix.submatrix ctrl ctrl,
     Matrix.submatrix_equiv_mem_unitary.mpr Gate.hadamardMatrix_mem_unitaryGroup⟩).toLinearIsometry
 
 /-- The one-query algorithm `H O_x H |0, 0⟩`, which ends in `|0, x₀⟩`. -/
-noncomputable def readBit : ℕ → State 1 Unit →ₗᵢ[ℂ] State 1 Unit := fun _ => hadamardCtrl
+@[expose] noncomputable def readBit : ℕ → State 1 Unit →ₗᵢ[ℂ] State 1 Unit := fun _ => hadamardCtrl
 
 /-- The initial state `|0, 0, ()⟩`. -/
-noncomputable def ψ₀ : State 1 Unit := ket (0, false, ())
+@[expose] noncomputable def ψ₀ : State 1 Unit := ket (0, false, ())
 
 theorem norm_ψ₀ : ‖ψ₀‖ = 1 := norm_ket _
 
 /-- The accepting outcome: control bit `1`. -/
-def accept : Finset (Fin 1 × Bool × Unit) := {(0, true, ())}
+@[expose] def accept : Finset (Fin 1 × Bool × Unit) := {(0, true, ())}
 
 private theorem inv_sqrt_two_mul_self : ((Real.sqrt 2)⁻¹ : ℂ) * ((Real.sqrt 2)⁻¹ : ℂ) = 1 / 2 := by
   rw [← mul_inv, ← Complex.ofReal_mul, Real.mul_self_sqrt (by norm_num)]
@@ -87,5 +94,7 @@ example (W : Type) [Fintype W] (U : ℕ → State 3 W →ₗᵢ[ℂ] State 3 W) 
     (S : Finset (Fin 3 × Bool × W)) :
     (fun x => measureProb (run U ψ x 2) S) ∈ lowDegree ℝ (Fin 3) 4 :=
   measureProb_run_mem_lowDegree U ψ 2 S
+
+end
 
 end CslibFrontierTests.QuantumPolynomial

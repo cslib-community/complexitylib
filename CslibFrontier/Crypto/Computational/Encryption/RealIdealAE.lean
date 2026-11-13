@@ -11,8 +11,11 @@ public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -300,22 +303,13 @@ private theorem map_runWith_cpaEncryptionOracle_eq (E : SymmetricCipher) (ctBoun
 running `adversary` in `cpaGame` with challenge bit `bit`. -/
 theorem eval_aeRealGame_cpaToAEAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : OracleDistinguisher) (bit : Bool) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound bit adversary) n) =
       ProbComp.eval (E.cpaGame adversary bit n) := by
-  simp only [aeRealGame, cpaGame, cpaToAEAdversary, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
-  have hsim :=
-    map_runWith_cpaEncryptionOracle_eq E ctBound bit n k (hctBound k hk) (adversary n [])
-  rw [← hsim]
-  simp only [PMF.bind_map, Function.comp_def]
+  simp only [aeRealGame, cpaGame, cpaToAEAdversary, runWith_norm, pmf_norm]
+  peel_binds k
+  rw [← map_runWith_cpaEncryptionOracle_eq E ctBound bit n k (hctBound k k_mem) (adversary n [])]
+  simp only [pmf_norm]
 
 /-- Against the ideal oracle, one step of `cpaToAEHandler` does not depend on the fixed bit: both
 selectable messages have length `n`, and the ideal oracle encrypts the all-zero message. -/
@@ -337,52 +331,40 @@ private theorem eval_aeIdealGame_cpaToAEAdversary (E : SymmetricCipher) (ctBound
     (adversary : OracleDistinguisher) (n : ℕ) :
     ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound true adversary) n) =
       ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound false adversary) n) := by
-  simp only [aeIdealGame, cpaToAEAdversary, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k _
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_run_interpret, ProbOracleComp.runWith_run_interpret]
-  simp only [runWith_aeIdealOracle_cpaToAEHandler]
+  simp only [aeIdealGame, cpaToAEAdversary, runWith_norm, pmf_norm,
+    runWith_aeIdealOracle_cpaToAEHandler]
 
 /-- The CPA advantage of `adversary` is at most the sum of the real/ideal advantages of
 `cpaToAEAdversary ctBound false adversary` and `cpaToAEAdversary ctBound true adversary`, when
 `ctBound n` bounds the ciphertext lengths of `n`-bit messages. -/
 theorem advantage_cpaGame_le_aeRealGame_aeIdealGame (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     Game.advantage (ProbComp.eval (E.cpaGame adversary false n))
         (ProbComp.eval (E.cpaGame adversary true n)) ≤
       Game.advantage (ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound false adversary) n))
           (ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound false adversary) n)) +
         Game.advantage (ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound true adversary) n))
           (ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound true adversary) n)) := by
-  rw [← eval_aeRealGame_cpaToAEAdversary E ctBound adversary false n hctBound,
-    ← eval_aeRealGame_cpaToAEAdversary E ctBound adversary true n hctBound]
-  have htri := Game.advantage_triangle
-    (ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound false adversary) n))
-    (ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound false adversary) n))
-    (ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound true adversary) n))
-  have hmid : Game.advantage
-        (ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound false adversary) n))
-        (ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound true adversary) n)) =
-      Game.advantage
-        (ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound true adversary) n))
-        (ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound true adversary) n)) := by
-    rw [Game.advantage_comm, eval_aeIdealGame_cpaToAEAdversary]
-  rw [hmid] at htri
-  exact htri
+  game_trans
+    [ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound false adversary) n),
+     ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound false adversary) n),
+     ProbComp.eval (E.aeIdealGame (cpaToAEAdversary ctBound true adversary) n),
+     ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound true adversary) n)]
+    using [eval_aeRealGame_cpaToAEAdversary E ctBound adversary false n hctBound,
+           le_rfl,
+           eval_aeIdealGame_cpaToAEAdversary E ctBound adversary n,
+           le_rfl,
+           eval_aeRealGame_cpaToAEAdversary E ctBound adversary true n hctBound]
 
 /-- Real/ideal authenticated encryption implies adaptive CPA security (`INDCPA`). -/
 theorem RealIdealAE.indcpa {E : SymmetricCipher} (h : E.RealIdealAE) : E.INDCPA := by
   intro adversary hadversary
   obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
-  exact negligible_of_le
-    ((h _ (isOraclePPT_cpaToAEAdversary hctBoundPoly false hadversary)).add
-      (h _ (isOraclePPT_cpaToAEAdversary hctBoundPoly true hadversary)))
-    fun n => advantage_cpaGame_le_aeRealGame_aeIdealGame E ctBound adversary n (hctBound n)
+  have hfalse := h _ (isOraclePPT_cpaToAEAdversary hctBoundPoly false hadversary)
+  have htrue := h _ (isOraclePPT_cpaToAEAdversary hctBoundPoly true hadversary)
+  negligible using fun n =>
+    advantage_cpaGame_le_aeRealGame_aeIdealGame E ctBound adversary n (hctBound n)
 
 /-! ### Real/ideal security implies ciphertext integrity -/
 
@@ -483,24 +465,15 @@ private theorem map_runWith_ciEncryptionOracle_eq (E : SymmetricCipher) (ctBound
 wins `ciGame`. -/
 theorem eval_aeRealGame_ciToAEAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : CIAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.aeRealGame (ciToAEAdversary ctBound adversary) n) =
       ProbComp.eval (E.ciGame adversary n) := by
-  simp only [aeRealGame, ciGame, ciToAEAdversary, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_run_interpret]
-  have hsim := map_runWith_ciEncryptionOracle_eq E ctBound n k (hctBound k hk) (adversary n [])
-  rw [← hsim]
-  simp only [PMF.bind_map, PMF.bind_bind, Function.comp_def]
-  apply PMF.bind_congr_on_support
-  rintro ⟨out, queried⟩ -
-  simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map,
-    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, aeRealOracle, ↓reduceIte,
-    PMF.bind_bind, PMF.pure_bind]
+  simp only [aeRealGame, ciGame, ciToAEAdversary, runWith_norm, pmf_norm]
+  peel_binds k
+  rw [← map_runWith_ciEncryptionOracle_eq E ctBound n k (hctBound k k_mem) (adversary n [])]
+  simp only [pmf_norm]
+  refine PMF.bind_congr_on_support _ _ _ fun ⟨out, queried⟩ _ => ?_
+  simp only [aeRealOracle, ↓reduceIte, pmf_norm]
   cases queried.contains out <;> cases E.decrypt n k out <;> simp
 
 /-- The ideal oracle rejects every decryption query. -/
@@ -521,9 +494,7 @@ theorem eval_aeIdealGame_ciToAEAdversary (E : SymmetricCipher) (ctBound : ℕ �
 messages. -/
 theorem succProbability_ciGame_eq_advantage_aeRealGame_aeIdealGame (E : SymmetricCipher)
     (ctBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     Game.succProbability (ProbComp.eval (E.ciGame adversary n)) =
       Game.advantage (ProbComp.eval (E.aeRealGame (ciToAEAdversary ctBound adversary) n))
         (ProbComp.eval (E.aeIdealGame (ciToAEAdversary ctBound adversary) n)) := by
@@ -535,7 +506,8 @@ theorem RealIdealAE.ciphertextIntegrity {E : SymmetricCipher} (h : E.RealIdealAE
     E.CiphertextIntegrity := by
   refine CiphertextIntegrity.of_negligible fun adversary hadversary => ?_
   obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
-  exact negligible_of_le (h _ (isOraclePPT_ciToAEAdversary hctBoundPoly hadversary)) fun n =>
+  have hae := h _ (isOraclePPT_ciToAEAdversary hctBoundPoly hadversary)
+  negligible using fun n =>
     (succProbability_ciGame_eq_advantage_aeRealGame_aeIdealGame E ctBound adversary n
       (hctBound n)).le
 
@@ -681,20 +653,13 @@ private theorem map_aeRealOracle_eq_runWith_aeToCCAHandler (E : SymmetricCipher)
 output distribution as running `adversary` in the real world. -/
 theorem eval_ccaGame_aeToCCAAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (decBound : ℕ → List Bool → ℕ) (adversary : CCAAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n)
+    (hctBound : E.CiphertextLengthLE n (ctBound n))
     (hdecBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     ProbComp.eval (E.ccaGame (aeToCCAAdversary ctBound decBound adversary) false n) =
       ProbComp.eval (E.aeRealGame adversary n) := by
-  simp only [ccaGame, aeRealGame, aeToCCAAdversary, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [ccaGame, aeRealGame, aeToCCAAdversary, runWith_norm, pmf_norm]
+  peel_binds k
   have hsim := ProbOracleComp.runWith_map_state
     (fun request queried => ProbComp.eval (E.aeRealOracle n k request queried))
     (fun request state =>
@@ -703,11 +668,11 @@ theorem eval_ccaGame_aeToCCAAdversary (E : SymmetricCipher) (ctBound : ℕ → �
         (fun result => (result.1.1, result.1.2, result.2)))
     (fun queried : List (List Bool) => ((), queried))
     (fun request queried =>
-      map_aeRealOracle_eq_runWith_aeToCCAHandler E ctBound decBound n k (hctBound k hk)
-        (hdecBound k hk) request queried)
+      map_aeRealOracle_eq_runWith_aeToCCAHandler E ctBound decBound n k (hctBound k k_mem)
+        (hdecBound k k_mem) request queried)
     (adversary n []) []
   rw [← hsim]
-  simp only [PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm]
 
 /-- One step of `aeToCCAHandler` against the all-reject CCA oracle with challenge bit `true`, after
 forgetting all state, is one step of the ideal oracle. -/
@@ -742,19 +707,11 @@ private theorem map_runWith_aeToCCAHandler_eq_aeIdealOracle (E : SymmetricCipher
 same output distribution as running `adversary` in the ideal world. -/
 theorem eval_ccaRejectGame_aeToCCAAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (decBound : ℕ → List Bool → ℕ) (adversary : CCAAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.ccaRejectGame (aeToCCAAdversary ctBound decBound adversary) true n) =
       ProbComp.eval (E.aeIdealGame adversary n) := by
-  simp only [ccaRejectGame, aeIdealGame, aeToCCAAdversary, ProbComp.eval_bind,
-    ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [ccaRejectGame, aeIdealGame, aeToCCAAdversary, runWith_norm, pmf_norm]
+  peel_binds k
   have hsim := ProbOracleComp.runWith_map_state
     (fun request state =>
       (ProbOracleComp.runWith (fun q s => ProbComp.eval (E.ccaRejectOracle n k true q s))
@@ -763,11 +720,11 @@ theorem eval_ccaRejectGame_aeToCCAAdversary (E : SymmetricCipher) (ctBound : ℕ
     (fun request u => ProbComp.eval (E.aeIdealOracle n k request u))
     (fun _ : Unit × List (List Bool) => ())
     (fun request state =>
-      map_runWith_aeToCCAHandler_eq_aeIdealOracle E ctBound decBound n k (hctBound k hk)
+      map_runWith_aeToCCAHandler_eq_aeIdealOracle E ctBound decBound n k (hctBound k k_mem)
         request state)
     (adversary n []) ((), [])
   rw [← hsim]
-  simp only [PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm]
 
 /-- **Real/ideal advantage bound.** If `aeToCCAAdversary ctBound decBound adversary` makes at most
 `Q n` queries, and `ctBound n` and `decBound n` bound the ciphertext and decryption-reply lengths,
@@ -776,9 +733,7 @@ then the real/ideal advantage of `adversary` is at most the CCA advantage of tha
 theorem advantage_aeRealGame_aeIdealGame_le (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (decBound : ℕ → List Bool → ℕ) (adversary : CCAAdversary) (n : ℕ)
     (hq : (aeToCCAAdversary ctBound decBound adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n)
+    (hctBound : E.CiphertextLengthLE n (ctBound n))
     (hdecBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     (Game.advantage (ProbComp.eval (E.aeRealGame adversary n))
@@ -790,18 +745,18 @@ theorem advantage_aeRealGame_aeIdealGame_le (E : SymmetricCipher) (ctBound Q : �
           (Game.succProbability (ProbComp.eval (E.ciGame
             (ccaToCIAdversary ctBound Q true (aeToCCAAdversary ctBound decBound adversary)) n)) :
             ℝ) := by
-  rw [← eval_ccaGame_aeToCCAAdversary E ctBound decBound adversary n hctBound hdecBound,
-    ← eval_ccaRejectGame_aeToCCAAdversary E ctBound decBound adversary n hctBound]
-  have htri := NNReal.coe_le_coe.mpr (Game.advantage_triangle
-    (ProbComp.eval (E.ccaGame (aeToCCAAdversary ctBound decBound adversary) false n))
-    (ProbComp.eval (E.ccaGame (aeToCCAAdversary ctBound decBound adversary) true n))
-    (ProbComp.eval (E.ccaRejectGame (aeToCCAAdversary ctBound decBound adversary) true n)))
-  rw [NNReal.coe_add] at htri
   have hhop := (advantage_ccaGame_ccaRejectGame_le_sum E ctBound Q
     (aeToCCAAdversary ctBound decBound adversary) true n hq hctBound).trans
     (sum_succProbability_ccaToCIAtIndexAdversary_le E ctBound Q true
       (aeToCCAAdversary ctBound decBound adversary) n)
-  linarith
+  game_trans
+    [ProbComp.eval (E.ccaGame (aeToCCAAdversary ctBound decBound adversary) false n),
+     ProbComp.eval (E.ccaGame (aeToCCAAdversary ctBound decBound adversary) true n),
+     ProbComp.eval (E.ccaRejectGame (aeToCCAAdversary ctBound decBound adversary) true n)]
+    using [eval_ccaGame_aeToCCAAdversary E ctBound decBound adversary n hctBound hdecBound,
+           le_rfl,
+           hhop,
+           eval_ccaRejectGame_aeToCCAAdversary E ctBound decBound adversary n hctBound]
 
 /-- **CCA security and ciphertext integrity imply real/ideal security**: the reverse direction of
 [KatzLindell2020] Theorem 5.5, with `CiphertextIntegrity` in place of unforgeability. -/
@@ -817,15 +772,11 @@ theorem realIdealAE_of_indcca_of_ciphertextIntegrity {E : SymmetricCipher} (hcca
     dsimp only [Q]; fun_prop
   have hq (n : ℕ) : (aeToCCAAdversary ctBound decBound adversary n []).IsQueryBounded (Q n) := by
     simpa only [Q, List.length_nil, Nat.add_zero] using (hqbounds n []).1
+  have hccaNeg := hcca _ hred
   have hciNeg := hci.negligible
     (ccaToCIAdversary ctBound Q true (aeToCCAAdversary ctBound decBound adversary))
     (isOraclePPT_ccaToCIAdversary hctBoundPoly hQPoly true hred)
-  have hpoly : PolynomiallyBounded (fun n => dyadicSize (Q n)) := by
-    dsimp only [Q]; fun_prop
-  refine negligible_of_le ((hcca _ hred).add (hciNeg.polynomiallyBounded_mul hpoly))
-    fun n => ?_
-  rw [← NNReal.coe_le_coe]
-  simpa only [Pi.add_apply, NNReal.coe_add, NNReal.coe_mul, NNReal.coe_natCast] using
+  negligible using fun n =>
     advantage_aeRealGame_aeIdealGame_le E ctBound Q decBound adversary n (hq n) (hctBound n)
       (hdecBound n)
 

@@ -20,22 +20,31 @@ namespace CslibFrontierTests.DominatingSet
 open Cslib.Complexity Turing.MultiTapeTM
 
 /-- The path `0 - 1 - 2`. -/
-private def path : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+private def path : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
 /-- The edge `0 - 1` with the isolated vertex `2`. -/
-private def edgeIso : Graph := ([0, 1, 2], [(0, 1)])
+private def edgeIso : Graph := ⟨[0, 1, 2], [(0, 1)]⟩
 
 /-- A self-loop at `0`, an edge to the undeclared vertex `5`, and a repeated vertex entry. -/
-private def junk : Graph := ([0, 0], [(0, 0), (0, 5)])
+private def junk : Graph := ⟨[0, 0], [(0, 0), (0, 5)]⟩
 
 /-! ### Headline results -/
 
-example : DominatingSet ∈ NP (encPair encGraph encNat) ∧
-    NPHard (encPair encGraph encNat) DominatingSet ∧
-    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) VertexCover
+example : DominatingSet ∈ NP encDominatingSet ∧
+    NPHard encDominatingSet DominatingSet ∧
+    PolyTimeReducible encVertexCoverInstance encDominatingSet VertexCover
       DominatingSet :=
   ⟨DominatingSet_npComplete.1, DominatingSet_npComplete.2,
     polyTimeReducible_VertexCover_DominatingSet⟩
+
+example : ComputableInPolyTime (fun x : DominatingSetInstance => x.graph)
+    encDominatingSet encGraph := by fun_prop
+
+example : ComputableInPolyTime (fun x : DominatingSetInstance => x.bound)
+    encDominatingSet encNat := by fun_prop
+
+example : ComputableInPolyTime (fun x : Graph × ℕ => DominatingSetInstance.mk x.1 x.2)
+    (encPair encGraph encNat) encDominatingSet := by fun_prop
 
 /-! ### The domination test -/
 
@@ -51,31 +60,31 @@ example : DominatingSet.isDominating edgeIso [0, 2] = true := by decide
 example : DominatingSet.isDominating junk [] = false := by decide
 example : DominatingSet.isDominating junk [0] = true := by decide
 -- The test reads adjacency off the edge list, so the undeclared `5` passes it. Certificates
--- select declared vertices only (`mem_DominatingSet_iff` asks for `S ⊆ G.1`).
+-- select declared vertices only (`mem_DominatingSet_iff` asks for `S ⊆ G.vertices`).
 example : DominatingSet.isDominating junk [5] = true := by decide
 
 /-! ### Dominating sets -/
 
-example : (path, 1) ∈ DominatingSet :=
+example : (⟨path, 1⟩ : DominatingSetInstance) ∈ DominatingSet :=
   mem_DominatingSet_iff.2 ⟨{1}, by decide,
     DominatingSet.isDominating_eq_true_iff.1 (by decide), rfl⟩
 
 -- Three vertices dominate the path too, but four distinct declared vertices do not exist.
-example : (path, 3) ∈ DominatingSet :=
+example : (⟨path, 3⟩ : DominatingSetInstance) ∈ DominatingSet :=
   mem_DominatingSet_iff.2 ⟨{0, 1, 2}, by decide,
     DominatingSet.isDominating_eq_true_iff.1 (by decide), rfl⟩
 
-example : (path, 4) ∉ DominatingSet := fun h => by
+example : (⟨path, 4⟩ : DominatingSetInstance) ∉ DominatingSet := fun h => by
   have := (mem_DominatingSet_iff_exists_card_le.1 h).1
   revert this
   decide
 
 -- The repeated entry counts once.
-example : (junk, 1) ∈ DominatingSet :=
+example : (⟨junk, 1⟩ : DominatingSetInstance) ∈ DominatingSet :=
   mem_DominatingSet_iff.2 ⟨{0}, by decide,
     DominatingSet.isDominating_eq_true_iff.1 (by decide), rfl⟩
 
-example : (junk, 2) ∉ DominatingSet := fun h => by
+example : (⟨junk, 2⟩ : DominatingSetInstance) ∉ DominatingSet := fun h => by
   have := (mem_DominatingSet_iff_exists_card_le.1 h).1
   revert this
   decide
@@ -87,33 +96,33 @@ example : VertexCover.properEdges path = [(0, 1), (1, 2)] := by decide
 example : VertexCover.properEdges junk = [] := by decide
 
 -- The graph of `junk`: hub, pendant and copies only.
-example : VertexCover.dominationGraph junk = ([1, 3, 0, 0], [(1, 3), (1, 0), (1, 0)]) := by decide
+example : VertexCover.dominationGraph junk = ⟨[1, 3, 0, 0], [(1, 3), (1, 0), (1, 0)]⟩ := by decide
 
 -- The edge `0 - 1` gets the vertex `2 * Nat.pair 0 1 + 5 = 7`, adjacent to the copies `0` and `2`.
 example : VertexCover.edgeVertex (0, 1) = 7 := by decide
-example : VertexCover.dominationGraph ([0, 1], [(0, 1)]) =
-    ([1, 3, 0, 2, 7], [(1, 3), (1, 0), (1, 2), (7, 0), (7, 2)]) := by decide
+example : VertexCover.dominationGraph ⟨[0, 1], [(0, 1)]⟩ =
+    ⟨[1, 3, 0, 2, 7], [(1, 3), (1, 0), (1, 2), (7, 0), (7, 2)]⟩ := by decide
 
 -- The target becomes `k + 1`, or `0` when `k` exceeds the number of distinct vertices.
-example : VertexCover.toDominatingSet (path, 1) = (VertexCover.dominationGraph path, 2) := by
+example : VertexCover.toDominatingSet ⟨path, 1⟩ = ⟨VertexCover.dominationGraph path, 2⟩ := by
   decide
-example : VertexCover.toDominatingSet (junk, 2) = (VertexCover.dominationGraph junk, 0) := by
+example : VertexCover.toDominatingSet ⟨junk, 2⟩ = ⟨VertexCover.dominationGraph junk, 0⟩ := by
   decide
 
 -- `{1}` covers the path, so the hub and the copy `2` dominate its graph.
-example : VertexCover.toDominatingSet (path, 1) ∈ DominatingSet :=
+example : VertexCover.toDominatingSet ⟨path, 1⟩ ∈ DominatingSet :=
   (VertexCover.toDominatingSet_mem_iff _).2
     (mem_VertexCover_iff.2 ⟨{1}, by decide, VertexCover.isCover_eq_true_iff.1 (by decide), rfl⟩)
 
 -- The isolated vertex `2` costs nothing: `{0}` covers `edgeIso`, and the hub dominates the copy
 -- `4` of `2`.
-example : VertexCover.toDominatingSet (edgeIso, 1) ∈ DominatingSet :=
+example : VertexCover.toDominatingSet ⟨edgeIso, 1⟩ ∈ DominatingSet :=
   (VertexCover.toDominatingSet_mem_iff _).2
     (mem_VertexCover_iff.2 ⟨{0}, by decide, VertexCover.isCover_eq_true_iff.1 (by decide), rfl⟩)
 
 -- No vertex cover is empty when there is an edge, so no single vertex (target `0 + 1`) dominates
 -- the graph of the path.
-example : VertexCover.toDominatingSet (path, 0) ∉ DominatingSet := by
+example : VertexCover.toDominatingSet ⟨path, 0⟩ ∉ DominatingSet := by
   rw [VertexCover.toDominatingSet_mem_iff, mem_VertexCover_iff]
   rintro ⟨S, -, hS, hcard⟩
   rw [Finset.card_eq_zero] at hcard
@@ -122,7 +131,7 @@ example : VertexCover.toDominatingSet (path, 0) ∉ DominatingSet := by
 
 -- `junk` has no vertex cover of `2` distinct vertices, and its target `0` is unsatisfiable,
 -- although the graph has a dominating set of at most `2` vertices.
-example : VertexCover.toDominatingSet (junk, 2) ∉ DominatingSet := by
+example : VertexCover.toDominatingSet ⟨junk, 2⟩ ∉ DominatingSet := by
   rw [VertexCover.toDominatingSet_mem_iff]
   intro h
   have := (mem_VertexCover_iff_exists_card_le.1 h).1

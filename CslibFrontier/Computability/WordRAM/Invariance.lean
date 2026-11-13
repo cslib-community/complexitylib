@@ -127,7 +127,7 @@ theorem UniformComputableInPolyTime.polyBounded {f : α → ℕ}
     (h : UniformComputableInPolyTime B f (fun _ a => (encIn a).map Bool.toNat)
       (fun a => (encIn a).length)) :
     PolyBounded (fun a => (encIn a).length) f := by
-  obtain ⟨T, -, k, hk, r, p, hp⟩ := h
+  obtain ⟨T, -, k, hk, r, p, hp, _⟩ := h
   refine ⟨fun n => 2 ^ k * (n + 1) ^ k, .of_forall_le (2 ^ k) k fun _ => le_rfl, fun a => ?_⟩
   have hi := inputFits_map_toNat (encIn := encIn) hk a le_rfl
   obtain ⟨n, hex, -⟩ := hp a _ le_rfl hi
@@ -162,7 +162,8 @@ theorem turingComputableInPolyTime_iff_uniformComputableInPolyTime (φ : Basis.a
   obtain ⟨D', e', hD'⟩ := polynomiallyBounded_iff_le.1 hbound
   refine ⟨fun n => simTime K (Fintype.card Q) (t n), ?_, D + e + D' + e' + 1, by omega, regs K,
     _, Program.ComputesInTime.mapOp (p := simProgram tm.tr tm.q₀ (Fintype.equivFin Q)) φ
-      fun a w hw _ => ?_⟩
+      fun a w hw _ => ?_,
+    inputAdmissible_of_widthIndependent _ _⟩
   · unfold simTime
     exact (PolynomiallyBounded.const _).add (ht.mul (.const _))
   · obtain ⟨hhalt, hout⟩ := (htm a).runFrom_of_le le_rfl

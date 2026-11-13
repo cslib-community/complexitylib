@@ -44,7 +44,7 @@ example (l : ℕ) :
       (OracleComp.replicateFin (l + 1) (sampleCenteredBinomial (8 * (l + 1)))))).map
         (fun values j i => (values j i : ZMod (2 ^ (moduleLWECBDWidth (l + 1) + 1)))) =
       PMF.pi (fun _ : Fin (l + 1) => PMF.pi (fun _ : Fin (l + 1) =>
-        Homomorphic.GSW.noiseLaw (moduleLWECBDWidth (l + 1) + 1) (8 * (l + 1)))) :=
+        LWE.noiseLaw (moduleLWECBDWidth (l + 1) + 1) (8 * (l + 1)))) :=
   eval_moduleLWECenteredBinomial_mod _ _ _ _
 
 /-- Power-of-two matrix entries use the exact finite uniform law, not arbitrary uniform sampling. -/
@@ -62,7 +62,7 @@ example : 4 * (2 * (10 : ℝ) + 1) * 10 * Real.exp (-10) < 1 := by
   linarith
 
 private noncomputable def noise (η : ℕ) : PMF (Fin 1 → ZMod 64) :=
-  PMF.pi fun _ => Homomorphic.GSW.noiseLaw 6 η
+  PMF.pi fun _ => LWE.noiseLaw 6 η
 
 private noncomputable def secrets : PMF (Fin 1 → Fin 1 → ZMod 64) := PMF.pi fun _ => noise 1
 
@@ -75,7 +75,7 @@ private noncomputable def sampledView (η : ℕ) := do
 private def failure : Set ((Fin 1 → Fin 1 → ZMod 64) ×
     (ModuleLWEPublicKey 1 1 64 × ModuleLWECiphertext 1 1 64)) :=
   {out | moduleLWEDecrypt
-    (fun j i => (GeneralSIS.liftCentered (out.1 j) i : ZMod 32))
+    (fun j i => (SIS.liftCentered (out.1 j) i : ZMod 32))
     (moduleLWEModulusSwitch 32 out.2.2) ≠ ![true]}
 
 /-- The supported witness below belongs to exactly the first member of the proved family. -/
@@ -163,7 +163,7 @@ example : 0 < ((sampledView 8).toOuterMeasure failure).toReal := by
   rw [PMF.toOuterMeasure_toReal_pos_iff]
   refine ⟨(![![-1]], (key, ciphertext)), ?_, witness_support⟩
   change moduleLWEDecrypt
-    (fun j i => (GeneralSIS.liftCentered ((![![-1]] : Fin 1 → Fin 1 → ZMod 64) j) i :
+    (fun j i => (SIS.liftCentered ((![![-1]] : Fin 1 → Fin 1 → ZMod 64) j) i :
       ZMod 32)) (moduleLWEModulusSwitch 32 ciphertext) ≠ ![true]
   rw [switched_ciphertext]
   decide

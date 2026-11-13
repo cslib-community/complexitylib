@@ -70,19 +70,19 @@ private theorem sum_walk_le_of_sublist (δ : α → α → ℕ) (htri : ∀ x y 
   | cons x _ ih =>
     refine (ih a).trans ?_
     rename_i l₁ l₂ _
-    simp only [List.cons_append, consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
+    simp only [List.cons_append, List.consecutivePairs_cons_cons]
     cases l₂ with
     | nil =>
-      simp only [List.nil_append, consecutivePairs_cons_cons, consecutivePairs_singleton,
+      simp only [List.nil_append, List.consecutivePairs_cons_cons, List.consecutivePairs_singleton,
         List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
       have := htri a x b
       omega
     | cons y l₂ =>
-      simp only [List.cons_append, consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
+      simp only [List.cons_append, List.consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
       have := htri a x y
       omega
   | cons_cons x _ ih =>
-    simp only [List.cons_append, consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
+    simp only [List.cons_append, List.consecutivePairs_cons_cons, List.map_cons, List.sum_cons]
     have := ih x
     simp only [List.cons_append] at this
     omega
@@ -118,7 +118,7 @@ theorem cycleCost_dedup_le_of_isEulerCircuit {δ : α → α → ℕ}
     cases w' with
     | nil =>
       have := hw.perm
-      simp only [consecutivePairs_singleton, List.map_nil] at this
+      simp only [List.consecutivePairs_singleton, List.map_nil] at this
       exact absurd (List.map_eq_nil_iff.1 this.symm.eq_nil) hH
     | cons b w' =>
       have := hw.getLast

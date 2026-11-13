@@ -45,6 +45,9 @@ This file connects state-free oblivious-sequence specifications
 `ObliviousSequenceImpl` bounds the instruction cost of initialization and of the subroutine
 operation bodies across an oblivious sequence `ops`, excluding external caller argument delivery and
 dispatch, with the word width `w` treated as an external admissible parameter.
+Its decoded observations are representation-relative and uncharged. A native typed-output
+program additionally needs canonical result words and a charged conversion certificate when
+the inline representation differs.
 
 ## Main definitions
 
@@ -131,7 +134,7 @@ structure SeqOutcome (Latent : Type z) {Op : Type u} (Result : Op → Type v) (r
 /-- Multi-operation distributional execution relation across an oblivious sequence
 `ops : List S.Op`.
 At each operation `o`, `t.data` and the encoded arguments are word-bounded (`Fits w`), arguments
-are delivered via `(P.toDynamicProgram encode decode).prepare o`, `P.code` executes under
+are delivered via `P.prepare encode o`, `P.code` executes under
 `ExecCodeDist` preserving `Data.Bounded w`, the observation `q.result` is decoded from
 `q.data.regs`, memory outside `[base, base + space)` is preserved, and `⟨o, q.result⟩` is appended
 to the accumulated transcript. -/
@@ -153,8 +156,8 @@ inductive ExecSteps {B : Basis} {r_ds k_init : ℕ}
       (∀ t ∈ ν.support,
         t.data.Bounded w ∧
         (∀ i, P.input i = true → Fits w (encode o i)) ∧
-        ((P.toDynamicProgram encode decode).prepare o t.data).Bounded w ∧
-        ExecCodeDist w P.code ((P.toDynamicProgram encode decode).prepare o t.data)
+        (P.prepare encode o t.data).Bounded w ∧
+        ExecCodeDist w P.code (P.prepare encode o t.data)
           ((μ_step t).map StepOutcome.data) (T_step t) ∧
         ∀ q ∈ (μ_step t).support,
           q.data.Bounded w ∧
@@ -316,12 +319,18 @@ variable {B B' : Basis} {r_ds k_init w base : ℕ}
   {S : DataStructure.ObliviousSequenceSpec.{u, v}}
   {params : Fin k_init → ℕ}
 
+/-- Deliver externally encoded arguments without executing a native instruction or decoding a
+result. Maintained memory and persistent registers are preserved. -/
+def prepare (C : ObliviousSequenceImpl.{u, v, z} P S w base params)
+    (o : S.Op) (x : Data r_ds) : Data r_ds :=
+  P.prepare C.encode o x
+
 /-- Argument preparation preserves `Data.Bounded w` on operations satisfying `C.validOp`. -/
 theorem prepare_bounded (C : ObliviousSequenceImpl.{u, v, z} P S w base params)
     {z : C.Latent} {o : S.Op} {x : Data r_ds}
     (hx : x.Bounded w) (hv : C.validOp z o) :
-    ((P.toDynamicProgram C.encode C.decode).prepare o x).Bounded w :=
-  (P.toDynamicProgram C.encode C.decode).prepare_bounded hx (C.arguments_fit o hv)
+    (C.prepare o x).Bounded w :=
+  P.prepare_bounded C.encode hx (C.arguments_fit o hv)
 
 /-- Total expected instruction bound for `P.initFresh` (`spanTime + setupTime`). -/
 @[expose] def initTime (C : ObliviousSequenceImpl.{u, v, z} P S w base params) : ℝ≥0∞ :=
@@ -622,7 +631,7 @@ private theorem steps_toObliviousSequenceImpl (C : StateTransitionImpl P D w bas
       have hbdd_t : t.data.Bounded w := C.bounded hrep_t
       have hfit_t : ∀ i, P.input i = true → Fits w (C.encode o i) := C.arguments_fit o hv_t.1
       obtain ⟨he_rel, hq_rel⟩ := hstep _ (hmem t ht)
-      refine ⟨hbdd_t, hfit_t, C.toDynamicProgram.prepare_bounded hbdd_t hfit_t, ?_, ?_⟩
+      refine ⟨hbdd_t, hfit_t, C.prepare_bounded hbdd_t hfit_t, ?_, ?_⟩
       · refine he_rel.congr_dist ?_ le_rfl
         dsimp only [μ_step]
         rw [PMF.map_comp]

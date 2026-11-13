@@ -10,8 +10,11 @@ module
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 public import CslibFrontier.Crypto.Encoding
+public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Tactic.PPT
@@ -92,14 +95,11 @@ noncomputable def hybridDEMContinuation (E : SymmetricCipher)
     (adversary : WordCCA2Adversary) (n : ℕ) (pk sk ctK : List Bool) :
     WordOracleComp Bool Bool := do
   let handler := hybridDEMHandler E decaps decBound n sk ctK
-  let choice ← OracleComp.interpret
-    (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
-    (adversary.choose n pk)
+  let choice ← ProbOracleComp.simulate handler (adversary.choose n pk)
   if (ChoiceOut.msg₀ choice).length == n && (ChoiceOut.msg₁ choice).length == n then
     let ct ← List.take (ctBound n) <$> ProbOracleComp.query
       (false, encPair encBits encBits (ChoiceOut.msg₀ choice, ChoiceOut.msg₁ choice))
-    OracleComp.interpret
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
+    ProbOracleComp.simulate handler
       (adversary.guess n (ChoiceOut.state choice)
         (encPair encBits encBits (ctK, ct)))
   else pure false
@@ -175,8 +175,7 @@ theorem run_hybridDEMHandler_after (E : SymmetricCipher)
       · simp [hd, List.take_of_length_le (hbound _)]
     · have hne : request.2 ≠ encPair encBits encBits (ctK, ctD) := by
         intro h
-        apply hk
-        simpa only [encPair_apply, encBits_apply, unframe_frame_append] using congrArg unframe h
+        exact hk ((congrArg unframe h).trans (unframe_encPair_encBits _ _ _))
       simp only [hybridDEMHandler, hybridDecrypt, beq_iff_eq, hc, hk, hne, ↓reduceIte,
         OracleComp.interpret_pure, StateT.run_pure]
   · have hne : request.2 ≠ encPair encBits encBits (ctK, ctD) := by
@@ -196,9 +195,7 @@ private theorem eval_run_substituted_phase {α : Type}
     (program : WordOracleComp Unit α) :
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m)) oracle)
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
-        program)).run state) =
+      (ProbOracleComp.simulate handler program)).run state) =
       (ProbComp.eval ((OracleComp.interpret
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (fun request (s : Unit) => pure (reply request, s))) program).run ())).map
@@ -211,8 +208,8 @@ private theorem eval_run_substituted_phase {α : Type}
       have h := congrArg ProbComp.eval (hstep request)
       rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure] at h
       simpa only [PMF.pure_map] using h.symm) program ()
-  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_interpret_sumHandler,
-    ← hsim, ProbOracleComp.eval_run_interpret_eq_runWith]
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_simulate, ← hsim,
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   simp only [ProbComp.eval_pure]
 
 private theorem eval_run_hybridDEMContinuation (E : SymmetricCipher)
@@ -296,9 +293,7 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
     (decaps : ℕ → List Bool → List Bool → Option (List Bool))
     (ctBound : ℕ → ℕ) (decBound : ℕ → List Bool → ℕ)
     (adversary : WordCCA2Adversary) (bit : Bool) (n : ℕ)
-    (hct : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n → ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support,
-        ct.length ≤ ctBound n)
+    (hct : E.CiphertextLengthLE n (ctBound n))
     (hdec : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     ProbComp.eval (hybridDEMGame E keyGen encaps decaps adversary bit n) =
@@ -364,9 +359,8 @@ private theorem isOraclePPTOn_hybridDEMInterpret (E : SymmetricCipher)
     (hsk : ComputableInPolyTime sk input encBits)
     (hctK : ComputableInPolyTime ctK input encBits)
     (hprogram : IsOraclePPTOn input output program) :
-    IsOraclePPTOn input output (fun a => OracleComp.interpret
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m))
-        (hybridDEMHandler E decaps decBound (n a) (sk a) (ctK a))) (program a)) := by
+    IsOraclePPTOn input output (fun a => ProbOracleComp.simulate
+      (hybridDEMHandler E decaps decBound (n a) (sk a) (ctK a)) (program a)) := by
   have hhandler : IsOraclePPTOn (encPair input (encPair (encFinEnum Unit) encBits)) encBits
       (fun p : α × (Unit × List Bool) =>
         hybridDEMHandler E decaps decBound (n p.1) (sk p.1) (ctK p.1) p.2) :=

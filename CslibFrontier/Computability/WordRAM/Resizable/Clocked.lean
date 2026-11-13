@@ -505,6 +505,19 @@ structure ExecRProgramDist (w : ℕ) (p : RProgram B r) (out : Fin r) (x : RData
   halted_le : ∀ (adv : RAdv r) (y : RData r),
     μ y ≤ ⨆ t : ℕ, evalRandDemonic w adv p t ⟨0, x⟩ (.halted (y.regs out) y)
 
+/-- The halted part of the configuration law only grows with the clock. -/
+private theorem indicator_haltedSet_evalRandDemonic_mono (w : ℕ) (adv : RAdv r)
+    (p : RProgram B r) (s : RState r) (cfg : RCfg r) :
+    Monotone fun t => Set.indicator (RCfg.haltedSet r) (evalRandDemonic w adv p t s) cfg := by
+  intro t₁ t₂ ht
+  dsimp only
+  by_cases hmem : cfg ∈ RCfg.haltedSet r
+  · have hmem' := hmem
+    obtain ⟨v, d, rfl⟩ := hmem
+    rw [Set.indicator_of_mem hmem', Set.indicator_of_mem hmem']
+    exact evalRandDemonic_halted_mono w adv p s v d ht
+  · simp [Set.indicator_of_notMem hmem]
+
 namespace ExecRProgramDist
 
 theorem mono {w L₁ L₂ : ℕ} {p : RProgram B r} {out : Fin r} {x : RData r}
@@ -525,16 +538,7 @@ theorem iSup_evalRandDemonic_halted_eq {w L_peak : ℕ} {p : RProgram B r} {out 
   let g : RCfg r → ℝ≥0∞ := fun cfg => ⨆ t : ℕ, evalRandDemonic w adv p t ⟨0, x⟩ cfg
   let f : RData r → ℝ≥0∞ := fun y => g (emb y)
   have htsum_f : ∑' y, f y ≤ 1 := by
-    have hind_mono : ∀ cfg : RCfg r, Monotone fun t =>
-        Set.indicator (RCfg.haltedSet r) (evalRandDemonic w adv p t ⟨0, x⟩) cfg := by
-      intro cfg t₁ t₂ ht
-      dsimp only
-      by_cases hmem : cfg ∈ RCfg.haltedSet r
-      · have hmem' := hmem
-        obtain ⟨v, d, rfl⟩ := hmem
-        rw [Set.indicator_of_mem hmem', Set.indicator_of_mem hmem']
-        exact evalRandDemonic_halted_mono w adv p ⟨0, x⟩ v d ht
-      · simp [Set.indicator_of_notMem hmem]
+    have hind_mono := indicator_haltedSet_evalRandDemonic_mono w adv p ⟨0, x⟩
     have hcfg_sum : (∑' cfg, ⨆ t : ℕ,
         Set.indicator (RCfg.haltedSet r) (evalRandDemonic w adv p t ⟨0, x⟩) cfg) ≤ 1 := by
       rw [ENNReal.tsum_iSup_of_monotone hind_mono]
@@ -580,16 +584,7 @@ theorem almostSurelyHaltsDemonic {w L_peak : ℕ} {p : RProgram B r} {out : Fin 
   have hemb : Function.Injective emb := fun _ _ heq => by injection heq with _ hy
   let g_ind : RCfg r → ℝ≥0∞ := fun cfg =>
     ⨆ t : ℕ, Set.indicator (RCfg.haltedSet r) (evalRandDemonic w adv p t ⟨0, x⟩) cfg
-  have hind_mono : ∀ cfg : RCfg r, Monotone fun t =>
-      Set.indicator (RCfg.haltedSet r) (evalRandDemonic w adv p t ⟨0, x⟩) cfg := by
-    intro cfg t₁ t₂ ht
-    dsimp only
-    by_cases hmem : cfg ∈ RCfg.haltedSet r
-    · have hmem' := hmem
-      obtain ⟨v, d, rfl⟩ := hmem
-      rw [Set.indicator_of_mem hmem', Set.indicator_of_mem hmem']
-      exact evalRandDemonic_halted_mono w adv p ⟨0, x⟩ v d ht
-    · simp [Set.indicator_of_notMem hmem]
+  have hind_mono := indicator_haltedSet_evalRandDemonic_mono w adv p ⟨0, x⟩
   simp_rw [PMF.toOuterMeasure_apply, ← ENNReal.tsum_iSup_of_monotone hind_mono]
   rw [← μ.tsum_coe, tsum_eq_iSup_sum]
   refine iSup_le fun s => ?_
@@ -825,18 +820,15 @@ theorem RDemonicExec.supExpectedStepsWithin_assemble {w L_peak n pc N : ℕ} {c 
       le_iSup₂_of_le (x.set dst k.val) (hp_y k.val (Nat.lt_succ_iff.mp k.isLt)) le_rfl).trans ?_
     rw [ProbComp.expect_const]
   | @seq c₁ c₂ x T₁ T₂ Q P _ _ ih₁ ih₂ =>
-    have hc₂ : p.Contains (pc + c₁.size) (c₂.assemble (pc + c₁.size)) := by
-      simpa [RCode.length_assemble] using hp.append_right
+    have hc₂ := hp.seq_right
     refine (ih₁ hp.append_left).trans ?_
     rw [Nat.cast_add, add_assoc]
     refine add_le_add le_rfl (iSup₂_le fun y₁ hy₁ => (ih₂ y₁ hy₁ hc₂).trans ?_)
     simp only [RCode.size, Nat.add_assoc]
     exact le_rfl
   | @branch_pos c pos neg x T P hc _ ih =>
-    have hbr : p[pc]? = some (.branch c (pc + neg.size + 2)) := by
-      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hp.head
-    have hc' := (hp.cons_tail.append_right (q₁ := neg.assemble (pc + 1))).cons_tail
-    rw [RCode.length_assemble, show pc + 1 + neg.size + 1 = pc + neg.size + 2 by omega] at hc'
+    have hbr := hp.branch_head
+    have hc' := hp.branch_pos
     refine (supExpectedStepsWithin_le_of_const fun _ =>
       stepRandResizable_branch_pos (s := ⟨pc, x⟩) hbr hc).trans ?_
     refine (add_le_add le_rfl (ih hc')).trans (le_of_eq ?_)
@@ -844,13 +836,11 @@ theorem RDemonicExec.supExpectedStepsWithin_assemble {w L_peak n pc N : ℕ} {c 
       show pc + neg.size + 2 + pos.size = pc + (neg.size + pos.size + 2) by omega]
     ac_rfl
   | @branch_neg c pos neg x T P hc _ ih =>
-    have hbr : p[pc]? = some (.branch c (pc + neg.size + 2)) := by
-      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hp.head
-    have hj : p[pc + 1 + neg.size]? = some (.jump (pc + neg.size + pos.size + 2)) := by
-      simpa using (hp.cons_tail.append_right (q₁ := neg.assemble (pc + 1))).head
+    have hbr := hp.branch_head
+    have hj := hp.branch_jump
     refine (supExpectedStepsWithin_le_of_const fun _ =>
       stepRandResizable_branch_neg (s := ⟨pc, x⟩) hbr hc).trans ?_
-    refine (add_le_add le_rfl (ih hp.cons_tail.append_left)).trans ?_
+    refine (add_le_add le_rfl (ih hp.branch_neg)).trans ?_
     have hj_le : (⨆ (y : RData r) (_ : P y),
         supExpectedStepsWithin w p N (.running ⟨pc + 1 + neg.size, y⟩)) ≤
         1 + ⨆ (y : RData r) (_ : P y),
@@ -872,7 +862,7 @@ theorem RDemonicExec.supExpectedStepsWithin_assemble {w L_peak n pc N : ℕ} {c 
           rw [show (2 : ℝ≥0∞) = 1 + 1 from one_add_one_eq_two.symm]
           ac_rfl
   | @loop_exit c body x P _ hc hp_y =>
-    have hj : p[pc + 1]? = some (.jump (pc + body.size + 3)) := hp.cons_tail.head
+    have hj := hp.loop_exit
     refine (supExpectedStepsWithin_le_of_const fun _ =>
       stepRandResizable_branch_neg (s := ⟨pc, x⟩) hp.head hc).trans ?_
     refine (add_le_add le_rfl (supExpectedStepsWithin_le_of_const fun f =>
@@ -881,10 +871,8 @@ theorem RDemonicExec.supExpectedStepsWithin_assemble {w L_peak n pc N : ℕ} {c 
       show pc + body.size + 3 = pc + (RCode.loop c body).size by simp [RCode.size]; omega]
     exact add_le_add (by norm_num) (le_iSup₂_of_le x hp_y le_rfl)
   | @loop_iter c body x T₁ T₂ Q P hc _ _ ihb ihl =>
-    have hbody_c : p.Contains (pc + 2) (body.assemble (pc + 2)) := by
-      simpa [Nat.add_assoc] using hp.cons_tail.cons_tail.append_left
-    have hj_back : p[pc + 2 + body.size]? = some (.jump pc) := by
-      simpa using hp.cons_tail.cons_tail.append_right.head
+    have hbody_c := hp.loop_body
+    have hj_back := hp.loop_back
     refine (supExpectedStepsWithin_le_of_const fun _ =>
       stepRandResizable_branch_pos (s := ⟨pc, x⟩) hp.head hc).trans ?_
     refine (add_le_add le_rfl (ihb hbody_c)).trans ?_
@@ -933,35 +921,30 @@ theorem RDemonicExec.demonicSafeWithin_assemble {w L_peak n pc T_hor : ℕ} {c :
     exact demonicSafeWithin_of_rand hL hp.head hfit fun j k hk =>
       (hcont _ (hp_y j.val (Nat.lt_succ_iff.mp j.isLt))).anti (by omega)
   | @seq c₁ c₂ x _ _ Q P _ _ ih₁ ih₂ =>
-    have hc₂ : p.Contains (pc + c₁.size) (c₂.assemble (pc + c₁.size)) := by
-      simpa [RCode.length_assemble] using hp.append_right
+    have hc₂ := hp.seq_right
     exact ih₁ hp.append_left fun y₁ hy₁ => ih₂ y₁ hy₁ hc₂ fun y₂ hy₂ => by
       simpa [RCode.size, Nat.add_assoc] using hcont y₂ hy₂
   | @branch_pos c pos neg x _ P hc hpos ih =>
-    have hbr : p[pc]? = some (.branch c (pc + neg.size + 2)) := by
-      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hp.head
-    have hc' := (hp.cons_tail.append_right (q₁ := neg.assemble (pc + 1))).cons_tail
-    rw [RCode.length_assemble, show pc + 1 + neg.size + 1 = pc + neg.size + 2 by omega] at hc'
+    have hbr := hp.branch_head
+    have hc' := hp.branch_pos
     refine demonicSafeWithin_of_pure hpos.frontier_le
       (fun _ => stepRandResizable_branch_pos (s := ⟨pc, x⟩) hbr hc)
       fun _ k hk => ih hc' fun y hy => ?_
     simpa [RCode.size, show pc + neg.size + 2 + pos.size = pc + (neg.size + pos.size + 2) by omega]
       using (hcont y hy).anti (by omega)
   | @branch_neg c pos neg x _ P hc hneg ih =>
-    have hbr : p[pc]? = some (.branch c (pc + neg.size + 2)) := by
-      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hp.head
-    have hj : p[pc + 1 + neg.size]? = some (.jump (pc + neg.size + pos.size + 2)) := by
-      simpa using (hp.cons_tail.append_right (q₁ := neg.assemble (pc + 1))).head
+    have hbr := hp.branch_head
+    have hj := hp.branch_jump
     refine demonicSafeWithin_of_pure hneg.frontier_le
       (fun _ => stepRandResizable_branch_neg (s := ⟨pc, x⟩) hbr hc)
-      fun _ k hk => ih hp.cons_tail.append_left fun y hy => ?_
+      fun _ k hk => ih hp.branch_neg fun y hy => ?_
     have hy_fr := (hcont y hy).frontier_le
     refine demonicSafeWithin_of_pure hy_fr
       (fun _ => stepRandResizable_jump (s := ⟨pc + 1 + neg.size, y⟩) hj) fun _ k' hk' => ?_
     simpa [RCode.size, show pc + neg.size + pos.size + 2 = pc + (neg.size + pos.size + 2) by omega]
       using (hcont y hy).anti (by omega)
   | @loop_exit c body x P hL hc hp_y =>
-    have hj : p[pc + 1]? = some (.jump (pc + body.size + 3)) := hp.cons_tail.head
+    have hj := hp.loop_exit
     refine demonicSafeWithin_of_pure hL
       (fun _ => stepRandResizable_branch_neg (s := ⟨pc, x⟩) hp.head hc)
       fun _ k hk => demonicSafeWithin_of_pure hL
@@ -969,10 +952,8 @@ theorem RDemonicExec.demonicSafeWithin_assemble {w L_peak n pc T_hor : ℕ} {c :
     simpa [RCode.size, show pc + body.size + 3 = pc + (body.size + 3) by omega]
       using (hcont x hp_y).anti (by omega)
   | @loop_iter c body x _ _ Q P hc hbody hloop ihb ihl =>
-    have hbody_c : p.Contains (pc + 2) (body.assemble (pc + 2)) := by
-      simpa [Nat.add_assoc] using hp.cons_tail.cons_tail.append_left
-    have hj_back : p[pc + 2 + body.size]? = some (.jump pc) := by
-      simpa using hp.cons_tail.cons_tail.append_right.head
+    have hbody_c := hp.loop_body
+    have hj_back := hp.loop_back
     refine demonicSafeWithin_of_pure hbody.frontier_le
       (fun _ => stepRandResizable_branch_pos (s := ⟨pc, x⟩) hp.head hc)
       fun _ k hk => ihb hbody_c fun y hy => ?_

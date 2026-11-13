@@ -25,7 +25,7 @@ ENCODING_RATCHET = (
 PROJECTION_RATCHET = (
     "projection chain ratchet",
     [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", "{base}"])
-# The per-module ratchets of `ci-checks`, which read only the library sources.
+# The per-module ratchets of CI's `source-checks` job, which read only the library sources.
 RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET)
 
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
@@ -38,7 +38,7 @@ DATA_CHECKS = {
     "scripts/projection_chains_baseline.json": PROJECTION_RATCHET,
 }
 
-# The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the
+# The source-only `source-checks` steps, scoped to the changed Lean files: source hygiene reads the
 # files under these roots (its default selection), the ratchets the modules under `RATCHET_ROOT`.
 # Each takes seconds; the post-build audits need whole-library outputs that quick mode does not
 # build, so they stay in the full check.
@@ -49,6 +49,9 @@ RATCHET_ROOT = "CslibFrontier/"
 # `lake lint` runs this driver; quick mode passes it flags that only Batteries' runLinter accepts.
 LINT_DRIVER = "batteries/runLinter"
 
+# Exit status for `--no-full-fallback` when the change needs the full check; argparse uses 2.
+NO_FALLBACK_STATUS = 3
+
 
 @dataclass
 class Plan:
@@ -56,6 +59,8 @@ class Plan:
     targets: list[str]
     checks: list[tuple[str, list[str]]] = field(default_factory=list)  # (label, command)
     lint: dict[str, list[str]] = field(default_factory=dict)  # lint target -> modules it checks
+    restore_files: list[str] = field(default_factory=list)  # affected source paths, not target names
+    restore_built: list[str] = field(default_factory=list)  # built aggregates and executable helpers
 
 
 @dataclass
@@ -70,6 +75,22 @@ def git(root: Path, *args: str) -> str:
     if result.returncode or "ambiguous" in result.stderr.lower():
         raise FullCheck(f"Git cannot resolve {args[0]} safely: {result.stderr.strip()}")
     return result.stdout
+
+
+# An import line as `lake exe mk_all` writes it, with no comment or other text.
+AGGREGATE_IMPORT = re.compile(r"(?:public )?import ([A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)*)")
+
+
+def only_adds_imports(old: str, new: str, added: set[str]) -> bool:
+    """Whether `new` is `old` with import lines for some of the `added` modules inserted."""
+    rest, imported = [], set()
+    for line in new.split("\n"):
+        match = AGGREGATE_IMPORT.fullmatch(line)
+        if match and match[1] in added and match[1] not in imported:
+            imported.add(match[1])
+        else:
+            rest.append(line)
+    return bool(imported) and rest == old.split("\n")
 
 
 def imports_from_lean(root: Path, paths: list[str]) -> dict[str, list[str]]:
@@ -250,6 +271,12 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
         checks.insert(0, ("source hygiene (changed files)",
                           [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp",
                            "--", *hygiene]))
+        # CI's changed-file lints that read only sources: a section-level `@[expose]` with no
+        # definition, and new tests that only restate signatures. The module-doc name lint reads
+        # whole-library build outputs, so it stays in the full check.
+        checks.insert(1, ("changed-file source lints (doc-name lint skipped)",
+                          [sys.executable, "-B", "scripts/check_changed_files.py", "--base", base,
+                           "--source-only"]))
     if any(path.startswith(RATCHET_ROOT) for _, path in changes):
         for label, command in RATCHETS:
             ratchet = (label, [base if part == "{base}" else part for part in command])
@@ -268,8 +295,14 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
         if "env_linter" in (root / path).read_text(errors="replace"):
             raise FullCheck(f"changed source mentions a linter: {path}")
         changed.add(by_path[path])
-    if changed & aggregates:
-        raise FullCheck("a library import aggregate changed")
+    added = {by_path[path] for status, path in changes if status == "A"}
+    for aggregate in sorted(changed & aggregates):
+        # `lake exe mk_all` adds an import line for each new module. The aggregate stays in
+        # `changed`, so its importing clients are built; any other edit falls back.
+        if not only_adds_imports(git(root, "show", f"{base}:{modules[aggregate]}"),
+                                 (root / modules[aggregate]).read_text(), added - aggregates):
+            raise FullCheck(f"library import aggregate {aggregate} changed beyond imports of "
+                            "modules this change adds")
     executables = executable_sources(root)
     imports = (parser or imports_from_lean)(
         root, list(dict.fromkeys([*by_path, *(exe.path for exe in executables)])))
@@ -302,8 +335,28 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
+    selected_executables = [exe for exe in executables if exe.target in executable_targets]
+    # An aggregate may warn on an import even when its importing client elaborates silently.
+    # Audit aggregates on built clients' import paths, not every root aggregate touched by the
+    # change. Executable helpers are outside this graph; include their built aggregates
+    # conservatively.
+    needed = affected - aggregates
+    queue = deque(sorted(needed))
+    while queue:
+        for dependency in imports[modules[queue.popleft()]]:
+            if dependency in modules and dependency not in needed:
+                needed.add(dependency)
+                queue.append(dependency)
+    aggregate_checks = affected & aggregates & needed
+    if selected_executables:
+        aggregate_checks |= affected & aggregates
     return Plan(base, sorted((affected - aggregates) | executable_targets), checks,
-                lint_scope(root, aggregates, affected, reverse))
+                lint_scope(root, aggregates, affected, reverse),
+                sorted({modules[module] for module in affected - aggregates}
+                       | {exe.path for exe in selected_executables}),
+                sorted({modules[module] for module in aggregate_checks}
+                       | {exe.source.relative_to(root.resolve()).as_posix()
+                          for exe in selected_executables}))
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
@@ -327,11 +380,18 @@ def run_check(root: Path, command: list[str], label: str) -> int:
 def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     args = argparse.ArgumentParser(description=__doc__)
     args.add_argument("--base", default="origin/main", help="comparison ref; use its merge base with HEAD")
+    args.add_argument("--no-full-fallback", action="store_true",
+                      help="when quick mode cannot plan the change, report why and exit with status "
+                           f"{NO_FALLBACK_STATUS} instead of running the full check")
     options = args.parse_args(argv)
     root = root or Path(__file__).resolve().parent.parent
     try:
         plan = make_plan(root, options.base)
     except (FullCheck, OSError, ValueError, TypeError) as error:
+        if options.no_full_fallback:
+            print(f"Quick check cannot plan this change: {error}. Build the changed modules and "
+                  "their clients directly, or let CI run the full check.", flush=True)
+            return NO_FALLBACK_STATUS
         print(f"Quick check falls back to the full check: {error}", flush=True)
         return subprocess.run([str(root / "scripts/check.sh"), "--base", options.base],
                               cwd=root).returncode
@@ -352,6 +412,18 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
             shown += f", ... ({len(batch) - 10} more in this batch)"
         print("Targets: " + shown, flush=True)
         status = run_check(root, ["lake", "build", "--wfail", "--iofail", *batch], "affected modules and clients")
+        if status:
+            return status
+    if plan.targets:
+        # Restored outputs carry no warnings for `--wfail` to see (#4523).
+        # JSON preserves whitespace in paths and avoids command-line limits for large closures.
+        with tempfile.TemporaryDirectory(prefix="cslib-frontier-restores-") as directory:
+            files = Path(directory) / "files.json"
+            files.write_text(json.dumps(plan.restore_files))
+            command = [sys.executable, "-B", "scripts/check_cache_restores.py", "--files-from", str(files)]
+            for source in plan.restore_built:
+                command.extend(["--built-under", source])
+            status = run_check(root, command, "affected files restored from the artifact cache")
         if status:
             return status
     status = run_lint(root, plan)

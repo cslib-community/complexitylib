@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.Data.Code.HintDecoding
 import CslibFrontier.Foundations.Data.Code.LowDegreeExtension
 import CslibFrontier.Foundations.GroupTheory.Perm.Fin
@@ -303,7 +304,8 @@ section Entropy
 open Cslib.Probability Cslib.Probability.PMF
 
 private theorem logb_two_four : Real.logb 2 4 = 2 := by
-  rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one] <;> norm_num
+  rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_two_pow]
+  norm_num
 
 -- Exposing the parity and then the first bit of a uniform two-bit word accounts for both bits.
 example : entropy ((PMF.uniformOfFintype (Bool × Bool)).map fun w => xor w.1 w.2) +
@@ -409,6 +411,21 @@ example : 3 / 4 ≤ dens {ω : ∀ j : Fin (7 * 1 * 2 + 1),
         {0, 1} ω ≤ (1 + 1) * #({0, 1} : Finset (Fin 2 → ZMod 2))} :=
   le_of_eq_of_le (tsub_eq_of_eq_add (by norm_num)).symm
     (one_sub_inv_two_pow_le_dens_filter_affineRelativeHashEstimate one_ne_zero 2 _)
+
+-- `dens_filter_not_relativeHashEstimate_le` applies even when `X` and the seed types are empty.
+private def emptyLevel (j : ℕ) : Empty → (Fin 7 → Empty) → Fin j → ZMod 2 :=
+  fun i _ => i.elim
+
+example :
+    dens {ω : ∀ _ : Fin (0 + 1), Fin (2 * 6) → Empty |
+      ¬ (#(∅ : Finset Empty) ≤ relativeHashEstimate emptyLevel (fun _ => 0) ∅ ω ∧
+        1 * relativeHashEstimate emptyLevel (fun _ => 0) ∅ ω ≤
+          (1 + 1) * #(∅ : Finset Empty))} ≤
+      ((0 : ℕ) + 1) * (8 / 9) ^ 6 :=
+  dens_filter_not_relativeHashEstimate_le (n := 0) (k := 7) (p := 1) (r := 6)
+    emptyLevel (fun _ => 0) ∅
+    (fun _ => ⟨fun x _ => (x 0).elim, fun {x₁} _ _ _ _ => (x₁ 0).elim⟩)
+    (fun _ => by simp [ZMod.card]) (by simp) (by norm_num)
 
 end ApproximateCounting
 

@@ -19,68 +19,85 @@ open Cslib Cslib.Complexity Cslib.Probability Turing.MultiTapeTM
 /-! ### Concrete graphs -/
 
 /-- A path on three vertices. -/
-private def path : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+private def path : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
 /-- A triangle. -/
-private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 /-- The path with other labels, a repeated vertex entry, and an edge to an undeclared vertex. -/
-private def path' : Graph := ([7, 5, 9, 5], [(9, 5), (5, 7), (7, 100)])
+private def path' : Graph := ⟨[7, 5, 9, 5], [(9, 5), (5, 7), (7, 100)]⟩
 
 -- Repeated entries are dropped; the order of first occurrences is kept.
 example : path'.distinctVertices = [7, 5, 9] := by decide
 
 -- Duplicate vertex entries do not change the graph: one vertex is one vertex.
-example : ((([1, 1], []), ([1], [])) : Graph × Graph) ∈ GraphIsomorphism := by
+example : (⟨⟨[1, 1], []⟩, ⟨[1], []⟩⟩ : GraphIsomorphismInstance) ∈ GraphIsomorphism := by
   rw [mem_GraphIsomorphism_iff]
   decide
 
 -- Relabeling, repetition and an edge leaving the declared vertices preserve the isomorphism type.
-example : (path, path') ∈ GraphIsomorphism := by
+example : (⟨path, path'⟩ : GraphIsomorphismInstance) ∈ GraphIsomorphism := by
   rw [mem_GraphIsomorphism_iff]
   decide
 
 -- A path and a triangle are not isomorphic.
-theorem path_triangle : (path, triangle) ∈ GraphNonIsomorphism := by
+theorem path_triangle : (⟨path, triangle⟩ : GraphIsomorphismInstance) ∈ GraphNonIsomorphism := by
   rw [GraphNonIsomorphism, Set.mem_compl_iff, mem_GraphIsomorphism_iff]
   decide
 
 -- The empty graph and a single vertex are not isomorphic.
-example : ((([], []), ([3], [])) : Graph × Graph) ∈ GraphNonIsomorphism := by
+example : (⟨⟨[], []⟩, ⟨[3], []⟩⟩ : GraphIsomorphismInstance) ∈ GraphNonIsomorphism := by
   rw [GraphNonIsomorphism, Set.mem_compl_iff, mem_GraphIsomorphism_iff]
   decide
 
 /-! ### `GraphIsomorphism ∈ NP` -/
 
--- The certificate decoding `[7, 5, 9]` (positions `0, 1, 2` of `path'.1 = [7, 5, 9, 5]` in unary
+example : ComputableInPolyTime (fun x : GraphIsomorphismInstance => x.first)
+    encGraphIsomorphism encGraph := by
+  fun_prop
+
+example : ComputableInPolyTime (fun x : GraphIsomorphismInstance => x.second)
+    encGraphIsomorphism encGraph := by
+  fun_prop
+
+example :
+    ComputableInPolyTime (fun p : Graph × Graph => (⟨p.1, p.2⟩ : GraphIsomorphismInstance))
+      (encPair encGraph encGraph) encGraphIsomorphism := by
+  fun_prop
+
+example : (default : GraphIsomorphismInstance) = ⟨default, default⟩ := rfl
+
+-- The certificate decoding `[7, 5, 9]` (positions `0, 1, 2` of
+-- `path'.vertices = [7, 5, 9, 5]` in unary
 -- blocks of width `4`) maps positions `0, 1, 2` of `path` to `7, 5, 9` and is accepted.
-example : GraphIsomorphism.verifier ((path, path'),
+example : GraphIsomorphism.verifier (⟨path, path'⟩,
     [false, false, false, false, true, false, false, false, true, true, false, false]) = true := by
   decide
 
 -- Mapping the end vertex `0` to the middle vertex `5` (`[5, 7, 9]`) breaks an edge and is rejected.
-example : GraphIsomorphism.verifier ((path, path'),
+example : GraphIsomorphism.verifier (⟨path, path'⟩,
     [true, false, false, false, false, false, false, false, true, true, false, false]) = false := by
   decide
 
 -- A decoded list with a duplicate vertex (`[7, 7, 9]`) is rejected.
-example : GraphIsomorphism.verifier ((path, path'),
+example : GraphIsomorphism.verifier (⟨path, path'⟩,
     [false, false, false, false, false, false, false, false, true, true, false, false]) =
       false := by
   decide
 
 -- Graphs with different numbers of distinct vertices are rejected.
-example : GraphIsomorphism.verifier (((([1, 2], []), ([1], [])) : Graph × Graph), []) = false := by
+example :
+    GraphIsomorphism.verifier (⟨⟨[1, 2], []⟩, ⟨[1], []⟩⟩, []) = false := by
   decide
 
-example : GraphIsomorphism ∈ IP (encPair encGraph encGraph) :=
+example : GraphIsomorphism ∈ IP encGraphIsomorphism :=
   NP_subset_IP _ GraphIsomorphism.mem_NP
 
 /-! ### The protocol for `GraphNonIsomorphism` -/
 
 -- The honest prover convinces the verifier of the non-isomorphism of a path and a triangle.
-example : acceptProb (GraphNonIsomorphism.verifier (path, triangle))
-    (GraphNonIsomorphism.prover (path, triangle)) = 1 :=
+example : acceptProb (GraphNonIsomorphism.verifier ⟨path, triangle⟩)
+    (GraphNonIsomorphism.prover ⟨path, triangle⟩) = 1 :=
   GraphNonIsomorphism.acceptProb_verifier_prover path_triangle
 
 /-- The cheating prover that always names the second graph. -/
@@ -98,23 +115,23 @@ private theorem acceptProb_guessingRound_alwaysSecond (message : Bool → ProbCo
 
 -- Naming the second graph regardless of the message wins exactly half of the rounds, for every
 -- pair of graphs: the bound `1 / 2 + 1 / 32` of one round is nearly attained.
-theorem acceptProb_round_alwaysSecond (x : Graph × Graph) :
+theorem acceptProb_round_alwaysSecond (x : GraphIsomorphismInstance) :
     acceptProb (GraphNonIsomorphism.round x) alwaysSecond = 1 / 2 :=
   acceptProb_guessingRound_alwaysSecond _
 
 -- On the isomorphic pair `(path, path')` every prover, the cheating one included, passes both
 -- rounds with probability at most `(17 / 32) ^ 2 < 1 / 3`.
-example : acceptProb (GraphNonIsomorphism.verifier (path, path')) alwaysSecond ≤
+example : acceptProb (GraphNonIsomorphism.verifier ⟨path, path'⟩) alwaysSecond ≤
     (17 / 32) ^ 2 :=
   GraphNonIsomorphism.acceptProb_verifier_le (by rw [mem_GraphIsomorphism_iff]; decide) _
 
 -- The verifier exchanges polynomially many messages of polynomial length.
-example : ∃ verifier : Graph × Graph → WordOracleComp Unit Bool,
-    IsOraclePPTOn (encPair encGraph encGraph) encBool verifier ∧
+example : ∃ verifier : GraphIsomorphismInstance → WordOracleComp Unit Bool,
+    IsOraclePPTOn encGraphIsomorphism encBool verifier ∧
       IsInteractiveProof verifier GraphNonIsomorphism (2 / 3) (1 / 3) ∧ ∃ c d : ℕ, ∀ x,
-        (verifier x).IsQueryBounded (c * ((encPair encGraph encGraph x).length + 1) ^ d) ∧
+        (verifier x).IsQueryBounded (c * ((encGraphIsomorphism x).length + 1) ^ d) ∧
           (verifier x).QueriesSatisfy fun message =>
-            message.2.length ≤ c * ((encPair encGraph encGraph x).length + 1) ^ d :=
+            message.2.length ≤ c * ((encGraphIsomorphism x).length + 1) ^ d :=
   exists_queryBounds_of_mem_IP GraphNonIsomorphism.mem_IP
 
 /-! ### Class inclusions and repetition -/
@@ -149,8 +166,8 @@ example (round : WordOracleComp Unit Bool) (P : Prover Unit) :
 
 -- Graph non-isomorphism and graph isomorphism are in polynomial space through interactive proofs.
 example :
-    GraphNonIsomorphism ∈ PSPACE (encPair encGraph encGraph) ∧
-    GraphIsomorphism ∈ PSPACE (encPair encGraph encGraph) :=
+    GraphNonIsomorphism ∈ PSPACE encGraphIsomorphism ∧
+    GraphIsomorphism ∈ PSPACE encGraphIsomorphism :=
   ⟨IP_subset_PSPACE _ GraphNonIsomorphism.mem_IP,
    IP_subset_PSPACE _ (NP_subset_IP _ GraphIsomorphism.mem_NP)⟩
 
@@ -177,8 +194,7 @@ example : ComputableInPolySpace (fun w => BitString.increment (BitString.increme
 
 -- A Boolean function computable within polynomial space decides a problem in `PSPACE`.
 example : {w : List Bool | w.headD false = true} ∈ PSPACE encBits :=
-  mem_PSPACE_of_computableInPolySpace (f := fun w => w.headD false)
-    (.of_polyTime (ComputableInPolyTime.headD false)) fun _ => Iff.rfl
+  ⟨fun w => w.headD false, .of_polyTime (ComputableInPolyTime.headD false), fun _ => Iff.rfl⟩
 
 -- The seven codes of length `3` decode to the seven words of length at most `2`, each once.
 example : (List.range (Interaction.codeCount 2)).map (fun i =>

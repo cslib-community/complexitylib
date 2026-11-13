@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Fagin.Layout
+public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
+public import CslibFrontier.Logics.FirstOrder.Encoding.Power
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitArithmetic
 import CslibFrontier.Tactic.FirstOrder
 

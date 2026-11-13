@@ -28,6 +28,7 @@ import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Languages.Probabilistic.Notation
+import CslibFrontier.Tactic.PPT
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Uniform
@@ -141,11 +142,11 @@ noncomputable def mcspRun (p : Polynomial ℕ) (V : MCSP.Instance × List Bool �
 
 variable {p : Polynomial ℕ} {V : MCSP.Instance × List Bool → Bool}
 
+@[fun_prop]
 theorem isPPTOn_mcspRun
     (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
-    IsPPTOn MCSP.encInstance encBool (mcspRun p V) :=
-  IsPPTOn.map_with (ComputableInPolyTime.sampleList
-    (.of_tidy ((unary_eval p).comp (encoding_length MCSP.encInstance)))) hV
+    IsPPTOn MCSP.encInstance encBool (mcspRun p V) := by
+  ppt [mcspRun]
 
 /-- The acceptance probability of `mcspRun` is the fraction of accepting coin strings. -/
 theorem toReal_eval_mcspRun (p : Polynomial ℕ) (V : MCSP.Instance × List Bool → Bool)
@@ -222,7 +223,7 @@ theorem interpret_mcspDistinguisher (d : ℕ) (oracle : List Bool → List Bool)
         (restriction oracle n (tableArity d n)), 2 ^ tableArity d n / (5 * tableArity d n)⟩ := by
   rw [mcspDistinguisher, OracleComp.interpret_bind, interpret_queryTable, pure_bind,
     ProbOracleComp.interpret_sample, tableInstance_map_tableQueries]
-  exact OracleComp.interpret_query_eq_self _
+  exact ProbComp.interpret_unifFin _
 
 /-! ### The distinguisher is uniform strict oracle PPT -/
 
@@ -241,6 +242,7 @@ theorem computableInPolyTime_two_pow_tableArity (d : ℕ) :
     ComputableInPolyTime.unary_pow_clog_const ComputableInPolyTime.id' (2 ^ d) 2
 
 /-- The queries are computed in polynomial time from the unary parameter. -/
+@[fun_prop]
 theorem computableInPolyTime_tableQueries (d : ℕ) :
     ComputableInPolyTime (fun input : ℕ × List Bool =>
       tableQueries input.1 (tableArity d input.1)) (encPair encUnary encBits)
@@ -273,6 +275,7 @@ theorem computableInPolyTime_tableQueries (d : ℕ) :
     exact bitsAppend ((bitsReplicate false).comp hsub) (snd _ _)
 
 /-- The instance read from the answers is computed in polynomial time. -/
+@[fun_prop]
 theorem computableInPolyTime_tableInstance (d : ℕ) :
     ComputableInPolyTime (fun pair : (ℕ × List Bool) × List Bool =>
       tableInstance (tableArity d pair.1.1) pair.2) (encPair (encPair encUnary encBits) encBits)
@@ -301,10 +304,7 @@ of `2 ^ m` bits. -/
 theorem isOraclePPT_mcspDistinguisher (d : ℕ)
     (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
     IsOraclePPT encBool (mcspDistinguisher p V d) := by
-  apply IsOraclePPTOn.isOraclePPT
-  exact IsOraclePPTOn.bind_with
-    (isOraclePPTOn_queryTable.preprocess' (computableInPolyTime_tableQueries d))
-    ((isPPTOn_mcspRun hV).preprocess (computableInPolyTime_tableInstance d)).isOraclePPTOn
+  ppt [mcspDistinguisher]
 
 /-! ### The advantage of the distinguisher -/
 
@@ -317,7 +317,7 @@ theorem eval_prfRealGame_mcspDistinguisher (family : List Bool → List Bool →
         ⟨tableArity d n, MCSP.truthTable (tableArity d n)
           (restriction (family key) n (tableArity d n)),
           2 ^ tableArity d n / (5 * tableArity d n)⟩) := by
-  simp only [prfRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
+  simp only [prfRealGame, ProbOracleComp.run, ProbComp.eval_bind, BitString.eval_sampleList,
     interpret_mcspDistinguisher, restriction_prfOracle hm]
 
 /-- In the ideal game, the decider runs on the truth table of the restriction of a uniformly
@@ -328,7 +328,7 @@ theorem eval_prfIdealGame_mcspDistinguisher {d n : ℕ} (hn : 0 < n) (hm : table
         ProbComp.eval (mcspRun p V ⟨tableArity d n, MCSP.truthTable (tableArity d n)
           (restrictTable n (tableArity d n) hn table),
           2 ^ tableArity d n / (5 * tableArity d n)⟩) := by
-  simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+  simp only [prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
     interpret_mcspDistinguisher, restriction_randomFunctionOracle hn hm]
 
 /-- For large `n`, the arity `m = d ⌈log₂ n⌉` with `d = c + 2` satisfies `16 ≤ m ≤ n`, and the

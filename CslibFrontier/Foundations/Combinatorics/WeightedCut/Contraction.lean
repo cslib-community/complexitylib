@@ -27,7 +27,7 @@ cut of `Fin (m + 1)` that does not separate `u` and `v` becomes the cut `contrac
 Contraction preserves `Cslib.WeightedCut.IsContractionOf` (`isContractionOf_contract`), so pulled
 back cuts keep their weight, and a cut that does not separate `u` and `v` keeps its weight
 (`cutWeight_contractCut`). The randomized algorithms of Karger and Karger–Stein
-(`CslibFrontier.Algorithms.WordRAM.Karger.Graph`) and the deterministic Stoer–Wagner algorithm
+(`CslibFrontier.Algorithms.Karger.Graph`) and the deterministic Stoer–Wagner algorithm
 (`CslibFrontier.Algorithms.Lean.StoerWagner.Basic`) are built on this API.
 
 ## Main definitions

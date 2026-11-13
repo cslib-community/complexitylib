@@ -4,9 +4,11 @@ Part of the [representative algorithm endpoints](algorithm-endpoints.md); the co
 
 ## Global minimum cut
 
-[abstracts/CslibFrontierAbstracts/KargerMinCutAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/KargerMinCutAbstract.lean) (retired; its bridge applied [KargerMinCut.lean](../../CslibFrontier/Algorithms/WordRAM/KargerMinCut.lean) and [KargerStein.lean](../../CslibFrontier/Algorithms/WordRAM/KargerStein.lean)) treats weighted undirected multigraphs, `n≥2`, fitted total doubled edge weight and word widths sufficient for workspace/trial counters. A single contraction trial is one fixed 16-register program: `42*n²+12*n+21` worst-case instructions and at most `n-2` random calls, always returning a genuine nontrivial cut value. When minimum cut is positive, it succeeds with probability at least `2/(n*(n-1))`.
+[abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/KargerMinCutAbstract.lean) (retired; its bridge applied [KargerMinCut.lean](../../CslibFrontier/Algorithms/WordRAM/KargerMinCut.lean) and [KargerStein.lean](../../CslibFrontier/Algorithms/WordRAM/KargerStein.lean)) treats weighted undirected multigraphs, `n≥2`, fitted total doubled edge weight and word widths sufficient for workspace/trial counters. A single contraction trial is one fixed 16-register program: `42*n²+12*n+21` worst-case instructions and at most `n-2` random calls, always returning a genuine nontrivial cut value. When minimum cut is positive, it succeeds with probability at least `2/(n*(n-1))`.
 
 The Karger–Stein endpoint uses one fixed 24-register program, `O(n² log n)` worst-case steps and `O(n²)` matrix scratch per tree, with success at least `1/(floorlog₂(n)+15)`. Repetition gives minimum-cut **value** with failure at most `1/(2n)` in `O(n² log³ n)`. It does not enumerate all minimum cuts or attain the source's sparse-space formulation. The threshold is an integer inequality rather than a literal square-root expression; the abstract labels the implementation and proof adaptations.
+
+The machine-free contraction facts shared by the Lean specification and the word-RAM programs (edge sampling, the survival bound, the trial counts and the Karger–Stein threshold arithmetic) are in `CslibFrontier.Algorithms.Karger.Graph` and `CslibFrontier.Algorithms.Karger.FastCut` ([Graph.lean](../../CslibFrontier/Algorithms/Karger/Graph.lean), [FastCut.lean](../../CslibFrontier/Algorithms/Karger/FastCut.lean)). Nothing under `Algorithms/Lean/Karger` imports `Algorithms/WordRAM/Karger`; the row-major input layout `flattenMatrix` is in `CslibFrontier.Algorithms.WordRAM.Karger.Contract`.
 
 ### Each minimum cut, and the number of minimum cuts
 
@@ -20,6 +22,7 @@ The output cut and the per-cut bound are in `CslibFrontier.Algorithms.Lean.Karge
 The [checked examples](../../CslibFrontierTests/KargerMinCutCount.lean) count by brute force the `C(4, 2) = 6` minimum cuts of the unit 4-cycle, where the bound is tight, and the `C(5, 2) = 10` minimum cuts of the unit 5-cycle. They also instantiate both theorems on the 4-cycle. The empty graph on four vertices has `7` non-trivial minimum cuts. The filter, which then also contains `∅`, has `8 > C(4, 2)` elements, so `0 < minCut W₀` is needed.
 
 Not formalized:
+
 - the `O((2n)^(2α))` bound on `α`-minimal cuts (Theorem 8.4 of the source);
 - the enumeration and the cactus representation of all minimum cuts;
 - the per-cut bound for the recursive Karger–Stein algorithm.
@@ -40,6 +43,7 @@ Import `CslibFrontier.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Csl
   The charges are annotations; they are not derived from the Lean evaluation, which uses closures. One-time setup is not charged: the weight matrix is taken as given, and the initial map `part = id` of the original vertices to supervertices is free. The bound `n ^ 3 + 4 n ^ 2` is loose. Summing the charges by hand, a phase on `m ≥ 3` supervertices costs `m ^ 2 + 6 m + 2 n + 1`, so the charged time is `n ^ 3 / 3 + O(n ^ 2)` (`509` against the bound `768` on the 8-vertex example); only the weaker bound is proved.
 
 The [checked examples](../../CslibFrontierTests/StoerWagner.lean) test three graphs against brute force over all vertex sets. The first is a weighted 4-cycle. The second is the 8-vertex example graph of [Stoer and Wagner][stoerwagner97], with edge weights from a secondary reproduction (Wikipedia's article). It has minimum cut `4`, and search from its vertex `2` gives the ordering `2, 3, 4, 7, 8, 6, 5, 1` of the worked example's first phase, with cut of the phase `5`. The third is the Boost Graph Library example, which asserts minimum cut weight `7`. The examples also show that an ordering without the MA property can end in a pair whose last-vertex cut is not minimal. They cover a disconnected graph and `n = 0, 1, 2`. Not formalized:
+
 - the `O(n m + n² log n)` priority-queue version;
 - real weights (rational weights need scaling);
 - enumeration of all minimum cuts;
@@ -90,17 +94,25 @@ To check a candidate tree, first compute its edge sides with `edgeSide_eq_of_for
 
 The cost model is the Edmonds–Karp one, extended with `Finset` membership on the returned cut and evaluating `out.flow.value` (`netOut N.s`, an `O(n)` sum over `Fin n`) as free primitives inside the charged step. One tick is charged per slot allocated in the parent and weight arrays (`2 n`), per vertex for the loop test (`n`), per parent read (`1`), per vertex scanned when re-hanging (`n`), per swap test and parent writes (`1`), and per weight-array update (`1`). Vector reads and writes, `Finset` membership tests on the returned cut, evaluating `out.flow.value`, and `Fin n` comparisons are free primitives inside those steps. (Evaluating `out.flow.value` once per step would add `O(n²)` in total, subsumed by the re-hanging scan, whereas `O(n)` `Finset` membership tests inside each `n`-vertex scan would add `O(n³)` in total.) The [tests](../../CslibFrontierTests/GomoryHuConstruction.lean) run `gomoryHuM` by `decide` on the five-edge graph of the structure tests. From root `0` they obtain `parent = [0, 0, 1, 2]` (the path `0 - 1 - 2 - 3`) and `weight = [0, 5, 4, 4]`; from root `3` they obtain `parent = [1, 2, 3, 3]` and `weight = [5, 4, 4, 0]`, taking the swap branch at `s = 1` (`weight` `[5, 4, 0, 0]`). The tests also instantiate the time bounds (`313` steps against `2013` and dense `3705`), refute the output of `gusfieldParent` with a non-minimum cut oracle and the weights of `gusfieldWithWeights` with an inconsistent value oracle, and check the `1`-vertex and edgeless cases.
 
+### Real capacities and other oracles
+
+`cutWeight W X` is defined for weights in any additive commutative monoid, so the same definition and laws serve `ℕ` and a linearly ordered field `K` such as `ℝ` or `ℚ`. Submodularity (`cutWeight_union_add_cutWeight_inter_le_of_nonneg`) needs non-negative `W`; the complement law (`cutWeight_compl_of_symm`) and posimodularity (`cutWeight_sdiff_add_cutWeight_sdiff_le_of_symm`) also need symmetric `W`. The `ℕ` lemmas above are their special cases. [RealCut.lean](../../CslibFrontier/Foundations/Combinatorics/WeightedCut/RealCut.lean) adds the noncomputable minimum `s`–`t` cut weight `minRealCutBetween` over `K` (`0` by convention when `s = t`), with attainment (`exists_cutWeight_eq_minRealCutBetween`, for `s ≠ t`), symmetry for symmetric `W` (`minRealCutBetween_comm`) and the triangle inequality (`min_le_minRealCutBetween`). [Real.lean](../../CslibFrontier/Algorithms/Lean/GomoryHu/Real.lean) feeds this cut function to the abstract theory. For symmetric non-negative `W`, `exists_isGomoryHuTree_cutWeight_of_symm` gives a Gomory–Hu tree when `V` is nonempty ([Schrijver 2003][schrijver03], Theorem 15.14, p. 250), `IsGomoryHuTree.isLeast_minRealCutBetween` is flow-equivalence for distinct `s` and `t` (Theorem 15.13, p. 249), and `card_image_minRealCutBetween_le` bounds the number of distinct values by `|V| - 1`.
+
+[RealFlow.lean](../../CslibFrontier/Algorithms/Lean/MaxFlow/RealFlow.lean) relates `minRealCutBetween` to flows. A flow is a function `f : V × V → K`. `IsFeasibleRealFlow W s t f` requires `0 ≤ f (u, v) ≤ W u v` and conservation at every vertex other than `s` and `t`, and `realNetOut f s` is the value. `IsFeasibleRealFlow.realNetOut_le_cutWeight` is weak duality. With irrational capacities augmenting paths need not terminate, so `exists_isMaxRealFlow` obtains a maximum flow from linear-programming duality over `K` instead. `isMaxRealFlow_minRealCutBetween` is the max-flow min-cut theorem `IsMaxRealFlow W s t (minRealCutBetween W s t)` for non-negative `W` and `s ≠ t` ([Schrijver 2003][schrijver03], Theorem 10.3, p. 150). It extends the source from `ℝ` to any linearly ordered field, encodes the arcs as all ordered pairs (absent arcs have capacity `0`, loops cancel), and uses linear-programming attainment where the source can use compactness of the real flow polytope. The residual-reachability cut certifies optimality: if `t` were reachable, an augmentation built along the reachability relation would increase the value.
+
+[Oracles.lean](../../CslibFrontier/Algorithms/Lean/GomoryHu/Oracles.lean) runs Gusfield's construction with any correct cut oracle (`gusfieldOutput`, `isGomoryHuTree_gusfieldOutput`, `vget_gusfieldOutput_weight`). It instantiates the construction with the minimum cuts of push–relabel (`pushRelabelGomoryHu`) and of Dinitz's algorithm (`dinitzGomoryHu`). Like those algorithms, both instances take capacities in `ℕ`, not `K`. Both are pure functions and are not charged. The [checked client](../../CslibFrontierTests/GomoryHuRealAndOracles.lean) runs both instances by `decide` on a five-vertex graph (`parent = [0, 0, 0, 1, 3]`, `weight = [0, 8, 13, 10, 9]`). It also applies the real-capacity theorems to a two-vertex graph with capacity `√2`.
+
 Limitations:
 
-- Weights are natural numbers; real-valued capacities remain open (optional Item 2 of [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)).
-- Only Edmonds–Karp is available as the maximum flow oracle; `gomoryHuM_time_le_of_forall` takes any per-call bound (faster oracles remain open, optional Item 3 of [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)).
+- `minRealCutBetween` and the maximum flow of `exists_isMaxRealFlow` are noncomputable. No algorithm computes a maximum flow or minimum cut over `K`, so Gusfield's construction has no executable real-capacity oracle (Item 2 of [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)).
+- The push–relabel and Dinitz instances charge no running time, so they give no time bound better than `gomoryHuM_time_le` (Item 3 of [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)).
 - Minimum cuts are not enumerated.
 
 [#3422](https://github.com/cslib-community/cslib-frontier/issues/3422) tracks the remaining optional items.
 
 ## Minimum vertex separators
 
-Import `CslibFrontier.Algorithms.Lean.MaxFlow.VertexSeparator` ([source](../../CslibFrontier/Algorithms/Lean/MaxFlow/VertexSeparator.lean)). `minSeparatorM G Z A B` runs the dense Edmonds–Karp solver `edmondsKarpDenseM` on the vertex-split network `vertexSplitNetwork G Z A B` and returns a minimum set `X` of vertices outside `Z` such that `Z ∪ X` separates `A` from `B` ([`SimpleGraph.IsSeparator`](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Separator.lean)). It is a `TimeM ℕ` program with Edmonds–Karp's unit-cost model, bounded by `time_minSeparatorM_le`. Its client is odd cycle transversal by iterative compression; see [parameterized complexity](../machines-and-classes/parameterized-complexity.md#iterative-compression-odd-cycle-transversal). Relating `SimpleGraph.IsSeparator` to the single-terminal Menger separator is an open follow-up in `ROADMAP.md`.
+Import `CslibFrontier.Algorithms.Lean.MaxFlow.VertexSeparator` ([source](../../CslibFrontier/Algorithms/Lean/MaxFlow/VertexSeparator.lean)). `minSeparatorM G Z A B` runs the dense Edmonds–Karp solver `edmondsKarpDenseM` on the vertex-split network `vertexSplitNetwork G Z A B` and returns a minimum set `X` of vertices outside `Z` such that `Z ∪ X` separates `A` from `B` ([`SimpleGraph.IsSeparator`](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Separator.lean)). It is a `TimeM ℕ` program with Edmonds–Karp's unit-cost model, bounded by `time_minSeparatorM_le`. Its client is odd cycle transversal by iterative compression; see [parameterized complexity](../machines-and-classes/parameterized-complexity.md#iterative-compression-odd-cycle-transversal). [`SimpleGraph.isVertexSeparator_iff_isSeparator`](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Separator.lean) bridges single-terminal Menger separators (`SimpleGraph.IsVertexSeparator`) to `SimpleGraph.IsSeparator`.
 
 ## Maximum flow: generic push–relabel
 
@@ -121,34 +133,43 @@ Limitations: the bounds count operations and do not charge the selection of an o
 
 ## Menger's theorem
 
-Import `CslibFrontier.Algorithms.Lean.MaxFlow.Menger` ([source](../../CslibFrontier/Algorithms/Lean/MaxFlow/Menger.lean)). The declarations live in `Cslib.Algorithms.Lean.MaxFlow`. This is a theorem-level development: there is no algorithm and no running time. Every form of [Menger's theorem][menger27] is derived from the integral max-flow min-cut theorem `Network.exists_maxFlow_eq_minCut` together with a flow decomposition, and each comes in two versions: an `iff` against all cuts, and an existence statement whose cut has exactly as many elements as there are paths. Graphs are finite and have two terminals. Directed paths are duplicate-free vertex lists (`IsDipath`). Undirected paths are Mathlib `Walk`s with `IsPath`.
+Import `CslibFrontier.Algorithms.Lean.MaxFlow.Menger` ([source](../../CslibFrontier/Algorithms/Lean/MaxFlow/Menger.lean)). The Menger theorems live in `Cslib.Algorithms.Lean.MaxFlow`. This is a theorem-level development: there is no algorithm and no running time. Every form of [Menger's theorem][menger27] is derived from the integral max-flow min-cut theorem `Network.exists_maxFlow_eq_minCut` together with flow decomposition (`exists_flowPaths`). Pure graph-theoretic connectivity notions, cut certificates and weak-duality bounds live in modular foundations files:
 
-| Form | Source | `iff` version | Matching-cut version |
+- [`Digraph/Connectivity.lean`](../../CslibFrontier/Foundations/Combinatorics/Digraph/Connectivity.lean): `Digraph.IsDipath` (duplicate-free vertex lists), `Digraph.ArcDisjoint`, `Digraph.InternallyDisjoint`, `Digraph.IsArcCut`, `Digraph.IsVertexCut`, `Digraph.IsSeparator` and `Digraph.outArcs` (`δ^out(S)`).
+- [`Multidigraph/Connectivity.lean`](../../CslibFrontier/Foundations/Combinatorics/Multidigraph/Connectivity.lean): `Cslib.Multidigraph.IsDipath` (`List E` arc chains whose visited vertex list `s :: q.map tgt` is duplicate-free), `Cslib.Multidigraph.IsArcCut` and `Cslib.Multidigraph.outArcs`.
+- [`SimpleGraph/Separator.lean`](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Separator.lean): `SimpleGraph.IsVertexSeparator` and its bridge `isVertexSeparator_iff_isSeparator` to `SimpleGraph.IsSeparator`.
+- [`SimpleGraph/Connectivity/EdgeConnectivity.lean`](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Connectivity/EdgeConnectivity.lean) and [`VertexConnectivity.lean`](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Connectivity/VertexConnectivity.lean): `SimpleGraph.InternallyDisjoint`, `SimpleGraph.IsVertexConnected` (`|V| > k` and `G - X` connected for `|X| < k`; [Diestel 2025][diestel25], §1.4), weak duality, cut certificates and path-family conversions (`injective_of_edgeDisjoint`, `exists_injective_internallyDisjoint_iff_exists_finset`, `edgeDisjoint_of_injective_internallyDisjoint`).
+
+Graphs are finite (`[Finite V]`, and `[Finite E]` for directed multigraphs). All forms are summarized below.
+
+| Form | Source | `iff` version | Matching-cut / witness version |
 |---|---|---|---|
+| integral capacity | [Schrijver 2017][schrijver17], §4.1 / Thm 4.2 remark | `exists_arcCap_iff_forall_isCut` | `exists_arcCap_eq_cutCapacity` |
+| multidigraph, arc-disjoint | [Schrijver 2017][schrijver17], §4.1, Cor. 4.1b | `exists_multidigraph_arcDisjoint_iff_forall_isArcCut` | `exists_multidigraph_arcDisjoint_eq_outArcs` |
 | directed, arc-disjoint | [Schrijver 2017][schrijver17], Corollary 4.1b | `exists_arcDisjoint_iff_forall_isArcCut` | `exists_arcDisjoint_eq_outArcs` |
 | directed, internally disjoint | [Schrijver 2017][schrijver17], Corollary 4.1a | `exists_internallyDisjoint_iff_forall_isVertexCut` | `exists_internallyDisjoint_eq_isVertexCut` |
+| directed, `A`–`B` sets | [Schrijver 2017][schrijver17], Theorem 4.1 | `exists_vertexDisjoint_iff_forall_isSeparator` | `exists_vertexDisjoint_eq_isSeparator` |
 | undirected, edge-disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (ii) | `isEdgeReachable_iff_exists_edgeDisjoint` | `exists_edgeDisjoint_eq_not_reachable` |
 | undirected, internally disjoint | [Diestel 2025][diestel25], Corollary 3.3.5 (i) | `exists_internallyDisjoint_iff_forall_isVertexSeparator` | `exists_internallyDisjoint_eq_isVertexSeparator` |
+| undirected, `A`–`B` sets | [Diestel 2025][diestel25], Theorem 3.3.1 (endpoint convention of [Schrijver 2017][schrijver17], §4.1) | `exists_disjoint_walk_iff_forall_isSeparator` | `exists_disjoint_walk_eq_isSeparator` |
+| global `k`-edge-connected | [Diestel 2025][diestel25], Theorem 3.3.6 (ii) | `isEdgeConnected_iff_forall_exists_edgeDisjoint` | `isEdgeConnected_iff_forall_ne_exists_injective_edgeDisjoint` |
+| global `k`-vertex-connected | [Diestel 2025][diestel25], Theorem 3.3.6 (i) | `isVertexConnected_iff_forall_exists_injective_internallyDisjoint` | `isVertexConnected_iff_of_nontrivial`, `isVertexConnected_iff_forall_exists_finset` |
 
-- **Directed, arc-disjoint.** For `s ≠ t`, the matching-cut version gives `(outArcs G S).card` pairwise arc-disjoint `s`–`t` paths for some `S` with `s ∈ S` and `t ∉ S`. Here `outArcs G S` is Schrijver's `δ^out(S)`.
-- **Directed, internally disjoint.** For `s ≠ t` not adjacent, the matching-cut version gives internally disjoint paths and an `s`–`t` vertex cut (`IsVertexCut`) of the same size. The proof splits each vertex, as in the derivation after Corollary 4.1b.
-- **Undirected, edge-disjoint.** The `iff` version characterizes Mathlib's `SimpleGraph.IsEdgeReachable k u v` by `k` pairwise edge-disjoint `u`–`v` paths. Antiparallel flow is cancelled (`Network.Flow.cancel`), so the paths share no undirected edge in either direction.
-- **Undirected, internally disjoint.** Separators are `IsVertexSeparator` (Diestel §1.4).
+- **Capacity and multidigraph arc forms.** `exists_arcCap_iff_forall_isCut` packs `k` simple paths in `N.posCapDigraph` using each arc `(u, v)` at most `N.cap u v` times iff every cut has capacity at least `k`. Applying it to the multiplicity network of `src tgt : E → V` yields `exists_multidigraph_arcDisjoint_iff_forall_isArcCut`, handling parallel arcs and self-loops.
+- **Two-terminal simple digraph and undirected forms.** `exists_arcDisjoint_eq_outArcs` achieves `|(G.outArcs S)|` paths (`δ^out(S)`). The internally disjoint forms split vertices (`splitNetwork`); `isEdgeReachable_iff_exists_edgeDisjoint` cancels antiparallel flow (`Network.Flow.cancel`). The `iff` versions handle degenerate cases (`s = t`, or adjacent `s`, `t` in vertex forms).
+- **Set-to-set `A`–`B` forms.** `exists_vertexDisjoint_eq_isSeparator` attaches a supersource and supersink to `A` and `B` (`extDigraph`) and applies the single-terminal digraph theorem. `exists_disjoint_walk_iff_forall_isSeparator` lowers this to `SimpleGraph` walks. Both use the endpoint convention of [Schrijver 2017][schrijver17], §4.1 p. 54: an `A`–`B` path starts in `A` and ends in `B`, and may pass through further vertices of `A` or `B`. [Diestel 2025][diestel25], §1.3 p. 7, instead requires `A`–`B` paths to meet `A` and `B` only at their ends, so the undirected form adapts his Theorem 3.3.1 to the endpoint convention. Single-vertex paths at vertices of `A ∩ B` are allowed, so every separator meets `A ∩ B`. The theorems do not guarantee that such vertices appear as single-vertex paths: in the path `0 – 1 – 2` with `A = {0, 1}` and `B = {1, 2}`, the one-path family `[0, 1, 2]` and the separator `{1}` satisfy them. Trimming paths to Diestel's convention is not formalized.
+- **Global `k`-connectivity.** The edge form reuses Mathlib's `SimpleGraph.IsEdgeConnected`, which extends [Diestel 2025][diestel25], §1.4 p. 12: Diestel requires more than one vertex for `k`-edge-connectedness, but `IsEdgeConnected k` holds for every `k` on empty and one-vertex types, and `isEdgeConnected_iff_forall_exists_edgeDisjoint` then provides `k` copies of the trivial walk at `u = v`. `isVertexConnected_iff_forall_exists_injective_internallyDisjoint` characterizes `G.IsVertexConnected k` by `|V| > k` (needed for complete graphs such as `K₁` and `Kₖ`) together with `k` distinct pairwise internally disjoint paths between every `u ≠ v`; `Function.Injective` (or a `k`-element `Finset` in `isVertexConnected_iff_forall_exists_finset`) prevents repeating `[u, v]` on adjacent pairs, proved via [Diestel 2025][diestel25]'s edge-deletion argument (`isVertexSeparator_insert_of_not_reachable`). `isEdgeConnected_of_isVertexConnected` derives `κ(G) ≤ λ(G)` ([Diestel 2025][diestel25], Proposition 1.4.2).
 
-The `iff` versions also hold in the degenerate cases: `s = t`, and for the vertex forms adjacent `s`, `t`. In those cases no cut exists and both sides are true for every `k`.
-
-Each form has a weak-duality lemma: `card_le_card_of_arcDisjoint_of_isArcCut`, `card_le_card_of_internallyDisjoint_of_isVertexCut`, `le_encard_of_edgeDisjoint_of_not_reachable` and `card_le_card_of_internallyDisjoint_of_isVertexSeparator`. Four closed-set certificates turn a vertex set `S` with `s ∈ S` and `t ∉ S` into a decidable cut check: `isArcCut_outArcs`, `isVertexCut_of_forall_adj`, `not_reachable_deleteEdges_of_forall_adj` and `isVertexSeparator_of_forall_adj`.
+Weak duality and decidable closed-set certificates in the foundations modules turn cut checks into finite computations (`Digraph.card_le_card_of_arcDisjoint_of_isArcCut`, `Digraph.card_le_card_of_internallyDisjoint_of_isVertexCut`, `Digraph.card_le_card_of_disjoint_of_isSeparator`, `Cslib.Multidigraph.card_le_card_of_disjoint_of_isArcCut`, `SimpleGraph.le_encard_of_edgeDisjoint_of_not_reachable`, `SimpleGraph.card_le_card_of_internallyDisjoint_of_isVertexSeparator`, `SimpleGraph.card_le_card_of_disjoint_of_isSeparator`, `card_le_cutCapacity_of_cap`, plus `Digraph.isArcCut_outArcs`, `Digraph.isVertexCut_of_forall_adj`, `Digraph.isSeparator_of_forall_adj`, `Cslib.Multidigraph.isArcCut_outArcs`, `SimpleGraph.not_reachable_deleteEdges_of_forall_adj`, `SimpleGraph.isVertexSeparator_of_forall_adj`, `SimpleGraph.isSeparator_of_forall_adj`).
 
 The reusable flow layer is [Decomposition.lean](../../CslibFrontier/Algorithms/Lean/MaxFlow/Decomposition.lean). `Network.Flow.exists_flowPaths` decomposes an integral flow of value `k` into `k` simple paths along positive-flow arcs, with each arc `(u, v)` on at most `f u v` of them. `Network.Flow.cancel` removes antiparallel flow and keeps the value.
 
-The [tests](../../CslibFrontierTests/Menger.lean) check two examples. In the 3-cube, between antipodal vertices, the edge and vertex connectivity are both `3`: they give three explicit paths, show `IsEdgeReachable 3`, refute `IsEdgeReachable 4` with the three edges at `0`, and refute four internally disjoint paths with the separator `{1, 2, 4}`. One test applies `exists_internallyDisjoint_eq_isVertexSeparator` as stated and pins its common size `m` to `3` by weak duality. They also check a small digraph with arc and vertex connectivity `2`.
+The [tests](../../CslibFrontierTests/Menger.lean) exercise every form without `native_decide`: the 3-cube (antipodal `0`–`7` connectivity `3`, matching separator pin `m = 3`, `A`–`B` Menger `m = 3`, global `3`-vertex- and `3`-edge-connectivity, non-`4`-vertex-connectivity), a 4-vertex digraph (`2` paths, overlapping `A = {0, 1}`/`B = {1, 3}` sets), global `k`-connectivity edge cases (`K₃`, `K₂`, `K₁`), a capacity-`3` network (`capNet`), and a 5-arc multidigraph with parallel arcs (`mdSrc`/`mdTgt`, max `3` arc-disjoint dipaths).
 
 Limitations:
 
-- Only finite graphs with two terminals are covered. Directed graphs are Mathlib `Digraph`s, which have no parallel arcs, so the arc form covers simple digraphs and not the directed multigraphs allowed by Schrijver.
-- The `A`–`B` set version ([Schrijver 2017][schrijver17], Theorem 4.1; [Diestel 2025][diestel25], Theorem 3.3.1) is not formalized, and neither is the global `k`-connectivity form ([Diestel 2025][diestel25], Theorem 3.3.6).
-- Infinite graphs and the Erdős–Menger conjecture (Aharoni–Berger) are not formalized.
-- No algorithm or running time is given for computing local connectivity.
+- Graphs are finite (`[Finite V]`, and `[Finite E]` for directed multigraphs); infinite graphs and the Erdős–Menger theorem (Aharoni–Berger) are not formalized.
+- No algorithm or running time is given for computing local or global connectivity.
 
 [#3409](https://github.com/cslib-community/cslib-frontier/issues/3409) tracks the remaining work.
 
@@ -178,9 +199,10 @@ Egerváry's theorem is available without running the algorithm. `exists_isMinCos
 
 ## General matching: Berge's lemma and the Tutte–Berge formula
 
-These results are about matchings in arbitrary finite graphs, not necessarily bipartite. They are stated on Mathlib's `SimpleGraph` and `SimpleGraph.Subgraph.IsMatching`, not on the bipartite `L × R → Bool` model above, and there is no executable algorithm yet.
+These results are about matchings in arbitrary finite graphs, not necessarily bipartite. They are stated on Mathlib's `SimpleGraph` and `SimpleGraph.Subgraph.IsMatching`, not on the bipartite `L × R → Bool` model above. This mathematical layer is complemented by the native unweighted endpoint below.
 
 [CslibFrontier/Foundations/Combinatorics/SimpleGraph/Berge.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Berge.lean) defines:
+
 - `Subgraph.IsAugmentingPath M p`: a path between distinct uncovered vertices that alternates in Mathlib's `IsAlternating` sense;
 - `Subgraph.augment M p`: `M ∆ E(p)`;
 - `Subgraph.IsMaximumMatching`: a matching with at least as many edges, counted by `Set.encard`, as every matching.
@@ -188,17 +210,74 @@ These results are about matchings in arbitrary finite graphs, not necessarily bi
 `IsAugmentingPath.isMatching_augment` and `ncard_verts_augment` show that augmenting gives a matching covering two more vertices. `IsMatching.isMaximumMatching_iff_forall_not_isAugmentingPath` is Berge's lemma for finite graphs ([Berge 1957][berge57], Theorem 1; [Schrijver's lecture notes][schrijver17], Theorem 3.2). It is proved from `IsMatching.exists_isAugmentingPath_of_ncard_lt`, using the odd-degree vertices of a component of `M ∆ M'`. `exists_isMaximumMatching` gives a maximum matching of a finite graph, and `IsPerfectMatching.isMaximumMatching` shows that perfect matchings are maximum. The bipartite Berge theorem in `MaxFlow/AugmentingPath` is a separate statement in its own model; neither is derived from the other.
 
 [CslibFrontier/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean) proves the Tutte–Berge formula ([Berge 1958][berge58]; [Schrijver's lecture notes][schrijver17], Theorem 5.1) with vertex counts, writing `o(G - U)` as `((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard`:
+
 - `IsMatching.ncard_verts_add_ncard_oddComponents_le` (weak duality): `|V(M)| + o(G - U) ≤ |V| + |U|`.
 - `exists_isMatching_ncard_verts_add_ncard_oddComponents_eq` (strong duality) is derived from Mathlib's `SimpleGraph.tutte` by adjoining `d` universal vertices, where `d` is the maximum deficiency.
 - `IsMatching.isMaximumMatching_iff_exists_ncard_verts_add_ncard_oddComponents_eq`: a single `U` certifies that a matching is maximum.
 - `IsMaximumMatching.isLeast_two_mul_ncard_edgeSet`: `2ν(G)` is the least value of `|V| + |U| - o(G - U)`.
 
 The [checked instances](../../CslibFrontierTests/GeneralMatching.lean) cover three graphs:
+
 - On the path `0 - 1 - 2 - 3`, an explicit walk is an augmenting path for `{12}`.
 - On the `5`-cycle, `U = ∅` certifies the matching `{01, 23}`.
 - On the star `K_{1,3}`, `U = {0}` certifies the matching `{01}`.
 
+### Native unweighted perfect and maximum matching
+
+From a bootstrapped repository root, import
+`CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Endpoint` and open
+`Cslib.Complexity` and `Cslib.Complexity.Graph`. The complete
+[checked client](../../CslibFrontierTests/NativeMatching.lean) and
+[guide chapter](../../guide/CslibFrontierGuide/Matching.lean) show both endpoints and their certificates.
+Run `lake build CslibFrontierTests.NativeMatching --wfail --iofail` to check the client.
+
+A `Graph` stores two named list fields: `vertices` for declared binary natural-number names and
+`edges` for original endpoint pairs. Construct it as `⟨vertices, edges⟩`, as in the checked clients
+above. `encGraph` frames the vertex list before the edge list, preserving the original order and
+multiplicity of both lists.
+`G.maximumMatching` returns a list of selected original pairs; `G.perfectMatching` returns
+`some edges` exactly when a perfect matching exists, and `G.decidePerfectMatching` is its Boolean
+decision. On the path with edge order `[(1, 2), (0, 1), (2, 3)]`, both searches select
+`[(0, 1), (2, 3)]`; a greedy first-edge choice would miss the perfect matching.
+`maximumMatching_cardinality G M hM` proves that every actual Mathlib matching `M` has at most
+as many edges as the output. `maximumMatchingSubgraph_isMaximumMatching` gives the existing
+`Subgraph.IsMaximumMatching` predicate, and `maximumMatchingSubgraph_adj_iff` identifies its
+edges with the returned pairs in either orientation. `perfectMatching_spec` certifies successful
+search; `decidePerfectMatching_eq_true` gives the full existence equivalence.
+
+All raw graphs follow `G.induced`: repeated declarations are harmless, loops and edges with
+undeclared endpoints are discarded, and reversed/parallel duplicates become one edge. The output
+keeps the first retained orientation in `G.edgeList`. The empty graph has the empty perfect
+matching. Isolates prevent perfect matching and remain unmatched in maximum search. These
+normalization rules also apply to disconnected and nonbipartite inputs; callers supply no
+canonicality or degree hypothesis. For position-based clients, `maximumMatchingPositions` returns
+canonical normalized edge positions and `edgesAtPositions` converts them executably.
+
+The shared `Matching.Positions` API includes `exists_getD_edgeList_of_adj`: actual adjacency
+gives a valid retained position in either orientation. Coverage, edge-cardinality and the
+legacy perfect-matching counting proof reuse this fact instead of rebuilding the witness.
+
+`computableInPolyTime_maximumMatching`, `computableInPolyTime_perfectMatching` and
+`computableInPolyTime_decidePerfectMatching` use ordinary native multitape bit complexity on the
+complete framed `encGraph` input, with framed original pairs in `encMatching` and optional output
+in `encOption encMatching`. Every retained name bit, explicit one-hot row, scope width,
+solver state and output bit is charged by polynomial composition. Enumeration uses actual lists,
+never an interval below a raw name; the regressions include the sparse name `2 ^ 250`.
+`perfectMatchingProblem_mem_P` is the native P corollary. As with other typed native certificates,
+this is a claim on encoded graph values, not a parser for malformed bit strings.
+
+The algorithm specializes the certified Kazda–Kolmogorov–Rolinek even-delta-matroid optimizer
+([source and references](../../CslibFrontier/Computability/PolyTime/CSP/Edge/Solver/Endpoint.lean)).
+Each vertex chooses an incident original edge or a private unmatched port pinned false at its
+other end. Mutual original choices form a matching, and
+`defects_add_two_mul_positions` proves `defects + 2 * selected edges = distinct vertices`.
+Every actual matching supplies a feasible comparison labeling, so minimum defect proves maximum
+cardinality without an extra oracle. The native certificates impose no artificial table bound
+or finite-language premise. This endpoint does not establish weighted/min-cost matching or a
+tight classical cubic or `O(|V|²|E|)` operation count.
+
 Still open ([#3337](https://github.com/cslib-community/cslib-frontier/issues/3337)):
+
 - Edmonds' blossom-contraction lemma ([Schrijver's lecture notes][schrijver17], Theorem 5.2);
 - an executable blossom algorithm with its `O(|V|²|E|)` bound;
 - weighted general matching;
@@ -215,6 +294,7 @@ The algorithmic layer is stated on explicit objects. `IsExchSource`, `IsExchSink
 The executable solver is in `CslibFrontier.Algorithms.Lean.Matroid.Intersection.Solver` ([CslibFrontier/Algorithms/Lean/Matroid/Intersection/Solver.lean](../../CslibFrontier/Algorithms/Lean/Matroid/Intersection/Solver.lean)). Its independence tests are effectful, `Finset α → m Bool` for a monad `m`. One phase (`exchTablesM`) computes the sources, sinks and arcs of the exchange digraph of the current `I` by tests. It then runs a multi-source breadth-first search, `Cslib.Reachability.findWalk` ([CslibFrontier/Algorithms/Reachability/ShortestWalk.lean](../../CslibFrontier/Algorithms/Reachability/ShortestWalk.lean)). The search returns either a shortest source-to-sink walk (`isShortestSrcTgtWalk_of_findWalk_eq_inl`) or the reachable vertices, which form a separator (`isSrcTgtSeparator_of_findWalk_eq_inr`). `maxCommonIndepM` runs at most `n + 1` phases from `∅` on the `n` distinct candidates and returns `(I, U)`, where `U` is the set of unreachable candidates. `maxCommonIndep` is the same program with Boolean tests (`maxCommonIndepM_pure`). For tests that decide `M₁` and `M₂`, `maxCommonIndep_spec` (Theorem 10.8) shows that `I` is a maximum common independent subset of `es.toFinset` and that `U ⊆ es.toFinset` satisfies `I.card = M₁.eRk U + M₂.eRk (es.toFinset \ U)`, so `U` is a checkable optimality certificate. Breadth-first search and list bookkeeping are pure host computation. The tests are issued with core `List.filterM`. The general facts about it are `List.filterM_pure` and `Cslib.IsMonadHom.map_filterM` in [CslibFrontier/Foundations/Control/Monad/FilterM.lean](../../CslibFrontier/Foundations/Control/Monad/FilterM.lean), and `Cslib.FreeM.countQueries_filterM` in [CslibFrontier/Algorithms/Lean/Query/FreeM/FilterM.lean](../../CslibFrontier/Algorithms/Lean/Query/FreeM/FilterM.lean).
 
 `CslibFrontier.Algorithms.Lean.Query.Matroid.Intersection` ([CslibFrontier/Algorithms/Lean/Query/Matroid/Intersection.lean](../../CslibFrontier/Algorithms/Lean/Query/Matroid/Intersection.lean)) runs the solver in `FreeM (IndepPairQuery α)`. Here `IndepPairQuery α = IndepQuery α ⊕ IndepQuery α`, one independence oracle per matroid, and `IndepPairQuery.left`/`right`/`pair` split and join oracles. Only the independence tests are counted. `eval_matroidIntersection_spec` is the correctness theorem for oracles with `ImplementsMatroid (left oracle) M₁` and `ImplementsMatroid (right oracle) M₂`. On `n` distinct candidates a phase from `I` makes exactly `2(n - |I|)(1 + |I|)` queries (`countQueries_exchTablesM_of_nodup`). For every oracle, even one that implements no matroid, `matroidIntersection_upperBound` gives a `Cslib.Query.UpperBound` of `2n(n + 1)²` in the list length. For oracles implementing matroids, `countQueries_matroidIntersection` gives the exact count `∑_{r=0}^{ν} 2(n - r)(1 + r)`, where `ν` is the size of the output, and `countQueries_matroidIntersection_le` bounds it by `2n(ν + 1)²`. These counts describe this implementation, which rebuilds the exchange digraph in every phase. The source states only polynomial running time. The [solver tests](../../CslibFrontierTests/MatroidIntersectionSolver.lean) check:
+
 - shortest-walk and separator outcomes of the search;
 - a bipartite matching run that needs a three-vertex augmenting walk, with 20 queries;
 - a colourful-forest run (a graphic matroid against a colour partition matroid) that exchanges an edge, with 40 queries;

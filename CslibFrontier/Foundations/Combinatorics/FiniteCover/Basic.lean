@@ -19,7 +19,7 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
 If a uniformly chosen test misses each obligation with probability at most `p / q`, then
 `t` tests hit every obligation as soon as `|W| p ^ t < q ^ t`. The proof counts bad test
 sequences and takes their union over the obligations, using only finite cardinalities.
-Density estimates involving exponentials are in the companion `FiniteCover` module.
+Covers from a uniform density lower bound are in the companion `FiniteCover` module.
 
 ## Main results
 

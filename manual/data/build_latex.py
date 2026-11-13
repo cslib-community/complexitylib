@@ -65,12 +65,25 @@ MATH = {'ℕ': r'\mathbb{N}', 'ℝ': r'\mathbb{R}', 'ℓ': r'\ell', '→': r'\to
         '⊕': r'\oplus', '∞': r'\infty', '−': '-', '×': r'\times', 'Γ': r'\Gamma',
         'Σ': r'\Sigma', 'α': r'\alpha', 'β': r'\beta', 'δ': r'\delta', 'ε': r'\varepsilon',
         'η': r'\eta', 'ι': r'\iota', 'κ': r'\kappa', 'λ': r'\lambda', 'μ': r'\mu',
-        'σ': r'\sigma', '₁': '_1', '₂': '_2', 'ᵢ': '_i', 'ⱼ': '_j', '¹': '^1', '²': '^2', '³': '^3'}
+        'σ': r'\sigma', '₁': '_1', '₂': '_2', 'ᵢ': '_i', 'ⱼ': '_j', '¹': '^1', '²': '^2', '³': '^3',
+        # Neither DejaVu Sans Mono nor TeX Gyre Pagella has these glyphs; set them in math mode.
+        '₀': '_0', '⁰': '^0', '⁴': '^4', '⁻': '^-', '⬝': r'\cdot', '⋈': r'\bowtie',
+        '⨆': r'\bigsqcup', '∤': r'\nmid', '⋖': r'\lessdot', '⊨': r'\models', '⧸': '/',
+        '𝔼': r'\mathbb{E}', '𝔽': r'\mathbb{F}', '𝕜': r'\Bbbk', '𝟙': r'\mathbf{1}',
+        '𝒜': r'\mathcal{A}', 'ℬ': r'\mathcal{B}', '𝒞': r'\mathcal{C}', '𝒟': r'\mathcal{D}',
+        'ℱ': r'\mathcal{F}', '𝒩': r'\mathcal{N}', '𝒳': r'\mathcal{X}', '𝓕': r'\mathcal{F}',
+        '𝓝': r'\mathcal{N}'}
 
 
 def inline_tex(text):
     # Math symbols remain inspectable even inside identifiers and table cells.
     return ''.join(r'\ensuremath{' + MATH[c] + '}' if c in MATH else tex_escape(c) for c in text)
+
+
+def math_tex(text):
+    # Pandoc passes `$...$` through verbatim, and the math fonts lack Unicode letters such as `ι`.
+    return ''.join('{' + MATH[c] + '}' if MATH.get(c, '').startswith('\\') else MATH.get(c, c)
+                   for c in text)
 
 
 def ast_for(text):
@@ -143,6 +156,8 @@ def transform(node, path, chapter_index=False, references=False):
         escaped = inline_tex(node['c']).replace('/', r'/\allowbreak{}').replace(r'\_', r'\_\allowbreak{}')
         escaped = re.sub(r'(?<=[a-z0-9])(?=[A-Z])', lambda _: r'\allowbreak{}', escaped)
         return raw('RawInline', escaped)
+    if typ == 'Math':
+        return {'t': typ, 'c': [node['c'][0], math_tex(node['c'][1])]}
     if typ in {'RawBlock', 'RawInline'} and node['c'][0] == 'html':
         match = re.search(r'<a id="([^"]+)"', node['c'][1])
         return raw(typ, r'\phantomsection\label{' + label(path, match[1]) + '}') if match else raw(typ, '')
@@ -172,6 +187,8 @@ PREAMBLE = r'''% Generated from the reviewed cslib-frontier research dossier.
 \setmainfont{texgyrepagella-regular.otf}[BoldFont=texgyrepagella-bold.otf,ItalicFont=texgyrepagella-italic.otf,BoldItalicFont=texgyrepagella-bolditalic.otf]
 \setsansfont{texgyreheros-regular.otf}[BoldFont=texgyreheros-bold.otf,ItalicFont=texgyreheros-italic.otf]
 \setmonofont{DejaVuSansMono.ttf}[Scale=0.82,BoldFont=DejaVuSansMono-Bold.ttf,ItalicFont=DejaVuSansMono-Oblique.ttf]
+% Log characters absent from the fonts; the builder fails on them.
+\tracinglostchars=2
 \usepackage{amsmath,amssymb}
 \usepackage{microtype}
 \usepackage{longtable,booktabs,array,calc}

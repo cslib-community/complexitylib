@@ -13,7 +13,7 @@ import CslibFrontier.Probability.PMF
 /-!
 # Tests for SIS, box rejection sampling and Lyubashevsky identification
 
-Short integer solutions and the SIS experiment, the exact box rejection-sampling law, and a
+Short integer solutions, the exact box rejection-sampling law, and a
 run of Lyubashevsky's protocol over `ZMod 7` with `n = 1`, `m = 2`, `k = 1`, `γ = 2`, `β = 1` and
 witness entries bounded by `η = 1`. The block checks honest answers and an abort, runs the
 extractor on two conversations with a common commitment, and evaluates the simulator's law.
@@ -34,25 +34,6 @@ example : SIS.IsSolution !![(1 : ZMod 7), 2, 3] 1 ![1, 1, -1] := by decide
 example : ¬SIS.IsSolution !![(1 : ZMod 7), 2, 3] 1 0 := by decide
 example : ¬SIS.IsSolution !![(1 : ZMod 7), 2, 3] 1 ![2, -1, 0] := by decide
 example : SIS.IsSolution !![(1 : ZMod 7), 2, 3] 2 ![2, -1, 0] := by decide
-
-/-- Three-bit residues `1` and `7` modulo `8` decode to `1` and `-1`. -/
-example : SIS.decode 2 3 [true, false, false, true, true, true] = ![1, -1] := by decide
-
-/-- With no rows, the unit vector is always a solution, so a constant program breaks SIS: the
-hypothesis is not vacuous. -/
-example : ¬SIS (fun _ => 0) (fun _ => 1) (fun _ => 1) (fun _ => 1) := fun h => by
-  have hwin (security : ℕ) : SIS.game (fun _ => 0) (fun _ => 1) (fun _ => 1) (fun _ => 1)
-      (fun _ _ => pure [true]) security = PMF.pure true := by
-    have hsol (A : Matrix (Fin 0) (Fin 1) (ZMod (2 ^ 1))) :
-        SIS.IsSolution A 1 (SIS.decode 1 1 [true]) := by
-      refine ⟨by decide, by decide, ?_⟩
-      funext i
-      exact i.elim0
-    simp only [SIS.game, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      PMF.pure_bind, hsol, decide_true, PMF.bind_const]
-  refine not_negligible_const one_ne_zero ?_
-  simpa only [hwin, Game.succProbability, PMF.pure_apply_self, ENNReal.toNNReal_one] using
-    h (fun _ _ => pure [true]) (ComputableInPolyTime.const [true]).isPPTOn
 
 /-! ### Lyubashevsky's protocol
 
@@ -141,7 +122,8 @@ example : sampleDyadicIntBoxCoins 3 [] = -4 := by decide
 example : sampleDyadicIntBoxCoins 3 [true, true, true] = 3 := by decide
 
 /-- Runtime parameters `(n, m, k, width) = (1, 2, 1, 4)` and `(q, γ, β) = (7, 2, 1)`. -/
-abbrev params : LyubashevskyParams := ((1, 2, 1, 4), (7, 2, 1))
+abbrev params : LyubashevskyParams :=
+  { n := 1, m := 2, k := 1, width := 4, q := 7, γ := 2, β := 1 }
 
 /-- `(S, (A, T))` satisfies `lyubashevskyFamilyRelation (fun _ => 1) params` (`β ≤ γ` and
 `k * 1 ≤ β`). -/
@@ -200,7 +182,7 @@ example :
 
 /-- Unconditional `EfficientNonAbortSpecialHVZK` certificate instantiated at `η = fun _ => 1`, and
 its concrete statistical distance bound `2 * (5 / 16)` on `params` between the strict-PPT simulator
-and the honest prover's encoded `acceptedTranscript`. -/
+`lyubashevskySimulator` and the honest prover's `acceptedTranscript`. -/
 example :
     EfficientNonAbortSpecialHVZK lyubashevskyFamily
       (lyubashevskyFamilyRelation (fun _ => 1))
@@ -210,18 +192,72 @@ example :
   efficientNonAbortSpecialHVZK_lyubashevsky (fun _ => 1)
 
 example (c : BitString params.k) :
-    CloseTo
-      (((lyubashevskyFamily params).acceptedTranscript S (A, T) c).map
-        (Option.map fun tz =>
-          (lyubashevskyEncoding.commitment params tz.1,
-            lyubashevskyEncoding.response params (some tz.2))))
-      (ProbComp.eval (lyubashevskySimulateWord
-        (params,
-          lyubashevskyEncoding.statement params (A, T),
-          lyubashevskyEncoding.challenge params c)))
+    CloseTo ((lyubashevskyFamily params).acceptedTranscript S (A, T) c)
+      (ProbComp.eval (lyubashevskySimulator params (A, T) c))
       ((params.m : ℝ≥0∞) * ((2 * params.γ + 1 : ℝ≥0∞) / 2 ^ params.width)) :=
-  nonAbortSimulatorRealizedBy_lyubashevskySimulateWord.closeTo_acceptedTranscript
+  simulatorRealizedBy_lyubashevskySimulator.closeTo_acceptedTranscript
     (lyubashevskyFamily_nonAbortSpecialHVZK (fun _ => 1))
     (by decide : lyubashevskyFamilyRelation (fun _ => 1) params S (A, T)) c
 
+example {p q : LyubashevskyParams} (hn : p.n = q.n) (hm : p.m = q.m) (hk : p.k = q.k)
+    (hw : p.width = q.width) (hq : p.q = q.q) (hγ : p.γ = q.γ) (hβ : p.β = q.β) : p = q := by
+  ext <;> assumption
+
+section PolyTimeOpened
+
+open ComputableInPolyTime
+
+example : ComputableInPolyTime LyubashevskyParams.n encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.m encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.k encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.width encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.q encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.γ encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.β encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun x : ℕ × ℕ =>
+      ({ n := x.1, m := x.1, k := x.1, width := x.1, q := x.2, γ := x.2, β := x.2 } :
+        LyubashevskyParams))
+    (encPair encUnary encNat) encLyubashevskyParams := by
+  fun_prop
+
+end PolyTimeOpened
+
 end CslibFrontierTests.Crypto.Lyubashevsky
+
+namespace CslibFrontierTests.Crypto.LyubashevskyUnopened
+
+open Cslib.Crypto.Protocols.SigmaProtocol (LyubashevskyParams encLyubashevskyParams)
+open Turing.MultiTapeTM (ComputableInPolyTime encNat encPair encUnary)
+
+example : ComputableInPolyTime LyubashevskyParams.n encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.m encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.q encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun p : LyubashevskyParams =>
+      ({ n := p.n, m := p.m, k := p.k, width := p.width, q := p.q, γ := p.γ, β := p.β } :
+        LyubashevskyParams))
+    encLyubashevskyParams encLyubashevskyParams := by
+  fun_prop
+
+end CslibFrontierTests.Crypto.LyubashevskyUnopened

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.TreeEval.Ary.Iterative
 public import CslibFrontier.Computability.TreeEval.Reader.Arith
 public import Mathlib.Logic.Equiv.Fin.Basic
+import CslibFrontier.Foundations.Data.List.Lookup
 
 /-!
 # Uniform raw control for packed Cook–Mertz
@@ -100,8 +101,7 @@ theorem toRegs_ofRegs {p d r : ℕ} [NeZero p] (S : Ary.State (ZMod p) d r) :
   funext t i
   have hk := index_lt t i
   have hnat : (ofRegs S).getD (index r t i) 0 = p + (S t i).val := by
-    simp only [ofRegs, List.getD_eq_getElem?_getD, List.getElem?_ofFn, hk,
-      ↓reduceDIte, Option.getD_some]
+    rw [ofRegs, List.getD_ofFn_of_lt _ hk]
     have hfin : (⟨index r t i, hk⟩ : Fin ((d + 1) * r)) = finProdFinEquiv (t, i) := rfl
     rw [hfin, Equiv.symm_apply_apply]
   change ((ofRegs S).getD (index r t i) 0 : ZMod p) = S t i
@@ -123,11 +123,9 @@ theorem toRegs_scaleBank {p d r : ℕ} [Fact p.Prime] (bank : List ℕ)
   have hd := index_div t' i
   by_cases ht : t' = t
   · subst t'
-    simp [toRegs, scaleBank, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk,
-      hd, Ary.scale]
+    simp [toRegs, scaleBank, hk, hd, Ary.scale]
   · have htn : t'.val ≠ t.val := fun h => ht (Fin.ext h)
-    simp [toRegs, scaleBank, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk,
-      hd, htn, Ary.scale, ht]
+    simp [toRegs, scaleBank, hk, hd, htn, Ary.scale, ht]
 
 /-- Adding a returned leaf vector is the existing typed leaf update. -/
 theorem toRegs_addBank {p d r : ℕ} (bank values : List ℕ)
@@ -141,11 +139,9 @@ theorem toRegs_addBank {p d r : ℕ} (bank values : List ℕ)
   have hm := index_mod t' i
   by_cases ht : t' = t
   · subst t'
-    simp [toRegs, addBank, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk,
-      hd, hm]
+    simp [toRegs, addBank, hk, hd, hm]
   · have htn : t'.val ≠ t.val := fun h => ht (Fin.ext h)
-    simp [toRegs, addBank, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk,
-      hd, htn, ht]
+    simp [toRegs, addBank, hk, hd, htn, ht]
 
 /-- Subtracting returned packed gate values is the existing typed gate update. -/
 theorem toRegs_subBank {p d r : ℕ} [NeZero p] (bank values : List ℕ)
@@ -159,11 +155,9 @@ theorem toRegs_subBank {p d r : ℕ} [NeZero p] (bank values : List ℕ)
   have hm := index_mod t' i
   by_cases ht : t' = t
   · subst t'
-    simp [toRegs, subBank, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk,
-      hd, hm, sub_eq_add_neg]
+    simp [toRegs, subBank, hk, hd, hm, sub_eq_add_neg]
   · have htn : t'.val ≠ t.val := fun h => ht (Fin.ext h)
-    simp [toRegs, subBank, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk,
-      hd, htn, ht]
+    simp [toRegs, subBank, hk, hd, htn, ht]
 
 /-- Recover the path from child indices; it is not duplicated in continuation frames. -/
 def path (stack : List Frame) : List ℕ := stack.reverse.map (fun fr => fr.2.1)
@@ -398,8 +392,8 @@ theorem toCfg_beginRound {p d r : ℕ} [Fact p.Prime] (hd : 0 < d)
 /-- The comparison enumeration's unit is obtained directly from its round index. -/
 theorem unitAt_zmodUnits {p : ℕ} [Fact p.Prime] {j : ℕ} (hj : j < p - 1) :
     Ary.Iter.unitAt ((List.range (p - 1)).map (TreeEval.Iter.zmodUnit p)) j =
-      TreeEval.Iter.zmodUnit p j := by
-  simp [Ary.Iter.unitAt, List.getD_eq_getElem?_getD, hj]
+      TreeEval.Iter.zmodUnit p j :=
+  List.getD_map_range _ _ hj
 
 /-- In the canonical prime-field enumeration, the raw round counter implements the existing
 round initializer without ever constructing the comparison enumeration at runtime. -/

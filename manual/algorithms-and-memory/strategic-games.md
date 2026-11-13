@@ -127,13 +127,19 @@ results:
 - `IsMixedNash.isCoarseCorrelatedEquilibrium`: the product distribution of a mixed Nash equilibrium
   is a coarse correlated equilibrium.
 
+[Bimatrix/CostGame.lean](../../CslibFrontier/GameTheory/Bimatrix/CostGame.lean) is the bridge
+from bimatrix games to cost games. `BimatrixGame.toCostGame` is the two-player cost game indexed
+by `Bool` with the negated payoffs; `PureStrategy M N` lifts both strategy sets to a common
+universe, and `profile x y` packs a strategy pair as a mixed profile (`eq_profile` unpacks any
+profile). `isNash_iff_isMixedNash` states that `G.IsNash x y` holds exactly when
+`G.toCostGame.IsMixedNash (profile x y)`, so results about mixed Nash equilibria of cost games
+apply to bimatrix games. `deviationCost_toCostGame_row` and `deviationCost_toCostGame_column` give
+each player's expected cost vector as the negated matrix–vector product of expected payoffs, by
+`sum_productWeight_mul_apply` in `Mixed.lean`: under the product weights, a function of one
+player's strategy has its expectation under that player's mixed strategy.
 [Bimatrix/Existence.lean](../../CslibFrontier/GameTheory/Bimatrix/Existence.lean) derives
 `BimatrixGame.exists_isNash` for every bimatrix game with nonempty strategy sets, with no
-nondegeneracy hypothesis. It views the game as a two-player cost game indexed by `Bool` with the
-negated payoffs, lifting both strategy sets to a common universe. Each player's expected cost
-vector is the negated matrix–vector product of expected payoffs, by `sum_productWeight_mul_apply`
-in `Mixed.lean`: under the product weights, a function of one player's strategy has its expectation
-under that player's mixed strategy.
+nondegeneracy hypothesis, from Nash's theorem through this bridge.
 
 To check a candidate equilibrium, compute `deviationCost` for each pure strategy and compare it
 with `expectedCost`, which `sum_mul_deviationCost_eq_expectedCost` writes as their average.
@@ -171,6 +177,33 @@ evenly: it is a correlated equilibrium but not the product distribution of any m
 In Rock–Paper–Scissors, the uniform distribution on the six outcomes without a tie is a coarse
 correlated equilibrium but not a correlated equilibrium. Since `a + 1` beats `a` there, a player
 recommended `a` gains by switching to `a + 2`.
+
+[SwapRegretDynamics.lean](../../CslibFrontier/GameTheory/Strategic/SwapRegretDynamics.lean) defines
+`IsApproxCorrelatedEquilibrium ε σ`, where the expected cost bound for player `i` is relaxed by
+`ε i`. If after `T > 0` rounds every player `i` has total expected swap regret at most `R i`, then
+the time average of the product distributions is an `(R i / T)`-approximate correlated equilibrium
+(`timeAverage_productDist_isApproxCorrelatedEquilibrium`, Lecture 18, Proposition 1.3 of
+[roughgarden13cs364a][roughgarden13cs364a]; Theorem 3 of [blummansour07][blummansour07]).
+
+`blumMansourDynamics G T` constructs the coupled multi-player Blum–Mansour trajectory with Hedge
+copies tuned for a fixed finite horizon `T`, and `blumMansourDynamics_eq_blumMansourProb`
+identifies each player's trajectory with the single-learner Blum–Mansour algorithm against its
+realized `deviationCost` sequence. Under `[Fintype ι] [DecidableEq ι]`, `[∀ i, Fintype (S i)]`,
+`[∀ i, DecidableEq (S i)]`, `[∀ i, Nonempty (S i)]`, costs in `[-1, 1]` (`∀ i s, |G.cost i s| ≤ 1`),
+`m_i = |S i| ≥ 2`, and `T > 0` satisfying `m_i ln m_i ≤ T`,
+`blumMansour_isApproxCorrelatedEquilibrium` proves that the time average of the first `T` rounds
+is an approximate correlated equilibrium with exact slack `2 √(m_i ln m_i / T)` ([blummansour07][blummansour07],
+Corollary 7). This is a fixed-horizon (`T`-indexed), full-information expected-cost analysis: it
+does not establish anytime convergence independent of `T`, sampled play, last-iterate convergence,
+or a running-time theorem.
+
+The checked theorem `CslibFrontierTests.GameTheory.SwapRegretDynamics.blumMansour_pennies` in
+[GameTheory/SwapRegretDynamics.lean](../../CslibFrontierTests/GameTheory/SwapRegretDynamics.lean)
+instantiates this unconditionally on matching pennies for every `T ≥ 2`:
+
+```bash
+lake build CslibFrontierTests.GameTheory.SwapRegretDynamics
+```
 
 ## Atomic congestion games
 
@@ -429,10 +462,43 @@ Nash's theorem (see the section on mixed Nash equilibria); the parity argument a
 and finiteness for nondegenerate games.
 The algorithm is due to Lemke and Howson [lemkehowson64][lemkehowson64].
 
-Only the undirected parity argument is formalized. The Lemke–Howson path is not run as an
-algorithm, and nothing is said about its length. There is no orientation of the paths and no bit
-sizes of the rational vertices. Games are not encoded as a TFNP search problem, so this does not
-show that two-player Nash is in PPAD.
+For computational complexity (`PPAD` membership of two-player rational Nash equilibria
+[papadimitriou94ppad][papadimitriou94ppad]), four additional layers sit above the undirected
+parity argument:
+
+- [Foundations/Data/Int/Radix.lean](../../CslibFrontier/Foundations/Data/Int/Radix.lean) and
+  [Foundations/LinearAlgebra/Matrix/IntegerKernel.lean](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/IntegerKernel.lean)
+  prove uniqueness of bounded signed radix expansions (`Int.eq_zero_of_sum_mul_pow_eq_zero`) and
+  existence of `kernelVecBound`-bounded nonzero integer kernel vectors for wide integer matrices
+  (`Matrix.exists_int_mulVec_eq_zero_of_card_lt`).
+- [Foundations/LinearAlgebra/Matrix/VertexOrientation.lean](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/VertexOrientation.lean)
+  and [Bimatrix/ShapleyOrientation.lean](../../CslibFrontier/GameTheory/Bimatrix/ShapleyOrientation.lean)
+  formalize Shapley's determinant orientation [shapley74][shapley74] of pivoting edges across
+  two bounded polyhedral systems (`halfEdgeIndex`, `halfEdgeIndex_pivot_left_eq_neg`,
+  `halfEdgeIndex_pivot_right_eq_neg`, `halfEdgeIndex_zero_zero`).
+- [Bimatrix/RationalVertex.lean](../../CslibFrontier/GameTheory/Bimatrix/RationalVertex.lean)
+  perturbs positive integer payoff matrices with `K = 2 ^ bitBound m n H` (`intMatP`, `intMatQ`,
+  `pertRhsPInt`, `pertRhsQInt`), establishes nondegeneracy over every ordered field, and recovers
+  unperturbed exact rational Nash equilibria via signed Cramer determinants (`cramerVec`,
+  `basisSignNum`, `IsFeasibleBasis`, `isNash_extractNum`) with bounded numerators
+  `m! * H^m` and `n! * H^n` with polynomial bit length.
+- [Bimatrix/PPAD.lean](../../CslibFrontier/GameTheory/Bimatrix/PPAD.lean) defines the
+  structures `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix` using
+  `Turing.MultiTapeTM.encRat`) and `StrategyPair` (fields `x`, `y`, encoded via
+  `enc_structure encWitness`),
+  the rational Nash search problem `BimatrixNash` (accepting `[]` on malformed codes; witnesses of
+  well-formed codes have length at most `witnessPoly.eval` of the code length),
+  polynomial-time bit-encoded graph maps `pred` and `succ` on `2 * (m + n)` bits, and
+  `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`, `BimatrixNash_mem_PPAD`,
+  `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`.
+  `strategyVec` reads a rational strategy list as a real vector, so `BimatrixNash.isNash` states
+  that every witness of a well-formed code decodes to a pair `s` with
+  `c.toGame.IsNash (strategyVec s.x) (strategyVec s.y)`; `isMixedStrategy_strategyVec` gives the
+  mixed-strategy condition from the list's length, nonnegativity and sum.
+
+Executing the Lemke–Howson path as a standalone solver, extending the undirected parity theorem
+directly to degenerate bimatrix games, and proving the Savani–von Stengel exponential lower
+bound or `PPAD`-completeness of two-player Nash are not formalized.
 
 ## Working with the API
 
@@ -466,6 +532,9 @@ of Rock–Paper–Scissors is a coarse correlated equilibrium that is not correl
 
 The congestion tests also check that Hedge dynamics start uniform, and they apply the Hedge
 price-of-anarchy bound to the two-link game for every horizon.
+[CslibFrontierTests/GameTheory/SwapRegretDynamics.lean](../../CslibFrontierTests/GameTheory/SwapRegretDynamics.lean)
+instantiates the unconditional Blum–Mansour bound on matching pennies for every `T ≥ 2` and checks
+the `t = 0` learner identity at `T = 4`.
 [CslibFrontierTests/GameTheory/Stability.lean](../../CslibFrontierTests/GameTheory/Stability.lean) checks
 the following price-of-stability instances:
 
@@ -494,17 +563,26 @@ decides `PureNash` on a two-player code, at one equilibrium and two non-equilibr
 the `step` map, clamping, a player with no listed strategy, and out-of-range resources.
 
 [CslibFrontierTests/GameTheory/Bimatrix.lean](../../CslibFrontierTests/GameTheory/Bimatrix.lean) checks
-the three equilibria of von Stengel's `3 × 2` example (3.3). It shows that the identity
+the three equilibria of von Stengel's `3 × 2` example (3.3), and carries one of them through
+`isNash_iff_isMixedNash` to a mixed Nash and correlated equilibrium of `stengel.toCostGame`. It shows that the identity
 coordination game is nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies. The zero game
 is degenerate, and its infinitely many equilibria show that the hypothesis cannot be dropped;
 `exists_isNash` still applies to it. The file also checks a vertex and a non-vertex of an interval and a degenerate system. Finally, the
 artificial pair `(0, 0)` has degree `1` in the Lemke–Howson graph of the shifted coordination
 game.
 
+[CslibFrontierTests/GameTheory/BimatrixPPAD.lean](../../CslibFrontierTests/GameTheory/BimatrixPPAD.lean)
+checks `BimatrixCode.WellFormed` and `wellFormedB` on concrete games and malformed inputs
+(`emptyCode`, `nonRectCode`, `mismatchCode`), verifies valid and invalid `IsRationalNash` and
+`BimatrixNash` witnesses on the `2 × 2` coordination game, matching pennies, von Stengel's
+`3 × 2` game (3.3), and a degenerate `2 × 2` zero game, checks `Turing.MultiTapeTM.encRat`, `StrategyPair`, and `encWitness` length
+bounds, and exercises `BimatrixNash.isNash`, `extractNash_sound`, `BimatrixNash_mem_PPAD`,
+`BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`
+under strict `module` axiom checks.
+
 ## Known Limitations
 
-Swap regret and the convergence of no-swap-regret dynamics to correlated equilibria (Lecture 18,
-§1), existence of Wardrop flows, and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
+Existence of Wardrop flows and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
 [roughgarden03][roughgarden03] for classes without the constant functions (diverse classes on
 parallel links, Theorem 4.5, and inhomogeneous classes on unions of paths, Theorem 4.9) and the
 M/M/1 and M/G/1 delay functions of its Section 5 are not formalized. Nor are the tight price of
@@ -517,26 +595,31 @@ of congestion games are in `PLS`, but their PLS-completeness (Lecture #19, Theor
 PPAD-completeness of mixed equilibria are not formalized. Neither are exponentially long
 better-response paths or the polynomial-time algorithm for symmetric network congestion games. These
 are ROADMAP directions under [#2900](https://github.com/cslib-community/cslib-frontier/issues/2900).
-Two-player Nash in PPAD, degenerate bimatrix games and the Lemke–Howson algorithm are tracked in
-[#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge dynamics are
-full-information and deterministic: they work with expected costs, not sampled play or bandit
-feedback, and only time-average guarantees are proved, not last-iterate convergence.
+Two-player rational Nash equilibrium is in `PPAD` (`BimatrixNash_mem_PPAD`); degenerate bimatrix
+parity, executing the Lemke–Howson path as a solver, and the Savani–von Stengel exponential
+lower bound remain tracked in [#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge and Blum–Mansour
+swap-regret dynamics are full-information, deterministic, and fixed-horizon (`T`-indexed): they work
+with expected costs, not anytime step sizes independent of `T`, sampled play or bandit feedback,
+and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
 [anshelevichDKTWR08]: ../sources.md#anshelevichdktwr08
 [babaioffChuangFeldman07]: ../sources.md#babaioffchuangfeldman07
+[blummansour07]: ../sources.md#blummansour07
 [complexitylib]: ../sources.md#complexitylib
 [epsteinFeldmanMansour09]: ../sources.md#epsteinfeldmanmansour09
 [fabrikantPapadimitriouTalwar04]: ../sources.md#fabrikantpapadimitrioutalwar04
 [lemkehowson64]: ../sources.md#lemkehowson64
 [mondererShapley96]: ../sources.md#monderershapley96
 [nash51]: ../sources.md#nash51
+[papadimitriou94ppad]: ../sources.md#papadimitriou94ppad
 [rosenthal73]: ../sources.md#rosenthal73
 [roughgarden03]: ../sources.md#roughgarden03
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [roughgarden15]: ../sources.md#roughgarden15
 [roughgardenTardos02]: ../sources.md#roughgardentardos02
 [roughgardenTardos07]: ../sources.md#roughgardentardos07
+[shapley74]: ../sources.md#shapley74
 [tardosWexler07]: ../sources.md#tardoswexler07
 [vonstengel07]: ../sources.md#vonstengel07

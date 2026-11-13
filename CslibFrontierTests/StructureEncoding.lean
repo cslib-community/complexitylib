@@ -1,13 +1,20 @@
 /-
-Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Christian Reitwiessner
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+module
+-- upstream: local-only (structure-encoding regression tests)
+
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+public import CslibFrontier.Tactic.PolyTime
 
 /-! Tests of `enc_structure`. -/
+
+public section
 
 namespace CslibFrontierTests.StructureEncoding
 
@@ -49,6 +56,146 @@ example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoi
     have := ((List.tail_sublist p.z).flatMap (frame ∘ encUnary)).length_le
     omega
 
+-- Direct and composed polynomial-time field projections and structure construction.
+example : ComputableInPolyTime Point.x ePoint encNat := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {f : α → Point}
+    (hf : ComputableInPolyTime f enc ePoint) :
+    ComputableInPolyTime (fun a => Point.mk (f a).x (f a).y (f a).z) enc ePoint := by
+  fun_prop
+
+/-- A record with an implicit description type, as used by encoded security challenges. -/
+structure DescribedPair {Desc : Type} where
+  /-- The arbitrary description. -/
+  description : Desc
+  /-- The first word. -/
+  left : List Bool
+  /-- The second word. -/
+  right : List Bool
+
+/-- Explicit command parameters determine the record type and its field encodings. -/
+enc_structure eDescribedPair (Desc : Type) (encDesc : Desc ↪ List Bool) :
+    DescribedPair (Desc := Desc) where
+  description : encDesc, left : encBits, right : encBits
+
+example (Desc : Type) (encDesc : Desc ↪ List Bool) (d : Desc) (u v : List Bool) :
+    eDescribedPair Desc encDesc ⟨d, u, v⟩ = encPair encDesc (encPair encBits encBits) (d, u, v) :=
+  rfl
+
+-- Swapping the two words exercises both generated field projections and the constructor rule.
+example (Desc : Type) (encDesc : Desc ↪ List Bool) :
+    ComputableInPolyTime
+      (fun p : DescribedPair (Desc := Desc) =>
+        { description := p.description, left := p.right, right := p.left })
+      (eDescribedPair Desc encDesc) (eDescribedPair Desc encDesc) := by
+  fun_prop
+
+example (Desc : Type) (encDesc : Desc ↪ List Bool) {α : Type} {enc : α ↪ List Bool}
+    {S : α → ℕ} {f : α → DescribedPair (Desc := Desc)}
+    (hf : ComputableInSpace f enc (eDescribedPair Desc encDesc) S) :
+    ComputableInSpace (fun a => (f a).description) enc encDesc S :=
+  eDescribedPair_description_budget Desc encDesc hf
+
+/-- User parameters may share names with the command's generated proof variables. -/
+enc_structure eDescribedPairCollision (γ : Type) (encIn : γ ↪ List Bool) :
+    DescribedPair (Desc := γ) where
+  description : encIn, left : encBits, right : encBits
+
+example (γ : Type) (encIn : γ ↪ List Bool) :
+    ComputableInPolyTime
+      (fun p : DescribedPair (Desc := γ) =>
+        { description := p.description, left := p.right, right := p.left })
+      (eDescribedPairCollision γ encIn) (eDescribedPairCollision γ encIn) := by
+  fun_prop
+
+-- The constructor must retain the chosen description encoding when the caller has a different
+-- input type and encoding. A same-domain identity test would not detect parameter capture.
+example (γ : Type) (encIn : γ ↪ List Bool) {α : Type} {enc : α ↪ List Bool}
+    {description : α → γ} {left right : α → List Bool}
+    (hd : ComputableInPolyTime description enc encIn)
+    (hl : ComputableInPolyTime left enc encBits)
+    (hr : ComputableInPolyTime right enc encBits) :
+    ComputableInPolyTime
+      (fun a => { description := description a, left := left a, right := right a })
+      enc (eDescribedPairCollision γ encIn) :=
+  eDescribedPairCollision_mk_polyTime γ encIn hd hl hr
+
+/-- A single-field structure, where `eSFields` is the field encoding itself rather than a pair. -/
+structure Single where
+  /-- Binary payload list. -/
+  items : List ℕ
+
+/-- Single-field records, encoded directly by their field encoding. -/
+enc_structure eSingle : Single where items : (encList encNat)
+
+example : ComputableInPolyTime Single.items eSingle (encList encNat) := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {xs : α → List ℕ}
+    (hxs : ComputableInPolyTime xs enc (encList encNat)) :
+    ComputableInPolyTime (fun a => Single.mk (xs a)) enc eSingle := by
+  fun_prop
+
+/-- A fixed-size family with a tag whose type does not mention the size parameter. -/
+structure TaggedTable (n : ℕ) where
+  /-- A flag outside the table. -/
+  tag : Bool
+  /-- Binary values indexed by the fixed table size. -/
+  entries : Fin n → ℕ
+
+noncomputable section
+
+variable {n : ℕ}
+
+/-- The framed tag followed by the existing finite-table encoding. -/
+enc_structure eTaggedTable : TaggedTable n where
+  tag : encBool, entries : (encPi (Index := Fin n) encNat)
+
+example (t : TaggedTable n) :
+    eTaggedTable t = encPair encBool (encPi encNat) (t.tag, t.entries) := rfl
+
+-- A parameter-independent field still fixes the encoded input type, including at size zero.
+example : ComputableInDegree (TaggedTable.tag (n := 0)) eTaggedTable encBool 1 1 := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → TaggedTable n}
+    (hf : ComputableInSpace f enc eTaggedTable S) :
+    ComputableInSpace (fun a => (f a).entries) enc (encPi encNat) S := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
+    {tag : α → Bool} {entries : α → Fin n → ℕ}
+    (ht : ComputableInSpace tag enc encBool S)
+    (he : ComputableInSpace entries enc (encPi encNat) S) :
+    ComputableInSpace (fun a => TaggedTable.mk (tag a) (entries a)) enc eTaggedTable S := by
+  fun_prop
+
+end
+
+/-- A multi-field problem instance encoded with `enc_structure` for `polytime` clients. -/
+structure HittingSetInstance where
+  /-- Finite ground set of elements, encoded in binary. -/
+  ground : List ℕ
+  /-- Subsets that must each be hit. -/
+  sets : List (List ℕ)
+  /-- Target cardinality, encoded in binary. -/
+  k : ℕ
+
+/-- Ground set, framed, followed by framed subsets, framed, followed by binary target `k`. -/
+enc_structure encHittingSet : HittingSetInstance where
+  ground : (encList encNat), sets : (encList (encList encNat)), k : encNat
+
+/-- Transform a problem instance using named fields without unfolding `encHittingSet`. -/
+@[expose]
+def prependZeroToSets (I : HittingSetInstance) : HittingSetInstance where
+  ground := 0 :: I.ground
+  sets := I.sets.map fun S => 0 :: S
+  k := I.k
+
+example : ComputableInPolyTime prependZeroToSets encHittingSet encHittingSet := by
+  polytime [prependZeroToSets]
+
 /-! The command resolves the structure through `open`, a parent structure is the single field
 `toParent`, as in the constructor, and the constructor need not be called `mk`. The projections
 are those of the checked structure, even where another declaration shares their name. -/
@@ -70,6 +217,7 @@ structure Triple extends Inner.Pair where
   w : ℕ
 
 /-- Not the projection `Inner.Pair.fst`: under `open Inner`, `Pair.fst` could name either. -/
+@[expose]
 def Pair.fst (p : Inner.Pair) : ℕ := p.fst + 1
 
 open Inner in
@@ -97,6 +245,261 @@ enc_structure eRenamed : Renamed where n : encNat, b : encBool
 example :
     ComputableInDegree (fun r : Renamed => Renamed.mkRenamed r.n r.b) eRenamed eRenamed 1 1 := by
   fun_prop (disch := lia)
+
+example :
+    ComputableInPolyTime (fun r : Renamed => Renamed.mkRenamed r.n r.b) eRenamed eRenamed := by
+  fun_prop
+
+/-! Listing the fields of a parent instead of the parent field flattens them into the tuple. -/
+
+/-- Triples, as the flat tuple of their three fields. -/
+enc_structure eFlat : Triple flattened toPair : ePair where
+  fst : encNat, snd : encBool, w : encUnary
+
+example (t : Triple) : eFlat t = encPair encNat (encPair encBool encUnary) (t.fst, t.snd, t.w) :=
+  rfl
+
+-- The constructor rule on tuples nests the constructor of the parent.
+example : ComputableInDegree (fun p : ℕ × Bool × ℕ => Triple.mk ⟨p.1, p.2.1⟩ p.2.2)
+    eFlatFields eFlat 1 1 :=
+  eFlat_mk_deg
+
+-- The flattened field rules read through the parent projection.
+example {α : Type} {enc : α ↪ List Bool} {f : α → Triple} (hf : ComputableInPolyTime f enc eFlat) :
+    ComputableInPolyTime (fun a => Triple.mk ⟨(f a).fst, (f a).snd⟩ (f a).w) enc eFlat := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {f : α → Triple} (hf : ComputableInPolyTime f enc eFlat) :
+    ComputableInPolyTime (fun a => (f a).toPair) enc ePair := by
+  fun_prop
+
+/-! A field whose type depends on an earlier field is encoded by an injective word function of the
+earlier fields. -/
+
+/-- A family of types indexed by descriptions, with injective encodings of their elements. -/
+structure Family where
+  /-- The descriptions. -/
+  Desc : Type
+  /-- The encoding of descriptions. -/
+  encDesc : Desc ↪ List Bool
+  /-- The type described by each description. -/
+  Carrier : Desc → Type
+  /-- The encoding of the elements of each type. -/
+  encode : ∀ d, Carrier d → List Bool
+  /-- Element encodings are injective. -/
+  encode_injective : ∀ d, Function.Injective (encode d)
+
+/-- A description and an element of the type it describes. -/
+structure Element (F : Family) where
+  /-- A unary size. -/
+  size : ℕ
+  /-- The description. -/
+  desc : F.Desc
+  /-- The element. -/
+  elt : F.Carrier desc
+
+/-- Elements, as their size, description and the word of the element. -/
+enc_structure eElement (F : Family) : Element F where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc)
+
+example (F : Family) (x : Element F) :
+    eElement F x =
+      encPair encUnary (encPair F.encDesc encBits) (x.size, x.desc, F.encode x.desc x.elt) :=
+  rfl
+
+example (F : Family) {x y : Element F} (h : eElement F x = eElement F y) : x = y :=
+  (eElement F).injective h
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → Element F}
+    (hf : ComputableInPolyTime f enc (eElement F)) :
+    ComputableInPolyTime (fun a => F.encode (f a).desc (f a).elt) enc encBits := by
+  fun_prop
+
+/-- An element with a second element of the same type, through a flattened parent. -/
+structure ElementPair (F : Family) extends Element F where
+  /-- The second element. -/
+  other : F.Carrier desc
+
+/-- Element pairs, flattening the parent: byte-compatible with a hand-written five-word tuple. -/
+enc_structure eElementPair (F : Family) : ElementPair F flattened toElement : (eElement F) where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc),
+  other : (F.encode desc) using (F.encode_injective desc)
+
+example (F : Family) (x : ElementPair F) :
+    eElementPair F x = encPair encUnary (encPair F.encDesc (encPair encBits encBits))
+      (x.size, x.desc, F.encode x.desc x.elt, F.encode x.desc x.other) :=
+  rfl
+
+-- Swapping the two elements uses the dependent field rules and the dependent constructor rule.
+example (F : Family) :
+    ComputableInPolyTime
+      (fun x : ElementPair F => (⟨⟨x.size, x.desc, x.other⟩, x.elt⟩ : ElementPair F))
+      (eElementPair F) (eElementPair F) := by
+  fun_prop
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → ElementPair F}
+    (hf : ComputableInSpace f enc (eElementPair F) S) :
+    ComputableInSpace (fun a => F.encode (f a).desc (f a).other) enc encBits S :=
+  eElementPair_other_budget F hf
+
+-- The explicit flattened-parent metadata generates the projection rule directly.
+example (F : Family) :
+    ComputableInDegree (fun x : ElementPair F => x.toElement)
+      (eElementPair F) (eElement F) 1 1 := by
+  fun_prop
+
+example (F : Family) :
+    ComputableInO (fun x : ElementPair F => x.toElement) (eElementPair F) (eElement F)
+      (fun x => (eElementPair F x).length) (fun x => (eElementPair F x).length) := by
+  fun_prop
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → ElementPair F}
+    (hf : ComputableInSpace f enc (eElementPair F) S) :
+    ComputableInSpace (fun a => (f a).toElement) enc (eElement F) S := by
+  fun_prop
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPair F}
+    (hf : ComputableInPolyTime f enc (eElementPair F)) :
+    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) := by
+  fun_prop
+
+/-- An element with a second element of the same type, keeping the parent as one field. -/
+structure ElementTagged (F : Family) extends Element F where
+  /-- The second element. -/
+  other : F.Carrier desc
+
+/-- A dependent word may read a listed parent field through a dotted name. -/
+enc_structure eElementTagged (F : Family) : ElementTagged F where
+  toElement : (eElement F),
+  other : (F.encode toElement.desc) using (F.encode_injective toElement.desc)
+
+example (F : Family) (x : ElementTagged F) :
+    eElementTagged F x = encPair (eElement F) encBits (x.toElement, F.encode x.desc x.other) :=
+  rfl
+
+/-- The injectivity proof may be a lambda: the command supplies its expected type. -/
+enc_structure eElementLambda (F : Family) : Element F where
+  size : encUnary, desc : F.encDesc,
+  elt : (F.encode desc) using (fun ⦃_ _⦄ h => F.encode_injective desc h)
+
+example (F : Family) (x : Element F) : eElementLambda F x = eElement F x := rfl
+
+/-- An element of the type indexed by a unary size. -/
+structure Sized (Carrier : ℕ → Type) where
+  /-- The size. -/
+  size : ℕ
+  /-- The element. -/
+  elt : Carrier size
+
+/-- The parameter `encode` occurs only in the word of `elt`, which goes in the slot `encBits`, so
+`eSizedFields` does not use it. -/
+enc_structure eSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+example (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (x : Sized Carrier) :
+    eSized Carrier encode x = encPair encUnary encBits (x.size, encode x.size x.elt) :=
+  rfl
+
+/-- A slot-local `encode` shadows the parameter, which only the word of `elt` uses. -/
+enc_structure eSizedShadow (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) :
+    Sized Carrier where
+  size : (let encode := encUnary; encode), elt : (encode size) using ((encode size).injective)
+
+-- The command marks `eSizedFields` and `eSizedShadowFields` `nolint unusedArguments`, so the
+-- linter passes. `Carrier` is used, because it occurs in the type of `encode`.
+set_option linter.hashCommand false in
+#guard_msgs in
+#lint- only unusedArguments
+
+/-! Encoded fields can belong to a larger universe than their word slots. -/
+
+universe u
+
+/-- A universe-polymorphic image followed by a public flag. -/
+structure TaggedImage (Image : Type u) where
+  /-- The image represented by its chosen word. -/
+  image : Image
+  /-- A flag in the base universe. -/
+  flag : Bool
+
+/-- The image word is framed before the flag, independently of the image's universe. -/
+enc_structure eTaggedImage (Image : Type u) (encodeImage : Image ↪ List Bool) :
+    TaggedImage Image where
+  image : encodeImage using encodeImage.injective, flag : encBool
+
+example (Image : Type u) (encodeImage : Image ↪ List Bool) (x : TaggedImage Image) :
+    eTaggedImage Image encodeImage x = encPair encBits encBool (encodeImage x.image, x.flag) :=
+  rfl
+
+-- Both projections cross from the record's universe to the word/Boolean universe.
+example (Image : Type u) (encodeImage : Image ↪ List Bool) :
+    ComputableInDegree (fun x : TaggedImage Image => (encodeImage x.image).reverse)
+      (eTaggedImage Image encodeImage) encBits 1 1 :=
+  ComputableInDegree.bitsReverse.comp (eTaggedImage_image_deg Image encodeImage)
+
+example (Image : Type u) (encodeImage : Image ↪ List Bool) :
+    ComputableInDegree (fun x : TaggedImage Image => x.flag)
+      (eTaggedImage Image encodeImage) encBool 1 1 := by
+  fun_prop
+
+-- A caller in Type can pass through a larger intermediate record without changing its budget.
+example (Image : Type u) (encodeImage : Image ↪ List Bool)
+    {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → TaggedImage Image}
+    (hf : ComputableInSpace f enc (eTaggedImage Image encodeImage) S) :
+    ComputableInSpace (fun a => (f a).flag) enc encBool S := by
+  fun_prop
+
+/-! A parameter that nothing uses leaves `…Fields` linted: alone, next to a parameter that only a
+dependent field uses, or when a proof-local binder shares its name. These come after the `#lint-`
+check above, which they would fail. -/
+
+/-- Points, with a parameter that nothing reads. -/
+enc_structure eJunkPoint (junk : ℕ) : Point where x : encNat, y : encBits, z : (encList encUnary)
+
+/-- Sized elements, with a parameter that nothing reads. -/
+enc_structure eJunkSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (junk : ℕ) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+/-- Sized elements, with a parameter that nothing uses and a proof-local binder of its name. -/
+enc_structure eSizedLetJunk (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool)
+    (junk : ℕ) : Sized Carrier where
+  size : encUnary, elt : (encode size) using (let junk := (encode size).injective; junk)
+
+-- Fully used encodings (`ePoint`, and `eElement`, whose dependent field also reads `F`) stay
+-- linted as usual.
+run_meta do
+  for decl in [``eJunkPointFields, ``eJunkSizedFields, ``eSizedLetJunkFields, ``ePointFields,
+      ``eElementFields] do
+    unless ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments decl do
+      throwError "{decl} is marked nolint unusedArguments"
+  for decl in [``eSizedFields, ``eSizedShadowFields] do
+    if ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments decl then
+      throwError "{decl} is not marked nolint unusedArguments"
+
+-- A parameter named like a field that a dependent word reads would be captured by the field.
+/--
+error: enc_structure: the parameter `desc` has the name of a field that the word of `elt` reads; rename the parameter
+-/
+#guard_msgs in
+enc_structure eClash (F : Family) (desc : F.Desc) : Element F where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc)
+
+/-! Generated binders keep plain names, so callers may pass them by name. -/
+
+example (p : Point) : ePoint p = ePointFields (p.x, p.y, p.z) := ePoint_apply (a := p)
+
+-- Only the binders that collide with the parameters `γ` and `encIn` are renamed.
+example (γ : Type) (encIn : γ ↪ List Bool) {α : Type} {enc : α ↪ List Bool}
+    {description : α → γ} {left right : α → List Bool}
+    (hd : ComputableInPolyTime description enc encIn)
+    (hl : ComputableInPolyTime left enc encBits)
+    (hr : ComputableInPolyTime right enc encBits) :
+    ComputableInPolyTime
+      (fun a => { description := description a, left := left a, right := right a })
+      enc (eDescribedPairCollision γ encIn) :=
+  eDescribedPairCollision_mk_polyTime γ encIn (x0 := description) (h0 := hd) (h1 := hl) (h2 := hr)
 
 /-! The command checks the field list before declaring anything. Each error names the field. -/
 
@@ -130,12 +533,39 @@ error: enc_structure: missing fields `x`, `z` of `Point`; the fields of `Point` 
 #guard_msgs in
 enc_structure eMissingTwo : Point where y : encBits
 
--- A field inherited from a parent is listed through its parent field.
+-- A parent is listed either as its field or as its fields, not both.
 /--
-error: enc_structure: `fst` is inherited through the parent field `toPair`, so list `toPair` instead; the fields of `Triple` in declaration order are `toPair`, `w`
+error: enc_structure: the parent field `toPair` and its field `fst` are both listed; list either the parent field or its fields; the fields of `Triple` in declaration order are `fst`, `snd`, `w`
 -/
 #guard_msgs in
-enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary
+enc_structure eBoth : Triple where toPair : ePair, fst : encNat, w : encUnary
+
+/--
+error: enc_structure: missing field `snd` of `Triple`; the fields of `Triple` in declaration order are `fst`, `snd`, `w`
+-/
+#guard_msgs in
+enc_structure eFlatMissing : Triple where fst : encNat, w : encUnary
+
+/-- error: enc_structure: `missingParent` is not a field of `Triple` -/
+#guard_msgs in
+enc_structure eUnknownParent : Triple flattened missingParent : ePair where
+  fst : encNat, snd : encBool, w : encUnary
+
+/-- error: enc_structure: `w` is a field of `Triple`, but not a parent field -/
+#guard_msgs in
+enc_structure eNonParent : Triple flattened w : encUnary where
+  fst : encNat, snd : encBool, w : encUnary
+
+/-- error: enc_structure: parent field `toPair` is not flattened by the listed fields -/
+#guard_msgs in
+enc_structure eUnflattenedParent : Triple flattened toPair : ePair where
+  toPair : ePair, w : encUnary
+
+/-- error: enc_structure: flattened parent `toPair` is listed twice -/
+#guard_msgs in
+enc_structure eDuplicateParent : Triple
+    flattened toPair : ePair flattened toPair : ePair where
+  fst : encNat, snd : encBool, w : encUnary
 
 /-- error: enc_structure: `Nat` is not a structure -/
 #guard_msgs in

@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.PolyTime.Int.DotProduct
 import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Foundations.Data.List.DotProduct
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -215,8 +216,7 @@ private theorem abs_matrix_le (C : List (List ℤ × ℤ)) (n : ℕ) (i : Fin C.
       ((2 ^ (encSystem C).length : ℕ) : ℤ) := by
   simp only [matrix, of_apply]
   by_cases hj : (j : ℕ) < C[i.1].1.length
-  · rw [List.getD_eq_getElem _ _ hj]
-    exact abs_le_two_pow (List.getElem_mem i.2) (Or.inl (List.getElem_mem hj))
+  · exact abs_le_two_pow (List.getElem_mem i.2) (Or.inl (List.getD_mem 0 hj))
   · rw [List.getD_eq_default _ _ (not_lt.1 hj), abs_zero]
     positivity
 
@@ -335,8 +335,7 @@ theorem notMem_of_certCheck {C : List (List ℤ × ℤ)} {q : List ℤ}
   · intro i
     have : 0 ≤ q.getD i 0 := by
       by_cases hi : (i : ℕ) < q.length
-      · rw [List.getD_eq_getElem _ _ hi]
-        exact hq _ (List.getElem_mem hi)
+      · exact hq _ (List.getD_mem 0 hi)
       · rw [List.getD_eq_default _ _ (not_lt.1 hi)]
     simp only [Pi.zero_apply]
     exact_mod_cast this
@@ -431,19 +430,6 @@ theorem computableInPolyTime_certCheck : ComputableInPolyTime certCheck
   · apply allWithInput (by fun_prop)
     apply allWithInput (by fun_prop)
     fun_prop
-
-/-- Membership in `NP` from a sound and complete polynomial-time check with short witnesses. -/
-private theorem mem_NP_of_check {α β : Type} {enc : α ↪ List Bool} {encW : β ↪ List Bool}
-    (D : Decoder encW) {A : Set α} {chk : α × β → Bool} {p : Polynomial ℕ}
-    (hchk : ComputableInPolyTime chk (encPair enc encW) encBool)
-    (hsound : ∀ a b, chk (a, b) = true → a ∈ A)
-    (hcomplete : ∀ a ∈ A, ∃ b, chk (a, b) = true ∧ (encW b).length ≤ p.eval (enc a).length) :
-    A ∈ NP enc := by
-  have hA : A = {a | ∃ b, chk (a, b) = true} := by
-    ext a
-    exact ⟨fun ha => (hcomplete a ha).imp fun _ hb => hb.1, fun ⟨b, hb⟩ => hsound a b hb⟩
-  rw [hA]
-  exact mem_NP_of_witness D hchk (fun _ _ => Iff.rfl) fun a b hb => hcomplete a (hsound a b hb)
 
 /-- **Rational LP feasibility is in `NP`.** -/
 theorem mem_NP : LPFeasibility ∈ NP (encSystem) :=

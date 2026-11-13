@@ -7,9 +7,7 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Game
-public import CslibFrontier.Languages.Probabilistic.Expect
-public import CslibFrontier.Probability.PMF.Event
+public import CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.ToReal
@@ -34,24 +32,18 @@ scheme `PKE = (Gen, Enc, Dec)` with explicit coin space `R` into two modular ste
      `fallback ← M`, returning a pseudorandom fallback key `H(true, fallback, c)` on
      decapsulation rejection so decapsulation never outputs failure externally.
 
-**Scope of this module**: this file formalizes `ExplicitCoinPKE` (together with expected
-worst-case-message `δ`-correctness `ExplicitCoinPKE.DeltaCorrect`, `γ`-spreadness
-`ExplicitCoinPKE.GammaSpread`, and the single-challenge fixed-message IND-CPA experiment
-`ExplicitCoinPKE.indCpaGame` / `ExplicitCoinPKE.indCpaAdvantage`) and the `T`, `FO^⊥`, and
-`FO-notbot` transforms together with their deterministic recovery and re-encryption rigidity
-lemmas. Adaptive random-oracle IND-CCA games, quantitative transfer of PKE `δ`-correctness to KEM
-correctness, and security reductions are deferred to follow-up modules.
+**Scope of this module**: this file formalizes the `T`, `FO^⊥`, and `FO-notbot` transforms together
+with their deterministic recovery and re-encryption rigidity lemmas. The generic explicit-coin PKE
+interface, correctness, spreadness, and fixed-message IND-CPA experiment live in
+`CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin`. Adaptive random-oracle IND-CCA games,
+quantitative transfer of PKE `δ`-correctness to KEM correctness, and security reductions are
+deferred to follow-up modules.
 
 ## Source map and model differences
 
 All section and figure locators refer to the full version of [HofheinzHoevelmannsKiltz2017] served
 by IACR ePrint 2017/604, dated **2 November 2021**:
 
-* **§2.1**: PKE syntax (`ExplicitCoinPKE`), expected worst-case-message `δ`-correctness
-  (`ExplicitCoinPKE.msgFailProb`, `ExplicitCoinPKE.keyPairMaxFailProb`,
-  `ExplicitCoinPKE.DeltaCorrect`), and `γ`-spreadness (`ExplicitCoinPKE.GammaSpread`).
-* **§2.1, Definition 2.2 / Figure 4**: IND-CPA security for PKE (contrasted with
-  `ExplicitCoinPKE.indCpaGame` and `ExplicitCoinPKE.indCpaAdvantage`; see difference 2 below).
 * **§3.1, Figure 5**: derandomization and re-encryption check transform `T[PKE, G]` (`encT`,
   `decT`).
 * **§3.2.1, Figure 9**: explicit-rejection KEM `FO^⊥ = U^⊥ ∘ T` (`Scheme.encapsBot`,
@@ -59,29 +51,16 @@ by IACR ePrint 2017/604, dated **2 November 2021**:
 * **§3.2.2, Figure 12**: implicit-rejection KEM `FO-notbot = U-notbot ∘ T` (`ImplicitSK`,
   `Scheme.keyGenNotBot`, `Scheme.encapsNotBot`, `Scheme.decapsNotBot`).
 
-This formalization differs from the paper's presentation in three respects:
+The PKE-level fixed-coin-type, arbitrary-sampler, and fixed-message IND-CPA differences are
+documented in `CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin`. This transform differs from the
+paper's presentation in two further respects:
 
-1. **Fixed coin/message types and arbitrary samplers (`sampleCoins`, `sampleMsg`, `sampleKey`) vs.
-   uniform draws and key-dependent coin space**: in [HofheinzHoevelmannsKiltz2017] (§2.1, §3.2.1
-   Fig. 9, §3.2.2 Fig. 12), encryption coins and encapsulated messages/fallback seeds are drawn
-   uniformly from finite sets (`r ←$ R`, `m ←$ M`, `s ←$ M`), and §2.1 permits the randomness
-   space `R` to depend on the public key `pk`. Here `ExplicitCoinPKE` and
-   `Scheme` use fixed types `R`, `M`, `K` (independent of `pk`) and parameterize the algorithms by
-   arbitrary `ProbComp` samplers `sampleCoins : ProbComp R`, `sampleMsg : ProbComp M`, and
-   `sampleKey : ProbComp K`. The deterministic transform lemmas (`decT_encT_eq_some`,
-   `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`, `Scheme.decapsNotBot_encT_eq`, etc.)
-   hold in this generality for arbitrary samplers and fixed functions `G, H`.
-2. **Single-stage fixed-message probability-difference `indCpaGame` / `indCpaAdvantage` vs.
-   HHK17 §2.1 Definition 2.2 / Figure 4**: in [HofheinzHoevelmannsKiltz2017] (§2.1, Def. 2.2,
-   Fig. 4), IND-CPA is a two-stage guessing experiment in which stage 1 of the adversary receives
-   `pk` and chooses a pair of challenge messages `(m₀, m₁)` in `M` (allowing key-dependent
-   message selection) along with state `st`, a uniform challenge bit `b ←$ {0, 1}` is drawn, stage
-   2 outputs a guess `b'`, and the advantage is normalized as `|Pr[b' = b] - 1/2|`. Here
-   `ExplicitCoinPKE.indCpaGame` and `ExplicitCoinPKE.indCpaAdvantage` formalize a single-stage
-   fixed-message distinguishing experiment parameterized by caller-supplied messages `m₀, m₁ : M`
-   fixed before `keyGen` (independent of `pk`), with unnormalized probability-difference advantage
-   `|Pr[indCpaGame m₀ m₁ false = true] - Pr[indCpaGame m₀ m₁ true = true]|` via `Game.advantage`.
-3. **Domain-separated `H : Bool × M × CT → K` in `FO-notbot`**: in [HofheinzHoevelmannsKiltz2017]
+1. **Fixed message/key types and arbitrary samplers**: in [HofheinzHoevelmannsKiltz2017]
+   (§3.2.1 Fig. 9, §3.2.2 Fig. 12), encapsulated messages, fallback seeds, and ideal keys are drawn
+   uniformly. Here `Scheme` uses fixed types `M`, `K` and arbitrary `ProbComp` samplers
+   `sampleMsg : ProbComp M` and `sampleKey : ProbComp K`. The deterministic transform lemmas hold
+   for arbitrary samplers and fixed functions `G, H`.
+2. **Domain-separated `H : Bool × M × CT → K` in `FO-notbot`**: in [HofheinzHoevelmannsKiltz2017]
    (§3.2.1 Fig. 9, §3.2.2 Fig. 12), `U^⊥` and `U-notbot` derive honest keys `H(m, c)` and
    implicit-rejection keys `H(s, c)` from a single untagged random oracle `H : M × CT → K` using a
    secret seed `s ←$ M`. Here `H` has domain `Bool × M × CT → K`, with `false` tagging valid key
@@ -91,25 +70,11 @@ This formalization differs from the paper's presentation in three respects:
    namespaces disjoint. It does not affect the deterministic correctness and re-encryption rigidity
    lemmas proved below; its effect on random-oracle security bounds is not analysed in this module.
 
-Unlike the standard-model bit-string KEM interfaces in `Cslib.Crypto.Encryption.KEMINDCPA`
-(`CslibFrontier/Crypto/Computational/Encryption/Hybrid.lean`),
-`Cslib.Crypto.Encryption.encryptKeyEncaps`
-(`CslibFrontier/Crypto/Computational/Encryption/KEMFromPKE.lean`), and
-`CslibFrontier/Crypto/Computational/Encryption/KEMFromPKE/CCA.lean` (which encrypt a sampled key
-directly without derandomization or re-encryption checks), `ExplicitCoinPKE` exposes the
-encryption coin space `R` and deterministic encryption `encDet : PK → M → R → CT` needed for `T`
-to recompute `Enc(pk, m'; G(m'))` during decapsulation.
+The imported `ExplicitCoinPKE` interface exposes the deterministic encryption needed for `T` to
+recompute `Enc(pk, m'; G(m'))` during decapsulation.
 
 ## Main definitions
 
-* `Cslib.Crypto.Protocols.ExplicitCoinPKE`: public-key encryption with explicit deterministic
-  encryption coins `encDet : PK → M → R → CT`.
-* `Cslib.Crypto.Protocols.ExplicitCoinPKE.DeltaCorrect`,
-  `Cslib.Crypto.Protocols.ExplicitCoinPKE.GammaSpread`: HHK17 `δ`-correctness and `γ`-spreadness
-  (§2.1).
-* `Cslib.Crypto.Protocols.ExplicitCoinPKE.indCpaGame`,
-  `Cslib.Crypto.Protocols.ExplicitCoinPKE.indCpaAdvantage`: single-stage fixed-message IND-CPA
-  game and probability-difference advantage.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.encT`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.decT`: the `T[PKE, G]` derandomization and re-encryption
   check transform (§3.1, Fig. 5).
@@ -118,12 +83,16 @@ to recompute `Enc(pk, m'; G(m'))` during decapsulation.
   bundle (`FO^⊥` via `Scheme.encapsBot` / `Scheme.decapsBot` (§3.2.1, Fig. 9) and
   domain-separated `FO-notbot` via `Scheme.keyGenNotBot` / `Scheme.encapsNotBot` /
   `Scheme.decapsNotBot` (§3.2.2, Fig. 12)).
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.decTM`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.decapsBotM`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.decapsNotBotM`: the `T` check and both
+  decapsulation algorithms with oracle access to `G` and `H` in any monad, run by the random-oracle
+  games. `decT`, `decapsBot` and `decapsNotBot` are these in the identity monad; with pure oracles
+  in any lawful monad the decapsulations return `decapsBot` and `decapsNotBot`
+  (`Scheme.decapsBotM_pure`, `Scheme.decapsNotBotM_pure`).
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.ExplicitCoinPKE.deltaCorrect_zero_of_perfect`,
-  `Cslib.Crypto.Protocols.ExplicitCoinPKE.DeltaCorrect.mono`: zero-error correctness and
-  monotonicity in `δ`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.decT_encT_eq_some`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.encT_of_decT_eq_some`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.dec_of_decT_eq_some`,
@@ -150,154 +119,6 @@ namespace Cslib.Crypto.Protocols
 open Probability
 open scoped NNReal ENNReal
 
-/-- A public-key encryption scheme `PKE = (Gen, Enc, Dec)` with explicit encryption coins `r : R`
-([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §2.1): randomized encryption draws
-`r ← sampleCoins` and evaluates deterministic encryption `encDet pk m r`, allowing
-Fujisaki–Okamoto transforms to derandomize encryption with `G(m) : R` and perform exact
-re-encryption checks. Unlike §2.1's uniform draw from a potentially `pk`-dependent coin space,
-`R` is a fixed type and `sampleCoins : ProbComp R` is an arbitrary sampler. -/
-structure ExplicitCoinPKE (PK SK M R CT : Type) where
-  /-- Key generation `(pk, sk) ← keyGen`. -/
-  keyGen : ProbComp (PK × SK)
-  /-- Encryption coin sampler `r ← sampleCoins`. -/
-  sampleCoins : ProbComp R
-  /-- Deterministic encryption `Enc(pk, m; r)` with explicit coins `r : R`. -/
-  encDet : PK → M → R → CT
-  /-- Deterministic decryption `Dec(sk, c) ∈ M ∪ {⊥}`. -/
-  dec : SK → CT → Option M
-
-namespace ExplicitCoinPKE
-
-variable {PK SK M R CT : Type}
-
-/-- Randomized encryption `Enc(pk, m)` drawing fresh coins `r ← sampleCoins`. -/
-def encrypt (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (m : M) : ProbComp CT := do
-  let r ← P.sampleCoins
-  return P.encDet pk m r
-
-/-- Per-message decryption failure probability `Pr_{r ← sampleCoins}[Dec(sk, Enc(pk, m; r)) ≠ m]`
-for a fixed key pair `(pk, sk)` and message `m` ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604
-(2 Nov 2021), §2.1, generalized from uniform coins to `sampleCoins`). -/
-noncomputable def msgFailProb
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) (m : M) : ℝ :=
-  ((ProbComp.eval P.sampleCoins).toOuterMeasure
-    {r | P.dec sk (P.encDet pk m r) ≠ some m}).toReal
-
-theorem msgFailProb_nonneg
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) (m : M) :
-    0 ≤ P.msgFailProb pk sk m :=
-  ENNReal.toReal_nonneg
-
-theorem msgFailProb_le_one
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) (m : M) :
-    P.msgFailProb pk sk m ≤ 1 := by
-  rw [msgFailProb]
-  exact PMF.toOuterMeasure_toReal_le_one _ _
-
-/-- If `Dec(sk, Enc(pk, m; r)) = some m` holds for every supported coin `r`, the message failure
-probability at `(pk, sk, m)` is `0`. -/
-theorem msgFailProb_eq_zero_of_support
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) (m : M)
-    (hdec : ∀ r ∈ (ProbComp.eval P.sampleCoins).support, P.dec sk (P.encDet pk m r) = some m) :
-    P.msgFailProb pk sk m = 0 := by
-  rw [msgFailProb, ENNReal.toReal_eq_zero_iff]
-  left
-  rw [_root_.PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-  intro r hr hne
-  exact hne (hdec r hr)
-
-/-- Worst-case-over-messages decryption failure probability
-`max_{m ∈ M} Pr_{r ← sampleCoins}[Dec(sk, Enc(pk, m; r)) ≠ m]` for a fixed key pair `(pk, sk)`
-([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §2.1). -/
-noncomputable def keyPairMaxFailProb [Fintype M] [Nonempty M]
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) : ℝ :=
-  Finset.univ.sup' Finset.univ_nonempty (fun m => P.msgFailProb pk sk m)
-
-theorem msgFailProb_le_keyPairMaxFailProb [Fintype M] [Nonempty M]
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) (m : M) :
-    P.msgFailProb pk sk m ≤ P.keyPairMaxFailProb pk sk :=
-  Finset.le_sup' (f := fun m => P.msgFailProb pk sk m) (Finset.mem_univ m)
-
-theorem keyPairMaxFailProb_nonneg [Fintype M] [Nonempty M]
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) :
-    0 ≤ P.keyPairMaxFailProb pk sk := by
-  obtain ⟨m₀⟩ := ‹Nonempty M›
-  exact le_trans (P.msgFailProb_nonneg pk sk m₀) (P.msgFailProb_le_keyPairMaxFailProb pk sk m₀)
-
-theorem keyPairMaxFailProb_le_one [Fintype M] [Nonempty M]
-    (P : ExplicitCoinPKE PK SK M R CT) (pk : PK) (sk : SK) :
-    P.keyPairMaxFailProb pk sk ≤ 1 := by
-  rw [keyPairMaxFailProb, Finset.sup'_le_iff]
-  intro m _
-  exact P.msgFailProb_le_one pk sk m
-
-/-- **HHK17 `δ`-correctness** ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §2.1,
-generalized from uniform coins to `sampleCoins`): the expectation over `(pk, sk) ← keyGen` of the
-worst-case message decryption failure probability is at most `δ`:
-`E_{(pk, sk) ← keyGen}[max_{m ∈ M} Pr_{r ← sampleCoins}[Dec(sk, Enc(pk, m; r)) ≠ m]] ≤ δ`. -/
-def DeltaCorrect [Fintype M] [Nonempty M]
-    (P : ExplicitCoinPKE PK SK M R CT) (δ : ℝ) : Prop :=
-  (P.keyGen.expect fun (pk, sk) => ENNReal.ofReal (P.keyPairMaxFailProb pk sk)).toReal ≤ δ
-
-/-- Monotonicity of `DeltaCorrect` in the failure bound `δ`. -/
-theorem DeltaCorrect.mono [Fintype M] [Nonempty M]
-    {P : ExplicitCoinPKE PK SK M R CT} {δ δ' : ℝ}
-    (h : P.DeltaCorrect δ) (hle : δ ≤ δ') : P.DeltaCorrect δ' :=
-  le_trans h hle
-
-/-- A public-key encryption scheme whose supported key pairs and coins never incur decryption
-errors is `0`-correct (`DeltaCorrect P 0`). -/
-theorem deltaCorrect_zero_of_perfect [Fintype M] [Nonempty M]
-    (P : ExplicitCoinPKE PK SK M R CT)
-    (hperf : ∀ pk sk, (pk, sk) ∈ (ProbComp.eval P.keyGen).support →
-      ∀ m, ∀ r ∈ (ProbComp.eval P.sampleCoins).support,
-        P.dec sk (P.encDet pk m r) = some m) :
-    P.DeltaCorrect 0 := by
-  unfold DeltaCorrect
-  have hcongr : P.keyGen.expect (fun (pk, sk) => ENNReal.ofReal (P.keyPairMaxFailProb pk sk)) =
-      P.keyGen.expect (fun _ => 0) := by
-    refine ProbComp.expect_congr_on_support ?_
-    rintro ⟨pk, sk⟩ hkeys
-    rw [← ProbComp.support_eval] at hkeys
-    have hmax : P.keyPairMaxFailProb pk sk = 0 := by
-      apply le_antisymm _ (P.keyPairMaxFailProb_nonneg pk sk)
-      rw [keyPairMaxFailProb, Finset.sup'_le_iff]
-      intro m _
-      exact le_of_eq (P.msgFailProb_eq_zero_of_support pk sk m (hperf pk sk hkeys m))
-    simp [hmax]
-  rw [hcongr, ProbComp.expect_zero, ENNReal.toReal_zero]
-
-/-- **HHK17 `γ`-spreadness** ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §2.1,
-generalized from uniform coins to `sampleCoins`): for every supported key pair
-`(pk, sk) ∈ support(keyGen)`, message `m`, and ciphertext `c`, encryption hits `c` with
-probability at most `2 ^ (-γ)` over fresh coins `r ← sampleCoins`. -/
-def GammaSpread (P : ExplicitCoinPKE PK SK M R CT) (γ : ℝ) : Prop :=
-  ∀ pk sk, (pk, sk) ∈ (ProbComp.eval P.keyGen).support → ∀ (m : M) (c : CT),
-    ((ProbComp.eval P.sampleCoins).toOuterMeasure
-      {r | P.encDet pk m r = c}).toReal ≤ (2 : ℝ) ^ (-γ)
-
-/-- Single-challenge fixed-message IND-CPA experiment for `ExplicitCoinPKE`: on bit `false` the
-challenger encrypts `m₀`, and on bit `true` it encrypts `m₁`. Unlike [HofheinzHoevelmannsKiltz2017]
-(ePrint 2017/604 (2 Nov 2021), §2.1, Def. 2.2 / Fig. 4), where a first-stage adversary receives
-`pk` and chooses `(m₀, m₁)` with state, `(m₀, m₁)` are fixed caller-supplied messages independent
-of `pk`. -/
-def indCpaGame (P : ExplicitCoinPKE PK SK M R CT) (m₀ m₁ : M) (bit : Bool)
-    (adversary : PK → CT → ProbComp Bool) : ProbComp Bool := do
-  let (pk, _) ← P.keyGen
-  let c ← P.encrypt pk (if bit then m₁ else m₀)
-  adversary pk c
-
-/-- Single-challenge fixed-message IND-CPA probability-difference advantage
-`|Pr[indCpaGame m₀ m₁ false = true] - Pr[indCpaGame m₀ m₁ true = true]|` via `Game.advantage`
-(whereas [HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §2.1, Def. 2.2 / Fig. 4
-defines `|Pr[b' = b] - 1/2|` in a two-stage key-dependent-message guessing game). -/
-noncomputable def indCpaAdvantage (P : ExplicitCoinPKE PK SK M R CT) (m₀ m₁ : M)
-    (adversary : PK → CT → ProbComp Bool) : ℝ≥0 :=
-  Game.advantage (ProbComp.eval (P.indCpaGame m₀ m₁ false adversary))
-    (ProbComp.eval (P.indCpaGame m₀ m₁ true adversary))
-
-end ExplicitCoinPKE
-
 namespace FujisakiOkamoto
 
 /-! ### `T[PKE, G]`: Derandomization with Mandatory Re-Encryption Check -/
@@ -313,26 +134,55 @@ def encT (P : ExplicitCoinPKE PK SK M R CT) (G : M → R) (pk : PK) (m : M) : CT
 
 /-- Derandomized decryption `Dec_1(pk, sk, c)` of `T[PKE, G]` with mandatory re-encryption check
 ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §3.1, Fig. 5): runs
-`m' ← Dec(sk, c)` and accepts `m'` only when `Enc(pk, m'; G(m')) = c`. -/
+`m' ← Dec(sk, c)` and accepts `m'` only when `Enc(pk, m'; G(m')) = c`, with oracle access to
+`G : M → m R` in a monad `m`. `G` is queried only when `Dec` succeeds. The random-oracle games run
+it with lazily sampled `G`; `decT` is the case of a fixed function `G`. -/
+def decTM [DecidableEq CT] {m : Type → Type} [Monad m] (P : ExplicitCoinPKE PK SK M R CT)
+    (G : M → m R) (pk : PK) (sk : SK) (c : CT) : m (Option M) :=
+  match P.dec sk c with
+  | none => return none
+  | some m' => do
+    let r' ← G m'
+    return if P.encDet pk m' r' = c then some m' else none
+
+/-- Derandomized decryption `Dec_1(pk, sk, c)` of `T[PKE, G]` with mandatory re-encryption check
+([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §3.1, Fig. 5) for a fixed
+function `G`: `decTM` in the identity monad. -/
 def decT [DecidableEq CT] (P : ExplicitCoinPKE PK SK M R CT) (G : M → R)
     (pk : PK) (sk : SK) (c : CT) : Option M :=
-  match P.dec sk c with
-  | none => none
-  | some m' => if encT P G pk m' = c then some m' else none
+  decTM (m := Id) P G pk sk c
+
+/-- `decT` runs `m' ← Dec(sk, c)` and accepts `m'` only when `Enc(pk, m'; G(m')) = c`. -/
+theorem decT_eq [DecidableEq CT] (P : ExplicitCoinPKE PK SK M R CT) (G : M → R)
+    (pk : PK) (sk : SK) (c : CT) :
+    decT P G pk sk c =
+      match P.dec sk c with
+      | none => none
+      | some m' => if encT P G pk m' = c then some m' else none := by
+  unfold decT decTM encT
+  cases P.dec sk c <;> rfl
+
+/-- With a pure oracle, `decTM` is `decT`. -/
+@[simp] theorem decTM_pure [DecidableEq CT] {m : Type → Type} [Monad m] [LawfulMonad m]
+    (P : ExplicitCoinPKE PK SK M R CT) (G : M → R) (pk : PK) (sk : SK) (c : CT) :
+    decTM (m := m) P (pure ∘ G) pk sk c = pure (decT P G pk sk c) := by
+  rw [decT_eq]
+  unfold decTM encT
+  cases P.dec sk c <;> simp
 
 /-- Whenever `Dec(sk, Enc_1(pk, m)) = some m`, the re-encryption check succeeds and `decT`
 recovers `some m`. -/
 theorem decT_encT_eq_some [DecidableEq CT] (P : ExplicitCoinPKE PK SK M R CT) (G : M → R)
     (pk : PK) (sk : SK) (m : M) (hdec : P.dec sk (encT P G pk m) = some m) :
     decT P G pk sk (encT P G pk m) = some m := by
-  simp [decT, hdec]
+  simp [decT_eq, hdec]
 
 /-- **Rigidity of `T`**: any plaintext `m'` accepted by `decT` re-encrypts strictly to `c`, and
 satisfies `P.dec sk c = some m'`. -/
 theorem encT_of_decT_eq_some [DecidableEq CT] {P : ExplicitCoinPKE PK SK M R CT} {G : M → R}
     {pk : PK} {sk : SK} {c : CT} {m' : M} (h : decT P G pk sk c = some m') :
     encT P G pk m' = c := by
-  unfold decT at h
+  rw [decT_eq] at h
   cases hdec : P.dec sk c with
   | none => simp [hdec] at h
   | some m₀ =>
@@ -344,7 +194,7 @@ theorem encT_of_decT_eq_some [DecidableEq CT] {P : ExplicitCoinPKE PK SK M R CT}
 theorem dec_of_decT_eq_some [DecidableEq CT] {P : ExplicitCoinPKE PK SK M R CT} {G : M → R}
     {pk : PK} {sk : SK} {c : CT} {m' : M} (h : decT P G pk sk c = some m') :
     P.dec sk c = some m' := by
-  unfold decT at h
+  rw [decT_eq] at h
   cases hdec : P.dec sk c with
   | none => simp [hdec] at h
   | some m₀ =>
@@ -358,7 +208,7 @@ theorem decT_eq_none_of_reencrypt_ne [DecidableEq CT] (P : ExplicitCoinPKE PK SK
     (G : M → R) (pk : PK) (sk : SK) (c : CT)
     (hbad : ∀ m', P.dec sk c = some m' → encT P G pk m' ≠ c) :
     decT P G pk sk c = none := by
-  unfold decT
+  rw [decT_eq]
   cases hdec : P.dec sk c with
   | none => rfl
   | some m' => exact ite_eq_right (hbad m' hdec)
@@ -393,6 +243,82 @@ structure Scheme (PK SK M R CT K : Type) where
 
 namespace Scheme
 
+/-! ### Decapsulation with oracle access
+
+The random-oracle games answer `G` and `H` lazily, so their decapsulation oracles run the
+decapsulation algorithms with `G : M → m R` and `H : Bool × M × CT → m K` given as oracles in a
+monad `m`. Both run the `T` check `decTM` and add only their rejection policy and `H` query.
+`decapsBotM_eq` and `decapsNotBotM_eq` unfold them into explicit oracle calls. The fixed-function
+decapsulations `decapsBot` and `decapsNotBot` below are these algorithms in the identity monad; with
+pure oracles in any lawful monad, the oracle-access versions return them (`decapsBotM_pure`,
+`decapsNotBotM_pure`). -/
+
+section OracleAccess
+
+variable {PK SK M R CT K : Type} [DecidableEq CT] {m : Type → Type} [Monad m]
+
+/-- Explicit-rejection decapsulation `Decaps^⊥(pk, sk, c)` of `FO^⊥` with oracle access to `G` and
+`H`: returns `some (H(false, m', c))` when `decTM` accepts `m'`, and `none` otherwise. -/
+def decapsBotM (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K) (pk : PK)
+    (sk : SK) (c : CT) : m (Option K) := do
+  match ← decTM S.pke G pk sk c with
+  | some m' => some <$> H (false, m', c)
+  | none => return none
+
+/-- Implicit-rejection decapsulation `Decaps-notbot(dk, c)` of `FO-notbot` with oracle access to
+`G` and `H`: returns `H(false, m', c)` when `decTM` accepts `m'`, and the fallback key
+`H(true, dk.fallback, c)` otherwise. -/
+def decapsNotBotM (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K)
+    (dk : ImplicitSK PK SK M) (c : CT) : m K := do
+  match ← decTM S.pke G dk.pk dk.sk c with
+  | some m' => H (false, m', c)
+  | none => H (true, dk.fallback, c)
+
+variable [LawfulMonad m]
+
+/-- `decapsBotM` as explicit oracle calls: no query when `Dec` fails; otherwise `G(m')`, then
+`H(false, m', c)` exactly when the re-encryption check passes. -/
+theorem decapsBotM_eq (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K)
+    (pk : PK) (sk : SK) (c : CT) :
+    S.decapsBotM G H pk sk c =
+      (match S.pke.dec sk c with
+      | none => return none
+      | some m' => do
+        let r' ← G m'
+        if S.pke.encDet pk m' r' = c then do
+          let k ← H (false, m', c)
+          return some k
+        else
+          return none) := by
+  unfold decapsBotM decTM
+  cases S.pke.dec sk c with
+  | none => simp
+  | some m' =>
+    simp only [bind_assoc, pure_bind]
+    refine bind_congr fun r' => ?_
+    split_ifs <;> simp
+
+/-- `decapsNotBotM` as explicit oracle calls: `H(true, dk.fallback, c)` when `Dec` fails;
+otherwise `G(m')`, then `H(false, m', c)` or `H(true, dk.fallback, c)` by the re-encryption
+check. -/
+theorem decapsNotBotM_eq (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K)
+    (dk : ImplicitSK PK SK M) (c : CT) :
+    S.decapsNotBotM G H dk c =
+      (match S.pke.dec dk.sk c with
+      | none => H (true, dk.fallback, c)
+      | some m' => do
+        let r' ← G m'
+        if S.pke.encDet dk.pk m' r' = c then H (false, m', c) else H (true, dk.fallback, c)) := by
+  unfold decapsNotBotM decTM
+  cases S.pke.dec dk.sk c with
+  | none => simp
+  | some m' =>
+    simp only [bind_assoc, pure_bind]
+    refine bind_congr fun r' => ?_
+    split_ifs <;> rfl
+
+end OracleAccess
+
 section FixedOracles
 
 variable {PK SK M R CT K : Type}
@@ -408,11 +334,18 @@ def encapsBot (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT →
   return (c, H (false, m, c))
 
 /-- Explicit-rejection decapsulation `Decaps^⊥(pk, sk, c)` for `FO^⊥ = U^⊥ ∘ T`
-([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §3.2.1, Fig. 9): returns
-`some (H(false, m', c))` when `decT` accepts `m'`, and `none` otherwise. -/
+([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §3.2.1, Fig. 9) with fixed
+functions `G` and `H`: `decapsBotM` in the identity monad. It returns `some (H(false, m', c))`
+when `decT` accepts `m'`, and `none` otherwise (`decapsBot_eq`). -/
 def decapsBot [DecidableEq CT] (S : Scheme PK SK M R CT K) (G : M → R)
     (H : Bool × M × CT → K) (pk : PK) (sk : SK) (c : CT) : Option K :=
-  (decT S.pke G pk sk c).map fun m' => H (false, m', c)
+  S.decapsBotM (m := Id) G H pk sk c
+
+/-- `decapsBot` returns `some (H(false, m', c))` when `decT` accepts `m'`, and `none` otherwise. -/
+theorem decapsBot_eq [DecidableEq CT] (S : Scheme PK SK M R CT K) (G : M → R)
+    (H : Bool × M × CT → K) (pk : PK) (sk : SK) (c : CT) :
+    S.decapsBot G H pk sk c = (decT S.pke G pk sk c).map fun m' => H (false, m', c) :=
+  rfl
 
 /-- Honest recovery for `FO^⊥`: whenever `Dec(sk, Enc_1(pk, m)) = some m`, `decapsBot` returns
 `some (H(false, m, Enc_1(pk, m)))`. -/
@@ -420,13 +353,13 @@ theorem decapsBot_encT_eq_some [DecidableEq CT] (S : Scheme PK SK M R CT K) (G :
     (H : Bool × M × CT → K) (pk : PK) (sk : SK) (m : M)
     (hdec : S.pke.dec sk (encT S.pke G pk m) = some m) :
     S.decapsBot G H pk sk (encT S.pke G pk m) = some (H (false, m, encT S.pke G pk m)) := by
-  simp [decapsBot, decT_encT_eq_some S.pke G pk sk m hdec]
+  simp [decapsBot_eq, decT_encT_eq_some S.pke G pk sk m hdec]
 
 theorem decapsBot_eq_none_of_decT_eq_none [DecidableEq CT] (S : Scheme PK SK M R CT K)
     (G : M → R) (H : Bool × M × CT → K) (pk : PK) (sk : SK) (c : CT)
     (hnone : decT S.pke G pk sk c = none) :
     S.decapsBot G H pk sk c = none := by
-  simp [decapsBot, hnone]
+  simp [decapsBot_eq, hnone]
 
 /-- Explicit rejection for `FO^⊥`: any tampered ciphertext failing the re-encryption check
 decapsulates to `none`. -/
@@ -455,14 +388,23 @@ def encapsNotBot (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT 
 
 /-- Implicit-rejection decapsulation `Decaps-notbot(dk, c)` for the domain-separated variant of
 `FO-notbot = U-notbot ∘ T` ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §3.2.2,
-Fig. 12): returns `H(false, m', c)` when `decT` accepts `m'`, and returns the domain-separated
-pseudorandom fallback key `H(true, dk.fallback, c)` otherwise (where the `Bool` tag separates
-valid key derivations from rejection evaluations, in place of HHK17's untagged `H(s, c)`). -/
+Fig. 12) with fixed functions `G` and `H`: `decapsNotBotM` in the identity monad. It returns
+`H(false, m', c)` when `decT` accepts `m'`, and the domain-separated pseudorandom fallback key
+`H(true, dk.fallback, c)` otherwise (`decapsNotBot_eq`), where the `Bool` tag separates valid key
+derivations from rejection evaluations, in place of HHK17's untagged `H(s, c)`. -/
 def decapsNotBot [DecidableEq CT] (S : Scheme PK SK M R CT K) (G : M → R)
     (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (c : CT) : K :=
-  match decT S.pke G dk.pk dk.sk c with
-  | some m' => H (false, m', c)
-  | none => H (true, dk.fallback, c)
+  S.decapsNotBotM (m := Id) G H dk c
+
+/-- `decapsNotBot` returns `H(false, m', c)` when `decT` accepts `m'`, and the fallback key
+`H(true, dk.fallback, c)` otherwise. -/
+theorem decapsNotBot_eq [DecidableEq CT] (S : Scheme PK SK M R CT K) (G : M → R)
+    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (c : CT) :
+    S.decapsNotBot G H dk c =
+      (match decT S.pke G dk.pk dk.sk c with
+      | some m' => H (false, m', c)
+      | none => H (true, dk.fallback, c)) :=
+  rfl
 
 /-- Honest recovery for `FO-notbot`: whenever `Dec(dk.sk, Enc_1(dk.pk, m)) = some m`, the
 re-encryption check passes and `decapsNotBot` outputs `H(false, m, Enc_1(dk.pk, m))`. -/
@@ -470,13 +412,13 @@ theorem decapsNotBot_encT_eq [DecidableEq CT] (S : Scheme PK SK M R CT K) (G : M
     (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (m : M)
     (hdec : S.pke.dec dk.sk (encT S.pke G dk.pk m) = some m) :
     S.decapsNotBot G H dk (encT S.pke G dk.pk m) = H (false, m, encT S.pke G dk.pk m) := by
-  simp [decapsNotBot, decT_encT_eq_some S.pke G dk.pk dk.sk m hdec]
+  simp [decapsNotBot_eq, decT_encT_eq_some S.pke G dk.pk dk.sk m hdec]
 
 theorem decapsNotBot_of_decT_eq_none [DecidableEq CT] (S : Scheme PK SK M R CT K)
     (G : M → R) (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (c : CT)
     (hnone : decT S.pke G dk.pk dk.sk c = none) :
     S.decapsNotBot G H dk c = H (true, dk.fallback, c) := by
-  simp [decapsNotBot, hnone]
+  simp [decapsNotBot_eq, hnone]
 
 /-- Implicit pseudorandom rejection for `FO-notbot`: any tampered ciphertext failing the
 re-encryption check decapsulates to `H(true, dk.fallback, c)`. -/
@@ -488,6 +430,35 @@ theorem decapsNotBot_of_reencrypt_ne [DecidableEq CT] (S : Scheme PK SK M R CT K
     (decT_eq_none_of_reencrypt_ne S.pke G dk.pk dk.sk c hbad)
 
 end FixedOracles
+
+/-! ### Pure oracles
+
+With pure oracles `pure ∘ G` and `pure ∘ H` in any lawful monad, the oracle-access decapsulations
+return the fixed-function ones. -/
+
+section PureOracles
+
+variable {PK SK M R CT K : Type} [DecidableEq CT] {m : Type → Type} [Monad m] [LawfulMonad m]
+
+/-- With pure oracles, `decapsBotM` is the fixed-function decapsulation `decapsBot`. -/
+@[simp] theorem decapsBotM_pure (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
+    (pk : PK) (sk : SK) (c : CT) :
+    S.decapsBotM (m := m) (pure ∘ G) (pure ∘ H) pk sk c = pure (S.decapsBot G H pk sk c) := by
+  rw [decapsBot_eq]
+  unfold decapsBotM
+  rw [decTM_pure, pure_bind]
+  cases decT S.pke G pk sk c <;> simp
+
+/-- With pure oracles, `decapsNotBotM` is the fixed-function decapsulation `decapsNotBot`. -/
+@[simp] theorem decapsNotBotM_pure (S : Scheme PK SK M R CT K) (G : M → R)
+    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (c : CT) :
+    S.decapsNotBotM (m := m) (pure ∘ G) (pure ∘ H) dk c = pure (S.decapsNotBot G H dk c) := by
+  rw [decapsNotBot_eq]
+  unfold decapsNotBotM
+  rw [decTM_pure, pure_bind]
+  cases decT S.pke G dk.pk dk.sk c <;> rfl
+
+end PureOracles
 
 end Scheme
 

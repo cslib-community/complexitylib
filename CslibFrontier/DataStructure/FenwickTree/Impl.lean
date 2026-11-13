@@ -8,14 +8,15 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.DataStructure.FenwickTree.Basic
+public import CslibFrontier.DataStructure.PrefixSums.Spec
 public import CslibFrontier.DataStructure.StateTransition.Resource
+public import CslibFrontier.DataStructure.StateTransition.StepFunction
 
 /-!
 # Stateful Dynamic Prefix-Sum Implementation by Fenwick Trees
 
-This module defines a representation-independent `Cslib.DataStructure.StateTransitionSpec` for
-fixed-length dynamic
-prefix-sum sequences (`add`, `prefixSum`) over any `[AddCommMonoid α]` and realizes it by
+This module realizes the representation-independent dynamic prefix-sum specification
+`Cslib.DataStructure.PrefixSums.spec` (`add`, `sum`) over any `[AddCommMonoid α]` by
 `Cslib.DataStructure.FenwickTree` with per-operation node-visit budget
 `Nat.clog 2 (s.length + 1)` (`0` when `s = []`, `⌊log₂ s.length⌋ + 1` when `s ≠ []`).
 
@@ -39,12 +40,11 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
 
 ## Main definitions
 
-* `Cslib.DataStructure.FenwickTree.Op`, `spec`: representation-independent dynamic prefix-sum
-  operations and `List α` specification.
 * `Cslib.DataStructure.FenwickTree.step`, `Exec`, `run`: concrete `TimeM`-backed execution step,
-  native execution relation, and executable client interpreter.
-* `Cslib.DataStructure.FenwickTree.impl`: `Cslib.DataStructure.StateTransitionImpl` of `spec α`
-  using
+  native execution relation, and executable client interpreter, built with
+  `Cslib.DataStructure.Execution.ofStep`.
+* `Cslib.DataStructure.FenwickTree.impl`: `Cslib.DataStructure.StateTransitionImpl` of
+  `PrefixSums.spec α` using
   `Valid` directly as the representation invariant (`rep s t := Valid t s`).
 * `Cslib.DataStructure.FenwickTree.charge`: representation-independent logarithmic node-visit
   budget `Nat.clog 2 (s.length + 1)`.
@@ -54,7 +54,7 @@ history starting from `s` simplifies to `k * Nat.clog 2 (s.length + 1)` (`totalC
 * `Cslib.DataStructure.FenwickTree.stepBound`: logarithmic `Cslib.DataStructure.Bound`
   certificate.
 * `Cslib.DataStructure.FenwickTree.totalCost_charge`: for any history `os`,
-  `(spec α).totalCost charge s os = os.length * Nat.clog 2 (s.length + 1)`.
+  `(PrefixSums.spec α).totalCost charge s os = os.length * Nat.clog 2 (s.length + 1)`.
 * `Cslib.DataStructure.FenwickTree.realized_client`, `run_correct`: adaptive dynamic prefix-sum
   clients execute with `List α` correctness and additive `Nat.clog 2 (s.length + 1)` bounds.
 
@@ -69,71 +69,31 @@ namespace Cslib.DataStructure.FenwickTree
 
 open Cslib.DataStructure
 
-/-- Dynamic prefix-sum operations over `α`, independent of storage representation. -/
-inductive Op (α : Type) where
-  /-- Increment the entry at `0`-based index `pos` by `delta` (no-op when out of bounds). -/
-  | add (pos : ℕ) (delta : α)
-  /-- Query the sum `(s.take len).sum` of the first `len` elements. -/
-  | prefixSum (len : ℕ)
-  deriving DecidableEq, Repr
-
-/-- Return types for `Op α`. -/
-abbrev Op.Result (α : Type) : Op α → Type
-  | .add _ _ => Unit
-  | .prefixSum _ => α
-
-/-- Pure transition function of dynamic prefix sums on `List α`. -/
-@[expose] def specStep {α : Type} [AddCommMonoid α] (s : List α) :
-    (o : Op α) → List α × o.Result α
-  | .add pos δ => (addAt s pos δ, ())
-  | .prefixSum len => (s, (s.take len).sum)
-
-/-- Mathematical specification of dynamic prefix sums on `List α`. All operations are admissible:
-out-of-bounds `add` is a no-op and `prefixSum len` sums `s.take len`. -/
-abbrev spec (α : Type) [AddCommMonoid α] : StateTransitionSpec :=
-  StateTransitionSpec.ofFn (State := List α) (Op := Op α) (Result := Op.Result α) specStep
-
 variable {α : Type} [AddCommMonoid α]
 
-@[simp]
-theorem length_spec_step (s : List α) (o : Op α) :
-    ((spec α).stepFn s o).1.length = s.length := by
-  cases o with
-  | add pos δ => exact length_addAt s pos δ
-  | prefixSum len => rfl
-
-/-- Execute a single `Op α` on `t : FenwickTree α`, returning the updated tree, observation, and
-exact `TimeM` node-visit count. -/
-@[expose] def step (t : FenwickTree α) (o : Op α) : FenwickTree α × (spec α).Result o × ℕ :=
+/-- Execute a single `PrefixSums.Op α` on `t : FenwickTree α`, returning the updated tree,
+observation, and exact `TimeM` node-visit count. -/
+@[expose] def step (t : FenwickTree α) (o : PrefixSums.Op α) :
+    StepResult (FenwickTree α) ℕ ((PrefixSums.spec α).Result o) :=
   match o with
   | .add pos δ =>
       let m := addM t pos δ
-      (m.ret, (), m.time)
-  | .prefixSum len =>
+      ⟨m.ret, (), m.time⟩
+  | .sum len =>
       let m := prefixSumM t len
-      (t, m.ret, m.time)
+      ⟨t, m.ret, m.time⟩
 
-/-- Native execution relation for `spec α` over `FenwickTree α`. -/
-@[expose] def Exec : Execution (spec α) (FenwickTree α) ℕ :=
-  fun t o a t' c => step t o = (t', a, c)
+/-- Native execution relation for `PrefixSums.spec α` over `FenwickTree α`. -/
+abbrev Exec : Execution (PrefixSums.spec α) (FenwickTree α) ℕ := Execution.ofStep step
 
-/-- Semantic realization of `spec α` by `FenwickTree α`, using `Valid t s` directly as the
-representation invariant. -/
-@[expose] def impl : StateTransitionImpl (spec α) (Exec (α := α)) :=
-  StateTransitionImpl.ofFn
-    (rep := fun s t => Valid t s)
-    (total := fun {_ t} o _ _ =>
-      match h : step t o with
-      | (t', a, c) => ⟨a, t', c, h⟩)
-    (correct := by
-      intro s t o a t' c hr _ he
+/-- Semantic realization of `PrefixSums.spec α` by `FenwickTree α`, using `Valid t s` directly as
+the representation invariant. -/
+@[expose] def impl : StateTransitionImpl (PrefixSums.spec α) (Exec (α := α)) :=
+  StateTransitionImpl.ofStep (D := PrefixSums.spec α) (fun s t => Valid t s) step
+    fun o hr _ => by
       cases o with
-      | add pos δ =>
-        cases he
-        exact ⟨rfl, valid_add hr pos δ⟩
-      | prefixSum len =>
-        cases he
-        exact ⟨ret_prefixSumM_eq hr len, hr⟩)
+      | add pos δ => exact ⟨rfl, valid_add hr pos δ⟩
+      | sum len => exact ⟨ret_prefixSumM_eq hr len, hr⟩
 
 @[simp]
 theorem impl_rep (s : List α) (t : FenwickTree α) :
@@ -141,17 +101,19 @@ theorem impl_rep (s : List α) (t : FenwickTree α) :
 
 /-- Representation-independent per-operation node-visit budget `⌈log₂ (|s| + 1)⌉`
 (`0` when `s = []`, `⌊log₂ |s|⌋ + 1` when `s ≠ []`). -/
-@[expose] def charge (s : List α) (_ : Op α) : ℕ :=
+@[expose] def charge (s : List α) (_ : PrefixSums.Op α) : ℕ :=
   Nat.clog 2 (s.length + 1)
 
-/-- Because every `Op α` preserves `s.length`, the abstract `totalCost` along any history `os`
-equals `os.length * Nat.clog 2 (s.length + 1)`. -/
-theorem totalCost_charge (s : List α) (os : List (Op α)) :
-    (spec α).totalCost (charge (α := α)) s os = os.length * Nat.clog 2 (s.length + 1) := by
+/-- Because every `PrefixSums.Op α` preserves `s.length`, the abstract `totalCost` along any
+history `os` equals `os.length * Nat.clog 2 (s.length + 1)`. -/
+theorem totalCost_charge (s : List α) (os : List (PrefixSums.Op α)) :
+    (PrefixSums.spec α).totalCost (charge (α := α)) s os =
+      os.length * Nat.clog 2 (s.length + 1) := by
   induction os generalizing s with
   | nil => simp only [StateTransitionSpec.totalCost_nil, List.length_nil, Nat.zero_mul]
   | cons o os ih =>
-    rw [StateTransitionSpec.totalCost_cons, ih ((spec α).stepFn s o).1, length_spec_step]
+    rw [StateTransitionSpec.totalCost_cons, ih ((PrefixSums.spec α).stepFn s o).1,
+      PrefixSums.length_stepFn]
     simp only [charge, List.length_cons, Nat.add_mul, Nat.one_mul, Nat.add_comm]
 
 /-- Logarithmic per-operation node-visit certificate for `FenwickTree.impl`. -/
@@ -162,49 +124,36 @@ theorem stepBound : Bound (impl (α := α)) id charge := by
   | add pos δ =>
     cases he
     simpa only [id_eq, charge, hsz] using addM_time_le_clog t pos δ
-  | prefixSum len =>
+  | sum len =>
     cases he
     simpa only [id_eq, charge, hsz] using prefixSumM_time_le_clog t len
 
 /-- Every adaptive dynamic prefix-sum client executes on `FenwickTree` with `List α` correctness and
 additive `Nat.clog 2 (s.length + 1)` node-visit bounds. -/
-theorem realized_client {β : Type} (p : (spec α).Client β)
+theorem realized_client {β : Type} (p : (PrefixSums.spec α).Client β)
     {s : List α} {t : FenwickTree α} (hr : Valid t s) :
-    ∃ t' cs, Executes Exec p t ((spec α).runClient s p).1 t' cs ∧
-      Valid t' ((spec α).runClient s p).2.1 ∧
-      total id cs ≤ (spec α).totalCost charge s ((spec α).runClient s p).2.2 := by
-  have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
-    s ((spec α).runClient s p).2.2
-  exact Bound.exists_executes stepBound p hr hv
+    let (value, finalState, history) := (PrefixSums.spec α).runClient s p
+    ∃ t' cs, Executes Exec p t value t' cs ∧ Valid t' finalState ∧
+      total id cs ≤ (PrefixSums.spec α).totalCost charge s history :=
+  Bound.exists_executes stepBound p hr
+    ((PrefixSums.spec α).validHistory_of_forall_valid (fun _ _ => trivial) s _)
 
 /-- Execute a dynamic prefix-sum client concretely on a Fenwick tree, recording exact node visits
 per operation. -/
-@[expose] def run {β : Type} (t : FenwickTree α) :
-    (spec α).Client β → β × FenwickTree α × List ℕ
-  | .pure a => (a, t, [])
-  | .liftBind o k =>
-      let (t', a, c) := step t o
-      let (res, t'', cs) := run t' (k a)
-      (res, t'', c :: cs)
-
-/-- The concrete runner produces a valid `Executes Exec` derivation. -/
-theorem run_exec {β : Type} (p : (spec α).Client β) (t : FenwickTree α) :
-    Executes Exec p t (run t p).1 (run t p).2.1 (run t p).2.2 := by
-  induction p generalizing t with
-  | pure a => exact .pure a t
-  | liftBind o k ih => exact .call rfl (ih _ _)
+abbrev run {β : Type} (t : FenwickTree α) (p : (PrefixSums.spec α).Client β) :
+    RunResult (FenwickTree α) ℕ β :=
+  Execution.run step t p
 
 /-- Running the concrete Fenwick tree interpreter agrees with abstract `List α` semantics, preserves
 `Valid`, and satisfies the additive logarithmic node-visit bound. -/
-theorem run_correct {β : Type} (p : (spec α).Client β)
+theorem run_correct {β : Type} (p : (PrefixSums.spec α).Client β)
     {s : List α} {t : FenwickTree α} (hr : Valid t s) :
-    (run t p).1 = ((spec α).runClient s p).1 ∧
-      Valid (run t p).2.1 ((spec α).runClient s p).2.1 ∧
-      total id (run t p).2.2 ≤
-        ((spec α).runClient s p).2.2.length * Nat.clog 2 (s.length + 1) := by
-  have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
-    s ((spec α).runClient s p).2.2
-  have hexec := run_exec p t
+    let (value, finalState, history) := (PrefixSums.spec α).runClient s p
+    (run t p).value = value ∧ Valid (run t p).state finalState ∧
+      total id (run t p).traces ≤ history.length * Nat.clog 2 (s.length + 1) := by
+  have hv := (PrefixSums.spec α).validHistory_of_forall_valid (fun _ _ => trivial) s
+    ((PrefixSums.spec α).clientHistory s p)
+  have hexec := Execution.executes_run step p t
   have hc := impl.correct_client hr hv hexec
   have hb := Bound.client stepBound hr hv hexec
   rw [totalCost_charge] at hb

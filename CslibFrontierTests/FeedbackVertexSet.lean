@@ -19,22 +19,36 @@ namespace CslibFrontierTests.FeedbackVertexSet
 open Cslib.Complexity Turing.MultiTapeTM
 
 /-- The directed triangle `0 → 1 → 2 → 0`. -/
-private def tri : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def tri : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 /-- A self-loop at `0`. -/
-private def loop : Graph := ([0], [(0, 0)])
+private def loop : Graph := ⟨[0], [(0, 0)]⟩
 
 /-- An acyclic graph with arcs `0 → 1 → 2` and `0 → 2`. -/
-private def dag : Graph := ([0, 1, 2], [(0, 1), (1, 2), (0, 2)])
+private def dag : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩
 
 /-! ### Headline results -/
 
-example : FeedbackVertexSet ∈ NP (encPair encGraph encNat) ∧
-    NPHard (encPair encGraph encNat) FeedbackVertexSet ∧
-    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) VertexCover
+example : FeedbackVertexSet ∈ NP encFeedbackVertexSet ∧
+    NPHard encFeedbackVertexSet FeedbackVertexSet ∧
+    PolyTimeReducible encVertexCoverInstance encFeedbackVertexSet VertexCover
       FeedbackVertexSet :=
   ⟨FeedbackVertexSet_npComplete.1, FeedbackVertexSet_npComplete.2,
     polyTimeReducible_VertexCover_FeedbackVertexSet⟩
+
+example : ComputableInPolyTime (fun x : FeedbackVertexSetInstance => x.graph)
+    encFeedbackVertexSet encGraph := by
+  fun_prop
+
+example : ComputableInPolyTime (fun x : FeedbackVertexSetInstance => x.bound)
+    encFeedbackVertexSet encNat := by
+  fun_prop
+
+example : ComputableInPolyTime (fun p : Graph × ℕ => (⟨p.1, p.2⟩ : FeedbackVertexSetInstance))
+    (encPair encGraph encNat) encFeedbackVertexSet := by
+  fun_prop
+
+example : (default : FeedbackVertexSetInstance) = ⟨default, default⟩ := rfl
 
 /-! ### Directed cycles -/
 
@@ -72,7 +86,7 @@ example (h : dag.IsDirAcyclic) : Relation.Acyclic dag.DirAdj :=
 /-! ### Feedback vertex sets -/
 
 -- Removing `0` breaks the triangle, but some vertex must be removed.
-example : (tri, 1) ∈ FeedbackVertexSet := by
+example : (⟨tri, 1⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet := by
   refine ⟨{0}, by decide, by decide, Graph.isDirAcyclic_of_rank (f := id) fun u v h => ?_⟩
   rw [Graph.dirAdj_deleteVerts] at h
   obtain ⟨⟨-, -, he⟩, hu, hv⟩ := h
@@ -82,7 +96,7 @@ example : (tri, 1) ∈ FeedbackVertexSet := by
   · decide
   · exact absurd (Finset.mem_singleton_self 0) hv
 
-example : (tri, 0) ∉ FeedbackVertexSet := by
+example : (⟨tri, 0⟩ : FeedbackVertexSetInstance) ∉ FeedbackVertexSet := by
   rw [mem_FeedbackVertexSet_iff_forall_isDirCycle]
   rintro ⟨R, -, hcard, hR⟩
   obtain rfl : R = ∅ := Finset.card_eq_zero.1 (Nat.le_zero.1 hcard)
@@ -91,14 +105,14 @@ example : (tri, 0) ∉ FeedbackVertexSet := by
   exact Finset.notMem_empty v hv
 
 -- A self-loop must be removed.
-example : (loop, 0) ∉ FeedbackVertexSet := by
+example : (⟨loop, 0⟩ : FeedbackVertexSetInstance) ∉ FeedbackVertexSet := by
   rintro ⟨R, -, hcard, hacyc⟩
   obtain rfl : R = ∅ := Finset.card_eq_zero.1 (Nat.le_zero.1 hcard)
   obtain ⟨f, -, hf⟩ := Graph.exists_rank_of_isDirAcyclic hacyc
   exact (hf 0 0 (Graph.dirAdj_deleteVerts.2 ⟨⟨by decide, by decide, by decide⟩,
     Finset.notMem_empty 0, Finset.notMem_empty 0⟩)).false
 
-example : (loop, 1) ∈ FeedbackVertexSet := by
+example : (⟨loop, 1⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet := by
   refine ⟨{0}, by decide, by decide, Graph.isDirAcyclic_of_rank (f := id) fun u v h => ?_⟩
   rw [Graph.dirAdj_deleteVerts] at h
   obtain ⟨⟨hu, -, -⟩, hu', -⟩ := h
@@ -107,14 +121,15 @@ example : (loop, 1) ∈ FeedbackVertexSet := by
   exact absurd (Finset.mem_singleton_self 0) hu'
 
 -- An acyclic graph needs no removal.
-example : (dag, 0) ∈ FeedbackVertexSet := by
+example : (⟨dag, 0⟩ : FeedbackVertexSetInstance) ∈ FeedbackVertexSet := by
   refine ⟨∅, by simp, by simp, Graph.isDirAcyclic_of_rank (f := id) fun u v h => ?_⟩
   obtain ⟨⟨_, _, he⟩, -, -⟩ := Graph.dirAdj_deleteVerts.1 h
   simp only [dag, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at he
   rcases he with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> decide
 
 -- Arcs to undeclared vertices are ignored: `0 ⇄ 1` with only `0` declared has no cycle.
-example : ((([0], [(0, 1), (1, 0)]) : Graph), 0) ∈ FeedbackVertexSet := by
+example : (⟨(⟨[0], [(0, 1), (1, 0)]⟩ : Graph), 0⟩ : FeedbackVertexSetInstance) ∈
+    FeedbackVertexSet := by
   refine ⟨∅, by simp, by simp, Graph.isDirAcyclic_of_rank (f := fun _ => 0) fun u v h => ?_⟩
   obtain ⟨⟨hu, hv, he⟩, -, -⟩ := Graph.dirAdj_deleteVerts.1 h
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hu hv
@@ -124,21 +139,22 @@ example : ((([0], [(0, 1), (1, 0)]) : Graph), 0) ∈ FeedbackVertexSet := by
 /-! ### Karp's reduction from `VertexCover` -/
 
 -- The edge `0 - 1` becomes the arcs `0 → 1` and `1 → 0`.
-example : VertexCover.toFeedbackVertexSet ((([0, 1], [(0, 1)]) : Graph), 1) =
-    ((([0, 1], [(0, 1), (1, 0)]) : Graph), 1) := by
+example : VertexCover.toFeedbackVertexSet (⟨⟨[0, 1], [(0, 1)]⟩, 1⟩ : VertexCoverInstance) =
+    ⟨(⟨[0, 1], [(0, 1), (1, 0)]⟩ : Graph), 1⟩ := by
   decide
 
 -- Self-loops of the undirected graph are dropped.
-example : VertexCover.bidirect (([0], [(0, 0)]) : Graph) = (([0], []) : Graph) := by
+example : VertexCover.bidirect (⟨[0], [(0, 0)]⟩ : Graph) = (⟨[0], []⟩ : Graph) := by
   decide
 
 -- A target above the number of distinct vertices goes to the self-loop with target `0`.
-example : VertexCover.toFeedbackVertexSet ((([0, 1], [(0, 1)]) : Graph), 3) =
-    ((([0], [(0, 0)]) : Graph), 0) := by
+example : VertexCover.toFeedbackVertexSet (⟨⟨[0, 1], [(0, 1)]⟩, 3⟩ : VertexCoverInstance) =
+    ⟨(⟨[0], [(0, 0)]⟩ : Graph), 0⟩ := by
   decide
 
-example : ((([0, 1], [(0, 1)]) : Graph), 1) ∈ VertexCover ↔
-    VertexCover.toFeedbackVertexSet ((([0, 1], [(0, 1)]) : Graph), 1) ∈ FeedbackVertexSet :=
+example : (⟨⟨[0, 1], [(0, 1)]⟩, 1⟩ : VertexCoverInstance) ∈ VertexCover ↔
+    VertexCover.toFeedbackVertexSet
+      (⟨⟨[0, 1], [(0, 1)]⟩, 1⟩ : VertexCoverInstance) ∈ FeedbackVertexSet :=
   (VertexCover.toFeedbackVertexSet_mem_iff _).symm
 
 end CslibFrontierTests.FeedbackVertexSet

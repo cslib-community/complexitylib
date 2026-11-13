@@ -31,7 +31,7 @@ consecutive ones adjacent. A path on `k` vertices extends to an ordering by appe
 declared vertices. The first `k` entries, for `k` in binary, are the first `min (length) k`
 entries, a count in unary, so the verifier is polynomial-time.
 
-**Hardness.** The pendant copy (`Cslib.Complexity.HamPath.pendantCopy`) of an instance `(G, s, t)`
+**Hardness.** The pendant copy (`Cslib.Complexity.HamPath.pendantCopy`) of an instance `⟨G, s, t⟩`
 of undirected Hamiltonian path relabels every declared vertex `v` as `Nat.pair i (p + 2)`
 (`Cslib.Complexity.HamPath.copyLabel`), for `p` the position of the first occurrence of `v`, and
 attaches two pendant vertices `Nat.pair i 0` and `Nat.pair i 1` to the copies of `s` and `t`. A
@@ -78,14 +78,15 @@ namespace LongPath
 /-- The verifier for `LongPath`: decode a list of vertices from the certificate
 (`Graph.decodeVertexList`), check that it lists every declared vertex exactly once, and check that
 its first `k` entries are `k` vertices with consecutive ones adjacent. -/
-def verifier : (Graph × ℕ) × List Bool → Bool :=
-  Graph.verifyOrdering (fun (G, _) => G.1) fun (G, k) p =>
-    decide ((p.take k).length = k) && Graph.chainBool G.adjBool (p.take k)
+def verifier : LongPathInstance × List Bool → Bool :=
+  Graph.verifyOrdering (fun x => x.graph.vertices) fun x p =>
+    decide ((p.take x.target).length = x.target) &&
+      Graph.chainBool x.graph.adjBool (p.take x.target)
 
 /-- A path on `k` vertices extends to an enumeration of the declared vertices. -/
 private theorem exists_enum_of_isVertexPath {G : Graph} {q : List ℕ} (hq : G.IsVertexPath q) :
-    ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.1) ∧ p.take q.length = q := by
-  refine ⟨q ++ (G.1.dedup.filter fun v => v ∉ q), ?_, fun v => ?_, List.take_left⟩
+    ∃ p : List ℕ, p.Nodup ∧ (∀ v, v ∈ p ↔ v ∈ G.vertices) ∧ p.take q.length = q := by
+  refine ⟨q ++ (G.vertices.dedup.filter fun v => v ∉ q), ?_, fun v => ?_, List.take_left⟩
   · refine List.nodup_append.2 ⟨hq.1, (List.nodup_dedup _).filter _, fun a ha b hb hab => ?_⟩
     subst hab
     exact of_decide_eq_true (List.mem_filter.1 hb).2 ha
@@ -104,16 +105,22 @@ encoded length `n`: a path on `k` vertices extends to an ordering of the declare
 first `k` entries of such an ordering form a path when there are `k` of them and consecutive ones
 are adjacent. -/
 theorem isVerifier :
-    IsVerifier (encPair encGraph encNat) (Polynomial.X ^ 2) verifier LongPath := by
-  have h := Graph.isVerifier_verifyOrdering (enc := encPair encGraph encNat)
-    (V := fun x : Graph × ℕ => x.1.1)
+    IsVerifier encLongPath (Polynomial.X ^ 2) verifier LongPath := by
+  have h := Graph.isVerifier_verifyOrdering (enc := encLongPath)
+    (V := fun x : LongPathInstance => x.graph.vertices)
     (check := fun x p =>
-      decide ((p.take x.2).length = x.2) && Graph.chainBool x.1.adjBool (p.take x.2))
-    (P := fun x p => (p.take x.2).length = x.2 ∧ (p.take x.2).IsChain x.1.toSimpleGraph.Adj)
-    (fun x => (Graph.length_vertices_le_encGraph x.1).trans (length_le_encPair_left _ _ _))
+      decide ((p.take x.target).length = x.target) &&
+        Graph.chainBool x.graph.adjBool (p.take x.target))
+    (P := fun x p =>
+      (p.take x.target).length = x.target ∧ (p.take x.target).IsChain x.graph.toSimpleGraph.Adj)
+    (fun x => by
+      have hlen : (encGraph x.graph).length ≤ (encLongPath x).length := by
+        rw [encLongPath_apply]
+        exact length_le_encPair_left encGraph encNat (x.graph, x.target)
+      exact (Graph.length_vertices_le_encGraph x.graph).trans hlen)
     (fun x p => by
       simp only [Bool.and_eq_true, decide_eq_true_eq,
-        Graph.chainBool_eq_true_iff (Graph.adjBool_eq_true_iff x.1)])
+        Graph.chainBool_eq_true_iff (Graph.adjBool_eq_true_iff x.graph)])
   intro x
   refine Iff.trans ?_ (h x)
   obtain ⟨G, k⟩ := x
@@ -130,13 +137,13 @@ theorem isVerifier :
 first `min (length) k` entries, a count in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair (encPair encGraph encNat) encBits) encBool := by
-  refine Graph.computableInPolyTime_verifyOrdering (by unfold encGraph; fun_prop) ?_
-  have htake : ComputableInPolyTime (fun q : (Graph × ℕ) × List ℕ => q.2.take q.1.2)
-      (encPair (encPair encGraph encNat) (encList encNat)) (encList encNat) := by
+    ComputableInPolyTime verifier (encPair encLongPath encBits) encBool := by
+  refine Graph.computableInPolyTime_verifyOrdering (by fun_prop) ?_
+  have htake : ComputableInPolyTime (fun q : LongPathInstance × List ℕ => q.2.take q.1.target)
+      (encPair encLongPath (encList encNat)) (encList encNat) := by
     have hmin : ComputableInPolyTime
-        (fun q : (Graph × ℕ) × List ℕ => min q.2.length q.1.2)
-        (encPair (encPair encGraph encNat) (encList encNat)) encUnary :=
+        (fun q : LongPathInstance × List ℕ => min q.2.length q.1.target)
+        (encPair encLongPath (encList encNat)) encUnary :=
       binary_min_unary' ((length_list encNat).comp (snd _ _)) (by fun_prop)
     have h := (ComputableInDegree.takeUnary encNat).computableInPolyTime.comp
       ((snd _ _).prod hmin)
@@ -146,7 +153,7 @@ theorem computableInPolyTime_verifier :
     (Graph.computableInPolyTime_chainBool (by fun_prop) htake)
 
 /-- **k-Path belongs to `NP`.** -/
-theorem mem_NP : LongPath ∈ NP (encPair encGraph encNat) :=
+theorem mem_NP : LongPath ∈ NP encLongPath :=
   ⟨_, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end LongPath
@@ -155,14 +162,15 @@ namespace HamPath
 
 /-- The label of the vertex `v` of the graph `G` in copy `i`: the pair of `i` and two more than
 the position of the first occurrence of `v` in the vertex list of `G`. -/
-def copyLabel (G : Graph) (i v : ℕ) : ℕ := Nat.pair i (G.1.idxOf v + 2)
+def copyLabel (G : Graph) (i v : ℕ) : ℕ := Nat.pair i (G.vertices.idxOf v + 2)
 
-/-- Copy `i` of the instance `x = (G, s, t)`: the vertices of `G`, relabeled by `copyLabel`, with
+/-- Copy `i` of the instance `x = ⟨G, s, t⟩`: the vertices of `G`, relabeled by `copyLabel`, with
 two pendant vertices `Nat.pair i 0` and `Nat.pair i 1` attached to `s` and to `t`. -/
-def pendantCopy (x : Graph × ℕ × ℕ) (i : ℕ) : Graph :=
-  (Nat.pair i 0 :: Nat.pair i 1 :: x.1.1.map (copyLabel x.1 i),
-    (Nat.pair i 0, copyLabel x.1 i x.2.1) :: (Nat.pair i 1, copyLabel x.1 i x.2.2) ::
-      x.1.2.map fun e => (copyLabel x.1 i e.1, copyLabel x.1 i e.2))
+def pendantCopy (x : PathInstance) (i : ℕ) : Graph :=
+  ⟨Nat.pair i 0 :: Nat.pair i 1 :: x.graph.vertices.map (copyLabel x.graph i),
+    (Nat.pair i 0, copyLabel x.graph i x.source) ::
+      (Nat.pair i 1, copyLabel x.graph i x.target) ::
+      x.graph.edges.map fun e => (copyLabel x.graph i e.1, copyLabel x.graph i e.2)⟩
 
 /-! ### Polynomial time -/
 
@@ -172,50 +180,51 @@ private theorem computableInPolyTime_copyLabel {γ : Type} {enc : γ ↪ List Bo
     ComputableInPolyTime (fun c => copyLabel (G c) (i c) (v c)) enc encNat := by
   have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
       (encPair encUnary encUnary) encUnary := by fun_prop
-  have hV : ComputableInPolyTime (fun c => (G c).1) enc (encList encNat) := by
-    unfold encGraph at hG
-    exact hG.fst'
-  have hidx : ComputableInPolyTime (fun c => (G c).1.idxOf (v c)) enc encUnary :=
+  have hV : ComputableInPolyTime (fun c => (G c).vertices) enc (encList encNat) := by
+    fun_prop
+  have hidx : ComputableInPolyTime (fun c => (G c).vertices.idxOf (v c)) enc encUnary :=
     idxOfWithInput hV hv
   exact unary_to_binary.comp (hpair.comp (hi.prod (by fun_prop)))
 
 /-- Building a pendant copy is polynomial-time, with the copy index in unary. -/
 theorem computableInPolyTime_pendantCopy :
-    ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => pendantCopy p.1 p.2)
+    ComputableInPolyTime (fun p : PathInstance × ℕ => pendantCopy p.1 p.2)
       (encPair encPathInstance encUnary) encGraph := by
   have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
       (encPair encUnary encUnary) encUnary := by fun_prop
-  have hG : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => p.1.1)
+  have hG : ComputableInPolyTime (fun p : PathInstance × ℕ => p.1.graph)
       (encPair encPathInstance encUnary) encGraph := by fun_prop
-  have hi : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => p.2)
+  have hi : ComputableInPolyTime (fun p : PathInstance × ℕ => p.2)
       (encPair encPathInstance encUnary) encUnary := by fun_prop
-  have h0 : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => Nat.pair p.2 0)
+  have h0 : ComputableInPolyTime (fun p : PathInstance × ℕ => Nat.pair p.2 0)
       (encPair encPathInstance encUnary) encNat :=
     unary_to_binary.comp (hpair.comp (hi.prod (const 0)))
-  have h1 : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => Nat.pair p.2 1)
+  have h1 : ComputableInPolyTime (fun p : PathInstance × ℕ => Nat.pair p.2 1)
       (encPair encPathInstance encUnary) encNat :=
     unary_to_binary.comp (hpair.comp (hi.prod (const 1)))
-  have hs : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => copyLabel p.1.1 p.2 p.1.2.1)
+  have hs : ComputableInPolyTime
+      (fun p : PathInstance × ℕ => copyLabel p.1.graph p.2 p.1.source)
       (encPair encPathInstance encUnary) encNat :=
     computableInPolyTime_copyLabel hG hi (by fun_prop)
-  have ht : ComputableInPolyTime (fun p : (Graph × ℕ × ℕ) × ℕ => copyLabel p.1.1 p.2 p.1.2.2)
+  have ht : ComputableInPolyTime
+      (fun p : PathInstance × ℕ => copyLabel p.1.graph p.2 p.1.target)
       (encPair encPathInstance encUnary) encNat :=
     computableInPolyTime_copyLabel hG hi (by fun_prop)
   have hV : ComputableInPolyTime
-      (fun p : (Graph × ℕ × ℕ) × ℕ => p.1.1.1.map (copyLabel p.1.1 p.2))
+      (fun p : PathInstance × ℕ => p.1.graph.vertices.map (copyLabel p.1.graph p.2))
       (encPair encPathInstance encUnary) (encList encNat) := by
-    refine mapWithInput (by unfold encGraph at hG; exact hG.fst') ?_
+    refine mapWithInput (by fun_prop) ?_
     exact computableInPolyTime_copyLabel (hG.comp (fst _ _)) (hi.comp (fst _ _)) (snd _ _)
   have hE : ComputableInPolyTime
-      (fun p : (Graph × ℕ × ℕ) × ℕ =>
-        p.1.1.2.map fun e => (copyLabel p.1.1 p.2 e.1, copyLabel p.1.1 p.2 e.2))
+      (fun p : PathInstance × ℕ =>
+        p.1.graph.edges.map fun e => (copyLabel p.1.graph p.2 e.1, copyLabel p.1.graph p.2 e.2))
       (encPair encPathInstance encUnary) (encList (encPair encNat encNat)) := by
-    refine mapWithInput (by unfold encGraph at hG; exact hG.snd') ?_
+    refine mapWithInput (by fun_prop) ?_
     exact (computableInPolyTime_copyLabel (hG.comp (fst _ _)) (hi.comp (fst _ _))
       (snd _ _).fst').prod
       (computableInPolyTime_copyLabel (hG.comp (fst _ _)) (hi.comp (fst _ _)) (snd _ _).snd')
-  unfold pendantCopy encGraph
-  exact (cons' h0 (cons' h1 hV)).prod (cons' (h0.prod hs) (cons' (h1.prod ht) hE))
+  unfold pendantCopy
+  exact encGraph_mk_polyTime (cons' h0 (cons' h1 hV)) (cons' (h0.prod hs) (cons' (h1.prod ht) hE))
 
 /-! ### Labels -/
 
@@ -229,7 +238,7 @@ private theorem copyLabel_ne_pair {G : Graph} {i v i' j : ℕ} (hj : j < 2) :
   rw [copyLabel, Nat.pair_eq_pair] at h
   omega
 
-private theorem copyLabel_inj {G : Graph} {i u v : ℕ} (hu : u ∈ G.1) :
+private theorem copyLabel_inj {G : Graph} {i u v : ℕ} (hu : u ∈ G.vertices) :
     copyLabel G i u = copyLabel G i v ↔ u = v := by
   rw [copyLabel, copyLabel, Nat.pair_eq_pair, ← List.idxOf_inj hu]
   omega
@@ -241,28 +250,28 @@ private theorem pair_zero_ne_pair_one (i i' : ℕ) : Nat.pair i 0 ≠ Nat.pair i
 
 /-! ### One copy -/
 
-private theorem mem_pendantCopy_fst {x : Graph × ℕ × ℕ} {i w : ℕ} :
-    w ∈ (pendantCopy x i).1 ↔
-      w = Nat.pair i 0 ∨ w = Nat.pair i 1 ∨ ∃ v ∈ x.1.1, copyLabel x.1 i v = w := by
+private theorem mem_pendantCopy_fst {x : PathInstance} {i w : ℕ} :
+    w ∈ (pendantCopy x i).vertices ↔
+      w = Nat.pair i 0 ∨ w = Nat.pair i 1 ∨ ∃ v ∈ x.graph.vertices, copyLabel x.graph i v = w := by
   simp only [pendantCopy, List.mem_cons, List.mem_map]
 
-private theorem mem_pendantCopy_snd {x : Graph × ℕ × ℕ} {i : ℕ} {e : ℕ × ℕ} :
-    e ∈ (pendantCopy x i).2 ↔ e = (Nat.pair i 0, copyLabel x.1 i x.2.1) ∨
-      e = (Nat.pair i 1, copyLabel x.1 i x.2.2) ∨
-      ∃ d ∈ x.1.2, (copyLabel x.1 i d.1, copyLabel x.1 i d.2) = e := by
+private theorem mem_pendantCopy_snd {x : PathInstance} {i : ℕ} {e : ℕ × ℕ} :
+    e ∈ (pendantCopy x i).edges ↔ e = (Nat.pair i 0, copyLabel x.graph i x.source) ∨
+      e = (Nat.pair i 1, copyLabel x.graph i x.target) ∨
+      ∃ d ∈ x.graph.edges, (copyLabel x.graph i d.1, copyLabel x.graph i d.2) = e := by
   simp only [pendantCopy, List.mem_cons, List.mem_map]
 
 /-- Every vertex of copy `i` is a pair with first component `i`. -/
-theorem unpair_of_mem_pendantCopy_fst {x : Graph × ℕ × ℕ} {i w : ℕ}
-    (h : w ∈ (pendantCopy x i).1) : (Nat.unpair w).1 = i := by
+theorem unpair_of_mem_pendantCopy_fst {x : PathInstance} {i w : ℕ}
+    (h : w ∈ (pendantCopy x i).vertices) : (Nat.unpair w).1 = i := by
   rcases mem_pendantCopy_fst.1 h with rfl | rfl | ⟨v, -, rfl⟩
   · simp only [Nat.unpair_pair]
   · simp only [Nat.unpair_pair]
   · exact unpair_copyLabel_fst _ _ _
 
 /-- Both ends of every edge of copy `i` are pairs with first component `i`. -/
-theorem unpair_of_mem_pendantCopy_snd {x : Graph × ℕ × ℕ} {i : ℕ} {e : ℕ × ℕ}
-    (h : e ∈ (pendantCopy x i).2) : (Nat.unpair e.1).1 = i ∧ (Nat.unpair e.2).1 = i := by
+theorem unpair_of_mem_pendantCopy_snd {x : PathInstance} {i : ℕ} {e : ℕ × ℕ}
+    (h : e ∈ (pendantCopy x i).edges) : (Nat.unpair e.1).1 = i ∧ (Nat.unpair e.2).1 = i := by
   rcases mem_pendantCopy_snd.1 h with rfl | rfl | ⟨d, -, rfl⟩
   · exact ⟨by simp only [Nat.unpair_pair], unpair_copyLabel_fst _ _ _⟩
   · exact ⟨by simp only [Nat.unpair_pair], unpair_copyLabel_fst _ _ _⟩
@@ -276,7 +285,7 @@ variable {G : Graph} {s t i : ℕ}
 
 /-- The only neighbor of the pendant vertex `Nat.pair i 0` is the copy of `s`. -/
 private theorem eq_of_adj_pair_zero {w : ℕ}
-    (h : (pendantCopy (G, s, t) i).toSimpleGraph.Adj (Nat.pair i 0) w) :
+    (h : (pendantCopy ⟨G, s, t⟩ i).toSimpleGraph.Adj (Nat.pair i 0) w) :
     w = copyLabel G i s := by
   rw [Graph.toSimpleGraph_adj] at h
   rcases h.2 with h | h
@@ -291,7 +300,7 @@ private theorem eq_of_adj_pair_zero {w : ℕ}
 
 /-- The only neighbor of the pendant vertex `Nat.pair i 1` is the copy of `t`. -/
 private theorem eq_of_adj_pair_one {w : ℕ}
-    (h : (pendantCopy (G, s, t) i).toSimpleGraph.Adj (Nat.pair i 1) w) :
+    (h : (pendantCopy ⟨G, s, t⟩ i).toSimpleGraph.Adj (Nat.pair i 1) w) :
     w = copyLabel G i t := by
   rw [Graph.toSimpleGraph_adj] at h
   rcases h.2 with h | h
@@ -305,11 +314,12 @@ private theorem eq_of_adj_pair_one {w : ℕ}
     · exact absurd (Prod.mk.inj h).2 (copyLabel_ne_pair (by omega))
 
 /-- On copies of declared vertices, adjacency of the copy is adjacency of `G`. -/
-private theorem adj_copyLabel_iff {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) :
-    (pendantCopy (G, s, t) i).toSimpleGraph.Adj (copyLabel G i u) (copyLabel G i v) ↔
+private theorem adj_copyLabel_iff {u v : ℕ} (hu : u ∈ G.vertices) (hv : v ∈ G.vertices) :
+    (pendantCopy ⟨G, s, t⟩ i).toSimpleGraph.Adj (copyLabel G i u) (copyLabel G i v) ↔
       G.toSimpleGraph.Adj u v := by
-  have key : ∀ {u v : ℕ}, u ∈ G.1 → v ∈ G.1 →
-      ((copyLabel G i u, copyLabel G i v) ∈ (pendantCopy (G, s, t) i).2 ↔ (u, v) ∈ G.2) := by
+  have key : ∀ {u v : ℕ}, u ∈ G.vertices → v ∈ G.vertices →
+      ((copyLabel G i u, copyLabel G i v) ∈ (pendantCopy ⟨G, s, t⟩ i).edges ↔
+        (u, v) ∈ G.edges) := by
     intro u v hu hv
     rw [mem_pendantCopy_snd]
     constructor
@@ -325,26 +335,27 @@ private theorem adj_copyLabel_iff {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) 
   rw [Graph.toSimpleGraph_adj, Graph.toSimpleGraph_adj, key hu hv, key hv hu, Ne,
     copyLabel_inj hu]
 
-private theorem pair_zero_mem_pendantCopy : Nat.pair i 0 ∈ (pendantCopy (G, s, t) i).1 :=
+private theorem pair_zero_mem_pendantCopy : Nat.pair i 0 ∈ (pendantCopy ⟨G, s, t⟩ i).vertices :=
   mem_pendantCopy_fst.2 (Or.inl rfl)
 
-private theorem pair_one_mem_pendantCopy : Nat.pair i 1 ∈ (pendantCopy (G, s, t) i).1 :=
+private theorem pair_one_mem_pendantCopy : Nat.pair i 1 ∈ (pendantCopy ⟨G, s, t⟩ i).vertices :=
   mem_pendantCopy_fst.2 (Or.inr (Or.inl rfl))
 
 /-- A copy has two more distinct vertices than `G`. -/
 private theorem card_pendantCopy :
-    (pendantCopy (G, s, t) i).1.toFinset.card = G.distinctVertices.length + 2 := by
-  have h0 : Nat.pair i 0 ∉ insert (Nat.pair i 1) (G.1.toFinset.image (copyLabel G i)) := by
+    (pendantCopy ⟨G, s, t⟩ i).vertices.toFinset.card = G.distinctVertices.length + 2 := by
+  have h0 : Nat.pair i 0 ∉ insert (Nat.pair i 1) (G.vertices.toFinset.image (copyLabel G i)) := by
     simp only [Finset.mem_insert, Finset.mem_image, not_or, not_exists, not_and]
     exact ⟨pair_zero_ne_pair_one i i, fun v _ h => copyLabel_ne_pair (by omega) h⟩
-  have h1 : Nat.pair i 1 ∉ G.1.toFinset.image (copyLabel G i) := by
+  have h1 : Nat.pair i 1 ∉ G.vertices.toFinset.image (copyLabel G i) := by
     simp only [Finset.mem_image, not_exists, not_and]
     exact fun v _ h => copyLabel_ne_pair (by omega) h
-  have hinj : Set.InjOn (copyLabel G i) G.1.toFinset := fun u hu v _ h =>
+  have hinj : Set.InjOn (copyLabel G i) G.vertices.toFinset := fun u hu v _ h =>
     (copyLabel_inj (List.mem_toFinset.1 (Finset.mem_coe.1 hu))).1 h
-  have hV : (pendantCopy (G, s, t) i).1 =
-      Nat.pair i 0 :: Nat.pair i 1 :: G.1.map (copyLabel G i) := rfl
-  have hmap : (G.1.map (copyLabel G i)).toFinset = G.1.toFinset.image (copyLabel G i) := by
+  have hV : (pendantCopy ⟨G, s, t⟩ i).vertices =
+      Nat.pair i 0 :: Nat.pair i 1 :: G.vertices.map (copyLabel G i) := rfl
+  have hmap : (G.vertices.map (copyLabel G i)).toFinset =
+      G.vertices.toFinset.image (copyLabel G i) := by
     ext w
     simp
   rw [hV, List.toFinset_cons, List.toFinset_cons, hmap,
@@ -375,10 +386,10 @@ private theorem head_or_last_of_forall_adj {R : ℕ → ℕ → Prop} {q : List 
 /-- A path of a copy from `Nat.pair i 0` to `Nat.pair i 1` through the copies of all declared
 vertices gives a Hamiltonian path of `G` from `s` to `t`. -/
 private theorem mem_HamPath_of_path {q : List ℕ} (hnd : q.Nodup)
-    (hV : ∀ w ∈ q, w ∈ (pendantCopy (G, s, t) i).1)
-    (hch : q.IsChain (pendantCopy (G, s, t) i).toSimpleGraph.Adj)
-    (hcov : ∀ v ∈ G.1, copyLabel G i v ∈ q) (ha : q.head? = some (Nat.pair i 0))
-    (hb : q.getLast? = some (Nat.pair i 1)) : (G, s, t) ∈ HamPath := by
+    (hV : ∀ w ∈ q, w ∈ (pendantCopy ⟨G, s, t⟩ i).vertices)
+    (hch : q.IsChain (pendantCopy ⟨G, s, t⟩ i).toSimpleGraph.Adj)
+    (hcov : ∀ v ∈ G.vertices, copyLabel G i v ∈ q) (ha : q.head? = some (Nat.pair i 0))
+    (hb : q.getLast? = some (Nat.pair i 1)) : (⟨G, s, t⟩ : PathInstance) ∈ HamPath := by
   obtain ⟨l, rfl⟩ := List.getLast?_eq_some_iff.1 hb
   obtain ⟨m, rfl⟩ : ∃ m, l = Nat.pair i 0 :: m := by
     cases l with
@@ -389,7 +400,7 @@ private theorem mem_HamPath_of_path {q : List ℕ} (hnd : q.Nodup)
   have hnd' := List.nodup_cons.1 hnd
   have hb' : Nat.pair i 1 ∉ m := fun h =>
     (List.nodup_append.1 hnd'.2).2.2 _ h _ (List.mem_singleton_self _) rfl
-  have hm : ∀ w ∈ m, ∃ v ∈ G.1, copyLabel G i v = w := by
+  have hm : ∀ w ∈ m, ∃ v ∈ G.vertices, copyLabel G i v = w := by
     intro w hw
     rcases mem_pendantCopy_fst.1 (hV w (List.mem_cons_of_mem _ (List.mem_append_left _ hw)))
       with rfl | rfl | h
@@ -397,7 +408,7 @@ private theorem mem_HamPath_of_path {q : List ℕ} (hnd : q.Nodup)
     · exact absurd hw hb'
     · exact h
   choose! dec hdec using hm
-  obtain ⟨p, hpV, rfl⟩ : ∃ p : List ℕ, (∀ v ∈ p, v ∈ G.1) ∧ p.map (copyLabel G i) = m := by
+  obtain ⟨p, hpV, rfl⟩ : ∃ p : List ℕ, (∀ v ∈ p, v ∈ G.vertices) ∧ p.map (copyLabel G i) = m := by
     refine ⟨m.map dec, fun v hv => ?_, ?_⟩
     · obtain ⟨w, hw, rfl⟩ := List.mem_map.1 hv
       exact (hdec w hw).1
@@ -439,17 +450,17 @@ private theorem mem_HamPath_of_path {q : List ℕ} (hnd : q.Nodup)
 
 /-- A path of a copy on two more vertices than `G` has gives a Hamiltonian path of `G`. -/
 private theorem mem_HamPath_of_mem_LongPath
-    (h : (pendantCopy (G, s, t) i, G.distinctVertices.length + 2) ∈ LongPath) :
-    (G, s, t) ∈ HamPath := by
+    (h : ⟨pendantCopy ⟨G, s, t⟩ i, G.distinctVertices.length + 2⟩ ∈ LongPath) :
+    (⟨G, s, t⟩ : PathInstance) ∈ HamPath := by
   obtain ⟨q, ⟨hnd, hV, hch⟩, hlen⟩ := mem_LongPath_iff.1 h
-  have hfin : q.toFinset = (pendantCopy (G, s, t) i).1.toFinset := by
+  have hfin : q.toFinset = (pendantCopy ⟨G, s, t⟩ i).vertices.toFinset := by
     refine Finset.eq_of_subset_of_card_le
       (fun w hw => List.mem_toFinset.2 (hV w (List.mem_toFinset.1 hw))) ?_
     rw [card_pendantCopy, List.toFinset_card_of_nodup hnd, hlen]
-  have hmem : ∀ w ∈ (pendantCopy (G, s, t) i).1, w ∈ q := fun w hw => by
+  have hmem : ∀ w ∈ (pendantCopy ⟨G, s, t⟩ i).vertices, w ∈ q := fun w hw => by
     rw [← List.mem_toFinset, hfin, List.mem_toFinset]
     exact hw
-  have hcov : ∀ v ∈ G.1, copyLabel G i v ∈ q := fun v hv =>
+  have hcov : ∀ v ∈ G.vertices, copyLabel G i v ∈ q := fun v hv =>
     hmem _ (mem_pendantCopy_fst.2 (Or.inr (Or.inr ⟨v, hv, rfl⟩)))
   have hend0 := head_or_last_of_forall_adj hnd hch (hmem _ pair_zero_mem_pendantCopy)
     (fun hw => eq_of_adj_pair_zero (hw.elim (fun h => h.symm) id))
@@ -471,10 +482,10 @@ private theorem mem_HamPath_of_mem_LongPath
 
 /-- A Hamiltonian path of `G` from `s` to `t`, with the pendant vertices at its ends, is a path of
 the copy on two more vertices than `G` has. -/
-private theorem mem_LongPath_of_mem_HamPath (h : (G, s, t) ∈ HamPath) :
-    (pendantCopy (G, s, t) i, G.distinctVertices.length + 2) ∈ LongPath := by
+private theorem mem_LongPath_of_mem_HamPath (h : (⟨G, s, t⟩ : PathInstance) ∈ HamPath) :
+    ⟨pendantCopy ⟨G, s, t⟩ i, G.distinctVertices.length + 2⟩ ∈ LongPath := by
   obtain ⟨p, hnd, hcov, hs, ht, hch⟩ := mem_HamPath_iff.1 h
-  have hpV : ∀ v ∈ p, v ∈ G.1 := fun v hv => (hcov v).1 hv
+  have hpV : ∀ v ∈ p, v ∈ G.vertices := fun v hv => (hcov v).1 hv
   have hlen : p.length = G.distinctVertices.length := by
     rw [Graph.length_distinctVertices, ← List.toFinset_card_of_nodup hnd]
     congr 1
@@ -517,11 +528,11 @@ private theorem mem_LongPath_of_mem_HamPath (h : (G, s, t) ∈ HamPath) :
         Or.inr (mem_pendantCopy_snd.2 (Or.inr (Or.inl rfl)))⟩
   · simp only [List.length_cons, List.length_append, List.length_map, List.length_nil, hlen]
 
-/-- **One copy**: the copy of `(G, s, t)` has a path on two more vertices than `G` has exactly
+/-- **One copy**: the copy of `⟨G, s, t⟩` has a path on two more vertices than `G` has exactly
 when `G` has a Hamiltonian path from `s` to `t`. -/
 theorem pendantCopy_mem_LongPath_iff :
-    (pendantCopy (G, s, t) i, G.distinctVertices.length + 2) ∈ LongPath ↔
-      (G, s, t) ∈ HamPath :=
+    ⟨pendantCopy ⟨G, s, t⟩ i, G.distinctVertices.length + 2⟩ ∈ LongPath ↔
+      (⟨G, s, t⟩ : PathInstance) ∈ HamPath :=
   ⟨mem_HamPath_of_mem_LongPath, mem_LongPath_of_mem_HamPath⟩
 
 end Copy
@@ -531,19 +542,30 @@ end HamPath
 /-- **k-Path is `NP`-hard**, by the pendant copy of an instance of `HamPath`: a graph has a
 Hamiltonian path from `s` to `t` exactly when its pendant copy has a path on two more vertices than
 the graph has. -/
-theorem LongPath_npHard : NPHard (encPair encGraph encNat) LongPath := by
-  have hk : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length + 2)
+theorem LongPath_npHard : NPHard encLongPath LongPath := by
+  have hk : ComputableInPolyTime (fun x : PathInstance => x.graph.distinctVertices.length + 2)
       encPathInstance encNat := by
-    have hn : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length)
+    have hn : ComputableInPolyTime (fun x : PathInstance => x.graph.distinctVertices.length)
         encPathInstance encUnary :=
       (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))
     exact unary_to_binary.comp (by fun_prop)
-  refine HamPath_npHard.trans ⟨fun x => (HamPath.pendantCopy x 0, x.1.distinctVertices.length + 2),
-    (HamPath.computableInPolyTime_pendantCopy.comp (id'.prod (const 0))).prod hk, fun x => ?_⟩
+  have hf : ComputableInPolyTime (fun x : PathInstance => HamPath.pendantCopy x 0)
+      encPathInstance encGraph := by
+    change ComputableInPolyTime
+      ((fun p : PathInstance × ℕ => HamPath.pendantCopy p.1 p.2) ∘ fun a => (a, 0))
+      encPathInstance encGraph
+    exact HamPath.computableInPolyTime_pendantCopy.comp (id'.prod (const 0))
+  have hr : ComputableInPolyTime
+      (fun x : PathInstance =>
+        (⟨HamPath.pendantCopy x 0, x.graph.distinctVertices.length + 2⟩ : LongPathInstance))
+      encPathInstance encLongPath :=
+    encLongPath_mk_polyTime hf hk
+  refine HamPath_npHard.trans ⟨_, hr, fun x => ?_⟩
+  obtain ⟨G, s, t⟩ := x
   exact HamPath.pendantCopy_mem_LongPath_iff.symm
 
 /-- **k-Path is `NP`-complete**, with the target `k` in binary. -/
-theorem LongPath_npComplete : NPComplete (encPair encGraph encNat) LongPath :=
+theorem LongPath_npComplete : NPComplete encLongPath LongPath :=
   ⟨LongPath.mem_NP, LongPath_npHard⟩
 
 end Cslib.Complexity

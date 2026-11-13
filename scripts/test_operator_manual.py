@@ -11,9 +11,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from check_operator_manual import (MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR, book_input_errors,
-                                   check, comment_depths, fix_anchors, main as check_main,
-                                   source_anchor_error)
+from build_operator_manual import main as build_main
+from check_operator_manual import (LIST_AFTER_PARAGRAPH, MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR,
+                                   book_input_errors, check, comment_depths, fix_anchors,
+                                   lists_after_paragraphs, main as check_main, source_anchor_error)
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -85,6 +86,34 @@ class ManualChecks(unittest.TestCase):
     def test_current_checkout_needs_no_git_or_historical_revision(self):
         self.assertEqual(self.errors(), [])
 
+    def test_merge_conflicts_report_document_and_opening_line(self):
+        original = self.doc.read_text()
+        for body in (
+                "<<<<<<< HEAD\nOld scope.\n=======\nNew scope.\n>>>>>>> feature\n",
+                "<<<<<<< HEAD\n[paper]: https://example.org/old\n=======\n"
+                "[paper]: https://example.org/new\n>>>>>>> feature\n",
+                "<<<<<<< ours\nOurs.\n||||||| base\nOriginal.\n=======\nTheirs.\n>>>>>>> theirs\n",
+                "  <<<<<<<<<\nOurs.\n=========\nTheirs.\n  >>>>>>>>>\n",
+                "<<<<<<< HEAD\nUnfinished resolution.\n"):
+            with self.subTest(body=body):
+                self.doc.write_text(original + "\n" + body)
+                line = len(original.splitlines()) + 2
+                self.assertIn(f"workflows/first.md: Line {line}: unresolved Git merge conflict",
+                              self.errors())
+
+    def test_pdf_entry_point_rejects_conflicts_before_rendering(self):
+        self.doc.write_text(self.doc.read_text() +
+                            "\n<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n")
+        for option in ("--tex-only", "--agent-manual"):
+            with self.subTest(option=option), mock.patch("build_operator_manual.ROOT", self.repo), \
+                    mock.patch.object(sys, "argv", ["build_operator_manual.py", option]), \
+                    mock.patch("build_operator_manual.subprocess.run") as render, \
+                    contextlib.redirect_stderr(io.StringIO()) as diagnostics:
+                self.assertEqual(build_main(), 1)
+                self.assertIn("workflows/first.md: Line", diagnostics.getvalue())
+                self.assertIn("unresolved Git merge conflict", diagnostics.getvalue())
+                render.assert_not_called()
+
     def test_source_relocation_is_allowed(self):
         self.client.write_text("-- inserted before the original source\n\n" + self.client.read_text())
         result = check(self.repo)
@@ -114,6 +143,15 @@ class ManualChecks(unittest.TestCase):
     def test_undefined_reference_is_reported(self):
         self.doc.write_text(self.doc.read_text() + "\n[Read it][undefined]\n")
         self.assertTrue(any("undefined reference" in e for e in self.errors()))
+
+    def test_list_directly_after_a_paragraph_line_is_reported(self):
+        original = self.doc.read_text()
+        self.doc.write_text(original + "\nThe examples check:\n- one case;\n- another.\n")
+        line = len(original.splitlines()) + 3
+        self.assertEqual(self.errors(),
+                         [f"workflows/first.md: Line {line}: {LIST_AFTER_PARAGRAPH}"])
+        self.doc.write_text(original + "\nThe examples check:\n\n- one case;\n- another.\n")
+        self.assertEqual(self.errors(), [])
 
     def test_unregistered_lean_block_is_reported(self):
         self.doc.write_text(self.doc.read_text() + "\n```lean\nexample : True := .intro\n```\n")
@@ -608,11 +646,30 @@ class BookInputs(unittest.TestCase):
             book.validate_manifest(self.root, self.output, ["README.md"])
 
 
+class MissingGlyphs(unittest.TestCase):
+    def test_log_lines_name_each_missing_character_once(self):
+        log = ("Missing character: There is no 𝔼 (U+1D53C) in font [DejaVuSansMono.ttf]:mode=node;\n"
+               "Missing character: There is no ι in font cmmi10!\n"
+               "Missing character: There is no 𝔼 (U+1D53C) in font [DejaVuSansMono.ttf]:mode=node;\n"
+               "Missing character: There is no ⬝ (U+2B1D) in font [texgyrepagella-regular.o\n")
+        self.assertEqual(book.missing_glyphs(log), [
+            "𝔼 (U+1D53C) in [DejaVuSansMono.ttf]", "ι (U+03B9) in cmmi10",
+            "⬝ (U+2B1D) in [texgyrepagella-regular.o"])
+        self.assertEqual(book.missing_glyphs("Output written on book.pdf (2 pages).\n"), [])
+
+    def test_unicode_absent_from_the_fonts_is_set_in_math(self):
+        self.assertEqual(book.base.inline_tex("𝔼"), r"\ensuremath{\mathbb{E}}")
+        self.assertEqual(book.base.inline_tex("A ⬝ v"), r"A \ensuremath{\cdot} v")
+        self.assertTrue(all(book.base.MATH.values()))
+        math = {'t': 'Math', 'c': [{'t': 'InlineMath'}, r'ι \times κ₁']}
+        self.assertEqual(book.base.transform(math, 'topic.md')['c'][1], r'{\iota} \times {\kappa}_1')
+
+
 class PortableLinks(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-links-")
         self.addCleanup(self.temp.cleanup)
-        self.repo = Path(self.temp.name)
+        self.repo = Path(self.temp.name).resolve()
         self.root = self.repo / 'manual'
         self.root.mkdir()
         (self.repo / 'CslibFrontierTests').mkdir()
@@ -673,6 +730,48 @@ class PortableLinks(unittest.TestCase):
             self.target('../../outside.txt')
 
 
+class ListsAfterParagraphs(unittest.TestCase):
+    """Cases follow pandoc's `markdown+autolink_bare_uris` reader, which builds the PDFs."""
+
+    def test_list_starting_below_a_paragraph_line_is_found(self):
+        for text, lines in (
+                ("Intro:\n- a\n- b\n", [2]),
+                ("Intro:\n1. a\n2. b\n", [2]),
+                ("Intro:\n  - an indented item is still lazy paragraph text\n", [2]),
+                ("A wrapped sum `a\n+ b` starts a list on GitHub.\n", [2]),
+                ("- a\n\nA paragraph after the list.\n- b\n", [4]),
+                ("> Quote.\n- a\n", [2]),
+                ('<a id="anchor"></a>\n- a\n', [2]),
+                ("Intro:\n[ref]: https://example.org\n- a\n", [3]),
+                ("Para\n# Not a heading after a paragraph line\n- a\n", [3]),
+                ("A wrapped reference to\n#4903 landed.\n- a\n", [3]),
+                ("```text\nx\n```\nPara\n- a\n", [5]),
+                ("- a\n\n  ```text\n  x\n  ```\n\nA paragraph after the list.\n- b\n", [8])):
+            with self.subTest(text=text):
+                self.assertEqual(lists_after_paragraphs(text), lines)
+
+    def test_separated_open_and_non_paragraph_lists_are_accepted(self):
+        for text in ("Intro:\n\n- a\n- b\n",
+                     "# Heading\n- a\n",
+                     "- a\n  - nested\n- b\n",
+                     "- a lazy\ncontinuation line\n- b\n",
+                     "- a\n\n  A second paragraph of the item.\n  - nested\n",
+                     "1. a\n2. b\n   - nested\n",
+                     "1. Run:\n\n   ```bash\n   python3 x\n   ```\n\n   Then inspect.\n2. Build.\n",
+                     "- a\n\n  ```text\n  x\n\n  y\n  ```\n  after fence\n- b\n",
+                     "- a\n\n  ```text\n  x\n  ```\nlazy text continues the item\n- b\n",
+                     "| a | b |\n- a\n",
+                     "<!-- comment -->\n- a\n",
+                     "</div>\n- a\n",
+                     "[ref]: https://example.org\n- a\n",
+                     "Setext heading\n---\n- a\n",
+                     "```text\nIntro:\n- a literal, not a list\n```\n",
+                     "```text\nliteral\n```\n- a\n",
+                     "*Emphasis* and\n*more emphasis* are not items.\n"):
+            with self.subTest(text=text):
+                self.assertEqual(lists_after_paragraphs(text), [])
+
+
 class VisualSources(unittest.TestCase):
     diagram = 'flowchart TB\nA["Encoded input"]\nB["Machine<br/>certificate"]\nA -->|"realized by"| B\n'
 
@@ -695,6 +794,42 @@ class VisualSources(unittest.TestCase):
         self.assertEqual(book.visuals.diagram_sources(text), [])
         self.assertEqual(book.visuals.check_markup(text)['diagrams'], 0)
 
+    def test_fenced_merge_conflicts_are_literal_examples(self):
+        conflict = "<<<<<<< HEAD\nOld.\n||||||| base\nBase.\n=======\nNew.\n>>>>>>> feature\n"
+        for fence in ("```", "~~~~", "`````"):
+            with self.subTest(fence=fence):
+                text = fence + "text\n" + conflict + fence + "\n"
+                self.assertEqual(book.visuals.check_markup(text),
+                                 {"diagrams": 0, "worked_examples": 0})
+        nested = "````markdown\n```text\n" + conflict + "```\n````\n"
+        self.assertEqual(book.visuals.check_markup(nested)['worked_examples'], 0)
+
+    def test_valid_markdown_is_not_a_merge_conflict(self):
+        text = "# Heading\n\nSetext heading\n=======\n\n---\n\n***\n\n___\n\n>>>>>>> A quotation\n"
+        self.assertEqual(book.visuals.check_markup(text), {"diagrams": 0, "worked_examples": 0})
+
+    def test_list_fenced_conflicts_are_literal_until_the_fence_closes(self):
+        conflict = "<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n"
+        for marker in ("- ", "+ ", "* ", "1. ", "12) ", "- - "):
+            with self.subTest(marker=marker):
+                indent = " " * len(marker)
+                example = marker + "```text\n" + "".join(
+                    indent + line + "\n" for line in conflict.splitlines()) + indent + "```\n"
+                self.assertEqual(book.visuals.check_markup(example),
+                                 {"diagrams": 0, "worked_examples": 0})
+                for after in ("<<<<<<< HEAD\n", indent + "<<<<<<< HEAD\n"):
+                    with self.assertRaisesRegex(ValueError, "Line 8: unresolved Git merge conflict"):
+                        book.visuals.check_markup(example + after)
+                literal_diagram = marker + "````markdown\n" + indent + "```mermaid\n" + \
+                    indent + "This is a literal example, not a model diagram.\n" + \
+                    indent + "```\n" + indent + "````\n"
+                self.assertEqual(book.visuals.check_markup(literal_diagram)['diagrams'], 0)
+
+    def test_leaving_a_list_also_ends_its_literal_fence(self):
+        text = "- ```text\n  Literal example.\n<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n"
+        with self.assertRaisesRegex(ValueError, "Line 3: unresolved Git merge conflict"):
+            book.visuals.check_markup(text)
+
     def test_similar_source_paths_keep_distinct_diagram_assets(self):
         paths = ['topic-one.md', 'topic/one.md', 'topic_one.md']
         names = [book.visuals.diagram_name(path, 1) for path in paths]
@@ -702,7 +837,7 @@ class VisualSources(unittest.TestCase):
         self.assertEqual(names[1], 'figures/topic/one-1.pdf')
 
     def test_nested_mermaid_fences_fail_before_publishing(self):
-        for prefix in ('> ', '>> ', '  ', '    ', '- ', '1. ', '> - '):
+        for prefix in ('> ', '>> ', '  ', '    ', '- ', '1. ', '> - ', '- - ', '1. - '):
             with self.subTest(prefix=prefix), self.assertRaisesRegex(ValueError, 'top-level'):
                 book.visuals.check_markup(prefix + '```mermaid\n' + self.diagram + '```\n')
 

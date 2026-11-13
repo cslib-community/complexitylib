@@ -8,11 +8,13 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.CollisionResistant
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Tactic.PolyTime
 import Mathlib.Data.List.GetD
@@ -393,93 +395,103 @@ private theorem pow_clog_two_le (L : ℕ) : 2 ^ Nat.clog 2 L ≤ 2 * L + 1 := by
   · simp
   · exact (Nat.pow_clog_le_mul (by norm_num) hL).trans (Nat.le_succ _)
 
-private theorem computableTidilyInPolyTime_hash
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
+private def LevelInv (key : List Bool) (L : ℕ) (level : List (List Bool)) : Prop :=
+  (∀ y ∈ level, y.length = key.length) ∧ level.length ≤ 2 ^ Nat.clog 2 L
+
+private theorem levelInv_merkleLeafLevel (hlen : ∀ k x, (H k x).length = k.length)
+    (key : List Bool) (leaves : List (List Bool)) :
+    LevelInv key leaves.length (merkleLeafLevel H key leaves) :=
+  ⟨fun _ hy => length_of_mem_merkleLeafLevel hlen hy, (length_merkleLeafLevel leaves).le⟩
+
+private theorem LevelInv.merkleParents {key : List Bool} {L : ℕ} {level : List (List Bool)}
+    (h : LevelInv key L level) (hlen : ∀ k x, (H k x).length = k.length) :
+    LevelInv key L (Cslib.Crypto.merkleParents H key level) :=
+  ⟨fun _ hy => length_of_mem_merkleParents hlen hy,
+    (length_merkleParents level).le.trans ((Nat.div_le_self _ _).trans h.2)⟩
+
+private theorem length_encList_level_le {L : ℕ} {key : List Bool} {level : List (List Bool)}
+    (hy : ∀ y ∈ level, y.length ≤ key.length) (hL : level.length ≤ 2 ^ Nat.clog 2 L) :
+    (encList encBits level).length ≤ (2 * L + 1) * (2 * key.length + 1) :=
+  (length_encList_le encBits _ hy).trans (Nat.mul_le_mul_right _ (hL.trans (pow_clog_two_le L)))
+
+private theorem computableInPolyTime_hash
+    (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
-    {k x : γ → List Bool} (hk : ComputableTidilyInPolyTime k encIn encBits)
-    (hx : ComputableTidilyInPolyTime x encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => H (k a) (x a)) encIn encBits :=
+    {k x : γ → List Bool} (hk : ComputableInPolyTime k encIn encBits)
+    (hx : ComputableInPolyTime x encIn encBits) :
+    ComputableInPolyTime (fun a => H (k a) (x a)) encIn encBits :=
   hH.comp (hk.prod hx)
 
-private theorem computableTidilyInPolyTime_pairWord {x y : γ → List Bool}
-    (hx : ComputableTidilyInPolyTime x encIn encBits)
-    (hy : ComputableTidilyInPolyTime y encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => encPair encBits encBits (x a, y a)) encIn encBits :=
-  (ComputableTidilyInPolyTime.of_eq (encIn := encPair encBits encBits) (encMid := encBits)
-    fun _ => rfl).comp (hx.prod hy)
-
-private theorem computableTidilyInPolyTime_merkleLeafLevel
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
+private theorem computableInPolyTime_merkleLeafLevel
+    (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
     {k : γ → List Bool} {leaves : γ → List (List Bool)}
-    (hk : ComputableTidilyInPolyTime k encIn encBits)
-    (hleaves : ComputableTidilyInPolyTime leaves encIn (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => merkleLeafLevel H (k a) (leaves a)) encIn
+    (hk : ComputableInPolyTime k encIn encBits)
+    (hleaves : ComputableInPolyTime leaves encIn (encList encBits)) :
+    ComputableInPolyTime (fun a => merkleLeafLevel H (k a) (leaves a)) encIn
       (encList encBits) := by
   unfold merkleLeafLevel
-  have hcount : ComputableTidilyInPolyTime
+  have hcount : ComputableInPolyTime
       (fun a => 2 ^ Nat.clog 2 (leaves a).length) encIn encUnary :=
-    ComputableTidilyInPolyTime.unary_pow_clog_const
-      ((ComputableTidilyInPolyTime.length encBits).comp hleaves) 2 2
-  refine ComputableTidilyInPolyTime.mapWithInput
-    (ComputableTidilyInPolyTime.range.comp hcount) ?_
-  have hget : ComputableTidilyInPolyTime (fun p : γ × ℕ => (leaves p.1).getD p.2 [])
+    ComputableInPolyTime.unary_pow_clog_const
+      ((ComputableInPolyTime.length_list encBits).comp hleaves) 2 2
+  refine ComputableInPolyTime.mapWithInput
+    (ComputableInPolyTime.range.comp hcount) ?_
+  have hget : ComputableInPolyTime (fun p : γ × ℕ => (leaves p.1).getD p.2 [])
       (encPair encIn encUnary) encBits :=
-    (ComputableTidilyInPolyTime.listGetD (encA := encBits) []).comp
-      ((hleaves.comp (ComputableTidilyInPolyTime.fst _ _)).prod
-        (ComputableTidilyInPolyTime.snd _ _))
-  exact computableTidilyInPolyTime_hash hH (hk.comp (ComputableTidilyInPolyTime.fst _ _)) hget
+    (ComputableInPolyTime.listGetD (encA := encBits) []).comp
+      ((hleaves.comp (ComputableInPolyTime.fst _ _)).prod
+        (ComputableInPolyTime.snd _ _))
+  exact computableInPolyTime_hash hH (hk.comp (ComputableInPolyTime.fst _ _)) hget
 
-private theorem computableTidilyInPolyTime_merkleParents
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
+private theorem computableInPolyTime_merkleParents
+    (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
     {k : γ → List Bool} {level : γ → List (List Bool)}
-    (hk : ComputableTidilyInPolyTime k encIn encBits)
-    (hlevel : ComputableTidilyInPolyTime level encIn (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => merkleParents H (k a) (level a)) encIn
+    (hk : ComputableInPolyTime k encIn encBits)
+    (hlevel : ComputableInPolyTime level encIn (encList encBits)) :
+    ComputableInPolyTime (fun a => merkleParents H (k a) (level a)) encIn
       (encList encBits) := by
   unfold merkleParents
-  have hcount : ComputableTidilyInPolyTime (fun a => (level a).length / 2) encIn encUnary :=
-    (ComputableTidilyInPolyTime.unary_div_const 2).comp
-      ((ComputableTidilyInPolyTime.length encBits).comp hlevel)
-  refine ComputableTidilyInPolyTime.mapWithInput
-    (ComputableTidilyInPolyTime.range.comp hcount) ?_
-  have hlevel' := hlevel.comp (ComputableTidilyInPolyTime.fst encIn encUnary)
-  have hi := ComputableTidilyInPolyTime.snd encIn encUnary
-  have hget (offset : ℕ) : ComputableTidilyInPolyTime
+  have hcount : ComputableInPolyTime (fun a => (level a).length / 2) encIn encUnary :=
+    (ComputableInPolyTime.unary_div_const 2).comp
+      ((ComputableInPolyTime.length_list encBits).comp hlevel)
+  refine ComputableInPolyTime.mapWithInput
+    (ComputableInPolyTime.range.comp hcount) ?_
+  have hlevel' := hlevel.comp (ComputableInPolyTime.fst encIn encUnary)
+  have hi := ComputableInPolyTime.snd encIn encUnary
+  have hget (offset : ℕ) : ComputableInPolyTime
       (fun p : γ × ℕ => (level p.1).getD (2 * p.2 + offset) []) (encPair encIn encUnary)
       encBits :=
-    (ComputableTidilyInPolyTime.listGetD (encA := encBits) []).comp
+    (ComputableInPolyTime.listGetD (encA := encBits) []).comp
       (hlevel'.prod (by polytime))
-  have hleft : ComputableTidilyInPolyTime
+  have hleft : ComputableInPolyTime
       (fun p : γ × ℕ => (level p.1).getD (2 * p.2) []) (encPair encIn encUnary) encBits := by
     simpa using hget 0
-  exact computableTidilyInPolyTime_hash hH (hk.comp (ComputableTidilyInPolyTime.fst _ _))
-    (computableTidilyInPolyTime_pairWord hleft (hget 1))
+  exact computableInPolyTime_hash hH (hk.comp (ComputableInPolyTime.fst _ _))
+    (hleft.prod (hget 1)).encoding_comp
 
-private theorem computableTidilyInPolyTime_iterate_merkleParents
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
+private theorem computableInPolyTime_iterate_merkleParents
+    (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length) :
-    ComputableTidilyInPolyTime (fun p : List Bool × List (List Bool) =>
+    ComputableInPolyTime (fun p : List Bool × List (List Bool) =>
       (merkleParents H p.1)^[Nat.clog 2 p.2.length] (merkleLeafLevel H p.1 p.2))
       (encPair encBits (encList encBits)) (encList encBits) := by
-  have hk := ComputableTidilyInPolyTime.fst encBits (encList encBits)
-  have hleaves := ComputableTidilyInPolyTime.snd encBits (encList encBits)
-  refine (ComputableTidilyInPolyTime.iterateWith_spec
+  have hk := ComputableInPolyTime.fst encBits (encList encBits)
+  have hleaves := ComputableInPolyTime.snd encBits (encList encBits)
+  refine (ComputableInPolyTime.iterateWith_spec
     (par := fun p : List Bool × List (List Bool) => p.1)
     (count := fun p => Nat.clog 2 p.2.length)
     (step := fun k level => merkleParents H k level)
-    hk ((ComputableTidilyInPolyTime.unary_clog_const 2).comp
-      ((ComputableTidilyInPolyTime.length encBits).comp hleaves))
-    (computableTidilyInPolyTime_merkleLeafLevel hH hk hleaves)
-    (computableTidilyInPolyTime_merkleParents hH (ComputableTidilyInPolyTime.fst _ _)
-      (ComputableTidilyInPolyTime.snd _ _))
-    (fun p _ level => (∀ y ∈ level, y.length = p.1.length) ∧
-      level.length ≤ 2 ^ Nat.clog 2 p.2.length)
-    (fun p => ⟨fun y hy => length_of_mem_merkleLeafLevel hlen hy, by simp⟩)
-    (fun p _ level _ hinv => ⟨fun y hy => length_of_mem_merkleParents hlen hy,
-      by simpa using (Nat.div_le_self _ _).trans hinv.2⟩)
+    hk ((ComputableInPolyTime.unary_clog_const 2).comp
+      ((ComputableInPolyTime.length_list encBits).comp hleaves))
+    (computableInPolyTime_merkleLeafLevel hH hk hleaves)
+    (computableInPolyTime_merkleParents hH (ComputableInPolyTime.fst _ _)
+      (ComputableInPolyTime.snd _ _))
+    (fun p _ level => LevelInv p.1 p.2.length level)
+    (fun p => levelInv_merkleLeafLevel hlen p.1 p.2)
+    (fun _ _ _ _ hinv => hinv.merkleParents hlen)
     (size := fun p => (2 * p.2.length + 1) * (2 * p.1.length + 1))
     ?_ ?_).1
   · refine PolyBounded.of_forall_le 9 2 fun p => ?_
@@ -492,18 +504,7 @@ private theorem computableTidilyInPolyTime_iterate_merkleParents
     calc (2 * p.2.length + 1) * (2 * p.1.length + 1) ≤ (2 * s + 1) * (2 * s + 1) := by
           gcongr
       _ ≤ 9 * (s + 1) ^ 2 := by nlinarith
-  · intro p _ level _ hinv
-    refine (length_encList_le encBits _ fun y hy => (hinv.1 y hy).le).trans ?_
-    exact Nat.mul_le_mul_right _ (hinv.2.trans (pow_clog_two_le _))
-
-private theorem computableTidilyInPolyTime_merkleRoot
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
-      (encPair encBits encBits) encBits)
-    (hlen : ∀ k x, (H k x).length = k.length) :
-    ComputableTidilyInPolyTime (fun p : List Bool × List (List Bool) => merkleRoot H p.1 p.2)
-      (encPair encBits (encList encBits)) encBits :=
-  ComputableTidilyInPolyTime.listHeadDWithInput []
-    (computableTidilyInPolyTime_iterate_merkleParents hH hlen)
+  · exact fun _ _ _ _ hinv => length_encList_level_le (fun y hy => (hinv.1 y hy).le) hinv.2
 
 /-- Computing the root of a Merkle tree is polynomial-time for a polynomial-time keyed hash whose
 digests have the length of the key. -/
@@ -514,84 +515,84 @@ theorem computableInPolyTime_merkleRoot
     (hlen : ∀ k x, (H k x).length = k.length) :
     ComputableInPolyTime (fun p : List Bool × List (List Bool) => merkleRoot H p.1 p.2)
       (encPair encBits (encList encBits)) encBits :=
-  .of_tidy (computableTidilyInPolyTime_merkleRoot hH.tidy hlen)
+  ComputableInPolyTime.listHeadDWithInput
+    (computableInPolyTime_iterate_merkleParents hH hlen) (.const [])
 
-private theorem computableTidilyInPolyTime_merkleSibling :
-    ComputableTidilyInPolyTime merkleSibling encUnary encUnary := by
+private theorem computableInPolyTime_merkleSibling :
+    ComputableInPolyTime merkleSibling encUnary encUnary := by
   unfold merkleSibling
   polytime
 
-private theorem computableTidilyInPolyTime_merklePathStep
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
+private theorem computableInPolyTime_merklePathStep
+    (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : List Bool × (List (List Bool) × ℕ × List (List Bool)) => merklePathStep H p.1 p.2)
       (encPair encBits (encPair (encList encBits) (encPair encUnary (encList encBits))))
       (encPair (encList encBits) (encPair encUnary (encList encBits))) := by
-  have hk := ComputableTidilyInPolyTime.fst encBits
+  have hk := ComputableInPolyTime.fst encBits
     (encPair (encList encBits) (encPair encUnary (encList encBits)))
-  have hstate := ComputableTidilyInPolyTime.snd encBits
+  have hstate := ComputableInPolyTime.snd encBits
     (encPair (encList encBits) (encPair encUnary (encList encBits)))
-  have hlevel := (ComputableTidilyInPolyTime.fst _ _).comp hstate
-  have hidx := (ComputableTidilyInPolyTime.fst _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hstate)
-  have hpath := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hstate)
-  have hsib := (ComputableTidilyInPolyTime.listGetD (encA := encBits) []).comp
-    (hlevel.prod (computableTidilyInPolyTime_merkleSibling.comp hidx))
-  exact (computableTidilyInPolyTime_merkleParents hH hk hlevel).prod
-    (((ComputableTidilyInPolyTime.unary_div_const 2).comp hidx).prod
-      (ComputableTidilyInPolyTime.listAppend' hpath
-        (ComputableTidilyInPolyTime.cons' hsib (ComputableTidilyInPolyTime.const []))))
+  have hlevel := (ComputableInPolyTime.fst _ _).comp hstate
+  have hidx := (ComputableInPolyTime.fst _ _).comp
+    ((ComputableInPolyTime.snd _ _).comp hstate)
+  have hpath := (ComputableInPolyTime.snd _ _).comp
+    ((ComputableInPolyTime.snd _ _).comp hstate)
+  have hsib := (ComputableInPolyTime.listGetD (encA := encBits) []).comp
+    (hlevel.prod (computableInPolyTime_merkleSibling.comp hidx))
+  exact (computableInPolyTime_merkleParents hH hk hlevel).prod
+    (((ComputableInPolyTime.unary_div_const 2).comp hidx).prod
+      (ComputableInPolyTime.listAppend' hpath
+        (ComputableInPolyTime.cons' hsib (ComputableInPolyTime.const []))))
 
-private theorem computableTidilyInPolyTime_merklePath
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
+/-- Computing an authentication path is polynomial-time for a polynomial-time keyed hash whose
+digests have the length of the key. -/
+@[program_certificate]
+theorem computableInPolyTime_merklePath
+    (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length) :
-    ComputableTidilyInPolyTime
+    ComputableInPolyTime
       (fun p : List Bool × List (List Bool) × ℕ => merklePath H p.1 p.2.1 p.2.2)
       (encPair encBits (encPair (encList encBits) encUnary)) (encList encBits) := by
-  have hk := ComputableTidilyInPolyTime.fst encBits (encPair (encList encBits) encUnary)
-  have hleaves := (ComputableTidilyInPolyTime.fst _ _).comp
-    (ComputableTidilyInPolyTime.snd encBits (encPair (encList encBits) encUnary))
-  have hi := (ComputableTidilyInPolyTime.snd _ _).comp
-    (ComputableTidilyInPolyTime.snd encBits (encPair (encList encBits) encUnary))
-  have hinit : ComputableTidilyInPolyTime
+  have hk := ComputableInPolyTime.fst encBits (encPair (encList encBits) encUnary)
+  have hleaves := (ComputableInPolyTime.fst _ _).comp
+    (ComputableInPolyTime.snd encBits (encPair (encList encBits) encUnary))
+  have hi := (ComputableInPolyTime.snd _ _).comp
+    (ComputableInPolyTime.snd encBits (encPair (encList encBits) encUnary))
+  have hinit : ComputableInPolyTime
       (fun p : List Bool × List (List Bool) × ℕ =>
         (merkleLeafLevel H p.1 p.2.1, p.2.2, ([] : List (List Bool))))
       (encPair encBits (encPair (encList encBits) encUnary))
       (encPair (encList encBits) (encPair encUnary (encList encBits))) :=
-    (computableTidilyInPolyTime_merkleLeafLevel hH hk hleaves).prod
-      (hi.prod (ComputableTidilyInPolyTime.const []))
-  have hiter := (ComputableTidilyInPolyTime.iterateWith_spec
+    (computableInPolyTime_merkleLeafLevel hH hk hleaves).prod
+      (hi.prod (ComputableInPolyTime.const []))
+  have hiter := (ComputableInPolyTime.iterateWith_spec
     (par := fun p : List Bool × List (List Bool) × ℕ => p.1)
     (count := fun p => Nat.clog 2 p.2.1.length)
     (step := fun k state => merklePathStep H k state)
-    hk ((ComputableTidilyInPolyTime.unary_clog_const 2).comp
-      ((ComputableTidilyInPolyTime.length encBits).comp hleaves))
-    hinit (computableTidilyInPolyTime_merklePathStep hH)
-    (fun p j state => (∀ y ∈ state.1, y.length = p.1.length) ∧
-      state.1.length ≤ 2 ^ Nat.clog 2 p.2.1.length ∧ state.2.1 ≤ p.2.2 ∧
+    hk ((ComputableInPolyTime.unary_clog_const 2).comp
+      ((ComputableInPolyTime.length_list encBits).comp hleaves))
+    hinit (computableInPolyTime_merklePathStep hH)
+    (fun p j state => LevelInv p.1 p.2.1.length state.1 ∧ state.2.1 ≤ p.2.2 ∧
       (∀ y ∈ state.2.2, y.length ≤ p.1.length) ∧ state.2.2.length ≤ j)
-    (fun p => ⟨fun y hy => length_of_mem_merkleLeafLevel hlen hy, by simp, le_rfl,
-      by simp, by simp⟩)
-    (fun p j state _ hinv => ⟨fun y hy => length_of_mem_merkleParents hlen hy,
-      by simpa [merklePathStep] using (Nat.div_le_self _ _).trans hinv.2.1,
-      (Nat.div_le_self _ _).trans hinv.2.2.1,
+    (fun p => ⟨levelInv_merkleLeafLevel hlen p.1 p.2.1, le_rfl, by simp, by simp⟩)
+    (fun p j state _ hinv => ⟨hinv.1.merkleParents hlen,
+      (Nat.div_le_self _ _).trans hinv.2.1,
       by
         intro y hy
         simp only [merklePathStep, List.mem_append, List.mem_singleton] at hy
         rcases hy with hy | rfl
-        · exact hinv.2.2.2.1 y hy
-        · rw [List.getD_eq_getElem?_getD]
-          cases hget : state.1[merkleSibling state.2.1]? with
-          | none => simp
-          | some y => exact (hinv.1 y (List.mem_of_getElem? hget)).le,
-      by simpa [merklePathStep] using hinv.2.2.2.2⟩)
+        · exact hinv.2.2.1 y hy
+        · rcases List.getD_mem_or state.1 (merkleSibling state.2.1) [] with hmem | hnil
+          · exact (hinv.1.1 _ hmem).le
+          · simp only [hnil, List.length_nil, zero_le],
+      by simpa [merklePathStep] using hinv.2.2.2⟩)
     (size := fun p => 3 * ((2 * p.2.1.length + 1) * (2 * p.1.length + 1)) + 2 * p.2.2 + 2)
     ?_ ?_).1
-  · exact (ComputableTidilyInPolyTime.snd _ _).comp
-      ((ComputableTidilyInPolyTime.snd _ _).comp hiter)
+  · exact (ComputableInPolyTime.snd _ _).comp
+      ((ComputableInPolyTime.snd _ _).comp hiter)
   · refine PolyBounded.of_forall_le 40 2 fun p => ?_
     set s := (encPair encBits (encPair (encList encBits) encUnary) p).length
     have h1 : p.1.length ≤ s := by
@@ -605,67 +606,52 @@ private theorem computableTidilyInPolyTime_merklePath
         3 * ((2 * s + 1) * (2 * s + 1)) + 2 * s + 2 := by gcongr
       _ ≤ 40 * (s + 1) ^ 2 := by nlinarith
   · intro p j state hj hinv
-    have hL := pow_clog_two_le p.2.1.length
-    have hlevel := (length_encList_le encBits _ fun y hy => (hinv.1 y hy).le).trans
-      (Nat.mul_le_mul_right (2 * p.1.length + 1) (hinv.2.1.trans hL))
-    have hjL : j ≤ 2 * p.2.1.length + 1 := hj.trans ((Nat.lt_pow_self (by norm_num)).le.trans hL)
-    have hpath := (length_encList_le encBits _ hinv.2.2.2.1).trans
-      (Nat.mul_le_mul_right (2 * p.1.length + 1) (hinv.2.2.2.2.trans hjL))
+    have hlevel := length_encList_level_le (fun y hy => (hinv.1.1 y hy).le) hinv.1.2
+    have hpath := length_encList_level_le hinv.2.2.1
+      (hinv.2.2.2.trans (hj.trans (Nat.lt_pow_self (by norm_num)).le))
     simp only [encPair_apply, encUnary_apply, List.length_append, length_frame,
       List.length_replicate]
-    have := hinv.2.2.1
+    have := hinv.2.1
     omega
 
-/-- Computing an authentication path is polynomial-time for a polynomial-time keyed hash whose
-digests have the length of the key. -/
-@[program_certificate]
-theorem computableInPolyTime_merklePath
+private theorem computableInPolyTime_merkleInputs
     (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
-      (encPair encBits encBits) encBits)
-    (hlen : ∀ k x, (H k x).length = k.length) :
-    ComputableInPolyTime
-      (fun p : List Bool × List (List Bool) × ℕ => merklePath H p.1 p.2.1 p.2.2)
-      (encPair encBits (encPair (encList encBits) encUnary)) (encList encBits) :=
-  .of_tidy (computableTidilyInPolyTime_merklePath hH.tidy hlen)
-
-private theorem computableTidilyInPolyTime_merkleInputs
-    (hH : ComputableTidilyInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length)
     {k leaf : γ → List Bool} {i : γ → ℕ} {path : γ → List (List Bool)}
-    (hk : ComputableTidilyInPolyTime k encIn encBits)
-    (hleaf : ComputableTidilyInPolyTime leaf encIn encBits)
-    (hi : ComputableTidilyInPolyTime i encIn encUnary)
-    (hpath : ComputableTidilyInPolyTime path encIn (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => merkleInputs H (k a) (leaf a) (i a) (path a)) encIn
+    (hk : ComputableInPolyTime k encIn encBits)
+    (hleaf : ComputableInPolyTime leaf encIn encBits)
+    (hi : ComputableInPolyTime i encIn encUnary)
+    (hpath : ComputableInPolyTime path encIn (encList encBits)) :
+    ComputableInPolyTime (fun a => merkleInputs H (k a) (leaf a) (i a) (path a)) encIn
       (encList encBits) := by
-  have hstep : ComputableTidilyInPolyTime
+  have hstep : ComputableInPolyTime
       (fun p : (List Bool × (List (List Bool) × ℕ)) × List Bool =>
         merkleInputsStep H p.1.1 p.1.2 p.2)
       (encPair (encPair encBits (encPair (encList encBits) encUnary)) encBits)
       (encPair (encList encBits) encUnary) := by
-    have hk' : ComputableTidilyInPolyTime
+    have hk' : ComputableInPolyTime
         (fun p : (List Bool × (List (List Bool) × ℕ)) × List Bool => p.1.1)
         (encPair (encPair encBits (encPair (encList encBits) encUnary)) encBits) encBits := by
       polytime
-    have hinputs : ComputableTidilyInPolyTime
+    have hinputs : ComputableInPolyTime
         (fun p : (List Bool × (List (List Bool) × ℕ)) × List Bool => p.1.2.1)
         (encPair (encPair encBits (encPair (encList encBits) encUnary)) encBits)
         (encList encBits) := by
       polytime
-    have hidx : ComputableTidilyInPolyTime
+    have hidx : ComputableInPolyTime
         (fun p : (List Bool × (List (List Bool) × ℕ)) × List Bool => p.1.2.2)
         (encPair (encPair encBits (encPair (encList encBits) encUnary)) encBits) encUnary := by
       polytime
-    have hsib : ComputableTidilyInPolyTime
+    have hsib : ComputableInPolyTime
         (fun p : (List Bool × (List (List Bool) × ℕ)) × List Bool => p.2)
         (encPair (encPair encBits (encPair (encList encBits) encUnary)) encBits) encBits := by
       polytime
-    have hnode := computableTidilyInPolyTime_hash hH hk'
-      (ComputableTidilyInPolyTime.listHeadDWithInput [] hinputs)
-    have hleft := computableTidilyInPolyTime_pairWord hnode hsib
-    have hright := computableTidilyInPolyTime_pairWord hsib hnode
-    have hnext : ComputableTidilyInPolyTime
+    have hnode := computableInPolyTime_hash hH hk'
+      (ComputableInPolyTime.listHeadDWithInput hinputs (.const []))
+    have hleft := (hnode.prod hsib).encoding_comp
+    have hright := (hsib.prod hnode).encoding_comp
+    have hnext : ComputableInPolyTime
         (fun p : (List Bool × (List (List Bool) × ℕ)) × List Bool =>
           if p.1.2.2 % 2 = 0 then
             encPair encBits encBits (H p.1.1 (p.1.2.1.headD []), p.2)
@@ -673,14 +659,14 @@ private theorem computableTidilyInPolyTime_merkleInputs
         (encPair (encPair encBits (encPair (encList encBits) encUnary)) encBits) encBits := by
       polytime
     unfold merkleInputsStep
-    exact (ComputableTidilyInPolyTime.cons' hnext hinputs).prod
-      ((ComputableTidilyInPolyTime.unary_div_const 2).comp hidx)
-  have hfold := ComputableTidilyInPolyTime.foldlWith_of_bounded_growth
+    exact (ComputableInPolyTime.cons' hnext hinputs).prod
+      ((ComputableInPolyTime.unary_div_const 2).comp hidx)
+  have hfold := ComputableInPolyTime.foldlWith_of_bounded_growth
     (encA := encBits) (encL := encList encBits) (encP := encBits)
     (encB := encPair (encList encBits) encUnary)
     (step := fun k state sibling => merkleInputsStep H k state sibling)
     hk hpath
-    ((ComputableTidilyInPolyTime.cons' hleaf (ComputableTidilyInPolyTime.const [])).prod hi)
+    ((ComputableInPolyTime.cons' hleaf (ComputableInPolyTime.const [])).prod hi)
     hstep (growth := fun a => 8 * (k a).length + 8 * (encList encBits (path a)).length + 6)
     ((((PolyBounded.const 8).mul hk.polyBounded_length).add
       ((PolyBounded.const 8).mul hpath.polyBounded_length)).add (.const 6))
@@ -696,7 +682,7 @@ private theorem computableTidilyInPolyTime_merkleInputs
           length_frame, List.length_replicate, hnode]
         have := Nat.div_le_self state.2 2
         omega)
-  exact (ComputableTidilyInPolyTime.fst _ _).comp hfold
+  exact (ComputableInPolyTime.fst _ _).comp hfold
 
 /-- Recomputing a root from an opening is polynomial-time for a polynomial-time keyed hash whose
 digests have the length of the key. -/
@@ -709,18 +695,17 @@ theorem computableInPolyTime_merkleRootOfPath
       (fun p : List Bool × List Bool × ℕ × List (List Bool) =>
         merkleRootOfPath H p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encBits (encPair encBits (encPair encUnary (encList encBits)))) encBits := by
-  apply ComputableInPolyTime.of_tidy
-  have hk := ComputableTidilyInPolyTime.fst encBits
+  have hk := ComputableInPolyTime.fst encBits
     (encPair encBits (encPair encUnary (encList encBits)))
-  have hrest := ComputableTidilyInPolyTime.snd encBits
+  have hrest := ComputableInPolyTime.snd encBits
     (encPair encBits (encPair encUnary (encList encBits)))
-  have hleaf := (ComputableTidilyInPolyTime.fst _ _).comp hrest
-  have hi := (ComputableTidilyInPolyTime.fst _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hrest)
-  have hpath := (ComputableTidilyInPolyTime.snd _ _).comp
-    ((ComputableTidilyInPolyTime.snd _ _).comp hrest)
-  exact computableTidilyInPolyTime_hash hH.tidy hk (ComputableTidilyInPolyTime.listHeadDWithInput []
-    (computableTidilyInPolyTime_merkleInputs hH.tidy hlen hk hleaf hi hpath))
+  have hleaf := (ComputableInPolyTime.fst _ _).comp hrest
+  have hi := (ComputableInPolyTime.fst _ _).comp
+    ((ComputableInPolyTime.snd _ _).comp hrest)
+  have hpath := (ComputableInPolyTime.snd _ _).comp
+    ((ComputableInPolyTime.snd _ _).comp hrest)
+  exact computableInPolyTime_hash hH hk (ComputableInPolyTime.listHeadDWithInput
+    (computableInPolyTime_merkleInputs hH hlen hk hleaf hi hpath) (.const []))
 
 /-- Extracting a collision from two openings is polynomial-time for a polynomial-time keyed hash
 whose digests have the length of the key. -/
@@ -735,25 +720,24 @@ theorem computableInPolyTime_extractMerkleCollision
       (encPair encBits (encPair (encPair encBits encBits)
         (encPair encUnary (encPair (encList encBits) (encList encBits)))))
       (encPair encBits encBits) := by
-  apply ComputableInPolyTime.of_tidy
-  have hk := ComputableTidilyInPolyTime.fst encBits (encPair (encPair encBits encBits)
+  have hk := ComputableInPolyTime.fst encBits (encPair (encPair encBits encBits)
     (encPair encUnary (encPair (encList encBits) (encList encBits))))
-  have hrest := ComputableTidilyInPolyTime.snd encBits (encPair (encPair encBits encBits)
+  have hrest := ComputableInPolyTime.snd encBits (encPair (encPair encBits encBits)
     (encPair encUnary (encPair (encList encBits) (encList encBits))))
-  have hleaves := (ComputableTidilyInPolyTime.fst _ _).comp hrest
-  have hleaf₁ := (ComputableTidilyInPolyTime.fst _ _).comp hleaves
-  have hleaf₂ := (ComputableTidilyInPolyTime.snd _ _).comp hleaves
-  have hopen := (ComputableTidilyInPolyTime.snd _ _).comp hrest
-  have hi := (ComputableTidilyInPolyTime.fst _ _).comp hopen
-  have hpaths := (ComputableTidilyInPolyTime.snd _ _).comp hopen
-  have hpath₁ := (ComputableTidilyInPolyTime.fst _ _).comp hpaths
-  have hpath₂ := (ComputableTidilyInPolyTime.snd _ _).comp hpaths
-  have hzip := (ComputableTidilyInPolyTime.zip encBits encBits).comp
-    ((computableTidilyInPolyTime_merkleInputs hH.tidy hlen hk hleaf₁ hi hpath₁).prod
-      (computableTidilyInPolyTime_merkleInputs hH.tidy hlen hk hleaf₂ hi hpath₂))
-  have hfind := ComputableTidilyInPolyTime.findWithInput
+  have hleaves := (ComputableInPolyTime.fst _ _).comp hrest
+  have hleaf₁ := (ComputableInPolyTime.fst _ _).comp hleaves
+  have hleaf₂ := (ComputableInPolyTime.snd _ _).comp hleaves
+  have hopen := (ComputableInPolyTime.snd _ _).comp hrest
+  have hi := (ComputableInPolyTime.fst _ _).comp hopen
+  have hpaths := (ComputableInPolyTime.snd _ _).comp hopen
+  have hpath₁ := (ComputableInPolyTime.fst _ _).comp hpaths
+  have hpath₂ := (ComputableInPolyTime.snd _ _).comp hpaths
+  have hzip := (ComputableInPolyTime.zip encBits encBits).comp
+    ((computableInPolyTime_merkleInputs hH hlen hk hleaf₁ hi hpath₁).prod
+      (computableInPolyTime_merkleInputs hH hlen hk hleaf₂ hi hpath₂))
+  have hfind := ComputableInPolyTime.findWithInput
     (test := fun _ p => p.1 != p.2) hzip (by polytime)
-  exact ComputableTidilyInPolyTime.optionGetDWithInput hfind (.const ([], []))
+  exact ComputableInPolyTime.optionGetDWithInput hfind (.const ([], []))
 
 end PolyTime
 

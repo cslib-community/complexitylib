@@ -66,15 +66,20 @@ iff it search-reduces to the violation relation of some uniform polynomial-time 
 potential range `{0, …, 2 ^ m - 1}` of Definition 9 corresponds to the polynomial bit-length of the
 binary output of `V` (`exists_potentialBound`).
 
-Two syntactic conditions of Definition 9 are not imposed, exactly as `endOfLineRel` does not impose
-the promise of End-of-Line: an instance violating `LineSourcePromise` has the extra solution
+Two syntactic conditions of Definition 9 are not imposed here, just as `endOfLineRel` does not
+impose the promise of End-of-Line: an instance violating `LineSourcePromise` has the extra solution
 `0 ^ n`, and the normalization `V (0 ^ n) = 0`, which does not occur in (R1) or (R2), is omitted.
-This does not change the class (informal argument, not formalized here): the instance on `n + 1`
-bits with `S' (0 ^ (n + 1)) = 1 0 ^ n`, `P' (0 ^ (n + 1)) = 0 ^ (n + 1)`, `V' (0 ^ (n + 1)) = 0`,
-with `S' (1 u) = 1 (potentialSucc u)`, `P' (1 u) = 1 (potentialPred u)` (except
-`P' (1 0 ^ n) = 0 ^ (n + 1)`) and `V' (1 u) = V u + 1`, and with every other string isolated
-satisfies both conditions, and its (R1)/(R2) solutions are exactly the strings `1 u` with `u` an end
-(resp., without the start-of-line clause, a sink) of the original potential line.
+`CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization`
+formalizes the uniform polynomial-time `(n + 1)`-bit normalization to both conditions
+(`PromisedPotentialLine`, `endOfPotentialLinePromisedRel`, `sinkOfPotentialLinePromisedRel`,
+`mem_EOPL_iff_promised`, `mem_SOPL_iff_promised`): the instance on `n + 1` bits with
+`S' (0 ^ (n + 1)) = 1 0 ^ n`, `P' (0 ^ (n + 1)) = 0 ^ (n + 1)`, `V' (0 ^ (n + 1)) = 0`, with
+`S' (1 u) = 1 (potentialSucc u)`, `P' (1 u) = 1 (potentialPred u)` (except
+`P' (1 0 ^ n) = 0 ^ (n + 1)`) and `V' (1 u) = V u + 1`, and with every other string isolated at
+potential `0` satisfies both conditions, and its pure (R1)/(R2) solutions are exactly the strings
+`1 u` with `u` an end (resp., without the start-of-line clause, a sink) of the original potential
+line. Both presentations use uniform polynomial-time families rather than canonical circuit codes;
+`UEOPL` and `CLS` are not formalized.
 
 ## Main definitions
 
@@ -279,8 +284,14 @@ theorem endOfPotentialLineRel_of_sinkOfPotentialLineRel (h : sinkOfPotentialLine
     endOfPotentialLineRel n P S V a u :=
   endOfPotentialLineRel_iff.mpr (.inl h)
 
+/-- The sinks of a potential line are its ends without a potential-increasing outgoing edge. -/
+theorem sinkOfPotentialLineRel_iff : sinkOfPotentialLineRel n P S V a u ↔
+    endOfPotentialLineRel n P S V a u ∧ hasPotentialOut n P S V a u = false := by
+  rw [sinkOfPotentialLineRel_eq, endOfPotentialLineRel_eq, ← hasOut_potential]
+  exact sinkOfLineRel_iff
+
 /-- `endOfPotentialLineRel` is total whenever the successor map preserves the vertex bit-length. -/
-theorem isTotalSearch_endOfPotentialLineRel (hS : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+theorem isTotalSearch_endOfPotentialLineRel (hS : PreservesWidth n S) :
     IsTotalSearch (endOfPotentialLineRel n P S V) := by
   rw [endOfPotentialLineRel_eq]
   exact isTotalSearch_endOfLineRel fun a u hu => length_potentialSucc (hS a) hu
@@ -288,8 +299,7 @@ theorem isTotalSearch_endOfPotentialLineRel (hS : ∀ a u, u.length = n a → (S
 /-- `sinkOfPotentialLineRel` is total whenever the successor map preserves the vertex
 bit-length. -/
 theorem isTotalSearch_sinkOfPotentialLineRel
-    (hS : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    IsTotalSearch (sinkOfPotentialLineRel n P S V) := by
+    (hS : PreservesWidth n S) : IsTotalSearch (sinkOfPotentialLineRel n P S V) := by
   rw [sinkOfPotentialLineRel_eq]
   exact isTotalSearch_sinkOfLineRel fun a u hu => length_potentialSucc (hS a) hu
 
@@ -638,8 +648,7 @@ def EOPL (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
     ComputableInPolyTime P (encPair enc encBits) encBits ∧
     ComputableInPolyTime S (encPair enc encBits) encBits ∧
     ComputableInPolyTime V (encPair enc encBits) encNat ∧
-    (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-    (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+    PreservesWidth n P ∧ PreservesWidth n S ∧
     SearchReducible enc enc R (endOfPotentialLineRel n P S V)}
 
 /-- **Sink of Potential Line (`SOPL`)** [Göös et al.][GoosEtAl2022]: `FNP` search problems
@@ -652,8 +661,7 @@ def SOPL (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
     ComputableInPolyTime P (encPair enc encBits) encBits ∧
     ComputableInPolyTime S (encPair enc encBits) encBits ∧
     ComputableInPolyTime V (encPair enc encBits) encNat ∧
-    (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-    (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+    PreservesWidth n P ∧ PreservesWidth n S ∧
     SearchReducible enc enc R (sinkOfPotentialLineRel n P S V)}
 
 variable {enc : α ↪ List Bool} {encB : β ↪ List Bool} {R : α → List Bool → Prop}
@@ -665,8 +673,7 @@ theorem mem_EOPL : R ∈ EOPL enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime P (encPair enc encBits) encBits ∧
       ComputableInPolyTime S (encPair enc encBits) encBits ∧
       ComputableInPolyTime V (encPair enc encBits) encNat ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       SearchReducible enc enc R (endOfPotentialLineRel n P S V) :=
   Iff.rfl
 
@@ -676,8 +683,7 @@ theorem mem_SOPL : R ∈ SOPL enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime P (encPair enc encBits) encBits ∧
       ComputableInPolyTime S (encPair enc encBits) encBits ∧
       ComputableInPolyTime V (encPair enc encBits) encNat ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       SearchReducible enc enc R (sinkOfPotentialLineRel n P S V) :=
   Iff.rfl
 
@@ -687,8 +693,7 @@ theorem endOfPotentialLineRel_mem_EOPL
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hV : ComputableInPolyTime V (encPair enc encBits) encNat)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     endOfPotentialLineRel n P S V ∈ EOPL enc :=
   mem_EOPL.mpr ⟨endOfPotentialLineRel_mem_FNP hn hP hS hV, n, P, S, V, hn, hP, hS, hV, hP_len,
     hS_len, .refl _ _⟩
@@ -699,8 +704,7 @@ theorem sinkOfPotentialLineRel_mem_SOPL
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hV : ComputableInPolyTime V (encPair enc encBits) encNat)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     sinkOfPotentialLineRel n P S V ∈ SOPL enc :=
   mem_SOPL.mpr ⟨sinkOfPotentialLineRel_mem_FNP hn hP hS hV, n, P, S, V, hn, hP, hS, hV, hP_len,
     hS_len, .refl _ _⟩
@@ -708,26 +712,20 @@ theorem sinkOfPotentialLineRel_mem_SOPL
 /-- `EOPL` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_EOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ EOPL encB) : R ∈ EOPL enc := by
-  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT_red⟩ := Complexity.mem_EOPL.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  have hpair := (hf.comp (.fst enc encBits)).prod (.snd enc encBits)
-  refine Complexity.mem_EOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    fun p => V (f p.1, p.2), hn.comp hf, hP.comp hpair, hS.comp hpair, hV.comp hpair,
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_endOfPotentialLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_EOPL.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_EOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
+    fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-- `SOPL` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_SOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ SOPL encB) : R ∈ SOPL enc := by
-  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT_red⟩ := Complexity.mem_SOPL.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  have hpair := (hf.comp (.fst enc encBits)).prod (.snd enc encBits)
-  refine Complexity.mem_SOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    fun p => V (f p.1, p.2), hn.comp hf, hP.comp hpair, hS.comp hpair, hV.comp hpair,
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_sinkOfPotentialLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_SOPL.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_SOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
+    fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-! ### Equivalence with the circuit-style solution types -/
 
@@ -740,17 +738,16 @@ theorem mem_EOPL_iff_violation : R ∈ EOPL enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime P (encPair enc encBits) encBits ∧
       ComputableInPolyTime S (encPair enc encBits) encBits ∧
       ComputableInPolyTime V (encPair enc encBits) encNat ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       SearchReducible enc enc R (endOfPotentialLineViolationRel n P S V) := by
   constructor
   · rintro ⟨hR, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hred⟩
     have hP' := computableInPolyTime_potentialPred hn hP hS hV
     have hS' := computableInPolyTime_potentialSucc hn hP hS hV
-    have hP'_len (a : α) (u : List Bool) (hu : u.length = n a) :
-        (potentialPred n P S V (a, u)).length = n a := length_potentialPred (hP_len a) hu
-    have hS'_len (a : α) (u : List Bool) (hu : u.length = n a) :
-        (potentialSucc n P S V (a, u)).length = n a := length_potentialSucc (hS_len a) hu
+    have hP'_len : PreservesWidth n (potentialPred n P S V) :=
+      fun a _ hu => length_potentialPred (hP_len a) hu
+    have hS'_len : PreservesWidth n (potentialSucc n P S V) :=
+      fun a _ hu => length_potentialSucc (hS_len a) hu
     have htot : IsTotalSearch
         (endOfPotentialLineViolationRel n (potentialPred n P S V) (potentialSucc n P S V) V) :=
       fun a =>
@@ -775,17 +772,16 @@ theorem mem_SOPL_iff_violation : R ∈ SOPL enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime P (encPair enc encBits) encBits ∧
       ComputableInPolyTime S (encPair enc encBits) encBits ∧
       ComputableInPolyTime V (encPair enc encBits) encNat ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       SearchReducible enc enc R (sinkOfPotentialLineViolationRel n P S V) := by
   constructor
   · rintro ⟨hR, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hred⟩
     have hP' := computableInPolyTime_potentialPred hn hP hS hV
     have hS' := computableInPolyTime_potentialSucc hn hP hS hV
-    have hP'_len (a : α) (u : List Bool) (hu : u.length = n a) :
-        (potentialPred n P S V (a, u)).length = n a := length_potentialPred (hP_len a) hu
-    have hS'_len (a : α) (u : List Bool) (hu : u.length = n a) :
-        (potentialSucc n P S V (a, u)).length = n a := length_potentialSucc (hS_len a) hu
+    have hP'_len : PreservesWidth n (potentialPred n P S V) :=
+      fun a _ hu => length_potentialPred (hP_len a) hu
+    have hS'_len : PreservesWidth n (potentialSucc n P S V) :=
+      fun a _ hu => length_potentialSucc (hS_len a) hu
     have htot : IsTotalSearch
         (sinkOfPotentialLineViolationRel n (potentialPred n P S V) (potentialSucc n P S V) V) :=
       fun a =>
@@ -809,8 +805,7 @@ theorem endOfPotentialLineViolationRel_mem_EOPL
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hV : ComputableInPolyTime V (encPair enc encBits) encNat)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     endOfPotentialLineViolationRel n P S V ∈ EOPL enc :=
   mem_EOPL_iff_violation.mpr ⟨endOfPotentialLineViolationRel_mem_FNP hn hP hS hV, n, P, S, V, hn,
     hP, hS, hV, hP_len, hS_len, .refl _ _⟩
@@ -822,8 +817,7 @@ theorem sinkOfPotentialLineViolationRel_mem_SOPL
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
     (hV : ComputableInPolyTime V (encPair enc encBits) encNat)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     sinkOfPotentialLineViolationRel n P S V ∈ SOPL enc :=
   mem_SOPL_iff_violation.mpr ⟨sinkOfPotentialLineViolationRel_mem_FNP hn hP hS hV, n, P, S, V, hn,
     hP, hS, hV, hP_len, hS_len, .refl _ _⟩
@@ -965,8 +959,8 @@ theorem SOPL_subset_PLS : SOPL enc ⊆ PLS enc := by
     unfold soplCost
     exact hon.ite (binary_sub' hBp hV)
       (ComputableInPolyTime.binary_add.comp (hBp.prod (ComputableInPolyTime.const 1)))
-  have hlen (a : α) (u : List Bool) (hu : u.length = n a) :
-      (soplNeighbor n P S V (a, u)).length = n a := length_soplNeighbor (hS_len a) hu
+  have hlen : PreservesWidth n (soplNeighbor n P S V) :=
+    fun a _ hu => length_soplNeighbor (hS_len a) hu
   exact ⟨hR, n, soplNeighbor n P S V, soplCost (fun a => 2 ^ m a) n P S V, hn, hN, hC, hlen,
     hred.trans (.of_isTotalSearch (isTotalSearch_localOptRel hlen) ComputableInPolyTime.id'
       (snd enc encBits) fun a _ hw =>

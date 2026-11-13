@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Logics.Propositional.CSP.Affine
+public import CslibFrontier.Computability.PolyTime.CSP.AffineEquation
 public import CslibFrontier.Computability.Complexity.Problems.XORSAT.Dense
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 import CslibFrontier.Foundations.Data.List.EraseDupsBy
@@ -18,7 +18,8 @@ import Mathlib.Algebra.BigOperators.Group.List.Basic
 
 The input is an ordinary list of parity equations on natural-number variable labels, with
 arbitrary repetitions and Boolean right-hand sides. Labels use the existing binary `encNat`,
-equations use the existing pair encoding, and systems use the existing framed-list encoding.
+equations use `Cslib.Complexity.encAffineEquation` (a framed label list, then the right-hand side
+bit), and systems use the existing framed-list encoding.
 No bound on the numerical value of a variable label is imposed.
 
 The compiler lists the occurring labels without duplicates and computes each coefficient as the
@@ -36,41 +37,41 @@ the chosen equations are fixed independently of the input.
 * `Cslib.Complexity.XORSAT.encoding`: lists of equations with binary variable labels.
 * `Cslib.Complexity.XORSAT.compile`: compress labels and cancel repeated occurrences.
 * `Cslib.Complexity.XORSAT.solve`: compile, then perform Gaussian elimination.
+* `Cslib.Complexity.XORSAT`: the satisfiable systems.
 
 ## Main results
 
 * `Cslib.Complexity.XORSAT.solve_eq_true_iff`: correctness for ordinary parity systems.
-* `Cslib.Complexity.XORSAT.solve_polyTime`: a native multi-tape polynomial-time certificate.
-* `Cslib.Complexity.XORSAT.satisfiable_mem_P`: ordinary XOR-SAT is in `P`.
+* `Cslib.Complexity.XORSAT.computableInPolyTime_solve`: a native multi-tape polynomial-time
+  certificate.
+* `Cslib.Complexity.XORSAT.mem_P`: ordinary XOR-SAT is in `P`.
 -/
 
 public section
 
-namespace Cslib.Complexity.XORSAT
+namespace Cslib.Complexity
+
+namespace XORSAT
 
 open Turing.MultiTapeTM Cslib.Logic.PL
 
 /-- A conjunction of parity equations on arbitrarily large natural-number variable labels. -/
 abbrev System := AffineSystem ℕ
 
-/-- A row is encoded by a framed list of binary labels and a Boolean right-hand side. -/
-@[expose] def equationEncoding : AffineEquation ℕ ↪ List Bool :=
-  encPair (encList encNat) encBool
-
 /-- Ordinary framed-list encoding of sparse equations with binary labels. -/
-@[expose] def encoding : System ↪ List Bool := encList equationEncoding
+@[expose] def encoding : System ↪ List Bool := encList (encAffineEquation encNat)
 
 /-- The occurring variable labels, each retained once, in order of first occurrence. -/
 @[expose] def labels (F : System) : List ℕ :=
-  (F.flatMap Prod.fst).eraseDupsBy fun a b => Decidable.decide (a = b)
+  (F.flatMap AffineEquation.vars).eraseDupsBy fun a b => Decidable.decide (a = b)
 
 /-- The coefficient of a variable is the parity of its occurrences. -/
 @[expose] def coefficient (vs : List ℕ) (v : ℕ) : Bool :=
   (vs.map fun w => Decidable.decide (w = v)).sum
 
 /-- Compress occurring labels, keeping one Boolean coefficient for each label. -/
-@[expose] def compile (F : System) : ℕ × Dense.System :=
-  ((labels F).length, F.map fun e => ((labels F).map (coefficient e.1), e.2))
+@[expose] def compile (F : System) : Dense.Input :=
+  ⟨(labels F).length, F.map fun e => ⟨(labels F).map (coefficient e.vars), e.rhs⟩⟩
 
 /-- Native dense Gaussian elimination after compression of binary variable labels. -/
 @[expose] def solve (F : System) : Bool := Dense.decide (compile F)
@@ -80,7 +81,7 @@ abbrev System := AffineSystem ℕ
 
 /-- The compressed label list contains precisely the occurring labels. -/
 theorem mem_labels {F : System} {v : ℕ} :
-    v ∈ labels F ↔ ∃ e ∈ F, v ∈ e.1 := by
+    v ∈ labels F ↔ ∃ e ∈ F, v ∈ e.vars := by
   simp only [labels, List.mem_eraseDupsBy_eq, List.mem_flatMap]
 
 /-- There is one compressed coordinate per distinct occurring variable. -/
@@ -89,11 +90,11 @@ theorem nodup_labels (F : System) : (labels F).Nodup :=
 
 /-- Compression allocates at most one column per variable occurrence in the input. -/
 theorem length_labels_le (F : System) :
-    (labels F).length ≤ (F.flatMap Prod.fst).length :=
+    (labels F).length ≤ (F.flatMap AffineEquation.vars).length :=
   (List.eraseDupsBy_sublist _).length_le
 
 /-- Every compiled row has exactly the declared width. -/
-theorem width_compile (F : System) : Dense.Width (compile F).1 (compile F).2 := by
+theorem width_compile (F : System) : Dense.Width (compile F).width (compile F).rows := by
   intro r hr
   obtain ⟨e, _, rfl⟩ := List.mem_map.mp hr
   exact List.length_map _
@@ -132,19 +133,19 @@ private theorem sum_coefficients (l vs : List ℕ) (hl : l.Nodup)
 
 /-- Compiled rows evaluate exactly as their sparse input equations, including repetitions. -/
 theorem dot_compile_row (F : System) (e : AffineEquation ℕ) (he : e ∈ F) (a : ℕ → Bool) :
-    Dense.dot ((labels F).map (coefficient e.1)) ((labels F).map a) =
-      (e.1.map a).sum := by
+    Dense.dot ((labels F).map (coefficient e.vars)) ((labels F).map a) =
+      (e.vars.map a).sum := by
   rw [dot_map]
   exact sum_coefficients _ _ (nodup_labels F)
     (fun v hv => mem_labels.mpr ⟨e, he, hv⟩) a
 
 /-- The compiler preserves the satisfaction relation on every assignment. -/
 theorem holds_compile (F : System) (a : ℕ → Bool) :
-    Dense.Holds (compile F).2 ((labels F).map a) ↔ F.Holds a := by
+    Dense.Holds (compile F).rows ((labels F).map a) ↔ F.Holds a := by
   constructor
   · intro h e he
     have hh := h _ (List.mem_map.mpr ⟨e, he, rfl⟩)
-    change Dense.dot ((labels F).map (coefficient e.1)) ((labels F).map a) = e.2 at hh
+    change Dense.dot ((labels F).map (coefficient e.vars)) ((labels F).map a) = e.rhs at hh
     rwa [dot_compile_row F e he a] at hh
   · intro h r hr
     obtain ⟨e, he, rfl⟩ := List.mem_map.mp hr
@@ -174,7 +175,7 @@ private theorem exists_assignment {l : List ℕ} (hl : l.Nodup) {a : List Bool}
 
 /-- Sparse satisfiability is equivalent to satisfiability of the compressed dense system. -/
 theorem satisfiable_compile_iff (F : System) :
-    Dense.Satisfiable (compile F).1 (compile F).2 ↔ Satisfiable F := by
+    Dense.Satisfiable (compile F).width (compile F).rows ↔ Satisfiable F := by
   constructor
   · rintro ⟨a, ha, h⟩
     obtain ⟨f, hf⟩ := exists_assignment (nodup_labels F) ha
@@ -189,7 +190,7 @@ theorem solve_eq_true_iff (F : System) : solve F = true ↔ Satisfiable F := by
 
 private theorem labels_polyTime :
     ComputableInPolyTime labels encoding (encList encNat) := by
-  unfold labels encoding equationEncoding
+  unfold labels encoding
   fun_prop
 
 private theorem sum_polyTime :
@@ -208,21 +209,33 @@ private theorem sum_polyTime :
     fun_prop
   exact sum_polyTime.comp hbits
 
+section
+open scoped _root_.Cslib.Complexity.XORSAT.Dense
+
 /-- Label compression is itself a native polynomial-time computation. Binary labels are only
 compared, never expanded into a table indexed by their numerical value. -/
-theorem compile_polyTime : ComputableInPolyTime compile encoding Dense.encInput := by
-  have hvars := labels_polyTime.tidy
-  apply ComputableInPolyTime.of_tidy
-  unfold compile Dense.encInput Dense.encSystem Dense.encRow
-  unfold encoding equationEncoding at hvars ⊢
+theorem computableInPolyTime_compile : ComputableInPolyTime compile encoding Dense.encInput := by
+  have hvars := labels_polyTime
+  have hcoeff := coefficient_polyTime.computableInPolyTime
+  unfold compile
+  unfold encoding at hvars ⊢
   fun_prop
 
+end
+
 /-- Ordinary XOR-SAT is decided in polynomial time by native multi-tape machines. -/
-theorem solve_polyTime : ComputableInPolyTime solve encoding encBool :=
-  Dense.decide_polyTime.comp compile_polyTime
+theorem computableInPolyTime_solve : ComputableInPolyTime solve encoding encBool :=
+  Dense.computableInPolyTime_decide.comp computableInPolyTime_compile
+
+end XORSAT
+
+/-- Ordinary XOR-SAT: the satisfiable systems of parity equations. -/
+@[expose] def XORSAT : Set XORSAT.System := {F | XORSAT.Satisfiable F}
+
+theorem mem_XORSAT {F : XORSAT.System} : F ∈ XORSAT ↔ XORSAT.Satisfiable F := Iff.rfl
 
 /-- Ordinary systems of affine parity equations, with sparse binary variable labels, are in P. -/
-theorem satisfiable_mem_P : {F : System | Satisfiable F} ∈ P encoding :=
-  ⟨solve, solve_polyTime, fun F => (solve_eq_true_iff F).symm⟩
+theorem XORSAT.mem_P : XORSAT ∈ P XORSAT.encoding :=
+  ⟨solve, computableInPolyTime_solve, fun F => (solve_eq_true_iff F).symm⟩
 
-end Cslib.Complexity.XORSAT
+end Cslib.Complexity

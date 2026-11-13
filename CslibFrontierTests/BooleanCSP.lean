@@ -16,37 +16,37 @@ private def unary : Bool → ℕ := fun _ => 1
 private def pin (b : Bool) (vs : List Bool) : Bool := vs == [b]
 
 -- Variable labels need not be dense or bounded by the number of constraints.
-example : [(true, [2 ^ 80])] ∈ CSPSAT unary pin := by
+example : [⟨true, [2 ^ 80]⟩] ∈ CSPSAT unary pin := by
   refine ⟨by decide, fun _ => true, ?_⟩
   decide
 
 -- Opposite unary pins on the same variable are inconsistent.
-example : [(true, [37]), (false, [37])] ∉ CSPSAT unary pin := by
+example : [⟨true, [37]⟩, ⟨false, [37]⟩] ∉ CSPSAT unary pin := by
   rintro ⟨_, σ, hσ⟩
   cases h : σ 37 <;> simp [CSP.eval, Constraint.eval, pin, h] at hσ
 
 -- The arity guard rejects syntax even when an unconstrained list semantics would accept it.
-example : [(true, [0, 1])] ∉ CSPSAT unary (fun _ _ => true) := by
+example : [⟨true, [0, 1]⟩] ∉ CSPSAT unary (fun _ _ => true) := by
   rintro ⟨h, _⟩
-  have hw := h (true, [0, 1]) (by simp)
+  have hw := h ⟨true, [0, 1]⟩ (by simp)
   norm_num [unary] at hw
 
 -- Repeated variables occupy multiple positions; no distinctness restriction is imposed.
-example : [((), [7, 7])] ∈ CSPSAT (fun _ : Unit => 2)
+example : [⟨(), [7, 7]⟩] ∈ CSPSAT (fun _ : Unit => 2)
     (fun _ vs => vs == [true, true]) := by
   refine ⟨by decide, fun _ => true, ?_⟩
   decide
 
 -- A nullary true relation is satisfied; a nullary false relation makes an instance false.
-example : [((), [])] ∈ CSPSAT (fun _ : Unit => 0) (fun _ _ => true) := by
+example : [⟨(), []⟩] ∈ CSPSAT (fun _ : Unit => 0) (fun _ _ => true) := by
   exact ⟨by decide, fun _ => false, rfl⟩
 
-example : [((), [])] ∉ CSPSAT (fun _ : Unit => 0) (fun _ _ => false) := by
+example : [⟨(), []⟩] ∉ CSPSAT (fun _ : Unit => 0) (fun _ _ => false) := by
   rintro ⟨_, σ, hσ⟩
   exact Bool.false_ne_true hσ
 
 -- An empty relation of positive arity is handled by its actual false semantics.
-example : [((), [0])] ∉ CSPSAT (fun _ : Unit => 1) (fun _ _ => false) := by
+example : [⟨(), [0]⟩] ∉ CSPSAT (fun _ : Unit => 1) (fun _ _ => false) := by
   rintro ⟨_, σ, hσ⟩
   exact Bool.false_ne_true hσ
 

@@ -60,7 +60,7 @@ The default makes this total even for a short buffer. -/
 
 /-- Test every constraint against the complete finite labeling buffer. -/
 @[expose] def valid (F : CSP Table ℕ) (bits : List Bool) : Bool :=
-  F.zipIdx.all fun ((table, scope), constraint) => table.sem
+  F.zipIdx.all fun ⟨⟨table, scope⟩, constraint⟩ => table.sem
     (scope.zipIdx.map fun (vertex, port) => readRecord F bits (constraint, port, vertex))
 
 /-- Test for unequal buffer bits at two actual occurrences of the requested variable. -/
@@ -203,6 +203,19 @@ theorem labeling_map (F : CSP Table ℕ) (f : OccurrenceLabeling F Bool) :
   funext o
   simp [labeling, occurrenceIndex, mem_incidenceList o]
 
+/-- An exact-width occurrence buffer is recovered by materializing its positional labeling
+in incidence-list order. Width is the actual number of occurrences, not a declared arity. -/
+theorem buffer_eq {F : CSP Table ℕ} (bits : List Bool)
+    (hlen : bits.length = (incidenceList F).length) :
+    bits = (incidenceList F).map (labeling F bits) := by
+  apply List.ext_getElem
+  · simpa using hlen
+  · intro i hi hj
+    have ho : i < (incidenceList F).length := by omega
+    have he := (incidenceList_nodup F).idxOf_getElem i ho
+    simp only [List.getElem_map, labeling, occurrenceIndex, he,
+      List.getD_eq_getElem _ _ hi]
+
 /-- Projection of an existing walk followed by positional decoding recovers its occurrences. -/
 theorem getElem?_occurrenceIndex {F : CSP Table ℕ} (o : Occurrence F) :
     (incidenceList F)[occurrenceIndex o]? = some o := by
@@ -220,12 +233,12 @@ theorem valid_eq (F : CSP Table ℕ) (bits : List Bool) :
   apply Bool.eq_iff_iff.mpr
   rw [decide_eq_true_eq]
   change valid F bits = true ↔ ∀ i : Fin F.length,
-    F[i].1.sem (localTuple (labeling F bits) i) = true
+    F[i].rel.sem (localTuple (labeling F bits) i) = true
   simp only [valid, List.all_eq_true, zipIdx_eq_ofFn, List.mem_ofFn, forall_exists_index,
     forall_apply_eq_imp_iff, List.map_ofFn, Function.comp_def]
   have htuple (i : Fin F.length) :
-      (List.ofFn fun j : Fin F[i].2.length =>
-        readRecord F bits (i.val, j.val, F[i].2[j])) = localTuple (labeling F bits) i := by
+      (List.ofFn fun j : Fin F[i].scope.length =>
+        readRecord F bits (i.val, j.val, F[i].scope[j])) = localTuple (labeling F bits) i := by
     apply congrArg List.ofFn
     funext j
     exact read_record bits ⟨i, j⟩

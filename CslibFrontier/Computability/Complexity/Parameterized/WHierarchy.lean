@@ -7,9 +7,10 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Parameterized
+public import CslibFrontier.Computability.Complexity.Parameterized.Hardness
 public import CslibFrontier.Computability.Circuit.Boolean.Unbounded.Encoding
 public import CslibFrontier.Computability.Circuit.Weft
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Foundations.Data.BitString.Weight
 
 /-!
@@ -38,12 +39,16 @@ only lowers the weft, and constants propagate without raising weft or depth.
 ## Main definitions
 
 * `Cslib.Circuits.Circuit.SatisfiableWithWeight`: a satisfying input with exactly `k` ones.
-* `Cslib.Complexity.WeightedCircuitSAT`: weighted satisfiability of circuits with unbounded fan-in.
+* `Cslib.Complexity.WeightedCircuitSATInstance`, `Cslib.Complexity.encWeightedCircuitSAT`,
+  `Cslib.Complexity.WeightedCircuitSAT`: weighted satisfiability of circuits with unbounded
+  fan-in.
 * `Cslib.Complexity.WeftCircuit`, `Cslib.Complexity.encWeftCircuit`: the circuits of weft at most
   `t` and depth at most `d`, and their encoding.
-* `Cslib.Complexity.WCS`, `Cslib.Complexity.encWCS`: weighted satisfiability for those circuits.
+* `Cslib.Complexity.WCSInstance`, `Cslib.Complexity.WCS`, `Cslib.Complexity.encWCS`: weighted
+  satisfiability for those circuits.
 * `Cslib.Complexity.W`: the class `W[t]`.
-* `Cslib.Complexity.WHard`: `W[t]`-hardness.
+* `Cslib.Complexity.WHard`: `W[t]`-hardness, the instance `FPTHard (W t)` of
+  `Cslib.Complexity.FPTHard`.
 
 ## Main results
 
@@ -52,7 +57,6 @@ only lowers the weft, and constants propagate without raising weft or depth.
 * `Cslib.Complexity.W_mono`: `W[t] ⊆ W[t']` for `t ≤ t'`.
 * `Cslib.Complexity.FPT_subset_W`: `FPT ⊆ W[t]`.
 * `Cslib.Complexity.wHard_iff`: `W[t]`-hardness is hardness for every `WCS t d`.
-* `Cslib.Complexity.WHard.subset_FPT`: a `W[t]`-hard problem in `FPT` puts `W[t]` in `FPT`.
 
 ## References
 
@@ -77,45 +81,153 @@ open Circuits Circuits.Boolean Turing.MultiTapeTM
 
 /-! ### Weighted circuit satisfiability -/
 
+/-- An instance of weighted circuit satisfiability over the unbounded fan-in basis: a one-output
+circuit packaged with its input count and a target Hamming weight. -/
+@[ext]
+structure WeightedCircuitSATInstance where
+  /-- The one-output circuit over the unbounded fan-in basis, packaged with its input count. -/
+  circuit : Σ n, Circuit Unbounded.signature n 1
+  /-- The target Hamming weight of a satisfying input. -/
+  weight : ℕ
+
+/-- The binary encoding of `WeightedCircuitSAT` instances: the circuit, then the weight in
+binary. -/
+enc_structure encWeightedCircuitSAT : WeightedCircuitSATInstance where
+  circuit : (Unbounded.encCircuit 1), weight : encNat
+
 /-- **Weighted circuit satisfiability** [Cygan et al., Section 13.3][CyganEtAl2015]: the circuits
 over the unbounded fan-in basis, with one output, that have a satisfying input with exactly `k`
 ones. -/
-def WeightedCircuitSAT : Set ((Σ n, Circuit Unbounded.signature n 1) × ℕ) :=
-  {(c, k) | c.2.SatisfiableWithWeight Unbounded.interpretation k}
+def WeightedCircuitSAT : Set WeightedCircuitSATInstance :=
+  {x | x.circuit.2.SatisfiableWithWeight Unbounded.interpretation x.weight}
 
 /-- Membership in `WeightedCircuitSAT`. -/
 theorem mem_WeightedCircuitSAT {n : ℕ} {c : Circuit Unbounded.signature n 1} {k : ℕ} :
-    ((⟨n, c⟩, k) : (Σ n, Circuit Unbounded.signature n 1) × ℕ) ∈ WeightedCircuitSAT ↔
+    (⟨⟨n, c⟩, k⟩ : WeightedCircuitSATInstance) ∈ WeightedCircuitSAT ↔
       c.SatisfiableWithWeight Unbounded.interpretation k :=
   Iff.rfl
 
 /-- The circuits over the unbounded fan-in basis with one output, weft at most `t` and depth at
 most `d`. -/
-abbrev WeftCircuit (t d : ℕ) : Type :=
-  {c : Σ n, Circuit Unbounded.signature n 1 // c.2.weft ≤ t ∧ c.2.depth ≤ d}
+@[ext]
+structure WeftCircuit (t d : ℕ) where
+  /-- The underlying one-output circuit, packaged with its input count. -/
+  toCircuit : Σ n, Circuit Unbounded.signature n 1
+  /-- The circuit's weft is at most `t`. -/
+  weft_le : toCircuit.2.weft ≤ t
+  /-- The circuit's depth is at most `d`. -/
+  depth_le : toCircuit.2.depth ≤ d
+
+/-- Two bounded circuits with equal underlying circuits are equal. -/
+theorem WeftCircuit.toCircuit_injective {t d : ℕ} :
+    Function.Injective (WeftCircuit.toCircuit (t := t) (d := d)) := fun _ _ h =>
+  WeftCircuit.ext h
 
 /-- The encoding of circuits of weft at most `t` and depth at most `d`: their encoding as
 circuits (`Unbounded.encCircuit`). -/
 def encWeftCircuit (t d : ℕ) : WeftCircuit t d ↪ List Bool :=
-  (Function.Embedding.subtype _).trans (Unbounded.encCircuit 1)
+  (⟨WeftCircuit.toCircuit, WeftCircuit.toCircuit_injective⟩ : WeftCircuit t d ↪ _).trans
+    (Unbounded.encCircuit 1)
 
 /-- A circuit of the class is encoded as a circuit. -/
 theorem encWeftCircuit_apply {t d : ℕ} (c : WeftCircuit t d) :
-    encWeftCircuit t d c = Unbounded.encCircuit 1 c.1 :=
+    encWeftCircuit t d c = Unbounded.encCircuit 1 c.toCircuit :=
   rfl
+
+private theorem computableInDegree_weftCircuitFields (t d : ℕ) :
+    ComputableInDegree
+      (fun c : WeftCircuit t d =>
+        (c.toCircuit.1, (c.toCircuit.2.code.1, c.toCircuit.2.code.2)))
+      (encWeftCircuit t d)
+      (encPair encUnary (encPair (encList (Circuit.encGate Unbounded.encOp)) (encList encNat)))
+      1 1 :=
+  ComputableInDegree.of_eq fun _ => rfl
+
+/-- Projecting the input count of a `WeftCircuit` in unary is polynomial-time. -/
+theorem WeftCircuit.computableInPolyTime_numInputs {t d : ℕ} {γ : Type}
+    {encIn : γ ↪ List Bool} {g : γ → WeftCircuit t d}
+    (h : ComputableInPolyTime g encIn (encWeftCircuit t d)) :
+    ComputableInPolyTime (fun a => (g a).toCircuit.1) encIn encUnary :=
+  (ComputableInDegree.fst' (computableInDegree_weftCircuitFields t d)).computableInPolyTime.comp h
+
+/-- Projecting the gate list of a `WeftCircuit` is polynomial-time. -/
+theorem WeftCircuit.computableInPolyTime_gates {t d : ℕ} {γ : Type}
+    {encIn : γ ↪ List Bool} {g : γ → WeftCircuit t d}
+    (h : ComputableInPolyTime g encIn (encWeftCircuit t d)) :
+    ComputableInPolyTime (fun a => (g a).toCircuit.2.code.1) encIn
+      (encList (Circuit.encGate Unbounded.encOp)) :=
+  (ComputableInDegree.fst' (ComputableInDegree.snd'
+    (computableInDegree_weftCircuitFields t d))).computableInPolyTime.comp h
+
+/-- Projecting the output wires of a `WeftCircuit` is polynomial-time. -/
+theorem WeftCircuit.computableInPolyTime_outputs {t d : ℕ} {γ : Type}
+    {encIn : γ ↪ List Bool} {g : γ → WeftCircuit t d}
+    (h : ComputableInPolyTime g encIn (encWeftCircuit t d)) :
+    ComputableInPolyTime (fun a => (g a).toCircuit.2.code.2) encIn (encList encNat) :=
+  (ComputableInDegree.snd' (ComputableInDegree.snd'
+    (computableInDegree_weftCircuitFields t d))).computableInPolyTime.comp h
+
+/-- An instance of bounded-weft, bounded-depth weighted circuit satisfiability `WCS[C_{t,d}]`
+[Cygan et al., Section 13.3][CyganEtAl2015]. -/
+@[ext]
+structure WCSInstance (t d : ℕ) where
+  /-- The circuit of weft at most `t` and depth at most `d`. -/
+  circuit : WeftCircuit t d
+  /-- The target Hamming weight of a satisfying input. -/
+  weight : ℕ
 
 /-- **Weighted circuit satisfiability for circuits of weft at most `t` and depth at most `d`**, the
 problem `WCS[C_{t,d}]` [Cygan et al., Section 13.3][CyganEtAl2015]. -/
-def WCS (t d : ℕ) : Set (WeftCircuit t d × ℕ) :=
-  Prod.map Subtype.val id ⁻¹' WeightedCircuitSAT
+def WCS (t d : ℕ) : Set (WCSInstance t d) :=
+  {x | x.circuit.toCircuit.2.SatisfiableWithWeight Unbounded.interpretation x.weight}
 
-/-- The encoding of the instances of `WCS t d`: the circuit, then the weight in binary. -/
-abbrev encWCS (t d : ℕ) : WeftCircuit t d × ℕ ↪ List Bool :=
-  encPair (encWeftCircuit t d) encNat
+/-- The encoding of the instances of `WCS t d`: the circuit, then the weight in binary.
+(`enc_structure` currently requires an unparameterized structure, so this parameterized instance
+defines the same field-pair embedding directly.) -/
+def encWCS (t d : ℕ) : WCSInstance t d ↪ List Bool :=
+  ⟨fun x => encPair (encWeftCircuit t d) encNat (x.circuit, x.weight), fun x y h => by
+    have h' := (encPair (encWeftCircuit t d) encNat).injective h
+    cases x; cases y; simp_all⟩
+
+/-- A `WCS t d` instance is encoded as the pair of its circuit and binary weight. -/
+@[simp] theorem encWCS_apply {t d : ℕ} (x : WCSInstance t d) :
+    encWCS t d x = encPair (encWeftCircuit t d) encNat (x.circuit, x.weight) :=
+  rfl
+
+private theorem computableInDegree_wcsFields (t d : ℕ) :
+    ComputableInDegree (fun x : WCSInstance t d => (x.circuit, x.weight))
+      (encWCS t d) (encPair (encWeftCircuit t d) encNat) 1 1 :=
+  ComputableInDegree.of_eq fun _ => rfl
+
+/-- Projecting `WCSInstance.circuit` is polynomial-time. -/
+@[scoped fun_prop]
+theorem encWCS_circuit_polyTime {t d : ℕ} {γ : Type}
+    {encIn : γ ↪ List Bool} {g : γ → WCSInstance t d}
+    (h : ComputableInPolyTime g encIn (encWCS t d)) :
+    ComputableInPolyTime (fun a => (g a).circuit) encIn (encWeftCircuit t d) :=
+  (ComputableInDegree.fst' (computableInDegree_wcsFields t d)).computableInPolyTime.comp h
+
+/-- Projecting `WCSInstance.weight` is polynomial-time. -/
+@[scoped fun_prop]
+theorem encWCS_weight_polyTime {t d : ℕ} {γ : Type}
+    {encIn : γ ↪ List Bool} {g : γ → WCSInstance t d}
+    (h : ComputableInPolyTime g encIn (encWCS t d)) :
+    ComputableInPolyTime (fun a => (g a).weight) encIn encNat :=
+  (ComputableInDegree.snd' (computableInDegree_wcsFields t d)).computableInPolyTime.comp h
+
+/-- Constructing a `WCSInstance` is polynomial-time. -/
+@[scoped fun_prop]
+theorem encWCS_mk_polyTime {t d : ℕ} {γ : Type}
+    {encIn : γ ↪ List Bool} {circuit : γ → WeftCircuit t d} {weight : γ → ℕ}
+    (hcircuit : ComputableInPolyTime circuit encIn (encWeftCircuit t d))
+    (hweight : ComputableInPolyTime weight encIn encNat) :
+    ComputableInPolyTime (fun a => (⟨circuit a, weight a⟩ : WCSInstance t d))
+      encIn (encWCS t d) :=
+  (hcircuit.prod hweight).of_enc_eq fun _ => rfl
 
 /-- Membership in `WCS t d`. -/
-theorem mem_WCS {t d : ℕ} {c : WeftCircuit t d} {k : ℕ} :
-    (c, k) ∈ WCS t d ↔ c.1.2.SatisfiableWithWeight Unbounded.interpretation k :=
+theorem mem_WCS {t d : ℕ} {x : WCSInstance t d} :
+    x ∈ WCS t d ↔ x.circuit.toCircuit.2.SatisfiableWithWeight Unbounded.interpretation x.weight :=
   Iff.rfl
 
 /-! ### The classes `W[t]` -/
@@ -124,18 +236,19 @@ theorem mem_WCS {t d : ℕ} {c : WeftCircuit t d} {k : ℕ} :
 that fpt-reduce to weighted satisfiability of circuits of weft at most `t` and depth at most `d`,
 for some `d`. -/
 def W (t : ℕ) {α : Type} (enc : α ↪ List Bool) (κ : α → ℕ) : Set (Set α) :=
-  {A | ∃ d, FPTReducible enc (encWCS t d) κ Prod.snd A (WCS t d)}
+  {A | ∃ d, FPTReducible enc (encWCS t d) κ WCSInstance.weight A (WCS t d)}
 
-/-- **`W[t]`-hardness**: every problem of `W[t]` fpt-reduces to `B`. -/
-def WHard (t : ℕ) {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
-  ∀ ⦃α : Type⦄ (encA : α ↪ List Bool) (κA : α → ℕ) (A : Set α), A ∈ W t encA κA →
-    FPTReducible encA enc κA κ A B
+/-- **`W[t]`-hardness**: every problem of `W[t]` fpt-reduces to `B`. The general lemmas, such as
+`FPTHard.trans` and `FPTHard.subset_FPT`, apply through dot notation. -/
+abbrev WHard (t : ℕ) {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
+  FPTHard (@W t) enc κ B
 
 variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool} {κA : α → ℕ} {κB : β → ℕ}
   {A : Set α} {B : Set β} {t : ℕ}
 
 /-- Membership in `W t`. -/
-theorem mem_W : A ∈ W t encA κA ↔ ∃ d, FPTReducible encA (encWCS t d) κA Prod.snd A (WCS t d) :=
+theorem mem_W :
+    A ∈ W t encA κA ↔ ∃ d, FPTReducible encA (encWCS t d) κA WCSInstance.weight A (WCS t d) :=
   Iff.rfl
 
 /-- **`W[t]` is closed under fpt-reductions.** -/
@@ -145,15 +258,17 @@ theorem FPTReducible.mem_W (hAB : FPTReducible encA encB κA κB A B) (hB : B �
   ⟨d, hAB.trans hB⟩
 
 /-- Weighted satisfiability of circuits of weft at most `t` and depth at most `d` is in `W[t]`. -/
-theorem WCS_mem_W (t d : ℕ) : WCS t d ∈ W t (encWCS t d) Prod.snd :=
+theorem WCS_mem_W (t d : ℕ) : WCS t d ∈ W t (encWCS t d) WCSInstance.weight :=
   ⟨d, FPTReducible.refl _ _ _⟩
 
 /-- Raising the bounds on the weft and the depth is an fpt-reduction, by the identity on
 circuits. -/
 theorem fptReducible_WCS_of_le {t t' d d' : ℕ} (ht : t ≤ t') (hd : d ≤ d') :
-    FPTReducible (encWCS t d) (encWCS t' d') Prod.snd Prod.snd (WCS t d) (WCS t' d') :=
+    FPTReducible (encWCS t d) (encWCS t' d') WCSInstance.weight WCSInstance.weight
+      (WCS t d) (WCS t' d') :=
   FPTReducible.of_computableInPolyTime
-    (f := Prod.map (fun c => ⟨c.1, c.2.1.trans ht, c.2.2.trans hd⟩) id)
+    (f := fun x : WCSInstance t d =>
+      ⟨⟨x.circuit.toCircuit, x.circuit.weft_le.trans ht, x.circuit.depth_le.trans hd⟩, x.weight⟩)
     (ComputableInPolyTime.id'.of_enc_eq fun _ => rfl) (h := id) (fun _ => le_rfl) fun _ => Iff.rfl
 
 /-- **The W-hierarchy is increasing**: `W[t] ⊆ W[t']` for `t ≤ t'`. -/
@@ -173,16 +288,16 @@ def falseCircuit : Σ n, Circuit Unbounded.signature n 1 :=
   ⟨0, ⟨Program.empty.gate ⟨.or 0, Fin.elim0⟩, fun _ => .gate 0⟩⟩
 
 /-- A yes-instance of `WCS t 1`: `trueCircuit` with weight `0`. -/
-def yesInstance (t : ℕ) : WeftCircuit t 1 × ℕ :=
-  (⟨trueCircuit, (by decide : trueCircuit.2.weft = 0).trans_le (Nat.zero_le t), by decide⟩, 0)
+def yesInstance (t : ℕ) : WCSInstance t 1 :=
+  ⟨⟨trueCircuit, (by decide : trueCircuit.2.weft = 0).trans_le (Nat.zero_le t), by decide⟩, 0⟩
 
 /-- A no-instance of `WCS t 1`: `falseCircuit` with weight `0`. -/
-def noInstance (t : ℕ) : WeftCircuit t 1 × ℕ :=
-  (⟨falseCircuit, (by decide : falseCircuit.2.weft = 0).trans_le (Nat.zero_le t), by decide⟩, 0)
+def noInstance (t : ℕ) : WCSInstance t 1 :=
+  ⟨⟨falseCircuit, (by decide : falseCircuit.2.weft = 0).trans_le (Nat.zero_le t), by decide⟩, 0⟩
 
 /-- `yesInstance t` is a yes-instance: the empty input has weight `0` and satisfies `true`. -/
 theorem yesInstance_mem (t : ℕ) : yesInstance t ∈ WCS t 1 :=
-  ⟨fun _ => false, by simp [BitString.weight], rfl⟩
+  ⟨fun _ => false, Nat.eq_zero_of_le_zero (BitString.weight_le_length _), rfl⟩
 
 /-- `noInstance t` is a no-instance: no input satisfies `false`. -/
 theorem noInstance_not_mem (t : ℕ) : noInstance t ∉ WCS t 1 := by
@@ -213,17 +328,7 @@ theorem FPT_subset_W (t : ℕ) : FPT encA κA ⊆ W t encA κA := by
 /-- **`W[t]`-hardness is hardness for weighted circuit satisfiability**: `B` is `W[t]`-hard
 exactly when `WCS t d` fpt-reduces to it for every depth `d`. -/
 theorem wHard_iff : WHard t encB κB B ↔
-    ∀ d, FPTReducible (encWCS t d) encB Prod.snd κB (WCS t d) B :=
+    ∀ d, FPTReducible (encWCS t d) encB WCSInstance.weight κB (WCS t d) B :=
   ⟨fun h d => h _ _ _ (WCS_mem_W t d), fun h _ _ _ _ ⟨d, hA⟩ => hA.trans (h d)⟩
-
-/-- Hardness transfers along fpt-reductions. -/
-theorem WHard.fptReducible (hB : WHard t encB κB B) (h : FPTReducible encB encA κB κA B A) :
-    WHard t encA κA A :=
-  fun _ _ _ _ hC => (hB _ _ _ hC).trans h
-
-/-- **A `W[t]`-hard problem in `FPT` puts `W[t]` in `FPT`.** -/
-theorem WHard.subset_FPT (hB : WHard t encB κB B) (hFPT : B ∈ FPT encB κB) :
-    W t encA κA ⊆ FPT encA κA :=
-  fun _ hA => (hB _ _ _ hA).mem_FPT hFPT
 
 end Cslib.Complexity

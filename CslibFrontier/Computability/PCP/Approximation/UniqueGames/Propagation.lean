@@ -59,9 +59,9 @@ is exhausted.
 Completeness needs injective tables: a constant table loses the information that propagation
 relies on, and `solve` may then miss a satisfying labelling (a counterexample is in the tests).
 The cost of the algorithm is analysed in
-`CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime`. This file does not show
-that `GapUniqueGames (Fin L) 1 s` is in `PromiseP` under the encoding of
-`Cslib.Complexity.UniqueGamesConjecture`; that wiring is not done.
+`CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime`, and `PromiseP`
+membership under the encoding of `Cslib.Complexity.UniqueGamesConjecture` is proved in
+`CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity`.
 
 ## References
 
@@ -540,6 +540,23 @@ private structure SemInv (τ : ℕ → α) (s : ℕ) (S : State α) : Prop where
   val : ∀ v f, S.get v = some f → f (τ s) = τ v
   cand : S.cand (τ s) = true
 
+omit [DecidableEq α] in
+/-- Pushing a table that sends the seed's label to the vertex's label keeps every stored table
+correct. -/
+private theorem SemInv.val_push {τ : ℕ → α} {s : ℕ} {S : State α} (h : SemInv τ s S) {w : ℕ}
+    {g : α → α} (hg : g (τ s) = τ w) {v : ℕ} {f : α → α} (hv : (push S w g).get v = some f) :
+    f (τ s) = τ v := by
+  by_cases hw : w = v
+  · subst hw
+    by_cases hlt : w < S.table.length
+    · rw [get_push_self hlt] at hv
+      cases hv
+      exact hg
+    · rw [push, State.get, List.set_eq_of_length_le (by omega)] at hv
+      exact h.val _ _ hv
+  · rw [get_push_ne S hw] at hv
+    exact h.val _ _ hv
+
 private theorem sem_extend {labels : List α} (hlabels : ∀ a, a ∈ labels) {τ : ℕ → α} {s : ℕ}
     {S : State α} {e : Edge (α → α)} (hπ : Function.Injective e.constraint)
     (hsat : e.constraint (τ e.src) = τ e.dst) (h : SemInv τ s S) :
@@ -548,27 +565,10 @@ private theorem sem_extend {labels : List α} (hlabels : ∀ a, a ∈ labels) {�
   unfold extend at hv
   split at hv
   · rename_i f0 hs hd
-    by_cases hw : e.dst = v
-    · subst hw
-      by_cases hlt : e.dst < S.table.length
-      · rw [get_push_self hlt] at hv
-        cases hv
-        simp only [Function.comp_apply, h.val _ _ hs, hsat]
-      · rw [push, State.get, List.set_eq_of_length_le (by omega)] at hv
-        exact h.val _ _ hv
-    · rw [get_push_ne S hw] at hv
-      exact h.val _ _ hv
+    exact h.val_push (by simp only [Function.comp_apply, h.val _ _ hs, hsat]) hv
   · rename_i h0 hs hd
-    by_cases hw : e.src = v
-    · subst hw
-      by_cases hlt : e.src < S.table.length
-      · rw [get_push_self hlt] at hv
-        cases hv
-        simp only [Function.comp_apply, h.val _ _ hd, ← hsat, preimage_apply hπ (hlabels _)]
-      · rw [push, State.get, List.set_eq_of_length_le (by omega)] at hv
-        exact h.val _ _ hv
-    · rw [get_push_ne S hw] at hv
-      exact h.val _ _ hv
+    exact h.val_push
+      (by simp only [Function.comp_apply, h.val _ _ hd, ← hsat, preimage_apply hπ (hlabels _)]) hv
   · exact h.val _ _ hv
 
 private theorem sem_prune {τ : ℕ → α} {s : ℕ} {S : State α} {e : Edge (α → α)}
@@ -673,7 +673,7 @@ private theorem scan_cons (labels : List α) (g : Graph (α → α)) {S : State 
   unfold scan; rw [h]
 
 /-- Scanning keeps the number of slots. -/
-private theorem length_scan (labels : List α) (g : Graph (α → α)) (S : State α) :
+theorem length_scan (labels : List α) (g : Graph (α → α)) (S : State α) :
     (scan labels g S).table.length = S.table.length := by
   unfold scan
   split
@@ -688,7 +688,7 @@ private theorem get_scan (labels : List α) (g : Graph (α → α)) {S : State �
   · exact foldl_visit_get labels _ hv
 
 /-- Repeated scanning keeps the number of slots. -/
-private theorem length_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) (S : State α) :
+theorem length_iterate_scan (labels : List α) (g : Graph (α → α)) (k : ℕ) (S : State α) :
     ((scan labels g)^[k] S).table.length = S.table.length := by
   induction k with
   | zero => rfl
@@ -948,7 +948,7 @@ private theorem settle_get [Inhabited α] (labels : List α) (S : State α) (v :
 
 omit [DecidableEq α] in
 /-- Settling keeps the number of slots. -/
-private theorem settle_length [Inhabited α] (labels : List α) (S : State α) :
+theorem settle_length [Inhabited α] (labels : List α) (S : State α) :
     (settle labels S).table.length = S.table.length :=
   foldl_freeze_length _ _ _
 
@@ -1079,7 +1079,7 @@ private theorem step_src [Inhabited α] (labels : List α) (g : Graph (α → α
     rw [settle_isSome, get_iterate_scan labels g _ h1]; rfl
 
 /-- A step of the outer loop keeps the number of slots. -/
-private theorem length_step [Inhabited α] (labels : List α) (g : Graph (α → α)) (S : State α)
+theorem length_step [Inhabited α] (labels : List α) (g : Graph (α → α)) (S : State α)
     (e : Edge (α → α)) : (step labels g S e).table.length = S.table.length := by
   unfold step
   split

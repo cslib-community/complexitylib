@@ -82,7 +82,7 @@ theorem polyTimeReducible_HornSAT_of_templates [Finite Rel] (encRel : Rel ↪ Li
   have hsyntax : (F.instantiateCNF 0 template).IsHorn := by
     intro c hc
     obtain ⟨d, _, hd⟩ := List.mem_flatMap.mp hc
-    exact ((CNF.isHorn_relabel _ _).mpr (hh d.1)) c hd
+    exact ((CNF.isHorn_relabel _ _).mpr (hh d.rel)) c hd
   exact (CSP.satisfiable_instantiateCNF ht 0 hF).symm.trans (and_iff_right hsyntax).symm
 
 /-- Fixed correct dual Horn templates give a native polynomial-time reduction to dual HornSAT. -/
@@ -98,7 +98,7 @@ theorem polyTimeReducible_DualHornSAT_of_templates [Finite Rel] (encRel : Rel �
     intro c hc
     obtain ⟨d, _, hd⟩ := List.mem_flatMap.mp hc
     exact (CNF.isDualHorn_iff _).mp
-      ((CNF.isDualHorn_relabel _ _).mpr (hh d.1)) c hd
+      ((CNF.isDualHorn_relabel _ _).mpr (hh d.rel)) c hd
   exact (CSP.satisfiable_instantiateCNF ht 0 hF).symm.trans (and_iff_right hsyntax).symm
 
 /-- **Native polynomial-time tractability of a fixed finite AND-preserved Boolean language.** -/

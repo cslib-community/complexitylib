@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Foundations.Data.Code.NearestDecoding
 public import CslibFrontier.Foundations.BooleanAnalysis.Bernoulli
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.PMF.Coin
@@ -188,23 +189,6 @@ return `m`. -/
 theorem decodingError_def (p : I) (E : M → ι → Bool) (D : (ι → Bool) → M) (m : M) :
     decodingError p E D m = ((bsc p (E m)).toOuterMeasure {y | D y ≠ m}).toReal := by
   rw [decodingError]
-
-/-- `D` decodes `E` to a nearest codeword: the codeword of the decoded message is at least as close
-to the received word as every other codeword. For `p ≤ 1 / 2` this is maximum-likelihood decoding
-(`bsc_apply_toReal_le_of_isNearestDecoder`). -/
-@[expose] def IsNearestDecoder (E : M → ι → Bool) (D : (ι → Bool) → M) : Prop :=
-  ∀ y m, hammingDist (E (D y)) y ≤ hammingDist (E m) y
-
-/-- Every code with finitely many messages has a nearest-codeword decoder. -/
-theorem exists_isNearestDecoder [Finite M] [Nonempty M] (E : M → ι → Bool) :
-    ∃ D, IsNearestDecoder E D := by
-  choose D hD using fun y : ι → Bool => Finite.exists_min fun m => hammingDist (E m) y
-  exact ⟨D, hD⟩
-
-/-- A nearest-codeword decoder of an injective code decodes every codeword correctly. -/
-theorem IsNearestDecoder.leftInverse {E : M → ι → Bool} {D : (ι → Bool) → M}
-    (hD : IsNearestDecoder E D) (hE : Function.Injective E) : Function.LeftInverse D E :=
-  fun m => hE (hammingDist_eq_zero.mp (Nat.le_zero.mp ((hD (E m) m).trans_eq (hammingDist_self _))))
 
 /-- **Nearest-codeword decoding is maximum-likelihood decoding** on `BSC_p` for `p ≤ 1 / 2`: the
 decoded codeword is at least as likely to produce the received word as any other codeword. -/

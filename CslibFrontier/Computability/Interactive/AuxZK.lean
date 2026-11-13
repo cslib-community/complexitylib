@@ -413,10 +413,10 @@ section Indexed
 
 variable {I : Type} {sI : I → Spec} {StmtI WitI StmtOutI WitOutI AuxI : I → Type}
 
-/-- The index, the statement and the auxiliary input `(i, x, z)` of an indexed family, with `x` and
-`z` already encoded: the index under `enc.index`, then `x` and `z` as bit words. The index and `x`
-are framed; `z` is not. An auxiliary-input simulator program reads this triple, and a
-distinguisher reads it after the unary security parameter, paired with an encoded transcript. -/
+/-- Family index, encoded statement and auxiliary input word `(i, x, z)`: the index under
+`enc.index`, then `x` and `z` as bit words (`enc.index` and `x` framed, `z` unframed). An
+auxiliary-input simulator reads this triple; a transcript distinguisher reads it after the unary
+parameter, paired with an encoded transcript, with an auxiliary input word in the `z` slot. -/
 abbrev Encoding.encStatementAux (enc : Encoding I sI StmtI) :
     I × List Bool × List Bool ↪ List Bool :=
   encPair enc.index (encPair encBits encBits)
@@ -940,8 +940,10 @@ theorem Verifier.KnowledgeSound.seqProd
       ¬ relIn₂ x₂ (E₂ x₂ (Transcript.split s₁ s₂ r.1).2 r.2.2)}
   have hsub : (fun r : Transcript (s₁ ++ s₂) × (W₁' × W₂') =>
         (r.1, (V₁.seqProd V₂).outputOn (x₁, x₂) r.1, r.2)) ⁻¹'
-      {r | (∃ y, r.2.1 = some y ∧ relProd relOut₁ relOut₂ y r.2.2) ∧
-        ¬ relProd relIn₁ relIn₂ (x₁, x₂) (Verifier.extractSeqProd E₁ E₂ (x₁, x₂) r.1 r.2.2)} ⊆
+      {r : Execution (s₁ ++ s₂) (S₁' × S₂') (W₁' × W₂') |
+        (∃ y, r.output = some y ∧ relProd relOut₁ relOut₂ y r.result) ∧
+        ¬ relProd relIn₁ relIn₂ (x₁, x₂)
+          (Verifier.extractSeqProd E₁ E₂ (x₁, x₂) r.transcript r.result)} ⊆
       T₁ ∪ T₂ := by
     rintro ⟨τ, w₁', w₂'⟩ ⟨⟨⟨y₁, y₂⟩, hout, hy₁, hy₂⟩, hnot⟩
     rw [Verifier.outputOn_seqProd_eq_some_iff] at hout

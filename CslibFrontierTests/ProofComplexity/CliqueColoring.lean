@@ -29,6 +29,7 @@ four vertices separates, so it has at least `C(4, 2) - 1 = 5` gates.
 
 namespace CslibFrontierTests.ProofComplexity.CliqueColoring
 
+open Cslib.BitString.Graph
 open Cslib Cslib.Circuits Cslib.Circuits.Clique Cslib.Logic.PL
 
 /-- Every pair of vertices is adjacent in the graph of the all-`true` input. -/

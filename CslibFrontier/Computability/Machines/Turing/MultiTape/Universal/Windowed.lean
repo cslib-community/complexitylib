@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Machine
+import CslibFrontier.Foundations.Data.List.Lookup
+import Mathlib.Data.List.GetD
 
 /-!
 # Windowed simulation
@@ -129,24 +131,15 @@ private lemma getD_tail' (l : List (Option ℕ)) (m : ℕ) :
 
 private lemma getD_drop' (l : List (Option ℕ)) (k m : ℕ) :
     (l.drop k).getD m none = l.getD (k + m) none := by
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_drop]
+  rcases Nat.lt_or_ge (k + m) l.length with h | h
+  · rw [List.getD_eq_getElem _ _ (by simp; omega), List.getElem_drop, List.getD_eq_getElem _ _ h]
+  · rw [List.getD_eq_default _ _ (by simp; omega), List.getD_eq_default _ _ h]
 
 private lemma getD_take' (l : List (Option ℕ)) (k m : ℕ) :
     (l.take k).getD m none = if m < k then l.getD m none else none := by
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_take]
-  split_ifs <;> rfl
-
-private lemma getD_append_left' {A B : List (Option ℕ)} {m : ℕ} (h : m < A.length) :
-    (A ++ B).getD m none = A.getD m none := by
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_append_left h]
-
-private lemma getD_append_right' {A B : List (Option ℕ)} {m : ℕ} (h : A.length ≤ m) :
-    (A ++ B).getD m none = B.getD (m - A.length) none := by
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_append_right h]
-
-private lemma getD_eq_none' {l : List (Option ℕ)} {m : ℕ} (h : l.length ≤ m) :
-    l.getD m none = none := by
-  simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none h]
+  split_ifs with hmk
+  · simpa only [List.drop_zero, Nat.zero_add] using (List.getD_take_drop l 0 hmk none)
+  · exact List.getD_eq_default _ _ (by simp; omega)
 
 private lemma cellAt_of_nonneg (t : Tape) {i : ℤ} (h : 0 ≤ i) :
     cellAt t i = t.right.getD i.toNat none := by
@@ -234,24 +227,24 @@ private lemma getD_append_drop {A B : List (Option ℕ)} {k : ℕ} {s : ℤ}
     (A ++ B.drop k).getD m none =
       if (m : ℤ) + s < k then A.getD m none else B.getD (m + s).toNat none := by
   by_cases hm : m < A.length
-  · rw [getD_append_left' hm]
+  · rw [List.getD_append _ _ _ _ hm]
     split_ifs with h
     · rfl
     · rw [hA m (by omega)]
       by_cases hb : k ≤ B.length
       · have := hk hb
         omega
-      · rw [getD_eq_none' (by omega)]
-  · rw [getD_append_right' (by omega), getD_drop', getD_eq_none' (l := A) (by omega)]
+      · rw [List.getD_eq_default _ _ (by omega)]
+  · rw [List.getD_append_right _ _ _ _ (by omega), getD_drop', List.getD_eq_default A _ (by omega)]
     by_cases hb : k ≤ B.length
     · have := hk hb
       rw [ite_eq_right (by omega)]
       congr 1
       omega
-    · rw [getD_eq_none' (by omega)]
+    · rw [List.getD_eq_default _ _ (by omega)]
       split_ifs
       · rfl
-      · rw [getD_eq_none' (by omega)]
+      · rw [List.getD_eq_default _ _ (by omega)]
 
 private lemma cellAt_paste {r : ℕ} {O I : Tape} {h h' : ℤ} (h₁ : h - r ≤ h') (h₂ : h' ≤ h + r)
     (hL : r ≤ O.left.length → (I.left.length : ℤ) + h = r + h')
@@ -708,13 +701,15 @@ private theorem sim_spec (d : Desc) (x : List ℕ) (n : ℕ) : ∀ (c : SCfg) (w
 private lemma cellAt_initWin_input (x : List ℕ) (z : ℤ) :
     cellAt ⟨0, [some 0], x.map fun a => some (a + 1)⟩ (z - (1 : ℕ)) = inCell x z := by
   rcases lt_trichotomy z 0 with hz | rfl | hz
-  · rw [cellAt_of_neg _ (by omega), getD_eq_none' (by simp; omega)]
+  · rw [cellAt_of_neg _ (by omega), List.getD_eq_default _ _ (by simp; omega)]
     simp [inCell, show z ≠ 0 by omega, show ¬0 < z by omega]
   · simp [cellAt, inCell]
   · rw [cellAt_of_nonneg _ (by omega)]
-    simp only [Nat.cast_one, Int.pred_toNat, List.getD_eq_getElem?_getD, List.getElem?_map,
-      inCell, show z ≠ 0 by omega, ↓reduceIte, hz]
-    cases x[z.toNat - 1]? <;> simp
+    simp only [Nat.cast_one, Int.pred_toNat, inCell, show z ≠ 0 by omega, ↓reduceIte, hz]
+    rcases Nat.lt_or_ge (z.toNat - 1) x.length with h | h
+    · rw [List.getD_eq_getElem _ _ (by simp [h]), List.getElem_map, List.getElem?_eq_getElem h,
+        Option.map_some]
+    · rw [List.getD_eq_default _ _ (by simp [h]), List.getElem?_eq_none h, Option.map_none]
 
 /-- **The windowed simulation computes the universal function**: started from the radius-`t`
 windows of the initial configuration, `t` windowed steps give the output and the halting status

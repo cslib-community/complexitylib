@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathBou
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathGeometry
 import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalPath
+import CslibFrontier.Foundations.Data.List.GetD
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
@@ -26,15 +27,15 @@ The actual output fits the unchanged 240-macrocell grid, with linear grid sides 
 clause, literal, route, segment, and Manhattan-wire costs. Bounds concern the emitted lists and
 all their integer points; geometric separation is proved separately.
 
+The path and grid estimates are those of
+`CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathBounds`, and the clause and
+literal counts those of `CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedSize`.
+
 ## Main results
 
 * `drawing_fits`, `gridWidth_le`, `gridHeight_le`: the actual drawing fits a linear grid.
 * `length_routes`, `drawingSegmentCount_eq`, `drawingWireLength_eq`: exact output costs.
 * `routes_length_le`, `drawingSegmentCount_le`, `drawingWireLength_le`: quadratic bounds.
-
-## References
-
-The unchanged path and grid estimates are reused from `Planar.Size` and `Planar.Bounds`.
 -/
 
 @[expose] public section
@@ -132,14 +133,12 @@ private theorem outputBound_access {φ : CNF ℕ} (sites : List Point) {p q a : 
 
 private theorem lastLiteral_bounds {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) (sites : List Point) :
-    OutputBound φ (variablePosition (lastLiteral sites (occurrencePath φ o) o.2.2.2).1.1) ∧
-      ∀ a ∈ (lastLiteral sites (occurrencePath φ o) o.2.2.2).2, OutputBound φ a := by
+    OutputBound φ (variablePosition (lastLiteral sites (occurrencePath φ o) o.lit.2).1.1) ∧
+      ∀ a ∈ (lastLiteral sites (occurrencePath φ o) o.lit.2).2, OutputBound φ a := by
   let r := occurrencePath φ o
   have hlen : 2 ≤ r.length := PlanarCompile.occurrencePath_length_ge_two ho
-  have hp : CellBound φ (r.getD (r.length - 2) (0, 0)) := by
-    apply cellBound_occurrencePath ho
-    rw [List.getD_eq_getElem _ _ (show r.length - 2 < r.length by omega)]
-    exact List.getElem_mem _
+  have hp : CellBound φ (r.getD (r.length - 2) (0, 0)) :=
+    cellBound_occurrencePath ho (List.getD_mem (0, 0) (show r.length - 2 < r.length by omega))
   have hq : CellBound φ (r.getLastD (0, 0)) := by
     rw [List.getLastD_eq_getLast?, (PlanarCompile.occurrencePath_endpoints ho).2,
       Option.getD_some]
@@ -165,19 +164,14 @@ private def ClauseBound (φ : CNF ℕ) (pc : PlacedClause) : Prop :=
 private theorem originalClauses_bounds (φ : CNF ℕ) (sites : List Point) :
     ∀ pc ∈ originalClauses φ sites, ClauseBound φ pc := by
   intro pc hpc
+  have hocc := exists_occurrence_of_mem_originalClauses hpc
   obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hpc
   refine ⟨outputBound_center (cellBound_clause (List.mem_zipIdx' hci).1), ?_, ?_⟩
   · intro l hl
-    obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hl
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
+    obtain ⟨i, j, x, ho, rfl⟩ := hocc.1 l hl
     exact (lastLiteral_bounds ho sites).1
   · intro r hr a ha
-    obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hr
-    obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-    have ho : (ci.2, lj.2, lj.1) ∈ Cslib.Logic.PL.occurrences φ :=
-      List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩
+    obtain ⟨i, j, x, ho, rfl⟩ := hocc.2 r hr
     exact (lastLiteral_bounds ho sites).2 a ha
 
 private theorem ordinaryClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBound φ p) :
@@ -189,8 +183,7 @@ private theorem ordinaryClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     have hi : ci.2 < OrdinaryRing.clausePositions.length := by
       rw [OrdinaryRing.drawing_sizes.1]
       exact (OrdinaryRing.formula_sizes.1 ▸ (List.mem_zipIdx' hci).1)
-    have hb := OrdinaryRing.clause_bounds _ (List.getElem_mem hi)
-    rw [List.getD_eq_getElem _ _ hi]
+    have hb := OrdinaryRing.clause_bounds _ (List.getD_mem (0, 0) hi)
     omega
   · intro l hl
     obtain ⟨v, _, rfl⟩ := List.mem_map.mp hl
@@ -212,8 +205,7 @@ private theorem crossingClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     have hi : ci.2 < PairedCrossover.clausePositions.length := by
       rw [show PairedCrossover.clausePositions.length = 78 by decide +kernel]
       exact (PairedCrossover.length_formula ▸ (List.mem_zipIdx' hci).1)
-    have hb := PairedCrossover.clause_bounds _ (List.getElem_mem hi)
-    rw [List.getD_eq_getElem _ _ hi]
+    have hb := PairedCrossover.clause_bounds _ (List.getD_mem (0, 0) hi)
     omega
   · intro l hl
     obtain ⟨v, _, rfl⟩ := List.mem_map.mp hl
@@ -255,17 +247,14 @@ private theorem cellBound_ordinary {φ : CNF ℕ} {p : Point} (hp : p ∈ ordina
 private theorem placedClauses_bounds (φ : CNF ℕ) :
     ∀ pc ∈ placedClauses φ, ClauseBound φ pc := by
   intro pc hpc
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hpc
-  rcases hpc with ((hpc | ⟨p, hp, hpc⟩) | ⟨p, hp, hpc⟩) | ⟨o, ho, hpc⟩
+  rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, e, he, hpc⟩
   · exact originalClauses_bounds φ _ pc hpc
   · exact ordinaryClauses_bounds (cellBound_ordinary hp) pc hpc
   · exact crossingClauses_bounds (cellBound_crossing hp) pc hpc
-  · obtain ⟨e, he, hpc⟩ := List.mem_flatMap.mp hpc
-    have he' := List.of_mem_zip he
+  · have he' := List.of_mem_zip he
     have hp := cellBound_occurrencePath ho ((List.dropLast_subset _) he'.1)
     have hq := cellBound_occurrencePath ho
       ((List.dropLast_subset _) (List.mem_of_mem_tail he'.2))
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hpc
     rcases hpc with rfl | rfl <;> exact link_bounds _ _ hp hq
 
 /-- Every actual vertex and route point lies in the explicit nonnegative grid rectangle.
@@ -320,7 +309,7 @@ private theorem original_route_count (φ : CNF ℕ) (sites : List Point) :
 
 private theorem original_route_cost (φ : CNF ℕ) (sites : List Point) (cost : Route → ℕ)
     (k : ℕ) (h : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
-      cost (lastLiteral sites (occurrencePath φ o) o.2.2.2).2 = k) :
+      cost (lastLiteral sites (occurrencePath φ o) o.lit.2).2 = k) :
     ((originalClauses φ sites).map fun c => (c.2.2.map cost).sum).sum = k * φ.vars.length := by
   have hm : (originalClauses φ sites).map (fun c => (c.2.2.map cost).sum) =
       (originalClauses φ sites).map (fun c => k * c.2.2.length) := by
@@ -329,11 +318,8 @@ private theorem original_route_cost (φ : CNF ℕ) (sites : List Point) (cost : 
     have he : c.2.2.map cost = c.2.2.map (fun _ => k) := by
       apply List.map_congr_left
       intro r hr
-      obtain ⟨ci, hci, rfl⟩ := List.mem_map.mp hc
-      obtain ⟨lr, hlr, rfl⟩ := List.mem_map.mp hr
-      obtain ⟨lj, hlj, rfl⟩ := List.mem_map.mp hlr
-      exact h (ci.2, lj.2, lj.1)
-        (List.mem_flatMap.mpr ⟨ci, hci, List.mem_map.mpr ⟨lj, hlj, rfl⟩⟩)
+      obtain ⟨i, j, x, ho, rfl⟩ := (exists_occurrence_of_mem_originalClauses hc).2 r hr
+      exact h _ ho
     rw [he]
     simp [Nat.mul_comm]
   rw [hm, List.sum_map_mul_left, original_route_count]
@@ -362,9 +348,7 @@ private theorem links_stat (sites : List Point) (r : Route) (cost : PlacedClause
   have hm : (links sites r).map cost = (links sites r).map (fun _ => k) := by
     apply List.map_congr_left
     intro c hc
-    obtain ⟨e, _, hc⟩ := List.mem_flatMap.mp hc
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
-    rcases hc with rfl | rfl <;> exact h _ _ _
+    obtain ⟨e, _, rfl | rfl⟩ := mem_links.mp hc <;> exact h _ _ _
   rw [hm]
   have he : ((links sites r).map fun _ => k).sum = k * (links sites r).length := by
     simp [Nat.mul_comm]

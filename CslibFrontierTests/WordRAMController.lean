@@ -218,6 +218,16 @@ private theorem widthCountdown_computes :
   apply ComputableInTime.of_code widthCountdown 0
       (time := fun n w => 3 * w + 3 * n + 7)
   · exact ⟨12, fun _ => by simp [widthCountdown]⟩
+  · intro n
+    let w := max 2 n
+    have hw : 2 ≤ w := le_max_left _ _
+    refine ⟨w, by lia, ?_, ?_⟩
+    · exact (show Fits 2 2 by decide).mono hw
+    · intro v hv
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hv
+      rcases hv with rfl | rfl
+      · exact (fits_self v).mono (le_max_right _ _)
+      · exact fits_self w
   · intro n w hw hi
     have h1 : Fits w 1 := fits_one (by omega)
     let x : Data 3 := ((Data.init [n, w]).set 0 w).set 1 1
@@ -242,7 +252,7 @@ private theorem widthCountdown_computes :
 example : InputFits 3 [5, 3] ∧
     (∃ r, ∃ P : WordSizeDependentProgram .standard r, P.BoundedCode ∧
       ∃ t, Executes 3 (P 3) (State.init [5, 3]) 0 t ∧ t ≤ 32) := by
-  obtain ⟨r, P, hP, hp⟩ := widthCountdown_computes
+  obtain ⟨r, P, hP, hp, _⟩ := widthCountdown_computes
   exact ⟨by decide, r, P, hP, hp 5 3 (show 1 ≤ 3 by decide) (by decide)⟩
 
 example (_f : ℕ → ℕ) : True := by
@@ -292,10 +302,11 @@ def choiceProg : DynamicProgram choiceSpec 1 where
   output := 0
   input _ := true
   encode _ _ := 0
-  decode o regs :=
-    match o with
-    | .choose => some (regs 0 != 0)
-    | .bad => some ()
+  resultBank _ := 0
+  resultType
+    | .choose => .bool
+    | .bad => .unit
+  resultType_eq o := by cases o <;> rfl
 
 /-- Dynamic certificate for `choiceProg`. -/
 def choiceCert : DynamicCertificate choiceProg 3 where
@@ -310,7 +321,9 @@ def choiceCert : DynamicCertificate choiceProg 3 where
         Exec.const (B := Basis.standard) (x := choiceProg.prepare .choose x) (d := 0)
           (show Fits 3 1 by decide)
       refine ⟨(choiceProg.prepare .choose x).set 0 1, (), true, 1, hex, trivial,
-        by simp [choiceProg, Data.set], ?_⟩
+        by
+          change some (cast _ true) = some true
+          exact congrArg some (cast_eq _ true), ?_⟩
       exact (choiceProg.prepare_bounded hr (fun _ _ => fits_zero 3)).set (show Fits 3 1 by decide)
     | bad => exact False.elim hv
 

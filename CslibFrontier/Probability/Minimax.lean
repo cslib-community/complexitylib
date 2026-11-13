@@ -53,6 +53,8 @@ functions (`PMF`), whose supports may be infinite. On a finite type the two corr
 
 * `Convexity.StdSimplex.exists_mem_support_le_sum_mul`,
   `Cslib.Probability.PMF.exists_mem_support_le_tsum_mul`: some outcome is at most the mean.
+* `Cslib.Probability.PMF.exists_mem_support_sum_mul_le`: some possible outcome is at least the
+  mean of a real-valued function on a finite type.
 * `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le_tsum_mul`,
   `Cslib.Probability.PMF.exists_mem_support_tsum_mul_le`,
   `Cslib.Probability.PMF.exists_mem_support_toOuterMeasure_le`: the averaging argument.
@@ -293,6 +295,19 @@ noncomputable def toStdSimplex (μ : PMF I) : StdSimplex ℝ I where
     rw [← ENNReal.ofReal_toReal (PMF.apply_ne_top μ i), ← weights_toStdSimplex]
     rfl
 
+/-- **Some possible outcome is at least the mean** of a real-valued function on a finite type:
+the averaging argument that fixes a choice at least as good as a random one. This is
+`Convexity.StdSimplex.exists_mem_support_le_sum_mul` applied to `-g`. -/
+theorem exists_mem_support_sum_mul_le (μ : PMF I) (g : I → ℝ) :
+    ∃ i ∈ μ.support, ∑ j, (μ j).toReal * g j ≤ g i := by
+  obtain ⟨i, hi, hle⟩ := StdSimplex.exists_mem_support_le_sum_mul (toStdSimplex μ) fun i => -g i
+  refine ⟨i, ?_, ?_⟩
+  · simpa [toStdSimplex, PMF.mem_support_iff, ENNReal.toReal_eq_zero_iff, PMF.apply_ne_top]
+      using hi
+  · rw [Finsupp.sum_fintype _ _ (by simp)] at hle
+    simp only [weights_toStdSimplex, mul_neg, Finset.sum_neg_distrib] at hle
+    linarith
+
 /-- **The minimax theorem for finite games** [vonNeumann1928], for distributions. Let `M i j` be
 the loss of a strategy `i` on an input `j`. If against every distribution `ν` on the inputs some
 strategy has expected loss at most `ε`, then some distribution `μ` on the strategies has expected
@@ -305,13 +320,6 @@ theorem exists_forall_sum_mul_le [Nonempty I] (M : I → J → ℝ) {ε : ℝ}
   obtain ⟨p, hp⟩ := StdSimplex.exists_forall_sum_le_of_forall_exists_sum_le M fun q => by
     simpa using h (ofStdSimplex q)
   exact ⟨ofStdSimplex p, by simpa using hp⟩
-
-/-- The probability of an event in a finite space as a sum. -/
-private theorem toReal_toOuterMeasure_eq_sum {γ : Type*} [Fintype γ] (π : PMF γ) (s : Set γ)
-    [DecidablePred (· ∈ s)] :
-    (π.toOuterMeasure s).toReal = ∑ c, (π c).toReal * if c ∈ s then 1 else 0 := by
-  rw [toOuterMeasure_apply_toReal]
-  exact sum_congr rfl fun c _ => by by_cases hc : c ∈ s <;> simp [hc]
 
 /-- **Yao's minimax principle** for finite sets of inputs. Let `E i j` say that a strategy `i`
 fails on an input `j`, where there may be infinitely many strategies but only finitely many inputs.
@@ -336,9 +344,9 @@ theorem exists_forall_toOuterMeasure_le {I J : Type*} [Finite J] [Nonempty I] (E
     (ε := ε) fun ν => by
       obtain ⟨i, hi⟩ := h ν
       refine ⟨⟨r i, i, rfl⟩, ?_⟩
-      rwa [toReal_toOuterMeasure_eq_sum] at hi
+      rwa [toOuterMeasure_toReal_eq_sum_ite] at hi
   refine ⟨μ.map rep, by rw [PMF.support_map]; exact (Set.toFinite _).image _, fun j => ?_⟩
-  rw [PMF.toOuterMeasure_map_apply, toReal_toOuterMeasure_eq_sum]
+  rw [PMF.toOuterMeasure_map_apply, toOuterMeasure_toReal_eq_sum_ite]
   refine le_of_eq_of_le (sum_congr rfl fun s _ => ?_) (hμ j)
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, hrep]
 

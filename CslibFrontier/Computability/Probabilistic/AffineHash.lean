@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Probabilistic.LinearHash
 public import CslibFrontier.Probability.BitString.AffineHash.ThreeWise
 public import CslibFrontier.Probability.BitString.AffineHash.Word
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Probabilistic.Sampling
@@ -20,7 +21,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 
 This module certifies `Cslib.BitString.LinearHash.wordAffineHash`,
 `Cslib.BitString.LinearHash.wordAdjustAffineSeed` and the zero test
-`Cslib.Complexity.SetLowerBound.hashZero` directly in the plain `ComputableInPolyTime`
+`Cslib.BitString.LinearHash.hashZero` directly in the plain `ComputableInPolyTime`
 calculus, together with uniform strict-PPT sampling of prefix-colliding affine seeds.
 
 ## Main results
@@ -32,7 +33,7 @@ calculus, together with uniform strict-PPT sampling of prefix-colliding affine s
 * `Cslib.BitString.LinearHash.isPPTOn_sampleAdjustedAffineSeed`: uniform strict-PPT sampler
   drawing a fresh `(k * n + k)`-bit affine seed and projecting it onto prefix collisions of `y` and
   `y₀`.
-* `Cslib.Complexity.SetLowerBound.computableInPolyTime_hashZero`: plain polynomial-time
+* `Cslib.BitString.LinearHash.computableInPolyTime_hashZero`: plain polynomial-time
   certificate for `hashZero`.
 
 ## References
@@ -111,20 +112,18 @@ theorem computableInPolyTime_wordAdjustAffineSeed {α : Type} {encode : α ↪ L
     ComputableInPolyTime.bitsRowWithInput (hn.comp hfst) hsnd (hmatBits.comp hfst)
   have hdot : ComputableInPolyTime
       (fun p : α × ℕ =>
-        ((listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1))).zipWith Bool.and
-          (listXor (n p.1) [y p.1, y₀ p.1])).foldl Bool.xor false)
+        listDot (listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1)))
+          (listXor (n p.1) [y p.1, y₀ p.1]))
       (encPair encode encUnary) encBool :=
-    ComputableInPolyTime.bitsFoldlWithInput Bool.xor
-      (ComputableInPolyTime.bitsZipWithInput Bool.and hrow (hdiff.comp hfst))
-      (ComputableInPolyTime.const false)
+    ComputableInPolyTime.bitsListDot hrow (hdiff.comp hfst)
   have hlt : ComputableInPolyTime (fun p : α × ℕ => decide (p.2 < r p.1))
       (encPair encode encUnary) encBool :=
     ComputableInPolyTime.unary_lt.comp (hsnd.prod (hr.comp hfst))
   have hcond : ComputableInPolyTime
       (fun p : α × ℕ =>
         decide (p.2 < r p.1) &&
-          ((listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1))).zipWith Bool.and
-            (listXor (n p.1) [y p.1, y₀ p.1])).foldl Bool.xor false)
+          listDot (listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1)))
+            (listXor (n p.1) [y p.1, y₀ p.1]))
       (encPair encode encUnary) encBool :=
     ComputableInPolyTime.bool_and.comp (hlt.prod hdot)
   have hadjRow : ComputableInPolyTime
@@ -141,7 +140,7 @@ theorem computableInPolyTime_wordAdjustAffineSeed {α : Type} {encode : α ↪ L
       let diff := listXor (n a) [y a, y₀ a]
       let mask := listSingle (n a) (diff.idxOf true)
       let row := listRow (n a) i ((seed a).take (k a * n a))
-      let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
+      let dot := listDot row diff
       if decide (i < r a) && dot then listXor (n a) [row, mask] else row)
     (ComputableInPolyTime.range.comp hk) hstep
   exact ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsFlatten hrows) hshift
@@ -167,20 +166,16 @@ theorem isPPTOn_sampleAdjustedAffineSeed {α : Type} {encode : α ↪ List Bool}
     (hk.comp hfst) (hn.comp hfst) (hr.comp hfst) (hy.comp hfst) (hy₀.comp hfst) hsnd
   simpa only [bind_pure_comp, Function.comp_def] using IsPPTOn.of_seeded hseedLen hcallback
 
-end Cslib.BitString.LinearHash
-
-namespace Cslib.Complexity.SetLowerBound
-
-open Turing.MultiTapeTM
-
-/-- `hashZero` is polynomial-time. -/
+/-- Decide `hashZero` in plain polynomial time, with dimensions `k` and `n` supplied in unary. -/
 @[fun_prop]
-theorem computableInPolyTime_hashZero {β : Type} {encIn : β ↪ List Bool} {m M : β → ℕ}
-    {seed x : β → List Bool} (hm : ComputableInPolyTime m encIn encUnary)
-    (hM : ComputableInPolyTime M encIn encUnary) (hseed : ComputableInPolyTime seed encIn encBits)
-    (hx : ComputableInPolyTime x encIn encBits) :
-    ComputableInPolyTime (fun b => hashZero (m b) (M b) (seed b) (x b)) encIn encBool := by
+theorem computableInPolyTime_hashZero {α : Type} {encode : α ↪ List Bool}
+    {k n : α → ℕ} {seed x : α → List Bool}
+    (hk : ComputableInPolyTime k encode encUnary)
+    (hn : ComputableInPolyTime n encode encUnary)
+    (hseed : ComputableInPolyTime seed encode encBits)
+    (hx : ComputableInPolyTime x encode encBits) :
+    ComputableInPolyTime (fun a => hashZero (k a) (n a) (seed a) (x a)) encode encBool := by
   unfold hashZero
   fun_prop
 
-end Cslib.Complexity.SetLowerBound
+end Cslib.BitString.LinearHash

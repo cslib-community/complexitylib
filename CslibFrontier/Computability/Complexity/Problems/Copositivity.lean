@@ -8,25 +8,23 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.Computability.Circuit.Arithmetic.Encoding
-public import CslibFrontier.Computability.Circuit.Boolean.Encoding
 public import CslibFrontier.Computability.Complexity.Classes.NP
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.Clique
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Rat
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.Data.Rat.Basic
 public import Mathlib.Tactic.Matrix.ListMatrix
-import CslibFrontier.Computability.Circuit.Encoding.Check
 import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
@@ -59,21 +57,15 @@ and `Copositive` in `coNP`. In the reverse direction, the Motzkin–Straus copos
 characterization (`SimpleGraph.exists_nonneg_dotProduct_copositiveCliqueMatrix_lt_zero_iff`) gives
 a polynomial-time many-one reduction from `Clique` to `NonCopositive`.
 
-We also provide an optional input encoding `encRatArithCircuitInput` for rational arithmetic
-circuits over `encRat`.
-
 ## Main definitions
 
-- `Cslib.Complexity.encRat`: binary encoding of `ℚ` via `(q.num, q.den)`.
 - `Cslib.Complexity.SymRatMatrix`, `Cslib.Complexity.encSymRatMatrix`: symmetric rational square
-  matrices represented by row lists and their binary encoding.
+  matrices represented by row lists and their binary encoding via `Turing.MultiTapeTM.encRat`.
 - `Cslib.Complexity.Copositive`, `Cslib.Complexity.NonCopositive`: the copositivity and
   non-copositivity decision problems.
 - `Cslib.Complexity.NonCopositive.check`: polynomial-time verifier relation for `NonCopositive`.
 - `Cslib.Complexity.cliqueToSymRatMatrix`: polynomial-time reduction from `Clique` to
   `NonCopositive`.
-- `Cslib.Complexity.encRatArithCircuit`, `Cslib.Complexity.encRatArithCircuitInput`: binary
-  encodings for rational arithmetic circuits and circuit-input pairs.
 
 ## Main results
 
@@ -102,26 +94,11 @@ namespace Cslib.Complexity
 
 open Matrix Turing.MultiTapeTM
 
-/-! ### Rational and symmetric matrix encodings -/
-
-/-- Binary encoding of rational numerator-denominator pairs `(q.num, q.den)`. -/
-abbrev encRatData : ℤ × ℕ ↪ List Bool :=
-  encPair encIntBin encNat
-
-/-- Binary encoding of rational numbers `ℚ` as `(q.num, q.den)`. -/
-@[expose] def encRat : ℚ ↪ List Bool where
-  toFun q := encRatData (q.num, q.den)
-  inj' _ _ h :=
-    Rat.ext (congrArg Prod.fst (encRatData.injective h))
-      (congrArg Prod.snd (encRatData.injective h))
+/-! ### Symmetric rational matrix encoding -/
 
 /-- Binary encoding of a rational matrix row list. -/
 abbrev encRatMatrixRows : List (List ℚ) ↪ List Bool :=
   encList (encList encRat)
-
-/-- Binary encoding of `Clique` instances `(G, k)`. -/
-abbrev encClique : Graph × ℕ ↪ List Bool :=
-  encPair encGraph encNat
 
 /-- A square symmetric rational matrix represented by its list of rows. -/
 structure SymRatMatrix where
@@ -342,18 +319,6 @@ private theorem NonCopositive.sound_of_check {M : SymRatMatrix} {p : List ℕ}
   intro hcop
   exact (not_lt_of_ge (hcop (fun i => (pFin i : ℚ)) fun i => Nat.cast_nonneg _)) hneg
 
-private theorem length_encRat_num_le (q : ℚ) : (encIntBin q.num).length ≤ (encRat q).length := by
-  change (encIntBin q.num).length ≤ (encPair encIntBin encNat (q.num, q.den)).length
-  rw [encPair_apply, List.length_append, length_frame]
-  dsimp only
-  omega
-
-private theorem length_encRat_den_le (q : ℚ) : (encNat q.den).length ≤ (encRat q).length := by
-  change (encNat q.den).length ≤ (encPair encIntBin encNat (q.num, q.den)).length
-  rw [encPair_apply, List.length_append, length_frame]
-  dsimp only
-  omega
-
 private theorem natAbs_le_two_pow_encIntBin (z : ℤ) : z.natAbs ≤ 2 ^ (encIntBin z).length := by
   have h := Nat.lt_size_self z.natAbs
   have hlen : z.natAbs.size ≤ (encIntBin z).length := by
@@ -523,32 +488,10 @@ theorem NonCopositive.exists_check_eq_true_iff (M : SymRatMatrix) :
     obtain ⟨p, hp, _⟩ := NonCopositive.complete_of_mem hM
     exact ⟨p, hp⟩
 
-private theorem computableInPolyTime_intCastRat :
-    ComputableInPolyTime (fun z : ℤ => (z : ℚ)) encIntBin encRat := by
-  have h : ComputableInPolyTime (fun z : ℤ => (z, (1 : ℕ))) encIntBin encRatData := by
-    fun_prop
-  exact h.of_enc_eq fun z => by
-    change encPair encIntBin encNat ((z : ℚ).num, (z : ℚ).den) =
-      encPair encIntBin encNat (z, 1)
-    rw [Rat.num_intCast, Rat.den_intCast]
-
 private theorem computableInPolyTime_rows :
     ComputableInPolyTime SymRatMatrix.rows encSymRatMatrix encRatMatrixRows :=
   (ComputableTidilyInPolyTime.of_eq (f := SymRatMatrix.rows)
     (encIn := encSymRatMatrix) (encMid := encRatMatrixRows) fun _ => rfl).computableInPolyTime
-
-private theorem computableInPolyTime_ratPair :
-    ComputableInPolyTime (fun q : ℚ => (q.num, q.den)) encRat encRatData :=
-  (ComputableTidilyInPolyTime.of_eq (f := fun q : ℚ => (q.num, q.den))
-    (encIn := encRat) (encMid := encRatData) fun _ => rfl).computableInPolyTime
-
-private theorem computableInPolyTime_ratNum :
-    ComputableInPolyTime Rat.num encRat encIntBin :=
-  computableInPolyTime_ratPair.fst'
-
-private theorem computableInPolyTime_ratDen :
-    ComputableInPolyTime Rat.den encRat encNat :=
-  computableInPolyTime_ratPair.snd'
 
 private theorem computableInPolyTime_commonDenom :
     ComputableInPolyTime SymRatMatrix.commonDenom encSymRatMatrix encIntBin := by
@@ -564,7 +507,7 @@ private theorem computableInPolyTime_commonDenom :
       ComputableInPolyTime (fun M : SymRatMatrix => M.rows.flatten.map fun q : ℚ => (q.den : ℤ))
         encSymRatMatrix (encList encIntBin) := by
     have hq : ComputableInPolyTime (fun q : ℚ => (q.den : ℤ)) encRat encIntBin :=
-      ComputableInPolyTime.intBin_natCast.comp computableInPolyTime_ratDen
+      ComputableInPolyTime.intBin_natCast.comp ComputableInPolyTime.rat_den
     exact (ComputableInPolyTime.map hq).comp hflat
   exact ComputableInPolyTime.intBin_prod.comp hdens
 
@@ -575,11 +518,11 @@ private theorem computableInPolyTime_intRows :
       (encIn := encSymRatMatrix) (encMid := encRatMatrixRows) fun _ => rfl
   have hnum : ComputableInPolyTime (fun p : SymRatMatrix × ℚ => p.2.num)
       (encPair encSymRatMatrix encRat) encIntBin :=
-    computableInPolyTime_ratNum.comp (ComputableInPolyTime.snd encSymRatMatrix encRat)
+    ComputableInPolyTime.rat_num.comp (ComputableInPolyTime.snd encSymRatMatrix encRat)
   have hdenZ : ComputableInPolyTime (fun p : SymRatMatrix × ℚ => (p.2.den : ℤ))
       (encPair encSymRatMatrix encRat) encIntBin :=
     ComputableInPolyTime.intBin_natCast.comp
-      (computableInPolyTime_ratDen.comp (ComputableInPolyTime.snd encSymRatMatrix encRat))
+      (ComputableInPolyTime.rat_den.comp (ComputableInPolyTime.snd encSymRatMatrix encRat))
   have hD : ComputableInPolyTime (fun p : SymRatMatrix × ℚ => p.1.commonDenom)
       (encPair encSymRatMatrix encRat) encIntBin :=
     computableInPolyTime_commonDenom.comp (ComputableInPolyTime.fst encSymRatMatrix encRat)
@@ -709,8 +652,8 @@ theorem Copositive.mem_coNP : Copositive ∈ coNP encSymRatMatrix := by
 /-- Row list produced by the reduction from a `Clique` instance `(G, k)` to a symmetric rational
 matrix. For `k ≥ 2` on a graph with nonempty vertex list, this is the Motzkin–Straus matrix
 `(k - 2) J - (k - 1) A_G`. -/
-@[expose] def cliqueToRows (gk : Graph × ℕ) : List (List ℚ) :=
-  let (G, k) := gk
+@[expose] def cliqueToRows (gk : CliqueInstance) : List (List ℚ) :=
+  let ⟨G, k⟩ := gk
   if k = 0 then [[(-1 : ℚ)]]
   else if G.distinctVertices.isEmpty then [[(1 : ℚ)]]
   else if k = 1 then [[(-1 : ℚ)]]
@@ -723,7 +666,7 @@ private theorem graph_adjBool_comm (G : Graph) (u v : ℕ) :
   rw [Bool.eq_iff_iff, G.adjBool_eq_true_iff u v, G.adjBool_eq_true_iff v u,
     G.toSimpleGraph.adj_comm]
 
-private theorem cliqueToRows_square (gk : Graph × ℕ) :
+private theorem cliqueToRows_square (gk : CliqueInstance) :
     ∀ r ∈ cliqueToRows gk, r.length = (cliqueToRows gk).length := by
   rcases gk with ⟨G, k⟩
   dsimp only [cliqueToRows]
@@ -744,7 +687,7 @@ private theorem cliqueToRows_square (gk : Graph × ℕ) :
     obtain ⟨u, _, rfl⟩ := List.mem_map.1 hr
     simp only [List.length_map]
 
-private theorem cliqueToRows_symm (gk : Graph × ℕ) :
+private theorem cliqueToRows_symm (gk : CliqueInstance) :
     ∀ i j, ((cliqueToRows gk).getD i []).getD j 0 =
       ((cliqueToRows gk).getD j []).getD i 0 := by
   rcases gk with ⟨G, k⟩
@@ -785,13 +728,13 @@ private theorem cliqueToRows_symm (gk : Graph × ℕ) :
 
 /-- Polynomial-time many-one reduction mapping a `Clique` instance `(G, k)` to a symmetric
 rational matrix `M` such that `(G, k) ∈ Clique ↔ M ∈ NonCopositive`. -/
-def cliqueToSymRatMatrix (gk : Graph × ℕ) : SymRatMatrix where
+def cliqueToSymRatMatrix (gk : CliqueInstance) : SymRatMatrix where
   rows := cliqueToRows gk
   square := cliqueToRows_square gk
   symm := cliqueToRows_symm gk
 
 @[simp]
-theorem cliqueToSymRatMatrix_rows (gk : Graph × ℕ) :
+theorem cliqueToSymRatMatrix_rows (gk : CliqueInstance) :
     (cliqueToSymRatMatrix gk).rows = cliqueToRows gk := by
   dsimp only [cliqueToSymRatMatrix]
 
@@ -838,35 +781,35 @@ private theorem singleton_pos_copositive :
   simp only [List.getD_cons_zero, one_mul]
   exact mul_nonneg (hx i0) (hx i0)
 
-theorem cliqueToSymRatMatrix_mem_iff (gk : Graph × ℕ) :
+theorem cliqueToSymRatMatrix_mem_iff (gk : CliqueInstance) :
     gk ∈ Clique ↔ cliqueToSymRatMatrix gk ∈ NonCopositive := by
   rcases gk with ⟨G, k⟩
   by_cases hk0 : k = 0
   · subst hk0
-    have hin : (G, 0) ∈ Clique := by
+    have hin : (⟨G, 0⟩ : CliqueInstance) ∈ Clique := by
       rw [mem_Clique_iff]
       exact ⟨∅, fun _ h => absurd h (Finset.notMem_empty _),
         by simp only [SimpleGraph.isNClique_iff, Finset.coe_empty, SimpleGraph.isClique_empty,
           Finset.card_empty, and_self]⟩
-    have hM : cliqueToSymRatMatrix (G, 0) ∈ NonCopositive := by
-      have hrows : (cliqueToSymRatMatrix (G, 0)).rows = (singletonSymRatMatrix (-1)).rows := by
+    have hM : cliqueToSymRatMatrix ⟨G, 0⟩ ∈ NonCopositive := by
+      have hrows : (cliqueToSymRatMatrix ⟨G, 0⟩).rows = (singletonSymRatMatrix (-1)).rows := by
         simp only [cliqueToSymRatMatrix_rows, cliqueToRows, ↓reduceIte, singletonSymRatMatrix]
       rw [SymRatMatrix.ext hrows]
       exact singleton_neg_nonCopositive
     exact iff_of_true hin hM
   · by_cases hemp : G.distinctVertices.isEmpty = true
-    · have hnot : (G, k) ∉ Clique := by
+    · have hnot : (⟨G, k⟩ : CliqueInstance) ∉ Clique := by
         intro hmem
         rw [mem_Clique_iff] at hmem
         obtain ⟨S, hSG, hS⟩ := hmem
-        have hpos : 0 < S.card := by rw [hS.card_eq]; omega
+        have hpos : 0 < S.card := by rw [hS.card_eq]; dsimp only; omega
         obtain ⟨v, hvS⟩ := Finset.card_pos.1 hpos
         have hv : v ∈ G.distinctVertices := Graph.mem_distinctVertices.2 (hSG v hvS)
         have hnil : G.distinctVertices = [] := List.isEmpty_iff.1 hemp
         rw [hnil] at hv
         cases hv
-      have hM : cliqueToSymRatMatrix (G, k) ∉ NonCopositive := by
-        have hrows : (cliqueToSymRatMatrix (G, k)).rows = (singletonSymRatMatrix 1).rows := by
+      have hM : cliqueToSymRatMatrix ⟨G, k⟩ ∉ NonCopositive := by
+        have hrows : (cliqueToSymRatMatrix ⟨G, k⟩).rows = (singletonSymRatMatrix 1).rows := by
           simp only [cliqueToSymRatMatrix_rows, cliqueToRows, hk0, ↓reduceIte, hemp,
             singletonSymRatMatrix]
         rw [SymRatMatrix.ext hrows]
@@ -879,14 +822,14 @@ theorem cliqueToSymRatMatrix_mem_iff (gk : Graph × ℕ) :
           apply hemp
           simp only [hnil, List.isEmpty_nil]
         obtain ⟨v, hv⟩ := List.exists_mem_of_ne_nil G.distinctVertices hne
-        have hvG : v ∈ G.1 := Graph.mem_distinctVertices.1 hv
-        have hin : (G, 1) ∈ Clique := by
+        have hvG : v ∈ G.vertices := Graph.mem_distinctVertices.1 hv
+        have hin : (⟨G, 1⟩ : CliqueInstance) ∈ Clique := by
           rw [mem_Clique_iff]
           refine ⟨{v}, fun _ hw => by simp only [Finset.mem_singleton] at hw; rwa [hw], ?_⟩
           simp only [SimpleGraph.isNClique_iff, Finset.coe_singleton,
             SimpleGraph.isClique_singleton, Finset.card_singleton, and_self]
-        have hM : cliqueToSymRatMatrix (G, 1) ∈ NonCopositive := by
-          have hrows : (cliqueToSymRatMatrix (G, 1)).rows = (singletonSymRatMatrix (-1)).rows := by
+        have hM : cliqueToSymRatMatrix ⟨G, 1⟩ ∈ NonCopositive := by
+          have hrows : (cliqueToSymRatMatrix ⟨G, 1⟩).rows = (singletonSymRatMatrix (-1)).rows := by
             simp only [cliqueToSymRatMatrix_rows, cliqueToRows, hk0, hemp, Bool.false_eq_true,
               ↓reduceIte, singletonSymRatMatrix]
           rw [SymRatMatrix.ext hrows]
@@ -909,23 +852,23 @@ theorem cliqueToSymRatMatrix_mem_iff (gk : Graph × ℕ) :
               simp only [H, SimpleGraph.comap_adj]
               exact G.adjBool_eq_true_iff (ι i) (ι j))
         have hrows_eq :
-            (cliqueToSymRatMatrix (G, k)).rows =
+            (cliqueToSymRatMatrix ⟨G, k⟩).rows =
               G.distinctVertices.map fun u =>
                 G.distinctVertices.map fun v => cliqueEntry G k u v := by
           simp only [cliqueToSymRatMatrix_rows, cliqueToRows, hk0, hemp, Bool.false_eq_true, hk1,
             ↓reduceIte]
-        have hlen_rows : (cliqueToSymRatMatrix (G, k)).rows.length = G.distinctVertices.length := by
+        have hlen_rows : (cliqueToSymRatMatrix ⟨G, k⟩).rows.length = G.distinctVertices.length := by
           rw [hrows_eq, List.length_map]
-        let eFin : Fin (cliqueToSymRatMatrix (G, k)).rows.length ≃ Fin G.distinctVertices.length :=
+        let eFin : Fin (cliqueToSymRatMatrix ⟨G, k⟩).rows.length ≃ Fin G.distinctVertices.length :=
           ⟨Fin.cast hlen_rows, Fin.cast hlen_rows.symm, fun _ => rfl, fun _ => rfl⟩
         have hmat_eq :
-            ∀ i j : Fin (cliqueToSymRatMatrix (G, k)).rows.length,
-              (cliqueToSymRatMatrix (G, k)).toMatrix i j =
+            ∀ i j : Fin (cliqueToSymRatMatrix ⟨G, k⟩).rows.length,
+              (cliqueToSymRatMatrix ⟨G, k⟩).toMatrix i j =
                 ((H.copositiveCliqueMatrix k).map (Int.cast : ℤ → ℚ)) (eFin i) (eFin j) := by
           intro i j
           have hi : i.1 < G.distinctVertices.length := hlen_rows ▸ i.2
           have hj : j.1 < G.distinctVertices.length := hlen_rows ▸ j.2
-          have hget1 : (cliqueToSymRatMatrix (G, k)).rows.getD i.1 [] =
+          have hget1 : (cliqueToSymRatMatrix ⟨G, k⟩).rows.getD i.1 [] =
               G.distinctVertices.map fun v => cliqueEntry G k G.distinctVertices[i.1] v := by
             have hrows_get := congrArg (fun l => List.getD l i.1 []) hrows_eq
             rw [hrows_get, List.getD_eq_getElem?_getD, List.getElem?_map,
@@ -962,17 +905,17 @@ theorem cliqueToSymRatMatrix_mem_iff (gk : Graph × ℕ) :
               simp only [cliqueEntry, hij_val, ↓reduceIte, hadj, Bool.false_eq_true, hH,
                 Int.cast_sub, Int.cast_natCast, Int.cast_ofNat]
         have hnc_iff :
-            cliqueToSymRatMatrix (G, k) ∈ NonCopositive ↔
+            cliqueToSymRatMatrix ⟨G, k⟩ ∈ NonCopositive ↔
               ∃ x : Fin G.distinctVertices.length → ℚ, (∀ v, 0 ≤ x v) ∧
                 x ⬝ᵥ ((H.copositiveCliqueMatrix k).map (Int.cast : ℤ → ℚ) *ᵥ x) < 0 := by
-          have hsub : (cliqueToSymRatMatrix (G, k)).toMatrix =
+          have hsub : (cliqueToSymRatMatrix ⟨G, k⟩).toMatrix =
               ((H.copositiveCliqueMatrix k).map (Int.cast : ℤ → ℚ)).submatrix eFin eFin :=
             Matrix.ext fun i j => hmat_eq i j
           rw [mem_NonCopositive_iff, hsub, Matrix.IsCopositive.submatrix_equiv_iff,
             Matrix.IsCopositive]
           push Not
           rfl
-        have hclique_iff : (G, k) ∈ Clique ↔ k ≤ H.cliqueNum := by
+        have hclique_iff : (⟨G, k⟩ : CliqueInstance) ∈ Clique ↔ k ≤ H.cliqueNum := by
           rw [mem_Clique_iff]
           constructor
           · rintro ⟨S, hSG, hS⟩
@@ -1018,117 +961,125 @@ theorem cliqueToSymRatMatrix_mem_iff (gk : Graph × ℕ) :
         exact (SimpleGraph.exists_nonneg_dotProduct_copositiveCliqueMatrix_lt_zero_iff H hk2).symm
 
 private theorem computableInPolyTime_distinctVertices_gk :
-    ComputableInPolyTime (fun gk : Graph × ℕ => gk.1.distinctVertices) encClique (encList encNat) :=
-  Graph.computableInPolyTime_distinctVertices.comp (ComputableInPolyTime.fst encGraph encNat)
+    ComputableInPolyTime (fun gk : CliqueInstance => gk.graph.distinctVertices)
+      encCliqueInstance (encList encNat) :=
+  Graph.computableInPolyTime_distinctVertices.comp (by fun_prop)
 
 private theorem computableInPolyTime_toRows :
-    ComputableInPolyTime cliqueToRows encClique encRatMatrixRows := by
+    ComputableInPolyTime cliqueToRows encCliqueInstance encRatMatrixRows := by
   have hk0 :
-      ComputableInPolyTime (fun gk : Graph × ℕ => decide (gk.2 = 0)) encClique encBool :=
+      ComputableInPolyTime (fun gk : CliqueInstance => decide (gk.m = 0))
+        encCliqueInstance encBool :=
     (ComputableTidilyInPolyTime.decide_eq encNat).computableInPolyTime.comp
-      (ComputableInPolyTime.prod (ComputableInPolyTime.snd encGraph encNat)
-        (ComputableInPolyTime.const 0))
+      (ComputableInPolyTime.prod (by fun_prop) (ComputableInPolyTime.const 0))
   have hk1 :
-      ComputableInPolyTime (fun gk : Graph × ℕ => decide (gk.2 = 1)) encClique encBool :=
+      ComputableInPolyTime (fun gk : CliqueInstance => decide (gk.m = 1))
+        encCliqueInstance encBool :=
     (ComputableTidilyInPolyTime.decide_eq encNat).computableInPolyTime.comp
-      (ComputableInPolyTime.prod (ComputableInPolyTime.snd encGraph encNat)
-        (ComputableInPolyTime.const 1))
+      (ComputableInPolyTime.prod (by fun_prop) (ComputableInPolyTime.const 1))
   have hemp :
-      ComputableInPolyTime (fun gk : Graph × ℕ => gk.1.distinctVertices.isEmpty)
-        encClique encBool := by
-    have hlen : ComputableInPolyTime (fun gk : Graph × ℕ => gk.1.distinctVertices.length)
-        encClique encUnary :=
+      ComputableInPolyTime (fun gk : CliqueInstance => gk.graph.distinctVertices.isEmpty)
+        encCliqueInstance encBool := by
+    have hlen :
+        ComputableInPolyTime (fun gk : CliqueInstance => gk.graph.distinctVertices.length)
+          encCliqueInstance encUnary :=
       (ComputableTidilyInPolyTime.length_list encNat).computableInPolyTime.comp
         computableInPolyTime_distinctVertices_gk
     have hdec :
-        ComputableInPolyTime (fun gk : Graph × ℕ => decide (gk.1.distinctVertices.length = 0))
-          encClique encBool :=
+        ComputableInPolyTime
+          (fun gk : CliqueInstance => decide (gk.graph.distinctVertices.length = 0))
+          encCliqueInstance encBool :=
       (ComputableTidilyInPolyTime.decide_eq encUnary).computableInPolyTime.comp
         (ComputableInPolyTime.prod hlen (ComputableInPolyTime.const 0))
     exact hdec.of_enc_eq fun gk => by
       simp only [encBool_apply]
-      cases gk.1.distinctVertices <;> rfl
+      cases gk.graph.distinctVertices <;> rfl
   have hk2Rat :
-      ComputableInPolyTime (fun gk : Graph × ℕ => (((gk.2 : ℤ) - 2 : ℤ) : ℚ)) encClique encRat :=
-    computableInPolyTime_intCastRat.comp
+      ComputableInPolyTime (fun gk : CliqueInstance => (((gk.m : ℤ) - 2 : ℤ) : ℚ))
+        encCliqueInstance encRat :=
+    ComputableInPolyTime.rat_intCast.comp
       (by fun_prop :
-        ComputableInPolyTime (fun gk : Graph × ℕ => (gk.2 : ℤ) - 2) encClique encIntBin)
+        ComputableInPolyTime (fun gk : CliqueInstance => (gk.m : ℤ) - 2)
+          encCliqueInstance encIntBin)
   have hentry :
       ComputableTidilyInPolyTime
-        (fun x : ((Graph × ℕ) × ℕ) × ℕ => cliqueEntry x.1.1.1 x.1.1.2 x.1.2 x.2)
-        (encPair (encPair encClique encNat) encNat) encRat := by
+        (fun x : (CliqueInstance × ℕ) × ℕ => cliqueEntry x.1.1.graph x.1.1.m x.1.2 x.2)
+        (encPair (encPair encCliqueInstance encNat) encNat) encRat := by
     have heq_uv :
-        ComputableInPolyTime (fun x : ((Graph × ℕ) × ℕ) × ℕ => decide (x.1.2 = x.2))
-          (encPair (encPair encClique encNat) encNat) encBool :=
+        ComputableInPolyTime (fun x : (CliqueInstance × ℕ) × ℕ => decide (x.1.2 = x.2))
+          (encPair (encPair encCliqueInstance encNat) encNat) encBool :=
       (ComputableTidilyInPolyTime.decide_eq encNat).computableInPolyTime.comp
         (ComputableInPolyTime.prod
-          ((ComputableInPolyTime.snd encClique encNat).comp (ComputableInPolyTime.fst _ _))
+          ((ComputableInPolyTime.snd encCliqueInstance encNat).comp (ComputableInPolyTime.fst _ _))
           (ComputableInPolyTime.snd _ _))
     have hadj :
         ComputableInPolyTime
-          (fun x : ((Graph × ℕ) × ℕ) × ℕ => x.1.1.1.adjBool x.1.2 x.2)
-          (encPair (encPair encClique encNat) encNat) encBool :=
+          (fun x : (CliqueInstance × ℕ) × ℕ => x.1.1.graph.adjBool x.1.2 x.2)
+          (encPair (encPair encCliqueInstance encNat) encNat) encBool :=
       Graph.computableInPolyTime_adjBool_comp
-        ((ComputableInPolyTime.fst encGraph encNat).comp
-          ((ComputableInPolyTime.fst encClique encNat).comp (ComputableInPolyTime.fst _ _)))
-        ((ComputableInPolyTime.snd encClique encNat).comp (ComputableInPolyTime.fst _ _))
+        ((by fun_prop :
+            ComputableInPolyTime (fun c : CliqueInstance => c.graph)
+              encCliqueInstance encGraph).comp
+          ((ComputableInPolyTime.fst encCliqueInstance encNat).comp (ComputableInPolyTime.fst _ _)))
+        ((ComputableInPolyTime.snd encCliqueInstance encNat).comp (ComputableInPolyTime.fst _ _))
         (ComputableInPolyTime.snd _ _)
     have hk2' :
-        ComputableInPolyTime (fun x : ((Graph × ℕ) × ℕ) × ℕ => (((x.1.1.2 : ℤ) - 2 : ℤ) : ℚ))
-          (encPair (encPair encClique encNat) encNat) encRat :=
-      hk2Rat.comp ((ComputableInPolyTime.fst encClique encNat).comp (ComputableInPolyTime.fst _ _))
+        ComputableInPolyTime (fun x : (CliqueInstance × ℕ) × ℕ => (((x.1.1.m : ℤ) - 2 : ℤ) : ℚ))
+          (encPair (encPair encCliqueInstance encNat) encNat) encRat :=
+      hk2Rat.comp
+        ((ComputableInPolyTime.fst encCliqueInstance encNat).comp (ComputableInPolyTime.fst _ _))
     have hinner :
         ComputableInPolyTime
-          (fun x : ((Graph × ℕ) × ℕ) × ℕ =>
-            if x.1.1.1.adjBool x.1.2 x.2 then (-1 : ℚ)
-            else (((x.1.1.2 : ℤ) - 2 : ℤ) : ℚ))
-          (encPair (encPair encClique encNat) encNat) encRat :=
+          (fun x : (CliqueInstance × ℕ) × ℕ =>
+            if x.1.1.graph.adjBool x.1.2 x.2 then (-1 : ℚ)
+            else (((x.1.1.m : ℤ) - 2 : ℤ) : ℚ))
+          (encPair (encPair encCliqueInstance encNat) encNat) encRat :=
       ComputableInPolyTime.ite' hadj (ComputableInPolyTime.const (-1)) hk2'
     have hfull :
         ComputableInPolyTime
-          (fun x : ((Graph × ℕ) × ℕ) × ℕ =>
-            if decide (x.1.2 = x.2) then (((x.1.1.2 : ℤ) - 2 : ℤ) : ℚ)
-            else if x.1.1.1.adjBool x.1.2 x.2 then (-1 : ℚ)
-            else (((x.1.1.2 : ℤ) - 2 : ℤ) : ℚ))
-          (encPair (encPair encClique encNat) encNat) encRat :=
+          (fun x : (CliqueInstance × ℕ) × ℕ =>
+            if decide (x.1.2 = x.2) then (((x.1.1.m : ℤ) - 2 : ℤ) : ℚ)
+            else if x.1.1.graph.adjBool x.1.2 x.2 then (-1 : ℚ)
+            else (((x.1.1.m : ℤ) - 2 : ℤ) : ℚ))
+          (encPair (encPair encCliqueInstance encNat) encNat) encRat :=
       ComputableInPolyTime.ite' heq_uv hk2' hinner
     exact (hfull.of_enc_eq fun x => by
       simp only [cliqueEntry, decide_eq_true_eq]).tidy
   have hrow :
       ComputableTidilyInPolyTime
-        (fun p : (Graph × ℕ) × ℕ =>
-          p.1.1.distinctVertices.map fun v => cliqueEntry p.1.1 p.1.2 p.2 v)
-        (encPair encClique encNat) (encList encRat) :=
+        (fun p : CliqueInstance × ℕ =>
+          p.1.graph.distinctVertices.map fun v => cliqueEntry p.1.graph p.1.m p.2 v)
+        (encPair encCliqueInstance encNat) (encList encRat) :=
     ComputableTidilyInPolyTime.mapWithInput
       (computableInPolyTime_distinctVertices_gk.comp
-        (ComputableInPolyTime.fst encClique encNat)).tidy
+        (ComputableInPolyTime.fst encCliqueInstance encNat)).tidy
       hentry
   have hmat :
       ComputableInPolyTime
-        (fun gk : Graph × ℕ =>
-          gk.1.distinctVertices.map fun u =>
-            gk.1.distinctVertices.map fun v => cliqueEntry gk.1 gk.2 u v)
-        encClique encRatMatrixRows :=
+        (fun gk : CliqueInstance =>
+          gk.graph.distinctVertices.map fun u =>
+            gk.graph.distinctVertices.map fun v => cliqueEntry gk.graph gk.m u v)
+        encCliqueInstance encRatMatrixRows :=
     (ComputableTidilyInPolyTime.mapWithInput
       computableInPolyTime_distinctVertices_gk.tidy hrow).computableInPolyTime
   have hb1 :
       ComputableInPolyTime
-        (fun gk : Graph × ℕ =>
-          if decide (gk.2 = 1) then [[(-1 : ℚ)]]
+        (fun gk : CliqueInstance =>
+          if decide (gk.m = 1) then [[(-1 : ℚ)]]
           else
-            gk.1.distinctVertices.map fun u =>
-              gk.1.distinctVertices.map fun v => cliqueEntry gk.1 gk.2 u v)
-        encClique encRatMatrixRows :=
+            gk.graph.distinctVertices.map fun u =>
+              gk.graph.distinctVertices.map fun v => cliqueEntry gk.graph gk.m u v)
+        encCliqueInstance encRatMatrixRows :=
     ComputableInPolyTime.ite' hk1 (ComputableInPolyTime.const [[(-1 : ℚ)]]) hmat
   have hb2 :
       ComputableInPolyTime
-        (fun gk : Graph × ℕ =>
-          if gk.1.distinctVertices.isEmpty then [[(1 : ℚ)]]
-          else if decide (gk.2 = 1) then [[(-1 : ℚ)]]
+        (fun gk : CliqueInstance =>
+          if gk.graph.distinctVertices.isEmpty then [[(1 : ℚ)]]
+          else if decide (gk.m = 1) then [[(-1 : ℚ)]]
           else
-            gk.1.distinctVertices.map fun u =>
-              gk.1.distinctVertices.map fun v => cliqueEntry gk.1 gk.2 u v)
-        encClique encRatMatrixRows :=
+            gk.graph.distinctVertices.map fun u =>
+              gk.graph.distinctVertices.map fun v => cliqueEntry gk.graph gk.m u v)
+        encCliqueInstance encRatMatrixRows :=
     ComputableInPolyTime.ite' hemp (ComputableInPolyTime.const [[(1 : ℚ)]]) hb1
   exact (ComputableInPolyTime.ite' hk0 (ComputableInPolyTime.const [[(-1 : ℚ)]]) hb2).of_enc_eq
     fun gk => by
@@ -1136,12 +1087,12 @@ private theorem computableInPolyTime_toRows :
       simp only [cliqueToRows, decide_eq_true_eq]
 
 theorem computableInPolyTime_cliqueToSymRatMatrix :
-    ComputableInPolyTime cliqueToSymRatMatrix encClique encSymRatMatrix :=
+    ComputableInPolyTime cliqueToSymRatMatrix encCliqueInstance encSymRatMatrix :=
   computableInPolyTime_toRows.of_enc_eq fun _ => rfl
 
 /-- Polynomial-time many-one reduction from `Clique` to `NonCopositive`. -/
 theorem polyTimeReducible_Clique_NonCopositive :
-    PolyTimeReducible encClique encSymRatMatrix Clique NonCopositive :=
+    PolyTimeReducible encCliqueInstance encSymRatMatrix Clique NonCopositive :=
   ⟨cliqueToSymRatMatrix, computableInPolyTime_cliqueToSymRatMatrix, cliqueToSymRatMatrix_mem_iff⟩
 
 /-- `NonCopositive` is `NP`-hard (proved here via `Clique` and Motzkin–Straus; [MurtyKabadi1987]
@@ -1164,18 +1115,5 @@ theorem Copositive_coNPHard : coNPHard encSymRatMatrix Copositive := by
 library proof uses `NonCopositive` membership and the `Clique`/Motzkin–Straus reduction). -/
 theorem Copositive_coNPComplete : coNPComplete encSymRatMatrix Copositive :=
   ⟨Copositive.mem_coNP, Copositive_coNPHard⟩
-
-/-! ### Optional rational arithmetic circuit input encoding -/
-
-/-- Binary encoding of rational arithmetic circuits with `m` outputs over `encRat`. -/
-abbrev encRatArithCircuit (m : ℕ) :
-    (Σ n, Cslib.Circuits.Circuit (Cslib.Circuits.arithSignature ℚ) n m) ↪ List Bool :=
-  Cslib.Circuits.Circuit.encCircuit (Cslib.Circuits.ArithOp.encoding encRat) m
-
-/-- Binary encoding of `(C, x)` pairs for rational arithmetic circuits with `m` outputs and
-rational input vectors `x : List ℚ`. -/
-abbrev encRatArithCircuitInput (m : ℕ) :
-    (Σ n, Cslib.Circuits.Circuit (Cslib.Circuits.arithSignature ℚ) n m) × List ℚ ↪ List Bool :=
-  encPair (encRatArithCircuit m) (encList encRat)
 
 end Cslib.Complexity

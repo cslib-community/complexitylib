@@ -16,11 +16,11 @@ public import CslibFrontier.Computability.Complexity.Problems.TSP
 
 This file connects the Bellman–Held–Karp dynamic program
 `Cslib.Algorithms.Lean.TSP.heldKarp` [Bellman1962] [HeldKarp1962] to the decision problem
-`Cslib.Complexity.TSP` on distance matrices `D : List (List ℕ)` with budgets `b : ℕ`.
+`Cslib.Complexity.TSP` on instances `x : TSPInstance`.
 
-An instance `(D, b)` with `D.length = n + 1` has the cities `0, …, n` at distances
-`TSP.dist D i j`, and it belongs to `TSP` when some ordering of all cities has closed tour length
-at most `b`. The tour length is the closed-walk cost `cycleCost (dist D)`
+An instance `x` with `x.dist.length = n + 1` has the cities `0, …, n` at distances
+`TSP.dist x.dist i j`, and it belongs to `TSP` when some ordering of all cities has closed tour
+length at most `x.bound`. The tour length is the closed-walk cost `cycleCost (dist x.dist)`
 (`TSP.tourLength_eq_cycleCost`), which is invariant under rotation (`cycleCost_append_comm`), so
 such a tour can be taken to start at city `0`, which is the normal form `heldKarp` optimizes over.
 `TSP.heldKarpDecide` therefore decides `TSP` in at most `(n - 1)² · 2ⁿ⁻¹` ticks on `n` cities,
@@ -37,8 +37,8 @@ examined by brute force.
 ## Main results
 
 * `Cslib.Complexity.TSP.tourLength_eq_cycleCost`: tour length is the cost of the closed walk.
-* `Cslib.Complexity.TSP.mem_TSP_iff_heldKarp_le`: `(D, b) ∈ TSP` exactly when the
-  Bellman–Held–Karp optimum is at most `b`.
+* `Cslib.Complexity.TSP.mem_TSP_iff_heldKarp_le`: `x ∈ TSP` exactly when the Bellman–Held–Karp
+  optimum is at most `x.bound`.
 * `Cslib.Complexity.TSP.heldKarpDecide_eq_true_iff`, `Cslib.Complexity.TSP.time_heldKarpDecide_le`:
   `heldKarpDecide` decides `TSP` in at most `(n - 1)² · 2ⁿ⁻¹` ticks on `n` cities.
 * `Cslib.Complexity.HamCycle.heldKarpDecide_toTSP_eq_true_iff`,
@@ -73,27 +73,27 @@ private theorem walkCost_succ_eq_tourLength (D : List (List ℕ)) {n : ℕ} (L :
 
 /-- **`TSP` by the Bellman–Held–Karp algorithm.** An instance with `n + 1` cities belongs to
 `TSP` exactly when the optimal tour computed by `heldKarp` has length at most the budget. -/
-theorem mem_TSP_iff_heldKarp_le {D : List (List ℕ)} {b n : ℕ} (hn : D.length = n + 1) :
-    (D, b) ∈ TSP ↔ (heldKarp fun i j : Fin (n + 1) => dist D i j).ret ≤ b := by
-  set d : Fin (n + 1) → Fin (n + 1) → ℕ := fun i j => dist D i j
+theorem mem_TSP_iff_heldKarp_le {x : TSPInstance} {n : ℕ} (hn : x.dist.length = n + 1) :
+    x ∈ TSP ↔ (heldKarp fun i j : Fin (n + 1) => dist x.dist i j).ret ≤ x.bound := by
+  set d : Fin (n + 1) → Fin (n + 1) → ℕ := fun i j => dist x.dist i j
   constructor
   · rintro ⟨p, hp, hb⟩
     rw [hn] at hp
     obtain ⟨A, B, rfl⟩ := List.append_of_mem (hp.symm.subset (List.mem_range.2 (Nat.succ_pos n)))
     have hp' : (0 :: (B ++ A)).Perm (List.range (n + 1)) := List.perm_append_comm.symm.trans hp
-    have hrot : tourLength D (A ++ 0 :: B) = tourLength D (0 :: (B ++ A)) :=
-      cycleCost_append_comm (dist D) A (0 :: B)
+    have hrot : tourLength x.dist (A ++ 0 :: B) = tourLength x.dist (0 :: (B ++ A)) :=
+      cycleCost_append_comm (dist x.dist) A (0 :: B)
     have hnd := hp'.nodup_iff.2 List.nodup_range
-    have hpos : ∀ x ∈ B ++ A, x ≠ 0 := fun x hx h => (List.nodup_cons.1 hnd).1 (h ▸ hx)
-    have hR : ∀ x ∈ B ++ A, x - 1 < n := fun x hx => by
-      have h1 := List.mem_range.1 (hp'.subset (List.mem_cons_of_mem _ hx))
-      have h2 := hpos x hx
+    have hpos : ∀ v ∈ B ++ A, v ≠ 0 := fun v hv h => (List.nodup_cons.1 hnd).1 (h ▸ hv)
+    have hR : ∀ v ∈ B ++ A, v - 1 < n := fun v hv => by
+      have h1 := List.mem_range.1 (hp'.subset (List.mem_cons_of_mem _ hv))
+      have h2 := hpos v hv
       omega
-    set L : List (Fin n) := (B ++ A).pmap (fun x hx => ⟨x - 1, hx⟩) hR
+    set L : List (Fin n) := (B ++ A).pmap (fun v hv => ⟨v - 1, hv⟩) hR
     have hLmap : L.map (fun i : Fin n => (i : ℕ) + 1) = B ++ A := by
       rw [List.map_pmap]
-      refine List.pmap_eq_self.2 fun x hx => ?_
-      have := hpos x hx
+      refine List.pmap_eq_self.2 fun v hv => ?_
+      have := hpos v hv
       simp only
       omega
     have hLnd : L.Nodup := by
@@ -111,8 +111,8 @@ theorem mem_TSP_iff_heldKarp_le {D : List (List ℕ)} {b n : ℕ} (hn : D.length
       exact hij ▸ hj
     calc (heldKarp d).ret ≤ walkCost d 0 (L.map Fin.succ) 0 :=
           (isLeast_heldKarp d).2 ⟨L, hLnd, hLuniv, rfl⟩
-      _ = tourLength D (A ++ 0 :: B) := by rw [walkCost_succ_eq_tourLength, hLmap, hrot]
-      _ ≤ b := hb
+      _ = tourLength x.dist (A ++ 0 :: B) := by rw [walkCost_succ_eq_tourLength, hLmap, hrot]
+      _ ≤ x.bound := hb
   · intro h
     obtain ⟨⟨L, hnd, hL, hc⟩, -⟩ := isLeast_heldKarp d
     refine ⟨0 :: L.map fun i : Fin n => (i : ℕ) + 1, ?_, ?_⟩
@@ -131,24 +131,22 @@ theorem mem_TSP_iff_heldKarp_le {D : List (List ℕ)} {b n : ℕ} (hn : D.length
           · refine Or.inr ⟨⟨v, by omega⟩, ?_, rfl⟩
             rw [← List.mem_toFinset, hL]
             exact Finset.mem_univ _
-    · change tourLength D _ ≤ b
-      rw [← walkCost_succ_eq_tourLength, hc]
+    · rw [← walkCost_succ_eq_tourLength, hc]
       exact h
 
 /-- Decide `TSP` by the Bellman–Held–Karp algorithm [HeldKarp1962]: run `heldKarp` on the
 distance matrix and compare the optimal tour length with the budget. The empty matrix is a
 yes-instance, witnessed by the empty tour. -/
-@[expose] def heldKarpDecide (x : List (List ℕ) × ℕ) : TimeM ℕ Bool :=
-  match x.1.length with
+@[expose] def heldKarpDecide (x : TSPInstance) : TimeM ℕ Bool :=
+  match x.dist.length with
   | 0 => pure true
   | n + 1 => do
-      let c ← heldKarp fun i j : Fin (n + 1) => dist x.1 i j
-      pure (decide (c ≤ x.2))
+      let c ← heldKarp fun i j : Fin (n + 1) => dist x.dist i j
+      pure (decide (c ≤ x.bound))
 
 /-- `heldKarpDecide` decides `TSP`. -/
-theorem heldKarpDecide_eq_true_iff (x : List (List ℕ) × ℕ) :
+theorem heldKarpDecide_eq_true_iff (x : TSPInstance) :
     (heldKarpDecide x).ret = true ↔ x ∈ TSP := by
-  obtain ⟨D, b⟩ := x
   unfold heldKarpDecide
   split
   · rename_i h
@@ -161,9 +159,8 @@ theorem heldKarpDecide_eq_true_iff (x : List (List ℕ) × ℕ) :
 
 /-- **`TSP` in `O(n² · 2ⁿ)` arithmetic operations** [HeldKarp1962]. On `n` cities,
 `heldKarpDecide` takes at most `(n - 1)² · 2ⁿ⁻¹` ticks, one per addition-and-comparison. -/
-theorem time_heldKarpDecide_le (x : List (List ℕ) × ℕ) :
-    (heldKarpDecide x).time ≤ (x.1.length - 1) ^ 2 * 2 ^ (x.1.length - 1) := by
-  obtain ⟨D, b⟩ := x
+theorem time_heldKarpDecide_le (x : TSPInstance) :
+    (heldKarpDecide x).time ≤ (x.dist.length - 1) ^ 2 * 2 ^ (x.dist.length - 1) := by
   unfold heldKarpDecide
   split
   · simp

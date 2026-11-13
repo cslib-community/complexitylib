@@ -28,6 +28,11 @@ determines a later query.
 * `Cslib.RandomOracle.memoize_cache_bounds_prob`: external budgets control the list cache.
 * `Cslib.RandomOracle.eval_run_interpret_memoize_prob`: closed samplers realize the list cache.
 * `Cslib.RandomOracle.interpret_prob_eq_memoize_map`: injective representations preserve the game.
+* `Cslib.RandomOracle.eval_zoom_memoize_map`, `Cslib.RandomOracle.eval_zoom_memoize_bind`:
+  component-cache `zoomStateT`/`memoize` representation bridges to `RandomOracle.answer`.
+* `Cslib.RandomOracle.answer_bind_complete`, `Cslib.RandomOracle.answer_bind_complete₁`,
+  `Cslib.RandomOracle.answer_bind_complete₂`: continuation-form table completion laws past
+  independent samples.
 
 ## References
 
@@ -120,6 +125,37 @@ theorem eval_run_interpret_memoize_prob [LawfulBEq Query] [DecidableEq Query]
   rw [ProbOracleComp.eval_run_interpret_eq_runWith]
   simpa only [ProbComp.eval_memoize] using
     run_interpret_memoize_prob (fun q => ProbComp.eval (compute q)) program cache
+
+omit [BEq Query] in
+/-- One lazy call on a component cache, with its result and represented state, is
+`RandomOracle.answer` on the represented component. -/
+theorem eval_zoom_memoize_map {Key Value St T β : Type} [DecidableEq Key]
+    (get : St → List (Key × Value)) (set : St → List (Key × Value) → St) (d : ProbComp Value)
+    (q : Key) (s : St) (g : Value → β) (rep : St → T)
+    (F : Cache (fun _ : Key => Value) → T)
+    (hrep : ∀ c, rep (set s c) = F (ofList c)) :
+    (ProbComp.eval (zoomStateT get set (memoize (fun _ => d) q) s)).map
+        (fun z => (g z.1, rep z.2)) =
+      (answer (fun _ => ProbComp.eval d) q (ofList (get s))).map
+        (fun z => (g z.1, F z.2)) := by
+  rw [eval_zoomStateT_memoize, ← memoize_map_ofList]
+  simp only [PMF.map_comp, Function.comp_def, hrep]
+
+omit [BEq Query] in
+/-- One lazy call on a component cache followed by a continuation, on represented states. -/
+theorem eval_zoom_memoize_bind {Key Value St T β : Type} [DecidableEq Key]
+    (get : St → List (Key × Value)) (set : St → List (Key × Value) → St) (d : ProbComp Value)
+    (q : Key) (s : St) (f : Value → St → ProbComp (β × St)) (rep : St → T)
+    (Φ : Value × Cache (fun _ : Key => Value) → PMF (β × T))
+    (hf : ∀ v c, (ProbComp.eval (f v (set s c))).map (fun z => (z.1, rep z.2)) =
+      Φ (v, ofList c)) :
+    (ProbComp.eval (zoomStateT get set (memoize (fun _ => d) q) s >>=
+        fun vs => f vs.1 vs.2)).map (fun z => (z.1, rep z.2)) =
+      (answer (fun _ => ProbComp.eval d) q (ofList (get s))).bind Φ := by
+  rw [ProbComp.eval_bind, eval_zoomStateT_memoize, ← memoize_map_ofList, PMF.map_bind,
+    PMF.bind_map, PMF.bind_map]
+  congr 1 with ⟨v, c⟩ : 1
+  exact hf v c
 
 end List
 
@@ -230,5 +266,49 @@ theorem eval_run_interpret_memoize_prob_eq_eager {Key Value Result : Type}
             program) := by
   rw [interpret_prob_eq_memoize]
   simp only [ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_memoize]
+
+section AnswerComplete
+
+variable {Q V α α' β : Type} [Fintype Q] [Finite V] [DecidableEq Q]
+
+/-- Answering one query and completing its table is completing the table and reading it,
+followed by any continuation `F` that ignores the intermediate cache. -/
+theorem answer_bind_complete (d : Q → PMF V) (c : Cache (fun _ : Q => V))
+    (q : Q) (F : V × Cache (fun _ : Q => V) → (Q → V) → PMF β)
+    (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
+    (answer d q c).bind (fun x => (complete d x.2).bind (F x)) =
+      (complete d c).bind (fun T => F (T q, c) T) := by
+  have h := congrArg (fun p => p.bind (fun x => F (x.1, c) x.2)) (answer_complete d c q)
+  simp only [Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map,
+    Function.comp_def] at h
+  rw [← h]
+  congr 1 with ⟨v, c'⟩ : 1
+  rw [hF v c' c]
+
+/-- `answer_bind_complete` past one independent sample `p`. -/
+theorem answer_bind_complete₁ (d : Q → PMF V) (c : Cache (fun _ : Q => V))
+    (q : Q) (p : PMF α) (F : V × Cache (fun _ : Q => V) → α → (Q → V) → PMF β)
+    (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
+    (answer d q c).bind (fun x => p.bind fun a =>
+        (complete d x.2).bind (F x a)) =
+      (complete d c).bind (fun T => p.bind fun a => F (T q, c) a T) := by
+  simp only [PMF.bind_comm p]
+  exact answer_bind_complete d c q (fun x T => p.bind fun a => F x a T)
+    (fun v c₁ c₂ => by rw [hF v c₁ c₂])
+
+/-- `answer_bind_complete` past two independent samples `p` and `p'`. -/
+theorem answer_bind_complete₂ (d : Q → PMF V) (c : Cache (fun _ : Q => V))
+    (q : Q) (p : PMF α) (p' : PMF α')
+    (F : V × Cache (fun _ : Q => V) → α → α' → (Q → V) → PMF β)
+    (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
+    (answer d q c).bind (fun x => p.bind fun a => p'.bind fun b =>
+        (complete d x.2).bind (F x a b)) =
+      (complete d c).bind (fun T => p.bind fun a => p'.bind fun b =>
+        F (T q, c) a b T) := by
+  simp only [PMF.bind_comm p]
+  exact answer_bind_complete₁ d c q p' (fun x b T => p.bind fun a => F x a b T)
+    (fun v c₁ c₂ => by rw [hF v c₁ c₂])
+
+end AnswerComplete
 
 end Cslib.RandomOracle

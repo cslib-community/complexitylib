@@ -72,6 +72,20 @@ variable {ι β : Type*}
 noncomputable def expectedCost (μ : RandomizedDecisionTree ι β) (x : ι → Bool) : ℝ :=
   μ.weights.sum fun t w => w * (t.cost x : ℝ)
 
+/-- Express expected cost as the finite weighted sum over the sampled trees. -/
+theorem expectedCost_eq_sum (μ : RandomizedDecisionTree ι β) (x : ι → Bool) :
+    μ.expectedCost x = μ.weights.sum (fun t w => w * (t.cost x : ℝ)) := by
+  unfold expectedCost
+  rfl
+
+/-- Sampling an index and running its associated tree averages the costs over the indices. -/
+theorem expectedCost_map {C : Type*} (p : StdSimplex ℝ C) (g : C → DecisionTree ι β)
+    (x : ι → Bool) :
+    expectedCost (p.map g : RandomizedDecisionTree ι β) x =
+      p.weights.sum (fun c w => w * ((g c).cost x : ℝ)) := by
+  rw [expectedCost, StdSimplex.weights_map,
+    Finsupp.sum_mapDomain_index (fun _ => zero_mul _) fun _ _ _ => add_mul _ _ _]
+
 variable {μ : RandomizedDecisionTree ι β} {x : ι → Bool}
 
 theorem expectedCost_nonneg : 0 ≤ μ.expectedCost x :=
@@ -119,8 +133,7 @@ theorem computes_uniformMixture {g : C → DecisionTree ι β} {f : (ι → Bool
 `g c`. -/
 theorem expectedCost_uniformMixture (g : C → DecisionTree ι β) (x : ι → Bool) :
     (uniformMixture g).expectedCost x = 𝔼 c, ((g c).cost x : ℝ) := by
-  rw [expectedCost, uniformMixture, StdSimplex.weights_map,
-    Finsupp.sum_mapDomain_index (fun _ => zero_mul _) fun _ _ _ => add_mul _ _ _,
+  rw [uniformMixture, expectedCost_map,
     Finsupp.sum_fintype _ _ fun _ => zero_mul _, Fintype.expect_eq_sum_div_card, sum_div]
   refine sum_congr rfl fun c _ => ?_
   simp [div_eq_inv_mul]
@@ -149,11 +162,14 @@ variable {ι β : Type*} {f : (ι → Bool) → β}
 
 /-- The zero-error (Las Vegas) randomized decision tree complexity `R₀(f)`: the least `c` such
 that some randomized decision tree computing `f` with error `0` makes at most `c` queries in
-expectation on every input. It is the junk value `0` (`Real.sInf_empty`) when no decision tree
-computes `f`, which cannot happen over finitely many variables
-(`QueryComplexity.zeroErrorComplexity_le_complexity`). -/
-noncomputable def zeroErrorComplexity (f : (ι → Bool) → β) : ℝ :=
+expectation on every input. The finite coordinate space guarantees a correct deterministic tree,
+so the feasible set is nonempty. -/
+-- Finiteness restricts the public domain; `sInf` itself does not require it.
+@[nolint unusedArguments]
+noncomputable def zeroErrorComplexity [Finite ι] (f : (ι → Bool) → β) : ℝ :=
   sInf {c | ∃ μ : RandomizedDecisionTree ι β, μ.Computes 0 f ∧ ∀ x, μ.expectedCost x ≤ c}
+
+variable [Finite ι]
 
 /-- An always-correct randomized decision tree making at most `c` queries in expectation on every
 input bounds `R₀(f)` by `c`. -/
@@ -161,15 +177,25 @@ theorem zeroErrorComplexity_le {μ : RandomizedDecisionTree ι β} {c : ℝ} (h�
     (hc : ∀ x, μ.expectedCost x ≤ c) : zeroErrorComplexity f ≤ c :=
   csInf_le ⟨0, fun _ ⟨_, _, h⟩ => expectedCost_nonneg.trans (h fun _ => false)⟩ ⟨μ, hμ, hc⟩
 
-theorem zeroErrorComplexity_nonneg : 0 ≤ zeroErrorComplexity f := by
-  by_cases h : {c | ∃ μ : RandomizedDecisionTree ι β, μ.Computes 0 f ∧
-      ∀ x, μ.expectedCost x ≤ c}.Nonempty
-  · exact le_csInf h fun _ ⟨_, _, hc⟩ => expectedCost_nonneg.trans (hc fun _ => false)
-  · rw [Set.not_nonempty_iff_eq_empty] at h
-    rw [zeroErrorComplexity, h, Real.sInf_empty]
+private theorem zeroErrorComplexity_nonempty (f : (ι → Bool) → β) :
+    {c | ∃ μ : RandomizedDecisionTree ι β, μ.Computes 0 f ∧
+      ∀ x, μ.expectedCost x ≤ c}.Nonempty := by
+  obtain ⟨t, ht, -⟩ := DecisionTree.exists_computes_depth_eq_complexity f
+  refine ⟨t.depth, StdSimplex.single t, computes_single ht le_rfl, fun x => ?_⟩
+  rw [expectedCost_single]
+  exact Nat.cast_le.2 (t.cost_le_depth x)
+
+/-- A lower bound valid for every feasible randomized expected-cost bound also bounds `R₀`. -/
+theorem le_zeroErrorComplexity {c : ℝ}
+    (hc : ∀ (μ : RandomizedDecisionTree ι β) (d : ℝ), μ.Computes 0 f →
+      (∀ x, μ.expectedCost x ≤ d) → c ≤ d) : c ≤ zeroErrorComplexity f :=
+  le_csInf (zeroErrorComplexity_nonempty f) fun _ ⟨μ, hμ, h⟩ => hc μ _ hμ h
+
+theorem zeroErrorComplexity_nonneg : 0 ≤ zeroErrorComplexity f :=
+  le_zeroErrorComplexity fun _ _ _ hc => expectedCost_nonneg.trans (hc fun _ => false)
 
 /-- Randomness with zero error does not hurt: `R₀(f) ≤ D(f)`. -/
-theorem zeroErrorComplexity_le_complexity [Finite ι] (f : (ι → Bool) → β) :
+theorem zeroErrorComplexity_le_complexity (f : (ι → Bool) → β) :
     zeroErrorComplexity f ≤ DecisionTree.complexity f := by
   obtain ⟨t, ht, hd⟩ := DecisionTree.exists_computes_depth_eq_complexity f
   refine zeroErrorComplexity_le (computes_single ht le_rfl) fun x => ?_
@@ -178,13 +204,10 @@ theorem zeroErrorComplexity_le_complexity [Finite ι] (f : (ι → Bool) → β)
 
 /-- A nonconstant function needs at least one query in expectation: `1 ≤ R₀(f)`. Every tree
 computing `f` is a node, so it makes at least one query on every input. -/
-theorem one_le_zeroErrorComplexity [Finite ι] (hf : ∃ x y, f x ≠ f y) :
+theorem one_le_zeroErrorComplexity (hf : ∃ x y, f x ≠ f y) :
     1 ≤ zeroErrorComplexity f := by
-  obtain ⟨t, ht, -⟩ := DecisionTree.exists_computes_depth_eq_complexity f
-  refine le_csInf ⟨t.depth, StdSimplex.single t, computes_single ht le_rfl, fun x => by
-    rw [expectedCost_single]
-    exact Nat.cast_le.2 (t.cost_le_depth x)⟩ ?_
-  rintro c ⟨μ, hμ, hc⟩
+  apply le_zeroErrorComplexity
+  intro μ c hμ hc
   obtain ⟨t, ht, hle⟩ :=
     StdSimplex.exists_mem_support_le_sum_mul μ fun t => (t.cost fun _ => false : ℝ)
   refine le_trans ?_ (hle.trans (hc fun _ => false))

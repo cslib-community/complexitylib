@@ -27,11 +27,11 @@ import Mathlib.Data.List.GetD
 
 A verifier that guesses a circuit reads it from a certificate of a fixed length. This file fixes
 such a format for De Morgan circuits with `n` inputs, one output and at most `s` gates, of length
-`certLength n s`, monotone in the number of inputs (`certLength_mono_left`). Wire numbers are
-below `w = n + s` and are written in unary in fields of `w`
-bits (`unaryField`); an operation takes three bits (`Op.bits`). A certificate lists the number of
-gates in a field of `s` bits, the output wire, and then `s` rows of `3 + 2 w` bits, the first of
-which hold the gates (`certificate`).
+`certLength n s`, monotone in the number of inputs (`certLength_mono_left`) and at most
+`3 (n + s + 1) ^ 2` (`certLength_le_three_mul_sq`). Wire numbers are below `w = n + s` and are
+written in unary in fields of `w` bits (`unaryField`); an operation takes three bits (`Op.bits`).
+A certificate lists the number of gates in a field of `s` bits, the output wire, and then `s` rows
+of `3 + 2 w` bits, the first of which hold the gates (`certificate`).
 
 Every bit string reads as a list of gates and an output wire (`readCertificate`): a field is read
 as its number of ones, any three bits as an operation, and the arguments of a gate are cut to the
@@ -55,6 +55,8 @@ De Morgan polynomial-time certificate (`Cslib.Circuits.Boolean.computableInPolyT
 ## Main results
 
 * `Cslib.Circuits.Boolean.certLength_mono_left`: certificate length is monotone in the input count.
+* `Cslib.Circuits.Boolean.certLength_le_three_mul_sq`: certificate length is at most
+  `3 (n + s + 1) ^ 2`.
 * `Cslib.Circuits.Boolean.length_certificate`: certificates have length `certLength n s`.
 * `Cslib.Circuits.Boolean.readCertificate_certificate_append`: a certificate reads as the code of
   its circuit.
@@ -175,6 +177,14 @@ def certLength (n s : ℕ) : ℕ := s + (n + s) + s * (3 + 2 * (n + s))
 theorem certLength_mono_left {m n : ℕ} (h : m ≤ n) (s : ℕ) : certLength m s ≤ certLength n s := by
   unfold certLength
   gcongr
+
+/-- The certificate length is at most `3 (n + s + 1) ^ 2`. -/
+theorem certLength_le_three_mul_sq (n s : ℕ) : certLength n s ≤ 3 * (n + s + 1) ^ 2 := by
+  have h : 3 * (n + s + 1) ^ 2 =
+      certLength n s + (3 * n ^ 2 + s ^ 2 + 4 * n * s + 5 * n + s + 3) := by
+    unfold certLength
+    ring
+  omega
 
 /-- The certificate of a circuit with `n` inputs and at most `s` gates, given by its gate list and
 its output wire: the number of gates and the output wire in fields of `s` and `n + s` bits, the

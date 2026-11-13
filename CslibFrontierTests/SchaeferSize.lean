@@ -19,9 +19,9 @@ namespace CslibFrontierTests.SchaeferSize
 open Cslib.Logic Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
 private def template (_ : Unit) : CSP Unit (Bool × ℕ) :=
-  [((), [(false, 0), (false, 1), (true, 0)])]
+  [⟨(), [(false, 0), (false, 1), (true, 0)]⟩]
 
-private def input : CSP Unit ℕ := [((), [2 ^ 100, 2 ^ 100]), ((), [0, 1])]
+private def input : CSP Unit ℕ := [⟨(), [2 ^ 100, 2 ^ 100]⟩, ⟨(), [0, 1]⟩]
 
 example : (CSP.replaceGadgets 1 template input).length = 2 := by decide
 example : (CSP.replaceGadgets 1 template input).vars.length = 6 := by decide
@@ -36,16 +36,16 @@ example : (CSP.replaceGadgets 1 template input).numVars +
 
 -- The general guarded bound includes malformed source scopes and arbitrary fixed rejection.
 example : ∃ C : ℕ, ∀ F : CSP Unit ℕ,
-    (CSP.replaceGadgetsGuarded (fun _ => 2) 1 template [((), [])] F).numVars +
-      (CSP.replaceGadgetsGuarded (fun _ => 2) 1 template [((), [])] F).length ≤
+    (CSP.replaceGadgetsGuarded (fun _ => 2) 1 template [⟨(), []⟩] F).numVars +
+      (CSP.replaceGadgetsGuarded (fun _ => 2) 1 template [⟨(), []⟩] F).length ≤
         C * F.length :=
   CSP.exists_linear_bound_replaceGadgetsGuarded _ _ _ _
 
-example : CSP.replaceGadgetsGuarded (fun _ => 2) 1 template [((), [])]
-    [((), [2 ^ 100])] = [((), [])] := by decide
+example : CSP.replaceGadgetsGuarded (fun _ => 2) 1 template [⟨(), []⟩]
+    [⟨(), [2 ^ 100]⟩] = [⟨(), []⟩] := by decide
 
 -- Even a nonempty reject instance cannot introduce an additive constant on empty input.
-example : CSP.replaceGadgetsGuarded (fun _ : Unit => 2) 1 template [((), [])] [] = [] := by
+example : CSP.replaceGadgetsGuarded (fun _ : Unit => 2) 1 template [⟨(), []⟩] [] = [] := by
   rfl
 
 example : (CSP.replaceGadgets 0 (fun _ : Unit => ([] : CSP Unit (Bool × ℕ))) input).numVars +

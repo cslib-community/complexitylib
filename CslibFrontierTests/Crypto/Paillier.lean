@@ -6,6 +6,7 @@ Authors: Karn Seth
 
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Crypto.Computational.Paillier
+import CslibFrontier.Crypto.Computational.Paillier.Finite
 import CslibFrontier.Crypto.Computational.Paillier.Security
 import Mathlib.Tactic.NormNum.Prime
 
@@ -18,6 +19,8 @@ and the premises of the efficiency, correctness and homomorphism theorems are sa
 constant modulus generator for `N = 143` is uniform strict PPT, and its key pair is in the support
 of key generation. For the IND-CPA reduction, the admissibility predicate is checked by evaluation,
 and the reduction distinguisher and the security theorem are applied to a concrete adversary.
+The fixed-modulus scheme at `N = 143` is correct and additively homomorphic, and the reduction to
+the fixed-modulus DCR experiments applies to a concrete two-stage adversary.
 -/
 
 namespace CslibFrontierTests.Crypto.Paillier
@@ -63,7 +66,7 @@ example : d143.modulus = 143 := rfl
 example : d143.totient = 120 := rfl
 
 /-- `gcd(143, φ(143)) = 1` ([KatzLindell2020], Claim 15.7). -/
-example : Nat.Coprime 143 (Nat.totient 143) := d143.coprime_totient
+theorem coprime_totient_143 : Nat.Coprime 143 (Nat.totient 143) := d143.coprime_totient
 
 /-- The modulus generator that always outputs `d143`. -/
 noncomputable def constGen : ℕ → ProbComp Desc := fun _ => pure d143
@@ -115,7 +118,7 @@ theorem isPPTOn_constDistinguisher :
 negligible advantage. -/
 example (setup : ℕ → PMF Desc) (h : DCR setup) :
     Negligible (fun n => Game.advantage (dcrRealGame setup (fun _ _ => pure true) n)
-      (dcrIdealGame setup (fun _ _ => pure true) n)) :=
+      (dcrRandomGame setup (fun _ _ => pure true) n)) :=
   h (fun _ _ => pure true) isPPTOn_constDistinguisher
 
 /-! ### IND-CPA security under decisional composite residuosity -/
@@ -155,6 +158,43 @@ example {gen : ℕ → ProbComp Desc}
       (ProbComp.eval
         (Encryption.gameOn validMessages (keyGen gen) encrypt constAdversary true n)) :=
   DCR.indcpaOn_paillier hsize hDCR constAdversary constAdversary_isPPT
+
+/-! ### The scheme at a fixed modulus -/
+
+/-- Every encryption of `42` modulo `143` decrypts to `42` with secret key `φ(143)`. -/
+example {c : (ZMod (143 ^ 2))ˣ} (hc : c ∈ (ProbComp.eval (paillierEncrypt 143 42)).support) :
+    paillierDecrypt 143 (Nat.totient 143) c = 42 :=
+  paillierDecrypt_of_mem_support coprime_totient_143 hc
+
+/-- The product of encryptions of `100` and `50` decrypts to `7 = 150 mod 143`. -/
+example {c₁ c₂ : (ZMod (143 ^ 2))ˣ}
+    (hc₁ : c₁ ∈ (ProbComp.eval (paillierEncrypt 143 100)).support)
+    (hc₂ : c₂ ∈ (ProbComp.eval (paillierEncrypt 143 50)).support) :
+    paillierDecrypt 143 (Nat.totient 143) (c₁ * c₂) = 7 :=
+  (paillierDecrypt_mul coprime_totient_143 hc₁ hc₂).trans (by decide)
+
+/-- Multiplying two independent encryptions of `100` and `50` gives exactly a fresh encryption of
+`7`. -/
+example :
+    ProbComp.eval (do
+        let c₁ ← paillierEncrypt 143 100
+        let c₂ ← paillierEncrypt 143 50
+        return c₁ * c₂) =
+      ProbComp.eval (paillierEncrypt 143 7) := by
+  rw [eval_paillierEncrypt_mul_paillierEncrypt, show (100 + 50 : ZMod 143) = 7 by decide]
+
+/-- The two-stage adversary that challenges with `0` and `1` and always guesses `true`. -/
+noncomputable def constTwoStage :
+    TwoStage ℕ (MessagePair (ZMod 143)) (ZMod (143 ^ 2))ˣ Bool Unit where
+  choose _ := pure (⟨0, 1⟩, ())
+  guess _ _ := pure true
+
+/-- The fixed-modulus chosen-plaintext advantage of the concrete adversary is bounded by the DCR
+advantages of its two reductions. -/
+example : paillierCPAAdvantage 143 constTwoStage ≤
+    dcrAdvantage 143 (paillierToDCR 143 constTwoStage false) +
+      dcrAdvantage 143 (paillierToDCR 143 constTwoStage true) :=
+  paillierCPAAdvantage_le_dcrAdvantage constTwoStage
 
 /-! ### Axiom guards for headline results -/
 
@@ -205,5 +245,23 @@ info: 'Cslib.Crypto.Paillier.decrypt_addCiphertexts' depends on axioms: [propext
 -/
 #guard_msgs in
 #print axioms decrypt_addCiphertexts
+
+/--
+info: 'Cslib.Crypto.paillierDecrypt_of_mem_support' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms paillierDecrypt_of_mem_support
+
+/--
+info: 'Cslib.Crypto.eval_mul_paillierEncrypt' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms eval_mul_paillierEncrypt
+
+/--
+info: 'Cslib.Crypto.paillierCPAAdvantage_le_dcrAdvantage' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms paillierCPAAdvantage_le_dcrAdvantage
 
 end CslibFrontierTests.Crypto.Paillier

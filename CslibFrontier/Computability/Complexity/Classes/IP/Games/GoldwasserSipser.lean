@@ -351,7 +351,8 @@ end Emulation
 
 open IPGame Emulation
 
-private theorem le_two_pow_sub {x r ρ : ℕ} (h : x * 2 ^ r ≤ 2 ^ ρ) : x ≤ 2 ^ (ρ - r) := by
+/-- Bound `x ≤ 2 ^ (ρ - r)` from `x * 2 ^ r ≤ 2 ^ ρ`. -/
+theorem le_two_pow_sub {x r ρ : ℕ} (h : x * 2 ^ r ≤ 2 ^ ρ) : x ≤ 2 ^ (ρ - r) := by
   rcases le_or_gt r ρ with hr | hr
   · rw [← Nat.sub_add_cancel hr, pow_add] at h
     exact Nat.le_of_mul_le_mul_right h (Nat.two_pow_pos r)
@@ -363,7 +364,8 @@ private theorem le_two_pow_sub {x r ρ : ℕ} (h : x * 2 ^ r ≤ 2 ^ ρ) : x ≤
     rw [hx]
     exact Nat.zero_le _
 
-private theorem two_pow_sub_le {N r ρ : ℕ} (h : 2 ^ r * 2 ^ ρ ≤ 3 ^ r * N) :
+/-- Bound `2 ^ (ρ - r) ≤ N` from `2 ^ r * 2 ^ ρ ≤ 3 ^ r * N`. -/
+theorem two_pow_sub_le {N r ρ : ℕ} (h : 2 ^ r * 2 ^ ρ ≤ 3 ^ r * N) :
     2 ^ (ρ - r) ≤ N := by
   have h3 : 3 ^ r ≤ 2 ^ r * 2 ^ r := by
     rw [← mul_pow]; exact Nat.pow_le_pow_left (by norm_num) r

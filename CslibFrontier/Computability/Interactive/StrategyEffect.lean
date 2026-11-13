@@ -27,6 +27,7 @@ combined interaction once, rather than resetting the state at each translated ef
 ## Main results
 
 * `runAgainst_hoist`: a monad morphism commutes with the complete interaction.
+* `interpret_liftVerifier`: a lifted verifier computation ignores the prover's oracle.
 -/
 
 @[expose] public section
@@ -90,5 +91,17 @@ theorem isMonadHom_liftProver :
 theorem isMonadHom_liftVerifier :
     IsMonadHom (ProbOracleComp oV) (ProbOracleComp (oP ⊕ₒ oV)) liftVerifier :=
   PFunctor.FreeM.isMonadHom_liftM _
+
+/-- A lifted verifier computation uses only the sampling and verifier components of a joint
+handler: the prover component is never consulted. -/
+theorem interpret_liftVerifier [Monad m] [LawfulMonad m] (random : (k : ℕ) → m (Fin (k + 1)))
+    (prover : (q : ιP) → m (oP q)) (verifier : (q : ιV) → m (oV q))
+    (program : ProbOracleComp oV α) :
+    OracleComp.interpret (OracleComp.sumHandler random (OracleComp.sumHandler prover verifier))
+        (liftVerifier (oP := oP) program) =
+      OracleComp.interpret (OracleComp.sumHandler random verifier) program := by
+  rw [liftVerifier, OracleComp.interpret_interpret]
+  congr 1 with q : 1
+  cases q <;> simp [ProbOracleComp.query]
 
 end Cslib.Interactive

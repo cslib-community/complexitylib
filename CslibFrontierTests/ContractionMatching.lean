@@ -31,26 +31,26 @@ example : (CSP.permanentInstance 3 (rowEntry ones₃)).partitionFunction CSP.exa
     6 := by
   decide +kernel
 
-example : (rowsMatrix ones₃).permanent = 6 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix ones₃).permanent = 6 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- The identity has permanent one.
-example : (rowsMatrix id₃).permanent = 1 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix id₃).permanent = 1 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- Rows of unequal length are cut or padded with zeros: `[[1, 0], [1, 1]]` has permanent one.
-example : rowsMatrix [[true], [true, true, true]] = !![1, 0; 1, 1] := by
+example : boolTableMatrix [[true], [true, true, true]] = !![1, 0; 1, 1] := by
   decide
 
-example : (rowsMatrix [[true], [true, true, true]]).permanent = 1 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix [[true], [true, true, true]]).permanent = 1 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- Each nonzero entry `(i, j)` is the variable `3 i + j`, in its row and its column.
 example : (CSP.permanentInstance 3 (rowEntry id₃)) =
-    [((), [0]), ((), [4]), ((), [8]), ((), [0]), ((), [4]), ((), [8])] := by
+    [⟨(), [0]⟩, ⟨(), [4]⟩, ⟨(), [8]⟩, ⟨(), [0]⟩, ⟨(), [4]⟩, ⟨(), [8]⟩] := by
   decide
 
 example : (CSP.permanentInstance 3 (rowEntry ones₃)).vars.count 5 = 2 := by
@@ -62,8 +62,8 @@ example : guarded 2 (CSP.permanentInstance 2 (rowEntry [[true, true], [false, fa
     zeroInstance := by
   decide
 
-example : (rowsMatrix [[true, true], [false, false]]).permanent = 0 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix [[true, true], [false, false]]).permanent = 0 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- Wide constraints are guarded out too.
@@ -75,18 +75,18 @@ matrix, which meets the degree promise. -/
 example : ∃ count : List (List Bool) → ℕ, count ones₃ = 6 := by
   obtain ⟨count, A, e, b, hcount, -⟩ := exists_permanentCounter 3
   refine ⟨count, ?_⟩
-  rw [hcount ones₃ (by decide) (by decide), rowsMatrix_eq,
+  rw [hcount ones₃ (by decide) (by decide), boolTableMatrix_eq_rowEntry,
     ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 /-! ### Perfect matchings -/
 
 /-- The cycle `0 - 1 - 2 - 3 - 4 - 5 - 0`. -/
-def cycle₆ : Graph := (List.range 6, [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0)])
+def cycle₆ : Graph := ⟨List.range 6, [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0)]⟩
 
 /-- The complete bipartite graph `K₃,₃` with sides `{0, 1, 2}` and `{3, 4, 5}`. -/
 def k₃₃ : Graph :=
-  (List.range 6, (List.range 3).flatMap fun i => (List.range 3).map fun j => (i, j + 3))
+  ⟨List.range 6, (List.range 3).flatMap fun i => (List.range 3).map fun j => (i, j + 3)⟩
 
 -- The cycle `C₆` has two perfect matchings.
 example : cycle₆.perfectMatchingInstance.partitionFunction CSP.exactlyOneWeight = 2 := by
@@ -102,16 +102,16 @@ example : Nat.card {M : k₃₃.induced.Subgraph // M.IsPerfectMatching} = 6 := 
 
 -- The edge list drops the loop `(1, 1)` and the edge `(2, 5)` to an undeclared vertex, and keeps
 -- one copy of `0 - 1` among `(0, 1)`, `(1, 0)` and `(0, 1)`.
-example : Graph.edgeList ([0, 1, 2, 1], [(0, 1), (1, 0), (1, 1), (1, 2), (2, 5), (0, 1)]) =
+example : Graph.edgeList ⟨[0, 1, 2, 1], [(0, 1), (1, 0), (1, 1), (1, 2), (2, 5), (0, 1)]⟩ =
     [(0, 1), (1, 2)] := by
   decide
 
 -- The path `0 - 1` with the isolated vertex `2`: the constraint of `2` has no variable, the guard
 -- answers the zero instance, and there is no perfect matching.
-example : guarded 2 (Graph.perfectMatchingInstance ([0, 1, 2], [(0, 1)])) = zeroInstance := by
+example : guarded 2 (Graph.perfectMatchingInstance ⟨[0, 1, 2], [(0, 1)]⟩) = zeroInstance := by
   decide
 
-example : Nat.card {M : Graph.induced ([0, 1, 2], [(0, 1)]) |>.Subgraph // M.IsPerfectMatching} =
+example : Nat.card {M : Graph.induced ⟨[0, 1, 2], [(0, 1)]⟩ |>.Subgraph // M.IsPerfectMatching} =
     0 := by
   rw [← Graph.partitionFunction_perfectMatchingInstance]
   decide +kernel

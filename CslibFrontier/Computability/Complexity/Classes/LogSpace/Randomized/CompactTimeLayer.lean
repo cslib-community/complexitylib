@@ -30,6 +30,8 @@ packaging, paired ports and the native recursive estimator remain open.
 
 * `Turing.MultiTapePTM.ConfigurationGraph.finTimeLayer_compactCoinMatrix_acceptance`: clock-zero
   acceptance for the explicit finite indexing and any horizon.
+* `Turing.MultiTapePTM.ConfigurationGraph.compactTimeLayer_polyClock`: the gap-independent
+  matrix, reward and potential facts at the polynomial clock, shared by the `RL` and `BPL` layers.
 * `Cslib.Complexity.exists_compactTimeLayer_of_mem_BPL`: the canonical polynomial-size
   strict-forward real matrix with the actual `2/3` versus `1/3` BPL gap.
 
@@ -62,6 +64,41 @@ theorem finTimeLayer_compactCoinMatrix_acceptance (c : ℕ) {w : List Bool}
   dsimp only
   rw [finTimeLayerPotential_zero, compactCoinMatrix_pow_accept]
 
+/-- **The clocked compact layer at the polynomial clock.** On a word `w`, the compact matrix
+clocked at `T = Turing.polyClock d w.length` has polynomial dimension, is strictly forward,
+nonnegative and substochastic, has a `0`/`1` terminal reward, and its potential solves the linear
+and inverse equations with values in `[0,1]`. These facts need no space bound; the `RL` and `BPL`
+compact layers add the acceptance gap through
+`Turing.MultiTapePTM.ConfigurationGraph.finTimeLayer_compactCoinMatrix_acceptance`. -/
+theorem compactTimeLayer_polyClock (machine : MultiTapePTM k Bool State) (c d : ℕ)
+    (w : List Bool) :
+    let D := radixExponent State c
+    let B := radix D w.length
+    let N := vertexBound (k := k) B
+    let T := polyClock d w.length
+    let P := compactCoinMatrix machine ℝ B w
+    let e₀ := compactAcceptVec (k := k) (State := State) ℝ B w.length
+    let S := finTimeLayer T P
+    let e := finTimeLayerReward T e₀
+    let p := finTimeLayerPotential T P e₀
+    Fintype.card (Fin ((T + 1) * N)) ≤
+      (2 * (w.length + 1)) ^ (D * Fintype.card (Register k) + d + 2) ∧
+    S.IsStrictUpperTriangular ∧ (∀ x y, 0 ≤ S x y) ∧ S *ᵥ 1 ≤ 1 ∧
+    (∀ x, e x = 0 ∨ e x = 1) ∧ (1 - S) *ᵥ p = e ∧ (1 - S)⁻¹ *ᵥ e = p ∧
+    p ∈ Set.Icc 0 1 := by
+  intro D B N T P e₀ S e p
+  have hP0 := compactCoinMatrix_nonneg (machine := machine) (R := ℝ) B w
+  have hP1 := compactCoinMatrix_mulVec_one_le (machine := machine) (R := ℝ) B w
+  refine ⟨?_, finTimeLayer_isStrictUpperTriangular _ _, finTimeLayer_nonneg hP0 _,
+    finTimeLayer_mulVec_one_le hP1 _, fun x => ?_, one_sub_finTimeLayer_mulVec _ _ _,
+    inv_one_sub_finTimeLayer_mulVec _ _ _,
+    finTimeLayerPotential_mem_Icc hP0 hP1 (compactAcceptVec_mem_Icc _ _) _⟩
+  · rw [Fintype.card_fin]
+    exact (Nat.le_succ _).trans (clockedVertexBound_add_one_le_pow (k := k) D d w.length)
+  · unfold e finTimeLayerReward timeLayerReward e₀ compactAcceptVec
+    dsimp only [Function.comp_apply]
+    split_ifs <;> simp
+
 end Turing.MultiTapePTM.ConfigurationGraph
 
 namespace Cslib.Complexity
@@ -85,7 +122,7 @@ theorem exists_compactTimeLayer_of_mem_BPL (h : A ∈ BPL enc) :
         let D := radixExponent State c
         let B := radix D w.length
         let N := vertexBound (k := k) B
-        let T := 2 * (2 * (w.length + 1)) ^ d
+        let T := polyClock d w.length
         let P := compactCoinMatrix M ℝ B w
         let e₀ := compactAcceptVec (k := k) (State := State) ℝ B w.length
         let S := finTimeLayer T P
@@ -100,34 +137,17 @@ theorem exists_compactTimeLayer_of_mem_BPL (h : A ∈ BPL enc) :
         p ∈ Set.Icc 0 1 ∧
         (a ∈ A → 2 / 3 ≤ p x₀) ∧ (a ∉ A → p x₀ ≤ 1 / 3) := by
   classical
-  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_BPL h
+  obtain ⟨k, State, _, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_BPL h
   let : Fintype State := Fintype.ofFinite State
-  refine ⟨k, State, inferInstance, M, c, d, fun a => ?_⟩
-  obtain ⟨hs, hT, hmem, hnot⟩ := hM a
-  refine ⟨hs, ?_⟩
-  dsimp only
-  have hP0 := compactCoinMatrix_nonneg (machine := M) (R := ℝ)
-    (radix (radixExponent State c) (enc a).length) (enc a)
-  have hP1 := compactCoinMatrix_mulVec_one_le (machine := M) (R := ℝ)
-    (radix (radixExponent State c) (enc a).length) (enc a)
-  refine ⟨hT, ?_, finTimeLayer_isStrictUpperTriangular _ _, finTimeLayer_nonneg hP0 _,
-    finTimeLayer_mulVec_one_le hP1 _, ?_, one_sub_finTimeLayer_mulVec _ _ _,
-    inv_one_sub_finTimeLayer_mulVec _ _ _,
-    finTimeLayerPotential_mem_Icc hP0 hP1 (compactAcceptVec_mem_Icc _ _) _, ?_, ?_⟩
-  · rw [Fintype.card_fin]
-    exact (Nat.le_succ _).trans (clockedVertexBound_add_one_le_pow
-      (k := k) (radixExponent State c) d (enc a).length)
-  · intro x
-    unfold finTimeLayerReward timeLayerReward compactAcceptVec
-    dsimp only [Function.comp_apply]
-    split_ifs <;> simp
-  · intro ha
-    rw [finTimeLayer_compactCoinMatrix_acceptance, le_div_iff₀ (by positivity)]
+  refine ⟨k, State, inferInstance, M, c, d, fun a => ⟨hM.runsInSpace a, ?_⟩⟩
+  obtain ⟨hmem, hnot⟩ := herr a
+  obtain ⟨hcard, hS, hS0, hS1, he, hp, hinv, hIcc⟩ := compactTimeLayer_polyClock M c d (enc a)
+  refine ⟨hM.runsInTime a, hcard, hS, hS0, hS1, he, hp, hinv, hIcc, fun ha => ?_, fun ha => ?_⟩
+  · rw [finTimeLayer_compactCoinMatrix_acceptance, le_div_iff₀ (by positivity)]
     have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
     push_cast at hc
     linarith
-  · intro ha
-    rw [finTimeLayer_compactCoinMatrix_acceptance, div_le_iff₀ (by positivity)]
+  · rw [finTimeLayer_compactCoinMatrix_acceptance, div_le_iff₀ (by positivity)]
     have hc := (Nat.cast_le (α := ℝ)).mpr (hnot ha)
     push_cast at hc
     linarith

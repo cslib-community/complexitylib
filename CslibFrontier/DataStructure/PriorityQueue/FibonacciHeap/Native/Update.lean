@@ -17,10 +17,10 @@ import CslibFrontier.Tactic.Realize
 # Native updates of the indexed Fibonacci heap
 
 The original linked record source is compiled through the existing realization rules. The
-lexicographic priority test is distributed into ordinary word comparisons using `ite_or` and
-`ite_and`, without changing the program. The certificate retains its intrinsic source-history
-admissibility contract; the existing heap refinement supplies that contract for indexed-queue
-clients. These blocks do not constitute a complete native method family.
+lexicographic priority test is compiled directly by `realize` from its original named guard.
+The certificate retains its intrinsic source-history admissibility contract; the existing heap
+refinement supplies that contract for indexed-queue clients. These blocks do not constitute a
+complete native method family.
 
 ## Main definitions
 
@@ -42,14 +42,6 @@ namespace Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
 
 open Cslib.WordRAM Cslib.WordRAM.Realization
 
-/-- Compile the existing lexicographic priority predicate as native word comparisons. The
-same normalization applies to record and memory source branches. -/
-theorem priority_if {α : Type} (u ku p kp : ℕ) (yes no : α) :
-    (if IndexedMinPQ.RawPrioLT (u, ku) (p, kp) then yes else no) =
-      if ku < kp then yes else if ku = kp then if u < p then yes else no else no := by
-  change (if ku < kp ∨ ku = kp ∧ u < p then yes else no) = _
-  rw [ite_or, ite_and]
-
 private theorem bind_if (P : Prop) [Decidable P] (yes no : Prog Unit) (k : Unit → Prog Unit) :
     (if P then yes else no) >>= k = if P then yes >>= k else no >>= k :=
   apply_ite (fun p : Prog Unit => p >>= k) _ _ _
@@ -69,7 +61,6 @@ private theorem realizes_addRoot_history : Realizes .exact
     ext d
     arg 2
     simp only [addRoot, spliceAfter]
-    simp only [priority_if]
   conv =>
     arg 2
     ext d
@@ -89,7 +80,7 @@ private theorem realizes_addRoot_history : Realizes .exact
     have hv := h.2.2
     simp only [DataStructure.link, addRoot, spliceAfter, rd, wr,
       PFunctor.FreeM.liftM_bind, Record.Layout.lift_read, Record.Layout.lift_write,
-      Record.lift_ite, priority_if, layout] at hv
+      Record.lift_ite, IndexedMinPQ.RawPrioLT, layout] at hv
     simp only [StateTransitionSpec.clientHistory, bind_assoc,
       StateTransitionSpec.runClient_lift_bind', Memory.read, Memory.write,
       StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, Memory.step_read,
@@ -97,10 +88,11 @@ private theorem realizes_addRoot_history : Realizes .exact
     have hfit := h.1
     have hlt := h.2.1
     clear h
-    simp_all only [ite_true, ite_false, StateTransitionSpec.runClient_lift_bind',
-      StateTransitionSpec.runClient_lift, StateTransitionSpec.validHistory_cons,
-      StateTransitionSpec.validHistory_nil, StateTransitionSpec.stepFn,
-      Memory.step_read, Memory.step_write, Memory.valid]
+    simp_all only [true_or, false_or, true_and, false_and, ite_true, ite_false,
+      PFunctor.FreeM.liftM_bind, Record.Layout.lift_read, Record.Layout.lift_write,
+      StateTransitionSpec.runClient_lift_bind', StateTransitionSpec.runClient_lift,
+      StateTransitionSpec.validHistory_cons, StateTransitionSpec.validHistory_nil,
+      StateTransitionSpec.stepFn, Memory.step_read, Memory.step_write, Memory.valid]
   all_goals
     have hfront := hmem.frontier_fits
     simp only [Fits] at hv hfront ⊢
@@ -253,7 +245,7 @@ private theorem realizes_setKey_history : Realizes .exact
     arg 2
     ext d
     arg 2
-    simp only [setKey, priority_if]
+    simp only [setKey]
   conv =>
     arg 2
     ext d
@@ -275,10 +267,8 @@ private theorem realizes_setKey_history : Realizes .exact
   all_goals
     have hv := h.2
     clear h
-    simp only [DataStructure.link, setKey, rd, wr, priority_if,
-      PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure, Record.Layout.lift_read,
-      Record.Layout.lift_write,
-      Record.lift_ite, layout] at hv
+    simp only [DataStructure.link, setKey, rd, wr, IndexedMinPQ.RawPrioLT,
+      PFunctor.FreeM.liftM_bind, Record.Layout.lift_read, Record.Layout.lift_write, layout] at hv
     simp_all only [StateTransitionSpec.clientHistory, StateTransitionSpec.runClient_lift_bind',
       StateTransitionSpec.validHistory_cons, StateTransitionSpec.stepFn, Memory.read,
       Memory.write, Memory.step_read, Memory.step_write, Memory.valid,

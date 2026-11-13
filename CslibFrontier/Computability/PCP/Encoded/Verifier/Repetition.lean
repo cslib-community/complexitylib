@@ -138,24 +138,27 @@ theorem polyTime_repeatedEdgeVerifier (width repeats : ℕ) (decode : (Fin width
     (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
     (repeatedEdgeVerifier width repeats decode eval).PolyTime (encoding enc) := by
-  obtain ⟨_, hqueries, hverdict⟩ := polyTime_edgeVerifier width decode heval
+  have h := polyTime_edgeVerifier width decode heval
   have hclog : ComputableInPolyTime (fun g : Graph C => (edgeVerifier width decode eval).coins g)
       (encoding enc) encUnary :=
     (ComputableInPolyTime.unary_clog_const 2).comp
       ((ComputableInPolyTime.length_list (Edge.encoding enc)).comp (isPolyTime_edges .id'))
-  refine ⟨?_, ?_, ?_⟩
-  · exact ComputableInPolyTime.unary_to_binary.comp
+  constructor
+  case coins =>
+    exact ComputableInPolyTime.unary_to_binary.comp
       (ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const repeats).prod hclog))
-  · exact ComputableInPolyTime.flatMapWithInput
+  case queries =>
+    exact ComputableInPolyTime.flatMapWithInput
       (.const (encOut := encList encUnary) (List.range repeats))
-      (hqueries.comp
+      (h.queries.comp
         (((ComputableInPolyTime.fst _ _).fst').prod
           (ComputableInPolyTime.bitsRowWithInput
             (hclog.comp ((ComputableInPolyTime.fst _ _).fst'))
             (.snd _ _) ((ComputableInPolyTime.fst _ _).snd'))))
-  · exact ComputableInPolyTime.allWithInput
+  case verdict =>
+    exact ComputableInPolyTime.allWithInput
       (.const (encOut := encList encUnary) (List.range repeats))
-      (hverdict.comp
+      (h.verdict.comp
         ((((ComputableInPolyTime.fst _ _).fst'.fst').prod
           (ComputableInPolyTime.bitsRowWithInput
             (hclog.comp ((ComputableInPolyTime.fst _ _).fst'.fst'))

@@ -17,7 +17,7 @@ Whenever any of the four deletion rules `(D1)`–`(D4)` of [Mishra and Santhanam
 applies to a valid state `S` for a `d`-affine disperser with `d < S.a`, one step reduces `m + s`
 while keeping `Δa = 0` and `ΔW ≤ -1`.
 
-* `(D1)`: a gate computing an input literal or constant on `EqnsHold val ∧ InZeroLocus val`.
+* `(D1)`: a gate computing an input literal or constant on `EqnsHold val ∧ Locus val`.
 * `(D2)`: a gate read by no other gate and not by the output.
 * `(D3)`: an affine equation of at most two terms.
 * `(D4)` (`unit_delete`): an unpaired parameter whose sole child is an affine equation `e`, which
@@ -31,6 +31,8 @@ while keeping `Δa = 0` and `ΔW ≤ -1`.
 
 * `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.not_out_reads_param`: when `d < S.a`, the
   output does not read a parameter directly.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.unitDelete`: performing `(D4)` with a
+  given swap partner, without any disperser hypothesis.
 * `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.exists_unit_delete`: performing `(D4)` on a
   unit-degree unpaired parameter.
 * `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.step_of_deletion`: every available
@@ -47,9 +49,11 @@ public section
 
 namespace Cslib.Circuits.Boolean.AffineDisperser4n
 
-open Finset Cslib.BitString SemiCircuit
+open Finset Cslib.BitString SemiCircuit AffineDisperserCore
 
 namespace State
+
+open AffineDisperserCore.State
 
 variable {n : ℕ}
 
@@ -57,35 +61,30 @@ variable {n : ℕ}
 parameter directly. -/
 theorem Valid.not_out_reads_param {S : State n} {f : BooleanFunction n} {d : ℕ}
     (hS : S.Valid f) (hf : IsAffineDisperser f d) (ha : d < S.a) {x : ℕ} (hx : x ∈ S.params) :
-    ¬ S.out.Reads x := by
-  intro hread
-  refine hS.out_not_affine hf ha S.out.neg (Finset.singleton_subset_iff.2 hx)
-    fun val _ _ => ?_
-  have hread' : S.out.arg = .node x := hread
-  simp only [Lit.eval, hread', Arg.eval_node, Finset.sum_singleton]
-  cases S.out.neg <;> cases val x <;> rfl
+    ¬ S.out.Reads x :=
+  not_out_reads_param_of
+    (Valid.out_not_affine hS hf ha S.out.neg (Finset.singleton_subset_iff.2 hx))
 
-/-- `(D4)` (unit delete): an unpaired parameter `x` with `S.children x = {.inr e}` swaps with an
-auxiliary variable occurring in `e`, and then drops `e` and `x`, lowering `s` and `W` by `1`
-while preserving `m`, `q`, and `a`. -/
-theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
-    (hS : S.Valid f) (hf : IsAffineDisperser f d) (ha : d < S.a)
-    {x e : ℕ} (hx : x ∈ S.unpaired) (hcx : S.children x = {.inr e}) :
-    ∃ S' : State n, S'.Valid f ∧ S'.m = S.m ∧ S'.s + 1 = S.s ∧ S'.q = S.q ∧ S'.a = S.a ∧
-      S'.W + 1 ≤ S.W := by
+/-- `(D4)` (unit delete), concretely: an unpaired parameter `x` with `S.children x = {.inr e}`,
+not read by the output, swaps with an auxiliary variable `Q` that is affine in parameters `T`
+containing `x`; then `(S.swap x Q c T).dropEqn e x` drops `e` and `x`, lowering `s` and `W` by
+`1` while preserving `m`, `q`, and `a`. -/
+theorem Valid.unitDelete {S : State n} {f : BooleanFunction n} (hS : S.Valid f)
+    {x e Q : ℕ} {c : Bool} {T : Finset ℕ} (hx : x ∈ S.unpaired) (hcx : S.children x = {.inr e})
+    (hout : ¬ S.out.Reads x) (hQaux : Q ∈ S.aux) (haff : S.AffineIn Q c T) (hxT : x ∈ T) :
+    let S' := (S.swap x Q c T).dropEqn e x
+    S'.Valid f ∧ S'.m = S.m ∧ S'.s + 1 = S.s ∧ S'.q = S.q ∧ S'.a = S.a ∧ S'.W + 1 ≤ S.W := by
   have hxpar : x ∈ S.params := (mem_unpaired.1 hx).1
   have hxu : ¬ S.Paired x := (mem_unpaired.1 hx).2
   obtain ⟨he, hxe⟩ := (SemiCircuit.inr_mem_children _).1 (by
     rw [hcx]; exact Finset.mem_singleton_self _)
-  obtain ⟨Q, hQaux, c, T, haff, hxT⟩ :=
-    SemiCircuit.exists_affineIn_of_mem_terms hS.wf hxpar he hxe
   let S₁ := S.swap x Q c T
   have hswap : S.SwapOK x Q c T := ⟨hxpar, hxu, hQaux, haff, hxT⟩
-  have hS₁ : S₁.Valid f := hS.swap hswap
+  have hS₁ : S₁.Valid f := Valid.swap hS hswap
   have hm₁ : S₁.m = S.m := hS.swap_m hswap
   have hq₁ : S₁.q = S.q := rfl
   have hs₁ : S₁.s = S.s := swap_size S x Q c T
-  have hW₁ : S₁.W ≤ S.W := hS.swap_W_le hswap (by simp [deg, hcx])
+  have hW₁ : S₁.W ≤ S.W := Valid.swap_W_le hS hswap (by simp [deg, hcx])
   have hdrop : S₁.DropEqnOK e x :=
     { mem := he
       aux := Finset.mem_insert_self _ _
@@ -98,7 +97,7 @@ theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
         have : Sum.inl K ∈ S.children x := (SemiCircuit.inl_mem_children _).2 ⟨hK, hread⟩
         rw [hcx, Finset.mem_singleton] at this
         cases this
-      out := hS.not_out_reads_param hf ha hxpar }
+      out := hout }
   let S₂ := S₁.dropEqn e x
   have hS₂ : S₂.Valid f := hS₁.dropEqn hdrop
   have hm₂ : S₂.m = S.m := by
@@ -125,17 +124,32 @@ theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
             exact Finset.card_le_card (Finset.erase_subset _ _))
     simp only [Finset.sum_const_zero, add_zero, hq₂, ← hq₁] at h
     omega
-  exact ⟨S₂, hS₂, hm₂, hs₂, hq₂, ha₂, hW₂⟩
+  exact ⟨hS₂, hm₂, hs₂, hq₂, ha₂, hW₂⟩
+
+/-- `(D4)` (unit delete): an unpaired parameter `x` with `S.children x = {.inr e}` swaps with an
+auxiliary variable occurring in `e`, and then drops `e` and `x`, lowering `s` and `W` by `1`
+while preserving `m`, `q`, and `a`. -/
+theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
+    (hS : S.Valid f) (hf : IsAffineDisperser f d) (ha : d < S.a)
+    {x e : ℕ} (hx : x ∈ S.unpaired) (hcx : S.children x = {.inr e}) :
+    ∃ S' : State n, S'.Valid f ∧ S'.m = S.m ∧ S'.s + 1 = S.s ∧ S'.q = S.q ∧ S'.a = S.a ∧
+      S'.W + 1 ≤ S.W := by
+  have hxpar : x ∈ S.params := (mem_unpaired.1 hx).1
+  obtain ⟨he, hxe⟩ := (SemiCircuit.inr_mem_children _).1 (by
+    rw [hcx]; exact Finset.mem_singleton_self _)
+  obtain ⟨Q, hQaux, c, T, haff, hxT⟩ :=
+    SemiCircuit.exists_affineIn_of_mem_terms hS.wf hxpar he hxe
+  exact ⟨_, Valid.unitDelete hS hx hcx (Valid.not_out_reads_param hS hf ha hxpar) hQaux haff hxT⟩
 
 /-- Whether one of the four deletion rules `(D1)`–`(D4)` applies to `S`:
-* `(D1)`: a gate computing a literal or constant on `EqnsHold val ∧ InZeroLocus val` whose inputs
+* `(D1)`: a gate computing a literal or constant on `EqnsHold val ∧ Locus val` whose inputs
   are at most those of the gate;
 * `(D2)`: a gate read by no gate and not by the output;
 * `(D3)`: an equation of at most two terms;
 * `(D4)`: an unpaired parameter whose sole child is an affine equation. -/
 @[expose] def DeletionAvailable (S : State n) : Prop :=
   (∃ J ∈ S.gates, ∃ ℓ : Lit, (∀ t, ℓ.Reads t → (S.gate J).Reads t) ∧
-    ∀ val, S.EqnsHold val → S.InZeroLocus val → (S.gate J).eval val = ℓ.eval val) ∨
+    ∀ val, S.EqnsHold val → S.Locus val → (S.gate J).eval val = ℓ.eval val) ∨
   (∃ J ∈ S.gates, (∀ K ∈ S.gates, ¬ (S.gate K).Reads J) ∧ ¬ S.out.Reads J) ∨
   (∃ e ∈ S.eqns, (S.eqn e).terms.card ≤ 2) ∨
   (∃ x ∈ S.unpaired, ∃ e, S.children x = {.inr e})
@@ -147,15 +161,15 @@ theorem Valid.step_of_deletion {S : State n} {f : BooleanFunction n} {d : ℕ}
     (hdel : S.DeletionAvailable) : ∃ S', Step f S S' := by
   rcases hdel with ⟨J, hJ, ℓ, hreads, heval⟩ | ⟨J, hJ, hgates, hout⟩ |
       ⟨e, he, hcard⟩ | ⟨x, hx, e, hcx⟩
-  · exact ⟨_, (hS.reduction_deleteGate ⟨hJ, hreads, Or.inl heval⟩
-      (fun _ _ => List.mem_singleton_self _)).step_of_delete hS⟩
-  · exact ⟨_, (hS.reduction_deleteGate (ℓ := Lit.const false)
+  · exact ⟨_, Reduction.step_of_delete (hS.reduction_deleteGate ⟨hJ, hreads, Or.inl heval⟩
+      (fun _ _ => List.mem_singleton_self _)) hS⟩
+  · exact ⟨_, Reduction.step_of_delete (hS.reduction_deleteGate (ℓ := Lit.const false)
       ⟨hJ, (fun _ h => by cases h), Or.inr ⟨hgates, hout⟩⟩
-      fun _ h => by cases h).step_of_delete hS⟩
+      fun _ h => by cases h) hS⟩
   · obtain ⟨S', hred⟩ := hS.exists_reduction_delete (N := .inr e) ⟨he, hcard⟩
-    exact ⟨S', hred.step_of_delete hS⟩
-  · obtain ⟨S', hS', hm, hs, _, ha', hW⟩ := hS.exists_unit_delete hf ha hx hcx
-    exact ⟨S', ⟨hS', by omega, by omega, by omega, by omega⟩⟩
+    exact ⟨S', Reduction.step_of_delete hred hS⟩
+  · obtain ⟨S', hS', hm, hs, _, ha', hW⟩ := Valid.exists_unit_delete hS hf ha hx hcx
+    exact ⟨S', ⟨hS', by omega, by omega, by omega, by rw [ha']; omega⟩⟩
 
 end State
 

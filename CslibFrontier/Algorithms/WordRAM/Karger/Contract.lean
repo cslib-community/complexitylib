@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 import CslibFrontier.Computability.WordRAM.Call
+import CslibFrontier.Computability.WordRAM.RegisterFrame
+import CslibFrontier.Foundations.Data.Nat.Div
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Lean.Karger.Contraction
 public import CslibFrontier.Computability.WordRAM.Heap
@@ -73,6 +75,8 @@ law.
 
 ## Main definitions
 
+* `Cslib.Algorithms.WordRAM.Karger.flattenMatrix`: the row-major `n ^ 2`-word input layout of a
+  weight matrix.
 * `Cslib.Algorithms.WordRAM.Karger.HoldsMatrix`,
   `Cslib.Algorithms.WordRAM.Karger.HoldsWorkspace`,
   `Cslib.Algorithms.WordRAM.Karger.workspaceFootprint`,
@@ -120,6 +124,7 @@ open scoped ENNReal
 open Cslib.WeightedCut
 open Cslib.Probability.PMF
 open Cslib.WordRAM
+open Cslib.Algorithms.Karger
 
 /-! ### Register layout (`r = 16`) -/
 
@@ -159,6 +164,37 @@ abbrev val1 : Fin 16 := 14
 abbrev val2 : Fin 16 := 15
 
 end Reg
+
+/-! ### Row-major input layout of the matrix -/
+
+/-- Row-major `n * n`-element list encoding of `W : Fin n → Fin n → ℕ`. -/
+def flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) : List ℕ :=
+  List.ofFn fun idx : Fin (n * n) =>
+    W ⟨idx.val / n, Nat.div_lt_of_lt_mul idx.isLt⟩
+      ⟨idx.val % n, Nat.mod_lt _
+        (Nat.pos_of_ne_zero fun h0 => Nat.not_lt_zero idx.val (by simpa [h0] using idx.isLt))⟩
+
+@[simp]
+theorem length_flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) :
+    (flattenMatrix W).length = n * n := by
+  simp [flattenMatrix]
+
+theorem getElem_flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) (u v : Fin n) :
+    (flattenMatrix W)[u.val * n + v.val]'(by
+      rw [length_flattenMatrix]
+      nlinarith [u.isLt, v.isLt]) = W u v := by
+  simp only [flattenMatrix, List.getElem_ofFn]
+  have hdiv : (u.val * n + v.val) / n = u.val := Nat.mul_add_div_of_lt _ v.isLt
+  have hmod : (u.val * n + v.val) % n = v.val := Nat.mul_add_mod_of_lt v.isLt
+  congr 1 <;> exact Fin.ext (by assumption)
+
+theorem mem_flattenMatrix_le_totalDoubledWeight {n : ℕ} (W : Fin n → Fin n → ℕ)
+    {x : ℕ} (hx : x ∈ flattenMatrix W) :
+    x ≤ totalDoubledWeight W := by
+  unfold flattenMatrix at hx
+  rw [List.mem_ofFn] at hx
+  rcases hx with ⟨idx, rfl⟩
+  exact entry_le_totalDoubledWeight W _ _
 
 /-! ### Relocatable workspace representation and address geometry -/
 
@@ -2825,12 +2861,6 @@ def computeDegreesAndTotalAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
 def contractDownToAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
   contractDownTo.rename (Fin.castLE hr)
 
-private theorem extend_castLE_regs_ge {r : ℕ} (hr : 16 ≤ r) (y : Data 16) (x : Data r)
-    (j : Fin r) (hj : 16 ≤ j.val) :
-    (y.extend (Fin.castLE hr) x).regs j = x.regs j :=
-  Function.extend_apply' y.regs x.regs j
-    (by rintro ⟨i, rfl⟩; exact absurd i.isLt (by simp [Fin.castLE] at hj; omega))
-
 /-- Specification of `computeDegreesAndTotalAt hr` on any `r`-register file (`16 ≤ r`), preserving
 all caller registers with index `≥ 16`. -/
 theorem computeDegreesAndTotalAt_exec {r w wb db str k : ℕ} (hr : 16 ≤ r)
@@ -2877,7 +2907,8 @@ theorem contractDownToAt_law {r w wb db str k t : ℕ} (hr : 16 ≤ r) {W : Fin 
       ((Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes (k - t))
         ⟨k, W⟩).map Prod.snd) :=
   (ExecRandLaw.rename (Fin.castLE_injective hr) (contractDownTo_law ht htk hW hst)).mono
-    (fun _ ⟨y, ⟨hmod, hy⟩, he⟩ => he ▸ ⟨hmod, fun j hj => extend_castLE_regs_ge hr y x j hj,
+    (fun _ ⟨y, ⟨hmod, hy⟩, he⟩ => he ▸ ⟨hmod,
+      fun j hj => Data.extend_castLE_regs_of_le (hrs := hr) y x j hj,
       by rwa [Data.comap_extend (Fin.castLE_injective hr)]⟩) le_rfl le_rfl
 
 /-- Specification of `contractDownToAt hr` on any `r`-register file (`16 ≤ r`), preserving all
@@ -2913,7 +2944,8 @@ theorem contractDownToAt_spec {r n w wb db str k t : ℕ} (hr : 16 ≤ r)
   · intro z hz
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
     rcases hsup₀ z₀ hz₀ with ⟨ht0, hmod0, W', part', hC', hst'⟩
-    refine ⟨ht0, hmod0, fun j hj => extend_castLE_regs_ge hr z₀.1 x j hj, W', part', hC', ?_⟩
+    refine ⟨ht0, hmod0, fun j hj => Data.extend_castLE_regs_of_le (hrs := hr) z₀.1 x j hj,
+      W', part', hC', ?_⟩
     rwa [Data.comap_extend hf]
   · intro B hmin_pos hB_nt hB_min
     rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]

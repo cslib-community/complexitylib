@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Run the required steps of CI's `ci-checks` job locally; `scripts/check.sh` calls this.
+"""Run CI's locally reproducible source and Lean validation; `scripts/check.sh` calls this.
 
 Usage: python3 scripts/full_check.py [--base REF]
 
 `ci-checks` in `.github/workflows/lean_action_ci.yml` is the repository's only required status
-check. `STEPS` repeats each of its steps that can run on a contributor's machine, in CI's order and
-with CI's commands, so that a local full check fails where a pull request's CI would. Steps that
+check. It requires the parallel `source-checks` and `lean-checks` jobs to succeed. `STEPS` repeats
+each step of those jobs that can run on a contributor's machine, preserving each job's order and
+using CI's commands, so that a local full check fails where pull-request CI would. Steps that
 compare a change with its base use the merge base of REF (default `origin/main`) with `HEAD`, and
 the working tree, where pull-request CI uses the first parent of its merge commit. Every step runs
 even after a failure, and each is reported as `ok` or `FAIL` with its log.
@@ -14,10 +15,15 @@ even after a failure, and each is reported as `ok` or `FAIL` with its log.
 `CI_ONLY` lists the remaining steps with the reason each does not run here: advisory notices that
 never fail the job, cache and runner plumbing (`scripts/cache/ensure.sh` restores caches locally),
 and steps that need GitHub context, tokens or secrets. `scripts/test_full_check.py` fails when a
-`ci-checks` step is in none of the three; when a mirrored or preflight step's `run` script has a
+source or Lean step is in none of the three; when a mirrored or preflight step's `run` script has a
 line that is neither one of its commands here nor the listed `BASE` plumbing; when such a step sets
 something the local run does not reproduce (another working directory or environment, `shell`,
-`continue-on-error`, a timeout); or when the mirrored steps are out of CI's order.
+`continue-on-error`, a timeout); or when the mirrored steps are out of order within their CI job.
+It separately tests the required aggregator's dependencies, publication output and failure
+semantics.
+
+`LOCAL_STEPS` run after the mirrored steps and have no CI counterpart. They check failures that
+only a local machine can produce.
 """
 
 from __future__ import annotations
@@ -32,13 +38,18 @@ import sys
 import tempfile
 from typing import TextIO
 
+try:
+    import check_vm_map_count
+except ModuleNotFoundError:
+    from scripts import check_vm_map_count
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
 @dataclass(frozen=True)
 class Step:
-    """A `ci-checks` step: its CI name and every line of its `run` script except `set -e` and the
-    computation of CI's base commit, which `BASE` replaces (`PLUMBING` in
+    """A source- or Lean-check step: its CI name and every line of its `run` script except
+    `set -e` and the computation of CI's base commit, which `BASE` replaces (`PLUMBING` in
     `scripts/test_full_check.py`)."""
     name: str
     commands: tuple[str, ...]
@@ -47,8 +58,9 @@ class Step:
 
 
 STEPS = (
-    # CI runs this before installing Lean, so the suite's Lean-gated tests skip there; here Lean is
-    # installed and they run. It includes the manual checker's tests that check.sh runs first.
+    # The source-check job has no Lean installation, so the suite's Lean-gated tests skip there;
+    # here Lean is installed and they run. It includes the manual checker's tests that check.sh
+    # runs first.
     Step("Test Python tooling", ("python3 -m unittest discover -s scripts -p 'test_*.py'",)),
     Step("Source hygiene", ("python3 -B scripts/check_hygiene.py --check-simp",)),
     Step("Encoding readability ratchet (changed modules)",
@@ -82,14 +94,20 @@ STEPS = (
     Step("checkInitImports", ("lake exe checkInitImports",)),
 )
 
+# Run after `STEPS`; not CI steps, so `scripts/test_full_check.py` keeps their names apart from CI's.
+LOCAL_STEPS = (
+    # The local artifact cache restores outputs without their warnings, which `--wfail` and
+    # `--iofail` then miss (#4523). CI's remote cache is published only from `main`.
+    Step("Re-elaborate root-package files restored from the artifact cache",
+         ("python3 -B scripts/check_cache_restores.py",)),
+)
+
 # Run by scripts/check.sh before the cache bootstrap, in both full and quick modes.
 PREFLIGHT = {
     "Operator manual links and excerpts": "python3 -B scripts/check_operator_manual.py",
 }
 
 CI_ONLY = {
-    "Prepare optional handoff measurement":
-        "main-push cache experiment (#1728); needs the GitHub API",
     "Encoding readability report":
         "merge groups and main pushes only; reports and always succeeds",
     "Projection chain report":
@@ -101,11 +119,11 @@ CI_ONLY = {
     "Restore Mathlib cache with retries": "CI cache; check.sh runs scripts/cache/ensure.sh",
     "Restore build outputs from the remote cache":
         "CI cache; check.sh runs scripts/cache/ensure.sh",
-    "Optional controlled handoff measurement":
-        "main-push cache experiment (#1728); needs the GitHub API",
     "Restore validated merge-group build outputs":
         "main pushes only; downloads a merge-group artifact through the GitHub API",
     "Save .lake to the Actions cache": "main pushes only; CI cache",
+    "Save .lake after cache publication (experiment)":
+        "main pushes only; default-off CI cache experiment (#4972)",
     "Parallel-definition and duplicate-statement notices (advisory)":
         "advisory; never fails the job. Run `scripts/parallel_defs.py [--theorems]` to see it",
     "PR description names (advisory)":
@@ -114,7 +132,6 @@ CI_ONLY = {
     "Upload merge-group build outputs": "merge groups only; build handoff to main",
     "Stage cache publication": "main pushes only; cache publication",
     "Hand off staged files to the enabled publishers": "main pushes only; cache publication",
-    "Record optional handoff measurement": "main-push cache experiment (#1728)",
 }
 
 
@@ -149,8 +166,12 @@ def main(argv: list[str] | None = None) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", default="origin/main",
                         help="comparison ref; changes are taken from its merge base with HEAD")
+    parser.add_argument("--skip-map-count-check", action="store_true",
+                        help="skip the Linux vm.max_map_count preflight for whole-library imports")
     args = parser.parse_args(argv)
-    return run_steps(STEPS, args.base)
+    if not args.skip_map_count_check and check_vm_map_count.preflight(ROOT, sys.stdout) != 0:
+        return 1
+    return run_steps(STEPS + LOCAL_STEPS, args.base)
 
 
 if __name__ == "__main__":

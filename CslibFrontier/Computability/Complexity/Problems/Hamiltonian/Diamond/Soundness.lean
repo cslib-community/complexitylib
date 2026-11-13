@@ -82,7 +82,7 @@ private theorem pairLeft_nbrs {i s u : ℕ} (hs : s < slots i)
     (h : (u, rowNode i (3 * s + 2)) ∈ arcs N slots D ∨
       (rowNode i (3 * s + 2), u) ∈ arcs N slots D) :
     u = rowNode i (3 * s + 1) ∨ u = rowNode i (3 * s + 3) ∨
-      ∃ d ∈ D, d.2.1 = i ∧ d.2.2.1 = s ∧ u = clauseNode d.1 := by
+      ∃ d ∈ D, d.row = i ∧ d.slot = s ∧ u = clauseNode d.clause := by
   diamond_slot_arc h
 
 /-- The neighbours of the right node of slot `s` are the adjacent row nodes and the nodes of the
@@ -91,7 +91,7 @@ private theorem pairRight_nbrs {i s u : ℕ}
     (h : (u, rowNode i (3 * s + 3)) ∈ arcs N slots D ∨
       (rowNode i (3 * s + 3), u) ∈ arcs N slots D) :
     u = rowNode i (3 * s + 2) ∨ u = rowNode i (3 * s + 4) ∨
-      ∃ d ∈ D, d.2.1 = i ∧ d.2.2.1 = s ∧ u = clauseNode d.1 := by
+      ∃ d ∈ D, d.row = i ∧ d.slot = s ∧ u = clauseNode d.clause := by
   diamond_slot_arc h
 
 /-- Arcs into the left end of a row come from the top of its diamond or the next row node. -/
@@ -102,8 +102,8 @@ private theorem leftEnd_nbrs {i u : ℕ} (h : (u, rowNode i 0) ∈ arcs N slots 
 /-- Arcs into the node of clause `j` come from the slots of its detours: from the left node for a
 detour from left to right, from the right node otherwise. -/
 private theorem clauseNode_nbrs {j u : ℕ} (h : (u, clauseNode j) ∈ arcs N slots D) :
-    ∃ d ∈ D, d.1 = j ∧
-      u = rowNode d.2.1 (if d.2.2.2 then 3 * d.2.2.1 + 2 else 3 * d.2.2.1 + 3) := by
+    ∃ d ∈ D, d.clause = j ∧
+      u = rowNode d.row (if d.leftToRight then 3 * d.slot + 2 else 3 * d.slot + 3) := by
   rcases mem_arcs.1 h with
       ⟨i', hi', ⟨h₁, h₂ | h₂⟩ | ⟨h₁ | h₁, h₂⟩ | ⟨a', ha', ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩⟩⟩ |
       ⟨d, hd, ⟨hb, ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩⟩ | ⟨hb, ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩⟩⟩ <;>
@@ -230,8 +230,8 @@ private theorem separator_dir_succ
 
 /-- The clause nodes adjacent to the two nodes of a slot are the same. -/
 private theorem clauseNode_eq_of_slot (hD : WellFormed N slots M D) {i s : ℕ} {d d' : Detour}
-    (hd : d ∈ D) (hd' : d' ∈ D) (hi : d.2.1 = i) (hs : d.2.2.1 = s) (hi' : d'.2.1 = i)
-    (hs' : d'.2.2.1 = s) : clauseNode d.1 = clauseNode d'.1 := by
+    (hd : d ∈ D) (hd' : d' ∈ D) (hi : d.row = i) (hs : d.slot = s) (hi' : d'.row = i)
+    (hs' : d'.slot = s) : clauseNode d.clause = clauseNode d'.clause := by
   rw [hD.clause_eq d hd d' hd' (hi.trans hi'.symm) (hs.trans hs'.symm)]
 
 /-- If the separator before slot `s` is traversed rightwards, so is the separator after it. -/
@@ -254,7 +254,8 @@ private theorem pair_rightwards (hD : WellFormed N slots M D)
     · exact absurd h' (hq'.asymm hnd)
   -- The successor of the right pair node lies to its right.
   have hsucc_q : ∀ w, Follows p (rowNode i (3 * s + 3)) w →
-      w ≠ rowNode i (3 * s + 2) → (∀ d ∈ D, d.2.1 = i → d.2.2.1 = s → w ≠ clauseNode d.1) →
+      w ≠ rowNode i (3 * s + 2) →
+      (∀ d ∈ D, d.row = i → d.slot = s → w ≠ clauseNode d.clause) →
       Follows p (rowNode i (3 * s + 4)) (rowNode i (3 * s + 5)) := fun w hw h₁ h₂ => by
     rcases pairRight_nbrs (Or.inr (hw.rel hch)) with rfl | rfl | ⟨d, hd, hdi, hds, rfl⟩
     · exact (h₁ rfl).elim
@@ -277,8 +278,8 @@ private theorem pair_rightwards (hD : WellFormed N slots M D)
     have hw'p : w' ≠ rowNode i (3 * s + 2) := fun he => by
       subst he
       simpa using hw'.left_unique hnd h
-    have hw'c : ∀ d' ∈ D, d'.2.1 = i → d'.2.2.1 = s → w' ≠ clauseNode d'.1 := fun d' hd' hdi'
-        hds' he => by
+    have hw'c : ∀ d' ∈ D, d'.row = i → d'.slot = s → w' ≠ clauseNode d'.clause :=
+      fun d' hd' hdi' hds' he => by
       rw [he, ← clauseNode_eq_of_slot hD hd hd' hdi hds hdi' hds'] at hw'
       simpa using hw'.left_unique hnd hw
     exact hsucc_q w' hw' hw'p hw'c
@@ -351,8 +352,8 @@ private theorem rightwards_iff_top
 /-- The node of clause `j` is entered by a detour in the direction of its row. -/
 private theorem exists_detour (hD : WellFormed N slots M D)
     (hp : (graph N slots M D).IsDirHamPath (topNode 0) (topNode N) p) {j : ℕ} (hj : j < M) :
-    ∃ d ∈ D, d.1 = j ∧
-      (Follows p (topNode d.2.1) (rowNode d.2.1 0) ↔ d.2.2.2 = true) := by
+    ∃ d ∈ D, d.clause = j ∧
+      (Follows p (topNode d.row) (rowNode d.row 0) ↔ d.leftToRight = true) := by
   have hnd := hp.1
   obtain ⟨u, hu⟩ := exists_pred hp (clauseNode_mem_vertices (N := N) (slots := slots) hj)
     (clauseNode_ne_topNode _ _)
@@ -361,11 +362,11 @@ private theorem exists_detour (hD : WellFormed N slots M D)
   have hs := hD.slot_lt d hd
   refine ⟨d, hd, hdj, ?_⟩
   rw [← rightwards_iff_top hp hi]
-  cases hb : d.2.2.2
+  cases hb : d.leftToRight
   · simp only [hb, Bool.false_eq_true, ite_false] at hu
-    rw [← rightwards_iff hD hp hi (d.2.2.1 + 1) (by omega),
-      show 3 * (d.2.2.1 + 1) + 1 = 3 * d.2.2.1 + 4 by ring,
-      show 3 * (d.2.2.1 + 1) + 2 = 3 * d.2.2.1 + 5 by ring]
+    rw [← rightwards_iff hD hp hi (d.slot + 1) (by omega),
+      show 3 * (d.slot + 1) + 1 = 3 * d.slot + 4 by ring,
+      show 3 * (d.slot + 1) + 2 = 3 * d.slot + 5 by ring]
     simp only [Bool.false_eq_true, iff_false]
     intro h
     rcases separator_dir_succ hp hi hs with ⟨h₁, -⟩ | ⟨-, h₁⟩
@@ -373,21 +374,22 @@ private theorem exists_detour (hD : WellFormed N slots M D)
     · simpa using h₁.right_unique hnd h
   · simp only [hb, ite_true] at hu
     simp only [iff_true]
-    rw [← rightwards_iff hD hp hi d.2.2.1 hs.le]
-    rcases separator_dir hp hi (s := d.2.2.1) hs.le with ⟨-, h₁⟩ | ⟨h₁, -⟩
+    rw [← rightwards_iff hD hp hi d.slot hs.le]
+    rcases separator_dir hp hi (s := d.slot) hs.le with ⟨-, h₁⟩ | ⟨h₁, -⟩
     · exact h₁
     · simpa using hu.right_unique hnd h₁
 
 /-- A Hamiltonian path of the diamond graph gives directions of the rows satisfying every
 clause. -/
 theorem satisfiable_of_mem_DirHamPath (hD : WellFormed N slots M D)
-    (h : (graph N slots M D, topNode 0, topNode N) ∈ DirHamPath) : Satisfiable M D := by
+    (h : (⟨graph N slots M D, topNode 0, topNode N⟩ : PathInstance) ∈ DirHamPath) :
+    Satisfiable M D := by
   classical
   obtain ⟨p, hp⟩ := h
   refine ⟨fun i => decide (Follows p (topNode i) (rowNode i 0)), fun j hj => ?_⟩
   obtain ⟨d, hd, hdj, hiff⟩ := exists_detour hD hp hj
   refine ⟨d, hd, hdj, ?_⟩
-  cases hb : d.2.2.2 <;> simp_all
+  cases hb : d.leftToRight <;> simp_all
 
 end PathToDirections
 

@@ -8,9 +8,11 @@ module
 -- upstream: local-only (tests for Copositivity)
 
 public import CslibFrontier.Init
+public import CslibFrontier.Computability.Circuit.Arithmetic.Encoding
 public import CslibFrontier.Computability.Complexity.Problems.Copositivity
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Foundations.Data.List.DotProduct
 import Mathlib.Combinatorics.SimpleGraph.Clique
@@ -49,7 +51,7 @@ example :
     Copositive ∈ coNP encSymRatMatrix ∧
     coNPHard encSymRatMatrix Copositive ∧
     coNPComplete encSymRatMatrix Copositive ∧
-    PolyTimeReducible encClique encSymRatMatrix Clique NonCopositive :=
+    PolyTimeReducible encCliqueInstance encSymRatMatrix Clique NonCopositive :=
   ⟨NonCopositive_npComplete.1, NonCopositive_npComplete.2, NonCopositive_npComplete,
     Copositive_coNPComplete.1, Copositive_coNPComplete.2, Copositive_coNPComplete,
     polyTimeReducible_Clique_NonCopositive⟩
@@ -338,13 +340,13 @@ example :
 
 /-! ### Reduction instances (`cliqueToSymRatMatrix`) -/
 
-private def triangleG : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def triangleG : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
-private def path3G : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+private def path3G : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
-private def emptyG : Graph := ([], [])
+private def emptyG : Graph := ⟨[], []⟩
 
-example : cliqueToSymRatMatrix (triangleG, 3) ∈ NonCopositive := by
+example : cliqueToSymRatMatrix ⟨triangleG, 3⟩ ∈ NonCopositive := by
   rw [← cliqueToSymRatMatrix_mem_iff, mem_Clique_iff]
   refine ⟨{0, 1, 2}, fun v hv => by
     simp only [triangleG, List.mem_cons, List.not_mem_nil, or_false]
@@ -359,7 +361,7 @@ example : cliqueToSymRatMatrix (triangleG, 3) ∈ NonCopositive := by
   rcases hu with rfl | rfl | rfl <;> rcases hv with rfl | rfl | rfl <;>
     first | exact absurd rfl huv | decide
 
-example : cliqueToSymRatMatrix (path3G, 3) ∈ Copositive := by
+example : cliqueToSymRatMatrix ⟨path3G, 3⟩ ∈ Copositive := by
   rw [Copositive_eq_compl, Set.mem_compl_iff, ← cliqueToSymRatMatrix_mem_iff, mem_Clique_iff]
   rintro ⟨S, hSG, hS⟩
   have hsub : S ⊆ ({0, 1, 2} : Finset ℕ) := by
@@ -378,21 +380,30 @@ example : cliqueToSymRatMatrix (path3G, 3) ∈ Copositive := by
   revert hadj
   decide
 
-example : cliqueToSymRatMatrix (emptyG, 0) ∈ NonCopositive := by
+example : cliqueToSymRatMatrix ⟨emptyG, 0⟩ ∈ NonCopositive := by
   rw [← cliqueToSymRatMatrix_mem_iff, mem_Clique_iff]
   refine ⟨∅, fun _ h => absurd h (Finset.notMem_empty _), ?_⟩
   simp only [SimpleGraph.isNClique_iff, Finset.coe_empty, SimpleGraph.isClique_empty,
     Finset.card_empty, and_self]
 
-example : cliqueToSymRatMatrix (emptyG, 1) ∈ Copositive := by
+example : cliqueToSymRatMatrix ⟨emptyG, 1⟩ ∈ Copositive := by
   rw [Copositive_eq_compl, Set.mem_compl_iff, ← cliqueToSymRatMatrix_mem_iff, mem_Clique_iff]
   rintro ⟨S, hSG, hS⟩
-  have hpos : 0 < S.card := by rw [hS.card_eq]; omega
+  have hpos : 0 < S.card := by
+    have hc := hS.card_eq
+    dsimp only at hc
+    omega
   obtain ⟨v, hv⟩ := Finset.card_pos.1 hpos
   have hv0 := hSG v hv
   simp only [emptyG, List.not_mem_nil] at hv0
 
-/-! ### Optional rational arithmetic circuit input encoding -/
+/-! ### Optional rational arithmetic circuit input encoding and `PolyTime.Rat` -/
+
+example : ComputableInPolyTime Rat.num encRat encIntBin := by fun_prop
+
+example : ComputableInPolyTime Rat.den encRat encNat := by fun_prop
+
+example : ComputableInPolyTime (fun z : ℤ => (z : ℚ)) encIntBin encRat := by fun_prop
 
 example :
     let c : Σ n, Circuit (arithSignature ℚ) n 1 :=
