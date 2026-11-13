@@ -1,5 +1,8 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import CslibFrontier.Algorithms.Dijkstra.Defs
+public import CslibFrontier.Algorithms.Dijkstra.Invariant
+public import CslibFrontier.Algorithms.Dijkstra.ListInstance
 public import CslibFrontier.Algorithms.Ellipsoid.Basic
 public import CslibFrontier.Algorithms.ExactTriangle.CountPrime
 public import CslibFrontier.Algorithms.ExactTriangle.CountPrime.Extraction
@@ -13,6 +16,8 @@ public import CslibFrontier.Algorithms.ExactTriangle.PieceBounds
 public import CslibFrontier.Algorithms.ExactTriangle.Splitting
 public import CslibFrontier.Algorithms.ExactTriangle.Weights
 public import CslibFrontier.Algorithms.ExactTriangle.Witnesses
+public import CslibFrontier.Algorithms.Karger.FastCut
+public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.Algorithms.LatticeReduction.Babai
 public import CslibFrontier.Algorithms.LatticeReduction.LLL
 public import CslibFrontier.Algorithms.LatticeReduction.NearestPlane
@@ -328,10 +333,8 @@ public import CslibFrontier.Algorithms.WordRAM.Deduplicate.Program
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Fibonacci
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.FibonacciStatement
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.HeapStatement
-public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Invariant
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.ListEncode
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.LogLinear
-public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Statement
 public import CslibFrontier.Algorithms.WordRAM.ElementDistinctness
 public import CslibFrontier.Algorithms.WordRAM.ElementDistinctnessRAM
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Exec
@@ -536,8 +539,6 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.WitnessScan.Setup
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.WriteMatrices
 public import CslibFrontier.Algorithms.WordRAM.Histogram
 public import CslibFrontier.Algorithms.WordRAM.Karger.Contract
-public import CslibFrontier.Algorithms.WordRAM.Karger.FastCut
-public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
 public import CslibFrontier.Algorithms.WordRAM.Karger.OutputLaw
 public import CslibFrontier.Algorithms.WordRAM.KargerMinCut
 public import CslibFrontier.Algorithms.WordRAM.KargerStein

@@ -7,7 +7,7 @@ Authors: Renfei Zhou, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
+public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.Computability.WordRAM.Heap
 public import CslibFrontier.Computability.WordRAM.Randomized.Law
 public import CslibFrontier.Computability.WordRAM.Time
