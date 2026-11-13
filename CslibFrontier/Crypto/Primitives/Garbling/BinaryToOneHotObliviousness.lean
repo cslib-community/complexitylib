@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Mayank Rathee
 -/
 
 module
@@ -50,11 +50,11 @@ fresh tweak, so every ciphertext is uniform given what came before (`idealGame_r
 random-function side resamples the function at a query point that the function itself chooses,
 using `Cslib.Probability.PMF.uniformOfFintype_bind_bind_adaptiveUpdate`.
 
-The reduction makes `n` queries (`isQueryBounded_reduction`) at pairwise distinct tweaks. In
-particular it never asks the same `(X, τ)` with both bits, which Definition 1 forbids as illegal:
-against such a query pair the keyed oracle is trivially distinguishable, so the bound is meaningful
-for the reductions of this file and not for arbitrary adversaries of `CCR.advantage`.
-The distinctness of the tweaks is documented, not formalized as a transcript property. This is the
+The reduction makes `n` queries (`isQueryBounded_reduction`) at pairwise distinct tweaks
+(`isTweakUnique_reduction`). In particular it never asks the same `(X, τ)` with both bits, which
+Definition 1 forbids as illegal: against such a query pair the keyed oracle is trivially
+distinguishable, so the bound is meaningful for the reductions of this file and not for arbitrary
+adversaries of `CCR.advantage`. This is the
 single-instance form: the index, tweaks and distinguisher are fixed, and running time is not
 tracked. Obliviousness, privacy and authenticity of the full `logrow` gate are not formalized here.
 
@@ -68,6 +68,8 @@ tracked. Obliviousness, privacy and authenticity of the full `logrow` gate are n
 ## Main results
 
 * `Cslib.Crypto.Garbling.BinaryToOneHot.isQueryBounded_reduction`: one query per step.
+* `Cslib.Crypto.Garbling.BinaryToOneHot.isTweakUnique_reduction`: at most one query per tweak when
+  different steps use different tweaks (`CCR.IsTweakUnique`).
 * `Cslib.Crypto.Garbling.BinaryToOneHot.realGame_reduction`: the keyed oracle gives the real view.
 * `Cslib.Crypto.Garbling.BinaryToOneHot.idealGame_reduction`: a random function gives the
   simulated view.
@@ -165,6 +167,43 @@ private theorem isQueryBounded_oracleSteps (H : L → T → L)
         ⟨prev.2 (Fin.init x), tw n (Fin.init x), x (Fin.last (n + 1))⟩).bind fun _ =>
       OracleComp.IsCostBounded.pure _ 0
 
+/-- When different steps use different tweaks, the reduction's evaluation makes at most one query
+with each tweak. -/
+private theorem isCostBounded_oracleSteps_tweak [DecidableEq T] (H : L → T → L)
+    (tw : (t : ℕ) → (Fin (t + 1) → Bool) → T) (n : ℕ)
+    (htw : ∀ t t' j j', t < n → t' < n → tw t j = tw t' j' → t = t')
+    (x : Fin (n + 1) → Bool) (A : Fin (n + 1) → L) (τ : T) :
+    OracleComp.IsCostBounded
+      (Sum.elim (fun _ => 0) fun q : CCR.Query L T => if q.tweak = τ then 1 else 0)
+      (oracleSteps H tw n x A)
+      (if ∃ s < n, ∃ j, tw s j = τ then 1 else 0) := by
+  classical
+  induction n with
+  | zero => exact OracleComp.IsCostBounded.pure _ _
+  | succ n ih =>
+    have htw' : ∀ t t' j j', t < n → t' < n → tw t j = tw t' j' → t = t' :=
+      fun t t' j j' ht ht' => htw t t' j j' (by omega) (by omega)
+    refine OracleComp.IsCostBounded.mono
+      (n := (if ∃ s < n, ∃ j, tw s j = τ then 1 else 0) +
+        ((if tw n (Fin.init x) = τ then 1 else 0) + 0)) ?_ ?_
+    · exact (ih htw' (Fin.init x) (Fin.init A)).bind fun prev =>
+        (ProbOracleComp.isCostBounded_query (spec := fun _ : CCR.Query L T => L)
+          (fun q : CCR.Query L T => if q.tweak = τ then 1 else 0)
+          ⟨prev.2 (Fin.init x), tw n (Fin.init x), x (Fin.last (n + 1))⟩).bind fun _ =>
+        OracleComp.IsCostBounded.pure _ 0
+    · by_cases h1 : ∃ s < n, ∃ j, tw s j = τ
+      · obtain ⟨s, hs, j, hst⟩ := h1
+        have h1' : ∃ s < n, ∃ j, tw s j = τ := ⟨s, hs, j, hst⟩
+        have h2 : ¬ tw n (Fin.init x) = τ := fun h2 => by
+          have := htw s n j (Fin.init x) (by omega) (by omega) (hst.trans h2.symm)
+          omega
+        have h3 : ∃ s < n + 1, ∃ j, tw s j = τ := ⟨s, by omega, j, hst⟩
+        simp only [h1', h2, h3, ↓reduceIte, Nat.add_zero, le_refl]
+      · by_cases h2 : tw n (Fin.init x) = τ
+        · have h3 : ∃ s < n + 1, ∃ j, tw s j = τ := ⟨n, by omega, Fin.init x, h2⟩
+          simp only [h1, h2, h3, ↓reduceIte, Nat.add_zero, zero_add, le_refl]
+        · simp only [h1, h2, ↓reduceIte, Nat.add_zero, Nat.zero_le]
+
 /-- Against the keyed oracle with offset `Δ`, on the labels of the bits of `x` with zero-labels
 `X`, the reduction's evaluation gives the garbled ciphertexts and the one-hot labels. -/
 private theorem runSteps_oracle [Module (ZMod 2) L] (H : L → T → L)
@@ -253,6 +292,21 @@ theorem isQueryBounded_reduction (H : L → T → L) (tw : (t : ℕ) → (Fin (t
     (isQueryBounded_oracleSteps H tw n x A).bind fun steps =>
     ProbOracleComp.IsQueryBounded.sample (spec := fun _ : CCR.Query L T => L) (D (A, steps.1))
   simpa only [reduction, Nat.zero_add, Nat.add_zero] using h
+
+/-- When different steps use different tweaks, the reduction makes at most one query with each
+tweak. -/
+theorem isTweakUnique_reduction [DecidableEq T] (H : L → T → L)
+    (tw : (t : ℕ) → (Fin (t + 1) → Bool) → T) (n : ℕ)
+    (htw : ∀ t t' j j', t < n → t' < n → tw t j = tw t' j' → t = t')
+    (x : Fin (n + 1) → Bool) (D : OneHotView L n → ProbComp Bool) :
+    CCR.IsTweakUnique (reduction H tw n x D) := by
+  classical
+  intro τ
+  refine ((ProbOracleComp.isCostBounded_sample _
+    (ProbComp.uniform (Fin (n + 1) → L))).bind fun A =>
+    (isCostBounded_oracleSteps_tweak H tw n htw x A τ).bind fun steps =>
+    ProbOracleComp.isCostBounded_sample _ (D (A, steps.1))).mono ?_
+  split_ifs <;> omega
 
 /-- Against a fixed function the reduction runs `D` on uniform labels and the ciphertexts of
 `runSteps`. -/
