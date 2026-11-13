@@ -312,9 +312,9 @@ theorem distinguishingGame_realEnsemble (noise : (κ : ℕ) → PMF (ZMod (2 ^ w
     distinguishingGame (realEnsemble n m w noise κ) (W κ) =
       realGame (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ)))
         (PMF.pi fun _ : Fin (m κ) => noise κ) (Distinguisher.ofWords W κ) := by
-  simp only [distinguishingGame, realEnsemble, publicMatrixLaw, realGame, eval_realExperiment,
-    Distinguisher.ofWords, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
-    PMF.pure_bind, PMF.bind_bind, Function.comp_def]
+  simp only [distinguishingGame_eq_bind, realEnsemble, publicMatrixLaw, realGame,
+    eval_realExperiment, Distinguisher.ofWords, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.bind_map, PMF.pure_bind, PMF.bind_bind, Function.comp_def]
   congr 1 with s
   rw [PMF.bind_comm]
   rfl
@@ -323,7 +323,7 @@ theorem distinguishingGame_realEnsemble (noise : (κ : ℕ) → PMF (ZMod (2 ^ w
 theorem distinguishingGame_uniformEnsemble (W : Crypto.Distinguisher) (κ : ℕ) :
     distinguishingGame (uniformEnsemble n m w κ) (W κ) =
       randomGame (Distinguisher.ofWords (n := n) (m := m) (w := w) W κ) := by
-  rw [distinguishingGame, uniformEnsemble, ← uniformOfFintype_augmentedMatrix]
+  rw [distinguishingGame_eq_bind, uniformEnsemble, ← uniformOfFintype_augmentedMatrix]
   simp only [randomGame, eval_randomExperiment, Distinguisher.ofWords, PMF.monad_bind_eq_bind,
     PMF.bind_map, PMF.bind_bind, Function.comp_def]
 
