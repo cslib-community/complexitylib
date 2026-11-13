@@ -262,7 +262,7 @@ theorem indistinguishableWithAdvice {generator : ℕ → ℕ → List Bool → L
     · exact .snd _ _
   apply (hsecure.negligible_encoded (encAdvice := encPair encBits encUnary) hreduce).congr'
   filter_upwards [hchoose] with n hn
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
     (advantage_eq (count n) (seedBits n) (outputBits n) (generator n) ⟨choose n, hn⟩
       (fun word => adversary ((n, advice n), word))).symm
 
