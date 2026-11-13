@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Crypto.Computational.RSATrapdoor
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 import CslibFrontier.Computability.Probabilistic.PPT.Extension
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Data.Nat.Size
 
