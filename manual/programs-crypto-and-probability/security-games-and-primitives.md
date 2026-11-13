@@ -248,20 +248,24 @@ Micciancio–Peikert gadget-based lattice trapdoors over `ZMod (2 ^ w)` (IACR eP
 
 ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Decompose.lean),
 [`MLDSA/Basic.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Basic.lean) and
-[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean). `decompose`,
-`highBits` and `lowBits` follow the FIPS 204 rounding with its `q - 1` wrap-around rule; the
-reusable facts are uniqueness of the decomposition (`decompose_intCast_mul_add`) and stability of
-the high bits under `β`-short perturbations (`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
+[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean).
+`power2Round` follows FIPS 204 Algorithm 35; `power2RoundVec_reconstruct` and
+`abs_power2RoundVec_low_le` give the coefficientwise public-key identity and low-part bound used by
+the Dilithium self-target calculation. `decompose`, `highBits` and `lowBits` follow the commitment
+rounding with its `q - 1` wrap-around rule; the reusable facts are uniqueness of the decomposition
+(`decompose_intCast_mul_add`) and stability of the high bits under `β`-short perturbations
+(`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
 `sign` and `verify` model the uncompressed-public-key scheme with an arbitrary hash-to-ball
-function and mask sampler (no Power2Round, hints, byte encodings or seed expansion), and
+function and mask sampler (it does not yet use the available Power2Round layer, hints, byte
+encodings or seed expansion), and
 `verify_sign` proves correctness under `Params.Valid`, which the three standard parameter sets
 satisfy. `succProbability_koaGame_le` bounds key-only forgery by the Module-LWE advantage
 `ModuleLWE.advantage` of `forgeryDistinguisher` for the short secret and error laws plus the
 self-target MSIS success of `selfTargetReduction`;
 chosen-message security, which needs signing-oracle simulation in the random-oracle model, is not
-formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the wrap-around
-case and a toy instance that signs, verifies, rejects a modified response and yields a self-target
-solution.
+formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
+Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
+signs, verifies, rejects a modified response and yields a self-target solution.
 
 Falcon's current checked layer is deliberately narrower. Import
 [`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
