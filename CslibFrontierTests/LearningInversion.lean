@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Inversion
 
 /-!
@@ -15,6 +17,9 @@ error above `1 / 2` with probability at most `2 (1 / 2) ^ 4 = 1 / 8` from four e
 the cruder Occam form, at most `1 / 2`, since `log 2 + log 2 ≤ 4 / 2`. The first bound also holds
 for a uniformly random key.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.LearningInversion
 

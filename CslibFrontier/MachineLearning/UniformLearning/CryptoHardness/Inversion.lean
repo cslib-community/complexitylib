@@ -62,6 +62,7 @@ variable {ι κ : Type*} [Fintype ι] [DecidableEq ι] {m : ℕ}
 
 /-- Run the randomized inverter `I` on `m` uniform examples of `F K`, returning the sample and the
 key that `I` outputs. -/
+@[expose]
 noncomputable def labelInversion (F : κ → (ι → Bool) → Bool)
     (I : LabeledSample (ι → Bool) Bool m → PMF κ) (K : κ) :
     PMF (LabeledSample (ι → Bool) Bool m × κ) :=
